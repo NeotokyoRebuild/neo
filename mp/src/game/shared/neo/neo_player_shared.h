@@ -194,7 +194,7 @@ enum NeoStar {
 class CNEO_Player;
 class CNEOBaseCombatWeapon;
 class C_BaseCombatWeapon;
-enum PlayerAnimEvent_t : uint;
+enum PlayerAnimEvent_t : int;
 
 extern bool IsThereRoomForLeanSlide(CNEO_Player *player,
 	const Vector &targetViewOffset, bool &outStartInSolid);

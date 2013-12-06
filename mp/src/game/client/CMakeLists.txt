@@ -15,6 +15,7 @@ target_include_directories(client
     ${CMAKE_SOURCE_DIR}/game/shared
     ${CMAKE_SOURCE_DIR}/game/shared/hl2
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp
+    ${CMAKE_SOURCE_DIR}/game/shared/Multiplayer
     ${CMAKE_SOURCE_DIR}/game/shared/neo
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons
     ${CMAKE_SOURCE_DIR}/public
@@ -1636,12 +1637,22 @@ endif()
 
 target_sources_grouped(
     TARGET client
+    NAME "Source Files\\Shared\\Multiplayer"
+    FILES
+    ${CMAKE_SOURCE_DIR}/game/shared/multiplayer/multiplayer_animstate.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/multiplayer/multiplayer_animstate.h
+)
+
+target_sources_grouped(
+    TARGET client
     NAME "HL2MP"
     FILES
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_gamerules.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_gamerules.h
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_player_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_player_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_playeranimstate.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_playeranimstate.h
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_weapon_parse.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_weapon_parse.h
     hl2mp/c_hl2mp_player.cpp

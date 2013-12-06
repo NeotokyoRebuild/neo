@@ -443,8 +443,8 @@ C_NEO_Player::C_NEO_Player()
 	m_bLastTickInThermOpticCamo = false;
 	m_bIsAllowedToToggleVision = false;
 
-	m_pPlayerAnimState = CreatePlayerAnimState(this, CreateAnimStateHelpers(this),
-		NEO_ANIMSTATE_LEGANIM_TYPE, NEO_ANIMSTATE_USES_AIMSEQUENCES);
+	/*m_pPlayerAnimState = CreatePlayerAnimState(this, CreateAnimStateHelpers(this),
+		NEO_ANIMSTATE_LEGANIM_TYPE, NEO_ANIMSTATE_USES_AIMSEQUENCES);*/
 
 	memset(m_szNeoNameWDupeIdx, 0, sizeof(m_szNeoNameWDupeIdx));
 	m_szNameDupePos = 0;
@@ -452,7 +452,7 @@ C_NEO_Player::C_NEO_Player()
 
 C_NEO_Player::~C_NEO_Player()
 {
-	m_pPlayerAnimState->Release();
+	//m_pPlayerAnimState->Release();
 }
 
 void C_NEO_Player::CheckThermOpticButtons()
@@ -967,7 +967,7 @@ extern ConVar cl_spec_mode;
 
 void C_NEO_Player::PostThink(void)
 {
-	BaseClass::PostThink();
+	//BaseClass::PostThink();
 
 	SetNextClientThink(CLIENT_THINK_ALWAYS);
 
@@ -1102,7 +1102,7 @@ void C_NEO_Player::PostThink(void)
 
 	float flPitch = asin(-eyeForward[2]);
 	float flYaw = atan2(eyeForward[1], eyeForward[0]);
-	m_pPlayerAnimState->Update(RAD2DEG(flYaw), RAD2DEG(flPitch));
+	//m_pPlayerAnimState->Update(RAD2DEG(flYaw), RAD2DEG(flPitch));
 }
 
 void C_NEO_Player::CalcDeathCamView(Vector &eyeOrigin, QAngle &eyeAngles, float &fov)
@@ -1604,7 +1604,7 @@ void C_NEO_Player::SetAnimation(PLAYER_ANIM playerAnim)
 	}
 	else
 	{
-		m_pPlayerAnimState->DoAnimationEvent(animEvent);
+		//m_pPlayerAnimState->DoAnimationEvent(animEvent);
 	}
 }
 

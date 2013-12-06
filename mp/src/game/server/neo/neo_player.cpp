@@ -510,7 +510,7 @@ void CNEO_Player::Spawn(void)
 	BaseClass::Spawn();
 
 	SetNumAnimOverlays(NUM_LAYERS_WANTED);
-	ResetAnimation();
+	//ResetAnimation();
 
 	m_HL2Local.m_cloakPower = CloakPower_Cap();
 
@@ -1235,7 +1235,7 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 	}
 	else
 	{
-		m_pPlayerAnimState->DoAnimationEvent(animEvent);
+		//m_pPlayerAnimState->DoAnimationEvent(animEvent);
 	}
 	// Stopping; animations are handled by m_pPlayerAnimState->Update.
 	// Should clean up this unused code later.
@@ -1885,7 +1885,7 @@ void CNEO_Player::SetPlayerCorpseModel(int type)
 
 	SetModel(model);
 	SetPlaybackRate(1.0f);
-	ResetAnimation();
+	//ResetAnimation();
 }
 
 float CNEO_Player::GetReceivedDamageScale(CBaseEntity* pAttacker)
@@ -2031,7 +2031,7 @@ void CNEO_Player::SetPlayerTeamModel( void )
 
 	SetModel(model);
 	SetPlaybackRate(1.0f);
-	ResetAnimation();
+	//ResetAnimation();
 
 	DevMsg("Set model: %s\n", model);
 

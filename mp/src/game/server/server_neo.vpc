@@ -15,7 +15,7 @@ $Configuration
 {
 	$Compiler
 	{
-		$AdditionalIncludeDirectories	"$BASE;$SRCDIR\game\shared\hl2,.\neo,.\hl2,.\hl2mp,$SRCDIR\game\shared\hl2mp,$SRCDIR\game\shared\neo,$SRCDIR\game\shared\neo\weapons"
+		$AdditionalIncludeDirectories	"$BASE;$SRCDIR\game\shared\hl2,.\neo,.\hl2,.\hl2mp,$SRCDIR\game\shared\hl2mp,$SRCDIR\game\shared\neo,$SRCDIR\game\shared\neo\weapons",$SRCDIR\game\shared\Multiplayer"
 		$PreprocessorDefinitions		"$BASE;NEO;HL2MP;HL2_DLL;SDK2013CE" [!$INCLUDE_WEP_PBK]
 		$PreprocessorDefinitions		"$BASE;NEO;HL2MP;HL2_DLL;SDK2013CE;INCLUDE_WEP_PBK" [$INCLUDE_WEP_PBK]
 	}
@@ -381,6 +381,10 @@ $Project "Server (HL2MP)"
 			$File	"$SRCDIR\game\shared\hl2mp\hl2mp_player_shared.h"
 			$File	"$SRCDIR\game\shared\hl2mp\hl2mp_weapon_parse.cpp"
 			$File	"$SRCDIR\game\shared\hl2mp\hl2mp_weapon_parse.h"
+			$File	"$SRCDIR\game\shared\hl2mp\hl2mp_playeranimstate.h"
+			$File	"$SRCDIR\game\shared\hl2mp\hl2mp_playeranimstate.cpp"
+			$File	"$SRCDIR\game\shared\Multiplayer\multiplayer_animstate.h"
+			$File	"$SRCDIR\game\shared\Multiplayer\multiplayer_animstate.cpp"
 			
 			$Folder	"Weapons"
 			{
