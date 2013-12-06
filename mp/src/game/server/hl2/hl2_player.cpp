@@ -2166,7 +2166,7 @@ bool CHL2_Player::IsIlluminatedByFlashlight( CBaseEntity *pEntity, float *flRetu
 	}
 
 	// Within 50 feet?
- 	float flDistSqr = GetAbsOrigin().DistToSqr(pEntity->GetAbsOrigin());
+	float flDistSqr = GetAbsOrigin().DistToSqr(pEntity->GetAbsOrigin());
 	if( flDistSqr > FLASHLIGHT_RANGE )
 		return false;
 
@@ -2242,7 +2242,7 @@ void CHL2_Player::SetPlayerUnderwater( bool state )
 	}
 	else
 	{
-  		SuitPower_RemoveDevice( SuitDeviceBreather );
+		SuitPower_RemoveDevice( SuitDeviceBreather );
 	}
 
 	BaseClass::SetPlayerUnderwater( state );
