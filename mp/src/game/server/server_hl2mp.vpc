@@ -252,6 +252,9 @@ $Project "Server (HL2MP)"
 			$File	"neo\neo_player.cpp"
 			$File	"neo\neo_player.h"
 
+			$File	"neo\neo_model_manager.cpp"
+			$File	"neo\neo_model_manager.h"
+
 			////////////////
 			// NEO SHARED //
 			////////////////

@@ -10,7 +10,7 @@
 #include "engine/IEngineSound.h"
 #include "team.h"
 #include "viewport_panel_names.h"
-//#include "neo_model_manager.h"
+#include "neo_model_manager.h"
 
 #include "tier0/vprof.h"
 
@@ -285,14 +285,12 @@ void ClientGamePrecache( void )
 {
 	Precache_HL2MP();
 	
-	/*
 	CNEOModelManager *modelManager = CNEOModelManager::Instance();
 	if (!modelManager)
 	{
 		Error("Failed to instantiate CNEOModelManager\n");
 	}
 	modelManager->Precache();
-	*/
 
 	Precache_NEO_Sounds();
 }
@@ -337,4 +335,3 @@ void InstallGameRules()
 {
 	CreateGameRulesObject( "CNEORules" );
 }
-
