@@ -30,6 +30,8 @@ public:
 
     CNEOBaseCombatWeapon();
 
+    virtual bool Reload( void );
+
 private:
     CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &);
 };

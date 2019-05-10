@@ -666,15 +666,15 @@ protected:
 #ifdef CLIENT_DLL
 extern ConVar cl_autoreload_when_empty;
 #endif
-inline bool ClientWantsAutoReload(CBaseCombatCharacter *pCharacter)
+inline bool ClientWantsAutoReload(CBaseCombatCharacter *pCharacter = NULL)
 {
+#ifdef CLIENT_DLL
+	return cl_autoreload_when_empty.GetBool();
+#else
 	if (!pCharacter)
 	{
 		return false;
 	}
-#ifdef CLIENT_DLL
-	return cl_autoreload_when_empty.GetBool();
-#else
 	return (bool)atoi(engine->GetClientConVarValue(
 		engine->IndexOfEdict(pCharacter->edict()),
 		"cl_autoreload_when_empty"));

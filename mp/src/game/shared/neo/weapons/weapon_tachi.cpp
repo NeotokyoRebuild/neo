@@ -314,7 +314,8 @@ Activity CWeaponTachi::GetPrimaryAttackActivity( void )
 //-----------------------------------------------------------------------------
 bool CWeaponTachi::Reload( void )
 {
-	bool fRet = DefaultReload( GetMaxClip1(), GetMaxClip2(), ACT_VM_RELOAD );
+	bool fRet = BaseClass::Reload();
+
 	if ( fRet )
 	{
 		WeaponSound( RELOAD );
