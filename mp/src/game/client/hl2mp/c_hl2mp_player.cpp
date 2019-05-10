@@ -20,7 +20,9 @@
 #undef CHL2MP_Player	
 #endif
 
+#ifndef NEO
 LINK_ENTITY_TO_CLASS( player, C_HL2MP_Player );
+#endif
 
 IMPLEMENT_CLIENTCLASS_DT(C_HL2MP_Player, DT_HL2MP_Player, CHL2MP_Player)
 	RecvPropFloat( RECVINFO( m_angEyeAngles[0] ) ),

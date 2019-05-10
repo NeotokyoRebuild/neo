@@ -119,6 +119,8 @@ $Project "Client (HL2MP)"
 			////////////////
 			// NEO CLIENT //
 			////////////////
+			$File	"neo\c_neo_player.cpp"
+			$File	"neo\c_neo_player.h"
 
 			////////////////
 			// NEO SHARED //

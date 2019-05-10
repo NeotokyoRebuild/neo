@@ -13,6 +13,8 @@
 
 */
 
+#ifndef NEO
+
 #include "cbase.h"
 #include "hl2mp_player.h"
 #include "hl2mp_gamerules.h"
@@ -199,3 +201,4 @@ void InstallGameRules()
 	CreateGameRulesObject( "CHL2MPRules" );
 }
 
+#endif
