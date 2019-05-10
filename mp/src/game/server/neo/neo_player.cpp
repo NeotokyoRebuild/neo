@@ -20,6 +20,8 @@
 
 #include "ilagcompensationmanager.h"
 
+#include "neo_model_manager.h"
+
 void DropPrimedFragGrenade(CNEO_Player *pPlayer, CBaseCombatWeapon *pGrenade);
 
 LINK_ENTITY_TO_CLASS(player, CNEO_Player);
@@ -141,6 +143,8 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 
 bool CNEO_Player::HandleCommand_JoinTeam( int team )
 {
+    SetPlayerTeamModel();
+
     return BaseClass::HandleCommand_JoinTeam(team);
 }
 
@@ -202,12 +206,30 @@ void CNEO_Player::ChangeTeam( int iTeam )
 
 void CNEO_Player::SetPlayerTeamModel( void )
 {
-    /*
-    if ( GetTeamNumber() == TEAM_JINRAI )
+    CNEOModelManager *modelManager = CNEOModelManager::Instance();
+    if (!modelManager)
     {
-
+        Assert(false);
+        return;
     }
-    */
+
+    // Pick a random skin from random class.
+    // NEO TODO (Rain): pick the appropriate one
+    // based on player's class and skin selection.
+    const char *model = modelManager->GetPlayerModel(
+        (NeoSkin)RandomInt(0, 2),
+        (NeoClass)RandomInt(0, NEO_CLASS_ENUM_COUNT - 1),
+        GetTeamNumber());
+
+    if (!*model)
+    {
+        Assert(false);
+        return;
+    }
+
+    SetModel(model);
+    //DevMsg("Set model: %s\n", model);
+    //SetupPlayerSoundsByModel(model); // TODO
 }
 
 void CNEO_Player::PickupObject( CBaseEntity *pObject,
