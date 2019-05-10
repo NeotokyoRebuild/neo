@@ -170,6 +170,10 @@ extern vgui::IInputInternal *g_InputInternal;
 #include "sixense/in_sixense.h"
 #endif
 
+#ifdef NEO
+#include "neo_mount_original.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -1087,6 +1091,11 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 #endif
 #ifndef _X360
 	HookHapticMessages(); // Always hook the messages
+#endif
+
+#ifdef NEO
+	Assert(g_pFullFileSystem);
+	FindOriginalNeotokyoAssets(g_pFullFileSystem);
 #endif
 
 	return true;
