@@ -1,6 +1,6 @@
 "GameInfo"
 {
-	game	"Neotokyo"
+	game	"Neotokyo: Revamp"
 	title	"neatbkyoc"
 	title2	""
 	type multiplayer_only
