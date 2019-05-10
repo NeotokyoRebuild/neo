@@ -1,8 +1,8 @@
 "GameInfo"
 {
-	game	"My First HL2MP Mod"
-	title	"HALF+LIFE'"
-	title2	"deathmatch mod"
+	game	"Neotokyo"
+	title	"neatbkyoc"
+	title2	""
 	type multiplayer_only
 	nomodels 0
 	nohimodel 1
