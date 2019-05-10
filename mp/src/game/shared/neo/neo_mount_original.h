@@ -29,8 +29,6 @@ static inline bool IsDir(const StatStruct& st) { return S_ISDIR(st.st_mode); }
 //
 // On Linux, we assume to find the root "NeotokyoSource" at hardcoded path.
 // These can be installed with SteamCMD, or copied over from a Windows install.
-//
-// NEO TODO (Rain): add launch arg for Linux to customize find path
 inline bool FindOriginalNeotokyoAssets(IFileSystem *g_pFullFileSystem)
 {
     if (!g_pFullFileSystem)
@@ -54,9 +52,32 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *g_pFullFileSystem)
 
 	bool originalNtPathOk = false;
 #ifdef LINUX
-	// The NeotokyoSource root asset folder should exist (or be symlinked) here.
+	// The NeotokyoSource root asset folder should exist (or be symlinked) here,
+	// or in the custom neopath.
 	const char *neoHardcodedLinuxAssetPath = "/usr/share/neotokyo/NeotokyoSource/";
-	strcpy(neoPath, neoHardcodedLinuxAssetPath);
+
+	// NEO FIXME (Rain): getting this ParmValue from Steam Linux client seems to be broken(?),
+	// we always fall back to hardcoded pDefaultVal.
+	Q_strncpy(neoPath,
+		CommandLine()->ParmValue ("-neopath", neoHardcodedLinuxAssetPath),
+		sizeof(neoPath));
+	if (Q_stricmp(neoPath, neoHardcodedLinuxAssetPath) != 0)
+	{
+		if (!*neoPath)
+		{
+			strcpy(neoPath, neoHardcodedLinuxAssetPath);
+			Warning("Failed to parse custom -neopath, reverting to: %s\n",
+				neoHardcodedLinuxAssetPath);
+		}
+		else
+		{
+#ifdef CLIENT_DLL
+			Msg("Client using custom -neopath: %s\n", neoPath);
+#else
+			Msg("Server using custom -neopath: %s\n", neoPath);
+#endif
+		}
+	}
 
 #ifdef CLIENT_DLL // Both client & server call this function; only print the informational stuff once.
     if (developer.GetBool())
