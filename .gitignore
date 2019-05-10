@@ -66,6 +66,8 @@ stats.txt
 glshaders.cfg
 server_blacklist.txt
 videoconfig_linux.cfg
+*.ain
+user_custom
 
 # shader files
 *.tmp
