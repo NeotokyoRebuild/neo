@@ -340,6 +340,9 @@ static ConVar s_cl_class("cl_class", "default", FCVAR_USERINFO|FCVAR_ARCHIVE, "D
 static ConVar s_cl_load_hl1_content("cl_load_hl1_content", "0", FCVAR_ARCHIVE, "Mount the content from Half-Life: Source if possible");
 #endif
 
+#ifdef NEO
+static ConVar snd_musicvolume("snd_musicvolume", "1.0", FCVAR_ARCHIVE, "Background music volume.");
+#endif
 
 // Physics system
 bool g_bLevelInitialized;
@@ -1136,6 +1139,57 @@ bool CHLClient::ReplayPostInit()
 #endif
 }
 
+static inline void UpdateBgm(ConVar *volCvar)
+{
+	if (!volCvar)
+	{
+		Assert(false);
+		return;
+	}
+
+	const char *bgmFile = "ui/gamestartup1.mp3";
+
+	CUtlVector<SndInfo_t> sounds;
+	enginesound->GetActiveSounds(sounds);
+
+	char filename[MAX_PATH];
+	for (int i = 0; i < sounds.Size(); i++)
+	{
+		if (!g_pFullFileSystem->String(sounds[i].m_filenameHandle, filename, sizeof(filename)))
+		{
+			continue;
+		}
+
+		if (!*filename || (Q_strcmp(filename, bgmFile) != 0))
+		{
+			continue;
+		}
+
+		enginesound->SetVolumeByGuid(sounds[i].m_nGuid, volCvar->GetFloat());
+
+		return;
+	}
+
+	enginesound->EmitAmbientSound(bgmFile, volCvar->GetFloat());
+}
+
+void MusicVol_ChangeCallback(IConVar *cvar, const char *pOldVal, float flOldVal)
+{
+	if (!g_pFullFileSystem)
+	{
+		Assert(false);
+		return;
+	}
+
+	// We are in a level, don't start playing menu music.
+	if (Q_strcmp(engine->GetLevelName(), "") != 0)
+	{
+		return;
+	}
+
+	UpdateBgm((ConVar*)cvar);
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: Called after client & server DLL are loaded and all systems initialized
 //-----------------------------------------------------------------------------
@@ -1164,6 +1218,10 @@ void CHLClient::PostInit()
 			g_pFullFileSystem->AddSearchPath( szPath, "GAME" );
 		}
 	}
+#endif
+
+#ifdef NEO
+	snd_musicvolume.InstallChangeCallback(MusicVol_ChangeCallback);
 #endif
 }
 
@@ -1748,6 +1806,10 @@ void CHLClient::LevelShutdown( void )
 	// Shutdown the ragdoll recorder
 	CReplayRagdollRecorder::Instance().Shutdown();
 	CReplayRagdollCache::Instance().Shutdown();
+#endif
+
+#ifdef NEO
+	UpdateBgm(&snd_musicvolume);
 #endif
 }
 
