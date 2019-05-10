@@ -57,8 +57,11 @@ WeaponData
 		}
 		"crosshair"
 		{
-				"font"		"Crosshairs"
-				"character"	"Q"
+				"file"		"vgui/hud/crosshair"
+				"x"		"0"
+				"y"		"0"
+				"width"		"128"
+				"height"	"128"
 		}
 		"autoaim"
 		{
