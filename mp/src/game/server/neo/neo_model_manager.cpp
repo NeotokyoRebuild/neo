@@ -349,6 +349,17 @@ void CNEOModelManager::Precache( void ) const
     PrecacheViewModels();
     PrecacheWeapons();
     PrecacheGibs();
+
+    CBaseEntity::PrecacheModel("models/player/jinrai_mamanims.mdl");
+    CBaseEntity::PrecacheModel("models/player/jinrai_mhmanims.mdl");
+    CBaseEntity::PrecacheModel("models/player/jinrai_msfanims.mdl");
+    CBaseEntity::PrecacheModel("models/player/jinrai_msfanims2.mdl");
+    CBaseEntity::PrecacheModel("models/player/nsf_gamanims.mdl");
+    CBaseEntity::PrecacheModel("models/player/nsf_ghmanims.mdl");
+    CBaseEntity::PrecacheModel("models/player/nsf_gsfanims.mdl");
+    CBaseEntity::PrecacheModel("models/player/nsf_gsfanims2.mdl");
+    //CBaseEntity::PrecacheModel("models/player/nsf_nsfanims2.mdl");
+    CBaseEntity::PrecacheModel("models/player/vip_anims.mdl");
 }
 
 static inline int GetTeamArrOffset(int iTeam)

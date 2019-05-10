@@ -138,7 +138,107 @@ inline void CNEO_Player::Weapon_SetZoom(bool bZoomIn)
 
 void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 {
-    BaseClass::SetAnimation(playerAnim);
+    int animDesired;
+
+	float speed;
+
+	speed = GetAbsVelocity().Length2D();
+
+    if ( GetFlags() & ( FL_FROZEN | FL_ATCONTROLS ) )
+	{
+		speed = 0;
+		playerAnim = PLAYER_IDLE;
+	}
+
+    Activity idealActivity = ACT_IDLE;
+
+    if ( playerAnim == PLAYER_JUMP )
+    {
+        idealActivity = ACT_HOP;
+    }
+    else if ( playerAnim == PLAYER_DIE )
+    {
+        if ( m_lifeState == LIFE_ALIVE )
+        {
+            return;
+        }
+    }
+    else if ( playerAnim == PLAYER_ATTACK1 )
+    {
+        if ( GetActivity( ) == ACT_HOVER	|| 
+			 GetActivity( ) == ACT_SWIM		||
+			 GetActivity( ) == ACT_HOP		||
+			 GetActivity( ) == ACT_LEAP		||
+			 GetActivity( ) == ACT_DIESIMPLE )
+		{
+			idealActivity = GetActivity( );
+		}
+        else
+        {
+            idealActivity = ACT_RANGE_ATTACK1;
+        }
+    }
+    else if ( playerAnim == PLAYER_RELOAD )
+    {
+        idealActivity = ACT_RELOAD;
+    }
+    else if ( playerAnim == PLAYER_IDLE || playerAnim == PLAYER_WALK )
+    {
+        // Still jumping
+        if ( !( GetFlags() & FL_ONGROUND ) && GetActivity( ) == ACT_HOP )
+        {
+            idealActivity = GetActivity();
+        }
+        else
+        {
+            if ( GetFlags() & FL_DUCKING )
+            {
+                if ( speed > 0 )
+				{
+					idealActivity = ACT_WALK_CROUCH;
+				}
+				else
+				{
+					idealActivity = ACT_CROUCHIDLE;
+				}
+            }
+            else
+			{
+				if ( speed > 0 )
+				{
+					{
+						idealActivity = ACT_RUN;
+					}
+				}
+				else
+				{
+					idealActivity = ACT_IDLE;
+				}
+			}
+        }
+    }
+
+    SetActivity(idealActivity);
+
+    animDesired = SelectWeightedSequence( Weapon_TranslateActivity ( idealActivity ) );
+
+    if (animDesired == -1)
+    {
+        animDesired = SelectWeightedSequence( idealActivity );
+
+        if ( animDesired == -1 )
+        {
+            animDesired = 0;
+        }
+    }
+
+    // Already using the desired animation?
+    if ( GetSequence() == animDesired )
+        return;
+    
+    m_flPlaybackRate = 1.0;
+    ResetSequence( animDesired );
+    SetCycle( 0 );
 }
 
 bool CNEO_Player::HandleCommand_JoinTeam( int team )
