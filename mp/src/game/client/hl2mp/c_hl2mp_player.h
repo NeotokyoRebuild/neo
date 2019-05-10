@@ -26,12 +26,12 @@ public:
 	DECLARE_PREDICTABLE();
 	DECLARE_INTERPOLATION();
 
-#ifdef NEO
-	virtual C_HL2MP_Player();
-#else
 	C_HL2MP_Player();
-#endif
+#ifdef NEO
+	virtual ~C_HL2MP_Player( void );
+#else
 	~C_HL2MP_Player( void );
+#endif
 
 	void ClientThink( void );
 
