@@ -262,6 +262,15 @@ $Project "Server (HL2MP)"
 
 			$File	"$SRCDIR\game\shared\neo\neo_gamerules.cpp"
 			$File	"$SRCDIR\game\shared\neo\neo_gamerules.h"
+
+			$Folder "Weapons"
+			{
+				$File	"$SRCDIR\game\shared\neo\weapons\weapon_neobasecombatweapon.cpp"
+				$File	"$SRCDIR\game\shared\neo\weapons\weapon_neobasecombatweapon.h"
+
+				$File	"$SRCDIR\game\shared\neo\weapons\weapon_tachi.cpp"
+				$File	"$SRCDIR\game\shared\neo\weapons\weapon_tachi.h"
+			}
 		}
 
 		$Folder	"HL2MP"

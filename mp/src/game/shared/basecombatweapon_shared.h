@@ -662,4 +662,24 @@ protected:
 #endif // End Client .dll only
 };
 
+#ifdef NEO
+#ifdef CLIENT_DLL
+extern ConVar cl_autoreload_when_empty;
+#endif
+inline bool ClientWantsAutoReload(CBaseCombatCharacter *pCharacter)
+{
+	if (!pCharacter)
+	{
+		return false;
+	}
+#ifdef CLIENT_DLL
+	return cl_autoreload_when_empty.GetBool();
+#else
+	return (bool)atoi(engine->GetClientConVarValue(
+		engine->IndexOfEdict(pCharacter->edict()),
+		"cl_autoreload_when_empty"));
+#endif
+}
+#endif
+
 #endif // COMBATWEAPON_SHARED_H
