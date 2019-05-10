@@ -15,7 +15,7 @@ $Configuration
 {
 	$Compiler
 	{
-		$AdditionalIncludeDirectories	"$BASE;$SRCDIR\game\shared\hl2,.\hl2,.\hl2mp,$SRCDIR\game\shared\hl2mp,$SRCDIR\game\shared\neo"
+		$AdditionalIncludeDirectories	"$BASE;$SRCDIR\game\shared\hl2,.\neo,.\hl2,.\hl2mp,$SRCDIR\game\shared\hl2mp,$SRCDIR\game\shared\neo,$SRCDIR\game\shared\neo\weapons"
 		$PreprocessorDefinitions		"$BASE;NEO;HL2MP;HL2_DLL"
 	}
 }
@@ -256,6 +256,9 @@ $Project "Server (HL2MP)"
 			// NEO SHARED //
 			////////////////
 			$File	"$SRCDIR\game\shared\neo\neo_mount_original.h"
+
+			$File	"$SRCDIR\game\shared\neo\neo_gamerules.cpp"
+			$File	"$SRCDIR\game\shared\neo\neo_gamerules.h"
 		}
 
 		$Folder	"HL2MP"

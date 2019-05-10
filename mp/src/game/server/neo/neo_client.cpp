@@ -1,6 +1,6 @@
 #include "cbase.h"
 #include "neo_player.h"
-#include "hl2mp_gamerules.h"
+#include "neo_gamerules.h"
 #include "gamerules.h"
 #include "teamplay_gamerules.h"
 #include "entitylist.h"
@@ -50,8 +50,7 @@ void FinishClientPutInServer( CNEO_Player *pPlayer )
 	// notify other clients of player joining the game
 	UTIL_ClientPrintAll( HUD_PRINTNOTIFY, "#Game_connected", sName[0] != 0 ? sName : "<unconnected>" );
 
-	//if ( NEORules()->IsTeamplay() == true )
-	if ( HL2MPRules()->IsTeamplay() == true )
+	if ( NEORules()->IsTeamplay() == true )
 	{
 		ClientPrint( pPlayer, HUD_PRINTTALK, "You are on team %s1\n", pPlayer->GetTeam()->GetName() );
 	}
@@ -107,7 +106,7 @@ const char *GetGameDescription()
 	if ( g_pGameRules ) // this function may be called before the world has spawned, and the game rules initialized
 		return g_pGameRules->GetGameDescription();
 	else
-		return "Neotokyo: Revamp";
+		return NEO_GAME_NAME;
 }
 
 //-----------------------------------------------------------------------------
@@ -336,8 +335,6 @@ void GameStartFrame( void )
 //=========================================================
 void InstallGameRules()
 {
-	// vanilla deathmatch
-	//CreateGameRulesObject( "CNEORules" );
-	CreateGameRulesObject( "CHL2MPRules" );
+	CreateGameRulesObject( "CNEORules" );
 }
 
