@@ -22,6 +22,7 @@ END_NETWORK_TABLE()
 LINK_ENTITY_TO_CLASS( neo_gamerules, CNEOGameRulesProxy );
 IMPLEMENT_NETWORKCLASS_ALIASED( NEOGameRulesProxy, DT_NEOGameRulesProxy );
 
+// NEO TODO (Rain): set accurately
 static NEOViewVectors g_NEOViewVectors(
     Vector( 0, 0, 64 ),       //VEC_VIEW (m_vView) 
 							  
@@ -134,7 +135,7 @@ int CNEORules::WeaponShouldRespawn(CBaseCombatWeapon *pWep)
 
 const char *CNEORules::GetGameDescription(void)
 {
-    DevMsg("Querying CNEORules game description\n");
+    //DevMsg("Querying CNEORules game description\n");
     return BaseClass::GetGameDescription();
 }
 
