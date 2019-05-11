@@ -86,7 +86,6 @@ void CNEO_Player::PostThink(void)
         previouslyReloading = pWep->m_bInReload;
     }
 
-    /*
     if (m_afButtonPressed & IN_DROP)
     {
         Vector eyeForward;
@@ -95,7 +94,7 @@ void CNEO_Player::PostThink(void)
         eyeForward *= forwardOffset;
 
         Weapon_Drop(GetActiveWeapon(), NULL, &eyeForward);
-    }*/
+    }
 }
 
 void CNEO_Player::PreThink(void)
@@ -406,6 +405,7 @@ void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
             // NEO TODO (Rain): No need for server to tell
             // client to play a sound effect, move this to client.
             {
+#if (0)
                 CRecipientFilter filter;
                 filter.AddRecipient(this);
 
@@ -414,7 +414,7 @@ void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
                 // NEO TODO (Rain): Find appropriate sound for denying drop.
                 // Possibly the original NT "can't +use" sound.
                 sound.m_pSoundName = "player/CPneutral.wav";
-                sound.m_SoundLevel = SNDLVL_NORM;
+                sound.m_SoundLevel = SNDLVL_30dB;
                 sound.m_flVolume = VOL_NORM;
 
                 // NEO HACK/FIXME (Rain): This should get early precached
@@ -422,6 +422,7 @@ void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
                 PrecacheScriptSound(sound.m_pSoundName);
 
                 EmitSound(filter, edict()->m_EdictIndex, sound);
+#endif
             }
 
             return;
