@@ -72,3 +72,6 @@ user_custom
 # shader files
 *.tmp
 
+# Excludes
+!makefile_base_posix.mak
+!sourcesdk_def.mak
