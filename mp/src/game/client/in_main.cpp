@@ -1601,8 +1601,13 @@ static ConCommand startmoveleft("+moveleft", IN_MoveleftDown);
 static ConCommand endmoveleft("-moveleft", IN_MoveleftUp);
 static ConCommand startmoveright("+moveright", IN_MoverightDown);
 static ConCommand endmoveright("-moveright", IN_MoverightUp);
+#ifdef NEO
+static ConCommand startspeed("+sprint", IN_SpeedDown);
+static ConCommand endspeed("-sprint", IN_SpeedUp);
+#else
 static ConCommand startspeed("+speed", IN_SpeedDown);
 static ConCommand endspeed("-speed", IN_SpeedUp);
+#endif
 static ConCommand startwalk("+walk", IN_WalkDown);
 static ConCommand endwalk("-walk", IN_WalkUp);
 static ConCommand startattack("+attack", IN_AttackDown);
