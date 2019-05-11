@@ -1,5 +1,8 @@
 # Files to ignore when considering what GIT should commit.
 
+!makefile_base_posix.mak
+!sourcesdk_def.mak
+
 # Object files
 *.o
 *.p
