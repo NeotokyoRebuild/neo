@@ -38,4 +38,9 @@
 #define IN_GRENADE2		(1 << 24)	// grenade 2
 #define	IN_ATTACK3		(1 << 25)
 
+#ifdef NEO
+#define IN_DROP         (1 << 26) // Weapon drop
+#define IN_AIM          (1 << 27) // Weapon aim
+#endif
+
 #endif // IN_BUTTONS_H

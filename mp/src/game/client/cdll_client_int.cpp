@@ -340,10 +340,6 @@ static ConVar s_cl_class("cl_class", "default", FCVAR_USERINFO|FCVAR_ARCHIVE, "D
 static ConVar s_cl_load_hl1_content("cl_load_hl1_content", "0", FCVAR_ARCHIVE, "Mount the content from Half-Life: Source if possible");
 #endif
 
-#ifdef NEO
-static ConVar snd_musicvolume("snd_musicvolume", "1.0", FCVAR_ARCHIVE, "Background music volume.");
-#endif
-
 // Physics system
 bool g_bLevelInitialized;
 bool g_bTextMode = false;
@@ -1221,7 +1217,14 @@ void CHLClient::PostInit()
 #endif
 
 #ifdef NEO
-	snd_musicvolume.InstallChangeCallback(MusicVol_ChangeCallback);
+	if (g_pCVar)
+	{
+		g_pCVar->FindVar("snd_musicvolume")->InstallChangeCallback(MusicVol_ChangeCallback);
+	}
+	else
+	{
+		Assert(false);
+	}
 #endif
 }
 
@@ -1809,7 +1812,14 @@ void CHLClient::LevelShutdown( void )
 #endif
 
 #ifdef NEO
-	UpdateBgm(&snd_musicvolume);
+	if (g_pCVar)
+	{
+		UpdateBgm(g_pCVar->FindVar("snd_musicvolume"));
+	}
+	else
+	{
+		Assert(false);
+	}
 #endif
 }
 
