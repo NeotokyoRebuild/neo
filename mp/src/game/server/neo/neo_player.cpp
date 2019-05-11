@@ -7,7 +7,7 @@
 #include "hl2mp_player_shared.h"
 #include "predicted_viewmodel.h"
 #include "in_buttons.h"
-#include "hl2mp_gamerules.h"
+#include "neo_gamerules.h"
 #include "KeyValues.h"
 #include "team.h"
 #include "weapon_hl2mpbase.h"
@@ -84,6 +84,35 @@ void CNEO_Player::PostThink(void)
         }
 
         previouslyReloading = pWep->m_bInReload;
+    }
+
+    // Lerp towards lean
+    if ((m_afButtonPressed & IN_LEAN_LEFT) || (m_afButtonPressed & IN_LEAN_RIGHT))
+    {
+        Vector forward, up, right;
+        EyeVectors(&forward, &right, &up);
+
+        const float w = sqrt(forward.LengthSqr() * up.LengthSqr()) + forward.Dot(up);
+        Quaternion start(right.x, right.y, right.z, w);
+
+        right = (m_afButtonPressed & IN_LEAN_LEFT) ?
+            ((CNEORules*)g_pGameRules)->GetNEOViewVectors()->m_vViewAngLeanLeft :
+            ((CNEORules*)g_pGameRules)->GetNEOViewVectors()->m_vViewAngLeanRight;
+        Quaternion end(right.x, right.y, right.z, w);
+
+        Quaternion out;
+        QuaternionSlerp(start, end, 1.0f, out);
+
+        QAngle lean;
+        QuaternionAngles(out, lean);
+
+        SnapEyeAngles(EyeAngles() + lean);
+    }
+    else if ((m_afButtonReleased & IN_LEAN_LEFT) || (m_afButtonReleased & IN_LEAN_RIGHT))
+    {
+        QAngle rollReset = LocalEyeAngles();
+        rollReset.z = 0;
+        SnapEyeAngles(rollReset);
     }
 
     if (m_afButtonPressed & IN_DROP)
