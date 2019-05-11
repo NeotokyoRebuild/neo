@@ -77,7 +77,7 @@ void CNEO_Player::PostThink(void)
         }
         else
         {
-            if (m_afButtonReleased & IN_ATTACK2)
+            if (m_afButtonReleased & IN_AIM)
             {
                 Weapon_AimToggle(pWep);
             }

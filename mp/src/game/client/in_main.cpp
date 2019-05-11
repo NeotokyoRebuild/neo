@@ -147,6 +147,7 @@ kbutton_t	in_ducktoggle;
 
 #ifdef NEO
 static	kbutton_t	in_drop;
+static	kbutton_t	in_aim;
 #endif
 
 /*
@@ -498,6 +499,9 @@ void IN_Attack3Up( const CCommand &args ) { KeyUp(&in_attack3, args[1] );}
 #ifdef NEO
 void IN_DropUp( const CCommand &args ) { KeyUp( &in_drop, args[1] ); }
 void IN_DropDown( const CCommand &args ) { KeyDown( &in_drop, args[1] ); }
+
+void IN_AimUp( const CCommand &args ) { KeyUp( &in_aim, args[1] ); }
+void IN_AimDown( const CCommand &args ) { KeyDown( &in_aim, args[1] ); }
 #endif
 
 void IN_DuckToggle( const CCommand &args ) 
@@ -1481,6 +1485,7 @@ int CInput::GetButtonBits( int bResetState )
 
 #ifdef NEO
 	CalcButtonBits( bits, IN_DROP, s_ClearInputState, &in_drop, bResetState );
+	CalcButtonBits( bits, IN_AIM, s_ClearInputState, &in_aim, bResetState );
 #endif
 
 	if ( KeyState(&in_ducktoggle) )
@@ -1651,6 +1656,9 @@ static ConCommand xboxlook("xlook", IN_XboxStub);
 #ifdef NEO
 static ConCommand startdrop("+toss", IN_DropDown);
 static ConCommand enddrop("-toss", IN_DropUp);
+
+static ConCommand startaim("+aim", IN_AimDown);
+static ConCommand endaim("-aim", IN_AimUp);
 #endif
 
 /*

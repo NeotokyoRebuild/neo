@@ -40,6 +40,7 @@
 
 #ifdef NEO
 #define IN_DROP         (1 << 26) // Weapon drop
+#define IN_AIM          (1 << 27) // Weapon aim
 #endif
 
 #endif // IN_BUTTONS_H
