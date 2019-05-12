@@ -59,8 +59,9 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *g_pFullFileSystem)
 	// NEO FIXME (Rain): getting this ParmValue from Steam Linux client seems to be broken(?),
 	// we always fall back to hardcoded pDefaultVal.
 	Q_strncpy(neoPath,
-		CommandLine()->ParmValue ("-neopath", neoHardcodedLinuxAssetPath),
+		CommandLine()->ParmValue("-neopath", neoHardcodedLinuxAssetPath),
 		sizeof(neoPath));
+	
 	if (Q_stricmp(neoPath, neoHardcodedLinuxAssetPath) != 0)
 	{
 		if (!*neoPath)
@@ -80,10 +81,7 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *g_pFullFileSystem)
 	}
 
 #ifdef CLIENT_DLL // Both client & server call this function; only print the informational stuff once.
-    if (developer.GetBool())
-    {
-        Msg("%s: Linux build; expecting to find original Neotokyo assets at: '%s'\n", thisCaller, neoPath);
-    }
+	DevMsg("%s: Linux build; expecting to find original Neotokyo assets at: '%s'\n", thisCaller, neoPath);
 #endif
 
 	StatStruct file_stat;
@@ -102,10 +100,7 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *g_pFullFileSystem)
 			g_pFullFileSystem->AddSearchPath(neoPath, pathID, addType);
 
 #ifdef CLIENT_DLL
-            if (developer.GetBool())
-            {
-                Msg("%s: Added '%s' to path.\n", thisCaller, neoPath);
-            }
+			DevMsg("%s: Added '%s' to path.\n", thisCaller, neoPath);
 #endif
 			
 			FilesystemMountRetval_t mountStatus =
@@ -134,11 +129,9 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *g_pFullFileSystem)
 			V_AppendSlash(neoPath, sizeof(neoPath));
 			V_strncat(neoPath, "NeotokyoSource", sizeof(neoPath));
 			g_pFullFileSystem->AddSearchPath(neoPath, pathID, addType);
+
 #ifdef CLIENT_DLL
-            if (developer.GetBool())
-            {
-                Msg("%s: Added '%s' to path.\n", thisCaller, neoPath);
-            }
+            DevMsg("%s: Added '%s' to path.\n", thisCaller, neoPath);
 #endif
 			
 			FilesystemMountRetval_t mountStatus =

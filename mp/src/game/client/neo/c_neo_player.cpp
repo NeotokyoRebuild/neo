@@ -3,7 +3,7 @@
 #include "c_neo_player.h"
 #include "view.h"
 #include "takedamageinfo.h"
-#include "hl2mp_gamerules.h"
+#include "neo_gamerules.h"
 #include "in_buttons.h"
 #include "iviewrender_beams.h"			// flashlight beam
 #include "r_efx.h"

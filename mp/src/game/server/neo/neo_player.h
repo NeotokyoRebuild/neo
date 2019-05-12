@@ -66,6 +66,9 @@ public:
 	void Weapon_AimToggle( CBaseCombatWeapon *pWep );
 
 	inline void Weapon_SetZoom( bool bZoomIn );
+
+private:
+	inline void ProcessLean(const float lerpSpeed = 1.0f);
 };
 
 inline CNEO_Player *ToNEOPlayer(CBaseEntity *pEntity)
