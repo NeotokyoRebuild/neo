@@ -68,7 +68,7 @@ public:
 	inline void Weapon_SetZoom( bool bZoomIn );
 
 private:
-	inline void ProcessLean(float lerpSpeed);
+	inline void ProcessLean(const float lerpSpeed = 1.0f);
 };
 
 inline CNEO_Player *ToNEOPlayer(CBaseEntity *pEntity)

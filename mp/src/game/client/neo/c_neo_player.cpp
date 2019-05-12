@@ -3,7 +3,7 @@
 #include "c_neo_player.h"
 #include "view.h"
 #include "takedamageinfo.h"
-#include "hl2mp_gamerules.h"
+#include "neo_gamerules.h"
 #include "in_buttons.h"
 #include "iviewrender_beams.h"			// flashlight beam
 #include "r_efx.h"
@@ -184,4 +184,18 @@ void C_NEO_Player::PostThink(void)
 bool C_NEO_Player::ShouldDrawHL2StyleQuickHud(void)
 {
     return cl_drawhud_quickinfo.GetBool();
+}
+
+static inline void QNormalize(Quaternion &out)
+{
+    const double len = sqrt(
+        out.x * out.x +
+        out.y * out.y +
+        out.z * out.z +
+        out.w * out.w);
+    
+    out.x /= len;
+    out.y /= len;
+    out.z /= len;
+    out.w /= len;
 }

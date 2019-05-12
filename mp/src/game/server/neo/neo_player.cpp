@@ -72,8 +72,12 @@ static inline void QNormalize(Quaternion &out)
     out.w /= len;
 }
 
-inline void CNEO_Player::ProcessLean(float lerpSpeed = 1.0f)
+inline void CNEO_Player::ProcessLean(const float lerpSpeed)
 {
+    // Get a framerate-independent lerp
+    const float lerpSpeedDefault = clamp(lerpSpeed * gpGlobals->frametime, 0, 1);
+    float lerpSpeedMod = lerpSpeedDefault;
+
     Vector forward, right, up;
     EyeVectors(&forward, &right, &up);
 
@@ -111,13 +115,33 @@ inline void CNEO_Player::ProcessLean(float lerpSpeed = 1.0f)
 
         offset.z = -eyeAngles.z;
         // HACK (Rain): we un-lerp slower for some reason, just boost the speed for now
-        lerpSpeed *= 10;
+        lerpSpeedMod *= 10;
+    }
+    
+    SnapEyeAngles(Lerp(lerpSpeedMod, eyeAngles, eyeAngles + offset));
+
+    Vector tempForw;
+    AngleVectors(eyeAngles, &tempForw);
+
+    Vector viewDelta = GetViewOffset();
+
+    const float yawPeekAmount = 128.0f;
+    if (m_nButtons & IN_LEAN_LEFT)
+    {
+        viewDelta.y = yawPeekAmount;
+    }
+    else if (m_nButtons & IN_LEAN_RIGHT)
+    {
+        viewDelta.y = -yawPeekAmount;
+    }
+    else
+    {
+        viewDelta = VEC_VIEW;
     }
 
-    // Get a framerate-independent lerp
-    lerpSpeed = clamp(lerpSpeed * gpGlobals->frametime, 0, 1);
-    
-    SnapEyeAngles(Lerp(lerpSpeed, eyeAngles, eyeAngles + offset));
+    VectorYawRotate(viewDelta, GetLocalAngles().y, viewDelta);
+
+    SetViewOffset(Lerp(lerpSpeedMod, GetViewOffset(), viewDelta));
 }
 
 void CNEO_Player::PostThink(void)
