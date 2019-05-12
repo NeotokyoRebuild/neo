@@ -90,18 +90,9 @@ inline void CNEO_Player::ProcessLean(float lerpSpeed = 1.0f)
     {
         right.x = (m_nButtons & IN_LEAN_LEFT) ?
             ((CNEORules*)g_pGameRules)->GetNEOViewVectors()->m_vViewAngLeanLeft.x :
-            0;
-        
-        if (m_nButtons & IN_LEAN_RIGHT)
-        {
-            right.x += ((CNEORules*)g_pGameRules)->GetNEOViewVectors()->m_vViewAngLeanRight.x;
-        }
+            ((CNEORules*)g_pGameRules)->GetNEOViewVectors()->m_vViewAngLeanRight.x;
 
-        if (right.x == 0 && eyeAngles.z == 0)
-        {
-            return;
-        }
-        else if (fabs(EyeAngles().z) > fabs(right.x))
+        if (fabs(EyeAngles().z) > fabs(right.x))
         {
             return;
         }
