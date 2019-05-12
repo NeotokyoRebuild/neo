@@ -58,6 +58,8 @@ public:
         // NEO specific
         Vector vViewLeanLeft,
         Vector vViewLeanRight,
+        Vector vViewAngLeanLeft,
+        Vector vViewAngLeanRight,
         Vector vHullLeanLeftMin,
         Vector vHullLeanLeftMax,
         Vector vHullLeanRightMin,
@@ -78,6 +80,9 @@ public:
         m_vViewLeanLeft = vViewLeanLeft;
         m_vViewLeanRight = vViewLeanRight;
 
+        m_vViewAngLeanLeft = vViewAngLeanLeft;
+        m_vViewAngLeanRight = vViewAngLeanRight;
+
         m_vHullLeanLeftMin = vHullLeanLeftMin;
         m_vHullLeanLeftMax = vHullLeanLeftMax;
         m_vHullLeanRightMin = vHullLeanRightMin;
@@ -85,6 +90,7 @@ public:
 	}
 
     Vector m_vViewLeanLeft, m_vViewLeanRight;
+    Vector m_vViewAngLeanLeft, m_vViewAngLeanRight;
     Vector m_vHullLeanLeftMin, m_vHullLeanLeftMax;
     Vector m_vHullLeanRightMin, m_vHullLeanRightMax;
 };

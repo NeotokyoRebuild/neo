@@ -4527,6 +4527,9 @@ void CGameMovement::Duck( void )
 	//
 	// If the player is still alive and not an observer, check to make sure that
 	// his view height is at the standing height.
+
+// NEO HACK (Rain): This triggers with leaning viewmodels, so it's disabled for us.
+#ifndef NEO
 	else if ( !IsDead() && !player->IsObserver() && !player->IsInAVehicle() )
 	{
 		if ( ( player->m_Local.m_flDuckJumpTime == 0.0f ) && ( fabs(player->GetViewOffset().z - GetPlayerViewOffset( false ).z) > 0.1 ) )
@@ -4539,6 +4542,7 @@ void CGameMovement::Duck( void )
 			SetDuckedEyeOffset(0.0f);
 		}
 	}
+#endif
 }
 
 static ConVar sv_optimizedmovement( "sv_optimizedmovement", "1", FCVAR_REPLICATED | FCVAR_DEVELOPMENTONLY );

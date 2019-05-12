@@ -148,6 +148,8 @@ kbutton_t	in_ducktoggle;
 #ifdef NEO
 static	kbutton_t	in_drop;
 static	kbutton_t	in_aim;
+static	kbutton_t	in_lean_left;
+static	kbutton_t	in_lean_right;
 #endif
 
 /*
@@ -502,6 +504,12 @@ void IN_DropDown( const CCommand &args ) { KeyDown( &in_drop, args[1] ); }
 
 void IN_AimUp( const CCommand &args ) { KeyUp( &in_aim, args[1] ); }
 void IN_AimDown( const CCommand &args ) { KeyDown( &in_aim, args[1] ); }
+
+void IN_LeanLeftUp( const CCommand &args ) { KeyUp( &in_lean_left, args[1] ); }
+void IN_LeanLeftDown( const CCommand &args ) { KeyDown( &in_lean_left, args[1] ); }
+
+void IN_LeanRightUp( const CCommand &args ) { KeyUp( &in_lean_right, args[1] ); }
+void IN_LeanRightDown( const CCommand &args ) { KeyDown( &in_lean_right, args[1] ); }
 #endif
 
 void IN_DuckToggle( const CCommand &args ) 
@@ -1486,6 +1494,8 @@ int CInput::GetButtonBits( int bResetState )
 #ifdef NEO
 	CalcButtonBits( bits, IN_DROP, s_ClearInputState, &in_drop, bResetState );
 	CalcButtonBits( bits, IN_AIM, s_ClearInputState, &in_aim, bResetState );
+	CalcButtonBits( bits, IN_LEAN_LEFT, s_ClearInputState, &in_lean_left, bResetState );
+	CalcButtonBits( bits, IN_LEAN_RIGHT, s_ClearInputState, &in_lean_right, bResetState );
 #endif
 
 	if ( KeyState(&in_ducktoggle) )
@@ -1664,6 +1674,12 @@ static ConCommand enddrop("-toss", IN_DropUp);
 
 static ConCommand startaim("+aim", IN_AimDown);
 static ConCommand endaim("-aim", IN_AimUp);
+
+static ConCommand startleanleft("+leanl", IN_LeanLeftDown);
+static ConCommand endleanleft("-leanl", IN_LeanLeftUp);
+
+static ConCommand startleanright("+leanr", IN_LeanRightDown);
+static ConCommand endleanright("-leanr", IN_LeanRightUp);
 #endif
 
 /*

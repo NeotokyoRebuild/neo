@@ -45,6 +45,9 @@ static NEOViewVectors g_NEOViewVectors(
     Vector(-24, 0, 50), // vViewLeanLeft
     Vector(24, 0, 50), // vViewLeanRight
 
+    Vector(-33, 0, 0), // vViewAngLeanLeft
+    Vector(33, 0, 0), // vViewAngLeanRight
+
     Vector(-24, -16, 0), // vHullLeanLeftMin
     Vector(16, 16, 58), // vHullLeanLeftMax
     Vector(-16, -16, 0), // vHullLeanRightMin
