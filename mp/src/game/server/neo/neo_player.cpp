@@ -58,6 +58,77 @@ void CNEO_Player::Spawn(void)
     ShowCrosshair(false);
 }
 
+static inline void QNormalize(Quaternion &out)
+{
+    const double len = sqrt(
+        out.x * out.x +
+        out.y * out.y +
+        out.z * out.z +
+        out.w * out.w);
+    
+    out.x /= len;
+    out.y /= len;
+    out.z /= len;
+    out.w /= len;
+}
+
+inline void CNEO_Player::ProcessLean(float lerpSpeed = 1.0f)
+{
+    Vector forward, right, up;
+    EyeVectors(&forward, &right, &up);
+
+    //DevMsg("Right: %f, %f, %f\n", right.x, right.y, right.z);
+
+    const double w = sqrt(forward.LengthSqr() * up.LengthSqr()) + forward.Dot(up);
+    Quaternion start(right.x, right.y, right.z, w);
+    QNormalize(start);
+
+    QAngle eyeAngles = EyeAngles();
+    QAngle offset = vec3_angle;
+
+    if ((m_nButtons & IN_LEAN_LEFT) || (m_nButtons & IN_LEAN_RIGHT))
+    {
+        right.x = (m_nButtons & IN_LEAN_LEFT) ?
+            ((CNEORules*)g_pGameRules)->GetNEOViewVectors()->m_vViewAngLeanLeft.x :
+            0;
+        
+        if (m_nButtons & IN_LEAN_RIGHT)
+        {
+            right.x += ((CNEORules*)g_pGameRules)->GetNEOViewVectors()->m_vViewAngLeanRight.x;
+        }
+
+        if (right.x == 0 && eyeAngles.z == 0)
+        {
+            return;
+        }
+        else if (fabs(EyeAngles().z) > fabs(right.x))
+        {
+            return;
+        }
+
+        Quaternion end(right.x, right.y, right.z, w);
+        QNormalize(end);
+
+        QuaternionAngles(end, offset);
+    }
+    else
+    {
+        if (eyeAngles.z == 0)
+        {
+            return;
+        }
+
+        offset.z = -eyeAngles.z;
+        // HACK (Rain): we un-lerp slower for some reason, just boost the speed for now
+        lerpSpeed *= 10;
+    }
+
+    // Get a framerate-independent lerp
+    lerpSpeed = clamp(lerpSpeed * gpGlobals->frametime, 0, 1);
+    
+    SnapEyeAngles(Lerp(lerpSpeed, eyeAngles, eyeAngles + offset));
+}
+
 void CNEO_Player::PostThink(void)
 {
     BaseClass::PostThink();
@@ -86,34 +157,7 @@ void CNEO_Player::PostThink(void)
         previouslyReloading = pWep->m_bInReload;
     }
 
-    // Lerp towards lean
-    if ((m_afButtonPressed & IN_LEAN_LEFT) || (m_afButtonPressed & IN_LEAN_RIGHT))
-    {
-        Vector forward, up, right;
-        EyeVectors(&forward, &right, &up);
-
-        const float w = sqrt(forward.LengthSqr() * up.LengthSqr()) + forward.Dot(up);
-        Quaternion start(right.x, right.y, right.z, w);
-
-        right = (m_afButtonPressed & IN_LEAN_LEFT) ?
-            ((CNEORules*)g_pGameRules)->GetNEOViewVectors()->m_vViewAngLeanLeft :
-            ((CNEORules*)g_pGameRules)->GetNEOViewVectors()->m_vViewAngLeanRight;
-        Quaternion end(right.x, right.y, right.z, w);
-
-        Quaternion out;
-        QuaternionSlerp(start, end, 1.0f, out);
-
-        QAngle lean;
-        QuaternionAngles(out, lean);
-
-        SnapEyeAngles(EyeAngles() + lean);
-    }
-    else if ((m_afButtonReleased & IN_LEAN_LEFT) || (m_afButtonReleased & IN_LEAN_RIGHT))
-    {
-        QAngle rollReset = LocalEyeAngles();
-        rollReset.z = 0;
-        SnapEyeAngles(rollReset);
-    }
+    ProcessLean();
 
     if (m_afButtonPressed & IN_DROP)
     {
