@@ -185,17 +185,3 @@ bool C_NEO_Player::ShouldDrawHL2StyleQuickHud(void)
 {
     return cl_drawhud_quickinfo.GetBool();
 }
-
-static inline void QNormalize(Quaternion &out)
-{
-    const double len = sqrt(
-        out.x * out.x +
-        out.y * out.y +
-        out.z * out.z +
-        out.w * out.w);
-    
-    out.x /= len;
-    out.y /= len;
-    out.z /= len;
-    out.w /= len;
-}
