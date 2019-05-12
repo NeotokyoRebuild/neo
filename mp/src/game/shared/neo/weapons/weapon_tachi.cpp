@@ -240,7 +240,7 @@ void CWeaponTachi::ItemPostFrame( void )
 		return;
 	}	
 
-	if ( (pOwner->m_nButtons & IN_ALT1) && (!(pOwner->m_afButtonLast & IN_ALT1)) )
+	if ( (pOwner->m_nButtons & IN_ATTACK2) && (!(pOwner->m_afButtonLast & IN_ATTACK2)) )
 	{
 		if (m_flSoonestFiremodeSwitch < gpGlobals->curtime)
 		{
