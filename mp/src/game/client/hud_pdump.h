@@ -68,9 +68,15 @@ private:
 
 	EHANDLE			m_hDumpEntity;
 
+#ifdef LINUX
+	CPanelAnimationVar( vgui::HFont, m_FontSmall, "ItemFont", "HudSelectionNumbers" );
+	CPanelAnimationVar( vgui::HFont, m_FontMedium, "LabelFont", "HudSelectionNumbers" );
+	CPanelAnimationVar( vgui::HFont, m_FontBig, "TitleFont", "Trebuchet24" );
+#else
 	CPanelAnimationVar( vgui::HFont, m_FontSmall, "ItemFont", "DefaultVerySmall" );
 	CPanelAnimationVar( vgui::HFont, m_FontMedium, "LabelFont", "DefaultSmall" );
 	CPanelAnimationVar( vgui::HFont, m_FontBig, "TitleFont", "Trebuchet24" );
+#endif
 };
 
 CPDumpPanel *GetPDumpPanel();
