@@ -67,8 +67,14 @@ public:
 
 	inline void Weapon_SetZoom( bool bZoomIn );
 
+	CNetworkVar(Vector, m_leanPos);
+	CNetworkVar(QAngle, m_leanAng);
+
+	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);
+
 private:
-	inline void ProcessLean(const float lerpSpeed = 1.0f);
+	bool m_bInLeanLeft, m_bInLeanRight;
+	Vector m_leanPosTargetOffset;
 };
 
 inline CNEO_Player *ToNEOPlayer(CBaseEntity *pEntity)

@@ -47,6 +47,9 @@ LINK_ENTITY_TO_CLASS( info_player_rebel, CPointEntity );
 IMPLEMENT_SERVERCLASS_ST(CHL2MP_Player, DT_HL2MP_Player)
 	SendPropAngle( SENDINFO_VECTORELEM(m_angEyeAngles, 0), 11, SPROP_CHANGES_OFTEN ),
 	SendPropAngle( SENDINFO_VECTORELEM(m_angEyeAngles, 1), 11, SPROP_CHANGES_OFTEN ),
+#ifdef NEO
+	SendPropAngle( SENDINFO_VECTORELEM(m_angEyeAngles, 2), 11, SPROP_CHANGES_OFTEN ),
+#endif
 	SendPropEHandle( SENDINFO( m_hRagdoll ) ),
 	SendPropInt( SENDINFO( m_iSpawnInterpCounter), 4 ),
 	SendPropInt( SENDINFO( m_iPlayerSoundType), 3 ),

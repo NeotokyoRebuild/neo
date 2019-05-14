@@ -30,6 +30,7 @@ public:
 	virtual C_BaseAnimating *BecomeRagdollOnClient();
 	virtual const QAngle& GetRenderAngles();
 	virtual bool ShouldDraw( void );
+	virtual bool ShouldInterpolate() { return true; }
 	virtual void OnDataChanged( DataUpdateType_t type );
 	virtual float GetFOV( void );
 	virtual CStudioHdr *OnNewModel( void );
@@ -43,18 +44,37 @@ public:
 	virtual bool ShouldReceiveProjectedTextures( int flags );
 	virtual void PostDataUpdate( DataUpdateType_t updateType );
 	virtual void PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, float fvol, bool force );
-	virtual void PreThink( void );
 	virtual void DoImpactEffect( trace_t &tr, int nDamageType );
 	IRagdoll* GetRepresentativeRagdoll() const;
 	virtual void CalcView( Vector &eyeOrigin, QAngle &eyeAngles, float &zNear, float &zFar, float &fov );
 	virtual const QAngle& EyeAngles( void );
 
+	virtual void Think( void );
+	virtual void PreThink( void );
     virtual void PostThink( void );
+	virtual void Spawn( void );
 
 	bool ShouldDrawHL2StyleQuickHud( void );
 
+	virtual void SetLocalViewAngles( const QAngle &viewAngles )
+	{
+		BaseClass::SetLocalViewAngles(viewAngles);
+	}
+	virtual void SetViewAngles( const QAngle& ang )
+	{
+		BaseClass::SetViewAngles(ang);
+	}
+
 private:
     C_NEO_Player(const C_NEO_Player &);
+
+protected:
+	Vector m_leanPos;
+	QAngle m_leanAng;
+
+private:
+	CInterpolatedVar<Vector> m_iv_leanPos;
+	CInterpolatedVar<QAngle> m_iv_leanAng;
 };
 
 inline C_NEO_Player *ToNEOPlayer(CBaseEntity *pEntity)

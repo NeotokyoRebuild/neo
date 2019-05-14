@@ -15,6 +15,10 @@
 
 #include "hud_crosshair.h"
 
+#include "neo_predicted_viewmodel.h"
+
+#include "baseviewmodel_shared.h"
+
 // Don't alias here
 #if defined( CNEO_Player )
 #undef CNEO_Player	
@@ -23,9 +27,13 @@
 LINK_ENTITY_TO_CLASS(player, C_NEO_Player);
 
 IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
+    RecvPropVector(RECVINFO(m_leanPos)),
+    RecvPropQAngles(RECVINFO(m_leanAng)),
 END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA(C_NEO_Player)
+    DEFINE_PRED_FIELD(m_leanPos, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
+    DEFINE_PRED_FIELD(m_leanAng, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 
 ConVar cl_autoreload_when_empty("cl_autoreload_when_empty", "1", FCVAR_USERINFO,
@@ -36,9 +44,14 @@ ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
     "Whether to display HL2 style ammo/health info near crosshair.",
     true, 0.0f, true, 1.0f);
 
-C_NEO_Player::C_NEO_Player()
+C_NEO_Player::C_NEO_Player() :
+    m_iv_leanPos("C_NEO_Player::m_iv_leanPos"),
+    m_iv_leanAng("C_NEO_Player::m_iv_leanAng")
 {
-    
+    AddVar(&m_leanPos, &m_iv_leanPos, LATCH_SIMULATION_VAR);
+    AddVar(&m_leanAng, &m_iv_leanAng, LATCH_SIMULATION_VAR);
+
+    SetPredictionEligible(true);
 }
 
 C_NEO_Player::~C_NEO_Player()
@@ -151,6 +164,33 @@ void C_NEO_Player::PlayStepSound( Vector &vecOrigin,
 void C_NEO_Player::PreThink( void )
 {
     BaseClass::PreThink();
+
+    CNEOPredictedViewModel *vm = (CNEOPredictedViewModel*)GetViewModel();
+    if (vm)
+    {
+        vm->CalcLean(this);
+    }
+    else
+    {
+        Warning("C_NEO_Player::PreThink: Failed to get CNEOPredictedViewModel\n");
+    }
+}
+
+void C_NEO_Player::Think( void )
+{
+    BaseClass::Think();
+}
+
+void C_NEO_Player::PostThink(void)
+{
+    BaseClass::PostThink();
+
+    //DevMsg("Roll: %f\n", m_angEyeAngles[2]);
+}
+
+void C_NEO_Player::Spawn( void )
+{
+    BaseClass::Spawn();
 }
 
 void C_NEO_Player::DoImpactEffect( trace_t &tr, int nDamageType )
@@ -172,11 +212,6 @@ void C_NEO_Player::CalcView( Vector &eyeOrigin, QAngle &eyeAngles,
 const QAngle &C_NEO_Player::EyeAngles()
 {
     return BaseClass::EyeAngles();
-}
-
-void C_NEO_Player::PostThink(void)
-{
-    BaseClass::PostThink();
 }
 
 // Whether to draw the HL2 style quick health/ammo info around the crosshair.
