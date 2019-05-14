@@ -41,8 +41,13 @@ public:
 	DECLARE_CLASS( CHL2MP_Player, CHL2_Player );
 
 	CHL2MP_Player();
+#ifdef NEO
+	virtual ~CHL2MP_Player( void );
+	friend class CNEO_Player;
+#else
 	~CHL2MP_Player( void );
-	
+#endif
+
 	static CHL2MP_Player *CreatePlayer( const char *className, edict_t *ed )
 	{
 		CHL2MP_Player::s_PlayerEdict = ed;

@@ -5,7 +5,7 @@
 #include "game.h"
 #include "gamerules.h"
 #include "hl2mp_player_shared.h"
-#include "predicted_viewmodel.h"
+#include "neo_predicted_viewmodel.h"
 #include "in_buttons.h"
 #include "neo_gamerules.h"
 #include "KeyValues.h"
@@ -22,6 +22,10 @@
 
 #include "neo_model_manager.h"
 
+#include "shareddefs.h"
+#include "inetchannelinfo.h"
+#include "eiface.h"
+
 void DropPrimedFragGrenade(CNEO_Player *pPlayer, CBaseCombatWeapon *pGrenade);
 
 LINK_ENTITY_TO_CLASS(player, CNEO_Player);
@@ -31,14 +35,26 @@ LINK_ENTITY_TO_CLASS(info_player_defender, CPointEntity);
 LINK_ENTITY_TO_CLASS(info_player_start, CPointEntity);*/
 
 IMPLEMENT_SERVERCLASS_ST(CNEO_Player, DT_NEO_Player)
+    SendPropVector(SENDINFO(m_leanPos)),
+    SendPropQAngles(SENDINFO(m_leanAng)),
 END_SEND_TABLE()
 
 BEGIN_DATADESC(CNEO_Player)
+    DEFINE_FIELD(m_leanPos, FIELD_VECTOR),
+    DEFINE_FIELD(m_leanAng, FIELD_VECTOR),
 END_DATADESC()
 
 CNEO_Player::CNEO_Player()
 {
+    m_leanAng.Set(QAngle(0, 0, 0));
+    m_leanPos.Set(Vector(0, 0, 0));
 
+    m_bInLeanLeft = false;
+    m_bInLeanRight = false;
+
+    m_leanPosTargetOffset = vec3_origin;
+
+    SetPredictionEligible(true);
 }
 
 CNEO_Player::~CNEO_Player( void )
@@ -56,92 +72,29 @@ void CNEO_Player::Spawn(void)
     BaseClass::Spawn();
 
     ShowCrosshair(false);
+
+    m_leanPosTargetOffset = VEC_VIEW;
+
+#if(0)
+    SetNextThink(gpGlobals->curtime);
+#endif
 }
 
-static inline void QNormalize(Quaternion &out)
+void CNEO_Player::PreThink(void)
 {
-    const double len = sqrt(
-        out.x * out.x +
-        out.y * out.y +
-        out.z * out.z +
-        out.w * out.w);
-    
-    out.x /= len;
-    out.y /= len;
-    out.z /= len;
-    out.w /= len;
-}
+    BaseClass::PreThink();
 
-inline void CNEO_Player::ProcessLean(const float lerpSpeed)
-{
-    // Get a framerate-independent lerp
-    const float lerpSpeedDefault = clamp(lerpSpeed * gpGlobals->frametime, 0, 1);
-    float lerpSpeedMod = lerpSpeedDefault;
-
-    Vector forward, right, up;
-    EyeVectors(&forward, &right, &up);
-
-    //DevMsg("Right: %f, %f, %f\n", right.x, right.y, right.z);
-
-    const double w = sqrt(forward.LengthSqr() * up.LengthSqr()) + forward.Dot(up);
-    Quaternion start(right.x, right.y, right.z, w);
-    QNormalize(start);
-
-    QAngle eyeAngles = EyeAngles();
-    QAngle offset = vec3_angle;
-
-    if ((m_nButtons & IN_LEAN_LEFT) || (m_nButtons & IN_LEAN_RIGHT))
+    CNEOPredictedViewModel *vm = (CNEOPredictedViewModel*)GetViewModel();
+    if (vm)
     {
-        right.x = (m_nButtons & IN_LEAN_LEFT) ?
-            ((CNEORules*)g_pGameRules)->GetNEOViewVectors()->m_vViewAngLeanLeft.x :
-            ((CNEORules*)g_pGameRules)->GetNEOViewVectors()->m_vViewAngLeanRight.x;
-
-        if (fabs(EyeAngles().z) > fabs(right.x))
-        {
-            return;
-        }
-
-        Quaternion end(right.x, right.y, right.z, w);
-        QNormalize(end);
-
-        QuaternionAngles(end, offset);
+        //static float lastThink = gpGlobals->curtime;
+        vm->CalcLean(this/*, lastThink*/);
+        //lastThink = gpGlobals->curtime;
     }
     else
     {
-        if (eyeAngles.z == 0)
-        {
-            return;
-        }
-
-        offset.z = -eyeAngles.z;
-        // HACK (Rain): we un-lerp slower for some reason, just boost the speed for now
-        lerpSpeedMod *= 10;
+        Warning("CNEO_Player::PreThink: Failed to get CNEOPredictedViewModel\n");
     }
-    
-    SnapEyeAngles(Lerp(lerpSpeedMod, eyeAngles, eyeAngles + offset));
-
-    Vector tempForw;
-    AngleVectors(eyeAngles, &tempForw);
-
-    Vector viewDelta = GetViewOffset();
-
-    const float yawPeekAmount = 128.0f;
-    if (m_nButtons & IN_LEAN_LEFT)
-    {
-        viewDelta.y = yawPeekAmount;
-    }
-    else if (m_nButtons & IN_LEAN_RIGHT)
-    {
-        viewDelta.y = -yawPeekAmount;
-    }
-    else
-    {
-        viewDelta = VEC_VIEW;
-    }
-
-    VectorYawRotate(viewDelta, GetLocalAngles().y, viewDelta);
-
-    SetViewOffset(Lerp(lerpSpeedMod, GetViewOffset(), viewDelta));
 }
 
 void CNEO_Player::PostThink(void)
@@ -172,8 +125,6 @@ void CNEO_Player::PostThink(void)
         previouslyReloading = pWep->m_bInReload;
     }
 
-    ProcessLean();
-
     if (m_afButtonPressed & IN_DROP)
     {
         Vector eyeForward;
@@ -183,11 +134,11 @@ void CNEO_Player::PostThink(void)
 
         Weapon_Drop(GetActiveWeapon(), NULL, &eyeForward);
     }
-}
 
-void CNEO_Player::PreThink(void)
-{
-    BaseClass::PreThink();
+#if(0)
+    SetSimulationTime(gpGlobals->curtime);
+    SetNextThink(gpGlobals->curtime + 0.01f);
+#endif
 }
 
 void CNEO_Player::PlayerDeathThink()
@@ -342,7 +293,28 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 
 void CNEO_Player::CreateViewModel( int index )
 {
-    BaseClass::CreateViewModel(index);
+    Assert( index >= 0 && index < MAX_VIEWMODELS );
+
+	if ( GetViewModel( index ) )
+    {
+        return;
+    }
+
+	CNEOPredictedViewModel *vm = ( CNEOPredictedViewModel * )CreateEntityByName( "neo_predicted_viewmodel" );
+	if ( vm )
+	{
+		vm->SetAbsOrigin( GetAbsOrigin() );
+		vm->SetOwner( this );
+		vm->SetIndex( index );
+		DispatchSpawn( vm );
+		vm->FollowEntity( this, false );
+		m_hViewModel.Set( index, vm );
+	}
+    else
+    {
+        Warning("CNEO_Player::CreateViewModel: Failed to create neo_predicted_viewmodel\n");
+        return;
+    }
 }
 
 bool CNEO_Player::BecomeRagdollOnClient( const Vector &force )

@@ -1787,7 +1787,9 @@ void CPrediction::SetViewAngles( QAngle& ang )
 		return;
 
 	player->SetViewAngles( ang );
+#ifndef NEO
 	player->m_iv_angRotation.Reset();
+#endif
 }
 
 //-----------------------------------------------------------------------------
