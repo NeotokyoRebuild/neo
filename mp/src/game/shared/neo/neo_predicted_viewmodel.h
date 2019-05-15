@@ -25,11 +25,25 @@ public:
     virtual void CalcViewModelView(CBasePlayer *pOwner,
         const Vector& eyePosition, const QAngle& eyeAngles);
 
+    virtual void CalcViewModelLag(Vector& origin, QAngle& angles,
+        QAngle& original_angles);
+
     void CalcLean(CNEO_Player *player);
+
+#ifdef CLIENT_DLL
+    float GetLeanInterp()
+    {
+        return GetInterpolationAmount(m_LagAnglesHistory.GetType());
+    }
+#endif
 
 private:
     Vector m_vecLeanDolly;
     QAngle m_angLeanAngle;
+
+#ifdef CLIENT_DLL
+    float m_flLastLeanChangeTime;
+#endif
 };
 
 #endif // NEO_PREDICTED_VIEWMODEL_H

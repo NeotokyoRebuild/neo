@@ -53,17 +53,7 @@ public:
 		Vector vObsHullMax,
 		Vector vDeadViewHeight,
 		Vector vCrouchTraceMin,
-		Vector vCrouchTraceMax,
-        
-        // NEO specific
-        Vector vViewLeanLeft,
-        Vector vViewLeanRight,
-        Vector vViewAngLeanLeft,
-        Vector vViewAngLeanRight,
-        Vector vHullLeanLeftMin,
-        Vector vHullLeanLeftMax,
-        Vector vHullLeanRightMin,
-        Vector vHullLeanRightMax ) :
+		Vector vCrouchTraceMax) :
 			HL2MPViewVectors( 
                 vView,
                 vHullMin,
@@ -77,22 +67,7 @@ public:
                 vCrouchTraceMin,
                 vCrouchTraceMax )
 	{
-        m_vViewLeanLeft = vViewLeanLeft;
-        m_vViewLeanRight = vViewLeanRight;
-
-        m_vViewAngLeanLeft = vViewAngLeanLeft;
-        m_vViewAngLeanRight = vViewAngLeanRight;
-
-        m_vHullLeanLeftMin = vHullLeanLeftMin;
-        m_vHullLeanLeftMax = vHullLeanLeftMax;
-        m_vHullLeanRightMin = vHullLeanRightMin;
-        m_vHullLeanRightMax = vHullLeanRightMax;
 	}
-
-    Vector m_vViewLeanLeft, m_vViewLeanRight;
-    Vector m_vViewAngLeanLeft, m_vViewAngLeanRight;
-    Vector m_vHullLeanLeftMin, m_vHullLeanLeftMax;
-    Vector m_vHullLeanRightMin, m_vHullLeanRightMax;
 };
 
 class CNEORules : public CHL2MPRules

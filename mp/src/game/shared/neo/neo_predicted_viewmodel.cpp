@@ -8,6 +8,7 @@
 #include "c_neo_player.h"
 #include "prediction.h"
 #include "ivieweffects.h"
+#include "iinput.h"
 #else
 #include "neo_player.h"
 #include "gameinterface.h"
@@ -31,6 +32,9 @@ CNEOPredictedViewModel::CNEOPredictedViewModel()
 
 CNEOPredictedViewModel::~CNEOPredictedViewModel()
 {
+#ifdef CLIENT_DLL
+    RemoveFromInterpolationList();
+#endif
 }
 
 static inline void NeoVmInterpolateAngles(const QAngle& start,
@@ -71,14 +75,20 @@ static inline bool RoughlyEquals(const float &f1, const float &f2, const float &
     return fabs(f1 - f2) < tolerance;
 }
 
+static ConVar neo_lean_yaw_lerp_scale("neo_lean_yaw_lerp_scale", "0.075", FCVAR_REPLICATED | FCVAR_CHEAT, "How fast to lerp viewoffset yaw into full lean position.");
+static ConVar neo_lean_roll_lerp_scale("neo_lean_roll_lerp_scale", "0.1", FCVAR_REPLICATED | FCVAR_CHEAT, "How fast to lerp viewangoffset roll into full lean position.");
+static ConVar neo_lean_yaw_peek_amount("neo_lean_yaw_peek_amount", "32.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How far sideways will a full lean view reach.");
+// Engine code starts to fight back at angles beyond 50, so we cap the max value there.
+static ConVar neo_lean_angle("neo_lean_angle", "33.0", FCVAR_REPLICATED | FCVAR_CHEAT, "Angle of a full lean.", true, 0.0, true, 50.0);
+
 void CNEOPredictedViewModel::CalcLean(CNEO_Player *player/*, float lastThink*/)
 {
-    const float yawPeekAmount = 32.0f;
-    const float lerpScale = 0.2f;
-
-    static float leanStartTime = gpGlobals->curtime, leanEndTime = gpGlobals->curtime;
-
-    static bool m_bInLeanLeft = false, m_bInLeanRight = false;
+#ifdef CLIENT_DLL
+    // We will touch view angles, so we have to resample here
+    // to avoid disturbing user's mouse input.
+    // This should also handle controller input.
+    input->ExtraMouseSample(gpGlobals->absoluteframetime, 1);
+#endif
 
     static Vector m_leanPosTargetOffset;
     const Vector viewOffset = player->GetViewOffset();
@@ -103,18 +113,18 @@ void CNEOPredictedViewModel::CalcLean(CNEO_Player *player/*, float lastThink*/)
         else
         {
             leaningIn = true;
-            angOffset.z = ((CNEORules*)g_pGameRules)->GetNEOViewVectors()->m_vViewAngLeanLeft.x;
+            angOffset.z = -neo_lean_angle.GetFloat();
 
-            viewDelta.y = yawPeekAmount;
+            viewDelta.y = neo_lean_yaw_peek_amount.GetFloat();
         }
     }
     // Leaning exclusively right
     else if (player->m_nButtons & IN_LEAN_RIGHT)
     {
         leaningIn = true;
-        angOffset.z = ((CNEORules*)g_pGameRules)->GetNEOViewVectors()->m_vViewAngLeanRight.x;
+        angOffset.z = neo_lean_angle.GetFloat();
 
-        viewDelta.y = -yawPeekAmount;
+        viewDelta.y = -neo_lean_yaw_peek_amount.GetFloat();
     }
     // Not leaning at all
     else
@@ -140,7 +150,7 @@ void CNEOPredictedViewModel::CalcLean(CNEO_Player *player/*, float lastThink*/)
         m_leanPosTargetOffset = (player->m_nButtons & IN_DUCK) ? VEC_DUCK_VIEW : VEC_VIEW;
     }
 
-    const float tolerance = 0.1;
+    const float tolerance = 0.001;
 
     float angDrift = fabs(eyeAngles.z - angOffset.z);
     float posDrift_X = fabs(viewOffset.x - m_leanPosTargetOffset.x);
@@ -161,10 +171,14 @@ void CNEOPredictedViewModel::CalcLean(CNEO_Player *player/*, float lastThink*/)
 
     if (wantAngLerp || wantPosLerp)
     {
-        const float lerp = (leaningIn ? (lerpScale) : (lerpScale * 1.5));
+        const float angLerp = (leaningIn ?
+            (neo_lean_roll_lerp_scale.GetFloat()) : (neo_lean_roll_lerp_scale.GetFloat() * 1.5));
+        
+        const float posLerp = (leaningIn ?
+            (neo_lean_yaw_lerp_scale.GetFloat()) : (neo_lean_yaw_lerp_scale.GetFloat() * 1.5));
 
-        NeoVmInterpolateAngles(eyeAngles, angOffset, m_angLeanAngle, lerp);
-        VectorLerp(viewOffset, m_leanPosTargetOffset, lerp, m_vecLeanDolly);
+        NeoVmInterpolateAngles(eyeAngles, angOffset, m_angLeanAngle, angLerp);
+        VectorLerp(viewOffset, m_leanPosTargetOffset, posLerp, m_vecLeanDolly);
 
         float angDrift = fabs(m_angLeanAngle.z - angOffset.z);
         float posDrift_X = fabs(viewOffset.x - m_leanPosTargetOffset.x);
@@ -181,7 +195,7 @@ void CNEOPredictedViewModel::CalcLean(CNEO_Player *player/*, float lastThink*/)
         }
 
 #ifdef CLIENT_DLL
-        if (false && !prediction->InPrediction() && prediction->IsFirstTimePredicted())
+        if (!prediction->InPrediction() && prediction->IsFirstTimePredicted())
 #endif
         {
             // This provides us with lag compensated out values.
@@ -189,12 +203,52 @@ void CNEOPredictedViewModel::CalcLean(CNEO_Player *player/*, float lastThink*/)
         }
 
 #ifdef CLIENT_DLL
-        // NEO FIXME / BUG (Rain): This jitters clientside when ping > 0.
-        // Do we need to inform server of the new angles?
+        // NOTE: we must sample mouse (input->ExtraMouseSample) before calling this,
+        // otherwise we risk network view jitter when user turns their
+        // view and applies the lean roll simultaneously!
         engine->SetViewAngles(m_angLeanAngle);
 #endif
         player->SetViewOffset(m_vecLeanDolly);
     }
+}
+
+#ifdef CLIENT_DLL
+extern ConVar cl_wpn_sway_interp;
+extern ConVar cl_wpn_sway_scale;
+#endif
+ConVar neo_lean_allow_extrapolation("neo_lean_allow_extrapolation", "1", FCVAR_REPLICATED | FCVAR_CHEAT,
+    "Whether we're allowed to extrapolate lean beyond known values.", true, 0, true, 1);
+void CNEOPredictedViewModel::CalcViewModelLag(Vector& origin, QAngle& angles,
+    QAngle& original_angles)
+{
+    BaseClass::CalcViewModelLag(origin, angles, original_angles);
+	return;
+
+#ifdef CLIENT_DLL
+    // Calculate our drift
+    Vector	forward, right, up;
+    AngleVectors( angles, &forward, &right, &up );
+    
+    CInterpolationContext context;
+    context.EnableExtrapolation( neo_lean_allow_extrapolation.GetBool() );
+
+    // Add an entry to the history.
+    m_vLagAngles = angles;
+    m_LagAnglesHistory.NoteChanged( gpGlobals->curtime, cl_wpn_sway_interp.GetFloat(), false );
+
+    // Interpolate back 100ms.
+    m_LagAnglesHistory.Interpolate( gpGlobals->curtime, cl_wpn_sway_interp.GetFloat() );
+    
+    // Now take the 100ms angle difference and figure out how far the forward vector moved in local space.
+    Vector vLaggedForward;
+    QAngle angleDiff = m_vLagAngles - angles;
+    AngleVectors( -angleDiff, &vLaggedForward, 0, 0 );
+    Vector vForwardDiff = Vector(1,0,0) - vLaggedForward;
+
+    // Now offset the origin using that.
+    vForwardDiff *= cl_wpn_sway_scale.GetFloat();
+    origin += forward*vForwardDiff.x + right*-vForwardDiff.y + up*vForwardDiff.z;
+#endif
 }
 
 void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
