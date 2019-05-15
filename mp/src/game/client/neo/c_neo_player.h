@@ -30,7 +30,7 @@ public:
 	virtual C_BaseAnimating *BecomeRagdollOnClient();
 	virtual const QAngle& GetRenderAngles();
 	virtual bool ShouldDraw( void );
-	virtual bool ShouldInterpolate() { return true; }
+	//virtual bool ShouldInterpolate() { return true; }
 	virtual void OnDataChanged( DataUpdateType_t type );
 	virtual float GetFOV( void );
 	virtual CStudioHdr *OnNewModel( void );
@@ -49,7 +49,7 @@ public:
 	virtual void CalcView( Vector &eyeOrigin, QAngle &eyeAngles, float &zNear, float &zFar, float &fov );
 	virtual const QAngle& EyeAngles( void );
 
-	virtual void Think( void );
+	virtual void ClientThink( void );
 	virtual void PreThink( void );
     virtual void PostThink( void );
 	virtual void Spawn( void );
@@ -67,14 +67,6 @@ public:
 
 private:
     C_NEO_Player(const C_NEO_Player &);
-
-protected:
-	Vector m_leanPos;
-	QAngle m_leanAng;
-
-private:
-	CInterpolatedVar<Vector> m_iv_leanPos;
-	CInterpolatedVar<QAngle> m_iv_leanAng;
 };
 
 inline C_NEO_Player *ToNEOPlayer(CBaseEntity *pEntity)

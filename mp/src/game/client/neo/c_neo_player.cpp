@@ -19,6 +19,8 @@
 
 #include "baseviewmodel_shared.h"
 
+#include "prediction.h"
+
 // Don't alias here
 #if defined( CNEO_Player )
 #undef CNEO_Player	
@@ -27,13 +29,9 @@
 LINK_ENTITY_TO_CLASS(player, C_NEO_Player);
 
 IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
-    RecvPropVector(RECVINFO(m_leanPos)),
-    RecvPropQAngles(RECVINFO(m_leanAng)),
 END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA(C_NEO_Player)
-    DEFINE_PRED_FIELD(m_leanPos, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
-    DEFINE_PRED_FIELD(m_leanAng, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 
 ConVar cl_autoreload_when_empty("cl_autoreload_when_empty", "1", FCVAR_USERINFO,
@@ -44,19 +42,12 @@ ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
     "Whether to display HL2 style ammo/health info near crosshair.",
     true, 0.0f, true, 1.0f);
 
-C_NEO_Player::C_NEO_Player() :
-    m_iv_leanPos("C_NEO_Player::m_iv_leanPos"),
-    m_iv_leanAng("C_NEO_Player::m_iv_leanAng")
+C_NEO_Player::C_NEO_Player()
 {
-    AddVar(&m_leanPos, &m_iv_leanPos, LATCH_SIMULATION_VAR);
-    AddVar(&m_leanAng, &m_iv_leanAng, LATCH_SIMULATION_VAR);
-
-    SetPredictionEligible(true);
 }
 
 C_NEO_Player::~C_NEO_Player()
 {
-
 }
 
 C_NEO_Player *C_NEO_Player::GetLocalNEOPlayer()
@@ -153,6 +144,12 @@ bool C_NEO_Player::ShouldReceiveProjectedTextures( int flags )
 void C_NEO_Player::PostDataUpdate( DataUpdateType_t updateType )
 {
     BaseClass::PostDataUpdate(updateType);
+
+    CNEOPredictedViewModel *vm = (CNEOPredictedViewModel*)GetViewModel();
+    if (vm)
+    {
+        SetNextThink(CLIENT_THINK_ALWAYS);
+    }
 }
 
 void C_NEO_Player::PlayStepSound( Vector &vecOrigin,
@@ -168,17 +165,13 @@ void C_NEO_Player::PreThink( void )
     CNEOPredictedViewModel *vm = (CNEOPredictedViewModel*)GetViewModel();
     if (vm)
     {
-        vm->CalcLean(this);
-    }
-    else
-    {
-        Warning("C_NEO_Player::PreThink: Failed to get CNEOPredictedViewModel\n");
+        vm->CalcLean(this);  
     }
 }
 
-void C_NEO_Player::Think( void )
+void C_NEO_Player::ClientThink(void)
 {
-    BaseClass::Think();
+    BaseClass::ClientThink();
 }
 
 void C_NEO_Player::PostThink(void)

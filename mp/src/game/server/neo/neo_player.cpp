@@ -35,26 +35,17 @@ LINK_ENTITY_TO_CLASS(info_player_defender, CPointEntity);
 LINK_ENTITY_TO_CLASS(info_player_start, CPointEntity);*/
 
 IMPLEMENT_SERVERCLASS_ST(CNEO_Player, DT_NEO_Player)
-    SendPropVector(SENDINFO(m_leanPos)),
-    SendPropQAngles(SENDINFO(m_leanAng)),
 END_SEND_TABLE()
 
 BEGIN_DATADESC(CNEO_Player)
-    DEFINE_FIELD(m_leanPos, FIELD_VECTOR),
-    DEFINE_FIELD(m_leanAng, FIELD_VECTOR),
 END_DATADESC()
 
 CNEO_Player::CNEO_Player()
 {
-    m_leanAng.Set(QAngle(0, 0, 0));
-    m_leanPos.Set(Vector(0, 0, 0));
-
     m_bInLeanLeft = false;
     m_bInLeanRight = false;
 
     m_leanPosTargetOffset = vec3_origin;
-
-    SetPredictionEligible(true);
 }
 
 CNEO_Player::~CNEO_Player( void )
@@ -75,9 +66,7 @@ void CNEO_Player::Spawn(void)
 
     m_leanPosTargetOffset = VEC_VIEW;
 
-#if(0)
-    SetNextThink(gpGlobals->curtime);
-#endif
+    SetTransmitState(FL_EDICT_ALWAYS);
 }
 
 void CNEO_Player::PreThink(void)
@@ -87,13 +76,7 @@ void CNEO_Player::PreThink(void)
     CNEOPredictedViewModel *vm = (CNEOPredictedViewModel*)GetViewModel();
     if (vm)
     {
-        //static float lastThink = gpGlobals->curtime;
-        vm->CalcLean(this/*, lastThink*/);
-        //lastThink = gpGlobals->curtime;
-    }
-    else
-    {
-        Warning("CNEO_Player::PreThink: Failed to get CNEOPredictedViewModel\n");
+        vm->CalcLean(this);
     }
 }
 
@@ -134,11 +117,6 @@ void CNEO_Player::PostThink(void)
 
         Weapon_Drop(GetActiveWeapon(), NULL, &eyeForward);
     }
-
-#if(0)
-    SetSimulationTime(gpGlobals->curtime);
-    SetNextThink(gpGlobals->curtime + 0.01f);
-#endif
 }
 
 void CNEO_Player::PlayerDeathThink()

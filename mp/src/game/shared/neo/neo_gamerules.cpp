@@ -39,19 +39,7 @@ static NEOViewVectors g_NEOViewVectors(
 	Vector( 0, 0, 14 ),		  //VEC_DEAD_VIEWHEIGHT (m_vDeadViewHeight)
 
 	Vector(-16, -16, 0 ),	  //VEC_CROUCH_TRACE_MIN (m_vCrouchTraceMin)
-	Vector( 16,  16,  60 ),	  //VEC_CROUCH_TRACE_MAX (m_vCrouchTraceMax)
-
-    // NEO specific
-    Vector(-24, 0, 50), // vViewLeanLeft
-    Vector(24, 0, 50), // vViewLeanRight
-
-    Vector(-33, 0, 0), // vViewAngLeanLeft
-    Vector(33, 0, 0), // vViewAngLeanRight
-
-    Vector(-24, -16, 0), // vHullLeanLeftMin
-    Vector(16, 16, 58), // vHullLeanLeftMax
-    Vector(-16, -16, 0), // vHullLeanRightMin
-    Vector(24, 16, 58) // vHullLeanRightMax
+	Vector( 16,  16,  60 )	  //VEC_CROUCH_TRACE_MAX (m_vCrouchTraceMax)
 );
 
 #ifdef CLIENT_DLL
