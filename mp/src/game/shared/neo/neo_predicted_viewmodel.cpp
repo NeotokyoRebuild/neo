@@ -81,6 +81,7 @@ static ConVar neo_lean_yaw_peek_amount("neo_lean_yaw_peek_amount", "32.0", FCVAR
 // Engine code starts to fight back at angles beyond 50, so we cap the max value there.
 static ConVar neo_lean_angle("neo_lean_angle", "33.0", FCVAR_REPLICATED | FCVAR_CHEAT, "Angle of a full lean.", true, 0.0, true, 50.0);
 
+// NEO FIXME (Rain): we may gimbal lock!
 void CNEOPredictedViewModel::CalcLean(CNEO_Player *player/*, float lastThink*/)
 {
 #ifdef CLIENT_DLL
