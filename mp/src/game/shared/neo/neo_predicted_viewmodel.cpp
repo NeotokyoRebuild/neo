@@ -2,16 +2,13 @@
 #include "neo_predicted_viewmodel.h"
 
 #include "in_buttons.h"
-#include "neo_gamerules.h"
 
 #ifdef CLIENT_DLL
 #include "c_neo_player.h"
 #include "prediction.h"
-#include "ivieweffects.h"
 #include "iinput.h"
 #else
 #include "neo_player.h"
-#include "gameinterface.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -26,8 +23,9 @@ END_NETWORK_TABLE()
 
 CNEOPredictedViewModel::CNEOPredictedViewModel()
 {
-    m_vecLeanDolly = vec3_origin;
-    m_angLeanAngle = vec3_angle;
+    m_vecNextViewOffset = vec3_origin;
+
+    m_angNextViewAngles = vec3_angle;
 }
 
 CNEOPredictedViewModel::~CNEOPredictedViewModel()
@@ -37,6 +35,8 @@ CNEOPredictedViewModel::~CNEOPredictedViewModel()
 #endif
 }
 
+// Interpolate euler angles via quaternions to avoid gimbal lock.
+// This helper function is copied here from cdll_util, to have shared access.
 static inline void NeoVmInterpolateAngles(const QAngle& start,
     const QAngle& end, QAngle& output, float frac)
 {
@@ -55,51 +55,28 @@ static inline void NeoVmInterpolateAngles(const QAngle& start,
 	QuaternionAngles( result, output );
 }
 
-static inline void QNormalize(Quaternion &out)
-{
-    const double len = sqrt(
-        out.x * out.x +
-        out.y * out.y +
-        out.z * out.z +
-        out.w * out.w);
-    
-    out.x /= len;
-    out.y /= len;
-    out.z /= len;
-    out.w /= len;
-}
-
-// Returns true if f1 and f2 are within the tolerance range of each other.
-static inline bool RoughlyEquals(const float &f1, const float &f2, const float &tolerance = 0.1f)
-{
-    return fabs(f1 - f2) < tolerance;
-}
-
 static ConVar neo_lean_yaw_lerp_scale("neo_lean_yaw_lerp_scale", "0.075", FCVAR_REPLICATED | FCVAR_CHEAT, "How fast to lerp viewoffset yaw into full lean position.");
 static ConVar neo_lean_roll_lerp_scale("neo_lean_roll_lerp_scale", "0.1", FCVAR_REPLICATED | FCVAR_CHEAT, "How fast to lerp viewangoffset roll into full lean position.");
 static ConVar neo_lean_yaw_peek_amount("neo_lean_yaw_peek_amount", "32.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How far sideways will a full lean view reach.");
 // Engine code starts to fight back at angles beyond 50, so we cap the max value there.
 static ConVar neo_lean_angle("neo_lean_angle", "33.0", FCVAR_REPLICATED | FCVAR_CHEAT, "Angle of a full lean.", true, 0.0, true, 50.0);
 
-// NEO FIXME (Rain): we may gimbal lock!
-void CNEOPredictedViewModel::CalcLean(CNEO_Player *player/*, float lastThink*/)
+void CNEOPredictedViewModel::CalcLean(CNEO_Player *player)
 {
 #ifdef CLIENT_DLL
-    // We will touch view angles, so we have to resample here
-    // to avoid disturbing user's mouse input.
-    // This should also handle controller input.
+    // We will touch view angles, so we have to resample
+    // here to avoid disturbing user's mouse look input.
+    // This should also handle controller look input.
     input->ExtraMouseSample(gpGlobals->absoluteframetime, 1);
 #endif
 
-    static Vector m_leanPosTargetOffset;
-    const Vector viewOffset = player->GetViewOffset();
 
-    QAngle eyeAngles = player->LocalEyeAngles();
-    QAngle angOffset = eyeAngles;
+    //////////////////////////////////
+    // Handle player lean key input //
+    //////////////////////////////////
 
-    Vector viewDelta(0.0f, viewOffset.y, viewOffset.z);
-
-    bool leaningIn = false;
+    bool leaningIn;
+    float leanRotation, leanSideways;
 
     // If we're actively leaning
     if (player->m_nButtons & IN_LEAN_LEFT)
@@ -108,91 +85,91 @@ void CNEOPredictedViewModel::CalcLean(CNEO_Player *player/*, float lastThink*/)
         if (player->m_nButtons & IN_LEAN_RIGHT)
         {
             leaningIn = false;
-            angOffset.z = 0;
+            leanRotation = 0;
+            leanSideways = 0;
         }
         // Leaning exclusively left
         else
         {
             leaningIn = true;
-            angOffset.z = -neo_lean_angle.GetFloat();
-
-            viewDelta.y = neo_lean_yaw_peek_amount.GetFloat();
+            leanRotation = -neo_lean_angle.GetFloat();
+            leanSideways = neo_lean_yaw_peek_amount.GetFloat();
         }
     }
     // Leaning exclusively right
     else if (player->m_nButtons & IN_LEAN_RIGHT)
     {
         leaningIn = true;
-        angOffset.z = neo_lean_angle.GetFloat();
-
-        viewDelta.y = -neo_lean_yaw_peek_amount.GetFloat();
+        leanRotation = neo_lean_angle.GetFloat();
+        leanSideways = -neo_lean_yaw_peek_amount.GetFloat();
     }
     // Not leaning at all
     else
     {
         leaningIn = false;
-        angOffset.z = 0;
+        leanRotation = 0;
+        leanSideways = 0;
     }
 
-    // Same deal as above, but with view "dolly" pos
-    if ((player->m_nButtons & IN_LEAN_LEFT) || (player->m_nButtons & IN_LEAN_RIGHT))
+
+    //////////////////////////////
+    // Get target lean rotation //
+    //////////////////////////////
+
+    QAngle startAng = player->LocalEyeAngles();
+    QAngle targetAng(startAng.x, startAng.y, leanRotation);
+
+
+    /////////////////////////
+    // Get target lean yaw //
+    /////////////////////////
+
+    const float verticalOffset = (player->m_nButtons & IN_DUCK) ? VEC_DUCK_VIEW.z : VEC_VIEW.z;
+    Vector eyeOffset(0, leanSideways, verticalOffset);
+    VectorYawRotate(eyeOffset, player->GetLocalAngles().y, eyeOffset);
+
+
+    /////////////////////////////////////////////////
+    // Calculate lerp values for the next position //
+    /////////////////////////////////////////////////
+
+    // We allow this much lerp inaccuracy, and then snap to target location.
+    // This prevents slight inaccuracy in final camera roll as we converge.
+    const float tolerance = 0.001f;
+
+    float rotationDiff = fabs(startAng.z - targetAng.z);
+    float sidewaySlideDiff = fabs(eyeOffset.x - m_vecNextViewOffset.x);
+    float forwardSlideDiff = fabs(eyeOffset.y - m_vecNextViewOffset.y);
+
+    bool wantRotationLerp = (rotationDiff > tolerance);
+    bool wantSlideLerp = (sidewaySlideDiff > tolerance) || (forwardSlideDiff > tolerance);
+
+    ////////////////////////////////////////////
+    // Lerp & assign the new eye pos & angles //
+    ////////////////////////////////////////////
+
+    // We can skip this if we're within tolerance
+    if (wantRotationLerp || wantSlideLerp)
     {
-        if ((player->m_nButtons & IN_LEAN_LEFT) && (player->m_nButtons & IN_LEAN_RIGHT))
-        {
-            m_leanPosTargetOffset = (player->m_nButtons & IN_DUCK) ? VEC_DUCK_VIEW : VEC_VIEW;
-        }
-        else
-        {
-            VectorYawRotate(viewDelta, player->GetLocalAngles().y, m_leanPosTargetOffset);
-        }
-    }
-    else
-    {
-        m_leanPosTargetOffset = (player->m_nButtons & IN_DUCK) ? VEC_DUCK_VIEW : VEC_VIEW;
-    }
-
-    const float tolerance = 0.001;
-
-    float angDrift = fabs(eyeAngles.z - angOffset.z);
-    float posDrift_X = fabs(viewOffset.x - m_leanPosTargetOffset.x);
-    float posDrift_Y = fabs(viewOffset.y - m_leanPosTargetOffset.y);
-
-    bool wantAngLerp = (angDrift > tolerance);
-    bool wantPosLerp = (posDrift_X > tolerance) || (posDrift_Y > tolerance);
-
-#if(0)
-    DevMsg("wantAng: %i wantPos: %i\n",
-        (int)wantAngLerp, (int)wantAngLerp);
-    
-    DevMsg("Z comparison: %f -- %f\n", eyeAngles.z, angOffset.z);
-    DevMsg("xyz comp: %f %f %f -- %f %f %f\n",
-        viewOffset.x, viewOffset.y, viewOffset.z,
-        m_leanPosTargetOffset.x, m_leanPosTargetOffset.y, m_leanPosTargetOffset.z);
-#endif
-
-    if (wantAngLerp || wantPosLerp)
-    {
-        const float angLerp = (leaningIn ?
-            (neo_lean_roll_lerp_scale.GetFloat()) : (neo_lean_roll_lerp_scale.GetFloat() * 1.5));
+        float rotationLerp =
+            (leaningIn ? (neo_lean_roll_lerp_scale.GetFloat()) : (neo_lean_roll_lerp_scale.GetFloat() * 1.5));
         
-        const float posLerp = (leaningIn ?
-            (neo_lean_yaw_lerp_scale.GetFloat()) : (neo_lean_yaw_lerp_scale.GetFloat() * 1.5));
+        float slideLerp =
+            (leaningIn ? (neo_lean_yaw_lerp_scale.GetFloat()) : (neo_lean_yaw_lerp_scale.GetFloat() * 1.5));
 
-        NeoVmInterpolateAngles(eyeAngles, angOffset, m_angLeanAngle, angLerp);
-        VectorLerp(viewOffset, m_leanPosTargetOffset, posLerp, m_vecLeanDolly);
+        // Interpolate eye angles
+        // NEO FIXME (Rain): This lerps at different rates based on ping.
+        // This bug doesn't happen with viewpos lerping.
+        NeoVmInterpolateAngles(startAng, targetAng, m_angNextViewAngles, rotationLerp);
 
-        float angDrift = fabs(m_angLeanAngle.z - angOffset.z);
-        float posDrift_X = fabs(viewOffset.x - m_leanPosTargetOffset.x);
-        float posDrift_Y = fabs(viewOffset.y - m_leanPosTargetOffset.y);
+        // Interpolate eye position offset
+        VectorLerp(player->GetViewOffset(), eyeOffset, slideLerp, m_vecNextViewOffset);
 
-        if (angDrift <= tolerance)
+        // See if we've reached the tolerance, and snap to target if so.
+        // This prevents our view from drifting due to float inaccuracy.
+        if (fabs(m_angNextViewAngles.z - targetAng.z) <= tolerance)
         {
-            m_angLeanAngle.z = angOffset.z;
-        }
-        if (posDrift_X <= tolerance || posDrift_Y <= tolerance)
-        {
-            m_vecLeanDolly.x = m_leanPosTargetOffset.x;
-            m_vecLeanDolly.y = m_leanPosTargetOffset.y;
+            m_angNextViewAngles.z = targetAng.z;
         }
 
 #ifdef CLIENT_DLL
@@ -200,16 +177,16 @@ void CNEOPredictedViewModel::CalcLean(CNEO_Player *player/*, float lastThink*/)
 #endif
         {
             // This provides us with lag compensated out values.
-            CalcViewModelLag(m_vecLeanDolly, m_angLeanAngle, eyeAngles);
+            CalcViewModelLag(m_vecNextViewOffset, m_angNextViewAngles, startAng);
         }
 
 #ifdef CLIENT_DLL
-        // NOTE: we must sample mouse (input->ExtraMouseSample) before calling this,
-        // otherwise we risk network view jitter when user turns their
-        // view and applies the lean roll simultaneously!
-        engine->SetViewAngles(m_angLeanAngle);
+        // NOTE: we must sample mouse input (input->ExtraMouseSample)
+        // before calling this, otherwise we risk network view jitter
+        // if the user turns their view and applies lean simultaneously!
+        engine->SetViewAngles(m_angNextViewAngles);
 #endif
-        player->SetViewOffset(m_vecLeanDolly);
+        player->SetViewOffset(m_vecNextViewOffset);
     }
 }
 

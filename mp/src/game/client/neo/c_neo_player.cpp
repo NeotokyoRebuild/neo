@@ -165,7 +165,7 @@ void C_NEO_Player::PreThink( void )
     CNEOPredictedViewModel *vm = (CNEOPredictedViewModel*)GetViewModel();
     if (vm)
     {
-        vm->CalcLean(this);  
+        vm->CalcLean(this);
     }
 }
 
