@@ -7,11 +7,10 @@
 #ifdef CLIENT_DLL
 #include "c_neo_player.h"
 #include "prediction.h"
-#include "ivieweffects.h"
 #include "iinput.h"
+#include "engine/ivdebugoverlay.h"
 #else
 #include "neo_player.h"
-#include "gameinterface.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -26,8 +25,9 @@ END_NETWORK_TABLE()
 
 CNEOPredictedViewModel::CNEOPredictedViewModel()
 {
-    m_vecLeanDolly = vec3_origin;
-    m_angLeanAngle = vec3_angle;
+    m_vecNextViewOffset = vec3_origin;
+
+    m_angNextViewAngles = vec3_angle;
 }
 
 CNEOPredictedViewModel::~CNEOPredictedViewModel()
@@ -37,6 +37,8 @@ CNEOPredictedViewModel::~CNEOPredictedViewModel()
 #endif
 }
 
+// Interpolate euler angles via quaternions to avoid gimbal lock.
+// This helper function is copied here from cdll_util, to have shared access.
 static inline void NeoVmInterpolateAngles(const QAngle& start,
     const QAngle& end, QAngle& output, float frac)
 {
@@ -55,24 +57,166 @@ static inline void NeoVmInterpolateAngles(const QAngle& start,
 	QuaternionAngles( result, output );
 }
 
-static inline void QNormalize(Quaternion &out)
+#ifdef CLIENT_DLL
+inline void DrawRenderToTextureDebugInfo( IClientRenderable* pRenderable,
+    const Vector& mins, const Vector& maxs, const Vector &rgbColor,
+    const char *message = "", const Vector &vecOrigin = vec3_origin)
 {
-    const double len = sqrt(
-        out.x * out.x +
-        out.y * out.y +
-        out.z * out.z +
-        out.w * out.w);
-    
-    out.x /= len;
-    out.y /= len;
-    out.z /= len;
-    out.w /= len;
-}
+	// Get the object's basis
+	Vector vec[3];
+	AngleVectors( pRenderable->GetRenderAngles(), &vec[0], &vec[1], &vec[2] );
+	vec[1] *= -1.0f;
 
-// Returns true if f1 and f2 are within the tolerance range of each other.
-static inline bool RoughlyEquals(const float &f1, const float &f2, const float &tolerance = 0.1f)
+	Vector vecSize;
+	VectorSubtract( maxs, mins, vecSize );
+
+	//Vector vecOrigin = pRenderable->GetRenderOrigin() + renderOffset;
+	Vector start, end, end2;
+
+	VectorMA( vecOrigin, mins.x, vec[0], start );
+	VectorMA( start, mins.y, vec[1], start );
+	VectorMA( start, mins.z, vec[2], start );
+
+	VectorMA( start, vecSize.x, vec[0], end );
+	VectorMA( end, vecSize.z, vec[2], end2 );
+	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 ); 
+	debugoverlay->AddLineOverlay( end2, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 ); 
+
+	VectorMA( start, vecSize.y, vec[1], end );
+	VectorMA( end, vecSize.z, vec[2], end2 );
+	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 ); 
+	debugoverlay->AddLineOverlay( end2, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 ); 
+
+	VectorMA( start, vecSize.z, vec[2], end );
+	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 );
+	
+	start = end;
+	VectorMA( start, vecSize.x, vec[0], end );
+	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 ); 
+
+	VectorMA( start, vecSize.y, vec[1], end );
+	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 ); 
+
+	VectorMA( end, vecSize.x, vec[0], start );
+	VectorMA( start, -vecSize.x, vec[0], end );
+	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 ); 
+
+	VectorMA( start, -vecSize.y, vec[1], end );
+	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 ); 
+
+	VectorMA( start, -vecSize.z, vec[2], end );
+	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 );
+
+	start = end;
+	VectorMA( start, -vecSize.x, vec[0], end );
+	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 ); 
+
+	VectorMA( start, -vecSize.y, vec[1], end );
+	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 ); 
+
+	C_BaseEntity *pEnt = pRenderable->GetIClientUnknown()->GetBaseEntity();
+    int lineOffset = V_stristr("end", message) ? 1 : 0;
+	if ( pEnt )
+	{
+		debugoverlay->AddTextOverlay( vecOrigin, lineOffset, "%s -- %d", message, pEnt->entindex() );
+	}
+	else
+	{
+		debugoverlay->AddTextOverlay( vecOrigin, lineOffset, "%s -- %X", message, (size_t)pRenderable );
+	}
+}
+#endif
+
+ConVar neo_lean_debug_draw_hull("neo_lean_debug_draw_hull", "0", FCVAR_CHEAT | FCVAR_REPLICATED);
+ConVar neo_lean_hullmins_offset_x("neo_lean_hullmins_offset_x", "10", FCVAR_CHEAT | FCVAR_REPLICATED);
+ConVar neo_lean_hullmins_offset_y("neo_lean_hullmins_offset_y", "2", FCVAR_CHEAT | FCVAR_REPLICATED);
+ConVar neo_lean_hullmins_offset_z("neo_lean_hullmins_offset_z", "40", FCVAR_CHEAT | FCVAR_REPLICATED);
+ConVar neo_lean_hullmaxs_offset_x("neo_lean_hullmaxs_offset_x", "-10", FCVAR_CHEAT | FCVAR_REPLICATED);
+ConVar neo_lean_hullmaxs_offset_y("neo_lean_hullmaxs_offset_y", "-2", FCVAR_CHEAT | FCVAR_REPLICATED);
+ConVar neo_lean_hullmaxs_offset_z("neo_lean_hullmaxs_offset_z", "-1", FCVAR_CHEAT | FCVAR_REPLICATED);
+static inline bool IsThereRoomForLeanSlide(CNEO_Player *player,
+    const Vector &targetViewOffset, bool &outStartInSolid)
 {
-    return fabs(f1 - f2) < tolerance;
+    //DevMsg("Targetviewoffset: %f %f %f\n", targetViewOffset[0], targetViewOffset[1], targetViewOffset[2]);
+    const Vector startViewPos = player->GetAbsOrigin();
+    const Vector endViewPos = startViewPos + Vector(
+        targetViewOffset.x,
+        targetViewOffset.y,
+        0);
+
+    // We can only lean through stuff that isn't solid for us
+    CTraceFilterNoNPCsOrPlayer filter(player, COLLISION_GROUP_PLAYER_MOVEMENT);
+
+    Vector hullMins = (player->m_nButtons & IN_DUCK) ?
+        NEORules()->GetViewVectors()->m_vDuckHullMin :
+        NEORules()->GetViewVectors()->m_vHullMin;
+    
+    Vector hullMaxs = (player->m_nButtons & IN_DUCK) ?
+        NEORules()->GetViewVectors()->m_vDuckHullMax :
+        NEORules()->GetViewVectors()->m_vHullMax;
+    
+    float multiplier;
+    if (NEORules()->GetViewVectors()->m_vHullMax.z == 0)
+    {
+        Assert(false);
+        multiplier = 1;
+    }
+    else
+    {
+        multiplier = player->m_nButtons & IN_DUCK ?
+            NEORules()->GetViewVectors()->m_vDuckHullMax.z / NEORules()->GetViewVectors()->m_vHullMax.z
+            : 1;
+    }
+
+    hullMins += Vector(
+        neo_lean_hullmins_offset_x.GetFloat() * multiplier,
+        neo_lean_hullmins_offset_y.GetFloat() * multiplier,
+        neo_lean_hullmins_offset_z.GetFloat() * multiplier);
+    hullMaxs += Vector(
+        neo_lean_hullmaxs_offset_x.GetFloat() * multiplier,
+        neo_lean_hullmaxs_offset_y.GetFloat() * multiplier,
+        neo_lean_hullmaxs_offset_z.GetFloat() * multiplier);
+
+    Ray_t ray;
+    ray.Init(startViewPos, endViewPos, hullMins, hullMaxs);
+    
+    trace_t trace;
+    enginetrace->TraceRay(ray, player->PhysicsSolidMaskForEntity(),
+        &filter, &trace);
+
+    if (trace.startsolid)
+    {
+        outStartInSolid = true;
+        return false;
+    }
+
+    const float targetLen = startViewPos.AsVector2D().
+        DistTo(endViewPos.AsVector2D());
+    
+    const float traceLen = trace.startpos.AsVector2D().
+        DistTo(trace.endpos.AsVector2D());
+
+    const float tolerance = 0.01f;
+    const float delta = fabs(traceLen - targetLen);
+    const bool weHaveRoom = (delta < tolerance);
+
+#ifdef CLIENT_DLL
+    if (neo_lean_debug_draw_hull.GetBool())
+    {
+        const Vector colorBlue(0, 0, 255), colorGreen(0, 255, 0), colorRed(255, 0, 0);
+        DrawRenderToTextureDebugInfo(player, hullMins, hullMaxs, colorBlue, "startLeanPos", startViewPos);
+        DrawRenderToTextureDebugInfo(player, hullMins, hullMaxs, (weHaveRoom ? colorGreen : colorRed), "endLeanPos", endViewPos);
+#if(0)
+        if (!weHaveRoom)
+        {
+            DevMsg("We didn't have room to lean; delta: %f tol: %f\n",
+                delta, tolerance);
+        }
+#endif
+    }
+#endif
+
+    return weHaveRoom;
 }
 
 static ConVar neo_lean_yaw_lerp_scale("neo_lean_yaw_lerp_scale", "0.075", FCVAR_REPLICATED | FCVAR_CHEAT, "How fast to lerp viewoffset yaw into full lean position.");
@@ -81,25 +225,22 @@ static ConVar neo_lean_yaw_peek_amount("neo_lean_yaw_peek_amount", "32.0", FCVAR
 // Engine code starts to fight back at angles beyond 50, so we cap the max value there.
 static ConVar neo_lean_angle("neo_lean_angle", "33.0", FCVAR_REPLICATED | FCVAR_CHEAT, "Angle of a full lean.", true, 0.0, true, 50.0);
 
-// NEO FIXME (Rain): we may gimbal lock!
-void CNEOPredictedViewModel::CalcLean(CNEO_Player *player/*, float lastThink*/)
+void CNEOPredictedViewModel::CalcLean(CNEO_Player *player)
 {
 #ifdef CLIENT_DLL
-    // We will touch view angles, so we have to resample here
-    // to avoid disturbing user's mouse input.
-    // This should also handle controller input.
+    // We will touch view angles, so we have to resample
+    // here to avoid disturbing user's mouse look input.
+    // This should also handle controller look input.
     input->ExtraMouseSample(gpGlobals->absoluteframetime, 1);
 #endif
 
-    static Vector m_leanPosTargetOffset;
-    const Vector viewOffset = player->GetViewOffset();
 
-    QAngle eyeAngles = player->LocalEyeAngles();
-    QAngle angOffset = eyeAngles;
+    //////////////////////////////////
+    // Handle player lean key input //
+    //////////////////////////////////
 
-    Vector viewDelta(0.0f, viewOffset.y, viewOffset.z);
-
-    bool leaningIn = false;
+    bool leaningIn;
+    float leanRotation, leanSideways;
 
     // If we're actively leaning
     if (player->m_nButtons & IN_LEAN_LEFT)
@@ -108,91 +249,122 @@ void CNEOPredictedViewModel::CalcLean(CNEO_Player *player/*, float lastThink*/)
         if (player->m_nButtons & IN_LEAN_RIGHT)
         {
             leaningIn = false;
-            angOffset.z = 0;
+            leanRotation = 0;
+            leanSideways = 0;
         }
         // Leaning exclusively left
         else
         {
             leaningIn = true;
-            angOffset.z = -neo_lean_angle.GetFloat();
-
-            viewDelta.y = neo_lean_yaw_peek_amount.GetFloat();
+            leanRotation = -neo_lean_angle.GetFloat();
+            leanSideways = neo_lean_yaw_peek_amount.GetFloat();
         }
     }
     // Leaning exclusively right
     else if (player->m_nButtons & IN_LEAN_RIGHT)
     {
         leaningIn = true;
-        angOffset.z = neo_lean_angle.GetFloat();
-
-        viewDelta.y = -neo_lean_yaw_peek_amount.GetFloat();
+        leanRotation = neo_lean_angle.GetFloat();
+        leanSideways = -neo_lean_yaw_peek_amount.GetFloat();
     }
     // Not leaning at all
     else
     {
         leaningIn = false;
-        angOffset.z = 0;
+        leanRotation = 0;
+        leanSideways = 0;
     }
 
-    // Same deal as above, but with view "dolly" pos
-    if ((player->m_nButtons & IN_LEAN_LEFT) || (player->m_nButtons & IN_LEAN_RIGHT))
+
+    //////////////////////////////
+    // Get target lean rotation //
+    //////////////////////////////
+
+    QAngle startAng = player->LocalEyeAngles();
+    QAngle targetAng(startAng.x, startAng.y, leanRotation);
+
+
+    /////////////////////////
+    // Get target lean yaw //
+    /////////////////////////
+
+    const float verticalOffset = (player->m_nButtons & IN_DUCK) ? VEC_DUCK_VIEW.z : VEC_VIEW.z;
+    Vector eyeOffset(0, leanSideways, verticalOffset);
+    VectorYawRotate(eyeOffset, player->GetLocalAngles().y, eyeOffset);
+
+
+    /////////////////////////////////////////////////
+    // Calculate lerp values for the next position //
+    /////////////////////////////////////////////////
+
+    // We allow this much lerp inaccuracy, and then snap to target location.
+    // This prevents slight inaccuracy in final camera roll as we converge.
+    const float tolerance = 0.001f;
+
+    float rotationDiff = fabs(startAng.z - targetAng.z);
+    float sidewaySlideDiff = fabs(eyeOffset.x - m_vecNextViewOffset.x);
+    float forwardSlideDiff = fabs(eyeOffset.y - m_vecNextViewOffset.y);
+
+    bool wantRotationLerp = (rotationDiff > tolerance);
+    bool wantSlideLerp = (sidewaySlideDiff > tolerance) || (forwardSlideDiff > tolerance);
+
+    ////////////////////////////////////////////
+    // Lerp & assign the new eye pos & angles //
+    ////////////////////////////////////////////
+
+    // We can skip this if we're within tolerance
+    if (wantRotationLerp || wantSlideLerp)
     {
-        if ((player->m_nButtons & IN_LEAN_LEFT) && (player->m_nButtons & IN_LEAN_RIGHT))
-        {
-            m_leanPosTargetOffset = (player->m_nButtons & IN_DUCK) ? VEC_DUCK_VIEW : VEC_VIEW;
-        }
-        else
-        {
-            VectorYawRotate(viewDelta, player->GetLocalAngles().y, m_leanPosTargetOffset);
-        }
-    }
-    else
-    {
-        m_leanPosTargetOffset = (player->m_nButtons & IN_DUCK) ? VEC_DUCK_VIEW : VEC_VIEW;
-    }
-
-    const float tolerance = 0.001;
-
-    float angDrift = fabs(eyeAngles.z - angOffset.z);
-    float posDrift_X = fabs(viewOffset.x - m_leanPosTargetOffset.x);
-    float posDrift_Y = fabs(viewOffset.y - m_leanPosTargetOffset.y);
-
-    bool wantAngLerp = (angDrift > tolerance);
-    bool wantPosLerp = (posDrift_X > tolerance) || (posDrift_Y > tolerance);
-
-#if(0)
-    DevMsg("wantAng: %i wantPos: %i\n",
-        (int)wantAngLerp, (int)wantAngLerp);
-    
-    DevMsg("Z comparison: %f -- %f\n", eyeAngles.z, angOffset.z);
-    DevMsg("xyz comp: %f %f %f -- %f %f %f\n",
-        viewOffset.x, viewOffset.y, viewOffset.z,
-        m_leanPosTargetOffset.x, m_leanPosTargetOffset.y, m_leanPosTargetOffset.z);
-#endif
-
-    if (wantAngLerp || wantPosLerp)
-    {
-        const float angLerp = (leaningIn ?
-            (neo_lean_roll_lerp_scale.GetFloat()) : (neo_lean_roll_lerp_scale.GetFloat() * 1.5));
+        float rotationLerp =
+            (leaningIn ? (neo_lean_roll_lerp_scale.GetFloat()) : (neo_lean_roll_lerp_scale.GetFloat() * 1.5));
         
-        const float posLerp = (leaningIn ?
-            (neo_lean_yaw_lerp_scale.GetFloat()) : (neo_lean_yaw_lerp_scale.GetFloat() * 1.5));
+        float slideLerp =
+            (leaningIn ? (neo_lean_yaw_lerp_scale.GetFloat()) : (neo_lean_yaw_lerp_scale.GetFloat() * 1.5));
 
-        NeoVmInterpolateAngles(eyeAngles, angOffset, m_angLeanAngle, angLerp);
-        VectorLerp(viewOffset, m_leanPosTargetOffset, posLerp, m_vecLeanDolly);
+        // Interpolate eye angles
+        // NEO FIXME (Rain): This lerps at different rates based on ping.
+        // This bug doesn't happen with viewpos lerping.
+        NeoVmInterpolateAngles(startAng, targetAng, m_angNextViewAngles, rotationLerp);
 
-        float angDrift = fabs(m_angLeanAngle.z - angOffset.z);
-        float posDrift_X = fabs(viewOffset.x - m_leanPosTargetOffset.x);
-        float posDrift_Y = fabs(viewOffset.y - m_leanPosTargetOffset.y);
+        // Interpolate eye position offset
+        VectorLerp(player->GetViewOffset(), eyeOffset, slideLerp, m_vecNextViewOffset);
 
-        if (angDrift <= tolerance)
+        bool startInSolid = false;
+        if (!IsThereRoomForLeanSlide(player, m_vecNextViewOffset, startInSolid))
         {
-            m_angLeanAngle.z = angOffset.z;
+            // Always allow un-lean
+            if (leaningIn)
+            {
+                // Zero the lean intent if we're clipping.
+                //
+                // NEO HACK/FIXME (Rain): Instead of doing a boolean lean trace,
+                // we should see how many units of clearance we've got, and use that.
+                // Current method will sometimes be too late to prevent view clipping,
+                // and will lerp jitter on half-leans that collide.
+                player->m_nButtons &= ~IN_LEAN_LEFT;
+                player->m_nButtons &= ~IN_LEAN_RIGHT;
+
+                if (startAng.z == 0 && eyeOffset.x == 0 && eyeOffset.y == 0)
+                {
+                    return;
+                }
+
+                targetAng.z = 0;
+                NeoVmInterpolateAngles(startAng, targetAng, m_angNextViewAngles,
+                    neo_lean_roll_lerp_scale.GetFloat() * 1.5);
+                
+                eyeOffset.x = 0;
+                eyeOffset.y = 0;
+                VectorLerp(player->GetViewOffset(), eyeOffset,
+                    neo_lean_yaw_lerp_scale.GetFloat() * 1.5, m_vecNextViewOffset);
+            }
         }
-        if (posDrift_X <= tolerance || posDrift_Y <= tolerance)
+
+        // See if we've reached the tolerance, and snap to target if so.
+        // This prevents our view from drifting due to float inaccuracy.
+        if (fabs(m_angNextViewAngles.z - targetAng.z) <= tolerance)
         {
-            m_vecLeanDolly.x = m_leanPosTargetOffset.x;
-            m_vecLeanDolly.y = m_leanPosTargetOffset.y;
+            m_angNextViewAngles.z = targetAng.z;
         }
 
 #ifdef CLIENT_DLL
@@ -200,16 +372,16 @@ void CNEOPredictedViewModel::CalcLean(CNEO_Player *player/*, float lastThink*/)
 #endif
         {
             // This provides us with lag compensated out values.
-            CalcViewModelLag(m_vecLeanDolly, m_angLeanAngle, eyeAngles);
+            CalcViewModelLag(m_vecNextViewOffset, m_angNextViewAngles, startAng);
         }
 
 #ifdef CLIENT_DLL
-        // NOTE: we must sample mouse (input->ExtraMouseSample) before calling this,
-        // otherwise we risk network view jitter when user turns their
-        // view and applies the lean roll simultaneously!
-        engine->SetViewAngles(m_angLeanAngle);
+        // NOTE: we must sample mouse input (input->ExtraMouseSample)
+        // before calling this, otherwise we risk network view jitter
+        // if the user turns their view and applies lean simultaneously!
+        engine->SetViewAngles(m_angNextViewAngles);
 #endif
-        player->SetViewOffset(m_vecLeanDolly);
+        player->SetViewOffset(m_vecNextViewOffset);
     }
 }
 

@@ -38,12 +38,9 @@ public:
 #endif
 
 private:
-    Vector m_vecLeanDolly;
-    QAngle m_angLeanAngle;
+    Vector m_vecNextViewOffset;
 
-#ifdef CLIENT_DLL
-    float m_flLastLeanChangeTime;
-#endif
+    QAngle m_angNextViewAngles;
 };
 
 #endif // NEO_PREDICTED_VIEWMODEL_H
