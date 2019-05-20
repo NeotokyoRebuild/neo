@@ -2,11 +2,13 @@
 #include "neo_predicted_viewmodel.h"
 
 #include "in_buttons.h"
+#include "neo_gamerules.h"
 
 #ifdef CLIENT_DLL
 #include "c_neo_player.h"
 #include "prediction.h"
 #include "iinput.h"
+#include "engine/ivdebugoverlay.h"
 #else
 #include "neo_player.h"
 #endif
@@ -53,6 +55,168 @@ static inline void NeoVmInterpolateAngles(const QAngle& start,
 
 	// Convert to euler
 	QuaternionAngles( result, output );
+}
+
+#ifdef CLIENT_DLL
+inline void DrawRenderToTextureDebugInfo( IClientRenderable* pRenderable,
+    const Vector& mins, const Vector& maxs, const Vector &rgbColor,
+    const char *message = "", const Vector &vecOrigin = vec3_origin)
+{
+	// Get the object's basis
+	Vector vec[3];
+	AngleVectors( pRenderable->GetRenderAngles(), &vec[0], &vec[1], &vec[2] );
+	vec[1] *= -1.0f;
+
+	Vector vecSize;
+	VectorSubtract( maxs, mins, vecSize );
+
+	//Vector vecOrigin = pRenderable->GetRenderOrigin() + renderOffset;
+	Vector start, end, end2;
+
+	VectorMA( vecOrigin, mins.x, vec[0], start );
+	VectorMA( start, mins.y, vec[1], start );
+	VectorMA( start, mins.z, vec[2], start );
+
+	VectorMA( start, vecSize.x, vec[0], end );
+	VectorMA( end, vecSize.z, vec[2], end2 );
+	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 ); 
+	debugoverlay->AddLineOverlay( end2, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 ); 
+
+	VectorMA( start, vecSize.y, vec[1], end );
+	VectorMA( end, vecSize.z, vec[2], end2 );
+	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 ); 
+	debugoverlay->AddLineOverlay( end2, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 ); 
+
+	VectorMA( start, vecSize.z, vec[2], end );
+	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 );
+	
+	start = end;
+	VectorMA( start, vecSize.x, vec[0], end );
+	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 ); 
+
+	VectorMA( start, vecSize.y, vec[1], end );
+	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 ); 
+
+	VectorMA( end, vecSize.x, vec[0], start );
+	VectorMA( start, -vecSize.x, vec[0], end );
+	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 ); 
+
+	VectorMA( start, -vecSize.y, vec[1], end );
+	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 ); 
+
+	VectorMA( start, -vecSize.z, vec[2], end );
+	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 );
+
+	start = end;
+	VectorMA( start, -vecSize.x, vec[0], end );
+	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 ); 
+
+	VectorMA( start, -vecSize.y, vec[1], end );
+	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 ); 
+
+	C_BaseEntity *pEnt = pRenderable->GetIClientUnknown()->GetBaseEntity();
+    int lineOffset = V_stristr("end", message) ? 1 : 0;
+	if ( pEnt )
+	{
+		debugoverlay->AddTextOverlay( vecOrigin, lineOffset, "%s -- %d", message, pEnt->entindex() );
+	}
+	else
+	{
+		debugoverlay->AddTextOverlay( vecOrigin, lineOffset, "%s -- %X", message, (size_t)pRenderable );
+	}
+}
+#endif
+
+ConVar neo_lean_debug_draw_hull("neo_lean_debug_draw_hull", "0", FCVAR_CHEAT | FCVAR_REPLICATED);
+ConVar neo_lean_hullmins_offset_x("neo_lean_hullmins_offset_x", "10", FCVAR_CHEAT | FCVAR_REPLICATED);
+ConVar neo_lean_hullmins_offset_y("neo_lean_hullmins_offset_y", "2", FCVAR_CHEAT | FCVAR_REPLICATED);
+ConVar neo_lean_hullmins_offset_z("neo_lean_hullmins_offset_z", "40", FCVAR_CHEAT | FCVAR_REPLICATED);
+ConVar neo_lean_hullmaxs_offset_x("neo_lean_hullmaxs_offset_x", "-10", FCVAR_CHEAT | FCVAR_REPLICATED);
+ConVar neo_lean_hullmaxs_offset_y("neo_lean_hullmaxs_offset_y", "-2", FCVAR_CHEAT | FCVAR_REPLICATED);
+ConVar neo_lean_hullmaxs_offset_z("neo_lean_hullmaxs_offset_z", "-1", FCVAR_CHEAT | FCVAR_REPLICATED);
+static inline bool IsThereRoomForLeanSlide(CNEO_Player *player,
+    const Vector &targetViewOffset, bool &outStartInSolid)
+{
+    //DevMsg("Targetviewoffset: %f %f %f\n", targetViewOffset[0], targetViewOffset[1], targetViewOffset[2]);
+    const Vector startViewPos = player->GetAbsOrigin();
+    const Vector endViewPos = startViewPos + Vector(
+        targetViewOffset.x,
+        targetViewOffset.y,
+        0);
+
+    // We can only lean through stuff that isn't solid for us
+    CTraceFilterNoNPCsOrPlayer filter(player, COLLISION_GROUP_PLAYER_MOVEMENT);
+
+    Vector hullMins = (player->m_nButtons & IN_DUCK) ?
+        NEORules()->GetViewVectors()->m_vDuckHullMin :
+        NEORules()->GetViewVectors()->m_vHullMin;
+    
+    Vector hullMaxs = (player->m_nButtons & IN_DUCK) ?
+        NEORules()->GetViewVectors()->m_vDuckHullMax :
+        NEORules()->GetViewVectors()->m_vHullMax;
+    
+    float multiplier;
+    if (NEORules()->GetViewVectors()->m_vHullMax.z == 0)
+    {
+        Assert(false);
+        multiplier = 1;
+    }
+    else
+    {
+        multiplier = player->m_nButtons & IN_DUCK ?
+            NEORules()->GetViewVectors()->m_vDuckHullMax.z / NEORules()->GetViewVectors()->m_vHullMax.z
+            : 1;
+    }
+
+    hullMins += Vector(
+        neo_lean_hullmins_offset_x.GetFloat() * multiplier,
+        neo_lean_hullmins_offset_y.GetFloat() * multiplier,
+        neo_lean_hullmins_offset_z.GetFloat() * multiplier);
+    hullMaxs += Vector(
+        neo_lean_hullmaxs_offset_x.GetFloat() * multiplier,
+        neo_lean_hullmaxs_offset_y.GetFloat() * multiplier,
+        neo_lean_hullmaxs_offset_z.GetFloat() * multiplier);
+
+    Ray_t ray;
+    ray.Init(startViewPos, endViewPos, hullMins, hullMaxs);
+    
+    trace_t trace;
+    enginetrace->TraceRay(ray, player->PhysicsSolidMaskForEntity(),
+        &filter, &trace);
+
+    if (trace.startsolid)
+    {
+        outStartInSolid = true;
+        return false;
+    }
+
+    const float targetLen = startViewPos.AsVector2D().
+        DistTo(endViewPos.AsVector2D());
+    
+    const float traceLen = trace.startpos.AsVector2D().
+        DistTo(trace.endpos.AsVector2D());
+
+    const float tolerance = 0.01f;
+    const float delta = fabs(traceLen - targetLen);
+    const bool weHaveRoom = (delta < tolerance);
+
+#ifdef CLIENT_DLL
+    if (neo_lean_debug_draw_hull.GetBool())
+    {
+        const Vector colorBlue(0, 0, 255), colorGreen(0, 255, 0), colorRed(255, 0, 0);
+        DrawRenderToTextureDebugInfo(player, hullMins, hullMaxs, colorBlue, "startLeanPos", startViewPos);
+        DrawRenderToTextureDebugInfo(player, hullMins, hullMaxs, (weHaveRoom ? colorGreen : colorRed), "endLeanPos", endViewPos);
+#if(0)
+        if (!weHaveRoom)
+        {
+            DevMsg("We didn't have room to lean; delta: %f tol: %f\n",
+                delta, tolerance);
+        }
+#endif
+    }
+#endif
+
+    return weHaveRoom;
 }
 
 static ConVar neo_lean_yaw_lerp_scale("neo_lean_yaw_lerp_scale", "0.075", FCVAR_REPLICATED | FCVAR_CHEAT, "How fast to lerp viewoffset yaw into full lean position.");
@@ -164,6 +328,37 @@ void CNEOPredictedViewModel::CalcLean(CNEO_Player *player)
 
         // Interpolate eye position offset
         VectorLerp(player->GetViewOffset(), eyeOffset, slideLerp, m_vecNextViewOffset);
+
+        bool startInSolid = false;
+        if (!IsThereRoomForLeanSlide(player, m_vecNextViewOffset, startInSolid))
+        {
+            // Always allow un-lean
+            if (leaningIn)
+            {
+                // Zero the lean intent if we're clipping.
+                //
+                // NEO HACK/FIXME (Rain): Instead of doing a boolean lean trace,
+                // we should see how many units of clearance we've got, and use that.
+                // Current method will sometimes be too late to prevent view clipping,
+                // and will lerp jitter on half-leans that collide.
+                player->m_nButtons &= ~IN_LEAN_LEFT;
+                player->m_nButtons &= ~IN_LEAN_RIGHT;
+
+                if (startAng.z == 0 && eyeOffset.x == 0 && eyeOffset.y == 0)
+                {
+                    return;
+                }
+
+                targetAng.z = 0;
+                NeoVmInterpolateAngles(startAng, targetAng, m_angNextViewAngles,
+                    neo_lean_roll_lerp_scale.GetFloat() * 1.5);
+                
+                eyeOffset.x = 0;
+                eyeOffset.y = 0;
+                VectorLerp(player->GetViewOffset(), eyeOffset,
+                    neo_lean_yaw_lerp_scale.GetFloat() * 1.5, m_vecNextViewOffset);
+            }
+        }
 
         // See if we've reached the tolerance, and snap to target if so.
         // This prevents our view from drifting due to float inaccuracy.
