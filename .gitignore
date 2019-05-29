@@ -26,6 +26,11 @@ ipch
 *.idb
 *.vcxproj
 *.sln
+*.vcxproj.filters
+*.vcxproj.vpc_crc
+*.vpc.sentinel
+Degub
+Release
 
 # OSX/Linux build products
 *.mak
@@ -38,6 +43,8 @@ obj*/
 # Specific Source build products
 bin
 *.project
+*.lib
+*.fxc
 
 client.pdb
 client.dll
