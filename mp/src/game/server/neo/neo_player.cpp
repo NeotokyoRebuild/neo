@@ -131,7 +131,7 @@ void CNEO_Player::Weapon_AimToggle( CBaseCombatWeapon *pWep )
         return;
     }
 
-    bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR);
+	bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR) == HIDEHUD_CROSSHAIR;
     Weapon_SetZoom(showCrosshair);
 }
 

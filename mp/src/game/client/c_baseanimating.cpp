@@ -911,8 +911,8 @@ void C_BaseAnimating::RemoveBaseAnimatingInterpolatedVars()
 }
 
 /*
- From Ken: Lock() and Unlock() are render frame only, it’s just so the mdlcache
- doesn’t toss the memory when it reshuffles the data, or at least used to. I
+ From Ken: Lock() and Unlock() are render frame only, it's just so the mdlcache
+ doesn't toss the memory when it reshuffles the data, or at least used to. I
  don't have any idea if mdlcache even does that anymore, but at one point it would
  happily throw away the animation data if you ran out of memory on the
  consoles. Jay adds: Ken is correct and the pointer should be valid until the end

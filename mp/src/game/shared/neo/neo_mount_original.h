@@ -135,7 +135,7 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *g_pFullFileSystem)
 #endif
 			
 			FilesystemMountRetval_t mountStatus =
-				g_pFullFileSystem->MountSteamContent(-neoAppId);
+				g_pFullFileSystem->MountSteamContent(-(int)neoAppId);
 			if (mountStatus == FILESYSTEM_MOUNT_OK)
 			{
 #ifdef CLIENT_DLL
