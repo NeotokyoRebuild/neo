@@ -60,7 +60,7 @@ static void Usage( void )
 	fprintf( stderr, "-quiet   : don't print anything out, don't pause for input\n" );
 	fprintf( stderr, "-nopause : don't pause for input\n" );
 	fprintf( stderr, "-encrypt : encrypt files with given key\n" );
-	fprintf( stderr, "-decrypt : decypt files with given key\n" );
+	fprintf( stderr, "-decrypt : decrypt files with given key\n" );
 	fprintf( stderr, "-newext  : new output file extension\n" );
 	Pause();
 	exit( -1 );
