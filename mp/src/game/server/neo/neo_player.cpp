@@ -3,7 +3,7 @@
 #include "neo_player.h"
 #include "globalstate.h"
 #include "game.h"
-#include "gamerules.h"
+#include "neo_gamerules.h"
 #include "hl2mp_player_shared.h"
 #include "neo_predicted_viewmodel.h"
 #include "in_buttons.h"
@@ -498,4 +498,45 @@ void CNEO_Player::StopObserverMode()
 bool CNEO_Player::CanHearAndReadChatFrom( CBasePlayer *pPlayer )
 {
     return BaseClass::CanHearAndReadChatFrom(pPlayer);
+}
+
+void CNEO_Player::PickDefaultSpawnTeam(void)
+{
+	if (!GetTeamNumber())
+	{
+		if (!NEORules()->IsTeamplay())
+		{
+			if (!GetModelPtr())
+			{
+				SetPlayerTeamModel();
+
+				ChangeTeam(TEAM_UNASSIGNED);
+			}
+		}
+		else
+		{
+			CTeam *pJinrai = g_Teams[TEAM_JINRAI];
+			CTeam *pNSF = g_Teams[TEAM_NSF];
+
+			if (!pJinrai || !pNSF)
+			{
+				ChangeTeam(random->RandomInt(TEAM_JINRAI, TEAM_NSF));
+			}
+			else
+			{
+				if (pJinrai->GetNumPlayers() > pNSF->GetNumPlayers())
+				{
+					ChangeTeam(TEAM_NSF);
+				}
+				else if (pNSF->GetNumPlayers() > pJinrai->GetNumPlayers())
+				{
+					ChangeTeam(TEAM_JINRAI);
+				}
+				else
+				{
+					ChangeTeam(random->RandomInt(TEAM_JINRAI, TEAM_NSF));
+				}
+			}
+		}
+	}
 }

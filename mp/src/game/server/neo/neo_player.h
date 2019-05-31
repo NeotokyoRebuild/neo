@@ -54,6 +54,7 @@ public:
 	virtual CBaseEntity* EntSelectSpawnPoint( void );
 
 	void SetPlayerTeamModel( void );
+	virtual void PickDefaultSpawnTeam( void );
 
     virtual bool StartObserverMode( int mode );
 	virtual void StopObserverMode( void );

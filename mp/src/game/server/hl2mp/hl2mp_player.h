@@ -105,7 +105,13 @@ public:
 	
 	float GetNextModelChangeTime( void ) { return m_flNextModelChangeTime; }
 	float GetNextTeamChangeTime( void ) { return m_flNextTeamChangeTime; }
+
+#ifdef NEO
+	virtual void  PickDefaultSpawnTeam( void );
+#else
 	void  PickDefaultSpawnTeam( void );
+#endif
+
 	void  SetupPlayerSoundsByModel( const char *pModelName );
 	const char *GetPlayerModelSoundPrefix( void );
 	int	  GetPlayerModelType( void ) { return m_iPlayerSoundType;	}
