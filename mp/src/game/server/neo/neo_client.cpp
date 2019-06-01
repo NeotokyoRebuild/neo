@@ -20,12 +20,12 @@
 void Host_Say( edict_t *pEdict, bool teamonly );
 
 ConVar sv_motd_unload_on_dismissal( "sv_motd_unload_on_dismissal",
-    "0", 0,
-    "If enabled, the MOTD contents will be unloaded when the player \
+	"0", 0,
+	"If enabled, the MOTD contents will be unloaded when the player \
 closes the MOTD." );
 
 extern CBaseEntity*	FindPickerEntityClass( CBasePlayer *pPlayer,
-    char *classname );
+	char *classname );
 extern bool			g_fGameOver;
 
 void FinishClientPutInServer( CNEO_Player *pPlayer )
@@ -39,8 +39,8 @@ void FinishClientPutInServer( CNEO_Player *pPlayer )
 	// First parse the name and remove any %'s
 	for ( char *pApersand = sName; pApersand != NULL && *pApersand != 0; pApersand++ )
 	{
-        // This causes problems with Source engine, purge!
-        const int bellCharCode = 7;
+		// This causes problems with Source engine, purge!
+		const int bellCharCode = 7;
 
 		// Replace it with a space
 		if ( *pApersand == '%' || *pApersand == bellCharCode)

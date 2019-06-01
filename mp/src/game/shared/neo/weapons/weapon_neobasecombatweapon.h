@@ -5,35 +5,35 @@
 #endif
 
 #ifdef CLIENT_DLL
-    #include "c_neo_player.h"
+	#include "c_neo_player.h"
 #else
-    #include "neo_player.h"
+	#include "neo_player.h"
 #endif
 
 #include "weapon_hl2mpbasehlmpcombatweapon.h"
 
 #ifdef CLIENT_DLL
-    #define CNEOBaseCombatWeapon C_NEOBaseCombatWeapon
+	#define CNEOBaseCombatWeapon C_NEOBaseCombatWeapon
 #endif
 
 class CNEOBaseCombatWeapon : public CBaseHL2MPCombatWeapon
 {
 #ifndef CLIENT_DLL
-    DECLARE_DATADESC();
+	DECLARE_DATADESC();
 #endif
 
-    DECLARE_CLASS(CNEOBaseCombatWeapon, CBaseHL2MPCombatWeapon);
+	DECLARE_CLASS(CNEOBaseCombatWeapon, CBaseHL2MPCombatWeapon);
 
 public:
-    DECLARE_NETWORKCLASS();
-    DECLARE_PREDICTABLE();
+	DECLARE_NETWORKCLASS();
+	DECLARE_PREDICTABLE();
 
-    CNEOBaseCombatWeapon();
+	CNEOBaseCombatWeapon();
 
-    virtual bool Reload( void );
+	virtual bool Reload( void );
 
 private:
-    CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &);
+	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &);
 };
 
 #endif // WEAPON_NEO_BASECOMBATWEAPON_SHARED_H

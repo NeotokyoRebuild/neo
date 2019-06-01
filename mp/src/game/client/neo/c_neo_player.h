@@ -10,22 +10,22 @@ class C_NEO_Player;
 class C_NEO_Player : public C_HL2MP_Player
 {
 public:
-    DECLARE_CLASS(C_NEO_Player, C_HL2MP_Player);
+	DECLARE_CLASS(C_NEO_Player, C_HL2MP_Player);
 
-    DECLARE_CLIENTCLASS();
+	DECLARE_CLIENTCLASS();
 	DECLARE_PREDICTABLE();
 	DECLARE_INTERPOLATION();
 
-    C_NEO_Player();
-    virtual ~C_NEO_Player();
+	C_NEO_Player();
+	virtual ~C_NEO_Player();
 
-    static C_NEO_Player *GetLocalNEOPlayer();
+	static C_NEO_Player *GetLocalNEOPlayer();
 
-    virtual int DrawModel( int flags );
+	virtual int DrawModel( int flags );
 	virtual void AddEntity( void );
 
-    // Should this object cast shadows?
-    virtual ShadowType_t		ShadowCastType( void );
+	// Should this object cast shadows?
+	virtual ShadowType_t		ShadowCastType( void );
 
 	virtual C_BaseAnimating *BecomeRagdollOnClient();
 	virtual const QAngle& GetRenderAngles();
@@ -51,7 +51,7 @@ public:
 
 	virtual void ClientThink( void );
 	virtual void PreThink( void );
-    virtual void PostThink( void );
+	virtual void PostThink( void );
 	virtual void Spawn( void );
 
 	bool ShouldDrawHL2StyleQuickHud( void );
@@ -70,17 +70,17 @@ public:
 	int m_nCyborgClass;
 
 private:
-    C_NEO_Player(const C_NEO_Player &);
+	C_NEO_Player(const C_NEO_Player &);
 };
 
 inline C_NEO_Player *ToNEOPlayer(CBaseEntity *pEntity)
 {
-    if (!pEntity || !pEntity->IsPlayer())
-    {
-        return NULL;
-    }
+	if (!pEntity || !pEntity->IsPlayer())
+	{
+		return NULL;
+	}
 
-    return dynamic_cast<C_NEO_Player*>(pEntity);
+	return dynamic_cast<C_NEO_Player*>(pEntity);
 }
 
 extern ConVar cl_autoreload_when_empty;

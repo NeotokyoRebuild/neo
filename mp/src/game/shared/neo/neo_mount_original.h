@@ -32,12 +32,12 @@ static inline bool IsDir(const StatStruct& st) { return S_ISDIR(st.st_mode); }
 // These can be installed with SteamCMD, or copied over from a Windows install.
 inline bool FindOriginalNeotokyoAssets(IFileSystem *g_pFullFileSystem)
 {
-    if (!g_pFullFileSystem)
-    {
-        return false;
-    }
+	if (!g_pFullFileSystem)
+	{
+		return false;
+	}
 
-    const char *thisCaller = "FindOriginalNeotokyoAssets";
+	const char *thisCaller = "FindOriginalNeotokyoAssets";
 	char neoPath[MAX_PATH];
 	const AppId_t neoAppId = 47182;
 	const char *pathID = "GAME";
@@ -126,7 +126,7 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *g_pFullFileSystem)
 		g_pFullFileSystem->AddSearchPath(neoPath, pathID, addType);
 
 #ifdef CLIENT_DLL
-        DevMsg("%s: Added '%s' to path.\n", thisCaller, neoPath);
+		DevMsg("%s: Added '%s' to path.\n", thisCaller, neoPath);
 #endif
 		
 		FilesystemMountRetval_t mountStatus =

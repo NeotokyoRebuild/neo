@@ -15,21 +15,21 @@ class CNEO_Player;
 class CNEO_Player : public CHL2MP_Player
 {
 public:
-    DECLARE_CLASS(CNEO_Player, CHL2MP_Player);
+	DECLARE_CLASS(CNEO_Player, CHL2MP_Player);
 
-    CNEO_Player();
-    virtual ~CNEO_Player(void);
+	CNEO_Player();
+	virtual ~CNEO_Player(void);
 
-    static CNEO_Player *CreatePlayer(const char *className, edict_t *ed)
-    {
-        CNEO_Player::s_PlayerEdict = ed;
-        return (CNEO_Player*)CreateEntityByName(className);
-    }
+	static CNEO_Player *CreatePlayer(const char *className, edict_t *ed)
+	{
+		CNEO_Player::s_PlayerEdict = ed;
+		return (CNEO_Player*)CreateEntityByName(className);
+	}
 
-    DECLARE_SERVERCLASS();
-    DECLARE_DATADESC();
+	DECLARE_SERVERCLASS();
+	DECLARE_DATADESC();
 
-    virtual void Precache( void );
+	virtual void Precache( void );
 	virtual void Spawn( void );
 	virtual void PostThink( void );
 	virtual void PreThink( void );
@@ -56,10 +56,10 @@ public:
 	void SetPlayerTeamModel( void );
 	virtual void PickDefaultSpawnTeam( void );
 
-    virtual bool StartObserverMode( int mode );
+	virtual bool StartObserverMode( int mode );
 	virtual void StopObserverMode( void );
 
-    virtual bool	CanHearAndReadChatFrom( CBasePlayer *pPlayer );
+	virtual bool	CanHearAndReadChatFrom( CBasePlayer *pPlayer );
 
 	inline bool IsAllowedToDrop(CBaseCombatWeapon *pWep);
 	inline bool IsAllowedToZoom(CBaseCombatWeapon *pWep);
@@ -81,12 +81,12 @@ private:
 
 inline CNEO_Player *ToNEOPlayer(CBaseEntity *pEntity)
 {
-    if (!pEntity || !pEntity->IsPlayer())
-    {
-        return NULL;
-    }
+	if (!pEntity || !pEntity->IsPlayer())
+	{
+		return NULL;
+	}
 
-    return dynamic_cast<CNEO_Player*>(pEntity);
+	return dynamic_cast<CNEO_Player*>(pEntity);
 }
 
 #endif // NEO_PLAYER_H
