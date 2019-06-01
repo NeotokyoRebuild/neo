@@ -675,7 +675,7 @@ inline bool ClientWantsAutoReload(CBaseCombatCharacter *pCharacter = NULL)
 	{
 		return false;
 	}
-	return (bool)atoi(engine->GetClientConVarValue(
+	return 1 == atoi(engine->GetClientConVarValue(
 		engine->IndexOfEdict(pCharacter->edict()),
 		"cl_autoreload_when_empty"));
 #endif

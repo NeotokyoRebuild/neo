@@ -1143,7 +1143,13 @@ static inline void UpdateBgm(ConVar *volCvar)
 		return;
 	}
 
+#ifdef LINUX
 	const char *bgmFile = "ui/gamestartup1.mp3";
+#elif defined(_WIN32)
+	const char *bgmFile = "ui\\gamestartup1.mp3";
+#else
+#error Unimplemented!
+#endif
 
 	CUtlVector<SndInfo_t> sounds;
 	enginesound->GetActiveSounds(sounds);

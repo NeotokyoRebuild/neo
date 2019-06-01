@@ -25,30 +25,23 @@ static inline bool IsDir(const StatStruct& st) { return S_ISDIR(st.st_mode); }
 
 // Purpose: Find and mount files for the original Steam release of Neotokyo.
 //
-// On Windows, this should work if user has Neotokyo installed on Steam.
+// On Windows, we assume to find the root "NeotokyoSource" at Steam install dir path.
+// This can be overridden with -neopath for supporting multiple Steam library locations.
 //
 // On Linux, we assume to find the root "NeotokyoSource" at hardcoded path.
 // These can be installed with SteamCMD, or copied over from a Windows install.
 inline bool FindOriginalNeotokyoAssets(IFileSystem *g_pFullFileSystem)
 {
-    if (!g_pFullFileSystem)
-    {
-        return false;
-    }
-
-    const char *thisCaller = "FindOriginalNeotokyoAssets";
-	char neoPath[MAX_PATH * 2];
-	const AppId_t neoAppId = 47182;
-	const char *pathID = "GAME";
-	const SearchPathAdd_t addType = PATH_ADD_TO_HEAD;
-
-	ISteamApps *apps = SteamClient()->GetISteamApps(
-		GetHSteamUser(), GetHSteamPipe(), STEAMAPPS_INTERFACE_VERSION);
-
-	if (!apps)
+	if (!g_pFullFileSystem)
 	{
 		return false;
 	}
+
+	const char *thisCaller = "FindOriginalNeotokyoAssets";
+	char neoPath[MAX_PATH];
+	const AppId_t neoAppId = 47182;
+	const char *pathID = "GAME";
+	const SearchPathAdd_t addType = PATH_ADD_TO_HEAD;
 
 	bool originalNtPathOk = false;
 #ifdef LINUX
@@ -88,7 +81,14 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *g_pFullFileSystem)
 	originalNtPathOk = ( Stat(neoPath, &file_stat) == 0
 		&& IsDir(file_stat) );
 #else // If Windows
-	originalNtPathOk = apps->BIsAppInstalled(neoAppId);
+	char neoWindowsDefaultPath[MAX_PATH];
+	Q_strncpy(neoWindowsDefaultPath, SteamAPI_GetSteamInstallPath(), sizeof(neoWindowsDefaultPath));
+	V_AppendSlash(neoWindowsDefaultPath, sizeof(neoWindowsDefaultPath));
+	V_strcat(neoWindowsDefaultPath, "steamapps\\common\\NEOTOKYO\\NeotokyoSource", sizeof(neoWindowsDefaultPath));
+
+	Q_strncpy(neoPath, CommandLine()->ParmValue("-neopath", neoWindowsDefaultPath), sizeof(neoPath));
+
+	originalNtPathOk = g_pFullFileSystem->IsDirectory(neoPath);
 #endif
 
 	if (originalNtPathOk)
@@ -123,34 +123,23 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *g_pFullFileSystem)
 			return false;
 		}
 #else // If Windows
-		int pathLen = apps->GetAppInstallDir(neoAppId, neoPath, sizeof(neoPath));
-		if (pathLen > 0)
-		{
-			V_AppendSlash(neoPath, sizeof(neoPath));
-			V_strncat(neoPath, "NeotokyoSource", sizeof(neoPath));
-			g_pFullFileSystem->AddSearchPath(neoPath, pathID, addType);
+		g_pFullFileSystem->AddSearchPath(neoPath, pathID, addType);
 
 #ifdef CLIENT_DLL
-            DevMsg("%s: Added '%s' to path.\n", thisCaller, neoPath);
+		DevMsg("%s: Added '%s' to path.\n", thisCaller, neoPath);
 #endif
-			
-			FilesystemMountRetval_t mountStatus =
-				g_pFullFileSystem->MountSteamContent(-neoAppId);
-			if (mountStatus == FILESYSTEM_MOUNT_OK)
-			{
+		
+		FilesystemMountRetval_t mountStatus =
+			g_pFullFileSystem->MountSteamContent(-(int)neoAppId);
+		if (mountStatus == FILESYSTEM_MOUNT_OK)
+		{
 #ifdef CLIENT_DLL
-				Msg("Neotokyo AppID (%i) mount OK.\n", neoAppId);
+			Msg("Neotokyo AppID (%i) mount OK.\n", neoAppId);
 #endif
-			}
-			else
-			{
-				Warning("%s: Failed to mount Neotokyo AppID (%i)\n", thisCaller, neoAppId);
-				return false;
-			}
 		}
 		else
 		{
-			Warning("%s: Failed to parse original Neotokyo files location\n", thisCaller);
+			Warning("%s: Failed to mount Neotokyo AppID (%i)\n", thisCaller, neoAppId);
 			return false;
 		}
 #endif
@@ -159,10 +148,13 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *g_pFullFileSystem)
 	{
 #ifdef LINUX
 		Warning("%s: Original Neotokyo installation was not found. \
-Please use SteamCMD to download the Neotokyo (Windows) contents to path: '%s'\n", thisCaller, neoHardcodedLinuxAssetPath);
+Please use SteamCMD to download the Neotokyo (Windows) contents to path: '%s'\n",
+	thisCaller, neoHardcodedLinuxAssetPath);
 #else
-		Warning("%s: Original Neotokyo installation was not found. \
-Please install Neotokyo on Steam for this mod to work.\n", thisCaller);
+		Warning("%s: Original Neotokyo installation was not found (looked at path: '%s'). \
+Please install Neotokyo on Steam for this mod to work. If your Neotokyo path \
+differs from Steam install path, use the -neopath launch argument to specify your \
+NeotokyoSource root folder install location.\n", thisCaller, neoPath);
 #endif
 		return false;
 	}

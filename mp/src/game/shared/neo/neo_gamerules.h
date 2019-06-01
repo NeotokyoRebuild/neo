@@ -11,7 +11,7 @@
 #include "shareddefs.h"
 
 #ifndef CLIENT_DLL
-    #include "neo_player.h"
+	#include "neo_player.h"
 #endif
 
 enum
@@ -34,15 +34,15 @@ enum
 class CNEOGameRulesProxy : public CHL2MPGameRulesProxy
 {
 public:
-    DECLARE_CLASS( CNEOGameRulesProxy, CHL2MPGameRulesProxy );
-    DECLARE_NETWORKCLASS();
+	DECLARE_CLASS( CNEOGameRulesProxy, CHL2MPGameRulesProxy );
+	DECLARE_NETWORKCLASS();
 };
 
 class NEOViewVectors : public HL2MPViewVectors
 {
 public:
 	NEOViewVectors( 
-        // Same as HL2MP, passed to parent ctor
+		// Same as HL2MP, passed to parent ctor
 		Vector vView,
 		Vector vHullMin,
 		Vector vHullMax,
@@ -53,73 +53,50 @@ public:
 		Vector vObsHullMax,
 		Vector vDeadViewHeight,
 		Vector vCrouchTraceMin,
-		Vector vCrouchTraceMax,
-        
-        // NEO specific
-        Vector vViewLeanLeft,
-        Vector vViewLeanRight,
-        Vector vViewAngLeanLeft,
-        Vector vViewAngLeanRight,
-        Vector vHullLeanLeftMin,
-        Vector vHullLeanLeftMax,
-        Vector vHullLeanRightMin,
-        Vector vHullLeanRightMax ) :
+		Vector vCrouchTraceMax) :
 			HL2MPViewVectors( 
-                vView,
-                vHullMin,
-                vHullMax,
-                vDuckHullMin,
-                vDuckHullMax,
-                vDuckView,
-                vObsHullMin,
-                vObsHullMax,
-                vDeadViewHeight,
-                vCrouchTraceMin,
-                vCrouchTraceMax )
+				vView,
+				vHullMin,
+				vHullMax,
+				vDuckHullMin,
+				vDuckHullMax,
+				vDuckView,
+				vObsHullMin,
+				vObsHullMax,
+				vDeadViewHeight,
+				vCrouchTraceMin,
+				vCrouchTraceMax )
 	{
-        m_vViewLeanLeft = vViewLeanLeft;
-        m_vViewLeanRight = vViewLeanRight;
-
-        m_vViewAngLeanLeft = vViewAngLeanLeft;
-        m_vViewAngLeanRight = vViewAngLeanRight;
-
-        m_vHullLeanLeftMin = vHullLeanLeftMin;
-        m_vHullLeanLeftMax = vHullLeanLeftMax;
-        m_vHullLeanRightMin = vHullLeanRightMin;
-        m_vHullLeanRightMax = vHullLeanRightMax;
 	}
-
-    Vector m_vViewLeanLeft, m_vViewLeanRight;
-    Vector m_vViewAngLeanLeft, m_vViewAngLeanRight;
-    Vector m_vHullLeanLeftMin, m_vHullLeanLeftMax;
-    Vector m_vHullLeanRightMin, m_vHullLeanRightMax;
 };
 
 class CNEORules : public CHL2MPRules
 {
 public:
-    DECLARE_CLASS( CNEORules, CHL2MPRules );
+	DECLARE_CLASS( CNEORules, CHL2MPRules );
 
 // This makes datatables able to access our private vars.
 #ifdef CLIENT_DLL
-    DECLARE_CLIENTCLASS_NOBASE();
+	DECLARE_CLIENTCLASS_NOBASE();
 #else
-    DECLARE_SERVERCLASS_NOBASE();
+	DECLARE_SERVERCLASS_NOBASE();
 #endif
 
-    CNEORules();
-    virtual ~CNEORules();
+	CNEORules();
+	virtual ~CNEORules();
 
-    virtual bool ShouldCollide( int collisionGroup0, int collisionGroup1 );
+	virtual bool ShouldCollide( int collisionGroup0, int collisionGroup1 );
 
-    virtual void Think( void );
-    virtual void CreateStandardEntities( void );
-    virtual int WeaponShouldRespawn( CBaseCombatWeapon *pWeapon );
-    virtual const char *GetGameDescription( void );
-    virtual const CViewVectors* GetViewVectors() const;
-    const NEOViewVectors* GetNEOViewVectors() const;
+	virtual void Think( void );
+	virtual void CreateStandardEntities( void );
+	virtual int WeaponShouldRespawn( CBaseCombatWeapon *pWeapon );
+	virtual const char *GetGameDescription( void );
+	virtual const CViewVectors* GetViewVectors() const;
+	const NEOViewVectors* GetNEOViewVectors() const;
 
-    float GetMapRemainingTime();
+	virtual void ClientSettingsChanged(CBasePlayer *pPlayer);
+
+	float GetMapRemainingTime();
 	void CleanUpMap();
 	void CheckRestartGame();
 	void RestartGame();
@@ -127,7 +104,7 @@ public:
 
 inline CNEORules *NEORules()
 {
-    return static_cast<CNEORules*>(g_pGameRules);
+	return static_cast<CNEORules*>(g_pGameRules);
 }
 
 #endif // NEO_GAMERULES_H

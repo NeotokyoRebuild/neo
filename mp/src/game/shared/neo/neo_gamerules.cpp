@@ -2,10 +2,11 @@
 #include "neo_gamerules.h"
 
 #ifdef CLIENT_DLL
-    #include "c_neo_player.h"
+	#include "c_neo_player.h"
 #else
-    #include "neo_player.h"
-    #include "team.h"
+	#include "neo_player.h"
+	#include "team.h"
+	#include "neo_model_manager.h"
 #endif
 
 REGISTER_GAMERULES_CLASS( CNEORules );
@@ -13,9 +14,9 @@ REGISTER_GAMERULES_CLASS( CNEORules );
 BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 // NEO TODO (Rain): NEO specific game modes var (CTG/TDM/...)
 #ifdef CLIENT_DLL
-    //RecvPropInt( RECVINFO( m_iGameMode ) ),
+	//RecvPropInt( RECVINFO( m_iGameMode ) ),
 #else
-    //SendPropInt( SENDINFO( m_iGameMode ) ),
+	//SendPropInt( SENDINFO( m_iGameMode ) ),
 #endif
 END_NETWORK_TABLE()
 
@@ -24,7 +25,7 @@ IMPLEMENT_NETWORKCLASS_ALIASED( NEOGameRulesProxy, DT_NEOGameRulesProxy );
 
 // NEO TODO (Rain): set accurately
 static NEOViewVectors g_NEOViewVectors(
-    Vector( 0, 0, 64 ),       //VEC_VIEW (m_vView) 
+	Vector( 0, 0, 64 ),	   //VEC_VIEW (m_vView) 
 							  
 	Vector(-16, -16, 0 ),	  //VEC_HULL_MIN (m_vHullMin)
 	Vector( 16,  16,  72 ),	  //VEC_HULL_MAX (m_vHullMax)
@@ -39,75 +40,63 @@ static NEOViewVectors g_NEOViewVectors(
 	Vector( 0, 0, 14 ),		  //VEC_DEAD_VIEWHEIGHT (m_vDeadViewHeight)
 
 	Vector(-16, -16, 0 ),	  //VEC_CROUCH_TRACE_MIN (m_vCrouchTraceMin)
-	Vector( 16,  16,  60 ),	  //VEC_CROUCH_TRACE_MAX (m_vCrouchTraceMax)
-
-    // NEO specific
-    Vector(-24, 0, 50), // vViewLeanLeft
-    Vector(24, 0, 50), // vViewLeanRight
-
-    Vector(-33, 0, 0), // vViewAngLeanLeft
-    Vector(33, 0, 0), // vViewAngLeanRight
-
-    Vector(-24, -16, 0), // vHullLeanLeftMin
-    Vector(16, 16, 58), // vHullLeanLeftMax
-    Vector(-16, -16, 0), // vHullLeanRightMin
-    Vector(24, 16, 58) // vHullLeanRightMax
+	Vector( 16,  16,  60 )	  //VEC_CROUCH_TRACE_MAX (m_vCrouchTraceMax)
 );
 
 #ifdef CLIENT_DLL
-    void RecvProxy_NEORules( const RecvProp *pProp, void **pOut,
-        void *pData, int objectID )
-    {
-        CNEORules *pRules = NEORules();
-        Assert( pRules );
-        *pOut = pRules;
-    }
+	void RecvProxy_NEORules( const RecvProp *pProp, void **pOut,
+		void *pData, int objectID )
+	{
+		CNEORules *pRules = NEORules();
+		Assert( pRules );
+		*pOut = pRules;
+	}
 
-    BEGIN_RECV_TABLE( CNEOGameRulesProxy, DT_NEOGameRulesProxy )
-        RecvPropDataTable( "neo_gamerules_data", 0, 0,
-            &REFERENCE_RECV_TABLE( DT_NEORules ),
-            RecvProxy_NEORules )
-    END_RECV_TABLE()
+	BEGIN_RECV_TABLE( CNEOGameRulesProxy, DT_NEOGameRulesProxy )
+		RecvPropDataTable( "neo_gamerules_data", 0, 0,
+			&REFERENCE_RECV_TABLE( DT_NEORules ),
+			RecvProxy_NEORules )
+	END_RECV_TABLE()
 #else
-    void *SendProxy_NEORules( const SendProp *pProp,
-        const void *pStructBase, const void *pData,
-        CSendProxyRecipients *pRecipients, int objectID )
-    {
-        CNEORules *pRules = NEORules();
-        Assert( pRules );
-        return pRules;
-    }
+	void *SendProxy_NEORules( const SendProp *pProp,
+		const void *pStructBase, const void *pData,
+		CSendProxyRecipients *pRecipients, int objectID )
+	{
+		CNEORules *pRules = NEORules();
+		Assert( pRules );
+		return pRules;
+	}
 
-    BEGIN_SEND_TABLE( CNEOGameRulesProxy, DT_NEOGameRulesProxy )
-        SendPropDataTable( "neo_gamerules_data", 0,
-            &REFERENCE_SEND_TABLE( DT_NEORules ),
-            SendProxy_NEORules )
-    END_SEND_TABLE()
+	BEGIN_SEND_TABLE( CNEOGameRulesProxy, DT_NEOGameRulesProxy )
+		SendPropDataTable( "neo_gamerules_data", 0,
+			&REFERENCE_SEND_TABLE( DT_NEORules ),
+			SendProxy_NEORules )
+	END_SEND_TABLE()
 #endif
 
 CNEORules::CNEORules()
 {
 #ifndef CLIENT_DLL
-    DevMsg("CNEORules serverside ctor\n");
-    
-    Q_strncpy(g_Teams[TEAM_JINRAI]->m_szTeamname.GetForModify(),
-        TEAM_STR_JINRAI, MAX_TEAM_NAME_LENGTH);
-    
-    Q_strncpy(g_Teams[TEAM_NSF]->m_szTeamname.GetForModify(),
-        TEAM_STR_NSF, MAX_TEAM_NAME_LENGTH);
-    
-    Msg("Server teams %s & %s\n",
-        g_Teams[TEAM_JINRAI]->GetName(), g_Teams[TEAM_NSF]->GetName());
-    
-    for (int i = 1; i <= gpGlobals->maxClients; i++)
-    {
-        CBasePlayer *player = UTIL_PlayerByIndex(i);
-        if (player)
-        {
-            g_Teams[TEAM_JINRAI]->UpdateClientData(player);
-            g_Teams[TEAM_NSF]->UpdateClientData(player);
-        }
-    }
+	DevMsg("CNEORules serverside ctor\n");
+	
+	Q_strncpy(g_Teams[TEAM_JINRAI]->m_szTeamname.GetForModify(),
+		TEAM_STR_JINRAI, MAX_TEAM_NAME_LENGTH);
+	
+	Q_strncpy(g_Teams[TEAM_NSF]->m_szTeamname.GetForModify(),
+		TEAM_STR_NSF, MAX_TEAM_NAME_LENGTH);
+	
+	Msg("Server teams %s & %s\n",
+		g_Teams[TEAM_JINRAI]->GetName(), g_Teams[TEAM_NSF]->GetName());
+	
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		CBasePlayer *player = UTIL_PlayerByIndex(i);
+		if (player)
+		{
+			g_Teams[TEAM_JINRAI]->UpdateClientData(player);
+			g_Teams[TEAM_NSF]->UpdateClientData(player);
+		}
+	}
 #endif
 }
 
@@ -118,58 +107,86 @@ CNEORules::~CNEORules()
 
 bool CNEORules::ShouldCollide(int collisionGroup0, int collisionGroup1)
 {
-    return BaseClass::ShouldCollide(collisionGroup0, collisionGroup1);
+	return BaseClass::ShouldCollide(collisionGroup0, collisionGroup1);
 }
 
 void CNEORules::Think(void)
 {
-    BaseClass::Think();
+	BaseClass::Think();
 }
 
 void CNEORules::CreateStandardEntities(void)
 {
-    BaseClass::CreateStandardEntities();
+	BaseClass::CreateStandardEntities();
 }
 
 int CNEORules::WeaponShouldRespawn(CBaseCombatWeapon *pWep)
 {
-    return BaseClass::WeaponShouldRespawn(pWep);
+	return BaseClass::WeaponShouldRespawn(pWep);
 }
 
 const char *CNEORules::GetGameDescription(void)
 {
-    //DevMsg("Querying CNEORules game description\n");
-    return BaseClass::GetGameDescription();
+	//DevMsg("Querying CNEORules game description\n");
+	return BaseClass::GetGameDescription();
 }
 
 const CViewVectors *CNEORules::GetViewVectors() const
 {
-    return &g_NEOViewVectors;
+	return &g_NEOViewVectors;
 }
 
 const NEOViewVectors* CNEORules::GetNEOViewVectors() const
 {
-    return &g_NEOViewVectors;
+	return &g_NEOViewVectors;
 }
 
 float CNEORules::GetMapRemainingTime()
 {
-    return BaseClass::GetMapRemainingTime();
+	return BaseClass::GetMapRemainingTime();
 }
 
 #ifndef CLIENT_DLL
 void CNEORules::CleanUpMap()
 {
-    BaseClass::CleanUpMap();
+	BaseClass::CleanUpMap();
 }
 
 void CNEORules::CheckRestartGame()
 {
-    BaseClass::CheckRestartGame();
+	BaseClass::CheckRestartGame();
 }
 
 void CNEORules::RestartGame()
 {
-    BaseClass::RestartGame();
+	BaseClass::RestartGame();
 }
 #endif
+
+void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
+{
+#ifndef CLIENT_DLL
+	CNEO_Player *pNEOPlayer = ToNEOPlayer(pPlayer);
+
+	if (!pNEOPlayer)
+	{
+		return;
+	}
+
+	CNEOModelManager *mm = CNEOModelManager::Instance();
+
+	const char *pCurrentModel = modelinfo->GetModelName(pNEOPlayer->GetModel());
+	const char *pTargetModel = mm->GetPlayerModel(
+		(NeoSkin)pNEOPlayer->m_nNeoSkin.Get(),
+		(NeoClass)pNEOPlayer->m_nCyborgClass.Get(),
+		pNEOPlayer->GetTeamNumber());
+
+	if (V_stricmp(pCurrentModel, pTargetModel))
+	{
+		pNEOPlayer->SetPlayerTeamModel();
+	}
+
+	// We're skipping calling the base CHL2MPRules method here
+	CTeamplayRules::ClientSettingsChanged(pPlayer);
+#endif
+}

@@ -29,6 +29,7 @@ public:
 	C_HL2MP_Player();
 #ifdef NEO
 	virtual ~C_HL2MP_Player( void );
+	friend class C_NEO_Player;
 #else
 	~C_HL2MP_Player( void );
 #endif

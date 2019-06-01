@@ -329,7 +329,11 @@ void CPlayerAnimState::ComputePoseParam_BodyPitch( CStudioHdr *pStudioHdr )
 	m_angRender[ PITCH ] = m_angRender[ ROLL ] = 0.0f;
 
 	// See if we have a blender for pitch
+#ifdef NEO
+	GetOuter()->SetPoseParameter(pStudioHdr, "body_pitch", flPitch);
+#else
 	GetOuter()->SetPoseParameter( pStudioHdr, "aim_pitch", flPitch );
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -389,8 +393,12 @@ void CPlayerAnimState::ComputePoseParam_BodyLookYaw( void )
 	m_angRender = absangles;
 	m_angRender[ PITCH ] = m_angRender[ ROLL ] = 0.0f;
 
-	// See if we even have a blender for pitch
+#ifdef NEO
+	int upper_body_yaw = GetOuter()->LookupPoseParameter( "body_yaw" );
+#else
 	int upper_body_yaw = GetOuter()->LookupPoseParameter( "aim_yaw" );
+#endif
+	// See if we even have a blender for yaw
 	if ( upper_body_yaw < 0 )
 	{
 		return;

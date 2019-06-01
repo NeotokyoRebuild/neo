@@ -27,7 +27,7 @@ END_PREDICTION_DATA()
 
 CNEOBaseCombatWeapon::CNEOBaseCombatWeapon( void )
 {
-
+	
 }
 
 #ifdef CLIENT_DLL
@@ -35,28 +35,28 @@ extern ConVar cl_autoreload_when_empty;
 #endif
 bool CNEOBaseCombatWeapon::Reload( void )
 {
-    CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
-    if (!pOwner)
-    {
-        return false;
-    }
+	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
+	if (!pOwner)
+	{
+		return false;
+	}
 
-    if (pOwner->m_afButtonPressed & IN_RELOAD)
-    {
-        return DefaultReload( GetMaxClip1(), GetMaxClip2(), ACT_VM_RELOAD );
-    }
+	if (pOwner->m_afButtonPressed & IN_RELOAD)
+	{
+		return DefaultReload( GetMaxClip1(), GetMaxClip2(), ACT_VM_RELOAD );
+	}
 
 #ifdef CLIENT_DLL
-    if (!ClientWantsAutoReload())
-    {
-        return false;
-    }
+	if (!ClientWantsAutoReload())
+	{
+		return false;
+	}
 #else
-    if (!ClientWantsAutoReload(pOwner))
-    {
-        return false;
-    }
+	if (!ClientWantsAutoReload(pOwner))
+	{
+		return false;
+	}
 #endif
 
-    return DefaultReload( GetMaxClip1(), GetMaxClip2(), ACT_VM_RELOAD );
+	return DefaultReload( GetMaxClip1(), GetMaxClip2(), ACT_VM_RELOAD );
 }

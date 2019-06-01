@@ -1,3 +1,4 @@
+#include "cbase.h"
 #include "weapon_tachi.h"
 
 // memdbgon must be the last include file in a .cpp file!!!

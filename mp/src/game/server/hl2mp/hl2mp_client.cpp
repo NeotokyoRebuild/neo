@@ -13,8 +13,6 @@
 
 */
 
-#ifndef NEO
-
 #include "cbase.h"
 #include "hl2mp_player.h"
 #include "hl2mp_gamerules.h"
@@ -32,6 +30,8 @@
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
+
+#ifndef NEO
 
 void Host_Say( edict_t *pEdict, bool teamonly );
 

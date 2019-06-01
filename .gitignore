@@ -26,6 +26,62 @@ ipch
 *.idb
 *.vcxproj
 *.sln
+*.vcxproj.filters
+*.vcxproj.vpc_crc
+*.vpc.sentinel
+Degub/
+Release/
+mp/src/fgdlib/Debug/
+mp/src/fgdlib/Release/
+mp/src/game/client/Debug_mod_hl2mp/
+mp/src/game/client/Release_mod_hl2mp/
+mp/src/game/server/Debug_mod_hl2mp/
+mp/src/game/server/Release_mod_hl2mp/
+mp/src/materialsystem/stdshaders/Debug_dx9_mod_hl2mp/
+mp/src/materialsystem/stdshaders/Release_dx9_mod_hl2mp/
+mp/src/mathlib/Debug/
+mp/src/mathlib/Release/
+mp/src/raytrace/Debug/
+mp/src/raytrace/Release/
+mp/src/tier1/Debug/
+mp/src/tier1/Release/
+mp/src/utils/captioncompiler/Debug/
+mp/src/utils/captioncompiler/Release/
+mp/src/utils/glview/Debug/
+mp/src/utils/glview/Release/
+mp/src/utils/height2normal/Debug/
+mp/src/utils/height2normal/Release/
+mp/src/utils/motionmapper/Debug/
+mp/src/utils/motionmapper/Release/
+mp/src/utils/phonemeextractor/Debug/
+mp/src/utils/phonemeextractor/Release/
+mp/src/utils/qc_eyes/Debug/
+mp/src/utils/qc_eyes/Release/
+mp/src/utils/serverplugin_sample/Debug/
+mp/src/utils/serverplugin_sample/Release/
+mp/src/utils/tgadiff/Debug/
+mp/src/utils/tgadiff/Release/
+mp/src/utils/vbsp/Debug/
+mp/src/utils/vbsp/Release/
+mp/src/utils/vice/Debug/
+mp/src/utils/vice/Release/
+mp/src/utils/vrad/Debug/
+mp/src/utils/vrad/Release/
+mp/src/utils/vrad_launcher/Debug/
+mp/src/utils/vrad_launcher/Release/
+mp/src/utils/vtf2tga/Debug/
+mp/src/utils/vtf2tga/Release/
+mp/src/utils/vtfdiff/Debug/
+mp/src/utils/vtfdiff/Release/
+mp/src/utils/vvis/Debug/
+mp/src/utils/vvis/Release/
+mp/src/utils/vvis_launcher/Debug/
+mp/src/utils/vvis_launcher/Release/
+mp/src/vgui2/vgui_controls/Debug/
+mp/src/vgui2/vgui_controls/Release/
+
+# Speech SDK API
+sapi51/
 
 # OSX/Linux build products
 *.mak
@@ -38,6 +94,8 @@ obj*/
 # Specific Source build products
 bin
 *.project
+*.lib
+*.fxc
 
 client.pdb
 client.dll

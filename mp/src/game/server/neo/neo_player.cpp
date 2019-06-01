@@ -3,9 +3,9 @@
 #include "neo_player.h"
 #include "globalstate.h"
 #include "game.h"
-#include "gamerules.h"
+#include "neo_gamerules.h"
 #include "hl2mp_player_shared.h"
-#include "predicted_viewmodel.h"
+#include "neo_predicted_viewmodel.h"
 #include "in_buttons.h"
 #include "neo_gamerules.h"
 #include "KeyValues.h"
@@ -22,6 +22,10 @@
 
 #include "neo_model_manager.h"
 
+#include "shareddefs.h"
+#include "inetchannelinfo.h"
+#include "eiface.h"
+
 void DropPrimedFragGrenade(CNEO_Player *pPlayer, CBaseCombatWeapon *pGrenade);
 
 LINK_ENTITY_TO_CLASS(player, CNEO_Player);
@@ -31,6 +35,8 @@ LINK_ENTITY_TO_CLASS(info_player_defender, CPointEntity);
 LINK_ENTITY_TO_CLASS(info_player_start, CPointEntity);*/
 
 IMPLEMENT_SERVERCLASS_ST(CNEO_Player, DT_NEO_Player)
+	SendPropInt(SENDINFO(m_nNeoSkin), 3),
+	SendPropInt(SENDINFO(m_nCyborgClass), 3),
 END_SEND_TABLE()
 
 BEGIN_DATADESC(CNEO_Player)
@@ -38,12 +44,18 @@ END_DATADESC()
 
 CNEO_Player::CNEO_Player()
 {
+	m_bInLeanLeft = false;
+	m_bInLeanRight = false;
 
+	m_leanPosTargetOffset = vec3_origin;
+
+	m_nNeoSkin = NEO_SKIN_FIRST;
+	m_nCyborgClass = NEO_CLASS_ASSAULT;
 }
 
 CNEO_Player::~CNEO_Player( void )
 {
-
+	
 }
 
 void CNEO_Player::Precache( void )
@@ -53,206 +65,128 @@ void CNEO_Player::Precache( void )
 
 void CNEO_Player::Spawn(void)
 {
-    BaseClass::Spawn();
+	BaseClass::Spawn();
 
-    ShowCrosshair(false);
-}
+	ShowCrosshair(false);
 
-static inline void QNormalize(Quaternion &out)
-{
-    const double len = sqrt(
-        out.x * out.x +
-        out.y * out.y +
-        out.z * out.z +
-        out.w * out.w);
-    
-    out.x /= len;
-    out.y /= len;
-    out.z /= len;
-    out.w /= len;
-}
+	m_leanPosTargetOffset = VEC_VIEW;
 
-inline void CNEO_Player::ProcessLean(const float lerpSpeed)
-{
-    // Get a framerate-independent lerp
-    const float lerpSpeedDefault = clamp(lerpSpeed * gpGlobals->frametime, 0, 1);
-    float lerpSpeedMod = lerpSpeedDefault;
-
-    Vector forward, right, up;
-    EyeVectors(&forward, &right, &up);
-
-    //DevMsg("Right: %f, %f, %f\n", right.x, right.y, right.z);
-
-    const double w = sqrt(forward.LengthSqr() * up.LengthSqr()) + forward.Dot(up);
-    Quaternion start(right.x, right.y, right.z, w);
-    QNormalize(start);
-
-    QAngle eyeAngles = EyeAngles();
-    QAngle offset = vec3_angle;
-
-    if ((m_nButtons & IN_LEAN_LEFT) || (m_nButtons & IN_LEAN_RIGHT))
-    {
-        right.x = (m_nButtons & IN_LEAN_LEFT) ?
-            ((CNEORules*)g_pGameRules)->GetNEOViewVectors()->m_vViewAngLeanLeft.x :
-            ((CNEORules*)g_pGameRules)->GetNEOViewVectors()->m_vViewAngLeanRight.x;
-
-        if (fabs(EyeAngles().z) > fabs(right.x))
-        {
-            return;
-        }
-
-        Quaternion end(right.x, right.y, right.z, w);
-        QNormalize(end);
-
-        QuaternionAngles(end, offset);
-    }
-    else
-    {
-        if (eyeAngles.z == 0)
-        {
-            return;
-        }
-
-        offset.z = -eyeAngles.z;
-        // HACK (Rain): we un-lerp slower for some reason, just boost the speed for now
-        lerpSpeedMod *= 10;
-    }
-    
-    SnapEyeAngles(Lerp(lerpSpeedMod, eyeAngles, eyeAngles + offset));
-
-    Vector tempForw;
-    AngleVectors(eyeAngles, &tempForw);
-
-    Vector viewDelta = GetViewOffset();
-
-    const float yawPeekAmount = 128.0f;
-    if (m_nButtons & IN_LEAN_LEFT)
-    {
-        viewDelta.y = yawPeekAmount;
-    }
-    else if (m_nButtons & IN_LEAN_RIGHT)
-    {
-        viewDelta.y = -yawPeekAmount;
-    }
-    else
-    {
-        viewDelta = VEC_VIEW;
-    }
-
-    VectorYawRotate(viewDelta, GetLocalAngles().y, viewDelta);
-
-    SetViewOffset(Lerp(lerpSpeedMod, GetViewOffset(), viewDelta));
-}
-
-void CNEO_Player::PostThink(void)
-{
-    BaseClass::PostThink();
-
-    CBaseCombatWeapon *pWep = GetActiveWeapon();
-
-    if (pWep)
-    {
-        static bool previouslyReloading = false;
-
-        if (pWep->m_bInReload)
-        {
-            if (!previouslyReloading)
-            {
-                Weapon_SetZoom(false);
-            }
-        }
-        else
-        {
-            if (m_afButtonReleased & IN_AIM)
-            {
-                Weapon_AimToggle(pWep);
-            }
-        }
-
-        previouslyReloading = pWep->m_bInReload;
-    }
-
-    ProcessLean();
-
-    if (m_afButtonPressed & IN_DROP)
-    {
-        Vector eyeForward;
-        EyeVectors(&eyeForward);
-        const float forwardOffset = 250.0f;
-        eyeForward *= forwardOffset;
-
-        Weapon_Drop(GetActiveWeapon(), NULL, &eyeForward);
-    }
+	SetTransmitState(FL_EDICT_ALWAYS);
 }
 
 void CNEO_Player::PreThink(void)
 {
-    BaseClass::PreThink();
+	BaseClass::PreThink();
+
+	CNEOPredictedViewModel *vm = (CNEOPredictedViewModel*)GetViewModel();
+	if (vm)
+	{
+		vm->CalcLean(this);
+	}
+}
+
+void CNEO_Player::PostThink(void)
+{
+	BaseClass::PostThink();
+
+	CBaseCombatWeapon *pWep = GetActiveWeapon();
+
+	if (pWep)
+	{
+		static bool previouslyReloading = false;
+
+		if (pWep->m_bInReload)
+		{
+			if (!previouslyReloading)
+			{
+				Weapon_SetZoom(false);
+			}
+		}
+		else
+		{
+			if (m_afButtonReleased & IN_AIM)
+			{
+				Weapon_AimToggle(pWep);
+			}
+		}
+
+		previouslyReloading = pWep->m_bInReload;
+	}
+
+	if (m_afButtonPressed & IN_DROP)
+	{
+		Vector eyeForward;
+		EyeVectors(&eyeForward);
+		const float forwardOffset = 250.0f;
+		eyeForward *= forwardOffset;
+
+		Weapon_Drop(GetActiveWeapon(), NULL, &eyeForward);
+	}
 }
 
 void CNEO_Player::PlayerDeathThink()
 {
-    BaseClass::PlayerDeathThink();
+	BaseClass::PlayerDeathThink();
 }
 
 void CNEO_Player::Weapon_AimToggle( CBaseCombatWeapon *pWep )
 {
-    if (!IsAllowedToZoom(pWep))
-    {
-        return;
-    }
+	if (!IsAllowedToZoom(pWep))
+	{
+		return;
+	}
 
-    bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR);
-    Weapon_SetZoom(showCrosshair);
+	bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR) == HIDEHUD_CROSSHAIR;
+	Weapon_SetZoom(showCrosshair);
 }
 
 inline void CNEO_Player::Weapon_SetZoom(bool bZoomIn)
 {
-    const float zoomSpeedSecs = 0.25f;
+	const float zoomSpeedSecs = 0.25f;
 
-    ShowCrosshair(bZoomIn);
-    
-    if (bZoomIn)
-    {
-        const int zoomAmount = 30;
-        SetFOV((CBaseEntity*)this, GetDefaultFOV() - zoomAmount, zoomSpeedSecs);
-    }
-    else
-    {
-        SetFOV((CBaseEntity*)this, GetDefaultFOV(), zoomSpeedSecs);
-    }
+	ShowCrosshair(bZoomIn);
+	
+	if (bZoomIn)
+	{
+		const int zoomAmount = 30;
+		SetFOV((CBaseEntity*)this, GetDefaultFOV() - zoomAmount, zoomSpeedSecs);
+	}
+	else
+	{
+		SetFOV((CBaseEntity*)this, GetDefaultFOV(), zoomSpeedSecs);
+	}
 }
 
 void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 {
-    int animDesired;
+	int animDesired;
 
 	float speed;
 
 	speed = GetAbsVelocity().Length2D();
 
-    if ( GetFlags() & ( FL_FROZEN | FL_ATCONTROLS ) )
+	if ( GetFlags() & ( FL_FROZEN | FL_ATCONTROLS ) )
 	{
 		speed = 0;
 		playerAnim = PLAYER_IDLE;
 	}
 
-    Activity idealActivity = ACT_IDLE;
+	Activity idealActivity = ACT_IDLE;
 
-    if ( playerAnim == PLAYER_JUMP )
-    {
-        idealActivity = ACT_HOP;
-    }
-    else if ( playerAnim == PLAYER_DIE )
-    {
-        if ( m_lifeState == LIFE_ALIVE )
-        {
-            return;
-        }
-    }
-    else if ( playerAnim == PLAYER_ATTACK1 )
-    {
-        if ( GetActivity( ) == ACT_HOVER	|| 
+	if ( playerAnim == PLAYER_JUMP )
+	{
+		idealActivity = ACT_HOP;
+	}
+	else if ( playerAnim == PLAYER_DIE )
+	{
+		if ( m_lifeState == LIFE_ALIVE )
+		{
+			return;
+		}
+	}
+	else if ( playerAnim == PLAYER_ATTACK1 )
+	{
+		if ( GetActivity( ) == ACT_HOVER	|| 
 			 GetActivity( ) == ACT_SWIM		||
 			 GetActivity( ) == ACT_HOP		||
 			 GetActivity( ) == ACT_LEAP		||
@@ -260,27 +194,27 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 		{
 			idealActivity = GetActivity( );
 		}
-        else
-        {
-            idealActivity = ACT_RANGE_ATTACK1;
-        }
-    }
-    else if ( playerAnim == PLAYER_RELOAD )
-    {
-        idealActivity = ACT_RELOAD;
-    }
-    else if ( playerAnim == PLAYER_IDLE || playerAnim == PLAYER_WALK )
-    {
-        // Still jumping
-        if ( !( GetFlags() & FL_ONGROUND ) && GetActivity( ) == ACT_HOP )
-        {
-            idealActivity = GetActivity();
-        }
-        else
-        {
-            if ( GetFlags() & FL_DUCKING )
-            {
-                if ( speed > 0 )
+		else
+		{
+			idealActivity = ACT_RANGE_ATTACK1;
+		}
+	}
+	else if ( playerAnim == PLAYER_RELOAD )
+	{
+		idealActivity = ACT_RELOAD;
+	}
+	else if ( playerAnim == PLAYER_IDLE || playerAnim == PLAYER_WALK )
+	{
+		// Still jumping
+		if ( !( GetFlags() & FL_ONGROUND ) && GetActivity( ) == ACT_HOP )
+		{
+			idealActivity = GetActivity();
+		}
+		else
+		{
+			if ( GetFlags() & FL_DUCKING )
+			{
+				if ( speed > 0 )
 				{
 					idealActivity = ACT_WALK_CROUCH;
 				}
@@ -288,8 +222,8 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 				{
 					idealActivity = ACT_CROUCHIDLE;
 				}
-            }
-            else
+			}
+			else
 			{
 				if ( speed > 0 )
 				{
@@ -302,133 +236,154 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 					idealActivity = ACT_IDLE;
 				}
 			}
-        }
-    }
+		}
+	}
 
-    SetActivity(idealActivity);
+	SetActivity(idealActivity);
 
-    animDesired = SelectWeightedSequence( Weapon_TranslateActivity ( idealActivity ) );
+	animDesired = SelectWeightedSequence( Weapon_TranslateActivity ( idealActivity ) );
 
-    if (animDesired == -1)
-    {
-        animDesired = SelectWeightedSequence( idealActivity );
+	if (animDesired == -1)
+	{
+		animDesired = SelectWeightedSequence( idealActivity );
 
-        if ( animDesired == -1 )
-        {
-            animDesired = 0;
-        }
-    }
+		if ( animDesired == -1 )
+		{
+			animDesired = 0;
+		}
+	}
 
-    // Already using the desired animation?
-    if ( GetSequence() == animDesired )
-        return;
-    
-    m_flPlaybackRate = 1.0;
-    ResetSequence( animDesired );
-    SetCycle( 0 );
+	// Already using the desired animation?
+	if ( GetSequence() == animDesired )
+		return;
+	
+	m_flPlaybackRate = 1.0;
+	ResetSequence( animDesired );
+	SetCycle( 0 );
 }
 
 bool CNEO_Player::HandleCommand_JoinTeam( int team )
 {
-    SetPlayerTeamModel();
+	SetPlayerTeamModel();
 
-    return BaseClass::HandleCommand_JoinTeam(team);
+	return BaseClass::HandleCommand_JoinTeam(team);
 }
 
 bool CNEO_Player::ClientCommand( const CCommand &args )
 {
-    return BaseClass::ClientCommand(args);
+	return BaseClass::ClientCommand(args);
 }
 
 void CNEO_Player::CreateViewModel( int index )
 {
-    BaseClass::CreateViewModel(index);
+	Assert( index >= 0 && index < MAX_VIEWMODELS );
+
+	if ( GetViewModel( index ) )
+	{
+		return;
+	}
+
+	CNEOPredictedViewModel *vm = ( CNEOPredictedViewModel * )CreateEntityByName( "neo_predicted_viewmodel" );
+	if ( vm )
+	{
+		vm->SetAbsOrigin( GetAbsOrigin() );
+		vm->SetOwner( this );
+		vm->SetIndex( index );
+		DispatchSpawn( vm );
+		vm->FollowEntity( this, false );
+		m_hViewModel.Set( index, vm );
+	}
+	else
+	{
+		Warning("CNEO_Player::CreateViewModel: Failed to create neo_predicted_viewmodel\n");
+		return;
+	}
 }
 
 bool CNEO_Player::BecomeRagdollOnClient( const Vector &force )
 {
-    return BaseClass::BecomeRagdollOnClient(force);
+	return BaseClass::BecomeRagdollOnClient(force);
 }
 
 void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 {
-    BaseClass::Event_Killed(info);
+	BaseClass::Event_Killed(info);
 }
 
 int CNEO_Player::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 {
-    return BaseClass::OnTakeDamage(inputInfo);
+	return BaseClass::OnTakeDamage(inputInfo);
 }
 
 bool CNEO_Player::WantsLagCompensationOnEntity( const CBasePlayer *pPlayer,
-    const CUserCmd *pCmd,
-    const CBitVec<MAX_EDICTS> *pEntityTransmitBits ) const
+	const CUserCmd *pCmd,
+	const CBitVec<MAX_EDICTS> *pEntityTransmitBits ) const
 {
-    return BaseClass::WantsLagCompensationOnEntity(pPlayer, pCmd,
-        pEntityTransmitBits);
+	return BaseClass::WantsLagCompensationOnEntity(pPlayer, pCmd,
+		pEntityTransmitBits);
 }
 
 void CNEO_Player::FireBullets ( const FireBulletsInfo_t &info )
 {
-    BaseClass::FireBullets(info);
+	BaseClass::FireBullets(info);
 }
 
 bool CNEO_Player::Weapon_Switch( CBaseCombatWeapon *pWeapon,
-    int viewmodelindex )
+	int viewmodelindex )
 {
-    ShowCrosshair(false);
+	ShowCrosshair(false);
 
-    return BaseClass::Weapon_Switch(pWeapon, viewmodelindex);
+	return BaseClass::Weapon_Switch(pWeapon, viewmodelindex);
 }
 
 bool CNEO_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 {
-    return BaseClass::BumpWeapon(pWeapon);
+	return BaseClass::BumpWeapon(pWeapon);
 }
 
 void CNEO_Player::ChangeTeam( int iTeam )
 {
-    BaseClass::ChangeTeam(iTeam);
+	BaseClass::ChangeTeam(iTeam);
 }
 
 void CNEO_Player::SetPlayerTeamModel( void )
 {
-    CNEOModelManager *modelManager = CNEOModelManager::Instance();
-    if (!modelManager)
-    {
-        Assert(false);
-        return;
-    }
+	CNEOModelManager *modelManager = CNEOModelManager::Instance();
+	if (!modelManager)
+	{
+		Assert(false);
+		return;
+	}
 
-    // Pick a random skin from random class.
-    // NEO TODO (Rain): pick the appropriate one
-    // based on player's class and skin selection.
-    const char *model = modelManager->GetPlayerModel(
-        (NeoSkin)RandomInt(0, 2),
-        (NeoClass)RandomInt(0, NEO_CLASS_ENUM_COUNT - 1),
-        GetTeamNumber());
+	// Pick a random skin from random class.
+	// NEO TODO (Rain): pick the appropriate one
+	// based on player's class and skin selection.
+	const char *model = modelManager->GetPlayerModel(
+		(NeoSkin)RandomInt(0, 2),
+		(NeoClass)RandomInt(0, NEO_CLASS_ENUM_COUNT - 1),
+		GetTeamNumber());
 
-    if (!*model)
-    {
-        Assert(false);
-        return;
-    }
+	if (!*model)
+	{
+		Assert(false);
+		return;
+	}
 
-    SetModel(model);
-    //DevMsg("Set model: %s\n", model);
-    //SetupPlayerSoundsByModel(model); // TODO
+	SetModel(model);
+	//DevMsg("Set model: %s\n", model);
+	//SetupPlayerSoundsByModel(model); // TODO
 }
 
 void CNEO_Player::PickupObject( CBaseEntity *pObject,
-    bool bLimitMassAndSize )
+	bool bLimitMassAndSize )
 {
-    BaseClass::PickupObject(pObject, bLimitMassAndSize);
+	BaseClass::PickupObject(pObject, bLimitMassAndSize);
 }
 
 void CNEO_Player::PlayStepSound( Vector &vecOrigin,
-    surfacedata_t *psurface, float fvol, bool force )
+	surfacedata_t *psurface, float fvol, bool force )
 {
-    BaseClass::PlayStepSound(vecOrigin, psurface, fvol, force);
+	BaseClass::PlayStepSound(vecOrigin, psurface, fvol, force);
 }
 
 // Is the player allowed to drop a weapon of this type?
@@ -436,116 +391,158 @@ void CNEO_Player::PlayStepSound( Vector &vecOrigin,
 // once they have been implemented.
 inline bool CNEO_Player::IsAllowedToDrop(CBaseCombatWeapon *pWep)
 {
-    if (!pWep)
-    {
-        return false;
-    }
+	if (!pWep)
+	{
+		return false;
+	}
 
-    const char *unallowedDrops[] = {
-        "weapon_frag",
-    };
+	const char *unallowedDrops[] = {
+		"weapon_frag",
+	};
 
-    CBaseCombatWeapon *pTest = NULL;
-    for (int i = 0; i < ARRAYSIZE(unallowedDrops); i++)
-    {
-        pTest = Weapon_OwnsThisType(unallowedDrops[i]);
-        if (pWep == pTest)
-        {
-            return false;
-        }
-    }
+	CBaseCombatWeapon *pTest = NULL;
+	for (int i = 0; i < ARRAYSIZE(unallowedDrops); i++)
+	{
+		pTest = Weapon_OwnsThisType(unallowedDrops[i]);
+		if (pWep == pTest)
+		{
+			return false;
+		}
+	}
 
-    return true;
+	return true;
 }
 
 // Is the player allowed to aim zoom with a weapon of this type?
 inline bool CNEO_Player::IsAllowedToZoom(CBaseCombatWeapon *pWep)
 {
-    if (!pWep)
-    {
-        return false;
-    }
+	if (!pWep)
+	{
+		return false;
+	}
 
-    const char *allowedAimZoom[] = {
-        "weapon_tachi",
-    };
+	const char *allowedAimZoom[] = {
+		"weapon_tachi",
+	};
 
-    CBaseCombatWeapon *pTest = NULL;
-    for (int i = 0; i < ARRAYSIZE(allowedAimZoom); i++)
-    {
-        pTest = Weapon_OwnsThisType(allowedAimZoom[i]);
-        if (pWep == pTest)
-        {
-            return true;
-        }
-    }
+	CBaseCombatWeapon *pTest = NULL;
+	for (int i = 0; i < ARRAYSIZE(allowedAimZoom); i++)
+	{
+		pTest = Weapon_OwnsThisType(allowedAimZoom[i]);
+		if (pWep == pTest)
+		{
+			return true;
+		}
+	}
 
-    return false;
+	return false;
 }
 
 void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
-    const Vector *pvecTarget, const Vector *pVelocity )
+	const Vector *pvecTarget, const Vector *pVelocity )
 {
-    if (!IsDead() && pWeapon)
-    {
-        if (!IsAllowedToDrop(pWeapon))
-        {
-            // NEO TODO (Rain): No need for server to tell
-            // client to play a sound effect, move this to client.
-            {
+	if (!IsDead() && pWeapon)
+	{
+		if (!IsAllowedToDrop(pWeapon))
+		{
+			// NEO TODO (Rain): No need for server to tell
+			// client to play a sound effect, move this to client.
+			{
 #if (0)
-                CRecipientFilter filter;
-                filter.AddRecipient(this);
+				CRecipientFilter filter;
+				filter.AddRecipient(this);
 
-                EmitSound_t sound;
-                sound.m_nChannel = CHAN_ITEM;
-                // NEO TODO (Rain): Find appropriate sound for denying drop.
-                // Possibly the original NT "can't +use" sound.
-                sound.m_pSoundName = "player/CPneutral.wav";
-                sound.m_SoundLevel = SNDLVL_30dB;
-                sound.m_flVolume = VOL_NORM;
+				EmitSound_t sound;
+				sound.m_nChannel = CHAN_ITEM;
+				// NEO TODO (Rain): Find appropriate sound for denying drop.
+				// Possibly the original NT "can't +use" sound.
+				sound.m_pSoundName = "player/CPneutral.wav";
+				sound.m_SoundLevel = SNDLVL_30dB;
+				sound.m_flVolume = VOL_NORM;
 
-                // NEO HACK/FIXME (Rain): This should get early precached
-                // as part of our regular sound scripts on this::Precache()
-                PrecacheScriptSound(sound.m_pSoundName);
+				// NEO HACK/FIXME (Rain): This should get early precached
+				// as part of our regular sound scripts on this::Precache()
+				PrecacheScriptSound(sound.m_pSoundName);
 
-                EmitSound(filter, edict()->m_EdictIndex, sound);
+				EmitSound(filter, edict()->m_EdictIndex, sound);
 #endif
-            }
+			}
 
-            return;
-        }
-    }
+			return;
+		}
+	}
 
-    BaseClass::Weapon_Drop(pWeapon, pvecTarget, pVelocity);
+	BaseClass::Weapon_Drop(pWeapon, pvecTarget, pVelocity);
 }
 
 void CNEO_Player::UpdateOnRemove( void )
 {
-    BaseClass::UpdateOnRemove();
+	BaseClass::UpdateOnRemove();
 }
 
 void CNEO_Player::DeathSound( const CTakeDamageInfo &info )
 {
-    BaseClass::DeathSound(info);
+	BaseClass::DeathSound(info);
 }
 
 CBaseEntity* CNEO_Player::EntSelectSpawnPoint( void )
 {
-    return BaseClass::EntSelectSpawnPoint();
+	return BaseClass::EntSelectSpawnPoint();
 }
 
 bool CNEO_Player::StartObserverMode(int mode)
 {
-    return BaseClass::StartObserverMode(mode);
+	return BaseClass::StartObserverMode(mode);
 }
 
 void CNEO_Player::StopObserverMode()
 {
-    BaseClass::StopObserverMode();
+	BaseClass::StopObserverMode();
 }
 
 bool CNEO_Player::CanHearAndReadChatFrom( CBasePlayer *pPlayer )
 {
-    return BaseClass::CanHearAndReadChatFrom(pPlayer);
+	return BaseClass::CanHearAndReadChatFrom(pPlayer);
+}
+
+void CNEO_Player::PickDefaultSpawnTeam(void)
+{
+	if (!GetTeamNumber())
+	{
+		if (!NEORules()->IsTeamplay())
+		{
+			ChangeTeam(TEAM_UNASSIGNED);
+		}
+		else
+		{
+			CTeam *pJinrai = g_Teams[TEAM_JINRAI];
+			CTeam *pNSF = g_Teams[TEAM_NSF];
+
+			if (!pJinrai || !pNSF)
+			{
+				ChangeTeam(random->RandomInt(TEAM_JINRAI, TEAM_NSF));
+			}
+			else
+			{
+				if (pJinrai->GetNumPlayers() > pNSF->GetNumPlayers())
+				{
+					ChangeTeam(TEAM_NSF);
+				}
+				else if (pNSF->GetNumPlayers() > pJinrai->GetNumPlayers())
+				{
+					ChangeTeam(TEAM_JINRAI);
+				}
+				else
+				{
+					ChangeTeam(random->RandomInt(TEAM_JINRAI, TEAM_NSF));
+				}
+			}
+
+		}
+
+		if (!GetModelPtr())
+		{
+			SetPlayerTeamModel();
+		}
+	}
 }
