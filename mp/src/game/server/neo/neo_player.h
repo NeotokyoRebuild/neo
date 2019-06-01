@@ -70,6 +70,10 @@ public:
 
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);
 
+public:
+	CNetworkVar(int, m_nNeoSkin);
+	CNetworkVar(int, m_nCyborgClass);
+
 private:
 	bool m_bInLeanLeft, m_bInLeanRight;
 	Vector m_leanPosTargetOffset;

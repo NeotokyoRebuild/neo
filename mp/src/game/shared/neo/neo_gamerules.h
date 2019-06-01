@@ -94,6 +94,8 @@ public:
     virtual const CViewVectors* GetViewVectors() const;
     const NEOViewVectors* GetNEOViewVectors() const;
 
+	virtual void ClientSettingsChanged(CBasePlayer *pPlayer);
+
     float GetMapRemainingTime();
 	void CleanUpMap();
 	void CheckRestartGame();

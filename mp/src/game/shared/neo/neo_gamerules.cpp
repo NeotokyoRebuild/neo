@@ -6,6 +6,7 @@
 #else
     #include "neo_player.h"
     #include "team.h"
+    #include "neo_model_manager.h"
 #endif
 
 REGISTER_GAMERULES_CLASS( CNEORules );
@@ -161,3 +162,31 @@ void CNEORules::RestartGame()
     BaseClass::RestartGame();
 }
 #endif
+
+void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
+{
+#ifndef CLIENT_DLL
+	CNEO_Player *pNEOPlayer = ToNEOPlayer(pPlayer);
+
+	if (!pNEOPlayer)
+	{
+		return;
+	}
+
+	CNEOModelManager *mm = CNEOModelManager::Instance();
+
+	const char *pCurrentModel = modelinfo->GetModelName(pNEOPlayer->GetModel());
+	const char *pTargetModel = mm->GetPlayerModel(
+		(NeoSkin)pNEOPlayer->m_nNeoSkin.Get(),
+		(NeoClass)pNEOPlayer->m_nCyborgClass.Get(),
+		pNEOPlayer->GetTeamNumber());
+
+	if (V_stricmp(pCurrentModel, pTargetModel))
+	{
+		pNEOPlayer->SetPlayerTeamModel();
+	}
+
+	// We're skipping calling the base CHL2MPRules method here
+	CTeamplayRules::ClientSettingsChanged(pPlayer);
+#endif
+}

@@ -65,6 +65,10 @@ public:
 		BaseClass::SetViewAngles(ang);
 	}
 
+public:
+	int m_nNeoSkin;
+	int m_nCyborgClass;
+
 private:
     C_NEO_Player(const C_NEO_Player &);
 };

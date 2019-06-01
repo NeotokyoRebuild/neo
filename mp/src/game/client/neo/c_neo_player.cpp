@@ -29,6 +29,8 @@
 LINK_ENTITY_TO_CLASS(player, C_NEO_Player);
 
 IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
+	RecvPropInt(RECVINFO(m_nNeoSkin)),
+	RecvPropInt(RECVINFO(m_nCyborgClass)),
 END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA(C_NEO_Player)

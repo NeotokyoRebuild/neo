@@ -35,6 +35,8 @@ LINK_ENTITY_TO_CLASS(info_player_defender, CPointEntity);
 LINK_ENTITY_TO_CLASS(info_player_start, CPointEntity);*/
 
 IMPLEMENT_SERVERCLASS_ST(CNEO_Player, DT_NEO_Player)
+	SendPropInt(SENDINFO(m_nNeoSkin), 3),
+	SendPropInt(SENDINFO(m_nCyborgClass), 3),
 END_SEND_TABLE()
 
 BEGIN_DATADESC(CNEO_Player)
@@ -46,6 +48,9 @@ CNEO_Player::CNEO_Player()
     m_bInLeanRight = false;
 
     m_leanPosTargetOffset = vec3_origin;
+
+	m_nNeoSkin = NEO_SKIN_FIRST;
+	m_nCyborgClass = NEO_CLASS_ASSAULT;
 }
 
 CNEO_Player::~CNEO_Player( void )
@@ -506,12 +511,7 @@ void CNEO_Player::PickDefaultSpawnTeam(void)
 	{
 		if (!NEORules()->IsTeamplay())
 		{
-			if (!GetModelPtr())
-			{
-				SetPlayerTeamModel();
-
-				ChangeTeam(TEAM_UNASSIGNED);
-			}
+			ChangeTeam(TEAM_UNASSIGNED);
 		}
 		else
 		{
@@ -537,6 +537,12 @@ void CNEO_Player::PickDefaultSpawnTeam(void)
 					ChangeTeam(random->RandomInt(TEAM_JINRAI, TEAM_NSF));
 				}
 			}
+
+		}
+
+		if (!GetModelPtr())
+		{
+			SetPlayerTeamModel();
 		}
 	}
 }
