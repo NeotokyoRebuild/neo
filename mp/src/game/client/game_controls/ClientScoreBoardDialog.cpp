@@ -217,6 +217,7 @@ void CClientScoreBoardDialog::ShowPanel(bool bShow)
 	if ( bShow )
 	{
 		Reset();
+		SetKeyBoardInputEnabled(true);
 		Update();
 		SetVisible( true );
 		MoveToFront();
