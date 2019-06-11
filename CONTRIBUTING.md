@@ -5,6 +5,18 @@
 Come [join the Discord channel](https://steamcommunity.com/groups/ANPA/discussions/0/487876568238532577/) to discuss the project
 (see the "nt_semantic_sequels" and other related channels under the channel group "Architects").
 
+## Table of contents
+<!-- Generated with: https://github.com/jonschlinkert/markdown-toc -->
+* [Getting started](#getting-started)
+	+ [Cloning & merging](#cloning--merging)
+    + [Building](#building)
+    + [Debugging](#debugging)
+    + [Game loop and reference material](#game-loop-and-reference-material)
+* [Good to know](#good-to-know)
+    + [Solutions/makefiles](#solutionsmakefiles)
+    + [Preprocessor definitions](#preprocessor-definitions)
+    + [Code style](#code-style)
+
 ## Getting started
 
 ### Cloning & merging
