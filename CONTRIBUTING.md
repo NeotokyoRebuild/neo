@@ -38,7 +38,7 @@ Example settings for debugging from Visual Studio solutions:
 | :---------------------------------- | :------------ |
 | Command | C:\Steam\steamapps\common\Source SDK Base 2013 Multiplayer\hl2.exe |
 | Command Arguments | -allowdebug -insecure -dev -sw -game "C:\Steam\steamapps\sourcemods\neo" |
-| Working Directory | C:\\steamapps\common\Source SDK Base 2013 Multiplayer |
+| Working Directory | C:\Steam\steamapps\common\Source SDK Base 2013 Multiplayer |
 
 ### Game loop and reference material
 
