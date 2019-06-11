@@ -37,7 +37,7 @@ Example settings for debugging from Visual Studio solutions:
 | Configuration Properties->Debugging | Example value |
 | :---------------------------------- | :------------ |
 | Command | C:\Steam\steamapps\common\Source SDK Base 2013 Multiplayer\hl2.exe |
-| Command Arguments | -allowdebug -insecure -dev -sw -game "C:\Steam\steamapps\sourcemods\neo" |
+| Command Arguments | -allowdebug -insecure -dev -sw -game "C:\git\neo\mp\game\mod_hl2mp" |
 | Working Directory | C:\Steam\steamapps\common\Source SDK Base 2013 Multiplayer |
 
 ### Game loop and reference material
@@ -52,7 +52,7 @@ Ochii's impressive [reverse engineering project](https://github.com/Ochii/neotok
 
 This project uses Valve's [VPC system](https://developer.valvesoftware.com/wiki/VPC) to generate its makefiles and VS solutions. When modifying the project file structure, instead of pushing your solution/makefile, edit the relevant VPC files instead (most commonly "[client_hl2mp.vpc](mp/src/game/client/client_hl2mp.vpc)" and "[server_hl2mp.vpc](mp/src/game/server/server_hl2mp.vpc)").
 
-Running the VPC scripts after a change will generate the solutions and makefiles on all platforms. (You may sometimes have to purge your object file cache if you get linker errors after restructuring existing translation units.) Note that on Windows, this will also overwrite any of your hand edited solution preferences.
+Running the VPC scripts after a change will generate the solutions and makefiles on all platforms. (You may sometimes have to purge your object file cache if you get linker errors after restructuring existing translation units.) Note that on Windows, this might overwrite some of your hand edited solution preferences (unless if they're stored in the .suo files?).
 
 ### Preprocessor definitions
 In shared code, clientside code can be differentiated with CLIENT_DLL, vs. serverside's GAME_DLL. In more general engine files, Neotokyo specific code can be marked with a NEO ifdef. These are also defined with the VPC system described above, in the $PreprocessorDefinitions section.
