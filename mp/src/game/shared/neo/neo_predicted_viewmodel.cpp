@@ -235,6 +235,7 @@ int CNEOPredictedViewModel::CalcLean(CNEO_Player *player)
 	// We will touch view angles, so we have to resample
 	// here to avoid disturbing user's mouse look input.
 	// This should also handle controller look input.
+	// NEO TODO (Rain): Test if sampling works (no jitter) for gamepads.
 	input->ExtraMouseSample(gpGlobals->absoluteframetime, 1);
 #endif
 
