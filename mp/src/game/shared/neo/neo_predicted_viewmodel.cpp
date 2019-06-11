@@ -221,8 +221,8 @@ static inline bool IsThereRoomForLeanSlide(CNEO_Player *player,
 	return weHaveRoom;
 }
 
-extern ConVar neo_lean_yaw_lerp_scale("neo_lean_yaw_lerp_scale", "6.5", FCVAR_REPLICATED | FCVAR_CHEAT, "How fast to lerp viewoffset yaw into full lean position.", true, 0.0, false, 0);
-extern ConVar neo_lean_roll_lerp_scale("neo_lean_roll_lerp_scale", "3", FCVAR_REPLICATED | FCVAR_CHEAT, "How fast to lerp viewangoffset roll into full lean position.", true, 0.0, false, 0);
+extern ConVar neo_lean_yaw_lerp_scale("neo_lean_yaw_lerp_scale", "0.65", FCVAR_REPLICATED | FCVAR_CHEAT, "How fast to lerp viewoffset yaw into full lean position.", true, 0.0, false, 0);
+extern ConVar neo_lean_roll_lerp_scale("neo_lean_roll_lerp_scale", "0.3", FCVAR_REPLICATED | FCVAR_CHEAT, "How fast to lerp viewangoffset roll into full lean position.", true, 0.0, false, 0);
 // Original Neotokyo with the latest leftlean fix uses 7 for leftlean and 15 for rightlean yaw slide.
 extern ConVar neo_lean_yaw_peek_left_amount("neo_lean_yaw_peek_left_amount", "7.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How far sideways will a full left lean view reach.", true, 0.0, false, 0);
 extern ConVar neo_lean_yaw_peek_right_amount("neo_lean_yaw_peek_right_amount", "15.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How far sideways will a full right lean view reach.", true, 0.0, false, 0);
@@ -289,10 +289,12 @@ int CNEOPredictedViewModel::CalcLean(CNEO_Player *player)
 	//////////////////////////////
 	// Get target lean rotation //
 	//////////////////////////////
-
+#ifdef CLIENT_DLL
 	QAngle startAng = player->LocalEyeAngles();
+#else
+	QAngle startAng = player->EyeAngles();
+#endif
 	QAngle targetAng(startAng.x, startAng.y, leanRotation);
-
 
 	/////////////////////////
 	// Get target lean yaw //
@@ -325,8 +327,8 @@ int CNEOPredictedViewModel::CalcLean(CNEO_Player *player)
 	// We can skip this if we're within tolerance
 	if (wantRotationLerp || wantSlideLerp)
 	{
-		const float rotationLerp = neo_lean_roll_lerp_scale.GetFloat() * gpGlobals->frametime;
-		const float slideLerp = neo_lean_yaw_lerp_scale.GetFloat() * gpGlobals->frametime;
+		const float rotationLerp = neo_lean_roll_lerp_scale.GetFloat();
+		const float slideLerp = neo_lean_yaw_lerp_scale.GetFloat();
 
 		// Interpolate eye angles
 		NeoVmInterpolateAngles(startAng, targetAng, m_angNextViewAngles, rotationLerp);
