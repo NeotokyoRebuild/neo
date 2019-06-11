@@ -7,6 +7,8 @@
 class C_NEO_Player;
 #include "c_hl2mp_player.h"
 
+class C_NEOPredictedViewModel;
+
 class C_NEO_Player : public C_HL2MP_Player
 {
 public:
@@ -64,6 +66,8 @@ public:
 	{
 		BaseClass::SetViewAngles(ang);
 	}
+
+	C_NEOPredictedViewModel *GetNEOViewModel();
 
 public:
 	int m_nNeoSkin;

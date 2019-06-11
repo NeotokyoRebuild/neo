@@ -66,6 +66,8 @@ public:
 
 	void Weapon_AimToggle( CBaseCombatWeapon *pWep );
 
+	void DoThirdPersonLean();
+
 	inline void Weapon_SetZoom( bool bZoomIn );
 
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);

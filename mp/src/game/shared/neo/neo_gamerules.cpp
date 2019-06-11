@@ -1,5 +1,6 @@
 #include "cbase.h"
 #include "neo_gamerules.h"
+#include "in_buttons.h"
 
 #ifdef CLIENT_DLL
 	#include "c_neo_player.h"
