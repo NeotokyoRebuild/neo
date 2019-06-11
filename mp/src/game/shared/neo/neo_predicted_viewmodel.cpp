@@ -247,7 +247,7 @@ int CNEOPredictedViewModel::CalcLean(CNEO_Player *player)
 	bool leaningIn;
 	float leanRotation, leanSideways;
 
-	// If we're actively leaning
+	// If we're actively leaning left
 	if (player->m_nButtons & IN_LEAN_LEFT)
 	{
 		// Except if we're leaning both ways, in which case cancel
