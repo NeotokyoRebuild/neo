@@ -273,6 +273,9 @@ $Project "Server (HL2MP)"
 
 				$File	"$SRCDIR\game\shared\neo\weapons\weapon_tachi.cpp"
 				$File	"$SRCDIR\game\shared\neo\weapons\weapon_tachi.h"
+
+				$File	"$SRCDIR\game\shared\neo\weapons\weapon_ghost.cpp"
+				$File	"$SRCDIR\game\shared\neo\weapons\weapon_ghost.h"
 			}
 		}
 
