@@ -260,8 +260,12 @@ enum {
 	NEO_GHOST_ONLY_PLAYABLE_TEAMS,
 	NEO_GHOST_ANY_TEAMS
 };
-extern ConVar neo_ghost_debug_ignore_teams("neo_ghost_debug_ignore_teams", "2", FCVAR_CHEAT | FCVAR_REPLICATED,
+ConVar neo_ghost_debug_ignore_teams("neo_ghost_debug_ignore_teams", "2", FCVAR_CHEAT | FCVAR_REPLICATED,
 	"Debug ghost team filter. If 0, only ghost the enemy team. If 1, ghost both playable teams. If 2, ghost any team, including spectator and unassigned.", true, 0.0, true, 2.0);
+ConVar neo_ghost_debug_spew("neo_ghost_debug_spew", "1", FCVAR_CHEAT | FCVAR_REPLICATED,
+	"Whether to spew debug logs to console about ghosting positions and the data PVS/server origin.", true, 0.0, true, 1.0);
+ConVar neo_ghost_debug_hudinfo("neo_ghost_debug_hudinfo", "1", FCVAR_CHEAT | FCVAR_REPLICATED,
+	"Whether to overlay debug text information to screen about ghosting targets.", true, 0.0, true, 1.0);
 
 #ifdef CLIENT_DLL
 // Purpose: Iterate through all enemies and give ghoster their position info,
@@ -308,26 +312,38 @@ void CWeaponGhost::ShowEnemies(void)
 		// If it's in my PVS already
 		if (otherPlayer->IsVisible())
 		{
-			DevMsg("Ghosting enemy from my PVS: %f %f %f\n",
-				otherPlayer->GetAbsOrigin().x,
-				otherPlayer->GetAbsOrigin().y,
-				otherPlayer->GetAbsOrigin().z);
-			
-			Debug_ShowPos(otherPlayer->GetAbsOrigin());
-
 			ShowBeacon(i, otherPlayer->GetAbsOrigin());
+
+			if (neo_ghost_debug_spew.GetBool())
+			{
+				DevMsg("Ghosting enemy from my PVS: %f %f %f\n",
+					otherPlayer->GetAbsOrigin().x,
+					otherPlayer->GetAbsOrigin().y,
+					otherPlayer->GetAbsOrigin().z);
+			}
+			
+			if (neo_ghost_debug_hudinfo.GetBool())
+			{
+				Debug_ShowPos(otherPlayer->GetAbsOrigin());
+			}
 		}
 		// Else, the server will provide us with this enemy's position info
 		else
 		{
-			DevMsg("Ghosting enemy from server pos: %f %f %f\n",
-				m_rvPlayerPositions[i].x,
-				m_rvPlayerPositions[i].y,
-				m_rvPlayerPositions[i].z);
-
-			Debug_ShowPos(m_rvPlayerPositions[i]);
-
 			ShowBeacon(i, m_rvPlayerPositions[i]);
+
+			if (neo_ghost_debug_spew.GetBool())
+			{
+				DevMsg("Ghosting enemy from server pos: %f %f %f\n",
+					m_rvPlayerPositions[i].x,
+					m_rvPlayerPositions[i].y,
+					m_rvPlayerPositions[i].z);
+			}
+			
+			if (neo_ghost_debug_hudinfo.GetBool())
+			{
+				Debug_ShowPos(m_rvPlayerPositions[i]);
+			}
 		}
 	}
 }
@@ -337,6 +353,7 @@ inline void CWeaponGhost::HideBeacon(int panelIndex)
 	rootGhostPanel->GetChild(panelIndex)->SetVisible(false);
 }
 
+// NEO FIXME (Rain): this doesn't work, need to figure out why
 inline void CWeaponGhost::ShowBeacon(int panelIndex, const Vector &pos)
 {
 	int x, y;
