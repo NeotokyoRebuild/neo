@@ -13,7 +13,7 @@ RecvPropBool(RECVINFO(m_bShouldShowEnemies)),
 RecvPropArray(RecvPropVector(RECVINFO(m_rvPlayerPositions[0])), m_rvPlayerPositions),
 #else
 SendPropBool(SENDINFO(m_bShouldShowEnemies)),
-SendPropArray(SendPropVector(SENDINFO_ARRAY(m_rvPlayerPositions), -1, SPROP_COORD), m_rvPlayerPositions),
+SendPropArray(SendPropVector(SENDINFO_ARRAY(m_rvPlayerPositions), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rvPlayerPositions),
 #endif
 END_NETWORK_TABLE()
 
