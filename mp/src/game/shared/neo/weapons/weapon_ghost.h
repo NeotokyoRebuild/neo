@@ -24,13 +24,11 @@ public:
 	CWeaponGhost(void);
 
 	DECLARE_NETWORKCLASS();
-	//DECLARE_PREDICTABLE();
+	DECLARE_PREDICTABLE();
 
 	void ItemPreFrame(void);
 	void PrimaryAttack(void);
 	
-	void SetShowEnemies(bool enabled);
-
 	virtual void ItemHolsterFrame(void);
 
 
@@ -40,11 +38,25 @@ public:
 #endif
 
 private:
-	CNetworkVar(bool, m_bShouldShowEnemies);
+	inline void ZeroGhostedPlayerLocArray(void);
 
+#ifdef CLIENT_DLL
 	void ShowEnemies(void);
+#else
+	void SetShowEnemies(bool enabled);
+	void UpdateNetworkedEnemyLocations(void);
+#endif
 
 private:
+
+#ifdef CLIENT_DLL
+	bool m_bShouldShowEnemies;
+	Vector m_rvPlayerPositions[MAX_PLAYERS];
+#else
+	CNetworkVar(bool, m_bShouldShowEnemies);
+	CNetworkArray(Vector, m_rvPlayerPositions, MAX_PLAYERS);
+#endif
+
 	CWeaponGhost(const CWeaponGhost &);
 };
 
