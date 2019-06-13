@@ -119,7 +119,7 @@ void C_NEO_Player::ItemPreFrame( void )
 {
 	BaseClass::ItemPreFrame();
 
-	if (m_nButtons & IN_DROP)
+	if (m_afButtonPressed & IN_DROP)
 	{
 		Weapon_Drop(GetActiveWeapon());
 	}
@@ -230,7 +230,7 @@ bool C_NEO_Player::ShouldDrawHL2StyleQuickHud(void)
 
 void C_NEO_Player::Weapon_Drop(C_BaseCombatWeapon *pWeapon)
 {
-	auto ghost = dynamic_cast<C_WeaponGhost*>(pWeapon);
+	C_WeaponGhost *ghost = dynamic_cast<C_WeaponGhost*>(pWeapon);
 	if (ghost)
 	{
 		ghost->HandleGhostUnequipSound();

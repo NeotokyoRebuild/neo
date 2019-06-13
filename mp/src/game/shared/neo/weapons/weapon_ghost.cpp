@@ -23,28 +23,6 @@ enum {
 	NUM_GHOST_SOUNDS
 };
 
-#ifdef _WIN32
-const char *ghostSoundFiles[NUM_GHOST_SOUNDS] = {
-#if(0)
-	"gameplay\\ghost_equip.wav",
-	"gameplay\\ghost_equip2.wav",
-	"gameplay\\ghost_equip3.wav",
-	"gameplay\\ghost_equip4.wav",
-	"gameplay\\ghost_equip5.wav",
-	"gameplay\\ghost_idle_loop.wav",
-	"gameplay\\ghost_pickup.wav",
-	"gameplay\\ghost_ping.wav",
-#endif
-	"gameplay/ghost_equip.wav",
-	"gameplay/ghost_equip2.wav",
-	"gameplay/ghost_equip3.wav",
-	"gameplay/ghost_equip4.wav",
-	"gameplay/ghost_equip5.wav",
-	"gameplay/ghost_idle_loop.wav",
-	"gameplay/ghost_pickup.wav",
-	"gameplay/ghost_ping.wav",
-};
-#elif defined(LINUX)
 const char *ghostSoundFiles[NUM_GHOST_SOUNDS] = {
 	"gameplay/ghost_equip.wav",
 	"gameplay/ghost_equip2.wav",
@@ -55,9 +33,6 @@ const char *ghostSoundFiles[NUM_GHOST_SOUNDS] = {
 	"gameplay/ghost_pickup.wav",
 	"gameplay/ghost_ping.wav",
 };
-#else
-#error Unimplemented
-#endif
 
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponGhost, DT_WeaponGhost)
 

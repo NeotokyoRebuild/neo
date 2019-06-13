@@ -221,8 +221,8 @@ static inline bool IsThereRoomForLeanSlide(CNEO_Player *player,
 	return weHaveRoom;
 }
 
-extern ConVar neo_lean_yaw_lerp_scale("neo_lean_yaw_lerp_scale", "0.65", FCVAR_REPLICATED | FCVAR_CHEAT, "How fast to lerp viewoffset yaw into full lean position.", true, 0.0, false, 0);
-extern ConVar neo_lean_roll_lerp_scale("neo_lean_roll_lerp_scale", "0.3", FCVAR_REPLICATED | FCVAR_CHEAT, "How fast to lerp viewangoffset roll into full lean position.", true, 0.0, false, 0);
+extern ConVar neo_lean_yaw_lerp_scale("neo_lean_yaw_lerp_scale", "0.125", FCVAR_REPLICATED | FCVAR_CHEAT, "How fast to lerp viewoffset yaw into full lean position.", true, 0.0, false, 2.0);
+extern ConVar neo_lean_roll_lerp_scale("neo_lean_roll_lerp_scale", "0.1", FCVAR_REPLICATED | FCVAR_CHEAT, "How fast to lerp viewangoffset roll into full lean position.", true, 0.0, false, 2.0);
 // Original Neotokyo with the latest leftlean fix uses 7 for leftlean and 15 for rightlean yaw slide.
 extern ConVar neo_lean_yaw_peek_left_amount("neo_lean_yaw_peek_left_amount", "7.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How far sideways will a full left lean view reach.", true, 0.0, false, 0);
 extern ConVar neo_lean_yaw_peek_right_amount("neo_lean_yaw_peek_right_amount", "15.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How far sideways will a full right lean view reach.", true, 0.0, false, 0);
@@ -309,87 +309,117 @@ int CNEOPredictedViewModel::CalcLean(CNEO_Player *player)
 	// Calculate lerp values for the next position //
 	/////////////////////////////////////////////////
 
-	// We allow this much lerp inaccuracy, and then snap to target location.
-	// This prevents slight inaccuracy in final camera roll as we converge.
-	const float tolerance = 0.001f;
-
 	float rotationDiff = fabs(startAng.z - targetAng.z);
 	float sidewaySlideDiff = fabs(eyeOffset.x - m_vecNextViewOffset.x);
 	float forwardSlideDiff = fabs(eyeOffset.y - m_vecNextViewOffset.y);
-
-	bool wantRotationLerp = (rotationDiff > tolerance);
-	bool wantSlideLerp = (sidewaySlideDiff > tolerance) || (forwardSlideDiff > tolerance);
 
 	////////////////////////////////////////////
 	// Lerp & assign the new eye pos & angles //
 	////////////////////////////////////////////
 
-	// We can skip this if we're within tolerance
-	if (wantRotationLerp || wantSlideLerp)
-	{
-		const float rotationLerp = neo_lean_roll_lerp_scale.GetFloat();
-		const float slideLerp = neo_lean_yaw_lerp_scale.GetFloat();
+#ifdef CLIENT_DLL
+	const float thisTime = player->GetFinalPredictedTime() + TICK_INTERVAL -
+		(gpGlobals->interpolation_amount * TICK_INTERVAL);
+	static float lastTime = thisTime;
+	const float dTime = thisTime - lastTime;
+	lastTime = thisTime;
+	//DevMsg("dtime: %f\n", dTime);
+#endif
 
+#ifdef CLIENT_DLL
+	const float rotationLerp = neo_lean_roll_lerp_scale.GetFloat() * dTime;
+	const float slideLerp = neo_lean_yaw_lerp_scale.GetFloat() * dTime;
+#else
+	const float rotationLerp = neo_lean_roll_lerp_scale.GetFloat();
+	const float slideLerp = neo_lean_yaw_lerp_scale.GetFloat();
+#endif
+
+	// We allow this much lerp inaccuracy, and then snap to target location.
+	// This prevents slight inaccuracy in final camera roll as we converge.
+	const float tolerance = 0.05f;
+
+	// Can we snap eye angles?
+	if (rotationDiff < tolerance)
+	{
+		m_angNextViewAngles = targetAng;
+	}
+	else
+	{
 		// Interpolate eye angles
 		NeoVmInterpolateAngles(startAng, targetAng, m_angNextViewAngles, rotationLerp);
+	}
 
+	// Can we smap yaw offset?
+	if (sidewaySlideDiff < tolerance && forwardSlideDiff < tolerance)
+	{
+		m_vecNextViewOffset = eyeOffset;
+	}
+	else
+	{
 		// Interpolate eye position offset
 		VectorLerp(player->GetViewOffset(), eyeOffset, slideLerp, m_vecNextViewOffset);
-
-		bool startInSolid = false;
-		if (!IsThereRoomForLeanSlide(player, m_vecNextViewOffset, startInSolid))
-		{
-			// Always allow un-lean
-			if (leaningIn)
-			{
-				// Zero the lean intent if we're clipping.
-				//
-				// NEO HACK/FIXME (Rain): Instead of doing a boolean lean trace,
-				// we should see how many units of clearance we've got, and use that.
-				// Current method will sometimes be too late to prevent view clipping,
-				// and will lerp jitter on half-leans that collide.
-				player->m_nButtons &= ~IN_LEAN_LEFT;
-				player->m_nButtons &= ~IN_LEAN_RIGHT;
-
-				if (startAng.z == 0 && eyeOffset.x == 0 && eyeOffset.y == 0)
-				{
-					return leanDir;
-				}
-
-				targetAng.z = 0;
-				NeoVmInterpolateAngles(startAng, targetAng, m_angNextViewAngles,
-					neo_lean_roll_lerp_scale.GetFloat() * 1.5);
-				
-				eyeOffset.x = 0;
-				eyeOffset.y = 0;
-				VectorLerp(player->GetViewOffset(), eyeOffset,
-					neo_lean_yaw_lerp_scale.GetFloat() * 1.5, m_vecNextViewOffset);
-			}
-		}
-
-		// See if we've reached the tolerance, and snap to target if so.
-		// This prevents our view from drifting due to float inaccuracy.
-		if (fabs(m_angNextViewAngles.z - targetAng.z) <= tolerance)
-		{
-			m_angNextViewAngles.z = targetAng.z;
-		}
-
-#ifdef CLIENT_DLL
-		if (!prediction->InPrediction() && prediction->IsFirstTimePredicted())
-#endif
-		{
-			// This provides us with lag compensated out values.
-			CalcViewModelLag(m_vecNextViewOffset, m_angNextViewAngles, startAng);
-		}
-
-#ifdef CLIENT_DLL
-		// NOTE: we must sample mouse input (input->ExtraMouseSample)
-		// before calling this, otherwise we risk network view jitter
-		// if the user turns their view and applies lean simultaneously!
-		engine->SetViewAngles(m_angNextViewAngles);
-#endif
-		player->SetViewOffset(m_vecNextViewOffset);
 	}
+
+	bool startInSolid = false;
+	if (!IsThereRoomForLeanSlide(player, m_vecNextViewOffset, startInSolid))
+	{
+		// Always allow un-lean
+		if (leaningIn)
+		{
+			// Zero the lean intent if we're clipping.
+			//
+			// NEO HACK/FIXME (Rain): Instead of doing a boolean lean trace,
+			// we should see how many units of clearance we've got, and use that.
+			// Current method will sometimes be too late to prevent view clipping,
+			// and will lerp jitter on half-leans that collide.
+			player->m_nButtons &= ~IN_LEAN_LEFT;
+			player->m_nButtons &= ~IN_LEAN_RIGHT;
+
+			if (startAng.z == 0 && eyeOffset.x == 0 && eyeOffset.y == 0)
+			{
+				return leanDir;
+			}
+
+			targetAng.z = 0;
+			NeoVmInterpolateAngles(startAng, targetAng, m_angNextViewAngles,
+				neo_lean_roll_lerp_scale.GetFloat() * 1.5);
+
+			eyeOffset.x = 0;
+			eyeOffset.y = 0;
+			VectorLerp(player->GetViewOffset(), eyeOffset,
+				neo_lean_yaw_lerp_scale.GetFloat() * 1.5, m_vecNextViewOffset);
+		}
+	}
+
+	// See if we've reached the tolerance, and snap to target if so.
+	// This prevents our view from drifting due to float inaccuracy.
+	if (fabs(m_angNextViewAngles.z - targetAng.z) <= tolerance)
+	{
+		m_angNextViewAngles.z = targetAng.z;
+	}
+
+#ifdef CLIENT_DLL
+	if (!prediction->InPrediction() && prediction->IsFirstTimePredicted())
+#endif
+	{
+		// This provides us with lag compensated out values.
+		CalcViewModelLag(m_vecNextViewOffset, m_angNextViewAngles, startAng);
+	}
+
+#ifdef CLIENT_DLL
+	// NOTE: we must sample mouse input (input->ExtraMouseSample)
+	// before calling this, otherwise we risk network view jitter
+	// if the user turns their view and applies lean simultaneously!
+	engine->SetViewAngles(m_angNextViewAngles);
+#endif
+	player->SetViewOffset(m_vecNextViewOffset);
+
+#ifdef CLIENT_DLL
+	if (player->ShouldInterpolate())
+	{
+		player->Interpolate(gpGlobals->curtime);
+	}
+#endif
 
 	return leanDir;
 }
