@@ -46,10 +46,13 @@ IMPLEMENT_ACTTABLE(CWeaponGhost);
 
 CWeaponGhost::CWeaponGhost(void)
 {
-	m_bShouldShowEnemies = false;
-
 #ifdef CLIENT_DLL
 	rootGhostPanel = NULL;
+#else
+	// This is just always on for now.
+	// Not sure if there's a reason to ever disable ghosting,
+	// but might as well have the option.
+	SetShowEnemies(true);
 #endif
 }
 
@@ -106,6 +109,7 @@ inline void CWeaponGhost::ZeroGhostedPlayerLocArray(void)
 		m_rvPlayerPositions[i].Zero();
 	}
 #else
+
 	for (int i = 0; i < m_rvPlayerPositions.Count(); i++)
 	{
 		m_rvPlayerPositions.Set(i, Vector(0, 0, 0));
@@ -136,22 +140,6 @@ void CWeaponGhost::ItemHolsterFrame(void)
 
 void CWeaponGhost::PrimaryAttack(void)
 {
-#ifdef GAME_DLL
-	static float lastTime = gpGlobals->curtime;
-	float dTime = gpGlobals->curtime - lastTime;
-	if (dTime < 0) { dTime = 0; }
-	if (dTime >= 0.001)
-	{
-		SetShowEnemies(!m_bShouldShowEnemies);
-		DevMsg("PrimaryAttack: %s\n", m_bShouldShowEnemies ? "on" : "off");
-		lastTime = gpGlobals->curtime;
-
-		if (!m_bShouldShowEnemies)
-		{
-			ZeroGhostedPlayerLocArray();
-		}
-	}
-#endif
 }
 
 #ifdef GAME_DLL
