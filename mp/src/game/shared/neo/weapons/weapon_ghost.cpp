@@ -2,6 +2,10 @@
 #include "weapon_ghost.h"
 #include "neo_gamerules.h"
 
+#ifdef CLIENT_DLL
+#include <engine/ivdebugoverlay.h>
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -43,6 +47,55 @@ IMPLEMENT_ACTTABLE(CWeaponGhost);
 CWeaponGhost::CWeaponGhost(void)
 {
 	m_bShouldShowEnemies = false;
+
+#ifdef CLIENT_DLL
+	rootGhostPanel = NULL;
+#endif
+}
+
+#ifdef CLIENT_DLL
+CWeaponGhost::~C_WeaponGhost(void)
+{
+	if (rootGhostPanel)
+	{
+		rootGhostPanel->DeletePanel();
+	}
+}
+#endif
+
+void CWeaponGhost::Spawn(void)
+{
+	BaseClass::Spawn();
+
+#ifdef CLIENT_DLL
+	rootGhostPanel = new vgui::Panel();
+	rootGhostPanel->SetAlpha(255);
+	rootGhostPanel->SetVisible(true);
+	rootGhostPanel->SetEnabled(false);
+	rootGhostPanel->SetPostChildPaintEnabled(true);
+
+	char formatBuff[21];
+	const int playerPosArrSize = sizeof(m_rvPlayerPositions) / sizeof(m_rvPlayerPositions[0]);
+	for (int i = 1; i <= playerPosArrSize; i++)
+	{
+		V_sprintf_safe(formatBuff, "GhostHUD_ClientIdx%i", i);
+		vgui::ImagePanel *img = new vgui::ImagePanel(rootGhostPanel, formatBuff);
+
+#ifdef _WIN32
+		img->SetImage(vgui::scheme()->GetImage("vgui\\hud\\ctg\\g_beacon_enemy", false));
+#elif defined(LINUX)
+		img->SetImage(vgui::scheme()->GetImage("vgui/hud/ctg/g_beacon_enemy", false));
+#else
+#error Unimplemented
+#endif
+
+		img->SetAutoDelete(true);
+		img->SetSize(256, 256);
+		img->SetFgColor(Color(255, 0, 0));
+		img->SetEnabled(false);
+		img->SetVisible(false);
+	}
+#endif
 }
 
 inline void CWeaponGhost::ZeroGhostedPlayerLocArray(void)
@@ -68,6 +121,7 @@ void CWeaponGhost::ItemPreFrame(void)
 #ifdef CLIENT_DLL
 		// Only show enemies if we are ghosting
 		ShowEnemies();
+		rootGhostPanel->Paint();
 #else
 		// We only need to update this while someone is ghosting
 		UpdateNetworkedEnemyLocations();
@@ -128,6 +182,8 @@ void CWeaponGhost::ShowEnemies(void)
 
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
+		HideBeacon(i);
+
 		auto otherPlayer = ToBasePlayer( ClientEntityList().GetEnt( i ) );
 		//auto otherPlayer = UTIL_PlayerByIndex(i);
 
@@ -162,6 +218,10 @@ void CWeaponGhost::ShowEnemies(void)
 				otherPlayer->GetAbsOrigin().x,
 				otherPlayer->GetAbsOrigin().y,
 				otherPlayer->GetAbsOrigin().z);
+			
+			Debug_ShowPos(otherPlayer->GetAbsOrigin());
+
+			ShowBeacon(i, otherPlayer->GetAbsOrigin());
 		}
 		// Else, the server will provide us with this enemy's position info
 		else
@@ -170,8 +230,39 @@ void CWeaponGhost::ShowEnemies(void)
 				m_rvPlayerPositions[i].x,
 				m_rvPlayerPositions[i].y,
 				m_rvPlayerPositions[i].z);
+
+			Debug_ShowPos(m_rvPlayerPositions[i]);
+
+			ShowBeacon(i, m_rvPlayerPositions[i]);
 		}
 	}
+}
+
+inline void CWeaponGhost::HideBeacon(int panelIndex)
+{
+	rootGhostPanel->GetChild(panelIndex)->SetVisible(false);
+}
+
+inline void CWeaponGhost::ShowBeacon(int panelIndex, const Vector &pos)
+{
+	int x, y;
+	GetVectorInScreenSpace(pos, x, y); // this is pixels from top-left
+
+	//DevMsg("x %d y %d\n", x, y);
+
+	rootGhostPanel->GetChild(panelIndex)->SetPos(x, y);
+	rootGhostPanel->GetChild(panelIndex)->SetVisible(true);
+	rootGhostPanel->GetChild(panelIndex)->Paint();
+
+	//Assert(rootGhostPanel->GetChild(panelIndex)->IsFullyVisible());
+}
+
+void CWeaponGhost::Debug_ShowPos(const Vector &pos)
+{
+	int x, y;
+	GetVectorInScreenSpace(pos, x, y);
+
+	debugoverlay->AddTextOverlay(pos, 0.002f, "GHOST TARGET");
 }
 #endif
 

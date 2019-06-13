@@ -6,6 +6,8 @@
 
 #ifdef CLIENT_DLL
 #include "c_neo_player.h"
+#include <vgui_controls/Panel.h>
+#include <vgui_controls/ImagePanel.h>
 #else
 #include "neo_player.h"
 #endif
@@ -22,6 +24,9 @@ public:
 	DECLARE_CLASS(CWeaponGhost, CNEOBaseCombatWeapon);
 
 	CWeaponGhost(void);
+#ifdef CLIENT_DLL
+	virtual ~CWeaponGhost(void);
+#endif
 
 	DECLARE_NETWORKCLASS();
 	DECLARE_PREDICTABLE();
@@ -30,8 +35,7 @@ public:
 	void PrimaryAttack(void);
 	
 	virtual void ItemHolsterFrame(void);
-
-
+	virtual void Spawn(void);
 
 #ifdef GAME_DLL
 	DECLARE_ACTTABLE();
@@ -39,9 +43,12 @@ public:
 
 private:
 	inline void ZeroGhostedPlayerLocArray(void);
+	inline void ShowBeacon(int panelIndex, const Vector &pos);
+	inline void HideBeacon(int panelIndex);
 
 #ifdef CLIENT_DLL
 	void ShowEnemies(void);
+	void Debug_ShowPos(const Vector &pos);
 #else
 	void SetShowEnemies(bool enabled);
 	void UpdateNetworkedEnemyLocations(void);
@@ -51,7 +58,10 @@ private:
 
 #ifdef CLIENT_DLL
 	bool m_bShouldShowEnemies;
+
 	Vector m_rvPlayerPositions[MAX_PLAYERS];
+
+	vgui::Panel *rootGhostPanel;
 #else
 	CNetworkVar(bool, m_bShouldShowEnemies);
 	CNetworkArray(Vector, m_rvPlayerPositions, MAX_PLAYERS);
