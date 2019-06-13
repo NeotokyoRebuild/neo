@@ -276,6 +276,15 @@ static inline void Precache_NEO_Sounds( void )
 	CBaseEntity::PrecacheScriptSound("BaseExplosionEffect.Sound");
 
 	CBaseEntity::PrecacheScriptSound("Weapon_Generic.melee_swing");
+
+	CBaseEntity::PrecacheSound("sound/gameplay/ghost_equip.wav");
+	CBaseEntity::PrecacheSound("sound/gameplay/ghost_equip2.wav");
+	CBaseEntity::PrecacheSound("sound/gameplay/ghost_equip3.wav");
+	CBaseEntity::PrecacheSound("sound/gameplay/ghost_equip4.wav");
+	CBaseEntity::PrecacheSound("sound/gameplay/ghost_equip5.wav");
+	CBaseEntity::PrecacheSound("sound/gameplay/ghost_pickup.wav");
+	CBaseEntity::PrecacheSound("sound/gameplay/ghost_ping.wav");
+	CBaseEntity::PrecacheSound("sound/gameplay/ghost_idle_loop.wav");
 }
 
 //-----------------------------------------------------------------------------

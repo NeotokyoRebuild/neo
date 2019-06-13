@@ -16,6 +16,9 @@
 
 #ifdef CLIENT_DLL
 #define CWeaponGhost C_WeaponGhost
+#define CBaseCombatCharacter C_BaseCombatCharacter
+#define CBasePlayer C_BasePlayer
+#define CNEOPlayer C_NEO_Player
 #endif
 
 class CWeaponGhost : public CNEOBaseCombatWeapon
@@ -36,6 +39,9 @@ public:
 	
 	virtual void ItemHolsterFrame(void);
 	virtual void Spawn(void);
+	virtual void Equip(CBaseCombatCharacter *pOwner);
+
+	inline void HandleGhostUnequipSound();
 
 #ifdef GAME_DLL
 	DECLARE_ACTTABLE();
@@ -47,8 +53,11 @@ private:
 	inline void HideBeacon(int panelIndex);
 
 #ifdef CLIENT_DLL
-	void ShowEnemies(void);
-	void Debug_ShowPos(const Vector &pos);
+	inline void ShowEnemies(void);
+	inline void Debug_ShowPos(const Vector &pos);
+	inline void PlayGhostSound(float volume = 1.0f);
+	inline void StopGhostSound();
+	inline void HandleGhostEquipSound();
 #else
 	void SetShowEnemies(bool enabled);
 	void UpdateNetworkedEnemyLocations(void);
@@ -58,6 +67,8 @@ private:
 
 #ifdef CLIENT_DLL
 	bool m_bShouldShowEnemies;
+	bool m_bHavePlayedGhostEquipSound;
+	bool m_bHaveHolsteredTheGhost;
 
 	Vector m_rvPlayerPositions[MAX_PLAYERS];
 

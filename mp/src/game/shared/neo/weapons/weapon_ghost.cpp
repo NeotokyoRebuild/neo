@@ -4,10 +4,60 @@
 
 #ifdef CLIENT_DLL
 #include <engine/ivdebugoverlay.h>
+#include <engine/IEngineSound.h>
+#include "filesystem.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
+
+enum {
+	GHOST_SOUND_EQUIP = 0,
+	GHOST_SOUND_EQUIP2,
+	GHOST_SOUND_EQUIP3,
+	GHOST_SOUND_EQUIP4,
+	GHOST_SOUND_EQUIP5,
+	GHOST_SOUND_IDLE_LOOP,
+	GHOST_SOUND_PICKUP,
+	GHOST_SOUND_PING,
+	NUM_GHOST_SOUNDS
+};
+
+#ifdef _WIN32
+const char *ghostSoundFiles[NUM_GHOST_SOUNDS] = {
+#if(0)
+	"gameplay\\ghost_equip.wav",
+	"gameplay\\ghost_equip2.wav",
+	"gameplay\\ghost_equip3.wav",
+	"gameplay\\ghost_equip4.wav",
+	"gameplay\\ghost_equip5.wav",
+	"gameplay\\ghost_idle_loop.wav",
+	"gameplay\\ghost_pickup.wav",
+	"gameplay\\ghost_ping.wav",
+#endif
+	"gameplay/ghost_equip.wav",
+	"gameplay/ghost_equip2.wav",
+	"gameplay/ghost_equip3.wav",
+	"gameplay/ghost_equip4.wav",
+	"gameplay/ghost_equip5.wav",
+	"gameplay/ghost_idle_loop.wav",
+	"gameplay/ghost_pickup.wav",
+	"gameplay/ghost_ping.wav",
+};
+#elif defined(LINUX)
+const char *ghostSoundFiles[NUM_GHOST_SOUNDS] = {
+	"gameplay/ghost_equip.wav",
+	"gameplay/ghost_equip2.wav",
+	"gameplay/ghost_equip3.wav",
+	"gameplay/ghost_equip4.wav",
+	"gameplay/ghost_equip5.wav",
+	"gameplay/ghost_idle_loop.wav",
+	"gameplay/ghost_pickup.wav",
+	"gameplay/ghost_ping.wav",
+};
+#else
+#error Unimplemented
+#endif
 
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponGhost, DT_WeaponGhost)
 
@@ -31,6 +81,7 @@ LINK_ENTITY_TO_CLASS(weapon_ghost, CWeaponGhost);
 PRECACHE_WEAPON_REGISTER(weapon_ghost);
 
 #ifdef GAME_DLL
+// NEO TODO (Rain): make these sensible
 acttable_t CWeaponGhost::m_acttable[] =
 {
 	{ ACT_IDLE,				ACT_IDLE_PISTOL,				false },
@@ -48,11 +99,17 @@ CWeaponGhost::CWeaponGhost(void)
 {
 #ifdef CLIENT_DLL
 	rootGhostPanel = NULL;
-#else
+	m_bHavePlayedGhostEquipSound = false;
+	m_bHaveHolsteredTheGhost = false;
+#endif
+
+#ifdef GAME_DLL
 	// This is just always on for now.
 	// Not sure if there's a reason to ever disable ghosting,
 	// but might as well have the option.
 	SetShowEnemies(true);
+#else
+	m_bShouldShowEnemies = true;
 #endif
 }
 
@@ -126,6 +183,7 @@ void CWeaponGhost::ItemPreFrame(void)
 		// Only show enemies if we are ghosting
 		ShowEnemies();
 		rootGhostPanel->Paint();
+		HandleGhostEquipSound();
 #else
 		// We only need to update this while someone is ghosting
 		UpdateNetworkedEnemyLocations();
@@ -133,9 +191,82 @@ void CWeaponGhost::ItemPreFrame(void)
 	}
 }
 
+#ifdef CLIENT_DLL
+inline void CWeaponGhost::HandleGhostEquipSound()
+{
+	if (!m_bHavePlayedGhostEquipSound)
+	{
+		PlayGhostSound();
+		m_bHavePlayedGhostEquipSound = true;
+		m_bHaveHolsteredTheGhost = false;
+	}
+}
+
+inline void CWeaponGhost::HandleGhostUnequipSound()
+{
+	if (!m_bHaveHolsteredTheGhost)
+	{
+		StopGhostSound();
+		m_bHaveHolsteredTheGhost = true;
+		m_bHavePlayedGhostEquipSound = false;
+	}
+}
+
+inline void CWeaponGhost::PlayGhostSound(float volume)
+{
+	C_RecipientFilter filter;
+	filter.AddRecipient((CBasePlayer*)GetOwner());
+
+	const int randomEquipSoundIndex = RandomInt(GHOST_SOUND_EQUIP, GHOST_SOUND_EQUIP5);
+	enginesound->EmitAmbientSound(ghostSoundFiles[randomEquipSoundIndex], volume);
+}
+
+inline void CWeaponGhost::StopGhostSound(void)
+{
+	CUtlVector<SndInfo_t> sounds;
+	enginesound->GetActiveSounds(sounds);
+
+	char filename[MAX_PATH];
+	for (int i = 0; i < sounds.Size(); i++)
+	{
+		if (!g_pFullFileSystem->String(sounds[i].m_filenameHandle, filename, sizeof(filename)))
+		{
+			continue;
+		}
+
+		if (!*filename)
+		{
+			continue;
+		}
+
+		// NEO HACK/TODO (Rain): track sound guid so we can avoid expensive string compare
+#ifdef _WIN32
+		if (Q_stricmp(filename, "gameplay\\ghost_equip") != -1)
+#elif defined(LINUX)
+		if (Q_stricmp(filename, "gameplay/ghost_equip") != -1)
+#else
+#error Unimplemented
+#endif
+		{
+			enginesound->StopSoundByGuid(sounds[i].m_nGuid);
+			break;
+		}
+	}
+}
+#endif
+
+void CWeaponGhost::Equip(CBaseCombatCharacter *pOwner)
+{
+	BaseClass::Equip(pOwner);
+}
+
 void CWeaponGhost::ItemHolsterFrame(void)
 {
 	BaseClass::ItemHolsterFrame();
+
+#ifdef CLIENT_DLL
+	HandleGhostUnequipSound();
+#endif
 }
 
 void CWeaponGhost::PrimaryAttack(void)

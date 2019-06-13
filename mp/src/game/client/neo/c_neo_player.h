@@ -67,6 +67,8 @@ public:
 		BaseClass::SetViewAngles(ang);
 	}
 
+	void Weapon_Drop(C_BaseCombatWeapon *pWeapon);
+
 	C_NEOPredictedViewModel *GetNEOViewModel();
 
 public:

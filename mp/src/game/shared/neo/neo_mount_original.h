@@ -165,6 +165,7 @@ NeotokyoSource root folder install location.\n", thisCaller, neoPath);
 #endif
 		return false;
 	}
+
 	return true;
 }
 

@@ -21,6 +21,8 @@
 
 #include "prediction.h"
 
+#include "weapon_ghost.h"
+
 // Don't alias here
 #if defined( CNEO_Player )
 #undef CNEO_Player	
@@ -116,6 +118,11 @@ void C_NEO_Player::TraceAttack( const CTakeDamageInfo &info,
 void C_NEO_Player::ItemPreFrame( void )
 {
 	BaseClass::ItemPreFrame();
+
+	if (m_nButtons & IN_DROP)
+	{
+		Weapon_Drop(GetActiveWeapon());
+	}
 }
 
 void C_NEO_Player::ItemPostFrame( void )
@@ -219,4 +226,13 @@ const QAngle &C_NEO_Player::EyeAngles()
 bool C_NEO_Player::ShouldDrawHL2StyleQuickHud(void)
 {
 	return cl_drawhud_quickinfo.GetBool();
+}
+
+void C_NEO_Player::Weapon_Drop(C_BaseCombatWeapon *pWeapon)
+{
+	auto ghost = dynamic_cast<C_WeaponGhost*>(pWeapon);
+	if (ghost)
+	{
+		ghost->HandleGhostUnequipSound();
+	}
 }
