@@ -67,6 +67,10 @@ public:
 		BaseClass::SetViewAngles(ang);
 	}
 
+	inline void DrawCompass(void);
+
+	void Weapon_Drop(C_BaseCombatWeapon *pWeapon);
+
 	C_NEOPredictedViewModel *GetNEOViewModel();
 
 public:

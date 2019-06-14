@@ -32,8 +32,15 @@ static inline bool IsDir(const StatStruct& st) { return S_ISDIR(st.st_mode); }
 // These can be installed with SteamCMD, or copied over from a Windows install.
 inline bool FindOriginalNeotokyoAssets(IFileSystem *g_pFullFileSystem)
 {
-	if (!g_pFullFileSystem)
+	// We can't mount Neotokyo if these fail. Crash with an error message.
+	if (!SteamAPI_IsSteamRunning())
 	{
+		Error("Failed to call Steam API. This game needs to be launched through Steam.");
+		return false;
+	}
+	else if (!g_pFullFileSystem)
+	{
+		Error("Engine filesystem was not initialized properly.");
 		return false;
 	}
 
@@ -158,6 +165,7 @@ NeotokyoSource root folder install location.\n", thisCaller, neoPath);
 #endif
 		return false;
 	}
+
 	return true;
 }
 
