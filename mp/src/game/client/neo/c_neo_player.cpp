@@ -287,17 +287,18 @@ inline void C_NEO_Player::DrawCompass(void)
 	// How many characters should be visible around each side of the needle position
 	const int numCharsVisibleAroundNeedle = 6;
 
+	// Get index offset for this angle's compass position
+	int offset = (angle / unitAccuracy) - numCharsVisibleAroundNeedle;
+	if (offset < 0)
+	{
+		offset += sizeof(rose);
+	}
+
 	// Both sides + center + terminator
 	char compass[numCharsVisibleAroundNeedle * 2 + 2];
 	int i;
 	for (i = 0; i < sizeof(compass) - 1; i++)
 	{
-		int offset = (angle / unitAccuracy) - numCharsVisibleAroundNeedle;
-		if (offset < 0)
-		{
-			offset += sizeof(rose);
-		}
-
 		// Get our index by circling around the compass strip.
 		// We do modulo -1, because sizeof would land us on NULL
 		// and terminate the string early.
