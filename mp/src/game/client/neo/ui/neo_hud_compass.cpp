@@ -2,6 +2,7 @@
 #include "neo_hud_compass.h"
 
 #include "c_neo_player.h"
+#include "neo_gamerules.h"
 
 #include "iclientmode.h"
 #include <vgui/ILocalize.h>
@@ -104,6 +105,21 @@ void CNEOHud_Compass::Paint()
 	DrawCompass();
 }
 
+static inline double GetColorPulse(double startPulse = 0.5, double pulseStep = 0.1,
+	double minPulse = -20, double maxPulse = 20)
+{
+	static double colorPulse = startPulse;
+	colorPulse += pulseStep;
+
+	if (colorPulse >= maxPulse || colorPulse <= minPulse)
+	{
+		pulseStep = -pulseStep;
+		colorPulse = 0;
+	}
+
+	return colorPulse;
+}
+
 inline void CNEOHud_Compass::DrawCompass(void)
 {
 	if (!m_pOwner)
@@ -178,27 +194,65 @@ inline void CNEOHud_Compass::DrawCompass(void)
 	const int xpos = m_resX - (m_resX / neo_cl_hud_compass_pos_x.GetInt());
 	const int ypos = m_resY - (m_resY / neo_cl_hud_compass_pos_y.GetInt());
 	
+	// Print compass objective arrow
 	if (neo_cl_hud_compass_needle.GetBool())
 	{
+		double pulse = GetColorPulse() * 3;
+		Color alert = Color(180 + pulse, 10 + pulse, 0 + pulse, 200);
+
 		// Print a unicode arrow to signify compass needle
 		wchar_t arrowUnicode[] = L"▼";
-		const Color arrowColor = Color(
-			neo_cl_hud_debug_compass_color_r.GetInt(),
-			neo_cl_hud_debug_compass_color_g.GetInt(),
-			neo_cl_hud_debug_compass_color_b.GetInt(),
-			neo_cl_hud_debug_compass_color_a.GetInt() / 3);
-		surface()->DrawSetTextColor(arrowColor);
-		surface()->DrawSetTextPos(xpos - ((fontWidth / (numCharsVisibleAroundNeedle - 1)) / 2), ypos - (fontHeight * 1.75f));
+		surface()->DrawSetTextColor(alert);
+		surface()->DrawSetTextPos(
+			xpos - ((fontWidth / (numCharsVisibleAroundNeedle - 1)) / 2) + (pulse / 2),
+			ypos - (fontHeight * 1.75f));
 		surface()->DrawPrintText(arrowUnicode, Q_UnicodeLength(arrowUnicode));
 	}
 
-	// Print the compass rose
 	surface()->DrawSetTextColor(textColor);
 	surface()->DrawSetTextPos(xpos - (fontWidth / 2), ypos - (fontHeight / 2));
 	surface()->DrawPrintText(compassUnicode, sizeof(compass));
 
-	// NEO TODO (Rain): original NT has a fade effect on compass sides.
-	// We could emulate this by rendering each wchar separately, and modifying alpha that way.
+	surface()->DrawSetColor(Color(20, 20, 20, 200));
+	// Draw right half of the background fade...
+	surface()->DrawFilledRectFade(
+		xpos, ypos - (fontHeight / 2),
+		xpos + (fontWidth / 2), ypos + (fontHeight / 2),
+		neo_cl_hud_debug_compass_color_a.GetInt(),
+		0,
+		true);
+	// ...And then the left side.
+	surface()->DrawFilledRectFade(
+		xpos - (fontWidth / 2), ypos - (fontHeight / 2),
+		xpos - 1, ypos + (fontHeight / 2),
+		0,
+		neo_cl_hud_debug_compass_color_a.GetInt(),
+		true);
+
+	// Draw the compass "needle"
+	if (neo_cl_hud_compass_needle.GetBool())
+	{
+		const Color jinColor = Color(70, 145, 80, 200);
+		const Color nsfColor = Color(20, 70, 180, 200);
+		const Color specColor = Color(240, 120, 40, 200);
+
+		if (m_pOwner->GetTeamNumber() == TEAM_JINRAI)
+		{
+			surface()->DrawSetColor(jinColor);
+		}
+		else if (m_pOwner->GetTeamNumber() == TEAM_NSF)
+		{
+			surface()->DrawSetColor(nsfColor);
+		}
+		else
+		{
+			surface()->DrawSetColor(jinColor);
+			//surface()->DrawSetColor(specColor);
+		}
+
+		surface()->DrawFilledRect(xpos - 1, ypos - (fontHeight / 2),
+			xpos + 1, ypos + (fontHeight / 2));
+	}
 }
 
 void CNEOHud_Compass::ApplySchemeSettings(vgui::IScheme *pScheme)
