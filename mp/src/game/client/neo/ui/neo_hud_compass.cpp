@@ -1,4 +1,4 @@
-#include "cbase.h"
+﻿#include "cbase.h"
 #include "neo_hud_compass.h"
 
 #include "c_neo_player.h"
@@ -18,27 +18,29 @@
 
 using vgui::surface;
 
-extern ConVar neo_cl_hud_compass_enabled("neo_cl_hud_compass_enabled", "1", FCVAR_USERINFO,
-	"Whether the HUD compass is enabled or not.", true, 0.0f, true, 1.0f);
+ConVar neo_cl_hud_compass_enabled("neo_cl_hud_compass_enabled", "1", FCVAR_USERINFO,
+	"Whether the HUD compass is enabled or not.", true, 0, true, 1);
 // NEO TODO (Rain): descriptions for 2 cvars
-extern ConVar neo_cl_hud_compass_pos_x("neo_cl_hud_compass_pos_x", "2", FCVAR_USERINFO,
+ConVar neo_cl_hud_compass_pos_x("neo_cl_hud_compass_pos_x", "2", FCVAR_USERINFO,
 	"", true, 1, false, 10);
-extern ConVar neo_cl_hud_compass_pos_y("neo_cl_hud_compass_pos_y", "80", FCVAR_USERINFO,
+ConVar neo_cl_hud_compass_pos_y("neo_cl_hud_compass_pos_y", "80", FCVAR_USERINFO,
 	"", true, 1, false, 10);
+ConVar neo_cl_hud_compass_needle("neo_cl_hud_compass_needle", "1", FCVAR_USERINFO,
+	"Whether or not to show HUD compass needle.", true, 0, true, 1);
 
-extern ConVar neo_cl_hud_debug_compass_enabled("neo_cl_hud_debug_compass_enabled", "1", FCVAR_USERINFO | FCVAR_CHEAT,
+ConVar neo_cl_hud_debug_compass_enabled("neo_cl_hud_debug_compass_enabled", "0", FCVAR_USERINFO | FCVAR_CHEAT,
 	"Whether the Debug HUD compass is enabled or not.", true, 0.0f, true, 1.0f);
-extern ConVar neo_cl_hud_debug_compass_pos_x("neo_cl_hud_debug_compass_pos_x", "0.45", FCVAR_USERINFO | FCVAR_CHEAT,
+ConVar neo_cl_hud_debug_compass_pos_x("neo_cl_hud_debug_compass_pos_x", "0.45", FCVAR_USERINFO | FCVAR_CHEAT,
 	"Horizontal position of the Debug compass, in range 0 to 1.", true, 0.0f, true, 1.0f);
-extern ConVar neo_cl_hud_debug_compass_pos_y("neo_cl_hud_debug_compass_pos_y", "0.925", FCVAR_USERINFO | FCVAR_CHEAT,
+ConVar neo_cl_hud_debug_compass_pos_y("neo_cl_hud_debug_compass_pos_y", "0.925", FCVAR_USERINFO | FCVAR_CHEAT,
 	"Vertical position of the Debug compass, in range 0 to 1.", true, 0.0f, true, 1.0f);
-extern ConVar neo_cl_hud_debug_compass_color_r("neo_cl_hud_debug_compass_color_r", "190", FCVAR_USERINFO | FCVAR_CHEAT,
+ConVar neo_cl_hud_debug_compass_color_r("neo_cl_hud_debug_compass_color_r", "190", FCVAR_USERINFO | FCVAR_CHEAT,
 	"Red color value of the Debug compass, in range 0 - 255.", true, 0.0f, true, 255.0f);
-extern ConVar neo_cl_hud_debug_compass_color_g("neo_cl_hud_debug_compass_color_g", "185", FCVAR_USERINFO | FCVAR_CHEAT,
+ConVar neo_cl_hud_debug_compass_color_g("neo_cl_hud_debug_compass_color_g", "185", FCVAR_USERINFO | FCVAR_CHEAT,
 	"Green color value of the Debug compass, in range 0 - 255.", true, 0.0f, true, 255.0f);
-extern ConVar neo_cl_hud_debug_compass_color_b("neo_cl_hud_debug_compass_color_b", "205", FCVAR_USERINFO | FCVAR_CHEAT,
+ConVar neo_cl_hud_debug_compass_color_b("neo_cl_hud_debug_compass_color_b", "205", FCVAR_USERINFO | FCVAR_CHEAT,
 	"Blue value of the Debug compass, in range 0 - 255.", true, 0.0f, true, 255.0f);
-extern ConVar neo_cl_hud_debug_compass_color_a("neo_cl_hud_debug_compass_color_a", "255", FCVAR_USERINFO | FCVAR_CHEAT,
+ConVar neo_cl_hud_debug_compass_color_a("neo_cl_hud_debug_compass_color_a", "255", FCVAR_USERINFO | FCVAR_CHEAT,
 	"Alpha color value of the Debug compass, in range 0 - 255.", true, 0.0f, true, 255.0f);
 
 CNEOHud_Compass::CNEOHud_Compass(const char *pElementName, vgui::Panel *parent)
@@ -168,7 +170,6 @@ inline void CNEOHud_Compass::DrawCompass(void)
 		neo_cl_hud_debug_compass_color_b.GetInt(),
 		neo_cl_hud_debug_compass_color_a.GetInt());
 
-	surface()->DrawSetTextColor(textColor);
 	surface()->DrawSetTextFont(m_hFont);
 
 	int fontWidth, fontHeight;
@@ -177,6 +178,22 @@ inline void CNEOHud_Compass::DrawCompass(void)
 	const int xpos = m_resX - (m_resX / neo_cl_hud_compass_pos_x.GetInt());
 	const int ypos = m_resY - (m_resY / neo_cl_hud_compass_pos_y.GetInt());
 	
+	if (neo_cl_hud_compass_needle.GetBool())
+	{
+		// Print a unicode arrow to signify compass needle
+		wchar_t arrowUnicode[] = L"▼";
+		const Color arrowColor = Color(
+			neo_cl_hud_debug_compass_color_r.GetInt(),
+			neo_cl_hud_debug_compass_color_g.GetInt(),
+			neo_cl_hud_debug_compass_color_b.GetInt(),
+			neo_cl_hud_debug_compass_color_a.GetInt() / 3);
+		surface()->DrawSetTextColor(arrowColor);
+		surface()->DrawSetTextPos(xpos - ((fontWidth / (numCharsVisibleAroundNeedle - 1)) / 2), ypos - (fontHeight * 1.75f));
+		surface()->DrawPrintText(arrowUnicode, Q_UnicodeLength(arrowUnicode));
+	}
+
+	// Print the compass rose
+	surface()->DrawSetTextColor(textColor);
 	surface()->DrawSetTextPos(xpos - (fontWidth / 2), ypos - (fontHeight / 2));
 	surface()->DrawPrintText(compassUnicode, sizeof(compass));
 
