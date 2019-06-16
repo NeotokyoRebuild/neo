@@ -122,6 +122,12 @@ $Project "Client (HL2MP)"
 			$File	"neo\c_neo_player.cpp"
 			$File	"neo\c_neo_player.h"
 
+			$Folder "UI"
+			{
+				$File	"neo\ui\neo_hud_ghostbeacon.cpp"
+				$File	"neo\ui\neo_hud_ghostbeacon.h"
+			}
+
 			////////////////
 			// NEO SHARED //
 			////////////////

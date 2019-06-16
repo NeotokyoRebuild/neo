@@ -237,7 +237,7 @@ void C_NEO_Player::Weapon_Drop(C_BaseCombatWeapon *pWeapon)
 	C_WeaponGhost *ghost = dynamic_cast<C_WeaponGhost*>(pWeapon);
 	if (ghost)
 	{
-		ghost->HandleGhostUnequipSound();
+		ghost->HandleGhostUnequip();
 	}
 }
 
