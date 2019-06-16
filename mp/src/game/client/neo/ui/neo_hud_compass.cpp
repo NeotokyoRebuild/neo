@@ -211,13 +211,13 @@ inline void CNEOHud_Compass::DrawDebugCompass(void)
 	const char rose[] = "N -- ne -- E -- se -- S -- sw -- W -- nw -- ";
 
 	// One compass tick represents this many degrees of rotation
-	const int unitAccuracy = RoundFloatToInt(360.0f / sizeof(rose));
+	const float unitAccuracy = 360.0f / sizeof(rose);
 
 	// How many characters should be visible around each side of the needle position
 	const int numCharsVisibleAroundNeedle = 6;
 
 	// Get index offset for this angle's compass position
-	int offset = (angle / unitAccuracy) - numCharsVisibleAroundNeedle;
+	int offset = RoundFloatToInt((angle / unitAccuracy)) - numCharsVisibleAroundNeedle;
 	if (offset < 0)
 	{
 		offset += sizeof(rose);
