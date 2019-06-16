@@ -6,6 +6,7 @@
 #include <engine/ivdebugoverlay.h>
 #include <engine/IEngineSound.h>
 #include "filesystem.h"
+#include "ui/neo_hud_ghostbeacon.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -73,65 +74,35 @@ IMPLEMENT_ACTTABLE(CWeaponGhost);
 CWeaponGhost::CWeaponGhost(void)
 {
 #ifdef CLIENT_DLL
-	rootGhostPanel = NULL;
 	m_bHavePlayedGhostEquipSound = false;
 	m_bHaveHolsteredTheGhost = false;
+
+	for (int i = 0; i < ARRAYSIZE(m_pGhostBeacons); i++)
+	{
+		m_pGhostBeacons[i] = new CNEOHud_GhostBeacon("ghostBeacon");
+	}
 #endif
 
-#ifdef GAME_DLL
 	// This is just always on for now.
 	// Not sure if there's a reason to ever disable ghosting,
 	// but might as well have the option.
 	SetShowEnemies(true);
-#else
-	m_bShouldShowEnemies = true;
-#endif
+
+	ZeroGhostedPlayerLocArray();
 }
 
 #ifdef CLIENT_DLL
 CWeaponGhost::~C_WeaponGhost(void)
 {
-	if (rootGhostPanel)
+	for (int i = 0; i < ARRAYSIZE(m_pGhostBeacons); i++)
 	{
-		rootGhostPanel->DeletePanel();
+		if (m_pGhostBeacons[i])
+		{
+			delete m_pGhostBeacons[i];
+		}
 	}
 }
 #endif
-
-void CWeaponGhost::Spawn(void)
-{
-	BaseClass::Spawn();
-
-#ifdef CLIENT_DLL
-	rootGhostPanel = new vgui::Panel();
-	rootGhostPanel->SetAlpha(255);
-	rootGhostPanel->SetVisible(true);
-	rootGhostPanel->SetEnabled(false);
-	rootGhostPanel->SetPostChildPaintEnabled(true);
-
-	char formatBuff[21];
-	const int playerPosArrSize = sizeof(m_rvPlayerPositions) / sizeof(m_rvPlayerPositions[0]);
-	for (int i = 1; i <= playerPosArrSize; i++)
-	{
-		V_sprintf_safe(formatBuff, "GhostHUD_ClientIdx%i", i);
-		vgui::ImagePanel *img = new vgui::ImagePanel(rootGhostPanel, formatBuff);
-
-#ifdef _WIN32
-		img->SetImage(vgui::scheme()->GetImage("vgui\\hud\\ctg\\g_beacon_enemy", false));
-#elif defined(LINUX)
-		img->SetImage(vgui::scheme()->GetImage("vgui/hud/ctg/g_beacon_enemy", false));
-#else
-#error Unimplemented
-#endif
-
-		img->SetAutoDelete(true);
-		img->SetSize(256, 256);
-		img->SetFgColor(Color(255, 0, 0));
-		img->SetEnabled(false);
-		img->SetVisible(false);
-	}
-#endif
-}
 
 inline void CWeaponGhost::ZeroGhostedPlayerLocArray(void)
 {
@@ -152,22 +123,24 @@ inline void CWeaponGhost::ZeroGhostedPlayerLocArray(void)
 
 void CWeaponGhost::ItemPreFrame(void)
 {
-	if (m_bShouldShowEnemies)
+	// NEO TODO (Rain): it's probably acceptable to move this scope to Tick for perf
 	{
-#ifdef CLIENT_DLL
 		// Only show enemies if we are ghosting
-		ShowEnemies();
-		rootGhostPanel->Paint();
-		HandleGhostEquipSound();
+		if (m_bShouldShowEnemies)
+		{
+#ifdef CLIENT_DLL
+			ShowEnemies();
+			HandleGhostEquip();
 #else
-		// We only need to update this while someone is ghosting
-		UpdateNetworkedEnemyLocations();
+			// We only need to update this while someone is ghosting
+			UpdateNetworkedEnemyLocations();
 #endif
+		}
 	}
 }
 
 #ifdef CLIENT_DLL
-inline void CWeaponGhost::HandleGhostEquipSound()
+inline void CWeaponGhost::HandleGhostEquip(void)
 {
 	if (!m_bHavePlayedGhostEquipSound)
 	{
@@ -177,25 +150,25 @@ inline void CWeaponGhost::HandleGhostEquipSound()
 	}
 }
 
-inline void CWeaponGhost::HandleGhostUnequipSound()
+inline void CWeaponGhost::HandleGhostUnequip(void)
 {
 	if (!m_bHaveHolsteredTheGhost)
 	{
+		HideEnemies();
 		StopGhostSound();
 		m_bHaveHolsteredTheGhost = true;
 		m_bHavePlayedGhostEquipSound = false;
 	}
 }
 
+// Consider calling HandleGhostEquip instead.
 inline void CWeaponGhost::PlayGhostSound(float volume)
 {
-	C_RecipientFilter filter;
-	filter.AddRecipient((CBasePlayer*)GetOwner());
-
 	const int randomEquipSoundIndex = RandomInt(GHOST_SOUND_EQUIP, GHOST_SOUND_EQUIP5);
 	enginesound->EmitAmbientSound(ghostSoundFiles[randomEquipSoundIndex], volume);
 }
 
+// Consider calling HandleGhostUnequip instead.
 inline void CWeaponGhost::StopGhostSound(void)
 {
 	CUtlVector<SndInfo_t> sounds;
@@ -204,7 +177,8 @@ inline void CWeaponGhost::StopGhostSound(void)
 	char filename[MAX_PATH];
 	for (int i = 0; i < sounds.Size(); i++)
 	{
-		if (!g_pFullFileSystem->String(sounds[i].m_filenameHandle, filename, sizeof(filename)))
+		if (!g_pFullFileSystem->String(sounds[i].m_filenameHandle,
+			filename, sizeof(filename)))
 		{
 			continue;
 		}
@@ -240,7 +214,7 @@ void CWeaponGhost::ItemHolsterFrame(void)
 	BaseClass::ItemHolsterFrame();
 
 #ifdef CLIENT_DLL
-	HandleGhostUnequipSound();
+	HandleGhostUnequip(); // is there some callback, so we don't have to keep calling this?
 #endif
 }
 
@@ -248,12 +222,14 @@ void CWeaponGhost::PrimaryAttack(void)
 {
 }
 
-#ifdef GAME_DLL
 void CWeaponGhost::SetShowEnemies(bool enabled)
 {
+#ifdef GAME_DLL
 	m_bShouldShowEnemies.GetForModify() = enabled;
-}
+#else
+	m_bShouldShowEnemies = enabled;
 #endif
+}
 
 enum {
 	NEO_GHOST_ONLY_ENEMIES = 0,
@@ -262,12 +238,20 @@ enum {
 };
 ConVar neo_ghost_debug_ignore_teams("neo_ghost_debug_ignore_teams", "2", FCVAR_CHEAT | FCVAR_REPLICATED,
 	"Debug ghost team filter. If 0, only ghost the enemy team. If 1, ghost both playable teams. If 2, ghost any team, including spectator and unassigned.", true, 0.0, true, 2.0);
-ConVar neo_ghost_debug_spew("neo_ghost_debug_spew", "1", FCVAR_CHEAT | FCVAR_REPLICATED,
+ConVar neo_ghost_debug_spew("neo_ghost_debug_spew", "0", FCVAR_CHEAT | FCVAR_REPLICATED,
 	"Whether to spew debug logs to console about ghosting positions and the data PVS/server origin.", true, 0.0, true, 1.0);
 ConVar neo_ghost_debug_hudinfo("neo_ghost_debug_hudinfo", "1", FCVAR_CHEAT | FCVAR_REPLICATED,
 	"Whether to overlay debug text information to screen about ghosting targets.", true, 0.0, true, 1.0);
 
 #ifdef CLIENT_DLL
+void CWeaponGhost::HideEnemies(void)
+{
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		HideBeacon(i);
+	}
+}
+
 // Purpose: Iterate through all enemies and give ghoster their position info,
 // either via client's own PVS information or networked by the server when needed.
 void CWeaponGhost::ShowEnemies(void)
@@ -283,7 +267,6 @@ void CWeaponGhost::ShowEnemies(void)
 		HideBeacon(i);
 
 		auto otherPlayer = ToBasePlayer( ClientEntityList().GetEnt( i ) );
-		//auto otherPlayer = UTIL_PlayerByIndex(i);
 
 		// Only ghost valid clients that aren't ourselves
 		if (!otherPlayer || otherPlayer == player)
@@ -309,8 +292,10 @@ void CWeaponGhost::ShowEnemies(void)
 			}
 		}
 
+		const bool isInPVS = otherPlayer->IsVisible();
+
 		// If it's in my PVS already
-		if (otherPlayer->IsVisible())
+		if (isInPVS)
 		{
 			ShowBeacon(i, otherPlayer->GetAbsOrigin());
 
@@ -324,7 +309,7 @@ void CWeaponGhost::ShowEnemies(void)
 			
 			if (neo_ghost_debug_hudinfo.GetBool())
 			{
-				Debug_ShowPos(otherPlayer->GetAbsOrigin());
+				Debug_ShowPos(otherPlayer->GetAbsOrigin(), isInPVS);
 			}
 		}
 		// Else, the server will provide us with this enemy's position info
@@ -342,51 +327,90 @@ void CWeaponGhost::ShowEnemies(void)
 			
 			if (neo_ghost_debug_hudinfo.GetBool())
 			{
-				Debug_ShowPos(m_rvPlayerPositions[i]);
+				Debug_ShowPos(m_rvPlayerPositions[i], isInPVS);
 			}
 		}
 	}
 }
 
-inline void CWeaponGhost::HideBeacon(int panelIndex)
+inline void CWeaponGhost::HideBeacon(int clientIndex)
 {
-	rootGhostPanel->GetChild(panelIndex)->SetVisible(false);
+	m_pGhostBeacons[clientIndex]->SetVisible(false);
 }
 
-// NEO FIXME (Rain): this doesn't work, need to figure out why
-inline void CWeaponGhost::ShowBeacon(int panelIndex, const Vector &pos)
+using vgui::surface;
+
+extern ConVar neo_ghost_beacon_scale_baseline;
+
+inline void CWeaponGhost::ShowBeacon(int clientIndex, const Vector &pos)
 {
+	if (!m_pGhostBeacons[clientIndex])
+	{
+		Assert(false);
+		return;
+	}
+
+	Vector dir = GetOwner()->EyePosition() - pos;
+
+	// NEO TODO (Rain): make server authoritative cvar in shared code
+	const float maxGhostRangeMeters = 45.0f;
+
+	const float distance = dir.Length2D();
+	// NEO TODO (Rain): Make sure this conversion is actually accurate
+	const float distMeters = (distance / METERS_PER_INCH) / 1000.0f;
+
+	// Server will never give us info beyond the ghost range,
+	// so this only happens if there was a target in PVS beyond range.
+	// (NEO FIXME (Rain): actually it does, there is no check in place yet)
+	if (distMeters > maxGhostRangeMeters)
+	{
+		return;
+	}
+
+	const float maxDistInHammerUnits = (maxGhostRangeMeters / METERS_PER_INCH);
+
+	Assert(maxDistInHammerUnits > 0);
+
+	const float scaling = clamp((distance / maxDistInHammerUnits),
+		0.25f * neo_ghost_beacon_scale_baseline.GetFloat(),
+		0.75f * neo_ghost_beacon_scale_baseline.GetFloat());
+	
+#if(0)
+	DevMsg("Dist was: %.1f meters; beacon texture scaling: %f\n",
+		distMeters, scaling);
+#endif
+
+	const int heightOffset = 32;
+	Vector temp(pos.x, pos.y, pos.z + heightOffset);
 	int x, y;
-	GetVectorInScreenSpace(pos, x, y); // this is pixels from top-left
+	GetVectorInScreenSpace(temp, x, y); // this is pixels from top-left
 
-	//DevMsg("x %d y %d\n", x, y);
-
-	rootGhostPanel->GetChild(panelIndex)->SetPos(x, y);
-	rootGhostPanel->GetChild(panelIndex)->SetVisible(true);
-	rootGhostPanel->GetChild(panelIndex)->Paint();
-
-	//Assert(rootGhostPanel->GetChild(panelIndex)->IsFullyVisible());
+	m_pGhostBeacons[clientIndex]->SetGhostTargetPos(x, y, scaling, distMeters);
+	m_pGhostBeacons[clientIndex]->SetVisible(true);
 }
 
-void CWeaponGhost::Debug_ShowPos(const Vector &pos)
+void CWeaponGhost::Debug_ShowPos(const Vector &pos, bool pvs)
 {
 	int x, y;
 	GetVectorInScreenSpace(pos, x, y);
 
-	debugoverlay->AddTextOverlay(pos, 0.002f, "GHOST TARGET");
+	// Whether target originated from client PVS or was sent by server
+	if (pvs)
+	{
+		debugoverlay->AddTextOverlay(pos, gpGlobals->frametime, "GHOST TARGET (PVS)");
+	}
+	else
+	{
+		debugoverlay->AddTextOverlay(pos, gpGlobals->frametime, "GHOST TARGET (SERVER)");
+	}
 }
 #endif
 
 #ifdef GAME_DLL
 // Purpose: Send enemy player locations to clients for ghost usage outside their PVS.
 //
-// NEO TODO/FIXME 1 (Rain): We should only send enemy position info to the ghoster
-//
-// NEO TODO/FIXME 2 (Rain): This stuff will get networked once per ghost;
+// NEO TODO/FIXME (Rain): This stuff will get networked once per ghost;
 // this can be inefficient in the unlikely event of multiple ghosts at play at once.
-//
-// NEO TODO/FIXME 3 (Rain): We don't check for distance (45m) yet - all enemy positions are revealed.
-// This is also true for the PVS method.
 void CWeaponGhost::UpdateNetworkedEnemyLocations(void)
 {
 	// FIXME/HACK: we never deallocate, move this to class member variable

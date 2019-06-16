@@ -6,8 +6,6 @@
 
 #ifdef CLIENT_DLL
 #include "c_neo_player.h"
-#include <vgui_controls/Panel.h>
-#include <vgui_controls/ImagePanel.h>
 #else
 #include "neo_player.h"
 #endif
@@ -19,6 +17,10 @@
 #define CBaseCombatCharacter C_BaseCombatCharacter
 #define CBasePlayer C_BasePlayer
 #define CNEOPlayer C_NEO_Player
+#endif
+
+#ifdef CLIENT_DLL
+class CNEOHud_GhostBeacon;
 #endif
 
 class CWeaponGhost : public CNEOBaseCombatWeapon
@@ -38,10 +40,8 @@ public:
 	void PrimaryAttack(void);
 	
 	virtual void ItemHolsterFrame(void);
-	virtual void Spawn(void);
 	virtual void Equip(CBaseCombatCharacter *pOwner);
-
-	inline void HandleGhostUnequipSound();
+	void HandleGhostUnequip(void);
 
 #ifdef GAME_DLL
 	DECLARE_ACTTABLE();
@@ -49,17 +49,18 @@ public:
 
 private:
 	inline void ZeroGhostedPlayerLocArray(void);
-	inline void ShowBeacon(int panelIndex, const Vector &pos);
-	inline void HideBeacon(int panelIndex);
+	inline void ShowBeacon(int clientIndex, const Vector &pos);
+	inline void HideBeacon(int clientIndex);
+	inline void SetShowEnemies(bool enabled);
 
 #ifdef CLIENT_DLL
 	inline void ShowEnemies(void);
-	inline void Debug_ShowPos(const Vector &pos);
+	inline void HideEnemies(void);
+	inline void Debug_ShowPos(const Vector &pos, bool pvs);
 	inline void PlayGhostSound(float volume = 1.0f);
-	inline void StopGhostSound();
-	inline void HandleGhostEquipSound();
+	inline void StopGhostSound(void);
+	inline void HandleGhostEquip(void);
 #else
-	void SetShowEnemies(bool enabled);
 	void UpdateNetworkedEnemyLocations(void);
 #endif
 
@@ -72,7 +73,9 @@ private:
 
 	Vector m_rvPlayerPositions[MAX_PLAYERS];
 
-	vgui::Panel *rootGhostPanel;
+	// NEO TODO (Rain): It's probably better to just have one beacon,
+	// and call it numplayers times on each update between hud buffer swaps
+	CNEOHud_GhostBeacon *m_pGhostBeacons[MAX_PLAYERS];
 #else
 	CNetworkVar(bool, m_bShouldShowEnemies);
 	CNetworkArray(Vector, m_rvPlayerPositions, MAX_PLAYERS);

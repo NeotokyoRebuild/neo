@@ -59,9 +59,10 @@ In shared code, clientside code can be differentiated with CLIENT_DLL, vs. serve
 
 ### Code style
 
-No big restrictions, just try to more or less match the other SDK code style.
+No big restrictions on general code format, just try to more or less match the other SDK code style.
 
 * C++11
 * Valve likes to ( space ) their arguments, especially with macros, but it's not necessary to strictly follow everywhere.
 * Tabs are preferred for whitespace, to be consistent with the SDK code.
+* When using a TODO/FIXME/HACK... style comment, use the format "// NEO TODO (Rain): Example comment." to make it easier to search NEO specific todos/fixmes (opposed to Valve ones), and at a glance figure out who has written them.
 * For classes running on both client and server, you should generally follow Valve's <i>C_Thing</i> (client) -- <i>CThing</i> (server) convention. On shared files, this might mean #defining serverclass for client, or vice versa. There's plenty of examples of this pattern in Valve's classes for reference, [for example here](https://github.com/NeotokyoRevamp/neo/blob/f749c07a4701d285bbb463686d5a5a50c20b9528/mp/src/game/shared/hl2mp/weapon_357.cpp#L20).
