@@ -238,7 +238,7 @@ enum {
 };
 ConVar neo_ghost_debug_ignore_teams("neo_ghost_debug_ignore_teams", "2", FCVAR_CHEAT | FCVAR_REPLICATED,
 	"Debug ghost team filter. If 0, only ghost the enemy team. If 1, ghost both playable teams. If 2, ghost any team, including spectator and unassigned.", true, 0.0, true, 2.0);
-ConVar neo_ghost_debug_spew("neo_ghost_debug_spew", "1", FCVAR_CHEAT | FCVAR_REPLICATED,
+ConVar neo_ghost_debug_spew("neo_ghost_debug_spew", "0", FCVAR_CHEAT | FCVAR_REPLICATED,
 	"Whether to spew debug logs to console about ghosting positions and the data PVS/server origin.", true, 0.0, true, 1.0);
 ConVar neo_ghost_debug_hudinfo("neo_ghost_debug_hudinfo", "1", FCVAR_CHEAT | FCVAR_REPLICATED,
 	"Whether to overlay debug text information to screen about ghosting targets.", true, 0.0, true, 1.0);
@@ -352,24 +352,40 @@ inline void CWeaponGhost::ShowBeacon(int clientIndex, const Vector &pos)
 
 	Vector dir = GetOwner()->EyePosition() - pos;
 
-	const float distance = dir.NormalizeInPlace();
-	const float maxDistInHammerUnits = (45.0f / METERS_PER_INCH);
+	// NEO TODO (Rain): make server authoritative cvar in shared code
+	const float maxGhostRangeMeters = 45.0f;
+
+	const float distance = dir.Length2D();
+	// NEO TODO (Rain): Make sure this conversion is actually accurate
+	const float distMeters = (distance / METERS_PER_INCH) / 1000.0f;
+
+	// Server will never give us info beyond the ghost range,
+	// so this only happens if there was a target in PVS beyond range.
+	// (NEO FIXME (Rain): actually it does, there is no check in place yet)
+	if (distMeters > maxGhostRangeMeters)
+	{
+		return;
+	}
+
+	const float maxDistInHammerUnits = (maxGhostRangeMeters / METERS_PER_INCH);
 
 	Assert(maxDistInHammerUnits > 0);
 
 	const float scaling = clamp((distance / maxDistInHammerUnits),
 		0.25f * neo_ghost_beacon_scale_baseline.GetFloat(),
 		0.75f * neo_ghost_beacon_scale_baseline.GetFloat());
-
-	DevMsg("Dist was: %f meters; beacon texture scaling: %f\n",
-		(distance / METERS_PER_INCH), scaling);
+	
+#if(0)
+	DevMsg("Dist was: %.1f meters; beacon texture scaling: %f\n",
+		distMeters, scaling);
+#endif
 
 	const int heightOffset = 32;
 	Vector temp(pos.x, pos.y, pos.z + heightOffset);
 	int x, y;
 	GetVectorInScreenSpace(temp, x, y); // this is pixels from top-left
 
-	m_pGhostBeacons[clientIndex]->SetGhostTargetPos(x, y, scaling);
+	m_pGhostBeacons[clientIndex]->SetGhostTargetPos(x, y, scaling, distMeters);
 	m_pGhostBeacons[clientIndex]->SetVisible(true);
 }
 
@@ -393,13 +409,8 @@ void CWeaponGhost::Debug_ShowPos(const Vector &pos, bool pvs)
 #ifdef GAME_DLL
 // Purpose: Send enemy player locations to clients for ghost usage outside their PVS.
 //
-// NEO TODO/FIXME 1 (Rain): We should only send enemy position info to the ghoster
-//
-// NEO TODO/FIXME 2 (Rain): This stuff will get networked once per ghost;
+// NEO TODO/FIXME (Rain): This stuff will get networked once per ghost;
 // this can be inefficient in the unlikely event of multiple ghosts at play at once.
-//
-// NEO TODO/FIXME 3 (Rain): We don't check for distance (45m) yet - all enemy positions are revealed.
-// This is also true for the PVS method.
 void CWeaponGhost::UpdateNetworkedEnemyLocations(void)
 {
 	// FIXME/HACK: we never deallocate, move this to class member variable

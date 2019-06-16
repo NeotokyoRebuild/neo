@@ -16,6 +16,7 @@
 #include "hud_crosshair.h"
 
 #include "neo_predicted_viewmodel.h"
+#include "ui/neo_hud_compass.h"
 
 #include "baseviewmodel_shared.h"
 
@@ -50,10 +51,17 @@ ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
 
 C_NEO_Player::C_NEO_Player()
 {
+	m_pCompass = new CNEOHud_Compass("compass");
+	m_pCompass->SetOwner(this);
 }
 
 C_NEO_Player::~C_NEO_Player()
 {
+	if (m_pCompass)
+	{
+		m_pCompass->MarkForDeletion();
+		delete m_pCompass;
+	}
 }
 
 C_NEO_Player *C_NEO_Player::GetLocalNEOPlayer()
@@ -183,8 +191,6 @@ void C_NEO_Player::PreThink( void )
 	{
 		vm->CalcLean(this);
 	}
-
-	DrawCompass();
 }
 
 void C_NEO_Player::ClientThink(void)
@@ -239,84 +245,4 @@ void C_NEO_Player::Weapon_Drop(C_BaseCombatWeapon *pWeapon)
 	{
 		ghost->HandleGhostUnequip();
 	}
-}
-
-ConVar neo_cl_hud_compass_enabled("neo_cl_hud_compass_enabled", "1", FCVAR_USERINFO,
-	"Whether the HUD compass is enabled or not.", true, 0.0f, true, 1.0f);
-ConVar neo_cl_hud_compass_pos_x("neo_cl_hud_compass_pos_x", "0.45", FCVAR_USERINFO,
-	"Horizontal position of the compass, in range 0 to 1.", true, 0.0f, true, 1.0f);
-ConVar neo_cl_hud_compass_pos_y("neo_cl_hud_compass_pos_y", "0.925", FCVAR_USERINFO,
-	"Vertical position of the compass, in range 0 to 1.", true, 0.0f, true, 1.0f);
-ConVar neo_cl_hud_compass_color_r("neo_cl_hud_compass_color_r", "190", FCVAR_USERINFO,
-	"Red color value of the compass, in range 0 - 255.", true, 0.0f, true, 255.0f);
-ConVar neo_cl_hud_compass_color_g("neo_cl_hud_compass_color_g", "185", FCVAR_USERINFO,
-	"Green color value of the compass, in range 0 - 255.", true, 0.0f, true, 255.0f);
-ConVar neo_cl_hud_compass_color_b("neo_cl_hud_compass_color_b", "205", FCVAR_USERINFO,
-	"Blue value of the compass, in range 0 - 255.", true, 0.0f, true, 255.0f);
-ConVar neo_cl_hud_compass_color_a("neo_cl_hud_compass_color_a", "255", FCVAR_USERINFO,
-	"Alpha color value of the compass, in range 0 - 255.", true, 0.0f, true, 255.0f);
-
-// Purpose: Draw a simple compass to the bottom of player's screen.
-// NEO TODO (Rain): figure out the HUD design and add fancier textured compass.
-inline void C_NEO_Player::DrawCompass(void)
-{
-	if (!neo_cl_hud_compass_enabled.GetBool())
-	{
-		return;
-	}
-
-	// Direction in -180 to 180
-	float angle = EyeAngles()[YAW];
-
-	// Bring us back to safety
-	if (angle > 180)
-	{
-		angle -= 360;
-	}
-	else if (angle < -180)
-	{
-		angle += 360;
-	}
-
-	// Char representation of the compass strip
-	const char rose[] = "N -- ne -- E -- se -- S -- sw -- W -- nw -- ";
-
-	// One compass tick represents this many degrees of rotation
-	const int unitAccuracy = RoundFloatToInt(360.0f / sizeof(rose));
-
-	// How many characters should be visible around each side of the needle position
-	const int numCharsVisibleAroundNeedle = 6;
-
-	// Get index offset for this angle's compass position
-	int offset = (angle / unitAccuracy) - numCharsVisibleAroundNeedle;
-	if (offset < 0)
-	{
-		offset += sizeof(rose);
-	}
-
-	// Both sides + center + terminator
-	char compass[numCharsVisibleAroundNeedle * 2 + 2];
-	int i;
-	for (i = 0; i < sizeof(compass) - 1; i++)
-	{
-		// Get our index by circling around the compass strip.
-		// We do modulo -1, because sizeof would land us on NULL
-		// and terminate the string early.
-		const int wrappedIndex = (offset + i) % (sizeof(rose) - 1);
-
-		compass[i] = rose[wrappedIndex];
-	}
-	// Finally, make sure we have a null terminator
-	compass[i] = '\0';
-
-	// Draw the compass for this frame
-	debugoverlay->AddScreenTextOverlay(
-		neo_cl_hud_compass_pos_x.GetFloat(),
-		neo_cl_hud_compass_pos_y.GetFloat(),
-		gpGlobals->frametime,
-		neo_cl_hud_compass_color_r.GetInt(),
-		neo_cl_hud_compass_color_g.GetInt(),
-		neo_cl_hud_compass_color_b.GetInt(),
-		neo_cl_hud_compass_color_a.GetInt(),
-		compass);
 }

@@ -1,0 +1,248 @@
+#include "cbase.h"
+#include "neo_hud_compass.h"
+
+#include "c_neo_player.h"
+
+#include "iclientmode.h"
+#include <vgui/ILocalize.h>
+#include <vgui/ISurface.h>
+#include <vgui_controls/Controls.h>
+#include <vgui_controls/ImagePanel.h>
+#include <vgui/IScheme.h>
+
+#include <engine/ivdebugoverlay.h>
+#include "ienginevgui.h"
+
+// memdbgon must be the last include file in a .cpp file!!!
+#include "tier0/memdbgon.h"
+
+using vgui::surface;
+
+extern ConVar neo_cl_hud_compass_enabled("neo_cl_hud_compass_enabled", "1", FCVAR_USERINFO,
+	"Whether the HUD compass is enabled or not.", true, 0.0f, true, 1.0f);
+// NEO TODO (Rain): descriptions for 2 cvars
+extern ConVar neo_cl_hud_compass_pos_x("neo_cl_hud_compass_pos_x", "2", FCVAR_USERINFO,
+	"", true, 1, false, 10);
+extern ConVar neo_cl_hud_compass_pos_y("neo_cl_hud_compass_pos_y", "8", FCVAR_USERINFO,
+	"", true, 1, false, 10);
+
+extern ConVar neo_cl_hud_debug_compass_enabled("neo_cl_hud_debug_compass_enabled", "1", FCVAR_USERINFO | FCVAR_CHEAT,
+	"Whether the Debug HUD compass is enabled or not.", true, 0.0f, true, 1.0f);
+extern ConVar neo_cl_hud_debug_compass_pos_x("neo_cl_hud_debug_compass_pos_x", "0.45", FCVAR_USERINFO | FCVAR_CHEAT,
+	"Horizontal position of the Debug compass, in range 0 to 1.", true, 0.0f, true, 1.0f);
+extern ConVar neo_cl_hud_debug_compass_pos_y("neo_cl_hud_debug_compass_pos_y", "0.925", FCVAR_USERINFO | FCVAR_CHEAT,
+	"Vertical position of the Debug compass, in range 0 to 1.", true, 0.0f, true, 1.0f);
+extern ConVar neo_cl_hud_debug_compass_color_r("neo_cl_hud_debug_compass_color_r", "190", FCVAR_USERINFO | FCVAR_CHEAT,
+	"Red color value of the Debug compass, in range 0 - 255.", true, 0.0f, true, 255.0f);
+extern ConVar neo_cl_hud_debug_compass_color_g("neo_cl_hud_debug_compass_color_g", "185", FCVAR_USERINFO | FCVAR_CHEAT,
+	"Green color value of the Debug compass, in range 0 - 255.", true, 0.0f, true, 255.0f);
+extern ConVar neo_cl_hud_debug_compass_color_b("neo_cl_hud_debug_compass_color_b", "205", FCVAR_USERINFO | FCVAR_CHEAT,
+	"Blue value of the Debug compass, in range 0 - 255.", true, 0.0f, true, 255.0f);
+extern ConVar neo_cl_hud_debug_compass_color_a("neo_cl_hud_debug_compass_color_a", "255", FCVAR_USERINFO | FCVAR_CHEAT,
+	"Alpha color value of the Debug compass, in range 0 - 255.", true, 0.0f, true, 255.0f);
+
+CNEOHud_Compass::CNEOHud_Compass(const char *pElementName, vgui::Panel *parent)
+	: CHudElement(pElementName), Panel(parent, pElementName)
+{
+	m_pOwner = NULL;
+
+	SetAutoDelete(true);
+
+	vgui::HScheme neoscheme = vgui::scheme()->LoadSchemeFromFileEx(
+		enginevgui->GetPanel(PANEL_CLIENTDLL), "resource/ClientScheme_Neo.res", "ClientScheme_Neo");
+	SetScheme(neoscheme);
+
+	if (parent)
+	{
+		SetParent(parent);
+	}
+	else
+	{
+		SetParent(g_pClientMode->GetViewport());
+	}
+
+	surface()->GetScreenSize(m_resX, m_resY);
+	SetBounds(0, 0, m_resX, m_resY);
+
+	// NEO HACK (Rain): this is kind of awkward, we should get the handle on ApplySchemeSettings
+	vgui::IScheme *scheme = vgui::scheme()->GetIScheme(neoscheme);
+	Assert(scheme);
+
+	m_hFont = scheme->GetFont("NHudOCRSmall");
+
+	SetVisible(neo_cl_hud_compass_enabled.GetBool());
+}
+
+void CNEOHud_Compass::SetOwner(C_NEO_Player *owner)
+{
+	Assert(owner);
+
+	if (owner)
+	{
+		m_pOwner = owner;
+	}
+}
+
+void CNEOHud_Compass::Paint()
+{
+	if (neo_cl_hud_debug_compass_enabled.GetBool())
+	{
+		DrawDebugCompass();
+	}
+
+	// NEO TODO (Rain): hook cvar to re-enable ourselves
+	if (!neo_cl_hud_compass_enabled.GetBool())
+	{
+		SetVisible(false);
+		return;
+	}
+
+	BaseClass::Paint();
+
+	DrawCompass();
+}
+
+inline void CNEOHud_Compass::DrawCompass(void)
+{
+	if (!m_pOwner)
+	{
+		return;
+	}
+
+	// Direction in -180 to 180
+	float angle = m_pOwner->EyeAngles()[YAW];
+
+	// Bring us back to safety
+	if (angle > 180)
+	{
+		angle -= 360;
+	}
+	else if (angle < -180)
+	{
+		angle += 360;
+	}
+
+	// Char representation of the compass strip
+	const char rose[] = "N        |        ne        |        E        |\
+        se        |        S        |        sw        |        W        |\
+        nw        |        ";
+
+	// One compass tick represents this many degrees of rotation
+	const int unitAccuracy = RoundFloatToInt(360.0f / sizeof(rose));
+
+	// How many characters should be visible around each side of the needle position
+	const int numCharsVisibleAroundNeedle = 20;
+
+	// Get index offset for this angle's compass position
+	int offset = (angle / unitAccuracy) - numCharsVisibleAroundNeedle;
+	if (offset < 0)
+	{
+		offset += sizeof(rose);
+	}
+
+	// Both sides + center + terminator
+	const size_t compassStrSize = numCharsVisibleAroundNeedle * 2 + 2;
+	char compass[compassStrSize];
+	int i;
+	for (i = 0; i < sizeof(compass) - 1; i++)
+	{
+		// Get our index by circling around the compass strip.
+		// We do modulo -1, because sizeof would land us on NULL
+		// and terminate the string early.
+		const int wrappedIndex = (offset + i) % (sizeof(rose) - 1);
+
+		compass[i] = rose[wrappedIndex];
+	}
+	// Finally, make sure we have a null terminator
+	compass[i] = '\0';
+
+	wchar_t compassUnicode[compassStrSize * sizeof(wchar_t)];
+	g_pVGuiLocalize->ConvertANSIToUnicode(compass, compassUnicode, compassStrSize * sizeof(wchar_t));
+
+	const Color textColor = Color(
+		neo_cl_hud_debug_compass_color_r.GetInt(),
+		neo_cl_hud_debug_compass_color_g.GetInt(),
+		neo_cl_hud_debug_compass_color_b.GetInt(),
+		neo_cl_hud_debug_compass_color_a.GetInt());
+
+	surface()->DrawSetTextColor(textColor);
+	surface()->DrawSetTextFont(m_hFont);
+
+	int fontWidth, fontHeight;
+	surface()->GetTextSize(m_hFont, compassUnicode, fontWidth, fontHeight);
+
+	const int xpos = m_resX - (m_resX / neo_cl_hud_compass_pos_x.GetInt());
+	const int ypos = m_resY - (m_resY / neo_cl_hud_compass_pos_y.GetInt());
+	
+	surface()->DrawSetTextPos(xpos - (fontWidth / 2), ypos - (fontHeight / 2));
+	surface()->DrawPrintText(compassUnicode, sizeof(compass));
+
+	// NEO TODO (Rain): original NT has a fade effect on compass sides.
+	// We could emulate this by rendering each wchar separately, and modifying alpha that way.
+}
+
+void CNEOHud_Compass::ApplySchemeSettings(vgui::IScheme *pScheme)
+{
+	BaseClass::ApplySchemeSettings(pScheme);
+
+	surface()->GetScreenSize(m_resX, m_resY);
+	SetBounds(0, 0, m_resX, m_resY);
+}
+
+inline void CNEOHud_Compass::DrawDebugCompass(void)
+{
+	// Direction in -180 to 180
+	float angle = m_pOwner->EyeAngles()[YAW];
+
+	// Bring us back to safety
+	if (angle > 180)
+	{
+		angle -= 360;
+	}
+	else if (angle < -180)
+	{
+		angle += 360;
+	}
+
+	// Char representation of the compass strip
+	const char rose[] = "N -- ne -- E -- se -- S -- sw -- W -- nw -- ";
+
+	// One compass tick represents this many degrees of rotation
+	const int unitAccuracy = RoundFloatToInt(360.0f / sizeof(rose));
+
+	// How many characters should be visible around each side of the needle position
+	const int numCharsVisibleAroundNeedle = 6;
+
+	// Get index offset for this angle's compass position
+	int offset = (angle / unitAccuracy) - numCharsVisibleAroundNeedle;
+	if (offset < 0)
+	{
+		offset += sizeof(rose);
+	}
+
+	// Both sides + center + terminator
+	char compass[numCharsVisibleAroundNeedle * 2 + 2];
+	int i;
+	for (i = 0; i < sizeof(compass) - 1; i++)
+	{
+		// Get our index by circling around the compass strip.
+		// We do modulo -1, because sizeof would land us on NULL
+		// and terminate the string early.
+		const int wrappedIndex = (offset + i) % (sizeof(rose) - 1);
+
+		compass[i] = rose[wrappedIndex];
+	}
+	// Finally, make sure we have a null terminator
+	compass[i] = '\0';
+
+	// Draw the compass for this frame
+	debugoverlay->AddScreenTextOverlay(
+		neo_cl_hud_debug_compass_pos_x.GetFloat(),
+		neo_cl_hud_debug_compass_pos_y.GetFloat(),
+		gpGlobals->frametime,
+		neo_cl_hud_debug_compass_color_r.GetInt(),
+		neo_cl_hud_debug_compass_color_g.GetInt(),
+		neo_cl_hud_debug_compass_color_b.GetInt(),
+		neo_cl_hud_debug_compass_color_a.GetInt(),
+		compass);
+}

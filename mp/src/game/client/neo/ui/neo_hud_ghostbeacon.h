@@ -7,7 +7,6 @@
 #include "hudelement.h"
 #include <vgui_controls/Panel.h>
 
-#ifdef CLIENT_DLL
 class CNEOHud_GhostBeacon : public CHudElement, public vgui::Panel
 {
 	DECLARE_CLASS_SIMPLE(CNEOHud_GhostBeacon, Panel);
@@ -17,18 +16,21 @@ public:
 
 	virtual void Paint();
 
-	void SetGhostTargetPos(int x, int y, float textureScale)
+	// NEO TODO (Rain): we should move the entire textureScale logic to this class,
+	// since it could be derived from the distance
+	void SetGhostTargetPos(int x, int y, float textureScale, float distMeters)
 	{
 		m_posX = x;
 		m_posY = y;
 		m_flTexScale = textureScale;
+		m_flDistMeters = distMeters;
 	}
 
 private:
 	int m_posX, m_posY;
 	int m_beaconTexWidth, m_beaconTexHeight;
 
-	float m_flTexScale;
+	float m_flTexScale, m_flDistMeters;
 
 	vgui::HFont m_hFont;
 
@@ -37,6 +39,5 @@ private:
 private:
 	CNEOHud_GhostBeacon(const CNEOHud_GhostBeacon &other);
 };
-#endif
 
 #endif // NEO_HUD_GHOSTBEACON_H

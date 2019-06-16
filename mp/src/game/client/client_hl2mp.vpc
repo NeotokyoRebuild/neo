@@ -124,6 +124,8 @@ $Project "Client (HL2MP)"
 
 			$Folder "UI"
 			{
+				$File	"neo\ui\neo_hud_compass.cpp"
+				$File	"neo\ui\neo_hud_compass.h"
 				$File	"neo\ui\neo_hud_ghostbeacon.cpp"
 				$File	"neo\ui\neo_hud_ghostbeacon.h"
 			}
