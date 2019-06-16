@@ -17,16 +17,22 @@ public:
 
 	virtual void Paint();
 
-	void SetGhostTargetPos(int x, int y)
+	void SetGhostTargetPos(int x, int y, float textureScale)
 	{
 		m_posX = x;
 		m_posY = y;
+		m_flTexScale = textureScale;
 	}
 
 private:
 	int m_posX, m_posY;
+	int m_beaconTexWidth, m_beaconTexHeight;
 
-	vgui::HFont font;
+	float m_flTexScale;
+
+	vgui::HFont m_hFont;
+
+	vgui::HTexture m_hTex;
 
 private:
 	CNEOHud_GhostBeacon(const CNEOHud_GhostBeacon &other);

@@ -292,8 +292,10 @@ void CWeaponGhost::ShowEnemies(void)
 			}
 		}
 
+		const bool isInPVS = otherPlayer->IsVisible();
+
 		// If it's in my PVS already
-		if (otherPlayer->IsVisible())
+		if (isInPVS)
 		{
 			ShowBeacon(i, otherPlayer->GetAbsOrigin());
 
@@ -307,7 +309,7 @@ void CWeaponGhost::ShowEnemies(void)
 			
 			if (neo_ghost_debug_hudinfo.GetBool())
 			{
-				Debug_ShowPos(otherPlayer->GetAbsOrigin());
+				Debug_ShowPos(otherPlayer->GetAbsOrigin(), isInPVS);
 			}
 		}
 		// Else, the server will provide us with this enemy's position info
@@ -325,7 +327,7 @@ void CWeaponGhost::ShowEnemies(void)
 			
 			if (neo_ghost_debug_hudinfo.GetBool())
 			{
-				Debug_ShowPos(m_rvPlayerPositions[i]);
+				Debug_ShowPos(m_rvPlayerPositions[i], isInPVS);
 			}
 		}
 	}
@@ -338,27 +340,53 @@ inline void CWeaponGhost::HideBeacon(int clientIndex)
 
 using vgui::surface;
 
+extern ConVar neo_ghost_beacon_scale_baseline;
+
 inline void CWeaponGhost::ShowBeacon(int clientIndex, const Vector &pos)
 {
+	if (!m_pGhostBeacons[clientIndex])
+	{
+		Assert(false);
+		return;
+	}
+
+	Vector dir = GetOwner()->EyePosition() - pos;
+
+	const float distance = dir.NormalizeInPlace();
+	const float maxDistInHammerUnits = (45.0f / METERS_PER_INCH);
+
+	Assert(maxDistInHammerUnits > 0);
+
+	const float scaling = clamp((distance / maxDistInHammerUnits),
+		0.25f * neo_ghost_beacon_scale_baseline.GetFloat(),
+		0.75f * neo_ghost_beacon_scale_baseline.GetFloat());
+
+	DevMsg("Dist was: %f meters; beacon texture scaling: %f\n",
+		(distance / METERS_PER_INCH), scaling);
+
 	const int heightOffset = 32;
 	Vector temp(pos.x, pos.y, pos.z + heightOffset);
 	int x, y;
 	GetVectorInScreenSpace(temp, x, y); // this is pixels from top-left
 
-	if (m_pGhostBeacons[clientIndex])
-	{
-		m_pGhostBeacons[clientIndex]->SetGhostTargetPos(x, y);
-		m_pGhostBeacons[clientIndex]->SetVisible(true);
-	}
+	m_pGhostBeacons[clientIndex]->SetGhostTargetPos(x, y, scaling);
+	m_pGhostBeacons[clientIndex]->SetVisible(true);
 }
 
-void CWeaponGhost::Debug_ShowPos(const Vector &pos)
+void CWeaponGhost::Debug_ShowPos(const Vector &pos, bool pvs)
 {
-	return;
 	int x, y;
 	GetVectorInScreenSpace(pos, x, y);
 
-	debugoverlay->AddTextOverlay(pos, gpGlobals->frametime, "GHOST TARGET");
+	// Whether target originated from client PVS or was sent by server
+	if (pvs)
+	{
+		debugoverlay->AddTextOverlay(pos, gpGlobals->frametime, "GHOST TARGET (PVS)");
+	}
+	else
+	{
+		debugoverlay->AddTextOverlay(pos, gpGlobals->frametime, "GHOST TARGET (SERVER)");
+	}
 }
 #endif
 

@@ -56,7 +56,7 @@ private:
 #ifdef CLIENT_DLL
 	inline void ShowEnemies(void);
 	inline void HideEnemies(void);
-	inline void Debug_ShowPos(const Vector &pos);
+	inline void Debug_ShowPos(const Vector &pos, bool pvs);
 	inline void PlayGhostSound(float volume = 1.0f);
 	inline void StopGhostSound(void);
 	inline void HandleGhostEquip(void);
