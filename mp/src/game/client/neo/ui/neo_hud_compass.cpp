@@ -23,7 +23,7 @@ extern ConVar neo_cl_hud_compass_enabled("neo_cl_hud_compass_enabled", "1", FCVA
 // NEO TODO (Rain): descriptions for 2 cvars
 extern ConVar neo_cl_hud_compass_pos_x("neo_cl_hud_compass_pos_x", "2", FCVAR_USERINFO,
 	"", true, 1, false, 10);
-extern ConVar neo_cl_hud_compass_pos_y("neo_cl_hud_compass_pos_y", "8", FCVAR_USERINFO,
+extern ConVar neo_cl_hud_compass_pos_y("neo_cl_hud_compass_pos_y", "80", FCVAR_USERINFO,
 	"", true, 1, false, 10);
 
 extern ConVar neo_cl_hud_debug_compass_enabled("neo_cl_hud_debug_compass_enabled", "1", FCVAR_USERINFO | FCVAR_CHEAT,
@@ -123,18 +123,21 @@ inline void CNEOHud_Compass::DrawCompass(void)
 	}
 
 	// Char representation of the compass strip
-	const char rose[] = "N        |        ne        |        E        |\
-        se        |        S        |        sw        |        W        |\
-        nw        |        ";
+	const char rose[] =
+               "N                |                NE                |\
+                E                |                SE                |\
+                S                |                SW                |\
+                W                |                NW                |\
+                ";
 
 	// One compass tick represents this many degrees of rotation
-	const int unitAccuracy = RoundFloatToInt(360.0f / sizeof(rose));
+	const float unitAccuracy = 360.0f / sizeof(rose);
 
 	// How many characters should be visible around each side of the needle position
-	const int numCharsVisibleAroundNeedle = 20;
+	const int numCharsVisibleAroundNeedle = 24;
 
 	// Get index offset for this angle's compass position
-	int offset = (angle / unitAccuracy) - numCharsVisibleAroundNeedle;
+	int offset = RoundFloatToInt((angle / unitAccuracy)) - numCharsVisibleAroundNeedle;
 	if (offset < 0)
 	{
 		offset += sizeof(rose);
