@@ -310,9 +310,31 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 
 bool CNEO_Player::HandleCommand_JoinTeam( int team )
 {
+	if (!BaseClass::HandleCommand_JoinTeam(team))
+	{
+		return false;
+	}
+
+	ChangeTeam(team);
+
 	SetPlayerTeamModel();
 
-	return BaseClass::HandleCommand_JoinTeam(team);
+	switch (team)
+	{
+	case TEAM_JINRAI:
+		UTIL_ClientPrintAll(HUD_PRINTNOTIFY, "You have joined team Jinrai");
+		break;
+	case TEAM_NSF:
+		UTIL_ClientPrintAll(HUD_PRINTNOTIFY, "You have joined team NSF");
+		break;
+	case TEAM_SPECTATOR:
+		UTIL_ClientPrintAll(HUD_PRINTNOTIFY, "You have joined spectators");
+		break;
+	default:
+		break;
+	}
+
+	return true;
 }
 
 bool CNEO_Player::ClientCommand( const CCommand &args )
@@ -389,7 +411,27 @@ bool CNEO_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 
 void CNEO_Player::ChangeTeam( int iTeam )
 {
-	BaseClass::ChangeTeam(iTeam);
+	// NEO TODO (Rain): add server cvars
+	const bool suicide = true;
+	const float teamChangeInterval = 5.0f;
+
+	m_flNextTeamChangeTime = gpGlobals->curtime + teamChangeInterval;
+
+	// We're skipping over HL2MP player because we don't care about
+	// deathmatch rules or Combine/Rebels model stuff.
+	CBasePlayer::ChangeTeam(iTeam);
+
+	RemoveAllItems(true);
+
+	if (iTeam == TEAM_SPECTATOR)
+	{
+		State_Transition(STATE_OBSERVER_MODE);
+	}
+
+	if (suicide)
+	{
+		CommitSuicide();
+	}
 }
 
 void CNEO_Player::SetPlayerTeamModel( void )
