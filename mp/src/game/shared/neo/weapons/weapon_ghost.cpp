@@ -413,10 +413,10 @@ void CWeaponGhost::Debug_ShowPos(const Vector &pos, bool pvs)
 // this can be inefficient in the unlikely event of multiple ghosts at play at once.
 void CWeaponGhost::UpdateNetworkedEnemyLocations(void)
 {
-	// FIXME/HACK: we never deallocate, move this to class member variable
-	const int pvsMaxSize = (engine->GetClusterCount() / 8);
+	const int pvsMaxSize = (engine->GetClusterCount() / 8) + 1;
 	Assert(pvsMaxSize > 0);
-	static unsigned char *pvs = new unsigned char[pvsMaxSize];
+	// NEO HACK/FIXME (Rain): we should stack allocate instead
+	unsigned char *pvs = new unsigned char[pvsMaxSize];
 
 	CNEO_Player *player = (CNEO_Player*)GetOwner();
 	if (!player)
@@ -449,5 +449,7 @@ void CWeaponGhost::UpdateNetworkedEnemyLocations(void)
 		m_rvPlayerPositions.Set(i, otherPlayer->GetAbsOrigin());
 		m_rvPlayerPositions.GetForModify(i).CopyToArray(absPos);
 	}
+
+	delete[] pvs;
 }
 #endif
