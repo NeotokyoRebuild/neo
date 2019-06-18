@@ -67,6 +67,17 @@ void FinishClientPutInServer( CNEO_Player *pPlayer )
 	pPlayer->ShowViewPortPanel( PANEL_INFO, true, data );
 
 	data->deleteThis();
+
+#if(0)
+	// Join spectators by default.
+	// Original NT defaults to TEAM_UNASSIGNED, but by default that's
+	// unsupported by HL2DM. Probably best to follow suit and avoid
+	// weird edge cases.
+	//
+	// NEO TODO (Rain): display team join HUD screen here
+	const char *joinargs[] = { "jointeam", "1" };
+	pPlayer->ClientCommand(CCommand(2, joinargs));
+#endif
 }
 
 /*
@@ -277,6 +288,7 @@ static inline void Precache_NEO_Sounds( void )
 
 	CBaseEntity::PrecacheScriptSound("Weapon_Generic.melee_swing");
 
+	// NEO HACK/FIXME (Rain): we should use soundscript
 	CBaseEntity::PrecacheSound("sound/gameplay/ghost_equip.wav");
 	CBaseEntity::PrecacheSound("sound/gameplay/ghost_equip2.wav");
 	CBaseEntity::PrecacheSound("sound/gameplay/ghost_equip3.wav");
@@ -297,7 +309,7 @@ void ClientGamePrecache( void )
 	CNEOModelManager *modelManager = CNEOModelManager::Instance();
 	if (!modelManager)
 	{
-		Error("Failed to instantiate CNEOModelManager\n");
+		Error("Failed to get CNEOModelManager instance\n");
 	}
 	modelManager->Precache();
 

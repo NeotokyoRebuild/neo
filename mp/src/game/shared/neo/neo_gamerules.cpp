@@ -164,6 +164,25 @@ void CNEORules::RestartGame()
 }
 #endif
 
+#ifdef GAME_DLL
+bool CNEORules::ClientConnected(edict_t *pEntity, const char *pszName, const char *pszAddress, char *reject, int maxrejectlen)
+{
+	return BaseClass::ClientConnected(pEntity, pszName, pszAddress,
+		reject, maxrejectlen);
+#if(0)
+	const bool canJoin = BaseClass::ClientConnected(pEntity, pszName, pszAddress,
+		reject, maxrejectlen);
+
+	if (canJoin)
+	{
+
+	}
+
+	return canJoin;
+#endif
+}
+#endif
+
 void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 {
 #ifndef CLIENT_DLL

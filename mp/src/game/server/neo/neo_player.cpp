@@ -409,6 +409,33 @@ bool CNEO_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 	return BaseClass::BumpWeapon(pWeapon);
 }
 
+static inline int GetNumOtherPlayersConnected(edict_t *askerEdict)
+{
+	const int askerClientIndex = askerEdict->m_EdictIndex;
+
+	// We expect to find an edict index inside valid client range
+	Assert(askerClientIndex >= 1 && askerClientIndex <= gpGlobals->maxClients);
+
+	int numConnected = 0;
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		// This is our own index, skip
+		if (i == askerClientIndex)
+		{
+			continue;
+		}
+
+		CBasePlayer *player = UTIL_PlayerByIndex(i);
+
+		if (player && player->IsConnected())
+		{
+			numConnected++;
+		}
+	}
+
+	return numConnected;
+}
+
 void CNEO_Player::ChangeTeam( int iTeam )
 {
 	// NEO TODO (Rain): add server cvars
@@ -426,12 +453,20 @@ void CNEO_Player::ChangeTeam( int iTeam )
 	if (iTeam == TEAM_SPECTATOR)
 	{
 		State_Transition(STATE_OBSERVER_MODE);
+
+		// Default to free fly camera if there's nobody to spectate
+		if (GetNumOtherPlayersConnected(edict()) == 0)
+		{
+			StartObserverMode(OBS_MODE_ROAMING);
+		}
 	}
 
 	if (suicide)
 	{
 		CommitSuicide();
 	}
+
+	ShowCrosshair(false);
 }
 
 void CNEO_Player::SetPlayerTeamModel( void )

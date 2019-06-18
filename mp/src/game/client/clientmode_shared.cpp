@@ -720,7 +720,13 @@ int ClientModeShared::HandleSpectatorKeyInput( int down, ButtonCode_t keynum, co
 	// we are in spectator mode, open spectator menu
 	if ( down && pszCurrentBinding && Q_strcmp( pszCurrentBinding, "+duck" ) == 0 )
 	{
+#ifdef NEO
+		// This feature seems pretty broken, you can get stuck in menus etc.
+		// Disabling entirely for now.
+#if(0)
 		m_pViewport->ShowPanel( PANEL_SPECMENU, true );
+#endif
+#endif
 		return 0; // we handled it, don't handle twice or send to server
 	}
 	else if ( down && pszCurrentBinding && Q_strcmp( pszCurrentBinding, "+attack" ) == 0 )
