@@ -221,8 +221,8 @@ static inline bool IsThereRoomForLeanSlide(CNEO_Player *player,
 	return weHaveRoom;
 }
 
-extern ConVar neo_lean_yaw_lerp_scale("neo_lean_yaw_lerp_scale", "0.125", FCVAR_REPLICATED | FCVAR_CHEAT, "How fast to lerp viewoffset yaw into full lean position.", true, 0.0, false, 2.0);
-extern ConVar neo_lean_roll_lerp_scale("neo_lean_roll_lerp_scale", "0.1", FCVAR_REPLICATED | FCVAR_CHEAT, "How fast to lerp viewangoffset roll into full lean position.", true, 0.0, false, 2.0);
+extern ConVar neo_lean_yaw_lerp_scale("neo_lean_yaw_lerp_scale", "0.125", FCVAR_REPLICATED | FCVAR_CHEAT, "How fast to lerp viewoffset yaw into full lean position.", true, 0.0, true, 2.0);
+extern ConVar neo_lean_roll_lerp_scale("neo_lean_roll_lerp_scale", "5.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How fast to lerp viewangoffset roll into full lean position.", true, 0.0, true, 6.0);
 // Original Neotokyo with the latest leftlean fix uses 7 for leftlean and 15 for rightlean yaw slide.
 extern ConVar neo_lean_yaw_peek_left_amount("neo_lean_yaw_peek_left_amount", "7.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How far sideways will a full left lean view reach.", true, 0.0, false, 0);
 extern ConVar neo_lean_yaw_peek_right_amount("neo_lean_yaw_peek_right_amount", "15.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How far sideways will a full right lean view reach.", true, 0.0, false, 0);
