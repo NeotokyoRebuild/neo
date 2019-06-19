@@ -25,6 +25,9 @@ public:
 	CHL2MPClientScoreBoardDialog(IViewPort *pViewPort);
 	~CHL2MPClientScoreBoardDialog();
 
+#ifdef NEO // NEO HACK (Rain): remove this once we don't depend on it anymore
+	friend class CNEOScoreBoard;
+#endif
 
 protected:
 	// scoreboard overrides
