@@ -9,14 +9,14 @@
 #include "neo_gamerules.h"
 
 #include <KeyValues.h>
+#include "ienginevgui.h"
+#include "voice_status.h"
 
 #include <vgui/IScheme.h>
 #include <vgui/ILocalize.h>
 #include <vgui/ISurface.h>
 #include <vgui/IVGui.h>
 #include <vgui_controls/SectionedListPanel.h>
-
-#include "voice_status.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -33,6 +33,9 @@ enum EScoreboardSections
 CNEOScoreBoard::CNEOScoreBoard(IViewPort *pViewPort)
 	: CHL2MPClientScoreBoardDialog(pViewPort)
 {
+	vgui::HScheme neoscheme = vgui::scheme()->LoadSchemeFromFileEx(
+		enginevgui->GetPanel(PANEL_CLIENTDLL), "resource/ClientScheme_Neo.res", "ClientScheme_Neo");
+	SetScheme(neoscheme);
 }
 
 CNEOScoreBoard::~CNEOScoreBoard()
@@ -44,9 +47,59 @@ void CNEOScoreBoard::InitScoreboardSections()
 	BaseClass::InitScoreboardSections();
 }
 
+// Purpose: Update the scoreboard rows with currently connected players' info
 void CNEOScoreBoard::UpdatePlayerInfo()
 {
+#if(0)
 	BaseClass::UpdatePlayerInfo();
+	return;
+#endif
+
+	CBasePlayer *player = C_BasePlayer::GetLocalPlayer();
+	Assert(player);
+
+	const Color test = Color(255, 0, 0, 255);
+	surface()->DrawSetTextColor(test);
+
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		int itemId = FindItemIDForPlayerIndex(i);
+
+		if (g_PR->IsConnected(i))
+		{
+			KeyValues *playerData = new KeyValues("data");
+
+			GetPlayerScoreInfo(i, playerData);
+			int sectionId = GetSectionFromTeamNumber(g_PR->GetTeam(i));
+
+			// We aren't in the scoreboard yet
+			if (itemId == -1)
+			{
+				itemId = m_pPlayerList->AddItem(sectionId, playerData);
+			}
+			else
+			{
+				m_pPlayerList->ModifyItem(itemId, sectionId, playerData);
+			}
+
+			// Highlight the row if this is the local player
+			if (i == player->entindex())
+			{
+				Assert(itemId != -1);
+				m_pPlayerList->SetSelectedItem(itemId);
+				m_pPlayerList->SetFgColor(test);
+			}
+
+			playerData->deleteThis();
+		}
+		// We have itemId for unconnected player, remove it
+		else if (itemId != -1)
+		{
+			m_pPlayerList->RemoveItem(itemId);
+		}
+	}
+
+	m_pPlayerList->SetVisible(true);
 }
 
 void CNEOScoreBoard::UpdateTeamInfo()
