@@ -19,12 +19,16 @@
 #include "SoundEmitterSystem/isoundemittersystembase.h"
 
 #include "ilagcompensationmanager.h"
+#include "datacache/imdlcache.h"
 
 #include "neo_model_manager.h"
 
 #include "shareddefs.h"
 #include "inetchannelinfo.h"
 #include "eiface.h"
+
+// memdbgon must be the last include file in a .cpp file!!!
+#include "tier0/memdbgon.h"
 
 void DropPrimedFragGrenade(CNEO_Player *pPlayer, CBaseCombatWeapon *pGrenade);
 
@@ -41,6 +45,24 @@ END_SEND_TABLE()
 
 BEGIN_DATADESC(CNEO_Player)
 END_DATADESC()
+
+static inline int GetNumOtherPlayersConnected(CNEO_Player *asker)
+{
+	Assert(asker);
+
+	int numConnected = 0;
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		CNEO_Player *player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
+
+		if (player && player != asker && player->IsConnected())
+		{
+			numConnected++;
+		}
+	}
+
+	return numConnected;
+}
 
 CNEO_Player::CNEO_Player()
 {
@@ -308,33 +330,25 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 	SetCycle( 0 );
 }
 
+// Purpose: Suicide, but cancel the point loss.
+void CNEO_Player::SoftSuicide(void)
+{
+	if (IsDead())
+	{
+		AssertMsg(false, "This should never get called on a dead client");
+		return;
+	}
+
+	m_fNextSuicideTime = gpGlobals->curtime;
+
+	CommitSuicide();
+
+	IncrementFragCount(1);
+}
+
 bool CNEO_Player::HandleCommand_JoinTeam( int team )
 {
-	if (!BaseClass::HandleCommand_JoinTeam(team))
-	{
-		return false;
-	}
-
-	ChangeTeam(team);
-
-	SetPlayerTeamModel();
-
-	switch (team)
-	{
-	case TEAM_JINRAI:
-		UTIL_ClientPrintAll(HUD_PRINTNOTIFY, "You have joined team Jinrai");
-		break;
-	case TEAM_NSF:
-		UTIL_ClientPrintAll(HUD_PRINTNOTIFY, "You have joined team NSF");
-		break;
-	case TEAM_SPECTATOR:
-		UTIL_ClientPrintAll(HUD_PRINTNOTIFY, "You have joined spectators");
-		break;
-	default:
-		break;
-	}
-
-	return true;
+	return ProcessTeamSwitchRequest(team);
 }
 
 bool CNEO_Player::ClientCommand( const CCommand &args )
@@ -409,64 +423,9 @@ bool CNEO_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 	return BaseClass::BumpWeapon(pWeapon);
 }
 
-static inline int GetNumOtherPlayersConnected(edict_t *askerEdict)
-{
-	const int askerClientIndex = askerEdict->m_EdictIndex;
-
-	// We expect to find an edict index inside valid client range
-	Assert(askerClientIndex >= 1 && askerClientIndex <= gpGlobals->maxClients);
-
-	int numConnected = 0;
-	for (int i = 1; i <= gpGlobals->maxClients; i++)
-	{
-		// This is our own index, skip
-		if (i == askerClientIndex)
-		{
-			continue;
-		}
-
-		CBasePlayer *player = UTIL_PlayerByIndex(i);
-
-		if (player && player->IsConnected())
-		{
-			numConnected++;
-		}
-	}
-
-	return numConnected;
-}
-
 void CNEO_Player::ChangeTeam( int iTeam )
 {
-	// NEO TODO (Rain): add server cvars
-	const bool suicide = true;
-	const float teamChangeInterval = 5.0f;
-
-	m_flNextTeamChangeTime = gpGlobals->curtime + teamChangeInterval;
-
-	// We're skipping over HL2MP player because we don't care about
-	// deathmatch rules or Combine/Rebels model stuff.
-	CBasePlayer::ChangeTeam(iTeam);
-
-	RemoveAllItems(true);
-
-	if (iTeam == TEAM_SPECTATOR)
-	{
-		State_Transition(STATE_OBSERVER_MODE);
-
-		// Default to free fly camera if there's nobody to spectate
-		if (GetNumOtherPlayersConnected(edict()) == 0)
-		{
-			StartObserverMode(OBS_MODE_ROAMING);
-		}
-	}
-
-	if (suicide)
-	{
-		CommitSuicide();
-	}
-
-	ShowCrosshair(false);
+	ProcessTeamSwitchRequest(iTeam);
 }
 
 void CNEO_Player::SetPlayerTeamModel( void )
@@ -608,6 +567,7 @@ void CNEO_Player::DeathSound( const CTakeDamageInfo &info )
 	BaseClass::DeathSound(info);
 }
 
+// NEO TODO (Rain): we spawn here (info_player_attacker etc...)
 CBaseEntity* CNEO_Player::EntSelectSpawnPoint( void )
 {
 	return BaseClass::EntSelectSpawnPoint();
@@ -634,33 +594,36 @@ void CNEO_Player::PickDefaultSpawnTeam(void)
 	{
 		if (!NEORules()->IsTeamplay())
 		{
-			ChangeTeam(TEAM_UNASSIGNED);
+			ProcessTeamSwitchRequest(TEAM_SPECTATOR);
 		}
 		else
 		{
+			ProcessTeamSwitchRequest(TEAM_SPECTATOR);
+
+#if(0) // code for random team selection
 			CTeam *pJinrai = g_Teams[TEAM_JINRAI];
 			CTeam *pNSF = g_Teams[TEAM_NSF];
 
 			if (!pJinrai || !pNSF)
 			{
-				ChangeTeam(random->RandomInt(TEAM_JINRAI, TEAM_NSF));
+				ProcessTeamSwitchRequest(random->RandomInt(TEAM_JINRAI, TEAM_NSF));
 			}
 			else
 			{
 				if (pJinrai->GetNumPlayers() > pNSF->GetNumPlayers())
 				{
-					ChangeTeam(TEAM_NSF);
+					ProcessTeamSwitchRequest(TEAM_NSF);
 				}
 				else if (pNSF->GetNumPlayers() > pJinrai->GetNumPlayers())
 				{
-					ChangeTeam(TEAM_JINRAI);
+					ProcessTeamSwitchRequest(TEAM_JINRAI);
 				}
 				else
 				{
-					ChangeTeam(random->RandomInt(TEAM_JINRAI, TEAM_NSF));
+					ProcessTeamSwitchRequest(random->RandomInt(TEAM_JINRAI, TEAM_NSF));
 				}
 			}
-
+#endif
 		}
 
 		if (!GetModelPtr())
@@ -668,4 +631,170 @@ void CNEO_Player::PickDefaultSpawnTeam(void)
 			SetPlayerTeamModel();
 		}
 	}
+}
+
+// NEO FIXME/HACK (Rain): bots don't properly set their fakeclient flag currently,
+// making IsFakeClient and IsBot return false. This is an ugly hack to get bots
+// joining teams. We cannot trust this player input (and it's slow), so it really
+// should be fixed properly.
+inline bool Hack_IsBot(CNEO_Player *player)
+{
+	if (!player)
+	{
+		return false;
+	}
+
+	const char *name = player->GetPlayerInfo()->GetName();
+
+	return (strlen(name) == 5 && name[0] == 'B' && name[1] == 'o' && name[2] == 't');
+}
+
+bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
+{
+	if (!GetGlobalTeam(iTeam) || iTeam == 0)
+	{
+		Warning("HandleCommand_JoinTeam( %d ) - invalid team index.\n", iTeam);
+		return false;
+	}
+
+	// NEO TODO (Rain): add server cvars
+	const bool suicide = true;
+	const float teamChangeInterval = 5.0f;
+
+	const bool justJoined = (GetTeamNumber() == TEAM_UNASSIGNED);
+
+	if (justJoined && Hack_IsBot(this) && !IsHLTV())
+	{
+		// Player bots should initially join a player team
+		iTeam = RandomInt(TEAM_JINRAI, TEAM_NSF);
+	}
+	else if (!justJoined && m_flNextTeamChangeTime > gpGlobals->curtime)
+	{
+		ClientPrint(this, HUD_PRINTTALK, "Please wait before switching teams again.");
+		return false;
+	}
+
+	if (iTeam == TEAM_SPECTATOR)
+	{
+		if (!mp_allowspectators.GetInt())
+		{
+			if (justJoined)
+			{
+				AssertMsg(false, "Client just joined, but was denied default team join!");
+				return ProcessTeamSwitchRequest(RandomInt(TEAM_JINRAI, TEAM_NSF));
+			}
+
+			ClientPrint(this, HUD_PRINTTALK, "#Cannot Be Spectator");
+
+			return false;
+		}
+
+		if (suicide)
+		{
+			// Unassigned implies we just joined.
+			if (!justJoined && !IsDead())
+			{
+				SoftSuicide();
+			}
+		}
+
+		// Default to free fly camera if there's nobody to spectate
+		if (justJoined || GetNumOtherPlayersConnected(this) == 0)
+		{
+			StartObserverMode(OBS_MODE_ROAMING);
+		}
+		else
+		{
+			StartObserverMode(m_iObserverLastMode);
+		}
+
+		State_Transition(STATE_OBSERVER_MODE);
+	}
+	else if (iTeam == TEAM_JINRAI || iTeam == TEAM_NSF)
+	{
+		if (suicide)
+		{
+			if (!justJoined && GetTeamNumber() != TEAM_SPECTATOR && !IsDead())
+			{
+				SoftSuicide();
+			}
+		}
+
+		StopObserverMode();
+
+		State_Transition(STATE_ACTIVE);
+	}
+	else
+	{
+		// Client should not be able to reach this
+		Assert(false);
+
+		ClientPrint(this, HUD_PRINTTALK, "Team switch failed, unrecognized Neotokyo team specified.");
+
+		return false;
+	}
+
+	m_flNextTeamChangeTime = gpGlobals->curtime + teamChangeInterval;
+	
+	RemoveAllItems(true);
+	ShowCrosshair(false);
+
+	if (iTeam == TEAM_JINRAI || iTeam == TEAM_NSF)
+	{
+		SetPlayerTeamModel();
+		GiveAllItems();
+	}
+
+	// We're skipping over HL2MP player because we don't care about
+	// deathmatch rules or Combine/Rebels model stuff.
+	CHL2_Player::ChangeTeam(iTeam, false, justJoined);
+
+	return true;
+}
+
+void CNEO_Player::GiveAllItems(void)
+{
+	// NEO TODO (Rain): our own ammo types
+	CBasePlayer::GiveAmmo(255, "Pistol");
+	CBasePlayer::GiveAmmo(45, "SMG1");
+	CBasePlayer::GiveAmmo(1, "grenade");
+	CBasePlayer::GiveAmmo(6, "Buckshot");
+	CBasePlayer::GiveAmmo(6, "357");
+
+	GiveNamedItem("weapon_tachi");
+	GiveNamedItem("weapon_ghost");
+	Weapon_Switch(Weapon_OwnsThisType("weapon_tachi"));
+
+#if(0) // startup weps stuff
+	if (m_nCyborgClass == NEO_CLASS_RECON)
+	{
+		GiveNamedItem("weapon_tachi");
+		GiveNamedItem("weapon_ghost");
+		Weapon_Switch(Weapon_OwnsThisType("weapon_tachi"));
+	}
+	else if (m_nCyborgClass == NEO_CLASS_ASSAULT)
+	{
+		GiveNamedItem("weapon_tachi");
+		GiveNamedItem("weapon_ghost");
+		Weapon_Switch(Weapon_OwnsThisType("weapon_tachi"));
+	}
+	else if (m_nCyborgClass == NEO_CLASS_SUPPORT)
+	{
+		
+	}
+#endif
+}
+
+// Purpose: For Neotokyo, we could use this engine method
+// to setup class specific armor, abilities, etc.
+void CNEO_Player::EquipSuit(bool bPlayEffects)
+{
+	//MDLCACHE_CRITICAL_SECTION();
+
+	BaseClass::EquipSuit();
+}
+
+void CNEO_Player::RemoveSuit(void)
+{
+	BaseClass::RemoveSuit();
 }

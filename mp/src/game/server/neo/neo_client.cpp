@@ -68,16 +68,10 @@ void FinishClientPutInServer( CNEO_Player *pPlayer )
 
 	data->deleteThis();
 
-#if(0)
-	// Join spectators by default.
-	// Original NT defaults to TEAM_UNASSIGNED, but by default that's
-	// unsupported by HL2DM. Probably best to follow suit and avoid
-	// weird edge cases.
-	//
-	// NEO TODO (Rain): display team join HUD screen here
-	const char *joinargs[] = { "jointeam", "1" };
-	pPlayer->ClientCommand(CCommand(2, joinargs));
-#endif
+	// NEO TODO (Rain): Team selection HUD here.
+
+	// If player chooses to spectate upon joining, start in free roam mode.
+	pPlayer->StartObserverMode(OBS_MODE_ROAMING);
 }
 
 /*

@@ -1071,20 +1071,37 @@ void ClientModeShared::FireGameEvent( IGameEvent *event )
 
 			if ( !IsInCommentaryMode() )
 			{
+				bool weWantToChat = false;
+
 				wchar_t wszLocalized[100];
 				if ( bAutoTeamed )
 				{
 					g_pVGuiLocalize->ConstructString( wszLocalized, sizeof( wszLocalized ), g_pVGuiLocalize->Find( "#game_player_joined_autoteam" ), 2, wszPlayerName, wszTeam );
+					weWantToChat = true;
 				}
 				else
 				{
-					g_pVGuiLocalize->ConstructString( wszLocalized, sizeof( wszLocalized ), g_pVGuiLocalize->Find( "#game_player_joined_team" ), 2, wszPlayerName, wszTeam );
+					int oldteam = event->GetInt("oldteam");
+
+					// NEO NOTE (Rain):
+					// Avoid a "client joined spectator" on initial player connect,
+					// as they will most likely choose a team to join from the HUD,
+					// resulting in yet another "client joined Jinrai" message or similar.
+					// An unassigned->spectator is always a new client, because clients
+					// cannot join team unassigned manually.
+					if (oldteam != TEAM_UNASSIGNED && team != TEAM_SPECTATOR)
+					{
+						g_pVGuiLocalize->ConstructString(wszLocalized, sizeof(wszLocalized), g_pVGuiLocalize->Find("#game_player_joined_team"), 2, wszPlayerName, wszTeam);
+					}
 				}
 
-				char szLocalized[100];
-				g_pVGuiLocalize->ConvertUnicodeToANSI( wszLocalized, szLocalized, sizeof(szLocalized) );
+				if (weWantToChat)
+				{
+					char szLocalized[100];
+					g_pVGuiLocalize->ConvertUnicodeToANSI(wszLocalized, szLocalized, sizeof(szLocalized));
 
-				hudChat->Printf( CHAT_FILTER_TEAMCHANGE, "%s", szLocalized );
+					hudChat->Printf(CHAT_FILTER_TEAMCHANGE, "%s", szLocalized);
+				}
 			}
 		}
 

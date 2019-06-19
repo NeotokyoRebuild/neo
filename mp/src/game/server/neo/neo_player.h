@@ -52,6 +52,8 @@ public:
 	virtual void UpdateOnRemove( void );
 	virtual void DeathSound( const CTakeDamageInfo &info );
 	virtual CBaseEntity* EntSelectSpawnPoint( void );
+	virtual void EquipSuit(bool bPlayEffects = true);
+	virtual void RemoveSuit(void);
 
 	void SetPlayerTeamModel( void );
 	virtual void PickDefaultSpawnTeam( void );
@@ -66,7 +68,10 @@ public:
 
 	void Weapon_AimToggle( CBaseCombatWeapon *pWep );
 
-	void DoThirdPersonLean();
+	void DoThirdPersonLean(void);
+	void SoftSuicide(void);
+	void GiveAllItems(void);
+	inline bool ProcessTeamSwitchRequest(int iTeam);
 
 	inline void Weapon_SetZoom( bool bZoomIn );
 

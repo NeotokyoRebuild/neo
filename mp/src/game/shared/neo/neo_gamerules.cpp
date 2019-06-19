@@ -10,6 +10,8 @@
 	#include "neo_model_manager.h"
 #endif
 
+// NEO TODO (Rain): use GetPlayerSpawnSpot
+
 REGISTER_GAMERULES_CLASS( CNEORules );
 
 BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
@@ -175,7 +177,6 @@ bool CNEORules::ClientConnected(edict_t *pEntity, const char *pszName, const cha
 
 	if (canJoin)
 	{
-
 	}
 
 	return canJoin;
