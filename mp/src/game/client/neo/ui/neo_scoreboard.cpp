@@ -34,7 +34,7 @@ CNEOScoreBoard::CNEOScoreBoard(IViewPort *pViewPort)
 	: CHL2MPClientScoreBoardDialog(pViewPort)
 {
 	vgui::HScheme neoscheme = vgui::scheme()->LoadSchemeFromFileEx(
-		enginevgui->GetPanel(PANEL_CLIENTDLL), "resource/ClientScheme_Neo.res", "ClientScheme_Neo");
+		enginevgui->GetPanel(PANEL_CLIENTDLL), "resource/ClientScheme.res", "ClientScheme");
 	SetScheme(neoscheme);
 }
 
