@@ -48,7 +48,11 @@ END_DATADESC()
 
 static inline int GetNumOtherPlayersConnected(CNEO_Player *asker)
 {
-	Assert(asker);
+	if (!asker)
+	{
+		Assert(false);
+		return 0;
+	}
 
 	int numConnected = 0;
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
@@ -208,6 +212,7 @@ void CNEO_Player::Weapon_AimToggle( CBaseCombatWeapon *pWep )
 	Weapon_SetZoom(showCrosshair);
 }
 
+// NEO TODO (Rain): mirror clientside so we can predict
 inline void CNEO_Player::Weapon_SetZoom(bool bZoomIn)
 {
 	const float zoomSpeedSecs = 0.25f;

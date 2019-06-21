@@ -1,32 +1,59 @@
 #include "cbase.h"
 #include "neo_ghost_cap_point.h"
 
-#include "neo_gamerules.h"
-
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+// NEO NOTE (Rain). These limits defined in original NT FGD as (48 - 256),
+// but it seems not even offical maps follow it. I haven't actually checked
+// if there's clamping in the original, but setting some sane limits here
+// anyways. These are in Hammer units.
+#define NEO_CAP_MIN_RADIUS 8
+#define NEO_CAP_MAX_RADIUS 10240
+
+#define NEO_FGD_TEAMNUM_ATTACKER 0
+#define NEO_FGD_TEAMNUM_DEFENDER 1
+
 LINK_ENTITY_TO_CLASS(neo_ghost_retrieval_point, CNEOGhostCapturePoint);
 
-IMPLEMENT_NETWORKCLASS_ALIASED(NEOGhostCapturePoint, DT_NEOGhostCapturePoint);
+#ifdef GAME_DLL
+IMPLEMENT_SERVERCLASS_ST(CNEOGhostCapturePoint, DT_NEOGhostCapturePoint)
+	SendPropFloat(SENDINFO(m_flCapzoneRadius)),
 
-BEGIN_NETWORK_TABLE_NOBASE(CNEOGhostCapturePoint, DT_NEOGhostCapturePoint)
-#ifdef CLIENT_DLL
+	SendPropInt(SENDINFO(m_iOwningTeam)),
+	SendPropInt(SENDINFO(m_iSuccessfulCaptorClientIndex)),
+
+	SendPropBool(SENDINFO(m_bGhostHasBeenCaptured)),
+	SendPropBool(SENDINFO(m_bIsActive)),
+END_SEND_TABLE()
 #else
+#ifdef CNEOGhostCapturePoint
+#undef CNEOGhostCapturePoint
 #endif
-END_NETWORK_TABLE()
+IMPLEMENT_CLIENTCLASS_DT(C_NEOGhostCapturePoint, DT_NEOGhostCapturePoint, CNEOGhostCapturePoint)
+RecvPropFloat(RECVINFO(m_flCapzoneRadius)),
+
+RecvPropInt(RECVINFO(m_iOwningTeam)),
+RecvPropInt(RECVINFO(m_iSuccessfulCaptorClientIndex)),
+
+RecvPropBool(RECVINFO(m_bGhostHasBeenCaptured)),
+RecvPropBool(RECVINFO(m_bIsActive)),
+END_RECV_TABLE()
+#define CNEOGhostCapturePoint C_NEOGhostCapturePoint
+#endif
 
 BEGIN_DATADESC(CNEOGhostCapturePoint)
 #ifdef GAME_DLL
 	DEFINE_THINKFUNC(Think_CheckMyRadius),
 #endif
+
+// These keyfields come from NT's FGD definition
+	DEFINE_KEYFIELD(m_flCapzoneRadius, FIELD_FLOAT, "Radius"),
+	DEFINE_KEYFIELD(m_iOwningTeam, FIELD_INTEGER, "team"),
 END_DATADESC()
 
-#if(0)
 #ifdef CLIENT_DLL
-BEGIN_PREDICTION_DATA(CNEOGhostCapturePoint)
-END_PREDICTION_DATA()
-#endif
+
 #endif
 
 CNEOGhostCapturePoint::CNEOGhostCapturePoint()
@@ -44,18 +71,52 @@ void CNEOGhostCapturePoint::Spawn(void)
 {
 	BaseClass::Spawn();
 
-	m_iOwningTeam = TEAM_JINRAI;
-	m_flCapzoneRadius = 128.0f;
-	SetActive(true);
-
-	Precache();
+	AddEFlags(EFL_FORCE_CHECK_TRANSMIT);
 
 #ifdef GAME_DLL
+	// This is a Jinrai capzone
+	if (m_iOwningTeam == NEO_FGD_TEAMNUM_ATTACKER)
+	{
+		m_iOwningTeam = TEAM_JINRAI;
+	}
+	// This is an NSF capzone
+	else if (m_iOwningTeam == NEO_FGD_TEAMNUM_DEFENDER)
+	{
+		m_iOwningTeam = TEAM_NSF;
+	}
+	else
+	{
+		// We could recover, but it's probably better to break the capzone
+		// and throw a nag message in console so the mapper can fix their error.
+		Warning("Capzone had an invalid owning team: %i. Expected %i (Jinrai), or %i (NSF).\n",
+			m_iOwningTeam, NEO_FGD_TEAMNUM_ATTACKER, NEO_FGD_TEAMNUM_DEFENDER);
+
+		// Nobody will be able to cap here.
+		m_iOwningTeam = TEAM_INVALID;
+	}
+
+	// Warning messages for the about-to-occur clamping, if we've hit limits.
+	if (m_flCapzoneRadius < NEO_CAP_MIN_RADIUS)
+	{
+		Warning("Capzone had too small radius: %f, clamping! (Expected a minimum of %f)\n",
+			m_flCapzoneRadius, NEO_CAP_MIN_RADIUS);
+	}
+	else if (m_flCapzoneRadius > NEO_CAP_MAX_RADIUS)
+	{
+		Warning("Capzone had too large radius: %f, clamping! (Expected a minimum of %f)\n",
+			m_flCapzoneRadius, NEO_CAP_MAX_RADIUS);
+	}
+	// Actually clamp.
+	m_flCapzoneRadius = clamp(m_flCapzoneRadius, NEO_CAP_MIN_RADIUS, NEO_CAP_MAX_RADIUS);
+
+	// Set cap zone active if we've got a valid owner.
+	SetActive(m_iOwningTeam == TEAM_JINRAI || m_iOwningTeam == TEAM_NSF);
+
 	RegisterThinkContext("CheckMyRadius");
 	SetContextThink(&CNEOGhostCapturePoint::Think_CheckMyRadius,
 		gpGlobals->curtime, "CheckMyRadius");
 #else
-	SetNextClientThink(gpGlobals->curtime);
+	SetNextClientThink(gpGlobals->curtime + NEO_GHOSTCAP_GRAPHICS_THINK_INTERVAL);
 #endif
 }
 
@@ -134,14 +195,24 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 		gpGlobals->curtime + (1.0f / checksPerSecond), "CheckMyRadius");
 }
 #else
-// Purpose: Render capzone effects clientside.
+// Purpose: Set up clientside HUD graphics for capzone.
 void CNEOGhostCapturePoint::ClientThink(void)
 {
 	BaseClass::ClientThink();
 
-	//DevMsg("CNEOGhostCapturePoint::ClientThink\n");
+	// If we haven't set up capzone HUD graphics yet
+	if (!m_pHUDCapPoint)
+	{
+		m_pHUDCapPoint = new CNEOHud_GhostCapPoint("hudCapZone");
+	}
 
-	SetNextClientThink(CLIENT_THINK_ALWAYS);
+	m_pHUDCapPoint->SetPos(GetAbsOrigin());
+	m_pHUDCapPoint->SetRadius(m_flCapzoneRadius);
+	m_pHUDCapPoint->SetTeam(m_iOwningTeam);
+
+	m_pHUDCapPoint->SetVisible(true);
+
+	SetNextClientThink(gpGlobals->curtime + NEO_GHOSTCAP_GRAPHICS_THINK_INTERVAL);
 }
 #endif
 
