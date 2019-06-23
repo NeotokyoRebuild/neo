@@ -115,8 +115,8 @@ void CNEO_Player::DoThirdPersonLean(void)
 
 	CBaseAnimating *anim = GetBaseAnimating();
 	Assert(anim);
-	int pelvisBone = anim->LookupBone("ValveBiped.Bip01_Pelvis");
-	Assert(pelvisBone != -1);
+	//int pelvisBone = anim->LookupBone("ValveBiped.Bip01_Pelvis");
+	//Assert(pelvisBone != -1);
 
 	const float startRot = GetBoneController(0);
 
@@ -508,7 +508,10 @@ inline bool CNEO_Player::IsAllowedToZoom(CBaseCombatWeapon *pWep)
 		return false;
 	}
 
+	// NEO TODO (Rain): this list will probably eventually become longer
+	// than forbidden list; swap logic?
 	const char *allowedAimZoom[] = {
+		"weapon_aa13",
 		"weapon_tachi",
 	};
 
