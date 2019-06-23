@@ -30,6 +30,8 @@ protected:
 	virtual void PaintBorder();
 	virtual void ApplySchemeSettings(vgui::IScheme *pScheme);
 
+	bool IsTeamplay(void) { return true; }
+
 private:
 	virtual void AddHeader(); // add the start header of the scoreboard
 	virtual void AddSection(int teamType, int teamNumber); // add a new section header for a team
