@@ -671,15 +671,20 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 
 	const bool justJoined = (GetTeamNumber() == TEAM_UNASSIGNED);
 
+	// Player bots should initially join a player team
 	if (justJoined && Hack_IsBot(this) && !IsHLTV())
 	{
-		// Player bots should initially join a player team
 		iTeam = RandomInt(TEAM_JINRAI, TEAM_NSF);
 	}
+	// Limit team join spam, unless this is a newly joined player
 	else if (!justJoined && m_flNextTeamChangeTime > gpGlobals->curtime)
 	{
-		ClientPrint(this, HUD_PRINTTALK, "Please wait before switching teams again.");
-		return false;
+		// Except for spectators, who are allowed to join a team as soon as they wish
+		if (GetTeamNumber() != TEAM_SPECTATOR)
+		{
+			ClientPrint(this, HUD_PRINTTALK, "Please wait before switching teams again.");
+			return false;
+		}
 	}
 
 	if (iTeam == TEAM_SPECTATOR)
