@@ -39,12 +39,15 @@ LINK_ENTITY_TO_CLASS(info_player_defender, CPointEntity);
 LINK_ENTITY_TO_CLASS(info_player_start, CPointEntity);*/
 
 IMPLEMENT_SERVERCLASS_ST(CNEO_Player, DT_NEO_Player)
-	SendPropInt(SENDINFO(m_nNeoSkin), 3),
-	SendPropInt(SENDINFO(m_nCyborgClass), 3),
+SendPropInt(SENDINFO(m_nNeoSkin), 3),
+SendPropInt(SENDINFO(m_nCyborgClass), 3),
 END_SEND_TABLE()
 
 BEGIN_DATADESC(CNEO_Player)
 END_DATADESC()
+
+CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
+extern CBaseEntity *g_pLastSpawn;
 
 static inline int GetNumOtherPlayersConnected(CNEO_Player *asker)
 {
@@ -575,10 +578,109 @@ void CNEO_Player::DeathSound( const CTakeDamageInfo &info )
 	BaseClass::DeathSound(info);
 }
 
-// NEO TODO (Rain): we spawn here (info_player_attacker etc...)
+#define TELEFRAG_ON_OVERLAPPING_SPAWN 0
 CBaseEntity* CNEO_Player::EntSelectSpawnPoint( void )
 {
-	return BaseClass::EntSelectSpawnPoint();
+#if TELEFRAG_ON_OVERLAPPING_SPAWN
+	edict_t		*player = edict();
+#endif
+
+	CBaseEntity *pSpot = NULL;
+	CBaseEntity *pLastSpawnPoint = g_pLastSpawn;
+	const char *pSpawnpointName = "info_player_start";
+
+	if (NEORules()->IsTeamplay())
+	{
+		if (GetTeamNumber() == TEAM_JINRAI)
+		{
+			pSpawnpointName = "info_player_attacker";
+			pLastSpawnPoint = g_pLastJinraiSpawn;
+		}
+		else if (GetTeamNumber() == TEAM_NSF)
+		{
+			pSpawnpointName = "info_player_defender";
+			pLastSpawnPoint = g_pLastNSFSpawn;
+		}
+
+		if (gEntList.FindEntityByClassname(NULL, pSpawnpointName) == NULL)
+		{
+			pSpawnpointName = "info_player_start";
+			pLastSpawnPoint = g_pLastSpawn;
+		}
+	}
+
+	pSpot = pLastSpawnPoint;
+	// Randomize the start spot
+	for (int i = random->RandomInt(1, 5); i > 0; i--)
+		pSpot = gEntList.FindEntityByClassname(pSpot, pSpawnpointName);
+	if (!pSpot)  // skip over the null point
+		pSpot = gEntList.FindEntityByClassname(pSpot, pSpawnpointName);
+
+	CBaseEntity *pFirstSpot = pSpot;
+
+	do
+	{
+		if (pSpot)
+		{
+			// check if pSpot is valid
+			if (g_pGameRules->IsSpawnPointValid(pSpot, this))
+			{
+				if (pSpot->GetLocalOrigin() == vec3_origin)
+				{
+					pSpot = gEntList.FindEntityByClassname(pSpot, pSpawnpointName);
+					continue;
+				}
+
+				// if so, go to pSpot
+				goto ReturnSpot;
+			}
+		}
+		// increment pSpot
+		pSpot = gEntList.FindEntityByClassname(pSpot, pSpawnpointName);
+	} while (pSpot != pFirstSpot); // loop if we're not back to the start
+
+	// we haven't found a place to spawn yet, so kill any guy at the first spawn point and spawn there
+	if (pSpot)
+	{
+#if TELEFRAG_ON_OVERLAPPING_SPAWN
+		CBaseEntity *ent = NULL;
+		for (CEntitySphereQuery sphere(pSpot->GetAbsOrigin(), 128); (ent = sphere.GetCurrentEntity()) != NULL; sphere.NextEntity())
+		{
+			// if ent is a client, kill em (unless they are ourselves)
+			if (ent->IsPlayer() && !(ent->edict() == player))
+				ent->TakeDamage(CTakeDamageInfo(GetContainingEntity(INDEXENT(0)), GetContainingEntity(INDEXENT(0)), 300, DMG_GENERIC));
+		}
+#endif
+		goto ReturnSpot;
+	}
+
+	if (!pSpot)
+	{
+		pSpot = gEntList.FindEntityByClassname(pSpot, "info_player_start");
+
+		if (pSpot)
+			goto ReturnSpot;
+	}
+
+ReturnSpot:
+
+	if (NEORules()->IsTeamplay())
+	{
+		if (GetTeamNumber() == TEAM_JINRAI)
+		{
+			g_pLastJinraiSpawn = pSpot;
+		}
+		else if (GetTeamNumber() == TEAM_NSF)
+		{
+			g_pLastNSFSpawn = pSpot;
+		}
+	}
+
+	g_pLastSpawn = pSpot;
+
+	m_flSlamProtectTime = gpGlobals->curtime + 0.5;
+
+	return pSpot;
 }
 
 bool CNEO_Player::StartObserverMode(int mode)

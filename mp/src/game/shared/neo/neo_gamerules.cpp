@@ -90,6 +90,8 @@ static NEOViewVectors g_NEOViewVectors(
 // convert a velocity in ft/sec and a mass in grains to an impulse in kg in/s
 #define BULLET_IMPULSE(grains, ftpersec)	((ftpersec)*12*BULLET_MASS_GRAINS_TO_KG(grains)*BULLET_IMPULSE_EXAGGERATION)
 
+extern CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
+
 CNEORules::CNEORules()
 {
 #ifndef CLIENT_DLL
@@ -182,6 +184,11 @@ void CNEORules::Think(void)
 void CNEORules::CreateStandardEntities(void)
 {
 	BaseClass::CreateStandardEntities();
+
+#ifdef GAME_DLL
+	g_pLastJinraiSpawn = NULL;
+	g_pLastNSFSpawn = NULL;
+#endif
 }
 
 int CNEORules::WeaponShouldRespawn(CBaseCombatWeapon *pWep)
