@@ -85,13 +85,19 @@ public:
 	CNEORules();
 	virtual ~CNEORules();
 
+#ifdef GAME_DLL
+	virtual bool ClientConnected(edict_t *pEntity, const char *pszName, const char *pszAddress, char *reject, int maxrejectlen);
+#endif
 	virtual bool ShouldCollide( int collisionGroup0, int collisionGroup1 );
 
 	virtual void Think( void );
 	virtual void CreateStandardEntities( void );
+
 	virtual int WeaponShouldRespawn( CBaseCombatWeapon *pWeapon );
+
 	virtual const char *GetGameDescription( void );
 	virtual const CViewVectors* GetViewVectors() const;
+
 	const NEOViewVectors* GetNEOViewVectors() const;
 
 	virtual void ClientSettingsChanged(CBasePlayer *pPlayer);

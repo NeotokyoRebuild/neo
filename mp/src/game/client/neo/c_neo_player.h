@@ -7,6 +7,9 @@
 class C_NEO_Player;
 #include "c_hl2mp_player.h"
 
+class C_NEOPredictedViewModel;
+class CNEOHud_Compass;
+
 class C_NEO_Player : public C_HL2MP_Player
 {
 public:
@@ -65,9 +68,18 @@ public:
 		BaseClass::SetViewAngles(ang);
 	}
 
+	inline void DrawCompass(void);
+
+	void Weapon_Drop(C_BaseCombatWeapon *pWeapon);
+
+	C_NEOPredictedViewModel *GetNEOViewModel();
+
 public:
 	int m_nNeoSkin;
 	int m_nCyborgClass;
+
+private:
+	CNEOHud_Compass *m_pCompass;
 
 private:
 	C_NEO_Player(const C_NEO_Player &);

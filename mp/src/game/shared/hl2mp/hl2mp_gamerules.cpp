@@ -914,7 +914,7 @@ bool CHL2MPRules::ClientCommand( CBaseEntity *pEdict, const CCommand &args )
 // convert a velocity in ft/sec and a mass in grains to an impulse in kg in/s
 #define BULLET_IMPULSE(grains, ftpersec)	((ftpersec)*12*BULLET_MASS_GRAINS_TO_KG(grains)*BULLET_IMPULSE_EXAGGERATION)
 
-
+#ifndef NEO // NEO implements this in neo_gamerules.cpp
 CAmmoDef *GetAmmoDef()
 {
 	static CAmmoDef def;
@@ -939,6 +939,7 @@ CAmmoDef *GetAmmoDef()
 
 	return &def;
 }
+#endif
 
 #ifdef CLIENT_DLL
 

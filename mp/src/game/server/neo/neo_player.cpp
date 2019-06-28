@@ -19,12 +19,16 @@
 #include "SoundEmitterSystem/isoundemittersystembase.h"
 
 #include "ilagcompensationmanager.h"
+#include "datacache/imdlcache.h"
 
 #include "neo_model_manager.h"
 
 #include "shareddefs.h"
 #include "inetchannelinfo.h"
 #include "eiface.h"
+
+// memdbgon must be the last include file in a .cpp file!!!
+#include "tier0/memdbgon.h"
 
 void DropPrimedFragGrenade(CNEO_Player *pPlayer, CBaseCombatWeapon *pGrenade);
 
@@ -35,12 +39,37 @@ LINK_ENTITY_TO_CLASS(info_player_defender, CPointEntity);
 LINK_ENTITY_TO_CLASS(info_player_start, CPointEntity);*/
 
 IMPLEMENT_SERVERCLASS_ST(CNEO_Player, DT_NEO_Player)
-	SendPropInt(SENDINFO(m_nNeoSkin), 3),
-	SendPropInt(SENDINFO(m_nCyborgClass), 3),
+SendPropInt(SENDINFO(m_nNeoSkin), 3),
+SendPropInt(SENDINFO(m_nCyborgClass), 3),
 END_SEND_TABLE()
 
 BEGIN_DATADESC(CNEO_Player)
 END_DATADESC()
+
+CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
+extern CBaseEntity *g_pLastSpawn;
+
+static inline int GetNumOtherPlayersConnected(CNEO_Player *asker)
+{
+	if (!asker)
+	{
+		Assert(false);
+		return 0;
+	}
+
+	int numConnected = 0;
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		CNEO_Player *player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
+
+		if (player && player != asker && player->IsConnected())
+		{
+			numConnected++;
+		}
+	}
+
+	return numConnected;
+}
 
 CNEO_Player::CNEO_Player()
 {
@@ -74,15 +103,61 @@ void CNEO_Player::Spawn(void)
 	SetTransmitState(FL_EDICT_ALWAYS);
 }
 
+extern ConVar neo_lean_angle;
+extern ConVar neo_lean_thirdperson_roll_lerp_scale("neo_lean_thirdperson_roll_lerp_scale", "5", FCVAR_REPLICATED | FCVAR_CHEAT, "Multiplier for 3rd person lean roll lerping.", true, 0.0, false, 0);
+void CNEO_Player::DoThirdPersonLean(void)
+{
+	CNEOPredictedViewModel *vm = (CNEOPredictedViewModel*)GetViewModel();
+
+	if (!vm)
+	{
+		return;
+	}
+
+	int leanDir = vm->CalcLean(this);
+
+	CBaseAnimating *anim = GetBaseAnimating();
+	Assert(anim);
+	//int pelvisBone = anim->LookupBone("ValveBiped.Bip01_Pelvis");
+	//Assert(pelvisBone != -1);
+
+	const float startRot = GetBoneController(0);
+
+	const float ultimateRot =
+		(leanDir & IN_LEAN_LEFT) ? -neo_lean_angle.GetFloat() :
+		(leanDir & IN_LEAN_RIGHT) ? neo_lean_angle.GetFloat() :
+		0;
+
+	float lerpedRot;
+
+	const float leniency = 0.5f;
+	// We're close enough to target, snap to it so we don't drift when lerping towards zero.
+	if (fabs(startRot - ultimateRot) < leniency)
+	{
+		lerpedRot = ultimateRot;
+	}
+	else
+	{
+		lerpedRot = Lerp(gpGlobals->frametime * neo_lean_thirdperson_roll_lerp_scale.GetFloat(), startRot, ultimateRot);
+	}
+
+#if(0)
+	static float lastRot = 0;
+	if (lastRot != lerpedRot)
+	{
+		DevMsg("New lean target; leaning %f --> %f\n", startRot, lerpedRot);
+		lastRot = lerpedRot;
+	}
+#endif
+
+	anim->SetBoneController(0, lerpedRot);
+}
+
 void CNEO_Player::PreThink(void)
 {
 	BaseClass::PreThink();
 
-	CNEOPredictedViewModel *vm = (CNEOPredictedViewModel*)GetViewModel();
-	if (vm)
-	{
-		vm->CalcLean(this);
-	}
+	DoThirdPersonLean();
 }
 
 void CNEO_Player::PostThink(void)
@@ -140,6 +215,7 @@ void CNEO_Player::Weapon_AimToggle( CBaseCombatWeapon *pWep )
 	Weapon_SetZoom(showCrosshair);
 }
 
+// NEO TODO (Rain): mirror clientside so we can predict
 inline void CNEO_Player::Weapon_SetZoom(bool bZoomIn)
 {
 	const float zoomSpeedSecs = 0.25f;
@@ -262,11 +338,25 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 	SetCycle( 0 );
 }
 
+// Purpose: Suicide, but cancel the point loss.
+void CNEO_Player::SoftSuicide(void)
+{
+	if (IsDead())
+	{
+		AssertMsg(false, "This should never get called on a dead client");
+		return;
+	}
+
+	m_fNextSuicideTime = gpGlobals->curtime;
+
+	CommitSuicide();
+
+	IncrementFragCount(1);
+}
+
 bool CNEO_Player::HandleCommand_JoinTeam( int team )
 {
-	SetPlayerTeamModel();
-
-	return BaseClass::HandleCommand_JoinTeam(team);
+	return ProcessTeamSwitchRequest(team);
 }
 
 bool CNEO_Player::ClientCommand( const CCommand &args )
@@ -343,7 +433,7 @@ bool CNEO_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 
 void CNEO_Player::ChangeTeam( int iTeam )
 {
-	BaseClass::ChangeTeam(iTeam);
+	ProcessTeamSwitchRequest(iTeam);
 }
 
 void CNEO_Player::SetPlayerTeamModel( void )
@@ -421,7 +511,10 @@ inline bool CNEO_Player::IsAllowedToZoom(CBaseCombatWeapon *pWep)
 		return false;
 	}
 
+	// NEO TODO (Rain): this list will probably eventually become longer
+	// than forbidden list; swap logic?
 	const char *allowedAimZoom[] = {
+		"weapon_aa13",
 		"weapon_tachi",
 	};
 
@@ -485,9 +578,109 @@ void CNEO_Player::DeathSound( const CTakeDamageInfo &info )
 	BaseClass::DeathSound(info);
 }
 
+#define TELEFRAG_ON_OVERLAPPING_SPAWN 0
 CBaseEntity* CNEO_Player::EntSelectSpawnPoint( void )
 {
-	return BaseClass::EntSelectSpawnPoint();
+#if TELEFRAG_ON_OVERLAPPING_SPAWN
+	edict_t		*player = edict();
+#endif
+
+	CBaseEntity *pSpot = NULL;
+	CBaseEntity *pLastSpawnPoint = g_pLastSpawn;
+	const char *pSpawnpointName = "info_player_start";
+
+	if (NEORules()->IsTeamplay())
+	{
+		if (GetTeamNumber() == TEAM_JINRAI)
+		{
+			pSpawnpointName = "info_player_attacker";
+			pLastSpawnPoint = g_pLastJinraiSpawn;
+		}
+		else if (GetTeamNumber() == TEAM_NSF)
+		{
+			pSpawnpointName = "info_player_defender";
+			pLastSpawnPoint = g_pLastNSFSpawn;
+		}
+
+		if (gEntList.FindEntityByClassname(NULL, pSpawnpointName) == NULL)
+		{
+			pSpawnpointName = "info_player_start";
+			pLastSpawnPoint = g_pLastSpawn;
+		}
+	}
+
+	pSpot = pLastSpawnPoint;
+	// Randomize the start spot
+	for (int i = random->RandomInt(1, 5); i > 0; i--)
+		pSpot = gEntList.FindEntityByClassname(pSpot, pSpawnpointName);
+	if (!pSpot)  // skip over the null point
+		pSpot = gEntList.FindEntityByClassname(pSpot, pSpawnpointName);
+
+	CBaseEntity *pFirstSpot = pSpot;
+
+	do
+	{
+		if (pSpot)
+		{
+			// check if pSpot is valid
+			if (g_pGameRules->IsSpawnPointValid(pSpot, this))
+			{
+				if (pSpot->GetLocalOrigin() == vec3_origin)
+				{
+					pSpot = gEntList.FindEntityByClassname(pSpot, pSpawnpointName);
+					continue;
+				}
+
+				// if so, go to pSpot
+				goto ReturnSpot;
+			}
+		}
+		// increment pSpot
+		pSpot = gEntList.FindEntityByClassname(pSpot, pSpawnpointName);
+	} while (pSpot != pFirstSpot); // loop if we're not back to the start
+
+	// we haven't found a place to spawn yet, so kill any guy at the first spawn point and spawn there
+	if (pSpot)
+	{
+#if TELEFRAG_ON_OVERLAPPING_SPAWN
+		CBaseEntity *ent = NULL;
+		for (CEntitySphereQuery sphere(pSpot->GetAbsOrigin(), 128); (ent = sphere.GetCurrentEntity()) != NULL; sphere.NextEntity())
+		{
+			// if ent is a client, kill em (unless they are ourselves)
+			if (ent->IsPlayer() && !(ent->edict() == player))
+				ent->TakeDamage(CTakeDamageInfo(GetContainingEntity(INDEXENT(0)), GetContainingEntity(INDEXENT(0)), 300, DMG_GENERIC));
+		}
+#endif
+		goto ReturnSpot;
+	}
+
+	if (!pSpot)
+	{
+		pSpot = gEntList.FindEntityByClassname(pSpot, "info_player_start");
+
+		if (pSpot)
+			goto ReturnSpot;
+	}
+
+ReturnSpot:
+
+	if (NEORules()->IsTeamplay())
+	{
+		if (GetTeamNumber() == TEAM_JINRAI)
+		{
+			g_pLastJinraiSpawn = pSpot;
+		}
+		else if (GetTeamNumber() == TEAM_NSF)
+		{
+			g_pLastNSFSpawn = pSpot;
+		}
+	}
+
+	g_pLastSpawn = pSpot;
+
+	m_flSlamProtectTime = gpGlobals->curtime + 0.5;
+
+	return pSpot;
 }
 
 bool CNEO_Player::StartObserverMode(int mode)
@@ -511,33 +704,36 @@ void CNEO_Player::PickDefaultSpawnTeam(void)
 	{
 		if (!NEORules()->IsTeamplay())
 		{
-			ChangeTeam(TEAM_UNASSIGNED);
+			ProcessTeamSwitchRequest(TEAM_SPECTATOR);
 		}
 		else
 		{
+			ProcessTeamSwitchRequest(TEAM_SPECTATOR);
+
+#if(0) // code for random team selection
 			CTeam *pJinrai = g_Teams[TEAM_JINRAI];
 			CTeam *pNSF = g_Teams[TEAM_NSF];
 
 			if (!pJinrai || !pNSF)
 			{
-				ChangeTeam(random->RandomInt(TEAM_JINRAI, TEAM_NSF));
+				ProcessTeamSwitchRequest(random->RandomInt(TEAM_JINRAI, TEAM_NSF));
 			}
 			else
 			{
 				if (pJinrai->GetNumPlayers() > pNSF->GetNumPlayers())
 				{
-					ChangeTeam(TEAM_NSF);
+					ProcessTeamSwitchRequest(TEAM_NSF);
 				}
 				else if (pNSF->GetNumPlayers() > pJinrai->GetNumPlayers())
 				{
-					ChangeTeam(TEAM_JINRAI);
+					ProcessTeamSwitchRequest(TEAM_JINRAI);
 				}
 				else
 				{
-					ChangeTeam(random->RandomInt(TEAM_JINRAI, TEAM_NSF));
+					ProcessTeamSwitchRequest(random->RandomInt(TEAM_JINRAI, TEAM_NSF));
 				}
 			}
-
+#endif
 		}
 
 		if (!GetModelPtr())
@@ -545,4 +741,175 @@ void CNEO_Player::PickDefaultSpawnTeam(void)
 			SetPlayerTeamModel();
 		}
 	}
+}
+
+// NEO FIXME/HACK (Rain): bots don't properly set their fakeclient flag currently,
+// making IsFakeClient and IsBot return false. This is an ugly hack to get bots
+// joining teams. We cannot trust this player input (and it's slow), so it really
+// should be fixed properly.
+inline bool Hack_IsBot(CNEO_Player *player)
+{
+	if (!player)
+	{
+		return false;
+	}
+
+	const char *name = player->GetPlayerInfo()->GetName();
+
+	return (strlen(name) == 5 && name[0] == 'B' && name[1] == 'o' && name[2] == 't');
+}
+
+bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
+{
+	if (!GetGlobalTeam(iTeam) || iTeam == 0)
+	{
+		Warning("HandleCommand_JoinTeam( %d ) - invalid team index.\n", iTeam);
+		return false;
+	}
+
+	// NEO TODO (Rain): add server cvars
+	const bool suicide = true;
+	const float teamChangeInterval = 5.0f;
+
+	const bool justJoined = (GetTeamNumber() == TEAM_UNASSIGNED);
+
+	// Player bots should initially join a player team
+	if (justJoined && Hack_IsBot(this) && !IsHLTV())
+	{
+		iTeam = RandomInt(TEAM_JINRAI, TEAM_NSF);
+	}
+	// Limit team join spam, unless this is a newly joined player
+	else if (!justJoined && m_flNextTeamChangeTime > gpGlobals->curtime)
+	{
+		// Except for spectators, who are allowed to join a team as soon as they wish
+		if (GetTeamNumber() != TEAM_SPECTATOR)
+		{
+			ClientPrint(this, HUD_PRINTTALK, "Please wait before switching teams again.");
+			return false;
+		}
+	}
+
+	if (iTeam == TEAM_SPECTATOR)
+	{
+		if (!mp_allowspectators.GetInt())
+		{
+			if (justJoined)
+			{
+				AssertMsg(false, "Client just joined, but was denied default team join!");
+				return ProcessTeamSwitchRequest(RandomInt(TEAM_JINRAI, TEAM_NSF));
+			}
+
+			ClientPrint(this, HUD_PRINTTALK, "#Cannot Be Spectator");
+
+			return false;
+		}
+
+		if (suicide)
+		{
+			// Unassigned implies we just joined.
+			if (!justJoined && !IsDead())
+			{
+				SoftSuicide();
+			}
+		}
+
+		// Default to free fly camera if there's nobody to spectate
+		if (justJoined || GetNumOtherPlayersConnected(this) == 0)
+		{
+			StartObserverMode(OBS_MODE_ROAMING);
+		}
+		else
+		{
+			StartObserverMode(m_iObserverLastMode);
+		}
+
+		State_Transition(STATE_OBSERVER_MODE);
+	}
+	else if (iTeam == TEAM_JINRAI || iTeam == TEAM_NSF)
+	{
+		if (suicide)
+		{
+			if (!justJoined && GetTeamNumber() != TEAM_SPECTATOR && !IsDead())
+			{
+				SoftSuicide();
+			}
+		}
+
+		StopObserverMode();
+
+		State_Transition(STATE_ACTIVE);
+	}
+	else
+	{
+		// Client should not be able to reach this
+		Assert(false);
+
+		ClientPrint(this, HUD_PRINTTALK, "Team switch failed, unrecognized Neotokyo team specified.");
+
+		return false;
+	}
+
+	m_flNextTeamChangeTime = gpGlobals->curtime + teamChangeInterval;
+	
+	RemoveAllItems(true);
+	ShowCrosshair(false);
+
+	if (iTeam == TEAM_JINRAI || iTeam == TEAM_NSF)
+	{
+		SetPlayerTeamModel();
+		GiveAllItems();
+	}
+
+	// We're skipping over HL2MP player because we don't care about
+	// deathmatch rules or Combine/Rebels model stuff.
+	CHL2_Player::ChangeTeam(iTeam, false, justJoined);
+
+	return true;
+}
+
+void CNEO_Player::GiveAllItems(void)
+{
+	// NEO TODO (Rain): our own ammo types
+	CBasePlayer::GiveAmmo(255, "Pistol");
+	CBasePlayer::GiveAmmo(45, "SMG1");
+	CBasePlayer::GiveAmmo(1, "grenade");
+	CBasePlayer::GiveAmmo(6, "Buckshot");
+	CBasePlayer::GiveAmmo(6, "357");
+
+	GiveNamedItem("weapon_tachi");
+	GiveNamedItem("weapon_ghost");
+	Weapon_Switch(Weapon_OwnsThisType("weapon_tachi"));
+
+#if(0) // startup weps stuff
+	if (m_nCyborgClass == NEO_CLASS_RECON)
+	{
+		GiveNamedItem("weapon_tachi");
+		GiveNamedItem("weapon_ghost");
+		Weapon_Switch(Weapon_OwnsThisType("weapon_tachi"));
+	}
+	else if (m_nCyborgClass == NEO_CLASS_ASSAULT)
+	{
+		GiveNamedItem("weapon_tachi");
+		GiveNamedItem("weapon_ghost");
+		Weapon_Switch(Weapon_OwnsThisType("weapon_tachi"));
+	}
+	else if (m_nCyborgClass == NEO_CLASS_SUPPORT)
+	{
+		
+	}
+#endif
+}
+
+// Purpose: For Neotokyo, we could use this engine method
+// to setup class specific armor, abilities, etc.
+void CNEO_Player::EquipSuit(bool bPlayEffects)
+{
+	//MDLCACHE_CRITICAL_SECTION();
+
+	BaseClass::EquipSuit();
+}
+
+void CNEO_Player::RemoveSuit(void)
+{
+	BaseClass::RemoveSuit();
 }

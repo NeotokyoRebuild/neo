@@ -16,10 +16,15 @@
 #include "hud_crosshair.h"
 
 #include "neo_predicted_viewmodel.h"
+#include "ui/neo_hud_compass.h"
 
 #include "baseviewmodel_shared.h"
 
 #include "prediction.h"
+
+#include "weapon_ghost.h"
+
+#include <engine/ivdebugoverlay.h>
 
 // Don't alias here
 #if defined( CNEO_Player )
@@ -46,15 +51,27 @@ ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
 
 C_NEO_Player::C_NEO_Player()
 {
+	m_pCompass = new CNEOHud_Compass("compass");
+	m_pCompass->SetOwner(this);
 }
 
 C_NEO_Player::~C_NEO_Player()
 {
+	if (m_pCompass)
+	{
+		m_pCompass->MarkForDeletion();
+		delete m_pCompass;
+	}
 }
 
 C_NEO_Player *C_NEO_Player::GetLocalNEOPlayer()
 {
 	return (C_NEO_Player*)C_BasePlayer::GetLocalPlayer();
+}
+
+C_NEOPredictedViewModel *C_NEO_Player::GetNEOViewModel()
+{
+	return (C_NEOPredictedViewModel*)GetViewModel();
 }
 
 int C_NEO_Player::DrawModel( int flags )
@@ -111,6 +128,11 @@ void C_NEO_Player::TraceAttack( const CTakeDamageInfo &info,
 void C_NEO_Player::ItemPreFrame( void )
 {
 	BaseClass::ItemPreFrame();
+
+	if (m_afButtonPressed & IN_DROP)
+	{
+		Weapon_Drop(GetActiveWeapon());
+	}
 }
 
 void C_NEO_Player::ItemPostFrame( void )
@@ -186,6 +208,13 @@ void C_NEO_Player::PostThink(void)
 void C_NEO_Player::Spawn( void )
 {
 	BaseClass::Spawn();
+
+#if(0)
+	// We could support crosshair customization/colors etc this way.
+	auto cross = GET_HUDELEMENT(CHudCrosshair);
+	Color color = Color(255, 255, 255, 255);
+	cross->SetCrosshair(NULL, color);
+#endif
 }
 
 void C_NEO_Player::DoImpactEffect( trace_t &tr, int nDamageType )
@@ -214,4 +243,13 @@ const QAngle &C_NEO_Player::EyeAngles()
 bool C_NEO_Player::ShouldDrawHL2StyleQuickHud(void)
 {
 	return cl_drawhud_quickinfo.GetBool();
+}
+
+void C_NEO_Player::Weapon_Drop(C_BaseCombatWeapon *pWeapon)
+{
+	C_WeaponGhost *ghost = dynamic_cast<C_WeaponGhost*>(pWeapon);
+	if (ghost)
+	{
+		ghost->HandleGhostUnequip();
+	}
 }

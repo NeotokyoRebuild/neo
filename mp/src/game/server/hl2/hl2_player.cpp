@@ -463,7 +463,11 @@ void CHL2_Player::EquipSuit( bool bPlayEffects )
 	MDLCACHE_CRITICAL_SECTION();
 	BaseClass::EquipSuit();
 	
+#ifdef NEO
+	m_HL2Local.m_bDisplayReticle = false;
+#else
 	m_HL2Local.m_bDisplayReticle = true;
+#endif
 
 	if ( bPlayEffects == true )
 	{

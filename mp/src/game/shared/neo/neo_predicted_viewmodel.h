@@ -5,8 +5,11 @@
 #endif
 
 #include "predicted_viewmodel.h"
+#ifdef CLIENT_DLL
+#include "clienteffectprecachesystem.h"
+#endif
 
-#if defined( CLIENT_DLL )
+#ifdef CLIENT_DLL
 #define CNEOPredictedViewModel C_NEOPredictedViewModel
 #define CNEO_Player C_NEO_Player
 #endif
@@ -28,13 +31,19 @@ public:
 	virtual void CalcViewModelLag(Vector& origin, QAngle& angles,
 		QAngle& original_angles);
 
-	void CalcLean(CNEO_Player *player);
+	int CalcLean(CNEO_Player *player);
 
 #ifdef CLIENT_DLL
 	float GetLeanInterp()
 	{
 		return GetInterpolationAmount(m_LagAnglesHistory.GetType());
 	}
+#endif
+
+#ifdef CLIENT_DLL
+	inline void DrawRenderToTextureDebugInfo(IClientRenderable* pRenderable,
+		const Vector& mins, const Vector& maxs, const Vector &rgbColor,
+		const char *message = "", const Vector &vecOrigin = vec3_origin);
 #endif
 
 private:
