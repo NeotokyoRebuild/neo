@@ -5,6 +5,11 @@
 Come [join the Discord channel](https://steamcommunity.com/groups/ANPA/discussions/0/487876568238532577/) to discuss the project
 (see the "nt_semantic_sequels" and other related channels under the channel group "Architects").
 
+## General goal of the project
+The overall goal is to create a reimplementation of Neotokyo for Source 2013 MP engine, with the source code opened for viewing and editing (with certain limitations; see the Source SDK license for legalese). Original NT assets/IP are mounted as dependencies, and aren't part of the repository. It's like a mod of a mod.
+
+The end result should hopefully be a shinier and less error-prone rendition of NT, with the source code and more cvars providing room to fine tune game balance, or come up with completely new modes entirely.
+
 ## Table of contents
 <!-- Generated with: https://github.com/jonschlinkert/markdown-toc -->
 * [Getting started](#getting-started)
