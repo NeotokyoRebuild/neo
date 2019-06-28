@@ -15,7 +15,13 @@
 #include <vgui/ISurface.h>
 #include <vgui_controls/AnimationController.h>
 #include "iinput.h"
-#include "hl2mpclientscoreboard.h"
+
+#ifdef NEO
+	#include "neo/ui/neo_scoreboard.h"
+#else
+	#include "hl2mpclientscoreboard.h"
+#endif
+
 #include "hl2mptextwindow.h"
 #include "ienginevgui.h"
 
@@ -73,7 +79,11 @@ IViewPortPanel* CHudViewport::CreatePanelByName( const char *szPanelName )
 
 	if ( Q_strcmp( PANEL_SCOREBOARD, szPanelName) == 0 )
 	{
+#ifdef NEO
+		newpanel = new CNEOScoreBoard(this);
+#else
 		newpanel = new CHL2MPClientScoreBoardDialog( this );
+#endif
 		return newpanel;
 	}
 	else if ( Q_strcmp(PANEL_INFO, szPanelName) == 0 )

@@ -283,9 +283,9 @@ Scheme
 	// describes all the fonts
 	Fonts
 	{
-		////////////////////////
-		// NEO FONTS END HERE //
-		////////////////////////
+		//////////////////////////
+		// NEO FONTS START HERE //
+		//////////////////////////
 		
 		// Also remember to add your custom fonts in CustomFontFiles key near the end of this file.
 	

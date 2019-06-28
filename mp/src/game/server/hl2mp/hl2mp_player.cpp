@@ -924,7 +924,6 @@ void CHL2MP_Player::ChangeTeam( int iTeam )
 
 	m_flNextTeamChangeTime = gpGlobals->curtime + TEAM_CHANGE_INTERVAL;
 
-#ifndef NEO
 	if ( HL2MPRules()->IsTeamplay() == true )
 	{
 		SetPlayerTeamModel();
@@ -933,7 +932,6 @@ void CHL2MP_Player::ChangeTeam( int iTeam )
 	{
 		SetPlayerModel();
 	}
-#endif
 
 	if ( iTeam == TEAM_SPECTATOR )
 	{

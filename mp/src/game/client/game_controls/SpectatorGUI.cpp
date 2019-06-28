@@ -277,6 +277,16 @@ void CSpectatorMenu::OnKeyCodePressed(KeyCode code)
 
 void CSpectatorMenu::ShowPanel(bool bShow)
 {
+#ifdef NEO
+	// NEO NOTE (Rain): Unless the menu's been fixed and re-enabled,
+	// we should never reach this code with (bShow == true).
+	if (bShow)
+	{
+		AssertMsg(false, "We should not enable this menu in NEO, unless it has been fixed!");
+		return;
+	}
+#endif
+
 	if ( BaseClass::IsVisible() == bShow )
 		return;
 
@@ -367,14 +377,18 @@ void CSpectatorMenu::Update( void )
 
 	// make sure the player combo box is up to date
 	int playernum = GetSpectatorTarget();
-	const char *selectedPlayerName = gr->GetPlayerName( playernum );
-	for ( iPlayerIndex=0; iPlayerIndex<m_pPlayerList->GetItemCount(); ++iPlayerIndex )
+	// If there were no players around to spectate, playernum may return zero.
+	if (playernum != 0)
 	{
-		KeyValues *kv = m_pPlayerList->GetItemUserData( iPlayerIndex );
-		if ( kv && FStrEq( kv->GetString( "player" ), selectedPlayerName ) )
+		const char *selectedPlayerName = gr->GetPlayerName(playernum);
+		for (iPlayerIndex = 0; iPlayerIndex<m_pPlayerList->GetItemCount(); ++iPlayerIndex)
 		{
-			m_pPlayerList->ActivateItemByRow( iPlayerIndex );
-			break;
+			KeyValues *kv = m_pPlayerList->GetItemUserData(iPlayerIndex);
+			if (kv && FStrEq(kv->GetString("player"), selectedPlayerName))
+			{
+				m_pPlayerList->ActivateItemByRow(iPlayerIndex);
+				break;
+			}
 		}
 	}
 

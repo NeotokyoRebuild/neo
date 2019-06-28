@@ -9,7 +9,7 @@ WeaponData
 	"team2viewmodel"	"models/gameplay/v_nsf_ghost.mdl"
 	"playermodel"		"models/gameplay/w_ghost.mdl"
 	"anim_prefix"		"Ghost"
-	"bucket"		"1"
+	"bucket"		"2"
 	"bucket_position"	"0"
 	"Damage"		"1"
 	"Penetration"		"1.0"

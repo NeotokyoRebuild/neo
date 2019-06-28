@@ -105,6 +105,14 @@ bool CEventLog::PrintPlayerEvent( IGameEvent *event )
 		{
 			const int newTeam = event->GetInt( "team" );
 			const int oldTeam = event->GetInt( "oldteam" );
+
+			// This is a new joinee auto-joining spectators.
+			// We shouldn't announce this globally.
+			if (oldTeam == TEAM_UNASSIGNED && newTeam == TEAM_SPECTATOR)
+			{
+				return true;
+			}
+
 			CTeam *team = GetGlobalTeam( newTeam );
 			CTeam *oldteam = GetGlobalTeam( oldTeam );
 			

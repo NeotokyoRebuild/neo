@@ -67,6 +67,11 @@ void FinishClientPutInServer( CNEO_Player *pPlayer )
 	pPlayer->ShowViewPortPanel( PANEL_INFO, true, data );
 
 	data->deleteThis();
+
+	// NEO TODO (Rain): Team selection HUD here.
+
+	// If player chooses to spectate upon joining, start in free roam mode.
+	pPlayer->StartObserverMode(OBS_MODE_ROAMING);
 }
 
 /*
@@ -277,6 +282,7 @@ static inline void Precache_NEO_Sounds( void )
 
 	CBaseEntity::PrecacheScriptSound("Weapon_Generic.melee_swing");
 
+	// NEO HACK/FIXME (Rain): we should use soundscript
 	CBaseEntity::PrecacheSound("sound/gameplay/ghost_equip.wav");
 	CBaseEntity::PrecacheSound("sound/gameplay/ghost_equip2.wav");
 	CBaseEntity::PrecacheSound("sound/gameplay/ghost_equip3.wav");
@@ -297,7 +303,7 @@ void ClientGamePrecache( void )
 	CNEOModelManager *modelManager = CNEOModelManager::Instance();
 	if (!modelManager)
 	{
-		Error("Failed to instantiate CNEOModelManager\n");
+		Error("Failed to get CNEOModelManager instance\n");
 	}
 	modelManager->Precache();
 

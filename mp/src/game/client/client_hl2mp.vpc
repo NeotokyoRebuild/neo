@@ -126,8 +126,12 @@ $Project "Client (HL2MP)"
 			{
 				$File	"neo\ui\neo_hud_compass.cpp"
 				$File	"neo\ui\neo_hud_compass.h"
+
 				$File	"neo\ui\neo_hud_ghostbeacon.cpp"
 				$File	"neo\ui\neo_hud_ghostbeacon.h"
+
+				$File	"neo\ui\neo_scoreboard.cpp"
+				$File	"neo\ui\neo_scoreboard.h"
 			}
 
 			////////////////
@@ -137,6 +141,12 @@ $Project "Client (HL2MP)"
 
 			$File	"$SRCDIR\game\shared\neo\neo_gamerules.cpp"
 			$File	"$SRCDIR\game\shared\neo\neo_gamerules.h"
+
+			$File	"$SRCDIR\game\shared\neo\neo_ghost_cap_point.cpp"
+			$File	"$SRCDIR\game\shared\neo\neo_ghost_cap_point.h"
+
+			$File	"$SRCDIR\game\shared\neo\neo_player_spawnpoint.cpp"
+			$File	"$SRCDIR\game\shared\neo\neo_player_spawnpoint.h"
 
 			$File	"$SRCDIR\game\shared\neo\neo_predicted_viewmodel.cpp"
 			$File	"$SRCDIR\game\shared\neo\neo_predicted_viewmodel.h"

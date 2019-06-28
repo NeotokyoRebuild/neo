@@ -128,7 +128,7 @@ inline void CNEOHud_Compass::DrawCompass(void)
 	}
 
 	// Direction in -180 to 180
-	float angle = m_pOwner->EyeAngles()[YAW];
+	float angle = -1 * m_pOwner->EyeAngles()[YAW];
 
 	// Bring us back to safety
 	if (angle > 180)
@@ -266,7 +266,7 @@ void CNEOHud_Compass::ApplySchemeSettings(vgui::IScheme *pScheme)
 inline void CNEOHud_Compass::DrawDebugCompass(void)
 {
 	// Direction in -180 to 180
-	float angle = m_pOwner->EyeAngles()[YAW];
+	float angle = -1 * m_pOwner->EyeAngles()[YAW];
 
 	// Bring us back to safety
 	if (angle > 180)
