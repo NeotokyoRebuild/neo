@@ -175,7 +175,7 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 
 		// Has the ghost carrier reached inside our radius?
 		// NEO TODO (Rain): newbie UI helpers for approaching wrong team cap
-		if (distance >= m_flCapzoneRadius)
+		if (distance >= (m_flCapzoneRadius / 2.0f))
 		{
 			continue;
 		}
