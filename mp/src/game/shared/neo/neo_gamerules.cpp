@@ -231,6 +231,13 @@ void CNEORules::CheckRestartGame()
 void CNEORules::RestartGame()
 {
 	BaseClass::RestartGame();
+
+	static int ghostEdict = -1;
+	auto ghost = CreateEntityByName("weapon_ghost", ghostEdict);
+	ghostEdict = ghost->edict()->m_EdictIndex;
+
+	ghost->SetAbsOrigin(vec3_origin); // NEO TODO (Rain): fetch new spawn coords
+	DispatchSpawn(ghost);
 }
 #endif
 

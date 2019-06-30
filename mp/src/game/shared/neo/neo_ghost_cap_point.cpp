@@ -63,7 +63,7 @@ CNEOGhostCapturePoint::CNEOGhostCapturePoint()
 
 	m_flCapzoneRadius = 0;
 
-	m_bIsActive = false;
+	m_bIsActive = true;
 	m_bGhostHasBeenCaptured = false;
 }
 

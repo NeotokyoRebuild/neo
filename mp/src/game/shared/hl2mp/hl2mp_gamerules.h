@@ -119,7 +119,12 @@ public:
 	float GetMapRemainingTime();
 	void CleanUpMap();
 	void CheckRestartGame();
+
+#if defined(NEO) && defined(GAME_DLL)
+	virtual void RestartGame();
+#else
 	void RestartGame();
+#endif
 
 #ifndef CLIENT_DLL
 	virtual Vector VecItemRespawnSpot( CItem *pItem );

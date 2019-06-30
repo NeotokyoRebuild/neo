@@ -103,9 +103,14 @@ public:
 	virtual void ClientSettingsChanged(CBasePlayer *pPlayer);
 
 	float GetMapRemainingTime();
+
 	void CleanUpMap();
 	void CheckRestartGame();
+#ifdef CLIENT_DLL
 	void RestartGame();
+#else
+	virtual void RestartGame() override;
+#endif
 };
 
 inline CNEORules *NEORules()
