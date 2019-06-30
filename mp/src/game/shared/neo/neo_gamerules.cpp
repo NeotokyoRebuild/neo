@@ -9,6 +9,7 @@
 	#include "neo_player.h"
 	#include "team.h"
 	#include "neo_model_manager.h"
+	#include "neo_ghost_spawn_point.h"
 #endif
 
 // NEO TODO (Rain): use GetPlayerSpawnSpot
@@ -236,7 +237,23 @@ void CNEORules::RestartGame()
 	auto ghost = CreateEntityByName("weapon_ghost", ghostEdict);
 	ghostEdict = ghost->edict()->m_EdictIndex;
 
-	ghost->SetAbsOrigin(vec3_origin); // NEO TODO (Rain): fetch new spawn coords
+	ghost->SetAbsOrigin(vec3_origin);
+
+	auto ent = gEntList.FirstEnt();
+	while (ent)
+	{
+		auto ghostSpawn = dynamic_cast<CNEOGhostSpawnPoint*>(ent);
+
+		// NEO TODO (Rain): spawn pick logic
+		if (ghostSpawn)
+		{
+			ghost->SetAbsOrigin(ghostSpawn->GetAbsOrigin());
+			break;
+		}
+
+		ent = gEntList.NextEnt(ent);
+	}
+
 	DispatchSpawn(ghost);
 }
 #endif
