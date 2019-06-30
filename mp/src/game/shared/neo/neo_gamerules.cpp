@@ -237,9 +237,10 @@ void CNEORules::RestartGame()
 	auto ghost = CreateEntityByName("weapon_ghost", ghostEdict);
 	ghostEdict = ghost->edict()->m_EdictIndex;
 
-	ghost->SetAbsOrigin(vec3_origin);
+	int numGhostSpawns = 0;
 
 	auto ent = gEntList.FirstEnt();
+	// First iteration, we get the amount of ghost spawns available to us
 	while (ent)
 	{
 		auto ghostSpawn = dynamic_cast<CNEOGhostSpawnPoint*>(ent);
@@ -247,12 +248,47 @@ void CNEORules::RestartGame()
 		// NEO TODO (Rain): spawn pick logic
 		if (ghostSpawn)
 		{
-			ghost->SetAbsOrigin(ghostSpawn->GetAbsOrigin());
-			break;
+			numGhostSpawns++;
 		}
 
 		ent = gEntList.NextEnt(ent);
 	}
+
+	// We didn't have any spawns, spawn ghost at origin
+	if (numGhostSpawns == 0)
+	{
+		Warning("No ghost spawns found! Spawning ghost at map origin, instead.\n");
+		ghost->SetAbsOrigin(vec3_origin);
+	}
+	else
+	{
+		// Randomly decide on a ghost spawn point we want this time
+		const int desiredSpawn = RandomInt(1, numGhostSpawns);
+		int ghostSpawnIteration = 1;
+
+		ent = gEntList.FirstEnt();
+		// Second iteration, we pick the ghost spawn we want
+		while (ent)
+		{
+			auto ghostSpawn = dynamic_cast<CNEOGhostSpawnPoint*>(ent);
+
+			if (ghostSpawn)
+			{
+				if (ghostSpawnIteration++ == desiredSpawn)
+				{
+					ghost->SetAbsOrigin(ghostSpawn->GetAbsOrigin());
+					break;
+				}
+			}
+
+			ent = gEntList.NextEnt(ent);
+		}
+	}
+
+	DevMsg("Spawned ghost at coords: %.1f %.1f %.1f\n",
+		ghost->GetAbsOrigin().x,
+		ghost->GetAbsOrigin().y,
+		ghost->GetAbsOrigin().z);
 
 	DispatchSpawn(ghost);
 }
