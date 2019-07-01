@@ -52,20 +52,28 @@ BEGIN_DATADESC(CNEOGhostCapturePoint)
 	DEFINE_KEYFIELD(m_iOwningTeam, FIELD_INTEGER, "team"),
 END_DATADESC()
 
-#ifdef CLIENT_DLL
-
-#endif
-
 CNEOGhostCapturePoint::CNEOGhostCapturePoint()
 {
-	m_iOwningTeam = TEAM_UNASSIGNED;
 	m_iSuccessfulCaptorClientIndex = 0;
-
-	m_flCapzoneRadius = 0;
 
 	m_bIsActive = true;
 	m_bGhostHasBeenCaptured = false;
 }
+
+#ifdef GAME_DLL
+bool CNEOGhostCapturePoint::IsGhostCaptured(int& outTeamNumber, int& outCaptorClientIndex)
+{
+	if (m_bIsActive && m_bGhostHasBeenCaptured)
+	{
+		outTeamNumber = m_iOwningTeam;
+		outCaptorClientIndex = m_iSuccessfulCaptorClientIndex;
+
+		return true;
+	}
+
+	return false;
+}
+#endif
 
 void CNEOGhostCapturePoint::Spawn(void)
 {
@@ -189,11 +197,12 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 		player->SendTestMessage("Player captured the ghost!");
 		player->m_iCapTeam = player->GetTeamNumber();
 
+#if(0) // NEO FIXME (Rain), this doesn't play. maybe move to gamerules victory?
 		CRecipientFilter filter;
 		filter.AddAllPlayers();
-
 		player->EmitSound(filter, SOUND_FROM_UI_PANEL,
 			(player->GetTeamNumber() == TEAM_JINRAI ? "Victory.Jinrai" : "Victory.NSF"));
+#endif
 
 		// Return early; we pass next think responsibility to gamerules,
 		// whenever it sees fit to start capzone thinking again.

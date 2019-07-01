@@ -10,9 +10,9 @@
 	#include "team.h"
 	#include "neo_model_manager.h"
 	#include "neo_ghost_spawn_point.h"
+	#include "neo_ghost_cap_point.h"
+	#include "neo/weapons/weapon_ghost.h"
 #endif
-
-// NEO TODO (Rain): use GetPlayerSpawnSpot
 
 REGISTER_GAMERULES_CLASS( CNEORules );
 
@@ -95,7 +95,7 @@ extern CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
 
 CNEORules::CNEORules()
 {
-#ifndef CLIENT_DLL	
+#ifdef GAME_DLL	
 	Q_strncpy(g_Teams[TEAM_JINRAI]->m_szTeamname.GetForModify(),
 		TEAM_STR_JINRAI, MAX_TEAM_NAME_LENGTH);
 	
@@ -116,8 +116,15 @@ CNEORules::CNEORules()
 
 CNEORules::~CNEORules()
 {
-
+	
 }
+
+#ifdef GAME_DLL
+void CNEORules::Precache()
+{
+	BaseClass::Precache();
+}
+#endif
 
 // This is the HL2MP gamerules GetAmmoDef() global scope function copied over,
 // because we want to implement it ourselves. This can be refactored out if/when
@@ -175,6 +182,39 @@ bool CNEORules::ShouldCollide(int collisionGroup0, int collisionGroup1)
 void CNEORules::Think(void)
 {
 	BaseClass::Think();
+
+#ifdef GAME_DLL
+	{
+		// Check if the ghost was capped during this Think
+		int captorTeam, captorClient;
+		for (int i = 0; i < m_pGhostCaps.Count(); i++)
+		{
+			auto pGhostCap = dynamic_cast<CNEOGhostCapturePoint*>(UTIL_EntityByIndex(m_pGhostCaps[i]));
+			if (!pGhostCap)
+			{
+				Assert(false);
+				continue;
+			}
+
+			// If a ghost was captured
+			if (pGhostCap->IsGhostCaptured(captorTeam, captorClient))
+			{
+				// Turn off all capzones
+				for (int i = 0; i < m_pGhostCaps.Count(); i++)
+				{
+					auto pGhostCap = dynamic_cast<CNEOGhostCapturePoint*>(UTIL_EntityByIndex(m_pGhostCaps[i]));
+					pGhostCap->SetActive(false);
+				}
+
+				// And then announce team victory
+				// NEO TODO (Rain): figure out the win reasons for Neo
+				SetWinningTeam(captorTeam, 0, true, false, false, false);
+
+				break;
+			}
+		}
+	}
+#endif
 }
 
 void CNEORules::CreateStandardEntities(void)
@@ -224,9 +264,33 @@ void CNEORules::CheckRestartGame()
 	BaseClass::CheckRestartGame();
 }
 
-void CNEORules::RestartGame()
+// Purpose: Spawns one ghost at a randomly chosen Neo ghost spawn point.
+static inline void SpawnTheGhost()
 {
-	BaseClass::RestartGame();
+	CBaseEntity *pEnt = gEntList.FirstEnt();
+	while (pEnt)
+	{
+		auto ghost = dynamic_cast<CWeaponGhost*>(pEnt);
+
+		if (ghost)
+		{
+			auto owner = ghost->GetPlayerOwner();
+
+			if (owner)
+			{
+				auto heldWeapon = owner->GetActiveWeapon();
+
+				if (heldWeapon && ghost == heldWeapon)
+				{
+					owner->ClearActiveWeapon();
+				}
+			}
+
+			ghost->Delete();
+		}
+
+		pEnt = gEntList.NextEnt(pEnt);
+	}
 
 	// NEO TODO (Rain): figure out how we can safely cache and reuse this edict
 	int ghostEdict = -1;
@@ -235,7 +299,7 @@ void CNEORules::RestartGame()
 
 	int numGhostSpawns = 0;
 
-	CBaseEntity *pEnt = gEntList.FirstEnt();
+	pEnt = gEntList.FirstEnt();
 	// First iteration, we get the amount of ghost spawns available to us
 	while (pEnt)
 	{
@@ -287,6 +351,62 @@ void CNEORules::RestartGame()
 
 	DispatchSpawn(ghost);
 }
+
+void CNEORules::RestartGame()
+{
+	BaseClass::RestartGame();
+
+	SpawnTheGhost();
+
+	m_pGhostCaps.Purge();
+
+	int numGhostCaps = 0;
+
+	CBaseEntity *pEnt = gEntList.FirstEnt();
+
+	// First iteration, pre-size our dynamic array to avoid extra copies
+	while (pEnt)
+	{
+		auto ghostCap = dynamic_cast<CNEOGhostCapturePoint*>(pEnt);
+
+		if (ghostCap)
+		{
+			numGhostCaps++;
+		}
+
+		pEnt = gEntList.NextEnt(pEnt);
+	}
+
+	//m_pGhostCaps.SetSize(numGhostCaps);
+
+	if (numGhostCaps > 0)
+	{
+		// Second iteration, populate with cap points
+		pEnt = gEntList.FirstEnt();
+		while (pEnt)
+		{
+			auto ghostCap = dynamic_cast<CNEOGhostCapturePoint*>(pEnt);
+
+			if (ghostCap)
+			{
+				ghostCap->ResetCaptureState();
+				m_pGhostCaps.AddToTail(ghostCap->entindex());
+				ghostCap->SetActive(true);
+			}
+
+			pEnt = gEntList.NextEnt(pEnt);
+		}
+	}
+
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		CNEO_Player *player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
+		if (player)
+		{
+			player->SetTestMessageVisible(false);
+		}
+	}
+}
 #endif
 
 #ifdef GAME_DLL
@@ -334,3 +454,41 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 	CTeamplayRules::ClientSettingsChanged(pPlayer);
 #endif
 }
+
+#ifdef GAME_DLL
+void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bool bSwitchTeams, bool bDontAddScore, bool bFinal)
+{
+	if (iWinReason == NEO_VICTORY_GHOST_CAPTURE)
+	{
+		Msg("Team %s wins by capturing the ghost!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
+	}
+	else if (iWinReason == NEO_VICTORY_TEAM_ELIMINATION)
+	{
+		Msg("Team %s wins by eliminating the other team!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
+	}
+	else if (iWinReason == NEO_VICTORY_TIMEOUT_WIN_BY_NUMBERS)
+	{
+		Msg("Team %s wins by numbers!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
+	}
+	else if (iWinReason == NEO_VICTORY_FORFEIT)
+	{
+		Msg("Team %s wins by forfeit!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
+	}
+	else
+	{
+		Warning("Unknown Neotokyo victory reason %i\n", iWinReason);
+		Assert(false);
+	}
+	
+	if (bForceMapReset)
+	{
+		RestartGame();
+	}
+
+	if (!bDontAddScore)
+	{
+		auto winningTeam = GetGlobalTeam(team);
+		winningTeam->AddScore(1);
+	}
+}
+#endif

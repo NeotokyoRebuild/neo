@@ -172,9 +172,16 @@ public:
 #endif
 
 	void SetActive(bool isActive);
+	void ResetCaptureState()
+	{
+		m_bGhostHasBeenCaptured = false;
+		m_iSuccessfulCaptorClientIndex = 0;
+	}
 
 #ifdef GAME_DLL
 	int ShouldTransmit(const CCheckTransmitInfo *pInfo) { return EF_BRIGHTLIGHT; }
+
+	bool IsGhostCaptured(int &outTeamNumber, int &outCaptorClientIndex);
 #endif
 
 private:

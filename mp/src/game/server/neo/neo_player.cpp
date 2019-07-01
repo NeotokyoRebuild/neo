@@ -206,6 +206,7 @@ void CNEO_Player::PostThink(void)
 		Weapon_Drop(GetActiveWeapon(), NULL, &eyeForward);
 	}
 
+#if(0)
 	if (m_iCapTeam != TEAM_UNASSIGNED)
 	{
 		const int resetTime = 11;
@@ -221,6 +222,7 @@ void CNEO_Player::PostThink(void)
 			return;
 		}
 	}
+#endif
 }
 
 void CNEO_Player::PlayerDeathThink()
@@ -943,4 +945,9 @@ void CNEO_Player::SendTestMessage(const char *message)
 	V_memcpy(m_pszTestMessage.GetForModify(), message, sizeof(m_pszTestMessage));
 
 	m_bShowTestMessage = true;
+}
+
+void CNEO_Player::SetTestMessageVisible(bool visible)
+{
+	m_bShowTestMessage = visible;
 }

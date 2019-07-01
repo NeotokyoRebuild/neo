@@ -27,6 +27,7 @@ public:
 	}
 
 	void SendTestMessage(const char *message);
+	void SetTestMessageVisible(bool visible);
 
 	DECLARE_SERVERCLASS();
 	DECLARE_DATADESC();
