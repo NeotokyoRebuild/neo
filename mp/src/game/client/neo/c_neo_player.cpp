@@ -154,6 +154,8 @@ void C_NEO_Player::ItemPostFrame( void )
 
 	static bool onceOnly = true;
 
+	// NEO HACK/FIXME (Rain): this should be issued from serverside gamerules with player filter,
+	// using proper precached soundscript entries
 	if (m_iCapTeam != TEAM_UNASSIGNED)
 	{
 		if (onceOnly)
