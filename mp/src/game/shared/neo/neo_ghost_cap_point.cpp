@@ -137,7 +137,7 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
-		CBasePlayer *player = UTIL_PlayerByIndex(i);
+		CNEO_Player *player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
 
 		if (!player)
 		{
@@ -185,6 +185,15 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 		m_iSuccessfulCaptorClientIndex = i;
 
 		DevMsg("Player got ghost inside my radius\n");
+
+		player->SendTestMessage("Player captured the ghost!");
+		player->m_iCapTeam = player->GetTeamNumber();
+
+		CRecipientFilter filter;
+		filter.AddAllPlayers();
+
+		player->EmitSound(filter, SOUND_FROM_UI_PANEL,
+			(player->GetTeamNumber() == TEAM_JINRAI ? "Victory.Jinrai" : "Victory.NSF"));
 
 		// Return early; we pass next think responsibility to gamerules,
 		// whenever it sees fit to start capzone thinking again.

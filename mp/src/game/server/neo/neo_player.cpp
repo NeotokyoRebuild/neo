@@ -41,6 +41,10 @@ LINK_ENTITY_TO_CLASS(info_player_start, CPointEntity);*/
 IMPLEMENT_SERVERCLASS_ST(CNEO_Player, DT_NEO_Player)
 SendPropInt(SENDINFO(m_nNeoSkin), 3),
 SendPropInt(SENDINFO(m_nCyborgClass), 3),
+SendPropInt(SENDINFO(m_iCapTeam), 3),
+
+SendPropBool(SENDINFO(m_bShowTestMessage)),
+SendPropString(SENDINFO(m_pszTestMessage)),
 END_SEND_TABLE()
 
 BEGIN_DATADESC(CNEO_Player)
@@ -80,6 +84,10 @@ CNEO_Player::CNEO_Player()
 
 	m_nNeoSkin = NEO_SKIN_FIRST;
 	m_nCyborgClass = NEO_CLASS_ASSAULT;
+	m_iCapTeam = TEAM_UNASSIGNED;
+
+	m_bShowTestMessage = false;
+	V_memset(m_pszTestMessage.GetForModify(), 0, sizeof(m_pszTestMessage));
 }
 
 CNEO_Player::~CNEO_Player( void )
@@ -196,6 +204,22 @@ void CNEO_Player::PostThink(void)
 		eyeForward *= forwardOffset;
 
 		Weapon_Drop(GetActiveWeapon(), NULL, &eyeForward);
+	}
+
+	if (m_iCapTeam != TEAM_UNASSIGNED)
+	{
+		const int resetTime = 11;
+		static float lastTime = gpGlobals->curtime;
+		float dTime = gpGlobals->curtime - lastTime;
+		if (dTime >= resetTime)
+		{
+			m_iCapTeam = TEAM_UNASSIGNED;
+			lastTime = gpGlobals->curtime;
+
+			NEORules()->RestartGame();
+
+			return;
+		}
 	}
 }
 
@@ -912,4 +936,11 @@ void CNEO_Player::EquipSuit(bool bPlayEffects)
 void CNEO_Player::RemoveSuit(void)
 {
 	BaseClass::RemoveSuit();
+}
+
+void CNEO_Player::SendTestMessage(const char *message)
+{
+	V_memcpy(m_pszTestMessage.GetForModify(), message, sizeof(m_pszTestMessage));
+
+	m_bShowTestMessage = true;
 }

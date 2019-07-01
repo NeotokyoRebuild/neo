@@ -17,6 +17,7 @@
 
 #include "neo_predicted_viewmodel.h"
 #include "ui/neo_hud_compass.h"
+#include "ui/neo_hud_game_event.h"
 
 #include "baseviewmodel_shared.h"
 
@@ -25,6 +26,8 @@
 #include "weapon_ghost.h"
 
 #include <engine/ivdebugoverlay.h>
+
+#include "engine/ienginesound.h"
 
 // Don't alias here
 #if defined( CNEO_Player )
@@ -36,6 +39,11 @@ LINK_ENTITY_TO_CLASS(player, C_NEO_Player);
 IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_nNeoSkin)),
 	RecvPropInt(RECVINFO(m_nCyborgClass)),
+
+	RecvPropBool(RECVINFO(m_bShowTestMessage)),
+	RecvPropString(RECVINFO(m_pszTestMessage)),
+
+	RecvPropInt(RECVINFO(m_iCapTeam)),
 END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA(C_NEO_Player)
@@ -53,6 +61,11 @@ C_NEO_Player::C_NEO_Player()
 {
 	m_pCompass = new CNEOHud_Compass("compass");
 	m_pCompass->SetOwner(this);
+
+	m_pHudEvent_Test = new CNEOHud_GameEvent("hudEvent_Test");
+	m_pHudEvent_Test->SetMessage("Test message");
+
+	m_iCapTeam = TEAM_UNASSIGNED;
 }
 
 C_NEO_Player::~C_NEO_Player()
@@ -138,6 +151,48 @@ void C_NEO_Player::ItemPreFrame( void )
 void C_NEO_Player::ItemPostFrame( void )
 {
 	BaseClass::ItemPostFrame();
+
+	static bool onceOnly = true;
+
+	if (m_iCapTeam != TEAM_UNASSIGNED)
+	{
+		if (onceOnly)
+		{
+			if (m_iCapTeam == TEAM_JINRAI)
+			{
+				/*
+				EmitSound("Victory.Jinrai");
+
+				EmitSound("sound/gameplay/jinrai.mp3");
+				*/
+
+				enginesound->EmitAmbientSound("gameplay/jinrai.mp3", 1.f);
+			}
+			else if (m_iCapTeam == TEAM_NSF)
+			{
+				/*
+				EmitSound("Victory.NSF");
+
+				EmitSound("sound/gameplay/nsf.mp3");
+				*/
+
+				enginesound->EmitAmbientSound("gameplay/nsf.mp3", 1.f);
+			}
+			else
+			{
+				EmitSound("Victory.Draw");
+			}
+
+			onceOnly = !onceOnly;
+		}
+	}
+	else
+	{
+		if (onceOnly != true)
+		{
+			onceOnly = true;
+		}
+	}
 }
 
 float C_NEO_Player::GetMinFOV() const
@@ -191,6 +246,12 @@ void C_NEO_Player::PreThink( void )
 	{
 		vm->CalcLean(this);
 	}
+
+	if (m_bShowTestMessage)
+	{
+		m_pHudEvent_Test->SetMessage(m_pszTestMessage);
+		m_pHudEvent_Test->SetVisible(true);
+	}
 }
 
 void C_NEO_Player::ClientThink(void)
@@ -203,6 +264,15 @@ void C_NEO_Player::PostThink(void)
 	BaseClass::PostThink();
 
 	//DevMsg("Roll: %f\n", m_angEyeAngles[2]);
+
+	bool preparingToHideMsg = (m_iCapTeam != TEAM_UNASSIGNED);
+	static bool previouslyPreparing = preparingToHideMsg;
+
+	if (!preparingToHideMsg && previouslyPreparing)
+	{
+		m_pHudEvent_Test->SetVisible(false);
+		previouslyPreparing = false;
+	}
 }
 
 void C_NEO_Player::Spawn( void )

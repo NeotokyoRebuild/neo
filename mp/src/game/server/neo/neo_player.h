@@ -26,6 +26,8 @@ public:
 		return (CNEO_Player*)CreateEntityByName(className);
 	}
 
+	void SendTestMessage(const char *message);
+
 	DECLARE_SERVERCLASS();
 	DECLARE_DATADESC();
 
@@ -80,6 +82,10 @@ public:
 public:
 	CNetworkVar(int, m_nNeoSkin);
 	CNetworkVar(int, m_nCyborgClass);
+	CNetworkVar(int, m_iCapTeam);
+
+	CNetworkVar(bool, m_bShowTestMessage);
+	CNetworkString(m_pszTestMessage, 32 * 2 + 1);
 
 private:
 	bool m_bInLeanLeft, m_bInLeanRight;

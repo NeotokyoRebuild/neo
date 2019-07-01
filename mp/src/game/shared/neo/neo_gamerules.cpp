@@ -233,7 +233,7 @@ void CNEORules::RestartGame()
 {
 	BaseClass::RestartGame();
 
-	static int ghostEdict = -1;
+	int ghostEdict = -1;
 	auto ghost = CreateEntityByName("weapon_ghost", ghostEdict);
 	ghostEdict = ghost->edict()->m_EdictIndex;
 
