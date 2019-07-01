@@ -32,13 +32,15 @@ static inline bool IsDir(const StatStruct& st) { return S_ISDIR(st.st_mode); }
 // These can be installed with SteamCMD, or copied over from a Windows install.
 inline bool FindOriginalNeotokyoAssets(IFileSystem *g_pFullFileSystem)
 {
-	// We can't mount Neotokyo if these fail. Crash with an error message.
+#ifdef CLIENT_DLL // Server can manage without Steam, but the clients need it.
 	if (!SteamAPI_IsSteamRunning())
 	{
 		Error("Failed to call Steam API. This game needs to be launched through Steam.");
 		return false;
 	}
-	else if (!g_pFullFileSystem)
+#endif
+
+	if (!g_pFullFileSystem)
 	{
 		Error("Engine filesystem was not initialized properly.");
 		return false;
@@ -88,10 +90,19 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *g_pFullFileSystem)
 	originalNtPathOk = ( Stat(neoPath, &file_stat) == 0
 		&& IsDir(file_stat) );
 #else // If Windows
+
 	char neoWindowsDefaultPath[MAX_PATH];
+
+#ifdef CLIENT_DLL
+	// Client falls back to Steam's default Source mod install path, if -neopath was not specified.
 	Q_strncpy(neoWindowsDefaultPath, SteamAPI_GetSteamInstallPath(), sizeof(neoWindowsDefaultPath));
 	V_AppendSlash(neoWindowsDefaultPath, sizeof(neoWindowsDefaultPath));
 	V_strcat(neoWindowsDefaultPath, "steamapps\\common\\NEOTOKYO\\NeotokyoSource", sizeof(neoWindowsDefaultPath));
+#else
+	// A generic, plausible Windows server srcds location for fallback, if -neopath was not specified.
+	const char *serverWinDefault = "C:\\srcds\\NeotokyoSource";
+	Q_strncpy(neoWindowsDefaultPath, serverWinDefault, sizeof(serverWinDefault));
+#endif
 
 	Q_strncpy(neoPath, CommandLine()->ParmValue("-neopath", neoWindowsDefaultPath), sizeof(neoPath));
 
@@ -154,14 +165,20 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *g_pFullFileSystem)
 	else // originalNtPathOk
 	{
 #ifdef LINUX
-		Warning("%s: Original Neotokyo installation was not found. \
+		Error("%s: Original Neotokyo installation was not found. \
 Please use SteamCMD to download the Neotokyo (Windows) contents to path: '%s'\n",
 	thisCaller, neoHardcodedLinuxAssetPath);
 #else
-		Warning("%s: Original Neotokyo installation was not found (looked at path: '%s'). \
+#ifdef CLIENT_DLL
+		Error("%s: Original Neotokyo installation was not found (looked at path: '%s'). \
 Please install Neotokyo on Steam for this mod to work. If your Neotokyo path \
 differs from Steam install path, use the -neopath launch argument to specify your \
-NeotokyoSource root folder install location.\n", thisCaller, neoPath);
+NeotokyoSource root folder install location.", thisCaller, neoPath);
+#else
+		Error("%s: Original Neotokyo installation was not found (looked at path: '%s'). \
+If you are not running a Steam process on this server instance, please specify your \
+NeotokyoSource root folder install location using the -neopath launch argument.", thisCaller, neoPath);
+#endif
 #endif
 		return false;
 	}
