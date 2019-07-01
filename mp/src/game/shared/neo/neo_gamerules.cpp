@@ -95,18 +95,13 @@ extern CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
 
 CNEORules::CNEORules()
 {
-#ifndef CLIENT_DLL
-	DevMsg("CNEORules serverside ctor\n");
-	
+#ifndef CLIENT_DLL	
 	Q_strncpy(g_Teams[TEAM_JINRAI]->m_szTeamname.GetForModify(),
 		TEAM_STR_JINRAI, MAX_TEAM_NAME_LENGTH);
 	
 	Q_strncpy(g_Teams[TEAM_NSF]->m_szTeamname.GetForModify(),
 		TEAM_STR_NSF, MAX_TEAM_NAME_LENGTH);
-	
-	Msg("Server teams %s & %s\n",
-		g_Teams[TEAM_JINRAI]->GetName(), g_Teams[TEAM_NSF]->GetName());
-	
+		
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
 		CBasePlayer *player = UTIL_PlayerByIndex(i);
