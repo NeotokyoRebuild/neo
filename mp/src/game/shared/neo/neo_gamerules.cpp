@@ -228,25 +228,25 @@ void CNEORules::RestartGame()
 {
 	BaseClass::RestartGame();
 
+	// NEO TODO (Rain): figure out how we can safely cache and reuse this edict
 	int ghostEdict = -1;
 	auto ghost = CreateEntityByName("weapon_ghost", ghostEdict);
 	ghostEdict = ghost->edict()->m_EdictIndex;
 
 	int numGhostSpawns = 0;
 
-	auto ent = gEntList.FirstEnt();
+	CBaseEntity *pEnt = gEntList.FirstEnt();
 	// First iteration, we get the amount of ghost spawns available to us
-	while (ent)
+	while (pEnt)
 	{
-		auto ghostSpawn = dynamic_cast<CNEOGhostSpawnPoint*>(ent);
+		auto ghostSpawn = dynamic_cast<CNEOGhostSpawnPoint*>(pEnt);
 
-		// NEO TODO (Rain): spawn pick logic
 		if (ghostSpawn)
 		{
 			numGhostSpawns++;
 		}
 
-		ent = gEntList.NextEnt(ent);
+		pEnt = gEntList.NextEnt(pEnt);
 	}
 
 	// We didn't have any spawns, spawn ghost at origin
@@ -261,11 +261,11 @@ void CNEORules::RestartGame()
 		const int desiredSpawn = RandomInt(1, numGhostSpawns);
 		int ghostSpawnIteration = 1;
 
-		ent = gEntList.FirstEnt();
+		pEnt = gEntList.FirstEnt();
 		// Second iteration, we pick the ghost spawn we want
-		while (ent)
+		while (pEnt)
 		{
-			auto ghostSpawn = dynamic_cast<CNEOGhostSpawnPoint*>(ent);
+			auto ghostSpawn = dynamic_cast<CNEOGhostSpawnPoint*>(pEnt);
 
 			if (ghostSpawn)
 			{
@@ -276,7 +276,7 @@ void CNEORules::RestartGame()
 				}
 			}
 
-			ent = gEntList.NextEnt(ent);
+			pEnt = gEntList.NextEnt(pEnt);
 		}
 	}
 
