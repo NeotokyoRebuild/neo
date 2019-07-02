@@ -181,9 +181,10 @@ Please use SteamCMD to download the Neotokyo (Windows) contents to path: '%s'\n"
 	thisCaller, neoHardcodedLinuxAssetPath);
 #else
 		Error("%s: Original Neotokyo installation was not found (looked at path: '%s'). \
-Please install Neotokyo on Steam for this mod to work. If your Neotokyo path \
-differs from Steam install path, or if you are running a Steamless srcds instance, use the -neopath \
-launch argument to specify your NeotokyoSource root folder install location.", thisCaller, neoPath);
+Please install Neotokyo on Steam for this mod to work.\n\n\
+If your original Neotokyo path differs from Steam install path (or if you are running a Steamless \
+dedicated server instance), use the -neopath launch argument to specify your NeotokyoSource root \
+folder install location.", thisCaller, neoPath);
 #endif
 		return false;
 	}
