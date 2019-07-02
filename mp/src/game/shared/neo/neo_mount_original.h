@@ -106,6 +106,10 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 	}
 	else
 	{
+		// NEO TODO (Rain): check reg entries:
+		//	HKEY_LOCAL_MACHINE\SOFTWARE\Valve\Steam (32bit) and HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Valve\Steam (64bit)
+		// for a Steam installation as fallback on client systems.
+
 		// A generic, plausible Windows server srcds location for fallback, if -neopath was not specified.
 		const char serverWinDefault[MAX_PATH] = "C:\\srcds\\NeotokyoSource";
 		Q_strncpy(neoWindowsDefaultPath, serverWinDefault, sizeof(serverWinDefault));
@@ -180,6 +184,9 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 Please use SteamCMD to download the Neotokyo (Windows) contents to path: '%s'\n",
 	thisCaller, neoHardcodedLinuxAssetPath);
 #else
+		// NEO TODO (Rain): we can attempt to recover here clientside by parsing SteamApps\libraryfolders.vdf
+		// for additional Steam drives where Neotokyo might be located.
+
 		Error("%s: Original Neotokyo installation was not found (looked at path: '%s'). \
 Please install Neotokyo on Steam for this mod to work.\n\n\
 If your original Neotokyo path differs from Steam install path (or if you are running a Steamless \
