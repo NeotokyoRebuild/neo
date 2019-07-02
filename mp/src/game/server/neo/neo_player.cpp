@@ -531,7 +531,7 @@ void CNEO_Player::SetPlayerTeamModel( void )
 	// based on player's class and skin selection.
 	const char *model = modelManager->GetPlayerModel(
 		(NeoSkin)RandomInt(0, 2),
-		(NeoClass)RandomInt(0, NEO_CLASS_ENUM_COUNT - 1),
+		(NeoClass)RandomInt(0, NEO_CLASS_VIP - 1),
 		GetTeamNumber());
 
 	if (!*model)
