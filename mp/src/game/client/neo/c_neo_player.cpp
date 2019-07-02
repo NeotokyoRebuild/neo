@@ -19,6 +19,7 @@
 #include "ui/neo_hud_compass.h"
 #include "ui/neo_hud_game_event.h"
 #include "ui/neo_hud_ghost_marker.h"
+#include "ui/neo_hud_friendly_marker.h"
 
 #include "baseviewmodel_shared.h"
 
@@ -49,9 +50,12 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropVector(RECVINFO(m_vecGhostMarkerPos)),
 	RecvPropInt(RECVINFO(m_iGhosterTeam)),
 	RecvPropBool(RECVINFO(m_bGhostExists)),
+
+	RecvPropArray(RecvPropVector(RECVINFO(m_rvFriendlyPlayerPositions[0])), m_rvFriendlyPlayerPositions),
 END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA(C_NEO_Player)
+	DEFINE_PRED_FIELD(m_rvFriendlyPlayerPositions, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 
 ConVar cl_autoreload_when_empty("cl_autoreload_when_empty", "1", FCVAR_USERINFO,
@@ -77,6 +81,9 @@ C_NEO_Player::C_NEO_Player()
 
 	m_vecGhostMarkerPos = vec3_origin;
 	m_bGhostExists = false;
+
+	m_pFriendlyMarker = new CNEOHud_FriendlyMarker("friendlyMarker");
+	m_pFriendlyMarker->SetOwner(this);
 }
 
 C_NEO_Player::~C_NEO_Player()
@@ -98,7 +105,22 @@ C_NEO_Player::~C_NEO_Player()
 		m_pGhostMarker->MarkForDeletion();
 		delete m_pGhostMarker;
 	}
+
+	if (m_pFriendlyMarker)
+	{
+		m_pFriendlyMarker->MarkForDeletion();
+		delete m_pFriendlyMarker;
+	}
 }
+
+void C_NEO_Player::ZeroFriendlyPlayerLocArray()
+{
+	for (int i = 0; i < m_rvFriendlyPlayerPositions->Length(); i++)
+	{
+		m_rvFriendlyPlayerPositions[i].Zero();
+	}
+}
+
 
 C_NEO_Player *C_NEO_Player::GetLocalNEOPlayer()
 {

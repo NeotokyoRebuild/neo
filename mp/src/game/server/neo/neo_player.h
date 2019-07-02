@@ -69,6 +69,10 @@ public:
 	inline bool IsAllowedToDrop(CBaseCombatWeapon *pWep);
 	inline bool IsAllowedToZoom(CBaseCombatWeapon *pWep);
 
+	inline void ZeroFriendlyPlayerLocArray(void);
+
+	void UpdateNetworkedFriendlyLocations(void);
+
 	void Weapon_AimToggle(CBaseCombatWeapon *pWep);
 
 	void DoThirdPersonLean(void);
@@ -91,6 +95,8 @@ public:
 	CNetworkVector(m_vecGhostMarkerPos);
 	CNetworkVar(int, m_iGhosterTeam);
 	CNetworkVar(bool, m_bGhostExists);
+
+	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
 
 private:
 	bool m_bInLeanLeft, m_bInLeanRight;

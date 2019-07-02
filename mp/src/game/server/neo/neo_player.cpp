@@ -51,6 +51,8 @@ SendPropString(SENDINFO(m_pszTestMessage)),
 SendPropVector(SENDINFO(m_vecGhostMarkerPos)),
 SendPropInt(SENDINFO(m_iGhosterTeam)),
 SendPropBool(SENDINFO(m_bGhostExists)),
+
+SendPropArray(SendPropVector(SENDINFO_ARRAY(m_rvFriendlyPlayerPositions), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rvFriendlyPlayerPositions),
 END_SEND_TABLE()
 
 BEGIN_DATADESC(CNEO_Player)
@@ -58,6 +60,22 @@ END_DATADESC()
 
 CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
 extern CBaseEntity *g_pLastSpawn;
+
+// NEO FIXME/HACK (Rain): bots don't properly set their fakeclient flag currently,
+// making IsFakeClient and IsBot return false. This is an ugly hack to get bots
+// joining teams. We cannot trust this player input (and it's slow), so it really
+// should be fixed properly.
+inline bool Hack_IsBot(CNEO_Player *player)
+{
+	if (!player)
+	{
+		return false;
+	}
+
+	const char *name = player->GetPlayerInfo()->GetName();
+
+	return (strlen(name) == 5 && name[0] == 'B' && name[1] == 'o' && name[2] == 't');
+}
 
 static inline int GetNumOtherPlayersConnected(CNEO_Player *asker)
 {
@@ -98,11 +116,75 @@ CNEO_Player::CNEO_Player()
 	V_memset(m_pszTestMessage.GetForModify(), 0, sizeof(m_pszTestMessage));
 
 	m_vecGhostMarkerPos = vec3_origin;
+
+	ZeroFriendlyPlayerLocArray();
 }
 
 CNEO_Player::~CNEO_Player( void )
 {
 	
+}
+
+inline void CNEO_Player::ZeroFriendlyPlayerLocArray(void)
+{
+	for (int i = 0; i < m_rvFriendlyPlayerPositions.Count(); i++)
+	{
+		m_rvFriendlyPlayerPositions.Set(i, Vector(0, 0, 0));
+	}
+	NetworkStateChanged();
+}
+
+void CNEO_Player::UpdateNetworkedFriendlyLocations()
+{
+	const int pvsMaxSize = (engine->GetClusterCount() / 8) + 1;
+	Assert(pvsMaxSize > 0);
+
+	// NEO HACK/FIXME (Rain): we should stack allocate instead
+	unsigned char *pvs = new unsigned char[pvsMaxSize];
+
+	const int cluster = engine->GetClusterForOrigin(GetAbsOrigin());
+	const int pvsSize = engine->GetPVSForCluster(cluster, pvsMaxSize, pvs);
+	Assert(pvsSize > 0);
+
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		CNEO_Player *otherPlayer = (CNEO_Player*)UTIL_PlayerByIndex(i);
+
+		vec_t zeroPos[3] = { 0, 0, 0 };
+
+		// Look for valid players that aren't us
+		if (!otherPlayer || otherPlayer == this)
+		{
+			m_rvFriendlyPlayerPositions.Set(i, vec3_origin);
+			m_rvFriendlyPlayerPositions.GetForModify(i).CopyToArray(zeroPos);
+			continue;
+		}
+
+		// Only players in our team
+		else if (otherPlayer->GetTeamNumber() != GetTeamNumber())
+		{
+			m_rvFriendlyPlayerPositions.Set(i, vec3_origin);
+			m_rvFriendlyPlayerPositions.GetForModify(i).CopyToArray(zeroPos);
+			continue;
+		}
+
+		// If the other player is already in our PVS, we can skip them.
+		else if (engine->CheckOriginInPVS(otherPlayer->GetAbsOrigin(), pvs, pvsSize))
+		{
+#if(0) // currently networking all friendlies, NEO TODO (Rain): optimise this
+			m_rvFriendlyPlayerPositions.Set(i, vec3_origin);
+			m_rvFriendlyPlayerPositions.GetForModify(i).CopyToArray(zeroPos);
+			continue;
+#endif
+		}
+
+		vec_t absPos[3] = { otherPlayer->GetAbsOrigin().x, otherPlayer->GetAbsOrigin().y, otherPlayer->GetAbsOrigin().z };
+
+		m_rvFriendlyPlayerPositions.Set(i, otherPlayer->GetAbsOrigin());
+		m_rvFriendlyPlayerPositions.GetForModify(i).CopyToArray(absPos);
+	}
+
+	delete[] pvs;
 }
 
 void CNEO_Player::Precache( void )
@@ -221,6 +303,11 @@ void CNEO_Player::PreThink(void)
 	}
 
 	m_bGhostExists = ghostIsValid;
+
+	if (IsAlive() && GetTeamNumber() != TEAM_SPECTATOR)
+	{
+		UpdateNetworkedFriendlyLocations();
+	}
 }
 
 void CNEO_Player::PostThink(void)
@@ -824,22 +911,6 @@ void CNEO_Player::PickDefaultSpawnTeam(void)
 	}
 }
 
-// NEO FIXME/HACK (Rain): bots don't properly set their fakeclient flag currently,
-// making IsFakeClient and IsBot return false. This is an ugly hack to get bots
-// joining teams. We cannot trust this player input (and it's slow), so it really
-// should be fixed properly.
-inline bool Hack_IsBot(CNEO_Player *player)
-{
-	if (!player)
-	{
-		return false;
-	}
-
-	const char *name = player->GetPlayerInfo()->GetName();
-
-	return (strlen(name) == 5 && name[0] == 'B' && name[1] == 'o' && name[2] == 't');
-}
-
 bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 {
 	if (!GetGlobalTeam(iTeam) || iTeam == 0)
@@ -950,6 +1021,8 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 
 void CNEO_Player::GiveAllItems(void)
 {
+	RemoveAllWeapons();
+
 	// NEO TODO (Rain): our own ammo types
 	CBasePlayer::GiveAmmo(255, "Pistol");
 	CBasePlayer::GiveAmmo(45, "SMG1");
@@ -958,8 +1031,8 @@ void CNEO_Player::GiveAllItems(void)
 	CBasePlayer::GiveAmmo(6, "357");
 
 	GiveNamedItem("weapon_tachi");
-	GiveNamedItem("weapon_ghost");
-	Weapon_Switch(Weapon_OwnsThisType("weapon_tachi"));
+	GiveNamedItem("weapon_aa13");
+	Weapon_Switch(Weapon_OwnsThisType("weapon_aa13"));
 
 #if(0) // startup weps stuff
 	if (m_nCyborgClass == NEO_CLASS_RECON)

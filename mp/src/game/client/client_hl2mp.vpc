@@ -127,6 +127,9 @@ $Project "Client (HL2MP)"
 				$File	"neo\ui\neo_hud_compass.cpp"
 				$File	"neo\ui\neo_hud_compass.h"
 
+				$File	"neo\ui\neo_hud_friendly_marker.h"
+				$File	"neo\ui\neo_hud_friendly_marker.cpp"
+
 				$File	"neo\ui\neo_hud_game_event.cpp"
 				$File	"neo\ui\neo_hud_game_event.h"
 
