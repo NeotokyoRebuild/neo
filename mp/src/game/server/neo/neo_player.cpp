@@ -23,6 +23,8 @@
 
 #include "neo_model_manager.h"
 
+#include "weapon_ghost.h"
+
 #include "shareddefs.h"
 #include "inetchannelinfo.h"
 #include "eiface.h"
@@ -45,6 +47,10 @@ SendPropInt(SENDINFO(m_iCapTeam), 3),
 
 SendPropBool(SENDINFO(m_bShowTestMessage)),
 SendPropString(SENDINFO(m_pszTestMessage)),
+
+SendPropVector(SENDINFO(m_vecGhostMarkerPos)),
+SendPropInt(SENDINFO(m_iGhosterTeam)),
+SendPropBool(SENDINFO(m_bGhostExists)),
 END_SEND_TABLE()
 
 BEGIN_DATADESC(CNEO_Player)
@@ -79,15 +85,19 @@ CNEO_Player::CNEO_Player()
 {
 	m_bInLeanLeft = false;
 	m_bInLeanRight = false;
+	m_bGhostExists = false;
 
 	m_leanPosTargetOffset = vec3_origin;
 
 	m_nNeoSkin = NEO_SKIN_FIRST;
 	m_nCyborgClass = NEO_CLASS_ASSAULT;
 	m_iCapTeam = TEAM_UNASSIGNED;
+	m_iGhosterTeam = TEAM_UNASSIGNED;
 
 	m_bShowTestMessage = false;
 	V_memset(m_pszTestMessage.GetForModify(), 0, sizeof(m_pszTestMessage));
+
+	m_vecGhostMarkerPos = vec3_origin;
 }
 
 CNEO_Player::~CNEO_Player( void )
@@ -166,6 +176,51 @@ void CNEO_Player::PreThink(void)
 	BaseClass::PreThink();
 
 	DoThirdPersonLean();
+
+	static int ghostEdict = -1;
+	auto ent = UTIL_EntityByIndex(ghostEdict);
+	bool ghostIsValid = (ent != NULL);
+	if (!ghostIsValid)
+	{
+		auto entIter = gEntList.FirstEnt();
+		while (entIter)
+		{
+			auto ghost = dynamic_cast<CWeaponGhost*>(entIter);
+
+			if (ghost)
+			{
+				ghostEdict = ghost->entindex();
+				ghostIsValid = true;
+				break;
+			}
+
+			entIter = gEntList.NextEnt(entIter);
+		}
+	}
+
+	if (ghostIsValid)
+	{
+		auto ghost = dynamic_cast<CWeaponGhost*>(UTIL_EntityByIndex(ghostEdict));
+		if (ghost)
+		{
+			m_vecGhostMarkerPos = ghost->GetAbsOrigin();
+			auto owner = ghost->GetPlayerOwner();
+			if (owner)
+			{
+				m_iGhosterTeam = owner->GetTeamNumber();
+			}
+			else
+			{
+				m_iGhosterTeam = TEAM_UNASSIGNED;
+			}
+		}
+		else
+		{
+			ghostIsValid = false;
+		}
+	}
+
+	m_bGhostExists = ghostIsValid;
 }
 
 void CNEO_Player::PostThink(void)

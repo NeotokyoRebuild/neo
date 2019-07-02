@@ -133,6 +133,9 @@ $Project "Client (HL2MP)"
 				$File	"neo\ui\neo_hud_ghostbeacon.cpp"
 				$File	"neo\ui\neo_hud_ghostbeacon.h"
 
+				$File	"neo\ui\neo_hud_ghost_marker.cpp"
+				$File	"neo\ui\neo_hud_ghost_marker.h"
+
 				$File	"neo\ui\neo_scoreboard.cpp"
 				$File	"neo\ui\neo_scoreboard.h"
 			}

@@ -88,12 +88,15 @@ void CNEOHud_Compass::SetOwner(C_NEO_Player *owner)
 
 void CNEOHud_Compass::Paint()
 {
+	SetFgColor(Color(0, 0, 0, 0));
+	SetBgColor(Color(0, 0, 0, 0));
+
 	if (neo_cl_hud_debug_compass_enabled.GetBool())
 	{
 		DrawDebugCompass();
 	}
 
-	// NEO TODO (Rain): hook cvar to re-enable ourselves
+	// NEO FIXME (Rain): hook cvar to re-enable ourselves
 	if (!neo_cl_hud_compass_enabled.GetBool())
 	{
 		SetVisible(false);

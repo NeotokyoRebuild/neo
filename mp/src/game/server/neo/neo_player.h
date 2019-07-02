@@ -88,6 +88,10 @@ public:
 	CNetworkVar(bool, m_bShowTestMessage);
 	CNetworkString(m_pszTestMessage, 32 * 2 + 1);
 
+	CNetworkVector(m_vecGhostMarkerPos);
+	CNetworkVar(int, m_iGhosterTeam);
+	CNetworkVar(bool, m_bGhostExists);
+
 private:
 	bool m_bInLeanLeft, m_bInLeanRight;
 	Vector m_leanPosTargetOffset;

@@ -18,6 +18,7 @@
 #include "neo_predicted_viewmodel.h"
 #include "ui/neo_hud_compass.h"
 #include "ui/neo_hud_game_event.h"
+#include "ui/neo_hud_ghost_marker.h"
 
 #include "baseviewmodel_shared.h"
 
@@ -44,6 +45,10 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropString(RECVINFO(m_pszTestMessage)),
 
 	RecvPropInt(RECVINFO(m_iCapTeam)),
+
+	RecvPropVector(RECVINFO(m_vecGhostMarkerPos)),
+	RecvPropInt(RECVINFO(m_iGhosterTeam)),
+	RecvPropBool(RECVINFO(m_bGhostExists)),
 END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA(C_NEO_Player)
@@ -66,6 +71,12 @@ C_NEO_Player::C_NEO_Player()
 	m_pHudEvent_Test->SetMessage("Test message");
 
 	m_iCapTeam = TEAM_UNASSIGNED;
+	m_iGhosterTeam = TEAM_UNASSIGNED;
+
+	m_pGhostMarker = new CNEOHud_GhostMarker("ghostMarker");
+
+	m_vecGhostMarkerPos = vec3_origin;
+	m_bGhostExists = false;
 }
 
 C_NEO_Player::~C_NEO_Player()
@@ -74,6 +85,18 @@ C_NEO_Player::~C_NEO_Player()
 	{
 		m_pCompass->MarkForDeletion();
 		delete m_pCompass;
+	}
+
+	if (m_pHudEvent_Test)
+	{
+		m_pHudEvent_Test->MarkForDeletion();
+		delete m_pHudEvent_Test;
+	}
+
+	if (m_pGhostMarker)
+	{
+		m_pGhostMarker->MarkForDeletion();
+		delete m_pGhostMarker;
 	}
 }
 
@@ -253,6 +276,36 @@ void C_NEO_Player::PreThink( void )
 	{
 		m_pHudEvent_Test->SetMessage(m_pszTestMessage);
 		m_pHudEvent_Test->SetVisible(true);
+	}
+
+	if (!m_bGhostExists)
+	{
+		m_pGhostMarker->SetVisible(false);
+	}
+	else
+	{
+		const float distance = METERS_PER_INCH *
+			Vector(GetAbsOrigin() - m_vecGhostMarkerPos).Length2D();
+
+		// NEO HACK (Rain): We should test if we're holding a ghost
+		// instead of relying on a distance check.
+		if (m_iGhosterTeam != GetTeamNumber() || distance > 0.2)
+		{
+			m_pGhostMarker->SetVisible(true);
+
+			int ghostMarkerX, ghostMarkerY;
+			GetVectorInScreenSpace(m_vecGhostMarkerPos, ghostMarkerX, ghostMarkerY);
+
+			m_pGhostMarker->SetScreenPosition(ghostMarkerX, ghostMarkerY);
+			m_pGhostMarker->SetGhostingTeam(m_iGhosterTeam);
+
+
+			m_pGhostMarker->SetGhostDistance(distance);
+		}
+		else
+		{
+			m_pGhostMarker->SetVisible(false);
+		}
 	}
 }
 

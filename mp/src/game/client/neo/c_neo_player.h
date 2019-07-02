@@ -10,6 +10,7 @@ class C_NEO_Player;
 class C_NEOPredictedViewModel;
 class CNEOHud_Compass;
 class CNEOHud_GameEvent;
+class CNEOHud_GhostMarker;
 
 class C_NEO_Player : public C_HL2MP_Player
 {
@@ -84,10 +85,20 @@ public:
 	//wchar_t m_pszTestMessage;
 
 	int m_iCapTeam;
+
+protected:
+	Vector m_vecGhostMarkerPos;
+
+	int m_iGhosterTeam;
+
+	bool m_bGhostExists;
+
 private:
 	CNEOHud_Compass *m_pCompass;
 
 	CNEOHud_GameEvent *m_pHudEvent_Test;
+
+	CNEOHud_GhostMarker *m_pGhostMarker;
 
 private:
 	C_NEO_Player(const C_NEO_Player &);
