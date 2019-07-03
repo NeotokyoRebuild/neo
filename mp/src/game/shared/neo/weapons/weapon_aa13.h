@@ -25,16 +25,16 @@ public:
 
 	void UpdatePenaltyTime(void);
 
-	virtual void	ItemPostFrame(void) override;
-	virtual void	ItemPreFrame(void) override;
-	virtual void	ItemBusyFrame(void) override;
-	virtual void	PrimaryAttack(void) override;
-	virtual void	AddViewKick(void) override;
+	virtual void	ItemPostFrame(void);
+	virtual void	ItemPreFrame(void);
+	virtual void	ItemBusyFrame(void);
+	virtual void	PrimaryAttack(void);
+	virtual void	AddViewKick(void);
 	void	DryFire(void);
 
-	Activity GetPrimaryAttackActivity(void) override;
+	Activity GetPrimaryAttackActivity(void);
 
-	const Vector& GetBulletSpread(void) override;
+	const Vector& GetBulletSpread(void);
 
 private:
 	CNetworkVar(float, m_flSoonestPrimaryAttack);

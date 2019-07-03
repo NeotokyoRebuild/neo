@@ -57,7 +57,7 @@ public:
 	virtual CBaseEntity* EntSelectSpawnPoint(void);
 	virtual void EquipSuit(bool bPlayEffects = true);
 	virtual void RemoveSuit(void);
-	virtual void GiveDefaultItems(void) override;
+	virtual void GiveDefaultItems(void);
 
 	void SetPlayerTeamModel(void);
 	virtual void PickDefaultSpawnTeam(void);

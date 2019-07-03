@@ -90,18 +90,18 @@ public:
 	virtual ~CNEORules();
 
 #ifdef GAME_DLL
-	virtual void Precache() override;
+	virtual void Precache();
 
 	virtual bool ClientConnected(edict_t *pEntity, const char *pszName, const char *pszAddress, char *reject, int maxrejectlen);
 
-	virtual void SetWinningTeam(int team, int iWinReason, bool bForceMapReset = true, bool bSwitchTeams = false, bool bDontAddScore = false, bool bFinal = false) override;
+	virtual void SetWinningTeam(int team, int iWinReason, bool bForceMapReset = true, bool bSwitchTeams = false, bool bDontAddScore = false, bool bFinal = false);
 #endif
 	virtual bool ShouldCollide( int collisionGroup0, int collisionGroup1 );
 
 	virtual void Think( void );
 	virtual void CreateStandardEntities( void );
 
-	virtual int WeaponShouldRespawn(CBaseCombatWeapon* pWeapon) override;
+	virtual int WeaponShouldRespawn(CBaseCombatWeapon* pWeapon);
 
 	virtual const char *GetGameDescription( void );
 	virtual const CViewVectors* GetViewVectors() const;
@@ -117,7 +117,7 @@ public:
 #ifdef CLIENT_DLL
 	void RestartGame();
 #else
-	virtual void RestartGame() override;
+	virtual void RestartGame();
 #endif
 
 	enum

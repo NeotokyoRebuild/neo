@@ -19,7 +19,7 @@ public:
 	void SetMessage(const char *message);
 	void SetMessage(const wchar_t *message, size_t size);
 
-	virtual void Paint() override;
+	virtual void Paint();
 
 private:
 	vgui::HFont m_hFont;

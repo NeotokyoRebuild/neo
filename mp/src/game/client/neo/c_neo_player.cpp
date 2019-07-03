@@ -25,11 +25,10 @@
 
 #include "prediction.h"
 
-#include "weapon_ghost.h"
+#include "neo/weapons/weapon_ghost.h"
 
 #include <engine/ivdebugoverlay.h>
-
-#include "engine/ienginesound.h"
+#include <engine/IEngineSound.h>
 
 // Don't alias here
 #if defined( CNEO_Player )

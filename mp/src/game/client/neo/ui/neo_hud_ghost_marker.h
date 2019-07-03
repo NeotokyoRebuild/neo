@@ -14,7 +14,7 @@ class CNEOHud_GhostMarker : public CHudElement, public vgui::Panel
 public:
 	CNEOHud_GhostMarker(const char *pElemName, vgui::Panel *parent = NULL);
 
-	virtual void Paint() override;
+	virtual void Paint();
 
 	void SetGhostingTeam(int team);
 	void SetScreenPosition(int x, int y);

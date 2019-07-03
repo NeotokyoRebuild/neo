@@ -16,7 +16,7 @@ class CNEOHud_FriendlyMarker : public CHudElement, public vgui::Panel
 public:
 	CNEOHud_FriendlyMarker(const char *pElemName, vgui::Panel *parent = NULL);
 
-	virtual void Paint() override;
+	virtual void Paint();
 
 	void SetOwner(C_NEO_Player *player);
 

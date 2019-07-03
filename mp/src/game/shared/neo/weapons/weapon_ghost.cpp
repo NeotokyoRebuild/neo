@@ -150,7 +150,7 @@ inline void CWeaponGhost::HandleGhostEquip(void)
 	}
 }
 
-inline void CWeaponGhost::HandleGhostUnequip(void)
+void CWeaponGhost::HandleGhostUnequip(void)
 {
 	if (!m_bHaveHolsteredTheGhost)
 	{
