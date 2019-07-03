@@ -1019,10 +1019,22 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	return true;
 }
 
+void CNEO_Player::GiveDefaultItems(void)
+{
+	//EquipSuit();
+
+	CBasePlayer::GiveAmmo(150, "Pistol");
+	CBasePlayer::GiveAmmo(30, "AMMO_10G_SHELL");
+
+	GiveNamedItem("weapon_tachi");
+	GiveNamedItem("weapon_aa13");
+
+	Weapon_Switch(Weapon_OwnsThisType("weapon_aa13"));
+}
+
+
 void CNEO_Player::GiveAllItems(void)
 {
-	RemoveAllWeapons();
-
 	// NEO TODO (Rain): our own ammo types
 	CBasePlayer::GiveAmmo(255, "Pistol");
 	CBasePlayer::GiveAmmo(45, "SMG1");
