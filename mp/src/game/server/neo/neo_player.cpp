@@ -684,6 +684,7 @@ inline bool CNEO_Player::IsAllowedToZoom(CBaseCombatWeapon *pWep)
 	const char *allowedAimZoom[] = {
 		"weapon_aa13",
 		"weapon_tachi",
+		"weapon_zr68s",
 	};
 
 	CBaseCombatWeapon *pTest = NULL;
@@ -1024,14 +1025,14 @@ void CNEO_Player::GiveDefaultItems(void)
 	//EquipSuit();
 
 	CBasePlayer::GiveAmmo(150, "Pistol");
+	CBasePlayer::GiveAmmo(150, "AR2");
 	CBasePlayer::GiveAmmo(30, "AMMO_10G_SHELL");
 
 	GiveNamedItem("weapon_tachi");
-	GiveNamedItem("weapon_aa13");
+	GiveNamedItem("weapon_zr68s");
 
-	Weapon_Switch(Weapon_OwnsThisType("weapon_aa13"));
+	Weapon_Switch(Weapon_OwnsThisType("weapon_zr68s"));
 }
-
 
 void CNEO_Player::GiveAllItems(void)
 {
