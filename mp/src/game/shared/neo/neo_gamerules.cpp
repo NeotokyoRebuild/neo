@@ -227,9 +227,9 @@ void CNEORules::CreateStandardEntities(void)
 #endif
 }
 
-int CNEORules::WeaponShouldRespawn(CBaseCombatWeapon *pWep)
+int CNEORules::WeaponShouldRespawn(CBaseCombatWeapon *pWeapon)
 {
-	return BaseClass::WeaponShouldRespawn(pWep);
+	return GR_NONE;
 }
 
 const char *CNEORules::GetGameDescription(void)

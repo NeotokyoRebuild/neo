@@ -3,6 +3,10 @@
 
 #include "in_buttons.h"
 
+#ifdef GAME_DLL
+#include "player.h"
+#endif
+
 #include "basecombatweapon_shared.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -28,6 +32,15 @@ END_PREDICTION_DATA()
 CNEOBaseCombatWeapon::CNEOBaseCombatWeapon( void )
 {
 	
+}
+
+void CNEOBaseCombatWeapon::Spawn()
+{
+	BaseClass::Spawn();
+
+#ifdef GAME_DLL
+	AddSpawnFlags(SF_NORESPAWN);
+#endif
 }
 
 #ifdef CLIENT_DLL

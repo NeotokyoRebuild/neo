@@ -101,7 +101,7 @@ public:
 	virtual void Think( void );
 	virtual void CreateStandardEntities( void );
 
-	virtual int WeaponShouldRespawn( CBaseCombatWeapon *pWeapon );
+	virtual int WeaponShouldRespawn(CBaseCombatWeapon* pWeapon) override;
 
 	virtual const char *GetGameDescription( void );
 	virtual const CViewVectors* GetViewVectors() const;

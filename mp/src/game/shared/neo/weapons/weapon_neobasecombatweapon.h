@@ -30,7 +30,14 @@ public:
 
 	CNEOBaseCombatWeapon();
 
+	virtual void Spawn() override;
+
 	virtual bool Reload( void );
+
+	// We override with empty implementation to avoid getting removed by
+	// some game logic somewhere. There's probably some flag we could set
+	// somewhere to achieve the same without having to do this.
+	virtual void SUB_Remove(void) override { }
 
 private:
 	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &);
