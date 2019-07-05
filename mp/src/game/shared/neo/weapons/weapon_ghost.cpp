@@ -107,7 +107,7 @@ CWeaponGhost::~C_WeaponGhost(void)
 inline void CWeaponGhost::ZeroGhostedPlayerLocArray(void)
 {
 #ifdef CLIENT_DLL
-	for (int i = 0; i < m_rvPlayerPositions->Length(); i++)
+	for (int i = 0; i < ARRAYSIZE(m_rvPlayerPositions); i++)
 	{
 		m_rvPlayerPositions[i].Zero();
 	}
@@ -150,7 +150,7 @@ inline void CWeaponGhost::HandleGhostEquip(void)
 	}
 }
 
-inline void CWeaponGhost::HandleGhostUnequip(void)
+void CWeaponGhost::HandleGhostUnequip(void)
 {
 	if (!m_bHaveHolsteredTheGhost)
 	{
@@ -421,6 +421,7 @@ void CWeaponGhost::UpdateNetworkedEnemyLocations(void)
 	CNEO_Player *player = (CNEO_Player*)GetOwner();
 	if (!player)
 	{
+		delete[] pvs;
 		return;
 	}
 

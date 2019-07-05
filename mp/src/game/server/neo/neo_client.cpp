@@ -291,6 +291,10 @@ static inline void Precache_NEO_Sounds( void )
 	CBaseEntity::PrecacheSound("sound/gameplay/ghost_pickup.wav");
 	CBaseEntity::PrecacheSound("sound/gameplay/ghost_ping.wav");
 	CBaseEntity::PrecacheSound("sound/gameplay/ghost_idle_loop.wav");
+
+	CBaseEntity::PrecacheScriptSound("Victory.Draw");
+	CBaseEntity::PrecacheScriptSound("Victory.Jinrai");
+	CBaseEntity::PrecacheScriptSound("Victory.NSF");
 }
 
 //-----------------------------------------------------------------------------

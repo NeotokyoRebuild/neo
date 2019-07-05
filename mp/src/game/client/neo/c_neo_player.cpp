@@ -17,14 +17,18 @@
 
 #include "neo_predicted_viewmodel.h"
 #include "ui/neo_hud_compass.h"
+#include "ui/neo_hud_game_event.h"
+#include "ui/neo_hud_ghost_marker.h"
+#include "ui/neo_hud_friendly_marker.h"
 
 #include "baseviewmodel_shared.h"
 
 #include "prediction.h"
 
-#include "weapon_ghost.h"
+#include "neo/weapons/weapon_ghost.h"
 
 #include <engine/ivdebugoverlay.h>
+#include <engine/IEngineSound.h>
 
 // Don't alias here
 #if defined( CNEO_Player )
@@ -36,9 +40,21 @@ LINK_ENTITY_TO_CLASS(player, C_NEO_Player);
 IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_nNeoSkin)),
 	RecvPropInt(RECVINFO(m_nCyborgClass)),
+
+	RecvPropBool(RECVINFO(m_bShowTestMessage)),
+	RecvPropString(RECVINFO(m_pszTestMessage)),
+
+	RecvPropInt(RECVINFO(m_iCapTeam)),
+
+	RecvPropVector(RECVINFO(m_vecGhostMarkerPos)),
+	RecvPropInt(RECVINFO(m_iGhosterTeam)),
+	RecvPropBool(RECVINFO(m_bGhostExists)),
+
+	RecvPropArray(RecvPropVector(RECVINFO(m_rvFriendlyPlayerPositions[0])), m_rvFriendlyPlayerPositions),
 END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA(C_NEO_Player)
+	DEFINE_PRED_FIELD(m_rvFriendlyPlayerPositions, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 
 ConVar cl_autoreload_when_empty("cl_autoreload_when_empty", "1", FCVAR_USERINFO,
@@ -53,6 +69,20 @@ C_NEO_Player::C_NEO_Player()
 {
 	m_pCompass = new CNEOHud_Compass("compass");
 	m_pCompass->SetOwner(this);
+
+	m_pHudEvent_Test = new CNEOHud_GameEvent("hudEvent_Test");
+	m_pHudEvent_Test->SetMessage("Test message");
+
+	m_iCapTeam = TEAM_UNASSIGNED;
+	m_iGhosterTeam = TEAM_UNASSIGNED;
+
+	m_pGhostMarker = new CNEOHud_GhostMarker("ghostMarker");
+
+	m_vecGhostMarkerPos = vec3_origin;
+	m_bGhostExists = false;
+
+	m_pFriendlyMarker = new CNEOHud_FriendlyMarker("friendlyMarker");
+	m_pFriendlyMarker->SetOwner(this);
 }
 
 C_NEO_Player::~C_NEO_Player()
@@ -62,7 +92,34 @@ C_NEO_Player::~C_NEO_Player()
 		m_pCompass->MarkForDeletion();
 		delete m_pCompass;
 	}
+
+	if (m_pHudEvent_Test)
+	{
+		m_pHudEvent_Test->MarkForDeletion();
+		delete m_pHudEvent_Test;
+	}
+
+	if (m_pGhostMarker)
+	{
+		m_pGhostMarker->MarkForDeletion();
+		delete m_pGhostMarker;
+	}
+
+	if (m_pFriendlyMarker)
+	{
+		m_pFriendlyMarker->MarkForDeletion();
+		delete m_pFriendlyMarker;
+	}
 }
+
+void C_NEO_Player::ZeroFriendlyPlayerLocArray()
+{
+	for (int i = 0; i < m_rvFriendlyPlayerPositions->Length(); i++)
+	{
+		m_rvFriendlyPlayerPositions[i].Zero();
+	}
+}
+
 
 C_NEO_Player *C_NEO_Player::GetLocalNEOPlayer()
 {
@@ -138,6 +195,50 @@ void C_NEO_Player::ItemPreFrame( void )
 void C_NEO_Player::ItemPostFrame( void )
 {
 	BaseClass::ItemPostFrame();
+
+	static bool onceOnly = true;
+
+	// NEO HACK/FIXME (Rain): this should be issued from serverside gamerules with player filter,
+	// using proper precached soundscript entries
+	if (m_iCapTeam != TEAM_UNASSIGNED)
+	{
+		if (onceOnly)
+		{
+			if (m_iCapTeam == TEAM_JINRAI)
+			{
+				/*
+				EmitSound("Victory.Jinrai");
+
+				EmitSound("sound/gameplay/jinrai.mp3");
+				*/
+
+				enginesound->EmitAmbientSound("gameplay/jinrai.mp3", 1.f);
+			}
+			else if (m_iCapTeam == TEAM_NSF)
+			{
+				/*
+				EmitSound("Victory.NSF");
+
+				EmitSound("sound/gameplay/nsf.mp3");
+				*/
+
+				enginesound->EmitAmbientSound("gameplay/nsf.mp3", 1.f);
+			}
+			else
+			{
+				EmitSound("Victory.Draw");
+			}
+
+			onceOnly = !onceOnly;
+		}
+	}
+	else
+	{
+		if (onceOnly != true)
+		{
+			onceOnly = true;
+		}
+	}
 }
 
 float C_NEO_Player::GetMinFOV() const
@@ -191,6 +292,42 @@ void C_NEO_Player::PreThink( void )
 	{
 		vm->CalcLean(this);
 	}
+
+	if (m_bShowTestMessage)
+	{
+		m_pHudEvent_Test->SetMessage(m_pszTestMessage);
+		m_pHudEvent_Test->SetVisible(true);
+	}
+
+	if (!m_bGhostExists)
+	{
+		m_pGhostMarker->SetVisible(false);
+	}
+	else
+	{
+		const float distance = METERS_PER_INCH *
+			Vector(GetAbsOrigin() - m_vecGhostMarkerPos).Length2D();
+
+		// NEO HACK (Rain): We should test if we're holding a ghost
+		// instead of relying on a distance check.
+		if (m_iGhosterTeam != GetTeamNumber() || distance > 0.2)
+		{
+			m_pGhostMarker->SetVisible(true);
+
+			int ghostMarkerX, ghostMarkerY;
+			GetVectorInScreenSpace(m_vecGhostMarkerPos, ghostMarkerX, ghostMarkerY);
+
+			m_pGhostMarker->SetScreenPosition(ghostMarkerX, ghostMarkerY);
+			m_pGhostMarker->SetGhostingTeam(m_iGhosterTeam);
+
+
+			m_pGhostMarker->SetGhostDistance(distance);
+		}
+		else
+		{
+			m_pGhostMarker->SetVisible(false);
+		}
+	}
 }
 
 void C_NEO_Player::ClientThink(void)
@@ -203,6 +340,15 @@ void C_NEO_Player::PostThink(void)
 	BaseClass::PostThink();
 
 	//DevMsg("Roll: %f\n", m_angEyeAngles[2]);
+
+	bool preparingToHideMsg = (m_iCapTeam != TEAM_UNASSIGNED);
+	static bool previouslyPreparing = preparingToHideMsg;
+
+	if (!preparingToHideMsg && previouslyPreparing)
+	{
+		m_pHudEvent_Test->SetVisible(false);
+		previouslyPreparing = false;
+	}
 }
 
 void C_NEO_Player::Spawn( void )

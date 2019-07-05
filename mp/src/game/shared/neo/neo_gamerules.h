@@ -70,6 +70,10 @@ public:
 	}
 };
 
+#ifdef GAME_DLL
+class CNEOGhostCapturePoint;
+#endif
+
 class CNEORules : public CHL2MPRules
 {
 public:
@@ -86,14 +90,18 @@ public:
 	virtual ~CNEORules();
 
 #ifdef GAME_DLL
+	virtual void Precache();
+
 	virtual bool ClientConnected(edict_t *pEntity, const char *pszName, const char *pszAddress, char *reject, int maxrejectlen);
+
+	virtual void SetWinningTeam(int team, int iWinReason, bool bForceMapReset = true, bool bSwitchTeams = false, bool bDontAddScore = false, bool bFinal = false);
 #endif
 	virtual bool ShouldCollide( int collisionGroup0, int collisionGroup1 );
 
 	virtual void Think( void );
 	virtual void CreateStandardEntities( void );
 
-	virtual int WeaponShouldRespawn( CBaseCombatWeapon *pWeapon );
+	virtual int WeaponShouldRespawn(CBaseCombatWeapon* pWeapon);
 
 	virtual const char *GetGameDescription( void );
 	virtual const CViewVectors* GetViewVectors() const;
@@ -103,9 +111,27 @@ public:
 	virtual void ClientSettingsChanged(CBasePlayer *pPlayer);
 
 	float GetMapRemainingTime();
+
 	void CleanUpMap();
 	void CheckRestartGame();
+#ifdef CLIENT_DLL
 	void RestartGame();
+#else
+	virtual void RestartGame();
+#endif
+
+	enum
+	{
+		NEO_VICTORY_GHOST_CAPTURE = 0,
+		NEO_VICTORY_TEAM_ELIMINATION,
+		NEO_VICTORY_TIMEOUT_WIN_BY_NUMBERS,
+		NEO_VICTORY_FORFEIT
+	};
+
+#ifdef GAME_DLL
+private:
+	CUtlVector<int> m_pGhostCaps;
+#endif
 };
 
 inline CNEORules *NEORules()

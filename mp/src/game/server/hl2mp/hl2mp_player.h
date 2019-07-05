@@ -94,7 +94,12 @@ public:
 	void CheatImpulseCommands( int iImpulse );
 	void CreateRagdollEntity( void );
 	void GiveAllItems( void );
+
+#ifdef NEO
+	virtual void GiveDefaultItems(void);
+#else
 	void GiveDefaultItems( void );
+#endif
 
 	void NoteWeaponFired( void );
 

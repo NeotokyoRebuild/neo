@@ -26,6 +26,9 @@ public:
 		return (CNEO_Player*)CreateEntityByName(className);
 	}
 
+	void SendTestMessage(const char *message);
+	void SetTestMessageVisible(bool visible);
+
 	DECLARE_SERVERCLASS();
 	DECLARE_DATADESC();
 
@@ -54,6 +57,7 @@ public:
 	virtual CBaseEntity* EntSelectSpawnPoint(void);
 	virtual void EquipSuit(bool bPlayEffects = true);
 	virtual void RemoveSuit(void);
+	virtual void GiveDefaultItems(void);
 
 	void SetPlayerTeamModel(void);
 	virtual void PickDefaultSpawnTeam(void);
@@ -65,6 +69,10 @@ public:
 
 	inline bool IsAllowedToDrop(CBaseCombatWeapon *pWep);
 	inline bool IsAllowedToZoom(CBaseCombatWeapon *pWep);
+
+	inline void ZeroFriendlyPlayerLocArray(void);
+
+	void UpdateNetworkedFriendlyLocations(void);
 
 	void Weapon_AimToggle(CBaseCombatWeapon *pWep);
 
@@ -80,6 +88,16 @@ public:
 public:
 	CNetworkVar(int, m_nNeoSkin);
 	CNetworkVar(int, m_nCyborgClass);
+	CNetworkVar(int, m_iCapTeam);
+
+	CNetworkVar(bool, m_bShowTestMessage);
+	CNetworkString(m_pszTestMessage, 32 * 2 + 1);
+
+	CNetworkVector(m_vecGhostMarkerPos);
+	CNetworkVar(int, m_iGhosterTeam);
+	CNetworkVar(bool, m_bGhostExists);
+
+	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
 
 private:
 	bool m_bInLeanLeft, m_bInLeanRight;

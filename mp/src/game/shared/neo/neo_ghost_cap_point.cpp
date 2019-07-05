@@ -52,20 +52,28 @@ BEGIN_DATADESC(CNEOGhostCapturePoint)
 	DEFINE_KEYFIELD(m_iOwningTeam, FIELD_INTEGER, "team"),
 END_DATADESC()
 
-#ifdef CLIENT_DLL
-
-#endif
-
 CNEOGhostCapturePoint::CNEOGhostCapturePoint()
 {
-	m_iOwningTeam = TEAM_UNASSIGNED;
 	m_iSuccessfulCaptorClientIndex = 0;
 
-	m_flCapzoneRadius = 0;
-
-	m_bIsActive = false;
+	m_bIsActive = true;
 	m_bGhostHasBeenCaptured = false;
 }
+
+#ifdef GAME_DLL
+bool CNEOGhostCapturePoint::IsGhostCaptured(int& outTeamNumber, int& outCaptorClientIndex)
+{
+	if (m_bIsActive && m_bGhostHasBeenCaptured)
+	{
+		outTeamNumber = m_iOwningTeam;
+		outCaptorClientIndex = m_iSuccessfulCaptorClientIndex;
+
+		return true;
+	}
+
+	return false;
+}
+#endif
 
 void CNEOGhostCapturePoint::Spawn(void)
 {
@@ -137,7 +145,7 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
-		CBasePlayer *player = UTIL_PlayerByIndex(i);
+		CNEO_Player *player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
 
 		if (!player)
 		{
@@ -175,7 +183,7 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 
 		// Has the ghost carrier reached inside our radius?
 		// NEO TODO (Rain): newbie UI helpers for approaching wrong team cap
-		if (distance >= m_flCapzoneRadius)
+		if (distance >= (m_flCapzoneRadius / 2.0f))
 		{
 			continue;
 		}
@@ -185,6 +193,16 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 		m_iSuccessfulCaptorClientIndex = i;
 
 		DevMsg("Player got ghost inside my radius\n");
+
+		player->SendTestMessage("Player captured the ghost!");
+		player->m_iCapTeam = player->GetTeamNumber();
+
+#if(0) // NEO FIXME (Rain), this doesn't play. maybe move to gamerules victory?
+		CRecipientFilter filter;
+		filter.AddAllPlayers();
+		player->EmitSound(filter, SOUND_FROM_UI_PANEL,
+			(player->GetTeamNumber() == TEAM_JINRAI ? "Victory.Jinrai" : "Victory.NSF"));
+#endif
 
 		// Return early; we pass next think responsibility to gamerules,
 		// whenever it sees fit to start capzone thinking again.

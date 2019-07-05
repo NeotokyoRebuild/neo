@@ -9,6 +9,9 @@ class C_NEO_Player;
 
 class C_NEOPredictedViewModel;
 class CNEOHud_Compass;
+class CNEOHud_GameEvent;
+class CNEOHud_GhostMarker;
+class CNEOHud_FriendlyMarker;
 
 class C_NEO_Player : public C_HL2MP_Player
 {
@@ -74,12 +77,35 @@ public:
 
 	C_NEOPredictedViewModel *GetNEOViewModel();
 
+	inline void ZeroFriendlyPlayerLocArray(void);
+
 public:
 	int m_nNeoSkin;
 	int m_nCyborgClass;
 
+	bool m_bShowTestMessage;
+	char m_pszTestMessage[32 * 2 + 1];
+	//wchar_t m_pszTestMessage;
+
+	int m_iCapTeam;
+
+	Vector m_rvFriendlyPlayerPositions[MAX_PLAYERS];
+
+protected:
+	Vector m_vecGhostMarkerPos;
+
+	int m_iGhosterTeam;
+
+	bool m_bGhostExists;
+
 private:
 	CNEOHud_Compass *m_pCompass;
+
+	CNEOHud_GameEvent *m_pHudEvent_Test;
+
+	CNEOHud_GhostMarker *m_pGhostMarker;
+
+	CNEOHud_FriendlyMarker *m_pFriendlyMarker;
 
 private:
 	C_NEO_Player(const C_NEO_Player &);
