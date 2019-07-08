@@ -16,6 +16,9 @@
 #include "hud_crosshair.h"
 
 #include "neo_predicted_viewmodel.h"
+
+#include "game_controls/neo_teammenu.h"
+
 #include "ui/neo_hud_compass.h"
 #include "ui/neo_hud_game_event.h"
 #include "ui/neo_hud_ghost_marker.h"
@@ -64,6 +67,55 @@ ConVar cl_autoreload_when_empty("cl_autoreload_when_empty", "1", FCVAR_USERINFO,
 ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
 	"Whether to display HL2 style ammo/health info near crosshair.",
 	true, 0.0f, true, 1.0f);
+
+class NeoTeamMenu_Cb : public ICommandCallback
+{
+public:
+	virtual void CommandCallback( const CCommand &command )
+	{
+		Msg("Teammenu access cb\n");
+
+		vgui::EditablePanel *panel = dynamic_cast<vgui::EditablePanel*>
+			(GetClientModeNormal()->GetViewport()->FindChildByName(PANEL_TEAM));
+		if (!panel)
+		{
+			Assert(false);
+			Warning("Couldn't find team panel\n");
+			return;
+		}
+
+		panel->ApplySchemeSettings(vgui::scheme()->GetIScheme(panel->GetScheme()));
+		int w, h;
+		surface()->GetScreenSize(w, h);
+		panel->SetSize(w, h);
+		panel->SetPos((int)w / 3, (int)h / 3);
+
+		panel->SetMouseInputEnabled(true);
+		panel->SetKeyBoardInputEnabled(true);
+		panel->SetCursorAlwaysVisible(true);
+
+		panel->SetControlEnabled("jinraibutton", true);
+		panel->SetControlEnabled("nsfbutton", true);
+		panel->SetControlEnabled("specbutton", true);
+		panel->SetControlEnabled("autobutton", true);
+		panel->SetControlEnabled("CancelButton", true);
+
+		panel->MoveToFront();
+
+		if (panel->IsKeyBoardInputEnabled())
+		{
+			panel->RequestFocus();
+		}
+
+		panel->SetVisible(true);
+		panel->SetEnabled(true);
+
+		surface()->SetMinimized(panel->GetVPanel(), false);
+	}
+};
+NeoTeamMenu_Cb neoTeamMenu_Cb;
+
+ConCommand teammenu("teammenu", &neoTeamMenu_Cb, "Open team selection menu.", FCVAR_USERINFO);
 
 C_NEO_Player::C_NEO_Player()
 {

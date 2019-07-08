@@ -122,6 +122,12 @@ $Project "Client (HL2MP)"
 			$File	"neo\c_neo_player.cpp"
 			$File	"neo\c_neo_player.h"
 
+			$Folder "Game_Controls"
+			{
+				$File	"neo\game_controls\neo_teammenu.cpp"
+				$File	"neo\game_controls\neo_teammenu.h"
+			}
+
 			$Folder "UI"
 			{
 				$File	"neo\ui\neo_hud_compass.cpp"
