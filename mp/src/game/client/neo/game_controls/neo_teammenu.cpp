@@ -87,8 +87,8 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 
 	SetVisible(false);
 	SetProportional(true);
-	SetMouseInputEnabled(false);
-	SetKeyBoardInputEnabled(false);
+	SetMouseInputEnabled(true);
+	SetKeyBoardInputEnabled(true);
 
 	SetTitleBarVisible(false);
 	SetProportional(true);
@@ -134,11 +134,7 @@ inline Button *CNeoTeamMenu::GetPressedButton()
 }
 
 void CNeoTeamMenu::CommandCompletion()
-{
-	SetMouseInputEnabled(false);
-	SetKeyBoardInputEnabled(false);
-	SetCursorAlwaysVisible(false);
-	
+{	
 	SetControlEnabled("jinraibutton", false);
 	SetControlEnabled("nsfbutton", false);
 	SetControlEnabled("specbutton", false);
@@ -147,6 +143,10 @@ void CNeoTeamMenu::CommandCompletion()
 
 	SetVisible(false);
 	SetEnabled(false);
+
+	SetMouseInputEnabled(false);
+	SetKeyBoardInputEnabled(false);
+	SetCursorAlwaysVisible(false);
 }
 
 void CNeoTeamMenu::OnCommand(const char *command)
@@ -161,8 +161,6 @@ void CNeoTeamMenu::OnCommand(const char *command)
 		if (pressedButton)
 		{
 			ShowPanel(false);
-			SetMouseInputEnabled(false);
-			SetKeyBoardInputEnabled(false);
 
 			char buttonCmd[128];
 

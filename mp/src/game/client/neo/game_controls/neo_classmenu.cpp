@@ -75,8 +75,8 @@ CNeoClassMenu::CNeoClassMenu(IViewPort *pViewPort)
 
 	SetVisible(false);
 	SetProportional(true);
-	SetMouseInputEnabled(false);
-	SetKeyBoardInputEnabled(false);
+	SetMouseInputEnabled(true);
+	SetKeyBoardInputEnabled(true);
 
 	SetTitleBarVisible(false);
 	SetProportional(true);
@@ -119,11 +119,7 @@ inline Button *CNeoClassMenu::GetPressedButton()
 }
 
 void CNeoClassMenu::CommandCompletion()
-{
-	SetMouseInputEnabled(false);
-	SetKeyBoardInputEnabled(false);
-	SetCursorAlwaysVisible(false);
-	
+{	
 	SetControlEnabled("Scout_Button", false);
 	SetControlEnabled("Assault_Button", false);
 	SetControlEnabled("Heavy_Button", false);
@@ -131,6 +127,10 @@ void CNeoClassMenu::CommandCompletion()
 
 	SetVisible(false);
 	SetEnabled(false);
+
+	SetMouseInputEnabled(false);
+	SetKeyBoardInputEnabled(false);
+	SetCursorAlwaysVisible(false);
 }
 
 void CNeoClassMenu::OnCommand(const char *command)
@@ -147,8 +147,6 @@ void CNeoClassMenu::OnCommand(const char *command)
 			hasCompletedClassSelection = true;
 
 			ShowPanel(false);
-			SetMouseInputEnabled(false);
-			SetKeyBoardInputEnabled(false);
 
 			char buttonCmd[128];
 			if (pressedButton == m_pRecon_Button)
