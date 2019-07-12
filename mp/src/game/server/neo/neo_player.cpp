@@ -621,6 +621,16 @@ bool CNEO_Player::Weapon_Switch( CBaseCombatWeapon *pWeapon,
 
 bool CNEO_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 {
+	int bumpedSlot = pWeapon->GetSlot();
+
+	CBaseCombatWeapon *currentSlotWep = Weapon_GetSlot(bumpedSlot);
+
+	// We already have a weapon in this slot
+	if (currentSlotWep)
+	{
+		return false;
+	}
+
 	return BaseClass::BumpWeapon(pWeapon);
 }
 
