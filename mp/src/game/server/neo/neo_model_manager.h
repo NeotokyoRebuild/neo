@@ -5,6 +5,7 @@
 #endif
 
 #include "neo_gamerules.h"
+#include "neo_player_shared.h"
 
 enum NeoGib {
 	NEO_GIB_ALL = 0,
@@ -15,26 +16,6 @@ enum NeoGib {
 	NEO_GIB_RLEG,
 
 	NEO_GIB_ENUM_COUNT
-};
-
-enum NeoSkin {
-	NEO_SKIN_FIRST = 0,
-	NEO_SKIN_SECOND,
-	NEO_SKIN_THIRD,
-
-	NEO_SKIN_ENUM_COUNT
-};
-
-enum NeoClass {
-	NEO_CLASS_RECON = 0,
-	NEO_CLASS_ASSAULT,
-	NEO_CLASS_SUPPORT,
-
-	// NOTENOTE: VIP *must* be last, because we are
-	// using array offsets for recon/assault/support
-	NEO_CLASS_VIP,
-
-	NEO_CLASS_ENUM_COUNT
 };
 
 enum NeoViewmodel {

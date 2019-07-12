@@ -22,6 +22,7 @@
 #include "datacache/imdlcache.h"
 
 #include "neo_model_manager.h"
+#include "neo_player_shared.h"
 
 #include "weapon_ghost.h"
 
@@ -36,13 +37,7 @@ void DropPrimedFragGrenade(CNEO_Player *pPlayer, CBaseCombatWeapon *pGrenade);
 
 LINK_ENTITY_TO_CLASS(player, CNEO_Player);
 
-/*LINK_ENTITY_TO_CLASS(info_player_attacker, CPointEntity);
-LINK_ENTITY_TO_CLASS(info_player_defender, CPointEntity);
-LINK_ENTITY_TO_CLASS(info_player_start, CPointEntity);*/
-
 IMPLEMENT_SERVERCLASS_ST(CNEO_Player, DT_NEO_Player)
-SendPropInt(SENDINFO(m_nNeoSkin), 3),
-SendPropInt(SENDINFO(m_nCyborgClass), 3),
 SendPropInt(SENDINFO(m_iCapTeam), 3),
 
 SendPropBool(SENDINFO(m_bShowTestMessage)),
@@ -107,8 +102,6 @@ CNEO_Player::CNEO_Player()
 
 	m_leanPosTargetOffset = vec3_origin;
 
-	m_nNeoSkin = NEO_SKIN_FIRST;
-	m_nCyborgClass = NEO_CLASS_ASSAULT;
 	m_iCapTeam = TEAM_UNASSIGNED;
 	m_iGhosterTeam = TEAM_UNASSIGNED;
 
@@ -123,6 +116,36 @@ CNEO_Player::CNEO_Player()
 CNEO_Player::~CNEO_Player( void )
 {
 	
+}
+
+int CNEO_Player::GetSkin()
+{
+	return neo_cl_skin.GetInt();
+}
+
+int CNEO_Player::GetClass()
+{
+	return neo_cl_cyborgclass.GetInt();
+}
+
+float CNEO_Player::MaxSpeed() const
+{
+	const float baseSpeed = 50.0f;
+
+	switch (neo_cl_cyborgclass.GetInt())
+	{
+	case (int)NEO_CLASS_RECON:
+		return baseSpeed * 1.25f;
+		break;
+	case (int)NEO_CLASS_ASSAULT:
+		return baseSpeed;
+		break;
+	case (int)NEO_CLASS_SUPPORT:
+		return baseSpeed * 0.75;
+		break;
+	}
+
+	return baseSpeed;
 }
 
 inline void CNEO_Player::ZeroFriendlyPlayerLocArray(void)
@@ -201,6 +224,8 @@ void CNEO_Player::Spawn(void)
 	m_leanPosTargetOffset = VEC_VIEW;
 
 	SetTransmitState(FL_EDICT_ALWAYS);
+
+	SetMaxSpeed(MaxSpeed());
 }
 
 extern ConVar neo_lean_angle;

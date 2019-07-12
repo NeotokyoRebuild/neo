@@ -153,6 +153,8 @@ void CNeoTeamMenu::OnCommand(const char *command)
 {
 	BaseClass::OnCommand(command);
 
+	bool proceedToClassSelection = false;
+
 	if (Q_stricmp(command, "PressButton"))
 	{
 		Button *pressedButton = GetPressedButton();
@@ -163,6 +165,9 @@ void CNeoTeamMenu::OnCommand(const char *command)
 			SetKeyBoardInputEnabled(false);
 
 			char buttonCmd[128];
+
+			proceedToClassSelection = true;
+
 			if (pressedButton == m_pJinrai_Button)
 			{
 				sprintf(buttonCmd, "jointeam %i", TEAM_JINRAI);
@@ -180,13 +185,27 @@ void CNeoTeamMenu::OnCommand(const char *command)
 				int team = RandomInt(TEAM_JINRAI, TEAM_NSF);
 				sprintf(buttonCmd, "jointeam %i", team);
 			}
+			else
+			{
+				proceedToClassSelection = false;
+			}
 
 			engine->ExecuteClientCmd(buttonCmd);
 		}
 	}
-	else
+
+	if (proceedToClassSelection)
 	{
-		//Msg("PressButton ELSE\n");
+		C_NEO_Player *player = C_NEO_Player::GetLocalNEOPlayer();
+		if (player)
+		{
+			player->m_bShowTeamMenu = false;
+			player->m_bShowClassMenu = true;
+		}
+		else
+		{
+			Assert(false);
+		}
 	}
 
 	CommandCompletion();

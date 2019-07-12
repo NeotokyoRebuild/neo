@@ -110,6 +110,8 @@ public:
 
 	virtual void ClientSettingsChanged(CBasePlayer *pPlayer);
 
+	virtual void ClientSpawned(edict_t* pPlayer);
+
 	float GetMapRemainingTime();
 
 	void CleanUpMap();

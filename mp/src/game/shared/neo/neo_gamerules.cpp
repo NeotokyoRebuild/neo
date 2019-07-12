@@ -116,7 +116,6 @@ CNEORules::CNEORules()
 
 CNEORules::~CNEORules()
 {
-	
 }
 
 #ifdef GAME_DLL
@@ -172,6 +171,17 @@ CAmmoDef *GetAmmoDef()
 	}
 
 	return def;
+}
+
+void CNEORules::ClientSpawned(edict_t* pPlayer)
+{
+#ifdef CLIENT_DLL
+	C_NEO_Player *player = C_NEO_Player::GetLocalNEOPlayer();
+	if (player)
+	{
+		player->m_bShowClassMenu = true;
+	}
+#endif
 }
 
 bool CNEORules::ShouldCollide(int collisionGroup0, int collisionGroup1)
@@ -441,8 +451,8 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 
 	const char *pCurrentModel = modelinfo->GetModelName(pNEOPlayer->GetModel());
 	const char *pTargetModel = mm->GetPlayerModel(
-		(NeoSkin)pNEOPlayer->m_nNeoSkin.Get(),
-		(NeoClass)pNEOPlayer->m_nCyborgClass.Get(),
+		(NeoSkin)pNEOPlayer->GetSkin(),
+		(NeoClass)pNEOPlayer->GetClass(),
 		pNEOPlayer->GetTeamNumber());
 
 	if (V_stricmp(pCurrentModel, pTargetModel))

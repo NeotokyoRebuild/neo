@@ -57,6 +57,7 @@
 #endif
 
 #ifdef NEO
+#include "neo/game_controls/neo_classmenu.h"
 #include "neo/game_controls/neo_teammenu.h"
 #endif
 
@@ -249,6 +250,7 @@ void CBaseViewport::CreateDefaultPanels( void )
 #endif // !TF_CLIENT_DLL
 #ifdef NEO
 	AddNewPanel( CreatePanelByName( PANEL_TEAM ), "PANEL_TEAM" );
+	AddNewPanel( CreatePanelByName( PANEL_CLASS), "PANEL_CLASS" );
 #endif
 #endif // !_XBOX
 }
@@ -308,6 +310,12 @@ IViewPortPanel* CBaseViewport::CreatePanelByName(const char *szPanelName)
 		newpanel = new CNavProgress( this );
 	}
 #endif	// TF_CLIENT_DLL
+#ifdef NEO
+	else if ( Q_strcmp(PANEL_CLASS, szPanelName) == 0 )
+	{
+		newpanel = new CNeoClassMenu( this );
+	}
+#endif // NEO
 #endif
 
 	if ( Q_strcmp(PANEL_COMMENTARY_MODELVIEWER, szPanelName) == 0 )
@@ -317,7 +325,6 @@ IViewPortPanel* CBaseViewport::CreatePanelByName(const char *szPanelName)
 	
 	return newpanel; 
 }
-
 
 bool CBaseViewport::AddNewPanel( IViewPortPanel* pPanel, char const *pchDebugName )
 {
