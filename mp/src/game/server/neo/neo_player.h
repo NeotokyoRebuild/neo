@@ -12,6 +12,11 @@ class CNEO_Player;
 #include "utldict.h"
 #include "hl2mp_player.h"
 
+#define NEO_WEAPON_PRIMARY_SLOT 0
+#define NEO_WEAPON_SECONDARY_SLOT 1
+#define NEO_WEAPON_MELEE_SLOT 2
+#define NEO_WEAPON_EXPLOSIVE_SLOT 3
+
 class CNEO_Player : public CHL2MP_Player
 {
 public:
