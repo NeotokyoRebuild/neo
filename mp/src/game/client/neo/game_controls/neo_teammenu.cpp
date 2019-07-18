@@ -29,9 +29,11 @@
 
 #include "c_neo_player.h"
 
+//#include <game_controls/IconPanel.h>
+
 #include <vgui_controls/TextEntry.h>
-#include <vgui_controls/Panel.h>
 #include <vgui_controls/ImagePanel.h>
+#include <vgui_controls/Panel.h>
 #include <vgui_controls/Menu.h>
 #include "IGameUIFuncs.h" // for key bindings
 #include <imapoverview.h>
@@ -48,13 +50,20 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+using namespace vgui;
+
+Panel *NeoTeam_Factory()
+{
+	return new CNeoTeamMenu(gViewPortInterface);
+}
+
+DECLARE_BUILD_FACTORY_CUSTOM(CNeoTeamMenu, NeoTeam_Factory);
+
 #ifndef _XBOX
 extern IGameUIFuncs *gameuifuncs; // for key binding details
 #endif
 
 CNeoTeamMenu *g_pNeoTeamMenu = NULL;
-
-using namespace vgui;
 
 static inline int GetTeamIntFromString(const char *pszTeamName)
 {
@@ -70,8 +79,10 @@ static inline int GetTeamIntFromString(const char *pszTeamName)
 }
 
 CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
-	: vgui::Frame(NULL, PANEL_TEAM)
+	: BaseClass(NULL, PANEL_TEAM)
 {
+	Assert(pViewPort);
+
 	// Quiet "parent not sized yet" spew
 	SetSize(10, 10);
 
@@ -85,6 +96,8 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 	// own res definition file to mimic it.
 	SetScheme("ClientScheme");
 
+	LoadControlSettings(GetResFile());
+
 	SetVisible(false);
 	SetProportional(true);
 	SetMouseInputEnabled(true);
@@ -93,13 +106,17 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 	SetTitleBarVisible(false);
 	SetProportional(true);
 
-	m_pJinrai_TeamImage = new ImagePanel(this, "IconPanel1");
-	m_pNSF_TeamImage = new ImagePanel(this, "IconPanel2");
-	m_pBackgroundImage = new ImagePanel(this, "IconPanel3");
-	m_pJinrai_TeamImage->SetImage("image");
-	m_pNSF_TeamImage->SetImage("image");
-	m_pBackgroundImage->SetImage("image");
+	m_pJinrai_TeamImage = FindControl<ImagePanel>("ImagePanel1", false);
+	m_pNSF_TeamImage = FindControl<ImagePanel>("ImagePanel2", false);
 
+	m_pJinrai_Button = new Button(this, "jinraibutton", "labelText");
+	m_pNSF_Button = new Button(this, "ctbutton", "labelText");
+	m_pSpectator_Button = new Button(this, "specbutton", "labelText");
+	m_pAutoAssign_Button = new Button(this, "autobutton", "labelText");
+	m_pCancel_Button = new Button(this, "CancelButton", "labelText");
+
+#if(0)
+	m_pBackgroundImage = new ImagePanel(this, "IconPanel3");
 	m_pTeamMenuLabel = new Label(this, "Label1", "labelText");
 	m_pJinrai_PlayercountLabel = new Label(this, "jplayercountlabel", "labelText");
 	m_pNSF_PlayercountLabel = new Label(this, "nplayercountlabel", "labelText");
@@ -108,11 +125,10 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 
 	m_pDivider = new Divider(this, "Divider1");
 
-	m_pJinrai_Button = new Button(this, "jinraibutton", "labelText");
-	m_pNSF_Button = new Button(this, "nsfbutton", "labelText");
-	m_pSpectator_Button = new Button(this, "specbutton", "labelText");
-	m_pAutoAssign_Button = new Button(this, "autobutton", "labelText");
-	m_pCancel_Button = new Button(this, "CancelButton", "labelText");
+	m_pJinrai_TeamImage->SetImage("image");
+	m_pNSF_TeamImage->SetImage("image");
+	m_pBackgroundImage->SetImage("image");
+#endif
 
 	m_pJinrai_Button->AddActionSignalTarget(this);
 	m_pNSF_Button->AddActionSignalTarget(this);
@@ -120,7 +136,63 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 	m_pAutoAssign_Button->AddActionSignalTarget(this);
 	m_pCancel_Button->AddActionSignalTarget(this);
 
+	// Make sure we deallocate all child elements
+	m_pJinrai_TeamImage->SetAutoDelete(true);
+	m_pNSF_TeamImage->SetAutoDelete(true);
+#if(0)
+	m_pBackgroundImage->SetAutoDelete(true);
+	m_pTeamMenuLabel->SetAutoDelete(true);
+	m_pJinrai_PlayercountLabel->SetAutoDelete(true);
+	m_pNSF_PlayercountLabel->SetAutoDelete(true);
+	m_pJinrai_ScoreLabel->SetAutoDelete(true);
+	m_pNSF_ScoreLabel->SetAutoDelete(true);
+	m_pDivider->SetAutoDelete(true);
+#endif
+	m_pJinrai_Button->SetAutoDelete(true);
+	m_pNSF_Button->SetAutoDelete(true);
+	m_pSpectator_Button->SetAutoDelete(true);
+	m_pAutoAssign_Button->SetAutoDelete(true);
+	m_pCancel_Button->SetAutoDelete(true);
+
 	InvalidateLayout();
+}
+
+void CNeoTeamMenu::Update()
+{
+#if(0)
+	int numPlayersJinrai = 0, numPlayersNSF = 0;
+
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		auto player = UTIL_PlayerByIndex(i);
+
+		if (player)
+		{
+			int team = player->GetTeamNumber();
+
+			if (team == TEAM_JINRAI)
+			{
+				numPlayersJinrai++;
+			}
+			else if (team == TEAM_NSF)
+			{
+				numPlayersNSF++;
+			}
+		}
+	}
+
+	char textAscii[3]; // Support 2 chars + terminator
+	wchar_t textUnicode_Jinrai[sizeof(wchar_t) * sizeof(textAscii)];
+	wchar_t textUnicode_NSF[sizeof(wchar_t) * sizeof(textAscii)];
+
+	itoa(numPlayersJinrai, textAscii, sizeof(numPlayersJinrai));
+	g_pVGuiLocalize->ConvertANSIToUnicode(textAscii, textUnicode_Jinrai, sizeof(textUnicode_Jinrai));
+	m_pJinrai_PlayercountLabel->SetText(textUnicode_Jinrai);
+
+	itoa(numPlayersNSF, textAscii, sizeof(numPlayersNSF));
+	g_pVGuiLocalize->ConvertANSIToUnicode(textAscii, textUnicode_NSF, sizeof(textUnicode_NSF));
+	m_pNSF_PlayercountLabel->SetText(textUnicode_NSF);
+#endif
 }
 
 inline Button *CNeoTeamMenu::GetPressedButton()
@@ -145,7 +217,6 @@ void CNeoTeamMenu::CommandCompletion()
 	SetEnabled(false);
 
 	SetMouseInputEnabled(false);
-	SetKeyBoardInputEnabled(false);
 	SetCursorAlwaysVisible(false);
 }
 
@@ -211,39 +282,13 @@ void CNeoTeamMenu::OnCommand(const char *command)
 
 void CNeoTeamMenu::OnButtonPressed(KeyValues *data)
 {
-	//Msg("Button pressed\n");
+#if(0)
 	KeyValuesDumpAsDevMsg(data);
+#endif
 }
 
 CNeoTeamMenu::~CNeoTeamMenu()
 {
-	//Msg("~CNeoTeamMenu\n");
-}
-
-void CNeoTeamMenu::OnMessage(const KeyValues *params, VPANEL fromPanel)
-{
-#if(0)
-	if (Q_stricmp(params->GetName(), "OnMousePressed") == 0)
-	{
-		Msg("OnMousePressed\n");
-
-		if (fromPanel == m_pJinrai_Button->GetVPanel())
-		{
-			Msg("We clicked Jinrai?\n");
-		}
-	}
-#endif
-
-	BaseClass::OnMessage(params, fromPanel);
-}
-
-void CNeoTeamMenu::OnMousePressed(vgui::MouseCode code)
-{
-#if(0)
-    Msg("OnMousePressed\n");
-#endif
-
-    BaseClass::OnMousePressed(code);
 }
 
 void CNeoTeamMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
@@ -292,8 +337,6 @@ void CNeoTeamMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
     m_pCancel_Button->SetMouseInputEnabled(true);
     m_pCancel_Button->InstallMouseHandler(this);
 
-    //Msg("Jinraibutton is enabled: %i\n", (int)m_pJinrai_Button->IsEnabled());
-
     SetPaintBorderEnabled(false);
 
     SetBorder( NULL );
@@ -339,31 +382,4 @@ void CNeoTeamMenu::ShowPanel( bool bShow )
     {
         gViewPortInterface->ShowPanel(PANEL_TEAM, false);
     }
-}
-
-void CNeoTeamMenu::OnThink()
-{
-	BaseClass::OnThink();
-
-    /*
-    if (m_pJinrai_Button->IsSelected())
-    {
-        Msg("m_pJinrai_Button selected\n");
-    }
-    else if (m_pNSF_Button->IsSelected())
-    {
-        Msg("m_pNSF_Button selected\n");
-    }
-    else if (m_pAutoAssign_Button->IsSelected())
-    {
-        Msg("m_pAutoAssign_Button selected\n");
-    }
-    else if (m_pSpectator_Button->IsSelected())
-    {
-        Msg("m_pSpectator_Button selected\n");
-    }
-    else if (m_pCancel_Button->IsSelected())
-    {
-        Msg("m_pCancel_Button selected\n");
-    }*/
 }

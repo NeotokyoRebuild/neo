@@ -23,6 +23,7 @@ namespace vgui
 	class Button;
 	class Panel;
 	class ImagePanel;
+	//class CIconPanel;
 	class ComboBox;
     class Button;
 }
@@ -44,26 +45,21 @@ public:
     virtual const char *GetName( void ) { return PANEL_TEAM; }
 	virtual void SetData(KeyValues *data) { }
 	virtual void Reset() { }
-	virtual void Update() { /* Do things! */ }
+	virtual void Update();
 	virtual bool NeedsUpdate( void ) { return false; }
 	virtual bool HasInputElements( void ) { return true; }
 	virtual void ShowPanel( bool bShow );
-
-    virtual void OnMessage(const KeyValues *params, vgui::VPANEL fromPanel);
 
     // both vgui::Frame and IViewPortPanel define these, so explicitly define them here as passthroughs to vgui
 	vgui::VPANEL GetVPanel( void ) { return BaseClass::GetVPanel(); }
 	virtual bool IsVisible() { return BaseClass::IsVisible(); }
 	virtual void SetParent(vgui::VPANEL parent) { BaseClass::SetParent(parent); }
-	virtual void OnThink();
-
-    virtual void OnMousePressed(vgui::MouseCode code);
 
     virtual Color GetBlackBarColor( void ) { return BLACK_BAR_COLOR; }
 
     virtual const char *GetResFile(void)
     {
-        return "resource/ui/TeamMenu.res";
+        return "Resource/TeamMenu.res";
     }
 
 protected:
@@ -83,9 +79,10 @@ protected:
     // --------------------------------------------------------
 
     // Image textures
-    vgui::ImagePanel *m_pJinrai_TeamImage;
-    vgui::ImagePanel *m_pNSF_TeamImage;
-    vgui::ImagePanel *m_pBackgroundImage;
+	vgui::ImagePanel *m_pJinrai_TeamImage;
+	vgui::ImagePanel *m_pNSF_TeamImage;
+#if(0)
+	vgui::ImagePanel *m_pBackgroundImage;
 
     // Team menu label
     vgui::Label *m_pTeamMenuLabel;
@@ -99,6 +96,7 @@ protected:
 
     // Divider
     vgui::Divider *m_pDivider;
+#endif
 
     // Buttons
     vgui::Button *m_pJinrai_Button;
