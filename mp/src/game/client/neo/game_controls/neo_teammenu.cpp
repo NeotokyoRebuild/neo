@@ -74,19 +74,6 @@ extern IGameUIFuncs *gameuifuncs; // for key binding details
 
 CNeoTeamMenu *g_pNeoTeamMenu = NULL;
 
-static inline int GetTeamIntFromString(const char *pszTeamName)
-{
-	// Auto assign by default
-	if (Q_stristr("default", pszTeamName) != 0) { return TEAM_ANY; }
-
-	// Did client have a team preference?
-	if (Q_stristr(TEAM_STR_JINRAI, pszTeamName) != 0) { return TEAM_JINRAI; }
-	if (Q_stristr(TEAM_STR_NSF, pszTeamName) != 0) { return TEAM_NSF; }
-
-	// Client didn't want auto assign nor a specific team; assign them to spec
-	return TEAM_SPECTATOR;
-}
-
 CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 	: BaseClass(NULL, PANEL_TEAM)
 {
@@ -125,12 +112,6 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 	m_pCancel_Button = FindControl<Button>(CONTROL_CANCEL_BUTTON);
 
 #if(0)
-	m_pJinrai_Button = new Button(this, "jinraibutton", "labelText");
-	m_pNSF_Button = new Button(this, "ctbutton", "labelText");
-	m_pSpectator_Button = new Button(this, "specbutton", "labelText");
-	m_pAutoAssign_Button = new Button(this, "autobutton", "labelText");
-	m_pCancel_Button = new Button(this, "CancelButton", "labelText");
-
 	m_pBackgroundImage = new ImagePanel(this, "IconPanel3");
 	m_pTeamMenuLabel = new Label(this, "Label1", "labelText");
 	m_pJinrai_PlayercountLabel = new Label(this, "jplayercountlabel", "labelText");
@@ -247,9 +228,20 @@ void CNeoTeamMenu::OnCommand(const char *command)
 		return;
 	}
 
-	engine->ExecuteClientCmd(command);
+	char commandBuffer[11];
+	V_strcpy_safe(commandBuffer, command);
 
-	bool proceedToClassSelection = (Q_stristr(command, "jointeam") != 0);
+	// As a bit of a hack, we assume "jointeam 0" means autoassign in this context,
+	// because that's how Neotokyo's .res file treats it.
+	if (Q_strcmp(commandBuffer, "jointeam 0") == 0)
+	{
+		int randomTeam = RandomInt(TEAM_JINRAI, TEAM_NSF);
+		V_sprintf_safe(commandBuffer, "jointeam %i", randomTeam);
+	}
+
+	engine->ExecuteClientCmd(commandBuffer);
+
+	bool proceedToClassSelection = (Q_stristr(commandBuffer, "jointeam") != 0);
 
 	if (proceedToClassSelection)
 	{
@@ -295,33 +287,36 @@ void CNeoTeamMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
     m_pAutoAssign_Button->SetFont(pScheme->GetFont(font, IsProportional()));
     m_pCancel_Button->SetFont(pScheme->GetFont(font, IsProportional()));
 
+	const Color selectedBgColor(0, 0, 0), selectedFgColor(255, 0, 0),
+		armedBgColor(0, 0, 0), armedFgColor(0, 255, 0);
+
     m_pJinrai_Button->SetUseCaptureMouse(true);
-    m_pJinrai_Button->SetSelectedColor(Color(255, 0, 0), Color(0, 0, 0));
-    m_pJinrai_Button->SetArmedColor(Color(0, 255, 0), Color(0, 0, 0));
+	m_pJinrai_Button->SetSelectedColor(selectedFgColor, selectedBgColor);
+	m_pJinrai_Button->SetArmedColor(armedFgColor, armedBgColor);
     m_pJinrai_Button->SetMouseInputEnabled(true);
     m_pJinrai_Button->InstallMouseHandler(this);
 
     m_pNSF_Button->SetUseCaptureMouse(true);
-    m_pNSF_Button->SetSelectedColor(Color(255, 0, 0), Color(0, 0, 0));
-    m_pNSF_Button->SetArmedColor(Color(0, 255, 0), Color(0, 0, 0));
+	m_pNSF_Button->SetSelectedColor(selectedFgColor, selectedBgColor);
+	m_pNSF_Button->SetArmedColor(armedFgColor, armedBgColor);
     m_pNSF_Button->SetMouseInputEnabled(true);
     m_pNSF_Button->InstallMouseHandler(this);
 
     m_pSpectator_Button->SetUseCaptureMouse(true);
-    m_pSpectator_Button->SetSelectedColor(Color(255, 0, 0), Color(0, 0, 0));
-    m_pSpectator_Button->SetArmedColor(Color(0, 255, 0), Color(0, 0, 0));
+	m_pSpectator_Button->SetSelectedColor(selectedFgColor, selectedBgColor);
+	m_pSpectator_Button->SetArmedColor(armedFgColor, armedBgColor);
     m_pSpectator_Button->SetMouseInputEnabled(true);
     m_pSpectator_Button->InstallMouseHandler(this);
 
     m_pAutoAssign_Button->SetUseCaptureMouse(true);
-    m_pAutoAssign_Button->SetSelectedColor(Color(255, 0, 0), Color(0, 0, 0));
-    m_pAutoAssign_Button->SetArmedColor(Color(0, 255, 0), Color(0, 0, 0));
+	m_pAutoAssign_Button->SetSelectedColor(selectedFgColor, selectedBgColor);
+	m_pAutoAssign_Button->SetArmedColor(armedFgColor, armedBgColor);
     m_pAutoAssign_Button->SetMouseInputEnabled(true);
     m_pAutoAssign_Button->InstallMouseHandler(this);
 
     m_pCancel_Button->SetUseCaptureMouse(true);
-    m_pCancel_Button->SetSelectedColor(Color(255, 0, 0), Color(0, 0, 0));
-    m_pCancel_Button->SetArmedColor(Color(0, 255, 0), Color(0, 0, 0));
+	m_pCancel_Button->SetSelectedColor(selectedFgColor, selectedBgColor);
+	m_pCancel_Button->SetArmedColor(armedFgColor, armedBgColor);
     m_pCancel_Button->SetMouseInputEnabled(true);
     m_pCancel_Button->InstallMouseHandler(this);
 
