@@ -177,6 +177,9 @@ $Project "Client (HL2MP)"
 				$File	"$SRCDIR\game\shared\neo\weapons\weapon_neobasecombatweapon.cpp"
 				$File	"$SRCDIR\game\shared\neo\weapons\weapon_neobasecombatweapon.h"
 
+				$File	"$SRCDIR\game\shared\neo\weapons\weapon_neobase_ar.cpp"
+				$File	"$SRCDIR\game\shared\neo\weapons\weapon_neobase_ar.h"
+
 				$File	"$SRCDIR\game\shared\neo\weapons\weapon_aa13.cpp"
 				$File	"$SRCDIR\game\shared\neo\weapons\weapon_aa13.h"
 				$File	"$SRCDIR\game\shared\neo\weapons\weapon_detpack.cpp"
