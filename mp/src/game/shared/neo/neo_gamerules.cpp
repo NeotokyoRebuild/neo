@@ -12,6 +12,10 @@
 	#include "neo_ghost_spawn_point.h"
 	#include "neo_ghost_cap_point.h"
 	#include "neo/weapons/weapon_ghost.h"
+	#include "neo/weapons/weapon_neobasecombatweapon.h"
+	#include "eventqueue.h"
+	#include "mapentities.h"
+	#include "hl2mp_gameinterface.h"
 #endif
 
 REGISTER_GAMERULES_CLASS( CNEORules );
@@ -92,6 +96,58 @@ static NEOViewVectors g_NEOViewVectors(
 #define BULLET_IMPULSE(grains, ftpersec)	((ftpersec)*12*BULLET_MASS_GRAINS_TO_KG(grains)*BULLET_IMPULSE_EXAGGERATION)
 
 extern CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
+
+static const char *s_NeoPreserveEnts[] =
+{
+	"neo_gamerules",
+	"info_player_attacker",
+	"info_player_defender",
+	"info_player_start",
+	"neo_predicted_viewmodel",
+	"neo_ghost_retrieval_point",
+	"neo_ghostspawnpoint",
+
+	// HL2MP inherited below
+	"ai_network",
+	"ai_hint",
+	"hl2mp_gamerules",
+	"team_manager",
+	"player_manager",
+	"env_soundscape",
+	"env_soundscape_proxy",
+	"env_soundscape_triggerable",
+	"env_sun",
+	"env_wind",
+	"env_fog_controller",
+	"func_brush",
+	"func_wall",
+	"func_buyzone",
+	"func_illusionary",
+	"infodecal",
+	"info_projecteddecal",
+	"info_node",
+	"info_target",
+	"info_node_hint",
+	"info_player_deathmatch",
+	"info_player_combine",
+	"info_player_rebel",
+	"info_map_parameters",
+	"keyframe_rope",
+	"move_rope",
+	"info_ladder",
+	"player",
+	"point_viewcontrol",
+	"scene_manager",
+	"shadow_control",
+	"sky_camera",
+	"soundent",
+	"trigger_soundscape",
+	"viewmodel",
+	"predicted_viewmodel",
+	"worldspawn",
+	"point_devshot_camera",
+	"", // END Marker
+};
 
 CNEORules::CNEORules()
 {
@@ -234,6 +290,12 @@ void CNEORules::CreateStandardEntities(void)
 #ifdef GAME_DLL
 	g_pLastJinraiSpawn = NULL;
 	g_pLastNSFSpawn = NULL;
+
+#ifdef DBGFLAG_ASSERT
+	CBaseEntity *pEnt =
+#endif
+		CBaseEntity::Create("neo_gamerules", vec3_origin, vec3_angle);
+	Assert(pEnt);
 #endif
 }
 
@@ -264,19 +326,10 @@ float CNEORules::GetMapRemainingTime()
 }
 
 #ifndef CLIENT_DLL
-void CNEORules::CleanUpMap()
+static inline void RemoveGhosts()
 {
-	BaseClass::CleanUpMap();
-}
+	return;
 
-void CNEORules::CheckRestartGame()
-{
-	BaseClass::CheckRestartGame();
-}
-
-// Purpose: Spawns one ghost at a randomly chosen Neo ghost spawn point.
-static inline void SpawnTheGhost()
-{
 	CBaseEntity *pEnt = gEntList.FirstEnt();
 	while (pEnt)
 	{
@@ -297,16 +350,165 @@ static inline void SpawnTheGhost()
 
 		pEnt = gEntList.NextEnt(pEnt);
 	}
+}
 
-	// NEO TODO (Rain): figure out how we can safely cache and reuse this edict
-	int ghostEdict = -1;
-	auto ghost = CreateEntityByName("weapon_ghost", ghostEdict);
+extern bool FindInList(const char **pStrings, const char *pToFind);
+
+void CNEORules::CleanUpMap()
+{
+	// Recreate all the map entities from the map data (preserving their indices),
+	// then remove everything else except the players.
+
+	// Get rid of all entities except players.
+	CBaseEntity *pCur = gEntList.FirstEnt();
+	while (pCur)
+	{
+		CNEOBaseCombatWeapon *pWeapon = dynamic_cast<CNEOBaseCombatWeapon*>(pCur);
+		if (pWeapon)
+		{
+			UTIL_Remove(pCur);
+		}
+		// remove entities that has to be restored on roundrestart (breakables etc)
+		else if (!FindInList(s_NeoPreserveEnts, pCur->GetClassname()))
+		{
+			UTIL_Remove(pCur);
+		}
+
+		pCur = gEntList.NextEnt(pCur);
+	}
+
+	// Really remove the entities so we can have access to their slots below.
+	gEntList.CleanupDeleteList();
+
+	// Cancel all queued events to avoid any delayed inputs affecting nextround
+	g_EventQueue.Clear();
+
+	// Now reload the map entities.
+	class CNEOMapEntityFilter : public IMapEntityFilter
+	{
+	public:
+		virtual bool ShouldCreateEntity(const char *pClassname)
+		{
+			// Don't recreate the preserved entities.
+			if (!FindInList(s_NeoPreserveEnts, pClassname))
+			{
+				return true;
+			}
+			else
+			{
+				// Increment our iterator since it's not going to call CreateNextEntity for this ent.
+				if (m_iIterator != g_MapEntityRefs.InvalidIndex())
+					m_iIterator = g_MapEntityRefs.Next(m_iIterator);
+
+				return false;
+			}
+		}
+
+
+		virtual CBaseEntity* CreateNextEntity(const char *pClassname)
+		{
+			if (m_iIterator == g_MapEntityRefs.InvalidIndex())
+			{
+				// This shouldn't be possible. When we loaded the map, it should have used 
+				// CCSMapLoadEntityFilter, which should have built the g_MapEntityRefs list
+				// with the same list of entities we're referring to here.
+				Assert(false);
+				return NULL;
+			}
+			else
+			{
+				CMapEntityRef &ref = g_MapEntityRefs[m_iIterator];
+				m_iIterator = g_MapEntityRefs.Next(m_iIterator);	// Seek to the next entity.
+
+				if (ref.m_iEdict == -1 || engine->PEntityOfEntIndex(ref.m_iEdict))
+				{
+					// Doh! The entity was delete and its slot was reused.
+					// Just use any old edict slot. This case sucks because we lose the baseline.
+					return CreateEntityByName(pClassname);
+				}
+				else
+				{
+					// Cool, the slot where this entity was is free again (most likely, the entity was 
+					// freed above). Now create an entity with this specific index.
+					return CreateEntityByName(pClassname, ref.m_iEdict);
+				}
+			}
+		}
+
+	public:
+		int m_iIterator; // Iterator into g_MapEntityRefs.
+	};
+	CNEOMapEntityFilter filter;
+	filter.m_iIterator = g_MapEntityRefs.Head();
+
+	// DO NOT CALL SPAWN ON info_node ENTITIES!
+
+	MapEntity_ParseAllEntities(engine->GetMapEntitiesString(), &filter, true);
+
+
+
+	//RemoveGhosts();
+	//ResetGhostCapPoints();
+
+	//BaseClass::CleanUpMap();
+}
+
+void CNEORules::CheckRestartGame()
+{
+	BaseClass::CheckRestartGame();
+}
+
+// Purpose: Spawns one ghost at a randomly chosen Neo ghost spawn point.
+static inline void SpawnTheGhost()
+{
+	static int ghostEdict = -1;
+
+	CBaseEntity *pEnt;
+
+	CWeaponGhost *ghost = dynamic_cast<CWeaponGhost*>(UTIL_EntityByIndex(ghostEdict));
+
+	bool spawnedGhostNow = false;
+
+	// If we couldn't cast to ghost from existing edict
+	if (!ghost)
+	{
+		pEnt = gEntList.FirstEnt();
+		while (pEnt)
+		{
+			auto ghostTest = dynamic_cast<CWeaponGhost*>(pEnt);
+
+			if (ghostTest)
+			{
+				ghost = ghostTest;
+				break;
+			}
+
+			pEnt = gEntList.NextEnt(pEnt);
+		}
+
+		// If none of the entities were castable to a ghost
+		if (!ghost)
+		{
+			ghost = dynamic_cast<CWeaponGhost*>(CreateEntityByName("weapon_ghost", -1));
+
+			spawnedGhostNow = true;
+
+			if (!ghost)
+			{
+				Warning("Failed to spawn a new ghost\n");
+				Assert(false);
+
+				return;
+			}
+		}
+	}
+
 	ghostEdict = ghost->edict()->m_EdictIndex;
 
+	// Get the amount of ghost spawns available to us
 	int numGhostSpawns = 0;
 
 	pEnt = gEntList.FirstEnt();
-	// First iteration, we get the amount of ghost spawns available to us
 	while (pEnt)
 	{
 		auto ghostSpawn = dynamic_cast<CNEOGhostSpawnPoint*>(pEnt);
@@ -350,20 +552,26 @@ static inline void SpawnTheGhost()
 		}
 	}
 
-	DevMsg("Spawned ghost at coords: %.1f %.1f %.1f\n",
-		ghost->GetAbsOrigin().x,
-		ghost->GetAbsOrigin().y,
-		ghost->GetAbsOrigin().z);
+	if (spawnedGhostNow)
+	{
+		DispatchSpawn(ghost);
 
-	DispatchSpawn(ghost);
+		DevMsg("Spawned ghost at coords: %.1f %.1f %.1f\n",
+			ghost->GetAbsOrigin().x,
+			ghost->GetAbsOrigin().y,
+			ghost->GetAbsOrigin().z);
+	}
+	else
+	{
+		DevMsg("Moved ghost to coords: %.1f %.1f %.1f\n",
+			ghost->GetAbsOrigin().x,
+			ghost->GetAbsOrigin().y,
+			ghost->GetAbsOrigin().z);
+	}
 }
 
-void CNEORules::RestartGame()
+inline void CNEORules::ResetGhostCapPoints()
 {
-	BaseClass::RestartGame();
-
-	SpawnTheGhost();
-
 	m_pGhostCaps.Purge();
 
 	int numGhostCaps = 0;
@@ -403,15 +611,76 @@ void CNEORules::RestartGame()
 			pEnt = gEntList.NextEnt(pEnt);
 		}
 	}
+}
 
+extern void respawn(CBaseEntity *pEdict, bool fCopyCorpse);
+
+void CNEORules::RestartGame()
+{
+	// bounds check
+	if (mp_timelimit.GetInt() < 0)
+	{
+		mp_timelimit.SetValue(0);
+	}
+	m_flGameStartTime = gpGlobals->curtime;
+	if (!IsFinite(m_flGameStartTime.Get()))
+	{
+		Warning("Trying to set a NaN game start time\n");
+		m_flGameStartTime.GetForModify() = 0.0f;
+	}
+
+	CleanUpMap();
+
+	// now respawn all players
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
-		CNEO_Player *player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
-		if (player)
+		CNEO_Player *pPlayer = (CNEO_Player*)UTIL_PlayerByIndex(i);
+
+		if (!pPlayer)
+			continue;
+
+		if (pPlayer->GetActiveWeapon())
 		{
-			player->SetTestMessageVisible(false);
+			pPlayer->GetActiveWeapon()->Holster();
 		}
+		pPlayer->RemoveAllItems(true);
+		respawn(pPlayer, false);
+		pPlayer->Reset();
+
+		pPlayer->SetTestMessageVisible(false);
 	}
+
+	// Respawn entities (glass, doors, etc..)
+
+	CTeam *pJinrai = GetGlobalTeam(TEAM_JINRAI);
+	CTeam *pNSF = GetGlobalTeam(TEAM_NSF);
+
+	if (pJinrai)
+	{
+		pJinrai->SetScore(0);
+	}
+
+	if (pNSF)
+	{
+		pNSF->SetScore(0);
+	}
+
+	m_flIntermissionEndTime = 0;
+	m_flRestartGameTime = 0.0;
+	m_bCompleteReset = false;
+
+	IGameEvent * event = gameeventmanager->CreateEvent("round_start");
+	if (event)
+	{
+		event->SetInt("fraglimit", 0);
+		event->SetInt("priority", 6); // HLTV event priority, not transmitted
+
+		event->SetString("objective", "DEATHMATCH");
+
+		gameeventmanager->FireEvent(event);
+	}
+
+	SpawnTheGhost();
 }
 #endif
 

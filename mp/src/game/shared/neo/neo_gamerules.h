@@ -114,11 +114,15 @@ public:
 
 	float GetMapRemainingTime();
 
-	void CleanUpMap();
+	inline void ResetGhostCapPoints();
+
 	void CheckRestartGame();
+
 #ifdef CLIENT_DLL
+	void CleanUpMap();
 	void RestartGame();
 #else
+	virtual void CleanUpMap();
 	virtual void RestartGame();
 #endif
 

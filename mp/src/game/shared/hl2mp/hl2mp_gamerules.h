@@ -93,6 +93,10 @@ public:
 	DECLARE_SERVERCLASS_NOBASE(); // This makes datatables able to access our private vars.
 #endif
 	
+#ifdef NEO
+	friend class CNEORules;
+#endif
+
 	CHL2MPRules();
 	virtual ~CHL2MPRules();
 
@@ -117,13 +121,15 @@ public:
 	const HL2MPViewVectors* GetHL2MPViewVectors() const;
 
 	float GetMapRemainingTime();
-	void CleanUpMap();
+
 	void CheckRestartGame();
 
 #if defined(NEO) && defined(GAME_DLL)
+	virtual void CleanUpMap();
 	virtual void RestartGame();
 #else
 	void RestartGame();
+	void CleanUpMap();
 #endif
 
 #ifndef CLIENT_DLL
