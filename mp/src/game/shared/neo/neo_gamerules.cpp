@@ -276,6 +276,8 @@ void CNEORules::Think(void)
 				// NEO TODO (Rain): figure out the win reasons for Neo
 				SetWinningTeam(captorTeam, 0, true, false, false, false);
 
+				RestartGame();
+
 				break;
 			}
 		}
@@ -448,7 +450,7 @@ void CNEORules::CleanUpMap()
 
 
 	//RemoveGhosts();
-	//ResetGhostCapPoints();
+	ResetGhostCapPoints();
 
 	//BaseClass::CleanUpMap();
 }
@@ -733,26 +735,39 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 #ifdef GAME_DLL
 void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bool bSwitchTeams, bool bDontAddScore, bool bFinal)
 {
+	char victoryMsg[128];
+
 	if (iWinReason == NEO_VICTORY_GHOST_CAPTURE)
 	{
-		Msg("Team %s wins by capturing the ghost!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
+		V_sprintf_safe(victoryMsg, "Team %s wins by capturing the ghost!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
 	}
 	else if (iWinReason == NEO_VICTORY_TEAM_ELIMINATION)
 	{
-		Msg("Team %s wins by eliminating the other team!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
+		V_sprintf_safe(victoryMsg, "Team %s wins by eliminating the other team!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
 	}
 	else if (iWinReason == NEO_VICTORY_TIMEOUT_WIN_BY_NUMBERS)
 	{
-		Msg("Team %s wins by numbers!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
+		V_sprintf_safe(victoryMsg, "Team %s wins by numbers!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
 	}
 	else if (iWinReason == NEO_VICTORY_FORFEIT)
 	{
-		Msg("Team %s wins by forfeit!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
+		V_sprintf_safe(victoryMsg, "Team %s wins by forfeit!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
 	}
 	else
 	{
-		Warning("Unknown Neotokyo victory reason %i\n", iWinReason);
+		V_sprintf_safe(victoryMsg, "Unknown Neotokyo victory reason %i\n", iWinReason);
+		Warning(victoryMsg);
 		Assert(false);
+	}
+
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		auto player = UTIL_PlayerByIndex(i);
+
+		if (player)
+		{
+			engine->ClientPrintf(player->edict(), victoryMsg);
+		}
 	}
 	
 	if (bForceMapReset)
@@ -760,7 +775,7 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 		RestartGame();
 	}
 
-	if (!bDontAddScore)
+	else if (!bDontAddScore)
 	{
 		auto winningTeam = GetGlobalTeam(team);
 		winningTeam->AddScore(1);
