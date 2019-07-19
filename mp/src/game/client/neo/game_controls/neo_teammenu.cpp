@@ -52,6 +52,15 @@
 
 using namespace vgui;
 
+// These are defined in the .res file
+#define CONTROL_JINRAI_BUTTON "jinraibutton"
+#define CONTROL_NSF_BUTTON "ctbutton"
+#define CONTROL_SPEC_BUTTON "specbutton"
+#define CONTROL_AUTO_BUTTON "autobutton"
+#define CONTROL_CANCEL_BUTTON "CancelButton"
+#define CONTROL_JINRAI_IMAGE "ImagePanel1"
+#define CONTROL_NSF_IMAGE "ImagePanel2"
+
 Panel *NeoTeam_Factory()
 {
 	return new CNeoTeamMenu(gViewPortInterface);
@@ -106,14 +115,14 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 	SetTitleBarVisible(false);
 	SetProportional(true);
 
-	m_pJinrai_TeamImage = FindControl<ImagePanel>("ImagePanel1", false);
-	m_pNSF_TeamImage = FindControl<ImagePanel>("ImagePanel2", false);
+	m_pJinrai_TeamImage = FindControl<ImagePanel>(CONTROL_JINRAI_IMAGE, false);
+	m_pNSF_TeamImage = FindControl<ImagePanel>(CONTROL_NSF_IMAGE, false);
 
-	m_pJinrai_Button = FindControl<Button>("jinraibutton");
-	m_pNSF_Button = FindControl<Button>("ctbutton");
-	m_pSpectator_Button = FindControl<Button>("specbutton");
-	m_pAutoAssign_Button = FindControl<Button>("autobutton");
-	m_pCancel_Button = FindControl<Button>("CancelButton");
+	m_pJinrai_Button = FindControl<Button>(CONTROL_JINRAI_BUTTON);
+	m_pNSF_Button = FindControl<Button>(CONTROL_NSF_BUTTON);
+	m_pSpectator_Button = FindControl<Button>(CONTROL_SPEC_BUTTON);
+	m_pAutoAssign_Button = FindControl<Button>(CONTROL_AUTO_BUTTON);
+	m_pCancel_Button = FindControl<Button>(CONTROL_CANCEL_BUTTON);
 
 #if(0)
 	m_pJinrai_Button = new Button(this, "jinraibutton", "labelText");
@@ -216,11 +225,11 @@ inline Button *CNeoTeamMenu::GetPressedButton()
 
 void CNeoTeamMenu::CommandCompletion()
 {	
-	SetControlEnabled("jinraibutton", false);
-	SetControlEnabled("nsfbutton", false);
-	SetControlEnabled("specbutton", false);
-	SetControlEnabled("autobutton", false);
-	SetControlEnabled("CancelButton", false);
+	SetControlEnabled(CONTROL_JINRAI_BUTTON, false);
+	SetControlEnabled(CONTROL_NSF_BUTTON, false);
+	SetControlEnabled(CONTROL_SPEC_BUTTON, false);
+	SetControlEnabled(CONTROL_AUTO_BUTTON, false);
+	SetControlEnabled(CONTROL_CANCEL_BUTTON, false);
 
 	SetVisible(false);
 	SetEnabled(false);
