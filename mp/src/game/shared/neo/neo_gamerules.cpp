@@ -286,14 +286,10 @@ static inline void SpawnTheGhost()
 		{
 			auto owner = ghost->GetPlayerOwner();
 
-			if (owner)
+			if (owner && owner->GetActiveWeapon() &&
+				(Q_strcmp(owner->GetActiveWeapon()->GetName(), ghost->GetName()) == 0))
 			{
-				auto heldWeapon = owner->GetActiveWeapon();
-
-				if (heldWeapon && ghost == heldWeapon)
-				{
-					owner->ClearActiveWeapon();
-				}
+				owner->ClearActiveWeapon();
 			}
 
 			ghost->Delete();
