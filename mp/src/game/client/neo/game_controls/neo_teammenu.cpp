@@ -109,13 +109,19 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 	m_pJinrai_TeamImage = FindControl<ImagePanel>("ImagePanel1", false);
 	m_pNSF_TeamImage = FindControl<ImagePanel>("ImagePanel2", false);
 
+	m_pJinrai_Button = FindControl<Button>("jinraibutton");
+	m_pNSF_Button = FindControl<Button>("ctbutton");
+	m_pSpectator_Button = FindControl<Button>("specbutton");
+	m_pAutoAssign_Button = FindControl<Button>("autobutton");
+	m_pCancel_Button = FindControl<Button>("CancelButton");
+
+#if(0)
 	m_pJinrai_Button = new Button(this, "jinraibutton", "labelText");
 	m_pNSF_Button = new Button(this, "ctbutton", "labelText");
 	m_pSpectator_Button = new Button(this, "specbutton", "labelText");
 	m_pAutoAssign_Button = new Button(this, "autobutton", "labelText");
 	m_pCancel_Button = new Button(this, "CancelButton", "labelText");
 
-#if(0)
 	m_pBackgroundImage = new ImagePanel(this, "IconPanel3");
 	m_pTeamMenuLabel = new Label(this, "Label1", "labelText");
 	m_pJinrai_PlayercountLabel = new Label(this, "jplayercountlabel", "labelText");
@@ -130,6 +136,9 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 	m_pBackgroundImage->SetImage("image");
 #endif
 
+#if(0)
+	
+#endif
 	m_pJinrai_Button->AddActionSignalTarget(this);
 	m_pNSF_Button->AddActionSignalTarget(this);
 	m_pSpectator_Button->AddActionSignalTarget(this);
@@ -224,44 +233,14 @@ void CNeoTeamMenu::OnCommand(const char *command)
 {
 	BaseClass::OnCommand(command);
 
-	bool proceedToClassSelection = false;
-
-	if (Q_stricmp(command, "PressButton"))
+	if (*command == NULL)
 	{
-		Button *pressedButton = GetPressedButton();
-		if (pressedButton)
-		{
-			ShowPanel(false);
-
-			char buttonCmd[128];
-
-			proceedToClassSelection = true;
-
-			if (pressedButton == m_pJinrai_Button)
-			{
-				sprintf(buttonCmd, "jointeam %i", TEAM_JINRAI);
-			}
-			else if (pressedButton == m_pNSF_Button)
-			{
-				sprintf(buttonCmd, "jointeam %i", TEAM_NSF);
-			}
-			else if (pressedButton == m_pSpectator_Button)
-			{
-				sprintf(buttonCmd, "jointeam %i", TEAM_SPECTATOR);
-			}
-			else if (pressedButton == m_pAutoAssign_Button)
-			{
-				int team = RandomInt(TEAM_JINRAI, TEAM_NSF);
-				sprintf(buttonCmd, "jointeam %i", team);
-			}
-			else
-			{
-				proceedToClassSelection = false;
-			}
-
-			engine->ExecuteClientCmd(buttonCmd);
-		}
+		return;
 	}
+
+	engine->ExecuteClientCmd(command);
+
+	bool proceedToClassSelection = (Q_stristr(command, "jointeam") != 0);
 
 	if (proceedToClassSelection)
 	{
