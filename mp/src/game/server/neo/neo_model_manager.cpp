@@ -385,19 +385,33 @@ const char *CNEOModelManager::GetCorpseModel(NeoSkin nSkin, NeoClass nClass,
 	if (index < 0 || index >= ARRAYSIZE(gibs))
 	{
 		Assert(false);
-		return "";
+		return gibs[0];
 	}
 
 	return gibs[index];
 }
 
 // Returns a third person player model.
+// NEO FIXME (Rain): this is sometimes off. Are we indexing incorrectly, or is the cvar logic flawed?
 const char *CNEOModelManager::GetPlayerModel(NeoSkin nSkin,
 	NeoClass nClass, int iTeam) const
 {
 	if (nClass == NEO_CLASS_VIP)
 	{
 		return vipModel;
+	}
+
+	// Unspecified skin number, give a skin randomly.
+	if ((int)nSkin == -1)
+	{
+		nSkin = (NeoSkin)RandomInt(NEO_SKIN_FIRST, NEO_SKIN_THIRD);
+	}
+
+	// We don't know what class this player wants (they probably just joined),
+	// give them an assault model as placeholder.
+	if ((int)nClass == -1)
+	{
+		nClass = NEO_CLASS_ASSAULT;
 	}
 
 	const int index =
@@ -408,7 +422,7 @@ const char *CNEOModelManager::GetPlayerModel(NeoSkin nSkin,
 	if (index < 0 || index >= ARRAYSIZE(playerModels))
 	{
 		Assert(false);
-		return "";
+		return playerModels[0];
 	}
 
 	return playerModels[index];
@@ -427,7 +441,7 @@ const char *CNEOModelManager::GetViewModel(NeoViewmodel nWepVm, int iTeam) const
 	if (index < 0 || index >= ARRAYSIZE(viewModels))
 	{
 		Assert(false);
-		return "";
+		return viewModels[0];
 	}
 
 	return viewModels[index];
@@ -439,7 +453,7 @@ const char *CNEOModelManager::GetWeaponModel(NeoWeapon nWep) const
 	if (nWep < 0 || nWep >= ARRAYSIZE(weapons))
 	{
 		Assert(false);
-		return "";
+		return weapons[0];
 	}
 
 	return weapons[nWep];

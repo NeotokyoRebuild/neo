@@ -10,7 +10,7 @@ WeaponData
 	"playermodel"		"models/weapons/w_zr68s.mdl"
 	"anim_prefix"		"ZR68C"
 	"bucket"		"0"
-	"bucket_position"	"0"
+	"bucket_position"	"1"
 	"Damage"		"22"
 	"Penetration"		"18.0"
 	"CycleTime"		"0.1"		// time between shots

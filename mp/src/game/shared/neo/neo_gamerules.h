@@ -110,13 +110,19 @@ public:
 
 	virtual void ClientSettingsChanged(CBasePlayer *pPlayer);
 
+	virtual void ClientSpawned(edict_t* pPlayer);
+
 	float GetMapRemainingTime();
 
-	void CleanUpMap();
+	inline void ResetGhostCapPoints();
+
 	void CheckRestartGame();
+
 #ifdef CLIENT_DLL
+	void CleanUpMap();
 	void RestartGame();
 #else
+	virtual void CleanUpMap();
 	virtual void RestartGame();
 #endif
 

@@ -177,10 +177,17 @@ static const char *s_PreserveEnts[] =
 // NOTE: the indices here must match TEAM_TERRORIST, TEAM_CT, TEAM_SPECTATOR, etc.
 char *sTeamNames[] =
 {
+#ifdef NEO
+	"Unassigned",
+	"Spectator",
+	"Jinrai",
+	"NSF",
+#else
 	"Unassigned",
 	"Spectator",
 	"Combine",
 	"Rebels",
+#endif
 };
 
 CHL2MPRules::CHL2MPRules()
@@ -974,6 +981,9 @@ CAmmoDef *GetAmmoDef()
 
 
 	ConCommand cc_Bot( "bot", Bot_f, "Add a bot.", FCVAR_CHEAT );
+#ifdef NEO
+	ConCommand cc_Bot_Alias_BotAdd("bot_add", Bot_f, "Add a bot. Alias for \"bot\".", FCVAR_CHEAT);
+#endif
 
 #endif
 
@@ -1062,6 +1072,11 @@ void CHL2MPRules::RestartGame()
 
 void CHL2MPRules::CleanUpMap()
 {
+#ifdef NEO
+	AssertMsg(false, "Neo rules has its own implementation; we should never reach here.");
+	return;
+#endif
+
 	// Recreate all the map entities from the map data (preserving their indices),
 	// then remove everything else except the players.
 

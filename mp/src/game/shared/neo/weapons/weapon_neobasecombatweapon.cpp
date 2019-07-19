@@ -31,7 +31,6 @@ END_PREDICTION_DATA()
 
 CNEOBaseCombatWeapon::CNEOBaseCombatWeapon( void )
 {
-	
 }
 
 void CNEOBaseCombatWeapon::Spawn()

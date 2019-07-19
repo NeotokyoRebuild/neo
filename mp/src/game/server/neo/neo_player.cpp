@@ -22,6 +22,7 @@
 #include "datacache/imdlcache.h"
 
 #include "neo_model_manager.h"
+#include "neo_player_shared.h"
 
 #include "weapon_ghost.h"
 
@@ -36,13 +37,7 @@ void DropPrimedFragGrenade(CNEO_Player *pPlayer, CBaseCombatWeapon *pGrenade);
 
 LINK_ENTITY_TO_CLASS(player, CNEO_Player);
 
-/*LINK_ENTITY_TO_CLASS(info_player_attacker, CPointEntity);
-LINK_ENTITY_TO_CLASS(info_player_defender, CPointEntity);
-LINK_ENTITY_TO_CLASS(info_player_start, CPointEntity);*/
-
 IMPLEMENT_SERVERCLASS_ST(CNEO_Player, DT_NEO_Player)
-SendPropInt(SENDINFO(m_nNeoSkin), 3),
-SendPropInt(SENDINFO(m_nCyborgClass), 3),
 SendPropInt(SENDINFO(m_iCapTeam), 3),
 
 SendPropBool(SENDINFO(m_bShowTestMessage)),
@@ -107,8 +102,6 @@ CNEO_Player::CNEO_Player()
 
 	m_leanPosTargetOffset = vec3_origin;
 
-	m_nNeoSkin = NEO_SKIN_FIRST;
-	m_nCyborgClass = NEO_CLASS_ASSAULT;
 	m_iCapTeam = TEAM_UNASSIGNED;
 	m_iGhosterTeam = TEAM_UNASSIGNED;
 
@@ -123,6 +116,16 @@ CNEO_Player::CNEO_Player()
 CNEO_Player::~CNEO_Player( void )
 {
 	
+}
+
+int CNEO_Player::GetSkin()
+{
+	return neo_cl_skin.GetInt();
+}
+
+int CNEO_Player::GetClass()
+{
+	return neo_cl_cyborgclass.GetInt();
 }
 
 inline void CNEO_Player::ZeroFriendlyPlayerLocArray(void)
@@ -596,6 +599,16 @@ bool CNEO_Player::Weapon_Switch( CBaseCombatWeapon *pWeapon,
 
 bool CNEO_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 {
+	int bumpedSlot = pWeapon->GetSlot();
+
+	CBaseCombatWeapon *currentSlotWep = Weapon_GetSlot(bumpedSlot);
+
+	// We already have a weapon in this slot
+	if (currentSlotWep)
+	{
+		return false;
+	}
+
 	return BaseClass::BumpWeapon(pWeapon);
 }
 

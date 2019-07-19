@@ -269,6 +269,9 @@ $Project "Server (HL2MP)"
 			$File	"$SRCDIR\game\shared\neo\neo_ghost_cap_point.cpp"
 			$File	"$SRCDIR\game\shared\neo\neo_ghost_cap_point.h"
 
+			$File	"$SRCDIR\game\shared\neo\neo_player_shared.cpp"
+			$File	"$SRCDIR\game\shared\neo\neo_player_shared.h"
+
 			$File	"$SRCDIR\game\shared\neo\neo_player_spawnpoint.cpp"
 			$File	"$SRCDIR\game\shared\neo\neo_player_spawnpoint.h"
 

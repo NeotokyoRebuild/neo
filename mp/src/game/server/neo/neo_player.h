@@ -12,6 +12,11 @@ class CNEO_Player;
 #include "utldict.h"
 #include "hl2mp_player.h"
 
+#define NEO_WEAPON_PRIMARY_SLOT 0
+#define NEO_WEAPON_SECONDARY_SLOT 1
+#define NEO_WEAPON_MELEE_SLOT 2
+#define NEO_WEAPON_EXPLOSIVE_SLOT 3
+
 class CNEO_Player : public CHL2MP_Player
 {
 public:
@@ -83,11 +88,12 @@ public:
 
 	inline void Weapon_SetZoom(bool bZoomIn);
 
+	int GetSkin();
+	int GetClass();
+
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);
 
 public:
-	CNetworkVar(int, m_nNeoSkin);
-	CNetworkVar(int, m_nCyborgClass);
 	CNetworkVar(int, m_iCapTeam);
 
 	CNetworkVar(bool, m_bShowTestMessage);

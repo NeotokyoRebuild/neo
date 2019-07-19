@@ -80,9 +80,6 @@ public:
 	inline void ZeroFriendlyPlayerLocArray(void);
 
 public:
-	int m_nNeoSkin;
-	int m_nCyborgClass;
-
 	bool m_bShowTestMessage;
 	char m_pszTestMessage[32 * 2 + 1];
 	//wchar_t m_pszTestMessage;
@@ -91,12 +88,15 @@ public:
 
 	Vector m_rvFriendlyPlayerPositions[MAX_PLAYERS];
 
+	bool m_bShowClassMenu, m_bShowTeamMenu;
+
 protected:
 	Vector m_vecGhostMarkerPos;
 
 	int m_iGhosterTeam;
 
 	bool m_bGhostExists;
+	bool m_bIsClassMenuOpen, m_bIsTeamMenuOpen;
 
 private:
 	CNEOHud_Compass *m_pCompass;

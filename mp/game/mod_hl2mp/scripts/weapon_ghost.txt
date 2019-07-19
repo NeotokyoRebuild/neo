@@ -9,8 +9,8 @@ WeaponData
 	"team2viewmodel"	"models/gameplay/v_nsf_ghost.mdl"
 	"playermodel"		"models/gameplay/w_ghost.mdl"
 	"anim_prefix"		"Ghost"
-	"bucket"		"2"
-	"bucket_position"	"0"
+	"bucket"		"0"
+	"bucket_position"	"2"
 	"Damage"		"1"
 	"Penetration"		"1.0"
 	"CycleTime"		"0.11"		// time between shoots

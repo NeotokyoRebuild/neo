@@ -153,7 +153,7 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 		}
 
 		// Do we have a weapon?
-		CBaseCombatWeapon *weapon = player->Weapon_GetSlot(WEAPON_PRIMARY_SLOT);
+		CBaseCombatWeapon *weapon = player->Weapon_GetSlot(NEO_WEAPON_PRIMARY_SLOT);
 		if (!weapon)
 		{
 			continue;

@@ -56,6 +56,11 @@
 #include "replay/ienginereplay.h"
 #endif
 
+#ifdef NEO
+#include "neo/game_controls/neo_classmenu.h"
+#include "neo/game_controls/neo_teammenu.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -243,6 +248,10 @@ void CBaseViewport::CreateDefaultPanels( void )
 	AddNewPanel( CreatePanelByName( PANEL_SPECMENU ), "PANEL_SPECMENU" );
 	AddNewPanel( CreatePanelByName( PANEL_NAV_PROGRESS ), "PANEL_NAV_PROGRESS" );
 #endif // !TF_CLIENT_DLL
+#ifdef NEO
+	AddNewPanel( CreatePanelByName( PANEL_TEAM ), "PANEL_TEAM" );
+	AddNewPanel( CreatePanelByName( PANEL_CLASS), "PANEL_CLASS" );
+#endif
 #endif // !_XBOX
 }
 
@@ -281,7 +290,11 @@ IViewPortPanel* CBaseViewport::CreatePanelByName(const char *szPanelName)
 	*/
 	else if ( Q_strcmp(PANEL_TEAM, szPanelName) == 0 )
 	{
+#ifndef NEO
 		newpanel = new CTeamMenu( this );
+#else
+		newpanel = new CNeoTeamMenu( this );
+#endif
 	}
 	else if ( Q_strcmp(PANEL_SPECMENU, szPanelName) == 0 )
 	{
@@ -297,6 +310,12 @@ IViewPortPanel* CBaseViewport::CreatePanelByName(const char *szPanelName)
 		newpanel = new CNavProgress( this );
 	}
 #endif	// TF_CLIENT_DLL
+#ifdef NEO
+	else if ( Q_strcmp(PANEL_CLASS, szPanelName) == 0 )
+	{
+		newpanel = new CNeoClassMenu( this );
+	}
+#endif // NEO
 #endif
 
 	if ( Q_strcmp(PANEL_COMMENTARY_MODELVIEWER, szPanelName) == 0 )
@@ -306,7 +325,6 @@ IViewPortPanel* CBaseViewport::CreatePanelByName(const char *szPanelName)
 	
 	return newpanel; 
 }
-
 
 bool CBaseViewport::AddNewPanel( IViewPortPanel* pPanel, char const *pchDebugName )
 {

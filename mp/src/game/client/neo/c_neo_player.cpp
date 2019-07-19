@@ -16,6 +16,9 @@
 #include "hud_crosshair.h"
 
 #include "neo_predicted_viewmodel.h"
+
+#include "game_controls/neo_teammenu.h"
+
 #include "ui/neo_hud_compass.h"
 #include "ui/neo_hud_game_event.h"
 #include "ui/neo_hud_ghost_marker.h"
@@ -30,6 +33,8 @@
 #include <engine/ivdebugoverlay.h>
 #include <engine/IEngineSound.h>
 
+#include "neo_player_shared.h"
+
 // Don't alias here
 #if defined( CNEO_Player )
 #undef CNEO_Player	
@@ -38,9 +43,6 @@
 LINK_ENTITY_TO_CLASS(player, C_NEO_Player);
 
 IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
-	RecvPropInt(RECVINFO(m_nNeoSkin)),
-	RecvPropInt(RECVINFO(m_nCyborgClass)),
-
 	RecvPropBool(RECVINFO(m_bShowTestMessage)),
 	RecvPropString(RECVINFO(m_pszTestMessage)),
 
@@ -65,6 +67,120 @@ ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
 	"Whether to display HL2 style ammo/health info near crosshair.",
 	true, 0.0f, true, 1.0f);
 
+class NeoClassMenu_Cb : public ICommandCallback
+{
+public:
+	virtual void CommandCallback(const CCommand& command)
+	{
+		Msg("Classmenu access cb\n");
+
+		vgui::EditablePanel *panel = dynamic_cast<vgui::EditablePanel*>
+			(GetClientModeNormal()->GetViewport()->FindChildByName(PANEL_CLASS));
+
+		if (!panel)
+		{
+			Assert(false);
+			Warning("Couldn't find class panel\n");
+			return;
+		}
+
+		panel->ApplySchemeSettings(vgui::scheme()->GetIScheme(panel->GetScheme()));
+		int w, h;
+		surface()->GetScreenSize(w, h);
+		panel->SetSize(w, h);
+		panel->SetPos((int)w / 3, (int)h / 3);
+
+		panel->SetMouseInputEnabled(true);
+		panel->SetKeyBoardInputEnabled(true);
+		panel->SetCursorAlwaysVisible(true);
+
+		panel->SetControlEnabled("Scout_Button", true);
+		panel->SetControlEnabled("Assault_Button", true);
+		panel->SetControlEnabled("Heavy_Button", true);
+		panel->SetControlEnabled("Back_Button", true);
+
+		panel->MoveToFront();
+
+		if (panel->IsKeyBoardInputEnabled())
+		{
+			panel->RequestFocus();
+		}
+
+		panel->SetVisible(true);
+		panel->SetEnabled(true);
+
+		surface()->SetMinimized(panel->GetVPanel(), false);
+	}
+};
+NeoClassMenu_Cb neoClassMenu_Cb;
+
+class NeoTeamMenu_Cb : public ICommandCallback
+{
+public:
+	virtual void CommandCallback( const CCommand &command )
+	{
+		Msg("Teammenu access cb\n");
+
+		vgui::EditablePanel *panel = dynamic_cast<vgui::EditablePanel*>
+			(GetClientModeNormal()->GetViewport()->FindChildByName(PANEL_TEAM));
+		if (!panel)
+		{
+			Assert(false);
+			Warning("Couldn't find team panel\n");
+			return;
+		}
+
+		panel->ApplySchemeSettings(vgui::scheme()->GetIScheme(panel->GetScheme()));
+		int w, h;
+		surface()->GetScreenSize(w, h);
+		panel->SetSize(w, h);
+		panel->SetPos((int)w / 3, (int)h / 3);
+
+		panel->SetMouseInputEnabled(true);
+		panel->SetKeyBoardInputEnabled(true);
+		panel->SetCursorAlwaysVisible(true);
+
+		panel->SetControlEnabled("jinraibutton", true);
+		panel->SetControlEnabled("nsfbutton", true);
+		panel->SetControlEnabled("specbutton", true);
+		panel->SetControlEnabled("autobutton", true);
+		panel->SetControlEnabled("CancelButton", true);
+
+		panel->MoveToFront();
+
+		if (panel->IsKeyBoardInputEnabled())
+		{
+			panel->RequestFocus();
+		}
+
+		panel->SetVisible(true);
+		panel->SetEnabled(true);
+
+		surface()->SetMinimized(panel->GetVPanel(), false);
+	}
+};
+NeoTeamMenu_Cb neoTeamMenu_Cb;
+
+void SetClass(const CCommand &command)
+{
+	if (command.ArgC() != 2)
+	{
+		Warning("SetClass: Unexpected arg count %i\n", command.ArgC());
+		return;
+	}
+
+	const int iClass = atoi(command.ArgV()[1]);
+
+	char cmd[32];
+	V_sprintf_safe(cmd, "%s %i", neo_cl_cyborgclass.GetName(), iClass);
+
+	engine->ClientCmd(cmd);
+}
+
+ConCommand classmenu("classmenu", &neoClassMenu_Cb, "Open class selection menu.", FCVAR_USERINFO);
+ConCommand teammenu("teammenu", &neoTeamMenu_Cb, "Open team selection menu.", FCVAR_USERINFO);
+ConCommand setclass("setclass", SetClass, "Set class", FCVAR_USERINFO);
+
 C_NEO_Player::C_NEO_Player()
 {
 	m_pCompass = new CNEOHud_Compass("compass");
@@ -80,6 +196,7 @@ C_NEO_Player::C_NEO_Player()
 
 	m_vecGhostMarkerPos = vec3_origin;
 	m_bGhostExists = false;
+	m_bShowClassMenu = m_bShowTeamMenu = m_bIsClassMenuOpen = m_bIsTeamMenuOpen = false;
 
 	m_pFriendlyMarker = new CNEOHud_FriendlyMarker("friendlyMarker");
 	m_pFriendlyMarker->SetOwner(this);
@@ -293,6 +410,19 @@ void C_NEO_Player::PreThink( void )
 		vm->CalcLean(this);
 	}
 
+	if (m_bShowTeamMenu && !m_bIsTeamMenuOpen)
+	{
+		m_bIsTeamMenuOpen = true;
+
+		engine->ClientCmd(teammenu.GetName());
+	}
+	else if (m_bShowClassMenu && !m_bIsClassMenuOpen)
+	{
+		m_bIsClassMenuOpen = true;
+
+		engine->ClientCmd(classmenu.GetName());
+	}
+
 	if (m_bShowTestMessage)
 	{
 		m_pHudEvent_Test->SetMessage(m_pszTestMessage);
@@ -354,6 +484,11 @@ void C_NEO_Player::PostThink(void)
 void C_NEO_Player::Spawn( void )
 {
 	BaseClass::Spawn();
+
+	if (GetTeamNumber() == TEAM_UNASSIGNED)
+	{
+		m_bShowTeamMenu = true;
+	}
 
 #if(0)
 	// We could support crosshair customization/colors etc this way.
