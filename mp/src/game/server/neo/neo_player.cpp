@@ -128,26 +128,6 @@ int CNEO_Player::GetClass()
 	return neo_cl_cyborgclass.GetInt();
 }
 
-float CNEO_Player::MaxSpeed() const
-{
-	const float baseSpeed = 50.0f;
-
-	switch (neo_cl_cyborgclass.GetInt())
-	{
-	case (int)NEO_CLASS_RECON:
-		return baseSpeed * 1.25f;
-		break;
-	case (int)NEO_CLASS_ASSAULT:
-		return baseSpeed;
-		break;
-	case (int)NEO_CLASS_SUPPORT:
-		return baseSpeed * 0.75;
-		break;
-	}
-
-	return baseSpeed;
-}
-
 inline void CNEO_Player::ZeroFriendlyPlayerLocArray(void)
 {
 	for (int i = 0; i < m_rvFriendlyPlayerPositions.Count(); i++)
@@ -224,8 +204,6 @@ void CNEO_Player::Spawn(void)
 	m_leanPosTargetOffset = VEC_VIEW;
 
 	SetTransmitState(FL_EDICT_ALWAYS);
-
-	SetMaxSpeed(MaxSpeed());
 }
 
 extern ConVar neo_lean_angle;

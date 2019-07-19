@@ -91,8 +91,6 @@ public:
 	int GetSkin();
 	int GetClass();
 
-	float MaxSpeed() const;
-
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);
 
 public:
