@@ -41,9 +41,26 @@ BEGIN_PREDICTION_DATA( C_HL2MP_Player )
 	DEFINE_PRED_FIELD( m_fIsWalking, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE ),
 END_PREDICTION_DATA()
 
+#ifdef NEO
+#define NEO_SPRINT_MODIFIER 1.6
+#define NEO_SLOW_MODIFIER 0.75
+
+#define NEO_ASSAULT_NORM_SPEED 136
+// All of these should be able to stack create even slower speeds (at least in original NT)
+#define NEO_ASSAULT_SPRINT_SPEED (NEO_ASSAULT_NORM_SPEED * NEO_SPRINT_MODIFIER)
+#define NEO_ASSAULT_WALK_SPEED (NEO_ASSAULT_NORM_SPEED * NEO_SLOW_MODIFIER)
+#define NEO_ASSAULT_CROUCH_SPEED (NEO_ASSAULT_NORM_SPEED * NEO_SLOW_MODIFIER)
+#endif
+
+#ifdef NEO
+#define	HL2_WALK_SPEED NEO_ASSAULT_WALK_SPEED
+#define	HL2_NORM_SPEED NEO_ASSAULT_NORM_SPEED
+#define	HL2_SPRINT_SPEED NEO_ASSAULT_SPRINT_SPEED
+#else
 #define	HL2_WALK_SPEED 150
 #define	HL2_NORM_SPEED 190
 #define	HL2_SPRINT_SPEED 320
+#endif
 
 static ConVar cl_playermodel( "cl_playermodel", "none", FCVAR_USERINFO | FCVAR_ARCHIVE | FCVAR_SERVER_CAN_EXECUTE, "Default Player Model");
 static ConVar cl_defaultweapon( "cl_defaultweapon", "weapon_physcannon", FCVAR_USERINFO | FCVAR_ARCHIVE, "Default Spawn Weapon");
