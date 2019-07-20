@@ -275,6 +275,13 @@ void CNeoTeamMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 {
     BaseClass::ApplySchemeSettings(pScheme);
 
+	if (!pScheme)
+	{
+		Assert(false);
+		Warning("Failed to ApplySchemeSettings for CNeoTeamMenu\n");
+		return;
+	}
+
     LoadControlSettings(GetResFile());
 
     SetBgColor(Color( 0,0,0,0 ) ); // make the background transparent

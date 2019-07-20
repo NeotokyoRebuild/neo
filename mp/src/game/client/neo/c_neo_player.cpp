@@ -428,6 +428,13 @@ void C_NEO_Player::PreThink( void )
 		m_pHudEvent_Test->SetMessage(m_pszTestMessage);
 		m_pHudEvent_Test->SetVisible(true);
 	}
+	else
+	{
+		if (m_pHudEvent_Test->IsVisible())
+		{
+			m_pHudEvent_Test->SetVisible(false);
+		}
+	}
 
 	if (!m_bGhostExists)
 	{

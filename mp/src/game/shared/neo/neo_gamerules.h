@@ -118,12 +118,19 @@ public:
 
 	void CheckRestartGame();
 
+	float GetRoundRemainingTime();
+
 #ifdef CLIENT_DLL
 	void CleanUpMap();
 	void RestartGame();
 #else
 	virtual void CleanUpMap();
 	virtual void RestartGame();
+#endif
+
+#ifdef GAME_DLL
+	bool IsRoundOver();
+	void StartNextRound();
 #endif
 
 	enum
@@ -137,6 +144,10 @@ public:
 #ifdef GAME_DLL
 private:
 	CUtlVector<int> m_pGhostCaps;
+
+	CNetworkVar(float, m_flRoundStartTime);
+
+	float m_flNextRoundStartTime;
 #endif
 };
 

@@ -32,6 +32,8 @@ END_NETWORK_TABLE()
 LINK_ENTITY_TO_CLASS( neo_gamerules, CNEOGameRulesProxy );
 IMPLEMENT_NETWORKCLASS_ALIASED( NEOGameRulesProxy, DT_NEOGameRulesProxy );
 
+extern void respawn(CBaseEntity *pEdict, bool fCopyCorpse);
+
 // NEO TODO (Rain): set accurately
 static NEOViewVectors g_NEOViewVectors(
 	Vector( 0, 0, 64 ),	   //VEC_VIEW (m_vView) 
@@ -76,24 +78,28 @@ static NEOViewVectors g_NEOViewVectors(
 		return pRules;
 	}
 
-	BEGIN_SEND_TABLE( CNEOGameRulesProxy, DT_NEOGameRulesProxy )
-		SendPropDataTable( "neo_gamerules_data", 0,
-			&REFERENCE_SEND_TABLE( DT_NEORules ),
-			SendProxy_NEORules )
-	END_SEND_TABLE()
+	BEGIN_SEND_TABLE(CNEOGameRulesProxy, DT_NEOGameRulesProxy)
+		SendPropDataTable("neo_gamerules_data", 0,
+		&REFERENCE_SEND_TABLE(DT_NEORules),
+		SendProxy_NEORules)
+		END_SEND_TABLE()
 #endif
 
-// NEO NOTE (Rain): These are copied over from hl2mp gamerules implementation.
-//
-// shared ammo definition
-// JAY: Trying to make a more physical bullet response
+		// NEO NOTE (Rain): These are copied over from hl2mp gamerules implementation.
+		//
+		// shared ammo definition
+		// JAY: Trying to make a more physical bullet response
 #define BULLET_MASS_GRAINS_TO_LB(grains)	(0.002285*(grains)/16.0f)
 #define BULLET_MASS_GRAINS_TO_KG(grains)	lbs2kg(BULLET_MASS_GRAINS_TO_LB(grains))
 
-// exaggerate all of the forces, but use real numbers to keep them consistent
+		// exaggerate all of the forces, but use real numbers to keep them consistent
 #define BULLET_IMPULSE_EXAGGERATION			3.5
-// convert a velocity in ft/sec and a mass in grains to an impulse in kg in/s
+		// convert a velocity in ft/sec and a mass in grains to an impulse in kg in/s
 #define BULLET_IMPULSE(grains, ftpersec)	((ftpersec)*12*BULLET_MASS_GRAINS_TO_KG(grains)*BULLET_IMPULSE_EXAGGERATION)
+
+
+ConVar neo_round_timelimit("neo_round_timelimit", "2.75", FCVAR_REPLICATED, "Neo round timelimit, in minutes.",
+	true, 0.0f, false, 600.0f);
 
 extern CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
 
@@ -149,6 +155,30 @@ static const char *s_NeoPreserveEnts[] =
 	"", // END Marker
 };
 
+// Purpose: Empty legacy event for backwards compatibility
+// with server plugins relying on this callback.
+// https://wiki.alliedmods.net/Neotokyo_Events
+static inline void FireLegacyEvent_NeoRoundStart()
+{
+	IGameEvent *neoLegacy = gameeventmanager->CreateEvent("game_round_start");
+	if (neoLegacy)
+	{
+		gameeventmanager->FireEvent(neoLegacy);
+	}
+}
+
+// Purpose: Empty legacy event for backwards compatibility
+// with server plugins relying on this callback.
+// https://wiki.alliedmods.net/Neotokyo_Events
+static inline void FireLegacyEvent_NeoRoundEnd()
+{
+	IGameEvent *neoLegacy = gameeventmanager->CreateEvent("game_round_end");
+	if (neoLegacy)
+	{
+		gameeventmanager->FireEvent(neoLegacy);
+	}
+}
+
 CNEORules::CNEORules()
 {
 #ifdef GAME_DLL	
@@ -167,6 +197,9 @@ CNEORules::CNEORules()
 			g_Teams[TEAM_NSF]->UpdateClientData(player);
 		}
 	}
+
+	m_flNextRoundStartTime = 0;
+	m_flRoundStartTime = 0;
 #endif
 }
 
@@ -245,45 +278,259 @@ bool CNEORules::ShouldCollide(int collisionGroup0, int collisionGroup1)
 	return BaseClass::ShouldCollide(collisionGroup0, collisionGroup1);
 }
 
+extern ConVar mp_chattime;
+
 void CNEORules::Think(void)
 {
 	BaseClass::Think();
 
 #ifdef GAME_DLL
+	if (IsRoundOver())
 	{
-		// Check if the ghost was capped during this Think
-		int captorTeam, captorClient;
-		for (int i = 0; i < m_pGhostCaps.Count(); i++)
+		// If the next round was not scheduled yet
+		if (m_flNextRoundStartTime == 0)
 		{
-			auto pGhostCap = dynamic_cast<CNEOGhostCapturePoint*>(UTIL_EntityByIndex(m_pGhostCaps[i]));
-			if (!pGhostCap)
+			m_flNextRoundStartTime = gpGlobals->curtime + mp_chattime.GetFloat();
+			DevMsg("Round is over\n");
+		}
+		// Else if it's time to start the next round
+		else if (gpGlobals->curtime >= m_flNextRoundStartTime)
+		{
+			StartNextRound();
+		}
+
+		return;
+	}
+
+	// Check if the ghost was capped during this Think
+	int captorTeam, captorClient;
+	for (int i = 0; i < m_pGhostCaps.Count(); i++)
+	{
+		auto pGhostCap = dynamic_cast<CNEOGhostCapturePoint*>(UTIL_EntityByIndex(m_pGhostCaps[i]));
+		if (!pGhostCap)
+		{
+			Assert(false);
+			continue;
+		}
+
+		// If a ghost was captured
+		if (pGhostCap->IsGhostCaptured(captorTeam, captorClient))
+		{
+			// Turn off all capzones
+			for (int i = 0; i < m_pGhostCaps.Count(); i++)
 			{
-				Assert(false);
-				continue;
+				auto pGhostCap = dynamic_cast<CNEOGhostCapturePoint*>(UTIL_EntityByIndex(m_pGhostCaps[i]));
+				pGhostCap->SetActive(false);
 			}
 
-			// If a ghost was captured
-			if (pGhostCap->IsGhostCaptured(captorTeam, captorClient))
-			{
-				// Turn off all capzones
-				for (int i = 0; i < m_pGhostCaps.Count(); i++)
-				{
-					auto pGhostCap = dynamic_cast<CNEOGhostCapturePoint*>(UTIL_EntityByIndex(m_pGhostCaps[i]));
-					pGhostCap->SetActive(false);
-				}
+			// And then announce team victory
+			// NEO TODO (Rain): figure out the win reasons for Neo
+			SetWinningTeam(captorTeam, 0, false, false, false, false);
 
-				// And then announce team victory
-				// NEO TODO (Rain): figure out the win reasons for Neo
-				SetWinningTeam(captorTeam, 0, true, false, false, false);
-
-				RestartGame();
-
-				break;
-			}
+			break;
 		}
 	}
 #endif
 }
+
+// Return remaining time in seconds. Zero means there is no time limit.
+float CNEORules::GetRoundRemainingTime()
+{
+	if (neo_round_timelimit.GetFloat() == 0)
+	{
+		return 0;
+	}
+
+	return (m_flGameStartTime + (neo_round_timelimit.GetFloat() * 60.0f)) - gpGlobals->curtime;
+}
+
+#ifdef GAME_DLL
+// Purpose: Spawns one ghost at a randomly chosen Neo ghost spawn point.
+static inline void SpawnTheGhost()
+{
+	static int ghostEdict = -1;
+
+	CBaseEntity *pEnt;
+
+	CWeaponGhost *ghost = dynamic_cast<CWeaponGhost*>(UTIL_EntityByIndex(ghostEdict));
+
+	bool spawnedGhostNow = false;
+
+	// If we couldn't cast to ghost from existing edict
+	if (!ghost)
+	{
+		pEnt = gEntList.FirstEnt();
+		while (pEnt)
+		{
+			auto ghostTest = dynamic_cast<CWeaponGhost*>(pEnt);
+
+			if (ghostTest)
+			{
+				ghost = ghostTest;
+				break;
+			}
+
+			pEnt = gEntList.NextEnt(pEnt);
+		}
+
+		// If none of the entities were castable to a ghost
+		if (!ghost)
+		{
+			ghost = dynamic_cast<CWeaponGhost*>(CreateEntityByName("weapon_ghost", -1));
+
+			spawnedGhostNow = true;
+
+			if (!ghost)
+			{
+				Warning("Failed to spawn a new ghost\n");
+				Assert(false);
+
+				return;
+			}
+		}
+	}
+
+	ghostEdict = ghost->edict()->m_EdictIndex;
+
+	// Get the amount of ghost spawns available to us
+	int numGhostSpawns = 0;
+
+	pEnt = gEntList.FirstEnt();
+	while (pEnt)
+	{
+		auto ghostSpawn = dynamic_cast<CNEOGhostSpawnPoint*>(pEnt);
+
+		if (ghostSpawn)
+		{
+			numGhostSpawns++;
+		}
+
+		pEnt = gEntList.NextEnt(pEnt);
+	}
+
+	// We didn't have any spawns, spawn ghost at origin
+	if (numGhostSpawns == 0)
+	{
+		Warning("No ghost spawns found! Spawning ghost at map origin, instead.\n");
+		ghost->SetAbsOrigin(vec3_origin);
+	}
+	else
+	{
+		// Randomly decide on a ghost spawn point we want this time
+		const int desiredSpawn = RandomInt(1, numGhostSpawns);
+		int ghostSpawnIteration = 1;
+
+		pEnt = gEntList.FirstEnt();
+		// Second iteration, we pick the ghost spawn we want
+		while (pEnt)
+		{
+			auto ghostSpawn = dynamic_cast<CNEOGhostSpawnPoint*>(pEnt);
+
+			if (ghostSpawn)
+			{
+				if (ghostSpawnIteration++ == desiredSpawn)
+				{
+					ghost->SetAbsOrigin(ghostSpawn->GetAbsOrigin());
+					break;
+				}
+			}
+
+			pEnt = gEntList.NextEnt(pEnt);
+		}
+	}
+
+	if (spawnedGhostNow)
+	{
+		DispatchSpawn(ghost);
+
+		DevMsg("Spawned ghost at coords: %.1f %.1f %.1f\n",
+			ghost->GetAbsOrigin().x,
+			ghost->GetAbsOrigin().y,
+			ghost->GetAbsOrigin().z);
+	}
+	else
+	{
+		DevMsg("Moved ghost to coords: %.1f %.1f %.1f\n",
+			ghost->GetAbsOrigin().x,
+			ghost->GetAbsOrigin().y,
+			ghost->GetAbsOrigin().z);
+	}
+}
+
+void CNEORules::StartNextRound()
+{
+	m_flNextRoundStartTime = 0;
+	m_flRoundStartTime = gpGlobals->curtime;
+
+	CleanUpMap();
+
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		CNEO_Player *pPlayer = (CNEO_Player*)UTIL_PlayerByIndex(i);
+
+		if (!pPlayer)
+		{
+			continue;
+		}
+
+		if (pPlayer->GetActiveWeapon())
+		{
+			pPlayer->GetActiveWeapon()->Holster();
+		}
+		pPlayer->RemoveAllItems(true);
+		respawn(pPlayer, false);
+		pPlayer->Reset();
+
+		pPlayer->SetTestMessageVisible(false);
+	}
+
+	m_flIntermissionEndTime = 0;
+	m_flRestartGameTime = 0;
+	m_bCompleteReset = false;
+
+	IGameEvent * event = gameeventmanager->CreateEvent("round_start");
+	if (event)
+	{
+		event->SetInt("fraglimit", 0);
+		event->SetInt("priority", 6); // HLTV event priority, not transmitted
+
+		event->SetString("objective", "DEATHMATCH");
+
+		gameeventmanager->FireEvent(event);
+	}
+
+	FireLegacyEvent_NeoRoundEnd();
+	FireLegacyEvent_NeoRoundStart();
+
+	SpawnTheGhost();
+
+	DevMsg("New round start here!\n");
+}
+
+bool CNEORules::IsRoundOver()
+{
+	// We don't want to start preparing for a new round
+	// if the game has ended for the current map.
+	if (g_fGameOver)
+	{
+		return false;
+	}
+
+	// Next round start has been scheduled, so current round must be over.
+	if (m_flNextRoundStartTime != 0)
+	{
+		return true;
+	}
+
+	// Note that exactly zero here means infinite round time.
+	if (GetRoundRemainingTime() < 0)
+	{
+		return true;
+	}
+
+	return false;
+}
+#endif
 
 void CNEORules::CreateStandardEntities(void)
 {
@@ -460,118 +707,6 @@ void CNEORules::CheckRestartGame()
 	BaseClass::CheckRestartGame();
 }
 
-// Purpose: Spawns one ghost at a randomly chosen Neo ghost spawn point.
-static inline void SpawnTheGhost()
-{
-	static int ghostEdict = -1;
-
-	CBaseEntity *pEnt;
-
-	CWeaponGhost *ghost = dynamic_cast<CWeaponGhost*>(UTIL_EntityByIndex(ghostEdict));
-
-	bool spawnedGhostNow = false;
-
-	// If we couldn't cast to ghost from existing edict
-	if (!ghost)
-	{
-		pEnt = gEntList.FirstEnt();
-		while (pEnt)
-		{
-			auto ghostTest = dynamic_cast<CWeaponGhost*>(pEnt);
-
-			if (ghostTest)
-			{
-				ghost = ghostTest;
-				break;
-			}
-
-			pEnt = gEntList.NextEnt(pEnt);
-		}
-
-		// If none of the entities were castable to a ghost
-		if (!ghost)
-		{
-			ghost = dynamic_cast<CWeaponGhost*>(CreateEntityByName("weapon_ghost", -1));
-
-			spawnedGhostNow = true;
-
-			if (!ghost)
-			{
-				Warning("Failed to spawn a new ghost\n");
-				Assert(false);
-
-				return;
-			}
-		}
-	}
-
-	ghostEdict = ghost->edict()->m_EdictIndex;
-
-	// Get the amount of ghost spawns available to us
-	int numGhostSpawns = 0;
-
-	pEnt = gEntList.FirstEnt();
-	while (pEnt)
-	{
-		auto ghostSpawn = dynamic_cast<CNEOGhostSpawnPoint*>(pEnt);
-
-		if (ghostSpawn)
-		{
-			numGhostSpawns++;
-		}
-
-		pEnt = gEntList.NextEnt(pEnt);
-	}
-
-	// We didn't have any spawns, spawn ghost at origin
-	if (numGhostSpawns == 0)
-	{
-		Warning("No ghost spawns found! Spawning ghost at map origin, instead.\n");
-		ghost->SetAbsOrigin(vec3_origin);
-	}
-	else
-	{
-		// Randomly decide on a ghost spawn point we want this time
-		const int desiredSpawn = RandomInt(1, numGhostSpawns);
-		int ghostSpawnIteration = 1;
-
-		pEnt = gEntList.FirstEnt();
-		// Second iteration, we pick the ghost spawn we want
-		while (pEnt)
-		{
-			auto ghostSpawn = dynamic_cast<CNEOGhostSpawnPoint*>(pEnt);
-
-			if (ghostSpawn)
-			{
-				if (ghostSpawnIteration++ == desiredSpawn)
-				{
-					ghost->SetAbsOrigin(ghostSpawn->GetAbsOrigin());
-					break;
-				}
-			}
-
-			pEnt = gEntList.NextEnt(pEnt);
-		}
-	}
-
-	if (spawnedGhostNow)
-	{
-		DispatchSpawn(ghost);
-
-		DevMsg("Spawned ghost at coords: %.1f %.1f %.1f\n",
-			ghost->GetAbsOrigin().x,
-			ghost->GetAbsOrigin().y,
-			ghost->GetAbsOrigin().z);
-	}
-	else
-	{
-		DevMsg("Moved ghost to coords: %.1f %.1f %.1f\n",
-			ghost->GetAbsOrigin().x,
-			ghost->GetAbsOrigin().y,
-			ghost->GetAbsOrigin().z);
-	}
-}
-
 inline void CNEORules::ResetGhostCapPoints()
 {
 	m_pGhostCaps.Purge();
@@ -614,8 +749,6 @@ inline void CNEORules::ResetGhostCapPoints()
 		}
 	}
 }
-
-extern void respawn(CBaseEntity *pEdict, bool fCopyCorpse);
 
 void CNEORules::RestartGame()
 {
@@ -682,6 +815,8 @@ void CNEORules::RestartGame()
 		gameeventmanager->FireEvent(event);
 	}
 
+	FireLegacyEvent_NeoRoundStart();
+
 	SpawnTheGhost();
 }
 #endif
@@ -735,6 +870,11 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 #ifdef GAME_DLL
 void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bool bSwitchTeams, bool bDontAddScore, bool bFinal)
 {
+	if (IsRoundOver())
+	{
+		return;
+	}
+
 	char victoryMsg[128];
 
 	if (iWinReason == NEO_VICTORY_GHOST_CAPTURE)
@@ -774,11 +914,15 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 	{
 		RestartGame();
 	}
-
-	else if (!bDontAddScore)
+	else
 	{
-		auto winningTeam = GetGlobalTeam(team);
-		winningTeam->AddScore(1);
+		m_flNextRoundStartTime = gpGlobals->curtime + mp_chattime.GetFloat();
+
+		if (!bDontAddScore)
+		{
+			auto winningTeam = GetGlobalTeam(team);
+			winningTeam->AddScore(1);
+		}
 	}
 }
 #endif
