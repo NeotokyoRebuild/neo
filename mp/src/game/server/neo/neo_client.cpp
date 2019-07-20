@@ -282,16 +282,13 @@ static inline void Precache_NEO_Sounds( void )
 
 	CBaseEntity::PrecacheScriptSound("Weapon_Generic.melee_swing");
 
-	// NEO HACK/FIXME (Rain): we should use soundscript
-	CBaseEntity::PrecacheSound("sound/gameplay/ghost_equip.wav");
-	CBaseEntity::PrecacheSound("sound/gameplay/ghost_equip2.wav");
-	CBaseEntity::PrecacheSound("sound/gameplay/ghost_equip3.wav");
-	CBaseEntity::PrecacheSound("sound/gameplay/ghost_equip4.wav");
-	CBaseEntity::PrecacheSound("sound/gameplay/ghost_equip5.wav");
-	CBaseEntity::PrecacheSound("sound/gameplay/ghost_pickup.wav");
-	CBaseEntity::PrecacheSound("sound/gameplay/ghost_ping.wav");
-	CBaseEntity::PrecacheSound("sound/gameplay/ghost_idle_loop.wav");
 
+	CBaseEntity::PrecacheScriptSound("HUD.GhostEquip");
+	CBaseEntity::PrecacheScriptSound("HUD.GhostPickUp");
+	CBaseEntity::PrecacheScriptSound("NeoPlayer.GhostPing");
+	CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOn");
+	CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOff");
+	CBaseEntity::PrecacheScriptSound("NeoPlayer.VisionOn");
 	CBaseEntity::PrecacheScriptSound("Victory.Draw");
 	CBaseEntity::PrecacheScriptSound("Victory.Jinrai");
 	CBaseEntity::PrecacheScriptSound("Victory.NSF");

@@ -12,29 +12,6 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-enum {
-	GHOST_SOUND_EQUIP = 0,
-	GHOST_SOUND_EQUIP2,
-	GHOST_SOUND_EQUIP3,
-	GHOST_SOUND_EQUIP4,
-	GHOST_SOUND_EQUIP5,
-	GHOST_SOUND_IDLE_LOOP,
-	GHOST_SOUND_PICKUP,
-	GHOST_SOUND_PING,
-	NUM_GHOST_SOUNDS
-};
-
-const char *ghostSoundFiles[NUM_GHOST_SOUNDS] = {
-	"gameplay/ghost_equip.wav",
-	"gameplay/ghost_equip2.wav",
-	"gameplay/ghost_equip3.wav",
-	"gameplay/ghost_equip4.wav",
-	"gameplay/ghost_equip5.wav",
-	"gameplay/ghost_idle_loop.wav",
-	"gameplay/ghost_pickup.wav",
-	"gameplay/ghost_ping.wav",
-};
-
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponGhost, DT_WeaponGhost)
 
 BEGIN_NETWORK_TABLE(CWeaponGhost, DT_WeaponGhost)
@@ -164,8 +141,20 @@ void CWeaponGhost::HandleGhostUnequip(void)
 // Consider calling HandleGhostEquip instead.
 inline void CWeaponGhost::PlayGhostSound(float volume)
 {
-	const int randomEquipSoundIndex = RandomInt(GHOST_SOUND_EQUIP, GHOST_SOUND_EQUIP5);
-	enginesound->EmitAmbientSound(ghostSoundFiles[randomEquipSoundIndex], volume);
+	auto owner = GetOwner();
+	if (!owner)
+	{
+		return;
+	}
+
+	C_RecipientFilter filter;
+	filter.AddRecipient(static_cast<C_BasePlayer*>(owner));
+
+	EmitSound_t emitSoundType;
+	emitSoundType.m_flVolume = volume;
+	emitSoundType.m_pSoundName = "HUD.GhostEquip";
+
+	EmitSound(filter, entindex(), emitSoundType);
 }
 
 // Consider calling HandleGhostUnequip instead.
