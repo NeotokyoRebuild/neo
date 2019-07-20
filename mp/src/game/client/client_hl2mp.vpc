@@ -131,6 +131,12 @@ $Project "Client (HL2MP)"
 				$File	"neo\game_controls\neo_teammenu.h"
 			}
 
+			$Folder "Material Proxies"
+			{
+				$File	"neo\material_proxies\neo_matproxy_thermoptic.cpp"
+				$File	"neo\material_proxies\neo_matproxy_thermoptic.h"
+			}
+
 			$Folder "UI"
 			{
 				$File	"neo\ui\neo_hud_compass.cpp"

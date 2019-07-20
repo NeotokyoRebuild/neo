@@ -51,6 +51,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropVector(RECVINFO(m_vecGhostMarkerPos)),
 	RecvPropInt(RECVINFO(m_iGhosterTeam)),
 	RecvPropBool(RECVINFO(m_bGhostExists)),
+	RecvPropBool(RECVINFO(m_bInThermOpticCamo)),
 
 	RecvPropArray(RecvPropVector(RECVINFO(m_rvFriendlyPlayerPositions[0])), m_rvFriendlyPlayerPositions),
 END_RECV_TABLE()
@@ -197,6 +198,7 @@ C_NEO_Player::C_NEO_Player()
 	m_vecGhostMarkerPos = vec3_origin;
 	m_bGhostExists = false;
 	m_bShowClassMenu = m_bShowTeamMenu = m_bIsClassMenuOpen = m_bIsTeamMenuOpen = false;
+	m_bInThermOpticCamo = m_bUnhandledTocChange = false;
 
 	m_pFriendlyMarker = new CNEOHud_FriendlyMarker("friendlyMarker");
 	m_pFriendlyMarker->SetOwner(this);
@@ -229,6 +231,19 @@ C_NEO_Player::~C_NEO_Player()
 	}
 }
 
+inline void C_NEO_Player::CheckThermOpticButtons()
+{
+	if (m_afButtonPressed & IN_THERMOPTIC)
+	{
+		if (IsAlive())
+		{
+			m_bInThermOpticCamo = !m_bInThermOpticCamo;
+
+			m_bUnhandledTocChange = true;
+		}
+	}
+}
+
 void C_NEO_Player::ZeroFriendlyPlayerLocArray()
 {
 	for (int i = 0; i < m_rvFriendlyPlayerPositions->Length(); i++)
@@ -250,6 +265,21 @@ C_NEOPredictedViewModel *C_NEO_Player::GetNEOViewModel()
 
 int C_NEO_Player::DrawModel( int flags )
 {
+	if (m_bUnhandledTocChange)
+	{
+		if (m_bInThermOpticCamo)
+		{
+			// We should enable camo here, or alternatively call it
+			// from the material proxy(?)
+		}
+		else
+		{
+			// We should disable camo here
+		}
+
+		m_bUnhandledTocChange = false;
+	}
+
 	return BaseClass::DrawModel(flags);
 }
 
@@ -307,6 +337,8 @@ void C_NEO_Player::ItemPreFrame( void )
 	{
 		Weapon_Drop(GetActiveWeapon());
 	}
+
+	CheckThermOpticButtons();
 }
 
 void C_NEO_Player::ItemPostFrame( void )
