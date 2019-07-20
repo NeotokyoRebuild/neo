@@ -62,7 +62,6 @@ void CNEOTocMaterialProxy::OnBind(void *pC_BaseEntity)
 	if (entity)
 	{
 		auto player = reinterpret_cast<C_NEO_Player*>(entity);
-		Assert(player);
 
 		const bool isCloaked = player->IsCloaked();
 
@@ -83,8 +82,7 @@ void CNEOTocMaterialProxy::OnBind(void *pC_BaseEntity)
 			return;
 		}
 
-		auto weapon = reinterpret_cast<C_BaseCombatWeapon*>(entity);
-		Assert(weapon);
+		//auto weapon = reinterpret_cast<C_BaseCombatWeapon*>(entity);
 	}
 }
 
