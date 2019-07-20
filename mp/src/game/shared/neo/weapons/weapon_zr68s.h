@@ -43,6 +43,9 @@ public:
 	void	AddViewKick(void);
 	void	DryFire(void);
 
+	virtual void Spawn(void);
+	virtual bool Deploy(void);
+
 	void	UpdatePenaltyTime(void);
 
 	Activity	GetPrimaryAttackActivity(void);

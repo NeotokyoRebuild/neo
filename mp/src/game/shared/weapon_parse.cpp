@@ -347,6 +347,10 @@ FileWeaponInfo_t::FileWeaponInfo_t()
 	bShowUsageHint = false;
 	m_bAllowFlipping = true;
 	m_bBuiltRightHanded = true;
+
+#ifdef NEO
+	vecVmOffset = vec3_origin;
+#endif
 }
 
 #ifdef CLIENT_DLL
@@ -404,6 +408,12 @@ void FileWeaponInfo_t::Parse( KeyValues *pKeyValuesData, const char *szWeaponNam
 		}
 	}
 
+#ifdef NEO
+	const float VMOffsetForward = pKeyValuesData->GetFloat("VMOffsetForward");
+	const float VMOffsetRight = pKeyValuesData->GetFloat("VMOffsetRight");
+	const float VMOffsetUp = pKeyValuesData->GetFloat("VMOffsetUp");
+	vecVmOffset = Vector(VMOffsetForward, VMOffsetRight, VMOffsetUp);
+#endif
 
 	bShowUsageHint = ( pKeyValuesData->GetInt( "showusagehint", 0 ) != 0 ) ? true : false;
 	bAutoSwitchTo = ( pKeyValuesData->GetInt( "autoswitchto", 1 ) != 0 ) ? true : false;

@@ -83,7 +83,6 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 	SetSize(10, 10);
 
 	m_pViewPort = pViewPort;
-	g_pNeoTeamMenu = this;
 
 	m_bTeamMenu = false;
 
@@ -154,6 +153,8 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 	m_pCancel_Button->SetAutoDelete(true);
 
 	InvalidateLayout();
+
+	g_pNeoTeamMenu = this;
 }
 
 void CNeoTeamMenu::Update()
@@ -287,6 +288,12 @@ void CNeoTeamMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
     SetBgColor(Color( 0,0,0,0 ) ); // make the background transparent
 
     const char *font = "Default";
+
+	Assert(m_pJinrai_Button);
+	Assert(m_pNSF_Button);
+	Assert(m_pSpectator_Button);
+	Assert(m_pAutoAssign_Button);
+	Assert(m_pCancel_Button);
 
     m_pJinrai_Button->SetFont(pScheme->GetFont(font, IsProportional()));
     m_pNSF_Button->SetFont(pScheme->GetFont(font, IsProportional()));

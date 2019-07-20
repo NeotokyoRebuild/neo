@@ -53,8 +53,6 @@ CWeaponZR68S::CWeaponZR68S()
 	m_flAccuracyPenalty = 0;
 
 	m_nNumShotsFired = 0;
-
-	SetViewOffset(Vector(10, 8, 0));
 }
 
 void CWeaponZR68S::DryFire()
@@ -63,6 +61,16 @@ void CWeaponZR68S::DryFire()
 	SendWeaponAnim(ACT_VM_DRYFIRE);
 
 	m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
+}
+
+void CWeaponZR68S::Spawn()
+{
+	BaseClass::Spawn();
+}
+
+bool CWeaponZR68S::Deploy(void)
+{
+	return BaseClass::Deploy();
 }
 
 void CWeaponZR68S::PrimaryAttack()

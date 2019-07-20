@@ -33,6 +33,9 @@ public:
 
 	int CalcLean(CNEO_Player *player);
 
+	virtual void SetWeaponModel(const char* pszModelname,
+		CBaseCombatWeapon* weapon);
+
 #ifdef CLIENT_DLL
 	float GetLeanInterp()
 	{

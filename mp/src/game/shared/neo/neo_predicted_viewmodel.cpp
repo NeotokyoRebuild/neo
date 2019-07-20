@@ -469,3 +469,17 @@ void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 	//DevMsg("CNEOPredictedViewModel::CalcViewModelView: %f\n", eyeAngles.z);
 	BaseClass::CalcViewModelView(pOwner, eyePosition, eyeAngles);
 }
+
+void CNEOPredictedViewModel::SetWeaponModel(const char* pszModelname,
+	CBaseCombatWeapon* weapon)
+{
+	BaseClass::SetWeaponModel(pszModelname, weapon);
+
+	// NEO FIXME (Rain): the offsets, they do nothing!
+	// We're reading the offset into the WpnData vector,
+	// but this is probably not how you're supposed to set it.
+	if (weapon)
+	{
+		weapon->SetViewOffset(weapon->GetWpnData().vecVmOffset);
+	}
+}
