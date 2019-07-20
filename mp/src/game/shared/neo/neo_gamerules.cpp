@@ -743,6 +743,7 @@ inline void CNEORules::ResetGhostCapPoints()
 				ghostCap->ResetCaptureState();
 				m_pGhostCaps.AddToTail(ghostCap->entindex());
 				ghostCap->SetActive(true);
+				ghostCap->Think_CheckMyRadius();
 			}
 
 			pEnt = gEntList.NextEnt(pEnt);

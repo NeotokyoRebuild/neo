@@ -184,11 +184,11 @@ public:
 	bool IsGhostCaptured(int &outTeamNumber, int &outCaptorClientIndex);
 #endif
 
-private:
 #ifdef GAME_DLL
-	void Think_CheckMyRadius(void);
+	void Think_CheckMyRadius(void); // NEO FIXME (Rain): this should be private
 #endif
 
+private:
 	inline void UpdateVisibility(void);
 
 private:
