@@ -480,6 +480,6 @@ void CNEOPredictedViewModel::SetWeaponModel(const char* pszModelname,
 	// but this is probably not how you're supposed to set it.
 	if (weapon)
 	{
-		weapon->SetViewOffset(weapon->GetWpnData().vecVmOffset);
+		//weapon->SetViewOffset(weapon->GetWpnData().vecVmOffset);
 	}
 }
