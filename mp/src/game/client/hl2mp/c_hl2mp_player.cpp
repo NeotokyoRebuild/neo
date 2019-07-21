@@ -590,17 +590,25 @@ void C_HL2MP_Player::StartSprinting( void )
 {
 	if( m_HL2Local.m_flSuitPower < 10 )
 	{
+#ifdef NEO
+#if(0)
 		// Don't sprint unless there's a reasonable
 		// amount of suit power.
 		CPASAttenuationFilter filter( this );
 		filter.UsePredictionRules();
 		EmitSound( filter, entindex(), "HL2Player.SprintNoPower" );
 		return;
+#endif
+#endif
 	}
 
+#ifdef NEO
+#if(0)
 	CPASAttenuationFilter filter( this );
 	filter.UsePredictionRules();
 	EmitSound( filter, entindex(), "HL2Player.SprintStart" );
+#endif
+#endif
 
 	SetMaxSpeed( HL2_SPRINT_SPEED );
 	m_fIsSprinting = true;
