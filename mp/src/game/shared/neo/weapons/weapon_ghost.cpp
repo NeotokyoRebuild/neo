@@ -160,36 +160,7 @@ inline void CWeaponGhost::PlayGhostSound(float volume)
 // Consider calling HandleGhostUnequip instead.
 inline void CWeaponGhost::StopGhostSound(void)
 {
-	CUtlVector<SndInfo_t> sounds;
-	enginesound->GetActiveSounds(sounds);
-
-	char filename[MAX_PATH];
-	for (int i = 0; i < sounds.Size(); i++)
-	{
-		if (!g_pFullFileSystem->String(sounds[i].m_filenameHandle,
-			filename, sizeof(filename)))
-		{
-			continue;
-		}
-
-		if (!*filename)
-		{
-			continue;
-		}
-
-		// NEO HACK/TODO (Rain): track sound guid so we can avoid expensive string compare
-#ifdef _WIN32
-		if (Q_stricmp(filename, "gameplay\\ghost_equip") != -1)
-#elif defined(LINUX)
-		if (Q_stricmp(filename, "gameplay/ghost_equip") != -1)
-#else
-#error Unimplemented
-#endif
-		{
-			enginesound->StopSoundByGuid(sounds[i].m_nGuid);
-			break;
-		}
-	}
+	StopSound(this->entindex(), "HUD.GhostEquip");
 }
 #endif
 
