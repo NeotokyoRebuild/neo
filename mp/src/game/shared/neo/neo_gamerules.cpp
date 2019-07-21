@@ -23,9 +23,9 @@ REGISTER_GAMERULES_CLASS( CNEORules );
 BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 // NEO TODO (Rain): NEO specific game modes var (CTG/TDM/...)
 #ifdef CLIENT_DLL
-	//RecvPropInt( RECVINFO( m_iGameMode ) ),
+	RecvPropFloat(RECVINFO(m_flNeoNextRoundStartTime)),
 #else
-	//SendPropInt( SENDINFO( m_iGameMode ) ),
+	SendPropFloat(SENDINFO(m_flNeoNextRoundStartTime)),
 #endif
 END_NETWORK_TABLE()
 
@@ -198,10 +198,9 @@ CNEORules::CNEORules()
 			g_Teams[TEAM_NSF]->UpdateClientData(player);
 		}
 	}
-
-	m_flNextRoundStartTime = 0;
-	m_flRoundStartTime = 0;
 #endif
+
+	m_flNeoRoundStartTime = m_flNeoNextRoundStartTime = 0;
 }
 
 CNEORules::~CNEORules()
@@ -289,13 +288,13 @@ void CNEORules::Think(void)
 	if (IsRoundOver())
 	{
 		// If the next round was not scheduled yet
-		if (m_flNextRoundStartTime == 0)
+		if (m_flNeoNextRoundStartTime == 0)
 		{
-			m_flNextRoundStartTime = gpGlobals->curtime + mp_chattime.GetFloat();
+			m_flNeoNextRoundStartTime = gpGlobals->curtime + mp_chattime.GetFloat();
 			DevMsg("Round is over\n");
 		}
 		// Else if it's time to start the next round
-		else if (gpGlobals->curtime >= m_flNextRoundStartTime)
+		else if (gpGlobals->curtime >= m_flNeoNextRoundStartTime)
 		{
 			StartNextRound();
 		}
@@ -342,7 +341,7 @@ float CNEORules::GetRoundRemainingTime()
 		return 0;
 	}
 
-	return (m_flGameStartTime + (neo_round_timelimit.GetFloat() * 60.0f)) - gpGlobals->curtime;
+	return (m_flNeoRoundStartTime + (neo_round_timelimit.GetFloat() * 60.0f)) - gpGlobals->curtime;
 }
 
 #ifdef GAME_DLL
@@ -460,8 +459,8 @@ static inline void SpawnTheGhost()
 
 void CNEORules::StartNextRound()
 {
-	m_flNextRoundStartTime = 0;
-	m_flRoundStartTime = gpGlobals->curtime;
+	m_flNeoRoundStartTime = gpGlobals->curtime;
+	m_flNeoNextRoundStartTime = 0;
 
 	CleanUpMap();
 
@@ -518,7 +517,7 @@ bool CNEORules::IsRoundOver()
 	}
 
 	// Next round start has been scheduled, so current round must be over.
-	if (m_flNextRoundStartTime != 0)
+	if (m_flNeoNextRoundStartTime != 0)
 	{
 		return true;
 	}
@@ -605,6 +604,7 @@ static inline void RemoveGhosts()
 extern bool FindInList(const char **pStrings, const char *pToFind);
 
 void CNEORules::CleanUpMap()
+
 {
 	// Recreate all the map entities from the map data (preserving their indices),
 	// then remove everything else except the players.
@@ -918,7 +918,7 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 	}
 	else
 	{
-		m_flNextRoundStartTime = gpGlobals->curtime + mp_chattime.GetFloat();
+		m_flNeoNextRoundStartTime = gpGlobals->curtime + mp_chattime.GetFloat();
 
 		if (!bDontAddScore)
 		{

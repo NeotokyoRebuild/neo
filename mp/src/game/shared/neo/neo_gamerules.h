@@ -145,9 +145,11 @@ public:
 private:
 	CUtlVector<int> m_pGhostCaps;
 
-	CNetworkVar(float, m_flRoundStartTime);
-
-	float m_flNextRoundStartTime;
+	CNetworkVar(float, m_flNeoRoundStartTime);
+	CNetworkVar(float, m_flNeoNextRoundStartTime);
+#else
+	float m_flNeoRoundStartTime;
+	float m_flNeoNextRoundStartTime;
 #endif
 };
 
