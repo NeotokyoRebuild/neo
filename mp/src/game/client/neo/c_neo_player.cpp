@@ -361,7 +361,7 @@ void C_NEO_Player::ItemPostFrame( void )
 				EmitSound("sound/gameplay/jinrai.mp3");
 				*/
 
-				enginesound->EmitAmbientSound("gameplay/jinrai.mp3", 1.f);
+				//enginesound->EmitAmbientSound("gameplay/jinrai.mp3", 1.f);
 			}
 			else if (m_iCapTeam == TEAM_NSF)
 			{
@@ -371,11 +371,11 @@ void C_NEO_Player::ItemPostFrame( void )
 				EmitSound("sound/gameplay/nsf.mp3");
 				*/
 
-				enginesound->EmitAmbientSound("gameplay/nsf.mp3", 1.f);
+				//enginesound->EmitAmbientSound("gameplay/nsf.mp3", 1.f);
 			}
 			else
 			{
-				EmitSound("Victory.Draw");
+				//EmitSound("Victory.Draw");
 			}
 
 			onceOnly = !onceOnly;

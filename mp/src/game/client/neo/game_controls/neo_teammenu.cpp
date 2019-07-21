@@ -299,6 +299,8 @@ void CNeoTeamMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
     m_pNSF_Button->SetFont(pScheme->GetFont(font, IsProportional()));
     m_pSpectator_Button->SetFont(pScheme->GetFont(font, IsProportional()));
     m_pAutoAssign_Button->SetFont(pScheme->GetFont(font, IsProportional()));
+	// NEO FIXME (Rain): this line rarely throws; I have no idea why.
+	// The assertions above are not hit when it occurs.
     m_pCancel_Button->SetFont(pScheme->GetFont(font, IsProportional()));
 
 	const Color selectedBgColor(0, 0, 0), selectedFgColor(255, 0, 0),

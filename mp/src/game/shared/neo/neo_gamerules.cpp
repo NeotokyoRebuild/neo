@@ -301,6 +301,11 @@ void CNEORules::Think(void)
 
 		return;
 	}
+	// Note that exactly zero here means infinite round time.
+	else if (GetRoundRemainingTime() < 0)
+	{
+		SetWinningTeam(TEAM_SPECTATOR, NEO_VICTORY_STALEMATE, false, false, true, false);
+	}
 
 	// Check if the ghost was capped during this Think
 	int captorTeam, captorClient;
@@ -518,12 +523,6 @@ bool CNEORules::IsRoundOver()
 
 	// Next round start has been scheduled, so current round must be over.
 	if (m_flNeoNextRoundStartTime != 0)
-	{
-		return true;
-	}
-
-	// Note that exactly zero here means infinite round time.
-	if (GetRoundRemainingTime() < 0)
 	{
 		return true;
 	}
@@ -895,6 +894,10 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 	{
 		V_sprintf_safe(victoryMsg, "Team %s wins by forfeit!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
 	}
+	else if (iWinReason == NEO_VICTORY_STALEMATE)
+	{
+		V_sprintf_safe(victoryMsg, "TIE\n");
+	}
 	else
 	{
 		V_sprintf_safe(victoryMsg, "Unknown Neotokyo victory reason %i\n", iWinReason);
@@ -909,6 +912,19 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 		if (player)
 		{
 			engine->ClientPrintf(player->edict(), victoryMsg);
+
+			if (team == TEAM_JINRAI)
+			{
+				player->EmitSound("HUD.JinraiWin");
+			}
+			else if (team == TEAM_NSF)
+			{
+				player->EmitSound("HUD.NSFWin");
+			}
+			else
+			{
+				player->EmitSound("HUD.Draw");
+			}
 		}
 	}
 	
