@@ -83,7 +83,6 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 	SetSize(10, 10);
 
 	m_pViewPort = pViewPort;
-	g_pNeoTeamMenu = this;
 
 	m_bTeamMenu = false;
 
@@ -154,6 +153,8 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 	m_pCancel_Button->SetAutoDelete(true);
 
 	InvalidateLayout();
+
+	g_pNeoTeamMenu = this;
 }
 
 void CNeoTeamMenu::Update()
@@ -275,16 +276,31 @@ void CNeoTeamMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 {
     BaseClass::ApplySchemeSettings(pScheme);
 
+	if (!pScheme)
+	{
+		Assert(false);
+		Warning("Failed to ApplySchemeSettings for CNeoTeamMenu\n");
+		return;
+	}
+
     LoadControlSettings(GetResFile());
 
     SetBgColor(Color( 0,0,0,0 ) ); // make the background transparent
 
     const char *font = "Default";
 
+	Assert(m_pJinrai_Button);
+	Assert(m_pNSF_Button);
+	Assert(m_pSpectator_Button);
+	Assert(m_pAutoAssign_Button);
+	Assert(m_pCancel_Button);
+
     m_pJinrai_Button->SetFont(pScheme->GetFont(font, IsProportional()));
     m_pNSF_Button->SetFont(pScheme->GetFont(font, IsProportional()));
     m_pSpectator_Button->SetFont(pScheme->GetFont(font, IsProportional()));
     m_pAutoAssign_Button->SetFont(pScheme->GetFont(font, IsProportional()));
+	// NEO FIXME (Rain): this line rarely throws; I have no idea why.
+	// The assertions above are not hit when it occurs.
     m_pCancel_Button->SetFont(pScheme->GetFont(font, IsProportional()));
 
 	const Color selectedBgColor(0, 0, 0), selectedFgColor(255, 0, 0),

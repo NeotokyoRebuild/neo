@@ -79,6 +79,11 @@ public:
 
 	inline void ZeroFriendlyPlayerLocArray(void);
 
+	bool IsCloaked() const { return m_bInThermOpticCamo; }
+
+private:
+	inline void CheckThermOpticButtons();
+
 public:
 	bool m_bShowTestMessage;
 	char m_pszTestMessage[32 * 2 + 1];
@@ -97,6 +102,7 @@ protected:
 
 	bool m_bGhostExists;
 	bool m_bIsClassMenuOpen, m_bIsTeamMenuOpen;
+	bool m_bInThermOpticCamo, m_bUnhandledTocChange;
 
 private:
 	CNEOHud_Compass *m_pCompass;

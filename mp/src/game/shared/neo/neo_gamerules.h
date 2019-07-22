@@ -118,6 +118,8 @@ public:
 
 	void CheckRestartGame();
 
+	float GetRoundRemainingTime();
+
 #ifdef CLIENT_DLL
 	void CleanUpMap();
 	void RestartGame();
@@ -126,17 +128,29 @@ public:
 	virtual void RestartGame();
 #endif
 
+#ifdef GAME_DLL
+	bool IsRoundOver();
+	void StartNextRound();
+#endif
+
 	enum
 	{
 		NEO_VICTORY_GHOST_CAPTURE = 0,
 		NEO_VICTORY_TEAM_ELIMINATION,
 		NEO_VICTORY_TIMEOUT_WIN_BY_NUMBERS,
-		NEO_VICTORY_FORFEIT
+		NEO_VICTORY_FORFEIT,
+		NEO_VICTORY_STALEMATE // Not actually a victory
 	};
 
 #ifdef GAME_DLL
 private:
 	CUtlVector<int> m_pGhostCaps;
+
+	CNetworkVar(float, m_flNeoRoundStartTime);
+	CNetworkVar(float, m_flNeoNextRoundStartTime);
+#else
+	float m_flNeoRoundStartTime;
+	float m_flNeoNextRoundStartTime;
 #endif
 };
 

@@ -93,6 +93,9 @@ public:
 
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);
 
+private:
+	inline void CheckThermOpticButtons();
+
 public:
 	CNetworkVar(int, m_iCapTeam);
 
@@ -102,6 +105,7 @@ public:
 	CNetworkVector(m_vecGhostMarkerPos);
 	CNetworkVar(int, m_iGhosterTeam);
 	CNetworkVar(bool, m_bGhostExists);
+	CNetworkVar(bool, m_bInThermOpticCamo);
 
 	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
 

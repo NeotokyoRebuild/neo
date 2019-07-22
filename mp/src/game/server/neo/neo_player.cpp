@@ -46,6 +46,7 @@ SendPropString(SENDINFO(m_pszTestMessage)),
 SendPropVector(SENDINFO(m_vecGhostMarkerPos)),
 SendPropInt(SENDINFO(m_iGhosterTeam)),
 SendPropBool(SENDINFO(m_bGhostExists)),
+SendPropBool(SENDINFO(m_bInThermOpticCamo)),
 
 SendPropArray(SendPropVector(SENDINFO_ARRAY(m_rvFriendlyPlayerPositions), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rvFriendlyPlayerPositions),
 END_SEND_TABLE()
@@ -99,6 +100,7 @@ CNEO_Player::CNEO_Player()
 	m_bInLeanLeft = false;
 	m_bInLeanRight = false;
 	m_bGhostExists = false;
+	m_bInThermOpticCamo = false;
 
 	m_leanPosTargetOffset = vec3_origin;
 
@@ -310,6 +312,19 @@ void CNEO_Player::PreThink(void)
 	if (IsAlive() && GetTeamNumber() != TEAM_SPECTATOR)
 	{
 		UpdateNetworkedFriendlyLocations();
+	}
+
+	CheckThermOpticButtons();
+}
+
+inline void CNEO_Player::CheckThermOpticButtons()
+{
+	if (m_afButtonPressed & IN_THERMOPTIC)
+	{
+		if (IsAlive())
+		{
+			m_bInThermOpticCamo = !m_bInThermOpticCamo;
+		}
 	}
 }
 
@@ -643,6 +658,12 @@ void CNEO_Player::SetPlayerTeamModel( void )
 	SetModel(model);
 	//DevMsg("Set model: %s\n", model);
 	//SetupPlayerSoundsByModel(model); // TODO
+
+#if(0)
+	const int modelIndex = modelinfo->GetModelIndex(model);
+	const model_t *modelType = modelinfo->GetModel(modelIndex);
+	MDLHandle_t modelCache = modelinfo->GetCacheHandle(modelType);
+#endif
 }
 
 void CNEO_Player::PickupObject( CBaseEntity *pObject,
