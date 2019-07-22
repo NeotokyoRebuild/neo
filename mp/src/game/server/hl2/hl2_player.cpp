@@ -1201,7 +1201,9 @@ void CHL2_Player::StartSprinting( void )
 	{
 		// Don't sprint unless there's a reasonable
 		// amount of suit power.
-		
+
+#ifdef NEO
+#if(0)
 		// debounce the button for sound playing
 		if ( m_afButtonPressed & IN_SPEED )
 		{
@@ -1209,15 +1211,23 @@ void CHL2_Player::StartSprinting( void )
 			filter.UsePredictionRules();
 			EmitSound( filter, entindex(), "HL2Player.SprintNoPower" );
 		}
+#endif
+#endif
+
 		return;
 	}
 
 	if( !SuitPower_AddDevice( SuitDeviceSprint ) )
 		return;
 
+
+#ifdef NEO
+#if(0)
 	CPASAttenuationFilter filter( this );
 	filter.UsePredictionRules();
 	EmitSound( filter, entindex(), "HL2Player.SprintStart" );
+#endif
+#endif
 
 	SetMaxSpeed( HL2_SPRINT_SPEED );
 	m_fIsSprinting = true;

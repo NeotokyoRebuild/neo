@@ -12,6 +12,11 @@ class CNEO_Player;
 #include "utldict.h"
 #include "hl2mp_player.h"
 
+#define NEO_WEAPON_PRIMARY_SLOT 0
+#define NEO_WEAPON_SECONDARY_SLOT 1
+#define NEO_WEAPON_MELEE_SLOT 2
+#define NEO_WEAPON_EXPLOSIVE_SLOT 3
+
 class CNEO_Player : public CHL2MP_Player
 {
 public:
@@ -25,6 +30,9 @@ public:
 		CNEO_Player::s_PlayerEdict = ed;
 		return (CNEO_Player*)CreateEntityByName(className);
 	}
+
+	void SendTestMessage(const char *message);
+	void SetTestMessageVisible(bool visible);
 
 	DECLARE_SERVERCLASS();
 	DECLARE_DATADESC();
@@ -54,6 +62,7 @@ public:
 	virtual CBaseEntity* EntSelectSpawnPoint(void);
 	virtual void EquipSuit(bool bPlayEffects = true);
 	virtual void RemoveSuit(void);
+	virtual void GiveDefaultItems(void);
 
 	void SetPlayerTeamModel(void);
 	virtual void PickDefaultSpawnTeam(void);
@@ -66,6 +75,10 @@ public:
 	inline bool IsAllowedToDrop(CBaseCombatWeapon *pWep);
 	inline bool IsAllowedToZoom(CBaseCombatWeapon *pWep);
 
+	inline void ZeroFriendlyPlayerLocArray(void);
+
+	void UpdateNetworkedFriendlyLocations(void);
+
 	void Weapon_AimToggle(CBaseCombatWeapon *pWep);
 
 	void DoThirdPersonLean(void);
@@ -75,11 +88,26 @@ public:
 
 	inline void Weapon_SetZoom(bool bZoomIn);
 
+	int GetSkin();
+	int GetClass();
+
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);
 
+private:
+	inline void CheckThermOpticButtons();
+
 public:
-	CNetworkVar(int, m_nNeoSkin);
-	CNetworkVar(int, m_nCyborgClass);
+	CNetworkVar(int, m_iCapTeam);
+
+	CNetworkVar(bool, m_bShowTestMessage);
+	CNetworkString(m_pszTestMessage, 32 * 2 + 1);
+
+	CNetworkVector(m_vecGhostMarkerPos);
+	CNetworkVar(int, m_iGhosterTeam);
+	CNetworkVar(bool, m_bGhostExists);
+	CNetworkVar(bool, m_bInThermOpticCamo);
+
+	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
 
 private:
 	bool m_bInLeanLeft, m_bInLeanRight;

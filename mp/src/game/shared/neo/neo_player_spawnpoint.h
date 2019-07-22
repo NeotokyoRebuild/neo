@@ -26,7 +26,7 @@ public:
 	CNEOSpawnPoint();
 	~CNEOSpawnPoint();
 
-	virtual void Spawn() override;
+	virtual void Spawn();
 
 protected:
 	int m_iOwningTeam;

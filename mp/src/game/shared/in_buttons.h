@@ -43,6 +43,7 @@
 #define IN_AIM          (1 << 27) // Weapon aim
 #define IN_LEAN_LEFT    (1 << 28)
 #define IN_LEAN_RIGHT   (1 << 29)
+#define IN_THERMOPTIC	(1 << 30) // Thermoptic cloaking
 #endif
 
 #endif // IN_BUTTONS_H

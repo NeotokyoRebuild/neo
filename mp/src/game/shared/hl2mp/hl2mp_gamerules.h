@@ -84,6 +84,10 @@ class CHL2MPRules : public CTeamplayRules
 public:
 	DECLARE_CLASS( CHL2MPRules, CTeamplayRules );
 
+#ifdef NEO
+	friend class CNEORules;
+#endif
+
 #ifdef CLIENT_DLL
 
 	DECLARE_CLIENTCLASS_NOBASE(); // This makes datatables able to access our private vars.
@@ -117,9 +121,16 @@ public:
 	const HL2MPViewVectors* GetHL2MPViewVectors() const;
 
 	float GetMapRemainingTime();
-	void CleanUpMap();
+
 	void CheckRestartGame();
+
+#if defined(NEO) && defined(GAME_DLL)
+	virtual void CleanUpMap();
+	virtual void RestartGame();
+#else
 	void RestartGame();
+	void CleanUpMap();
+#endif
 
 #ifndef CLIENT_DLL
 	virtual Vector VecItemRespawnSpot( CItem *pItem );
@@ -154,11 +165,17 @@ public:
 	void	CheckAllPlayersReady( void );
 
 	virtual bool IsConnectedUserInfoChangeAllowed( CBasePlayer *pPlayer );
-	
+
+#ifdef NEO
+protected:
+	CNetworkVar(float, m_flGameStartTime);
+#else
 private:
-	
+	CNetworkVar(float, m_flGameStartTime);
+#endif
+
+private:
 	CNetworkVar( bool, m_bTeamPlayEnabled );
-	CNetworkVar( float, m_flGameStartTime );
 	CUtlVector<EHANDLE> m_hRespawnableItemsAndWeapons;
 	float m_tmNextPeriodicThink;
 	float m_flRestartGameTime;

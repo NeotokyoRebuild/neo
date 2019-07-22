@@ -122,13 +122,37 @@ $Project "Client (HL2MP)"
 			$File	"neo\c_neo_player.cpp"
 			$File	"neo\c_neo_player.h"
 
+			$Folder "Game_Controls"
+			{
+				$File	"neo\game_controls\neo_classmenu.cpp"
+				$File	"neo\game_controls\neo_classmenu.h"
+
+				$File	"neo\game_controls\neo_teammenu.cpp"
+				$File	"neo\game_controls\neo_teammenu.h"
+			}
+
+			$Folder "Material Proxies"
+			{
+				$File	"neo\material_proxies\neo_matproxy_thermoptic.cpp"
+				$File	"neo\material_proxies\neo_matproxy_thermoptic.h"
+			}
+
 			$Folder "UI"
 			{
 				$File	"neo\ui\neo_hud_compass.cpp"
 				$File	"neo\ui\neo_hud_compass.h"
 
+				$File	"neo\ui\neo_hud_friendly_marker.h"
+				$File	"neo\ui\neo_hud_friendly_marker.cpp"
+
+				$File	"neo\ui\neo_hud_game_event.cpp"
+				$File	"neo\ui\neo_hud_game_event.h"
+
 				$File	"neo\ui\neo_hud_ghostbeacon.cpp"
 				$File	"neo\ui\neo_hud_ghostbeacon.h"
+
+				$File	"neo\ui\neo_hud_ghost_marker.cpp"
+				$File	"neo\ui\neo_hud_ghost_marker.h"
 
 				$File	"neo\ui\neo_scoreboard.cpp"
 				$File	"neo\ui\neo_scoreboard.h"
@@ -145,6 +169,9 @@ $Project "Client (HL2MP)"
 			$File	"$SRCDIR\game\shared\neo\neo_ghost_cap_point.cpp"
 			$File	"$SRCDIR\game\shared\neo\neo_ghost_cap_point.h"
 
+			$File	"$SRCDIR\game\shared\neo\neo_player_shared.cpp"
+			$File	"$SRCDIR\game\shared\neo\neo_player_shared.h"
+
 			$File	"$SRCDIR\game\shared\neo\neo_player_spawnpoint.cpp"
 			$File	"$SRCDIR\game\shared\neo\neo_player_spawnpoint.h"
 
@@ -155,6 +182,9 @@ $Project "Client (HL2MP)"
 			{
 				$File	"$SRCDIR\game\shared\neo\weapons\weapon_neobasecombatweapon.cpp"
 				$File	"$SRCDIR\game\shared\neo\weapons\weapon_neobasecombatweapon.h"
+
+				$File	"$SRCDIR\game\shared\neo\weapons\weapon_neobase_ar.cpp"
+				$File	"$SRCDIR\game\shared\neo\weapons\weapon_neobase_ar.h"
 
 				$File	"$SRCDIR\game\shared\neo\weapons\weapon_aa13.cpp"
 				$File	"$SRCDIR\game\shared\neo\weapons\weapon_aa13.h"

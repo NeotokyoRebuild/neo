@@ -11,6 +11,10 @@
 #include "entitylist.h"
 #include "globals.h"
 
+#ifdef NEO
+#include "weapon_neobasecombatweapon.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -81,6 +85,20 @@ void CBaseEntity::SUB_Remove( void )
 		m_iHealth = 0;
 		DevWarning( 2, "SUB_Remove called on entity with health > 0\n");
 	}
+
+#if(0)
+#ifdef NEO
+	// NEO HACK (Rain): Hacky way to ensure Neo weapons don't remove themselves.
+	// There's probably some flag we could raise to prevent it from happening
+	// in a nicer way.
+	auto neoWep = dynamic_cast<CNEOBaseCombatWeapon*>(this);
+
+	if (neoWep)
+	{
+		return;
+	}
+#endif
+#endif
 
 	UTIL_Remove( this );
 }

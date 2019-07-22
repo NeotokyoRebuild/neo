@@ -30,7 +30,16 @@ public:
 
 	CNEOBaseCombatWeapon();
 
+	virtual void Spawn();
+
 	virtual bool Reload( void );
+
+
+	// NEO HACK/FIXME (Rain):
+	// We override with empty implementation to avoid getting removed by
+	// some game logic somewhere. There's probably some flag we could set
+	// somewhere to achieve the same without having to do this.
+	virtual void SUB_Remove(void) { }
 
 private:
 	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &);

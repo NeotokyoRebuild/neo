@@ -16,7 +16,7 @@ WeaponData
 	
 	"anim_prefix"			"m4"
 	"bucket"				"0"
-	"bucket_position"		"0"
+	"bucket_position"		"3"
 
 	"clip_size"				"16"
 	"default_clip"			"16"

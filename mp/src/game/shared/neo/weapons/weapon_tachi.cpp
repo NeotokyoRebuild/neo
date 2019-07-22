@@ -228,9 +228,6 @@ void CWeaponTachi::ItemPostFrame( void )
 
 	if ( m_bInReload )
 	{
-#ifdef CLIENT_DLL
-		//DevMsg("IN RELOAD\n");
-#endif
 		return;
 	}
 
