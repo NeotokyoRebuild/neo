@@ -30,6 +30,8 @@ It's recommended you fork [the dev branch](https://github.com/NeotokyoRevamp/neo
 
 The dev branch will periodically get merged back to the master branch, as new things become stable enough.
 
+For now, there's a public [Trello board](https://trello.com/b/LCDYn7Dm) for organizing who's working on what. Come ask in the Discord if you have trouble joining it. GitHub issues could also be used if there's need, but we'll see.
+
 ### Building
 
 See [build instructions](BUILD_INSTRUCTIONS.md) in this repo for setting up your build environment (currently supporting Windows/Linux).
