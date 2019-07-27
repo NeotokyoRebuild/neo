@@ -476,7 +476,7 @@ void CNEO_Player::PlayerDeathThink()
 
 void CNEO_Player::Weapon_AimToggle( CBaseCombatWeapon *pWep )
 {
-	if (!IsAllowedToZoom(pWep))
+	if (!IsAllowedToZoom(this, pWep))
 	{
 		return;
 	}
@@ -798,35 +798,6 @@ inline bool CNEO_Player::IsAllowedToDrop(CBaseCombatWeapon *pWep)
 	}
 
 	return true;
-}
-
-// Is the player allowed to aim zoom with a weapon of this type?
-inline bool CNEO_Player::IsAllowedToZoom(CBaseCombatWeapon *pWep)
-{
-	if (!pWep)
-	{
-		return false;
-	}
-
-	// NEO TODO (Rain): this list will probably eventually become longer
-	// than forbidden list; swap logic?
-	const char *allowedAimZoom[] = {
-		"weapon_aa13",
-		"weapon_tachi",
-		"weapon_zr68s",
-	};
-
-	CBaseCombatWeapon *pTest = NULL;
-	for (int i = 0; i < ARRAYSIZE(allowedAimZoom); i++)
-	{
-		pTest = Weapon_OwnsThisType(allowedAimZoom[i]);
-		if (pWep == pTest)
-		{
-			return true;
-		}
-	}
-
-	return false;
 }
 
 void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,

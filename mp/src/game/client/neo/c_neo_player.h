@@ -79,7 +79,6 @@ public:
 
 	void Weapon_AimToggle(C_BaseCombatWeapon *pWep);
 	inline void Weapon_SetZoom(bool bZoomIn);
-	inline bool IsAllowedToZoom(C_BaseCombatWeapon *pWep);
 
 	void Weapon_Drop(C_BaseCombatWeapon *pWeapon);
 

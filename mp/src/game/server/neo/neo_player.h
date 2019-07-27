@@ -73,7 +73,6 @@ public:
 	virtual bool	CanHearAndReadChatFrom(CBasePlayer *pPlayer);
 
 	inline bool IsAllowedToDrop(CBaseCombatWeapon *pWep);
-	inline bool IsAllowedToZoom(CBaseCombatWeapon *pWep);
 
 	inline void ZeroFriendlyPlayerLocArray(void);
 
