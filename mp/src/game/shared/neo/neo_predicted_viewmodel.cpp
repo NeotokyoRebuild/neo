@@ -15,8 +15,9 @@
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
+#include "weapon_hl2mpbase.h"
 
-LINK_ENTITY_TO_CLASS( neo_predicted_viewmodel, CNEOPredictedViewModel );
+LINK_ENTITY_TO_CLASS(neo_predicted_viewmodel, CNEOPredictedViewModel);
 
 IMPLEMENT_NETWORKCLASS_ALIASED( NEOPredictedViewModel, DT_NEOPredictedViewModel )
 
@@ -466,20 +467,38 @@ void CNEOPredictedViewModel::CalcViewModelLag(Vector& origin, QAngle& angles,
 void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 	const Vector& eyePosition, const QAngle& eyeAngles)
 {
-	//DevMsg("CNEOPredictedViewModel::CalcViewModelView: %f\n", eyeAngles.z);
-	BaseClass::CalcViewModelView(pOwner, eyePosition, eyeAngles);
+	// Is there are nicer way to do this?
+	auto weapon = static_cast<CWeaponHL2MPBase*>(GetOwningWeapon());
+
+	if (!weapon)
+	{
+		return;
+	}
+
+	CHL2MPSWeaponInfo data = weapon->GetHL2MPWpnData();
+
+	Vector vForward, vRight, vUp, newPos, vOffset;
+	QAngle newAng, angOffset;
+
+	newAng = eyeAngles;
+	newPos = eyePosition;
+
+	AngleVectors(newAng, &vForward, &vRight, &vUp);
+
+	vOffset = data.m_vecVMPosOffset;
+	angOffset = data.m_angVMAngOffset;
+
+	newPos += vForward * vOffset.x;
+	newPos += vRight * vOffset.y;
+	newPos += vUp * vOffset.z;
+
+	newAng += angOffset;
+
+	BaseClass::CalcViewModelView(pOwner, newPos, newAng);
 }
 
 void CNEOPredictedViewModel::SetWeaponModel(const char* pszModelname,
 	CBaseCombatWeapon* weapon)
 {
 	BaseClass::SetWeaponModel(pszModelname, weapon);
-
-	// NEO FIXME (Rain): the offsets, they do nothing!
-	// We're reading the offset into the WpnData vector,
-	// but this is probably not how you're supposed to set it.
-	if (weapon)
-	{
-		//weapon->SetViewOffset(weapon->GetWpnData().vecVmOffset);
-	}
 }

@@ -38,6 +38,23 @@ WeaponData
 	"VMAimOffsetUp"			"3.45"
 
 	"AimFov"		"45.0"	//40
+	
+	"ViewModelOffset"
+	{
+		"fov"		"54.0"
+		"forward"	"25.0"
+		"right"		"9.0"
+		"up"		"0"
+		"yaw"		"-2"
+	}
+	
+	"AimOffset"
+	{
+		"fov"		"32"
+		"forward"	"-1.5"
+		"right"		"1.31"
+		"up"		"2.53"
+	}
 
 	// Sounds for the weapon. There is a max of 16 sounds per category (i.e. max 16 "single_shot" sounds)
 	SoundData
