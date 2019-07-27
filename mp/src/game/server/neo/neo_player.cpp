@@ -38,6 +38,9 @@ void DropPrimedFragGrenade(CNEO_Player *pPlayer, CBaseCombatWeapon *pGrenade);
 LINK_ENTITY_TO_CLASS(player, CNEO_Player);
 
 IMPLEMENT_SERVERCLASS_ST(CNEO_Player, DT_NEO_Player)
+SendPropInt(SENDINFO(m_iNeoClass)),
+SendPropInt(SENDINFO(m_iNeoSkin)),
+
 SendPropInt(SENDINFO(m_iCapTeam), 3),
 
 SendPropBool(SENDINFO(m_bShowTestMessage)),
@@ -56,6 +59,84 @@ END_DATADESC()
 
 CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
 extern CBaseEntity *g_pLastSpawn;
+
+void CNEO_Player::RequestSetClass(int newClass)
+{
+	bool canChangeImmediately = true; // TODO
+
+	if (canChangeImmediately)
+	{
+		m_iNeoClass = newClass;
+
+		SetPlayerTeamModel();
+	}
+	else
+	{
+		// TODO set for next spawn
+	}
+}
+
+void CNEO_Player::RequestSetSkin(int newSkin)
+{
+	bool canChangeImmediately = true; // TODO
+
+	if (canChangeImmediately)
+	{
+		m_iNeoSkin = newSkin;
+
+		SetPlayerTeamModel();
+	}
+	else
+	{
+		// TODO set for next spawn
+	}
+}
+
+void SetClass(const CCommand &command)
+{
+	auto player = static_cast<CNEO_Player*>(UTIL_GetCommandClient());
+
+	if (!player)
+	{
+		return;
+	}
+
+	if (command.ArgC() == 2)
+	{
+		// Class number from the .res button click action.
+		// Our NeoClass enum is zero indexed, so we subtract one.
+		int nextClass = atoi(command.ArgV()[1]) - 1;
+		
+		clamp(nextClass, NEO_CLASS_RECON, NEO_CLASS_SUPPORT);
+
+		player->RequestSetClass(nextClass);
+	}
+}
+
+void SetSkin(const CCommand &command)
+{
+	auto player = static_cast<CNEO_Player*>(UTIL_GetCommandClient());
+
+	if (!player)
+	{
+		return;
+	}
+
+	if (command.ArgC() == 2)
+	{
+		// Skin number from the .res button click action.
+		// These are actually zero indexed by the .res already,
+		// so we don't need to subtract from the value.
+		int nextSkin = atoi(command.ArgV()[1]);
+
+		clamp(nextSkin, NEO_SKIN_FIRST, NEO_SKIN_THIRD);
+
+		player->RequestSetSkin(nextSkin);
+	}
+}
+
+ConCommand setclass("setclass", SetClass, "Set class", FCVAR_USERINFO);
+ConCommand setskin("SetVariant", SetSkin, "Set skin", FCVAR_USERINFO);
 
 // NEO FIXME/HACK (Rain): bots don't properly set their fakeclient flag currently,
 // making IsFakeClient and IsBot return false. This is an ugly hack to get bots
@@ -97,6 +178,9 @@ static inline int GetNumOtherPlayersConnected(CNEO_Player *asker)
 
 CNEO_Player::CNEO_Player()
 {
+	m_iNeoClass = NEO_CLASS_ASSAULT;
+	m_iNeoSkin = NEO_SKIN_FIRST;
+
 	m_bInLeanLeft = false;
 	m_bInLeanRight = false;
 	m_bGhostExists = false;
@@ -120,14 +204,14 @@ CNEO_Player::~CNEO_Player( void )
 	
 }
 
-int CNEO_Player::GetSkin()
+int CNEO_Player::GetSkin() const
 {
-	return neo_cl_skin.GetInt();
+	return m_iNeoSkin;
 }
 
-int CNEO_Player::GetClass()
+int CNEO_Player::GetClass() const
 {
-	return neo_cl_cyborgclass.GetInt();
+	return m_iNeoClass;
 }
 
 inline void CNEO_Player::ZeroFriendlyPlayerLocArray(void)
@@ -542,7 +626,14 @@ void CNEO_Player::SoftSuicide(void)
 
 bool CNEO_Player::HandleCommand_JoinTeam( int team )
 {
-	return ProcessTeamSwitchRequest(team);
+	const bool isAllowedToJoin = ProcessTeamSwitchRequest(team);
+
+	if (isAllowedToJoin)
+	{
+		SetPlayerTeamModel();
+	}
+
+	return isAllowedToJoin;
 }
 
 bool CNEO_Player::ClientCommand( const CCommand &args )
@@ -629,7 +720,12 @@ bool CNEO_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 
 void CNEO_Player::ChangeTeam( int iTeam )
 {
-	ProcessTeamSwitchRequest(iTeam);
+	const bool isAllowedToChange = ProcessTeamSwitchRequest(iTeam);
+
+	if (isAllowedToChange)
+	{
+		SetPlayerTeamModel();
+	}
 }
 
 void CNEO_Player::SetPlayerTeamModel( void )
@@ -638,25 +734,25 @@ void CNEO_Player::SetPlayerTeamModel( void )
 	if (!modelManager)
 	{
 		Assert(false);
+		Warning("Failed to get Neo model manager\n");
 		return;
 	}
 
-	// Pick a random skin from random class.
-	// NEO TODO (Rain): pick the appropriate one
-	// based on player's class and skin selection.
 	const char *model = modelManager->GetPlayerModel(
-		(NeoSkin)RandomInt(0, 2),
-		(NeoClass)RandomInt(0, NEO_CLASS_VIP - 1),
+		static_cast<NeoSkin>(GetSkin()),
+		static_cast<NeoClass>(GetClass()),
 		GetTeamNumber());
 
 	if (!*model)
 	{
 		Assert(false);
+		Warning("Failed to find model string for Neo player\n");
 		return;
 	}
 
 	SetModel(model);
-	//DevMsg("Set model: %s\n", model);
+	DevMsg("Set model: %s\n", model);
+
 	//SetupPlayerSoundsByModel(model); // TODO
 
 #if(0)

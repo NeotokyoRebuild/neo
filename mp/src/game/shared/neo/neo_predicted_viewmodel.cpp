@@ -135,7 +135,7 @@ ConVar neo_lean_hullmins_offset_z("neo_lean_hullmins_offset_z", "40", FCVAR_CHEA
 ConVar neo_lean_hullmaxs_offset_x("neo_lean_hullmaxs_offset_x", "-10", FCVAR_CHEAT | FCVAR_REPLICATED);
 ConVar neo_lean_hullmaxs_offset_y("neo_lean_hullmaxs_offset_y", "-2", FCVAR_CHEAT | FCVAR_REPLICATED);
 ConVar neo_lean_hullmaxs_offset_z("neo_lean_hullmaxs_offset_z", "-1", FCVAR_CHEAT | FCVAR_REPLICATED);
-static inline bool IsThereRoomForLeanSlide(CNEO_Player *player,
+bool IsThereRoomForLeanSlide(CNEO_Player *player,
 	const Vector &targetViewOffset, bool &outStartInSolid)
 {
 	//DevMsg("Targetviewoffset: %f %f %f\n", targetViewOffset[0], targetViewOffset[1], targetViewOffset[2]);

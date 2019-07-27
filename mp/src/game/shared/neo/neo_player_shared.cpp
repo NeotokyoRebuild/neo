@@ -15,8 +15,3 @@
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
-
-ConVar neo_cl_cyborgclass("neo_cl_cyborgclass", "-1", FCVAR_USERINFO,
-	"Chosen class number.", true, -1, true, NEO_CLASS_SUPPORT);
-ConVar neo_cl_skin("neo_cl_skin", "-1", FCVAR_USERINFO,
-	"Chosen skin number.", true, -1, true, NEO_SKIN_THIRD);

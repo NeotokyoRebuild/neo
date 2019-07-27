@@ -26,12 +26,9 @@ enum NeoClass {
 	NEO_CLASS_ENUM_COUNT
 };
 
-extern ConVar neo_cl_cyborgclass;
-extern ConVar neo_cl_skin;
-
 class CNEO_Player;
 
-bool IsThereRoomForLeanSlide(CNEO_Player *player,
+extern bool IsThereRoomForLeanSlide(CNEO_Player *player,
 	const Vector &targetViewOffset, bool &outStartInSolid);
 
 #endif // NEO_PLAYER_SHARED_H

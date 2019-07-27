@@ -88,8 +88,11 @@ public:
 
 	inline void Weapon_SetZoom(bool bZoomIn);
 
-	int GetSkin();
-	int GetClass();
+	void RequestSetClass(int newClass);
+	void RequestSetSkin(int newSkin);
+
+	int GetSkin() const;
+	int GetClass() const;
 
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);
 
@@ -97,6 +100,9 @@ private:
 	inline void CheckThermOpticButtons();
 
 public:
+	CNetworkVar(int, m_iNeoClass);
+	CNetworkVar(int, m_iNeoSkin);
+
 	CNetworkVar(int, m_iCapTeam);
 
 	CNetworkVar(bool, m_bShowTestMessage);

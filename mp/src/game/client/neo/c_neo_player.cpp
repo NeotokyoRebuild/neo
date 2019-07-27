@@ -43,6 +43,9 @@
 LINK_ENTITY_TO_CLASS(player, C_NEO_Player);
 
 IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
+	RecvPropInt(RECVINFO(m_iNeoClass)),
+	RecvPropInt(RECVINFO(m_iNeoSkin)),
+
 	RecvPropBool(RECVINFO(m_bShowTestMessage)),
 	RecvPropString(RECVINFO(m_pszTestMessage)),
 
@@ -162,28 +165,14 @@ public:
 };
 NeoTeamMenu_Cb neoTeamMenu_Cb;
 
-void SetClass(const CCommand &command)
-{
-	if (command.ArgC() != 2)
-	{
-		Warning("SetClass: Unexpected arg count %i\n", command.ArgC());
-		return;
-	}
-
-	const int iClass = atoi(command.ArgV()[1]);
-
-	char cmd[32];
-	V_sprintf_safe(cmd, "%s %i", neo_cl_cyborgclass.GetName(), iClass);
-
-	engine->ClientCmd(cmd);
-}
-
 ConCommand classmenu("classmenu", &neoClassMenu_Cb, "Open class selection menu.", FCVAR_USERINFO);
 ConCommand teammenu("teammenu", &neoTeamMenu_Cb, "Open team selection menu.", FCVAR_USERINFO);
-ConCommand setclass("setclass", SetClass, "Set class", FCVAR_USERINFO);
 
 C_NEO_Player::C_NEO_Player()
 {
+	m_iNeoClass = NEO_CLASS_ASSAULT;
+	m_iNeoSkin = NEO_SKIN_FIRST;
+
 	m_pCompass = new CNEOHud_Compass("compass");
 	m_pCompass->SetOwner(this);
 

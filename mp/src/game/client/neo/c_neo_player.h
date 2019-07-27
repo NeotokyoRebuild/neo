@@ -7,6 +7,8 @@
 class C_NEO_Player;
 #include "c_hl2mp_player.h"
 
+#include "neo_player_shared.h"
+
 class C_NEOPredictedViewModel;
 class CNEOHud_Compass;
 class CNEOHud_GameEvent;
@@ -103,6 +105,9 @@ protected:
 	bool m_bGhostExists;
 	bool m_bIsClassMenuOpen, m_bIsTeamMenuOpen;
 	bool m_bInThermOpticCamo, m_bUnhandledTocChange;
+
+	int m_iNeoClass;
+	int m_iNeoSkin;
 
 private:
 	CNEOHud_Compass *m_pCompass;
