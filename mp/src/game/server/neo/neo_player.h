@@ -94,6 +94,13 @@ public:
 	int GetSkin() const;
 	int GetClass() const;
 
+	virtual void StartAutoSprint(void);
+	virtual void StartSprinting(void);
+	virtual void StopSprinting(void);
+	virtual void InitSprinting(void);
+	virtual bool CanSprint(void);
+	virtual void EnableSprint(bool bEnable);
+
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);
 
 private:

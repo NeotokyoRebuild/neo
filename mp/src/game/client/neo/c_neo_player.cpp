@@ -562,3 +562,27 @@ void C_NEO_Player::Weapon_Drop(C_BaseCombatWeapon *pWeapon)
 		ghost->HandleGhostUnequip();
 	}
 }
+
+void C_NEO_Player::StartSprinting(void)
+{
+	if (m_HL2Local.m_flSuitPower < 10)
+	{
+		return;
+	}
+
+	switch (m_iNeoClass)
+	{
+	case NEO_CLASS_RECON:
+		SetMaxSpeed(NEO_RECON_SPRINT_SPEED);
+		break;
+	case NEO_CLASS_ASSAULT:
+		SetMaxSpeed(NEO_ASSAULT_SPRINT_SPEED);
+		break;
+	case NEO_CLASS_SUPPORT:
+		// We don't run
+		break;
+	default:
+		Assert(false);
+		break;
+	}
+}

@@ -1222,3 +1222,38 @@ void CNEO_Player::SetTestMessageVisible(bool visible)
 {
 	m_bShowTestMessage = visible;
 }
+
+void CNEO_Player::StartAutoSprint(void)
+{
+	BaseClass::StartAutoSprint();
+}
+
+void CNEO_Player::StartSprinting(void)
+{
+	BaseClass::StartSprinting();
+}
+
+void CNEO_Player::StopSprinting(void)
+{
+	BaseClass::StopSprinting();
+}
+
+void CNEO_Player::InitSprinting(void)
+{
+	BaseClass::InitSprinting();
+}
+
+bool CNEO_Player::CanSprint(void)
+{
+	if (m_iNeoClass == NEO_CLASS_SUPPORT)
+	{
+		return false;
+	}
+
+	return BaseClass::CanSprint();
+}
+
+void CNEO_Player::EnableSprint(bool bEnable)
+{
+	BaseClass::EnableSprint(bEnable);
+}

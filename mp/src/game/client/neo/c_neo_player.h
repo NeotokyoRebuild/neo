@@ -62,6 +62,8 @@ public:
 	virtual void PostThink( void );
 	virtual void Spawn( void );
 
+	virtual void StartSprinting(void);
+
 	bool ShouldDrawHL2StyleQuickHud( void );
 
 	virtual void SetLocalViewAngles( const QAngle &viewAngles )
