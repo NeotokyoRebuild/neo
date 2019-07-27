@@ -485,7 +485,6 @@ void CNEO_Player::Weapon_AimToggle( CBaseCombatWeapon *pWep )
 	Weapon_SetZoom(showCrosshair);
 }
 
-// NEO TODO (Rain): mirror clientside so we can predict
 inline void CNEO_Player::Weapon_SetZoom(bool bZoomIn)
 {
 	const float zoomSpeedSecs = 0.25f;

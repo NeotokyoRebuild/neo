@@ -507,6 +507,30 @@ void C_NEO_Player::PostThink(void)
 		m_pHudEvent_Test->SetVisible(false);
 		previouslyPreparing = false;
 	}
+
+	C_BaseCombatWeapon *pWep = GetActiveWeapon();
+
+	if (pWep)
+	{
+		static bool previouslyReloading = false;
+
+		if (pWep->m_bInReload)
+		{
+			if (!previouslyReloading)
+			{
+				Weapon_SetZoom(false);
+			}
+		}
+		else
+		{
+			if (m_afButtonReleased & IN_AIM)
+			{
+				Weapon_AimToggle(pWep);
+			}
+		}
+
+		previouslyReloading = pWep->m_bInReload;
+	}
 }
 
 void C_NEO_Player::Spawn( void )
@@ -585,4 +609,64 @@ void C_NEO_Player::StartSprinting(void)
 		Assert(false);
 		break;
 	}
+}
+
+void C_NEO_Player::Weapon_AimToggle(C_BaseCombatWeapon *pWep)
+{
+	if (!IsAllowedToZoom(pWep))
+	{
+		return;
+	}
+
+	bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR) == HIDEHUD_CROSSHAIR;
+	Weapon_SetZoom(showCrosshair);
+}
+
+inline void C_NEO_Player::Weapon_SetZoom(bool bZoomIn)
+{
+	const float zoomSpeedSecs = 0.25f;
+
+	const int zoomAmount = 30;
+
+	if (bZoomIn)
+	{
+		m_Local.m_iHideHUD &= ~HIDEHUD_CROSSHAIR;
+
+		SetFOV((CBaseEntity*)this, GetDefaultFOV() - zoomAmount, zoomSpeedSecs);
+	}
+	else
+	{
+		m_Local.m_iHideHUD |= HIDEHUD_CROSSHAIR;
+
+		SetFOV((CBaseEntity*)this, GetDefaultFOV(), zoomSpeedSecs);
+	}
+}
+
+// Is the player allowed to aim zoom with a weapon of this type?
+inline bool C_NEO_Player::IsAllowedToZoom(C_BaseCombatWeapon *pWep)
+{
+	if (!pWep)
+	{
+		return false;
+	}
+
+	// NEO TODO (Rain): this list will probably eventually become longer
+	// than forbidden list; swap logic?
+	const char *allowedAimZoom[] = {
+		"weapon_aa13",
+		"weapon_tachi",
+		"weapon_zr68s",
+	};
+
+	C_BaseCombatWeapon *pTest = NULL;
+	for (int i = 0; i < ARRAYSIZE(allowedAimZoom); i++)
+	{
+		pTest = Weapon_OwnsThisType(allowedAimZoom[i]);
+		if (pWep == pTest)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
