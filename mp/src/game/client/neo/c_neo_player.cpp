@@ -63,10 +63,6 @@ BEGIN_PREDICTION_DATA(C_NEO_Player)
 	DEFINE_PRED_FIELD(m_rvFriendlyPlayerPositions, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 
-ConVar cl_autoreload_when_empty("cl_autoreload_when_empty", "1", FCVAR_USERINFO,
-	"Automatically start reloading when the active weapon becomes empty.",
-	true, 0.0f, true, 1.0f);
-
 ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
 	"Whether to display HL2 style ammo/health info near crosshair.",
 	true, 0.0f, true, 1.0f);
@@ -333,50 +329,6 @@ void C_NEO_Player::ItemPreFrame( void )
 void C_NEO_Player::ItemPostFrame( void )
 {
 	BaseClass::ItemPostFrame();
-
-	static bool onceOnly = true;
-
-	// NEO HACK/FIXME (Rain): this should be issued from serverside gamerules with player filter,
-	// using proper precached soundscript entries
-	if (m_iCapTeam != TEAM_UNASSIGNED)
-	{
-		if (onceOnly)
-		{
-			if (m_iCapTeam == TEAM_JINRAI)
-			{
-				/*
-				EmitSound("Victory.Jinrai");
-
-				EmitSound("sound/gameplay/jinrai.mp3");
-				*/
-
-				//enginesound->EmitAmbientSound("gameplay/jinrai.mp3", 1.f);
-			}
-			else if (m_iCapTeam == TEAM_NSF)
-			{
-				/*
-				EmitSound("Victory.NSF");
-
-				EmitSound("sound/gameplay/nsf.mp3");
-				*/
-
-				//enginesound->EmitAmbientSound("gameplay/nsf.mp3", 1.f);
-			}
-			else
-			{
-				//EmitSound("Victory.Draw");
-			}
-
-			onceOnly = !onceOnly;
-		}
-	}
-	else
-	{
-		if (onceOnly != true)
-		{
-			onceOnly = true;
-		}
-	}
 }
 
 float C_NEO_Player::GetMinFOV() const
@@ -464,7 +416,7 @@ void C_NEO_Player::PreThink( void )
 	else
 	{
 		const float distance = METERS_PER_INCH *
-			Vector(GetAbsOrigin() - m_vecGhostMarkerPos).Length2D();
+			GetAbsOrigin().DistTo(m_vecGhostMarkerPos);
 
 		// NEO HACK (Rain): We should test if we're holding a ghost
 		// instead of relying on a distance check.

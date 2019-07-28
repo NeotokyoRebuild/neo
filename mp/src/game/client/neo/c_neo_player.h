@@ -137,7 +137,6 @@ inline C_NEO_Player *ToNEOPlayer(CBaseEntity *pEntity)
 	return dynamic_cast<C_NEO_Player*>(pEntity);
 }
 
-extern ConVar cl_autoreload_when_empty;
 extern ConVar cl_drawhud_quickinfo;
 extern ConCommand teammenu;
 

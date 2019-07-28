@@ -42,9 +42,6 @@ void CNEOBaseCombatWeapon::Spawn()
 #endif
 }
 
-#ifdef CLIENT_DLL
-extern ConVar cl_autoreload_when_empty;
-#endif
 bool CNEOBaseCombatWeapon::Reload( void )
 {
 	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );

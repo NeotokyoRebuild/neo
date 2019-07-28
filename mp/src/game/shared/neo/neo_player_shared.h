@@ -88,4 +88,6 @@ inline bool IsAllowedToZoom(CBasePlayer *player, CBaseCombatWeapon *pWep)
 	return false;
 }
 
+extern ConVar cl_autoreload_when_empty;
+
 #endif // NEO_PLAYER_SHARED_H
