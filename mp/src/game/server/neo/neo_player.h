@@ -100,6 +100,14 @@ public:
 	virtual bool CanSprint(void);
 	virtual void EnableSprint(bool bEnable);
 
+	virtual void StartWalking(void);
+	virtual void StopWalking(void);
+
+	float GetNormSpeed() const;
+	float GetCrouchSpeed() const;
+	float GetWalkSpeed() const;
+	float GetSprintSpeed() const;
+
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);
 
 private:

@@ -82,6 +82,10 @@ public:
 
 	CHL2_Player();
 	~CHL2_Player( void );
+
+#ifdef NEO
+	friend class CNEO_Player;
+#endif
 	
 	static CHL2_Player *CreatePlayer( const char *className, edict_t *ed )
 	{
@@ -190,8 +194,13 @@ public:
 	void CheckSuitZoom( void );
 
 	// Walking
+#ifdef NEO
+	virtual void StartWalking( void );
+	virtual void StopWalking( void );
+#else
 	void StartWalking( void );
 	void StopWalking( void );
+#endif
 	bool IsWalking( void ) { return m_fIsWalking; }
 
 	// Aiming heuristics accessors

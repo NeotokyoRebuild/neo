@@ -604,7 +604,10 @@ void C_HL2MP_Player::StartSprinting( void )
 #endif
 #endif
 
+#ifndef NEO
 	SetMaxSpeed( HL2_SPRINT_SPEED );
+#endif
+
 	m_fIsSprinting = true;
 }
 
@@ -612,7 +615,10 @@ void C_HL2MP_Player::StartSprinting( void )
 //-----------------------------------------------------------------------------
 void C_HL2MP_Player::StopSprinting( void )
 {
+#ifndef NEO
 	SetMaxSpeed( HL2_NORM_SPEED );
+#endif
+
 	m_fIsSprinting = false;
 }
 
@@ -667,7 +673,10 @@ void C_HL2MP_Player::HandleSpeedChanges( void )
 //-----------------------------------------------------------------------------
 void C_HL2MP_Player::StartWalking( void )
 {
+#ifndef NEO
 	SetMaxSpeed( HL2_WALK_SPEED );
+#endif
+
 	m_fIsWalking = true;
 }
 
@@ -675,7 +684,10 @@ void C_HL2MP_Player::StartWalking( void )
 //-----------------------------------------------------------------------------
 void C_HL2MP_Player::StopWalking( void )
 {
+#ifndef NEO
 	SetMaxSpeed( HL2_NORM_SPEED );
+#endif
+
 	m_fIsWalking = false;
 }
 

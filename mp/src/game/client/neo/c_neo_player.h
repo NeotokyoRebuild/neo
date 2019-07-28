@@ -63,6 +63,16 @@ public:
 	virtual void Spawn( void );
 
 	virtual void StartSprinting(void);
+	virtual void StopSprinting(void);
+	virtual bool CanSprint(void);
+
+	virtual void StartWalking(void);
+	virtual void StopWalking(void);
+
+	float GetNormSpeed() const;
+	float GetCrouchSpeed() const;
+	float GetWalkSpeed() const;
+	float GetSprintSpeed() const;
 
 	bool ShouldDrawHL2StyleQuickHud( void );
 

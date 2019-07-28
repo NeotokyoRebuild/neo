@@ -69,6 +69,8 @@ void CNEO_Player::RequestSetClass(int newClass)
 		m_iNeoClass = newClass;
 
 		SetPlayerTeamModel();
+
+		InitSprinting();
 	}
 	else
 	{
@@ -1200,12 +1202,21 @@ void CNEO_Player::StartAutoSprint(void)
 
 void CNEO_Player::StartSprinting(void)
 {
+	if (m_HL2Local.m_flSuitPower < 10)
+	{
+		return;
+	}
+
 	BaseClass::StartSprinting();
+
+	SetMaxSpeed(GetSprintSpeed());
 }
 
 void CNEO_Player::StopSprinting(void)
 {
 	BaseClass::StopSprinting();
+
+	SetMaxSpeed(GetNormSpeed());
 }
 
 void CNEO_Player::InitSprinting(void)
@@ -1226,4 +1237,78 @@ bool CNEO_Player::CanSprint(void)
 void CNEO_Player::EnableSprint(bool bEnable)
 {
 	BaseClass::EnableSprint(bEnable);
+
+	SetMaxSpeed(GetSprintSpeed());
+}
+
+void CNEO_Player::StartWalking(void)
+{
+	SetMaxSpeed(GetWalkSpeed());
+	m_fIsWalking = true;
+}
+
+void CNEO_Player::StopWalking(void)
+{
+	SetMaxSpeed(GetNormSpeed());
+	m_fIsWalking = false;
+}
+
+float CNEO_Player::GetCrouchSpeed() const
+{
+	switch (m_iNeoClass)
+	{
+	case NEO_CLASS_RECON:
+		return NEO_RECON_CROUCH_SPEED;
+	case NEO_CLASS_ASSAULT:
+		return NEO_ASSAULT_CROUCH_SPEED;
+	case NEO_CLASS_SUPPORT:
+		return NEO_SUPPORT_CROUCH_SPEED;
+	}
+
+	return NEO_BASE_CROUCH_SPEED;
+}
+
+float CNEO_Player::GetNormSpeed() const
+{
+	switch (m_iNeoClass)
+	{
+	case NEO_CLASS_RECON:
+		return NEO_RECON_NORM_SPEED;
+	case NEO_CLASS_ASSAULT:
+		return NEO_ASSAULT_NORM_SPEED;
+	case NEO_CLASS_SUPPORT:
+		return NEO_SUPPORT_NORM_SPEED;
+	}
+
+	return NEO_BASE_NORM_SPEED;
+}
+
+float CNEO_Player::GetWalkSpeed() const
+{
+	switch (m_iNeoClass)
+	{
+	case NEO_CLASS_RECON:
+		return NEO_RECON_WALK_SPEED;
+	case NEO_CLASS_ASSAULT:
+		return NEO_ASSAULT_WALK_SPEED;
+	case NEO_CLASS_SUPPORT:
+		return NEO_SUPPORT_WALK_SPEED;
+	}
+
+	return NEO_BASE_WALK_SPEED;
+}
+
+float CNEO_Player::GetSprintSpeed() const
+{
+	switch (m_iNeoClass)
+	{
+	case NEO_CLASS_RECON:
+		return NEO_RECON_SPRINT_SPEED;
+	case NEO_CLASS_ASSAULT:
+		return NEO_ASSAULT_SPRINT_SPEED;
+	case NEO_CLASS_SUPPORT:
+		return NEO_SUPPORT_SPRINT_SPEED;
+	}
+
+	return NEO_BASE_SPRINT_SPEED;
 }

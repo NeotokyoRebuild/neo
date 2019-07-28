@@ -546,21 +546,98 @@ void C_NEO_Player::StartSprinting(void)
 		return;
 	}
 
+	SetMaxSpeed(GetSprintSpeed());
+}
+
+void C_NEO_Player::StopSprinting(void)
+{
+	SetMaxSpeed(GetNormSpeed());
+
+	m_fIsSprinting = false;
+}
+
+bool C_NEO_Player::CanSprint(void)
+{
+	if (m_iNeoClass == NEO_CLASS_SUPPORT)
+	{
+		return false;
+	}
+
+	return BaseClass::CanSprint();
+}
+
+void C_NEO_Player::StartWalking(void)
+{
+	SetMaxSpeed(GetWalkSpeed());
+
+	m_fIsWalking = true;
+}
+
+void C_NEO_Player::StopWalking(void)
+{
+	SetMaxSpeed(GetNormSpeed());
+
+	m_fIsWalking = true;
+}
+
+float C_NEO_Player::GetCrouchSpeed() const
+{
 	switch (m_iNeoClass)
 	{
 	case NEO_CLASS_RECON:
-		SetMaxSpeed(NEO_RECON_SPRINT_SPEED);
-		break;
+		return NEO_RECON_CROUCH_SPEED;
 	case NEO_CLASS_ASSAULT:
-		SetMaxSpeed(NEO_ASSAULT_SPRINT_SPEED);
-		break;
+		return NEO_ASSAULT_CROUCH_SPEED;
 	case NEO_CLASS_SUPPORT:
-		// We don't run
-		break;
-	default:
-		Assert(false);
-		break;
+		return NEO_SUPPORT_CROUCH_SPEED;
 	}
+
+	return NEO_BASE_CROUCH_SPEED;
+}
+
+float C_NEO_Player::GetNormSpeed() const
+{
+	switch (m_iNeoClass)
+	{
+	case NEO_CLASS_RECON:
+		return NEO_RECON_NORM_SPEED;
+	case NEO_CLASS_ASSAULT:
+		return NEO_ASSAULT_NORM_SPEED;
+	case NEO_CLASS_SUPPORT:
+		return NEO_SUPPORT_NORM_SPEED;
+	}
+
+	return NEO_BASE_NORM_SPEED;
+}
+
+float C_NEO_Player::GetWalkSpeed() const
+{
+	switch (m_iNeoClass)
+	{
+	case NEO_CLASS_RECON:
+		return NEO_RECON_WALK_SPEED;
+	case NEO_CLASS_ASSAULT:
+		return NEO_ASSAULT_WALK_SPEED;
+	case NEO_CLASS_SUPPORT:
+		return NEO_SUPPORT_WALK_SPEED;
+	}
+
+	return NEO_BASE_WALK_SPEED;
+}
+
+float C_NEO_Player::GetSprintSpeed() const
+{
+	switch (m_iNeoClass)
+	{
+	case NEO_CLASS_RECON:
+		return NEO_RECON_SPRINT_SPEED;
+	case NEO_CLASS_ASSAULT:
+		return NEO_ASSAULT_SPRINT_SPEED;
+	case NEO_CLASS_SUPPORT:
+		return NEO_SUPPORT_SPRINT_SPEED;
+	}
+
+	return NEO_BASE_SPRINT_SPEED;
 }
 
 void C_NEO_Player::Weapon_AimToggle(C_BaseCombatWeapon *pWep)
