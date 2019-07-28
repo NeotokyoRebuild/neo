@@ -120,6 +120,51 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 	originalNtPathOk = filesystem->IsDirectory(neoPath);
 #endif
 
+#ifdef _WIN32
+	// Search for any additional Steam library drives if Neotokyo was not found at Steam install location.
+	if (!originalNtPathOk)
+	{
+		KeyValues *pKvLibFolders = new KeyValues("LibraryFolders");
+
+		char steamLibraryPath[MAX_PATH];
+		V_strcpy_safe(steamLibraryPath, SteamAPI_GetSteamInstallPath());
+		V_AppendSlash(steamLibraryPath, sizeof(steamLibraryPath));
+		V_strcat(steamLibraryPath, "steamapps\\libraryfolders.vdf", sizeof(steamLibraryPath));
+
+		if (pKvLibFolders->LoadFromFile(filesystem, steamLibraryPath))
+		{
+			const int maxExtraLibs = 50;
+
+			for (int i = 1; i <= maxExtraLibs; i++)
+			{
+				char libStr[3];
+				itoa(i, libStr, sizeof(libStr));
+
+				KeyValues *pKvLib = pKvLibFolders->FindKey(libStr);
+				if (!pKvLib)
+				{
+					break;
+				}
+
+				const char *libPath = pKvLib->GetString();
+				if (*libPath != NULL && filesystem->IsDirectory(libPath))
+				{
+					V_strcpy_safe(neoPath, libPath);
+					V_AppendSlash(neoPath, sizeof(neoPath));
+					V_strcat(neoPath, "steamapps\\common\\NEOTOKYO\\NeotokyoSource", sizeof(neoPath));
+
+					if (filesystem->IsDirectory(neoPath))
+					{
+						originalNtPathOk = true;
+						break;
+					}
+				}
+			}
+		}
+		pKvLibFolders->deleteThis();
+	}
+#endif
+
 	if (originalNtPathOk)
 	{
 #ifdef LINUX
@@ -184,9 +229,6 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 Please use SteamCMD to download the Neotokyo (Windows) contents to path: '%s'\n",
 	thisCaller, neoHardcodedLinuxAssetPath);
 #else
-		// NEO TODO (Rain): we can attempt to recover here clientside by parsing SteamApps\libraryfolders.vdf
-		// for additional Steam drives where Neotokyo might be located.
-
 		Error("%s: Original Neotokyo installation was not found (looked at path: '%s'). \
 Please install Neotokyo on Steam for this mod to work.\n\n\
 If your original Neotokyo path differs from Steam install path (or if you are running a Steamless \
