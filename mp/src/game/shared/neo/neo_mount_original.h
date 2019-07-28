@@ -57,65 +57,63 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 	// The NeotokyoSource root asset folder should exist (or be symlinked) to one of these paths,
 	// or be specified with -neopath parm (which is currently broken on Linux, see below).
 	// We stop looking on first folder that exists.
-	const char *neoHardcodedLinuxAssetPaths[] = {
-		"$HOME/.local/share/neotokyo/",
-		"/usr/share/neotokyo/NeotokyoSource/",
-	};
-	const int numPaths = sizeof(neoHardcodedLinuxAssetPaths) / sizeof(neoHardcodedLinuxAssetPaths[0]);
+	const char *neoHardcodedLinuxAssetPath_Home = "$HOME/.local/share/neotokyo/NeotokyoSource/";
+	const char *neoHardcodedLinuxAssetPath_Share = "/usr/share/neotokyo/NeotokyoSource/";
+	
+	// NEO FIXME (Rain): getting this ParmValue from Steam Linux client seems to be broken(?),
+	// we always fall back to hardcoded pDefaultVal.
+	V_strcpy_safe(neoPath,
+		CommandLine()->ParmValue("-neopath", neoHardcodedLinuxAssetPath_Home));
 
-	for (int i = 0; i < numPaths; i++)
+	const bool isUsingCustomParm = (Q_stricmp(neoPath, neoHardcodedLinuxAssetPath_Home) != 0);
+
+	StatStruct file_stat;
+
+	if (isUsingCustomParm)
 	{
-		// NEO FIXME (Rain): getting this ParmValue from Steam Linux client seems to be broken(?),
-		// we always fall back to hardcoded pDefaultVal.
-		Q_strncpy(neoPath,
-			CommandLine()->ParmValue("-neopath", neoHardcodedLinuxAssetPaths[i]),
-			sizeof(neoPath));
-
-		bool isUsingCustomParm = false;
-
-		if (Q_stricmp(neoPath, neoHardcodedLinuxAssetPaths[i]) != 0)
-		{
-			if (!*neoPath)
-			{
-				strcpy(neoPath, neoHardcodedLinuxAssetPaths[i]);
-				Warning("Failed to parse custom -neopath, reverting to: %s\n",
-					neoHardcodedLinuxAssetPaths[i]);
-			}
-			else
-			{
-				isUsingCustomParm = true;
-
-				if (callerIsClientDll)
-				{
-					DevMsg("Client using custom -neopath: %s\n", neoPath);
-				}
-				else
-				{
-					DevMsg("Server using custom -neopath: %s\n", neoPath);
-				}
-			}
-		}
-
-		// Both client & server call this function; only print the informational stuff once.
-		if (callerIsClientDll)
-		{
-			DevMsg("%s: Linux build; searching for Neo mount from path: '%s'\n", thisCaller, neoPath);
-		}
-
-		StatStruct file_stat;
-		originalNtPathOk = ( Stat(neoPath, &file_stat) == 0 && IsDir(file_stat) );
-
-		if (originalNtPathOk)
-		{
-			break;
-		}
-		else if (isUsingCustomParm)
+		if (!*neoPath)
 		{
 			// We will crash with a more generic error later if Neo mount failed,
 			// so this is our only chance to throw this more specific error message.
+			Error("%s: Failed to read custom -neopath: '%s'\n", thisCaller, neoPath);
+		}
+
+		if (callerIsClientDll)
+		{
+			DevMsg("Client using custom -neopath: %s\n", neoPath);
+		}
+		else
+		{
+			DevMsg("Server using custom -neopath: %s\n", neoPath);
+		}
+
+		originalNtPathOk = ( Stat(neoPath, &file_stat) == 0 && IsDir(file_stat) );
+
+		if (!originalNtPathOk)
+		{
 			Error("%s: Failed to access custom -neopath: '%s'\n", thisCaller, neoPath);
 		}
 	}
+	else
+	{
+		// Try first path
+		originalNtPathOk = ( Stat(neoPath, &file_stat) == 0 && IsDir(file_stat) );
+
+		// Try second path
+		if (!originalNtPathOk)
+		{
+			V_strcpy_safe(neoPath, neoHardcodedLinuxAssetPath_Share);
+			
+			originalNtPathOk = ( Stat(neoPath, &file_stat) == 0 && IsDir(file_stat) );
+		}
+	}
+
+	// Both client & server call this function; only print the informational stuff once.
+	if (callerIsClientDll)
+	{
+		DevMsg("%s: Linux build; searching for Neo mount from path: '%s'\n", thisCaller, neoPath);
+	}
+
 #else // If Windows
 
 	char neoWindowsDefaultPath[MAX_PATH];
@@ -194,13 +192,14 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 		if (strlen(neoPath) > 0)
 		{
 			V_AppendSlash(neoPath, sizeof(neoPath));
+
 			filesystem->AddSearchPath(neoPath, pathID, addType);
 
 			if (callerIsClientDll)
 			{
 				DevMsg("%s: Added '%s' to path.\n", thisCaller, neoPath);
 			}
-			
+
 			FilesystemMountRetval_t mountStatus =
 				filesystem->MountSteamContent(-neoAppId);
 			if (mountStatus == FILESYSTEM_MOUNT_OK)
@@ -248,11 +247,9 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 	else // originalNtPathOk
 	{
 #ifdef LINUX
-		// We are hardcoding path error message below, please adjust if this assert flips.
-		COMPILE_TIME_ASSERT(numPaths == 2);
 		Error("%s: Original Neotokyo installation was not found. \
 Please use SteamCMD to download the Neotokyo (Windows) contents to one of these paths:\n\n'%s',\n'%s'\n",
-	thisCaller, neoHardcodedLinuxAssetPaths[0], neoHardcodedLinuxAssetPaths[1]);
+	thisCaller, neoHardcodedLinuxAssetPath_Home, neoHardcodedLinuxAssetPath_Share);
 #else
 		Error("%s: Original Neotokyo installation was not found (looked at path: '%s'). \
 Please install Neotokyo on Steam for this mod to work.\n\n\

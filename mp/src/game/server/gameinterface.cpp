@@ -639,7 +639,10 @@ bool CServerGameDLL::DLLInit( CreateInterfaceFn appSystemFactory,
 	}
 
 #ifdef NEO
-	FindOriginalNeotokyoAssets(filesystem, false);
+	if (!FindOriginalNeotokyoAssets(filesystem, false))
+	{
+		return false;
+	}
 #endif
 
 	// Yes, both the client and game .dlls will try to Connect, the soundemittersystem.dll will handle this gracefully
