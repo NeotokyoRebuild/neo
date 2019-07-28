@@ -249,8 +249,8 @@ void CNEO_Player::UpdateNetworkedFriendlyLocations()
 			continue;
 		}
 
-		// Only players in our team
-		else if (otherPlayer->GetTeamNumber() != GetTeamNumber())
+		// Only players in our team, and are alive
+		else if (otherPlayer->GetTeamNumber() != GetTeamNumber() || otherPlayer->IsDead())
 		{
 			m_rvFriendlyPlayerPositions.Set(i, vec3_origin);
 			m_rvFriendlyPlayerPositions.GetForModify(i).CopyToArray(zeroPos);

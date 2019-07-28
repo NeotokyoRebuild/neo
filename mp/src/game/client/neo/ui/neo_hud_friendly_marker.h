@@ -19,6 +19,7 @@ public:
 	virtual void Paint();
 
 	void SetOwner(C_NEO_Player *player);
+	C_NEO_Player *GetOwner() const;
 
 private:
 	C_NEO_Player *m_pOwner;
