@@ -52,47 +52,69 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 	const SearchPathAdd_t addType = PATH_ADD_TO_HEAD;
 
 	bool originalNtPathOk = false;
-#ifdef LINUX
-	// The NeotokyoSource root asset folder should exist (or be symlinked) here,
-	// or in the custom neopath.
-	const char *neoHardcodedLinuxAssetPath = "/usr/share/neotokyo/NeotokyoSource/";
 
-	// NEO FIXME (Rain): getting this ParmValue from Steam Linux client seems to be broken(?),
-	// we always fall back to hardcoded pDefaultVal.
-	Q_strncpy(neoPath,
-		CommandLine()->ParmValue("-neopath", neoHardcodedLinuxAssetPath),
-		sizeof(neoPath));
-	
-	if (Q_stricmp(neoPath, neoHardcodedLinuxAssetPath) != 0)
+#ifdef LINUX
+	// The NeotokyoSource root asset folder should exist (or be symlinked) to one of these paths,
+	// or be specified with -neopath parm (which is currently broken on Linux, see below).
+	// We stop looking on first folder that exists.
+	const char *neoHardcodedLinuxAssetPaths[] = {
+		"$HOME/.local/share/neotokyo/",
+		"/usr/share/neotokyo/NeotokyoSource/",
+	};
+
+	for (int i = 0; i < ARRAYSIZE(neoHardcodedLinuxAssetPaths); i++)
 	{
-		if (!*neoPath)
+		// NEO FIXME (Rain): getting this ParmValue from Steam Linux client seems to be broken(?),
+		// we always fall back to hardcoded pDefaultVal.
+		Q_strncpy(neoPath,
+			CommandLine()->ParmValue("-neopath", neoHardcodedLinuxAssetPaths[i]),
+			sizeof(neoPath));
+
+		bool isUsingCustomParm = false;
+
+		if (Q_stricmp(neoPath, neoHardcodedLinuxAssetPaths[i]) != 0)
 		{
-			strcpy(neoPath, neoHardcodedLinuxAssetPath);
-			Warning("Failed to parse custom -neopath, reverting to: %s\n",
-				neoHardcodedLinuxAssetPath);
-		}
-		else
-		{
-			if (callerIsClientDll)
+			if (!*neoPath)
 			{
-				DevMsg("Client using custom -neopath: %s\n", neoPath);
+				strcpy(neoPath, neoHardcodedLinuxAssetPaths[i]);
+				Warning("Failed to parse custom -neopath, reverting to: %s\n",
+					neoHardcodedLinuxAssetPaths[i]);
 			}
 			else
 			{
-				DevMsg("Server using custom -neopath: %s\n", neoPath);
+				isUsingCustomParm = true;
+
+				if (callerIsClientDll)
+				{
+					DevMsg("Client using custom -neopath: %s\n", neoPath);
+				}
+				else
+				{
+					DevMsg("Server using custom -neopath: %s\n", neoPath);
+				}
 			}
 		}
-	}
 
-	// Both client & server call this function; only print the informational stuff once.
-	if (callerIsClientDll)
-	{
-		DevMsg("%s: Linux build; expecting to find original Neotokyo assets at: '%s'\n", thisCaller, neoPath);
-	}
+		// Both client & server call this function; only print the informational stuff once.
+		if (callerIsClientDll)
+		{
+			DevMsg("%s: Linux build; searching for Neo mount from path: '%s'\n", thisCaller, neoPath);
+		}
 
-	StatStruct file_stat;
-	originalNtPathOk = ( Stat(neoPath, &file_stat) == 0
-		&& IsDir(file_stat) );
+		StatStruct file_stat;
+		originalNtPathOk = ( Stat(neoPath, &file_stat) == 0 && IsDir(file_stat) );
+
+		if (originalNtPathOk)
+		{
+			break;
+		}
+		else if (isUsingCustomParm)
+		{
+			// We will crash with a more generic error later if Neo mount failed,
+			// so this is our only chance to throw this more specific error message.
+			Error("%s: Failed to access custom -neopath: '%s'\n", thisCaller, neoPath);
+		}
+	}
 #else // If Windows
 
 	char neoWindowsDefaultPath[MAX_PATH];
