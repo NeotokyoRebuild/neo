@@ -61,8 +61,9 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 		"$HOME/.local/share/neotokyo/",
 		"/usr/share/neotokyo/NeotokyoSource/",
 	};
+	const int numPaths = sizeof(neoHardcodedLinuxAssetPaths) / sizeof(neoHardcodedLinuxAssetPaths[0]);
 
-	for (int i = 0; i < ARRAYSIZE(neoHardcodedLinuxAssetPaths); i++)
+	for (int i = 0; i < numPaths; i++)
 	{
 		// NEO FIXME (Rain): getting this ParmValue from Steam Linux client seems to be broken(?),
 		// we always fall back to hardcoded pDefaultVal.
@@ -247,9 +248,11 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 	else // originalNtPathOk
 	{
 #ifdef LINUX
+		// We are hardcoding path error message below, please adjust if this assert flips.
+		COMPILE_TIME_ASSERT(numPaths == 2);
 		Error("%s: Original Neotokyo installation was not found. \
-Please use SteamCMD to download the Neotokyo (Windows) contents to path: '%s'\n",
-	thisCaller, neoHardcodedLinuxAssetPath);
+Please use SteamCMD to download the Neotokyo (Windows) contents to one of these paths:\n\n'%s',\n'%s'\n",
+	thisCaller, neoHardcodedLinuxAssetPaths[0], neoHardcodedLinuxAssetPaths[1]);
 #else
 		Error("%s: Original Neotokyo installation was not found (looked at path: '%s'). \
 Please install Neotokyo on Steam for this mod to work.\n\n\
