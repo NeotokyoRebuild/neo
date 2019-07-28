@@ -86,4 +86,20 @@ WeaponData
 			Maxs	"22 8 9"
 		}
 	}
+	
+	"ViewModelOffset"
+	{
+		"fov"		"65.0"
+		"forward"	"5.0"
+		"right"		"5.0"
+		"up"		"0"
+	}
+	
+	"AimOffset"
+	{
+		"fov"		"40"
+		"forward"	"-5"
+		"right"		"-3.425"
+		"up"		"7.825"
+	}
 }
