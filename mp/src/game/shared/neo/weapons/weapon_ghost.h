@@ -54,12 +54,14 @@ private:
 	inline void SetShowEnemies(bool enabled);
 
 #ifdef CLIENT_DLL
-	inline void ShowEnemies(void);
+	inline float ShowEnemies(void);
 	inline void HideEnemies(void);
 	inline void Debug_ShowPos(const Vector &pos, bool pvs);
 	inline void PlayGhostSound(float volume = 1.0f);
 	inline void StopGhostSound(void);
 	inline void HandleGhostEquip(void);
+
+	inline void TryGhostPing(float closestEnemy);
 #else
 	void UpdateNetworkedEnemyLocations(void);
 #endif

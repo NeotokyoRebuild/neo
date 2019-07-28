@@ -106,8 +106,11 @@ void CWeaponGhost::ItemPreFrame(void)
 		if (m_bShouldShowEnemies)
 		{
 #ifdef CLIENT_DLL
-			ShowEnemies();
 			HandleGhostEquip();
+
+			const float closestEnemy = ShowEnemies();
+
+			TryGhostPing(closestEnemy);
 #else
 			// We only need to update this while someone is ghosting
 			UpdateNetworkedEnemyLocations();
@@ -124,6 +127,27 @@ inline void CWeaponGhost::HandleGhostEquip(void)
 		PlayGhostSound();
 		m_bHavePlayedGhostEquipSound = true;
 		m_bHaveHolsteredTheGhost = false;
+	}
+}
+
+// Emit a ghost ping at a refire interval based on distance.
+void C_WeaponGhost::TryGhostPing(float closestEnemy)
+{
+	if (closestEnemy < 0 || closestEnemy > 45)
+	{
+		return;
+	}
+
+	const float frequency = clamp((0.1f * closestEnemy), 1.0f, 3.5f);
+
+	static float lastSound = gpGlobals->curtime;
+	float deltaTime = gpGlobals->curtime - lastSound;
+
+	if (deltaTime > frequency)
+	{
+		EmitSound("NeoPlayer.GhostPing");
+
+		lastSound = gpGlobals->curtime;
 	}
 }
 
@@ -214,13 +238,16 @@ void CWeaponGhost::HideEnemies(void)
 
 // Purpose: Iterate through all enemies and give ghoster their position info,
 // either via client's own PVS information or networked by the server when needed.
-void CWeaponGhost::ShowEnemies(void)
+// Returns distance to closest enemy, or -1 if no enemies.
+float CWeaponGhost::ShowEnemies(void)
 {
 	C_NEO_Player *player = (C_NEO_Player*)GetOwner();
 	if (!player)
 	{
-		return;
+		return 0;
 	}
+
+	float closestDistance = 1000;
 
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
@@ -271,6 +298,12 @@ void CWeaponGhost::ShowEnemies(void)
 			{
 				Debug_ShowPos(otherPlayer->GetAbsOrigin(), isInPVS);
 			}
+
+			const float distance = (player->GetAbsOrigin().DistTo(otherPlayer->GetAbsOrigin()) / METERS_PER_INCH / 1000.0f);
+			if (distance < closestDistance)
+			{
+				closestDistance = distance;
+			}
 		}
 		// Else, the server will provide us with this enemy's position info
 		else
@@ -289,8 +322,17 @@ void CWeaponGhost::ShowEnemies(void)
 			{
 				Debug_ShowPos(m_rvPlayerPositions[i], isInPVS);
 			}
+
+			const float distance = (player->GetAbsOrigin().DistTo(m_rvPlayerPositions[i]) / METERS_PER_INCH / 1000.0f);
+
+			if (distance < closestDistance)
+			{
+				closestDistance = distance;
+			}
 		}
 	}
+
+	return closestDistance == 1000 ? -1 : closestDistance;
 }
 
 inline void CWeaponGhost::HideBeacon(int clientIndex)
@@ -312,11 +354,10 @@ inline void CWeaponGhost::ShowBeacon(int clientIndex, const Vector &pos)
 
 	Vector dir = GetOwner()->EyePosition() - pos;
 
-	// NEO TODO (Rain): make server authoritative cvar in shared code
+	// NEO TODO (Rain): make server cvar in shared code
 	const float maxGhostRangeMeters = 45.0f;
 
 	const float distance = dir.Length2D();
-	// NEO TODO (Rain): Make sure this conversion is actually accurate
 	const float distMeters = (distance / METERS_PER_INCH) / 1000.0f;
 
 	// Server will never give us info beyond the ghost range,
