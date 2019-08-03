@@ -505,7 +505,7 @@ void C_NEO_Player::Spawn( void )
 	if (!panel)
 	{
 		Assert(false);
-		Warning("Couldn't find team panel\n");
+		Warning("Couldn't find CNeoHudElements panel\n");
 		return;
 	}
 	else
@@ -516,6 +516,11 @@ void C_NEO_Player::Spawn( void )
 		if (compass)
 		{
 			compass->SetOwner(this);
+		}
+		else
+		{
+			Assert(false);
+			Warning("Couldn't find compass HUD element\n");
 		}
 	}
 
