@@ -4,6 +4,7 @@
 #include "GameEventListener.h"
 
 #include "neo_hud_compass.h"
+#include "neo_hud_ghost_marker.h"
 
 #include "vgui/ISurface.h"
 
@@ -11,6 +12,11 @@
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
+
+#define UI_ELEMENT_NAME_COMPASS "neo_compass"
+#define UI_ELEMENT_NAME_IFF "neo_iff"
+#define UI_ELEMENT_NAME_GHOST_MARKER "neo_ghost_marker"
+#define UI_ELEMENT_NAME_GHOST_BEACON "neo_ghost_beacon"
 
 using namespace vgui;
 
@@ -54,6 +60,20 @@ void CNeoHudElements::Reset()
 		m_pCompass->DeletePanel();
 		m_pCompass = NULL;
 	}
+
+	for (CNEOHud_GhostMarker *marker : m_vecGhostMarkers)
+	{
+		if (marker)
+		{
+			marker->DeletePanel();
+		}
+		else
+		{
+			// We should be never carrying a null pointer
+			Assert(false);
+		}
+	}
+	m_vecGhostMarkers.RemoveAll();
 
 	InitHud();
 }
@@ -153,14 +173,39 @@ int CNeoHudElements::FindIFFItemIDForPlayerIndex(int playerIndex)
 void CNeoHudElements::InitHud()
 {
 	InitCompass();
+	InitGhostMarkers();
 }
 
 void CNeoHudElements::InitCompass()
 {
-	m_pCompass = new CNEOHud_Compass("neo_compass", this);
+	m_pCompass = new CNEOHud_Compass(UI_ELEMENT_NAME_COMPASS, this);
+}
+
+void CNeoHudElements::InitGhostMarkers()
+{
+	const int numGhosts = 1;
+
+	for (int i = 0; i < numGhosts; i++)
+	{
+		auto marker = new CNEOHud_GhostMarker(UI_ELEMENT_NAME_GHOST_MARKER, this);
+
+		m_vecGhostMarkers.AddToTail(marker);
+	}
 }
 
 CNEOHud_Compass *CNeoHudElements::GetCompass()
 {
 	return m_pCompass;
+}
+
+CNEOHud_GhostMarker* CNeoHudElements::GetGhostMarker()
+{
+	// Just return first, for now
+	for (auto marker : m_vecGhostMarkers)
+	{
+		Assert(marker);
+		return marker;
+	}
+
+	return NULL;
 }

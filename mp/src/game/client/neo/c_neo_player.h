@@ -15,6 +15,8 @@ class CNEOHud_GameEvent;
 class CNEOHud_GhostMarker;
 class CNEOHud_FriendlyMarker;
 
+class CNeoHudElements;
+
 class C_NEO_Player : public C_HL2MP_Player
 {
 public:
@@ -131,9 +133,13 @@ private:
 
 	CNEOHud_GameEvent *m_pHudEvent_Test;
 
+#if(0)
 	CNEOHud_GhostMarker *m_pGhostMarker;
+#endif
 
 	CNEOHud_FriendlyMarker *m_pFriendlyMarker;
+
+	CNeoHudElements *m_pNeoPanel;
 
 private:
 	C_NEO_Player(const C_NEO_Player &);

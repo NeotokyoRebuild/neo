@@ -182,7 +182,9 @@ C_NEO_Player::C_NEO_Player()
 	m_iCapTeam = TEAM_UNASSIGNED;
 	m_iGhosterTeam = TEAM_UNASSIGNED;
 
+#if(0)
 	m_pGhostMarker = new CNEOHud_GhostMarker("ghostMarker");
+#endif
 
 	m_vecGhostMarkerPos = vec3_origin;
 	m_bGhostExists = false;
@@ -191,6 +193,8 @@ C_NEO_Player::C_NEO_Player()
 
 	m_pFriendlyMarker = new CNEOHud_FriendlyMarker("friendlyMarker");
 	m_pFriendlyMarker->SetOwner(this);
+
+	m_pNeoPanel = NULL;
 }
 
 C_NEO_Player::~C_NEO_Player()
@@ -209,11 +213,13 @@ C_NEO_Player::~C_NEO_Player()
 		delete m_pHudEvent_Test;
 	}
 
+#if(0)
 	if (m_pGhostMarker)
 	{
 		m_pGhostMarker->MarkForDeletion();
 		delete m_pGhostMarker;
 	}
+#endif
 
 	if (m_pFriendlyMarker)
 	{
@@ -415,35 +421,53 @@ void C_NEO_Player::PreThink( void )
 		}
 	}
 
-	if (!m_bGhostExists)
+	// NEO TODO (Rain): marker should be responsible for its own vis control instead
+	CNEOHud_GhostMarker *ghostMarker = NULL;
+	if (m_pNeoPanel)
 	{
-		m_pGhostMarker->SetVisible(false);
-	}
-	else
-	{
-		const float distance = METERS_PER_INCH *
-			GetAbsOrigin().DistTo(m_vecGhostMarkerPos);
+		ghostMarker = m_pNeoPanel->GetGhostMarker();
 
-		// NEO HACK (Rain): We should test if we're holding a ghost
-		// instead of relying on a distance check.
-		if (m_iGhosterTeam != GetTeamNumber() || distance > 0.2)
+		if (ghostMarker)
 		{
-			m_pGhostMarker->SetVisible(true);
+			if (!m_bGhostExists)
+			{
+				ghostMarker->SetVisible(false);
 
-			int ghostMarkerX, ghostMarkerY;
-			GetVectorInScreenSpace(m_vecGhostMarkerPos, ghostMarkerX, ghostMarkerY);
+				//m_pGhostMarker->SetVisible(false);
+			}
+			else
+			{
+				const float distance = METERS_PER_INCH *
+					GetAbsOrigin().DistTo(m_vecGhostMarkerPos);
 
-			m_pGhostMarker->SetScreenPosition(ghostMarkerX, ghostMarkerY);
-			m_pGhostMarker->SetGhostingTeam(m_iGhosterTeam);
+				// NEO HACK (Rain): We should test if we're holding a ghost
+				// instead of relying on a distance check.
+				if (m_iGhosterTeam != GetTeamNumber() || distance > 0.2)
+				{
+					ghostMarker->SetVisible(true);
+
+					int ghostMarkerX, ghostMarkerY;
+					GetVectorInScreenSpace(m_vecGhostMarkerPos, ghostMarkerX, ghostMarkerY);
+
+					ghostMarker->SetScreenPosition(ghostMarkerX, ghostMarkerY);
+					ghostMarker->SetGhostingTeam(m_iGhosterTeam);
 
 
-			m_pGhostMarker->SetGhostDistance(distance);
+					ghostMarker->SetGhostDistance(distance);
+				}
+				else
+				{
+					ghostMarker->SetVisible(false);
+				}
+			}
 		}
 		else
 		{
-			m_pGhostMarker->SetVisible(false);
+			Warning("Couldn't find ghostMarker\n");
 		}
 	}
+
+	
 }
 
 void C_NEO_Player::ClientThink(void)
@@ -500,19 +524,21 @@ void C_NEO_Player::Spawn( void )
 		m_bShowTeamMenu = true;
 	}
 
-	CNeoHudElements *panel = dynamic_cast<CNeoHudElements*>
-		(GetClientModeNormal()->GetViewport()->FindChildByName(PANEL_NEO_HUD));
-	if (!panel)
+	if (!m_pNeoPanel)
 	{
-		Assert(false);
-		Warning("Couldn't find CNeoHudElements panel\n");
-		return;
-	}
-	else
-	{
-		panel->ShowPanel(true);
+		m_pNeoPanel = dynamic_cast<CNeoHudElements*>
+			(GetClientModeNormal()->GetViewport()->FindChildByName(PANEL_NEO_HUD));
 
-		auto compass = panel->GetCompass();
+		if (!m_pNeoPanel)
+		{
+			Assert(false);
+			Warning("Couldn't find CNeoHudElements panel\n");
+			return;
+		}
+
+		m_pNeoPanel->ShowPanel(true);
+
+		auto compass = m_pNeoPanel->GetCompass();
 		if (compass)
 		{
 			compass->SetOwner(this);

@@ -9,6 +9,7 @@
 #include "GameEventListener.h"
 
 class CNEOHud_Compass;
+class CNEOHud_GhostMarker;
 
 class CNeoHudElements : public vgui::EditablePanel,
 	public IViewPortPanel, public CGameEventListener
@@ -40,6 +41,7 @@ public:
 	virtual void UpdatePlayerIFF(int playerIndex, KeyValues *kv);
 
 	CNEOHud_Compass *GetCompass();
+	CNEOHud_GhostMarker *GetGhostMarker();
 
 protected:
 	virtual void OnThink();
@@ -58,12 +60,15 @@ protected:
 
 private:
 	void InitCompass();
+	void InitGhostMarkers();
 
 	int m_iPlayerIndexSymbol;
 
 	IViewPort *m_pViewPort;
 
 	CNEOHud_Compass *m_pCompass;
+
+	CUtlVector<CNEOHud_GhostMarker*> m_vecGhostMarkers;
 
 	void FillIFFs();
 };
