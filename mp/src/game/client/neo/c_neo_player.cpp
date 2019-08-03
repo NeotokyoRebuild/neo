@@ -24,6 +24,8 @@
 #include "ui/neo_hud_ghost_marker.h"
 #include "ui/neo_hud_friendly_marker.h"
 
+#include "ui/neo_hud_elements.h"
+
 #include "baseviewmodel_shared.h"
 
 #include "prediction.h"
@@ -169,8 +171,10 @@ C_NEO_Player::C_NEO_Player()
 	m_iNeoClass = NEO_CLASS_ASSAULT;
 	m_iNeoSkin = NEO_SKIN_FIRST;
 
+#if(0)
 	m_pCompass = new CNEOHud_Compass("compass");
 	m_pCompass->SetOwner(this);
+#endif
 
 	m_pHudEvent_Test = new CNEOHud_GameEvent("hudEvent_Test");
 	m_pHudEvent_Test->SetMessage("Test message");
@@ -191,11 +195,13 @@ C_NEO_Player::C_NEO_Player()
 
 C_NEO_Player::~C_NEO_Player()
 {
+#if(0)
 	if (m_pCompass)
 	{
 		m_pCompass->MarkForDeletion();
 		delete m_pCompass;
 	}
+#endif
 
 	if (m_pHudEvent_Test)
 	{
@@ -492,6 +498,25 @@ void C_NEO_Player::Spawn( void )
 	if (GetTeamNumber() == TEAM_UNASSIGNED)
 	{
 		m_bShowTeamMenu = true;
+	}
+
+	CNeoHudElements *panel = dynamic_cast<CNeoHudElements*>
+		(GetClientModeNormal()->GetViewport()->FindChildByName(PANEL_NEO_HUD));
+	if (!panel)
+	{
+		Assert(false);
+		Warning("Couldn't find team panel\n");
+		return;
+	}
+	else
+	{
+		panel->ShowPanel(true);
+
+		auto compass = panel->GetCompass();
+		if (compass)
+		{
+			compass->SetOwner(this);
+		}
 	}
 
 #if(0)

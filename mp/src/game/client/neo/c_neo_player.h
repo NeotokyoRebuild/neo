@@ -10,7 +10,7 @@ class C_NEO_Player;
 #include "neo_player_shared.h"
 
 class C_NEOPredictedViewModel;
-class CNEOHud_Compass;
+//class CNEOHud_Compass;
 class CNEOHud_GameEvent;
 class CNEOHud_GhostMarker;
 class CNEOHud_FriendlyMarker;
@@ -125,7 +125,9 @@ protected:
 	int m_iNeoSkin;
 
 private:
+#if(0)
 	CNEOHud_Compass *m_pCompass;
+#endif
 
 	CNEOHud_GameEvent *m_pHudEvent_Test;
 

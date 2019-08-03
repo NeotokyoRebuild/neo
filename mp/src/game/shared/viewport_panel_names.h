@@ -35,4 +35,8 @@
 
 #define PANEL_COMMENTARY_MODELVIEWER	"commentary_modelviewer"
 
+#ifdef NEO
+#define PANEL_NEO_HUD "neo_hud"
+#endif
+
 #endif // VIEWPORT_PANEL_NAMES_H
