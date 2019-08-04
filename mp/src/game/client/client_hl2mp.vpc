@@ -154,6 +154,9 @@ $Project "Client (HL2MP)"
 				$File	"neo\ui\neo_hud_ghost_marker.cpp"
 				$File	"neo\ui\neo_hud_ghost_marker.h"
 
+				$File	"neo\ui\neo_hud_round_state.cpp"
+				$File	"neo\ui\neo_hud_round_state.h"
+
 				$File	"neo\ui\neo_scoreboard.cpp"
 				$File	"neo\ui\neo_scoreboard.h"
 
