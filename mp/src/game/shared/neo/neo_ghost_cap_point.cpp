@@ -139,6 +139,12 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 		return;
 	}
 
+	// This round has already ended, we can't be capped into
+	if (NEORules()->GetRoundRemainingTime() < 0)
+	{
+		return;
+	}
+
 	const int checksPerSecond = 10;
 
 	//DevMsg("CNEOGhostCapturePoint::Think_CheckMyRadius\n");
