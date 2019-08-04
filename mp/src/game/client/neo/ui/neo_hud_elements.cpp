@@ -4,6 +4,7 @@
 #include "GameEventListener.h"
 
 #include "neo_hud_compass.h"
+#include "neo_hud_friendly_marker.h"
 #include "neo_hud_ghost_marker.h"
 
 #include "vgui/ISurface.h"
@@ -39,11 +40,12 @@ CNeoHudElements::CNeoHudElements(IViewPort *pViewPort)
 	ListenForGameEvent("player_team");
 
 	m_pCompass = NULL;
+	m_pFriendlyMarker = NULL;
 }
 
 CNeoHudElements::~CNeoHudElements()
 {
-	
+	FreePanelChildren();
 }
 
 void CNeoHudElements::OnThink()
@@ -51,14 +53,18 @@ void CNeoHudElements::OnThink()
 	BaseClass::OnThink();
 }
 
-void CNeoHudElements::Reset()
+void CNeoHudElements::FreePanelChildren()
 {
-	m_fNextUpdateTime = 0;
-
 	if (m_pCompass)
 	{
 		m_pCompass->DeletePanel();
 		m_pCompass = NULL;
+	}
+
+	if (m_pFriendlyMarker)
+	{
+		m_pFriendlyMarker->DeletePanel();
+		m_pFriendlyMarker = NULL;
 	}
 
 	for (CNEOHud_GhostMarker *marker : m_vecGhostMarkers)
@@ -74,6 +80,13 @@ void CNeoHudElements::Reset()
 		}
 	}
 	m_vecGhostMarkers.RemoveAll();
+}
+
+void CNeoHudElements::Reset()
+{
+	m_fNextUpdateTime = 0;
+
+	FreePanelChildren();
 
 	InitHud();
 }
@@ -173,12 +186,18 @@ int CNeoHudElements::FindIFFItemIDForPlayerIndex(int playerIndex)
 void CNeoHudElements::InitHud()
 {
 	InitCompass();
+	InitFriendlyMarker();
 	InitGhostMarkers();
 }
 
 void CNeoHudElements::InitCompass()
 {
 	m_pCompass = new CNEOHud_Compass(UI_ELEMENT_NAME_COMPASS, this);
+}
+
+void CNeoHudElements::InitFriendlyMarker()
+{
+	m_pFriendlyMarker = new CNEOHud_FriendlyMarker(UI_ELEMENT_NAME_IFF, this);
 }
 
 void CNeoHudElements::InitGhostMarkers()
@@ -208,4 +227,9 @@ CNEOHud_GhostMarker* CNeoHudElements::GetGhostMarker()
 	}
 
 	return NULL;
+}
+
+CNEOHud_FriendlyMarker* CNeoHudElements::GetIFF()
+{
+	return m_pFriendlyMarker;
 }

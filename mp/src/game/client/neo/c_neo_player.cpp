@@ -191,8 +191,10 @@ C_NEO_Player::C_NEO_Player()
 	m_bShowClassMenu = m_bShowTeamMenu = m_bIsClassMenuOpen = m_bIsTeamMenuOpen = false;
 	m_bInThermOpticCamo = m_bUnhandledTocChange = false;
 
+#if(0)
 	m_pFriendlyMarker = new CNEOHud_FriendlyMarker("friendlyMarker");
 	m_pFriendlyMarker->SetOwner(this);
+#endif
 
 	m_pNeoPanel = NULL;
 }
@@ -221,11 +223,13 @@ C_NEO_Player::~C_NEO_Player()
 	}
 #endif
 
+#if(0)
 	if (m_pFriendlyMarker)
 	{
 		m_pFriendlyMarker->MarkForDeletion();
 		delete m_pFriendlyMarker;
 	}
+#endif
 }
 
 inline void C_NEO_Player::CheckThermOpticButtons()
@@ -524,6 +528,7 @@ void C_NEO_Player::Spawn( void )
 		m_bShowTeamMenu = true;
 	}
 
+	// NEO TODO (Rain): UI elements should do this themselves
 	if (!m_pNeoPanel)
 	{
 		m_pNeoPanel = dynamic_cast<CNeoHudElements*>
@@ -547,6 +552,17 @@ void C_NEO_Player::Spawn( void )
 		{
 			Assert(false);
 			Warning("Couldn't find compass HUD element\n");
+		}
+
+		auto iff = m_pNeoPanel->GetIFF();
+		if (iff)
+		{
+			iff->SetOwner(this);
+		}
+		else
+		{
+			Assert(false);
+			Warning("Couldn't find compass IFF element\n");
 		}
 	}
 

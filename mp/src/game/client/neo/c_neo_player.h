@@ -12,8 +12,8 @@ class C_NEO_Player;
 class C_NEOPredictedViewModel;
 //class CNEOHud_Compass;
 class CNEOHud_GameEvent;
-class CNEOHud_GhostMarker;
-class CNEOHud_FriendlyMarker;
+//class CNEOHud_GhostMarker;
+//class CNEOHud_FriendlyMarker;
 
 class CNeoHudElements;
 
@@ -137,7 +137,9 @@ private:
 	CNEOHud_GhostMarker *m_pGhostMarker;
 #endif
 
+#if(0)
 	CNEOHud_FriendlyMarker *m_pFriendlyMarker;
+#endif
 
 	CNeoHudElements *m_pNeoPanel;
 
