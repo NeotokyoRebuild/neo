@@ -1,6 +1,6 @@
 #ifndef NEO_HUD_GHOSTBEACON_H
 #define NEO_HUD_GHOSTBEACON_H
-#ifdef WIN_32
+#ifdef _WIN32
 #pragma once
 #endif
 

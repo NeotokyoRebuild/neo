@@ -7,6 +7,7 @@
 #include "neo_hud_friendly_marker.h"
 #include "neo_hud_game_event.h"
 #include "neo_hud_ghost_marker.h"
+#include "neo_hud_round_state.h"
 
 #include "vgui/ISurface.h"
 
@@ -20,6 +21,7 @@
 #define UI_ELEMENT_GAME_EVENT "neo_game_event_indicator"
 #define UI_ELEMENT_NAME_GHOST_MARKER "neo_ghost_marker"
 #define UI_ELEMENT_NAME_GHOST_BEACON "neo_ghost_beacon"
+#define UI_ELEMENT_ROUND_STATE "neo_round_state"
 
 using namespace vgui;
 
@@ -44,6 +46,7 @@ CNeoHudElements::CNeoHudElements(IViewPort *pViewPort)
 	m_pCompass = NULL;
 	m_pFriendlyMarker = NULL;
 	m_pGameEvent = NULL;
+	m_pRoundState = NULL;
 }
 
 CNeoHudElements::~CNeoHudElements()
@@ -74,6 +77,12 @@ void CNeoHudElements::FreePanelChildren()
 	{
 		m_pGameEvent->DeletePanel();
 		m_pGameEvent = NULL;
+	}
+
+	if (m_pRoundState)
+	{
+		m_pRoundState->DeletePanel();
+		m_pRoundState = NULL;
 	}
 
 	for (CNEOHud_GhostMarker *marker : m_vecGhostMarkers)
@@ -198,6 +207,7 @@ void CNeoHudElements::InitHud()
 	InitFriendlyMarker();
 	InitGameEventIndicator();
 	InitGhostMarkers();
+	InitRoundState();
 }
 
 void CNeoHudElements::InitCompass()
@@ -226,6 +236,12 @@ void CNeoHudElements::InitGhostMarkers()
 		m_vecGhostMarkers.AddToTail(marker);
 	}
 }
+
+void CNeoHudElements::InitRoundState()
+{
+	m_pRoundState = new CNEOHud_RoundState(UI_ELEMENT_ROUND_STATE, this);
+}
+
 
 CNEOHud_Compass *CNeoHudElements::GetCompass()
 {

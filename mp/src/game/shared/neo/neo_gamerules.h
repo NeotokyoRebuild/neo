@@ -10,6 +10,8 @@
 #include "hl2mp_gamerules.h"
 #include "shareddefs.h"
 
+#include "GameEventListener.h"
+
 #ifndef CLIENT_DLL
 	#include "neo_player.h"
 #endif
@@ -74,7 +76,7 @@ public:
 class CNEOGhostCapturePoint;
 #endif
 
-class CNEORules : public CHL2MPRules
+class CNEORules : public CHL2MPRules, public CGameEventListener
 {
 public:
 	DECLARE_CLASS( CNEORules, CHL2MPRules );
@@ -119,6 +121,9 @@ public:
 	void CheckRestartGame();
 
 	float GetRoundRemainingTime();
+
+	// IGameEventListener interface:
+	virtual void FireGameEvent(IGameEvent *event);
 
 #ifdef CLIENT_DLL
 	void CleanUpMap();

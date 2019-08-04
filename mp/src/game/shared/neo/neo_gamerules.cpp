@@ -24,8 +24,10 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 // NEO TODO (Rain): NEO specific game modes var (CTG/TDM/...)
 #ifdef CLIENT_DLL
 	RecvPropFloat(RECVINFO(m_flNeoNextRoundStartTime)),
+	RecvPropFloat(RECVINFO(m_flNeoRoundStartTime)),
 #else
 	SendPropFloat(SENDINFO(m_flNeoNextRoundStartTime)),
+	SendPropFloat(SENDINFO(m_flNeoRoundStartTime)),
 #endif
 END_NETWORK_TABLE()
 
@@ -201,6 +203,8 @@ CNEORules::CNEORules()
 #endif
 
 	m_flNeoRoundStartTime = m_flNeoNextRoundStartTime = 0;
+
+	ListenForGameEvent("round_start");
 }
 
 CNEORules::~CNEORules()
@@ -347,6 +351,17 @@ float CNEORules::GetRoundRemainingTime()
 	}
 
 	return (m_flNeoRoundStartTime + (neo_round_timelimit.GetFloat() * 60.0f)) - gpGlobals->curtime;
+}
+
+void CNEORules::FireGameEvent(IGameEvent* event)
+{
+	const char *type = event->GetName();
+
+	if (Q_strcmp(type, "round_start") == 0)
+	{
+		m_flNeoRoundStartTime = gpGlobals->curtime;
+		m_flNeoNextRoundStartTime = 0;
+	}
 }
 
 #ifdef GAME_DLL

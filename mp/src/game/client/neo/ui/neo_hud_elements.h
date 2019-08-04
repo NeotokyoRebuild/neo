@@ -12,6 +12,7 @@ class CNEOHud_Compass;
 class CNEOHud_FriendlyMarker;
 class CNEOHud_GameEvent;
 class CNEOHud_GhostMarker;
+class CNEOHud_RoundState;
 
 class CNeoHudElements : public vgui::EditablePanel,
 	public IViewPortPanel, public CGameEventListener
@@ -67,6 +68,7 @@ private:
 	void InitGameEventIndicator();
 	void InitGhostMarkers();
 	void InitFriendlyMarker();
+	void InitRoundState();
 
 	void FreePanelChildren();
 
@@ -77,6 +79,7 @@ private:
 	CNEOHud_Compass *m_pCompass;
 	CNEOHud_FriendlyMarker *m_pFriendlyMarker;
 	CNEOHud_GameEvent *m_pGameEvent;
+	CNEOHud_RoundState *m_pRoundState;
 
 	CUtlVector<CNEOHud_GhostMarker*> m_vecGhostMarkers;
 
