@@ -58,6 +58,21 @@ CNEOGhostCapturePoint::CNEOGhostCapturePoint()
 
 	m_bIsActive = true;
 	m_bGhostHasBeenCaptured = false;
+
+#ifdef CLIENT_DLL
+	m_pHUDCapPoint = NULL;
+#endif
+}
+
+CNEOGhostCapturePoint::~CNEOGhostCapturePoint()
+{
+#ifdef CLIENT_DLL
+	if (m_pHUDCapPoint)
+	{
+		m_pHUDCapPoint->DeletePanel();
+		m_pHUDCapPoint = NULL;
+	}
+#endif
 }
 
 #ifdef GAME_DLL
