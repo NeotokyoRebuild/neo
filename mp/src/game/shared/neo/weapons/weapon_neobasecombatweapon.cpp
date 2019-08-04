@@ -72,5 +72,10 @@ bool CNEOBaseCombatWeapon::Reload( void )
 
 bool CNEOBaseCombatWeapon::CanBeSelected(void)
 {
+	if (GetWeaponFlags() & ITEM_FLAG_NOAUTOSWITCHEMPTY)
+	{
+		return true;
+	}
+
 	return BaseClass::CanBeSelected();
 }
