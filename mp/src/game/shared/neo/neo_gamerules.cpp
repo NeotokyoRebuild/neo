@@ -199,6 +199,8 @@ CNEORules::CNEORules()
 			g_Teams[TEAM_NSF]->UpdateClientData(player);
 		}
 	}
+
+	m_bFirstRestartIsDone = false;
 #endif
 
 	m_flNeoRoundStartTime = m_flNeoNextRoundStartTime = 0;
@@ -287,11 +289,57 @@ bool CNEORules::ShouldCollide(int collisionGroup0, int collisionGroup1)
 
 extern ConVar mp_chattime;
 
+#ifdef GAME_DLL
+void CNEORules::ChangeLevel(void)
+{
+	BaseClass::ChangeLevel();
+}
+#endif
+
+bool CNEORules::CheckGameOver(void)
+{
+	// Note that this changes the level as side effect
+	bool gameOver = BaseClass::CheckGameOver();
+
+#ifdef GAME_DLL
+	if (gameOver)
+	{
+		m_bFirstRestartIsDone = false;
+	}
+#endif
+
+	return gameOver;
+}
+
 void CNEORules::Think(void)
 {
+#ifdef GAME_DLL
+	if (g_fGameOver)   // someone else quit the game already
+	{
+		// check to see if we should change levels now
+		if (m_flIntermissionEndTime < gpGlobals->curtime)
+		{
+			if (!m_bChangelevelDone)
+			{
+				ChangeLevel(); // intermission is over
+				m_bChangelevelDone = true;
+			}
+		}
+
+		return;
+	}
+#endif
+
 	BaseClass::Think();
 
 #ifdef GAME_DLL
+	if (!m_bFirstRestartIsDone)
+	{
+		m_bFirstRestartIsDone = !m_bFirstRestartIsDone;
+		RestartGame();
+		return;
+	}
+
 	if (IsRoundOver())
 	{
 		// If the next round was not scheduled yet

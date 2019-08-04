@@ -97,6 +97,8 @@ public:
 	virtual bool ClientConnected(edict_t *pEntity, const char *pszName, const char *pszAddress, char *reject, int maxrejectlen);
 
 	virtual void SetWinningTeam(int team, int iWinReason, bool bForceMapReset = true, bool bSwitchTeams = false, bool bDontAddScore = false, bool bFinal = false);
+
+	virtual void ChangeLevel(void);
 #endif
 	virtual bool ShouldCollide( int collisionGroup0, int collisionGroup1 );
 
@@ -119,6 +121,8 @@ public:
 	inline void ResetGhostCapPoints();
 
 	void CheckRestartGame();
+
+	virtual bool CheckGameOver(void);
 
 	float GetRoundRemainingTime();
 
@@ -149,6 +153,8 @@ public:
 
 #ifdef GAME_DLL
 private:
+	bool m_bFirstRestartIsDone;
+	
 	CUtlVector<int> m_pGhostCaps;
 
 	CNetworkVar(float, m_flNeoRoundStartTime);
