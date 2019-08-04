@@ -85,11 +85,11 @@ void CNeoHudElements::FreePanelChildren()
 		m_pRoundState = NULL;
 	}
 
-	for (CNEOHud_GhostMarker *marker : m_vecGhostMarkers)
+	for (int i = 0; i < m_vecGhostMarkers.Count(); i++)
 	{
-		if (marker)
+		if (m_vecGhostMarkers[i])
 		{
-			marker->DeletePanel();
+			m_vecGhostMarkers[i]->DeletePanel();
 		}
 		else
 		{
@@ -256,10 +256,10 @@ CNEOHud_GameEvent* CNeoHudElements::GetGameEventIndicator()
 CNEOHud_GhostMarker* CNeoHudElements::GetGhostMarker()
 {
 	// Just return first, for now
-	for (auto marker : m_vecGhostMarkers)
+	for (int i = 0; i < m_vecGhostMarkers.Count(); i++)
 	{
-		Assert(marker);
-		return marker;
+		Assert(m_vecGhostMarkers[i]);
+		return m_vecGhostMarkers[i];
 	}
 
 	return NULL;
