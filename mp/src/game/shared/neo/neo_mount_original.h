@@ -176,8 +176,18 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 
 					if (filesystem->IsDirectory(neoPath))
 					{
-						originalNtPathOk = true;
-						break;
+						// Make sure there's actually a GameInfo.txt in the path, otherwise we will crash on mount.
+						// We make the assumption that any GameInfo.txt found will be valid format.
+						char gameInfoPath[MAX_PATH];
+						V_strcpy_safe(gameInfoPath, neoPath);
+						V_AppendSlash(gameInfoPath, sizeof(gameInfoPath));
+						V_strcat(gameInfoPath, "GameInfo.txt", sizeof(gameInfoPath));
+
+						if (filesystem->FileExists(gameInfoPath))
+						{
+							originalNtPathOk = true;
+							break;
+						}
 					}
 				}
 			}
