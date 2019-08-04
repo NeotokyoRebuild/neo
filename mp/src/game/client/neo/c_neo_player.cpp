@@ -69,6 +69,66 @@ ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
 	"Whether to display HL2 style ammo/health info near crosshair.",
 	true, 0.0f, true, 1.0f);
 
+class NeoLoadoutMenu_Cb : public ICommandCallback
+{
+public:
+	virtual void CommandCallback(const CCommand& command)
+	{
+		Msg("Loadout access cb\n");
+
+		vgui::EditablePanel *panel = dynamic_cast<vgui::EditablePanel*>
+			(GetClientModeNormal()->GetViewport()->FindChildByName(PANEL_NEO_LOADOUT));
+
+		if (!panel)
+		{
+			Assert(false);
+			Warning("Couldn't find weapon loadout panel\n");
+			return;
+		}
+
+		panel->ApplySchemeSettings(vgui::scheme()->GetIScheme(panel->GetScheme()));
+		int w, h;
+		surface()->GetScreenSize(w, h);
+		panel->SetSize(w, h);
+		panel->SetPos((int)w / 3, (int)h / 3);
+
+		panel->SetMouseInputEnabled(true);
+		panel->SetKeyBoardInputEnabled(true);
+		panel->SetCursorAlwaysVisible(true);
+
+		panel->SetControlEnabled("Scout_Button", true);
+		panel->SetControlEnabled("Misc2", true);
+		panel->SetControlEnabled("Done_Button", true);
+		panel->SetControlEnabled("Button1", true);
+		panel->SetControlEnabled("Button2", true);
+		panel->SetControlEnabled("Button3", true);
+		panel->SetControlEnabled("Button4", true);
+		panel->SetControlEnabled("Button5", true);
+		panel->SetControlEnabled("Button6", true);
+		panel->SetControlEnabled("Button7", true);
+		panel->SetControlEnabled("Button8", true);
+		panel->SetControlEnabled("Button9", true);
+		panel->SetControlEnabled("Button10", true);
+		panel->SetControlEnabled("Button11", true);
+		panel->SetControlEnabled("Button12", true);
+		panel->SetControlEnabled("Button13", true);
+		panel->SetControlEnabled("Button14", true);
+
+		panel->MoveToFront();
+
+		if (panel->IsKeyBoardInputEnabled())
+		{
+			panel->RequestFocus();
+		}
+
+		panel->SetVisible(true);
+		panel->SetEnabled(true);
+
+		surface()->SetMinimized(panel->GetVPanel(), false);
+	}
+};
+NeoLoadoutMenu_Cb neoLoadoutMenu_Cb;
+
 class NeoClassMenu_Cb : public ICommandCallback
 {
 public:
@@ -163,6 +223,7 @@ public:
 };
 NeoTeamMenu_Cb neoTeamMenu_Cb;
 
+ConCommand loadoutmenu("loadoutmenu", &neoLoadoutMenu_Cb, "Open weapon loadout selection menu.", FCVAR_USERINFO);
 ConCommand classmenu("classmenu", &neoClassMenu_Cb, "Open class selection menu.", FCVAR_USERINFO);
 ConCommand teammenu("teammenu", &neoTeamMenu_Cb, "Open team selection menu.", FCVAR_USERINFO);
 

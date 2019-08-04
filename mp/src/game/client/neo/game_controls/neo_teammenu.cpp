@@ -125,9 +125,6 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 	m_pBackgroundImage->SetImage("image");
 #endif
 
-#if(0)
-	
-#endif
 	m_pJinrai_Button->AddActionSignalTarget(this);
 	m_pNSF_Button->AddActionSignalTarget(this);
 	m_pSpectator_Button->AddActionSignalTarget(this);
