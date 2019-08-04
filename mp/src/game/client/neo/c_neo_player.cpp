@@ -232,27 +232,13 @@ C_NEO_Player::C_NEO_Player()
 	m_iNeoClass = NEO_CLASS_ASSAULT;
 	m_iNeoSkin = NEO_SKIN_FIRST;
 
-#if(0)
-	m_pCompass = new CNEOHud_Compass("compass");
-	m_pCompass->SetOwner(this);
-#endif
-
 	m_iCapTeam = TEAM_UNASSIGNED;
 	m_iGhosterTeam = TEAM_UNASSIGNED;
-
-#if(0)
-	m_pGhostMarker = new CNEOHud_GhostMarker("ghostMarker");
-#endif
 
 	m_vecGhostMarkerPos = vec3_origin;
 	m_bGhostExists = false;
 	m_bShowClassMenu = m_bShowTeamMenu = m_bIsClassMenuOpen = m_bIsTeamMenuOpen = false;
 	m_bInThermOpticCamo = m_bUnhandledTocChange = false;
-
-#if(0)
-	m_pFriendlyMarker = new CNEOHud_FriendlyMarker("friendlyMarker");
-	m_pFriendlyMarker->SetOwner(this);
-#endif
 
 	m_pNeoPanel = NULL;
 }
