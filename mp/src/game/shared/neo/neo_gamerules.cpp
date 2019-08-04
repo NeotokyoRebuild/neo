@@ -36,17 +36,16 @@ IMPLEMENT_NETWORKCLASS_ALIASED( NEOGameRulesProxy, DT_NEOGameRulesProxy );
 
 extern void respawn(CBaseEntity *pEdict, bool fCopyCorpse);
 
-// NEO TODO (Rain): These are about 1 unit accurate currently, should probably double check view heights are 100% correct.
-// Also need to offset on class by class basis, these reflect the assault class.
+// NEO TODO (Rain): check against a test map
 static NEOViewVectors g_NEOViewVectors(
-	Vector( 0, 0, 72 ),	   //VEC_VIEW (m_vView)
+	Vector( 0, 0, 62 ),	   //VEC_VIEW (m_vView)
 							  
 	Vector(-16, -16, 0 ),	  //VEC_HULL_MIN (m_vHullMin)
-	Vector( 16,  16,  73 ),	  //VEC_HULL_MAX (m_vHullMax)
+	Vector(16, 16, 72),	  //VEC_HULL_MAX (m_vHullMax)
 							  					
 	Vector(-16, -16, 0 ),	  //VEC_DUCK_HULL_MIN (m_vDuckHullMin)
 	Vector( 16,  16,  48 ),	  //VEC_DUCK_HULL_MAX	(m_vDuckHullMax)
-	Vector( 0, 0, 53 ),		  //VEC_DUCK_VIEW		(m_vDuckView)
+	Vector( 0, 0, 45 ),		  //VEC_DUCK_VIEW		(m_vDuckView)
 							  					
 	Vector(-10, -10, -10 ),	  //VEC_OBS_HULL_MIN	(m_vObsHullMin)
 	Vector( 10,  10,  10 ),	  //VEC_OBS_HULL_MAX	(m_vObsHullMax)
@@ -54,7 +53,7 @@ static NEOViewVectors g_NEOViewVectors(
 	Vector( 0, 0, 14 ),		  //VEC_DEAD_VIEWHEIGHT (m_vDeadViewHeight)
 
 	Vector(-16, -16, 0 ),	  //VEC_CROUCH_TRACE_MIN (m_vCrouchTraceMin)
-	Vector( 16,  16,  60 )	  //VEC_CROUCH_TRACE_MAX (m_vCrouchTraceMax)
+	Vector(16, 16, 60)	  //VEC_CROUCH_TRACE_MAX (m_vCrouchTraceMax)
 );
 
 #ifdef CLIENT_DLL
