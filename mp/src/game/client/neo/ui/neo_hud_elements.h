@@ -10,6 +10,7 @@
 
 class CNEOHud_Compass;
 class CNEOHud_FriendlyMarker;
+class CNEOHud_GameEvent;
 class CNEOHud_GhostMarker;
 
 class CNeoHudElements : public vgui::EditablePanel,
@@ -42,6 +43,7 @@ public:
 	virtual void UpdatePlayerIFF(int playerIndex, KeyValues *kv);
 
 	CNEOHud_Compass *GetCompass();
+	CNEOHud_GameEvent *GetGameEventIndicator();
 	CNEOHud_GhostMarker *GetGhostMarker();
 	CNEOHud_FriendlyMarker *GetIFF();
 
@@ -62,6 +64,7 @@ protected:
 
 private:
 	void InitCompass();
+	void InitGameEventIndicator();
 	void InitGhostMarkers();
 	void InitFriendlyMarker();
 
@@ -73,6 +76,7 @@ private:
 
 	CNEOHud_Compass *m_pCompass;
 	CNEOHud_FriendlyMarker *m_pFriendlyMarker;
+	CNEOHud_GameEvent *m_pGameEvent;
 
 	CUtlVector<CNEOHud_GhostMarker*> m_vecGhostMarkers;
 

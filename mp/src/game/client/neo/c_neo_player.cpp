@@ -176,9 +176,6 @@ C_NEO_Player::C_NEO_Player()
 	m_pCompass->SetOwner(this);
 #endif
 
-	m_pHudEvent_Test = new CNEOHud_GameEvent("hudEvent_Test");
-	m_pHudEvent_Test->SetMessage("Test message");
-
 	m_iCapTeam = TEAM_UNASSIGNED;
 	m_iGhosterTeam = TEAM_UNASSIGNED;
 
@@ -201,35 +198,6 @@ C_NEO_Player::C_NEO_Player()
 
 C_NEO_Player::~C_NEO_Player()
 {
-#if(0)
-	if (m_pCompass)
-	{
-		m_pCompass->MarkForDeletion();
-		delete m_pCompass;
-	}
-#endif
-
-	if (m_pHudEvent_Test)
-	{
-		m_pHudEvent_Test->MarkForDeletion();
-		delete m_pHudEvent_Test;
-	}
-
-#if(0)
-	if (m_pGhostMarker)
-	{
-		m_pGhostMarker->MarkForDeletion();
-		delete m_pGhostMarker;
-	}
-#endif
-
-#if(0)
-	if (m_pFriendlyMarker)
-	{
-		m_pFriendlyMarker->MarkForDeletion();
-		delete m_pFriendlyMarker;
-	}
-#endif
 }
 
 inline void C_NEO_Player::CheckThermOpticButtons()
@@ -412,19 +380,6 @@ void C_NEO_Player::PreThink( void )
 		engine->ClientCmd(classmenu.GetName());
 	}
 
-	if (m_bShowTestMessage)
-	{
-		m_pHudEvent_Test->SetMessage(m_pszTestMessage);
-		m_pHudEvent_Test->SetVisible(true);
-	}
-	else
-	{
-		if (m_pHudEvent_Test->IsVisible())
-		{
-			m_pHudEvent_Test->SetVisible(false);
-		}
-	}
-
 	// NEO TODO (Rain): marker should be responsible for its own vis control instead
 	CNEOHud_GhostMarker *ghostMarker = NULL;
 	if (m_pNeoPanel)
@@ -469,9 +424,26 @@ void C_NEO_Player::PreThink( void )
 		{
 			Warning("Couldn't find ghostMarker\n");
 		}
-	}
 
-	
+		auto indicator = m_pNeoPanel->GetGameEventIndicator();
+
+		if (indicator)
+		{
+			if (m_bShowTestMessage)
+			{
+				indicator->SetMessage(m_pszTestMessage);
+			}
+
+			if (indicator->IsVisible() != m_bShowTestMessage)
+			{
+				indicator->SetVisible(m_bShowTestMessage);
+			}
+		}
+		else
+		{
+			Warning("Couldn't find GameEventIndicator\n");
+		}
+	}
 }
 
 void C_NEO_Player::ClientThink(void)
@@ -490,8 +462,15 @@ void C_NEO_Player::PostThink(void)
 
 	if (!preparingToHideMsg && previouslyPreparing)
 	{
-		m_pHudEvent_Test->SetVisible(false);
-		previouslyPreparing = false;
+		if (m_pNeoPanel && m_pNeoPanel->GetGameEventIndicator())
+		{
+			m_pNeoPanel->GetGameEventIndicator()->SetVisible(false);
+			previouslyPreparing = false;
+		}
+		else
+		{
+			Assert(false);
+		}
 	}
 
 	C_BaseCombatWeapon *pWep = GetActiveWeapon();
