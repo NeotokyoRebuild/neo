@@ -38,6 +38,10 @@
 
 #endif
 
+#ifdef NEO
+#include "neo_gamerules.h"
+#endif
+
 #include "vprof.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -327,7 +331,19 @@ const FileWeaponInfo_t &CBaseCombatWeapon::GetWpnData( void ) const
 //-----------------------------------------------------------------------------
 const char *CBaseCombatWeapon::GetViewModel( int /*viewmodelindex = 0 -- this is ignored in the base class here*/ ) const
 {
+#ifdef NEO
+	auto owner = GetOwner();
+
+	if (!owner)
+	{
+		return GetWpnData().szViewModel;
+	}
+
+	return owner->GetTeamNumber() == TEAM_JINRAI ?
+		GetWpnData().szViewModel : GetWpnData().szViewModel2;
+#else
 	return GetWpnData().szViewModel;
+#endif
 }
 
 //-----------------------------------------------------------------------------

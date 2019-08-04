@@ -5,10 +5,8 @@ WeaponData
 	// Weapon data is loaded by both the Game and Client DLLs.
 	"printname"	"TACHI"
 
-	// TODO: use class vms
 	"viewmodel"			"models/weapons/v_jinrai_tachi.mdl"
-	"viewmodelJin"		"models/weapons/v_jinrai_tachi.mdl"
-	"viewmodelNSF"		"models/weapons/v_nsf_tachi.mdl"
+	"team2viewmodel"	"models/weapons/v_nsf_tachi.mdl"
 
 	"playermodel"		"models/weapons/w_tachi.mdl"
 	"anim_prefix"		"tachi"
