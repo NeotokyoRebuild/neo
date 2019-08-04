@@ -16,6 +16,7 @@ WeaponData
 	"bucket_position"	"0"
 
 	"clip_size"			"15"
+	"default_clip"		"1500"
 	"primary_ammo"		"Pistol"
 	"secondary_ammo"	"None"
 

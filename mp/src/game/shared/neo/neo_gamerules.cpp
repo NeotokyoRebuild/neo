@@ -218,6 +218,10 @@ void CNEORules::Precache()
 }
 #endif
 
+ConVar	sk_max_neo_ammo("sk_max_neo_ammo", "10000", FCVAR_REPLICATED);
+ConVar	sk_plr_dmg_neo("sk_plr_dmg_neo", "0", FCVAR_REPLICATED);
+ConVar	sk_npc_dmg_neo("sk_npc_dmg_neo", "0", FCVAR_REPLICATED);
+
 // This is the HL2MP gamerules GetAmmoDef() global scope function copied over,
 // because we want to implement it ourselves. This can be refactored out if/when
 // we don't want to support HL2MP guns anymore.
@@ -230,17 +234,17 @@ CAmmoDef *GetAmmoDef_HL2MP()
 	{
 		bInitted = true;
 
-		def.AddAmmoType("AR2", DMG_BULLET, TRACER_LINE_AND_WHIZ, 0, 0, 60, BULLET_IMPULSE(200, 1225), 0);
-		def.AddAmmoType("AR2AltFire", DMG_DISSOLVE, TRACER_NONE, 0, 0, 3, 0, 0);
-		def.AddAmmoType("Pistol", DMG_BULLET, TRACER_LINE_AND_WHIZ, 0, 0, 150, BULLET_IMPULSE(200, 1225), 0);
-		def.AddAmmoType("SMG1", DMG_BULLET, TRACER_LINE_AND_WHIZ, 0, 0, 225, BULLET_IMPULSE(200, 1225), 0);
-		def.AddAmmoType("357", DMG_BULLET, TRACER_LINE_AND_WHIZ, 0, 0, 12, BULLET_IMPULSE(800, 5000), 0);
-		def.AddAmmoType("XBowBolt", DMG_BULLET, TRACER_LINE, 0, 0, 10, BULLET_IMPULSE(800, 8000), 0);
-		def.AddAmmoType("Buckshot", DMG_BULLET | DMG_BUCKSHOT, TRACER_LINE, 0, 0, 30, BULLET_IMPULSE(400, 1200), 0);
-		def.AddAmmoType("RPG_Round", DMG_BURN, TRACER_NONE, 0, 0, 3, 0, 0);
-		def.AddAmmoType("SMG1_Grenade", DMG_BURN, TRACER_NONE, 0, 0, 3, 0, 0);
-		def.AddAmmoType("Grenade", DMG_BURN, TRACER_NONE, 0, 0, 5, 0, 0);
-		def.AddAmmoType("slam", DMG_BURN, TRACER_NONE, 0, 0, 5, 0, 0);
+		def.AddAmmoType("AR2", DMG_BULLET, TRACER_LINE_AND_WHIZ, "sk_plr_dmg_neo", "sk_npc_dmg_neo", "sk_max_neo_ammo", BULLET_IMPULSE(200, 1225), 0);
+		def.AddAmmoType("AR2AltFire", DMG_DISSOLVE, TRACER_NONE, "sk_plr_dmg_neo", "sk_npc_dmg_neo", "sk_max_neo_ammo", 0, 0);
+		def.AddAmmoType("Pistol", DMG_BULLET, TRACER_LINE_AND_WHIZ, "sk_plr_dmg_neo", "sk_npc_dmg_neo", "sk_max_neo_ammo", BULLET_IMPULSE(200, 1225), 0);
+		def.AddAmmoType("SMG1", DMG_BULLET, TRACER_LINE_AND_WHIZ, "sk_plr_dmg_neo", "sk_npc_dmg_neo", "sk_max_neo_ammo", BULLET_IMPULSE(200, 1225), 0);
+		def.AddAmmoType("357", DMG_BULLET, TRACER_LINE_AND_WHIZ, "sk_plr_dmg_neo", "sk_npc_dmg_neo", "sk_max_neo_ammo", BULLET_IMPULSE(800, 5000), 0);
+		def.AddAmmoType("XBowBolt", DMG_BULLET, TRACER_LINE, "sk_plr_dmg_neo", "sk_npc_dmg_neo", "sk_max_neo_ammo", BULLET_IMPULSE(800, 8000), 0);
+		def.AddAmmoType("Buckshot", DMG_BULLET | DMG_BUCKSHOT, TRACER_LINE, "sk_plr_dmg_neo", "sk_npc_dmg_neo", "sk_max_neo_ammo", BULLET_IMPULSE(400, 1200), 0);
+		def.AddAmmoType("RPG_Round", DMG_BURN, TRACER_NONE, "sk_plr_dmg_neo", "sk_npc_dmg_neo", "sk_max_neo_ammo", 0, 0);
+		def.AddAmmoType("SMG1_Grenade", DMG_BURN, TRACER_NONE, "sk_plr_dmg_neo", "sk_npc_dmg_neo", "sk_max_neo_ammo", 0, 0);
+		def.AddAmmoType("Grenade", DMG_BURN, TRACER_NONE, "sk_plr_dmg_neo", "sk_npc_dmg_neo", "sk_max_neo_ammo", 0, 0);
+		def.AddAmmoType("slam", DMG_BURN, TRACER_NONE, "sk_plr_dmg_neo", "sk_npc_dmg_neo", "sk_max_neo_ammo", 0, 0);
 	}
 
 	return &def;
