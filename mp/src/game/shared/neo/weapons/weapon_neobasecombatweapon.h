@@ -34,6 +34,7 @@ public:
 
 	virtual bool Reload( void );
 
+	virtual bool CanBeSelected(void);
 
 	// NEO HACK/FIXME (Rain):
 	// We override with empty implementation to avoid getting removed by

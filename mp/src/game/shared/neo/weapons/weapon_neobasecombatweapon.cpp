@@ -69,3 +69,8 @@ bool CNEOBaseCombatWeapon::Reload( void )
 
 	return DefaultReload( GetMaxClip1(), GetMaxClip2(), ACT_VM_RELOAD );
 }
+
+bool CNEOBaseCombatWeapon::CanBeSelected(void)
+{
+	return BaseClass::CanBeSelected();
+}

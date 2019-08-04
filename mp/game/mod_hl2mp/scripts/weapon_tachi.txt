@@ -20,7 +20,12 @@ WeaponData
 	"secondary_ammo"	"None"
 
 	"weight"			"2"
-	"item_flags"			"0"
+	
+	// ITEM_FLAG_NOAUTOSWITCHEMPTY = (1 << 2)
+	// ITEM_FLAG_DOHITLOCATIONDMG = (1 << 5) 
+	// Combined as int = 36
+	"item_flags"		"36"
+	
 	"damage"			"17"
 
 	// Sounds for the weapon. There is a max of 16 sounds per category (i.e. max 16 "single_shot" sounds)

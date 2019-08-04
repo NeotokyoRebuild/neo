@@ -22,7 +22,12 @@ WeaponData
 	"secondary_ammo"	"None"
 
 	"weight"		"2"
-	"item_flags"		"0"
+	
+	
+	// ITEM_FLAG_NOAUTOSWITCHEMPTY = (1 << 2)
+	// ITEM_FLAG_DOHITLOCATIONDMG = (1 << 5) 
+	// Combined as int = 36
+	"item_flags"		"36"
 	
 	
 	"AimType"		"1"
