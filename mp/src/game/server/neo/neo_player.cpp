@@ -646,6 +646,8 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 	// Already using the desired animation?
 	if (GetSequence() == animDesired)
 	{
+		//SetCycle(fmodf(GetCycle() + GetSequenceCycleRate(animDesired), SequenceDuration()));
+
 		return;
 	}
 	else if (animDesired == 0)
@@ -693,7 +695,7 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 			}
 			else
 			{
-				DevMsg("neo_player: Failed to get a valid final model sequence\n");
+				//DevMsg("neo_player: Failed to get a valid final model sequence\n");
 				return;
 			}
 		}
@@ -707,7 +709,7 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 			SetSequence(finalSequence);
 			SetCycle(0);
 
-			AddGesture(idealActivity);
+			//AddGesture(idealActivity);
 		}
 	}
 }
