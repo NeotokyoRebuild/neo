@@ -506,54 +506,86 @@ inline void CNEO_Player::Weapon_SetZoom(bool bZoomIn)
 
 void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 {
-	int animDesired;
+	int animDesired = 0, wepLayer = 0;
+	char szAnim[64], szWepLayer[64];
 
-	float speed;
+	float speed = GetAbsVelocity().Length2D();
 
-	speed = GetAbsVelocity().Length2D();
-
-	if ( GetFlags() & ( FL_FROZEN | FL_ATCONTROLS ) )
+	if (GetFlags() & (FL_FROZEN | FL_ATCONTROLS))
 	{
 		speed = 0;
 		playerAnim = PLAYER_IDLE;
 	}
 
-	Activity idealActivity = ACT_IDLE;
+	Activity idealActivity = ACT_MP_RUN;
 
 	if ( playerAnim == PLAYER_JUMP )
 	{
-		idealActivity = ACT_HOP;
+		idealActivity = ACT_MP_JUMP;
 	}
 	else if ( playerAnim == PLAYER_DIE )
 	{
 		if ( m_lifeState == LIFE_ALIVE )
 		{
+			// should we get death activity?
+			// baseclass->baseclass has an example of this; relevant here?
 			return;
 		}
 	}
 	else if ( playerAnim == PLAYER_ATTACK1 )
 	{
-		if ( GetActivity( ) == ACT_HOVER	|| 
-			 GetActivity( ) == ACT_SWIM		||
-			 GetActivity( ) == ACT_HOP		||
-			 GetActivity( ) == ACT_LEAP		||
-			 GetActivity( ) == ACT_DIESIMPLE )
+		if (GetActivity() == ACT_HOVER ||
+			GetActivity( ) == ACT_SWIM	||
+			GetActivity() == ACT_JUMP ||
+			GetActivity( ) == ACT_LEAP		||
+			GetActivity( ) == ACT_DIESIMPLE )
 		{
 			idealActivity = GetActivity( );
 		}
 		else
 		{
 			idealActivity = ACT_RANGE_ATTACK1;
+
+			if (speed > 0)
+			{
+				if (speed > 50)
+				{
+					Q_strncpy(szAnim, "Run_Shoot_", sizeof(szAnim));
+				}
+				else
+				{
+					Q_strncpy(szAnim, "Walk_Shoot_", sizeof(szAnim));
+					
+				}
+			}
+			else
+			{
+				Q_strncpy(szAnim, "Idle_Shoot_", sizeof(szAnim));
+			}
+
+			Q_strncat(szAnim, m_szAnimExtension, sizeof(szAnim), COPY_ALL_CHARACTERS);
+			animDesired = LookupSequence(szAnim);
+
+			if (animDesired == -1)
+			{
+				animDesired = 0;
+			}
 		}
 	}
 	else if ( playerAnim == PLAYER_RELOAD )
 	{
-		idealActivity = ACT_RELOAD;
+		Q_strncpy(szAnim, "Reload_", sizeof(szAnim));
+		Q_strncat(szAnim, m_szAnimExtension, sizeof(szAnim), COPY_ALL_CHARACTERS);
+		animDesired = LookupSequence(szAnim);
+		if (animDesired == -1)
+		{
+			animDesired = 0;
+		}
 	}
 	else if ( playerAnim == PLAYER_IDLE || playerAnim == PLAYER_WALK )
 	{
 		// Still jumping
-		if ( !( GetFlags() & FL_ONGROUND ) && GetActivity( ) == ACT_HOP )
+		if (!(GetFlags() & FL_ONGROUND) && GetActivity() == ACT_MP_JUMP)
 		{
 			idealActivity = GetActivity();
 		}
@@ -563,50 +595,121 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 			{
 				if ( speed > 0 )
 				{
-					idealActivity = ACT_WALK_CROUCH;
+					Q_strncpy(szAnim, "Crouch_Idle", sizeof(szAnim));
+					animDesired = LookupSequence(szAnim);
+
+					idealActivity = ACT_MP_CROUCH_IDLE;
 				}
 				else
 				{
-					idealActivity = ACT_CROUCHIDLE;
+					Q_strncpy(szAnim, "Crouch_walk_lower", sizeof(szAnim));
+					animDesired = LookupSequence(szAnim);
+
+					idealActivity = ACT_MP_CROUCHWALK;
 				}
 			}
 			else
 			{
 				if ( speed > 0 )
 				{
+					if (speed > 50)
 					{
-						idealActivity = ACT_RUN;
+						Q_strncpy(szAnim, "Run_lower", sizeof(szAnim));
+						animDesired = LookupSequence(szAnim);
+
+						Q_strncpy(szWepLayer, "Run_Upper_", sizeof(szWepLayer));
+						Q_strncat(szWepLayer, m_szAnimExtension, sizeof(szWepLayer), COPY_ALL_CHARACTERS);
+						wepLayer = LookupSequence(szWepLayer);
+
+						idealActivity = ACT_MP_RUN;
+					}
+					else
+					{
+						Q_strncpy(szAnim, "walk_lower", sizeof(szAnim));
+						animDesired = LookupSequence(szAnim);
+
+						Q_strncpy(szWepLayer, "Walk_Upper_", sizeof(szWepLayer));
+						Q_strncat(szWepLayer, m_szAnimExtension, sizeof(szWepLayer), COPY_ALL_CHARACTERS);
+						wepLayer = LookupSequence(szWepLayer);
+
+						idealActivity = ACT_MP_WALK;
 					}
 				}
 				else
 				{
-					idealActivity = ACT_IDLE;
+					idealActivity = ACT_MP_STAND_IDLE;
 				}
 			}
 		}
 	}
 
-	SetActivity(idealActivity);
-
-	animDesired = SelectWeightedSequence( Weapon_TranslateActivity ( idealActivity ) );
-
-	if (animDesired == -1)
+	// Already using the desired animation?
+	if (GetSequence() == animDesired)
 	{
-		animDesired = SelectWeightedSequence( idealActivity );
-
-		if ( animDesired == -1 )
+		return;
+	}
+	else if (animDesired == 0)
+	{
+		if (idealActivity == ACT_RANGE_ATTACK1)
 		{
-			animDesired = 0;
+			RestartGesture(Weapon_TranslateActivity(idealActivity));
+
+			Weapon_SetActivity(idealActivity, 0);
+		}
+		else if (idealActivity == ACT_MP_RELOAD_STAND)
+		{
+			AddGesture(idealActivity);
+			//RestartGesture(Weapon_TranslateActivity(idealActivity));
+		}
+		else
+		{
+			SetActivity(idealActivity);
+
+			int animDesired = SelectWeightedSequence(Weapon_TranslateActivity(idealActivity));
+
+			// Already using the desired animation?
+			if (GetSequence() == animDesired)
+				return;
+
+			m_flPlaybackRate = 1.0;
+			ResetSequence(animDesired);
+			SetCycle(0);
 		}
 	}
+	else
+	{
+		int finalSequence;
 
-	// Already using the desired animation?
-	if ( GetSequence() == animDesired )
-		return;
-	
-	m_flPlaybackRate = 1.0;
-	ResetSequence( animDesired );
-	SetCycle( 0 );
+		if (IsValidSequence(animDesired))
+		{
+			finalSequence = animDesired;
+		}
+		else
+		{
+			int weightedSeq = SelectWeightedSequence(idealActivity);
+			if (IsValidSequence(weightedSeq))
+			{
+				finalSequence = weightedSeq;
+			}
+			else
+			{
+				DevMsg("neo_player: Failed to get a valid final model sequence\n");
+				return;
+			}
+		}
+
+		Assert(IsValidSequence(finalSequence));
+
+		if (GetSequence() != finalSequence)
+		{
+			m_flPlaybackRate = 1.0;
+
+			SetSequence(finalSequence);
+			SetCycle(0);
+
+			AddGesture(idealActivity);
+		}
+	}
 }
 
 // Purpose: Suicide, but cancel the point loss.
