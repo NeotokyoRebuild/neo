@@ -57,7 +57,12 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 	// The NeotokyoSource root asset folder should exist (or be symlinked) to one of these paths,
 	// or be specified with -neopath parm (which is currently broken on Linux, see below).
 	// We stop looking on first folder that exists.
-	const char *neoHardcodedLinuxAssetPath_Home = "$HOME/.local/share/neotokyo/NeotokyoSource/";
+	char neoHardcodedLinuxAssetPath_Home[MAX_PATH];
+	V_strcpy_safe(neoHardcodedLinuxAssetPath_Home, getenv("HOME"));
+	V_AppendSlash(neoHardcodedLinuxAssetPath_Home, sizeof(neoHardcodedLinuxAssetPath_Home));
+	V_strcat(neoHardcodedLinuxAssetPath_Home, ".local/share/neotokyo/NeotokyoSource/",
+		sizeof(neoHardcodedLinuxAssetPath_Home));
+
 	const char *neoHardcodedLinuxAssetPath_Share = "/usr/share/neotokyo/NeotokyoSource/";
 	
 	// NEO FIXME (Rain): getting this ParmValue from Steam Linux client seems to be broken(?),
