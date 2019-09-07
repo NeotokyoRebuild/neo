@@ -439,6 +439,43 @@ inline void CNEO_Player::SuperJump(void)
 		forward = -forward;
 	}
 
+	// NEO TODO (Rain): handle underwater case
+	// NEO TODO (Rain): handle ladder mounted case
+	// NEO TODO (Rain): handle "mounted" use key context case
+
+	// NEO TODO (Rain): this disabled block below is taken from trigger_push implementation.
+	// Probably wanna do some of this so we handle lag compensation accordingly; needs testing.
+#if(0)
+#if defined( HL2_DLL )
+	// HACK HACK  HL2 players on ladders will only be disengaged if the sf is set, otherwise no push occurs.
+	if ( pOther->IsPlayer() && 
+		pOther->GetMoveType() == MOVETYPE_LADDER )
+	{
+		if ( !HasSpawnFlags(SF_TRIG_PUSH_AFFECT_PLAYER_ON_LADDER) )
+		{
+			// Ignore the push
+			return;
+		}
+	}
+#endif
+
+	Vector vecPush = (m_flPushSpeed * vecAbsDir);
+	if ((pOther->GetFlags() & FL_BASEVELOCITY) && !lagcompensation->IsCurrentlyDoingLagCompensation())
+	{
+		vecPush = vecPush + pOther->GetBaseVelocity();
+	}
+	if (vecPush.z > 0 && (pOther->GetFlags() & FL_ONGROUND))
+	{
+		pOther->SetGroundEntity(NULL);
+		Vector origin = pOther->GetAbsOrigin();
+		origin.z += 1.0f;
+		pOther->SetAbsOrigin(origin);
+	}
+
+	pOther->SetBaseVelocity(vecPush);
+	pOther->AddFlag(FL_BASEVELOCITY);
+#endif
+
 	ApplyAbsVelocityImpulse(forward * neo_recon_superjump_intensity.GetFloat());
 }
 
