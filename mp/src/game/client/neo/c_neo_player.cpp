@@ -299,6 +299,11 @@ int C_NEO_Player::DrawModel( int flags )
 	return BaseClass::DrawModel(flags);
 }
 
+int C_NEO_Player::GetClass() const
+{
+	return m_iNeoClass;
+}
+
 void C_NEO_Player::AddEntity( void )
 {
 	BaseClass::AddEntity();

@@ -74,6 +74,8 @@ public:
 
 	bool ShouldDrawHL2StyleQuickHud( void );
 
+	int GetClass() const;
+
 	virtual void SetLocalViewAngles( const QAngle &viewAngles )
 	{
 		BaseClass::SetLocalViewAngles(viewAngles);
