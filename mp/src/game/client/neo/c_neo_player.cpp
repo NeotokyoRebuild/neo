@@ -544,13 +544,16 @@ void C_NEO_Player::PostThink(void)
 		previouslyReloading = pWep->m_bInReload;
 	}
 
-	if ((m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED))
+	if (m_iNeoClass == NEO_CLASS_RECON)
 	{
-		const float superJumpCost = 45.0f;
-		// This is for prediction only, actual power drain happens serverside
-		if (m_HL2Local.m_flSuitPower >= superJumpCost)
+		if ((m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED))
 		{
-			SuperJump();
+			const float superJumpCost = 45.0f;
+			// This is for prediction only, actual power drain happens serverside
+			if (m_HL2Local.m_flSuitPower >= superJumpCost)
+			{
+				SuperJump();
+			}
 		}
 	}
 }
@@ -558,11 +561,11 @@ void C_NEO_Player::PostThink(void)
 // This is applied for prediction purposes. It should match CNEO_Player's method.
 inline void C_NEO_Player::SuperJump(void)
 {
-	DevMsg("SuperJump (client)\n");
+	//DevMsg("SuperJump (client)\n");
 
 	if (GetMoveParent())
 	{
-		DevMsg("SuperJumper is parented; will not jump (client)\n");
+		//DevMsg("SuperJumper is parented; will not jump (client)\n");
 		return;
 	}
 

@@ -416,11 +416,11 @@ inline void CNEO_Player::CheckThermOpticButtons()
 
 inline void CNEO_Player::SuperJump(void)
 {
-	DevMsg("SuperJump\n");
+	//DevMsg("SuperJump\n");
 
 	if (GetMoveParent())
 	{
-		DevMsg("SuperJumper is parented; will not jump\n");
+		//DevMsg("SuperJumper is parented; will not jump\n");
 		return;
 	}
 
@@ -471,13 +471,16 @@ void CNEO_Player::PostThink(void)
 		Weapon_Drop(GetActiveWeapon(), NULL, &eyeForward);
 	}
 
-	if ((m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED))
+	if (m_iNeoClass == NEO_CLASS_RECON)
 	{
-		const float superJumpCost = 45.0f;
-		if (SuitPower_GetCurrentPercentage() >= superJumpCost)
+		if ((m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED))
 		{
-			SuitPower_Drain(superJumpCost);
-			SuperJump();
+			const float superJumpCost = 45.0f;
+			if (SuitPower_GetCurrentPercentage() >= superJumpCost)
+			{
+				SuitPower_Drain(superJumpCost);
+				SuperJump();
+			}
 		}
 	}
 
