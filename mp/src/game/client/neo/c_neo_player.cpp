@@ -543,6 +543,36 @@ void C_NEO_Player::PostThink(void)
 
 		previouslyReloading = pWep->m_bInReload;
 	}
+
+	if ((m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED))
+	{
+		const float superJumpCost = 45.0f;
+		// This is for prediction only, actual power drain happens serverside
+		if (m_HL2Local.m_flSuitPower >= superJumpCost)
+		{
+			SuperJump();
+		}
+	}
+}
+
+// This is applied for prediction purposes. It should match CNEO_Player's method.
+inline void C_NEO_Player::SuperJump(void)
+{
+	DevMsg("SuperJump (client)\n");
+
+	if (GetMoveParent())
+	{
+		DevMsg("SuperJumper is parented; will not jump (client)\n");
+		return;
+	}
+
+	Vector forward;
+	AngleVectors(EyeAngles(), &forward);
+
+	// We don't give an upwards boost aside from regular jump
+	forward.z = 0;
+
+	ApplyAbsVelocityImpulse(forward * neo_recon_superjump_intensity.GetFloat());
 }
 
 void C_NEO_Player::Spawn( void )

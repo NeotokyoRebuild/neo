@@ -87,6 +87,8 @@ public:
 
 	inline void Weapon_SetZoom(bool bZoomIn);
 
+	inline void SuperJump(void);
+
 	void RequestSetClass(int newClass);
 	void RequestSetSkin(int newSkin);
 

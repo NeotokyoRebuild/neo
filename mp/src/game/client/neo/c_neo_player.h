@@ -83,6 +83,8 @@ public:
 		BaseClass::SetViewAngles(ang);
 	}
 
+	inline void SuperJump(void);
+
 	inline void DrawCompass(void);
 
 	void Weapon_AimToggle(C_BaseCombatWeapon *pWep);

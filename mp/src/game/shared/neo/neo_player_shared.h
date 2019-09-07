@@ -89,5 +89,6 @@ inline bool IsAllowedToZoom(CBasePlayer *player, CBaseCombatWeapon *pWep)
 }
 
 extern ConVar cl_autoreload_when_empty;
+extern ConVar neo_recon_superjump_intensity;
 
 #endif // NEO_PLAYER_SHARED_H

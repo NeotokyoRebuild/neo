@@ -414,6 +414,25 @@ inline void CNEO_Player::CheckThermOpticButtons()
 	}
 }
 
+inline void CNEO_Player::SuperJump(void)
+{
+	DevMsg("SuperJump\n");
+
+	if (GetMoveParent())
+	{
+		DevMsg("SuperJumper is parented; will not jump\n");
+		return;
+	}
+
+	Vector forward;
+	AngleVectors(EyeAngles(), &forward);
+
+	// We don't give an upwards boost aside from regular jump
+	forward.z = 0;
+	
+	ApplyAbsVelocityImpulse(forward * neo_recon_superjump_intensity.GetFloat());
+}
+
 void CNEO_Player::PostThink(void)
 {
 	BaseClass::PostThink();
@@ -450,6 +469,16 @@ void CNEO_Player::PostThink(void)
 		eyeForward *= forwardOffset;
 
 		Weapon_Drop(GetActiveWeapon(), NULL, &eyeForward);
+	}
+
+	if ((m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED))
+	{
+		const float superJumpCost = 45.0f;
+		if (SuitPower_GetCurrentPercentage() >= superJumpCost)
+		{
+			SuitPower_Drain(superJumpCost);
+			SuperJump();
+		}
 	}
 
 #if(0)
@@ -620,6 +649,11 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 						Q_strncpy(szWepLayer, "Run_Upper_", sizeof(szWepLayer));
 						Q_strncat(szWepLayer, m_szAnimExtension, sizeof(szWepLayer), COPY_ALL_CHARACTERS);
 						wepLayer = LookupSequence(szWepLayer);
+
+						if (V_stricmp(szWepLayer, "Run_Upper_tachi"))
+						{
+							V_strcpy_safe(szWepLayer, "Run_Upper_Pistol");
+						}
 
 						idealActivity = ACT_MP_RUN;
 					}
