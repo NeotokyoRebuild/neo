@@ -421,6 +421,9 @@ inline void CNEO_Player::SuperJump(void)
 	if (GetMoveParent())
 	{
 		//DevMsg("SuperJumper is parented; will not jump\n");
+
+		// Give back the lost charge since we aren't jumping
+		SuitPower_Charge(45.0f);
 		return;
 	}
 
@@ -430,6 +433,12 @@ inline void CNEO_Player::SuperJump(void)
 	// We don't give an upwards boost aside from regular jump
 	forward.z = 0;
 	
+	// Flip direction if jumping backwards
+	if (m_nButtons & IN_BACK)
+	{
+		forward = -forward;
+	}
+
 	ApplyAbsVelocityImpulse(forward * neo_recon_superjump_intensity.GetFloat());
 }
 
@@ -478,8 +487,13 @@ void CNEO_Player::PostThink(void)
 			const float superJumpCost = 45.0f;
 			if (SuitPower_GetCurrentPercentage() >= superJumpCost)
 			{
-				SuitPower_Drain(superJumpCost);
-				SuperJump();
+				// Only superjump if we have a reasonable jump direction in mind
+				// NEO TODO (Rain): should we support sideways superjumping?
+				if (((m_nButtons & IN_FORWARD) && (m_nButtons & IN_BACK)) == false)
+				{
+					SuitPower_Drain(superJumpCost);
+					SuperJump();
+				}
 			}
 		}
 	}
