@@ -69,10 +69,25 @@ public:
 	virtual void CalcView( Vector &eyeOrigin, QAngle &eyeAngles, float &zNear, float &zFar, float &fov );
 	virtual const QAngle& EyeAngles( void );
 
+
+#ifdef NEO
+	virtual void StartSprinting(void);
+	virtual void StopSprinting(void);
+	virtual bool CanSprint(void);
+
+	virtual void StartWalking(void);
+	virtual void StopWalking(void);
+#else
+	void	StartSprinting(void);
+	void	StopSprinting(void);
+	bool	CanSprint(void);
+
+	void StartWalking(void);
+	void StopWalking(void);
+#endif
 	
-	bool	CanSprint( void );
-	void	StartSprinting( void );
-	void	StopSprinting( void );
+	bool IsWalking(void) { return m_fIsWalking; }
+
 	void	HandleSpeedChanges( void );
 	void	UpdateLookAt( void );
 	void	Initialize( void );
@@ -82,11 +97,6 @@ public:
 	const char	*GetPlayerModelSoundPrefix( void );
 
 	HL2MPPlayerState State_Get() const;
-
-	// Walking
-	void StartWalking( void );
-	void StopWalking( void );
-	bool IsWalking( void ) { return m_fIsWalking; }
 
 	virtual void PostThink( void );
 

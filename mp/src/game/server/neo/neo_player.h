@@ -73,7 +73,6 @@ public:
 	virtual bool	CanHearAndReadChatFrom(CBasePlayer *pPlayer);
 
 	inline bool IsAllowedToDrop(CBaseCombatWeapon *pWep);
-	inline bool IsAllowedToZoom(CBaseCombatWeapon *pWep);
 
 	inline void ZeroFriendlyPlayerLocArray(void);
 
@@ -88,8 +87,28 @@ public:
 
 	inline void Weapon_SetZoom(bool bZoomIn);
 
-	int GetSkin();
-	int GetClass();
+	inline void SuperJump(void);
+
+	void RequestSetClass(int newClass);
+	void RequestSetSkin(int newSkin);
+
+	int GetSkin() const;
+	int GetClass() const;
+
+	virtual void StartAutoSprint(void);
+	virtual void StartSprinting(void);
+	virtual void StopSprinting(void);
+	virtual void InitSprinting(void);
+	virtual bool CanSprint(void);
+	virtual void EnableSprint(bool bEnable);
+
+	virtual void StartWalking(void);
+	virtual void StopWalking(void);
+
+	float GetNormSpeed() const;
+	float GetCrouchSpeed() const;
+	float GetWalkSpeed() const;
+	float GetSprintSpeed() const;
 
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);
 
@@ -97,6 +116,9 @@ private:
 	inline void CheckThermOpticButtons();
 
 public:
+	CNetworkVar(int, m_iNeoClass);
+	CNetworkVar(int, m_iNeoSkin);
+
 	CNetworkVar(int, m_iCapTeam);
 
 	CNetworkVar(bool, m_bShowTestMessage);

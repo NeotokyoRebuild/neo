@@ -55,6 +55,11 @@ void CNEOScoreBoard::UpdatePlayerInfo()
 	return;
 #endif
 
+	if (!g_PR)
+	{
+		return;
+	}
+
 	CBasePlayer *player = C_BasePlayer::GetLocalPlayer();
 	Assert(player);
 
@@ -83,7 +88,7 @@ void CNEOScoreBoard::UpdatePlayerInfo()
 			}
 
 			// Highlight the row if this is the local player
-			if (i == player->entindex())
+			if (player && i == player->entindex())
 			{
 				Assert(itemId != -1);
 				m_pPlayerList->SetSelectedItem(itemId);

@@ -6,6 +6,34 @@
 
 #include "neo_predicted_viewmodel.h"
 
+// All of these should be able to stack create even slower speeds (at least in original NT)
+#define NEO_SPRINT_MODIFIER 1.6
+#define NEO_SLOW_MODIFIER 0.75
+
+#define NEO_BASE_NORM_SPEED 136
+#define NEO_BASE_SPRINT_SPEED (NEO_BASE_NORM_SPEED * NEO_SPRINT_MODIFIER)
+#define NEO_BASE_WALK_SPEED (NEO_BASE_NORM_SPEED * NEO_SLOW_MODIFIER)
+#define NEO_BASE_CROUCH_SPEED (NEO_BASE_NORM_SPEED * NEO_SLOW_MODIFIER)
+
+#define NEO_RECON_SPEED_MODIFIER 1.25
+#define NEO_ASSAULT_SPEED_MODIFIER 1.0
+#define NEO_SUPPORT_SPEED_MODIFIER 0.75
+
+#define NEO_RECON_NORM_SPEED (NEO_BASE_NORM_SPEED * NEO_RECON_SPEED_MODIFIER)
+#define NEO_RECON_SPRINT_SPEED (NEO_BASE_SPRINT_SPEED * NEO_RECON_SPEED_MODIFIER)
+#define NEO_RECON_WALK_SPEED (NEO_BASE_WALK_SPEED * NEO_RECON_SPEED_MODIFIER)
+#define NEO_RECON_CROUCH_SPEED (NEO_BASE_CROUCH_SPEED * NEO_RECON_SPEED_MODIFIER)
+
+#define NEO_ASSAULT_NORM_SPEED (NEO_BASE_NORM_SPEED * NEO_ASSAULT_SPEED_MODIFIER)
+#define NEO_ASSAULT_SPRINT_SPEED (NEO_BASE_SPRINT_SPEED * NEO_ASSAULT_SPEED_MODIFIER)
+#define NEO_ASSAULT_WALK_SPEED (NEO_BASE_WALK_SPEED * NEO_ASSAULT_SPEED_MODIFIER)
+#define NEO_ASSAULT_CROUCH_SPEED (NEO_BASE_CROUCH_SPEED * NEO_ASSAULT_SPEED_MODIFIER)
+
+#define NEO_SUPPORT_NORM_SPEED (NEO_BASE_NORM_SPEED * NEO_SUPPORT_SPEED_MODIFIER)
+#define NEO_SUPPORT_SPRINT_SPEED (NEO_BASE_SPRINT_SPEED * NEO_SUPPORT_SPEED_MODIFIER)
+#define NEO_SUPPORT_WALK_SPEED (NEO_BASE_WALK_SPEED * NEO_SUPPORT_SPEED_MODIFIER)
+#define NEO_SUPPORT_CROUCH_SPEED (NEO_BASE_CROUCH_SPEED * NEO_SUPPORT_SPEED_MODIFIER)
+
 enum NeoSkin {
 	NEO_SKIN_FIRST = 0,
 	NEO_SKIN_SECOND,
@@ -26,12 +54,43 @@ enum NeoClass {
 	NEO_CLASS_ENUM_COUNT
 };
 
-extern ConVar neo_cl_cyborgclass;
-extern ConVar neo_cl_skin;
-
 class CNEO_Player;
 
-bool IsThereRoomForLeanSlide(CNEO_Player *player,
+extern bool IsThereRoomForLeanSlide(CNEO_Player *player,
 	const Vector &targetViewOffset, bool &outStartInSolid);
+
+// Is the player allowed to aim zoom with a weapon of this type?
+inline bool IsAllowedToZoom(CBasePlayer *player, CBaseCombatWeapon *pWep)
+{
+	if (!pWep)
+	{
+		return false;
+	}
+
+	// NEO TODO (Rain): this list will probably eventually become longer
+	// than forbidden list; swap logic?
+	const char *allowedAimZoom[] = {
+		"weapon_aa13",
+		"weapon_kyla",
+		"weapon_milso",
+		"weapon_tachi",
+		"weapon_zr68s",
+	};
+
+	CBaseCombatWeapon *pTest = NULL;
+	for (int i = 0; i < ARRAYSIZE(allowedAimZoom); i++)
+	{
+		pTest = player->Weapon_OwnsThisType(allowedAimZoom[i]);
+		if (pWep == pTest)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+extern ConVar cl_autoreload_when_empty;
+extern ConVar neo_recon_superjump_intensity;
 
 #endif // NEO_PLAYER_SHARED_H

@@ -59,6 +59,7 @@
 #ifdef NEO
 #include "neo/game_controls/neo_classmenu.h"
 #include "neo/game_controls/neo_teammenu.h"
+#include "neo/game_controls/neo_loadoutmenu.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -181,7 +182,8 @@ CBaseViewport::CBaseViewport() : vgui::EditablePanel( NULL, "CBaseViewport")
 	m_pLastActivePanel = NULL;
 	g_lastPanel = NULL;
 
-	vgui::HScheme scheme = vgui::scheme()->LoadSchemeFromFileEx( enginevgui->GetPanel( PANEL_CLIENTDLL ), "resource/ClientScheme.res", "ClientScheme");
+
+	vgui::HScheme scheme = vgui::scheme()->LoadSchemeFromFileEx(enginevgui->GetPanel(PANEL_CLIENTDLL), "resource/ClientScheme.res", "ClientScheme");
 	SetScheme(scheme);
 	SetProportional( true );
 
@@ -249,8 +251,11 @@ void CBaseViewport::CreateDefaultPanels( void )
 	AddNewPanel( CreatePanelByName( PANEL_NAV_PROGRESS ), "PANEL_NAV_PROGRESS" );
 #endif // !TF_CLIENT_DLL
 #ifdef NEO
-	AddNewPanel( CreatePanelByName( PANEL_TEAM ), "PANEL_TEAM" );
-	AddNewPanel( CreatePanelByName( PANEL_CLASS), "PANEL_CLASS" );
+	AddNewPanel(CreatePanelByName(PANEL_TEAM), "PANEL_TEAM");
+	AddNewPanel(CreatePanelByName(PANEL_CLASS), "PANEL_CLASS");
+	AddNewPanel(CreatePanelByName(PANEL_NEO_LOADOUT), "PANEL_NEO_LOADOUT");
+
+	AddNewPanel(CreatePanelByName(PANEL_NEO_HUD), "PANEL_NEO_HUD");
 #endif
 #endif // !_XBOX
 }
@@ -315,11 +320,18 @@ IViewPortPanel* CBaseViewport::CreatePanelByName(const char *szPanelName)
 	{
 		newpanel = new CNeoClassMenu( this );
 	}
+	else if (Q_strcmp(PANEL_NEO_LOADOUT, szPanelName) == 0)
+	{
+		newpanel = new CNeoLoadoutMenu(this);
+	}
 #endif // NEO
 #endif
 
 	if ( Q_strcmp(PANEL_COMMENTARY_MODELVIEWER, szPanelName) == 0 )
 	{
+		// We should never double allocate this ptr
+		Assert(newpanel == NULL);
+
 		newpanel = new CCommentaryModelViewer( this );
 	}
 	

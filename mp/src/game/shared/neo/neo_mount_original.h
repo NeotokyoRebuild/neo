@@ -52,47 +52,73 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 	const SearchPathAdd_t addType = PATH_ADD_TO_HEAD;
 
 	bool originalNtPathOk = false;
-#ifdef LINUX
-	// The NeotokyoSource root asset folder should exist (or be symlinked) here,
-	// or in the custom neopath.
-	const char *neoHardcodedLinuxAssetPath = "/usr/share/neotokyo/NeotokyoSource/";
 
+#ifdef LINUX
+	// The NeotokyoSource root asset folder should exist (or be symlinked) to one of these paths,
+	// or be specified with -neopath parm (which is currently broken on Linux, see below).
+	// We stop looking on first folder that exists.
+	char neoHardcodedLinuxAssetPath_Home[MAX_PATH];
+	V_strcpy_safe(neoHardcodedLinuxAssetPath_Home, getenv("HOME"));
+	V_AppendSlash(neoHardcodedLinuxAssetPath_Home, sizeof(neoHardcodedLinuxAssetPath_Home));
+	V_strcat(neoHardcodedLinuxAssetPath_Home, ".local/share/neotokyo/NeotokyoSource/",
+		sizeof(neoHardcodedLinuxAssetPath_Home));
+
+	const char *neoHardcodedLinuxAssetPath_Share = "/usr/share/neotokyo/NeotokyoSource/";
+	
 	// NEO FIXME (Rain): getting this ParmValue from Steam Linux client seems to be broken(?),
 	// we always fall back to hardcoded pDefaultVal.
-	Q_strncpy(neoPath,
-		CommandLine()->ParmValue("-neopath", neoHardcodedLinuxAssetPath),
-		sizeof(neoPath));
-	
-	if (Q_stricmp(neoPath, neoHardcodedLinuxAssetPath) != 0)
+	V_strcpy_safe(neoPath,
+		CommandLine()->ParmValue("-neopath", neoHardcodedLinuxAssetPath_Home));
+
+	const bool isUsingCustomParm = (Q_stricmp(neoPath, neoHardcodedLinuxAssetPath_Home) != 0);
+
+	StatStruct file_stat;
+
+	if (isUsingCustomParm)
 	{
 		if (!*neoPath)
 		{
-			strcpy(neoPath, neoHardcodedLinuxAssetPath);
-			Warning("Failed to parse custom -neopath, reverting to: %s\n",
-				neoHardcodedLinuxAssetPath);
+			// We will crash with a more generic error later if Neo mount failed,
+			// so this is our only chance to throw this more specific error message.
+			Error("%s: Failed to read custom -neopath: '%s'\n", thisCaller, neoPath);
+		}
+
+		if (callerIsClientDll)
+		{
+			DevMsg("Client using custom -neopath: %s\n", neoPath);
 		}
 		else
 		{
-			if (callerIsClientDll)
-			{
-				DevMsg("Client using custom -neopath: %s\n", neoPath);
-			}
-			else
-			{
-				DevMsg("Server using custom -neopath: %s\n", neoPath);
-			}
+			DevMsg("Server using custom -neopath: %s\n", neoPath);
+		}
+
+		originalNtPathOk = ( Stat(neoPath, &file_stat) == 0 && IsDir(file_stat) );
+
+		if (!originalNtPathOk)
+		{
+			Error("%s: Failed to access custom -neopath: '%s'\n", thisCaller, neoPath);
+		}
+	}
+	else
+	{
+		// Try first path
+		originalNtPathOk = ( Stat(neoPath, &file_stat) == 0 && IsDir(file_stat) );
+
+		// Try second path
+		if (!originalNtPathOk)
+		{
+			V_strcpy_safe(neoPath, neoHardcodedLinuxAssetPath_Share);
+			
+			originalNtPathOk = ( Stat(neoPath, &file_stat) == 0 && IsDir(file_stat) );
 		}
 	}
 
 	// Both client & server call this function; only print the informational stuff once.
 	if (callerIsClientDll)
 	{
-		DevMsg("%s: Linux build; expecting to find original Neotokyo assets at: '%s'\n", thisCaller, neoPath);
+		DevMsg("%s: Linux build; searching for Neo mount from path: '%s'\n", thisCaller, neoPath);
 	}
 
-	StatStruct file_stat;
-	originalNtPathOk = ( Stat(neoPath, &file_stat) == 0
-		&& IsDir(file_stat) );
 #else // If Windows
 
 	char neoWindowsDefaultPath[MAX_PATH];
@@ -120,19 +146,75 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 	originalNtPathOk = filesystem->IsDirectory(neoPath);
 #endif
 
+#ifdef _WIN32
+	// Search for any additional Steam library drives if Neotokyo was not found at Steam install location.
+	if (!originalNtPathOk)
+	{
+		KeyValues *pKvLibFolders = new KeyValues("LibraryFolders");
+
+		char steamLibraryPath[MAX_PATH];
+		V_strcpy_safe(steamLibraryPath, SteamAPI_GetSteamInstallPath());
+		V_AppendSlash(steamLibraryPath, sizeof(steamLibraryPath));
+		V_strcat(steamLibraryPath, "steamapps\\libraryfolders.vdf", sizeof(steamLibraryPath));
+
+		if (pKvLibFolders->LoadFromFile(filesystem, steamLibraryPath))
+		{
+			const int maxExtraLibs = 50;
+
+			for (int i = 1; i <= maxExtraLibs; i++)
+			{
+				char libStr[3];
+				itoa(i, libStr, sizeof(libStr));
+
+				KeyValues *pKvLib = pKvLibFolders->FindKey(libStr);
+				if (!pKvLib)
+				{
+					break;
+				}
+
+				const char *libPath = pKvLib->GetString();
+				if (*libPath != NULL && filesystem->IsDirectory(libPath))
+				{
+					V_strcpy_safe(neoPath, libPath);
+					V_AppendSlash(neoPath, sizeof(neoPath));
+					V_strcat(neoPath, "steamapps\\common\\NEOTOKYO\\NeotokyoSource", sizeof(neoPath));
+
+					if (filesystem->IsDirectory(neoPath))
+					{
+						// Make sure there's actually a GameInfo.txt in the path, otherwise we will crash on mount.
+						// We make the assumption that any GameInfo.txt found will be valid format.
+						char gameInfoPath[MAX_PATH];
+						V_strcpy_safe(gameInfoPath, neoPath);
+						V_AppendSlash(gameInfoPath, sizeof(gameInfoPath));
+						V_strcat(gameInfoPath, "GameInfo.txt", sizeof(gameInfoPath));
+
+						if (filesystem->FileExists(gameInfoPath))
+						{
+							originalNtPathOk = true;
+							break;
+						}
+					}
+				}
+			}
+		}
+		pKvLibFolders->deleteThis();
+	}
+#endif
+
 	if (originalNtPathOk)
 	{
 #ifdef LINUX
 		if (strlen(neoPath) > 0)
 		{
 			V_AppendSlash(neoPath, sizeof(neoPath));
+
 			filesystem->AddSearchPath(neoPath, pathID, addType);
 
 			if (callerIsClientDll)
 			{
 				DevMsg("%s: Added '%s' to path.\n", thisCaller, neoPath);
 			}
-			
+
 			FilesystemMountRetval_t mountStatus =
 				filesystem->MountSteamContent(-neoAppId);
 			if (mountStatus == FILESYSTEM_MOUNT_OK)
@@ -181,12 +263,9 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 	{
 #ifdef LINUX
 		Error("%s: Original Neotokyo installation was not found. \
-Please use SteamCMD to download the Neotokyo (Windows) contents to path: '%s'\n",
-	thisCaller, neoHardcodedLinuxAssetPath);
+Please use SteamCMD to download the Neotokyo (Windows) contents to one of these paths:\n\n'%s',\n'%s'\n",
+	thisCaller, neoHardcodedLinuxAssetPath_Home, neoHardcodedLinuxAssetPath_Share);
 #else
-		// NEO TODO (Rain): we can attempt to recover here clientside by parsing SteamApps\libraryfolders.vdf
-		// for additional Steam drives where Neotokyo might be located.
-
 		Error("%s: Original Neotokyo installation was not found (looked at path: '%s'). \
 Please install Neotokyo on Steam for this mod to work.\n\n\
 If your original Neotokyo path differs from Steam install path (or if you are running a Steamless \

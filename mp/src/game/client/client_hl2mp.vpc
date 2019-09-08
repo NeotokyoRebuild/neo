@@ -127,6 +127,9 @@ $Project "Client (HL2MP)"
 				$File	"neo\game_controls\neo_classmenu.cpp"
 				$File	"neo\game_controls\neo_classmenu.h"
 
+				$File	"neo\game_controls\neo_loadoutmenu.cpp"
+				$File	"neo\game_controls\neo_loadoutmenu.h"
+
 				$File	"neo\game_controls\neo_teammenu.cpp"
 				$File	"neo\game_controls\neo_teammenu.h"
 			}
@@ -154,8 +157,14 @@ $Project "Client (HL2MP)"
 				$File	"neo\ui\neo_hud_ghost_marker.cpp"
 				$File	"neo\ui\neo_hud_ghost_marker.h"
 
+				$File	"neo\ui\neo_hud_round_state.cpp"
+				$File	"neo\ui\neo_hud_round_state.h"
+
 				$File	"neo\ui\neo_scoreboard.cpp"
 				$File	"neo\ui\neo_scoreboard.h"
+
+				$File	"neo\ui\neo_hud_elements.cpp"
+				$File	"neo\ui\neo_hud_elements.h"
 			}
 
 			////////////////

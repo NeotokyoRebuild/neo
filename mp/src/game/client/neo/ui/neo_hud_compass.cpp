@@ -21,11 +21,10 @@ using vgui::surface;
 
 ConVar neo_cl_hud_compass_enabled("neo_cl_hud_compass_enabled", "1", FCVAR_USERINFO,
 	"Whether the HUD compass is enabled or not.", true, 0, true, 1);
-// NEO TODO (Rain): descriptions for 2 cvars
 ConVar neo_cl_hud_compass_pos_x("neo_cl_hud_compass_pos_x", "2", FCVAR_USERINFO,
-	"", true, 1, false, 10);
+	"HUD compass X offset divisor.", true, 1, false, 10);
 ConVar neo_cl_hud_compass_pos_y("neo_cl_hud_compass_pos_y", "80", FCVAR_USERINFO,
-	"", true, 1, false, 10);
+	"HUD compass Y offset divisor.", true, 1, false, 10);
 ConVar neo_cl_hud_compass_needle("neo_cl_hud_compass_needle", "1", FCVAR_USERINFO,
 	"Whether or not to show HUD compass needle.", true, 0, true, 1);
 

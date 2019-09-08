@@ -148,7 +148,11 @@ public:
 #endif
 	virtual void ClientDisconnected( edict_t *pClient );
 
-	bool CheckGameOver( void );
+#ifdef NEO
+	virtual bool CheckGameOver( void );
+#else
+	bool CheckGameOver(void);
+#endif
 	bool IsIntermission( void );
 
 	void PlayerKilled( CBasePlayer *pVictim, const CTakeDamageInfo &info );

@@ -679,6 +679,7 @@ extern ConVar hl2_normspeed;
 // Set the activity based on an event or current state
 void CHL2MP_Player::SetAnimation( PLAYER_ANIM playerAnim )
 {
+	//BaseClass::SetAnimation(playerAnim);
 	int animDesired;
 
 	float speed;

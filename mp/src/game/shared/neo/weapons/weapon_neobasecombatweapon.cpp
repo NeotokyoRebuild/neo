@@ -42,9 +42,6 @@ void CNEOBaseCombatWeapon::Spawn()
 #endif
 }
 
-#ifdef CLIENT_DLL
-extern ConVar cl_autoreload_when_empty;
-#endif
 bool CNEOBaseCombatWeapon::Reload( void )
 {
 	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
@@ -71,4 +68,14 @@ bool CNEOBaseCombatWeapon::Reload( void )
 #endif
 
 	return DefaultReload( GetMaxClip1(), GetMaxClip2(), ACT_VM_RELOAD );
+}
+
+bool CNEOBaseCombatWeapon::CanBeSelected(void)
+{
+	if (GetWeaponFlags() & ITEM_FLAG_NOAUTOSWITCHEMPTY)
+	{
+		return true;
+	}
+
+	return BaseClass::CanBeSelected();
 }

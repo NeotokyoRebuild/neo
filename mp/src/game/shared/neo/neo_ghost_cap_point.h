@@ -163,7 +163,8 @@ public:
 	DECLARE_DATADESC();
 
 	CNEOGhostCapturePoint();
-
+	virtual ~CNEOGhostCapturePoint();
+	
 	virtual void Precache(void);
 	virtual void Spawn(void);
 

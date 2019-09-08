@@ -24,6 +24,8 @@
 #include "ui/neo_hud_ghost_marker.h"
 #include "ui/neo_hud_friendly_marker.h"
 
+#include "ui/neo_hud_elements.h"
+
 #include "baseviewmodel_shared.h"
 
 #include "prediction.h"
@@ -43,6 +45,9 @@
 LINK_ENTITY_TO_CLASS(player, C_NEO_Player);
 
 IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
+	RecvPropInt(RECVINFO(m_iNeoClass)),
+	RecvPropInt(RECVINFO(m_iNeoSkin)),
+
 	RecvPropBool(RECVINFO(m_bShowTestMessage)),
 	RecvPropString(RECVINFO(m_pszTestMessage)),
 
@@ -60,13 +65,69 @@ BEGIN_PREDICTION_DATA(C_NEO_Player)
 	DEFINE_PRED_FIELD(m_rvFriendlyPlayerPositions, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 
-ConVar cl_autoreload_when_empty("cl_autoreload_when_empty", "1", FCVAR_USERINFO,
-	"Automatically start reloading when the active weapon becomes empty.",
-	true, 0.0f, true, 1.0f);
-
 ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
 	"Whether to display HL2 style ammo/health info near crosshair.",
 	true, 0.0f, true, 1.0f);
+
+class NeoLoadoutMenu_Cb : public ICommandCallback
+{
+public:
+	virtual void CommandCallback(const CCommand& command)
+	{
+		Msg("Loadout access cb\n");
+
+		vgui::EditablePanel *panel = dynamic_cast<vgui::EditablePanel*>
+			(GetClientModeNormal()->GetViewport()->FindChildByName(PANEL_NEO_LOADOUT));
+
+		if (!panel)
+		{
+			Assert(false);
+			Warning("Couldn't find weapon loadout panel\n");
+			return;
+		}
+
+		panel->ApplySchemeSettings(vgui::scheme()->GetIScheme(panel->GetScheme()));
+		int w, h;
+		surface()->GetScreenSize(w, h);
+		panel->SetSize(w, h);
+		panel->SetPos((int)w / 3, (int)h / 3);
+
+		panel->SetMouseInputEnabled(true);
+		panel->SetKeyBoardInputEnabled(true);
+		panel->SetCursorAlwaysVisible(true);
+
+		panel->SetControlEnabled("Scout_Button", true);
+		panel->SetControlEnabled("Misc2", true);
+		panel->SetControlEnabled("Done_Button", true);
+		panel->SetControlEnabled("Button1", true);
+		panel->SetControlEnabled("Button2", true);
+		panel->SetControlEnabled("Button3", true);
+		panel->SetControlEnabled("Button4", true);
+		panel->SetControlEnabled("Button5", true);
+		panel->SetControlEnabled("Button6", true);
+		panel->SetControlEnabled("Button7", true);
+		panel->SetControlEnabled("Button8", true);
+		panel->SetControlEnabled("Button9", true);
+		panel->SetControlEnabled("Button10", true);
+		panel->SetControlEnabled("Button11", true);
+		panel->SetControlEnabled("Button12", true);
+		panel->SetControlEnabled("Button13", true);
+		panel->SetControlEnabled("Button14", true);
+
+		panel->MoveToFront();
+
+		if (panel->IsKeyBoardInputEnabled())
+		{
+			panel->RequestFocus();
+		}
+
+		panel->SetVisible(true);
+		panel->SetEnabled(true);
+
+		surface()->SetMinimized(panel->GetVPanel(), false);
+	}
+};
+NeoLoadoutMenu_Cb neoLoadoutMenu_Cb;
 
 class NeoClassMenu_Cb : public ICommandCallback
 {
@@ -162,73 +223,28 @@ public:
 };
 NeoTeamMenu_Cb neoTeamMenu_Cb;
 
-void SetClass(const CCommand &command)
-{
-	if (command.ArgC() != 2)
-	{
-		Warning("SetClass: Unexpected arg count %i\n", command.ArgC());
-		return;
-	}
-
-	const int iClass = atoi(command.ArgV()[1]);
-
-	char cmd[32];
-	V_sprintf_safe(cmd, "%s %i", neo_cl_cyborgclass.GetName(), iClass);
-
-	engine->ClientCmd(cmd);
-}
-
+ConCommand loadoutmenu("loadoutmenu", &neoLoadoutMenu_Cb, "Open weapon loadout selection menu.", FCVAR_USERINFO);
 ConCommand classmenu("classmenu", &neoClassMenu_Cb, "Open class selection menu.", FCVAR_USERINFO);
 ConCommand teammenu("teammenu", &neoTeamMenu_Cb, "Open team selection menu.", FCVAR_USERINFO);
-ConCommand setclass("setclass", SetClass, "Set class", FCVAR_USERINFO);
 
 C_NEO_Player::C_NEO_Player()
 {
-	m_pCompass = new CNEOHud_Compass("compass");
-	m_pCompass->SetOwner(this);
-
-	m_pHudEvent_Test = new CNEOHud_GameEvent("hudEvent_Test");
-	m_pHudEvent_Test->SetMessage("Test message");
+	m_iNeoClass = NEO_CLASS_ASSAULT;
+	m_iNeoSkin = NEO_SKIN_FIRST;
 
 	m_iCapTeam = TEAM_UNASSIGNED;
 	m_iGhosterTeam = TEAM_UNASSIGNED;
-
-	m_pGhostMarker = new CNEOHud_GhostMarker("ghostMarker");
 
 	m_vecGhostMarkerPos = vec3_origin;
 	m_bGhostExists = false;
 	m_bShowClassMenu = m_bShowTeamMenu = m_bIsClassMenuOpen = m_bIsTeamMenuOpen = false;
 	m_bInThermOpticCamo = m_bUnhandledTocChange = false;
 
-	m_pFriendlyMarker = new CNEOHud_FriendlyMarker("friendlyMarker");
-	m_pFriendlyMarker->SetOwner(this);
+	m_pNeoPanel = NULL;
 }
 
 C_NEO_Player::~C_NEO_Player()
 {
-	if (m_pCompass)
-	{
-		m_pCompass->MarkForDeletion();
-		delete m_pCompass;
-	}
-
-	if (m_pHudEvent_Test)
-	{
-		m_pHudEvent_Test->MarkForDeletion();
-		delete m_pHudEvent_Test;
-	}
-
-	if (m_pGhostMarker)
-	{
-		m_pGhostMarker->MarkForDeletion();
-		delete m_pGhostMarker;
-	}
-
-	if (m_pFriendlyMarker)
-	{
-		m_pFriendlyMarker->MarkForDeletion();
-		delete m_pFriendlyMarker;
-	}
 }
 
 inline void C_NEO_Player::CheckThermOpticButtons()
@@ -281,6 +297,11 @@ int C_NEO_Player::DrawModel( int flags )
 	}
 
 	return BaseClass::DrawModel(flags);
+}
+
+int C_NEO_Player::GetClass() const
+{
+	return m_iNeoClass;
 }
 
 void C_NEO_Player::AddEntity( void )
@@ -344,50 +365,6 @@ void C_NEO_Player::ItemPreFrame( void )
 void C_NEO_Player::ItemPostFrame( void )
 {
 	BaseClass::ItemPostFrame();
-
-	static bool onceOnly = true;
-
-	// NEO HACK/FIXME (Rain): this should be issued from serverside gamerules with player filter,
-	// using proper precached soundscript entries
-	if (m_iCapTeam != TEAM_UNASSIGNED)
-	{
-		if (onceOnly)
-		{
-			if (m_iCapTeam == TEAM_JINRAI)
-			{
-				/*
-				EmitSound("Victory.Jinrai");
-
-				EmitSound("sound/gameplay/jinrai.mp3");
-				*/
-
-				//enginesound->EmitAmbientSound("gameplay/jinrai.mp3", 1.f);
-			}
-			else if (m_iCapTeam == TEAM_NSF)
-			{
-				/*
-				EmitSound("Victory.NSF");
-
-				EmitSound("sound/gameplay/nsf.mp3");
-				*/
-
-				//enginesound->EmitAmbientSound("gameplay/nsf.mp3", 1.f);
-			}
-			else
-			{
-				//EmitSound("Victory.Draw");
-			}
-
-			onceOnly = !onceOnly;
-		}
-	}
-	else
-	{
-		if (onceOnly != true)
-		{
-			onceOnly = true;
-		}
-	}
 }
 
 float C_NEO_Player::GetMinFOV() const
@@ -455,46 +432,68 @@ void C_NEO_Player::PreThink( void )
 		engine->ClientCmd(classmenu.GetName());
 	}
 
-	if (m_bShowTestMessage)
+	// NEO TODO (Rain): marker should be responsible for its own vis control instead
+	CNEOHud_GhostMarker *ghostMarker = NULL;
+	if (m_pNeoPanel)
 	{
-		m_pHudEvent_Test->SetMessage(m_pszTestMessage);
-		m_pHudEvent_Test->SetVisible(true);
-	}
-	else
-	{
-		if (m_pHudEvent_Test->IsVisible())
+		ghostMarker = m_pNeoPanel->GetGhostMarker();
+
+		if (ghostMarker)
 		{
-			m_pHudEvent_Test->SetVisible(false);
-		}
-	}
+			if (!m_bGhostExists)
+			{
+				ghostMarker->SetVisible(false);
 
-	if (!m_bGhostExists)
-	{
-		m_pGhostMarker->SetVisible(false);
-	}
-	else
-	{
-		const float distance = METERS_PER_INCH *
-			Vector(GetAbsOrigin() - m_vecGhostMarkerPos).Length2D();
+				//m_pGhostMarker->SetVisible(false);
+			}
+			else
+			{
+				const float distance = METERS_PER_INCH *
+					GetAbsOrigin().DistTo(m_vecGhostMarkerPos);
 
-		// NEO HACK (Rain): We should test if we're holding a ghost
-		// instead of relying on a distance check.
-		if (m_iGhosterTeam != GetTeamNumber() || distance > 0.2)
-		{
-			m_pGhostMarker->SetVisible(true);
+				// NEO HACK (Rain): We should test if we're holding a ghost
+				// instead of relying on a distance check.
+				if (m_iGhosterTeam != GetTeamNumber() || distance > 0.2)
+				{
+					ghostMarker->SetVisible(true);
 
-			int ghostMarkerX, ghostMarkerY;
-			GetVectorInScreenSpace(m_vecGhostMarkerPos, ghostMarkerX, ghostMarkerY);
+					int ghostMarkerX, ghostMarkerY;
+					GetVectorInScreenSpace(m_vecGhostMarkerPos, ghostMarkerX, ghostMarkerY);
 
-			m_pGhostMarker->SetScreenPosition(ghostMarkerX, ghostMarkerY);
-			m_pGhostMarker->SetGhostingTeam(m_iGhosterTeam);
+					ghostMarker->SetScreenPosition(ghostMarkerX, ghostMarkerY);
+					ghostMarker->SetGhostingTeam(m_iGhosterTeam);
 
 
-			m_pGhostMarker->SetGhostDistance(distance);
+					ghostMarker->SetGhostDistance(distance);
+				}
+				else
+				{
+					ghostMarker->SetVisible(false);
+				}
+			}
 		}
 		else
 		{
-			m_pGhostMarker->SetVisible(false);
+			Warning("Couldn't find ghostMarker\n");
+		}
+
+		auto indicator = m_pNeoPanel->GetGameEventIndicator();
+
+		if (indicator)
+		{
+			if (m_bShowTestMessage)
+			{
+				indicator->SetMessage(m_pszTestMessage);
+			}
+
+			if (indicator->IsVisible() != m_bShowTestMessage)
+			{
+				indicator->SetVisible(m_bShowTestMessage);
+			}
+		}
+		else
+		{
+			Warning("Couldn't find GameEventIndicator\n");
 		}
 	}
 }
@@ -515,9 +514,73 @@ void C_NEO_Player::PostThink(void)
 
 	if (!preparingToHideMsg && previouslyPreparing)
 	{
-		m_pHudEvent_Test->SetVisible(false);
-		previouslyPreparing = false;
+		if (m_pNeoPanel && m_pNeoPanel->GetGameEventIndicator())
+		{
+			m_pNeoPanel->GetGameEventIndicator()->SetVisible(false);
+			previouslyPreparing = false;
+		}
+		else
+		{
+			Assert(false);
+		}
 	}
+
+	C_BaseCombatWeapon *pWep = GetActiveWeapon();
+
+	if (pWep)
+	{
+		static bool previouslyReloading = false;
+
+		if (pWep->m_bInReload)
+		{
+			if (!previouslyReloading)
+			{
+				Weapon_SetZoom(false);
+			}
+		}
+		else
+		{
+			if (m_afButtonReleased & IN_AIM)
+			{
+				Weapon_AimToggle(pWep);
+			}
+		}
+
+		previouslyReloading = pWep->m_bInReload;
+	}
+
+	if (m_iNeoClass == NEO_CLASS_RECON)
+	{
+		if ((m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED))
+		{
+			const float superJumpCost = 45.0f;
+			// This is for prediction only, actual power drain happens serverside
+			if (m_HL2Local.m_flSuitPower >= superJumpCost)
+			{
+				SuperJump();
+			}
+		}
+	}
+}
+
+// This is applied for prediction purposes. It should match CNEO_Player's method.
+inline void C_NEO_Player::SuperJump(void)
+{
+	//DevMsg("SuperJump (client)\n");
+
+	if (GetMoveParent())
+	{
+		//DevMsg("SuperJumper is parented; will not jump (client)\n");
+		return;
+	}
+
+	Vector forward;
+	AngleVectors(EyeAngles(), &forward);
+
+	// We don't give an upwards boost aside from regular jump
+	forward.z = 0;
+
+	ApplyAbsVelocityImpulse(forward * neo_recon_superjump_intensity.GetFloat());
 }
 
 void C_NEO_Player::Spawn( void )
@@ -527,6 +590,44 @@ void C_NEO_Player::Spawn( void )
 	if (GetTeamNumber() == TEAM_UNASSIGNED)
 	{
 		m_bShowTeamMenu = true;
+	}
+
+	// NEO TODO (Rain): UI elements should do this themselves
+	if (!m_pNeoPanel)
+	{
+		m_pNeoPanel = dynamic_cast<CNeoHudElements*>
+			(GetClientModeNormal()->GetViewport()->FindChildByName(PANEL_NEO_HUD));
+
+		if (!m_pNeoPanel)
+		{
+			Assert(false);
+			Warning("Couldn't find CNeoHudElements panel\n");
+			return;
+		}
+
+		m_pNeoPanel->ShowPanel(true);
+
+		auto compass = m_pNeoPanel->GetCompass();
+		if (compass)
+		{
+			compass->SetOwner(this);
+		}
+		else
+		{
+			Assert(false);
+			Warning("Couldn't find compass HUD element\n");
+		}
+
+		auto iff = m_pNeoPanel->GetIFF();
+		if (iff)
+		{
+			iff->SetOwner(this);
+		}
+		else
+		{
+			Assert(false);
+			Warning("Couldn't find compass IFF element\n");
+		}
 	}
 
 #if(0)
@@ -571,5 +672,137 @@ void C_NEO_Player::Weapon_Drop(C_BaseCombatWeapon *pWeapon)
 	if (ghost)
 	{
 		ghost->HandleGhostUnequip();
+	}
+}
+
+void C_NEO_Player::StartSprinting(void)
+{
+	if (m_HL2Local.m_flSuitPower < 10)
+	{
+		return;
+	}
+
+	SetMaxSpeed(GetSprintSpeed());
+}
+
+void C_NEO_Player::StopSprinting(void)
+{
+	SetMaxSpeed(GetNormSpeed());
+
+	m_fIsSprinting = false;
+}
+
+bool C_NEO_Player::CanSprint(void)
+{
+	if (m_iNeoClass == NEO_CLASS_SUPPORT)
+	{
+		return false;
+	}
+
+	return BaseClass::CanSprint();
+}
+
+void C_NEO_Player::StartWalking(void)
+{
+	SetMaxSpeed(GetWalkSpeed());
+
+	m_fIsWalking = true;
+}
+
+void C_NEO_Player::StopWalking(void)
+{
+	SetMaxSpeed(GetNormSpeed());
+
+	m_fIsWalking = true;
+}
+
+float C_NEO_Player::GetCrouchSpeed() const
+{
+	switch (m_iNeoClass)
+	{
+	case NEO_CLASS_RECON:
+		return NEO_RECON_CROUCH_SPEED;
+	case NEO_CLASS_ASSAULT:
+		return NEO_ASSAULT_CROUCH_SPEED;
+	case NEO_CLASS_SUPPORT:
+		return NEO_SUPPORT_CROUCH_SPEED;
+	}
+
+	return NEO_BASE_CROUCH_SPEED;
+}
+
+float C_NEO_Player::GetNormSpeed() const
+{
+	switch (m_iNeoClass)
+	{
+	case NEO_CLASS_RECON:
+		return NEO_RECON_NORM_SPEED;
+	case NEO_CLASS_ASSAULT:
+		return NEO_ASSAULT_NORM_SPEED;
+	case NEO_CLASS_SUPPORT:
+		return NEO_SUPPORT_NORM_SPEED;
+	}
+
+	return NEO_BASE_NORM_SPEED;
+}
+
+float C_NEO_Player::GetWalkSpeed() const
+{
+	switch (m_iNeoClass)
+	{
+	case NEO_CLASS_RECON:
+		return NEO_RECON_WALK_SPEED;
+	case NEO_CLASS_ASSAULT:
+		return NEO_ASSAULT_WALK_SPEED;
+	case NEO_CLASS_SUPPORT:
+		return NEO_SUPPORT_WALK_SPEED;
+	}
+
+	return NEO_BASE_WALK_SPEED;
+}
+
+float C_NEO_Player::GetSprintSpeed() const
+{
+	switch (m_iNeoClass)
+	{
+	case NEO_CLASS_RECON:
+		return NEO_RECON_SPRINT_SPEED;
+	case NEO_CLASS_ASSAULT:
+		return NEO_ASSAULT_SPRINT_SPEED;
+	case NEO_CLASS_SUPPORT:
+		return NEO_SUPPORT_SPRINT_SPEED;
+	}
+
+	return NEO_BASE_SPRINT_SPEED;
+}
+
+void C_NEO_Player::Weapon_AimToggle(C_BaseCombatWeapon *pWep)
+{
+	if (!IsAllowedToZoom(this, pWep))
+	{
+		return;
+	}
+
+	bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR) == HIDEHUD_CROSSHAIR;
+	Weapon_SetZoom(showCrosshair);
+}
+
+inline void C_NEO_Player::Weapon_SetZoom(bool bZoomIn)
+{
+	const float zoomSpeedSecs = 0.25f;
+
+	const int zoomAmount = 30;
+
+	if (bZoomIn)
+	{
+		m_Local.m_iHideHUD &= ~HIDEHUD_CROSSHAIR;
+
+		SetFOV((CBaseEntity*)this, GetDefaultFOV() - zoomAmount, zoomSpeedSecs);
+	}
+	else
+	{
+		m_Local.m_iHideHUD |= HIDEHUD_CROSSHAIR;
+
+		SetFOV((CBaseEntity*)this, GetDefaultFOV(), zoomSpeedSecs);
 	}
 }

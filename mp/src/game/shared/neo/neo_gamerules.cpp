@@ -24,8 +24,10 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 // NEO TODO (Rain): NEO specific game modes var (CTG/TDM/...)
 #ifdef CLIENT_DLL
 	RecvPropFloat(RECVINFO(m_flNeoNextRoundStartTime)),
+	RecvPropFloat(RECVINFO(m_flNeoRoundStartTime)),
 #else
 	SendPropFloat(SENDINFO(m_flNeoNextRoundStartTime)),
+	SendPropFloat(SENDINFO(m_flNeoRoundStartTime)),
 #endif
 END_NETWORK_TABLE()
 
@@ -34,17 +36,16 @@ IMPLEMENT_NETWORKCLASS_ALIASED( NEOGameRulesProxy, DT_NEOGameRulesProxy );
 
 extern void respawn(CBaseEntity *pEdict, bool fCopyCorpse);
 
-// NEO TODO (Rain): These are about 1 unit accurate currently, should probably double check view heights are 100% correct.
-// Also need to offset on class by class basis, these reflect the assault class.
+// NEO TODO (Rain): check against a test map
 static NEOViewVectors g_NEOViewVectors(
-	Vector( 0, 0, 72 ),	   //VEC_VIEW (m_vView)
+	Vector( 0, 0, 62 ),	   //VEC_VIEW (m_vView)
 							  
 	Vector(-16, -16, 0 ),	  //VEC_HULL_MIN (m_vHullMin)
-	Vector( 16,  16,  73 ),	  //VEC_HULL_MAX (m_vHullMax)
+	Vector(16, 16, 72),	  //VEC_HULL_MAX (m_vHullMax)
 							  					
 	Vector(-16, -16, 0 ),	  //VEC_DUCK_HULL_MIN (m_vDuckHullMin)
 	Vector( 16,  16,  48 ),	  //VEC_DUCK_HULL_MAX	(m_vDuckHullMax)
-	Vector( 0, 0, 53 ),		  //VEC_DUCK_VIEW		(m_vDuckView)
+	Vector( 0, 0, 45 ),		  //VEC_DUCK_VIEW		(m_vDuckView)
 							  					
 	Vector(-10, -10, -10 ),	  //VEC_OBS_HULL_MIN	(m_vObsHullMin)
 	Vector( 10,  10,  10 ),	  //VEC_OBS_HULL_MAX	(m_vObsHullMax)
@@ -52,7 +53,7 @@ static NEOViewVectors g_NEOViewVectors(
 	Vector( 0, 0, 14 ),		  //VEC_DEAD_VIEWHEIGHT (m_vDeadViewHeight)
 
 	Vector(-16, -16, 0 ),	  //VEC_CROUCH_TRACE_MIN (m_vCrouchTraceMin)
-	Vector( 16,  16,  60 )	  //VEC_CROUCH_TRACE_MAX (m_vCrouchTraceMax)
+	Vector(16, 16, 60)	  //VEC_CROUCH_TRACE_MAX (m_vCrouchTraceMax)
 );
 
 #ifdef CLIENT_DLL
@@ -198,9 +199,13 @@ CNEORules::CNEORules()
 			g_Teams[TEAM_NSF]->UpdateClientData(player);
 		}
 	}
+
+	m_bFirstRestartIsDone = false;
 #endif
 
 	m_flNeoRoundStartTime = m_flNeoNextRoundStartTime = 0;
+
+	ListenForGameEvent("round_start");
 }
 
 CNEORules::~CNEORules()
@@ -214,6 +219,10 @@ void CNEORules::Precache()
 }
 #endif
 
+ConVar	sk_max_neo_ammo("sk_max_neo_ammo", "10000", FCVAR_REPLICATED);
+ConVar	sk_plr_dmg_neo("sk_plr_dmg_neo", "0", FCVAR_REPLICATED);
+ConVar	sk_npc_dmg_neo("sk_npc_dmg_neo", "0", FCVAR_REPLICATED);
+
 // This is the HL2MP gamerules GetAmmoDef() global scope function copied over,
 // because we want to implement it ourselves. This can be refactored out if/when
 // we don't want to support HL2MP guns anymore.
@@ -226,17 +235,17 @@ CAmmoDef *GetAmmoDef_HL2MP()
 	{
 		bInitted = true;
 
-		def.AddAmmoType("AR2", DMG_BULLET, TRACER_LINE_AND_WHIZ, 0, 0, 60, BULLET_IMPULSE(200, 1225), 0);
-		def.AddAmmoType("AR2AltFire", DMG_DISSOLVE, TRACER_NONE, 0, 0, 3, 0, 0);
-		def.AddAmmoType("Pistol", DMG_BULLET, TRACER_LINE_AND_WHIZ, 0, 0, 150, BULLET_IMPULSE(200, 1225), 0);
-		def.AddAmmoType("SMG1", DMG_BULLET, TRACER_LINE_AND_WHIZ, 0, 0, 225, BULLET_IMPULSE(200, 1225), 0);
-		def.AddAmmoType("357", DMG_BULLET, TRACER_LINE_AND_WHIZ, 0, 0, 12, BULLET_IMPULSE(800, 5000), 0);
-		def.AddAmmoType("XBowBolt", DMG_BULLET, TRACER_LINE, 0, 0, 10, BULLET_IMPULSE(800, 8000), 0);
-		def.AddAmmoType("Buckshot", DMG_BULLET | DMG_BUCKSHOT, TRACER_LINE, 0, 0, 30, BULLET_IMPULSE(400, 1200), 0);
-		def.AddAmmoType("RPG_Round", DMG_BURN, TRACER_NONE, 0, 0, 3, 0, 0);
-		def.AddAmmoType("SMG1_Grenade", DMG_BURN, TRACER_NONE, 0, 0, 3, 0, 0);
-		def.AddAmmoType("Grenade", DMG_BURN, TRACER_NONE, 0, 0, 5, 0, 0);
-		def.AddAmmoType("slam", DMG_BURN, TRACER_NONE, 0, 0, 5, 0, 0);
+		def.AddAmmoType("AR2", DMG_BULLET, TRACER_LINE_AND_WHIZ, "sk_plr_dmg_neo", "sk_npc_dmg_neo", "sk_max_neo_ammo", BULLET_IMPULSE(200, 1225), 0);
+		def.AddAmmoType("AR2AltFire", DMG_DISSOLVE, TRACER_NONE, "sk_plr_dmg_neo", "sk_npc_dmg_neo", "sk_max_neo_ammo", 0, 0);
+		def.AddAmmoType("Pistol", DMG_BULLET, TRACER_LINE_AND_WHIZ, "sk_plr_dmg_neo", "sk_npc_dmg_neo", "sk_max_neo_ammo", BULLET_IMPULSE(200, 1225), 0);
+		def.AddAmmoType("SMG1", DMG_BULLET, TRACER_LINE_AND_WHIZ, "sk_plr_dmg_neo", "sk_npc_dmg_neo", "sk_max_neo_ammo", BULLET_IMPULSE(200, 1225), 0);
+		def.AddAmmoType("357", DMG_BULLET, TRACER_LINE_AND_WHIZ, "sk_plr_dmg_neo", "sk_npc_dmg_neo", "sk_max_neo_ammo", BULLET_IMPULSE(800, 5000), 0);
+		def.AddAmmoType("XBowBolt", DMG_BULLET, TRACER_LINE, "sk_plr_dmg_neo", "sk_npc_dmg_neo", "sk_max_neo_ammo", BULLET_IMPULSE(800, 8000), 0);
+		def.AddAmmoType("Buckshot", DMG_BULLET | DMG_BUCKSHOT, TRACER_LINE, "sk_plr_dmg_neo", "sk_npc_dmg_neo", "sk_max_neo_ammo", BULLET_IMPULSE(400, 1200), 0);
+		def.AddAmmoType("RPG_Round", DMG_BURN, TRACER_NONE, "sk_plr_dmg_neo", "sk_npc_dmg_neo", "sk_max_neo_ammo", 0, 0);
+		def.AddAmmoType("SMG1_Grenade", DMG_BURN, TRACER_NONE, "sk_plr_dmg_neo", "sk_npc_dmg_neo", "sk_max_neo_ammo", 0, 0);
+		def.AddAmmoType("Grenade", DMG_BURN, TRACER_NONE, "sk_plr_dmg_neo", "sk_npc_dmg_neo", "sk_max_neo_ammo", 0, 0);
+		def.AddAmmoType("slam", DMG_BURN, TRACER_NONE, "sk_plr_dmg_neo", "sk_npc_dmg_neo", "sk_max_neo_ammo", 0, 0);
 	}
 
 	return &def;
@@ -280,11 +289,57 @@ bool CNEORules::ShouldCollide(int collisionGroup0, int collisionGroup1)
 
 extern ConVar mp_chattime;
 
+#ifdef GAME_DLL
+void CNEORules::ChangeLevel(void)
+{
+	BaseClass::ChangeLevel();
+}
+#endif
+
+bool CNEORules::CheckGameOver(void)
+{
+	// Note that this changes the level as side effect
+	bool gameOver = BaseClass::CheckGameOver();
+
+#ifdef GAME_DLL
+	if (gameOver)
+	{
+		m_bFirstRestartIsDone = false;
+	}
+#endif
+
+	return gameOver;
+}
+
 void CNEORules::Think(void)
 {
+#ifdef GAME_DLL
+	if (g_fGameOver)   // someone else quit the game already
+	{
+		// check to see if we should change levels now
+		if (m_flIntermissionEndTime < gpGlobals->curtime)
+		{
+			if (!m_bChangelevelDone)
+			{
+				ChangeLevel(); // intermission is over
+				m_bChangelevelDone = true;
+			}
+		}
+
+		return;
+	}
+#endif
+
 	BaseClass::Think();
 
 #ifdef GAME_DLL
+	if (!m_bFirstRestartIsDone)
+	{
+		m_bFirstRestartIsDone = !m_bFirstRestartIsDone;
+		RestartGame();
+		return;
+	}
+
 	if (IsRoundOver())
 	{
 		// If the next round was not scheduled yet
@@ -347,6 +402,17 @@ float CNEORules::GetRoundRemainingTime()
 	}
 
 	return (m_flNeoRoundStartTime + (neo_round_timelimit.GetFloat() * 60.0f)) - gpGlobals->curtime;
+}
+
+void CNEORules::FireGameEvent(IGameEvent* event)
+{
+	const char *type = event->GetName();
+
+	if (Q_strcmp(type, "round_start") == 0)
+	{
+		m_flNeoRoundStartTime = gpGlobals->curtime;
+		m_flNeoNextRoundStartTime = 0;
+	}
 }
 
 #ifdef GAME_DLL

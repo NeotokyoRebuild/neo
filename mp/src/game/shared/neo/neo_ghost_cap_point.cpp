@@ -58,6 +58,21 @@ CNEOGhostCapturePoint::CNEOGhostCapturePoint()
 
 	m_bIsActive = true;
 	m_bGhostHasBeenCaptured = false;
+
+#ifdef CLIENT_DLL
+	m_pHUDCapPoint = NULL;
+#endif
+}
+
+CNEOGhostCapturePoint::~CNEOGhostCapturePoint()
+{
+#ifdef CLIENT_DLL
+	if (m_pHUDCapPoint)
+	{
+		m_pHUDCapPoint->DeletePanel();
+		m_pHUDCapPoint = NULL;
+	}
+#endif
 }
 
 #ifdef GAME_DLL
@@ -136,6 +151,12 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 	{
 		// We should have been reset after a cap before thinking!
 		Assert(false);
+		return;
+	}
+
+	// This round has already ended, we can't be capped into
+	if (NEORules()->GetRoundRemainingTime() < 0)
+	{
 		return;
 	}
 

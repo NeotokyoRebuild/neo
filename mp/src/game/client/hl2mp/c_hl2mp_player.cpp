@@ -15,6 +15,10 @@
 #include "r_efx.h"
 #include "dlight.h"
 
+#ifdef NEO
+#include "neo_player_shared.h"
+#endif
+
 // Don't alias here
 #if defined( CHL2MP_Player )
 #undef CHL2MP_Player	
@@ -40,17 +44,6 @@ END_RECV_TABLE()
 BEGIN_PREDICTION_DATA( C_HL2MP_Player )
 	DEFINE_PRED_FIELD( m_fIsWalking, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE ),
 END_PREDICTION_DATA()
-
-#ifdef NEO
-#define NEO_SPRINT_MODIFIER 1.6
-#define NEO_SLOW_MODIFIER 0.75
-
-#define NEO_ASSAULT_NORM_SPEED 136
-// All of these should be able to stack create even slower speeds (at least in original NT)
-#define NEO_ASSAULT_SPRINT_SPEED (NEO_ASSAULT_NORM_SPEED * NEO_SPRINT_MODIFIER)
-#define NEO_ASSAULT_WALK_SPEED (NEO_ASSAULT_NORM_SPEED * NEO_SLOW_MODIFIER)
-#define NEO_ASSAULT_CROUCH_SPEED (NEO_ASSAULT_NORM_SPEED * NEO_SLOW_MODIFIER)
-#endif
 
 #ifdef NEO
 #define	HL2_WALK_SPEED NEO_ASSAULT_WALK_SPEED
@@ -592,14 +585,15 @@ void C_HL2MP_Player::StartSprinting( void )
 	{
 #ifdef NEO
 #if(0)
-		// Don't sprint unless there's a reasonable
-		// amount of suit power.
 		CPASAttenuationFilter filter( this );
 		filter.UsePredictionRules();
 		EmitSound( filter, entindex(), "HL2Player.SprintNoPower" );
+#endif
+#endif
+
+		// Don't sprint unless there's a reasonable
+		// amount of suit power.
 		return;
-#endif
-#endif
 	}
 
 #ifdef NEO
@@ -610,16 +604,21 @@ void C_HL2MP_Player::StartSprinting( void )
 #endif
 #endif
 
+#ifndef NEO
 	SetMaxSpeed( HL2_SPRINT_SPEED );
+#endif
+
 	m_fIsSprinting = true;
 }
-
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 void C_HL2MP_Player::StopSprinting( void )
 {
+#ifndef NEO
 	SetMaxSpeed( HL2_NORM_SPEED );
+#endif
+
 	m_fIsSprinting = false;
 }
 
@@ -674,7 +673,10 @@ void C_HL2MP_Player::HandleSpeedChanges( void )
 //-----------------------------------------------------------------------------
 void C_HL2MP_Player::StartWalking( void )
 {
+#ifndef NEO
 	SetMaxSpeed( HL2_WALK_SPEED );
+#endif
+
 	m_fIsWalking = true;
 }
 
@@ -682,7 +684,10 @@ void C_HL2MP_Player::StartWalking( void )
 //-----------------------------------------------------------------------------
 void C_HL2MP_Player::StopWalking( void )
 {
+#ifndef NEO
 	SetMaxSpeed( HL2_NORM_SPEED );
+#endif
+
 	m_fIsWalking = false;
 }
 

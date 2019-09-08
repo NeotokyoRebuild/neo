@@ -82,6 +82,10 @@ public:
 
 	CHL2_Player();
 	~CHL2_Player( void );
+
+#ifdef NEO
+	friend class CNEO_Player;
+#endif
 	
 	static CHL2_Player *CreatePlayer( const char *className, edict_t *ed )
 	{
@@ -162,14 +166,25 @@ public:
 	// Locator
 	void UpdateLocatorPosition( const Vector &vecPosition );
 
+
 	// Sprint Device
+#ifdef NEO
+	virtual void StartAutoSprint( void );
+	virtual void StartSprinting( void );
+	virtual void StopSprinting( void );
+	virtual void InitSprinting( void );
+	virtual bool CanSprint( void );
+	virtual void EnableSprint( bool bEnable);
+#else
 	void StartAutoSprint( void );
 	void StartSprinting( void );
 	void StopSprinting( void );
 	void InitSprinting( void );
-	bool IsSprinting( void ) { return m_fIsSprinting; }
 	bool CanSprint( void );
 	void EnableSprint( bool bEnable);
+#endif
+	bool IsSprinting(void) { return m_fIsSprinting; }
+
 
 	bool CanZoom( CBaseEntity *pRequester );
 	void ToggleZoom(void);
@@ -179,8 +194,13 @@ public:
 	void CheckSuitZoom( void );
 
 	// Walking
+#ifdef NEO
+	virtual void StartWalking( void );
+	virtual void StopWalking( void );
+#else
 	void StartWalking( void );
 	void StopWalking( void );
+#endif
 	bool IsWalking( void ) { return m_fIsWalking; }
 
 	// Aiming heuristics accessors

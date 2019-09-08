@@ -89,9 +89,14 @@ void CNEOHud_FriendlyMarker::Paint()
 
 	for (int i = 0; i < ARRAYSIZE(m_pOwner->m_rvFriendlyPlayerPositions); i++)
 	{
-		const Vector heightOffset(0, 0, 48);
-		
 		Vector friendlyPos = m_pOwner->m_rvFriendlyPlayerPositions[i];
+
+		if (friendlyPos == vec3_origin)
+		{
+			continue;
+		}
+
+		const Vector heightOffset(0, 0, 48);
 
 		Vector absPos;
 		VectorAbs(friendlyPos, absPos);
@@ -120,4 +125,9 @@ void CNEOHud_FriendlyMarker::Paint()
 void CNEOHud_FriendlyMarker::SetOwner(C_NEO_Player* player)
 {
 	m_pOwner = player;
+}
+
+C_NEO_Player* CNEOHud_FriendlyMarker::GetOwner() const
+{
+	return m_pOwner;
 }

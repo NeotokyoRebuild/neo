@@ -19,6 +19,15 @@
 	#include "hl_movedata.h"
 #endif
 
+#ifdef NEO
+#include "neo_player_shared.h"
+#ifdef GAME_DLL
+#include "../server/neo/neo_player.h"
+#else
+#include "../client/neo/c_neo_player.h"
+#endif
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -2445,6 +2454,25 @@ bool CGameMovement::CheckJumpButton( void )
 	{
 		flMul = sqrt(2 * GetCurrentGravity() * GAMEMOVEMENT_JUMP_HEIGHT);
 	}
+
+#ifdef NEO
+#ifdef GAME_DLL
+	CNEO_Player *neoPlayer = static_cast<CNEO_Player*>(player);
+#else
+	C_NEO_Player *neoPlayer = static_cast<C_NEO_Player*>(player);
+#endif
+
+	// NEO TODO (Rain): adjust class specific jump height values
+	switch (neoPlayer->GetClass())
+	{
+	case NEO_CLASS_RECON:
+		flMul *= 1.25;
+		break;
+	case NEO_CLASS_SUPPORT:
+		flMul *= 0.95;
+		break;
+	}
+#endif
 
 	// Acclerate upward
 	// If we are ducking...

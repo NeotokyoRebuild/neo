@@ -1093,8 +1093,10 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 #endif
 
 #ifdef NEO
-	Assert(g_pFullFileSystem);
-	FindOriginalNeotokyoAssets(g_pFullFileSystem, true);
+	if (!FindOriginalNeotokyoAssets(g_pFullFileSystem, true))
+	{
+		return false;
+	}
 #endif
 
 	return true;

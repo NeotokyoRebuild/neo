@@ -7,11 +7,11 @@
 class C_NEO_Player;
 #include "c_hl2mp_player.h"
 
+#include "neo_player_shared.h"
+
 class C_NEOPredictedViewModel;
-class CNEOHud_Compass;
-class CNEOHud_GameEvent;
-class CNEOHud_GhostMarker;
-class CNEOHud_FriendlyMarker;
+
+class CNeoHudElements;
 
 class C_NEO_Player : public C_HL2MP_Player
 {
@@ -60,7 +60,21 @@ public:
 	virtual void PostThink( void );
 	virtual void Spawn( void );
 
+	virtual void StartSprinting(void);
+	virtual void StopSprinting(void);
+	virtual bool CanSprint(void);
+
+	virtual void StartWalking(void);
+	virtual void StopWalking(void);
+
+	float GetNormSpeed() const;
+	float GetCrouchSpeed() const;
+	float GetWalkSpeed() const;
+	float GetSprintSpeed() const;
+
 	bool ShouldDrawHL2StyleQuickHud( void );
+
+	int GetClass() const;
 
 	virtual void SetLocalViewAngles( const QAngle &viewAngles )
 	{
@@ -71,7 +85,12 @@ public:
 		BaseClass::SetViewAngles(ang);
 	}
 
+	inline void SuperJump(void);
+
 	inline void DrawCompass(void);
+
+	void Weapon_AimToggle(C_BaseCombatWeapon *pWep);
+	inline void Weapon_SetZoom(bool bZoomIn);
 
 	void Weapon_Drop(C_BaseCombatWeapon *pWeapon);
 
@@ -104,14 +123,11 @@ protected:
 	bool m_bIsClassMenuOpen, m_bIsTeamMenuOpen;
 	bool m_bInThermOpticCamo, m_bUnhandledTocChange;
 
+	int m_iNeoClass;
+	int m_iNeoSkin;
+
 private:
-	CNEOHud_Compass *m_pCompass;
-
-	CNEOHud_GameEvent *m_pHudEvent_Test;
-
-	CNEOHud_GhostMarker *m_pGhostMarker;
-
-	CNEOHud_FriendlyMarker *m_pFriendlyMarker;
+	CNeoHudElements *m_pNeoPanel;
 
 private:
 	C_NEO_Player(const C_NEO_Player &);
@@ -127,7 +143,6 @@ inline C_NEO_Player *ToNEOPlayer(CBaseEntity *pEntity)
 	return dynamic_cast<C_NEO_Player*>(pEntity);
 }
 
-extern ConVar cl_autoreload_when_empty;
 extern ConVar cl_drawhud_quickinfo;
 extern ConCommand teammenu;
 
