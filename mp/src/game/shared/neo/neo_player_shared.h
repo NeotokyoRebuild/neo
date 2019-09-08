@@ -71,6 +71,7 @@ inline bool IsAllowedToZoom(CBasePlayer *player, CBaseCombatWeapon *pWep)
 	// than forbidden list; swap logic?
 	const char *allowedAimZoom[] = {
 		"weapon_aa13",
+		"weapon_kyla",
 		"weapon_milso",
 		"weapon_tachi",
 		"weapon_zr68s",

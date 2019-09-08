@@ -1323,13 +1323,17 @@ void CNEO_Player::GiveDefaultItems(void)
 	CBasePlayer::GiveAmmo(150, "AR2");
 	CBasePlayer::GiveAmmo(30, "AMMO_10G_SHELL");
 
-	if (GetClass() == NEO_CLASS_RECON)
+	switch (GetClass())
 	{
+	case NEO_CLASS_RECON:
 		GiveNamedItem("weapon_milso");
-	}
-	else
-	{
+		break;
+	case NEO_CLASS_ASSAULT:
 		GiveNamedItem("weapon_tachi");
+		break;
+	case NEO_CLASS_SUPPORT:
+		GiveNamedItem("weapon_kyla");
+		break;
 	}
 
 	GiveNamedItem("weapon_zr68s");
