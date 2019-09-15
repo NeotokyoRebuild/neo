@@ -2868,7 +2868,7 @@ inline bool CGameMovement::OnLadder( trace_t &trace )
 // HPE_BEGIN
 // [sbodenbender] make ladders easier to climb in cstrike
 //=============================================================================
-#if defined (CSTRIKE_DLL)
+#if defined (CSTRIKE_DLL) || defined (NEO)
 ConVar sv_ladder_dampen ( "sv_ladder_dampen", "0.2", FCVAR_REPLICATED, "Amount to dampen perpendicular movement on a ladder", true, 0.0f, true, 1.0f );
 ConVar sv_ladder_angle( "sv_ladder_angle", "-0.707", FCVAR_REPLICATED, "Cos of angle of incidence to ladder perpendicular for applying ladder_dampen", true, -1.0f, true, 1.0f );
 #endif
