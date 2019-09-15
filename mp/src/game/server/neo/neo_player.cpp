@@ -1323,15 +1323,20 @@ void CNEO_Player::GiveDefaultItems(void)
 	CBasePlayer::GiveAmmo(150, "AR2");
 	CBasePlayer::GiveAmmo(30, "AMMO_10G_SHELL");
 
+	const bool supportsGetKnife = true;
+
 	switch (GetClass())
 	{
 	case NEO_CLASS_RECON:
+		GiveNamedItem("weapon_knife");
 		GiveNamedItem("weapon_milso");
 		break;
 	case NEO_CLASS_ASSAULT:
+		GiveNamedItem("weapon_knife");
 		GiveNamedItem("weapon_tachi");
 		break;
 	case NEO_CLASS_SUPPORT:
+		if (supportsGetKnife) { GiveNamedItem("weapon_knife"); }
 		GiveNamedItem("weapon_kyla");
 		break;
 	}
