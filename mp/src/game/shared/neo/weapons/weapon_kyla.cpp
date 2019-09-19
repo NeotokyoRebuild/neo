@@ -100,6 +100,11 @@ void CWeaponKyla::PrimaryAttack(void)
 	// Fire the bullets, and force the first shot to be perfectly accuracy
 	pPlayer->FireBullets(info);
 
+	// HL2 revolver does this view jerk, but it doesn't play nice with prediction.
+	// We could enable it with shared random vals and taking .z lean into account,
+	// but disabling entirely for now since the view punch seems sufficient.
+#if(0)
+#ifndef CLIENT_DLL
 	//Disorient the player
 	QAngle angles = pPlayer->GetLocalAngles();
 
@@ -107,15 +112,15 @@ void CWeaponKyla::PrimaryAttack(void)
 	angles.y += random->RandomInt(-1, 1);
 	angles.z = 0;
 
-#ifndef CLIENT_DLL
-	pPlayer->SnapEyeAngles(angles);
+	//pPlayer->SnapEyeAngles(angles);
+#endif
 #endif
 
-	const float punchIntensity = 4.0f;
+	const float punchIntensity = 1.0f;
 
 	pPlayer->ViewPunch(QAngle(
 		-punchIntensity,
-		random->RandomFloat(-(punchIntensity * 0.25), (punchIntensity * 0.25)),
+		SharedRandomFloat("kylaPunch", -punchIntensity, punchIntensity),
 		0));
 
 	if (!m_iClip1 && pPlayer->GetAmmoCount(m_iPrimaryAmmoType) <= 0)
