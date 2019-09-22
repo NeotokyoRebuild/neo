@@ -969,7 +969,21 @@ void CNEO_Player::PlayStepSound( Vector &vecOrigin,
 
 inline bool CNEO_Player::IsCarryingGhost(void)
 {
+#ifdef DEBUG
+	auto baseWep = GetWeapon(NEO_WEAPON_PRIMARY_SLOT);
+	if (!baseWep)
+	{
+		return false;
+	}
+
+	auto wep = dynamic_cast<CNEOBaseCombatWeapon*>(baseWep);
+	if (!wep)
+	{
+		Assert(false);
+	}
+#else
 	auto wep = static_cast<CNEOBaseCombatWeapon*>(GetWeapon(NEO_WEAPON_PRIMARY_SLOT));
+#endif
 	return (wep && wep->IsGhost());
 }
 

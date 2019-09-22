@@ -812,6 +812,20 @@ inline void C_NEO_Player::Weapon_SetZoom(bool bZoomIn)
 
 inline bool C_NEO_Player::IsCarryingGhost(void)
 {
+#ifdef DEBUG
+	auto baseWep = GetWeapon(NEO_WEAPON_PRIMARY_SLOT);
+	if (!baseWep)
+	{
+		return false;
+	}
+
+	auto wep = dynamic_cast<CNEOBaseCombatWeapon*>(baseWep);
+	if (!wep)
+	{
+		Assert(false);
+	}
+#else
 	auto wep = static_cast<CNEOBaseCombatWeapon*>(GetWeapon(NEO_WEAPON_PRIMARY_SLOT));
+#endif
 	return (wep && wep->IsGhost());
 }
