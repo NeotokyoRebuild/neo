@@ -35,8 +35,6 @@
 #include <engine/ivdebugoverlay.h>
 #include <engine/IEngineSound.h>
 
-#include "neo_player_shared.h"
-
 // Don't alias here
 #if defined( CNEO_Player )
 #undef CNEO_Player	
@@ -554,8 +552,9 @@ void C_NEO_Player::PostThink(void)
 		if ((m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED))
 		{
 			const float superJumpCost = 45.0f;
-			// This is for prediction only, actual power drain happens serverside
-			if (m_HL2Local.m_flSuitPower >= superJumpCost)
+			// The suit check is for prediction only, actual power drain happens serverside
+			if (!IsCarryingGhost() && !GetMoveParent() &&
+				m_HL2Local.m_flSuitPower >= superJumpCost)
 			{
 				SuperJump();
 			}
@@ -566,14 +565,6 @@ void C_NEO_Player::PostThink(void)
 // This is applied for prediction purposes. It should match CNEO_Player's method.
 inline void C_NEO_Player::SuperJump(void)
 {
-	//DevMsg("SuperJump (client)\n");
-
-	if (GetMoveParent())
-	{
-		//DevMsg("SuperJumper is parented; will not jump (client)\n");
-		return;
-	}
-
 	Vector forward;
 	AngleVectors(EyeAngles(), &forward);
 
@@ -805,4 +796,18 @@ inline void C_NEO_Player::Weapon_SetZoom(bool bZoomIn)
 
 		SetFOV((CBaseEntity*)this, GetDefaultFOV(), zoomSpeedSecs);
 	}
+}
+
+inline bool C_NEO_Player::IsCarryingGhost(void)
+{
+	auto wep = GetWeapon(NEO_WEAPON_PRIMARY_SLOT);
+	if (wep)
+	{
+		if (FStrEq(wep->GetName(), "weapon_ghost"))
+		{
+			return true;
+		}
+	}
+
+	return false;
 }

@@ -1,6 +1,8 @@
 #include "cbase.h"
 #include "neo_ghost_cap_point.h"
 
+#include "neo_player_shared.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 

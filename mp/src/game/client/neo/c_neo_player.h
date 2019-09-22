@@ -76,6 +76,8 @@ public:
 
 	int GetClass() const;
 
+	inline bool IsCarryingGhost(void);
+
 	virtual void SetLocalViewAngles( const QAngle &viewAngles )
 	{
 		BaseClass::SetLocalViewAngles(viewAngles);

@@ -30,6 +30,8 @@
 #include "inetchannelinfo.h"
 #include "eiface.h"
 
+#include "neo_player_shared.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -416,17 +418,6 @@ inline void CNEO_Player::CheckThermOpticButtons()
 
 inline void CNEO_Player::SuperJump(void)
 {
-	//DevMsg("SuperJump\n");
-
-	if (GetMoveParent())
-	{
-		//DevMsg("SuperJumper is parented; will not jump\n");
-
-		// Give back the lost charge since we aren't jumping
-		SuitPower_Charge(45.0f);
-		return;
-	}
-
 	Vector forward;
 	AngleVectors(EyeAngles(), &forward);
 
@@ -522,7 +513,8 @@ void CNEO_Player::PostThink(void)
 		if ((m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED))
 		{
 			const float superJumpCost = 45.0f;
-			if (SuitPower_GetCurrentPercentage() >= superJumpCost)
+			if (!IsCarryingGhost() && !GetMoveParent() &&
+				SuitPower_GetCurrentPercentage() >= superJumpCost)
 			{
 				// Only superjump if we have a reasonable jump direction in mind
 				// NEO TODO (Rain): should we support sideways superjumping?
@@ -966,6 +958,20 @@ void CNEO_Player::PlayStepSound( Vector &vecOrigin,
 	surfacedata_t *psurface, float fvol, bool force )
 {
 	BaseClass::PlayStepSound(vecOrigin, psurface, fvol, force);
+}
+
+inline bool CNEO_Player::IsCarryingGhost(void)
+{
+	auto wep = GetWeapon(NEO_WEAPON_PRIMARY_SLOT);
+	if (wep)
+	{
+		if (FStrEq(wep->GetName(), "weapon_ghost"))
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 // Is the player allowed to drop a weapon of this type?
