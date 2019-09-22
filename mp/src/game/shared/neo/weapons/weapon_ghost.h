@@ -4,24 +4,20 @@
 #pragma once
 #endif
 
-#ifdef CLIENT_DLL
-#include "c_neo_player.h"
-#else
-#include "neo_player.h"
-#endif
-
 #include "weapon_neobasecombatweapon.h"
 
 #ifdef CLIENT_DLL
 #define CWeaponGhost C_WeaponGhost
 #define CBaseCombatCharacter C_BaseCombatCharacter
 #define CBasePlayer C_BasePlayer
-#define CNEOPlayer C_NEO_Player
+#define CNEO_Player C_NEO_Player
 #endif
 
 #ifdef CLIENT_DLL
 class CNEOHud_GhostBeacon;
 #endif
+
+class CNEO_Player;
 
 class CWeaponGhost : public CNEOBaseCombatWeapon
 {
@@ -38,9 +34,9 @@ public:
 
 	void ItemPreFrame(void);
 	void PrimaryAttack(void);
-	
+
 	virtual void ItemHolsterFrame(void);
-	virtual void Equip(CBaseCombatCharacter *pOwner);
+	virtual void OnPickedUp(CBaseCombatCharacter *pNewOwner);
 	void HandleGhostUnequip(void);
 
 #ifdef GAME_DLL

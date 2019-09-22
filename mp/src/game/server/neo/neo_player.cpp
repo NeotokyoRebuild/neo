@@ -1425,6 +1425,11 @@ void CNEO_Player::StartSprinting(void)
 		return;
 	}
 
+	if (IsCarryingGhost())
+	{
+		return;
+	}
+
 	BaseClass::StartSprinting();
 
 	SetMaxSpeed(GetSprintSpeed());

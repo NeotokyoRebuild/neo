@@ -673,6 +673,11 @@ void C_NEO_Player::StartSprinting(void)
 		return;
 	}
 
+	if (IsCarryingGhost())
+	{
+		return;
+	}
+
 	SetMaxSpeed(GetSprintSpeed());
 }
 
