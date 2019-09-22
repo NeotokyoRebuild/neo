@@ -19,11 +19,9 @@ IMPLEMENT_NETWORKCLASS_ALIASED( NEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 END_NETWORK_TABLE()
 
-#ifndef CLIENT_DLL
-
+#ifdef GAME_DLL
 BEGIN_DATADESC( CNEOBaseCombatWeapon )
 END_DATADESC()
-
 #endif
 
 BEGIN_PREDICTION_DATA( CNEOBaseCombatWeapon )

@@ -39,6 +39,8 @@ public:
 	virtual void OnPickedUp(CBaseCombatCharacter *pNewOwner);
 	void HandleGhostUnequip(void);
 
+	virtual int GetNeoWepBits(void) const { return NEO_WEP_GHOST; }
+
 #ifdef GAME_DLL
 	DECLARE_ACTTABLE();
 #endif

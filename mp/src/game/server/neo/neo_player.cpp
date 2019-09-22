@@ -553,7 +553,14 @@ void CNEO_Player::PlayerDeathThink()
 
 void CNEO_Player::Weapon_AimToggle( CBaseCombatWeapon *pWep )
 {
-	if (!IsAllowedToZoom(this, pWep))
+	// NEO TODO/HACK: Not all neo weapons currently inherit
+	// through a base neo class, so we can't static_cast!!
+	auto neoCombatWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWep);
+	if (!neoCombatWep)
+	{
+		return;
+	}
+	else if (!IsAllowedToZoom(neoCombatWep))
 	{
 		return;
 	}
@@ -962,16 +969,8 @@ void CNEO_Player::PlayStepSound( Vector &vecOrigin,
 
 inline bool CNEO_Player::IsCarryingGhost(void)
 {
-	auto wep = GetWeapon(NEO_WEAPON_PRIMARY_SLOT);
-	if (wep)
-	{
-		if (FStrEq(wep->GetName(), "weapon_ghost"))
-		{
-			return true;
-		}
-	}
-
-	return false;
+	auto wep = static_cast<CNEOBaseCombatWeapon*>(GetWeapon(NEO_WEAPON_PRIMARY_SLOT));
+	return (wep && wep->IsGhost());
 }
 
 // Is the player allowed to drop a weapon of this type?

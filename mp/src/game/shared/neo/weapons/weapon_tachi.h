@@ -58,6 +58,8 @@ public:
 
 	virtual bool Reload( void );
 
+	virtual int GetNeoWepBits(void) const { return NEO_WEP_TACHI; }
+
 	virtual const Vector& GetBulletSpread( void )
 	{		
 		static Vector cone;

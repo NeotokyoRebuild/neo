@@ -3,6 +3,10 @@
 
 #include "neo_player_shared.h"
 
+#ifdef GAME_DLL
+#include "weapon_neobasecombatweapon.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -176,14 +180,14 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 		}
 
 		// Do we have a weapon?
-		CBaseCombatWeapon *weapon = player->Weapon_GetSlot(NEO_WEAPON_PRIMARY_SLOT);
+		CNEOBaseCombatWeapon *weapon = static_cast<CNEOBaseCombatWeapon*>(player->Weapon_GetSlot(NEO_WEAPON_PRIMARY_SLOT));
 		if (!weapon)
 		{
 			continue;
 		}
 
 		// Is it a ghost?
-		if (V_strcmp(weapon->GetName(), "weapon_ghost") != 0)
+		if (!weapon->IsGhost())
 		{
 			continue;
 		}

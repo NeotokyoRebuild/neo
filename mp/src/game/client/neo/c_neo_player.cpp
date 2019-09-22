@@ -774,7 +774,14 @@ float C_NEO_Player::GetSprintSpeed() const
 
 void C_NEO_Player::Weapon_AimToggle(C_BaseCombatWeapon *pWep)
 {
-	if (!IsAllowedToZoom(this, pWep))
+	// NEO TODO/HACK: Not all neo weapons currently inherit
+	// through a base neo class, so we can't static_cast!!
+	auto neoCombatWep = dynamic_cast<C_NEOBaseCombatWeapon*>(pWep);
+	if (!neoCombatWep)
+	{
+		return;
+	}
+	else if (!IsAllowedToZoom(neoCombatWep))
 	{
 		return;
 	}
@@ -805,14 +812,6 @@ inline void C_NEO_Player::Weapon_SetZoom(bool bZoomIn)
 
 inline bool C_NEO_Player::IsCarryingGhost(void)
 {
-	auto wep = GetWeapon(NEO_WEAPON_PRIMARY_SLOT);
-	if (wep)
-	{
-		if (FStrEq(wep->GetName(), "weapon_ghost"))
-		{
-			return true;
-		}
-	}
-
-	return false;
+	auto wep = static_cast<CNEOBaseCombatWeapon*>(GetWeapon(NEO_WEAPON_PRIMARY_SLOT));
+	return (wep && wep->IsGhost());
 }

@@ -46,6 +46,8 @@ public:
 	virtual void Spawn(void);
 	virtual bool Deploy(void);
 
+	virtual int GetNeoWepBits(void) const { return NEO_WEP_ZR68_S; }
+
 	void	UpdatePenaltyTime(void);
 
 	Activity	GetPrimaryAttackActivity(void);

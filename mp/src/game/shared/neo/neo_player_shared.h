@@ -59,41 +59,18 @@ enum NeoClass {
 	NEO_CLASS_ENUM_COUNT
 };
 
+#if defined(CLIENT_DLL) && !defined(CNEOBaseCombatWeapon)
+#define CNEOBaseCombatWeapon C_NEOBaseCombatWeapon
+#endif
+
 class CNEO_Player;
+class CNEOBaseCombatWeapon;
 
 extern bool IsThereRoomForLeanSlide(CNEO_Player *player,
 	const Vector &targetViewOffset, bool &outStartInSolid);
 
 // Is the player allowed to aim zoom with a weapon of this type?
-inline bool IsAllowedToZoom(CBasePlayer *player, CBaseCombatWeapon *pWep)
-{
-	if (!pWep)
-	{
-		return false;
-	}
-
-	// NEO TODO (Rain): this list will probably eventually become longer
-	// than forbidden list; swap logic?
-	const char *allowedAimZoom[] = {
-		"weapon_aa13",
-		"weapon_kyla",
-		"weapon_milso",
-		"weapon_tachi",
-		"weapon_zr68s",
-	};
-
-	CBaseCombatWeapon *pTest = NULL;
-	for (int i = 0; i < ARRAYSIZE(allowedAimZoom); i++)
-	{
-		pTest = player->Weapon_OwnsThisType(allowedAimZoom[i]);
-		if (pWep == pTest)
-		{
-			return true;
-		}
-	}
-
-	return false;
-}
+bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep);
 
 extern ConVar cl_autoreload_when_empty;
 extern ConVar neo_recon_superjump_intensity;
