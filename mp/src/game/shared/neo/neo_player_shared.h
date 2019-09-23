@@ -39,6 +39,12 @@
 #define NEO_SUPPORT_WALK_SPEED (NEO_BASE_WALK_SPEED * NEO_SUPPORT_SPEED_MODIFIER)
 #define NEO_SUPPORT_CROUCH_SPEED (NEO_BASE_CROUCH_SPEED * NEO_SUPPORT_SPEED_MODIFIER)
 
+#define SUPER_JMP_COST 45.0f
+
+// Original NT allows chaining superjumps up ramps,
+// so leaving this zeroed for enabling movement tricks.
+#define SUPER_JMP_DELAY_BETWEEN_JUMPS 0
+
 enum NeoSkin {
 	NEO_SKIN_FIRST = 0,
 	NEO_SKIN_SECOND,

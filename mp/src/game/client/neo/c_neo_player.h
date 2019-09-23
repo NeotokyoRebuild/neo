@@ -101,9 +101,12 @@ public:
 	inline void ZeroFriendlyPlayerLocArray(void);
 
 	bool IsCloaked() const { return m_bInThermOpticCamo; }
+	bool IsAirborne() const { return m_bIsAirborne; }
 
 private:
 	inline void CheckThermOpticButtons();
+
+	inline bool IsAllowedToSuperJump(void);
 
 public:
 	bool m_bShowTestMessage;
@@ -115,6 +118,8 @@ public:
 	Vector m_rvFriendlyPlayerPositions[MAX_PLAYERS];
 
 	bool m_bShowClassMenu, m_bShowTeamMenu;
+	bool m_bIsAirborne;
+	bool m_bHasBeenAirborneForTooLongToSuperJump;
 
 protected:
 	Vector m_vecGhostMarkerPos;

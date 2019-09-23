@@ -52,6 +52,8 @@ SendPropVector(SENDINFO(m_vecGhostMarkerPos)),
 SendPropInt(SENDINFO(m_iGhosterTeam)),
 SendPropBool(SENDINFO(m_bGhostExists)),
 SendPropBool(SENDINFO(m_bInThermOpticCamo)),
+SendPropBool(SENDINFO(m_bIsAirborne)),
+SendPropBool(SENDINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 
 SendPropArray(SendPropVector(SENDINFO_ARRAY(m_rvFriendlyPlayerPositions), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rvFriendlyPlayerPositions),
 END_SEND_TABLE()
@@ -189,6 +191,8 @@ CNEO_Player::CNEO_Player()
 	m_bInLeanRight = false;
 	m_bGhostExists = false;
 	m_bInThermOpticCamo = false;
+	m_bIsAirborne = false;
+	m_bHasBeenAirborneForTooLongToSuperJump = false;
 
 	m_leanPosTargetOffset = vec3_origin;
 
@@ -294,6 +298,13 @@ void CNEO_Player::Spawn(void)
 	m_leanPosTargetOffset = VEC_VIEW;
 
 	SetTransmitState(FL_EDICT_ALWAYS);
+
+	m_bIsAirborne = (!(GetFlags() & FL_ONGROUND));
+}
+
+bool CNEO_Player::IsAirborne(void) const
+{
+	return m_bIsAirborne;
 }
 
 extern ConVar neo_lean_angle;
@@ -351,6 +362,37 @@ void CNEO_Player::PreThink(void)
 	BaseClass::PreThink();
 
 	DoThirdPersonLean();
+
+	// NEO HACK (Rain): Just bodging together a check for if we're allowed
+	// to superjump, or if we've been airborne too long for that.
+	// Ideally this should get cleaned up and moved to wherever
+	// the regular engine jump does a similar check.
+	bool newNetAirborneVal;
+	if (IsAirborne())
+	{
+		static float lastAirborneJumpOkTime = gpGlobals->curtime;
+		const float deltaTime = gpGlobals->curtime - lastAirborneJumpOkTime;
+		const float leeway = 0.5f;
+		if (deltaTime > leeway)
+		{
+			newNetAirborneVal = false;
+			lastAirborneJumpOkTime = gpGlobals->curtime;
+		}
+		else
+		{
+			newNetAirborneVal = true;
+		}
+	}
+	else
+	{
+		newNetAirborneVal = false;
+	}
+	// Only send the network update if we actually changed state
+	if (m_bHasBeenAirborneForTooLongToSuperJump != newNetAirborneVal)
+	{
+		m_bHasBeenAirborneForTooLongToSuperJump = newNetAirborneVal;
+		NetworkStateChanged();
+	}
 
 	static int ghostEdict = -1;
 	auto ent = UTIL_EntityByIndex(ghostEdict);
@@ -470,6 +512,42 @@ inline void CNEO_Player::SuperJump(void)
 	ApplyAbsVelocityImpulse(forward * neo_recon_superjump_intensity.GetFloat());
 }
 
+bool CNEO_Player::IsAllowedToSuperJump(void)
+{
+	if (IsCarryingGhost())
+		return false;
+
+	if (GetMoveParent())
+		return false;
+
+	// Can't superjump whilst airborne (although it is kind of cool)
+	if (m_bHasBeenAirborneForTooLongToSuperJump)
+		return false;
+
+	// Only superjump if we have a reasonable jump direction in mind
+	// NEO TODO (Rain): should we support sideways superjumping?
+	if ((m_nButtons & (IN_FORWARD | IN_BACK)) == 0)
+	{
+		return false;
+	}
+
+	if (SuitPower_GetCurrentPercentage() < SUPER_JMP_COST)
+		return false;
+
+	if (SUPER_JMP_DELAY_BETWEEN_JUMPS > 0)
+	{
+		const float thisTime = gpGlobals->curtime;
+		static float lastSuperJumpTime = thisTime;
+		const float deltaTime = thisTime - lastSuperJumpTime;
+		if (deltaTime > SUPER_JMP_DELAY_BETWEEN_JUMPS)
+			return false;
+
+		lastSuperJumpTime = thisTime;
+	}
+
+	return true;
+}
+
 void CNEO_Player::PostThink(void)
 {
 	BaseClass::PostThink();
@@ -512,17 +590,10 @@ void CNEO_Player::PostThink(void)
 	{
 		if ((m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED))
 		{
-			const float superJumpCost = 45.0f;
-			if (!IsCarryingGhost() && !GetMoveParent() &&
-				SuitPower_GetCurrentPercentage() >= superJumpCost)
+			if (IsAllowedToSuperJump())
 			{
-				// Only superjump if we have a reasonable jump direction in mind
-				// NEO TODO (Rain): should we support sideways superjumping?
-				if (((m_nButtons & IN_FORWARD) && (m_nButtons & IN_BACK)) == false)
-				{
-					SuitPower_Drain(superJumpCost);
-					SuperJump();
-				}
+				SuitPower_Drain(SUPER_JMP_COST);
+				SuperJump();
 			}
 		}
 	}
