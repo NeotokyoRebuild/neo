@@ -442,6 +442,24 @@ void C_NEO_Player::PreThink( void )
 		m_bHasBeenAirborneForTooLongToSuperJump = false;
 	}
 
+	if (m_iNeoClass == NEO_CLASS_RECON)
+	{
+		if ((m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED))
+		{
+			// If player holds both forward + back, only use up AUX power.
+			// This movement trick replaces the original NT's trick of
+			// sideways-superjumping with the intent of dumping AUX for a
+			// jump setup that requires sprint jumping without the superjump.
+			if (IsAllowedToSuperJump())
+			{
+				if (!((m_nButtons & IN_FORWARD) && (m_nButtons & IN_BACK)))
+				{
+					SuperJump();
+				}
+			}
+		}
+	}
+
 	if (m_bShowTeamMenu && !m_bIsTeamMenuOpen)
 	{
 		m_bIsTeamMenuOpen = true;
@@ -570,17 +588,6 @@ void C_NEO_Player::PostThink(void)
 		}
 
 		previouslyReloading = pWep->m_bInReload;
-	}
-
-	if (m_iNeoClass == NEO_CLASS_RECON)
-	{
-		if ((m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED))
-		{
-			if (IsAllowedToSuperJump())
-			{
-				SuperJump();
-			}
-		}
 	}
 }
 

@@ -394,6 +394,32 @@ void CNEO_Player::PreThink(void)
 		NetworkStateChanged();
 	}
 
+	if (m_iNeoClass == NEO_CLASS_RECON)
+	{
+		if ((m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED))
+		{
+			if (IsAllowedToSuperJump())
+			{
+				SuitPower_Drain(SUPER_JMP_COST);
+
+				// If player holds both forward + back, only use up AUX power.
+				// This movement trick replaces the original NT's trick of
+				// sideways-superjumping with the intent of dumping AUX for a
+				// jump setup that requires sprint jumping without the superjump.
+				if (!((m_nButtons & IN_FORWARD) && (m_nButtons & IN_BACK)))
+				{
+					SuperJump();
+				}
+			}
+			// Allow intentional AUX dump (see comment above)
+			// even when not allowed to actually superjump.
+			else if ((m_nButtons & IN_FORWARD) && (m_nButtons & IN_BACK))
+			{
+				SuitPower_Drain(SUPER_JMP_COST);
+			}
+		}
+	}
+
 	static int ghostEdict = -1;
 	auto ent = UTIL_EntityByIndex(ghostEdict);
 	bool ghostIsValid = (ent != NULL);
@@ -584,18 +610,6 @@ void CNEO_Player::PostThink(void)
 		eyeForward *= forwardOffset;
 
 		Weapon_Drop(GetActiveWeapon(), NULL, &eyeForward);
-	}
-
-	if (m_iNeoClass == NEO_CLASS_RECON)
-	{
-		if ((m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED))
-		{
-			if (IsAllowedToSuperJump())
-			{
-				SuitPower_Drain(SUPER_JMP_COST);
-				SuperJump();
-			}
-		}
 	}
 
 #if(0)
