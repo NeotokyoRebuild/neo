@@ -12,11 +12,6 @@ class CNEO_Player;
 #include "utldict.h"
 #include "hl2mp_player.h"
 
-#define NEO_WEAPON_PRIMARY_SLOT 0
-#define NEO_WEAPON_SECONDARY_SLOT 1
-#define NEO_WEAPON_MELEE_SLOT 2
-#define NEO_WEAPON_EXPLOSIVE_SLOT 3
-
 class CNEO_Player : public CHL2MP_Player
 {
 public:
@@ -72,6 +67,7 @@ public:
 
 	virtual bool	CanHearAndReadChatFrom(CBasePlayer *pPlayer);
 
+	inline bool IsCarryingGhost(void);
 	inline bool IsAllowedToDrop(CBaseCombatWeapon *pWep);
 
 	inline void ZeroFriendlyPlayerLocArray(void);
@@ -95,6 +91,8 @@ public:
 	int GetSkin() const;
 	int GetClass() const;
 
+	bool IsAirborne(void) const;
+
 	virtual void StartAutoSprint(void);
 	virtual void StartSprinting(void);
 	virtual void StopSprinting(void);
@@ -115,6 +113,8 @@ public:
 private:
 	inline void CheckThermOpticButtons();
 
+	inline bool IsAllowedToSuperJump(void);
+
 public:
 	CNetworkVar(int, m_iNeoClass);
 	CNetworkVar(int, m_iNeoSkin);
@@ -128,6 +128,8 @@ public:
 	CNetworkVar(int, m_iGhosterTeam);
 	CNetworkVar(bool, m_bGhostExists);
 	CNetworkVar(bool, m_bInThermOpticCamo);
+	CNetworkVar(bool, m_bIsAirborne);
+	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
 
 	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
 

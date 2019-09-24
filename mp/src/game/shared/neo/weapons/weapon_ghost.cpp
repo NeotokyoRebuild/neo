@@ -3,6 +3,12 @@
 #include "neo_gamerules.h"
 
 #ifdef CLIENT_DLL
+#include "c_neo_player.h"
+#else
+#include "neo_player.h"
+#endif
+
+#ifdef CLIENT_DLL
 #include <engine/ivdebugoverlay.h>
 #include <engine/IEngineSound.h>
 #include "filesystem.h"
@@ -187,11 +193,6 @@ inline void CWeaponGhost::StopGhostSound(void)
 	StopSound(this->entindex(), "HUD.GhostEquip");
 }
 #endif
-
-void CWeaponGhost::Equip(CBaseCombatCharacter *pOwner)
-{
-	BaseClass::Equip(pOwner);
-}
 
 void CWeaponGhost::ItemHolsterFrame(void)
 {
@@ -455,3 +456,18 @@ void CWeaponGhost::UpdateNetworkedEnemyLocations(void)
 	delete[] pvs;
 }
 #endif
+
+void CWeaponGhost::OnPickedUp(CBaseCombatCharacter *pNewOwner)
+{
+	BaseClass::OnPickedUp(pNewOwner);
+
+	// Prevent ghoster from sprinting
+	if (pNewOwner)
+	{
+		auto neoOwner = static_cast<CNEO_Player*>(pNewOwner);
+		if (neoOwner->IsSprinting())
+		{
+			neoOwner->StopSprinting();
+		}
+	}
+}

@@ -32,6 +32,8 @@ public:
 
 	virtual const Vector &GetBulletSpread(void);
 
+	virtual int GetNeoWepBits(void) const { return NEO_WEP_INVALID; }
+
 	int WeaponSoundRealtime(WeaponSound_t shoot_type);
 
 	// utility function

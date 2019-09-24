@@ -256,7 +256,7 @@ const char *viewModels[NEO_VM_ENUM_COUNT * numTeams] {
 	"models/gameplay/v_jinrai_ghost.mdl"
 };
 
-const char *weapons[NEO_WEP_ENUM_COUNT] {
+const char *weapons[NEO_WEP_MDL_ENUM_COUNT] {
 	"models/weapons/w_aa13.mdl",
 	"models/weapons/w_detpack.mdl",
 	"models/weapons/w_detremote.mdl",
@@ -448,7 +448,7 @@ const char *CNEOModelManager::GetViewModel(NeoViewmodel nWepVm, int iTeam) const
 }
 
 // Returns a third person weapon model.
-const char *CNEOModelManager::GetWeaponModel(NeoWeapon nWep) const
+const char *CNEOModelManager::GetWeaponModel(NeoWeaponModel nWep) const
 {
 	if (nWep < 0 || nWep >= ARRAYSIZE(weapons))
 	{

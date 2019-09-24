@@ -19,6 +19,8 @@ public:
 
 	void PrimaryAttack(void);
 
+	virtual int GetNeoWepBits(void) const { return NEO_WEP_KYLA; }
+
 	DECLARE_NETWORKCLASS();
 	DECLARE_PREDICTABLE();
 

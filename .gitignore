@@ -1,5 +1,7 @@
 # Files to ignore when considering what GIT should commit.
 
+mp/game/mod_hl2mp/screenshots
+
 # Object files
 *.o
 *.p

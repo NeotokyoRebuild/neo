@@ -32,6 +32,8 @@ public:
 	virtual void	AddViewKick(void);
 	void	DryFire(void);
 
+	virtual int GetNeoWepBits(void) const { return NEO_WEP_AA13; }
+
 	Activity GetPrimaryAttackActivity(void);
 
 	const Vector& GetBulletSpread(void);

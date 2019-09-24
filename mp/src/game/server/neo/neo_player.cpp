@@ -30,6 +30,8 @@
 #include "inetchannelinfo.h"
 #include "eiface.h"
 
+#include "neo_player_shared.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -50,6 +52,8 @@ SendPropVector(SENDINFO(m_vecGhostMarkerPos)),
 SendPropInt(SENDINFO(m_iGhosterTeam)),
 SendPropBool(SENDINFO(m_bGhostExists)),
 SendPropBool(SENDINFO(m_bInThermOpticCamo)),
+SendPropBool(SENDINFO(m_bIsAirborne)),
+SendPropBool(SENDINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 
 SendPropArray(SendPropVector(SENDINFO_ARRAY(m_rvFriendlyPlayerPositions), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rvFriendlyPlayerPositions),
 END_SEND_TABLE()
@@ -187,6 +191,8 @@ CNEO_Player::CNEO_Player()
 	m_bInLeanRight = false;
 	m_bGhostExists = false;
 	m_bInThermOpticCamo = false;
+	m_bIsAirborne = false;
+	m_bHasBeenAirborneForTooLongToSuperJump = false;
 
 	m_leanPosTargetOffset = vec3_origin;
 
@@ -292,6 +298,13 @@ void CNEO_Player::Spawn(void)
 	m_leanPosTargetOffset = VEC_VIEW;
 
 	SetTransmitState(FL_EDICT_ALWAYS);
+
+	m_bIsAirborne = (!(GetFlags() & FL_ONGROUND));
+}
+
+bool CNEO_Player::IsAirborne(void) const
+{
+	return m_bIsAirborne;
 }
 
 extern ConVar neo_lean_angle;
@@ -349,6 +362,63 @@ void CNEO_Player::PreThink(void)
 	BaseClass::PreThink();
 
 	DoThirdPersonLean();
+
+	// NEO HACK (Rain): Just bodging together a check for if we're allowed
+	// to superjump, or if we've been airborne too long for that.
+	// Ideally this should get cleaned up and moved to wherever
+	// the regular engine jump does a similar check.
+	bool newNetAirborneVal;
+	if (IsAirborne())
+	{
+		static float lastAirborneJumpOkTime = gpGlobals->curtime;
+		const float deltaTime = gpGlobals->curtime - lastAirborneJumpOkTime;
+		const float leeway = 0.5f;
+		if (deltaTime > leeway)
+		{
+			newNetAirborneVal = false;
+			lastAirborneJumpOkTime = gpGlobals->curtime;
+		}
+		else
+		{
+			newNetAirborneVal = true;
+		}
+	}
+	else
+	{
+		newNetAirborneVal = false;
+	}
+	// Only send the network update if we actually changed state
+	if (m_bHasBeenAirborneForTooLongToSuperJump != newNetAirborneVal)
+	{
+		m_bHasBeenAirborneForTooLongToSuperJump = newNetAirborneVal;
+		NetworkStateChanged();
+	}
+
+	if (m_iNeoClass == NEO_CLASS_RECON)
+	{
+		if ((m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED))
+		{
+			if (IsAllowedToSuperJump())
+			{
+				SuitPower_Drain(SUPER_JMP_COST);
+
+				// If player holds both forward + back, only use up AUX power.
+				// This movement trick replaces the original NT's trick of
+				// sideways-superjumping with the intent of dumping AUX for a
+				// jump setup that requires sprint jumping without the superjump.
+				if (!((m_nButtons & IN_FORWARD) && (m_nButtons & IN_BACK)))
+				{
+					SuperJump();
+				}
+			}
+			// Allow intentional AUX dump (see comment above)
+			// even when not allowed to actually superjump.
+			else if ((m_nButtons & IN_FORWARD) && (m_nButtons & IN_BACK))
+			{
+				SuitPower_Drain(SUPER_JMP_COST);
+			}
+		}
+	}
 
 	static int ghostEdict = -1;
 	auto ent = UTIL_EntityByIndex(ghostEdict);
@@ -416,17 +486,6 @@ inline void CNEO_Player::CheckThermOpticButtons()
 
 inline void CNEO_Player::SuperJump(void)
 {
-	//DevMsg("SuperJump\n");
-
-	if (GetMoveParent())
-	{
-		//DevMsg("SuperJumper is parented; will not jump\n");
-
-		// Give back the lost charge since we aren't jumping
-		SuitPower_Charge(45.0f);
-		return;
-	}
-
 	Vector forward;
 	AngleVectors(EyeAngles(), &forward);
 
@@ -479,6 +538,42 @@ inline void CNEO_Player::SuperJump(void)
 	ApplyAbsVelocityImpulse(forward * neo_recon_superjump_intensity.GetFloat());
 }
 
+bool CNEO_Player::IsAllowedToSuperJump(void)
+{
+	if (IsCarryingGhost())
+		return false;
+
+	if (GetMoveParent())
+		return false;
+
+	// Can't superjump whilst airborne (although it is kind of cool)
+	if (m_bHasBeenAirborneForTooLongToSuperJump)
+		return false;
+
+	// Only superjump if we have a reasonable jump direction in mind
+	// NEO TODO (Rain): should we support sideways superjumping?
+	if ((m_nButtons & (IN_FORWARD | IN_BACK)) == 0)
+	{
+		return false;
+	}
+
+	if (SuitPower_GetCurrentPercentage() < SUPER_JMP_COST)
+		return false;
+
+	if (SUPER_JMP_DELAY_BETWEEN_JUMPS > 0)
+	{
+		const float thisTime = gpGlobals->curtime;
+		static float lastSuperJumpTime = thisTime;
+		const float deltaTime = thisTime - lastSuperJumpTime;
+		if (deltaTime > SUPER_JMP_DELAY_BETWEEN_JUMPS)
+			return false;
+
+		lastSuperJumpTime = thisTime;
+	}
+
+	return true;
+}
+
 void CNEO_Player::PostThink(void)
 {
 	BaseClass::PostThink();
@@ -517,24 +612,6 @@ void CNEO_Player::PostThink(void)
 		Weapon_Drop(GetActiveWeapon(), NULL, &eyeForward);
 	}
 
-	if (m_iNeoClass == NEO_CLASS_RECON)
-	{
-		if ((m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED))
-		{
-			const float superJumpCost = 45.0f;
-			if (SuitPower_GetCurrentPercentage() >= superJumpCost)
-			{
-				// Only superjump if we have a reasonable jump direction in mind
-				// NEO TODO (Rain): should we support sideways superjumping?
-				if (((m_nButtons & IN_FORWARD) && (m_nButtons & IN_BACK)) == false)
-				{
-					SuitPower_Drain(superJumpCost);
-					SuperJump();
-				}
-			}
-		}
-	}
-
 #if(0)
 	if (m_iCapTeam != TEAM_UNASSIGNED)
 	{
@@ -561,7 +638,14 @@ void CNEO_Player::PlayerDeathThink()
 
 void CNEO_Player::Weapon_AimToggle( CBaseCombatWeapon *pWep )
 {
-	if (!IsAllowedToZoom(this, pWep))
+	// NEO TODO/HACK: Not all neo weapons currently inherit
+	// through a base neo class, so we can't static_cast!!
+	auto neoCombatWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWep);
+	if (!neoCombatWep)
+	{
+		return;
+	}
+	else if (!IsAllowedToZoom(neoCombatWep))
 	{
 		return;
 	}
@@ -968,6 +1052,26 @@ void CNEO_Player::PlayStepSound( Vector &vecOrigin,
 	BaseClass::PlayStepSound(vecOrigin, psurface, fvol, force);
 }
 
+inline bool CNEO_Player::IsCarryingGhost(void)
+{
+#ifdef DEBUG
+	auto baseWep = GetWeapon(NEO_WEAPON_PRIMARY_SLOT);
+	if (!baseWep)
+	{
+		return false;
+	}
+
+	auto wep = dynamic_cast<CNEOBaseCombatWeapon*>(baseWep);
+	if (!wep)
+	{
+		Assert(false);
+	}
+#else
+	auto wep = static_cast<CNEOBaseCombatWeapon*>(GetWeapon(NEO_WEAPON_PRIMARY_SLOT));
+#endif
+	return (wep && wep->IsGhost());
+}
+
 // Is the player allowed to drop a weapon of this type?
 // NEO TODO (Rain): Forbid Neo drops like knife, neo nades etc.
 // once they have been implemented.
@@ -1323,15 +1427,20 @@ void CNEO_Player::GiveDefaultItems(void)
 	CBasePlayer::GiveAmmo(150, "AR2");
 	CBasePlayer::GiveAmmo(30, "AMMO_10G_SHELL");
 
+	const bool supportsGetKnife = true;
+
 	switch (GetClass())
 	{
 	case NEO_CLASS_RECON:
+		GiveNamedItem("weapon_knife");
 		GiveNamedItem("weapon_milso");
 		break;
 	case NEO_CLASS_ASSAULT:
+		GiveNamedItem("weapon_knife");
 		GiveNamedItem("weapon_tachi");
 		break;
 	case NEO_CLASS_SUPPORT:
+		if (supportsGetKnife) { GiveNamedItem("weapon_knife"); }
 		GiveNamedItem("weapon_kyla");
 		break;
 	}
@@ -1409,7 +1518,12 @@ void CNEO_Player::StartAutoSprint(void)
 
 void CNEO_Player::StartSprinting(void)
 {
-	if (m_HL2Local.m_flSuitPower < 10)
+	if (GetClass() != NEO_CLASS_RECON && m_HL2Local.m_flSuitPower < 10)
+	{
+		return;
+	}
+
+	if (IsCarryingGhost())
 	{
 		return;
 	}

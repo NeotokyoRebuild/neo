@@ -6,6 +6,11 @@
 
 #include "neo_predicted_viewmodel.h"
 
+#define NEO_WEAPON_MELEE_SLOT 0
+#define NEO_WEAPON_SECONDARY_SLOT 1
+#define NEO_WEAPON_PRIMARY_SLOT 2
+#define NEO_WEAPON_EXPLOSIVE_SLOT 3
+
 // All of these should be able to stack create even slower speeds (at least in original NT)
 #define NEO_SPRINT_MODIFIER 1.6
 #define NEO_SLOW_MODIFIER 0.75
@@ -34,6 +39,12 @@
 #define NEO_SUPPORT_WALK_SPEED (NEO_BASE_WALK_SPEED * NEO_SUPPORT_SPEED_MODIFIER)
 #define NEO_SUPPORT_CROUCH_SPEED (NEO_BASE_CROUCH_SPEED * NEO_SUPPORT_SPEED_MODIFIER)
 
+#define SUPER_JMP_COST 45.0f
+
+// Original NT allows chaining superjumps up ramps,
+// so leaving this zeroed for enabling movement tricks.
+#define SUPER_JMP_DELAY_BETWEEN_JUMPS 0
+
 enum NeoSkin {
 	NEO_SKIN_FIRST = 0,
 	NEO_SKIN_SECOND,
@@ -54,41 +65,18 @@ enum NeoClass {
 	NEO_CLASS_ENUM_COUNT
 };
 
+#if defined(CLIENT_DLL) && !defined(CNEOBaseCombatWeapon)
+#define CNEOBaseCombatWeapon C_NEOBaseCombatWeapon
+#endif
+
 class CNEO_Player;
+class CNEOBaseCombatWeapon;
 
 extern bool IsThereRoomForLeanSlide(CNEO_Player *player,
 	const Vector &targetViewOffset, bool &outStartInSolid);
 
 // Is the player allowed to aim zoom with a weapon of this type?
-inline bool IsAllowedToZoom(CBasePlayer *player, CBaseCombatWeapon *pWep)
-{
-	if (!pWep)
-	{
-		return false;
-	}
-
-	// NEO TODO (Rain): this list will probably eventually become longer
-	// than forbidden list; swap logic?
-	const char *allowedAimZoom[] = {
-		"weapon_aa13",
-		"weapon_kyla",
-		"weapon_milso",
-		"weapon_tachi",
-		"weapon_zr68s",
-	};
-
-	CBaseCombatWeapon *pTest = NULL;
-	for (int i = 0; i < ARRAYSIZE(allowedAimZoom); i++)
-	{
-		pTest = player->Weapon_OwnsThisType(allowedAimZoom[i]);
-		if (pWep == pTest)
-		{
-			return true;
-		}
-	}
-
-	return false;
-}
+bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep);
 
 extern ConVar cl_autoreload_when_empty;
 extern ConVar neo_recon_superjump_intensity;

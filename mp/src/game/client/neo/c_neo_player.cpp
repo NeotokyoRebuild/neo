@@ -35,8 +35,6 @@
 #include <engine/ivdebugoverlay.h>
 #include <engine/IEngineSound.h>
 
-#include "neo_player_shared.h"
-
 // Don't alias here
 #if defined( CNEO_Player )
 #undef CNEO_Player	
@@ -57,6 +55,8 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_iGhosterTeam)),
 	RecvPropBool(RECVINFO(m_bGhostExists)),
 	RecvPropBool(RECVINFO(m_bInThermOpticCamo)),
+	RecvPropBool(RECVINFO(m_bIsAirborne)),
+	RecvPropBool(RECVINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 
 	RecvPropArray(RecvPropVector(RECVINFO(m_rvFriendlyPlayerPositions[0])), m_rvFriendlyPlayerPositions),
 END_RECV_TABLE()
@@ -239,6 +239,8 @@ C_NEO_Player::C_NEO_Player()
 	m_bGhostExists = false;
 	m_bShowClassMenu = m_bShowTeamMenu = m_bIsClassMenuOpen = m_bIsTeamMenuOpen = false;
 	m_bInThermOpticCamo = m_bUnhandledTocChange = false;
+	m_bIsAirborne = false;
+	m_bHasBeenAirborneForTooLongToSuperJump = false;
 
 	m_pNeoPanel = NULL;
 }
@@ -419,6 +421,45 @@ void C_NEO_Player::PreThink( void )
 		vm->CalcLean(this);
 	}
 
+	// Eek. See rationale for this thing in CNEO_Player::PreThink
+	if (IsAirborne())
+	{
+		static float lastAirborneJumpOkTime = gpGlobals->curtime;
+		const float deltaTime = gpGlobals->curtime - lastAirborneJumpOkTime;
+		const float leeway = 0.5f;
+		if (deltaTime > leeway)
+		{
+			m_bHasBeenAirborneForTooLongToSuperJump = false;
+			lastAirborneJumpOkTime = gpGlobals->curtime;
+		}
+		else
+		{
+			m_bHasBeenAirborneForTooLongToSuperJump = true;
+		}
+	}
+	else
+	{
+		m_bHasBeenAirborneForTooLongToSuperJump = false;
+	}
+
+	if (m_iNeoClass == NEO_CLASS_RECON)
+	{
+		if ((m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED))
+		{
+			// If player holds both forward + back, only use up AUX power.
+			// This movement trick replaces the original NT's trick of
+			// sideways-superjumping with the intent of dumping AUX for a
+			// jump setup that requires sprint jumping without the superjump.
+			if (IsAllowedToSuperJump())
+			{
+				if (!((m_nButtons & IN_FORWARD) && (m_nButtons & IN_BACK)))
+				{
+					SuperJump();
+				}
+			}
+		}
+	}
+
 	if (m_bShowTeamMenu && !m_bIsTeamMenuOpen)
 	{
 		m_bIsTeamMenuOpen = true;
@@ -548,32 +589,48 @@ void C_NEO_Player::PostThink(void)
 
 		previouslyReloading = pWep->m_bInReload;
 	}
+}
 
-	if (m_iNeoClass == NEO_CLASS_RECON)
+bool C_NEO_Player::IsAllowedToSuperJump(void)
+{
+	if (IsCarryingGhost())
+		return false;
+
+	if (GetMoveParent())
+		return false;
+
+	// Can't superjump whilst airborne (although it is kind of cool)
+	if (m_bHasBeenAirborneForTooLongToSuperJump)
+		return false;
+
+	// Only superjump if we have a reasonable jump direction in mind
+	// NEO TODO (Rain): should we support sideways superjumping?
+	if ((m_nButtons & (IN_FORWARD | IN_BACK)) == 0)
 	{
-		if ((m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED))
-		{
-			const float superJumpCost = 45.0f;
-			// This is for prediction only, actual power drain happens serverside
-			if (m_HL2Local.m_flSuitPower >= superJumpCost)
-			{
-				SuperJump();
-			}
-		}
+		return false;
 	}
+
+	// The suit check is for prediction only, actual power drain happens serverside
+	if (m_HL2Local.m_flSuitPower < SUPER_JMP_COST)
+		return false;
+
+	if (SUPER_JMP_DELAY_BETWEEN_JUMPS > 0)
+	{
+		const float thisTime = gpGlobals->curtime;
+		static float lastSuperJumpTime = thisTime;
+		const float deltaTime = thisTime - lastSuperJumpTime;
+		if (deltaTime > SUPER_JMP_DELAY_BETWEEN_JUMPS)
+			return false;
+
+		lastSuperJumpTime = thisTime;
+	}
+
+	return true;
 }
 
 // This is applied for prediction purposes. It should match CNEO_Player's method.
 inline void C_NEO_Player::SuperJump(void)
 {
-	//DevMsg("SuperJump (client)\n");
-
-	if (GetMoveParent())
-	{
-		//DevMsg("SuperJumper is parented; will not jump (client)\n");
-		return;
-	}
-
 	Vector forward;
 	AngleVectors(EyeAngles(), &forward);
 
@@ -636,6 +693,8 @@ void C_NEO_Player::Spawn( void )
 	Color color = Color(255, 255, 255, 255);
 	cross->SetCrosshair(NULL, color);
 #endif
+
+	m_bIsAirborne = (!(GetFlags() & FL_ONGROUND));
 }
 
 void C_NEO_Player::DoImpactEffect( trace_t &tr, int nDamageType )
@@ -678,6 +737,11 @@ void C_NEO_Player::Weapon_Drop(C_BaseCombatWeapon *pWeapon)
 void C_NEO_Player::StartSprinting(void)
 {
 	if (m_HL2Local.m_flSuitPower < 10)
+	{
+		return;
+	}
+
+	if (IsCarryingGhost())
 	{
 		return;
 	}
@@ -778,7 +842,14 @@ float C_NEO_Player::GetSprintSpeed() const
 
 void C_NEO_Player::Weapon_AimToggle(C_BaseCombatWeapon *pWep)
 {
-	if (!IsAllowedToZoom(this, pWep))
+	// NEO TODO/HACK: Not all neo weapons currently inherit
+	// through a base neo class, so we can't static_cast!!
+	auto neoCombatWep = dynamic_cast<C_NEOBaseCombatWeapon*>(pWep);
+	if (!neoCombatWep)
+	{
+		return;
+	}
+	else if (!IsAllowedToZoom(neoCombatWep))
 	{
 		return;
 	}
@@ -805,4 +876,24 @@ inline void C_NEO_Player::Weapon_SetZoom(bool bZoomIn)
 
 		SetFOV((CBaseEntity*)this, GetDefaultFOV(), zoomSpeedSecs);
 	}
+}
+
+inline bool C_NEO_Player::IsCarryingGhost(void)
+{
+#ifdef DEBUG
+	auto baseWep = GetWeapon(NEO_WEAPON_PRIMARY_SLOT);
+	if (!baseWep)
+	{
+		return false;
+	}
+
+	auto wep = dynamic_cast<CNEOBaseCombatWeapon*>(baseWep);
+	if (!wep)
+	{
+		Assert(false);
+	}
+#else
+	auto wep = static_cast<CNEOBaseCombatWeapon*>(GetWeapon(NEO_WEAPON_PRIMARY_SLOT));
+#endif
+	return (wep && wep->IsGhost());
 }
