@@ -629,6 +629,20 @@ void CNEO_Player::PostThink(void)
 		}
 	}
 #endif
+
+	int iMoveX = LookupPoseParameter("move_x");
+	int iMoveY = LookupPoseParameter("move_y");
+
+	if (iMoveX != -1 && iMoveY != -1)
+	{
+		float speedScaleX = clamp((GetAbsVelocity().x / NEO_ASSAULT_NORM_SPEED), 0, 1);
+		float speedScaleY = clamp((GetAbsVelocity().y / NEO_ASSAULT_NORM_SPEED), 0, 1);
+
+		SetPoseParameter(iMoveX, speedScaleX);
+		SetPoseParameter(iMoveY, speedScaleY);
+
+		DevMsg("Setspeed %f , %f\n", speedScaleX, speedScaleY);
+	}
 }
 
 void CNEO_Player::PlayerDeathThink()
@@ -673,6 +687,192 @@ inline void CNEO_Player::Weapon_SetZoom(bool bZoomIn)
 
 void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 {
+	//BaseClass::SetAnimation(playerAnim);
+	int animDesired;
+
+	float speed;
+
+	speed = GetAbsVelocity().Length2D();
+
+	// bool bRunning = true;
+
+	//Revisit!
+	/*	if ( ( m_nButtons & ( IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT ) ) )
+	{
+	if ( speed > 1.0f && speed < hl2_normspeed.GetFloat() - 20.0f )
+	{
+	bRunning = false;
+	}
+	}*/
+
+	if (GetFlags() & (FL_FROZEN | FL_ATCONTROLS))
+	{
+		speed = 0;
+		playerAnim = PLAYER_IDLE;
+	}
+
+	Activity idealActivity = ACT_MP_RUN;
+
+	// This could stand to be redone. Why is playerAnim abstracted from activity? (sjb)
+	if (playerAnim == PLAYER_JUMP)
+	{
+		idealActivity = ACT_MP_JUMP;
+	}
+	else if (playerAnim == PLAYER_DIE)
+	{
+		if (m_lifeState == LIFE_ALIVE)
+		{
+			return;
+		}
+	}
+	else if (playerAnim == PLAYER_ATTACK1)
+	{
+		if (GetActivity() == ACT_HOVER ||
+			GetActivity() == ACT_SWIM ||
+			GetActivity() == ACT_HOP ||
+			GetActivity() == ACT_LEAP ||
+			GetActivity() == ACT_DIESIMPLE)
+		{
+			idealActivity = GetActivity();
+		}
+		else
+		{
+			//idealActivity = ACT_MP_ATTACK_STAND_PRIMARY;
+			idealActivity = ACT_RUN;
+		}
+	}
+	else if (playerAnim == PLAYER_RELOAD)
+	{
+		idealActivity = ACT_MP_RELOAD_STAND;
+	}
+	else if (playerAnim == PLAYER_IDLE || playerAnim == PLAYER_WALK)
+	{
+		if (!(GetFlags() & FL_ONGROUND) && GetActivity() == ACT_JUMP)	// Still jumping
+		{
+			idealActivity = GetActivity();
+		}
+		/*
+		else if ( GetWaterLevel() > 1 )
+		{
+		if ( speed == 0 )
+		idealActivity = ACT_HOVER;
+		else
+		idealActivity = ACT_SWIM;
+		}
+		*/
+		else
+		{
+			if (GetFlags() & FL_DUCKING)
+			{
+				if (speed > 0)
+				{
+					idealActivity = ACT_RUN_CROUCH;
+				}
+				else
+				{
+					idealActivity = ACT_CROUCHIDLE;
+				}
+			}
+			else
+			{
+				if (speed > 0)
+				{
+					/*
+					if ( bRunning == false )
+					{
+					idealActivity = ACT_WALK;
+					}
+					else
+					*/
+					{
+						idealActivity = ACT_MP_RUN;
+					}
+				}
+				else
+				{
+					idealActivity = ACT_MP_STAND_IDLE;
+				}
+			}
+		}
+
+		idealActivity = TranslateTeamActivity(idealActivity);
+	}
+
+	if (idealActivity == ACT_MP_ATTACK_STAND_PRIMARY)
+	{
+		RestartGesture(Weapon_TranslateActivity(idealActivity));
+
+		// FIXME: this seems a bit wacked
+		Weapon_SetActivity(Weapon_TranslateActivity(ACT_RANGE_ATTACK1), 0);
+
+		return;
+	}
+	else if (idealActivity == ACT_MP_RELOAD_STAND)
+	{
+		RestartGesture(Weapon_TranslateActivity(idealActivity));
+		return;
+	}
+	else
+	{
+		SetActivity(idealActivity);
+
+		animDesired = SelectWeightedSequence(Weapon_TranslateActivity(idealActivity));
+
+		if (animDesired == -1)
+		{
+			animDesired = SelectWeightedSequence(idealActivity);
+
+			if (animDesired == -1)
+			{
+				animDesired = 0;
+			}
+		}
+
+		// Already using the desired animation?
+		if (GetSequence() == animDesired)
+		{
+			//return;
+		}
+		else
+		{
+			m_flPlaybackRate = 1.0;
+			ResetSequence(animDesired);
+			SetCycle(0);
+		}
+
+#if(0)
+		m_flPlaybackRate = 1.0;
+		ResetSequence(animDesired);
+		SetCycle(0);
+#endif
+
+		if (GetSequenceActivity(animDesired) == ACT_RUN)
+		{			
+			SetSequence(LookupSequence("Run_lower"));
+			SetPlaybackRate(1.0f);
+			SetLayerLooping(LookupSequence("Run_lower"), true);
+
+			//AddLayeredSequence(LookupSequence("Run_lower"), 0);
+			AddLayeredSequence(LookupSequence("Run_Upper_ZR68C"), 0);
+		}
+
+		return;
+	}
+
+	// Already using the desired animation?
+	if (GetSequence() == animDesired)
+		return;
+
+	//Msg( "Set animation to %d\n", animDesired );
+	// Reset to first frame of desired animation
+	ResetSequence(animDesired);
+	SetCycle(0);
+
+	return;
+
+// END
+#if(0)
+
 	int animDesired = 0, wepLayer = 0;
 	char szAnim[64], szWepLayer[64];
 
@@ -828,12 +1028,14 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 		{
 			RestartGesture(Weapon_TranslateActivity(idealActivity));
 
-			Weapon_SetActivity(idealActivity, 0);
+			Weapon_SetActivity(Weapon_TranslateActivity(ACT_RANGE_ATTACK1), 0);
+
+			return;
 		}
 		else if (idealActivity == ACT_MP_RELOAD_STAND)
 		{
-			AddGesture(idealActivity);
-			//RestartGesture(Weapon_TranslateActivity(idealActivity));
+			//AddGesture(idealActivity);
+			RestartGesture(Weapon_TranslateActivity(idealActivity));
 		}
 		else
 		{
@@ -884,6 +1086,7 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 			//AddGesture(idealActivity);
 		}
 	}
+#endif
 }
 
 // Purpose: Suicide, but cancel the point loss.
