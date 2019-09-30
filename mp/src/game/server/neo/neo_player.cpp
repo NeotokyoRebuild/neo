@@ -641,7 +641,7 @@ void CNEO_Player::PostThink(void)
 		SetPoseParameter(iMoveX, speedScaleX);
 		SetPoseParameter(iMoveY, speedScaleY);
 
-		DevMsg("Setspeed %f , %f\n", speedScaleX, speedScaleY);
+		//DevMsg("Setspeed %f , %f\n", speedScaleX, speedScaleY);
 	}
 }
 
