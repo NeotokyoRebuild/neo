@@ -35,31 +35,35 @@ static inline bool IsNeoGameInfoPathOK(char *out_neoPath, const int pathLen)
 	}
 
 	// Get Steam path
-	char pathBuffer[MAX_PATH];
-	V_strcpy_safe(pathBuffer, SteamAPI_GetSteamInstallPath());
-	V_AppendSlash(pathBuffer, sizeof(pathBuffer));
+	V_strncpy(out_neoPath, SteamAPI_GetSteamInstallPath(), pathLen);
+	V_AppendSlash(out_neoPath, pathLen);
 
 	// Try and see if we have NT installed under the base Steam path
-	V_strcat(pathBuffer, "steamapps\\common\\NEOTOKYO\\NeotokyoSource", sizeof(pathBuffer));
-	if (filesystem->IsDirectory(pathBuffer))
+	V_strcat(out_neoPath, "steamapps\\common\\NEOTOKYO\\NeotokyoSource", pathLen);
+	if (filesystem->IsDirectory(out_neoPath))
 	{
-		V_AppendSlash(pathBuffer, sizeof(pathBuffer));
-		V_strcat(pathBuffer, "GameInfo.txt", sizeof(pathBuffer));
-		if (filesystem->FileExists(pathBuffer))
+		// Make sure there's actually a GameInfo.txt in the path, otherwise we will crash on mount.
+		// We make the assumption that any GameInfo.txt found will be valid format.
+		char gameInfoPath[MAX_PATH];
+		V_strcpy_safe(gameInfoPath, out_neoPath);
+		V_AppendSlash(gameInfoPath, sizeof(gameInfoPath));
+		V_strcat(gameInfoPath, "GameInfo.txt", sizeof(gameInfoPath));
+
+		if (filesystem->FileExists(gameInfoPath))
 		{
-			V_strncpy(out_neoPath, pathBuffer, pathLen);
 			return true;
 		}
 	}
 
 	// Otherwise, look up additional Steam library folders elsewhere
-	V_strcpy_safe(pathBuffer, SteamAPI_GetSteamInstallPath());
-	V_AppendSlash(pathBuffer, sizeof(pathBuffer));
-	V_strcat(pathBuffer, "steamapps\\libraryfolders.vdf", sizeof(pathBuffer));
+	char libraryFoldersPath[MAX_PATH];
+	V_strcpy_safe(libraryFoldersPath, SteamAPI_GetSteamInstallPath());
+	V_AppendSlash(libraryFoldersPath, sizeof(libraryFoldersPath));
+	V_strcat(libraryFoldersPath, "steamapps\\libraryfolders.vdf", sizeof(libraryFoldersPath));
 
 	bool bGameInfoPathIsOK = false;
 	KeyValues *pKvLibFolders = new KeyValues("LibraryFolders");
-	if (pKvLibFolders->LoadFromFile(filesystem, pathBuffer))
+	if (pKvLibFolders->LoadFromFile(filesystem, libraryFoldersPath))
 	{
 		const int maxExtraLibs = 50;
 
