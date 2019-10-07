@@ -21,6 +21,88 @@
 typedef struct stat StatStruct;
 static inline int Stat(const char* path, StatStruct* buf) { return stat(path, buf); }
 static inline bool IsDir(const StatStruct& st) { return S_ISDIR(st.st_mode); }
+#else
+// Attempts to build a valid NT game path using the provided Neo path, and Steam info.
+// Returns true/false depending on if we successfully found a valid path.
+// NOTE: this *will* modify the input path pointer, regardless of success!!
+static inline bool IsNeoGameInfoPathOK(char *out_neoPath, const int pathLen)
+{
+	// This only works for Steam users, and should only be called for them.
+	if (!SteamAPI_IsSteamRunning())
+	{
+		Assert(false);
+		return false;
+	}
+
+	// Get Steam path
+	char pathBuffer[MAX_PATH];
+	V_strcpy_safe(pathBuffer, SteamAPI_GetSteamInstallPath());
+	V_AppendSlash(pathBuffer, sizeof(pathBuffer));
+
+	// Try and see if we have NT installed under the base Steam path
+	V_strcat(pathBuffer, "steamapps\\common\\NEOTOKYO\\NeotokyoSource", sizeof(pathBuffer));
+	if (filesystem->IsDirectory(pathBuffer))
+	{
+		V_AppendSlash(pathBuffer, sizeof(pathBuffer));
+		V_strcat(pathBuffer, "GameInfo.txt", sizeof(pathBuffer));
+		if (filesystem->FileExists(pathBuffer))
+		{
+			V_strncpy(out_neoPath, pathBuffer, pathLen);
+			return true;
+		}
+	}
+
+	// Otherwise, look up additional Steam library folders elsewhere
+	V_strcpy_safe(pathBuffer, SteamAPI_GetSteamInstallPath());
+	V_AppendSlash(pathBuffer, sizeof(pathBuffer));
+	V_strcat(pathBuffer, "steamapps\\libraryfolders.vdf", sizeof(pathBuffer));
+
+	bool bGameInfoPathIsOK = false;
+	KeyValues *pKvLibFolders = new KeyValues("LibraryFolders");
+	if (pKvLibFolders->LoadFromFile(filesystem, pathBuffer))
+	{
+		const int maxExtraLibs = 50;
+
+		for (int i = 1; i <= maxExtraLibs; i++)
+		{
+			char libStr[3];
+			itoa(i, libStr, sizeof(libStr));
+
+			KeyValues *pKvLib = pKvLibFolders->FindKey(libStr);
+			if (!pKvLib)
+			{
+				break;
+			}
+
+			const char *libPath = pKvLib->GetString();
+			if (*libPath != NULL && filesystem->IsDirectory(libPath))
+			{
+				V_strncpy(out_neoPath, libPath, pathLen);
+				V_AppendSlash(out_neoPath, pathLen);
+				V_strcat(out_neoPath, "steamapps\\common\\NEOTOKYO\\NeotokyoSource", pathLen);
+
+				if (filesystem->IsDirectory(out_neoPath))
+				{
+					// Make sure there's actually a GameInfo.txt in the path, otherwise we will crash on mount.
+					// We make the assumption that any GameInfo.txt found will be valid format.
+					char gameInfoPath[MAX_PATH];
+					V_strcpy_safe(gameInfoPath, out_neoPath);
+					V_AppendSlash(gameInfoPath, sizeof(gameInfoPath));
+					V_strcat(gameInfoPath, "GameInfo.txt", sizeof(gameInfoPath));
+
+					if (filesystem->FileExists(gameInfoPath))
+					{
+						bGameInfoPathIsOK = true;
+						break;
+					}
+				}
+			}
+		}
+	}
+	pKvLibFolders->deleteThis();
+
+	return bGameInfoPathIsOK;
+}
 #endif
 
 // Purpose: Find and mount files for the original Steam release of Neotokyo.
@@ -47,7 +129,7 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 
 	const char *thisCaller = "FindOriginalNeotokyoAssets";
 	char neoPath[MAX_PATH];
-	const AppId_t neoAppId = 47182;
+	const AppId_t neoAppId = 244630;
 	const char *pathID = "GAME";
 	const SearchPathAdd_t addType = PATH_ADD_TO_HEAD;
 
@@ -120,85 +202,45 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 	}
 
 #else // If Windows
+	const char *noNeoPathId = "0";
+	Q_strncpy(neoPath, CommandLine()->ParmValue("-neopath", noNeoPathId), sizeof(neoPath));
 
-	char neoWindowsDefaultPath[MAX_PATH];
-
-	if (SteamAPI_IsSteamRunning())
+	// There was no -neopath provided
+	if (!*neoPath || FStrEq(neoPath, noNeoPathId))
 	{
-		// Client falls back to Steam's default Source mod install path, if -neopath was not specified.
-		Q_strncpy(neoWindowsDefaultPath, SteamAPI_GetSteamInstallPath(), sizeof(neoWindowsDefaultPath));
-		V_AppendSlash(neoWindowsDefaultPath, sizeof(neoWindowsDefaultPath));
-		V_strcat(neoWindowsDefaultPath, "steamapps\\common\\NEOTOKYO\\NeotokyoSource", sizeof(neoWindowsDefaultPath));
+		// User has Steam running, use it to deduce the NT path.
+		if (SteamAPI_IsSteamRunning())
+		{
+			originalNtPathOk = IsNeoGameInfoPathOK(neoPath, sizeof(neoPath));
+		}
+		else
+		{
+			// We don't have Steam running, and there is no -neopath specified.
+			// This is a failure state on Windows.
+			originalNtPathOk = false;
+		}
 	}
+	/// There is a -neopath
 	else
 	{
+		// Make sure the path is valid
+		if (filesystem->IsDirectory(neoPath))
+		{
+			// Make sure there's actually a GameInfo.txt in the path, otherwise we will crash on mount.
+			// We make the assumption that any GameInfo.txt found will be valid format.
+			char gameInfoPath[MAX_PATH];
+			V_strcpy_safe(gameInfoPath, neoPath);
+			V_AppendSlash(gameInfoPath, sizeof(gameInfoPath));
+			V_strcat(gameInfoPath, "GameInfo.txt", sizeof(gameInfoPath));
+
+			originalNtPathOk = filesystem->FileExists(gameInfoPath);
+		}
+
 		// NEO TODO (Rain): check reg entries:
 		//	HKEY_LOCAL_MACHINE\SOFTWARE\Valve\Steam (32bit) and HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Valve\Steam (64bit)
 		// for a Steam installation as fallback on client systems.
-
-		// A generic, plausible Windows server srcds location for fallback, if -neopath was not specified.
-		const char serverWinDefault[MAX_PATH] = "C:\\srcds\\NeotokyoSource";
-		Q_strncpy(neoWindowsDefaultPath, serverWinDefault, sizeof(serverWinDefault));
 	}
-
-	Q_strncpy(neoPath, CommandLine()->ParmValue("-neopath", neoWindowsDefaultPath), sizeof(neoPath));
-
-	originalNtPathOk = filesystem->IsDirectory(neoPath);
-#endif
-
-#ifdef _WIN32
-	// Search for any additional Steam library drives if Neotokyo was not found at Steam install location.
-	if (!originalNtPathOk)
-	{
-		KeyValues *pKvLibFolders = new KeyValues("LibraryFolders");
-
-		char steamLibraryPath[MAX_PATH];
-		V_strcpy_safe(steamLibraryPath, SteamAPI_GetSteamInstallPath());
-		V_AppendSlash(steamLibraryPath, sizeof(steamLibraryPath));
-		V_strcat(steamLibraryPath, "steamapps\\libraryfolders.vdf", sizeof(steamLibraryPath));
-
-		if (pKvLibFolders->LoadFromFile(filesystem, steamLibraryPath))
-		{
-			const int maxExtraLibs = 50;
-
-			for (int i = 1; i <= maxExtraLibs; i++)
-			{
-				char libStr[3];
-				itoa(i, libStr, sizeof(libStr));
-
-				KeyValues *pKvLib = pKvLibFolders->FindKey(libStr);
-				if (!pKvLib)
-				{
-					break;
-				}
-
-				const char *libPath = pKvLib->GetString();
-				if (*libPath != NULL && filesystem->IsDirectory(libPath))
-				{
-					V_strcpy_safe(neoPath, libPath);
-					V_AppendSlash(neoPath, sizeof(neoPath));
-					V_strcat(neoPath, "steamapps\\common\\NEOTOKYO\\NeotokyoSource", sizeof(neoPath));
-
-					if (filesystem->IsDirectory(neoPath))
-					{
-						// Make sure there's actually a GameInfo.txt in the path, otherwise we will crash on mount.
-						// We make the assumption that any GameInfo.txt found will be valid format.
-						char gameInfoPath[MAX_PATH];
-						V_strcpy_safe(gameInfoPath, neoPath);
-						V_AppendSlash(gameInfoPath, sizeof(gameInfoPath));
-						V_strcat(gameInfoPath, "GameInfo.txt", sizeof(gameInfoPath));
-
-						if (filesystem->FileExists(gameInfoPath))
-						{
-							originalNtPathOk = true;
-							break;
-						}
-					}
-				}
-			}
-		}
-		pKvLibFolders->deleteThis();
-	}
+	
 #endif
 
 	if (originalNtPathOk)
