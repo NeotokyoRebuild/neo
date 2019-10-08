@@ -215,22 +215,15 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 	// There was no NEO_PATH_PARM_CMD provided
 	if (!*neoPath || FStrEq(neoPath, noNeoPathId))
 	{
-		if (callerIsClientDll)
+		// User has Steam running, use it to deduce the NT path.
+		if (SteamAPI_IsSteamRunning())
 		{
-			// User has Steam running, use it to deduce the NT path.
-			if (SteamAPI_IsSteamRunning())
-			{
-				originalNtPathOk = IsNeoGameInfoPathOK(neoPath, sizeof(neoPath));
-			}
-			else
-			{
-				// We don't have Steam running, and there is no NEO_PATH_PARM_CMD specified.
-				// This is a failure state on Windows.
-				originalNtPathOk = false;
-			}
+			originalNtPathOk = IsNeoGameInfoPathOK(neoPath, sizeof(neoPath));
 		}
 		else
 		{
+			// We don't have Steam running, and there is no NEO_PATH_PARM_CMD specified.
+			// This is a failure state on Windows.
 			originalNtPathOk = false;
 		}
 	}
