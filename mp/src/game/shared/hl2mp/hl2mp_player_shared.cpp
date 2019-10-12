@@ -156,11 +156,25 @@ CPlayerAnimState::CPlayerAnimState( CHL2MP_Player *outer )
 	m_flLastYaw = 0.0f;
 	m_flLastTurnTime = 0.0f;
 	m_flTurnCorrectionTime = 0.0f;
+
+#ifdef NEO
+	if (outer)
+	{
+		//outer->UseClientSideAnimation();
+	}
+	else
+	{
+		Assert(false);
+	}
+#endif
 };
 
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
+#ifdef NEO
+ConVar cl_neo_animcyclerate("cl_neo_animcyclerate", "1.33", FCVAR_CHEAT);
+#endif
 void CPlayerAnimState::Update()
 {
 	m_angRender = GetOuter()->GetLocalAngles();
@@ -180,8 +194,15 @@ void CPlayerAnimState::Update()
 
 #ifdef CLIENT_DLL
 	GetOuter()->UpdateLookAt();
-#endif
 
+#ifdef NEO
+	static double cycle = GetOuter()->GetCycle();
+	cycle = fmod((cycle + (cl_neo_animcyclerate.GetFloat() * gpGlobals->frametime)), 1.0);
+
+	GetOuter()->SetCycle(cycle);
+	//DevMsg("CLI cycle: %f\n", cycle);
+#endif
+#endif
 }
 
 //-----------------------------------------------------------------------------
