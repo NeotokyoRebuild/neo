@@ -110,6 +110,25 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 	m_pAutoAssign_Button = FindControl<Button>(CONTROL_AUTO_BUTTON);
 	m_pCancel_Button = FindControl<Button>(CONTROL_CANCEL_BUTTON);
 
+	// We probably failed to mount original NT VGUI assets if this triggers.
+#ifdef DEBUG
+	Assert(m_pJinrai_TeamImage);
+	Assert(m_pNSF_TeamImage);
+	Assert(m_pJinrai_Button);
+	Assert(m_pNSF_Button);
+	Assert(m_pSpectator_Button);
+	Assert(m_pAutoAssign_Button);
+	Assert(m_pCancel_Button);
+#else
+	if (!(m_pJinrai_TeamImage && m_pNSF_TeamImage && m_pJinrai_Button &&
+		m_pNSF_Button && m_pSpectator_Button && m_pAutoAssign_Button &&
+		m_pCancel_Button))
+	{
+		// We should never be able to hit this line.
+		Error("Failed to load original Neotokyo VGUI elements! This is a bug, please report it.\n");
+	}
+#endif
+
 #if(0)
 	m_pBackgroundImage = new ImagePanel(this, "IconPanel3");
 	m_pTeamMenuLabel = new Label(this, "Label1", "labelText");

@@ -65,6 +65,10 @@ private:
 	void				ComputePoseParam_BodyYaw( void );
 	void				ComputePoseParam_BodyPitch( CStudioHdr *pStudioHdr );
 	void				ComputePoseParam_BodyLookYaw( void );
+#ifdef NEO
+	void				ComputePoseParam_BodyXY(void);
+	void				ComputePoseParam_MoveYaw(void);
+#endif
 
 	void				ComputePlaybackRate();
 

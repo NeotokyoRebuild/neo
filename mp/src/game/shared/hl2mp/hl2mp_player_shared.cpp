@@ -15,6 +15,12 @@
 #include "hl2mp_player.h"
 #endif
 
+#ifdef NEO
+#include "neo_player_shared.h"
+#include "in_buttons.h"
+#include "base_playeranimstate.h"
+#endif
+
 #include "engine/IEngineSound.h"
 #include "SoundEmitterSystem/isoundemittersystembase.h"
 
@@ -150,11 +156,25 @@ CPlayerAnimState::CPlayerAnimState( CHL2MP_Player *outer )
 	m_flLastYaw = 0.0f;
 	m_flLastTurnTime = 0.0f;
 	m_flTurnCorrectionTime = 0.0f;
+
+#ifdef NEO
+	if (outer)
+	{
+		//outer->UseClientSideAnimation();
+	}
+	else
+	{
+		Assert(false);
+	}
+#endif
 };
 
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
+#ifdef NEO
+ConVar cl_neo_animcyclerate("cl_neo_animcyclerate", "1.33", FCVAR_CHEAT);
+#endif
 void CPlayerAnimState::Update()
 {
 	m_angRender = GetOuter()->GetLocalAngles();
@@ -164,12 +184,25 @@ void CPlayerAnimState::Update()
 	ComputePoseParam_BodyPitch(GetOuter()->GetModelPtr());
 	ComputePoseParam_BodyLookYaw();
 
+	//ComputePoseParam_MoveYaw();
+
+#ifdef NEO
+	ComputePoseParam_BodyXY();
+#endif
+
 	ComputePlaybackRate();
 
 #ifdef CLIENT_DLL
 	GetOuter()->UpdateLookAt();
-#endif
 
+#ifdef NEO
+	static double cycle = GetOuter()->GetCycle();
+	cycle = fmod((cycle + (cl_neo_animcyclerate.GetFloat() * gpGlobals->frametime)), 1.0);
+
+	GetOuter()->SetCycle(cycle);
+	//DevMsg("CLI cycle: %f\n", cycle);
+#endif
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -334,6 +367,106 @@ void CPlayerAnimState::ComputePoseParam_BodyPitch( CStudioHdr *pStudioHdr )
 #else
 	GetOuter()->SetPoseParameter( pStudioHdr, "aim_pitch", flPitch );
 #endif
+}
+
+// Grabbed from CBasePlayerAnimState. We should really inherit/override from there.
+float CalcMovementPlaybackRate(const float speed, const float groundSpeed, bool *bIsMoving)
+{
+	bool isMoving = (speed > MOVING_MINIMUM_SPEED);
+
+	*bIsMoving = false;
+	float flReturnValue = 1;
+
+	if (isMoving)
+	{
+		if (groundSpeed < 0.001f)
+		{
+			flReturnValue = 0.01;
+		}
+		else
+		{
+			// Note this gets set back to 1.0 if sequence changes due to ResetSequenceInfo below
+			flReturnValue = speed / groundSpeed;
+			flReturnValue = clamp(flReturnValue, 0.01f, 10.f);	// don't go nuts here.
+		}
+		*bIsMoving = true;
+	}
+
+	return flReturnValue;
+}
+
+void CPlayerAnimState::ComputePoseParam_BodyXY(void)
+{
+#ifdef GAME_DLL
+#if(0)
+	DevMsg("%i has seq: %s (%i)\n",
+		GetOuter()->GetSequence(),
+		"body_x",
+		(GetOuter()->HasPoseParameter(GetOuter()->GetSequence(), "move_x")));
+#endif
+#endif
+
+	if (GetOuter()->LookupPoseParameter("move_x") == -1)
+	{
+		return;
+	}
+
+#if(0)
+	float speedScale = clamp(
+		(GetOuter()->GetLocalVelocity().Length2D() / NEO_ASSAULT_NORM_SPEED),
+		0, 1);
+
+	Vector forward, right;
+	GetOuter()->GetVectors(&forward, &right, NULL);
+#endif
+
+	const float speed = GetOuter()->GetLocalVelocity().Length2D();
+	float speedScale = clamp((speed / NEO_ASSAULT_NORM_SPEED), 0, 1);
+
+	int forwardSign = 0;
+	if (GetOuter()->m_nButtons & IN_FORWARD)
+	{
+		if (!(GetOuter()->m_nButtons & IN_BACK))
+		{
+			forwardSign = 1;
+		}
+	}
+	else if (GetOuter()->m_nButtons & IN_BACK)
+	{
+		forwardSign = -1;
+	}
+
+	int sideSign = 0;
+	if (GetOuter()->m_nButtons & IN_MOVERIGHT)
+	{
+		if (!(GetOuter()->m_nButtons & IN_MOVELEFT))
+		{
+			sideSign = 1;
+		}
+	}
+	else if (GetOuter()->m_nButtons & IN_MOVELEFT)
+	{
+		sideSign = -1;
+	}
+
+	float speed_x = speedScale * forwardSign;
+	float speed_y = speedScale * sideSign;	
+
+	GetOuter()->SetPoseParameter("move_x", speed_x);
+	GetOuter()->SetPoseParameter("move_y", speed_y);
+
+	bool bIsMoving;
+	float flPlaybackRate = CalcMovementPlaybackRate(speed,
+		GetOuter()->GetSequenceGroundSpeed(GetOuter()->GetSequence()), &bIsMoving);
+	
+	if (bIsMoving)
+	{
+		GetOuter()->SetPlaybackRate(flPlaybackRate);
+	}
+
+	//DevMsg("X: %f, Y: %f\n", speed_x, speed_y);
+
+	return;
 }
 
 //-----------------------------------------------------------------------------
