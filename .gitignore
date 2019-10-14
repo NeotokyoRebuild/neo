@@ -97,7 +97,6 @@ obj*/
 # Specific Source build products
 bin
 *.project
-*.lib
 *.fxc
 
 client.pdb
@@ -106,6 +105,12 @@ client.lib
 server.pdb
 server.dll
 server.lib
+
+vgui_controls.lib
+fgdlib.lib
+tier1.lib
+mathlib.lib
+raytrace.lib
 
 client.so
 client.so.dbg
