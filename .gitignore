@@ -1,6 +1,6 @@
 # Files to ignore when considering what GIT should commit.
 
-mp/game/mod_hl2mp/screenshots
+mp/game/neo/screenshots
 
 # Object files
 *.o
@@ -31,16 +31,17 @@ ipch
 *.vcxproj.filters
 *.vcxproj.vpc_crc
 *.vpc.sentinel
+.vs/
 Degub/
 Release/
 mp/src/fgdlib/Debug/
 mp/src/fgdlib/Release/
-mp/src/game/client/Debug_mod_hl2mp/
-mp/src/game/client/Release_mod_hl2mp/
-mp/src/game/server/Debug_mod_hl2mp/
-mp/src/game/server/Release_mod_hl2mp/
-mp/src/materialsystem/stdshaders/Debug_dx9_mod_hl2mp/
-mp/src/materialsystem/stdshaders/Release_dx9_mod_hl2mp/
+mp/src/game/client/Debug_neo/
+mp/src/game/client/Release_neo/
+mp/src/game/server/Debug_neo/
+mp/src/game/server/Release_neo/
+mp/src/materialsystem/stdshaders/Debug_dx9_neo/
+mp/src/materialsystem/stdshaders/Release_dx9_neo/
 mp/src/mathlib/Debug/
 mp/src/mathlib/Release/
 mp/src/raytrace/Debug/
