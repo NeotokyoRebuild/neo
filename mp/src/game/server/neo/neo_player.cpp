@@ -852,10 +852,11 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 #endif
 
 		if (GetSequenceActivity(animDesired) == ACT_RUN)
-		{			
-			SetSequence(LookupSequence("Run_lower"));
+		{
+			int lowerSeq = LookupSequence("Run_lower");
+			SetSequence(lowerSeq);
 			SetPlaybackRate(1.0f);
-			SetLayerLooping(LookupSequence("Run_lower"), true);
+			//SetLayerLooping(lowerSeq, true);
 
 			auto activeWep = GetActiveWeapon();
 			if (activeWep)
@@ -863,20 +864,36 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 				const char *animPrefix = activeWep->GetAnimPrefix();
 				if (*animPrefix != 0)
 				{
-#define MAX_WEAPON_PREFIX_LEN 10 + 1
-					char wepAnim[10 + MAX_WEAPON_PREFIX_LEN];
-					V_sprintf_safe(wepAnim, "Run_Upper_%s", animPrefix);
-					int layeredSequence = LookupSequence(wepAnim);
-					if (layeredSequence != -1)
+					const int numSeqs = 1;
+					const char *layeredSequences[numSeqs] {
+						"Run_Upper_%s",
+						///"Run_Aim_%s",
+					};
+
+#define MAX_WEAPON_PREFIX_LEN 6 + 1
+					char wepAnim[16 + MAX_WEAPON_PREFIX_LEN];
+
+					for (int i = 0; i < numSeqs; i++)
 					{
-						AddLayeredSequence(layeredSequence, 0);
-					}
-					else
-					{
-						DevWarning("CNEO_Player::SetAnimation: LookupSequence failed for \"%s\"\n", wepAnim);
+						V_sprintf_safe(wepAnim, layeredSequences[i], animPrefix);
+
+						int layeredSequence = LookupSequence(wepAnim);
+
+						if (layeredSequence != -1)
+						{
+							AddGestureSequence(layeredSequence);
+							//AddLayeredSequence(layeredSequence, 0);
+							//SetLayerWeight(layeredSequence, 1.0f);
+						}
+						else
+						{
+							DevWarning("CNEO_Player::SetAnimation: LookupSequence failed for \"%s\"\n", wepAnim);
+						}
 					}
 				}
 			}
+
+			SelectWeightedSequence(GetSequenceActivity(animDesired), animDesired);
 		}
 
 		return;
