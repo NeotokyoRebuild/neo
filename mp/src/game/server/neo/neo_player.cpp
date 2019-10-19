@@ -747,9 +747,14 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 	}
 	else if (playerAnim == PLAYER_IDLE || playerAnim == PLAYER_WALK)
 	{
-		if (!(GetFlags() & FL_ONGROUND) && GetActivity() == ACT_JUMP)	// Still jumping
+		if (!(GetFlags() & FL_ONGROUND))	// Still jumping
 		{
-			idealActivity = GetActivity();
+			const Activity onAirAct = GetActivity();
+
+			if (onAirAct == ACT_MP_JUMP)
+			{
+				idealActivity = onAirAct;
+			}
 		}
 		/*
 		else if ( GetWaterLevel() > 1 )
@@ -852,8 +857,26 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 			SetPlaybackRate(1.0f);
 			SetLayerLooping(LookupSequence("Run_lower"), true);
 
-			//AddLayeredSequence(LookupSequence("Run_lower"), 0);
-			AddLayeredSequence(LookupSequence("Run_Upper_ZR68C"), 0);
+			auto activeWep = GetActiveWeapon();
+			if (activeWep)
+			{
+				const char *animPrefix = activeWep->GetAnimPrefix();
+				if (*animPrefix != 0)
+				{
+#define MAX_WEAPON_PREFIX_LEN 10 + 1
+					char wepAnim[10 + MAX_WEAPON_PREFIX_LEN];
+					V_sprintf_safe(wepAnim, "Run_Upper_%s", animPrefix);
+					int layeredSequence = LookupSequence(wepAnim);
+					if (layeredSequence != -1)
+					{
+						AddLayeredSequence(layeredSequence, 0);
+					}
+					else
+					{
+						DevWarning("CNEO_Player::SetAnimation: LookupSequence failed for \"%s\"\n", wepAnim);
+					}
+				}
+			}
 		}
 
 		return;
