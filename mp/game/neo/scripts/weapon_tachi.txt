@@ -9,7 +9,7 @@ WeaponData
 	"team2viewmodel"	"models/weapons/v_nsf_tachi.mdl"
 
 	"playermodel"		"models/weapons/w_tachi.mdl"
-	"anim_prefix"		"tachi"
+	"anim_prefix"		"pistol"
 	"bucket"			"1"
 	"bucket_position"	"0"
 
