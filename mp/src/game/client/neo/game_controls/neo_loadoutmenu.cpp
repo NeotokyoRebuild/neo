@@ -7,6 +7,8 @@
 
 #include <vgui/ISurface.h>
 
+#include "ienginevgui.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -53,7 +55,12 @@ CNeoLoadoutMenu::CNeoLoadoutMenu(IViewPort *pViewPort)
 	// NEO TODO (Rain): It appears that original Neotokyo
 	// hardcodes its scheme. We probably need to make our
 	// own res definition file to mimic it.
-	SetScheme("ClientScheme");
+	const char *schemeName = "ClientScheme";
+
+	vgui::HScheme neoscheme = vgui::scheme()->LoadSchemeFromFileEx(
+		enginevgui->GetPanel(VGuiPanel_t::PANEL_CLIENTDLL), GetResFile(), schemeName);
+
+	vgui::IScheme *pScheme = vgui::scheme()->GetIScheme(neoscheme);
 
 	LoadControlSettings(GetResFile());
 
@@ -108,6 +115,12 @@ CNeoLoadoutMenu::CNeoLoadoutMenu(IViewPort *pViewPort)
 		m_pButton14,
 	};
 
+	const char *fontName = "Default";
+	auto fontHandle = pScheme->GetFont(fontName, IsProportional());
+
+	const Color selectedBgColor(0, 0, 0), selectedFgColor(255, 0, 0),
+		armedBgColor(0, 0, 0), armedFgColor(0, 255, 0);
+
 	for (vgui::Button *button : buttons)
 	{
 		if (!button)
@@ -119,8 +132,16 @@ CNeoLoadoutMenu::CNeoLoadoutMenu(IViewPort *pViewPort)
 
 		button->AddActionSignalTarget(this);
 		button->SetAutoDelete(true);
+
+		button->SetFont(fontHandle);
+
+		button->SetUseCaptureMouse(true);
+		button->SetSelectedColor(selectedFgColor, selectedBgColor);
+		button->SetArmedColor(armedFgColor, armedBgColor);
+		button->SetMouseInputEnabled(true);
+		button->InstallMouseHandler(this);
 	}
-	
+
 	InvalidateLayout();
 
 	g_pNeoLoadoutMenu = this;
@@ -235,45 +256,6 @@ void CNeoLoadoutMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 	LoadControlSettings(GetResFile());
 
 	SetBgColor(Color(0, 0, 0, 0)); // make the background transparent
-
-	vgui::Button *buttons[] = {
-		m_pScout_Button,
-		m_pMisc2,
-		m_pDone_Button,
-		m_pButton1,
-		m_pButton2,
-		m_pButton3,
-		m_pButton4,
-		m_pButton5,
-		m_pButton6,
-		m_pButton7,
-		m_pButton8,
-		m_pButton9,
-		m_pButton10,
-		m_pButton11,
-		m_pButton12,
-		m_pButton13,
-		m_pButton14,
-	};
-
-	const char *fontName = "Default";
-	auto fontHandle = pScheme->GetFont(fontName, IsProportional());
-
-	const Color selectedBgColor(0, 0, 0), selectedFgColor(255, 0, 0),
-		armedBgColor(0, 0, 0), armedFgColor(0, 255, 0);
-
-	for (vgui::Button *button : buttons)
-	{
-		Assert(button);
-		
-		button->SetFont(fontHandle);
-
-		button->SetUseCaptureMouse(true);
-		button->SetSelectedColor(selectedFgColor, selectedBgColor);
-		button->SetArmedColor(armedFgColor, armedBgColor);
-		button->SetMouseInputEnabled(true);
-		button->InstallMouseHandler(this);
-	}
 
 	SetPaintBorderEnabled(false);
 
