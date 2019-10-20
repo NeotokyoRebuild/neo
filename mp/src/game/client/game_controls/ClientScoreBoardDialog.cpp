@@ -33,6 +33,10 @@
 
 #include "vgui_avatarimage.h"
 
+#ifdef NEO
+#include "neo_player_shared.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -382,6 +386,7 @@ void CClientScoreBoardDialog::AddHeader()
 	m_pPlayerList->SetSectionAlwaysVisible(m_iSectionId);
 	m_pPlayerList->AddColumnToSection(m_iSectionId, "name", "#PlayerName", 0, scheme()->GetProportionalScaledValueEx( GetScheme(),NAME_WIDTH) );
 #ifdef NEO
+	m_pPlayerList->AddColumnToSection(m_iSectionId, "rank", "#PlayerScore", 0, scheme()->GetProportionalScaledValueEx(GetScheme(), NAME_WIDTH / 2));
 	m_pPlayerList->AddColumnToSection(m_iSectionId, "xp", "#PlayerScore", 0, scheme()->GetProportionalScaledValueEx(GetScheme(), SCORE_WIDTH));
 #else
 	m_pPlayerList->AddColumnToSection(m_iSectionId, "frags", "#PlayerScore", 0, scheme()->GetProportionalScaledValueEx(GetScheme(), SCORE_WIDTH));
@@ -425,6 +430,7 @@ void CClientScoreBoardDialog::AddSection(int teamType, int teamNumber)
 
 		m_pPlayerList->AddColumnToSection(m_iSectionId, "name", string1, 0, scheme()->GetProportionalScaledValueEx( GetScheme(),NAME_WIDTH) - m_iAvatarWidth );
 #ifdef NEO
+		m_pPlayerList->AddColumnToSection(m_iSectionId, "rank", "", 0, scheme()->GetProportionalScaledValueEx( GetScheme(),NAME_WIDTH / 2) );
 		m_pPlayerList->AddColumnToSection(m_iSectionId, "xp", "", 0, scheme()->GetProportionalScaledValueEx( GetScheme(),SCORE_WIDTH) );
 #else
 		m_pPlayerList->AddColumnToSection(m_iSectionId, "frags", "", 0, scheme()->GetProportionalScaledValueEx(GetScheme(), SCORE_WIDTH));
@@ -443,7 +449,8 @@ void CClientScoreBoardDialog::AddSection(int teamType, int teamNumber)
 		}
 		m_pPlayerList->AddColumnToSection(m_iSectionId, "name", "#Spectators", 0, scheme()->GetProportionalScaledValueEx( GetScheme(),NAME_WIDTH) - m_iAvatarWidth );
 #ifdef NEO
-		m_pPlayerList->AddColumnToSection(m_iSectionId, "xp", "", 0, scheme()->GetProportionalScaledValueEx( GetScheme(),SCORE_WIDTH) );
+		m_pPlayerList->AddColumnToSection(m_iSectionId, "rank", "", 0, scheme()->GetProportionalScaledValueEx( GetScheme(),NAME_WIDTH) );
+		m_pPlayerList->AddColumnToSection(m_iSectionId, "xp", "", 0, scheme()->GetProportionalScaledValueEx(GetScheme(), SCORE_WIDTH));
 #else
 		m_pPlayerList->AddColumnToSection(m_iSectionId, "frags", "", 0, scheme()->GetProportionalScaledValueEx(GetScheme(), SCORE_WIDTH));
 #endif
@@ -496,7 +503,9 @@ bool CClientScoreBoardDialog::GetPlayerScoreInfo(int playerIndex, KeyValues *kv)
 
 	kv->SetInt("deaths", gr->GetDeaths( playerIndex ) );
 #ifdef NEO
-	kv->SetInt("xp", gr->GetXP( playerIndex ) );
+	int xp = gr->GetXP(playerIndex);
+	kv->SetString("rank", GetRankName(xp));
+	kv->SetInt("xp", xp);
 #else
 	kv->SetInt("frags", gr->GetFrags(playerIndex));
 #endif

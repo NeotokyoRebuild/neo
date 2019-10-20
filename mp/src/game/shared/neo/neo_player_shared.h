@@ -93,4 +93,32 @@ bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep);
 extern ConVar cl_autoreload_when_empty;
 extern ConVar neo_recon_superjump_intensity;
 
+inline const char *GetRankName(int xp)
+{
+	if (xp < 0)
+	{
+		return "Rankless Dog";
+	}
+	else if (xp < 4)
+	{
+		return "Private";
+	}
+	else if (xp < 10)
+	{
+		return "Corporal";
+	}
+	else if (xp < 20)
+	{
+		return "Sergeant";
+	}
+	else if (xp < 75)
+	{
+		return "Lieutenant";
+	}
+	else // :-o
+	{
+		return "Puppet Master";
+	}
+}
+
 #endif // NEO_PLAYER_SHARED_H
