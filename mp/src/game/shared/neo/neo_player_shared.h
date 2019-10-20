@@ -6,9 +6,9 @@
 
 #include "neo_predicted_viewmodel.h"
 
-#define NEO_WEAPON_MELEE_SLOT 0
+#define NEO_WEAPON_PRIMARY_SLOT 0
 #define NEO_WEAPON_SECONDARY_SLOT 1
-#define NEO_WEAPON_PRIMARY_SLOT 2
+#define NEO_WEAPON_MELEE_SLOT 2
 #define NEO_WEAPON_EXPLOSIVE_SLOT 3
 
 // All of these should be able to stack create even slower speeds (at least in original NT)
