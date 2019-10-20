@@ -625,6 +625,13 @@ int CNEORules::WeaponShouldRespawn(CBaseCombatWeapon *pWeapon)
 const char *CNEORules::GetGameDescription(void)
 {
 	//DevMsg("Querying CNEORules game description\n");
+
+	// NEO TODO (Rain): get a neo_game_config so we can specify better
+	if (IsTeamplay())
+	{
+		return "Capture the Ghost";
+	}
+
 	return BaseClass::GetGameDescription();
 }
 
