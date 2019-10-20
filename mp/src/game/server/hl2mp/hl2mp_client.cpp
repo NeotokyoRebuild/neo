@@ -31,7 +31,7 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-#ifndef NEO
+#ifndef NEO // We do this all in neo_client.cpp!
 
 void Host_Say( edict_t *pEdict, bool teamonly );
 
@@ -114,9 +114,13 @@ Returns the descriptive name of this .dll.  E.g., Half-Life, or Team Fortress 2
 const char *GetGameDescription()
 {
 	if ( g_pGameRules ) // this function may be called before the world has spawned, and the game rules initialized
+	{
 		return g_pGameRules->GetGameDescription();
+	}
 	else
+	{
 		return "Half-Life 2 Deathmatch";
+	}
 }
 
 //-----------------------------------------------------------------------------

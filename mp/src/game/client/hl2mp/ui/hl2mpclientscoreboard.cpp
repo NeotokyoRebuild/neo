@@ -40,7 +40,12 @@ enum EScoreboardSections
 	SCORESECTION_SPECTATOR = 4
 };
 
-const int NumSegments = 7;
+const int NumSegments = 7
+#ifdef NEO
+	+ 1 // "Rank"
+#endif
+;
+
 static int coord[NumSegments+1] = {
 	0,
 	1,
@@ -49,7 +54,10 @@ static int coord[NumSegments+1] = {
 	4,
 	6,
 	9,
-	10
+	10,
+#ifdef NEO
+	11,
+#endif
 };
 
 //-----------------------------------------------------------------------------
@@ -460,7 +468,7 @@ void CHL2MPClientScoreBoardDialog::AddHeader()
 	m_pPlayerList->AddColumnToSection(0, "name", "", 0, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_NAME_WIDTH ), hFallbackFont );
 	m_pPlayerList->AddColumnToSection(0, "class", "", 0, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_CLASS_WIDTH ) );
 #ifdef NEO
-	m_pPlayerList->AddColumnToSection(0, "rank", "Rank", 0 | SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx(GetScheme(), CSTRIKE_NAME_WIDTH / 2));
+	m_pPlayerList->AddColumnToSection(0, "rank", "Rank", 0 | SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx(GetScheme(), CSTRIKE_NAME_WIDTH / 4));
 	m_pPlayerList->AddColumnToSection(0, "xp", "#PlayerScore", 0 | SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx(GetScheme(), CSTRIKE_SCORE_WIDTH));
 #else
 	m_pPlayerList->AddColumnToSection(0, "frags", "#PlayerScore", 0 | SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx(GetScheme(), CSTRIKE_SCORE_WIDTH));
@@ -487,7 +495,7 @@ void CHL2MPClientScoreBoardDialog::AddSection(int teamType, int teamNumber)
 		m_pPlayerList->AddColumnToSection(sectionID, "name", "", 0, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_NAME_WIDTH ), hFallbackFont );
 		m_pPlayerList->AddColumnToSection(sectionID, "class", "" , 0, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_CLASS_WIDTH ) );
 #ifdef NEO
-		m_pPlayerList->AddColumnToSection(sectionID, "rank", "", SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_NAME_WIDTH / 2 ) );
+		m_pPlayerList->AddColumnToSection(sectionID, "rank", "", SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_NAME_WIDTH / 4 ) );
 		m_pPlayerList->AddColumnToSection(sectionID, "xp", "", SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_SCORE_WIDTH ) );
 #else
 		m_pPlayerList->AddColumnToSection(sectionID, "frags", "", SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx(GetScheme(), CSTRIKE_SCORE_WIDTH));
