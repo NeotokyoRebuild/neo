@@ -74,6 +74,9 @@ public:
 
 #ifdef GAME_DLL
 class CNEOGhostCapturePoint;
+class CNEO_Player;
+#else
+class C_NEO_Player;
 #endif
 
 class CNEORules : public CHL2MPRules, public CGameEventListener
@@ -121,6 +124,13 @@ public:
 	inline void ResetGhostCapPoints();
 
 	void CheckRestartGame();
+
+	void AwardRankUp(int client);
+#ifdef CLIENT_DLL
+	void AwardRankUp(C_NEO_Player *pClient);
+#else
+	void AwardRankUp(CNEO_Player *pClient);
+#endif
 
 	virtual bool CheckGameOver(void);
 

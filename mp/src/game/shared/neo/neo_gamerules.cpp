@@ -389,10 +389,46 @@ void CNEORules::Think(void)
 			// NEO TODO (Rain): figure out the win reasons for Neo
 			SetWinningTeam(captorTeam, 0, false, false, false, false);
 
+			AwardRankUp(captorClient);
+
 			break;
 		}
 	}
 #endif
+}
+
+void CNEORules::AwardRankUp(int client)
+{
+	auto player = UTIL_PlayerByIndex(client);
+	if (player)
+	{
+		AwardRankUp(static_cast<CNEO_Player*>(player));
+	}
+}
+
+#ifdef CLIENT_DLL
+void CNEORules::AwardRankUp(C_NEO_Player *pClient)
+#else
+void CNEORules::AwardRankUp(CNEO_Player *pClient)
+#endif
+{
+	if (!pClient)
+	{
+		return;
+	}
+
+	const int ranks[] = { 0, 4, 10, 20 };
+	for (int i = 0; i < sizeof(ranks); i++)
+	{
+		if (pClient->m_iXP < ranks[i])
+		{
+			pClient->m_iXP = ranks[i];
+			return;
+		}
+	}
+
+	// If we're beyond max rank, just award +1 point.
+	pClient->m_iXP++;
 }
 
 // Return remaining time in seconds. Zero means there is no time limit.
