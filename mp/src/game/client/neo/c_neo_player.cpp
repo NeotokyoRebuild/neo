@@ -49,6 +49,8 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropBool(RECVINFO(m_bShowTestMessage)),
 	RecvPropString(RECVINFO(m_pszTestMessage)),
 
+	RecvPropInt(RECVINFO(m_iXP)),
+
 	RecvPropInt(RECVINFO(m_iCapTeam)),
 
 	RecvPropVector(RECVINFO(m_vecGhostMarkerPos)),
@@ -234,6 +236,7 @@ C_NEO_Player::C_NEO_Player()
 
 	m_iCapTeam = TEAM_UNASSIGNED;
 	m_iGhosterTeam = TEAM_UNASSIGNED;
+	m_iXP = 0;
 
 	m_vecGhostMarkerPos = vec3_origin;
 	m_bGhostExists = false;

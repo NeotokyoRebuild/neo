@@ -3,6 +3,8 @@
 #include "in_buttons.h"
 #include "ammodef.h"
 
+#include "takedamageinfo.h"
+
 #ifdef CLIENT_DLL
 	#include "c_neo_player.h"
 #else
@@ -552,6 +554,8 @@ void CNEORules::StartNextRound()
 		respawn(pPlayer, false);
 		pPlayer->Reset();
 
+		pPlayer->m_iXP = 0;
+
 		pPlayer->SetTestMessageVisible(false);
 	}
 
@@ -849,6 +853,8 @@ void CNEORules::RestartGame()
 		respawn(pPlayer, false);
 		pPlayer->Reset();
 
+		pPlayer->m_iXP = 0;
+
 		pPlayer->SetTestMessageVisible(false);
 	}
 
@@ -1010,3 +1016,34 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 	}
 }
 #endif
+
+void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
+{
+	BaseClass::PlayerKilled(pVictim, info);
+
+	auto attacker = dynamic_cast<CNEO_Player*>(info.GetAttacker());
+	auto victim = dynamic_cast<CNEO_Player*>(pVictim);
+
+	if (!attacker || !pVictim)
+	{
+		return;
+	}
+
+	// Suicide
+	if (attacker == victim)
+	{
+		victim->m_iXP--;
+	}
+	else
+	{
+		// Team kill
+		if (attacker->GetTeamNumber() == victim->GetTeamNumber())
+		{
+			attacker->m_iXP--;
+		}
+		else
+		{
+			attacker->m_iXP++;
+		}
+	}
+}

@@ -217,6 +217,13 @@ void CPlayerAnimState::Update()
 //-----------------------------------------------------------------------------
 void CPlayerAnimState::ComputePlaybackRate()
 {
+#ifdef NEO
+	// We use 9 way blending, therefore playbackrate should always be 1,
+	// and we adjust using poseparameters, instead.
+	GetOuter()->SetPlaybackRate(1.0f);
+	return;
+#endif
+
 	// Determine ideal playback rate
 	Vector vel;
 	GetOuterAbsVelocity( vel );

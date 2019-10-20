@@ -43,6 +43,8 @@ IMPLEMENT_SERVERCLASS_ST(CNEO_Player, DT_NEO_Player)
 SendPropInt(SENDINFO(m_iNeoClass)),
 SendPropInt(SENDINFO(m_iNeoSkin)),
 
+SendPropInt(SENDINFO(m_iXP), 3),
+
 SendPropInt(SENDINFO(m_iCapTeam), 3),
 
 SendPropBool(SENDINFO(m_bShowTestMessage)),
@@ -186,6 +188,7 @@ CNEO_Player::CNEO_Player()
 {
 	m_iNeoClass = NEO_CLASS_ASSAULT;
 	m_iNeoSkin = NEO_SKIN_FIRST;
+	m_iXP = 0;
 
 	m_bInLeanLeft = false;
 	m_bInLeanRight = false;
@@ -903,7 +906,11 @@ void CNEO_Player::SoftSuicide(void)
 
 	CommitSuicide();
 
+	// HL2DM code will decrement, so we cancel it here
 	IncrementFragCount(1);
+
+	// Gamerules event will decrement, so we cancel it here
+	m_iXP++;
 }
 
 bool CNEO_Player::HandleCommand_JoinTeam( int team )
@@ -1033,6 +1040,9 @@ void CNEO_Player::SetPlayerTeamModel( void )
 	}
 
 	SetModel(model);
+	SetPlaybackRate(1.0f);
+	ResetAnimation();
+
 	DevMsg("Set model: %s\n", model);
 
 	//SetupPlayerSoundsByModel(model); // TODO

@@ -121,6 +121,8 @@ public:
 
 	CNetworkVar(int, m_iCapTeam);
 
+	CNetworkVar(int, m_iXP);
+
 	CNetworkVar(bool, m_bShowTestMessage);
 	CNetworkString(m_pszTestMessage, 32 * 2 + 1);
 

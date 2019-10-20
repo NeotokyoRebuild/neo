@@ -126,6 +126,8 @@ public:
 
 	float GetRoundRemainingTime();
 
+	virtual void PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info);
+
 	// IGameEventListener interface:
 	virtual void FireGameEvent(IGameEvent *event);
 

@@ -33,6 +33,9 @@ public:
 	virtual int		GetPing( int index ) = 0;
 //	virtual int		GetPacketloss( int index ) = 0;
 	virtual int		GetDeaths( int index ) = 0;
+#ifdef NEO
+	virtual int		GetXP(int index) = 0;
+#endif
 	virtual int		GetFrags( int index ) = 0;
 	virtual int		GetTeam( int index ) = 0;
 	virtual int		GetHealth( int index ) = 0;

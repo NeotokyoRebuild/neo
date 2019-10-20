@@ -113,6 +113,7 @@ public:
 	char m_pszTestMessage[32 * 2 + 1];
 	//wchar_t m_pszTestMessage;
 
+	int m_iXP;
 	int m_iCapTeam;
 
 	Vector m_rvFriendlyPlayerPositions[MAX_PLAYERS];

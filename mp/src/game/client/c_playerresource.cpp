@@ -13,6 +13,10 @@
 #include "hl2mp_gamerules.h"
 #endif
 
+#ifdef NEO
+#include "c_neo_player.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -185,6 +189,18 @@ int C_PlayerResource::GetTeamScore(int index)
 		return 0;
 
 	return team->Get_Score();
+}
+
+int C_PlayerResource::GetXP(int index)
+{
+	C_NEO_Player *pPlayer = C_NEO_Player::GetLocalNEOPlayer();
+
+	if (!pPlayer)
+	{
+		return 0;
+	}
+
+	return pPlayer->m_iXP;
 }
 
 int C_PlayerResource::GetFrags(int index )

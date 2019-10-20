@@ -421,7 +421,12 @@ void CHL2MPClientScoreBoardDialog::UpdateTeamInfo()
 				// update stats
 				wchar_t val[6];
 				V_snwprintf(val, ARRAYSIZE(val), L"%d", team->Get_Score());
+#ifdef NEO
+				m_pPlayerList->ModifyColumn(sectionID, "score", val);
+#else
 				m_pPlayerList->ModifyColumn(sectionID, "frags", val);
+#endif
+				
 				if (team->Get_Ping() < 1)
 				{
 					m_pPlayerList->ModifyColumn(sectionID, "ping", L"");
@@ -450,7 +455,11 @@ void CHL2MPClientScoreBoardDialog::AddHeader()
 	HFont hFallbackFont = scheme()->GetIScheme( GetScheme() )->GetFont( "DefaultVerySmallFallBack", false );
 	m_pPlayerList->AddColumnToSection(0, "name", "", 0, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_NAME_WIDTH ), hFallbackFont );
 	m_pPlayerList->AddColumnToSection(0, "class", "", 0, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_CLASS_WIDTH ) );
-	m_pPlayerList->AddColumnToSection(0, "frags", "#PlayerScore", 0 | SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_SCORE_WIDTH ) );
+#ifdef NEO
+	m_pPlayerList->AddColumnToSection(0, "xp", "#PlayerScore", 0 | SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx(GetScheme(), CSTRIKE_SCORE_WIDTH));
+#else
+	m_pPlayerList->AddColumnToSection(0, "frags", "#PlayerScore", 0 | SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx(GetScheme(), CSTRIKE_SCORE_WIDTH));
+#endif
 	m_pPlayerList->AddColumnToSection(0, "deaths", "#PlayerDeath", 0 | SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_DEATH_WIDTH ) );
 	m_pPlayerList->AddColumnToSection(0, "ping", "#PlayerPing", 0 | SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_PING_WIDTH ) );
 //	m_pPlayerList->AddColumnToSection(0, "voice", "#PlayerVoice", SectionedListPanel::COLUMN_IMAGE | SectionedListPanel::HEADER_TEXT| SectionedListPanel::COLUMN_CENTER, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_VOICE_WIDTH ) );
@@ -472,7 +481,11 @@ void CHL2MPClientScoreBoardDialog::AddSection(int teamType, int teamNumber)
 		// setup the columns
 		m_pPlayerList->AddColumnToSection(sectionID, "name", "", 0, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_NAME_WIDTH ), hFallbackFont );
 		m_pPlayerList->AddColumnToSection(sectionID, "class", "" , 0, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_CLASS_WIDTH ) );
-		m_pPlayerList->AddColumnToSection(sectionID, "frags", "", SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_SCORE_WIDTH ) );
+#ifdef NEO
+		m_pPlayerList->AddColumnToSection(sectionID, "xp", "", SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_SCORE_WIDTH ) );
+#else
+		m_pPlayerList->AddColumnToSection(sectionID, "frags", "", SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx(GetScheme(), CSTRIKE_SCORE_WIDTH));
+#endif
 		m_pPlayerList->AddColumnToSection(sectionID, "deaths", "", SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_DEATH_WIDTH ) );
 		m_pPlayerList->AddColumnToSection(sectionID, "ping", "", SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_PING_WIDTH ) );
 
@@ -518,7 +531,11 @@ bool CHL2MPClientScoreBoardDialog::GetPlayerScoreInfo(int playerIndex, KeyValues
 	kv->SetInt("team", g_PR->GetTeam( playerIndex ) );
 	kv->SetString("name", g_PR->GetPlayerName(playerIndex) );
 	kv->SetInt("deaths", g_PR->GetDeaths( playerIndex ));
-	kv->SetInt("frags", g_PR->GetPlayerScore( playerIndex ));
+#ifdef NEO
+	kv->SetInt("xp", g_PR->GetXP(playerIndex));
+#else
+	kv->SetInt("frags", g_PR->GetPlayerScore(playerIndex));
+#endif
 	kv->SetString("class", "");
 	
 	if (g_PR->GetPing( playerIndex ) < 1)
@@ -548,6 +565,9 @@ struct PlayerScoreInfo
 {
 	int index;
 	int frags;
+#ifdef NEO
+	int xp;
+#endif
 	int deaths;
 	bool important;
 	bool alive;
@@ -566,6 +586,13 @@ int PlayerScoreInfoSort( const PlayerScoreInfo *p1, const PlayerScoreInfo *p2 )
 		return -1;
 	if ( p2->alive && !p1->alive )
 		return 1;
+
+#ifdef NEO
+	if (p1->xp > p2->xp)
+		return -1;
+	if (p2->xp > p1->xp)
+		return 1;
+#endif
 
 	// check frags
 	if ( p1->frags > p2->frags )

@@ -50,6 +50,9 @@ public : // IGameResources intreface
 	virtual int		GetPlayerScore( int index );
 	virtual int		GetDeaths( int index );
 	virtual int		GetTeam( int index );
+#ifdef NEO
+	virtual int		GetXP(int index);
+#endif
 	virtual int		GetFrags( int index );
 	virtual int		GetHealth( int index );
 
