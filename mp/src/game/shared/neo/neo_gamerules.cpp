@@ -389,7 +389,21 @@ void CNEORules::Think(void)
 			// NEO TODO (Rain): figure out the win reasons for Neo
 			SetWinningTeam(captorTeam, 0, false, false, false, false);
 
-			AwardRankUp(captorClient);
+			for (int i = 1; i <= gpGlobals->maxClients; i++)
+			{
+				if (i == captorClient)
+				{
+					AwardRankUp(i);
+					continue;
+				}
+
+				auto player = UTIL_PlayerByIndex(i);
+				if (player && player->GetTeamNumber() == captorTeam &&
+					player->IsAlive())
+				{
+					AwardRankUp(i);
+				}
+			}
 
 			break;
 		}
