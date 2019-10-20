@@ -7,7 +7,7 @@ WeaponData
 	"viewmodel"				"models/weapons/v_jinrai_knife.mdl"
 	"team2viewmodel"		"models/weapons/v_nsf_knife.mdl"
 	"playermodel"			"models/weapons/w_knife.mdl"
-	"anim_prefix"			"crowbar"
+	"anim_prefix"			"knife"
 	"bucket"				"2"
 	"bucket_position"		"0"
 
