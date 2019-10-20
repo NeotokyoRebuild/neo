@@ -387,7 +387,7 @@ void CNEORules::Think(void)
 
 			// And then announce team victory
 			// NEO TODO (Rain): figure out the win reasons for Neo
-			SetWinningTeam(captorTeam, 0, false, false, false, false);
+			SetWinningTeam(captorTeam, 0, false, true, false, false);
 
 			for (int i = 1; i <= gpGlobals->maxClients; i++)
 			{
@@ -437,12 +437,14 @@ void CNEORules::AwardRankUp(CNEO_Player *pClient)
 		if (pClient->m_iXP < ranks[i])
 		{
 			pClient->m_iXP = ranks[i];
+			NetworkStateChanged(&pClient->m_iXP);
 			return;
 		}
 	}
 
 	// If we're beyond max rank, just award +1 point.
 	pClient->m_iXP++;
+	NetworkStateChanged(&pClient->m_iXP);
 }
 
 // Return remaining time in seconds. Zero means there is no time limit.

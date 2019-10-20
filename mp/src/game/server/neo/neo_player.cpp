@@ -43,7 +43,7 @@ IMPLEMENT_SERVERCLASS_ST(CNEO_Player, DT_NEO_Player)
 SendPropInt(SENDINFO(m_iNeoClass)),
 SendPropInt(SENDINFO(m_iNeoSkin)),
 
-SendPropInt(SENDINFO(m_iXP), 3),
+SendPropInt(SENDINFO(m_iXP)),
 
 SendPropInt(SENDINFO(m_iCapTeam), 3),
 
@@ -61,6 +61,7 @@ SendPropArray(SendPropVector(SENDINFO_ARRAY(m_rvFriendlyPlayerPositions), -1, SP
 END_SEND_TABLE()
 
 BEGIN_DATADESC(CNEO_Player)
+DEFINE_FIELD(m_iXP, FIELD_INTEGER),
 END_DATADESC()
 
 CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
@@ -911,6 +912,7 @@ void CNEO_Player::SoftSuicide(void)
 
 	// Gamerules event will decrement, so we cancel it here
 	m_iXP++;
+	NetworkStateChanged(&m_iXP);
 }
 
 bool CNEO_Player::HandleCommand_JoinTeam( int team )
@@ -1078,10 +1080,11 @@ inline bool CNEO_Player::IsCarryingGhost(void)
 	auto wep = dynamic_cast<CNEOBaseCombatWeapon*>(baseWep);
 	if (!wep)
 	{
-		Assert(false);
+		//Assert(false); // FIXME
 	}
 #else
-	auto wep = static_cast<CNEOBaseCombatWeapon*>(GetWeapon(NEO_WEAPON_PRIMARY_SLOT));
+	//auto wep = static_cast<CNEOBaseCombatWeapon*>(GetWeapon(NEO_WEAPON_PRIMARY_SLOT));
+	auto wep = dynamic_cast<CNEOBaseCombatWeapon*>(GetWeapon(NEO_WEAPON_PRIMARY_SLOT));
 #endif
 	return (wep && wep->IsGhost());
 }

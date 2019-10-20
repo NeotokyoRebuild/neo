@@ -893,10 +893,11 @@ inline bool C_NEO_Player::IsCarryingGhost(void)
 	auto wep = dynamic_cast<CNEOBaseCombatWeapon*>(baseWep);
 	if (!wep)
 	{
-		Assert(false);
+		//Assert(false); // FIXME
 	}
 #else
-	auto wep = static_cast<CNEOBaseCombatWeapon*>(GetWeapon(NEO_WEAPON_PRIMARY_SLOT));
+	//auto wep = static_cast<CNEOBaseCombatWeapon*>(GetWeapon(NEO_WEAPON_PRIMARY_SLOT));
+	auto wep = dynamic_cast<CNEOBaseCombatWeapon*>(GetWeapon(NEO_WEAPON_PRIMARY_SLOT));
 #endif
 	return (wep && wep->IsGhost());
 }
