@@ -508,6 +508,7 @@ bool CNEOPlayerAnimState::CanThePlayerMove()
 	return m_pHelpers->NEOAnim_CanMove();
 }
 
+// NEO FIXME (Rain): use this
 float CNEOPlayerAnimState::GetCurrentMaxGroundSpeed()
 {
 	Activity currentActivity = m_pOuter->GetSequenceActivity(m_pOuter->GetSequence());
