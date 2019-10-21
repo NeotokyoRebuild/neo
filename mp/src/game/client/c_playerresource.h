@@ -66,6 +66,9 @@ protected:
 	// Stored in individual arrays so they can be sent down via datatables
 	string_t	m_szName[MAX_PLAYERS+1];
 	int		m_iPing[MAX_PLAYERS+1];
+#ifdef NEO
+	int		m_iXP[MAX_PLAYERS + 1];
+#endif
 	int		m_iScore[MAX_PLAYERS+1];
 	int		m_iDeaths[MAX_PLAYERS+1];
 	bool	m_bConnected[MAX_PLAYERS+1];

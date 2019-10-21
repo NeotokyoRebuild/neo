@@ -425,29 +425,32 @@ void CNEO_Player::PreThink(void)
 	}
 
 	static int ghostEdict = -1;
-	auto ent = UTIL_EntityByIndex(ghostEdict);
-	bool ghostIsValid = (ent != NULL);
-	if (!ghostIsValid)
+	static CWeaponGhost* ghost = dynamic_cast<CWeaponGhost*>(UTIL_EntityByIndex(ghostEdict));
+	if (!ghost)
 	{
-		auto entIter = gEntList.FirstEnt();
-		while (entIter)
+		ghost = dynamic_cast<CWeaponGhost*>(UTIL_EntityByIndex(ghostEdict));
+		if (!ghost)
 		{
-			auto ghost = dynamic_cast<CWeaponGhost*>(entIter);
-
-			if (ghost)
+			auto entIter = gEntList.FirstEnt();
+			while (entIter)
 			{
-				ghostEdict = ghost->entindex();
-				ghostIsValid = true;
-				break;
-			}
+				ghost = dynamic_cast<CWeaponGhost*>(entIter);
 
-			entIter = gEntList.NextEnt(entIter);
+				if (ghost)
+				{
+					ghostEdict = ghost->entindex();
+					break;
+				}
+
+				entIter = gEntList.NextEnt(entIter);
+			}
 		}
 	}
 
-	if (ghostIsValid)
+	m_bGhostExists = (ghost != NULL);
+
+	if (m_bGhostExists)
 	{
-		auto ghost = dynamic_cast<CWeaponGhost*>(UTIL_EntityByIndex(ghostEdict));
 		if (ghost)
 		{
 			m_vecGhostMarkerPos = ghost->GetAbsOrigin();
@@ -463,11 +466,27 @@ void CNEO_Player::PreThink(void)
 		}
 		else
 		{
-			ghostIsValid = false;
+			Assert(false);
+			m_bGhostExists = false;
 		}
 	}
 
-	m_bGhostExists = ghostIsValid;
+#if(0)
+	auto entIter = gEntList.FirstEnt();
+	int ghosts = 0;
+	while (entIter)
+	{
+		ghost = dynamic_cast<CWeaponGhost*>(entIter);
+
+		if (ghost)
+		{
+			ghosts++;
+		}
+
+		entIter = gEntList.NextEnt(entIter);
+	}
+	DevMsg("Num ghosts: %i\n", ghosts);
+#endif
 
 	if (IsAlive() && GetTeamNumber() != TEAM_SPECTATOR)
 	{

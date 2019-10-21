@@ -18,6 +18,7 @@
 	#include "eventqueue.h"
 	#include "mapentities.h"
 	#include "hl2mp_gameinterface.h"
+	#include "player_resource.h"
 #endif
 
 REGISTER_GAMERULES_CLASS( CNEORules );

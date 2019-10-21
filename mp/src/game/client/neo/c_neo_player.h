@@ -122,12 +122,13 @@ public:
 	bool m_bIsAirborne;
 	bool m_bHasBeenAirborneForTooLongToSuperJump;
 
+	bool m_bGhostExists;
+
 protected:
-	Vector m_vecGhostMarkerPos;
+	CNetworkVector(m_vecGhostMarkerPos);
 
 	int m_iGhosterTeam;
 
-	bool m_bGhostExists;
 	bool m_bIsClassMenuOpen, m_bIsTeamMenuOpen;
 	bool m_bInThermOpticCamo, m_bUnhandledTocChange;
 

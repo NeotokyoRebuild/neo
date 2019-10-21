@@ -30,6 +30,9 @@ protected:
 	// Data for each player that's propagated to all clients
 	// Stored in individual arrays so they can be sent down via datatables
 	CNetworkArray( int, m_iPing, MAX_PLAYERS+1 );
+#ifdef NEO
+	CNetworkArray(int, m_iXP, MAX_PLAYERS + 1);
+#endif
 	CNetworkArray( int, m_iScore, MAX_PLAYERS+1 );
 	CNetworkArray( int, m_iDeaths, MAX_PLAYERS+1 );
 	CNetworkArray( int, m_bConnected, MAX_PLAYERS+1 );
