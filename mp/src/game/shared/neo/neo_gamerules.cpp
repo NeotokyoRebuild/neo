@@ -504,15 +504,14 @@ static inline void SpawnTheGhost()
 		{
 			ghost = dynamic_cast<CWeaponGhost*>(CreateEntityByName("weapon_ghost", -1));
 
-			spawnedGhostNow = true;
-
 			if (!ghost)
 			{
-				Warning("Failed to spawn a new ghost\n");
 				Assert(false);
-
+				Warning("Failed to spawn a new ghost\n");
 				return;
 			}
+
+			spawnedGhostNow = true;
 		}
 	}
 
@@ -569,14 +568,14 @@ static inline void SpawnTheGhost()
 	{
 		DispatchSpawn(ghost);
 
-		DevMsg("Spawned ghost at coords: %.1f %.1f %.1f\n",
+		DevMsg("Spawned ghost at coords:\n\t%.1f %.1f %.1f\n",
 			ghost->GetAbsOrigin().x,
 			ghost->GetAbsOrigin().y,
 			ghost->GetAbsOrigin().z);
 	}
 	else
 	{
-		DevMsg("Moved ghost to coords: %.1f %.1f %.1f\n",
+		DevMsg("Moved ghost to coords:\n\t%.1f %.1f %.1f\n",
 			ghost->GetAbsOrigin().x,
 			ghost->GetAbsOrigin().y,
 			ghost->GetAbsOrigin().z);
@@ -607,7 +606,8 @@ void CNEORules::StartNextRound()
 		respawn(pPlayer, false);
 		pPlayer->Reset();
 
-		pPlayer->m_iXP = 0;
+		pPlayer->m_bIsAirborne = false;
+		pPlayer->m_bInThermOpticCamo = false;
 
 		pPlayer->SetTestMessageVisible(false);
 	}
