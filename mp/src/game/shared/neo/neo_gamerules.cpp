@@ -433,19 +433,17 @@ void CNEORules::AwardRankUp(CNEO_Player *pClient)
 	}
 
 	const int ranks[] = { 0, 4, 10, 20 };
-	for (int i = 0; i < sizeof(ranks); i++)
+	for (int i = 0; i < ARRAYSIZE(ranks); i++)
 	{
-		if (pClient->m_iXP < ranks[i])
+		if (pClient->m_iXP.Get() < ranks[i])
 		{
-			pClient->m_iXP = ranks[i];
-			NetworkStateChanged(&pClient->m_iXP);
+			pClient->m_iXP.GetForModify() = ranks[i];
 			return;
 		}
 	}
 
 	// If we're beyond max rank, just award +1 point.
-	pClient->m_iXP++;
-	NetworkStateChanged(&pClient->m_iXP);
+	pClient->m_iXP.GetForModify()++;
 }
 
 // Return remaining time in seconds. Zero means there is no time limit.
@@ -913,7 +911,7 @@ void CNEORules::RestartGame()
 		respawn(pPlayer, false);
 		pPlayer->Reset();
 
-		pPlayer->m_iXP = 0;
+		pPlayer->m_iXP.GetForModify() = 0;
 
 		pPlayer->SetTestMessageVisible(false);
 	}
@@ -1092,18 +1090,19 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 	// Suicide
 	if (attacker == victim)
 	{
-		victim->m_iXP--;
+		victim->m_iXP.GetForModify() -= 1;
 	}
 	else
 	{
 		// Team kill
 		if (attacker->GetTeamNumber() == victim->GetTeamNumber())
 		{
-			attacker->m_iXP--;
+			victim->m_iXP.GetForModify() -= 1;
 		}
+		// Enemy kill
 		else
 		{
-			attacker->m_iXP++;
+			victim->m_iXP.GetForModify() += 1;
 		}
 	}
 }

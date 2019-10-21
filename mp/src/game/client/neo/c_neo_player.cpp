@@ -236,7 +236,7 @@ C_NEO_Player::C_NEO_Player()
 
 	m_iCapTeam = TEAM_UNASSIGNED;
 	m_iGhosterTeam = TEAM_UNASSIGNED;
-	m_iXP = 0;
+	m_iXP.GetForModify() = 0;
 
 	m_vecGhostMarkerPos = vec3_origin;
 	m_bGhostExists = false;

@@ -189,7 +189,7 @@ CNEO_Player::CNEO_Player()
 {
 	m_iNeoClass = NEO_CLASS_ASSAULT;
 	m_iNeoSkin = NEO_SKIN_FIRST;
-	m_iXP = 0;
+	m_iXP.GetForModify() = 0;
 
 	m_bInLeanLeft = false;
 	m_bInLeanRight = false;
@@ -930,8 +930,7 @@ void CNEO_Player::SoftSuicide(void)
 	IncrementFragCount(1);
 
 	// Gamerules event will decrement, so we cancel it here
-	m_iXP++;
-	NetworkStateChanged(&m_iXP);
+	m_iXP.GetForModify() += 1;
 }
 
 bool CNEO_Player::HandleCommand_JoinTeam( int team )
