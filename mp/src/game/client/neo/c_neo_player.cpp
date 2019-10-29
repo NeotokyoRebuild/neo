@@ -65,6 +65,7 @@ END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA(C_NEO_Player)
 	DEFINE_PRED_FIELD(m_rvFriendlyPlayerPositions, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_vecGhostMarkerPos, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 
 ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
@@ -267,12 +268,12 @@ inline void C_NEO_Player::CheckThermOpticButtons()
 
 void C_NEO_Player::ZeroFriendlyPlayerLocArray()
 {
-	for (int i = 0; i < m_rvFriendlyPlayerPositions->Length(); i++)
+	const int size = m_rvFriendlyPlayerPositions.Count();
+	for (int i = 0; i < size; i++)
 	{
-		m_rvFriendlyPlayerPositions[i].Zero();
+		m_rvFriendlyPlayerPositions.GetForModify(i) = vec3_origin;
 	}
 }
-
 
 C_NEO_Player *C_NEO_Player::GetLocalNEOPlayer()
 {
