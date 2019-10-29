@@ -42,26 +42,41 @@ LINK_ENTITY_TO_CLASS(player, CNEO_Player);
 IMPLEMENT_SERVERCLASS_ST(CNEO_Player, DT_NEO_Player)
 SendPropInt(SENDINFO(m_iNeoClass)),
 SendPropInt(SENDINFO(m_iNeoSkin)),
-
 SendPropInt(SENDINFO(m_iXP)),
-
 SendPropInt(SENDINFO(m_iCapTeam), 3),
-
-SendPropBool(SENDINFO(m_bShowTestMessage)),
-SendPropString(SENDINFO(m_pszTestMessage)),
-
-SendPropVector(SENDINFO(m_vecGhostMarkerPos)),
 SendPropInt(SENDINFO(m_iGhosterTeam)),
+
 SendPropBool(SENDINFO(m_bGhostExists)),
 SendPropBool(SENDINFO(m_bInThermOpticCamo)),
 SendPropBool(SENDINFO(m_bIsAirborne)),
 SendPropBool(SENDINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
+SendPropBool(SENDINFO(m_bShowTestMessage)),
+
+SendPropString(SENDINFO(m_pszTestMessage)),
+
+SendPropVector(SENDINFO(m_vecGhostMarkerPos)),
 
 SendPropArray(SendPropVector(SENDINFO_ARRAY(m_rvFriendlyPlayerPositions), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rvFriendlyPlayerPositions),
 END_SEND_TABLE()
 
 BEGIN_DATADESC(CNEO_Player)
+DEFINE_FIELD(m_iNeoClass, FIELD_INTEGER),
+DEFINE_FIELD(m_iNeoSkin, FIELD_INTEGER),
 DEFINE_FIELD(m_iXP, FIELD_INTEGER),
+DEFINE_FIELD(m_iCapTeam, FIELD_INTEGER),
+DEFINE_FIELD(m_iGhosterTeam, FIELD_INTEGER),
+
+DEFINE_FIELD(m_bGhostExists, FIELD_BOOLEAN),
+DEFINE_FIELD(m_bInThermOpticCamo, FIELD_BOOLEAN),
+DEFINE_FIELD(m_bIsAirborne, FIELD_BOOLEAN),
+DEFINE_FIELD(m_bHasBeenAirborneForTooLongToSuperJump, FIELD_BOOLEAN),
+DEFINE_FIELD(m_bShowTestMessage, FIELD_BOOLEAN),
+
+DEFINE_FIELD(m_pszTestMessage, FIELD_STRING),
+
+DEFINE_FIELD(m_vecGhostMarkerPos, FIELD_VECTOR),
+
+DEFINE_FIELD(m_rvFriendlyPlayerPositions, FIELD_CUSTOM),
 END_DATADESC()
 
 CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
