@@ -54,7 +54,7 @@ SendPropBool(SENDINFO(m_bShowTestMessage)),
 
 SendPropString(SENDINFO(m_pszTestMessage)),
 
-SendPropVector(SENDINFO(m_vecGhostMarkerPos)),
+SendPropVector(SENDINFO(m_vecGhostMarkerPos), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT),
 
 SendPropArray(SendPropVector(SENDINFO_ARRAY(m_rvFriendlyPlayerPositions), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rvFriendlyPlayerPositions),
 END_SEND_TABLE()
