@@ -38,7 +38,7 @@ const char *GetWeaponByLoadoutId(int id)
 	const char* weps[] = {
 		"weapon_mpn",
 		"weapon_srm",
-		"weapon_srms",
+		"weapon_srm_s",
 		"weapon_jitte",
 		"weapon_jittescoped",
 		"weapon_zr68c",
