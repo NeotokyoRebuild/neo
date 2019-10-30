@@ -35,6 +35,28 @@ using namespace vgui;
 #define CONTROL_BUTTON13 "Button13"
 #define CONTROL_BUTTON14 "Button14"
 
+static const char *szButtons[] = {
+    CONTROL_SCOUT_BUTTON,
+    CONTROL_MISC2_BUTTON,
+    CONTROL_DONE_BUTTON,
+    CONTROL_BUTTON1,
+    CONTROL_BUTTON2,
+    CONTROL_BUTTON3,
+    CONTROL_BUTTON4,
+    CONTROL_BUTTON5,
+    CONTROL_BUTTON6,
+    CONTROL_BUTTON7,
+    CONTROL_BUTTON8,
+    CONTROL_BUTTON9,
+    CONTROL_BUTTON10,
+    CONTROL_BUTTON11,
+    CONTROL_BUTTON12,
+    CONTROL_BUTTON13,
+    CONTROL_BUTTON14,
+};
+
+const int iNumButtonStrings = ARRAYSIZE(szButtons);
+
 Panel *NeoLoadout_Factory()
 {
 	return new CNeoLoadoutMenu(gViewPortInterface);
@@ -99,34 +121,16 @@ CNeoLoadoutMenu::CNeoLoadoutMenu(IViewPort *pViewPort)
 	m_pButton13 = FindControl<Button>(CONTROL_BUTTON13);
 	m_pButton14 = FindControl<Button>(CONTROL_BUTTON14);
 
-	vgui::Button *buttons[] = {
-		m_pScout_Button,
-		m_pMisc2,
-		m_pDone_Button,
-		m_pButton1,
-		m_pButton2,
-		m_pButton3,
-		m_pButton4,
-		m_pButton5,
-		m_pButton6,
-		m_pButton7,
-		m_pButton8,
-		m_pButton9,
-		m_pButton10,
-		m_pButton11,
-		m_pButton12,
-		m_pButton13,
-		m_pButton14,
-	};
-
 	const char *fontName = "Default";
 	auto fontHandle = pScheme->GetFont(fontName, IsProportional());
 
 	const Color selectedBgColor(0, 0, 0), selectedFgColor(255, 0, 0),
 		armedBgColor(0, 0, 0), armedFgColor(0, 255, 0);
 
-	for (vgui::Button *button : buttons)
+    for (int i = 0; i < iNumButtonStrings; i++)
 	{
+        auto button = FindControl<Button>(szButtons[i]);
+
 		if (!button)
 		{
 			Assert(false);
@@ -157,28 +161,10 @@ CNeoLoadoutMenu::~CNeoLoadoutMenu()
 
 void CNeoLoadoutMenu::CommandCompletion()
 {
-	vgui::Button *buttons[] = {
-		m_pScout_Button,
-		m_pMisc2,
-		m_pDone_Button,
-		m_pButton1,
-		m_pButton2,
-		m_pButton3,
-		m_pButton4,
-		m_pButton5,
-		m_pButton6,
-		m_pButton7,
-		m_pButton8,
-		m_pButton9,
-		m_pButton10,
-		m_pButton11,
-		m_pButton12,
-		m_pButton13,
-		m_pButton14,
-	};
-
-	for (vgui::Button *button : buttons)
+    for (int i = 0; i < iNumButtonStrings; i++)
 	{
+        auto button = FindControl<Button>(szButtons[i]);
+
 		if (!button)
 		{
 			Assert(false);
@@ -261,44 +247,45 @@ void CNeoLoadoutMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 		return;
 	}
 
+    const char *schemeName = "ClientScheme";
+
+    vgui::HScheme neoscheme = vgui::scheme()->LoadSchemeFromFileEx(
+        enginevgui->GetPanel(VGuiPanel_t::PANEL_CLIENTDLL), GetResFile(), schemeName);
+    if (!neoscheme)
+    {
+        Assert(false);
+        Warning("Failed to ApplySchemeSettings for CNeoLoadoutMenu\n");
+        return;
+    }
+
+    vgui::IScheme *scheme = vgui::scheme()->GetIScheme(neoscheme);
+    if (!scheme)
+    {
+        Assert(false);
+        Warning("Failed to ApplySchemeSettings for CNeoLoadoutMenu\n");
+        return;
+    }
+
 	LoadControlSettings(GetResFile());
 
 	SetBgColor(Color(0, 0, 0, 0)); // make the background transparent
-
-	vgui::Button *buttons[] = {
-		m_pScout_Button,
-		m_pMisc2,
-		m_pDone_Button,
-		m_pButton1,
-		m_pButton2,
-		m_pButton3,
-		m_pButton4,
-		m_pButton5,
-		m_pButton6,
-		m_pButton7,
-		m_pButton8,
-		m_pButton9,
-		m_pButton10,
-		m_pButton11,
-		m_pButton12,
-		m_pButton13,
-		m_pButton14,
-	};
 
 	const Color selectedBgColor(0, 0, 0), selectedFgColor(255, 0, 0),
 		armedBgColor(0, 0, 0), armedFgColor(0, 255, 0);
 
 	const char *font = "Default";
 
-	for (vgui::Button *button : buttons)
+    for (int i = 0; i < iNumButtonStrings; i++)
 	{
+        auto button = FindControl<Button>(szButtons[i]);
+
 		if (!button)
 		{
 			Assert(false);
 			continue;
 		}
 
-		button->SetFont(pScheme->GetFont(font, IsProportional()));
+        button->SetFont(scheme->GetFont(font, IsProportional()));
 		button->SetUseCaptureMouse(true);
 		button->SetSelectedColor(selectedFgColor, selectedBgColor);
 		button->SetArmedColor(armedFgColor, armedBgColor);
