@@ -52,6 +52,29 @@ enum NeoWepBits {
 	NEO_WEP_HIGHEST_VALID_BITS = NEO_WEP_ZR68_S
 };
 
+// These are the .res file id numbers for
+// NEO weapon loadout choices used by the
+// client cvar "loadout <int>"
+enum {
+	NEO_WEP_LOADOUT_ID_MPN = 0,
+	NEO_WEP_LOADOUT_ID_SRM,
+	NEO_WEP_LOADOUT_ID_SRM_S,
+	NEO_WEP_LOADOUT_ID_JITTE,
+	NEO_WEP_LOADOUT_ID_JITTE_S,
+	NEO_WEP_LOADOUT_ID_ZR68C,
+	NEO_WEP_LOADOUT_ID_ZR68S,
+	NEO_WEP_LOADOUT_ID_ZR68L,
+	NEO_WEP_LOADOUT_ID_MX,
+	NEO_WEP_LOADOUT_ID_PZ,
+	NEO_WEP_LOADOUT_ID_SUPA7,
+	NEO_WEP_LOADOUT_ID_M41,
+	NEO_WEP_LOADOUT_ID_M41L,
+
+	NEO_WEP_LOADOUT_ID_COUNT
+};
+
+const char *GetWeaponByLoadoutId(int id);
+
 class CNEOBaseCombatWeapon : public CBaseHL2MPCombatWeapon
 {
 #ifndef CLIENT_DLL

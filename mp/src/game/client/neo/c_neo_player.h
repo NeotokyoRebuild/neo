@@ -153,6 +153,8 @@ inline C_NEO_Player *ToNEOPlayer(CBaseEntity *pEntity)
 }
 
 extern ConVar cl_drawhud_quickinfo;
+extern ConVar loadout;
+
 extern ConCommand teammenu;
 
 #endif // NEO_PLAYER_H

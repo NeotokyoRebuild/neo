@@ -9,6 +9,8 @@
 
 #include "ienginevgui.h"
 
+#include "c_neo_player.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -45,6 +47,8 @@ CNeoLoadoutMenu *g_pNeoLoadoutMenu = NULL;
 CNeoLoadoutMenu::CNeoLoadoutMenu(IViewPort *pViewPort)
 	: BaseClass(NULL, PANEL_NEO_LOADOUT)
 {
+	Assert(pViewPort);
+
 	// Quiet "parent not sized yet" spew
 	SetSize(10, 10);
 
@@ -178,6 +182,7 @@ void CNeoLoadoutMenu::CommandCompletion()
 		if (!button)
 		{
 			Assert(false);
+			Warning("Button was null on CNeoLoadoutMenu\n");
 			continue;
 		}
 
@@ -188,12 +193,13 @@ void CNeoLoadoutMenu::CommandCompletion()
 	SetEnabled(false);
 
 	SetMouseInputEnabled(false);
-	SetKeyBoardInputEnabled(false);
 	SetCursorAlwaysVisible(false);
 }
 
 void CNeoLoadoutMenu::ShowPanel(bool bShow)
 {
+	//gViewPortInterface->ShowPanel(PANEL_NEO_LOADOUT, bShow);
+
 	if (bShow && !IsVisible())
 	{
 		m_bLoadoutMenu = false;
@@ -231,15 +237,17 @@ void CNeoLoadoutMenu::OnCommand(const char* command)
 		return;
 	}
 
-	DevMsg("CNeoLoadoutMenu::OnCommand: %s\n", command);
+	engine->ClientCmd(command);
 
 	CommandCompletion();
 }
 
 void CNeoLoadoutMenu::OnButtonPressed(KeyValues *data)
 {
-	Msg("Loadout button pressed\n");
+#if(0)
+	DevMsg("Loadout button pressed\n");
 	KeyValuesDumpAsDevMsg(data);
+#endif
 }
 
 void CNeoLoadoutMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
@@ -249,13 +257,54 @@ void CNeoLoadoutMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 	if (!pScheme)
 	{
 		Assert(false);
-		Warning("Failed to ApplySchemeSettings for CNeoTeamMenu\n");
+		Warning("Failed to ApplySchemeSettings for CNeoLoadoutMenu\n");
 		return;
 	}
 
 	LoadControlSettings(GetResFile());
 
 	SetBgColor(Color(0, 0, 0, 0)); // make the background transparent
+
+	vgui::Button *buttons[] = {
+		m_pScout_Button,
+		m_pMisc2,
+		m_pDone_Button,
+		m_pButton1,
+		m_pButton2,
+		m_pButton3,
+		m_pButton4,
+		m_pButton5,
+		m_pButton6,
+		m_pButton7,
+		m_pButton8,
+		m_pButton9,
+		m_pButton10,
+		m_pButton11,
+		m_pButton12,
+		m_pButton13,
+		m_pButton14,
+	};
+
+	const Color selectedBgColor(0, 0, 0), selectedFgColor(255, 0, 0),
+		armedBgColor(0, 0, 0), armedFgColor(0, 255, 0);
+
+	const char *font = "Default";
+
+	for (vgui::Button *button : buttons)
+	{
+		if (!button)
+		{
+			Assert(false);
+			continue;
+		}
+
+		button->SetFont(pScheme->GetFont(font, IsProportional()));
+		button->SetUseCaptureMouse(true);
+		button->SetSelectedColor(selectedFgColor, selectedBgColor);
+		button->SetArmedColor(armedFgColor, armedBgColor);
+		button->SetMouseInputEnabled(true);
+		button->InstallMouseHandler(this);
+	}
 
 	SetPaintBorderEnabled(false);
 

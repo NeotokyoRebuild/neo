@@ -58,6 +58,8 @@ public:
 	virtual void EquipSuit(bool bPlayEffects = true);
 	virtual void RemoveSuit(void);
 	virtual void GiveDefaultItems(void);
+	
+	void GiveLoadoutWeapon(void);
 
 	void SetPlayerTeamModel(void);
 	virtual void PickDefaultSpawnTeam(void);

@@ -90,8 +90,9 @@ extern bool IsThereRoomForLeanSlide(CNEO_Player *player,
 // Is the player allowed to aim zoom with a weapon of this type?
 bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep);
 
-extern ConVar cl_autoreload_when_empty;
 extern ConVar neo_recon_superjump_intensity;
+
+//ConVar sv_neo_resupply_anywhere("sv_neo_resupply_anywhere", "0", FCVAR_CHEAT | FCVAR_REPLICATED);
 
 inline const char *GetRankName(int xp)
 {

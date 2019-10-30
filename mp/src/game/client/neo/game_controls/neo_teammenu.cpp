@@ -99,7 +99,6 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 	SetKeyBoardInputEnabled(true);
 
 	SetTitleBarVisible(false);
-	SetProportional(true);
 
 	m_pJinrai_TeamImage = FindControl<ImagePanel>(CONTROL_JINRAI_IMAGE, false);
 	m_pNSF_TeamImage = FindControl<ImagePanel>(CONTROL_NSF_IMAGE, false);
@@ -171,6 +170,10 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 	InvalidateLayout();
 
 	g_pNeoTeamMenu = this;
+}
+
+CNeoTeamMenu::~CNeoTeamMenu()
+{
 }
 
 void CNeoTeamMenu::Update()
@@ -256,7 +259,7 @@ void CNeoTeamMenu::OnCommand(const char *command)
 		V_sprintf_safe(commandBuffer, "jointeam %i", randomTeam);
 	}
 
-	engine->ExecuteClientCmd(commandBuffer);
+	engine->ClientCmd(commandBuffer);
 
 	bool proceedToClassSelection = (Q_stristr(commandBuffer, "jointeam") != 0);
 
@@ -282,10 +285,6 @@ void CNeoTeamMenu::OnButtonPressed(KeyValues *data)
 #if(0)
 	KeyValuesDumpAsDevMsg(data);
 #endif
-}
-
-CNeoTeamMenu::~CNeoTeamMenu()
-{
 }
 
 void CNeoTeamMenu::ApplySchemeSettings(vgui::IScheme *pScheme)

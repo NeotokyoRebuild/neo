@@ -23,8 +23,9 @@
 #include "ui/neo_hud_game_event.h"
 #include "ui/neo_hud_ghost_marker.h"
 #include "ui/neo_hud_friendly_marker.h"
-
 #include "ui/neo_hud_elements.h"
+
+#include "neo/game_controls/neo_loadoutmenu.h"
 
 #include "baseviewmodel_shared.h"
 
@@ -72,6 +73,9 @@ ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
 	"Whether to display HL2 style ammo/health info near crosshair.",
 	true, 0.0f, true, 1.0f);
 
+ConVar loadout("loadout", "0", FCVAR_CLIENTDLL | FCVAR_USERINFO,
+	"Select primary weapon loadout (int).", true, 0.0f, false, 0.0f);
+
 class NeoLoadoutMenu_Cb : public ICommandCallback
 {
 public:
@@ -79,8 +83,8 @@ public:
 	{
 		Msg("Loadout access cb\n");
 
-		vgui::EditablePanel *panel = dynamic_cast<vgui::EditablePanel*>
-			(GetClientModeNormal()->GetViewport()->FindChildByName(PANEL_NEO_LOADOUT));
+		auto panel = dynamic_cast<vgui::EditablePanel*>(GetClientModeNormal()->
+			GetViewport()->FindChildByName(PANEL_NEO_LOADOUT));
 
 		if (!panel)
 		{
@@ -126,6 +130,16 @@ public:
 
 		panel->SetVisible(true);
 		panel->SetEnabled(true);
+
+		auto loadoutPanel = dynamic_cast<CNeoLoadoutMenu*>(panel);
+		if (loadoutPanel)
+		{
+			loadoutPanel->ShowPanel(true);
+		}
+		else
+		{
+			Warning("Cast failed\n");
+		}
 
 		surface()->SetMinimized(panel->GetVPanel(), false);
 	}

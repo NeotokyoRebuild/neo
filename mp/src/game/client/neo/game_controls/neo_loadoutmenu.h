@@ -56,8 +56,6 @@ protected:
 	virtual void PerformLayout() { }
 	virtual void ApplySchemeSettings(vgui::IScheme *pScheme);
 
-	bool m_bLoadoutMenu;
-
 	// --------------------------------------------------------
 	// Menu pieces. These are defined in the GetResFile() file.
 	// --------------------------------------------------------
@@ -86,6 +84,8 @@ protected:
 
 	// Our viewport interface accessor
 	IViewPort *m_pViewPort;
+
+	bool m_bLoadoutMenu;
 };
 
 #endif // NEO_LOADOUT_MENU_H

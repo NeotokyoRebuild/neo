@@ -319,6 +319,8 @@ void CNEO_Player::Spawn(void)
 	SetTransmitState(FL_EDICT_ALWAYS);
 
 	m_bIsAirborne = (!(GetFlags() & FL_ONGROUND));
+
+	GiveLoadoutWeapon();
 }
 
 bool CNEO_Player::IsAirborne(void) const
@@ -1484,20 +1486,43 @@ void CNEO_Player::GiveDefaultItems(void)
 	case NEO_CLASS_RECON:
 		GiveNamedItem("weapon_knife");
 		GiveNamedItem("weapon_milso");
+		Weapon_Switch(Weapon_OwnsThisType("weapon_milso"));
 		break;
 	case NEO_CLASS_ASSAULT:
 		GiveNamedItem("weapon_knife");
 		GiveNamedItem("weapon_tachi");
+		Weapon_Switch(Weapon_OwnsThisType("weapon_tachi"));
 		break;
 	case NEO_CLASS_SUPPORT:
 		if (supportsGetKnife) { GiveNamedItem("weapon_knife"); }
 		GiveNamedItem("weapon_kyla");
+		Weapon_Switch(Weapon_OwnsThisType("weapon_kyla"));
+		break;
+	default:
+		GiveNamedItem("weapon_knife");
 		break;
 	}
+}
 
-	GiveNamedItem("weapon_zr68s");
+void CNEO_Player::GiveLoadoutWeapon(void)
+{
+	if (IsObserver() || IsDead())
+	{
+		return;
+	}
 
-	Weapon_Switch(Weapon_OwnsThisType("weapon_zr68s"));
+	const int loadoutId = atoi(engine->GetClientConVarValue(
+		engine->IndexOfEdict(edict()), "loadout"));
+
+	const char *szWep = GetWeaponByLoadoutId(loadoutId);
+#if DEBUG
+	DevMsg("Loadout slot: %i (\"%s\")\n", loadoutId, szWep);
+#endif
+
+	if (GiveNamedItem(szWep))
+	{
+		Weapon_Switch(Weapon_OwnsThisType(szWep));
+	}
 }
 
 void CNEO_Player::GiveAllItems(void)
