@@ -3,7 +3,6 @@
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
-#include "dt_recv.h"
 
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponZR68S, DT_WeaponZR68S)
 
@@ -188,7 +187,6 @@ void CWeaponZR68S::ItemPostFrame()
 		}
 	}
 }
-
 
 float CWeaponZR68S::GetFireRate()
 {
