@@ -12,6 +12,8 @@
 
 // Used to determine whether directories exist.
 #ifdef LINUX
+#include <cstdio>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -23,7 +25,14 @@
 #ifdef LINUX
 typedef struct stat StatStruct;
 static inline int Stat(const char* path, StatStruct* buf) { return stat(path, buf); }
+
 static inline bool IsDir(const StatStruct& st) { return S_ISDIR(st.st_mode); }
+
+static inline bool DirExists(const char *path)
+{
+    StatStruct file_stat;
+    return (Stat(path, &file_stat) == 0 && IsDir(file_stat));
+}
 #else
 // Attempts to build a valid NT game path using the provided Neo path, and Steam info.
 // Returns true/false depending on if we successfully found a valid path.
@@ -112,6 +121,91 @@ static inline bool IsNeoGameInfoPathOK(char *out_neoPath, const int pathLen)
 }
 #endif
 
+#ifdef LINUX
+// Purpose: Rename specific problematic NT paths to lowercase where their
+// inconsistent capitalization causes issues for Linux filesystems (EXT etc).
+//
+// This is kind of kludgy, but it's the most straightforward way of handling this
+// for soundscripts due to how they are read from the original files. It's also
+// Windows (NTFS) compatible, since Windows is case insensitive unlike most Linux FS's.
+//
+// NEO TODO (Rain): We should probably use a pop up dialog to confirm with the user,
+// but leaving it out for now since this rename has practically no side effect.
+static inline void FixCaseSensitivePathsForLinux(const char *neoPath)
+{
+    const char *szThisCaller = "FixCaseSensitivePathsForLinux";
+
+    Msg("%s: Checking for Neotokyo path case sensitivity issues...\n", szThisCaller);
+
+    const char *szPathsToFix[] = {
+        "sound/weapons/Jitte/",
+    };
+
+    int numSuccesses = 0;
+    for (int i = 0; i < ARRAYSIZE(szPathsToFix); i++)
+    {
+        char szLowerCaseTarget[MAX_PATH] { 0 };
+        char szOriginalCaseBuffer[MAX_PATH] { 0 };
+        char szResultBuffer[MAX_PATH] { 0 };
+
+        V_strcpy_safe(szLowerCaseTarget, szPathsToFix[i]);
+        V_strlower(szLowerCaseTarget);
+
+        V_sprintf_safe(szOriginalCaseBuffer, "%s%s", neoPath, szPathsToFix[i]);
+        V_sprintf_safe(szResultBuffer, "%s%s", neoPath, szLowerCaseTarget);
+
+        if (DirExists(szOriginalCaseBuffer))
+        {
+            if (DirExists(szResultBuffer))
+            {
+                Warning("%s: Both lower and upper case versions of this path exist at once: %s\n",
+                    szThisCaller, szOriginalCaseBuffer);
+                continue;
+            }
+        }
+        else
+        {
+            if (DirExists(szResultBuffer))
+            {
+                numSuccesses++;
+            }
+            else
+            {
+                Warning("%s: Could not find path: %s\n", szThisCaller, szResultBuffer);
+            }
+
+            continue;
+        }
+
+        Msg("%s: For Linux mixed case filesystem compatibility, now attempting to rename this folder path \
+to partially lowercase:\n\"%s\" --> \"%s\"\n",
+            szThisCaller, szOriginalCaseBuffer, szResultBuffer);
+
+        if (rename(szOriginalCaseBuffer, szResultBuffer) == 0)
+        {
+            Msg("%s: Path renaming was successful; result: \"%s\"\n", szThisCaller, szResultBuffer);
+            numSuccesses++;
+        }
+        else
+        {
+            Warning("%s: Path renaming failed for: %s\n", szThisCaller, strerror(errno));
+        }
+    }
+
+    const bool allPathsOk = (numSuccesses == ARRAYSIZE(szPathsToFix));
+
+    if (allPathsOk)
+    {
+        Msg("%s: All Neotokyo folder path cases are Linux compatible.\n", szThisCaller);
+    }
+    else
+    {
+        Warning("%s: Some folder path cases are not Linux compatible, this may cause errors! \
+See the error lines above for more info.\n", szThisCaller);
+    }
+}
+#endif
+
 // Purpose: Find and mount files for the original Steam release of Neotokyo.
 //
 // On Windows, we assume to find the root "NeotokyoSource" at Steam install dir path.
@@ -161,8 +255,6 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 
 	const bool isUsingCustomParm = (Q_stricmp(neoPath, neoHardcodedLinuxAssetPath_Home) != 0);
 
-	StatStruct file_stat;
-
 	if (isUsingCustomParm)
 	{
 		if (!*neoPath)
@@ -181,7 +273,7 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 			DevMsg("Server using custom %s: %s\n", NEO_PATH_PARM_CMD, neoPath);
 		}
 
-		originalNtPathOk = ( Stat(neoPath, &file_stat) == 0 && IsDir(file_stat) );
+        originalNtPathOk = DirExists(neoPath);
 
 		if (!originalNtPathOk)
 		{
@@ -191,14 +283,14 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 	else
 	{
 		// Try first path
-		originalNtPathOk = ( Stat(neoPath, &file_stat) == 0 && IsDir(file_stat) );
+        originalNtPathOk = DirExists(neoPath);
 
 		// Try second path
 		if (!originalNtPathOk)
 		{
 			V_strcpy_safe(neoPath, neoHardcodedLinuxAssetPath_Share);
 			
-			originalNtPathOk = ( Stat(neoPath, &file_stat) == 0 && IsDir(file_stat) );
+            originalNtPathOk = DirExists(neoPath);
 		}
 	}
 
@@ -278,6 +370,8 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 				Warning("%s: Failed to mount Neotokyo AppID (%i)\n", thisCaller, neoAppId);
 				return false;
 			}
+
+            FixCaseSensitivePathsForLinux(neoPath);
 		}
 		else
 		{
