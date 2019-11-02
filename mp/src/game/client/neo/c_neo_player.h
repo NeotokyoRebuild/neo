@@ -109,29 +109,31 @@ private:
 	inline bool IsAllowedToSuperJump(void);
 
 public:
-	bool m_bShowTestMessage;
-	char m_pszTestMessage[32 * 2 + 1];
+	CNetworkVar(bool, m_bShowTestMessage);
+	CNetworkString(m_pszTestMessage, 32 * 2 + 1);
 	//wchar_t m_pszTestMessage;
 
-	int m_iCapTeam;
+	CNetworkVar(int, m_iXP);
+	CNetworkVar(int, m_iCapTeam);
 
-	Vector m_rvFriendlyPlayerPositions[MAX_PLAYERS];
+	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
 
 	bool m_bShowClassMenu, m_bShowTeamMenu;
-	bool m_bIsAirborne;
-	bool m_bHasBeenAirborneForTooLongToSuperJump;
+	CNetworkVar(bool, m_bIsAirborne);
+	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
+
+	CNetworkVar(bool, m_bGhostExists);
 
 protected:
-	Vector m_vecGhostMarkerPos;
+	CNetworkVector(m_vecGhostMarkerPos);
 
-	int m_iGhosterTeam;
+	CNetworkVar(int, m_iGhosterTeam);
 
-	bool m_bGhostExists;
-	bool m_bIsClassMenuOpen, m_bIsTeamMenuOpen;
-	bool m_bInThermOpticCamo, m_bUnhandledTocChange;
+	bool m_bIsClassMenuOpen, m_bIsTeamMenuOpen, m_bUnhandledTocChange;
+	CNetworkVar(bool, m_bInThermOpticCamo);
 
-	int m_iNeoClass;
-	int m_iNeoSkin;
+	CNetworkVar(int, m_iNeoClass);
+	CNetworkVar(int, m_iNeoSkin);
 
 private:
 	CNeoHudElements *m_pNeoPanel;
@@ -151,6 +153,8 @@ inline C_NEO_Player *ToNEOPlayer(CBaseEntity *pEntity)
 }
 
 extern ConVar cl_drawhud_quickinfo;
+extern ConVar loadout;
+
 extern ConCommand teammenu;
 
 #endif // NEO_PLAYER_H

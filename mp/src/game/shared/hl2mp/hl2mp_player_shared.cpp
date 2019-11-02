@@ -16,6 +16,13 @@
 #endif
 
 #ifdef NEO
+
+#ifdef CLIENT_DLL
+#include "c_neo_player.h"
+#else
+#include "neo_player.h"
+#endif
+
 #include "neo_player_shared.h"
 #include "in_buttons.h"
 #include "base_playeranimstate.h"
@@ -172,7 +179,7 @@ CPlayerAnimState::CPlayerAnimState( CHL2MP_Player *outer )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-#ifdef NEO
+#if defined(NEO) && defined(CLIENT_DLL)
 ConVar cl_neo_animcyclerate("cl_neo_animcyclerate", "1.33", FCVAR_CHEAT);
 #endif
 void CPlayerAnimState::Update()
@@ -210,6 +217,13 @@ void CPlayerAnimState::Update()
 //-----------------------------------------------------------------------------
 void CPlayerAnimState::ComputePlaybackRate()
 {
+#ifdef NEO
+	// We use 9 way blending, therefore playbackrate should always be 1,
+	// and we adjust using poseparameters, instead.
+	GetOuter()->SetPlaybackRate(1.0f);
+	return;
+#endif
+
 	// Determine ideal playback rate
 	Vector vel;
 	GetOuterAbsVelocity( vel );
@@ -421,7 +435,11 @@ void CPlayerAnimState::ComputePoseParam_BodyXY(void)
 #endif
 
 	const float speed = GetOuter()->GetLocalVelocity().Length2D();
-	float speedScale = clamp((speed / NEO_ASSAULT_NORM_SPEED), 0, 1);
+
+	float speedScale = clamp(
+		((speed / ((GetOuter()->GetFlags() & FL_DUCKING) ? NEO_RECON_CROUCH_SPEED : NEO_RECON_NORM_SPEED))),
+		0,
+		1);
 
 	int forwardSign = 0;
 	if (GetOuter()->m_nButtons & IN_FORWARD)

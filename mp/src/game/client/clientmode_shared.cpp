@@ -306,7 +306,7 @@ void ClientModeShared::ReloadScheme( bool flushLowLevel )
 		KeyValuesSystem()->InvalidateCache();
 	}
 
-	m_pViewport->ReloadScheme( "resource/ClientScheme.res" );
+    m_pViewport->ReloadScheme( "resource/ClientScheme.res" );
 	ClearKeyValuesCache();
 }
 

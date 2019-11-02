@@ -42,23 +42,41 @@ LINK_ENTITY_TO_CLASS(player, CNEO_Player);
 IMPLEMENT_SERVERCLASS_ST(CNEO_Player, DT_NEO_Player)
 SendPropInt(SENDINFO(m_iNeoClass)),
 SendPropInt(SENDINFO(m_iNeoSkin)),
-
+SendPropInt(SENDINFO(m_iXP)),
 SendPropInt(SENDINFO(m_iCapTeam), 3),
-
-SendPropBool(SENDINFO(m_bShowTestMessage)),
-SendPropString(SENDINFO(m_pszTestMessage)),
-
-SendPropVector(SENDINFO(m_vecGhostMarkerPos)),
 SendPropInt(SENDINFO(m_iGhosterTeam)),
+
 SendPropBool(SENDINFO(m_bGhostExists)),
 SendPropBool(SENDINFO(m_bInThermOpticCamo)),
 SendPropBool(SENDINFO(m_bIsAirborne)),
 SendPropBool(SENDINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
+SendPropBool(SENDINFO(m_bShowTestMessage)),
+
+SendPropString(SENDINFO(m_pszTestMessage)),
+
+SendPropVector(SENDINFO(m_vecGhostMarkerPos), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT),
 
 SendPropArray(SendPropVector(SENDINFO_ARRAY(m_rvFriendlyPlayerPositions), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rvFriendlyPlayerPositions),
 END_SEND_TABLE()
 
 BEGIN_DATADESC(CNEO_Player)
+DEFINE_FIELD(m_iNeoClass, FIELD_INTEGER),
+DEFINE_FIELD(m_iNeoSkin, FIELD_INTEGER),
+DEFINE_FIELD(m_iXP, FIELD_INTEGER),
+DEFINE_FIELD(m_iCapTeam, FIELD_INTEGER),
+DEFINE_FIELD(m_iGhosterTeam, FIELD_INTEGER),
+
+DEFINE_FIELD(m_bGhostExists, FIELD_BOOLEAN),
+DEFINE_FIELD(m_bInThermOpticCamo, FIELD_BOOLEAN),
+DEFINE_FIELD(m_bIsAirborne, FIELD_BOOLEAN),
+DEFINE_FIELD(m_bHasBeenAirborneForTooLongToSuperJump, FIELD_BOOLEAN),
+DEFINE_FIELD(m_bShowTestMessage, FIELD_BOOLEAN),
+
+DEFINE_FIELD(m_pszTestMessage, FIELD_STRING),
+
+DEFINE_FIELD(m_vecGhostMarkerPos, FIELD_VECTOR),
+
+DEFINE_FIELD(m_rvFriendlyPlayerPositions, FIELD_CUSTOM),
 END_DATADESC()
 
 CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
@@ -186,6 +204,7 @@ CNEO_Player::CNEO_Player()
 {
 	m_iNeoClass = NEO_CLASS_ASSAULT;
 	m_iNeoSkin = NEO_SKIN_FIRST;
+	m_iXP.GetForModify() = 0;
 
 	m_bInLeanLeft = false;
 	m_bInLeanRight = false;
@@ -300,6 +319,8 @@ void CNEO_Player::Spawn(void)
 	SetTransmitState(FL_EDICT_ALWAYS);
 
 	m_bIsAirborne = (!(GetFlags() & FL_ONGROUND));
+
+	GiveLoadoutWeapon();
 }
 
 bool CNEO_Player::IsAirborne(void) const
@@ -421,29 +442,32 @@ void CNEO_Player::PreThink(void)
 	}
 
 	static int ghostEdict = -1;
-	auto ent = UTIL_EntityByIndex(ghostEdict);
-	bool ghostIsValid = (ent != NULL);
-	if (!ghostIsValid)
+	static CWeaponGhost* ghost = dynamic_cast<CWeaponGhost*>(UTIL_EntityByIndex(ghostEdict));
+	if (!ghost)
 	{
-		auto entIter = gEntList.FirstEnt();
-		while (entIter)
+		ghost = dynamic_cast<CWeaponGhost*>(UTIL_EntityByIndex(ghostEdict));
+		if (!ghost)
 		{
-			auto ghost = dynamic_cast<CWeaponGhost*>(entIter);
-
-			if (ghost)
+			auto entIter = gEntList.FirstEnt();
+			while (entIter)
 			{
-				ghostEdict = ghost->entindex();
-				ghostIsValid = true;
-				break;
-			}
+				ghost = dynamic_cast<CWeaponGhost*>(entIter);
 
-			entIter = gEntList.NextEnt(entIter);
+				if (ghost)
+				{
+					ghostEdict = ghost->entindex();
+					break;
+				}
+
+				entIter = gEntList.NextEnt(entIter);
+			}
 		}
 	}
 
-	if (ghostIsValid)
+	m_bGhostExists = (ghost != NULL);
+
+	if (m_bGhostExists)
 	{
-		auto ghost = dynamic_cast<CWeaponGhost*>(UTIL_EntityByIndex(ghostEdict));
 		if (ghost)
 		{
 			m_vecGhostMarkerPos = ghost->GetAbsOrigin();
@@ -459,11 +483,27 @@ void CNEO_Player::PreThink(void)
 		}
 		else
 		{
-			ghostIsValid = false;
+			Assert(false);
+			m_bGhostExists = false;
 		}
 	}
 
-	m_bGhostExists = ghostIsValid;
+#if(0)
+	auto entIter = gEntList.FirstEnt();
+	int ghosts = 0;
+	while (entIter)
+	{
+		ghost = dynamic_cast<CWeaponGhost*>(entIter);
+
+		if (ghost)
+		{
+			ghosts++;
+		}
+
+		entIter = gEntList.NextEnt(entIter);
+	}
+	DevMsg("Num ghosts: %i\n", ghosts);
+#endif
 
 	if (IsAlive() && GetTeamNumber() != TEAM_SPECTATOR)
 	{
@@ -630,6 +670,7 @@ void CNEO_Player::PostThink(void)
 	}
 #endif
 
+#if(0)
 	int iMoveX = LookupPoseParameter("move_x");
 	int iMoveY = LookupPoseParameter("move_y");
 
@@ -643,6 +684,7 @@ void CNEO_Player::PostThink(void)
 
 		//DevMsg("Setspeed %f , %f\n", speedScaleX, speedScaleY);
 	}
+#endif
 }
 
 void CNEO_Player::PlayerDeathThink()
@@ -687,38 +729,26 @@ inline void CNEO_Player::Weapon_SetZoom(bool bZoomIn)
 
 void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 {
-	//BaseClass::SetAnimation(playerAnim);
-	int animDesired;
+	int animDesired = -1;
+	int iUpperLayeredSequence = -1;
+	int iReloadLayeredSequence = -1;
 
 	float speed;
-
-	speed = GetAbsVelocity().Length2D();
-
-	// bool bRunning = true;
-
-	//Revisit!
-	/*	if ( ( m_nButtons & ( IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT ) ) )
-	{
-	if ( speed > 1.0f && speed < hl2_normspeed.GetFloat() - 20.0f )
-	{
-	bRunning = false;
-	}
-	}*/
 
 	if (GetFlags() & (FL_FROZEN | FL_ATCONTROLS))
 	{
 		speed = 0;
 		playerAnim = PLAYER_IDLE;
 	}
+	else
+	{
+		speed = GetAbsVelocity().Length2D();
+	}
 
-	Activity idealActivity = ACT_MP_RUN;
+	Activity idealActivity = ACT_NEO_MOVE_STAND;
 
 	// This could stand to be redone. Why is playerAnim abstracted from activity? (sjb)
-	if (playerAnim == PLAYER_JUMP)
-	{
-		idealActivity = ACT_MP_JUMP;
-	}
-	else if (playerAnim == PLAYER_DIE)
+	if (playerAnim == PLAYER_DIE)
 	{
 		if (m_lifeState == LIFE_ALIVE)
 		{
@@ -727,366 +757,177 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 	}
 	else if (playerAnim == PLAYER_ATTACK1)
 	{
-		if (GetActivity() == ACT_HOVER ||
-			GetActivity() == ACT_SWIM ||
-			GetActivity() == ACT_HOP ||
-			GetActivity() == ACT_LEAP ||
-			GetActivity() == ACT_DIESIMPLE)
+		if (GetActivity() == ACT_NEO_HOVER ||
+			GetActivity() == ACT_NEO_SWIM ||
+			GetActivity() == ACT_NEO_DIE)
 		{
 			idealActivity = GetActivity();
 		}
 		else
 		{
-			//idealActivity = ACT_MP_ATTACK_STAND_PRIMARY;
-			idealActivity = ACT_RUN;
+			idealActivity = ACT_NEO_ATTACK;
 		}
 	}
-	else if (playerAnim == PLAYER_RELOAD)
+	/*else if (playerAnim == PLAYER_RELOAD)
 	{
-		idealActivity = ACT_MP_RELOAD_STAND;
-	}
+		idealActivity = ACT_NEO_RELOAD;
+	}*/
 	else if (playerAnim == PLAYER_IDLE || playerAnim == PLAYER_WALK)
 	{
-		if (!(GetFlags() & FL_ONGROUND) && GetActivity() == ACT_JUMP)	// Still jumping
-		{
-			idealActivity = GetActivity();
-		}
+		
 		/*
 		else if ( GetWaterLevel() > 1 )
 		{
 		if ( speed == 0 )
-		idealActivity = ACT_HOVER;
+		idealActivity = ACT_NEO_HOVER;
 		else
-		idealActivity = ACT_SWIM;
+		idealActivity = ACT_NEO_SWIM;
 		}
 		*/
-		else
+		///else
 		{
 			if (GetFlags() & FL_DUCKING)
 			{
 				if (speed > 0)
 				{
-					idealActivity = ACT_RUN_CROUCH;
+					idealActivity = ACT_NEO_MOVE_CROUCH;
 				}
 				else
 				{
-					idealActivity = ACT_CROUCHIDLE;
+					idealActivity = ACT_NEO_IDLE_CROUCH;
 				}
 			}
 			else
 			{
 				if (speed > 0)
 				{
-					/*
-					if ( bRunning == false )
-					{
-					idealActivity = ACT_WALK;
-					}
-					else
-					*/
-					{
-						idealActivity = ACT_MP_RUN;
-					}
+					idealActivity = ACT_NEO_MOVE_STAND;
 				}
 				else
 				{
-					idealActivity = ACT_MP_STAND_IDLE;
+					idealActivity = ACT_NEO_IDLE_STAND;
 				}
 			}
 		}
-
-		idealActivity = TranslateTeamActivity(idealActivity);
 	}
 
-	if (idealActivity == ACT_MP_ATTACK_STAND_PRIMARY)
+	if (!(GetFlags() & FL_ONGROUND))	// Still jumping
 	{
-		RestartGesture(Weapon_TranslateActivity(idealActivity));
-
-		// FIXME: this seems a bit wacked
-		Weapon_SetActivity(Weapon_TranslateActivity(ACT_RANGE_ATTACK1), 0);
-
-		return;
+		idealActivity = ACT_NEO_JUMP;
 	}
-	else if (idealActivity == ACT_MP_RELOAD_STAND)
+	else if (m_afButtonPressed & IN_JUMP) // Started jumping now
 	{
-		RestartGesture(Weapon_TranslateActivity(idealActivity));
-		return;
+		idealActivity = ACT_NEO_JUMP;
 	}
-	else
+
+	auto activeWep = GetActiveWeapon();
+
+	const char *pszAnimPrefix = (activeWep) ? activeWep->GetAnimPrefix() : NULL;
+#define MAX_WEAPON_PREFI_LEN 18	// "Crouch_Walk_Upper_" == 18
+#define MAX_WEAPON_SUFFIX_LEN 6	// "pistol" == 6
+#define NONE_STR ""
+	char pszUpperAnim[MAX_WEAPON_PREFI_LEN + MAX_WEAPON_SUFFIX_LEN + 1] = NONE_STR;
+	char pszReloadAnim[MAX_WEAPON_PREFI_LEN + MAX_WEAPON_SUFFIX_LEN + 1] = NONE_STR;
+
+	const bool bInReload = (activeWep) && (activeWep->m_bInReload);
+
+	if (idealActivity == ACT_NEO_JUMP)
 	{
-		SetActivity(idealActivity);
+		animDesired = LookupSequence("Jump");
+	}
+	else if (idealActivity == ACT_NEO_MOVE_STAND)
+	{
+		animDesired = LookupSequence("Run_lower");
 
-		animDesired = SelectWeightedSequence(Weapon_TranslateActivity(idealActivity));
-
-		if (animDesired == -1)
+		if (!bInReload)
 		{
-			animDesired = SelectWeightedSequence(idealActivity);
-
-			if (animDesired == -1)
-			{
-				animDesired = 0;
-			}
+			const char *pszLayeredSequence = "Run_Upper_%s";
+			V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
 		}
+	}
+	else if (idealActivity == ACT_NEO_IDLE_STAND)
+	{
+		animDesired = LookupSequence("Idle_lower");
 
-		// Already using the desired animation?
-		if (GetSequence() == animDesired)
+		if (!bInReload)
 		{
-			//return;
+			const char *pszLayeredSequence = "Idle_Upper_%s";
+			V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
 		}
-		else
-		{
-			m_flPlaybackRate = 1.0;
-			ResetSequence(animDesired);
-			SetCycle(0);
-		}
+	}
+	else if (idealActivity == ACT_NEO_IDLE_CROUCH)
+	{
+		animDesired = LookupSequence("Crouch_Idle_Lower");
 
-#if(0)
-		m_flPlaybackRate = 1.0;
+		if (!bInReload)
+		{
+			const char *pszLayeredSequence = "Crouch_Idle_Upper_%s";
+			V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
+		}
+	}
+	else if (idealActivity == ACT_NEO_MOVE_CROUCH)
+	{
+		animDesired = LookupSequence("Crouch_walk_lower");
+
+		if (!bInReload)
+		{
+			const char *pszLayeredSequence = "Crouch_Walk_Upper_%s";
+			V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
+		}
+	}
+
+
+	if (bInReload)
+	{
+		const char *pszLayeredSequence = "Reload_%s";
+		V_sprintf_safe(pszReloadAnim, pszLayeredSequence, pszAnimPrefix);
+	}
+
+	if (animDesired == -1)
+	{
+		animDesired = 0;
+	}
+
+	SetActivity(idealActivity);
+
+	if (GetSequence() != animDesired || !SequenceLoops())
+	{
+		// Handle lower body animation
+		SetSequence(animDesired);
 		ResetSequence(animDesired);
-		SetCycle(0);
-#endif
 
-		if (GetSequenceActivity(animDesired) == ACT_RUN)
-		{			
-			SetSequence(LookupSequence("Run_lower"));
-			SetPlaybackRate(1.0f);
-			SetLayerLooping(LookupSequence("Run_lower"), true);
-
-			//AddLayeredSequence(LookupSequence("Run_lower"), 0);
-			AddLayeredSequence(LookupSequence("Run_Upper_ZR68C"), 0);
-		}
-
-		return;
-	}
-
-	// Already using the desired animation?
-	if (GetSequence() == animDesired)
-		return;
-
-	//Msg( "Set animation to %d\n", animDesired );
-	// Reset to first frame of desired animation
-	ResetSequence(animDesired);
-	SetCycle(0);
-
-	return;
-
-// END
-#if(0)
-
-	int animDesired = 0, wepLayer = 0;
-	char szAnim[64], szWepLayer[64];
-
-	float speed = GetAbsVelocity().Length2D();
-
-	if (GetFlags() & (FL_FROZEN | FL_ATCONTROLS))
-	{
-		speed = 0;
-		playerAnim = PLAYER_IDLE;
-	}
-
-	Activity idealActivity = ACT_MP_RUN;
-
-	if ( playerAnim == PLAYER_JUMP )
-	{
-		idealActivity = ACT_MP_JUMP;
-	}
-	else if ( playerAnim == PLAYER_DIE )
-	{
-		if ( m_lifeState == LIFE_ALIVE )
+		// Handle reload animation
+		if (!FStrEq(pszReloadAnim, NONE_STR)) 
 		{
-			// should we get death activity?
-			// baseclass->baseclass has an example of this; relevant here?
-			return;
-		}
-	}
-	else if ( playerAnim == PLAYER_ATTACK1 )
-	{
-		if (GetActivity() == ACT_HOVER ||
-			GetActivity( ) == ACT_SWIM	||
-			GetActivity() == ACT_JUMP ||
-			GetActivity( ) == ACT_LEAP		||
-			GetActivity( ) == ACT_DIESIMPLE )
-		{
-			idealActivity = GetActivity( );
-		}
-		else
-		{
-			idealActivity = ACT_RANGE_ATTACK1;
+			SetActivity(ACT_RELOAD); // NEO BUG (Rain): third person reloads are janky
 
-			if (speed > 0)
+			iReloadLayeredSequence = LookupSequence(pszReloadAnim);
+
+			if (!IsValidSequence(iReloadLayeredSequence))
 			{
-				if (speed > 50)
-				{
-					Q_strncpy(szAnim, "Run_Shoot_", sizeof(szAnim));
-				}
-				else
-				{
-					Q_strncpy(szAnim, "Walk_Shoot_", sizeof(szAnim));
-					
-				}
+				DevWarning("CNEO_Player::SetAnimation: !IsValidSequence %i: (\"%s\")\n", iReloadLayeredSequence, pszReloadAnim);
 			}
 			else
 			{
-				Q_strncpy(szAnim, "Idle_Shoot_", sizeof(szAnim));
-			}
-
-			Q_strncat(szAnim, m_szAnimExtension, sizeof(szAnim), COPY_ALL_CHARACTERS);
-			animDesired = LookupSequence(szAnim);
-
-			if (animDesired == -1)
-			{
-				animDesired = 0;
+				AddGestureSequence(iReloadLayeredSequence);
 			}
 		}
 	}
-	else if ( playerAnim == PLAYER_RELOAD )
+
+	// Handle upper body animation
+	if (!FStrEq(pszUpperAnim, NONE_STR))
 	{
-		Q_strncpy(szAnim, "Reload_", sizeof(szAnim));
-		Q_strncat(szAnim, m_szAnimExtension, sizeof(szAnim), COPY_ALL_CHARACTERS);
-		animDesired = LookupSequence(szAnim);
-		if (animDesired == -1)
+		iUpperLayeredSequence = LookupSequence(pszUpperAnim);
+
+		if (!IsValidSequence(iUpperLayeredSequence))
 		{
-			animDesired = 0;
-		}
-	}
-	else if ( playerAnim == PLAYER_IDLE || playerAnim == PLAYER_WALK )
-	{
-		// Still jumping
-		if (!(GetFlags() & FL_ONGROUND) && GetActivity() == ACT_MP_JUMP)
-		{
-			idealActivity = GetActivity();
+			DevWarning("CNEO_Player::SetAnimation: !IsValidSequence %i: (\"%s\")\n", iUpperLayeredSequence, pszUpperAnim);
 		}
 		else
 		{
-			if ( GetFlags() & FL_DUCKING )
-			{
-				if ( speed > 0 )
-				{
-					Q_strncpy(szAnim, "Crouch_Idle", sizeof(szAnim));
-					animDesired = LookupSequence(szAnim);
-
-					idealActivity = ACT_MP_CROUCH_IDLE;
-				}
-				else
-				{
-					Q_strncpy(szAnim, "Crouch_walk_lower", sizeof(szAnim));
-					animDesired = LookupSequence(szAnim);
-
-					idealActivity = ACT_MP_CROUCHWALK;
-				}
-			}
-			else
-			{
-				if ( speed > 0 )
-				{
-					if (speed > 50)
-					{
-						Q_strncpy(szAnim, "Run_lower", sizeof(szAnim));
-						animDesired = LookupSequence(szAnim);
-
-						Q_strncpy(szWepLayer, "Run_Upper_", sizeof(szWepLayer));
-						Q_strncat(szWepLayer, m_szAnimExtension, sizeof(szWepLayer), COPY_ALL_CHARACTERS);
-						wepLayer = LookupSequence(szWepLayer);
-
-						if (V_stricmp(szWepLayer, "Run_Upper_tachi"))
-						{
-							V_strcpy_safe(szWepLayer, "Run_Upper_Pistol");
-						}
-
-						idealActivity = ACT_MP_RUN;
-					}
-					else
-					{
-						Q_strncpy(szAnim, "walk_lower", sizeof(szAnim));
-						animDesired = LookupSequence(szAnim);
-
-						Q_strncpy(szWepLayer, "Walk_Upper_", sizeof(szWepLayer));
-						Q_strncat(szWepLayer, m_szAnimExtension, sizeof(szWepLayer), COPY_ALL_CHARACTERS);
-						wepLayer = LookupSequence(szWepLayer);
-
-						idealActivity = ACT_MP_WALK;
-					}
-				}
-				else
-				{
-					idealActivity = ACT_MP_STAND_IDLE;
-				}
-			}
+			AddGestureSequence(iUpperLayeredSequence);
 		}
 	}
-
-	// Already using the desired animation?
-	if (GetSequence() == animDesired)
-	{
-		//SetCycle(fmodf(GetCycle() + GetSequenceCycleRate(animDesired), SequenceDuration()));
-
-		return;
-	}
-	else if (animDesired == 0)
-	{
-		if (idealActivity == ACT_RANGE_ATTACK1)
-		{
-			RestartGesture(Weapon_TranslateActivity(idealActivity));
-
-			Weapon_SetActivity(Weapon_TranslateActivity(ACT_RANGE_ATTACK1), 0);
-
-			return;
-		}
-		else if (idealActivity == ACT_MP_RELOAD_STAND)
-		{
-			//AddGesture(idealActivity);
-			RestartGesture(Weapon_TranslateActivity(idealActivity));
-		}
-		else
-		{
-			SetActivity(idealActivity);
-
-			int animDesired = SelectWeightedSequence(Weapon_TranslateActivity(idealActivity));
-
-			// Already using the desired animation?
-			if (GetSequence() == animDesired)
-				return;
-
-			m_flPlaybackRate = 1.0;
-			ResetSequence(animDesired);
-			SetCycle(0);
-		}
-	}
-	else
-	{
-		int finalSequence;
-
-		if (IsValidSequence(animDesired))
-		{
-			finalSequence = animDesired;
-		}
-		else
-		{
-			int weightedSeq = SelectWeightedSequence(idealActivity);
-			if (IsValidSequence(weightedSeq))
-			{
-				finalSequence = weightedSeq;
-			}
-			else
-			{
-				//DevMsg("neo_player: Failed to get a valid final model sequence\n");
-				return;
-			}
-		}
-
-		Assert(IsValidSequence(finalSequence));
-
-		if (GetSequence() != finalSequence)
-		{
-			m_flPlaybackRate = 1.0;
-
-			SetSequence(finalSequence);
-			SetCycle(0);
-
-			//AddGesture(idealActivity);
-		}
-	}
-#endif
 }
 
 // Purpose: Suicide, but cancel the point loss.
@@ -1102,7 +943,11 @@ void CNEO_Player::SoftSuicide(void)
 
 	CommitSuicide();
 
+	// HL2DM code will decrement, so we cancel it here
 	IncrementFragCount(1);
+
+	// Gamerules event will decrement, so we cancel it here
+	m_iXP.GetForModify() += 1;
 }
 
 bool CNEO_Player::HandleCommand_JoinTeam( int team )
@@ -1232,6 +1077,9 @@ void CNEO_Player::SetPlayerTeamModel( void )
 	}
 
 	SetModel(model);
+	SetPlaybackRate(1.0f);
+	ResetAnimation();
+
 	DevMsg("Set model: %s\n", model);
 
 	//SetupPlayerSoundsByModel(model); // TODO
@@ -1267,10 +1115,11 @@ inline bool CNEO_Player::IsCarryingGhost(void)
 	auto wep = dynamic_cast<CNEOBaseCombatWeapon*>(baseWep);
 	if (!wep)
 	{
-		Assert(false);
+		//Assert(false); // FIXME
 	}
 #else
-	auto wep = static_cast<CNEOBaseCombatWeapon*>(GetWeapon(NEO_WEAPON_PRIMARY_SLOT));
+	//auto wep = static_cast<CNEOBaseCombatWeapon*>(GetWeapon(NEO_WEAPON_PRIMARY_SLOT));
+	auto wep = dynamic_cast<CNEOBaseCombatWeapon*>(GetWeapon(NEO_WEAPON_PRIMARY_SLOT));
 #endif
 	return (wep && wep->IsGhost());
 }
@@ -1637,20 +1486,43 @@ void CNEO_Player::GiveDefaultItems(void)
 	case NEO_CLASS_RECON:
 		GiveNamedItem("weapon_knife");
 		GiveNamedItem("weapon_milso");
+		Weapon_Switch(Weapon_OwnsThisType("weapon_milso"));
 		break;
 	case NEO_CLASS_ASSAULT:
 		GiveNamedItem("weapon_knife");
 		GiveNamedItem("weapon_tachi");
+		Weapon_Switch(Weapon_OwnsThisType("weapon_tachi"));
 		break;
 	case NEO_CLASS_SUPPORT:
 		if (supportsGetKnife) { GiveNamedItem("weapon_knife"); }
 		GiveNamedItem("weapon_kyla");
+		Weapon_Switch(Weapon_OwnsThisType("weapon_kyla"));
+		break;
+	default:
+		GiveNamedItem("weapon_knife");
 		break;
 	}
+}
 
-	GiveNamedItem("weapon_zr68s");
+void CNEO_Player::GiveLoadoutWeapon(void)
+{
+	if (IsObserver() || IsDead())
+	{
+		return;
+	}
 
-	Weapon_Switch(Weapon_OwnsThisType("weapon_zr68s"));
+	const int loadoutId = atoi(engine->GetClientConVarValue(
+		engine->IndexOfEdict(edict()), "loadout"));
+
+	const char *szWep = GetWeaponByLoadoutId(loadoutId);
+#if DEBUG
+	DevMsg("Loadout slot: %i (\"%s\")\n", loadoutId, szWep);
+#endif
+
+	if (GiveNamedItem(szWep))
+	{
+		Weapon_Switch(Weapon_OwnsThisType(szWep));
+	}
 }
 
 void CNEO_Player::GiveAllItems(void)

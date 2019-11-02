@@ -25,9 +25,7 @@ public:
 	DECLARE_CLASS(CWeaponGhost, CNEOBaseCombatWeapon);
 
 	CWeaponGhost(void);
-#ifdef CLIENT_DLL
 	virtual ~CWeaponGhost(void);
-#endif
 
 	DECLARE_NETWORKCLASS();
 	DECLARE_PREDICTABLE();
@@ -67,19 +65,17 @@ private:
 private:
 
 #ifdef CLIENT_DLL
-	bool m_bShouldShowEnemies;
 	bool m_bHavePlayedGhostEquipSound;
 	bool m_bHaveHolsteredTheGhost;
-
-	Vector m_rvPlayerPositions[MAX_PLAYERS];
 
 	// NEO TODO (Rain): It's probably better to just have one beacon,
 	// and call it numplayers times on each update between hud buffer swaps
 	CNEOHud_GhostBeacon *m_pGhostBeacons[MAX_PLAYERS];
 #else
+	
+#endif
 	CNetworkVar(bool, m_bShouldShowEnemies);
 	CNetworkArray(Vector, m_rvPlayerPositions, MAX_PLAYERS);
-#endif
 
 	CWeaponGhost(const CWeaponGhost &);
 };

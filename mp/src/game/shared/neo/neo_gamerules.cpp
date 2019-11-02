@@ -3,6 +3,8 @@
 #include "in_buttons.h"
 #include "ammodef.h"
 
+#include "takedamageinfo.h"
+
 #ifdef CLIENT_DLL
 	#include "c_neo_player.h"
 #else
@@ -16,6 +18,7 @@
 	#include "eventqueue.h"
 	#include "mapentities.h"
 	#include "hl2mp_gameinterface.h"
+	#include "player_resource.h"
 #endif
 
 REGISTER_GAMERULES_CLASS( CNEORules );
@@ -385,12 +388,62 @@ void CNEORules::Think(void)
 
 			// And then announce team victory
 			// NEO TODO (Rain): figure out the win reasons for Neo
-			SetWinningTeam(captorTeam, 0, false, false, false, false);
+			SetWinningTeam(captorTeam, 0, false, true, false, false);
+
+			for (int i = 1; i <= gpGlobals->maxClients; i++)
+			{
+				if (i == captorClient)
+				{
+					AwardRankUp(i);
+					continue;
+				}
+
+				auto player = UTIL_PlayerByIndex(i);
+				if (player && player->GetTeamNumber() == captorTeam &&
+					player->IsAlive())
+				{
+					AwardRankUp(i);
+				}
+			}
 
 			break;
 		}
 	}
 #endif
+}
+
+void CNEORules::AwardRankUp(int client)
+{
+	auto player = UTIL_PlayerByIndex(client);
+	if (player)
+	{
+		AwardRankUp(static_cast<CNEO_Player*>(player));
+	}
+}
+
+#ifdef CLIENT_DLL
+void CNEORules::AwardRankUp(C_NEO_Player *pClient)
+#else
+void CNEORules::AwardRankUp(CNEO_Player *pClient)
+#endif
+{
+	if (!pClient)
+	{
+		return;
+	}
+
+	const int ranks[] = { 0, 4, 10, 20 };
+	for (int i = 0; i < ARRAYSIZE(ranks); i++)
+	{
+		if (pClient->m_iXP.Get() < ranks[i])
+		{
+			pClient->m_iXP.GetForModify() = ranks[i];
+			return;
+		}
+	}
+
+	// If we're beyond max rank, just award +1 point.
+	pClient->m_iXP.GetForModify()++;
 }
 
 // Return remaining time in seconds. Zero means there is no time limit.
@@ -449,15 +502,14 @@ static inline void SpawnTheGhost()
 		{
 			ghost = dynamic_cast<CWeaponGhost*>(CreateEntityByName("weapon_ghost", -1));
 
-			spawnedGhostNow = true;
-
 			if (!ghost)
 			{
-				Warning("Failed to spawn a new ghost\n");
 				Assert(false);
-
+				Warning("Failed to spawn a new ghost\n");
 				return;
 			}
+
+			spawnedGhostNow = true;
 		}
 	}
 
@@ -514,14 +566,14 @@ static inline void SpawnTheGhost()
 	{
 		DispatchSpawn(ghost);
 
-		DevMsg("Spawned ghost at coords: %.1f %.1f %.1f\n",
+		DevMsg("Spawned ghost at coords:\n\t%.1f %.1f %.1f\n",
 			ghost->GetAbsOrigin().x,
 			ghost->GetAbsOrigin().y,
 			ghost->GetAbsOrigin().z);
 	}
 	else
 	{
-		DevMsg("Moved ghost to coords: %.1f %.1f %.1f\n",
+		DevMsg("Moved ghost to coords:\n\t%.1f %.1f %.1f\n",
 			ghost->GetAbsOrigin().x,
 			ghost->GetAbsOrigin().y,
 			ghost->GetAbsOrigin().z);
@@ -551,6 +603,9 @@ void CNEORules::StartNextRound()
 		pPlayer->RemoveAllItems(true);
 		respawn(pPlayer, false);
 		pPlayer->Reset();
+
+		pPlayer->m_bIsAirborne = false;
+		pPlayer->m_bInThermOpticCamo = false;
 
 		pPlayer->SetTestMessageVisible(false);
 	}
@@ -621,6 +676,13 @@ int CNEORules::WeaponShouldRespawn(CBaseCombatWeapon *pWeapon)
 const char *CNEORules::GetGameDescription(void)
 {
 	//DevMsg("Querying CNEORules game description\n");
+
+	// NEO TODO (Rain): get a neo_game_config so we can specify better
+	if (IsTeamplay())
+	{
+		return "Capture the Ghost";
+	}
+
 	return BaseClass::GetGameDescription();
 }
 
@@ -849,6 +911,8 @@ void CNEORules::RestartGame()
 		respawn(pPlayer, false);
 		pPlayer->Reset();
 
+		pPlayer->m_iXP.GetForModify() = 0;
+
 		pPlayer->SetTestMessageVisible(false);
 	}
 
@@ -1010,3 +1074,35 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 	}
 }
 #endif
+
+void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
+{
+	BaseClass::PlayerKilled(pVictim, info);
+
+	auto attacker = dynamic_cast<CNEO_Player*>(info.GetAttacker());
+	auto victim = dynamic_cast<CNEO_Player*>(pVictim);
+
+	if (!attacker || !pVictim)
+	{
+		return;
+	}
+
+	// Suicide
+	if (attacker == victim)
+	{
+		victim->m_iXP.GetForModify() -= 1;
+	}
+	else
+	{
+		// Team kill
+		if (attacker->GetTeamNumber() == victim->GetTeamNumber())
+		{
+			victim->m_iXP.GetForModify() -= 1;
+		}
+		// Enemy kill
+		else
+		{
+			victim->m_iXP.GetForModify() += 1;
+		}
+	}
+}

@@ -647,8 +647,10 @@ void CBasePlayerAnimState::ComputePoseParam_MoveYaw( CStudioHdr *pStudioHdr )
 
 		int iMoveX = GetOuter()->LookupPoseParameter( pStudioHdr, "move_x" );
 		int iMoveY = GetOuter()->LookupPoseParameter( pStudioHdr, "move_y" );
-		if ( iMoveX < 0 || iMoveY < 0 )
+		if (iMoveX < 0 || iMoveY < 0)
+		{
 			return;
+		}
 
 		bool bIsMoving;
 		float flPlaybackRate = CalcMovementPlaybackRate( &bIsMoving );

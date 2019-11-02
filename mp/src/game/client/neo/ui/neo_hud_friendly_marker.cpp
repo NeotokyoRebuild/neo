@@ -87,7 +87,8 @@ void CNEOHud_FriendlyMarker::Paint()
 
 	const float scale = neo_friendly_marker_hud_scale_factor.GetFloat();
 
-	for (int i = 0; i < ARRAYSIZE(m_pOwner->m_rvFriendlyPlayerPositions); i++)
+	const int friendliesSize = m_pOwner->m_rvFriendlyPlayerPositions.Count();
+	for (int i = 0; i < friendliesSize; i++)
 	{
 		Vector friendlyPos = m_pOwner->m_rvFriendlyPlayerPositions[i];
 

@@ -23,8 +23,9 @@
 #include "ui/neo_hud_game_event.h"
 #include "ui/neo_hud_ghost_marker.h"
 #include "ui/neo_hud_friendly_marker.h"
-
 #include "ui/neo_hud_elements.h"
+
+#include "neo/game_controls/neo_loadoutmenu.h"
 
 #include "baseviewmodel_shared.h"
 
@@ -49,6 +50,8 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropBool(RECVINFO(m_bShowTestMessage)),
 	RecvPropString(RECVINFO(m_pszTestMessage)),
 
+	RecvPropInt(RECVINFO(m_iXP)),
+
 	RecvPropInt(RECVINFO(m_iCapTeam)),
 
 	RecvPropVector(RECVINFO(m_vecGhostMarkerPos)),
@@ -63,11 +66,15 @@ END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA(C_NEO_Player)
 	DEFINE_PRED_FIELD(m_rvFriendlyPlayerPositions, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_vecGhostMarkerPos, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 
 ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
 	"Whether to display HL2 style ammo/health info near crosshair.",
 	true, 0.0f, true, 1.0f);
+
+ConVar loadout("loadout", "0", FCVAR_CLIENTDLL | FCVAR_USERINFO,
+	"Select primary weapon loadout (int).", true, 0.0f, false, 0.0f);
 
 class NeoLoadoutMenu_Cb : public ICommandCallback
 {
@@ -76,8 +83,8 @@ public:
 	{
 		Msg("Loadout access cb\n");
 
-		vgui::EditablePanel *panel = dynamic_cast<vgui::EditablePanel*>
-			(GetClientModeNormal()->GetViewport()->FindChildByName(PANEL_NEO_LOADOUT));
+		auto panel = dynamic_cast<vgui::EditablePanel*>(GetClientModeNormal()->
+			GetViewport()->FindChildByName(PANEL_NEO_LOADOUT));
 
 		if (!panel)
 		{
@@ -123,6 +130,16 @@ public:
 
 		panel->SetVisible(true);
 		panel->SetEnabled(true);
+
+		auto loadoutPanel = dynamic_cast<CNeoLoadoutMenu*>(panel);
+		if (loadoutPanel)
+		{
+			loadoutPanel->ShowPanel(true);
+		}
+		else
+		{
+			Warning("Cast failed\n");
+		}
 
 		surface()->SetMinimized(panel->GetVPanel(), false);
 	}
@@ -234,6 +251,7 @@ C_NEO_Player::C_NEO_Player()
 
 	m_iCapTeam = TEAM_UNASSIGNED;
 	m_iGhosterTeam = TEAM_UNASSIGNED;
+	m_iXP.GetForModify() = 0;
 
 	m_vecGhostMarkerPos = vec3_origin;
 	m_bGhostExists = false;
@@ -264,12 +282,12 @@ inline void C_NEO_Player::CheckThermOpticButtons()
 
 void C_NEO_Player::ZeroFriendlyPlayerLocArray()
 {
-	for (int i = 0; i < m_rvFriendlyPlayerPositions->Length(); i++)
+	const int size = m_rvFriendlyPlayerPositions.Count();
+	for (int i = 0; i < size; i++)
 	{
-		m_rvFriendlyPlayerPositions[i].Zero();
+		m_rvFriendlyPlayerPositions.GetForModify(i) = vec3_origin;
 	}
 }
-
 
 C_NEO_Player *C_NEO_Player::GetLocalNEOPlayer()
 {
@@ -890,10 +908,11 @@ inline bool C_NEO_Player::IsCarryingGhost(void)
 	auto wep = dynamic_cast<CNEOBaseCombatWeapon*>(baseWep);
 	if (!wep)
 	{
-		Assert(false);
+		//Assert(false); // FIXME
 	}
 #else
-	auto wep = static_cast<CNEOBaseCombatWeapon*>(GetWeapon(NEO_WEAPON_PRIMARY_SLOT));
+	//auto wep = static_cast<CNEOBaseCombatWeapon*>(GetWeapon(NEO_WEAPON_PRIMARY_SLOT));
+	auto wep = dynamic_cast<CNEOBaseCombatWeapon*>(GetWeapon(NEO_WEAPON_PRIMARY_SLOT));
 #endif
 	return (wep && wep->IsGhost());
 }

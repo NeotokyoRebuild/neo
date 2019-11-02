@@ -187,6 +187,8 @@ void CNeoClassMenu::OnCommand(const char *command)
 			{
 				Assert(false);
 			}
+
+			engine->ClientCmd("loadoutmenu");
 		}
 	}
 

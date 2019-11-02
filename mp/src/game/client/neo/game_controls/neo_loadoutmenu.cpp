@@ -7,6 +7,10 @@
 
 #include <vgui/ISurface.h>
 
+#include "ienginevgui.h"
+
+#include "c_neo_player.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -31,6 +35,28 @@ using namespace vgui;
 #define CONTROL_BUTTON13 "Button13"
 #define CONTROL_BUTTON14 "Button14"
 
+static const char *szButtons[] = {
+    CONTROL_SCOUT_BUTTON,
+    CONTROL_MISC2_BUTTON,
+    CONTROL_DONE_BUTTON,
+    CONTROL_BUTTON1,
+    CONTROL_BUTTON2,
+    CONTROL_BUTTON3,
+    CONTROL_BUTTON4,
+    CONTROL_BUTTON5,
+    CONTROL_BUTTON6,
+    CONTROL_BUTTON7,
+    CONTROL_BUTTON8,
+    CONTROL_BUTTON9,
+    CONTROL_BUTTON10,
+    CONTROL_BUTTON11,
+    CONTROL_BUTTON12,
+    CONTROL_BUTTON13,
+    CONTROL_BUTTON14,
+};
+
+const int iNumButtonStrings = ARRAYSIZE(szButtons);
+
 Panel *NeoLoadout_Factory()
 {
 	return new CNeoLoadoutMenu(gViewPortInterface);
@@ -43,6 +69,8 @@ CNeoLoadoutMenu *g_pNeoLoadoutMenu = NULL;
 CNeoLoadoutMenu::CNeoLoadoutMenu(IViewPort *pViewPort)
 	: BaseClass(NULL, PANEL_NEO_LOADOUT)
 {
+	Assert(pViewPort);
+
 	// Quiet "parent not sized yet" spew
 	SetSize(10, 10);
 
@@ -53,7 +81,12 @@ CNeoLoadoutMenu::CNeoLoadoutMenu(IViewPort *pViewPort)
 	// NEO TODO (Rain): It appears that original Neotokyo
 	// hardcodes its scheme. We probably need to make our
 	// own res definition file to mimic it.
-	SetScheme("ClientScheme");
+	const char *schemeName = "ClientScheme";
+
+	vgui::HScheme neoscheme = vgui::scheme()->LoadSchemeFromFileEx(
+		enginevgui->GetPanel(VGuiPanel_t::PANEL_CLIENTDLL), GetResFile(), schemeName);
+
+	vgui::IScheme *pScheme = vgui::scheme()->GetIScheme(neoscheme);
 
 	LoadControlSettings(GetResFile());
 
@@ -88,28 +121,16 @@ CNeoLoadoutMenu::CNeoLoadoutMenu(IViewPort *pViewPort)
 	m_pButton13 = FindControl<Button>(CONTROL_BUTTON13);
 	m_pButton14 = FindControl<Button>(CONTROL_BUTTON14);
 
-	vgui::Button *buttons[] = {
-		m_pScout_Button,
-		m_pMisc2,
-		m_pDone_Button,
-		m_pButton1,
-		m_pButton2,
-		m_pButton3,
-		m_pButton4,
-		m_pButton5,
-		m_pButton6,
-		m_pButton7,
-		m_pButton8,
-		m_pButton9,
-		m_pButton10,
-		m_pButton11,
-		m_pButton12,
-		m_pButton13,
-		m_pButton14,
-	};
+	const char *fontName = "Default";
+	auto fontHandle = pScheme->GetFont(fontName, IsProportional());
 
-	for (vgui::Button *button : buttons)
+	const Color selectedBgColor(0, 0, 0), selectedFgColor(255, 0, 0),
+		armedBgColor(0, 0, 0), armedFgColor(0, 255, 0);
+
+    for (int i = 0; i < iNumButtonStrings; i++)
 	{
+        auto button = FindControl<Button>(szButtons[i]);
+
 		if (!button)
 		{
 			Assert(false);
@@ -119,8 +140,16 @@ CNeoLoadoutMenu::CNeoLoadoutMenu(IViewPort *pViewPort)
 
 		button->AddActionSignalTarget(this);
 		button->SetAutoDelete(true);
+
+		button->SetFont(fontHandle);
+
+		button->SetUseCaptureMouse(true);
+		button->SetSelectedColor(selectedFgColor, selectedBgColor);
+		button->SetArmedColor(armedFgColor, armedBgColor);
+		button->SetMouseInputEnabled(true);
+		button->InstallMouseHandler(this);
 	}
-	
+
 	InvalidateLayout();
 
 	g_pNeoLoadoutMenu = this;
@@ -132,31 +161,14 @@ CNeoLoadoutMenu::~CNeoLoadoutMenu()
 
 void CNeoLoadoutMenu::CommandCompletion()
 {
-	vgui::Button *buttons[] = {
-		m_pScout_Button,
-		m_pMisc2,
-		m_pDone_Button,
-		m_pButton1,
-		m_pButton2,
-		m_pButton3,
-		m_pButton4,
-		m_pButton5,
-		m_pButton6,
-		m_pButton7,
-		m_pButton8,
-		m_pButton9,
-		m_pButton10,
-		m_pButton11,
-		m_pButton12,
-		m_pButton13,
-		m_pButton14,
-	};
-
-	for (vgui::Button *button : buttons)
+    for (int i = 0; i < iNumButtonStrings; i++)
 	{
+        auto button = FindControl<Button>(szButtons[i]);
+
 		if (!button)
 		{
 			Assert(false);
+			Warning("Button was null on CNeoLoadoutMenu\n");
 			continue;
 		}
 
@@ -167,12 +179,13 @@ void CNeoLoadoutMenu::CommandCompletion()
 	SetEnabled(false);
 
 	SetMouseInputEnabled(false);
-	SetKeyBoardInputEnabled(false);
 	SetCursorAlwaysVisible(false);
 }
 
 void CNeoLoadoutMenu::ShowPanel(bool bShow)
 {
+	//gViewPortInterface->ShowPanel(PANEL_NEO_LOADOUT, bShow);
+
 	if (bShow && !IsVisible())
 	{
 		m_bLoadoutMenu = false;
@@ -210,15 +223,17 @@ void CNeoLoadoutMenu::OnCommand(const char* command)
 		return;
 	}
 
-	DevMsg("CNeoLoadoutMenu::OnCommand: %s\n", command);
+	engine->ClientCmd(command);
 
 	CommandCompletion();
 }
 
 void CNeoLoadoutMenu::OnButtonPressed(KeyValues *data)
 {
-	Msg("Loadout button pressed\n");
+#if(0)
+	DevMsg("Loadout button pressed\n");
 	KeyValuesDumpAsDevMsg(data);
+#endif
 }
 
 void CNeoLoadoutMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
@@ -228,46 +243,49 @@ void CNeoLoadoutMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 	if (!pScheme)
 	{
 		Assert(false);
-		Warning("Failed to ApplySchemeSettings for CNeoTeamMenu\n");
+		Warning("Failed to ApplySchemeSettings for CNeoLoadoutMenu\n");
 		return;
 	}
+
+    const char *schemeName = "ClientScheme";
+
+    vgui::HScheme neoscheme = vgui::scheme()->LoadSchemeFromFileEx(
+        enginevgui->GetPanel(VGuiPanel_t::PANEL_CLIENTDLL), GetResFile(), schemeName);
+    if (!neoscheme)
+    {
+        Assert(false);
+        Warning("Failed to ApplySchemeSettings for CNeoLoadoutMenu\n");
+        return;
+    }
+
+    vgui::IScheme *scheme = vgui::scheme()->GetIScheme(neoscheme);
+    if (!scheme)
+    {
+        Assert(false);
+        Warning("Failed to ApplySchemeSettings for CNeoLoadoutMenu\n");
+        return;
+    }
 
 	LoadControlSettings(GetResFile());
 
 	SetBgColor(Color(0, 0, 0, 0)); // make the background transparent
 
-	vgui::Button *buttons[] = {
-		m_pScout_Button,
-		m_pMisc2,
-		m_pDone_Button,
-		m_pButton1,
-		m_pButton2,
-		m_pButton3,
-		m_pButton4,
-		m_pButton5,
-		m_pButton6,
-		m_pButton7,
-		m_pButton8,
-		m_pButton9,
-		m_pButton10,
-		m_pButton11,
-		m_pButton12,
-		m_pButton13,
-		m_pButton14,
-	};
-
-	const char *fontName = "Default";
-	auto fontHandle = pScheme->GetFont(fontName, IsProportional());
-
 	const Color selectedBgColor(0, 0, 0), selectedFgColor(255, 0, 0),
 		armedBgColor(0, 0, 0), armedFgColor(0, 255, 0);
 
-	for (vgui::Button *button : buttons)
-	{
-		Assert(button);
-		
-		button->SetFont(fontHandle);
+	const char *font = "Default";
 
+    for (int i = 0; i < iNumButtonStrings; i++)
+	{
+        auto button = FindControl<Button>(szButtons[i]);
+
+		if (!button)
+		{
+			Assert(false);
+			continue;
+		}
+
+        button->SetFont(scheme->GetFont(font, IsProportional()));
 		button->SetUseCaptureMouse(true);
 		button->SetSelectedColor(selectedFgColor, selectedBgColor);
 		button->SetArmedColor(armedFgColor, armedBgColor);

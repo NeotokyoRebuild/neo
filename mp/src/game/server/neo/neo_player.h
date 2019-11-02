@@ -58,6 +58,8 @@ public:
 	virtual void EquipSuit(bool bPlayEffects = true);
 	virtual void RemoveSuit(void);
 	virtual void GiveDefaultItems(void);
+	
+	void GiveLoadoutWeapon(void);
 
 	void SetPlayerTeamModel(void);
 	virtual void PickDefaultSpawnTeam(void);
@@ -120,6 +122,8 @@ public:
 	CNetworkVar(int, m_iNeoSkin);
 
 	CNetworkVar(int, m_iCapTeam);
+
+	CNetworkVar(int, m_iXP);
 
 	CNetworkVar(bool, m_bShowTestMessage);
 	CNetworkString(m_pszTestMessage, 32 * 2 + 1);

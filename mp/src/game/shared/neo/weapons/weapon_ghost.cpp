@@ -74,9 +74,9 @@ CWeaponGhost::CWeaponGhost(void)
 	ZeroGhostedPlayerLocArray();
 }
 
-#ifdef CLIENT_DLL
-CWeaponGhost::~C_WeaponGhost(void)
+CWeaponGhost::~CWeaponGhost(void)
 {
+#ifdef CLIENT_DLL
 	for (int i = 0; i < ARRAYSIZE(m_pGhostBeacons); i++)
 	{
 		if (m_pGhostBeacons[i])
@@ -84,24 +84,25 @@ CWeaponGhost::~C_WeaponGhost(void)
 			delete m_pGhostBeacons[i];
 		}
 	}
-}
 #endif
+
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		auto player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
+		if (player)
+		{
+			player->m_bGhostExists = false;
+		}
+	}
+}
 
 inline void CWeaponGhost::ZeroGhostedPlayerLocArray(void)
 {
-#ifdef CLIENT_DLL
-	for (int i = 0; i < ARRAYSIZE(m_rvPlayerPositions); i++)
-	{
-		m_rvPlayerPositions[i].Zero();
-	}
-#else
-
 	for (int i = 0; i < m_rvPlayerPositions.Count(); i++)
 	{
 		m_rvPlayerPositions.Set(i, Vector(0, 0, 0));
 	}
 	NetworkStateChanged();
-#endif
 }
 
 void CWeaponGhost::ItemPreFrame(void)

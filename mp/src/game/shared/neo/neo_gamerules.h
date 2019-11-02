@@ -74,6 +74,9 @@ public:
 
 #ifdef GAME_DLL
 class CNEOGhostCapturePoint;
+class CNEO_Player;
+#else
+class C_NEO_Player;
 #endif
 
 class CNEORules : public CHL2MPRules, public CGameEventListener
@@ -122,9 +125,18 @@ public:
 
 	void CheckRestartGame();
 
+	void AwardRankUp(int client);
+#ifdef CLIENT_DLL
+	void AwardRankUp(C_NEO_Player *pClient);
+#else
+	void AwardRankUp(CNEO_Player *pClient);
+#endif
+
 	virtual bool CheckGameOver(void);
 
 	float GetRoundRemainingTime();
+
+	virtual void PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info);
 
 	// IGameEventListener interface:
 	virtual void FireGameEvent(IGameEvent *event);

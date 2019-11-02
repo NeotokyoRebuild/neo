@@ -33,8 +33,13 @@ bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep)
 	}
 
 	// These weapons are not allowed to be zoomed in with.
-	const int forbiddenZooms = NEO_WEP_DETPACK | NEO_WEP_FRAG_GRENADE | NEO_WEP_GHOST |
-		NEO_WEP_KNIFE | NEO_WEP_PROX_MINE | NEO_WEP_SMOKE_GRENADE;
+	const int forbiddenZooms =
+		NEO_WEP_DETPACK |
+		NEO_WEP_FRAG_GRENADE |
+		NEO_WEP_GHOST |
+		NEO_WEP_KNIFE |
+		NEO_WEP_PROX_MINE |
+		NEO_WEP_SMOKE_GRENADE;
 
 	return !(pWep->GetNeoWepBits() & forbiddenZooms);
 }

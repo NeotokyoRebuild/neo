@@ -9,6 +9,10 @@
 #include "player_resource.h"
 #include <coordsize.h>
 
+#ifdef NEO
+#include "neo_player.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -17,6 +21,9 @@ IMPLEMENT_SERVERCLASS_ST_NOBASE(CPlayerResource, DT_PlayerResource)
 //	SendPropArray( SendPropString( SENDINFO(m_szName[0]) ), SENDARRAYINFO(m_szName) ),
 	SendPropArray3( SENDINFO_ARRAY3(m_iPing), SendPropInt( SENDINFO_ARRAY(m_iPing), 10, SPROP_UNSIGNED ) ),
 //	SendPropArray( SendPropInt( SENDINFO_ARRAY(m_iPacketloss), 7, SPROP_UNSIGNED ), m_iPacketloss ),
+#ifdef NEO
+	SendPropArray3(SENDINFO_ARRAY3(m_iXP), SendPropInt(SENDINFO_ARRAY(m_iXP), 12)),
+#endif
 	SendPropArray3( SENDINFO_ARRAY3(m_iScore), SendPropInt( SENDINFO_ARRAY(m_iScore), 12 ) ),
 	SendPropArray3( SENDINFO_ARRAY3(m_iDeaths), SendPropInt( SENDINFO_ARRAY(m_iDeaths), 12 ) ),
 	SendPropArray3( SENDINFO_ARRAY3(m_bConnected), SendPropInt( SENDINFO_ARRAY(m_bConnected), 1, SPROP_UNSIGNED ) ),
@@ -54,6 +61,9 @@ void CPlayerResource::Spawn( void )
 {
 	for ( int i=0; i < MAX_PLAYERS+1; i++ )
 	{
+#ifdef NEO
+		m_iXP.Set(i, 0);
+#endif
 		m_iPing.Set( i, 0 );
 		m_iScore.Set( i, 0 );
 		m_iDeaths.Set( i, 0 );
@@ -99,6 +109,9 @@ void CPlayerResource::UpdatePlayerData( void )
 		
 		if ( pPlayer && pPlayer->IsConnected() )
 		{
+#ifdef NEO
+			m_iXP.Set(i, static_cast<CNEO_Player*>(pPlayer)->m_iXP.Get());
+#endif
 			m_iScore.Set( i, pPlayer->FragCount() );
 			m_iDeaths.Set( i, pPlayer->DeathCount() );
 			m_bConnected.Set( i, 1 );
