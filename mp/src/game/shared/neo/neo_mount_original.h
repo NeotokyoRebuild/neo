@@ -122,10 +122,6 @@ static inline bool IsNeoGameInfoPathOK(char *out_neoPath, const int pathLen)
 }
 #endif
 
-#ifndef LINUX
-#define LINUX
-#endif
-
 #ifdef LINUX
 // Purpose: Rename specific problematic NT paths to lowercase where their
 // inconsistent capitalization causes issues for Linux filesystems (EXT etc).
