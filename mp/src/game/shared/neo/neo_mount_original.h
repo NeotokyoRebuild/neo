@@ -10,10 +10,11 @@
 #include "steam/steam_api.h"
 #include "filesystem.h"
 
-// Used to determine whether directories exist.
 #ifdef LINUX
+// User for renaming folder paths.
 #include <cstdio>
 #include <errno.h>
+// Used to determine whether directories exist.
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
