@@ -122,6 +122,10 @@ static inline bool IsNeoGameInfoPathOK(char *out_neoPath, const int pathLen)
 }
 #endif
 
+#ifndef LINUX
+#define LINUX
+#endif
+
 #ifdef LINUX
 // Purpose: Rename specific problematic NT paths to lowercase where their
 // inconsistent capitalization causes issues for Linux filesystems (EXT etc).
@@ -197,7 +201,7 @@ to partially lowercase:\n\"%s\" --> \"%s\"\n",
 
     if (allPathsOk)
     {
-        Msg("%s: All Neotokyo folder path cases are Linux compatible.\n", szThisCaller);
+        Msg("%s: All OK; scanned Neotokyo folder path cases are Linux compatible.\n", szThisCaller);
     }
     else
     {
@@ -240,21 +244,30 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 #ifdef LINUX
 	// The NeotokyoSource root asset folder should exist (or be symlinked) to one of these paths,
 	// or be specified with the NEO_PATH_PARM_CMD parm (which is currently broken on Linux, see below).
-	// We stop looking on first folder that exists.
-	char neoHardcodedLinuxAssetPath_Home[MAX_PATH];
-	V_strcpy_safe(neoHardcodedLinuxAssetPath_Home, getenv("HOME"));
-	V_AppendSlash(neoHardcodedLinuxAssetPath_Home, sizeof(neoHardcodedLinuxAssetPath_Home));
-	V_strcat(neoHardcodedLinuxAssetPath_Home, ".local/share/neotokyo/NeotokyoSource/",
-		sizeof(neoHardcodedLinuxAssetPath_Home));
+    // We look in the order described below, and stop looking at the first matching path.
+    char neoLinuxPath_LocalSteam[MAX_PATH] { 0 };
+    char neoLinuxPath_LocalShare[MAX_PATH] { 0 };
+    const char *homePath = getenv("HOME");
 
-	const char *neoHardcodedLinuxAssetPath_Share = "/usr/share/neotokyo/NeotokyoSource/";
+    // First lookup path: user's Steam home directory. This is where Steam and SteamCMD will install by default.
+    V_strcpy_safe(neoLinuxPath_LocalSteam, homePath);
+    V_AppendSlash(neoLinuxPath_LocalSteam, sizeof(neoLinuxPath_LocalSteam));
+    V_strcat(neoLinuxPath_LocalSteam, ".steam/steam/steamapps/common/NEOTOKYO/NeotokyoSource/", sizeof(neoLinuxPath_LocalSteam));
+
+    // Second lookup path: user's own share directory.
+    V_strcpy_safe(neoLinuxPath_LocalShare, homePath);
+    V_AppendSlash(neoLinuxPath_LocalShare, sizeof(neoLinuxPath_LocalShare));
+    V_strcat(neoLinuxPath_LocalShare, ".local/share/neotokyo/NeotokyoSource/", sizeof(neoLinuxPath_LocalShare));
+
+    // Third lookup path: machine's share directory.
+    const char *neoLinuxPath_UsrShare = "/usr/share/neotokyo/NeotokyoSource/";
 	
 	// NEO FIXME (Rain): getting this ParmValue from Steam Linux client seems to be broken(?),
 	// we always fall back to hardcoded pDefaultVal.
 	V_strcpy_safe(neoPath,
-		CommandLine()->ParmValue(NEO_PATH_PARM_CMD, neoHardcodedLinuxAssetPath_Home));
+        CommandLine()->ParmValue(NEO_PATH_PARM_CMD, neoLinuxPath_LocalSteam));
 
-	const bool isUsingCustomParm = (Q_stricmp(neoPath, neoHardcodedLinuxAssetPath_Home) != 0);
+    const bool isUsingCustomParm = (Q_stricmp(neoPath, neoLinuxPath_LocalSteam) != 0);
 
 	if (isUsingCustomParm)
 	{
@@ -282,17 +295,29 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 		}
 	}
 	else
-	{
-		// Try first path
-        originalNtPathOk = DirExists(neoPath);
+    {
+        // Try first (default path)
+        if (DirExists(neoPath))
+        {
+            // Do nothing; path is already set
+        }
+        // Try the second path
+        else if (DirExists(neoLinuxPath_LocalShare))
+        {
+            V_strcpy_safe(neoPath, neoLinuxPath_LocalShare);
+        }
+        // Try the third path
+        else if (DirExists(neoLinuxPath_UsrShare))
+        {
+            V_strcpy_safe(neoPath, neoLinuxPath_UsrShare);
+        }
+        // None of the paths existed
+        else
+        {
+            Warning("%s: Could not locate original Neotokyo install!\n", thisCaller);
+        }
 
-		// Try second path
-		if (!originalNtPathOk)
-		{
-			V_strcpy_safe(neoPath, neoHardcodedLinuxAssetPath_Share);
-			
-            originalNtPathOk = DirExists(neoPath);
-		}
+        originalNtPathOk = DirExists(neoPath);
 	}
 
 	// Both client & server call this function; only print the informational stuff once.
@@ -363,7 +388,7 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 			{
 				if (callerIsClientDll)
 				{
-					Msg("Neotokyo AppID (%i) mount OK.\n", neoAppId);
+                    DevMsg("Neotokyo AppID (%i) mount OK.\n", neoAppId);
 				}
 			}
 			else
@@ -393,7 +418,7 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 		{
 			if (callerIsClientDll)
 			{
-				Msg("Neotokyo AppID (%i) mount OK.\n", neoAppId);
+                DevMsg("Neotokyo AppID (%i) mount OK.\n", neoAppId);
 			}
 		}
 		else
@@ -406,9 +431,17 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 	else // originalNtPathOk
 	{
 #ifdef LINUX
-		Error("%s: Original Neotokyo installation was not found. \
-Please use SteamCMD to download the Neotokyo (Windows) contents to one of these paths:\n\n'%s',\n'%s'\n",
-	thisCaller, neoHardcodedLinuxAssetPath_Home, neoHardcodedLinuxAssetPath_Share);
+        const char *steamcmdWinDlOption = "./steamcmd.sh +@sSteamCmdForcePlatformType windows";
+        Error("%s: Original Neotokyo installation was not found. \
+Please use SteamCMD to download the Neotokyo (Windows) contents to one of these paths:\
+\n\n    1. '%s', or\n    2. '%s', or\n    3. '%s'\n\nThe paths are checked in this listed \
+order, using the first match.\n\nTip: To enable Windows file downloads on Linux SteamCMD, \
+you may invoke it as: \"%s\"\n\nExample SteamCMD input:\n\n    // Your Steam log in name \
+(log in to Steam client beforehand to prepare a login cookie and avoid authentication)\n\
+    login your-username\n    // Install NT client using its AppID\n    app_update %d \
+validate\n    quit\n",
+            thisCaller, neoLinuxPath_LocalSteam, neoLinuxPath_LocalShare,
+            neoLinuxPath_UsrShare, steamcmdWinDlOption, neoAppId);
 #else
 		Error("%s: Original Neotokyo installation was not found (looked at path: '%s'). \
 Please install Neotokyo on Steam for this mod to work.\n\n\
