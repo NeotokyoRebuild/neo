@@ -228,7 +228,6 @@ CNEO_Player::CNEO_Player()
 
 CNEO_Player::~CNEO_Player( void )
 {
-	
 }
 
 int CNEO_Player::GetSkin() const
@@ -329,7 +328,9 @@ bool CNEO_Player::IsAirborne(void) const
 }
 
 extern ConVar neo_lean_angle;
-extern ConVar neo_lean_thirdperson_roll_lerp_scale("neo_lean_thirdperson_roll_lerp_scale", "5", FCVAR_REPLICATED | FCVAR_CHEAT, "Multiplier for 3rd person lean roll lerping.", true, 0.0, false, 0);
+ConVar neo_lean_thirdperson_roll_lerp_scale("neo_lean_thirdperson_roll_lerp_scale", "5",
+	FCVAR_REPLICATED | FCVAR_CHEAT, "Multiplier for 3rd person lean roll lerping.", true, 0.0, false, 0);
+
 void CNEO_Player::DoThirdPersonLean(void)
 {
 	CNEOPredictedViewModel *vm = (CNEOPredictedViewModel*)GetViewModel();
