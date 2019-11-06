@@ -263,7 +263,7 @@ void CNEO_Player::UpdateNetworkedFriendlyLocations()
 
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
-		CNEO_Player *otherPlayer = (CNEO_Player*)UTIL_PlayerByIndex(i);
+		CNEO_Player *otherPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
 
 		vec_t zeroPos[3] = { 0, 0, 0 };
 
@@ -333,7 +333,7 @@ ConVar neo_lean_thirdperson_roll_lerp_scale("neo_lean_thirdperson_roll_lerp_scal
 
 void CNEO_Player::DoThirdPersonLean(void)
 {
-	CNEOPredictedViewModel *vm = (CNEOPredictedViewModel*)GetViewModel();
+	CNEOPredictedViewModel *vm = static_cast<CNEOPredictedViewModel*>(GetViewModel());
 
 	if (!vm)
 	{
@@ -1526,6 +1526,7 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 	}
 }
 
+// NEO TODO
 void CNEO_Player::GiveAllItems(void)
 {
 	// NEO TODO (Rain): our own ammo types
@@ -1538,27 +1539,6 @@ void CNEO_Player::GiveAllItems(void)
 	GiveNamedItem("weapon_tachi");
 	GiveNamedItem("weapon_zr68s");
 	Weapon_Switch(Weapon_OwnsThisType("weapon_zr68s"));
-	//GiveNamedItem("weapon_aa13");
-	//Weapon_Switch(Weapon_OwnsThisType("weapon_aa13"));
-
-#if(0) // startup weps stuff
-	if (m_nCyborgClass == NEO_CLASS_RECON)
-	{
-		GiveNamedItem("weapon_tachi");
-		GiveNamedItem("weapon_ghost");
-		Weapon_Switch(Weapon_OwnsThisType("weapon_tachi"));
-	}
-	else if (m_nCyborgClass == NEO_CLASS_ASSAULT)
-	{
-		GiveNamedItem("weapon_tachi");
-		GiveNamedItem("weapon_ghost");
-		Weapon_Switch(Weapon_OwnsThisType("weapon_tachi"));
-	}
-	else if (m_nCyborgClass == NEO_CLASS_SUPPORT)
-	{
-		
-	}
-#endif
 }
 
 // Purpose: For Neotokyo, we could use this engine method
@@ -1690,9 +1670,9 @@ float CNEO_Player::GetWalkSpeed() const
 		return NEO_ASSAULT_WALK_SPEED;
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_WALK_SPEED;
+	default:
+		return NEO_BASE_WALK_SPEED;
 	}
-
-	return NEO_BASE_WALK_SPEED;
 }
 
 float CNEO_Player::GetSprintSpeed() const
@@ -1705,7 +1685,7 @@ float CNEO_Player::GetSprintSpeed() const
 		return NEO_ASSAULT_SPRINT_SPEED;
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_SPRINT_SPEED;
+	default:
+		return NEO_BASE_SPRINT_SPEED;
 	}
-
-	return NEO_BASE_SPRINT_SPEED;
 }
