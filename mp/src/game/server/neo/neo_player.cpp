@@ -1126,8 +1126,6 @@ inline bool CNEO_Player::IsCarryingGhost(void)
 }
 
 // Is the player allowed to drop a weapon of this type?
-// NEO TODO (Rain): Forbid Neo drops like knife, neo nades etc.
-// once they have been implemented.
 inline bool CNEO_Player::IsAllowedToDrop(CBaseCombatWeapon *pWep)
 {
 	if (!pWep)
@@ -1135,15 +1133,37 @@ inline bool CNEO_Player::IsAllowedToDrop(CBaseCombatWeapon *pWep)
 		return false;
 	}
 
-	const char *unallowedDrops[] = {
-		"weapon_frag",
+	// We can static_cast if it's guaranteed that all weapons will be Neotokyo type.
+	// Allowing HL2DM weapons, for now.
+#define SUPPORT_NON_NEOTOKYO_WEAPONS 1
+
+#if SUPPORT_NON_NEOTOKYO_WEAPONS
+	auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWep);
+	if (!pNeoWep)
+	{
+		// This was not a Neotokyo weapon. Don't know what it is, but allow dropping.
+		return true;
+	}
+#else
+	Assert(dynamic_cast<CNEOBaseCombatWeapon*>(pWep));
+	auto pNeoWep = static_cast<CNEOBaseCombatWeapon*>(pWep);
+#endif
+
+	const int wepBits = pNeoWep->GetNeoWepBits();
+
+	Assert(wepBits > NEO_WEP_INVALID && wepBits <= NEO_WEP_HIGHEST_VALID_BITS);
+
+	const int unallowedDrops[] = {
+		NEO_WEP_DETPACK,
+		NEO_WEP_FRAG_GRENADE,
+		NEO_WEP_KNIFE,
+		NEO_WEP_PROX_MINE,
+		NEO_WEP_SMOKE_GRENADE,
 	};
 
-	CBaseCombatWeapon *pTest = NULL;
 	for (int i = 0; i < ARRAYSIZE(unallowedDrops); i++)
 	{
-		pTest = Weapon_OwnsThisType(unallowedDrops[i]);
-		if (pWep == pTest)
+		if (wepBits & unallowedDrops[i])
 		{
 			return false;
 		}
