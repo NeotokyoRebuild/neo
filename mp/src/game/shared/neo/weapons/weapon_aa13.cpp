@@ -211,8 +211,8 @@ void CWeaponAA13::AddViewKick()
 
 	QAngle viewPunch;
 
-	viewPunch.x = SharedRandomFloat("shotgunpax", 0.33f, 0.5f);
-	viewPunch.y = SharedRandomFloat("shotgunpay", -0.6f, 0.6f);
+	viewPunch.x = SharedRandomFloat("aa13x", 0.33f, 0.5f);
+	viewPunch.y = SharedRandomFloat("aa13y", -0.6f, 0.6f);
 	viewPunch.z = 0.0f;
 
 	pOwner->ViewPunch(viewPunch);
