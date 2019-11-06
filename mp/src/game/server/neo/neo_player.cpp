@@ -1199,6 +1199,9 @@ void CNEO_Player::DeathSound( const CTakeDamageInfo &info )
 	BaseClass::DeathSound(info);
 }
 
+// NEO TODO (Rain): this is mostly copied from hl2mp code,
+// should rewrite to get rid of the gotos, and deal with any
+// cases of multiple spawn overlaps at the same time.
 #define TELEFRAG_ON_OVERLAPPING_SPAWN 0
 CBaseEntity* CNEO_Player::EntSelectSpawnPoint( void )
 {
