@@ -1276,14 +1276,13 @@ inline bool CNEO_Player::IsAllowedToDrop(CBaseCombatWeapon *pWep)
 
 	// We can static_cast if it's guaranteed that all weapons will be Neotokyo type.
 	// Allowing HL2DM weapons, for now.
-#define SUPPORT_NON_NEOTOKYO_WEAPONS 1
+#define SUPPORT_NON_NEOTOKYO_WEAPONS 1 // NEO FIXME (Rain): knife is not yet a neo inherited weapon
 
 #if SUPPORT_NON_NEOTOKYO_WEAPONS
 	auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWep);
 	if (!pNeoWep)
 	{
 		// This was not a Neotokyo weapon. Don't know what it is, but allow dropping.
-		// NEO FIXME (Rain): knife is not yet a neo inherited weapon
 		return true;
 	}
 #else
@@ -1295,23 +1294,10 @@ inline bool CNEO_Player::IsAllowedToDrop(CBaseCombatWeapon *pWep)
 
 	Assert(wepBits > NEO_WEP_INVALID && wepBits <= NEO_WEP_HIGHEST_VALID_BITS);
 
-	const int unallowedDrops[] = {
-		NEO_WEP_DETPACK,
-		NEO_WEP_FRAG_GRENADE,
-		NEO_WEP_KNIFE,
-		NEO_WEP_PROX_MINE,
-		NEO_WEP_SMOKE_GRENADE,
-	};
+	const int unallowedDrops = (NEO_WEP_DETPACK | NEO_WEP_FRAG_GRENADE |
+		NEO_WEP_KNIFE | NEO_WEP_PROX_MINE | NEO_WEP_SMOKE_GRENADE);
 
-	for (int i = 0; i < ARRAYSIZE(unallowedDrops); i++)
-	{
-		if (wepBits & unallowedDrops[i])
-		{
-			return false;
-		}
-	}
-
-	return true;
+	return ((wepBits & unallowedDrops) == 0);
 }
 
 void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
