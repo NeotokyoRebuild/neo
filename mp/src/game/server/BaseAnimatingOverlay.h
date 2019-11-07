@@ -150,6 +150,10 @@ public:
 	int		AddGesture( Activity activity, bool autokill = true );
 	int		AddGesture( Activity activity, float flDuration, bool autokill = true );
 	bool	IsPlayingGesture( Activity activity );
+
+#ifdef NEO
+	void	RestartGesture(int sequence, bool addifmissing = true, bool autokill = true);
+#endif
 	void	RestartGesture( Activity activity, bool addifmissing = true, bool autokill = true );
 	void	RemoveGesture( Activity activity );
 	void	RemoveAllGestures( void );
@@ -180,7 +184,10 @@ public:
 	Activity	GetLayerActivity( int iLayer );
 	int			GetLayerSequence( int iLayer );
 
-	int		FindGestureLayer( Activity activity );
+#ifdef NEO
+	int		FindGestureLayer(int sequence);
+#endif
+	int		FindGestureLayer(Activity activity);
 
 	void	RemoveLayer( int iLayer, float flKillRate = 0.2, float flKillDelay = 0.0 );
 	void	FastRemoveLayer( int iLayer );
