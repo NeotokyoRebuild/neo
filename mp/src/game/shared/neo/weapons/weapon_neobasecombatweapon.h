@@ -10,6 +10,8 @@
 	#include "neo_player.h"
 #endif
 
+#include "neo_player_shared.h"
+
 #include "weapon_hl2mpbasehlmpcombatweapon.h"
 
 #ifdef CLIENT_DLL
