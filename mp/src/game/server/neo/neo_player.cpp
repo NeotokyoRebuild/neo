@@ -32,6 +32,8 @@
 
 #include "neo_player_shared.h"
 
+#include "sequence_Transitioner.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -728,11 +730,57 @@ inline void CNEO_Player::Weapon_SetZoom(bool bZoomIn)
 	}
 }
 
+void UpdateLayerSequenceGeneric(CNEO_Player *pPlayer, CStudioHdr *pStudioHdr, int iLayer, bool &bEnabled, float &flCurCycle, int &iSequence, bool bWaitAtEnd)
+{
+	if (!bEnabled)
+		return;
+
+	// Increment the fire sequence's cycle.
+	flCurCycle += pPlayer->GetSequenceCycleRate(pStudioHdr, iSequence) * gpGlobals->frametime;
+	if (flCurCycle > 1)
+	{
+		if (bWaitAtEnd)
+		{
+			flCurCycle = 1;
+		}
+		else
+		{
+			// Not firing anymore.
+			bEnabled = false;
+			iSequence = 0;
+			return;
+		}
+	}
+
+	// Now dump the state into its animation layer.
+	CAnimationLayer *pLayer = pPlayer->GetAnimOverlay(iLayer);
+
+	pLayer->m_flCycle = flCurCycle;
+	pLayer->m_nSequence = iSequence;
+
+	pLayer->m_flPlaybackRate = 1.0;
+	pLayer->m_flWeight = 1.0f;
+	pLayer->m_nOrder = iLayer;
+}
+
+// NEO FIXME (Rain): need to implement neo animstate for smoothed gestures!
+// See CSS code for basic idea.
 void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 {
-	int animDesired = -1;
-	int iUpperLayeredSequence = -1;
-	int iReloadLayeredSequence = -1;
+#if(0) // These should live in animstate
+#define AIMSEQUENCE_LAYER		1	// Aim sequence uses layers 0 and 1 for the weapon idle animation (needs 2 layers so it can blend).
+#define NUM_AIMSEQUENCE_LAYERS	4	// Then it uses layers 2 and 3 to blend in the weapon run/walk/crouchwalk animation.
+
+#define FIRESEQUENCE_LAYER		(AIMSEQUENCE_LAYER+NUM_AIMSEQUENCE_LAYERS)
+#define RELOADSEQUENCE_LAYER	(FIRESEQUENCE_LAYER + 1)
+#define GRENADESEQUENCE_LAYER	(RELOADSEQUENCE_LAYER + 1)
+#define NUM_LAYERS_WANTED		(GRENADESEQUENCE_LAYER + 1)
+
+	auto pAnimOverlay_Fire = GetAnimOverlay(FIRESEQUENCE_LAYER);
+	auto pAnimOverlay_Reload = GetAnimOverlay(RELOADSEQUENCE_LAYER);
+	Assert(pAnimOverlay_Fire);
+	Assert(pAnimOverlay_Reload);
+#endif
 
 	float speed;
 
@@ -746,7 +794,9 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 		speed = GetAbsVelocity().Length2D();
 	}
 
-	Activity idealActivity = ACT_NEO_MOVE_STAND;
+	Activity idealActivity = ACT_NEO_MOVE_RUN;
+
+	const bool bStartedReloading = (playerAnim == PLAYER_RELOAD);
 
 	// This could stand to be redone. Why is playerAnim abstracted from activity? (sjb)
 	if (playerAnim == PLAYER_DIE)
@@ -769,45 +819,35 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 			idealActivity = ACT_NEO_ATTACK;
 		}
 	}
-	/*else if (playerAnim == PLAYER_RELOAD)
+	else if (playerAnim == PLAYER_IDLE || playerAnim == PLAYER_WALK || bStartedReloading)
 	{
-		idealActivity = ACT_NEO_RELOAD;
-	}*/
-	else if (playerAnim == PLAYER_IDLE || playerAnim == PLAYER_WALK)
-	{
-		
-		/*
-		else if ( GetWaterLevel() > 1 )
+		if (GetFlags() & FL_DUCKING)
 		{
-		if ( speed == 0 )
-		idealActivity = ACT_NEO_HOVER;
-		else
-		idealActivity = ACT_NEO_SWIM;
-		}
-		*/
-		///else
-		{
-			if (GetFlags() & FL_DUCKING)
+			if (speed > 0)
 			{
-				if (speed > 0)
+				idealActivity = ACT_NEO_MOVE_CROUCH;
+			}
+			else
+			{
+				idealActivity = ACT_NEO_IDLE_CROUCH;
+			}
+		}
+		else
+		{
+			if (speed > 0)
+			{
+				if (speed > GetWalkSpeed())
 				{
-					idealActivity = ACT_NEO_MOVE_CROUCH;
+					idealActivity = ACT_NEO_MOVE_RUN;
 				}
 				else
 				{
-					idealActivity = ACT_NEO_IDLE_CROUCH;
+					idealActivity = ACT_NEO_MOVE_WALK;
 				}
 			}
 			else
 			{
-				if (speed > 0)
-				{
-					idealActivity = ACT_NEO_MOVE_STAND;
-				}
-				else
-				{
-					idealActivity = ACT_NEO_IDLE_STAND;
-				}
+				idealActivity = ACT_NEO_IDLE_STAND;
 			}
 		}
 	}
@@ -823,112 +863,157 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 
 	auto activeWep = GetActiveWeapon();
 
-	const char *pszAnimPrefix = (activeWep) ? activeWep->GetAnimPrefix() : NULL;
-#define MAX_WEAPON_PREFI_LEN 18	// "Crouch_Walk_Upper_" == 18
+	const char *pszAnimPrefix = (activeWep) ? activeWep->GetAnimPrefix() : "";
+#define MAX_WEAPON_PREFIX_LEN 18	// "Crouch_Walk_Upper_" == 18
 #define MAX_WEAPON_SUFFIX_LEN 6	// "pistol" == 6
 #define NONE_STR ""
-	char pszUpperAnim[MAX_WEAPON_PREFI_LEN + MAX_WEAPON_SUFFIX_LEN + 1] = NONE_STR;
-	char pszReloadAnim[MAX_WEAPON_PREFI_LEN + MAX_WEAPON_SUFFIX_LEN + 1] = NONE_STR;
+	char pszUpperAnim[MAX_WEAPON_PREFIX_LEN + MAX_WEAPON_SUFFIX_LEN + 1] = NONE_STR;
+	char pszReloadAnim[MAX_WEAPON_PREFIX_LEN + MAX_WEAPON_SUFFIX_LEN + 1] = NONE_STR;
 
-	const bool bInReload = (activeWep) && (activeWep->m_bInReload);
+	int iLowerSequence = -1;
 
 	if (idealActivity == ACT_NEO_JUMP)
 	{
-		animDesired = LookupSequence("Jump");
+		iLowerSequence = LookupSequence("Jump");
 	}
-	else if (idealActivity == ACT_NEO_MOVE_STAND)
+	else if (idealActivity == ACT_NEO_MOVE_RUN)
 	{
-		animDesired = LookupSequence("Run_lower");
+		iLowerSequence = LookupSequence("Run_lower");
 
-		if (!bInReload)
-		{
-			const char *pszLayeredSequence = "Run_Upper_%s";
-			V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
-		}
+		const char *pszLayeredSequence = "Run_Upper_%s";
+		V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
+	}
+	else if (idealActivity == ACT_NEO_MOVE_WALK)
+	{
+		iLowerSequence = LookupSequence("walk_lower");
+
+		const char *pszLayeredSequence = "Walk_Upper_%s";
+		V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
 	}
 	else if (idealActivity == ACT_NEO_IDLE_STAND)
 	{
-		animDesired = LookupSequence("Idle_lower");
+		iLowerSequence = LookupSequence("Idle_lower");
 
-		if (!bInReload)
-		{
-			const char *pszLayeredSequence = "Idle_Upper_%s";
-			V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
-		}
+		const char *pszLayeredSequence = "Idle_Upper_%s";
+		V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
 	}
 	else if (idealActivity == ACT_NEO_IDLE_CROUCH)
 	{
-		animDesired = LookupSequence("Crouch_Idle_Lower");
+		iLowerSequence = LookupSequence("Crouch_Idle_Lower");
 
-		if (!bInReload)
-		{
-			const char *pszLayeredSequence = "Crouch_Idle_Upper_%s";
-			V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
-		}
+		const char *pszLayeredSequence = "Crouch_Idle_Upper_%s";
+		V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
 	}
 	else if (idealActivity == ACT_NEO_MOVE_CROUCH)
 	{
-		animDesired = LookupSequence("Crouch_walk_lower");
+		iLowerSequence = LookupSequence("Crouch_walk_lower");
 
-		if (!bInReload)
-		{
-			const char *pszLayeredSequence = "Crouch_Walk_Upper_%s";
-			V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
-		}
+		const char *pszLayeredSequence = "Crouch_Walk_Upper_%s";
+		V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
 	}
 
-
-	if (bInReload)
+	if (iLowerSequence == -1)
 	{
-		const char *pszLayeredSequence = "Reload_%s";
-		V_sprintf_safe(pszReloadAnim, pszLayeredSequence, pszAnimPrefix);
-	}
-
-	if (animDesired == -1)
-	{
-		animDesired = 0;
+		//Assert(false);
+		iLowerSequence = 0;
 	}
 
 	SetActivity(idealActivity);
 
-	if (GetSequence() != animDesired || !SequenceLoops())
+	const bool bReloadAnimPlayingNow = ((bStartedReloading) || (activeWep && activeWep->m_bInReload));
+
+	// Handle lower body animation
+	if (GetSequence() != iLowerSequence || !SequenceLoops())
 	{
-		// Handle lower body animation
-		SetSequence(animDesired);
-		ResetSequence(animDesired);
-
-		// Handle reload animation
-		if (!FStrEq(pszReloadAnim, NONE_STR)) 
-		{
-			SetActivity(ACT_RELOAD); // NEO BUG (Rain): third person reloads are janky
-
-			iReloadLayeredSequence = LookupSequence(pszReloadAnim);
-
-			if (!IsValidSequence(iReloadLayeredSequence))
-			{
-				DevWarning("CNEO_Player::SetAnimation: !IsValidSequence %i: (\"%s\")\n", iReloadLayeredSequence, pszReloadAnim);
-			}
-			else
-			{
-				AddGestureSequence(iReloadLayeredSequence);
-			}
-		}
+		//DevMsg("Setting lower seq: %i\n", iLowerSequence);
+		SetSequence(iLowerSequence);
+		ResetSequence(iLowerSequence);
 	}
 
 	// Handle upper body animation
 	if (!FStrEq(pszUpperAnim, NONE_STR))
 	{
-		iUpperLayeredSequence = LookupSequence(pszUpperAnim);
+		const int iUpperAimSequence = LookupSequence(pszUpperAnim);
 
-		if (!IsValidSequence(iUpperLayeredSequence))
+		if (!IsValidSequence(iUpperAimSequence))
 		{
-			DevWarning("CNEO_Player::SetAnimation: !IsValidSequence %i: (\"%s\")\n", iUpperLayeredSequence, pszUpperAnim);
+			Assert(false);
+			Warning("CNEO_Player::SetAnimation: !IsValidSequence %i: (\"%s\")\n",
+				iUpperAimSequence, pszUpperAnim);
 		}
 		else
 		{
-			AddGestureSequence(iUpperLayeredSequence);
+			const int iAimLayer = AddGestureSequence(iUpperAimSequence, true);
+			SetLayerWeight(iAimLayer, 0.5f);
+#if(0)
+			if (!pAnimOverlay_Fire->IsActive() || pAnimOverlay_Fire->IsAbandoned())
+			{
+				pAnimOverlay_Fire->KillMe();
+			}
+			pAnimOverlay_Fire->Init(this);
+			pAnimOverlay_Fire->m_nSequence = iUpperAimSequence;
+			pAnimOverlay_Fire->StudioFrameAdvance(0.1, this);
+
+			int seq = AddGestureSequence(iUpperAimSequence, true);
+			if (IsValidSequence(seq))
+			{
+				SetLayerBlendIn(seq, 0.1f);
+				SetLayerBlendOut(seq, 0.1f);
+			}
+#endif
 		}
 	}
+
+	if (bReloadAnimPlayingNow)
+	{
+		const char *pszLayeredSequence = "Reload_%s";
+		V_sprintf_safe(pszReloadAnim, pszLayeredSequence, pszAnimPrefix);
+		Assert(!FStrEq(pszReloadAnim, NONE_STR));
+
+		const int iUpperReloadSequence = LookupSequence(pszReloadAnim);
+
+		const int iReloadLayer = AddGestureSequence(iUpperReloadSequence, true);
+		SetLayerWeight(iReloadLayer, 0.5f);
+
+#if(0)
+		int seq = AddGestureSequence(iUpperReloadSequence, true);
+		if (IsValidSequence(seq))
+		{
+			bool reloading = bReloadAnimPlayingNow;
+			float layerCycle = GetLayerCycle(RELOADSEQUENCE_LAYER);
+			int seq = iUpperReloadSequence;
+			UpdateLayerSequenceGeneric(this, GetModelPtr(), RELOADSEQUENCE_LAYER, reloading, layerCycle, seq, false);
+		}
+
+		if (!IsValidSequence(iUpperReloadSequence))
+		{
+			Assert(false);
+			Warning("CNEO_Player::SetAnimation: !IsValidSequence %i: (\"%s\")\n",
+				iUpperReloadSequence, pszReloadAnim);
+		}
+		else
+		{
+
+			pAnimOverlay_Reload->Init(this);
+			pAnimOverlay_Reload->m_nSequence = iUpperReloadSequence;
+			pAnimOverlay_Reload->StudioFrameAdvance(0.1, this);
+
+			int seq = AddGestureSequence(iUpperReloadSequence, true);
+			if (IsValidSequence(seq))
+			{
+				SetLayerBlendIn(seq, 0.1f);
+				SetLayerBlendOut(seq, 0.1f);
+			}
+		}
+#endif
+	}
+
+#if(0)
+	static CSequenceTransitioner transitioner;
+	transitioner->RemoveAll();
+	transitioner->CheckForSequenceChange(GetModelPtr(), GetSequence(), false, true);
+	transitioner->UpdateCurrent(GetModelPtr(), GetSequence(), GetCycle(), 1.0f, gpGlobals->curtime);
+#endif
 }
 
 // Purpose: Suicide, but cancel the point loss.
@@ -936,7 +1021,7 @@ void CNEO_Player::SoftSuicide(void)
 {
 	if (IsDead())
 	{
-		AssertMsg(false, "This should never get called on a dead client");
+		Assert(false); // This should never get called on a dead client
 		return;
 	}
 
@@ -1142,6 +1227,7 @@ inline bool CNEO_Player::IsAllowedToDrop(CBaseCombatWeapon *pWep)
 	if (!pNeoWep)
 	{
 		// This was not a Neotokyo weapon. Don't know what it is, but allow dropping.
+		// NEO FIXME (Rain): knife is not yet a neo inherited weapon
 		return true;
 	}
 #else
