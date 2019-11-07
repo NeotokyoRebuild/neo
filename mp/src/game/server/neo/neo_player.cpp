@@ -871,6 +871,7 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 	char pszReloadAnim[MAX_WEAPON_PREFIX_LEN + MAX_WEAPON_SUFFIX_LEN + 1] = NONE_STR;
 
 	int iLowerSequence = -1;
+	int iUpperSequence = -1;
 
 	if (idealActivity == ACT_NEO_JUMP)
 	{
@@ -882,6 +883,7 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 
 		const char *pszLayeredSequence = "Run_Upper_%s";
 		V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
+		iUpperSequence = LookupSequence(pszUpperAnim);
 	}
 	else if (idealActivity == ACT_NEO_MOVE_WALK)
 	{
@@ -889,6 +891,7 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 
 		const char *pszLayeredSequence = "Walk_Upper_%s";
 		V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
+		iUpperSequence = LookupSequence(pszUpperAnim);
 	}
 	else if (idealActivity == ACT_NEO_IDLE_STAND)
 	{
@@ -896,6 +899,7 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 
 		const char *pszLayeredSequence = "Idle_Upper_%s";
 		V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
+		iUpperSequence = LookupSequence(pszUpperAnim);
 	}
 	else if (idealActivity == ACT_NEO_IDLE_CROUCH)
 	{
@@ -903,6 +907,7 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 
 		const char *pszLayeredSequence = "Crouch_Idle_Upper_%s";
 		V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
+		iUpperSequence = LookupSequence(pszUpperAnim);
 	}
 	else if (idealActivity == ACT_NEO_MOVE_CROUCH)
 	{
@@ -910,6 +915,59 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 
 		const char *pszLayeredSequence = "Crouch_Walk_Upper_%s";
 		V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
+		iUpperSequence = LookupSequence(pszUpperAnim);
+	}
+	else if (idealActivity == ACT_NEO_ATTACK)
+	{
+		if (GetFlags() & FL_DUCKING)
+		{
+			if (speed > 0)
+			{
+				iLowerSequence = LookupSequence("Crouch_walk_lower");
+
+				const char *pszLayeredSequence = "Crouch_Walk_Shoot_%s";
+				V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
+				iUpperSequence = LookupSequence(pszUpperAnim);
+			}
+			else
+			{
+				iLowerSequence = LookupSequence("Crouch_Idle_Lower");
+
+				const char *pszLayeredSequence = "Crouch_Idle_Shoot_%s";
+				V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
+				iUpperSequence = LookupSequence(pszUpperAnim);
+			}
+		}
+		else
+		{
+			if (speed > 0)
+			{
+				if (speed > GetWalkSpeed())
+				{
+					iLowerSequence = LookupSequence("Run_lower");
+
+					const char *pszLayeredSequence = "Run_Shoot_%s";
+					V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
+					iUpperSequence = LookupSequence(pszUpperAnim);
+				}
+				else
+				{
+					iLowerSequence = LookupSequence("walk_lower");
+
+					const char *pszLayeredSequence = "Walk_Shoot_%s";
+					V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
+					iUpperSequence = LookupSequence(pszUpperAnim);
+				}
+			}
+			else
+			{
+				iLowerSequence = LookupSequence("Idle_lower");
+
+				const char *pszLayeredSequence = "Idle_Shoot_%s";
+				V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
+				iUpperSequence = LookupSequence(pszUpperAnim);
+			}
+		}
 	}
 
 	if (iLowerSequence == -1)
@@ -931,19 +989,17 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 	}
 
 	// Handle upper body animation
-	if (!FStrEq(pszUpperAnim, NONE_STR))
+	if (iUpperSequence != -1)
 	{
-		const int iUpperAimSequence = LookupSequence(pszUpperAnim);
-
-		if (!IsValidSequence(iUpperAimSequence))
+		if (!IsValidSequence(iUpperSequence))
 		{
 			Assert(false);
 			Warning("CNEO_Player::SetAnimation: !IsValidSequence %i: (\"%s\")\n",
-				iUpperAimSequence, pszUpperAnim);
+				iUpperSequence, pszUpperAnim);
 		}
 		else
 		{
-			const int iAimLayer = AddGestureSequence(iUpperAimSequence, true);
+			const int iAimLayer = AddGestureSequence(iUpperSequence, true);
 			SetLayerWeight(iAimLayer, 0.5f);
 #if(0)
 			if (!pAnimOverlay_Fire->IsActive() || pAnimOverlay_Fire->IsAbandoned())
