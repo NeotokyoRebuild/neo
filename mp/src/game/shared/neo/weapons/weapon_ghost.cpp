@@ -15,6 +15,8 @@
 #include "ui/neo_hud_ghostbeacon.h"
 #endif
 
+#include "neo_player_shared.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -39,20 +41,7 @@ END_PREDICTION_DATA()
 LINK_ENTITY_TO_CLASS(weapon_ghost, CWeaponGhost);
 PRECACHE_WEAPON_REGISTER(weapon_ghost);
 
-#ifdef GAME_DLL
-// NEO TODO (Rain): make these sensible
-acttable_t CWeaponGhost::m_acttable[] =
-{
-	{ ACT_IDLE,				ACT_IDLE_PISTOL,				false },
-	{ ACT_RUN,				ACT_RUN_PISTOL,					false },
-	{ ACT_CROUCHIDLE,		ACT_HL2MP_IDLE_CROUCH_PISTOL,	false },
-	{ ACT_WALK_CROUCH,		ACT_HL2MP_WALK_CROUCH_PISTOL,	false },
-	{ ACT_RANGE_ATTACK1,	ACT_RANGE_ATTACK_PISTOL,		false },
-	{ ACT_RELOAD,			ACT_RELOAD_PISTOL,				false },
-	{ ACT_JUMP,				ACT_HL2MP_JUMP_PISTOL,			false },
-};
-IMPLEMENT_ACTTABLE(CWeaponGhost);
-#endif
+NEO_ACTTABLE(CWeaponGhost);
 
 CWeaponGhost::CWeaponGhost(void)
 {

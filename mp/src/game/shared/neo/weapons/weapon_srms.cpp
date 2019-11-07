@@ -32,31 +32,7 @@ END_PREDICTION_DATA()
 LINK_ENTITY_TO_CLASS(weapon_srm_s, CWeaponSRM_S);
 PRECACHE_WEAPON_REGISTER(weapon_srm_s);
 
-#ifdef GAME_DLL
-acttable_t CWeaponSRM_S::m_acttable[] =
-{
-	{ ACT_MP_STAND_IDLE, ACT_IDLE, true },
-	{ ACT_MP_RUN, ACT_RUN, true },
-	{ ACT_MP_WALK, ACT_WALK, true },
-	{ ACT_MP_JUMP, ACT_HOP, true },
-
-	{ ACT_MP_AIRWALK, ACT_HOVER, true },
-	{ ACT_MP_SWIM, ACT_SWIM, true },
-
-	{ ACT_LEAP, ACT_LEAP, true },
-	{ ACT_DIESIMPLE, ACT_DIESIMPLE, true },
-
-	{ ACT_MP_CROUCH_IDLE, ACT_CROUCHIDLE, true },
-	{ ACT_MP_CROUCHWALK, ACT_WALK_CROUCH, true },
-
-	{ ACT_MP_RELOAD_STAND, ACT_RELOAD, true },
-
-	{ ACT_CROUCHIDLE, ACT_HL2MP_IDLE_CROUCH_AR2, true },
-	{ ACT_WALK_CROUCH, ACT_HL2MP_WALK_CROUCH_AR2, true },
-	{ ACT_RANGE_ATTACK1, ACT_RANGE_ATTACK_AR1, true }
-};
-IMPLEMENT_ACTTABLE(CWeaponSRM_S);
-#endif
+NEO_ACTTABLE(CWeaponSRM_S);
 
 CWeaponSRM_S::CWeaponSRM_S()
 {
