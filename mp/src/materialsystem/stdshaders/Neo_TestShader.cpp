@@ -7,16 +7,12 @@
 // This file defines the C++ component of the example shader.
 // ----------------------------------------------------------------------------
 
-// ----------------------------------------------------------------------------
-// Includes
-// ----------------------------------------------------------------------------
-
 // Must include this. Contains a bunch of macro definitions along with the
 // declaration of CBaseShader.
 #include "BaseVSShader.h"
 
-// Vertex shaders convention: ..._vs...
-// Pixel shaders convention: ..._ps...
+// Vertex shaders convention: ..._vs<shader model ver>...
+// Pixel shaders convention: ..._ps<shader model ver>...
 
 // We're going to be making a screenspace effect. Therefore, we need the
 // screenspace vertex shader.
@@ -38,8 +34,7 @@ BEGIN_SHADER(Neo_TestShader, "Help string for shader.")
 	END_SHADER_PARAMS
 
 	// ----------------------------------------------------------------------------
-	// This is the shader initialization block. This disgusting macro defines
-	// a bunch of ick that makes this shader work.
+	// This is the shader initialization block.
 	// ----------------------------------------------------------------------------
 	SHADER_INIT
 	{
@@ -77,9 +72,6 @@ BEGIN_SHADER(Neo_TestShader, "Help string for shader.")
 		return 0;
 	}
 
-	// ----------------------------------------------------------------------------
-	// This implements the guts of the shader drawing code.
-	// ----------------------------------------------------------------------------
 	SHADER_DRAW
 	{
 		// ----------------------------------------------------------------------------
@@ -134,7 +126,7 @@ BEGIN_SHADER(Neo_TestShader, "Help string for shader.")
 			}
 		}
 
-	Draw();
+	Draw(); // Need to call for each draw
 
 	}
 
