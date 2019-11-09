@@ -69,6 +69,7 @@ BEGIN_SHADER(Neo_TestShader, "Help string for shader.")
 			Assert(0);
 			return "Wireframe";
 		}
+
 		return 0;
 	}
 
@@ -81,8 +82,8 @@ BEGIN_SHADER(Neo_TestShader, "Help string for shader.")
 		SHADOW_STATE
 		{
 			// Setup the vertex format.
-			int fmt = VERTEX_POSITION;
-			pShaderShadow->VertexShaderVertexFormat(fmt, 1, 0, 0);
+			const int formatFlags = VERTEX_POSITION;
+			pShaderShadow->VertexShaderVertexFormat(formatFlags, 1, 0, 0);
 
 			// We don't need to write to the depth buffer.
 			pShaderShadow->EnableDepthWrites(false);
