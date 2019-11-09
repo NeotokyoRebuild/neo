@@ -10,4 +10,8 @@ $Include "$SRCDIR\materialsystem\stdshaders\game_shader_dx9_base.vpc"
 
 $Project "Shaders (HL2MP)"
 {
+	$Folder	"Source Files"
+	{
+		$File	"Neo_TestShader.cpp"
+	}
 }

@@ -1,5 +1,8 @@
 # Files to ignore when considering what GIT should commit.
 
+# Possible symlink for fixing tools that hardcode "game/mod_hl2mp" - we use "game/neo".
+mp/game/mod_hl2mp
+
 mp/game/neo/screenshots
 
 # Object files
@@ -135,8 +138,18 @@ videoconfig_linux.cfg
 *.ain
 user_custom
 
-# shader files
+# shader generation files
 *.tmp
+mp/src/materialsystem/stdshaders/fxctmp9/
+mp/src/materialsystem/stdshaders/fxctmp9_tmp/
+mp/src/materialsystem/stdshaders/shaders/fxc/
+mp/src/materialsystem/stdshaders/filestocopy.txt
+mp/src/materialsystem/stdshaders/inclist.txt
+mp/src/materialsystem/stdshaders/uniquefilestocopy.txt
+mp/src/materialsystem/stdshaders/vcslist.txt
+mp/src/materialsystem/stdshaders/makefile.stdshader_dx9_20b
+mp/src/materialsystem/stdshaders/makefile.stdshader_dx9_20b.copy
+mp/src/materialsystem/stdshaders/makefile.stdshader_dx9_30
 
 # Excludes
 !makefile_base_posix.mak
