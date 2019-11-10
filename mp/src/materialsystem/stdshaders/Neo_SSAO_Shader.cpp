@@ -5,7 +5,7 @@
 #define THIS_SHADER_NAME neo_ssao
 //==========================================
 // Set your DX shader model ver number here
-#define THIS_SHADER_MODEL_NUM 30		
+#define THIS_SHADER_MODEL_NUM 30
 //==========================================
 
 // A bunch of macro boilerplate to avoid repeating or mixing up shader names.
