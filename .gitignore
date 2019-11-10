@@ -103,7 +103,6 @@ obj*/
 # Specific Source build products
 bin
 *.project
-*.fxc
 
 client.pdb
 client.dll

@@ -1,0 +1,33 @@
+// ********************************
+// ** auto generated pixelshader **
+// ********************************
+
+
+// Includes
+#include "common_ps_fxc.h"
+//#include "common_vertexlitgeneric_dx9.h"
+//#include "common_lightmappedgeneric_fxc.h"
+//#include "common_flashlight_fxc.h"
+//#include "common_parallax.h"
+
+
+// Samplers
+sampler _Sampler_01		: register( s0 );
+sampler _Sampler_00		: register( s1 );
+
+// Semantic structures
+struct PS_INPUT
+{
+	float2 vTexCoord_0			:	TEXCOORD0;
+};
+
+// Entry point
+float4 main( const PS_INPUT In ) : COLOR
+{
+	float4 ssao_color = tex2D(_Sampler_00, In.vTexCoord_0);
+	float4 frame_color = tex2D(_Sampler_01, In.vTexCoord_0);
+	
+	//Out.vColor_0 = float4(color, alpha);
+	//Out.vColor_0 = float4(color, 1.0f);
+	return frame_color;
+}
