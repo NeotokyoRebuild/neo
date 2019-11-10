@@ -13,5 +13,8 @@ $Project "Shaders (HL2MP)"
 	$Folder	"Source Files"
 	{
 		$File	"Neo_TestShader.cpp"
+		$File	"Neo_SSAO_Shader.cpp"
+		$File	"Neo_SSAO_Combine_Shader.cpp"
+		$File	"Neo_GaussianBlur_Shader.cpp"
 	}
 }

@@ -320,6 +320,22 @@ void CViewRender::Init( void )
 	m_flLastFOV = default_fov.GetFloat();
 #endif
 
+#ifdef NEO
+	ITexture *depthOld = materials->FindTexture("_rt_FullFrameDepth", TEXTURE_GROUP_RENDER_TARGET);
+	static int flags = TEXTUREFLAGS_NOMIP | TEXTUREFLAGS_NOLOD | TEXTUREFLAGS_RENDERTARGET;
+	if (depthOld)
+		flags = depthOld->GetFlags();
+
+	int iW, iH;
+	materials->GetBackBufferDimensions(iW, iH);
+
+	materials->BeginRenderTargetAllocation();
+	auto pTex = materials->CreateNamedRenderTargetTextureEx("_rt_SSAO", iW, iH, RT_SIZE_NO_CHANGE, materials->GetBackBufferFormat(),
+		MATERIAL_RT_DEPTH_SHARED, flags, 0);
+	materials->EndRenderTargetAllocation();
+
+	Assert(!IsErrorTexture(pTex));
+#endif
 }
 
 //-----------------------------------------------------------------------------

@@ -85,6 +85,10 @@ ConVar mat_tonemap_percent_bright_pixels( "mat_tonemap_percent_bright_pixels", "
 ConVar mat_tonemap_min_avglum( "mat_tonemap_min_avglum", "3.0", FCVAR_CHEAT );
 ConVar mat_fullbright( "mat_fullbright", "0", FCVAR_CHEAT );
 
+#ifdef NEO
+ConVar mat_neo_ssao_enable("mat_neo_ssao_enable", "1", FCVAR_ARCHIVE);
+#endif
+
 extern ConVar localplayer_visionflags;
 
 enum PostProcessingCondition {
@@ -2213,6 +2217,106 @@ static ConVar r_queued_post_processing( "r_queued_post_processing", "0" );
 static ConVar mat_postprocess_x( "mat_postprocess_x", "4" );
 static ConVar mat_postprocess_y( "mat_postprocess_y", "1" );
 
+#ifdef NEO
+ConVar mat_neo_ssao_blur("mat_neo_ssao_blur", "1");
+ConVar mat_neo_ssao_combine("mat_neo_ssao_combine", "1");
+ConVar mat_neo_ssao_dump("mat_neo_ssao_dump", "0");
+#endif
+
+#ifdef NEO
+static inline void DoSSAO(const int x, const int y, const int w, const int h)
+{
+	CMatRenderContextPtr pRenderContext(materials);
+
+	IClientRenderable *pRenderable = GetClientWorldEntity()->GetClientRenderable();
+	Assert(pRenderable);
+
+	ITexture *pSrc = materials->FindTexture("_rt_FullFrameFB", TEXTURE_GROUP_RENDER_TARGET);
+	const int nSrcWidth = pSrc->GetActualWidth();
+	const int nSrcHeight = pSrc->GetActualHeight();
+
+	ITexture *pSSAOTex = materials->FindTexture("_rt_SSAO", TEXTURE_GROUP_RENDER_TARGET);
+
+	Rect_t DestRect{ 0, 0, nSrcWidth, nSrcHeight };
+
+	pRenderContext->CopyRenderTargetToTextureEx(pSSAOTex, 0, &DestRect, NULL);
+
+	IMaterial *pSSAOCalcMat = materials->FindMaterial("dev/ssao", TEXTURE_GROUP_OTHER, true);
+
+	if (!pSSAOCalcMat || pSSAOCalcMat->IsErrorMaterial())
+	{
+		Assert(false);
+		return;
+	}
+
+	// ssao in Crossroads consist of 3 separate passes:
+	// 1. ssao calculation (outputs white texture with black shadows)
+	pRenderContext->DrawScreenSpaceRectangle(
+		pSSAOCalcMat,
+		0, 0, w, h,
+		0, 0, nSrcWidth - 1, nSrcHeight - 1,
+		nSrcWidth, nSrcHeight, pRenderable);
+
+	//save this pass so we can apply additional post process effects to current ones
+	pRenderContext->CopyRenderTargetToTextureEx(pSSAOTex, 0, &DestRect, NULL);
+
+	if (mat_neo_ssao_dump.GetBool())
+	{
+		Msg("Dumping SSAO postprocess pass as TGA sequence...\n");
+		DumpTGAofRenderTarget(w, h, "SSAO");
+	}
+
+	// 2. blurring that texture to avoid grain
+	if (mat_neo_ssao_blur.GetBool())
+	{
+		IMaterial *pSSAOBlurMat = materials->FindMaterial("dev/ssaoblur", TEXTURE_GROUP_OTHER, true);
+		Assert(!pSSAOBlurMat->IsErrorMaterial());
+
+		pRenderContext->DrawScreenSpaceRectangle(
+			pSSAOBlurMat,
+			0, 0, w, h,
+			0, 0, nSrcWidth - 1, nSrcHeight - 1,
+			nSrcWidth, nSrcHeight, pRenderable);
+
+		pRenderContext->CopyRenderTargetToTextureEx(pSSAOTex, 0, &DestRect, NULL);
+
+		if (mat_neo_ssao_dump.GetBool())
+		{
+			DumpTGAofRenderTarget(w, h, "SSAO_Blur");
+		}
+	}
+
+	// 3. combine what we got with framebuffer texture
+	if (mat_neo_ssao_combine.GetBool())
+	{
+		//Vector4D fullViewportPostSrcCorners(0.0f, -0.5f, nSrcWidth / 4 - 1, nSrcHeight / 4 - 1);
+		//Vector4D fullViewportPostDestCorners(0.0f, 0.0f, nSrcWidth - 1, nSrcHeight - 1);
+		//Rect_t   fullViewportPostDestRect = { x, y, w, h };
+		//Vector2D destTexSize(nSrcWidth, nSrcHeight);
+
+		IMaterial *pSSAOCombineMat = materials->FindMaterial("dev/ssao_combine", TEXTURE_GROUP_OTHER, true);
+		Assert(!pSSAOCombineMat->IsErrorMaterial());
+
+		pRenderContext->DrawScreenSpaceRectangle(
+			pSSAOCombineMat,
+			0, 0, w, h,
+			0, 0, nSrcWidth - 1, nSrcHeight - 1,
+			nSrcWidth, nSrcHeight, pRenderable);
+
+		if (mat_neo_ssao_dump.GetBool())
+		{
+			DumpTGAofRenderTarget(w, h, "SSAO_Combine");
+		}
+	}
+
+	if (mat_neo_ssao_dump.GetBool())
+	{
+		mat_neo_ssao_dump.SetValue(0);
+		Msg("SSAO pass dump finished.\n");
+	}
+}
+#endif
+
 void DoEnginePostProcessing( int x, int y, int w, int h, bool bFlashlightIsOn, bool bPostVGui )
 {
 	tmZone( TELEMETRY_LEVEL0, TMZF_NONE, "%s", __FUNCTION__ );
@@ -2630,6 +2734,13 @@ void DoEnginePostProcessing( int x, int y, int w, int h, bool bFlashlightIsOn, b
 
 #if defined( _X360 )
 	pRenderContext->PopVertexShaderGPRAllocation();
+#endif
+
+#ifdef NEO
+	if (mat_neo_ssao_enable.GetBool())
+	{
+		DoSSAO(x, y, w, h);
+	}
 #endif
 }
 

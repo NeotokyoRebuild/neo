@@ -8,3 +8,12 @@
 //
 
 // There are no examples of such shaders in the SDK, but add yours here.
+
+neo_ssao_ps30.fxc
+neo_ssao_vs30.fxc
+
+neo_ssao_combine_ps30.fxc
+neo_ssao_combine_vs30.fxc
+
+neo_gaussianblur_ps30.fxc
+neo_gaussianblur_vs30.fxc

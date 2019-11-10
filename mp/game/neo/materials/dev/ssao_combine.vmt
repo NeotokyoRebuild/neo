@@ -1,0 +1,5 @@
+"neo_ssao_combine"
+{
+	"$basetexture" "_rt_FullFrameFB"
+	"$ssaotexture" "_rt_SSAO"
+}
