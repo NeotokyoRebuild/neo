@@ -13,13 +13,10 @@
 #define PS_MODEL_NUM PPCAT(_ps, THIS_SHADER_MODEL_NUM)
 #define THIS_SHADER_VS PPCAT(THIS_SHADER_NAME, VS_MODEL_NUM)
 #define THIS_SHADER_PS PPCAT(THIS_SHADER_NAME, PS_MODEL_NUM)
-#define SHADER_BINARY_ETX .inc
-#define THIS_SHADER_VS_BINARY STRINGIZE(PPCAT(THIS_SHADER_VS, SHADER_BINARY_ETX))
-#define THIS_SHADER_PS_BINARY STRINGIZE(PPCAT(THIS_SHADER_PS, SHADER_BINARY_ETX))
 
 // Compiled shader includes
-#include THIS_SHADER_VS_BINARY
-#include THIS_SHADER_PS_BINARY
+#include "neo_gaussianblur_ps30.inc"
+#include "neo_gaussianblur_vs30.inc"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
