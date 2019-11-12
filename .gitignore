@@ -142,7 +142,6 @@ user_custom
 
 # shader generation files
 *.tmp
-mp/src/materialsystem/stdshaders/fxctmp9/
 mp/src/materialsystem/stdshaders/fxctmp9_tmp/
 mp/src/materialsystem/stdshaders/shaders/fxc/
 mp/src/materialsystem/stdshaders/filestocopy.txt
