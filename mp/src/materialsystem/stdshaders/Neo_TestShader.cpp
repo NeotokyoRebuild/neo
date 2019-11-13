@@ -146,7 +146,7 @@ BEGIN_SHADER(Neo_TestShader, "Help string for shader.")
 				// another shader unexpectedly.
 				// NEO TODO (Rain): fail softly on release
 				Assert(false);
-				Warning("FIME: SHADER FAILED\n");
+				Warning("FIXME: SHADER FAILED\n");
 				once = false;
 			}
 
