@@ -81,6 +81,20 @@ BEGIN_SHADER(Neo_TestShader, "Help string for shader.")
 		// ----------------------------------------------------------------------------
 		SHADOW_STATE
 		{
+// Render targets are pegged as sRGB on POSIX, so just force these reads and writes
+#ifdef LINUX
+			const bool bForceSRGBReadAndWrite = g_pHardwareConfig->CanDoSRGBReadFromRTs();
+			pShaderShadow->EnableSRGBRead(SHADER_SAMPLER0, bForceSRGBReadAndWrite);
+			pShaderShadow->EnableSRGBWrite(bForceSRGBReadAndWrite);
+#elif defined(_WIN32)
+			pShaderShadow->EnableSRGBRead(SHADER_SAMPLER0, false);
+			pShaderShadow->EnableSRGBWrite(false);
+#else // OS X
+			const bool bForceSRGBReadAndWrite = IsOSX() && g_pHardwareConfig->CanDoSRGBReadFromRTs();
+			pShaderShadow->EnableSRGBRead(SHADER_SAMPLER0, bForceSRGBReadAndWrite);
+			pShaderShadow->EnableSRGBWrite(bForceSRGBReadAndWrite);
+#endif
+
 			// Setup the vertex format.
 			const int formatFlags = VERTEX_POSITION;
 			pShaderShadow->VertexShaderVertexFormat(formatFlags, 1, 0, 0);
@@ -124,6 +138,16 @@ BEGIN_SHADER(Neo_TestShader, "Help string for shader.")
 			{
 				DECLARE_DYNAMIC_PIXEL_SHADER(neo_testshader_ps20);
 				SET_DYNAMIC_PIXEL_SHADER(neo_testshader_ps20);
+			}
+
+			if (g_pHardwareConfig->SupportsShaderModel_3_0())
+			{
+				static bool once = true;
+				if (once)
+				{
+					Msg("SUPPORTS\n");
+					once = false;
+				}
 			}
 		}
 

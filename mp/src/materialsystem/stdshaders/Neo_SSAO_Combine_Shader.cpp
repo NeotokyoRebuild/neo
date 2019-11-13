@@ -69,11 +69,19 @@ SHADER_DRAW
 		DECLARE_STATIC_PIXEL_SHADER_X(THIS_SHADER_PS);
 		SET_STATIC_PIXEL_SHADER_X(THIS_SHADER_PS);
 
-		// // Render targets are pegged as sRGB on POSIX, so just force these reads and writes
-		// bool bForceSRGBReadAndWrite = (IsOSX() && g_pHardwareConfig->CanDoSRGBReadFromRTs());
-		// pShaderShadow->EnableSRGBRead(SHADER_SAMPLER0, bForceSRGBReadAndWrite);
-		// pShaderShadow->EnableSRGBRead(SHADER_SAMPLER1, bForceSRGBReadAndWrite);
-		// pShaderShadow->EnableSRGBWrite(bForceSRGBReadAndWrite);
+		// Render targets are pegged as sRGB on POSIX, so just force these reads and writes
+#ifdef LINUX
+		const bool bForceSRGBReadAndWrite = g_pHardwareConfig->CanDoSRGBReadFromRTs();
+		pShaderShadow->EnableSRGBRead(SHADER_SAMPLER0, bForceSRGBReadAndWrite);
+		pShaderShadow->EnableSRGBWrite(bForceSRGBReadAndWrite);
+#elif defined(_WIN32)
+		pShaderShadow->EnableSRGBRead(SHADER_SAMPLER0, false);
+		pShaderShadow->EnableSRGBWrite(false);
+#else // OS X
+		const bool bForceSRGBReadAndWrite = IsOSX() && g_pHardwareConfig->CanDoSRGBReadFromRTs();
+		pShaderShadow->EnableSRGBRead(SHADER_SAMPLER0, bForceSRGBReadAndWrite);
+		pShaderShadow->EnableSRGBWrite(bForceSRGBReadAndWrite);
+#endif
 	}
 
 	DYNAMIC_STATE

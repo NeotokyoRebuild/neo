@@ -64,9 +64,18 @@ SHADER_DRAW
 		pShaderShadow->EnableTexture(SHADER_SAMPLER0, true);
 
 		// Render targets are pegged as sRGB on POSIX, so just force these reads and writes
-		bool bForceSRGBReadAndWrite = IsOSX() && g_pHardwareConfig->CanDoSRGBReadFromRTs();
+#ifdef LINUX
+		const bool bForceSRGBReadAndWrite = g_pHardwareConfig->CanDoSRGBReadFromRTs();
 		pShaderShadow->EnableSRGBRead(SHADER_SAMPLER0, bForceSRGBReadAndWrite);
 		pShaderShadow->EnableSRGBWrite(bForceSRGBReadAndWrite);
+#elif defined(_WIN32)
+		pShaderShadow->EnableSRGBRead(SHADER_SAMPLER0, false);
+		pShaderShadow->EnableSRGBWrite(false);
+#else // OS X
+		const bool bForceSRGBReadAndWrite = IsOSX() && g_pHardwareConfig->CanDoSRGBReadFromRTs();
+		pShaderShadow->EnableSRGBRead(SHADER_SAMPLER0, bForceSRGBReadAndWrite);
+		pShaderShadow->EnableSRGBWrite(bForceSRGBReadAndWrite);
+#endif
 
 		DECLARE_STATIC_VERTEX_SHADER_X(THIS_SHADER_VS);
 		SET_STATIC_VERTEX_SHADER_X(THIS_SHADER_VS);
