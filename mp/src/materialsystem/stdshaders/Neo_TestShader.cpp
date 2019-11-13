@@ -69,7 +69,6 @@ BEGIN_SHADER(Neo_TestShader, "Help string for shader.")
 			Assert(0);
 			return "Wireframe";
 		}
-
 		return 0;
 	}
 
@@ -140,15 +139,23 @@ BEGIN_SHADER(Neo_TestShader, "Help string for shader.")
 				SET_DYNAMIC_PIXEL_SHADER(neo_testshader_ps20);
 			}
 
+			static bool once = true;
+			if (once)
+			{
+				// If we're actually running this shader, we've failed and fallen back from
+				// another shader unexpectedly.
+				// NEO TODO (Rain): fail softly on release
+				Assert(false);
+				Warning("FIME: SHADER FAILED\n");
+				once = false;
+			}
+
+#if(0)
 			if (g_pHardwareConfig->SupportsShaderModel_3_0())
 			{
-				static bool once = true;
-				if (once)
-				{
-					Msg("SUPPORTS\n");
-					once = false;
-				}
+				
 			}
+#endif
 		}
 
 	Draw(); // Need to call for each draw

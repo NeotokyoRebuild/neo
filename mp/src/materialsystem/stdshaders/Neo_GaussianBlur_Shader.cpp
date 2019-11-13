@@ -28,6 +28,12 @@ END_SHADER_PARAMS
 
 SHADER_FALLBACK
 {
+	// Requires DX9 + above
+	if (g_pHardwareConfig->GetDXSupportLevel() < 90)
+	{
+		Assert(0);
+		return "Wireframe";
+	}
 	return 0;
 }
 
