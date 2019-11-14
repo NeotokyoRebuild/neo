@@ -23,7 +23,7 @@
 
 BEGIN_VS_SHADER_FLAGS(THIS_SHADER_NAME, "Help for "STRINGIZE(THIS_SHADER_NAME), SHADER_NOT_EDITABLE)
 BEGIN_SHADER_PARAMS
-SHADER_PARAM(BASETEXTURE, SHADER_PARAM_TYPE_TEXTURE, "_rt_FullFrameFB", "Render Target")
+SHADER_PARAM(BASETEXTURE, SHADER_PARAM_TYPE_TEXTURE, "_rt_FullFrameFB", "Render target")
 END_SHADER_PARAMS
 
 SHADER_FALLBACK
@@ -83,13 +83,10 @@ SHADER_DRAW
 
 		ITexture *src_texture = params[BASETEXTURE]->GetTextureValue();
 
-		int width = src_texture->GetActualWidth();
-		int height = src_texture->GetActualHeight();
+		const int width = src_texture->GetActualWidth();
+		const int height = src_texture->GetActualHeight();
 
-		float dX = 1.0f / width;
-		float dY = 1.0f / height;
-
-		float fTexelSize[2] = { dX, dY };
+		const float fTexelSize[2] = { 1.0f / (float)width, 1.0f / (float)height };
 
 		pShaderAPI->SetPixelShaderConstant(0, fTexelSize);
 

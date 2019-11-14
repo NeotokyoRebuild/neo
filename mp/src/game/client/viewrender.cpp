@@ -808,6 +808,7 @@ CLIENTEFFECT_REGISTER_BEGIN( PrecachePostProcessingEffects )
 	CLIENTEFFECT_MATERIAL("dev/ssao")
 	CLIENTEFFECT_MATERIAL("dev/ssaoblur")
 	CLIENTEFFECT_MATERIAL("dev/ssao_combine")
+	CLIENTEFFECT_MATERIAL("dev/nightvision")
 #endif
 
 CLIENTEFFECT_REGISTER_END_CONDITIONAL( engine->GetDXSupportLevel() >= 90 )

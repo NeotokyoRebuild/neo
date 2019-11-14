@@ -17,6 +17,7 @@
 #include "c_world.h"
 #include "bitmap/tgawriter.h"
 #include "filesystem.h"
+
 #include "tier0/vprof.h"
 
 #include "proxyentity.h"
@@ -86,7 +87,8 @@ ConVar mat_tonemap_min_avglum( "mat_tonemap_min_avglum", "3.0", FCVAR_CHEAT );
 ConVar mat_fullbright( "mat_fullbright", "0", FCVAR_CHEAT );
 
 #ifdef NEO
-ConVar mat_neo_ssao_enable("mat_neo_ssao_enable", "1", FCVAR_ARCHIVE);
+ConVar mat_neo_ssao_enable("mat_neo_ssao_enable", "0", FCVAR_USERINFO, "Whether to use SSAO.", true, 0.0f, true, 1.0f);
+ConVar mat_neo_nv_enable("mat_neo_nv_enable", "0", FCVAR_CHEAT, "", true, 0.0f, true, 1.0f);
 #endif
 
 extern ConVar localplayer_visionflags;
@@ -2218,9 +2220,9 @@ static ConVar mat_postprocess_x( "mat_postprocess_x", "4" );
 static ConVar mat_postprocess_y( "mat_postprocess_y", "1" );
 
 #ifdef NEO
-ConVar mat_neo_ssao_blur("mat_neo_ssao_blur", "1");
-ConVar mat_neo_ssao_combine("mat_neo_ssao_combine", "1");
-ConVar mat_neo_ssao_dump("mat_neo_ssao_dump", "0");
+ConVar mat_neo_ssao_blur("mat_neo_ssao_blur", "1", FCVAR_USERINFO, "Use a blur to smooth the SSAO noise.");
+ConVar mat_neo_ssao_combine("mat_neo_ssao_combine", "1", FCVAR_CHEAT);
+ConVar mat_neo_ssao_dump("mat_neo_ssao_dump", "0", FCVAR_CHEAT);
 #endif
 
 #ifdef NEO
@@ -2228,18 +2230,19 @@ static inline void DoSSAO(const int x, const int y, const int w, const int h)
 {
 	CMatRenderContextPtr pRenderContext(materials);
 
-	IClientRenderable *pRenderable = GetClientWorldEntity()->GetClientRenderable();
-	Assert(pRenderable);
-
 	ITexture *pSrc = materials->FindTexture("_rt_FullFrameFB", TEXTURE_GROUP_RENDER_TARGET);
 	const int nSrcWidth = pSrc->GetActualWidth();
 	const int nSrcHeight = pSrc->GetActualHeight();
 
-	ITexture *pSSAOTex = materials->FindTexture("_rt_SSAO", TEXTURE_GROUP_RENDER_TARGET);
+	ITexture *pSSAOTex = GetSSAO();
+	ITexture *pSSAO_IM_Tex = GetSSAOIntermediate();
 
 	Rect_t DestRect{ 0, 0, nSrcWidth, nSrcHeight };
 
-	pRenderContext->CopyRenderTargetToTextureEx(pSSAOTex, 0, &DestRect, NULL);
+	const int renderTargetId = 0;
+
+	pRenderContext->CopyRenderTargetToTextureEx(pSSAOTex, renderTargetId, &DestRect, NULL);
+	pRenderContext->CopyRenderTargetToTextureEx(pSSAO_IM_Tex, renderTargetId, &DestRect, NULL);
 
 	IMaterial *pSSAOCalcMat = materials->FindMaterial("dev/ssao", TEXTURE_GROUP_OTHER, true);
 
@@ -2255,15 +2258,15 @@ static inline void DoSSAO(const int x, const int y, const int w, const int h)
 		pSSAOCalcMat,
 		0, 0, w, h,
 		0, 0, nSrcWidth - 1, nSrcHeight - 1,
-		nSrcWidth, nSrcHeight, pRenderable);
+		nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
 
 	//save this pass so we can apply additional post process effects to current ones
-	pRenderContext->CopyRenderTargetToTextureEx(pSSAOTex, 0, &DestRect, NULL);
+	pRenderContext->CopyRenderTargetToTextureEx(pSSAOTex, renderTargetId, &DestRect, NULL);
 
 	if (mat_neo_ssao_dump.GetBool())
 	{
 		Msg("Dumping SSAO postprocess pass as TGA sequence...\n");
-		DumpTGAofRenderTarget(w, h, "SSAO");
+		DumpTGAofRenderTarget(w, h, "neo_ssao");
 	}
 
 	// 2. blurring that texture to avoid grain
@@ -2276,13 +2279,13 @@ static inline void DoSSAO(const int x, const int y, const int w, const int h)
 			pSSAOBlurMat,
 			0, 0, w, h,
 			0, 0, nSrcWidth - 1, nSrcHeight - 1,
-			nSrcWidth, nSrcHeight, pRenderable);
+			nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
 
-		pRenderContext->CopyRenderTargetToTextureEx(pSSAOTex, 0, &DestRect, NULL);
+		pRenderContext->CopyRenderTargetToTextureEx(pSSAOTex, renderTargetId, &DestRect, NULL);
 
 		if (mat_neo_ssao_dump.GetBool())
 		{
-			DumpTGAofRenderTarget(w, h, "SSAO_Blur");
+			DumpTGAofRenderTarget(w, h, "neo_gaussianblur");
 		}
 	}
 
@@ -2301,11 +2304,11 @@ static inline void DoSSAO(const int x, const int y, const int w, const int h)
 			pSSAOCombineMat,
 			0, 0, w, h,
 			0, 0, nSrcWidth - 1, nSrcHeight - 1,
-			nSrcWidth, nSrcHeight, pRenderable);
+			nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
 
 		if (mat_neo_ssao_dump.GetBool())
 		{
-			DumpTGAofRenderTarget(w, h, "SSAO_Combine");
+			DumpTGAofRenderTarget(w, h, "neo_ssao_combine");
 		}
 	}
 
@@ -2314,6 +2317,28 @@ static inline void DoSSAO(const int x, const int y, const int w, const int h)
 		mat_neo_ssao_dump.SetValue(0);
 		Msg("SSAO pass dump finished.\n");
 	}
+}
+
+static inline void DoNightVision(const int x, const int y, const int w, const int h)
+{
+	CMatRenderContextPtr pRenderContext(materials);
+
+	ITexture *pSrc = materials->FindTexture("_rt_FullFrameFB", TEXTURE_GROUP_RENDER_TARGET);
+	const int nSrcWidth = pSrc->GetActualWidth();
+	const int nSrcHeight = pSrc->GetActualHeight();
+
+	IMaterial *pNvMat = materials->FindMaterial("dev/nightvision", TEXTURE_GROUP_OTHER, true);
+
+	if (!pNvMat || pNvMat->IsErrorMaterial())
+	{
+		Assert(false);
+		return;
+	}
+
+	pRenderContext->DrawScreenSpaceRectangle(pNvMat,
+		0, 0, w, h,
+		0, 0, nSrcWidth - 1, nSrcHeight - 1,
+		nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
 }
 #endif
 
@@ -2740,6 +2765,11 @@ void DoEnginePostProcessing( int x, int y, int w, int h, bool bFlashlightIsOn, b
 	if (mat_neo_ssao_enable.GetBool())
 	{
 		DoSSAO(x, y, w, h);
+	}
+
+	if (mat_neo_nv_enable.GetBool())
+	{
+		DoNightVision(x, y, w, h);
 	}
 #endif
 }

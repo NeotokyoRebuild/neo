@@ -321,20 +321,52 @@ void CViewRender::Init( void )
 #endif
 
 #ifdef NEO
-	ITexture *depthOld = materials->FindTexture("_rt_FullFrameDepth", TEXTURE_GROUP_RENDER_TARGET);
-	static int flags = TEXTUREFLAGS_NOMIP | TEXTUREFLAGS_NOLOD | TEXTUREFLAGS_RENDERTARGET;
-	if (depthOld)
-		flags = depthOld->GetFlags();
+	ITexture *pDepthOld = materials->FindTexture("_rt_FullFrameDepth", TEXTURE_GROUP_RENDER_TARGET);
+	const bool bDepthTexOk = ((pDepthOld != NULL) && (!pDepthOld->IsError()));
+	const int flags = (bDepthTexOk ? pDepthOld->GetFlags() : TEXTUREFLAGS_NOMIP |
+		TEXTUREFLAGS_NOLOD | TEXTUREFLAGS_RENDERTARGET);
 
+#ifdef DEBUG
+	const int iDimUninitialized = -1;
+	int iW = iDimUninitialized, iH = iDimUninitialized;
+#else
 	int iW, iH;
+#endif
 	materials->GetBackBufferDimensions(iW, iH);
+#ifdef DEBUG
+	// Make sure we actually got values. This should never fail.
+	Assert(iW != iDimUninitialized);
+	Assert(iH != iDimUninitialized);
+#endif
 
 	materials->BeginRenderTargetAllocation();
-	auto pTex = materials->CreateNamedRenderTargetTextureEx("_rt_SSAO", iW, iH, RT_SIZE_NO_CHANGE, materials->GetBackBufferFormat(),
-		MATERIAL_RT_DEPTH_SHARED, flags, 0);
+
+#ifdef DEBUG
+	ITexture *pSSAOTex =
+#endif
+		materials->CreateNamedRenderTargetTextureEx("_rt_SSAO", iW, iH, RT_SIZE_NO_CHANGE,
+			materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED, flags, 0);
+
+#ifdef DEBUG
+	ITexture *pSSAO_Im_Tex =
+#endif
+		materials->CreateNamedRenderTargetTextureEx("_rt_SSAO_Intermediate", iW, iH,
+			RT_SIZE_NO_CHANGE, materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED,
+			flags, 0);
+
+#ifdef DEBUG
+	ITexture *pNVTex =
+#endif
+		materials->CreateNamedRenderTargetTextureEx("_rt_NightVision", iW, iH, RT_SIZE_NO_CHANGE,
+			materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED, flags, 0);
+
 	materials->EndRenderTargetAllocation();
 
-	Assert(!IsErrorTexture(pTex));
+#ifdef DEBUG
+	Assert(pSSAOTex != NULL && !pSSAOTex->IsError());
+	Assert(pSSAO_Im_Tex != NULL && !pSSAO_Im_Tex->IsError());
+	Assert(pNVTex != NULL && !pNVTex->IsError());
+#endif
 #endif
 }
 

@@ -1,44 +1,37 @@
 #include "BaseVSShader.h"
 
-//==========================================
-// Set your shader name here
-#define THIS_SHADER_NAME neo_ssao
-//==========================================
-// Set your DX shader model ver number here
-#define THIS_SHADER_MODEL_NUM 30
-//==========================================
-
-// A bunch of macro boilerplate to avoid repeating or mixing up shader names.
-#define VS_MODEL_NUM PPCAT(_vs, THIS_SHADER_MODEL_NUM)
-#define PS_MODEL_NUM PPCAT(_ps, THIS_SHADER_MODEL_NUM)
-#define THIS_SHADER_VS PPCAT(THIS_SHADER_NAME, VS_MODEL_NUM)
-#define THIS_SHADER_PS PPCAT(THIS_SHADER_NAME, PS_MODEL_NUM)
-
-// Compiled shader includes
-#include "neo_ssao_ps30.inc"
 #include "neo_ssao_vs30.inc"
+#include "neo_ssao_ps30.inc"
 
 // memdbgon must be the last include file in a .cpp file!!!
-#include "tier0/memdbgon.h"
+//#include "tier0/memdbgon.h"
 
-// SHADER PARAMS DEFINED IN SHADER FXC CODE
-ConVar mat_neo_ssao_samples("mat_neo_ssao_samples", "8");
-ConVar mat_neo_ssao_contrast("mat_neo_ssao_contrast", "2.0");
-ConVar mat_neo_ssao_radius("mat_neo_ssao_radius", "16");
-ConVar mat_neo_ssao_bias("mat_neo_ssao_bias", "0.02");
-ConVar mat_neo_ssao_bias_offset("mat_neo_ssao_bias_offset", "0.05");
-ConVar mat_neo_ssao_illuminfluence("mat_neo_ssao_illuminfluence", "5.0");
-ConVar mat_neo_ssao_zfar("mat_neo_ssao_zfar", "8.0");
-ConVar mat_neo_ssao_znear("mat_neo_ssao_znear", "1.0");
+ConVar mat_neo_ssao_samples("mat_neo_ssao_samples", "16", FCVAR_CHEAT, "", true, 8.0f, true, 32.0f);
+ConVar mat_neo_ssao_contrast("mat_neo_ssao_contrast", "0.55", FCVAR_CHEAT, "", true, 0.0f, false, 0.0f);
+ConVar mat_neo_ssao_radius("mat_neo_ssao_radius", "8", FCVAR_CHEAT, "", true, 1.0f, false, 128.0f);
+ConVar mat_neo_ssao_bias("mat_neo_ssao_bias", "0.02", FCVAR_CHEAT, "", true, 0.0f, false, 10.0f);
+ConVar mat_neo_ssao_bias_offset("mat_neo_ssao_bias_offset", "0.05", FCVAR_CHEAT, "", true, 0.05f, true, 0.05f);
+ConVar mat_neo_ssao_illuminfluence("mat_neo_ssao_illuminfluence", "0", FCVAR_CHEAT, "", true, 0.0f, false, 10.0f);
+ConVar mat_neo_ssao_zfar("mat_neo_ssao_zfar", "8", FCVAR_CHEAT, "", true, 0.0f, true, 512.0f);
+ConVar mat_neo_ssao_znear("mat_neo_ssao_znear", "1", FCVAR_CHEAT, "", true, 0.0f, true, 512.0f);
 
-BEGIN_VS_SHADER_FLAGS(THIS_SHADER_NAME, "Help for "STRINGIZE(THIS_SHADER_NAME), SHADER_NOT_EDITABLE)
+BEGIN_SHADER(Neo_SSAO, "Help for my shader.")
+
 BEGIN_SHADER_PARAMS
-SHADER_PARAM(BASETEXTURE, SHADER_PARAM_TYPE_TEXTURE, "_rt_FullFrameFB", "")
+	SHADER_PARAM(BASETEXTURE, SHADER_PARAM_TYPE_TEXTURE, "_rt_FullFrameFB", "Full frame buffer")
 END_SHADER_PARAMS
 
-SHADER_INIT_PARAMS()
+SHADER_INIT
 {
-	SET_FLAGS2(MATERIAL_VAR2_NEEDS_FULL_FRAME_BUFFER_TEXTURE);
+	if (params[BASETEXTURE]->IsDefined())
+	{
+		LoadTexture(BASETEXTURE);
+	}
+}
+
+bool NeedsFullFrameBufferTexture(IMaterialVar **params, bool bCheckSpecificToThisFrame /* = true */) const
+{
+	return true;
 }
 
 SHADER_FALLBACK
@@ -52,71 +45,44 @@ SHADER_FALLBACK
 	return 0;
 }
 
-SHADER_INIT
-{
-	if (params[BASETEXTURE]->IsDefined())
-	{
-		LoadTexture(BASETEXTURE);
-	}
-}
-
 SHADER_DRAW
 {
 	SHADOW_STATE
 	{
-		pShaderShadow->VertexShaderVertexFormat(VERTEX_POSITION, 1, 0, 0);
+		const int fmt = VERTEX_POSITION;
+		pShaderShadow->VertexShaderVertexFormat(fmt, 1, 0, 0);
+
+		pShaderShadow->EnableDepthWrites(false);
 
 		pShaderShadow->EnableTexture(SHADER_SAMPLER0, true);
 
-		// Render targets are pegged as sRGB on POSIX, so just force these reads and writes
-#ifdef LINUX
-		const bool bForceSRGBReadAndWrite = g_pHardwareConfig->CanDoSRGBReadFromRTs();
-		pShaderShadow->EnableSRGBRead(SHADER_SAMPLER0, bForceSRGBReadAndWrite);
-		pShaderShadow->EnableSRGBWrite(bForceSRGBReadAndWrite);
-#elif defined(_WIN32)
-		pShaderShadow->EnableSRGBRead(SHADER_SAMPLER0, false);
-		pShaderShadow->EnableSRGBWrite(false);
-#else // OS X
-		const bool bForceSRGBReadAndWrite = IsOSX() && g_pHardwareConfig->CanDoSRGBReadFromRTs();
-		pShaderShadow->EnableSRGBRead(SHADER_SAMPLER0, bForceSRGBReadAndWrite);
-		pShaderShadow->EnableSRGBWrite(bForceSRGBReadAndWrite);
-#endif
+		DECLARE_STATIC_VERTEX_SHADER(neo_ssao_vs30);
+		SET_STATIC_VERTEX_SHADER(neo_ssao_vs30);
 
-		DECLARE_STATIC_VERTEX_SHADER_X(THIS_SHADER_VS);
-		SET_STATIC_VERTEX_SHADER_X(THIS_SHADER_VS);
-
-		DECLARE_STATIC_PIXEL_SHADER_X(THIS_SHADER_PS);
-		SET_STATIC_PIXEL_SHADER_X(THIS_SHADER_PS);
+		DECLARE_STATIC_PIXEL_SHADER(neo_ssao_ps30);
+		SET_STATIC_PIXEL_SHADER(neo_ssao_ps30);
 	}
 
 	DYNAMIC_STATE
 	{
-		BindTexture(SHADER_SAMPLER0, BASETEXTURE, -1);
+		BindTexture(SHADER_SAMPLER0, BASETEXTURE);
 
 		ITexture *src_texture = params[BASETEXTURE]->GetTextureValue();
 
-		int width = src_texture->GetActualWidth();
-		int height = src_texture->GetActualHeight();
+		const int width = src_texture->GetActualWidth();
+		const int height = src_texture->GetActualHeight();
 
-		float g_TexelSize[2] = { 1.0f / float(width), 1.0f / float(height) };
+		const float g_TexelSize[2] = { 1.0f / float(width), 1.0f / float(height) };
+		const float samples = mat_neo_ssao_samples.GetInt();
+		const float radius = mat_neo_ssao_radius.GetFloat();
+		const float bias = mat_neo_ssao_bias.GetFloat();
+		const float illuminf = mat_neo_ssao_illuminfluence.GetFloat();
+		const float contrast = mat_neo_ssao_contrast.GetFloat();
+		const float znear = mat_neo_ssao_znear.GetFloat();
+		const float zfar = mat_neo_ssao_zfar.GetFloat();
+		const float biasoffset = mat_neo_ssao_bias_offset.GetFloat();
 
 		pShaderAPI->SetPixelShaderConstant(0, g_TexelSize);
-
-		DECLARE_DYNAMIC_VERTEX_SHADER_X(THIS_SHADER_VS);
-		SET_DYNAMIC_VERTEX_SHADER_X(THIS_SHADER_VS);
-
-		DECLARE_DYNAMIC_PIXEL_SHADER_X(THIS_SHADER_PS);
-		SET_DYNAMIC_PIXEL_SHADER_X(THIS_SHADER_PS);
-
-		float samples = mat_neo_ssao_samples.GetInt();
-		float contrast = mat_neo_ssao_contrast.GetFloat();
-		float radius = mat_neo_ssao_radius.GetFloat();
-		float bias = mat_neo_ssao_bias.GetFloat();
-		float biasoffset = mat_neo_ssao_bias_offset.GetFloat();
-		float illuminf = mat_neo_ssao_illuminfluence.GetFloat();
-		float zfar = mat_neo_ssao_zfar.GetFloat();
-		float znear = mat_neo_ssao_znear.GetFloat();
-
 		pShaderAPI->SetPixelShaderConstant(1, &samples);
 		pShaderAPI->SetPixelShaderConstant(2, &radius);
 		pShaderAPI->SetPixelShaderConstant(3, &bias);
@@ -125,7 +91,14 @@ SHADER_DRAW
 		pShaderAPI->SetPixelShaderConstant(6, &znear);
 		pShaderAPI->SetPixelShaderConstant(7, &zfar);
 		pShaderAPI->SetPixelShaderConstant(8, &biasoffset);
+
+		DECLARE_DYNAMIC_VERTEX_SHADER(neo_ssao_vs30);
+		SET_DYNAMIC_VERTEX_SHADER(neo_ssao_vs30);
+
+		DECLARE_DYNAMIC_PIXEL_SHADER(neo_ssao_ps30);
+		SET_DYNAMIC_PIXEL_SHADER(neo_ssao_ps30);
 	}
+
 	Draw();
 }
 END_SHADER

@@ -1,33 +1,38 @@
-// ********************************
-// ** auto generated pixelshader **
-// ********************************
-
-
-// Includes
 #include "common_ps_fxc.h"
-//#include "common_vertexlitgeneric_dx9.h"
-//#include "common_lightmappedgeneric_fxc.h"
-//#include "common_flashlight_fxc.h"
-//#include "common_parallax.h"
 
+sampler sampler_ssao		: register( s0 );
+sampler sampler_im			: register( s1 );
+//
+//struct PS_INPUT
+//{
+//	HALF2 vTexCoord			:	TEXCOORD0;
+//};
+//
+//float4 main( PS_INPUT i ) : COLOR
+//{
+//	float4 framebuftex = tex2D( framebuffersampler, i.vTexCoord );
+//	float3 framebufcol = framebuftex.rgb;
+//	float framebufalpha = framebuftex.a;
+//	float ssaotex = tex2D( ssaosampler, i.vTexCoord ).r;
+//
+//	framebufcol = framebufcol * ssaotex;
+//
+//	return float4( framebufcol, framebufalpha );
+//}
 
-// Samplers
-sampler _Sampler_01		: register( s0 );
-sampler _Sampler_00		: register( s1 );
-
-// Semantic structures
 struct PS_INPUT
 {
-	float2 vTexCoord_0			:	TEXCOORD0;
+	HALF2 vTexCoord	: TEXCOORD0;
 };
 
-// Entry point
-float4 main( const PS_INPUT In ) : COLOR
+float4 main( const PS_INPUT i ) : COLOR
 {
-	float4 ssao_color = tex2D(_Sampler_00, In.vTexCoord_0);
-	float4 frame_color = tex2D(_Sampler_01, In.vTexCoord_0);
+	float4 imTex = tex2D(sampler_im, i.vTexCoord);
+	float3 imCol = imTex.rgb;
 	
-	//Out.vColor_0 = float4(color, alpha);
-	//Out.vColor_0 = float4(color, 1.0f);
-	return frame_color;
+	float ssaoMultiplier = tex2D(sampler_ssao, i.vTexCoord).r;
+	
+	imCol *= ssaoMultiplier;
+	
+	return float4(imCol, imTex.a);
 }

@@ -186,6 +186,42 @@ ITexture *GetSmallBufferHDR1( void )
 	return s_pSmallBufferHDR1;
 }
 
+#ifdef NEO
+static CTextureReference s_pSSAO;
+ITexture *GetSSAO(void)
+{
+	if (!s_pSSAO)
+	{
+		s_pSSAO.Init(materials->FindTexture("_rt_SSAO", TEXTURE_GROUP_RENDER_TARGET));
+		Assert(!IsErrorTexture(s_pSSAO));
+		AddReleaseFunc();
+	}
+	else
+	{
+		Assert(!IsErrorTexture(s_pSSAO));
+	}
+
+	return s_pSSAO;
+}
+
+static CTextureReference s_pSSAO_IM;
+ITexture *GetSSAOIntermediate(void)
+{
+	if (!s_pSSAO_IM)
+	{
+		s_pSSAO_IM.Init(materials->FindTexture("_rt_SSAO_Intermediate", TEXTURE_GROUP_RENDER_TARGET));
+		Assert(!IsErrorTexture(s_pSSAO_IM));
+		AddReleaseFunc();
+	}
+	else
+	{
+		Assert(!IsErrorTexture(s_pSSAO_IM));
+	}
+
+	return s_pSSAO_IM;
+}
+#endif
+
 //=============================================================================
 // Quarter Sized FB0
 //=============================================================================
@@ -255,4 +291,8 @@ void ReleaseRenderTargets( void )
 
 	for (int i=0; i<MAX_FB_TEXTURES; ++i)
 		s_pFullFrameFrameBufferTexture[i].Shutdown();
+
+#ifdef NEO
+	s_pSSAO.Shutdown();
+#endif
 }
