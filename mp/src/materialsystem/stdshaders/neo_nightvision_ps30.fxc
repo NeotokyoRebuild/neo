@@ -1,0 +1,11 @@
+#include "common_ps_fxc.h"
+
+struct PS_INPUT
+{
+	float2 texCoord	: TEXCOORD0;
+};
+
+float4 main( PS_INPUT i ) : COLOR
+{
+	return float4(1.0f, 1.0f, 0.0f, 1.0f);
+}
