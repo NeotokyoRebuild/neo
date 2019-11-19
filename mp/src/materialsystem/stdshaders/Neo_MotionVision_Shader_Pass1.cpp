@@ -6,13 +6,19 @@
 // memdbgon must be the last include file in a .cpp file!!!
 //#include "tier0/memdbgon.h"
 
-ConVar mat_neo_mv_sensitivity("mat_neo_mv_sensitivity", "0.2", FCVAR_CHEAT, "How fast movement gets picked up by motion vision.", true, 0.0f, true, 1.0f);
+ConVar mat_neo_mv_sensitivity("mat_neo_mv_sensitivity", "0.04", FCVAR_CHEAT, "How fast movement gets picked up by motion vision.", true, 0.0f, true, 1.0f);
+ConVar mat_neo_mv_color_r("mat_neo_mv_color_r", "0.1", FCVAR_CHEAT, "Normalized RBGA Red color.", true, 0.0f, true, 1.0f);
+ConVar mat_neo_mv_color_g("mat_neo_mv_color_g", "0.75", FCVAR_CHEAT, "Normalized RBGA Green color.", true, 0.0f, true, 1.0f);
+ConVar mat_neo_mv_color_b("mat_neo_mv_color_b", "0.45", FCVAR_CHEAT, "Normalized RBGA Blue color.", true, 0.0f, true, 1.0f);
+ConVar mat_neo_mv_color_a("mat_neo_mv_color_a", "1", FCVAR_CHEAT, "Normalized RBGA Alpha color.", true, 0.0f, true, 1.0f);
+
+static ConVar neo_this_client_speed("neo_this_client_speed", "0", FCVAR_SPONLY, "", true, 0.0f, true, 1.0f);
 
 BEGIN_SHADER_FLAGS(Neo_MotionVision_Pass1, "Help for my shader.", SHADER_NOT_EDITABLE)
 
 BEGIN_SHADER_PARAMS
 SHADER_PARAM(MOTIONORIGIN, SHADER_PARAM_TYPE_TEXTURE, "_rt_MotionVision", "")
-SHADER_PARAM(INTERMEDIATE, SHADER_PARAM_TYPE_TEXTURE, "_rt_MotionVision_Intermediate", "")
+SHADER_PARAM(INTERMEDIATE, SHADER_PARAM_TYPE_TEXTURE, "_rt_MotionVision_Buffer1", "")
 END_SHADER_PARAMS
 
 SHADER_INIT
@@ -106,8 +112,19 @@ SHADER_DRAW
 		//pShaderAPI->BindStandardTexture(SHADER_SAMPLER0, TEXTURE_FRAME_BUFFER_FULL_TEXTURE_0);
 
 		const float flMvSensitivity = mat_neo_mv_sensitivity.GetFloat();
+		const float speed = neo_this_client_speed.GetFloat();
+
+		const float r = mat_neo_mv_color_r.GetFloat();
+		const float g = mat_neo_mv_color_g.GetFloat();
+		const float b = mat_neo_mv_color_b.GetFloat();
+		const float a = mat_neo_mv_color_a.GetFloat();
 
 		pShaderAPI->SetPixelShaderConstant(0, &flMvSensitivity);
+		pShaderAPI->SetPixelShaderConstant(1, &speed);
+		pShaderAPI->SetPixelShaderConstant(2, &r);
+		pShaderAPI->SetPixelShaderConstant(3, &g);
+		pShaderAPI->SetPixelShaderConstant(4, &b);
+		pShaderAPI->SetPixelShaderConstant(5, &a);
 
 		DECLARE_DYNAMIC_VERTEX_SHADER(neo_motionvision_pass1_vs30);
 		SET_DYNAMIC_VERTEX_SHADER(neo_motionvision_pass1_vs30);

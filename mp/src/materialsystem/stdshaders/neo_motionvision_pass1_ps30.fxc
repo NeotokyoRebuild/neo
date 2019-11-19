@@ -3,7 +3,12 @@
 sampler FrameBuffer				: register(s0);
 sampler Intermediate			: register(s1);
 
-const float	g_MV_Sensitivity	: register(c0); // How fast movement gets picked up
+const float	g_MvSensitivity		: register(c0); // How quick movement must be to get picked up
+const float g_MvSpeed			: register(c1); // Normalized player speed
+const float g_MvColor_R			: register(c2); // RGBA Red
+const float g_MvColor_G			: register(c3); // RGBA Green
+const float g_MvColor_B			: register(c4); // RGBA Blue
+const float g_MvColor_A			: register(c5); // RBGA Alpha
 
 struct PS_INPUT
 {
@@ -15,9 +20,12 @@ float4 main( const PS_INPUT i ) : COLOR
 	const float4 mvColor = tex2D(Intermediate, i.texCoord);
 	const float4 fbColor = tex2D(FrameBuffer, i.texCoord);
 	
-	if (abs(mvColor.r - fbColor.r) > g_MV_Sensitivity)
+	if ((abs(mvColor.r - fbColor.r) > g_MvSensitivity) ||
+		(abs(mvColor.g - fbColor.g) > g_MvSensitivity) ||
+		(abs(mvColor.b - fbColor.b) > g_MvSensitivity))
 	{
-		return float4(0.5f, 0.25f, 0.033f, 1);
+		const float4 color = float4(g_MvColor_R, g_MvColor_G, g_MvColor_B, g_MvColor_A);
+		return color * (1 - min(g_MvSpeed, 0.8f));
 	}
 	
 	return float4(0, 0, 0, 1);

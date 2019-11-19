@@ -562,9 +562,13 @@ void C_NEO_Player::ClientThink(void)
 	BaseClass::ClientThink();
 }
 
+static ConVar neo_this_client_speed("neo_this_client_speed", "0", FCVAR_SPONLY);
+
 void C_NEO_Player::PostThink(void)
 {
 	BaseClass::PostThink();
+
+	neo_this_client_speed.SetValue(MIN(GetAbsVelocity().Length2D() / GetNormSpeed(), 1.0f));
 
 	//DevMsg("Roll: %f\n", m_angEyeAngles[2]);
 

@@ -238,6 +238,28 @@ ITexture *GetMV(void)
 	return s_pMV;
 }
 
+static CTextureReference s_pMV_Buffer1, s_pMV_Buffer2;
+ITexture *GetMVBuffer(const int index)
+{
+	if (!s_pMV_Buffer1)
+	{
+		s_pMV_Buffer1.Init(materials->FindTexture("_rt_MotionVision_Buffer1", TEXTURE_GROUP_RENDER_TARGET));
+		Assert(!IsErrorTexture(s_pMV_Buffer1));
+
+		s_pMV_Buffer2.Init(materials->FindTexture("_rt_MotionVision_Buffer2", TEXTURE_GROUP_RENDER_TARGET));
+		Assert(!IsErrorTexture(s_pMV_Buffer2));
+
+		AddReleaseFunc();
+	}
+	else
+	{
+		Assert(s_pMV_Buffer1 && !IsErrorTexture(s_pMV_Buffer1));
+		Assert(s_pMV_Buffer2 && !IsErrorTexture(s_pMV_Buffer2));
+	}
+
+	return (index == 0) ? s_pMV_Buffer1 : s_pMV_Buffer2;
+}
+
 static CTextureReference s_pMV_IM;
 ITexture *GetMVIntermediate(void)
 {
@@ -348,5 +370,7 @@ void ReleaseRenderTargets( void )
 	s_pSSAO_IM.Shutdown();
 	s_pMV.Shutdown();
 	s_pMV_IM.Shutdown();
+	s_pMV_Buffer1.Shutdown();
+	s_pMV_Buffer2.Shutdown();
 #endif
 }

@@ -15,7 +15,7 @@ float4 main( const PS_INPUT i ) : COLOR
 		
 	return float4(
 		min((imTex.r + mvTex.r), 1),
-		min((imTex.r + mvTex.g), 1),
-		min((imTex.r + mvTex.b), 1),
+		min((imTex.g + mvTex.g), 1),
+		min((imTex.b + mvTex.b), 1),
 		imTex.a);
 }

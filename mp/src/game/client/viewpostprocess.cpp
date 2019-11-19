@@ -2355,30 +2355,20 @@ static inline void DoMotionVision(const int x, const int y, const int w, const i
 
 	const int renderTargetId = 0;
 
-	ITexture *pMv = GetMV();
-	ITexture *pMv_Im = GetMVIntermediate();
-	ITexture *pMv_Im2 = GetMVIntermediate2();
+	ITexture *pVM_MV = GetMV();
+	ITexture *pVM_MV_IM = GetMVIntermediate();
 
-	Assert(pMv && !pMv->IsError());
-	Assert(pMv_Im && !pMv_Im->IsError());
-	Assert(pMv_Im2 && !pMv_Im2->IsError());
+	static int bufferIdx = 0;
+	const int numBuffers = 2;
+	ITexture *pVM_Buffer = GetMVBuffer(bufferIdx);
+	bufferIdx = (bufferIdx + 1) % numBuffers;
 
-	pRenderContext->CopyRenderTargetToTextureEx(pMv, renderTargetId, &DestRect, NULL);
-	pRenderContext->CopyRenderTargetToTextureEx(pMv_Im2, renderTargetId, &DestRect, NULL);
+	pRenderContext->CopyRenderTargetToTextureEx(pVM_MV, renderTargetId, &DestRect, NULL);
+	pRenderContext->CopyRenderTargetToTextureEx(pVM_MV_IM, renderTargetId, &DestRect, NULL);
+	pRenderContext->CopyRenderTargetToTextureEx(pVM_Buffer, renderTargetId, &DestRect, NULL);
 	
 	if (mat_neo_mv_1.GetBool())
 	{
-		static bool bCopyThisTime = true;
-		if (bCopyThisTime)
-		{
-			pRenderContext->CopyRenderTargetToTextureEx(pMv_Im, renderTargetId, &DestRect, NULL);
-		}
-		else
-		{
-			pRenderContext->CopyRenderTargetToTextureEx(pMv_Im2, renderTargetId, &DestRect, NULL);
-		}
-		bCopyThisTime = !bCopyThisTime;
-
 		IMaterial *pMVMat_1 = materials->FindMaterial("dev/neo_motionvision_pass1", TEXTURE_GROUP_OTHER, true);
 		if (!pMVMat_1 || pMVMat_1->IsErrorMaterial())
 		{
@@ -2402,7 +2392,7 @@ static inline void DoMotionVision(const int x, const int y, const int w, const i
 			return;
 		}
 
-		pRenderContext->CopyRenderTargetToTextureEx(pMv, renderTargetId, &DestRect, NULL);
+		pRenderContext->CopyRenderTargetToTextureEx(pVM_MV, renderTargetId, &DestRect, NULL);
 
 		pRenderContext->DrawScreenSpaceRectangle(
 			pMVMat_2,
