@@ -335,8 +335,8 @@ void CViewRender::Init( void )
 	materials->GetBackBufferDimensions(iW, iH);
 #ifdef DEBUG
 	// Make sure we actually got values. This should never fail.
-	Assert(iW != iDimUninitialized);
-	Assert(iH != iDimUninitialized);
+	Assert(iW != iDimUninitialized && iW > 0);
+	Assert(iH != iDimUninitialized && iH > 0);
 #endif
 
 	materials->BeginRenderTargetAllocation();
@@ -348,11 +348,10 @@ void CViewRender::Init( void )
 			materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED, flags, 0);
 
 #ifdef DEBUG
-	ITexture *pSSAO_Im_Tex =
+	ITexture *pSSAO_ImTex =
 #endif
-		materials->CreateNamedRenderTargetTextureEx("_rt_SSAO_Intermediate", iW, iH,
-			RT_SIZE_NO_CHANGE, materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED,
-			flags, 0);
+		materials->CreateNamedRenderTargetTextureEx("_rt_SSAO_Intermediate", iW, iH, RT_SIZE_NO_CHANGE,
+			materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED, flags, 0);
 
 #ifdef DEBUG
 	ITexture *pNVTex =
@@ -360,13 +359,37 @@ void CViewRender::Init( void )
 		materials->CreateNamedRenderTargetTextureEx("_rt_NightVision", iW, iH, RT_SIZE_NO_CHANGE,
 			materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED, flags, 0);
 
-	materials->EndRenderTargetAllocation();
+#ifdef DEBUG
+	ITexture *pMVTex =
+#endif
+		materials->CreateNamedRenderTargetTextureEx("_rt_MotionVision", iW, iH, RT_SIZE_DEFAULT,
+			materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED, flags, 0);
+
+#ifdef DEBUG
+	ITexture *pMvImTex =
+#endif
+		materials->CreateNamedRenderTargetTextureEx("_rt_MotionVision_Intermediate", iW, iH,
+		RT_SIZE_DEFAULT, materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED,
+		flags, 0);
+
+#ifdef DEBUG
+	ITexture *pMvIm2Tex =
+#endif
+		materials->CreateNamedRenderTargetTextureEx("_rt_MotionVision_Intermediate2", iW, iH,
+			RT_SIZE_DEFAULT, materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED,
+			flags, 0);
 
 #ifdef DEBUG
 	Assert(pSSAOTex != NULL && !pSSAOTex->IsError());
-	Assert(pSSAO_Im_Tex != NULL && !pSSAO_Im_Tex->IsError());
+	Assert(pSSAO_ImTex != NULL && !pSSAO_ImTex->IsError());
 	Assert(pNVTex != NULL && !pNVTex->IsError());
+	Assert(pMVTex != NULL && !pMVTex->IsError());
+	Assert(pMvImTex != NULL && !pMvImTex->IsError());
+	Assert(pMvIm2Tex != NULL && !pMvIm2Tex->IsError());
 #endif
+
+	materials->EndRenderTargetAllocation();
+
 #endif
 }
 

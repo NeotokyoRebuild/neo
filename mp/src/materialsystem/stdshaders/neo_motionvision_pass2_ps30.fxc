@@ -1,0 +1,21 @@
+#include "common_ps_fxc.h"
+
+sampler MotionEffect			: register(s0);
+sampler Original				: register(s1);
+
+struct PS_INPUT
+{
+	HALF2 vTexCoord	: TEXCOORD0;
+};
+
+float4 main( const PS_INPUT i ) : COLOR
+{
+	const float4 mvTex = tex2D(MotionEffect, i.vTexCoord);
+	const float4 imTex = tex2D(Original, i.vTexCoord);
+		
+	return float4(
+		min((imTex.r + mvTex.r), 1),
+		min((imTex.r + mvTex.g), 1),
+		min((imTex.r + mvTex.b), 1),
+		imTex.a);
+}

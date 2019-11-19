@@ -210,15 +210,66 @@ ITexture *GetSSAOIntermediate(void)
 	if (!s_pSSAO_IM)
 	{
 		s_pSSAO_IM.Init(materials->FindTexture("_rt_SSAO_Intermediate", TEXTURE_GROUP_RENDER_TARGET));
-		Assert(!IsErrorTexture(s_pSSAO_IM));
+		Assert(s_pSSAO_IM && !s_pSSAO_IM->IsError());
 		AddReleaseFunc();
 	}
 	else
 	{
-		Assert(!IsErrorTexture(s_pSSAO_IM));
+		Assert(!s_pSSAO_IM->IsError());
 	}
 
 	return s_pSSAO_IM;
+}
+
+static CTextureReference s_pMV;
+ITexture *GetMV(void)
+{
+	if (!s_pMV)
+	{
+		s_pMV.Init(materials->FindTexture("_rt_MotionVision", TEXTURE_GROUP_RENDER_TARGET));
+		Assert(!IsErrorTexture(s_pMV));
+		AddReleaseFunc();
+	}
+	else
+	{
+		Assert(!IsErrorTexture(s_pMV));
+	}
+
+	return s_pMV;
+}
+
+static CTextureReference s_pMV_IM;
+ITexture *GetMVIntermediate(void)
+{
+	if (!s_pMV_IM)
+	{
+		s_pMV_IM.Init(materials->FindTexture("_rt_MotionVision_Intermediate", TEXTURE_GROUP_RENDER_TARGET));
+		Assert(!IsErrorTexture(s_pMV_IM));
+		AddReleaseFunc();
+	}
+	else
+	{
+		Assert(!IsErrorTexture(s_pMV_IM));
+	}
+
+	return s_pMV_IM;
+}
+
+static CTextureReference s_pMV_IM2;
+ITexture *GetMVIntermediate2(void)
+{
+	if (!s_pMV_IM2)
+	{
+		s_pMV_IM2.Init(materials->FindTexture("_rt_MotionVision_Intermediate2", TEXTURE_GROUP_RENDER_TARGET));
+		Assert(!IsErrorTexture(s_pMV_IM2));
+		AddReleaseFunc();
+	}
+	else
+	{
+		Assert(!IsErrorTexture(s_pMV_IM2));
+	}
+
+	return s_pMV_IM2;
 }
 #endif
 
@@ -294,5 +345,8 @@ void ReleaseRenderTargets( void )
 
 #ifdef NEO
 	s_pSSAO.Shutdown();
+	s_pSSAO_IM.Shutdown();
+	s_pMV.Shutdown();
+	s_pMV_IM.Shutdown();
 #endif
 }

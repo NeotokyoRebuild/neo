@@ -1,0 +1,24 @@
+#include "common_ps_fxc.h"
+
+sampler FrameBuffer				: register(s0);
+sampler Intermediate			: register(s1);
+
+const float	g_MV_Sensitivity	: register(c0); // How fast movement gets picked up
+
+struct PS_INPUT
+{
+	float2 texCoord	: TEXCOORD0;
+};
+
+float4 main( const PS_INPUT i ) : COLOR
+{
+	const float4 mvColor = tex2D(Intermediate, i.texCoord);
+	const float4 fbColor = tex2D(FrameBuffer, i.texCoord);
+	
+	if (abs(mvColor.r - fbColor.r) > g_MV_Sensitivity)
+	{
+		return float4(0.5f, 0.25f, 0.033f, 1);
+	}
+	
+	return float4(0, 0, 0, 1);
+}

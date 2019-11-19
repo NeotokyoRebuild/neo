@@ -16,6 +16,8 @@ $Project "Shaders ($GAMENAME)"
 		$File	"Neo_SSAO_Shader.cpp"
 		$File	"Neo_SSAO_Combine_Shader.cpp"
 		$File	"Neo_GaussianBlur_Shader.cpp"
+		$File	"Neo_MotionVision_Shader_Pass1.cpp"
+		$File	"Neo_MotionVision_Shader_Pass2.cpp"
 		$File	"Neo_NightVision_Shader.cpp"
 	}
 }

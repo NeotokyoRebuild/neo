@@ -18,5 +18,11 @@ neo_ssao_combine_vs30.fxc
 neo_gaussianblur_ps30.fxc
 neo_gaussianblur_vs30.fxc
 
+neo_motionvision_pass1_ps30.fxc
+neo_motionvision_pass1_vs30.fxc
+
+neo_motionvision_pass2_ps30.fxc
+neo_motionvision_pass2_vs30.fxc
+
 neo_nightvision_ps30.fxc
 neo_nightvision_vs30.fxc

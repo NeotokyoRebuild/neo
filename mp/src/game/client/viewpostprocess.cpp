@@ -88,7 +88,8 @@ ConVar mat_fullbright( "mat_fullbright", "0", FCVAR_CHEAT );
 
 #ifdef NEO
 ConVar mat_neo_ssao_enable("mat_neo_ssao_enable", "0", FCVAR_USERINFO, "Whether to use SSAO.", true, 0.0f, true, 1.0f);
-ConVar mat_neo_nv_enable("mat_neo_nv_enable", "0", FCVAR_CHEAT, "", true, 0.0f, true, 1.0f);
+//ConVar mat_neo_nv_enable("mat_neo_nv_enable", "0", FCVAR_CHEAT, "", true, 0.0f, true, 1.0f);
+ConVar mat_neo_mv_enable("mat_neo_mv_enable", "0", FCVAR_CHEAT, "", true, 0.0f, true, 1.0f);
 #endif
 
 extern ConVar localplayer_visionflags;
@@ -2235,14 +2236,14 @@ static inline void DoSSAO(const int x, const int y, const int w, const int h)
 	const int nSrcHeight = pSrc->GetActualHeight();
 
 	ITexture *pSSAOTex = GetSSAO();
-	ITexture *pSSAO_IM_Tex = GetSSAOIntermediate();
+	ITexture *pSSAO_ImTex = GetSSAOIntermediate();
 
 	Rect_t DestRect{ 0, 0, nSrcWidth, nSrcHeight };
 
 	const int renderTargetId = 0;
 
 	pRenderContext->CopyRenderTargetToTextureEx(pSSAOTex, renderTargetId, &DestRect, NULL);
-	pRenderContext->CopyRenderTargetToTextureEx(pSSAO_IM_Tex, renderTargetId, &DestRect, NULL);
+	pRenderContext->CopyRenderTargetToTextureEx(pSSAO_ImTex, renderTargetId, &DestRect, NULL);
 
 	IMaterial *pSSAOCalcMat = materials->FindMaterial("dev/ssao", TEXTURE_GROUP_OTHER, true);
 
@@ -2252,8 +2253,6 @@ static inline void DoSSAO(const int x, const int y, const int w, const int h)
 		return;
 	}
 
-	// ssao in Crossroads consist of 3 separate passes:
-	// 1. ssao calculation (outputs white texture with black shadows)
 	pRenderContext->DrawScreenSpaceRectangle(
 		pSSAOCalcMat,
 		0, 0, w, h,
@@ -2339,6 +2338,78 @@ static inline void DoNightVision(const int x, const int y, const int w, const in
 		0, 0, w, h,
 		0, 0, nSrcWidth - 1, nSrcHeight - 1,
 		nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
+}
+
+ConVar mat_neo_mv_1("mat_neo_mv_1", "1");
+ConVar mat_neo_mv_2("mat_neo_mv_2", "1");
+
+static inline void DoMotionVision(const int x, const int y, const int w, const int h)
+{
+	CMatRenderContextPtr pRenderContext(materials);
+
+	ITexture *pSrc = materials->FindTexture("_rt_FullFrameFB", TEXTURE_GROUP_RENDER_TARGET);
+	const int nSrcWidth = pSrc->GetActualWidth();
+	const int nSrcHeight = pSrc->GetActualHeight();
+
+	Rect_t DestRect{ 0, 0, nSrcWidth, nSrcHeight };
+
+	const int renderTargetId = 0;
+
+	ITexture *pMv = GetMV();
+	ITexture *pMv_Im = GetMVIntermediate();
+	ITexture *pMv_Im2 = GetMVIntermediate2();
+
+	Assert(pMv && !pMv->IsError());
+	Assert(pMv_Im && !pMv_Im->IsError());
+	Assert(pMv_Im2 && !pMv_Im2->IsError());
+
+	pRenderContext->CopyRenderTargetToTextureEx(pMv, renderTargetId, &DestRect, NULL);
+	pRenderContext->CopyRenderTargetToTextureEx(pMv_Im2, renderTargetId, &DestRect, NULL);
+	
+	if (mat_neo_mv_1.GetBool())
+	{
+		static bool bCopyThisTime = true;
+		if (bCopyThisTime)
+		{
+			pRenderContext->CopyRenderTargetToTextureEx(pMv_Im, renderTargetId, &DestRect, NULL);
+		}
+		else
+		{
+			pRenderContext->CopyRenderTargetToTextureEx(pMv_Im2, renderTargetId, &DestRect, NULL);
+		}
+		bCopyThisTime = !bCopyThisTime;
+
+		IMaterial *pMVMat_1 = materials->FindMaterial("dev/neo_motionvision_pass1", TEXTURE_GROUP_OTHER, true);
+		if (!pMVMat_1 || pMVMat_1->IsErrorMaterial())
+		{
+			Assert(false);
+			return;
+		}
+
+		pRenderContext->DrawScreenSpaceRectangle(
+			pMVMat_1,
+			0, 0, w, h,
+			0, 0, nSrcWidth - 1, nSrcHeight - 1,
+			nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
+	}
+	
+	if (mat_neo_mv_2.GetBool())
+	{
+		IMaterial *pMVMat_2 = materials->FindMaterial("dev/neo_motionvision_pass2", TEXTURE_GROUP_OTHER, true);
+		if (!pMVMat_2 || pMVMat_2->IsErrorMaterial())
+		{
+			Assert(false);
+			return;
+		}
+
+		pRenderContext->CopyRenderTargetToTextureEx(pMv, renderTargetId, &DestRect, NULL);
+
+		pRenderContext->DrawScreenSpaceRectangle(
+			pMVMat_2,
+			0, 0, w, h,
+			0, 0, nSrcWidth - 1, nSrcHeight - 1,
+			nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
+	}
 }
 #endif
 
@@ -2767,9 +2838,14 @@ void DoEnginePostProcessing( int x, int y, int w, int h, bool bFlashlightIsOn, b
 		DoSSAO(x, y, w, h);
 	}
 
-	if (mat_neo_nv_enable.GetBool())
+	/*if (mat_neo_nv_enable.GetBool())
 	{
 		DoNightVision(x, y, w, h);
+	}*/
+
+	if (mat_neo_mv_enable.GetBool())
+	{
+		DoMotionVision(x, y, w, h);
 	}
 #endif
 }

@@ -1,32 +1,32 @@
 #include "BaseVSShader.h"
 
-#include "neo_ssao_combine_vs30.inc"
-#include "neo_ssao_combine_ps30.inc"
+#include "neo_motionvision_pass2_vs30.inc"
+#include "neo_motionvision_pass2_ps30.inc"
 
 // memdbgon must be the last include file in a .cpp file!!!
 //#include "tier0/memdbgon.h"
 
-BEGIN_SHADER(Neo_SSAO_Combine, "Help for my shader.")
+BEGIN_SHADER_FLAGS(Neo_MotionVision_Pass2, "Help for my shader.", SHADER_NOT_EDITABLE)
 
 BEGIN_SHADER_PARAMS
-	SHADER_PARAM(SSAOTEXTURE, SHADER_PARAM_TYPE_TEXTURE, "_rt_SSAO", "")
-	SHADER_PARAM(INTERMEDIATE, SHADER_PARAM_TYPE_TEXTURE, "_rt_SSAO_Intermediate", "")
+SHADER_PARAM(MOTIONEFFECT, SHADER_PARAM_TYPE_TEXTURE, "_rt_MotionVision", "")
+SHADER_PARAM(ORIGINAL, SHADER_PARAM_TYPE_TEXTURE, "_rt_MotionVision_Intermediate2", "")
 END_SHADER_PARAMS
 
 SHADER_INIT
 {
-	if (params[SSAOTEXTURE]->IsDefined())
+	if (params[MOTIONEFFECT]->IsDefined())
 	{
-		LoadTexture(SSAOTEXTURE);
+		LoadTexture(MOTIONEFFECT);
 	}
 	else
 	{
 		Assert(false);
 	}
 
-	if (params[INTERMEDIATE]->IsDefined())
+	if (params[ORIGINAL]->IsDefined())
 	{
-		LoadTexture(INTERMEDIATE);
+		LoadTexture(ORIGINAL);
 	}
 	else
 	{
@@ -75,11 +75,11 @@ SHADER_DRAW
 
 		//SetInitialShadowState();
 
-		DECLARE_STATIC_VERTEX_SHADER(neo_ssao_combine_vs30);
-		SET_STATIC_VERTEX_SHADER(neo_ssao_combine_vs30);
+		DECLARE_STATIC_VERTEX_SHADER(neo_motionvision_pass2_vs30);
+		SET_STATIC_VERTEX_SHADER(neo_motionvision_pass2_vs30);
 
-		DECLARE_STATIC_PIXEL_SHADER(neo_ssao_combine_ps30);
-		SET_STATIC_PIXEL_SHADER(neo_ssao_combine_ps30);
+		DECLARE_STATIC_PIXEL_SHADER(neo_motionvision_pass2_ps30);
+		SET_STATIC_PIXEL_SHADER(neo_motionvision_pass2_ps30);
 
 		// On DX9, get the gamma read and write correct
 		if (g_pHardwareConfig->SupportsSRGB())
@@ -94,20 +94,20 @@ SHADER_DRAW
 		}
 	}
 
-	DYNAMIC_STATE
+		DYNAMIC_STATE
 	{
 		//pShaderAPI->SetDefaultState();
 
-		BindTexture(SHADER_SAMPLER0, SSAOTEXTURE);
-		BindTexture(SHADER_SAMPLER1, INTERMEDIATE);
+		BindTexture(SHADER_SAMPLER0, MOTIONEFFECT);
+		BindTexture(SHADER_SAMPLER1, ORIGINAL);
 
 		//pShaderAPI->BindStandardTexture(SHADER_SAMPLER0, TEXTURE_FRAME_BUFFER_FULL_TEXTURE_0);
 
-		DECLARE_DYNAMIC_VERTEX_SHADER(neo_ssao_combine_vs30);
-		SET_DYNAMIC_VERTEX_SHADER(neo_ssao_combine_vs30);
+		DECLARE_DYNAMIC_VERTEX_SHADER(neo_motionvision_pass2_vs30);
+		SET_DYNAMIC_VERTEX_SHADER(neo_motionvision_pass2_vs30);
 
-		DECLARE_DYNAMIC_PIXEL_SHADER(neo_ssao_combine_ps30);
-		SET_DYNAMIC_PIXEL_SHADER(neo_ssao_combine_ps30);
+		DECLARE_DYNAMIC_PIXEL_SHADER(neo_motionvision_pass2_ps30);
+		SET_DYNAMIC_PIXEL_SHADER(neo_motionvision_pass2_ps30);
 	}
 	Draw();
 }

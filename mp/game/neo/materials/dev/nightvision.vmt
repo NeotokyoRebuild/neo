@@ -1,5 +1,5 @@
 "Neo_NightVision"
 {
-	//"$basetexture" "_rt_NightVision"
-	//"$basetexture" "_rt_FullFrameFB"
+	"$motionvision" "_rt_MotionVision"
+	"$intermediate" "_rt_MotionVision_Intermediate"
 }
