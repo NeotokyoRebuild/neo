@@ -1,10 +1,10 @@
 #include "BaseVSShader.h"
 
-#include "neo_motionvision_pass1_vs30.inc"
+#include "neo_passthrough_vs30.inc"
 #include "neo_motionvision_pass1_ps30.inc"
 
 // memdbgon must be the last include file in a .cpp file!!!
-//#include "tier0/memdbgon.h"
+#include "tier0/memdbgon.h"
 
 ConVar mat_neo_mv_sensitivity("mat_neo_mv_sensitivity", "0.04", FCVAR_CHEAT, "How fast movement gets picked up by motion vision.", true, 0.0f, true, 1.0f);
 ConVar mat_neo_mv_color_r("mat_neo_mv_color_r", "0.1", FCVAR_CHEAT, "Normalized RBGA Red color.", true, 0.0f, true, 1.0f);
@@ -83,8 +83,8 @@ SHADER_DRAW
 
 		//SetInitialShadowState();
 
-		DECLARE_STATIC_VERTEX_SHADER(neo_motionvision_pass1_vs30);
-		SET_STATIC_VERTEX_SHADER(neo_motionvision_pass1_vs30);
+		DECLARE_STATIC_VERTEX_SHADER(neo_passthrough_vs30);
+		SET_STATIC_VERTEX_SHADER(neo_passthrough_vs30);
 
 		DECLARE_STATIC_PIXEL_SHADER(neo_motionvision_pass1_ps30);
 		SET_STATIC_PIXEL_SHADER(neo_motionvision_pass1_ps30);
@@ -126,8 +126,8 @@ SHADER_DRAW
 		pShaderAPI->SetPixelShaderConstant(4, &b);
 		pShaderAPI->SetPixelShaderConstant(5, &a);
 
-		DECLARE_DYNAMIC_VERTEX_SHADER(neo_motionvision_pass1_vs30);
-		SET_DYNAMIC_VERTEX_SHADER(neo_motionvision_pass1_vs30);
+		DECLARE_DYNAMIC_VERTEX_SHADER(neo_passthrough_vs30);
+		SET_DYNAMIC_VERTEX_SHADER(neo_passthrough_vs30);
 
 		DECLARE_DYNAMIC_PIXEL_SHADER(neo_motionvision_pass1_ps30);
 		SET_DYNAMIC_PIXEL_SHADER(neo_motionvision_pass1_ps30);

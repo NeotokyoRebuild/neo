@@ -1,27 +1,13 @@
 #include "BaseVSShader.h"
 
-//==========================================
-// Set your shader name here
-#define THIS_SHADER_NAME neo_gaussianblur
-//==========================================
-// Set your DX shader model ver number here
-#define THIS_SHADER_MODEL_NUM 30
-//==========================================
-
-// A bunch of macro boilerplate to avoid repeating or mixing up shader names.
-#define VS_MODEL_NUM PPCAT(_vs, THIS_SHADER_MODEL_NUM)
-#define PS_MODEL_NUM PPCAT(_ps, THIS_SHADER_MODEL_NUM)
-#define THIS_SHADER_VS PPCAT(THIS_SHADER_NAME, VS_MODEL_NUM)
-#define THIS_SHADER_PS PPCAT(THIS_SHADER_NAME, PS_MODEL_NUM)
-
 // Compiled shader includes
+#include "neo_passthrough_vs30.inc"
 #include "neo_gaussianblur_ps30.inc"
-#include "neo_gaussianblur_vs30.inc"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-BEGIN_VS_SHADER_FLAGS(THIS_SHADER_NAME, "Help for "STRINGIZE(THIS_SHADER_NAME), SHADER_NOT_EDITABLE)
+BEGIN_VS_SHADER_FLAGS(Neo_GaussianBlur, "Help for Neo_GaussianBlur", SHADER_NOT_EDITABLE)
 BEGIN_SHADER_PARAMS
 SHADER_PARAM(BASETEXTURE, SHADER_PARAM_TYPE_TEXTURE, "_rt_FullFrameFB", "Render target")
 END_SHADER_PARAMS
@@ -70,11 +56,11 @@ SHADER_DRAW
 		pShaderShadow->EnableSRGBWrite(bForceSRGBReadAndWrite);
 #endif
 
-		DECLARE_STATIC_VERTEX_SHADER_X(THIS_SHADER_VS);
-		SET_STATIC_VERTEX_SHADER_X(THIS_SHADER_VS);
+		DECLARE_STATIC_VERTEX_SHADER_X(neo_passthrough_vs30);
+		SET_STATIC_VERTEX_SHADER_X(neo_passthrough_vs30);
 
-		DECLARE_STATIC_PIXEL_SHADER_X(THIS_SHADER_PS);
-		SET_STATIC_PIXEL_SHADER_X(THIS_SHADER_PS);
+		DECLARE_STATIC_PIXEL_SHADER_X(neo_gaussianblur_ps30);
+		SET_STATIC_PIXEL_SHADER_X(neo_gaussianblur_ps30);
 	}
 
 	DYNAMIC_STATE
@@ -90,11 +76,11 @@ SHADER_DRAW
 
 		pShaderAPI->SetPixelShaderConstant(0, fTexelSize);
 
-		DECLARE_DYNAMIC_VERTEX_SHADER_X(THIS_SHADER_VS);
-		SET_DYNAMIC_VERTEX_SHADER_X(THIS_SHADER_VS);
+		DECLARE_DYNAMIC_VERTEX_SHADER_X(neo_passthrough_vs30);
+		SET_DYNAMIC_VERTEX_SHADER_X(neo_passthrough_vs30);
 
-		DECLARE_DYNAMIC_PIXEL_SHADER_X(THIS_SHADER_PS);
-		SET_DYNAMIC_PIXEL_SHADER_X(THIS_SHADER_PS);
+		DECLARE_DYNAMIC_PIXEL_SHADER_X(neo_gaussianblur_ps30);
+		SET_DYNAMIC_PIXEL_SHADER_X(neo_gaussianblur_ps30);
 	}
 	Draw();
 }

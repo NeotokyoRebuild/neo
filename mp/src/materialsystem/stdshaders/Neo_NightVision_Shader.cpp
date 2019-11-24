@@ -1,6 +1,6 @@
 #include "BaseVSShader.h"
 
-#include "neo_nightvision_vs30.inc"
+#include "neo_passthrough_vs30.inc"
 #include "neo_nightvision_ps30.inc"
 
 BEGIN_SHADER(Neo_NightVision, "Help for my shader.")
@@ -37,8 +37,8 @@ SHADER_DRAW
 
 		pShaderShadow->EnableDepthWrites(false);
 
-		DECLARE_STATIC_VERTEX_SHADER(neo_nightvision_vs30);
-		SET_STATIC_VERTEX_SHADER(neo_nightvision_vs30);
+		DECLARE_STATIC_VERTEX_SHADER(neo_passthrough_vs30);
+		SET_STATIC_VERTEX_SHADER(neo_passthrough_vs30);
 
 		DECLARE_STATIC_PIXEL_SHADER(neo_nightvision_ps30);
 		SET_STATIC_PIXEL_SHADER(neo_nightvision_ps30);
@@ -46,8 +46,8 @@ SHADER_DRAW
 
 	DYNAMIC_STATE
 	{
-		DECLARE_DYNAMIC_VERTEX_SHADER(neo_nightvision_vs30);
-		SET_DYNAMIC_VERTEX_SHADER(neo_nightvision_vs30);
+		DECLARE_DYNAMIC_VERTEX_SHADER(neo_passthrough_vs30);
+		SET_DYNAMIC_VERTEX_SHADER(neo_passthrough_vs30);
 
 		DECLARE_DYNAMIC_PIXEL_SHADER(neo_nightvision_ps30);
 		SET_DYNAMIC_PIXEL_SHADER(neo_nightvision_ps30);

@@ -1,8 +1,8 @@
 #include "shaderlib/cshader.h"
-class neo_motionvision_ps30_Static_Index
+class neo_passthrough_vs30_Static_Index
 {
 public:
-	neo_motionvision_ps30_Static_Index( )
+	neo_passthrough_vs30_Static_Index( )
 	{
 	}
 	int GetIndex()
@@ -14,11 +14,11 @@ public:
 		return 0;
 	}
 };
-#define shaderStaticTest_neo_motionvision_ps30 0
-class neo_motionvision_ps30_Dynamic_Index
+#define shaderStaticTest_neo_passthrough_vs30 0
+class neo_passthrough_vs30_Dynamic_Index
 {
 public:
-	neo_motionvision_ps30_Dynamic_Index()
+	neo_passthrough_vs30_Dynamic_Index()
 	{
 	}
 	int GetIndex()
@@ -30,4 +30,4 @@ public:
 		return 0;
 	}
 };
-#define shaderDynamicTest_neo_motionvision_ps30 0
+#define shaderDynamicTest_neo_passthrough_vs30 0

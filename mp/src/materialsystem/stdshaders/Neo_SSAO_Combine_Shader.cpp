@@ -1,6 +1,6 @@
 #include "BaseVSShader.h"
 
-#include "neo_ssao_combine_vs30.inc"
+#include "neo_passthrough_vs30.inc"
 #include "neo_ssao_combine_ps30.inc"
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -75,8 +75,8 @@ SHADER_DRAW
 
 		//SetInitialShadowState();
 
-		DECLARE_STATIC_VERTEX_SHADER(neo_ssao_combine_vs30);
-		SET_STATIC_VERTEX_SHADER(neo_ssao_combine_vs30);
+		DECLARE_STATIC_VERTEX_SHADER(neo_passthrough_vs30);
+		SET_STATIC_VERTEX_SHADER(neo_passthrough_vs30);
 
 		DECLARE_STATIC_PIXEL_SHADER(neo_ssao_combine_ps30);
 		SET_STATIC_PIXEL_SHADER(neo_ssao_combine_ps30);
@@ -103,8 +103,8 @@ SHADER_DRAW
 
 		//pShaderAPI->BindStandardTexture(SHADER_SAMPLER0, TEXTURE_FRAME_BUFFER_FULL_TEXTURE_0);
 
-		DECLARE_DYNAMIC_VERTEX_SHADER(neo_ssao_combine_vs30);
-		SET_DYNAMIC_VERTEX_SHADER(neo_ssao_combine_vs30);
+		DECLARE_DYNAMIC_VERTEX_SHADER(neo_passthrough_vs30);
+		SET_DYNAMIC_VERTEX_SHADER(neo_passthrough_vs30);
 
 		DECLARE_DYNAMIC_PIXEL_SHADER(neo_ssao_combine_ps30);
 		SET_DYNAMIC_PIXEL_SHADER(neo_ssao_combine_ps30);
