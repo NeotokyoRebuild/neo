@@ -6,6 +6,10 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+ConVar mat_neo_mv_bw_tint_color_r("mat_neo_mv_bw_tint_color_r", "0.005", FCVAR_CHEAT, "Additional normalized Red color tint for the grayscale MV effect.", true, -1.0f, true, 1.0f);
+ConVar mat_neo_mv_bw_tint_color_g("mat_neo_mv_bw_tint_color_g", "-0.002", FCVAR_CHEAT, "Additional normalized Green color tint for the grayscale MV effect.", true, -1.0f, true, 1.0f);
+ConVar mat_neo_mv_bw_tint_color_b("mat_neo_mv_bw_tint_color_b", "-0.003", FCVAR_CHEAT, "Additional normalized Blue color tint for the grayscale MV effect.", true, -1.0f, true, 1.0f);
+
 BEGIN_SHADER_FLAGS(Neo_MotionVision_Pass2, "Help for my shader.", SHADER_NOT_EDITABLE)
 
 BEGIN_SHADER_PARAMS
@@ -102,6 +106,14 @@ SHADER_DRAW
 		BindTexture(SHADER_SAMPLER1, ORIGINAL);
 
 		//pShaderAPI->BindStandardTexture(SHADER_SAMPLER0, TEXTURE_FRAME_BUFFER_FULL_TEXTURE_0);
+
+		const float r = mat_neo_mv_bw_tint_color_r.GetFloat();
+		const float g = mat_neo_mv_bw_tint_color_g.GetFloat();
+		const float b = mat_neo_mv_bw_tint_color_b.GetFloat();
+
+		pShaderAPI->SetPixelShaderConstant(0, &r);
+		pShaderAPI->SetPixelShaderConstant(1, &g);
+		pShaderAPI->SetPixelShaderConstant(2, &b);
 
 		DECLARE_DYNAMIC_VERTEX_SHADER(neo_passthrough_vs30);
 		SET_DYNAMIC_VERTEX_SHADER(neo_passthrough_vs30);

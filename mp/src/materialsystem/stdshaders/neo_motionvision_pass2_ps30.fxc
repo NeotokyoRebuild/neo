@@ -3,6 +3,10 @@
 sampler MotionEffect			: register(s0);
 sampler Original				: register(s1);
 
+const float g_TintColor_R		: register(c0);
+const float g_TintColor_G		: register(c1);
+const float g_TintColor_B		: register(c2);
+
 struct PS_INPUT
 {
 	HALF2 vTexCoord	: TEXCOORD0;
@@ -12,10 +16,12 @@ float4 main( const PS_INPUT i ) : COLOR
 {
 	const float4 mvTex = tex2D(MotionEffect, i.vTexCoord);
 	const float4 imTex = tex2D(Original, i.vTexCoord);
-		
+	
+	const float bwTint = (imTex.r + imTex.g + imTex.b) / 3.0f;
+
 	return float4(
-		min((imTex.r + mvTex.r), 1),
-		min((imTex.g + mvTex.g), 1),
-		min((imTex.b + mvTex.b), 1),
+		min(bwTint + g_TintColor_R + mvTex.r, 1),
+		min(bwTint + g_TintColor_G + mvTex.g, 1),
+		min(bwTint + g_TintColor_B + mvTex.b, 1),
 		imTex.a);
 }
