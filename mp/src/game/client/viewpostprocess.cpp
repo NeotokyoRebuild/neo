@@ -90,6 +90,7 @@ ConVar mat_fullbright( "mat_fullbright", "0", FCVAR_CHEAT );
 ConVar mat_neo_ssao_enable("mat_neo_ssao_enable", "0", FCVAR_USERINFO, "Whether to use SSAO.", true, 0.0f, true, 1.0f);
 //ConVar mat_neo_nv_enable("mat_neo_nv_enable", "0", FCVAR_CHEAT, "", true, 0.0f, true, 1.0f);
 ConVar mat_neo_mv_enable("mat_neo_mv_enable", "0", FCVAR_CHEAT, "", true, 0.0f, true, 1.0f);
+ConVar mat_neo_mv_noise_enable("mat_neo_noise_enable", "1", FCVAR_CHEAT, "", true, 0.0f, true, 1.0f);
 #endif
 
 extern ConVar localplayer_visionflags;
@@ -2396,6 +2397,24 @@ static inline void DoMotionVision(const int x, const int y, const int w, const i
 
 		pRenderContext->DrawScreenSpaceRectangle(
 			pMVMat_2,
+			0, 0, w, h,
+			0, 0, nSrcWidth - 1, nSrcHeight - 1,
+			nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
+	}
+
+	if (mat_neo_mv_noise_enable.GetBool())
+	{
+		pRenderContext->CopyRenderTargetToTextureEx(pVM_MV, renderTargetId, &DestRect, NULL);
+
+		IMaterial *pNoiseMat = materials->FindMaterial("dev/neo_motionvision_noise", TEXTURE_GROUP_OTHER, true);
+		if (!pNoiseMat || pNoiseMat->IsErrorMaterial())
+		{
+			Assert(false);
+			return;
+		}
+
+		pRenderContext->DrawScreenSpaceRectangle(
+			pNoiseMat,
 			0, 0, w, h,
 			0, 0, nSrcWidth - 1, nSrcHeight - 1,
 			nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());

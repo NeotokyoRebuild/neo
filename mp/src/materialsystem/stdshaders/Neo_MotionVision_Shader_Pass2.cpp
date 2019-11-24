@@ -6,7 +6,7 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-ConVar mat_neo_mv_bw_tint_color_r("mat_neo_mv_bw_tint_color_r", "0.005", FCVAR_CHEAT, "Additional normalized Red color tint for the grayscale MV effect.", true, -1.0f, true, 1.0f);
+ConVar mat_neo_mv_bw_tint_color_r("mat_neo_mv_bw_tint_color_r", "0.002", FCVAR_CHEAT, "Additional normalized Red color tint for the grayscale MV effect.", true, -1.0f, true, 1.0f);
 ConVar mat_neo_mv_bw_tint_color_g("mat_neo_mv_bw_tint_color_g", "-0.002", FCVAR_CHEAT, "Additional normalized Green color tint for the grayscale MV effect.", true, -1.0f, true, 1.0f);
 ConVar mat_neo_mv_bw_tint_color_b("mat_neo_mv_bw_tint_color_b", "-0.003", FCVAR_CHEAT, "Additional normalized Blue color tint for the grayscale MV effect.", true, -1.0f, true, 1.0f);
 

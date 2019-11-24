@@ -9,6 +9,7 @@ const float g_MvColor_R			: register(c2); // RGBA Red
 const float g_MvColor_G			: register(c3); // RGBA Green
 const float g_MvColor_B			: register(c4); // RGBA Blue
 const float g_MvColor_A			: register(c5); // RBGA Alpha
+const float g_MaxSpeedMod		: register(c6);
 
 struct PS_INPUT
 {
@@ -24,8 +25,8 @@ float4 main( const PS_INPUT i ) : COLOR
 		(abs(mvColor.g - fbColor.g) > g_MvSensitivity) ||
 		(abs(mvColor.b - fbColor.b) > g_MvSensitivity))
 	{
-		const float4 color = float4(g_MvColor_R, g_MvColor_G, g_MvColor_B, g_MvColor_A);
-		return color * (1 - min(g_MvSpeed, 0.8f));
+		const float4 color = float4(g_MvColor_R, g_MvColor_G, g_MvColor_B, 1) * g_MvColor_A;
+		return color * (1 - min(g_MvSpeed, g_MaxSpeedMod));
 	}
 	
 	return float4(0, 0, 0, 1);

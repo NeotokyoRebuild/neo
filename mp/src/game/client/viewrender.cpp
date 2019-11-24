@@ -805,12 +805,13 @@ CLIENTEFFECT_REGISTER_BEGIN( PrecachePostProcessingEffects )
 #endif
 
 #ifdef NEO
-	CLIENTEFFECT_MATERIAL("dev/ssao")
-	CLIENTEFFECT_MATERIAL("dev/ssaoblur")
-	CLIENTEFFECT_MATERIAL("dev/ssao_combine")
+	CLIENTEFFECT_MATERIAL("dev/neo_motionvision_noise")
 	CLIENTEFFECT_MATERIAL("dev/neo_motionvision_pass1")
 	CLIENTEFFECT_MATERIAL("dev/neo_motionvision_pass2")
 	CLIENTEFFECT_MATERIAL("dev/nightvision")
+	CLIENTEFFECT_MATERIAL("dev/ssao")
+	CLIENTEFFECT_MATERIAL("dev/ssaoblur")
+	CLIENTEFFECT_MATERIAL("dev/ssao_combine")
 #endif
 
 CLIENTEFFECT_REGISTER_END_CONDITIONAL( engine->GetDXSupportLevel() >= 90 )

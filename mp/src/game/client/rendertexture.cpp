@@ -257,6 +257,8 @@ ITexture *GetMVBuffer(const int index)
 		Assert(s_pMV_Buffer2 && !IsErrorTexture(s_pMV_Buffer2));
 	}
 
+	Assert(index == 0 || index == 1);
+
 	return (index == 0) ? s_pMV_Buffer1 : s_pMV_Buffer2;
 }
 
@@ -275,23 +277,6 @@ ITexture *GetMVIntermediate(void)
 	}
 
 	return s_pMV_IM;
-}
-
-static CTextureReference s_pMV_IM2;
-ITexture *GetMVIntermediate2(void)
-{
-	if (!s_pMV_IM2)
-	{
-		s_pMV_IM2.Init(materials->FindTexture("_rt_MotionVision_Intermediate2", TEXTURE_GROUP_RENDER_TARGET));
-		Assert(!IsErrorTexture(s_pMV_IM2));
-		AddReleaseFunc();
-	}
-	else
-	{
-		Assert(!IsErrorTexture(s_pMV_IM2));
-	}
-
-	return s_pMV_IM2;
 }
 #endif
 
