@@ -366,6 +366,7 @@ void CNEOModelManager::Precache( void ) const
 	PrecacheMaterial("models/player/toc.vmt");
 	PrecacheMaterial("toc_remake_pass1.vmt");
 	PrecacheMaterial("toc_remake_pass2.vmt");
+	PrecacheMaterial("toc_remake_vm.vmt");
 }
 
 static inline int GetTeamArrOffset(int iTeam)

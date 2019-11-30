@@ -37,6 +37,10 @@ public:
 		CBaseCombatWeapon* weapon);
 
 #ifdef CLIENT_DLL
+	virtual int DrawModel(int flags);
+#endif
+
+#ifdef CLIENT_DLL
 	float GetLeanInterp()
 	{
 		return GetInterpolationAmount(m_LagAnglesHistory.GetType());

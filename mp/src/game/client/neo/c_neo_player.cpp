@@ -308,14 +308,9 @@ C_NEOPredictedViewModel *C_NEO_Player::GetNEOViewModel()
 
 int C_NEO_Player::DrawModel( int flags )
 {
-	if (m_afButtonPressed & IN_THERMOPTIC)
-	{
-		m_bInThermOpticCamo = !m_bInThermOpticCamo;
-	}
-
 	if (true || m_bUnhandledTocChange)
 	{
-		if (m_bInThermOpticCamo)
+		if (IsCloaked())
 		{
 			IMaterial *pass1 = materials->FindMaterial("toc_remake_pass1", TEXTURE_GROUP_MODEL);
 			IMaterial *pass2 = materials->FindMaterial("toc_remake_pass2", TEXTURE_GROUP_MODEL);
@@ -335,13 +330,15 @@ int C_NEO_Player::DrawModel( int flags )
 			{
 				//g_pClientShadowMgr->RemoveAllShadowsFromReceiver((IClientRenderable*)this, ShadowReceiver_t::SHADOW_RECEIVER_STUDIO_MODEL);
 
+				const int extraFlags = STUDIO_RENDER | STUDIO_TRANSPARENCY | STUDIO_NOSHADOWS | STUDIO_DRAWTRANSLUCENTSUBMODELS;
+
 				modelrender->ForcedMaterialOverride(pass1);
-				BaseClass::DrawModel(flags | STUDIO_RENDER | STUDIO_TRANSPARENCY | STUDIO_NOSHADOWS);
+				BaseClass::DrawModel(flags | extraFlags);
 
 				if (pass2 && !pass2->IsErrorMaterial())
 				{
 					modelrender->ForcedMaterialOverride(pass2);
-					ret = BaseClass::DrawModel(flags | STUDIO_RENDER | STUDIO_TRANSPARENCY | STUDIO_NOSHADOWS);
+					ret = BaseClass::DrawModel(flags | extraFlags);
 				}
 
 				modelrender->ForcedMaterialOverride(NULL);
@@ -473,6 +470,11 @@ void C_NEO_Player::PlayStepSound( Vector &vecOrigin,
 void C_NEO_Player::PreThink( void )
 {
 	BaseClass::PreThink();
+
+	if (m_afButtonPressed & IN_THERMOPTIC)
+	{
+		m_bInThermOpticCamo = !m_bInThermOpticCamo;
+	}
 
 	CNEOPredictedViewModel *vm = (CNEOPredictedViewModel*)GetViewModel();
 	if (vm)

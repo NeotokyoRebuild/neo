@@ -9,13 +9,21 @@
 #include "prediction.h"
 #include "iinput.h"
 #include "engine/ivdebugoverlay.h"
+
+#include "viewrender.h"
+
 #else
 #include "neo_player.h"
 #endif
 
+#ifdef CLIENT_DLL
+#include "model_types.h"
+#endif
+
+#include "weapon_hl2mpbase.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
-#include "weapon_hl2mpbase.h"
 
 LINK_ENTITY_TO_CLASS(neo_predicted_viewmodel, CNEOPredictedViewModel);
 
@@ -230,6 +238,41 @@ extern ConVar neo_lean_yaw_peek_right_amount("neo_lean_yaw_peek_right_amount", "
 // Engine code starts to fight back at angles beyond 50, so we cap the max value there. Original NT value is 20.
 extern ConVar neo_lean_angle("neo_lean_angle", "20.0", FCVAR_REPLICATED | FCVAR_CHEAT, "Angle of a full lean.", true, 0.0, true, 50.0);
 
+#ifdef CLIENT_DLL
+int CNEOPredictedViewModel::DrawModel(int flags)
+{
+	auto pPlayer = static_cast<C_NEO_Player*>(GetOwner());
+
+	Assert(pPlayer);
+
+	if (pPlayer)
+	{
+		if (pPlayer->IsCloaked())
+		{
+			//int ret = BaseClass::DrawModel(flags);
+			int ret = 0;
+
+			IMaterial *pass = materials->FindMaterial("toc_remake_vm", TEXTURE_GROUP_VIEW_MODEL);
+			Assert(pass && !pass->IsErrorMaterial());
+
+			if (pass && !pass->IsErrorMaterial())
+			{
+				//modelrender->SuppressEngineLighting(true);
+				modelrender->ForcedMaterialOverride(pass);
+				ret = BaseClass::DrawModel(flags | STUDIO_RENDER | STUDIO_TRANSPARENCY);
+				//modelrender->SuppressEngineLighting(false);
+
+				modelrender->ForcedMaterialOverride(NULL);
+			}
+
+			return ret;
+		}
+	}
+
+	return BaseClass::DrawModel(flags);
+}
+#endif
+
 int CNEOPredictedViewModel::CalcLean(CNEO_Player *player)
 {
 #ifdef CLIENT_DLL
@@ -412,6 +455,7 @@ int CNEOPredictedViewModel::CalcLean(CNEO_Player *player)
 	// before calling this, otherwise we risk network view jitter
 	// if the user turns their view and applies lean simultaneously!
 	engine->SetViewAngles(m_angNextViewAngles);
+
 #endif
 	player->SetViewOffset(m_vecNextViewOffset);
 
