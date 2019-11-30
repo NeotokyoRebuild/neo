@@ -150,6 +150,7 @@ static	kbutton_t	in_drop;
 static	kbutton_t	in_aim;
 static	kbutton_t	in_lean_left;
 static	kbutton_t	in_lean_right;
+static	kbutton_t	in_thermoptic;
 #endif
 
 /*
@@ -510,6 +511,9 @@ void IN_LeanLeftDown( const CCommand &args ) { KeyDown( &in_lean_left, args[1] )
 
 void IN_LeanRightUp( const CCommand &args ) { KeyUp( &in_lean_right, args[1] ); }
 void IN_LeanRightDown( const CCommand &args ) { KeyDown( &in_lean_right, args[1] ); }
+
+void IN_ThermOpticUp(const CCommand &args) { KeyUp(&in_thermoptic, args[1]); }
+void IN_ThermOpticDown(const CCommand &args) { KeyDown(&in_thermoptic, args[1]); }
 #endif
 
 void IN_DuckToggle( const CCommand &args ) 
@@ -1496,6 +1500,7 @@ int CInput::GetButtonBits( int bResetState )
 	CalcButtonBits( bits, IN_AIM, s_ClearInputState, &in_aim, bResetState );
 	CalcButtonBits( bits, IN_LEAN_LEFT, s_ClearInputState, &in_lean_left, bResetState );
 	CalcButtonBits( bits, IN_LEAN_RIGHT, s_ClearInputState, &in_lean_right, bResetState );
+	CalcButtonBits(bits, IN_THERMOPTIC, s_ClearInputState, &in_thermoptic, bResetState);
 #endif
 
 	if ( KeyState(&in_ducktoggle) )
@@ -1680,6 +1685,9 @@ static ConCommand endleanleft("-leanl", IN_LeanLeftUp);
 
 static ConCommand startleanright("+leanr", IN_LeanRightDown);
 static ConCommand endleanright("-leanr", IN_LeanRightUp);
+
+static ConCommand startthermoptic("+thermoptic", IN_ThermOpticDown);
+static ConCommand endthermoptic("-thermoptic", IN_ThermOpticUp);
 #endif
 
 /*

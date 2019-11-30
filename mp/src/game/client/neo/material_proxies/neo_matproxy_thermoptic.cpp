@@ -27,6 +27,8 @@ CNEOTocMaterialProxy::~CNEOTocMaterialProxy()
 
 bool CNEOTocMaterialProxy::Init(IMaterial *pMaterial, KeyValues *pKeyValues)
 {
+	m_pMaterial = pMaterial;
+
 	char const *pResultVarName = pKeyValues->GetString("resultvar");
 
 	if (!pResultVarName)
@@ -67,7 +69,7 @@ void CNEOTocMaterialProxy::OnBind(void *pC_BaseEntity)
 
 		m_pResultVar->SetIntValue(isCloaked ? 1 : 0);
 
-		DevMsg("Camo for weapon is %s\n", isCloaked ? "enabled" : "disabled");
+		//DevMsg("Camo for weapon is %s\n", isCloaked ? "enabled" : "disabled");
 	}
 	// It wasn't a player, see if it's a weapon.
 	else
@@ -88,7 +90,7 @@ void CNEOTocMaterialProxy::OnBind(void *pC_BaseEntity)
 
 IMaterial *CNEOTocMaterialProxy::GetMaterial()
 {
-	return NULL; // TODO
+	return m_pMaterial;
 }
 
 EXPOSE_INTERFACE(CNEOTocMaterialProxy, IMaterialProxy, NEO_TOC_PROXY IMATERIAL_PROXY_INTERFACE_VERSION);

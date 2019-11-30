@@ -360,6 +360,12 @@ void CNEOModelManager::Precache( void ) const
 	CBaseEntity::PrecacheModel("models/player/nsf_gsfanims2.mdl");
 	//CBaseEntity::PrecacheModel("models/player/nsf_nsfanims2.mdl");
 	CBaseEntity::PrecacheModel("models/player/vip_anims.mdl");
+
+	PrecacheMaterial("toc.vmt");
+	PrecacheMaterial("toc2.vmt");
+	PrecacheMaterial("models/player/toc.vmt");
+	PrecacheMaterial("toc_remake_pass1.vmt");
+	PrecacheMaterial("toc_remake_pass2.vmt");
 }
 
 static inline int GetTeamArrOffset(int iTeam)

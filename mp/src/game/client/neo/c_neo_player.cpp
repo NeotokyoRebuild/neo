@@ -36,6 +36,13 @@
 #include <engine/ivdebugoverlay.h>
 #include <engine/IEngineSound.h>
 
+#include <materialsystem/imaterialsystem.h>
+#include <materialsystem/itexture.h>
+#include "rendertexture.h"
+
+
+#include "model_types.h"
+
 // Don't alias here
 #if defined( CNEO_Player )
 #undef CNEO_Player	
@@ -301,12 +308,46 @@ C_NEOPredictedViewModel *C_NEO_Player::GetNEOViewModel()
 
 int C_NEO_Player::DrawModel( int flags )
 {
-	if (m_bUnhandledTocChange)
+	if (m_afButtonPressed & IN_THERMOPTIC)
+	{
+		m_bInThermOpticCamo = !m_bInThermOpticCamo;
+	}
+
+	if (true || m_bUnhandledTocChange)
 	{
 		if (m_bInThermOpticCamo)
 		{
+			IMaterial *pass1 = materials->FindMaterial("toc_remake_pass1", TEXTURE_GROUP_MODEL);
+			IMaterial *pass2 = materials->FindMaterial("toc_remake_pass2", TEXTURE_GROUP_MODEL);
+
+			Assert(pass1 && !pass1->IsErrorMaterial());
+			Assert(pass2 && !pass2->IsErrorMaterial());
+
 			// We should enable camo here, or alternatively call it
 			// from the material proxy(?)
+
+			int ret = 0;
+			//SetRenderColorA(100);
+			//int ret = BaseClass::DrawModel(STUDIO_RENDER | STUDIO_TRANSPARENCY | STUDIO_NOSHADOWS);
+
+			//IMaterial *foo = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_MODEL);
+			if (pass1 && !pass1->IsErrorMaterial())
+			{
+				//g_pClientShadowMgr->RemoveAllShadowsFromReceiver((IClientRenderable*)this, ShadowReceiver_t::SHADOW_RECEIVER_STUDIO_MODEL);
+
+				modelrender->ForcedMaterialOverride(pass1);
+				BaseClass::DrawModel(flags | STUDIO_RENDER | STUDIO_TRANSPARENCY | STUDIO_NOSHADOWS);
+
+				if (pass2 && !pass2->IsErrorMaterial())
+				{
+					modelrender->ForcedMaterialOverride(pass2);
+					ret = BaseClass::DrawModel(flags | STUDIO_RENDER | STUDIO_TRANSPARENCY | STUDIO_NOSHADOWS);
+				}
+
+				modelrender->ForcedMaterialOverride(NULL);
+			}
+
+			return ret;
 		}
 		else
 		{
