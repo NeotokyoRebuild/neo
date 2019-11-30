@@ -7,7 +7,7 @@
 
 #include "BaseVSShader.h"
 #include "convar.h"
-#include "neo_refract_dx9_helper.h"
+#include "Neo_refract_dx9_helper.h"
 
 DEFINE_FALLBACK_SHADER( Neo_Refract, Neo_Refract_DX90 )
 
