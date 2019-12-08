@@ -12,10 +12,10 @@
 #else
 #include "neo_player.h"
 #endif
-
+#include "weapon_hl2mpbase.h"
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
-#include "weapon_hl2mpbase.h"
+
 
 LINK_ENTITY_TO_CLASS(neo_predicted_viewmodel, CNEOPredictedViewModel);
 
@@ -26,9 +26,7 @@ END_NETWORK_TABLE()
 
 CNEOPredictedViewModel::CNEOPredictedViewModel()
 {
-	m_vecNextViewOffset = vec3_origin;
-
-	m_angNextViewAngles = vec3_angle;
+	Yprevious = 0;
 }
 
 CNEOPredictedViewModel::~CNEOPredictedViewModel()
@@ -135,27 +133,40 @@ ConVar neo_lean_hullmins_offset_z("neo_lean_hullmins_offset_z", "40", FCVAR_CHEA
 ConVar neo_lean_hullmaxs_offset_x("neo_lean_hullmaxs_offset_x", "-10", FCVAR_CHEAT | FCVAR_REPLICATED);
 ConVar neo_lean_hullmaxs_offset_y("neo_lean_hullmaxs_offset_y", "-2", FCVAR_CHEAT | FCVAR_REPLICATED);
 ConVar neo_lean_hullmaxs_offset_z("neo_lean_hullmaxs_offset_z", "-1", FCVAR_CHEAT | FCVAR_REPLICATED);
-bool IsThereRoomForLeanSlide(CNEO_Player *player,
-	const Vector &targetViewOffset, bool &outStartInSolid)
-{
-	//DevMsg("Targetviewoffset: %f %f %f\n", targetViewOffset[0], targetViewOffset[1], targetViewOffset[2]);
-	const Vector startViewPos = player->GetAbsOrigin();
-	const Vector endViewPos = startViewPos + Vector(
-		targetViewOffset.x,
-		targetViewOffset.y,
-		0);
+
+
+extern ConVar neo_lean_speed("neo_lean_speed", "120", FCVAR_REPLICATED | FCVAR_CHEAT, "Lean speed (units/second)", true, 0.0, false, 2.0);
+// Original Neotokyo with the latest leftlean fix uses 7 for leftlean and 15 for rightlean yaw slide.
+extern ConVar neo_lean_yaw_peek_left_amount("neo_lean_yaw_peek_left_amount", "7.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How far sideways will a full left lean view reach.", true, 0.0, false, 0);
+extern ConVar neo_lean_yaw_peek_right_amount("neo_lean_yaw_peek_right_amount", "15.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How far sideways will a full right lean view reach.", true, 0.0, false, 0);
+extern ConVar neo_lean_angle_percentage("neo_lean_angle_percentage", "0.75", FCVAR_REPLICATED | FCVAR_CHEAT, "for adjusting the actual angle of lean to a percentage of lean.", true, 0.0, true, 1.0);
+
+float CNEOPredictedViewModel::freeRoomForLean(float leanAmount, CNEO_Player *player){
+	const Vector playerDefaultViewPos = player->GetAbsOrigin() + Vector(0,0,player->GetViewOffset().z);
+	Vector deltaPlayerViewPos(0, leanAmount, 0);
+	VectorYawRotate(deltaPlayerViewPos, player->LocalEyeAngles().y, deltaPlayerViewPos);
+	const Vector leanEndPos = playerDefaultViewPos + deltaPlayerViewPos;
+
 
 	// We can only lean through stuff that isn't solid for us
 	CTraceFilterNoNPCsOrPlayer filter(player, COLLISION_GROUP_PLAYER_MOVEMENT);
 
-	Vector hullMins = (player->m_nButtons & IN_DUCK) ?
-		NEORules()->GetViewVectors()->m_vDuckHullMin :
-		NEORules()->GetViewVectors()->m_vHullMin;
 	
-	Vector hullMaxs = (player->m_nButtons & IN_DUCK) ?
-		NEORules()->GetViewVectors()->m_vDuckHullMax :
-		NEORules()->GetViewVectors()->m_vHullMax;
-	
+	Vector hullMins, hullMaxs;
+	//sets player hull size
+	//ducking
+	if (player->m_nButtons & IN_DUCK){
+		hullMins = NEORules()->GetViewVectors()->m_vDuckHullMin;
+		hullMaxs = NEORules()->GetViewVectors()->m_vDuckHullMax;
+	}
+	//standing
+	else{
+		hullMins = NEORules()->GetViewVectors()->m_vHullMin;
+		hullMaxs = NEORules()->GetViewVectors()->m_vHullMax;
+	}
+
+
+
 	float multiplier;
 	if (NEORules()->GetViewVectors()->m_vHullMax.z == 0)
 	{
@@ -164,273 +175,119 @@ bool IsThereRoomForLeanSlide(CNEO_Player *player,
 	}
 	else
 	{
-		multiplier = player->m_nButtons & IN_DUCK ?
-			NEORules()->GetViewVectors()->m_vDuckHullMax.z / NEORules()->GetViewVectors()->m_vHullMax.z
-			: 1;
+		multiplier = player->m_nButtons & IN_DUCK ? NEORules()->GetViewVectors()->m_vDuckHullMax.z / NEORules()->GetViewVectors()->m_vHullMax.z : 1;
 	}
 
-	hullMins += Vector(
-		neo_lean_hullmins_offset_x.GetFloat() * multiplier,
+	//hull minimum point (bottom left back)
+	hullMins += Vector(neo_lean_hullmins_offset_x.GetFloat() * multiplier,
 		neo_lean_hullmins_offset_y.GetFloat() * multiplier,
 		neo_lean_hullmins_offset_z.GetFloat() * multiplier);
-	hullMaxs += Vector(
-		neo_lean_hullmaxs_offset_x.GetFloat() * multiplier,
+	//hull maximum point (top right front)
+	hullMaxs += Vector(neo_lean_hullmaxs_offset_x.GetFloat() * multiplier,
 		neo_lean_hullmaxs_offset_y.GetFloat() * multiplier,
 		neo_lean_hullmaxs_offset_z.GetFloat() * multiplier);
 
+
+	//perform trace from 
 	Ray_t ray;
-	ray.Init(startViewPos, endViewPos, hullMins, hullMaxs);
-	
+	ray.Init(playerDefaultViewPos, leanEndPos, hullMins, hullMaxs);
 	trace_t trace;
-	enginetrace->TraceRay(ray, player->PhysicsSolidMaskForEntity(),
-		&filter, &trace);
+	enginetrace->TraceRay(ray, player->PhysicsSolidMaskForEntity(), &filter, &trace);
+	//debugoverlay->AddLineOverlay(playerDefaultViewPos, leanEndPos, 0, 255, 0, true, 0.001);
+	//debugoverlay->AddLineOverlay(trace.startpos, trace.endpos, 255, 0, 0, true, 0.005);
+	//debugoverlay->AddTextOverlay(playerDefaultViewPos, 0.001, "1");
+	//debugoverlay->AddTextOverlay(trace.endpos, 0.001, "2");
 
-	if (trace.startsolid)
-	{
-		outStartInSolid = true;
-		return false;
-	}
+	return roundf(trace.startpos.DistTo(trace.endpos) * 100) / 100;
 
-	const float targetLen = startViewPos.AsVector2D().
-		DistTo(endViewPos.AsVector2D());
-	
-	const float traceLen = trace.startpos.AsVector2D().
-		DistTo(trace.endpos.AsVector2D());
-
-	const float tolerance = 0.01f;
-	const float delta = fabs(traceLen - targetLen);
-	const bool weHaveRoom = (delta < tolerance);
-	
-#ifdef CLIENT_DLL
-	if (neo_lean_debug_draw_hull.GetBool())
-	{
-		const Vector colorBlue(0, 0, 255), colorGreen(0, 255, 0), colorRed(255, 0, 0);
-		player->GetNEOViewModel()->
-			DrawRenderToTextureDebugInfo(player, hullMins, hullMaxs, colorBlue, "startLeanPos", startViewPos);
-		player->GetNEOViewModel()->
-			DrawRenderToTextureDebugInfo(player, hullMins, hullMaxs, (weHaveRoom ? colorGreen : colorRed), "endLeanPos", endViewPos);
-#if(0)
-		if (!weHaveRoom)
-		{
-			DevMsg("We didn't have room to lean; delta: %f tol: %f\n",
-				delta, tolerance);
-		}
-#endif
-	}
-#endif
-
-	return weHaveRoom;
 }
 
-extern ConVar neo_lean_yaw_lerp_scale("neo_lean_yaw_lerp_scale", "0.125", FCVAR_REPLICATED | FCVAR_CHEAT, "How fast to lerp viewoffset yaw into full lean position.", true, 0.0, true, 2.0);
-extern ConVar neo_lean_roll_lerp_scale("neo_lean_roll_lerp_scale", "5.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How fast to lerp viewangoffset roll into full lean position.", true, 0.0, true, 6.0);
-// Original Neotokyo with the latest leftlean fix uses 7 for leftlean and 15 for rightlean yaw slide.
-extern ConVar neo_lean_yaw_peek_left_amount("neo_lean_yaw_peek_left_amount", "7.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How far sideways will a full left lean view reach.", true, 0.0, false, 0);
-extern ConVar neo_lean_yaw_peek_right_amount("neo_lean_yaw_peek_right_amount", "15.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How far sideways will a full right lean view reach.", true, 0.0, false, 0);
-// Engine code starts to fight back at angles beyond 50, so we cap the max value there. Original NT value is 20.
-extern ConVar neo_lean_angle("neo_lean_angle", "20.0", FCVAR_REPLICATED | FCVAR_CHEAT, "Angle of a full lean.", true, 0.0, true, 50.0);
 
-int CNEOPredictedViewModel::CalcLean(CNEO_Player *player)
-{
+
+
+float CNEOPredictedViewModel::calculateLeanAngle(float freeRoom, CNEO_Player *player){
+	Vector	hipBonePosition;
+	QAngle hipBoneAngle;
+	//it would be nicer if we could take the position of hip bone and use that to calculate hipToHeadHeight...
+	/*GetBonePosition(0, hipBonePosition, hipBoneAngle);
+	debugoverlay->AddTextOverlay(hipBonePosition, 0.001, "hip");
+	const float hipToHeadHeight = player->GetViewOffset().z - (hipBonePosition.z - player->GetAbsOrigin().z);*/
+	float hipToHeadHeight = 41;
+	if (player->m_nButtons & IN_DUCK){
+		hipToHeadHeight = 24;
+	}
+	return -RAD2DEG(atan2(freeRoom, hipToHeadHeight)) * neo_lean_angle_percentage.GetFloat();
+}
+
+
+void CNEOPredictedViewModel::lean(CNEO_Player *player){
 #ifdef CLIENT_DLL
-	// We will touch view angles, so we have to resample
-	// here to avoid disturbing user's mouse look input.
-	// This should also handle controller look input.
-	// NEO TODO (Rain): Test if sampling works (no jitter) for gamepads.
-	input->ExtraMouseSample(gpGlobals->absoluteframetime, 1);
+	input->ExtraMouseSample(gpGlobals->frametime,1);
 #endif
+	QAngle viewAng = player->LocalEyeAngles();
+	float Ycurrent = Yprevious;
+	float Yfinal = 0;
 
-	int leanDir = 0;
-
-	//////////////////////////////////
-	// Handle player lean key input //
-	//////////////////////////////////
-
-	bool leaningIn;
-	float leanRotation, leanSideways;
-
-	// If we're actively leaning left
-	if (player->m_nButtons & IN_LEAN_LEFT)
-	{
-		// Except if we're leaning both ways, in which case cancel
-		if (player->m_nButtons & IN_LEAN_RIGHT)
-		{
-			leaningIn = false;
-			leanRotation = 0;
-			leanSideways = 0;
+	auto leanButtons = player->m_nButtons;
+	if (leanButtons & (IN_LEAN_LEFT | IN_LEAN_RIGHT)){
+		if (leanButtons & IN_LEAN_LEFT & IN_LEAN_RIGHT){
+			//leaning both ways
 		}
-		// Leaning exclusively left
-		else
-		{
-			leaningIn = true;
-			leanRotation = -neo_lean_angle.GetFloat();
-			leanSideways = neo_lean_yaw_peek_left_amount.GetFloat();
-
-			leanDir = IN_LEAN_LEFT;
+		else if (leanButtons & IN_LEAN_LEFT){
+			//leaning left
+			Yfinal = freeRoomForLean(neo_lean_yaw_peek_left_amount.GetFloat(), player);
+		}
+		else{
+			//leaning right
+			Yfinal = -freeRoomForLean(-neo_lean_yaw_peek_right_amount.GetFloat(), player);
 		}
 	}
-	// Leaning exclusively right
-	else if (player->m_nButtons & IN_LEAN_RIGHT)
-	{
-		leaningIn = true;
-		leanRotation = neo_lean_angle.GetFloat();
-		leanSideways = -neo_lean_yaw_peek_right_amount.GetFloat();
-
-		leanDir = IN_LEAN_RIGHT;
-	}
-	// Not leaning at all
-	else
-	{
-		leaningIn = false;
-		leanRotation = 0;
-		leanSideways = 0;
+	else{
+		//not leaning... move towards zero
 	}
 
+	float dY = Yfinal - Ycurrent;
 
-	//////////////////////////////
-	// Get target lean rotation //
-	//////////////////////////////
-#ifdef CLIENT_DLL
-	QAngle startAng = player->LocalEyeAngles();
-#else
-	QAngle startAng = player->EyeAngles();
-#endif
-	QAngle targetAng(startAng.x, startAng.y, leanRotation);
-
-	/////////////////////////
-	// Get target lean yaw //
-	/////////////////////////
-
-	const float verticalOffset = (player->m_nButtons & IN_DUCK) ? VEC_DUCK_VIEW.z : VEC_VIEW.z;
-	Vector eyeOffset(0, leanSideways, verticalOffset);
-	VectorYawRotate(eyeOffset, player->GetLocalAngles().y, eyeOffset);
-
-
-	/////////////////////////////////////////////////
-	// Calculate lerp values for the next position //
-	/////////////////////////////////////////////////
-
-	float rotationDiff = fabs(startAng.z - targetAng.z);
-	float sidewaySlideDiff = fabs(eyeOffset.x - m_vecNextViewOffset.x);
-	float forwardSlideDiff = fabs(eyeOffset.y - m_vecNextViewOffset.y);
-
-	////////////////////////////////////////////
-	// Lerp & assign the new eye pos & angles //
-	////////////////////////////////////////////
-
-#ifdef CLIENT_DLL
-	const float thisTime = player->GetFinalPredictedTime() + TICK_INTERVAL -
-		(gpGlobals->interpolation_amount * TICK_INTERVAL);
-	static float lastTime = thisTime;
-	const float dTime = thisTime - lastTime;
+	static double lastTime = gpGlobals->curtime;
+	double thisTime = gpGlobals->curtime;
+	const double dTime = thisTime - lastTime;
 	lastTime = thisTime;
-	//DevMsg("dtime: %f\n", dTime);
-#endif
+	float Ymoved = dTime * neo_lean_speed.GetFloat();
 
-#ifdef CLIENT_DLL
-	const float rotationLerp = neo_lean_roll_lerp_scale.GetFloat() * dTime;
-	const float slideLerp = neo_lean_yaw_lerp_scale.GetFloat() * dTime;
-#else
-	const float rotationLerp = neo_lean_roll_lerp_scale.GetFloat();
-	const float slideLerp = neo_lean_yaw_lerp_scale.GetFloat();
-#endif
-
-	// We allow this much lerp inaccuracy, and then snap to target location.
-	// This prevents slight inaccuracy in final camera roll as we converge.
-	const float tolerance = 0.05f;
-
-	// Can we snap eye angles?
-	if (rotationDiff < tolerance)
-	{
-		m_angNextViewAngles = targetAng;
-	}
-	else
-	{
-		// Interpolate eye angles
-		NeoVmInterpolateAngles(startAng, targetAng, m_angNextViewAngles, rotationLerp);
-	}
-
-	// Can we smap yaw offset?
-	if (sidewaySlideDiff < tolerance && forwardSlideDiff < tolerance)
-	{
-		m_vecNextViewOffset = eyeOffset;
-	}
-	else
-	{
-		// Interpolate eye position offset
-		VectorLerp(player->GetViewOffset(), eyeOffset, slideLerp, m_vecNextViewOffset);
-	}
-
-	bool startInSolid = false;
-	if (!IsThereRoomForLeanSlide(player, m_vecNextViewOffset, startInSolid))
-	{
-		// Always allow un-lean
-		if (leaningIn)
-		{
-			// Zero the lean intent if we're clipping.
-			//
-			// NEO HACK/FIXME (Rain): Instead of doing a boolean lean trace,
-			// we should see how many units of clearance we've got, and use that.
-			// Current method will sometimes be too late to prevent view clipping,
-			// and will lerp jitter on half-leans that collide.
-			player->m_nButtons &= ~IN_LEAN_LEFT;
-			player->m_nButtons &= ~IN_LEAN_RIGHT;
-
-			if (startAng.z == 0 && eyeOffset.x == 0 && eyeOffset.y == 0)
-			{
-				return leanDir;
-			}
-
-			targetAng.z = 0;
-			NeoVmInterpolateAngles(startAng, targetAng, m_angNextViewAngles,
-				neo_lean_roll_lerp_scale.GetFloat() * 1.5);
-
-			eyeOffset.x = 0;
-			eyeOffset.y = 0;
-			VectorLerp(player->GetViewOffset(), eyeOffset,
-				neo_lean_yaw_lerp_scale.GetFloat() * 1.5, m_vecNextViewOffset);
+	if (dY > 0){
+		Ycurrent += Ymoved;
+		if (Ycurrent >= Yfinal - 0.05f){
+			Ycurrent = Yfinal;
 		}
 	}
-
-	// See if we've reached the tolerance, and snap to target if so.
-	// This prevents our view from drifting due to float inaccuracy.
-	if (fabs(m_angNextViewAngles.z - targetAng.z) <= tolerance)
-	{
-		m_angNextViewAngles.z = targetAng.z;
+	else{
+		Ycurrent -= Ymoved;
+		if (Ycurrent <= Yfinal + 0.05f){
+			Ycurrent = Yfinal;
+		}
 	}
+	Vector viewOffset(0, 0, player->GetViewOffset().z);
+	viewOffset.y = Ycurrent;
+	Yprevious = Ycurrent;
+	VectorYawRotate(viewOffset, viewAng.y, viewOffset);
 
-#ifdef CLIENT_DLL
-	if (!prediction->InPrediction() && prediction->IsFirstTimePredicted())
-#endif
-	{
-		// This provides us with lag compensated out values.
-		CalcViewModelLag(m_vecNextViewOffset, m_angNextViewAngles, startAng);
-	}
+	player->SetViewOffset(viewOffset);
 
+	float leanAngle = calculateLeanAngle(Ycurrent, player);
+	viewAng.z = leanAngle;
 #ifdef CLIENT_DLL
-	// NOTE: we must sample mouse input (input->ExtraMouseSample)
-	// before calling this, otherwise we risk network view jitter
-	// if the user turns their view and applies lean simultaneously!
-	engine->SetViewAngles(m_angNextViewAngles);
-#endif
-	player->SetViewOffset(m_vecNextViewOffset);
-
-#ifdef CLIENT_DLL
-	if (player->ShouldInterpolate())
-	{
-		player->Interpolate(gpGlobals->curtime);
-	}
+	engine->SetViewAngles(viewAng);
 #endif
 
-	return leanDir;
 }
+
 
 #ifdef CLIENT_DLL
 extern ConVar cl_wpn_sway_interp;
 extern ConVar cl_wpn_sway_scale;
 #endif
-ConVar neo_lean_allow_extrapolation("neo_lean_allow_extrapolation", "1", FCVAR_REPLICATED | FCVAR_CHEAT,
-	"Whether we're allowed to extrapolate lean beyond known values.", true, 0, true, 1);
+ConVar neo_lean_allow_extrapolation("neo_lean_allow_extrapolation", "1", FCVAR_REPLICATED | FCVAR_CHEAT, "Whether we're allowed to extrapolate lean beyond known values.", true, 0, true, 1);
+
 void CNEOPredictedViewModel::CalcViewModelLag(Vector& origin, QAngle& angles,
 	QAngle& original_angles)
 {
@@ -467,7 +324,7 @@ void CNEOPredictedViewModel::CalcViewModelLag(Vector& origin, QAngle& angles,
 void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 	const Vector& eyePosition, const QAngle& eyeAngles)
 {
-	// Is there are nicer way to do this?
+	// Is there a nicer way to do this?
 	auto weapon = static_cast<CWeaponHL2MPBase*>(GetOwningWeapon());
 
 	if (!weapon)
@@ -502,3 +359,4 @@ void CNEOPredictedViewModel::SetWeaponModel(const char* pszModelname,
 {
 	BaseClass::SetWeaponModel(pszModelname, weapon);
 }
+
