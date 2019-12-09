@@ -88,11 +88,11 @@ WeaponData
 		}
 		"crosshair"
 		{
-				"file"		"vgui/hud/crosshair"
+				"file"		"vgui/hud/scopes/scope03"
 				"x"		"0"
 				"y"		"0"
-				"width"		"128"
-				"height"	"128"
+				"width"		"1024"
+				"height"	"1024"
 		}
 		"autoaim"
 		{

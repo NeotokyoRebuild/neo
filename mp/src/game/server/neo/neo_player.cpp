@@ -1292,7 +1292,7 @@ inline bool CNEO_Player::IsAllowedToDrop(CBaseCombatWeapon *pWep)
 
 	const int wepBits = pNeoWep->GetNeoWepBits();
 
-	Assert(wepBits > NEO_WEP_INVALID && wepBits <= NEO_WEP_HIGHEST_VALID_BITS);
+	Assert(wepBits > NEO_WEP_INVALID);
 
 	const int unallowedDrops = (NEO_WEP_DETPACK | NEO_WEP_FRAG_GRENADE |
 		NEO_WEP_KNIFE | NEO_WEP_PROX_MINE | NEO_WEP_SMOKE_GRENADE);
