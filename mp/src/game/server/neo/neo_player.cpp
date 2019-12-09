@@ -34,6 +34,8 @@
 
 #include "sequence_Transitioner.h"
 
+#include "neo_te_tocflash.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -617,6 +619,14 @@ void CNEO_Player::PreThink(void)
 	CheckThermOpticButtons();
 }
 
+ConVar sv_neo_cloak_color_r("sv_neo_cloak_color_r", "1", FCVAR_CHEAT, "Thermoptic cloak flash color (red channel).", true, 0.0f, true, 255.0f);
+ConVar sv_neo_cloak_color_g("sv_neo_cloak_color_g", "2", FCVAR_CHEAT, "Thermoptic cloak flash color (green channel).", true, 0.0f, true, 255.0f);
+ConVar sv_neo_cloak_color_b("sv_neo_cloak_color_b", "4", FCVAR_CHEAT, "Thermoptic cloak flash color (blue channel).", true, 0.0f, true, 255.0f);
+ConVar sv_neo_cloak_color_radius("sv_neo_cloak_color_radius", "64", FCVAR_CHEAT, "Thermoptic cloak flash effect radius.", true, 0.0f, true, 4096.0f);
+ConVar sv_neo_cloak_time("sv_neo_cloak_time", "0.1", FCVAR_CHEAT, "How long should the thermoptic flash be visible, in seconds.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_cloak_decay("sv_neo_cloak_decay", "0", FCVAR_CHEAT, "After the cloak time, how quickly should the flash effect disappear.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_cloak_exponent("sv_neo_cloak_exponent", "4", FCVAR_CHEAT, "Cloak flash lighting exponent.", true, 0.0f, false, 0.0f);
+
 inline void CNEO_Player::CheckThermOpticButtons()
 {
 	if (m_afButtonPressed & IN_THERMOPTIC)
@@ -624,6 +634,23 @@ inline void CNEO_Player::CheckThermOpticButtons()
 		if (IsAlive())
 		{
 			m_bInThermOpticCamo = !m_bInThermOpticCamo;
+
+			if (m_bInThermOpticCamo)
+			{
+				CRecipientFilter filter;
+				filter.AddRecipientsByPVS(GetAbsOrigin());
+
+				g_NEO_TE_TocFlash.r = sv_neo_cloak_color_r.GetInt();
+				g_NEO_TE_TocFlash.g = sv_neo_cloak_color_g.GetInt();
+				g_NEO_TE_TocFlash.b = sv_neo_cloak_color_b.GetInt();
+				g_NEO_TE_TocFlash.m_vecOrigin = GetAbsOrigin();
+				g_NEO_TE_TocFlash.exponent = sv_neo_cloak_exponent.GetInt();
+				g_NEO_TE_TocFlash.m_fRadius = sv_neo_cloak_color_radius.GetFloat();
+				g_NEO_TE_TocFlash.m_fTime = sv_neo_cloak_time.GetFloat();
+				g_NEO_TE_TocFlash.m_fDecay = sv_neo_cloak_decay.GetFloat();
+
+				g_NEO_TE_TocFlash.Create(filter);
+			}
 		}
 	}
 }
