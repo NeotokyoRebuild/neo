@@ -46,7 +46,7 @@ public:
 	virtual void Spawn(void);
 	virtual bool Deploy(void);
 
-	virtual int GetNeoWepBits(void) const { return NEO_WEP_MPN_S; }
+	virtual int GetNeoWepBits(void) const { return NEO_WEP_MPN; }
 
 	void	UpdatePenaltyTime(void);
 
