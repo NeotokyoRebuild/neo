@@ -45,6 +45,7 @@ SendPropInt(SENDINFO(m_iLoadoutWepChoice)),
 
 SendPropBool(SENDINFO(m_bGhostExists)),
 SendPropBool(SENDINFO(m_bInThermOpticCamo)),
+SendPropBool(SENDINFO(m_bInVision)),
 SendPropBool(SENDINFO(m_bIsAirborne)),
 SendPropBool(SENDINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 SendPropBool(SENDINFO(m_bShowTestMessage)),
@@ -66,6 +67,7 @@ DEFINE_FIELD(m_iLoadoutWepChoice, FIELD_INTEGER),
 
 DEFINE_FIELD(m_bGhostExists, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bInThermOpticCamo, FIELD_BOOLEAN),
+DEFINE_FIELD(m_bInVision, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bIsAirborne, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bHasBeenAirborneForTooLongToSuperJump, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bShowTestMessage, FIELD_BOOLEAN),
@@ -302,10 +304,9 @@ CNEO_Player::CNEO_Player()
 	m_iNeoSkin = NEO_SKIN_FIRST;
 	m_iXP.GetForModify() = 0;
 
-	m_bInLeanLeft = false;
-	m_bInLeanRight = false;
+	m_bInLeanLeft = m_bInLeanRight = false;
 	m_bGhostExists = false;
-	m_bInThermOpticCamo = false;
+	m_bInThermOpticCamo = m_bInVision = false;
 	m_bIsAirborne = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
 
@@ -476,9 +477,38 @@ void CNEO_Player::DoThirdPersonLean(void)
 	anim->SetBoneController(0, lerpedRot);
 }
 
+inline void CNEO_Player::CheckVisionButtons()
+{
+	if (m_afButtonPressed & IN_VISION)
+	{
+		if (IsAlive())
+		{
+			m_bInVision = !m_bInVision;
+
+			if (m_bInVision)
+			{
+				CRecipientFilter filter;
+				filter.AddRecipient(this);
+
+				static int visionToggle = CBaseEntity::PrecacheScriptSound("NeoPlayer.VisionOn");
+
+				EmitSound_t tocSoundParams;
+				tocSoundParams.m_bEmitCloseCaption = false;
+				tocSoundParams.m_hSoundScriptHandle = visionToggle;
+				tocSoundParams.m_pOrigin = &GetAbsOrigin();
+
+				EmitSound(filter, edict()->m_EdictIndex, tocSoundParams);
+			}
+		}
+	}
+}
+
 void CNEO_Player::PreThink(void)
 {
 	BaseClass::PreThink();
+
+	CheckThermOpticButtons();
+	CheckVisionButtons();
 
 	DoThirdPersonLean();
 
@@ -607,8 +637,6 @@ void CNEO_Player::PreThink(void)
 	{
 		UpdateNetworkedFriendlyLocations();
 	}
-
-	CheckThermOpticButtons();
 }
 
 ConVar sv_neo_cloak_color_r("sv_neo_cloak_color_r", "1", FCVAR_CHEAT, "Thermoptic cloak flash color (red channel).", true, 0.0f, true, 255.0f);

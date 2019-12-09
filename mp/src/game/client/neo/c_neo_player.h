@@ -102,9 +102,11 @@ public:
 
 	bool IsCloaked() const { return m_bInThermOpticCamo; }
 	bool IsAirborne() const { return m_bIsAirborne; }
+	bool IsInVision() const { return m_bInVision; }
 
 private:
 	inline void CheckThermOpticButtons();
+	inline void CheckVisionButtons();
 
 	inline bool IsAllowedToSuperJump(void);
 
@@ -132,6 +134,7 @@ protected:
 
 	bool m_bIsClassMenuOpen, m_bIsTeamMenuOpen, m_bUnhandledTocChange;
 	CNetworkVar(bool, m_bInThermOpticCamo);
+	CNetworkVar(bool, m_bInVision);
 
 	CNetworkVar(int, m_iNeoClass);
 	CNetworkVar(int, m_iNeoSkin);

@@ -115,6 +115,7 @@ public:
 
 private:
 	inline void CheckThermOpticButtons();
+	inline void CheckVisionButtons();
 
 	inline bool IsAllowedToSuperJump(void);
 
@@ -135,6 +136,7 @@ public:
 	CNetworkVar(int, m_iGhosterTeam);
 	CNetworkVar(bool, m_bGhostExists);
 	CNetworkVar(bool, m_bInThermOpticCamo);
+	CNetworkVar(bool, m_bInVision);
 	CNetworkVar(bool, m_bIsAirborne);
 	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
 

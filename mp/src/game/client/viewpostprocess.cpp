@@ -18,6 +18,10 @@
 #include "bitmap/tgawriter.h"
 #include "filesystem.h"
 
+#ifdef NEO
+#include "c_neo_player.h"
+#endif
+
 #include "tier0/vprof.h"
 
 #include "proxyentity.h"
@@ -2852,7 +2856,8 @@ void DoEnginePostProcessing( int x, int y, int w, int h, bool bFlashlightIsOn, b
 		DoNightVision(x, y, w, h);
 	}*/
 
-	if (mat_neo_mv_enable.GetBool())
+	auto pNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if ((pNeoPlayer && pNeoPlayer->IsInVision()) || mat_neo_mv_enable.GetBool())
 	{
 		DoMotionVision(x, y, w, h);
 	}

@@ -65,6 +65,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_iGhosterTeam)),
 	RecvPropBool(RECVINFO(m_bGhostExists)),
 	RecvPropBool(RECVINFO(m_bInThermOpticCamo)),
+	RecvPropBool(RECVINFO(m_bInVision)),
 	RecvPropBool(RECVINFO(m_bIsAirborne)),
 	RecvPropBool(RECVINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 
@@ -261,7 +262,7 @@ C_NEO_Player::C_NEO_Player()
 	m_vecGhostMarkerPos = vec3_origin;
 	m_bGhostExists = false;
 	m_bShowClassMenu = m_bShowTeamMenu = m_bIsClassMenuOpen = m_bIsTeamMenuOpen = false;
-	m_bInThermOpticCamo = m_bUnhandledTocChange = false;
+	m_bInThermOpticCamo = m_bInVision = m_bUnhandledTocChange = false;
 	m_bIsAirborne = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
 
@@ -281,6 +282,17 @@ inline void C_NEO_Player::CheckThermOpticButtons()
 			m_bInThermOpticCamo = !m_bInThermOpticCamo;
 
 			m_bUnhandledTocChange = true;
+		}
+	}
+}
+
+inline void C_NEO_Player::CheckVisionButtons()
+{
+	if (m_afButtonPressed & IN_VISION)
+	{
+		if (IsAlive())
+		{
+			m_bInVision = !m_bInVision;
 		}
 	}
 }
@@ -308,16 +320,18 @@ int C_NEO_Player::DrawModel( int flags )
 {
 	if (true || m_bUnhandledTocChange)
 	{
-		if (IsCloaked())
+		auto pNeoLocalPlayer = GetLocalNEOPlayer();
+		if (pNeoLocalPlayer && pNeoLocalPlayer->IsInVision())
+		{
+			// TODO Do motion stencil pass
+		}
+		else if (IsCloaked())
 		{
 			IMaterial *pass1 = materials->FindMaterial("toc_remake_pass1", TEXTURE_GROUP_MODEL);
 			IMaterial *pass2 = materials->FindMaterial("toc_remake_pass2", TEXTURE_GROUP_MODEL);
 
 			Assert(pass1 && !pass1->IsErrorMaterial());
 			Assert(pass2 && !pass2->IsErrorMaterial());
-
-			// We should enable camo here, or alternatively call it
-			// from the material proxy(?)
 
 			int ret = 0;
 			//SetRenderColorA(100);
@@ -414,8 +428,6 @@ void C_NEO_Player::ItemPreFrame( void )
 	{
 		Weapon_Drop(GetActiveWeapon());
 	}
-
-	CheckThermOpticButtons();
 }
 
 void C_NEO_Player::ItemPostFrame( void )
@@ -469,10 +481,8 @@ void C_NEO_Player::PreThink( void )
 {
 	BaseClass::PreThink();
 
-	if (m_afButtonPressed & IN_THERMOPTIC)
-	{
-		m_bInThermOpticCamo = !m_bInThermOpticCamo;
-	}
+	CheckThermOpticButtons();
+	CheckVisionButtons();
 
 	CNEOPredictedViewModel *vm = (CNEOPredictedViewModel*)GetViewModel();
 	if (vm)
