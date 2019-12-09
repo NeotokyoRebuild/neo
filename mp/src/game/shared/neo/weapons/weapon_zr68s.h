@@ -14,7 +14,7 @@
 #include "neo_player.h"
 #endif
 
-#include "weapon_neobase_ar.h"
+#include "weapon_neobasecombatweapon.h"
 
 #define	ZR68S_FASTEST_REFIRE_TIME 0.1f
 #define	ZR68S_FASTEST_DRY_REFIRE_TIME	0.2f
@@ -26,10 +26,10 @@
 #define CWeaponZR68S C_WeaponZR68S
 #endif
 
-class CWeaponZR68S : public CNEOAssaultRifle
+class CWeaponZR68S : public CNEOBaseCombatWeapon
 {
 public:
-	DECLARE_CLASS(CWeaponZR68S, CNEOAssaultRifle);
+	DECLARE_CLASS(CWeaponZR68S, CNEOBaseCombatWeapon);
 
 	CWeaponZR68S();
 
