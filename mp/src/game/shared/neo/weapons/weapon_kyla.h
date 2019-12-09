@@ -20,6 +20,7 @@ public:
 	void PrimaryAttack(void);
 
 	virtual int GetNeoWepBits(void) const { return NEO_WEP_KYLA; }
+	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
 
 	DECLARE_NETWORKCLASS();
 	DECLARE_PREDICTABLE();

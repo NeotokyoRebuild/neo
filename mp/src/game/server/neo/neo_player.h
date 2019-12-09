@@ -89,7 +89,7 @@ public:
 
 	void RequestSetClass(int newClass);
 	void RequestSetSkin(int newSkin);
-	void RequestSetLoadout(int loadoutNumber);
+	bool RequestSetLoadout(int loadoutNumber);
 
 	int GetSkin() const;
 	int GetClass() const;

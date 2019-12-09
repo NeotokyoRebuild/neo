@@ -47,6 +47,7 @@ public:
 	virtual bool Deploy(void);
 
 	virtual int GetNeoWepBits(void) const { return NEO_WEP_PZ; }
+	virtual int GetNeoWepXPCost(const int neoClass) const { return 20; }
 
 	void	UpdatePenaltyTime(void);
 

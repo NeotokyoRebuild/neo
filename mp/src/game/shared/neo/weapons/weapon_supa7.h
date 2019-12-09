@@ -44,6 +44,7 @@ public:
 	}
 
 	virtual int GetNeoWepBits(void) const { return NEO_WEP_SUPA7; }
+	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
 
 	virtual int GetMinBurst() { return 1; }
 	virtual int GetMaxBurst() { return 3; }

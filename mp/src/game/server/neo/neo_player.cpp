@@ -120,17 +120,66 @@ void CNEO_Player::RequestSetSkin(int newSkin)
 	}
 }
 
-void CNEO_Player::RequestSetLoadout(int loadoutNumber)
+static inline bool IsNeoPrimary(CNEOBaseCombatWeapon *pNeoWep)
 {
-	if (FStrEq(GetWeaponByLoadoutId(loadoutNumber), ""))
+	if (!pNeoWep)
+	{
+		return false;
+	}
+
+	const int bits = pNeoWep->GetNeoWepBits();
+	const int primaryBits = NEO_WEP_AA13 | NEO_WEP_GHOST | NEO_WEP_JITTE | NEO_WEP_JITTE_S |
+		NEO_WEP_M41 | NEO_WEP_M41_L | NEO_WEP_M41_S | NEO_WEP_MPN | NEO_WEP_MPN_S |
+		NEO_WEP_MX | NEO_WEP_MX_S | NEO_WEP_PZ | NEO_WEP_SMAC | NEO_WEP_SRM |
+		NEO_WEP_SRM_S | NEO_WEP_SRS | NEO_WEP_SUPA7 | NEO_WEP_ZR68_C | NEO_WEP_ZR68_L |
+		NEO_WEP_ZR68_S;
+
+	return ((bits & primaryBits) == bits);
+}
+
+bool CNEO_Player::RequestSetLoadout(int loadoutNumber)
+{
+	const char *pszWepName = GetWeaponByLoadoutId(loadoutNumber);
+
+	if (FStrEq(pszWepName, ""))
 	{
 		Assert(false);
-		const int fallbackLoadout = 0;
-		Warning("CNEO_Player::RequestSetLoadout: Loadout request failed; defaulting to %i.\n", fallbackLoadout);
-		loadoutNumber = fallbackLoadout;
+		Warning("CNEO_Player::RequestSetLoadout: Loadout request failed\n");
+		return false;
+	}
+
+	auto pWep = GiveNamedItem(pszWepName);
+	if (!pWep)
+	{
+		Assert(false);
+		Warning("CNEO_Player::RequestSetLoadout: Could not find weapon of type: %s\n", pszWepName);
+		return false;
+	}
+
+	auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWep);
+	if (!pNeoWep)
+	{
+		Assert(false);
+		Warning("CNEO_Player::RequestSetLoadout: Not a Neo base weapon: %s\n", pszWepName);
+		return false;
+	}
+
+	if (!IsNeoPrimary(pNeoWep))
+	{
+		Assert(false);
+		Warning("CNEO_Player::RequestSetLoadout: Not a Neo primary weapon: %s\n", pszWepName);
+		return false;
+	}
+
+	if (m_iXP < pNeoWep->GetNeoWepXPCost(GetClass()))
+	{
+		DevMsg("Insufficient XP for %s\n", pszWepName);
+		return false;
 	}
 
 	m_iLoadoutWepChoice = loadoutNumber;
+
+	return true;
 }
 
 void SetClass(const CCommand &command)
@@ -1701,9 +1750,27 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 	DevMsg("Loadout slot: %i (\"%s\")\n", m_iLoadoutWepChoice, szWep);
 #endif
 
-	if (GiveNamedItem(szWep))
+	auto pWep = GiveNamedItem(szWep);
+	if (pWep)
 	{
-		Weapon_Switch(Weapon_OwnsThisType(szWep));
+		auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWep);
+
+		if (pNeoWep)
+		{
+			if (m_iXP >= pNeoWep->GetNeoWepXPCost(GetClass()))
+			{
+				Weapon_Switch(Weapon_OwnsThisType(szWep));
+			}
+			else
+			{
+				UTIL_RemoveImmediate(pWep);
+			}
+		}
+		else
+		{
+			Warning("Attempted to use a non-Neotokyo loadout weapon, removing.\n");
+			UTIL_RemoveImmediate(pWep);
+		}
 	}
 }
 
