@@ -43,6 +43,8 @@ public:
 		return cone;
 	}
 
+	virtual int GetNeoWepBits(void) const { return NEO_WEP_SUPA7; }
+
 	virtual int GetMinBurst() { return 1; }
 	virtual int GetMaxBurst() { return 3; }
 
