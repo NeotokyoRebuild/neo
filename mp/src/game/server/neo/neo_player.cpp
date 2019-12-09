@@ -1,19 +1,11 @@
 #include "cbase.h"
-#include "weapon_hl2mpbasehlmpcombatweapon.h"
 #include "neo_player.h"
-#include "globalstate.h"
-#include "game.h"
-#include "neo_gamerules.h"
-#include "hl2mp_player_shared.h"
+
+
 #include "neo_predicted_viewmodel.h"
 #include "in_buttons.h"
 #include "neo_gamerules.h"
-#include "KeyValues.h"
 #include "team.h"
-#include "weapon_hl2mpbase.h"
-#include "grenade_satchel.h"
-#include "eventqueue.h"
-#include "gamestats.h"
 
 #include "engine/IEngineSound.h"
 #include "SoundEmitterSystem/isoundemittersystembase.h"
@@ -635,11 +627,12 @@ inline void CNEO_Player::CheckThermOpticButtons()
 		{
 			m_bInThermOpticCamo = !m_bInThermOpticCamo;
 
+			CRecipientFilter filter;
+			filter.AddRecipientsByPVS(GetAbsOrigin());
+
 			if (m_bInThermOpticCamo)
 			{
-				CRecipientFilter filter;
-				filter.AddRecipientsByPVS(GetAbsOrigin());
-
+				// Do cloak flash
 				g_NEO_TE_TocFlash.r = sv_neo_cloak_color_r.GetInt();
 				g_NEO_TE_TocFlash.g = sv_neo_cloak_color_g.GetInt();
 				g_NEO_TE_TocFlash.b = sv_neo_cloak_color_b.GetInt();
@@ -651,6 +644,17 @@ inline void CNEO_Player::CheckThermOpticButtons()
 
 				g_NEO_TE_TocFlash.Create(filter);
 			}
+
+			// Play cloak sound
+			static int tocOn = CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOn");
+			static int tocOff = CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOff");
+
+			EmitSound_t tocSoundParams;
+			tocSoundParams.m_bEmitCloseCaption = false;
+			tocSoundParams.m_hSoundScriptHandle = (m_bInThermOpticCamo ? tocOn : tocOff);
+			tocSoundParams.m_pOrigin = &GetAbsOrigin();
+
+			EmitSound(filter, edict()->m_EdictIndex, tocSoundParams);
 		}
 	}
 }
