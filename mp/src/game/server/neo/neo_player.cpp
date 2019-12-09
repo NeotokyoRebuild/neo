@@ -134,7 +134,7 @@ static inline bool IsNeoPrimary(CNEOBaseCombatWeapon *pNeoWep)
 		NEO_WEP_SRM_S | NEO_WEP_SRS | NEO_WEP_SUPA7 | NEO_WEP_ZR68_C | NEO_WEP_ZR68_L |
 		NEO_WEP_ZR68_S;
 
-	return ((bits & primaryBits) == bits);
+	return (primaryBits & bits) ? true : false;
 }
 
 bool CNEO_Player::RequestSetLoadout(int loadoutNumber)
@@ -148,38 +148,57 @@ bool CNEO_Player::RequestSetLoadout(int loadoutNumber)
 		return false;
 	}
 
-	auto pWep = GiveNamedItem(pszWepName);
-	if (!pWep)
+	EHANDLE pEnt;
+	pEnt = CreateEntityByName(pszWepName);
+
+	if (!pEnt)
 	{
 		Assert(false);
-		Warning("CNEO_Player::RequestSetLoadout: Could not find weapon of type: %s\n", pszWepName);
+		Warning("NULL Ent in RequestSetLoadout!\n");
 		return false;
 	}
 
-	auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWep);
-	if (!pNeoWep)
+	pEnt->SetLocalOrigin(GetLocalOrigin());
+	pEnt->AddSpawnFlags(SF_NORESPAWN);
+
+	CNEOBaseCombatWeapon *pNeoWeapon = dynamic_cast<CNEOBaseCombatWeapon*>((CBaseEntity*)pEnt);
+	if (!pNeoWeapon)
 	{
-		Assert(false);
-		Warning("CNEO_Player::RequestSetLoadout: Not a Neo base weapon: %s\n", pszWepName);
-		return false;
+		if (pEnt != NULL && !(pEnt->IsMarkedForDeletion()))
+		{
+			UTIL_Remove((CBaseEntity*)pEnt);
+			Assert(false);
+			Warning("CNEO_Player::RequestSetLoadout: Not a Neo base weapon: %s\n", pszWepName);
+			return false;
+		}
 	}
 
-	if (!IsNeoPrimary(pNeoWep))
+	bool result = true;
+
+	if (!IsNeoPrimary(pNeoWeapon))
 	{
 		Assert(false);
 		Warning("CNEO_Player::RequestSetLoadout: Not a Neo primary weapon: %s\n", pszWepName);
-		return false;
+		result = false;
 	}
 
-	if (m_iXP < pNeoWep->GetNeoWepXPCost(GetClass()))
+	if (m_iXP < pNeoWeapon->GetNeoWepXPCost(GetClass()))
 	{
 		DevMsg("Insufficient XP for %s\n", pszWepName);
-		return false;
+		result = false;
 	}
 
-	m_iLoadoutWepChoice = loadoutNumber;
+	if (result)
+	{
+		m_iLoadoutWepChoice = loadoutNumber;
+	}
+	
+	if (pEnt != NULL && !(pEnt->IsMarkedForDeletion()))
+	{
+		UTIL_Remove((CBaseEntity*)pEnt);
+	}
 
-	return true;
+	return result;
 }
 
 void SetClass(const CCommand &command)
@@ -1750,26 +1769,47 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 	DevMsg("Loadout slot: %i (\"%s\")\n", m_iLoadoutWepChoice, szWep);
 #endif
 
-	auto pWep = GiveNamedItem(szWep);
-	if (pWep)
+	// If I already own this type don't create one
+	const int wepSubType = 0;
+	if (Weapon_OwnsThisType(szWep, wepSubType))
 	{
-		auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWep);
+		return;
+	}
 
-		if (pNeoWep)
+	EHANDLE pEnt;
+	pEnt = CreateEntityByName(szWep);
+
+	if (!pEnt)
+	{
+		Assert(false);
+		Warning("NULL Ent in GiveLoadoutWeapon!\n");
+		return;
+	}
+
+	pEnt->SetLocalOrigin(GetLocalOrigin());
+	pEnt->AddSpawnFlags(SF_NORESPAWN);
+
+	CNEOBaseCombatWeapon *pNeoWeapon = dynamic_cast<CNEOBaseCombatWeapon*>((CBaseEntity*)pEnt);
+	if (pNeoWeapon)
+	{
+		if (m_iXP >= pNeoWeapon->GetNeoWepXPCost(GetClass()))
 		{
-			if (m_iXP >= pNeoWep->GetNeoWepXPCost(GetClass()))
+			pNeoWeapon->SetSubType(wepSubType);
+
+			DispatchSpawn(pEnt);
+
+			if (pEnt != NULL && !(pEnt->IsMarkedForDeletion()))
 			{
+				pEnt->Touch(this);
 				Weapon_Switch(Weapon_OwnsThisType(szWep));
-			}
-			else
-			{
-				UTIL_RemoveImmediate(pWep);
 			}
 		}
 		else
 		{
-			Warning("Attempted to use a non-Neotokyo loadout weapon, removing.\n");
-			UTIL_RemoveImmediate(pWep);
+			if (pEnt != NULL && !(pEnt->IsMarkedForDeletion()))
+			{
+				UTIL_Remove((CBaseEntity*)pEnt);
+			}
 		}
 	}
 }
