@@ -47,6 +47,7 @@ SendPropInt(SENDINFO(m_iNeoSkin)),
 SendPropInt(SENDINFO(m_iXP)),
 SendPropInt(SENDINFO(m_iCapTeam), 3),
 SendPropInt(SENDINFO(m_iGhosterTeam)),
+SendPropInt(SENDINFO(m_iLoadoutWepChoice)),
 
 SendPropBool(SENDINFO(m_bGhostExists)),
 SendPropBool(SENDINFO(m_bInThermOpticCamo)),
@@ -67,6 +68,7 @@ DEFINE_FIELD(m_iNeoSkin, FIELD_INTEGER),
 DEFINE_FIELD(m_iXP, FIELD_INTEGER),
 DEFINE_FIELD(m_iCapTeam, FIELD_INTEGER),
 DEFINE_FIELD(m_iGhosterTeam, FIELD_INTEGER),
+DEFINE_FIELD(m_iLoadoutWepChoice, FIELD_INTEGER),
 
 DEFINE_FIELD(m_bGhostExists, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bInThermOpticCamo, FIELD_BOOLEAN),
@@ -118,6 +120,19 @@ void CNEO_Player::RequestSetSkin(int newSkin)
 	}
 }
 
+void CNEO_Player::RequestSetLoadout(int loadoutNumber)
+{
+	if (FStrEq(GetWeaponByLoadoutId(loadoutNumber), ""))
+	{
+		Assert(false);
+		const int fallbackLoadout = 0;
+		Warning("CNEO_Player::RequestSetLoadout: Loadout request failed; defaulting to %i.\n", fallbackLoadout);
+		loadoutNumber = fallbackLoadout;
+	}
+
+	m_iLoadoutWepChoice = loadoutNumber;
+}
+
 void SetClass(const CCommand &command)
 {
 	auto player = static_cast<CNEO_Player*>(UTIL_GetCommandClient());
@@ -161,8 +176,25 @@ void SetSkin(const CCommand &command)
 	}
 }
 
+void SetLoadout(const CCommand &command)
+{
+	auto player = static_cast<CNEO_Player*>(UTIL_GetCommandClient());
+
+	if (!player)
+	{
+		return;
+	}
+
+	if (command.ArgC() == 2)
+	{
+		int loadoutNumber = atoi(command.ArgV()[1]);
+		player->RequestSetLoadout(loadoutNumber);
+	}
+}
+
 ConCommand setclass("setclass", SetClass, "Set class", FCVAR_USERINFO);
 ConCommand setskin("SetVariant", SetSkin, "Set skin", FCVAR_USERINFO);
+ConCommand loadout("loadout", SetLoadout, "Set loadout", FCVAR_USERINFO);
 
 // NEO FIXME/HACK (Rain): bots don't properly set their fakeclient flag currently,
 // making IsFakeClient and IsBot return false. This is an ugly hack to get bots
@@ -219,6 +251,7 @@ CNEO_Player::CNEO_Player()
 
 	m_iCapTeam = TEAM_UNASSIGNED;
 	m_iGhosterTeam = TEAM_UNASSIGNED;
+	m_iLoadoutWepChoice = 0;
 
 	m_bShowTestMessage = false;
 	V_memset(m_pszTestMessage.GetForModify(), 0, sizeof(m_pszTestMessage));
@@ -1663,12 +1696,9 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 		return;
 	}
 
-	const int loadoutId = atoi(engine->GetClientConVarValue(
-		engine->IndexOfEdict(edict()), "loadout"));
-
-	const char *szWep = GetWeaponByLoadoutId(loadoutId);
+	const char *szWep = GetWeaponByLoadoutId(m_iLoadoutWepChoice);
 #if DEBUG
-	DevMsg("Loadout slot: %i (\"%s\")\n", loadoutId, szWep);
+	DevMsg("Loadout slot: %i (\"%s\")\n", m_iLoadoutWepChoice, szWep);
 #endif
 
 	if (GiveNamedItem(szWep))

@@ -89,6 +89,7 @@ public:
 
 	void RequestSetClass(int newClass);
 	void RequestSetSkin(int newSkin);
+	void RequestSetLoadout(int loadoutNumber);
 
 	int GetSkin() const;
 	int GetClass() const;
@@ -124,6 +125,8 @@ public:
 	CNetworkVar(int, m_iCapTeam);
 
 	CNetworkVar(int, m_iXP);
+
+	CNetworkVar(int, m_iLoadoutWepChoice);
 
 	CNetworkVar(bool, m_bShowTestMessage);
 	CNetworkString(m_pszTestMessage, 32 * 2 + 1);

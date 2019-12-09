@@ -115,6 +115,7 @@ public:
 
 	CNetworkVar(int, m_iXP);
 	CNetworkVar(int, m_iCapTeam);
+	CNetworkVar(int, m_iLoadoutWepChoice);
 
 	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
 
@@ -153,7 +154,7 @@ inline C_NEO_Player *ToNEOPlayer(CBaseEntity *pEntity)
 }
 
 extern ConVar cl_drawhud_quickinfo;
-extern ConVar loadout;
+extern ConVar loadout_choice;
 
 extern ConCommand teammenu;
 

@@ -58,8 +58,8 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropString(RECVINFO(m_pszTestMessage)),
 
 	RecvPropInt(RECVINFO(m_iXP)),
-
 	RecvPropInt(RECVINFO(m_iCapTeam)),
+	RecvPropInt(RECVINFO(m_iLoadoutWepChoice)),
 
 	RecvPropVector(RECVINFO(m_vecGhostMarkerPos)),
 	RecvPropInt(RECVINFO(m_iGhosterTeam)),
@@ -79,9 +79,6 @@ END_PREDICTION_DATA()
 ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
 	"Whether to display HL2 style ammo/health info near crosshair.",
 	true, 0.0f, true, 1.0f);
-
-ConVar loadout("loadout", "0", FCVAR_CLIENTDLL | FCVAR_USERINFO,
-	"Select primary weapon loadout (int).", true, 0.0f, false, 0.0f);
 
 class NeoLoadoutMenu_Cb : public ICommandCallback
 {
@@ -257,6 +254,7 @@ C_NEO_Player::C_NEO_Player()
 	m_iNeoSkin = NEO_SKIN_FIRST;
 
 	m_iCapTeam = TEAM_UNASSIGNED;
+	m_iLoadoutWepChoice = 0;
 	m_iGhosterTeam = TEAM_UNASSIGNED;
 	m_iXP.GetForModify() = 0;
 
