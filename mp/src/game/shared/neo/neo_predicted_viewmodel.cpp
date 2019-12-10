@@ -206,16 +206,7 @@ float CNEOPredictedViewModel::freeRoomForLean(float leanAmount, CNEO_Player *pla
 
 
 float CNEOPredictedViewModel::calculateLeanAngle(float freeRoom, CNEO_Player *player){
-	Vector	hipBonePosition;
-	QAngle hipBoneAngle;
-	//it would be nicer if we could take the position of hip bone and use that to calculate hipToHeadHeight...
-	/*GetBonePosition(0, hipBonePosition, hipBoneAngle);
-	debugoverlay->AddTextOverlay(hipBonePosition, 0.001, "hip");
-	const float hipToHeadHeight = player->GetViewOffset().z - (hipBonePosition.z - player->GetAbsOrigin().z);*/
 	float hipToHeadHeight = 41;
-	if (player->m_nButtons & IN_DUCK){
-		hipToHeadHeight = 24;
-	}
 	return -RAD2DEG(atan2(freeRoom, hipToHeadHeight)) * neo_lean_angle_percentage.GetFloat();
 }
 
