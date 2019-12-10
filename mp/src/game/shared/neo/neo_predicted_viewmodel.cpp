@@ -127,14 +127,6 @@ inline void CNEOPredictedViewModel::DrawRenderToTextureDebugInfo(IClientRenderab
 #endif
 
 ConVar neo_lean_debug_draw_hull("neo_lean_debug_draw_hull", "0", FCVAR_CHEAT | FCVAR_REPLICATED);
-ConVar neo_lean_hullmins_offset_x("neo_lean_hullmins_offset_x", "10", FCVAR_CHEAT | FCVAR_REPLICATED);
-ConVar neo_lean_hullmins_offset_y("neo_lean_hullmins_offset_y", "2", FCVAR_CHEAT | FCVAR_REPLICATED);
-ConVar neo_lean_hullmins_offset_z("neo_lean_hullmins_offset_z", "40", FCVAR_CHEAT | FCVAR_REPLICATED);
-ConVar neo_lean_hullmaxs_offset_x("neo_lean_hullmaxs_offset_x", "-10", FCVAR_CHEAT | FCVAR_REPLICATED);
-ConVar neo_lean_hullmaxs_offset_y("neo_lean_hullmaxs_offset_y", "-2", FCVAR_CHEAT | FCVAR_REPLICATED);
-ConVar neo_lean_hullmaxs_offset_z("neo_lean_hullmaxs_offset_z", "-1", FCVAR_CHEAT | FCVAR_REPLICATED);
-
-
 extern ConVar neo_lean_speed("neo_lean_speed", "120", FCVAR_REPLICATED | FCVAR_CHEAT, "Lean speed (units/second)", true, 0.0, false, 2.0);
 // Original Neotokyo with the latest leftlean fix uses 7 for leftlean and 15 for rightlean yaw slide.
 extern ConVar neo_lean_yaw_peek_left_amount("neo_lean_yaw_peek_left_amount", "7.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How far sideways will a full left lean view reach.", true, 0.0, false, 0);
@@ -142,67 +134,29 @@ extern ConVar neo_lean_yaw_peek_right_amount("neo_lean_yaw_peek_right_amount", "
 extern ConVar neo_lean_angle_percentage("neo_lean_angle_percentage", "0.75", FCVAR_REPLICATED | FCVAR_CHEAT, "for adjusting the actual angle of lean to a percentage of lean.", true, 0.0, true, 1.0);
 
 float CNEOPredictedViewModel::freeRoomForLean(float leanAmount, CNEO_Player *player){
-	//const Vector playerDefaultViewPos = player->GetAbsOrigin() + Vector(0,0,player->GetViewOffset().z);
-	//Vector deltaPlayerViewPos(0, leanAmount, 0);
-	//VectorYawRotate(deltaPlayerViewPos, player->LocalEyeAngles().y, deltaPlayerViewPos);
-	//const Vector leanEndPos = playerDefaultViewPos + deltaPlayerViewPos;
-
 	const Vector playerDefaultViewPos = player->GetAbsOrigin();
 	Vector deltaPlayerViewPos(0, leanAmount, 0);
 	VectorYawRotate(deltaPlayerViewPos, player->LocalEyeAngles().y, deltaPlayerViewPos);
 	const Vector leanEndPos = playerDefaultViewPos + deltaPlayerViewPos;
 
-	//UTIL_TraceHull();
 	// We can only lean through stuff that isn't solid for us
 	CTraceFilterNoNPCsOrPlayer filter(player, COLLISION_GROUP_PLAYER_MOVEMENT);
 
-	
 	Vector hullMins, hullMaxs;
 	//sets player hull size
 	//ducking
+	Vector groundClearance(0, 0, 30);
 	if (player->m_nButtons & IN_DUCK){
-		hullMins = NEORules()->GetViewVectors()->m_vDuckHullMin;
+		hullMins = NEORules()->GetViewVectors()->m_vDuckHullMin + groundClearance;
 		hullMaxs = NEORules()->GetViewVectors()->m_vDuckHullMax;
 	}
 	//standing
 	else{
-		hullMins = NEORules()->GetViewVectors()->m_vHullMin;
+		hullMins = NEORules()->GetViewVectors()->m_vHullMin + groundClearance;
 		hullMaxs = NEORules()->GetViewVectors()->m_vHullMax;
 	}
 
-
-
-	float multiplier;
-	if (NEORules()->GetViewVectors()->m_vHullMax.z == 0)
-	{
-		Assert(false);
-		multiplier = 1;
-	}
-	else
-	{
-		multiplier = player->m_nButtons & IN_DUCK ? NEORules()->GetViewVectors()->m_vDuckHullMax.z / NEORules()->GetViewVectors()->m_vHullMax.z : 1;
-	}
-
-	//hull minimum point (bottom left back)
-	hullMins += Vector(neo_lean_hullmins_offset_x.GetFloat() * multiplier,
-		neo_lean_hullmins_offset_y.GetFloat() * multiplier,
-		neo_lean_hullmins_offset_z.GetFloat() * multiplier);
-	//hull maximum point (top right front)
-	hullMaxs += Vector(neo_lean_hullmaxs_offset_x.GetFloat() * multiplier,
-		neo_lean_hullmaxs_offset_y.GetFloat() * multiplier,
-		neo_lean_hullmaxs_offset_z.GetFloat() * multiplier);
-
-
-	////perform trace from 
-	//Ray_t ray;
-	//ray.Init(playerDefaultViewPos, leanEndPos, hullMins, hullMaxs);
 	trace_t trace;
-	//enginetrace->TraceRay(ray, player->PhysicsSolidMaskForEntity(), &filter, &trace);
-	////debugoverlay->AddLineOverlay(playerDefaultViewPos, leanEndPos, 0, 255, 0, true, 0.001);
-	////debugoverlay->AddLineOverlay(trace.startpos, trace.endpos, 255, 0, 0, true, 0.005);
-	////debugoverlay->AddTextOverlay(playerDefaultViewPos, 0.001, "1");
-	////debugoverlay->AddTextOverlay(trace.endpos, 0.001, "2");
-
 	UTIL_TraceHull(playerDefaultViewPos, leanEndPos, hullMins, hullMaxs, player->PhysicsSolidMaskForEntity(), &filter, &trace);
 #ifdef CLIENT_DLL
 	debugoverlay->AddTextOverlay(playerDefaultViewPos, 0.0001, "x: %f\n y: %f\n z:%f\n", playerDefaultViewPos.x, playerDefaultViewPos.y, playerDefaultViewPos.z);
