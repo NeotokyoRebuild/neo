@@ -142,12 +142,17 @@ extern ConVar neo_lean_yaw_peek_right_amount("neo_lean_yaw_peek_right_amount", "
 extern ConVar neo_lean_angle_percentage("neo_lean_angle_percentage", "0.75", FCVAR_REPLICATED | FCVAR_CHEAT, "for adjusting the actual angle of lean to a percentage of lean.", true, 0.0, true, 1.0);
 
 float CNEOPredictedViewModel::freeRoomForLean(float leanAmount, CNEO_Player *player){
-	const Vector playerDefaultViewPos = player->GetAbsOrigin() + Vector(0,0,player->GetViewOffset().z);
+	//const Vector playerDefaultViewPos = player->GetAbsOrigin() + Vector(0,0,player->GetViewOffset().z);
+	//Vector deltaPlayerViewPos(0, leanAmount, 0);
+	//VectorYawRotate(deltaPlayerViewPos, player->LocalEyeAngles().y, deltaPlayerViewPos);
+	//const Vector leanEndPos = playerDefaultViewPos + deltaPlayerViewPos;
+
+	const Vector playerDefaultViewPos = player->GetAbsOrigin();
 	Vector deltaPlayerViewPos(0, leanAmount, 0);
 	VectorYawRotate(deltaPlayerViewPos, player->LocalEyeAngles().y, deltaPlayerViewPos);
 	const Vector leanEndPos = playerDefaultViewPos + deltaPlayerViewPos;
 
-
+	//UTIL_TraceHull();
 	// We can only lean through stuff that isn't solid for us
 	CTraceFilterNoNPCsOrPlayer filter(player, COLLISION_GROUP_PLAYER_MOVEMENT);
 
@@ -188,18 +193,26 @@ float CNEOPredictedViewModel::freeRoomForLean(float leanAmount, CNEO_Player *pla
 		neo_lean_hullmaxs_offset_z.GetFloat() * multiplier);
 
 
-	//perform trace from 
-	Ray_t ray;
-	ray.Init(playerDefaultViewPos, leanEndPos, hullMins, hullMaxs);
+	////perform trace from 
+	//Ray_t ray;
+	//ray.Init(playerDefaultViewPos, leanEndPos, hullMins, hullMaxs);
 	trace_t trace;
-	enginetrace->TraceRay(ray, player->PhysicsSolidMaskForEntity(), &filter, &trace);
-	//debugoverlay->AddLineOverlay(playerDefaultViewPos, leanEndPos, 0, 255, 0, true, 0.001);
-	//debugoverlay->AddLineOverlay(trace.startpos, trace.endpos, 255, 0, 0, true, 0.005);
-	//debugoverlay->AddTextOverlay(playerDefaultViewPos, 0.001, "1");
-	//debugoverlay->AddTextOverlay(trace.endpos, 0.001, "2");
+	//enginetrace->TraceRay(ray, player->PhysicsSolidMaskForEntity(), &filter, &trace);
+	////debugoverlay->AddLineOverlay(playerDefaultViewPos, leanEndPos, 0, 255, 0, true, 0.001);
+	////debugoverlay->AddLineOverlay(trace.startpos, trace.endpos, 255, 0, 0, true, 0.005);
+	////debugoverlay->AddTextOverlay(playerDefaultViewPos, 0.001, "1");
+	////debugoverlay->AddTextOverlay(trace.endpos, 0.001, "2");
+
+	UTIL_TraceHull(playerDefaultViewPos, leanEndPos, hullMins, hullMaxs, player->PhysicsSolidMaskForEntity(), &filter, &trace);
+#ifdef CLIENT_DLL
+	debugoverlay->AddTextOverlay(playerDefaultViewPos, 0.0001, "x: %f\n y: %f\n z:%f\n", playerDefaultViewPos.x, playerDefaultViewPos.y, playerDefaultViewPos.z);
+	if (neo_lean_debug_draw_hull.GetBool()){
+		const Vector colorBlue(0, 0, 255), colorGreen(0, 255, 0), colorRed(255, 0, 0);
+		player->GetNEOViewModel()->DrawRenderToTextureDebugInfo(player, hullMins, hullMaxs, colorBlue, "startLeanPos", player->GetAbsOrigin());
+	}
+#endif
 
 	return roundf(trace.startpos.DistTo(trace.endpos) * 100) / 100;
-
 }
 
 
