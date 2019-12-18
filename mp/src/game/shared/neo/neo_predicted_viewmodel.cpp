@@ -43,6 +43,8 @@ CNEOPredictedViewModel::CNEOPredictedViewModel()
 	IMaterial *pass = materials->FindMaterial("dev/toc_cloakpass", TEXTURE_GROUP_CLIENT_EFFECTS);
 	Assert(pass && pass->IsPrecached());
 #endif
+
+	AddToInterpolationList();
 #endif
 }
 
