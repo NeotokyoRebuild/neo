@@ -205,6 +205,12 @@ public:
 	{
 		Msg("Teammenu access cb\n");
 
+		if (!g_pNeoTeamMenu)
+		{
+			DevMsg("CNeoTeamMenu is not ready\n");
+			return;
+		}
+
 		vgui::EditablePanel *panel = dynamic_cast<vgui::EditablePanel*>
 			(GetClientModeNormal()->GetViewport()->FindChildByName(PANEL_TEAM));
 		if (!panel)
