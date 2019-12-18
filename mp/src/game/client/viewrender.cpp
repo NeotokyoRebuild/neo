@@ -770,6 +770,11 @@ static void SetClearColorToFogColor()
 #ifdef HL2_CLIENT_DLL
 CLIENTEFFECT_REGISTER_BEGIN( PrecacheViewRender )
 	CLIENTEFFECT_MATERIAL( "scripted/intro_screenspaceeffect" )
+
+#ifdef NEO
+	CLIENTEFFECT_MATERIAL("dev/toc_cloakpass")
+	CLIENTEFFECT_MATERIAL("dev/toc_vm")
+#endif
 CLIENTEFFECT_REGISTER_END()
 #endif
 
@@ -812,6 +817,7 @@ CLIENTEFFECT_REGISTER_BEGIN( PrecachePostProcessingEffects )
 	CLIENTEFFECT_MATERIAL("dev/ssao")
 	CLIENTEFFECT_MATERIAL("dev/ssaoblur")
 	CLIENTEFFECT_MATERIAL("dev/ssao_combine")
+	CLIENTEFFECT_MATERIAL("dev/motion")
 #endif
 
 CLIENTEFFECT_REGISTER_END_CONDITIONAL( engine->GetDXSupportLevel() >= 90 )

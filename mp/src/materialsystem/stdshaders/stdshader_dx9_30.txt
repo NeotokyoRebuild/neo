@@ -14,6 +14,7 @@
 ////////////////////////////////
 
 neo_gaussianblur_ps30.fxc
+//neo_motionvision_modelshader_ps30.fxc
 neo_motionvision_pass1_ps30.fxc
 neo_motionvision_pass2_ps30.fxc
 neo_nightvision_ps30.fxc
@@ -25,4 +26,5 @@ neo_ssao_ps30.fxc
 // NEO VERTEX SHADERS //
 ////////////////////////
 
+//neo_motionvision_modelshader_vs30.fxc
 neo_passthrough_vs30.fxc

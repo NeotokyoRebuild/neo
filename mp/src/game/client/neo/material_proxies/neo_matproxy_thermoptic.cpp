@@ -9,6 +9,7 @@
 #include "toolframework_client.h"
 
 #include "c_neo_player.h"
+#include "weapon_neobasecombatweapon.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -43,6 +44,8 @@ bool CNEOTocMaterialProxy::Init(IMaterial *pMaterial, KeyValues *pKeyValues)
 	return foundVar;
 }
 
+ConVar mat_neo_toc_test("mat_neo_toc_test", "0.1", FCVAR_CHEAT);
+
 void CNEOTocMaterialProxy::OnBind(void *pC_BaseEntity)
 {
 	if (!m_pResultVar)
@@ -55,37 +58,53 @@ void CNEOTocMaterialProxy::OnBind(void *pC_BaseEntity)
 		return;
 	}
 
+	m_pResultVar->SetFloatValue(mat_neo_toc_test.GetFloat());
+	return;
+
 	auto renderable = static_cast<IClientRenderable*>(pC_BaseEntity);
+	Assert(renderable);
 
-
-	void *entity = dynamic_cast<C_NEO_Player*>(renderable);
-
-	// This entity is a valid C_NEO_Player
-	if (entity)
+	// This entity is a valid C_NEO_Player?
+	auto pNeoPlayer = dynamic_cast<C_NEO_Player*>(renderable);
+	if (pNeoPlayer)
 	{
-		auto player = reinterpret_cast<C_NEO_Player*>(entity);
-
-		const bool isCloaked = player->IsCloaked();
-
-		m_pResultVar->SetIntValue(isCloaked ? 1 : 0);
+		m_pResultVar->SetIntValue(pNeoPlayer->IsCloaked() ? 1 : 0);
 
 		//DevMsg("Camo for weapon is %s\n", isCloaked ? "enabled" : "disabled");
+		return;
 	}
-	// It wasn't a player, see if it's a weapon.
-	else
+
+	// This entity is a viewmodel?
+	auto pVM = dynamic_cast<C_NEOPredictedViewModel*>(renderable);
+	if (pVM)
 	{
-		entity = dynamic_cast<C_BaseCombatWeapon*>(renderable);
-
-		// It's neither a weapon nor a player.
-		// We don't know what it is, but abort! This shouldn't happen.
-		if (!entity)
-		{
-			Assert(false);
-			return;
-		}
-
-		//auto weapon = reinterpret_cast<C_BaseCombatWeapon*>(entity);
+		auto pOwner = static_cast<C_NEO_Player*>(pVM->GetOwner());
+		Assert(pOwner);
+		m_pResultVar->SetIntValue(pOwner->IsCloaked() ? 1 : 0);
+		return;
 	}
+
+	// This entity is a weapon?
+	auto pWep = dynamic_cast<C_BaseHL2MPCombatWeapon*>(renderable);
+	if (pWep)
+	{
+		auto pOwner = static_cast<C_NEO_Player*>(pWep->GetOwner());
+		if (pOwner)
+		{
+			m_pResultVar->SetIntValue(pOwner->IsCloaked() ? 1 : 0);
+		}
+		else
+		{
+			m_pResultVar->SetIntValue(0);
+		}
+		return;
+	}
+
+	// All checks above failed; this is not a player/vm/wep.
+	// Probably a mistake if we reach here. If not, add your use case above.
+	Assert(false);
+
+	m_pResultVar->SetIntValue(0);
 }
 
 IMaterial *CNEOTocMaterialProxy::GetMaterial()

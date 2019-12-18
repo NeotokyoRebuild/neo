@@ -37,6 +37,13 @@ CNEOPredictedViewModel::CNEOPredictedViewModel()
 	m_vecNextViewOffset = vec3_origin;
 
 	m_angNextViewAngles = vec3_angle;
+
+#ifdef CLIENT_DLL
+#ifdef DEBUG
+	IMaterial *pass = materials->FindMaterial("dev/toc_cloakpass", TEXTURE_GROUP_CLIENT_EFFECTS);
+	Assert(pass && pass->IsPrecached());
+#endif
+#endif
 }
 
 CNEOPredictedViewModel::~CNEOPredictedViewModel()
@@ -249,23 +256,26 @@ int CNEOPredictedViewModel::DrawModel(int flags)
 	{
 		if (pPlayer->IsCloaked())
 		{
-			//int ret = BaseClass::DrawModel(flags);
-			int ret = 0;
-
-			IMaterial *pass = materials->FindMaterial("toc_remake_vm", TEXTURE_GROUP_VIEW_MODEL);
+			IMaterial *pass = materials->FindMaterial("dev/toc_vm", TEXTURE_GROUP_VIEW_MODEL);
 			Assert(pass && !pass->IsErrorMaterial());
 
 			if (pass && !pass->IsErrorMaterial())
 			{
+				if (!pass->IsPrecached())
+				{
+					PrecacheMaterial(pass->GetName());
+					Assert(pass->IsPrecached());
+				}
+
 				//modelrender->SuppressEngineLighting(true);
 				modelrender->ForcedMaterialOverride(pass);
-				ret = BaseClass::DrawModel(flags | STUDIO_RENDER | STUDIO_TRANSPARENCY);
+				int ret = BaseClass::DrawModel(flags /*| STUDIO_RENDER | STUDIO_DRAWTRANSLUCENTSUBMODELS | STUDIO_TRANSPARENCY*/);
 				//modelrender->SuppressEngineLighting(false);
-
 				modelrender->ForcedMaterialOverride(NULL);
+				return ret;
 			}
-
-			return ret;
+			
+			return 0;
 		}
 	}
 
@@ -546,3 +556,18 @@ void CNEOPredictedViewModel::SetWeaponModel(const char* pszModelname,
 {
 	BaseClass::SetWeaponModel(pszModelname, weapon);
 }
+
+#ifdef CLIENT_DLL
+RenderGroup_t CNEOPredictedViewModel::GetRenderGroup()
+{
+	auto pPlayer = static_cast<C_NEO_Player*>(GetOwner());
+	Assert(pPlayer);
+
+	if (pPlayer)
+	{
+		return pPlayer->IsCloaked() ? RENDER_GROUP_VIEW_MODEL_TRANSLUCENT : RENDER_GROUP_VIEW_MODEL_OPAQUE;
+	}
+
+	return BaseClass::GetRenderGroup();
+}
+#endif

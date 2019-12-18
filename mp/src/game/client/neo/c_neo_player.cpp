@@ -318,52 +318,55 @@ C_NEOPredictedViewModel *C_NEO_Player::GetNEOViewModel()
 
 int C_NEO_Player::DrawModel( int flags )
 {
-	if (true || m_bUnhandledTocChange)
+	if (true || m_bUnhandledTocChange) // NEO TODO (Rain): remove redundant bool
 	{
+#if(0)
 		auto pNeoLocalPlayer = GetLocalNEOPlayer();
-		if (pNeoLocalPlayer && pNeoLocalPlayer->IsInVision())
+		if (pNeoLocalPlayer && pNeoLocalPlayer->IsInVision() || IsCloaked())
 		{
 			// TODO Do motion stencil pass
+			IMaterial *mvTex = materials->FindMaterial("dev/toc_cloakpass", TEXTURE_GROUP_MODEL);
+
+			Assert(mvTex && !mvTex->IsErrorMaterial());
+
+			if (mvTex && !mvTex->IsErrorMaterial())
+			{
+				modelrender->ForcedMaterialOverride(mvTex);
+				ret = BaseClass::DrawModel(flags);
+
+				modelrender->ForcedMaterialOverride(NULL);
+			}
 		}
-		else if (IsCloaked())
+#endif
+
+		int ret = 0;
+
+		if (IsCloaked())
 		{
-			IMaterial *pass1 = materials->FindMaterial("toc_remake_pass1", TEXTURE_GROUP_MODEL);
-			IMaterial *pass2 = materials->FindMaterial("toc_remake_pass2", TEXTURE_GROUP_MODEL);
+			IMaterial *pass = materials->FindMaterial("dev/toc_cloakpass", TEXTURE_GROUP_CLIENT_EFFECTS);
 
-			Assert(pass1 && !pass1->IsErrorMaterial());
-			Assert(pass2 && !pass2->IsErrorMaterial());
-
-			int ret = 0;
-			//SetRenderColorA(100);
-			//int ret = BaseClass::DrawModel(STUDIO_RENDER | STUDIO_TRANSPARENCY | STUDIO_NOSHADOWS);
+			Assert(pass && !pass->IsErrorMaterial());
 
 			//IMaterial *foo = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_MODEL);
-			if (pass1 && !pass1->IsErrorMaterial())
+			if (pass && !pass->IsErrorMaterial())
 			{
 				//g_pClientShadowMgr->RemoveAllShadowsFromReceiver((IClientRenderable*)this, ShadowReceiver_t::SHADOW_RECEIVER_STUDIO_MODEL);
 
 				const int extraFlags = STUDIO_RENDER | STUDIO_TRANSPARENCY | STUDIO_NOSHADOWS | STUDIO_DRAWTRANSLUCENTSUBMODELS;
 
-				modelrender->ForcedMaterialOverride(pass1);
-				BaseClass::DrawModel(flags | extraFlags);
-
-				if (pass2 && !pass2->IsErrorMaterial())
-				{
-					modelrender->ForcedMaterialOverride(pass2);
-					ret = BaseClass::DrawModel(flags | extraFlags);
-				}
+				modelrender->ForcedMaterialOverride(pass);
+				ret = BaseClass::DrawModel(flags | extraFlags);
 
 				modelrender->ForcedMaterialOverride(NULL);
 			}
-
-			return ret;
-		}
-		else
-		{
-			// We should disable camo here
 		}
 
 		m_bUnhandledTocChange = false;
+
+		if (ret != 0)
+		{
+			return ret;
+		}
 	}
 
 	return BaseClass::DrawModel(flags);

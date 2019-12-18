@@ -7,6 +7,7 @@
 #include "predicted_viewmodel.h"
 #ifdef CLIENT_DLL
 #include "clienteffectprecachesystem.h"
+#include <engine/IClientLeafSystem.h>
 #endif
 
 #ifdef CLIENT_DLL
@@ -38,6 +39,8 @@ public:
 
 #ifdef CLIENT_DLL
 	virtual int DrawModel(int flags);
+
+	virtual RenderGroup_t GetRenderGroup();
 #endif
 
 #ifdef CLIENT_DLL
