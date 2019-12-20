@@ -28,6 +28,10 @@
 	#include "weapon_hl2mpbase.h"
 	#include "hl2mp_weapon_parse.h"
 
+	#include "weapon_srs.h"
+	#include "weapon_zr68l.h"
+	//#include "weapon_m41l.h"
+
 	#include <mathlib/mathlib.h>
 #endif
 
@@ -82,11 +86,11 @@ int ClientModeHL2MPNormal::GetDeathMessageStartHeight( void )
 	return m_pViewport->GetDeathMessageStartHeight();
 }
 
-IViewPortPanel* CHudViewport::CreatePanelByName( const char *szPanelName )
+IViewPortPanel* CHudViewport::CreatePanelByName(const char *szPanelName)
 {
 	IViewPortPanel* newpanel = NULL;
 
-	if ( Q_strcmp( PANEL_SCOREBOARD, szPanelName) == 0 )
+	if (Q_strcmp(PANEL_SCOREBOARD, szPanelName) == 0)
 	{
 #ifdef NEO
 		newpanel = new CNEOScoreBoard(this);
@@ -95,14 +99,14 @@ IViewPortPanel* CHudViewport::CreatePanelByName( const char *szPanelName )
 #endif
 		return newpanel;
 	}
-	else if ( Q_strcmp(PANEL_INFO, szPanelName) == 0 )
+	else if (Q_strcmp(PANEL_INFO, szPanelName) == 0)
 	{
-		newpanel = new CHL2MPTextWindow( this );
+		newpanel = new CHL2MPTextWindow(this);
 		return newpanel;
 	}
-	else if ( Q_strcmp(PANEL_SPECGUI, szPanelName) == 0 )
+	else if (Q_strcmp(PANEL_SPECGUI, szPanelName) == 0)
 	{
-		newpanel = new CHL2MPSpectatorGUI( this );	
+		newpanel = new CHL2MPSpectatorGUI(this);
 		return newpanel;
 	}
 #ifdef NEO
@@ -113,8 +117,8 @@ IViewPortPanel* CHudViewport::CreatePanelByName( const char *szPanelName )
 	}
 #endif
 
-	
-	return BaseClass::CreatePanelByName( szPanelName ); 
+
+	return BaseClass::CreatePanelByName(szPanelName);
 }
 
 //-----------------------------------------------------------------------------
@@ -123,7 +127,7 @@ IViewPortPanel* CHudViewport::CreatePanelByName( const char *szPanelName )
 ClientModeHL2MPNormal::ClientModeHL2MPNormal()
 {
 	m_pViewport = new CHudViewport();
-	m_pViewport->Start( gameuifuncs, gameeventmanager );
+	m_pViewport->Start(gameuifuncs, gameeventmanager);
 }
 
 
@@ -143,10 +147,10 @@ void ClientModeHL2MPNormal::Init()
 	BaseClass::Init();
 
 	// Load up the combine control panel scheme
-	g_hVGuiCombineScheme = vgui::scheme()->LoadSchemeFromFileEx( enginevgui->GetPanel( PANEL_CLIENTDLL ), "resource/CombinePanelScheme.res", "CombineScheme" );
+	g_hVGuiCombineScheme = vgui::scheme()->LoadSchemeFromFileEx(enginevgui->GetPanel(PANEL_CLIENTDLL), "resource/CombinePanelScheme.res", "CombineScheme");
 	if (!g_hVGuiCombineScheme)
 	{
-		Warning( "Couldn't load combine panel scheme!\n" );
+		Warning("Couldn't load combine panel scheme!\n");
 	}
 }
 
@@ -180,6 +184,23 @@ float ClientModeHL2MPNormal::GetViewModelFOV()
 
 			const CHL2MPSWeaponInfo *pWepInfo = &pWeapon->GetHL2MPWpnData();
 			Assert(pWepInfo);
+
+			auto pVm = pOwner->GetViewModel();
+			if (pVm)
+			{
+				// Toggle sniper viewmodel rendering according to scoped status.
+				if (pWeapon->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
+				{
+					if (pOwner->IsInAim())
+					{
+						pVm->AddEffects(EF_NODRAW);
+					}
+					else
+					{
+						pVm->RemoveEffects(EF_NODRAW);
+					}
+				}
+			}
 
 			static float flCurrentFov = pWepInfo->m_flVMFov;
 			const float flTargetFov = pOwner->IsInAim() ? (pWepInfo->m_flVMAimFov) : (pWepInfo->m_flVMFov);
