@@ -154,7 +154,7 @@ void ClientModeHL2MPNormal::Init()
 
 
 ConVar cl_neo_decouple_vm_fov("cl_neo_decouple_vm_fov", "1", FCVAR_CHEAT, "Whether to decouple aim FOV from viewmodel FOV.", true, 0.0f, true, 1.0f);
-ConVar cl_neo_decoupled_vm_fov_lerp_scale("cl_neo_decoupled_vm_fov_lerp_scale", "14", FCVAR_CHEAT, "Multiplier for decoupled FOV lerp speed.", true, 0.01, false, 0);
+ConVar cl_neo_decoupled_vm_fov_lerp_scale("cl_neo_decoupled_vm_fov_lerp_scale", "10", FCVAR_CHEAT, "Multiplier for decoupled FOV lerp speed.", true, 0.01, false, 0);
 
 //-----------------------------------------------------------------------------
 // Purpose: Use correct view model FOV
@@ -172,6 +172,12 @@ float ClientModeHL2MPNormal::GetViewModelFOV()
 			// Should always have an owner if we've reached this far.
 			Assert(pOwner);
 
+			// While the adjust factor appears to be originally intended for LOD calculations,
+			// it gives us a way to tie the vm fov lerp to player's actual zoom rate without having to
+			// roll our own implementation.
+			const float flScale = cl_neo_decoupled_vm_fov_lerp_scale.GetFloat() / MAX(0.1f, pOwner->GetFOVDistanceAdjustFactor());
+			//DevMsg("GetViewModelFOV flScale: %.2f\n", flScale);
+
 			const CHL2MPSWeaponInfo *pWepInfo = &pWeapon->GetHL2MPWpnData();
 			Assert(pWepInfo);
 
@@ -185,7 +191,7 @@ float ClientModeHL2MPNormal::GetViewModelFOV()
 			flLastTime = flThisTime;
 
 			// Lerp towards the desired fov
-			flCurrentFov = Lerp(flDeltaTime * cl_neo_decoupled_vm_fov_lerp_scale.GetFloat(), flCurrentFov, flTargetFov);
+			flCurrentFov = Lerp(flDeltaTime * flScale, flCurrentFov, flTargetFov);
 
 			// Snap to target when approximately equal
 			const float flThreshold = 0.001f;
