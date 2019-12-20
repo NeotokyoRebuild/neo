@@ -27,6 +27,22 @@ WeaponData
 	
 	"damage"			"17"
 
+	"ViewModelOffset"
+	{
+		"fov"		"65.0"
+		"forward"	"5.0"
+		"right"		"5.0"
+		"up"		"0"
+	}
+	
+	"AimOffset"
+	{
+		"fov"		"40"
+		"forward"	"-5"
+		"right"		"-3.425"
+		"up"		"7.825"
+	}
+
 	// Sounds for the weapon. There is a max of 16 sounds per category (i.e. max 16 "single_shot" sounds)
 	SoundData
 	{
@@ -89,21 +105,5 @@ WeaponData
 			Mins	"-10 -7 -6"
 			Maxs	"22 8 9"
 		}
-	}
-	
-	"ViewModelOffset"
-	{
-		"fov"		"65.0"
-		"forward"	"5.0"
-		"right"		"5.0"
-		"up"		"0"
-	}
-	
-	"AimOffset"
-	{
-		"fov"		"40"
-		"forward"	"-5"
-		"right"		"-3.425"
-		"up"		"7.825"
 	}
 }

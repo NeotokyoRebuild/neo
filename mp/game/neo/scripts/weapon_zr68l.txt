@@ -45,7 +45,7 @@ WeaponData
 		"forward"	"10.0"
 		"right"		"8.0"
 		"up"		"0"
-		"yaw"		"-2"
+		//"yaw"		"-2"
 	}
 	
 	"AimOffset"

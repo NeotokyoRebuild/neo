@@ -49,19 +49,33 @@ WeaponData
 	
 	"ViewModelOffset"
 	{
-		"fov"		"54.0"
-		"forward"	"25.0"
-		"right"		"9.0"
+		"fov"		"60.0"
+		"forward"	"10.0"
+		"right"		"8.0"
 		"up"		"0"
-		"yaw"		"-2"
+		//"yaw"		"-2"
 	}
 	
 	"AimOffset"
 	{
-		"fov"		"32"
-		"forward"	"-1.5"
-		"right"		"1.31"
-		"up"		"2.53"
+		"fov"		"55"
+		"forward"	"-3.5"
+		"right"		"1.04"
+		"up"		"3.45"
+	}
+	
+	ModelBounds
+	{
+		Viewmodel
+		{
+			Mins	"-10 -4 -13"
+			Maxs	"21 9 -1"
+		}
+		World
+		{
+			Mins	"-10 -7 -6"
+			Maxs	"22 8 9"
+		}
 	}
 
 	// Sounds for the weapon. There is a max of 16 sounds per category (i.e. max 16 "single_shot" sounds)
@@ -112,19 +126,6 @@ WeaponData
 				"y"			"48"
 				"width"		"24"
 				"height"	"24"
-		}
-	}
-	ModelBounds
-	{
-		Viewmodel
-		{
-			Mins	"-10 -4 -13"
-			Maxs	"21 9 -1"
-		}
-		World
-		{
-			Mins	"-10 -7 -6"
-			Maxs	"22 8 9"
 		}
 	}	
 }
