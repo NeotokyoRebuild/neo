@@ -40,17 +40,16 @@ WeaponData
 	
 	"ViewModelOffset"
 	{
-		"fov"		"70.0"
-		"forward"	"15.0"
-		"right"		"6.0"
-		"up"		"0.0"
-		"yaw"		"-2"
+		"fov"		"70"
+		"forward"	"15"
+		"right"		"6"
+		"up"		"0"
 	}
 	
 	"AimOffset"
 	{
 		"fov"		"50"
-		"forward"	"0.0"
+		"forward"	"0"
 		"right"		"1.275"
 		"up"		"0.5"
 	}

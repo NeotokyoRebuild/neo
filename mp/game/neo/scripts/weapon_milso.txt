@@ -38,19 +38,18 @@ WeaponData
 	
 	"ViewModelOffset"
 	{
-		"fov"		"54.0"
-		"forward"	"25.0"
-		"right"		"9.0"
+		"fov"		"65"
+		"forward"	"5"
+		"right"		"5"
 		"up"		"0"
-		"yaw"		"-2"
 	}
 	
 	"AimOffset"
 	{
-		"fov"		"32"
-		"forward"	"-1.5"
-		"right"		"1.31"
-		"up"		"2.53"
+		"fov"		"40"
+		"forward"	"-8"
+		"right"		"-3.425"
+		"up"		"6.6"
 	}
 	
 	// Sounds for the weapon. There is a max of 16 sounds per category (i.e. max 16 "single_shot" sounds)

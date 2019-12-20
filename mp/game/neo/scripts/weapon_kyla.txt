@@ -38,9 +38,9 @@ WeaponData
 	
 	"ViewModelOffset"
 	{
-		"fov"		"65.0"
-		"forward"	"-1.0"
-		"right"		"5.0"
+		"fov"		"65"
+		"forward"	"-1"
+		"right"		"5"
 		"up"		"0"
 	}
 	
