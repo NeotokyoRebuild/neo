@@ -108,7 +108,7 @@ public:
 	virtual void SUB_Remove(void) { }
 
 private:
-	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &);
+	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &other);
 };
 
 #endif // WEAPON_NEO_BASECOMBATWEAPON_SHARED_H

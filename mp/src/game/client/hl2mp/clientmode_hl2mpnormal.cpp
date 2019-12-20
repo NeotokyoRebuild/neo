@@ -23,6 +23,14 @@
 	#include "hl2mpclientscoreboard.h"
 #endif
 
+#ifdef NEO
+	#include "weapon_neobasecombatweapon.h"
+	#include "weapon_hl2mpbase.h"
+	#include "hl2mp_weapon_parse.h"
+
+	#include <mathlib/mathlib.h>
+#endif
+
 #include "hl2mptextwindow.h"
 #include "ienginevgui.h"
 
@@ -142,5 +150,55 @@ void ClientModeHL2MPNormal::Init()
 	}
 }
 
+#ifdef NEO
 
+
+ConVar cl_neo_decouple_vm_fov("cl_neo_decouple_vm_fov", "1", FCVAR_CHEAT, "Whether to decouple aim FOV from viewmodel FOV.", true, 0.0f, true, 1.0f);
+ConVar cl_neo_decoupled_vm_fov_lerp_scale("cl_neo_decoupled_vm_fov_lerp_scale", "14", FCVAR_CHEAT, "Multiplier for decoupled FOV lerp speed.", true, 0.01, false, 0);
+
+//-----------------------------------------------------------------------------
+// Purpose: Use correct view model FOV
+//-----------------------------------------------------------------------------
+float ClientModeHL2MPNormal::GetViewModelFOV()
+{
+	if (cl_neo_decouple_vm_fov.GetBool())
+	{
+		// NEO TODO (Rain): switch to static cast when all weapons
+		// inherit in such a way that downcast is guaranteed to be valid.
+		auto pWeapon = dynamic_cast<C_NEOBaseCombatWeapon*>(GetActiveWeapon());
+		if (pWeapon)
+		{
+			auto pOwner = static_cast<C_NEO_Player*>(pWeapon->GetOwner());
+			// Should always have an owner if we've reached this far.
+			Assert(pOwner);
+
+			const CHL2MPSWeaponInfo *pWepInfo = &pWeapon->GetHL2MPWpnData();
+			Assert(pWepInfo);
+
+			static float flCurrentFov = pWepInfo->m_flVMFov;
+			const float flTargetFov = pOwner->IsInAim() ? (pWepInfo->m_flVMAimFov) : (pWepInfo->m_flVMFov);
+
+			// Get delta time
+			const float flThisTime = gpGlobals->curtime;
+			static float flLastTime = flThisTime;
+			const float flDeltaTime = flThisTime - flLastTime;
+			flLastTime = flThisTime;
+
+			// Lerp towards the desired fov
+			flCurrentFov = Lerp(flDeltaTime * cl_neo_decoupled_vm_fov_lerp_scale.GetFloat(), flCurrentFov, flTargetFov);
+
+			// Snap to target when approximately equal
+			const float flThreshold = 0.001f;
+			if (fabs(flTargetFov - flCurrentFov) < flThreshold)
+			{
+				flCurrentFov = flTargetFov;
+			}
+
+			return flCurrentFov;
+		}
+	}
+
+	return BaseClass::GetViewModelFOV();
+}
+#endif
 

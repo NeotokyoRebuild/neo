@@ -24,8 +24,10 @@ BEGIN_DATADESC( CNEOBaseCombatWeapon )
 END_DATADESC()
 #endif
 
+#ifdef CLIENT_DLL
 BEGIN_PREDICTION_DATA( CNEOBaseCombatWeapon )
 END_PREDICTION_DATA()
+#endif
 
 const char *GetWeaponByLoadoutId(int id)
 {

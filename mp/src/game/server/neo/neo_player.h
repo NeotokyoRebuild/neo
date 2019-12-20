@@ -139,6 +139,7 @@ public:
 	CNetworkVar(bool, m_bInVision);
 	CNetworkVar(bool, m_bIsAirborne);
 	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
+	CNetworkVar(bool, m_bInAim);
 
 	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
 

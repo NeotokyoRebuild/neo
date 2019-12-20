@@ -736,7 +736,7 @@ void CViewRender::SetUpViews()
 	//  closest point of approach seems to be view center to top of crouched box
 	view.zNear			    = GetZNear();
 	view.zNearViewmodel	    = 1;
-	view.fov				= default_fov.GetFloat();
+	view.fov = default_fov.GetFloat();
 
 	view.m_bOrtho			= false;
     view.m_bViewToProjectionOverride = false;
@@ -820,8 +820,12 @@ void CViewRender::SetUpViews()
 	float fDefaultFov = default_fov.GetFloat();
 	float flFOVOffset = fDefaultFov - view.fov;
 
+#ifdef NEO // Decouple viewmodel FOV from view FOV.
+	view.fovViewmodel = g_pClientMode->GetViewModelFOV();
+#else
 	//Adjust the viewmodel's FOV to move with any FOV offsets on the viewer's end
 	view.fovViewmodel = g_pClientMode->GetViewModelFOV() - flFOVOffset;
+#endif
 
 	if ( UseVR() )
 	{

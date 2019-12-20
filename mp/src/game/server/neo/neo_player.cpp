@@ -49,6 +49,7 @@ SendPropBool(SENDINFO(m_bInVision)),
 SendPropBool(SENDINFO(m_bIsAirborne)),
 SendPropBool(SENDINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 SendPropBool(SENDINFO(m_bShowTestMessage)),
+SendPropBool(SENDINFO(m_bInAim)),
 
 SendPropString(SENDINFO(m_pszTestMessage)),
 
@@ -71,6 +72,7 @@ DEFINE_FIELD(m_bInVision, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bIsAirborne, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bHasBeenAirborneForTooLongToSuperJump, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bShowTestMessage, FIELD_BOOLEAN),
+DEFINE_FIELD(m_bInAim, FIELD_BOOLEAN),
 
 DEFINE_FIELD(m_pszTestMessage, FIELD_STRING),
 
@@ -309,6 +311,7 @@ CNEO_Player::CNEO_Player()
 	m_bInThermOpticCamo = m_bInVision = false;
 	m_bIsAirborne = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
+	m_bInAim = false;
 
 	m_leanPosTargetOffset = vec3_origin;
 
@@ -888,6 +891,8 @@ inline void CNEO_Player::Weapon_SetZoom(bool bZoomIn)
 	{
 		SetFOV((CBaseEntity*)this, GetDefaultFOV(), zoomSpeedSecs);
 	}
+
+	m_bInAim = bZoomIn;
 }
 
 void UpdateLayerSequenceGeneric(CNEO_Player *pPlayer, CStudioHdr *pStudioHdr, int iLayer, bool &bEnabled, float &flCurCycle, int &iSequence, bool bWaitAtEnd)

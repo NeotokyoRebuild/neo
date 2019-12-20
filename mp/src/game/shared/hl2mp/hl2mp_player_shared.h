@@ -34,6 +34,8 @@ enum HL2MPPlayerState
 #define CHL2MP_Player C_HL2MP_Player
 #endif
 
+class CHL2MP_Player;
+
 class CPlayerAnimState
 {
 public:

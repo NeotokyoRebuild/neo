@@ -68,6 +68,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropBool(RECVINFO(m_bInVision)),
 	RecvPropBool(RECVINFO(m_bIsAirborne)),
 	RecvPropBool(RECVINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
+	RecvPropBool(RECVINFO(m_bInAim)),
 
 	RecvPropArray(RecvPropVector(RECVINFO(m_rvFriendlyPlayerPositions[0])), m_rvFriendlyPlayerPositions),
 END_RECV_TABLE()
@@ -271,6 +272,7 @@ C_NEO_Player::C_NEO_Player()
 	m_bInThermOpticCamo = m_bInVision = m_bUnhandledTocChange = false;
 	m_bIsAirborne = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
+	m_bInAim = false;
 
 	m_pNeoPanel = NULL;
 }
@@ -809,6 +811,8 @@ bool C_NEO_Player::ShouldDrawHL2StyleQuickHud(void)
 
 void C_NEO_Player::Weapon_Drop(C_BaseCombatWeapon *pWeapon)
 {
+	Weapon_SetZoom(false);
+
 	C_WeaponGhost *ghost = dynamic_cast<C_WeaponGhost*>(pWeapon);
 	if (ghost)
 	{
@@ -927,17 +931,13 @@ void C_NEO_Player::Weapon_AimToggle(C_BaseCombatWeapon *pWep)
 	// NEO TODO/HACK: Not all neo weapons currently inherit
 	// through a base neo class, so we can't static_cast!!
 	auto neoCombatWep = dynamic_cast<C_NEOBaseCombatWeapon*>(pWep);
-	if (!neoCombatWep)
-	{
-		return;
-	}
-	else if (!IsAllowedToZoom(neoCombatWep))
-	{
-		return;
-	}
 
-	bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR) == HIDEHUD_CROSSHAIR;
-	Weapon_SetZoom(showCrosshair);
+	// This implies the wep ptr is valid, so we don't bother checking
+	if (IsAllowedToZoom(neoCombatWep))
+	{
+		const bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR) == HIDEHUD_CROSSHAIR;
+		Weapon_SetZoom(showCrosshair);
+	}
 }
 
 inline void C_NEO_Player::Weapon_SetZoom(bool bZoomIn)
@@ -958,6 +958,8 @@ inline void C_NEO_Player::Weapon_SetZoom(bool bZoomIn)
 
 		SetFOV((CBaseEntity*)this, GetDefaultFOV(), zoomSpeedSecs);
 	}
+
+	m_bInAim = bZoomIn;
 }
 
 inline bool C_NEO_Player::IsCarryingGhost(void)
