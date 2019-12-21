@@ -180,7 +180,7 @@ float CNEOPredictedViewModel::calculateLeanAngle(float freeRoom, CNEO_Player *pl
 
 void CNEOPredictedViewModel::lean(CNEO_Player *player){
 #ifdef CLIENT_DLL
-	input->ExtraMouseSample(gpGlobals->frametime,1);
+	input->ExtraMouseSample(gpGlobals->frametime, 1);
 #endif
 	QAngle viewAng = player->LocalEyeAngles();
 	float Ycurrent = Yprevious;
@@ -211,19 +211,21 @@ void CNEOPredictedViewModel::lean(CNEO_Player *player){
 	const double dTime = thisTime - lastTime;
 	lastTime = thisTime;
 	float Ymoved = dTime * neo_lean_speed.GetFloat();
+	if (dY != 0){
+		if (dY > 0){
+			Ycurrent += Ymoved;
+			if (Ycurrent >= Yfinal - 0.05f){
+				Ycurrent = Yfinal;
+			}
+		}
+		else{
+			Ycurrent -= Ymoved;
+			if (Ycurrent <= Yfinal + 0.05f){
+				Ycurrent = Yfinal;
+			}
+		}
+	}
 
-	if (dY > 0){
-		Ycurrent += Ymoved;
-		if (Ycurrent >= Yfinal - 0.05f){
-			Ycurrent = Yfinal;
-		}
-	}
-	else{
-		Ycurrent -= Ymoved;
-		if (Ycurrent <= Yfinal + 0.05f){
-			Ycurrent = Yfinal;
-		}
-	}
 	Vector viewOffset(0, 0, player->GetViewOffset().z);
 	viewOffset.y = Ycurrent;
 	Yprevious = Ycurrent;
@@ -251,32 +253,6 @@ void CNEOPredictedViewModel::CalcViewModelLag(Vector& origin, QAngle& angles,
 {
 	BaseClass::CalcViewModelLag(origin, angles, original_angles);
 	return;
-
-#ifdef CLIENT_DLL
-	// Calculate our drift
-	Vector	forward, right, up;
-	AngleVectors( angles, &forward, &right, &up );
-	
-	CInterpolationContext context;
-	context.EnableExtrapolation( neo_lean_allow_extrapolation.GetBool() );
-
-	// Add an entry to the history.
-	m_vLagAngles = angles;
-	m_LagAnglesHistory.NoteChanged( gpGlobals->curtime, cl_wpn_sway_interp.GetFloat(), false );
-
-	// Interpolate back 100ms.
-	m_LagAnglesHistory.Interpolate( gpGlobals->curtime, cl_wpn_sway_interp.GetFloat() );
-	
-	// Now take the 100ms angle difference and figure out how far the forward vector moved in local space.
-	Vector vLaggedForward;
-	QAngle angleDiff = m_vLagAngles - angles;
-	AngleVectors( -angleDiff, &vLaggedForward, 0, 0 );
-	Vector vForwardDiff = Vector(1,0,0) - vLaggedForward;
-
-	// Now offset the origin using that.
-	vForwardDiff *= cl_wpn_sway_scale.GetFloat();
-	origin += forward*vForwardDiff.x + right*-vForwardDiff.y + up*vForwardDiff.z;
-#endif
 }
 
 void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
