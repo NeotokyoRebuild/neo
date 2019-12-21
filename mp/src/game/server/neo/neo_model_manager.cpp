@@ -369,6 +369,8 @@ void CNEOModelManager::Precache( void ) const
 	PrecacheMaterial("toc_remake_vm.vmt");
 
 	//PrecacheMaterial("water/ntwater_ivy");
+
+	PrecacheMaterial("dev/motion_third.vmt");
 }
 
 static inline int GetTeamArrOffset(int iTeam)

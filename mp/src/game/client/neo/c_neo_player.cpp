@@ -269,7 +269,7 @@ C_NEO_Player::C_NEO_Player()
 	m_vecGhostMarkerPos = vec3_origin;
 	m_bGhostExists = false;
 	m_bShowClassMenu = m_bShowTeamMenu = m_bIsClassMenuOpen = m_bIsTeamMenuOpen = false;
-	m_bInThermOpticCamo = m_bInVision = m_bUnhandledTocChange = false;
+	m_bInThermOpticCamo = m_bInVision = false;
 	m_bIsAirborne = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
 	m_bInAim = false;
@@ -288,8 +288,6 @@ inline void C_NEO_Player::CheckThermOpticButtons()
 		if (IsAlive())
 		{
 			m_bInThermOpticCamo = !m_bInThermOpticCamo;
-
-			m_bUnhandledTocChange = true;
 		}
 	}
 }
@@ -326,55 +324,45 @@ C_NEOPredictedViewModel *C_NEO_Player::GetNEOViewModel()
 
 int C_NEO_Player::DrawModel( int flags )
 {
-	if (true || m_bUnhandledTocChange) // NEO TODO (Rain): remove redundant bool
+	int ret = 0;
+
+	// Do cloak if cloaked
+	if (IsCloaked())
 	{
-#if(0)
-		auto pNeoLocalPlayer = GetLocalNEOPlayer();
-		if (pNeoLocalPlayer && pNeoLocalPlayer->IsInVision() || IsCloaked())
+		IMaterial *pass = materials->FindMaterial("dev/toc_cloakpass", TEXTURE_GROUP_CLIENT_EFFECTS);
+		Assert(pass && !pass->IsErrorMaterial());
+
+		if (pass && !pass->IsErrorMaterial())
 		{
-			// TODO Do motion stencil pass
-			IMaterial *mvTex = materials->FindMaterial("dev/toc_cloakpass", TEXTURE_GROUP_MODEL);
-
-			Assert(mvTex && !mvTex->IsErrorMaterial());
-
-			if (mvTex && !mvTex->IsErrorMaterial())
-			{
-				modelrender->ForcedMaterialOverride(mvTex);
-				ret = BaseClass::DrawModel(flags);
-
-				modelrender->ForcedMaterialOverride(NULL);
-			}
+			//const int extraFlags = STUDIO_RENDER | STUDIO_TRANSPARENCY | STUDIO_NOSHADOWS | STUDIO_DRAWTRANSLUCENTSUBMODELS;
+			modelrender->ForcedMaterialOverride(pass);
+			ret = BaseClass::DrawModel(flags /*| extraFlags*/);
+			Assert(ret != 0);
+			modelrender->ForcedMaterialOverride(NULL);
 		}
+	}
+
+#if(0) // Albedo pass for motionvision compare layer
+	// Do motionvision highlight if local player has vision on
+	auto pNeoLocalPlayer = GetLocalNEOPlayer();
+	if (pNeoLocalPlayer && pNeoLocalPlayer->IsInVision())
+	{
+		IMaterial *mvTex = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
+		Assert(mvTex && !mvTex->IsErrorMaterial());
+
+		if (mvTex && !mvTex->IsErrorMaterial())
+		{
+			modelrender->ForcedMaterialOverride(mvTex);
+			ret = BaseClass::DrawModel(flags);
+			Assert(ret != 0);
+			modelrender->ForcedMaterialOverride(NULL);
+		}
+	}
 #endif
 
-		int ret = 0;
-
-		if (IsCloaked())
-		{
-			IMaterial *pass = materials->FindMaterial("dev/toc_cloakpass", TEXTURE_GROUP_CLIENT_EFFECTS);
-
-			Assert(pass && !pass->IsErrorMaterial());
-
-			//IMaterial *foo = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_MODEL);
-			if (pass && !pass->IsErrorMaterial())
-			{
-				//g_pClientShadowMgr->RemoveAllShadowsFromReceiver((IClientRenderable*)this, ShadowReceiver_t::SHADOW_RECEIVER_STUDIO_MODEL);
-
-				const int extraFlags = STUDIO_RENDER | STUDIO_TRANSPARENCY | STUDIO_NOSHADOWS | STUDIO_DRAWTRANSLUCENTSUBMODELS;
-
-				modelrender->ForcedMaterialOverride(pass);
-				ret = BaseClass::DrawModel(flags | extraFlags);
-
-				modelrender->ForcedMaterialOverride(NULL);
-			}
-		}
-
-		m_bUnhandledTocChange = false;
-
-		if (ret != 0)
-		{
-			return ret;
-		}
+	if (ret != 0)
+	{
+		return ret;
 	}
 
 	return BaseClass::DrawModel(flags);
