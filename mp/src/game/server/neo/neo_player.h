@@ -78,7 +78,7 @@ public:
 
 	void Weapon_AimToggle(CBaseCombatWeapon *pWep);
 
-	void DoThirdPersonLean(void);
+	void Lean(void);
 	void SoftSuicide(void);
 	void GiveAllItems(void);
 	inline bool ProcessTeamSwitchRequest(int iTeam);

@@ -429,10 +429,12 @@ bool CNEO_Player::IsAirborne(void) const
 }
 
 extern ConVar neo_lean_angle;
+
 ConVar neo_lean_thirdperson_roll_lerp_scale("neo_lean_thirdperson_roll_lerp_scale", "5",
 	FCVAR_REPLICATED | FCVAR_CHEAT, "Multiplier for 3rd person lean roll lerping.", true, 0.0, false, 0);
 
-void CNEO_Player::DoThirdPersonLean(void)
+//just need to calculate lean angle in here
+void CNEO_Player::Lean(void)
 {
 	CNEOPredictedViewModel *vm = static_cast<CNEOPredictedViewModel*>(GetViewModel());
 
@@ -440,44 +442,10 @@ void CNEO_Player::DoThirdPersonLean(void)
 	{
 		return;
 	}
-
-	int leanDir = vm->CalcLean(this);
-
+	vm->lean(this);
 	CBaseAnimating *anim = GetBaseAnimating();
 	Assert(anim);
-	//int pelvisBone = anim->LookupBone("ValveBiped.Bip01_Pelvis");
-	//Assert(pelvisBone != -1);
-
-	const float startRot = GetBoneController(0);
-
-	const float ultimateRot =
-		(leanDir & IN_LEAN_LEFT) ? -neo_lean_angle.GetFloat() :
-		(leanDir & IN_LEAN_RIGHT) ? neo_lean_angle.GetFloat() :
-		0;
-
-	float lerpedRot;
-
-	const float leniency = 0.5f;
-	// We're close enough to target, snap to it so we don't drift when lerping towards zero.
-	if (fabs(startRot - ultimateRot) < leniency)
-	{
-		lerpedRot = ultimateRot;
-	}
-	else
-	{
-		lerpedRot = Lerp(gpGlobals->frametime * neo_lean_thirdperson_roll_lerp_scale.GetFloat(), startRot, ultimateRot);
-	}
-
-#if(0)
-	static float lastRot = 0;
-	if (lastRot != lerpedRot)
-	{
-		DevMsg("New lean target; leaning %f --> %f\n", startRot, lerpedRot);
-		lastRot = lerpedRot;
-	}
-#endif
-
-	anim->SetBoneController(0, lerpedRot);
+	anim->SetBoneController(0, LocalEyeAngles().z);
 }
 
 inline void CNEO_Player::CheckVisionButtons()
@@ -513,7 +481,7 @@ void CNEO_Player::PreThink(void)
 	CheckThermOpticButtons();
 	CheckVisionButtons();
 
-	DoThirdPersonLean();
+	Lean();
 
 	// NEO HACK (Rain): Just bodging together a check for if we're allowed
 	// to superjump, or if we've been airborne too long for that.

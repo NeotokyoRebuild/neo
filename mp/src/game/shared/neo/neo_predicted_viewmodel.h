@@ -23,7 +23,7 @@ class CNEOPredictedViewModel : public CPredictedViewModel
 public:
 	DECLARE_NETWORKCLASS();
 
-	CNEOPredictedViewModel( void );
+	CNEOPredictedViewModel(void);
 	virtual ~CNEOPredictedViewModel( void );
 
 	virtual void CalcViewModelView(CBasePlayer *pOwner,
@@ -32,7 +32,9 @@ public:
 	virtual void CalcViewModelLag(Vector& origin, QAngle& angles,
 		QAngle& original_angles);
 
-	int CalcLean(CNEO_Player *player);
+	float freeRoomForLean(float leanAmount, CNEO_Player *player);
+	float calculateLeanAngle(float freeRoom, CNEO_Player *player);
+	void lean(CNEO_Player *player);
 
 	virtual void SetWeaponModel(const char* pszModelname,
 		CBaseCombatWeapon* weapon);
@@ -57,9 +59,7 @@ public:
 #endif
 
 private:
-	Vector m_vecNextViewOffset;
-
-	QAngle m_angNextViewAngles;
+	float Yprevious;
 };
 
 #endif // NEO_PREDICTED_VIEWMODEL_H
