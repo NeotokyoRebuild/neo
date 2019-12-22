@@ -42,8 +42,6 @@ CNEOPredictedViewModel::CNEOPredictedViewModel()
 
 	AddToInterpolationList();
 #endif
-
-	Yprevious = 0;
 }
 
 CNEOPredictedViewModel::~CNEOPredictedViewModel()
@@ -51,26 +49,6 @@ CNEOPredictedViewModel::~CNEOPredictedViewModel()
 #ifdef CLIENT_DLL
 	RemoveFromInterpolationList();
 #endif
-}
-
-// Interpolate euler angles via quaternions to avoid gimbal lock.
-// This helper function is copied here from cdll_util, to have shared access.
-static inline void NeoVmInterpolateAngles(const QAngle& start,
-	const QAngle& end, QAngle& output, float frac)
-{
-	Quaternion src, dest;
-
-	// Convert to quaternions
-	AngleQuaternion( start, src );
-	AngleQuaternion( end, dest );
-
-	Quaternion result;
-
-	// Slerp
-	QuaternionSlerp( src, dest, frac, result );
-
-	// Convert to euler
-	QuaternionAngles( result, output );
 }
 
 #ifdef CLIENT_DLL
@@ -144,11 +122,11 @@ inline void CNEOPredictedViewModel::DrawRenderToTextureDebugInfo(IClientRenderab
 #endif
 
 ConVar neo_lean_debug_draw_hull("neo_lean_debug_draw_hull", "0", FCVAR_CHEAT | FCVAR_REPLICATED);
-extern ConVar neo_lean_speed("neo_lean_speed", "120", FCVAR_REPLICATED | FCVAR_CHEAT, "Lean speed (units/second)", true, 0.0, false, 2.0);
+ConVar neo_lean_speed("neo_lean_speed", "120", FCVAR_REPLICATED | FCVAR_CHEAT, "Lean speed (units/second)", true, 0.0, false, 2.0);
 // Original Neotokyo with the latest leftlean fix uses 7 for leftlean and 15 for rightlean yaw slide.
-extern ConVar neo_lean_yaw_peek_left_amount("neo_lean_yaw_peek_left_amount", "7.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How far sideways will a full left lean view reach.", true, 0.0, false, 0);
-extern ConVar neo_lean_yaw_peek_right_amount("neo_lean_yaw_peek_right_amount", "15.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How far sideways will a full right lean view reach.", true, 0.0, false, 0);
-extern ConVar neo_lean_angle_percentage("neo_lean_angle_percentage", "0.75", FCVAR_REPLICATED | FCVAR_CHEAT, "for adjusting the actual angle of lean to a percentage of lean.", true, 0.0, true, 1.0);
+ConVar neo_lean_yaw_peek_left_amount("neo_lean_yaw_peek_left_amount", "7.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How far sideways will a full left lean view reach.", true, 0.0, false, 0);
+ConVar neo_lean_yaw_peek_right_amount("neo_lean_yaw_peek_right_amount", "15.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How far sideways will a full right lean view reach.", true, 0.0, false, 0);
+ConVar neo_lean_angle_percentage("neo_lean_angle_percentage", "0.75", FCVAR_REPLICATED | FCVAR_CHEAT, "for adjusting the actual angle of lean to a percentage of lean.", true, 0.0, true, 1.0);
 
 float CNEOPredictedViewModel::freeRoomForLean(float leanAmount, CNEO_Player *player){
 	const Vector playerDefaultViewPos = player->GetAbsOrigin();
@@ -176,8 +154,10 @@ float CNEOPredictedViewModel::freeRoomForLean(float leanAmount, CNEO_Player *pla
 	trace_t trace;
 	UTIL_TraceHull(playerDefaultViewPos, leanEndPos, hullMins, hullMaxs, player->PhysicsSolidMaskForEntity(), &filter, &trace);
 #ifdef CLIENT_DLL
-	debugoverlay->AddTextOverlay(playerDefaultViewPos, 0.0001, "x: %f\n y: %f\n z:%f\n", playerDefaultViewPos.x, playerDefaultViewPos.y, playerDefaultViewPos.z);
 	if (neo_lean_debug_draw_hull.GetBool()){
+		// Z offset to avoid text overlap; DrawRenderToTextureDebugInfo will also want to print text around similar area.
+		const Vector debugOffset = Vector(playerDefaultViewPos) + Vector(0, 0, -4);
+		debugoverlay->AddTextOverlay(debugOffset, 0.0001, "x: %f\n y: %f\n z:%f\n", playerDefaultViewPos.x, playerDefaultViewPos.y, playerDefaultViewPos.z);
 		const Vector colorBlue(0, 0, 255), colorGreen(0, 255, 0), colorRed(255, 0, 0);
 		player->GetNEOViewModel()->DrawRenderToTextureDebugInfo(player, hullMins, hullMaxs, colorBlue, "startLeanPos", player->GetAbsOrigin());
 	}
@@ -224,28 +204,17 @@ int CNEOPredictedViewModel::DrawModel(int flags)
 }
 #endif
 
-int CNEOPredictedViewModel::CalcLean(CNEO_Player *player)
-{
-#ifdef CLIENT_DLL
-	// We will touch view angles, so we have to resample
-	// here to avoid disturbing user's mouse look input.
-	// This should also handle controller look input.
-	// NEO TODO (Rain): Test if sampling works (no jitter) for gamepads.
-	input->ExtraMouseSample(gpGlobals->absoluteframetime, 1);
-#endif
-
-
 float CNEOPredictedViewModel::calculateLeanAngle(float freeRoom, CNEO_Player *player){
 	float hipToHeadHeight = 41;
 	return -RAD2DEG(atan2(freeRoom, hipToHeadHeight)) * neo_lean_angle_percentage.GetFloat();
 }
-
 
 void CNEOPredictedViewModel::lean(CNEO_Player *player){
 #ifdef CLIENT_DLL
 	input->ExtraMouseSample(gpGlobals->frametime, 1);
 #endif
 	QAngle viewAng = player->LocalEyeAngles();
+	static float Yprevious = 0;
 	float Ycurrent = Yprevious;
 	float Yfinal = 0;
 
@@ -301,21 +270,6 @@ void CNEOPredictedViewModel::lean(CNEO_Player *player){
 #ifdef CLIENT_DLL
 	engine->SetViewAngles(viewAng);
 #endif
-
-}
-
-
-#ifdef CLIENT_DLL
-extern ConVar cl_wpn_sway_interp;
-extern ConVar cl_wpn_sway_scale;
-#endif
-ConVar neo_lean_allow_extrapolation("neo_lean_allow_extrapolation", "1", FCVAR_REPLICATED | FCVAR_CHEAT, "Whether we're allowed to extrapolate lean beyond known values.", true, 0, true, 1);
-
-void CNEOPredictedViewModel::CalcViewModelLag(Vector& origin, QAngle& angles,
-	QAngle& original_angles)
-{
-	BaseClass::CalcViewModelLag(origin, angles, original_angles);
-	return;
 }
 
 void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
@@ -349,12 +303,6 @@ void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 	newAng += angOffset;
 
 	BaseClass::CalcViewModelView(pOwner, newPos, newAng);
-}
-
-void CNEOPredictedViewModel::SetWeaponModel(const char* pszModelname,
-	CBaseCombatWeapon* weapon)
-{
-	BaseClass::SetWeaponModel(pszModelname, weapon);
 }
 
 #ifdef CLIENT_DLL
