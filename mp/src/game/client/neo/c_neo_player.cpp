@@ -9,6 +9,8 @@
 #include "r_efx.h"
 #include "dlight.h"
 
+#include "iinput.h"
+
 #include "clientmode_hl2mpnormal.h"
 #include <vgui/IScheme.h>
 #include <vgui_controls/Panel.h>
@@ -436,7 +438,12 @@ void C_NEO_Player::PreThink( void )
 	CNEOPredictedViewModel *vm = (CNEOPredictedViewModel*)GetViewModel();
 	if (vm)
 	{
-		vm->CalcLean(this);
+		//vm->Lean(this, LEAN_AND_ANGLE);
+		/*Vector offset = this->GetViewOffset() + Vector(0, 50, 0);
+		VectorYawRotate(offset, this->LocalEyeAngles().y, offset);*/
+		//SetViewOffset(Vector(0, -50, 60));
+		vm->lean(this);
+		//debugoverlay->AddTextOverlay(this->GetAbsOrigin() + GetViewOffset(), 0.001, "client view offset");
 	}
 
 	// Eek. See rationale for this thing in CNEO_Player::PreThink
