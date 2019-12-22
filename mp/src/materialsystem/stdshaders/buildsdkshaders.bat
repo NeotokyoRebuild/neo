@@ -3,8 +3,11 @@ setlocal
 
 rem Use dynamic shaders to build .inc files only
 rem set dynamic_shaders=1
+
 rem == Setup path to nmake.exe, from vc 2005 common tools directory ==
-call "%VS100COMNTOOLS%vsvars32.bat"
+rem call "%VS100COMNTOOLS%vsvars32.bat"
+rem (Disabled in favor of VS 2013; see line below instead!)
+call "%VS120COMNTOOLS%vsvars32.bat"
 
 
 set TTEXE=..\..\devtools\bin\timeprecise.exe
@@ -26,7 +29,7 @@ set BUILD_SHADER=call buildshaders.bat
 set ARG_EXTRA=
 
 %BUILD_SHADER% stdshader_dx9_20b		-game %GAMEDIR% -source %SOURCEDIR%
-%BUILD_SHADER% stdshader_dx9_30			-game %GAMEDIR% -source %SOURCEDIR% -dx9_30	-force30 
+%BUILD_SHADER% stdshader_dx9_30			-game %GAMEDIR% -source %SOURCEDIR% -dx9_30	-force30
 
 
 rem echo.

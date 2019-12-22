@@ -14,7 +14,7 @@
 #include "neo_player.h"
 #endif
 
-#include "weapon_neobase_ar.h"
+#include "weapon_neobasecombatweapon.h"
 
 #define	ZR68C_FASTEST_REFIRE_TIME 0.1f
 #define	ZR68C_FASTEST_DRY_REFIRE_TIME	0.2f
@@ -26,10 +26,10 @@
 #define CWeaponZR68C C_WeaponZR68C
 #endif
 
-class CWeaponZR68C : public CNEOAssaultRifle
+class CWeaponZR68C : public CNEOBaseCombatWeapon
 {
 public:
-	DECLARE_CLASS(CWeaponZR68C, CNEOAssaultRifle);
+	DECLARE_CLASS(CWeaponZR68C, CNEOBaseCombatWeapon);
 
 	CWeaponZR68C();
 
@@ -47,6 +47,7 @@ public:
 	virtual bool Deploy(void);
 
 	virtual int GetNeoWepBits(void) const { return NEO_WEP_ZR68_C; }
+	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
 
 	void	UpdatePenaltyTime(void);
 

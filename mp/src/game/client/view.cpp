@@ -320,6 +320,91 @@ void CViewRender::Init( void )
 	m_flLastFOV = default_fov.GetFloat();
 #endif
 
+#ifdef NEO
+	ITexture *pDepthOld = materials->FindTexture("_rt_FullFrameDepth", TEXTURE_GROUP_RENDER_TARGET);
+	const bool bDepthTexOk = ((pDepthOld != NULL) && (!pDepthOld->IsError()));
+	const int flags = (bDepthTexOk ? pDepthOld->GetFlags() : TEXTUREFLAGS_NOMIP |
+		TEXTUREFLAGS_NOLOD | TEXTUREFLAGS_RENDERTARGET);
+
+#ifdef DEBUG
+	const int iDimUninitialized = -1;
+	int iW = iDimUninitialized, iH = iDimUninitialized;
+#else
+	int iW, iH;
+#endif
+	materials->GetBackBufferDimensions(iW, iH);
+#ifdef DEBUG
+	// Make sure we actually got values. This should never fail.
+	Assert(iW != iDimUninitialized && iW > 0);
+	Assert(iH != iDimUninitialized && iH > 0);
+#endif
+
+	materials->BeginRenderTargetAllocation();
+
+#ifdef DEBUG
+	ITexture *pSSAOTex =
+#endif
+		materials->CreateNamedRenderTargetTextureEx("_rt_SSAO", iW, iH, RT_SIZE_NO_CHANGE,
+			materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED, flags, 0);
+
+#ifdef DEBUG
+	ITexture *pSSAO_ImTex =
+#endif
+		materials->CreateNamedRenderTargetTextureEx("_rt_SSAO_Intermediate", iW, iH, RT_SIZE_NO_CHANGE,
+			materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED, flags, 0);
+
+#ifdef DEBUG
+	ITexture *pNVTex =
+#endif
+		materials->CreateNamedRenderTargetTextureEx("_rt_NightVision", iW, iH, RT_SIZE_NO_CHANGE,
+			materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED, flags, 0);
+
+#ifdef DEBUG
+	ITexture *pMVTex =
+#endif
+		materials->CreateNamedRenderTargetTextureEx("_rt_MotionVision", iW, iH, RT_SIZE_DEFAULT,
+			materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED, flags, 0);
+
+#ifdef DEBUG
+	ITexture *pMVTexBuff1 =
+#endif
+		materials->CreateNamedRenderTargetTextureEx("_rt_MotionVision_Buffer1", iW, iH, RT_SIZE_DEFAULT,
+			materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED, flags, 0);
+
+#ifdef DEBUG
+	ITexture *pMVTexBuff2 =
+#endif
+		materials->CreateNamedRenderTargetTextureEx("_rt_MotionVision_Buffer2", iW, iH, RT_SIZE_DEFAULT,
+			materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED, flags, 0);
+
+#ifdef DEBUG
+	ITexture *pMvImTex =
+#endif
+		materials->CreateNamedRenderTargetTextureEx("_rt_MotionVision_Intermediate", iW, iH,
+		RT_SIZE_DEFAULT, materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED,
+		flags, 0);
+
+#ifdef DEBUG
+	ITexture *pMvIm2Tex =
+#endif
+		materials->CreateNamedRenderTargetTextureEx("_rt_MotionVision_Intermediate2", iW, iH,
+			RT_SIZE_DEFAULT, materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED,
+			flags, 0);
+
+#ifdef DEBUG
+	Assert(pSSAOTex != NULL && !pSSAOTex->IsError());
+	Assert(pSSAO_ImTex != NULL && !pSSAO_ImTex->IsError());
+	Assert(pNVTex != NULL && !pNVTex->IsError());
+	Assert(pMVTex != NULL && !pMVTex->IsError());
+	Assert(pMvImTex != NULL && !pMvImTex->IsError());
+	Assert(pMvIm2Tex != NULL && !pMvIm2Tex->IsError());
+	Assert(pMVTexBuff1 != NULL && !pMVTexBuff1->IsError());
+	Assert(pMVTexBuff2 != NULL && !pMVTexBuff2->IsError());
+#endif
+
+	materials->EndRenderTargetAllocation();
+
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -651,7 +736,7 @@ void CViewRender::SetUpViews()
 	//  closest point of approach seems to be view center to top of crouched box
 	view.zNear			    = GetZNear();
 	view.zNearViewmodel	    = 1;
-	view.fov				= default_fov.GetFloat();
+	view.fov = default_fov.GetFloat();
 
 	view.m_bOrtho			= false;
     view.m_bViewToProjectionOverride = false;
@@ -735,8 +820,12 @@ void CViewRender::SetUpViews()
 	float fDefaultFov = default_fov.GetFloat();
 	float flFOVOffset = fDefaultFov - view.fov;
 
+#ifdef NEO // Decouple viewmodel FOV from view FOV.
+	view.fovViewmodel = g_pClientMode->GetViewModelFOV();
+#else
 	//Adjust the viewmodel's FOV to move with any FOV offsets on the viewer's end
 	view.fovViewmodel = g_pClientMode->GetViewModelFOV() - flFOVOffset;
+#endif
 
 	if ( UseVR() )
 	{

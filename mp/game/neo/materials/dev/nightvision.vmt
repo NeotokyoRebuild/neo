@@ -1,0 +1,5 @@
+"Neo_NightVision"
+{
+	"$motionvision" "_rt_MotionVision"
+	"$intermediate" "_rt_MotionVision_Intermediate"
+}

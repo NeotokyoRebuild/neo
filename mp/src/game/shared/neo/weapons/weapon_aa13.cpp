@@ -52,20 +52,7 @@ END_PREDICTION_DATA()
 LINK_ENTITY_TO_CLASS(weapon_aa13, CWeaponAA13);
 PRECACHE_WEAPON_REGISTER(weapon_aa13);
 
-#ifdef GAME_DLL
-acttable_t CWeaponAA13::m_acttable[] =
-{
-	{ ACT_HL2MP_IDLE, ACT_HL2MP_IDLE_SHOTGUN, false },
-	{ ACT_HL2MP_RUN, ACT_HL2MP_RUN_SHOTGUN, false },
-	{ ACT_HL2MP_IDLE_CROUCH, ACT_HL2MP_IDLE_CROUCH_SHOTGUN, false },
-	{ ACT_HL2MP_WALK_CROUCH, ACT_HL2MP_WALK_CROUCH_SHOTGUN, false },
-	{ ACT_HL2MP_GESTURE_RANGE_ATTACK, ACT_HL2MP_GESTURE_RANGE_ATTACK_SHOTGUN, false },
-	{ ACT_HL2MP_GESTURE_RELOAD, ACT_HL2MP_GESTURE_RELOAD_SHOTGUN, false },
-	{ ACT_HL2MP_JUMP, ACT_HL2MP_JUMP_SHOTGUN, false },
-	{ ACT_RANGE_ATTACK1, ACT_RANGE_ATTACK_SHOTGUN, false },
-};
-IMPLEMENT_ACTTABLE(CWeaponAA13);
-#endif
+NEO_ACTTABLE(CWeaponAA13);
 
 Activity CWeaponAA13::GetPrimaryAttackActivity()
 {
@@ -211,8 +198,8 @@ void CWeaponAA13::AddViewKick()
 
 	QAngle viewPunch;
 
-	viewPunch.x = SharedRandomFloat("shotgunpax", 0.33f, 0.5f);
-	viewPunch.y = SharedRandomFloat("shotgunpay", -0.6f, 0.6f);
+	viewPunch.x = SharedRandomFloat("aa13x", 0.33f, 0.5f);
+	viewPunch.y = SharedRandomFloat("aa13y", -0.6f, 0.6f);
 	viewPunch.z = 0.0f;
 
 	pOwner->ViewPunch(viewPunch);

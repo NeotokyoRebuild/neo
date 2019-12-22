@@ -102,9 +102,12 @@ public:
 
 	bool IsCloaked() const { return m_bInThermOpticCamo; }
 	bool IsAirborne() const { return m_bIsAirborne; }
+	bool IsInVision() const { return m_bInVision; }
+	bool IsInAim() const { return m_bInAim; }
 
 private:
 	inline void CheckThermOpticButtons();
+	inline void CheckVisionButtons();
 
 	inline bool IsAllowedToSuperJump(void);
 
@@ -115,6 +118,7 @@ public:
 
 	CNetworkVar(int, m_iXP);
 	CNetworkVar(int, m_iCapTeam);
+	CNetworkVar(int, m_iLoadoutWepChoice);
 
 	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
 
@@ -129,8 +133,10 @@ protected:
 
 	CNetworkVar(int, m_iGhosterTeam);
 
-	bool m_bIsClassMenuOpen, m_bIsTeamMenuOpen, m_bUnhandledTocChange;
+	bool m_bIsClassMenuOpen, m_bIsTeamMenuOpen;
 	CNetworkVar(bool, m_bInThermOpticCamo);
+	CNetworkVar(bool, m_bInVision);
+	CNetworkVar(bool, m_bInAim);
 
 	CNetworkVar(int, m_iNeoClass);
 	CNetworkVar(int, m_iNeoSkin);
@@ -153,7 +159,7 @@ inline C_NEO_Player *ToNEOPlayer(CBaseEntity *pEntity)
 }
 
 extern ConVar cl_drawhud_quickinfo;
-extern ConVar loadout;
+extern ConVar loadout_choice;
 
 extern ConCommand teammenu;
 

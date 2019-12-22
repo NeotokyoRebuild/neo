@@ -49,6 +49,9 @@ public:
 
 	Activity	GetPrimaryAttackActivity(void);
 
+	virtual int GetNeoWepBits(void) const { return NEO_WEP_MILSO; }
+	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
+
 	virtual bool Reload(void);
 
 	virtual const Vector& GetBulletSpread(void)

@@ -1,0 +1,38 @@
+#include "common_ps_fxc.h"
+
+sampler sampler_ssao		: register( s0 );
+sampler sampler_im			: register( s1 );
+//
+//struct PS_INPUT
+//{
+//	HALF2 vTexCoord			:	TEXCOORD0;
+//};
+//
+//float4 main( PS_INPUT i ) : COLOR
+//{
+//	float4 framebuftex = tex2D( framebuffersampler, i.vTexCoord );
+//	float3 framebufcol = framebuftex.rgb;
+//	float framebufalpha = framebuftex.a;
+//	float ssaotex = tex2D( ssaosampler, i.vTexCoord ).r;
+//
+//	framebufcol = framebufcol * ssaotex;
+//
+//	return float4( framebufcol, framebufalpha );
+//}
+
+struct PS_INPUT
+{
+	HALF2 vTexCoord	: TEXCOORD0;
+};
+
+float4 main( const PS_INPUT i ) : COLOR
+{
+	float4 imTex = tex2D(sampler_im, i.vTexCoord);
+	float3 imCol = imTex.rgb;
+	
+	float ssaoMultiplier = tex2D(sampler_ssao, i.vTexCoord).r;
+	
+	imCol *= ssaoMultiplier;
+	
+	return float4(imCol, imTex.a);
+}

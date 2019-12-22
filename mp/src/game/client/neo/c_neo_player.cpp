@@ -38,6 +38,13 @@
 #include <engine/ivdebugoverlay.h>
 #include <engine/IEngineSound.h>
 
+#include <materialsystem/imaterialsystem.h>
+#include <materialsystem/itexture.h>
+#include "rendertexture.h"
+
+
+#include "model_types.h"
+
 // Don't alias here
 #if defined( CNEO_Player )
 #undef CNEO_Player	
@@ -53,15 +60,17 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropString(RECVINFO(m_pszTestMessage)),
 
 	RecvPropInt(RECVINFO(m_iXP)),
-
 	RecvPropInt(RECVINFO(m_iCapTeam)),
+	RecvPropInt(RECVINFO(m_iLoadoutWepChoice)),
 
 	RecvPropVector(RECVINFO(m_vecGhostMarkerPos)),
 	RecvPropInt(RECVINFO(m_iGhosterTeam)),
 	RecvPropBool(RECVINFO(m_bGhostExists)),
 	RecvPropBool(RECVINFO(m_bInThermOpticCamo)),
+	RecvPropBool(RECVINFO(m_bInVision)),
 	RecvPropBool(RECVINFO(m_bIsAirborne)),
 	RecvPropBool(RECVINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
+	RecvPropBool(RECVINFO(m_bInAim)),
 
 	RecvPropArray(RecvPropVector(RECVINFO(m_rvFriendlyPlayerPositions[0])), m_rvFriendlyPlayerPositions),
 END_RECV_TABLE()
@@ -74,9 +83,6 @@ END_PREDICTION_DATA()
 ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
 	"Whether to display HL2 style ammo/health info near crosshair.",
 	true, 0.0f, true, 1.0f);
-
-ConVar loadout("loadout", "0", FCVAR_CLIENTDLL | FCVAR_USERINFO,
-	"Select primary weapon loadout (int).", true, 0.0f, false, 0.0f);
 
 class NeoLoadoutMenu_Cb : public ICommandCallback
 {
@@ -202,6 +208,12 @@ public:
 	{
 		Msg("Teammenu access cb\n");
 
+		if (!g_pNeoTeamMenu)
+		{
+			DevMsg("CNeoTeamMenu is not ready\n");
+			return;
+		}
+
 		vgui::EditablePanel *panel = dynamic_cast<vgui::EditablePanel*>
 			(GetClientModeNormal()->GetViewport()->FindChildByName(PANEL_TEAM));
 		if (!panel)
@@ -252,15 +264,17 @@ C_NEO_Player::C_NEO_Player()
 	m_iNeoSkin = NEO_SKIN_FIRST;
 
 	m_iCapTeam = TEAM_UNASSIGNED;
+	m_iLoadoutWepChoice = 0;
 	m_iGhosterTeam = TEAM_UNASSIGNED;
 	m_iXP.GetForModify() = 0;
 
 	m_vecGhostMarkerPos = vec3_origin;
 	m_bGhostExists = false;
 	m_bShowClassMenu = m_bShowTeamMenu = m_bIsClassMenuOpen = m_bIsTeamMenuOpen = false;
-	m_bInThermOpticCamo = m_bUnhandledTocChange = false;
+	m_bInThermOpticCamo = m_bInVision = false;
 	m_bIsAirborne = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
+	m_bInAim = false;
 
 	m_pNeoPanel = NULL;
 }
@@ -276,8 +290,17 @@ inline void C_NEO_Player::CheckThermOpticButtons()
 		if (IsAlive())
 		{
 			m_bInThermOpticCamo = !m_bInThermOpticCamo;
+		}
+	}
+}
 
-			m_bUnhandledTocChange = true;
+inline void C_NEO_Player::CheckVisionButtons()
+{
+	if (m_afButtonPressed & IN_VISION)
+	{
+		if (IsAlive())
+		{
+			m_bInVision = !m_bInVision;
 		}
 	}
 }
@@ -303,19 +326,45 @@ C_NEOPredictedViewModel *C_NEO_Player::GetNEOViewModel()
 
 int C_NEO_Player::DrawModel( int flags )
 {
-	if (m_bUnhandledTocChange)
-	{
-		if (m_bInThermOpticCamo)
-		{
-			// We should enable camo here, or alternatively call it
-			// from the material proxy(?)
-		}
-		else
-		{
-			// We should disable camo here
-		}
+	int ret = 0;
 
-		m_bUnhandledTocChange = false;
+	// Do cloak if cloaked
+	if (IsCloaked())
+	{
+		IMaterial *pass = materials->FindMaterial("dev/toc_cloakpass", TEXTURE_GROUP_CLIENT_EFFECTS);
+		Assert(pass && !pass->IsErrorMaterial());
+
+		if (pass && !pass->IsErrorMaterial())
+		{
+			//const int extraFlags = STUDIO_RENDER | STUDIO_TRANSPARENCY | STUDIO_NOSHADOWS | STUDIO_DRAWTRANSLUCENTSUBMODELS;
+			modelrender->ForcedMaterialOverride(pass);
+			ret = BaseClass::DrawModel(flags /*| extraFlags*/);
+			Assert(ret != 0);
+			modelrender->ForcedMaterialOverride(NULL);
+		}
+	}
+
+#if(0) // Albedo pass for motionvision compare layer
+	// Do motionvision highlight if local player has vision on
+	auto pNeoLocalPlayer = GetLocalNEOPlayer();
+	if (pNeoLocalPlayer && pNeoLocalPlayer->IsInVision())
+	{
+		IMaterial *mvTex = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
+		Assert(mvTex && !mvTex->IsErrorMaterial());
+
+		if (mvTex && !mvTex->IsErrorMaterial())
+		{
+			modelrender->ForcedMaterialOverride(mvTex);
+			ret = BaseClass::DrawModel(flags);
+			Assert(ret != 0);
+			modelrender->ForcedMaterialOverride(NULL);
+		}
+	}
+#endif
+
+	if (ret != 0)
+	{
+		return ret;
 	}
 
 	return BaseClass::DrawModel(flags);
@@ -380,8 +429,6 @@ void C_NEO_Player::ItemPreFrame( void )
 	{
 		Weapon_Drop(GetActiveWeapon());
 	}
-
-	CheckThermOpticButtons();
 }
 
 void C_NEO_Player::ItemPostFrame( void )
@@ -434,6 +481,9 @@ void C_NEO_Player::PlayStepSound( Vector &vecOrigin,
 void C_NEO_Player::PreThink( void )
 {
 	BaseClass::PreThink();
+
+	CheckThermOpticButtons();
+	CheckVisionButtons();
 
 	CNEOPredictedViewModel *vm = (CNEOPredictedViewModel*)GetViewModel();
 	if (vm)
@@ -569,9 +619,13 @@ void C_NEO_Player::ClientThink(void)
 	BaseClass::ClientThink();
 }
 
+static ConVar neo_this_client_speed("neo_this_client_speed", "0", FCVAR_SPONLY);
+
 void C_NEO_Player::PostThink(void)
 {
 	BaseClass::PostThink();
+
+	neo_this_client_speed.SetValue(MIN(GetAbsVelocity().Length2D() / GetNormSpeed(), 1.0f));
 
 	//DevMsg("Roll: %f\n", m_angEyeAngles[2]);
 
@@ -752,6 +806,8 @@ bool C_NEO_Player::ShouldDrawHL2StyleQuickHud(void)
 
 void C_NEO_Player::Weapon_Drop(C_BaseCombatWeapon *pWeapon)
 {
+	Weapon_SetZoom(false);
+
 	C_WeaponGhost *ghost = dynamic_cast<C_WeaponGhost*>(pWeapon);
 	if (ghost)
 	{
@@ -870,17 +926,13 @@ void C_NEO_Player::Weapon_AimToggle(C_BaseCombatWeapon *pWep)
 	// NEO TODO/HACK: Not all neo weapons currently inherit
 	// through a base neo class, so we can't static_cast!!
 	auto neoCombatWep = dynamic_cast<C_NEOBaseCombatWeapon*>(pWep);
-	if (!neoCombatWep)
-	{
-		return;
-	}
-	else if (!IsAllowedToZoom(neoCombatWep))
-	{
-		return;
-	}
 
-	bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR) == HIDEHUD_CROSSHAIR;
-	Weapon_SetZoom(showCrosshair);
+	// This implies the wep ptr is valid, so we don't bother checking
+	if (IsAllowedToZoom(neoCombatWep))
+	{
+		const bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR) == HIDEHUD_CROSSHAIR;
+		Weapon_SetZoom(showCrosshair);
+	}
 }
 
 inline void C_NEO_Player::Weapon_SetZoom(bool bZoomIn)
@@ -901,6 +953,8 @@ inline void C_NEO_Player::Weapon_SetZoom(bool bZoomIn)
 
 		SetFOV((CBaseEntity*)this, GetDefaultFOV(), zoomSpeedSecs);
 	}
+
+	m_bInAim = bZoomIn;
 }
 
 inline bool C_NEO_Player::IsCarryingGhost(void)

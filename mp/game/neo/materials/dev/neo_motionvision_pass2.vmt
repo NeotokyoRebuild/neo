@@ -1,0 +1,5 @@
+"Neo_MotionVision_Pass2"
+{
+	"$motioneffect" "_rt_MotionVision"
+	"$original" "_rt_MotionVision_Intermediate"
+}

@@ -191,8 +191,6 @@ void CPlayerAnimState::Update()
 	ComputePoseParam_BodyPitch(GetOuter()->GetModelPtr());
 	ComputePoseParam_BodyLookYaw();
 
-	//ComputePoseParam_MoveYaw();
-
 #ifdef NEO
 	ComputePoseParam_BodyXY();
 #endif
@@ -222,8 +220,7 @@ void CPlayerAnimState::ComputePlaybackRate()
 	// and we adjust using poseparameters, instead.
 	GetOuter()->SetPlaybackRate(1.0f);
 	return;
-#endif
-
+#else
 	// Determine ideal playback rate
 	Vector vel;
 	GetOuterAbsVelocity( vel );
@@ -248,6 +245,7 @@ void CPlayerAnimState::ComputePlaybackRate()
 	{
 		GetOuter()->SetPlaybackRate( 1.0f );
 	}
+#endif
 }
 
 //-----------------------------------------------------------------------------

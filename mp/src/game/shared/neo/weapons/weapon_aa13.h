@@ -33,6 +33,7 @@ public:
 	void	DryFire(void);
 
 	virtual int GetNeoWepBits(void) const { return NEO_WEP_AA13; }
+	virtual int GetNeoWepXPCost(const int neoClass) const { return 20; }
 
 	Activity GetPrimaryAttackActivity(void);
 

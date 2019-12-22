@@ -89,6 +89,7 @@ public:
 
 	void RequestSetClass(int newClass);
 	void RequestSetSkin(int newSkin);
+	bool RequestSetLoadout(int loadoutNumber);
 
 	int GetSkin() const;
 	int GetClass() const;
@@ -114,6 +115,7 @@ public:
 
 private:
 	inline void CheckThermOpticButtons();
+	inline void CheckVisionButtons();
 
 	inline bool IsAllowedToSuperJump(void);
 
@@ -125,6 +127,8 @@ public:
 
 	CNetworkVar(int, m_iXP);
 
+	CNetworkVar(int, m_iLoadoutWepChoice);
+
 	CNetworkVar(bool, m_bShowTestMessage);
 	CNetworkString(m_pszTestMessage, 32 * 2 + 1);
 
@@ -132,8 +136,10 @@ public:
 	CNetworkVar(int, m_iGhosterTeam);
 	CNetworkVar(bool, m_bGhostExists);
 	CNetworkVar(bool, m_bInThermOpticCamo);
+	CNetworkVar(bool, m_bInVision);
 	CNetworkVar(bool, m_bIsAirborne);
 	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
+	CNetworkVar(bool, m_bInAim);
 
 	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
 

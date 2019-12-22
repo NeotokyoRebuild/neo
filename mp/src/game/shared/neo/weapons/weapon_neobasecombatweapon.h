@@ -10,6 +10,8 @@
 	#include "neo_player.h"
 #endif
 
+#include "neo_player_shared.h"
+
 #include "weapon_hl2mpbasehlmpcombatweapon.h"
 
 #ifdef CLIENT_DLL
@@ -48,8 +50,7 @@ enum NeoWepBits {
 	NEO_WEP_ZR68_C =			(1 << 25),
 	NEO_WEP_ZR68_L =			(1 << 26),
 	NEO_WEP_ZR68_S =			(1 << 27),
-
-	NEO_WEP_HIGHEST_VALID_BITS = NEO_WEP_ZR68_S
+	NEO_WEP_SCOPEDWEAPON =		(1 << 28), // Scoped weapons should OR this in their flags.
 };
 
 // These are the .res file id numbers for
@@ -96,6 +97,7 @@ public:
 	virtual bool CanBeSelected(void);
 
 	virtual int GetNeoWepBits(void) const { return NEO_WEP_INVALID; }
+	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
 
 	bool IsGhost(void) const { return (GetNeoWepBits() & NEO_WEP_GHOST) ? true : false; }
 
@@ -106,7 +108,7 @@ public:
 	virtual void SUB_Remove(void) { }
 
 private:
-	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &);
+	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &other);
 };
 
 #endif // WEAPON_NEO_BASECOMBATWEAPON_SHARED_H

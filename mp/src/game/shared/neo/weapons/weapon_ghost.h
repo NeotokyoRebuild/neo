@@ -38,6 +38,7 @@ public:
 	void HandleGhostUnequip(void);
 
 	virtual int GetNeoWepBits(void) const { return NEO_WEP_GHOST; }
+	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
 
 #ifdef GAME_DLL
 	DECLARE_ACTTABLE();

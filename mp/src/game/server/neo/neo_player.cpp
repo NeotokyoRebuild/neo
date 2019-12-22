@@ -1,19 +1,11 @@
 #include "cbase.h"
-#include "weapon_hl2mpbasehlmpcombatweapon.h"
 #include "neo_player.h"
-#include "globalstate.h"
-#include "game.h"
-#include "neo_gamerules.h"
-#include "hl2mp_player_shared.h"
+
+
 #include "neo_predicted_viewmodel.h"
 #include "in_buttons.h"
 #include "neo_gamerules.h"
-#include "KeyValues.h"
 #include "team.h"
-#include "weapon_hl2mpbase.h"
-#include "grenade_satchel.h"
-#include "eventqueue.h"
-#include "gamestats.h"
 
 #include "engine/IEngineSound.h"
 #include "SoundEmitterSystem/isoundemittersystembase.h"
@@ -32,6 +24,10 @@
 
 #include "neo_player_shared.h"
 
+#include "sequence_Transitioner.h"
+
+#include "neo_te_tocflash.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -45,12 +41,15 @@ SendPropInt(SENDINFO(m_iNeoSkin)),
 SendPropInt(SENDINFO(m_iXP)),
 SendPropInt(SENDINFO(m_iCapTeam), 3),
 SendPropInt(SENDINFO(m_iGhosterTeam)),
+SendPropInt(SENDINFO(m_iLoadoutWepChoice)),
 
 SendPropBool(SENDINFO(m_bGhostExists)),
 SendPropBool(SENDINFO(m_bInThermOpticCamo)),
+SendPropBool(SENDINFO(m_bInVision)),
 SendPropBool(SENDINFO(m_bIsAirborne)),
 SendPropBool(SENDINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 SendPropBool(SENDINFO(m_bShowTestMessage)),
+SendPropBool(SENDINFO(m_bInAim)),
 
 SendPropString(SENDINFO(m_pszTestMessage)),
 
@@ -65,12 +64,15 @@ DEFINE_FIELD(m_iNeoSkin, FIELD_INTEGER),
 DEFINE_FIELD(m_iXP, FIELD_INTEGER),
 DEFINE_FIELD(m_iCapTeam, FIELD_INTEGER),
 DEFINE_FIELD(m_iGhosterTeam, FIELD_INTEGER),
+DEFINE_FIELD(m_iLoadoutWepChoice, FIELD_INTEGER),
 
 DEFINE_FIELD(m_bGhostExists, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bInThermOpticCamo, FIELD_BOOLEAN),
+DEFINE_FIELD(m_bInVision, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bIsAirborne, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bHasBeenAirborneForTooLongToSuperJump, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bShowTestMessage, FIELD_BOOLEAN),
+DEFINE_FIELD(m_bInAim, FIELD_BOOLEAN),
 
 DEFINE_FIELD(m_pszTestMessage, FIELD_STRING),
 
@@ -116,6 +118,87 @@ void CNEO_Player::RequestSetSkin(int newSkin)
 	}
 }
 
+static inline bool IsNeoPrimary(CNEOBaseCombatWeapon *pNeoWep)
+{
+	if (!pNeoWep)
+	{
+		return false;
+	}
+
+	const int bits = pNeoWep->GetNeoWepBits();
+	const int primaryBits = NEO_WEP_AA13 | NEO_WEP_GHOST | NEO_WEP_JITTE | NEO_WEP_JITTE_S |
+		NEO_WEP_M41 | NEO_WEP_M41_L | NEO_WEP_M41_S | NEO_WEP_MPN | NEO_WEP_MPN_S |
+		NEO_WEP_MX | NEO_WEP_MX_S | NEO_WEP_PZ | NEO_WEP_SMAC | NEO_WEP_SRM |
+		NEO_WEP_SRM_S | NEO_WEP_SRS | NEO_WEP_SUPA7 | NEO_WEP_ZR68_C | NEO_WEP_ZR68_L |
+		NEO_WEP_ZR68_S;
+
+	return (primaryBits & bits) ? true : false;
+}
+
+bool CNEO_Player::RequestSetLoadout(int loadoutNumber)
+{
+	const char *pszWepName = GetWeaponByLoadoutId(loadoutNumber);
+
+	if (FStrEq(pszWepName, ""))
+	{
+		Assert(false);
+		Warning("CNEO_Player::RequestSetLoadout: Loadout request failed\n");
+		return false;
+	}
+
+	EHANDLE pEnt;
+	pEnt = CreateEntityByName(pszWepName);
+
+	if (!pEnt)
+	{
+		Assert(false);
+		Warning("NULL Ent in RequestSetLoadout!\n");
+		return false;
+	}
+
+	pEnt->SetLocalOrigin(GetLocalOrigin());
+	pEnt->AddSpawnFlags(SF_NORESPAWN);
+
+	CNEOBaseCombatWeapon *pNeoWeapon = dynamic_cast<CNEOBaseCombatWeapon*>((CBaseEntity*)pEnt);
+	if (!pNeoWeapon)
+	{
+		if (pEnt != NULL && !(pEnt->IsMarkedForDeletion()))
+		{
+			UTIL_Remove((CBaseEntity*)pEnt);
+			Assert(false);
+			Warning("CNEO_Player::RequestSetLoadout: Not a Neo base weapon: %s\n", pszWepName);
+			return false;
+		}
+	}
+
+	bool result = true;
+
+	if (!IsNeoPrimary(pNeoWeapon))
+	{
+		Assert(false);
+		Warning("CNEO_Player::RequestSetLoadout: Not a Neo primary weapon: %s\n", pszWepName);
+		result = false;
+	}
+
+	if (m_iXP < pNeoWeapon->GetNeoWepXPCost(GetClass()))
+	{
+		DevMsg("Insufficient XP for %s\n", pszWepName);
+		result = false;
+	}
+
+	if (result)
+	{
+		m_iLoadoutWepChoice = loadoutNumber;
+	}
+	
+	if (pEnt != NULL && !(pEnt->IsMarkedForDeletion()))
+	{
+		UTIL_Remove((CBaseEntity*)pEnt);
+	}
+
+	return result;
+}
+
 void SetClass(const CCommand &command)
 {
 	auto player = static_cast<CNEO_Player*>(UTIL_GetCommandClient());
@@ -159,8 +242,25 @@ void SetSkin(const CCommand &command)
 	}
 }
 
+void SetLoadout(const CCommand &command)
+{
+	auto player = static_cast<CNEO_Player*>(UTIL_GetCommandClient());
+
+	if (!player)
+	{
+		return;
+	}
+
+	if (command.ArgC() == 2)
+	{
+		int loadoutNumber = atoi(command.ArgV()[1]);
+		player->RequestSetLoadout(loadoutNumber);
+	}
+}
+
 ConCommand setclass("setclass", SetClass, "Set class", FCVAR_USERINFO);
 ConCommand setskin("SetVariant", SetSkin, "Set skin", FCVAR_USERINFO);
+ConCommand loadout("loadout", SetLoadout, "Set loadout", FCVAR_USERINFO);
 
 // NEO FIXME/HACK (Rain): bots don't properly set their fakeclient flag currently,
 // making IsFakeClient and IsBot return false. This is an ugly hack to get bots
@@ -206,17 +306,18 @@ CNEO_Player::CNEO_Player()
 	m_iNeoSkin = NEO_SKIN_FIRST;
 	m_iXP.GetForModify() = 0;
 
-	m_bInLeanLeft = false;
-	m_bInLeanRight = false;
+	m_bInLeanLeft = m_bInLeanRight = false;
 	m_bGhostExists = false;
-	m_bInThermOpticCamo = false;
+	m_bInThermOpticCamo = m_bInVision = false;
 	m_bIsAirborne = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
+	m_bInAim = false;
 
 	m_leanPosTargetOffset = vec3_origin;
 
 	m_iCapTeam = TEAM_UNASSIGNED;
 	m_iGhosterTeam = TEAM_UNASSIGNED;
+	m_iLoadoutWepChoice = 0;
 
 	m_bShowTestMessage = false;
 	V_memset(m_pszTestMessage.GetForModify(), 0, sizeof(m_pszTestMessage));
@@ -228,7 +329,6 @@ CNEO_Player::CNEO_Player()
 
 CNEO_Player::~CNEO_Player( void )
 {
-	
 }
 
 int CNEO_Player::GetSkin() const
@@ -264,7 +364,7 @@ void CNEO_Player::UpdateNetworkedFriendlyLocations()
 
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
-		CNEO_Player *otherPlayer = (CNEO_Player*)UTIL_PlayerByIndex(i);
+		CNEO_Player *otherPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
 
 		vec_t zeroPos[3] = { 0, 0, 0 };
 
@@ -329,13 +429,14 @@ bool CNEO_Player::IsAirborne(void) const
 }
 
 extern ConVar neo_lean_angle;
-extern ConVar neo_lean_thirdperson_roll_lerp_scale("neo_lean_thirdperson_roll_lerp_scale", "5", FCVAR_REPLICATED | FCVAR_CHEAT, "Multiplier for 3rd person lean roll lerping.", true, 0.0, false, 0);
 
+ConVar neo_lean_thirdperson_roll_lerp_scale("neo_lean_thirdperson_roll_lerp_scale", "5",
+	FCVAR_REPLICATED | FCVAR_CHEAT, "Multiplier for 3rd person lean roll lerping.", true, 0.0, false, 0);
 
 //just need to calculate lean angle in here
 void CNEO_Player::Lean(void)
 {
-	CNEOPredictedViewModel *vm = (CNEOPredictedViewModel*)GetViewModel();
+	CNEOPredictedViewModel *vm = static_cast<CNEOPredictedViewModel*>(GetViewModel());
 
 	if (!vm)
 	{
@@ -347,9 +448,38 @@ void CNEO_Player::Lean(void)
 	anim->SetBoneController(0, LocalEyeAngles().z);
 }
 
+inline void CNEO_Player::CheckVisionButtons()
+{
+	if (m_afButtonPressed & IN_VISION)
+	{
+		if (IsAlive())
+		{
+			m_bInVision = !m_bInVision;
+
+			if (m_bInVision)
+			{
+				CRecipientFilter filter;
+				filter.AddRecipient(this);
+
+				static int visionToggle = CBaseEntity::PrecacheScriptSound("NeoPlayer.VisionOn");
+
+				EmitSound_t tocSoundParams;
+				tocSoundParams.m_bEmitCloseCaption = false;
+				tocSoundParams.m_hSoundScriptHandle = visionToggle;
+				tocSoundParams.m_pOrigin = &GetAbsOrigin();
+
+				EmitSound(filter, edict()->m_EdictIndex, tocSoundParams);
+			}
+		}
+	}
+}
+
 void CNEO_Player::PreThink(void)
 {
 	BaseClass::PreThink();
+
+	CheckThermOpticButtons();
+	CheckVisionButtons();
 
 	Lean();
 
@@ -478,9 +608,15 @@ void CNEO_Player::PreThink(void)
 	{
 		UpdateNetworkedFriendlyLocations();
 	}
-
-	CheckThermOpticButtons();
 }
+
+ConVar sv_neo_cloak_color_r("sv_neo_cloak_color_r", "1", FCVAR_CHEAT, "Thermoptic cloak flash color (red channel).", true, 0.0f, true, 255.0f);
+ConVar sv_neo_cloak_color_g("sv_neo_cloak_color_g", "2", FCVAR_CHEAT, "Thermoptic cloak flash color (green channel).", true, 0.0f, true, 255.0f);
+ConVar sv_neo_cloak_color_b("sv_neo_cloak_color_b", "4", FCVAR_CHEAT, "Thermoptic cloak flash color (blue channel).", true, 0.0f, true, 255.0f);
+ConVar sv_neo_cloak_color_radius("sv_neo_cloak_color_radius", "64", FCVAR_CHEAT, "Thermoptic cloak flash effect radius.", true, 0.0f, true, 4096.0f);
+ConVar sv_neo_cloak_time("sv_neo_cloak_time", "0.1", FCVAR_CHEAT, "How long should the thermoptic flash be visible, in seconds.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_cloak_decay("sv_neo_cloak_decay", "0", FCVAR_CHEAT, "After the cloak time, how quickly should the flash effect disappear.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_cloak_exponent("sv_neo_cloak_exponent", "4", FCVAR_CHEAT, "Cloak flash lighting exponent.", true, 0.0f, false, 0.0f);
 
 inline void CNEO_Player::CheckThermOpticButtons()
 {
@@ -489,6 +625,35 @@ inline void CNEO_Player::CheckThermOpticButtons()
 		if (IsAlive())
 		{
 			m_bInThermOpticCamo = !m_bInThermOpticCamo;
+
+			CRecipientFilter filter;
+			filter.AddRecipientsByPVS(GetAbsOrigin());
+
+			if (m_bInThermOpticCamo)
+			{
+				// Do cloak flash
+				g_NEO_TE_TocFlash.r = sv_neo_cloak_color_r.GetInt();
+				g_NEO_TE_TocFlash.g = sv_neo_cloak_color_g.GetInt();
+				g_NEO_TE_TocFlash.b = sv_neo_cloak_color_b.GetInt();
+				g_NEO_TE_TocFlash.m_vecOrigin = GetAbsOrigin();
+				g_NEO_TE_TocFlash.exponent = sv_neo_cloak_exponent.GetInt();
+				g_NEO_TE_TocFlash.m_fRadius = sv_neo_cloak_color_radius.GetFloat();
+				g_NEO_TE_TocFlash.m_fTime = sv_neo_cloak_time.GetFloat();
+				g_NEO_TE_TocFlash.m_fDecay = sv_neo_cloak_decay.GetFloat();
+
+				g_NEO_TE_TocFlash.Create(filter);
+			}
+
+			// Play cloak sound
+			static int tocOn = CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOn");
+			static int tocOff = CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOff");
+
+			EmitSound_t tocSoundParams;
+			tocSoundParams.m_bEmitCloseCaption = false;
+			tocSoundParams.m_hSoundScriptHandle = (m_bInThermOpticCamo ? tocOn : tocOff);
+			tocSoundParams.m_pOrigin = &GetAbsOrigin();
+
+			EmitSound(filter, edict()->m_EdictIndex, tocSoundParams);
 		}
 	}
 }
@@ -694,13 +859,61 @@ inline void CNEO_Player::Weapon_SetZoom(bool bZoomIn)
 	{
 		SetFOV((CBaseEntity*)this, GetDefaultFOV(), zoomSpeedSecs);
 	}
+
+	m_bInAim = bZoomIn;
 }
 
+void UpdateLayerSequenceGeneric(CNEO_Player *pPlayer, CStudioHdr *pStudioHdr, int iLayer, bool &bEnabled, float &flCurCycle, int &iSequence, bool bWaitAtEnd)
+{
+	if (!bEnabled)
+		return;
+
+	// Increment the fire sequence's cycle.
+	flCurCycle += pPlayer->GetSequenceCycleRate(pStudioHdr, iSequence) * gpGlobals->frametime;
+	if (flCurCycle > 1)
+	{
+		if (bWaitAtEnd)
+		{
+			flCurCycle = 1;
+		}
+		else
+		{
+			// Not firing anymore.
+			bEnabled = false;
+			iSequence = 0;
+			return;
+		}
+	}
+
+	// Now dump the state into its animation layer.
+	CAnimationLayer *pLayer = pPlayer->GetAnimOverlay(iLayer);
+
+	pLayer->m_flCycle = flCurCycle;
+	pLayer->m_nSequence = iSequence;
+
+	pLayer->m_flPlaybackRate = 1.0;
+	pLayer->m_flWeight = 1.0f;
+	pLayer->m_nOrder = iLayer;
+}
+
+// NEO FIXME (Rain): need to implement neo animstate for smoothed gestures!
+// See CSS code for basic idea.
 void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 {
-	int animDesired = -1;
-	int iUpperLayeredSequence = -1;
-	int iReloadLayeredSequence = -1;
+#if(0) // These should live in animstate
+#define AIMSEQUENCE_LAYER		1	// Aim sequence uses layers 0 and 1 for the weapon idle animation (needs 2 layers so it can blend).
+#define NUM_AIMSEQUENCE_LAYERS	4	// Then it uses layers 2 and 3 to blend in the weapon run/walk/crouchwalk animation.
+
+#define FIRESEQUENCE_LAYER		(AIMSEQUENCE_LAYER+NUM_AIMSEQUENCE_LAYERS)
+#define RELOADSEQUENCE_LAYER	(FIRESEQUENCE_LAYER + 1)
+#define GRENADESEQUENCE_LAYER	(RELOADSEQUENCE_LAYER + 1)
+#define NUM_LAYERS_WANTED		(GRENADESEQUENCE_LAYER + 1)
+
+	auto pAnimOverlay_Fire = GetAnimOverlay(FIRESEQUENCE_LAYER);
+	auto pAnimOverlay_Reload = GetAnimOverlay(RELOADSEQUENCE_LAYER);
+	Assert(pAnimOverlay_Fire);
+	Assert(pAnimOverlay_Reload);
+#endif
 
 	float speed;
 
@@ -714,7 +927,9 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 		speed = GetAbsVelocity().Length2D();
 	}
 
-	Activity idealActivity = ACT_NEO_MOVE_STAND;
+	Activity idealActivity = ACT_NEO_MOVE_RUN;
+
+	const bool bStartedReloading = (playerAnim == PLAYER_RELOAD);
 
 	// This could stand to be redone. Why is playerAnim abstracted from activity? (sjb)
 	if (playerAnim == PLAYER_DIE)
@@ -737,45 +952,35 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 			idealActivity = ACT_NEO_ATTACK;
 		}
 	}
-	/*else if (playerAnim == PLAYER_RELOAD)
+	else if (playerAnim == PLAYER_IDLE || playerAnim == PLAYER_WALK || bStartedReloading)
 	{
-		idealActivity = ACT_NEO_RELOAD;
-	}*/
-	else if (playerAnim == PLAYER_IDLE || playerAnim == PLAYER_WALK)
-	{
-		
-		/*
-		else if ( GetWaterLevel() > 1 )
+		if (GetFlags() & FL_DUCKING)
 		{
-		if ( speed == 0 )
-		idealActivity = ACT_NEO_HOVER;
-		else
-		idealActivity = ACT_NEO_SWIM;
-		}
-		*/
-		///else
-		{
-			if (GetFlags() & FL_DUCKING)
+			if (speed > 0)
 			{
-				if (speed > 0)
+				idealActivity = ACT_NEO_MOVE_CROUCH;
+			}
+			else
+			{
+				idealActivity = ACT_NEO_IDLE_CROUCH;
+			}
+		}
+		else
+		{
+			if (speed > 0)
+			{
+				if (speed > GetWalkSpeed())
 				{
-					idealActivity = ACT_NEO_MOVE_CROUCH;
+					idealActivity = ACT_NEO_MOVE_RUN;
 				}
 				else
 				{
-					idealActivity = ACT_NEO_IDLE_CROUCH;
+					idealActivity = ACT_NEO_MOVE_WALK;
 				}
 			}
 			else
 			{
-				if (speed > 0)
-				{
-					idealActivity = ACT_NEO_MOVE_STAND;
-				}
-				else
-				{
-					idealActivity = ACT_NEO_IDLE_STAND;
-				}
+				idealActivity = ACT_NEO_IDLE_STAND;
 			}
 		}
 	}
@@ -791,112 +996,213 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 
 	auto activeWep = GetActiveWeapon();
 
-	const char *pszAnimPrefix = (activeWep) ? activeWep->GetAnimPrefix() : NULL;
-#define MAX_WEAPON_PREFI_LEN 18	// "Crouch_Walk_Upper_" == 18
+	const char *pszAnimPrefix = (activeWep) ? activeWep->GetAnimPrefix() : "";
+#define MAX_WEAPON_PREFIX_LEN 18	// "Crouch_Walk_Upper_" == 18
 #define MAX_WEAPON_SUFFIX_LEN 6	// "pistol" == 6
 #define NONE_STR ""
-	char pszUpperAnim[MAX_WEAPON_PREFI_LEN + MAX_WEAPON_SUFFIX_LEN + 1] = NONE_STR;
-	char pszReloadAnim[MAX_WEAPON_PREFI_LEN + MAX_WEAPON_SUFFIX_LEN + 1] = NONE_STR;
+	char pszUpperAnim[MAX_WEAPON_PREFIX_LEN + MAX_WEAPON_SUFFIX_LEN + 1] = NONE_STR;
+	char pszReloadAnim[MAX_WEAPON_PREFIX_LEN + MAX_WEAPON_SUFFIX_LEN + 1] = NONE_STR;
 
-	const bool bInReload = (activeWep) && (activeWep->m_bInReload);
+	int iLowerSequence = -1;
+	int iUpperSequence = -1;
 
 	if (idealActivity == ACT_NEO_JUMP)
 	{
-		animDesired = LookupSequence("Jump");
+		iLowerSequence = LookupSequence("Jump");
 	}
-	else if (idealActivity == ACT_NEO_MOVE_STAND)
+	else if (idealActivity == ACT_NEO_MOVE_RUN)
 	{
-		animDesired = LookupSequence("Run_lower");
+		iLowerSequence = LookupSequence("Run_lower");
 
-		if (!bInReload)
-		{
-			const char *pszLayeredSequence = "Run_Upper_%s";
-			V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
-		}
+		const char *pszLayeredSequence = "Run_Upper_%s";
+		V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
+		iUpperSequence = LookupSequence(pszUpperAnim);
+	}
+	else if (idealActivity == ACT_NEO_MOVE_WALK)
+	{
+		iLowerSequence = LookupSequence("walk_lower");
+
+		const char *pszLayeredSequence = "Walk_Upper_%s";
+		V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
+		iUpperSequence = LookupSequence(pszUpperAnim);
 	}
 	else if (idealActivity == ACT_NEO_IDLE_STAND)
 	{
-		animDesired = LookupSequence("Idle_lower");
+		iLowerSequence = LookupSequence("Idle_lower");
 
-		if (!bInReload)
-		{
-			const char *pszLayeredSequence = "Idle_Upper_%s";
-			V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
-		}
+		const char *pszLayeredSequence = "Idle_Upper_%s";
+		V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
+		iUpperSequence = LookupSequence(pszUpperAnim);
 	}
 	else if (idealActivity == ACT_NEO_IDLE_CROUCH)
 	{
-		animDesired = LookupSequence("Crouch_Idle_Lower");
+		iLowerSequence = LookupSequence("Crouch_Idle_Lower");
 
-		if (!bInReload)
-		{
-			const char *pszLayeredSequence = "Crouch_Idle_Upper_%s";
-			V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
-		}
+		const char *pszLayeredSequence = "Crouch_Idle_Upper_%s";
+		V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
+		iUpperSequence = LookupSequence(pszUpperAnim);
 	}
 	else if (idealActivity == ACT_NEO_MOVE_CROUCH)
 	{
-		animDesired = LookupSequence("Crouch_walk_lower");
+		iLowerSequence = LookupSequence("Crouch_walk_lower");
 
-		if (!bInReload)
+		const char *pszLayeredSequence = "Crouch_Walk_Upper_%s";
+		V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
+		iUpperSequence = LookupSequence(pszUpperAnim);
+	}
+	else if (idealActivity == ACT_NEO_ATTACK)
+	{
+		if (GetFlags() & FL_DUCKING)
 		{
-			const char *pszLayeredSequence = "Crouch_Walk_Upper_%s";
-			V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
+			if (speed > 0)
+			{
+				iLowerSequence = LookupSequence("Crouch_walk_lower");
+
+				const char *pszLayeredSequence = "Crouch_Walk_Shoot_%s";
+				V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
+				iUpperSequence = LookupSequence(pszUpperAnim);
+			}
+			else
+			{
+				iLowerSequence = LookupSequence("Crouch_Idle_Lower");
+
+				const char *pszLayeredSequence = "Crouch_Idle_Shoot_%s";
+				V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
+				iUpperSequence = LookupSequence(pszUpperAnim);
+			}
+		}
+		else
+		{
+			if (speed > 0)
+			{
+				if (speed > GetWalkSpeed())
+				{
+					iLowerSequence = LookupSequence("Run_lower");
+
+					const char *pszLayeredSequence = "Run_Shoot_%s";
+					V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
+					iUpperSequence = LookupSequence(pszUpperAnim);
+				}
+				else
+				{
+					iLowerSequence = LookupSequence("walk_lower");
+
+					const char *pszLayeredSequence = "Walk_Shoot_%s";
+					V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
+					iUpperSequence = LookupSequence(pszUpperAnim);
+				}
+			}
+			else
+			{
+				iLowerSequence = LookupSequence("Idle_lower");
+
+				const char *pszLayeredSequence = "Idle_Shoot_%s";
+				V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
+				iUpperSequence = LookupSequence(pszUpperAnim);
+			}
 		}
 	}
 
-
-	if (bInReload)
+	if (iLowerSequence == -1)
 	{
-		const char *pszLayeredSequence = "Reload_%s";
-		V_sprintf_safe(pszReloadAnim, pszLayeredSequence, pszAnimPrefix);
-	}
-
-	if (animDesired == -1)
-	{
-		animDesired = 0;
+		//Assert(false);
+		iLowerSequence = 0;
 	}
 
 	SetActivity(idealActivity);
 
-	if (GetSequence() != animDesired || !SequenceLoops())
+	const bool bReloadAnimPlayingNow = ((bStartedReloading) || (activeWep && activeWep->m_bInReload));
+
+	// Handle lower body animation
+	if (GetSequence() != iLowerSequence || !SequenceLoops())
 	{
-		// Handle lower body animation
-		SetSequence(animDesired);
-		ResetSequence(animDesired);
-
-		// Handle reload animation
-		if (!FStrEq(pszReloadAnim, NONE_STR)) 
-		{
-			SetActivity(ACT_RELOAD); // NEO BUG (Rain): third person reloads are janky
-
-			iReloadLayeredSequence = LookupSequence(pszReloadAnim);
-
-			if (!IsValidSequence(iReloadLayeredSequence))
-			{
-				DevWarning("CNEO_Player::SetAnimation: !IsValidSequence %i: (\"%s\")\n", iReloadLayeredSequence, pszReloadAnim);
-			}
-			else
-			{
-				AddGestureSequence(iReloadLayeredSequence);
-			}
-		}
+		//DevMsg("Setting lower seq: %i\n", iLowerSequence);
+		SetSequence(iLowerSequence);
+		ResetSequence(iLowerSequence);
 	}
 
 	// Handle upper body animation
-	if (!FStrEq(pszUpperAnim, NONE_STR))
+	if (iUpperSequence != -1)
 	{
-		iUpperLayeredSequence = LookupSequence(pszUpperAnim);
-
-		if (!IsValidSequence(iUpperLayeredSequence))
+		if (!IsValidSequence(iUpperSequence))
 		{
-			DevWarning("CNEO_Player::SetAnimation: !IsValidSequence %i: (\"%s\")\n", iUpperLayeredSequence, pszUpperAnim);
+			Assert(false);
+			Warning("CNEO_Player::SetAnimation: !IsValidSequence %i: (\"%s\")\n",
+				iUpperSequence, pszUpperAnim);
 		}
 		else
 		{
-			AddGestureSequence(iUpperLayeredSequence);
+			const int iAimLayer = AddGestureSequence(iUpperSequence, true);
+			SetLayerWeight(iAimLayer, 0.5f);
+#if(0)
+			if (!pAnimOverlay_Fire->IsActive() || pAnimOverlay_Fire->IsAbandoned())
+			{
+				pAnimOverlay_Fire->KillMe();
+			}
+			pAnimOverlay_Fire->Init(this);
+			pAnimOverlay_Fire->m_nSequence = iUpperAimSequence;
+			pAnimOverlay_Fire->StudioFrameAdvance(0.1, this);
+
+			int seq = AddGestureSequence(iUpperAimSequence, true);
+			if (IsValidSequence(seq))
+			{
+				SetLayerBlendIn(seq, 0.1f);
+				SetLayerBlendOut(seq, 0.1f);
+			}
+#endif
 		}
 	}
+
+	if (bReloadAnimPlayingNow)
+	{
+		const char *pszLayeredSequence = "Reload_%s";
+		V_sprintf_safe(pszReloadAnim, pszLayeredSequence, pszAnimPrefix);
+		Assert(!FStrEq(pszReloadAnim, NONE_STR));
+
+		const int iUpperReloadSequence = LookupSequence(pszReloadAnim);
+
+		const int iReloadLayer = AddGestureSequence(iUpperReloadSequence, true);
+		SetLayerWeight(iReloadLayer, 0.5f);
+
+#if(0)
+		int seq = AddGestureSequence(iUpperReloadSequence, true);
+		if (IsValidSequence(seq))
+		{
+			bool reloading = bReloadAnimPlayingNow;
+			float layerCycle = GetLayerCycle(RELOADSEQUENCE_LAYER);
+			int seq = iUpperReloadSequence;
+			UpdateLayerSequenceGeneric(this, GetModelPtr(), RELOADSEQUENCE_LAYER, reloading, layerCycle, seq, false);
+		}
+
+		if (!IsValidSequence(iUpperReloadSequence))
+		{
+			Assert(false);
+			Warning("CNEO_Player::SetAnimation: !IsValidSequence %i: (\"%s\")\n",
+				iUpperReloadSequence, pszReloadAnim);
+		}
+		else
+		{
+
+			pAnimOverlay_Reload->Init(this);
+			pAnimOverlay_Reload->m_nSequence = iUpperReloadSequence;
+			pAnimOverlay_Reload->StudioFrameAdvance(0.1, this);
+
+			int seq = AddGestureSequence(iUpperReloadSequence, true);
+			if (IsValidSequence(seq))
+			{
+				SetLayerBlendIn(seq, 0.1f);
+				SetLayerBlendOut(seq, 0.1f);
+			}
+		}
+#endif
+	}
+
+#if(0)
+	static CSequenceTransitioner transitioner;
+	transitioner->RemoveAll();
+	transitioner->CheckForSequenceChange(GetModelPtr(), GetSequence(), false, true);
+	transitioner->UpdateCurrent(GetModelPtr(), GetSequence(), GetCycle(), 1.0f, gpGlobals->curtime);
+#endif
 }
 
 // Purpose: Suicide, but cancel the point loss.
@@ -904,7 +1210,7 @@ void CNEO_Player::SoftSuicide(void)
 {
 	if (IsDead())
 	{
-		AssertMsg(false, "This should never get called on a dead client");
+		Assert(false); // This should never get called on a dead client
 		return;
 	}
 
@@ -1094,8 +1400,6 @@ inline bool CNEO_Player::IsCarryingGhost(void)
 }
 
 // Is the player allowed to drop a weapon of this type?
-// NEO TODO (Rain): Forbid Neo drops like knife, neo nades etc.
-// once they have been implemented.
 inline bool CNEO_Player::IsAllowedToDrop(CBaseCombatWeapon *pWep)
 {
 	if (!pWep)
@@ -1103,21 +1407,30 @@ inline bool CNEO_Player::IsAllowedToDrop(CBaseCombatWeapon *pWep)
 		return false;
 	}
 
-	const char *unallowedDrops[] = {
-		"weapon_frag",
-	};
+	// We can static_cast if it's guaranteed that all weapons will be Neotokyo type.
+	// Allowing HL2DM weapons, for now.
+#define SUPPORT_NON_NEOTOKYO_WEAPONS 1 // NEO FIXME (Rain): knife is not yet a neo inherited weapon
 
-	CBaseCombatWeapon *pTest = NULL;
-	for (int i = 0; i < ARRAYSIZE(unallowedDrops); i++)
+#if SUPPORT_NON_NEOTOKYO_WEAPONS
+	auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWep);
+	if (!pNeoWep)
 	{
-		pTest = Weapon_OwnsThisType(unallowedDrops[i]);
-		if (pWep == pTest)
-		{
-			return false;
-		}
+		// This was not a Neotokyo weapon. Don't know what it is, but allow dropping.
+		return true;
 	}
+#else
+	Assert(dynamic_cast<CNEOBaseCombatWeapon*>(pWep));
+	auto pNeoWep = static_cast<CNEOBaseCombatWeapon*>(pWep);
+#endif
 
-	return true;
+	const int wepBits = pNeoWep->GetNeoWepBits();
+
+	Assert(wepBits > NEO_WEP_INVALID);
+
+	const int unallowedDrops = (NEO_WEP_DETPACK | NEO_WEP_FRAG_GRENADE |
+		NEO_WEP_KNIFE | NEO_WEP_PROX_MINE | NEO_WEP_SMOKE_GRENADE);
+
+	return ((wepBits & unallowedDrops) == 0);
 }
 
 void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
@@ -1167,6 +1480,9 @@ void CNEO_Player::DeathSound( const CTakeDamageInfo &info )
 	BaseClass::DeathSound(info);
 }
 
+// NEO TODO (Rain): this is mostly copied from hl2mp code,
+// should rewrite to get rid of the gotos, and deal with any
+// cases of multiple spawn overlaps at the same time.
 #define TELEFRAG_ON_OVERLAPPING_SPAWN 0
 CBaseEntity* CNEO_Player::EntSelectSpawnPoint( void )
 {
@@ -1480,20 +1796,57 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 		return;
 	}
 
-	const int loadoutId = atoi(engine->GetClientConVarValue(
-		engine->IndexOfEdict(edict()), "loadout"));
-
-	const char *szWep = GetWeaponByLoadoutId(loadoutId);
+	const char *szWep = GetWeaponByLoadoutId(m_iLoadoutWepChoice);
 #if DEBUG
-	DevMsg("Loadout slot: %i (\"%s\")\n", loadoutId, szWep);
+	DevMsg("Loadout slot: %i (\"%s\")\n", m_iLoadoutWepChoice, szWep);
 #endif
 
-	if (GiveNamedItem(szWep))
+	// If I already own this type don't create one
+	const int wepSubType = 0;
+	if (Weapon_OwnsThisType(szWep, wepSubType))
 	{
-		Weapon_Switch(Weapon_OwnsThisType(szWep));
+		return;
+	}
+
+	EHANDLE pEnt;
+	pEnt = CreateEntityByName(szWep);
+
+	if (!pEnt)
+	{
+		Assert(false);
+		Warning("NULL Ent in GiveLoadoutWeapon!\n");
+		return;
+	}
+
+	pEnt->SetLocalOrigin(GetLocalOrigin());
+	pEnt->AddSpawnFlags(SF_NORESPAWN);
+
+	CNEOBaseCombatWeapon *pNeoWeapon = dynamic_cast<CNEOBaseCombatWeapon*>((CBaseEntity*)pEnt);
+	if (pNeoWeapon)
+	{
+		if (m_iXP >= pNeoWeapon->GetNeoWepXPCost(GetClass()))
+		{
+			pNeoWeapon->SetSubType(wepSubType);
+
+			DispatchSpawn(pEnt);
+
+			if (pEnt != NULL && !(pEnt->IsMarkedForDeletion()))
+			{
+				pEnt->Touch(this);
+				Weapon_Switch(Weapon_OwnsThisType(szWep));
+			}
+		}
+		else
+		{
+			if (pEnt != NULL && !(pEnt->IsMarkedForDeletion()))
+			{
+				UTIL_Remove((CBaseEntity*)pEnt);
+			}
+		}
 	}
 }
 
+// NEO TODO
 void CNEO_Player::GiveAllItems(void)
 {
 	// NEO TODO (Rain): our own ammo types
@@ -1506,27 +1859,6 @@ void CNEO_Player::GiveAllItems(void)
 	GiveNamedItem("weapon_tachi");
 	GiveNamedItem("weapon_zr68s");
 	Weapon_Switch(Weapon_OwnsThisType("weapon_zr68s"));
-	//GiveNamedItem("weapon_aa13");
-	//Weapon_Switch(Weapon_OwnsThisType("weapon_aa13"));
-
-#if(0) // startup weps stuff
-	if (m_nCyborgClass == NEO_CLASS_RECON)
-	{
-		GiveNamedItem("weapon_tachi");
-		GiveNamedItem("weapon_ghost");
-		Weapon_Switch(Weapon_OwnsThisType("weapon_tachi"));
-	}
-	else if (m_nCyborgClass == NEO_CLASS_ASSAULT)
-	{
-		GiveNamedItem("weapon_tachi");
-		GiveNamedItem("weapon_ghost");
-		Weapon_Switch(Weapon_OwnsThisType("weapon_tachi"));
-	}
-	else if (m_nCyborgClass == NEO_CLASS_SUPPORT)
-	{
-		
-	}
-#endif
 }
 
 // Purpose: For Neotokyo, we could use this engine method
@@ -1658,9 +1990,9 @@ float CNEO_Player::GetWalkSpeed() const
 		return NEO_ASSAULT_WALK_SPEED;
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_WALK_SPEED;
+	default:
+		return NEO_BASE_WALK_SPEED;
 	}
-
-	return NEO_BASE_WALK_SPEED;
 }
 
 float CNEO_Player::GetSprintSpeed() const
@@ -1673,7 +2005,7 @@ float CNEO_Player::GetSprintSpeed() const
 		return NEO_ASSAULT_SPRINT_SPEED;
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_SPRINT_SPEED;
+	default:
+		return NEO_BASE_SPRINT_SPEED;
 	}
-
-	return NEO_BASE_SPRINT_SPEED;
 }

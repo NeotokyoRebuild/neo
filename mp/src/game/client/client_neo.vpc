@@ -122,6 +122,9 @@ $Project "Client (HL2MP)"
 			$File	"neo\c_neo_player.cpp"
 			$File	"neo\c_neo_player.h"
 
+			$File	"neo\c_neo_te_tocflash.cpp"
+			$File	"neo\c_neo_te_tocflash.h"
+
 			$Folder "Game_Controls"
 			{
 				$File	"neo\game_controls\neo_classmenu.cpp"
@@ -194,9 +197,6 @@ $Project "Client (HL2MP)"
 			{
 				$File	"$SRCDIR\game\shared\neo\weapons\weapon_neobasecombatweapon.cpp"
 				$File	"$SRCDIR\game\shared\neo\weapons\weapon_neobasecombatweapon.h"
-
-				$File	"$SRCDIR\game\shared\neo\weapons\weapon_neobase_ar.cpp"
-				$File	"$SRCDIR\game\shared\neo\weapons\weapon_neobase_ar.h"
 
 				$File	"$SRCDIR\game\shared\neo\weapons\weapon_aa13.cpp"
 				$File	"$SRCDIR\game\shared\neo\weapons\weapon_aa13.h"

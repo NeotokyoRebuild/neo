@@ -11,6 +11,8 @@
 
 #include "c_neo_player.h"
 
+#include "weapon_neobasecombatweapon.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -214,6 +216,8 @@ void CNeoLoadoutMenu::OnMousePressed(vgui::MouseCode code)
 	BaseClass::OnMousePressed(code);
 }
 
+extern ConCommand loadoutmenu;
+
 void CNeoLoadoutMenu::OnCommand(const char* command)
 {
 	BaseClass::OnCommand(command);
@@ -223,7 +227,58 @@ void CNeoLoadoutMenu::OnCommand(const char* command)
 		return;
 	}
 
-	engine->ClientCmd(command);
+	bool allowedThisGun = false;
+	CUtlStringList loadoutArgs;
+	V_SplitString(command, " ", loadoutArgs);
+
+	if (loadoutArgs.Size() == 2)
+	{
+		Q_StripPrecedingAndTrailingWhitespace(loadoutArgs[1]);
+		const int choiceNum = atoi(loadoutArgs[1]);
+
+		const int myXp = C_NEO_Player::GetLocalNEOPlayer()->m_iXP;
+
+		// NEO TODO (Rain): set reasonably
+		const int xpLimits[] = {
+			-255,	// MPN
+			0,		// SRM
+			0,		// SRM-S
+			0,		// Jitte
+			0,		// Jittescoped
+			0,		// ZR68C
+			0,		// ZR68S
+			0,		// ZR68L
+			10,		// MX
+			20,		// PZ
+			10,		// Supa7
+			0,		// M41
+			0,		// M41L
+		};
+
+		if (choiceNum < 0 || choiceNum > ARRAYSIZE(xpLimits))
+		{
+			DevWarning("Weapon choice out of XP check range: %i\n", choiceNum);
+		}
+		else
+		{
+			allowedThisGun = (myXp >= xpLimits[choiceNum]);
+
+			if (!allowedThisGun)
+			{
+				Msg("Not enough XP for %s, need %i XP.\n",
+					GetWeaponByLoadoutId(choiceNum), xpLimits[choiceNum]);
+			}
+		}
+	}
+
+	if (allowedThisGun)
+	{
+		engine->ClientCmd(command);
+	}
+	else
+	{
+		engine->ClientCmd(loadoutmenu.GetName());
+	}
 
 	CommandCompletion();
 }
