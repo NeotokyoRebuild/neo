@@ -352,11 +352,8 @@ inline void CNEO_Player::ZeroFriendlyPlayerLocArray(void)
 
 void CNEO_Player::UpdateNetworkedFriendlyLocations()
 {
-	const int pvsMaxSize = (engine->GetClusterCount() / 8) + 1;
-	Assert(pvsMaxSize > 0);
-
-	// NEO HACK/FIXME (Rain): we should stack allocate instead
-	unsigned char *pvs = new unsigned char[pvsMaxSize];
+	const size_t pvsMaxSize = MAX_MAP_CLUSTERS + 1;
+	byte pvs[pvsMaxSize]{};
 
 	const int cluster = engine->GetClusterForOrigin(GetAbsOrigin());
 	const int pvsSize = engine->GetPVSForCluster(cluster, pvsMaxSize, pvs);
@@ -391,8 +388,6 @@ void CNEO_Player::UpdateNetworkedFriendlyLocations()
 
 		m_rvFriendlyPlayerPositions.Set(i, otherPlayer->GetAbsOrigin());
 	}
-
-	delete[] pvs;
 }
 
 void CNEO_Player::Precache( void )
