@@ -366,13 +366,10 @@ void CNEO_Player::UpdateNetworkedFriendlyLocations()
 	{
 		CNEO_Player *otherPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
 
-		vec_t zeroPos[3] = { 0, 0, 0 };
-
 		// Look for valid players that aren't us
 		if (!otherPlayer || otherPlayer == this)
 		{
 			m_rvFriendlyPlayerPositions.Set(i, vec3_origin);
-			m_rvFriendlyPlayerPositions.GetForModify(i).CopyToArray(zeroPos);
 			continue;
 		}
 
@@ -380,7 +377,6 @@ void CNEO_Player::UpdateNetworkedFriendlyLocations()
 		else if (otherPlayer->GetTeamNumber() != GetTeamNumber() || otherPlayer->IsDead())
 		{
 			m_rvFriendlyPlayerPositions.Set(i, vec3_origin);
-			m_rvFriendlyPlayerPositions.GetForModify(i).CopyToArray(zeroPos);
 			continue;
 		}
 
@@ -389,15 +385,11 @@ void CNEO_Player::UpdateNetworkedFriendlyLocations()
 		{
 #if(0) // currently networking all friendlies, NEO TODO (Rain): optimise this
 			m_rvFriendlyPlayerPositions.Set(i, vec3_origin);
-			m_rvFriendlyPlayerPositions.GetForModify(i).CopyToArray(zeroPos);
 			continue;
 #endif
 		}
 
-		vec_t absPos[3] = { otherPlayer->GetAbsOrigin().x, otherPlayer->GetAbsOrigin().y, otherPlayer->GetAbsOrigin().z };
-
 		m_rvFriendlyPlayerPositions.Set(i, otherPlayer->GetAbsOrigin());
-		m_rvFriendlyPlayerPositions.GetForModify(i).CopyToArray(absPos);
 	}
 
 	delete[] pvs;
