@@ -331,16 +331,6 @@ CNEO_Player::~CNEO_Player( void )
 {
 }
 
-int CNEO_Player::GetSkin() const
-{
-	return m_iNeoSkin;
-}
-
-int CNEO_Player::GetClass() const
-{
-	return m_iNeoClass;
-}
-
 inline void CNEO_Player::ZeroFriendlyPlayerLocArray(void)
 {
 	for (int i = 0; i < m_rvFriendlyPlayerPositions.Count(); i++)
@@ -408,11 +398,6 @@ void CNEO_Player::Spawn(void)
 	m_bIsAirborne = (!(GetFlags() & FL_ONGROUND));
 
 	GiveLoadoutWeapon();
-}
-
-bool CNEO_Player::IsAirborne(void) const
-{
-	return m_bIsAirborne;
 }
 
 extern ConVar neo_lean_angle;
