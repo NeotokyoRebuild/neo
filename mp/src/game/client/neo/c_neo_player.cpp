@@ -645,6 +645,19 @@ void C_NEO_Player::PostThink(void)
 		}
 	}
 
+	// Undo aim zoom if just died
+	static bool firstDeathTick = true;
+	if (!IsAlive() && firstDeathTick)
+	{
+		firstDeathTick = false;
+		Weapon_SetZoom(false);
+		return;
+	}
+	else
+	{
+		firstDeathTick = true;
+	}
+
 	C_BaseCombatWeapon *pWep = GetActiveWeapon();
 
 	if (pWep)

@@ -724,6 +724,19 @@ void CNEO_Player::PostThink(void)
 {
 	BaseClass::PostThink();
 
+	// Undo aim zoom if just died
+	static bool firstDeathTick = true;
+	if (!IsAlive() && firstDeathTick)
+	{
+		firstDeathTick = false;
+		Weapon_SetZoom(false);
+		return;
+	}
+	else
+	{
+		firstDeathTick = true;
+	}
+
 	CBaseCombatWeapon *pWep = GetActiveWeapon();
 
 	if (pWep)
