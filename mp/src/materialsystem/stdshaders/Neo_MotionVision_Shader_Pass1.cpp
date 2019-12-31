@@ -56,8 +56,9 @@ SHADER_FALLBACK
 	if (g_pHardwareConfig->GetDXSupportLevel() < 90)
 	{
 		Assert(0);
-		return "Neo_NightVision";
+		return "Wireframe";
 	}
+
 	return 0;
 }
 
