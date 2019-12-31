@@ -730,19 +730,17 @@ void CNEO_Player::PostThink(void)
 	{
 		static bool previouslyReloading = false;
 
-		if (pWep->m_bInReload)
+		if (pWep->m_bInReload && !previouslyReloading)
 		{
-			if (!previouslyReloading)
-			{
-				Weapon_SetZoom(false);
-			}
+			Weapon_SetZoom(false);
 		}
-		else
+		else if (m_afButtonPressed & IN_SPEED)
 		{
-			if (m_afButtonReleased & IN_AIM)
-			{
-				Weapon_AimToggle(pWep);
-			}
+			Weapon_SetZoom(false);
+		}
+		else if ((m_afButtonReleased & IN_AIM) && (!(m_nButtons & IN_SPEED)))
+		{
+			Weapon_AimToggle(pWep);
 		}
 
 		previouslyReloading = pWep->m_bInReload;
@@ -798,7 +796,7 @@ void CNEO_Player::PlayerDeathThink()
 	BaseClass::PlayerDeathThink();
 }
 
-void CNEO_Player::Weapon_AimToggle( CBaseCombatWeapon *pWep )
+void CNEO_Player::Weapon_AimToggle(CBaseCombatWeapon *pWep)
 {
 	// NEO TODO/HACK: Not all neo weapons currently inherit
 	// through a base neo class, so we can't static_cast!!
@@ -807,13 +805,12 @@ void CNEO_Player::Weapon_AimToggle( CBaseCombatWeapon *pWep )
 	{
 		return;
 	}
-	else if (!IsAllowedToZoom(neoCombatWep))
-	{
-		return;
-	}
 
-	bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR) == HIDEHUD_CROSSHAIR;
-	Weapon_SetZoom(showCrosshair);
+	if (IsAllowedToZoom(neoCombatWep))
+	{
+		const bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR) == HIDEHUD_CROSSHAIR;
+		Weapon_SetZoom(showCrosshair);
+	}
 }
 
 inline void CNEO_Player::Weapon_SetZoom(bool bZoomIn)

@@ -651,19 +651,17 @@ void C_NEO_Player::PostThink(void)
 	{
 		static bool previouslyReloading = false;
 
-		if (pWep->m_bInReload)
+		if (pWep->m_bInReload && !previouslyReloading)
 		{
-			if (!previouslyReloading)
-			{
-				Weapon_SetZoom(false);
-			}
+			Weapon_SetZoom(false);
 		}
-		else
+		else if (m_afButtonPressed & IN_SPEED)
 		{
-			if (m_afButtonReleased & IN_AIM)
-			{
-				Weapon_AimToggle(pWep);
-			}
+			Weapon_SetZoom(false);
+		}
+		else if ((m_afButtonReleased & IN_AIM) && (!(m_nButtons & IN_SPEED)))
+		{
+			Weapon_AimToggle(pWep);
 		}
 
 		previouslyReloading = pWep->m_bInReload;
@@ -926,6 +924,10 @@ void C_NEO_Player::Weapon_AimToggle(C_BaseCombatWeapon *pWep)
 	// NEO TODO/HACK: Not all neo weapons currently inherit
 	// through a base neo class, so we can't static_cast!!
 	auto neoCombatWep = dynamic_cast<C_NEOBaseCombatWeapon*>(pWep);
+	if (!neoCombatWep)
+	{
+		return;
+	}
 
 	// This implies the wep ptr is valid, so we don't bother checking
 	if (IsAllowedToZoom(neoCombatWep))
@@ -939,12 +941,11 @@ inline void C_NEO_Player::Weapon_SetZoom(bool bZoomIn)
 {
 	const float zoomSpeedSecs = 0.25f;
 
-	const int zoomAmount = 30;
-
 	if (bZoomIn)
 	{
 		m_Local.m_iHideHUD &= ~HIDEHUD_CROSSHAIR;
 
+		const int zoomAmount = 30;
 		SetFOV((CBaseEntity*)this, GetDefaultFOV() - zoomAmount, zoomSpeedSecs);
 	}
 	else
