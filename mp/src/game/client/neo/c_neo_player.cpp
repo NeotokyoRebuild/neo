@@ -337,7 +337,6 @@ int C_NEO_Player::DrawModel( int flags )
 			//const int extraFlags = STUDIO_RENDER | STUDIO_TRANSPARENCY | STUDIO_NOSHADOWS | STUDIO_DRAWTRANSLUCENTSUBMODELS;
 			modelrender->ForcedMaterialOverride(pass);
 			const int ret = BaseClass::DrawModel(flags /*| extraFlags*/);
-			Assert(ret != 0);
 			modelrender->ForcedMaterialOverride(NULL);
 
 			return ret;
