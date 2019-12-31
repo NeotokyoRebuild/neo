@@ -326,8 +326,6 @@ C_NEOPredictedViewModel *C_NEO_Player::GetNEOViewModel()
 
 int C_NEO_Player::DrawModel( int flags )
 {
-	int ret = 0;
-
 	// Do cloak if cloaked
 	if (IsCloaked())
 	{
@@ -338,36 +336,58 @@ int C_NEO_Player::DrawModel( int flags )
 		{
 			//const int extraFlags = STUDIO_RENDER | STUDIO_TRANSPARENCY | STUDIO_NOSHADOWS | STUDIO_DRAWTRANSLUCENTSUBMODELS;
 			modelrender->ForcedMaterialOverride(pass);
-			ret = BaseClass::DrawModel(flags /*| extraFlags*/);
+			const int ret = BaseClass::DrawModel(flags /*| extraFlags*/);
 			Assert(ret != 0);
 			modelrender->ForcedMaterialOverride(NULL);
+
+			return ret;
 		}
 	}
 
-#if(0) // Albedo pass for motionvision compare layer
-	// Do motionvision highlight if local player has vision on
-	auto pNeoLocalPlayer = GetLocalNEOPlayer();
-	if (pNeoLocalPlayer && pNeoLocalPlayer->IsInVision())
+	int ret = BaseClass::DrawModel(flags);
+
+#define SPEED_BETWEEN_WALK_AND_RUN ((NEO_ASSAULT_WALK_SPEED + NEO_ASSAULT_NORM_SPEED) / 2.0)
+	if (GetAbsVelocity().Length() >= SPEED_BETWEEN_WALK_AND_RUN)
 	{
-		IMaterial *mvTex = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
-		Assert(mvTex && !mvTex->IsErrorMaterial());
+		auto pLocalPlayer = GetLocalNEOPlayer();
+		if (pLocalPlayer && pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT)
+		{	
+			IMaterial *pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
+			Assert(pass && !pass->IsErrorMaterial());
 
-		if (mvTex && !mvTex->IsErrorMaterial())
-		{
-			modelrender->ForcedMaterialOverride(mvTex);
-			ret = BaseClass::DrawModel(flags);
-			Assert(ret != 0);
-			modelrender->ForcedMaterialOverride(NULL);
-		}
-	}
+			if (pass && !pass->IsErrorMaterial())
+			{
+				// Render
+				modelrender->ForcedMaterialOverride(pass);
+				ret = BaseClass::DrawModel(flags | STUDIO_RENDER | STUDIO_TRANSPARENCY);
+				modelrender->ForcedMaterialOverride(NULL);
+#if(0)
+				// Send to mv buffer
+				static int bufferIdx = 0;
+				const int numBuffers = 2;
+				ITexture *pVM_Buffer = GetMVBuffer(bufferIdx);
+				bufferIdx = (bufferIdx + 1) % numBuffers;
+				Assert(pVM_Buffer && !pVM_Buffer->IsError());
+
+				ITexture *pSrc = materials->FindTexture("_rt_FullFrameFB", TEXTURE_GROUP_RENDER_TARGET);
+				Assert(pSrc && !pSrc->IsError());
+
+				const int nSrcWidth = pSrc->GetActualWidth();
+				const int nSrcHeight = pSrc->GetActualHeight();
+				Rect_t DestRect{ 0, 0, nSrcWidth, nSrcHeight };
+
+				CMatRenderContextPtr pRenderContext(materials);
+				pRenderContext->CopyRenderTargetToTextureEx(pVM_Buffer, 0, &DestRect, NULL);
+
+				// Render without effect
+				//ret = BaseClass::DrawModel(flags);
+				rendered = false;
 #endif
-
-	if (ret != 0)
-	{
-		return ret;
+			}
+		}
 	}
 
-	return BaseClass::DrawModel(flags);
+	return ret;
 }
 
 int C_NEO_Player::GetClass() const
