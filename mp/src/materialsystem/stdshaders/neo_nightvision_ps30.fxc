@@ -26,7 +26,7 @@ float4 main( const PS_INPUT i ) : COLOR
 	cColor += tex2D(FBSampler, i.texCoord.xy + 0.0002);
 	cColor += tex2D(FBSampler, i.texCoord.xy + 0.0003); 
 	
-	if (((cColor.r + cColor.g + cColor.b)/3) < 0.9)
+	if (((cColor.r + cColor.g + cColor.b) / 3) < 0.9)
 	{
 		cColor = cColor / g_DimFlatness;
 	}
