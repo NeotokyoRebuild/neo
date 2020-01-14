@@ -28,10 +28,12 @@
 
 #include "neo_te_tocflash.h"
 
+#include "weapon_grenade.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-void DropPrimedFragGrenade(CNEO_Player *pPlayer, CBaseCombatWeapon *pGrenade);
+void NEODropPrimedFragGrenade(CNEO_Player *pPlayer, CBaseCombatWeapon *pGrenade);
 
 LINK_ENTITY_TO_CLASS(player, CNEO_Player);
 
@@ -731,7 +733,6 @@ void CNEO_Player::PostThink(void)
 	if (pWep)
 	{
 		static bool previouslyReloading = false;
-
 		if (pWep->m_bInReload && !previouslyReloading)
 		{
 			Weapon_SetZoom(false);
@@ -740,22 +741,62 @@ void CNEO_Player::PostThink(void)
 		{
 			Weapon_SetZoom(false);
 		}
-		else if ((m_afButtonReleased & IN_AIM) && (!(m_nButtons & IN_SPEED)))
+		else if (m_afButtonReleased & IN_AIM)
 		{
-			Weapon_AimToggle(pWep);
+			auto pGrenade = static_cast<CWeaponGrenade*>(Weapon_OwnsThisType("weapon_grenade"));
+			if (pWep == pGrenade)
+			{
+				if (pGrenade->HasPrimaryAmmo())
+				{
+					pGrenade->LobGrenade(this);
+					pGrenade->DecrementAmmo(this);
+
+					if (!pGrenade->HasPrimaryAmmo())
+					{
+						SwitchToNextBestWeapon(pGrenade);
+					}
+				}
+				else
+				{
+					SwitchToNextBestWeapon(pGrenade);
+				}
+			}
+			else if (!(m_nButtons & IN_SPEED))
+			{
+				Weapon_AimToggle(pWep);
+			}
 		}
-
 		previouslyReloading = pWep->m_bInReload;
-	}
 
-	if (m_afButtonPressed & IN_DROP)
-	{
-		Vector eyeForward;
-		EyeVectors(&eyeForward);
-		const float forwardOffset = 250.0f;
-		eyeForward *= forwardOffset;
+		if (m_afButtonPressed & IN_DROP)
+		{
+			Vector eyeForward;
+			EyeVectors(&eyeForward);
+			const float forwardOffset = 250.0f;
+			eyeForward *= forwardOffset;
+			Weapon_Drop(pWep, NULL, &eyeForward);
+		}
+		else if (m_afButtonReleased & IN_ATTACK)
+		{
+			auto pGrenade = static_cast<CWeaponGrenade*>(Weapon_OwnsThisType("weapon_grenade"));
+			if (pWep == pGrenade)
+			{
+				if (pGrenade->HasPrimaryAmmo())
+				{
+					pGrenade->ThrowGrenade(this);
+					pGrenade->DecrementAmmo(this);
 
-		Weapon_Drop(GetActiveWeapon(), NULL, &eyeForward);
+					if (!pGrenade->HasPrimaryAmmo())
+					{
+						SwitchToNextBestWeapon(pGrenade);
+					}
+				}
+				else
+				{
+					SwitchToNextBestWeapon(pGrenade);
+				}
+			}
+		}
 	}
 
 #if(0)
@@ -1435,6 +1476,21 @@ void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
 			}
 
 			return;
+		}
+	}
+
+	// Drop a grenade if it's primed.
+	if (GetActiveWeapon())
+	{
+		CBaseCombatWeapon *pGrenade = Weapon_OwnsThisType("weapon_grenade");
+
+		if (GetActiveWeapon() == pGrenade)
+		{
+			if ((m_nButtons & IN_ATTACK) || (m_nButtons & IN_ATTACK2))
+			{
+				NEODropPrimedFragGrenade(this, pGrenade);
+				return;
+			}
 		}
 	}
 

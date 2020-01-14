@@ -261,6 +261,9 @@ $Project "Server (HL2MP)"
 			$File	"neo\neo_te_tocflash.cpp"
 			$File	"neo\neo_te_tocflash.h"
 
+			$File	"neo\neo_grenade.cpp"
+			$File	"neo\neo_grenade.h"
+
 			////////////////
 			// NEO SHARED //
 			////////////////
