@@ -5,6 +5,9 @@ mp/game/mod_hl2mp
 
 mp/game/neo/screenshots
 
+# Any debug or user specific configs that shouldn't be pushed
+mp/game/neo/cfg/rain.cfg
+
 # Shader state debug image dumps
 mp/game/neo/*.tga
 
