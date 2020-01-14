@@ -27,6 +27,22 @@ WeaponData
 	"VMOffsetForward"	"2.0"
 	"VMOffsetRight"		"5.0"	
 	"VMOffsetUp"		"2.0"	
+    
+    "ViewModelOffset"
+	{
+		"fov"		"55.0"
+		"forward"	"2.0"
+		"right"		"5.0"
+		"up"		"2.0"
+	}
+	
+	"AimOffset"
+	{
+		"fov"		"0"
+		"forward"	"0"
+		"right"		"0"
+		"up"		"0"
+	}
 
 	// Sounds for the weapon. There is a max of 16 sounds per category (i.e. max 16 "single_shot" sounds)
 	SoundData
@@ -66,6 +82,19 @@ WeaponData
 				"y"			"72"
 				"width"		"24"
 				"height"	"24"
+		}
+	}
+    ModelBounds
+	{
+		Viewmodel
+		{
+			Mins	"-10 -4 -13"
+			Maxs	"21 9 -1"
+		}
+		World
+		{
+			Mins	"-10 -7 -6"
+			Maxs	"22 8 9"
 		}
 	}
 }
