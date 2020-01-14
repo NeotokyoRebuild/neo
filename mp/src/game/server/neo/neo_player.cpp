@@ -514,7 +514,7 @@ void CNEO_Player::PreThink(void)
 
 	static int ghostEdict = -1;
 	static CWeaponGhost* ghost = dynamic_cast<CWeaponGhost*>(UTIL_EntityByIndex(ghostEdict));
-	if (!ghost)
+	if ((!ghost) || (ghostEdict != ghost->edict()->m_EdictIndex))
 	{
 		ghost = dynamic_cast<CWeaponGhost*>(UTIL_EntityByIndex(ghostEdict));
 		if (!ghost)
@@ -526,7 +526,7 @@ void CNEO_Player::PreThink(void)
 
 				if (ghost)
 				{
-					ghostEdict = ghost->entindex();
+					ghostEdict = ghost->edict()->m_EdictIndex;
 					break;
 				}
 
@@ -539,23 +539,16 @@ void CNEO_Player::PreThink(void)
 
 	if (m_bGhostExists)
 	{
-		if (ghost)
+		Assert(UTIL_IsValidEntity(ghost));
+		Assert(ghostEdict == ghost->edict()->m_EdictIndex);
+
+		if (ghost->GetAbsOrigin().IsValid())
 		{
 			m_vecGhostMarkerPos = ghost->GetAbsOrigin();
-			auto owner = ghost->GetPlayerOwner();
-			if (owner)
-			{
-				m_iGhosterTeam = owner->GetTeamNumber();
-			}
-			else
-			{
-				m_iGhosterTeam = TEAM_UNASSIGNED;
-			}
 		}
 		else
 		{
 			Assert(false);
-			m_bGhostExists = false;
 		}
 	}
 

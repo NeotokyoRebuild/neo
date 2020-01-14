@@ -526,7 +526,21 @@ static inline void SpawnTheGhost()
 		}
 	}
 
-	ghostEdict = ghost->edict()->m_EdictIndex;
+	if (spawnedGhostNow)
+	{
+		int dispatchRes = DispatchSpawn(ghost);
+		if (dispatchRes != 0)
+		{
+			Assert(false);
+			return;
+		}
+
+		ghostEdict = ghost->edict()->m_EdictIndex;
+		ghost->NetworkStateChanged();
+	}
+
+	Assert(UTIL_IsValidEntity(ghost));
+	Assert(ghostEdict == ghost->edict()->m_EdictIndex);
 
 	// Get the amount of ghost spawns available to us
 	int numGhostSpawns = 0;
@@ -566,7 +580,23 @@ static inline void SpawnTheGhost()
 			{
 				if (ghostSpawnIteration++ == desiredSpawn)
 				{
-					ghost->SetAbsOrigin(ghostSpawn->GetAbsOrigin());
+					if (ghost->GetOwner())
+					{
+						Assert(false);
+						ghost->GetOwner()->Weapon_Detach(ghost);
+					}
+
+					if (!ghostSpawn->GetAbsOrigin().IsValid())
+					{
+						ghost->SetAbsOrigin(vec3_origin);
+						Warning("Failed to get ghost spawn coords; spawning ghost at map origin instead!\n");
+						Assert(false);
+					}
+					else
+					{
+						ghost->SetAbsOrigin(ghostSpawn->GetAbsOrigin());
+					}
+					
 					break;
 				}
 			}
@@ -577,8 +607,6 @@ static inline void SpawnTheGhost()
 
 	if (spawnedGhostNow)
 	{
-		DispatchSpawn(ghost);
-
 		DevMsg("Spawned ghost at coords:\n\t%.1f %.1f %.1f\n",
 			ghost->GetAbsOrigin().x,
 			ghost->GetAbsOrigin().y,
