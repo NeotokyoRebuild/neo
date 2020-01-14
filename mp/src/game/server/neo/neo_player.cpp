@@ -513,25 +513,21 @@ void CNEO_Player::PreThink(void)
 	}
 
 	static int ghostEdict = -1;
-	static CWeaponGhost* ghost = dynamic_cast<CWeaponGhost*>(UTIL_EntityByIndex(ghostEdict));
-	if ((!ghost) || (ghostEdict != ghost->edict()->m_EdictIndex))
+	CWeaponGhost* ghost = dynamic_cast<CWeaponGhost*>(UTIL_EntityByIndex(ghostEdict));
+	if (!ghost)
 	{
-		ghost = dynamic_cast<CWeaponGhost*>(UTIL_EntityByIndex(ghostEdict));
-		if (!ghost)
+		auto entIter = gEntList.FirstEnt();
+		while (entIter)
 		{
-			auto entIter = gEntList.FirstEnt();
-			while (entIter)
+			ghost = dynamic_cast<CWeaponGhost*>(entIter);
+
+			if (ghost)
 			{
-				ghost = dynamic_cast<CWeaponGhost*>(entIter);
-
-				if (ghost)
-				{
-					ghostEdict = ghost->edict()->m_EdictIndex;
-					break;
-				}
-
-				entIter = gEntList.NextEnt(entIter);
+				ghostEdict = ghost->edict()->m_EdictIndex;
+				break;
 			}
+
+			entIter = gEntList.NextEnt(entIter);
 		}
 	}
 
