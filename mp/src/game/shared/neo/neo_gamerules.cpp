@@ -165,11 +165,17 @@ static const char *s_NeoPreserveEnts[] =
 // https://wiki.alliedmods.net/Neotokyo_Events
 static inline void FireLegacyEvent_NeoRoundStart()
 {
+#if(0) // NEO TODO (Rain): unimplemented
 	IGameEvent *neoLegacy = gameeventmanager->CreateEvent("game_round_start");
 	if (neoLegacy)
 	{
 		gameeventmanager->FireEvent(neoLegacy);
 	}
+	else
+	{
+		Assert(neoLegacy);
+	}
+#endif
 }
 
 // Purpose: Empty legacy event for backwards compatibility
@@ -177,11 +183,17 @@ static inline void FireLegacyEvent_NeoRoundStart()
 // https://wiki.alliedmods.net/Neotokyo_Events
 static inline void FireLegacyEvent_NeoRoundEnd()
 {
+#if(0) // NEO TODO (Rain): unimplemented
 	IGameEvent *neoLegacy = gameeventmanager->CreateEvent("game_round_end");
 	if (neoLegacy)
 	{
 		gameeventmanager->FireEvent(neoLegacy);
 	}
+	else
+	{
+		Assert(neoLegacy);
+	}
+#endif
 }
 
 CNEORules::CNEORules()
@@ -204,6 +216,7 @@ CNEORules::CNEORules()
 	}
 
 	m_bFirstRestartIsDone = false;
+	ResetGhostCapPoints();
 #endif
 
 	m_flNeoRoundStartTime = m_flNeoNextRoundStartTime = 0;
@@ -302,7 +315,7 @@ void CNEORules::ChangeLevel(void)
 bool CNEORules::CheckGameOver(void)
 {
 	// Note that this changes the level as side effect
-	bool gameOver = BaseClass::CheckGameOver();
+	const bool gameOver = BaseClass::CheckGameOver();
 
 #ifdef GAME_DLL
 	if (gameOver)
@@ -513,7 +526,21 @@ static inline void SpawnTheGhost()
 		}
 	}
 
-	ghostEdict = ghost->edict()->m_EdictIndex;
+	if (spawnedGhostNow)
+	{
+		int dispatchRes = DispatchSpawn(ghost);
+		if (dispatchRes != 0)
+		{
+			Assert(false);
+			return;
+		}
+
+		ghostEdict = ghost->edict()->m_EdictIndex;
+		ghost->NetworkStateChanged();
+	}
+
+	Assert(UTIL_IsValidEntity(ghost));
+	Assert(ghostEdict == ghost->edict()->m_EdictIndex);
 
 	// Get the amount of ghost spawns available to us
 	int numGhostSpawns = 0;
@@ -553,7 +580,23 @@ static inline void SpawnTheGhost()
 			{
 				if (ghostSpawnIteration++ == desiredSpawn)
 				{
-					ghost->SetAbsOrigin(ghostSpawn->GetAbsOrigin());
+					if (ghost->GetOwner())
+					{
+						Assert(false);
+						ghost->GetOwner()->Weapon_Detach(ghost);
+					}
+
+					if (!ghostSpawn->GetAbsOrigin().IsValid())
+					{
+						ghost->SetAbsOrigin(vec3_origin);
+						Warning("Failed to get ghost spawn coords; spawning ghost at map origin instead!\n");
+						Assert(false);
+					}
+					else
+					{
+						ghost->SetAbsOrigin(ghostSpawn->GetAbsOrigin());
+					}
+					
 					break;
 				}
 			}
@@ -564,8 +607,6 @@ static inline void SpawnTheGhost()
 
 	if (spawnedGhostNow)
 	{
-		DispatchSpawn(ghost);
-
 		DevMsg("Spawned ghost at coords:\n\t%.1f %.1f %.1f\n",
 			ghost->GetAbsOrigin().x,
 			ghost->GetAbsOrigin().y,
@@ -604,8 +645,10 @@ void CNEORules::StartNextRound()
 		respawn(pPlayer, false);
 		pPlayer->Reset();
 
+		pPlayer->m_bInAim = false;
 		pPlayer->m_bIsAirborne = false;
 		pPlayer->m_bInThermOpticCamo = false;
+		pPlayer->m_bInVision = false;
 
 		pPlayer->SetTestMessageVisible(false);
 	}
@@ -614,7 +657,7 @@ void CNEORules::StartNextRound()
 	m_flRestartGameTime = 0;
 	m_bCompleteReset = false;
 
-	IGameEvent * event = gameeventmanager->CreateEvent("round_start");
+	IGameEvent *event = gameeventmanager->CreateEvent("round_start");
 	if (event)
 	{
 		event->SetInt("fraglimit", 0);
@@ -645,6 +688,7 @@ bool CNEORules::IsRoundOver()
 	// Next round start has been scheduled, so current round must be over.
 	if (m_flNeoNextRoundStartTime != 0)
 	{
+		Assert((m_flNeoNextRoundStartTime < 0) == false);
 		return true;
 	}
 
@@ -731,7 +775,6 @@ static inline void RemoveGhosts()
 extern bool FindInList(const char **pStrings, const char *pToFind);
 
 void CNEORules::CleanUpMap()
-
 {
 	// Recreate all the map entities from the map data (preserving their indices),
 	// then remove everything else except the players.
@@ -998,7 +1041,10 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 #endif
 }
 
+ConVar snd_victory_volume("snd_victory_volume", "0.33", FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_USERINFO, "Loudness of the victory jingle (0-1).", true, 0.0, true, 1.0);
+
 #ifdef GAME_DLL
+extern ConVar snd_musicvolume;
 void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bool bSwitchTeams, bool bDontAddScore, bool bFinal)
 {
 	if (IsRoundOver())
@@ -1035,26 +1081,25 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 		Assert(false);
 	}
 
+	EmitSound_t soundParams;
+	soundParams.m_nChannel = CHAN_VOICE;
+	// Referencing sounds directly because we can't override the soundscript volume level otherwise
+	soundParams.m_pSoundName = (team == TEAM_JINRAI) ? "gameplay/jinrai.mp3" : (team == TEAM_NSF) ? "gameplay/nsf.mp3" : "gameplay/draw.mp3";
+	soundParams.m_bWarnOnDirectWaveReference = false;
+
+	CRecipientFilter soundFilter;
+	soundFilter.AddAllPlayers();
+
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
 		auto player = UTIL_PlayerByIndex(i);
-
 		if (player)
 		{
 			engine->ClientPrintf(player->edict(), victoryMsg);
 
-			if (team == TEAM_JINRAI)
-			{
-				player->EmitSound("HUD.JinraiWin");
-			}
-			else if (team == TEAM_NSF)
-			{
-				player->EmitSound("HUD.NSFWin");
-			}
-			else
-			{
-				player->EmitSound("HUD.Draw");
-			}
+			float jingleVolume = atof(engine->GetClientConVarValue(i, snd_victory_volume.GetName()));
+			soundParams.m_flVolume = jingleVolume;
+			player->EmitSound(soundFilter, i, soundParams);
 		}
 	}
 	

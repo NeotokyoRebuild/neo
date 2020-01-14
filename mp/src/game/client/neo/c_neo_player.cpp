@@ -326,8 +326,6 @@ C_NEOPredictedViewModel *C_NEO_Player::GetNEOViewModel()
 
 int C_NEO_Player::DrawModel( int flags )
 {
-	int ret = 0;
-
 	// Do cloak if cloaked
 	if (IsCloaked())
 	{
@@ -338,36 +336,57 @@ int C_NEO_Player::DrawModel( int flags )
 		{
 			//const int extraFlags = STUDIO_RENDER | STUDIO_TRANSPARENCY | STUDIO_NOSHADOWS | STUDIO_DRAWTRANSLUCENTSUBMODELS;
 			modelrender->ForcedMaterialOverride(pass);
-			ret = BaseClass::DrawModel(flags /*| extraFlags*/);
-			Assert(ret != 0);
+			const int ret = BaseClass::DrawModel(flags /*| extraFlags*/);
 			modelrender->ForcedMaterialOverride(NULL);
+
+			return ret;
 		}
 	}
 
-#if(0) // Albedo pass for motionvision compare layer
-	// Do motionvision highlight if local player has vision on
-	auto pNeoLocalPlayer = GetLocalNEOPlayer();
-	if (pNeoLocalPlayer && pNeoLocalPlayer->IsInVision())
+	int ret = BaseClass::DrawModel(flags);
+
+#define SPEED_BETWEEN_WALK_AND_RUN ((NEO_ASSAULT_WALK_SPEED + NEO_ASSAULT_NORM_SPEED) / 2.0)
+	if (GetAbsVelocity().Length() >= SPEED_BETWEEN_WALK_AND_RUN)
 	{
-		IMaterial *mvTex = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
-		Assert(mvTex && !mvTex->IsErrorMaterial());
+		auto pLocalPlayer = GetLocalNEOPlayer();
+		if (pLocalPlayer && pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT)
+		{	
+			IMaterial *pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
+			Assert(pass && !pass->IsErrorMaterial());
 
-		if (mvTex && !mvTex->IsErrorMaterial())
-		{
-			modelrender->ForcedMaterialOverride(mvTex);
-			ret = BaseClass::DrawModel(flags);
-			Assert(ret != 0);
-			modelrender->ForcedMaterialOverride(NULL);
-		}
-	}
+			if (pass && !pass->IsErrorMaterial())
+			{
+				// Render
+				modelrender->ForcedMaterialOverride(pass);
+				ret = BaseClass::DrawModel(flags | STUDIO_RENDER | STUDIO_TRANSPARENCY);
+				modelrender->ForcedMaterialOverride(NULL);
+#if(0)
+				// Send to mv buffer
+				static int bufferIdx = 0;
+				const int numBuffers = 2;
+				ITexture *pVM_Buffer = GetMVBuffer(bufferIdx);
+				bufferIdx = (bufferIdx + 1) % numBuffers;
+				Assert(pVM_Buffer && !pVM_Buffer->IsError());
+
+				ITexture *pSrc = materials->FindTexture("_rt_FullFrameFB", TEXTURE_GROUP_RENDER_TARGET);
+				Assert(pSrc && !pSrc->IsError());
+
+				const int nSrcWidth = pSrc->GetActualWidth();
+				const int nSrcHeight = pSrc->GetActualHeight();
+				Rect_t DestRect{ 0, 0, nSrcWidth, nSrcHeight };
+
+				CMatRenderContextPtr pRenderContext(materials);
+				pRenderContext->CopyRenderTargetToTextureEx(pVM_Buffer, 0, &DestRect, NULL);
+
+				// Render without effect
+				//ret = BaseClass::DrawModel(flags);
+				rendered = false;
 #endif
-
-	if (ret != 0)
-	{
-		return ret;
+			}
+		}
 	}
 
-	return BaseClass::DrawModel(flags);
+	return ret;
 }
 
 int C_NEO_Player::GetClass() const
@@ -645,25 +664,36 @@ void C_NEO_Player::PostThink(void)
 		}
 	}
 
+	// Undo aim zoom if just died
+	static bool firstDeathTick = true;
+	if (!IsAlive() && firstDeathTick)
+	{
+		firstDeathTick = false;
+		Weapon_SetZoom(false);
+		return;
+	}
+	else
+	{
+		firstDeathTick = true;
+	}
+
 	C_BaseCombatWeapon *pWep = GetActiveWeapon();
 
 	if (pWep)
 	{
 		static bool previouslyReloading = false;
 
-		if (pWep->m_bInReload)
+		if (pWep->m_bInReload && !previouslyReloading)
 		{
-			if (!previouslyReloading)
-			{
-				Weapon_SetZoom(false);
-			}
+			Weapon_SetZoom(false);
 		}
-		else
+		else if (m_afButtonPressed & IN_SPEED)
 		{
-			if (m_afButtonReleased & IN_AIM)
-			{
-				Weapon_AimToggle(pWep);
-			}
+			Weapon_SetZoom(false);
+		}
+		else if ((m_afButtonReleased & IN_AIM) && (!(m_nButtons & IN_SPEED)))
+		{
+			Weapon_AimToggle(pWep);
 		}
 
 		previouslyReloading = pWep->m_bInReload;
@@ -926,6 +956,10 @@ void C_NEO_Player::Weapon_AimToggle(C_BaseCombatWeapon *pWep)
 	// NEO TODO/HACK: Not all neo weapons currently inherit
 	// through a base neo class, so we can't static_cast!!
 	auto neoCombatWep = dynamic_cast<C_NEOBaseCombatWeapon*>(pWep);
+	if (!neoCombatWep)
+	{
+		return;
+	}
 
 	// This implies the wep ptr is valid, so we don't bother checking
 	if (IsAllowedToZoom(neoCombatWep))
@@ -939,12 +973,11 @@ inline void C_NEO_Player::Weapon_SetZoom(bool bZoomIn)
 {
 	const float zoomSpeedSecs = 0.25f;
 
-	const int zoomAmount = 30;
-
 	if (bZoomIn)
 	{
 		m_Local.m_iHideHUD &= ~HIDEHUD_CROSSHAIR;
 
+		const int zoomAmount = 30;
 		SetFOV((CBaseEntity*)this, GetDefaultFOV() - zoomAmount, zoomSpeedSecs);
 	}
 	else

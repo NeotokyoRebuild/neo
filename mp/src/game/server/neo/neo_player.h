@@ -91,10 +91,10 @@ public:
 	void RequestSetSkin(int newSkin);
 	bool RequestSetLoadout(int loadoutNumber);
 
-	int GetSkin() const;
-	int GetClass() const;
+	int GetSkin() const { return m_iNeoSkin; }
+	int GetClass() const { return m_iNeoClass; }
 
-	bool IsAirborne(void) const;
+	bool IsAirborne(void) const { return m_bIsAirborne; }
 
 	virtual void StartAutoSprint(void);
 	virtual void StartSprinting(void);

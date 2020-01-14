@@ -331,16 +331,6 @@ CNEO_Player::~CNEO_Player( void )
 {
 }
 
-int CNEO_Player::GetSkin() const
-{
-	return m_iNeoSkin;
-}
-
-int CNEO_Player::GetClass() const
-{
-	return m_iNeoClass;
-}
-
 inline void CNEO_Player::ZeroFriendlyPlayerLocArray(void)
 {
 	for (int i = 0; i < m_rvFriendlyPlayerPositions.Count(); i++)
@@ -352,11 +342,8 @@ inline void CNEO_Player::ZeroFriendlyPlayerLocArray(void)
 
 void CNEO_Player::UpdateNetworkedFriendlyLocations()
 {
-	const int pvsMaxSize = (engine->GetClusterCount() / 8) + 1;
-	Assert(pvsMaxSize > 0);
-
-	// NEO HACK/FIXME (Rain): we should stack allocate instead
-	unsigned char *pvs = new unsigned char[pvsMaxSize];
+	const size_t pvsMaxSize = MAX_MAP_CLUSTERS + 1;
+	byte pvs[pvsMaxSize]{};
 
 	const int cluster = engine->GetClusterForOrigin(GetAbsOrigin());
 	const int pvsSize = engine->GetPVSForCluster(cluster, pvsMaxSize, pvs);
@@ -366,13 +353,10 @@ void CNEO_Player::UpdateNetworkedFriendlyLocations()
 	{
 		CNEO_Player *otherPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
 
-		vec_t zeroPos[3] = { 0, 0, 0 };
-
 		// Look for valid players that aren't us
 		if (!otherPlayer || otherPlayer == this)
 		{
 			m_rvFriendlyPlayerPositions.Set(i, vec3_origin);
-			m_rvFriendlyPlayerPositions.GetForModify(i).CopyToArray(zeroPos);
 			continue;
 		}
 
@@ -380,7 +364,6 @@ void CNEO_Player::UpdateNetworkedFriendlyLocations()
 		else if (otherPlayer->GetTeamNumber() != GetTeamNumber() || otherPlayer->IsDead())
 		{
 			m_rvFriendlyPlayerPositions.Set(i, vec3_origin);
-			m_rvFriendlyPlayerPositions.GetForModify(i).CopyToArray(zeroPos);
 			continue;
 		}
 
@@ -389,18 +372,12 @@ void CNEO_Player::UpdateNetworkedFriendlyLocations()
 		{
 #if(0) // currently networking all friendlies, NEO TODO (Rain): optimise this
 			m_rvFriendlyPlayerPositions.Set(i, vec3_origin);
-			m_rvFriendlyPlayerPositions.GetForModify(i).CopyToArray(zeroPos);
 			continue;
 #endif
 		}
 
-		vec_t absPos[3] = { otherPlayer->GetAbsOrigin().x, otherPlayer->GetAbsOrigin().y, otherPlayer->GetAbsOrigin().z };
-
 		m_rvFriendlyPlayerPositions.Set(i, otherPlayer->GetAbsOrigin());
-		m_rvFriendlyPlayerPositions.GetForModify(i).CopyToArray(absPos);
 	}
-
-	delete[] pvs;
 }
 
 void CNEO_Player::Precache( void )
@@ -421,11 +398,6 @@ void CNEO_Player::Spawn(void)
 	m_bIsAirborne = (!(GetFlags() & FL_ONGROUND));
 
 	GiveLoadoutWeapon();
-}
-
-bool CNEO_Player::IsAirborne(void) const
-{
-	return m_bIsAirborne;
 }
 
 extern ConVar neo_lean_angle;
@@ -541,25 +513,21 @@ void CNEO_Player::PreThink(void)
 	}
 
 	static int ghostEdict = -1;
-	static CWeaponGhost* ghost = dynamic_cast<CWeaponGhost*>(UTIL_EntityByIndex(ghostEdict));
+	CWeaponGhost* ghost = dynamic_cast<CWeaponGhost*>(UTIL_EntityByIndex(ghostEdict));
 	if (!ghost)
 	{
-		ghost = dynamic_cast<CWeaponGhost*>(UTIL_EntityByIndex(ghostEdict));
-		if (!ghost)
+		auto entIter = gEntList.FirstEnt();
+		while (entIter)
 		{
-			auto entIter = gEntList.FirstEnt();
-			while (entIter)
+			ghost = dynamic_cast<CWeaponGhost*>(entIter);
+
+			if (ghost)
 			{
-				ghost = dynamic_cast<CWeaponGhost*>(entIter);
-
-				if (ghost)
-				{
-					ghostEdict = ghost->entindex();
-					break;
-				}
-
-				entIter = gEntList.NextEnt(entIter);
+				ghostEdict = ghost->edict()->m_EdictIndex;
+				break;
 			}
+
+			entIter = gEntList.NextEnt(entIter);
 		}
 	}
 
@@ -567,23 +535,16 @@ void CNEO_Player::PreThink(void)
 
 	if (m_bGhostExists)
 	{
-		if (ghost)
+		Assert(UTIL_IsValidEntity(ghost));
+		Assert(ghostEdict == ghost->edict()->m_EdictIndex);
+
+		if (ghost->GetAbsOrigin().IsValid())
 		{
 			m_vecGhostMarkerPos = ghost->GetAbsOrigin();
-			auto owner = ghost->GetPlayerOwner();
-			if (owner)
-			{
-				m_iGhosterTeam = owner->GetTeamNumber();
-			}
-			else
-			{
-				m_iGhosterTeam = TEAM_UNASSIGNED;
-			}
 		}
 		else
 		{
 			Assert(false);
-			m_bGhostExists = false;
 		}
 	}
 
@@ -752,25 +713,36 @@ void CNEO_Player::PostThink(void)
 {
 	BaseClass::PostThink();
 
+	// Undo aim zoom if just died
+	static bool firstDeathTick = true;
+	if (!IsAlive() && firstDeathTick)
+	{
+		firstDeathTick = false;
+		Weapon_SetZoom(false);
+		return;
+	}
+	else
+	{
+		firstDeathTick = true;
+	}
+
 	CBaseCombatWeapon *pWep = GetActiveWeapon();
 
 	if (pWep)
 	{
 		static bool previouslyReloading = false;
 
-		if (pWep->m_bInReload)
+		if (pWep->m_bInReload && !previouslyReloading)
 		{
-			if (!previouslyReloading)
-			{
-				Weapon_SetZoom(false);
-			}
+			Weapon_SetZoom(false);
 		}
-		else
+		else if (m_afButtonPressed & IN_SPEED)
 		{
-			if (m_afButtonReleased & IN_AIM)
-			{
-				Weapon_AimToggle(pWep);
-			}
+			Weapon_SetZoom(false);
+		}
+		else if ((m_afButtonReleased & IN_AIM) && (!(m_nButtons & IN_SPEED)))
+		{
+			Weapon_AimToggle(pWep);
 		}
 
 		previouslyReloading = pWep->m_bInReload;
@@ -826,7 +798,7 @@ void CNEO_Player::PlayerDeathThink()
 	BaseClass::PlayerDeathThink();
 }
 
-void CNEO_Player::Weapon_AimToggle( CBaseCombatWeapon *pWep )
+void CNEO_Player::Weapon_AimToggle(CBaseCombatWeapon *pWep)
 {
 	// NEO TODO/HACK: Not all neo weapons currently inherit
 	// through a base neo class, so we can't static_cast!!
@@ -835,13 +807,12 @@ void CNEO_Player::Weapon_AimToggle( CBaseCombatWeapon *pWep )
 	{
 		return;
 	}
-	else if (!IsAllowedToZoom(neoCombatWep))
-	{
-		return;
-	}
 
-	bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR) == HIDEHUD_CROSSHAIR;
-	Weapon_SetZoom(showCrosshair);
+	if (IsAllowedToZoom(neoCombatWep))
+	{
+		const bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR) == HIDEHUD_CROSSHAIR;
+		Weapon_SetZoom(showCrosshair);
+	}
 }
 
 inline void CNEO_Player::Weapon_SetZoom(bool bZoomIn)

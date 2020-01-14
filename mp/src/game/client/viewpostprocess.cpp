@@ -2327,9 +2327,9 @@ static inline void DoNightVision(const int x, const int y, const int w, const in
 {
 	CMatRenderContextPtr pRenderContext(materials);
 
-	ITexture *pSrc = materials->FindTexture("_rt_FullFrameFB", TEXTURE_GROUP_RENDER_TARGET);
-	const int nSrcWidth = pSrc->GetActualWidth();
-	const int nSrcHeight = pSrc->GetActualHeight();
+	ITexture *pFbTex = materials->FindTexture("_rt_FullFrameFB", TEXTURE_GROUP_RENDER_TARGET);
+	const int nSrcWidth = pFbTex->GetActualWidth();
+	const int nSrcHeight = pFbTex->GetActualHeight();
 
 	IMaterial *pNvMat = materials->FindMaterial("dev/nightvision", TEXTURE_GROUP_OTHER, true);
 
@@ -2338,6 +2338,11 @@ static inline void DoNightVision(const int x, const int y, const int w, const in
 		Assert(false);
 		return;
 	}
+
+	Rect_t DestRect{ 0, 0, nSrcWidth, nSrcHeight };
+	const int renderTargetId = 0;
+
+	pRenderContext->CopyRenderTargetToTextureEx(pFbTex, renderTargetId, &DestRect, NULL);
 
 	pRenderContext->DrawScreenSpaceRectangle(pNvMat,
 		0, 0, w, h,
@@ -2856,10 +2861,34 @@ void DoEnginePostProcessing( int x, int y, int w, int h, bool bFlashlightIsOn, b
 		DoNightVision(x, y, w, h);
 	}*/
 
-	auto pNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if ((pNeoPlayer && pNeoPlayer->IsInVision()) || mat_neo_mv_enable.GetBool())
+	if (mat_neo_mv_enable.GetBool())
 	{
 		DoMotionVision(x, y, w, h);
+	}
+	else
+	{
+		auto pNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
+		if (pNeoPlayer && pNeoPlayer->IsInVision())
+		{
+			switch (pNeoPlayer->GetClass())
+			{
+			case NEO_CLASS_RECON:
+			{
+				DoNightVision(x, y, w, h);
+				break;
+			}
+			case NEO_CLASS_ASSAULT:
+			{
+				DoMotionVision(x, y, w, h);
+				break;
+			}
+			case NEO_CLASS_SUPPORT:
+			{
+				// NEO TODO
+				break;
+			}
+			}
+		}
 	}
 #endif
 }

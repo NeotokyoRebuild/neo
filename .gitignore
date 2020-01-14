@@ -5,6 +5,9 @@ mp/game/mod_hl2mp
 
 mp/game/neo/screenshots
 
+# Any debug or user specific configs that shouldn't be pushed
+mp/game/neo/cfg/rain.cfg
+
 # Shader state debug image dumps
 mp/game/neo/*.tga
 
@@ -144,6 +147,8 @@ user_custom
 *.tmp
 mp/src/materialsystem/stdshaders/fxctmp9_tmp/
 mp/src/materialsystem/stdshaders/shaders/fxc/
+mp/src/materialsystem/stdshaders/filelist.txt
+mp/src/materialsystem/stdshaders/filelistgen.txt
 mp/src/materialsystem/stdshaders/filestocopy.txt
 mp/src/materialsystem/stdshaders/inclist.txt
 mp/src/materialsystem/stdshaders/uniquefilestocopy.txt
