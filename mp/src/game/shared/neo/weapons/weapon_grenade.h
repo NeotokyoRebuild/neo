@@ -16,15 +16,11 @@
 
 #include "weapon_neobasecombatweapon.h"
 
-#define GRENADE_TIMER	2.5f //Seconds
-
 #define GRENADE_PAUSED_NO			0
 #define GRENADE_PAUSED_PRIMARY		1
 #define GRENADE_PAUSED_SECONDARY	2
 
 #define GRENADE_RADIUS	4.0f // inches
-
-#define GRENADE_DAMAGE_RADIUS 250.0f
 
 #ifdef CLIENT_DLL
 #define CWeaponGrenade C_WeaponGrenade

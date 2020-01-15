@@ -21,6 +21,14 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+ConVar sv_neo_infinite_frag_grenades("sv_neo_infinite_frag_grenades", "0", FCVAR_CHEAT, "Should frag grenades use up ammo.", true, 0.0, true, 1.0);
+ConVar sv_neo_grenade_throw_intensity("sv_neo_grenade_throw_intensity", "1200.0", FCVAR_CHEAT, "How strong should regular grenade throws be.", true, 0.0, true, 9999.9);
+ConVar sv_neo_grenade_lob_intensity("sv_neo_grenade_lob_intensity", "350.0", FCVAR_CHEAT, "How strong should underhand grenade lobs be.", true, 0.0, true, 9999.9);
+ConVar sv_neo_grenade_roll_intensity("sv_neo_grenade_roll_intensity", "700.0", FCVAR_CHEAT, "How strong should underhand grenade rolls be.", true, 0.0, true, 9999.9);
+ConVar sv_neo_grenade_blast_damage("sv_neo_grenade_blast_damage", "200.0", FCVAR_CHEAT, "How much damage should a grenade blast deal.", true, 0.0, true, 999.9);
+ConVar sv_neo_grenade_blast_radius("sv_neo_grenade_blast_radius", "250.0", FCVAR_CHEAT, "How large should the grenade blast radius be.", true, 0.0, true, 9999.9);
+ConVar sv_neo_grenade_fuse_timer("sv_neo_grenade_fuse_timer", "2.5", FCVAR_CHEAT, "How long in seconds until a frag grenade explodes.", true, 0.1, true, 60.0);
+
 NEO_ACTTABLE(CWeaponGrenade)
 
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponGrenade, DT_WeaponGrenade)
@@ -47,6 +55,8 @@ END_PREDICTION_DATA()
 
 LINK_ENTITY_TO_CLASS(weapon_grenade, CWeaponGrenade);
 PRECACHE_WEAPON_REGISTER(weapon_grenade);
+
+#define RETHROW_DELAY 0.5
 
 CWeaponGrenade::CWeaponGrenade()
 {
@@ -108,12 +118,7 @@ void CWeaponGrenade::SecondaryAttack(void)
 	if (!HasPrimaryAmmo())
 		return;
 
-	CBaseCombatCharacter *pOwner = GetOwner();
-
-	if (pOwner == NULL)
-		return;
-
-	CBasePlayer *pPlayer = ToBasePlayer(pOwner);
+	CBasePlayer *pPlayer = ToBasePlayer(GetOwner());
 
 	if (pPlayer == NULL)
 		return;
@@ -124,7 +129,7 @@ void CWeaponGrenade::SecondaryAttack(void)
 
 	// Don't let weapon idle interfere in the middle of a throw!
 	m_flTimeWeaponIdle = FLT_MAX;
-	m_flNextSecondaryAttack = FLT_MAX;
+	m_flNextPrimaryAttack = gpGlobals->curtime + RETHROW_DELAY;
 
 	// If I'm now out of ammo, switch away
 	if (!HasPrimaryAmmo())
@@ -151,10 +156,8 @@ void CWeaponGrenade::PrimaryAttack(void)
 	m_AttackPaused = GRENADE_PAUSED_PRIMARY;
 	SendWeaponAnim(ACT_VM_PULLPIN);
 
-	// Put both of these off indefinitely. We do not know how long
-	// the player will hold the grenade.
 	m_flTimeWeaponIdle = FLT_MAX;
-	m_flNextPrimaryAttack = FLT_MAX;
+	m_flNextPrimaryAttack = gpGlobals->curtime + RETHROW_DELAY;
 
 	// If I'm now out of ammo, switch away
 	if (!HasPrimaryAmmo())
@@ -170,6 +173,14 @@ void CWeaponGrenade::DecrementAmmo(CBaseCombatCharacter *pOwner)
 
 void CWeaponGrenade::ItemPostFrame(void)
 {
+	if (!m_fDrawbackFinished)
+	{
+		if ((m_flNextPrimaryAttack <= gpGlobals->curtime) && (m_flNextSecondaryAttack <= gpGlobals->curtime))
+		{
+			m_fDrawbackFinished = true;
+		}
+	}
+
 	if (m_fDrawbackFinished)
 	{
 		CBasePlayer *pOwner = ToBasePlayer(GetOwner());
@@ -181,8 +192,11 @@ void CWeaponGrenade::ItemPostFrame(void)
 			case GRENADE_PAUSED_PRIMARY:
 				if (!(pOwner->m_nButtons & IN_ATTACK))
 				{
+					ThrowGrenade(pOwner);
+
 					SendWeaponAnim(ACT_VM_THROW);
 					m_fDrawbackFinished = false;
+					m_AttackPaused = GRENADE_PAUSED_NO;
 				}
 				break;
 
@@ -192,34 +206,33 @@ void CWeaponGrenade::ItemPostFrame(void)
 					//See if we're ducking
 					if (pOwner->m_nButtons & IN_DUCK)
 					{
+						RollGrenade(pOwner);
 						//Send the weapon animation
-						SendWeaponAnim(ACT_VM_SECONDARYATTACK);
+						SendWeaponAnim(ACT_VM_THROW);
 					}
 					else
 					{
+						LobGrenade(pOwner);
 						//Send the weapon animation
-						SendWeaponAnim(ACT_VM_HAULBACK);
+						SendWeaponAnim(ACT_VM_THROW);
 					}
 
 					m_fDrawbackFinished = false;
+					m_AttackPaused = GRENADE_PAUSED_NO;
 				}
 				break;
 
 			default:
+				if (m_bRedraw)
+				{
+					Reload();
+				}
 				break;
 			}
 		}
 	}
 
 	BaseClass::ItemPostFrame();
-
-	if (m_bRedraw)
-	{
-		if (IsViewModelSequenceFinished())
-		{
-			Reload();
-		}
-	}
 }
 
 // Check a throw from vecSrc.  If not valid, move the position back along the line to vecEye
@@ -249,6 +262,12 @@ void NEODropPrimedFragGrenade(CNEO_Player *pPlayer, CBaseCombatWeapon *pGrenade)
 
 void CWeaponGrenade::ThrowGrenade(CBasePlayer *pPlayer)
 {
+	if (!sv_neo_infinite_frag_grenades.GetBool())
+	{
+		Assert(HasPrimaryAmmo());
+		DecrementAmmo(pPlayer);
+	}
+
 #ifndef CLIENT_DLL
 	Vector	vecEye = pPlayer->EyePosition();
 	Vector	vForward, vRight;
@@ -261,8 +280,8 @@ void CWeaponGrenade::ThrowGrenade(CBasePlayer *pPlayer)
 
 	Vector vecThrow;
 	pPlayer->GetVelocity(&vecThrow, NULL);
-	vecThrow += vForward * 1200;
-	CBaseGrenade *pGrenade = NEOFraggrenade_Create(vecSrc, vec3_angle, vecThrow, AngularImpulse(600, random->RandomInt(-1200, 1200), 0), pPlayer, GRENADE_TIMER, false);
+	vecThrow += vForward * sv_neo_grenade_throw_intensity.GetFloat();
+	CBaseGrenade *pGrenade = NEOFraggrenade_Create(vecSrc, vec3_angle, vecThrow, AngularImpulse(600, random->RandomInt(-1200, 1200), 0), pPlayer, sv_neo_grenade_fuse_timer.GetFloat(), false);
 
 	if (pGrenade)
 	{
@@ -277,8 +296,8 @@ void CWeaponGrenade::ThrowGrenade(CBasePlayer *pPlayer)
 			}
 		}
 
-		pGrenade->SetDamage(GetHL2MPWpnData().m_iPlayerDamage);
-		pGrenade->SetDamageRadius(GRENADE_DAMAGE_RADIUS);
+		pGrenade->SetDamage(sv_neo_grenade_blast_damage.GetFloat());
+		pGrenade->SetDamageRadius(sv_neo_grenade_blast_radius.GetFloat());
 	}
 #endif
 
@@ -292,6 +311,17 @@ void CWeaponGrenade::ThrowGrenade(CBasePlayer *pPlayer)
 
 void CWeaponGrenade::LobGrenade(CBasePlayer *pPlayer)
 {
+	// Binds hack: we want grenade secondary attack to trigger on aim, not the attack2 bind.
+	if (pPlayer->m_afButtonPressed & IN_ATTACK2)
+	{
+		return;
+	}
+	else if (!sv_neo_infinite_frag_grenades.GetBool())
+	{
+		Assert(HasPrimaryAmmo());
+		DecrementAmmo(pPlayer);
+	}
+
 #ifndef CLIENT_DLL
 	Vector	vecEye = pPlayer->EyePosition();
 	Vector	vForward, vRight;
@@ -302,13 +332,13 @@ void CWeaponGrenade::LobGrenade(CBasePlayer *pPlayer)
 
 	Vector vecThrow;
 	pPlayer->GetVelocity(&vecThrow, NULL);
-	vecThrow += vForward * 350 + Vector(0, 0, 50);
-	CBaseGrenade *pGrenade = NEOFraggrenade_Create(vecSrc, vec3_angle, vecThrow, AngularImpulse(200, random->RandomInt(-600, 600), 0), pPlayer, GRENADE_TIMER, false);
+	vecThrow += vForward * sv_neo_grenade_lob_intensity.GetFloat() + Vector(0, 0, 50);
+	CBaseGrenade *pGrenade = NEOFraggrenade_Create(vecSrc, vec3_angle, vecThrow, AngularImpulse(200, random->RandomInt(-600, 600), 0), pPlayer, sv_neo_grenade_fuse_timer.GetFloat(), false);
 
 	if (pGrenade)
 	{
-		pGrenade->SetDamage(GetHL2MPWpnData().m_iPlayerDamage);
-		pGrenade->SetDamageRadius(GRENADE_DAMAGE_RADIUS);
+		pGrenade->SetDamage(sv_neo_grenade_blast_damage.GetFloat());
+		pGrenade->SetDamageRadius(sv_neo_grenade_blast_radius.GetFloat());
 	}
 #endif
 
@@ -322,6 +352,17 @@ void CWeaponGrenade::LobGrenade(CBasePlayer *pPlayer)
 
 void CWeaponGrenade::RollGrenade(CBasePlayer *pPlayer)
 {
+	// Binds hack: we want grenade secondary attack to trigger on aim, not the attack2 bind.
+	if (pPlayer->m_afButtonPressed & IN_ATTACK2)
+	{
+		return;
+	}
+	else if (!sv_neo_infinite_frag_grenades.GetBool())
+	{
+		Assert(HasPrimaryAmmo());
+		DecrementAmmo(pPlayer);
+	}
+
 #ifndef CLIENT_DLL
 	// BUGBUG: Hardcoded grenade width of 4 - better not change the model :)
 	Vector vecSrc;
@@ -346,17 +387,17 @@ void CWeaponGrenade::RollGrenade(CBasePlayer *pPlayer)
 
 	Vector vecThrow;
 	pPlayer->GetVelocity(&vecThrow, NULL);
-	vecThrow += vecFacing * 700;
+	vecThrow += vecFacing * sv_neo_grenade_roll_intensity.GetFloat();
 	// put it on its side
 	QAngle orientation(0, pPlayer->GetLocalAngles().y, -90);
 	// roll it
 	AngularImpulse rotSpeed(0, 0, 720);
-	CBaseGrenade *pGrenade = NEOFraggrenade_Create(vecSrc, orientation, vecThrow, rotSpeed, pPlayer, GRENADE_TIMER, false);
+	CBaseGrenade *pGrenade = NEOFraggrenade_Create(vecSrc, orientation, vecThrow, rotSpeed, pPlayer, sv_neo_grenade_fuse_timer.GetFloat(), false);
 
 	if (pGrenade)
 	{
-		pGrenade->SetDamage(GetHL2MPWpnData().m_iPlayerDamage);
-		pGrenade->SetDamageRadius(GRENADE_DAMAGE_RADIUS);
+		pGrenade->SetDamage(sv_neo_grenade_blast_damage.GetFloat());
+		pGrenade->SetDamageRadius(sv_neo_grenade_blast_radius.GetFloat());
 	}
 
 #endif
@@ -406,7 +447,6 @@ void CWeaponGrenade::Operator_HandleAnimEvent(animevent_t *pEvent, CBaseCombatCh
 		break;
 	}
 
-#define RETHROW_DELAY 0.5
 	if (fThrewGrenade)
 	{
 		m_flNextPrimaryAttack = gpGlobals->curtime + RETHROW_DELAY;

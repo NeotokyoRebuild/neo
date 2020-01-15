@@ -728,7 +728,7 @@ void CNEO_Player::PostThink(void)
 		firstDeathTick = true;
 	}
 
-	CBaseCombatWeapon *pWep = GetActiveWeapon();
+	auto pWep = GetActiveWeapon();
 
 	if (pWep)
 	{
@@ -741,31 +741,23 @@ void CNEO_Player::PostThink(void)
 		{
 			Weapon_SetZoom(false);
 		}
+		else if (m_afButtonPressed & IN_AIM)
+		{
+			auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWep);
+			if (pNeoWep && pNeoWep->GetNeoWepBits() & NEO_WEP_FRAG_GRENADE)
+			{
+				// Binds hack: we want grenade secondary attack to trigger on aim (mouse button 2)
+				static_cast<CWeaponGrenade*>(pNeoWep)->SecondaryAttack();
+			}
+			else
+			{
+				// NEO TODO (Rain): customizations for aim pressed/released/held behavior
+				//Weapon_AimToggle(pWep);
+			}
+		}
 		else if (m_afButtonReleased & IN_AIM)
 		{
-			auto pGrenade = static_cast<CWeaponGrenade*>(Weapon_OwnsThisType("weapon_grenade"));
-			if (pWep == pGrenade)
-			{
-				if (pGrenade->HasPrimaryAmmo())
-				{
-					pGrenade->LobGrenade(this);
-					pGrenade->DecrementAmmo(this);
-					pGrenade->SendWeaponAnim(ACT_VM_THROW);
-
-					if (!pGrenade->HasPrimaryAmmo())
-					{
-						SwitchToNextBestWeapon(pGrenade);
-					}
-				}
-				else
-				{
-					SwitchToNextBestWeapon(pGrenade);
-				}
-			}
-			else if (!(m_nButtons & IN_SPEED))
-			{
-				Weapon_AimToggle(pWep);
-			}
+			Weapon_AimToggle(pWep);
 		}
 		previouslyReloading = pWep->m_bInReload;
 
@@ -776,28 +768,6 @@ void CNEO_Player::PostThink(void)
 			const float forwardOffset = 250.0f;
 			eyeForward *= forwardOffset;
 			Weapon_Drop(pWep, NULL, &eyeForward);
-		}
-		else if (m_afButtonReleased & IN_ATTACK)
-		{
-			auto pGrenade = static_cast<CWeaponGrenade*>(Weapon_OwnsThisType("weapon_grenade"));
-			if (pWep == pGrenade)
-			{
-				if (pGrenade->HasPrimaryAmmo())
-				{
-					pGrenade->ThrowGrenade(this);
-					pGrenade->DecrementAmmo(this);
-					pGrenade->SendWeaponAnim(ACT_VM_THROW);
-
-					if (!pGrenade->HasPrimaryAmmo())
-					{
-						SwitchToNextBestWeapon(pGrenade);
-					}
-				}
-				else
-				{
-					SwitchToNextBestWeapon(pGrenade);
-				}
-			}
 		}
 	}
 
