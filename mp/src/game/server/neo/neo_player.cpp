@@ -750,6 +750,7 @@ void CNEO_Player::PostThink(void)
 				{
 					pGrenade->LobGrenade(this);
 					pGrenade->DecrementAmmo(this);
+					pGrenade->SendWeaponAnim(ACT_VM_THROW);
 
 					if (!pGrenade->HasPrimaryAmmo())
 					{
@@ -785,6 +786,7 @@ void CNEO_Player::PostThink(void)
 				{
 					pGrenade->ThrowGrenade(this);
 					pGrenade->DecrementAmmo(this);
+					pGrenade->SendWeaponAnim(ACT_VM_THROW);
 
 					if (!pGrenade->HasPrimaryAmmo())
 					{

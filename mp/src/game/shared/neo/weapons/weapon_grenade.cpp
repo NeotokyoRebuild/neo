@@ -120,7 +120,7 @@ void CWeaponGrenade::SecondaryAttack(void)
 
 	// Note that this is a secondary attack and prepare the grenade attack to pause.
 	m_AttackPaused = GRENADE_PAUSED_SECONDARY;
-	SendWeaponAnim(ACT_VM_PULLBACK_LOW);
+	SendWeaponAnim(ACT_VM_PULLPIN);
 
 	// Don't let weapon idle interfere in the middle of a throw!
 	m_flTimeWeaponIdle = FLT_MAX;
@@ -149,7 +149,7 @@ void CWeaponGrenade::PrimaryAttack(void)
 
 	// Note that this is a primary attack and prepare the grenade attack to pause.
 	m_AttackPaused = GRENADE_PAUSED_PRIMARY;
-	SendWeaponAnim(ACT_VM_PULLBACK_HIGH);
+	SendWeaponAnim(ACT_VM_PULLPIN);
 
 	// Put both of these off indefinitely. We do not know how long
 	// the player will hold the grenade.
