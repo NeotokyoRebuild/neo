@@ -20,6 +20,8 @@ DEFINE_THINKFUNC(DelayThink),
 DEFINE_INPUTFUNC(FIELD_FLOAT, "SetTimer", InputSetTimer),
 END_DATADESC()
 
+ConVar sv_neo_smoke_bloom_duration("sv_neo_smoke_bloom_duration", "15", FCVAR_CHEAT, "How long should the smoke bloom be up, in seconds.", true, 0.0, true, 60.0);
+
 void CNEOGrenadeSmoke::Spawn(void)
 {
 	Precache();
@@ -191,8 +193,6 @@ bool CNEOGrenadeSmoke::TryDetonate(void)
 	return false;
 }
 
-#define NEO_SMOKE_BLOOM_TIME 15.0f
-
 void CNEOGrenadeSmoke::Detonate(void)
 {
 	Vector randVec;
@@ -214,7 +214,7 @@ void CNEOGrenadeSmoke::Detonate(void)
 		SetSolid(SOLID_NONE);
 		SetAbsVelocity(vec3_origin);
 	}
-	else if (gpGlobals->curtime - m_flSmokeBloomTime >= NEO_SMOKE_BLOOM_TIME)
+	else if (gpGlobals->curtime - m_flSmokeBloomTime >= sv_neo_smoke_bloom_duration.GetFloat())
 	{
 		SetThink(&CNEOGrenadeSmoke::SUB_Remove);
 		AddEffects(EF_NODRAW);
@@ -222,20 +222,6 @@ void CNEOGrenadeSmoke::Detonate(void)
 	
 	SetNextThink(gpGlobals->curtime + 0.01f);
 }
-
-#if(0)
-void CNEOGrenadeSmoke::BounceSound(void)
-{
-	Assert(m_iszBounceSound != NULL_STRING);
-
-	CRecipientFilter filter;
-	filter.AddRecipientsByPAS(GetAbsOrigin());
-	EmitSound_t type;
-	type.m_pSoundName = m_iszBounceSound.ToCStr();
-
-	EmitSound(filter, edict()->m_EdictIndex, type);
-}
-#endif
 
 CBaseGrenade* NEOSmokegrenade_Create(const Vector& position, const QAngle& angles, const Vector& velocity,
 	const AngularImpulse& angVelocity, CBaseEntity* pOwner)
