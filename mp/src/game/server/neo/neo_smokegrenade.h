@@ -24,7 +24,6 @@ class CNEOGrenadeSmoke : public CBaseGrenade
 
 public:
 	void	Spawn(void);
-	void	Precache(void);
 	bool	CreateVPhysics(void);
 	void	SetTimer(float detonateDelay, float warnDelay);
 	void	SetVelocity(const Vector& velocity, const AngularImpulse& angVelocity);
@@ -35,15 +34,26 @@ public:
 	bool	WasPunted(void) const { return m_punted; }
 	void	OnPhysGunPickup(CBasePlayer* pPhysGunUser, PhysGunPickup_t reason);
 
+	virtual void	Detonate(void);
+	
+	bool TryDetonate(void);
+
 	void	InputSetTimer(inputdata_t& inputdata);
 
 protected:
 	bool	m_inSolid;
 	bool	m_punted;
+	bool	m_hasSettled;
+	bool	m_hasBeenMadeNonSolid;
+
+	float	m_flSmokeBloomTime;
+
+private:
+	Vector m_lastPos;
 };
 
 CBaseGrenade* NEOSmokegrenade_Create(const Vector& position, const QAngle& angles, const Vector& velocity,
-	const AngularImpulse& angVelocity, CBaseEntity* pOwner, float timer, bool combineSpawned);
+	const AngularImpulse& angVelocity, CBaseEntity* pOwner);
 
 bool NEOSmokegrenade_WasPunted(const CBaseEntity* pEntity);
 

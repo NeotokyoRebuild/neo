@@ -4,7 +4,7 @@
 #include "basegrenade_shared.h"
 
 #ifdef GAME_DLL
-#include "neo_grenade.h"
+#include "neo_smokegrenade.h"
 #endif
 
 #ifdef CLIENT_DLL
@@ -279,7 +279,7 @@ void CWeaponSmokeGrenade::ThrowGrenade(CBasePlayer* pPlayer)
 	Vector vecThrow;
 	pPlayer->GetVelocity(&vecThrow, NULL);
 	vecThrow += vForward * sv_neo_grenade_throw_intensity.GetFloat();
-	CBaseGrenade* pGrenade = NEOFraggrenade_Create(vecSrc, vec3_angle, vecThrow, AngularImpulse(600, random->RandomInt(-1200, 1200), 0), pPlayer, 3, false);
+	CBaseGrenade* pGrenade = NEOSmokegrenade_Create(vecSrc, vec3_angle, vecThrow, AngularImpulse(600, random->RandomInt(-1200, 1200), 0), pPlayer);
 
 	if (pGrenade)
 	{
@@ -300,8 +300,6 @@ void CWeaponSmokeGrenade::ThrowGrenade(CBasePlayer* pPlayer)
 #endif
 
 	m_bRedraw = true;
-
-	WeaponSound(SINGLE);
 
 	// player "shoot" animation
 	pPlayer->SetAnimation(PLAYER_ATTACK1);
@@ -331,7 +329,7 @@ void CWeaponSmokeGrenade::LobGrenade(CBasePlayer* pPlayer)
 	Vector vecThrow;
 	pPlayer->GetVelocity(&vecThrow, NULL);
 	vecThrow += vForward * sv_neo_grenade_lob_intensity.GetFloat() + Vector(0, 0, 50);
-	CBaseGrenade* pGrenade = NEOFraggrenade_Create(vecSrc, vec3_angle, vecThrow, AngularImpulse(200, random->RandomInt(-600, 600), 0), pPlayer, 3, false);
+	CBaseGrenade* pGrenade = NEOSmokegrenade_Create(vecSrc, vec3_angle, vecThrow, AngularImpulse(200, random->RandomInt(-600, 600), 0), pPlayer);
 
 	if (pGrenade)
 	{
@@ -390,7 +388,7 @@ void CWeaponSmokeGrenade::RollGrenade(CBasePlayer* pPlayer)
 	QAngle orientation(0, pPlayer->GetLocalAngles().y, -90);
 	// roll it
 	AngularImpulse rotSpeed(0, 0, 720);
-	CBaseGrenade* pGrenade = NEOFraggrenade_Create(vecSrc, orientation, vecThrow, rotSpeed, pPlayer, 3, false);
+	CBaseGrenade* pGrenade = NEOSmokegrenade_Create(vecSrc, orientation, vecThrow, rotSpeed, pPlayer);
 
 	if (pGrenade)
 	{
