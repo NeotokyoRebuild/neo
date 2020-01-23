@@ -279,6 +279,7 @@ C_NEO_Player::C_NEO_Player()
 	m_pNeoPanel = NULL;
 
 	m_flLastAirborneJumpOkTime = 0;
+	m_flLastSuperJumpTime = 0;
 }
 
 C_NEO_Player::~C_NEO_Player()
@@ -732,13 +733,12 @@ bool C_NEO_Player::IsAllowedToSuperJump(void)
 
 	if (SUPER_JMP_DELAY_BETWEEN_JUMPS > 0)
 	{
-		const float thisTime = gpGlobals->curtime;
-		static float lastSuperJumpTime = thisTime;
-		const float deltaTime = thisTime - lastSuperJumpTime;
+		m_flLastSuperJumpTime = gpGlobals->curtime;
+		const float deltaTime = gpGlobals->curtime - m_flLastSuperJumpTime;
 		if (deltaTime > SUPER_JMP_DELAY_BETWEEN_JUMPS)
 			return false;
 
-		lastSuperJumpTime = thisTime;
+		m_flLastSuperJumpTime = gpGlobals->curtime;
 	}
 
 	return true;

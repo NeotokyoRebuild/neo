@@ -145,6 +145,7 @@ private:
 	CNeoHudElements *m_pNeoPanel;
 
 	float m_flLastAirborneJumpOkTime;
+	float m_flLastSuperJumpTime;
 
 private:
 	C_NEO_Player(const C_NEO_Player &);

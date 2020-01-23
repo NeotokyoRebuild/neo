@@ -151,6 +151,7 @@ private:
 
 	float m_flCamoAuxLastTime;
 	float m_flLastAirborneJumpOkTime;
+	float m_flLastSuperJumpTime;
 };
 
 inline CNEO_Player *ToNEOPlayer(CBaseEntity *pEntity)

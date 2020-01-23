@@ -330,6 +330,7 @@ CNEO_Player::CNEO_Player()
 
 	m_flCamoAuxLastTime = 0;
 	m_flLastAirborneJumpOkTime = 0;
+	m_flLastSuperJumpTime = 0;
 }
 
 CNEO_Player::~CNEO_Player( void )
@@ -754,13 +755,12 @@ bool CNEO_Player::IsAllowedToSuperJump(void)
 
 	if (SUPER_JMP_DELAY_BETWEEN_JUMPS > 0)
 	{
-		const float thisTime = gpGlobals->curtime;
-		static float lastSuperJumpTime = thisTime;
-		const float deltaTime = thisTime - lastSuperJumpTime;
+		m_flLastSuperJumpTime = gpGlobals->curtime;
+		const float deltaTime = gpGlobals->curtime - m_flLastSuperJumpTime;
 		if (deltaTime > SUPER_JMP_DELAY_BETWEEN_JUMPS)
 			return false;
 
-		lastSuperJumpTime = thisTime;
+		m_flLastSuperJumpTime = gpGlobals->curtime;
 	}
 
 	return true;
