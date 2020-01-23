@@ -260,6 +260,20 @@ void CHudCrosshair::Paint( void )
 	if ( pWeapon )
 	{
 		pWeapon->GetWeaponCrosshairScale( flWeaponScale );
+
+		// NEO HACK (Rain): this should get implemented in virtual pNeoWep->GetWeaponCrosshairScale
+		auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWeapon);
+		if (pNeoWep && pNeoWep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
+		{
+			int screenWidth, screenHeight;
+			GetHudSize(screenWidth, screenHeight);
+
+			// Scale scope size based on resolution.
+#define SCOPE_BASELINE_Y_RESOLUTION 1080
+			Assert(iTextureH > 0);
+			const float scaleRatio = (screenHeight / (float)iTextureH) / (SCOPE_BASELINE_Y_RESOLUTION / (float)iTextureH);
+			flWeaponScale = scaleRatio;
+		}
 	}
 
 	float flPlayerScale = 1.0f;
@@ -304,11 +318,11 @@ void CHudCrosshair::Paint( void )
 		// Draw black box on left side of the scope.
 		DrawBox(0, 0, iX - (iWidth / 2), screenHeight, blockColor, 1.0f);
 		// Draw black box on right side of the scope.
-		DrawBox((iX - (iWidth / 2) + iTextureW), 0, screenWidth, screenHeight, blockColor, 1.0f);
+		DrawBox((iX - (iWidth / 2) + iWidth), 0, screenWidth, screenHeight, blockColor, 1.0f);
 		// Draw black box on top of the scope.
-		DrawBox(iX - (iWidth / 2), 0, iTextureW, iY - (iHeight / 2), blockColor, 1.0f);
+		DrawBox(iX - (iWidth / 2), 0, iWidth, iY - (iHeight / 2), blockColor, 1.0f);
 		// Draw black box under the scope.
-		DrawBox(iX - (iWidth / 2), screenHeight - (iY - (iHeight / 2)), iTextureW, screenHeight, blockColor, 1.0f);
+		DrawBox(iX - (iWidth / 2), screenHeight - (iY - (iHeight / 2)), iWidth, screenHeight, blockColor, 1.0f);
 
 		// Reset corner rounding.
 		SetRoundedCorners(prevCornerFlags);
