@@ -51,6 +51,10 @@ public:
 		const Vector& mins, const Vector& maxs, const Vector &rgbColor,
 		const char *message = "", const Vector &vecOrigin = vec3_origin);
 #endif
+
+private:
+	float m_flYPrevious;
+	float m_flLastLeanTime;
 };
 
 #endif // NEO_PREDICTED_VIEWMODEL_H
