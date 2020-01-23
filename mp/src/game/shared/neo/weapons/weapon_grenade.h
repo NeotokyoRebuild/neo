@@ -35,7 +35,7 @@ public:
 
 	CWeaponGrenade();
 
-	virtual int GetNeoWepBits(void) const { return NEO_WEP_FRAG_GRENADE; }
+	virtual int GetNeoWepBits(void) const { return NEO_WEP_FRAG_GRENADE | NEO_WEP_THROWABLE; }
 
 	void	Precache(void);
 	void	PrimaryAttack(void);

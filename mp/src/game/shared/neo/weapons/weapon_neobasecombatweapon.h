@@ -51,6 +51,7 @@ enum NeoWepBits {
 	NEO_WEP_ZR68_L =			(1 << 26),
 	NEO_WEP_ZR68_S =			(1 << 27),
 	NEO_WEP_SCOPEDWEAPON =		(1 << 28), // Scoped weapons should OR this in their flags.
+	NEO_WEP_THROWABLE =			(1 << 29), // Generic for grenades
 };
 
 // These are the .res file id numbers for

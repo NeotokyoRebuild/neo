@@ -798,9 +798,9 @@ void CNEO_Player::PostThink(void)
 		else if (m_afButtonPressed & IN_AIM)
 		{
 			auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWep);
-			if (pNeoWep && pNeoWep->GetNeoWepBits() & NEO_WEP_FRAG_GRENADE)
+			// Binds hack: we want grenade secondary attack to trigger on aim (mouse button 2)
+			if (pNeoWep && pNeoWep->GetNeoWepBits() & NEO_WEP_THROWABLE)
 			{
-				// Binds hack: we want grenade secondary attack to trigger on aim (mouse button 2)
 				static_cast<CWeaponGrenade*>(pNeoWep)->SecondaryAttack();
 			}
 			else

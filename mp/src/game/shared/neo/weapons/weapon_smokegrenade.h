@@ -35,7 +35,7 @@ public:
 
 	CWeaponSmokeGrenade();
 
-	virtual int GetNeoWepBits(void) const { return NEO_WEP_SMOKE_GRENADE; }
+	virtual int GetNeoWepBits(void) const { return NEO_WEP_SMOKE_GRENADE | NEO_WEP_THROWABLE; }
 
 	void	Precache(void);
 	void	PrimaryAttack(void);
