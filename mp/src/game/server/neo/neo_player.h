@@ -116,6 +116,8 @@ public:
 private:
 	inline void CheckThermOpticButtons();
 	inline void CheckVisionButtons();
+	inline void PlayCloakSound();
+	inline void CloakFlash();
 
 	inline bool IsAllowedToSuperJump(void);
 
@@ -146,6 +148,8 @@ public:
 private:
 	bool m_bInLeanLeft, m_bInLeanRight;
 	Vector m_leanPosTargetOffset;
+
+	float m_flCamoAuxLastTime;
 };
 
 inline CNEO_Player *ToNEOPlayer(CBaseEntity *pEntity)

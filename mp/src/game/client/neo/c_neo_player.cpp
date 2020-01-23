@@ -285,9 +285,9 @@ C_NEO_Player::~C_NEO_Player()
 
 inline void C_NEO_Player::CheckThermOpticButtons()
 {
-	if (m_afButtonPressed & IN_THERMOPTIC)
+	if ((m_afButtonPressed & IN_THERMOPTIC) && IsAlive())
 	{
-		if (IsAlive())
+		if (m_HL2Local.m_flSuitPower >= CLOAK_AUX_COST)
 		{
 			m_bInThermOpticCamo = !m_bInThermOpticCamo;
 		}

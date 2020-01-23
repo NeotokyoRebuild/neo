@@ -327,6 +327,8 @@ CNEO_Player::CNEO_Player()
 	m_vecGhostMarkerPos = vec3_origin;
 
 	ZeroFriendlyPlayerLocArray();
+
+	m_flCamoAuxLastTime = 0;
 }
 
 CNEO_Player::~CNEO_Player( void )
@@ -455,6 +457,43 @@ void CNEO_Player::PreThink(void)
 	CheckThermOpticButtons();
 	CheckVisionButtons();
 
+	if (m_bInThermOpticCamo)
+	{
+		if (m_flCamoAuxLastTime == 0)
+		{
+			if (SuitPower_GetCurrentPercentage() >= CLOAK_AUX_COST)
+			{
+				m_flCamoAuxLastTime = gpGlobals->curtime;
+				CloakFlash();
+			}
+		}
+		else
+		{
+			const float deltaTime = gpGlobals->curtime - m_flCamoAuxLastTime;
+			if (deltaTime >= 1)
+			{
+				SuitPower_Drain(deltaTime * CLOAK_AUX_COST);
+
+				if (SuitPower_GetCurrentPercentage() < CLOAK_AUX_COST)
+				{
+					m_bInThermOpticCamo = false;
+					PlayCloakSound();
+
+					SuitPower_SetCharge(0);
+					m_flCamoAuxLastTime = 0;
+				}
+				else
+				{
+					m_flCamoAuxLastTime = gpGlobals->curtime;
+				}
+			}
+		}
+	}
+	else
+	{
+		m_flCamoAuxLastTime = 0;
+	}
+
 	Lean();
 
 	// NEO HACK (Rain): Just bodging together a check for if we're allowed
@@ -581,43 +620,53 @@ ConVar sv_neo_cloak_time("sv_neo_cloak_time", "0.1", FCVAR_CHEAT, "How long shou
 ConVar sv_neo_cloak_decay("sv_neo_cloak_decay", "0", FCVAR_CHEAT, "After the cloak time, how quickly should the flash effect disappear.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_cloak_exponent("sv_neo_cloak_exponent", "4", FCVAR_CHEAT, "Cloak flash lighting exponent.", true, 0.0f, false, 0.0f);
 
+inline void CNEO_Player::PlayCloakSound()
+{
+	static int tocOn = CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOn");
+	static int tocOff = CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOff");
+
+	EmitSound_t tocSoundParams;
+	tocSoundParams.m_bEmitCloseCaption = false;
+	tocSoundParams.m_hSoundScriptHandle = (m_bInThermOpticCamo ? tocOn : tocOff);
+	tocSoundParams.m_pOrigin = &GetAbsOrigin();
+
+	CRecipientFilter filter;
+	filter.AddRecipientsByPAS(GetAbsOrigin());
+
+	EmitSound(filter, edict()->m_EdictIndex, tocSoundParams);
+}
+
+inline void CNEO_Player::CloakFlash()
+{
+	CRecipientFilter filter;
+	filter.AddRecipientsByPVS(GetAbsOrigin());
+
+	g_NEO_TE_TocFlash.r = sv_neo_cloak_color_r.GetInt();
+	g_NEO_TE_TocFlash.g = sv_neo_cloak_color_g.GetInt();
+	g_NEO_TE_TocFlash.b = sv_neo_cloak_color_b.GetInt();
+	g_NEO_TE_TocFlash.m_vecOrigin = GetAbsOrigin();
+	g_NEO_TE_TocFlash.exponent = sv_neo_cloak_exponent.GetInt();
+	g_NEO_TE_TocFlash.m_fRadius = sv_neo_cloak_color_radius.GetFloat();
+	g_NEO_TE_TocFlash.m_fTime = sv_neo_cloak_time.GetFloat();
+	g_NEO_TE_TocFlash.m_fDecay = sv_neo_cloak_decay.GetFloat();
+
+	g_NEO_TE_TocFlash.Create(filter);
+}
+
 inline void CNEO_Player::CheckThermOpticButtons()
 {
-	if (m_afButtonPressed & IN_THERMOPTIC)
+	if ((m_afButtonPressed & IN_THERMOPTIC) && IsAlive())
 	{
-		if (IsAlive())
+		if (SuitPower_GetCurrentPercentage() >= CLOAK_AUX_COST)
 		{
 			m_bInThermOpticCamo = !m_bInThermOpticCamo;
 
-			CRecipientFilter filter;
-			filter.AddRecipientsByPVS(GetAbsOrigin());
-
 			if (m_bInThermOpticCamo)
 			{
-				// Do cloak flash
-				g_NEO_TE_TocFlash.r = sv_neo_cloak_color_r.GetInt();
-				g_NEO_TE_TocFlash.g = sv_neo_cloak_color_g.GetInt();
-				g_NEO_TE_TocFlash.b = sv_neo_cloak_color_b.GetInt();
-				g_NEO_TE_TocFlash.m_vecOrigin = GetAbsOrigin();
-				g_NEO_TE_TocFlash.exponent = sv_neo_cloak_exponent.GetInt();
-				g_NEO_TE_TocFlash.m_fRadius = sv_neo_cloak_color_radius.GetFloat();
-				g_NEO_TE_TocFlash.m_fTime = sv_neo_cloak_time.GetFloat();
-				g_NEO_TE_TocFlash.m_fDecay = sv_neo_cloak_decay.GetFloat();
-
-				g_NEO_TE_TocFlash.Create(filter);
+				CloakFlash();
 			}
-
-			// Play cloak sound
-			static int tocOn = CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOn");
-			static int tocOff = CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOff");
-
-			EmitSound_t tocSoundParams;
-			tocSoundParams.m_bEmitCloseCaption = false;
-			tocSoundParams.m_hSoundScriptHandle = (m_bInThermOpticCamo ? tocOn : tocOff);
-			tocSoundParams.m_pOrigin = &GetAbsOrigin();
-
-			EmitSound(filter, edict()->m_EdictIndex, tocSoundParams);
 		}
+		PlayCloakSound();
 	}
 }
 

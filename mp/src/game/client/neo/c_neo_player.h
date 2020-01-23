@@ -134,7 +134,7 @@ protected:
 	CNetworkVar(int, m_iGhosterTeam);
 
 	bool m_bIsClassMenuOpen, m_bIsTeamMenuOpen;
-	CNetworkVar(bool, m_bInThermOpticCamo);
+	bool m_bInThermOpticCamo;
 	CNetworkVar(bool, m_bInVision);
 	CNetworkVar(bool, m_bInAim);
 
