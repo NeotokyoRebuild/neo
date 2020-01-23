@@ -148,6 +148,7 @@ public:
 private:
 	bool m_bInLeanLeft, m_bInLeanRight;
 	bool m_bFirstDeathTick;
+	bool m_bPreviouslyReloading;
 
 	Vector m_leanPosTargetOffset;
 

@@ -332,6 +332,7 @@ CNEO_Player::CNEO_Player()
 	m_flLastAirborneJumpOkTime = 0;
 	m_flLastSuperJumpTime = 0;
 	m_bFirstDeathTick = true;
+	m_bPreviouslyReloading = false;
 }
 
 CNEO_Player::~CNEO_Player( void )
@@ -791,8 +792,7 @@ void CNEO_Player::PostThink(void)
 
 	if (pWep)
 	{
-		static bool previouslyReloading = false;
-		if (pWep->m_bInReload && !previouslyReloading)
+		if (pWep->m_bInReload && !m_bPreviouslyReloading)
 		{
 			Weapon_SetZoom(false);
 		}
@@ -818,7 +818,7 @@ void CNEO_Player::PostThink(void)
 		{
 			Weapon_AimToggle(pWep);
 		}
-		previouslyReloading = pWep->m_bInReload;
+		m_bPreviouslyReloading = pWep->m_bInReload;
 
 		if (m_afButtonPressed & IN_DROP)
 		{
@@ -829,24 +829,6 @@ void CNEO_Player::PostThink(void)
 			Weapon_Drop(pWep, NULL, &eyeForward);
 		}
 	}
-
-#if(0)
-	if (m_iCapTeam != TEAM_UNASSIGNED)
-	{
-		const int resetTime = 11;
-		static float lastTime = gpGlobals->curtime;
-		float dTime = gpGlobals->curtime - lastTime;
-		if (dTime >= resetTime)
-		{
-			m_iCapTeam = TEAM_UNASSIGNED;
-			lastTime = gpGlobals->curtime;
-
-			NEORules()->RestartGame();
-
-			return;
-		}
-	}
-#endif
 
 #if(0)
 	int iMoveX = LookupPoseParameter("move_x");

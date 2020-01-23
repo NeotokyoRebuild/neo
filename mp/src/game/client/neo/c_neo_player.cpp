@@ -282,6 +282,7 @@ C_NEO_Player::C_NEO_Player()
 	m_flLastSuperJumpTime = 0;
 
 	m_bFirstDeathTick = true;
+	m_bPreviouslyReloading = false;
 }
 
 C_NEO_Player::~C_NEO_Player()
@@ -694,9 +695,7 @@ void C_NEO_Player::PostThink(void)
 
 	if (pWep)
 	{
-		static bool previouslyReloading = false;
-
-		if (pWep->m_bInReload && !previouslyReloading)
+		if (pWep->m_bInReload && !m_bPreviouslyReloading)
 		{
 			Weapon_SetZoom(false);
 		}
@@ -709,7 +708,7 @@ void C_NEO_Player::PostThink(void)
 			Weapon_AimToggle(pWep);
 		}
 
-		previouslyReloading = pWep->m_bInReload;
+		m_bPreviouslyReloading = pWep->m_bInReload;
 	}
 }
 

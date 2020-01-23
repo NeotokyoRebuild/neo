@@ -143,6 +143,7 @@ protected:
 
 private:
 	bool m_bFirstDeathTick;
+	bool m_bPreviouslyReloading;
 
 	CNeoHudElements *m_pNeoPanel;
 
