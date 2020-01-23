@@ -305,6 +305,10 @@ void CHudCrosshair::Paint( void )
 		DrawBox(0, 0, iX - (iWidth / 2), screenHeight, blockColor, 1.0f);
 		// Draw black box on right side of the scope.
 		DrawBox((iX - (iWidth / 2) + iTextureW), 0, screenWidth, screenHeight, blockColor, 1.0f);
+		// Draw black box on top of the scope.
+		DrawBox(iX - (iWidth / 2), 0, iTextureW, iY - (iHeight / 2), blockColor, 1.0f);
+		// Draw black box under the scope.
+		DrawBox(iX - (iWidth / 2), screenHeight - (iY - (iHeight / 2)), iTextureW, screenHeight, blockColor, 1.0f);
 
 		// Reset corner rounding.
 		SetRoundedCorners(prevCornerFlags);
