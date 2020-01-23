@@ -1775,11 +1775,13 @@ void CNEO_Player::GiveDefaultItems(void)
 	case NEO_CLASS_ASSAULT:
 		GiveNamedItem("weapon_knife");
 		GiveNamedItem("weapon_tachi");
+		GiveNamedItem("weapon_grenade");
 		Weapon_Switch(Weapon_OwnsThisType("weapon_tachi"));
 		break;
 	case NEO_CLASS_SUPPORT:
 		if (supportsGetKnife) { GiveNamedItem("weapon_knife"); }
 		GiveNamedItem("weapon_kyla");
+		GiveNamedItem("weapon_smokegrenade");
 		Weapon_Switch(Weapon_OwnsThisType("weapon_kyla"));
 		break;
 	default:
