@@ -147,6 +147,8 @@ public:
 
 private:
 	bool m_bInLeanLeft, m_bInLeanRight;
+	bool m_bFirstDeathTick;
+
 	Vector m_leanPosTargetOffset;
 
 	float m_flCamoAuxLastTime;

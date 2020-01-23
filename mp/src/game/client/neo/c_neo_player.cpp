@@ -280,6 +280,8 @@ C_NEO_Player::C_NEO_Player()
 
 	m_flLastAirborneJumpOkTime = 0;
 	m_flLastSuperJumpTime = 0;
+
+	m_bFirstDeathTick = true;
 }
 
 C_NEO_Player::~C_NEO_Player()
@@ -672,17 +674,20 @@ void C_NEO_Player::PostThink(void)
 		}
 	}
 
-	// Undo aim zoom if just died
-	static bool firstDeathTick = true;
-	if (!IsAlive() && firstDeathTick)
+	if (!IsAlive())
 	{
-		firstDeathTick = false;
-		Weapon_SetZoom(false);
+		// Undo aim zoom if just died
+		if (m_bFirstDeathTick)
+		{
+			m_bFirstDeathTick = false;
+			Weapon_SetZoom(false);
+		}
+
 		return;
 	}
 	else
 	{
-		firstDeathTick = true;
+		m_bFirstDeathTick = true;
 	}
 
 	C_BaseCombatWeapon *pWep = GetActiveWeapon();

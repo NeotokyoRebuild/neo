@@ -142,6 +142,8 @@ protected:
 	CNetworkVar(int, m_iNeoSkin);
 
 private:
+	bool m_bFirstDeathTick;
+
 	CNeoHudElements *m_pNeoPanel;
 
 	float m_flLastAirborneJumpOkTime;

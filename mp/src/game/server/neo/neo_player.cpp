@@ -331,6 +331,7 @@ CNEO_Player::CNEO_Player()
 	m_flCamoAuxLastTime = 0;
 	m_flLastAirborneJumpOkTime = 0;
 	m_flLastSuperJumpTime = 0;
+	m_bFirstDeathTick = true;
 }
 
 CNEO_Player::~CNEO_Player( void )
@@ -770,17 +771,20 @@ void CNEO_Player::PostThink(void)
 {
 	BaseClass::PostThink();
 
-	// Undo aim zoom if just died
-	static bool firstDeathTick = true;
-	if (!IsAlive() && firstDeathTick)
+	if (!IsAlive())
 	{
-		firstDeathTick = false;
-		Weapon_SetZoom(false);
+		// Undo aim zoom if just died
+		if (m_bFirstDeathTick)
+		{
+			m_bFirstDeathTick = false;
+			Weapon_SetZoom(false);
+		}
+
 		return;
 	}
 	else
 	{
-		firstDeathTick = true;
+		m_bFirstDeathTick = true;
 	}
 
 	auto pWep = GetActiveWeapon();
