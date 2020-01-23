@@ -655,7 +655,10 @@ void C_NEO_Player::PostThink(void)
 {
 	BaseClass::PostThink();
 
-	neo_this_client_speed.SetValue(MIN(GetAbsVelocity().Length2D() / GetNormSpeed(), 1.0f));
+	if (GetLocalNEOPlayer() == this)
+	{
+		neo_this_client_speed.SetValue(MIN(GetAbsVelocity().Length2D() / GetNormSpeed(), 1.0f));
+	}
 
 	//DevMsg("Roll: %f\n", m_angEyeAngles[2]);
 
