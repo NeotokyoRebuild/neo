@@ -277,6 +277,8 @@ C_NEO_Player::C_NEO_Player()
 	m_bInAim = false;
 
 	m_pNeoPanel = NULL;
+
+	m_flLastAirborneJumpOkTime = 0;
 }
 
 C_NEO_Player::~C_NEO_Player()
@@ -523,13 +525,13 @@ void C_NEO_Player::PreThink( void )
 	// Eek. See rationale for this thing in CNEO_Player::PreThink
 	if (IsAirborne())
 	{
-		static float lastAirborneJumpOkTime = gpGlobals->curtime;
-		const float deltaTime = gpGlobals->curtime - lastAirborneJumpOkTime;
+		m_flLastAirborneJumpOkTime = gpGlobals->curtime;
+		const float deltaTime = gpGlobals->curtime - m_flLastAirborneJumpOkTime;
 		const float leeway = 0.5f;
 		if (deltaTime > leeway)
 		{
 			m_bHasBeenAirborneForTooLongToSuperJump = false;
-			lastAirborneJumpOkTime = gpGlobals->curtime;
+			m_flLastAirborneJumpOkTime = gpGlobals->curtime;
 		}
 		else
 		{

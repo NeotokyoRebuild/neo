@@ -150,6 +150,7 @@ private:
 	Vector m_leanPosTargetOffset;
 
 	float m_flCamoAuxLastTime;
+	float m_flLastAirborneJumpOkTime;
 };
 
 inline CNEO_Player *ToNEOPlayer(CBaseEntity *pEntity)

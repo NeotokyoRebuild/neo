@@ -329,6 +329,7 @@ CNEO_Player::CNEO_Player()
 	ZeroFriendlyPlayerLocArray();
 
 	m_flCamoAuxLastTime = 0;
+	m_flLastAirborneJumpOkTime = 0;
 }
 
 CNEO_Player::~CNEO_Player( void )
@@ -503,13 +504,13 @@ void CNEO_Player::PreThink(void)
 	bool newNetAirborneVal;
 	if (IsAirborne())
 	{
-		static float lastAirborneJumpOkTime = gpGlobals->curtime;
-		const float deltaTime = gpGlobals->curtime - lastAirborneJumpOkTime;
+		m_flLastAirborneJumpOkTime = gpGlobals->curtime;
+		const float deltaTime = gpGlobals->curtime - m_flLastAirborneJumpOkTime;
 		const float leeway = 0.5f;
 		if (deltaTime > leeway)
 		{
 			newNetAirborneVal = false;
-			lastAirborneJumpOkTime = gpGlobals->curtime;
+			m_flLastAirborneJumpOkTime = gpGlobals->curtime;
 		}
 		else
 		{

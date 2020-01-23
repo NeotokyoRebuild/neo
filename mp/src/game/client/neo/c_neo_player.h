@@ -144,6 +144,8 @@ protected:
 private:
 	CNeoHudElements *m_pNeoPanel;
 
+	float m_flLastAirborneJumpOkTime;
+
 private:
 	C_NEO_Player(const C_NEO_Player &);
 };
