@@ -283,6 +283,7 @@ C_NEO_Player::C_NEO_Player()
 
 	m_bFirstDeathTick = true;
 	m_bPreviouslyReloading = false;
+	m_bPreviouslyPreparingToHideMsg = false;
 }
 
 C_NEO_Player::~C_NEO_Player()
@@ -663,19 +664,22 @@ void C_NEO_Player::PostThink(void)
 	//DevMsg("Roll: %f\n", m_angEyeAngles[2]);
 
 	bool preparingToHideMsg = (m_iCapTeam != TEAM_UNASSIGNED);
-	static bool previouslyPreparing = preparingToHideMsg;
 
-	if (!preparingToHideMsg && previouslyPreparing)
+	if (!preparingToHideMsg && m_bPreviouslyPreparingToHideMsg)
 	{
 		if (m_pNeoPanel && m_pNeoPanel->GetGameEventIndicator())
 		{
 			m_pNeoPanel->GetGameEventIndicator()->SetVisible(false);
-			previouslyPreparing = false;
+			m_bPreviouslyPreparingToHideMsg = false;
 		}
 		else
 		{
 			Assert(false);
 		}
+	}
+	else
+	{
+		m_bPreviouslyPreparingToHideMsg = preparingToHideMsg;
 	}
 
 	if (!IsAlive())

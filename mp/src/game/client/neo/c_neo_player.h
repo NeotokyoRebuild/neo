@@ -144,6 +144,7 @@ protected:
 private:
 	bool m_bFirstDeathTick;
 	bool m_bPreviouslyReloading;
+	bool m_bPreviouslyPreparingToHideMsg;
 
 	CNeoHudElements *m_pNeoPanel;
 
