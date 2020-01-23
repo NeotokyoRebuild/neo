@@ -657,6 +657,11 @@ inline void CNEO_Player::CheckThermOpticButtons()
 {
 	if ((m_afButtonPressed & IN_THERMOPTIC) && IsAlive())
 	{
+		if (GetClass() == NEO_CLASS_SUPPORT || GetClass() == NEO_CLASS_VIP)
+		{
+			return;
+		}
+
 		if (SuitPower_GetCurrentPercentage() >= CLOAK_AUX_COST)
 		{
 			m_bInThermOpticCamo = !m_bInThermOpticCamo;
