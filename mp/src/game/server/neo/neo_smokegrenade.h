@@ -35,10 +35,12 @@ public:
 	void	OnPhysGunPickup(CBasePlayer* pPhysGunUser, PhysGunPickup_t reason);
 
 	virtual void	Detonate(void);
-	
-	bool TryDetonate(void);
 
 	void	InputSetTimer(inputdata_t& inputdata);
+
+private:
+	bool TryDetonate(void);
+	void SetupParticles(size_t number);
 
 protected:
 	bool	m_inSolid;

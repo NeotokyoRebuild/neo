@@ -2,6 +2,7 @@
 #include "neo_smokegrenade.h"
 
 #include "neo_tracefilter_collisiongroupdelta.h"
+#include "particle_smokegrenade.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -22,6 +23,7 @@ END_DATADESC()
 
 ConVar sv_neo_smoke_bloom_duration("sv_neo_smoke_bloom_duration", "15", FCVAR_CHEAT, "How long should the smoke bloom be up, in seconds.", true, 0.0, true, 60.0);
 ConVar sv_neo_smoke_bloom_radius("sv_neo_smoke_bloom_radius", "256", FCVAR_CHEAT, "Size of the smoke bloom radius, in Hammer units.", true, 1.0, true, 2048.0);
+ConVar sv_neo_smoke_bloom_layers("sv_neo_smoke_bloom_layers", "5", FCVAR_CHEAT, "Amount of smoke layers atop each other.", true, 0.0, true, 32.0);
 
 void CNEOGrenadeSmoke::Spawn(void)
 {
@@ -194,15 +196,41 @@ bool CNEOGrenadeSmoke::TryDetonate(void)
 	return false;
 }
 
+void CNEOGrenadeSmoke::SetupParticles(size_t number)
+{
+	for (size_t i = 0; i < number; ++i)
+	{
+		auto ptr = dynamic_cast<ParticleSmokeGrenade*>(CreateEntityByName(PARTICLESMOKEGRENADE_ENTITYNAME));
+		Assert(ptr);
+		if (ptr)
+		{
+			Vector vForward;
+			AngleVectors(GetLocalAngles(), &vForward);
+			vForward.z = 0;
+			VectorNormalize(vForward);
+
+			ptr->SetLocalOrigin(GetLocalOrigin());
+			ptr->SetFadeTime((sv_neo_smoke_bloom_duration.GetFloat() - 5), sv_neo_smoke_bloom_duration.GetFloat());
+			ptr->Activate();
+			ptr->SetLifetime(sv_neo_smoke_bloom_duration.GetFloat()); // This call passes on responsibility for the memory to the particle thinkfunc
+			ptr->FillVolume();
+		}
+	}
+}
+
 void CNEOGrenadeSmoke::Detonate(void)
 {
+#if(0)
 	Vector randVec;
 	randVec.Random((-sv_neo_smoke_bloom_radius.GetFloat() * 0.05f), (sv_neo_smoke_bloom_radius.GetFloat() * 0.05f));
 	UTIL_Smoke(GetAbsOrigin() + randVec, sv_neo_smoke_bloom_radius.GetFloat(), 1.0f);
+#endif
 
 	if (!m_hasBeenMadeNonSolid)
 	{
 		m_hasBeenMadeNonSolid = true;
+
+		SetupParticles(sv_neo_smoke_bloom_layers.GetInt());
 		m_flSmokeBloomTime = gpGlobals->curtime;
 
 		CRecipientFilter filter;
@@ -221,7 +249,7 @@ void CNEOGrenadeSmoke::Detonate(void)
 		AddEffects(EF_NODRAW);
 	}
 	
-	SetNextThink(gpGlobals->curtime + 0.01f);
+	SetNextThink(gpGlobals->curtime + 1.0f);
 }
 
 CBaseGrenade* NEOSmokegrenade_Create(const Vector& position, const QAngle& angles, const Vector& velocity,
