@@ -252,17 +252,22 @@ $Project "Server (HL2MP)"
 			$File	"neo\neo_ghost_spawn_point.cpp"
 			$File	"neo\neo_ghost_spawn_point.h"
 
+			$File	"neo\neo_grenade.cpp"
+			$File	"neo\neo_grenade.h"
+
 			$File	"neo\neo_model_manager.cpp"
 			$File	"neo\neo_model_manager.h"
 
 			$File	"neo\neo_player.cpp"
 			$File	"neo\neo_player.h"
 
+			$File	"neo\neo_smokegrenade.cpp"
+			$File	"neo\neo_smokegrenade.h"
+
 			$File	"neo\neo_te_tocflash.cpp"
 			$File	"neo\neo_te_tocflash.h"
 
-			$File	"neo\neo_grenade.cpp"
-			$File	"neo\neo_grenade.h"
+			$File	"neo\neo_tracefilter_collisiongroupdelta.h"
 
 			////////////////
 			// NEO SHARED //

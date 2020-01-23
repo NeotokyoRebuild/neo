@@ -1,0 +1,187 @@
+#include "cbase.h"
+#include "neo_smokegrenade.h"
+
+#include "neo_tracefilter_collisiongroupdelta.h"
+
+// memdbgon must be the last include file in a .cpp file!!!
+#include "tier0/memdbgon.h"
+
+LINK_ENTITY_TO_CLASS(neo_grenade_smoke, CNEOGrenadeSmoke);
+
+BEGIN_DATADESC(CNEOGrenadeSmoke)
+// Fields
+DEFINE_FIELD(m_inSolid, FIELD_BOOLEAN),
+DEFINE_FIELD(m_punted, FIELD_BOOLEAN),
+
+// Function Pointers
+DEFINE_THINKFUNC(DelayThink),
+
+// Inputs
+DEFINE_INPUTFUNC(FIELD_FLOAT, "SetTimer", InputSetTimer),
+END_DATADESC()
+
+void CNEOGrenadeSmoke::Spawn(void)
+{
+	Precache();
+
+	SetModel(NEO_SMOKE_GRENADE_MODEL);
+
+	m_flDamage = 0;
+	m_DmgRadius = 0;
+
+	m_takedamage = DAMAGE_YES;
+	m_iHealth = 1;
+
+	SetSize(-Vector(4, 4, 4), Vector(4, 4, 4));
+	SetCollisionGroup(COLLISION_GROUP_WEAPON);
+	CreateVPhysics();
+
+	AddSolidFlags(FSOLID_NOT_STANDABLE);
+
+	m_punted = false;
+
+	BaseClass::Spawn();
+}
+
+bool CNEOGrenadeSmoke::CreateVPhysics()
+{
+	// Create the object in the physics system
+	VPhysicsInitNormal(SOLID_BBOX, 0, false);
+	return true;
+}
+
+void CNEOGrenadeSmoke::VPhysicsUpdate(IPhysicsObject* pPhysics)
+{
+	BaseClass::VPhysicsUpdate(pPhysics);
+	Vector vel;
+	AngularImpulse angVel;
+	pPhysics->GetVelocity(&vel, &angVel);
+
+	Vector start = GetAbsOrigin();
+	// find all entities that my collision group wouldn't hit, but COLLISION_GROUP_NONE would and bounce off of them as a ray cast
+	CNEOTraceFilterCollisionGroupDelta filter(this, GetCollisionGroup(), COLLISION_GROUP_NONE);
+	trace_t tr;
+
+	// UNDONE: Hull won't work with hitboxes - hits outer hull.  But the whole point of this test is to hit hitboxes.
+#if 0
+	UTIL_TraceHull(start, start + vel * gpGlobals->frametime, CollisionProp()->OBBMins(), CollisionProp()->OBBMaxs(), CONTENTS_HITBOX | CONTENTS_MONSTER | CONTENTS_SOLID, &filter, &tr);
+#else
+	UTIL_TraceLine(start, start + vel * gpGlobals->frametime, CONTENTS_HITBOX | CONTENTS_MONSTER | CONTENTS_SOLID, &filter, &tr);
+#endif
+	if (tr.startsolid)
+	{
+		if (!m_inSolid)
+		{
+			// UNDONE: Do a better contact solution that uses relative velocity?
+			vel *= -GRENADE_COEFFICIENT_OF_RESTITUTION; // bounce backwards
+			pPhysics->SetVelocity(&vel, NULL);
+		}
+		m_inSolid = true;
+		return;
+	}
+	m_inSolid = false;
+	if (tr.DidHit())
+	{
+		Vector dir = vel;
+		VectorNormalize(dir);
+		// send a tiny amount of damage so the character will react to getting bonked
+		CTakeDamageInfo info(this, GetThrower(), pPhysics->GetMass() * vel, GetAbsOrigin(), 0.1f, DMG_CRUSH);
+		tr.m_pEnt->TakeDamage(info);
+
+		// reflect velocity around normal
+		vel = -2.0f * tr.plane.normal * DotProduct(vel, tr.plane.normal) + vel;
+
+		// absorb 80% in impact
+		vel *= GRENADE_COEFFICIENT_OF_RESTITUTION;
+		angVel *= -0.5f;
+		pPhysics->SetVelocity(&vel, &angVel);
+	}
+}
+
+void CNEOGrenadeSmoke::Precache(void)
+{
+	//PrecacheModel(GRENADE_MODEL);
+	//PrecacheScriptSound("Grenade.Blip");
+
+	BaseClass::Precache();
+}
+
+void CNEOGrenadeSmoke::SetTimer(float detonateDelay, float warnDelay)
+{
+	m_flDetonateTime = gpGlobals->curtime + detonateDelay;
+	m_flWarnAITime = gpGlobals->curtime + warnDelay;
+	SetThink(&CNEOGrenadeSmoke::DelayThink);
+	SetNextThink(gpGlobals->curtime);
+}
+
+void CNEOGrenadeSmoke::OnPhysGunPickup(CBasePlayer* pPhysGunUser, PhysGunPickup_t reason)
+{
+	SetThrower(pPhysGunUser);
+	m_bHasWarnedAI = true;
+
+	BaseClass::OnPhysGunPickup(pPhysGunUser, reason);
+}
+
+void CNEOGrenadeSmoke::DelayThink()
+{
+	if (gpGlobals->curtime > m_flDetonateTime)
+	{
+		Detonate();
+		return;
+	}
+
+	if (!m_bHasWarnedAI && gpGlobals->curtime >= m_flWarnAITime)
+	{
+#if !defined( CLIENT_DLL )
+		CSoundEnt::InsertSound(SOUND_DANGER, GetAbsOrigin(), 400, 1.5, this);
+#endif
+		m_bHasWarnedAI = true;
+	}
+
+	SetNextThink(gpGlobals->curtime + 0.1);
+}
+
+void CNEOGrenadeSmoke::SetVelocity(const Vector& velocity, const AngularImpulse& angVelocity)
+{
+	IPhysicsObject* pPhysicsObject = VPhysicsGetObject();
+	if (pPhysicsObject)
+	{
+		pPhysicsObject->AddVelocity(&velocity, &angVelocity);
+	}
+}
+
+int CNEOGrenadeSmoke::OnTakeDamage(const CTakeDamageInfo& inputInfo)
+{
+	// NEO smokes can't be detonated by damage.
+	return 0;
+}
+
+void CNEOGrenadeSmoke::InputSetTimer(inputdata_t& inputdata)
+{
+	SetTimer(inputdata.value.Float(), inputdata.value.Float());
+}
+
+CBaseGrenade* NEOSmokegrenade_Create(const Vector& position, const QAngle& angles, const Vector& velocity,
+	const AngularImpulse& angVelocity, CBaseEntity* pOwner, float timer, bool combineSpawned)
+{
+	// Don't set the owner here, or the player can't interact with grenades he's thrown
+	CNEOGrenadeSmoke* pGrenade = (CNEOGrenadeSmoke*)CBaseEntity::Create("neo_grenade_smoke", position, angles, pOwner);
+
+	pGrenade->SetTimer(timer, timer);
+	pGrenade->SetVelocity(velocity, angVelocity);
+	pGrenade->SetThrower(ToBaseCombatCharacter(pOwner));
+	pGrenade->m_takedamage = DAMAGE_EVENTS_ONLY;
+
+	return pGrenade;
+}
+
+bool NEOSmokegrenade_WasPunted(const CBaseEntity* pEntity)
+{
+	auto pSmoke = dynamic_cast<const CNEOGrenadeSmoke*>(pEntity);
+	if (pSmoke)
+	{
+		return pSmoke->WasPunted();
+	}
+
+	return false;
+}
