@@ -21,6 +21,7 @@ DEFINE_INPUTFUNC(FIELD_FLOAT, "SetTimer", InputSetTimer),
 END_DATADESC()
 
 ConVar sv_neo_smoke_bloom_duration("sv_neo_smoke_bloom_duration", "15", FCVAR_CHEAT, "How long should the smoke bloom be up, in seconds.", true, 0.0, true, 60.0);
+ConVar sv_neo_smoke_bloom_radius("sv_neo_smoke_bloom_radius", "256", FCVAR_CHEAT, "Size of the smoke bloom radius, in Hammer units.", true, 1.0, true, 2048.0);
 
 void CNEOGrenadeSmoke::Spawn(void)
 {
@@ -196,8 +197,8 @@ bool CNEOGrenadeSmoke::TryDetonate(void)
 void CNEOGrenadeSmoke::Detonate(void)
 {
 	Vector randVec;
-	randVec.Random(-32.0f, 32.0f);
-	UTIL_Smoke(GetAbsOrigin() + randVec, 128.0f, 0.0f);
+	randVec.Random((-sv_neo_smoke_bloom_radius.GetFloat() * 0.05f), (sv_neo_smoke_bloom_radius.GetFloat() * 0.05f));
+	UTIL_Smoke(GetAbsOrigin() + randVec, sv_neo_smoke_bloom_radius.GetFloat(), 1.0f);
 
 	if (!m_hasBeenMadeNonSolid)
 	{
