@@ -106,8 +106,6 @@ void CNEOGrenadeSmoke::VPhysicsUpdate(IPhysicsObject* pPhysics)
 		UTIL_TraceLine(start, end, CONTENTS_HITBOX | CONTENTS_SOLID, 0, COLLISION_GROUP_DEBRIS, &tr);
 		if (tr.DidHit())
 		{
-			DevMsg("Hit\n");
-
 			CRecipientFilter filter;
 			filter.AddRecipientsByPAS(GetAbsOrigin());
 			EmitSound_t type;
@@ -197,22 +195,9 @@ bool CNEOGrenadeSmoke::TryDetonate(void)
 
 void CNEOGrenadeSmoke::Detonate(void)
 {
-	//DevMsg("Smoke detonated!\n");
-
-	const size_t numSmokePuffs = 3;
-	for (size_t i = 0; i < numSmokePuffs; i++)
-	{
-		const float randScale = 32.0f;
-		Vector randVec;
-		RandomSeed(gpGlobals->framecount);
-		int min = RandomInt(-randScale, randScale);
-		RandomSeed(gpGlobals->framecount * (i + 1));
-		int max = MAX(min, min + RandomInt(-randScale, randScale));
-		RandomSeed((gpGlobals->framecount * (i + 1)) % 2);
-		randVec.Random(min, max);
-
-		UTIL_Smoke(GetAbsOrigin() + randVec, 128.0f, 1.0f);
-	}
+	Vector randVec;
+	randVec.Random(-32.0f, 32.0f);
+	UTIL_Smoke(GetAbsOrigin() + randVec, 128.0f, 0.0f);
 
 	if (!m_hasBeenMadeNonSolid)
 	{
