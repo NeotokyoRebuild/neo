@@ -42,6 +42,7 @@ IMPLEMENT_ACTTABLE(CWeaponKnife);
 
 CWeaponKnife::CWeaponKnife(void)
 {
+	m_flLastSwingTime = 0;
 }
 
 void CWeaponKnife::Drop(const Vector &vecVelocity)
@@ -53,22 +54,13 @@ void CWeaponKnife::Drop(const Vector &vecVelocity)
 
 void CWeaponKnife::PrimaryAttack(void)
 {
-	const float thisTime = gpGlobals->curtime;
-	static float lastAttack = thisTime;
-
-	if (lastAttack != thisTime)
+	if (gpGlobals->curtime < m_flLastSwingTime + GetFireRate())
 	{
-		const float deltaTime = thisTime - lastAttack;
-
-		if (deltaTime < GetFireRate())
-		{
-			return;
-		}
+		return;
 	}
 
+	m_flLastSwingTime = gpGlobals->curtime;
+
 	BaseClass::PrimaryAttack();
-
 	SendWeaponAnim(ACT_VM_PRIMARYATTACK);
-
-	lastAttack = thisTime;
 }
