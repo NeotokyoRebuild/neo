@@ -15,6 +15,9 @@ mp/game/neo/*.tga
 *.o
 *.p
 
+# Emacs style backup files
+*~
+
 # VSCode
 *.vscode/
 
