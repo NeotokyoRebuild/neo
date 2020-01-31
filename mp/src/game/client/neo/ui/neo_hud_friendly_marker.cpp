@@ -122,13 +122,3 @@ void CNEOHud_FriendlyMarker::Paint()
 			offset_Y + (m_iMarkerTexHeight * scale));
 	}
 }
-
-void CNEOHud_FriendlyMarker::SetOwner(C_NEO_Player* player)
-{
-	m_pOwner = player;
-}
-
-C_NEO_Player* CNEOHud_FriendlyMarker::GetOwner() const
-{
-	return m_pOwner;
-}

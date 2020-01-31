@@ -18,8 +18,8 @@ public:
 
 	virtual void Paint();
 
-	void SetOwner(C_NEO_Player *player);
-	C_NEO_Player *GetOwner() const;
+	void SetOwner(C_NEO_Player *player) { m_pOwner = player; }
+	C_NEO_Player *GetOwner() const { return m_pOwner; }
 
 private:
 	C_NEO_Player *m_pOwner;
