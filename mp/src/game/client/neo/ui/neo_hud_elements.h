@@ -43,10 +43,10 @@ public:
 
 	virtual void UpdatePlayerIFF(int playerIndex, KeyValues *kv);
 
-	CNEOHud_Compass *GetCompass();
-	CNEOHud_GameEvent *GetGameEventIndicator();
+	CNEOHud_Compass *GetCompass() { return m_pCompass; }
+	CNEOHud_GameEvent *GetGameEventIndicator() { return m_pGameEvent; }
 	CNEOHud_GhostMarker *GetGhostMarker();
-	CNEOHud_FriendlyMarker *GetIFF();
+	CNEOHud_FriendlyMarker *GetIFF() { return m_pFriendlyMarker; }
 
 protected:
 	virtual void OnThink();
