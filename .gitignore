@@ -103,6 +103,14 @@ obj*/
 !devtools/*.mak
 !utils/smdlexp/smdlexp.mak
 
+# QT Creator project generated files
+*.cflags
+*.config
+*.creator
+*.cxxflags
+*.files
+*.includes
+
 # Specific Source build products
 bin
 *.project
