@@ -773,7 +773,9 @@ void CNEO_Player::PostThink(void)
 		if (m_bFirstDeathTick)
 		{
 			m_bFirstDeathTick = false;
+
 			Weapon_SetZoom(false);
+			m_bInVision = false;
 		}
 
 		return;
