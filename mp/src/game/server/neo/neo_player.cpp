@@ -48,7 +48,6 @@ SendPropInt(SENDINFO(m_iLoadoutWepChoice)),
 SendPropBool(SENDINFO(m_bGhostExists)),
 SendPropBool(SENDINFO(m_bInThermOpticCamo)),
 SendPropBool(SENDINFO(m_bInVision)),
-SendPropBool(SENDINFO(m_bIsAirborne)),
 SendPropBool(SENDINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 SendPropBool(SENDINFO(m_bShowTestMessage)),
 SendPropBool(SENDINFO(m_bInAim)),
@@ -71,7 +70,6 @@ DEFINE_FIELD(m_iLoadoutWepChoice, FIELD_INTEGER),
 DEFINE_FIELD(m_bGhostExists, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bInThermOpticCamo, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bInVision, FIELD_BOOLEAN),
-DEFINE_FIELD(m_bIsAirborne, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bHasBeenAirborneForTooLongToSuperJump, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bShowTestMessage, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bInAim, FIELD_BOOLEAN),
@@ -311,7 +309,6 @@ CNEO_Player::CNEO_Player()
 	m_bInLeanLeft = m_bInLeanRight = false;
 	m_bGhostExists = false;
 	m_bInThermOpticCamo = m_bInVision = false;
-	m_bIsAirborne = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
 	m_bInAim = false;
 
@@ -402,8 +399,6 @@ void CNEO_Player::Spawn(void)
 	m_leanPosTargetOffset = VEC_VIEW;
 
 	SetTransmitState(FL_EDICT_ALWAYS);
-
-	m_bIsAirborne = (!(GetFlags() & FL_ONGROUND));
 
 	GiveLoadoutWeapon();
 }

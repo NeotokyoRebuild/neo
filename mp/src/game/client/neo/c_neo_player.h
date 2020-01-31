@@ -101,7 +101,7 @@ public:
 	inline void ZeroFriendlyPlayerLocArray(void);
 
 	bool IsCloaked() const { return m_bInThermOpticCamo; }
-	bool IsAirborne() const { return m_bIsAirborne; }
+	bool IsAirborne() const { return (!(GetFlags() & FL_ONGROUND)); }
 	bool IsInVision() const { return m_bInVision; }
 	bool IsInAim() const { return m_bInAim; }
 
@@ -123,7 +123,6 @@ public:
 	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
 
 	bool m_bShowClassMenu, m_bShowTeamMenu;
-	CNetworkVar(bool, m_bIsAirborne);
 	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
 
 	CNetworkVar(bool, m_bGhostExists);

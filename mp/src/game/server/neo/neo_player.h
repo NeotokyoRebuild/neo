@@ -94,7 +94,7 @@ public:
 	int GetSkin() const { return m_iNeoSkin; }
 	int GetClass() const { return m_iNeoClass; }
 
-	bool IsAirborne(void) const { return m_bIsAirborne; }
+	bool IsAirborne() const { return (!(GetFlags() & FL_ONGROUND)); }
 
 	virtual void StartAutoSprint(void);
 	virtual void StartSprinting(void);
@@ -139,7 +139,6 @@ public:
 	CNetworkVar(bool, m_bGhostExists);
 	CNetworkVar(bool, m_bInThermOpticCamo);
 	CNetworkVar(bool, m_bInVision);
-	CNetworkVar(bool, m_bIsAirborne);
 	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
 	CNetworkVar(bool, m_bInAim);
 

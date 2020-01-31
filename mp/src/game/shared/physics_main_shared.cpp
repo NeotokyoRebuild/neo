@@ -2193,33 +2193,12 @@ void CBaseEntity::StartGroundContact( CBaseEntity *ground )
 {
 	AddFlag( FL_ONGROUND );
 	//Msg( "+++ %s starting contact with ground %s\n", GetClassname(), ground->GetClassname() );
-
-#ifdef NEO
-	// NEO HACK (Rain): --also see EndGroundContact for same stuff
-	// A bit hacky, but ground contacts happen fairly rarely and are mostly player events anyway,
-	// so I think we can get away with the dynamic cast here.
-	// We should move this to the engine code for similar checks on regular jump, if possible.
-	auto player = dynamic_cast<CNEO_Player*>(this);
-	if (player)
-	{
-		player->m_bIsAirborne = false;
-	}
-#endif
 }
 
 void CBaseEntity::EndGroundContact( CBaseEntity *ground )
 {
 	RemoveFlag( FL_ONGROUND );
 	//Msg( "--- %s ending contact with ground %s\n", GetClassname(), ground->GetClassname() );
-
-#ifdef NEO
-	// See comment in ::StartGroundContact
-	auto player = dynamic_cast<CNEO_Player*>(this);
-	if (player)
-	{
-		player->m_bIsAirborne = true;
-	}
-#endif
 }
 
 void CBaseEntity::SetGroundChangeTime( float flTime )

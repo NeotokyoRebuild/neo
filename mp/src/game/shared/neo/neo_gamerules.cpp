@@ -647,7 +647,6 @@ void CNEORules::StartNextRound()
 		pPlayer->Reset();
 
 		pPlayer->m_bInAim = false;
-		pPlayer->m_bIsAirborne = false;
 		pPlayer->m_bInThermOpticCamo = false;
 		pPlayer->m_bInVision = false;
 

@@ -68,7 +68,6 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropBool(RECVINFO(m_bGhostExists)),
 	RecvPropBool(RECVINFO(m_bInThermOpticCamo)),
 	RecvPropBool(RECVINFO(m_bInVision)),
-	RecvPropBool(RECVINFO(m_bIsAirborne)),
 	RecvPropBool(RECVINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 	RecvPropBool(RECVINFO(m_bInAim)),
 
@@ -272,7 +271,6 @@ C_NEO_Player::C_NEO_Player()
 	m_bGhostExists = false;
 	m_bShowClassMenu = m_bShowTeamMenu = m_bIsClassMenuOpen = m_bIsTeamMenuOpen = false;
 	m_bInThermOpticCamo = m_bInVision = false;
-	m_bIsAirborne = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
 	m_bInAim = false;
 
@@ -820,8 +818,6 @@ void C_NEO_Player::Spawn( void )
 	Color color = Color(255, 255, 255, 255);
 	cross->SetCrosshair(NULL, color);
 #endif
-
-	m_bIsAirborne = (!(GetFlags() & FL_ONGROUND));
 }
 
 void C_NEO_Player::DoImpactEffect( trace_t &tr, int nDamageType )
