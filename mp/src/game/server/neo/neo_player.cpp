@@ -1798,6 +1798,7 @@ void CNEO_Player::GiveDefaultItems(void)
 	CBasePlayer::GiveAmmo(150, "Pistol");
 	CBasePlayer::GiveAmmo(150, "AR2");
 	CBasePlayer::GiveAmmo(30, "AMMO_10G_SHELL");
+	CBasePlayer::GiveAmmo(150, "AMMO_PRI");
 
 	const bool supportsGetKnife = true;
 

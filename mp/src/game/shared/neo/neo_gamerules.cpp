@@ -279,10 +279,37 @@ CAmmoDef *GetAmmoDef()
 		// HL2MP ammo support
 		def = GetAmmoDef_HL2MP();
 
+#ifdef DEBUG
+		// Make sure we have space for all HL2 ammo defs
+		size_t numAmmos = def->m_nAmmoIndex;
+		Assert(numAmmos <= MAX_AMMO_TYPES);
+#endif
+
 		// NEO ammo support
 		def->AddAmmoType("AMMO_10G_SHELL", DMG_BULLET | DMG_BUCKSHOT, TRACER_LINE, sk_plr_dmg_neo.GetName(), sk_npc_dmg_neo.GetName(), sk_max_neo_ammo.GetName(), BULLET_IMPULSE(400, 1200), 0);
+#ifdef DEBUG
+		numAmmos++;
+#endif
+
 		def->AddAmmoType("AMMO_GRENADE", DMG_BLAST, TRACER_NONE, sk_plr_dmg_neo.GetName(), sk_npc_dmg_neo.GetName(), sk_max_neo_ammo.GetName(), 0, 0);
+#ifdef DEBUG
+		numAmmos++;
+#endif
+
 		def->AddAmmoType("AMMO_SMOKEGRENADE", DMG_BLAST, TRACER_NONE, sk_plr_dmg_neo.GetName(), sk_npc_dmg_neo.GetName(), sk_max_neo_ammo.GetName(), 0, 0);
+#ifdef DEBUG
+		numAmmos++;
+#endif
+
+		def->AddAmmoType("AMMO_PRI", DMG_BULLET, TRACER_LINE_AND_WHIZ, sk_plr_dmg_neo.GetName(), sk_npc_dmg_neo.GetName(), sk_max_neo_ammo.GetName(), BULLET_IMPULSE(400, 1200), 0);
+#ifdef DEBUG
+		numAmmos++;
+#endif
+
+#ifdef DEBUG
+		// Make sure we have space for all NEO ammo defs
+		Assert(numAmmos <= MAX_AMMO_TYPES);
+#endif
 	}
 
 	return def;
