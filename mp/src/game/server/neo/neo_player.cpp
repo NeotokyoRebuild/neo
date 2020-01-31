@@ -340,7 +340,7 @@ inline void CNEO_Player::ZeroFriendlyPlayerLocArray(void)
 {
 	for (int i = 0; i < m_rvFriendlyPlayerPositions.Count(); i++)
 	{
-		m_rvFriendlyPlayerPositions.Set(i, Vector(0, 0, 0));
+		m_rvFriendlyPlayerPositions.Set(i, vec3_origin);
 	}
 	NetworkStateChanged();
 }

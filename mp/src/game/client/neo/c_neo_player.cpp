@@ -324,16 +324,6 @@ void C_NEO_Player::ZeroFriendlyPlayerLocArray()
 	}
 }
 
-C_NEO_Player *C_NEO_Player::GetLocalNEOPlayer()
-{
-	return (C_NEO_Player*)C_BasePlayer::GetLocalPlayer();
-}
-
-C_NEOPredictedViewModel *C_NEO_Player::GetNEOViewModel()
-{
-	return (C_NEOPredictedViewModel*)GetViewModel();
-}
-
 int C_NEO_Player::DrawModel( int flags )
 {
 	// Do cloak if cloaked

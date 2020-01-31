@@ -25,7 +25,7 @@ public:
 	C_NEO_Player();
 	virtual ~C_NEO_Player();
 
-	static C_NEO_Player *GetLocalNEOPlayer();
+	static C_NEO_Player *GetLocalNEOPlayer() { return static_cast<C_NEO_Player*>(C_BasePlayer::GetLocalPlayer()); }
 
 	virtual int DrawModel( int flags );
 	virtual void AddEntity( void );
@@ -96,7 +96,7 @@ public:
 
 	void Weapon_Drop(C_BaseCombatWeapon *pWeapon);
 
-	C_NEOPredictedViewModel *GetNEOViewModel();
+	C_NEOPredictedViewModel *GetNEOViewModel() { return static_cast<C_NEOPredictedViewModel*>(GetViewModel()); }
 
 	inline void ZeroFriendlyPlayerLocArray(void);
 
