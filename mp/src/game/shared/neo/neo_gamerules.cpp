@@ -267,57 +267,46 @@ CAmmoDef *GetAmmoDef_HL2MP()
 	return &def;
 }
 
+// This set of macros initializes a static CAmmoDef, and asserts its size stays within range. See usage in the GetAmmoDef() below.
+#ifndef DEBUG
+#define NEO_AMMO_DEF_START() static CAmmoDef *def; static bool bInitted = false; if (!bInitted) \
+{ \
+	bInitted = true; \
+	def = GetAmmoDef_HL2MP()
+#else
+#define NEO_AMMO_DEF_START() static CAmmoDef *def; static bool bInitted = false; if (!bInitted) \
+{ \
+	bInitted = true; \
+	def = GetAmmoDef_HL2MP(); \
+	size_t numAmmos = def->m_nAmmoIndex;\
+	Assert(numAmmos <= MAX_AMMO_TYPES)
+#endif
+
+#ifndef DEBUG
+#define ADD_NEO_AMMO_TYPE(TypeName, DmgFlags, TracerEnum, PhysForceImpulse) def->AddAmmoType(#TypeName, DmgFlags, TracerEnum, sk_plr_dmg_neo.GetName(), sk_npc_dmg_neo.GetName(), sk_max_neo_ammo.GetName(), PhysForceImpulse, 0)
+#else
+#define ADD_NEO_AMMO_TYPE(TypeName, DmgFlags, TracerEnum, PhysForceImpulse) def->AddAmmoType(#TypeName, DmgFlags, TracerEnum, sk_plr_dmg_neo.GetName(), sk_npc_dmg_neo.GetName(), sk_max_neo_ammo.GetName(), PhysForceImpulse, 0);++numAmmos
+#endif
+
+#ifndef DEBUG
+#define NEO_AMMO_DEF_END(); }
+#else
+#define NEO_AMMO_DEF_END(); Assert(numAmmos <= MAX_AMMO_TYPES); }
+#endif
+
+#define NEO_AMMO_DEF_RETURNVAL() def
+
 CAmmoDef *GetAmmoDef()
 {
-	static CAmmoDef *def;
-	static bool bInitted = false;
+	NEO_AMMO_DEF_START();
+		ADD_NEO_AMMO_TYPE(AMMO_10G_SHELL, DMG_BULLET | DMG_BUCKSHOT, TRACER_LINE, BULLET_IMPULSE(400, 1200));
+		ADD_NEO_AMMO_TYPE(AMMO_GRENADE, DMG_BLAST, TRACER_NONE, 0);
+		ADD_NEO_AMMO_TYPE(AMMO_SMOKEGRENADE, DMG_BLAST, TRACER_NONE, 0);
+		ADD_NEO_AMMO_TYPE(AMMO_PRI, DMG_BULLET, TRACER_LINE_AND_WHIZ, BULLET_IMPULSE(400, 1200));
+		ADD_NEO_AMMO_TYPE(AMMO_SMAC, DMG_BULLET, TRACER_LINE_AND_WHIZ, BULLET_IMPULSE(400, 1200));
+	NEO_AMMO_DEF_END();
 
-	if (!bInitted)
-	{
-		bInitted = true;
-
-		// HL2MP ammo support
-		def = GetAmmoDef_HL2MP();
-
-#ifdef DEBUG
-		// Make sure we have space for all HL2 ammo defs
-		size_t numAmmos = def->m_nAmmoIndex;
-		Assert(numAmmos <= MAX_AMMO_TYPES);
-#endif
-
-		// NEO ammo support
-		def->AddAmmoType("AMMO_10G_SHELL", DMG_BULLET | DMG_BUCKSHOT, TRACER_LINE, sk_plr_dmg_neo.GetName(), sk_npc_dmg_neo.GetName(), sk_max_neo_ammo.GetName(), BULLET_IMPULSE(400, 1200), 0);
-#ifdef DEBUG
-		++numAmmos;
-#endif
-
-		def->AddAmmoType("AMMO_GRENADE", DMG_BLAST, TRACER_NONE, sk_plr_dmg_neo.GetName(), sk_npc_dmg_neo.GetName(), sk_max_neo_ammo.GetName(), 0, 0);
-#ifdef DEBUG
-		++numAmmos;
-#endif
-
-		def->AddAmmoType("AMMO_SMOKEGRENADE", DMG_BLAST, TRACER_NONE, sk_plr_dmg_neo.GetName(), sk_npc_dmg_neo.GetName(), sk_max_neo_ammo.GetName(), 0, 0);
-#ifdef DEBUG
-		++numAmmos;
-#endif
-
-		def->AddAmmoType("AMMO_PRI", DMG_BULLET, TRACER_LINE_AND_WHIZ, sk_plr_dmg_neo.GetName(), sk_npc_dmg_neo.GetName(), sk_max_neo_ammo.GetName(), BULLET_IMPULSE(400, 1200), 0);
-#ifdef DEBUG
-		++numAmmos;
-#endif
-
-		def->AddAmmoType("AMMO_SMAC", DMG_BULLET, TRACER_LINE_AND_WHIZ, sk_plr_dmg_neo.GetName(), sk_npc_dmg_neo.GetName(), sk_max_neo_ammo.GetName(), BULLET_IMPULSE(400, 1200), 0);
-#ifdef DEBUG
-		++numAmmos;
-#endif
-
-#ifdef DEBUG
-		// Make sure we have space for all NEO ammo defs
-		Assert(numAmmos <= MAX_AMMO_TYPES);
-#endif
-	}
-
-	return def;
+	return NEO_AMMO_DEF_RETURNVAL();
 }
 
 void CNEORules::ClientSpawned(edict_t* pPlayer)
