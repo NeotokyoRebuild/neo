@@ -4,10 +4,11 @@
 #pragma once
 #endif
 
+#include "neo_hud_childelement.h"
 #include "hudelement.h"
 #include <vgui_controls/Panel.h>
 
-class CNEOHud_RoundState : public CHudElement, public vgui::Panel
+class CNEOHud_RoundState : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
 {
 	DECLARE_CLASS_SIMPLE(CNEOHud_RoundState, Panel);
 

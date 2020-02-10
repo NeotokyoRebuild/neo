@@ -262,22 +262,6 @@ ConCommand setclass("setclass", SetClass, "Set class", FCVAR_USERINFO);
 ConCommand setskin("SetVariant", SetSkin, "Set skin", FCVAR_USERINFO);
 ConCommand loadout("loadout", SetLoadout, "Set loadout", FCVAR_USERINFO);
 
-// NEO FIXME/HACK (Rain): bots don't properly set their fakeclient flag currently,
-// making IsFakeClient and IsBot return false. This is an ugly hack to get bots
-// joining teams. We cannot trust this player input (and it's slow), so it really
-// should be fixed properly.
-inline bool Hack_IsBot(CNEO_Player *player)
-{
-	if (!player)
-	{
-		return false;
-	}
-
-	const char *name = player->GetPlayerInfo()->GetName();
-
-	return (strlen(name) == 5 && name[0] == 'B' && name[1] == 'o' && name[2] == 't');
-}
-
 static inline int GetNumOtherPlayersConnected(CNEO_Player *asker)
 {
 	if (!asker)
@@ -330,6 +314,8 @@ CNEO_Player::CNEO_Player()
 	m_flLastSuperJumpTime = 0;
 	m_bFirstDeathTick = true;
 	m_bPreviouslyReloading = false;
+
+	m_flNextTeamChangeTime = gpGlobals->curtime + 0.5f;
 }
 
 CNEO_Player::~CNEO_Player( void )
@@ -338,7 +324,8 @@ CNEO_Player::~CNEO_Player( void )
 
 inline void CNEO_Player::ZeroFriendlyPlayerLocArray(void)
 {
-	for (int i = 0; i < m_rvFriendlyPlayerPositions.Count(); i++)
+	Assert(m_rvFriendlyPlayerPositions.Count() == MAX_PLAYERS);
+	for (int i = 0; i < MAX_PLAYERS; i++)
 	{
 		m_rvFriendlyPlayerPositions.Set(i, vec3_origin);
 	}
@@ -347,41 +334,48 @@ inline void CNEO_Player::ZeroFriendlyPlayerLocArray(void)
 
 void CNEO_Player::UpdateNetworkedFriendlyLocations()
 {
-	const size_t pvsMaxSize = MAX_MAP_CLUSTERS + 1;
-	byte pvs[pvsMaxSize]{};
+#define PVS_MAX_SIZE (MAX_MAP_CLUSTERS + 1)
+	byte pvs[PVS_MAX_SIZE]{};
 
 	const int cluster = engine->GetClusterForOrigin(GetAbsOrigin());
-	const int pvsSize = engine->GetPVSForCluster(cluster, pvsMaxSize, pvs);
+	const int pvsSize = engine->GetPVSForCluster(cluster, PVS_MAX_SIZE, pvs);
 	Assert(pvsSize > 0);
 
-	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	Assert(MAX_PLAYERS == m_rvFriendlyPlayerPositions.Count());
+	for (int i = 0; i < gpGlobals->maxClients; ++i)
 	{
-		CNEO_Player *otherPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
-
-		// Look for valid players that aren't us
-		if (!otherPlayer || otherPlayer == this)
+		// Skip self.
+		if (i == GetClientIndex())
 		{
-			m_rvFriendlyPlayerPositions.Set(i, vec3_origin);
 			continue;
 		}
 
-		// Only players in our team, and are alive
-		else if (otherPlayer->GetTeamNumber() != GetTeamNumber() || otherPlayer->IsDead())
-		{
-			m_rvFriendlyPlayerPositions.Set(i, vec3_origin);
-			continue;
-		}
+		auto player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i + 1));
 
-		// If the other player is already in our PVS, we can skip them.
-		else if (engine->CheckOriginInPVS(otherPlayer->GetAbsOrigin(), pvs, pvsSize))
-		{
-#if(0) // currently networking all friendlies, NEO TODO (Rain): optimise this
-			m_rvFriendlyPlayerPositions.Set(i, vec3_origin);
-			continue;
+		// Only teammates who are alive.
+		if (!player || player->GetTeamNumber() != GetTeamNumber() || player->IsDead()
+#if(1)
+			)
+#else // currently networking all friendlies, NEO TODO (Rain): optimise this
+			// If the other player is already in our PVS, we can skip them.
+			|| (engine->CheckOriginInPVS(otherPlayer->GetAbsOrigin(), pvs, pvsSize)))
 #endif
+		{
+			continue;
 		}
 
-		m_rvFriendlyPlayerPositions.Set(i, otherPlayer->GetAbsOrigin());
+		Assert(player != this);
+#if(0)
+		if (!IsFakeClient())
+		{
+			DevMsg("Got here: my(edict: %i) VEC: %f %f %f -- other(edict: %i) VEC: %f %f %f\n",
+				edict()->m_EdictIndex, GetAbsOrigin().x, GetAbsOrigin().y, GetAbsOrigin().z,
+				player->edict()->m_EdictIndex, player->GetAbsOrigin().x, player->GetAbsOrigin().y, player->GetAbsOrigin().z);
+		}
+#endif
+
+		m_rvFriendlyPlayerPositions.Set(i, player->GetAbsOrigin());
+		Assert(m_rvFriendlyPlayerPositions[i].IsValid());
 	}
 }
 
@@ -1685,6 +1679,31 @@ void CNEO_Player::PickDefaultSpawnTeam(void)
 	}
 }
 
+// NEO FIXME/HACK (Rain): bots don't properly set their fakeclient flag currently,
+// making IsFakeClient and IsBot return false. This is an ugly hack to get bots
+// joining teams. We cannot trust this player input (and it's slow), so it really
+// should be fixed properly.
+bool Hack_IsBot(CNEO_Player* player)
+{
+#ifdef DEBUG
+	DevMsg("Fixme: Using Hack_IsBot as workaround\n"); // nag to remind about fixing this whenever used
+#endif
+
+	if (!player)
+	{
+		return false;
+	}
+	else if (player->IsFakeClient())
+	{
+		return true;
+	}
+
+	const char* name = player->GetPlayerInfo()->GetName();
+
+	return (strlen(name) == 5 && name[0] == 'B' && name[1] == 'o' && name[2] == 't' &&
+		isdigit(name[3]) && isdigit(name[4]));
+}
+
 bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 {
 	if (!GetGlobalTeam(iTeam) || iTeam == 0)
@@ -1694,14 +1713,15 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	}
 
 	// NEO TODO (Rain): add server cvars
-	const bool suicide = true;
-	const float teamChangeInterval = 5.0f;
+#define TEAM_CHANGE_SUICIDE true
+#define TEAM_CHANGE_INTERVAL 5.0f
 
 	const bool justJoined = (GetTeamNumber() == TEAM_UNASSIGNED);
 
 	// Player bots should initially join a player team
 	if (justJoined && Hack_IsBot(this) && !IsHLTV())
 	{
+		Assert(gpGlobals->curtime >= m_flNextTeamChangeTime);
 		iTeam = RandomInt(TEAM_JINRAI, TEAM_NSF);
 	}
 	// Limit team join spam, unless this is a newly joined player
@@ -1710,7 +1730,9 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 		// Except for spectators, who are allowed to join a team as soon as they wish
 		if (GetTeamNumber() != TEAM_SPECTATOR)
 		{
-			ClientPrint(this, HUD_PRINTTALK, "Please wait before switching teams again.");
+			char szWaitTime[5];
+			V_sprintf_safe(szWaitTime, "%i", MAX(1, RoundFloatToInt(m_flNextTeamChangeTime - gpGlobals->curtime)));
+			ClientPrint(this, HUD_PRINTTALK, "Please wait %s1 seconds before switching teams again.", szWaitTime);
 			return false;
 		}
 	}
@@ -1730,7 +1752,7 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 			return false;
 		}
 
-		if (suicide)
+		if (TEAM_CHANGE_SUICIDE)
 		{
 			// Unassigned implies we just joined.
 			if (!justJoined && !IsDead())
@@ -1753,12 +1775,9 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	}
 	else if (iTeam == TEAM_JINRAI || iTeam == TEAM_NSF)
 	{
-		if (suicide)
+		if (TEAM_CHANGE_SUICIDE && !justJoined && GetTeamNumber() != TEAM_SPECTATOR && !IsDead())
 		{
-			if (!justJoined && GetTeamNumber() != TEAM_SPECTATOR && !IsDead())
-			{
-				SoftSuicide();
-			}
+			SoftSuicide();
 		}
 
 		StopObserverMode();
@@ -1770,12 +1789,14 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 		// Client should not be able to reach this
 		Assert(false);
 
-		ClientPrint(this, HUD_PRINTTALK, "Team switch failed, unrecognized Neotokyo team specified.");
+#define SWITCH_FAIL_MSG "Team switch failed; unrecognized Neotokyo team specified."
+		ClientPrint(this, HUD_PRINTTALK, SWITCH_FAIL_MSG);
+		Warning(SWITCH_FAIL_MSG);
 
 		return false;
 	}
 
-	m_flNextTeamChangeTime = gpGlobals->curtime + teamChangeInterval;
+	m_flNextTeamChangeTime = gpGlobals->curtime + TEAM_CHANGE_INTERVAL;
 	
 	RemoveAllItems(true);
 	ShowCrosshair(false);
@@ -1783,7 +1804,6 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	if (iTeam == TEAM_JINRAI || iTeam == TEAM_NSF)
 	{
 		SetPlayerTeamModel();
-		GiveAllItems();
 	}
 
 	// We're skipping over HL2MP player because we don't care about

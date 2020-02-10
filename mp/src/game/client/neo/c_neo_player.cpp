@@ -317,8 +317,8 @@ inline void C_NEO_Player::CheckVisionButtons()
 
 void C_NEO_Player::ZeroFriendlyPlayerLocArray()
 {
-	const int size = m_rvFriendlyPlayerPositions.Count();
-	for (int i = 0; i < size; i++)
+	Assert(m_rvFriendlyPlayerPositions.Count() == MAX_PLAYERS);
+	for (int i = 0; i < MAX_PLAYERS; ++i)
 	{
 		m_rvFriendlyPlayerPositions.GetForModify(i) = vec3_origin;
 	}
@@ -571,6 +571,8 @@ void C_NEO_Player::PreThink( void )
 	CNEOHud_GhostMarker *ghostMarker = NULL;
 	if (m_pNeoPanel)
 	{
+		m_pNeoPanel->SetLastUpdater(this);
+
 		ghostMarker = m_pNeoPanel->GetGhostMarker();
 
 		if (ghostMarker)
@@ -776,31 +778,10 @@ void C_NEO_Player::Spawn( void )
 		{
 			Assert(false);
 			Warning("Couldn't find CNeoHudElements panel\n");
-			return;
-		}
-
-		m_pNeoPanel->ShowPanel(true);
-
-		auto compass = m_pNeoPanel->GetCompass();
-		if (compass)
-		{
-			compass->SetOwner(this);
 		}
 		else
 		{
-			Assert(false);
-			Warning("Couldn't find compass HUD element\n");
-		}
-
-		auto iff = m_pNeoPanel->GetIFF();
-		if (iff)
-		{
-			iff->SetOwner(this);
-		}
-		else
-		{
-			Assert(false);
-			Warning("Couldn't find compass IFF element\n");
+			m_pNeoPanel->ShowPanel(true);
 		}
 	}
 

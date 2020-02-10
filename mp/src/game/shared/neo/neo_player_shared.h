@@ -103,6 +103,10 @@ enum NeoClass {
 #define CNEOBaseCombatWeapon C_NEOBaseCombatWeapon
 #endif
 
+#define COLOR_JINRAI COLOR_GREEN
+#define COLOR_NSF COLOR_BLUE
+#define COLOR_SPEC COLOR_YELLOW
+
 class CNEO_Player;
 class CNEOBaseCombatWeapon;
 

@@ -14,6 +14,8 @@
 #include <engine/ivdebugoverlay.h>
 #include "ienginevgui.h"
 
+#include "neo_hud_elements.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -46,8 +48,6 @@ ConVar neo_cl_hud_debug_compass_color_a("neo_cl_hud_debug_compass_color_a", "255
 CNEOHud_Compass::CNEOHud_Compass(const char *pElementName, vgui::Panel *parent)
 	: CHudElement(pElementName), Panel(parent, pElementName)
 {
-	m_pOwner = NULL;
-
 	SetAutoDelete(true);
 
 	vgui::HScheme neoscheme = vgui::scheme()->LoadSchemeFromFileEx(
@@ -75,18 +75,13 @@ CNEOHud_Compass::CNEOHud_Compass(const char *pElementName, vgui::Panel *parent)
 	SetVisible(neo_cl_hud_compass_enabled.GetBool());
 }
 
-void CNEOHud_Compass::SetOwner(C_NEO_Player *owner)
-{
-	Assert(owner);
-
-	if (owner)
-	{
-		m_pOwner = owner;
-	}
-}
-
 void CNEOHud_Compass::Paint()
 {
+	if (!IsHudReadyForPaintNow())
+	{
+		return;
+	}
+
 	SetFgColor(Color(0, 0, 0, 0));
 	SetBgColor(Color(0, 0, 0, 0));
 
@@ -124,13 +119,11 @@ static inline double GetColorPulse(double startPulse = 0.5, double pulseStep = 0
 
 inline void CNEOHud_Compass::DrawCompass(void)
 {
-	if (!m_pOwner)
-	{
-		return;
-	}
+	auto player = C_NEO_Player::GetLocalNEOPlayer();
+	Assert(player);
 
 	// Direction in -180 to 180
-	float angle = -1 * m_pOwner->EyeAngles()[YAW];
+	float angle = -1 * player->EyeAngles()[YAW];
 
 	// Bring us back to safety
 	if (angle > 180)
@@ -234,26 +227,8 @@ inline void CNEOHud_Compass::DrawCompass(void)
 	// Draw the compass "needle"
 	if (neo_cl_hud_compass_needle.GetBool())
 	{
-		const Color jinColor = Color(70, 145, 80, 200);
-		const Color nsfColor = Color(20, 70, 180, 200);
-		const Color specColor = Color(240, 120, 40, 200);
-
-		if (m_pOwner->GetTeamNumber() == TEAM_JINRAI)
-		{
-			surface()->DrawSetColor(jinColor);
-		}
-		else if (m_pOwner->GetTeamNumber() == TEAM_NSF)
-		{
-			surface()->DrawSetColor(nsfColor);
-		}
-		else
-		{
-			surface()->DrawSetColor(jinColor);
-			//surface()->DrawSetColor(specColor);
-		}
-
-		surface()->DrawFilledRect(xpos - 1, ypos - (fontHeight / 2),
-			xpos + 1, ypos + (fontHeight / 2));
+		surface()->DrawSetColor((player->GetTeamNumber() == TEAM_JINRAI) ? COLOR_JINRAI : ((player->GetTeamNumber() == TEAM_NSF) ? COLOR_NSF : COLOR_SPEC));
+		surface()->DrawFilledRect(xpos - 1, ypos - (fontHeight / 2), xpos + 1, ypos + (fontHeight / 2));
 	}
 }
 
@@ -267,8 +242,11 @@ void CNEOHud_Compass::ApplySchemeSettings(vgui::IScheme *pScheme)
 
 inline void CNEOHud_Compass::DrawDebugCompass(void)
 {
+	auto player = C_NEO_Player::GetLocalNEOPlayer();
+	Assert(player);
+
 	// Direction in -180 to 180
-	float angle = -1 * m_pOwner->EyeAngles()[YAW];
+	float angle = -1 * player->EyeAngles()[YAW];
 
 	// Bring us back to safety
 	if (angle > 180)

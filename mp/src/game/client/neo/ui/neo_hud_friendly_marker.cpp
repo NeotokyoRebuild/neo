@@ -26,8 +26,6 @@ ConVar neo_friendly_marker_hud_scale_factor("neo_friendly_marker_hud_scale_facto
 CNEOHud_FriendlyMarker::CNEOHud_FriendlyMarker(const char* pElemName, vgui::Panel* parent)
 	: CHudElement(pElemName), Panel(parent, pElemName)
 {
-	m_pOwner = NULL;
-
 	m_iPosX = m_iPosY = 0;
 
 	SetAutoDelete(true);
@@ -61,23 +59,23 @@ CNEOHud_FriendlyMarker::CNEOHud_FriendlyMarker(const char* pElemName, vgui::Pane
 
 	surface()->DrawGetTextureSize(m_hTex, m_iMarkerTexWidth, m_iMarkerTexHeight);
 
+	SetFgColor(Color(0, 0, 0, 0));
+	SetBgColor(Color(0, 0, 0, 0));
+
 	SetVisible(true);
 }
 
 void CNEOHud_FriendlyMarker::Paint()
 {
-	SetFgColor(Color(0, 0, 0, 0));
-	SetBgColor(Color(0, 0, 0, 0));
-
-	BaseClass::Paint();
-
-	if (!m_pOwner)
+	if (!IsHudReadyForPaintNow())
 	{
 		return;
 	}
 
-	const Color teamColor = (m_pOwner->GetTeamNumber() == TEAM_NSF) ?
-		Color(20, 40, 200, 200) : Color(20, 200, 40, 200);
+	BaseClass::Paint();
+
+	auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	const Color teamColor = (localPlayer->GetTeamNumber() == TEAM_NSF) ? COLOR_NSF : COLOR_JINRAI;
 
 	surface()->DrawSetTextFont(m_hFont);
 	surface()->DrawSetTextColor(teamColor);
@@ -85,40 +83,37 @@ void CNEOHud_FriendlyMarker::Paint()
 	surface()->DrawSetColor(teamColor);
 	surface()->DrawSetTexture(m_hTex);
 
+	int x, y;
 	const float scale = neo_friendly_marker_hud_scale_factor.GetFloat();
+#define HEIGHT_OFFSET 48.0f
+	Vector pos;
 
-	const int friendliesSize = m_pOwner->m_rvFriendlyPlayerPositions.Count();
-	for (int i = 0; i < friendliesSize; i++)
+	Assert(localPlayer->m_rvFriendlyPlayerPositions.Count() == MAX_PLAYERS);
+	for (int i = 0; i < MAX_PLAYERS; ++i)
 	{
-		Vector friendlyPos = m_pOwner->m_rvFriendlyPlayerPositions[i];
-
-		if (friendlyPos == vec3_origin)
+		if ((localPlayer->entindex() == i + 1) || // Skip self
+			(localPlayer->m_rvFriendlyPlayerPositions[i] == vec3_origin)) // Skip unused positions
 		{
 			continue;
 		}
 
-		const Vector heightOffset(0, 0, 48);
+		pos = Vector(
+			localPlayer->m_rvFriendlyPlayerPositions[i].x,
+			localPlayer->m_rvFriendlyPlayerPositions[i].y,
+			localPlayer->m_rvFriendlyPlayerPositions[i].z + HEIGHT_OFFSET);
 
-		Vector absPos;
-		VectorAbs(friendlyPos, absPos);
-
-		if (absPos.Length() < 1)
+		if (GetVectorInScreenSpace(pos, x, y))
 		{
-			continue;
+			const int x0 = RoundFloatToInt((x - ((m_iMarkerTexWidth / 2.0f) * scale)));
+			const int x1 = RoundFloatToInt((x + ((m_iMarkerTexWidth / 2.0f) * scale)));
+			const int y0 = RoundFloatToInt((y - ((m_iMarkerTexHeight / 2.0f) * scale)));
+			const int y1 = RoundFloatToInt((y + ((m_iMarkerTexHeight / 2.0f) * scale)));
+
+			surface()->DrawTexturedRect(x0, y0, x1, y1);
+#if(0)
+			DevMsg("Drawing %i @ X:%i--%i AND Y:%i--%i. I am %i.\n",
+				i, x0, x1, y0, y1, localPlayer->entindex());
+#endif
 		}
-
-		friendlyPos += heightOffset;
-
-		int x, y;
-		GetVectorInScreenSpace(friendlyPos, x, y);
-
-		const int offset_X = x - ((m_iMarkerTexWidth / 2) * scale);
-		const int offset_Y = y - ((m_iMarkerTexHeight / 2) * scale);
-
-		surface()->DrawTexturedRect(
-			offset_X,
-			offset_Y,
-			offset_X + (m_iMarkerTexWidth * scale),
-			offset_Y + (m_iMarkerTexHeight * scale));
 	}
 }

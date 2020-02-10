@@ -4,19 +4,18 @@
 #pragma once
 #endif
 
+#include "neo_hud_childelement.h"
 #include "hudelement.h"
 #include <vgui_controls/Panel.h>
 
-class C_NEO_Player;
+class CNeoHudElements;
 
-class CNEOHud_Compass : public CHudElement, public vgui::Panel
+class CNEOHud_Compass : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
 {
 	DECLARE_CLASS_SIMPLE(CNEOHud_Compass, Panel);
 
 public:
 	CNEOHud_Compass(const char *pElementName, vgui::Panel *parent = NULL);
-
-	void SetOwner(C_NEO_Player *owner);
 
 	virtual void ApplySchemeSettings(vgui::IScheme *pScheme);
 	virtual void Paint();
@@ -28,8 +27,6 @@ private:
 	vgui::HFont m_hFont;
 
 	int m_resX, m_resY;
-
-	C_NEO_Player *m_pOwner;
 
 private:
 	CNEOHud_Compass(const CNEOHud_Compass &other);

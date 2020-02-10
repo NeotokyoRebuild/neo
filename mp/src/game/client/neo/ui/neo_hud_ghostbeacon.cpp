@@ -77,6 +77,11 @@ static inline double GetColorPulse()
 
 void CNEOHud_GhostBeacon::Paint()
 {
+	if (!IsHudReadyForPaintNow())
+	{
+		return;
+	}
+
 	BaseClass::Paint();
 
 	// Since the distance format is a known length,

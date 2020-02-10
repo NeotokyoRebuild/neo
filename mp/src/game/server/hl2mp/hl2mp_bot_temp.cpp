@@ -103,6 +103,7 @@ CBasePlayer *BotPutInServer( bool bFrozen, int iTeam )
 	Assert(pPlayer);
 	pPlayer->ClearFlags();
 	pPlayer->AddFlag( FL_CLIENT | FL_FAKECLIENT );
+	Assert(pPlayer->IsFakeClient());
 
 	if ( bFrozen )
 		pPlayer->AddEFlags( EFL_BOT_FROZEN );
@@ -110,7 +111,7 @@ CBasePlayer *BotPutInServer( bool bFrozen, int iTeam )
 	BotNumber++;
 
 	g_BotData[pPlayer->entindex()-1].m_WantedTeam = iTeam;
-	g_BotData[pPlayer->entindex()-1].m_flJoinTeamTime = gpGlobals->curtime + 0.3;
+	g_BotData[pPlayer->entindex()-1].m_flJoinTeamTime = MAX(gpGlobals->curtime, pPlayer->GetNextTeamChangeTime()) + 0.3;
 
 	return pPlayer;
 }

@@ -47,6 +47,7 @@ CNeoHudElements::CNeoHudElements(IViewPort *pViewPort)
 	m_pFriendlyMarker = NULL;
 	m_pGameEvent = NULL;
 	m_pRoundState = NULL;
+	m_pLastUpdater = NULL;
 }
 
 CNeoHudElements::~CNeoHudElements()
