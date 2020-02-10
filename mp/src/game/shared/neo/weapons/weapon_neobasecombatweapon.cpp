@@ -108,3 +108,19 @@ bool CNEOBaseCombatWeapon::CanBeSelected(void)
 
 	return BaseClass::CanBeSelected();
 }
+
+bool CNEOBaseCombatWeapon::Holster(CBaseCombatWeapon* pSwitchingTo)
+{
+#ifdef CLIENT_DLL
+	if (GetOwner())
+	{
+		static_cast<C_NEO_Player*>(GetOwner())->Weapon_SetZoom(false);
+	}
+	else
+	{
+		Assert(false);
+	}
+#endif
+
+	return BaseClass::Holster(pSwitchingTo);
+}

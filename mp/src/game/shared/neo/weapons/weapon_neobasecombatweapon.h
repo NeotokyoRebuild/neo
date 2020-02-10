@@ -102,6 +102,8 @@ public:
 
 	bool IsGhost(void) const { return (GetNeoWepBits() & NEO_WEP_GHOST) ? true : false; }
 
+	virtual bool Holster(CBaseCombatWeapon* pSwitchingTo);
+
 	// NEO HACK/FIXME (Rain):
 	// We override with empty implementation to avoid getting removed by
 	// some game logic somewhere. There's probably some flag we could set
