@@ -956,7 +956,7 @@ void C_NEO_Player::Weapon_AimToggle(C_BaseCombatWeapon *pWep)
 	}
 }
 
-inline void C_NEO_Player::Weapon_SetZoom(bool bZoomIn)
+void C_NEO_Player::Weapon_SetZoom(bool bZoomIn)
 {
 	const float zoomSpeedSecs = 0.25f;
 
