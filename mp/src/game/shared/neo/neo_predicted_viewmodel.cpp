@@ -213,6 +213,7 @@ float CNEOPredictedViewModel::calculateLeanAngle(float freeRoom, CNEO_Player *pl
 }
 
 void CNEOPredictedViewModel::lean(CNEO_Player *player){
+	Assert(player);
 #ifdef CLIENT_DLL
 	input->ExtraMouseSample(gpGlobals->frametime, 1);
 #endif
@@ -220,22 +221,25 @@ void CNEOPredictedViewModel::lean(CNEO_Player *player){
 	float Ycurrent = m_flYPrevious;
 	float Yfinal = 0;
 
-	auto leanButtons = player->m_nButtons;
-	if (leanButtons & (IN_LEAN_LEFT | IN_LEAN_RIGHT)){
-		if (leanButtons & IN_LEAN_LEFT & IN_LEAN_RIGHT){
-			//leaning both ways
+	if (player->IsAlive())
+	{
+		auto leanButtons = player->m_nButtons;
+		if (leanButtons & (IN_LEAN_LEFT | IN_LEAN_RIGHT)) {
+			if (leanButtons & IN_LEAN_LEFT & IN_LEAN_RIGHT) {
+				//leaning both ways
+			}
+			else if (leanButtons & IN_LEAN_LEFT) {
+				//leaning left
+				Yfinal = freeRoomForLean(neo_lean_yaw_peek_left_amount.GetFloat(), player);
+			}
+			else {
+				//leaning right
+				Yfinal = -freeRoomForLean(-neo_lean_yaw_peek_right_amount.GetFloat(), player);
+			}
 		}
-		else if (leanButtons & IN_LEAN_LEFT){
-			//leaning left
-			Yfinal = freeRoomForLean(neo_lean_yaw_peek_left_amount.GetFloat(), player);
+		else {
+			//not leaning... move towards zero
 		}
-		else{
-			//leaning right
-			Yfinal = -freeRoomForLean(-neo_lean_yaw_peek_right_amount.GetFloat(), player);
-		}
-	}
-	else{
-		//not leaning... move towards zero
 	}
 
 	float dY = Yfinal - Ycurrent;
