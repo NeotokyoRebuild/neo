@@ -334,12 +334,14 @@ inline void CNEO_Player::ZeroFriendlyPlayerLocArray(void)
 
 void CNEO_Player::UpdateNetworkedFriendlyLocations()
 {
+#if(0)
 #define PVS_MAX_SIZE (MAX_MAP_CLUSTERS + 1)
 	byte pvs[PVS_MAX_SIZE]{};
 
 	const int cluster = engine->GetClusterForOrigin(GetAbsOrigin());
 	const int pvsSize = engine->GetPVSForCluster(cluster, PVS_MAX_SIZE, pvs);
 	Assert(pvsSize > 0);
+#endif
 
 	Assert(MAX_PLAYERS == m_rvFriendlyPlayerPositions.Count());
 	for (int i = 0; i < gpGlobals->maxClients; ++i)
