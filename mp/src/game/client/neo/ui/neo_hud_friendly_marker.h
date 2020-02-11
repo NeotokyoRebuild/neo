@@ -4,12 +4,14 @@
 #pragma once
 #endif
 
+#include "neo_hud_childelement.h"
 #include "hudelement.h"
 #include <vgui_controls/Panel.h>
 
-class C_NEO_Player;
+#include "c_neo_player.h"
+#include "neo_gamerules.h"
 
-class CNEOHud_FriendlyMarker : public CHudElement, public vgui::Panel
+class CNEOHud_FriendlyMarker : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
 {
 	DECLARE_CLASS_SIMPLE(CNEOHud_FriendlyMarker, Panel);
 
@@ -18,12 +20,7 @@ public:
 
 	virtual void Paint();
 
-	void SetOwner(C_NEO_Player *player);
-	C_NEO_Player *GetOwner() const;
-
 private:
-	C_NEO_Player *m_pOwner;
-
 	int m_iMarkerTexWidth, m_iMarkerTexHeight;
 	int m_iPosX, m_iPosY;
 

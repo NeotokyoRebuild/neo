@@ -68,7 +68,6 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropBool(RECVINFO(m_bGhostExists)),
 	RecvPropBool(RECVINFO(m_bInThermOpticCamo)),
 	RecvPropBool(RECVINFO(m_bInVision)),
-	RecvPropBool(RECVINFO(m_bIsAirborne)),
 	RecvPropBool(RECVINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 	RecvPropBool(RECVINFO(m_bInAim)),
 
@@ -272,11 +271,17 @@ C_NEO_Player::C_NEO_Player()
 	m_bGhostExists = false;
 	m_bShowClassMenu = m_bShowTeamMenu = m_bIsClassMenuOpen = m_bIsTeamMenuOpen = false;
 	m_bInThermOpticCamo = m_bInVision = false;
-	m_bIsAirborne = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
 	m_bInAim = false;
 
 	m_pNeoPanel = NULL;
+
+	m_flLastAirborneJumpOkTime = 0;
+	m_flLastSuperJumpTime = 0;
+
+	m_bFirstDeathTick = true;
+	m_bPreviouslyReloading = false;
+	m_bPreviouslyPreparingToHideMsg = false;
 }
 
 C_NEO_Player::~C_NEO_Player()
@@ -285,9 +290,14 @@ C_NEO_Player::~C_NEO_Player()
 
 inline void C_NEO_Player::CheckThermOpticButtons()
 {
-	if (m_afButtonPressed & IN_THERMOPTIC)
+	if ((m_afButtonPressed & IN_THERMOPTIC) && IsAlive())
 	{
-		if (IsAlive())
+		if (GetClass() == NEO_CLASS_SUPPORT || GetClass() == NEO_CLASS_VIP)
+		{
+			return;
+		}
+
+		if (m_HL2Local.m_flSuitPower >= CLOAK_AUX_COST)
 		{
 			m_bInThermOpticCamo = !m_bInThermOpticCamo;
 		}
@@ -307,21 +317,11 @@ inline void C_NEO_Player::CheckVisionButtons()
 
 void C_NEO_Player::ZeroFriendlyPlayerLocArray()
 {
-	const int size = m_rvFriendlyPlayerPositions.Count();
-	for (int i = 0; i < size; i++)
+	Assert(m_rvFriendlyPlayerPositions.Count() == MAX_PLAYERS);
+	for (int i = 0; i < MAX_PLAYERS; ++i)
 	{
 		m_rvFriendlyPlayerPositions.GetForModify(i) = vec3_origin;
 	}
-}
-
-C_NEO_Player *C_NEO_Player::GetLocalNEOPlayer()
-{
-	return (C_NEO_Player*)C_BasePlayer::GetLocalPlayer();
-}
-
-C_NEOPredictedViewModel *C_NEO_Player::GetNEOViewModel()
-{
-	return (C_NEOPredictedViewModel*)GetViewModel();
 }
 
 int C_NEO_Player::DrawModel( int flags )
@@ -518,13 +518,13 @@ void C_NEO_Player::PreThink( void )
 	// Eek. See rationale for this thing in CNEO_Player::PreThink
 	if (IsAirborne())
 	{
-		static float lastAirborneJumpOkTime = gpGlobals->curtime;
-		const float deltaTime = gpGlobals->curtime - lastAirborneJumpOkTime;
+		m_flLastAirborneJumpOkTime = gpGlobals->curtime;
+		const float deltaTime = gpGlobals->curtime - m_flLastAirborneJumpOkTime;
 		const float leeway = 0.5f;
 		if (deltaTime > leeway)
 		{
 			m_bHasBeenAirborneForTooLongToSuperJump = false;
-			lastAirborneJumpOkTime = gpGlobals->curtime;
+			m_flLastAirborneJumpOkTime = gpGlobals->curtime;
 		}
 		else
 		{
@@ -571,6 +571,8 @@ void C_NEO_Player::PreThink( void )
 	CNEOHud_GhostMarker *ghostMarker = NULL;
 	if (m_pNeoPanel)
 	{
+		m_pNeoPanel->SetLastUpdater(this);
+
 		ghostMarker = m_pNeoPanel->GetGhostMarker();
 
 		if (ghostMarker)
@@ -644,46 +646,55 @@ void C_NEO_Player::PostThink(void)
 {
 	BaseClass::PostThink();
 
-	neo_this_client_speed.SetValue(MIN(GetAbsVelocity().Length2D() / GetNormSpeed(), 1.0f));
+	if (GetLocalNEOPlayer() == this)
+	{
+		neo_this_client_speed.SetValue(MIN(GetAbsVelocity().Length2D() / GetNormSpeed(), 1.0f));
+	}
 
 	//DevMsg("Roll: %f\n", m_angEyeAngles[2]);
 
 	bool preparingToHideMsg = (m_iCapTeam != TEAM_UNASSIGNED);
-	static bool previouslyPreparing = preparingToHideMsg;
 
-	if (!preparingToHideMsg && previouslyPreparing)
+	if (!preparingToHideMsg && m_bPreviouslyPreparingToHideMsg)
 	{
 		if (m_pNeoPanel && m_pNeoPanel->GetGameEventIndicator())
 		{
 			m_pNeoPanel->GetGameEventIndicator()->SetVisible(false);
-			previouslyPreparing = false;
+			m_bPreviouslyPreparingToHideMsg = false;
 		}
 		else
 		{
 			Assert(false);
 		}
 	}
-
-	// Undo aim zoom if just died
-	static bool firstDeathTick = true;
-	if (!IsAlive() && firstDeathTick)
+	else
 	{
-		firstDeathTick = false;
-		Weapon_SetZoom(false);
+		m_bPreviouslyPreparingToHideMsg = preparingToHideMsg;
+	}
+
+	if (!IsAlive())
+	{
+		// Undo aim zoom if just died
+		if (m_bFirstDeathTick)
+		{
+			m_bFirstDeathTick = false;
+
+			Weapon_SetZoom(false);
+			m_bInVision = false;
+		}
+
 		return;
 	}
 	else
 	{
-		firstDeathTick = true;
+		m_bFirstDeathTick = true;
 	}
 
 	C_BaseCombatWeapon *pWep = GetActiveWeapon();
 
 	if (pWep)
 	{
-		static bool previouslyReloading = false;
-
-		if (pWep->m_bInReload && !previouslyReloading)
+		if (pWep->m_bInReload && !m_bPreviouslyReloading)
 		{
 			Weapon_SetZoom(false);
 		}
@@ -696,7 +707,7 @@ void C_NEO_Player::PostThink(void)
 			Weapon_AimToggle(pWep);
 		}
 
-		previouslyReloading = pWep->m_bInReload;
+		m_bPreviouslyReloading = pWep->m_bInReload;
 	}
 }
 
@@ -725,13 +736,12 @@ bool C_NEO_Player::IsAllowedToSuperJump(void)
 
 	if (SUPER_JMP_DELAY_BETWEEN_JUMPS > 0)
 	{
-		const float thisTime = gpGlobals->curtime;
-		static float lastSuperJumpTime = thisTime;
-		const float deltaTime = thisTime - lastSuperJumpTime;
+		m_flLastSuperJumpTime = gpGlobals->curtime;
+		const float deltaTime = gpGlobals->curtime - m_flLastSuperJumpTime;
 		if (deltaTime > SUPER_JMP_DELAY_BETWEEN_JUMPS)
 			return false;
 
-		lastSuperJumpTime = thisTime;
+		m_flLastSuperJumpTime = gpGlobals->curtime;
 	}
 
 	return true;
@@ -768,31 +778,10 @@ void C_NEO_Player::Spawn( void )
 		{
 			Assert(false);
 			Warning("Couldn't find CNeoHudElements panel\n");
-			return;
-		}
-
-		m_pNeoPanel->ShowPanel(true);
-
-		auto compass = m_pNeoPanel->GetCompass();
-		if (compass)
-		{
-			compass->SetOwner(this);
 		}
 		else
 		{
-			Assert(false);
-			Warning("Couldn't find compass HUD element\n");
-		}
-
-		auto iff = m_pNeoPanel->GetIFF();
-		if (iff)
-		{
-			iff->SetOwner(this);
-		}
-		else
-		{
-			Assert(false);
-			Warning("Couldn't find compass IFF element\n");
+			m_pNeoPanel->ShowPanel(true);
 		}
 	}
 
@@ -802,8 +791,6 @@ void C_NEO_Player::Spawn( void )
 	Color color = Color(255, 255, 255, 255);
 	cross->SetCrosshair(NULL, color);
 #endif
-
-	m_bIsAirborne = (!(GetFlags() & FL_ONGROUND));
 }
 
 void C_NEO_Player::DoImpactEffect( trace_t &tr, int nDamageType )
@@ -969,7 +956,7 @@ void C_NEO_Player::Weapon_AimToggle(C_BaseCombatWeapon *pWep)
 	}
 }
 
-inline void C_NEO_Player::Weapon_SetZoom(bool bZoomIn)
+void C_NEO_Player::Weapon_SetZoom(bool bZoomIn)
 {
 	const float zoomSpeedSecs = 0.25f;
 

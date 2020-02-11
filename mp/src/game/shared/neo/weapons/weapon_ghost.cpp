@@ -49,6 +49,8 @@ CWeaponGhost::CWeaponGhost(void)
 	m_bHavePlayedGhostEquipSound = false;
 	m_bHaveHolsteredTheGhost = false;
 
+	m_flLastGhostBeepTime = 0;
+
 	for (int i = 0; i < ARRAYSIZE(m_pGhostBeacons); i++)
 	{
 		m_pGhostBeacons[i] = new CNEOHud_GhostBeacon("ghostBeacon");
@@ -135,15 +137,13 @@ void C_WeaponGhost::TryGhostPing(float closestEnemy)
 	}
 
 	const float frequency = clamp((0.1f * closestEnemy), 1.0f, 3.5f);
-
-	static float lastSound = gpGlobals->curtime;
-	float deltaTime = gpGlobals->curtime - lastSound;
+	const float deltaTime = gpGlobals->curtime - m_flLastGhostBeepTime;
 
 	if (deltaTime > frequency)
 	{
 		EmitSound("NeoPlayer.GhostPing");
 
-		lastSound = gpGlobals->curtime;
+		m_flLastGhostBeepTime = gpGlobals->curtime;
 	}
 }
 

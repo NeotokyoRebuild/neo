@@ -2350,6 +2350,28 @@ static inline void DoNightVision(const int x, const int y, const int w, const in
 		nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
 }
 
+static inline void DoThermalVision(const int x, const int y, const int w, const int h)
+{
+#if(0) // NEO TODO (Rain)
+	CMatRenderContextPtr pRenderContext(materials);
+
+	int width, height;
+	materials->GetBackBufferDimensions(width, height);
+
+	//Rect_t DestRect{ 0, 0, width, height };
+	//const int renderTargetId = 0;
+
+	IMaterial* tvMat = materials->FindMaterial("dev/thermalvision_tv2", TEXTURE_GROUP_OTHER, true);
+	Assert(tvMat && !tvMat->IsErrorMaterial());
+
+	pRenderContext->DrawScreenSpaceRectangle(
+		tvMat,
+		0, 0, w, h,
+		0, 0, width - 1, height - 1,
+		width, height, GetClientWorldEntity()->GetClientRenderable());
+#endif
+}
+
 ConVar mat_neo_mv_1("mat_neo_mv_1", "1");
 ConVar mat_neo_mv_2("mat_neo_mv_2", "1");
 
@@ -2884,7 +2906,7 @@ void DoEnginePostProcessing( int x, int y, int w, int h, bool bFlashlightIsOn, b
 			}
 			case NEO_CLASS_SUPPORT:
 			{
-				// NEO TODO
+				DoThermalVision(x, y, w, h);
 				break;
 			}
 			}

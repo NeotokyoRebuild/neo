@@ -13,6 +13,7 @@ class CNEOHud_FriendlyMarker;
 class CNEOHud_GameEvent;
 class CNEOHud_GhostMarker;
 class CNEOHud_RoundState;
+class C_NEO_Player;
 
 class CNeoHudElements : public vgui::EditablePanel,
 	public IViewPortPanel, public CGameEventListener
@@ -43,10 +44,13 @@ public:
 
 	virtual void UpdatePlayerIFF(int playerIndex, KeyValues *kv);
 
-	CNEOHud_Compass *GetCompass();
-	CNEOHud_GameEvent *GetGameEventIndicator();
+	CNEOHud_Compass *GetCompass() { return m_pCompass; }
+	CNEOHud_GameEvent *GetGameEventIndicator() { return m_pGameEvent; }
 	CNEOHud_GhostMarker *GetGhostMarker();
-	CNEOHud_FriendlyMarker *GetIFF();
+	CNEOHud_FriendlyMarker *GetIFF() { return m_pFriendlyMarker; }
+
+	C_NEO_Player* GetLastUpdater() const { return m_pLastUpdater; }
+	void SetLastUpdater(C_NEO_Player* player) { m_pLastUpdater = player; }
 
 protected:
 	virtual void OnThink();
@@ -82,6 +86,8 @@ private:
 	CNEOHud_RoundState *m_pRoundState;
 
 	CUtlVector<CNEOHud_GhostMarker*> m_vecGhostMarkers;
+
+	C_NEO_Player* m_pLastUpdater;
 
 	void FillIFFs();
 };

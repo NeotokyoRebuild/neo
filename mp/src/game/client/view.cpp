@@ -344,51 +344,58 @@ void CViewRender::Init( void )
 #ifdef DEBUG
 	ITexture *pSSAOTex =
 #endif
-		materials->CreateNamedRenderTargetTextureEx("_rt_SSAO", iW, iH, RT_SIZE_NO_CHANGE,
+		materials->CreateNamedRenderTargetTextureEx("_rt_SSAO", iW, iH, RT_SIZE_FULL_FRAME_BUFFER,
 			materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED, flags, 0);
 
 #ifdef DEBUG
 	ITexture *pSSAO_ImTex =
 #endif
-		materials->CreateNamedRenderTargetTextureEx("_rt_SSAO_Intermediate", iW, iH, RT_SIZE_NO_CHANGE,
+		materials->CreateNamedRenderTargetTextureEx("_rt_SSAO_Intermediate", iW, iH, RT_SIZE_FULL_FRAME_BUFFER,
 			materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED, flags, 0);
 
 #ifdef DEBUG
 	ITexture *pNVTex =
 #endif
-		materials->CreateNamedRenderTargetTextureEx("_rt_NightVision", iW, iH, RT_SIZE_NO_CHANGE,
+		materials->CreateNamedRenderTargetTextureEx("_rt_NightVision", iW, iH, RT_SIZE_FULL_FRAME_BUFFER,
 			materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED, flags, 0);
 
 #ifdef DEBUG
 	ITexture *pMVTex =
 #endif
-		materials->CreateNamedRenderTargetTextureEx("_rt_MotionVision", iW, iH, RT_SIZE_DEFAULT,
+		materials->CreateNamedRenderTargetTextureEx("_rt_MotionVision", iW, iH, RT_SIZE_FULL_FRAME_BUFFER,
 			materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED, flags, 0);
 
 #ifdef DEBUG
 	ITexture *pMVTexBuff1 =
 #endif
-		materials->CreateNamedRenderTargetTextureEx("_rt_MotionVision_Buffer1", iW, iH, RT_SIZE_DEFAULT,
+		materials->CreateNamedRenderTargetTextureEx("_rt_MotionVision_Buffer1", iW, iH, RT_SIZE_FULL_FRAME_BUFFER,
 			materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED, flags, 0);
 
 #ifdef DEBUG
 	ITexture *pMVTexBuff2 =
 #endif
-		materials->CreateNamedRenderTargetTextureEx("_rt_MotionVision_Buffer2", iW, iH, RT_SIZE_DEFAULT,
+		materials->CreateNamedRenderTargetTextureEx("_rt_MotionVision_Buffer2", iW, iH, RT_SIZE_FULL_FRAME_BUFFER,
 			materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED, flags, 0);
 
 #ifdef DEBUG
 	ITexture *pMvImTex =
 #endif
 		materials->CreateNamedRenderTargetTextureEx("_rt_MotionVision_Intermediate", iW, iH,
-		RT_SIZE_DEFAULT, materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED,
+			RT_SIZE_FULL_FRAME_BUFFER, materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED,
 		flags, 0);
 
 #ifdef DEBUG
 	ITexture *pMvIm2Tex =
 #endif
 		materials->CreateNamedRenderTargetTextureEx("_rt_MotionVision_Intermediate2", iW, iH,
-			RT_SIZE_DEFAULT, materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED,
+			RT_SIZE_FULL_FRAME_BUFFER, materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED,
+			flags, 0);
+
+#ifdef DEBUG
+	ITexture* pTvTex =
+#endif
+		materials->CreateNamedRenderTargetTextureEx("neo_thermalvison_tv", iW, iH,
+			RT_SIZE_FULL_FRAME_BUFFER, materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED,
 			flags, 0);
 
 #ifdef DEBUG
@@ -400,6 +407,7 @@ void CViewRender::Init( void )
 	Assert(pMvIm2Tex != NULL && !pMvIm2Tex->IsError());
 	Assert(pMVTexBuff1 != NULL && !pMVTexBuff1->IsError());
 	Assert(pMVTexBuff2 != NULL && !pMVTexBuff2->IsError());
+	Assert(pTvTex != NULL && !pTvTex->IsError());
 #endif
 
 	materials->EndRenderTargetAllocation();

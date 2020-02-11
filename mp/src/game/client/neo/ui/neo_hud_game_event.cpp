@@ -63,6 +63,11 @@ void CNEOHud_GameEvent::SetMessage(const char* message)
 
 void CNEOHud_GameEvent::Paint()
 {
+	if (!IsHudReadyForPaintNow())
+	{
+		return;
+	}
+
 	BaseClass::Paint();
 
 	int wide, tall;

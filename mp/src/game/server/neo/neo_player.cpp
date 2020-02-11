@@ -28,10 +28,12 @@
 
 #include "neo_te_tocflash.h"
 
+#include "weapon_grenade.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-void DropPrimedFragGrenade(CNEO_Player *pPlayer, CBaseCombatWeapon *pGrenade);
+void NEODropPrimedFragGrenade(CNEO_Player *pPlayer, CBaseCombatWeapon *pGrenade);
 
 LINK_ENTITY_TO_CLASS(player, CNEO_Player);
 
@@ -46,7 +48,6 @@ SendPropInt(SENDINFO(m_iLoadoutWepChoice)),
 SendPropBool(SENDINFO(m_bGhostExists)),
 SendPropBool(SENDINFO(m_bInThermOpticCamo)),
 SendPropBool(SENDINFO(m_bInVision)),
-SendPropBool(SENDINFO(m_bIsAirborne)),
 SendPropBool(SENDINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 SendPropBool(SENDINFO(m_bShowTestMessage)),
 SendPropBool(SENDINFO(m_bInAim)),
@@ -69,7 +70,6 @@ DEFINE_FIELD(m_iLoadoutWepChoice, FIELD_INTEGER),
 DEFINE_FIELD(m_bGhostExists, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bInThermOpticCamo, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bInVision, FIELD_BOOLEAN),
-DEFINE_FIELD(m_bIsAirborne, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bHasBeenAirborneForTooLongToSuperJump, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bShowTestMessage, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bInAim, FIELD_BOOLEAN),
@@ -93,7 +93,7 @@ void CNEO_Player::RequestSetClass(int newClass)
 		m_iNeoClass = newClass;
 
 		SetPlayerTeamModel();
-
+		SetViewOffset(VEC_VIEW_NEOSCALE(this));
 		InitSprinting();
 	}
 	else
@@ -262,22 +262,6 @@ ConCommand setclass("setclass", SetClass, "Set class", FCVAR_USERINFO);
 ConCommand setskin("SetVariant", SetSkin, "Set skin", FCVAR_USERINFO);
 ConCommand loadout("loadout", SetLoadout, "Set loadout", FCVAR_USERINFO);
 
-// NEO FIXME/HACK (Rain): bots don't properly set their fakeclient flag currently,
-// making IsFakeClient and IsBot return false. This is an ugly hack to get bots
-// joining teams. We cannot trust this player input (and it's slow), so it really
-// should be fixed properly.
-inline bool Hack_IsBot(CNEO_Player *player)
-{
-	if (!player)
-	{
-		return false;
-	}
-
-	const char *name = player->GetPlayerInfo()->GetName();
-
-	return (strlen(name) == 5 && name[0] == 'B' && name[1] == 'o' && name[2] == 't');
-}
-
 static inline int GetNumOtherPlayersConnected(CNEO_Player *asker)
 {
 	if (!asker)
@@ -309,7 +293,6 @@ CNEO_Player::CNEO_Player()
 	m_bInLeanLeft = m_bInLeanRight = false;
 	m_bGhostExists = false;
 	m_bInThermOpticCamo = m_bInVision = false;
-	m_bIsAirborne = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
 	m_bInAim = false;
 
@@ -325,6 +308,14 @@ CNEO_Player::CNEO_Player()
 	m_vecGhostMarkerPos = vec3_origin;
 
 	ZeroFriendlyPlayerLocArray();
+
+	m_flCamoAuxLastTime = 0;
+	m_flLastAirborneJumpOkTime = 0;
+	m_flLastSuperJumpTime = 0;
+	m_bFirstDeathTick = true;
+	m_bPreviouslyReloading = false;
+
+	m_flNextTeamChangeTime = gpGlobals->curtime + 0.5f;
 }
 
 CNEO_Player::~CNEO_Player( void )
@@ -333,50 +324,60 @@ CNEO_Player::~CNEO_Player( void )
 
 inline void CNEO_Player::ZeroFriendlyPlayerLocArray(void)
 {
-	for (int i = 0; i < m_rvFriendlyPlayerPositions.Count(); i++)
+	Assert(m_rvFriendlyPlayerPositions.Count() == MAX_PLAYERS);
+	for (int i = 0; i < MAX_PLAYERS; i++)
 	{
-		m_rvFriendlyPlayerPositions.Set(i, Vector(0, 0, 0));
+		m_rvFriendlyPlayerPositions.Set(i, vec3_origin);
 	}
 	NetworkStateChanged();
 }
 
 void CNEO_Player::UpdateNetworkedFriendlyLocations()
 {
-	const size_t pvsMaxSize = MAX_MAP_CLUSTERS + 1;
-	byte pvs[pvsMaxSize]{};
+#if(0)
+#define PVS_MAX_SIZE (MAX_MAP_CLUSTERS + 1)
+	byte pvs[PVS_MAX_SIZE]{};
 
 	const int cluster = engine->GetClusterForOrigin(GetAbsOrigin());
-	const int pvsSize = engine->GetPVSForCluster(cluster, pvsMaxSize, pvs);
+	const int pvsSize = engine->GetPVSForCluster(cluster, PVS_MAX_SIZE, pvs);
 	Assert(pvsSize > 0);
-
-	for (int i = 1; i <= gpGlobals->maxClients; i++)
-	{
-		CNEO_Player *otherPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
-
-		// Look for valid players that aren't us
-		if (!otherPlayer || otherPlayer == this)
-		{
-			m_rvFriendlyPlayerPositions.Set(i, vec3_origin);
-			continue;
-		}
-
-		// Only players in our team, and are alive
-		else if (otherPlayer->GetTeamNumber() != GetTeamNumber() || otherPlayer->IsDead())
-		{
-			m_rvFriendlyPlayerPositions.Set(i, vec3_origin);
-			continue;
-		}
-
-		// If the other player is already in our PVS, we can skip them.
-		else if (engine->CheckOriginInPVS(otherPlayer->GetAbsOrigin(), pvs, pvsSize))
-		{
-#if(0) // currently networking all friendlies, NEO TODO (Rain): optimise this
-			m_rvFriendlyPlayerPositions.Set(i, vec3_origin);
-			continue;
 #endif
+
+	Assert(MAX_PLAYERS == m_rvFriendlyPlayerPositions.Count());
+	for (int i = 0; i < gpGlobals->maxClients; ++i)
+	{
+		// Skip self.
+		if (i == GetClientIndex())
+		{
+			continue;
 		}
 
-		m_rvFriendlyPlayerPositions.Set(i, otherPlayer->GetAbsOrigin());
+		auto player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i + 1));
+
+		// Only teammates who are alive.
+		if (!player || player->GetTeamNumber() != GetTeamNumber() || player->IsDead()
+#if(1)
+			)
+#else // currently networking all friendlies, NEO TODO (Rain): optimise this
+			// If the other player is already in our PVS, we can skip them.
+			|| (engine->CheckOriginInPVS(otherPlayer->GetAbsOrigin(), pvs, pvsSize)))
+#endif
+		{
+			continue;
+		}
+
+		Assert(player != this);
+#if(0)
+		if (!IsFakeClient())
+		{
+			DevMsg("Got here: my(edict: %i) VEC: %f %f %f -- other(edict: %i) VEC: %f %f %f\n",
+				edict()->m_EdictIndex, GetAbsOrigin().x, GetAbsOrigin().y, GetAbsOrigin().z,
+				player->edict()->m_EdictIndex, player->GetAbsOrigin().x, player->GetAbsOrigin().y, player->GetAbsOrigin().z);
+		}
+#endif
+
+		m_rvFriendlyPlayerPositions.Set(i, player->GetAbsOrigin());
+		Assert(m_rvFriendlyPlayerPositions[i].IsValid());
 	}
 }
 
@@ -389,13 +390,13 @@ void CNEO_Player::Spawn(void)
 {
 	BaseClass::Spawn();
 
+	SetViewOffset(VEC_VIEW_NEOSCALE(this));
+
 	ShowCrosshair(false);
 
-	m_leanPosTargetOffset = VEC_VIEW;
+	m_leanPosTargetOffset = VEC_VIEW_NEOSCALE(this);
 
 	SetTransmitState(FL_EDICT_ALWAYS);
-
-	m_bIsAirborne = (!(GetFlags() & FL_ONGROUND));
 
 	GiveLoadoutWeapon();
 }
@@ -453,6 +454,43 @@ void CNEO_Player::PreThink(void)
 	CheckThermOpticButtons();
 	CheckVisionButtons();
 
+	if (m_bInThermOpticCamo)
+	{
+		if (m_flCamoAuxLastTime == 0)
+		{
+			if (SuitPower_GetCurrentPercentage() >= CLOAK_AUX_COST)
+			{
+				m_flCamoAuxLastTime = gpGlobals->curtime;
+				CloakFlash();
+			}
+		}
+		else
+		{
+			const float deltaTime = gpGlobals->curtime - m_flCamoAuxLastTime;
+			if (deltaTime >= 1)
+			{
+				SuitPower_Drain(deltaTime * CLOAK_AUX_COST);
+
+				if (SuitPower_GetCurrentPercentage() < CLOAK_AUX_COST)
+				{
+					m_bInThermOpticCamo = false;
+					PlayCloakSound();
+
+					SuitPower_SetCharge(0);
+					m_flCamoAuxLastTime = 0;
+				}
+				else
+				{
+					m_flCamoAuxLastTime = gpGlobals->curtime;
+				}
+			}
+		}
+	}
+	else
+	{
+		m_flCamoAuxLastTime = 0;
+	}
+
 	Lean();
 
 	// NEO HACK (Rain): Just bodging together a check for if we're allowed
@@ -462,13 +500,13 @@ void CNEO_Player::PreThink(void)
 	bool newNetAirborneVal;
 	if (IsAirborne())
 	{
-		static float lastAirborneJumpOkTime = gpGlobals->curtime;
-		const float deltaTime = gpGlobals->curtime - lastAirborneJumpOkTime;
+		m_flLastAirborneJumpOkTime = gpGlobals->curtime;
+		const float deltaTime = gpGlobals->curtime - m_flLastAirborneJumpOkTime;
 		const float leeway = 0.5f;
 		if (deltaTime > leeway)
 		{
 			newNetAirborneVal = false;
-			lastAirborneJumpOkTime = gpGlobals->curtime;
+			m_flLastAirborneJumpOkTime = gpGlobals->curtime;
 		}
 		else
 		{
@@ -579,43 +617,58 @@ ConVar sv_neo_cloak_time("sv_neo_cloak_time", "0.1", FCVAR_CHEAT, "How long shou
 ConVar sv_neo_cloak_decay("sv_neo_cloak_decay", "0", FCVAR_CHEAT, "After the cloak time, how quickly should the flash effect disappear.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_cloak_exponent("sv_neo_cloak_exponent", "4", FCVAR_CHEAT, "Cloak flash lighting exponent.", true, 0.0f, false, 0.0f);
 
+inline void CNEO_Player::PlayCloakSound()
+{
+	static int tocOn = CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOn");
+	static int tocOff = CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOff");
+
+	EmitSound_t tocSoundParams;
+	tocSoundParams.m_bEmitCloseCaption = false;
+	tocSoundParams.m_hSoundScriptHandle = (m_bInThermOpticCamo ? tocOn : tocOff);
+	tocSoundParams.m_pOrigin = &GetAbsOrigin();
+
+	CRecipientFilter filter;
+	filter.AddRecipientsByPAS(GetAbsOrigin());
+
+	EmitSound(filter, edict()->m_EdictIndex, tocSoundParams);
+}
+
+inline void CNEO_Player::CloakFlash()
+{
+	CRecipientFilter filter;
+	filter.AddRecipientsByPVS(GetAbsOrigin());
+
+	g_NEO_TE_TocFlash.r = sv_neo_cloak_color_r.GetInt();
+	g_NEO_TE_TocFlash.g = sv_neo_cloak_color_g.GetInt();
+	g_NEO_TE_TocFlash.b = sv_neo_cloak_color_b.GetInt();
+	g_NEO_TE_TocFlash.m_vecOrigin = GetAbsOrigin();
+	g_NEO_TE_TocFlash.exponent = sv_neo_cloak_exponent.GetInt();
+	g_NEO_TE_TocFlash.m_fRadius = sv_neo_cloak_color_radius.GetFloat();
+	g_NEO_TE_TocFlash.m_fTime = sv_neo_cloak_time.GetFloat();
+	g_NEO_TE_TocFlash.m_fDecay = sv_neo_cloak_decay.GetFloat();
+
+	g_NEO_TE_TocFlash.Create(filter);
+}
+
 inline void CNEO_Player::CheckThermOpticButtons()
 {
-	if (m_afButtonPressed & IN_THERMOPTIC)
+	if ((m_afButtonPressed & IN_THERMOPTIC) && IsAlive())
 	{
-		if (IsAlive())
+		if (GetClass() == NEO_CLASS_SUPPORT || GetClass() == NEO_CLASS_VIP)
+		{
+			return;
+		}
+
+		if (SuitPower_GetCurrentPercentage() >= CLOAK_AUX_COST)
 		{
 			m_bInThermOpticCamo = !m_bInThermOpticCamo;
 
-			CRecipientFilter filter;
-			filter.AddRecipientsByPVS(GetAbsOrigin());
-
 			if (m_bInThermOpticCamo)
 			{
-				// Do cloak flash
-				g_NEO_TE_TocFlash.r = sv_neo_cloak_color_r.GetInt();
-				g_NEO_TE_TocFlash.g = sv_neo_cloak_color_g.GetInt();
-				g_NEO_TE_TocFlash.b = sv_neo_cloak_color_b.GetInt();
-				g_NEO_TE_TocFlash.m_vecOrigin = GetAbsOrigin();
-				g_NEO_TE_TocFlash.exponent = sv_neo_cloak_exponent.GetInt();
-				g_NEO_TE_TocFlash.m_fRadius = sv_neo_cloak_color_radius.GetFloat();
-				g_NEO_TE_TocFlash.m_fTime = sv_neo_cloak_time.GetFloat();
-				g_NEO_TE_TocFlash.m_fDecay = sv_neo_cloak_decay.GetFloat();
-
-				g_NEO_TE_TocFlash.Create(filter);
+				CloakFlash();
 			}
-
-			// Play cloak sound
-			static int tocOn = CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOn");
-			static int tocOff = CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOff");
-
-			EmitSound_t tocSoundParams;
-			tocSoundParams.m_bEmitCloseCaption = false;
-			tocSoundParams.m_hSoundScriptHandle = (m_bInThermOpticCamo ? tocOn : tocOff);
-			tocSoundParams.m_pOrigin = &GetAbsOrigin();
-
-			EmitSound(filter, edict()->m_EdictIndex, tocSoundParams);
 		}
+		PlayCloakSound();
 	}
 }
 
@@ -697,13 +750,12 @@ bool CNEO_Player::IsAllowedToSuperJump(void)
 
 	if (SUPER_JMP_DELAY_BETWEEN_JUMPS > 0)
 	{
-		const float thisTime = gpGlobals->curtime;
-		static float lastSuperJumpTime = thisTime;
-		const float deltaTime = thisTime - lastSuperJumpTime;
+		m_flLastSuperJumpTime = gpGlobals->curtime;
+		const float deltaTime = gpGlobals->curtime - m_flLastSuperJumpTime;
 		if (deltaTime > SUPER_JMP_DELAY_BETWEEN_JUMPS)
 			return false;
 
-		lastSuperJumpTime = thisTime;
+		m_flLastSuperJumpTime = gpGlobals->curtime;
 	}
 
 	return true;
@@ -713,26 +765,29 @@ void CNEO_Player::PostThink(void)
 {
 	BaseClass::PostThink();
 
-	// Undo aim zoom if just died
-	static bool firstDeathTick = true;
-	if (!IsAlive() && firstDeathTick)
+	if (!IsAlive())
 	{
-		firstDeathTick = false;
-		Weapon_SetZoom(false);
+		// Undo aim zoom if just died
+		if (m_bFirstDeathTick)
+		{
+			m_bFirstDeathTick = false;
+
+			Weapon_SetZoom(false);
+			m_bInVision = false;
+		}
+
 		return;
 	}
 	else
 	{
-		firstDeathTick = true;
+		m_bFirstDeathTick = true;
 	}
 
-	CBaseCombatWeapon *pWep = GetActiveWeapon();
+	auto pWep = GetActiveWeapon();
 
 	if (pWep)
 	{
-		static bool previouslyReloading = false;
-
-		if (pWep->m_bInReload && !previouslyReloading)
+		if (pWep->m_bInReload && !m_bPreviouslyReloading)
 		{
 			Weapon_SetZoom(false);
 		}
@@ -740,41 +795,35 @@ void CNEO_Player::PostThink(void)
 		{
 			Weapon_SetZoom(false);
 		}
-		else if ((m_afButtonReleased & IN_AIM) && (!(m_nButtons & IN_SPEED)))
+		else if (m_afButtonPressed & IN_AIM)
+		{
+			auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWep);
+			// Binds hack: we want grenade secondary attack to trigger on aim (mouse button 2)
+			if (pNeoWep && pNeoWep->GetNeoWepBits() & NEO_WEP_THROWABLE)
+			{
+				static_cast<CWeaponGrenade*>(pNeoWep)->SecondaryAttack();
+			}
+			else
+			{
+				// NEO TODO (Rain): customizations for aim pressed/released/held behavior
+				//Weapon_AimToggle(pWep);
+			}
+		}
+		else if (m_afButtonReleased & IN_AIM)
 		{
 			Weapon_AimToggle(pWep);
 		}
+		m_bPreviouslyReloading = pWep->m_bInReload;
 
-		previouslyReloading = pWep->m_bInReload;
-	}
-
-	if (m_afButtonPressed & IN_DROP)
-	{
-		Vector eyeForward;
-		EyeVectors(&eyeForward);
-		const float forwardOffset = 250.0f;
-		eyeForward *= forwardOffset;
-
-		Weapon_Drop(GetActiveWeapon(), NULL, &eyeForward);
-	}
-
-#if(0)
-	if (m_iCapTeam != TEAM_UNASSIGNED)
-	{
-		const int resetTime = 11;
-		static float lastTime = gpGlobals->curtime;
-		float dTime = gpGlobals->curtime - lastTime;
-		if (dTime >= resetTime)
+		if (m_afButtonPressed & IN_DROP)
 		{
-			m_iCapTeam = TEAM_UNASSIGNED;
-			lastTime = gpGlobals->curtime;
-
-			NEORules()->RestartGame();
-
-			return;
+			Vector eyeForward;
+			EyeVectors(&eyeForward);
+			const float forwardOffset = 250.0f;
+			eyeForward *= forwardOffset;
+			Weapon_Drop(pWep, NULL, &eyeForward);
 		}
 	}
-#endif
 
 #if(0)
 	int iMoveX = LookupPoseParameter("move_x");
@@ -1438,6 +1487,21 @@ void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
 		}
 	}
 
+	// Drop a grenade if it's primed.
+	if (GetActiveWeapon())
+	{
+		CBaseCombatWeapon *pGrenade = Weapon_OwnsThisType("weapon_grenade");
+
+		if (GetActiveWeapon() == pGrenade)
+		{
+			if ((m_nButtons & IN_ATTACK) || (m_nButtons & IN_ATTACK2))
+			{
+				NEODropPrimedFragGrenade(this, pGrenade);
+				return;
+			}
+		}
+	}
+
 	BaseClass::Weapon_Drop(pWeapon, pvecTarget, pVelocity);
 }
 
@@ -1619,6 +1683,31 @@ void CNEO_Player::PickDefaultSpawnTeam(void)
 	}
 }
 
+// NEO FIXME/HACK (Rain): bots don't properly set their fakeclient flag currently,
+// making IsFakeClient and IsBot return false. This is an ugly hack to get bots
+// joining teams. We cannot trust this player input (and it's slow), so it really
+// should be fixed properly.
+bool Hack_IsBot(CNEO_Player* player)
+{
+#ifdef DEBUG
+	DevMsg("Fixme: Using Hack_IsBot as workaround\n"); // nag to remind about fixing this whenever used
+#endif
+
+	if (!player)
+	{
+		return false;
+	}
+	else if (player->IsFakeClient())
+	{
+		return true;
+	}
+
+	const char* name = player->GetPlayerInfo()->GetName();
+
+	return (strlen(name) == 5 && name[0] == 'B' && name[1] == 'o' && name[2] == 't' &&
+		isdigit(name[3]) && isdigit(name[4]));
+}
+
 bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 {
 	if (!GetGlobalTeam(iTeam) || iTeam == 0)
@@ -1628,14 +1717,15 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	}
 
 	// NEO TODO (Rain): add server cvars
-	const bool suicide = true;
-	const float teamChangeInterval = 5.0f;
+#define TEAM_CHANGE_SUICIDE true
+#define TEAM_CHANGE_INTERVAL 5.0f
 
 	const bool justJoined = (GetTeamNumber() == TEAM_UNASSIGNED);
 
 	// Player bots should initially join a player team
 	if (justJoined && Hack_IsBot(this) && !IsHLTV())
 	{
+		Assert(gpGlobals->curtime >= m_flNextTeamChangeTime);
 		iTeam = RandomInt(TEAM_JINRAI, TEAM_NSF);
 	}
 	// Limit team join spam, unless this is a newly joined player
@@ -1644,7 +1734,9 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 		// Except for spectators, who are allowed to join a team as soon as they wish
 		if (GetTeamNumber() != TEAM_SPECTATOR)
 		{
-			ClientPrint(this, HUD_PRINTTALK, "Please wait before switching teams again.");
+			char szWaitTime[5];
+			V_sprintf_safe(szWaitTime, "%i", MAX(1, RoundFloatToInt(m_flNextTeamChangeTime - gpGlobals->curtime)));
+			ClientPrint(this, HUD_PRINTTALK, "Please wait %s1 seconds before switching teams again.", szWaitTime);
 			return false;
 		}
 	}
@@ -1664,7 +1756,7 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 			return false;
 		}
 
-		if (suicide)
+		if (TEAM_CHANGE_SUICIDE)
 		{
 			// Unassigned implies we just joined.
 			if (!justJoined && !IsDead())
@@ -1687,12 +1779,9 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	}
 	else if (iTeam == TEAM_JINRAI || iTeam == TEAM_NSF)
 	{
-		if (suicide)
+		if (TEAM_CHANGE_SUICIDE && !justJoined && GetTeamNumber() != TEAM_SPECTATOR && !IsDead())
 		{
-			if (!justJoined && GetTeamNumber() != TEAM_SPECTATOR && !IsDead())
-			{
-				SoftSuicide();
-			}
+			SoftSuicide();
 		}
 
 		StopObserverMode();
@@ -1704,12 +1793,14 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 		// Client should not be able to reach this
 		Assert(false);
 
-		ClientPrint(this, HUD_PRINTTALK, "Team switch failed, unrecognized Neotokyo team specified.");
+#define SWITCH_FAIL_MSG "Team switch failed; unrecognized Neotokyo team specified."
+		ClientPrint(this, HUD_PRINTTALK, SWITCH_FAIL_MSG);
+		Warning(SWITCH_FAIL_MSG);
 
 		return false;
 	}
 
-	m_flNextTeamChangeTime = gpGlobals->curtime + teamChangeInterval;
+	m_flNextTeamChangeTime = gpGlobals->curtime + TEAM_CHANGE_INTERVAL;
 	
 	RemoveAllItems(true);
 	ShowCrosshair(false);
@@ -1717,7 +1808,6 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	if (iTeam == TEAM_JINRAI || iTeam == TEAM_NSF)
 	{
 		SetPlayerTeamModel();
-		GiveAllItems();
 	}
 
 	// We're skipping over HL2MP player because we don't care about
@@ -1734,6 +1824,7 @@ void CNEO_Player::GiveDefaultItems(void)
 	CBasePlayer::GiveAmmo(150, "Pistol");
 	CBasePlayer::GiveAmmo(150, "AR2");
 	CBasePlayer::GiveAmmo(30, "AMMO_10G_SHELL");
+	CBasePlayer::GiveAmmo(150, "AMMO_PRI");
 
 	const bool supportsGetKnife = true;
 
@@ -1747,11 +1838,13 @@ void CNEO_Player::GiveDefaultItems(void)
 	case NEO_CLASS_ASSAULT:
 		GiveNamedItem("weapon_knife");
 		GiveNamedItem("weapon_tachi");
+		GiveNamedItem("weapon_grenade");
 		Weapon_Switch(Weapon_OwnsThisType("weapon_tachi"));
 		break;
 	case NEO_CLASS_SUPPORT:
 		if (supportsGetKnife) { GiveNamedItem("weapon_knife"); }
 		GiveNamedItem("weapon_kyla");
+		GiveNamedItem("weapon_smokegrenade");
 		Weapon_Switch(Weapon_OwnsThisType("weapon_kyla"));
 		break;
 	default:

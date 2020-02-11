@@ -25,7 +25,7 @@ public:
 	C_NEO_Player();
 	virtual ~C_NEO_Player();
 
-	static C_NEO_Player *GetLocalNEOPlayer();
+	static C_NEO_Player *GetLocalNEOPlayer() { return static_cast<C_NEO_Player*>(C_BasePlayer::GetLocalPlayer()); }
 
 	virtual int DrawModel( int flags );
 	virtual void AddEntity( void );
@@ -92,16 +92,16 @@ public:
 	inline void DrawCompass(void);
 
 	void Weapon_AimToggle(C_BaseCombatWeapon *pWep);
-	inline void Weapon_SetZoom(bool bZoomIn);
+	void Weapon_SetZoom(bool bZoomIn);
 
 	void Weapon_Drop(C_BaseCombatWeapon *pWeapon);
 
-	C_NEOPredictedViewModel *GetNEOViewModel();
+	C_NEOPredictedViewModel *GetNEOViewModel() { return static_cast<C_NEOPredictedViewModel*>(GetViewModel()); }
 
 	inline void ZeroFriendlyPlayerLocArray(void);
 
 	bool IsCloaked() const { return m_bInThermOpticCamo; }
-	bool IsAirborne() const { return m_bIsAirborne; }
+	bool IsAirborne() const { return (!(GetFlags() & FL_ONGROUND)); }
 	bool IsInVision() const { return m_bInVision; }
 	bool IsInAim() const { return m_bInAim; }
 
@@ -123,7 +123,6 @@ public:
 	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
 
 	bool m_bShowClassMenu, m_bShowTeamMenu;
-	CNetworkVar(bool, m_bIsAirborne);
 	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
 
 	CNetworkVar(bool, m_bGhostExists);
@@ -134,7 +133,7 @@ protected:
 	CNetworkVar(int, m_iGhosterTeam);
 
 	bool m_bIsClassMenuOpen, m_bIsTeamMenuOpen;
-	CNetworkVar(bool, m_bInThermOpticCamo);
+	bool m_bInThermOpticCamo;
 	CNetworkVar(bool, m_bInVision);
 	CNetworkVar(bool, m_bInAim);
 
@@ -142,7 +141,14 @@ protected:
 	CNetworkVar(int, m_iNeoSkin);
 
 private:
+	bool m_bFirstDeathTick;
+	bool m_bPreviouslyReloading;
+	bool m_bPreviouslyPreparingToHideMsg;
+
 	CNeoHudElements *m_pNeoPanel;
+
+	float m_flLastAirborneJumpOkTime;
+	float m_flLastSuperJumpTime;
 
 private:
 	C_NEO_Player(const C_NEO_Player &);

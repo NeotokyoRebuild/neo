@@ -42,6 +42,9 @@ CNEOPredictedViewModel::CNEOPredictedViewModel()
 
 	AddToInterpolationList();
 #endif
+
+	m_flYPrevious = 0;
+	m_flLastLeanTime = 0;
 }
 
 CNEOPredictedViewModel::~CNEOPredictedViewModel()
@@ -204,44 +207,46 @@ int CNEOPredictedViewModel::DrawModel(int flags)
 }
 #endif
 
-float CNEOPredictedViewModel::calculateLeanAngle(float freeRoom, CNEO_Player *player){
-	float hipToHeadHeight = 41;
-	return -RAD2DEG(atan2(freeRoom, hipToHeadHeight)) * neo_lean_angle_percentage.GetFloat();
+static inline float calculateLeanAngle(float freeRoom, CNEO_Player *player){
+#define HIP_TO_HEAD_HEIGHT 41.0f
+	return -RAD2DEG(atan2(freeRoom, HIP_TO_HEAD_HEIGHT)) * neo_lean_angle_percentage.GetFloat();
 }
 
 void CNEOPredictedViewModel::lean(CNEO_Player *player){
+	Assert(player);
 #ifdef CLIENT_DLL
 	input->ExtraMouseSample(gpGlobals->frametime, 1);
 #endif
 	QAngle viewAng = player->LocalEyeAngles();
-	static float Yprevious = 0;
-	float Ycurrent = Yprevious;
+	float Ycurrent = m_flYPrevious;
 	float Yfinal = 0;
 
-	auto leanButtons = player->m_nButtons;
-	if (leanButtons & (IN_LEAN_LEFT | IN_LEAN_RIGHT)){
-		if (leanButtons & IN_LEAN_LEFT & IN_LEAN_RIGHT){
-			//leaning both ways
+	if (player->IsAlive())
+	{
+		auto leanButtons = player->m_nButtons;
+		if (leanButtons & (IN_LEAN_LEFT | IN_LEAN_RIGHT)) {
+			if (leanButtons & IN_LEAN_LEFT & IN_LEAN_RIGHT) {
+				//leaning both ways
+			}
+			else if (leanButtons & IN_LEAN_LEFT) {
+				//leaning left
+				Yfinal = freeRoomForLean(neo_lean_yaw_peek_left_amount.GetFloat(), player);
+			}
+			else {
+				//leaning right
+				Yfinal = -freeRoomForLean(-neo_lean_yaw_peek_right_amount.GetFloat(), player);
+			}
 		}
-		else if (leanButtons & IN_LEAN_LEFT){
-			//leaning left
-			Yfinal = freeRoomForLean(neo_lean_yaw_peek_left_amount.GetFloat(), player);
+		else {
+			//not leaning... move towards zero
 		}
-		else{
-			//leaning right
-			Yfinal = -freeRoomForLean(-neo_lean_yaw_peek_right_amount.GetFloat(), player);
-		}
-	}
-	else{
-		//not leaning... move towards zero
 	}
 
 	float dY = Yfinal - Ycurrent;
 
-	static double lastTime = gpGlobals->curtime;
-	double thisTime = gpGlobals->curtime;
-	const double dTime = thisTime - lastTime;
-	lastTime = thisTime;
+	float thisTime = gpGlobals->curtime;
+	const float dTime = thisTime - m_flLastLeanTime;
+	m_flLastLeanTime = thisTime;
 	float Ymoved = dTime * neo_lean_speed.GetFloat();
 	if (dY != 0){
 		if (dY > 0){
@@ -260,7 +265,7 @@ void CNEOPredictedViewModel::lean(CNEO_Player *player){
 
 	Vector viewOffset(0, 0, player->GetViewOffset().z);
 	viewOffset.y = Ycurrent;
-	Yprevious = Ycurrent;
+	m_flYPrevious = Ycurrent;
 	VectorYawRotate(viewOffset, viewAng.y, viewOffset);
 
 	player->SetViewOffset(viewOffset);

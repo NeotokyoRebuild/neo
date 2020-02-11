@@ -30,7 +30,6 @@ public:
 		const Vector& eyePosition, const QAngle& eyeAngles);
 
 	float freeRoomForLean(float leanAmount, CNEO_Player *player);
-	float calculateLeanAngle(float freeRoom, CNEO_Player *player);
 	void lean(CNEO_Player *player);
 
 #ifdef CLIENT_DLL
@@ -51,6 +50,10 @@ public:
 		const Vector& mins, const Vector& maxs, const Vector &rgbColor,
 		const char *message = "", const Vector &vecOrigin = vec3_origin);
 #endif
+
+private:
+	float m_flYPrevious;
+	float m_flLastLeanTime;
 };
 
 #endif // NEO_PREDICTED_VIEWMODEL_H

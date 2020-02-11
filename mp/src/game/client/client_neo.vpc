@@ -166,6 +166,9 @@ $Project "Client (HL2MP)"
 				$File	"neo\ui\neo_scoreboard.cpp"
 				$File	"neo\ui\neo_scoreboard.h"
 
+				$File	"neo\ui\neo_hud_childelement.cpp"
+				$File	"neo\ui\neo_hud_childelement.h"
+
 				$File	"neo\ui\neo_hud_elements.cpp"
 				$File	"neo\ui\neo_hud_elements.h"
 			}

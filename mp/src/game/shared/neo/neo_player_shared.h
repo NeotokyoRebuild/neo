@@ -40,6 +40,7 @@
 #define NEO_SUPPORT_CROUCH_SPEED (NEO_BASE_CROUCH_SPEED * NEO_SUPPORT_SPEED_MODIFIER)
 
 #define SUPER_JMP_COST 45.0f
+#define CLOAK_AUX_COST ((GetClass() == NEO_CLASS_RECON) ? 17.5f : 19.0f)
 
 // Original NT allows chaining superjumps up ramps,
 // so leaving this zeroed for enabling movement tricks.
@@ -101,6 +102,10 @@ enum NeoClass {
 #if defined(CLIENT_DLL) && !defined(CNEOBaseCombatWeapon)
 #define CNEOBaseCombatWeapon C_NEOBaseCombatWeapon
 #endif
+
+#define COLOR_JINRAI COLOR_GREEN
+#define COLOR_NSF COLOR_BLUE
+#define COLOR_SPEC COLOR_YELLOW
 
 class CNEO_Player;
 class CNEOBaseCombatWeapon;

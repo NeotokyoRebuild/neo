@@ -44,6 +44,9 @@ public:
 	//virtual int GetNeoWepBits(void) const { return NEO_WEP_KNIFE; }
 
 private:
+	float m_flLastSwingTime;
+
+private:
 	CWeaponKnife(const CWeaponKnife &other);
 };
 

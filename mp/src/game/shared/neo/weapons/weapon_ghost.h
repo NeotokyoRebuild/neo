@@ -69,6 +69,8 @@ private:
 	bool m_bHavePlayedGhostEquipSound;
 	bool m_bHaveHolsteredTheGhost;
 
+	float m_flLastGhostBeepTime;
+
 	// NEO TODO (Rain): It's probably better to just have one beacon,
 	// and call it numplayers times on each update between hud buffer swaps
 	CNEOHud_GhostBeacon *m_pGhostBeacons[MAX_PLAYERS];

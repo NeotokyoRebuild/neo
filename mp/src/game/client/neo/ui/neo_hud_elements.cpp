@@ -47,6 +47,7 @@ CNeoHudElements::CNeoHudElements(IViewPort *pViewPort)
 	m_pFriendlyMarker = NULL;
 	m_pGameEvent = NULL;
 	m_pRoundState = NULL;
+	m_pLastUpdater = NULL;
 }
 
 CNeoHudElements::~CNeoHudElements()
@@ -212,60 +213,49 @@ void CNeoHudElements::InitHud()
 
 void CNeoHudElements::InitCompass()
 {
+	Assert(!m_pCompass);
 	m_pCompass = new CNEOHud_Compass(UI_ELEMENT_NAME_COMPASS, this);
 }
 
 void CNeoHudElements::InitFriendlyMarker()
 {
+	Assert(!m_pFriendlyMarker);
 	m_pFriendlyMarker = new CNEOHud_FriendlyMarker(UI_ELEMENT_NAME_IFF, this);
 }
 
 void CNeoHudElements::InitGameEventIndicator()
 {
+	Assert(!m_pGameEvent);
 	m_pGameEvent = new CNEOHud_GameEvent(UI_ELEMENT_GAME_EVENT, this);
 }
 
 void CNeoHudElements::InitGhostMarkers()
 {
+	Assert(m_vecGhostMarkers.Count() == 0);
 	const int numGhosts = 1;
-
 	for (int i = 0; i < numGhosts; i++)
 	{
 		auto marker = new CNEOHud_GhostMarker(UI_ELEMENT_NAME_GHOST_MARKER, this);
-
 		m_vecGhostMarkers.AddToTail(marker);
 	}
 }
 
 void CNeoHudElements::InitRoundState()
 {
+	Assert(!m_pRoundState);
 	m_pRoundState = new CNEOHud_RoundState(UI_ELEMENT_ROUND_STATE, this);
-}
-
-
-CNEOHud_Compass *CNeoHudElements::GetCompass()
-{
-	return m_pCompass;
-}
-
-CNEOHud_GameEvent* CNeoHudElements::GetGameEventIndicator()
-{
-	return m_pGameEvent;
 }
 
 CNEOHud_GhostMarker* CNeoHudElements::GetGhostMarker()
 {
-	// Just return first, for now
-	for (int i = 0; i < m_vecGhostMarkers.Count(); i++)
+	if (m_vecGhostMarkers.Count() < 1)
 	{
-		Assert(m_vecGhostMarkers[i]);
-		return m_vecGhostMarkers[i];
+		Assert(false);
+		return NULL;
 	}
 
-	return NULL;
-}
-
-CNEOHud_FriendlyMarker* CNeoHudElements::GetIFF()
-{
-	return m_pFriendlyMarker;
+	// Just return first, for now
+	CNEOHud_GhostMarker* ptr = m_vecGhostMarkers[m_vecGhostMarkers.Count() - 1];
+	Assert(ptr);
+	return ptr;
 }
