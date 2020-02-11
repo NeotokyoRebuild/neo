@@ -93,7 +93,7 @@ void CNEO_Player::RequestSetClass(int newClass)
 		m_iNeoClass = newClass;
 
 		SetPlayerTeamModel();
-
+		SetViewOffset(VEC_VIEW_NEOSCALE(this));
 		InitSprinting();
 	}
 	else
@@ -388,9 +388,11 @@ void CNEO_Player::Spawn(void)
 {
 	BaseClass::Spawn();
 
+	SetViewOffset(VEC_VIEW_NEOSCALE(this));
+
 	ShowCrosshair(false);
 
-	m_leanPosTargetOffset = VEC_VIEW;
+	m_leanPosTargetOffset = VEC_VIEW_NEOSCALE(this);
 
 	SetTransmitState(FL_EDICT_ALWAYS);
 

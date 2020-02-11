@@ -41,7 +41,7 @@ extern void respawn(CBaseEntity *pEdict, bool fCopyCorpse);
 
 // NEO TODO (Rain): check against a test map
 static NEOViewVectors g_NEOViewVectors(
-	Vector( 0, 0, 62 ),	   //VEC_VIEW (m_vView)
+	Vector( 0, 0, 58 ),	   //VEC_VIEW (m_vView) // 57 == vanilla recon, 58 == vanilla assault (default), 60 == vanilla support. Use the macro VEC_VIEW_NEOSCALE to access per client.
 							  
 	Vector(-16, -16, 0 ),	  //VEC_HULL_MIN (m_vHullMin)
 	Vector(16, 16, 72),	  //VEC_HULL_MAX (m_vHullMax)

@@ -84,6 +84,13 @@ public:
 
 #define VEC_DEAD_VIEWHEIGHT	g_pGameRules->GetViewVectors()->m_vDeadViewHeight
 
+#ifdef NEO
+#define NEO_RECON_VIEW_OFFSET Vector(0.0f, 0.0f, -1.0f)
+#define NEO_ASSAULT_VIEW_OFFSET vec3_origin
+#define NEO_SUPPORT_VIEW_OFFSET Vector(0.0f, 0.0f, 2.0f)
+#define VEC_VIEW_NEOSCALE(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vView + ((NeoPlayer->GetClass() == NEO_CLASS_RECON) ? NEO_RECON_VIEW_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_SUPPORT) ? NEO_SUPPORT_VIEW_OFFSET : NEO_ASSAULT_VIEW_OFFSET))
+#endif
+
 // If the player (enemy bots) are scaled, adjust the hull
 #define VEC_VIEW_SCALED( player )				( g_pGameRules->GetViewVectors()->m_vView * player->GetModelScale() )
 #define VEC_HULL_MIN_SCALED( player )			( g_pGameRules->GetViewVectors()->m_vHullMin * player->GetModelScale() )
