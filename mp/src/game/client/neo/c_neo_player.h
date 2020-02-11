@@ -7,11 +7,11 @@
 class C_NEO_Player;
 #include "c_hl2mp_player.h"
 
+#include "neo_player_shared.h"
+
 class C_NEOPredictedViewModel;
-class CNEOHud_Compass;
-class CNEOHud_GameEvent;
-class CNEOHud_GhostMarker;
-class CNEOHud_FriendlyMarker;
+
+class CNeoHudElements;
 
 class C_NEO_Player : public C_HL2MP_Player
 {
@@ -25,7 +25,7 @@ public:
 	C_NEO_Player();
 	virtual ~C_NEO_Player();
 
-	static C_NEO_Player *GetLocalNEOPlayer();
+	static C_NEO_Player *GetLocalNEOPlayer() { return static_cast<C_NEO_Player*>(C_BasePlayer::GetLocalPlayer()); }
 
 	virtual int DrawModel( int flags );
 	virtual void AddEntity( void );
@@ -60,7 +60,23 @@ public:
 	virtual void PostThink( void );
 	virtual void Spawn( void );
 
+	virtual void StartSprinting(void);
+	virtual void StopSprinting(void);
+	virtual bool CanSprint(void);
+
+	virtual void StartWalking(void);
+	virtual void StopWalking(void);
+
+	float GetNormSpeed() const;
+	float GetCrouchSpeed() const;
+	float GetWalkSpeed() const;
+	float GetSprintSpeed() const;
+
 	bool ShouldDrawHL2StyleQuickHud( void );
+
+	int GetClass() const;
+
+	inline bool IsCarryingGhost(void);
 
 	virtual void SetLocalViewAngles( const QAngle &viewAngles )
 	{
@@ -71,47 +87,68 @@ public:
 		BaseClass::SetViewAngles(ang);
 	}
 
+	inline void SuperJump(void);
+
 	inline void DrawCompass(void);
+
+	void Weapon_AimToggle(C_BaseCombatWeapon *pWep);
+	void Weapon_SetZoom(bool bZoomIn);
 
 	void Weapon_Drop(C_BaseCombatWeapon *pWeapon);
 
-	C_NEOPredictedViewModel *GetNEOViewModel();
+	C_NEOPredictedViewModel *GetNEOViewModel() { return static_cast<C_NEOPredictedViewModel*>(GetViewModel()); }
 
 	inline void ZeroFriendlyPlayerLocArray(void);
 
 	bool IsCloaked() const { return m_bInThermOpticCamo; }
+	bool IsAirborne() const { return (!(GetFlags() & FL_ONGROUND)); }
+	bool IsInVision() const { return m_bInVision; }
+	bool IsInAim() const { return m_bInAim; }
 
 private:
 	inline void CheckThermOpticButtons();
+	inline void CheckVisionButtons();
+
+	inline bool IsAllowedToSuperJump(void);
 
 public:
-	bool m_bShowTestMessage;
-	char m_pszTestMessage[32 * 2 + 1];
+	CNetworkVar(bool, m_bShowTestMessage);
+	CNetworkString(m_pszTestMessage, 32 * 2 + 1);
 	//wchar_t m_pszTestMessage;
 
-	int m_iCapTeam;
+	CNetworkVar(int, m_iXP);
+	CNetworkVar(int, m_iCapTeam);
+	CNetworkVar(int, m_iLoadoutWepChoice);
 
-	Vector m_rvFriendlyPlayerPositions[MAX_PLAYERS];
+	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
 
 	bool m_bShowClassMenu, m_bShowTeamMenu;
+	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
+
+	CNetworkVar(bool, m_bGhostExists);
 
 protected:
-	Vector m_vecGhostMarkerPos;
+	CNetworkVector(m_vecGhostMarkerPos);
 
-	int m_iGhosterTeam;
+	CNetworkVar(int, m_iGhosterTeam);
 
-	bool m_bGhostExists;
 	bool m_bIsClassMenuOpen, m_bIsTeamMenuOpen;
-	bool m_bInThermOpticCamo, m_bUnhandledTocChange;
+	bool m_bInThermOpticCamo;
+	CNetworkVar(bool, m_bInVision);
+	CNetworkVar(bool, m_bInAim);
+
+	CNetworkVar(int, m_iNeoClass);
+	CNetworkVar(int, m_iNeoSkin);
 
 private:
-	CNEOHud_Compass *m_pCompass;
+	bool m_bFirstDeathTick;
+	bool m_bPreviouslyReloading;
+	bool m_bPreviouslyPreparingToHideMsg;
 
-	CNEOHud_GameEvent *m_pHudEvent_Test;
+	CNeoHudElements *m_pNeoPanel;
 
-	CNEOHud_GhostMarker *m_pGhostMarker;
-
-	CNEOHud_FriendlyMarker *m_pFriendlyMarker;
+	float m_flLastAirborneJumpOkTime;
+	float m_flLastSuperJumpTime;
 
 private:
 	C_NEO_Player(const C_NEO_Player &);
@@ -127,8 +164,9 @@ inline C_NEO_Player *ToNEOPlayer(CBaseEntity *pEntity)
 	return dynamic_cast<C_NEO_Player*>(pEntity);
 }
 
-extern ConVar cl_autoreload_when_empty;
 extern ConVar cl_drawhud_quickinfo;
+extern ConVar loadout_choice;
+
 extern ConCommand teammenu;
 
 #endif // NEO_PLAYER_H

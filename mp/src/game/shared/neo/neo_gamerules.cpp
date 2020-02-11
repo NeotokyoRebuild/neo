@@ -3,6 +3,8 @@
 #include "in_buttons.h"
 #include "ammodef.h"
 
+#include "takedamageinfo.h"
+
 #ifdef CLIENT_DLL
 	#include "c_neo_player.h"
 #else
@@ -16,6 +18,7 @@
 	#include "eventqueue.h"
 	#include "mapentities.h"
 	#include "hl2mp_gameinterface.h"
+	#include "player_resource.h"
 #endif
 
 REGISTER_GAMERULES_CLASS( CNEORules );
@@ -24,8 +27,10 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 // NEO TODO (Rain): NEO specific game modes var (CTG/TDM/...)
 #ifdef CLIENT_DLL
 	RecvPropFloat(RECVINFO(m_flNeoNextRoundStartTime)),
+	RecvPropFloat(RECVINFO(m_flNeoRoundStartTime)),
 #else
 	SendPropFloat(SENDINFO(m_flNeoNextRoundStartTime)),
+	SendPropFloat(SENDINFO(m_flNeoRoundStartTime)),
 #endif
 END_NETWORK_TABLE()
 
@@ -34,17 +39,16 @@ IMPLEMENT_NETWORKCLASS_ALIASED( NEOGameRulesProxy, DT_NEOGameRulesProxy );
 
 extern void respawn(CBaseEntity *pEdict, bool fCopyCorpse);
 
-// NEO TODO (Rain): These are about 1 unit accurate currently, should probably double check view heights are 100% correct.
-// Also need to offset on class by class basis, these reflect the assault class.
+// NEO TODO (Rain): check against a test map
 static NEOViewVectors g_NEOViewVectors(
-	Vector( 0, 0, 72 ),	   //VEC_VIEW (m_vView)
+	Vector( 0, 0, 58 ),	   //VEC_VIEW (m_vView) // 57 == vanilla recon, 58 == vanilla assault (default), 60 == vanilla support. Use the macro VEC_VIEW_NEOSCALE to access per client.
 							  
 	Vector(-16, -16, 0 ),	  //VEC_HULL_MIN (m_vHullMin)
-	Vector( 16,  16,  73 ),	  //VEC_HULL_MAX (m_vHullMax)
+	Vector(16, 16, 72),	  //VEC_HULL_MAX (m_vHullMax)
 							  					
 	Vector(-16, -16, 0 ),	  //VEC_DUCK_HULL_MIN (m_vDuckHullMin)
 	Vector( 16,  16,  48 ),	  //VEC_DUCK_HULL_MAX	(m_vDuckHullMax)
-	Vector( 0, 0, 53 ),		  //VEC_DUCK_VIEW		(m_vDuckView)
+	Vector( 0, 0, 45 ),		  //VEC_DUCK_VIEW		(m_vDuckView)
 							  					
 	Vector(-10, -10, -10 ),	  //VEC_OBS_HULL_MIN	(m_vObsHullMin)
 	Vector( 10,  10,  10 ),	  //VEC_OBS_HULL_MAX	(m_vObsHullMax)
@@ -52,7 +56,7 @@ static NEOViewVectors g_NEOViewVectors(
 	Vector( 0, 0, 14 ),		  //VEC_DEAD_VIEWHEIGHT (m_vDeadViewHeight)
 
 	Vector(-16, -16, 0 ),	  //VEC_CROUCH_TRACE_MIN (m_vCrouchTraceMin)
-	Vector( 16,  16,  60 )	  //VEC_CROUCH_TRACE_MAX (m_vCrouchTraceMax)
+	Vector(16, 16, 60)	  //VEC_CROUCH_TRACE_MAX (m_vCrouchTraceMax)
 );
 
 #ifdef CLIENT_DLL
@@ -161,11 +165,17 @@ static const char *s_NeoPreserveEnts[] =
 // https://wiki.alliedmods.net/Neotokyo_Events
 static inline void FireLegacyEvent_NeoRoundStart()
 {
+#if(0) // NEO TODO (Rain): unimplemented
 	IGameEvent *neoLegacy = gameeventmanager->CreateEvent("game_round_start");
 	if (neoLegacy)
 	{
 		gameeventmanager->FireEvent(neoLegacy);
 	}
+	else
+	{
+		Assert(neoLegacy);
+	}
+#endif
 }
 
 // Purpose: Empty legacy event for backwards compatibility
@@ -173,11 +183,17 @@ static inline void FireLegacyEvent_NeoRoundStart()
 // https://wiki.alliedmods.net/Neotokyo_Events
 static inline void FireLegacyEvent_NeoRoundEnd()
 {
+#if(0) // NEO TODO (Rain): unimplemented
 	IGameEvent *neoLegacy = gameeventmanager->CreateEvent("game_round_end");
 	if (neoLegacy)
 	{
 		gameeventmanager->FireEvent(neoLegacy);
 	}
+	else
+	{
+		Assert(neoLegacy);
+	}
+#endif
 }
 
 CNEORules::CNEORules()
@@ -198,9 +214,14 @@ CNEORules::CNEORules()
 			g_Teams[TEAM_NSF]->UpdateClientData(player);
 		}
 	}
+
+	m_bFirstRestartIsDone = false;
+	ResetGhostCapPoints();
 #endif
 
 	m_flNeoRoundStartTime = m_flNeoNextRoundStartTime = 0;
+
+	ListenForGameEvent("round_start");
 }
 
 CNEORules::~CNEORules()
@@ -214,6 +235,10 @@ void CNEORules::Precache()
 }
 #endif
 
+ConVar	sk_max_neo_ammo("sk_max_neo_ammo", "10000", FCVAR_REPLICATED);
+ConVar	sk_plr_dmg_neo("sk_plr_dmg_neo", "0", FCVAR_REPLICATED);
+ConVar	sk_npc_dmg_neo("sk_npc_dmg_neo", "0", FCVAR_REPLICATED);
+
 // This is the HL2MP gamerules GetAmmoDef() global scope function copied over,
 // because we want to implement it ourselves. This can be refactored out if/when
 // we don't want to support HL2MP guns anymore.
@@ -226,40 +251,62 @@ CAmmoDef *GetAmmoDef_HL2MP()
 	{
 		bInitted = true;
 
-		def.AddAmmoType("AR2", DMG_BULLET, TRACER_LINE_AND_WHIZ, 0, 0, 60, BULLET_IMPULSE(200, 1225), 0);
-		def.AddAmmoType("AR2AltFire", DMG_DISSOLVE, TRACER_NONE, 0, 0, 3, 0, 0);
-		def.AddAmmoType("Pistol", DMG_BULLET, TRACER_LINE_AND_WHIZ, 0, 0, 150, BULLET_IMPULSE(200, 1225), 0);
-		def.AddAmmoType("SMG1", DMG_BULLET, TRACER_LINE_AND_WHIZ, 0, 0, 225, BULLET_IMPULSE(200, 1225), 0);
-		def.AddAmmoType("357", DMG_BULLET, TRACER_LINE_AND_WHIZ, 0, 0, 12, BULLET_IMPULSE(800, 5000), 0);
-		def.AddAmmoType("XBowBolt", DMG_BULLET, TRACER_LINE, 0, 0, 10, BULLET_IMPULSE(800, 8000), 0);
-		def.AddAmmoType("Buckshot", DMG_BULLET | DMG_BUCKSHOT, TRACER_LINE, 0, 0, 30, BULLET_IMPULSE(400, 1200), 0);
-		def.AddAmmoType("RPG_Round", DMG_BURN, TRACER_NONE, 0, 0, 3, 0, 0);
-		def.AddAmmoType("SMG1_Grenade", DMG_BURN, TRACER_NONE, 0, 0, 3, 0, 0);
-		def.AddAmmoType("Grenade", DMG_BURN, TRACER_NONE, 0, 0, 5, 0, 0);
-		def.AddAmmoType("slam", DMG_BURN, TRACER_NONE, 0, 0, 5, 0, 0);
+		def.AddAmmoType("AR2", DMG_BULLET, TRACER_LINE_AND_WHIZ, sk_plr_dmg_neo.GetName(), sk_npc_dmg_neo.GetName(), sk_max_neo_ammo.GetName(), BULLET_IMPULSE(200, 1225), 0);
+		def.AddAmmoType("AR2AltFire", DMG_DISSOLVE, TRACER_NONE, sk_plr_dmg_neo.GetName(), sk_npc_dmg_neo.GetName(), sk_max_neo_ammo.GetName(), 0, 0);
+		def.AddAmmoType("Pistol", DMG_BULLET, TRACER_LINE_AND_WHIZ, sk_plr_dmg_neo.GetName(), sk_npc_dmg_neo.GetName(), sk_max_neo_ammo.GetName(), BULLET_IMPULSE(200, 1225), 0);
+		def.AddAmmoType("SMG1", DMG_BULLET, TRACER_LINE_AND_WHIZ, sk_plr_dmg_neo.GetName(), sk_npc_dmg_neo.GetName(), sk_max_neo_ammo.GetName(), BULLET_IMPULSE(200, 1225), 0);
+		def.AddAmmoType("357", DMG_BULLET, TRACER_LINE_AND_WHIZ, sk_plr_dmg_neo.GetName(), sk_npc_dmg_neo.GetName(), sk_max_neo_ammo.GetName(), BULLET_IMPULSE(800, 5000), 0);
+		def.AddAmmoType("XBowBolt", DMG_BULLET, TRACER_LINE, sk_plr_dmg_neo.GetName(), sk_npc_dmg_neo.GetName(), sk_max_neo_ammo.GetName(), BULLET_IMPULSE(800, 8000), 0);
+		def.AddAmmoType("Buckshot", DMG_BULLET | DMG_BUCKSHOT, TRACER_LINE, sk_plr_dmg_neo.GetName(), sk_npc_dmg_neo.GetName(), sk_max_neo_ammo.GetName(), BULLET_IMPULSE(400, 1200), 0);
+		def.AddAmmoType("RPG_Round", DMG_BURN, TRACER_NONE, sk_plr_dmg_neo.GetName(), sk_npc_dmg_neo.GetName(), sk_max_neo_ammo.GetName(), 0, 0);
+		def.AddAmmoType("SMG1_Grenade", DMG_BURN, TRACER_NONE, sk_plr_dmg_neo.GetName(), sk_npc_dmg_neo.GetName(), sk_max_neo_ammo.GetName(), 0, 0);
+		def.AddAmmoType("Grenade", DMG_BURN, TRACER_NONE, sk_plr_dmg_neo.GetName(), sk_npc_dmg_neo.GetName(), sk_max_neo_ammo.GetName(), 0, 0);
+		def.AddAmmoType("slam", DMG_BURN, TRACER_NONE, sk_plr_dmg_neo.GetName(), sk_npc_dmg_neo.GetName(), sk_max_neo_ammo.GetName(), 0, 0);
 	}
 
 	return &def;
 }
 
+// This set of macros initializes a static CAmmoDef, and asserts its size stays within range. See usage in the GetAmmoDef() below.
+#ifndef DEBUG
+#define NEO_AMMO_DEF_START() static CAmmoDef *def; static bool bInitted = false; if (!bInitted) \
+{ \
+	bInitted = true; \
+	def = GetAmmoDef_HL2MP()
+#else
+#define NEO_AMMO_DEF_START() static CAmmoDef *def; static bool bInitted = false; if (!bInitted) \
+{ \
+	bInitted = true; \
+	def = GetAmmoDef_HL2MP(); \
+	size_t numAmmos = def->m_nAmmoIndex;\
+	Assert(numAmmos <= MAX_AMMO_TYPES)
+#endif
+
+#ifndef DEBUG
+#define ADD_NEO_AMMO_TYPE(TypeName, DmgFlags, TracerEnum, PhysForceImpulse) def->AddAmmoType(#TypeName, DmgFlags, TracerEnum, sk_plr_dmg_neo.GetName(), sk_npc_dmg_neo.GetName(), sk_max_neo_ammo.GetName(), PhysForceImpulse, 0)
+#else
+#define ADD_NEO_AMMO_TYPE(TypeName, DmgFlags, TracerEnum, PhysForceImpulse) def->AddAmmoType(#TypeName, DmgFlags, TracerEnum, sk_plr_dmg_neo.GetName(), sk_npc_dmg_neo.GetName(), sk_max_neo_ammo.GetName(), PhysForceImpulse, 0);++numAmmos
+#endif
+
+#ifndef DEBUG
+#define NEO_AMMO_DEF_END(); }
+#else
+#define NEO_AMMO_DEF_END(); Assert(numAmmos <= MAX_AMMO_TYPES); }
+#endif
+
+#define NEO_AMMO_DEF_RETURNVAL() def
+
 CAmmoDef *GetAmmoDef()
 {
-	static CAmmoDef *def;
-	static bool bInitted = false;
+	NEO_AMMO_DEF_START();
+		ADD_NEO_AMMO_TYPE(AMMO_10G_SHELL, DMG_BULLET | DMG_BUCKSHOT, TRACER_LINE, BULLET_IMPULSE(400, 1200));
+		ADD_NEO_AMMO_TYPE(AMMO_GRENADE, DMG_BLAST, TRACER_NONE, 0);
+		ADD_NEO_AMMO_TYPE(AMMO_SMOKEGRENADE, DMG_BLAST, TRACER_NONE, 0);
+		ADD_NEO_AMMO_TYPE(AMMO_PRI, DMG_BULLET, TRACER_LINE_AND_WHIZ, BULLET_IMPULSE(400, 1200));
+		ADD_NEO_AMMO_TYPE(AMMO_SMAC, DMG_BULLET, TRACER_LINE_AND_WHIZ, BULLET_IMPULSE(400, 1200));
+	NEO_AMMO_DEF_END();
 
-	if (!bInitted)
-	{
-		bInitted = true;
-
-		// HL2MP ammo support
-		def = GetAmmoDef_HL2MP();
-
-		// NEO ammo support
-		def->AddAmmoType("AMMO_10G_SHELL", DMG_BULLET | DMG_BUCKSHOT,
-			TRACER_LINE, 0, 0, 30, BULLET_IMPULSE(400, 1200), 0);
-	}
-
-	return def;
+	return NEO_AMMO_DEF_RETURNVAL();
 }
 
 void CNEORules::ClientSpawned(edict_t* pPlayer)
@@ -280,11 +327,57 @@ bool CNEORules::ShouldCollide(int collisionGroup0, int collisionGroup1)
 
 extern ConVar mp_chattime;
 
+#ifdef GAME_DLL
+void CNEORules::ChangeLevel(void)
+{
+	BaseClass::ChangeLevel();
+}
+#endif
+
+bool CNEORules::CheckGameOver(void)
+{
+	// Note that this changes the level as side effect
+	const bool gameOver = BaseClass::CheckGameOver();
+
+#ifdef GAME_DLL
+	if (gameOver)
+	{
+		m_bFirstRestartIsDone = false;
+	}
+#endif
+
+	return gameOver;
+}
+
 void CNEORules::Think(void)
 {
+#ifdef GAME_DLL
+	if (g_fGameOver)   // someone else quit the game already
+	{
+		// check to see if we should change levels now
+		if (m_flIntermissionEndTime < gpGlobals->curtime)
+		{
+			if (!m_bChangelevelDone)
+			{
+				ChangeLevel(); // intermission is over
+				m_bChangelevelDone = true;
+			}
+		}
+
+		return;
+	}
+#endif
+
 	BaseClass::Think();
 
 #ifdef GAME_DLL
+	if (!m_bFirstRestartIsDone)
+	{
+		m_bFirstRestartIsDone = !m_bFirstRestartIsDone;
+		RestartGame();
+		return;
+	}
+
 	if (IsRoundOver())
 	{
 		// If the next round was not scheduled yet
@@ -330,12 +423,62 @@ void CNEORules::Think(void)
 
 			// And then announce team victory
 			// NEO TODO (Rain): figure out the win reasons for Neo
-			SetWinningTeam(captorTeam, 0, false, false, false, false);
+			SetWinningTeam(captorTeam, 0, false, true, false, false);
+
+			for (int i = 1; i <= gpGlobals->maxClients; i++)
+			{
+				if (i == captorClient)
+				{
+					AwardRankUp(i);
+					continue;
+				}
+
+				auto player = UTIL_PlayerByIndex(i);
+				if (player && player->GetTeamNumber() == captorTeam &&
+					player->IsAlive())
+				{
+					AwardRankUp(i);
+				}
+			}
 
 			break;
 		}
 	}
 #endif
+}
+
+void CNEORules::AwardRankUp(int client)
+{
+	auto player = UTIL_PlayerByIndex(client);
+	if (player)
+	{
+		AwardRankUp(static_cast<CNEO_Player*>(player));
+	}
+}
+
+#ifdef CLIENT_DLL
+void CNEORules::AwardRankUp(C_NEO_Player *pClient)
+#else
+void CNEORules::AwardRankUp(CNEO_Player *pClient)
+#endif
+{
+	if (!pClient)
+	{
+		return;
+	}
+
+	const int ranks[] = { 0, 4, 10, 20 };
+	for (int i = 0; i < ARRAYSIZE(ranks); i++)
+	{
+		if (pClient->m_iXP.Get() < ranks[i])
+		{
+			pClient->m_iXP.GetForModify() = ranks[i];
+			return;
+		}
+	}
+
+	// If we're beyond max rank, just award +1 point.
+	pClient->m_iXP.GetForModify()++;
 }
 
 // Return remaining time in seconds. Zero means there is no time limit.
@@ -347,6 +490,17 @@ float CNEORules::GetRoundRemainingTime()
 	}
 
 	return (m_flNeoRoundStartTime + (neo_round_timelimit.GetFloat() * 60.0f)) - gpGlobals->curtime;
+}
+
+void CNEORules::FireGameEvent(IGameEvent* event)
+{
+	const char *type = event->GetName();
+
+	if (Q_strcmp(type, "round_start") == 0)
+	{
+		m_flNeoRoundStartTime = gpGlobals->curtime;
+		m_flNeoNextRoundStartTime = 0;
+	}
 }
 
 #ifdef GAME_DLL
@@ -383,19 +537,32 @@ static inline void SpawnTheGhost()
 		{
 			ghost = dynamic_cast<CWeaponGhost*>(CreateEntityByName("weapon_ghost", -1));
 
-			spawnedGhostNow = true;
-
 			if (!ghost)
 			{
-				Warning("Failed to spawn a new ghost\n");
 				Assert(false);
-
+				Warning("Failed to spawn a new ghost\n");
 				return;
 			}
+
+			spawnedGhostNow = true;
 		}
 	}
 
-	ghostEdict = ghost->edict()->m_EdictIndex;
+	if (spawnedGhostNow)
+	{
+		int dispatchRes = DispatchSpawn(ghost);
+		if (dispatchRes != 0)
+		{
+			Assert(false);
+			return;
+		}
+
+		ghostEdict = ghost->edict()->m_EdictIndex;
+		ghost->NetworkStateChanged();
+	}
+
+	Assert(UTIL_IsValidEntity(ghost));
+	Assert(ghostEdict == ghost->edict()->m_EdictIndex);
 
 	// Get the amount of ghost spawns available to us
 	int numGhostSpawns = 0;
@@ -435,7 +602,23 @@ static inline void SpawnTheGhost()
 			{
 				if (ghostSpawnIteration++ == desiredSpawn)
 				{
-					ghost->SetAbsOrigin(ghostSpawn->GetAbsOrigin());
+					if (ghost->GetOwner())
+					{
+						Assert(false);
+						ghost->GetOwner()->Weapon_Detach(ghost);
+					}
+
+					if (!ghostSpawn->GetAbsOrigin().IsValid())
+					{
+						ghost->SetAbsOrigin(vec3_origin);
+						Warning("Failed to get ghost spawn coords; spawning ghost at map origin instead!\n");
+						Assert(false);
+					}
+					else
+					{
+						ghost->SetAbsOrigin(ghostSpawn->GetAbsOrigin());
+					}
+					
 					break;
 				}
 			}
@@ -446,16 +629,14 @@ static inline void SpawnTheGhost()
 
 	if (spawnedGhostNow)
 	{
-		DispatchSpawn(ghost);
-
-		DevMsg("Spawned ghost at coords: %.1f %.1f %.1f\n",
+		DevMsg("Spawned ghost at coords:\n\t%.1f %.1f %.1f\n",
 			ghost->GetAbsOrigin().x,
 			ghost->GetAbsOrigin().y,
 			ghost->GetAbsOrigin().z);
 	}
 	else
 	{
-		DevMsg("Moved ghost to coords: %.1f %.1f %.1f\n",
+		DevMsg("Moved ghost to coords:\n\t%.1f %.1f %.1f\n",
 			ghost->GetAbsOrigin().x,
 			ghost->GetAbsOrigin().y,
 			ghost->GetAbsOrigin().z);
@@ -486,6 +667,10 @@ void CNEORules::StartNextRound()
 		respawn(pPlayer, false);
 		pPlayer->Reset();
 
+		pPlayer->m_bInAim = false;
+		pPlayer->m_bInThermOpticCamo = false;
+		pPlayer->m_bInVision = false;
+
 		pPlayer->SetTestMessageVisible(false);
 	}
 
@@ -493,7 +678,7 @@ void CNEORules::StartNextRound()
 	m_flRestartGameTime = 0;
 	m_bCompleteReset = false;
 
-	IGameEvent * event = gameeventmanager->CreateEvent("round_start");
+	IGameEvent *event = gameeventmanager->CreateEvent("round_start");
 	if (event)
 	{
 		event->SetInt("fraglimit", 0);
@@ -524,6 +709,7 @@ bool CNEORules::IsRoundOver()
 	// Next round start has been scheduled, so current round must be over.
 	if (m_flNeoNextRoundStartTime != 0)
 	{
+		Assert((m_flNeoNextRoundStartTime < 0) == false);
 		return true;
 	}
 
@@ -555,6 +741,13 @@ int CNEORules::WeaponShouldRespawn(CBaseCombatWeapon *pWeapon)
 const char *CNEORules::GetGameDescription(void)
 {
 	//DevMsg("Querying CNEORules game description\n");
+
+	// NEO TODO (Rain): get a neo_game_config so we can specify better
+	if (IsTeamplay())
+	{
+		return "Capture the Ghost";
+	}
+
 	return BaseClass::GetGameDescription();
 }
 
@@ -603,7 +796,6 @@ static inline void RemoveGhosts()
 extern bool FindInList(const char **pStrings, const char *pToFind);
 
 void CNEORules::CleanUpMap()
-
 {
 	// Recreate all the map entities from the map data (preserving their indices),
 	// then remove everything else except the players.
@@ -783,6 +975,8 @@ void CNEORules::RestartGame()
 		respawn(pPlayer, false);
 		pPlayer->Reset();
 
+		pPlayer->m_iXP.GetForModify() = 0;
+
 		pPlayer->SetTestMessageVisible(false);
 	}
 
@@ -868,7 +1062,10 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 #endif
 }
 
+ConVar snd_victory_volume("snd_victory_volume", "0.33", FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_USERINFO, "Loudness of the victory jingle (0-1).", true, 0.0, true, 1.0);
+
 #ifdef GAME_DLL
+extern ConVar snd_musicvolume;
 void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bool bSwitchTeams, bool bDontAddScore, bool bFinal)
 {
 	if (IsRoundOver())
@@ -905,26 +1102,25 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 		Assert(false);
 	}
 
+	EmitSound_t soundParams;
+	soundParams.m_nChannel = CHAN_VOICE;
+	// Referencing sounds directly because we can't override the soundscript volume level otherwise
+	soundParams.m_pSoundName = (team == TEAM_JINRAI) ? "gameplay/jinrai.mp3" : (team == TEAM_NSF) ? "gameplay/nsf.mp3" : "gameplay/draw.mp3";
+	soundParams.m_bWarnOnDirectWaveReference = false;
+
+	CRecipientFilter soundFilter;
+	soundFilter.AddAllPlayers();
+
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
 		auto player = UTIL_PlayerByIndex(i);
-
 		if (player)
 		{
 			engine->ClientPrintf(player->edict(), victoryMsg);
 
-			if (team == TEAM_JINRAI)
-			{
-				player->EmitSound("HUD.JinraiWin");
-			}
-			else if (team == TEAM_NSF)
-			{
-				player->EmitSound("HUD.NSFWin");
-			}
-			else
-			{
-				player->EmitSound("HUD.Draw");
-			}
+			float jingleVolume = atof(engine->GetClientConVarValue(i, snd_victory_volume.GetName()));
+			soundParams.m_flVolume = jingleVolume;
+			player->EmitSound(soundFilter, i, soundParams);
 		}
 	}
 	
@@ -944,3 +1140,35 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 	}
 }
 #endif
+
+void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
+{
+	BaseClass::PlayerKilled(pVictim, info);
+
+	auto attacker = dynamic_cast<CNEO_Player*>(info.GetAttacker());
+	auto victim = dynamic_cast<CNEO_Player*>(pVictim);
+
+	if (!attacker || !pVictim)
+	{
+		return;
+	}
+
+	// Suicide
+	if (attacker == victim)
+	{
+		victim->m_iXP.GetForModify() -= 1;
+	}
+	else
+	{
+		// Team kill
+		if (attacker->GetTeamNumber() == victim->GetTeamNumber())
+		{
+			victim->m_iXP.GetForModify() -= 1;
+		}
+		// Enemy kill
+		else
+		{
+			victim->m_iXP.GetForModify() += 1;
+		}
+	}
+}

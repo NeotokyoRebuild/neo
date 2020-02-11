@@ -77,13 +77,18 @@ static inline double GetColorPulse()
 
 void CNEOHud_GhostBeacon::Paint()
 {
+	if (!IsHudReadyForPaintNow())
+	{
+		return;
+	}
+
 	BaseClass::Paint();
-	
+
 	// Since the distance format is a known length,
 	// we hardcode to save the unicode length check each time.
-	const size_t beaconTextLen = 11;
+	const size_t beaconTextLen = 4;
 	char beaconText[beaconTextLen + 1];
-	V_snprintf(beaconText, sizeof(beaconText), "DIST %.1f M", m_flDistMeters);
+	V_snprintf(beaconText, sizeof(beaconText), "%02d M", FastFloatToSmallInt(m_flDistMeters));
 
 	wchar_t beaconTextUnicode[(sizeof(beaconText) + 1) * sizeof(wchar_t*)];
 	g_pVGuiLocalize->ConvertANSIToUnicode(beaconText, beaconTextUnicode, sizeof(beaconTextUnicode));

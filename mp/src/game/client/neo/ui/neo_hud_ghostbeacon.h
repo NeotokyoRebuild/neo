@@ -1,13 +1,14 @@
 #ifndef NEO_HUD_GHOSTBEACON_H
 #define NEO_HUD_GHOSTBEACON_H
-#ifdef WIN_32
+#ifdef _WIN32
 #pragma once
 #endif
 
+#include "neo_hud_childelement.h"
 #include "hudelement.h"
 #include <vgui_controls/Panel.h>
 
-class CNEOHud_GhostBeacon : public CHudElement, public vgui::Panel
+class CNEOHud_GhostBeacon : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
 {
 	DECLARE_CLASS_SIMPLE(CNEOHud_GhostBeacon, Panel);
 

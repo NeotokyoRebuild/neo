@@ -19,15 +19,44 @@ IMPLEMENT_NETWORKCLASS_ALIASED( NEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 END_NETWORK_TABLE()
 
-#ifndef CLIENT_DLL
-
+#ifdef GAME_DLL
 BEGIN_DATADESC( CNEOBaseCombatWeapon )
 END_DATADESC()
-
 #endif
 
+#ifdef CLIENT_DLL
 BEGIN_PREDICTION_DATA( CNEOBaseCombatWeapon )
 END_PREDICTION_DATA()
+#endif
+
+const char *GetWeaponByLoadoutId(int id)
+{
+	if (id < 0 || id >= NEO_WEP_LOADOUT_ID_COUNT)
+	{
+		Assert(false);
+		return "";
+	}
+
+	const char* weps[] = {
+		"weapon_mpn",
+		"weapon_srm",
+		"weapon_srm_s",
+		"weapon_jitte",
+		"weapon_jittescoped",
+		"weapon_zr68c",
+		"weapon_zr68s",
+		"weapon_zr68l",
+		"weapon_mx",
+		"weapon_pz",
+		"weapon_supa7",
+		"weapon_m41",
+		"weapon_m41l",
+	};
+
+	COMPILE_TIME_ASSERT(NEO_WEP_LOADOUT_ID_COUNT == ARRAYSIZE(weps));
+
+	return weps[id];
+}
 
 CNEOBaseCombatWeapon::CNEOBaseCombatWeapon( void )
 {
@@ -42,9 +71,6 @@ void CNEOBaseCombatWeapon::Spawn()
 #endif
 }
 
-#ifdef CLIENT_DLL
-extern ConVar cl_autoreload_when_empty;
-#endif
 bool CNEOBaseCombatWeapon::Reload( void )
 {
 	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
@@ -71,4 +97,30 @@ bool CNEOBaseCombatWeapon::Reload( void )
 #endif
 
 	return DefaultReload( GetMaxClip1(), GetMaxClip2(), ACT_VM_RELOAD );
+}
+
+bool CNEOBaseCombatWeapon::CanBeSelected(void)
+{
+	if (GetWeaponFlags() & ITEM_FLAG_NOAUTOSWITCHEMPTY)
+	{
+		return true;
+	}
+
+	return BaseClass::CanBeSelected();
+}
+
+bool CNEOBaseCombatWeapon::Holster(CBaseCombatWeapon* pSwitchingTo)
+{
+#ifdef CLIENT_DLL
+	if (GetOwner())
+	{
+		static_cast<C_NEO_Player*>(GetOwner())->Weapon_SetZoom(false);
+	}
+	else
+	{
+		Assert(false);
+	}
+#endif
+
+	return BaseClass::Holster(pSwitchingTo);
 }

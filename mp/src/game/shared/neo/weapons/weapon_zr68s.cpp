@@ -3,7 +3,6 @@
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
-#include "dt_recv.h"
 
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponZR68S, DT_WeaponZR68S)
 
@@ -33,19 +32,7 @@ END_PREDICTION_DATA()
 LINK_ENTITY_TO_CLASS(weapon_zr68s, CWeaponZR68S);
 PRECACHE_WEAPON_REGISTER(weapon_zr68s);
 
-#ifdef GAME_DLL
-acttable_t CWeaponZR68S::m_acttable[] =
-{
-	{ ACT_IDLE, ACT_IDLE_RIFLE, false },
-	{ ACT_RUN, ACT_RUN_RIFLE, false },
-	{ ACT_CROUCHIDLE, ACT_HL2MP_IDLE_CROUCH_AR2, false },
-	{ ACT_WALK_CROUCH, ACT_HL2MP_WALK_CROUCH_AR2, false },
-	{ ACT_RANGE_ATTACK1, ACT_RANGE_ATTACK_AR1, false },
-	{ ACT_RELOAD, ACT_RELOAD_SMG1, false },
-	{ ACT_JUMP, ACT_HL2MP_JUMP_AR2, false }
-};
-IMPLEMENT_ACTTABLE(CWeaponZR68S);
-#endif
+NEO_ACTTABLE(CWeaponZR68S);
 
 CWeaponZR68S::CWeaponZR68S()
 {
@@ -176,7 +163,6 @@ void CWeaponZR68S::ItemPostFrame()
 		}
 	}
 }
-
 
 float CWeaponZR68S::GetFireRate()
 {

@@ -33,6 +33,10 @@
 
 #include "vgui_avatarimage.h"
 
+#ifdef NEO
+#include "neo_player_shared.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -381,7 +385,12 @@ void CClientScoreBoardDialog::AddHeader()
 	m_pPlayerList->AddSection(m_iSectionId, "");
 	m_pPlayerList->SetSectionAlwaysVisible(m_iSectionId);
 	m_pPlayerList->AddColumnToSection(m_iSectionId, "name", "#PlayerName", 0, scheme()->GetProportionalScaledValueEx( GetScheme(),NAME_WIDTH) );
-	m_pPlayerList->AddColumnToSection(m_iSectionId, "frags", "#PlayerScore", 0, scheme()->GetProportionalScaledValueEx( GetScheme(),SCORE_WIDTH) );
+#ifdef NEO
+	m_pPlayerList->AddColumnToSection(m_iSectionId, "rank", "#PlayerScore", 0, scheme()->GetProportionalScaledValueEx(GetScheme(), NAME_WIDTH / 4));
+	m_pPlayerList->AddColumnToSection(m_iSectionId, "xp", "#PlayerScore", 0, scheme()->GetProportionalScaledValueEx(GetScheme(), SCORE_WIDTH));
+#else
+	m_pPlayerList->AddColumnToSection(m_iSectionId, "frags", "#PlayerScore", 0, scheme()->GetProportionalScaledValueEx(GetScheme(), SCORE_WIDTH));
+#endif
 	m_pPlayerList->AddColumnToSection(m_iSectionId, "deaths", "#PlayerDeath", 0, scheme()->GetProportionalScaledValueEx( GetScheme(),DEATH_WIDTH) );
 	m_pPlayerList->AddColumnToSection(m_iSectionId, "ping", "#PlayerPing", 0, scheme()->GetProportionalScaledValueEx( GetScheme(),PING_WIDTH) );
 }
@@ -420,7 +429,12 @@ void CClientScoreBoardDialog::AddSection(int teamType, int teamNumber)
 		}
 
 		m_pPlayerList->AddColumnToSection(m_iSectionId, "name", string1, 0, scheme()->GetProportionalScaledValueEx( GetScheme(),NAME_WIDTH) - m_iAvatarWidth );
-		m_pPlayerList->AddColumnToSection(m_iSectionId, "frags", "", 0, scheme()->GetProportionalScaledValueEx( GetScheme(),SCORE_WIDTH) );
+#ifdef NEO
+		m_pPlayerList->AddColumnToSection(m_iSectionId, "rank", "", 0, scheme()->GetProportionalScaledValueEx( GetScheme(),NAME_WIDTH / 4) );
+		m_pPlayerList->AddColumnToSection(m_iSectionId, "xp", "", 0, scheme()->GetProportionalScaledValueEx( GetScheme(),SCORE_WIDTH) );
+#else
+		m_pPlayerList->AddColumnToSection(m_iSectionId, "frags", "", 0, scheme()->GetProportionalScaledValueEx(GetScheme(), SCORE_WIDTH));
+#endif
 		m_pPlayerList->AddColumnToSection(m_iSectionId, "deaths", "", 0, scheme()->GetProportionalScaledValueEx( GetScheme(),DEATH_WIDTH) );
 		m_pPlayerList->AddColumnToSection(m_iSectionId, "ping", "", 0, scheme()->GetProportionalScaledValueEx( GetScheme(),PING_WIDTH) );
 	}
@@ -434,7 +448,12 @@ void CClientScoreBoardDialog::AddSection(int teamType, int teamNumber)
 			m_pPlayerList->AddColumnToSection( m_iSectionId, "avatar", "", SectionedListPanel::COLUMN_IMAGE | SectionedListPanel::COLUMN_RIGHT, m_iAvatarWidth );
 		}
 		m_pPlayerList->AddColumnToSection(m_iSectionId, "name", "#Spectators", 0, scheme()->GetProportionalScaledValueEx( GetScheme(),NAME_WIDTH) - m_iAvatarWidth );
-		m_pPlayerList->AddColumnToSection(m_iSectionId, "frags", "", 0, scheme()->GetProportionalScaledValueEx( GetScheme(),SCORE_WIDTH) );
+#ifdef NEO
+		m_pPlayerList->AddColumnToSection(m_iSectionId, "rank", "", 0, scheme()->GetProportionalScaledValueEx( GetScheme(),NAME_WIDTH / 4) );
+		m_pPlayerList->AddColumnToSection(m_iSectionId, "xp", "", 0, scheme()->GetProportionalScaledValueEx(GetScheme(), SCORE_WIDTH));
+#else
+		m_pPlayerList->AddColumnToSection(m_iSectionId, "frags", "", 0, scheme()->GetProportionalScaledValueEx(GetScheme(), SCORE_WIDTH));
+#endif
 	}
 }
 
@@ -448,8 +467,13 @@ bool CClientScoreBoardDialog::StaticPlayerSortFunc(vgui::SectionedListPanel *lis
 	Assert(it1 && it2);
 
 	// first compare frags
+#ifdef NEO
+	int v1 = it1->GetInt("xp");
+	int v2 = it2->GetInt("xp");
+#else
 	int v1 = it1->GetInt("frags");
 	int v2 = it2->GetInt("frags");
+#endif
 	if (v1 > v2)
 		return true;
 	else if (v1 < v2)
@@ -478,7 +502,13 @@ bool CClientScoreBoardDialog::GetPlayerScoreInfo(int playerIndex, KeyValues *kv)
 		return false;
 
 	kv->SetInt("deaths", gr->GetDeaths( playerIndex ) );
-	kv->SetInt("frags", gr->GetFrags( playerIndex ) );
+#ifdef NEO
+	int xp = gr->GetXP(playerIndex);
+	kv->SetString("rank", GetRankName(xp));
+	kv->SetInt("xp", xp);
+#else
+	kv->SetInt("frags", gr->GetFrags(playerIndex));
+#endif
 	kv->SetInt("ping", gr->GetPing( playerIndex ) ) ;
 	kv->SetString("name", gr->GetPlayerName( playerIndex ) );
 	kv->SetInt("playerIndex", playerIndex);

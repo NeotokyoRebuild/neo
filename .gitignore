@@ -1,8 +1,22 @@
 # Files to ignore when considering what GIT should commit.
 
+# Possible symlink for fixing tools that hardcode "game/mod_hl2mp" - we use "game/neo".
+mp/game/mod_hl2mp
+
+mp/game/neo/screenshots
+
+# Any debug or user specific configs that shouldn't be pushed
+mp/game/neo/cfg/rain.cfg
+
+# Shader state debug image dumps
+mp/game/neo/*.tga
+
 # Object files
 *.o
 *.p
+
+# Emacs style backup files
+*~
 
 # VSCode
 *.vscode/
@@ -29,16 +43,17 @@ ipch
 *.vcxproj.filters
 *.vcxproj.vpc_crc
 *.vpc.sentinel
+.vs/
 Degub/
 Release/
 mp/src/fgdlib/Debug/
 mp/src/fgdlib/Release/
-mp/src/game/client/Debug_mod_hl2mp/
-mp/src/game/client/Release_mod_hl2mp/
-mp/src/game/server/Debug_mod_hl2mp/
-mp/src/game/server/Release_mod_hl2mp/
-mp/src/materialsystem/stdshaders/Debug_dx9_mod_hl2mp/
-mp/src/materialsystem/stdshaders/Release_dx9_mod_hl2mp/
+mp/src/game/client/Debug_neo/
+mp/src/game/client/Release_neo/
+mp/src/game/server/Debug_neo/
+mp/src/game/server/Release_neo/
+mp/src/materialsystem/stdshaders/Debug_dx9_neo/
+mp/src/materialsystem/stdshaders/Release_dx9_neo/
 mp/src/mathlib/Debug/
 mp/src/mathlib/Release/
 mp/src/raytrace/Debug/
@@ -91,11 +106,17 @@ obj*/
 !devtools/*.mak
 !utils/smdlexp/smdlexp.mak
 
+# QT Creator project generated files
+*.cflags
+*.config
+*.creator
+*.cxxflags
+*.files
+*.includes
+
 # Specific Source build products
 bin
 *.project
-*.lib
-*.fxc
 
 client.pdb
 client.dll
@@ -103,6 +124,12 @@ client.lib
 server.pdb
 server.dll
 server.lib
+
+vgui_controls.lib
+fgdlib.lib
+tier1.lib
+mathlib.lib
+raytrace.lib
 
 client.so
 client.so.dbg
@@ -127,8 +154,20 @@ videoconfig_linux.cfg
 *.ain
 user_custom
 
-# shader files
+# shader generation files
 *.tmp
+mp/src/materialsystem/stdshaders/fxctmp9_tmp/
+mp/src/materialsystem/stdshaders/shaders/fxc/
+mp/src/materialsystem/stdshaders/filelist.txt
+mp/src/materialsystem/stdshaders/filelistgen.txt
+mp/src/materialsystem/stdshaders/filestocopy.txt
+mp/src/materialsystem/stdshaders/inclist.txt
+mp/src/materialsystem/stdshaders/uniquefilestocopy.txt
+mp/src/materialsystem/stdshaders/vcslist.txt
+mp/src/materialsystem/stdshaders/makefile.stdshader_dx9_20b
+mp/src/materialsystem/stdshaders/makefile.stdshader_dx9_20b.copy
+mp/src/materialsystem/stdshaders/makefile.stdshader_dx9_30
+mp/src/materialsystem/stdshaders/makefile.stdshader_dx9_30.copy
 
 # Excludes
 !makefile_base_posix.mak

@@ -4972,7 +4972,9 @@ void CBasePlayer::Spawn( void )
 
 	m_Local.m_bDucked = false;// This will persist over round restart if you hold duck otherwise. 
 	m_Local.m_bDucking = false;
+#ifndef NEO // We do this in neo_player
     SetViewOffset( VEC_VIEW_SCALED( this ) );
+#endif
 	Precache();
 	
 	m_bitsDamageType = 0;

@@ -17,6 +17,11 @@
 #include "c_world.h"
 #include "bitmap/tgawriter.h"
 #include "filesystem.h"
+
+#ifdef NEO
+#include "c_neo_player.h"
+#endif
+
 #include "tier0/vprof.h"
 
 #include "proxyentity.h"
@@ -84,6 +89,13 @@ ConVar mat_tonemap_percent_target( "mat_tonemap_percent_target", "60.0", FCVAR_C
 ConVar mat_tonemap_percent_bright_pixels( "mat_tonemap_percent_bright_pixels", "2.0", FCVAR_CHEAT );
 ConVar mat_tonemap_min_avglum( "mat_tonemap_min_avglum", "3.0", FCVAR_CHEAT );
 ConVar mat_fullbright( "mat_fullbright", "0", FCVAR_CHEAT );
+
+#ifdef NEO
+ConVar mat_neo_ssao_enable("mat_neo_ssao_enable", "0", FCVAR_USERINFO, "Whether to use SSAO.", true, 0.0f, true, 1.0f);
+//ConVar mat_neo_nv_enable("mat_neo_nv_enable", "0", FCVAR_CHEAT, "", true, 0.0f, true, 1.0f);
+ConVar mat_neo_mv_enable("mat_neo_mv_enable", "0", FCVAR_CHEAT, "", true, 0.0f, true, 1.0f);
+ConVar mat_neo_mv_noise_enable("mat_neo_noise_enable", "1", FCVAR_CHEAT, "", true, 0.0f, true, 1.0f);
+#endif
 
 extern ConVar localplayer_visionflags;
 
@@ -2213,6 +2225,234 @@ static ConVar r_queued_post_processing( "r_queued_post_processing", "0" );
 static ConVar mat_postprocess_x( "mat_postprocess_x", "4" );
 static ConVar mat_postprocess_y( "mat_postprocess_y", "1" );
 
+#ifdef NEO
+ConVar mat_neo_ssao_blur("mat_neo_ssao_blur", "1", FCVAR_USERINFO, "Use a blur to smooth the SSAO noise.");
+ConVar mat_neo_ssao_combine("mat_neo_ssao_combine", "1", FCVAR_CHEAT);
+ConVar mat_neo_ssao_dump("mat_neo_ssao_dump", "0", FCVAR_CHEAT);
+#endif
+
+#ifdef NEO
+static inline void DoSSAO(const int x, const int y, const int w, const int h)
+{
+	CMatRenderContextPtr pRenderContext(materials);
+
+	ITexture *pSrc = materials->FindTexture("_rt_FullFrameFB", TEXTURE_GROUP_RENDER_TARGET);
+	const int nSrcWidth = pSrc->GetActualWidth();
+	const int nSrcHeight = pSrc->GetActualHeight();
+
+	ITexture *pSSAOTex = GetSSAO();
+	ITexture *pSSAO_ImTex = GetSSAOIntermediate();
+
+	Rect_t DestRect{ 0, 0, nSrcWidth, nSrcHeight };
+
+	const int renderTargetId = 0;
+
+	pRenderContext->CopyRenderTargetToTextureEx(pSSAOTex, renderTargetId, &DestRect, NULL);
+	pRenderContext->CopyRenderTargetToTextureEx(pSSAO_ImTex, renderTargetId, &DestRect, NULL);
+
+	IMaterial *pSSAOCalcMat = materials->FindMaterial("dev/ssao", TEXTURE_GROUP_OTHER, true);
+
+	if (!pSSAOCalcMat || pSSAOCalcMat->IsErrorMaterial())
+	{
+		Assert(false);
+		return;
+	}
+
+	pRenderContext->DrawScreenSpaceRectangle(
+		pSSAOCalcMat,
+		0, 0, w, h,
+		0, 0, nSrcWidth - 1, nSrcHeight - 1,
+		nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
+
+	//save this pass so we can apply additional post process effects to current ones
+	pRenderContext->CopyRenderTargetToTextureEx(pSSAOTex, renderTargetId, &DestRect, NULL);
+
+	if (mat_neo_ssao_dump.GetBool())
+	{
+		Msg("Dumping SSAO postprocess pass as TGA sequence...\n");
+		DumpTGAofRenderTarget(w, h, "neo_ssao");
+	}
+
+	// 2. blurring that texture to avoid grain
+	if (mat_neo_ssao_blur.GetBool())
+	{
+		IMaterial *pSSAOBlurMat = materials->FindMaterial("dev/ssaoblur", TEXTURE_GROUP_OTHER, true);
+		Assert(!pSSAOBlurMat->IsErrorMaterial());
+
+		pRenderContext->DrawScreenSpaceRectangle(
+			pSSAOBlurMat,
+			0, 0, w, h,
+			0, 0, nSrcWidth - 1, nSrcHeight - 1,
+			nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
+
+		pRenderContext->CopyRenderTargetToTextureEx(pSSAOTex, renderTargetId, &DestRect, NULL);
+
+		if (mat_neo_ssao_dump.GetBool())
+		{
+			DumpTGAofRenderTarget(w, h, "neo_gaussianblur");
+		}
+	}
+
+	// 3. combine what we got with framebuffer texture
+	if (mat_neo_ssao_combine.GetBool())
+	{
+		//Vector4D fullViewportPostSrcCorners(0.0f, -0.5f, nSrcWidth / 4 - 1, nSrcHeight / 4 - 1);
+		//Vector4D fullViewportPostDestCorners(0.0f, 0.0f, nSrcWidth - 1, nSrcHeight - 1);
+		//Rect_t   fullViewportPostDestRect = { x, y, w, h };
+		//Vector2D destTexSize(nSrcWidth, nSrcHeight);
+
+		IMaterial *pSSAOCombineMat = materials->FindMaterial("dev/ssao_combine", TEXTURE_GROUP_OTHER, true);
+		Assert(!pSSAOCombineMat->IsErrorMaterial());
+
+		pRenderContext->DrawScreenSpaceRectangle(
+			pSSAOCombineMat,
+			0, 0, w, h,
+			0, 0, nSrcWidth - 1, nSrcHeight - 1,
+			nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
+
+		if (mat_neo_ssao_dump.GetBool())
+		{
+			DumpTGAofRenderTarget(w, h, "neo_ssao_combine");
+		}
+	}
+
+	if (mat_neo_ssao_dump.GetBool())
+	{
+		mat_neo_ssao_dump.SetValue(0);
+		Msg("SSAO pass dump finished.\n");
+	}
+}
+
+static inline void DoNightVision(const int x, const int y, const int w, const int h)
+{
+	CMatRenderContextPtr pRenderContext(materials);
+
+	ITexture *pFbTex = materials->FindTexture("_rt_FullFrameFB", TEXTURE_GROUP_RENDER_TARGET);
+	const int nSrcWidth = pFbTex->GetActualWidth();
+	const int nSrcHeight = pFbTex->GetActualHeight();
+
+	IMaterial *pNvMat = materials->FindMaterial("dev/nightvision", TEXTURE_GROUP_OTHER, true);
+
+	if (!pNvMat || pNvMat->IsErrorMaterial())
+	{
+		Assert(false);
+		return;
+	}
+
+	Rect_t DestRect{ 0, 0, nSrcWidth, nSrcHeight };
+	const int renderTargetId = 0;
+
+	pRenderContext->CopyRenderTargetToTextureEx(pFbTex, renderTargetId, &DestRect, NULL);
+
+	pRenderContext->DrawScreenSpaceRectangle(pNvMat,
+		0, 0, w, h,
+		0, 0, nSrcWidth - 1, nSrcHeight - 1,
+		nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
+}
+
+static inline void DoThermalVision(const int x, const int y, const int w, const int h)
+{
+#if(0) // NEO TODO (Rain)
+	CMatRenderContextPtr pRenderContext(materials);
+
+	int width, height;
+	materials->GetBackBufferDimensions(width, height);
+
+	//Rect_t DestRect{ 0, 0, width, height };
+	//const int renderTargetId = 0;
+
+	IMaterial* tvMat = materials->FindMaterial("dev/thermalvision_tv2", TEXTURE_GROUP_OTHER, true);
+	Assert(tvMat && !tvMat->IsErrorMaterial());
+
+	pRenderContext->DrawScreenSpaceRectangle(
+		tvMat,
+		0, 0, w, h,
+		0, 0, width - 1, height - 1,
+		width, height, GetClientWorldEntity()->GetClientRenderable());
+#endif
+}
+
+ConVar mat_neo_mv_1("mat_neo_mv_1", "1");
+ConVar mat_neo_mv_2("mat_neo_mv_2", "1");
+
+static inline void DoMotionVision(const int x, const int y, const int w, const int h)
+{
+	CMatRenderContextPtr pRenderContext(materials);
+
+	ITexture *pSrc = materials->FindTexture("_rt_FullFrameFB", TEXTURE_GROUP_RENDER_TARGET);
+	const int nSrcWidth = pSrc->GetActualWidth();
+	const int nSrcHeight = pSrc->GetActualHeight();
+
+	Rect_t DestRect{ 0, 0, nSrcWidth, nSrcHeight };
+
+	const int renderTargetId = 0;
+
+	ITexture *pVM_MV = GetMV();
+	ITexture *pVM_MV_IM = GetMVIntermediate();
+
+	static int bufferIdx = 0;
+	const int numBuffers = 2;
+	ITexture *pVM_Buffer = GetMVBuffer(bufferIdx);
+	bufferIdx = (bufferIdx + 1) % numBuffers;
+
+	pRenderContext->CopyRenderTargetToTextureEx(pVM_MV, renderTargetId, &DestRect, NULL);
+	pRenderContext->CopyRenderTargetToTextureEx(pVM_MV_IM, renderTargetId, &DestRect, NULL);
+	pRenderContext->CopyRenderTargetToTextureEx(pVM_Buffer, renderTargetId, &DestRect, NULL);
+	
+	if (mat_neo_mv_1.GetBool())
+	{
+		IMaterial *pMVMat_1 = materials->FindMaterial("dev/neo_motionvision_pass1", TEXTURE_GROUP_OTHER, true);
+		if (!pMVMat_1 || pMVMat_1->IsErrorMaterial())
+		{
+			Assert(false);
+			return;
+		}
+
+		pRenderContext->DrawScreenSpaceRectangle(
+			pMVMat_1,
+			0, 0, w, h,
+			0, 0, nSrcWidth - 1, nSrcHeight - 1,
+			nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
+	}
+	
+	if (mat_neo_mv_2.GetBool())
+	{
+		IMaterial *pMVMat_2 = materials->FindMaterial("dev/neo_motionvision_pass2", TEXTURE_GROUP_OTHER, true);
+		if (!pMVMat_2 || pMVMat_2->IsErrorMaterial())
+		{
+			Assert(false);
+			return;
+		}
+
+		pRenderContext->CopyRenderTargetToTextureEx(pVM_MV, renderTargetId, &DestRect, NULL);
+
+		pRenderContext->DrawScreenSpaceRectangle(
+			pMVMat_2,
+			0, 0, w, h,
+			0, 0, nSrcWidth - 1, nSrcHeight - 1,
+			nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
+	}
+
+	if (mat_neo_mv_noise_enable.GetBool())
+	{
+		pRenderContext->CopyRenderTargetToTextureEx(pVM_MV, renderTargetId, &DestRect, NULL);
+
+		IMaterial *pNoiseMat = materials->FindMaterial("dev/neo_motionvision_noise", TEXTURE_GROUP_OTHER, true);
+		if (!pNoiseMat || pNoiseMat->IsErrorMaterial())
+		{
+			Assert(false);
+			return;
+		}
+
+		pRenderContext->DrawScreenSpaceRectangle(
+			pNoiseMat,
+			0, 0, w, h,
+			0, 0, nSrcWidth - 1, nSrcHeight - 1,
+			nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
+	}
+}
+#endif
+
 void DoEnginePostProcessing( int x, int y, int w, int h, bool bFlashlightIsOn, bool bPostVGui )
 {
 	tmZone( TELEMETRY_LEVEL0, TMZF_NONE, "%s", __FUNCTION__ );
@@ -2630,6 +2870,48 @@ void DoEnginePostProcessing( int x, int y, int w, int h, bool bFlashlightIsOn, b
 
 #if defined( _X360 )
 	pRenderContext->PopVertexShaderGPRAllocation();
+#endif
+
+#ifdef NEO
+	if (mat_neo_ssao_enable.GetBool())
+	{
+		DoSSAO(x, y, w, h);
+	}
+
+	/*if (mat_neo_nv_enable.GetBool())
+	{
+		DoNightVision(x, y, w, h);
+	}*/
+
+	if (mat_neo_mv_enable.GetBool())
+	{
+		DoMotionVision(x, y, w, h);
+	}
+	else
+	{
+		auto pNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
+		if (pNeoPlayer && pNeoPlayer->IsInVision())
+		{
+			switch (pNeoPlayer->GetClass())
+			{
+			case NEO_CLASS_RECON:
+			{
+				DoNightVision(x, y, w, h);
+				break;
+			}
+			case NEO_CLASS_ASSAULT:
+			{
+				DoMotionVision(x, y, w, h);
+				break;
+			}
+			case NEO_CLASS_SUPPORT:
+			{
+				DoThermalVision(x, y, w, h);
+				break;
+			}
+			}
+		}
+	}
 #endif
 }
 

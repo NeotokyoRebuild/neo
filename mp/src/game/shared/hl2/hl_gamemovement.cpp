@@ -283,7 +283,16 @@ bool CHL2GameMovement::ContinueForcedMove()
 //-----------------------------------------------------------------------------
 bool CHL2GameMovement::OnLadder( trace_t &trace )
 {
+#ifndef NEO
 	return ( GetLadder() != NULL ) ? true : false;
+#else
+	if (!GetLadder())
+	{
+		return BaseClass::OnLadder(trace);
+	}
+
+	return true;
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -522,6 +531,14 @@ bool CHL2GameMovement::ExitLadderViaDismountNode( CFuncLadder *ladder, bool stri
 //-----------------------------------------------------------------------------
 void CHL2GameMovement::FullLadderMove()
 {
+#ifdef NEO
+	if (!GetLadder())
+	{
+		BaseClass::FullLadderMove();
+		return;
+	}
+#endif
+
 #if !defined( CLIENT_DLL )
 	CFuncLadder *ladder = GetLadder();
 	Assert( ladder );
@@ -887,7 +904,12 @@ bool CHL2GameMovement::LadderMove( void )
 	if ( player->GetMoveType() == MOVETYPE_NOCLIP )
 	{
 		SetLadder( NULL );
+
+#ifdef NEO
+		return BaseClass::LadderMove();
+#else
 		return false;
+#endif
 	}
 
 	// If being forced to mount/dismount continue to act like we are on the ladder
@@ -954,7 +976,11 @@ bool CHL2GameMovement::LadderMove( void )
 			}
 		}
 
+#ifdef NEO
+		return BaseClass::LadderMove();
+#else
 		return false;
+#endif
 	}
 
 	if ( !ladder && 
@@ -968,7 +994,11 @@ bool CHL2GameMovement::LadderMove( void )
 	ladder = GetLadder();
 	if ( !ladder )
 	{
+#ifdef NEO
+		return BaseClass::LadderMove();
+#else
 		return false;
+#endif
 	}
 
 	// Don't play the deny sound
@@ -1032,7 +1062,12 @@ bool CHL2GameMovement::LadderMove( void )
 		{
 			mv->m_vecVelocity.z = mv->m_vecVelocity.z + 50;
 		}
+
+#ifdef NEO
+		return BaseClass::LadderMove();
+#else
 		return false;
+#endif
 	}
 
 	if ( forwardSpeed != 0 || rightSpeed != 0 )
@@ -1064,7 +1099,12 @@ bool CHL2GameMovement::LadderMove( void )
 			player->SetMoveType( MOVETYPE_WALK );
 			// Remove from ladder
 			SetLadder( NULL );
+
+#ifdef NEO
+			return BaseClass::LadderMove();
+#else
 			return false;
+#endif
 		}
 
 		bool ishorizontal = fabs( topPosition.z - bottomPosition.z ) < 64.0f ? true : false;

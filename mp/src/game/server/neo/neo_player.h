@@ -12,11 +12,6 @@ class CNEO_Player;
 #include "utldict.h"
 #include "hl2mp_player.h"
 
-#define NEO_WEAPON_PRIMARY_SLOT 0
-#define NEO_WEAPON_SECONDARY_SLOT 1
-#define NEO_WEAPON_MELEE_SLOT 2
-#define NEO_WEAPON_EXPLOSIVE_SLOT 3
-
 class CNEO_Player : public CHL2MP_Player
 {
 public:
@@ -63,6 +58,8 @@ public:
 	virtual void EquipSuit(bool bPlayEffects = true);
 	virtual void RemoveSuit(void);
 	virtual void GiveDefaultItems(void);
+	
+	void GiveLoadoutWeapon(void);
 
 	void SetPlayerTeamModel(void);
 	virtual void PickDefaultSpawnTeam(void);
@@ -72,8 +69,8 @@ public:
 
 	virtual bool	CanHearAndReadChatFrom(CBasePlayer *pPlayer);
 
+	inline bool IsCarryingGhost(void);
 	inline bool IsAllowedToDrop(CBaseCombatWeapon *pWep);
-	inline bool IsAllowedToZoom(CBaseCombatWeapon *pWep);
 
 	inline void ZeroFriendlyPlayerLocArray(void);
 
@@ -81,23 +78,58 @@ public:
 
 	void Weapon_AimToggle(CBaseCombatWeapon *pWep);
 
-	void DoThirdPersonLean(void);
+	void Lean(void);
 	void SoftSuicide(void);
 	void GiveAllItems(void);
 	inline bool ProcessTeamSwitchRequest(int iTeam);
 
 	inline void Weapon_SetZoom(bool bZoomIn);
 
-	int GetSkin();
-	int GetClass();
+	inline void SuperJump(void);
+
+	void RequestSetClass(int newClass);
+	void RequestSetSkin(int newSkin);
+	bool RequestSetLoadout(int loadoutNumber);
+
+	int GetSkin() const { return m_iNeoSkin; }
+	int GetClass() const { return m_iNeoClass; }
+
+	bool IsAirborne() const { return (!(GetFlags() & FL_ONGROUND)); }
+
+	virtual void StartAutoSprint(void);
+	virtual void StartSprinting(void);
+	virtual void StopSprinting(void);
+	virtual void InitSprinting(void);
+	virtual bool CanSprint(void);
+	virtual void EnableSprint(bool bEnable);
+
+	virtual void StartWalking(void);
+	virtual void StopWalking(void);
+
+	float GetNormSpeed() const;
+	float GetCrouchSpeed() const;
+	float GetWalkSpeed() const;
+	float GetSprintSpeed() const;
 
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);
 
 private:
 	inline void CheckThermOpticButtons();
+	inline void CheckVisionButtons();
+	inline void PlayCloakSound();
+	inline void CloakFlash();
+
+	inline bool IsAllowedToSuperJump(void);
 
 public:
+	CNetworkVar(int, m_iNeoClass);
+	CNetworkVar(int, m_iNeoSkin);
+
 	CNetworkVar(int, m_iCapTeam);
+
+	CNetworkVar(int, m_iXP);
+
+	CNetworkVar(int, m_iLoadoutWepChoice);
 
 	CNetworkVar(bool, m_bShowTestMessage);
 	CNetworkString(m_pszTestMessage, 32 * 2 + 1);
@@ -106,12 +138,22 @@ public:
 	CNetworkVar(int, m_iGhosterTeam);
 	CNetworkVar(bool, m_bGhostExists);
 	CNetworkVar(bool, m_bInThermOpticCamo);
+	CNetworkVar(bool, m_bInVision);
+	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
+	CNetworkVar(bool, m_bInAim);
 
 	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
 
 private:
 	bool m_bInLeanLeft, m_bInLeanRight;
+	bool m_bFirstDeathTick;
+	bool m_bPreviouslyReloading;
+
 	Vector m_leanPosTargetOffset;
+
+	float m_flCamoAuxLastTime;
+	float m_flLastAirborneJumpOkTime;
+	float m_flLastSuperJumpTime;
 };
 
 inline CNEO_Player *ToNEOPlayer(CBaseEntity *pEntity)

@@ -358,6 +358,9 @@ inline bool CShader_IsFlag2Set( IMaterialVar **params, MaterialVarFlags2_t _flag
 	shader ## _Dynamic_Index _pshIndex; \
 	int psh ## shader = 0
 
+// Same as the non-X version, but we expand shader macro
+#define DECLARE_DYNAMIC_PIXEL_SHADER_X( shader ) DECLARE_DYNAMIC_PIXEL_SHADER( shader )
+
 // vsh ## shader is used here to generate a warning if you don't ever call SET_DYNAMIC_VERTEX_SHADER
 #define DECLARE_DYNAMIC_VERTEX_SHADER( shader ) \
 	int declaredynvertshader_ ## shader ## _missingcurlybraces = 0; \
@@ -365,6 +368,8 @@ inline bool CShader_IsFlag2Set( IMaterialVar **params, MaterialVarFlags2_t _flag
 	shader ## _Dynamic_Index _vshIndex; \
 	int vsh ## shader = 0
 
+// Same as the non-X version, but we expand shader macro
+#define DECLARE_DYNAMIC_VERTEX_SHADER_X( shader ) DECLARE_DYNAMIC_VERTEX_SHADER( shader )
 
 // psh ## shader is used here to generate a warning if you don't ever call SET_STATIC_PIXEL_SHADER
 #define DECLARE_STATIC_PIXEL_SHADER( shader ) \
@@ -373,6 +378,9 @@ inline bool CShader_IsFlag2Set( IMaterialVar **params, MaterialVarFlags2_t _flag
 	shader ## _Static_Index _pshIndex; \
 	int psh ## shader = 0
 
+// Same as the non-X version, but we expand shader macro
+#define DECLARE_STATIC_PIXEL_SHADER_X( shader ) DECLARE_STATIC_PIXEL_SHADER( shader )
+
 // vsh ## shader is used here to generate a warning if you don't ever call SET_STATIC_VERTEX_SHADER
 #define DECLARE_STATIC_VERTEX_SHADER( shader ) \
 	int declarestaticvertshader_ ## shader ## _missingcurlybraces = 0; \
@@ -380,6 +388,8 @@ inline bool CShader_IsFlag2Set( IMaterialVar **params, MaterialVarFlags2_t _flag
 	shader ## _Static_Index _vshIndex; \
 	int vsh ## shader = 0
 
+// like the non-X version, but we expand shader macro
+#define DECLARE_STATIC_VERTEX_SHADER_X( shader ) DECLARE_STATIC_VERTEX_SHADER( shader )
 
 // psh_forgot_to_set_dynamic_ ## var is used to make sure that you set all
 // all combos.  If you don't, you will get an undefined variable used error 
@@ -432,6 +442,9 @@ inline bool CShader_IsFlag2Set( IMaterialVar **params, MaterialVarFlags2_t _flag
 	NOTE_UNUSED( psh ## shader ); \
 	pShaderAPI->SetPixelShaderIndex( _pshIndex.GetIndex() )
 
+// Same as the non-X version, but we expand macros
+#define SET_DYNAMIC_PIXEL_SHADER_X( shader ) SET_DYNAMIC_PIXEL_SHADER( shader )
+
 #define SET_DYNAMIC_PIXEL_SHADER_CMD( cmdstream, shader ) \
 	int dynamicpixshader_ ## shader ## _missingcurlybraces = 0; \
 	NOTE_UNUSED( dynamicpixshader_ ## shader ## _missingcurlybraces ); \
@@ -453,6 +466,8 @@ inline bool CShader_IsFlag2Set( IMaterialVar **params, MaterialVarFlags2_t _flag
 	NOTE_UNUSED( vsh_testAllCombos ); \
 	NOTE_UNUSED( vsh ## shader ); \
 	pShaderAPI->SetVertexShaderIndex( _vshIndex.GetIndex() )
+
+#define SET_DYNAMIC_VERTEX_SHADER_X( shader ) SET_DYNAMIC_VERTEX_SHADER( shader )
 
 #define SET_DYNAMIC_VERTEX_SHADER_CMD( cmdstream, shader ) \
 	int dynamicvertshader_ ## shader ## _missingcurlybraces = 0; \
@@ -476,6 +491,9 @@ inline bool CShader_IsFlag2Set( IMaterialVar **params, MaterialVarFlags2_t _flag
 	NOTE_UNUSED( psh ## shader ); \
 	pShaderShadow->SetPixelShader( #shader, _pshIndex.GetIndex() )
 
+// Same as the non-X version, but we expand macros.
+#define SET_STATIC_PIXEL_SHADER_X( shader ) SET_STATIC_PIXEL_SHADER( shader )
+
 // vsh_testAllCombos adds up all of the vsh_forgot_to_set_static_ ## var's from 
 // SET_STATIC_VERTEX_SHADER_COMBO so that an error is generated if they aren't set.
 // vsh_testAllCombos is set to itself to avoid an unused variable warning.
@@ -488,5 +506,8 @@ inline bool CShader_IsFlag2Set( IMaterialVar **params, MaterialVarFlags2_t _flag
 	NOTE_UNUSED( vsh_testAllCombos ); \
 	NOTE_UNUSED( vsh ## shader ); \
 	pShaderShadow->SetVertexShader( #shader, _vshIndex.GetIndex() )
+
+// Same as the non-X version, but we expand macros.
+#define SET_STATIC_VERTEX_SHADER_X( shader ) SET_STATIC_VERTEX_SHADER( shader )
 
 #endif // CSHADER_H

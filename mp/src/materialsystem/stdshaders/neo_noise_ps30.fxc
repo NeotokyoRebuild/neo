@@ -1,0 +1,33 @@
+#include "common_ps_fxc.h"
+#include "common_noise_fxc.h"
+
+sampler FrameBuffer				: register(s0);
+
+const float g_RandomSeed		: register(c0);
+const float g_NoiseLevel		: register(c1);
+const float g_BrightnessScale	: register(c2);
+
+struct PS_INPUT
+{
+	float2 texCoord	: TEXCOORD0;
+};
+
+float randomFloat(float2 p)
+{
+	const float2 K1 = half2(23.14069263277926, 2.665144142690225);
+	return frac(cos(dot(p, K1)) * 12345.6789);
+}
+
+float4 main( const PS_INPUT i ) : COLOR
+{
+	const float4 vec4Tex = tex2D(FrameBuffer, i.texCoord);
+
+	const float2 seed = i.texCoord * float2(g_RandomSeed, -g_RandomSeed);
+	const float flRand = max(min(randomFloat(seed), 1), g_NoiseLevel);
+
+	return min(float4(
+		vec4Tex.r * flRand * g_BrightnessScale,
+		vec4Tex.g * flRand * g_BrightnessScale,
+		vec4Tex.b * flRand * g_BrightnessScale,
+		vec4Tex.a), float4(1,1,1,1));
+}

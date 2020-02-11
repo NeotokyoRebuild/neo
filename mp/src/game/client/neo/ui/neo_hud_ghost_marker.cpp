@@ -2,6 +2,7 @@
 #include "neo_hud_ghost_marker.h"
 
 #include "neo_gamerules.h"
+#include "neo_player_shared.h"
 
 #include "iclientmode.h"
 #include <vgui/ILocalize.h>
@@ -60,52 +61,40 @@ CNEOHud_GhostMarker::CNEOHud_GhostMarker(const char* pElemName, vgui::Panel* par
 	surface()->DrawGetTextureSize(m_hTex, m_iMarkerTexWidth, m_iMarkerTexHeight);
 
 	SetVisible(false);
+
+	SetFgColor(Color(0, 0, 0, 0));
+	SetBgColor(Color(0, 0, 0, 0));
 }
 
 void CNEOHud_GhostMarker::Paint()
 {
-	SetFgColor(Color(0, 0, 0, 0));
-	SetBgColor(Color(0, 0, 0, 0));
+	if (!IsHudReadyForPaintNow())
+	{
+		return;
+	}
 
 	BaseClass::Paint();
 
 	// Since the distance format is a known length,
 	// we hardcode to save the unicode length check each time.
-	const size_t markerTextLen = 12;
-	char markerText[markerTextLen + 1];
-	V_snprintf(markerText, sizeof(markerText), "GHOST %.1f M", m_flDistMeters);
+#define MARKER_TEXT_LENGTH 12
+	char markerText[MARKER_TEXT_LENGTH + 1];
+	V_snprintf(markerText, sizeof(markerText), "GHOST %.0f M", m_flDistMeters);
 
 	wchar_t markerTextUnicode[(sizeof(markerText) + 1) * sizeof(wchar_t)];
 	g_pVGuiLocalize->ConvertANSIToUnicode(markerText, markerTextUnicode, sizeof(markerTextUnicode));
 
-	const Color textColor = Color(200, 200, 200, 200);
-
-	surface()->DrawSetTextColor(textColor);
+	surface()->DrawSetTextColor(COLOR_GREY);
 	surface()->DrawSetTextFont(m_hFont);
 	surface()->DrawSetTextPos(m_iPosX, m_iPosY);
-	surface()->DrawPrintText(markerTextUnicode, markerTextLen);
-
-	Color markerColor;
-
-	if (m_iGhostingTeam == TEAM_JINRAI)
-	{
-		markerColor = Color(0, 200, 20, 200);
-	}
-	else if (m_iGhostingTeam == TEAM_NSF)
-	{
-		markerColor = Color(0, 20, 200, 200);
-	}
-	else
-	{
-		markerColor = Color(200, 200, 200, 200);
-	}
+	surface()->DrawPrintText(markerTextUnicode, MARKER_TEXT_LENGTH);
 
 	const float scale = neo_ghost_marker_hud_scale_factor.GetFloat();
 
 	const int offset_X = m_iPosX - ((m_iMarkerTexWidth / 2) * scale);
 	const int offset_Y = m_iPosY - ((m_iMarkerTexHeight / 2) * scale);
 
-	surface()->DrawSetColor(markerColor);
+	surface()->DrawSetColor(m_iGhostingTeam == TEAM_JINRAI ? COLOR_JINRAI : (m_iGhostingTeam == TEAM_NSF ? COLOR_NSF : COLOR_GREY));
 	surface()->DrawSetTexture(m_hTex);
 	surface()->DrawTexturedRect(
 		offset_X,

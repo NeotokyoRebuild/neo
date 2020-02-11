@@ -810,6 +810,28 @@ void CBaseAnimatingOverlay::SetLayerPriority( int iLayer, int iPriority )
 	return;
 }
 
+#ifdef NEO
+int	CBaseAnimatingOverlay::FindGestureLayer(int sequence)
+{
+	if (!IsValidSequence(sequence))
+		return -1;
+
+	for (int i = 0; i < m_AnimOverlay.Count(); i++)
+	{
+		if (!(m_AnimOverlay[i].IsActive()))
+			continue;
+
+		if (m_AnimOverlay[i].IsKillMe())
+			continue;
+
+		if (m_AnimOverlay[i].m_nSequence == sequence)
+			return i;			
+	}
+
+	return -1;
+}
+#endif
+
 //-----------------------------------------------------------------------------
 // Purpose: 
 // Input  : activity - 
@@ -843,6 +865,25 @@ bool CBaseAnimatingOverlay::IsPlayingGesture( Activity activity )
 {
 	return FindGestureLayer( activity ) != -1 ? true : false;
 }
+
+#ifdef NEO
+void CBaseAnimatingOverlay::RestartGesture(int sequence, bool addifmissing /*=true*/, bool autokill /*=true*/)
+{
+	int idx = FindGestureLayer(sequence);
+	if (idx == -1)
+	{
+		if (addifmissing)
+		{
+			AddGestureSequence(sequence, autokill);
+		}
+		return;
+	}
+
+	m_AnimOverlay[idx].m_flCycle = 0.0f;
+	m_AnimOverlay[idx].m_flPrevCycle = 0.0f;
+	m_AnimOverlay[idx].m_flLastEventCheck = 0.0f;
+}
+#endif
 
 //-----------------------------------------------------------------------------
 // Purpose: 

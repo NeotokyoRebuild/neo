@@ -19,6 +19,15 @@
 	#include "hl_movedata.h"
 #endif
 
+#ifdef NEO
+#include "neo_player_shared.h"
+#ifdef GAME_DLL
+#include "../server/neo/neo_player.h"
+#else
+#include "../client/neo/c_neo_player.h"
+#endif
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -2446,6 +2455,25 @@ bool CGameMovement::CheckJumpButton( void )
 		flMul = sqrt(2 * GetCurrentGravity() * GAMEMOVEMENT_JUMP_HEIGHT);
 	}
 
+#ifdef NEO
+#ifdef GAME_DLL
+	CNEO_Player *neoPlayer = static_cast<CNEO_Player*>(player);
+#else
+	C_NEO_Player *neoPlayer = static_cast<C_NEO_Player*>(player);
+#endif
+
+	// NEO TODO (Rain): adjust class specific jump height values
+	switch (neoPlayer->GetClass())
+	{
+	case NEO_CLASS_RECON:
+		flMul *= 1.25;
+		break;
+	case NEO_CLASS_SUPPORT:
+		flMul *= 0.95;
+		break;
+	}
+#endif
+
 	// Acclerate upward
 	// If we are ducking...
 	float startz = mv->m_vecVelocity[2];
@@ -2840,7 +2868,7 @@ inline bool CGameMovement::OnLadder( trace_t &trace )
 // HPE_BEGIN
 // [sbodenbender] make ladders easier to climb in cstrike
 //=============================================================================
-#if defined (CSTRIKE_DLL)
+#if defined (CSTRIKE_DLL) || defined (NEO)
 ConVar sv_ladder_dampen ( "sv_ladder_dampen", "0.2", FCVAR_REPLICATED, "Amount to dampen perpendicular movement on a ladder", true, 0.0f, true, 1.0f );
 ConVar sv_ladder_angle( "sv_ladder_angle", "-0.707", FCVAR_REPLICATED, "Cos of angle of incidence to ladder perpendicular for applying ladder_dampen", true, -1.0f, true, 1.0f );
 #endif

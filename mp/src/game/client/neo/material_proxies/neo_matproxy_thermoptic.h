@@ -24,6 +24,8 @@ public:
 
 private:
 	IMaterialVar *m_pResultVar;
+
+	IMaterial *m_pMaterial;
 };
 
 #endif // NEO_MATPROXY_THERMOPTIC_H

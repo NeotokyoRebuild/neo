@@ -45,9 +45,10 @@
 // there's a good chance some of these includes aren't needed.
 // Should clean up any unused ones.
 
+#include "neo_teammenu.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
-#include "neo_teammenu.h"
 
 #ifndef _XBOX
 extern IGameUIFuncs *gameuifuncs; // for key binding details
@@ -79,7 +80,6 @@ CNeoClassMenu::CNeoClassMenu(IViewPort *pViewPort)
 	SetKeyBoardInputEnabled(true);
 
 	SetTitleBarVisible(false);
-	SetProportional(true);
 
 	m_pImage_Jinrai_Recon_Skin1 = surface()->GetIconImageForFullPath("vgui/cm/jinrai_scout01");
 	m_pImage_Jinrai_Recon_Skin2 = surface()->GetIconImageForFullPath("vgui/cm/jinrai_scout02");
@@ -187,6 +187,8 @@ void CNeoClassMenu::OnCommand(const char *command)
 			{
 				Assert(false);
 			}
+
+			engine->ClientCmd("loadoutmenu");
 		}
 	}
 

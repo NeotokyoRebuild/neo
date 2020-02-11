@@ -4,12 +4,13 @@
 #pragma once
 #endif
 
+#include "neo_hud_childelement.h"
 #include "hudelement.h"
 #include "vgui_controls/Panel.h"
 
 #define NEO_MAX_HUD_GAME_EVENT_MSG_SIZE 32 + 1
 
-class CNEOHud_GameEvent : public CHudElement, public vgui::Panel
+class CNEOHud_GameEvent : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
 {
 	DECLARE_CLASS_SIMPLE(CNEOHud_GameEvent, Panel);
 

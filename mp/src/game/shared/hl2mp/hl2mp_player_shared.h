@@ -34,6 +34,8 @@ enum HL2MPPlayerState
 #define CHL2MP_Player C_HL2MP_Player
 #endif
 
+class CHL2MP_Player;
+
 class CPlayerAnimState
 {
 public:
@@ -65,6 +67,10 @@ private:
 	void				ComputePoseParam_BodyYaw( void );
 	void				ComputePoseParam_BodyPitch( CStudioHdr *pStudioHdr );
 	void				ComputePoseParam_BodyLookYaw( void );
+#ifdef NEO
+	void				ComputePoseParam_BodyXY(void);
+	void				ComputePoseParam_MoveYaw(void);
+#endif
 
 	void				ComputePlaybackRate();
 

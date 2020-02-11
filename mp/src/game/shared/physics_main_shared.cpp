@@ -23,6 +23,14 @@
 	#include "portal_util_shared.h"
 #endif
 
+#ifdef NEO
+	#ifdef CLIENT_DLL
+		#include "c_neo_player.h"
+	#else
+		#include "neo_player.h"
+	#endif
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -2184,15 +2192,14 @@ CBaseEntity *CBaseEntity::GetGroundEntity( void )
 void CBaseEntity::StartGroundContact( CBaseEntity *ground )
 {
 	AddFlag( FL_ONGROUND );
-//	Msg( "+++ %s starting contact with ground %s\n", GetClassname(), ground->GetClassname() );
+	//Msg( "+++ %s starting contact with ground %s\n", GetClassname(), ground->GetClassname() );
 }
 
 void CBaseEntity::EndGroundContact( CBaseEntity *ground )
 {
 	RemoveFlag( FL_ONGROUND );
-//	Msg( "--- %s ending contact with ground %s\n", GetClassname(), ground->GetClassname() );
+	//Msg( "--- %s ending contact with ground %s\n", GetClassname(), ground->GetClassname() );
 }
-
 
 void CBaseEntity::SetGroundChangeTime( float flTime )
 {

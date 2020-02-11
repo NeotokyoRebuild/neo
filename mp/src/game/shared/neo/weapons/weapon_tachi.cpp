@@ -38,22 +38,7 @@ END_PREDICTION_DATA()
 LINK_ENTITY_TO_CLASS( weapon_tachi, CWeaponTachi );
 PRECACHE_WEAPON_REGISTER( weapon_tachi );
 
-#ifndef CLIENT_DLL
-acttable_t CWeaponTachi::m_acttable[] = 
-{
-	{ ACT_IDLE,					ACT_IDLE_PISTOL,						false },
-	{ ACT_RUN,					ACT_RUN_PISTOL,							false },
-	{ ACT_CROUCHIDLE,			ACT_HL2MP_IDLE_CROUCH_PISTOL,			false },
-	{ ACT_WALK_CROUCH,			ACT_HL2MP_WALK_CROUCH_PISTOL,			false },
-	{ ACT_RANGE_ATTACK1,		ACT_RANGE_ATTACK_PISTOL,				false },
-	{ ACT_RELOAD,				ACT_RELOAD_PISTOL,						false },
-	{ ACT_JUMP,					ACT_HL2MP_JUMP_PISTOL,					false },
-};
-
-
-IMPLEMENT_ACTTABLE( CWeaponTachi );
-
-#endif
+NEO_ACTTABLE(CWeaponTachi);
 
 CWeaponTachi::CWeaponTachi( void )
 {

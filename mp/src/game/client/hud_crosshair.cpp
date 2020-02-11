@@ -26,6 +26,10 @@
 #include "c_portal_player.h"
 #endif // PORTAL
 
+#ifdef NEO
+#include "weapon_neobasecombatweapon.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -256,6 +260,20 @@ void CHudCrosshair::Paint( void )
 	if ( pWeapon )
 	{
 		pWeapon->GetWeaponCrosshairScale( flWeaponScale );
+
+		// NEO HACK (Rain): this should get implemented in virtual pNeoWep->GetWeaponCrosshairScale
+		auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWeapon);
+		if (pNeoWep && pNeoWep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
+		{
+			int screenWidth, screenHeight;
+			GetHudSize(screenWidth, screenHeight);
+
+			// Scale scope size based on resolution.
+#define SCOPE_BASELINE_Y_RESOLUTION 1080
+			Assert(iTextureH > 0);
+			const float scaleRatio = (screenHeight / (float)iTextureH) / (SCOPE_BASELINE_Y_RESOLUTION / (float)iTextureH);
+			flWeaponScale = scaleRatio;
+		}
 	}
 
 	float flPlayerScale = 1.0f;
@@ -278,6 +296,37 @@ void CHudCrosshair::Paint( void )
 		iTextureW, iTextureH,
 		iWidth, iHeight,
 		clr );
+
+	auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWeapon);
+	if (pNeoWep && pNeoWep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
+	{
+		int screenWidth, screenHeight;
+		GetHudSize(screenWidth, screenHeight);
+
+		const unsigned int prevCornerFlags = GetRoundedCorners();
+		SetRoundedCorners(0);
+
+		// NEO TODO (Rain): the NT scope does a color slide around RGB 0-20,
+		// instead of being completely black. For now, just picking a close-ish color
+		// instead of accurately representing. Should probably pick samples of the
+		// scope texture around the edges, and use those for fill color, instead.
+		// Stretching the scope wouldn't be a great workaround, because it ties the scope
+		// FOV to screen resolution, which can give an unfair advantage on widescreen
+		// or multi-monitor setups.
+		const Color blockColor = Color(10, 10, 10, 255);
+
+		// Draw black box on left side of the scope.
+		DrawBox(0, 0, iX - (iWidth / 2), screenHeight, blockColor, 1.0f);
+		// Draw black box on right side of the scope.
+		DrawBox((iX - (iWidth / 2) + iWidth), 0, screenWidth, screenHeight, blockColor, 1.0f);
+		// Draw black box on top of the scope.
+		DrawBox(iX - (iWidth / 2), 0, iWidth, iY - (iHeight / 2), blockColor, 1.0f);
+		// Draw black box under the scope.
+		DrawBox(iX - (iWidth / 2), screenHeight - (iY - (iHeight / 2)), iWidth, screenHeight, blockColor, 1.0f);
+
+		// Reset corner rounding.
+		SetRoundedCorners(prevCornerFlags);
+	}
 }
 
 //-----------------------------------------------------------------------------

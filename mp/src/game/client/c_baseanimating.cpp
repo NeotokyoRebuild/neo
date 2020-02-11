@@ -60,6 +60,10 @@
 #include "c_baseobject.h"
 #endif
 
+#ifdef NEO
+#include "c_neo_player.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -3454,6 +3458,16 @@ void C_BaseAnimating::DoAnimationEvents( CStudioHdr *pStudioHdr )
 	int nSeqNum = GetSequence();
 	if ( nSeqNum >= nStudioNumSeq )
 	{
+#ifdef NEO
+		if (GetOwnerEntity()->GetFlags() & FL_FAKECLIENT)
+		{
+#ifdef DEBUG
+			DevWarning("%s[%d]: Bot was playing sequence %d but there's only %d in total\n", GetDebugName(), entindex(), nSeqNum, nStudioNumSeq);
+#endif
+			return;
+		}
+#endif
+
 		// This can happen e.g. while reloading Heavy's shotgun, switch to the minigun.
 		Warning( "%s[%d]: Playing sequence %d but there's only %d in total?\n", GetDebugName(), entindex(), nSeqNum, nStudioNumSeq );
 		return;

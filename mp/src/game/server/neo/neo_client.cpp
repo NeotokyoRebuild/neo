@@ -282,9 +282,11 @@ static inline void Precache_NEO_Sounds( void )
 
 	CBaseEntity::PrecacheScriptSound("Weapon_Generic.melee_swing");
 
-
 	CBaseEntity::PrecacheScriptSound("HUD.GhostEquip");
 	CBaseEntity::PrecacheScriptSound("HUD.GhostPickUp");
+	CBaseEntity::PrecacheScriptSound("HUD.JinraiWin");
+	CBaseEntity::PrecacheScriptSound("HUD.NSFWin");
+	CBaseEntity::PrecacheScriptSound("HUD.Draw");
 	CBaseEntity::PrecacheScriptSound("NeoPlayer.GhostPing");
 	CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOn");
 	CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOff");

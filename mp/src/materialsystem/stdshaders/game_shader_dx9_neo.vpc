@@ -1,0 +1,30 @@
+//-----------------------------------------------------------------------------
+//	game_shader_dx9.vpc
+//
+//	Project Script for mods to use an an example of how to override shaders
+//-----------------------------------------------------------------------------
+
+$Macro SRCDIR		"..\.."
+$Macro GAMENAME "neo"
+$Include "$SRCDIR\materialsystem\stdshaders\game_shader_dx9_base.vpc"
+
+$Project "Shaders ($GAMENAME)"
+{
+	$Folder	"Source Files"
+	{
+		$File	"Neo_GaussianBlur_Shader.cpp"
+		$File	"Neo_NightVision_Shader.cpp"
+		$File	"Neo_Noise_Shader.cpp"
+		//$File	"Neo_MotionVision_ModelShader.cpp"
+		$File	"Neo_MotionVision_Shader_Pass1.cpp"
+		$File	"Neo_MotionVision_Shader_Pass2.cpp"
+		$File	"Neo_SSAO_Combine_Shader.cpp"
+		$File	"Neo_SSAO_Shader.cpp"
+		$File	"Neo_TestShader.cpp"
+		$File	"Neo_ThermalVision.cpp"
+
+		$File	"Neo_refract.cpp"
+		$File	"Neo_refract_dx9_helper.cpp"
+		$File	"Neo_refract_dx9_helper.h"
+	}
+}

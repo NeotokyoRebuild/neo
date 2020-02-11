@@ -55,6 +55,11 @@
 #include "portal_player.h"
 #endif // PORTAL
 
+#ifdef NEO
+#include "neo_player.h"
+#include "neo_player_shared.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -400,7 +405,30 @@ CHL2_Player::CHL2_Player()
 //
 // SUIT POWER DEVICES
 //
+#ifndef NEO
 #define SUITPOWER_CHARGE_RATE	12.5											// 100 units in 8 seconds
+#else
+#define SUITPOWER_CHARGE_RATE GetAuxChargeRate(this)
+
+static inline float GetAuxChargeRate(CBaseCombatCharacter *player)
+{
+	auto neoPlayer = static_cast<CNEO_Player*>(player);
+
+#define BASE_AUX_RATE 10.0
+
+	switch (neoPlayer->GetClass())
+	{
+	case NEO_CLASS_RECON:
+		return BASE_AUX_RATE * 1.2;
+	case NEO_CLASS_ASSAULT:
+		return BASE_AUX_RATE;
+	case NEO_CLASS_SUPPORT:
+		return BASE_AUX_RATE * 0.8;
+	default:
+		return BASE_AUX_RATE;
+	}
+}
+#endif
 
 #ifdef HL2MP
 	CSuitPowerDevice SuitDeviceSprint( bits_SUIT_DEVICE_SPRINT, 25.0f );				// 100 units in 4 seconds
@@ -1199,11 +1227,7 @@ void CHL2_Player::StartSprinting( void )
 {
 	if( m_HL2Local.m_flSuitPower < 10 )
 	{
-		// Don't sprint unless there's a reasonable
-		// amount of suit power.
-
-#ifdef NEO
-#if(0)
+#ifndef NEO
 		// debounce the button for sound playing
 		if ( m_afButtonPressed & IN_SPEED )
 		{
@@ -1212,8 +1236,8 @@ void CHL2_Player::StartSprinting( void )
 			EmitSound( filter, entindex(), "HL2Player.SprintNoPower" );
 		}
 #endif
-#endif
-
+		// Don't sprint unless there's a reasonable
+		// amount of suit power.
 		return;
 	}
 
@@ -1221,15 +1245,16 @@ void CHL2_Player::StartSprinting( void )
 		return;
 
 
-#ifdef NEO
-#if(0)
+#ifndef NEO
 	CPASAttenuationFilter filter( this );
 	filter.UsePredictionRules();
 	EmitSound( filter, entindex(), "HL2Player.SprintStart" );
 #endif
+
+#ifndef NEO
+	SetMaxSpeed( HL2_SPRINT_SPEED );
 #endif
 
-	SetMaxSpeed( HL2_SPRINT_SPEED );
 	m_fIsSprinting = true;
 }
 
@@ -1243,6 +1268,7 @@ void CHL2_Player::StopSprinting( void )
 		SuitPower_RemoveDevice( SuitDeviceSprint );
 	}
 
+#ifndef NEO
 	if( IsSuitEquipped() )
 	{
 		SetMaxSpeed( HL2_NORM_SPEED );
@@ -1251,6 +1277,7 @@ void CHL2_Player::StopSprinting( void )
 	{
 		SetMaxSpeed( HL2_WALK_SPEED );
 	}
+#endif
 
 	m_fIsSprinting = false;
 
@@ -1281,7 +1308,10 @@ void CHL2_Player::EnableSprint( bool bEnable )
 //-----------------------------------------------------------------------------
 void CHL2_Player::StartWalking( void )
 {
+#ifndef NEO
 	SetMaxSpeed( HL2_WALK_SPEED );
+#endif
+
 	m_fIsWalking = true;
 }
 
@@ -1289,7 +1319,10 @@ void CHL2_Player::StartWalking( void )
 //-----------------------------------------------------------------------------
 void CHL2_Player::StopWalking( void )
 {
+#ifndef NEO
 	SetMaxSpeed( HL2_NORM_SPEED );
+#endif
+
 	m_fIsWalking = false;
 }
 
@@ -1816,6 +1849,15 @@ void CHL2_Player::SuitPower_Update( void )
 					// If player's not moving, don't drain sprint juice.
 					flPowerLoad -= SuitDeviceSprint.GetDeviceDrainRate();
 				}
+#ifdef NEO
+				else
+				{
+					if (static_cast<CNEO_Player*>(this)->GetClass() == NEO_CLASS_RECON)
+					{
+						flPowerLoad -= SuitDeviceSprint.GetDeviceDrainRate();
+					}
+				}
+#endif
 			}
 		}
 
@@ -1971,8 +2013,30 @@ bool CHL2_Player::SuitPower_RemoveDevice( const CSuitPowerDevice &device )
 bool CHL2_Player::SuitPower_ShouldRecharge( void )
 {
 	// Make sure all devices are off.
-	if( m_HL2Local.m_bitsActiveDevices != 0x00000000 )
+	if (m_HL2Local.m_bitsActiveDevices != 0x00000000)
+	{
+#ifdef NEO
+		if (static_cast<CNEO_Player*>(this)->GetClass() == NEO_CLASS_RECON)
+		{
+			// Is the system fully charged?
+			if (m_HL2Local.m_flSuitPower >= 100.0f)
+			{
+				return false;
+			}
+
+			// Has the system been in a no-load state for long enough
+			// to begin recharging?
+			if (gpGlobals->curtime < m_flTimeAllSuitDevicesOff + SUITPOWER_BEGIN_RECHARGE_DELAY)
+			{
+				return false;
+			}
+
+			// Recons are allowed to recharge AUX whilst sprinting
+			return ((m_HL2Local.m_bitsActiveDevices & ~bits_SUIT_DEVICE_SPRINT) == 0);
+		}
+#endif
 		return false;
+	}
 
 	// Is the system fully charged?
 	if( m_HL2Local.m_flSuitPower >= 100.0f )

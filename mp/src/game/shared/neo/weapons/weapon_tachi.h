@@ -58,6 +58,9 @@ public:
 
 	virtual bool Reload( void );
 
+	virtual int GetNeoWepBits(void) const { return NEO_WEP_TACHI; }
+	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
+
 	virtual const Vector& GetBulletSpread( void )
 	{		
 		static Vector cone;

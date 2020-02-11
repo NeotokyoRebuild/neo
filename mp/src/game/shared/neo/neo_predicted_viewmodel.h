@@ -7,6 +7,7 @@
 #include "predicted_viewmodel.h"
 #ifdef CLIENT_DLL
 #include "clienteffectprecachesystem.h"
+#include <engine/IClientLeafSystem.h>
 #endif
 
 #ifdef CLIENT_DLL
@@ -22,19 +23,20 @@ class CNEOPredictedViewModel : public CPredictedViewModel
 public:
 	DECLARE_NETWORKCLASS();
 
-	CNEOPredictedViewModel( void );
+	CNEOPredictedViewModel(void);
 	virtual ~CNEOPredictedViewModel( void );
 
 	virtual void CalcViewModelView(CBasePlayer *pOwner,
 		const Vector& eyePosition, const QAngle& eyeAngles);
 
-	virtual void CalcViewModelLag(Vector& origin, QAngle& angles,
-		QAngle& original_angles);
+	float freeRoomForLean(float leanAmount, CNEO_Player *player);
+	void lean(CNEO_Player *player);
 
-	int CalcLean(CNEO_Player *player);
+#ifdef CLIENT_DLL
+	virtual int DrawModel(int flags);
 
-	virtual void SetWeaponModel(const char* pszModelname,
-		CBaseCombatWeapon* weapon);
+	virtual RenderGroup_t GetRenderGroup();
+#endif
 
 #ifdef CLIENT_DLL
 	float GetLeanInterp()
@@ -50,9 +52,8 @@ public:
 #endif
 
 private:
-	Vector m_vecNextViewOffset;
-
-	QAngle m_angNextViewAngles;
+	float m_flYPrevious;
+	float m_flLastLeanTime;
 };
 
 #endif // NEO_PREDICTED_VIEWMODEL_H

@@ -13,6 +13,10 @@
 #include "hl2mp_gamerules.h"
 #endif
 
+#ifdef NEO
+#include "c_neo_player.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -20,6 +24,9 @@ const float PLAYER_RESOURCE_THINK_INTERVAL = 0.2f;
 
 IMPLEMENT_CLIENTCLASS_DT_NOBASE(C_PlayerResource, DT_PlayerResource, CPlayerResource)
 	RecvPropArray3( RECVINFO_ARRAY(m_iPing), RecvPropInt( RECVINFO(m_iPing[0]))),
+#ifdef NEO
+	RecvPropArray3(RECVINFO_ARRAY(m_iXP), RecvPropInt(RECVINFO(m_iXP[0]))),
+#endif
 	RecvPropArray3( RECVINFO_ARRAY(m_iScore), RecvPropInt( RECVINFO(m_iScore[0]))),
 	RecvPropArray3( RECVINFO_ARRAY(m_iDeaths), RecvPropInt( RECVINFO(m_iDeaths[0]))),
 	RecvPropArray3( RECVINFO_ARRAY(m_bConnected), RecvPropInt( RECVINFO(m_bConnected[0]))),
@@ -32,6 +39,9 @@ BEGIN_PREDICTION_DATA( C_PlayerResource )
 
 	DEFINE_PRED_ARRAY( m_szName, FIELD_STRING, MAX_PLAYERS+1, FTYPEDESC_PRIVATE ),
 	DEFINE_PRED_ARRAY( m_iPing, FIELD_INTEGER, MAX_PLAYERS+1, FTYPEDESC_PRIVATE ),
+#ifdef NEO
+	DEFINE_PRED_ARRAY(m_iXP, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_PRIVATE),
+#endif
 	DEFINE_PRED_ARRAY( m_iScore, FIELD_INTEGER, MAX_PLAYERS+1, FTYPEDESC_PRIVATE ),
 	DEFINE_PRED_ARRAY( m_iDeaths, FIELD_INTEGER, MAX_PLAYERS+1, FTYPEDESC_PRIVATE ),
 	DEFINE_PRED_ARRAY( m_bConnected, FIELD_BOOLEAN, MAX_PLAYERS+1, FTYPEDESC_PRIVATE ),
@@ -52,6 +62,9 @@ C_PlayerResource::C_PlayerResource()
 {
 	memset( m_iPing, 0, sizeof( m_iPing ) );
 //	memset( m_iPacketloss, 0, sizeof( m_iPacketloss ) );
+#ifdef NEO
+	memset(m_iXP, 0, sizeof(m_iXP));
+#endif
 	memset( m_iScore, 0, sizeof( m_iScore ) );
 	memset( m_iDeaths, 0, sizeof( m_iDeaths ) );
 	memset( m_bConnected, 0, sizeof( m_bConnected ) );
@@ -185,6 +198,16 @@ int C_PlayerResource::GetTeamScore(int index)
 		return 0;
 
 	return team->Get_Score();
+}
+
+int C_PlayerResource::GetXP(int index)
+{
+	if (!IsConnected(index))
+	{
+		return 0;
+	}
+
+	return m_iXP[index];
 }
 
 int C_PlayerResource::GetFrags(int index )

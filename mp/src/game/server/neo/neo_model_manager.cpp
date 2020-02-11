@@ -256,7 +256,7 @@ const char *viewModels[NEO_VM_ENUM_COUNT * numTeams] {
 	"models/gameplay/v_jinrai_ghost.mdl"
 };
 
-const char *weapons[NEO_WEP_ENUM_COUNT] {
+const char *weapons[NEO_WEP_MDL_ENUM_COUNT] {
 	"models/weapons/w_aa13.mdl",
 	"models/weapons/w_detpack.mdl",
 	"models/weapons/w_detremote.mdl",
@@ -360,6 +360,17 @@ void CNEOModelManager::Precache( void ) const
 	CBaseEntity::PrecacheModel("models/player/nsf_gsfanims2.mdl");
 	//CBaseEntity::PrecacheModel("models/player/nsf_nsfanims2.mdl");
 	CBaseEntity::PrecacheModel("models/player/vip_anims.mdl");
+
+	PrecacheMaterial("toc.vmt");
+	PrecacheMaterial("toc2.vmt");
+	PrecacheMaterial("models/player/toc.vmt");
+	PrecacheMaterial("toc_remake_pass1.vmt");
+	PrecacheMaterial("toc_remake_pass2.vmt");
+	PrecacheMaterial("toc_remake_vm.vmt");
+
+	//PrecacheMaterial("water/ntwater_ivy");
+
+	PrecacheMaterial("dev/motion_third.vmt");
 }
 
 static inline int GetTeamArrOffset(int iTeam)
@@ -448,7 +459,7 @@ const char *CNEOModelManager::GetViewModel(NeoViewmodel nWepVm, int iTeam) const
 }
 
 // Returns a third person weapon model.
-const char *CNEOModelManager::GetWeaponModel(NeoWeapon nWep) const
+const char *CNEOModelManager::GetWeaponModel(NeoWeaponModel nWep) const
 {
 	if (nWep < 0 || nWep >= ARRAYSIZE(weapons))
 	{

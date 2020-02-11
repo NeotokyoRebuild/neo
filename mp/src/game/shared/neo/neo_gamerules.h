@@ -10,6 +10,8 @@
 #include "hl2mp_gamerules.h"
 #include "shareddefs.h"
 
+#include "GameEventListener.h"
+
 #ifndef CLIENT_DLL
 	#include "neo_player.h"
 #endif
@@ -72,9 +74,12 @@ public:
 
 #ifdef GAME_DLL
 class CNEOGhostCapturePoint;
+class CNEO_Player;
+#else
+class C_NEO_Player;
 #endif
 
-class CNEORules : public CHL2MPRules
+class CNEORules : public CHL2MPRules, public CGameEventListener
 {
 public:
 	DECLARE_CLASS( CNEORules, CHL2MPRules );
@@ -95,6 +100,8 @@ public:
 	virtual bool ClientConnected(edict_t *pEntity, const char *pszName, const char *pszAddress, char *reject, int maxrejectlen);
 
 	virtual void SetWinningTeam(int team, int iWinReason, bool bForceMapReset = true, bool bSwitchTeams = false, bool bDontAddScore = false, bool bFinal = false);
+
+	virtual void ChangeLevel(void);
 #endif
 	virtual bool ShouldCollide( int collisionGroup0, int collisionGroup1 );
 
@@ -118,7 +125,21 @@ public:
 
 	void CheckRestartGame();
 
+	void AwardRankUp(int client);
+#ifdef CLIENT_DLL
+	void AwardRankUp(C_NEO_Player *pClient);
+#else
+	void AwardRankUp(CNEO_Player *pClient);
+#endif
+
+	virtual bool CheckGameOver(void);
+
 	float GetRoundRemainingTime();
+
+	virtual void PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info);
+
+	// IGameEventListener interface:
+	virtual void FireGameEvent(IGameEvent *event);
 
 #ifdef CLIENT_DLL
 	void CleanUpMap();
@@ -144,6 +165,8 @@ public:
 
 #ifdef GAME_DLL
 private:
+	bool m_bFirstRestartIsDone;
+	
 	CUtlVector<int> m_pGhostCaps;
 
 	CNetworkVar(float, m_flNeoRoundStartTime);

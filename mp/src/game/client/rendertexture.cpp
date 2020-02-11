@@ -186,6 +186,100 @@ ITexture *GetSmallBufferHDR1( void )
 	return s_pSmallBufferHDR1;
 }
 
+#ifdef NEO
+static CTextureReference s_pSSAO;
+ITexture *GetSSAO(void)
+{
+	if (!s_pSSAO)
+	{
+		s_pSSAO.Init(materials->FindTexture("_rt_SSAO", TEXTURE_GROUP_RENDER_TARGET));
+		Assert(!IsErrorTexture(s_pSSAO));
+		AddReleaseFunc();
+	}
+	else
+	{
+		Assert(!IsErrorTexture(s_pSSAO));
+	}
+
+	return s_pSSAO;
+}
+
+static CTextureReference s_pSSAO_IM;
+ITexture *GetSSAOIntermediate(void)
+{
+	if (!s_pSSAO_IM)
+	{
+		s_pSSAO_IM.Init(materials->FindTexture("_rt_SSAO_Intermediate", TEXTURE_GROUP_RENDER_TARGET));
+		Assert(s_pSSAO_IM && !s_pSSAO_IM->IsError());
+		AddReleaseFunc();
+	}
+	else
+	{
+		Assert(!s_pSSAO_IM->IsError());
+	}
+
+	return s_pSSAO_IM;
+}
+
+static CTextureReference s_pMV;
+ITexture *GetMV(void)
+{
+	if (!s_pMV)
+	{
+		s_pMV.Init(materials->FindTexture("_rt_MotionVision", TEXTURE_GROUP_RENDER_TARGET));
+		Assert(!IsErrorTexture(s_pMV));
+		AddReleaseFunc();
+	}
+	else
+	{
+		Assert(!IsErrorTexture(s_pMV));
+	}
+
+	return s_pMV;
+}
+
+static CTextureReference s_pMV_Buffer1, s_pMV_Buffer2;
+ITexture *GetMVBuffer(const int index)
+{
+	if (!s_pMV_Buffer1)
+	{
+		s_pMV_Buffer1.Init(materials->FindTexture("_rt_MotionVision_Buffer1", TEXTURE_GROUP_RENDER_TARGET));
+		Assert(!IsErrorTexture(s_pMV_Buffer1));
+
+		s_pMV_Buffer2.Init(materials->FindTexture("_rt_MotionVision_Buffer2", TEXTURE_GROUP_RENDER_TARGET));
+		Assert(!IsErrorTexture(s_pMV_Buffer2));
+
+		AddReleaseFunc();
+	}
+	else
+	{
+		Assert(s_pMV_Buffer1 && !IsErrorTexture(s_pMV_Buffer1));
+		Assert(s_pMV_Buffer2 && !IsErrorTexture(s_pMV_Buffer2));
+	}
+
+	Assert(index == 0 || index == 1);
+
+	return (index == 0) ? s_pMV_Buffer1 : s_pMV_Buffer2;
+}
+
+static CTextureReference s_pMV_IM;
+ITexture *GetMVIntermediate(void)
+{
+	if (!s_pMV_IM)
+	{
+		s_pMV_IM.Init(materials->FindTexture("_rt_MotionVision_Intermediate", TEXTURE_GROUP_RENDER_TARGET));
+		Assert(!IsErrorTexture(s_pMV_IM));
+		AddReleaseFunc();
+	}
+	else
+	{
+		Assert(!IsErrorTexture(s_pMV_IM));
+	}
+
+	return s_pMV_IM;
+}
+#endif
+
 //=============================================================================
 // Quarter Sized FB0
 //=============================================================================
@@ -255,4 +349,13 @@ void ReleaseRenderTargets( void )
 
 	for (int i=0; i<MAX_FB_TEXTURES; ++i)
 		s_pFullFrameFrameBufferTexture[i].Shutdown();
+
+#ifdef NEO
+	s_pSSAO.Shutdown();
+	s_pSSAO_IM.Shutdown();
+	s_pMV.Shutdown();
+	s_pMV_IM.Shutdown();
+	s_pMV_Buffer1.Shutdown();
+	s_pMV_Buffer2.Shutdown();
+#endif
 }

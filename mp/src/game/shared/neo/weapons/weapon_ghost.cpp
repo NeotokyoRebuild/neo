@@ -3,11 +3,19 @@
 #include "neo_gamerules.h"
 
 #ifdef CLIENT_DLL
+#include "c_neo_player.h"
+#else
+#include "neo_player.h"
+#endif
+
+#ifdef CLIENT_DLL
 #include <engine/ivdebugoverlay.h>
 #include <engine/IEngineSound.h>
 #include "filesystem.h"
 #include "ui/neo_hud_ghostbeacon.h"
 #endif
+
+#include "neo_player_shared.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -33,26 +41,15 @@ END_PREDICTION_DATA()
 LINK_ENTITY_TO_CLASS(weapon_ghost, CWeaponGhost);
 PRECACHE_WEAPON_REGISTER(weapon_ghost);
 
-#ifdef GAME_DLL
-// NEO TODO (Rain): make these sensible
-acttable_t CWeaponGhost::m_acttable[] =
-{
-	{ ACT_IDLE,				ACT_IDLE_PISTOL,				false },
-	{ ACT_RUN,				ACT_RUN_PISTOL,					false },
-	{ ACT_CROUCHIDLE,		ACT_HL2MP_IDLE_CROUCH_PISTOL,	false },
-	{ ACT_WALK_CROUCH,		ACT_HL2MP_WALK_CROUCH_PISTOL,	false },
-	{ ACT_RANGE_ATTACK1,	ACT_RANGE_ATTACK_PISTOL,		false },
-	{ ACT_RELOAD,			ACT_RELOAD_PISTOL,				false },
-	{ ACT_JUMP,				ACT_HL2MP_JUMP_PISTOL,			false },
-};
-IMPLEMENT_ACTTABLE(CWeaponGhost);
-#endif
+NEO_ACTTABLE(CWeaponGhost);
 
 CWeaponGhost::CWeaponGhost(void)
 {
 #ifdef CLIENT_DLL
 	m_bHavePlayedGhostEquipSound = false;
 	m_bHaveHolsteredTheGhost = false;
+
+	m_flLastGhostBeepTime = 0;
 
 	for (int i = 0; i < ARRAYSIZE(m_pGhostBeacons); i++)
 	{
@@ -68,9 +65,9 @@ CWeaponGhost::CWeaponGhost(void)
 	ZeroGhostedPlayerLocArray();
 }
 
-#ifdef CLIENT_DLL
-CWeaponGhost::~C_WeaponGhost(void)
+CWeaponGhost::~CWeaponGhost(void)
 {
+#ifdef CLIENT_DLL
 	for (int i = 0; i < ARRAYSIZE(m_pGhostBeacons); i++)
 	{
 		if (m_pGhostBeacons[i])
@@ -78,24 +75,25 @@ CWeaponGhost::~C_WeaponGhost(void)
 			delete m_pGhostBeacons[i];
 		}
 	}
-}
 #endif
+
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		auto player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
+		if (player)
+		{
+			player->m_bGhostExists = false;
+		}
+	}
+}
 
 inline void CWeaponGhost::ZeroGhostedPlayerLocArray(void)
 {
-#ifdef CLIENT_DLL
-	for (int i = 0; i < ARRAYSIZE(m_rvPlayerPositions); i++)
-	{
-		m_rvPlayerPositions[i].Zero();
-	}
-#else
-
 	for (int i = 0; i < m_rvPlayerPositions.Count(); i++)
 	{
 		m_rvPlayerPositions.Set(i, Vector(0, 0, 0));
 	}
 	NetworkStateChanged();
-#endif
 }
 
 void CWeaponGhost::ItemPreFrame(void)
@@ -106,8 +104,11 @@ void CWeaponGhost::ItemPreFrame(void)
 		if (m_bShouldShowEnemies)
 		{
 #ifdef CLIENT_DLL
-			ShowEnemies();
 			HandleGhostEquip();
+
+			const float closestEnemy = ShowEnemies();
+
+			TryGhostPing(closestEnemy);
 #else
 			// We only need to update this while someone is ghosting
 			UpdateNetworkedEnemyLocations();
@@ -124,6 +125,25 @@ inline void CWeaponGhost::HandleGhostEquip(void)
 		PlayGhostSound();
 		m_bHavePlayedGhostEquipSound = true;
 		m_bHaveHolsteredTheGhost = false;
+	}
+}
+
+// Emit a ghost ping at a refire interval based on distance.
+void C_WeaponGhost::TryGhostPing(float closestEnemy)
+{
+	if (closestEnemy < 0 || closestEnemy > 45)
+	{
+		return;
+	}
+
+	const float frequency = clamp((0.1f * closestEnemy), 1.0f, 3.5f);
+	const float deltaTime = gpGlobals->curtime - m_flLastGhostBeepTime;
+
+	if (deltaTime > frequency)
+	{
+		EmitSound("NeoPlayer.GhostPing");
+
+		m_flLastGhostBeepTime = gpGlobals->curtime;
 	}
 }
 
@@ -164,11 +184,6 @@ inline void CWeaponGhost::StopGhostSound(void)
 }
 #endif
 
-void CWeaponGhost::Equip(CBaseCombatCharacter *pOwner)
-{
-	BaseClass::Equip(pOwner);
-}
-
 void CWeaponGhost::ItemHolsterFrame(void)
 {
 	BaseClass::ItemHolsterFrame();
@@ -196,11 +211,11 @@ enum {
 	NEO_GHOST_ONLY_PLAYABLE_TEAMS,
 	NEO_GHOST_ANY_TEAMS
 };
-ConVar neo_ghost_debug_ignore_teams("neo_ghost_debug_ignore_teams", "2", FCVAR_CHEAT | FCVAR_REPLICATED,
+ConVar neo_ghost_debug_ignore_teams("neo_ghost_debug_ignore_teams", "0", FCVAR_CHEAT | FCVAR_REPLICATED,
 	"Debug ghost team filter. If 0, only ghost the enemy team. If 1, ghost both playable teams. If 2, ghost any team, including spectator and unassigned.", true, 0.0, true, 2.0);
 ConVar neo_ghost_debug_spew("neo_ghost_debug_spew", "0", FCVAR_CHEAT | FCVAR_REPLICATED,
 	"Whether to spew debug logs to console about ghosting positions and the data PVS/server origin.", true, 0.0, true, 1.0);
-ConVar neo_ghost_debug_hudinfo("neo_ghost_debug_hudinfo", "1", FCVAR_CHEAT | FCVAR_REPLICATED,
+ConVar neo_ghost_debug_hudinfo("neo_ghost_debug_hudinfo", "0", FCVAR_CHEAT | FCVAR_REPLICATED,
 	"Whether to overlay debug text information to screen about ghosting targets.", true, 0.0, true, 1.0);
 
 #ifdef CLIENT_DLL
@@ -214,13 +229,16 @@ void CWeaponGhost::HideEnemies(void)
 
 // Purpose: Iterate through all enemies and give ghoster their position info,
 // either via client's own PVS information or networked by the server when needed.
-void CWeaponGhost::ShowEnemies(void)
+// Returns distance to closest enemy, or -1 if no enemies.
+float CWeaponGhost::ShowEnemies(void)
 {
 	C_NEO_Player *player = (C_NEO_Player*)GetOwner();
 	if (!player)
 	{
-		return;
+		return 0;
 	}
+
+	float closestDistance = 1000;
 
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
@@ -271,6 +289,12 @@ void CWeaponGhost::ShowEnemies(void)
 			{
 				Debug_ShowPos(otherPlayer->GetAbsOrigin(), isInPVS);
 			}
+
+			const float distance = (player->GetAbsOrigin().DistTo(otherPlayer->GetAbsOrigin()) / METERS_PER_INCH / 1000.0f);
+			if (distance < closestDistance)
+			{
+				closestDistance = distance;
+			}
 		}
 		// Else, the server will provide us with this enemy's position info
 		else
@@ -289,8 +313,17 @@ void CWeaponGhost::ShowEnemies(void)
 			{
 				Debug_ShowPos(m_rvPlayerPositions[i], isInPVS);
 			}
+
+			const float distance = (player->GetAbsOrigin().DistTo(m_rvPlayerPositions[i]) / METERS_PER_INCH / 1000.0f);
+
+			if (distance < closestDistance)
+			{
+				closestDistance = distance;
+			}
 		}
 	}
+
+	return closestDistance == 1000 ? -1 : closestDistance;
 }
 
 inline void CWeaponGhost::HideBeacon(int clientIndex)
@@ -312,11 +345,10 @@ inline void CWeaponGhost::ShowBeacon(int clientIndex, const Vector &pos)
 
 	Vector dir = GetOwner()->EyePosition() - pos;
 
-	// NEO TODO (Rain): make server authoritative cvar in shared code
+	// NEO TODO (Rain): make server cvar in shared code
 	const float maxGhostRangeMeters = 45.0f;
 
 	const float distance = dir.Length2D();
-	// NEO TODO (Rain): Make sure this conversion is actually accurate
 	const float distMeters = (distance / METERS_PER_INCH) / 1000.0f;
 
 	// Server will never give us info beyond the ghost range,
@@ -414,3 +446,18 @@ void CWeaponGhost::UpdateNetworkedEnemyLocations(void)
 	delete[] pvs;
 }
 #endif
+
+void CWeaponGhost::OnPickedUp(CBaseCombatCharacter *pNewOwner)
+{
+	BaseClass::OnPickedUp(pNewOwner);
+
+	// Prevent ghoster from sprinting
+	if (pNewOwner)
+	{
+		auto neoOwner = static_cast<CNEO_Player*>(pNewOwner);
+		if (neoOwner->IsSprinting())
+		{
+			neoOwner->StopSprinting();
+		}
+	}
+}

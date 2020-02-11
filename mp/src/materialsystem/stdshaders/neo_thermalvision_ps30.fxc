@@ -1,0 +1,17 @@
+#include "common_ps_fxc.h"
+
+sampler FrameBuffer				: register(s0);
+sampler BlurBuffer			    : register(s1);
+sampler TvTexture               : register(s2);
+sampler NoiseTexture            : register(s3);
+
+struct PS_INPUT
+{
+	float2 texCoord	: TEXCOORD0;
+};
+
+float4 main( const PS_INPUT i ) : COLOR
+{
+	const float4 color = tex2D(FrameBuffer, i.texCoord);
+	return float4(1.0, 0.0, 0.0, color.a);
+}

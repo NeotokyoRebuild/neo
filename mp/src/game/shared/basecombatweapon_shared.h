@@ -675,6 +675,11 @@ inline bool ClientWantsAutoReload(CBaseCombatCharacter *pCharacter = NULL)
 	{
 		return false;
 	}
+	else if (pCharacter->GetFlags() & FL_FAKECLIENT)
+	{
+		return true;
+	}
+
 	return 1 == atoi(engine->GetClientConVarValue(
 		engine->IndexOfEdict(pCharacter->edict()),
 		"cl_autoreload_when_empty"));

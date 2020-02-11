@@ -1033,6 +1033,14 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 	IGameSystem::Add( GetPredictionCopyTester() );
 #endif
 
+#ifdef NEO
+	// We mount before clientmode any init because we rely on NT VGUI files existing
+	if (!FindOriginalNeotokyoAssets(g_pFullFileSystem, true))
+	{
+		return false;
+	}
+#endif
+
 	modemanager->Init( );
 
 	g_pClientMode->InitViewport();
@@ -1090,11 +1098,6 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 #endif
 #ifndef _X360
 	HookHapticMessages(); // Always hook the messages
-#endif
-
-#ifdef NEO
-	Assert(g_pFullFileSystem);
-	FindOriginalNeotokyoAssets(g_pFullFileSystem, true);
 #endif
 
 	return true;

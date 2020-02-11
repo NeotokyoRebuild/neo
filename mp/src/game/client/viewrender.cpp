@@ -770,6 +770,11 @@ static void SetClearColorToFogColor()
 #ifdef HL2_CLIENT_DLL
 CLIENTEFFECT_REGISTER_BEGIN( PrecacheViewRender )
 	CLIENTEFFECT_MATERIAL( "scripted/intro_screenspaceeffect" )
+
+#ifdef NEO
+	CLIENTEFFECT_MATERIAL("dev/toc_cloakpass")
+	CLIENTEFFECT_MATERIAL("dev/toc_vm")
+#endif
 CLIENTEFFECT_REGISTER_END()
 #endif
 
@@ -802,6 +807,20 @@ CLIENTEFFECT_REGISTER_BEGIN( PrecachePostProcessingEffects )
 	CLIENTEFFECT_MATERIAL( "dev/pyro_vignette_border" )
 	CLIENTEFFECT_MATERIAL( "dev/pyro_vignette" )
 	CLIENTEFFECT_MATERIAL( "dev/pyro_post" )
+#endif
+
+#ifdef NEO
+	CLIENTEFFECT_MATERIAL("dev/neo_motionvision_noise")
+	CLIENTEFFECT_MATERIAL("dev/neo_motionvision_pass1")
+	CLIENTEFFECT_MATERIAL("dev/neo_motionvision_pass2")
+	CLIENTEFFECT_MATERIAL("dev/nightvision")
+	CLIENTEFFECT_MATERIAL("dev/ssao")
+	CLIENTEFFECT_MATERIAL("dev/ssaoblur")
+	CLIENTEFFECT_MATERIAL("dev/ssao_combine")
+	CLIENTEFFECT_MATERIAL("dev/motion")
+
+	// Note: this is referring original NeotokyoSource files
+	CLIENTEFFECT_MATERIAL("dev/thermalvision_tv2")
 #endif
 
 CLIENTEFFECT_REGISTER_END_CONDITIONAL( engine->GetDXSupportLevel() >= 90 )

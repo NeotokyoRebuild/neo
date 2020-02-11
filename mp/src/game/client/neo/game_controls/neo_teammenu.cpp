@@ -99,7 +99,6 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 	SetKeyBoardInputEnabled(true);
 
 	SetTitleBarVisible(false);
-	SetProportional(true);
 
 	m_pJinrai_TeamImage = FindControl<ImagePanel>(CONTROL_JINRAI_IMAGE, false);
 	m_pNSF_TeamImage = FindControl<ImagePanel>(CONTROL_NSF_IMAGE, false);
@@ -109,6 +108,25 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 	m_pSpectator_Button = FindControl<Button>(CONTROL_SPEC_BUTTON);
 	m_pAutoAssign_Button = FindControl<Button>(CONTROL_AUTO_BUTTON);
 	m_pCancel_Button = FindControl<Button>(CONTROL_CANCEL_BUTTON);
+
+	// We probably failed to mount original NT VGUI assets if this triggers.
+#ifdef DEBUG
+	Assert(m_pJinrai_TeamImage);
+	Assert(m_pNSF_TeamImage);
+	Assert(m_pJinrai_Button);
+	Assert(m_pNSF_Button);
+	Assert(m_pSpectator_Button);
+	Assert(m_pAutoAssign_Button);
+	Assert(m_pCancel_Button);
+#else
+	if (!(m_pJinrai_TeamImage && m_pNSF_TeamImage && m_pJinrai_Button &&
+		m_pNSF_Button && m_pSpectator_Button && m_pAutoAssign_Button &&
+		m_pCancel_Button))
+	{
+		// We should never be able to hit this line.
+		Error("Failed to load original Neotokyo VGUI elements! This is a bug, please report it.\n");
+	}
+#endif
 
 #if(0)
 	m_pBackgroundImage = new ImagePanel(this, "IconPanel3");
@@ -125,36 +143,36 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 	m_pBackgroundImage->SetImage("image");
 #endif
 
-#if(0)
-	
-#endif
 	m_pJinrai_Button->AddActionSignalTarget(this);
 	m_pNSF_Button->AddActionSignalTarget(this);
 	m_pSpectator_Button->AddActionSignalTarget(this);
 	m_pAutoAssign_Button->AddActionSignalTarget(this);
 	m_pCancel_Button->AddActionSignalTarget(this);
 
+	InvalidateLayout();
+
+	g_pNeoTeamMenu = this;
+}
+
+CNeoTeamMenu::~CNeoTeamMenu()
+{
+	m_pJinrai_Button->RemoveActionSignalTarget(this);
+	m_pNSF_Button->RemoveActionSignalTarget(this);
+	m_pSpectator_Button->RemoveActionSignalTarget(this);
+	m_pAutoAssign_Button->RemoveActionSignalTarget(this);
+	m_pCancel_Button->RemoveActionSignalTarget(this);
+
 	// Make sure we deallocate all child elements
 	m_pJinrai_TeamImage->SetAutoDelete(true);
 	m_pNSF_TeamImage->SetAutoDelete(true);
-#if(0)
-	m_pBackgroundImage->SetAutoDelete(true);
-	m_pTeamMenuLabel->SetAutoDelete(true);
-	m_pJinrai_PlayercountLabel->SetAutoDelete(true);
-	m_pNSF_PlayercountLabel->SetAutoDelete(true);
-	m_pJinrai_ScoreLabel->SetAutoDelete(true);
-	m_pNSF_ScoreLabel->SetAutoDelete(true);
-	m_pDivider->SetAutoDelete(true);
-#endif
+
 	m_pJinrai_Button->SetAutoDelete(true);
 	m_pNSF_Button->SetAutoDelete(true);
 	m_pSpectator_Button->SetAutoDelete(true);
 	m_pAutoAssign_Button->SetAutoDelete(true);
 	m_pCancel_Button->SetAutoDelete(true);
 
-	InvalidateLayout();
-
-	g_pNeoTeamMenu = this;
+	g_pNeoTeamMenu = NULL;
 }
 
 void CNeoTeamMenu::Update()
@@ -240,7 +258,7 @@ void CNeoTeamMenu::OnCommand(const char *command)
 		V_sprintf_safe(commandBuffer, "jointeam %i", randomTeam);
 	}
 
-	engine->ExecuteClientCmd(commandBuffer);
+	engine->ClientCmd(commandBuffer);
 
 	bool proceedToClassSelection = (Q_stristr(commandBuffer, "jointeam") != 0);
 
@@ -268,10 +286,6 @@ void CNeoTeamMenu::OnButtonPressed(KeyValues *data)
 #endif
 }
 
-CNeoTeamMenu::~CNeoTeamMenu()
-{
-}
-
 void CNeoTeamMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 {
     BaseClass::ApplySchemeSettings(pScheme);
@@ -287,7 +301,8 @@ void CNeoTeamMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 
     SetBgColor(Color( 0,0,0,0 ) ); // make the background transparent
 
-    const char *font = "Default";
+	const vgui::HFont font = pScheme->GetFont("Default", IsProportional());
+	Assert(font > 0);
 
 	Assert(m_pJinrai_Button);
 	Assert(m_pNSF_Button);
@@ -295,46 +310,48 @@ void CNeoTeamMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 	Assert(m_pAutoAssign_Button);
 	Assert(m_pCancel_Button);
 
-    m_pJinrai_Button->SetFont(pScheme->GetFont(font, IsProportional()));
-    m_pNSF_Button->SetFont(pScheme->GetFont(font, IsProportional()));
-    m_pSpectator_Button->SetFont(pScheme->GetFont(font, IsProportional()));
-    m_pAutoAssign_Button->SetFont(pScheme->GetFont(font, IsProportional()));
+	m_pJinrai_Button->SetFont(font);
+	m_pNSF_Button->SetFont(font);
+	m_pSpectator_Button->SetFont(font);
+	m_pAutoAssign_Button->SetFont(font);
 	// NEO FIXME (Rain): this line rarely throws; I have no idea why.
 	// The assertions above are not hit when it occurs.
-    m_pCancel_Button->SetFont(pScheme->GetFont(font, IsProportional()));
+	m_pCancel_Button->SetFont(font);
 
 	const Color selectedBgColor(0, 0, 0), selectedFgColor(255, 0, 0),
 		armedBgColor(0, 0, 0), armedFgColor(0, 255, 0);
 
-    m_pJinrai_Button->SetUseCaptureMouse(true);
-	m_pJinrai_Button->SetSelectedColor(selectedFgColor, selectedBgColor);
-	m_pJinrai_Button->SetArmedColor(armedFgColor, armedBgColor);
-    m_pJinrai_Button->SetMouseInputEnabled(true);
-    m_pJinrai_Button->InstallMouseHandler(this);
+	const bool bUseCaptureMouse = true, bMouseInputEnabled = true;
 
-    m_pNSF_Button->SetUseCaptureMouse(true);
-	m_pNSF_Button->SetSelectedColor(selectedFgColor, selectedBgColor);
-	m_pNSF_Button->SetArmedColor(armedFgColor, armedBgColor);
-    m_pNSF_Button->SetMouseInputEnabled(true);
-    m_pNSF_Button->InstallMouseHandler(this);
+	m_pJinrai_Button		->SetUseCaptureMouse(bUseCaptureMouse);
+	m_pNSF_Button			->SetUseCaptureMouse(bUseCaptureMouse);
+	m_pSpectator_Button		->SetUseCaptureMouse(bUseCaptureMouse);
+	m_pAutoAssign_Button	->SetUseCaptureMouse(bUseCaptureMouse);
+	m_pCancel_Button		->SetUseCaptureMouse(bUseCaptureMouse);
 
-    m_pSpectator_Button->SetUseCaptureMouse(true);
-	m_pSpectator_Button->SetSelectedColor(selectedFgColor, selectedBgColor);
-	m_pSpectator_Button->SetArmedColor(armedFgColor, armedBgColor);
-    m_pSpectator_Button->SetMouseInputEnabled(true);
-    m_pSpectator_Button->InstallMouseHandler(this);
+	m_pJinrai_Button		->SetMouseInputEnabled(bMouseInputEnabled);
+	m_pNSF_Button			->SetMouseInputEnabled(bMouseInputEnabled);
+	m_pSpectator_Button		->SetMouseInputEnabled(bMouseInputEnabled);
+	m_pAutoAssign_Button	->SetMouseInputEnabled(bMouseInputEnabled);
+	m_pCancel_Button		->SetMouseInputEnabled(bMouseInputEnabled);
 
-    m_pAutoAssign_Button->SetUseCaptureMouse(true);
-	m_pAutoAssign_Button->SetSelectedColor(selectedFgColor, selectedBgColor);
-	m_pAutoAssign_Button->SetArmedColor(armedFgColor, armedBgColor);
-    m_pAutoAssign_Button->SetMouseInputEnabled(true);
-    m_pAutoAssign_Button->InstallMouseHandler(this);
+	m_pJinrai_Button		->InstallMouseHandler(this);
+	m_pNSF_Button			->InstallMouseHandler(this);
+	m_pSpectator_Button		->InstallMouseHandler(this);
+	m_pAutoAssign_Button	->InstallMouseHandler(this);
+	m_pCancel_Button		->InstallMouseHandler(this);
 
-    m_pCancel_Button->SetUseCaptureMouse(true);
-	m_pCancel_Button->SetSelectedColor(selectedFgColor, selectedBgColor);
-	m_pCancel_Button->SetArmedColor(armedFgColor, armedBgColor);
-    m_pCancel_Button->SetMouseInputEnabled(true);
-    m_pCancel_Button->InstallMouseHandler(this);
+	m_pJinrai_Button		->SetSelectedColor(selectedFgColor, selectedBgColor);
+	m_pNSF_Button			->SetSelectedColor(selectedFgColor, selectedBgColor);
+	m_pSpectator_Button		->SetSelectedColor(selectedFgColor, selectedBgColor);
+	m_pAutoAssign_Button	->SetSelectedColor(selectedFgColor, selectedBgColor);
+	m_pCancel_Button		->SetSelectedColor(selectedFgColor, selectedBgColor);
+
+	m_pJinrai_Button		->SetArmedColor(armedFgColor, armedBgColor);
+	m_pNSF_Button			->SetArmedColor(armedFgColor, armedBgColor);
+	m_pSpectator_Button		->SetArmedColor(armedFgColor, armedBgColor);
+	m_pAutoAssign_Button	->SetArmedColor(armedFgColor, armedBgColor);
+	m_pCancel_Button		->SetArmedColor(armedFgColor, armedBgColor);
 
     SetPaintBorderEnabled(false);
 
