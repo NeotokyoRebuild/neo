@@ -207,9 +207,9 @@ int CNEOPredictedViewModel::DrawModel(int flags)
 }
 #endif
 
-float CNEOPredictedViewModel::calculateLeanAngle(float freeRoom, CNEO_Player *player){
-	float hipToHeadHeight = 41;
-	return -RAD2DEG(atan2(freeRoom, hipToHeadHeight)) * neo_lean_angle_percentage.GetFloat();
+static inline float calculateLeanAngle(float freeRoom, CNEO_Player *player){
+#define HIP_TO_HEAD_HEIGHT 41.0f
+	return -RAD2DEG(atan2(freeRoom, HIP_TO_HEAD_HEIGHT)) * neo_lean_angle_percentage.GetFloat();
 }
 
 void CNEOPredictedViewModel::lean(CNEO_Player *player){
