@@ -507,9 +507,29 @@ void CNEORules::FireGameEvent(IGameEvent* event)
 // Purpose: Spawns one ghost at a randomly chosen Neo ghost spawn point.
 static inline void SpawnTheGhost()
 {
-	static int ghostEdict = -1;
+	CBaseEntity* pEnt;
 
-	CBaseEntity *pEnt;
+	// Get the amount of ghost spawns available to us
+	int numGhostSpawns = 0;
+
+	pEnt = gEntList.FirstEnt();
+	while (pEnt)
+	{
+		if (dynamic_cast<CNEOGhostSpawnPoint*>(pEnt))
+		{
+			numGhostSpawns++;
+		}
+
+		pEnt = gEntList.NextEnt(pEnt);
+	}
+
+	// No ghost spawns and this map isn't named "_ctg". Probably not a CTG map.
+	if (numGhostSpawns == 0 && (V_stristr(GameRules()->MapName(), "_ctg") == 0))
+	{
+		return;
+	}
+
+	static int ghostEdict = -1;
 
 	CWeaponGhost *ghost = dynamic_cast<CWeaponGhost*>(UTIL_EntityByIndex(ghostEdict));
 
@@ -563,22 +583,6 @@ static inline void SpawnTheGhost()
 
 	Assert(UTIL_IsValidEntity(ghost));
 	Assert(ghostEdict == ghost->edict()->m_EdictIndex);
-
-	// Get the amount of ghost spawns available to us
-	int numGhostSpawns = 0;
-
-	pEnt = gEntList.FirstEnt();
-	while (pEnt)
-	{
-		auto ghostSpawn = dynamic_cast<CNEOGhostSpawnPoint*>(pEnt);
-
-		if (ghostSpawn)
-		{
-			numGhostSpawns++;
-		}
-
-		pEnt = gEntList.NextEnt(pEnt);
-	}
 
 	// We didn't have any spawns, spawn ghost at origin
 	if (numGhostSpawns == 0)
