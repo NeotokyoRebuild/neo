@@ -179,9 +179,6 @@ CPlayerAnimState::CPlayerAnimState( CHL2MP_Player *outer )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-#if defined(NEO) && defined(CLIENT_DLL)
-ConVar cl_neo_animcyclerate("cl_neo_animcyclerate", "1.33", FCVAR_CHEAT);
-#endif
 void CPlayerAnimState::Update()
 {
 	m_angRender = GetOuter()->GetLocalAngles();
@@ -193,16 +190,12 @@ void CPlayerAnimState::Update()
 
 #ifdef NEO
 	ComputePoseParam_BodyXY();
+#else
+	ComputePlaybackRate(); // We do this in ComputePoseParam_BodyXY, don't call me
 #endif
-
-	ComputePlaybackRate();
 
 #ifdef CLIENT_DLL
 	GetOuter()->UpdateLookAt();
-
-#ifdef NEO
-	GetOuter()->SetCycle(fmod(GetOuter()->GetCycle() + (gpGlobals->frametime * cl_neo_animcyclerate.GetFloat()), 1));
-#endif
 #endif
 }
 
@@ -212,9 +205,7 @@ void CPlayerAnimState::Update()
 void CPlayerAnimState::ComputePlaybackRate()
 {
 #ifdef NEO
-	// We use 9 way blending, therefore playbackrate should always be 1,
-	// and we adjust using poseparameters, instead.
-	GetOuter()->SetPlaybackRate(1.0f);
+	Assert(false); // We do this in ComputePoseParam_BodyXY, don't call me
 	return;
 #else
 	// Determine ideal playback rate
@@ -350,6 +341,11 @@ void CPlayerAnimState::ComputePoseParam_BodyYaw( void )
 #endif
 }
 
+#ifdef NEO
+ConVar sv_neo_animrate_scale("sv_neo_animrate_scale", "1.0", FCVAR_ARCHIVE | FCVAR_CHEAT, "", true, 0.0, true, 10.0);
+ConVar sv_neo_animrate_max("sv_neo_animrate_max", "1.25", FCVAR_ARCHIVE | FCVAR_CHEAT, "", true, 0.0, true, 10.0);
+#endif
+
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
@@ -395,7 +391,12 @@ float CalcMovementPlaybackRate(const float speed, const float groundSpeed, bool 
 		{
 			// Note this gets set back to 1.0 if sequence changes due to ResetSequenceInfo below
 			flReturnValue = speed / groundSpeed;
-			flReturnValue = clamp(flReturnValue, 0.01f, 10.f);	// don't go nuts here.
+			flReturnValue = clamp(flReturnValue, 0.01f,
+#ifdef NEO
+				sv_neo_animrate_max.GetFloat()); // clamp crouch legs max anim rate
+#else
+				10.f);	// don't go nuts here.
+#endif
 		}
 		*bIsMoving = true;
 	}
@@ -414,26 +415,18 @@ void CPlayerAnimState::ComputePoseParam_BodyXY(void)
 #endif
 #endif
 
-	if (GetOuter()->LookupPoseParameter("move_x") == -1)
+	const int poseparam_move_x = GetOuter()->LookupPoseParameter("move_x");
+
+	if (poseparam_move_x == -1)
 	{
 		return;
 	}
-
-#if(0)
-	float speedScale = clamp(
-		(GetOuter()->GetLocalVelocity().Length2D() / NEO_ASSAULT_NORM_SPEED),
-		0, 1);
-
-	Vector forward, right;
-	GetOuter()->GetVectors(&forward, &right, NULL);
-#endif
 
 	const float speed = GetOuter()->GetLocalVelocity().Length2D();
 
 	float speedScale = clamp(
 		((speed / ((GetOuter()->GetFlags() & FL_DUCKING) ? NEO_RECON_CROUCH_SPEED : NEO_RECON_NORM_SPEED))),
-		0,
-		1);
+		0, 1);
 
 	int forwardSign = 0;
 	if (GetOuter()->m_nButtons & IN_FORWARD)
@@ -464,21 +457,16 @@ void CPlayerAnimState::ComputePoseParam_BodyXY(void)
 	float speed_x = speedScale * forwardSign;
 	float speed_y = speedScale * sideSign;	
 
-	GetOuter()->SetPoseParameter("move_x", speed_x);
+	GetOuter()->SetPoseParameter(poseparam_move_x, speed_x);
 	GetOuter()->SetPoseParameter("move_y", speed_y);
 
 	bool bIsMoving;
-	float flPlaybackRate = CalcMovementPlaybackRate(speed,
-		GetOuter()->GetSequenceGroundSpeed(GetOuter()->GetSequence()), &bIsMoving);
+	const float flPlaybackRate = CalcMovementPlaybackRate(speed, GetOuter()->GetSequenceGroundSpeed(GetOuter()->GetSequence()), &bIsMoving) * sv_neo_animrate_scale.GetFloat();
 	
 	if (bIsMoving)
 	{
 		GetOuter()->SetPlaybackRate(flPlaybackRate);
 	}
-
-	//DevMsg("X: %f, Y: %f\n", speed_x, speed_y);
-
-	return;
 }
 
 //-----------------------------------------------------------------------------
