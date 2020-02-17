@@ -201,11 +201,7 @@ void CPlayerAnimState::Update()
 	GetOuter()->UpdateLookAt();
 
 #ifdef NEO
-	static double cycle = GetOuter()->GetCycle();
-	cycle = fmod((cycle + (cl_neo_animcyclerate.GetFloat() * gpGlobals->frametime)), 1.0);
-
-	GetOuter()->SetCycle(cycle);
-	//DevMsg("CLI cycle: %f\n", cycle);
+	GetOuter()->SetCycle(fmod(GetOuter()->GetCycle() + (gpGlobals->frametime * cl_neo_animcyclerate.GetFloat()), 1));
 #endif
 #endif
 }
