@@ -14,15 +14,12 @@
 #include "datacache/imdlcache.h"
 
 #include "neo_model_manager.h"
-#include "neo_player_shared.h"
 
 #include "weapon_ghost.h"
 
 #include "shareddefs.h"
 #include "inetchannelinfo.h"
 #include "eiface.h"
-
-#include "neo_player_shared.h"
 
 #include "sequence_Transitioner.h"
 

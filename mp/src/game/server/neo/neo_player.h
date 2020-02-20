@@ -12,6 +12,8 @@ class CNEO_Player;
 #include "utldict.h"
 #include "hl2mp_player.h"
 
+#include "neo_player_shared.h"
+
 class CNEO_Player : public CHL2MP_Player
 {
 public:
@@ -58,6 +60,20 @@ public:
 	virtual void EquipSuit(bool bPlayEffects = true);
 	virtual void RemoveSuit(void);
 	virtual void GiveDefaultItems(void);
+
+	// Implementing in header in hopes of compiler picking up the inlined base method
+	virtual float GetModelScale() const
+	{
+		switch (GetClass())
+		{
+		case NEO_CLASS_RECON:
+			return CBaseAnimating::GetModelScale() * NEO_RECON_MODEL_SCALE;
+		case NEO_CLASS_SUPPORT:
+			return CBaseAnimating::GetModelScale() * NEO_SUPPORT_MODEL_SCALE;
+		default:
+			return CBaseAnimating::GetModelScale() * NEO_ASSAULT_MODEL_SCALE;
+		}
+	}
 	
 	void GiveLoadoutWeapon(void);
 

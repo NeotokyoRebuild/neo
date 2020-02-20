@@ -79,6 +79,22 @@
 #define NEO_ACTTABLE(CNEOWepClass)
 #endif
 
+#define HL2DM_DEFAULT_PLAYERMODEL_HEIGHT 74.0
+#define NEO_RECON_PLAYERMODEL_HEIGHT 66.0
+#define NEO_ASSAULT_PLAYERMODEL_HEIGHT 67.0
+#define NEO_SUPPORT_PLAYERMODEL_HEIGHT 72.0
+
+// "Magic number" for scaling the hull ratios below to make them match original NT.
+// It makes the hull clearance slightly larger than the actual models (as is the
+// case with the original), but ensures that reachability of various places
+// inside NT levels remains the same. This specific value was found by binary
+// searching until the hulls matched within 1 unit in-game.
+#define NEO_HULL_TOLERANCE_SCALE 1.078125
+
+#define NEO_RECON_MODEL_SCALE ((NEO_RECON_PLAYERMODEL_HEIGHT / HL2DM_DEFAULT_PLAYERMODEL_HEIGHT) * NEO_HULL_TOLERANCE_SCALE)
+#define NEO_ASSAULT_MODEL_SCALE ((NEO_ASSAULT_PLAYERMODEL_HEIGHT / HL2DM_DEFAULT_PLAYERMODEL_HEIGHT) * NEO_HULL_TOLERANCE_SCALE)
+#define NEO_SUPPORT_MODEL_SCALE ((NEO_SUPPORT_PLAYERMODEL_HEIGHT / HL2DM_DEFAULT_PLAYERMODEL_HEIGHT) * NEO_HULL_TOLERANCE_SCALE)
+
 enum NeoSkin {
 	NEO_SKIN_FIRST = 0,
 	NEO_SKIN_SECOND,

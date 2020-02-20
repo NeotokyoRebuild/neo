@@ -67,6 +67,20 @@ public:
 	virtual void StartWalking(void);
 	virtual void StopWalking(void);
 
+	// Implementing in header in hopes of compiler picking up the inlined base method
+	virtual float GetModelScale() const
+	{
+		switch (GetClass())
+		{
+		case NEO_CLASS_RECON:
+			return C_BaseAnimating::GetModelScale() * NEO_RECON_MODEL_SCALE;
+		case NEO_CLASS_SUPPORT:
+			return C_BaseAnimating::GetModelScale() * NEO_SUPPORT_MODEL_SCALE;
+		default:
+			return C_BaseAnimating::GetModelScale() * NEO_ASSAULT_MODEL_SCALE;
+		}
+	}
+
 	float GetNormSpeed() const;
 	float GetCrouchSpeed() const;
 	float GetWalkSpeed() const;

@@ -41,10 +41,10 @@ extern void respawn(CBaseEntity *pEdict, bool fCopyCorpse);
 
 // NEO TODO (Rain): check against a test map
 static NEOViewVectors g_NEOViewVectors(
-	Vector( 0, 0, 58 ),	   //VEC_VIEW (m_vView) // 57 == vanilla recon, 58 == vanilla assault (default), 60 == vanilla support. Use the macro VEC_VIEW_NEOSCALE to access per client.
+	Vector( 0, 0, 58 ),	   //VEC_VIEW (m_vView) // 57 == vanilla recon, 58 == vanilla assault (default), 60 == vanilla support. Use the shareddefs.h macro VEC_VIEW_NEOSCALE to access per player.
 							  
 	Vector(-16, -16, 0 ),	  //VEC_HULL_MIN (m_vHullMin)
-	Vector(16, 16, 72),	  //VEC_HULL_MAX (m_vHullMax)
+	Vector(16, 16, NEO_ASSAULT_PLAYERMODEL_HEIGHT),	  //VEC_HULL_MAX (m_vHullMax). 66 == vanilla recon, 67 == vanilla assault (default), 72 == vanilla support. Use relevant VEC_... macros in shareddefs for class height adjusted per player access.
 							  					
 	Vector(-16, -16, 0 ),	  //VEC_DUCK_HULL_MIN (m_vDuckHullMin)
 	Vector( 16,  16,  48 ),	  //VEC_DUCK_HULL_MAX	(m_vDuckHullMax)
