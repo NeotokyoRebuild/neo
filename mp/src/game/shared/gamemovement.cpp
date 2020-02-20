@@ -2480,7 +2480,7 @@ bool CGameMovement::CheckJumpButton( void )
 // jump values. In theory, this should just be "original hull
 // height over NT class hull height", but that seemed to be
 // incorrect in-game, so these values have just been binary searched
-// until they matched how each classes jump should be.
+// until they matched how each classes' jump should be.
 #define NEO_HULL_SCALE_RECON_CORRECTION 1.065
 #define NEO_HULL_SCALE_ASSAULT_CORRECTION 1.125
 #define NEO_HULL_SCALE_SUPPORT_CORRECTION 1.1
