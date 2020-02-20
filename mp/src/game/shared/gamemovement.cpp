@@ -44,7 +44,6 @@ extern IFileSystem *filesystem;
 	static ConVar dispcoll_drawplane( "dispcoll_drawplane", "0" );
 #endif
 
-
 // tickcount currently isn't set during prediction, although gpGlobals->curtime and
 // gpGlobals->frametime are. We should probably set tickcount (to player->m_nTickBase),
 // but we're REALLY close to shipping, so we can change that later and people can use
@@ -2456,22 +2455,32 @@ bool CGameMovement::CheckJumpButton( void )
 	}
 
 #ifdef NEO
-#ifdef GAME_DLL
-	CNEO_Player *neoPlayer = static_cast<CNEO_Player*>(player);
-#else
-	C_NEO_Player *neoPlayer = static_cast<C_NEO_Player*>(player);
-#endif
+// How many units one can jump up in default HL2DM.
+// This is using the jump+crouch input sequence,
+// and not crouch+jump, which will provide an extra
+// +1 unit of jump height.
+#define HL2DM_DEFAULT_MAX_JUMP_REACH_UNITS 44.0
 
-	// NEO TODO (Rain): adjust class specific jump height values
-	switch (neoPlayer->GetClass())
-	{
-	case NEO_CLASS_RECON:
-		flMul *= 1.25;
-		break;
-	case NEO_CLASS_SUPPORT:
-		flMul *= 0.95;
-		break;
-	}
+// How many units should the various NT classes reach.
+// This value ignores the +1 unit that can be gained
+// by sequencing crouch before jumping (see comment above).
+#define RECON_SHOULD_REACH_HEIGHT 65.0
+// Assault and support share the same jump height.
+#define NON_RECON_SHOULD_REACH_HEIGHT 45.0
+
+// Because we're calculating these values from full unit accuracy (zeroed decimals),
+// the recon jump has accumulated this many units of error in the in-game world.
+#define RECON_OVERJUMP_UNITS 2.75
+// Downscale by overjump ratio, so these numbers more accurately map to actual units of in-game jump height.
+#define RECON_OVERJUMP_DOWNSCALE_MULTIPLIER (RECON_SHOULD_REACH_HEIGHT / (RECON_SHOULD_REACH_HEIGHT + RECON_OVERJUMP_UNITS))
+
+#define RECON_JUMP_MULTIPLIER ((RECON_SHOULD_REACH_HEIGHT / HL2DM_DEFAULT_MAX_JUMP_REACH_UNITS) * RECON_OVERJUMP_DOWNSCALE_MULTIPLIER)
+#define NON_RECON_JUMP_MULTIPLIER (NON_RECON_SHOULD_REACH_HEIGHT / HL2DM_DEFAULT_MAX_JUMP_REACH_UNITS)
+
+#ifdef DEBUG
+	Assert(dynamic_cast<CNEO_Player*>(player));
+#endif
+	flMul *= (static_cast<CNEO_Player*>(player)->GetClass() == NEO_CLASS_RECON ? RECON_JUMP_MULTIPLIER : NON_RECON_JUMP_MULTIPLIER);
 #endif
 
 	// Acclerate upward
