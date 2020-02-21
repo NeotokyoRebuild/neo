@@ -2458,19 +2458,20 @@ bool CGameMovement::CheckJumpButton( void )
 // How many units one can jump up in default HL2DM.
 // This is using the jump+crouch input sequence,
 // and not crouch+jump, which will provide an extra
-// +1 unit of jump height.
+// +1 unit of jump height for assault & support,
+// and +3 units of jump height for recon.
 #define HL2DM_DEFAULT_MAX_JUMP_REACH_UNITS 44.0
 
 // How many units should the various NT classes reach.
-// This value ignores the +1 unit that can be gained
+// This value ignores the extra height that can be gained
 // by sequencing crouch before jumping (see comment above).
-#define RECON_SHOULD_REACH_HEIGHT 65.0
+#define RECON_SHOULD_REACH_HEIGHT 62.0
 #define ASSAULT_SHOULD_REACH_HEIGHT 45.0
 #define SUPPORT_SHOULD_REACH_HEIGHT ASSAULT_SHOULD_REACH_HEIGHT
 
 // Because we're calculating these values from full unit accuracy (zeroed decimals),
 // the recon jump has accumulated this many units of error in the in-game world.
-#define RECON_OVERJUMP_UNITS 2.75
+#define RECON_OVERJUMP_UNITS 1.1 // NEO FIXME (Rain): still jumping +1 unit too low with crouch+jump. adjust crouch hulls to fix
 
 // Downscale by overjump ratio, so these numbers more accurately map to actual units of in-game jump height.
 #define RECON_OVERJUMP_DOWNSCALE_MULTIPLIER (RECON_SHOULD_REACH_HEIGHT / (RECON_SHOULD_REACH_HEIGHT + RECON_OVERJUMP_UNITS))
