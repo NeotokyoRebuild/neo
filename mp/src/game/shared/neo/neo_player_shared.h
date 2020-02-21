@@ -84,6 +84,11 @@
 #define NEO_ASSAULT_PLAYERMODEL_HEIGHT 67.0
 #define NEO_SUPPORT_PLAYERMODEL_HEIGHT 72.0
 
+#define HL2DM_DEFAULT_PLAYERMODEL_DUCK_HEIGHT 36.0
+#define NEO_RECON_PLAYERMODEL_DUCK_HEIGHT 48.0
+#define NEO_ASSAULT_PLAYERMODEL_DUCK_HEIGHT 50.0
+#define NEO_SUPPORT_PLAYERMODEL_DUCK_HEIGHT 61.0
+
 // "Magic number" for scaling the hull ratios below to make them match original NT.
 // It makes the hull clearance slightly larger than the actual models (as is the
 // case with the original), but ensures that reachability of various places

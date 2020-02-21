@@ -2070,3 +2070,25 @@ float CNEO_Player::GetSprintSpeed() const
 		return NEO_BASE_SPRINT_SPEED;
 	}
 }
+
+const Vector CNEO_Player::GetPlayerMaxs(void) const
+{
+	return VEC_DUCK_HULL_MAX_SCALED(this);
+}
+
+extern ConVar sv_turbophysics;
+
+void CNEO_Player::InitVCollision(const Vector& vecAbsOrigin, const Vector& vecAbsVelocity)
+{
+	// Cleanup any old vphysics stuff.
+	VPhysicsDestroyObject();
+
+	// in turbo physics players dont have a physics shadow
+	if (sv_turbophysics.GetBool())
+		return;
+
+	CPhysCollide* pModel = PhysCreateBbox(VEC_HULL_MIN_SCALED(this), VEC_HULL_MAX_SCALED(this));
+	CPhysCollide* pCrouchModel = PhysCreateBbox(VEC_DUCK_HULL_MIN_SCALED(this), VEC_DUCK_HULL_MAX_SCALED(this));
+
+	SetupVPhysicsShadow(vecAbsOrigin, vecAbsVelocity, pModel, "player_stand", pCrouchModel, "player_crouch");
+}

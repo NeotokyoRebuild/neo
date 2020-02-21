@@ -67,6 +67,8 @@ public:
 	virtual void StartWalking(void);
 	virtual void StopWalking(void);
 
+	virtual const Vector GetPlayerMaxs(void) const;
+
 	// Implementing in header in hopes of compiler picking up the inlined base method
 	virtual float GetModelScale() const
 	{
@@ -88,7 +90,7 @@ public:
 
 	bool ShouldDrawHL2StyleQuickHud( void );
 
-	int GetClass() const;
+	int GetClass() const { return m_iNeoClass; }
 
 	inline bool IsCarryingGhost(void);
 

@@ -61,6 +61,9 @@ public:
 	virtual void RemoveSuit(void);
 	virtual void GiveDefaultItems(void);
 
+	virtual const Vector GetPlayerMaxs(void) const;
+	virtual void InitVCollision(const Vector& vecAbsOrigin, const Vector& vecAbsVelocity);
+
 	// Implementing in header in hopes of compiler picking up the inlined base method
 	virtual float GetModelScale() const
 	{

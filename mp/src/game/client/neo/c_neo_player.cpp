@@ -389,11 +389,6 @@ int C_NEO_Player::DrawModel( int flags )
 	return ret;
 }
 
-int C_NEO_Player::GetClass() const
-{
-	return m_iNeoClass;
-}
-
 void C_NEO_Player::AddEntity( void )
 {
 	BaseClass::AddEntity();
@@ -996,4 +991,9 @@ inline bool C_NEO_Player::IsCarryingGhost(void)
 	auto wep = dynamic_cast<CNEOBaseCombatWeapon*>(GetWeapon(NEO_WEAPON_PRIMARY_SLOT));
 #endif
 	return (wep && wep->IsGhost());
+}
+
+const Vector C_NEO_Player::GetPlayerMaxs(void) const
+{
+	return VEC_DUCK_HULL_MAX_SCALED(this);
 }

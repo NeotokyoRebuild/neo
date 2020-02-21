@@ -47,7 +47,7 @@ static NEOViewVectors g_NEOViewVectors(
 	Vector(16, 16, NEO_ASSAULT_PLAYERMODEL_HEIGHT),	  //VEC_HULL_MAX (m_vHullMax). 66 == vanilla recon, 67 == vanilla assault (default), 72 == vanilla support. Use relevant VEC_... macros in shareddefs for class height adjusted per player access.
 							  					
 	Vector(-16, -16, 0 ),	  //VEC_DUCK_HULL_MIN (m_vDuckHullMin)
-	Vector( 16,  16,  48 ),	  //VEC_DUCK_HULL_MAX	(m_vDuckHullMax)
+	Vector( 16,  16, NEO_ASSAULT_PLAYERMODEL_DUCK_HEIGHT),	  //VEC_DUCK_HULL_MAX	(m_vDuckHullMax)
 	Vector( 0, 0, 45 ),		  //VEC_DUCK_VIEW		(m_vDuckView)
 							  					
 	Vector(-10, -10, -10 ),	  //VEC_OBS_HULL_MIN	(m_vObsHullMin)
