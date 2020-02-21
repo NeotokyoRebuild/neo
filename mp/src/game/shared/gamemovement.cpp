@@ -2448,7 +2448,7 @@ bool CGameMovement::CheckJumpButton( void )
 	float flMul;
 	if ( g_bMovementOptimizations )
 	{
-#if defined(HL2_DLL) || defined(HL2_CLIENT_DLL)
+#if (!defined NEO) && (defined(HL2_DLL) || defined(HL2_CLIENT_DLL))
 		Assert( GetCurrentGravity() == 600.0f );
 		flMul = 160.0f;	// approx. 21 units.
 #else
@@ -2477,27 +2477,17 @@ bool CGameMovement::CheckJumpButton( void )
 #define ASSAULT_SHOULD_REACH_HEIGHT 45.0
 #define SUPPORT_SHOULD_REACH_HEIGHT ASSAULT_SHOULD_REACH_HEIGHT
 
-// Because we're calculating these values from full unit accuracy (zeroed decimals),
-// the recon jump has accumulated this many units of error in the in-game world.
-#define RECON_OVERJUMP_UNITS 1.1 // NEO FIXME (Rain): still jumping +1 unit too low with crouch+jump. adjust crouch hulls to fix
+// Because jump heights depend on the hull values, ducked
+// hull values, and gravity settings, need some magical
+// multipliers here to actually hit the correct values in-game.
+#define NEO_JUMP_SCALE_RECON_CORRECTION 0.7221
+#define NEO_JUMP_SCALE_ASSAULT_CORRECTION 0.79
+#define NEO_JUMP_SCALE_SUPPORT_CORRECTION 0.872
 
-// Downscale by overjump ratio, so these numbers more accurately map to actual units of in-game jump height.
-#define RECON_OVERJUMP_DOWNSCALE_MULTIPLIER (RECON_SHOULD_REACH_HEIGHT / (RECON_SHOULD_REACH_HEIGHT + RECON_OVERJUMP_UNITS))
-
-// Because jump heights depend on the hull values, and ours differ
-// from HL2DM (and are class specific), we need to scale the final
-// jump values. In theory, this should just be "original hull
-// height over NT class hull height", but that seemed to be
-// incorrect in-game, so these values have just been binary searched
-// until they matched how each classes' jump should be.
-#define NEO_HULL_SCALE_RECON_CORRECTION 1.065
-#define NEO_HULL_SCALE_ASSAULT_CORRECTION 1.125
-#define NEO_HULL_SCALE_SUPPORT_CORRECTION 1.1
-
-// The final NT class specific multipliers to be applied in jump calculations.
-#define RECON_JUMP_MULTIPLIER (((RECON_SHOULD_REACH_HEIGHT / HL2DM_DEFAULT_MAX_JUMP_REACH_UNITS) * RECON_OVERJUMP_DOWNSCALE_MULTIPLIER) * NEO_HULL_SCALE_RECON_CORRECTION)
-#define ASSAULT_JUMP_MULTIPLIER ((ASSAULT_SHOULD_REACH_HEIGHT / HL2DM_DEFAULT_MAX_JUMP_REACH_UNITS) * NEO_HULL_SCALE_ASSAULT_CORRECTION)
-#define SUPPORT_JUMP_MULTIPLIER ((SUPPORT_SHOULD_REACH_HEIGHT / HL2DM_DEFAULT_MAX_JUMP_REACH_UNITS) * NEO_HULL_SCALE_SUPPORT_CORRECTION)
+// The final NT class specific multipliers to be applied in jump calculations below.
+#define RECON_JUMP_MULTIPLIER ((RECON_SHOULD_REACH_HEIGHT / HL2DM_DEFAULT_MAX_JUMP_REACH_UNITS) * NEO_JUMP_SCALE_RECON_CORRECTION)
+#define ASSAULT_JUMP_MULTIPLIER ((ASSAULT_SHOULD_REACH_HEIGHT / HL2DM_DEFAULT_MAX_JUMP_REACH_UNITS) * NEO_JUMP_SCALE_ASSAULT_CORRECTION)
+#define SUPPORT_JUMP_MULTIPLIER ((SUPPORT_SHOULD_REACH_HEIGHT / HL2DM_DEFAULT_MAX_JUMP_REACH_UNITS) * NEO_JUMP_SCALE_SUPPORT_CORRECTION)
 
 #ifdef DEBUG
 	Assert(dynamic_cast<CNEO_Player*>(player));
