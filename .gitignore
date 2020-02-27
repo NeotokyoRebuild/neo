@@ -114,6 +114,9 @@ obj*/
 *.files
 *.includes
 
+# Intel utilities
+VTune\ Profiler\ Results/
+
 # Specific Source build products
 bin
 *.project
