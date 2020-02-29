@@ -218,8 +218,15 @@ void CNeoLoadoutMenu::OnMousePressed(vgui::MouseCode code)
 
 extern ConCommand loadoutmenu;
 
-bool IsAllowedGun(const int loadoutId, const int currentXP)
+extern ConVar neo_sv_ignore_wep_xp_limit;
+
+static bool IsAllowedGun(const int loadoutId, const int currentXP)
 {
+	if (neo_sv_ignore_wep_xp_limit.GetBool())
+	{
+		return true;
+	}
+
 	// NEO TODO (Rain): set reasonably
 	const int xpLimits[] = {
 		-255,	// MPN

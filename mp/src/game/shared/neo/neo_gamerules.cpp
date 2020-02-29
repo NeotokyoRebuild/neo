@@ -106,6 +106,9 @@ static NEOViewVectors g_NEOViewVectors(
 ConVar neo_round_timelimit("neo_round_timelimit", "2.75", FCVAR_REPLICATED, "Neo round timelimit, in minutes.",
 	true, 0.0f, false, 600.0f);
 
+ConVar neo_sv_ignore_wep_xp_limit("neo_sv_ignore_wep_xp_limit", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "If true, allow equipping any loadout regardless of player XP.",
+	true, 0.0f, true, 1.0f);
+
 extern CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
 
 static const char *s_NeoPreserveEnts[] =

@@ -81,6 +81,8 @@ END_DATADESC()
 CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
 extern CBaseEntity *g_pLastSpawn;
 
+extern ConVar neo_sv_ignore_wep_xp_limit;
+
 void CNEO_Player::RequestSetClass(int newClass)
 {
 	bool canChangeImmediately = true; // TODO
@@ -177,7 +179,7 @@ bool CNEO_Player::RequestSetLoadout(int loadoutNumber)
 		result = false;
 	}
 
-	if (m_iXP < pNeoWeapon->GetNeoWepXPCost(GetClass()))
+	if (!neo_sv_ignore_wep_xp_limit.GetBool() && m_iXP < pNeoWeapon->GetNeoWepXPCost(GetClass()))
 	{
 		DevMsg("Insufficient XP for %s\n", pszWepName);
 		result = false;
@@ -1885,7 +1887,7 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 	CNEOBaseCombatWeapon *pNeoWeapon = dynamic_cast<CNEOBaseCombatWeapon*>((CBaseEntity*)pEnt);
 	if (pNeoWeapon)
 	{
-		if (m_iXP >= pNeoWeapon->GetNeoWepXPCost(GetClass()))
+		if (neo_sv_ignore_wep_xp_limit.GetBool() || (m_iXP >= pNeoWeapon->GetNeoWepXPCost(GetClass())))
 		{
 			pNeoWeapon->SetSubType(wepSubType);
 
