@@ -13,15 +13,6 @@ CNEOHud_ChildElement::CNEOHud_ChildElement()
 {
 	m_pNeoHud = dynamic_cast<CNeoHudElements*>(GetClientModeNormal()->GetViewport()->FindChildByName(PANEL_NEO_HUD));
 	Assert(m_pNeoHud);
-}
 
-void CNEOHud_ChildElement::SetLastHudUpdater(C_NEO_Player* player)
-{
-	m_pNeoHud->SetLastUpdater(player);
-}
-
-bool CNEOHud_ChildElement::IsHudReadyForPaintNow() const
-{
-	Assert(C_NEO_Player::GetLocalNEOPlayer());
-	return m_pNeoHud->GetLastUpdater() == C_NEO_Player::GetLocalNEOPlayer();
+	m_flLastUpdateTime = 0;
 }

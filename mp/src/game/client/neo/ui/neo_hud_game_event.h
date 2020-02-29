@@ -17,17 +17,22 @@ class CNEOHud_GameEvent : public CNEOHud_ChildElement, public CHudElement, publi
 public:
 	CNEOHud_GameEvent(const char *pElementName, vgui::Panel *parent = NULL);
 
-	void SetMessage(const char *message);
+	void SetMessage(const char *message, size_t size);
 	void SetMessage(const wchar_t *message, size_t size);
 
 	virtual void Paint();
+
+protected:
+	virtual void UpdateStateForNeoHudElementDraw() override;
+	virtual void DrawNeoHudElement() override;
+	virtual ConVar* GetUpdateFrequencyConVar() const override;
 
 private:
 	vgui::HFont m_hFont;
 
 	int m_iResX, m_iResY;
 
-	wchar_t m_pszMessage[NEO_MAX_HUD_GAME_EVENT_MSG_SIZE * sizeof(wchar_t)];
+	wchar_t m_pszMessage[NEO_MAX_HUD_GAME_EVENT_MSG_SIZE];
 };
 
 

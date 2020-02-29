@@ -21,10 +21,18 @@ public:
 	void SetScreenPosition(int x, int y);
 	void SetGhostDistance(float distance);
 
+protected:
+	virtual void UpdateStateForNeoHudElementDraw() override;
+	virtual void DrawNeoHudElement() override;
+	virtual ConVar* GetUpdateFrequencyConVar() const override;
+
 private:
 	int m_iMarkerTexWidth, m_iMarkerTexHeight;
 	int m_iPosX, m_iPosY;
 	int m_iGhostingTeam;
+
+	char m_szMarkerText[12 + 1];
+	wchar_t m_wszMarkerTextUnicode[12 + 1];
 
 	float m_flDistMeters;
 

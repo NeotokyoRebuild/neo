@@ -615,7 +615,7 @@ void C_NEO_Player::PreThink( void )
 		{
 			if (m_bShowTestMessage)
 			{
-				indicator->SetMessage(m_pszTestMessage);
+				indicator->SetMessage(m_pszTestMessage, sizeof(m_pszTestMessage));
 			}
 
 			if (indicator->IsVisible() != m_bShowTestMessage)

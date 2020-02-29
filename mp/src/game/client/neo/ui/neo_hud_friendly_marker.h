@@ -20,9 +20,19 @@ public:
 
 	virtual void Paint();
 
+protected:
+	virtual void UpdateStateForNeoHudElementDraw() override;
+	virtual void DrawNeoHudElement() override;
+	virtual ConVar* GetUpdateFrequencyConVar() const override;
+
 private:
 	int m_iMarkerTexWidth, m_iMarkerTexHeight;
 	int m_iPosX, m_iPosY;
+
+	int m_x0[MAX_PLAYERS];
+	int m_x1[MAX_PLAYERS];
+	int m_y0[MAX_PLAYERS];
+	int m_y1[MAX_PLAYERS];
 
 	vgui::HTexture m_hTex;
 	vgui::HFont m_hFont;
