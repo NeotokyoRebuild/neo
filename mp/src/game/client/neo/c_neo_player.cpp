@@ -62,6 +62,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_iXP)),
 	RecvPropInt(RECVINFO(m_iCapTeam)),
 	RecvPropInt(RECVINFO(m_iLoadoutWepChoice)),
+	RecvPropInt(RECVINFO(m_iNextSpawnClassChoice)),
 
 	RecvPropVector(RECVINFO(m_vecGhostMarkerPos)),
 	RecvPropInt(RECVINFO(m_iGhosterTeam)),
@@ -264,6 +265,7 @@ C_NEO_Player::C_NEO_Player()
 
 	m_iCapTeam = TEAM_UNASSIGNED;
 	m_iLoadoutWepChoice = 0;
+	m_iNextSpawnClassChoice = -1;
 	m_iGhosterTeam = TEAM_UNASSIGNED;
 	m_iXP.GetForModify() = 0;
 

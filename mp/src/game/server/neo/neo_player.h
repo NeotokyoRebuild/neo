@@ -149,6 +149,7 @@ public:
 	CNetworkVar(int, m_iXP);
 
 	CNetworkVar(int, m_iLoadoutWepChoice);
+	CNetworkVar(int, m_iNextSpawnClassChoice);
 
 	CNetworkVar(bool, m_bShowTestMessage);
 	CNetworkString(m_pszTestMessage, 32 * 2 + 1);

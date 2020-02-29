@@ -135,6 +135,7 @@ public:
 	CNetworkVar(int, m_iXP);
 	CNetworkVar(int, m_iCapTeam);
 	CNetworkVar(int, m_iLoadoutWepChoice);
+	CNetworkVar(int, m_iNextSpawnClassChoice);
 
 	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
 

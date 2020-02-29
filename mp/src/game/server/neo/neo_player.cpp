@@ -41,6 +41,7 @@ SendPropInt(SENDINFO(m_iXP)),
 SendPropInt(SENDINFO(m_iCapTeam), 3),
 SendPropInt(SENDINFO(m_iGhosterTeam)),
 SendPropInt(SENDINFO(m_iLoadoutWepChoice)),
+SendPropInt(SENDINFO(m_iNextSpawnClassChoice)),
 
 SendPropBool(SENDINFO(m_bGhostExists)),
 SendPropBool(SENDINFO(m_bInThermOpticCamo)),
@@ -63,6 +64,7 @@ DEFINE_FIELD(m_iXP, FIELD_INTEGER),
 DEFINE_FIELD(m_iCapTeam, FIELD_INTEGER),
 DEFINE_FIELD(m_iGhosterTeam, FIELD_INTEGER),
 DEFINE_FIELD(m_iLoadoutWepChoice, FIELD_INTEGER),
+DEFINE_FIELD(m_iNextSpawnClassChoice, FIELD_INTEGER),
 
 DEFINE_FIELD(m_bGhostExists, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bInThermOpticCamo, FIELD_BOOLEAN),
@@ -83,13 +85,21 @@ extern CBaseEntity *g_pLastSpawn;
 
 extern ConVar neo_sv_ignore_wep_xp_limit;
 
+ConVar sv_neo_can_change_classes_anytime("sv_neo_can_change_classes_anytime", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "Can players change classes at any moment, even mid-round?",
+	true, 0.0f, true, 1.0f);
+
 void CNEO_Player::RequestSetClass(int newClass)
 {
-	bool canChangeImmediately = true; // TODO
+	if (newClass < 0 || newClass >= NEO_CLASS_ENUM_COUNT)
+	{
+		Assert(false);
+		return;
+	}
 
-	if (canChangeImmediately)
+	if (IsDead() || sv_neo_can_change_classes_anytime.GetBool())
 	{
 		m_iNeoClass = newClass;
+		m_iNextSpawnClassChoice = -1;
 
 		SetPlayerTeamModel();
 		SetViewOffset(VEC_VIEW_NEOSCALE(this));
@@ -97,7 +107,12 @@ void CNEO_Player::RequestSetClass(int newClass)
 	}
 	else
 	{
-		// TODO set for next spawn
+		m_iNextSpawnClassChoice = newClass;
+
+		const char* classes[] = { "recon", "assault", "support", "VIP" };
+		const char* msg = "You will spawn as %s class next round.\n";
+		Msg(msg, classes[newClass]);
+		ConMsg(msg, classes[newClass]);
 	}
 }
 
@@ -300,6 +315,7 @@ CNEO_Player::CNEO_Player()
 	m_iCapTeam = TEAM_UNASSIGNED;
 	m_iGhosterTeam = TEAM_UNASSIGNED;
 	m_iLoadoutWepChoice = 0;
+	m_iNextSpawnClassChoice = -1;
 
 	m_bShowTestMessage = false;
 	V_memset(m_pszTestMessage.GetForModify(), 0, sizeof(m_pszTestMessage));
@@ -396,6 +412,14 @@ void CNEO_Player::Spawn(void)
 	m_leanPosTargetOffset = VEC_VIEW_NEOSCALE(this);
 
 	SetTransmitState(FL_EDICT_ALWAYS);
+
+	if ((m_iNextSpawnClassChoice != -1) && (m_iNeoClass != m_iNextSpawnClassChoice))
+	{
+		m_iNeoClass = m_iNextSpawnClassChoice;
+		SetPlayerTeamModel();
+		SetViewOffset(VEC_VIEW_NEOSCALE(this));
+		InitSprinting();
+	}
 
 	GiveLoadoutWeapon();
 }
