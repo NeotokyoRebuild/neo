@@ -20,13 +20,18 @@ public:
 	virtual void ApplySchemeSettings(vgui::IScheme *pScheme);
 	virtual void Paint();
 
-	inline void DrawCompass(void);
-	inline void DrawDebugCompass(void);
+	void DrawCompass(void);
+	void DrawDebugCompass(void);
 
 private:
+	void GetCompassUnicodeString(const float angle, wchar_t* outUnicodeStr) const;
+
 	vgui::HFont m_hFont;
 
 	int m_resX, m_resY;
+
+	float m_flCompassPulse;
+	float m_flPulseStep;
 
 private:
 	CNEOHud_Compass(const CNEOHud_Compass &other);
