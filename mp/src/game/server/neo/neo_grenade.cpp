@@ -76,6 +76,9 @@ void CNEOGrenadeFrag::VPhysicsUpdate(IPhysicsObject *pPhysics)
 #else
 	UTIL_TraceLine(start, start + vel * gpGlobals->frametime, CONTENTS_HITBOX | CONTENTS_MONSTER | CONTENTS_SOLID, &filter, &tr);
 #endif
+
+	const float GRENADE_COEFFICIENT_OF_RESTITUTION = 0.2f;
+
 	if (tr.startsolid)
 	{
 		if (!m_inSolid)

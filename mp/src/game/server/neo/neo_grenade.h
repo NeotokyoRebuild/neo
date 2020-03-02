@@ -13,8 +13,6 @@
 
 #define NEO_FRAG_GRENADE_WARN_TIME 1.5f
 
-const float GRENADE_COEFFICIENT_OF_RESTITUTION = 0.2f;
-
 extern ConVar sk_plr_dmg_fraggrenade, sk_npc_dmg_fraggrenade, sk_fraggrenade_radius;
 
 #define NEO_FRAG_GRENADE_MODEL "models/weapons/w_frag_thrown.mdl"
