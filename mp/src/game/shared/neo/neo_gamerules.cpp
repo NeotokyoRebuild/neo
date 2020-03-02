@@ -21,6 +21,8 @@
 	#include "player_resource.h"
 #endif
 
+#include "decals.h"
+
 REGISTER_GAMERULES_CLASS( CNEORules );
 
 BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
@@ -307,6 +309,7 @@ CAmmoDef *GetAmmoDef()
 		ADD_NEO_AMMO_TYPE(AMMO_SMOKEGRENADE, DMG_BLAST, TRACER_NONE, 0);
 		ADD_NEO_AMMO_TYPE(AMMO_PRI, DMG_BULLET, TRACER_LINE_AND_WHIZ, BULLET_IMPULSE(400, 1200));
 		ADD_NEO_AMMO_TYPE(AMMO_SMAC, DMG_BULLET, TRACER_LINE_AND_WHIZ, BULLET_IMPULSE(400, 1200));
+		ADD_NEO_AMMO_TYPE(None, DMG_BLAST, TRACER_NONE, 0); // Used for detpacks.
 	NEO_AMMO_DEF_END();
 
 	return NEO_AMMO_DEF_RETURNVAL();
@@ -821,6 +824,10 @@ void CNEORules::CleanUpMap()
 		{
 			UTIL_Remove(pCur);
 		}
+		else
+		{
+			//pCur->RemoveAllDecals();
+		}
 
 		pCur = gEntList.NextEnt(pCur);
 	}
@@ -893,12 +900,8 @@ void CNEORules::CleanUpMap()
 
 	MapEntity_ParseAllEntities(engine->GetMapEntitiesString(), &filter, true);
 
-
-
 	//RemoveGhosts();
 	ResetGhostCapPoints();
-
-	//BaseClass::CleanUpMap();
 }
 
 void CNEORules::CheckRestartGame()
