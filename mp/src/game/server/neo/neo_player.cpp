@@ -1869,6 +1869,8 @@ void CNEO_Player::GiveDefaultItems(void)
 	CBasePlayer::GiveAmmo(150, "AR2");
 	CBasePlayer::GiveAmmo(30, "AMMO_10G_SHELL");
 	CBasePlayer::GiveAmmo(150, "AMMO_PRI");
+	CBasePlayer::GiveAmmo(150, "AMMO_SMAC");
+	CBasePlayer::GiveAmmo(150, "None");
 
 	const bool supportsGetKnife = true;
 
@@ -1963,6 +1965,12 @@ void CNEO_Player::GiveAllItems(void)
 	CBasePlayer::GiveAmmo(1, "grenade");
 	CBasePlayer::GiveAmmo(6, "Buckshot");
 	CBasePlayer::GiveAmmo(6, "357");
+	CBasePlayer::GiveAmmo(150, "AR2");
+
+	CBasePlayer::GiveAmmo(30, "AMMO_10G_SHELL");
+	CBasePlayer::GiveAmmo(150, "AMMO_PRI");
+	CBasePlayer::GiveAmmo(150, "AMMO_SMAC");
+	CBasePlayer::GiveAmmo(150, "None");
 
 	GiveNamedItem("weapon_tachi");
 	GiveNamedItem("weapon_zr68s");
