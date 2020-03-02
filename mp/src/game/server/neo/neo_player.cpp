@@ -314,8 +314,6 @@ CNEO_Player::CNEO_Player()
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
 	m_bInAim = false;
 
-	m_leanPosTargetOffset = vec3_origin;
-
 	m_iCapTeam = TEAM_UNASSIGNED;
 	m_iGhosterTeam = TEAM_UNASSIGNED;
 	m_iLoadoutWepChoice = 0;
@@ -407,23 +405,19 @@ void CNEO_Player::Precache( void )
 
 void CNEO_Player::Spawn(void)
 {
-	BaseClass::Spawn();
-
-	SetViewOffset(VEC_VIEW_NEOSCALE(this));
-
-	ShowCrosshair(false);
-
-	m_leanPosTargetOffset = VEC_VIEW_NEOSCALE(this);
-
-	SetTransmitState(FL_EDICT_ALWAYS);
-
+	// Should do this class update first, because most of the stuff below depends on which player class we are.
 	if ((m_iNextSpawnClassChoice != -1) && (m_iNeoClass != m_iNextSpawnClassChoice))
 	{
 		m_iNeoClass = m_iNextSpawnClassChoice;
-		SetPlayerTeamModel();
-		SetViewOffset(VEC_VIEW_NEOSCALE(this));
-		InitSprinting();
 	}
+
+	BaseClass::Spawn();
+
+	ShowCrosshair(false);
+	SetTransmitState(FL_EDICT_ALWAYS);
+
+	SetPlayerTeamModel();
+	SetViewOffset(VEC_VIEW_NEOSCALE(this));
 
 	GiveLoadoutWeapon();
 }
@@ -436,16 +430,14 @@ ConVar neo_lean_thirdperson_roll_lerp_scale("neo_lean_thirdperson_roll_lerp_scal
 //just need to calculate lean angle in here
 void CNEO_Player::Lean(void)
 {
-	CNEOPredictedViewModel *vm = static_cast<CNEOPredictedViewModel*>(GetViewModel());
-
-	if (!vm)
+	auto vm = static_cast<CNEOPredictedViewModel*>(GetViewModel());
+	if (vm)
 	{
-		return;
+		vm->lean(this);
+
+		Assert(GetBaseAnimating());
+		GetBaseAnimating()->SetBoneController(0, LocalEyeAngles().z);
 	}
-	vm->lean(this);
-	CBaseAnimating *anim = GetBaseAnimating();
-	Assert(anim);
-	anim->SetBoneController(0, LocalEyeAngles().z);
 }
 
 inline void CNEO_Player::CheckVisionButtons()
@@ -668,7 +660,7 @@ inline void CNEO_Player::CloakFlash()
 	g_NEO_TE_TocFlash.r = sv_neo_cloak_color_r.GetInt();
 	g_NEO_TE_TocFlash.g = sv_neo_cloak_color_g.GetInt();
 	g_NEO_TE_TocFlash.b = sv_neo_cloak_color_b.GetInt();
-	g_NEO_TE_TocFlash.m_vecOrigin = GetAbsOrigin();
+	g_NEO_TE_TocFlash.m_vecOrigin = GetAbsOrigin() + Vector(0, 0, 4);
 	g_NEO_TE_TocFlash.exponent = sv_neo_cloak_exponent.GetInt();
 	g_NEO_TE_TocFlash.m_fRadius = sv_neo_cloak_color_radius.GetFloat();
 	g_NEO_TE_TocFlash.m_fTime = sv_neo_cloak_time.GetFloat();
@@ -1855,16 +1847,53 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	return true;
 }
 
+void GiveDet(CNEO_Player* pPlayer)
+{
+	const char* detpackClassname = "weapon_remotedet";
+	if (!pPlayer->Weapon_OwnsThisType(detpackClassname))
+	{
+		EHANDLE pent = CreateEntityByName(detpackClassname);
+		if (pent == NULL)
+		{
+			Assert(false);
+			Warning("Failed to spawn %s at loadout!\n", detpackClassname);
+		}
+		else
+		{
+			pent->SetLocalOrigin(pPlayer->GetLocalOrigin());
+			pent->AddSpawnFlags(SF_NORESPAWN);
+
+			auto pWeapon = dynamic_cast<CNEOBaseCombatWeapon*>((CBaseEntity*)pent);
+			if (pWeapon)
+			{
+				pWeapon->SetSubType(0);
+				if (pPlayer->m_iXP < pWeapon->GetNeoWepXPCost(pPlayer->GetClass()))
+				{
+					UTIL_Remove(pWeapon);
+				}
+				else
+				{
+					DispatchSpawn(pent);
+
+					if (pent != NULL && !(pent->IsMarkedForDeletion()))
+					{
+						pent->Touch(pPlayer);
+					}
+				}
+			}
+		}
+	}
+}
+
 void CNEO_Player::GiveDefaultItems(void)
 {
-	//EquipSuit();
+	CBasePlayer::GiveAmmo(150, "AR2");
 
 	CBasePlayer::GiveAmmo(150, "Pistol");
-	CBasePlayer::GiveAmmo(150, "AR2");
 	CBasePlayer::GiveAmmo(30, "AMMO_10G_SHELL");
 	CBasePlayer::GiveAmmo(150, "AMMO_PRI");
 	CBasePlayer::GiveAmmo(150, "AMMO_SMAC");
-	CBasePlayer::GiveAmmo(150, "None");
+	CBasePlayer::GiveAmmo(1, "AMMO_DETPACK");
 
 	const bool supportsGetKnife = true;
 
@@ -1873,6 +1902,7 @@ void CNEO_Player::GiveDefaultItems(void)
 	case NEO_CLASS_RECON:
 		GiveNamedItem("weapon_knife");
 		GiveNamedItem("weapon_milso");
+		GiveDet(this);
 		Weapon_Switch(Weapon_OwnsThisType("weapon_milso"));
 		break;
 	case NEO_CLASS_ASSAULT:
@@ -1944,7 +1974,7 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 		{
 			if (pEnt != NULL && !(pEnt->IsMarkedForDeletion()))
 			{
-				UTIL_Remove((CBaseEntity*)pEnt);
+				UTIL_Remove(pEnt);
 			}
 		}
 	}
@@ -1954,17 +1984,17 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 void CNEO_Player::GiveAllItems(void)
 {
 	// NEO TODO (Rain): our own ammo types
-	CBasePlayer::GiveAmmo(255, "Pistol");
 	CBasePlayer::GiveAmmo(45, "SMG1");
 	CBasePlayer::GiveAmmo(1, "grenade");
 	CBasePlayer::GiveAmmo(6, "Buckshot");
 	CBasePlayer::GiveAmmo(6, "357");
 	CBasePlayer::GiveAmmo(150, "AR2");
 
+	CBasePlayer::GiveAmmo(255, "Pistol");
 	CBasePlayer::GiveAmmo(30, "AMMO_10G_SHELL");
 	CBasePlayer::GiveAmmo(150, "AMMO_PRI");
 	CBasePlayer::GiveAmmo(150, "AMMO_SMAC");
-	CBasePlayer::GiveAmmo(150, "None");
+	CBasePlayer::GiveAmmo(1, "AMMO_DETPACK");
 
 	GiveNamedItem("weapon_tachi");
 	GiveNamedItem("weapon_zr68s");

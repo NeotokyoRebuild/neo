@@ -159,7 +159,7 @@ void CWeaponDetpack::ItemPostFrame(void)
 
 	if (m_fDrawbackFinished)
 	{
-		CBasePlayer* pOwner = ToBasePlayer(GetOwner());
+		auto pOwner = ToBasePlayer(GetOwner());
 
 		if (pOwner)
 		{

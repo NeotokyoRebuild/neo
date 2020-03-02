@@ -169,8 +169,6 @@ private:
 	bool m_bFirstDeathTick;
 	bool m_bPreviouslyReloading;
 
-	Vector m_leanPosTargetOffset;
-
 	float m_flCamoAuxLastTime;
 	float m_flLastAirborneJumpOkTime;
 	float m_flLastSuperJumpTime;
