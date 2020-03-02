@@ -97,8 +97,8 @@ public:
 
 	virtual bool CanBeSelected(void);
 
-	virtual int GetNeoWepBits(void) const { return NEO_WEP_INVALID; }
-	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
+	virtual int GetNeoWepBits(void) const { Assert(false); return NEO_WEP_INVALID; }
+	virtual int GetNeoWepXPCost(const int neoClass) const { Assert(false); return 0; }
 
 	bool IsGhost(void) const { return (GetNeoWepBits() & NEO_WEP_GHOST) ? true : false; }
 
