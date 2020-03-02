@@ -1462,8 +1462,15 @@ inline bool CNEO_Player::IsAllowedToDrop(CBaseCombatWeapon *pWep)
 	auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWep);
 	if (!pNeoWep)
 	{
+		if (dynamic_cast<CWeaponKnife*>(pWep))
+		{
+			return false;
+		}
 		// This was not a Neotokyo weapon. Don't know what it is, but allow dropping.
-		return true;
+		else
+		{
+			return true;
+		}
 	}
 #else
 	Assert(dynamic_cast<CNEOBaseCombatWeapon*>(pWep));
@@ -1471,12 +1478,9 @@ inline bool CNEO_Player::IsAllowedToDrop(CBaseCombatWeapon *pWep)
 #endif
 
 	const int wepBits = pNeoWep->GetNeoWepBits();
-
 	Assert(wepBits > NEO_WEP_INVALID);
 
-	const int unallowedDrops = (NEO_WEP_DETPACK | NEO_WEP_FRAG_GRENADE |
-		NEO_WEP_KNIFE | NEO_WEP_PROX_MINE | NEO_WEP_SMOKE_GRENADE);
-
+	const int unallowedDrops = (NEO_WEP_KNIFE | NEO_WEP_PROX_MINE | NEO_WEP_THROWABLE);
 	return ((wepBits & unallowedDrops) == 0);
 }
 
