@@ -21,8 +21,6 @@
 	#include "player_resource.h"
 #endif
 
-#include "decals.h"
-
 REGISTER_GAMERULES_CLASS( CNEORules );
 
 BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
@@ -826,6 +824,8 @@ void CNEORules::CleanUpMap()
 		}
 		else
 		{
+			// NEO FIXME (Rain): decals won't clean on world (non-ent) surfaces.
+			// Is this the right place to call in? Gamemode related?
 			//pCur->RemoveAllDecals();
 		}
 
