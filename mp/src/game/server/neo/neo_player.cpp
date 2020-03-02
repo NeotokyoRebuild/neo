@@ -1728,7 +1728,7 @@ void CNEO_Player::PickDefaultSpawnTeam(void)
 bool Hack_IsBot(CNEO_Player* player)
 {
 #ifdef DEBUG
-	DevMsg("Fixme: Using Hack_IsBot as workaround\n"); // nag to remind about fixing this whenever used
+	DevWarning("Fixme: Using Hack_IsBot as workaround\n"); // nag to remind about fixing this whenever used
 #endif
 
 	if (!player)
