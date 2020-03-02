@@ -247,9 +247,9 @@ void CWeaponSmokeGrenade::CheckThrowPosition(CBasePlayer* pPlayer, const Vector&
 	}
 }
 
-void NEODropPrimedSmokeGrenade(CNEO_Player* pPlayer, CBaseCombatWeapon* pGrenade)
+void NEODropPrimedSmokeGrenade(CNEO_Player* pPlayer, CBaseCombatWeapon* pSmokeGrenade)
 {
-	auto pWeaponSmoke = dynamic_cast<CWeaponSmokeGrenade*>(pGrenade);
+	auto pWeaponSmoke = dynamic_cast<CWeaponSmokeGrenade*>(pSmokeGrenade);
 
 	if (pWeaponSmoke)
 	{
@@ -278,15 +278,15 @@ void CWeaponSmokeGrenade::ThrowGrenade(CBasePlayer* pPlayer)
 
 	Vector vecThrow;
 	pPlayer->GetVelocity(&vecThrow, NULL);
-	vecThrow += vForward * sv_neo_grenade_throw_intensity.GetFloat();
+	vecThrow += vForward * (pPlayer->IsAlive() ? sv_neo_grenade_throw_intensity.GetFloat() : 1.0f);
+	Assert(vecThrow.IsValid());
 	CBaseGrenade* pGrenade = NEOSmokegrenade_Create(vecSrc, vec3_angle, vecThrow, AngularImpulse(600, random->RandomInt(-1200, 1200), 0), pPlayer);
 
 	if (pGrenade)
 	{
-		if (pPlayer && pPlayer->m_lifeState != LIFE_ALIVE)
+		Assert(pPlayer);
+		if (!pPlayer->IsAlive())
 		{
-			pPlayer->GetVelocity(&vecThrow, NULL);
-
 			IPhysicsObject* pPhysicsObject = pGrenade->VPhysicsGetObject();
 			if (pPhysicsObject)
 			{

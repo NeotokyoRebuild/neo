@@ -4,6 +4,8 @@
 #include "neo_tracefilter_collisiongroupdelta.h"
 #include "particle_smokegrenade.h"
 
+#include "mathlib/vector.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -13,6 +15,7 @@ BEGIN_DATADESC(CNEOGrenadeSmoke)
 // Fields
 DEFINE_FIELD(m_inSolid, FIELD_BOOLEAN),
 DEFINE_FIELD(m_punted, FIELD_BOOLEAN),
+DEFINE_FIELD(m_hasSettled, FIELD_BOOLEAN),
 
 // Function Pointers
 DEFINE_THINKFUNC(DelayThink),
@@ -46,9 +49,10 @@ void CNEOGrenadeSmoke::Spawn(void)
 	m_punted = false;
 	m_hasSettled = false;
 	m_hasBeenMadeNonSolid = false;
-	m_lastPos = GetAbsOrigin();
 
 	BaseClass::Spawn();
+
+	m_lastPos = GetAbsOrigin();
 }
 
 bool CNEOGrenadeSmoke::CreateVPhysics()
@@ -77,6 +81,9 @@ void CNEOGrenadeSmoke::VPhysicsUpdate(IPhysicsObject* pPhysics)
 #else
 	UTIL_TraceLine(start, end, CONTENTS_HITBOX | CONTENTS_MONSTER | CONTENTS_SOLID, &filter, &tr);
 #endif
+
+	const float GRENADE_COEFFICIENT_OF_RESTITUTION = 0.2f;
+
 	if (tr.startsolid)
 	{
 		if (!m_inSolid)
@@ -137,13 +144,6 @@ void CNEOGrenadeSmoke::OnPhysGunPickup(CBasePlayer* pPhysGunUser, PhysGunPickup_
 	BaseClass::OnPhysGunPickup(pPhysGunUser, reason);
 }
 
-static inline bool IsRoughlySameVector(const Vector& v1, const Vector& v2)
-{
-	Assert(v1.IsValid() && v2.IsValid());
-	const float threshold = 0.1f;
-	return (abs(v1.x - v2.x) <= threshold) && (abs(v1.y - v2.y) <= threshold) && (abs(v1.z - v2.z) <= threshold);
-}
-
 void CNEOGrenadeSmoke::DelayThink()
 {
 	if (TryDetonate())
@@ -159,7 +159,7 @@ void CNEOGrenadeSmoke::DelayThink()
 		m_bHasWarnedAI = true;
 	}
 
-	m_hasSettled = IsRoughlySameVector(m_lastPos, GetAbsOrigin());
+	m_hasSettled = CloseEnough(m_lastPos, GetAbsOrigin(), 0.1f);
 	m_lastPos = GetAbsOrigin();
 
 	SetNextThink(gpGlobals->curtime + 0.1);
@@ -242,6 +242,7 @@ void CNEOGrenadeSmoke::Detonate(void)
 		SetTouch(NULL);
 		SetSolid(SOLID_NONE);
 		SetAbsVelocity(vec3_origin);
+		SetMoveType(MOVETYPE_NONE);
 	}
 	else if (gpGlobals->curtime - m_flSmokeBloomTime >= sv_neo_smoke_bloom_duration.GetFloat())
 	{
