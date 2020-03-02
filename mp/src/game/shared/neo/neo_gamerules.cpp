@@ -305,9 +305,9 @@ CAmmoDef *GetAmmoDef()
 		ADD_NEO_AMMO_TYPE(AMMO_10G_SHELL, DMG_BULLET | DMG_BUCKSHOT, TRACER_LINE, BULLET_IMPULSE(400, 1200));
 		ADD_NEO_AMMO_TYPE(AMMO_GRENADE, DMG_BLAST, TRACER_NONE, 0);
 		ADD_NEO_AMMO_TYPE(AMMO_SMOKEGRENADE, DMG_BLAST, TRACER_NONE, 0);
+		ADD_NEO_AMMO_TYPE(AMMO_DETPACK, DMG_BLAST, TRACER_NONE, 0);
 		ADD_NEO_AMMO_TYPE(AMMO_PRI, DMG_BULLET, TRACER_LINE_AND_WHIZ, BULLET_IMPULSE(400, 1200));
 		ADD_NEO_AMMO_TYPE(AMMO_SMAC, DMG_BULLET, TRACER_LINE_AND_WHIZ, BULLET_IMPULSE(400, 1200));
-		ADD_NEO_AMMO_TYPE(None, DMG_BLAST, TRACER_NONE, 0); // Used for detpacks.
 	NEO_AMMO_DEF_END();
 
 	return NEO_AMMO_DEF_RETURNVAL();
@@ -315,12 +315,15 @@ CAmmoDef *GetAmmoDef()
 
 void CNEORules::ClientSpawned(edict_t* pPlayer)
 {
+#if(0)
 #ifdef CLIENT_DLL
 	C_NEO_Player *player = C_NEO_Player::GetLocalNEOPlayer();
 	if (player)
 	{
+		DevMsg("SPAWNED: %d vs %d\n", player->index, pPlayer->m_EdictIndex);
 		player->m_bShowClassMenu = true;
 	}
+#endif
 #endif
 }
 
