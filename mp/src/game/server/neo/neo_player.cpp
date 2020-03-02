@@ -26,6 +26,7 @@
 #include "neo_te_tocflash.h"
 
 #include "weapon_grenade.h"
+#include "weapon_smokegrenade.h"
 
 #include "weapon_knife.h"
 
