@@ -27,10 +27,13 @@
 
 #include "weapon_grenade.h"
 
+#include "weapon_knife.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
 void NEODropPrimedFragGrenade(CNEO_Player *pPlayer, CBaseCombatWeapon *pGrenade);
+void NEODropPrimedSmokeGrenade(CNEO_Player* pPlayer, CBaseCombatWeapon* pSmokeGrenade);
 
 LINK_ENTITY_TO_CLASS(player, CNEO_Player);
 
@@ -1509,18 +1512,31 @@ void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
 			return;
 		}
 	}
-
-	// Drop a grenade if it's primed.
-	if (GetActiveWeapon())
+	else
 	{
-		CBaseCombatWeapon *pGrenade = Weapon_OwnsThisType("weapon_grenade");
-
-		if (GetActiveWeapon() == pGrenade)
+		// Drop a grenade if it's primed.
+		if (GetActiveWeapon())
 		{
-			if ((m_nButtons & IN_ATTACK) || (m_nButtons & IN_ATTACK2))
+			// If player has held down an attack key since the previous frame
+			if (((m_nButtons & IN_ATTACK) && (!(m_afButtonPressed & IN_ATTACK))) ||
+				((m_nButtons & IN_ATTACK2) && (!(m_afButtonPressed & IN_ATTACK2))))
 			{
-				NEODropPrimedFragGrenade(this, pGrenade);
-				return;
+				if (GetActiveWeapon() == Weapon_OwnsThisType("weapon_grenade"))
+				{
+					if ((m_nButtons & IN_ATTACK) || (m_nButtons & IN_ATTACK2))
+					{
+						NEODropPrimedFragGrenade(this, GetActiveWeapon());
+						return;
+					}
+				}
+				else if (GetActiveWeapon() == Weapon_OwnsThisType("weapon_smokegrenade"))
+				{
+					if ((m_nButtons & IN_ATTACK) || (m_nButtons & IN_ATTACK2))
+					{
+						NEODropPrimedSmokeGrenade(this, GetActiveWeapon());
+						return;
+					}
+				}
 			}
 		}
 	}
