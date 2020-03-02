@@ -1528,19 +1528,13 @@ void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
 			{
 				if (GetActiveWeapon() == Weapon_OwnsThisType("weapon_grenade"))
 				{
-					if ((m_nButtons & IN_ATTACK) || (m_nButtons & IN_ATTACK2))
-					{
-						NEODropPrimedFragGrenade(this, GetActiveWeapon());
-						return;
-					}
+					NEODropPrimedFragGrenade(this, GetActiveWeapon());
+					return;
 				}
 				else if (GetActiveWeapon() == Weapon_OwnsThisType("weapon_smokegrenade"))
 				{
-					if ((m_nButtons & IN_ATTACK) || (m_nButtons & IN_ATTACK2))
-					{
-						NEODropPrimedSmokeGrenade(this, GetActiveWeapon());
-						return;
-					}
+					NEODropPrimedSmokeGrenade(this, GetActiveWeapon());
+					return;
 				}
 			}
 		}
