@@ -69,7 +69,7 @@ In shared code, clientside code can be differentiated with CLIENT_DLL, vs. serve
 No big restrictions on general code format, just try to more or less match the other SDK code style.
 
 * C++11, except...
-    * Use #define over constexpr; while it is a part of C++11 spec, the v120 MSVC toolset that Source targets on Windows doesn't support it natively.
+    * Use const (or #define) over constexpr; while it is a part of C++11 spec, the v120 MSVC toolset that Source targets on Windows doesn't support it natively.
 * Valve likes to ( space ) their arguments, especially with macros, but it's not necessary to strictly follow everywhere.
 * Tabs are preferred for indentation, to be consistent with the SDK code.
 * When using a TODO/FIXME/HACK... style comment, use the format "// NEO TODO (Your-username): Example comment." to make it easier to search NEO specific todos/fixmes (opposed to Valve ones), and at a glance figure out who has written them.
