@@ -20,7 +20,7 @@ WeaponData
 	"primary_ammo"		"AR2" // NEO TODO (Rain): add specific ammos
 	"secondary_ammo"	"None"
 
-	"weight"		"2"
+	"weight"		"3"
 	"item_flags"		"0"
 	
 	

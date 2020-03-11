@@ -19,7 +19,7 @@ WeaponData
 	"primary_ammo"			"SMG1"
 	"secondary_ammo"		"SMG1_Grenade"
 
-	"weight"				"3"
+	"weight"				"-1"
 	"item_flags"			"0"
 	"damage"			"5"
 

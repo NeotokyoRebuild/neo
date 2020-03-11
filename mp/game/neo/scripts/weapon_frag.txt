@@ -16,7 +16,7 @@ WeaponData
 	"primary_ammo"			"grenade"
 	"secondary_ammo"		"None"
 
-	"weight"				"1"
+	"weight"				"-1"
 	"item_flags"			"18"	// ITEM_FLAG_NOAUTORELOAD | ITEM_FLAG_EXHAUSTIBLE
 	"damage"			"150"
 

@@ -19,7 +19,7 @@ WeaponData
 	"primary_ammo"			"rpg_round"
 	"secondary_ammo"		"None"
 
-	"weight"				"0"
+	"weight"				"-1"
 	"item_flags"			"0"
 	"damage"			"150"
 
