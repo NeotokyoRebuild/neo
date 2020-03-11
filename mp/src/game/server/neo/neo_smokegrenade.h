@@ -22,6 +22,7 @@ class CNEOGrenadeSmoke : public CBaseGrenade
 
 public:
 	virtual void	Detonate(void);
+	virtual void	Explode(trace_t* pTrace, int bitsDamageType) { Assert(false); }
 
 	void	Spawn(void);
 	bool	CreateVPhysics(void);
