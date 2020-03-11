@@ -14,12 +14,10 @@
 
 #include "weapon_neobasecombatweapon.h"
 
-#define DETPACK_DEPLOY_PAUSED_NO			0
-#define DETPACK_DEPLOY_PAUSED_PRIMARY		1
-//#define DETPACK_DEPLOY_PAUSED_SECONDARY	2
-
 #ifdef CLIENT_DLL
 #define CWeaponDetpack C_WeaponDetpack
+#else
+class CNEODeployedDetpack;
 #endif
 
 class CWeaponDetpack : public CNEOBaseCombatWeapon
@@ -55,14 +53,16 @@ private:
 	// Check a throw from vecSrc.  If not valid, move the position back along the line to vecEye
 	void	CheckTossPosition(CBasePlayer* pPlayer, const Vector& vecEye, Vector& vecSrc);
 
-	CNetworkVar(bool, m_bRedraw);	//Draw the weapon again after deploying det
 	CNetworkVar(bool, m_fDrawbackFinished);
-
-	CNetworkVar(int, m_AttackPaused);
+	CNetworkVar(bool, m_bWantsToThrowThisDetpack);
+	CNetworkVar(bool, m_bThisDetpackHasBeenThrown);
+	CNetworkVar(bool, m_bRemoteHasBeenTriggered);
 
 	CWeaponDetpack(const CWeaponDetpack &other);
 
-#ifndef CLIENT_DLL
+#ifdef GAME_DLL
+	CNEODeployedDetpack* m_pDetpack;
+
 	DECLARE_ACTTABLE();
 #endif
 };

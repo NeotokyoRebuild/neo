@@ -3,6 +3,10 @@
 
 #include "neo_tracefilter_collisiongroupdelta.h"
 
+#ifdef GAME_DLL
+#include "gamestats.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -29,8 +33,8 @@ void CNEODeployedDetpack::Spawn(void)
 	SetModel(NEO_DEPLOYED_DETPACK_MODEL);
 
 	// NEO FIXME (Rain): these are doubly defined in weapon_detpack
-#define NEO_DETPACK_DAMAGE 999.0f
-#define NEO_DETPACK_DAMAGE_RADIUS 999.0f
+#define NEO_DETPACK_DAMAGE 320.0f
+#define NEO_DETPACK_DAMAGE_RADIUS 320.0f
 
 	m_flDamage = NEO_DETPACK_DAMAGE;
 	m_DmgRadius = NEO_DETPACK_DAMAGE_RADIUS;
@@ -154,6 +158,22 @@ void CNEODeployedDetpack::OnPhysGunPickup(CBasePlayer* pPhysGunUser, PhysGunPick
 	BaseClass::OnPhysGunPickup(pPhysGunUser, reason);
 }
 
+void CNEODeployedDetpack::Explode(trace_t* pTrace, int bitsDamageType)
+{
+	BaseClass::Explode(pTrace, bitsDamageType);
+#ifdef GAME_DLL
+	auto pThrower = GetThrower();
+	auto pPlayer = ToBasePlayer(pThrower);
+	if (pPlayer)
+	{
+		// Use the thrower's position as the reported position
+		Vector vecReported = pThrower ? pThrower->GetAbsOrigin() : vec3_origin;
+		CTakeDamageInfo info(this, pThrower, GetBlastForce(), GetAbsOrigin(), m_flDamage, bitsDamageType, 0, &vecReported);
+		gamestats->Event_WeaponHit(pPlayer, true, "weapon_remotedet", info);
+	}
+#endif
+}
+
 bool CNEODeployedDetpack::TryDetonate(void)
 {
 	if (m_hasBeenTriggeredToDetonate || (gpGlobals->curtime > m_flDetonateTime))
@@ -167,12 +187,15 @@ bool CNEODeployedDetpack::TryDetonate(void)
 
 void CNEODeployedDetpack::Detonate(void)
 {
+	if (!m_hasSettled)
+	{
+		m_hasSettled = true;
+	}
+	
 	BaseClass::Detonate();
 
 	SetThink(&CNEODeployedDetpack::SUB_Remove);
-	AddEffects(EF_NODRAW);
-
-	SetNextThink(gpGlobals->curtime + 1.0);
+	SetNextThink(gpGlobals->curtime);
 }
 
 void CNEODeployedDetpack::DelayThink()

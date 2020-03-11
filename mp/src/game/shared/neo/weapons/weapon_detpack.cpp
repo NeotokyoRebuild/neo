@@ -27,8 +27,8 @@
 #include "tier0/memdbgon.h"
 
 // NEO FIXME (Rain): these are doubly defined in neo_detpack
-#define NEO_DETPACK_DAMAGE 999.0f
-#define NEO_DETPACK_DAMAGE_RADIUS 999.0f
+#define NEO_DETPACK_DAMAGE 320.0f
+#define NEO_DETPACK_DAMAGE_RADIUS 320.0f
 
 NEO_ACTTABLE(CWeaponDetpack)
 
@@ -36,32 +36,39 @@ IMPLEMENT_NETWORKCLASS_ALIASED(WeaponDetpack, DT_WeaponDetpack)
 
 BEGIN_NETWORK_TABLE(CWeaponDetpack, DT_WeaponDetpack)
 #ifdef CLIENT_DLL
-RecvPropBool(RECVINFO(m_bRedraw)),
 RecvPropBool(RECVINFO(m_fDrawbackFinished)),
-RecvPropInt(RECVINFO(m_AttackPaused)),
+RecvPropBool(RECVINFO(m_bWantsToThrowThisDetpack)),
+RecvPropBool(RECVINFO(m_bThisDetpackHasBeenThrown)),
+RecvPropBool(RECVINFO(m_bRemoteHasBeenTriggered)),
 #else
-SendPropBool(SENDINFO(m_bRedraw)),
 SendPropBool(SENDINFO(m_fDrawbackFinished)),
-SendPropInt(SENDINFO(m_AttackPaused)),
+SendPropBool(SENDINFO(m_bWantsToThrowThisDetpack)),
+SendPropBool(SENDINFO(m_bThisDetpackHasBeenThrown)),
+SendPropBool(SENDINFO(m_bRemoteHasBeenTriggered)),
 #endif
 END_NETWORK_TABLE()
 
 #ifdef CLIENT_DLL
 BEGIN_PREDICTION_DATA(CWeaponDetpack)
-DEFINE_PRED_FIELD(m_bRedraw, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 DEFINE_PRED_FIELD(m_fDrawbackFinished, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_AttackPaused, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
+DEFINE_PRED_FIELD(m_bWantsToThrowThisDetpack, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+DEFINE_PRED_FIELD(m_bThisDetpackHasBeenThrown, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+DEFINE_PRED_FIELD(m_bRemoteHasBeenTriggered, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 #endif
 
 LINK_ENTITY_TO_CLASS(weapon_remotedet, CWeaponDetpack);
 PRECACHE_WEAPON_REGISTER(weapon_remotedet);
 
-#define REDEPLOY_DELAY 0.5
-
 CWeaponDetpack::CWeaponDetpack()
 {
-	m_bRedraw = false;
+	m_bWantsToThrowThisDetpack = false;
+	m_bThisDetpackHasBeenThrown = false;
+	m_bRemoteHasBeenTriggered = false;
+
+#ifdef GAME_DLL
+	m_pDetpack = NULL;
+#endif
 }
 
 void CWeaponDetpack::Precache(void)
@@ -71,44 +78,37 @@ void CWeaponDetpack::Precache(void)
 
 bool CWeaponDetpack::Deploy(void)
 {
-	m_bRedraw = false;
+	const bool res = BaseClass::Deploy();
+
 	m_fDrawbackFinished = false;
 
-	return BaseClass::Deploy();
+	if (m_bThisDetpackHasBeenThrown)
+	{
+		SendWeaponAnim(ACT_VM_DRAW_DEPLOYED);
+	}
+
+	return res;
 }
 
 // Output : Returns true on success, false on failure.
 bool CWeaponDetpack::Holster(CBaseCombatWeapon* pSwitchingTo)
 {
-	m_bRedraw = false;
+	const bool res = BaseClass::Holster(pSwitchingTo);
+
 	m_fDrawbackFinished = false;
 
-	return BaseClass::Holster(pSwitchingTo);
+	if (m_bThisDetpackHasBeenThrown)
+	{
+		SendWeaponAnim(ACT_VM_PULLBACK);
+	}
+
+	return res;
 }
 
 // Output : Returns true on success, false on failure.
 bool CWeaponDetpack::Reload(void)
 {
-	if (!HasPrimaryAmmo())
-	{
-		return false;
-	}
-
-	if ((m_bRedraw) && (m_flNextPrimaryAttack <= gpGlobals->curtime) && (m_flNextSecondaryAttack <= gpGlobals->curtime))
-	{
-		//Redraw the weapon
-		SendWeaponAnim(ACT_VM_DRAW);
-
-		//Update our times
-		m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
-		m_flNextSecondaryAttack = gpGlobals->curtime + SequenceDuration();
-		m_flTimeWeaponIdle = gpGlobals->curtime + SequenceDuration();
-
-		//Mark this as done
-		m_bRedraw = false;
-	}
-
-	return true;
+	return false;
 }
 
 void CWeaponDetpack::SecondaryAttack(void)
@@ -117,28 +117,35 @@ void CWeaponDetpack::SecondaryAttack(void)
 
 void CWeaponDetpack::PrimaryAttack(void)
 {
-	if (m_bRedraw)
+	if (!GetOwner())
+	{
+		Assert(false);
+		return;
+	}
+	else if (m_bRemoteHasBeenTriggered)
 	{
 		return;
 	}
 
-	auto pPlayer = ToBasePlayer(GetOwner());
-
-	if (!pPlayer)
+	if ((m_bThisDetpackHasBeenThrown) && (gpGlobals->curtime > m_flNextPrimaryAttack))
 	{
-		return;
+		m_bRemoteHasBeenTriggered = true;
+		Msg("Pulling remote trigger\n");
+		SendWeaponAnim(ACT_VM_PRIMARYATTACK_DEPLOYED);
+		m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
+		m_flTimeWeaponIdle = FLT_MAX;
 	}
-
-	m_AttackPaused = DETPACK_DEPLOY_PAUSED_NO;
-	SendWeaponAnim(ACT_VM_PULLPIN);
-
-	m_flTimeWeaponIdle = FLT_MAX;
-	m_flNextPrimaryAttack = gpGlobals->curtime + REDEPLOY_DELAY;
-
-	// If I'm now out of ammo, switch away
-	if (!HasPrimaryAmmo())
+	else
 	{
-		pPlayer->SwitchToNextBestWeapon(this);
+		if (!m_bWantsToThrowThisDetpack)
+		{
+			m_bWantsToThrowThisDetpack = true;
+			Msg("Preparing primary attack\n");
+
+			SendWeaponAnim(ACT_VM_PRIMARYATTACK);
+			m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
+			m_flTimeWeaponIdle = FLT_MAX;
+		}
 	}
 }
 
@@ -159,28 +166,50 @@ void CWeaponDetpack::ItemPostFrame(void)
 
 	if (m_fDrawbackFinished)
 	{
-		auto pOwner = ToBasePlayer(GetOwner());
+		auto pOwner = GetOwner();
 
-		if (pOwner)
+		if ((m_bRemoteHasBeenTriggered) && (gpGlobals->curtime > m_flNextPrimaryAttack))
 		{
-			switch (m_AttackPaused)
+#ifdef GAME_DLL
+			if (m_pDetpack)
 			{
-			case DETPACK_DEPLOY_PAUSED_PRIMARY:
-				if (!(pOwner->m_nButtons & IN_ATTACK))
+				Msg("REMOTE ATK\n");
+				m_pDetpack->Detonate();
+				m_pDetpack = NULL;
+			}
+			else
+			{
+				if (pOwner)
 				{
-					TossDetpack(pOwner);
+					if (!pOwner->SwitchToNextBestWeapon(this))
+					{
+						pOwner->Weapon_Drop(this);
+					}
+					UTIL_Remove(this);
+				}
+			}
+#endif
+		}
+		if (pOwner && m_bWantsToThrowThisDetpack)
+		{
+			if (!m_bThisDetpackHasBeenThrown)
+			{
+				if (gpGlobals->curtime > m_flNextPrimaryAttack)
+				{
+					TossDetpack(ToBasePlayer(pOwner));
+					m_bThisDetpackHasBeenThrown = true;
 
 					SendWeaponAnim(ACT_VM_THROW);
+					m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
 					m_fDrawbackFinished = false;
-					m_AttackPaused = DETPACK_DEPLOY_PAUSED_NO;
 				}
-				break;
-			default:
-				if (m_bRedraw)
+			}
+			else
+			{
+				if (gpGlobals->curtime > m_flNextPrimaryAttack)
 				{
-					Reload();
+					SendWeaponAnim(ACT_VM_IDLE_DEPLOYED);
 				}
-				break;
 			}
 		}
 	}
@@ -210,6 +239,8 @@ void CWeaponDetpack::TossDetpack(CBasePlayer* pPlayer)
 	Assert(pPlayer);
 	DecrementAmmo(pPlayer);
 
+	Msg("TossDetpack\n");
+
 #ifndef CLIENT_DLL
 	Vector	vecEye = pPlayer->EyePosition();
 	Vector	vForward, vRight;
@@ -224,26 +255,28 @@ void CWeaponDetpack::TossDetpack(CBasePlayer* pPlayer)
 	pPlayer->GetVelocity(&vecToss, NULL);
 	vecToss += vForward /* * (pPlayer->IsAlive() ? 1.0f : 1.0f)*/;
 	Assert(vecToss.IsValid());
-	CBaseGrenade* pDet = NEODeployedDetpack_Create(vecSrc, vec3_angle, vecToss, AngularImpulse(600, random->RandomInt(-1200, 1200), 0), pPlayer);
+	m_pDetpack = static_cast<CNEODeployedDetpack*>(NEODeployedDetpack_Create(vecSrc, vec3_angle, vecToss, AngularImpulse(600, random->RandomInt(-1200, 1200), 0), pPlayer));
 
-	if (pDet)
+	if (m_pDetpack)
 	{
 		Assert(pPlayer);
 		if (!pPlayer->IsAlive())
 		{
-			auto pPhysicsObject = pDet->VPhysicsGetObject();
+			auto pPhysicsObject = m_pDetpack->VPhysicsGetObject();
 			if (pPhysicsObject)
 			{
 				pPhysicsObject->SetVelocity(&vecToss, NULL);
 			}
 		}
 
-		pDet->SetDamage(NEO_DETPACK_DAMAGE);
-		pDet->SetDamageRadius(NEO_DETPACK_DAMAGE_RADIUS);
+		m_pDetpack->SetDamage(NEO_DETPACK_DAMAGE);
+		m_pDetpack->SetDamageRadius(NEO_DETPACK_DAMAGE_RADIUS);
+	}
+	else
+	{
+		Assert(false);
 	}
 #endif
-
-	m_bRedraw = true;
 
 	WeaponSound(SINGLE);
 
@@ -277,8 +310,8 @@ void CWeaponDetpack::Operator_HandleAnimEvent(animevent_t* pEvent, CBaseCombatCh
 
 	if (fThrewGrenade)
 	{
-		m_flNextPrimaryAttack = gpGlobals->curtime + REDEPLOY_DELAY;
-		m_flNextSecondaryAttack = gpGlobals->curtime + REDEPLOY_DELAY;
+		m_flNextPrimaryAttack = gpGlobals->curtime + 1.0;
+		m_flNextSecondaryAttack = gpGlobals->curtime + 1.0;
 		m_flTimeWeaponIdle = FLT_MAX; //NOTE: This is set once the animation has finished up!
 	}
 }

@@ -200,11 +200,13 @@ void CBaseGrenade::Explode( trace_t *pTrace, int bitsDamageType )
 #endif//HL2_EPISODIC
 
 #if defined( HL2_DLL )
+#ifndef NEO // NEO frag and det do this in their inherited classes with the appropriate "weapon_..." names.
 	CBasePlayer *pPlayer = ToBasePlayer( m_hThrower.Get() );
 	if ( pPlayer )
 	{
 		gamestats->Event_WeaponHit( pPlayer, true, "weapon_frag", info );
 	}
+#endif
 #endif
 
 #endif

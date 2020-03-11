@@ -25,6 +25,7 @@ class CNEODeployedDetpack : public CBaseGrenade
 
 public:
 	virtual void	Detonate(void);
+	virtual void	Explode(trace_t* pTrace, int bitsDamageType);
 
 	void	Spawn(void);
 	void	Precache(void);

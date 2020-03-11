@@ -3,6 +3,10 @@
 
 #include "neo_tracefilter_collisiongroupdelta.h"
 
+#ifdef GAME_DLL
+#include "gamestats.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -150,6 +154,22 @@ void CNEOGrenadeFrag::DelayThink()
 	}
 
 	SetNextThink(gpGlobals->curtime + 0.1);
+}
+
+void CNEOGrenadeFrag::Explode(trace_t* pTrace, int bitsDamageType)
+{
+	BaseClass::Explode(pTrace, bitsDamageType);
+#ifdef GAME_DLL
+	auto pThrower = GetThrower();
+	auto pPlayer = ToBasePlayer(pThrower);
+	if (pPlayer)
+	{
+		// Use the thrower's position as the reported position
+		Vector vecReported = pThrower ? pThrower->GetAbsOrigin() : vec3_origin;
+		CTakeDamageInfo info(this, pThrower, GetBlastForce(), GetAbsOrigin(), m_flDamage, bitsDamageType, 0, &vecReported);
+		gamestats->Event_WeaponHit(pPlayer, true, "weapon_grenade", info);
+	}
+#endif
 }
 
 void CNEOGrenadeFrag::SetVelocity(const Vector &velocity, const AngularImpulse &angVelocity)

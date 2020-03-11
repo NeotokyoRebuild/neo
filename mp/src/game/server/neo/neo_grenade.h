@@ -25,6 +25,8 @@ class CNEOGrenadeFrag : public CBaseGrenade
 #endif
 
 public:
+	virtual void	Explode(trace_t* pTrace, int bitsDamageType);
+
 	void	Spawn(void);
 	void	Precache(void);
 	bool	CreateVPhysics(void);
