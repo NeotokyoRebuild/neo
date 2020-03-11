@@ -186,12 +186,15 @@ void CWeaponDetpack::ItemPostFrame(void)
 			{
 				if (pOwner)
 				{
-					if (!pOwner->SwitchToNextBestWeapon(this))
+					if (pOwner->GetActiveWeapon() == this)
 					{
-						pOwner->Weapon_Drop(this);
+						if (!pOwner->SwitchToNextBestWeapon(this))
+						{
+							pOwner->Weapon_Drop(this);
+						}
 					}
-					UTIL_Remove(this);
 				}
+				UTIL_Remove(this);
 			}
 #endif
 		}
