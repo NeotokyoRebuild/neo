@@ -183,6 +183,7 @@ bool CNEODeployedDetpack::TryDetonate(void)
 
 void CNEODeployedDetpack::Detonate(void)
 {
+	// Make sure we've stopped playing bounce tick sounds upon explosion
 	if (!m_hasSettled)
 	{
 		m_hasSettled = true;
