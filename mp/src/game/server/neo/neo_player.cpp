@@ -1345,14 +1345,19 @@ bool CNEO_Player::Weapon_Switch( CBaseCombatWeapon *pWeapon,
 
 bool CNEO_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 {
-	int bumpedSlot = pWeapon->GetSlot();
-
-	CBaseCombatWeapon *currentSlotWep = Weapon_GetSlot(bumpedSlot);
-
 	// We already have a weapon in this slot
-	if (currentSlotWep)
+	if (Weapon_GetSlot(pWeapon->GetSlot()))
 	{
 		return false;
+	}
+	else if (GetClass() == NEO_CLASS_RECON)
+	{
+		auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWeapon);
+		// Recons can't carry a PZ
+		if ((pNeoWep) && (pNeoWep->GetNeoWepBits() & NEO_WEP_PZ))
+		{
+			return false;
+		}
 	}
 
 	return BaseClass::BumpWeapon(pWeapon);
