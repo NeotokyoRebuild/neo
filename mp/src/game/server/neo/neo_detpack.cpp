@@ -32,10 +32,6 @@ void CNEODeployedDetpack::Spawn(void)
 
 	SetModel(NEO_DEPLOYED_DETPACK_MODEL);
 
-	// NEO FIXME (Rain): these are doubly defined in weapon_detpack
-#define NEO_DETPACK_DAMAGE 320.0f
-#define NEO_DETPACK_DAMAGE_RADIUS 320.0f
-
 	m_flDamage = NEO_DETPACK_DAMAGE;
 	m_DmgRadius = NEO_DETPACK_DAMAGE_RADIUS;
 

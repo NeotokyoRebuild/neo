@@ -26,10 +26,6 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-// NEO FIXME (Rain): these are doubly defined in neo_detpack
-#define NEO_DETPACK_DAMAGE 320.0f
-#define NEO_DETPACK_DAMAGE_RADIUS 320.0f
-
 NEO_ACTTABLE(CWeaponDetpack)
 
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponDetpack, DT_WeaponDetpack)
