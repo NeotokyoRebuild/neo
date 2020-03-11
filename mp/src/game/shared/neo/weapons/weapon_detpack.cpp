@@ -97,6 +97,10 @@ bool CWeaponDetpack::Holster(CBaseCombatWeapon* pSwitchingTo)
 	{
 		SendWeaponAnim(ACT_VM_PULLBACK);
 	}
+	else if (m_bWantsToThrowThisDetpack)
+	{
+		m_bWantsToThrowThisDetpack = false;
+	}
 
 	return res;
 }
