@@ -126,7 +126,9 @@ void CWeaponDetpack::PrimaryAttack(void)
 	if ((m_bThisDetpackHasBeenThrown) && (gpGlobals->curtime > m_flNextPrimaryAttack))
 	{
 		m_bRemoteHasBeenTriggered = true;
-		Msg("Pulling remote trigger\n");
+#if(0)
+		DevMsg("Pulling remote trigger\n");
+#endif
 		SendWeaponAnim(ACT_VM_PRIMARYATTACK_DEPLOYED);
 		m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
 		m_flTimeWeaponIdle = FLT_MAX;
@@ -136,8 +138,9 @@ void CWeaponDetpack::PrimaryAttack(void)
 		if (!m_bWantsToThrowThisDetpack)
 		{
 			m_bWantsToThrowThisDetpack = true;
-			Msg("Preparing primary attack\n");
-
+#if(0)
+			DevMsg("Preparing primary attack\n");
+#endif
 			SendWeaponAnim(ACT_VM_PRIMARYATTACK);
 			m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
 			m_flTimeWeaponIdle = FLT_MAX;
@@ -169,7 +172,9 @@ void CWeaponDetpack::ItemPostFrame(void)
 #ifdef GAME_DLL
 			if (m_pDetpack)
 			{
-				Msg("REMOTE ATK\n");
+#if(0)
+				DevMsg("REMOTE ATK\n");
+#endif
 				m_pDetpack->Detonate();
 				m_pDetpack = NULL;
 			}
@@ -235,7 +240,9 @@ void CWeaponDetpack::TossDetpack(CBasePlayer* pPlayer)
 	Assert(pPlayer);
 	DecrementAmmo(pPlayer);
 
-	Msg("TossDetpack\n");
+#if(0)
+	DevMsg("TossDetpack\n");
+#endif
 
 #ifndef CLIENT_DLL
 	Vector	vecEye = pPlayer->EyePosition();
