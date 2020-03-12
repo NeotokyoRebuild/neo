@@ -332,6 +332,14 @@ void respawn( CBaseEntity *pEdict, bool fCopyCorpse )
 	}
 }
 
+ConVar sv_neo_bot_think("sv_neo_bot_think",
+#ifdef DEBUG
+	"1",
+#else
+	"0",
+#endif
+	FCVAR_NONE, "Run think on debug bots.", true, 0.0, true, 1.0);
+
 void GameStartFrame( void )
 {
 	VPROF("GameStartFrame()");
@@ -340,10 +348,11 @@ void GameStartFrame( void )
 
 	gpGlobals->teamplay = (teamplay.GetInt() != 0);
 
-#ifdef DEBUG
-	extern void Bot_RunAll();
-	Bot_RunAll();
-#endif
+	if (sv_neo_bot_think.GetBool())
+	{
+		extern void Bot_RunAll();
+		Bot_RunAll();
+	}
 }
 
 //=========================================================
