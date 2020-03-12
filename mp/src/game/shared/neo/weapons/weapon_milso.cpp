@@ -66,7 +66,7 @@ void CWeaponMilso::PrimaryAttack(void)
 	{
 		if (!m_bFireOnEmpty)
 		{
-			Reload();
+			CheckReload();
 		}
 		else
 		{

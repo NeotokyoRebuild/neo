@@ -56,7 +56,7 @@ void CWeaponM41S::PrimaryAttack()
 	{
 		if (!m_bFireOnEmpty)
 		{
-			Reload();
+			CheckReload();
 		}
 		else
 		{
@@ -148,11 +148,6 @@ void CWeaponM41S::ItemPostFrame()
 	auto owner = ToBasePlayer(GetOwner());
 
 	if (!owner)
-	{
-		return;
-	}
-
-	if (m_iClip1 <= 0)
 	{
 		return;
 	}

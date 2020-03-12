@@ -2014,6 +2014,20 @@ bool CBaseCombatWeapon::DefaultReload( int iClipSize1, int iClipSize2, int iActi
 	// If you don't have clips, then don't try to reload them.
 	if ( UsesClipsForAmmo1() )
 	{
+#ifdef NEO
+		if ((!m_bInReload) && (m_iClip1 == 0))
+		{
+			Assert(ToBasePlayer(pOwner));
+			if (!(ToBasePlayer(pOwner)->m_nButtons & IN_RELOAD))
+			{
+				if (!ClientWantsAutoReload(pOwner))
+				{
+					return false;
+				}
+			}
+		}
+#endif
+
 		// need to reload primary clip?
 		int primary	= MIN(iClipSize1 - m_iClip1, pOwner->GetAmmoCount(m_iPrimaryAmmoType));
 		if ( primary != 0 )

@@ -62,14 +62,6 @@ bool CWeaponZR68L::Deploy(void)
 
 void CWeaponZR68L::PrimaryAttack()
 {
-	auto pOwner = ToBasePlayer(GetOwner());
-
-	// We don't have bullets, but player doesn't want auto-reload. Do nothing.
-	if (m_iClip1 == 0 && !ClientWantsAutoReload(pOwner))
-	{
-		return;
-	}
-
 	if ((gpGlobals->curtime - m_flLastAttackTime) > 0.5f)
 	{
 		m_nNumShotsFired = 0;
@@ -81,6 +73,7 @@ void CWeaponZR68L::PrimaryAttack()
 
 	m_flLastAttackTime = gpGlobals->curtime;
 
+	auto pOwner = ToBasePlayer(GetOwner());
 	if (pOwner)
 	{
 		pOwner->ViewPunchReset();
@@ -93,20 +86,9 @@ void CWeaponZR68L::PrimaryAttack()
 
 void CWeaponZR68L::UpdatePenaltyTime()
 {
-	auto owner = ToBasePlayer(GetOwner());
-
-	if (!owner)
-	{
-		return;
-	}
-
-	if (((owner->m_nButtons & IN_ATTACK) == false) &&
-		(m_flSoonestAttack < gpGlobals->curtime))
-	{
-		m_flAccuracyPenalty -= gpGlobals->frametime;
-		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty,
-			0.0f, ZR68L_ACCURACY_MAXIMUM_PENALTY_TIME);
-	}
+	m_flAccuracyPenalty -= gpGlobals->frametime;
+	m_flAccuracyPenalty = clamp(m_flAccuracyPenalty,
+		0.0f, ZR68L_ACCURACY_MAXIMUM_PENALTY_TIME);
 }
 
 void CWeaponZR68L::ItemPreFrame()
@@ -135,11 +117,6 @@ void CWeaponZR68L::ItemPostFrame()
 	auto owner = ToBasePlayer(GetOwner());
 
 	if (!owner)
-	{
-		return;
-	}
-
-	if (m_iClip1 <= 0)
 	{
 		return;
 	}

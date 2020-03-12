@@ -62,14 +62,6 @@ bool CWeaponZR68S::Deploy(void)
 
 void CWeaponZR68S::PrimaryAttack()
 {
-	auto pOwner = ToBasePlayer(GetOwner());
-
-	// We don't have bullets, but player doesn't want auto-reload. Do nothing.
-	if (m_iClip1 == 0 && !ClientWantsAutoReload(pOwner))
-	{
-		return;
-	}
-
 	if ((gpGlobals->curtime - m_flLastAttackTime) > 0.5f)
 	{
 		m_nNumShotsFired = 0;
@@ -81,6 +73,7 @@ void CWeaponZR68S::PrimaryAttack()
 
 	m_flLastAttackTime = gpGlobals->curtime;
 
+	auto pOwner = ToBasePlayer(GetOwner());
 	if (pOwner)
 	{
 		pOwner->ViewPunchReset();
@@ -135,11 +128,6 @@ void CWeaponZR68S::ItemPostFrame()
 	auto owner = ToBasePlayer(GetOwner());
 
 	if (!owner)
-	{
-		return;
-	}
-
-	if (m_iClip1 <= 0)
 	{
 		return;
 	}

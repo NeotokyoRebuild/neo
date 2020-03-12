@@ -92,6 +92,7 @@ public:
 	CNEOBaseCombatWeapon();
 
 	virtual void Spawn();
+	virtual	void CheckReload(void);
 
 	virtual bool Reload( void );
 

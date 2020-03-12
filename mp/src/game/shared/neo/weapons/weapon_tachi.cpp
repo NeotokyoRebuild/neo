@@ -74,7 +74,7 @@ void CWeaponTachi::PrimaryAttack( void )
 	{
 		if (!m_bFireOnEmpty)
 		{
-			Reload();
+			CheckReload();
 		}
 		else
 		{
@@ -228,11 +228,6 @@ void CWeaponTachi::ItemPostFrame( void )
 			m_flSoonestFiremodeSwitch = gpGlobals->curtime + TACHI_FASTEST_FIREMODE_SWITCH_TIME;
 			m_flSoonestPrimaryAttack = gpGlobals->curtime + TACHI_FASTEST_FIREMODE_SWITCH_TIME;
 		}
-	}
-
-	if (m_iClip1 <= 0)
-	{
-		return;
 	}
 
 	if (pOwner->m_nButtons & IN_ATTACK)

@@ -73,6 +73,9 @@ void CNEOBaseCombatWeapon::Spawn()
 
 bool CNEOBaseCombatWeapon::Reload( void )
 {
+	return BaseClass::Reload();
+
+#if(0)
 	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
 	if (!pOwner)
 	{
@@ -97,6 +100,7 @@ bool CNEOBaseCombatWeapon::Reload( void )
 #endif
 
 	return DefaultReload( GetMaxClip1(), GetMaxClip2(), ACT_VM_RELOAD );
+#endif
 }
 
 bool CNEOBaseCombatWeapon::CanBeSelected(void)
@@ -123,4 +127,14 @@ bool CNEOBaseCombatWeapon::Holster(CBaseCombatWeapon* pSwitchingTo)
 #endif
 
 	return BaseClass::Holster(pSwitchingTo);
+}
+
+void CNEOBaseCombatWeapon::CheckReload(void)
+{
+	if (!m_bInReload && UsesClipsForAmmo1() && m_iClip1 == 0 && GetOwner() && !ClientWantsAutoReload(GetOwner()))
+	{
+		return;
+	}
+
+	BaseClass::CheckReload();
 }

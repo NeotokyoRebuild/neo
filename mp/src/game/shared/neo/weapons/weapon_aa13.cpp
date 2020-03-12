@@ -84,13 +84,6 @@ CWeaponAA13::CWeaponAA13(void)
 
 void CWeaponAA13::UpdatePenaltyTime()
 {
-	CNEO_Player *pOwner = ToNEOPlayer((GetOwner()));
-
-	if (!pOwner)
-	{
-		return;
-	}
-
 	// Update the penalty time decay
 	m_flAccuracyPenalty -= gpGlobals->frametime;
 	m_flAccuracyPenalty = clamp(m_flAccuracyPenalty, 0.0f, AA13_ACCURACY_MAXIMUM_PENALTY_TIME);
@@ -150,12 +143,6 @@ void CWeaponAA13::PrimaryAttack(void)
 	CNEO_Player *pOwner = ToNEOPlayer((GetOwner()));
 
 	if (!pOwner)
-	{
-		return;
-	}
-
-	// We don't have bullets, but player doesn't want auto-reload. Do nothing.
-	if (m_iClip1 == 0 && !ClientWantsAutoReload(pOwner))
 	{
 		return;
 	}

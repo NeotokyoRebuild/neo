@@ -38,7 +38,7 @@ void CWeaponKyla::PrimaryAttack(void)
 	{
 		if (!m_bFireOnEmpty)
 		{
-			Reload();
+			CheckReload();
 		}
 		else
 		{
