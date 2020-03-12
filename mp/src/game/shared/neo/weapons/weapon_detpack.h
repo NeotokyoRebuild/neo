@@ -29,8 +29,8 @@ public:
 
 	CWeaponDetpack();
 
-	virtual int GetNeoWepBits(void) const override { return NEO_WEP_DETPACK | NEO_WEP_THROWABLE; }
-	virtual int GetNeoWepXPCost(const int neoClass) const override { return 4; }
+	virtual int GetNeoWepBits(void) const { return NEO_WEP_DETPACK | NEO_WEP_THROWABLE; }
+	virtual int GetNeoWepXPCost(const int neoClass) const { return 4; }
 
 	void	Precache(void);
 	void	PrimaryAttack(void);
