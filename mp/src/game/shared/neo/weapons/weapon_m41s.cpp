@@ -52,6 +52,21 @@ void CWeaponM41S::DryFire()
 
 void CWeaponM41S::PrimaryAttack()
 {
+	if (m_iClip1 == 0)
+	{
+		if (!m_bFireOnEmpty)
+		{
+			Reload();
+		}
+		else
+		{
+			WeaponSound(EMPTY);
+			m_flNextPrimaryAttack = 0.2;
+		}
+
+		return;
+	}
+
 	auto owner = ToBasePlayer(GetOwner());
 
 	if (owner)
@@ -178,19 +193,6 @@ Activity CWeaponM41S::GetPrimaryAttackActivity()
 	}
 
 	return ACT_VM_RECOIL3;
-}
-
-bool CWeaponM41S::Reload()
-{
-	bool fRet = BaseClass::Reload();
-
-	if (fRet)
-	{
-		WeaponSound(RELOAD);
-		m_flAccuracyPenalty = 0;
-	}
-
-	return fRet;
 }
 
 void CWeaponM41S::AddViewKick()

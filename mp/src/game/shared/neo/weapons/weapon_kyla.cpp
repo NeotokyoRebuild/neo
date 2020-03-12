@@ -34,15 +34,7 @@ CWeaponKyla::CWeaponKyla(void)
 
 void CWeaponKyla::PrimaryAttack(void)
 {
-	// Only the player fires this way so we can cast
-	CBasePlayer *pPlayer = ToBasePlayer(GetOwner());
-
-	if (!pPlayer)
-	{
-		return;
-	}
-
-	if (m_iClip1 <= 0)
+	if (m_iClip1 == 0)
 	{
 		if (!m_bFireOnEmpty)
 		{
@@ -57,6 +49,13 @@ void CWeaponKyla::PrimaryAttack(void)
 		return;
 	}
 
+	// Only the player fires this way so we can cast
+	CBasePlayer* pPlayer = ToBasePlayer(GetOwner());
+
+	if (!pPlayer)
+	{
+		return;
+	}
 	WeaponSound(SINGLE);
 	pPlayer->DoMuzzleFlash();
 

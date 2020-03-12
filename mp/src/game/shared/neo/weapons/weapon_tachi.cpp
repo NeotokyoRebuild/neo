@@ -70,24 +70,19 @@ void CWeaponTachi::DryFire( void )
 
 void CWeaponTachi::PrimaryAttack( void )
 {
-	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
-
-	if (pOwner)
+	if (m_iClip1 == 0)
 	{
-		if (!m_iClip1 && !ClientWantsAutoReload(GetOwner()))
+		if (!m_bFireOnEmpty)
 		{
-			return;
+			Reload();
+		}
+		else
+		{
+			WeaponSound(EMPTY);
+			m_flNextPrimaryAttack = 0.2;
 		}
 
-		if (m_bIsPrimaryFireMode)
-		{
-			// Do nothing if we hold fire whilst semi auto
-			if ((pOwner->m_nButtons & IN_ATTACK) &&
-			(!(pOwner->m_afButtonPressed & IN_ATTACK)))
-			{
-				return;
-			}
-		}
+		return;
 	}
 
 	if ( ( gpGlobals->curtime - m_flLastAttackTime ) > 0.5f )
@@ -101,6 +96,7 @@ void CWeaponTachi::PrimaryAttack( void )
 
 	m_flLastAttackTime = gpGlobals->curtime;
 
+	CBasePlayer* pOwner = ToBasePlayer(GetOwner());
 	if( pOwner )
 	{
 		// Each time the player fires the pistol, reset the view punch. This prevents
@@ -291,20 +287,6 @@ Activity CWeaponTachi::GetPrimaryAttackActivity( void )
 		return ACT_VM_RECOIL2;
 
 	return ACT_VM_RECOIL3;
-}
-
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-bool CWeaponTachi::Reload( void )
-{
-	bool fRet = BaseClass::Reload();
-
-	if ( fRet )
-	{
-		WeaponSound( RELOAD );
-		m_flAccuracyPenalty = 0.0f;
-	}
-	return fRet;
 }
 
 //-----------------------------------------------------------------------------

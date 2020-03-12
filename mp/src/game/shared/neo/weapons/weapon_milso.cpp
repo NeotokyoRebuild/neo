@@ -62,11 +62,26 @@ void CWeaponMilso::DryFire(void)
 
 void CWeaponMilso::PrimaryAttack(void)
 {
+	if (m_iClip1 == 0)
+	{
+		if (!m_bFireOnEmpty)
+		{
+			Reload();
+		}
+		else
+		{
+			WeaponSound(EMPTY);
+			m_flNextPrimaryAttack = 0.2;
+		}
+
+		return;
+	}
+
 	CBasePlayer *pOwner = ToBasePlayer(GetOwner());
 
 	if (pOwner)
 	{
-		if (!m_iClip1 && !ClientWantsAutoReload(GetOwner()))
+		if (!m_iClip1 && !ClientWantsAutoReload(pOwner))
 		{
 			return;
 		}
@@ -196,19 +211,6 @@ Activity CWeaponMilso::GetPrimaryAttackActivity(void)
 		return ACT_VM_RECOIL2;
 
 	return ACT_VM_RECOIL3;
-}
-
-bool CWeaponMilso::Reload(void)
-{
-	bool fRet = BaseClass::Reload();
-
-	if (fRet)
-	{
-		WeaponSound(RELOAD);
-		m_flAccuracyPenalty = 0.0f;
-	}
-
-	return fRet;
 }
 
 void CWeaponMilso::AddViewKick(void)

@@ -155,7 +155,7 @@ void CWeaponAA13::PrimaryAttack(void)
 	}
 
 	// We don't have bullets, but player doesn't want auto-reload. Do nothing.
-	if (!m_iClip1 && !ClientWantsAutoReload(pOwner))
+	if (m_iClip1 == 0 && !ClientWantsAutoReload(pOwner))
 	{
 		return;
 	}

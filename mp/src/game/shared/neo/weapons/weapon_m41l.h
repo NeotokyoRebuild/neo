@@ -50,8 +50,6 @@ public:
 
 	Activity	GetPrimaryAttackActivity(void);
 
-	virtual bool Reload(void);
-
 	virtual const Vector& GetBulletSpread(void)
 	{
 		static Vector cone;

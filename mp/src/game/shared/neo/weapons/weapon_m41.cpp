@@ -52,20 +52,19 @@ void CWeaponM41::DryFire()
 
 void CWeaponM41::PrimaryAttack()
 {
-	auto owner = ToBasePlayer(GetOwner());
-
-	if (owner)
+	if (m_iClip1 == 0)
 	{
-		if (!m_iClip1 && !ClientWantsAutoReload(GetOwner()))
+		if (!m_bFireOnEmpty)
 		{
-			return;
+			Reload();
+		}
+		else
+		{
+			WeaponSound(EMPTY);
+			m_flNextPrimaryAttack = 0.2;
 		}
 
-		// Do nothing if we hold fire whilst semi auto
-		if (!(owner->m_afButtonPressed & IN_ATTACK))
-		{
-			return;
-		}
+		return;
 	}
 
 	if ((gpGlobals->curtime - m_flLastAttackTime) > 0.5f)
@@ -79,6 +78,7 @@ void CWeaponM41::PrimaryAttack()
 
 	m_flLastAttackTime = gpGlobals->curtime;
 
+	auto owner = ToBasePlayer(GetOwner());
 	if (owner)
 	{
 		owner->ViewPunchReset();
@@ -178,19 +178,6 @@ Activity CWeaponM41::GetPrimaryAttackActivity()
 	}
 
 	return ACT_VM_RECOIL3;
-}
-
-bool CWeaponM41::Reload()
-{
-	bool fRet = BaseClass::Reload();
-
-	if (fRet)
-	{
-		WeaponSound(RELOAD);
-		m_flAccuracyPenalty = 0;
-	}
-
-	return fRet;
 }
 
 void CWeaponM41::AddViewKick()

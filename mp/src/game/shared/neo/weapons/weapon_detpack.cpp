@@ -105,16 +105,6 @@ bool CWeaponDetpack::Holster(CBaseCombatWeapon* pSwitchingTo)
 	return res;
 }
 
-// Output : Returns true on success, false on failure.
-bool CWeaponDetpack::Reload(void)
-{
-	return false;
-}
-
-void CWeaponDetpack::SecondaryAttack(void)
-{
-}
-
 void CWeaponDetpack::PrimaryAttack(void)
 {
 	if (!GetOwner())

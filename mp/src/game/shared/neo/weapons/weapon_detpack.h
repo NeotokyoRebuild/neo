@@ -34,14 +34,14 @@ public:
 
 	void	Precache(void);
 	void	PrimaryAttack(void);
-	void	SecondaryAttack(void);
+	void	SecondaryAttack(void) { }
 	void	DecrementAmmo(CBaseCombatCharacter* pOwner);
 	void	ItemPostFrame(void);
 
 	bool	Deploy(void);
 	bool	Holster(CBaseCombatWeapon* pSwitchingTo = NULL);
 
-	bool	Reload(void);
+	bool	Reload(void) { return false; }
 
 #ifndef CLIENT_DLL
 	void Operator_HandleAnimEvent(animevent_t* pEvent, CBaseCombatCharacter* pOperator);

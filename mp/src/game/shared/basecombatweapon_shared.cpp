@@ -2035,7 +2035,8 @@ bool CBaseCombatWeapon::DefaultReload( int iClipSize1, int iClipSize2, int iActi
 	if ( !bReload )
 		return false;
 
-#ifdef CLIENT_DLL
+	// On NEO, we want to always give out reload sound cues
+#if defined(CLIENT_DLL) || defined(NEO)
 	// Play reload
 	WeaponSound( RELOAD );
 #endif

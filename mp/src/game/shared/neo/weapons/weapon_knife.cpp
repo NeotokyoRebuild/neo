@@ -45,13 +45,6 @@ CWeaponKnife::CWeaponKnife(void)
 	m_flLastSwingTime = 0;
 }
 
-void CWeaponKnife::Drop(const Vector &vecVelocity)
-{
-#ifdef GAME_DLL
-	UTIL_Remove(this); // Knives should not drop in world
-#endif
-}
-
 void CWeaponKnife::PrimaryAttack(void)
 {
 	if (gpGlobals->curtime < m_flLastSwingTime + GetFireRate())

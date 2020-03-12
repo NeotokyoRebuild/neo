@@ -62,14 +62,12 @@ bool CWeaponSRM::Deploy(void)
 
 void CWeaponSRM::PrimaryAttack()
 {
-	auto owner = ToBasePlayer(GetOwner());
+	auto pOwner = ToBasePlayer(GetOwner());
 
-	if (owner)
+	// We don't have bullets, but player doesn't want auto-reload. Do nothing.
+	if (m_iClip1 == 0 && !ClientWantsAutoReload(pOwner))
 	{
-		if (!m_iClip1 && !ClientWantsAutoReload(GetOwner()))
-		{
-			return;
-		}
+		return;
 	}
 
 	if ((gpGlobals->curtime - m_flLastAttackTime) > 0.5f)
@@ -83,9 +81,9 @@ void CWeaponSRM::PrimaryAttack()
 
 	m_flLastAttackTime = gpGlobals->curtime;
 
-	if (owner)
+	if (pOwner)
 	{
-		owner->ViewPunchReset();
+		pOwner->ViewPunchReset();
 	}
 
 	BaseClass::PrimaryAttack();
@@ -187,19 +185,6 @@ Activity CWeaponSRM::GetPrimaryAttackActivity()
 	}
 
 	return ACT_VM_RECOIL3;
-}
-
-bool CWeaponSRM::Reload()
-{
-	bool fRet = BaseClass::Reload();
-
-	if (fRet)
-	{
-		WeaponSound(RELOAD);
-		m_flAccuracyPenalty = 0;
-	}
-
-	return fRet;
 }
 
 void CWeaponSRM::AddViewKick()
