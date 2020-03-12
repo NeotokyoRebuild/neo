@@ -689,7 +689,8 @@ void C_NEO_Player::PostThink(void)
 
 	C_BaseCombatWeapon *pWep = GetActiveWeapon();
 
-	if (pWep)
+	// Can't do aim zoom in prediction, because we can't know server's reload state for our weapon with certainty.
+	if (pWep && !prediction->InPrediction())
 	{
 		if (pWep->m_bInReload && !m_bPreviouslyReloading)
 		{

@@ -36,24 +36,25 @@ public:
 	DECLARE_NETWORKCLASS();
 	DECLARE_PREDICTABLE();
 
-	void	ItemPostFrame(void);
-	void	ItemPreFrame(void);
-	void	ItemBusyFrame(void);
-	void	PrimaryAttack(void);
-	void	AddViewKick(void);
+	virtual void	ItemPostFrame(void) override;
+	virtual void	ItemPreFrame(void) override;
+	virtual void	ItemBusyFrame(void) override;
+	virtual void	PrimaryAttack(void) override;
+	virtual void	AddViewKick(void) override;
+
 	void	DryFire(void);
 
-	virtual void Spawn(void);
-	virtual bool Deploy(void);
+	virtual void Spawn(void) override;
+	virtual bool Deploy(void) override;
 
-	virtual int GetNeoWepBits(void) const { return NEO_WEP_ZR68_S; }
-	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
+	virtual int GetNeoWepBits(void) const override { return NEO_WEP_ZR68_S; }
+	virtual int GetNeoWepXPCost(const int neoClass) const override { return 0; }
 
 	void	UpdatePenaltyTime(void);
 
-	Activity	GetPrimaryAttackActivity(void);
+	virtual Activity	GetPrimaryAttackActivity(void) override;
 
-	virtual const Vector& GetBulletSpread(void)
+	virtual const Vector& GetBulletSpread(void) override
 	{
 		static Vector cone;
 
@@ -69,7 +70,7 @@ public:
 		return cone;
 	}
 
-	virtual float GetFireRate(void);
+	virtual float GetFireRate(void) override { return ZR68S_FASTEST_REFIRE_TIME; }
 
 #ifdef GAME_DLL
 	DECLARE_ACTTABLE();

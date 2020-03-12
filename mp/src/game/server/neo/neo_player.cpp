@@ -136,7 +136,7 @@ void CNEO_Player::RequestSetSkin(int newSkin)
 	}
 }
 
-static inline bool IsNeoPrimary(CNEOBaseCombatWeapon *pNeoWep)
+static bool IsNeoPrimary(CNEOBaseCombatWeapon *pNeoWep)
 {
 	if (!pNeoWep)
 	{
@@ -280,7 +280,7 @@ ConCommand setclass("setclass", SetClass, "Set class", FCVAR_USERINFO);
 ConCommand setskin("SetVariant", SetSkin, "Set skin", FCVAR_USERINFO);
 ConCommand loadout("loadout", SetLoadout, "Set loadout", FCVAR_USERINFO);
 
-static inline int GetNumOtherPlayersConnected(CNEO_Player *asker)
+static int GetNumOtherPlayersConnected(CNEO_Player *asker)
 {
 	if (!asker)
 	{
@@ -339,7 +339,7 @@ CNEO_Player::~CNEO_Player( void )
 {
 }
 
-inline void CNEO_Player::ZeroFriendlyPlayerLocArray(void)
+void CNEO_Player::ZeroFriendlyPlayerLocArray(void)
 {
 	Assert(m_rvFriendlyPlayerPositions.Count() == MAX_PLAYERS);
 	for (int i = 0; i < MAX_PLAYERS; i++)
@@ -440,7 +440,7 @@ void CNEO_Player::Lean(void)
 	}
 }
 
-inline void CNEO_Player::CheckVisionButtons()
+void CNEO_Player::CheckVisionButtons()
 {
 	if (m_afButtonPressed & IN_VISION)
 	{
@@ -636,7 +636,7 @@ ConVar sv_neo_cloak_time("sv_neo_cloak_time", "0.1", FCVAR_CHEAT, "How long shou
 ConVar sv_neo_cloak_decay("sv_neo_cloak_decay", "0", FCVAR_CHEAT, "After the cloak time, how quickly should the flash effect disappear.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_cloak_exponent("sv_neo_cloak_exponent", "8", FCVAR_CHEAT, "Cloak flash lighting exponent.", true, 0.0f, false, 0.0f);
 
-inline void CNEO_Player::PlayCloakSound()
+void CNEO_Player::PlayCloakSound()
 {
 	static int tocOn = CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOn");
 	static int tocOff = CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOff");
@@ -652,7 +652,7 @@ inline void CNEO_Player::PlayCloakSound()
 	EmitSound(filter, edict()->m_EdictIndex, tocSoundParams);
 }
 
-inline void CNEO_Player::CloakFlash()
+void CNEO_Player::CloakFlash()
 {
 	CRecipientFilter filter;
 	filter.AddRecipientsByPVS(GetAbsOrigin());
@@ -669,7 +669,7 @@ inline void CNEO_Player::CloakFlash()
 	g_NEO_TE_TocFlash.Create(filter);
 }
 
-inline void CNEO_Player::CheckThermOpticButtons()
+void CNEO_Player::CheckThermOpticButtons()
 {
 	if ((m_afButtonPressed & IN_THERMOPTIC) && IsAlive())
 	{
@@ -691,7 +691,7 @@ inline void CNEO_Player::CheckThermOpticButtons()
 	}
 }
 
-inline void CNEO_Player::SuperJump(void)
+void CNEO_Player::SuperJump(void)
 {
 	Vector forward;
 	AngleVectors(EyeAngles(), &forward);
@@ -791,7 +791,7 @@ void CNEO_Player::PostThink(void)
 		{
 			m_bFirstDeathTick = false;
 
-			Weapon_SetZoom(false);
+			Weapon_SetZoom(false, NULL);
 			m_bInVision = false;
 		}
 
@@ -803,20 +803,21 @@ void CNEO_Player::PostThink(void)
 	}
 
 	auto pWep = GetActiveWeapon();
+	CNEOBaseCombatWeapon* pNeoWep = NULL;
 
 	if (pWep)
 	{
 		if (pWep->m_bInReload && !m_bPreviouslyReloading)
 		{
-			Weapon_SetZoom(false);
+			Weapon_SetZoom(false, pWep);
 		}
 		else if (m_afButtonPressed & IN_SPEED)
 		{
-			Weapon_SetZoom(false);
+			Weapon_SetZoom(false, pWep);
 		}
 		else if (m_afButtonPressed & IN_AIM)
 		{
-			auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWep);
+			pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWep);
 			// Binds hack: we want grenade secondary attack to trigger on aim (mouse button 2)
 			if (pNeoWep && pNeoWep->GetNeoWepBits() & NEO_WEP_THROWABLE)
 			{
@@ -825,7 +826,7 @@ void CNEO_Player::PostThink(void)
 			else
 			{
 				// NEO TODO (Rain): customizations for aim pressed/released/held behavior
-				//Weapon_AimToggle(pWep);
+				//if (pNeoWep != NULL) { Weapon_AimToggle(pWep); }
 			}
 		}
 		else if (m_afButtonReleased & IN_AIM)
@@ -866,29 +867,50 @@ void CNEO_Player::PlayerDeathThink()
 	BaseClass::PlayerDeathThink();
 }
 
-void CNEO_Player::Weapon_AimToggle(CBaseCombatWeapon *pWep)
+void CNEO_Player::Weapon_AimToggle(CNEOBaseCombatWeapon* pNeoWep)
 {
-	// NEO TODO/HACK: Not all neo weapons currently inherit
-	// through a base neo class, so we can't static_cast!!
-	auto neoCombatWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWep);
-	if (!neoCombatWep)
+	if (!pNeoWep)
 	{
 		return;
 	}
 
-	if (IsAllowedToZoom(neoCombatWep))
+	if (IsAllowedToZoom(pNeoWep))
 	{
 		const bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR) == HIDEHUD_CROSSHAIR;
-		Weapon_SetZoom(showCrosshair);
+		Weapon_SetZoom(showCrosshair, pNeoWep);
 	}
 }
 
-inline void CNEO_Player::Weapon_SetZoom(bool bZoomIn)
+void CNEO_Player::Weapon_AimToggle(CBaseCombatWeapon *pWep)
+{
+	// NEO TODO/HACK: Not all neo weapons currently inherit
+	// through a base neo class, so we can't static_cast!!
+	Weapon_AimToggle(dynamic_cast<CNEOBaseCombatWeapon*>(pWep));
+}
+
+void CNEO_Player::Weapon_SetZoom(const bool bZoomIn, CBaseCombatWeapon* pWep)
 {
 	const float zoomSpeedSecs = 0.25f;
 
 	ShowCrosshair(bZoomIn);
 	
+#ifdef CLIENT_DLL
+	int numBulletsInClip1, numBulletsInClip2;
+	if (pWep)
+	{
+		numBulletsInClip1 = pWep->UsesClipsForAmmo1() ? pWep->m_iClip1 : WEAPON_NOCLIP;
+		numBulletsInClip2 = pWep->UsesClipsForAmmo2() ? pWep->m_iClip2 : WEAPON_NOCLIP;
+		if (numBulletsInClip1 == 0)
+		{
+			pWep->m_iClip1 = 1;
+		}
+		if (numBulletsInClip2 == 0)
+		{
+			pWep->m_iClip2 = 1;
+		}
+	}
+#endif
+
 	if (bZoomIn)
 	{
 		const int zoomAmount = 30;
@@ -898,6 +920,14 @@ inline void CNEO_Player::Weapon_SetZoom(bool bZoomIn)
 	{
 		SetFOV((CBaseEntity*)this, GetDefaultFOV(), zoomSpeedSecs);
 	}
+
+#ifdef CLIENT_DLL
+	if (pWep)
+	{
+		pWep->m_iClip1 = numBulletsInClip1;
+		pWep->m_iClip2 = numBulletsInClip2;
+	}
+#endif
 
 	m_bInAim = bZoomIn;
 }
@@ -1422,7 +1452,7 @@ void CNEO_Player::PlayStepSound( Vector &vecOrigin,
 	BaseClass::PlayStepSound(vecOrigin, psurface, fvol, force);
 }
 
-inline bool CNEO_Player::IsCarryingGhost(void)
+bool CNEO_Player::IsCarryingGhost(void)
 {
 #ifdef DEBUG
 	auto baseWep = GetWeapon(NEO_WEAPON_PRIMARY_SLOT);
@@ -1444,7 +1474,7 @@ inline bool CNEO_Player::IsCarryingGhost(void)
 }
 
 // Is the player allowed to drop a weapon of this type?
-inline bool CNEO_Player::IsAllowedToDrop(CBaseCombatWeapon *pWep)
+bool CNEO_Player::IsAllowedToDrop(CBaseCombatWeapon *pWep)
 {
 	if (!pWep)
 	{

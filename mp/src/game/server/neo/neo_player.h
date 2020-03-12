@@ -96,15 +96,16 @@ public:
 	void UpdateNetworkedFriendlyLocations(void);
 
 	void Weapon_AimToggle(CBaseCombatWeapon *pWep);
+	void Weapon_AimToggle(CNEOBaseCombatWeapon* pWep);
 
 	void Lean(void);
 	void SoftSuicide(void);
 	void GiveAllItems(void);
-	inline bool ProcessTeamSwitchRequest(int iTeam);
+	bool ProcessTeamSwitchRequest(int iTeam);
 
-	inline void Weapon_SetZoom(bool bZoomIn);
+	void Weapon_SetZoom(const bool bZoomIn, CBaseCombatWeapon* pWep);
 
-	inline void SuperJump(void);
+	void SuperJump(void);
 
 	void RequestSetClass(int newClass);
 	void RequestSetSkin(int newSkin);
@@ -133,12 +134,12 @@ public:
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);
 
 private:
-	inline void CheckThermOpticButtons();
-	inline void CheckVisionButtons();
-	inline void PlayCloakSound();
-	inline void CloakFlash();
+	void CheckThermOpticButtons();
+	void CheckVisionButtons();
+	void PlayCloakSound();
+	void CloakFlash();
 
-	inline bool IsAllowedToSuperJump(void);
+	bool IsAllowedToSuperJump(void);
 
 public:
 	CNetworkVar(int, m_iNeoClass);

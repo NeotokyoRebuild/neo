@@ -150,11 +150,6 @@ void CWeaponZR68S::ItemPostFrame()
 	}
 }
 
-float CWeaponZR68S::GetFireRate()
-{
-	return ZR68S_FASTEST_REFIRE_TIME;
-}
-
 Activity CWeaponZR68S::GetPrimaryAttackActivity()
 {
 	if (m_nNumShotsFired < 1)
