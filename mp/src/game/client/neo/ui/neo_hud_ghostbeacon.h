@@ -28,9 +28,9 @@ public:
 	}
 
 protected:
-	virtual void UpdateStateForNeoHudElementDraw() override;
-	virtual void DrawNeoHudElement() override;
-	virtual ConVar* GetUpdateFrequencyConVar() const override;
+	virtual void UpdateStateForNeoHudElementDraw();
+	virtual void DrawNeoHudElement();
+	virtual ConVar* GetUpdateFrequencyConVar() const;
 
 private:
 	int m_posX, m_posY;

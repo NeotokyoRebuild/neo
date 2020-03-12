@@ -21,9 +21,9 @@ public:
 	virtual void Paint();
 
 protected:
-	virtual void UpdateStateForNeoHudElementDraw() override;
-	virtual void DrawNeoHudElement() override;
-	virtual ConVar* GetUpdateFrequencyConVar() const override;
+	virtual void UpdateStateForNeoHudElementDraw();
+	virtual void DrawNeoHudElement();
+	virtual ConVar* GetUpdateFrequencyConVar() const;
 
 private:
 	vgui::HFont m_hFont;
