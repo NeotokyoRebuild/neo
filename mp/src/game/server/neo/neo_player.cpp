@@ -791,7 +791,7 @@ void CNEO_Player::PostThink(void)
 		{
 			m_bFirstDeathTick = false;
 
-			Weapon_SetZoom(false, NULL);
+			Weapon_SetZoom(false);
 			m_bInVision = false;
 		}
 
@@ -809,11 +809,11 @@ void CNEO_Player::PostThink(void)
 	{
 		if (pWep->m_bInReload && !m_bPreviouslyReloading)
 		{
-			Weapon_SetZoom(false, pWep);
+			Weapon_SetZoom(false);
 		}
 		else if (m_afButtonPressed & IN_SPEED)
 		{
-			Weapon_SetZoom(false, pWep);
+			Weapon_SetZoom(false);
 		}
 		else if (m_afButtonPressed & IN_AIM)
 		{
@@ -877,7 +877,7 @@ void CNEO_Player::Weapon_AimToggle(CNEOBaseCombatWeapon* pNeoWep)
 	if (IsAllowedToZoom(pNeoWep))
 	{
 		const bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR) == HIDEHUD_CROSSHAIR;
-		Weapon_SetZoom(showCrosshair, pNeoWep);
+		Weapon_SetZoom(showCrosshair);
 	}
 }
 
@@ -888,29 +888,12 @@ void CNEO_Player::Weapon_AimToggle(CBaseCombatWeapon *pWep)
 	Weapon_AimToggle(dynamic_cast<CNEOBaseCombatWeapon*>(pWep));
 }
 
-void CNEO_Player::Weapon_SetZoom(const bool bZoomIn, CBaseCombatWeapon* pWep)
+void CNEO_Player::Weapon_SetZoom(const bool bZoomIn)
 {
 	const float zoomSpeedSecs = 0.25f;
 
 	ShowCrosshair(bZoomIn);
 	
-#ifdef CLIENT_DLL
-	int numBulletsInClip1, numBulletsInClip2;
-	if (pWep)
-	{
-		numBulletsInClip1 = pWep->UsesClipsForAmmo1() ? pWep->m_iClip1 : WEAPON_NOCLIP;
-		numBulletsInClip2 = pWep->UsesClipsForAmmo2() ? pWep->m_iClip2 : WEAPON_NOCLIP;
-		if (numBulletsInClip1 == 0)
-		{
-			pWep->m_iClip1 = 1;
-		}
-		if (numBulletsInClip2 == 0)
-		{
-			pWep->m_iClip2 = 1;
-		}
-	}
-#endif
-
 	if (bZoomIn)
 	{
 		const int zoomAmount = 30;
@@ -920,14 +903,6 @@ void CNEO_Player::Weapon_SetZoom(const bool bZoomIn, CBaseCombatWeapon* pWep)
 	{
 		SetFOV((CBaseEntity*)this, GetDefaultFOV(), zoomSpeedSecs);
 	}
-
-#ifdef CLIENT_DLL
-	if (pWep)
-	{
-		pWep->m_iClip1 = numBulletsInClip1;
-		pWep->m_iClip2 = numBulletsInClip2;
-	}
-#endif
 
 	m_bInAim = bZoomIn;
 }

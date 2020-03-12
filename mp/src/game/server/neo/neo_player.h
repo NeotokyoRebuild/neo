@@ -103,7 +103,7 @@ public:
 	void GiveAllItems(void);
 	bool ProcessTeamSwitchRequest(int iTeam);
 
-	void Weapon_SetZoom(const bool bZoomIn, CBaseCombatWeapon* pWep);
+	void Weapon_SetZoom(const bool bZoomIn);
 
 	void SuperJump(void);
 
