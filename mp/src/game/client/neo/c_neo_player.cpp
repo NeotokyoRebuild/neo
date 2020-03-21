@@ -89,7 +89,9 @@ class NeoLoadoutMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback(const CCommand& command)
 	{
-		Msg("Loadout access cb\n");
+#if DEBUG
+		DevMsg("Loadout access cb\n");
+#endif
 
 		auto panel = dynamic_cast<vgui::EditablePanel*>(GetClientModeNormal()->
 			GetViewport()->FindChildByName(PANEL_NEO_LOADOUT));
@@ -146,7 +148,8 @@ public:
 		}
 		else
 		{
-			Warning("Cast failed\n");
+			Assert(false);
+			DevWarning("Cast failed\n");
 		}
 
 		surface()->SetMinimized(panel->GetVPanel(), false);
@@ -159,7 +162,9 @@ class NeoClassMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback(const CCommand& command)
 	{
-		Msg("Classmenu access cb\n");
+#ifdef DEBUG
+		DevMsg("Classmenu access cb\n");
+#endif
 
 		vgui::EditablePanel *panel = dynamic_cast<vgui::EditablePanel*>
 			(GetClientModeNormal()->GetViewport()->FindChildByName(PANEL_CLASS));
@@ -206,11 +211,14 @@ class NeoTeamMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback( const CCommand &command )
 	{
-		Msg("Teammenu access cb\n");
+#ifdef DEBUG
+		DevMsg("Teammenu access cb\n");
+#endif
 
 		if (!g_pNeoTeamMenu)
 		{
-			DevMsg("CNeoTeamMenu is not ready\n");
+			Assert(false);
+			DevWarning("CNeoTeamMenu is not ready\n");
 			return;
 		}
 

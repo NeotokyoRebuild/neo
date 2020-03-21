@@ -85,11 +85,11 @@ bool CWeaponKnife::Deploy(void)
 			{
 				pOwner->SetMaxSpeed(pOwner->GetCrouchSpeed());
 			}
-			else if (static_cast<CNEO_Player*>(pOwner)->IsWalking())
+			else if (pOwner->IsWalking())
 			{
 				pOwner->SetMaxSpeed(pOwner->GetWalkSpeed());
 			}
-			else if (static_cast<CNEO_Player*>(pOwner)->IsSprinting())
+			else if (pOwner->IsSprinting())
 			{
 				pOwner->SetMaxSpeed(pOwner->GetSprintSpeed());
 			}

@@ -132,17 +132,15 @@ bool CNEOBaseCombatWeapon::Deploy(void)
 
 		if (pOwner)
 		{
-			DevMsg("Max before: %f\n", pOwner->MaxSpeed());
-
 			if (pOwner->GetFlags() & FL_DUCKING)
 			{
 				pOwner->SetMaxSpeed(pOwner->GetCrouchSpeed_WithWepEncumberment(this));
 			}
-			else if (static_cast<CNEO_Player*>(pOwner)->IsWalking())
+			else if (pOwner->IsWalking())
 			{
 				pOwner->SetMaxSpeed(pOwner->GetWalkSpeed_WithWepEncumberment(this));
 			}
-			else if (static_cast<CNEO_Player*>(pOwner)->IsSprinting())
+			else if (pOwner->IsSprinting())
 			{
 				pOwner->SetMaxSpeed(pOwner->GetSprintSpeed_WithWepEncumberment(this));
 			}
@@ -150,8 +148,6 @@ bool CNEOBaseCombatWeapon::Deploy(void)
 			{
 				pOwner->SetMaxSpeed(pOwner->GetNormSpeed_WithWepEncumberment(this));
 			}
-
-			DevMsg("Max after: %f\n", pOwner->MaxSpeed());
 		}
 	}
 
