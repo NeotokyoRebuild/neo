@@ -381,7 +381,7 @@ enum PLAYER_ANIM
 	PLAYER_LEAVE_AIMING,
 };
 
-#ifdef HL2_DLL
+#if defined(HL2_DLL) && !defined(NEO)
 // HL2 has 600 gravity by default
 // NOTE: The discrete ticks can have quantization error, so these numbers are biased a little to
 // make the heights more exact
