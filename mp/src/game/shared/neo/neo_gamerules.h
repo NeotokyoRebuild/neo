@@ -147,6 +147,8 @@ public:
 #else
 	virtual void CleanUpMap();
 	virtual void RestartGame();
+
+	virtual float FlPlayerFallDamage(CBasePlayer* pPlayer);
 #endif
 
 #ifdef GAME_DLL

@@ -1185,3 +1185,21 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 		}
 	}
 }
+
+#ifdef GAME_DLL
+extern ConVar falldamage;
+ConVar sv_neo_falldmg_scale("sv_neo_falldmg_scale", "0.25", FCVAR_CHEAT | FCVAR_DEVELOPMENTONLY, "Scale factor for NEO fall damage.");
+float CNEORules::FlPlayerFallDamage(CBasePlayer* pPlayer)
+{
+	// Is player fall damage disabled?
+	if (!falldamage.GetBool())
+	{
+		return 0;
+	}
+
+	// subtract off the speed at which a player is allowed to fall without being hurt,
+	// so damage will be based on speed beyond that, not the entire fall
+	pPlayer->m_Local.m_flFallVelocity -= PLAYER_MAX_SAFE_FALL_SPEED;
+	return pPlayer->m_Local.m_flFallVelocity * DAMAGE_FOR_FALL_SPEED * sv_neo_falldmg_scale.GetFloat();
+}
+#endif
