@@ -4026,29 +4026,57 @@ void CGameMovement::CheckFalling( void )
 
 void CGameMovement::PlayerRoughLandingEffects( float fvol )
 {
-	if ( fvol > 0.0 )
+#ifdef NEO
+	if (fvol > 0.0)
+	{
+		// Play landing sound right away.
+		player->m_flStepSoundTime = 400;
+
+		// Play step sound for current texture.
+		player->PlayStepSound((Vector&)mv->GetAbsOrigin(), player->m_pSurfaceData, fvol, true);
+
+		// Only punch the screen around if this was a serious drop.
+		// Original NT doesn't do this at all, but we apply a slight effect.
+		if (fvol > 0.85f)
+		{
+#define NEO_FALLPUNCH_INTENSITY 0.1 // We want this effect way less than HL2DM, so scaling down here.
+			// Knock the screen around a little bit; temporary effect.
+			player->m_Local.m_vecPunchAngle.Set(ROLL, player->m_Local.m_flFallVelocity * 0.013 * NEO_FALLPUNCH_INTENSITY);
+
+			if (player->m_Local.m_vecPunchAngle[PITCH] > 8)
+			{
+				player->m_Local.m_vecPunchAngle.Set(PITCH, 8);
+			}
+		}
+#if !defined( CLIENT_DLL )
+		player->RumbleEffect((fvol > 0.85f) ? (RUMBLE_FALL_LONG) : (RUMBLE_FALL_SHORT), 0, RUMBLE_FLAGS_NONE);
+#endif
+	}
+#else
+	if (fvol > 0.0)
 	{
 		//
 		// Play landing sound right away.
 		player->m_flStepSoundTime = 400;
 
 		// Play step sound for current texture.
-		player->PlayStepSound( (Vector &)mv->GetAbsOrigin(), player->m_pSurfaceData, fvol, true );
+		player->PlayStepSound((Vector&)mv->GetAbsOrigin(), player->m_pSurfaceData, fvol, true);
 
 		//
 		// Knock the screen around a little bit, temporary effect.
 		//
-		player->m_Local.m_vecPunchAngle.Set( ROLL, player->m_Local.m_flFallVelocity * 0.013 );
+		player->m_Local.m_vecPunchAngle.Set(ROLL, player->m_Local.m_flFallVelocity * 0.013);
 
-		if ( player->m_Local.m_vecPunchAngle[PITCH] > 8 )
+		if (player->m_Local.m_vecPunchAngle[PITCH] > 8)
 		{
-			player->m_Local.m_vecPunchAngle.Set( PITCH, 8 );
-		}
+			player->m_Local.m_vecPunchAngle.Set(PITCH, 8);
+	}
 
 #if !defined( CLIENT_DLL )
-		player->RumbleEffect( ( fvol > 0.85f ) ? ( RUMBLE_FALL_LONG ) : ( RUMBLE_FALL_SHORT ), 0, RUMBLE_FLAGS_NONE );
+		player->RumbleEffect((fvol > 0.85f) ? (RUMBLE_FALL_LONG) : (RUMBLE_FALL_SHORT), 0, RUMBLE_FLAGS_NONE);
 #endif
-	}
+}
+#endif
 }
 
 //-----------------------------------------------------------------------------
