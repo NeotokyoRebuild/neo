@@ -40,6 +40,10 @@ public:
 
 	virtual float GetFireRate(void) const { return 0.534f; }
 
+	virtual float GetSpeedScale(void) const { return 1.0; }
+
+	virtual bool Deploy(void);
+
 	// FIXME: we should inherit CNEOMelee -> CNEOBaseWep etc...
 	//virtual int GetNeoWepBits(void) const { return NEO_WEP_KNIFE; }
 

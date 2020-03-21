@@ -98,18 +98,24 @@ public:
 
 	virtual bool CanBeSelected(void);
 
-	virtual int GetNeoWepBits(void) const { Assert(false); return NEO_WEP_INVALID; }
-	virtual int GetNeoWepXPCost(const int neoClass) const { Assert(false); return 0; }
+	virtual int GetNeoWepBits(void) const { Assert(false); return NEO_WEP_INVALID; } // Should never call this base class; implement in children.
+	virtual int GetNeoWepXPCost(const int neoClass) const { Assert(false); return 0; } // Should never call this base class; implement in children.
 
 	bool IsGhost(void) const { return (GetNeoWepBits() & NEO_WEP_GHOST) ? true : false; }
 
+#ifdef CLIENT_DLL
 	virtual bool Holster(CBaseCombatWeapon* pSwitchingTo);
+#endif
+
+	virtual bool Deploy(void);
 
 	// NEO HACK/FIXME (Rain):
 	// We override with empty implementation to avoid getting removed by
 	// some game logic somewhere. There's probably some flag we could set
 	// somewhere to achieve the same without having to do this.
 	virtual void SUB_Remove(void) { }
+
+	virtual float GetSpeedScale(void) const { Assert(false); return 1.0; } // Should never call this base class; implement in children.
 
 private:
 	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &other);

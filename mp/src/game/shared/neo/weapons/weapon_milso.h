@@ -52,6 +52,8 @@ public:
 	virtual int GetNeoWepBits(void) const { return NEO_WEP_MILSO; }
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
 
+	virtual float GetSpeedScale(void) const { return 1.0; }
+
 	virtual const Vector& GetBulletSpread(void)
 	{
 		static Vector cone;

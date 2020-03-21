@@ -40,6 +40,8 @@ public:
 	virtual int GetNeoWepBits(void) const { return NEO_WEP_GHOST; }
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
 
+	virtual float GetSpeedScale(void) const { return 1.0; }
+
 #ifdef GAME_DLL
 	DECLARE_ACTTABLE();
 #endif

@@ -2100,7 +2100,51 @@ void CNEO_Player::StopWalking(void)
 	m_fIsWalking = false;
 }
 
-float CNEO_Player::GetCrouchSpeed() const
+float CNEO_Player::GetCrouchSpeed_WithActiveWepEncumberment(void) const
+{
+	return GetCrouchSpeed() * GetActiveWeaponSpeedScale();
+}
+
+float CNEO_Player::GetNormSpeed_WithActiveWepEncumberment(void) const
+{
+	return GetNormSpeed() * GetActiveWeaponSpeedScale();
+}
+
+float CNEO_Player::GetWalkSpeed_WithActiveWepEncumberment(void) const
+{
+	return GetWalkSpeed() * GetActiveWeaponSpeedScale();
+}
+
+float CNEO_Player::GetSprintSpeed_WithActiveWepEncumberment(void) const
+{
+	return GetSprintSpeed() * GetActiveWeaponSpeedScale();
+}
+
+float CNEO_Player::GetCrouchSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const
+{
+	Assert(pNeoWep);
+	return GetCrouchSpeed() * pNeoWep->GetSpeedScale();
+}
+
+float CNEO_Player::GetNormSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const
+{
+	Assert(pNeoWep);
+	return GetNormSpeed() * pNeoWep->GetSpeedScale();
+}
+
+float CNEO_Player::GetWalkSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const
+{
+	Assert(pNeoWep);
+	return GetWalkSpeed() * pNeoWep->GetSpeedScale();
+}
+
+float CNEO_Player::GetSprintSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const
+{
+	Assert(pNeoWep);
+	return GetSprintSpeed() * pNeoWep->GetSpeedScale();
+}
+
+float CNEO_Player::GetCrouchSpeed(void) const
 {
 	switch (m_iNeoClass)
 	{
@@ -2110,12 +2154,12 @@ float CNEO_Player::GetCrouchSpeed() const
 		return NEO_ASSAULT_CROUCH_SPEED;
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_CROUCH_SPEED;
+	default:
+		return NEO_BASE_CROUCH_SPEED;
 	}
-
-	return NEO_BASE_CROUCH_SPEED;
 }
 
-float CNEO_Player::GetNormSpeed() const
+float CNEO_Player::GetNormSpeed(void) const
 {
 	switch (m_iNeoClass)
 	{
@@ -2125,12 +2169,12 @@ float CNEO_Player::GetNormSpeed() const
 		return NEO_ASSAULT_NORM_SPEED;
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_NORM_SPEED;
+	default:
+		return NEO_BASE_NORM_SPEED;
 	}
-
-	return NEO_BASE_NORM_SPEED;
 }
 
-float CNEO_Player::GetWalkSpeed() const
+float CNEO_Player::GetWalkSpeed(void) const
 {
 	switch (m_iNeoClass)
 	{
@@ -2145,7 +2189,7 @@ float CNEO_Player::GetWalkSpeed() const
 	}
 }
 
-float CNEO_Player::GetSprintSpeed() const
+float CNEO_Player::GetSprintSpeed(void) const
 {
 	switch (m_iNeoClass)
 	{
@@ -2158,6 +2202,13 @@ float CNEO_Player::GetSprintSpeed() const
 	default:
 		return NEO_BASE_SPRINT_SPEED;
 	}
+}
+
+float CNEO_Player::GetActiveWeaponSpeedScale() const
+{
+	// NEO TODO (Rain): change to static cast once all weapons are guaranteed to derive from the class
+	auto pWep = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
+	return (pWep ? pWep->GetSpeedScale() : 1.0f);
 }
 
 const Vector CNEO_Player::GetPlayerMaxs(void) const

@@ -876,7 +876,51 @@ void C_NEO_Player::StopWalking(void)
 	m_fIsWalking = true;
 }
 
-float C_NEO_Player::GetCrouchSpeed() const
+float C_NEO_Player::GetCrouchSpeed_WithActiveWepEncumberment(void) const
+{
+	return GetCrouchSpeed() * GetActiveWeaponSpeedScale();
+}
+
+float C_NEO_Player::GetNormSpeed_WithActiveWepEncumberment(void) const
+{
+	return GetNormSpeed() * GetActiveWeaponSpeedScale();
+}
+
+float C_NEO_Player::GetWalkSpeed_WithActiveWepEncumberment(void) const
+{
+	return GetWalkSpeed() * GetActiveWeaponSpeedScale();
+}
+
+float C_NEO_Player::GetSprintSpeed_WithActiveWepEncumberment(void) const
+{
+	return GetSprintSpeed() * GetActiveWeaponSpeedScale();
+}
+
+float C_NEO_Player::GetCrouchSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const
+{
+	Assert(pNeoWep);
+	return GetCrouchSpeed() * pNeoWep->GetSpeedScale();
+}
+
+float C_NEO_Player::GetNormSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const
+{
+	Assert(pNeoWep);
+	return GetNormSpeed() * pNeoWep->GetSpeedScale();
+}
+
+float C_NEO_Player::GetWalkSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const
+{
+	Assert(pNeoWep);
+	return GetWalkSpeed() * pNeoWep->GetSpeedScale();
+}
+
+float C_NEO_Player::GetSprintSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const
+{
+	Assert(pNeoWep);
+	return GetSprintSpeed() * pNeoWep->GetSpeedScale();
+}
+
+float C_NEO_Player::GetCrouchSpeed(void) const
 {
 	switch (m_iNeoClass)
 	{
@@ -886,12 +930,12 @@ float C_NEO_Player::GetCrouchSpeed() const
 		return NEO_ASSAULT_CROUCH_SPEED;
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_CROUCH_SPEED;
+	default:
+		return NEO_BASE_CROUCH_SPEED;
 	}
-
-	return NEO_BASE_CROUCH_SPEED;
 }
 
-float C_NEO_Player::GetNormSpeed() const
+float C_NEO_Player::GetNormSpeed(void) const
 {
 	switch (m_iNeoClass)
 	{
@@ -901,12 +945,12 @@ float C_NEO_Player::GetNormSpeed() const
 		return NEO_ASSAULT_NORM_SPEED;
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_NORM_SPEED;
+	default:
+		return NEO_BASE_NORM_SPEED;
 	}
-
-	return NEO_BASE_NORM_SPEED;
 }
 
-float C_NEO_Player::GetWalkSpeed() const
+float C_NEO_Player::GetWalkSpeed(void) const
 {
 	switch (m_iNeoClass)
 	{
@@ -916,12 +960,12 @@ float C_NEO_Player::GetWalkSpeed() const
 		return NEO_ASSAULT_WALK_SPEED;
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_WALK_SPEED;
+	default:
+		return NEO_BASE_WALK_SPEED;
 	}
-
-	return NEO_BASE_WALK_SPEED;
 }
 
-float C_NEO_Player::GetSprintSpeed() const
+float C_NEO_Player::GetSprintSpeed(void) const
 {
 	switch (m_iNeoClass)
 	{
@@ -931,9 +975,16 @@ float C_NEO_Player::GetSprintSpeed() const
 		return NEO_ASSAULT_SPRINT_SPEED;
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_SPRINT_SPEED;
+	default:
+		return NEO_BASE_SPRINT_SPEED;
 	}
+}
 
-	return NEO_BASE_SPRINT_SPEED;
+float C_NEO_Player::GetActiveWeaponSpeedScale() const
+{
+	// NEO TODO (Rain): change to static cast once all weapons are guaranteed to derive from the class
+	auto pWep = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
+	return (pWep ? pWep->GetSpeedScale() : 1.0f);
 }
 
 void C_NEO_Player::Weapon_AimToggle(C_BaseCombatWeapon *pWep)

@@ -50,6 +50,8 @@ public:
 	virtual int GetNeoWepBits(void) const { return NEO_WEP_ZR68_S; }
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
 
+	virtual float GetSpeedScale(void) const { return 155.0 / 170.0; }
+
 	void	UpdatePenaltyTime(void);
 
 	virtual Activity	GetPrimaryAttackActivity(void);

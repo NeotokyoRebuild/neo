@@ -113,21 +113,73 @@ bool CNEOBaseCombatWeapon::CanBeSelected(void)
 	return BaseClass::CanBeSelected();
 }
 
+bool CNEOBaseCombatWeapon::Deploy(void)
+{
+	const bool ret = BaseClass::Deploy();
+
+	if (ret)
+	{
+#ifdef DEBUG
+		CNEO_Player* pOwner = NULL;
+		if (GetOwner())
+		{
+			pOwner = dynamic_cast<CNEO_Player*>(GetOwner());
+			Assert(pOwner);
+		}
+#else
+		auto pOwner = static_cast<CNEO_Player*>(GetOwner());
+#endif
+
+		if (pOwner)
+		{
+			DevMsg("Max before: %f\n", pOwner->MaxSpeed());
+
+			if (pOwner->GetFlags() & FL_DUCKING)
+			{
+				pOwner->SetMaxSpeed(pOwner->GetCrouchSpeed_WithWepEncumberment(this));
+			}
+			else if (static_cast<CNEO_Player*>(pOwner)->IsWalking())
+			{
+				pOwner->SetMaxSpeed(pOwner->GetWalkSpeed_WithWepEncumberment(this));
+			}
+			else if (static_cast<CNEO_Player*>(pOwner)->IsSprinting())
+			{
+				pOwner->SetMaxSpeed(pOwner->GetSprintSpeed_WithWepEncumberment(this));
+			}
+			else
+			{
+				pOwner->SetMaxSpeed(pOwner->GetNormSpeed_WithWepEncumberment(this));
+			}
+
+			DevMsg("Max after: %f\n", pOwner->MaxSpeed());
+		}
+	}
+
+	return ret;
+}
+
+#ifdef CLIENT_DLL
 bool CNEOBaseCombatWeapon::Holster(CBaseCombatWeapon* pSwitchingTo)
 {
-#ifdef CLIENT_DLL
+#ifdef DEBUG
+	CNEO_Player* pOwner = NULL;
 	if (GetOwner())
 	{
-		static_cast<C_NEO_Player*>(GetOwner())->Weapon_SetZoom(false);
+		pOwner = dynamic_cast<CNEO_Player*>(GetOwner());
+		Assert(pOwner);
 	}
-	else
-	{
-		Assert(false);
-	}
+#else
+	auto pOwner = static_cast<CNEO_Player*>(GetOwner());
 #endif
+
+	if (pOwner)
+	{
+		pOwner->Weapon_SetZoom(false);
+	}
 
 	return BaseClass::Holster(pSwitchingTo);
 }
+#endif
 
 void CNEOBaseCombatWeapon::CheckReload(void)
 {

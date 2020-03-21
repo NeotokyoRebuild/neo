@@ -126,10 +126,20 @@ public:
 	virtual void StartWalking(void);
 	virtual void StopWalking(void);
 
-	float GetNormSpeed() const;
-	float GetCrouchSpeed() const;
-	float GetWalkSpeed() const;
-	float GetSprintSpeed() const;
+	float GetNormSpeed_WithActiveWepEncumberment(void) const;
+	float GetCrouchSpeed_WithActiveWepEncumberment(void) const;
+	float GetWalkSpeed_WithActiveWepEncumberment(void) const;
+	float GetSprintSpeed_WithActiveWepEncumberment(void) const;
+	float GetNormSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const;
+	float GetCrouchSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const;
+	float GetWalkSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const;
+	float GetSprintSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const;
+	float GetNormSpeed(void) const;
+	float GetCrouchSpeed(void) const;
+	float GetWalkSpeed(void) const;
+	float GetSprintSpeed(void) const;
+
+	float GetActiveWeaponSpeedScale() const;
 
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);
 

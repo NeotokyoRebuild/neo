@@ -39,9 +39,11 @@ public:
 	void	ItemPostFrame(void);
 
 	bool	Deploy(void);
-	bool	Holster(CBaseCombatWeapon* pSwitchingTo = NULL);
+	virtual bool	Holster(CBaseCombatWeapon* pSwitchingTo = NULL);
 
 	bool	Reload(void) { return false; }
+
+	virtual float GetSpeedScale(void) const { return 1.0; }
 
 #ifndef CLIENT_DLL
 	void Operator_HandleAnimEvent(animevent_t* pEvent, CBaseCombatCharacter* pOperator);

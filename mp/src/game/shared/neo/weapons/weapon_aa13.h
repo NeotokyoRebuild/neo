@@ -39,6 +39,8 @@ public:
 
 	const Vector& GetBulletSpread(void);
 
+	virtual float GetSpeedScale(void) const { return 145.0 / 170.0; }
+
 private:
 	CNetworkVar(float, m_flSoonestPrimaryAttack);
 	CNetworkVar(float, m_flLastAttackTime);
