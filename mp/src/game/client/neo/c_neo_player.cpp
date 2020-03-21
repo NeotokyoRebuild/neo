@@ -498,6 +498,26 @@ void C_NEO_Player::PreThink( void )
 {
 	BaseClass::PreThink();
 
+	if (!GetActiveWeapon() && IsAlive())
+	{
+		if (GetFlags() & FL_DUCKING)
+		{
+			SetMaxSpeed(GetCrouchSpeed());
+		}
+		else if (IsWalking())
+		{
+			SetMaxSpeed(GetWalkSpeed());
+		}
+		else if (IsSprinting())
+		{
+			SetMaxSpeed(GetSprintSpeed());
+		}
+		else
+		{
+			SetMaxSpeed(GetNormSpeed());
+		}
+	}
+
 	CheckThermOpticButtons();
 	CheckVisionButtons();
 
