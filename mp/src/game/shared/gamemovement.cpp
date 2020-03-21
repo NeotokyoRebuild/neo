@@ -4411,7 +4411,11 @@ void CGameMovement::HandleDuckingSpeedCrop( void )
 {
 	if ( !( m_iSpeedCropped & SPEED_CROPPED_DUCK ) && ( player->GetFlags() & FL_DUCKING ) && ( player->GetGroundEntity() != NULL ) )
 	{
+#ifdef NEO
+		float frac = 0.75; // (crouch speed / norm speed) for each NT class == 0.75
+#else
 		float frac = 0.33333333f;
+#endif
 		mv->m_flForwardMove	*= frac;
 		mv->m_flSideMove	*= frac;
 		mv->m_flUpMove		*= frac;
