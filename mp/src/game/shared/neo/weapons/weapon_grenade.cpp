@@ -22,7 +22,7 @@
 #include "tier0/memdbgon.h"
 
 ConVar sv_neo_infinite_frag_grenades("sv_neo_infinite_frag_grenades", "0", FCVAR_CHEAT, "Should frag grenades use up ammo.", true, 0.0, true, 1.0);
-ConVar sv_neo_grenade_throw_intensity("sv_neo_grenade_throw_intensity", "1200.0", FCVAR_CHEAT, "How strong should regular grenade throws be.", true, 0.0, true, 9999.9);
+ConVar sv_neo_grenade_throw_intensity("sv_neo_grenade_throw_intensity", "750.0", FCVAR_CHEAT, "How strong should regular grenade throws be.", true, 0.0, true, 9999.9); // 750 is the original NT impulse
 ConVar sv_neo_grenade_lob_intensity("sv_neo_grenade_lob_intensity", "350.0", FCVAR_CHEAT, "How strong should underhand grenade lobs be.", true, 0.0, true, 9999.9);
 ConVar sv_neo_grenade_roll_intensity("sv_neo_grenade_roll_intensity", "700.0", FCVAR_CHEAT, "How strong should underhand grenade rolls be.", true, 0.0, true, 9999.9);
 ConVar sv_neo_grenade_blast_damage("sv_neo_grenade_blast_damage", "200.0", FCVAR_CHEAT, "How much damage should a grenade blast deal.", true, 0.0, true, 999.9);
@@ -276,14 +276,26 @@ void CWeaponGrenade::ThrowGrenade(CBasePlayer *pPlayer)
 	pPlayer->EyeVectors(&vForward, &vRight, NULL);
 	Vector vecSrc = vecEye + vForward * 18.0f + vRight * 8.0f;
 	CheckThrowPosition(pPlayer, vecEye, vecSrc);
-	//	vForward[0] += 0.1f;
-	vForward[2] += 0.1f;
+	vForward.z += 0.1f;
+
+	// Direction vector sampled from original NT frag spawn --> next tick.
+	const Vector vThrowDir = Vector(1, 0, 0.1226);
+	QAngle aThrowDir;
+	VectorAngles(vThrowDir, aThrowDir);
+	Assert(aThrowDir.IsValid());
 
 	Vector vecThrow;
 	pPlayer->GetVelocity(&vecThrow, NULL);
 	vecThrow += vForward * (pPlayer->IsAlive() ? sv_neo_grenade_throw_intensity.GetFloat() : 1.0f);
 	Assert(vecThrow.IsValid());
-	CBaseGrenade *pGrenade = NEOFraggrenade_Create(vecSrc, vec3_angle, vecThrow, AngularImpulse(600, random->RandomInt(-1200, 1200), 0), pPlayer, sv_neo_grenade_fuse_timer.GetFloat(), false);
+
+	// Sampled angular impulses from original NT frags:
+	// x: -584, 630, -1028, 967, -466, -535 (random, seems roughly in the same (-1200, 1200) range)
+	// y: 0 (constant)
+	// z: 600 (constant)
+	// This SDK original impulse line: AngularImpulse(600, random->RandomInt(-1200, 1200), 0)
+
+	CBaseGrenade *pGrenade = NEOFraggrenade_Create(vecSrc, aThrowDir, vecThrow, AngularImpulse(random->RandomInt(-1200, 1200), 0, 600), pPlayer, sv_neo_grenade_fuse_timer.GetFloat(), false);
 
 	if (pGrenade)
 	{
