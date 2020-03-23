@@ -1028,8 +1028,15 @@ void C_NEO_Player::Weapon_AimToggle(C_BaseCombatWeapon *pWep)
 	// This implies the wep ptr is valid, so we don't bother checking
 	if (IsAllowedToZoom(neoCombatWep))
 	{
-		const bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR) == HIDEHUD_CROSSHAIR;
-		Weapon_SetZoom(showCrosshair);
+		if (neoCombatWep->IsReadyToAimIn())
+		{
+			const bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR) == HIDEHUD_CROSSHAIR;
+			Weapon_SetZoom(showCrosshair);
+		}
+		else
+		{
+			Weapon_SetZoom(false);
+		}
 	}
 }
 

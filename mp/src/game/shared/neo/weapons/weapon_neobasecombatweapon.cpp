@@ -60,6 +60,7 @@ const char *GetWeaponByLoadoutId(int id)
 
 CNEOBaseCombatWeapon::CNEOBaseCombatWeapon( void )
 {
+	m_flNextAimReadyTime = 0;
 }
 
 void CNEOBaseCombatWeapon::Spawn()
@@ -119,6 +120,13 @@ bool CNEOBaseCombatWeapon::Deploy(void)
 
 	if (ret)
 	{
+		// Slightly delay the next acceptable aim-zoom-in moment.
+		// This is a workaround to an issue where a player using their
+		// mouse2 to toss their last grenade may get auto-weaponswitched
+		// to a different weapon, which will then handle that mouse click
+		// as if we were zooming in with that weapon.
+		m_flNextAimReadyTime = gpGlobals->curtime + 0.1;
+
 #ifdef DEBUG
 		CNEO_Player* pOwner = NULL;
 		if (GetOwner())

@@ -385,7 +385,7 @@ public:
 	virtual void OnChangeActiveWeapon( CBaseCombatWeapon *pOldWeapon, CBaseCombatWeapon *pNewWeapon ) {}
 
 	// I can't use my current weapon anymore. Switch me to the next best weapon.
-	bool SwitchToNextBestWeapon(CBaseCombatWeapon *pCurrent);
+	bool SwitchToNextBestWeapon(CBaseCombatWeapon* pCurrent);
 
 	// This is a hack to copy the relationship strings used by monstermaker
 	void SetRelationshipString( string_t theString ) { m_RelationshipString = theString; }

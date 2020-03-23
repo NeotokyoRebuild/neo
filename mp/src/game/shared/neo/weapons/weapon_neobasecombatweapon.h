@@ -105,6 +105,12 @@ public:
 
 	bool IsGhost(void) const { return (GetNeoWepBits() & NEO_WEP_GHOST) ? true : false; }
 
+	// This check is a workaround to an issue where a player using their
+	// mouse2 to toss their last grenade may get auto-weaponswitched
+	// to a different weapon, which will then handle that mouse click
+	// as if we were zooming in with that weapon.
+	bool IsReadyToAimIn(void) const { return (gpGlobals->curtime > m_flNextAimReadyTime); }
+
 #ifdef CLIENT_DLL
 	virtual bool Holster(CBaseCombatWeapon* pSwitchingTo);
 #endif
@@ -116,6 +122,9 @@ public:
 	// some game logic somewhere. There's probably some flag we could set
 	// somewhere to achieve the same without having to do this.
 	virtual void SUB_Remove(void) { }
+
+private:
+	float m_flNextAimReadyTime;
 
 private:
 	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &other);

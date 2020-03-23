@@ -896,8 +896,15 @@ void CNEO_Player::Weapon_AimToggle(CNEOBaseCombatWeapon* pNeoWep)
 
 	if (IsAllowedToZoom(pNeoWep))
 	{
-		const bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR) == HIDEHUD_CROSSHAIR;
-		Weapon_SetZoom(showCrosshair);
+		if (pNeoWep->IsReadyToAimIn())
+		{
+			const bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR) == HIDEHUD_CROSSHAIR;
+			Weapon_SetZoom(showCrosshair);
+		}
+		else
+		{
+			Weapon_SetZoom(false);
+		}
 	}
 }
 
