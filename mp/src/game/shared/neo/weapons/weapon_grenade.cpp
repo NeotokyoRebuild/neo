@@ -112,25 +112,27 @@ bool CWeaponGrenade::Reload(void)
 
 void CWeaponGrenade::SecondaryAttack(void)
 {
-	if (m_bRedraw)
+	if (m_bRedraw || !HasPrimaryAmmo())
+	{
 		return;
+	}
 
-	if (!HasPrimaryAmmo())
+	auto pPlayer = ToBasePlayer(GetOwner());
+	if (!pPlayer)
+	{
 		return;
+	}
 
-	CBasePlayer *pPlayer = ToBasePlayer(GetOwner());
+	if (m_AttackPaused != GRENADE_PAUSED_SECONDARY)
+	{
+		// Note that this is a secondary attack and prepare the grenade attack to pause.
+		m_AttackPaused = GRENADE_PAUSED_SECONDARY;
+		SendWeaponAnim(ACT_VM_PULLPIN);
 
-	if (pPlayer == NULL)
-		return;
-
-	// Note that this is a secondary attack and prepare the grenade attack to pause.
-	m_AttackPaused = GRENADE_PAUSED_SECONDARY;
-	SendWeaponAnim(ACT_VM_PULLPIN);
-
-	// Don't let weapon idle interfere in the middle of a throw!
-	m_flTimeWeaponIdle = FLT_MAX;
-	m_flNextPrimaryAttack = gpGlobals->curtime + RETHROW_DELAY;
-
+		// Don't let weapon idle interfere in the middle of a throw!
+		m_flTimeWeaponIdle = FLT_MAX;
+		m_flNextPrimaryAttack = gpGlobals->curtime + RETHROW_DELAY;
+	}
 	// If I'm now out of ammo, switch away
 	if (!HasPrimaryAmmo())
 	{
@@ -140,25 +142,27 @@ void CWeaponGrenade::SecondaryAttack(void)
 
 void CWeaponGrenade::PrimaryAttack(void)
 {
-	if (m_bRedraw)
+	if (m_bRedraw || !HasPrimaryAmmo())
 	{
 		return;
 	}
 
 	auto pPlayer = ToBasePlayer(GetOwner());
-
 	if (!pPlayer)
 	{
 		return;
 	}
 
-	// Note that this is a primary attack and prepare the grenade attack to pause.
-	m_AttackPaused = GRENADE_PAUSED_PRIMARY;
-	SendWeaponAnim(ACT_VM_PULLPIN);
+	if (m_AttackPaused != GRENADE_PAUSED_PRIMARY)
+	{
+		// Note that this is a primary attack and prepare the grenade attack to pause.
+		m_AttackPaused = GRENADE_PAUSED_PRIMARY;
+		SendWeaponAnim(ACT_VM_PULLPIN);
 
-	m_flTimeWeaponIdle = FLT_MAX;
-	m_flNextPrimaryAttack = gpGlobals->curtime + RETHROW_DELAY;
-
+		// Don't let weapon idle interfere in the middle of a throw!
+		m_flTimeWeaponIdle = FLT_MAX;
+		m_flNextPrimaryAttack = gpGlobals->curtime + RETHROW_DELAY;
+	}
 	// If I'm now out of ammo, switch away
 	if (!HasPrimaryAmmo())
 	{
@@ -320,6 +324,12 @@ void CWeaponGrenade::ThrowGrenade(CBasePlayer *pPlayer)
 
 	// player "shoot" animation
 	pPlayer->SetAnimation(PLAYER_ATTACK1);
+
+	// If I'm now out of ammo, switch away
+	if (!HasPrimaryAmmo())
+	{
+		pPlayer->SwitchToNextBestWeapon(this);
+	}
 }
 
 void CWeaponGrenade::LobGrenade(CBasePlayer *pPlayer)
@@ -361,6 +371,12 @@ void CWeaponGrenade::LobGrenade(CBasePlayer *pPlayer)
 	pPlayer->SetAnimation(PLAYER_ATTACK1);
 
 	m_bRedraw = true;
+
+	// If I'm now out of ammo, switch away
+	if (!HasPrimaryAmmo())
+	{
+		pPlayer->SwitchToNextBestWeapon(this);
+	}
 }
 
 void CWeaponGrenade::RollGrenade(CBasePlayer *pPlayer)
@@ -421,6 +437,12 @@ void CWeaponGrenade::RollGrenade(CBasePlayer *pPlayer)
 	pPlayer->SetAnimation(PLAYER_ATTACK1);
 
 	m_bRedraw = true;
+
+	// If I'm now out of ammo, switch away
+	if (!HasPrimaryAmmo())
+	{
+		pPlayer->SwitchToNextBestWeapon(this);
+	}
 }
 
 #ifndef CLIENT_DLL
