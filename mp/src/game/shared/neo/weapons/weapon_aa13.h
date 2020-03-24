@@ -35,11 +35,11 @@ public:
 	virtual int GetNeoWepBits(void) const { return NEO_WEP_AA13; }
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 20; }
 
+	virtual float GetSpeedScale(void) const { return 145.0 / 170.0; }
+
 	Activity GetPrimaryAttackActivity(void);
 
 	const Vector& GetBulletSpread(void);
-
-	virtual float GetSpeedScale(void) const { return 145.0 / 170.0; }
 
 private:
 	CNetworkVar(float, m_flSoonestPrimaryAttack);

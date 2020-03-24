@@ -49,6 +49,8 @@ public:
 	virtual int GetNeoWepBits(void) const { return NEO_WEP_SRS | NEO_WEP_SCOPEDWEAPON; }
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 20; }
 
+	virtual float GetSpeedScale(void) const { return 116.0 / 136.0; }
+
 	void	UpdatePenaltyTime(void);
 
 	Activity	GetPrimaryAttackActivity(void);
