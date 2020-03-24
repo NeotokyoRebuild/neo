@@ -11,6 +11,7 @@
 #endif
 
 #include "neo_player_shared.h"
+#include "in_buttons.h"
 
 #include "weapon_hl2mpbasehlmpcombatweapon.h"
 
@@ -103,13 +104,12 @@ public:
 
 	virtual float GetSpeedScale(void) const { Assert(false); return 1.0; } // Should never call this base class; implement in children.
 
+	virtual void ItemPreFrame(void);
+
 	bool IsGhost(void) const { return (GetNeoWepBits() & NEO_WEP_GHOST) ? true : false; }
 
-	// This check is a workaround to an issue where a player using their
-	// mouse2 to toss their last grenade may get auto-weaponswitched
-	// to a different weapon, which will then handle that mouse click
-	// as if we were zooming in with that weapon.
-	bool IsReadyToAimIn(void) const { return (gpGlobals->curtime > m_flNextAimReadyTime); }
+	// We do this check to avoid a player unintentionally aiming in due to holding down their aim key while an automatic wep switch occurs.
+	bool IsReadyToAimIn(void) const { return m_bReadyToAimIn; }
 
 #ifdef CLIENT_DLL
 	virtual bool Holster(CBaseCombatWeapon* pSwitchingTo);
@@ -124,7 +124,7 @@ public:
 	virtual void SUB_Remove(void) { }
 
 private:
-	float m_flNextAimReadyTime;
+	bool m_bReadyToAimIn;
 
 private:
 	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &other);
