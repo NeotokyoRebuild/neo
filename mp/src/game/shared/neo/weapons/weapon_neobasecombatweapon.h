@@ -11,7 +11,6 @@
 #endif
 
 #include "neo_player_shared.h"
-#include "in_buttons.h"
 
 #include "weapon_hl2mpbasehlmpcombatweapon.h"
 

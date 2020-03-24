@@ -4,6 +4,8 @@
 #pragma once
 #endif
 
+#include "in_buttons.h"
+
 class C_NEO_Player;
 #include "c_hl2mp_player.h"
 
@@ -96,8 +98,11 @@ public:
 	float GetWalkSpeed(void) const;
 	float GetSprintSpeed(void) const;
 
+private:
 	float GetActiveWeaponSpeedScale() const;
+	float GetBackwardsMovementPenaltyScale() const { return ((m_nButtons & IN_BACK) ? NEO_SLOW_MODIFIER : 1.0); }
 
+public:
 	bool ShouldDrawHL2StyleQuickHud( void );
 
 	int GetClass() const { return m_iNeoClass; }

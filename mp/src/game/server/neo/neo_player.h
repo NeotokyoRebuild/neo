@@ -11,6 +11,7 @@ class CNEO_Player;
 #include "soundenvelope.h"
 #include "utldict.h"
 #include "hl2mp_player.h"
+#include "in_buttons.h"
 
 #include "neo_player_shared.h"
 
@@ -139,9 +140,11 @@ public:
 	float GetWalkSpeed(void) const;
 	float GetSprintSpeed(void) const;
 
-	float GetActiveWeaponSpeedScale() const;
-
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);
+
+private:
+	float GetActiveWeaponSpeedScale() const;
+	float GetBackwardsMovementPenaltyScale() const { return ((m_nButtons & IN_BACK) ? NEO_SLOW_MODIFIER : 1.0); }
 
 private:
 	void CheckThermOpticButtons();
