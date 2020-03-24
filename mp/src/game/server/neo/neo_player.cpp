@@ -414,7 +414,7 @@ void CNEO_Player::Spawn(void)
 	BaseClass::Spawn();
 
 	ShowCrosshair(false);
-	SetTransmitState(FL_EDICT_ALWAYS);
+	SetTransmitState(FL_EDICT_PVSCHECK);
 
 	SetPlayerTeamModel();
 	SetViewOffset(VEC_VIEW_NEOSCALE(this));
