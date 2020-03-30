@@ -186,14 +186,16 @@ private:
 	C_NEO_Player(const C_NEO_Player &);
 };
 
-inline C_NEO_Player *ToNEOPlayer(CBaseEntity *pEntity)
+inline C_NEO_Player *ToNEOPlayer(C_BaseEntity *pEntity)
 {
 	if (!pEntity || !pEntity->IsPlayer())
 	{
 		return NULL;
 	}
-
-	return dynamic_cast<C_NEO_Player*>(pEntity);
+#if _DEBUG
+	Assert(dynamic_cast<C_NEO_Player*>(pEntity));
+#endif
+	return static_cast<C_NEO_Player*>(pEntity);
 }
 
 extern ConVar cl_drawhud_quickinfo;

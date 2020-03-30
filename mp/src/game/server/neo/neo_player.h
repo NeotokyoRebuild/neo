@@ -194,8 +194,10 @@ inline CNEO_Player *ToNEOPlayer(CBaseEntity *pEntity)
 	{
 		return NULL;
 	}
-
-	return dynamic_cast<CNEO_Player*>(pEntity);
+#if _DEBUG
+	Assert(dynamic_cast<CNEO_Player*>(pEntity));
+#endif
+	return static_cast<CNEO_Player*>(pEntity);
 }
 
 #endif // NEO_PLAYER_H
