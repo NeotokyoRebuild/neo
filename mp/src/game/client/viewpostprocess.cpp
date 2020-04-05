@@ -2359,8 +2359,11 @@ static inline void DoThermalVision(const int x, const int y, const int w, const 
 	const int nSrcWidth = pFbTex->GetActualWidth();
 	const int nSrcHeight = pFbTex->GetActualHeight();
 
+#ifdef DEBUG
+	// Our shader pipeline expects this to exist, so checking in debug
 	auto pGradMat = materials->FindTexture("dev/tvgrad2", TEXTURE_GROUP_OTHER, true);
 	Assert((pGradMat != NULL) && (!pGradMat->IsError()));
+#endif
 
 	IMaterial* pTvMat = materials->FindMaterial("dev/neo_thermalvision", TEXTURE_GROUP_OTHER, true);
 	if (!pTvMat || pTvMat->IsErrorMaterial())
