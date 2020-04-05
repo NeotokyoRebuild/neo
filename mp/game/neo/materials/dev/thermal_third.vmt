@@ -1,0 +1,14 @@
+"UnlitGeneric"
+{
+	$model 1
+	$receiveflashlight 0
+	
+	$translucent 0
+	$alpha 0
+}
+
+//"VertexLitGeneric"
+//{
+//	$alpha 1
+//	$translucent 1
+//}

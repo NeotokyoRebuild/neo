@@ -8,7 +8,6 @@
 
 ConVar mat_neo_tv_brightness_scale("mat_neo_tv_brightness_scale", "1", FCVAR_CHEAT);
 
-// Sic: this name is typo'd to match the materials/dev/thermalvision vmt naming.
 BEGIN_SHADER_FLAGS(Neo_ThermalVision, "Help for my shader.", SHADER_NOT_EDITABLE)
 
 BEGIN_SHADER_PARAMS

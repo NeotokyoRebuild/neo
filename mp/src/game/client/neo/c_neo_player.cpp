@@ -355,13 +355,14 @@ int C_NEO_Player::DrawModel( int flags )
 
 	int ret = BaseClass::DrawModel(flags);
 
-#define SPEED_BETWEEN_WALK_AND_RUN ((NEO_ASSAULT_WALK_SPEED + NEO_ASSAULT_NORM_SPEED) / 2.0)
-	if (GetAbsVelocity().Length() >= SPEED_BETWEEN_WALK_AND_RUN)
+	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if (pLocalPlayer && pLocalPlayer->IsInVision())
 	{
-		auto pLocalPlayer = GetLocalNEOPlayer();
-		if (pLocalPlayer && pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT)
-		{	
-			IMaterial *pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
+#define SPEED_BETWEEN_WALK_AND_RUN ((NEO_ASSAULT_WALK_SPEED + NEO_ASSAULT_NORM_SPEED) / 2.0)
+		if ((pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT) &&
+			(GetAbsVelocity().Length() >= SPEED_BETWEEN_WALK_AND_RUN))
+		{
+			IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
 			Assert(pass && !pass->IsErrorMaterial());
 
 			if (pass && !pass->IsErrorMaterial())
@@ -374,11 +375,11 @@ int C_NEO_Player::DrawModel( int flags )
 				// Send to mv buffer
 				static int bufferIdx = 0;
 				const int numBuffers = 2;
-				ITexture *pVM_Buffer = GetMVBuffer(bufferIdx);
+				ITexture* pVM_Buffer = GetMVBuffer(bufferIdx);
 				bufferIdx = (bufferIdx + 1) % numBuffers;
 				Assert(pVM_Buffer && !pVM_Buffer->IsError());
 
-				ITexture *pSrc = materials->FindTexture("_rt_FullFrameFB", TEXTURE_GROUP_RENDER_TARGET);
+				ITexture* pSrc = materials->FindTexture("_rt_FullFrameFB", TEXTURE_GROUP_RENDER_TARGET);
 				Assert(pSrc && !pSrc->IsError());
 
 				const int nSrcWidth = pSrc->GetActualWidth();
@@ -392,6 +393,19 @@ int C_NEO_Player::DrawModel( int flags )
 				//ret = BaseClass::DrawModel(flags);
 				rendered = false;
 #endif
+			}
+		}
+		else if (pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT)
+		{
+			IMaterial* pass = materials->FindMaterial("dev/thermal_third", TEXTURE_GROUP_MODEL);
+			Assert(pass && !pass->IsErrorMaterial());
+
+			if (pass && !pass->IsErrorMaterial())
+			{
+				// Render
+				modelrender->ForcedMaterialOverride(pass);
+				ret = BaseClass::DrawModel(flags | STUDIO_RENDER | STUDIO_TRANSPARENCY);
+				modelrender->ForcedMaterialOverride(NULL);
 			}
 		}
 	}
