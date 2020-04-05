@@ -394,7 +394,7 @@ void CViewRender::Init( void )
 #ifdef DEBUG
 	ITexture* pTvTex =
 #endif
-		materials->CreateNamedRenderTargetTextureEx("neo_thermalvison_tv", iW, iH,
+		materials->CreateNamedRenderTargetTextureEx("_rt_ThermalVision", iW, iH,
 			RT_SIZE_FULL_FRAME_BUFFER, materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED,
 			flags, 0);
 

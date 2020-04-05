@@ -2352,24 +2352,32 @@ static inline void DoNightVision(const int x, const int y, const int w, const in
 
 static inline void DoThermalVision(const int x, const int y, const int w, const int h)
 {
-#if(0) // NEO TODO (Rain)
 	CMatRenderContextPtr pRenderContext(materials);
 
-	int width, height;
-	materials->GetBackBufferDimensions(width, height);
+	ITexture* pFbTex = GetTV();
+	Assert((pFbTex != NULL) && (!pFbTex->IsError()));
+	const int nSrcWidth = pFbTex->GetActualWidth();
+	const int nSrcHeight = pFbTex->GetActualHeight();
 
-	//Rect_t DestRect{ 0, 0, width, height };
-	//const int renderTargetId = 0;
+	auto pGradMat = materials->FindTexture("dev/tvgrad2", TEXTURE_GROUP_OTHER, true);
+	Assert((pGradMat != NULL) && (!pGradMat->IsError()));
 
-	IMaterial* tvMat = materials->FindMaterial("dev/thermalvision_tv2", TEXTURE_GROUP_OTHER, true);
-	Assert(tvMat && !tvMat->IsErrorMaterial());
+	IMaterial* pTvMat = materials->FindMaterial("dev/neo_thermalvision", TEXTURE_GROUP_OTHER, true);
+	if (!pTvMat || pTvMat->IsErrorMaterial())
+	{
+		Assert(false);
+		return;
+	}
 
-	pRenderContext->DrawScreenSpaceRectangle(
-		tvMat,
+	Rect_t DestRect{ 0, 0, nSrcWidth, nSrcHeight };
+	const int renderTargetId = 0;
+	
+	pRenderContext->CopyRenderTargetToTextureEx(pFbTex, renderTargetId, &DestRect, NULL);
+
+	pRenderContext->DrawScreenSpaceRectangle(pTvMat,
 		0, 0, w, h,
-		0, 0, width - 1, height - 1,
-		width, height, GetClientWorldEntity()->GetClientRenderable());
-#endif
+		0, 0, nSrcWidth - 1, nSrcHeight - 1,
+		nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
 }
 
 ConVar mat_neo_mv_1("mat_neo_mv_1", "1");
@@ -2384,7 +2392,6 @@ static inline void DoMotionVision(const int x, const int y, const int w, const i
 	const int nSrcHeight = pSrc->GetActualHeight();
 
 	Rect_t DestRect{ 0, 0, nSrcWidth, nSrcHeight };
-
 	const int renderTargetId = 0;
 
 	ITexture *pVM_MV = GetMV();

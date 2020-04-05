@@ -1,0 +1,7 @@
+"Neo_ThermalVision"
+{
+	"$fbtexture" "_rt_ThermalVision"
+	//"$blurtexture" "_rt_SmallHDR0"
+	"$tvtexture" "dev/tvgrad2"
+	//"$noisetexture" "dev/noise"
+}

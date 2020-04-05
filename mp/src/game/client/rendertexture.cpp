@@ -221,6 +221,23 @@ ITexture *GetSSAOIntermediate(void)
 	return s_pSSAO_IM;
 }
 
+static CTextureReference s_pTV;
+ITexture* GetTV(void)
+{
+	if (!s_pTV)
+	{
+		s_pTV.Init(materials->FindTexture("_rt_ThermalVision", TEXTURE_GROUP_RENDER_TARGET));
+		Assert(!IsErrorTexture(s_pTV));
+		AddReleaseFunc();
+	}
+	else
+	{
+		Assert(!IsErrorTexture(s_pTV));
+	}
+
+	return s_pTV;
+}
+
 static CTextureReference s_pMV;
 ITexture *GetMV(void)
 {
@@ -357,5 +374,6 @@ void ReleaseRenderTargets( void )
 	s_pMV_IM.Shutdown();
 	s_pMV_Buffer1.Shutdown();
 	s_pMV_Buffer2.Shutdown();
+	s_pTV.Shutdown();
 #endif
 }
