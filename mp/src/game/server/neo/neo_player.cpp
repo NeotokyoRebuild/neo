@@ -1306,7 +1306,8 @@ bool CNEO_Player::HandleCommand_JoinTeam( int team )
 	{
 		SetPlayerTeamModel();
 
-		ClientPrint(this, HUD_PRINTTALK, "You are on team %s1\n", GetTeam()->GetName());
+		UTIL_ClientPrintAll(HUD_PRINTTALK, "%s1 joined team %s2\n",
+			GetPlayerName(), GetTeam()->GetName());
 	}
 
 	return isAllowedToJoin;
