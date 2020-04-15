@@ -104,10 +104,13 @@ public:
 		}
 
 		panel->ApplySchemeSettings(vgui::scheme()->GetIScheme(panel->GetScheme()));
-		int w, h;
-		surface()->GetScreenSize(w, h);
-		panel->SetSize(w, h);
-		panel->SetPos((int)w / 3, (int)h / 3);
+
+		int panelWide = 960, panelTall = 700, screenWide, screenTall;
+		surface()->GetScreenSize(screenWide, screenTall);
+		// Resize panel, but make sure it fits the resolution.
+		panel->SetSize(Min(screenWide, panelWide), Min(screenTall, panelTall));
+		panel->SetPos((screenWide / 2) - (panelWide / 2),
+			(screenTall / 2) - (panelTall / 2));
 
 		panel->SetMouseInputEnabled(true);
 		panel->SetKeyBoardInputEnabled(true);
@@ -177,10 +180,13 @@ public:
 		}
 
 		panel->ApplySchemeSettings(vgui::scheme()->GetIScheme(panel->GetScheme()));
-		int w, h;
-		surface()->GetScreenSize(w, h);
-		panel->SetSize(w, h);
-		panel->SetPos((int)w / 3, (int)h / 3);
+
+		int panelWide = 650, panelTall = 215, screenWide, screenTall;
+		surface()->GetScreenSize(screenWide, screenTall);
+		// Resize panel, but make sure it fits the resolution.
+		panel->SetSize(Min(screenWide, panelWide), Min(screenTall, panelTall));
+		panel->SetPos((screenWide / 2) - (panelWide / 2),
+			(screenTall / 2) - (panelTall / 2));
 
 		panel->SetMouseInputEnabled(true);
 		panel->SetKeyBoardInputEnabled(true);
@@ -232,10 +238,14 @@ public:
 		}
 
 		panel->ApplySchemeSettings(vgui::scheme()->GetIScheme(panel->GetScheme()));
-		int w, h;
-		surface()->GetScreenSize(w, h);
-		panel->SetSize(w, h);
-		panel->SetPos((int)w / 3, (int)h / 3);
+
+		int panelWide = 360, panelTall = 215, screenWide, screenTall;
+		panelWide *= 1.5; panelTall *= 1.5;
+		surface()->GetScreenSize(screenWide, screenTall);
+		// Resize panel, but make sure it fits the resolution.
+		panel->SetSize(Min(screenWide, panelWide), Min(screenTall, panelTall));
+		panel->SetPos((screenWide / 2) - (panelWide / 2),
+			(screenTall / 2) - (panelTall / 2));
 
 		panel->SetMouseInputEnabled(true);
 		panel->SetKeyBoardInputEnabled(true);

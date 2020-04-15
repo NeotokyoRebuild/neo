@@ -15,8 +15,6 @@
 
 #include <game/client/iviewport.h>
 
-#define BLACK_BAR_COLOR	Color(0, 0, 0, 196)
-
 namespace vgui
 {
 	class TextEntry;
@@ -55,11 +53,11 @@ public:
 	virtual bool IsVisible() { return BaseClass::IsVisible(); }
 	virtual void SetParent(vgui::VPANEL parent) { BaseClass::SetParent(parent); }
 
-    virtual Color GetBlackBarColor( void ) { return BLACK_BAR_COLOR; }
+    virtual Color GetBlackBarColor( void ) { return Color(0, 0, 0, 196); }
 
     virtual const char *GetResFile(void)
     {
-        return "Resource/TeamMenu.res";
+        return "resource/neo_ui/Neo_TeamMenu.res";
     }
 
 protected:

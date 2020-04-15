@@ -15,8 +15,6 @@
 
 #include <game/client/iviewport.h>
 
-#define BLACK_BAR_COLOR	Color(0, 0, 0, 196)
-
 namespace vgui
 {
 	class TextEntry;
@@ -59,11 +57,11 @@ public:
 
     virtual void OnMousePressed(vgui::MouseCode code);
 
-    virtual Color GetBlackBarColor( void ) { return BLACK_BAR_COLOR; }
+    virtual Color GetBlackBarColor( void ) { return Color(0, 0, 0, 196); }
 
     virtual const char *GetResFile(void)
     {
-        return "resource/ui/ClassMenu.res";
+        return "resource/neo_ui/Neo_ClassMenu.res";
     }
 
 protected:
