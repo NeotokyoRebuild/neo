@@ -156,6 +156,7 @@ public:
 	void StartNextRound();
 
 	const char* GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer);
+	const char* GetChatPrefix(bool bTeamOnly, CBasePlayer* pPlayer) { return ""; } // handled by GetChatFormat
 #endif
 
 	enum

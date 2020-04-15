@@ -1217,25 +1217,52 @@ const char* CNEORules::GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer)
 #define FMT_TEAM_NSF "[NSF]"
 #define FMT_TEAM_SPECTATOR "[Spectator]"
 #define FMT_TEAM_UNASSIGNED "[Unassigned]"
+#define FMT_DEAD "*DEAD*"
 
-	if (bTeamOnly)
+	if (pPlayer->IsAlive())
 	{
-		switch (pPlayer->GetTeamNumber())
+		if (bTeamOnly)
 		{
-		case TEAM_JINRAI: return FMT_TEAM_JINRAI " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
-		case TEAM_NSF: return FMT_TEAM_NSF " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
-		case TEAM_SPECTATOR: return FMT_TEAM_SPECTATOR " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
-		default: return FMT_TEAM_UNASSIGNED " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			switch (pPlayer->GetTeamNumber())
+			{
+			case TEAM_JINRAI: return FMT_TEAM_JINRAI " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_NSF: return FMT_TEAM_NSF " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_SPECTATOR: return FMT_TEAM_SPECTATOR " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			default: return FMT_TEAM_UNASSIGNED " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			}
+		}
+		else
+		{
+			switch (pPlayer->GetTeamNumber())
+			{
+			case TEAM_JINRAI: return FMT_TEAM_JINRAI " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_NSF: return FMT_TEAM_NSF " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_SPECTATOR: return FMT_TEAM_SPECTATOR " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			default: return FMT_TEAM_UNASSIGNED " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			}
 		}
 	}
 	else
 	{
-		switch (pPlayer->GetTeamNumber())
+		if (bTeamOnly)
 		{
-		case TEAM_JINRAI: return FMT_TEAM_JINRAI " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
-		case TEAM_NSF: return FMT_TEAM_NSF " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
-		case TEAM_SPECTATOR: return FMT_TEAM_SPECTATOR " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
-		default: return FMT_TEAM_UNASSIGNED " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			switch (pPlayer->GetTeamNumber())
+			{
+			case TEAM_JINRAI: return FMT_DEAD " " FMT_TEAM_JINRAI " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_NSF: return FMT_DEAD " " FMT_TEAM_NSF " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_SPECTATOR: return FMT_TEAM_SPECTATOR " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			default: return FMT_TEAM_UNASSIGNED " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			}
+		}
+		else
+		{
+			switch (pPlayer->GetTeamNumber())
+			{
+			case TEAM_JINRAI: return FMT_DEAD " " FMT_TEAM_JINRAI " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_NSF: return FMT_DEAD " " FMT_TEAM_NSF " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_SPECTATOR: return FMT_TEAM_SPECTATOR " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			default: return FMT_TEAM_UNASSIGNED " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			}
 		}
 	}
 
