@@ -344,7 +344,7 @@ void CNeoLoadoutMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 
 	LoadControlSettings(GetResFile());
 
-	SetBgColor(Color(10, 10, 10, 10)); // make the background transparent
+	SetBgColor(Color(0, 0, 0, 196));
 
 	const Color selectedBgColor(75, 75, 75), selectedFgColor(255, 0, 0, 128),
 		armedBgColor(50, 50, 50, 128), armedFgColor(0, 255, 0, 128);
