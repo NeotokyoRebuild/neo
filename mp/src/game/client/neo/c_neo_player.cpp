@@ -181,7 +181,7 @@ public:
 
 		panel->ApplySchemeSettings(vgui::scheme()->GetIScheme(panel->GetScheme()));
 
-		int panelWide = 650, panelTall = 215, screenWide, screenTall;
+		int panelWide = 650, panelTall = 280, screenWide, screenTall;
 		surface()->GetScreenSize(screenWide, screenTall);
 		// Resize panel, but make sure it fits the resolution.
 		panel->SetSize(Min(screenWide, panelWide), Min(screenTall, panelTall));

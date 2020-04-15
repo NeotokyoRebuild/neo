@@ -196,7 +196,7 @@
 		"ControlName"		"Button"
 		"fieldName"		"Back_Button"
 		"xpos"		"8"
-		"ypos"		"394"
+		"ypos"		"150"
 		"wide"		"207"
 		"tall"		"30"
 		"autoResize"		"0"
