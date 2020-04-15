@@ -1239,44 +1239,7 @@ const char* CNEORules::GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer)
 		}
 	}
 
-	return "%s1: %s2 (%s3)";
-
-	const char* pszFormat = NULL;
-
-	// team only
-	if (bTeamOnly == TRUE)
-	{
-		if (pPlayer->GetTeamNumber() == TEAM_SPECTATOR)
-		{
-			pszFormat = "HL2MP_Chat_Spec";
-		}
-		else
-		{
-			const char* chatLocation = GetChatLocation(bTeamOnly, pPlayer);
-			if (chatLocation && *chatLocation)
-			{
-				pszFormat = "HL2MP_Chat_Team_Loc";
-			}
-			else
-			{
-				pszFormat = "HL2MP_Chat_Team";
-			}
-		}
-	}
-	// everyone
-	else
-	{
-		if (pPlayer->GetTeamNumber() != TEAM_SPECTATOR)
-		{
-			pszFormat = "HL2MP_Chat_All";
-		}
-		else
-		{
-			pszFormat = "HL2MP_Chat_AllSpec";
-		}
-	}
-
-	return pszFormat;
+	Assert(false); // should never fall through the switch
 }
 
 #endif
