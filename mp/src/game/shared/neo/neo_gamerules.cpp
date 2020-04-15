@@ -1202,4 +1202,81 @@ float CNEORules::FlPlayerFallDamage(CBasePlayer* pPlayer)
 	pPlayer->m_Local.m_flFallVelocity -= PLAYER_MAX_SAFE_FALL_SPEED;
 	return pPlayer->m_Local.m_flFallVelocity * DAMAGE_FOR_FALL_SPEED * sv_neo_falldmg_scale.GetFloat();
 }
+
+const char* CNEORules::GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer)
+{
+	if (!pPlayer)  // dedicated server output
+	{
+		return NULL;
+	}
+
+#define FMT_PLAYERNAME "%s1"
+#define FMT_CHATMESSAGE "%s2"
+#define FMT_LOCATION "%s3"
+#define FMT_TEAM_JINRAI "[Jinrai]"
+#define FMT_TEAM_NSF "[NSF]"
+#define FMT_TEAM_SPECTATOR "[Spectator]"
+#define FMT_TEAM_UNASSIGNED "[Unassigned]"
+
+	if (bTeamOnly)
+	{
+		switch (pPlayer->GetTeamNumber())
+		{
+		case TEAM_JINRAI: return FMT_TEAM_JINRAI " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+		case TEAM_NSF: return FMT_TEAM_NSF " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+		case TEAM_SPECTATOR: return FMT_TEAM_SPECTATOR " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+		default: return FMT_TEAM_UNASSIGNED " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+		}
+	}
+	else
+	{
+		switch (pPlayer->GetTeamNumber())
+		{
+		case TEAM_JINRAI: return FMT_TEAM_JINRAI " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+		case TEAM_NSF: return FMT_TEAM_NSF " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+		case TEAM_SPECTATOR: return FMT_TEAM_SPECTATOR " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+		default: return FMT_TEAM_UNASSIGNED " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+		}
+	}
+
+	return "%s1: %s2 (%s3)";
+
+	const char* pszFormat = NULL;
+
+	// team only
+	if (bTeamOnly == TRUE)
+	{
+		if (pPlayer->GetTeamNumber() == TEAM_SPECTATOR)
+		{
+			pszFormat = "HL2MP_Chat_Spec";
+		}
+		else
+		{
+			const char* chatLocation = GetChatLocation(bTeamOnly, pPlayer);
+			if (chatLocation && *chatLocation)
+			{
+				pszFormat = "HL2MP_Chat_Team_Loc";
+			}
+			else
+			{
+				pszFormat = "HL2MP_Chat_Team";
+			}
+		}
+	}
+	// everyone
+	else
+	{
+		if (pPlayer->GetTeamNumber() != TEAM_SPECTATOR)
+		{
+			pszFormat = "HL2MP_Chat_All";
+		}
+		else
+		{
+			pszFormat = "HL2MP_Chat_AllSpec";
+		}
+	}
+
+	return pszFormat;
+}
+
 #endif

@@ -154,6 +154,8 @@ public:
 #ifdef GAME_DLL
 	bool IsRoundOver();
 	void StartNextRound();
+
+	const char* GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer);
 #endif
 
 	enum
