@@ -155,8 +155,9 @@ public:
 	bool IsRoundOver();
 	void StartNextRound();
 
-	const char* GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer);
-	const char* GetChatPrefix(bool bTeamOnly, CBasePlayer* pPlayer) { return ""; } // handled by GetChatFormat
+	virtual const char* GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer);
+	virtual const char* GetChatPrefix(bool bTeamOnly, CBasePlayer* pPlayer) { return ""; } // handled by GetChatFormat
+	virtual const char* GetChatLocation(bool bTeamOnly, CBasePlayer* pPlayer) { return NULL; } // unimplemented
 #endif
 
 	enum
