@@ -160,6 +160,11 @@ public:
 	virtual const char* GetChatLocation(bool bTeamOnly, CBasePlayer* pPlayer) { return NULL; } // unimplemented
 #endif
 
+	// This is the supposed encrypt key on NT, although it has its issues.
+	// See https://steamcommunity.com/groups/ANPA/discussions/0/1482109512299590948/
+	// (and NT Discord) for discussions.
+	virtual const unsigned char* GetEncryptionKey(void) { return (unsigned char*)"tBA%-ygc"; }
+
 	enum
 	{
 		NEO_VICTORY_GHOST_CAPTURE = 0,
