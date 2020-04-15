@@ -1312,6 +1312,17 @@ bool CNEO_Player::HandleCommand_JoinTeam( int team )
 
 bool CNEO_Player::ClientCommand( const CCommand &args )
 {
+	if (FStrEq(args[0], "playerstate_reverse"))
+	{
+		if (ShouldRunRateLimitedCommand(args))
+		{
+			// Player is reversing their HUD team join choice,
+			// so allow instantly switching teams again.
+			m_flNextTeamChangeTime = 0;
+		}
+		return true;
+	}
+
 	return BaseClass::ClientCommand(args);
 }
 

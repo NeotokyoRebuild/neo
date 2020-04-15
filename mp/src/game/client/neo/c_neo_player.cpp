@@ -608,14 +608,19 @@ void C_NEO_Player::PreThink( void )
 	if (m_bShowTeamMenu && !m_bIsTeamMenuOpen)
 	{
 		m_bIsTeamMenuOpen = true;
-
 		engine->ClientCmd(teammenu.GetName());
 	}
 	else if (m_bShowClassMenu && !m_bIsClassMenuOpen)
 	{
 		m_bIsClassMenuOpen = true;
-
 		engine->ClientCmd(classmenu.GetName());
+	}
+	else if (m_bShowTeamMenu && m_bShowClassMenu)
+	{
+		m_bShowClassMenu = false;
+		m_bIsTeamMenuOpen = true;
+		m_bIsClassMenuOpen = false;
+		engine->ClientCmd(teammenu.GetName());
 	}
 
 	// NEO TODO (Rain): marker should be responsible for its own vis control instead

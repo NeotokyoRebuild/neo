@@ -137,10 +137,10 @@ void CNeoClassMenu::OnCommand(const char *command)
 {
 	BaseClass::OnCommand(command);
 
+	bool hasCompletedClassSelection = false;
+
 	if (Q_stricmp(command, "PressButton"))
 	{
-		bool hasCompletedClassSelection = false;
-
 		Button *pressedButton = GetPressedButton();
 		if (pressedButton)
 		{
@@ -148,7 +148,9 @@ void CNeoClassMenu::OnCommand(const char *command)
 
 			ShowPanel(false);
 
-			char buttonCmd[128];
+			char buttonCmd[29];
+			COMPILE_TIME_ASSERT(sizeof(buttonCmd) == sizeof("playerstate_reverse;teammenu"));
+
 			if (pressedButton == m_pRecon_Button)
 			{
 				sprintf(buttonCmd, "setclass %i", 1);
@@ -163,36 +165,43 @@ void CNeoClassMenu::OnCommand(const char *command)
 			}
 			else
 			{
-				if (pressedButton != m_pBack_Button)
-				{
-					Assert(false);
-				}
-
-				sprintf(buttonCmd, "teammenu");
-
+				Assert(pressedButton == m_pBack_Button);
+				V_strcpy_safe(buttonCmd, "playerstate_reverse");
 				hasCompletedClassSelection = false;
 			}
 
 			engine->ExecuteClientCmd(buttonCmd);
-		}
 
-		if (hasCompletedClassSelection)
-		{
-			C_NEO_Player *player = C_NEO_Player::GetLocalNEOPlayer();
-			if (player)
+			if (hasCompletedClassSelection)
 			{
-				player->m_bShowClassMenu = false;
+				C_NEO_Player* player = C_NEO_Player::GetLocalNEOPlayer();
+				if (player)
+				{
+					player->m_bShowClassMenu = false;
+				}
+				else
+				{
+					Assert(false);
+				}
+				engine->ClientCmd("loadoutmenu");
 			}
-			else
-			{
-				Assert(false);
-			}
-
-			engine->ClientCmd("loadoutmenu");
 		}
 	}
 
 	CommandCompletion();
+
+	if (!hasCompletedClassSelection)
+	{
+		C_NEO_Player* player = C_NEO_Player::GetLocalNEOPlayer();
+		if (player)
+		{
+			player->m_bShowTeamMenu = true;
+		}
+		else
+		{
+			Assert(false);
+		}
+	}
 }
 
 void CNeoClassMenu::OnButtonPressed(KeyValues *data)
