@@ -26,6 +26,10 @@
 #include "multiplay_gamerules.h"
 #include "voice_status.h"
 
+#ifdef NEO
+#include "neo_gamerules.h"
+#include "neo_player_shared.h"
+#endif
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -1340,7 +1344,14 @@ Color CBaseHudChat::GetTextColorForClient( TextColor colorNum, int clientIndex )
 		break;
 
 	default:
-		c = GetDefaultTextColor();
+		if (clientIndex == 0)
+		{
+			c = GetDefaultTextColor();
+		}
+		else
+		{
+			c = COLOR_NEO_ORANGE;
+		}
 	}
 
 	return Color( c[0], c[1], c[2], 255 );
@@ -1356,7 +1367,11 @@ void CBaseHudChat::SetCustomColor( const char *pszColorName )
 //-----------------------------------------------------------------------------
 Color CBaseHudChat::GetDefaultTextColor( void )
 {
+#ifdef NEO
+	return COLOR_NEO_WHITE;
+#else
 	return g_ColorYellow;
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -1386,7 +1401,7 @@ void CBaseHudChatLine::InsertAndColorizeText( wchar_t *buf, int clientIndex )
 	}
 	m_textRanges.RemoveAll();
 
-	m_text = CloneWString( buf );
+	m_text = CloneWString(buf);
 
 	CBaseHudChat *pChat = dynamic_cast<CBaseHudChat*>(GetParent() );
 
@@ -1396,6 +1411,7 @@ void CBaseHudChatLine::InsertAndColorizeText( wchar_t *buf, int clientIndex )
 	wchar_t *txt = m_text;
 	int lineLen = wcslen( m_text );
 	Color colCustom;
+
 	if ( m_text[0] == COLOR_PLAYERNAME || m_text[0] == COLOR_LOCATION || m_text[0] == COLOR_NORMAL || m_text[0] == COLOR_ACHIEVEMENT || m_text[0] == COLOR_CUSTOM || m_text[0] == COLOR_HEXCODE || m_text[0] == COLOR_HEXCODE_ALPHA )
 	{
 		while ( txt && *txt )
@@ -1476,7 +1492,62 @@ void CBaseHudChatLine::InsertAndColorizeText( wchar_t *buf, int clientIndex )
 			}
 		}
 	}
+	else
+	{
+		if (m_text[0] == NULL) { Assert(false); }
+		DevMsg("text was %d but expected %d\n", m_text[0], COLOR_NORMAL);
+	}
 
+#ifdef NEO
+	{
+		TextRange range;
+		range.start = 0;
+		range.end = m_iNameStart;
+
+		if (clientIndex != 0)
+		{
+			auto player = UTIL_PlayerByIndex(clientIndex);
+			if (player)
+			{
+				switch (player->GetTeamNumber())
+				{
+				case TEAM_JINRAI:
+					pChat->SetCustomColor(COLOR_JINRAI);
+					break;
+				case TEAM_NSF:
+					pChat->SetCustomColor(COLOR_NSF);
+					break;
+				default:
+					pChat->SetCustomColor(COLOR_SPEC);
+					break;
+				}
+				range.color = pChat->GetTextColorForClient(COLOR_CUSTOM, clientIndex);
+				m_textRanges.AddToTail(range);
+			}
+			else
+			{
+				Assert(false);
+				range.color = pChat->GetTextColorForClient(COLOR_NORMAL, clientIndex);
+				m_textRanges.AddToTail(range);
+			}
+		}
+		else
+		{
+			range.color = pChat->GetTextColorForClient(COLOR_NORMAL, clientIndex);
+			m_textRanges.AddToTail(range);
+		}
+
+		range.start = m_iNameStart;
+		range.end = m_iNameStart + m_iNameLength;
+		range.color = pChat->GetTextColorForClient(COLOR_PLAYERNAME, clientIndex);
+		m_textRanges.AddToTail(range);
+
+		range.start = range.end;
+		range.end = wcslen(m_text);
+		range.color = pChat->GetTextColorForClient(COLOR_NORMAL, clientIndex);
+		m_textRanges.AddToTail(range);
+	}
+#else
 	if ( !m_textRanges.Count() && m_iNameLength > 0 && m_text[0] == COLOR_USEOLDCOLORS )
 	{
 		TextRange range;
@@ -1495,6 +1566,7 @@ void CBaseHudChatLine::InsertAndColorizeText( wchar_t *buf, int clientIndex )
 		range.color = pChat->GetTextColorForClient( COLOR_NORMAL, clientIndex );
 		m_textRanges.AddToTail( range );
 	}
+#endif
 
 	if ( !m_textRanges.Count() )
 	{
