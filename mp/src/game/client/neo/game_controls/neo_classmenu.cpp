@@ -266,6 +266,8 @@ void CNeoClassMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
     SetPaintBorderEnabled(false);
 
     SetBorder( NULL );
+
+	SetMinimumSize(950, 450);
 }
 
 void CNeoClassMenu::MoveLabelToFront(const char *textEntryName)

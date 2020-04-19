@@ -414,5 +414,5 @@ void CNeoLoadoutMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 
 	SetBorder(NULL);
 
-	MoveToCenterOfScreen();
+	SetMinimumSize(1280, 1280);
 }
