@@ -212,6 +212,7 @@ void CHudDeathNotice::Paint()
 		}
 		else
 		{
+#ifdef NEO
 			surface()->DrawGetTextureSize(icon->textureId, iconWide, iconTall);
 
 			const float scale = ((float)ScreenHeight() / 480.0f);	//scale based on 640x480
@@ -222,6 +223,11 @@ void CHudDeathNotice::Paint()
 
 			// Center the icon vertically in relation to the killfeed text.
 			yNeoIconOffset = (int)(surface()->GetFontTall(m_hTextFont) * -0.25);
+#else
+			float scale = ((float)ScreenHeight() / 480.0f);	//scale based on 640x480
+			iconWide = (int)(scale * (float)icon->Width());
+			iconTall = (int)(scale * (float)icon->Height());
+#endif
 		}
 
 		int x;
