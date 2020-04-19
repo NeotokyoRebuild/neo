@@ -42,8 +42,6 @@
 #include <materialsystem/itexture.h>
 #include "rendertexture.h"
 
-#include "spectatorgui.h"
-
 #include "model_types.h"
 
 // Don't alias here
@@ -739,7 +737,7 @@ void C_NEO_Player::PostThink(void)
 			Weapon_SetZoom(false);
 			m_bInVision = false;
 
-			g_pSpectatorGUI->SetVisible(true);
+			gViewPortInterface->ShowPanel(PANEL_SPECGUI, true);
 		}
 
 		return;
@@ -748,7 +746,8 @@ void C_NEO_Player::PostThink(void)
 	{
 		if (!m_bFirstDeathTick)
 		{
-			g_pSpectatorGUI->SetVisible(false);
+			gViewPortInterface->ShowPanel(PANEL_SPECGUI, false);
+
 			m_bFirstDeathTick = true;
 		}
 	}
@@ -826,6 +825,8 @@ inline void C_NEO_Player::SuperJump(void)
 void C_NEO_Player::Spawn( void )
 {
 	BaseClass::Spawn();
+
+	gViewPortInterface->ShowPanel(PANEL_SPECGUI, true);
 
 	if (GetTeamNumber() == TEAM_UNASSIGNED)
 	{
