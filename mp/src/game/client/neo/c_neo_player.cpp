@@ -42,6 +42,7 @@
 #include <materialsystem/itexture.h>
 #include "rendertexture.h"
 
+#include "spectatorgui.h"
 
 #include "model_types.h"
 
@@ -737,13 +738,19 @@ void C_NEO_Player::PostThink(void)
 
 			Weapon_SetZoom(false);
 			m_bInVision = false;
+
+			g_pSpectatorGUI->SetVisible(true);
 		}
 
 		return;
 	}
 	else
 	{
-		m_bFirstDeathTick = true;
+		if (!m_bFirstDeathTick)
+		{
+			g_pSpectatorGUI->SetVisible(false);
+			m_bFirstDeathTick = true;
+		}
 	}
 
 	C_BaseCombatWeapon *pWep = GetActiveWeapon();

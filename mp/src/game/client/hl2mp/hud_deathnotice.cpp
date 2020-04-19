@@ -21,6 +21,7 @@
 #include "../neo/ui/neo_hud_elements.h"
 #include "../neo/ui/neo_hud_game_event.h"
 #include "neo_player_shared.h"
+#include "spectatorgui.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -167,6 +168,12 @@ void CHudDeathNotice::Paint()
 #endif
 
 	int yStart = GetClientModeHL2MPNormal()->GetDeathMessageStartHeight();
+#ifdef NEO
+	if (g_pSpectatorGUI->IsVisible())
+	{
+		yStart += g_pSpectatorGUI->GetTopBarHeight();
+	}
+#endif
 
 	surface()->DrawSetTextFont( m_hTextFont );
 	surface()->DrawSetTextColor( GameResources()->GetTeamColor( 0 ) );
