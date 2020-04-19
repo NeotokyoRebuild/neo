@@ -1492,11 +1492,6 @@ void CBaseHudChatLine::InsertAndColorizeText( wchar_t *buf, int clientIndex )
 			}
 		}
 	}
-	else
-	{
-		if (m_text[0] == NULL) { Assert(false); }
-		DevMsg("text was %d but expected %d\n", m_text[0], COLOR_NORMAL);
-	}
 
 #ifdef NEO
 	{

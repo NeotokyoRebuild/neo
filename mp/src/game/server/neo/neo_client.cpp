@@ -134,7 +134,7 @@ CBaseEntity* FindEntity( edict_t *pEdict, char *classname)
 // These are what hl2mp_client.cpp calls on ClientGamePrecache().
 // NEO TODO (Rain): we can probably skip this once we're guaranteed
 // to no longer use any of these.
-static inline void Precache_HL2MP( void )
+void Precache_HL2MP( void )
 {
 	CBaseEntity::PrecacheModel("models/player.mdl");
 	CBaseEntity::PrecacheModel( "models/gibs/agibs.mdl" );
@@ -153,7 +153,7 @@ static inline void Precache_HL2MP( void )
 	CBaseEntity::PrecacheScriptSound( "Geiger.BeepLow" );
 }
 
-static inline void Precache_NEO_Sounds( void )
+void Precache_NEO_Sounds( void )
 {
 	CBaseEntity::PrecacheScriptSound("weapon_milso.reload");
 	CBaseEntity::PrecacheScriptSound("weapon_milso.npc_reload");
