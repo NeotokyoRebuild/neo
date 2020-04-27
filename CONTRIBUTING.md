@@ -57,7 +57,7 @@ Ochii's impressive [reverse engineering project](https://github.com/Ochii/neotok
 
 ### Solutions/makefiles
 
-This project uses Valve's [VPC system](https://developer.valvesoftware.com/wiki/VPC) to generate its makefiles and VS solutions. When modifying the project file structure, instead of pushing your solution/makefile, edit the relevant VPC files instead (most commonly "[client_hl2mp.vpc](mp/src/game/client/client_hl2mp.vpc)" and "[server_hl2mp.vpc](mp/src/game/server/server_hl2mp.vpc)").
+This project uses Valve's [VPC system](https://developer.valvesoftware.com/wiki/VPC) to generate its makefiles and VS solutions. When modifying the project file structure, instead of pushing your solution/makefile, edit the relevant VPC files instead (most commonly "[client_neo.vpc](mp/src/game/client/client_neo.vpc)" and "[server_neo.vpc](mp/src/game/server/server_neo.vpc)").
 
 Running the VPC scripts in mp/src/... after a change will regenerate the solutions and makefiles on all platforms. You may sometimes have to purge your object file cache if you get linker errors after restructuring existing translation units.
 
