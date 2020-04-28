@@ -29,13 +29,16 @@
 
 class CWeaponMilso : public CNEOBaseCombatWeapon
 {
-public:
 	DECLARE_CLASS(CWeaponMilso, CNEOBaseCombatWeapon);
-
-	CWeaponMilso(void);
-
+public:
 	DECLARE_NETWORKCLASS();
 	DECLARE_PREDICTABLE();
+
+#ifdef GAME_DLL
+	DECLARE_ACTTABLE();
+#endif
+
+	CWeaponMilso();
 
 	void	Precache(void);
 	void	ItemPostFrame(void);
@@ -71,17 +74,6 @@ public:
 	}
 
 	virtual float GetFireRate(void);
-
-#ifndef CLIENT_DLL
-	DECLARE_ACTTABLE();
-#endif
-
-private:
-	CNetworkVar(float, m_flSoonestPrimaryAttack);
-	CNetworkVar(float, m_flLastAttackTime);
-	CNetworkVar(float, m_flAccuracyPenalty);
-
-	CNetworkVar(int, m_nNumShotsFired);
 
 private:
 	CWeaponMilso(const CWeaponMilso &other);

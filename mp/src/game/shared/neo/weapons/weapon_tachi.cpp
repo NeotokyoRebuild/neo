@@ -7,42 +7,42 @@
 IMPLEMENT_NETWORKCLASS_ALIASED( WeaponTachi, DT_WeaponTachi )
 
 BEGIN_NETWORK_TABLE( CWeaponTachi, DT_WeaponTachi )
+	DEFINE_NEO_BASE_WEP_NETWORK_TABLE
+
 #ifdef CLIENT_DLL
-	RecvPropTime( RECVINFO( m_flSoonestPrimaryAttack ) ),
 	RecvPropTime( RECVINFO( m_flSoonestFiremodeSwitch ) ),
-	RecvPropTime( RECVINFO( m_flLastAttackTime ) ),
-	RecvPropFloat( RECVINFO( m_flAccuracyPenalty ) ),
-	RecvPropInt( RECVINFO( m_nNumShotsFired ) ),
 	RecvPropBool( RECVINFO( m_bIsPrimaryFireMode ) ),
 #else
-	SendPropTime( SENDINFO( m_flSoonestPrimaryAttack ) ),
 	SendPropTime( SENDINFO( m_flSoonestFiremodeSwitch ) ),
-	SendPropTime( SENDINFO( m_flLastAttackTime ) ),
-	SendPropFloat( SENDINFO( m_flAccuracyPenalty ) ),
-	SendPropInt( SENDINFO( m_nNumShotsFired ) ),
 	SendPropBool( SENDINFO( m_bIsPrimaryFireMode ) ),
 #endif
 END_NETWORK_TABLE()
 
 #ifdef CLIENT_DLL
 BEGIN_PREDICTION_DATA( CWeaponTachi )
-	DEFINE_PRED_FIELD( m_flSoonestPrimaryAttack, FIELD_FLOAT, FTYPEDESC_INSENDTABLE ),
+	DEFINE_NEO_BASE_WEP_PREDICTION
+
 	DEFINE_PRED_FIELD( m_flSoonestFiremodeSwitch, FIELD_FLOAT, FTYPEDESC_INSENDTABLE ),
-	DEFINE_PRED_FIELD( m_flLastAttackTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE ),
-	DEFINE_PRED_FIELD( m_flAccuracyPenalty, FIELD_FLOAT, FTYPEDESC_INSENDTABLE ),
-	DEFINE_PRED_FIELD( m_nNumShotsFired, FIELD_INTEGER, FTYPEDESC_INSENDTABLE ),
 	DEFINE_PRED_FIELD( m_bIsPrimaryFireMode, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE ),
 END_PREDICTION_DATA()
 #endif
 
+NEO_IMPLEMENT_ACTTABLE(CWeaponTachi)
+
 LINK_ENTITY_TO_CLASS( weapon_tachi, CWeaponTachi );
+
+#ifdef GAME_DLL
+BEGIN_DATADESC(CWeaponTachi)
+	DEFINE_FIELD(m_flSoonestFiremodeSwitch, FIELD_TIME),
+	DEFINE_FIELD(m_bIsPrimaryFireMode, FIELD_BOOLEAN),
+END_DATADESC()
+#endif
+
 PRECACHE_WEAPON_REGISTER( weapon_tachi );
 
-NEO_ACTTABLE(CWeaponTachi);
-
-CWeaponTachi::CWeaponTachi( void )
+CWeaponTachi::CWeaponTachi()
 {
-	m_flSoonestPrimaryAttack = gpGlobals->curtime;
+	m_flSoonestAttack = gpGlobals->curtime;
 	m_flSoonestFiremodeSwitch = gpGlobals->curtime;
 	m_flAccuracyPenalty = 0.0f;
 
@@ -150,7 +150,7 @@ void CWeaponTachi::UpdatePenaltyTime( void )
 		return;
 
 	// Check our penalty time decay
-	if ( ( ( pOwner->m_nButtons & IN_ATTACK ) == false ) && ( m_flSoonestPrimaryAttack < gpGlobals->curtime ) )
+	if ( ( ( pOwner->m_nButtons & IN_ATTACK ) == false ) && ( m_flSoonestAttack < gpGlobals->curtime ) )
 	{
 		m_flAccuracyPenalty -= gpGlobals->frametime;
 		m_flAccuracyPenalty = clamp( m_flAccuracyPenalty, 0.0f, TACHI_ACCURACY_MAXIMUM_PENALTY_TIME );
@@ -226,31 +226,31 @@ void CWeaponTachi::ItemPostFrame( void )
 			SwitchFireMode();
 
 			m_flSoonestFiremodeSwitch = gpGlobals->curtime + TACHI_FASTEST_FIREMODE_SWITCH_TIME;
-			m_flSoonestPrimaryAttack = gpGlobals->curtime + TACHI_FASTEST_FIREMODE_SWITCH_TIME;
+			m_flSoonestAttack = gpGlobals->curtime + TACHI_FASTEST_FIREMODE_SWITCH_TIME;
 		}
 	}
 
 	if (pOwner->m_nButtons & IN_ATTACK)
 	{
-		if (m_flSoonestPrimaryAttack < gpGlobals->curtime)
+		if (m_flSoonestAttack < gpGlobals->curtime)
 		{
 			if (m_iClip1 <= 0)
 			{
 				DryFire();
 
-				m_flSoonestPrimaryAttack = gpGlobals->curtime + TACHI_FASTEST_DRY_REFIRE_TIME;
+				m_flSoonestAttack = gpGlobals->curtime + TACHI_FASTEST_DRY_REFIRE_TIME;
 			}
 			else
 			{
 				// Semi-auto mode
 				if (m_bIsPrimaryFireMode)
 				{
-					m_flSoonestPrimaryAttack = gpGlobals->curtime + TACHI_FASTEST_MANUAL_REFIRE_TIME;
+					m_flSoonestAttack = gpGlobals->curtime + TACHI_FASTEST_MANUAL_REFIRE_TIME;
 				}
 				// Full-auto mode
 				else
 				{
-					m_flSoonestPrimaryAttack = gpGlobals->curtime + TACHI_FASTEST_AUTO_REFIRE_TIME;
+					m_flSoonestAttack = gpGlobals->curtime + TACHI_FASTEST_AUTO_REFIRE_TIME;
 				}
 			}
 		}
@@ -261,7 +261,7 @@ void CWeaponTachi::ItemPostFrame( void )
 		// to prevent tap firing at full auto speeds.
 		if (!m_bIsPrimaryFireMode)
 		{
-			m_flSoonestPrimaryAttack = gpGlobals->curtime + TACHI_FASTEST_MANUAL_REFIRE_TIME;
+			m_flSoonestAttack = gpGlobals->curtime + TACHI_FASTEST_MANUAL_REFIRE_TIME;
 		}
 	}
 }
@@ -296,8 +296,8 @@ void CWeaponTachi::AddViewKick( void )
 
 	QAngle	viewPunch;
 
-	viewPunch.x = SharedRandomFloat( "pistolpax", 0.25f, 0.5f );
-	viewPunch.y = SharedRandomFloat( "pistolpay", -0.6f, 0.6f );
+	viewPunch.x = SharedRandomFloat( "tachipax", 0.25f, 0.5f );
+	viewPunch.y = SharedRandomFloat( "tachipay", -0.6f, 0.6f );
 	viewPunch.z = 0.0f;
 
 	//Add it to the view punch

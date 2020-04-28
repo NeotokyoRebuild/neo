@@ -28,13 +28,16 @@
 
 class CWeaponM41S : public CNEOBaseCombatWeapon
 {
-public:
 	DECLARE_CLASS(CWeaponM41S, CNEOBaseCombatWeapon);
-
-	CWeaponM41S();
-
+public:
 	DECLARE_NETWORKCLASS();
 	DECLARE_PREDICTABLE();
+
+#ifdef GAME_DLL
+	DECLARE_ACTTABLE();
+#endif
+
+	CWeaponM41S();
 
 	void	ItemPostFrame(void);
 	void	ItemPreFrame(void);
@@ -69,17 +72,6 @@ public:
 	}
 
 	virtual float GetFireRate(void) { return M41_S_FASTEST_REFIRE_TIME; }
-
-#ifdef GAME_DLL
-	DECLARE_ACTTABLE();
-#endif
-
-private:
-	CNetworkVar(float, m_flSoonestAttack);
-	CNetworkVar(float, m_flLastAttackTime);
-	CNetworkVar(float, m_flAccuracyPenalty);
-
-	CNetworkVar(int, m_nNumShotsFired);
 
 private:
 	CWeaponM41S(const CWeaponM41S& other);

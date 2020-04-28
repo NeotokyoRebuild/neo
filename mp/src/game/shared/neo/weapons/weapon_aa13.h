@@ -42,13 +42,6 @@ public:
 	const Vector& GetBulletSpread(void);
 
 private:
-	CNetworkVar(float, m_flSoonestPrimaryAttack);
-	CNetworkVar(float, m_flLastAttackTime);
-	CNetworkVar(float, m_flAccuracyPenalty);
-
-	CNetworkVar(int, m_nNumShotsFired);
-
-private:
 	CWeaponAA13(const CWeaponAA13 &other);
 };
 

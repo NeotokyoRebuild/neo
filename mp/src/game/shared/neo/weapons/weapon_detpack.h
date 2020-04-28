@@ -27,6 +27,11 @@ public:
 	DECLARE_NETWORKCLASS();
 	DECLARE_PREDICTABLE();
 
+#ifdef GAME_DLL
+	DECLARE_ACTTABLE();
+	DECLARE_DATADESC();
+#endif
+
 	CWeaponDetpack();
 
 	virtual int GetNeoWepBits(void) const { return NEO_WEP_DETPACK | NEO_WEP_THROWABLE; }
@@ -64,8 +69,6 @@ private:
 
 #ifdef GAME_DLL
 	CNEODeployedDetpack* m_pDetpack;
-
-	DECLARE_ACTTABLE();
 #endif
 };
 

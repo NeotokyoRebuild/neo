@@ -27,6 +27,7 @@ public:
 
 #ifdef GAME_DLL
 	DECLARE_ACTTABLE();
+	DECLARE_DATADESC();
 #endif
 
 	CWeaponKnife();
@@ -48,7 +49,7 @@ public:
 	//virtual int GetNeoWepBits(void) const { return NEO_WEP_KNIFE; }
 
 private:
-	float m_flLastSwingTime;
+	CNetworkVar(float, m_flLastSwingTime);
 
 private:
 	CWeaponKnife(const CWeaponKnife &other);

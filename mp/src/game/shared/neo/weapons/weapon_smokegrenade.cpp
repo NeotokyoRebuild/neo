@@ -27,31 +27,20 @@ extern ConVar sv_neo_grenade_roll_intensity;
 
 ConVar sv_neo_infinite_smoke_grenades("sv_neo_infinite_smoke_grenades", "0", FCVAR_CHEAT, "Should smoke grenades use up ammo.", true, 0.0, true, 1.0);
 
-NEO_ACTTABLE(CWeaponSmokeGrenade)
-
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponSmokeGrenade, DT_WeaponSmokeGrenade)
 
 BEGIN_NETWORK_TABLE(CWeaponSmokeGrenade, DT_WeaponSmokeGrenade)
-#ifdef CLIENT_DLL
-RecvPropBool(RECVINFO(m_bRedraw)),
-RecvPropBool(RECVINFO(m_fDrawbackFinished)),
-RecvPropInt(RECVINFO(m_AttackPaused)),
-#else
-SendPropBool(SENDINFO(m_bRedraw)),
-SendPropBool(SENDINFO(m_fDrawbackFinished)),
-SendPropInt(SENDINFO(m_AttackPaused)),
-#endif
 END_NETWORK_TABLE()
 
 #ifdef CLIENT_DLL
 BEGIN_PREDICTION_DATA(CWeaponSmokeGrenade)
-DEFINE_PRED_FIELD(m_bRedraw, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_fDrawbackFinished, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_AttackPaused, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 #endif
 
+NEO_IMPLEMENT_ACTTABLE(CWeaponSmokeGrenade)
+
 LINK_ENTITY_TO_CLASS(weapon_smokegrenade, CWeaponSmokeGrenade);
+
 PRECACHE_WEAPON_REGISTER(weapon_smokegrenade);
 
 #define RETHROW_DELAY 0.5

@@ -12,21 +12,40 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-LINK_ENTITY_TO_CLASS( neobasecombatweapon, CNEOBaseCombatWeapon );
-
 IMPLEMENT_NETWORKCLASS_ALIASED( NEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 
 BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
+#ifdef CLIENT_DLL
+	RecvPropTime(RECVINFO(m_flSoonestAttack)),
+	RecvPropTime(RECVINFO(m_flLastAttackTime)),
+	RecvPropFloat(RECVINFO(m_flAccuracyPenalty)),
+	RecvPropInt(RECVINFO(m_nNumShotsFired)),
+#else
+	SendPropTime(SENDINFO(m_flSoonestAttack)),
+	SendPropTime(SENDINFO(m_flLastAttackTime)),
+	SendPropFloat(SENDINFO(m_flAccuracyPenalty)),
+	SendPropInt(SENDINFO(m_nNumShotsFired)),
+#endif
 END_NETWORK_TABLE()
+
+#ifdef CLIENT_DLL
+BEGIN_PREDICTION_DATA(CNEOBaseCombatWeapon)
+	DEFINE_PRED_FIELD(m_flSoonestAttack, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_flLastAttackTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_flAccuracyPenalty, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_nNumShotsFired, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
+END_PREDICTION_DATA()
+#endif
+
+LINK_ENTITY_TO_CLASS(neobasecombatweapon, CNEOBaseCombatWeapon);
 
 #ifdef GAME_DLL
 BEGIN_DATADESC( CNEOBaseCombatWeapon )
+	DEFINE_FIELD(m_flSoonestAttack, FIELD_TIME),
+	DEFINE_FIELD(m_flLastAttackTime, FIELD_TIME),
+	DEFINE_FIELD(m_flAccuracyPenalty, FIELD_FLOAT),
+	DEFINE_FIELD(m_nNumShotsFired, FIELD_INTEGER),
 END_DATADESC()
-#endif
-
-#ifdef CLIENT_DLL
-BEGIN_PREDICTION_DATA( CNEOBaseCombatWeapon )
-END_PREDICTION_DATA()
 #endif
 
 const char *GetWeaponByLoadoutId(int id)
@@ -199,4 +218,28 @@ void CNEOBaseCombatWeapon::ItemPreFrame(void)
 			m_bReadyToAimIn = true;
 		}
 	}
+}
+
+void CNEOBaseCombatWeapon::PrimaryAttack(void)
+{
+	BaseClass::PrimaryAttack();
+#if(0)
+	if (IsSemiAuto())
+	{
+		auto pOwner = ToBasePlayer(GetOwner());
+		if (pOwner)
+		{
+			if (!m_iClip1 && !ClientWantsAutoReload(pOwner))
+			{
+				return;
+			}
+
+			// Do nothing if we hold fire whilst semi auto
+			if (!(pOwner->m_afButtonPressed & IN_ATTACK))
+			{
+				return;
+			}
+		}
+	}
+#endif
 }

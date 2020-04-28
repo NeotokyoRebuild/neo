@@ -28,13 +28,16 @@
 
 class CWeaponZR68L : public CNEOBaseCombatWeapon
 {
-public:
 	DECLARE_CLASS(CWeaponZR68L, CNEOBaseCombatWeapon);
-
-	CWeaponZR68L();
-
+public:
 	DECLARE_NETWORKCLASS();
 	DECLARE_PREDICTABLE();
+
+#ifdef GAME_DLL
+	DECLARE_ACTTABLE();
+#endif
+
+	CWeaponZR68L();
 
 	void	ItemPostFrame(void);
 	void	ItemPreFrame(void);
@@ -72,17 +75,6 @@ public:
 	}
 
 	virtual float GetFireRate(void);
-
-#ifdef GAME_DLL
-	DECLARE_ACTTABLE();
-#endif
-
-private:
-	CNetworkVar(float, m_flSoonestAttack);
-	CNetworkVar(float, m_flLastAttackTime);
-	CNetworkVar(float, m_flAccuracyPenalty);
-
-	CNetworkVar(int, m_nNumShotsFired);
 
 private:
 	CWeaponZR68L(const CWeaponZR68L &other);

@@ -28,13 +28,16 @@
 
 class CWeaponSRM_S : public CNEOBaseCombatWeapon
 {
-public:
 	DECLARE_CLASS(CWeaponSRM_S, CNEOBaseCombatWeapon);
-
-	CWeaponSRM_S();
-
+public:
 	DECLARE_NETWORKCLASS();
 	DECLARE_PREDICTABLE();
+
+#ifdef GAME_DLL
+	DECLARE_ACTTABLE();
+#endif
+
+	CWeaponSRM_S();
 
 	void	ItemPostFrame(void);
 	void	ItemPreFrame(void);
@@ -72,17 +75,6 @@ public:
 	}
 
 	virtual float GetFireRate(void);
-
-#ifdef GAME_DLL
-	DECLARE_ACTTABLE();
-#endif
-
-private:
-	CNetworkVar(float, m_flSoonestAttack);
-	CNetworkVar(float, m_flLastAttackTime);
-	CNetworkVar(float, m_flAccuracyPenalty);
-
-	CNetworkVar(int, m_nNumShotsFired);
 
 private:
 	CWeaponSRM_S(const CWeaponSRM_S &other);

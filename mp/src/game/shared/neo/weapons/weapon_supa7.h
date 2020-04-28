@@ -22,11 +22,17 @@
 
 class CWeaponSupa7 : public CNEOBaseCombatWeapon
 {
-public:
 	DECLARE_CLASS(CWeaponSupa7, CNEOBaseCombatWeapon);
-
+public:
 	DECLARE_NETWORKCLASS();
 	DECLARE_PREDICTABLE();
+
+#ifdef GAME_DLL
+	DECLARE_ACTTABLE();
+	DECLARE_DATADESC();
+#endif
+
+	CWeaponSupa7();
 
 private:
 	CNetworkVar(bool, m_bNeedPump); // When emptied completely
@@ -69,12 +75,6 @@ public:
 #if(0)
 	void WeaponIdle( void );
 #endif
-
-#ifndef CLIENT_DLL
-	DECLARE_ACTTABLE();
-#endif
-
-	CWeaponSupa7();
 
 private:
 	CWeaponSupa7(const CWeaponSupa7 &other);

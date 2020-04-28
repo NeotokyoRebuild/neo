@@ -13,8 +13,14 @@
 class CWeaponKyla : public CNEOBaseCombatWeapon
 {
 	DECLARE_CLASS(CWeaponKyla, CNEOBaseCombatWeapon);
-
 public:
+	DECLARE_NETWORKCLASS();
+	DECLARE_PREDICTABLE();
+
+#ifdef GAME_DLL
+	DECLARE_ACTTABLE();
+#endif
+
 	CWeaponKyla(void);
 
 	void PrimaryAttack(void);
@@ -23,13 +29,6 @@ public:
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
 
 	virtual float GetSpeedScale(void) const { return 1.0; }
-
-	DECLARE_NETWORKCLASS();
-	DECLARE_PREDICTABLE();
-
-#ifndef CLIENT_DLL
-	DECLARE_ACTTABLE();
-#endif
 
 private:
 	CWeaponKyla(const CWeaponKyla &other);

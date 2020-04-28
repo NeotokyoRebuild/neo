@@ -28,13 +28,16 @@
 
 class CWeaponZR68S : public CNEOBaseCombatWeapon
 {
-public:
 	DECLARE_CLASS(CWeaponZR68S, CNEOBaseCombatWeapon);
-
-	CWeaponZR68S();
-
+public:
 	DECLARE_NETWORKCLASS();
 	DECLARE_PREDICTABLE();
+
+#ifdef GAME_DLL
+	DECLARE_ACTTABLE();
+#endif
+
+	CWeaponZR68S();
 
 	virtual void	ItemPostFrame(void);
 	virtual void	ItemPreFrame(void);
@@ -73,17 +76,6 @@ public:
 	}
 
 	virtual float GetFireRate(void) { return ZR68S_FASTEST_REFIRE_TIME; }
-
-#ifdef GAME_DLL
-	DECLARE_ACTTABLE();
-#endif
-
-private:
-	CNetworkVar(float, m_flSoonestAttack);
-	CNetworkVar(float, m_flLastAttackTime);
-	CNetworkVar(float, m_flAccuracyPenalty);
-
-	CNetworkVar(int, m_nNumShotsFired);
 
 private:
 	CWeaponZR68S(const CWeaponZR68S &other);

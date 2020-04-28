@@ -33,6 +33,10 @@ public:
 	DECLARE_NETWORKCLASS();
 	DECLARE_PREDICTABLE();
 
+#ifdef GAME_DLL
+	DECLARE_ACTTABLE();
+#endif
+
 	CWeaponSmokeGrenade();
 
 	virtual int GetNeoWepBits(void) const { return NEO_WEP_SMOKE_GRENADE | NEO_WEP_THROWABLE; }
@@ -69,10 +73,6 @@ private:
 	CNetworkVar(bool, m_fDrawbackFinished);
 
 	CWeaponSmokeGrenade(const CWeaponSmokeGrenade& other);
-
-#ifndef CLIENT_DLL
-	DECLARE_ACTTABLE();
-#endif
 };
 
 #endif // NEO_WEAPON_SMOKEGRENADE_H

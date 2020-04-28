@@ -7,12 +7,27 @@
 IMPLEMENT_NETWORKCLASS_ALIASED (WeaponKnife, DT_WeaponKnife)
 
 BEGIN_NETWORK_TABLE(CWeaponKnife, DT_WeaponKnife)
+#ifdef CLIENT_DLL
+	RecvPropTime(RECVINFO(m_flLastSwingTime)),
+#else
+	SendPropTime(SENDINFO(m_flLastSwingTime)),
+#endif
 END_NETWORK_TABLE()
 
+#ifdef CLIENT_DLL
 BEGIN_PREDICTION_DATA(CWeaponKnife)
+	DEFINE_PRED_FIELD(m_flLastSwingTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
+#endif
 
 LINK_ENTITY_TO_CLASS(weapon_knife, CWeaponKnife);
+
+#ifdef GAME_DLL
+BEGIN_DATADESC(CWeaponKnife)
+	DEFINE_FIELD(m_flLastSwingTime, FIELD_TIME),
+END_DATADESC()
+#endif
+
 PRECACHE_WEAPON_REGISTER(weapon_knife);
 
 #ifdef GAME_DLL // NEO FIXME (Rain): fix these values

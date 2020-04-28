@@ -26,34 +26,44 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-NEO_ACTTABLE(CWeaponDetpack)
-
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponDetpack, DT_WeaponDetpack)
 
 BEGIN_NETWORK_TABLE(CWeaponDetpack, DT_WeaponDetpack)
 #ifdef CLIENT_DLL
-RecvPropBool(RECVINFO(m_fDrawbackFinished)),
-RecvPropBool(RECVINFO(m_bWantsToThrowThisDetpack)),
-RecvPropBool(RECVINFO(m_bThisDetpackHasBeenThrown)),
-RecvPropBool(RECVINFO(m_bRemoteHasBeenTriggered)),
+	RecvPropBool(RECVINFO(m_fDrawbackFinished)),
+	RecvPropBool(RECVINFO(m_bWantsToThrowThisDetpack)),
+	RecvPropBool(RECVINFO(m_bThisDetpackHasBeenThrown)),
+	RecvPropBool(RECVINFO(m_bRemoteHasBeenTriggered)),
 #else
-SendPropBool(SENDINFO(m_fDrawbackFinished)),
-SendPropBool(SENDINFO(m_bWantsToThrowThisDetpack)),
-SendPropBool(SENDINFO(m_bThisDetpackHasBeenThrown)),
-SendPropBool(SENDINFO(m_bRemoteHasBeenTriggered)),
+	SendPropBool(SENDINFO(m_fDrawbackFinished)),
+	SendPropBool(SENDINFO(m_bWantsToThrowThisDetpack)),
+	SendPropBool(SENDINFO(m_bThisDetpackHasBeenThrown)),
+	SendPropBool(SENDINFO(m_bRemoteHasBeenTriggered)),
 #endif
 END_NETWORK_TABLE()
 
 #ifdef CLIENT_DLL
 BEGIN_PREDICTION_DATA(CWeaponDetpack)
-DEFINE_PRED_FIELD(m_fDrawbackFinished, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_bWantsToThrowThisDetpack, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_bThisDetpackHasBeenThrown, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_bRemoteHasBeenTriggered, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_fDrawbackFinished, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bWantsToThrowThisDetpack, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bThisDetpackHasBeenThrown, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bRemoteHasBeenTriggered, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 #endif
 
+NEO_IMPLEMENT_ACTTABLE(CWeaponDetpack)
+
 LINK_ENTITY_TO_CLASS(weapon_remotedet, CWeaponDetpack);
+
+#ifdef GAME_DLL
+BEGIN_DATADESC(CWeaponDetpack)
+	DEFINE_FIELD(m_fDrawbackFinished, FIELD_BOOLEAN),
+	DEFINE_FIELD(m_bWantsToThrowThisDetpack, FIELD_BOOLEAN),
+	DEFINE_FIELD(m_bThisDetpackHasBeenThrown, FIELD_BOOLEAN),
+	DEFINE_FIELD(m_bRemoteHasBeenTriggered, FIELD_BOOLEAN),
+END_DATADESC()
+#endif
+
 PRECACHE_WEAPON_REGISTER(weapon_remotedet);
 
 CWeaponDetpack::CWeaponDetpack()

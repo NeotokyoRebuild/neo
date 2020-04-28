@@ -7,32 +7,20 @@
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponMPN, DT_WeaponMPN)
 
 BEGIN_NETWORK_TABLE(CWeaponMPN, DT_WeaponMPN)
-#ifdef CLIENT_DLL
-RecvPropTime(RECVINFO(m_flSoonestAttack)),
-RecvPropTime(RECVINFO(m_flLastAttackTime)),
-RecvPropFloat(RECVINFO(m_flAccuracyPenalty)),
-RecvPropInt(RECVINFO(m_nNumShotsFired)),
-#else
-SendPropTime(SENDINFO(m_flSoonestAttack)),
-SendPropTime(SENDINFO(m_flLastAttackTime)),
-SendPropFloat(SENDINFO(m_flAccuracyPenalty)),
-SendPropInt(SENDINFO(m_nNumShotsFired)),
-#endif
+	DEFINE_NEO_BASE_WEP_NETWORK_TABLE
 END_NETWORK_TABLE()
 
 #ifdef CLIENT_DLL
 BEGIN_PREDICTION_DATA(CWeaponMPN)
-DEFINE_PRED_FIELD(m_flSoonestAttack, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_flLastAttackTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_flAccuracyPenalty, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_nNumShotsFired, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
+	DEFINE_NEO_BASE_WEP_PREDICTION
 END_PREDICTION_DATA()
 #endif
 
-LINK_ENTITY_TO_CLASS(weapon_mpn_unsilenced, CWeaponMPN);
-PRECACHE_WEAPON_REGISTER(weapon_mpn_unsilenced);
+NEO_IMPLEMENT_ACTTABLE(CWeaponMPN)
 
-NEO_ACTTABLE(CWeaponMPN);
+LINK_ENTITY_TO_CLASS(weapon_mpn_unsilenced, CWeaponMPN);
+
+PRECACHE_WEAPON_REGISTER(weapon_mpn_unsilenced);
 
 CWeaponMPN::CWeaponMPN()
 {

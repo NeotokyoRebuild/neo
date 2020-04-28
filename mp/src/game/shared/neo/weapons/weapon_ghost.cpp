@@ -24,24 +24,32 @@ IMPLEMENT_NETWORKCLASS_ALIASED(WeaponGhost, DT_WeaponGhost)
 
 BEGIN_NETWORK_TABLE(CWeaponGhost, DT_WeaponGhost)
 #ifdef CLIENT_DLL
-RecvPropBool(RECVINFO(m_bShouldShowEnemies)),
-RecvPropArray(RecvPropVector(RECVINFO(m_rvPlayerPositions[0])), m_rvPlayerPositions),
+	RecvPropBool(RECVINFO(m_bShouldShowEnemies)),
+	RecvPropArray(RecvPropVector(RECVINFO(m_rvPlayerPositions[0])), m_rvPlayerPositions),
 #else
-SendPropBool(SENDINFO(m_bShouldShowEnemies)),
-SendPropArray(SendPropVector(SENDINFO_ARRAY(m_rvPlayerPositions), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rvPlayerPositions),
+	SendPropBool(SENDINFO(m_bShouldShowEnemies)),
+	SendPropArray(SendPropVector(SENDINFO_ARRAY(m_rvPlayerPositions), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rvPlayerPositions),
 #endif
 END_NETWORK_TABLE()
 
 #ifdef CLIENT_DLL
 BEGIN_PREDICTION_DATA(CWeaponGhost)
-DEFINE_PRED_FIELD(m_rvPlayerPositions, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD_TOL(m_rvPlayerPositions, FIELD_VECTOR, FTYPEDESC_INSENDTABLE, 0.5f),
 END_PREDICTION_DATA()
 #endif
 
-LINK_ENTITY_TO_CLASS(weapon_ghost, CWeaponGhost);
-PRECACHE_WEAPON_REGISTER(weapon_ghost);
+NEO_IMPLEMENT_ACTTABLE(CWeaponGhost)
 
-NEO_ACTTABLE(CWeaponGhost);
+LINK_ENTITY_TO_CLASS(weapon_ghost, CWeaponGhost);
+
+#ifdef GAME_DLL
+BEGIN_DATADESC(CWeaponGhost)
+	DEFINE_FIELD(m_bShouldShowEnemies, FIELD_BOOLEAN),
+	DEFINE_FIELD(m_rvPlayerPositions, FIELD_VECTOR),
+END_DATADESC()
+#endif
+
+PRECACHE_WEAPON_REGISTER(weapon_ghost);
 
 CWeaponGhost::CWeaponGhost(void)
 {

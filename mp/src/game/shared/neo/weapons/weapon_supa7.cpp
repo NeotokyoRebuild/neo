@@ -8,29 +8,41 @@ IMPLEMENT_NETWORKCLASS_ALIASED(WeaponSupa7, DT_WeaponSupa7)
 
 BEGIN_NETWORK_TABLE(CWeaponSupa7, DT_WeaponSupa7)
 #ifdef CLIENT_DLL
-RecvPropBool(RECVINFO(m_bNeedPump)),
-RecvPropBool(RECVINFO(m_bDelayedFire1)),
-RecvPropBool(RECVINFO(m_bDelayedFire2)),
-RecvPropBool(RECVINFO(m_bDelayedReload)),
+	RecvPropBool(RECVINFO(m_bNeedPump)),
+	RecvPropBool(RECVINFO(m_bDelayedFire1)),
+	RecvPropBool(RECVINFO(m_bDelayedFire2)),
+	RecvPropBool(RECVINFO(m_bDelayedReload)),
 #else
-SendPropBool(SENDINFO(m_bNeedPump)),
-SendPropBool(SENDINFO(m_bDelayedFire1)),
-SendPropBool(SENDINFO(m_bDelayedFire2)),
-SendPropBool(SENDINFO(m_bDelayedReload)),
+	SendPropBool(SENDINFO(m_bNeedPump)),
+	SendPropBool(SENDINFO(m_bDelayedFire1)),
+	SendPropBool(SENDINFO(m_bDelayedFire2)),
+	SendPropBool(SENDINFO(m_bDelayedReload)),
 #endif
 END_NETWORK_TABLE()
 
 #ifdef CLIENT_DLL
 BEGIN_PREDICTION_DATA(CWeaponSupa7)
-DEFINE_PRED_FIELD(m_bNeedPump, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_bDelayedFire1, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_bDelayedFire2, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_bDelayedReload, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bNeedPump, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bDelayedFire1, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bDelayedFire2, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bDelayedReload, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 #endif
 
+//NEO_IMPLEMENT_ACTTABLE(CWeaponSupa7)
+
 LINK_ENTITY_TO_CLASS(weapon_supa7, CWeaponSupa7);
+
 PRECACHE_WEAPON_REGISTER(weapon_supa7);
+
+#ifdef GAME_DLL
+BEGIN_DATADESC(CWeaponSupa7)
+	DEFINE_FIELD(m_bNeedPump, FIELD_BOOLEAN),
+	DEFINE_FIELD(m_bDelayedFire1, FIELD_BOOLEAN),
+	DEFINE_FIELD(m_bDelayedFire2, FIELD_BOOLEAN),
+	DEFINE_FIELD(m_bDelayedReload, FIELD_BOOLEAN),
+END_DATADESC()
+#endif
 
 extern ConVar sk_auto_reload_time;
 extern ConVar sk_plr_num_shotgun_pellets;

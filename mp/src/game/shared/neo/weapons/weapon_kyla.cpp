@@ -18,13 +18,16 @@ IMPLEMENT_NETWORKCLASS_ALIASED(WeaponKyla, DT_WeaponKyla);
 BEGIN_NETWORK_TABLE(CWeaponKyla, DT_WeaponKyla)
 END_NETWORK_TABLE()
 
+#ifdef CLIENT_DLL
 BEGIN_PREDICTION_DATA(CWeaponKyla)
 END_PREDICTION_DATA()
+#endif
+
+NEO_IMPLEMENT_ACTTABLE(CWeaponKyla)
 
 LINK_ENTITY_TO_CLASS(weapon_kyla, CWeaponKyla);
-PRECACHE_WEAPON_REGISTER(weapon_kyla);
 
-NEO_ACTTABLE(CWeaponKyla);
+PRECACHE_WEAPON_REGISTER(weapon_kyla);
 
 CWeaponKyla::CWeaponKyla(void)
 {

@@ -7,32 +7,20 @@
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponJitte, DT_WeaponJitte)
 
 BEGIN_NETWORK_TABLE(CWeaponJitte, DT_WeaponJitte)
-#ifdef CLIENT_DLL
-RecvPropTime(RECVINFO(m_flSoonestAttack)),
-RecvPropTime(RECVINFO(m_flLastAttackTime)),
-RecvPropFloat(RECVINFO(m_flAccuracyPenalty)),
-RecvPropInt(RECVINFO(m_nNumShotsFired)),
-#else
-SendPropTime(SENDINFO(m_flSoonestAttack)),
-SendPropTime(SENDINFO(m_flLastAttackTime)),
-SendPropFloat(SENDINFO(m_flAccuracyPenalty)),
-SendPropInt(SENDINFO(m_nNumShotsFired)),
-#endif
+	DEFINE_NEO_BASE_WEP_NETWORK_TABLE
 END_NETWORK_TABLE()
 
 #ifdef CLIENT_DLL
 BEGIN_PREDICTION_DATA(CWeaponJitte)
-DEFINE_PRED_FIELD(m_flSoonestAttack, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_flLastAttackTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_flAccuracyPenalty, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_nNumShotsFired, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
+	DEFINE_NEO_BASE_WEP_PREDICTION
 END_PREDICTION_DATA()
 #endif
 
-LINK_ENTITY_TO_CLASS(weapon_jitte, CWeaponJitte);
-PRECACHE_WEAPON_REGISTER(weapon_jitte);
+NEO_IMPLEMENT_ACTTABLE(CWeaponJitte)
 
-NEO_ACTTABLE(CWeaponJitte);
+LINK_ENTITY_TO_CLASS(weapon_jitte, CWeaponJitte);
+
+PRECACHE_WEAPON_REGISTER(weapon_jitte);
 
 CWeaponJitte::CWeaponJitte()
 {

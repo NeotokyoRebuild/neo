@@ -29,31 +29,40 @@ ConVar sv_neo_grenade_blast_damage("sv_neo_grenade_blast_damage", "100.0", FCVAR
 ConVar sv_neo_grenade_blast_radius("sv_neo_grenade_blast_radius", "250.0", FCVAR_CHEAT, "How large should the grenade blast radius be.", true, 0.0, true, 9999.9);
 ConVar sv_neo_grenade_fuse_timer("sv_neo_grenade_fuse_timer", "2.16", FCVAR_CHEAT, "How long in seconds until a frag grenade explodes.", true, 0.1, true, 60.0); // Measured as 2.15999... in NT, ie. < 2.16
 
-NEO_ACTTABLE(CWeaponGrenade)
-
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponGrenade, DT_WeaponGrenade)
 
 BEGIN_NETWORK_TABLE(CWeaponGrenade, DT_WeaponGrenade)
 #ifdef CLIENT_DLL
-RecvPropBool(RECVINFO(m_bRedraw)),
-RecvPropBool(RECVINFO(m_fDrawbackFinished)),
-RecvPropInt(RECVINFO(m_AttackPaused)),
+	RecvPropBool(RECVINFO(m_bRedraw)),
+	RecvPropBool(RECVINFO(m_fDrawbackFinished)),
+	RecvPropInt(RECVINFO(m_AttackPaused)),
 #else
-SendPropBool(SENDINFO(m_bRedraw)),
-SendPropBool(SENDINFO(m_fDrawbackFinished)),
-SendPropInt(SENDINFO(m_AttackPaused)),
+	SendPropBool(SENDINFO(m_bRedraw)),
+	SendPropBool(SENDINFO(m_fDrawbackFinished)),
+	SendPropInt(SENDINFO(m_AttackPaused)),
 #endif
 END_NETWORK_TABLE()
 
 #ifdef CLIENT_DLL
 BEGIN_PREDICTION_DATA(CWeaponGrenade)
-DEFINE_PRED_FIELD(m_bRedraw, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_fDrawbackFinished, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_AttackPaused, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bRedraw, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_fDrawbackFinished, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_AttackPaused, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 #endif
 
+NEO_IMPLEMENT_ACTTABLE(CWeaponGrenade)
+
 LINK_ENTITY_TO_CLASS(weapon_grenade, CWeaponGrenade);
+
+#ifdef GAME_DLL
+BEGIN_DATADESC(CWeaponGrenade)
+	DEFINE_FIELD(m_bRedraw, FIELD_BOOLEAN),
+	DEFINE_FIELD(m_fDrawbackFinished, FIELD_BOOLEAN),
+	DEFINE_FIELD(m_AttackPaused, FIELD_INTEGER),
+END_DATADESC()
+#endif
+
 PRECACHE_WEAPON_REGISTER(weapon_grenade);
 
 #define RETHROW_DELAY 0.5

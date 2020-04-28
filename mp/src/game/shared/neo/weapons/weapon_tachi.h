@@ -32,13 +32,17 @@
 
 class CWeaponTachi : public CNEOBaseCombatWeapon
 {
+	DECLARE_CLASS(CWeaponTachi, CNEOBaseCombatWeapon);
 public:
-	DECLARE_CLASS( CWeaponTachi, CNEOBaseCombatWeapon );
-
-	CWeaponTachi(void);
-
 	DECLARE_NETWORKCLASS(); 
 	DECLARE_PREDICTABLE();
+
+#ifdef GAME_DLL
+	DECLARE_ACTTABLE();
+	DECLARE_DATADESC();
+#endif
+
+	CWeaponTachi();
 
 	void	Precache( void );
 	void	ItemPostFrame( void );
@@ -94,18 +98,8 @@ public:
         return m_bIsPrimaryFireMode;
     }
 	
-#ifndef CLIENT_DLL
-	DECLARE_ACTTABLE();
-#endif
-
 private:
-	CNetworkVar( float,	m_flSoonestPrimaryAttack );
-    CNetworkVar( float, m_flSoonestFiremodeSwitch );
-	CNetworkVar( float,	m_flLastAttackTime );
-	CNetworkVar( float,	m_flAccuracyPenalty );
-	
-    CNetworkVar( int,	m_nNumShotsFired );
-
+	CNetworkVar( float, m_flSoonestFiremodeSwitch );
     CNetworkVar( bool, m_bIsPrimaryFireMode );
 
 private:
