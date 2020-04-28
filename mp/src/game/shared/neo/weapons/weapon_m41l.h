@@ -16,12 +16,6 @@
 
 #include "weapon_neobasecombatweapon.h"
 
-#define	M41_L_FASTEST_REFIRE_TIME 0.1f
-#define	M41_L_FASTEST_DRY_REFIRE_TIME	0.2f
-
-#define	M41_L_ACCURACY_SHOT_PENALTY_TIME		0.2f
-#define	M41_L_ACCURACY_MAXIMUM_PENALTY_TIME	1.5f	// Maximum penalty to deal out
-
 #ifdef CLIENT_DLL
 #define CWeaponM41L C_WeaponM41L
 #endif
@@ -39,29 +33,29 @@ public:
 
 	CWeaponM41L();
 
-	void	ItemPostFrame(void);
-	void	ItemPreFrame(void);
-	void	ItemBusyFrame(void);
-	void	PrimaryAttack(void);
-	void	AddViewKick(void);
+	virtual void	ItemPostFrame(void) OVERRIDE;
+	virtual void	ItemPreFrame(void) OVERRIDE;
+	virtual void	ItemBusyFrame(void) OVERRIDE;
+	virtual void	PrimaryAttack(void) OVERRIDE;
+	virtual void	AddViewKick(void) OVERRIDE;
 	void	DryFire(void);
 
-	virtual int GetNeoWepBits(void) const { return NEO_WEP_M41_L; }
-	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
+	virtual int GetNeoWepBits(void) const OVERRIDE { return NEO_WEP_M41_L; }
+	virtual int GetNeoWepXPCost(const int neoClass) const OVERRIDE { return 0; }
 
-	virtual float GetSpeedScale(void) const { return 145.0 / 170.0; }
+	virtual float GetSpeedScale(void) const OVERRIDE { return 145.0 / 170.0; }
 
 	void	UpdatePenaltyTime(void);
 
-	Activity	GetPrimaryAttackActivity(void);
+	virtual Activity	GetPrimaryAttackActivity(void) OVERRIDE;
 
-	virtual const Vector& GetBulletSpread(void)
+	virtual const Vector& GetBulletSpread(void) OVERRIDE
 	{
 		static Vector cone;
 
 		float ramp = RemapValClamped(m_flAccuracyPenalty,
 			0.0f,
-			M41_L_ACCURACY_MAXIMUM_PENALTY_TIME,
+			GetMaxAccuracyPenalty(),
 			0.0f,
 			1.0f);
 
@@ -71,7 +65,11 @@ public:
 		return cone;
 	}
 
-	virtual float GetFireRate(void) { return M41_L_FASTEST_REFIRE_TIME; }
+	virtual float GetFireRate(void) OVERRIDE { return 0.1f; }
+protected:
+	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
+	virtual float GetAccuracyPenalty() const OVERRIDE { return 0.2f; }
+	virtual float GetMaxAccuracyPenalty() const OVERRIDE { return 1.5f; }
 
 private:
 	CWeaponM41L(const CWeaponM41L& other);

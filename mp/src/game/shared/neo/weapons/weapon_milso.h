@@ -16,13 +16,6 @@
 
 #include "weapon_neobasecombatweapon.h"
 
-#define	MILSO_FASTEST_REFIRE_TIME 0.2f
-
-#define	MILSO_FASTEST_DRY_REFIRE_TIME 0.2f
-
-#define	MILSO_ACCURACY_SHOT_PENALTY_TIME 0.2f	
-#define	MILSO_ACCURACY_MAXIMUM_PENALTY_TIME 1.5f	// Maximum penalty to deal out
-
 #ifdef CLIENT_DLL
 #define CWeaponMilso C_WeaponMilso
 #endif
@@ -57,13 +50,13 @@ public:
 
 	virtual float GetSpeedScale(void) const { return 1.0; }
 
-	virtual const Vector& GetBulletSpread(void)
+	virtual const Vector& GetBulletSpread(void) OVERRIDE
 	{
 		static Vector cone;
 
-		float ramp = RemapValClamped(m_flAccuracyPenalty,
+		const float ramp = RemapValClamped(m_flAccuracyPenalty,
 			0.0f,
-			MILSO_ACCURACY_MAXIMUM_PENALTY_TIME,
+			GetMaxAccuracyPenalty(),
 			0.0f,
 			1.0f);
 
@@ -73,7 +66,11 @@ public:
 		return cone;
 	}
 
-	virtual float GetFireRate(void);
+	virtual float GetFireRate(void) OVERRIDE { return 0.2f; }
+protected:
+	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
+	virtual float GetAccuracyPenalty() const OVERRIDE { return 0.2f; }
+	virtual float GetMaxAccuracyPenalty() const OVERRIDE { return 0.2f; }
 
 private:
 	CWeaponMilso(const CWeaponMilso &other);

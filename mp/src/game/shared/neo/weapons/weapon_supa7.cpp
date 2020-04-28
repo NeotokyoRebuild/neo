@@ -397,7 +397,7 @@ void CWeaponSupa7::ItemPostFrame(void)
 		else if (GetOwner()->GetWaterLevel() == 3 && m_bFiresUnderwater == false)
 		{
 			WeaponSound(EMPTY);
-			ProposeNextAttack(gpGlobals->curtime + 0.2);
+			ProposeNextAttack(gpGlobals->curtime + GetFastestDryRefireTime());
 			return;
 		}
 		else
@@ -428,7 +428,7 @@ void CWeaponSupa7::ItemPostFrame(void)
 		else if (pOwner->GetWaterLevel() == 3 && m_bFiresUnderwater == false)
 		{
 			WeaponSound(EMPTY);
-			ProposeNextAttack(gpGlobals->curtime + 0.2);
+			ProposeNextAttack(gpGlobals->curtime + GetFastestDryRefireTime());
 			return;
 		}
 		else

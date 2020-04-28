@@ -137,12 +137,13 @@ public:
 	bool IsReadyToAimIn(void) const { return m_bReadyToAimIn; }
 
 	// Whether this weapon should fire automatically when holding down the attack.
+	// Tachi is considered automatic here because of its alt fire mode.
 	bool IsAutomatic(void) const
 	{
 		return ((GetNeoWepBits() & (NEO_WEP_AA13 | NEO_WEP_JITTE | NEO_WEP_JITTE_S |
 			NEO_WEP_KNIFE | NEO_WEP_MPN | NEO_WEP_MPN_S | NEO_WEP_MX | NEO_WEP_MX_S |
 			NEO_WEP_PZ | NEO_WEP_SMAC | NEO_WEP_SRM | NEO_WEP_SRM_S | NEO_WEP_ZR68_C |
-			NEO_WEP_ZR68_S)) ? true : false);
+			NEO_WEP_ZR68_S | NEO_WEP_TACHI)) ? true : false);
 	}
 
 	// Whether this weapon should fire only once per each attack command, even if held down.
@@ -159,6 +160,15 @@ public:
 	// some game logic somewhere. There's probably some flag we could set
 	// somewhere to achieve the same without having to do this.
 	virtual void SUB_Remove(void) { }
+
+	virtual float GetFireRate(void) OVERRIDE { Assert(false); return BaseClass::GetFireRate(); } // Should never call this base class; override in children.
+
+protected:
+	virtual float GetAccuracyPenalty() const { Assert(false); return 0; } // Should never call this base class; implement in children.
+	virtual float GetMaxAccuracyPenalty() const { Assert(false); return 0; } // Should never call this base class; implement in children.
+	virtual float GetFastestDryRefireTime() const { Assert(false); return 0; } // Should never call this base class; implement in children.
+
+	float GetFastestRefireTime() { return GetFireRate(); }
 
 protected:
 	CNetworkVar(float, m_flSoonestAttack);

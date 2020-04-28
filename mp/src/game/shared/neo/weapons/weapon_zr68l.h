@@ -16,12 +16,6 @@
 
 #include "weapon_neobasecombatweapon.h"
 
-#define	ZR68L_FASTEST_REFIRE_TIME 0.5f
-#define	ZR68L_FASTEST_DRY_REFIRE_TIME	0.2f
-
-#define	ZR68L_ACCURACY_SHOT_PENALTY_TIME		0.2f
-#define	ZR68L_ACCURACY_MAXIMUM_PENALTY_TIME	1.5f	// Maximum penalty to deal out
-
 #ifdef CLIENT_DLL
 #define CWeaponZR68L C_WeaponZR68L
 #endif
@@ -62,9 +56,9 @@ public:
 	{
 		static Vector cone;
 
-		float ramp = RemapValClamped(m_flAccuracyPenalty,
+		const float ramp = RemapValClamped(m_flAccuracyPenalty,
 			0.0f,
-			ZR68L_ACCURACY_MAXIMUM_PENALTY_TIME,
+			GetMaxAccuracyPenalty(),
 			0.0f,
 			1.0f);
 
@@ -74,7 +68,11 @@ public:
 		return cone;
 	}
 
-	virtual float GetFireRate(void);
+	virtual float GetFireRate(void) OVERRIDE { return 0.5f; }
+protected:
+	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
+	virtual float GetAccuracyPenalty() const OVERRIDE { return 0.2f; }
+	virtual float GetMaxAccuracyPenalty() const OVERRIDE { return 1.5f; }
 
 private:
 	CWeaponZR68L(const CWeaponZR68L &other);

@@ -205,6 +205,11 @@ void CWeaponGhost::PrimaryAttack(void)
 {
 }
 
+void CWeaponGhost::SecondaryAttack(void)
+{
+	BaseClass::SecondaryAttack();
+}
+
 void CWeaponGhost::SetShowEnemies(bool enabled)
 {
 #ifdef GAME_DLL

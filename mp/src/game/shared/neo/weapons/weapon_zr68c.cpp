@@ -50,26 +50,7 @@ bool CWeaponZR68C::Deploy(void)
 
 void CWeaponZR68C::PrimaryAttack()
 {
-	if ((gpGlobals->curtime - m_flLastAttackTime) > 0.5f)
-	{
-		m_nNumShotsFired = 0;
-	}
-	else
-	{
-		m_nNumShotsFired++;
-	}
-
-	m_flLastAttackTime = gpGlobals->curtime;
-
-	auto pOwner = ToBasePlayer(GetOwner());
-	if (pOwner)
-	{
-		pOwner->ViewPunchReset();
-	}
-
 	BaseClass::PrimaryAttack();
-
-	m_flAccuracyPenalty += ZR68C_ACCURACY_SHOT_PENALTY_TIME;
 }
 
 void CWeaponZR68C::UpdatePenaltyTime()
@@ -85,8 +66,7 @@ void CWeaponZR68C::UpdatePenaltyTime()
 		(m_flSoonestAttack < gpGlobals->curtime))
 	{
 		m_flAccuracyPenalty -= gpGlobals->frametime;
-		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty,
-			0.0f, ZR68C_ACCURACY_MAXIMUM_PENALTY_TIME);
+		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty, 0.0f, GetMaxAccuracyPenalty());
 	}
 }
 
@@ -128,19 +108,14 @@ void CWeaponZR68C::ItemPostFrame()
 			{
 				DryFire();
 
-				m_flSoonestAttack = gpGlobals->curtime + ZR68C_FASTEST_DRY_REFIRE_TIME;
+				m_flSoonestAttack = gpGlobals->curtime + GetFastestDryRefireTime();
 			}
 			else
 			{
-				m_flSoonestAttack = gpGlobals->curtime + ZR68C_FASTEST_REFIRE_TIME;
+				m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
 			}
 		}
 	}
-}
-
-float CWeaponZR68C::GetFireRate()
-{
-	return ZR68C_FASTEST_REFIRE_TIME;
 }
 
 Activity CWeaponZR68C::GetPrimaryAttackActivity()
@@ -174,8 +149,8 @@ void CWeaponZR68C::AddViewKick()
 
 	QAngle viewPunch;
 
-	viewPunch.x = SharedRandomFloat("zr68cx", 0.25f, 0.5f);
-	viewPunch.y = SharedRandomFloat("zr68cy", -0.6f, 0.6f);
+	viewPunch.x = SharedRandomFloat("zr68cpx", 0.25f, 0.5f);
+	viewPunch.y = SharedRandomFloat("zr68cpy", -0.6f, 0.6f);
 	viewPunch.z = 0;
 
 	owner->ViewPunch(viewPunch);

@@ -50,26 +50,7 @@ bool CWeaponPZ::Deploy(void)
 
 void CWeaponPZ::PrimaryAttack()
 {
-	if ((gpGlobals->curtime - m_flLastAttackTime) > 0.5f)
-	{
-		m_nNumShotsFired = 0;
-	}
-	else
-	{
-		m_nNumShotsFired++;
-	}
-
-	m_flLastAttackTime = gpGlobals->curtime;
-
-	auto pOwner = ToBasePlayer(GetOwner());
-	if (pOwner)
-	{
-		pOwner->ViewPunchReset();
-	}
-
 	BaseClass::PrimaryAttack();
-
-	m_flAccuracyPenalty += PZ_ACCURACY_SHOT_PENALTY_TIME;
 }
 
 void CWeaponPZ::UpdatePenaltyTime()
@@ -85,8 +66,7 @@ void CWeaponPZ::UpdatePenaltyTime()
 		(m_flSoonestAttack < gpGlobals->curtime))
 	{
 		m_flAccuracyPenalty -= gpGlobals->frametime;
-		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty,
-			0.0f, PZ_ACCURACY_MAXIMUM_PENALTY_TIME);
+		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty, 0.0f, GetMaxAccuracyPenalty());
 	}
 }
 
@@ -127,20 +107,14 @@ void CWeaponPZ::ItemPostFrame()
 			if (m_iClip1 <= 0)
 			{
 				DryFire();
-
-				m_flSoonestAttack = gpGlobals->curtime + PZ_FASTEST_DRY_REFIRE_TIME;
+				m_flSoonestAttack = gpGlobals->curtime + GetFastestDryRefireTime();
 			}
 			else
 			{
-				m_flSoonestAttack = gpGlobals->curtime + PZ_FASTEST_REFIRE_TIME;
+				m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
 			}
 		}
 	}
-}
-
-float CWeaponPZ::GetFireRate()
-{
-	return PZ_FASTEST_REFIRE_TIME;
 }
 
 Activity CWeaponPZ::GetPrimaryAttackActivity()
@@ -174,8 +148,8 @@ void CWeaponPZ::AddViewKick()
 
 	QAngle viewPunch;
 
-	viewPunch.x = SharedRandomFloat("pzx", 0.25f, 0.5f);
-	viewPunch.y = SharedRandomFloat("pzy", -0.6f, 0.6f);
+	viewPunch.x = SharedRandomFloat("pzpx", 0.25f, 0.5f);
+	viewPunch.y = SharedRandomFloat("pzpy", -0.6f, 0.6f);
 	viewPunch.z = 0;
 
 	owner->ViewPunch(viewPunch);

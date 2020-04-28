@@ -50,26 +50,7 @@ bool CWeaponSMAC::Deploy(void)
 
 void CWeaponSMAC::PrimaryAttack()
 {
-	if ((gpGlobals->curtime - m_flLastAttackTime) > 0.5f)
-	{
-		m_nNumShotsFired = 0;
-	}
-	else
-	{
-		m_nNumShotsFired++;
-	}
-
-	m_flLastAttackTime = gpGlobals->curtime;
-
-	auto pOwner = ToBasePlayer(GetOwner());
-	if (pOwner)
-	{
-		pOwner->ViewPunchReset();
-	}
-
 	BaseClass::PrimaryAttack();
-
-	m_flAccuracyPenalty += SMAC_ACCURACY_SHOT_PENALTY_TIME;
 }
 
 void CWeaponSMAC::UpdatePenaltyTime()
@@ -85,8 +66,7 @@ void CWeaponSMAC::UpdatePenaltyTime()
 		(m_flSoonestAttack < gpGlobals->curtime))
 	{
 		m_flAccuracyPenalty -= gpGlobals->frametime;
-		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty,
-			0.0f, SMAC_ACCURACY_MAXIMUM_PENALTY_TIME);
+		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty, 0.0f, GetMaxAccuracyPenalty());
 	}
 }
 
@@ -127,20 +107,14 @@ void CWeaponSMAC::ItemPostFrame()
 			if (m_iClip1 <= 0)
 			{
 				DryFire();
-
-				m_flSoonestAttack = gpGlobals->curtime + SMAC_FASTEST_DRY_REFIRE_TIME;
+				m_flSoonestAttack = gpGlobals->curtime + GetFastestDryRefireTime();
 			}
 			else
 			{
-				m_flSoonestAttack = gpGlobals->curtime + SMAC_FASTEST_REFIRE_TIME;
+				m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
 			}
 		}
 	}
-}
-
-float CWeaponSMAC::GetFireRate()
-{
-	return SMAC_FASTEST_REFIRE_TIME;
 }
 
 Activity CWeaponSMAC::GetPrimaryAttackActivity()
@@ -174,8 +148,8 @@ void CWeaponSMAC::AddViewKick()
 
 	QAngle viewPunch;
 
-	viewPunch.x = SharedRandomFloat("smacx", 0.25f, 0.5f);
-	viewPunch.y = SharedRandomFloat("smacy", -0.6f, 0.6f);
+	viewPunch.x = SharedRandomFloat("smacpx", 0.25f, 0.5f);
+	viewPunch.y = SharedRandomFloat("smacpy", -0.6f, 0.6f);
 	viewPunch.z = 0;
 
 	owner->ViewPunch(viewPunch);

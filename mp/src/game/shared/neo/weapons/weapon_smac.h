@@ -16,12 +16,6 @@
 
 #include "weapon_neobasecombatweapon.h"
 
-#define	SMAC_FASTEST_REFIRE_TIME 0.085f
-#define SMAC_FASTEST_DRY_REFIRE_TIME	0.2f
-
-#define	SMAC_ACCURACY_SHOT_PENALTY_TIME		0.2f
-#define	SMAC_ACCURACY_MAXIMUM_PENALTY_TIME	1.5f	// Maximum penalty to deal out
-
 #ifdef CLIENT_DLL
 #define CWeaponSMAC C_WeaponSMAC
 #endif
@@ -64,7 +58,7 @@ public:
 
 		float ramp = RemapValClamped(m_flAccuracyPenalty,
 			0.0f,
-			SMAC_ACCURACY_MAXIMUM_PENALTY_TIME,
+			GetMaxAccuracyPenalty(),
 			0.0f,
 			1.0f);
 
@@ -74,7 +68,11 @@ public:
 		return cone;
 	}
 
-	virtual float GetFireRate(void);
+	virtual float GetFireRate(void) OVERRIDE { return 0.085f; }
+protected:
+	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
+	virtual float GetAccuracyPenalty() const OVERRIDE { return 0.2f; }
+	virtual float GetMaxAccuracyPenalty() const OVERRIDE { return 1.5f; }
 
 private:
 	CWeaponSMAC(const CWeaponSMAC& other);

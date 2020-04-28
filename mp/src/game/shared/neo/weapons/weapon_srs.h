@@ -16,12 +16,6 @@
 
 #include "weapon_neobasecombatweapon.h"
 
-#define	SRS_FASTEST_REFIRE_TIME 1.0f
-#define	SRS_FASTEST_DRY_REFIRE_TIME	0.2f
-
-#define	SRS_ACCURACY_SHOT_PENALTY_TIME		0.2f
-#define	SRS_ACCURACY_MAXIMUM_PENALTY_TIME	1.5f	// Maximum penalty to deal out
-
 #ifdef CLIENT_DLL
 #define CWeaponSRS C_WeaponSRS
 #endif
@@ -58,13 +52,13 @@ public:
 
 	Activity	GetPrimaryAttackActivity(void);
 
-	virtual const Vector& GetBulletSpread(void)
+	virtual const Vector& GetBulletSpread(void) OVERRIDE
 	{
 		static Vector cone;
 
-		float ramp = RemapValClamped(m_flAccuracyPenalty,
+		const float ramp = RemapValClamped(m_flAccuracyPenalty,
 			0.0f,
-			SRS_ACCURACY_MAXIMUM_PENALTY_TIME,
+			GetMaxAccuracyPenalty(),
 			0.0f,
 			1.0f);
 
@@ -74,7 +68,11 @@ public:
 		return cone;
 	}
 
-	virtual float GetFireRate(void);
+	virtual float GetFireRate(void) OVERRIDE { return 1.0f; }
+protected:
+	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
+	virtual float GetAccuracyPenalty() const OVERRIDE { return 0.2f; }
+	virtual float GetMaxAccuracyPenalty() const OVERRIDE { return 1.5f; }
 
 private:
 	CWeaponSRS(const CWeaponSRS &other);

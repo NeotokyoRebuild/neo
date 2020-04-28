@@ -50,26 +50,7 @@ bool CWeaponSRM::Deploy(void)
 
 void CWeaponSRM::PrimaryAttack()
 {
-	if ((gpGlobals->curtime - m_flLastAttackTime) > 0.5f)
-	{
-		m_nNumShotsFired = 0;
-	}
-	else
-	{
-		m_nNumShotsFired++;
-	}
-
-	m_flLastAttackTime = gpGlobals->curtime;
-
-	auto pOwner = ToBasePlayer(GetOwner());
-	if (pOwner)
-	{
-		pOwner->ViewPunchReset();
-	}
-
 	BaseClass::PrimaryAttack();
-
-	m_flAccuracyPenalty += SRM_ACCURACY_SHOT_PENALTY_TIME;
 }
 
 void CWeaponSRM::UpdatePenaltyTime()
@@ -85,8 +66,7 @@ void CWeaponSRM::UpdatePenaltyTime()
 		(m_flSoonestAttack < gpGlobals->curtime))
 	{
 		m_flAccuracyPenalty -= gpGlobals->frametime;
-		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty,
-			0.0f, SRM_ACCURACY_MAXIMUM_PENALTY_TIME);
+		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty, 0.0f, GetMaxAccuracyPenalty());
 	}
 }
 
@@ -128,19 +108,14 @@ void CWeaponSRM::ItemPostFrame()
 			{
 				DryFire();
 
-				m_flSoonestAttack = gpGlobals->curtime + SRM_FASTEST_DRY_REFIRE_TIME;
+				m_flSoonestAttack = gpGlobals->curtime + GetFastestDryRefireTime();
 			}
 			else
 			{
-				m_flSoonestAttack = gpGlobals->curtime + SRM_FASTEST_REFIRE_TIME;
+				m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
 			}
 		}
 	}
-}
-
-float CWeaponSRM::GetFireRate()
-{
-	return SRM_FASTEST_REFIRE_TIME;
 }
 
 Activity CWeaponSRM::GetPrimaryAttackActivity()
@@ -174,8 +149,8 @@ void CWeaponSRM::AddViewKick()
 
 	QAngle viewPunch;
 
-	viewPunch.x = SharedRandomFloat("srmx", 0.25f, 0.5f);
-	viewPunch.y = SharedRandomFloat("srmy", -0.6f, 0.6f);
+	viewPunch.x = SharedRandomFloat("srmpx", 0.25f, 0.5f);
+	viewPunch.y = SharedRandomFloat("srmpy", -0.6f, 0.6f);
 	viewPunch.z = 0;
 
 	owner->ViewPunch(viewPunch);

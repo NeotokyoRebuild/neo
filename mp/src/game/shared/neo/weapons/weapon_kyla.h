@@ -30,6 +30,12 @@ public:
 
 	virtual float GetSpeedScale(void) const { return 1.0; }
 
+	virtual float GetFireRate(void) OVERRIDE { return 0.35f; }
+protected:
+	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
+	virtual float GetAccuracyPenalty() const OVERRIDE { return 0.2f; }
+	virtual float GetMaxAccuracyPenalty() const OVERRIDE { return 0.5f; }
+
 private:
 	CWeaponKyla(const CWeaponKyla &other);
 };

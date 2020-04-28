@@ -50,62 +50,7 @@ void CWeaponMilso::DryFire(void)
 
 void CWeaponMilso::PrimaryAttack(void)
 {
-	if (m_iClip1 == 0)
-	{
-		if (!m_bFireOnEmpty)
-		{
-			CheckReload();
-		}
-		else
-		{
-			WeaponSound(EMPTY);
-			m_flNextPrimaryAttack = 0.2;
-		}
-
-		return;
-	}
-
-	CBasePlayer *pOwner = ToBasePlayer(GetOwner());
-
-	if (pOwner)
-	{
-		if (!m_iClip1 && !ClientWantsAutoReload(pOwner))
-		{
-			return;
-		}
-
-		// Do nothing if we hold fire
-		if ((pOwner->m_nButtons & IN_ATTACK) &&
-			(!(pOwner->m_afButtonPressed & IN_ATTACK)))
-		{
-			return;
-		}
-	}
-
-	if ((gpGlobals->curtime - m_flLastAttackTime) > 0.5f)
-	{
-		m_nNumShotsFired = 0;
-	}
-	else
-	{
-		m_nNumShotsFired++;
-	}
-
-	m_flLastAttackTime = gpGlobals->curtime;
-
-	if (pOwner)
-	{
-		// Each time the player fires the pistol, reset the view punch. This prevents
-		// the aim from 'drifting off' when the player fires very quickly. This may
-		// not be the ideal way to achieve this, but it's cheap and it works, which is
-		// great for a feature we're evaluating. (sjb)
-		pOwner->ViewPunchReset();
-	}
-
 	BaseClass::PrimaryAttack();
-
-	// Add an accuracy penalty which can move past our maximum penalty time if we're really spastic
-	m_flAccuracyPenalty += MILSO_ACCURACY_SHOT_PENALTY_TIME;
 }
 
 void CWeaponMilso::UpdatePenaltyTime(void)
@@ -120,8 +65,7 @@ void CWeaponMilso::UpdatePenaltyTime(void)
 		(m_flSoonestAttack < gpGlobals->curtime))
 	{
 		m_flAccuracyPenalty -= gpGlobals->frametime;
-		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty, 0.0f,
-			MILSO_ACCURACY_MAXIMUM_PENALTY_TIME);
+		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty, 0.0f, GetMaxAccuracyPenalty());
 	}
 }
 
@@ -137,11 +81,6 @@ void CWeaponMilso::ItemBusyFrame(void)
 	UpdatePenaltyTime();
 
 	BaseClass::ItemBusyFrame();
-}
-
-float CWeaponMilso::GetFireRate(void)
-{
-	return MILSO_FASTEST_REFIRE_TIME;
 }
 
 void CWeaponMilso::ItemPostFrame(void)
@@ -172,18 +111,17 @@ void CWeaponMilso::ItemPostFrame(void)
 			if (m_iClip1 <= 0)
 			{
 				DryFire();
-
-				m_flSoonestAttack = gpGlobals->curtime + MILSO_FASTEST_DRY_REFIRE_TIME;
+				m_flSoonestAttack = gpGlobals->curtime + GetFastestDryRefireTime();
 			}
 			else
 			{
-				m_flSoonestAttack = gpGlobals->curtime + MILSO_FASTEST_REFIRE_TIME;
+				m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
 			}
 		}
 	}
 	else if (pOwner->m_afButtonReleased & IN_ATTACK)
 	{
-		m_flSoonestAttack = gpGlobals->curtime + MILSO_FASTEST_REFIRE_TIME;
+		m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
 	}
 }
 
@@ -205,15 +143,17 @@ void CWeaponMilso::AddViewKick(void)
 {
 	CBasePlayer *pPlayer = ToBasePlayer(GetOwner());
 
-	if (pPlayer == NULL)
+	if (!pPlayer)
+	{
 		return;
+	}
 
-	QAngle	viewPunch;
+	const QAngle viewPunch{
+		SharedRandomFloat("milsopax", 0.25f, 0.5f),
+		SharedRandomFloat("milsopay", -0.6f, 0.6f),
+		0.0f
+	};
 
-	viewPunch.x = SharedRandomFloat("milsopax", 0.25f, 0.5f);
-	viewPunch.y = SharedRandomFloat("milsopay", -0.6f, 0.6f);
-	viewPunch.z = 0.0f;
-
-	//Add it to the view punch
+	// Add it to the view punch
 	pPlayer->ViewPunch(viewPunch);
 }

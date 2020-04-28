@@ -222,24 +222,63 @@ void CNEOBaseCombatWeapon::ItemPreFrame(void)
 
 void CNEOBaseCombatWeapon::PrimaryAttack(void)
 {
-	BaseClass::PrimaryAttack();
-#if(0)
+	// Can't shoot again yet
+	if (gpGlobals->curtime - m_flLastAttackTime < GetFastestRefireTime())
+	{
+		return;
+	}
+
+	if (m_iClip1 == 0)
+	{
+		if (!m_bFireOnEmpty)
+		{
+			CheckReload();
+		}
+		else
+		{
+			WeaponSound(EMPTY);
+			m_flNextPrimaryAttack = 0.2;
+		}
+		return;
+	}
+
+	auto pOwner = ToBasePlayer(GetOwner());
+
+	if (!pOwner)
+	{
+		Assert(false);
+		return;
+	}
+
+	if (m_iClip1 == 0 && !ClientWantsAutoReload(pOwner))
+	{
+		return;
+	}
+
 	if (IsSemiAuto())
 	{
-		auto pOwner = ToBasePlayer(GetOwner());
-		if (pOwner)
+		// Do nothing if we hold fire whilst semi auto
+		if ((pOwner->m_afButtonLast & IN_ATTACK) &&
+			(pOwner->m_nButtons & IN_ATTACK))
 		{
-			if (!m_iClip1 && !ClientWantsAutoReload(pOwner))
-			{
-				return;
-			}
-
-			// Do nothing if we hold fire whilst semi auto
-			if (!(pOwner->m_afButtonPressed & IN_ATTACK))
-			{
-				return;
-			}
+			return;
 		}
 	}
-#endif
+
+	pOwner->ViewPunchReset();
+
+	if ((gpGlobals->curtime - m_flLastAttackTime) > 0.5f)
+	{
+		m_nNumShotsFired = 0;
+	}
+	else
+	{
+		++m_nNumShotsFired;
+	}
+
+	m_flLastAttackTime = gpGlobals->curtime;
+
+	BaseClass::PrimaryAttack();
+
+	m_flAccuracyPenalty += GetAccuracyPenalty();
 }

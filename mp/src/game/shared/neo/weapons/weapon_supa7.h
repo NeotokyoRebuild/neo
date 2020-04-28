@@ -70,7 +70,11 @@ public:
 	void SecondaryAttack(void);
 	void DryFire(void);
 
-	virtual float GetFireRate(void) { return 0.7; };
+	virtual float GetFireRate(void) OVERRIDE { return 0.7f; }
+protected:
+	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
+	virtual float GetAccuracyPenalty() const OVERRIDE { Assert(false); return 0; } // Currently unused in shotgun code
+	virtual float GetMaxAccuracyPenalty() const OVERRIDE { Assert(false); return 0; } // Currently unused in shotgun code
 
 #if(0)
 	void WeaponIdle( void );

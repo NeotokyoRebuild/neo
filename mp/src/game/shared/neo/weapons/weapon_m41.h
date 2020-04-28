@@ -16,12 +16,6 @@
 
 #include "weapon_neobasecombatweapon.h"
 
-#define	M41_FASTEST_REFIRE_TIME 0.1f
-#define	M41_FASTEST_DRY_REFIRE_TIME	0.2f
-
-#define	M41_ACCURACY_SHOT_PENALTY_TIME		0.2f
-#define	M41_ACCURACY_MAXIMUM_PENALTY_TIME	1.5f	// Maximum penalty to deal out
-
 #ifdef CLIENT_DLL
 #define CWeaponM41 C_WeaponM41
 #endif
@@ -61,7 +55,7 @@ public:
 
 		float ramp = RemapValClamped(m_flAccuracyPenalty,
 			0.0f,
-			M41_ACCURACY_MAXIMUM_PENALTY_TIME,
+			GetMaxAccuracyPenalty(),
 			0.0f,
 			1.0f);
 
@@ -71,7 +65,11 @@ public:
 		return cone;
 	}
 
-	virtual float GetFireRate(void) { return M41_FASTEST_REFIRE_TIME; }
+	virtual float GetFireRate(void) OVERRIDE { return 0.1f; }
+protected:
+	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
+	virtual float GetAccuracyPenalty() const OVERRIDE { return 0.2f; }
+	virtual float GetMaxAccuracyPenalty() const OVERRIDE { return 1.5f; }
 
 private:
 	CWeaponM41(const CWeaponM41& other);

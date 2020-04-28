@@ -40,56 +40,7 @@ void CWeaponM41S::DryFire()
 
 void CWeaponM41S::PrimaryAttack()
 {
-	if (m_iClip1 == 0)
-	{
-		if (!m_bFireOnEmpty)
-		{
-			CheckReload();
-		}
-		else
-		{
-			WeaponSound(EMPTY);
-			m_flNextPrimaryAttack = 0.2;
-		}
-
-		return;
-	}
-
-	auto owner = ToBasePlayer(GetOwner());
-
-	if (owner)
-	{
-		if (!m_iClip1 && !ClientWantsAutoReload(GetOwner()))
-		{
-			return;
-		}
-
-		// Do nothing if we hold fire whilst semi auto
-		if (!(owner->m_afButtonPressed & IN_ATTACK))
-		{
-			return;
-		}
-	}
-
-	if ((gpGlobals->curtime - m_flLastAttackTime) > 0.5f)
-	{
-		m_nNumShotsFired = 0;
-	}
-	else
-	{
-		m_nNumShotsFired++;
-	}
-
-	m_flLastAttackTime = gpGlobals->curtime;
-
-	if (owner)
-	{
-		owner->ViewPunchReset();
-	}
-
 	BaseClass::PrimaryAttack();
-
-	m_flAccuracyPenalty += M41_S_ACCURACY_SHOT_PENALTY_TIME;
 }
 
 void CWeaponM41S::UpdatePenaltyTime()
@@ -106,7 +57,7 @@ void CWeaponM41S::UpdatePenaltyTime()
 	{
 		m_flAccuracyPenalty -= gpGlobals->frametime;
 		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty,
-			0.0f, M41_S_ACCURACY_MAXIMUM_PENALTY_TIME);
+			0.0f, GetMaxAccuracyPenalty());
 	}
 }
 
@@ -148,11 +99,11 @@ void CWeaponM41S::ItemPostFrame()
 			{
 				DryFire();
 
-				m_flSoonestAttack = gpGlobals->curtime + M41_S_FASTEST_DRY_REFIRE_TIME;
+				m_flSoonestAttack = gpGlobals->curtime + GetFastestDryRefireTime();
 			}
 			else
 			{
-				m_flSoonestAttack = gpGlobals->curtime + M41_S_FASTEST_REFIRE_TIME;
+				m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
 			}
 		}
 	}
@@ -180,18 +131,18 @@ Activity CWeaponM41S::GetPrimaryAttackActivity()
 
 void CWeaponM41S::AddViewKick()
 {
-	auto owner = ToBasePlayer(GetOwner());
+	auto pOwner = ToBasePlayer(GetOwner());
 
-	if (!owner)
+	if (!pOwner)
 	{
 		return;
 	}
 
-	QAngle viewPunch;
+	const QAngle viewPunch {
+		SharedRandomFloat("m41spx", 0.25f, 0.5f),
+		SharedRandomFloat("m41spy", -0.6f, 0.6f),
+		0.0f
+	};
 
-	viewPunch.x = SharedRandomFloat("m41sx", 0.25f, 0.5f);
-	viewPunch.y = SharedRandomFloat("m41sy", -0.6f, 0.6f);
-	viewPunch.z = 0;
-
-	owner->ViewPunch(viewPunch);
+	pOwner->ViewPunch(viewPunch);
 }

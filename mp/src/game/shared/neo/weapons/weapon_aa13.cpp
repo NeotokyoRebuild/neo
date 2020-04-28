@@ -17,13 +17,6 @@
 #define CNEO_Player C_NEO_Player
 #endif
 
-// NEO TODO (Rain): move this stuff to weapon scripts for all guns
-#define	AA13_ACCURACY_SHOT_PENALTY_TIME		0.2f
-#define	AA13_ACCURACY_MAXIMUM_PENALTY_TIME	1.5f	// Maximum penalty to deal out
-
-#define	AA13_FASTEST_REFIRE_TIME 0.333f
-#define	AA13_FASTEST_DRY_REFIRE_TIME 0.2f
-
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponAA13, DT_WeaponAA13)
 
 BEGIN_NETWORK_TABLE(CWeaponAA13, DT_WeaponAA13)
@@ -74,7 +67,7 @@ void CWeaponAA13::UpdatePenaltyTime()
 {
 	// Update the penalty time decay
 	m_flAccuracyPenalty -= gpGlobals->frametime;
-	m_flAccuracyPenalty = clamp(m_flAccuracyPenalty, 0.0f, AA13_ACCURACY_MAXIMUM_PENALTY_TIME);
+	m_flAccuracyPenalty = clamp(m_flAccuracyPenalty, 0.0f, GetMaxAccuracyPenalty());
 }
 
 void CWeaponAA13::ItemPostFrame()
@@ -100,13 +93,12 @@ void CWeaponAA13::ItemPostFrame()
 			if (m_iClip1 <= 0)
 			{
 				DryFire();
-
-				m_flSoonestAttack = gpGlobals->curtime + AA13_FASTEST_DRY_REFIRE_TIME;
+				m_flSoonestAttack = gpGlobals->curtime + GetFastestDryRefireTime();
 				return;
 			}
 			else
 			{
-				m_flSoonestAttack = gpGlobals->curtime + AA13_FASTEST_REFIRE_TIME;
+				m_flSoonestAttack = gpGlobals->curtime + GetFastestRefireTime();
 			}
 		}
 	}
@@ -128,38 +120,7 @@ void CWeaponAA13::ItemBusyFrame()
 
 void CWeaponAA13::PrimaryAttack(void)
 {
-	CNEO_Player *pOwner = ToNEOPlayer((GetOwner()));
-
-	if (!pOwner)
-	{
-		return;
-	}
-
-	// Can't shoot again yet
-	if (gpGlobals->curtime - m_flLastAttackTime < AA13_FASTEST_REFIRE_TIME)
-	{
-		return;
-	}
-
-	if ((gpGlobals->curtime - m_flLastAttackTime) > 0.5f)
-	{
-		m_nNumShotsFired = 0;
-	}
-	else
-	{
-		m_nNumShotsFired++;
-	}
-
-	m_flLastAttackTime = gpGlobals->curtime;
-
-	if (pOwner)
-	{
-		pOwner->ViewPunchReset();
-	}
-
 	BaseClass::PrimaryAttack();
-
-	m_flAccuracyPenalty += AA13_ACCURACY_SHOT_PENALTY_TIME;
 }
 
 void CWeaponAA13::AddViewKick()
@@ -173,8 +134,8 @@ void CWeaponAA13::AddViewKick()
 
 	QAngle viewPunch;
 
-	viewPunch.x = SharedRandomFloat("aa13x", 0.33f, 0.5f);
-	viewPunch.y = SharedRandomFloat("aa13y", -0.6f, 0.6f);
+	viewPunch.x = SharedRandomFloat("aa13px", 0.33f, 0.5f);
+	viewPunch.y = SharedRandomFloat("aa13py", -0.6f, 0.6f);
 	viewPunch.z = 0.0f;
 
 	pOwner->ViewPunch(viewPunch);
@@ -184,6 +145,5 @@ void CWeaponAA13::DryFire()
 {
 	WeaponSound(EMPTY);
 	SendWeaponAnim(ACT_VM_DRYFIRE);
-
-	m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
+	m_flNextPrimaryAttack = gpGlobals->curtime + GetFastestDryRefireTime();
 }

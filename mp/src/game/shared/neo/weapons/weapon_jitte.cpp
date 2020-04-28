@@ -50,26 +50,7 @@ bool CWeaponJitte::Deploy(void)
 
 void CWeaponJitte::PrimaryAttack()
 {
-	if ((gpGlobals->curtime - m_flLastAttackTime) > 0.5f)
-	{
-		m_nNumShotsFired = 0;
-	}
-	else
-	{
-		m_nNumShotsFired++;
-	}
-
-	m_flLastAttackTime = gpGlobals->curtime;
-
-	auto pOwner = ToBasePlayer(GetOwner());
-	if (pOwner)
-	{
-		pOwner->ViewPunchReset();
-	}
-
 	BaseClass::PrimaryAttack();
-
-	m_flAccuracyPenalty += JITTE_ACCURACY_SHOT_PENALTY_TIME;
 }
 
 void CWeaponJitte::UpdatePenaltyTime()
@@ -86,7 +67,7 @@ void CWeaponJitte::UpdatePenaltyTime()
 	{
 		m_flAccuracyPenalty -= gpGlobals->frametime;
 		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty,
-			0.0f, JITTE_ACCURACY_MAXIMUM_PENALTY_TIME);
+			0.0f, GetMaxAccuracyPenalty());
 	}
 }
 
@@ -128,19 +109,14 @@ void CWeaponJitte::ItemPostFrame()
 			{
 				DryFire();
 
-				m_flSoonestAttack = gpGlobals->curtime + JITTE_FASTEST_DRY_REFIRE_TIME;
+				m_flSoonestAttack = gpGlobals->curtime + GetFastestDryRefireTime();
 			}
 			else
 			{
-				m_flSoonestAttack = gpGlobals->curtime + JITTE_FASTEST_REFIRE_TIME;
+				m_flSoonestAttack = gpGlobals->curtime + GetFastestRefireTime();
 			}
 		}
 	}
-}
-
-float CWeaponJitte::GetFireRate()
-{
-	return JITTE_FASTEST_REFIRE_TIME;
 }
 
 Activity CWeaponJitte::GetPrimaryAttackActivity()
@@ -174,8 +150,8 @@ void CWeaponJitte::AddViewKick()
 
 	QAngle viewPunch;
 
-	viewPunch.x = SharedRandomFloat("jittex", 0.25f, 0.5f);
-	viewPunch.y = SharedRandomFloat("jittey", -0.6f, 0.6f);
+	viewPunch.x = SharedRandomFloat("jittepx", 0.25f, 0.5f);
+	viewPunch.y = SharedRandomFloat("jittepy", -0.6f, 0.6f);
 	viewPunch.z = 0;
 
 	owner->ViewPunch(viewPunch);

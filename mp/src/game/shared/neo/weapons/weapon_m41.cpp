@@ -40,57 +40,7 @@ void CWeaponM41::DryFire()
 
 void CWeaponM41::PrimaryAttack()
 {
-	if (m_iClip1 == 0)
-	{
-		if (!m_bFireOnEmpty)
-		{
-			CheckReload();
-		}
-		else
-		{
-			WeaponSound(EMPTY);
-			m_flNextPrimaryAttack = 0.2;
-		}
-
-		return;
-	}
-
-	CBasePlayer* pOwner = ToBasePlayer(GetOwner());
-
-	if (pOwner)
-	{
-		if (!m_iClip1 && !ClientWantsAutoReload(pOwner))
-		{
-			return;
-		}
-
-		// Do nothing if we hold fire
-		if ((pOwner->m_nButtons & IN_ATTACK) &&
-			(!(pOwner->m_afButtonPressed & IN_ATTACK)))
-		{
-			return;
-		}
-	}
-
-	if ((gpGlobals->curtime - m_flLastAttackTime) > 0.5f)
-	{
-		m_nNumShotsFired = 0;
-	}
-	else
-	{
-		m_nNumShotsFired++;
-	}
-
-	m_flLastAttackTime = gpGlobals->curtime;
-
-	if (pOwner)
-	{
-		pOwner->ViewPunchReset();
-	}
-
 	BaseClass::PrimaryAttack();
-
-	m_flAccuracyPenalty += M41_ACCURACY_SHOT_PENALTY_TIME;
 }
 
 void CWeaponM41::UpdatePenaltyTime()
@@ -107,7 +57,7 @@ void CWeaponM41::UpdatePenaltyTime()
 	{
 		m_flAccuracyPenalty -= gpGlobals->frametime;
 		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty,
-			0.0f, M41_ACCURACY_MAXIMUM_PENALTY_TIME);
+			0.0f, GetMaxAccuracyPenalty());
 	}
 }
 
@@ -148,12 +98,11 @@ void CWeaponM41::ItemPostFrame()
 			if (m_iClip1 <= 0)
 			{
 				DryFire();
-
-				m_flSoonestAttack = gpGlobals->curtime + M41_FASTEST_DRY_REFIRE_TIME;
+				m_flSoonestAttack = gpGlobals->curtime + GetFastestDryRefireTime();
 			}
 			else
 			{
-				m_flSoonestAttack = gpGlobals->curtime + M41_FASTEST_REFIRE_TIME;
+				m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
 			}
 		}
 	}
@@ -190,8 +139,8 @@ void CWeaponM41::AddViewKick()
 
 	QAngle viewPunch;
 
-	viewPunch.x = SharedRandomFloat("m41x", 0.25f, 0.5f);
-	viewPunch.y = SharedRandomFloat("m41y", -0.6f, 0.6f);
+	viewPunch.x = SharedRandomFloat("m41px", 0.25f, 0.5f);
+	viewPunch.y = SharedRandomFloat("m41py", -0.6f, 0.6f);
 	viewPunch.z = 0;
 
 	owner->ViewPunch(viewPunch);
