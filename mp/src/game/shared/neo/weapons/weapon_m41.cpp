@@ -67,6 +67,23 @@ void CWeaponM41::PrimaryAttack()
 		return;
 	}
 
+	CBasePlayer* pOwner = ToBasePlayer(GetOwner());
+
+	if (pOwner)
+	{
+		if (!m_iClip1 && !ClientWantsAutoReload(pOwner))
+		{
+			return;
+		}
+
+		// Do nothing if we hold fire
+		if ((pOwner->m_nButtons & IN_ATTACK) &&
+			(!(pOwner->m_afButtonPressed & IN_ATTACK)))
+		{
+			return;
+		}
+	}
+
 	if ((gpGlobals->curtime - m_flLastAttackTime) > 0.5f)
 	{
 		m_nNumShotsFired = 0;
@@ -78,10 +95,9 @@ void CWeaponM41::PrimaryAttack()
 
 	m_flLastAttackTime = gpGlobals->curtime;
 
-	auto owner = ToBasePlayer(GetOwner());
-	if (owner)
+	if (pOwner)
 	{
-		owner->ViewPunchReset();
+		pOwner->ViewPunchReset();
 	}
 
 	BaseClass::PrimaryAttack();
