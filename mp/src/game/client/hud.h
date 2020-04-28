@@ -199,6 +199,10 @@ extern CHud gHUD;
 //-----------------------------------------------------------------------------
 extern vgui::HFont g_hFontTrebuchet24;
 
+#ifdef NEO
+extern vgui::HFont g_hFontKillfeed;
+#endif
+
 void LoadHudTextures( CUtlDict< CHudTexture *, int >& list, const char *szFilenameWithoutExtension, const unsigned char *pICEKey );
 
 void GetHudSize( int& w, int &h );

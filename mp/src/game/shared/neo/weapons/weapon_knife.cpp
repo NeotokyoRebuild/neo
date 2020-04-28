@@ -45,13 +45,6 @@ CWeaponKnife::CWeaponKnife(void)
 	m_flLastSwingTime = 0;
 }
 
-void CWeaponKnife::Drop(const Vector &vecVelocity)
-{
-#ifdef GAME_DLL
-	UTIL_Remove(this); // Knives should not drop in world
-#endif
-}
-
 void CWeaponKnife::PrimaryAttack(void)
 {
 	if (gpGlobals->curtime < m_flLastSwingTime + GetFireRate())
@@ -63,4 +56,49 @@ void CWeaponKnife::PrimaryAttack(void)
 
 	BaseClass::PrimaryAttack();
 	SendWeaponAnim(ACT_VM_PRIMARYATTACK);
+}
+
+// NEO TODO (Rain): inherit from CNEOBaseCombatWeapon or related,
+// so we can do this in the base class Deploy method together
+// with other NEO weps.
+bool CWeaponKnife::Deploy(void)
+{
+	const bool ret = BaseClass::Deploy();
+
+	if (ret)
+	{
+#ifdef DEBUG
+		CNEO_Player* pOwner = NULL;
+		if (GetOwner())
+		{
+			pOwner = dynamic_cast<CNEO_Player*>(GetOwner());
+			Assert(pOwner);
+		}
+#else
+		auto pOwner = static_cast<CNEO_Player*>(GetOwner());
+#endif
+		if (pOwner)
+		{
+			// This wep incurs no speed penalty, so we return class max speed as-is.
+
+			if (pOwner->GetFlags() & FL_DUCKING)
+			{
+				pOwner->SetMaxSpeed(pOwner->GetCrouchSpeed());
+			}
+			else if (pOwner->IsWalking())
+			{
+				pOwner->SetMaxSpeed(pOwner->GetWalkSpeed());
+			}
+			else if (pOwner->IsSprinting())
+			{
+				pOwner->SetMaxSpeed(pOwner->GetSprintSpeed());
+			}
+			else
+			{
+				pOwner->SetMaxSpeed(pOwner->GetNormSpeed());
+			}
+		}
+	}
+
+	return ret;
 }

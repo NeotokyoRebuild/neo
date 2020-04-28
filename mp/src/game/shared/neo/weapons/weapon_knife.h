@@ -32,13 +32,17 @@ public:
 	CWeaponKnife();
 
 	void PrimaryAttack(void);
-	void SecondaryAttack(void) { return; }
-	void Drop(const Vector &vecVelocity);
+	void SecondaryAttack(void) { }
+	void Drop(const Vector &vecVelocity) { Assert(false); /* knives shouldn't drop */ }
 
 	float GetRange(void) const { return KNIFE_RANGE; }
 	float GetDamageForActivity(Activity activity) const { return 25.0f; }
 
 	virtual float GetFireRate(void) const { return 0.534f; }
+
+	virtual float GetSpeedScale(void) const { return 1.0; }
+
+	virtual bool Deploy(void);
 
 	// FIXME: we should inherit CNEOMelee -> CNEOBaseWep etc...
 	//virtual int GetNeoWepBits(void) const { return NEO_WEP_KNIFE; }

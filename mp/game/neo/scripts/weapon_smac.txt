@@ -19,7 +19,7 @@ WeaponData
 	"primary_ammo"		"AMMO_SMAC"
 	"secondary_ammo"	"None"
 
-	"weight"		"2"
+	"weight"		"3"
 	"item_flags"		"0"
 	
 	

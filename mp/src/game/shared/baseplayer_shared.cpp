@@ -387,6 +387,12 @@ const Vector CBasePlayer::GetPlayerMins( void ) const
 //-----------------------------------------------------------------------------
 const Vector CBasePlayer::GetPlayerMaxs( void ) const
 {	
+#ifdef NEO
+	Assert(false); // we override this, should never reach here.
+	Error("Called incorrect maxs for \"%s\"\n", m_iClassname);
+	return vec3_origin;
+#else
+
 	if ( IsObserver() )
 	{
 		return VEC_OBS_HULL_MAX_SCALED( this );	
@@ -402,6 +408,7 @@ const Vector CBasePlayer::GetPlayerMaxs( void ) const
 			return VEC_HULL_MAX_SCALED( this );
 		}
 	}
+#endif
 }
 
 //-----------------------------------------------------------------------------

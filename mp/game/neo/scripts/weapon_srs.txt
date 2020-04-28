@@ -21,7 +21,7 @@ WeaponData
 	"primary_ammo"		"AR2"
 	"secondary_ammo"	"None"
 
-	"weight"		"2"
+	"weight"		"3"
 	"item_flags"		"0"
 	
 	

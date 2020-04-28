@@ -27,6 +27,11 @@ public:
 		m_flDistMeters = distMeters;
 	}
 
+protected:
+	virtual void UpdateStateForNeoHudElementDraw();
+	virtual void DrawNeoHudElement();
+	virtual ConVar* GetUpdateFrequencyConVar() const;
+
 private:
 	int m_posX, m_posY;
 	int m_beaconTexWidth, m_beaconTexHeight;
@@ -36,6 +41,9 @@ private:
 	vgui::HFont m_hFont;
 
 	vgui::HTexture m_hTex;
+
+	char m_szBeaconTextANSI[4 + 1];
+	wchar_t m_wszBeaconTextUnicode[4 + 1];
 
 private:
 	CNEOHud_GhostBeacon(const CNEOHud_GhostBeacon &other);

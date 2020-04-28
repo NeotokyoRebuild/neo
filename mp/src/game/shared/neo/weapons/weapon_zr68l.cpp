@@ -62,16 +62,6 @@ bool CWeaponZR68L::Deploy(void)
 
 void CWeaponZR68L::PrimaryAttack()
 {
-	auto owner = ToBasePlayer(GetOwner());
-
-	if (owner)
-	{
-		if (!m_iClip1 && !ClientWantsAutoReload(GetOwner()))
-		{
-			return;
-		}
-	}
-
 	if ((gpGlobals->curtime - m_flLastAttackTime) > 0.5f)
 	{
 		m_nNumShotsFired = 0;
@@ -83,9 +73,10 @@ void CWeaponZR68L::PrimaryAttack()
 
 	m_flLastAttackTime = gpGlobals->curtime;
 
-	if (owner)
+	auto pOwner = ToBasePlayer(GetOwner());
+	if (pOwner)
 	{
-		owner->ViewPunchReset();
+		pOwner->ViewPunchReset();
 	}
 
 	BaseClass::PrimaryAttack();
@@ -95,20 +86,9 @@ void CWeaponZR68L::PrimaryAttack()
 
 void CWeaponZR68L::UpdatePenaltyTime()
 {
-	auto owner = ToBasePlayer(GetOwner());
-
-	if (!owner)
-	{
-		return;
-	}
-
-	if (((owner->m_nButtons & IN_ATTACK) == false) &&
-		(m_flSoonestAttack < gpGlobals->curtime))
-	{
-		m_flAccuracyPenalty -= gpGlobals->frametime;
-		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty,
-			0.0f, ZR68L_ACCURACY_MAXIMUM_PENALTY_TIME);
-	}
+	m_flAccuracyPenalty -= gpGlobals->frametime;
+	m_flAccuracyPenalty = clamp(m_flAccuracyPenalty,
+		0.0f, ZR68L_ACCURACY_MAXIMUM_PENALTY_TIME);
 }
 
 void CWeaponZR68L::ItemPreFrame()
@@ -137,11 +117,6 @@ void CWeaponZR68L::ItemPostFrame()
 	auto owner = ToBasePlayer(GetOwner());
 
 	if (!owner)
-	{
-		return;
-	}
-
-	if (m_iClip1 <= 0)
 	{
 		return;
 	}
@@ -187,19 +162,6 @@ Activity CWeaponZR68L::GetPrimaryAttackActivity()
 	}
 
 	return ACT_VM_RECOIL3;
-}
-
-bool CWeaponZR68L::Reload()
-{
-	bool fRet = BaseClass::Reload();
-
-	if (fRet)
-	{
-		WeaponSound(RELOAD);
-		m_flAccuracyPenalty = 0;
-	}
-
-	return fRet;
 }
 
 void CWeaponZR68L::AddViewKick()

@@ -14,6 +14,7 @@
 #endif
 
 #ifdef NEO
+#include "neo_gamerules.h"
 #include "c_neo_player.h"
 #endif
 
@@ -78,10 +79,17 @@ C_PlayerResource::C_PlayerResource()
 		m_Colors[i] = COLOR_GREY;
 	}
 
+#ifdef NEO
+	m_Colors[TEAM_UNASSIGNED] = COLOR_NEO_WHITE;
+	m_Colors[TEAM_SPECTATOR] = COLOR_NEO_ORANGE;
+	m_Colors[TEAM_JINRAI] = COLOR_JINRAI;
+	m_Colors[TEAM_NSF] = COLOR_NSF;
+#else
 #ifdef HL2MP
 	m_Colors[TEAM_COMBINE] = COLOR_BLUE;
 	m_Colors[TEAM_REBELS] = COLOR_RED;
 	m_Colors[TEAM_UNASSIGNED] = COLOR_YELLOW;
+#endif
 #endif
 
 	g_PR = this;

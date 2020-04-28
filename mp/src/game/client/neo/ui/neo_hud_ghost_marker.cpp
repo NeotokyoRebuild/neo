@@ -22,12 +22,18 @@ using vgui::surface;
 ConVar neo_ghost_marker_hud_scale_factor("neo_ghost_marker_hud_scale_factor", "0.125", FCVAR_USERINFO,
 	"Ghost marker HUD element scaling factor", true, 0.01, false, 0);
 
+NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(GhostMarker, 0.01)
+
 CNEOHud_GhostMarker::CNEOHud_GhostMarker(const char* pElemName, vgui::Panel* parent)
 	: CHudElement(pElemName), Panel(parent, pElemName)
 {
 	m_flDistMeters = 0;
+
 	m_iGhostingTeam = TEAM_UNASSIGNED;
 	m_iPosX = m_iPosY = 0;
+
+	V_sprintf_safe(m_szMarkerText, "");
+	g_pVGuiLocalize->ConvertANSIToUnicode(m_szMarkerText, m_wszMarkerTextUnicode, sizeof(m_wszMarkerTextUnicode));
 
 	SetAutoDelete(true);
 
@@ -66,33 +72,23 @@ CNEOHud_GhostMarker::CNEOHud_GhostMarker(const char* pElemName, vgui::Panel* par
 	SetBgColor(Color(0, 0, 0, 0));
 }
 
-void CNEOHud_GhostMarker::Paint()
+void CNEOHud_GhostMarker::UpdateStateForNeoHudElementDraw()
 {
-	if (!IsHudReadyForPaintNow())
-	{
-		return;
-	}
+	V_snprintf(m_szMarkerText, sizeof(m_szMarkerText), "GHOST %.0f M", m_flDistMeters);
+	g_pVGuiLocalize->ConvertANSIToUnicode(m_szMarkerText, m_wszMarkerTextUnicode, sizeof(m_wszMarkerTextUnicode));
+}
 
-	BaseClass::Paint();
-
-	// Since the distance format is a known length,
-	// we hardcode to save the unicode length check each time.
-#define MARKER_TEXT_LENGTH 12
-	char markerText[MARKER_TEXT_LENGTH + 1];
-	V_snprintf(markerText, sizeof(markerText), "GHOST %.0f M", m_flDistMeters);
-
-	wchar_t markerTextUnicode[(sizeof(markerText) + 1) * sizeof(wchar_t)];
-	g_pVGuiLocalize->ConvertANSIToUnicode(markerText, markerTextUnicode, sizeof(markerTextUnicode));
-
+void CNEOHud_GhostMarker::DrawNeoHudElement()
+{
 	surface()->DrawSetTextColor(COLOR_GREY);
 	surface()->DrawSetTextFont(m_hFont);
 	surface()->DrawSetTextPos(m_iPosX, m_iPosY);
-	surface()->DrawPrintText(markerTextUnicode, MARKER_TEXT_LENGTH);
+	surface()->DrawPrintText(m_wszMarkerTextUnicode, sizeof(m_szMarkerText));
 
 	const float scale = neo_ghost_marker_hud_scale_factor.GetFloat();
 
-	const int offset_X = m_iPosX - ((m_iMarkerTexWidth / 2) * scale);
-	const int offset_Y = m_iPosY - ((m_iMarkerTexHeight / 2) * scale);
+	const int offset_X = m_iPosX - ((m_iMarkerTexWidth * 0.5f) * scale);
+	const int offset_Y = m_iPosY - ((m_iMarkerTexHeight * 0.5f) * scale);
 
 	surface()->DrawSetColor(m_iGhostingTeam == TEAM_JINRAI ? COLOR_JINRAI : (m_iGhostingTeam == TEAM_NSF ? COLOR_NSF : COLOR_GREY));
 	surface()->DrawSetTexture(m_hTex);
@@ -101,6 +97,12 @@ void CNEOHud_GhostMarker::Paint()
 		offset_Y,
 		offset_X + (m_iMarkerTexWidth * scale),
 		offset_Y + (m_iMarkerTexHeight * scale));
+}
+
+void CNEOHud_GhostMarker::Paint()
+{
+	BaseClass::Paint();
+	PaintNeoElement();
 }
 
 void CNEOHud_GhostMarker::SetGhostingTeam(int team)

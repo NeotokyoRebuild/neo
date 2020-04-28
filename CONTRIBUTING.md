@@ -57,7 +57,7 @@ Ochii's impressive [reverse engineering project](https://github.com/Ochii/neotok
 
 ### Solutions/makefiles
 
-This project uses Valve's [VPC system](https://developer.valvesoftware.com/wiki/VPC) to generate its makefiles and VS solutions. When modifying the project file structure, instead of pushing your solution/makefile, edit the relevant VPC files instead (most commonly "[client_hl2mp.vpc](mp/src/game/client/client_hl2mp.vpc)" and "[server_hl2mp.vpc](mp/src/game/server/server_hl2mp.vpc)").
+This project uses Valve's [VPC system](https://developer.valvesoftware.com/wiki/VPC) to generate its makefiles and VS solutions. When modifying the project file structure, instead of pushing your solution/makefile, edit the relevant VPC files instead (most commonly "[client_neo.vpc](mp/src/game/client/client_neo.vpc)" and "[server_neo.vpc](mp/src/game/server/server_neo.vpc)").
 
 Running the VPC scripts in mp/src/... after a change will regenerate the solutions and makefiles on all platforms. You may sometimes have to purge your object file cache if you get linker errors after restructuring existing translation units.
 
@@ -69,7 +69,7 @@ In shared code, clientside code can be differentiated with CLIENT_DLL, vs. serve
 No big restrictions on general code format, just try to more or less match the other SDK code style.
 
 * C++11, except...
-    * Use #define over constexpr; while it is a part of C++11 spec, the v120 MSVC toolset that Source targets on Windows doesn't support it natively.
+    * Use const (or #define) over constexpr; while it is a part of C++11 spec, the v120 MSVC toolset that Source targets on Windows doesn't support it natively.
 * Valve likes to ( space ) their arguments, especially with macros, but it's not necessary to strictly follow everywhere.
 * Tabs are preferred for indentation, to be consistent with the SDK code.
 * When using a TODO/FIXME/HACK... style comment, use the format "// NEO TODO (Your-username): Example comment." to make it easier to search NEO specific todos/fixmes (opposed to Valve ones), and at a glance figure out who has written them.

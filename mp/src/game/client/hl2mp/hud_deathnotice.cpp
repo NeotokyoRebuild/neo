@@ -17,6 +17,12 @@
 #include "c_baseplayer.h"
 #include "c_team.h"
 
+#ifdef NEO
+#include "../neo/ui/neo_hud_elements.h"
+#include "../neo/ui/neo_hud_game_event.h"
+#include "neo_player_shared.h"
+#include "spectatorgui.h"
+#endif
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -111,7 +117,7 @@ void CHudDeathNotice::ApplySchemeSettings( IScheme *scheme )
 //-----------------------------------------------------------------------------
 void CHudDeathNotice::Init( void )
 {
-	ListenForGameEvent( "player_death" );	
+	ListenForGameEvent( "player_death" );
 }
 
 //-----------------------------------------------------------------------------
@@ -144,18 +150,41 @@ void CHudDeathNotice::SetColorForNoticePlayer( int iTeamNumber )
 //-----------------------------------------------------------------------------
 void CHudDeathNotice::Paint()
 {
-	if ( !m_iconD_skull )
+	if (!m_iconD_skull)
+	{
+		Assert(false);
 		return;
+	}
+
+#ifdef NEO
+	if (g_hFontKillfeed != vgui::INVALID_FONT)
+	{
+		m_hTextFont = g_hFontKillfeed;
+	}
+	else
+	{
+		Assert(false);
+	}
+#endif
 
 	int yStart = GetClientModeHL2MPNormal()->GetDeathMessageStartHeight();
+#ifdef NEO
+	if (g_pSpectatorGUI->IsVisible())
+	{
+		yStart += g_pSpectatorGUI->GetTopBarHeight();
+	}
+#endif
 
 	surface()->DrawSetTextFont( m_hTextFont );
 	surface()->DrawSetTextColor( GameResources()->GetTeamColor( 0 ) );
 
-
 	int iCount = m_DeathNotices.Count();
 	for ( int i = 0; i < iCount; i++ )
 	{
+#ifdef NEO
+		int yNeoIconOffset = 0;
+#endif
+
 		CHudTexture *icon = m_DeathNotices[i].iconDeath;
 		if ( !icon )
 			continue;
@@ -190,9 +219,22 @@ void CHudDeathNotice::Paint()
 		}
 		else
 		{
-			float scale = ( (float)ScreenHeight() / 480.0f );	//scale based on 640x480
-			iconWide = (int)( scale * (float)icon->Width() );
-			iconTall = (int)( scale * (float)icon->Height() );
+#ifdef NEO
+			surface()->DrawGetTextureSize(icon->textureId, iconWide, iconTall);
+
+			const float scale = ((float)ScreenHeight() / 480.0f);	//scale based on 640x480
+			const float neoIconScale = 0.22;
+
+			iconWide = (int)(scale * iconWide * neoIconScale);
+			iconTall = (int)(scale * iconTall * neoIconScale);
+
+			// Center the icon vertically in relation to the killfeed text.
+			yNeoIconOffset = (int)(surface()->GetFontTall(m_hTextFont) * -0.25);
+#else
+			float scale = ((float)ScreenHeight() / 480.0f);	//scale based on 640x480
+			iconWide = (int)(scale * (float)icon->Width());
+			iconTall = (int)(scale * (float)icon->Height());
+#endif
 		}
 
 		int x;
@@ -217,23 +259,28 @@ void CHudDeathNotice::Paint()
 
 			// Draw killer's name
 			surface()->DrawSetTextPos( x, y );
-			surface()->DrawSetTextFont( m_hTextFont );
+			surface()->DrawSetTextFont(m_hTextFont);
 			surface()->DrawUnicodeString( killer );
 			surface()->DrawGetTextPos( x, y );
 		}
 
-		Color iconColor( 255, 80, 0, 255 );
-
 		// Draw death weapon
 		//If we're using a font char, this will ignore iconTall and iconWide
-		icon->DrawSelf( x, y, iconWide, iconTall, iconColor );
-		x += iconWide;		
+#ifdef NEO
+		icon->DrawSelf(x, y + yNeoIconOffset, iconWide, iconTall,
+			(m_DeathNotices[i].iSuicide ? COLOR_NEO_ORANGE : COLOR_NEO_WHITE));
+#else
+		Color iconColor(255, 80, 0, 255);
+		icon->DrawSelf(x, y, iconWide, iconTall, iconColor);
+#endif
+		x += iconWide;
 
 		SetColorForNoticePlayer( iVictimTeam );
 
 		// Draw victims name
 		surface()->DrawSetTextPos( x, y );
-		surface()->DrawSetTextFont( m_hTextFont );	//reset the font, draw icon can change it
+		// reset the font, draw icon can change it
+		surface()->DrawSetTextFont(m_hTextFont);
 		surface()->DrawUnicodeString( victim );
 	}
 
@@ -309,6 +356,35 @@ void CHudDeathNotice::FireGameEvent( IGameEvent * event )
 	deathMsg.flDisplayTime = gpGlobals->curtime + hud_deathnotice_time.GetFloat();
 	deathMsg.iSuicide = ( !killer || killer == victim );
 
+#ifdef NEO
+	// Look up the appropriate kill feed icon for this death
+	if (deathMsg.iSuicide)
+	{
+		deathMsg.iconDeath = gHUD.GetIcon("neo_bus");
+	}
+	else
+	{
+		// Explosives
+		if (V_stristr(killedwith, "gre") || V_stristr(killedwith, "det"))
+		{
+			deathMsg.bHeadshot = false;
+			deathMsg.iconDeath = gHUD.GetIcon("neo_boom");
+		}
+		// Guns
+		else
+		{
+			deathMsg.bHeadshot = event->GetBool("headshot");
+			deathMsg.iconDeath = gHUD.GetIcon(deathMsg.bHeadshot ? "neo_hs" : "neo_gun");
+		}
+	}
+
+	if (!deathMsg.iconDeath)
+	{
+		Assert(false);
+		// Can't find it, so use the default skull & crossbones icon
+		deathMsg.iconDeath = m_iconD_skull;
+	}
+#else
 	// Try and find the death identifier in the icon list
 	deathMsg.iconDeath = gHUD.GetIcon( fullkilledwith );
 
@@ -317,6 +393,7 @@ void CHudDeathNotice::FireGameEvent( IGameEvent * event )
 		// Can't find it, so use the default skull & crossbones icon
 		deathMsg.iconDeath = m_iconD_skull;
 	}
+#endif
 
 	// Add it to our list of death notices
 	m_DeathNotices.AddToTail( deathMsg );
@@ -337,7 +414,10 @@ void CHudDeathNotice::FireGameEvent( IGameEvent * event )
 	}
 	else
 	{
-		Q_snprintf( sDeathMsg, sizeof( sDeathMsg ), "%s killed %s", deathMsg.Killer.szName, deathMsg.Victim.szName );
+		Q_snprintf( sDeathMsg, sizeof( sDeathMsg ), "%s %s %s",
+			deathMsg.Killer.szName,
+			(deathMsg.bHeadshot ? "headshot'd" : "killed"),
+			deathMsg.Victim.szName );
 
 		if ( fullkilledwith && *fullkilledwith && (*fullkilledwith > 13 ) )
 		{

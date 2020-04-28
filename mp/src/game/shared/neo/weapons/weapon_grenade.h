@@ -37,6 +37,8 @@ public:
 
 	virtual int GetNeoWepBits(void) const { return NEO_WEP_FRAG_GRENADE | NEO_WEP_THROWABLE; }
 
+	virtual float GetSpeedScale(void) const { return 1.0; }
+
 	void	Precache(void);
 	void	PrimaryAttack(void);
 	void	SecondaryAttack(void);

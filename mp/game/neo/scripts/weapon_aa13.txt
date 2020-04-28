@@ -24,7 +24,7 @@ WeaponData
 	"primary_ammo"			"AMMO_10G_SHELL"
 	"secondary_ammo"		"None"
 
-	"weight"				"20"
+	"weight"				"3"
 	
 	// ITEM_FLAG_NOAUTOSWITCHEMPTY = (1 << 2)
 	// ITEM_FLAG_DOHITLOCATIONDMG = (1 << 5) 

@@ -813,14 +813,20 @@ CLIENTEFFECT_REGISTER_BEGIN( PrecachePostProcessingEffects )
 	CLIENTEFFECT_MATERIAL("dev/neo_motionvision_noise")
 	CLIENTEFFECT_MATERIAL("dev/neo_motionvision_pass1")
 	CLIENTEFFECT_MATERIAL("dev/neo_motionvision_pass2")
+
 	CLIENTEFFECT_MATERIAL("dev/nightvision")
+
 	CLIENTEFFECT_MATERIAL("dev/ssao")
 	CLIENTEFFECT_MATERIAL("dev/ssaoblur")
 	CLIENTEFFECT_MATERIAL("dev/ssao_combine")
+
 	CLIENTEFFECT_MATERIAL("dev/motion")
 
-	// Note: this is referring original NeotokyoSource files
-	CLIENTEFFECT_MATERIAL("dev/thermalvision_tv2")
+	CLIENTEFFECT_MATERIAL("dev/neo_thermalvision")
+
+	// Note: these are referring original NeotokyoSource files
+	//CLIENTEFFECT_MATERIAL("dev/thermalvision_tv2")
+	//CLIENTEFFECT_MATERIAL("dev/vm_thermal")
 #endif
 
 CLIENTEFFECT_REGISTER_END_CONDITIONAL( engine->GetDXSupportLevel() >= 90 )

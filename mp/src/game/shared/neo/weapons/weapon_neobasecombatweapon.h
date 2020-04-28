@@ -92,23 +92,38 @@ public:
 	CNEOBaseCombatWeapon();
 
 	virtual void Spawn();
+	virtual	void CheckReload(void);
 
 	virtual bool Reload( void );
 
 	virtual bool CanBeSelected(void);
 
-	virtual int GetNeoWepBits(void) const { return NEO_WEP_INVALID; }
-	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
+	virtual int GetNeoWepBits(void) const { Assert(false); return NEO_WEP_INVALID; } // Should never call this base class; implement in children.
+	virtual int GetNeoWepXPCost(const int neoClass) const { Assert(false); return 0; } // Should never call this base class; implement in children.
+
+	virtual float GetSpeedScale(void) const { Assert(false); return 1.0; } // Should never call this base class; implement in children.
+
+	virtual void ItemPreFrame(void);
 
 	bool IsGhost(void) const { return (GetNeoWepBits() & NEO_WEP_GHOST) ? true : false; }
 
+	// We do this check to avoid a player unintentionally aiming in due to holding down their aim key while an automatic wep switch occurs.
+	bool IsReadyToAimIn(void) const { return m_bReadyToAimIn; }
+
+#ifdef CLIENT_DLL
 	virtual bool Holster(CBaseCombatWeapon* pSwitchingTo);
+#endif
+
+	virtual bool Deploy(void);
 
 	// NEO HACK/FIXME (Rain):
 	// We override with empty implementation to avoid getting removed by
 	// some game logic somewhere. There's probably some flag we could set
 	// somewhere to achieve the same without having to do this.
 	virtual void SUB_Remove(void) { }
+
+private:
+	bool m_bReadyToAimIn;
 
 private:
 	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &other);

@@ -60,6 +60,7 @@ const char *GetWeaponByLoadoutId(int id)
 
 CNEOBaseCombatWeapon::CNEOBaseCombatWeapon( void )
 {
+	m_bReadyToAimIn = false;
 }
 
 void CNEOBaseCombatWeapon::Spawn()
@@ -73,6 +74,9 @@ void CNEOBaseCombatWeapon::Spawn()
 
 bool CNEOBaseCombatWeapon::Reload( void )
 {
+	return BaseClass::Reload();
+
+#if(0)
 	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
 	if (!pOwner)
 	{
@@ -97,6 +101,7 @@ bool CNEOBaseCombatWeapon::Reload( void )
 #endif
 
 	return DefaultReload( GetMaxClip1(), GetMaxClip2(), ACT_VM_RELOAD );
+#endif
 }
 
 bool CNEOBaseCombatWeapon::CanBeSelected(void)
@@ -109,18 +114,89 @@ bool CNEOBaseCombatWeapon::CanBeSelected(void)
 	return BaseClass::CanBeSelected();
 }
 
-bool CNEOBaseCombatWeapon::Holster(CBaseCombatWeapon* pSwitchingTo)
+bool CNEOBaseCombatWeapon::Deploy(void)
 {
-#ifdef CLIENT_DLL
-	if (GetOwner())
+	const bool ret = BaseClass::Deploy();
+
+	if (ret)
 	{
-		static_cast<C_NEO_Player*>(GetOwner())->Weapon_SetZoom(false);
-	}
-	else
-	{
-		Assert(false);
-	}
+		m_bReadyToAimIn = false;
+
+#ifdef DEBUG
+		CNEO_Player* pOwner = NULL;
+		if (GetOwner())
+		{
+			pOwner = dynamic_cast<CNEO_Player*>(GetOwner());
+			Assert(pOwner);
+		}
+#else
+		auto pOwner = static_cast<CNEO_Player*>(GetOwner());
 #endif
 
+		if (pOwner)
+		{
+			if (pOwner->GetFlags() & FL_DUCKING)
+			{
+				pOwner->SetMaxSpeed(pOwner->GetCrouchSpeed_WithWepEncumberment(this));
+			}
+			else if (pOwner->IsWalking())
+			{
+				pOwner->SetMaxSpeed(pOwner->GetWalkSpeed_WithWepEncumberment(this));
+			}
+			else if (pOwner->IsSprinting())
+			{
+				pOwner->SetMaxSpeed(pOwner->GetSprintSpeed_WithWepEncumberment(this));
+			}
+			else
+			{
+				pOwner->SetMaxSpeed(pOwner->GetNormSpeed_WithWepEncumberment(this));
+			}
+		}
+	}
+
+	return ret;
+}
+
+#ifdef CLIENT_DLL
+bool CNEOBaseCombatWeapon::Holster(CBaseCombatWeapon* pSwitchingTo)
+{
+#ifdef DEBUG
+	CNEO_Player* pOwner = NULL;
+	if (GetOwner())
+	{
+		pOwner = dynamic_cast<CNEO_Player*>(GetOwner());
+		Assert(pOwner);
+	}
+#else
+	auto pOwner = static_cast<CNEO_Player*>(GetOwner());
+#endif
+
+	if (pOwner)
+	{
+		pOwner->Weapon_SetZoom(false);
+	}
+
 	return BaseClass::Holster(pSwitchingTo);
+}
+#endif
+
+void CNEOBaseCombatWeapon::CheckReload(void)
+{
+	if (!m_bInReload && UsesClipsForAmmo1() && m_iClip1 == 0 && GetOwner() && !ClientWantsAutoReload(GetOwner()))
+	{
+		return;
+	}
+
+	BaseClass::CheckReload();
+}
+
+void CNEOBaseCombatWeapon::ItemPreFrame(void)
+{
+	if (!m_bReadyToAimIn)
+	{
+		if (gpGlobals->curtime >= m_flNextPrimaryAttack)
+		{
+			m_bReadyToAimIn = true;
+		}
+	}
 }

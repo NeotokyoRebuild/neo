@@ -56,10 +56,10 @@ public:
     virtual void ForceSetFireMode( bool bPrimaryMode,
         bool bPlaySound = false, float flSoonestSwitch = 0.0f );
 
-	virtual bool Reload( void );
-
 	virtual int GetNeoWepBits(void) const { return NEO_WEP_TACHI; }
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
+
+	virtual float GetSpeedScale(void) const { return 1.0; }
 
 	virtual const Vector& GetBulletSpread( void )
 	{		

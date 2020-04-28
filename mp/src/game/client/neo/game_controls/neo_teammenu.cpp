@@ -299,7 +299,7 @@ void CNeoTeamMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 
     LoadControlSettings(GetResFile());
 
-    SetBgColor(Color( 0,0,0,0 ) ); // make the background transparent
+	SetBgColor(Color(0, 0, 0, 196));
 
 	const vgui::HFont font = pScheme->GetFont("Default", IsProportional());
 	Assert(font > 0);
@@ -356,6 +356,8 @@ void CNeoTeamMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
     SetPaintBorderEnabled(false);
 
     SetBorder( NULL );
+
+	SetMinimumSize(850, 400);
 }
 
 void CNeoTeamMenu::MoveLabelToFront(const char *textEntryName)

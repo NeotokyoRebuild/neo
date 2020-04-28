@@ -23,6 +23,8 @@ using vgui::surface;
 ConVar neo_friendly_marker_hud_scale_factor("neo_friendly_marker_hud_scale_factor", "0.5", FCVAR_USERINFO,
 	"Friendly player marker HUD element scaling factor", true, 0.01, false, 0);
 
+NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(FriendlyMarker, 0.01)
+
 CNEOHud_FriendlyMarker::CNEOHud_FriendlyMarker(const char* pElemName, vgui::Panel* parent)
 	: CHudElement(pElemName), Panel(parent, pElemName)
 {
@@ -65,30 +67,22 @@ CNEOHud_FriendlyMarker::CNEOHud_FriendlyMarker(const char* pElemName, vgui::Pane
 	SetVisible(true);
 }
 
-void CNEOHud_FriendlyMarker::Paint()
+void CNEOHud_FriendlyMarker::UpdateStateForNeoHudElementDraw()
 {
-	if (!IsHudReadyForPaintNow())
-	{
-		return;
-	}
-
-	BaseClass::Paint();
-
-	auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	const Color teamColor = (localPlayer->GetTeamNumber() == TEAM_NSF) ? COLOR_NSF : COLOR_JINRAI;
-
-	surface()->DrawSetTextFont(m_hFont);
-	surface()->DrawSetTextColor(teamColor);
-
-	surface()->DrawSetColor(teamColor);
-	surface()->DrawSetTexture(m_hTex);
-
 	int x, y;
 	const float scale = neo_friendly_marker_hud_scale_factor.GetFloat();
-#define HEIGHT_OFFSET 48.0f
+	const float heightOffset = 48.0f;
 	Vector pos;
 
+	auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
+
 	Assert(localPlayer->m_rvFriendlyPlayerPositions.Count() == MAX_PLAYERS);
+
+	COMPILE_TIME_ASSERT(ARRAYSIZE(m_x0) == MAX_PLAYERS);
+	COMPILE_TIME_ASSERT(ARRAYSIZE(m_x1) == MAX_PLAYERS);
+	COMPILE_TIME_ASSERT(ARRAYSIZE(m_y0) == MAX_PLAYERS);
+	COMPILE_TIME_ASSERT(ARRAYSIZE(m_y1) == MAX_PLAYERS);
+
 	for (int i = 0; i < MAX_PLAYERS; ++i)
 	{
 		if ((localPlayer->entindex() == i + 1) || // Skip self
@@ -100,20 +94,53 @@ void CNEOHud_FriendlyMarker::Paint()
 		pos = Vector(
 			localPlayer->m_rvFriendlyPlayerPositions[i].x,
 			localPlayer->m_rvFriendlyPlayerPositions[i].y,
-			localPlayer->m_rvFriendlyPlayerPositions[i].z + HEIGHT_OFFSET);
+			localPlayer->m_rvFriendlyPlayerPositions[i].z + heightOffset);
 
 		if (GetVectorInScreenSpace(pos, x, y))
 		{
-			const int x0 = RoundFloatToInt((x - ((m_iMarkerTexWidth / 2.0f) * scale)));
-			const int x1 = RoundFloatToInt((x + ((m_iMarkerTexWidth / 2.0f) * scale)));
-			const int y0 = RoundFloatToInt((y - ((m_iMarkerTexHeight / 2.0f) * scale)));
-			const int y1 = RoundFloatToInt((y + ((m_iMarkerTexHeight / 2.0f) * scale)));
-
-			surface()->DrawTexturedRect(x0, y0, x1, y1);
-#if(0)
-			DevMsg("Drawing %i @ X:%i--%i AND Y:%i--%i. I am %i.\n",
-				i, x0, x1, y0, y1, localPlayer->entindex());
-#endif
+			m_x0[i] = RoundFloatToInt((x - ((m_iMarkerTexWidth * 0.5f) * scale)));
+			m_x1[i] = RoundFloatToInt((x + ((m_iMarkerTexWidth * 0.5f) * scale)));
+			m_y0[i] = RoundFloatToInt((y - ((m_iMarkerTexHeight * 0.5f) * scale)));
+			m_y1[i] = RoundFloatToInt((y + ((m_iMarkerTexHeight * 0.5f) * scale)));
 		}
 	}
+}
+
+void CNEOHud_FriendlyMarker::DrawNeoHudElement()
+{
+	const Color teamColor = (C_NEO_Player::GetLocalNEOPlayer()->GetTeamNumber() == TEAM_NSF) ? COLOR_NSF : COLOR_JINRAI;
+
+	surface()->DrawSetTextFont(m_hFont);
+	surface()->DrawSetTextColor(teamColor);
+
+	surface()->DrawSetColor(teamColor);
+	surface()->DrawSetTexture(m_hTex);
+
+	auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
+
+	for (int i = 0; i < MAX_PLAYERS; ++i)
+	{
+		// Skip self
+		if (localPlayer->entindex() == (i + 1))
+		{
+			continue;
+		}
+		// Skip unused
+		if ((m_x0[i] == 0) && (m_x1[i] == 0) && (m_y0[i] == 0) && (m_y1[i] == 0))
+		{
+			continue;
+		}
+
+		surface()->DrawTexturedRect(m_x0[i], m_y0[i], m_x1[i], m_y1[i]);
+#if(0)
+		DevMsg("Drawing %i @ X:%i--%i AND Y:%i--%i. I am %i.\n",
+			i, m_x0[i], m_x1[i], m_y0[i], m_y1[i], localPlayer->entindex());
+#endif
+	}
+}
+
+void CNEOHud_FriendlyMarker::Paint()
+{
+	BaseClass::Paint();
+	PaintNeoElement();
 }

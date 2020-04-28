@@ -5,6 +5,11 @@
 
 #ifdef GAME_DLL
 #include "weapon_neobasecombatweapon.h"
+
+#if(0) // wide name localize helpers
+#include "tier3/tier3.h"
+#include "vgui/ILocalize.h"
+#endif
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -244,12 +249,30 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 		player->SendTestMessage("Player captured the ghost!");
 		player->m_iCapTeam = player->GetTeamNumber();
 
-#if(0) // NEO FIXME (Rain), this doesn't play. maybe move to gamerules victory?
+		// Center print the cap message.
+		// NEO TODO (Rain): better looking message with the team logo.
 		CRecipientFilter filter;
 		filter.AddAllPlayers();
-		player->EmitSound(filter, SOUND_FROM_UI_PANEL,
-			(player->GetTeamNumber() == TEAM_JINRAI ? "Victory.Jinrai" : "Victory.NSF"));
+
+#if(0) // NEO FIXME (Rain): wide name handling
+		wchar wmsg[64 + MAX_PLAYER_NAME_LENGTH];
+
+		wchar wPlayerName[MAX_PLAYER_NAME_LENGTH];
+		g_pVGuiLocalize->ConvertANSIToUnicode(player->GetPlayerName(), wPlayerName, sizeof(wPlayerName));
+
+		V_swprintf_safe(wmsg, L"%s wins\n%s captured the ghost",
+			player->GetTeamNumber() == TEAM_JINRAI ? L"Jinrai" : L"NSF",
+			wPlayerName);
+#else
+		char msg[64 + MAX_PLACE_NAME_LENGTH];
+		COMPILE_TIME_ASSERT(sizeof(msg) <= 512); // max supported
+
+		V_sprintf_safe(msg, "%s wins\n%s captured the ghost",
+			player->GetTeamNumber() == TEAM_JINRAI ? "Jinrai" : "NSF",
+			player->GetPlayerName());
 #endif
+
+		UTIL_ClientPrintFilter(filter, HUD_PRINTCENTER, msg);
 
 		// Return early; we pass next think responsibility to gamerules,
 		// whenever it sees fit to start capzone thinking again.

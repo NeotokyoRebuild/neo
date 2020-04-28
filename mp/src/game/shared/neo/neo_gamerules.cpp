@@ -41,13 +41,13 @@ extern void respawn(CBaseEntity *pEdict, bool fCopyCorpse);
 
 // NEO TODO (Rain): check against a test map
 static NEOViewVectors g_NEOViewVectors(
-	Vector( 0, 0, 58 ),	   //VEC_VIEW (m_vView) // 57 == vanilla recon, 58 == vanilla assault (default), 60 == vanilla support. Use the macro VEC_VIEW_NEOSCALE to access per client.
+	Vector( 0, 0, 58 ),	   //VEC_VIEW (m_vView) // 57 == vanilla recon, 58 == vanilla assault (default), 60 == vanilla support. Use the shareddefs.h macro VEC_VIEW_NEOSCALE to access per player.
 							  
 	Vector(-16, -16, 0 ),	  //VEC_HULL_MIN (m_vHullMin)
-	Vector(16, 16, 72),	  //VEC_HULL_MAX (m_vHullMax)
+	Vector(16, 16, NEO_ASSAULT_PLAYERMODEL_HEIGHT),	  //VEC_HULL_MAX (m_vHullMax). 66 == vanilla recon, 67 == vanilla assault (default), 72 == vanilla support. Use relevant VEC_... macros in shareddefs for class height adjusted per player access.
 							  					
 	Vector(-16, -16, 0 ),	  //VEC_DUCK_HULL_MIN (m_vDuckHullMin)
-	Vector( 16,  16,  48 ),	  //VEC_DUCK_HULL_MAX	(m_vDuckHullMax)
+	Vector( 16,  16, NEO_ASSAULT_PLAYERMODEL_DUCK_HEIGHT),	  //VEC_DUCK_HULL_MAX	(m_vDuckHullMax)
 	Vector( 0, 0, 45 ),		  //VEC_DUCK_VIEW		(m_vDuckView)
 							  					
 	Vector(-10, -10, -10 ),	  //VEC_OBS_HULL_MIN	(m_vObsHullMin)
@@ -105,6 +105,9 @@ static NEOViewVectors g_NEOViewVectors(
 
 ConVar neo_round_timelimit("neo_round_timelimit", "2.75", FCVAR_REPLICATED, "Neo round timelimit, in minutes.",
 	true, 0.0f, false, 600.0f);
+
+ConVar neo_sv_ignore_wep_xp_limit("neo_sv_ignore_wep_xp_limit", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "If true, allow equipping any loadout regardless of player XP.",
+	true, 0.0f, true, 1.0f);
 
 extern CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
 
@@ -302,6 +305,7 @@ CAmmoDef *GetAmmoDef()
 		ADD_NEO_AMMO_TYPE(AMMO_10G_SHELL, DMG_BULLET | DMG_BUCKSHOT, TRACER_LINE, BULLET_IMPULSE(400, 1200));
 		ADD_NEO_AMMO_TYPE(AMMO_GRENADE, DMG_BLAST, TRACER_NONE, 0);
 		ADD_NEO_AMMO_TYPE(AMMO_SMOKEGRENADE, DMG_BLAST, TRACER_NONE, 0);
+		ADD_NEO_AMMO_TYPE(AMMO_DETPACK, DMG_BLAST, TRACER_NONE, 0);
 		ADD_NEO_AMMO_TYPE(AMMO_PRI, DMG_BULLET, TRACER_LINE_AND_WHIZ, BULLET_IMPULSE(400, 1200));
 		ADD_NEO_AMMO_TYPE(AMMO_SMAC, DMG_BULLET, TRACER_LINE_AND_WHIZ, BULLET_IMPULSE(400, 1200));
 	NEO_AMMO_DEF_END();
@@ -311,12 +315,15 @@ CAmmoDef *GetAmmoDef()
 
 void CNEORules::ClientSpawned(edict_t* pPlayer)
 {
+#if(0)
 #ifdef CLIENT_DLL
 	C_NEO_Player *player = C_NEO_Player::GetLocalNEOPlayer();
 	if (player)
 	{
+		DevMsg("SPAWNED: %d vs %d\n", player->index, pPlayer->m_EdictIndex);
 		player->m_bShowClassMenu = true;
 	}
+#endif
 #endif
 }
 
@@ -507,9 +514,29 @@ void CNEORules::FireGameEvent(IGameEvent* event)
 // Purpose: Spawns one ghost at a randomly chosen Neo ghost spawn point.
 static inline void SpawnTheGhost()
 {
-	static int ghostEdict = -1;
+	CBaseEntity* pEnt;
 
-	CBaseEntity *pEnt;
+	// Get the amount of ghost spawns available to us
+	int numGhostSpawns = 0;
+
+	pEnt = gEntList.FirstEnt();
+	while (pEnt)
+	{
+		if (dynamic_cast<CNEOGhostSpawnPoint*>(pEnt))
+		{
+			numGhostSpawns++;
+		}
+
+		pEnt = gEntList.NextEnt(pEnt);
+	}
+
+	// No ghost spawns and this map isn't named "_ctg". Probably not a CTG map.
+	if (numGhostSpawns == 0 && (V_stristr(GameRules()->MapName(), "_ctg") == 0))
+	{
+		return;
+	}
+
+	static int ghostEdict = -1;
 
 	CWeaponGhost *ghost = dynamic_cast<CWeaponGhost*>(UTIL_EntityByIndex(ghostEdict));
 
@@ -563,22 +590,6 @@ static inline void SpawnTheGhost()
 
 	Assert(UTIL_IsValidEntity(ghost));
 	Assert(ghostEdict == ghost->edict()->m_EdictIndex);
-
-	// Get the amount of ghost spawns available to us
-	int numGhostSpawns = 0;
-
-	pEnt = gEntList.FirstEnt();
-	while (pEnt)
-	{
-		auto ghostSpawn = dynamic_cast<CNEOGhostSpawnPoint*>(pEnt);
-
-		if (ghostSpawn)
-		{
-			numGhostSpawns++;
-		}
-
-		pEnt = gEntList.NextEnt(pEnt);
-	}
 
 	// We didn't have any spawns, spawn ghost at origin
 	if (numGhostSpawns == 0)
@@ -814,6 +825,12 @@ void CNEORules::CleanUpMap()
 		{
 			UTIL_Remove(pCur);
 		}
+		else
+		{
+			// NEO FIXME (Rain): decals won't clean on world (non-ent) surfaces.
+			// Is this the right place to call in? Gamemode related?
+			//pCur->RemoveAllDecals();
+		}
 
 		pCur = gEntList.NextEnt(pCur);
 	}
@@ -886,12 +903,8 @@ void CNEORules::CleanUpMap()
 
 	MapEntity_ParseAllEntities(engine->GetMapEntitiesString(), &filter, true);
 
-
-
 	//RemoveGhosts();
 	ResetGhostCapPoints();
-
-	//BaseClass::CleanUpMap();
 }
 
 void CNEORules::CheckRestartGame()
@@ -1172,3 +1185,88 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 		}
 	}
 }
+
+#ifdef GAME_DLL
+extern ConVar falldamage;
+ConVar sv_neo_falldmg_scale("sv_neo_falldmg_scale", "0.25", FCVAR_CHEAT | FCVAR_DEVELOPMENTONLY, "Scale factor for NEO fall damage.");
+float CNEORules::FlPlayerFallDamage(CBasePlayer* pPlayer)
+{
+	// Is player fall damage disabled?
+	if (!falldamage.GetBool())
+	{
+		return 0;
+	}
+
+	// subtract off the speed at which a player is allowed to fall without being hurt,
+	// so damage will be based on speed beyond that, not the entire fall
+	pPlayer->m_Local.m_flFallVelocity -= PLAYER_MAX_SAFE_FALL_SPEED;
+	return pPlayer->m_Local.m_flFallVelocity * DAMAGE_FOR_FALL_SPEED * sv_neo_falldmg_scale.GetFloat();
+}
+
+const char* CNEORules::GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer)
+{
+	if (!pPlayer)  // dedicated server output
+	{
+		return NULL;
+	}
+
+#define FMT_PLAYERNAME "%s1"
+#define FMT_CHATMESSAGE "%s2"
+#define FMT_LOCATION "%s3"
+#define FMT_TEAM_JINRAI "[Jinrai]"
+#define FMT_TEAM_NSF "[NSF]"
+#define FMT_TEAM_SPECTATOR "[Spectator]"
+#define FMT_TEAM_UNASSIGNED "[Unassigned]"
+#define FMT_DEAD "*DEAD*"
+
+	if (pPlayer->IsAlive())
+	{
+		if (bTeamOnly)
+		{
+			switch (pPlayer->GetTeamNumber())
+			{
+			case TEAM_JINRAI: return FMT_TEAM_JINRAI " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_NSF: return FMT_TEAM_NSF " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_SPECTATOR: return FMT_TEAM_SPECTATOR " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			default: return FMT_TEAM_UNASSIGNED " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			}
+		}
+		else
+		{
+			switch (pPlayer->GetTeamNumber())
+			{
+			case TEAM_JINRAI: return FMT_TEAM_JINRAI " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_NSF: return FMT_TEAM_NSF " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_SPECTATOR: return FMT_TEAM_SPECTATOR " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			default: return FMT_TEAM_UNASSIGNED " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			}
+		}
+	}
+	else
+	{
+		if (bTeamOnly)
+		{
+			switch (pPlayer->GetTeamNumber())
+			{
+			case TEAM_JINRAI: return FMT_DEAD " " FMT_TEAM_JINRAI " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_NSF: return FMT_DEAD " " FMT_TEAM_NSF " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_SPECTATOR: return FMT_TEAM_SPECTATOR " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			default: return FMT_TEAM_UNASSIGNED " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			}
+		}
+		else
+		{
+			switch (pPlayer->GetTeamNumber())
+			{
+			case TEAM_JINRAI: return FMT_DEAD " " FMT_TEAM_JINRAI " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_NSF: return FMT_DEAD " " FMT_TEAM_NSF " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_SPECTATOR: return FMT_TEAM_SPECTATOR " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			default: return FMT_TEAM_UNASSIGNED " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			}
+		}
+	}
+
+	Assert(false); // should never fall through the switch
+}
+
+#endif

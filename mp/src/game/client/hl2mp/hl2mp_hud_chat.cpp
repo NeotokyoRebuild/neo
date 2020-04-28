@@ -16,6 +16,10 @@
 #include "hl2mp_gamerules.h"
 #include "ihudlcd.h"
 
+#ifdef NEO
+#include "neo_gamerules.h"
+#include "neo_player_shared.h"
+#endif
 
 
 DECLARE_HUDELEMENT( CHudChat );
@@ -100,17 +104,31 @@ Color CHudChat::GetClientColor( int clientIndex )
 {
 	if ( clientIndex == 0 ) // console msg
 	{
+#ifdef NEO
+		return COLOR_NEO_ORANGE;
+#else
 		return g_ColorYellow;
+#endif
 	}
 	else if( g_PR )
 	{
 		switch ( g_PR->GetTeam( clientIndex ) )
 		{
+#ifdef NEO
+		case TEAM_JINRAI: return COLOR_JINRAI;
+		case TEAM_NSF: return COLOR_NSF;
+		default: return COLOR_SPEC;
+#else
 		case TEAM_COMBINE	: return g_ColorBlue;
 		case TEAM_REBELS	: return g_ColorRed;
 		default	: return g_ColorYellow;
+#endif
 		}
 	}
 
+#ifdef NEO
+	return COLOR_NEO_ORANGE;
+#else
 	return g_ColorYellow;
+#endif
 }

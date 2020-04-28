@@ -5,12 +5,12 @@
 #include "vgui_controls/ImagePanel.h"
 #include "vgui_controls/Button.h"
 
+#include <vgui/ILocalize.h>
 #include <vgui/ISurface.h>
 
 #include "ienginevgui.h"
 
 #include "c_neo_player.h"
-
 #include "weapon_neobasecombatweapon.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -218,6 +218,46 @@ void CNeoLoadoutMenu::OnMousePressed(vgui::MouseCode code)
 
 extern ConCommand loadoutmenu;
 
+extern ConVar neo_sv_ignore_wep_xp_limit;
+
+static bool IsAllowedGun(const int loadoutId, const int currentXP)
+{
+	if (neo_sv_ignore_wep_xp_limit.GetBool())
+	{
+		return true;
+	}
+
+	// NEO TODO (Rain): set reasonably
+	const int xpLimits[] = {
+		-255,	// MPN
+		0,		// SRM
+		0,		// SRM-S
+		0,		// Jitte
+		0,		// Jittescoped
+		0,		// ZR68C
+		0,		// ZR68S
+		0,		// ZR68L
+		10,		// MX
+		20,		// PZ
+		10,		// Supa7
+		0,		// M41
+		0,		// M41L
+	};
+
+	bool allowedThisGun = false;
+
+	if (loadoutId < 0 || loadoutId > ARRAYSIZE(xpLimits))
+	{
+		DevWarning("Weapon choice out of XP check range: %i\n", loadoutId);
+	}
+	else
+	{
+		allowedThisGun = (currentXP >= xpLimits[loadoutId]);
+	}
+
+	return allowedThisGun;
+}
+
 void CNeoLoadoutMenu::OnCommand(const char* command)
 {
 	BaseClass::OnCommand(command);
@@ -236,37 +276,18 @@ void CNeoLoadoutMenu::OnCommand(const char* command)
 		Q_StripPrecedingAndTrailingWhitespace(loadoutArgs[1]);
 		const int choiceNum = atoi(loadoutArgs[1]);
 
-		const int myXp = C_NEO_Player::GetLocalNEOPlayer()->m_iXP;
-
-		// NEO TODO (Rain): set reasonably
-		const int xpLimits[] = {
-			-255,	// MPN
-			0,		// SRM
-			0,		// SRM-S
-			0,		// Jitte
-			0,		// Jittescoped
-			0,		// ZR68C
-			0,		// ZR68S
-			0,		// ZR68L
-			10,		// MX
-			20,		// PZ
-			10,		// Supa7
-			0,		// M41
-			0,		// M41L
-		};
-
-		if (choiceNum < 0 || choiceNum > ARRAYSIZE(xpLimits))
+		auto localplayer = C_NEO_Player::GetLocalNEOPlayer();
+		Assert(localplayer);
+		if (localplayer)
 		{
-			DevWarning("Weapon choice out of XP check range: %i\n", choiceNum);
-		}
-		else
-		{
-			allowedThisGun = (myXp >= xpLimits[choiceNum]);
+			const int myXp = localplayer->m_iXP;
+			allowedThisGun = IsAllowedGun(choiceNum, myXp);
 
 			if (!allowedThisGun)
 			{
-				Msg("Not enough XP for %s, need %i XP.\n",
-					GetWeaponByLoadoutId(choiceNum), xpLimits[choiceNum]);
+				const char* noxpmsg = "Not enough XP for equipping this loadout!\n";
+				Msg(noxpmsg);
+				engine->Con_NPrintf(0, noxpmsg);
 			}
 		}
 	}
@@ -323,10 +344,10 @@ void CNeoLoadoutMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 
 	LoadControlSettings(GetResFile());
 
-	SetBgColor(Color(0, 0, 0, 0)); // make the background transparent
+	SetBgColor(Color(0, 0, 0, 196));
 
-	const Color selectedBgColor(0, 0, 0), selectedFgColor(255, 0, 0),
-		armedBgColor(0, 0, 0), armedFgColor(0, 255, 0);
+	const Color selectedBgColor(75, 75, 75), selectedFgColor(255, 0, 0, 128),
+		armedBgColor(50, 50, 50, 128), armedFgColor(0, 255, 0, 128);
 
 	const char *font = "Default";
 
@@ -340,6 +361,47 @@ void CNeoLoadoutMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 			continue;
 		}
 
+		auto str = button->GetCommand()->GetString("Command");
+		if (V_stristr(str, "loadout") > 0)
+		{
+			CUtlStringList loadoutArgs;
+			V_SplitString(str, " ", loadoutArgs);
+			if (loadoutArgs.Size() == 2)
+			{
+				Q_StripPrecedingAndTrailingWhitespace(loadoutArgs[1]);
+				const int loadoutId = atoi(loadoutArgs[1]);
+				if (loadoutId < NEO_WEP_LOADOUT_ID_COUNT)
+				{
+					auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
+					if (localPlayer)
+					{
+						if (!IsAllowedGun(loadoutId, localPlayer->m_iXP))
+						{
+							const char noxp[] = " -- [insufficient XP!]";
+							char wepname[48 + sizeof(noxp)];
+							button->GetText(wepname, sizeof(wepname));
+							V_strcat_safe(wepname, noxp);
+							button->SetText(wepname);
+
+							button->SetTextColorState(Label::EColorState::CS_DULL);
+							button->SetBgColor(COLOR_RED);
+						}
+						else
+						{
+							button->SetTextColorState(Label::EColorState::CS_NORMAL);
+							button->SetBgColor(COLOR_GREEN);
+						}
+					}
+
+					button->SetPaintBackgroundEnabled(true);
+				}
+			}
+			else
+			{
+				Assert(false);
+			}
+		}
+
         button->SetFont(scheme->GetFont(font, IsProportional()));
 		button->SetUseCaptureMouse(true);
 		button->SetSelectedColor(selectedFgColor, selectedBgColor);
@@ -351,4 +413,6 @@ void CNeoLoadoutMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 	SetPaintBorderEnabled(false);
 
 	SetBorder(NULL);
+
+	SetMinimumSize(1280, 1280);
 }

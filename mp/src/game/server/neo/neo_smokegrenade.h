@@ -11,8 +11,6 @@
 #include "SpriteTrail.h"
 #include "soundent.h"
 
-const float GRENADE_COEFFICIENT_OF_RESTITUTION = 0.2f;
-
 #define NEO_SMOKE_GRENADE_MODEL "models/weapons/w_smokenade.mdl"
 
 class CNEOGrenadeSmoke : public CBaseGrenade
@@ -23,6 +21,9 @@ class CNEOGrenadeSmoke : public CBaseGrenade
 #endif
 
 public:
+	virtual void	Detonate(void);
+	virtual void	Explode(trace_t* pTrace, int bitsDamageType) { Assert(false); }
+
 	void	Spawn(void);
 	bool	CreateVPhysics(void);
 	void	SetTimer(float detonateDelay, float warnDelay);
@@ -33,8 +34,6 @@ public:
 	void	SetPunted(bool punt) { m_punted = punt; }
 	bool	WasPunted(void) const { return m_punted; }
 	void	OnPhysGunPickup(CBasePlayer* pPhysGunUser, PhysGunPickup_t reason);
-
-	virtual void	Detonate(void);
 
 	void	InputSetTimer(inputdata_t& inputdata);
 

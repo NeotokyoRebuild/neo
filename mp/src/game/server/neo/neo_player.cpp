@@ -14,7 +14,6 @@
 #include "datacache/imdlcache.h"
 
 #include "neo_model_manager.h"
-#include "neo_player_shared.h"
 
 #include "weapon_ghost.h"
 
@@ -22,18 +21,20 @@
 #include "inetchannelinfo.h"
 #include "eiface.h"
 
-#include "neo_player_shared.h"
-
 #include "sequence_Transitioner.h"
 
 #include "neo_te_tocflash.h"
 
 #include "weapon_grenade.h"
+#include "weapon_smokegrenade.h"
+
+#include "weapon_knife.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
 void NEODropPrimedFragGrenade(CNEO_Player *pPlayer, CBaseCombatWeapon *pGrenade);
+void NEODropPrimedSmokeGrenade(CNEO_Player* pPlayer, CBaseCombatWeapon* pSmokeGrenade);
 
 LINK_ENTITY_TO_CLASS(player, CNEO_Player);
 
@@ -44,6 +45,7 @@ SendPropInt(SENDINFO(m_iXP)),
 SendPropInt(SENDINFO(m_iCapTeam), 3),
 SendPropInt(SENDINFO(m_iGhosterTeam)),
 SendPropInt(SENDINFO(m_iLoadoutWepChoice)),
+SendPropInt(SENDINFO(m_iNextSpawnClassChoice)),
 
 SendPropBool(SENDINFO(m_bGhostExists)),
 SendPropBool(SENDINFO(m_bInThermOpticCamo)),
@@ -66,6 +68,7 @@ DEFINE_FIELD(m_iXP, FIELD_INTEGER),
 DEFINE_FIELD(m_iCapTeam, FIELD_INTEGER),
 DEFINE_FIELD(m_iGhosterTeam, FIELD_INTEGER),
 DEFINE_FIELD(m_iLoadoutWepChoice, FIELD_INTEGER),
+DEFINE_FIELD(m_iNextSpawnClassChoice, FIELD_INTEGER),
 
 DEFINE_FIELD(m_bGhostExists, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bInThermOpticCamo, FIELD_BOOLEAN),
@@ -84,13 +87,23 @@ END_DATADESC()
 CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
 extern CBaseEntity *g_pLastSpawn;
 
+extern ConVar neo_sv_ignore_wep_xp_limit;
+
+ConVar sv_neo_can_change_classes_anytime("sv_neo_can_change_classes_anytime", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "Can players change classes at any moment, even mid-round?",
+	true, 0.0f, true, 1.0f);
+
 void CNEO_Player::RequestSetClass(int newClass)
 {
-	bool canChangeImmediately = true; // TODO
+	if (newClass < 0 || newClass >= NEO_CLASS_ENUM_COUNT)
+	{
+		Assert(false);
+		return;
+	}
 
-	if (canChangeImmediately)
+	if (IsDead() || sv_neo_can_change_classes_anytime.GetBool())
 	{
 		m_iNeoClass = newClass;
+		m_iNextSpawnClassChoice = -1;
 
 		SetPlayerTeamModel();
 		SetViewOffset(VEC_VIEW_NEOSCALE(this));
@@ -98,7 +111,12 @@ void CNEO_Player::RequestSetClass(int newClass)
 	}
 	else
 	{
-		// TODO set for next spawn
+		m_iNextSpawnClassChoice = newClass;
+
+		const char* classes[] = { "recon", "assault", "support", "VIP" };
+		const char* msg = "You will spawn as %s class next round.\n";
+		Msg(msg, classes[newClass]);
+		ConMsg(msg, classes[newClass]);
 	}
 }
 
@@ -118,7 +136,7 @@ void CNEO_Player::RequestSetSkin(int newSkin)
 	}
 }
 
-static inline bool IsNeoPrimary(CNEOBaseCombatWeapon *pNeoWep)
+static bool IsNeoPrimary(CNEOBaseCombatWeapon *pNeoWep)
 {
 	if (!pNeoWep)
 	{
@@ -180,7 +198,7 @@ bool CNEO_Player::RequestSetLoadout(int loadoutNumber)
 		result = false;
 	}
 
-	if (m_iXP < pNeoWeapon->GetNeoWepXPCost(GetClass()))
+	if (!neo_sv_ignore_wep_xp_limit.GetBool() && m_iXP < pNeoWeapon->GetNeoWepXPCost(GetClass()))
 	{
 		DevMsg("Insufficient XP for %s\n", pszWepName);
 		result = false;
@@ -262,7 +280,7 @@ ConCommand setclass("setclass", SetClass, "Set class", FCVAR_USERINFO);
 ConCommand setskin("SetVariant", SetSkin, "Set skin", FCVAR_USERINFO);
 ConCommand loadout("loadout", SetLoadout, "Set loadout", FCVAR_USERINFO);
 
-static inline int GetNumOtherPlayersConnected(CNEO_Player *asker)
+static int GetNumOtherPlayersConnected(CNEO_Player *asker)
 {
 	if (!asker)
 	{
@@ -296,11 +314,10 @@ CNEO_Player::CNEO_Player()
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
 	m_bInAim = false;
 
-	m_leanPosTargetOffset = vec3_origin;
-
 	m_iCapTeam = TEAM_UNASSIGNED;
 	m_iGhosterTeam = TEAM_UNASSIGNED;
 	m_iLoadoutWepChoice = 0;
+	m_iNextSpawnClassChoice = -1;
 
 	m_bShowTestMessage = false;
 	V_memset(m_pszTestMessage.GetForModify(), 0, sizeof(m_pszTestMessage));
@@ -322,7 +339,7 @@ CNEO_Player::~CNEO_Player( void )
 {
 }
 
-inline void CNEO_Player::ZeroFriendlyPlayerLocArray(void)
+void CNEO_Player::ZeroFriendlyPlayerLocArray(void)
 {
 	Assert(m_rvFriendlyPlayerPositions.Count() == MAX_PLAYERS);
 	for (int i = 0; i < MAX_PLAYERS; i++)
@@ -388,15 +405,19 @@ void CNEO_Player::Precache( void )
 
 void CNEO_Player::Spawn(void)
 {
+	// Should do this class update first, because most of the stuff below depends on which player class we are.
+	if ((m_iNextSpawnClassChoice != -1) && (m_iNeoClass != m_iNextSpawnClassChoice))
+	{
+		m_iNeoClass = m_iNextSpawnClassChoice;
+	}
+
 	BaseClass::Spawn();
 
-	SetViewOffset(VEC_VIEW_NEOSCALE(this));
-
 	ShowCrosshair(false);
+	SetTransmitState(FL_EDICT_PVSCHECK);
 
-	m_leanPosTargetOffset = VEC_VIEW_NEOSCALE(this);
-
-	SetTransmitState(FL_EDICT_ALWAYS);
+	SetPlayerTeamModel();
+	SetViewOffset(VEC_VIEW_NEOSCALE(this));
 
 	GiveLoadoutWeapon();
 }
@@ -409,19 +430,17 @@ ConVar neo_lean_thirdperson_roll_lerp_scale("neo_lean_thirdperson_roll_lerp_scal
 //just need to calculate lean angle in here
 void CNEO_Player::Lean(void)
 {
-	CNEOPredictedViewModel *vm = static_cast<CNEOPredictedViewModel*>(GetViewModel());
-
-	if (!vm)
+	auto vm = static_cast<CNEOPredictedViewModel*>(GetViewModel());
+	if (vm)
 	{
-		return;
+		vm->lean(this);
+
+		Assert(GetBaseAnimating());
+		GetBaseAnimating()->SetBoneController(0, LocalEyeAngles().z);
 	}
-	vm->lean(this);
-	CBaseAnimating *anim = GetBaseAnimating();
-	Assert(anim);
-	anim->SetBoneController(0, LocalEyeAngles().z);
 }
 
-inline void CNEO_Player::CheckVisionButtons()
+void CNEO_Player::CheckVisionButtons()
 {
 	if (m_afButtonPressed & IN_VISION)
 	{
@@ -450,6 +469,28 @@ inline void CNEO_Player::CheckVisionButtons()
 void CNEO_Player::PreThink(void)
 {
 	BaseClass::PreThink();
+
+	if ((!GetActiveWeapon() && IsAlive()) ||
+		// Whether or not we move backwards affects max speed
+		((m_afButtonPressed | m_afButtonReleased) & IN_BACK))
+	{
+		if (GetFlags() & FL_DUCKING)
+		{
+			SetMaxSpeed(GetCrouchSpeed());
+		}
+		else if (IsWalking())
+		{
+			SetMaxSpeed(GetWalkSpeed());
+		}
+		else if (IsSprinting())
+		{
+			SetMaxSpeed(GetSprintSpeed());
+		}
+		else
+		{
+			SetMaxSpeed(GetNormSpeed());
+		}
+	}
 
 	CheckThermOpticButtons();
 	CheckVisionButtons();
@@ -612,12 +653,12 @@ void CNEO_Player::PreThink(void)
 ConVar sv_neo_cloak_color_r("sv_neo_cloak_color_r", "1", FCVAR_CHEAT, "Thermoptic cloak flash color (red channel).", true, 0.0f, true, 255.0f);
 ConVar sv_neo_cloak_color_g("sv_neo_cloak_color_g", "2", FCVAR_CHEAT, "Thermoptic cloak flash color (green channel).", true, 0.0f, true, 255.0f);
 ConVar sv_neo_cloak_color_b("sv_neo_cloak_color_b", "4", FCVAR_CHEAT, "Thermoptic cloak flash color (blue channel).", true, 0.0f, true, 255.0f);
-ConVar sv_neo_cloak_color_radius("sv_neo_cloak_color_radius", "64", FCVAR_CHEAT, "Thermoptic cloak flash effect radius.", true, 0.0f, true, 4096.0f);
+ConVar sv_neo_cloak_color_radius("sv_neo_cloak_color_radius", "128", FCVAR_CHEAT, "Thermoptic cloak flash effect radius.", true, 0.0f, true, 4096.0f);
 ConVar sv_neo_cloak_time("sv_neo_cloak_time", "0.1", FCVAR_CHEAT, "How long should the thermoptic flash be visible, in seconds.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_cloak_decay("sv_neo_cloak_decay", "0", FCVAR_CHEAT, "After the cloak time, how quickly should the flash effect disappear.", true, 0.0f, true, 1.0f);
-ConVar sv_neo_cloak_exponent("sv_neo_cloak_exponent", "4", FCVAR_CHEAT, "Cloak flash lighting exponent.", true, 0.0f, false, 0.0f);
+ConVar sv_neo_cloak_exponent("sv_neo_cloak_exponent", "8", FCVAR_CHEAT, "Cloak flash lighting exponent.", true, 0.0f, false, 0.0f);
 
-inline void CNEO_Player::PlayCloakSound()
+void CNEO_Player::PlayCloakSound()
 {
 	static int tocOn = CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOn");
 	static int tocOff = CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOff");
@@ -633,7 +674,7 @@ inline void CNEO_Player::PlayCloakSound()
 	EmitSound(filter, edict()->m_EdictIndex, tocSoundParams);
 }
 
-inline void CNEO_Player::CloakFlash()
+void CNEO_Player::CloakFlash()
 {
 	CRecipientFilter filter;
 	filter.AddRecipientsByPVS(GetAbsOrigin());
@@ -641,7 +682,7 @@ inline void CNEO_Player::CloakFlash()
 	g_NEO_TE_TocFlash.r = sv_neo_cloak_color_r.GetInt();
 	g_NEO_TE_TocFlash.g = sv_neo_cloak_color_g.GetInt();
 	g_NEO_TE_TocFlash.b = sv_neo_cloak_color_b.GetInt();
-	g_NEO_TE_TocFlash.m_vecOrigin = GetAbsOrigin();
+	g_NEO_TE_TocFlash.m_vecOrigin = GetAbsOrigin() + Vector(0, 0, 4);
 	g_NEO_TE_TocFlash.exponent = sv_neo_cloak_exponent.GetInt();
 	g_NEO_TE_TocFlash.m_fRadius = sv_neo_cloak_color_radius.GetFloat();
 	g_NEO_TE_TocFlash.m_fTime = sv_neo_cloak_time.GetFloat();
@@ -650,7 +691,7 @@ inline void CNEO_Player::CloakFlash()
 	g_NEO_TE_TocFlash.Create(filter);
 }
 
-inline void CNEO_Player::CheckThermOpticButtons()
+void CNEO_Player::CheckThermOpticButtons()
 {
 	if ((m_afButtonPressed & IN_THERMOPTIC) && IsAlive())
 	{
@@ -672,7 +713,7 @@ inline void CNEO_Player::CheckThermOpticButtons()
 	}
 }
 
-inline void CNEO_Player::SuperJump(void)
+void CNEO_Player::SuperJump(void)
 {
 	Vector forward;
 	AngleVectors(EyeAngles(), &forward);
@@ -784,6 +825,7 @@ void CNEO_Player::PostThink(void)
 	}
 
 	auto pWep = GetActiveWeapon();
+	CNEOBaseCombatWeapon* pNeoWep = NULL;
 
 	if (pWep)
 	{
@@ -797,7 +839,7 @@ void CNEO_Player::PostThink(void)
 		}
 		else if (m_afButtonPressed & IN_AIM)
 		{
-			auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWep);
+			pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWep);
 			// Binds hack: we want grenade secondary attack to trigger on aim (mouse button 2)
 			if (pNeoWep && pNeoWep->GetNeoWepBits() & NEO_WEP_THROWABLE)
 			{
@@ -806,7 +848,7 @@ void CNEO_Player::PostThink(void)
 			else
 			{
 				// NEO TODO (Rain): customizations for aim pressed/released/held behavior
-				//Weapon_AimToggle(pWep);
+				//if (pNeoWep != NULL) { Weapon_AimToggle(pWep); }
 			}
 		}
 		else if (m_afButtonReleased & IN_AIM)
@@ -847,24 +889,35 @@ void CNEO_Player::PlayerDeathThink()
 	BaseClass::PlayerDeathThink();
 }
 
-void CNEO_Player::Weapon_AimToggle(CBaseCombatWeapon *pWep)
+void CNEO_Player::Weapon_AimToggle(CNEOBaseCombatWeapon* pNeoWep)
 {
-	// NEO TODO/HACK: Not all neo weapons currently inherit
-	// through a base neo class, so we can't static_cast!!
-	auto neoCombatWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWep);
-	if (!neoCombatWep)
+	if (!pNeoWep)
 	{
 		return;
 	}
 
-	if (IsAllowedToZoom(neoCombatWep))
+	if (IsAllowedToZoom(pNeoWep))
 	{
-		const bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR) == HIDEHUD_CROSSHAIR;
-		Weapon_SetZoom(showCrosshair);
+		if (pNeoWep->IsReadyToAimIn())
+		{
+			const bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR) == HIDEHUD_CROSSHAIR;
+			Weapon_SetZoom(showCrosshair);
+		}
+		else
+		{
+			Weapon_SetZoom(false);
+		}
 	}
 }
 
-inline void CNEO_Player::Weapon_SetZoom(bool bZoomIn)
+void CNEO_Player::Weapon_AimToggle(CBaseCombatWeapon *pWep)
+{
+	// NEO TODO/HACK: Not all neo weapons currently inherit
+	// through a base neo class, so we can't static_cast!!
+	Weapon_AimToggle(dynamic_cast<CNEOBaseCombatWeapon*>(pWep));
+}
+
+void CNEO_Player::Weapon_SetZoom(const bool bZoomIn)
 {
 	const float zoomSpeedSecs = 0.25f;
 
@@ -1252,6 +1305,9 @@ bool CNEO_Player::HandleCommand_JoinTeam( int team )
 	if (isAllowedToJoin)
 	{
 		SetPlayerTeamModel();
+
+		UTIL_ClientPrintAll(HUD_PRINTTALK, "%s1 joined team %s2\n",
+			GetPlayerName(), GetTeam()->GetName());
 	}
 
 	return isAllowedToJoin;
@@ -1259,6 +1315,17 @@ bool CNEO_Player::HandleCommand_JoinTeam( int team )
 
 bool CNEO_Player::ClientCommand( const CCommand &args )
 {
+	if (FStrEq(args[0], "playerstate_reverse"))
+	{
+		if (ShouldRunRateLimitedCommand(args))
+		{
+			// Player is reversing their HUD team join choice,
+			// so allow instantly switching teams again.
+			m_flNextTeamChangeTime = 0;
+		}
+		return true;
+	}
+
 	return BaseClass::ClientCommand(args);
 }
 
@@ -1326,14 +1393,19 @@ bool CNEO_Player::Weapon_Switch( CBaseCombatWeapon *pWeapon,
 
 bool CNEO_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 {
-	int bumpedSlot = pWeapon->GetSlot();
-
-	CBaseCombatWeapon *currentSlotWep = Weapon_GetSlot(bumpedSlot);
-
 	// We already have a weapon in this slot
-	if (currentSlotWep)
+	if (Weapon_GetSlot(pWeapon->GetSlot()))
 	{
 		return false;
+	}
+	else if (GetClass() == NEO_CLASS_RECON)
+	{
+		auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWeapon);
+		// Recons can't carry a PZ
+		if ((pNeoWep) && (pNeoWep->GetNeoWepBits() & NEO_WEP_PZ))
+		{
+			return false;
+		}
 	}
 
 	return BaseClass::BumpWeapon(pWeapon);
@@ -1398,7 +1470,7 @@ void CNEO_Player::PlayStepSound( Vector &vecOrigin,
 	BaseClass::PlayStepSound(vecOrigin, psurface, fvol, force);
 }
 
-inline bool CNEO_Player::IsCarryingGhost(void)
+bool CNEO_Player::IsCarryingGhost(void)
 {
 #ifdef DEBUG
 	auto baseWep = GetWeapon(NEO_WEAPON_PRIMARY_SLOT);
@@ -1420,7 +1492,7 @@ inline bool CNEO_Player::IsCarryingGhost(void)
 }
 
 // Is the player allowed to drop a weapon of this type?
-inline bool CNEO_Player::IsAllowedToDrop(CBaseCombatWeapon *pWep)
+bool CNEO_Player::IsAllowedToDrop(CBaseCombatWeapon *pWep)
 {
 	if (!pWep)
 	{
@@ -1435,8 +1507,15 @@ inline bool CNEO_Player::IsAllowedToDrop(CBaseCombatWeapon *pWep)
 	auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWep);
 	if (!pNeoWep)
 	{
+		if (dynamic_cast<CWeaponKnife*>(pWep))
+		{
+			return false;
+		}
 		// This was not a Neotokyo weapon. Don't know what it is, but allow dropping.
-		return true;
+		else
+		{
+			return true;
+		}
 	}
 #else
 	Assert(dynamic_cast<CNEOBaseCombatWeapon*>(pWep));
@@ -1444,12 +1523,9 @@ inline bool CNEO_Player::IsAllowedToDrop(CBaseCombatWeapon *pWep)
 #endif
 
 	const int wepBits = pNeoWep->GetNeoWepBits();
-
 	Assert(wepBits > NEO_WEP_INVALID);
 
-	const int unallowedDrops = (NEO_WEP_DETPACK | NEO_WEP_FRAG_GRENADE |
-		NEO_WEP_KNIFE | NEO_WEP_PROX_MINE | NEO_WEP_SMOKE_GRENADE);
-
+	const int unallowedDrops = (NEO_WEP_KNIFE | NEO_WEP_PROX_MINE | NEO_WEP_THROWABLE);
 	return ((wepBits & unallowedDrops) == 0);
 }
 
@@ -1486,18 +1562,25 @@ void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
 			return;
 		}
 	}
-
-	// Drop a grenade if it's primed.
-	if (GetActiveWeapon())
+	else
 	{
-		CBaseCombatWeapon *pGrenade = Weapon_OwnsThisType("weapon_grenade");
-
-		if (GetActiveWeapon() == pGrenade)
+		// Drop a grenade if it's primed.
+		if (GetActiveWeapon())
 		{
-			if ((m_nButtons & IN_ATTACK) || (m_nButtons & IN_ATTACK2))
+			// If player has held down an attack key since the previous frame
+			if (((m_nButtons & IN_ATTACK) && (!(m_afButtonPressed & IN_ATTACK))) ||
+				((m_nButtons & IN_ATTACK2) && (!(m_afButtonPressed & IN_ATTACK2))))
 			{
-				NEODropPrimedFragGrenade(this, pGrenade);
-				return;
+				if (GetActiveWeapon() == Weapon_OwnsThisType("weapon_grenade"))
+				{
+					NEODropPrimedFragGrenade(this, GetActiveWeapon());
+					return;
+				}
+				else if (GetActiveWeapon() == Weapon_OwnsThisType("weapon_smokegrenade"))
+				{
+					NEODropPrimedSmokeGrenade(this, GetActiveWeapon());
+					return;
+				}
 			}
 		}
 	}
@@ -1690,7 +1773,7 @@ void CNEO_Player::PickDefaultSpawnTeam(void)
 bool Hack_IsBot(CNEO_Player* player)
 {
 #ifdef DEBUG
-	DevMsg("Fixme: Using Hack_IsBot as workaround\n"); // nag to remind about fixing this whenever used
+	DevWarning("Fixme: Using Hack_IsBot as workaround\n"); // nag to remind about fixing this whenever used
 #endif
 
 	if (!player)
@@ -1817,14 +1900,53 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	return true;
 }
 
+void GiveDet(CNEO_Player* pPlayer)
+{
+	const char* detpackClassname = "weapon_remotedet";
+	if (!pPlayer->Weapon_OwnsThisType(detpackClassname))
+	{
+		EHANDLE pent = CreateEntityByName(detpackClassname);
+		if (pent == NULL)
+		{
+			Assert(false);
+			Warning("Failed to spawn %s at loadout!\n", detpackClassname);
+		}
+		else
+		{
+			pent->SetLocalOrigin(pPlayer->GetLocalOrigin());
+			pent->AddSpawnFlags(SF_NORESPAWN);
+
+			auto pWeapon = dynamic_cast<CNEOBaseCombatWeapon*>((CBaseEntity*)pent);
+			if (pWeapon)
+			{
+				pWeapon->SetSubType(0);
+				if (pPlayer->m_iXP < pWeapon->GetNeoWepXPCost(pPlayer->GetClass()))
+				{
+					UTIL_Remove(pWeapon);
+				}
+				else
+				{
+					DispatchSpawn(pent);
+
+					if (pent != NULL && !(pent->IsMarkedForDeletion()))
+					{
+						pent->Touch(pPlayer);
+					}
+				}
+			}
+		}
+	}
+}
+
 void CNEO_Player::GiveDefaultItems(void)
 {
-	//EquipSuit();
+	CBasePlayer::GiveAmmo(150, "AR2");
 
 	CBasePlayer::GiveAmmo(150, "Pistol");
-	CBasePlayer::GiveAmmo(150, "AR2");
 	CBasePlayer::GiveAmmo(30, "AMMO_10G_SHELL");
 	CBasePlayer::GiveAmmo(150, "AMMO_PRI");
+	CBasePlayer::GiveAmmo(150, "AMMO_SMAC");
+	CBasePlayer::GiveAmmo(1, "AMMO_DETPACK");
 
 	const bool supportsGetKnife = true;
 
@@ -1833,6 +1955,7 @@ void CNEO_Player::GiveDefaultItems(void)
 	case NEO_CLASS_RECON:
 		GiveNamedItem("weapon_knife");
 		GiveNamedItem("weapon_milso");
+		GiveDet(this);
 		Weapon_Switch(Weapon_OwnsThisType("weapon_milso"));
 		break;
 	case NEO_CLASS_ASSAULT:
@@ -1888,7 +2011,7 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 	CNEOBaseCombatWeapon *pNeoWeapon = dynamic_cast<CNEOBaseCombatWeapon*>((CBaseEntity*)pEnt);
 	if (pNeoWeapon)
 	{
-		if (m_iXP >= pNeoWeapon->GetNeoWepXPCost(GetClass()))
+		if (neo_sv_ignore_wep_xp_limit.GetBool() || (m_iXP >= pNeoWeapon->GetNeoWepXPCost(GetClass())))
 		{
 			pNeoWeapon->SetSubType(wepSubType);
 
@@ -1904,7 +2027,7 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 		{
 			if (pEnt != NULL && !(pEnt->IsMarkedForDeletion()))
 			{
-				UTIL_Remove((CBaseEntity*)pEnt);
+				UTIL_Remove(pEnt);
 			}
 		}
 	}
@@ -1914,11 +2037,17 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 void CNEO_Player::GiveAllItems(void)
 {
 	// NEO TODO (Rain): our own ammo types
-	CBasePlayer::GiveAmmo(255, "Pistol");
 	CBasePlayer::GiveAmmo(45, "SMG1");
 	CBasePlayer::GiveAmmo(1, "grenade");
 	CBasePlayer::GiveAmmo(6, "Buckshot");
 	CBasePlayer::GiveAmmo(6, "357");
+	CBasePlayer::GiveAmmo(150, "AR2");
+
+	CBasePlayer::GiveAmmo(255, "Pistol");
+	CBasePlayer::GiveAmmo(30, "AMMO_10G_SHELL");
+	CBasePlayer::GiveAmmo(150, "AMMO_PRI");
+	CBasePlayer::GiveAmmo(150, "AMMO_SMAC");
+	CBasePlayer::GiveAmmo(1, "AMMO_DETPACK");
 
 	GiveNamedItem("weapon_tachi");
 	GiveNamedItem("weapon_zr68s");
@@ -2014,62 +2143,135 @@ void CNEO_Player::StopWalking(void)
 	m_fIsWalking = false;
 }
 
-float CNEO_Player::GetCrouchSpeed() const
+float CNEO_Player::GetCrouchSpeed_WithActiveWepEncumberment(void) const
 {
-	switch (m_iNeoClass)
-	{
-	case NEO_CLASS_RECON:
-		return NEO_RECON_CROUCH_SPEED;
-	case NEO_CLASS_ASSAULT:
-		return NEO_ASSAULT_CROUCH_SPEED;
-	case NEO_CLASS_SUPPORT:
-		return NEO_SUPPORT_CROUCH_SPEED;
-	}
-
-	return NEO_BASE_CROUCH_SPEED;
+	return GetCrouchSpeed() * GetActiveWeaponSpeedScale();
 }
 
-float CNEO_Player::GetNormSpeed() const
+float CNEO_Player::GetNormSpeed_WithActiveWepEncumberment(void) const
 {
-	switch (m_iNeoClass)
-	{
-	case NEO_CLASS_RECON:
-		return NEO_RECON_NORM_SPEED;
-	case NEO_CLASS_ASSAULT:
-		return NEO_ASSAULT_NORM_SPEED;
-	case NEO_CLASS_SUPPORT:
-		return NEO_SUPPORT_NORM_SPEED;
-	}
-
-	return NEO_BASE_NORM_SPEED;
+	return GetNormSpeed() * GetActiveWeaponSpeedScale();
 }
 
-float CNEO_Player::GetWalkSpeed() const
+float CNEO_Player::GetWalkSpeed_WithActiveWepEncumberment(void) const
+{
+	return GetWalkSpeed() * GetActiveWeaponSpeedScale();
+}
+
+float CNEO_Player::GetSprintSpeed_WithActiveWepEncumberment(void) const
+{
+	return GetSprintSpeed() * GetActiveWeaponSpeedScale();
+}
+
+float CNEO_Player::GetCrouchSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const
+{
+	Assert(pNeoWep);
+	return GetCrouchSpeed() * pNeoWep->GetSpeedScale();
+}
+
+float CNEO_Player::GetNormSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const
+{
+	Assert(pNeoWep);
+	return GetNormSpeed() * pNeoWep->GetSpeedScale();
+}
+
+float CNEO_Player::GetWalkSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const
+{
+	Assert(pNeoWep);
+	return GetWalkSpeed() * pNeoWep->GetSpeedScale();
+}
+
+float CNEO_Player::GetSprintSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const
+{
+	Assert(pNeoWep);
+	return GetSprintSpeed() * pNeoWep->GetSpeedScale();
+}
+
+float CNEO_Player::GetCrouchSpeed(void) const
 {
 	switch (m_iNeoClass)
 	{
 	case NEO_CLASS_RECON:
-		return NEO_RECON_WALK_SPEED;
+		return NEO_RECON_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_ASSAULT:
-		return NEO_ASSAULT_WALK_SPEED;
+		return NEO_ASSAULT_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_SUPPORT:
-		return NEO_SUPPORT_WALK_SPEED;
+		return NEO_SUPPORT_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
 	default:
-		return NEO_BASE_WALK_SPEED;
+		return NEO_BASE_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
 	}
 }
 
-float CNEO_Player::GetSprintSpeed() const
+float CNEO_Player::GetNormSpeed(void) const
 {
 	switch (m_iNeoClass)
 	{
 	case NEO_CLASS_RECON:
-		return NEO_RECON_SPRINT_SPEED;
+		return NEO_RECON_NORM_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_ASSAULT:
-		return NEO_ASSAULT_SPRINT_SPEED;
+		return NEO_ASSAULT_NORM_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_SUPPORT:
-		return NEO_SUPPORT_SPRINT_SPEED;
+		return NEO_SUPPORT_NORM_SPEED * GetBackwardsMovementPenaltyScale();
 	default:
-		return NEO_BASE_SPRINT_SPEED;
+		return NEO_BASE_NORM_SPEED * GetBackwardsMovementPenaltyScale();
 	}
+}
+
+float CNEO_Player::GetWalkSpeed(void) const
+{
+	switch (m_iNeoClass)
+	{
+	case NEO_CLASS_RECON:
+		return NEO_RECON_WALK_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_ASSAULT:
+		return NEO_ASSAULT_WALK_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_SUPPORT:
+		return NEO_SUPPORT_WALK_SPEED * GetBackwardsMovementPenaltyScale();
+	default:
+		return NEO_BASE_WALK_SPEED * GetBackwardsMovementPenaltyScale();
+	}
+}
+
+float CNEO_Player::GetSprintSpeed(void) const
+{
+	switch (m_iNeoClass)
+	{
+	case NEO_CLASS_RECON:
+		return NEO_RECON_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_ASSAULT:
+		return NEO_ASSAULT_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_SUPPORT:
+		return NEO_SUPPORT_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
+	default:
+		return NEO_BASE_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
+	}
+}
+
+float CNEO_Player::GetActiveWeaponSpeedScale() const
+{
+	// NEO TODO (Rain): change to static cast once all weapons are guaranteed to derive from the class
+	auto pWep = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
+	return (pWep ? pWep->GetSpeedScale() : 1.0f);
+}
+
+const Vector CNEO_Player::GetPlayerMaxs(void) const
+{
+	return VEC_DUCK_HULL_MAX_SCALED(this);
+}
+
+extern ConVar sv_turbophysics;
+
+void CNEO_Player::InitVCollision(const Vector& vecAbsOrigin, const Vector& vecAbsVelocity)
+{
+	// Cleanup any old vphysics stuff.
+	VPhysicsDestroyObject();
+
+	// in turbo physics players dont have a physics shadow
+	if (sv_turbophysics.GetBool())
+		return;
+
+	CPhysCollide* pModel = PhysCreateBbox(VEC_HULL_MIN_SCALED(this), VEC_HULL_MAX_SCALED(this));
+	CPhysCollide* pCrouchModel = PhysCreateBbox(VEC_DUCK_HULL_MIN_SCALED(this), VEC_DUCK_HULL_MAX_SCALED(this));
+
+	SetupVPhysicsShadow(vecAbsOrigin, vecAbsVelocity, pModel, "player_stand", pCrouchModel, "player_crouch");
 }

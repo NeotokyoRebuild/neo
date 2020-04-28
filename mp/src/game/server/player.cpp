@@ -8333,6 +8333,12 @@ void CBasePlayer::RefreshCollisionBounds( void )
 //-----------------------------------------------------------------------------
 void CBasePlayer::InitVCollision( const Vector &vecAbsOrigin, const Vector &vecAbsVelocity )
 {
+#ifdef NEO
+	// We override this because our scaled hull macros differ for NT class specific scaling.
+	// Should never call this base class.
+	Assert(false);
+	Error("Called InitVCollision on base player for: \"%s\"\n", GetClassname());
+#else
 	// Cleanup any old vphysics stuff.
 	VPhysicsDestroyObject();
 
@@ -8344,6 +8350,7 @@ void CBasePlayer::InitVCollision( const Vector &vecAbsOrigin, const Vector &vecA
 	CPhysCollide *pCrouchModel = PhysCreateBbox( VEC_DUCK_HULL_MIN_SCALED( this ), VEC_DUCK_HULL_MAX_SCALED( this ) );
 
 	SetupVPhysicsShadow( vecAbsOrigin, vecAbsVelocity, pModel, "player_stand", pCrouchModel, "player_crouch" );
+#endif
 }
 
 

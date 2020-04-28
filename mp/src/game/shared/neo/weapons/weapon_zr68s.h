@@ -36,11 +36,12 @@ public:
 	DECLARE_NETWORKCLASS();
 	DECLARE_PREDICTABLE();
 
-	void	ItemPostFrame(void);
-	void	ItemPreFrame(void);
-	void	ItemBusyFrame(void);
-	void	PrimaryAttack(void);
-	void	AddViewKick(void);
+	virtual void	ItemPostFrame(void);
+	virtual void	ItemPreFrame(void);
+	virtual void	ItemBusyFrame(void);
+	virtual void	PrimaryAttack(void);
+	virtual void	AddViewKick(void);
+
 	void	DryFire(void);
 
 	virtual void Spawn(void);
@@ -49,11 +50,11 @@ public:
 	virtual int GetNeoWepBits(void) const { return NEO_WEP_ZR68_S; }
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
 
+	virtual float GetSpeedScale(void) const { return 155.0 / 170.0; }
+
 	void	UpdatePenaltyTime(void);
 
-	Activity	GetPrimaryAttackActivity(void);
-
-	virtual bool Reload(void);
+	virtual Activity	GetPrimaryAttackActivity(void);
 
 	virtual const Vector& GetBulletSpread(void)
 	{
@@ -71,7 +72,7 @@ public:
 		return cone;
 	}
 
-	virtual float GetFireRate(void);
+	virtual float GetFireRate(void) { return ZR68S_FASTEST_REFIRE_TIME; }
 
 #ifdef GAME_DLL
 	DECLARE_ACTTABLE();

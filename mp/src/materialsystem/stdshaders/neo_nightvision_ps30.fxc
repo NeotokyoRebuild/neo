@@ -5,17 +5,26 @@
 #include "common_ps_fxc.h"
 
 sampler FBSampler	: register(s0);
-sampler BlurSampler	: register(s1);
+//sampler BlurSampler	: register(s1);
 
 const float g_BrightnessScale : register(c0);
 const float g_GreenScale : register(c1);
-const float g_BrightFlatness : register(c2);
-const float g_DimFlatness : register(c3);
+const float g_Contrast : register(c2);
+const float g_Luminance : register(c3);
+const float g_StartGamma : register(c4);
+const float g_TargetGamma : register(c5);
 
 struct PS_INPUT
 {
 	float2 texCoord				: TEXCOORD0;
 };
+
+float3 grayscale(float3 col)
+{
+    // ATSC grayscale standard
+    float3 ratio = float3(0.2126, 0.7152, 0.0722);
+    return float3(dot(col.r, ratio), dot(col.g, ratio), dot(col.b, ratio));
+}
 
 float4 main( const PS_INPUT i ) : COLOR
 {
@@ -24,24 +33,32 @@ float4 main( const PS_INPUT i ) : COLOR
 	// "Blur"
 	cColor += tex2D(FBSampler, i.texCoord.xy + 0.0001);
 	cColor += tex2D(FBSampler, i.texCoord.xy + 0.0002);
-	cColor += tex2D(FBSampler, i.texCoord.xy + 0.0003); 
-	
-	if (((cColor.r + cColor.g + cColor.b) / 3) < 0.9)
-	{
-		cColor = cColor / g_DimFlatness;
-	}
-	else
-	{
-		cColor = cColor / g_BrightFlatness;
-	}
-	
+	cColor += tex2D(FBSampler, i.texCoord.xy + 0.0003);
+
+    // NEO TODO (Rain): optimise, can be expressed as single value without piping cvars,
+    // and avoid float division.
+    float targetGamma = g_TargetGamma / g_StartGamma;
+    float3 gamma = float3(targetGamma, targetGamma, targetGamma);
+
+    // Gamma adjustment based on:
+    // https://forums.libretro.com/t/filter-to-change-brightness-saturation-contrast/1233
+    float3 avgLumin = float3(0.5, 0.5, 0.5);
+    float3 intensity = grayscale(cColor);
+    float3 sat = lerp(intensity, cColor, 1.0);
+	float3 contrast = lerp(avgLumin, sat, g_Contrast);
+    contrast = pow(contrast, 1.0 / gamma);
+    contrast = saturate(contrast * g_Luminance) + float3(
+        g_BrightnessScale, g_BrightnessScale, g_BrightnessScale);
+
+    cColor.rgb = contrast;
+
 	// Sets green the the average of rgb
-	const float gHue = (cColor.r + cColor.g + cColor.b) / 3;
-	const float rbHue = gHue / (1 + g_GreenScale);
+	const float gHue = (cColor.r + cColor.g + cColor.b) * 0.3333;
+	const float rbHue = gHue / (1.0 + g_GreenScale);
 
 	cColor.g = gHue;
 	cColor.r = rbHue;
 	cColor.b = rbHue;
 
-	return cColor * g_BrightnessScale;
+	return cColor;
 }

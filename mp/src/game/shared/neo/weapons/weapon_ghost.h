@@ -40,25 +40,27 @@ public:
 	virtual int GetNeoWepBits(void) const { return NEO_WEP_GHOST; }
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
 
+	virtual float GetSpeedScale(void) const { return 1.0; }
+
 #ifdef GAME_DLL
 	DECLARE_ACTTABLE();
 #endif
 
 private:
-	inline void ZeroGhostedPlayerLocArray(void);
-	inline void ShowBeacon(int clientIndex, const Vector &pos);
-	inline void HideBeacon(int clientIndex);
-	inline void SetShowEnemies(bool enabled);
+	void ZeroGhostedPlayerLocArray(void);
+	void ShowBeacon(int clientIndex, const Vector &pos);
+	void HideBeacon(int clientIndex);
+	void SetShowEnemies(bool enabled);
 
 #ifdef CLIENT_DLL
-	inline float ShowEnemies(void);
-	inline void HideEnemies(void);
-	inline void Debug_ShowPos(const Vector &pos, bool pvs);
-	inline void PlayGhostSound(float volume = 1.0f);
-	inline void StopGhostSound(void);
-	inline void HandleGhostEquip(void);
+	float ShowEnemies(void);
+	void HideEnemies(void);
+	void Debug_ShowPos(const Vector &pos, bool pvs);
+	void PlayGhostSound(float volume = 1.0f);
+	void StopGhostSound(void);
+	void HandleGhostEquip(void);
 
-	inline void TryGhostPing(float closestEnemy);
+	void TryGhostPing(float closestEnemy);
 #else
 	void UpdateNetworkedEnemyLocations(void);
 #endif

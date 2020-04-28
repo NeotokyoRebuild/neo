@@ -87,7 +87,7 @@ CWeaponGhost::~CWeaponGhost(void)
 	}
 }
 
-inline void CWeaponGhost::ZeroGhostedPlayerLocArray(void)
+void CWeaponGhost::ZeroGhostedPlayerLocArray(void)
 {
 	for (int i = 0; i < m_rvPlayerPositions.Count(); i++)
 	{
@@ -118,7 +118,7 @@ void CWeaponGhost::ItemPreFrame(void)
 }
 
 #ifdef CLIENT_DLL
-inline void CWeaponGhost::HandleGhostEquip(void)
+void CWeaponGhost::HandleGhostEquip(void)
 {
 	if (!m_bHavePlayedGhostEquipSound)
 	{
@@ -159,7 +159,7 @@ void CWeaponGhost::HandleGhostUnequip(void)
 }
 
 // Consider calling HandleGhostEquip instead.
-inline void CWeaponGhost::PlayGhostSound(float volume)
+void CWeaponGhost::PlayGhostSound(float volume)
 {
 	auto owner = GetOwner();
 	if (!owner)
@@ -178,7 +178,7 @@ inline void CWeaponGhost::PlayGhostSound(float volume)
 }
 
 // Consider calling HandleGhostUnequip instead.
-inline void CWeaponGhost::StopGhostSound(void)
+void CWeaponGhost::StopGhostSound(void)
 {
 	StopSound(this->entindex(), "HUD.GhostEquip");
 }
@@ -326,7 +326,7 @@ float CWeaponGhost::ShowEnemies(void)
 	return closestDistance == 1000 ? -1 : closestDistance;
 }
 
-inline void CWeaponGhost::HideBeacon(int clientIndex)
+void CWeaponGhost::HideBeacon(int clientIndex)
 {
 	m_pGhostBeacons[clientIndex]->SetVisible(false);
 }
@@ -335,7 +335,7 @@ using vgui::surface;
 
 extern ConVar neo_ghost_beacon_scale_baseline;
 
-inline void CWeaponGhost::ShowBeacon(int clientIndex, const Vector &pos)
+void CWeaponGhost::ShowBeacon(int clientIndex, const Vector &pos)
 {
 	if (!m_pGhostBeacons[clientIndex])
 	{

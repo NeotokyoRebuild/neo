@@ -62,16 +62,6 @@ bool CWeaponJitte::Deploy(void)
 
 void CWeaponJitte::PrimaryAttack()
 {
-	auto owner = ToBasePlayer(GetOwner());
-
-	if (owner)
-	{
-		if (!m_iClip1 && !ClientWantsAutoReload(GetOwner()))
-		{
-			return;
-		}
-	}
-
 	if ((gpGlobals->curtime - m_flLastAttackTime) > 0.5f)
 	{
 		m_nNumShotsFired = 0;
@@ -83,9 +73,10 @@ void CWeaponJitte::PrimaryAttack()
 
 	m_flLastAttackTime = gpGlobals->curtime;
 
-	if (owner)
+	auto pOwner = ToBasePlayer(GetOwner());
+	if (pOwner)
 	{
-		owner->ViewPunchReset();
+		pOwner->ViewPunchReset();
 	}
 
 	BaseClass::PrimaryAttack();
@@ -141,11 +132,6 @@ void CWeaponJitte::ItemPostFrame()
 		return;
 	}
 
-	if (m_iClip1 <= 0)
-	{
-		return;
-	}
-
 	if (owner->m_nButtons & IN_ATTACK)
 	{
 		if (m_flSoonestAttack < gpGlobals->curtime)
@@ -187,19 +173,6 @@ Activity CWeaponJitte::GetPrimaryAttackActivity()
 	}
 
 	return ACT_VM_RECOIL3;
-}
-
-bool CWeaponJitte::Reload()
-{
-	bool fRet = BaseClass::Reload();
-
-	if (fRet)
-	{
-		WeaponSound(RELOAD);
-		m_flAccuracyPenalty = 0;
-	}
-
-	return fRet;
 }
 
 void CWeaponJitte::AddViewKick()

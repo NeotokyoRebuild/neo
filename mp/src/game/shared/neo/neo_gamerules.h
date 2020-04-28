@@ -147,12 +147,23 @@ public:
 #else
 	virtual void CleanUpMap();
 	virtual void RestartGame();
+
+	virtual float FlPlayerFallDamage(CBasePlayer* pPlayer);
 #endif
 
 #ifdef GAME_DLL
 	bool IsRoundOver();
 	void StartNextRound();
+
+	virtual const char* GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer);
+	virtual const char* GetChatPrefix(bool bTeamOnly, CBasePlayer* pPlayer) { return ""; } // handled by GetChatFormat
+	virtual const char* GetChatLocation(bool bTeamOnly, CBasePlayer* pPlayer) { return NULL; } // unimplemented
 #endif
+
+	// This is the supposed encrypt key on NT, although it has its issues.
+	// See https://steamcommunity.com/groups/ANPA/discussions/0/1482109512299590948/
+	// (and NT Discord) for discussions.
+	virtual const unsigned char* GetEncryptionKey(void) { return (unsigned char*)"tBA%-ygc"; }
 
 	enum
 	{

@@ -42,7 +42,6 @@
 #include <materialsystem/itexture.h>
 #include "rendertexture.h"
 
-
 #include "model_types.h"
 
 // Don't alias here
@@ -62,6 +61,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_iXP)),
 	RecvPropInt(RECVINFO(m_iCapTeam)),
 	RecvPropInt(RECVINFO(m_iLoadoutWepChoice)),
+	RecvPropInt(RECVINFO(m_iNextSpawnClassChoice)),
 
 	RecvPropVector(RECVINFO(m_vecGhostMarkerPos)),
 	RecvPropInt(RECVINFO(m_iGhosterTeam)),
@@ -88,7 +88,9 @@ class NeoLoadoutMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback(const CCommand& command)
 	{
-		Msg("Loadout access cb\n");
+#if DEBUG
+		DevMsg("Loadout access cb\n");
+#endif
 
 		auto panel = dynamic_cast<vgui::EditablePanel*>(GetClientModeNormal()->
 			GetViewport()->FindChildByName(PANEL_NEO_LOADOUT));
@@ -101,10 +103,13 @@ public:
 		}
 
 		panel->ApplySchemeSettings(vgui::scheme()->GetIScheme(panel->GetScheme()));
-		int w, h;
-		surface()->GetScreenSize(w, h);
-		panel->SetSize(w, h);
-		panel->SetPos((int)w / 3, (int)h / 3);
+
+		int panelWide = 960, panelTall = 700, screenWide, screenTall;
+		surface()->GetScreenSize(screenWide, screenTall);
+		// Resize panel, but make sure it fits the resolution.
+		panel->SetSize(Min(screenWide, panelWide), Min(screenTall, panelTall));
+		panel->SetPos((screenWide / 2) - (panelWide / 2),
+			(screenTall / 2) - (panelTall / 2));
 
 		panel->SetMouseInputEnabled(true);
 		panel->SetKeyBoardInputEnabled(true);
@@ -145,7 +150,8 @@ public:
 		}
 		else
 		{
-			Warning("Cast failed\n");
+			Assert(false);
+			DevWarning("Cast failed\n");
 		}
 
 		surface()->SetMinimized(panel->GetVPanel(), false);
@@ -158,7 +164,9 @@ class NeoClassMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback(const CCommand& command)
 	{
-		Msg("Classmenu access cb\n");
+#ifdef DEBUG
+		DevMsg("Classmenu access cb\n");
+#endif
 
 		vgui::EditablePanel *panel = dynamic_cast<vgui::EditablePanel*>
 			(GetClientModeNormal()->GetViewport()->FindChildByName(PANEL_CLASS));
@@ -171,10 +179,13 @@ public:
 		}
 
 		panel->ApplySchemeSettings(vgui::scheme()->GetIScheme(panel->GetScheme()));
-		int w, h;
-		surface()->GetScreenSize(w, h);
-		panel->SetSize(w, h);
-		panel->SetPos((int)w / 3, (int)h / 3);
+
+		int panelWide = 650, panelTall = 280, screenWide, screenTall;
+		surface()->GetScreenSize(screenWide, screenTall);
+		// Resize panel, but make sure it fits the resolution.
+		panel->SetSize(Min(screenWide, panelWide), Min(screenTall, panelTall));
+		panel->SetPos((screenWide / 2) - (panelWide / 2),
+			(screenTall / 2) - (panelTall / 2));
 
 		panel->SetMouseInputEnabled(true);
 		panel->SetKeyBoardInputEnabled(true);
@@ -205,11 +216,14 @@ class NeoTeamMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback( const CCommand &command )
 	{
-		Msg("Teammenu access cb\n");
+#ifdef DEBUG
+		DevMsg("Teammenu access cb\n");
+#endif
 
 		if (!g_pNeoTeamMenu)
 		{
-			DevMsg("CNeoTeamMenu is not ready\n");
+			Assert(false);
+			DevWarning("CNeoTeamMenu is not ready\n");
 			return;
 		}
 
@@ -223,10 +237,14 @@ public:
 		}
 
 		panel->ApplySchemeSettings(vgui::scheme()->GetIScheme(panel->GetScheme()));
-		int w, h;
-		surface()->GetScreenSize(w, h);
-		panel->SetSize(w, h);
-		panel->SetPos((int)w / 3, (int)h / 3);
+
+		int panelWide = 360, panelTall = 215, screenWide, screenTall;
+		panelWide *= 1.5; panelTall *= 1.5;
+		surface()->GetScreenSize(screenWide, screenTall);
+		// Resize panel, but make sure it fits the resolution.
+		panel->SetSize(Min(screenWide, panelWide), Min(screenTall, panelTall));
+		panel->SetPos((screenWide / 2) - (panelWide / 2),
+			(screenTall / 2) - (panelTall / 2));
 
 		panel->SetMouseInputEnabled(true);
 		panel->SetKeyBoardInputEnabled(true);
@@ -264,6 +282,7 @@ C_NEO_Player::C_NEO_Player()
 
 	m_iCapTeam = TEAM_UNASSIGNED;
 	m_iLoadoutWepChoice = 0;
+	m_iNextSpawnClassChoice = -1;
 	m_iGhosterTeam = TEAM_UNASSIGNED;
 	m_iXP.GetForModify() = 0;
 
@@ -345,13 +364,14 @@ int C_NEO_Player::DrawModel( int flags )
 
 	int ret = BaseClass::DrawModel(flags);
 
-#define SPEED_BETWEEN_WALK_AND_RUN ((NEO_ASSAULT_WALK_SPEED + NEO_ASSAULT_NORM_SPEED) / 2.0)
-	if (GetAbsVelocity().Length() >= SPEED_BETWEEN_WALK_AND_RUN)
+	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if (pLocalPlayer && pLocalPlayer->IsInVision())
 	{
-		auto pLocalPlayer = GetLocalNEOPlayer();
-		if (pLocalPlayer && pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT)
-		{	
-			IMaterial *pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
+#define SPEED_BETWEEN_WALK_AND_RUN ((NEO_ASSAULT_WALK_SPEED + NEO_ASSAULT_NORM_SPEED) / 2.0)
+		if ((pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT) &&
+			(GetAbsVelocity().Length() >= SPEED_BETWEEN_WALK_AND_RUN))
+		{
+			IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
 			Assert(pass && !pass->IsErrorMaterial());
 
 			if (pass && !pass->IsErrorMaterial())
@@ -364,11 +384,11 @@ int C_NEO_Player::DrawModel( int flags )
 				// Send to mv buffer
 				static int bufferIdx = 0;
 				const int numBuffers = 2;
-				ITexture *pVM_Buffer = GetMVBuffer(bufferIdx);
+				ITexture* pVM_Buffer = GetMVBuffer(bufferIdx);
 				bufferIdx = (bufferIdx + 1) % numBuffers;
 				Assert(pVM_Buffer && !pVM_Buffer->IsError());
 
-				ITexture *pSrc = materials->FindTexture("_rt_FullFrameFB", TEXTURE_GROUP_RENDER_TARGET);
+				ITexture* pSrc = materials->FindTexture("_rt_FullFrameFB", TEXTURE_GROUP_RENDER_TARGET);
 				Assert(pSrc && !pSrc->IsError());
 
 				const int nSrcWidth = pSrc->GetActualWidth();
@@ -384,14 +404,22 @@ int C_NEO_Player::DrawModel( int flags )
 #endif
 			}
 		}
+		else if (pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT)
+		{
+			IMaterial* pass = materials->FindMaterial("dev/thermal_third", TEXTURE_GROUP_MODEL);
+			Assert(pass && !pass->IsErrorMaterial());
+
+			if (pass && !pass->IsErrorMaterial())
+			{
+				// Render
+				modelrender->ForcedMaterialOverride(pass);
+				ret = BaseClass::DrawModel(flags | STUDIO_RENDER | STUDIO_TRANSPARENCY);
+				modelrender->ForcedMaterialOverride(NULL);
+			}
+		}
 	}
 
 	return ret;
-}
-
-int C_NEO_Player::GetClass() const
-{
-	return m_iNeoClass;
 }
 
 void C_NEO_Player::AddEntity( void )
@@ -501,6 +529,28 @@ void C_NEO_Player::PreThink( void )
 {
 	BaseClass::PreThink();
 
+	if ((!GetActiveWeapon() && IsAlive()) ||
+		// Whether or not we move backwards affects max speed
+		((m_afButtonPressed | m_afButtonReleased) & IN_BACK))
+	{
+		if (GetFlags() & FL_DUCKING)
+		{
+			SetMaxSpeed(GetCrouchSpeed());
+		}
+		else if (IsWalking())
+		{
+			SetMaxSpeed(GetWalkSpeed());
+		}
+		else if (IsSprinting())
+		{
+			SetMaxSpeed(GetSprintSpeed());
+		}
+		else
+		{
+			SetMaxSpeed(GetNormSpeed());
+		}
+	}
+
 	CheckThermOpticButtons();
 	CheckVisionButtons();
 
@@ -557,14 +607,19 @@ void C_NEO_Player::PreThink( void )
 	if (m_bShowTeamMenu && !m_bIsTeamMenuOpen)
 	{
 		m_bIsTeamMenuOpen = true;
-
 		engine->ClientCmd(teammenu.GetName());
 	}
 	else if (m_bShowClassMenu && !m_bIsClassMenuOpen)
 	{
 		m_bIsClassMenuOpen = true;
-
 		engine->ClientCmd(classmenu.GetName());
+	}
+	else if (m_bShowTeamMenu && m_bShowClassMenu)
+	{
+		m_bShowClassMenu = false;
+		m_bIsTeamMenuOpen = true;
+		m_bIsClassMenuOpen = false;
+		engine->ClientCmd(teammenu.GetName());
 	}
 
 	// NEO TODO (Rain): marker should be responsible for its own vis control instead
@@ -620,7 +675,7 @@ void C_NEO_Player::PreThink( void )
 		{
 			if (m_bShowTestMessage)
 			{
-				indicator->SetMessage(m_pszTestMessage);
+				indicator->SetMessage(m_pszTestMessage, sizeof(m_pszTestMessage));
 			}
 
 			if (indicator->IsVisible() != m_bShowTestMessage)
@@ -681,18 +736,26 @@ void C_NEO_Player::PostThink(void)
 
 			Weapon_SetZoom(false);
 			m_bInVision = false;
+
+			gViewPortInterface->ShowPanel(PANEL_SPECGUI, true);
 		}
 
 		return;
 	}
 	else
 	{
-		m_bFirstDeathTick = true;
+		if (!m_bFirstDeathTick)
+		{
+			gViewPortInterface->ShowPanel(PANEL_SPECGUI, false);
+
+			m_bFirstDeathTick = true;
+		}
 	}
 
 	C_BaseCombatWeapon *pWep = GetActiveWeapon();
 
-	if (pWep)
+	// Can't do aim zoom in prediction, because we can't know server's reload state for our weapon with certainty.
+	if (pWep && !prediction->InPrediction())
 	{
 		if (pWep->m_bInReload && !m_bPreviouslyReloading)
 		{
@@ -762,6 +825,8 @@ inline void C_NEO_Player::SuperJump(void)
 void C_NEO_Player::Spawn( void )
 {
 	BaseClass::Spawn();
+
+	gViewPortInterface->ShowPanel(PANEL_SPECGUI, true);
 
 	if (GetTeamNumber() == TEAM_UNASSIGNED)
 	{
@@ -878,64 +943,115 @@ void C_NEO_Player::StopWalking(void)
 	m_fIsWalking = true;
 }
 
-float C_NEO_Player::GetCrouchSpeed() const
+float C_NEO_Player::GetCrouchSpeed_WithActiveWepEncumberment(void) const
 {
-	switch (m_iNeoClass)
-	{
-	case NEO_CLASS_RECON:
-		return NEO_RECON_CROUCH_SPEED;
-	case NEO_CLASS_ASSAULT:
-		return NEO_ASSAULT_CROUCH_SPEED;
-	case NEO_CLASS_SUPPORT:
-		return NEO_SUPPORT_CROUCH_SPEED;
-	}
-
-	return NEO_BASE_CROUCH_SPEED;
+	return GetCrouchSpeed() * GetActiveWeaponSpeedScale();
 }
 
-float C_NEO_Player::GetNormSpeed() const
+float C_NEO_Player::GetNormSpeed_WithActiveWepEncumberment(void) const
 {
-	switch (m_iNeoClass)
-	{
-	case NEO_CLASS_RECON:
-		return NEO_RECON_NORM_SPEED;
-	case NEO_CLASS_ASSAULT:
-		return NEO_ASSAULT_NORM_SPEED;
-	case NEO_CLASS_SUPPORT:
-		return NEO_SUPPORT_NORM_SPEED;
-	}
-
-	return NEO_BASE_NORM_SPEED;
+	return GetNormSpeed() * GetActiveWeaponSpeedScale();
 }
 
-float C_NEO_Player::GetWalkSpeed() const
+float C_NEO_Player::GetWalkSpeed_WithActiveWepEncumberment(void) const
 {
-	switch (m_iNeoClass)
-	{
-	case NEO_CLASS_RECON:
-		return NEO_RECON_WALK_SPEED;
-	case NEO_CLASS_ASSAULT:
-		return NEO_ASSAULT_WALK_SPEED;
-	case NEO_CLASS_SUPPORT:
-		return NEO_SUPPORT_WALK_SPEED;
-	}
-
-	return NEO_BASE_WALK_SPEED;
+	return GetWalkSpeed() * GetActiveWeaponSpeedScale();
 }
 
-float C_NEO_Player::GetSprintSpeed() const
+float C_NEO_Player::GetSprintSpeed_WithActiveWepEncumberment(void) const
+{
+	return GetSprintSpeed() * GetActiveWeaponSpeedScale();
+}
+
+float C_NEO_Player::GetCrouchSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const
+{
+	Assert(pNeoWep);
+	return GetCrouchSpeed() * pNeoWep->GetSpeedScale();
+}
+
+float C_NEO_Player::GetNormSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const
+{
+	Assert(pNeoWep);
+	return GetNormSpeed() * pNeoWep->GetSpeedScale();
+}
+
+float C_NEO_Player::GetWalkSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const
+{
+	Assert(pNeoWep);
+	return GetWalkSpeed() * pNeoWep->GetSpeedScale();
+}
+
+float C_NEO_Player::GetSprintSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const
+{
+	Assert(pNeoWep);
+	return GetSprintSpeed() * pNeoWep->GetSpeedScale();
+}
+
+float C_NEO_Player::GetCrouchSpeed(void) const
 {
 	switch (m_iNeoClass)
 	{
 	case NEO_CLASS_RECON:
-		return NEO_RECON_SPRINT_SPEED;
+		return NEO_RECON_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_ASSAULT:
-		return NEO_ASSAULT_SPRINT_SPEED;
+		return NEO_ASSAULT_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_SUPPORT:
-		return NEO_SUPPORT_SPRINT_SPEED;
+		return NEO_SUPPORT_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
+	default:
+		return NEO_BASE_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
 	}
+}
 
-	return NEO_BASE_SPRINT_SPEED;
+float C_NEO_Player::GetNormSpeed(void) const
+{
+	switch (m_iNeoClass)
+	{
+	case NEO_CLASS_RECON:
+		return NEO_RECON_NORM_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_ASSAULT:
+		return NEO_ASSAULT_NORM_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_SUPPORT:
+		return NEO_SUPPORT_NORM_SPEED * GetBackwardsMovementPenaltyScale();
+	default:
+		return NEO_BASE_NORM_SPEED * GetBackwardsMovementPenaltyScale();
+	}
+}
+
+float C_NEO_Player::GetWalkSpeed(void) const
+{
+	switch (m_iNeoClass)
+	{
+	case NEO_CLASS_RECON:
+		return NEO_RECON_WALK_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_ASSAULT:
+		return NEO_ASSAULT_WALK_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_SUPPORT:
+		return NEO_SUPPORT_WALK_SPEED * GetBackwardsMovementPenaltyScale();
+	default:
+		return NEO_BASE_WALK_SPEED * GetBackwardsMovementPenaltyScale();
+	}
+}
+
+float C_NEO_Player::GetSprintSpeed(void) const
+{
+	switch (m_iNeoClass)
+	{
+	case NEO_CLASS_RECON:
+		return NEO_RECON_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_ASSAULT:
+		return NEO_ASSAULT_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_SUPPORT:
+		return NEO_SUPPORT_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
+	default:
+		return NEO_BASE_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
+	}
+}
+
+float C_NEO_Player::GetActiveWeaponSpeedScale() const
+{
+	// NEO TODO (Rain): change to static cast once all weapons are guaranteed to derive from the class
+	auto pWep = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
+	return (pWep ? pWep->GetSpeedScale() : 1.0f);
 }
 
 void C_NEO_Player::Weapon_AimToggle(C_BaseCombatWeapon *pWep)
@@ -951,12 +1067,19 @@ void C_NEO_Player::Weapon_AimToggle(C_BaseCombatWeapon *pWep)
 	// This implies the wep ptr is valid, so we don't bother checking
 	if (IsAllowedToZoom(neoCombatWep))
 	{
-		const bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR) == HIDEHUD_CROSSHAIR;
-		Weapon_SetZoom(showCrosshair);
+		if (neoCombatWep->IsReadyToAimIn())
+		{
+			const bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR) == HIDEHUD_CROSSHAIR;
+			Weapon_SetZoom(showCrosshair);
+		}
+		else
+		{
+			Weapon_SetZoom(false);
+		}
 	}
 }
 
-void C_NEO_Player::Weapon_SetZoom(bool bZoomIn)
+void C_NEO_Player::Weapon_SetZoom(const bool bZoomIn)
 {
 	const float zoomSpeedSecs = 0.25f;
 
@@ -996,4 +1119,9 @@ inline bool C_NEO_Player::IsCarryingGhost(void)
 	auto wep = dynamic_cast<CNEOBaseCombatWeapon*>(GetWeapon(NEO_WEAPON_PRIMARY_SLOT));
 #endif
 	return (wep && wep->IsGhost());
+}
+
+const Vector C_NEO_Player::GetPlayerMaxs(void) const
+{
+	return VEC_DUCK_HULL_MAX_SCALED(this);
 }

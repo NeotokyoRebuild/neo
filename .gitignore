@@ -11,6 +11,11 @@ mp/game/neo/cfg/rain.cfg
 # Shader state debug image dumps
 mp/game/neo/*.tga
 
+# Map compile artifacts
+mp/game/neo/mapsrc/*.bsp
+mp/game/neo/mapsrc/*.prt
+mp/game/neo/mapsrc/*.vmx
+
 # Object files
 *.o
 *.p
@@ -113,6 +118,9 @@ obj*/
 *.cxxflags
 *.files
 *.includes
+
+# Intel utilities
+VTune\ Profiler\ Results/
 
 # Specific Source build products
 bin

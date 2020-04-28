@@ -311,7 +311,13 @@ public:
 	inline void						SetPlaybackRate( float rate );
 
 	void							SetModelScale( float scale, float change_duration = 0.0f  );
+
+#ifdef NEO
+	virtual float							GetModelScale() const { return m_flModelScale; }
+#else
 	float							GetModelScale() const { return m_flModelScale; }
+#endif
+
 	inline bool						IsModelScaleFractional() const;  /// very fast way to ask if the model scale is < 1.0f  (faster than if (GetModelScale() < 1.0f) )
 	inline bool						IsModelScaled() const;
 	void							UpdateModelScale( void );

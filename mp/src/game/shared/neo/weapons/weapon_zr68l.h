@@ -49,11 +49,11 @@ public:
 	virtual int GetNeoWepBits(void) const { return NEO_WEP_ZR68_L | NEO_WEP_SCOPEDWEAPON; }
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
 
+	virtual float GetSpeedScale(void) const { return 145.0 / 170.0; }
+
 	void	UpdatePenaltyTime(void);
 
 	Activity	GetPrimaryAttackActivity(void);
-
-	virtual bool Reload(void);
 
 	virtual const Vector& GetBulletSpread(void)
 	{
