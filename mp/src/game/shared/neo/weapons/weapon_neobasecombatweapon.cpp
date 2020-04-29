@@ -222,13 +222,16 @@ void CNEOBaseCombatWeapon::ItemPreFrame(void)
 
 void CNEOBaseCombatWeapon::PrimaryAttack(void)
 {
-	// Can't shoot again yet
-	if (gpGlobals->curtime - m_flLastAttackTime < GetFastestRefireTime())
+	if (gpGlobals->curtime < m_flSoonestAttack)
 	{
 		return;
 	}
-
-	if (m_iClip1 == 0)
+	// Can't shoot again yet
+	else if (gpGlobals->curtime - m_flLastAttackTime < GetFireRate())
+	{
+		return;
+	}
+	else if (m_iClip1 == 0)
 	{
 		if (!m_bFireOnEmpty)
 		{
@@ -237,6 +240,7 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 		else
 		{
 			WeaponSound(EMPTY);
+			SendWeaponAnim(ACT_VM_DRYFIRE);
 			m_flNextPrimaryAttack = 0.2;
 		}
 		return;
@@ -249,8 +253,7 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 		Assert(false);
 		return;
 	}
-
-	if (m_iClip1 == 0 && !ClientWantsAutoReload(pOwner))
+	else if (m_iClip1 == 0 && !ClientWantsAutoReload(pOwner))
 	{
 		return;
 	}

@@ -113,7 +113,7 @@ void CWeaponJitte::ItemPostFrame()
 			}
 			else
 			{
-				m_flSoonestAttack = gpGlobals->curtime + GetFastestRefireTime();
+				m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
 			}
 		}
 	}

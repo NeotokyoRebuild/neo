@@ -22,6 +22,9 @@
 
 class CWeaponTachi : public CNEOBaseCombatWeapon
 {
+#define TACHI_SEMIAUTO_FIRERATE 0.2f
+#define TACHI_MAGDUMP_FIRERATE 0.1f
+
 	DECLARE_CLASS(CWeaponTachi, CNEOBaseCombatWeapon);
 public:
 	DECLARE_NETWORKCLASS(); 
@@ -71,31 +74,13 @@ public:
 	virtual int	GetMinBurst() OVERRIDE { return 1; }
 	virtual int	GetMaxBurst() OVERRIDE { return 3; }
 
-	virtual float GetFireRate(void) OVERRIDE
+	virtual bool IsAutomatic(void) const OVERRIDE
 	{
-#define	TACHI_FASTEST_MANUAL_REFIRE_TIME 0.2f
-#define TACHI_FASTEST_AUTO_REFIRE_TIME 0.1f
-
-		CBasePlayer* pOwner = ToBasePlayer(GetOwner());
-		if (!pOwner)
-		{
-			Assert(false);
-			return (m_bIsPrimaryFireMode ? TACHI_FASTEST_MANUAL_REFIRE_TIME :
-				TACHI_FASTEST_AUTO_REFIRE_TIME);
-		}
-
-		// Semi auto.
-		if (m_bIsPrimaryFireMode) { return TACHI_FASTEST_MANUAL_REFIRE_TIME; }
-
-		// We are full auto, but tap firing. Get the semi auto fire rate.
-		if (!(pOwner->m_afButtonLast & IN_ATTACK))
-		{
-			m_flAutoTapPenalty = 0.2;
-		}
-		
-		// Full auto.
-		return TACHI_FASTEST_MANUAL_REFIRE_TIME;
+		return (m_bIsPrimaryFireMode == false);
 	}
+
+	virtual float GetFireRate(void) OVERRIDE { return (m_bIsPrimaryFireMode ? TACHI_SEMIAUTO_FIRERATE : TACHI_MAGDUMP_FIRERATE); }
+
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
 	virtual float GetAccuracyPenalty() const OVERRIDE { return 0.2f; }
@@ -103,7 +88,6 @@ protected:
 
 private:
 	CNetworkVar(float, m_flSoonestFiremodeSwitch);
-	CNetworkVar(float, m_flAutoTapPenalty);
     CNetworkVar(bool, m_bIsPrimaryFireMode);
 
 private:

@@ -11,11 +11,9 @@ DEFINE_NEO_BASE_WEP_NETWORK_TABLE
 
 #ifdef CLIENT_DLL
 RecvPropTime(RECVINFO(m_flSoonestFiremodeSwitch)),
-RecvPropTime(RECVINFO(m_flAutoTapPenalty)),
 RecvPropBool(RECVINFO(m_bIsPrimaryFireMode)),
 #else
 SendPropTime(SENDINFO(m_flSoonestFiremodeSwitch)),
-SendPropTime(SENDINFO(m_flAutoTapPenalty)),
 SendPropBool(SENDINFO(m_bIsPrimaryFireMode)),
 #endif
 END_NETWORK_TABLE()
@@ -25,7 +23,6 @@ BEGIN_PREDICTION_DATA(CWeaponTachi)
 DEFINE_NEO_BASE_WEP_PREDICTION
 
 DEFINE_PRED_FIELD(m_flSoonestFiremodeSwitch, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_flAutoTapPenalty, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
 DEFINE_PRED_FIELD(m_bIsPrimaryFireMode, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 #endif
@@ -37,7 +34,6 @@ LINK_ENTITY_TO_CLASS(weapon_tachi, CWeaponTachi);
 #ifdef GAME_DLL
 BEGIN_DATADESC(CWeaponTachi)
 DEFINE_FIELD(m_flSoonestFiremodeSwitch, FIELD_TIME),
-DEFINE_FIELD(m_flAutoTapPenalty, FIELD_TIME),
 DEFINE_FIELD(m_bIsPrimaryFireMode, FIELD_BOOLEAN),
 END_DATADESC()
 #endif
@@ -49,7 +45,6 @@ CWeaponTachi::CWeaponTachi()
 	m_flSoonestAttack = gpGlobals->curtime;
 	m_flSoonestFiremodeSwitch = gpGlobals->curtime;
 	m_flAccuracyPenalty = 0.0f;
-	m_flAutoTapPenalty = 0.0f;
 
 	m_fMinRange1 = 24;
 	m_fMaxRange1 = 1500;
@@ -75,11 +70,6 @@ void CWeaponTachi::DryFire(void)
 
 void CWeaponTachi::PrimaryAttack(void)
 {
-	if (gpGlobals->curtime > m_flSoonestAttack)
-	{
-		m_flSoonestAttack = gpGlobals->curtime + m_flAutoTapPenalty;
-	}
-
 	BaseClass::PrimaryAttack();
 }
 
@@ -121,16 +111,30 @@ void CWeaponTachi::UpdatePenaltyTime( void )
 		return;
 
 	// Check our penalty time decay
-	if ( ( ( pOwner->m_nButtons & IN_ATTACK ) == false ) && ( m_flSoonestAttack < gpGlobals->curtime ) )
+	if ( ( pOwner->m_nButtons & IN_ATTACK ) == false )
 	{
-		m_flAccuracyPenalty -= gpGlobals->frametime;
-		m_flAccuracyPenalty = clamp( m_flAccuracyPenalty, 0.0f, GetMaxAccuracyPenalty() );
+		if (m_flSoonestAttack < gpGlobals->curtime)
+		{
+			m_flAccuracyPenalty -= gpGlobals->frametime;
+			m_flAccuracyPenalty = clamp(m_flAccuracyPenalty, 0.0f, GetMaxAccuracyPenalty());
+		}
+	}
+	else
+	{
+		if ((IsAutomatic() && (!(pOwner->m_afButtonLast & IN_ATTACK))) &&
+			(gpGlobals->curtime - m_flLastAttackTime > TACHI_SEMIAUTO_FIRERATE))
+		{
+			m_flSoonestAttack = gpGlobals->curtime + TACHI_SEMIAUTO_FIRERATE;
+		}
+		else
+		{
+			m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
+		}
 	}
 
-	if (m_flAutoTapPenalty != 0)
+	if (m_flSoonestAttack > gpGlobals->curtime)
 	{
-		m_flAutoTapPenalty -= gpGlobals->frametime;
-		m_flAutoTapPenalty = clamp(m_flAutoTapPenalty, 0.0f, 0.2f);
+		m_flSoonestAttack -= (gpGlobals->curtime - m_flLastAttackTime);
 	}
 }
 
@@ -172,31 +176,7 @@ void CWeaponTachi::ItemPostFrame( void )
 #define TACHI_FASTEST_FIREMODE_SWITCH_TIME 0.2f
 			m_flSoonestFiremodeSwitch = gpGlobals->curtime + TACHI_FASTEST_FIREMODE_SWITCH_TIME;
 			m_flSoonestAttack = gpGlobals->curtime + TACHI_FASTEST_FIREMODE_SWITCH_TIME;
-		}
-	}
-
-	if (pOwner->m_nButtons & IN_ATTACK)
-	{
-		if (m_flSoonestAttack < gpGlobals->curtime)
-		{
-			if (m_iClip1 <= 0)
-			{
-				DryFire();
-				m_flSoonestAttack = gpGlobals->curtime + GetFastestDryRefireTime();
-			}
-			else
-			{
-				m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
-			}
-		}
-	}
-	else if (pOwner->m_afButtonReleased & IN_ATTACK)
-	{
-		// We let go of fire whilst full auto, set semi auto refire time
-		// to prevent tap firing at full auto speeds.
-		if (!m_bIsPrimaryFireMode)
-		{
-			m_flSoonestAttack = gpGlobals->curtime + TACHI_FASTEST_MANUAL_REFIRE_TIME;
+			return;
 		}
 	}
 }
