@@ -35,21 +35,19 @@ protected:
 
 	void PaintNeoElement()
 	{
-		if (ShouldUpdateYet())
+		if (!engine->IsDrawingLoadingImage())
 		{
-			UpdateStateForNeoHudElementDraw();
-		}
+			if (ShouldUpdateYet())
+			{
+				UpdateStateForNeoHudElementDraw();
+			}
 
-		DrawNeoHudElement();
+			DrawNeoHudElement();
+		}
 	}
 
 	bool ShouldUpdateYet()
 	{
-		if (engine->IsDrawingLoadingImage())
-		{
-			return false;
-		}
-
 		const float frequency = GetUpdateFrequency();
 		if (frequency < 0)
 		{
