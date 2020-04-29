@@ -85,6 +85,11 @@ void CNEOHud_GhostBeacon::UpdateStateForNeoHudElementDraw()
 
 void CNEOHud_GhostBeacon::DrawNeoHudElement()
 {
+	if (!ShouldDraw())
+	{
+		return;
+	}
+
 	const Color textColor = Color(220, 180, 180, neo_ghost_beacon_alpha.GetInt());
 
 	surface()->DrawSetTextColor(textColor);

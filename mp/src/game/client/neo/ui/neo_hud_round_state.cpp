@@ -87,6 +87,11 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 
 void CNEOHud_RoundState::DrawNeoHudElement()
 {
+	if (!ShouldDraw())
+	{
+		return;
+	}
+
 	surface()->DrawSetTextFont(m_hFont);
 
 	int fontWidth, fontHeight;

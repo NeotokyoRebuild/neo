@@ -168,6 +168,11 @@ void CNEOHud_Compass::UpdateStateForNeoHudElementDraw()
 
 void CNEOHud_Compass::DrawNeoHudElement(void)
 {
+	if (!ShouldDraw())
+	{
+		return;
+	}
+
 	if (neo_cl_hud_compass_enabled.GetBool())
 	{
 		DrawCompass();

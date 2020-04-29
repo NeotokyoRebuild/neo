@@ -45,6 +45,11 @@ protected:
 
 	bool ShouldUpdateYet()
 	{
+		if (engine->IsDrawingLoadingImage())
+		{
+			return false;
+		}
+
 		const float frequency = GetUpdateFrequency();
 		if (frequency < 0)
 		{
