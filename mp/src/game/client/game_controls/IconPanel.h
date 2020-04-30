@@ -15,6 +15,12 @@
 
 using namespace vgui;
 
+#ifndef CIconPanel
+#define CIconPanel IconPanel
+#else
+#error Already defined
+#endif
+
 class CIconPanel : public vgui::Panel
 {
 	DECLARE_CLASS_SIMPLE( CIconPanel, vgui::Panel );

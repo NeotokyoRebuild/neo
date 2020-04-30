@@ -277,6 +277,17 @@ Scheme
 	// describes all the fonts
 	Fonts
 	{
+		"joinmenus"
+        {
+            "1"
+            {
+                "name"        "greenm03"
+                "tall"        "12"
+                "weight"      "600"
+                "antialias"   "1"
+            }
+        }
+	
 		// fonts are used in order that they are listed
 		// fonts are used in order that they are listed
 		"DebugFixed"

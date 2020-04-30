@@ -164,10 +164,6 @@ class NeoClassMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback(const CCommand& command)
 	{
-#ifdef DEBUG
-		DevMsg("Classmenu access cb\n");
-#endif
-
 		vgui::EditablePanel *panel = dynamic_cast<vgui::EditablePanel*>
 			(GetClientModeNormal()->GetViewport()->FindChildByName(PANEL_CLASS));
 
@@ -216,10 +212,6 @@ class NeoTeamMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback( const CCommand &command )
 	{
-#ifdef DEBUG
-		DevMsg("Teammenu access cb\n");
-#endif
-
 		if (!g_pNeoTeamMenu)
 		{
 			Assert(false);
@@ -271,9 +263,28 @@ public:
 };
 NeoTeamMenu_Cb neoTeamMenu_Cb;
 
+class VguiCancel_Cb : public ICommandCallback
+{
+public:
+	virtual void CommandCallback(const CCommand& command)
+	{
+		auto player = C_NEO_Player::GetLocalNEOPlayer();
+		Assert(player);
+		if (player)
+		{
+			if (player->GetTeamNumber() <= TEAM_UNASSIGNED)
+			{
+				engine->ClientCmd("jointeam 0");
+			}
+		}
+	}
+};
+VguiCancel_Cb vguiCancel_Cb;
+
 ConCommand loadoutmenu("loadoutmenu", &neoLoadoutMenu_Cb, "Open weapon loadout selection menu.", FCVAR_USERINFO);
 ConCommand classmenu("classmenu", &neoClassMenu_Cb, "Open class selection menu.", FCVAR_USERINFO);
 ConCommand teammenu("teammenu", &neoTeamMenu_Cb, "Open team selection menu.", FCVAR_USERINFO);
+ConCommand vguicancel("vguicancel", &vguiCancel_Cb, "Cancel current vgui screen.", FCVAR_USERINFO);
 
 C_NEO_Player::C_NEO_Player()
 {
