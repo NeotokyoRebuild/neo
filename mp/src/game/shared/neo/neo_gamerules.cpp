@@ -1111,7 +1111,7 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 	else
 	{
 		V_sprintf_safe(victoryMsg, "Unknown Neotokyo victory reason %i\n", iWinReason);
-		Warning(victoryMsg);
+		Warning("Unknown Neotokyo victory reason %i", iWinReason);
 		Assert(false);
 	}
 
