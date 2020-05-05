@@ -28,6 +28,8 @@ The end result should hopefully be a shinier and less error-prone rendition of N
 
 It's recommended you fork [the dev branch](https://github.com/NeotokyoRevamp/neo/tree/dev), and pull request your work there back to it.
 
+*Note: It's recommended you also read the [dev branch version of this document](https://github.com/NeotokyoRevamp/neo/blob/dev/CONTRIBUTING.md) to make sure the information is up to date.*
+
 The dev branch will periodically get merged back to the master branch, as new things become stable enough.
 
 For now, there's a public [Trello board](https://trello.com/b/LCDYn7Dm) for organizing who's working on what. Come ask in the Discord if you have trouble joining it. GitHub issues could also be used if there's need, but we'll see.
