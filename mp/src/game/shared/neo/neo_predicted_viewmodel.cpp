@@ -229,7 +229,7 @@ void CNEOPredictedViewModel::lean(CNEO_Player *player){
 			//leaning left
 			Yfinal = freeRoomForLean(neo_lean_yaw_peek_left_amount.GetFloat(), player);
 		}
-		else if (leanButtons & IN_LEAN_RIGHT) {
+		else if ((leanButtons & IN_LEAN_RIGHT) && !(leanButtons & IN_LEAN_LEFT)) {
 			//leaning right
 			Yfinal = -freeRoomForLean(-neo_lean_yaw_peek_right_amount.GetFloat(), player);
 		}
