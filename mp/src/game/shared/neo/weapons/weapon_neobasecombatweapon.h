@@ -131,6 +131,8 @@ public:
 
 	virtual void PrimaryAttack(void);
 
+	virtual float GetInnateInaccuracy(void) const { return 0.0f; } // NEO TODO (Rain): make this abstract & implement some amount of inaccuracy (spread) for weapons?
+
 	bool IsGhost(void) const { return (GetNeoWepBits() & NEO_WEP_GHOST) ? true : false; }
 
 	// We do this check to avoid a player unintentionally aiming in due to holding down their aim key while an automatic wep switch occurs.
@@ -143,6 +145,27 @@ public:
 			NEO_WEP_KNIFE | NEO_WEP_MPN | NEO_WEP_MPN_S | NEO_WEP_MX | NEO_WEP_MX_S |
 			NEO_WEP_PZ | NEO_WEP_SMAC | NEO_WEP_SRM | NEO_WEP_SRM_S | NEO_WEP_ZR68_C |
 			NEO_WEP_ZR68_S)) ? true : false);
+	}
+
+	virtual Vector GetMinCone() const { static Vector cone = VECTOR_CONE_1DEGREES; return cone; }
+	virtual Vector GetMaxCone() const { static Vector cone = VECTOR_CONE_10DEGREES; return cone; }
+
+	virtual const Vector& GetBulletSpread(void) OVERRIDE
+	{
+		static Vector cone;
+
+		Assert(GetInnateInaccuracy() <= GetMaxAccuracyPenalty());
+
+		const float ramp = RemapValClamped(m_flAccuracyPenalty,
+			GetInnateInaccuracy(),
+			GetMaxAccuracyPenalty(),
+			0.0f,
+			1.0f);
+
+		// We lerp from very accurate to inaccurate over time
+		VectorLerp(GetMinCone(), GetMaxCone(), ramp, cone);
+
+		return cone;
 	}
 
 	// Whether this weapon should fire only once per each attack command, even if held down.

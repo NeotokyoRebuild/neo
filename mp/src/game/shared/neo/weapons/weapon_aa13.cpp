@@ -49,12 +49,6 @@ Activity CWeaponAA13::GetPrimaryAttackActivity()
 	return ACT_VM_RECOIL3;
 }
 
-const Vector& CWeaponAA13::GetBulletSpread()
-{
-	static Vector cone = VECTOR_CONE_10DEGREES;
-	return cone;
-}
-
 CWeaponAA13::CWeaponAA13(void)
 {
 	m_flSoonestAttack = gpGlobals->curtime;

@@ -52,22 +52,6 @@ public:
 
 	Activity	GetPrimaryAttackActivity(void);
 
-	virtual const Vector& GetBulletSpread(void)
-	{
-		static Vector cone;
-
-		const float ramp = RemapValClamped(m_flAccuracyPenalty,
-			0.0f,
-			GetMaxAccuracyPenalty(),
-			0.0f,
-			1.0f);
-
-		// We lerp from very accurate to inaccurate over time
-		VectorLerp(VECTOR_CONE_1DEGREES, VECTOR_CONE_6DEGREES, ramp, cone);
-
-		return cone;
-	}
-
 	virtual float GetFireRate(void) OVERRIDE { return 0.5f; }
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }

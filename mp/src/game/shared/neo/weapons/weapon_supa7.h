@@ -43,12 +43,6 @@ private:
 	inline void ProposeNextAttack(const float flNextAttackProposal);
 
 public:
-	virtual const Vector& GetBulletSpread(void)
-	{
-		static Vector cone = VECTOR_CONE_10DEGREES;
-		return cone;
-	}
-
 	virtual int GetNeoWepBits(void) const { return NEO_WEP_SUPA7; }
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
 
