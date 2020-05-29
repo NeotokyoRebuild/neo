@@ -8,6 +8,7 @@
 #include "c_neo_player.h"
 #include "prediction.h"
 #include "iinput.h"
+#include "inetchannelinfo.h"
 #include "engine/ivdebugoverlay.h"
 
 #include "viewrender.h"
@@ -125,7 +126,7 @@ inline void CNEOPredictedViewModel::DrawRenderToTextureDebugInfo(IClientRenderab
 #endif
 
 ConVar neo_lean_debug_draw_hull("neo_lean_debug_draw_hull", "0", FCVAR_CHEAT | FCVAR_REPLICATED);
-ConVar neo_lean_speed("neo_lean_speed", "120", FCVAR_REPLICATED | FCVAR_CHEAT, "Lean speed (units/second)", true, 0.0, false, 2.0);
+ConVar neo_lean_speed("neo_lean_speed", "0.333", FCVAR_REPLICATED | FCVAR_CHEAT, "Lean speed scale", true, 0.0, false, 1000.0);
 // Original Neotokyo with the latest leftlean fix uses 7 for leftlean and 15 for rightlean yaw slide.
 ConVar neo_lean_yaw_peek_left_amount("neo_lean_yaw_peek_left_amount", "7.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How far sideways will a full left lean view reach.", true, 0.0, false, 0);
 ConVar neo_lean_yaw_peek_right_amount("neo_lean_yaw_peek_right_amount", "15.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How far sideways will a full right lean view reach.", true, 0.0, false, 0);
@@ -221,51 +222,50 @@ void CNEOPredictedViewModel::lean(CNEO_Player *player){
 	float Ycurrent = m_flYPrevious;
 	float Yfinal = 0;
 
+	const int leanButtons = player->m_nButtons;
 	if (player->IsAlive())
 	{
-		auto leanButtons = player->m_nButtons;
-		if (leanButtons & (IN_LEAN_LEFT | IN_LEAN_RIGHT)) {
-			if (leanButtons & IN_LEAN_LEFT & IN_LEAN_RIGHT) {
-				//leaning both ways
-			}
-			else if (leanButtons & IN_LEAN_LEFT) {
-				//leaning left
-				Yfinal = freeRoomForLean(neo_lean_yaw_peek_left_amount.GetFloat(), player);
-			}
-			else {
-				//leaning right
-				Yfinal = -freeRoomForLean(-neo_lean_yaw_peek_right_amount.GetFloat(), player);
-			}
+		if ((leanButtons & IN_LEAN_LEFT) && !(leanButtons & IN_LEAN_RIGHT)) {
+			//leaning left
+			Yfinal = freeRoomForLean(neo_lean_yaw_peek_left_amount.GetFloat(), player);
+		}
+		else if (leanButtons & IN_LEAN_RIGHT) {
+			//leaning right
+			Yfinal = -freeRoomForLean(-neo_lean_yaw_peek_right_amount.GetFloat(), player);
 		}
 		else {
-			//not leaning... move towards zero
+			//not leaning, or leaning both ways; move towards zero
 		}
 	}
 
-	float dY = Yfinal - Ycurrent;
+	const float dY = Yfinal - Ycurrent;
 
-	float thisTime = gpGlobals->curtime;
-	const float dTime = thisTime - m_flLastLeanTime;
-	m_flLastLeanTime = thisTime;
-	float Ymoved = dTime * neo_lean_speed.GetFloat();
 	if (dY != 0){
-		if (dY > 0){
-			Ycurrent += Ymoved;
-			if (Ycurrent >= Yfinal - 0.05f){
-				Ycurrent = Yfinal;
-			}
+		const float leanStep = 0.25f;
+
+		// Almost done leaning; snap to zero to avoid back-and-forth "wiggle"
+		if (fabs(dY) - leanStep < 0) {
+			Ycurrent = Yfinal;
 		}
-		else{
-			Ycurrent -= Ymoved;
-			if (Ycurrent <= Yfinal + 0.05f){
-				Ycurrent = Yfinal;
+		else {
+#ifdef CLIENT_DLL
+			// Less than 0.1 ms latency, this must be a LAN connection. Don't interpolate.
+			if (engine->GetNetChannelInfo()->GetAvgLatency(FLOW_OUTGOING) < 0.0001) {
+				Ycurrent = Lerp(leanStep * neo_lean_speed.GetFloat() * 1.5f, Ycurrent, Yfinal);
 			}
+			// We have to interpolate here to avoid prediction error jitter over network connections.
+			else {
+				Ycurrent = Lerp(leanStep * neo_lean_speed.GetFloat() * gpGlobals->interpolation_amount, Ycurrent, Yfinal);
+			}
+#else
+			Ycurrent = Lerp(leanStep * neo_lean_speed.GetFloat(), Ycurrent, Yfinal);
+#endif
 		}
 	}
 
 	Vector viewOffset(0, 0, player->GetViewOffset().z);
-	viewOffset.y = Ycurrent;
-	m_flYPrevious = Ycurrent;
+	viewOffset.y = m_flYPrevious = Ycurrent;
+
 	VectorYawRotate(viewOffset, viewAng.y, viewOffset);
 
 	player->SetViewOffset(viewOffset);

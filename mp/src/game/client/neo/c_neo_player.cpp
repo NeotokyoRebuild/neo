@@ -288,6 +288,8 @@ ConCommand vguicancel("vguicancel", &vguiCancel_Cb, "Cancel current vgui screen.
 
 C_NEO_Player::C_NEO_Player()
 {
+	SetPredictionEligible(true);
+
 	m_iNeoClass = NEO_CLASS_ASSAULT;
 	m_iNeoSkin = NEO_SKIN_FIRST;
 
