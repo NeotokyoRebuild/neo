@@ -767,8 +767,7 @@ void C_NEO_Player::PostThink(void)
 
 	C_BaseCombatWeapon *pWep = GetActiveWeapon();
 
-	// Can't do aim zoom in prediction, because we can't know server's reload state for our weapon with certainty.
-	if (pWep && !prediction->InPrediction())
+	if (pWep)
 	{
 		if (pWep->m_bInReload && !m_bPreviouslyReloading)
 		{
@@ -783,7 +782,16 @@ void C_NEO_Player::PostThink(void)
 			Weapon_AimToggle(pWep);
 		}
 
-		m_bPreviouslyReloading = pWep->m_bInReload;
+#if !defined( NO_ENTITY_PREDICTION )
+		// Can't do aim zoom in prediction, because we can't know
+		// server's reload state for our weapon with certainty.
+		if (!GetPredictable() || !prediction->InPrediction())
+		{
+#else
+		if (true) {
+#endif
+			m_bPreviouslyReloading = pWep->m_bInReload;
+		}
 	}
 }
 
@@ -1094,7 +1102,19 @@ void C_NEO_Player::Weapon_AimToggle(C_BaseCombatWeapon *pWep)
 
 void C_NEO_Player::Weapon_SetZoom(const bool bZoomIn)
 {
-	const float zoomSpeedSecs = 0.25f;
+	float zoomSpeedSecs = 0.25f;
+
+#if(0)
+#if !defined( NO_ENTITY_PREDICTION )
+	if (!prediction->InPrediction() && IsLocalPlayer())
+	{
+		if (GetPredictable())
+		{
+			zoomSpeedSecs *= gpGlobals->interpolation_amount;
+		}
+	}
+#endif
+#endif
 
 	if (bZoomIn)
 	{
