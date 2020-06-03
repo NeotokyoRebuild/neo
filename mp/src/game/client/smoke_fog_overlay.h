@@ -14,7 +14,6 @@
 #include "mathlib/vector.h"
 #include "smoke_fog_overlay_shared.h"
 
-
 #define ROTATION_SPEED				0.1
 #define TRADE_DURATION_MIN			10
 #define TRADE_DURATION_MAX			20
@@ -32,12 +31,16 @@
 void InitSmokeFogOverlay();
 void TermSmokeFogOverlay();
 void DrawSmokeFogOverlay();
-
+#ifdef NEO
+void UpdateThermalOverride();
+#endif
 
 // Set these before calling DrawSmokeFogOverlay.
 extern float	g_SmokeFogOverlayAlpha;
 extern Vector	g_SmokeFogOverlayColor;
-
+#ifdef NEO
+extern bool		g_SmokeFogOverlayThermalOverride;
+#endif
 
 #endif
 
