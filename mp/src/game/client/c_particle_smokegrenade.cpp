@@ -20,6 +20,10 @@
 #include "c_cs_player.h"
 #endif
 
+#ifdef NEO
+#include "c_neo_player.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -677,6 +681,29 @@ inline void C_ParticleSmokeGrenade::ApplyDynamicLight( const Vector &vParticlePo
 
 void C_ParticleSmokeGrenade::RenderParticles( CParticleRenderIterator *pIterator )
 {
+#ifdef NEO
+	auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	Assert(localPlayer);
+	if (localPlayer->IsAlive())
+	{
+		if (localPlayer->GetClass() == NEO_CLASS_SUPPORT && localPlayer->IsInVision())
+		{
+			return;
+		}
+	}
+	else if (localPlayer->GetObserverMode() == OBS_MODE_IN_EYE)
+	{
+		auto targetPlayer = dynamic_cast<C_NEO_Player*>(localPlayer->GetObserverTarget());
+		if (targetPlayer && targetPlayer->IsAlive())
+		{
+			if (targetPlayer->GetClass() == NEO_CLASS_SUPPORT && targetPlayer->IsInVision())
+			{
+				return;
+			}
+		}
+	}
+#endif
+
 	const SmokeGrenadeParticle *pParticle = (const SmokeGrenadeParticle*)pIterator->GetFirst();
 	while ( pParticle )
 	{
@@ -751,7 +778,7 @@ void C_ParticleSmokeGrenade::RenderParticles( CParticleRenderIterator *pIterator
 				alpha * GetAlphaDistanceFade(tRenderPos, 0, 10),	// Alpha
 				SMOKEPARTICLE_SIZE,
 				pParticle->m_CurRotation
-				);
+			);
 		}
 
 		pParticle = (SmokeGrenadeParticle*)pIterator->GetNext( sortKey );
