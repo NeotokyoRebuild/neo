@@ -3,25 +3,20 @@
 
 #include "in_buttons.h"
 #include "neo_gamerules.h"
+#include "weapon_hl2mpbase.h"
 
 #ifdef CLIENT_DLL
 #include "c_neo_player.h"
-#include "prediction.h"
+
+#include "engine/ivdebugoverlay.h"
 #include "iinput.h"
 #include "inetchannelinfo.h"
-#include "engine/ivdebugoverlay.h"
-
+#include "model_types.h"
+#include "prediction.h"
 #include "viewrender.h"
-
 #else
 #include "neo_player.h"
 #endif
-
-#ifdef CLIENT_DLL
-#include "model_types.h"
-#endif
-
-#include "weapon_hl2mpbase.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -56,7 +51,7 @@ CNEOPredictedViewModel::~CNEOPredictedViewModel()
 }
 
 #ifdef CLIENT_DLL
-inline void CNEOPredictedViewModel::DrawRenderToTextureDebugInfo(IClientRenderable* pRenderable,
+void CNEOPredictedViewModel::DrawRenderToTextureDebugInfo(IClientRenderable* pRenderable,
 	const Vector& mins, const Vector& maxs, const Vector &rgbColor,
 	const char *message, const Vector &vecOrigin)
 {
@@ -77,50 +72,54 @@ inline void CNEOPredictedViewModel::DrawRenderToTextureDebugInfo(IClientRenderab
 
 	VectorMA( start, vecSize.x, vec[0], end );
 	VectorMA( end, vecSize.z, vec[2], end2 );
-	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 ); 
-	debugoverlay->AddLineOverlay( end2, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 ); 
+
+	const float duration = 0.01f;
+	const bool noDepthTest = true;
+
+	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], noDepthTest, duration);
+	debugoverlay->AddLineOverlay( end2, end, rgbColor[0], rgbColor[1], rgbColor[2], noDepthTest, duration);
 
 	VectorMA( start, vecSize.y, vec[1], end );
 	VectorMA( end, vecSize.z, vec[2], end2 );
-	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 ); 
-	debugoverlay->AddLineOverlay( end2, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 ); 
+	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], noDepthTest, duration);
+	debugoverlay->AddLineOverlay( end2, end, rgbColor[0], rgbColor[1], rgbColor[2], noDepthTest, duration);
 
 	VectorMA( start, vecSize.z, vec[2], end );
-	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 );
+	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], noDepthTest, duration);
 	
 	start = end;
 	VectorMA( start, vecSize.x, vec[0], end );
-	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 ); 
+	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], noDepthTest, duration);
 
 	VectorMA( start, vecSize.y, vec[1], end );
-	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 ); 
+	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], noDepthTest, duration);
 
 	VectorMA( end, vecSize.x, vec[0], start );
 	VectorMA( start, -vecSize.x, vec[0], end );
-	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 ); 
+	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], noDepthTest, duration);
 
 	VectorMA( start, -vecSize.y, vec[1], end );
-	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 ); 
+	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], noDepthTest, duration);
 
 	VectorMA( start, -vecSize.z, vec[2], end );
-	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 );
+	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], noDepthTest, duration);
 
 	start = end;
 	VectorMA( start, -vecSize.x, vec[0], end );
-	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 ); 
+	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], noDepthTest, duration);
 
 	VectorMA( start, -vecSize.y, vec[1], end );
-	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], true, 0.01 ); 
+	debugoverlay->AddLineOverlay( start, end, rgbColor[0], rgbColor[1], rgbColor[2], noDepthTest, duration);
 
 	C_BaseEntity *pEnt = pRenderable->GetIClientUnknown()->GetBaseEntity();
 	int lineOffset = V_stristr("end", message) ? 1 : 0;
 	if ( pEnt )
 	{
-		debugoverlay->AddTextOverlay( vecOrigin, lineOffset, "%s -- %d", message, pEnt->entindex() );
+		debugoverlay->AddTextOverlay( vecOrigin, lineOffset, "%s -- ent %d", message, pEnt->entindex() );
 	}
 	else
 	{
-		debugoverlay->AddTextOverlay( vecOrigin, lineOffset, "%s -- %X", message, (size_t)pRenderable );
+		debugoverlay->AddTextOverlay( vecOrigin, lineOffset, "%s -- renderable %X", message, (size_t)pRenderable );
 	}
 }
 #endif
@@ -132,6 +131,11 @@ ConVar neo_lean_yaw_peek_left_amount("neo_lean_yaw_peek_left_amount", "7.0", FCV
 ConVar neo_lean_yaw_peek_right_amount("neo_lean_yaw_peek_right_amount", "15.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How far sideways will a full right lean view reach.", true, 0.0, false, 0);
 ConVar neo_lean_angle_percentage("neo_lean_angle_percentage", "0.75", FCVAR_REPLICATED | FCVAR_CHEAT, "for adjusting the actual angle of lean to a percentage of lean.", true, 0.0, true, 1.0);
 
+#if(0)
+ConVar neo_lean_thirdperson_roll_lerp_scale("neo_lean_thirdperson_roll_lerp_scale", "5",
+	FCVAR_REPLICATED | FCVAR_CHEAT, "Multiplier for 3rd person lean roll lerping.", true, 0.0, false, 0);
+#endif
+
 float CNEOPredictedViewModel::freeRoomForLean(float leanAmount, CNEO_Player *player){
 	const Vector playerDefaultViewPos = player->GetAbsOrigin();
 	Vector deltaPlayerViewPos(0, leanAmount, 0);
@@ -141,29 +145,40 @@ float CNEOPredictedViewModel::freeRoomForLean(float leanAmount, CNEO_Player *pla
 	// We can only lean through stuff that isn't solid for us
 	CTraceFilterNoNPCsOrPlayer filter(player, COLLISION_GROUP_PLAYER_MOVEMENT);
 
+	// Player hull size, dependent on current ducking status
 	Vector hullMins, hullMaxs;
-	//sets player hull size
-	//ducking
-	Vector groundClearance(0, 0, 30);
-	if (player->m_nButtons & IN_DUCK){
-		hullMins = NEORules()->GetViewVectors()->m_vDuckHullMin + groundClearance;
-		hullMaxs = NEORules()->GetViewVectors()->m_vDuckHullMax;
+	// Need this much z clearance to not "bump" our head whilst leaning
+	const Vector groundClearance(0, 0, 30);
+
+#define STAND_MINS (NEORules()->GetViewVectors()->m_vHullMin + groundClearance)
+#define STAND_MAXS (NEORules()->GetViewVectors()->m_vHullMax)
+#define DUCK_MINS (NEORules()->GetViewVectors()->m_vDuckHullMin + groundClearance)
+#define DUCK_MAXS (NEORules()->GetViewVectors()->m_vDuckHullMax)
+
+	if (player->GetFlags() & FL_DUCKING)
+	{
+		hullMins = DUCK_MINS;
+		hullMaxs = DUCK_MAXS;
 	}
-	//standing
-	else{
-		hullMins = NEORules()->GetViewVectors()->m_vHullMin + groundClearance;
-		hullMaxs = NEORules()->GetViewVectors()->m_vHullMax;
+	else
+	{
+		hullMins = STAND_MINS;
+		hullMaxs = STAND_MAXS;
 	}
+
+	Assert(hullMins.IsValid() && hullMaxs.IsValid());
 
 	trace_t trace;
 	UTIL_TraceHull(playerDefaultViewPos, leanEndPos, hullMins, hullMaxs, player->PhysicsSolidMaskForEntity(), &filter, &trace);
+
 #ifdef CLIENT_DLL
-	if (neo_lean_debug_draw_hull.GetBool()){
+	if (neo_lean_debug_draw_hull.GetBool())
+	{
 		// Z offset to avoid text overlap; DrawRenderToTextureDebugInfo will also want to print text around similar area.
 		const Vector debugOffset = Vector(playerDefaultViewPos) + Vector(0, 0, -4);
+		const Vector color = Vector(20, 255, 0);
 		debugoverlay->AddTextOverlay(debugOffset, 0.0001, "x: %f\n y: %f\n z:%f\n", playerDefaultViewPos.x, playerDefaultViewPos.y, playerDefaultViewPos.z);
-		const Vector colorBlue(0, 0, 255), colorGreen(0, 255, 0), colorRed(255, 0, 0);
-		player->GetNEOViewModel()->DrawRenderToTextureDebugInfo(player, hullMins, hullMaxs, colorBlue, "startLeanPos", player->GetAbsOrigin());
+		player->GetNEOViewModel()->DrawRenderToTextureDebugInfo(player, hullMins, hullMaxs, color, "freeRoomForLean", player->GetAbsOrigin());
 	}
 #endif
 

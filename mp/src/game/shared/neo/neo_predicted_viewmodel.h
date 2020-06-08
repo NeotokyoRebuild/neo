@@ -5,9 +5,10 @@
 #endif
 
 #include "predicted_viewmodel.h"
+
 #ifdef CLIENT_DLL
-#include "clienteffectprecachesystem.h"
-#include <engine/IClientLeafSystem.h>
+//#include "clienteffectprecachesystem.h"
+//#include <engine/IClientLeafSystem.h>
 #endif
 
 #ifdef CLIENT_DLL
@@ -46,7 +47,7 @@ public:
 #endif
 
 #ifdef CLIENT_DLL
-	inline void DrawRenderToTextureDebugInfo(IClientRenderable* pRenderable,
+	void DrawRenderToTextureDebugInfo(IClientRenderable* pRenderable,
 		const Vector& mins, const Vector& maxs, const Vector &rgbColor,
 		const char *message = "", const Vector &vecOrigin = vec3_origin);
 #endif
