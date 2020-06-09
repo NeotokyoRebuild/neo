@@ -127,8 +127,8 @@ void CNEOPredictedViewModel::DrawRenderToTextureDebugInfo(IClientRenderable* pRe
 ConVar neo_lean_debug_draw_hull("neo_lean_debug_draw_hull", "0", FCVAR_CHEAT | FCVAR_REPLICATED);
 ConVar neo_lean_speed("neo_lean_speed", "0.333", FCVAR_REPLICATED | FCVAR_CHEAT, "Lean speed scale", true, 0.0, false, 1000.0);
 // Original Neotokyo with the latest leftlean fix uses 7 for leftlean and 15 for rightlean yaw slide.
-ConVar neo_lean_yaw_peek_left_amount("neo_lean_yaw_peek_left_amount", "7.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How far sideways will a full left lean view reach.", true, 0.0, false, 0);
-ConVar neo_lean_yaw_peek_right_amount("neo_lean_yaw_peek_right_amount", "15.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How far sideways will a full right lean view reach.", true, 0.0, false, 0);
+ConVar neo_lean_yaw_peek_left_amount("neo_lean_yaw_peek_left_amount", "7.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How far sideways will a full left lean view reach.", true, 0.001f, false, 0);
+ConVar neo_lean_yaw_peek_right_amount("neo_lean_yaw_peek_right_amount", "15.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How far sideways will a full right lean view reach.", true, 0.001f, false, 0);
 ConVar neo_lean_angle_percentage("neo_lean_angle_percentage", "0.75", FCVAR_REPLICATED | FCVAR_CHEAT, "for adjusting the actual angle of lean to a percentage of lean.", true, 0.0, true, 1.0);
 ConVar neo_lean_tp_exaggerate_scale("neo_lean_tp_exaggerate_scale", "2", FCVAR_REPLICATED | FCVAR_CHEAT, "How much more to scale leaning motion in 3rd person animation vs 1st person viewmodel.", true, 0.0, false, 0);
 ConVar neo_lean_fp_lower_eyes_scale("neo_lean_fp_lower_eyes_scale", "2.333", FCVAR_REPLICATED | FCVAR_CHEAT, "Multiplier for how low to bring eye-level (and hence bullet line level) whilst leaning.", true, 0.0, false, 0);
@@ -232,16 +232,7 @@ static inline float calculateLeanAngle(float freeRoom, CNEO_Player *player){
 
 float GetLeanRatio(const float leanAngle)
 {
-	if (neo_lean_yaw_peek_left_amount.GetFloat() == 0 || neo_lean_yaw_peek_right_amount.GetFloat() == 0)
-	{
-		Assert(false);
-		return 0.0f;
-	}
-
-	const float fullLean = (leanAngle < 0) ? neo_lean_yaw_peek_left_amount.GetFloat() : neo_lean_yaw_peek_right_amount.GetFloat();
-	Assert(fullLean != 0);
-
-	return fabs(leanAngle) / fullLean;
+	return fabs(leanAngle) / ((leanAngle < 0) ? neo_lean_yaw_peek_left_amount.GetFloat() : neo_lean_yaw_peek_right_amount.GetFloat());
 }
 
 float CNEOPredictedViewModel::lean(CNEO_Player *player){
@@ -333,7 +324,7 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 	}
 	else
 	{
-		const float leftleanOverleanRatio = (neo_lean_yaw_peek_left_amount.GetFloat() == 0) ? 1.0f : (neo_lean_yaw_peek_right_amount.GetFloat() / neo_lean_yaw_peek_left_amount.GetFloat());
+		const float leftleanOverleanRatio = (neo_lean_yaw_peek_right_amount.GetFloat() / neo_lean_yaw_peek_left_amount.GetFloat());
 		return leanAngle * neo_lean_tp_exaggerate_scale.GetFloat() * leftleanOverleanRatio;
 	}
 }
