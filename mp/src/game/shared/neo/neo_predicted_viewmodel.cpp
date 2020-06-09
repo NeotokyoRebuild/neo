@@ -130,6 +130,8 @@ ConVar neo_lean_speed("neo_lean_speed", "0.333", FCVAR_REPLICATED | FCVAR_CHEAT,
 ConVar neo_lean_yaw_peek_left_amount("neo_lean_yaw_peek_left_amount", "7.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How far sideways will a full left lean view reach.", true, 0.0, false, 0);
 ConVar neo_lean_yaw_peek_right_amount("neo_lean_yaw_peek_right_amount", "15.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How far sideways will a full right lean view reach.", true, 0.0, false, 0);
 ConVar neo_lean_angle_percentage("neo_lean_angle_percentage", "0.75", FCVAR_REPLICATED | FCVAR_CHEAT, "for adjusting the actual angle of lean to a percentage of lean.", true, 0.0, true, 1.0);
+ConVar neo_lean_tp_exaggerate_scale("neo_lean_tp_exaggerate_scale", "2", FCVAR_REPLICATED | FCVAR_CHEAT, "How much more to scale leaning motion in 3rd person animation vs 1st person viewmodel.", true, 0.0, false, 0);
+ConVar neo_lean_fp_lower_eyes_scale("neo_lean_fp_lower_eyes_scale", "2.333", FCVAR_REPLICATED | FCVAR_CHEAT, "Multiplier for how low to bring eye-level (and hence bullet line level) whilst leaning.", true, 0.0, false, 0);
 
 #if(0)
 ConVar neo_lean_thirdperson_roll_lerp_scale("neo_lean_thirdperson_roll_lerp_scale", "5",
@@ -228,7 +230,21 @@ static inline float calculateLeanAngle(float freeRoom, CNEO_Player *player){
 	return -RAD2DEG(atan2(freeRoom, HIP_TO_HEAD_HEIGHT)) * neo_lean_angle_percentage.GetFloat();
 }
 
-void CNEOPredictedViewModel::lean(CNEO_Player *player){
+float GetLeanRatio(const float leanAngle)
+{
+	if (neo_lean_yaw_peek_left_amount.GetFloat() == 0 || neo_lean_yaw_peek_right_amount.GetFloat() == 0)
+	{
+		Assert(false);
+		return 0.0f;
+	}
+
+	const float fullLean = (leanAngle < 0) ? neo_lean_yaw_peek_left_amount.GetFloat() : neo_lean_yaw_peek_right_amount.GetFloat();
+	Assert(fullLean != 0);
+
+	return fabs(leanAngle) / fullLean;
+}
+
+float CNEOPredictedViewModel::lean(CNEO_Player *player){
 	Assert(player);
 #ifdef CLIENT_DLL
 	input->ExtraMouseSample(gpGlobals->frametime, 1);
@@ -278,18 +294,48 @@ void CNEOPredictedViewModel::lean(CNEO_Player *player){
 		}
 	}
 
-	Vector viewOffset(0, 0, player->GetViewOffset().z);
+	Vector viewOffset(0, 0, 0);
 	viewOffset.y = m_flYPrevious = Ycurrent;
 
 	VectorYawRotate(viewOffset, viewAng.y, viewOffset);
 
+	float leanAngle = calculateLeanAngle(Ycurrent, player);
+
+	const float leanRatio = GetLeanRatio(leanAngle);
+
+	switch (player->GetClass())
+	{
+	case NEO_CLASS_RECON:
+		viewOffset.z = ((player->GetFlags() & FL_DUCKING) ? NEO_RECON_EYE_HEIGHT_DUCKING : NEO_RECON_EYE_HEIGHT_STANDING) - (neo_lean_fp_lower_eyes_scale.GetFloat() * leanRatio);
+		break;
+	case NEO_CLASS_ASSAULT:
+		viewOffset.z = ((player->GetFlags() & FL_DUCKING) ? NEO_ASSAULT_EYE_HEIGHT_DUCKING : NEO_ASSAULT_EYE_HEIGHT_STANDING) - (neo_lean_fp_lower_eyes_scale.GetFloat() * leanRatio);
+		break;
+	case NEO_CLASS_SUPPORT:
+		viewOffset.z = ((player->GetFlags() & FL_DUCKING) ? NEO_SUPPORT_EYE_HEIGHT_DUCKING : NEO_SUPPORT_EYE_HEIGHT_STANDING) - (neo_lean_fp_lower_eyes_scale.GetFloat() * leanRatio);
+		break;
+	default:
+		Assert(false);
+		viewOffset.z = player->GetViewOffset().z;
+		break;
+	}
+
 	player->SetViewOffset(viewOffset);
 
-	float leanAngle = calculateLeanAngle(Ycurrent, player);
 	viewAng.z = leanAngle;
 #ifdef CLIENT_DLL
 	engine->SetViewAngles(viewAng);
 #endif
+
+	if (leanAngle >= 0)
+	{
+		return leanAngle * neo_lean_tp_exaggerate_scale.GetFloat();
+	}
+	else
+	{
+		const float leftleanOverleanRatio = (neo_lean_yaw_peek_left_amount.GetFloat() == 0) ? 1.0f : (neo_lean_yaw_peek_right_amount.GetFloat() / neo_lean_yaw_peek_left_amount.GetFloat());
+		return leanAngle * neo_lean_tp_exaggerate_scale.GetFloat() * leftleanOverleanRatio;
+	}
 }
 
 void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
