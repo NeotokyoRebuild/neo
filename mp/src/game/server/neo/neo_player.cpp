@@ -433,10 +433,8 @@ void CNEO_Player::Lean(void)
 	auto vm = static_cast<CNEOPredictedViewModel*>(GetViewModel());
 	if (vm)
 	{
-		vm->lean(this);
-
 		Assert(GetBaseAnimating());
-		GetBaseAnimating()->SetBoneController(0, LocalEyeAngles().z);
+		GetBaseAnimating()->SetBoneController(0, vm->lean(this));
 	}
 }
 

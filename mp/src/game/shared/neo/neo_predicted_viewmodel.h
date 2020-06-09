@@ -31,6 +31,8 @@ public:
 		const Vector& eyePosition, const QAngle& eyeAngles);
 
 	float freeRoomForLean(float leanAmount, CNEO_Player *player);
+
+	// Returns the amount of pelvis rotation expected of player bone controller.
 	float lean(CNEO_Player *player);
 
 #ifdef CLIENT_DLL
