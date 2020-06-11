@@ -69,6 +69,8 @@ public:
 	virtual void StartWalking(void);
 	virtual void StopWalking(void);
 
+	void Lean(void);
+
 	virtual const Vector GetPlayerMaxs(void) const;
 
 	// Implementing in header in hopes of compiler picking up the inlined base method

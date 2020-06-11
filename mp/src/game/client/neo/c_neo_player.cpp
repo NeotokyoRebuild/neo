@@ -567,16 +567,7 @@ void C_NEO_Player::PreThink( void )
 	CheckThermOpticButtons();
 	CheckVisionButtons();
 
-	CNEOPredictedViewModel *vm = (CNEOPredictedViewModel*)GetViewModel();
-	if (vm)
-	{
-		//vm->Lean(this, LEAN_AND_ANGLE);
-		/*Vector offset = this->GetViewOffset() + Vector(0, 50, 0);
-		VectorYawRotate(offset, this->LocalEyeAngles().y, offset);*/
-		//SetViewOffset(Vector(0, -50, 60));
-		vm->lean(this);
-		//debugoverlay->AddTextOverlay(this->GetAbsOrigin() + GetViewOffset(), 0.001, "client view offset");
-	}
+	Lean();
 
 	// Eek. See rationale for this thing in CNEO_Player::PreThink
 	if (IsAirborne())
@@ -700,6 +691,18 @@ void C_NEO_Player::PreThink( void )
 		{
 			Warning("Couldn't find GameEventIndicator\n");
 		}
+	}
+}
+
+void C_NEO_Player::Lean(void)
+{
+	auto vm = static_cast<CNEOPredictedViewModel*>(GetViewModel());
+	if (vm)
+	{
+		Assert(GetBaseAnimating());
+		GetBaseAnimating()->SetBoneController(0, vm->lean(this));
+
+		//debugoverlay->AddTextOverlay(this->GetAbsOrigin() + GetViewOffset(), 0.001, "client view offset");
 	}
 }
 
