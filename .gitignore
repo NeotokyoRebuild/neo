@@ -23,6 +23,9 @@ mp/game/neo/mapsrc/*.vmx
 # Emacs style backup files
 *~
 
+# Git for Windows editor crash
+*.exe.stackdump
+
 # VSCode
 *.vscode/
 
