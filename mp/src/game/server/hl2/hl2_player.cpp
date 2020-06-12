@@ -2819,16 +2819,18 @@ bool CHL2_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 		Weapon_Equip( pWeapon );
 
 #ifdef NEO
-		CRecipientFilter filter;
-		Assert(static_cast<CBasePlayer*>(pOwner));
-		filter.AddRecipientsByPAS(pWeapon->GetAbsOrigin());
-		filter.MakeReliable();
+		if (pOwner)
+		{
+			CRecipientFilter filter;
+			filter.AddRecipientsByPAS(pWeapon->GetAbsOrigin());
+			filter.MakeReliable();
 
-		EmitSound_t params;
-		params.m_pSoundName = "HL2Player.PickupWeapon";
-		params.m_nFlags |= SND_DO_NOT_OVERWRITE_EXISTING_ON_CHANNEL;
+			EmitSound_t params;
+			params.m_pSoundName = "HL2Player.PickupWeapon";
+			params.m_nFlags |= SND_DO_NOT_OVERWRITE_EXISTING_ON_CHANNEL;
 
-		EmitSound(filter, pOwner->entindex(), params);
+			EmitSound(filter, pOwner->entindex(), params);
+		}
 #else
 		EmitSound( "HL2Player.PickupWeapon" );
 #endif	
