@@ -67,9 +67,12 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_iGhosterTeam)),
 	RecvPropBool(RECVINFO(m_bGhostExists)),
 	RecvPropBool(RECVINFO(m_bInThermOpticCamo)),
+	RecvPropBool(RECVINFO(m_bLastTickInThermOpticCamo)),
 	RecvPropBool(RECVINFO(m_bInVision)),
 	RecvPropBool(RECVINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 	RecvPropBool(RECVINFO(m_bInAim)),
+
+	RecvPropTime(RECVINFO(m_flCamoAuxLastTime)),
 
 	RecvPropArray(RecvPropVector(RECVINFO(m_rvFriendlyPlayerPositions[0])), m_rvFriendlyPlayerPositions),
 END_RECV_TABLE()
@@ -77,6 +80,14 @@ END_RECV_TABLE()
 BEGIN_PREDICTION_DATA(C_NEO_Player)
 	DEFINE_PRED_FIELD(m_rvFriendlyPlayerPositions, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_vecGhostMarkerPos, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
+
+	DEFINE_PRED_FIELD_TOL(m_flCamoAuxLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
+	
+	DEFINE_PRED_FIELD(m_bInThermOpticCamo, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bLastTickInThermOpticCamo, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bInAim, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bInVision, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bHasBeenAirborneForTooLongToSuperJump, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 
 ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
@@ -310,21 +321,25 @@ C_NEO_Player::C_NEO_Player()
 
 	m_flLastAirborneJumpOkTime = 0;
 	m_flLastSuperJumpTime = 0;
+	m_flCamoAuxLastTime = 0;
 
 	m_bFirstDeathTick = true;
 	m_bPreviouslyReloading = false;
 	m_bPreviouslyPreparingToHideMsg = false;
+	m_bLastTickInThermOpticCamo = false;
 }
 
 C_NEO_Player::~C_NEO_Player()
 {
 }
 
-inline void C_NEO_Player::CheckThermOpticButtons()
+void C_NEO_Player::CheckThermOpticButtons()
 {
+	m_bLastTickInThermOpticCamo = m_bInThermOpticCamo;
+
 	if ((m_afButtonPressed & IN_THERMOPTIC) && IsAlive())
 	{
-		if (GetClass() == NEO_CLASS_SUPPORT || GetClass() == NEO_CLASS_VIP)
+		if (GetClass() != NEO_CLASS_RECON && GetClass() != NEO_CLASS_ASSAULT)
 		{
 			return;
 		}
@@ -334,9 +349,14 @@ inline void C_NEO_Player::CheckThermOpticButtons()
 			m_bInThermOpticCamo = !m_bInThermOpticCamo;
 		}
 	}
+
+	if (m_bInThermOpticCamo != m_bLastTickInThermOpticCamo)
+	{
+		PlayCloakSound();
+	}
 }
 
-inline void C_NEO_Player::CheckVisionButtons()
+void C_NEO_Player::CheckVisionButtons()
 {
 	if (m_afButtonPressed & IN_VISION)
 	{
@@ -554,6 +574,8 @@ void C_NEO_Player::PlayStepSound( Vector &vecOrigin,
 	BaseClass::PlayStepSound(vecOrigin, psurface, fvol, force);
 }
 
+extern ConVar sv_infinite_aux_power;
+
 void C_NEO_Player::PreThink( void )
 {
 	BaseClass::PreThink();
@@ -582,6 +604,50 @@ void C_NEO_Player::PreThink( void )
 
 	CheckThermOpticButtons();
 	CheckVisionButtons();
+
+	if (m_bInThermOpticCamo)
+	{
+		if (m_flCamoAuxLastTime == 0)
+		{
+			// NEO TODO (Rain): add server style interface for accessor,
+			// so we can share code
+			if (m_HL2Local.m_flSuitPower >= CLOAK_AUX_COST)
+			{
+				m_flCamoAuxLastTime = gpGlobals->curtime;
+			}
+		}
+		else
+		{
+			const float deltaTime = gpGlobals->curtime + gpGlobals->interpolation_amount - m_flCamoAuxLastTime;
+			if (deltaTime >= 1)
+			{
+				// NEO TODO (Rain): add interface for predicting this
+				//SuitPower_Drain(deltaTime * CLOAK_AUX_COST);
+
+				const float auxToDrain = deltaTime * CLOAK_AUX_COST;
+				if (m_HL2Local.m_flSuitPower <= auxToDrain)
+				{
+					m_HL2Local.m_flSuitPower = 0;
+				}
+
+				if (m_HL2Local.m_flSuitPower < CLOAK_AUX_COST)
+				{
+					m_bInThermOpticCamo = false;
+
+					m_HL2Local.m_flSuitPower = 0;
+					m_flCamoAuxLastTime = 0;
+				}
+				else
+				{
+					m_flCamoAuxLastTime = gpGlobals->curtime;
+				}
+			}
+		}
+	}
+	else
+	{
+		m_flCamoAuxLastTime = 0;
+	}
 
 	Lean();
 
@@ -853,7 +919,7 @@ bool C_NEO_Player::IsAllowedToSuperJump(void)
 }
 
 // This is applied for prediction purposes. It should match CNEO_Player's method.
-inline void C_NEO_Player::SuperJump(void)
+void C_NEO_Player::SuperJump(void)
 {
 	Vector forward;
 	AngleVectors(EyeAngles(), &forward);
@@ -868,7 +934,14 @@ void C_NEO_Player::Spawn( void )
 {
 	BaseClass::Spawn();
 
+	m_bLastTickInThermOpticCamo = m_bInThermOpticCamo = false;
+	m_flCamoAuxLastTime = 0;
+
+	Weapon_SetZoom(false);
+
 	gViewPortInterface->ShowPanel(PANEL_SPECGUI, true);
+
+	SetViewOffset(VEC_VIEW_NEOSCALE(this));
 
 	if (GetTeamNumber() == TEAM_UNASSIGNED)
 	{
@@ -1154,7 +1227,7 @@ void C_NEO_Player::Weapon_SetZoom(const bool bZoomIn)
 	m_bInAim = bZoomIn;
 }
 
-inline bool C_NEO_Player::IsCarryingGhost(void)
+bool C_NEO_Player::IsCarryingGhost(void)
 {
 #ifdef DEBUG
 	auto baseWep = GetWeapon(NEO_WEAPON_PRIMARY_SLOT);
@@ -1178,4 +1251,22 @@ inline bool C_NEO_Player::IsCarryingGhost(void)
 const Vector C_NEO_Player::GetPlayerMaxs(void) const
 {
 	return VEC_DUCK_HULL_MAX_SCALED(this);
+}
+
+void C_NEO_Player::PlayCloakSound(void)
+{
+	C_RecipientFilter filter;
+	filter.AddRecipient(this);
+	filter.MakeReliable();
+
+	static int tocOn = CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOn");
+	static int tocOff = CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOff");
+
+	EmitSound_t params;
+	params.m_bEmitCloseCaption = false;
+	params.m_hSoundScriptHandle = (m_bInThermOpticCamo ? tocOn : tocOff);
+	params.m_pOrigin = &GetAbsOrigin();
+	params.m_nChannel = CHAN_VOICE;
+
+	EmitSound(filter, entindex(), params);
 }

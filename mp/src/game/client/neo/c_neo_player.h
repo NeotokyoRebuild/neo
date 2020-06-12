@@ -109,20 +109,20 @@ public:
 
 	int GetClass() const { return m_iNeoClass; }
 
-	inline bool IsCarryingGhost(void);
+	bool IsCarryingGhost(void);
 
-	virtual void SetLocalViewAngles( const QAngle &viewAngles )
+	virtual void SetLocalViewAngles( const QAngle &viewAngles ) OVERRIDE
 	{
 		BaseClass::SetLocalViewAngles(viewAngles);
 	}
-	virtual void SetViewAngles( const QAngle& ang )
+	virtual void SetViewAngles( const QAngle& ang ) OVERRIDE
 	{
 		BaseClass::SetViewAngles(ang);
 	}
 
-	inline void SuperJump(void);
+	void SuperJump(void);
 
-	inline void DrawCompass(void);
+	void DrawCompass(void);
 
 	void Weapon_AimToggle(C_BaseCombatWeapon *pWep);
 	void Weapon_SetZoom(const bool bZoomIn);
@@ -139,10 +139,11 @@ public:
 	bool IsInAim() const { return m_bInAim; }
 
 private:
-	inline void CheckThermOpticButtons();
-	inline void CheckVisionButtons();
+	void CheckThermOpticButtons();
+	void CheckVisionButtons();
+	void PlayCloakSound();
 
-	inline bool IsAllowedToSuperJump(void);
+	bool IsAllowedToSuperJump(void);
 
 public:
 	CNetworkVar(bool, m_bShowTestMessage);
@@ -161,18 +162,22 @@ public:
 
 	CNetworkVar(bool, m_bGhostExists);
 
-protected:
+	CNetworkVar(float, m_flCamoAuxLastTime);
+
 	CNetworkVector(m_vecGhostMarkerPos);
 
 	CNetworkVar(int, m_iGhosterTeam);
 
-	bool m_bIsClassMenuOpen, m_bIsTeamMenuOpen;
-	bool m_bInThermOpticCamo;
+	CNetworkVar(bool, m_bInThermOpticCamo);
+	CNetworkVar(bool, m_bLastTickInThermOpticCamo);
 	CNetworkVar(bool, m_bInVision);
 	CNetworkVar(bool, m_bInAim);
 
 	CNetworkVar(int, m_iNeoClass);
 	CNetworkVar(int, m_iNeoSkin);
+
+protected:
+	bool m_bIsClassMenuOpen, m_bIsTeamMenuOpen;
 
 private:
 	bool m_bFirstDeathTick;
