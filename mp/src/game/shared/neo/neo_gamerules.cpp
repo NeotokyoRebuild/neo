@@ -1268,5 +1268,145 @@ const char* CNEORules::GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer)
 
 	Assert(false); // should never fall through the switch
 }
+#endif
 
+#ifdef GAME_DLL
+void CNEORules::DeathNotice(CBasePlayer* pVictim, const CTakeDamageInfo& info)
+{
+	// Work out what killed the player, and send a message to all clients about it
+	const char* killer_weapon_name = "world";		// by default, the player is killed by the world
+	int killer_ID = 0;
+
+	// Find the killer & the scorer
+	CBaseEntity* pInflictor = info.GetInflictor();
+	CBaseEntity* pKiller = info.GetAttacker();
+	CBasePlayer* pScorer = GetDeathScorer(pKiller, pInflictor);
+
+	bool isExplosiveKill = false;
+	bool isANeoDerivedWeapon = false;
+
+	// Custom kill type?
+	if (info.GetDamageCustom())
+	{
+		killer_weapon_name = GetDamageCustomString(info);
+		if (pScorer)
+		{
+			killer_ID = pScorer->GetUserID();
+		}
+	}
+	else
+	{
+		// Is the killer a client?
+		if (pScorer)
+		{
+			killer_ID = pScorer->GetUserID();
+
+			if (pInflictor)
+			{
+				if (pInflictor == pScorer)
+				{
+					// If the inflictor is the killer,  then it must be their current weapon doing the damage
+					if (pScorer->GetActiveWeapon())
+					{
+						killer_weapon_name = pScorer->GetActiveWeapon()->GetClassname();
+
+						auto neoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pScorer->GetActiveWeapon());
+						if (neoWep)
+						{
+							isANeoDerivedWeapon = true;
+							isExplosiveKill = (neoWep->GetNeoWepBits() & NEO_WEP_EXPLOSIVE) ? true : false;
+						}
+					}
+				}
+				else
+				{
+					killer_weapon_name = pInflictor->GetClassname();  // it's just that easy
+				}
+			}
+		}
+		else
+		{
+			killer_weapon_name = pInflictor->GetClassname();
+		}
+
+		// strip the NPC_* or weapon_* from the inflictor's classname
+		if (strncmp(killer_weapon_name, "weapon_", 7) == 0)
+		{
+			killer_weapon_name += 7;
+		}
+		else if (strncmp(killer_weapon_name, "npc_", 4) == 0)
+		{
+			killer_weapon_name += 4;
+		}
+		else if (strncmp(killer_weapon_name, "func_", 5) == 0)
+		{
+			killer_weapon_name += 5;
+		}
+		else if (strstr(killer_weapon_name, "physics"))
+		{
+			killer_weapon_name = "physics";
+		}
+#if(0)
+		if (strcmp(killer_weapon_name, "prop_combine_ball") == 0)
+		{
+			killer_weapon_name = "combine_ball";
+		}
+		else if (strcmp(killer_weapon_name, "grenade_ar2") == 0)
+		{
+			killer_weapon_name = "smg1_grenade";
+		}
+		else if (strcmp(killer_weapon_name, "satchel") == 0 || strcmp(killer_weapon_name, "tripmine") == 0)
+		{
+			killer_weapon_name = "slam";
+		}
+#endif
+	}
+
+	IGameEvent* event = gameeventmanager->CreateEvent("player_death");
+	if (event)
+	{
+		event->SetInt("userid", pVictim->GetUserID());
+		event->SetInt("attacker", killer_ID);
+		event->SetString("weapon", killer_weapon_name);
+		event->SetInt("priority", 7);
+
+		// Which deathnotice icon to draw.
+		// This value needs to be the same as original NT for plugin compatibility.
+		short killfeed_icon;
+
+		// NEO HACK/TODO (Rain):
+		// Knife is not yet derived from nt base wep class, so we can't yet get its bits
+		if (!isANeoDerivedWeapon)
+		{
+			killfeed_icon = 0; // NEO TODO (Rain): set correct icon
+		}
+		else
+		{
+			// Suicide icon
+			if (pKiller == pVictim)
+			{
+				killfeed_icon = 0; // NEO TODO (Rain): set correct icon
+			}
+			// Explosion icon
+			else if (isExplosiveKill)
+			{
+				killfeed_icon = 0; // NEO TODO (Rain): set correct icon
+			}
+			// Headshot icon
+			else if (pVictim->LastHitGroup() == HITGROUP_HEAD)
+			{
+				killfeed_icon = NEO_DEATH_EVENT_ICON_HEADSHOT;
+			}
+			// Generic weapon kill icon
+			else
+			{
+				killfeed_icon = 0; // NEO TODO (Rain): set correct icon
+			}
+		}
+
+		event->SetInt("icon", killfeed_icon);
+
+		gameeventmanager->FireEvent(event);
+	}
+}
 #endif

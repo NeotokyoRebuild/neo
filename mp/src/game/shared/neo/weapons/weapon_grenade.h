@@ -40,7 +40,7 @@ public:
 
 	CWeaponGrenade();
 
-	virtual int GetNeoWepBits(void) const { return NEO_WEP_FRAG_GRENADE | NEO_WEP_THROWABLE; }
+	virtual int GetNeoWepBits(void) const { return NEO_WEP_FRAG_GRENADE | NEO_WEP_THROWABLE | NEO_WEP_EXPLOSIVE; }
 
 	virtual float GetSpeedScale(void) const { return 1.0; }
 

@@ -119,6 +119,13 @@ public:
 
 	virtual void ClientSpawned(edict_t* pPlayer) OVERRIDE;
 
+	virtual void DeathNotice(CBasePlayer* pVictim, const CTakeDamageInfo& info) OVERRIDE
+#ifdef CLIENT_DLL
+	{ }
+#else
+	;
+#endif
+
 	float GetMapRemainingTime();
 
 	void ResetGhostCapPoints();

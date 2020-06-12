@@ -34,7 +34,7 @@ public:
 
 	CWeaponDetpack();
 
-	virtual int GetNeoWepBits(void) const { return NEO_WEP_DETPACK | NEO_WEP_THROWABLE; }
+	virtual int GetNeoWepBits(void) const { return NEO_WEP_DETPACK | NEO_WEP_THROWABLE | NEO_WEP_EXPLOSIVE; }
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 4; }
 
 	void	Precache(void);

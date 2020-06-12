@@ -754,6 +754,8 @@ void C_NEO_Player::PostThink(void)
 			m_bInVision = false;
 
 			gViewPortInterface->ShowPanel(PANEL_SPECGUI, true);
+
+
 		}
 
 		return;

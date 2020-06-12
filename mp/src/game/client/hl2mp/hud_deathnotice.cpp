@@ -22,6 +22,7 @@
 #include "../neo/ui/neo_hud_game_event.h"
 #include "neo_player_shared.h"
 #include "spectatorgui.h"
+#include "takedamageinfo.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -357,7 +358,11 @@ void CHudDeathNotice::FireGameEvent( IGameEvent * event )
 	deathMsg.iSuicide = ( !killer || killer == victim );
 
 #ifdef NEO
-	// Look up the appropriate kill feed icon for this death
+	// NEO TODO (Rain): we're passing an event->"icon" as short here.
+	// Only headshot's icon is implemented thus far, but we should
+	// implement them all and use them to determine what to draw here
+	// instead of doing all these test cases.
+
 	if (deathMsg.iSuicide)
 	{
 		deathMsg.iconDeath = gHUD.GetIcon("neo_bus");
@@ -373,7 +378,7 @@ void CHudDeathNotice::FireGameEvent( IGameEvent * event )
 		// Guns
 		else
 		{
-			deathMsg.bHeadshot = event->GetBool("headshot");
+			deathMsg.bHeadshot = (event->GetInt("icon") == NEO_DEATH_EVENT_ICON_HEADSHOT);
 			deathMsg.iconDeath = gHUD.GetIcon(deathMsg.bHeadshot ? "neo_hs" : "neo_gun");
 		}
 	}
@@ -414,9 +419,19 @@ void CHudDeathNotice::FireGameEvent( IGameEvent * event )
 	}
 	else
 	{
+#ifdef NEO
+		// These phrases are the same as in original NT to provide plugin/stats tracking website/etc compatibility.
+#define HEADSHOT_LINGO "headshot'd"
+#define NON_HEADSHOT_LINGO "killed"
+#endif
+
 		Q_snprintf( sDeathMsg, sizeof( sDeathMsg ), "%s %s %s",
 			deathMsg.Killer.szName,
-			(deathMsg.bHeadshot ? "headshot'd" : "killed"),
+#ifdef NEO
+			(deathMsg.bHeadshot ? HEADSHOT_LINGO : NON_HEADSHOT_LINGO),
+#else
+			"killed"
+#endif
 			deathMsg.Victim.szName );
 
 		if ( fullkilledwith && *fullkilledwith && (*fullkilledwith > 13 ) )
