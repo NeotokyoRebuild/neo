@@ -56,11 +56,21 @@ public:
 protected:
 	virtual	void	ImpactEffect( trace_t &trace );
 
+#ifdef NEO
+protected:
+	virtual void		Swing(int bIsSecondary);
+	virtual Activity	ChooseIntersectionPointAndActivity(trace_t& hitTrace, const Vector& mins, const Vector& maxs, CBasePlayer* pOwner);
+	bool				ImpactWater(const Vector& start, const Vector& end);
+	virtual void		Hit(trace_t& traceHit, Activity nHitActivity);
+#else
 private:
-	bool			ImpactWater( const Vector &start, const Vector &end );
-	void			Swing( int bIsSecondary );
-	void			Hit( trace_t &traceHit, Activity nHitActivity );
-	Activity		ChooseIntersectionPointAndActivity( trace_t &hitTrace, const Vector &mins, const Vector &maxs, CBasePlayer *pOwner );
+	void				Swing(int bIsSecondary);
+	Activity			ChooseIntersectionPointAndActivity(trace_t& hitTrace, const Vector& mins, const Vector& maxs, CBasePlayer* pOwner);
+	bool				ImpactWater(const Vector& start, const Vector& end);
+	void				Hit(trace_t& traceHit, Activity nHitActivity);
+#endif
+
+private:
 };
 
 #endif

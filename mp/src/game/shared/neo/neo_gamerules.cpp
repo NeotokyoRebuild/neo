@@ -912,7 +912,7 @@ void CNEORules::CheckRestartGame()
 	BaseClass::CheckRestartGame();
 }
 
-inline void CNEORules::ResetGhostCapPoints()
+void CNEORules::ResetGhostCapPoints()
 {
 	m_pGhostCaps.Purge();
 
