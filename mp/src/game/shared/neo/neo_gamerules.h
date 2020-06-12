@@ -181,6 +181,25 @@ public:
 		NEO_VICTORY_STALEMATE // Not actually a victory
 	};
 
+	int GetOpposingTeam(const int team) const
+	{
+		if (team == TEAM_JINRAI) { return TEAM_NSF; }
+		if (team == TEAM_NSF) { return TEAM_JINRAI; }
+		Assert(false);
+		return TEAM_SPECTATOR;
+	}
+
+	int GetOpposingTeam(const CBaseCombatCharacter* player) const
+	{
+		if (!player)
+		{
+			Assert(false);
+			return TEAM_SPECTATOR;
+		}
+
+		return GetOpposingTeam(player->GetTeamNumber());
+	}
+
 #ifdef GAME_DLL
 private:
 	bool m_bFirstRestartIsDone;

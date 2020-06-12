@@ -58,6 +58,7 @@
 #ifdef NEO
 #include "neo_player.h"
 #include "neo_player_shared.h"
+#include "recipientfilter.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -76,7 +77,11 @@ extern ConVar autoaim_max_dist;
 #define PLAYER_HULL_REDUCTION	0.70
 
 // This switches between the single primary weapon, and multiple weapons with buckets approach (jdw)
+#ifdef NEO
+#define	HL2_SINGLE_PRIMARY_WEAPON_MODE	1
+#else
 #define	HL2_SINGLE_PRIMARY_WEAPON_MODE	0
+#endif
 
 #define TIME_IGNORE_FALL_DAMAGE 10.0
 
@@ -2813,8 +2818,20 @@ bool CHL2_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 
 		Weapon_Equip( pWeapon );
 
+#ifdef NEO
+		CRecipientFilter filter;
+		Assert(static_cast<CBasePlayer*>(pOwner));
+		filter.AddRecipientsByPAS(pWeapon->GetAbsOrigin());
+		filter.MakeReliable();
+
+		EmitSound_t params;
+		params.m_pSoundName = "HL2Player.PickupWeapon";
+		params.m_nFlags |= SND_DO_NOT_OVERWRITE_EXISTING_ON_CHANNEL;
+
+		EmitSound(filter, pOwner->entindex(), params);
+#else
 		EmitSound( "HL2Player.PickupWeapon" );
-		
+#endif	
 		return true;
 	}
 #else

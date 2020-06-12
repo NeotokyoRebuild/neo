@@ -457,6 +457,7 @@ void CNEO_Player::CheckVisionButtons()
 				tocSoundParams.m_bEmitCloseCaption = false;
 				tocSoundParams.m_hSoundScriptHandle = visionToggle;
 				tocSoundParams.m_pOrigin = &GetAbsOrigin();
+				tocSoundParams.m_nChannel = CHAN_ITEM;
 
 				EmitSound(filter, edict()->m_EdictIndex, tocSoundParams);
 			}
@@ -665,9 +666,11 @@ void CNEO_Player::PlayCloakSound()
 	tocSoundParams.m_bEmitCloseCaption = false;
 	tocSoundParams.m_hSoundScriptHandle = (m_bInThermOpticCamo ? tocOn : tocOff);
 	tocSoundParams.m_pOrigin = &GetAbsOrigin();
+	tocSoundParams.m_nChannel = CHAN_VOICE;
 
 	CRecipientFilter filter;
 	filter.AddRecipientsByPAS(GetAbsOrigin());
+	filter.MakeReliable();
 
 	EmitSound(filter, edict()->m_EdictIndex, tocSoundParams);
 }
@@ -676,6 +679,7 @@ void CNEO_Player::CloakFlash()
 {
 	CRecipientFilter filter;
 	filter.AddRecipientsByPVS(GetAbsOrigin());
+	filter.MakeReliable();
 
 	g_NEO_TE_TocFlash.r = sv_neo_cloak_color_r.GetInt();
 	g_NEO_TE_TocFlash.g = sv_neo_cloak_color_g.GetInt();
