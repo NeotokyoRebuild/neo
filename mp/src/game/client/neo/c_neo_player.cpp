@@ -73,6 +73,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropBool(RECVINFO(m_bInAim)),
 
 	RecvPropTime(RECVINFO(m_flCamoAuxLastTime)),
+	RecvPropInt(RECVINFO(m_nVisionLastTick)),
 
 	RecvPropArray(RecvPropVector(RECVINFO(m_rvFriendlyPlayerPositions[0])), m_rvFriendlyPlayerPositions),
 END_RECV_TABLE()
@@ -88,6 +89,8 @@ BEGIN_PREDICTION_DATA(C_NEO_Player)
 	DEFINE_PRED_FIELD(m_bInAim, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bInVision, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bHasBeenAirborneForTooLongToSuperJump, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+
+	DEFINE_PRED_FIELD(m_nVisionLastTick, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 
 ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
@@ -319,14 +322,16 @@ C_NEO_Player::C_NEO_Player()
 
 	m_pNeoPanel = NULL;
 
+	m_flCamoAuxLastTime = 0;
+	m_nVisionLastTick = 0;
 	m_flLastAirborneJumpOkTime = 0;
 	m_flLastSuperJumpTime = 0;
-	m_flCamoAuxLastTime = 0;
 
 	m_bFirstDeathTick = true;
 	m_bPreviouslyReloading = false;
 	m_bPreviouslyPreparingToHideMsg = false;
 	m_bLastTickInThermOpticCamo = false;
+	m_bIsAllowedToToggleVision = false;
 }
 
 C_NEO_Player::~C_NEO_Player()
@@ -358,16 +363,26 @@ void C_NEO_Player::CheckThermOpticButtons()
 
 void C_NEO_Player::CheckVisionButtons()
 {
+	if (!m_bIsAllowedToToggleVision)
+	{
+		return;
+	}
+
 	if (m_afButtonPressed & IN_VISION)
 	{
 		if (IsAlive())
 		{
+			m_bIsAllowedToToggleVision = false;
+
 			m_bInVision = !m_bInVision;
 
 			if (m_bInVision)
 			{
+				DevMsg("Playing sound at :%f\n", gpGlobals->curtime);
+
 				C_RecipientFilter filter;
 				filter.AddRecipient(this);
+				filter.MakeReliable();
 
 				EmitSound_t params;
 				params.m_bEmitCloseCaption = false;
@@ -836,8 +851,6 @@ void C_NEO_Player::PostThink(void)
 			m_bInVision = false;
 
 			gViewPortInterface->ShowPanel(PANEL_SPECGUI, true);
-
-
 		}
 
 		return;
@@ -936,6 +949,9 @@ void C_NEO_Player::Spawn( void )
 
 	m_bLastTickInThermOpticCamo = m_bInThermOpticCamo = false;
 	m_flCamoAuxLastTime = 0;
+
+	m_bInVision = false;
+	m_nVisionLastTick = 0;
 
 	Weapon_SetZoom(false);
 
@@ -1269,4 +1285,21 @@ void C_NEO_Player::PlayCloakSound(void)
 	params.m_nChannel = CHAN_VOICE;
 
 	EmitSound(filter, entindex(), params);
+}
+
+void C_NEO_Player::PreDataUpdate(DataUpdateType_t updateType)
+{
+	if (updateType == DATA_UPDATE_DATATABLE_CHANGED)
+	{
+		if (gpGlobals->tickcount - m_nVisionLastTick < TIME_TO_TICKS(0.1f))
+		{
+			return;
+		}
+		else
+		{
+			m_bIsAllowedToToggleVision = true;
+		}
+	}
+
+	BaseClass::PreDataUpdate(updateType);
 }

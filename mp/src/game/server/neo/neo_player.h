@@ -178,6 +178,7 @@ public:
 	CNetworkVar(bool, m_bInAim);
 
 	CNetworkVar(float, m_flCamoAuxLastTime);
+	CNetworkVar(int, m_nVisionLastTick);
 
 	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
 

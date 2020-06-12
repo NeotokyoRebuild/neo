@@ -56,6 +56,7 @@ SendPropBool(SENDINFO(m_bShowTestMessage)),
 SendPropBool(SENDINFO(m_bInAim)),
 
 SendPropTime(SENDINFO(m_flCamoAuxLastTime)),
+SendPropInt(SENDINFO(m_nVisionLastTick)),
 
 SendPropString(SENDINFO(m_pszTestMessage)),
 
@@ -82,6 +83,7 @@ DEFINE_FIELD(m_bShowTestMessage, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bInAim, FIELD_BOOLEAN),
 
 DEFINE_FIELD(m_flCamoAuxLastTime, FIELD_TIME),
+DEFINE_FIELD(m_nVisionLastTick, FIELD_TICK),
 
 DEFINE_FIELD(m_pszTestMessage, FIELD_STRING),
 
@@ -332,8 +334,10 @@ CNEO_Player::CNEO_Player()
 	ZeroFriendlyPlayerLocArray();
 
 	m_flCamoAuxLastTime = 0;
+	m_nVisionLastTick = 0;
 	m_flLastAirborneJumpOkTime = 0;
 	m_flLastSuperJumpTime = 0;
+
 	m_bFirstDeathTick = true;
 	m_bPreviouslyReloading = false;
 	m_bLastTickInThermOpticCamo = false;
@@ -422,6 +426,9 @@ void CNEO_Player::Spawn(void)
 	m_bLastTickInThermOpticCamo = m_bInThermOpticCamo = false;
 	m_flCamoAuxLastTime = 0;
 
+	m_bInVision = false;
+	m_nVisionLastTick = 0;
+
 	Weapon_SetZoom(false);
 
 	SetTransmitState(FL_EDICT_PVSCHECK);
@@ -450,10 +457,17 @@ void CNEO_Player::Lean(void)
 
 void CNEO_Player::CheckVisionButtons()
 {
+	if (gpGlobals->tickcount - m_nVisionLastTick < TIME_TO_TICKS(0.1f))
+	{
+		return;
+	}
+
 	if (m_afButtonPressed & IN_VISION)
 	{
 		if (IsAlive())
 		{
+			m_nVisionLastTick = gpGlobals->tickcount;
+
 			m_bInVision = !m_bInVision;
 
 			if (m_bInVision)

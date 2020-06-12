@@ -32,6 +32,8 @@ public:
 	virtual int DrawModel( int flags );
 	virtual void AddEntity( void );
 
+	virtual void PreDataUpdate(DataUpdateType_t updateType) OVERRIDE;
+
 	// Should this object cast shadows?
 	virtual ShadowType_t		ShadowCastType( void );
 
@@ -163,6 +165,7 @@ public:
 	CNetworkVar(bool, m_bGhostExists);
 
 	CNetworkVar(float, m_flCamoAuxLastTime);
+	CNetworkVar(int, m_nVisionLastTick);
 
 	CNetworkVector(m_vecGhostMarkerPos);
 
@@ -183,6 +186,7 @@ private:
 	bool m_bFirstDeathTick;
 	bool m_bPreviouslyReloading;
 	bool m_bPreviouslyPreparingToHideMsg;
+	bool m_bIsAllowedToToggleVision;
 
 	CNeoHudElements *m_pNeoPanel;
 
