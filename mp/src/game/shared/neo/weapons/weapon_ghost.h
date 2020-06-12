@@ -35,8 +35,8 @@ public:
 	virtual ~CWeaponGhost(void);
 
 	void ItemPreFrame(void);
-	virtual void PrimaryAttack(void) OVERRIDE;
-	virtual void SecondaryAttack(void) OVERRIDE;
+	virtual void PrimaryAttack(void) OVERRIDE { }
+	virtual void SecondaryAttack(void) OVERRIDE { }
 
 	virtual void ItemHolsterFrame(void);
 	virtual void OnPickedUp(CBaseCombatCharacter *pNewOwner);

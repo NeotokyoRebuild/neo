@@ -13,6 +13,9 @@
 #include <engine/IEngineSound.h>
 #include "filesystem.h"
 #include "ui/neo_hud_ghostbeacon.h"
+#include <c_recipientfilter.h>
+#else
+#include "recipientfilter.h"
 #endif
 
 #include "neo_player_shared.h"
@@ -169,18 +172,19 @@ void CWeaponGhost::HandleGhostUnequip(void)
 // Consider calling HandleGhostEquip instead.
 void CWeaponGhost::PlayGhostSound(float volume)
 {
-	auto owner = GetOwner();
+	auto owner = static_cast<C_BasePlayer*>(GetOwner());
 	if (!owner)
 	{
 		return;
 	}
 
 	C_RecipientFilter filter;
-	filter.AddRecipient(static_cast<C_BasePlayer*>(owner));
+	filter.AddRecipient(owner);
 
 	EmitSound_t emitSoundType;
 	emitSoundType.m_flVolume = volume;
 	emitSoundType.m_pSoundName = "HUD.GhostEquip";
+	emitSoundType.m_nFlags |= SND_SHOULDPAUSE | SND_DO_NOT_OVERWRITE_EXISTING_ON_CHANNEL;
 
 	EmitSound(filter, entindex(), emitSoundType);
 }
@@ -199,15 +203,6 @@ void CWeaponGhost::ItemHolsterFrame(void)
 #ifdef CLIENT_DLL
 	HandleGhostUnequip(); // is there some callback, so we don't have to keep calling this?
 #endif
-}
-
-void CWeaponGhost::PrimaryAttack(void)
-{
-}
-
-void CWeaponGhost::SecondaryAttack(void)
-{
-	BaseClass::SecondaryAttack();
 }
 
 void CWeaponGhost::SetShowEnemies(bool enabled)
@@ -464,13 +459,23 @@ void CWeaponGhost::OnPickedUp(CBaseCombatCharacter *pNewOwner)
 {
 	BaseClass::OnPickedUp(pNewOwner);
 
-	// Prevent ghoster from sprinting
 	if (pNewOwner)
 	{
 		auto neoOwner = static_cast<CNEO_Player*>(pNewOwner);
+		Assert(neoOwner);
+
+		// Prevent ghoster from sprinting
 		if (neoOwner->IsSprinting())
 		{
 			neoOwner->StopSprinting();
 		}
+
+#ifdef GAME_DLL
+		CTeamRecipientFilter filter(NEORules()->GetOpposingTeam(neoOwner), true);
+		EmitSound_t params;
+		params.m_nChannel = CHAN_USER_BASE;
+		params.m_pSoundName = "HUD.GhostPickUp";
+		EmitSound(filter, neoOwner->entindex(), params);
+#endif
 	}
 }
