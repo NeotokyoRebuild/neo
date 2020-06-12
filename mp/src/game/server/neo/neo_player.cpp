@@ -449,17 +449,39 @@ void CNEO_Player::CheckVisionButtons()
 			if (m_bInVision)
 			{
 				CRecipientFilter filter;
-				filter.AddRecipient(this);
 
-				static int visionToggle = CBaseEntity::PrecacheScriptSound("NeoPlayer.VisionOn");
+				// NEO TODO/FIXME (Rain): optimise this loop to once per cycle instead of repeating for each client
+				for (int i = 1; i <= gpGlobals->maxClients; ++i)
+				{
+					if (edict()->m_EdictIndex == i)
+					{
+						continue;
+					}
 
-				EmitSound_t tocSoundParams;
-				tocSoundParams.m_bEmitCloseCaption = false;
-				tocSoundParams.m_hSoundScriptHandle = visionToggle;
-				tocSoundParams.m_pOrigin = &GetAbsOrigin();
-				tocSoundParams.m_nChannel = CHAN_ITEM;
+					auto player = UTIL_PlayerByIndex(i);
+					if (!player || !player->IsDead() || player->GetObserverMode() != OBS_MODE_IN_EYE)
+					{
+						continue;
+					}
 
-				EmitSound(filter, edict()->m_EdictIndex, tocSoundParams);
+					if (player->GetObserverTarget() == this)
+					{
+						filter.AddRecipient(player);
+					}
+				}
+
+				if (filter.GetRecipientCount() > 0)
+				{
+					static int visionToggle = CBaseEntity::PrecacheScriptSound("NeoPlayer.VisionOn");
+
+					EmitSound_t tocSoundParams;
+					tocSoundParams.m_bEmitCloseCaption = false;
+					tocSoundParams.m_hSoundScriptHandle = visionToggle;
+					tocSoundParams.m_pOrigin = &GetAbsOrigin();
+					tocSoundParams.m_nChannel = CHAN_ITEM;
+
+					EmitSound(filter, edict()->m_EdictIndex, tocSoundParams);
+				}
 			}
 		}
 	}
@@ -679,7 +701,6 @@ void CNEO_Player::CloakFlash()
 {
 	CRecipientFilter filter;
 	filter.AddRecipientsByPVS(GetAbsOrigin());
-	filter.MakeReliable();
 
 	g_NEO_TE_TocFlash.r = sv_neo_cloak_color_r.GetInt();
 	g_NEO_TE_TocFlash.g = sv_neo_cloak_color_g.GetInt();

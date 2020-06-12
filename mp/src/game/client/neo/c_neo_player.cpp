@@ -343,6 +343,22 @@ inline void C_NEO_Player::CheckVisionButtons()
 		if (IsAlive())
 		{
 			m_bInVision = !m_bInVision;
+
+			if (m_bInVision)
+			{
+				C_RecipientFilter filter;
+				filter.AddRecipient(this);
+
+				EmitSound_t params;
+				params.m_bEmitCloseCaption = false;
+				params.m_pOrigin = &GetAbsOrigin();
+				params.m_nChannel = CHAN_ITEM;
+				params.m_nFlags |= SND_DO_NOT_OVERWRITE_EXISTING_ON_CHANNEL;
+				static int visionToggle = CBaseEntity::PrecacheScriptSound("NeoPlayer.VisionOn");
+				params.m_hSoundScriptHandle = visionToggle;
+
+				EmitSound(filter, entindex(), params);
+			}
 		}
 	}
 }
