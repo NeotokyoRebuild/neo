@@ -248,14 +248,12 @@ void CWeaponKnife::Hit(trace_t& traceHit, Activity nHitActivity)
 
 	CBaseEntity* pHitEntity = traceHit.m_pEnt;
 
-#ifdef DEBUG
-	// Shouldn't be able to hit self
-	if (pPlayer != NULL) { Assert(pPlayer != pHitEntity); }
-#endif
-
 	//Apply damage to a hit target
 	if (pHitEntity != NULL)
 	{
+		// Shouldn't be able to hit self
+		Assert(pPlayer != pHitEntity);
+
 		Vector hitDirection;
 		pPlayer->EyeVectors(&hitDirection, NULL, NULL);
 		VectorNormalize(hitDirection);
