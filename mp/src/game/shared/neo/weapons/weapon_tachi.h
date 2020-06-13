@@ -16,29 +16,26 @@
 
 #include "weapon_neobasecombatweapon.h"
 
-#define	TACHI_FASTEST_MANUAL_REFIRE_TIME 0.2f
-#define TACHI_FASTEST_AUTO_REFIRE_TIME 0.1f
-
-#define	TACHI_FASTEST_DRY_REFIRE_TIME	0.2f
-
-#define TACHI_FASTEST_FIREMODE_SWITCH_TIME 0.2f
-
-#define	TACHI_ACCURACY_SHOT_PENALTY_TIME		0.2f	
-#define	TACHI_ACCURACY_MAXIMUM_PENALTY_TIME	1.5f	// Maximum penalty to deal out
-
 #ifdef CLIENT_DLL
 #define CWeaponTachi C_WeaponTachi
 #endif
 
 class CWeaponTachi : public CNEOBaseCombatWeapon
 {
+#define TACHI_SEMIAUTO_FIRERATE 0.2f
+#define TACHI_MAGDUMP_FIRERATE 0.1f
+
+	DECLARE_CLASS(CWeaponTachi, CNEOBaseCombatWeapon);
 public:
-	DECLARE_CLASS( CWeaponTachi, CNEOBaseCombatWeapon );
-
-	CWeaponTachi(void);
-
 	DECLARE_NETWORKCLASS(); 
 	DECLARE_PREDICTABLE();
+
+#ifdef GAME_DLL
+	DECLARE_ACTTABLE();
+	DECLARE_DATADESC();
+#endif
+
+	CWeaponTachi();
 
 	void	Precache( void );
 	void	ItemPostFrame( void );
@@ -60,56 +57,28 @@ public:
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
 
 	virtual float GetSpeedScale(void) const { return 1.0; }
-
-	virtual const Vector& GetBulletSpread( void )
-	{		
-		static Vector cone;
-
-		float ramp = RemapValClamped(	m_flAccuracyPenalty, 
-											0.0f, 
-											TACHI_ACCURACY_MAXIMUM_PENALTY_TIME, 
-											0.0f, 
-											1.0f ); 
-
-			// We lerp from very accurate to inaccurate over time
-		VectorLerp( VECTOR_CONE_1DEGREES, VECTOR_CONE_6DEGREES, ramp, cone );
-
-		return cone;
-	}
 	
-	virtual int	GetMinBurst() 
-	{ 
-		return 1; 
+	virtual int	GetMinBurst() OVERRIDE { return 1; }
+	virtual int	GetMaxBurst() OVERRIDE { return 3; }
+
+	virtual bool IsAutomatic(void) const OVERRIDE
+	{
+		return (m_bIsPrimaryFireMode == false);
 	}
 
-	virtual int	GetMaxBurst() 
-	{ 
-		return 3; 
-	}
+	virtual float GetFireRate(void) OVERRIDE { return (m_bIsPrimaryFireMode ? TACHI_SEMIAUTO_FIRERATE : TACHI_MAGDUMP_FIRERATE); }
 
-	virtual float GetFireRate( void );
-
-    virtual bool IsPrimaryFireMode( void )
-    {
-        return m_bIsPrimaryFireMode;
-    }
-	
-#ifndef CLIENT_DLL
-	DECLARE_ACTTABLE();
-#endif
+protected:
+	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
+	virtual float GetAccuracyPenalty() const OVERRIDE { return 0.2f; }
+	virtual float GetMaxAccuracyPenalty() const OVERRIDE { return 1.5f; }
 
 private:
-	CNetworkVar( float,	m_flSoonestPrimaryAttack );
-    CNetworkVar( float, m_flSoonestFiremodeSwitch );
-	CNetworkVar( float,	m_flLastAttackTime );
-	CNetworkVar( float,	m_flAccuracyPenalty );
-	
-    CNetworkVar( int,	m_nNumShotsFired );
-
-    CNetworkVar( bool, m_bIsPrimaryFireMode );
+	CNetworkVar(float, m_flSoonestFiremodeSwitch);
+    CNetworkVar(bool, m_bIsPrimaryFireMode);
 
 private:
-	CWeaponTachi( const CWeaponTachi & );
+	CWeaponTachi( const CWeaponTachi &other );
 };
 
 #endif // NEO_WEAPON_TACHI_H

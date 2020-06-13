@@ -160,6 +160,7 @@ void FreeHudTextureList( CUtlDict< CHudTexture *, int >& list )
 vgui::HFont g_hFontTrebuchet24 = vgui::INVALID_FONT;
 #ifdef NEO
 vgui::HFont g_hFontKillfeed = vgui::INVALID_FONT;
+vgui::HFont g_hFontJoinMenus = vgui::INVALID_FONT;
 #endif
 
 //=======================================================================================================================

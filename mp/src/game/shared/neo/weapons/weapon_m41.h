@@ -16,25 +16,22 @@
 
 #include "weapon_neobasecombatweapon.h"
 
-#define	M41_FASTEST_REFIRE_TIME 0.1f
-#define	M41_FASTEST_DRY_REFIRE_TIME	0.2f
-
-#define	M41_ACCURACY_SHOT_PENALTY_TIME		0.2f
-#define	M41_ACCURACY_MAXIMUM_PENALTY_TIME	1.5f	// Maximum penalty to deal out
-
 #ifdef CLIENT_DLL
 #define CWeaponM41 C_WeaponM41
 #endif
 
 class CWeaponM41 : public CNEOBaseCombatWeapon
 {
-public:
 	DECLARE_CLASS(CWeaponM41, CNEOBaseCombatWeapon);
-
-	CWeaponM41();
-
+public:
 	DECLARE_NETWORKCLASS();
 	DECLARE_PREDICTABLE();
+
+#ifdef GAME_DLL
+	DECLARE_ACTTABLE();
+#endif
+
+	CWeaponM41();
 
 	void	ItemPostFrame(void);
 	void	ItemPreFrame(void);
@@ -52,34 +49,11 @@ public:
 
 	Activity	GetPrimaryAttackActivity(void);
 
-	virtual const Vector& GetBulletSpread(void)
-	{
-		static Vector cone;
-
-		float ramp = RemapValClamped(m_flAccuracyPenalty,
-			0.0f,
-			M41_ACCURACY_MAXIMUM_PENALTY_TIME,
-			0.0f,
-			1.0f);
-
-		// We lerp from very accurate to inaccurate over time
-		VectorLerp(VECTOR_CONE_1DEGREES, VECTOR_CONE_6DEGREES, ramp, cone);
-
-		return cone;
-	}
-
-	virtual float GetFireRate(void) { return M41_FASTEST_REFIRE_TIME; }
-
-#ifdef GAME_DLL
-	DECLARE_ACTTABLE();
-#endif
-
-private:
-	CNetworkVar(float, m_flSoonestAttack);
-	CNetworkVar(float, m_flLastAttackTime);
-	CNetworkVar(float, m_flAccuracyPenalty);
-
-	CNetworkVar(int, m_nNumShotsFired);
+	virtual float GetFireRate(void) OVERRIDE { return 0.1f; }
+protected:
+	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
+	virtual float GetAccuracyPenalty() const OVERRIDE { return 0.2f; }
+	virtual float GetMaxAccuracyPenalty() const OVERRIDE { return 1.5f; }
 
 private:
 	CWeaponM41(const CWeaponM41& other);

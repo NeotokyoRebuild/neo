@@ -67,9 +67,13 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_iGhosterTeam)),
 	RecvPropBool(RECVINFO(m_bGhostExists)),
 	RecvPropBool(RECVINFO(m_bInThermOpticCamo)),
+	RecvPropBool(RECVINFO(m_bLastTickInThermOpticCamo)),
 	RecvPropBool(RECVINFO(m_bInVision)),
 	RecvPropBool(RECVINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 	RecvPropBool(RECVINFO(m_bInAim)),
+
+	RecvPropTime(RECVINFO(m_flCamoAuxLastTime)),
+	RecvPropInt(RECVINFO(m_nVisionLastTick)),
 
 	RecvPropArray(RecvPropVector(RECVINFO(m_rvFriendlyPlayerPositions[0])), m_rvFriendlyPlayerPositions),
 END_RECV_TABLE()
@@ -77,6 +81,16 @@ END_RECV_TABLE()
 BEGIN_PREDICTION_DATA(C_NEO_Player)
 	DEFINE_PRED_FIELD(m_rvFriendlyPlayerPositions, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_vecGhostMarkerPos, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
+
+	DEFINE_PRED_FIELD_TOL(m_flCamoAuxLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
+	
+	DEFINE_PRED_FIELD(m_bInThermOpticCamo, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bLastTickInThermOpticCamo, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bInAim, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bInVision, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bHasBeenAirborneForTooLongToSuperJump, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+
+	DEFINE_PRED_FIELD(m_nVisionLastTick, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 
 ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
@@ -164,10 +178,6 @@ class NeoClassMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback(const CCommand& command)
 	{
-#ifdef DEBUG
-		DevMsg("Classmenu access cb\n");
-#endif
-
 		vgui::EditablePanel *panel = dynamic_cast<vgui::EditablePanel*>
 			(GetClientModeNormal()->GetViewport()->FindChildByName(PANEL_CLASS));
 
@@ -216,10 +226,6 @@ class NeoTeamMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback( const CCommand &command )
 	{
-#ifdef DEBUG
-		DevMsg("Teammenu access cb\n");
-#endif
-
 		if (!g_pNeoTeamMenu)
 		{
 			Assert(false);
@@ -271,12 +277,33 @@ public:
 };
 NeoTeamMenu_Cb neoTeamMenu_Cb;
 
+class VguiCancel_Cb : public ICommandCallback
+{
+public:
+	virtual void CommandCallback(const CCommand& command)
+	{
+		auto player = C_NEO_Player::GetLocalNEOPlayer();
+		Assert(player);
+		if (player)
+		{
+			if (player->GetTeamNumber() <= TEAM_UNASSIGNED)
+			{
+				engine->ClientCmd("jointeam 0");
+			}
+		}
+	}
+};
+VguiCancel_Cb vguiCancel_Cb;
+
 ConCommand loadoutmenu("loadoutmenu", &neoLoadoutMenu_Cb, "Open weapon loadout selection menu.", FCVAR_USERINFO);
 ConCommand classmenu("classmenu", &neoClassMenu_Cb, "Open class selection menu.", FCVAR_USERINFO);
 ConCommand teammenu("teammenu", &neoTeamMenu_Cb, "Open team selection menu.", FCVAR_USERINFO);
+ConCommand vguicancel("vguicancel", &vguiCancel_Cb, "Cancel current vgui screen.", FCVAR_USERINFO);
 
 C_NEO_Player::C_NEO_Player()
 {
+	SetPredictionEligible(true);
+
 	m_iNeoClass = NEO_CLASS_ASSAULT;
 	m_iNeoSkin = NEO_SKIN_FIRST;
 
@@ -295,23 +322,29 @@ C_NEO_Player::C_NEO_Player()
 
 	m_pNeoPanel = NULL;
 
+	m_flCamoAuxLastTime = 0;
+	m_nVisionLastTick = 0;
 	m_flLastAirborneJumpOkTime = 0;
 	m_flLastSuperJumpTime = 0;
 
 	m_bFirstDeathTick = true;
 	m_bPreviouslyReloading = false;
 	m_bPreviouslyPreparingToHideMsg = false;
+	m_bLastTickInThermOpticCamo = false;
+	m_bIsAllowedToToggleVision = false;
 }
 
 C_NEO_Player::~C_NEO_Player()
 {
 }
 
-inline void C_NEO_Player::CheckThermOpticButtons()
+void C_NEO_Player::CheckThermOpticButtons()
 {
+	m_bLastTickInThermOpticCamo = m_bInThermOpticCamo;
+
 	if ((m_afButtonPressed & IN_THERMOPTIC) && IsAlive())
 	{
-		if (GetClass() == NEO_CLASS_SUPPORT || GetClass() == NEO_CLASS_VIP)
+		if (GetClass() != NEO_CLASS_RECON && GetClass() != NEO_CLASS_ASSAULT)
 		{
 			return;
 		}
@@ -321,15 +354,46 @@ inline void C_NEO_Player::CheckThermOpticButtons()
 			m_bInThermOpticCamo = !m_bInThermOpticCamo;
 		}
 	}
+
+	if (m_bInThermOpticCamo != m_bLastTickInThermOpticCamo)
+	{
+		PlayCloakSound();
+	}
 }
 
-inline void C_NEO_Player::CheckVisionButtons()
+void C_NEO_Player::CheckVisionButtons()
 {
+	if (!m_bIsAllowedToToggleVision)
+	{
+		return;
+	}
+
 	if (m_afButtonPressed & IN_VISION)
 	{
 		if (IsAlive())
 		{
+			m_bIsAllowedToToggleVision = false;
+
 			m_bInVision = !m_bInVision;
+
+			if (m_bInVision)
+			{
+				DevMsg("Playing sound at :%f\n", gpGlobals->curtime);
+
+				C_RecipientFilter filter;
+				filter.AddRecipient(this);
+				filter.MakeReliable();
+
+				EmitSound_t params;
+				params.m_bEmitCloseCaption = false;
+				params.m_pOrigin = &GetAbsOrigin();
+				params.m_nChannel = CHAN_ITEM;
+				params.m_nFlags |= SND_DO_NOT_OVERWRITE_EXISTING_ON_CHANNEL;
+				static int visionToggle = CBaseEntity::PrecacheScriptSound("NeoPlayer.VisionOn");
+				params.m_hSoundScriptHandle = visionToggle;
+
+				EmitSound(filter, entindex(), params);
+			}
 		}
 	}
 }
@@ -525,6 +589,8 @@ void C_NEO_Player::PlayStepSound( Vector &vecOrigin,
 	BaseClass::PlayStepSound(vecOrigin, psurface, fvol, force);
 }
 
+extern ConVar sv_infinite_aux_power;
+
 void C_NEO_Player::PreThink( void )
 {
 	BaseClass::PreThink();
@@ -554,16 +620,51 @@ void C_NEO_Player::PreThink( void )
 	CheckThermOpticButtons();
 	CheckVisionButtons();
 
-	CNEOPredictedViewModel *vm = (CNEOPredictedViewModel*)GetViewModel();
-	if (vm)
+	if (m_bInThermOpticCamo)
 	{
-		//vm->Lean(this, LEAN_AND_ANGLE);
-		/*Vector offset = this->GetViewOffset() + Vector(0, 50, 0);
-		VectorYawRotate(offset, this->LocalEyeAngles().y, offset);*/
-		//SetViewOffset(Vector(0, -50, 60));
-		vm->lean(this);
-		//debugoverlay->AddTextOverlay(this->GetAbsOrigin() + GetViewOffset(), 0.001, "client view offset");
+		if (m_flCamoAuxLastTime == 0)
+		{
+			// NEO TODO (Rain): add server style interface for accessor,
+			// so we can share code
+			if (m_HL2Local.m_flSuitPower >= CLOAK_AUX_COST)
+			{
+				m_flCamoAuxLastTime = gpGlobals->curtime;
+			}
+		}
+		else
+		{
+			const float deltaTime = gpGlobals->curtime + gpGlobals->interpolation_amount - m_flCamoAuxLastTime;
+			if (deltaTime >= 1)
+			{
+				// NEO TODO (Rain): add interface for predicting this
+				//SuitPower_Drain(deltaTime * CLOAK_AUX_COST);
+
+				const float auxToDrain = deltaTime * CLOAK_AUX_COST;
+				if (m_HL2Local.m_flSuitPower <= auxToDrain)
+				{
+					m_HL2Local.m_flSuitPower = 0;
+				}
+
+				if (m_HL2Local.m_flSuitPower < CLOAK_AUX_COST)
+				{
+					m_bInThermOpticCamo = false;
+
+					m_HL2Local.m_flSuitPower = 0;
+					m_flCamoAuxLastTime = 0;
+				}
+				else
+				{
+					m_flCamoAuxLastTime = gpGlobals->curtime;
+				}
+			}
+		}
 	}
+	else
+	{
+		m_flCamoAuxLastTime = 0;
+	}
+
+	Lean();
 
 	// Eek. See rationale for this thing in CNEO_Player::PreThink
 	if (IsAirborne())
@@ -690,6 +791,18 @@ void C_NEO_Player::PreThink( void )
 	}
 }
 
+void C_NEO_Player::Lean(void)
+{
+	auto vm = static_cast<CNEOPredictedViewModel*>(GetViewModel());
+	if (vm)
+	{
+		Assert(GetBaseAnimating());
+		GetBaseAnimating()->SetBoneController(0, vm->lean(this));
+
+		//debugoverlay->AddTextOverlay(this->GetAbsOrigin() + GetViewOffset(), 0.001, "client view offset");
+	}
+}
+
 void C_NEO_Player::ClientThink(void)
 {
 	BaseClass::ClientThink();
@@ -754,8 +867,7 @@ void C_NEO_Player::PostThink(void)
 
 	C_BaseCombatWeapon *pWep = GetActiveWeapon();
 
-	// Can't do aim zoom in prediction, because we can't know server's reload state for our weapon with certainty.
-	if (pWep && !prediction->InPrediction())
+	if (pWep)
 	{
 		if (pWep->m_bInReload && !m_bPreviouslyReloading)
 		{
@@ -770,7 +882,16 @@ void C_NEO_Player::PostThink(void)
 			Weapon_AimToggle(pWep);
 		}
 
-		m_bPreviouslyReloading = pWep->m_bInReload;
+#if !defined( NO_ENTITY_PREDICTION )
+		// Can't do aim zoom in prediction, because we can't know
+		// server's reload state for our weapon with certainty.
+		if (!GetPredictable() || !prediction->InPrediction())
+		{
+#else
+		if (true) {
+#endif
+			m_bPreviouslyReloading = pWep->m_bInReload;
+		}
 	}
 }
 
@@ -811,7 +932,7 @@ bool C_NEO_Player::IsAllowedToSuperJump(void)
 }
 
 // This is applied for prediction purposes. It should match CNEO_Player's method.
-inline void C_NEO_Player::SuperJump(void)
+void C_NEO_Player::SuperJump(void)
 {
 	Vector forward;
 	AngleVectors(EyeAngles(), &forward);
@@ -826,7 +947,17 @@ void C_NEO_Player::Spawn( void )
 {
 	BaseClass::Spawn();
 
+	m_bLastTickInThermOpticCamo = m_bInThermOpticCamo = false;
+	m_flCamoAuxLastTime = 0;
+
+	m_bInVision = false;
+	m_nVisionLastTick = 0;
+
+	Weapon_SetZoom(false);
+
 	gViewPortInterface->ShowPanel(PANEL_SPECGUI, true);
+
+	SetViewOffset(VEC_VIEW_NEOSCALE(this));
 
 	if (GetTeamNumber() == TEAM_UNASSIGNED)
 	{
@@ -1081,7 +1212,19 @@ void C_NEO_Player::Weapon_AimToggle(C_BaseCombatWeapon *pWep)
 
 void C_NEO_Player::Weapon_SetZoom(const bool bZoomIn)
 {
-	const float zoomSpeedSecs = 0.25f;
+	float zoomSpeedSecs = 0.25f;
+
+#if(0)
+#if !defined( NO_ENTITY_PREDICTION )
+	if (!prediction->InPrediction() && IsLocalPlayer())
+	{
+		if (GetPredictable())
+		{
+			zoomSpeedSecs *= gpGlobals->interpolation_amount;
+		}
+	}
+#endif
+#endif
 
 	if (bZoomIn)
 	{
@@ -1100,7 +1243,7 @@ void C_NEO_Player::Weapon_SetZoom(const bool bZoomIn)
 	m_bInAim = bZoomIn;
 }
 
-inline bool C_NEO_Player::IsCarryingGhost(void)
+bool C_NEO_Player::IsCarryingGhost(void)
 {
 #ifdef DEBUG
 	auto baseWep = GetWeapon(NEO_WEAPON_PRIMARY_SLOT);
@@ -1124,4 +1267,39 @@ inline bool C_NEO_Player::IsCarryingGhost(void)
 const Vector C_NEO_Player::GetPlayerMaxs(void) const
 {
 	return VEC_DUCK_HULL_MAX_SCALED(this);
+}
+
+void C_NEO_Player::PlayCloakSound(void)
+{
+	C_RecipientFilter filter;
+	filter.AddRecipient(this);
+	filter.MakeReliable();
+
+	static int tocOn = CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOn");
+	static int tocOff = CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOff");
+
+	EmitSound_t params;
+	params.m_bEmitCloseCaption = false;
+	params.m_hSoundScriptHandle = (m_bInThermOpticCamo ? tocOn : tocOff);
+	params.m_pOrigin = &GetAbsOrigin();
+	params.m_nChannel = CHAN_VOICE;
+
+	EmitSound(filter, entindex(), params);
+}
+
+void C_NEO_Player::PreDataUpdate(DataUpdateType_t updateType)
+{
+	if (updateType == DATA_UPDATE_DATATABLE_CHANGED)
+	{
+		if (gpGlobals->tickcount - m_nVisionLastTick < TIME_TO_TICKS(0.1f))
+		{
+			return;
+		}
+		else
+		{
+			m_bIsAllowedToToggleVision = true;
+		}
+	}
+
+	BaseClass::PreDataUpdate(updateType);
 }

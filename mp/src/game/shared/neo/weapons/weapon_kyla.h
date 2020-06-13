@@ -13,8 +13,14 @@
 class CWeaponKyla : public CNEOBaseCombatWeapon
 {
 	DECLARE_CLASS(CWeaponKyla, CNEOBaseCombatWeapon);
-
 public:
+	DECLARE_NETWORKCLASS();
+	DECLARE_PREDICTABLE();
+
+#ifdef GAME_DLL
+	DECLARE_ACTTABLE();
+#endif
+
 	CWeaponKyla(void);
 
 	void PrimaryAttack(void);
@@ -24,12 +30,11 @@ public:
 
 	virtual float GetSpeedScale(void) const { return 1.0; }
 
-	DECLARE_NETWORKCLASS();
-	DECLARE_PREDICTABLE();
-
-#ifndef CLIENT_DLL
-	DECLARE_ACTTABLE();
-#endif
+	virtual float GetFireRate(void) OVERRIDE { return 0.35f; }
+protected:
+	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
+	virtual float GetAccuracyPenalty() const OVERRIDE { return 0.2f; }
+	virtual float GetMaxAccuracyPenalty() const OVERRIDE { return 0.5f; }
 
 private:
 	CWeaponKyla(const CWeaponKyla &other);

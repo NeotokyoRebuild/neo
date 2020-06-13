@@ -52,6 +52,7 @@ enum NeoWepBits {
 	NEO_WEP_ZR68_S =			(1 << 27),
 	NEO_WEP_SCOPEDWEAPON =		(1 << 28), // Scoped weapons should OR this in their flags.
 	NEO_WEP_THROWABLE =			(1 << 29), // Generic for grenades
+	NEO_WEP_EXPLOSIVE =			(1 << 30), // Generic for weapons that count as explosive kills on killfeed.
 };
 
 // These are the .res file id numbers for
@@ -77,17 +78,41 @@ enum {
 
 const char *GetWeaponByLoadoutId(int id);
 
-class CNEOBaseCombatWeapon : public CBaseHL2MPCombatWeapon
-{
-#ifndef CLIENT_DLL
-	DECLARE_DATADESC();
+#if(1)
+		// This does nothing; dummy value for network test. Remove when not needed anymore.
+#define DEFINE_NEO_BASE_WEP_PREDICTION
+		// This does nothing; dummy value for network test. Remove when not needed anymore.
+#define DEFINE_NEO_BASE_WEP_NETWORK_TABLE
+#else
+#ifdef CLIENT_DLL
+#define DEFINE_NEO_BASE_WEP_PREDICTION DEFINE_PRED_FIELD(m_flSoonestAttack, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),\
+DEFINE_PRED_FIELD(m_flLastAttackTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),\
+DEFINE_PRED_FIELD(m_flAccuracyPenalty, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),\
+DEFINE_PRED_FIELD(m_nNumShotsFired, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
+#endif
+#ifdef CLIENT_DLL
+#define DEFINE_NEO_BASE_WEP_NETWORK_TABLE RecvPropTime(RECVINFO(m_flSoonestAttack)),\
+RecvPropTime(RECVINFO(m_flLastAttackTime)),\
+RecvPropFloat(RECVINFO(m_flAccuracyPenalty)),\
+RecvPropInt(RECVINFO(m_nNumShotsFired)),
+#else
+#define DEFINE_NEO_BASE_WEP_NETWORK_TABLE SendPropTime(SENDINFO(m_flSoonestAttack)),\
+SendPropTime(SENDINFO(m_flLastAttackTime)),\
+SendPropFloat(SENDINFO(m_flAccuracyPenalty)),\
+SendPropInt(SENDINFO(m_nNumShotsFired)),
+#endif
 #endif
 
+class CNEOBaseCombatWeapon : public CBaseHL2MPCombatWeapon
+{
 	DECLARE_CLASS(CNEOBaseCombatWeapon, CBaseHL2MPCombatWeapon);
-
 public:
 	DECLARE_NETWORKCLASS();
 	DECLARE_PREDICTABLE();
+
+#ifdef GAME_DLL
+	DECLARE_DATADESC();
+#endif
 
 	CNEOBaseCombatWeapon();
 
@@ -105,10 +130,47 @@ public:
 
 	virtual void ItemPreFrame(void);
 
+	virtual void PrimaryAttack(void);
+
+	virtual float GetInnateInaccuracy(void) const { return 0.0f; } // NEO TODO (Rain): make this abstract & implement some amount of inaccuracy (spread) for weapons?
+
 	bool IsGhost(void) const { return (GetNeoWepBits() & NEO_WEP_GHOST) ? true : false; }
 
 	// We do this check to avoid a player unintentionally aiming in due to holding down their aim key while an automatic wep switch occurs.
 	bool IsReadyToAimIn(void) const { return m_bReadyToAimIn; }
+
+	// Whether this weapon should fire automatically when holding down the attack.
+	virtual bool IsAutomatic(void) const
+	{
+		return ((GetNeoWepBits() & (NEO_WEP_AA13 | NEO_WEP_JITTE | NEO_WEP_JITTE_S |
+			NEO_WEP_KNIFE | NEO_WEP_MPN | NEO_WEP_MPN_S | NEO_WEP_MX | NEO_WEP_MX_S |
+			NEO_WEP_PZ | NEO_WEP_SMAC | NEO_WEP_SRM | NEO_WEP_SRM_S | NEO_WEP_ZR68_C |
+			NEO_WEP_ZR68_S)) ? true : false);
+	}
+
+	virtual Vector GetMinCone() const { static Vector cone = VECTOR_CONE_1DEGREES; return cone; }
+	virtual Vector GetMaxCone() const { static Vector cone = VECTOR_CONE_10DEGREES; return cone; }
+
+	virtual const Vector& GetBulletSpread(void) OVERRIDE
+	{
+		static Vector cone;
+
+		Assert(GetInnateInaccuracy() <= GetMaxAccuracyPenalty());
+
+		const float ramp = RemapValClamped(m_flAccuracyPenalty,
+			GetInnateInaccuracy(),
+			GetMaxAccuracyPenalty(),
+			0.0f,
+			1.0f);
+
+		// We lerp from very accurate to inaccurate over time
+		VectorLerp(GetMinCone(), GetMaxCone(), ramp, cone);
+
+		return cone;
+	}
+
+	// Whether this weapon should fire only once per each attack command, even if held down.
+	bool IsSemiAuto(void) const { return !IsAutomatic(); }
 
 #ifdef CLIENT_DLL
 	virtual bool Holster(CBaseCombatWeapon* pSwitchingTo);
@@ -121,6 +183,20 @@ public:
 	// some game logic somewhere. There's probably some flag we could set
 	// somewhere to achieve the same without having to do this.
 	virtual void SUB_Remove(void) { }
+
+	virtual float GetFireRate(void) OVERRIDE { Assert(false); return BaseClass::GetFireRate(); } // Should never call this base class; override in children.
+
+protected:
+	virtual float GetAccuracyPenalty() const { Assert(false); return 0; } // Should never call this base class; implement in children.
+	virtual float GetMaxAccuracyPenalty() const { Assert(false); return 0; } // Should never call this base class; implement in children.
+	virtual float GetFastestDryRefireTime() const { Assert(false); return 0; } // Should never call this base class; implement in children.
+
+protected:
+	CNetworkVar(float, m_flSoonestAttack);
+	CNetworkVar(float, m_flLastAttackTime);
+	CNetworkVar(float, m_flAccuracyPenalty);
+
+	CNetworkVar(int, m_nNumShotsFired);
 
 private:
 	bool m_bReadyToAimIn;

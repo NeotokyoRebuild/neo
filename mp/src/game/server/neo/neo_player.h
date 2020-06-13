@@ -172,20 +172,25 @@ public:
 	CNetworkVar(int, m_iGhosterTeam);
 	CNetworkVar(bool, m_bGhostExists);
 	CNetworkVar(bool, m_bInThermOpticCamo);
+	CNetworkVar(bool, m_bLastTickInThermOpticCamo);
 	CNetworkVar(bool, m_bInVision);
 	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
 	CNetworkVar(bool, m_bInAim);
 
+	CNetworkVar(float, m_flCamoAuxLastTime);
+	CNetworkVar(int, m_nVisionLastTick);
+
 	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
 
 private:
-	bool m_bInLeanLeft, m_bInLeanRight;
 	bool m_bFirstDeathTick;
 	bool m_bPreviouslyReloading;
 
-	float m_flCamoAuxLastTime;
 	float m_flLastAirborneJumpOkTime;
 	float m_flLastSuperJumpTime;
+
+private:
+	CNEO_Player(const CNEO_Player&);
 };
 
 inline CNEO_Player *ToNEOPlayer(CBaseEntity *pEntity)

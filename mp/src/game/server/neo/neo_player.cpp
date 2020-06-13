@@ -49,10 +49,14 @@ SendPropInt(SENDINFO(m_iNextSpawnClassChoice)),
 
 SendPropBool(SENDINFO(m_bGhostExists)),
 SendPropBool(SENDINFO(m_bInThermOpticCamo)),
+SendPropBool(SENDINFO(m_bLastTickInThermOpticCamo)),
 SendPropBool(SENDINFO(m_bInVision)),
 SendPropBool(SENDINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 SendPropBool(SENDINFO(m_bShowTestMessage)),
 SendPropBool(SENDINFO(m_bInAim)),
+
+SendPropTime(SENDINFO(m_flCamoAuxLastTime)),
+SendPropInt(SENDINFO(m_nVisionLastTick)),
 
 SendPropString(SENDINFO(m_pszTestMessage)),
 
@@ -72,10 +76,14 @@ DEFINE_FIELD(m_iNextSpawnClassChoice, FIELD_INTEGER),
 
 DEFINE_FIELD(m_bGhostExists, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bInThermOpticCamo, FIELD_BOOLEAN),
+DEFINE_FIELD(m_bLastTickInThermOpticCamo, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bInVision, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bHasBeenAirborneForTooLongToSuperJump, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bShowTestMessage, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bInAim, FIELD_BOOLEAN),
+
+DEFINE_FIELD(m_flCamoAuxLastTime, FIELD_TIME),
+DEFINE_FIELD(m_nVisionLastTick, FIELD_TICK),
 
 DEFINE_FIELD(m_pszTestMessage, FIELD_STRING),
 
@@ -308,7 +316,6 @@ CNEO_Player::CNEO_Player()
 	m_iNeoSkin = NEO_SKIN_FIRST;
 	m_iXP.GetForModify() = 0;
 
-	m_bInLeanLeft = m_bInLeanRight = false;
 	m_bGhostExists = false;
 	m_bInThermOpticCamo = m_bInVision = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
@@ -327,10 +334,13 @@ CNEO_Player::CNEO_Player()
 	ZeroFriendlyPlayerLocArray();
 
 	m_flCamoAuxLastTime = 0;
+	m_nVisionLastTick = 0;
 	m_flLastAirborneJumpOkTime = 0;
 	m_flLastSuperJumpTime = 0;
+
 	m_bFirstDeathTick = true;
 	m_bPreviouslyReloading = false;
+	m_bLastTickInThermOpticCamo = false;
 
 	m_flNextTeamChangeTime = gpGlobals->curtime + 0.5f;
 }
@@ -413,7 +423,14 @@ void CNEO_Player::Spawn(void)
 
 	BaseClass::Spawn();
 
-	ShowCrosshair(false);
+	m_bLastTickInThermOpticCamo = m_bInThermOpticCamo = false;
+	m_flCamoAuxLastTime = 0;
+
+	m_bInVision = false;
+	m_nVisionLastTick = 0;
+
+	Weapon_SetZoom(false);
+
 	SetTransmitState(FL_EDICT_PVSCHECK);
 
 	SetPlayerTeamModel();
@@ -433,34 +450,62 @@ void CNEO_Player::Lean(void)
 	auto vm = static_cast<CNEOPredictedViewModel*>(GetViewModel());
 	if (vm)
 	{
-		vm->lean(this);
-
 		Assert(GetBaseAnimating());
-		GetBaseAnimating()->SetBoneController(0, LocalEyeAngles().z);
+		GetBaseAnimating()->SetBoneController(0, vm->lean(this));
 	}
 }
 
 void CNEO_Player::CheckVisionButtons()
 {
+	if (gpGlobals->tickcount - m_nVisionLastTick < TIME_TO_TICKS(0.1f))
+	{
+		return;
+	}
+
 	if (m_afButtonPressed & IN_VISION)
 	{
 		if (IsAlive())
 		{
+			m_nVisionLastTick = gpGlobals->tickcount;
+
 			m_bInVision = !m_bInVision;
 
 			if (m_bInVision)
 			{
 				CRecipientFilter filter;
-				filter.AddRecipient(this);
 
-				static int visionToggle = CBaseEntity::PrecacheScriptSound("NeoPlayer.VisionOn");
+				// NEO TODO/FIXME (Rain): optimise this loop to once per cycle instead of repeating for each client
+				for (int i = 1; i <= gpGlobals->maxClients; ++i)
+				{
+					if (edict()->m_EdictIndex == i)
+					{
+						continue;
+					}
 
-				EmitSound_t tocSoundParams;
-				tocSoundParams.m_bEmitCloseCaption = false;
-				tocSoundParams.m_hSoundScriptHandle = visionToggle;
-				tocSoundParams.m_pOrigin = &GetAbsOrigin();
+					auto player = UTIL_PlayerByIndex(i);
+					if (!player || !player->IsDead() || player->GetObserverMode() != OBS_MODE_IN_EYE)
+					{
+						continue;
+					}
 
-				EmitSound(filter, edict()->m_EdictIndex, tocSoundParams);
+					if (player->GetObserverTarget() == this)
+					{
+						filter.AddRecipient(player);
+					}
+				}
+
+				if (filter.GetRecipientCount() > 0)
+				{
+					static int visionToggle = CBaseEntity::PrecacheScriptSound("NeoPlayer.VisionOn");
+
+					EmitSound_t params;
+					params.m_bEmitCloseCaption = false;
+					params.m_hSoundScriptHandle = visionToggle;
+					params.m_pOrigin = &GetAbsOrigin();
+					params.m_nChannel = CHAN_ITEM;
+
+					EmitSound(filter, edict()->m_EdictIndex, params);
+				}
 			}
 		}
 	}
@@ -502,7 +547,6 @@ void CNEO_Player::PreThink(void)
 			if (SuitPower_GetCurrentPercentage() >= CLOAK_AUX_COST)
 			{
 				m_flCamoAuxLastTime = gpGlobals->curtime;
-				CloakFlash();
 			}
 		}
 		else
@@ -510,12 +554,14 @@ void CNEO_Player::PreThink(void)
 			const float deltaTime = gpGlobals->curtime - m_flCamoAuxLastTime;
 			if (deltaTime >= 1)
 			{
+				// Need to have at least this much spare AUX to enable.
+				// This prevents AUX spam abuse where player has a sliver of AUX
+				// each frame to never really run out.
 				SuitPower_Drain(deltaTime * CLOAK_AUX_COST);
 
 				if (SuitPower_GetCurrentPercentage() < CLOAK_AUX_COST)
 				{
 					m_bInThermOpticCamo = false;
-					PlayCloakSound();
 
 					SuitPower_SetCharge(0);
 					m_flCamoAuxLastTime = 0;
@@ -660,18 +706,43 @@ ConVar sv_neo_cloak_exponent("sv_neo_cloak_exponent", "8", FCVAR_CHEAT, "Cloak f
 
 void CNEO_Player::PlayCloakSound()
 {
-	static int tocOn = CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOn");
-	static int tocOff = CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOff");
-
-	EmitSound_t tocSoundParams;
-	tocSoundParams.m_bEmitCloseCaption = false;
-	tocSoundParams.m_hSoundScriptHandle = (m_bInThermOpticCamo ? tocOn : tocOff);
-	tocSoundParams.m_pOrigin = &GetAbsOrigin();
-
 	CRecipientFilter filter;
 	filter.AddRecipientsByPAS(GetAbsOrigin());
+	filter.MakeReliable();
+	// NEO TODO/FIXME (Rain): optimise this loop to once per cycle instead of repeating for each client
+	for (int i = 1; i <= gpGlobals->maxClients; ++i)
+	{
+		if (edict()->m_EdictIndex == i)
+		{
+			continue;
+		}
 
-	EmitSound(filter, edict()->m_EdictIndex, tocSoundParams);
+		auto player = UTIL_PlayerByIndex(i);
+		if (!player || !player->IsDead() || player->GetObserverMode() != OBS_MODE_IN_EYE)
+		{
+			continue;
+		}
+
+		if (player->GetObserverTarget() == this)
+		{
+			filter.AddRecipient(player);
+		}
+	}
+	filter.RemoveRecipient(this); // We play clientside for ourselves
+
+	if (filter.GetRecipientCount() > 0)
+	{
+		static int tocOn = CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOn");
+		static int tocOff = CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOff");
+
+		EmitSound_t params;
+		params.m_bEmitCloseCaption = false;
+		params.m_hSoundScriptHandle = (m_bInThermOpticCamo ? tocOn : tocOff);
+		params.m_pOrigin = &GetAbsOrigin();
+		params.m_nChannel = CHAN_VOICE;
+
+		EmitSound(filter, edict()->m_EdictIndex, params);
+	}
 }
 
 void CNEO_Player::CloakFlash()
@@ -693,6 +764,8 @@ void CNEO_Player::CloakFlash()
 
 void CNEO_Player::CheckThermOpticButtons()
 {
+	m_bLastTickInThermOpticCamo = m_bInThermOpticCamo;
+
 	if ((m_afButtonPressed & IN_THERMOPTIC) && IsAlive())
 	{
 		if (GetClass() == NEO_CLASS_SUPPORT || GetClass() == NEO_CLASS_VIP)
@@ -709,6 +782,10 @@ void CNEO_Player::CheckThermOpticButtons()
 				CloakFlash();
 			}
 		}
+	}
+
+	if (m_bInThermOpticCamo != m_bLastTickInThermOpticCamo)
+	{
 		PlayCloakSound();
 	}
 }

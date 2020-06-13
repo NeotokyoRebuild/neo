@@ -7,32 +7,20 @@
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponMPN_S, DT_WeaponMPN_S)
 
 BEGIN_NETWORK_TABLE(CWeaponMPN_S, DT_WeaponMPN_S)
-#ifdef CLIENT_DLL
-RecvPropTime(RECVINFO(m_flSoonestAttack)),
-RecvPropTime(RECVINFO(m_flLastAttackTime)),
-RecvPropFloat(RECVINFO(m_flAccuracyPenalty)),
-RecvPropInt(RECVINFO(m_nNumShotsFired)),
-#else
-SendPropTime(SENDINFO(m_flSoonestAttack)),
-SendPropTime(SENDINFO(m_flLastAttackTime)),
-SendPropFloat(SENDINFO(m_flAccuracyPenalty)),
-SendPropInt(SENDINFO(m_nNumShotsFired)),
-#endif
+	DEFINE_NEO_BASE_WEP_NETWORK_TABLE
 END_NETWORK_TABLE()
 
 #ifdef CLIENT_DLL
 BEGIN_PREDICTION_DATA(CWeaponMPN_S)
-DEFINE_PRED_FIELD(m_flSoonestAttack, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_flLastAttackTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_flAccuracyPenalty, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_nNumShotsFired, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
+	DEFINE_NEO_BASE_WEP_PREDICTION
 END_PREDICTION_DATA()
 #endif
 
-LINK_ENTITY_TO_CLASS(weapon_mpn, CWeaponMPN_S);
-PRECACHE_WEAPON_REGISTER(weapon_mpn);
+NEO_IMPLEMENT_ACTTABLE(CWeaponMPN_S)
 
-NEO_ACTTABLE(CWeaponMPN_S);
+LINK_ENTITY_TO_CLASS(weapon_mpn, CWeaponMPN_S);
+
+PRECACHE_WEAPON_REGISTER(weapon_mpn);
 
 CWeaponMPN_S::CWeaponMPN_S()
 {
@@ -62,26 +50,7 @@ bool CWeaponMPN_S::Deploy(void)
 
 void CWeaponMPN_S::PrimaryAttack()
 {
-	if ((gpGlobals->curtime - m_flLastAttackTime) > 0.5f)
-	{
-		m_nNumShotsFired = 0;
-	}
-	else
-	{
-		++m_nNumShotsFired;
-	}
-
-	m_flLastAttackTime = gpGlobals->curtime;
-
-	auto pOwner = ToBasePlayer(GetOwner());
-	if (pOwner)
-	{
-		pOwner->ViewPunchReset();
-	}
-
 	BaseClass::PrimaryAttack();
-
-	m_flAccuracyPenalty += MPN_S_ACCURACY_SHOT_PENALTY_TIME;
 }
 
 void CWeaponMPN_S::UpdatePenaltyTime()
@@ -97,8 +66,7 @@ void CWeaponMPN_S::UpdatePenaltyTime()
 		(m_flSoonestAttack < gpGlobals->curtime))
 	{
 		m_flAccuracyPenalty -= gpGlobals->frametime;
-		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty,
-			0.0f, MPN_S_ACCURACY_MAXIMUM_PENALTY_TIME);
+		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty, 0.0f, GetMaxAccuracyPenalty());
 	}
 }
 
@@ -140,19 +108,14 @@ void CWeaponMPN_S::ItemPostFrame()
 			{
 				DryFire();
 
-				m_flSoonestAttack = gpGlobals->curtime + MPN_S_FASTEST_DRY_REFIRE_TIME;
+				m_flSoonestAttack = gpGlobals->curtime + GetFastestDryRefireTime();
 			}
 			else
 			{
-				m_flSoonestAttack = gpGlobals->curtime + MPN_S_FASTEST_REFIRE_TIME;
+				m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
 			}
 		}
 	}
-}
-
-float CWeaponMPN_S::GetFireRate()
-{
-	return MPN_S_FASTEST_REFIRE_TIME;
 }
 
 Activity CWeaponMPN_S::GetPrimaryAttackActivity()
@@ -177,18 +140,18 @@ Activity CWeaponMPN_S::GetPrimaryAttackActivity()
 
 void CWeaponMPN_S::AddViewKick()
 {
-	auto owner = ToBasePlayer(GetOwner());
+	auto pOwner = ToBasePlayer(GetOwner());
 
-	if (!owner)
+	if (!pOwner)
 	{
 		return;
 	}
 
-	QAngle viewPunch;
+	const QAngle viewPunch{
+		SharedRandomFloat("mpnspx", 0.25f, 0.5f),
+		SharedRandomFloat("mpnspy", -0.6f, 0.6f),
+		0.0f
+	};
 
-	viewPunch.x = SharedRandomFloat("mpnsx", 0.25f, 0.5f);
-	viewPunch.y = SharedRandomFloat("mpnsy", -0.6f, 0.6f);
-	viewPunch.z = 0;
-
-	owner->ViewPunch(viewPunch);
+	pOwner->ViewPunch(viewPunch);
 }

@@ -21,17 +21,22 @@ class CNEO_Player;
 
 class CWeaponGhost : public CNEOBaseCombatWeapon
 {
-public:
 	DECLARE_CLASS(CWeaponGhost, CNEOBaseCombatWeapon);
+public:
+	DECLARE_NETWORKCLASS();
+	DECLARE_PREDICTABLE();
+
+#ifdef GAME_DLL
+	DECLARE_ACTTABLE();
+	DECLARE_DATADESC();
+#endif
 
 	CWeaponGhost(void);
 	virtual ~CWeaponGhost(void);
 
-	DECLARE_NETWORKCLASS();
-	DECLARE_PREDICTABLE();
-
 	void ItemPreFrame(void);
-	void PrimaryAttack(void);
+	virtual void PrimaryAttack(void) OVERRIDE { }
+	virtual void SecondaryAttack(void) OVERRIDE { }
 
 	virtual void ItemHolsterFrame(void);
 	virtual void OnPickedUp(CBaseCombatCharacter *pNewOwner);
@@ -41,10 +46,6 @@ public:
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
 
 	virtual float GetSpeedScale(void) const { return 1.0; }
-
-#ifdef GAME_DLL
-	DECLARE_ACTTABLE();
-#endif
 
 private:
 	void ZeroGhostedPlayerLocArray(void);
@@ -82,7 +83,7 @@ private:
 	CNetworkVar(bool, m_bShouldShowEnemies);
 	CNetworkArray(Vector, m_rvPlayerPositions, MAX_PLAYERS);
 
-	CWeaponGhost(const CWeaponGhost &);
+	CWeaponGhost(const CWeaponGhost &other);
 };
 
 #endif // NEO_WEAPON_GHOST_H

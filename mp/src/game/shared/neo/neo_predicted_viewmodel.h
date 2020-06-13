@@ -5,9 +5,10 @@
 #endif
 
 #include "predicted_viewmodel.h"
+
 #ifdef CLIENT_DLL
-#include "clienteffectprecachesystem.h"
-#include <engine/IClientLeafSystem.h>
+//#include "clienteffectprecachesystem.h"
+//#include <engine/IClientLeafSystem.h>
 #endif
 
 #ifdef CLIENT_DLL
@@ -30,7 +31,9 @@ public:
 		const Vector& eyePosition, const QAngle& eyeAngles);
 
 	float freeRoomForLean(float leanAmount, CNEO_Player *player);
-	void lean(CNEO_Player *player);
+
+	// Returns the amount of pelvis rotation expected of player bone controller.
+	float lean(CNEO_Player *player);
 
 #ifdef CLIENT_DLL
 	virtual int DrawModel(int flags);
@@ -46,7 +49,7 @@ public:
 #endif
 
 #ifdef CLIENT_DLL
-	inline void DrawRenderToTextureDebugInfo(IClientRenderable* pRenderable,
+	void DrawRenderToTextureDebugInfo(IClientRenderable* pRenderable,
 		const Vector& mins, const Vector& maxs, const Vector &rgbColor,
 		const char *message = "", const Vector &vecOrigin = vec3_origin);
 #endif

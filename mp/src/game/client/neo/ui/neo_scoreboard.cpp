@@ -50,11 +50,6 @@ void CNEOScoreBoard::InitScoreboardSections()
 // Purpose: Update the scoreboard rows with currently connected players' info
 void CNEOScoreBoard::UpdatePlayerInfo()
 {
-#if(0)
-	BaseClass::UpdatePlayerInfo();
-	return;
-#endif
-
 	if (!g_PR)
 	{
 		return;

@@ -71,6 +71,11 @@ void CNEOHud_GameEvent::UpdateStateForNeoHudElementDraw()
 
 void CNEOHud_GameEvent::DrawNeoHudElement()
 {
+	if (!ShouldDraw())
+	{
+		return;
+	}
+
 	int wide, tall;
 	surface()->GetTextSize(m_hFont, m_pszMessage, wide, tall);
 

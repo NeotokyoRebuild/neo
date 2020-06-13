@@ -23,7 +23,12 @@
 #endif
 
 void ClientPutInServer( edict_t *pEdict, const char *playername );
-void Bot_Think( CHL2MP_Player *pBot );
+
+#ifdef NEO
+void Bot_Think(CNEO_Player* pBot);
+#else
+void Bot_Think(CHL2MP_Player* pBot);
+#endif
 
 #if defined(DEBUG) || defined(NEO)
 
@@ -80,7 +85,7 @@ CBasePlayer *BotPutInServer( bool bFrozen, int iTeam )
 {
 	g_iNextBotTeam = iTeam;
 
-	char botname[ 64 ];
+	char botname[MAX_PLAYER_NAME_LENGTH];
 	Q_snprintf( botname, sizeof( botname ), "Bot%02i", BotNumber );
 
 	// This is an evil hack, but we use it to prevent sv_autojointeam from kicking in.
@@ -96,7 +101,7 @@ CBasePlayer *BotPutInServer( bool bFrozen, int iTeam )
 	// Allocate a CBasePlayer for the bot, and call spawn
 	//ClientPutInServer( pEdict, botname );
 #ifdef NEO
-	auto pPlayer = static_cast<CNEO_Player*>(CBaseEntity::Instance(pEdict));
+	CNEO_Player* pPlayer = static_cast<CNEO_Player*>(CBaseEntity::Instance(pEdict));
 #else
 	auto pPlayer = ((CHL2MP_Player*)CBaseEntity::Instance(pEdict));
 #endif
@@ -108,7 +113,7 @@ CBasePlayer *BotPutInServer( bool bFrozen, int iTeam )
 	if ( bFrozen )
 		pPlayer->AddEFlags( EFL_BOT_FROZEN );
 
-	BotNumber++;
+	++BotNumber;
 
 	g_BotData[pPlayer->entindex()-1].m_WantedTeam = iTeam;
 	g_BotData[pPlayer->entindex()-1].m_flJoinTeamTime = MAX(gpGlobals->curtime, pPlayer->GetNextTeamChangeTime()) + 0.3;
@@ -121,9 +126,13 @@ CBasePlayer *BotPutInServer( bool bFrozen, int iTeam )
 //-----------------------------------------------------------------------------
 void Bot_RunAll( void )
 {
-	for ( int i = 1; i <= gpGlobals->maxClients; i++ )
+	for ( int i = 1; i <= gpGlobals->maxClients; ++i )
 	{
+#ifdef NEO
+		auto pPlayer = ToNEOPlayer(UTIL_PlayerByIndex(i));
+#else
 		CHL2MP_Player *pPlayer = ToHL2MPPlayer( UTIL_PlayerByIndex( i ) );
+#endif
 
 		if ( pPlayer && (pPlayer->GetFlags() & FL_FAKECLIENT) )
 		{
@@ -166,7 +175,13 @@ bool RunMimicCommand( CUserCmd& cmd )
 //			msec - 
 // Output : 	virtual void
 //-----------------------------------------------------------------------------
-static void RunPlayerMove( CHL2MP_Player *fakeclient, const QAngle& viewangles, float forwardmove, float sidemove, float upmove, unsigned short buttons, byte impulse, float frametime )
+static void RunPlayerMove(
+#ifdef NEO
+	CNEO_Player *fakeclient,
+#else
+	CHL2MP_Player* fakeclient,
+#endif
+	const QAngle& viewangles, float forwardmove, float sidemove, float upmove, unsigned short buttons, byte impulse, float frametime )
 {
 	if ( !fakeclient )
 		return;
@@ -216,7 +231,11 @@ static void RunPlayerMove( CHL2MP_Player *fakeclient, const QAngle& viewangles, 
 //-----------------------------------------------------------------------------
 // Purpose: Run this Bot's AI for one frame.
 //-----------------------------------------------------------------------------
-void Bot_Think( CHL2MP_Player *pBot )
+#ifdef NEO
+void Bot_Think(CNEO_Player* pBot)
+#else
+void Bot_Think(CHL2MP_Player* pBot)
+#endif
 {
 	// Make sure we stay being a bot
 	pBot->AddFlag( FL_FAKECLIENT );

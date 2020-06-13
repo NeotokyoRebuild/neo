@@ -31,7 +31,9 @@
 	{
 		"userid"	"short"   	// user ID who died				
 		"attacker"	"short"	 	// user ID who killed
-		"weapon"	"string" 	// weapon name killed used 
+		"weapon"	"string" 	// weapon name killed used
+		// inherited from NT
+		"icon"		"short"		// icon
 	}
 	
 	"teamplay_round_start"			// round restart
@@ -47,5 +49,17 @@
 	{
 		"player"	"byte"		// entindex of the player
 		"achievement"	"short"		// achievement ID
+	}
+	
+	// inherited from NT
+	"game_round_start"
+	{
+	
+	}
+	
+	// inherited from NT
+	"game_round_end"
+	{
+	
 	}
 }

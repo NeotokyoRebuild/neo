@@ -25,28 +25,26 @@ public:
 
 	void UpdatePenaltyTime(void);
 
-	virtual void	ItemPostFrame(void);
-	virtual void	ItemPreFrame(void);
-	virtual void	ItemBusyFrame(void);
-	virtual void	PrimaryAttack(void);
-	virtual void	AddViewKick(void);
+	virtual void	ItemPostFrame(void) OVERRIDE;
+	virtual void	ItemPreFrame(void) OVERRIDE;
+	virtual void	ItemBusyFrame(void) OVERRIDE;
+	virtual void	PrimaryAttack(void) OVERRIDE;
+	virtual void	AddViewKick(void) OVERRIDE;
 	void	DryFire(void);
 
-	virtual int GetNeoWepBits(void) const { return NEO_WEP_AA13; }
-	virtual int GetNeoWepXPCost(const int neoClass) const { return 20; }
+	virtual int GetNeoWepBits(void) const OVERRIDE { return NEO_WEP_AA13; }
+	virtual int GetNeoWepXPCost(const int neoClass) const OVERRIDE { return 20; }
 
-	virtual float GetSpeedScale(void) const { return 145.0 / 170.0; }
+	virtual float GetSpeedScale(void) const OVERRIDE { return 145.0 / 170.0; }
 
-	Activity GetPrimaryAttackActivity(void);
+	Activity GetPrimaryAttackActivity(void) OVERRIDE;
 
-	const Vector& GetBulletSpread(void);
+	virtual float GetFireRate() OVERRIDE { return 0.333f; }
 
-private:
-	CNetworkVar(float, m_flSoonestPrimaryAttack);
-	CNetworkVar(float, m_flLastAttackTime);
-	CNetworkVar(float, m_flAccuracyPenalty);
-
-	CNetworkVar(int, m_nNumShotsFired);
+protected:
+	virtual float GetAccuracyPenalty() const OVERRIDE { return 0.2f; }
+	virtual float GetMaxAccuracyPenalty() const OVERRIDE { return 1.5f; }
+	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
 
 private:
 	CWeaponAA13(const CWeaponAA13 &other);

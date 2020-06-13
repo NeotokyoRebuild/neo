@@ -2076,6 +2076,12 @@ void CViewRender::RenderView( const CViewSetup &view, int nClearFlags, int whatT
 		bool blend;
 		vieweffects->GetFadeParams( &color[0], &color[1], &color[2], &color[3], &blend );
 
+#ifdef NEO
+		// Check if local player is qualified for seeing through smokes (ie. is a support using their thermal,
+		// or is observing such a player in first-person view).
+		UpdateThermalOverride();
+#endif
+
 		// Draw an overlay to make it even harder to see inside smoke particle systems.
 		DrawSmokeFogOverlay();
 

@@ -780,7 +780,7 @@ int CParticleEffectBinding::DrawMaterialParticles(
 	if ( m_nActiveParticles > MAX_TOTAL_PARTICLES )
 		Error( "CParticleEffectBinding::DrawMaterialParticles: too many particles (%d should be less than %d)", m_nActiveParticles, MAX_TOTAL_PARTICLES );
 
-	// Simluate and render all the particles.
+	// Simulate and render all the particles.
 	CParticleRenderIterator renderIterator;
 
 	renderIterator.m_pEffectBinding = this;

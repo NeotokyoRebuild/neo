@@ -13,14 +13,20 @@
 #include "clienteffectprecachesystem.h"
 #include "tier0/vprof.h"
 
+#ifdef NEO
+#include "c_neo_player.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
 static IMaterial *g_pSmokeFogMaterial = NULL;
 
-
 float		g_SmokeFogOverlayAlpha;
 Vector		g_SmokeFogOverlayColor;
+#ifdef NEO
+bool		g_SmokeFogOverlayThermalOverride;
+#endif
 
 CLIENTEFFECT_REGISTER_BEGIN( PrecacheSmokeFogOverlay )
 CLIENTEFFECT_MATERIAL( "particle/screenspace_fog" )
@@ -31,6 +37,9 @@ void InitSmokeFogOverlay()
 	TermSmokeFogOverlay();
 	
 	g_SmokeFogOverlayAlpha = 0;
+#ifdef NEO
+	g_SmokeFogOverlayThermalOverride = false;
+#endif
 
 	if(materials)
 	{
@@ -53,8 +62,10 @@ void TermSmokeFogOverlay()
 
 void DrawSmokeFogOverlay()
 {
-	if(g_SmokeFogOverlayAlpha == 0 || !g_pSmokeFogMaterial || !materials)
+	if (g_SmokeFogOverlayAlpha == 0 || !g_pSmokeFogMaterial || !materials)
+	{
 		return;
+	}
 
 	tmZone( TELEMETRY_LEVEL0, TMZF_NONE, "%s", __FUNCTION__ );
 
@@ -108,4 +119,31 @@ void DrawSmokeFogOverlay()
 
 	meshBuilder.End();
 	pMesh->Draw();
+}
+
+void UpdateThermalOverride()
+{
+	auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	Assert(localPlayer);
+	if (localPlayer->IsAlive())
+	{
+		if (localPlayer->GetClass() == NEO_CLASS_SUPPORT && localPlayer->IsInVision())
+		{
+			g_SmokeFogOverlayThermalOverride = true;
+			return;
+		}
+	}
+	else if (localPlayer->GetObserverMode() == OBS_MODE_IN_EYE)
+	{
+		auto targetPlayer = dynamic_cast<C_NEO_Player*>(localPlayer->GetObserverTarget());
+		if (targetPlayer && targetPlayer->IsAlive())
+		{
+			if (targetPlayer->GetClass() == NEO_CLASS_SUPPORT && targetPlayer->IsInVision())
+			{
+				g_SmokeFogOverlayThermalOverride = true;
+				return;
+			}
+		}
+	}
+	g_SmokeFogOverlayThermalOverride = false;
 }

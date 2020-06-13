@@ -35,12 +35,15 @@ protected:
 
 	void PaintNeoElement()
 	{
-		if (ShouldUpdateYet())
+		if (!engine->IsDrawingLoadingImage())
 		{
-			UpdateStateForNeoHudElementDraw();
-		}
+			if (ShouldUpdateYet())
+			{
+				UpdateStateForNeoHudElementDraw();
+			}
 
-		DrawNeoHudElement();
+			DrawNeoHudElement();
+		}
 	}
 
 	bool ShouldUpdateYet()

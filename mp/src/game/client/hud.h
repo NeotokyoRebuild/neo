@@ -201,6 +201,7 @@ extern vgui::HFont g_hFontTrebuchet24;
 
 #ifdef NEO
 extern vgui::HFont g_hFontKillfeed;
+extern vgui::HFont g_hFontJoinMenus;
 #endif
 
 void LoadHudTextures( CUtlDict< CHudTexture *, int >& list, const char *szFilenameWithoutExtension, const unsigned char *pICEKey );

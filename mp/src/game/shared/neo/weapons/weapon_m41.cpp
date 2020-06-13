@@ -7,32 +7,20 @@
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponM41, DT_WeaponM41)
 
 BEGIN_NETWORK_TABLE(CWeaponM41, DT_WeaponM41)
-#ifdef CLIENT_DLL
-RecvPropTime(RECVINFO(m_flSoonestAttack)),
-RecvPropTime(RECVINFO(m_flLastAttackTime)),
-RecvPropFloat(RECVINFO(m_flAccuracyPenalty)),
-RecvPropInt(RECVINFO(m_nNumShotsFired)),
-#else
-SendPropTime(SENDINFO(m_flSoonestAttack)),
-SendPropTime(SENDINFO(m_flLastAttackTime)),
-SendPropFloat(SENDINFO(m_flAccuracyPenalty)),
-SendPropInt(SENDINFO(m_nNumShotsFired)),
-#endif
+	DEFINE_NEO_BASE_WEP_NETWORK_TABLE
 END_NETWORK_TABLE()
 
 #ifdef CLIENT_DLL
 BEGIN_PREDICTION_DATA(CWeaponM41)
-DEFINE_PRED_FIELD(m_flSoonestAttack, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_flLastAttackTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_flAccuracyPenalty, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_nNumShotsFired, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
+	DEFINE_NEO_BASE_WEP_PREDICTION
 END_PREDICTION_DATA()
 #endif
 
-LINK_ENTITY_TO_CLASS(weapon_m41, CWeaponM41);
-PRECACHE_WEAPON_REGISTER(weapon_m41);
+NEO_IMPLEMENT_ACTTABLE(CWeaponM41)
 
-NEO_ACTTABLE(CWeaponM41);
+LINK_ENTITY_TO_CLASS(weapon_m41, CWeaponM41);
+
+PRECACHE_WEAPON_REGISTER(weapon_m41);
 
 CWeaponM41::CWeaponM41()
 {
@@ -52,41 +40,7 @@ void CWeaponM41::DryFire()
 
 void CWeaponM41::PrimaryAttack()
 {
-	if (m_iClip1 == 0)
-	{
-		if (!m_bFireOnEmpty)
-		{
-			CheckReload();
-		}
-		else
-		{
-			WeaponSound(EMPTY);
-			m_flNextPrimaryAttack = 0.2;
-		}
-
-		return;
-	}
-
-	if ((gpGlobals->curtime - m_flLastAttackTime) > 0.5f)
-	{
-		m_nNumShotsFired = 0;
-	}
-	else
-	{
-		m_nNumShotsFired++;
-	}
-
-	m_flLastAttackTime = gpGlobals->curtime;
-
-	auto owner = ToBasePlayer(GetOwner());
-	if (owner)
-	{
-		owner->ViewPunchReset();
-	}
-
 	BaseClass::PrimaryAttack();
-
-	m_flAccuracyPenalty += M41_ACCURACY_SHOT_PENALTY_TIME;
 }
 
 void CWeaponM41::UpdatePenaltyTime()
@@ -103,7 +57,7 @@ void CWeaponM41::UpdatePenaltyTime()
 	{
 		m_flAccuracyPenalty -= gpGlobals->frametime;
 		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty,
-			0.0f, M41_ACCURACY_MAXIMUM_PENALTY_TIME);
+			0.0f, GetMaxAccuracyPenalty());
 	}
 }
 
@@ -144,12 +98,11 @@ void CWeaponM41::ItemPostFrame()
 			if (m_iClip1 <= 0)
 			{
 				DryFire();
-
-				m_flSoonestAttack = gpGlobals->curtime + M41_FASTEST_DRY_REFIRE_TIME;
+				m_flSoonestAttack = gpGlobals->curtime + GetFastestDryRefireTime();
 			}
 			else
 			{
-				m_flSoonestAttack = gpGlobals->curtime + M41_FASTEST_REFIRE_TIME;
+				m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
 			}
 		}
 	}
@@ -186,8 +139,8 @@ void CWeaponM41::AddViewKick()
 
 	QAngle viewPunch;
 
-	viewPunch.x = SharedRandomFloat("m41x", 0.25f, 0.5f);
-	viewPunch.y = SharedRandomFloat("m41y", -0.6f, 0.6f);
+	viewPunch.x = SharedRandomFloat("m41px", 0.25f, 0.5f);
+	viewPunch.y = SharedRandomFloat("m41py", -0.6f, 0.6f);
 	viewPunch.z = 0;
 
 	owner->ViewPunch(viewPunch);

@@ -770,7 +770,14 @@ void CBaseCombatWeapon::OnPickedUp( CBaseCombatCharacter *pNewOwner )
 		}
 		if ( filter.GetRecipientCount() )
 		{
+#ifdef NEO
+			EmitSound_t params;
+			params.m_pSoundName = "Player.PickupWeapon";
+			params.m_nFlags |= SND_DO_NOT_OVERWRITE_EXISTING_ON_CHANNEL;
+			CBaseEntity::EmitSound(filter, pNewOwner->entindex(), params);
+#else
 			CBaseEntity::EmitSound( filter, pNewOwner->entindex(), "Player.PickupWeapon" );
+#endif
 		}
 
 		// Robin: We don't want to delete weapons the player has picked up, so 

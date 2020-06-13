@@ -150,7 +150,18 @@ void C_BaseCombatWeapon::OnDataChanged( DataUpdateType_t updateType )
 					pHudSelection->OnWeaponPickup( this );
 				}
 
-				pPlayer->EmitSound( "Player.PickupWeapon" );
+#ifdef NEO
+				C_RecipientFilter filter;
+				filter.AddRecipient(pPlayer);
+
+				EmitSound_t params;
+				params.m_pSoundName = "Player.PickupWeapon";
+				params.m_nFlags |= SND_DO_NOT_OVERWRITE_EXISTING_ON_CHANNEL;
+
+				pPlayer->EmitSound(filter, pPlayer->entindex(), params);
+#else
+				pPlayer->EmitSound("Player.PickupWeapon");
+#endif
 			}
 		}
 	}

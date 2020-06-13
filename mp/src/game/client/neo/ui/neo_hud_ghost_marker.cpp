@@ -80,6 +80,11 @@ void CNEOHud_GhostMarker::UpdateStateForNeoHudElementDraw()
 
 void CNEOHud_GhostMarker::DrawNeoHudElement()
 {
+	if (!ShouldDraw())
+	{
+		return;
+	}
+
 	surface()->DrawSetTextColor(COLOR_GREY);
 	surface()->DrawSetTextFont(m_hFont);
 	surface()->DrawSetTextPos(m_iPosX, m_iPosY);

@@ -17,14 +17,14 @@
 
 namespace vgui
 {
-	class TextEntry;
 	class Button;
+    class ComboBox;
+    class Label;
 	class Panel;
-	class ImagePanel;
-	//class CIconPanel;
-	class ComboBox;
-    class Button;
+    class TextEntry;
+    //class ImagePanel;
 }
+class IconPanel;
 
 class MouseCode;
 
@@ -77,10 +77,14 @@ protected:
     // --------------------------------------------------------
 
     // Image textures
-	vgui::ImagePanel *m_pJinrai_TeamImage;
-	vgui::ImagePanel *m_pNSF_TeamImage;
-#if(0)
-	vgui::ImagePanel *m_pBackgroundImage;
+	//vgui::ImagePanel *m_pJinrai_TeamImage;
+	//vgui::ImagePanel *m_pNSF_TeamImage;
+
+   IconPanel* m_pJinrai_TeamImage;
+   IconPanel* m_pNSF_TeamImage;
+   IconPanel* m_pBgDarkGrey;
+#if(1)
+	//vgui::ImagePanel *m_pBackgroundImage;
 
     // Team menu label
     vgui::Label *m_pTeamMenuLabel;
