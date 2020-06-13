@@ -95,33 +95,40 @@ public:
 	virtual ~CNEORules();
 
 #ifdef GAME_DLL
-	virtual void Precache();
+	virtual void Precache() OVERRIDE;
 
-	virtual bool ClientConnected(edict_t *pEntity, const char *pszName, const char *pszAddress, char *reject, int maxrejectlen);
+	virtual bool ClientConnected(edict_t *pEntity, const char *pszName, const char *pszAddress, char *reject, int maxrejectlen) OVERRIDE;
 
-	virtual void SetWinningTeam(int team, int iWinReason, bool bForceMapReset = true, bool bSwitchTeams = false, bool bDontAddScore = false, bool bFinal = false);
+	virtual void SetWinningTeam(int team, int iWinReason, bool bForceMapReset = true, bool bSwitchTeams = false, bool bDontAddScore = false, bool bFinal = false) OVERRIDE;
 
-	virtual void ChangeLevel(void);
+	virtual void ChangeLevel(void) OVERRIDE;
 #endif
-	virtual bool ShouldCollide( int collisionGroup0, int collisionGroup1 );
+	virtual bool ShouldCollide( int collisionGroup0, int collisionGroup1 ) OVERRIDE;
 
-	virtual void Think( void );
-	virtual void CreateStandardEntities( void );
+	virtual void Think( void ) OVERRIDE;
+	virtual void CreateStandardEntities( void ) OVERRIDE;
 
-	virtual int WeaponShouldRespawn(CBaseCombatWeapon* pWeapon);
+	virtual int WeaponShouldRespawn(CBaseCombatWeapon* pWeapon) OVERRIDE;
 
-	virtual const char *GetGameDescription( void );
-	virtual const CViewVectors* GetViewVectors() const;
+	virtual const char *GetGameDescription( void ) OVERRIDE;
+	virtual const CViewVectors* GetViewVectors() const OVERRIDE;
 
 	const NEOViewVectors* GetNEOViewVectors() const;
 
-	virtual void ClientSettingsChanged(CBasePlayer *pPlayer);
+	virtual void ClientSettingsChanged(CBasePlayer *pPlayer) OVERRIDE;
 
-	virtual void ClientSpawned(edict_t* pPlayer);
+	virtual void ClientSpawned(edict_t* pPlayer) OVERRIDE;
+
+	virtual void DeathNotice(CBasePlayer* pVictim, const CTakeDamageInfo& info) OVERRIDE
+#ifdef CLIENT_DLL
+	{ }
+#else
+	;
+#endif
 
 	float GetMapRemainingTime();
 
-	inline void ResetGhostCapPoints();
+	void ResetGhostCapPoints();
 
 	void CheckRestartGame();
 
@@ -132,27 +139,38 @@ public:
 	void AwardRankUp(CNEO_Player *pClient);
 #endif
 
-	virtual bool CheckGameOver(void);
+	virtual bool CheckGameOver(void) OVERRIDE;
 
 	float GetRoundRemainingTime();
 
-	virtual void PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info);
+	virtual void PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info) OVERRIDE;
 
 	// IGameEventListener interface:
-	virtual void FireGameEvent(IGameEvent *event);
+	virtual void FireGameEvent(IGameEvent *event) OVERRIDE;
 
 #ifdef CLIENT_DLL
 	void CleanUpMap();
 	void RestartGame();
 #else
-	virtual void CleanUpMap();
-	virtual void RestartGame();
+	virtual void CleanUpMap() OVERRIDE;
+	virtual void RestartGame() OVERRIDE;
+
+	virtual float FlPlayerFallDamage(CBasePlayer* pPlayer) OVERRIDE;
 #endif
 
 #ifdef GAME_DLL
 	bool IsRoundOver();
 	void StartNextRound();
+
+	virtual const char* GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer) OVERRIDE;
+	virtual const char* GetChatPrefix(bool bTeamOnly, CBasePlayer* pPlayer) OVERRIDE { return ""; } // handled by GetChatFormat
+	virtual const char* GetChatLocation(bool bTeamOnly, CBasePlayer* pPlayer) OVERRIDE { return NULL; } // unimplemented
 #endif
+
+	// This is the supposed encrypt key on NT, although it has its issues.
+	// See https://steamcommunity.com/groups/ANPA/discussions/0/1482109512299590948/
+	// (and NT Discord) for discussions.
+	virtual const unsigned char* GetEncryptionKey(void) OVERRIDE { return (unsigned char*)"tBA%-ygc"; }
 
 	enum
 	{
@@ -162,6 +180,25 @@ public:
 		NEO_VICTORY_FORFEIT,
 		NEO_VICTORY_STALEMATE // Not actually a victory
 	};
+
+	int GetOpposingTeam(const int team) const
+	{
+		if (team == TEAM_JINRAI) { return TEAM_NSF; }
+		if (team == TEAM_NSF) { return TEAM_JINRAI; }
+		Assert(false);
+		return TEAM_SPECTATOR;
+	}
+
+	int GetOpposingTeam(const CBaseCombatCharacter* player) const
+	{
+		if (!player)
+		{
+			Assert(false);
+			return TEAM_SPECTATOR;
+		}
+
+		return GetOpposingTeam(player->GetTeamNumber());
+	}
 
 #ifdef GAME_DLL
 private:

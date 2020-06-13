@@ -41,7 +41,7 @@ public:
 
 	virtual const char *GetResFile(void)
 	{
-		return "resource/ui/LoadoutMenu_Dev.res";
+		return "resource/neo_ui/Neo_LoadoutMenu_Dev.res";
 	}
 
 protected:

@@ -4,116 +4,73 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-IMPLEMENT_NETWORKCLASS_ALIASED( WeaponTachi, DT_WeaponTachi )
+IMPLEMENT_NETWORKCLASS_ALIASED(WeaponTachi, DT_WeaponTachi)
 
-BEGIN_NETWORK_TABLE( CWeaponTachi, DT_WeaponTachi )
+BEGIN_NETWORK_TABLE(CWeaponTachi, DT_WeaponTachi)
+DEFINE_NEO_BASE_WEP_NETWORK_TABLE
+
 #ifdef CLIENT_DLL
-	RecvPropTime( RECVINFO( m_flSoonestPrimaryAttack ) ),
-	RecvPropTime( RECVINFO( m_flSoonestFiremodeSwitch ) ),
-	RecvPropTime( RECVINFO( m_flLastAttackTime ) ),
-	RecvPropFloat( RECVINFO( m_flAccuracyPenalty ) ),
-	RecvPropInt( RECVINFO( m_nNumShotsFired ) ),
-	RecvPropBool( RECVINFO( m_bIsPrimaryFireMode ) ),
+RecvPropTime(RECVINFO(m_flSoonestFiremodeSwitch)),
+RecvPropBool(RECVINFO(m_bIsPrimaryFireMode)),
 #else
-	SendPropTime( SENDINFO( m_flSoonestPrimaryAttack ) ),
-	SendPropTime( SENDINFO( m_flSoonestFiremodeSwitch ) ),
-	SendPropTime( SENDINFO( m_flLastAttackTime ) ),
-	SendPropFloat( SENDINFO( m_flAccuracyPenalty ) ),
-	SendPropInt( SENDINFO( m_nNumShotsFired ) ),
-	SendPropBool( SENDINFO( m_bIsPrimaryFireMode ) ),
+SendPropTime(SENDINFO(m_flSoonestFiremodeSwitch)),
+SendPropBool(SENDINFO(m_bIsPrimaryFireMode)),
 #endif
 END_NETWORK_TABLE()
 
 #ifdef CLIENT_DLL
-BEGIN_PREDICTION_DATA( CWeaponTachi )
-	DEFINE_PRED_FIELD( m_flSoonestPrimaryAttack, FIELD_FLOAT, FTYPEDESC_INSENDTABLE ),
-	DEFINE_PRED_FIELD( m_flSoonestFiremodeSwitch, FIELD_FLOAT, FTYPEDESC_INSENDTABLE ),
-	DEFINE_PRED_FIELD( m_flLastAttackTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE ),
-	DEFINE_PRED_FIELD( m_flAccuracyPenalty, FIELD_FLOAT, FTYPEDESC_INSENDTABLE ),
-	DEFINE_PRED_FIELD( m_nNumShotsFired, FIELD_INTEGER, FTYPEDESC_INSENDTABLE ),
-	DEFINE_PRED_FIELD( m_bIsPrimaryFireMode, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE ),
+BEGIN_PREDICTION_DATA(CWeaponTachi)
+DEFINE_NEO_BASE_WEP_PREDICTION
+
+DEFINE_PRED_FIELD(m_flSoonestFiremodeSwitch, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
+DEFINE_PRED_FIELD(m_bIsPrimaryFireMode, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 #endif
 
-LINK_ENTITY_TO_CLASS( weapon_tachi, CWeaponTachi );
-PRECACHE_WEAPON_REGISTER( weapon_tachi );
+NEO_IMPLEMENT_ACTTABLE(CWeaponTachi)
 
-NEO_ACTTABLE(CWeaponTachi);
+LINK_ENTITY_TO_CLASS(weapon_tachi, CWeaponTachi);
 
-CWeaponTachi::CWeaponTachi( void )
+#ifdef GAME_DLL
+BEGIN_DATADESC(CWeaponTachi)
+DEFINE_FIELD(m_flSoonestFiremodeSwitch, FIELD_TIME),
+DEFINE_FIELD(m_bIsPrimaryFireMode, FIELD_BOOLEAN),
+END_DATADESC()
+#endif
+
+PRECACHE_WEAPON_REGISTER(weapon_tachi);
+
+CWeaponTachi::CWeaponTachi()
 {
-	m_flSoonestPrimaryAttack = gpGlobals->curtime;
+	m_flSoonestAttack = gpGlobals->curtime;
 	m_flSoonestFiremodeSwitch = gpGlobals->curtime;
 	m_flAccuracyPenalty = 0.0f;
 
-	m_fMinRange1		= 24;
-	m_fMaxRange1		= 1500;
-	m_fMinRange2		= 24;
-	m_fMaxRange2		= 200;
+	m_fMinRange1 = 24;
+	m_fMaxRange1 = 1500;
+	m_fMinRange2 = 24;
+	m_fMaxRange2 = 200;
 
-	m_bFiresUnderwater	= true;
+	m_bFiresUnderwater = true;
 	m_bIsPrimaryFireMode = true;
 }
 
-void CWeaponTachi::Precache( void )
+void CWeaponTachi::Precache(void)
 {
 	BaseClass::Precache();
 }
 
-void CWeaponTachi::DryFire( void )
+void CWeaponTachi::DryFire(void)
 {
-	WeaponSound( EMPTY );
-	SendWeaponAnim( ACT_VM_DRYFIRE );
+	WeaponSound(EMPTY);
+	SendWeaponAnim(ACT_VM_DRYFIRE);
 
-	m_flNextPrimaryAttack		= gpGlobals->curtime + SequenceDuration();
+	m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
 }
 
-void CWeaponTachi::PrimaryAttack( void )
+void CWeaponTachi::PrimaryAttack(void)
 {
-	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
-
-	if (pOwner)
-	{
-		if (!m_iClip1 && !ClientWantsAutoReload(GetOwner()))
-		{
-			return;
-		}
-
-		if (m_bIsPrimaryFireMode)
-		{
-			// Do nothing if we hold fire whilst semi auto
-			if ((pOwner->m_nButtons & IN_ATTACK) &&
-			(!(pOwner->m_afButtonPressed & IN_ATTACK)))
-			{
-				return;
-			}
-		}
-	}
-
-	if ( ( gpGlobals->curtime - m_flLastAttackTime ) > 0.5f )
-	{
-		m_nNumShotsFired = 0;
-	}
-	else
-	{
-		m_nNumShotsFired++;
-	}
-
-	m_flLastAttackTime = gpGlobals->curtime;
-
-	if( pOwner )
-	{
-		// Each time the player fires the pistol, reset the view punch. This prevents
-		// the aim from 'drifting off' when the player fires very quickly. This may
-		// not be the ideal way to achieve this, but it's cheap and it works, which is
-		// great for a feature we're evaluating. (sjb)
-		pOwner->ViewPunchReset();
-	}
-
 	BaseClass::PrimaryAttack();
-
-	// Add an accuracy penalty which can move past our maximum penalty time if we're really spastic
-	m_flAccuracyPenalty += TACHI_ACCURACY_SHOT_PENALTY_TIME;
 }
 
 void CWeaponTachi::SwitchFireMode( void )
@@ -154,10 +111,30 @@ void CWeaponTachi::UpdatePenaltyTime( void )
 		return;
 
 	// Check our penalty time decay
-	if ( ( ( pOwner->m_nButtons & IN_ATTACK ) == false ) && ( m_flSoonestPrimaryAttack < gpGlobals->curtime ) )
+	if ( ( pOwner->m_nButtons & IN_ATTACK ) == false )
 	{
-		m_flAccuracyPenalty -= gpGlobals->frametime;
-		m_flAccuracyPenalty = clamp( m_flAccuracyPenalty, 0.0f, TACHI_ACCURACY_MAXIMUM_PENALTY_TIME );
+		if (m_flSoonestAttack < gpGlobals->curtime)
+		{
+			m_flAccuracyPenalty -= gpGlobals->frametime;
+			m_flAccuracyPenalty = clamp(m_flAccuracyPenalty, 0.0f, GetMaxAccuracyPenalty());
+		}
+	}
+	else
+	{
+		if ((IsAutomatic() && (!(pOwner->m_afButtonLast & IN_ATTACK))) &&
+			(gpGlobals->curtime - m_flLastAttackTime > TACHI_SEMIAUTO_FIRERATE))
+		{
+			m_flSoonestAttack = gpGlobals->curtime + TACHI_SEMIAUTO_FIRERATE;
+		}
+		else
+		{
+			m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
+		}
+	}
+
+	if (m_flSoonestAttack > gpGlobals->curtime)
+	{
+		m_flSoonestAttack -= (gpGlobals->curtime - m_flLastAttackTime);
 	}
 }
 
@@ -173,38 +150,6 @@ void CWeaponTachi::ItemBusyFrame( void )
 	UpdatePenaltyTime();
 
 	BaseClass::ItemBusyFrame();
-}
-
-float CWeaponTachi::GetFireRate( void )
-{
-	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
-
-	if (!pOwner)
-	{
-		return TACHI_FASTEST_MANUAL_REFIRE_TIME;
-	}
-
-	// Semi auto
-	if (m_bIsPrimaryFireMode)
-	{
-		return TACHI_FASTEST_MANUAL_REFIRE_TIME;
-	}
-	// Full auto
-	else
-	{
-		// We are tap firing, get the semi auto fire rate
-		if ((pOwner->m_afButtonPressed & IN_ATTACK) &&
-			(!(pOwner->m_afButtonLast & IN_ATTACK)))
-		{
-			if ((gpGlobals->curtime - m_flLastAttackTime) <
-				TACHI_FASTEST_AUTO_REFIRE_TIME)
-			{
-				return TACHI_FASTEST_MANUAL_REFIRE_TIME;
-			}
-		}
-
-		return TACHI_FASTEST_AUTO_REFIRE_TIME;
-	}
 }
 
 void CWeaponTachi::ItemPostFrame( void )
@@ -228,49 +173,10 @@ void CWeaponTachi::ItemPostFrame( void )
 		if (m_flSoonestFiremodeSwitch < gpGlobals->curtime)
 		{
 			SwitchFireMode();
-
+#define TACHI_FASTEST_FIREMODE_SWITCH_TIME 0.2f
 			m_flSoonestFiremodeSwitch = gpGlobals->curtime + TACHI_FASTEST_FIREMODE_SWITCH_TIME;
-			m_flSoonestPrimaryAttack = gpGlobals->curtime + TACHI_FASTEST_FIREMODE_SWITCH_TIME;
-		}
-	}
-
-	if (m_iClip1 <= 0)
-	{
-		return;
-	}
-
-	if (pOwner->m_nButtons & IN_ATTACK)
-	{
-		if (m_flSoonestPrimaryAttack < gpGlobals->curtime)
-		{
-			if (m_iClip1 <= 0)
-			{
-				DryFire();
-
-				m_flSoonestPrimaryAttack = gpGlobals->curtime + TACHI_FASTEST_DRY_REFIRE_TIME;
-			}
-			else
-			{
-				// Semi-auto mode
-				if (m_bIsPrimaryFireMode)
-				{
-					m_flSoonestPrimaryAttack = gpGlobals->curtime + TACHI_FASTEST_MANUAL_REFIRE_TIME;
-				}
-				// Full-auto mode
-				else
-				{
-					m_flSoonestPrimaryAttack = gpGlobals->curtime + TACHI_FASTEST_AUTO_REFIRE_TIME;
-				}
-			}
-		}
-	}
-	else if (pOwner->m_afButtonReleased & IN_ATTACK)
-	{
-		// We let go of fire whilst full auto, set semi auto refire time
-		// to prevent tap firing at full auto speeds.
-		if (!m_bIsPrimaryFireMode)
-		{
-			m_flSoonestPrimaryAttack = gpGlobals->curtime + TACHI_FASTEST_MANUAL_REFIRE_TIME;
+			m_flSoonestAttack = gpGlobals->curtime + TACHI_FASTEST_FIREMODE_SWITCH_TIME;
+			return;
 		}
 	}
 }
@@ -294,20 +200,6 @@ Activity CWeaponTachi::GetPrimaryAttackActivity( void )
 }
 
 //-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-bool CWeaponTachi::Reload( void )
-{
-	bool fRet = BaseClass::Reload();
-
-	if ( fRet )
-	{
-		WeaponSound( RELOAD );
-		m_flAccuracyPenalty = 0.0f;
-	}
-	return fRet;
-}
-
-//-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
 void CWeaponTachi::AddViewKick( void )
@@ -319,8 +211,8 @@ void CWeaponTachi::AddViewKick( void )
 
 	QAngle	viewPunch;
 
-	viewPunch.x = SharedRandomFloat( "pistolpax", 0.25f, 0.5f );
-	viewPunch.y = SharedRandomFloat( "pistolpay", -0.6f, 0.6f );
+	viewPunch.x = SharedRandomFloat( "tachipax", 0.25f, 0.5f );
+	viewPunch.y = SharedRandomFloat( "tachipay", -0.6f, 0.6f );
 	viewPunch.z = 0.0f;
 
 	//Add it to the view punch

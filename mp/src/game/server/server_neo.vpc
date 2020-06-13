@@ -249,6 +249,9 @@ $Project "Server (HL2MP)"
 			////////////////
 			$File	"neo\neo_client.cpp"
 
+			$File	"neo\neo_detpack.cpp"
+			$File	"neo\neo_detpack.h"
+
 			$File	"neo\neo_ghost_spawn_point.cpp"
 			$File	"neo\neo_ghost_spawn_point.h"
 

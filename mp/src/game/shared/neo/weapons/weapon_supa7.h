@@ -22,11 +22,17 @@
 
 class CWeaponSupa7 : public CNEOBaseCombatWeapon
 {
-public:
 	DECLARE_CLASS(CWeaponSupa7, CNEOBaseCombatWeapon);
-
+public:
 	DECLARE_NETWORKCLASS();
 	DECLARE_PREDICTABLE();
+
+#ifdef GAME_DLL
+	DECLARE_ACTTABLE();
+	DECLARE_DATADESC();
+#endif
+
+	CWeaponSupa7();
 
 private:
 	CNetworkVar(bool, m_bNeedPump); // When emptied completely
@@ -37,14 +43,10 @@ private:
 	inline void ProposeNextAttack(const float flNextAttackProposal);
 
 public:
-	virtual const Vector& GetBulletSpread(void)
-	{
-		static Vector cone = VECTOR_CONE_10DEGREES;
-		return cone;
-	}
-
 	virtual int GetNeoWepBits(void) const { return NEO_WEP_SUPA7; }
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
+
+	virtual float GetSpeedScale(void) const { return 140.0 / 170.0; }
 
 	virtual int GetMinBurst() { return 1; }
 	virtual int GetMaxBurst() { return 3; }
@@ -62,17 +64,15 @@ public:
 	void SecondaryAttack(void);
 	void DryFire(void);
 
-	virtual float GetFireRate(void) { return 0.7; };
+	virtual float GetFireRate(void) OVERRIDE { return 0.7f; }
+protected:
+	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
+	virtual float GetAccuracyPenalty() const OVERRIDE { Assert(false); return 0; } // Currently unused in shotgun code
+	virtual float GetMaxAccuracyPenalty() const OVERRIDE { Assert(false); return 0; } // Currently unused in shotgun code
 
 #if(0)
 	void WeaponIdle( void );
 #endif
-
-#ifndef CLIENT_DLL
-	DECLARE_ACTTABLE();
-#endif
-
-	CWeaponSupa7();
 
 private:
 	CWeaponSupa7(const CWeaponSupa7 &other);

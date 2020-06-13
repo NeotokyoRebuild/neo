@@ -12,6 +12,8 @@
 
 using vgui::surface;
 
+NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(GhostBeacon, 0.01)
+
 CNEOHud_GhostBeacon::CNEOHud_GhostBeacon(const char *pElementName, vgui::Panel *parent)
 	: CHudElement(pElementName), Panel(parent, pElementName)
 {
@@ -75,23 +77,18 @@ static inline double GetColorPulse()
 	return colorPulse;
 }
 
-void CNEOHud_GhostBeacon::Paint()
+void CNEOHud_GhostBeacon::UpdateStateForNeoHudElementDraw()
 {
-	if (!IsHudReadyForPaintNow())
+	V_snprintf(m_szBeaconTextANSI, sizeof(m_szBeaconTextANSI), "%02d M", FastFloatToSmallInt(m_flDistMeters));
+	g_pVGuiLocalize->ConvertANSIToUnicode(m_szBeaconTextANSI, m_wszBeaconTextUnicode, sizeof(m_wszBeaconTextUnicode));
+}
+
+void CNEOHud_GhostBeacon::DrawNeoHudElement()
+{
+	if (!ShouldDraw())
 	{
 		return;
 	}
-
-	BaseClass::Paint();
-
-	// Since the distance format is a known length,
-	// we hardcode to save the unicode length check each time.
-	const size_t beaconTextLen = 4;
-	char beaconText[beaconTextLen + 1];
-	V_snprintf(beaconText, sizeof(beaconText), "%02d M", FastFloatToSmallInt(m_flDistMeters));
-
-	wchar_t beaconTextUnicode[(sizeof(beaconText) + 1) * sizeof(wchar_t*)];
-	g_pVGuiLocalize->ConvertANSIToUnicode(beaconText, beaconTextUnicode, sizeof(beaconTextUnicode));
 
 	const Color textColor = Color(220, 180, 180, neo_ghost_beacon_alpha.GetInt());
 
@@ -99,7 +96,7 @@ void CNEOHud_GhostBeacon::Paint()
 	surface()->DrawSetTextFont(m_hFont);
 	//surface()->DrawSetTextScale(1.0f, 1.0f);
 	surface()->DrawSetTextPos(m_posX, m_posY);
-	surface()->DrawPrintText(beaconTextUnicode, beaconTextLen);
+	surface()->DrawPrintText(m_wszBeaconTextUnicode, sizeof(m_szBeaconTextANSI));
 	//surface()->SwapBuffers(g_pClientMode->GetViewport()->GetVPanel());
 
 	const double colorPulse = GetColorPulse();
@@ -127,4 +124,10 @@ void CNEOHud_GhostBeacon::Paint()
 		posfix_Y,
 		posfix_X + (m_beaconTexWidth * hackyScale),
 		posfix_Y + (m_beaconTexHeight * hackyScale));
+}
+
+void CNEOHud_GhostBeacon::Paint()
+{
+	BaseClass::Paint();
+	PaintNeoElement();
 }

@@ -21,17 +21,22 @@ class CNEO_Player;
 
 class CWeaponGhost : public CNEOBaseCombatWeapon
 {
-public:
 	DECLARE_CLASS(CWeaponGhost, CNEOBaseCombatWeapon);
+public:
+	DECLARE_NETWORKCLASS();
+	DECLARE_PREDICTABLE();
+
+#ifdef GAME_DLL
+	DECLARE_ACTTABLE();
+	DECLARE_DATADESC();
+#endif
 
 	CWeaponGhost(void);
 	virtual ~CWeaponGhost(void);
 
-	DECLARE_NETWORKCLASS();
-	DECLARE_PREDICTABLE();
-
 	void ItemPreFrame(void);
-	void PrimaryAttack(void);
+	virtual void PrimaryAttack(void) OVERRIDE { }
+	virtual void SecondaryAttack(void) OVERRIDE { }
 
 	virtual void ItemHolsterFrame(void);
 	virtual void OnPickedUp(CBaseCombatCharacter *pNewOwner);
@@ -40,25 +45,23 @@ public:
 	virtual int GetNeoWepBits(void) const { return NEO_WEP_GHOST; }
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
 
-#ifdef GAME_DLL
-	DECLARE_ACTTABLE();
-#endif
+	virtual float GetSpeedScale(void) const { return 1.0; }
 
 private:
-	inline void ZeroGhostedPlayerLocArray(void);
-	inline void ShowBeacon(int clientIndex, const Vector &pos);
-	inline void HideBeacon(int clientIndex);
-	inline void SetShowEnemies(bool enabled);
+	void ZeroGhostedPlayerLocArray(void);
+	void ShowBeacon(int clientIndex, const Vector &pos);
+	void HideBeacon(int clientIndex);
+	void SetShowEnemies(bool enabled);
 
 #ifdef CLIENT_DLL
-	inline float ShowEnemies(void);
-	inline void HideEnemies(void);
-	inline void Debug_ShowPos(const Vector &pos, bool pvs);
-	inline void PlayGhostSound(float volume = 1.0f);
-	inline void StopGhostSound(void);
-	inline void HandleGhostEquip(void);
+	float ShowEnemies(void);
+	void HideEnemies(void);
+	void Debug_ShowPos(const Vector &pos, bool pvs);
+	void PlayGhostSound(float volume = 1.0f);
+	void StopGhostSound(void);
+	void HandleGhostEquip(void);
 
-	inline void TryGhostPing(float closestEnemy);
+	void TryGhostPing(float closestEnemy);
 #else
 	void UpdateNetworkedEnemyLocations(void);
 #endif
@@ -80,7 +83,7 @@ private:
 	CNetworkVar(bool, m_bShouldShowEnemies);
 	CNetworkArray(Vector, m_rvPlayerPositions, MAX_PLAYERS);
 
-	CWeaponGhost(const CWeaponGhost &);
+	CWeaponGhost(const CWeaponGhost &other);
 };
 
 #endif // NEO_WEAPON_GHOST_H

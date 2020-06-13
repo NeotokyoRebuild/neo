@@ -28,6 +28,8 @@ The end result should hopefully be a shinier and less error-prone rendition of N
 
 It's recommended you fork [the dev branch](https://github.com/NeotokyoRevamp/neo/tree/dev), and pull request your work there back to it.
 
+*Note: It's recommended you also read the [dev branch version of this document](https://github.com/NeotokyoRevamp/neo/blob/dev/CONTRIBUTING.md) to make sure the information is up to date.*
+
 The dev branch will periodically get merged back to the master branch, as new things become stable enough.
 
 For now, there's a public [Trello board](https://trello.com/b/LCDYn7Dm) for organizing who's working on what. Come ask in the Discord if you have trouble joining it. GitHub issues could also be used if there's need, but we'll see.
@@ -57,7 +59,7 @@ Ochii's impressive [reverse engineering project](https://github.com/Ochii/neotok
 
 ### Solutions/makefiles
 
-This project uses Valve's [VPC system](https://developer.valvesoftware.com/wiki/VPC) to generate its makefiles and VS solutions. When modifying the project file structure, instead of pushing your solution/makefile, edit the relevant VPC files instead (most commonly "[client_hl2mp.vpc](mp/src/game/client/client_hl2mp.vpc)" and "[server_hl2mp.vpc](mp/src/game/server/server_hl2mp.vpc)").
+This project uses Valve's [VPC system](https://developer.valvesoftware.com/wiki/VPC) to generate its makefiles and VS solutions. When modifying the project file structure, instead of pushing your solution/makefile, edit the relevant VPC files instead (most commonly "[client_neo.vpc](mp/src/game/client/client_neo.vpc)" and "[server_neo.vpc](mp/src/game/server/server_neo.vpc)").
 
 Running the VPC scripts in mp/src/... after a change will regenerate the solutions and makefiles on all platforms. You may sometimes have to purge your object file cache if you get linker errors after restructuring existing translation units.
 
@@ -69,7 +71,7 @@ In shared code, clientside code can be differentiated with CLIENT_DLL, vs. serve
 No big restrictions on general code format, just try to more or less match the other SDK code style.
 
 * C++11, except...
-    * Use #define over constexpr; while it is a part of C++11 spec, the v120 MSVC toolset that Source targets on Windows doesn't support it natively.
+    * Use const (or #define) over constexpr; while it is a part of C++11 spec, the v120 MSVC toolset that Source targets on Windows doesn't support it natively.
 * Valve likes to ( space ) their arguments, especially with macros, but it's not necessary to strictly follow everywhere.
 * Tabs are preferred for indentation, to be consistent with the SDK code.
 * When using a TODO/FIXME/HACK... style comment, use the format "// NEO TODO (Your-username): Example comment." to make it easier to search NEO specific todos/fixmes (opposed to Valve ones), and at a glance figure out who has written them.

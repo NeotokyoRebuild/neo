@@ -152,11 +152,33 @@ void ClientModeHL2MPNormal::Init()
 	{
 		Warning("Couldn't load combine panel scheme!\n");
 	}
+
+#ifdef NEO
+	const char* neoKillfeedIcons[][2] = {
+		{ "neo_bus",	"vgui/hud/kill_shortbus.vmt" },
+		{ "neo_gun",	"vgui/hud/kill_gun.vmt" },
+		{ "neo_hs",		"vgui/hud/kill_headshot.vmt" },
+		{ "neo_boom",	"vgui/hud/kill_explode.vmt" },
+	};
+
+	for (int i = 0; i < ARRAYSIZE(neoKillfeedIcons); ++i)
+	{
+		AssertValidStringPtr(neoKillfeedIcons[i][0]);
+		AssertValidStringPtr(neoKillfeedIcons[i][1]);
+		PrecacheMaterial(neoKillfeedIcons[i][1]);
+		Assert(materials->FindMaterial(neoKillfeedIcons[i][1], TEXTURE_GROUP_PRECACHED));
+
+		CHudTexture neoKillFeedTex;
+		neoKillFeedTex.bRenderUsingFont = false;
+		V_strcpy_safe(neoKillFeedTex.szShortName, neoKillfeedIcons[i][0]);
+		V_strcpy_safe(neoKillFeedTex.szTextureFile, neoKillfeedIcons[i][1]);
+
+		gHUD.AddSearchableHudIconToList(neoKillFeedTex);
+	}
+#endif
 }
 
 #ifdef NEO
-
-
 ConVar cl_neo_decouple_vm_fov("cl_neo_decouple_vm_fov", "1", FCVAR_CHEAT, "Whether to decouple aim FOV from viewmodel FOV.", true, 0.0f, true, 1.0f);
 ConVar cl_neo_decoupled_vm_fov_lerp_scale("cl_neo_decoupled_vm_fov_lerp_scale", "10", FCVAR_CHEAT, "Multiplier for decoupled FOV lerp speed.", true, 0.01, false, 0);
 

@@ -12,21 +12,40 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-LINK_ENTITY_TO_CLASS( neobasecombatweapon, CNEOBaseCombatWeapon );
-
 IMPLEMENT_NETWORKCLASS_ALIASED( NEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 
 BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
+#ifdef CLIENT_DLL
+	RecvPropTime(RECVINFO(m_flSoonestAttack)),
+	RecvPropTime(RECVINFO(m_flLastAttackTime)),
+	RecvPropFloat(RECVINFO(m_flAccuracyPenalty)),
+	RecvPropInt(RECVINFO(m_nNumShotsFired)),
+#else
+	SendPropTime(SENDINFO(m_flSoonestAttack)),
+	SendPropTime(SENDINFO(m_flLastAttackTime)),
+	SendPropFloat(SENDINFO(m_flAccuracyPenalty)),
+	SendPropInt(SENDINFO(m_nNumShotsFired)),
+#endif
 END_NETWORK_TABLE()
+
+#ifdef CLIENT_DLL
+BEGIN_PREDICTION_DATA(CNEOBaseCombatWeapon)
+	DEFINE_PRED_FIELD(m_flSoonestAttack, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_flLastAttackTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_flAccuracyPenalty, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_nNumShotsFired, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
+END_PREDICTION_DATA()
+#endif
+
+LINK_ENTITY_TO_CLASS(neobasecombatweapon, CNEOBaseCombatWeapon);
 
 #ifdef GAME_DLL
 BEGIN_DATADESC( CNEOBaseCombatWeapon )
+	DEFINE_FIELD(m_flSoonestAttack, FIELD_TIME),
+	DEFINE_FIELD(m_flLastAttackTime, FIELD_TIME),
+	DEFINE_FIELD(m_flAccuracyPenalty, FIELD_FLOAT),
+	DEFINE_FIELD(m_nNumShotsFired, FIELD_INTEGER),
 END_DATADESC()
-#endif
-
-#ifdef CLIENT_DLL
-BEGIN_PREDICTION_DATA( CNEOBaseCombatWeapon )
-END_PREDICTION_DATA()
 #endif
 
 const char *GetWeaponByLoadoutId(int id)
@@ -60,6 +79,7 @@ const char *GetWeaponByLoadoutId(int id)
 
 CNEOBaseCombatWeapon::CNEOBaseCombatWeapon( void )
 {
+	m_bReadyToAimIn = false;
 }
 
 void CNEOBaseCombatWeapon::Spawn()
@@ -73,6 +93,9 @@ void CNEOBaseCombatWeapon::Spawn()
 
 bool CNEOBaseCombatWeapon::Reload( void )
 {
+	return BaseClass::Reload();
+
+#if(0)
 	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
 	if (!pOwner)
 	{
@@ -97,6 +120,7 @@ bool CNEOBaseCombatWeapon::Reload( void )
 #endif
 
 	return DefaultReload( GetMaxClip1(), GetMaxClip2(), ACT_VM_RELOAD );
+#endif
 }
 
 bool CNEOBaseCombatWeapon::CanBeSelected(void)
@@ -109,18 +133,155 @@ bool CNEOBaseCombatWeapon::CanBeSelected(void)
 	return BaseClass::CanBeSelected();
 }
 
+bool CNEOBaseCombatWeapon::Deploy(void)
+{
+	const bool ret = BaseClass::Deploy();
+
+	if (ret)
+	{
+		m_bReadyToAimIn = false;
+
+#ifdef DEBUG
+		CNEO_Player* pOwner = NULL;
+		if (GetOwner())
+		{
+			pOwner = dynamic_cast<CNEO_Player*>(GetOwner());
+			Assert(pOwner);
+		}
+#else
+		auto pOwner = static_cast<CNEO_Player*>(GetOwner());
+#endif
+
+		if (pOwner)
+		{
+			if (pOwner->GetFlags() & FL_DUCKING)
+			{
+				pOwner->SetMaxSpeed(pOwner->GetCrouchSpeed_WithWepEncumberment(this));
+			}
+			else if (pOwner->IsWalking())
+			{
+				pOwner->SetMaxSpeed(pOwner->GetWalkSpeed_WithWepEncumberment(this));
+			}
+			else if (pOwner->IsSprinting())
+			{
+				pOwner->SetMaxSpeed(pOwner->GetSprintSpeed_WithWepEncumberment(this));
+			}
+			else
+			{
+				pOwner->SetMaxSpeed(pOwner->GetNormSpeed_WithWepEncumberment(this));
+			}
+		}
+	}
+
+	return ret;
+}
+
+#ifdef CLIENT_DLL
 bool CNEOBaseCombatWeapon::Holster(CBaseCombatWeapon* pSwitchingTo)
 {
-#ifdef CLIENT_DLL
+#ifdef DEBUG
+	CNEO_Player* pOwner = NULL;
 	if (GetOwner())
 	{
-		static_cast<C_NEO_Player*>(GetOwner())->Weapon_SetZoom(false);
+		pOwner = dynamic_cast<CNEO_Player*>(GetOwner());
+		Assert(pOwner);
+	}
+#else
+	auto pOwner = static_cast<CNEO_Player*>(GetOwner());
+#endif
+
+	if (pOwner)
+	{
+		pOwner->Weapon_SetZoom(false);
+	}
+
+	return BaseClass::Holster(pSwitchingTo);
+}
+#endif
+
+void CNEOBaseCombatWeapon::CheckReload(void)
+{
+	if (!m_bInReload && UsesClipsForAmmo1() && m_iClip1 == 0 && GetOwner() && !ClientWantsAutoReload(GetOwner()))
+	{
+		return;
+	}
+
+	BaseClass::CheckReload();
+}
+
+void CNEOBaseCombatWeapon::ItemPreFrame(void)
+{
+	if (!m_bReadyToAimIn)
+	{
+		if (gpGlobals->curtime >= m_flNextPrimaryAttack)
+		{
+			m_bReadyToAimIn = true;
+		}
+	}
+}
+
+void CNEOBaseCombatWeapon::PrimaryAttack(void)
+{
+	if (gpGlobals->curtime < m_flSoonestAttack)
+	{
+		return;
+	}
+	// Can't shoot again yet
+	else if (gpGlobals->curtime - m_flLastAttackTime < GetFireRate())
+	{
+		return;
+	}
+	else if (m_iClip1 == 0)
+	{
+		if (!m_bFireOnEmpty)
+		{
+			CheckReload();
+		}
+		else
+		{
+			WeaponSound(EMPTY);
+			SendWeaponAnim(ACT_VM_DRYFIRE);
+			m_flNextPrimaryAttack = 0.2;
+		}
+		return;
+	}
+
+	auto pOwner = ToBasePlayer(GetOwner());
+
+	if (!pOwner)
+	{
+		Assert(false);
+		return;
+	}
+	else if (m_iClip1 == 0 && !ClientWantsAutoReload(pOwner))
+	{
+		return;
+	}
+
+	if (IsSemiAuto())
+	{
+		// Do nothing if we hold fire whilst semi auto
+		if ((pOwner->m_afButtonLast & IN_ATTACK) &&
+			(pOwner->m_nButtons & IN_ATTACK))
+		{
+			return;
+		}
+	}
+
+	pOwner->ViewPunchReset();
+
+	if ((gpGlobals->curtime - m_flLastAttackTime) > 0.5f)
+	{
+		m_nNumShotsFired = 0;
 	}
 	else
 	{
-		Assert(false);
+		++m_nNumShotsFired;
 	}
-#endif
 
-	return BaseClass::Holster(pSwitchingTo);
+	m_flLastAttackTime = gpGlobals->curtime;
+
+	BaseClass::PrimaryAttack();
+
+	m_flAccuracyPenalty += GetAccuracyPenalty();
 }

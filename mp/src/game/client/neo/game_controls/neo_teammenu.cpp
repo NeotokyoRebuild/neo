@@ -16,6 +16,8 @@
 #include <vgui_controls/TextImage.h>
 #include <vgui_controls/Divider.h>
 
+#include <game_controls/IconPanel.h>
+
 #include <vgui_int.h>
 
 #include <stdio.h> // _snprintf define
@@ -43,6 +45,10 @@
 
 #include <vgui/MouseCode.h>
 
+#include "c_team.h"
+
+#include "ienginevgui.h"
+
 // NEO TODO (Rain): This file is based off Valve's SpectatorGUI.cpp,
 // there's a good chance some of these includes aren't needed.
 // Should clean up any unused ones.
@@ -53,13 +59,22 @@
 using namespace vgui;
 
 // These are defined in the .res file
-#define CONTROL_JINRAI_BUTTON "jinraibutton"
-#define CONTROL_NSF_BUTTON "ctbutton"
-#define CONTROL_SPEC_BUTTON "specbutton"
-#define CONTROL_AUTO_BUTTON "autobutton"
-#define CONTROL_CANCEL_BUTTON "CancelButton"
-#define CONTROL_JINRAI_IMAGE "ImagePanel1"
-#define CONTROL_NSF_IMAGE "ImagePanel2"
+#define CONTROL_JINRAI_BUTTON "neo_jinraibutton"
+#define CONTROL_NSF_BUTTON "neo_nsfbutton"
+#define CONTROL_SPEC_BUTTON "neo_specbutton"
+#define CONTROL_AUTO_BUTTON "neo_autobutton"
+#define CONTROL_CANCEL_BUTTON "neo_CancelButton"
+#define CONTROL_JINRAI_IMAGE "neo_IconPanel1"
+#define CONTROL_NSF_IMAGE "neo_IconPanel2"
+#define CONTROL_BG_IMAGE "neo_IconPanel3"
+
+#define CONTROL_TEAM_MENU_LABEL "neo_Label1"
+#define CONTROL_JINRAI_PLAYERCOUNT_LABEL "neo_jplayercountlabel"
+#define CONTROL_NSF_PLAYERCOUNT_LABEL "neo_nplayercountlabel"
+#define CONTROL_JINRAI_SCORE_LABEL "neo_jscorelabel"
+#define CONTROL_NSF_SCORE_LABEL "neo_nscorelabel"
+
+#define CONTROL_DIVIDER "neo_Divider1"
 
 Panel *NeoTeam_Factory()
 {
@@ -100,8 +115,11 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 
 	SetTitleBarVisible(false);
 
-	m_pJinrai_TeamImage = FindControl<ImagePanel>(CONTROL_JINRAI_IMAGE, false);
-	m_pNSF_TeamImage = FindControl<ImagePanel>(CONTROL_NSF_IMAGE, false);
+	m_pTeamMenuLabel = FindControl<Label>(CONTROL_TEAM_MENU_LABEL);
+	m_pJinrai_PlayercountLabel = FindControl<Label>(CONTROL_JINRAI_PLAYERCOUNT_LABEL);
+	m_pNSF_PlayercountLabel = FindControl<Label>(CONTROL_NSF_PLAYERCOUNT_LABEL);
+	m_pJinrai_ScoreLabel = FindControl<Label>(CONTROL_JINRAI_SCORE_LABEL);
+	m_pNSF_ScoreLabel = FindControl<Label>(CONTROL_NSF_SCORE_LABEL);
 
 	m_pJinrai_Button = FindControl<Button>(CONTROL_JINRAI_BUTTON);
 	m_pNSF_Button = FindControl<Button>(CONTROL_NSF_BUTTON);
@@ -111,36 +129,99 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 
 	// We probably failed to mount original NT VGUI assets if this triggers.
 #ifdef DEBUG
-	Assert(m_pJinrai_TeamImage);
-	Assert(m_pNSF_TeamImage);
+	Assert(m_pTeamMenuLabel);
+	Assert(m_pJinrai_PlayercountLabel);
+	Assert(m_pNSF_PlayercountLabel);
+	Assert(m_pJinrai_ScoreLabel);
+	Assert(m_pNSF_ScoreLabel);
+
 	Assert(m_pJinrai_Button);
 	Assert(m_pNSF_Button);
 	Assert(m_pSpectator_Button);
 	Assert(m_pAutoAssign_Button);
 	Assert(m_pCancel_Button);
 #else
-	if (!(m_pJinrai_TeamImage && m_pNSF_TeamImage && m_pJinrai_Button &&
-		m_pNSF_Button && m_pSpectator_Button && m_pAutoAssign_Button &&
-		m_pCancel_Button))
+	if (!(m_pTeamMenuLabel && m_pJinrai_PlayercountLabel && m_pNSF_PlayercountLabel &&
+		m_pJinrai_ScoreLabel && m_pNSF_ScoreLabel && m_pJinrai_Button && m_pNSF_Button &&
+		m_pSpectator_Button && m_pAutoAssign_Button && m_pCancel_Button))
 	{
 		// We should never be able to hit this line.
 		Error("Failed to load original Neotokyo VGUI elements! This is a bug, please report it.\n");
 	}
 #endif
 
-#if(0)
-	m_pBackgroundImage = new ImagePanel(this, "IconPanel3");
-	m_pTeamMenuLabel = new Label(this, "Label1", "labelText");
-	m_pJinrai_PlayercountLabel = new Label(this, "jplayercountlabel", "labelText");
-	m_pNSF_PlayercountLabel = new Label(this, "nplayercountlabel", "labelText");
-	m_pJinrai_ScoreLabel = new Label(this, "jscorelabel", "labelText");
-	m_pNSF_ScoreLabel = new Label(this, "nscorelabel", "labelText");
+	m_pJinrai_PlayercountLabel->SetAutoResize(vgui::Panel::PinCorner_e::PIN_CENTER_LEFT, vgui::Panel::AutoResize_e::AUTORESIZE_RIGHT, 0, 0, 0, 0);
+	m_pJinrai_ScoreLabel->SetAutoResize(vgui::Panel::PinCorner_e::PIN_CENTER_LEFT, vgui::Panel::AutoResize_e::AUTORESIZE_RIGHT, 0, 0, 0, 0);
+	m_pNSF_PlayercountLabel->SetAutoResize(vgui::Panel::PinCorner_e::PIN_CENTER_RIGHT, vgui::Panel::AutoResize_e::AUTORESIZE_RIGHT, 0, 0, 0, 0);
+	m_pNSF_ScoreLabel->SetAutoResize(vgui::Panel::PinCorner_e::PIN_CENTER_RIGHT, vgui::Panel::AutoResize_e::AUTORESIZE_RIGHT, 0, 0, 0, 0);
 
-	m_pDivider = new Divider(this, "Divider1");
+	m_pJinrai_TeamImage = FindControl<IconPanel>(CONTROL_JINRAI_IMAGE, true);
+	m_pNSF_TeamImage = FindControl<IconPanel>(CONTROL_NSF_IMAGE, true);
+	m_pBgDarkGrey = FindControl<IconPanel>(CONTROL_BG_IMAGE, true);
 
-	m_pJinrai_TeamImage->SetImage("image");
-	m_pNSF_TeamImage->SetImage("image");
-	m_pBackgroundImage->SetImage("image");
+	m_pDivider = FindControl<Divider>(CONTROL_DIVIDER);
+
+	if (!m_pJinrai_TeamImage)
+	{
+		m_pJinrai_TeamImage = new IconPanel(this, CONTROL_JINRAI_IMAGE);
+		Assert(m_pJinrai_TeamImage);
+
+		m_pJinrai_TeamImage->SetPos(10, 17);
+		m_pJinrai_TeamImage->SetSize(110, 110);
+		m_pJinrai_TeamImage->SetAutoResize(
+			vgui::Panel::PinCorner_e::PIN_TOPLEFT,
+			vgui::Panel::AutoResize_e::AUTORESIZE_NO,
+			0, 0, 0, 0);
+		m_pJinrai_TeamImage->SetEnabled(true);
+		m_pJinrai_TeamImage->SetTabPosition(0);
+		m_pJinrai_TeamImage->SetIcon("vgui/jinrai_128tm");
+	}
+
+	if (!m_pNSF_TeamImage)
+	{
+		m_pNSF_TeamImage = new IconPanel(this, CONTROL_NSF_IMAGE);
+		Assert(m_pNSF_TeamImage);
+
+		m_pNSF_TeamImage->SetPos(125, 18);
+		m_pNSF_TeamImage->SetSize(110, 110);
+		m_pNSF_TeamImage->SetAutoResize(
+			vgui::Panel::PinCorner_e::PIN_TOPLEFT,
+			vgui::Panel::AutoResize_e::AUTORESIZE_NO,
+			0, 0, 0, 0);
+		m_pNSF_TeamImage->SetEnabled(true);
+		m_pNSF_TeamImage->SetTabPosition(0);
+		m_pNSF_TeamImage->SetIcon("vgui/nsf_128tm");
+	}
+
+	if (!m_pBgDarkGrey)
+	{
+		m_pBgDarkGrey = new IconPanel(this, CONTROL_BG_IMAGE);
+		Assert(m_pBgDarkGrey);
+
+		m_pBgDarkGrey->SetPos(10, 166);
+		m_pBgDarkGrey->SetSize(340, 40);
+		m_pBgDarkGrey->SetAutoResize(
+			vgui::Panel::PinCorner_e::PIN_TOPLEFT,
+			vgui::Panel::AutoResize_e::AUTORESIZE_NO,
+			0, 0, 0, 0);
+		m_pBgDarkGrey->SetEnabled(true);
+		m_pBgDarkGrey->SetTabPosition(0);
+		m_pBgDarkGrey->SetIconColor(COLOR_BLACK);
+		m_pBgDarkGrey->SetIcon("vgui/darkgrey_background");
+	}
+
+#ifdef DEBUG
+	Assert(m_pJinrai_TeamImage);
+	Assert(m_pNSF_TeamImage);
+	Assert(m_pBgDarkGrey);
+
+	Assert(m_pDivider);
+#else
+	if (!(m_pJinrai_TeamImage && m_pNSF_TeamImage && m_pBgDarkGrey && m_pDivider))
+	{
+		// We should never be able to hit this line.
+		Error("Failed to load original Neotokyo VGUI elements! This is a bug, please report it.\n");
+	}
 #endif
 
 	m_pJinrai_Button->AddActionSignalTarget(this);
@@ -165,6 +246,7 @@ CNeoTeamMenu::~CNeoTeamMenu()
 	// Make sure we deallocate all child elements
 	m_pJinrai_TeamImage->SetAutoDelete(true);
 	m_pNSF_TeamImage->SetAutoDelete(true);
+	m_pBgDarkGrey->SetAutoDelete(true);
 
 	m_pJinrai_Button->SetAutoDelete(true);
 	m_pNSF_Button->SetAutoDelete(true);
@@ -299,10 +381,18 @@ void CNeoTeamMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 
     LoadControlSettings(GetResFile());
 
-    SetBgColor(Color( 0,0,0,0 ) ); // make the background transparent
+	SetBgColor(Color(0, 0, 0, 196));
 
-	const vgui::HFont font = pScheme->GetFont("Default", IsProportional());
-	Assert(font > 0);
+	this->SetPos(332, 276);
+	this->SetSize(360, 215);
+
+	//vgui::HScheme neoScheme = vgui::scheme()->LoadSchemeFromFileEx(
+	//	enginevgui->GetPanel(PANEL_CLIENTDLL), "resource/ClientScheme_Neo.res", "ClientScheme_Neo");
+	//vgui::IScheme* neoIScheme = vgui::scheme()->GetIScheme(neoScheme);
+	//Assert(neoIScheme);
+	//
+	//const vgui::HFont font = neoIScheme->GetFont("BOOT", false);// IsProportional());
+	//Assert(font > 0);
 
 	Assert(m_pJinrai_Button);
 	Assert(m_pNSF_Button);
@@ -310,13 +400,33 @@ void CNeoTeamMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 	Assert(m_pAutoAssign_Button);
 	Assert(m_pCancel_Button);
 
-	m_pJinrai_Button->SetFont(font);
-	m_pNSF_Button->SetFont(font);
-	m_pSpectator_Button->SetFont(font);
-	m_pAutoAssign_Button->SetFont(font);
-	// NEO FIXME (Rain): this line rarely throws; I have no idea why.
-	// The assertions above are not hit when it occurs.
-	m_pCancel_Button->SetFont(font);
+	//m_pJinrai_Button->SetFont(font);
+	//m_pNSF_Button->SetFont(font);
+	//m_pSpectator_Button->SetFont(font);
+	//m_pAutoAssign_Button->SetFont(font);
+	//// NEO FIXME (Rain): this line rarely throws; I have no idea why.
+	//// The assertions above are not hit when it occurs.
+	//m_pCancel_Button->SetFont(font);
+
+	//if (g_hFontJoinMenus == vgui::INVALID_FONT)
+	//{
+	//	auto pNeoKillfeedOverrideScheme = vgui::scheme()->GetIScheme(vgui::scheme()->
+	//		LoadSchemeFromFile("resource/ClientScheme_JoinMenus.res", "JoinMenus"));
+	//	Assert(pNeoKillfeedOverrideScheme);
+	//	if (pNeoKillfeedOverrideScheme)
+	//	{
+	//		g_hFontKillfeed = pNeoKillfeedOverrideScheme->GetFont("joinmenus");
+	//		Assert(g_hFontKillfeed != vgui::INVALID_FONT);
+	//	}
+	//}
+	//
+	//m_pJinrai_Button->SetFont(g_hFontKillfeed);
+
+	m_pJinrai_Button->SizeToContents();
+	m_pNSF_Button->SizeToContents();
+	m_pSpectator_Button->SizeToContents();
+	m_pAutoAssign_Button->SizeToContents();
+	m_pCancel_Button->SizeToContents();
 
 	const Color selectedBgColor(0, 0, 0), selectedFgColor(255, 0, 0),
 		armedBgColor(0, 0, 0), armedFgColor(0, 255, 0);
@@ -356,6 +466,40 @@ void CNeoTeamMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
     SetPaintBorderEnabled(false);
 
     SetBorder( NULL );
+
+	SetMinimumSize(900, 900);
+
+	auto pJinrai = GetGlobalTeam(TEAM_JINRAI);
+	auto pNsf = GetGlobalTeam(TEAM_NSF);
+
+	const int jinScore = (pJinrai != NULL ? pJinrai->Get_Score() : 0);
+	const int jinNumPlayers = (pJinrai != NULL ? pJinrai->Get_Number_Players() : 0);
+
+	const int nsfScore = (pNsf != NULL ? pNsf->Get_Score() : 0);
+	const int nsfNumPlayers = (pNsf != NULL ? pNsf->Get_Number_Players() : 0);
+
+	Assert(m_pJinrai_ScoreLabel);
+	Assert(m_pNSF_ScoreLabel);
+	Assert(m_pJinrai_PlayercountLabel);
+	Assert(m_pNSF_PlayercountLabel);
+
+	char textBuff[13 + 1];
+	V_sprintf_safe(textBuff, "SCORE:%d", jinScore);
+	m_pJinrai_ScoreLabel->SetText(textBuff);
+
+	V_sprintf_safe(textBuff, "SCORE:%d", nsfScore);
+	m_pNSF_ScoreLabel->SetText(textBuff);
+
+	V_sprintf_safe(textBuff, "PLAYERS: %d", jinNumPlayers);
+	m_pJinrai_PlayercountLabel->SetText(textBuff);
+
+	V_sprintf_safe(textBuff, "PLAYERS: %d", nsfNumPlayers);
+	m_pNSF_PlayercountLabel->SetText(textBuff);
+
+	m_pJinrai_ScoreLabel->SizeToContents();
+	m_pNSF_ScoreLabel->SizeToContents();
+	m_pJinrai_PlayercountLabel->SizeToContents();
+	m_pNSF_PlayercountLabel->SizeToContents();
 }
 
 void CNeoTeamMenu::MoveLabelToFront(const char *textEntryName)

@@ -16,73 +16,48 @@
 
 #include "weapon_neobasecombatweapon.h"
 
-#define	JITTE_FASTEST_REFIRE_TIME 0.085f
-#define JITTE_FASTEST_DRY_REFIRE_TIME	0.2f
-
-#define	JITTE_ACCURACY_SHOT_PENALTY_TIME		0.2f
-#define	JITTE_ACCURACY_MAXIMUM_PENALTY_TIME	0.5f	// Maximum penalty to deal out
-
 #ifdef CLIENT_DLL
 #define CWeaponJitte C_WeaponJitte
 #endif
 
 class CWeaponJitte : public CNEOBaseCombatWeapon
 {
-public:
 	DECLARE_CLASS(CWeaponJitte, CNEOBaseCombatWeapon);
-
-	CWeaponJitte();
-
+public:
 	DECLARE_NETWORKCLASS();
 	DECLARE_PREDICTABLE();
-
-	void	ItemPostFrame(void);
-	void	ItemPreFrame(void);
-	void	ItemBusyFrame(void);
-	void	PrimaryAttack(void);
-	void	AddViewKick(void);
-	void	DryFire(void);
-
-	virtual void Spawn(void);
-	virtual bool Deploy(void);
-
-	virtual int GetNeoWepBits(void) const { return NEO_WEP_JITTE; }
-	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
-
-	void	UpdatePenaltyTime(void);
-
-	Activity	GetPrimaryAttackActivity(void);
-
-	virtual bool Reload(void);
-
-	virtual const Vector& GetBulletSpread(void)
-	{
-		static Vector cone;
-
-		float ramp = RemapValClamped(m_flAccuracyPenalty,
-			0.0f,
-			JITTE_ACCURACY_MAXIMUM_PENALTY_TIME,
-			0.0f,
-			1.0f);
-
-		// We lerp from very accurate to inaccurate over time
-		VectorLerp(VECTOR_CONE_1DEGREES, VECTOR_CONE_6DEGREES, ramp, cone);
-
-		return cone;
-	}
-
-	virtual float GetFireRate(void);
 
 #ifdef GAME_DLL
 	DECLARE_ACTTABLE();
 #endif
 
-private:
-	CNetworkVar(float, m_flSoonestAttack);
-	CNetworkVar(float, m_flLastAttackTime);
-	CNetworkVar(float, m_flAccuracyPenalty);
+	CWeaponJitte();
 
-	CNetworkVar(int, m_nNumShotsFired);
+	virtual void	ItemPostFrame(void) OVERRIDE;
+	virtual void	ItemPreFrame(void) OVERRIDE;
+	virtual void	ItemBusyFrame(void) OVERRIDE;
+	virtual void	PrimaryAttack(void) OVERRIDE;
+	virtual void	AddViewKick(void) OVERRIDE;
+	void	DryFire(void);
+
+	virtual void Spawn(void) OVERRIDE;
+	virtual bool Deploy(void) OVERRIDE;
+
+	virtual int GetNeoWepBits(void) const OVERRIDE { return NEO_WEP_JITTE; }
+	virtual int GetNeoWepXPCost(const int neoClass) const OVERRIDE { return 0; }
+
+	virtual float GetSpeedScale(void) const OVERRIDE { return 160.0 / 170.0; }
+
+	void	UpdatePenaltyTime(void);
+
+	Activity	GetPrimaryAttackActivity(void) OVERRIDE;
+
+	virtual float GetFireRate(void) OVERRIDE { return 0.085f; }
+
+protected:
+	virtual float GetAccuracyPenalty() const OVERRIDE { return 0.2f; }
+	virtual float GetMaxAccuracyPenalty() const OVERRIDE { return 0.5f; }
+	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
 
 private:
 	CWeaponJitte(const CWeaponJitte &other);

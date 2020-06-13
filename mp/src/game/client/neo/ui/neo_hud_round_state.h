@@ -8,6 +8,8 @@
 #include "hudelement.h"
 #include <vgui_controls/Panel.h>
 
+
+
 class CNEOHud_RoundState : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
 {
 	DECLARE_CLASS_SIMPLE(CNEOHud_RoundState, Panel);
@@ -19,12 +21,17 @@ public:
 	virtual void Paint();
 
 protected:
-	void DrawRoundStatus();
+	virtual void UpdateStateForNeoHudElementDraw();
+	virtual void DrawNeoHudElement();
+	virtual ConVar* GetUpdateFrequencyConVar() const;
 
 private:
 	vgui::HFont m_hFont;
 
 	int m_resX, m_resY;
+
+	char m_szStatusANSI[6];
+	wchar_t m_wszStatusUnicode[6];
 
 private:
 	CNEOHud_RoundState(const CNEOHud_RoundState &other);

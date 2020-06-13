@@ -13,6 +13,9 @@
 #include <engine/IEngineSound.h>
 #include "filesystem.h"
 #include "ui/neo_hud_ghostbeacon.h"
+#include <c_recipientfilter.h>
+#else
+#include "recipientfilter.h"
 #endif
 
 #include "neo_player_shared.h"
@@ -24,24 +27,32 @@ IMPLEMENT_NETWORKCLASS_ALIASED(WeaponGhost, DT_WeaponGhost)
 
 BEGIN_NETWORK_TABLE(CWeaponGhost, DT_WeaponGhost)
 #ifdef CLIENT_DLL
-RecvPropBool(RECVINFO(m_bShouldShowEnemies)),
-RecvPropArray(RecvPropVector(RECVINFO(m_rvPlayerPositions[0])), m_rvPlayerPositions),
+	RecvPropBool(RECVINFO(m_bShouldShowEnemies)),
+	RecvPropArray(RecvPropVector(RECVINFO(m_rvPlayerPositions[0])), m_rvPlayerPositions),
 #else
-SendPropBool(SENDINFO(m_bShouldShowEnemies)),
-SendPropArray(SendPropVector(SENDINFO_ARRAY(m_rvPlayerPositions), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rvPlayerPositions),
+	SendPropBool(SENDINFO(m_bShouldShowEnemies)),
+	SendPropArray(SendPropVector(SENDINFO_ARRAY(m_rvPlayerPositions), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rvPlayerPositions),
 #endif
 END_NETWORK_TABLE()
 
 #ifdef CLIENT_DLL
 BEGIN_PREDICTION_DATA(CWeaponGhost)
-DEFINE_PRED_FIELD(m_rvPlayerPositions, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD_TOL(m_rvPlayerPositions, FIELD_VECTOR, FTYPEDESC_INSENDTABLE, 0.5f),
 END_PREDICTION_DATA()
 #endif
 
-LINK_ENTITY_TO_CLASS(weapon_ghost, CWeaponGhost);
-PRECACHE_WEAPON_REGISTER(weapon_ghost);
+NEO_IMPLEMENT_ACTTABLE(CWeaponGhost)
 
-NEO_ACTTABLE(CWeaponGhost);
+LINK_ENTITY_TO_CLASS(weapon_ghost, CWeaponGhost);
+
+#ifdef GAME_DLL
+BEGIN_DATADESC(CWeaponGhost)
+	DEFINE_FIELD(m_bShouldShowEnemies, FIELD_BOOLEAN),
+	DEFINE_FIELD(m_rvPlayerPositions, FIELD_VECTOR),
+END_DATADESC()
+#endif
+
+PRECACHE_WEAPON_REGISTER(weapon_ghost);
 
 CWeaponGhost::CWeaponGhost(void)
 {
@@ -87,7 +98,7 @@ CWeaponGhost::~CWeaponGhost(void)
 	}
 }
 
-inline void CWeaponGhost::ZeroGhostedPlayerLocArray(void)
+void CWeaponGhost::ZeroGhostedPlayerLocArray(void)
 {
 	for (int i = 0; i < m_rvPlayerPositions.Count(); i++)
 	{
@@ -118,7 +129,7 @@ void CWeaponGhost::ItemPreFrame(void)
 }
 
 #ifdef CLIENT_DLL
-inline void CWeaponGhost::HandleGhostEquip(void)
+void CWeaponGhost::HandleGhostEquip(void)
 {
 	if (!m_bHavePlayedGhostEquipSound)
 	{
@@ -159,26 +170,27 @@ void CWeaponGhost::HandleGhostUnequip(void)
 }
 
 // Consider calling HandleGhostEquip instead.
-inline void CWeaponGhost::PlayGhostSound(float volume)
+void CWeaponGhost::PlayGhostSound(float volume)
 {
-	auto owner = GetOwner();
+	auto owner = static_cast<C_BasePlayer*>(GetOwner());
 	if (!owner)
 	{
 		return;
 	}
 
 	C_RecipientFilter filter;
-	filter.AddRecipient(static_cast<C_BasePlayer*>(owner));
+	filter.AddRecipient(owner);
 
 	EmitSound_t emitSoundType;
 	emitSoundType.m_flVolume = volume;
 	emitSoundType.m_pSoundName = "HUD.GhostEquip";
+	emitSoundType.m_nFlags |= SND_SHOULDPAUSE | SND_DO_NOT_OVERWRITE_EXISTING_ON_CHANNEL;
 
 	EmitSound(filter, entindex(), emitSoundType);
 }
 
 // Consider calling HandleGhostUnequip instead.
-inline void CWeaponGhost::StopGhostSound(void)
+void CWeaponGhost::StopGhostSound(void)
 {
 	StopSound(this->entindex(), "HUD.GhostEquip");
 }
@@ -191,10 +203,6 @@ void CWeaponGhost::ItemHolsterFrame(void)
 #ifdef CLIENT_DLL
 	HandleGhostUnequip(); // is there some callback, so we don't have to keep calling this?
 #endif
-}
-
-void CWeaponGhost::PrimaryAttack(void)
-{
 }
 
 void CWeaponGhost::SetShowEnemies(bool enabled)
@@ -326,7 +334,7 @@ float CWeaponGhost::ShowEnemies(void)
 	return closestDistance == 1000 ? -1 : closestDistance;
 }
 
-inline void CWeaponGhost::HideBeacon(int clientIndex)
+void CWeaponGhost::HideBeacon(int clientIndex)
 {
 	m_pGhostBeacons[clientIndex]->SetVisible(false);
 }
@@ -335,7 +343,7 @@ using vgui::surface;
 
 extern ConVar neo_ghost_beacon_scale_baseline;
 
-inline void CWeaponGhost::ShowBeacon(int clientIndex, const Vector &pos)
+void CWeaponGhost::ShowBeacon(int clientIndex, const Vector &pos)
 {
 	if (!m_pGhostBeacons[clientIndex])
 	{
@@ -451,13 +459,23 @@ void CWeaponGhost::OnPickedUp(CBaseCombatCharacter *pNewOwner)
 {
 	BaseClass::OnPickedUp(pNewOwner);
 
-	// Prevent ghoster from sprinting
 	if (pNewOwner)
 	{
 		auto neoOwner = static_cast<CNEO_Player*>(pNewOwner);
+		Assert(neoOwner);
+
+		// Prevent ghoster from sprinting
 		if (neoOwner->IsSprinting())
 		{
 			neoOwner->StopSprinting();
 		}
+
+#ifdef GAME_DLL
+		CTeamRecipientFilter filter(NEORules()->GetOpposingTeam(neoOwner), true);
+		EmitSound_t params;
+		params.m_nChannel = CHAN_USER_BASE;
+		params.m_pSoundName = "HUD.GhostPickUp";
+		EmitSound(filter, neoOwner->entindex(), params);
+#endif
 	}
 }

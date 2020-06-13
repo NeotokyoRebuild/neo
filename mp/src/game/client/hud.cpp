@@ -158,7 +158,10 @@ void FreeHudTextureList( CUtlDict< CHudTexture *, int >& list )
 
 // Globally-used fonts
 vgui::HFont g_hFontTrebuchet24 = vgui::INVALID_FONT;
-
+#ifdef NEO
+vgui::HFont g_hFontKillfeed = vgui::INVALID_FONT;
+vgui::HFont g_hFontJoinMenus = vgui::INVALID_FONT;
+#endif
 
 //=======================================================================================================================
 // Hud Element Visibility handling
@@ -490,6 +493,22 @@ void CHud::InitFonts()
 	vgui::HScheme scheme = vgui::scheme()->GetScheme( "ClientScheme" );
 	vgui::IScheme *pScheme = vgui::scheme()->GetIScheme( scheme );
 	g_hFontTrebuchet24 = pScheme->GetFont("CenterPrintText", true);
+
+#ifdef NEO
+	auto pNeoKillfeedOverrideScheme = vgui::scheme()->GetIScheme(vgui::scheme()->
+		LoadSchemeFromFile("resource/ClientScheme_KillFeed.res", "KillFeed"));
+	Assert(pNeoKillfeedOverrideScheme);
+	if (pNeoKillfeedOverrideScheme)
+	{
+		g_hFontKillfeed = pNeoKillfeedOverrideScheme->GetFont("killfeed");
+	}
+
+	if (g_hFontKillfeed == vgui::INVALID_FONT)
+	{
+		Assert(false);
+		g_hFontKillfeed = g_hFontTrebuchet24;
+	}
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -722,6 +741,17 @@ void CHud::SetupNewHudTexture( CHudTexture *t )
 		int wide, tall;
 		vgui::surface()->DrawGetTextureSize( t->textureId, wide, tall );
 
+#ifdef NEO // We don't use font glyphs for killfeed icons, so have to set this up separately.
+		if (V_stristr(t->szShortName, "neo_") != 0)
+		{
+			t->rc.top = 0;
+			t->rc.left = 0;
+			t->rc.right = wide;
+			t->rc.bottom = tall;
+		}
+#endif
+		Assert((float)wide != 0);
+		Assert((float)tall != 0);
 		t->texCoords[ 0 ] = (float)(t->rc.left + 0.5f) / (float)wide;
 		t->texCoords[ 1 ] = (float)(t->rc.top + 0.5f) / (float)tall;
 		t->texCoords[ 2 ] = (float)(t->rc.right - 0.5f) / (float)wide;

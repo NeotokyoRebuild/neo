@@ -14,7 +14,7 @@ WeaponData
 	"primary_ammo"		"Pistol"
 	"secondary_ammo"	"None"
 
-	"weight"			"2"
+	"weight"			"-1"
 	"item_flags"			"0"
 	"damage"			"8"
 

@@ -7,32 +7,20 @@
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponSRM, DT_WeaponSRM)
 
 BEGIN_NETWORK_TABLE(CWeaponSRM, DT_WeaponSRM)
-#ifdef CLIENT_DLL
-RecvPropTime(RECVINFO(m_flSoonestAttack)),
-RecvPropTime(RECVINFO(m_flLastAttackTime)),
-RecvPropFloat(RECVINFO(m_flAccuracyPenalty)),
-RecvPropInt(RECVINFO(m_nNumShotsFired)),
-#else
-SendPropTime(SENDINFO(m_flSoonestAttack)),
-SendPropTime(SENDINFO(m_flLastAttackTime)),
-SendPropFloat(SENDINFO(m_flAccuracyPenalty)),
-SendPropInt(SENDINFO(m_nNumShotsFired)),
-#endif
+	DEFINE_NEO_BASE_WEP_NETWORK_TABLE
 END_NETWORK_TABLE()
 
 #ifdef CLIENT_DLL
 BEGIN_PREDICTION_DATA(CWeaponSRM)
-DEFINE_PRED_FIELD(m_flSoonestAttack, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_flLastAttackTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_flAccuracyPenalty, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_nNumShotsFired, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
+	DEFINE_NEO_BASE_WEP_PREDICTION
 END_PREDICTION_DATA()
 #endif
 
-LINK_ENTITY_TO_CLASS(weapon_srm, CWeaponSRM);
-PRECACHE_WEAPON_REGISTER(weapon_srm);
+NEO_IMPLEMENT_ACTTABLE(CWeaponSRM)
 
-NEO_ACTTABLE(CWeaponSRM);
+LINK_ENTITY_TO_CLASS(weapon_srm, CWeaponSRM);
+
+PRECACHE_WEAPON_REGISTER(weapon_srm);
 
 CWeaponSRM::CWeaponSRM()
 {
@@ -62,35 +50,7 @@ bool CWeaponSRM::Deploy(void)
 
 void CWeaponSRM::PrimaryAttack()
 {
-	auto owner = ToBasePlayer(GetOwner());
-
-	if (owner)
-	{
-		if (!m_iClip1 && !ClientWantsAutoReload(GetOwner()))
-		{
-			return;
-		}
-	}
-
-	if ((gpGlobals->curtime - m_flLastAttackTime) > 0.5f)
-	{
-		m_nNumShotsFired = 0;
-	}
-	else
-	{
-		m_nNumShotsFired++;
-	}
-
-	m_flLastAttackTime = gpGlobals->curtime;
-
-	if (owner)
-	{
-		owner->ViewPunchReset();
-	}
-
 	BaseClass::PrimaryAttack();
-
-	m_flAccuracyPenalty += SRM_ACCURACY_SHOT_PENALTY_TIME;
 }
 
 void CWeaponSRM::UpdatePenaltyTime()
@@ -106,8 +66,7 @@ void CWeaponSRM::UpdatePenaltyTime()
 		(m_flSoonestAttack < gpGlobals->curtime))
 	{
 		m_flAccuracyPenalty -= gpGlobals->frametime;
-		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty,
-			0.0f, SRM_ACCURACY_MAXIMUM_PENALTY_TIME);
+		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty, 0.0f, GetMaxAccuracyPenalty());
 	}
 }
 
@@ -141,11 +100,6 @@ void CWeaponSRM::ItemPostFrame()
 		return;
 	}
 
-	if (m_iClip1 <= 0)
-	{
-		return;
-	}
-
 	if (owner->m_nButtons & IN_ATTACK)
 	{
 		if (m_flSoonestAttack < gpGlobals->curtime)
@@ -154,19 +108,14 @@ void CWeaponSRM::ItemPostFrame()
 			{
 				DryFire();
 
-				m_flSoonestAttack = gpGlobals->curtime + SRM_FASTEST_DRY_REFIRE_TIME;
+				m_flSoonestAttack = gpGlobals->curtime + GetFastestDryRefireTime();
 			}
 			else
 			{
-				m_flSoonestAttack = gpGlobals->curtime + SRM_FASTEST_REFIRE_TIME;
+				m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
 			}
 		}
 	}
-}
-
-float CWeaponSRM::GetFireRate()
-{
-	return SRM_FASTEST_REFIRE_TIME;
 }
 
 Activity CWeaponSRM::GetPrimaryAttackActivity()
@@ -189,19 +138,6 @@ Activity CWeaponSRM::GetPrimaryAttackActivity()
 	return ACT_VM_RECOIL3;
 }
 
-bool CWeaponSRM::Reload()
-{
-	bool fRet = BaseClass::Reload();
-
-	if (fRet)
-	{
-		WeaponSound(RELOAD);
-		m_flAccuracyPenalty = 0;
-	}
-
-	return fRet;
-}
-
 void CWeaponSRM::AddViewKick()
 {
 	auto owner = ToBasePlayer(GetOwner());
@@ -213,8 +149,8 @@ void CWeaponSRM::AddViewKick()
 
 	QAngle viewPunch;
 
-	viewPunch.x = SharedRandomFloat("srmx", 0.25f, 0.5f);
-	viewPunch.y = SharedRandomFloat("srmy", -0.6f, 0.6f);
+	viewPunch.x = SharedRandomFloat("srmpx", 0.25f, 0.5f);
+	viewPunch.y = SharedRandomFloat("srmpy", -0.6f, 0.6f);
 	viewPunch.z = 0;
 
 	owner->ViewPunch(viewPunch);

@@ -153,9 +153,14 @@ public:
 #else
 	bool CheckGameOver(void);
 #endif
+
 	bool IsIntermission( void );
 
+#ifdef NEO
+	virtual void PlayerKilled(CBasePlayer* pVictim, const CTakeDamageInfo& info);
+#else
 	void PlayerKilled( CBasePlayer *pVictim, const CTakeDamageInfo &info );
+#endif
 
 	bool	IsTeamplay( void )
 	{

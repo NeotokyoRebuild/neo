@@ -7,32 +7,20 @@
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponZR68S, DT_WeaponZR68S)
 
 BEGIN_NETWORK_TABLE(CWeaponZR68S, DT_WeaponZR68S)
-#ifdef CLIENT_DLL
-RecvPropTime(RECVINFO(m_flSoonestAttack)),
-RecvPropTime(RECVINFO(m_flLastAttackTime)),
-RecvPropFloat(RECVINFO(m_flAccuracyPenalty)),
-RecvPropInt(RECVINFO(m_nNumShotsFired)),
-#else
-SendPropTime(SENDINFO(m_flSoonestAttack)),
-SendPropTime(SENDINFO(m_flLastAttackTime)),
-SendPropFloat(SENDINFO(m_flAccuracyPenalty)),
-SendPropInt(SENDINFO(m_nNumShotsFired)),
-#endif
+	DEFINE_NEO_BASE_WEP_NETWORK_TABLE
 END_NETWORK_TABLE()
 
 #ifdef CLIENT_DLL
 BEGIN_PREDICTION_DATA(CWeaponZR68S)
-DEFINE_PRED_FIELD(m_flSoonestAttack, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_flLastAttackTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_flAccuracyPenalty, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_nNumShotsFired, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
+	DEFINE_NEO_BASE_WEP_PREDICTION
 END_PREDICTION_DATA()
 #endif
 
-LINK_ENTITY_TO_CLASS(weapon_zr68s, CWeaponZR68S);
-PRECACHE_WEAPON_REGISTER(weapon_zr68s);
+NEO_IMPLEMENT_ACTTABLE(CWeaponZR68S)
 
-NEO_ACTTABLE(CWeaponZR68S);
+LINK_ENTITY_TO_CLASS(weapon_zr68s, CWeaponZR68S);
+
+PRECACHE_WEAPON_REGISTER(weapon_zr68s);
 
 CWeaponZR68S::CWeaponZR68S()
 {
@@ -62,35 +50,7 @@ bool CWeaponZR68S::Deploy(void)
 
 void CWeaponZR68S::PrimaryAttack()
 {
-	auto owner = ToBasePlayer(GetOwner());
-
-	if (owner)
-	{
-		if (!m_iClip1 && !ClientWantsAutoReload(GetOwner()))
-		{
-			return;
-		}
-	}
-
-	if ((gpGlobals->curtime - m_flLastAttackTime) > 0.5f)
-	{
-		m_nNumShotsFired = 0;
-	}
-	else
-	{
-		m_nNumShotsFired++;
-	}
-
-	m_flLastAttackTime = gpGlobals->curtime;
-
-	if (owner)
-	{
-		owner->ViewPunchReset();
-	}
-
 	BaseClass::PrimaryAttack();
-
-	m_flAccuracyPenalty += ZR68S_ACCURACY_SHOT_PENALTY_TIME;
 }
 
 void CWeaponZR68S::UpdatePenaltyTime()
@@ -106,8 +66,7 @@ void CWeaponZR68S::UpdatePenaltyTime()
 		(m_flSoonestAttack < gpGlobals->curtime))
 	{
 		m_flAccuracyPenalty -= gpGlobals->frametime;
-		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty,
-			0.0f, ZR68S_ACCURACY_MAXIMUM_PENALTY_TIME);
+		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty, 0.0f, GetMaxAccuracyPenalty());
 	}
 }
 
@@ -141,11 +100,6 @@ void CWeaponZR68S::ItemPostFrame()
 		return;
 	}
 
-	if (m_iClip1 <= 0)
-	{
-		return;
-	}
-
 	if (owner->m_nButtons & IN_ATTACK)
 	{
 		if (m_flSoonestAttack < gpGlobals->curtime)
@@ -154,19 +108,14 @@ void CWeaponZR68S::ItemPostFrame()
 			{
 				DryFire();
 
-				m_flSoonestAttack = gpGlobals->curtime + ZR68S_FASTEST_DRY_REFIRE_TIME;
+				m_flSoonestAttack = gpGlobals->curtime + GetFastestDryRefireTime();
 			}
 			else
 			{
-				m_flSoonestAttack = gpGlobals->curtime + ZR68S_FASTEST_REFIRE_TIME;
+				m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
 			}
 		}
 	}
-}
-
-float CWeaponZR68S::GetFireRate()
-{
-	return ZR68S_FASTEST_REFIRE_TIME;
 }
 
 Activity CWeaponZR68S::GetPrimaryAttackActivity()
@@ -189,19 +138,6 @@ Activity CWeaponZR68S::GetPrimaryAttackActivity()
 	return ACT_VM_RECOIL3;
 }
 
-bool CWeaponZR68S::Reload()
-{
-	bool fRet = BaseClass::Reload();
-
-	if (fRet)
-	{
-		WeaponSound(RELOAD);
-		m_flAccuracyPenalty = 0;
-	}
-
-	return fRet;
-}
-
 void CWeaponZR68S::AddViewKick()
 {
 	auto owner = ToBasePlayer(GetOwner());
@@ -213,8 +149,8 @@ void CWeaponZR68S::AddViewKick()
 
 	QAngle viewPunch;
 
-	viewPunch.x = SharedRandomFloat("zr68sx", 0.25f, 0.5f);
-	viewPunch.y = SharedRandomFloat("zr68sy", -0.6f, 0.6f);
+	viewPunch.x = SharedRandomFloat("zr68spx", 0.25f, 0.5f);
+	viewPunch.y = SharedRandomFloat("zr68spy", -0.6f, 0.6f);
 	viewPunch.z = 0;
 
 	owner->ViewPunch(viewPunch);

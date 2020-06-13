@@ -7,32 +7,20 @@
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponJitteS, DT_WeaponJitteS)
 
 BEGIN_NETWORK_TABLE(CWeaponJitteS, DT_WeaponJitteS)
-#ifdef CLIENT_DLL
-RecvPropTime(RECVINFO(m_flSoonestAttack)),
-RecvPropTime(RECVINFO(m_flLastAttackTime)),
-RecvPropFloat(RECVINFO(m_flAccuracyPenalty)),
-RecvPropInt(RECVINFO(m_nNumShotsFired)),
-#else
-SendPropTime(SENDINFO(m_flSoonestAttack)),
-SendPropTime(SENDINFO(m_flLastAttackTime)),
-SendPropFloat(SENDINFO(m_flAccuracyPenalty)),
-SendPropInt(SENDINFO(m_nNumShotsFired)),
-#endif
+	DEFINE_NEO_BASE_WEP_NETWORK_TABLE
 END_NETWORK_TABLE()
 
 #ifdef CLIENT_DLL
 BEGIN_PREDICTION_DATA(CWeaponJitteS)
-DEFINE_PRED_FIELD(m_flSoonestAttack, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_flLastAttackTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_flAccuracyPenalty, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_nNumShotsFired, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
+	DEFINE_NEO_BASE_WEP_PREDICTION
 END_PREDICTION_DATA()
 #endif
 
-LINK_ENTITY_TO_CLASS(weapon_jittescoped, CWeaponJitteS);
-PRECACHE_WEAPON_REGISTER(weapon_jittescoped);
+NEO_IMPLEMENT_ACTTABLE(CWeaponJitteS)
 
-NEO_ACTTABLE(CWeaponJitteS);
+LINK_ENTITY_TO_CLASS(weapon_jittescoped, CWeaponJitteS);
+
+PRECACHE_WEAPON_REGISTER(weapon_jittescoped);
 
 CWeaponJitteS::CWeaponJitteS()
 {
@@ -62,35 +50,7 @@ bool CWeaponJitteS::Deploy(void)
 
 void CWeaponJitteS::PrimaryAttack()
 {
-	auto owner = ToBasePlayer(GetOwner());
-
-	if (owner)
-	{
-		if (!m_iClip1 && !ClientWantsAutoReload(GetOwner()))
-		{
-			return;
-		}
-	}
-
-	if ((gpGlobals->curtime - m_flLastAttackTime) > 0.5f)
-	{
-		m_nNumShotsFired = 0;
-	}
-	else
-	{
-		m_nNumShotsFired++;
-	}
-
-	m_flLastAttackTime = gpGlobals->curtime;
-
-	if (owner)
-	{
-		owner->ViewPunchReset();
-	}
-
 	BaseClass::PrimaryAttack();
-
-	m_flAccuracyPenalty += JITTE_S_ACCURACY_SHOT_PENALTY_TIME;
 }
 
 void CWeaponJitteS::UpdatePenaltyTime()
@@ -107,7 +67,7 @@ void CWeaponJitteS::UpdatePenaltyTime()
 	{
 		m_flAccuracyPenalty -= gpGlobals->frametime;
 		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty,
-			0.0f, JITTE_S_ACCURACY_MAXIMUM_PENALTY_TIME);
+			0.0f, GetMaxAccuracyPenalty());
 	}
 }
 
@@ -141,11 +101,6 @@ void CWeaponJitteS::ItemPostFrame()
 		return;
 	}
 
-	if (m_iClip1 <= 0)
-	{
-		return;
-	}
-
 	if (owner->m_nButtons & IN_ATTACK)
 	{
 		if (m_flSoonestAttack < gpGlobals->curtime)
@@ -154,19 +109,14 @@ void CWeaponJitteS::ItemPostFrame()
 			{
 				DryFire();
 
-				m_flSoonestAttack = gpGlobals->curtime + JITTE_S_FASTEST_DRY_REFIRE_TIME;
+				m_flSoonestAttack = gpGlobals->curtime + GetFastestDryRefireTime();
 			}
 			else
 			{
-				m_flSoonestAttack = gpGlobals->curtime + JITTE_S_FASTEST_REFIRE_TIME;
+				m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
 			}
 		}
 	}
-}
-
-float CWeaponJitteS::GetFireRate()
-{
-	return JITTE_S_FASTEST_REFIRE_TIME;
 }
 
 Activity CWeaponJitteS::GetPrimaryAttackActivity()
@@ -189,19 +139,6 @@ Activity CWeaponJitteS::GetPrimaryAttackActivity()
 	return ACT_VM_RECOIL3;
 }
 
-bool CWeaponJitteS::Reload()
-{
-	bool fRet = BaseClass::Reload();
-
-	if (fRet)
-	{
-		WeaponSound(RELOAD);
-		m_flAccuracyPenalty = 0;
-	}
-
-	return fRet;
-}
-
 void CWeaponJitteS::AddViewKick()
 {
 	auto owner = ToBasePlayer(GetOwner());
@@ -213,8 +150,8 @@ void CWeaponJitteS::AddViewKick()
 
 	QAngle viewPunch;
 
-	viewPunch.x = SharedRandomFloat("jittex", 0.25f, 0.5f);
-	viewPunch.y = SharedRandomFloat("jittey", -0.6f, 0.6f);
+	viewPunch.x = SharedRandomFloat("jittespx", 0.25f, 0.5f);
+	viewPunch.y = SharedRandomFloat("jittespy", -0.6f, 0.6f);
 	viewPunch.z = 0;
 
 	owner->ViewPunch(viewPunch);

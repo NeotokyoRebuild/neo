@@ -15,18 +15,16 @@
 
 #include <game/client/iviewport.h>
 
-#define BLACK_BAR_COLOR	Color(0, 0, 0, 196)
-
 namespace vgui
 {
-	class TextEntry;
 	class Button;
+    class ComboBox;
+    class Label;
 	class Panel;
-	class ImagePanel;
-	//class CIconPanel;
-	class ComboBox;
-    class Button;
+    class TextEntry;
+    //class ImagePanel;
 }
+class IconPanel;
 
 class MouseCode;
 
@@ -55,11 +53,11 @@ public:
 	virtual bool IsVisible() { return BaseClass::IsVisible(); }
 	virtual void SetParent(vgui::VPANEL parent) { BaseClass::SetParent(parent); }
 
-    virtual Color GetBlackBarColor( void ) { return BLACK_BAR_COLOR; }
+    virtual Color GetBlackBarColor( void ) { return Color(0, 0, 0, 196); }
 
     virtual const char *GetResFile(void)
     {
-        return "Resource/TeamMenu.res";
+        return "resource/neo_ui/Neo_TeamMenu.res";
     }
 
 protected:
@@ -79,10 +77,14 @@ protected:
     // --------------------------------------------------------
 
     // Image textures
-	vgui::ImagePanel *m_pJinrai_TeamImage;
-	vgui::ImagePanel *m_pNSF_TeamImage;
-#if(0)
-	vgui::ImagePanel *m_pBackgroundImage;
+	//vgui::ImagePanel *m_pJinrai_TeamImage;
+	//vgui::ImagePanel *m_pNSF_TeamImage;
+
+   IconPanel* m_pJinrai_TeamImage;
+   IconPanel* m_pNSF_TeamImage;
+   IconPanel* m_pBgDarkGrey;
+#if(1)
+	//vgui::ImagePanel *m_pBackgroundImage;
 
     // Team menu label
     vgui::Label *m_pTeamMenuLabel;

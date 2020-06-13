@@ -31,10 +31,13 @@ ITexture *GetTeenyTexture(int which);						// tiny 32x32 texture, always 8888
 #ifdef NEO
 ITexture *GetSSAO(void);
 ITexture *GetSSAOIntermediate(void);
+
 ITexture *GetMV(void);
 ITexture *GetMVBuffer(const int index);
 ITexture *GetMVIntermediate(void);
 ITexture *GetMVIntermediate2(void);
+
+ITexture *GetTV(void);
 #endif
 
 void ReleaseRenderTargets( void );

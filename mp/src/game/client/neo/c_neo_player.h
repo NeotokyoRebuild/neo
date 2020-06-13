@@ -4,6 +4,8 @@
 #pragma once
 #endif
 
+#include "in_buttons.h"
+
 class C_NEO_Player;
 #include "c_hl2mp_player.h"
 
@@ -29,6 +31,8 @@ public:
 
 	virtual int DrawModel( int flags );
 	virtual void AddEntity( void );
+
+	virtual void PreDataUpdate(DataUpdateType_t updateType) OVERRIDE;
 
 	// Should this object cast shadows?
 	virtual ShadowType_t		ShadowCastType( void );
@@ -67,32 +71,63 @@ public:
 	virtual void StartWalking(void);
 	virtual void StopWalking(void);
 
-	float GetNormSpeed() const;
-	float GetCrouchSpeed() const;
-	float GetWalkSpeed() const;
-	float GetSprintSpeed() const;
+	void Lean(void);
 
+	virtual const Vector GetPlayerMaxs(void) const;
+
+	// Implementing in header in hopes of compiler picking up the inlined base method
+	virtual float GetModelScale() const
+	{
+		switch (GetClass())
+		{
+		case NEO_CLASS_RECON:
+			return C_BaseAnimating::GetModelScale() * NEO_RECON_MODEL_SCALE;
+		case NEO_CLASS_SUPPORT:
+			return C_BaseAnimating::GetModelScale() * NEO_SUPPORT_MODEL_SCALE;
+		default:
+			return C_BaseAnimating::GetModelScale() * NEO_ASSAULT_MODEL_SCALE;
+		}
+	}
+
+	float GetNormSpeed_WithActiveWepEncumberment(void) const;
+	float GetCrouchSpeed_WithActiveWepEncumberment(void) const;
+	float GetWalkSpeed_WithActiveWepEncumberment(void) const;
+	float GetSprintSpeed_WithActiveWepEncumberment(void) const;
+	float GetNormSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const;
+	float GetCrouchSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const;
+	float GetWalkSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const;
+	float GetSprintSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const;
+	float GetNormSpeed(void) const;
+	float GetCrouchSpeed(void) const;
+	float GetWalkSpeed(void) const;
+	float GetSprintSpeed(void) const;
+
+private:
+	float GetActiveWeaponSpeedScale() const;
+	float GetBackwardsMovementPenaltyScale() const { return ((m_nButtons & IN_BACK) ? NEO_SLOW_MODIFIER : 1.0); }
+
+public:
 	bool ShouldDrawHL2StyleQuickHud( void );
 
-	int GetClass() const;
+	int GetClass() const { return m_iNeoClass; }
 
-	inline bool IsCarryingGhost(void);
+	bool IsCarryingGhost(void);
 
-	virtual void SetLocalViewAngles( const QAngle &viewAngles )
+	virtual void SetLocalViewAngles( const QAngle &viewAngles ) OVERRIDE
 	{
 		BaseClass::SetLocalViewAngles(viewAngles);
 	}
-	virtual void SetViewAngles( const QAngle& ang )
+	virtual void SetViewAngles( const QAngle& ang ) OVERRIDE
 	{
 		BaseClass::SetViewAngles(ang);
 	}
 
-	inline void SuperJump(void);
+	void SuperJump(void);
 
-	inline void DrawCompass(void);
+	void DrawCompass(void);
 
 	void Weapon_AimToggle(C_BaseCombatWeapon *pWep);
-	void Weapon_SetZoom(bool bZoomIn);
+	void Weapon_SetZoom(const bool bZoomIn);
 
 	void Weapon_Drop(C_BaseCombatWeapon *pWeapon);
 
@@ -106,10 +141,11 @@ public:
 	bool IsInAim() const { return m_bInAim; }
 
 private:
-	inline void CheckThermOpticButtons();
-	inline void CheckVisionButtons();
+	void CheckThermOpticButtons();
+	void CheckVisionButtons();
+	void PlayCloakSound();
 
-	inline bool IsAllowedToSuperJump(void);
+	bool IsAllowedToSuperJump(void);
 
 public:
 	CNetworkVar(bool, m_bShowTestMessage);
@@ -119,6 +155,7 @@ public:
 	CNetworkVar(int, m_iXP);
 	CNetworkVar(int, m_iCapTeam);
 	CNetworkVar(int, m_iLoadoutWepChoice);
+	CNetworkVar(int, m_iNextSpawnClassChoice);
 
 	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
 
@@ -127,23 +164,29 @@ public:
 
 	CNetworkVar(bool, m_bGhostExists);
 
-protected:
+	CNetworkVar(float, m_flCamoAuxLastTime);
+	CNetworkVar(int, m_nVisionLastTick);
+
 	CNetworkVector(m_vecGhostMarkerPos);
 
 	CNetworkVar(int, m_iGhosterTeam);
 
-	bool m_bIsClassMenuOpen, m_bIsTeamMenuOpen;
-	bool m_bInThermOpticCamo;
+	CNetworkVar(bool, m_bInThermOpticCamo);
+	CNetworkVar(bool, m_bLastTickInThermOpticCamo);
 	CNetworkVar(bool, m_bInVision);
 	CNetworkVar(bool, m_bInAim);
 
 	CNetworkVar(int, m_iNeoClass);
 	CNetworkVar(int, m_iNeoSkin);
 
+protected:
+	bool m_bIsClassMenuOpen, m_bIsTeamMenuOpen;
+
 private:
 	bool m_bFirstDeathTick;
 	bool m_bPreviouslyReloading;
 	bool m_bPreviouslyPreparingToHideMsg;
+	bool m_bIsAllowedToToggleVision;
 
 	CNeoHudElements *m_pNeoPanel;
 
@@ -154,14 +197,16 @@ private:
 	C_NEO_Player(const C_NEO_Player &);
 };
 
-inline C_NEO_Player *ToNEOPlayer(CBaseEntity *pEntity)
+inline C_NEO_Player *ToNEOPlayer(C_BaseEntity *pEntity)
 {
 	if (!pEntity || !pEntity->IsPlayer())
 	{
 		return NULL;
 	}
-
-	return dynamic_cast<C_NEO_Player*>(pEntity);
+#if _DEBUG
+	Assert(dynamic_cast<C_NEO_Player*>(pEntity));
+#endif
+	return static_cast<C_NEO_Player*>(pEntity);
 }
 
 extern ConVar cl_drawhud_quickinfo;

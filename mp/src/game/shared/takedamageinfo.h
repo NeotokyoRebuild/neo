@@ -11,6 +11,12 @@
 #pragma once
 #endif
 
+#ifdef NEO
+// Which deathnotice icon to draw.
+// This value needs to be the same as original NT for plugin compatibility.
+// NEO TODO (Rain): add other icon numbers
+#define NEO_DEATH_EVENT_ICON_HEADSHOT 2
+#endif
 
 #include "networkvar.h" // todo: change this when DECLARE_CLASS is moved into a better location.
 

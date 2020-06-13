@@ -19,7 +19,7 @@ WeaponData
 	"primary_ammo"			"None"
 	"secondary_ammo"		"None"
 
-	"weight"			"0"
+	"weight"			"-1"
 	"item_flags"			"0"
 
 	// Weapon Sprite data is loaded by the Client DLL.

@@ -27,25 +27,36 @@ public:
 
 #ifdef GAME_DLL
 	DECLARE_ACTTABLE();
+	DECLARE_DATADESC();
 #endif
 
 	CWeaponKnife();
 
 	void PrimaryAttack(void);
-	void SecondaryAttack(void) { return; }
-	void Drop(const Vector &vecVelocity);
+	void SecondaryAttack(void) { }
+	void Drop(const Vector &vecVelocity) { Assert(false); /* knives shouldn't drop */ }
 
 	float GetRange(void) const { return KNIFE_RANGE; }
-	float GetDamageForActivity(Activity activity) const { return 25.0f; }
+	
+	virtual	float GetDamageForActivity(Activity hitActivity) OVERRIDE
+	{
+		return 25.0f;
+	}
 
 	virtual float GetFireRate(void) const { return 0.534f; }
+
+	virtual float GetSpeedScale(void) const { return 1.0; }
+
+	virtual bool Deploy(void);
 
 	// FIXME: we should inherit CNEOMelee -> CNEOBaseWep etc...
 	//virtual int GetNeoWepBits(void) const { return NEO_WEP_KNIFE; }
 
-private:
-	float m_flLastSwingTime;
-
+protected:
+	virtual void		Swing(int bIsSecondary) OVERRIDE;
+	virtual Activity	ChooseIntersectionPointAndActivity(trace_t& hitTrace, const Vector& mins,
+		const Vector& maxs, CBasePlayer* pOwner) OVERRIDE;
+	virtual void		Hit(trace_t& traceHit, Activity nHitActivity) OVERRIDE;
 private:
 	CWeaponKnife(const CWeaponKnife &other);
 };

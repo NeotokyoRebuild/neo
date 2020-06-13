@@ -84,6 +84,7 @@ void C_NEO_TE_TocFlash::PostDataUpdate(DataUpdateType_t updateType)
 	VPROF("C_NEO_TE_TocFlash::PostDataUpdate");
 
 	CBroadcastRecipientFilter filter;
+	filter.MakeReliable();
 	TE_TocFlash(filter, 0.0f, &m_vecOrigin, r, g, b, exponent, m_fRadius, m_fTime, m_fDecay, LIGHT_INDEX_TE_DYNAMIC);
 }
 

@@ -19,6 +19,8 @@
 
 using vgui::surface;
 
+NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(GameEvent, 0.1)
+
 CNEOHud_GameEvent::CNEOHud_GameEvent(const char *pElementName, vgui::Panel *parent)
 	: CHudElement(pElementName), Panel(parent, pElementName)
 {
@@ -46,29 +48,33 @@ CNEOHud_GameEvent::CNEOHud_GameEvent(const char *pElementName, vgui::Panel *pare
 
 	m_hFont = scheme->GetFont("NHudOCR");
 
-	SetMessage("");
+	SetMessage("", 1);
 
 	SetVisible(false);
 }
 
 void CNEOHud_GameEvent::SetMessage(const wchar_t *message, size_t size)
 {
-	V_memcpy(m_pszMessage, message, size);
+	Assert(sizeof(m_pszMessage) >= size);
+	V_memcpy(m_pszMessage, message, sizeof(m_pszMessage));
 }
 
-void CNEOHud_GameEvent::SetMessage(const char* message)
+void CNEOHud_GameEvent::SetMessage(const char* message, size_t size)
 {
-	g_pVGuiLocalize->ConvertANSIToUnicode(message, m_pszMessage, NEO_MAX_HUD_GAME_EVENT_MSG_SIZE);
+	Assert(sizeof(m_pszMessage) >= size);
+	g_pVGuiLocalize->ConvertANSIToUnicode(message, m_pszMessage, sizeof(m_pszMessage));
 }
 
-void CNEOHud_GameEvent::Paint()
+void CNEOHud_GameEvent::UpdateStateForNeoHudElementDraw()
 {
-	if (!IsHudReadyForPaintNow())
+}
+
+void CNEOHud_GameEvent::DrawNeoHudElement()
+{
+	if (!ShouldDraw())
 	{
 		return;
 	}
-
-	BaseClass::Paint();
 
 	int wide, tall;
 	surface()->GetTextSize(m_hFont, m_pszMessage, wide, tall);
@@ -79,4 +85,10 @@ void CNEOHud_GameEvent::Paint()
 	surface()->DrawSetTextPos(m_iResX / 2, m_iResY / 2);
 	surface()->DrawSetTextFont(m_hFont);
 	surface()->DrawPrintText(m_pszMessage, NEO_MAX_HUD_GAME_EVENT_MSG_SIZE);
+}
+
+void CNEOHud_GameEvent::Paint()
+{
+	BaseClass::Paint();
+	PaintNeoElement();
 }

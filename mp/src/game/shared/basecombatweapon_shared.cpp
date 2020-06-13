@@ -770,7 +770,14 @@ void CBaseCombatWeapon::OnPickedUp( CBaseCombatCharacter *pNewOwner )
 		}
 		if ( filter.GetRecipientCount() )
 		{
+#ifdef NEO
+			EmitSound_t params;
+			params.m_pSoundName = "Player.PickupWeapon";
+			params.m_nFlags |= SND_DO_NOT_OVERWRITE_EXISTING_ON_CHANNEL;
+			CBaseEntity::EmitSound(filter, pNewOwner->entindex(), params);
+#else
 			CBaseEntity::EmitSound( filter, pNewOwner->entindex(), "Player.PickupWeapon" );
+#endif
 		}
 
 		// Robin: We don't want to delete weapons the player has picked up, so 
@@ -2014,6 +2021,20 @@ bool CBaseCombatWeapon::DefaultReload( int iClipSize1, int iClipSize2, int iActi
 	// If you don't have clips, then don't try to reload them.
 	if ( UsesClipsForAmmo1() )
 	{
+#ifdef NEO
+		if ((!m_bInReload) && (m_iClip1 == 0))
+		{
+			Assert(ToBasePlayer(pOwner));
+			if (!(ToBasePlayer(pOwner)->m_nButtons & IN_RELOAD))
+			{
+				if (!ClientWantsAutoReload(pOwner))
+				{
+					return false;
+				}
+			}
+		}
+#endif
+
 		// need to reload primary clip?
 		int primary	= MIN(iClipSize1 - m_iClip1, pOwner->GetAmmoCount(m_iPrimaryAmmoType));
 		if ( primary != 0 )
@@ -2035,7 +2056,8 @@ bool CBaseCombatWeapon::DefaultReload( int iClipSize1, int iClipSize2, int iActi
 	if ( !bReload )
 		return false;
 
-#ifdef CLIENT_DLL
+	// On NEO, we want to always give out reload sound cues
+#if defined(CLIENT_DLL) || defined(NEO)
 	// Play reload
 	WeaponSound( RELOAD );
 #endif

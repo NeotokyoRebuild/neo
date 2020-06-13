@@ -18,13 +18,16 @@ IMPLEMENT_NETWORKCLASS_ALIASED(WeaponKyla, DT_WeaponKyla);
 BEGIN_NETWORK_TABLE(CWeaponKyla, DT_WeaponKyla)
 END_NETWORK_TABLE()
 
+#ifdef CLIENT_DLL
 BEGIN_PREDICTION_DATA(CWeaponKyla)
 END_PREDICTION_DATA()
+#endif
+
+NEO_IMPLEMENT_ACTTABLE(CWeaponKyla)
 
 LINK_ENTITY_TO_CLASS(weapon_kyla, CWeaponKyla);
-PRECACHE_WEAPON_REGISTER(weapon_kyla);
 
-NEO_ACTTABLE(CWeaponKyla);
+PRECACHE_WEAPON_REGISTER(weapon_kyla);
 
 CWeaponKyla::CWeaponKyla(void)
 {
@@ -34,19 +37,11 @@ CWeaponKyla::CWeaponKyla(void)
 
 void CWeaponKyla::PrimaryAttack(void)
 {
-	// Only the player fires this way so we can cast
-	CBasePlayer *pPlayer = ToBasePlayer(GetOwner());
-
-	if (!pPlayer)
-	{
-		return;
-	}
-
-	if (m_iClip1 <= 0)
+	if (m_iClip1 == 0)
 	{
 		if (!m_bFireOnEmpty)
 		{
-			Reload();
+			CheckReload();
 		}
 		else
 		{
@@ -57,6 +52,13 @@ void CWeaponKyla::PrimaryAttack(void)
 		return;
 	}
 
+	// Only the player fires this way so we can cast
+	CBasePlayer* pPlayer = ToBasePlayer(GetOwner());
+
+	if (!pPlayer)
+	{
+		return;
+	}
 	WeaponSound(SINGLE);
 	pPlayer->DoMuzzleFlash();
 

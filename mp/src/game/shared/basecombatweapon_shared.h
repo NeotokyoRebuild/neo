@@ -666,7 +666,8 @@ protected:
 #ifdef CLIENT_DLL
 extern ConVar cl_autoreload_when_empty;
 #endif
-inline bool ClientWantsAutoReload(CBaseCombatCharacter *pCharacter = NULL)
+
+inline bool ClientWantsAutoReload(const CBaseCombatCharacter* const pCharacter)
 {
 #ifdef CLIENT_DLL
 	return cl_autoreload_when_empty.GetBool();

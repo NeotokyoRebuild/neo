@@ -1147,16 +1147,23 @@ static inline void UpdateBgm(ConVar *volCvar)
 	}
 
 #ifdef LINUX
-	const char *bgmFile = "ui/gamestartup1.mp3";
+#define DIR_SLASH "/"
 #elif defined(_WIN32)
-	const char *bgmFile = "ui\\gamestartup1.mp3";
+#define DIR_SLASH "\\"
 #else
 #error Unimplemented!
 #endif
+	const char* bgmFiles[] = {
+		"ui"		DIR_SLASH "gamestartup1.mp3", // main menu bgm should be at first index
+		"gameplay"	DIR_SLASH "draw.mp3",
+		"gameplay"	DIR_SLASH "jinrai.mp3",
+		"gameplay"	DIR_SLASH "nsf.mp3",
+	};
 
 	CUtlVector<SndInfo_t> sounds;
 	enginesound->GetActiveSounds(sounds);
 
+	// If we are playing a music track, update its current volume.
 	char filename[MAX_PATH];
 	for (int i = 0; i < sounds.Size(); i++)
 	{
@@ -1164,18 +1171,27 @@ static inline void UpdateBgm(ConVar *volCvar)
 		{
 			continue;
 		}
-
-		if (!*filename || (Q_strcmp(filename, bgmFile) != 0))
+		else if (!*filename)
 		{
 			continue;
 		}
 
-		enginesound->SetVolumeByGuid(sounds[i].m_nGuid, volCvar->GetFloat());
-
-		return;
+		for (int j = 0; j < ARRAYSIZE(bgmFiles); ++j)
+		{
+			if (Q_strcmp(filename, bgmFiles[j]) == 0)
+			{
+				enginesound->SetVolumeByGuid(sounds[i].m_nGuid, volCvar->GetFloat());
+				return; // should only ever be playing one jingle at a time; return early
+			}
+		}
 	}
 
-	enginesound->EmitAmbientSound(bgmFile, volCvar->GetFloat());
+	// We were not in a server nor joining a server, and there was no music playing.
+	// Start playing the main menu bgm.
+	if (!engine->IsConnected())
+	{
+		enginesound->EmitAmbientSound(bgmFiles[0], volCvar->GetFloat());
+	}
 }
 
 void MusicVol_ChangeCallback(IConVar *cvar, const char *pOldVal, float flOldVal)

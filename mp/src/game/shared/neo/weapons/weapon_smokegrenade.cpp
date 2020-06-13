@@ -27,31 +27,20 @@ extern ConVar sv_neo_grenade_roll_intensity;
 
 ConVar sv_neo_infinite_smoke_grenades("sv_neo_infinite_smoke_grenades", "0", FCVAR_CHEAT, "Should smoke grenades use up ammo.", true, 0.0, true, 1.0);
 
-NEO_ACTTABLE(CWeaponSmokeGrenade)
-
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponSmokeGrenade, DT_WeaponSmokeGrenade)
 
 BEGIN_NETWORK_TABLE(CWeaponSmokeGrenade, DT_WeaponSmokeGrenade)
-#ifdef CLIENT_DLL
-RecvPropBool(RECVINFO(m_bRedraw)),
-RecvPropBool(RECVINFO(m_fDrawbackFinished)),
-RecvPropInt(RECVINFO(m_AttackPaused)),
-#else
-SendPropBool(SENDINFO(m_bRedraw)),
-SendPropBool(SENDINFO(m_fDrawbackFinished)),
-SendPropInt(SENDINFO(m_AttackPaused)),
-#endif
 END_NETWORK_TABLE()
 
 #ifdef CLIENT_DLL
 BEGIN_PREDICTION_DATA(CWeaponSmokeGrenade)
-DEFINE_PRED_FIELD(m_bRedraw, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_fDrawbackFinished, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_AttackPaused, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 #endif
 
+NEO_IMPLEMENT_ACTTABLE(CWeaponSmokeGrenade)
+
 LINK_ENTITY_TO_CLASS(weapon_smokegrenade, CWeaponSmokeGrenade);
+
 PRECACHE_WEAPON_REGISTER(weapon_smokegrenade);
 
 #define RETHROW_DELAY 0.5
@@ -110,25 +99,27 @@ bool CWeaponSmokeGrenade::Reload(void)
 
 void CWeaponSmokeGrenade::SecondaryAttack(void)
 {
-	if (m_bRedraw)
+	if (m_bRedraw || !HasPrimaryAmmo())
+	{
 		return;
+	}
 
-	if (!HasPrimaryAmmo())
+	auto pPlayer = ToBasePlayer(GetOwner());
+	if (!pPlayer)
+	{
 		return;
+	}
 
-	CBasePlayer* pPlayer = ToBasePlayer(GetOwner());
+	if (m_AttackPaused != GRENADE_PAUSED_SECONDARY)
+	{
+		// Note that this is a secondary attack and prepare the grenade attack to pause.
+		m_AttackPaused = GRENADE_PAUSED_SECONDARY;
+		SendWeaponAnim(ACT_VM_PULLPIN);
 
-	if (pPlayer == NULL)
-		return;
-
-	// Note that this is a secondary attack and prepare the grenade attack to pause.
-	m_AttackPaused = GRENADE_PAUSED_SECONDARY;
-	SendWeaponAnim(ACT_VM_PULLPIN);
-
-	// Don't let weapon idle interfere in the middle of a throw!
-	m_flTimeWeaponIdle = FLT_MAX;
-	m_flNextPrimaryAttack = gpGlobals->curtime + RETHROW_DELAY;
-
+		// Don't let weapon idle interfere in the middle of a throw!
+		m_flTimeWeaponIdle = FLT_MAX;
+		m_flNextPrimaryAttack = gpGlobals->curtime + RETHROW_DELAY;
+	}
 	// If I'm now out of ammo, switch away
 	if (!HasPrimaryAmmo())
 	{
@@ -138,25 +129,27 @@ void CWeaponSmokeGrenade::SecondaryAttack(void)
 
 void CWeaponSmokeGrenade::PrimaryAttack(void)
 {
-	if (m_bRedraw)
+	if (m_bRedraw || !HasPrimaryAmmo())
 	{
 		return;
 	}
 
 	auto pPlayer = ToBasePlayer(GetOwner());
-
 	if (!pPlayer)
 	{
 		return;
 	}
 
-	// Note that this is a primary attack and prepare the grenade attack to pause.
-	m_AttackPaused = GRENADE_PAUSED_PRIMARY;
-	SendWeaponAnim(ACT_VM_PULLPIN);
+	if (m_AttackPaused != GRENADE_PAUSED_PRIMARY)
+	{
+		// Note that this is a primary attack and prepare the grenade attack to pause.
+		m_AttackPaused = GRENADE_PAUSED_PRIMARY;
+		SendWeaponAnim(ACT_VM_PULLPIN);
 
-	m_flTimeWeaponIdle = FLT_MAX;
-	m_flNextPrimaryAttack = gpGlobals->curtime + RETHROW_DELAY;
-
+		// Don't let weapon idle interfere in the middle of a throw!
+		m_flTimeWeaponIdle = FLT_MAX;
+		m_flNextPrimaryAttack = gpGlobals->curtime + RETHROW_DELAY;
+	}
 	// If I'm now out of ammo, switch away
 	if (!HasPrimaryAmmo())
 	{
@@ -247,9 +240,9 @@ void CWeaponSmokeGrenade::CheckThrowPosition(CBasePlayer* pPlayer, const Vector&
 	}
 }
 
-void NEODropPrimedSmokeGrenade(CNEO_Player* pPlayer, CBaseCombatWeapon* pGrenade)
+void NEODropPrimedSmokeGrenade(CNEO_Player* pPlayer, CBaseCombatWeapon* pSmokeGrenade)
 {
-	auto pWeaponSmoke = dynamic_cast<CWeaponSmokeGrenade*>(pGrenade);
+	auto pWeaponSmoke = dynamic_cast<CWeaponSmokeGrenade*>(pSmokeGrenade);
 
 	if (pWeaponSmoke)
 	{
@@ -273,20 +266,34 @@ void CWeaponSmokeGrenade::ThrowGrenade(CBasePlayer* pPlayer)
 	pPlayer->EyeVectors(&vForward, &vRight, NULL);
 	Vector vecSrc = vecEye + vForward * 18.0f + vRight * 8.0f;
 	CheckThrowPosition(pPlayer, vecEye, vecSrc);
-	//	vForward[0] += 0.1f;
-	vForward[2] += 0.1f;
+	vForward.z += 0.1f;
+
+	// Direction vector sampled from original NT frag spawn --> next tick.
+	// Assuming smokes behave the same.
+	const Vector vThrowDir = Vector(1, 0, 0.1226);
+	QAngle aThrowDir;
+	VectorAngles(vThrowDir, aThrowDir);
+	Assert(aThrowDir.IsValid());
 
 	Vector vecThrow;
 	pPlayer->GetVelocity(&vecThrow, NULL);
-	vecThrow += vForward * sv_neo_grenade_throw_intensity.GetFloat();
-	CBaseGrenade* pGrenade = NEOSmokegrenade_Create(vecSrc, vec3_angle, vecThrow, AngularImpulse(600, random->RandomInt(-1200, 1200), 0), pPlayer);
+	vecThrow += vForward * (pPlayer->IsAlive() ? sv_neo_grenade_throw_intensity.GetFloat() : 1.0f);
+	Assert(vecThrow.IsValid());
+
+	// Sampled angular impulses from original NT frags:
+	// (Assuming here that smokes behave the same as frags.)
+	// x: -584, 630, -1028, 967, -466, -535 (random, seems roughly in the same (-1200, 1200) range)
+	// y: 0 (constant)
+	// z: 600 (constant)
+	// This SDK original impulse line: AngularImpulse(600, random->RandomInt(-1200, 1200), 0)
+
+	CBaseGrenade* pGrenade = NEOSmokegrenade_Create(vecSrc, aThrowDir, vecThrow, AngularImpulse(random->RandomInt(-1200, 1200), 0, 600), pPlayer);
 
 	if (pGrenade)
 	{
-		if (pPlayer && pPlayer->m_lifeState != LIFE_ALIVE)
+		Assert(pPlayer);
+		if (!pPlayer->IsAlive())
 		{
-			pPlayer->GetVelocity(&vecThrow, NULL);
-
 			IPhysicsObject* pPhysicsObject = pGrenade->VPhysicsGetObject();
 			if (pPhysicsObject)
 			{
@@ -303,6 +310,12 @@ void CWeaponSmokeGrenade::ThrowGrenade(CBasePlayer* pPlayer)
 
 	// player "shoot" animation
 	pPlayer->SetAnimation(PLAYER_ATTACK1);
+
+	// If I'm now out of ammo, switch away
+	if (!HasPrimaryAmmo())
+	{
+		pPlayer->SwitchToNextBestWeapon(this);
+	}
 }
 
 void CWeaponSmokeGrenade::LobGrenade(CBasePlayer* pPlayer)
@@ -344,6 +357,12 @@ void CWeaponSmokeGrenade::LobGrenade(CBasePlayer* pPlayer)
 	pPlayer->SetAnimation(PLAYER_ATTACK1);
 
 	m_bRedraw = true;
+
+	// If I'm now out of ammo, switch away
+	if (!HasPrimaryAmmo())
+	{
+		pPlayer->SwitchToNextBestWeapon(this);
+	}
 }
 
 void CWeaponSmokeGrenade::RollGrenade(CBasePlayer* pPlayer)
@@ -404,6 +423,12 @@ void CWeaponSmokeGrenade::RollGrenade(CBasePlayer* pPlayer)
 	pPlayer->SetAnimation(PLAYER_ATTACK1);
 
 	m_bRedraw = true;
+
+	// If I'm now out of ammo, switch away
+	if (!HasPrimaryAmmo())
+	{
+		pPlayer->SwitchToNextBestWeapon(this);
+	}
 }
 
 #ifndef CLIENT_DLL

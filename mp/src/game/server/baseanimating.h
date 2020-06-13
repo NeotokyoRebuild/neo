@@ -266,7 +266,12 @@ public:
 	void				DrawRawSkeleton( matrix3x4_t boneToWorld[], int boneMask, bool noDepthTest = true, float duration = 0.0f, bool monocolor = false );
 
 	void				SetModelScale( float scale, float change_duration = 0.0f );
+
+#ifdef NEO
+	virtual float		GetModelScale() const { return m_flModelScale; }
+#else
 	float				GetModelScale() const { return m_flModelScale; }
+#endif
 
 	void				UpdateModelScale();
 	virtual	void		RefreshCollisionBounds( void );
