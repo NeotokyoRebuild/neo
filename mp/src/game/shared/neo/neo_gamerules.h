@@ -28,6 +28,9 @@ enum
 
 #define NEO_GAME_NAME "Neotokyo: Revamp"
 
+#define NEO_GAME_TYPE_TDM 0
+#define NEO_GAME_TYPE_CTG 1
+
 #ifdef CLIENT_DLL
 	#define CNEORules C_NEORules
 	#define CNEOGameRulesProxy C_NEOGameRulesProxy
@@ -107,6 +110,13 @@ public:
 #endif
 	virtual bool ShouldCollide( int collisionGroup0, int collisionGroup1 ) OVERRIDE;
 
+#ifdef GAME_DLL
+	virtual bool FPlayerCanRespawn(CBasePlayer* pPlayer) OVERRIDE;
+#endif
+
+	virtual int GetGameType(void) OVERRIDE { return NEO_GAME_TYPE_CTG; /*NEO TODO (Rain): modes*/ }
+	virtual const char* GetGameTypeName(void) OVERRIDE;
+
 	virtual void Think( void ) OVERRIDE;
 	virtual void CreateStandardEntities( void ) OVERRIDE;
 
@@ -127,6 +137,8 @@ public:
 #else
 	;
 #endif
+
+	float GetRemainingPreRoundFreezeTime(const bool clampToZero) const;
 
 	float GetMapRemainingTime();
 
@@ -161,7 +173,7 @@ public:
 #endif
 
 #ifdef GAME_DLL
-	bool IsRoundOver();
+	bool IsRoundOver() const;
 	void StartNextRound();
 
 	virtual const char* GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer) OVERRIDE;
@@ -205,6 +217,7 @@ public:
 #ifdef GAME_DLL
 private:
 	bool m_bFirstRestartIsDone;
+	bool m_bRoundHasBegun;
 	
 	CUtlVector<int> m_pGhostCaps;
 

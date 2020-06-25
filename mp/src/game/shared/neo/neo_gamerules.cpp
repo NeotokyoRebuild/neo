@@ -21,6 +21,9 @@
 	#include "player_resource.h"
 #endif
 
+ConVar mp_neo_preround_freeze_time("mp_neo_preround_freeze_time", "10", FCVAR_REPLICATED, "The pre-round freeze time, in seconds.", true, 0.0, false, 0);
+ConVar mp_neo_latespawn_max_time("mp_neo_latespawn_max_time", "15", FCVAR_REPLICATED, "How many seconds late are players still allowed to spawn.", true, 0.0, false, 0);
+
 REGISTER_GAMERULES_CLASS( CNEORules );
 
 BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
@@ -218,7 +221,7 @@ CNEORules::CNEORules()
 		}
 	}
 
-	m_bFirstRestartIsDone = false;
+	m_bFirstRestartIsDone = m_bRoundHasBegun = false;
 	ResetGhostCapPoints();
 #endif
 
@@ -429,8 +432,7 @@ void CNEORules::Think(void)
 			}
 
 			// And then announce team victory
-			// NEO TODO (Rain): figure out the win reasons for Neo
-			SetWinningTeam(captorTeam, 0, false, true, false, false);
+			SetWinningTeam(captorTeam, NEO_VICTORY_GHOST_CAPTURE, false, true, false, false);
 
 			for (int i = 1; i <= gpGlobals->maxClients; i++)
 			{
@@ -449,6 +451,25 @@ void CNEORules::Think(void)
 			}
 
 			break;
+		}
+	}
+
+	if (!m_bRoundHasBegun && !IsRoundOver())
+	{
+		if (GetGlobalTeam(TEAM_JINRAI)->GetAliveMembers() > 0 && GetGlobalTeam(TEAM_NSF)->GetAliveMembers() > 0)
+		{
+			m_bRoundHasBegun = true;
+		}
+	}
+	else
+	{
+		COMPILE_TIME_ASSERT(TEAM_JINRAI == 2 && TEAM_NSF == 3);
+		for (int team = TEAM_JINRAI; team <= TEAM_NSF; ++team)
+		{
+			if (GetGlobalTeam(team)->GetAliveMembers() == 0)
+			{
+				SetWinningTeam(GetOpposingTeam(team), NEO_VICTORY_TEAM_ELIMINATION, false, true, false, false);
+			}
 		}
 	}
 #endif
@@ -708,7 +729,7 @@ void CNEORules::StartNextRound()
 	DevMsg("New round start here!\n");
 }
 
-bool CNEORules::IsRoundOver()
+bool CNEORules::IsRoundOver() const
 {
 	// We don't want to start preparing for a new round
 	// if the game has ended for the current map.
@@ -1086,6 +1107,8 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 		return;
 	}
 
+	m_bRoundHasBegun = false;
+
 	char victoryMsg[128];
 
 	if (iWinReason == NEO_VICTORY_GHOST_CAPTURE)
@@ -1430,3 +1453,73 @@ void CNEORules::ClientDisconnected(edict_t* pClient)
 	BaseClass::ClientDisconnected(pClient);
 }
 #endif
+
+#ifdef GAME_DLL
+bool CNEORules::FPlayerCanRespawn(CBasePlayer* pPlayer)
+{
+	auto gameType = GetGameType();
+
+	if (gameType == NEO_GAME_TYPE_TDM)
+	{
+		return true;
+	}
+	// Some unknown game mode
+	else if (gameType != NEO_GAME_TYPE_CTG)
+	{
+		Assert(false);
+		return true;
+	}
+
+	// Mode is CTG
+	auto jinrai = GetGlobalTeam(TEAM_JINRAI);
+	auto nsf = GetGlobalTeam(TEAM_NSF);
+
+	if (jinrai && nsf)
+	{
+		if (jinrai->GetNumPlayers() == 0 || nsf->GetNumPlayers() == 0)
+		{
+			return true;
+		}
+	}
+	else
+	{
+		Assert(false);
+	}
+
+	// Did we make it in time to spawn for this round?
+	if (GetRemainingPreRoundFreezeTime(false) + mp_neo_latespawn_max_time.GetFloat() > 0)
+	{
+		return true;
+	}
+
+	return false;
+}
+#endif
+
+const char* CNEORules::GetGameTypeName(void)
+{
+	switch (GetGameType())
+	{
+	case NEO_GAME_TYPE_TDM:
+		return "Team Deathmatch";
+	case NEO_GAME_TYPE_CTG:
+		return "Capture the Ghost";
+	default:
+		Assert(false);
+		return "Unknown";
+	}
+}
+
+float CNEORules::GetRemainingPreRoundFreezeTime(const bool clampToZero) const
+{
+	// If there's no time left, return 0 instead of a negative value.
+	if (clampToZero)
+	{
+		return Max(0.0f, m_flNeoRoundStartTime + mp_neo_preround_freeze_time.GetFloat() - gpGlobals->curtime);
+	}
+	// Or return negative value of how many seconds late we were.
+	else
+	{
+		return m_flNeoRoundStartTime + mp_neo_preround_freeze_time.GetFloat() - gpGlobals->curtime;
+	}
+}
