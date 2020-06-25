@@ -1526,7 +1526,13 @@ void CBaseEntity::HandleShotImpactingGlass( const FireBulletsInfo_t &info,
 	behindGlassInfo.m_pAttacker = info.m_pAttacker ? info.m_pAttacker : this;
 	behindGlassInfo.m_nFlags = info.m_nFlags;
 
+#ifdef NEO
+	// NEO FIX (Rain): skip the vtable, because this is a recursive call,
+	// and otherwise we'd be trying to initiate multiple lag compensations within each other.
+	CBaseEntity::FireBullets(behindGlassInfo);
+#else
 	FireBullets( behindGlassInfo );
+#endif
 }
 
 
