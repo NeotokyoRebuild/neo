@@ -139,6 +139,8 @@ public:
 	// We do this check to avoid a player unintentionally aiming in due to holding down their aim key while an automatic wep switch occurs.
 	bool IsReadyToAimIn(void) const { return m_bReadyToAimIn; }
 
+	bool IsExplosive(void) const { return (GetNeoWepBits() & NEO_WEP_EXPLOSIVE) ? true : false; }
+
 	// Whether this weapon should fire automatically when holding down the attack.
 	virtual bool IsAutomatic(void) const
 	{

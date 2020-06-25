@@ -1439,6 +1439,38 @@ bool CNEO_Player::BecomeRagdollOnClient( const Vector &force )
 
 void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 {
+	// Drop all weapons
+	Vector vecForward, pVecThrowDir;
+	EyeVectors(&vecForward);
+	VMatrix zRot;
+	int numExplosivesDropped = 0;
+	const int maxExplosivesToDrop = 1;
+	for (int i = 0; i < MAX_WEAPONS; i++)
+	{
+		auto pWep = m_hMyWeapons[i].Get();
+		if (pWep)
+		{
+			auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWep);
+			if (pNeoWep && pNeoWep->IsExplosive())
+			{
+				if (++numExplosivesDropped > maxExplosivesToDrop)
+				{
+					continue;
+				}
+			}
+
+			// Nowhere in particular; just drop it.
+			MatrixBuildRotateZ(zRot, random->RandomFloat(-60.0f, 60.0f));
+			Vector3DMultiply(zRot, vecForward, pVecThrowDir);
+			pVecThrowDir.z = random->RandomFloat(-0.5f, 0.5f);
+			VectorNormalize(pVecThrowDir);
+			Assert(pVecThrowDir.IsValid());
+			pWep->Drop(pVecThrowDir);
+			pWep->SetRemoveable(false);
+			Weapon_Detach(pWep);
+		}
+	}
+
 	BaseClass::Event_Killed(info);
 }
 

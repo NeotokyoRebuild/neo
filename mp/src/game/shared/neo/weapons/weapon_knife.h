@@ -34,7 +34,7 @@ public:
 
 	void PrimaryAttack(void);
 	void SecondaryAttack(void) { }
-	void Drop(const Vector &vecVelocity) { Assert(false); /* knives shouldn't drop */ }
+	void Drop(const Vector &vecVelocity) { /* knives shouldn't drop */ }
 
 	float GetRange(void) const { return KNIFE_RANGE; }
 	
