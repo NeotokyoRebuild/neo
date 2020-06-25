@@ -102,6 +102,8 @@ public:
 	virtual void SetWinningTeam(int team, int iWinReason, bool bForceMapReset = true, bool bSwitchTeams = false, bool bDontAddScore = false, bool bFinal = false) OVERRIDE;
 
 	virtual void ChangeLevel(void) OVERRIDE;
+
+	virtual void ClientDisconnected(edict_t* pClient) OVERRIDE;
 #endif
 	virtual bool ShouldCollide( int collisionGroup0, int collisionGroup1 ) OVERRIDE;
 

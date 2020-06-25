@@ -111,7 +111,7 @@ public:
 
 	int GetClass() const { return m_iNeoClass; }
 
-	bool IsCarryingGhost(void);
+	bool IsCarryingGhost(void) const;
 
 	virtual void SetLocalViewAngles( const QAngle &viewAngles ) OVERRIDE
 	{

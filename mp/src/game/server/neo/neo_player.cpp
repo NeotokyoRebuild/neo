@@ -1579,7 +1579,7 @@ void CNEO_Player::PlayStepSound( Vector &vecOrigin,
 	BaseClass::PlayStepSound(vecOrigin, psurface, fvol, force);
 }
 
-bool CNEO_Player::IsCarryingGhost(void)
+bool CNEO_Player::IsCarryingGhost(void) const
 {
 #ifdef DEBUG
 	auto baseWep = GetWeapon(NEO_WEAPON_PRIMARY_SLOT);

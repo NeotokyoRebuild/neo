@@ -1410,3 +1410,27 @@ void CNEORules::DeathNotice(CBasePlayer* pVictim, const CTakeDamageInfo& info)
 	}
 }
 #endif
+
+#ifdef GAME_DLL
+void CNEORules::ClientDisconnected(edict_t* pClient)
+{
+	auto pNeoPlayer = static_cast<CNEO_Player*>(CBaseEntity::Instance(pClient));
+	Assert(pNeoPlayer);
+	if (pNeoPlayer)
+	{
+		// NEO TODO (Rain): static cast when all weps are neo weps
+		auto neoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pNeoPlayer->GetWeapon(NEO_WEAPON_PRIMARY_SLOT));
+		if (neoWep)
+		{
+			if (neoWep->IsGhost())
+			{
+				neoWep->Drop(vec3_origin);
+				neoWep->SetRemoveable(false);
+				pNeoPlayer->Weapon_Detach(neoWep);
+			}
+		}
+	}
+
+	BaseClass::ClientDisconnected(pClient);
+}
+#endif

@@ -89,7 +89,7 @@ public:
 
 	virtual bool	CanHearAndReadChatFrom(CBasePlayer *pPlayer) OVERRIDE;
 
-	bool IsCarryingGhost(void);
+	bool IsCarryingGhost(void) const;
 	bool IsAllowedToDrop(CBaseCombatWeapon *pWep);
 
 	void ZeroFriendlyPlayerLocArray(void);

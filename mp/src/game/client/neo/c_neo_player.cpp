@@ -1243,7 +1243,7 @@ void C_NEO_Player::Weapon_SetZoom(const bool bZoomIn)
 	m_bInAim = bZoomIn;
 }
 
-bool C_NEO_Player::IsCarryingGhost(void)
+bool C_NEO_Player::IsCarryingGhost(void) const
 {
 #ifdef DEBUG
 	auto baseWep = GetWeapon(NEO_WEAPON_PRIMARY_SLOT);
