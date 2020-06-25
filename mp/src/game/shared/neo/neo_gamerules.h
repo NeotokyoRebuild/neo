@@ -30,6 +30,7 @@ enum
 
 #define NEO_GAME_TYPE_TDM 0
 #define NEO_GAME_TYPE_CTG 1
+#define NEO_GAME_TYPE_VIP 2
 
 #ifdef CLIENT_DLL
 	#define CNEORules C_NEORules
