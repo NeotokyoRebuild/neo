@@ -43,3 +43,31 @@ bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep)
 
 	return !(pWep->GetNeoWepBits() & forbiddenZooms);
 }
+
+CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, int neoWepBits)
+{
+	int nonNeoWepFoundAtIndex = -1;
+	for (int i = 0; i < MAX_WEAPONS; i++)
+	{
+		auto pWep = dynamic_cast<CNEOBaseCombatWeapon*>(player->GetWeapon(i));
+		if (!pWep)
+		{
+			nonNeoWepFoundAtIndex = i;
+			continue;
+		}
+
+		if (pWep->GetNeoWepBits() & neoWepBits)
+		{
+			return pWep;
+		}
+	}
+
+	// NEO HACK (Rain): If wanted a knife, assume it's the non-CNEOBaseCombatWeapon one we found.
+	// Should clean this up once all guns inherit from CNEOBaseCombatWeapon.
+	if ((neoWepBits & NEO_WEP_KNIFE) && nonNeoWepFoundAtIndex != -1)
+	{
+		return player->GetWeapon(nonNeoWepFoundAtIndex);
+	}
+
+	return NULL;
+}

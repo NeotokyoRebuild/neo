@@ -184,35 +184,7 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 			continue;
 		}
 
-		auto weapon = dynamic_cast<CNEOBaseCombatWeapon*>(player->Weapon_GetSlot(NEO_WEAPON_PRIMARY_SLOT));
-		// NEO FIXME (Rain): we're dynamic casting because not all NT weapons inherit from a neo base wep class yet!
-		// Should fix this and switch to the approach below, instead.
-#if(0)
-		// Do we have a weapon?
-#ifdef DEBUG
-		auto baseWeapon = player->Weapon_GetSlot(NEO_WEAPON_PRIMARY_SLOT);
-		if (!baseWeapon)
-		{
-			continue;
-		}
-		// Make sure we're casting appropriately
-		auto weapon = dynamic_cast<CNEOBaseCombatWeapon*>(player->Weapon_GetSlot(NEO_WEAPON_PRIMARY_SLOT));
-		if (!weapon)
-		{
-			Assert(false);
-		}
-#else
-		auto weapon = static_cast<CNEOBaseCombatWeapon*>(player->Weapon_GetSlot(NEO_WEAPON_PRIMARY_SLOT));
-#endif
-#endif
-
-		if (!weapon)
-		{
-			continue;
-		}
-
-		// Is it a ghost?
-		if (!weapon->IsGhost())
+		if (!player->IsCarryingGhost())
 		{
 			continue;
 		}

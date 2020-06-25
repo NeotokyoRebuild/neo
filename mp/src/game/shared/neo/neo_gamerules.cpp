@@ -1418,16 +1418,12 @@ void CNEORules::ClientDisconnected(edict_t* pClient)
 	Assert(pNeoPlayer);
 	if (pNeoPlayer)
 	{
-		// NEO TODO (Rain): static cast when all weps are neo weps
-		auto neoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pNeoPlayer->GetWeapon(NEO_WEAPON_PRIMARY_SLOT));
-		if (neoWep)
+		auto ghost = GetNeoWepWithBits(pNeoPlayer, NEO_WEP_GHOST);
+		if (ghost)
 		{
-			if (neoWep->IsGhost())
-			{
-				neoWep->Drop(vec3_origin);
-				neoWep->SetRemoveable(false);
-				pNeoPlayer->Weapon_Detach(neoWep);
-			}
+			ghost->Drop(vec3_origin);
+			ghost->SetRemoveable(false);
+			pNeoPlayer->Weapon_Detach(ghost);
 		}
 	}
 
