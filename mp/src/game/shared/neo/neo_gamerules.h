@@ -83,6 +83,14 @@ class CNEO_Player;
 class C_NEO_Player;
 #endif
 
+enum NeoRoundStatus {
+	Idle = 0,
+	//Warmup,
+	PreRoundFreeze,
+	RoundLive,
+	PostRound,
+};
+
 class CNEORules : public CHL2MPRules, public CGameEventListener
 {
 public:
@@ -182,6 +190,8 @@ public:
 	virtual const char* GetChatLocation(bool bTeamOnly, CBasePlayer* pPlayer) OVERRIDE { return NULL; } // unimplemented
 #endif
 
+	void SetRoundStatus(NeoRoundStatus status);
+
 	// This is the supposed encrypt key on NT, although it has its issues.
 	// See https://steamcommunity.com/groups/ANPA/discussions/0/1482109512299590948/
 	// (and NT Discord) for discussions.
@@ -215,19 +225,15 @@ public:
 		return GetOpposingTeam(player->GetTeamNumber());
 	}
 
-#ifdef GAME_DLL
 private:
-	bool m_bFirstRestartIsDone;
-	bool m_bRoundHasBegun;
-	
+#ifdef GAME_DLL
 	CUtlVector<int> m_pGhostCaps;
+#endif
+	CNetworkVar(int, m_nRoundStatus); // NEO TODO (Rain): probably don't need to network this
+	CNetworkVar(int, m_iRoundNumber);
 
 	CNetworkVar(float, m_flNeoRoundStartTime);
 	CNetworkVar(float, m_flNeoNextRoundStartTime);
-#else
-	float m_flNeoRoundStartTime;
-	float m_flNeoNextRoundStartTime;
-#endif
 };
 
 inline CNEORules *NEORules()

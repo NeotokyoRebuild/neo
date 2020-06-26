@@ -79,6 +79,18 @@ public:
 		}
 	}
 
+	void AddNeoFlag(int flags)
+	{
+		m_fNeoFlags.GetForModify() = (m_fNeoFlags | flags);
+	}
+
+	void RemoveNeoFlag(int flags)
+	{
+		m_fNeoFlags.GetForModify() = (m_fNeoFlags & ~flags);
+	}
+
+	int GetNeoFlags() const { return m_fNeoFlags; }
+
 	void GiveLoadoutWeapon(void);
 
 	void SetPlayerTeamModel(void);
@@ -181,6 +193,10 @@ public:
 	CNetworkVar(int, m_nVisionLastTick);
 
 	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
+
+	CNetworkVar(int, m_fNeoFlags);
+
+	bool m_bIsPendingSpawnForThisRound;
 
 private:
 	bool m_bFirstDeathTick;

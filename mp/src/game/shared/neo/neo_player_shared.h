@@ -152,6 +152,11 @@ enum NeoClass {
 	NEO_CLASS_ENUM_COUNT
 };
 
+// Implemented by CNEOPlayer::m_fNeoFlags.
+// Rolling our own because Source FL_ flags already reserve all 32 bits,
+// and extending the type would require a larger refactor.
+#define NEO_FL_FREEZETIME (1 << 1) // Freeze player movement, but allow looking around.
+
 #if defined(CLIENT_DLL) && !defined(CNEOBaseCombatWeapon)
 #define CNEOBaseCombatWeapon C_NEOBaseCombatWeapon
 #endif

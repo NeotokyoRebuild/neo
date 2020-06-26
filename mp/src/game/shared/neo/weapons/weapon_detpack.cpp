@@ -117,6 +117,11 @@ bool CWeaponDetpack::Holster(CBaseCombatWeapon* pSwitchingTo)
 
 void CWeaponDetpack::PrimaryAttack(void)
 {
+	if (ShootingIsPrevented())
+	{
+		return;
+	}
+
 	if (!GetOwner())
 	{
 		Assert(false);

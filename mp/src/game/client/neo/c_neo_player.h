@@ -73,6 +73,18 @@ public:
 
 	void Lean(void);
 
+	void AddNeoFlag(int flags)
+	{
+		m_fNeoFlags = (m_fNeoFlags | flags);
+	}
+
+	void RemoveNeoFlag(int flags)
+	{
+		m_fNeoFlags = (m_fNeoFlags & ~flags);
+	}
+
+	int GetNeoFlags() const { return m_fNeoFlags; }
+
 	virtual const Vector GetPlayerMaxs(void) const;
 
 	// Implementing in header in hopes of compiler picking up the inlined base method
@@ -178,6 +190,8 @@ public:
 
 	CNetworkVar(int, m_iNeoClass);
 	CNetworkVar(int, m_iNeoSkin);
+
+	CNetworkVar(int, m_fNeoFlags);
 
 protected:
 	bool m_bIsClassMenuOpen, m_bIsTeamMenuOpen;

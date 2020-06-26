@@ -57,6 +57,10 @@
 // NVNT haptics system interface
 #include "haptics/ihaptics.h"
 
+#ifdef NEO
+#include "c_neo_player.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -2317,7 +2321,12 @@ void C_BasePlayer::PhysicsSimulate( void )
 	ctx->needsprocessing = false;
 
 	// Handle FL_FROZEN.
+#ifdef NEO
+	if ((GetFlags() & FL_FROZEN) ||
+		(static_cast<C_NEO_Player*>(this)->GetNeoFlags() & NEO_FL_FREEZETIME))
+#else
 	if(GetFlags() & FL_FROZEN)
+#endif
 	{
 		ctx->cmd.forwardmove = 0;
 		ctx->cmd.sidemove = 0;

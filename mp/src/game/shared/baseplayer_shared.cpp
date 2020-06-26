@@ -51,6 +51,14 @@
 #include "sixense/in_sixense.h"
 #endif
 
+#ifdef NEO
+#ifdef GAME_DLL
+#include "neo_player.h"
+#else
+#include "c_neo_player.h"
+#endif
+#endif
+
 // NVNT haptic utils
 #include "haptics/haptic_utils.h"
 // memdbgon must be the last include file in a .cpp file!!!
@@ -536,6 +544,11 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 
 	if ( GetFlags() & (FL_FROZEN|FL_ATCONTROLS))
 		return;
+	
+#ifdef NEO
+	if (static_cast<CNEO_Player*>(this)->GetNeoFlags() & NEO_FL_FREEZETIME)
+		return;
+#endif
 
 	if ( GetMoveType() == MOVETYPE_NOCLIP || GetMoveType() == MOVETYPE_OBSERVER )
 		return;

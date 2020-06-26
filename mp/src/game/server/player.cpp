@@ -82,6 +82,10 @@
 #include "weapon_physcannon.h"
 #endif
 
+#ifdef NEO
+#include "neo_player.h"
+#endif
+
 ConVar autoaim_max_dist( "autoaim_max_dist", "2160" ); // 2160 = 180 feet
 ConVar autoaim_max_deflect( "autoaim_max_deflect", "0.99" );
 
@@ -3668,15 +3672,27 @@ void CBasePlayer::PlayerRunCommand(CUserCmd *ucmd, IMoveHelper *moveHelper)
 
 	// Handle FL_FROZEN.
 	// Prevent player moving for some seconds after New Game, so that they pick up everything
-	if( GetFlags() & FL_FROZEN || 
-		(developer.GetInt() == 0 && gpGlobals->eLoadType == MapLoad_NewGame && gpGlobals->curtime < 3.0 ) )
+	const bool originalCheck = (GetFlags() & FL_FROZEN ||
+		(developer.GetInt() == 0 && gpGlobals->eLoadType == MapLoad_NewGame && gpGlobals->curtime < 3.0));
+
+#ifdef NEO
+	if (originalCheck || static_cast<CNEO_Player*>(this)->GetNeoFlags() & NEO_FL_FREEZETIME)
+#else
+	if (originalCheck)
+#endif
 	{
 		ucmd->forwardmove = 0;
 		ucmd->sidemove = 0;
 		ucmd->upmove = 0;
 		ucmd->buttons = 0;
 		ucmd->impulse = 0;
-		VectorCopy ( pl.v_angle, ucmd->viewangles );
+#ifdef NEO
+		// Want to be able to turn around whilst pre-round freeze time happens.
+		if (originalCheck)
+#endif
+		{
+			VectorCopy(pl.v_angle, ucmd->viewangles);
+		}
 	}
 	else
 	{

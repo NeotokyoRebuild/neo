@@ -63,6 +63,8 @@ SendPropString(SENDINFO(m_pszTestMessage)),
 SendPropVector(SENDINFO(m_vecGhostMarkerPos), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT),
 
 SendPropArray(SendPropVector(SENDINFO_ARRAY(m_rvFriendlyPlayerPositions), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rvFriendlyPlayerPositions),
+
+SendPropInt(SENDINFO(m_fNeoFlags)),
 END_SEND_TABLE()
 
 BEGIN_DATADESC(CNEO_Player)
@@ -90,6 +92,8 @@ DEFINE_FIELD(m_pszTestMessage, FIELD_STRING),
 DEFINE_FIELD(m_vecGhostMarkerPos, FIELD_VECTOR),
 
 DEFINE_FIELD(m_rvFriendlyPlayerPositions, FIELD_CUSTOM),
+
+DEFINE_FIELD(m_fNeoFlags, FIELD_INTEGER),
 END_DATADESC()
 
 CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
@@ -341,8 +345,11 @@ CNEO_Player::CNEO_Player()
 	m_bFirstDeathTick = true;
 	m_bPreviouslyReloading = false;
 	m_bLastTickInThermOpticCamo = false;
+	m_bIsPendingSpawnForThisRound = false;
 
 	m_flNextTeamChangeTime = gpGlobals->curtime + 0.5f;
+
+	m_fNeoFlags = 0;
 }
 
 CNEO_Player::~CNEO_Player( void )
@@ -422,6 +429,7 @@ void CNEO_Player::Spawn(void)
 	}
 
 	BaseClass::Spawn();
+	m_bIsPendingSpawnForThisRound = false;
 
 	m_bLastTickInThermOpticCamo = m_bInThermOpticCamo = false;
 	m_flCamoAuxLastTime = 0;
@@ -1445,7 +1453,7 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 	VMatrix zRot;
 	int numExplosivesDropped = 0;
 	const int maxExplosivesToDrop = 1;
-	for (int i = 0; i < MAX_WEAPONS; i++)
+	for (int i = 0; i < MAX_WEAPONS; ++i)
 	{
 		auto pWep = m_hMyWeapons[i].Get();
 		if (pWep)

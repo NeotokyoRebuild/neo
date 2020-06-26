@@ -48,11 +48,6 @@ bool CWeaponMPN::Deploy(void)
 	return BaseClass::Deploy();
 }
 
-void CWeaponMPN::PrimaryAttack()
-{
-	BaseClass::PrimaryAttack();
-}
-
 void CWeaponMPN::UpdatePenaltyTime()
 {
 	auto owner = ToBasePlayer(GetOwner());

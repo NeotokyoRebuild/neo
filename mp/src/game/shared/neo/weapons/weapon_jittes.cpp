@@ -48,11 +48,6 @@ bool CWeaponJitteS::Deploy(void)
 	return BaseClass::Deploy();
 }
 
-void CWeaponJitteS::PrimaryAttack()
-{
-	BaseClass::PrimaryAttack();
-}
-
 void CWeaponJitteS::UpdatePenaltyTime()
 {
 	auto owner = ToBasePlayer(GetOwner());

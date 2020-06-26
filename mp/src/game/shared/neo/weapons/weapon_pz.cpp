@@ -48,11 +48,6 @@ bool CWeaponPZ::Deploy(void)
 	return BaseClass::Deploy();
 }
 
-void CWeaponPZ::PrimaryAttack()
-{
-	BaseClass::PrimaryAttack();
-}
-
 void CWeaponPZ::UpdatePenaltyTime()
 {
 	auto owner = ToBasePlayer(GetOwner());

@@ -38,11 +38,6 @@ void CWeaponM41S::DryFire()
 	m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
 }
 
-void CWeaponM41S::PrimaryAttack()
-{
-	BaseClass::PrimaryAttack();
-}
-
 void CWeaponM41S::UpdatePenaltyTime()
 {
 	auto owner = ToBasePlayer(GetOwner());
