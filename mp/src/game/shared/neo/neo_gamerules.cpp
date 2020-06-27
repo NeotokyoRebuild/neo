@@ -1203,6 +1203,7 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 
 	CRecipientFilter soundFilter;
 	soundFilter.AddAllPlayers();
+	soundFilter.MakeReliable();
 
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
