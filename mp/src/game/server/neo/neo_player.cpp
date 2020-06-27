@@ -1888,8 +1888,9 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	const bool justJoined = (GetTeamNumber() == TEAM_UNASSIGNED);
 
 	// Player bots should initially join a player team.
-	// Note that we can't do a ->IsBot check here, because it's too early.
-	// Hence using the g_NextClientIsFakeClient workaround.
+	// Note that we can't do a ->IsBot check here, because the bot has not
+	// received its fakeclient flags yet at this point. Hence using the
+	// g_NextClientIsFakeClient workaround.
 	if (justJoined && g_NextClientIsFakeClient && !IsHLTV())
 	{
 		Assert(gpGlobals->curtime >= m_flNextTeamChangeTime);

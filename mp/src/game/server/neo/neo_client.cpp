@@ -137,8 +137,8 @@ CBaseEntity* FindEntity( edict_t *pEdict, char *classname)
 void Precache_HL2MP( void )
 {
 	CBaseEntity::PrecacheModel("models/player.mdl");
-	CBaseEntity::PrecacheModel( "models/gibs/agibs.mdl" );
-	CBaseEntity::PrecacheModel ("models/weapons/v_hands.mdl");
+	CBaseEntity::PrecacheModel("models/gibs/agibs.mdl");
+	CBaseEntity::PrecacheModel("models/weapons/v_hands.mdl");
 
 	CBaseEntity::PrecacheScriptSound( "HUDQuickInfo.LowAmmo" );
 	CBaseEntity::PrecacheScriptSound( "HUDQuickInfo.LowHealth" );
