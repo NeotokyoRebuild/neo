@@ -4,6 +4,129 @@
 #pragma once
 #endif
 
+#if(0)
+#ifdef _WIN32
+// We need some Win api functions as fallbacks for some engine filesystem calls
+// that aren't working as expected (namely file writing), so temporarily undeffing some engine overrides.
+#undef GetCommandLine
+#undef ReadConsoleInput
+#undef RegCreateKey
+#undef RegCreateKeyEx
+#undef RegOpenKey
+#undef RegOpenKeyEx
+#undef RegQueryValue
+#undef RegQueryValueEx
+#undef RegSetValue
+#undef RegSetValueEx
+#undef INVALID_HANDLE_VALUE
+// Windows includes...
+#include "windows.h"
+#include "winbase.h"
+// ...and then undo the damage. Based on protected_things.h and other stubs.
+#if defined( PROTECTED_THINGS_ENABLE ) && !defined( _X360 ) && !defined(DISABLE_PROTECTED_THINGS)
+#if defined( CreateEvent )
+#undef CreateEvent
+#endif
+#if defined( GetTickCount )
+#undef GetTickCount
+#endif
+#define GetTickCount		GetTickCount__USE_VCR_MODE
+#if defined( timeGetTime )
+#undef timeGetTime
+#endif
+#define timeGetTime			timeGetTime__USE_VCR_MODE
+#if defined( clock )
+#undef clock
+#endif
+#define time				time__USE_VCR_MODE
+#if defined( recvfrom )
+#undef recvfrom
+#endif
+#define recvfrom			recvfrom__USE_VCR_MODE
+#if defined( GetCursorPos )
+#undef GetCursorPos
+#endif
+#define GetCursorPos		GetCursorPos__USE_VCR_MODE
+#if defined( ScreenToClient )
+#undef ScreenToClient
+#endif
+#define ScreenToClient		ScreenToClient__USE_VCR_MODE
+#if defined( GetCommandLine )
+#undef GetCommandLine
+#endif
+#define GetCommandLine		GetCommandLine__USE_VCR_MODE
+#if defined( RegOpenKeyEx )
+#undef RegOpenKeyEx
+#endif
+#define RegOpenKeyEx		RegOpenKeyEx__USE_VCR_MODE
+#if defined( RegOpenKey )
+#undef RegOpenKey
+#endif
+#define RegOpenKey			RegOpenKey__USE_VCR_MODE
+#if defined( RegSetValueEx )
+#undef RegSetValueEx
+#endif
+#define RegSetValueEx		RegSetValueEx__USE_VCR_MODE
+#if defined( RegSetValue )
+#undef RegSetValue
+#endif
+#define RegSetValue			RegSetValue__USE_VCR_MODE
+#if defined( RegQueryValueEx )
+#undef RegQueryValueEx
+#endif
+#define RegQueryValueEx		RegQueryValueEx__USE_VCR_MODE
+#if defined( RegQueryValue )
+#undef RegQueryValue
+#endif
+#define RegQueryValue		RegQueryValue__USE_VCR_MODE
+#if defined( RegCreateKeyEx )
+#undef RegCreateKeyEx
+#endif
+#define RegCreateKeyEx		RegCreateKeyEx__USE_VCR_MODE
+#if defined( RegCreateKey )
+#undef RegCreateKey
+#endif
+#define RegCreateKey		RegCreateKey__USE_VCR_MODE
+#if defined( RegCloseKey )
+#undef RegCloseKey
+#endif
+#define RegCloseKey			RegCloseKey__USE_VCR_MODE
+#if defined( GetNumberOfConsoleInputEvents )
+#undef GetNumberOfConsoleInputEvents
+#endif
+#define GetNumberOfConsoleInputEvents	GetNumberOfConsoleInputEvents__USE_VCR_MODE
+#if defined( ReadConsoleInput )
+#undef ReadConsoleInput
+#endif
+#define ReadConsoleInput	ReadConsoleInput__USE_VCR_MODE
+#if defined( GetAsyncKeyState )
+#undef GetAsyncKeyState
+#endif
+#define GetAsyncKeyState	GetAsyncKeyState__USE_VCR_MODE
+#if defined( GetKeyState )
+#undef GetKeyState
+#endif
+#define GetKeyState			GetKeyState__USE_VCR_MODE
+#if defined( CreateThread )
+#undef CreateThread
+#endif
+#define CreateThread		CreateThread__USE_VCR_MODE
+#if defined( WaitForSingleObject )
+#undef WaitForSingleObject
+#endif
+#define WaitForSingleObject	WaitForSingleObject__USE_VCR_MODE
+#if defined( EnterCriticalSection )
+#undef EnterCriticalSection
+#endif
+#define EnterCriticalSection EnterCriticalSection__USE_VCR_MODE
+#ifdef INVALID_HANDLE_VALUE
+#undef INVALID_HANDLE_VALUE
+#define INVALID_HANDLE_VALUE ((HANDLE)-1)
+#endif
+#endif
+#endif // _WIN32
+#endif
+
 #include "tier1.h"
 #include "mathlib/vmatrix.h"
 #include "shareddefs.h"
@@ -22,6 +145,8 @@
 
 // This needs to start with a -
 #define NEO_PATH_PARM_CMD "-neopath"
+
+#define NEO_MOUNT_PATHID "GAME"
 
 #ifdef LINUX
 typedef struct stat StatStruct;
@@ -168,7 +293,7 @@ static inline void FixCaseSensitivePathsForLinux(const char *neoPath)
         {
             if (DirExists(szResultBuffer))
             {
-                numSuccesses++;
+                ++numSuccesses;
             }
             else
             {
@@ -185,7 +310,7 @@ to partially lowercase:\n\"%s\" --> \"%s\"\n",
         if (rename(szOriginalCaseBuffer, szResultBuffer) == 0)
         {
             Msg("%s: Path renaming was successful; result: \"%s\"\n", szThisCaller, szResultBuffer);
-            numSuccesses++;
+            ++numSuccesses;
         }
         else
         {
@@ -206,6 +331,178 @@ See the error lines above for more info.\n", szThisCaller);
     }
 }
 #endif
+
+// Either modify Neotokyo assets upon mount to fix incompatibilities,
+// or restore those modifications by setting the restoreInstead boolean.
+// Will warn on failed initial modification, and error out if the restoration
+// of assets failed for whatever reason.
+void FixIncompatibleNeoAssets(IFileSystem* filesystem, const char* neoPath, bool restoreInstead)
+{
+	return;
+#if(0)
+	const char* szThisCaller = "FixIncompatibleNeoAssets";
+
+	Assert(neoPath != NULL && strlen(neoPath) > 0);
+
+	if (!filesystem)
+	{
+		Assert(false);
+		Error("%s: filesystem was NULL\n", szThisCaller);
+	}
+
+	if (restoreInstead)
+	{
+		Msg("%s: Restoring modified Neotokyo assets...\n", szThisCaller);
+	}
+	else
+	{
+		Msg("%s: Checking for Neotokyo assets compatibility...\n", szThisCaller);
+	}
+
+	const char* filesToFix[] = {
+		"materials/models/props_vehicles/rabbitfrog_engine_anim.vmt",
+		"materials/models/props_vehicles/rabbitfrog_engine_anim2.vmt",
+		"materials/models/props_vehicles/rabbitfrog_engine_anim3.vmt",
+	};
+
+	int numSuccesses = 0;
+	for (int i = 0; i < ARRAYSIZE(filesToFix); ++i)
+	{
+		if (!filesystem->FileExists(filesToFix[i]))
+		{
+			Warning("%s: File doesn't exist: %s\n", szThisCaller, filesToFix[i]);
+			continue;
+		}
+
+		CUtlBuffer fileBuffer(0, 365 + 1, CUtlBuffer::TEXT_BUFFER | CUtlBuffer::CONTAINS_CRLF);
+		if (!filesystem->ReadFile(filesToFix[i], NEO_MOUNT_PATHID, fileBuffer))
+		{
+			Warning("%s: Failed to read file: %s\n", szThisCaller, filesToFix[i]);
+			continue;
+		}
+
+		const char* fixFrom = (restoreInstead ? "VertexLitGeneric" : "UnlitGeneric");
+		const char* fixTo = (restoreInstead ? "UnlitGeneric" : "VertexLitGeneric");
+
+		CUtlString contents = fileBuffer.String();
+		// Shader has already been replaced.
+		if (V_stristr(contents, fixTo) != 0)
+		{
+			++numSuccesses;
+			continue;
+		}
+		else if (V_stristr(contents, fixFrom) != 0)
+		{
+			contents = contents.Replace(fixFrom, fixTo);
+		}
+		else
+		{
+			Warning("%s: File had unexpected contents: %s\n", szThisCaller, filesToFix[i]);
+			continue;
+		}
+
+		const unsigned long bytesToWrite = contents.Length();
+		fileBuffer.Purge();
+		fileBuffer.Put(contents, bytesToWrite);
+
+		if (!filesystem->IsFileWritable(filesToFix[i], NEO_MOUNT_PATHID))
+		{
+			Warning("%s: File is not writeable: %s\n", szThisCaller, filesToFix[i]);
+			continue;
+		}
+		else if (!filesystem->WriteFile(filesToFix[i], NEO_MOUNT_PATHID, fileBuffer))
+		{
+#ifdef LINUX
+			// NEO TODO (Rain): implement system write
+#error Unimplemented
+#else
+			CUtlString fullPath = neoPath;
+			fullPath.FixSlashes();
+			fullPath = fullPath.Replace(":\\\\", ":\\");
+			fullPath.StripTrailingSlash();
+			fullPath.Append("/");
+			fullPath.Append(filesToFix[i]);
+			fullPath.FixSlashes();
+
+			HANDLE hFile = CreateFile(fullPath.String(), GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+			if (hFile == INVALID_HANDLE_VALUE)
+			{
+				Warning("%s: Failed to overwrite file: %s\n", szThisCaller, filesToFix[i]);
+				continue;
+			}
+
+			DWORD numBytesWritten = 0;
+			bool writeSuccess = static_cast<bool>(WriteFile(hFile, fileBuffer.String(), bytesToWrite, &numBytesWritten, NULL));
+
+			if (!writeSuccess)
+			{
+				CloseHandle(hFile);
+				Error("%s: Win32 API file overwrite failed: %s\n", szThisCaller, filesToFix[i]);
+			}
+			else if (bytesToWrite != numBytesWritten)
+			{
+				Warning("%s: Expected to write %d bytes but wrote %d bytes for file: %s\n", szThisCaller,
+					bytesToWrite, numBytesWritten, filesToFix[i]);
+			}
+			else
+			{
+				++numSuccesses;
+			}
+			CloseHandle(hFile);
+#endif
+		}
+		else
+		{
+			++numSuccesses;
+		}
+	}
+
+	const bool allFilesOk = (numSuccesses == ARRAYSIZE(filesToFix));
+
+	if (restoreInstead)
+	{
+		if (allFilesOk)
+		{
+			Msg("%s: All Neotokyo assets restore OK.\n", szThisCaller);
+		}
+		else
+		{
+			// Something went wrong with files restore on game shutdown.
+			// Error out to make sure that user sees this message.
+			Error("%s: Failed to restore some temporarily modified Neotokyo assets!\n\n\
+Please go to original Neotokyo game properties on Steam Library, and verify files integrity \
+to ensure there aren't any corrupt files.\n\nIf you don't know why this error occurred, \
+and/or think it's a bug, please report it.\n", szThisCaller);
+		}
+	}
+	else
+	{
+		if (allFilesOk)
+		{
+			Msg("%s: All OK; scanned Neotokyo assets are compatible.\n", szThisCaller);
+		}
+		else
+		{
+			Warning("%s: Failed to fix some incompatible assets; some Neotokyo maps may not load correctly!\n", szThisCaller);
+		}
+	}
+#endif
+}
+
+// Helper override when you don't have a constructed neoPath at hand.
+void FixIncompatibleNeoAssets(IFileSystem* filesystem, bool restoreInstead)
+{
+	const char* szThisCaller = "FixIncompatibleNeoAssets";
+	char neoPath[MAX_PATH];
+	if (!IsNeoGameInfoPathOK(neoPath, sizeof(neoPath)))
+	{
+		Error("%s: Failed to get Neo path\n", szThisCaller);
+	}
+	else
+	{
+		FixIncompatibleNeoAssets(filesystem, neoPath, restoreInstead);
+	}
+}
 
 // Purpose: Find and mount files for the original Steam release of Neotokyo.
 //
@@ -232,7 +529,6 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 	const char *thisCaller = "FindOriginalNeotokyoAssets";
 	char neoPath[MAX_PATH];
 	const AppId_t neoAppId = 244630;
-	const char *pathID = "GAME";
 	const SearchPathAdd_t addType = PATH_ADD_TO_HEAD;
 
 	bool originalNtPathOk = false;
@@ -371,7 +667,7 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 		{
 			V_AppendSlash(neoPath, sizeof(neoPath));
 
-			filesystem->AddSearchPath(neoPath, pathID, addType);
+			filesystem->AddSearchPath(neoPath, NEO_MOUNT_PATHID, addType);
 
 			if (callerIsClientDll)
 			{
@@ -392,8 +688,6 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 				Warning("%s: Failed to mount Neotokyo AppID (%i)\n", thisCaller, neoAppId);
 				return false;
 			}
-
-            FixCaseSensitivePathsForLinux(neoPath);
 		}
 		else
 		{
@@ -401,7 +695,7 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 			return false;
 		}
 #else // If Windows
-		filesystem->AddSearchPath(neoPath, pathID, addType);
+		filesystem->AddSearchPath(neoPath, NEO_MOUNT_PATHID, addType);
 
 		if (callerIsClientDll)
 		{
@@ -423,6 +717,10 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 			return false;
 		}
 #endif
+#ifdef LINUX
+		FixCaseSensitivePathsForLinux(neoPath);
+#endif
+		FixIncompatibleNeoAssets(filesystem, neoPath, false);
 	}
 	else // originalNtPathOk
 	{
