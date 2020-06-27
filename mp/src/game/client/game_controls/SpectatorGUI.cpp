@@ -557,9 +557,9 @@ void CSpectatorGUI::OnThink()
 		Assert(nsfScoreValueLabel);
 
 		char scoreBuff[3];
-		itoa(Max(0, Min(99, GetGlobalTeam(TEAM_JINRAI)->Get_Score())), scoreBuff, 10);
+		itoa(Max(0, Min(99, GetGlobalTeam(TEAM_JINRAI)->GetRoundsWon())), scoreBuff, 10);
 		jinScoreValueLabel->SetText(scoreBuff);
-		itoa(Max(0, Min(99, GetGlobalTeam(TEAM_NSF)->Get_Score())), scoreBuff, 10);
+		itoa(Max(0, Min(99, GetGlobalTeam(TEAM_NSF)->GetRoundsWon())), scoreBuff, 10);
 		nsfScoreValueLabel->SetText(scoreBuff);
 	}
 }

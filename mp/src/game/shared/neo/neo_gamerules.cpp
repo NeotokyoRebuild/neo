@@ -92,8 +92,8 @@ static NEOViewVectors g_NEOViewVectors(
 
 	BEGIN_SEND_TABLE(CNEOGameRulesProxy, DT_NEOGameRulesProxy)
 		SendPropDataTable("neo_gamerules_data", 0,
-		&REFERENCE_SEND_TABLE(DT_NEORules),
-		SendProxy_NEORules)
+			&REFERENCE_SEND_TABLE(DT_NEORules),
+			SendProxy_NEORules)
 		END_SEND_TABLE()
 #endif
 
@@ -109,6 +109,8 @@ static NEOViewVectors g_NEOViewVectors(
 		// convert a velocity in ft/sec and a mass in grains to an impulse in kg in/s
 #define BULLET_IMPULSE(grains, ftpersec)	((ftpersec)*12*BULLET_MASS_GRAINS_TO_KG(grains)*BULLET_IMPULSE_EXAGGERATION)
 
+
+ConVar neo_score_limit("neo_score_limit", "7", FCVAR_REPLICATED, "Neo score limit.", true, 0.0f, true, 99.0f);
 
 ConVar neo_round_timelimit("neo_round_timelimit", "2.75", FCVAR_REPLICATED, "Neo round timelimit, in minutes.",
 	true, 0.0f, false, 600.0f);
@@ -392,6 +394,20 @@ void CNEORules::Think(void)
 		}
 
 		return;
+	}
+
+	if (neo_score_limit.GetInt() > 0)
+	{
+		if (GetGlobalTeam(TEAM_JINRAI)->GetRoundsWon() >= neo_score_limit.GetInt())
+		{
+			UTIL_CenterPrintAll("JINRAI WINS THE MATCH\n");
+			GoToIntermission();
+		}
+		else if (GetGlobalTeam(TEAM_NSF)->GetRoundsWon() >= neo_score_limit.GetInt())
+		{
+			UTIL_CenterPrintAll("NSF WINS THE MATCH\n");
+			GoToIntermission();
+		}
 	}
 #endif
 
@@ -1070,16 +1086,12 @@ void CNEORules::RestartGame()
 
 	CTeam *pJinrai = GetGlobalTeam(TEAM_JINRAI);
 	CTeam *pNSF = GetGlobalTeam(TEAM_NSF);
+	Assert(pJinrai && pNSF);
 
-	if (pJinrai)
-	{
-		pJinrai->SetScore(0);
-	}
-
-	if (pNSF)
-	{
-		pNSF->SetScore(0);
-	}
+	pJinrai->SetScore(0);
+	pJinrai->SetRoundsWon(0);
+	pNSF->SetScore(0);
+	pNSF->SetRoundsWon(0);
 
 	m_flIntermissionEndTime = 0;
 	m_flRestartGameTime = 0.0;
@@ -1230,7 +1242,7 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 		if (!bDontAddScore)
 		{
 			auto winningTeam = GetGlobalTeam(team);
-			winningTeam->AddScore(1);
+			winningTeam->IncrementRoundsWon();
 		}
 	}
 }
