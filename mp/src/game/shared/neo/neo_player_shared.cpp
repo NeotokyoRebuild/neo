@@ -71,3 +71,26 @@ CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, int neoWepBits)
 
 	return NULL;
 }
+
+bool Hack_IsBot(CNEO_Player* player)
+{
+#ifdef DEBUG
+	DevWarning("Fixme: Using Hack_IsBot as workaround\n"); // nag to remind about fixing this whenever used
+#endif
+
+	if (!player)
+	{
+		return false;
+	}
+#ifdef GAME_DLL
+	else if (player->IsFakeClient())
+	{
+		return true;
+	}
+#endif
+
+	const char* name = player->GetPlayerName();
+
+	return (strlen(name) == 5 && name[0] == 'B' && name[1] == 'o' && name[2] == 't' &&
+		isdigit(name[3]) && isdigit(name[4]));
+}

@@ -396,17 +396,23 @@ void CNEORules::Think(void)
 		return;
 	}
 
-	if (neo_score_limit.GetInt() > 0)
+	if (neo_score_limit.GetInt() != 0)
 	{
-		if (GetGlobalTeam(TEAM_JINRAI)->GetRoundsWon() >= neo_score_limit.GetInt())
+#ifdef DEBUG
+		float neoScoreLimitMin = -1.0f;
+		AssertOnce(neo_score_limit.GetMin(neoScoreLimitMin));
+		AssertOnce(neoScoreLimitMin >= 0);
+#endif
+		COMPILE_TIME_ASSERT((TEAM_JINRAI < TEAM_NSF) && (TEAM_JINRAI == (TEAM_NSF - 1)));
+		for (int team = TEAM_JINRAI; team <= TEAM_NSF; ++team)
 		{
-			UTIL_CenterPrintAll("JINRAI WINS THE MATCH\n");
-			GoToIntermission();
-		}
-		else if (GetGlobalTeam(TEAM_NSF)->GetRoundsWon() >= neo_score_limit.GetInt())
-		{
-			UTIL_CenterPrintAll("NSF WINS THE MATCH\n");
-			GoToIntermission();
+			if (GetGlobalTeam(team)->GetRoundsWon() >= neo_score_limit.GetInt())
+			{
+				UTIL_CenterPrintAll(team == TEAM_JINRAI ? "JINRAI WINS THE MATCH\n" : "NSF WINS THE MATCH\n");
+				SetRoundStatus(NeoRoundStatus::PostRound);
+				GoToIntermission();
+				return;
+			}
 		}
 	}
 #endif
@@ -1178,33 +1184,68 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 
 	SetRoundStatus(NeoRoundStatus::PostRound);
 
-	char victoryMsg[128];
+	auto winningTeam = GetGlobalTeam(team);
 
-	if (iWinReason == NEO_VICTORY_GHOST_CAPTURE)
+	if (bForceMapReset)
 	{
-		V_sprintf_safe(victoryMsg, "Team %s wins by capturing the ghost!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
-	}
-	else if (iWinReason == NEO_VICTORY_TEAM_ELIMINATION)
-	{
-		V_sprintf_safe(victoryMsg, "Team %s wins by eliminating the other team!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
-	}
-	else if (iWinReason == NEO_VICTORY_TIMEOUT_WIN_BY_NUMBERS)
-	{
-		V_sprintf_safe(victoryMsg, "Team %s wins by numbers!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
-	}
-	else if (iWinReason == NEO_VICTORY_FORFEIT)
-	{
-		V_sprintf_safe(victoryMsg, "Team %s wins by forfeit!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
-	}
-	else if (iWinReason == NEO_VICTORY_STALEMATE)
-	{
-		V_sprintf_safe(victoryMsg, "TIE\n");
+		RestartGame();
 	}
 	else
 	{
-		V_sprintf_safe(victoryMsg, "Unknown Neotokyo victory reason %i\n", iWinReason);
-		Warning(victoryMsg);
-		Assert(false);
+		m_flNeoNextRoundStartTime = gpGlobals->curtime + mp_chattime.GetFloat();
+
+		if (!bDontAddScore)
+		{
+			winningTeam->IncrementRoundsWon();
+		}
+	}
+
+	char victoryMsg[128];
+	bool gotMatchWinner = false;
+
+	if (!bForceMapReset && neo_score_limit.GetInt() != 0)
+	{
+#ifdef DEBUG
+		float neoScoreLimitMin = -1.0f;
+		AssertOnce(neo_score_limit.GetMin(neoScoreLimitMin));
+		AssertOnce(neoScoreLimitMin >= 0);
+#endif
+		if (winningTeam->GetRoundsWon() >= neo_score_limit.GetInt())
+		{
+			V_sprintf_safe(victoryMsg, "Team %s wins the match!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
+			m_flNeoNextRoundStartTime = FLT_MAX;
+			gotMatchWinner = true;
+		}
+	}
+
+	if (!gotMatchWinner)
+	{
+		if (iWinReason == NEO_VICTORY_GHOST_CAPTURE)
+		{
+			V_sprintf_safe(victoryMsg, "Team %s wins by capturing the ghost!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
+		}
+		else if (iWinReason == NEO_VICTORY_TEAM_ELIMINATION)
+		{
+			V_sprintf_safe(victoryMsg, "Team %s wins by eliminating the other team!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
+		}
+		else if (iWinReason == NEO_VICTORY_TIMEOUT_WIN_BY_NUMBERS)
+		{
+			V_sprintf_safe(victoryMsg, "Team %s wins by numbers!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
+		}
+		else if (iWinReason == NEO_VICTORY_FORFEIT)
+		{
+			V_sprintf_safe(victoryMsg, "Team %s wins by forfeit!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
+		}
+		else if (iWinReason == NEO_VICTORY_STALEMATE)
+		{
+			V_sprintf_safe(victoryMsg, "TIE\n");
+		}
+		else
+		{
+			V_sprintf_safe(victoryMsg, "Unknown Neotokyo victory reason %i\n", iWinReason);
+			Warning(victoryMsg);
+			Assert(false);
+		}
 	}
 
 	EmitSound_t soundParams;
@@ -1217,33 +1258,23 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 	soundFilter.AddAllPlayers();
 	soundFilter.MakeReliable();
 
-	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	for (int i = 1; i <= gpGlobals->maxClients; ++i)
 	{
-		auto player = UTIL_PlayerByIndex(i);
-		if (player)
+		auto player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
+		if (player && (!Hack_IsBot(player) || player->IsHLTV()))
 		{
 			engine->ClientPrintf(player->edict(), victoryMsg);
-			UTIL_CenterPrintAll(victoryMsg);
+			UTIL_ClientPrintAll((gotMatchWinner ? HUD_PRINTTALK : HUD_PRINTCENTER), victoryMsg);
 
 			float jingleVolume = atof(engine->GetClientConVarValue(i, snd_victory_volume.GetName()));
 			soundParams.m_flVolume = jingleVolume;
 			player->EmitSound(soundFilter, i, soundParams);
 		}
 	}
-	
-	if (bForceMapReset)
-	{
-		RestartGame();
-	}
-	else
-	{
-		m_flNeoNextRoundStartTime = gpGlobals->curtime + mp_chattime.GetFloat();
 
-		if (!bDontAddScore)
-		{
-			auto winningTeam = GetGlobalTeam(team);
-			winningTeam->IncrementRoundsWon();
-		}
+	if (gotMatchWinner)
+	{
+		GoToIntermission();
 	}
 }
 #endif

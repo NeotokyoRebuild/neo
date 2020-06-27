@@ -213,4 +213,10 @@ inline const char *GetRankName(int xp)
 
 CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, int neoWepBits);
 
+// NEO FIXME/HACK (Rain): bots don't properly set their fakeclient flag currently,
+// making IsFakeClient and IsBot return false. This is an ugly hack to get bots
+// joining teams. We cannot trust this player input (and it's slow), so it really
+// should be fixed properly.
+bool Hack_IsBot(CNEO_Player* player);
+
 #endif // NEO_PLAYER_SHARED_H

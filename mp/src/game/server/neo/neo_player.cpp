@@ -1873,31 +1873,6 @@ void CNEO_Player::PickDefaultSpawnTeam(void)
 	}
 }
 
-// NEO FIXME/HACK (Rain): bots don't properly set their fakeclient flag currently,
-// making IsFakeClient and IsBot return false. This is an ugly hack to get bots
-// joining teams. We cannot trust this player input (and it's slow), so it really
-// should be fixed properly.
-bool Hack_IsBot(CNEO_Player* player)
-{
-#ifdef DEBUG
-	DevWarning("Fixme: Using Hack_IsBot as workaround\n"); // nag to remind about fixing this whenever used
-#endif
-
-	if (!player)
-	{
-		return false;
-	}
-	else if (player->IsFakeClient())
-	{
-		return true;
-	}
-
-	const char* name = player->GetPlayerInfo()->GetName();
-
-	return (strlen(name) == 5 && name[0] == 'B' && name[1] == 'o' && name[2] == 't' &&
-		isdigit(name[3]) && isdigit(name[4]));
-}
-
 bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 {
 	if (!GetGlobalTeam(iTeam) || iTeam == 0)
