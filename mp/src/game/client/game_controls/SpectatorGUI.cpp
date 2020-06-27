@@ -44,6 +44,11 @@
 void AddSubKeyNamed( KeyValues *pKeys, const char *pszName );
 #endif
 
+#ifdef NEO
+#include "c_team.h"
+#include "neo_gamerules.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -537,6 +542,25 @@ void CSpectatorGUI::OnThink()
 				gViewPortInterface->ShowPanel( PANEL_SCOREBOARD, m_bSpecScoreboard );
 			}
 		}
+
+		static Label* jinScoreValueLabel = NULL;
+		static Label* nsfScoreValueLabel = NULL;
+		if (!jinScoreValueLabel)
+		{
+			jinScoreValueLabel = dynamic_cast<Label*>(FindChildByName("CTScoreValue"));
+		}
+		if (!nsfScoreValueLabel)
+		{
+			nsfScoreValueLabel = dynamic_cast<Label*>(FindChildByName("TERScoreValue"));
+		}
+		Assert(jinScoreValueLabel);
+		Assert(nsfScoreValueLabel);
+
+		char scoreBuff[3];
+		itoa(Max(0, Min(99, GetGlobalTeam(TEAM_JINRAI)->Get_Score())), scoreBuff, 10);
+		jinScoreValueLabel->SetText(scoreBuff);
+		itoa(Max(0, Min(99, GetGlobalTeam(TEAM_NSF)->Get_Score())), scoreBuff, 10);
+		nsfScoreValueLabel->SetText(scoreBuff);
 	}
 }
 
