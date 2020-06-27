@@ -424,7 +424,7 @@ void CNEO_Player::Precache( void )
 
 void CNEO_Player::Spawn(void)
 {
-	ShowViewPortPanel(PANEL_SPECGUI, false);
+	ShowViewPortPanel(PANEL_SPECGUI, (GetTeamNumber() == TEAM_SPECTATOR ? true : false));
 
 	// Should do this class update first, because most of the stuff below depends on which player class we are.
 	if ((m_iNextSpawnClassChoice != -1) && (m_iNeoClass != m_iNextSpawnClassChoice))

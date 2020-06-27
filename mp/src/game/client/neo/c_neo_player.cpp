@@ -955,8 +955,6 @@ void C_NEO_Player::Spawn( void )
 
 	Weapon_SetZoom(false);
 
-	gViewPortInterface->ShowPanel(PANEL_SPECGUI, true);
-
 	SetViewOffset(VEC_VIEW_NEOSCALE(this));
 
 	if (GetTeamNumber() == TEAM_UNASSIGNED)
