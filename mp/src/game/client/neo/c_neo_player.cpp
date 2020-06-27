@@ -853,8 +853,6 @@ void C_NEO_Player::PostThink(void)
 
 			Weapon_SetZoom(false);
 			m_bInVision = false;
-
-			gViewPortInterface->ShowPanel(PANEL_SPECGUI, true);
 		}
 
 		return;
@@ -863,8 +861,6 @@ void C_NEO_Player::PostThink(void)
 	{
 		if (!m_bFirstDeathTick)
 		{
-			gViewPortInterface->ShowPanel(PANEL_SPECGUI, false);
-
 			m_bFirstDeathTick = true;
 		}
 	}

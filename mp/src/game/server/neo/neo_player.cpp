@@ -30,6 +30,8 @@
 
 #include "weapon_knife.h"
 
+#include "viewport_panel_names.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -422,6 +424,8 @@ void CNEO_Player::Precache( void )
 
 void CNEO_Player::Spawn(void)
 {
+	ShowViewPortPanel(PANEL_SPECGUI, false);
+
 	// Should do this class update first, because most of the stuff below depends on which player class we are.
 	if ((m_iNextSpawnClassChoice != -1) && (m_iNeoClass != m_iNextSpawnClassChoice))
 	{
@@ -1478,6 +1482,8 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 			Weapon_Detach(pWep);
 		}
 	}
+
+	ShowViewPortPanel(PANEL_SPECGUI, true);
 
 	BaseClass::Event_Killed(info);
 }
