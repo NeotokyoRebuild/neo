@@ -1890,7 +1890,7 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	// Player bots should initially join a player team.
 	// Note that we can't do a ->IsBot check here, because it's too early.
 	// Hence using the g_NextClientIsFakeClient workaround.
-	if (justJoined && g_NextClientIsFakeClient)
+	if (justJoined && g_NextClientIsFakeClient && !IsHLTV())
 	{
 		Assert(gpGlobals->curtime >= m_flNextTeamChangeTime);
 		iTeam = RandomInt(TEAM_JINRAI, TEAM_NSF);
