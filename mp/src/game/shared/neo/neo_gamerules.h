@@ -37,6 +37,12 @@ enum
 	#define CNEOGameRulesProxy C_NEOGameRulesProxy
 #endif
 
+#ifdef GAME_DLL
+// This is a hack to dance around CreateFakeClient,
+// see Bot_f() for details.
+bool g_NextClientIsFakeClient = false;
+#endif
+
 class CNEOGameRulesProxy : public CHL2MPGameRulesProxy
 {
 public:

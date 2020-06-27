@@ -1261,7 +1261,7 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 	for (int i = 1; i <= gpGlobals->maxClients; ++i)
 	{
 		auto player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
-		if (player && (!Hack_IsBot(player) || player->IsHLTV()))
+		if (player && (!player->IsBot() || player->IsHLTV()))
 		{
 			engine->ClientPrintf(player->edict(), victoryMsg);
 			UTIL_ClientPrintAll((gotMatchWinner ? HUD_PRINTTALK : HUD_PRINTCENTER), victoryMsg);
