@@ -1488,9 +1488,20 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 	BaseClass::Event_Killed(info);
 }
 
-int CNEO_Player::OnTakeDamage( const CTakeDamageInfo &inputInfo )
+float CNEO_Player::GetReceivedDamageScale(CBaseEntity* pAttacker)
 {
-	return BaseClass::OnTakeDamage(inputInfo);
+	switch (GetClass())
+	{
+	case NEO_CLASS_RECON:
+		return NEO_RECON_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
+	case NEO_CLASS_ASSAULT:
+		return NEO_ASSAULT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
+	case NEO_CLASS_SUPPORT:
+		return NEO_SUPPORT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
+	default:
+		Assert(false);
+		return BaseClass::GetReceivedDamageScale(pAttacker);
+	}
 }
 
 bool CNEO_Player::WantsLagCompensationOnEntity( const CBasePlayer *pPlayer,

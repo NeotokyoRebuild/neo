@@ -46,7 +46,7 @@ public:
 	virtual void CreateViewModel(int viewmodelindex = 0) OVERRIDE;
 	virtual bool BecomeRagdollOnClient(const Vector &force) OVERRIDE;
 	virtual void Event_Killed(const CTakeDamageInfo &info) OVERRIDE;
-	virtual int OnTakeDamage(const CTakeDamageInfo &inputInfo) OVERRIDE;
+	virtual float GetReceivedDamageScale(CBaseEntity* pAttacker) OVERRIDE;
 	virtual bool WantsLagCompensationOnEntity(const CBasePlayer *pPlayer, const CUserCmd *pCmd, const CBitVec<MAX_EDICTS> *pEntityTransmitBits) const OVERRIDE;
 	virtual void FireBullets(const FireBulletsInfo_t &info) OVERRIDE;
 	virtual bool Weapon_Switch(CBaseCombatWeapon *pWeapon, int viewmodelindex = 0) OVERRIDE;
