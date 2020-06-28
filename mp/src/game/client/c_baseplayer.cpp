@@ -2321,12 +2321,7 @@ void C_BasePlayer::PhysicsSimulate( void )
 	ctx->needsprocessing = false;
 
 	// Handle FL_FROZEN.
-#ifdef NEO
-	if ((GetFlags() & FL_FROZEN) ||
-		(static_cast<C_NEO_Player*>(this)->GetNeoFlags() & NEO_FL_FREEZETIME))
-#else
 	if(GetFlags() & FL_FROZEN)
-#endif
 	{
 		ctx->cmd.forwardmove = 0;
 		ctx->cmd.sidemove = 0;
@@ -2335,6 +2330,17 @@ void C_BasePlayer::PhysicsSimulate( void )
 		ctx->cmd.impulse = 0;
 		//VectorCopy ( pl.v_angle, ctx->cmd.viewangles );
 	}
+#ifdef NEO
+	else if (static_cast<C_NEO_Player*>(this)->GetNeoFlags() & NEO_FL_FREEZETIME)
+	{
+		ctx->cmd.forwardmove = 0;
+		ctx->cmd.sidemove = 0;
+		ctx->cmd.upmove = 0;
+		ctx->cmd.impulse = 0;
+		ctx->cmd.buttons &= ~(IN_ATTACK | IN_ATTACK2 | IN_ATTACK3 | IN_JUMP | IN_SPEED |
+			IN_ALT1 | IN_ALT2 | IN_BACK | IN_FORWARD | IN_MOVELEFT | IN_MOVERIGHT | IN_RUN | IN_ZOOM);
+	}
+#endif
 
 	// Run the next command
 	prediction->RunCommand( 

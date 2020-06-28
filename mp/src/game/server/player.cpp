@@ -3684,8 +3684,18 @@ void CBasePlayer::PlayerRunCommand(CUserCmd *ucmd, IMoveHelper *moveHelper)
 		ucmd->forwardmove = 0;
 		ucmd->sidemove = 0;
 		ucmd->upmove = 0;
-		ucmd->buttons = 0;
 		ucmd->impulse = 0;
+
+#ifdef NEO
+		if (!originalCheck && static_cast<CNEO_Player*>(this)->GetNeoFlags() & NEO_FL_FREEZETIME)
+		{
+			ucmd->buttons &= ~(IN_ATTACK | IN_ATTACK2 | IN_ATTACK3 | IN_JUMP | IN_SPEED |
+				IN_ALT1 | IN_ALT2 | IN_BACK | IN_FORWARD | IN_MOVELEFT | IN_MOVERIGHT | IN_RUN | IN_ZOOM);
+		}
+#else
+		ucmd->buttons = 0;
+#endif
+
 #ifdef NEO
 		// Want to be able to turn around whilst pre-round freeze time happens.
 		if (originalCheck)
