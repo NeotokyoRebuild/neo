@@ -32,7 +32,9 @@ CNEOHud_GhostMarker::CNEOHud_GhostMarker(const char* pElemName, vgui::Panel* par
 	m_iGhostingTeam = TEAM_UNASSIGNED;
 	m_iPosX = m_iPosY = 0;
 
-	m_szMarkerText[0] = '\0';
+	const char spaces[] = "            ";
+	COMPILE_TIME_ASSERT(sizeof(spaces) == sizeof(m_szMarkerText));
+	V_sprintf_safe(m_szMarkerText, spaces);
 	g_pVGuiLocalize->ConvertANSIToUnicode(m_szMarkerText, m_wszMarkerTextUnicode, sizeof(m_wszMarkerTextUnicode));
 
 	SetAutoDelete(true);
