@@ -248,8 +248,10 @@ void FixIncompatibleNeoAssets(IFileSystem* filesystem, const char* neoPath, bool
 		if (!restoreInstead)
 		{
 			fixFrom = neoPath;
+#ifdef _WIN32
 			fixFrom.FixSlashes();
 			fixFrom = fixFrom.Replace(":\\\\", ":\\");
+#endif
 			fixFrom.StripTrailingSlash();
 			fixFrom.Append("/");
 			fixFrom.Append(filesToFix[i]);
@@ -261,8 +263,10 @@ void FixIncompatibleNeoAssets(IFileSystem* filesystem, const char* neoPath, bool
 		else
 		{
 			fixTo = neoPath;
+#ifdef _WIN32
 			fixTo.FixSlashes();
 			fixTo = fixTo.Replace(":\\\\", ":\\");
+#endif
 			fixTo.StripTrailingSlash();
 			fixTo.Append("/");
 			fixTo.Append(filesToFix[i]);
@@ -282,7 +286,7 @@ void FixIncompatibleNeoAssets(IFileSystem* filesystem, const char* neoPath, bool
 			}
 			else
 			{
-				Warning("%s: Rename failed: \"%s\" -> \"%s\"\n", szThisCaller, fixFrom, fixTo);
+				Warning("%s: Rename failed: \"%s\" -> \"%s\"\n", szThisCaller, fixFrom.String(), fixTo.String());
 			}
 		}
 		else
@@ -294,7 +298,7 @@ void FixIncompatibleNeoAssets(IFileSystem* filesystem, const char* neoPath, bool
 			}
 			else
 			{
-				Warning("%s: File doesn't exist: %s\n", szThisCaller, fixTo);
+				Warning("%s: File doesn't exist: %s\n", szThisCaller, fixTo.String());
 			}
 		}
 		fixFrom.Clear();
