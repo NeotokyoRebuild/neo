@@ -344,6 +344,8 @@ void FixIncompatibleNeoAssets(IFileSystem* filesystem, bool restoreInstead)
 	char neoPath[MAX_PATH];
 	bool originalNtPathOk = false;
 #ifdef LINUX
+	const bool callerIsClientDll = false; // always server here. should refactor this stuff later.
+
 	// The NeotokyoSource root asset folder should exist (or be symlinked) to one of these paths,
 	// or be specified with the NEO_PATH_PARM_CMD parm (which is currently broken on Linux, see below).
 	// We look in the order described below, and stop looking at the first matching path.
@@ -377,7 +379,7 @@ void FixIncompatibleNeoAssets(IFileSystem* filesystem, bool restoreInstead)
 		{
 			// We will crash with a more generic error later if Neo mount failed,
 			// so this is our only chance to throw this more specific error message.
-			Error("%s: Failed to read custom %s: '%s'\n", thisCaller, NEO_PATH_PARM_CMD, neoPath);
+			Error("%s: Failed to read custom %s: '%s'\n", szThisCaller, NEO_PATH_PARM_CMD, neoPath);
 		}
 
 		if (callerIsClientDll)
@@ -393,7 +395,7 @@ void FixIncompatibleNeoAssets(IFileSystem* filesystem, bool restoreInstead)
 
 		if (!originalNtPathOk)
 		{
-			Error("%s: Failed to access custom %s: '%s'\n", thisCaller, NEO_PATH_PARM_CMD, neoPath);
+			Error("%s: Failed to access custom %s: '%s'\n", szThisCaller, NEO_PATH_PARM_CMD, neoPath);
 		}
 	}
 	else
@@ -416,7 +418,7 @@ void FixIncompatibleNeoAssets(IFileSystem* filesystem, bool restoreInstead)
 		// None of the paths existed
 		else
 		{
-			Warning("%s: Could not locate original Neotokyo install!\n", thisCaller);
+			Warning("%s: Could not locate original Neotokyo install!\n", szThisCaller);
 		}
 		
 		if (!DirExists(neoPath))
