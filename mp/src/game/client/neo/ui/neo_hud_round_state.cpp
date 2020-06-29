@@ -50,7 +50,7 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 
 	const char spaces[] = "     ";
 	COMPILE_TIME_ASSERT(sizeof(spaces) == sizeof(m_szStatusANSI));
-	V_sprintf_safe(m_szStatusANSI, spaces);
+	V_strcpy_safe(m_szStatusANSI, spaces);
 	g_pVGuiLocalize->ConvertANSIToUnicode(m_szStatusANSI, m_wszStatusUnicode, sizeof(m_wszStatusUnicode));
 }
 
@@ -71,7 +71,7 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	{
 		const char spaces[] = "     ";
 		COMPILE_TIME_ASSERT(sizeof(spaces) == sizeof(m_szStatusANSI));
-		V_sprintf_safe(m_szStatusANSI, spaces);
+		V_strcpy_safe(m_szStatusANSI, spaces);
 		g_pVGuiLocalize->ConvertANSIToUnicode(m_szStatusANSI, m_wszStatusUnicode, sizeof(m_wszStatusUnicode));
 		return;
 	}

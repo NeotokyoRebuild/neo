@@ -34,7 +34,7 @@ CNEOHud_GhostMarker::CNEOHud_GhostMarker(const char* pElemName, vgui::Panel* par
 
 	const char spaces[] = "            ";
 	COMPILE_TIME_ASSERT(sizeof(spaces) == sizeof(m_szMarkerText));
-	V_sprintf_safe(m_szMarkerText, spaces);
+	V_strcpy_safe(m_szMarkerText, spaces);
 	g_pVGuiLocalize->ConvertANSIToUnicode(m_szMarkerText, m_wszMarkerTextUnicode, sizeof(m_wszMarkerTextUnicode));
 
 	SetAutoDelete(true);
