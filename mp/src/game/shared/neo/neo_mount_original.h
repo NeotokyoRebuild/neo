@@ -40,7 +40,7 @@ static inline bool DirExists(const char *path)
 // Attempts to build a valid NT game path using the provided Neo path, and Steam info.
 // Returns true/false depending on if we successfully found a valid path.
 // NOTE: this *will* modify the input path pointer, regardless of success!!
-static inline bool IsNeoGameInfoPathOK(char *out_neoPath, const int pathLen)
+bool IsNeoGameInfoPathOK(char *out_neoPath, const int pathLen)
 {
 	// This only works for Steam users, and should only be called for them.
 	if (!SteamAPI_IsSteamRunning())
@@ -342,9 +342,94 @@ void FixIncompatibleNeoAssets(IFileSystem* filesystem, bool restoreInstead)
 {
 	const char* szThisCaller = "FixIncompatibleNeoAssets";
 	char neoPath[MAX_PATH];
-	if (!IsNeoGameInfoPathOK(neoPath, sizeof(neoPath)))
+	bool originalNtPathOk = false;
+#ifdef LINUX
+	// The NeotokyoSource root asset folder should exist (or be symlinked) to one of these paths,
+	// or be specified with the NEO_PATH_PARM_CMD parm (which is currently broken on Linux, see below).
+	// We look in the order described below, and stop looking at the first matching path.
+	char neoLinuxPath_LocalSteam[MAX_PATH]{ 0 };
+	char neoLinuxPath_LocalShare[MAX_PATH]{ 0 };
+	const char* homePath = getenv("HOME");
+
+	// First lookup path: user's Steam home directory. This is where Steam and SteamCMD will install by default.
+	V_strcpy_safe(neoLinuxPath_LocalSteam, homePath);
+	V_AppendSlash(neoLinuxPath_LocalSteam, sizeof(neoLinuxPath_LocalSteam));
+	V_strcat(neoLinuxPath_LocalSteam, ".steam/steam/steamapps/common/NEOTOKYO/NeotokyoSource/", sizeof(neoLinuxPath_LocalSteam));
+
+	// Second lookup path: user's own share directory.
+	V_strcpy_safe(neoLinuxPath_LocalShare, homePath);
+	V_AppendSlash(neoLinuxPath_LocalShare, sizeof(neoLinuxPath_LocalShare));
+	V_strcat(neoLinuxPath_LocalShare, ".local/share/neotokyo/NeotokyoSource/", sizeof(neoLinuxPath_LocalShare));
+
+	// Third lookup path: machine's share directory.
+	const char* neoLinuxPath_UsrShare = "/usr/share/neotokyo/NeotokyoSource/";
+
+	// NEO FIXME (Rain): getting this ParmValue from Steam Linux client seems to be broken(?),
+	// we always fall back to hardcoded pDefaultVal.
+	V_strcpy_safe(neoPath,
+		CommandLine()->ParmValue(NEO_PATH_PARM_CMD, neoLinuxPath_LocalSteam));
+
+	const bool isUsingCustomParm = (Q_stricmp(neoPath, neoLinuxPath_LocalSteam) != 0);
+
+	if (isUsingCustomParm)
 	{
-		Error("%s: Failed to get Neo path\n", szThisCaller);
+		if (!*neoPath)
+		{
+			// We will crash with a more generic error later if Neo mount failed,
+			// so this is our only chance to throw this more specific error message.
+			Error("%s: Failed to read custom %s: '%s'\n", thisCaller, NEO_PATH_PARM_CMD, neoPath);
+		}
+
+		if (callerIsClientDll)
+		{
+			DevMsg("Client using custom %s: %s\n", NEO_PATH_PARM_CMD, neoPath);
+		}
+		else
+		{
+			DevMsg("Server using custom %s: %s\n", NEO_PATH_PARM_CMD, neoPath);
+		}
+
+		originalNtPathOk = DirExists(neoPath);
+
+		if (!originalNtPathOk)
+		{
+			Error("%s: Failed to access custom %s: '%s'\n", thisCaller, NEO_PATH_PARM_CMD, neoPath);
+		}
+	}
+	else
+	{
+		// Try first (default path)
+		if (DirExists(neoPath))
+		{
+			// Do nothing; path is already set
+		}
+		// Try the second path
+		else if (DirExists(neoLinuxPath_LocalShare))
+		{
+			V_strcpy_safe(neoPath, neoLinuxPath_LocalShare);
+		}
+		// Try the third path
+		else if (DirExists(neoLinuxPath_UsrShare))
+		{
+			V_strcpy_safe(neoPath, neoLinuxPath_UsrShare);
+		}
+		// None of the paths existed
+		else
+		{
+			Warning("%s: Could not locate original Neotokyo install!\n", thisCaller);
+		}
+		
+		if (!DirExists(neoPath))
+		{
+			Error("%s: Failed to get Neo path\n", szThisCaller);
+		}
+	}
+#else
+	originalNtPathOk = IsNeoGameInfoPathOK(neoPath, sizeof(neoPath));
+#endif
+	if (!originalNtPathOk)
+	{
+		Error("%s: Failed to retrieve Neo path\n", szThisCaller);
 	}
 	else
 	{
@@ -382,6 +467,8 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 	bool originalNtPathOk = false;
 
 #ifdef LINUX
+	// NEO TODO (Rain): this linux path get code is repeated; should turn into a function for brevity.
+
 	// The NeotokyoSource root asset folder should exist (or be symlinked) to one of these paths,
 	// or be specified with the NEO_PATH_PARM_CMD parm (which is currently broken on Linux, see below).
     // We look in the order described below, and stop looking at the first matching path.
