@@ -47,6 +47,7 @@ void AddSubKeyNamed( KeyValues *pKeys, const char *pszName );
 #ifdef NEO
 #include "c_team.h"
 #include "neo_gamerules.h"
+#include "c_neo_player.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -534,6 +535,18 @@ void CSpectatorGUI::OnThink()
 
 	if ( IsVisible() )
 	{
+		// Temp fix to hide team scores etc when closing scoreboard.
+		if (C_NEO_Player::GetLocalNEOPlayer()->IsAlive())
+		{
+			auto scoreboard = gViewPortInterface->FindPanelByName(PANEL_SCOREBOARD);
+			Assert(scoreboard);
+			if (!scoreboard->IsVisible())
+			{
+				SetVisible(false);
+				return;
+			}
+		}
+
 		if ( m_bSpecScoreboard != spec_scoreboard.GetBool() )
 		{
 			if ( !spec_scoreboard.GetBool() || !gViewPortInterface->GetActivePanel() )

@@ -20,21 +20,22 @@ public:
 
 protected:
 	// scoreboard overrides
-	virtual void InitScoreboardSections();
-	virtual void UpdatePlayerInfo();
-	virtual void UpdateTeamInfo();
-	virtual bool GetPlayerScoreInfo(int playerIndex, KeyValues *outPlayerInfo);
+	virtual void InitScoreboardSections() OVERRIDE;
+	virtual void UpdatePlayerInfo() OVERRIDE;
+	virtual void UpdateTeamInfo() OVERRIDE;
+	virtual bool GetPlayerScoreInfo(int playerIndex, KeyValues *outPlayerInfo) OVERRIDE;
+	virtual void SetVisible(bool state) OVERRIDE;
 
 	// vgui overrides
-	virtual void PaintBackground();
-	virtual void PaintBorder();
-	virtual void ApplySchemeSettings(vgui::IScheme *pScheme);
+	virtual void PaintBackground() OVERRIDE;
+	virtual void PaintBorder() OVERRIDE;
+	virtual void ApplySchemeSettings(vgui::IScheme *pScheme) OVERRIDE;
 
 	bool IsTeamplay(void) { return true; }
 
 private:
-	virtual void AddHeader(); // add the start header of the scoreboard
-	virtual void AddSection(int teamType, int teamNumber); // add a new section header for a team
+	virtual void AddHeader() OVERRIDE; // add the start header of the scoreboard
+	virtual void AddSection(int teamType, int teamNumber) OVERRIDE; // add a new section header for a team
 
 	int GetSectionFromTeamNumber(int teamNumber);
 

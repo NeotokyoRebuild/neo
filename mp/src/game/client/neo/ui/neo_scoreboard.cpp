@@ -166,3 +166,15 @@ int CNEOScoreBoard::GetSectionFromTeamNumber(int teamNumber)
 
 	return SCORESECTION_SPECTATOR;
 }
+
+void CNEOScoreBoard::SetVisible(bool state)
+{
+	// Temp fix to show team scores etc when opening scoreboard.
+	if (C_NEO_Player::GetLocalNEOPlayer()->IsAlive())
+	{
+		gViewPortInterface->ShowPanel(gViewPortInterface->FindPanelByName(PANEL_SPECGUI), state);
+		DevMsg("Setting to %s\n", (state ? "true" : "false"));
+	}
+
+	BaseClass::SetVisible(state);
+}
