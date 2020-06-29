@@ -37,12 +37,6 @@ enum
 	#define CNEOGameRulesProxy C_NEOGameRulesProxy
 #endif
 
-#ifdef GAME_DLL
-// This is a hack to dance around CreateFakeClient,
-// see Bot_f() for details.
-bool g_NextClientIsFakeClient = false;
-#endif
-
 class CNEOGameRulesProxy : public CHL2MPGameRulesProxy
 {
 public:
@@ -230,6 +224,12 @@ public:
 
 		return GetOpposingTeam(player->GetTeamNumber());
 	}
+
+public:
+#ifdef GAME_DLL
+	// Workaround for bot spawning. See Bot_f() for details.
+	bool m_bNextClientIsFakeClient;
+#endif
 
 private:
 #ifdef GAME_DLL

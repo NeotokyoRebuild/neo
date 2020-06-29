@@ -1002,13 +1002,13 @@ CAmmoDef *GetAmmoDef()
 		{
 #ifdef NEO
 			// We need to catch this fake client when it connects, but control escapes
-			// to external engine code, so just kludging a global here for it.
-			g_NextClientIsFakeClient = true;
+			// to external engine code, so just kludging a status variable here for it.
+			NEORules()->m_bNextClientIsFakeClient = true;
 #endif
 			BotPutInServer(bFrozen, iTeam);
 #ifdef NEO
 			// Toggle this off after creating the bot
-			g_NextClientIsFakeClient = false;
+			NEORules()->m_bNextClientIsFakeClient = false;
 #endif
 		}
 	}

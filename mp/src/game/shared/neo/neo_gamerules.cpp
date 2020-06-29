@@ -210,7 +210,9 @@ static inline void FireLegacyEvent_NeoRoundEnd()
 
 CNEORules::CNEORules()
 {
-#ifdef GAME_DLL	
+#ifdef GAME_DLL
+	m_bNextClientIsFakeClient = false;
+
 	Q_strncpy(g_Teams[TEAM_JINRAI]->m_szTeamname.GetForModify(),
 		TEAM_STR_JINRAI, MAX_TEAM_NAME_LENGTH);
 	
