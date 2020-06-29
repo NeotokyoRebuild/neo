@@ -173,7 +173,6 @@ void CNEOScoreBoard::SetVisible(bool state)
 	if (C_NEO_Player::GetLocalNEOPlayer()->IsAlive())
 	{
 		gViewPortInterface->ShowPanel(gViewPortInterface->FindPanelByName(PANEL_SPECGUI), state);
-		DevMsg("Setting to %s\n", (state ? "true" : "false"));
 	}
 
 	BaseClass::SetVisible(state);
