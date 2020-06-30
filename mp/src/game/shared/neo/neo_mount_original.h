@@ -278,7 +278,11 @@ void FixIncompatibleNeoAssets(IFileSystem* filesystem, const char* neoPath, bool
 
 		if (filesystem->FileExists(fixFrom))
 		{
+#ifdef LINUX
+            if (rename(fixFrom, fixTo) == 0)
+#else
 			if (filesystem->RenameFile(fixFrom, fixTo))
+#endif
 			{
 				Assert(!filesystem->FileExists(fixFrom));
 				Assert(filesystem->FileExists(fixTo));
@@ -425,6 +429,10 @@ void FixIncompatibleNeoAssets(IFileSystem* filesystem, bool restoreInstead)
 		{
 			Error("%s: Failed to get Neo path\n", szThisCaller);
 		}
+        else
+        {
+            originalNtPathOk = true;
+        }
 	}
 #else
 	originalNtPathOk = IsNeoGameInfoPathOK(neoPath, sizeof(neoPath));
