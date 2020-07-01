@@ -81,15 +81,15 @@ public:
 
 	void AddNeoFlag(int flags)
 	{
-		m_fNeoFlags.GetForModify() = (m_fNeoFlags | flags);
+		m_NeoFlags.GetForModify() = (GetNeoFlags() | flags);
 	}
 
 	void RemoveNeoFlag(int flags)
 	{
-		m_fNeoFlags.GetForModify() = (m_fNeoFlags & ~flags);
+		m_NeoFlags.GetForModify() = (GetNeoFlags() & ~flags);
 	}
 
-	int GetNeoFlags() const { return m_fNeoFlags; }
+	int GetNeoFlags() const { return m_NeoFlags.Get(); }
 
 	void GiveLoadoutWeapon(void);
 
@@ -194,7 +194,7 @@ public:
 
 	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
 
-	CNetworkVar(int, m_fNeoFlags);
+	CNetworkVar(unsigned char, m_NeoFlags);
 
 	bool m_bIsPendingSpawnForThisRound;
 

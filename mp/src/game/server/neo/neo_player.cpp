@@ -66,7 +66,7 @@ SendPropVector(SENDINFO(m_vecGhostMarkerPos), -1, SPROP_COORD_MP_LOWPRECISION | 
 
 SendPropArray(SendPropVector(SENDINFO_ARRAY(m_rvFriendlyPlayerPositions), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rvFriendlyPlayerPositions),
 
-SendPropInt(SENDINFO(m_fNeoFlags)),
+SendPropInt(SENDINFO(m_NeoFlags), 4, SPROP_UNSIGNED),
 END_SEND_TABLE()
 
 BEGIN_DATADESC(CNEO_Player)
@@ -95,7 +95,7 @@ DEFINE_FIELD(m_vecGhostMarkerPos, FIELD_VECTOR),
 
 DEFINE_FIELD(m_rvFriendlyPlayerPositions, FIELD_CUSTOM),
 
-DEFINE_FIELD(m_fNeoFlags, FIELD_INTEGER),
+DEFINE_FIELD(m_NeoFlags, FIELD_CHARACTER),
 END_DATADESC()
 
 CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
@@ -351,7 +351,7 @@ CNEO_Player::CNEO_Player()
 
 	m_flNextTeamChangeTime = gpGlobals->curtime + 0.5f;
 
-	m_fNeoFlags = 0;
+	m_NeoFlags = 0;
 }
 
 CNEO_Player::~CNEO_Player( void )

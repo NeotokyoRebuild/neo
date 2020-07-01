@@ -75,15 +75,15 @@ public:
 
 	void AddNeoFlag(int flags)
 	{
-		m_fNeoFlags = (m_fNeoFlags | flags);
+		m_NeoFlags = (GetNeoFlags() | flags);
 	}
 
 	void RemoveNeoFlag(int flags)
 	{
-		m_fNeoFlags = (m_fNeoFlags & ~flags);
+		m_NeoFlags = (GetNeoFlags() & ~flags);
 	}
 
-	int GetNeoFlags() const { return m_fNeoFlags; }
+	int GetNeoFlags() const { return m_NeoFlags; }
 
 	virtual const Vector GetPlayerMaxs(void) const;
 
@@ -191,7 +191,7 @@ public:
 	CNetworkVar(int, m_iNeoClass);
 	CNetworkVar(int, m_iNeoSkin);
 
-	CNetworkVar(int, m_fNeoFlags);
+	unsigned char m_NeoFlags;
 
 protected:
 	bool m_bIsClassMenuOpen, m_bIsTeamMenuOpen;
