@@ -1602,7 +1602,7 @@ bool CNEORules::FPlayerCanRespawn(CBasePlayer* pPlayer)
 
 void CNEORules::SetRoundStatus(NeoRoundStatus status)
 {
-	if (status == NeoRoundStatus::RoundLive)
+	if (status == NeoRoundStatus::RoundLive || status == NeoRoundStatus::Idle)
 	{
 		for (int i = 1; i <= gpGlobals->maxClients; ++i)
 		{
