@@ -1614,7 +1614,10 @@ void CNEORules::SetRoundStatus(NeoRoundStatus status)
 			}
 		}
 #ifdef GAME_DLL
-		UTIL_CenterPrintAll("GO GO GO\n"); // NEO TODO (Rain): correct phrase
+		if (status == NeoRoundStatus::RoundLive)
+		{
+			UTIL_CenterPrintAll("GO GO GO\n"); // NEO TODO (Rain): correct phrase
+		}
 #endif
 	}
 
