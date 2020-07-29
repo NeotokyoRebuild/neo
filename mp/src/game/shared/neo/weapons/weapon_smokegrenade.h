@@ -60,7 +60,7 @@ public:
 
 	void	ThrowGrenade(CBasePlayer* pPlayer);
 	void	LobGrenade(CBasePlayer* pPlayer);
-	bool	IsPrimed(bool) { return (m_AttackPaused != 0); }
+	bool	IsPrimed() const { return (m_AttackPaused != 0); }
 
 private:
 	void	RollGrenade(CBasePlayer* pPlayer);

@@ -31,11 +31,6 @@
 #define DEFAULT_FIRE_WALK_NAME "Walk_Shoot_"
 #define DEFAULT_FIRE_RUN_NAME "Run_Shoot_"
 
-#define FIRESEQUENCE_LAYER		(AIMSEQUENCE_LAYER+NUM_AIMSEQUENCE_LAYERS)
-#define RELOADSEQUENCE_LAYER	(FIRESEQUENCE_LAYER + 1)
-#define GRENADESEQUENCE_LAYER	(RELOADSEQUENCE_LAYER + 1)
-#define NUM_LAYERS_WANTED		(GRENADESEQUENCE_LAYER + 1)
-
 // ------------------------------------------------------------------------- //
 // CSDKPlayerAnimState declaration.
 // ------------------------------------------------------------------------- //
@@ -47,6 +42,7 @@ public:
 		INEOPlayerAnimStateHelpers *pHelpers, LegAnimType_t legAnimType, bool bUseAimSequences);
 
 	CNEOPlayerAnimState();
+	~CNEOPlayerAnimState();
 
 	virtual void DoAnimationEvent(PlayerAnimEvent_t event, int nData);
 	virtual bool IsThrowingGrenade();
@@ -113,6 +109,40 @@ INEOPlayerAnimState *CreatePlayerAnimState(CBaseAnimatingOverlay *pEntity,
 {
 	CNEOPlayerAnimState *pRet = new CNEOPlayerAnimState;
 	pRet->InitNEO(pEntity, pHelpers, legAnimType, bUseAimSequences);
+	Assert(pRet);
+	return pRet;
+}
+
+class CNEOPlayerAnimStateHelpers : public INEOPlayerAnimStateHelpers
+{
+public:
+	CNEOPlayerAnimStateHelpers(CNEO_Player* player) : m_pPlayer(player)
+	{
+		Assert(m_pPlayer);
+	}
+
+	virtual CBaseCombatWeapon* NEOAnim_GetActiveWeapon()
+	{
+		return m_pPlayer->GetActiveWeapon();
+	}
+
+	virtual bool NEOAnim_CanMove()
+	{
+		if ((m_pPlayer->GetNeoFlags() & FL_FROZEN) || (m_pPlayer->GetFlags() & FL_FROZEN))
+		{
+			return false;
+		}
+		return true;
+	}
+
+private:
+	CNEO_Player* m_pPlayer;
+};
+
+INEOPlayerAnimStateHelpers* CreateAnimStateHelpers(CNEO_Player* pPlayer)
+{
+	CNEOPlayerAnimStateHelpers* pRet = new CNEOPlayerAnimStateHelpers(pPlayer);
+	Assert(pRet);
 	return pRet;
 }
 
@@ -123,6 +153,11 @@ CNEOPlayerAnimState::CNEOPlayerAnimState()
 {
 	m_pOuter = NULL;
 	m_bReloading = false;
+}
+
+CNEOPlayerAnimState::~CNEOPlayerAnimState()
+{
+	delete m_pHelpers;
 }
 
 void CNEOPlayerAnimState::InitNEO(CBaseAnimatingOverlay *pPlayer,
@@ -179,7 +214,7 @@ void CNEOPlayerAnimState::DoAnimationEvent(PlayerAnimEvent_t event, int nData)
 	}
 	else
 	{
-		Assert(!"CSDKPlayerAnimState::DoAnimationEvent");
+		Assert(!"CNEOPlayerAnimState::DoAnimationEvent");
 	}
 }
 
@@ -245,10 +280,12 @@ int CNEOPlayerAnimState::CalcReloadLayerSequence()
 	return -1;
 }
 
-#ifdef CLIENT_DLL
 void CNEOPlayerAnimState::UpdateLayerSequenceGeneric(CStudioHdr *pStudioHdr,
 	int iLayer, bool &bEnabled, float &flCurCycle, int &iSequence, bool bWaitAtEnd)
 {
+#ifdef GAME_DLL
+	Assert(false); // currently not expecting to do anything here serverside
+#else
 	if (!bEnabled)
 	{
 		return;
@@ -272,7 +309,7 @@ void CNEOPlayerAnimState::UpdateLayerSequenceGeneric(CStudioHdr *pStudioHdr,
 	}
 
 	// Now dump the state into its animation layer.
-	C_AnimationLayer *pLayer = m_pOuter->GetAnimOverlay(iLayer);
+	CAnimationLayer *pLayer = m_pOuter->GetAnimOverlay(iLayer);
 
 	pLayer->m_flCycle = flCurCycle;
 	pLayer->m_nSequence = iSequence;
@@ -280,25 +317,22 @@ void CNEOPlayerAnimState::UpdateLayerSequenceGeneric(CStudioHdr *pStudioHdr,
 	pLayer->m_flPlaybackRate = 1.0;
 	pLayer->m_flWeight = 1.0f;
 	pLayer->m_nOrder = iLayer;
-}
 #endif
+}
 
+// We don't have a concept of cooking grenades, so checking for the actual moment of tossing it.
 bool CNEOPlayerAnimState::IsOuterGrenadePrimed()
 {
+	auto player = static_cast<CNEO_Player*>(m_pOuter->MyCombatCharacterPointer());
+	if (player)
+	{
+		auto vm = player->GetViewModel();
+		if (vm)
+		{
+			return (vm->GetSequenceActivity(vm->GetSequence()) == ACT_VM_THROW);
+		}
+	}
 	return false;
-
-#if(0) // NEO TODO (Rain): we don't have neo nades implemented as of writing this
-	CBaseCombatCharacter *pChar = m_pOuter->MyCombatCharacterPointer();
-	if (pChar)
-	{
-		CBaseSDKGrenade *pGren = dynamic_cast<CBaseSDKGrenade*>(pChar->GetActiveWeapon());
-		return pGren && pGren->IsPinPulled();
-	}
-	else
-	{
-		return NULL;
-	}
-#endif
 }
 
 void CNEOPlayerAnimState::ComputeGrenadeSequence(CStudioHdr *pStudioHdr)
@@ -359,15 +393,14 @@ void CNEOPlayerAnimState::ComputeGrenadeSequence(CStudioHdr *pStudioHdr)
 
 int CNEOPlayerAnimState::CalcGrenadePrimeSequence()
 {
-	// NEO FIXME (Rain): this is actually the throw animation because we don't have
-	// a third person prime animation. This should be replaced with a "do nothing"
-	// return value, whatever that may look like (or ideally refactored out entirely).
 	return CalcSequenceIndex("Idle_Shoot_Gren1");
 }
 
 int CNEOPlayerAnimState::CalcGrenadeThrowSequence()
 {
-	return CalcSequenceIndex("Idle_Shoot_Gren1");
+	// We don't have a prime sequence, so we throw on the prime;
+	// don't need to return anything here.
+	return 0;
 }
 
 int CNEOPlayerAnimState::GetOuterGrenadeThrowCounter()

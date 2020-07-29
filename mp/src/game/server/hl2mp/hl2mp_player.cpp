@@ -309,7 +309,7 @@ void CHL2MP_Player::Spawn(void)
 		GiveDefaultItems();
 	}
 
-	SetNumAnimOverlays( 3 );
+	SetNumAnimOverlays(3);
 	ResetAnimation();
 
 	m_nRenderFX = kRenderNormal;
@@ -512,6 +512,7 @@ void CHL2MP_Player::SetupPlayerSoundsByModel( const char *pModelName )
 
 void CHL2MP_Player::ResetAnimation( void )
 {
+#ifndef NEO
 	if ( IsAlive() )
 	{
 		SetSequence ( -1 );
@@ -524,6 +525,7 @@ void CHL2MP_Player::ResetAnimation( void )
 		else if (GetWaterLevel() > 1)
 			SetAnimation( PLAYER_WALK );
 	}
+#endif
 }
 
 

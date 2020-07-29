@@ -12,8 +12,8 @@ class C_NEO_Player;
 #include "neo_player_shared.h"
 
 class C_NEOPredictedViewModel;
-
 class CNeoHudElements;
+class INEOPlayerAnimState;
 
 class C_NEO_Player : public C_HL2MP_Player
 {
@@ -114,6 +114,8 @@ public:
 	float GetWalkSpeed(void) const;
 	float GetSprintSpeed(void) const;
 
+	virtual void SetAnimation(PLAYER_ANIM playerAnim) OVERRIDE;
+
 private:
 	float GetActiveWeaponSpeedScale() const;
 	float GetBackwardsMovementPenaltyScale() const { return ((m_nButtons & IN_BACK) ? NEO_SLOW_MODIFIER : 1.0); }
@@ -203,6 +205,8 @@ private:
 	bool m_bIsAllowedToToggleVision;
 
 	CNeoHudElements *m_pNeoPanel;
+
+	INEOPlayerAnimState* m_pPlayerAnimState;
 
 	float m_flLastAirborneJumpOkTime;
 	float m_flLastSuperJumpTime;

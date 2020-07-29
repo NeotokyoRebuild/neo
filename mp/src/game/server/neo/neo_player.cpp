@@ -1,7 +1,7 @@
 #include "cbase.h"
 #include "neo_player.h"
 
-
+#include "neo_playeranimstate.h"
 #include "neo_predicted_viewmodel.h"
 #include "in_buttons.h"
 #include "neo_gamerules.h"
@@ -352,10 +352,13 @@ CNEO_Player::CNEO_Player()
 	m_flNextTeamChangeTime = gpGlobals->curtime + 0.5f;
 
 	m_NeoFlags = 0;
+
+	m_pPlayerAnimState = CreatePlayerAnimState(this, CreateAnimStateHelpers(this), NEO_LEGANIM_TYPE, true);
 }
 
 CNEO_Player::~CNEO_Player( void )
 {
+	m_pPlayerAnimState->Release();
 }
 
 void CNEO_Player::ZeroFriendlyPlayerLocArray(void)
@@ -433,6 +436,10 @@ void CNEO_Player::Spawn(void)
 	}
 
 	BaseClass::Spawn();
+
+	SetNumAnimOverlays(NUM_LAYERS_WANTED);
+	ResetAnimation();
+
 	m_bIsPendingSpawnForThisRound = false;
 
 	m_bLastTickInThermOpticCamo = m_bInThermOpticCamo = false;
@@ -971,6 +978,11 @@ void CNEO_Player::PostThink(void)
 		//DevMsg("Setspeed %f , %f\n", speedScaleX, speedScaleY);
 	}
 #endif
+
+	Vector eyeForward;
+	this->EyeVectors(&eyeForward, NULL, NULL);
+	Assert(eyeForward.IsValid());
+	m_pPlayerAnimState->Update(eyeForward[YAW], eyeForward[PITCH]);
 }
 
 void CNEO_Player::PlayerDeathThink()
@@ -1025,57 +1037,20 @@ void CNEO_Player::Weapon_SetZoom(const bool bZoomIn)
 	m_bInAim = bZoomIn;
 }
 
-void UpdateLayerSequenceGeneric(CNEO_Player *pPlayer, CStudioHdr *pStudioHdr, int iLayer, bool &bEnabled, float &flCurCycle, int &iSequence, bool bWaitAtEnd)
-{
-	if (!bEnabled)
-		return;
-
-	// Increment the fire sequence's cycle.
-	flCurCycle += pPlayer->GetSequenceCycleRate(pStudioHdr, iSequence) * gpGlobals->frametime;
-	if (flCurCycle > 1)
-	{
-		if (bWaitAtEnd)
-		{
-			flCurCycle = 1;
-		}
-		else
-		{
-			// Not firing anymore.
-			bEnabled = false;
-			iSequence = 0;
-			return;
-		}
-	}
-
-	// Now dump the state into its animation layer.
-	CAnimationLayer *pLayer = pPlayer->GetAnimOverlay(iLayer);
-
-	pLayer->m_flCycle = flCurCycle;
-	pLayer->m_nSequence = iSequence;
-
-	pLayer->m_flPlaybackRate = 1.0;
-	pLayer->m_flWeight = 1.0f;
-	pLayer->m_nOrder = iLayer;
-}
-
-// NEO FIXME (Rain): need to implement neo animstate for smoothed gestures!
-// See CSS code for basic idea.
 void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 {
-#if(0) // These should live in animstate
-#define AIMSEQUENCE_LAYER		1	// Aim sequence uses layers 0 and 1 for the weapon idle animation (needs 2 layers so it can blend).
-#define NUM_AIMSEQUENCE_LAYERS	4	// Then it uses layers 2 and 3 to blend in the weapon run/walk/crouchwalk animation.
-
-#define FIRESEQUENCE_LAYER		(AIMSEQUENCE_LAYER+NUM_AIMSEQUENCE_LAYERS)
-#define RELOADSEQUENCE_LAYER	(FIRESEQUENCE_LAYER + 1)
-#define GRENADESEQUENCE_LAYER	(RELOADSEQUENCE_LAYER + 1)
-#define NUM_LAYERS_WANTED		(GRENADESEQUENCE_LAYER + 1)
-
-	auto pAnimOverlay_Fire = GetAnimOverlay(FIRESEQUENCE_LAYER);
-	auto pAnimOverlay_Reload = GetAnimOverlay(RELOADSEQUENCE_LAYER);
-	Assert(pAnimOverlay_Fire);
-	Assert(pAnimOverlay_Reload);
-#endif
+	PlayerAnimEvent_t animEvent;
+	if (!PlayerAnimToPlayerAnimEvent(playerAnim, animEvent))
+	{
+		DevWarning("SRV Tried to get unknown PLAYER_ANIM %d\n", playerAnim);
+	}
+	else
+	{
+		m_pPlayerAnimState->DoAnimationEvent(animEvent);
+	}
+	// Stopping; animations are handled by m_pPlayerAnimState->Update.
+	// Should clean up this unused code later.
+	return;
 
 	float speed;
 

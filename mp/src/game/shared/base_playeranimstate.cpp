@@ -211,7 +211,12 @@ void CBasePlayerAnimState::ClearAnimationLayers()
 	if ( !m_pOuter )
 		return;
 
-	m_pOuter->SetNumAnimOverlays( AIMSEQUENCE_LAYER+NUM_AIMSEQUENCE_LAYERS );
+#ifdef NEO
+	//m_pOuter->SetNumAnimOverlays(7); // NEO TODO (Rain): NUM_LAYERS_WANTED
+	m_pOuter->SetNumAnimOverlays(8);
+#else
+	m_pOuter->SetNumAnimOverlays(AIMSEQUENCE_LAYER + NUM_AIMSEQUENCE_LAYERS);
+#endif
 	for ( int i=0; i < m_pOuter->GetNumAnimOverlays(); i++ )
 	{
 		m_pOuter->GetAnimOverlay( i )->SetOrder( CBaseAnimatingOverlay::MAX_OVERLAYS );

@@ -15,6 +15,8 @@
 #include "neo_player.h"
 #endif
 
+#include "neo_playeranimstate.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -70,4 +72,14 @@ CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, int neoWepBits)
 	}
 
 	return NULL;
+}
+
+bool PlayerAnimToPlayerAnimEvent(const PLAYER_ANIM playerAnim, PlayerAnimEvent_t& outAnimEvent)
+{
+	bool success = true;
+	if (playerAnim == PLAYER_ANIM::PLAYER_JUMP) { outAnimEvent = PlayerAnimEvent_t::PLAYERANIMEVENT_JUMP; }
+	else if (playerAnim == PLAYER_ANIM::PLAYER_RELOAD) { outAnimEvent = PlayerAnimEvent_t::PLAYERANIMEVENT_RELOAD; }
+	else if (playerAnim == PLAYER_ANIM::PLAYER_ATTACK1) { outAnimEvent = PlayerAnimEvent_t::PLAYERANIMEVENT_FIRE_GUN_PRIMARY; }
+	else { success = false; }
+	return success;
 }

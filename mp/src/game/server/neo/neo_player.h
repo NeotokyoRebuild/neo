@@ -5,6 +5,7 @@
 #endif
 
 class CNEO_Player;
+class INEOPlayerAnimState;
 
 #include "basemultiplayerplayer.h"
 #include "simtimer.h"
@@ -204,6 +205,8 @@ private:
 
 	float m_flLastAirborneJumpOkTime;
 	float m_flLastSuperJumpTime;
+
+	INEOPlayerAnimState* m_pPlayerAnimState;
 
 private:
 	CNEO_Player(const CNEO_Player&);

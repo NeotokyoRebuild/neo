@@ -15,37 +15,16 @@
 
 #include "dt_utlvector_recv.h"
 
+#ifdef NEO
+#include "neo_playeranimstate.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
 extern ConVar r_sequence_debug;
 
-C_BaseAnimatingOverlay::C_BaseAnimatingOverlay()
-{
-	// FIXME: where does this initialization go now?
-	//for ( int i=0; i < MAX_OVERLAYS; i++ )
-	//{
-	//	memset( &m_Layer[i], 0, sizeof(m_Layer[0]) );
-	//	m_Layer[i].m_nOrder = MAX_OVERLAYS;
-	//}
-
-	// FIXME: where does this initialization go now?
-	// AddVar( m_Layer, &m_iv_AnimOverlay, LATCH_ANIMATION_VAR );
-}
-
-#undef CBaseAnimatingOverlay
-
-
-
-BEGIN_RECV_TABLE_NOBASE(CAnimationLayer, DT_Animationlayer)
-	RecvPropInt(	RECVINFO_NAME(m_nSequence, m_nSequence)),
-	RecvPropFloat(	RECVINFO_NAME(m_flCycle, m_flCycle)),
-	RecvPropFloat(	RECVINFO_NAME(m_flPrevCycle, m_flPrevCycle)),
-	RecvPropFloat(	RECVINFO_NAME(m_flWeight, m_flWeight)),
-	RecvPropInt(	RECVINFO_NAME(m_nOrder, m_nOrder))
-END_RECV_TABLE()
-
-const char *s_m_iv_AnimOverlayNames[C_BaseAnimatingOverlay::MAX_OVERLAYS] =
+const char* s_m_iv_AnimOverlayNames[C_BaseAnimatingOverlay::MAX_OVERLAYS] =
 {
 	"C_BaseAnimatingOverlay::m_iv_AnimOverlay00",
 	"C_BaseAnimatingOverlay::m_iv_AnimOverlay01",
@@ -63,6 +42,45 @@ const char *s_m_iv_AnimOverlayNames[C_BaseAnimatingOverlay::MAX_OVERLAYS] =
 	"C_BaseAnimatingOverlay::m_iv_AnimOverlay13",
 	"C_BaseAnimatingOverlay::m_iv_AnimOverlay14"
 };
+
+void ResizeAnimationLayerCallback(void* pStruct, int offsetToUtlVector, int len);
+
+C_BaseAnimatingOverlay::C_BaseAnimatingOverlay()
+{
+#ifdef NEO
+	const int wantedSize = NUM_LAYERS_WANTED;
+	COMPILE_TIME_ASSERT(wantedSize > 0 && wantedSize < C_BaseAnimatingOverlay::MAX_OVERLAYS);
+
+	GetResizeUtlVectorTemplate(m_AnimOverlay)(this, ((char*)&this->m_AnimOverlay - (char*)this), C_BaseAnimatingOverlay::MAX_OVERLAYS);
+	GetResizeUtlVectorTemplate(m_iv_AnimOverlay)(this, ((char*)&this->m_iv_AnimOverlay - (char*)this), C_BaseAnimatingOverlay::MAX_OVERLAYS);
+	ResizeAnimationLayerCallback(this, ((char*)&this->m_AnimOverlay - (char*)this), wantedSize);
+
+	Assert(m_AnimOverlay.Count() == wantedSize);
+	Assert(m_iv_AnimOverlay.Count() == m_AnimOverlay.Count());
+#else
+	// FIXME: where does this initialization go now?
+	//for ( int i=0; i < MAX_OVERLAYS; i++ )
+	//{
+	//	memset( &m_Layer[i], 0, sizeof(m_Layer[0]) );
+	//	m_Layer[i].m_nOrder = MAX_OVERLAYS;
+	//}
+
+	// FIXME: where does this initialization go now?
+	// AddVar( m_Layer, &m_iv_AnimOverlay, LATCH_ANIMATION_VAR );
+#endif
+}
+
+#undef CBaseAnimatingOverlay
+
+
+
+BEGIN_RECV_TABLE_NOBASE(CAnimationLayer, DT_Animationlayer)
+	RecvPropInt(	RECVINFO_NAME(m_nSequence, m_nSequence)),
+	RecvPropFloat(	RECVINFO_NAME(m_flCycle, m_flCycle)),
+	RecvPropFloat(	RECVINFO_NAME(m_flPrevCycle, m_flPrevCycle)),
+	RecvPropFloat(	RECVINFO_NAME(m_flWeight, m_flWeight)),
+	RecvPropInt(	RECVINFO_NAME(m_nOrder, m_nOrder))
+END_RECV_TABLE()
 
 void ResizeAnimationLayerCallback( void *pStruct, int offsetToUtlVector, int len )
 {
@@ -84,7 +102,11 @@ void ResizeAnimationLayerCallback( void *pStruct, int offsetToUtlVector, int len
 	// remove all entries
 	for ( int i=0; i < pVec->Count(); i++ )
 	{
+#ifdef NEO
+		pEnt->RemoveVar(&pVec->Element(i), false);
+#else
 		pEnt->RemoveVar( &pVec->Element( i ) );
+#endif
 	}
 
 	// adjust vector sizes

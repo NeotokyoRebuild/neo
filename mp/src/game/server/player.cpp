@@ -4600,6 +4600,7 @@ void CBasePlayer::PostThink()
 				m_Local.m_flFallVelocity = 0;
 			}
 
+#ifndef NEO
 			// select the proper animation for the player character	
 			VPROF( "CBasePlayer::PostThink-Animation" );
 			// If he's in a vehicle, sit down
@@ -4611,6 +4612,7 @@ void CBasePlayer::PostThink()
 				SetAnimation( PLAYER_WALK );
 			else if (GetWaterLevel() > 1)
 				SetAnimation( PLAYER_WALK );
+#endif
 		}
 
 		// Don't allow bogus sequence on player

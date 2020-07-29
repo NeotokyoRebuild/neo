@@ -136,6 +136,8 @@ COMPILE_TIME_ASSERT(NEO_ASSAULT_CROUCH_SPEED > NEO_SUPPORT_CROUCH_SPEED);
 #define NEO_ASSAULT_DAMAGE_MODIFIER 1.0f
 #define NEO_SUPPORT_DAMAGE_MODIFIER 0.56f
 
+#define NEO_LEGANIM_TYPE LegAnimType_t::LEGANIM_9WAY
+
 enum NeoSkin {
 	NEO_SKIN_FIRST = 0,
 	NEO_SKIN_SECOND,
@@ -176,6 +178,7 @@ enum NeoClass {
 
 class CNEO_Player;
 class CNEOBaseCombatWeapon;
+enum PlayerAnimEvent_t : int;
 
 extern bool IsThereRoomForLeanSlide(CNEO_Player *player,
 	const Vector &targetViewOffset, bool &outStartInSolid);
@@ -212,5 +215,9 @@ inline const char *GetRankName(int xp)
 }
 
 CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, int neoWepBits);
+
+// Temporary helper for converting between these. Should refactor this to use the same structure for both.
+// Returns true on success. If returns false, the out value will not be set.
+bool PlayerAnimToPlayerAnimEvent(const PLAYER_ANIM playerAnim, PlayerAnimEvent_t& outAnimEvent);
 
 #endif // NEO_PLAYER_SHARED_H

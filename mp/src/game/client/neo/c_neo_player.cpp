@@ -44,6 +44,8 @@
 
 #include "model_types.h"
 
+#include "neo_playeranimstate.h"
+
 // Don't alias here
 #if defined( CNEO_Player )
 #undef CNEO_Player	
@@ -334,10 +336,13 @@ C_NEO_Player::C_NEO_Player()
 	m_bPreviouslyPreparingToHideMsg = false;
 	m_bLastTickInThermOpticCamo = false;
 	m_bIsAllowedToToggleVision = false;
+
+	m_pPlayerAnimState = CreatePlayerAnimState(this, CreateAnimStateHelpers(this), NEO_LEGANIM_TYPE, true);
 }
 
 C_NEO_Player::~C_NEO_Player()
 {
+	m_pPlayerAnimState->Release();
 }
 
 void C_NEO_Player::CheckThermOpticButtons()
@@ -891,6 +896,11 @@ void C_NEO_Player::PostThink(void)
 			m_bPreviouslyReloading = pWep->m_bInReload;
 		}
 	}
+
+	Vector eyeForward;
+	this->EyeVectors(&eyeForward, NULL, NULL);
+	Assert(eyeForward.IsValid());
+	m_pPlayerAnimState->Update(eyeForward[YAW], eyeForward[PITCH]);
 }
 
 bool C_NEO_Player::IsAllowedToSuperJump(void)
@@ -1282,4 +1292,17 @@ void C_NEO_Player::PreDataUpdate(DataUpdateType_t updateType)
 	}
 
 	BaseClass::PreDataUpdate(updateType);
+}
+
+void C_NEO_Player::SetAnimation(PLAYER_ANIM playerAnim)
+{
+	PlayerAnimEvent_t animEvent;
+	if (!PlayerAnimToPlayerAnimEvent(playerAnim, animEvent))
+	{
+		DevWarning("CLI Tried to get unknown PLAYER_ANIM %d\n", playerAnim);
+	}
+	else
+	{
+		m_pPlayerAnimState->DoAnimationEvent(animEvent);
+	}
 }
