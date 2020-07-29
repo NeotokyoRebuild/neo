@@ -278,8 +278,13 @@ void CBasePlayerAnimState::ComputeMainSequence()
 		return;
 #endif
 
-	if ( animDesired < 0 )
-		 animDesired = 0;
+	if (animDesired < 0)
+	{
+#ifdef DEBUG
+		DevWarning("fixme: animDesired was %d, defaulting to 3\n", animDesired); // NEO FIXME (Rain)
+#endif
+		animDesired = 3; // defaulting to some reasonable value. we should T-pose here (0) once this is properly fixed
+	}
 
 	pPlayer->ResetSequence( animDesired );
 
@@ -486,6 +491,8 @@ int CBasePlayerAnimState::CalcSequenceIndex( const char *pBaseName, ... )
 
 		iSequence = 0;
 	}
+
+	//DevMsg("CalcSeqIdx: \"%s\": %d\n", szFullName, iSequence);
 
 	return iSequence;
 }

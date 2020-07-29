@@ -1052,9 +1052,13 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 	// Should clean up this unused code later.
 	return;
 
+	Activity idealActivity = ACT_NEO_MOVE_RUN;
+
+	const bool bStartedReloading = (playerAnim == PLAYER_RELOAD);
+
 	float speed;
 
-	if (GetFlags() & (FL_FROZEN | FL_ATCONTROLS))
+	if ((GetFlags() & (FL_FROZEN | FL_ATCONTROLS)) || (GetNeoFlags() & NEO_FL_FREEZETIME))
 	{
 		speed = 0;
 		playerAnim = PLAYER_IDLE;
@@ -1063,10 +1067,6 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 	{
 		speed = GetAbsVelocity().Length2D();
 	}
-
-	Activity idealActivity = ACT_NEO_MOVE_RUN;
-
-	const bool bStartedReloading = (playerAnim == PLAYER_RELOAD);
 
 	// This could stand to be redone. Why is playerAnim abstracted from activity? (sjb)
 	if (playerAnim == PLAYER_DIE)
@@ -1130,6 +1130,8 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 	{
 		idealActivity = ACT_NEO_JUMP;
 	}
+
+	SetActivity(idealActivity);
 
 	auto activeWep = GetActiveWeapon();
 
@@ -1245,8 +1247,6 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 		//Assert(false);
 		iLowerSequence = 0;
 	}
-
-	SetActivity(idealActivity);
 
 	const bool bReloadAnimPlayingNow = ((bStartedReloading) || (activeWep && activeWep->m_bInReload));
 

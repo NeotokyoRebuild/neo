@@ -512,28 +512,39 @@ int CNEOPlayerAnimState::CalcFireLayerSequence(PlayerAnimEvent_t event)
 		pSuffix = "Gren";
 	}
 
+	int res;
+
 	switch (GetCurrentMainSequenceActivity())
 	{
 	case ACT_PLAYER_RUN_FIRE:
 	case ACT_RUN:
-		return CalcSequenceIndex("%s%s", DEFAULT_FIRE_RUN_NAME, pSuffix);
+		res = CalcSequenceIndex("%s%s", DEFAULT_FIRE_RUN_NAME, pSuffix);
+		break;
 
 	case ACT_PLAYER_WALK_FIRE:
 	case ACT_WALK:
-		return CalcSequenceIndex("%s%s", DEFAULT_FIRE_WALK_NAME, pSuffix);
+		res = CalcSequenceIndex("%s%s", DEFAULT_FIRE_WALK_NAME, pSuffix);
+		break;
 
 	case ACT_PLAYER_CROUCH_FIRE:
 	case ACT_CROUCHIDLE:
-		return CalcSequenceIndex("%s%s", DEFAULT_FIRE_CROUCH_NAME, pSuffix);
+		res = CalcSequenceIndex("%s%s", DEFAULT_FIRE_CROUCH_NAME, pSuffix);
+		break;
 
 	case ACT_PLAYER_CROUCH_WALK_FIRE:
 	case ACT_RUN_CROUCH:
-		return CalcSequenceIndex("%s%s", DEFAULT_FIRE_CROUCH_WALK_NAME, pSuffix);
+		res = CalcSequenceIndex("%s%s", DEFAULT_FIRE_CROUCH_WALK_NAME, pSuffix);
+		break;
 
 	default:
 	case ACT_PLAYER_IDLE_FIRE:
-		return CalcSequenceIndex("%s%s", DEFAULT_FIRE_IDLE_NAME, pSuffix);
+		res = CalcSequenceIndex("%s%s", DEFAULT_FIRE_IDLE_NAME, pSuffix);
+		break;
 	}
+
+	DevMsg("Res: %d\n", res);
+
+	return res;
 }
 
 bool CNEOPlayerAnimState::CanThePlayerMove()
@@ -541,32 +552,31 @@ bool CNEOPlayerAnimState::CanThePlayerMove()
 	return m_pHelpers->NEOAnim_CanMove();
 }
 
-// NEO FIXME (Rain): use this
 float CNEOPlayerAnimState::GetCurrentMaxGroundSpeed()
 {
-	Activity currentActivity = m_pOuter->GetSequenceActivity(m_pOuter->GetSequence());
+	const Activity currentActivity = m_pOuter->GetSequenceActivity(m_pOuter->GetSequence());
 
 	Assert(dynamic_cast<CNEO_Player*>(m_pOuter));
 
 	if (currentActivity == ACT_WALK || currentActivity == ACT_IDLE)
 	{
-		return static_cast<CNEO_Player*>(m_pOuter)->GetWalkSpeed();
+		return static_cast<CNEO_Player*>(m_pOuter)->GetWalkSpeed_WithActiveWepEncumberment();
 	}
 	else if (currentActivity == ACT_RUN)
 	{
-		return static_cast<CNEO_Player*>(m_pOuter)->GetNormSpeed();
+		return static_cast<CNEO_Player*>(m_pOuter)->GetNormSpeed_WithActiveWepEncumberment();
 	}
 	else if (currentActivity == ACT_SPRINT)
 	{
-		return static_cast<CNEO_Player*>(m_pOuter)->GetSprintSpeed();
+		return static_cast<CNEO_Player*>(m_pOuter)->GetSprintSpeed_WithActiveWepEncumberment();
 	}
 	else if (currentActivity == ACT_RUN_CROUCH)
 	{
-		return static_cast<CNEO_Player*>(m_pOuter)->GetCrouchSpeed();
+		return static_cast<CNEO_Player*>(m_pOuter)->GetCrouchSpeed_WithActiveWepEncumberment();
 	}
 	else
 	{
-		return 0;
+		return static_cast<CNEO_Player*>(m_pOuter)->GetNormSpeed();
 	}
 }
 
