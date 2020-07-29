@@ -228,6 +228,10 @@ static void RunPlayerMove(
 	gpGlobals->curtime = flOldCurtime;
 }
 
+#ifdef NEO
+ConVar sv_bot_test_pattern("sv_bot_test_pattern", "1", 0, "Bot test pattern", true, 0.0, true, 1.0);
+#endif
+
 //-----------------------------------------------------------------------------
 // Purpose: Run this Bot's AI for one frame.
 //-----------------------------------------------------------------------------
@@ -252,7 +256,6 @@ void Bot_Think(CHL2MP_Player* pBot)
 
 	vecViewAngles = pBot->GetLocalAngles();
 
-
 	// Create some random values
 	if ( pBot->IsAlive() && (pBot->GetSolid() == SOLID_BBOX) )
 	{
@@ -261,22 +264,29 @@ void Bot_Think(CHL2MP_Player* pBot)
 		// Stop when shot
 		if ( !pBot->IsEFlagSet(EFL_BOT_FROZEN) )
 		{
-			if ( pBot->m_iHealth == 100 )
+			if (sv_bot_test_pattern.GetInt() == 1)
 			{
-				forwardmove = 600 * ( botdata->backwards ? -1 : 1 );
-				if ( botdata->sidemove != 0.0f )
-				{
-					forwardmove *= random->RandomFloat( 0.1, 1.0f );
-				}
+				forwardmove = 600;
 			}
 			else
 			{
-				forwardmove = 0;
+				if (pBot->m_iHealth == 100)
+				{
+					forwardmove = 600 * (botdata->backwards ? -1 : 1);
+					if (botdata->sidemove != 0.0f)
+					{
+						forwardmove *= random->RandomFloat(0.1, 1.0f);
+					}
+				}
+				else
+				{
+					forwardmove = 0;
+				}
 			}
 		}
 
 		// Only turn if I haven't been hurt
-		if ( !pBot->IsEFlagSet(EFL_BOT_FROZEN) && pBot->m_iHealth == 100 )
+		if (( !pBot->IsEFlagSet(EFL_BOT_FROZEN) && pBot->m_iHealth == 100 ) || (sv_bot_test_pattern.GetInt() == 1))
 		{
 			Vector vecEnd;
 			Vector forward;
@@ -321,11 +331,10 @@ void Bot_Think(CHL2MP_Player* pBot)
 					angle.y += 360;
 
 				botdata->nextturntime = gpGlobals->curtime + 2.0;
-				botdata->lastturntoright = random->RandomInt( 0, 1 ) == 0 ? true : false;
+				botdata->lastturntoright = (sv_bot_test_pattern.GetInt() == 1) ? true : random->RandomInt( 0, 1 ) == 0 ? true : false;
 
 				botdata->forwardAngle = angle;
 				botdata->lastAngles = angle;
-
 			}
 
 
@@ -333,7 +342,7 @@ void Bot_Think(CHL2MP_Player* pBot)
 			{
 				botdata->nextstrafetime = gpGlobals->curtime + 1.0f;
 
-				if ( random->RandomInt( 0, 5 ) == 0 )
+				if (( random->RandomInt( 0, 5 ) == 0 ) && (sv_bot_test_pattern.GetInt() == 0))
 				{
 					botdata->sidemove = -600.0f + 1200.0f * random->RandomFloat( 0, 2 );
 				}
@@ -343,7 +352,7 @@ void Bot_Think(CHL2MP_Player* pBot)
 				}
 				sidemove = botdata->sidemove;
 
-				if ( random->RandomInt( 0, 20 ) == 0 )
+				if (( random->RandomInt( 0, 20 ) == 0 ) && (sv_bot_test_pattern.GetInt() == 0))
 				{
 					botdata->backwards = true;
 				}
