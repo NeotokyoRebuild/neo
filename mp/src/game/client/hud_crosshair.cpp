@@ -233,6 +233,9 @@ void CHudCrosshair::GetDrawPosition ( float *pX, float *pY, bool *pbBehindCamera
 	*pbBehindCamera = bBehindCamera;
 }
 
+// NEO TODO (Rain): move to server game rules for server op toggling
+ConVar cl_neo_scope_restrict_to_rectangle("cl_neo_scope_restrict_to_rectangle", "1", FCVAR_CHEAT,
+	"Whether to enforce rectangular sniper scope shape regardless of screen ratio.", true, 0.0, true, 1.0);
 
 void CHudCrosshair::Paint( void )
 {
@@ -253,38 +256,75 @@ void CHudCrosshair::Paint( void )
 	if( bBehindCamera )
 		return;
 
+#ifdef TF_CLIENT_DLL
 	float flWeaponScale = 1.f;
+#else
+	float flWeaponScale_X = 1.0f;
+	float flWeaponScale_Y = 1.0f;
+#endif
 	int iTextureW = m_pCrosshair->Width();
 	int iTextureH = m_pCrosshair->Height();
+
+	//DevMsg("TexFileW: %s (%s) :: W %d H %d\n", m_pCrosshair->szTextureFile, m_pCrosshair->szShortName, iTextureW, iTextureH);
+
+	if (iTextureH == 0 || iTextureW == 0)
+	{
+		Assert(false);
+		return;
+	}
+
 	C_BaseCombatWeapon *pWeapon = pPlayer->GetActiveWeapon();
+	CNEOBaseCombatWeapon* pNeoWep = NULL;
 	if ( pWeapon )
 	{
-		pWeapon->GetWeaponCrosshairScale( flWeaponScale );
-
 		// NEO HACK (Rain): this should get implemented in virtual pNeoWep->GetWeaponCrosshairScale
-		auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWeapon);
+		pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWeapon);
 		if (pNeoWep && pNeoWep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
 		{
 			int screenWidth, screenHeight;
 			GetHudSize(screenWidth, screenHeight);
+			Assert(screenWidth > 0 && screenHeight > 0);
 
 			// Scale scope size based on resolution.
-#define SCOPE_BASELINE_Y_RESOLUTION 1080
-			Assert(iTextureH > 0);
-			const float scaleRatio = (screenHeight / (float)iTextureH) / (SCOPE_BASELINE_Y_RESOLUTION / (float)iTextureH);
-			flWeaponScale = scaleRatio;
+			flWeaponScale_X = static_cast<float>(screenWidth) / iTextureW;
+			flWeaponScale_Y = static_cast<float>(screenHeight) / iTextureH;
+
+			if (cl_neo_scope_restrict_to_rectangle.GetBool())
+			{
+// This is how many see-through "lens" pixels there are in X vs Y axes of the default scope03 texture.
+#define RECT_SCOPE03_VISIBLE_AREA_SCALING (720.0f / 960.0f)
+				// Get the smaller dimension as base for the square scope.
+				flWeaponScale_X = Min(flWeaponScale_X, flWeaponScale_Y);
+				// And further downscale with this ratio to make the actual scope lens part of the texture square shaped.
+				flWeaponScale_Y = flWeaponScale_X * RECT_SCOPE03_VISIBLE_AREA_SCALING;
+				// We can increase the final rectangle scale size by about this much without overflowing the screen area.
+				flWeaponScale_X *= (1.0f + (1.0f - RECT_SCOPE03_VISIBLE_AREA_SCALING));
+				flWeaponScale_Y *= (1.0f + (1.0f - RECT_SCOPE03_VISIBLE_AREA_SCALING));
+			}
+		}
+		else
+		{
+			pWeapon->GetWeaponCrosshairScale(flWeaponScale_X);
+			flWeaponScale_Y = flWeaponScale_X;
 		}
 	}
 
-	float flPlayerScale = 1.0f;
 #ifdef TF_CLIENT_DLL
+	float flPlayerScale = 1.0f;
 	Color clr( cl_crosshair_red.GetInt(), cl_crosshair_green.GetInt(), cl_crosshair_blue.GetInt(), 255 );
 	flPlayerScale = cl_crosshair_scale.GetFloat() / 32.0f;  // the player can change the scale in the options/multiplayer tab
-#else
-	Color clr = m_clrCrosshair;
-#endif
 	float flWidth = flWeaponScale * flPlayerScale * (float)iTextureW;
 	float flHeight = flWeaponScale * flPlayerScale * (float)iTextureH;
+	int iWidth = (int)(flWidth + 0.5f);
+	int iHeight = (int)(flHeight + 0.5f);
+	int iX = (int)(x + 0.5f);
+	int iY = (int)(y + 0.5f);
+	Color clr = m_clrCrosshair;
+#endif
+
+	float flWidth = flWeaponScale_X * (float)iTextureW;
+	float flHeight = flWeaponScale_Y * (float)iTextureH;
+
 	int iWidth = (int)( flWidth + 0.5f );
 	int iHeight = (int)( flHeight + 0.5f );
 	int iX = (int)( x + 0.5f );
@@ -295,9 +335,13 @@ void CHudCrosshair::Paint( void )
 		0, 0,
 		iTextureW, iTextureH,
 		iWidth, iHeight,
-		clr );
+#ifdef TF_CLIENT_DLL
+		clr
+#else
+		m_clrCrosshair
+#endif
+	);
 
-	auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWeapon);
 	if (pNeoWep && pNeoWep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
 	{
 		int screenWidth, screenHeight;
