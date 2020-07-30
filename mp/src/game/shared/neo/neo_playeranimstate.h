@@ -19,7 +19,7 @@ class CBaseAnimatingOverlay;
 class CBaseCombatWeapon;
 class CNEO_Player;
 
-enum PlayerAnimEvent_t
+enum PlayerAnimEvent_t : uint
 {
 	PLAYERANIMEVENT_FIRE_GUN_PRIMARY = 0,
 	PLAYERANIMEVENT_FIRE_GUN_SECONDARY,

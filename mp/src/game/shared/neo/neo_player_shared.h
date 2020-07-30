@@ -180,7 +180,7 @@ enum NeoClass {
 
 class CNEO_Player;
 class CNEOBaseCombatWeapon;
-enum PlayerAnimEvent_t : int;
+enum PlayerAnimEvent_t : uint;
 
 extern bool IsThereRoomForLeanSlide(CNEO_Player *player,
 	const Vector &targetViewOffset, bool &outStartInSolid);
