@@ -236,8 +236,16 @@ private:
 
 	virtual bool		ShouldResetMainSequence( int iCurrentSequence, int iNewSequence );
 	void				ComputeMainSequence();
-	void				ComputeAimSequence();
 
+#ifdef NEO
+protected:
+	virtual void		ComputeAimSequence();
+#else
+private:
+	void				ComputeAimSequence();
+#endif
+
+private:
 	void				ComputePlaybackRate();
 
 	void UpdateInterpolators();

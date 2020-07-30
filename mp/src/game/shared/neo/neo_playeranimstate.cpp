@@ -58,7 +58,18 @@ public:
 	void InitNEO(CBaseAnimatingOverlay *pPlayer, INEOPlayerAnimStateHelpers *pHelpers,
 		LegAnimType_t legAnimType, bool bUseAimSequences);
 
+	// If this returns true, then it will blend the current aim layer sequence with an idle aim layer
+	// sequence based on how fast the character is moving, so it doesn't play the upper-body run at
+	// full speed if he's moving really slowly.
+	//
+	// We return false on this for animations that don't have blends.
+	virtual bool ShouldBlendAimSequenceToIdle() OVERRIDE;
+
+	virtual bool ShouldBlendReloadSequenceToIdle();
+
 protected:
+	virtual void ComputeAimSequence() OVERRIDE;
+
 	int CalcFireLayerSequence(PlayerAnimEvent_t event);
 	void ComputeFireSequence(CStudioHdr *pStudioHdr);
 
@@ -76,6 +87,10 @@ protected:
 
 	void UpdateLayerSequenceGeneric(CStudioHdr *pStudioHdr, int iLayer, bool &bEnabled,
 		float &flCurCycle, int &iSequence, bool bWaitAtEnd);
+
+private:
+	void UpdateReloadSequenceLayers(float flCycle, int iFirstLayer, bool bForceIdle,
+		CSequenceTransitioner* pTransitioner, float flWeightScale);
 
 private:
 	// Current state variables.
@@ -102,6 +117,8 @@ private:
 	int m_iLastThrowGrenadeCounter;	// used to detect when the guy threw the grenade.
 
 	INEOPlayerAnimStateHelpers *m_pHelpers;
+
+	CSequenceTransitioner m_ReloadSequenceTransitioner;
 };
 
 INEOPlayerAnimState *CreatePlayerAnimState(CBaseAnimatingOverlay *pEntity,
@@ -164,7 +181,7 @@ void CNEOPlayerAnimState::InitNEO(CBaseAnimatingOverlay *pPlayer,
 	INEOPlayerAnimStateHelpers *pHelpers, LegAnimType_t legAnimType, bool bUseAimSequences)
 {
 	CModAnimConfig config;
-	config.m_flMaxBodyYawDegrees = 90;
+	config.m_flMaxBodyYawDegrees = NEO_ANIMSTATE_MAX_BODY_YAW_DEGREES;
 	config.m_LegAnimType = legAnimType;
 	config.m_bUseAimSequences = bUseAimSequences;
 
@@ -178,6 +195,7 @@ void CNEOPlayerAnimState::ClearAnimationState()
 	m_bJumping = false;
 	m_bFiring = false;
 	m_bReloading = false;
+
 	m_bThrowingGrenade = m_bPrimingGrenade = false;
 	m_iLastThrowGrenadeCounter = GetOuterGrenadeThrowCounter();
 
@@ -194,7 +212,7 @@ void CNEOPlayerAnimState::DoAnimationEvent(PlayerAnimEvent_t event, int nData)
 		// Regardless of what we're doing in the fire layer, restart it.
 		m_flFireCycle = 0;
 		m_iFireSequence = CalcFireLayerSequence(event);
-		m_bFiring = m_iFireSequence != -1;
+		m_bFiring = (m_iFireSequence > 0);
 	}
 	else if (event == PLAYERANIMEVENT_JUMP)
 	{
@@ -206,7 +224,7 @@ void CNEOPlayerAnimState::DoAnimationEvent(PlayerAnimEvent_t event, int nData)
 	else if (event == PLAYERANIMEVENT_RELOAD)
 	{
 		m_iReloadSequence = CalcReloadLayerSequence();
-		if (m_iReloadSequence != -1)
+		if (m_iReloadSequence > 0)
 		{
 			m_bReloading = true;
 			m_flReloadCycle = 0;
@@ -238,46 +256,30 @@ int CNEOPlayerAnimState::CalcReloadLayerSequence()
 	const char *pSuffix = GetWeaponSuffix();
 	if (!pSuffix)
 	{
-		return -1;
+		return 0;
 	}
 
 	auto pWeapon = m_pHelpers->NEOAnim_GetActiveWeapon();
 	if (!pWeapon)
 	{
-		return -1;
+		return 0;
 	}
 
-	// First, look for reload_<weapon name>.
+	// First, look for Reload_<weapon name>.
 	char szName[512];
-	Q_snprintf(szName, sizeof(szName), "reload_%s", pSuffix);
-	int iReloadSequence = m_pOuter->LookupSequence(szName);
-	if (iReloadSequence != -1)
-	{
-		return iReloadSequence;
-	}
-	
-	// NEO NOTE (Rain): this is imported from SDK codebase.
-	// Figure out if we need to do something here, or can we remove it.
-#if(0) // SDK TODO
-	// Ok, look for generic categories.. pistol, shotgun, rifle, etc.
-	if ( pWeapon->GetSDKWpnData().m_WeaponType == WEAPONTYPE_PISTOL )
-	{
-	Q_snprintf( szName, sizeof( szName ), "reload_pistol" );
-	iReloadSequence = m_pOuter->LookupSequence( szName );
-	if ( iReloadSequence != -1 )
-	return iReloadSequence;
-	}
-#endif
+	Q_snprintf(szName, sizeof(szName), "Reload_%s", pSuffix);
 
-	// Fall back to reload_m4.
-	// NEO FIXME (Rain): get a sensible NT fallback value (Pistol/ZR68C?)
-	iReloadSequence = CalcSequenceIndex("reload_m4");
+	int iReloadSequence = CalcSequenceIndex(szName);// m_pOuter->LookupSequence(szName);
+	Assert(iReloadSequence > 0);
 	if (iReloadSequence > 0)
 	{
 		return iReloadSequence;
 	}
-	
-	return -1;
+
+	// Fall back to Reload_M4.
+	iReloadSequence = CalcSequenceIndex("Reload_M4");
+	Assert(iReloadSequence > 0);
+	return iReloadSequence;
 }
 
 void CNEOPlayerAnimState::UpdateLayerSequenceGeneric(CStudioHdr *pStudioHdr,
@@ -428,7 +430,7 @@ void CNEOPlayerAnimState::ComputeReloadSequence(CStudioHdr *pStudioHdr)
 int CNEOPlayerAnimState::CalcAimLayerSequence(float *flCycle,
 	float *flAimSequenceWeight, bool bForceIdle)
 {
-	const char *pSuffix = GetWeaponSuffix();
+	const char* pSuffix = GetWeaponSuffix();
 	if (!pSuffix)
 	{
 		return 0;
@@ -438,7 +440,7 @@ int CNEOPlayerAnimState::CalcAimLayerSequence(float *flCycle,
 	{
 		switch (GetCurrentMainSequenceActivity())
 		{
-		case ACT_CROUCHIDLE:
+		case ACT_NEO_IDLE_CROUCH:
 			return CalcSequenceIndex("%s%s", DEFAULT_CROUCH_IDLE_NAME, pSuffix);
 
 		default:
@@ -512,6 +514,7 @@ int CNEOPlayerAnimState::CalcFireLayerSequence(PlayerAnimEvent_t event)
 		pSuffix = "Gren";
 	}
 
+	// NEO TODO (Rain): cleanup once done with debug
 	int res;
 
 	switch (GetCurrentMainSequenceActivity())
@@ -542,7 +545,7 @@ int CNEOPlayerAnimState::CalcFireLayerSequence(PlayerAnimEvent_t event)
 		break;
 	}
 
-	DevMsg("Res: %d\n", res);
+	//DevMsg("Res: %d\n", res);
 
 	return res;
 }
@@ -608,50 +611,52 @@ bool CNEOPlayerAnimState::HandleJumping()
 
 Activity CNEOPlayerAnimState::CalcMainActivity()
 {
-	float flOuterSpeed = GetOuterXYSpeed();
-
 	if (HandleJumping())
 	{
-		return ACT_HOP;
+		return ACT_NEO_JUMP;
 	}
-	else
-	{
-		Activity idealActivity = ACT_IDLE;
 
-		if (m_pOuter->GetFlags() & FL_DUCKING)
+	Activity idealActivity = ACT_NEO_IDLE_STAND;
+
+	const float flOuterSpeed = GetOuterXYSpeed();
+
+	if (m_pOuter->GetFlags() & FL_DUCKING)
+	{
+		if (flOuterSpeed > MOVING_MINIMUM_SPEED)
 		{
-			if (flOuterSpeed > MOVING_MINIMUM_SPEED)
-				idealActivity = ACT_RUN_CROUCH;
-			else
-				idealActivity = ACT_CROUCHIDLE;
+			idealActivity = ACT_NEO_MOVE_CROUCH;
 		}
 		else
 		{
-			Assert(dynamic_cast<CNEO_Player*>(m_pOuter));
+			idealActivity = ACT_NEO_IDLE_CROUCH;
+		}
+	}
+	else
+	{
+		Assert(dynamic_cast<CNEO_Player*>(m_pOuter));
 
-			if (flOuterSpeed > MOVING_MINIMUM_SPEED)
+		if (flOuterSpeed > MOVING_MINIMUM_SPEED)
+		{
+			if (flOuterSpeed > static_cast<CNEO_Player*>(m_pOuter)->GetNormSpeed_WithActiveWepEncumberment())
 			{
-				if (flOuterSpeed > static_cast<CNEO_Player*>(m_pOuter)->GetNormSpeed())
-				{
-					idealActivity = ACT_SPRINT;
-				}
-				else if (flOuterSpeed > static_cast<CNEO_Player*>(m_pOuter)->GetWalkSpeed())
-				{
-					idealActivity = ACT_RUN;
-				}
-				else
-				{
-					idealActivity = ACT_WALK;
-				}
+				idealActivity = ACT_NEO_MOVE_RUN;
+			}
+			else if (flOuterSpeed > static_cast<CNEO_Player*>(m_pOuter)->GetWalkSpeed_WithActiveWepEncumberment())
+			{
+				idealActivity = ACT_NEO_MOVE_RUN;
 			}
 			else
 			{
-				idealActivity = ACT_IDLE;
+				idealActivity = ACT_NEO_MOVE_WALK;
 			}
 		}
-
-		return idealActivity;
+		else
+		{
+			idealActivity = ACT_NEO_IDLE_STAND;
+		}
 	}
+
+	return idealActivity;
 }
 
 void CNEOPlayerAnimState::DebugShowAnimState(int iStartLine)
@@ -680,15 +685,17 @@ void CNEOPlayerAnimState::ComputeSequences(CStudioHdr *pStudioHdr)
 
 void CNEOPlayerAnimState::ClearAnimationLayers()
 {
+	VPROF("CNEOPlayerAnimState::ClearAnimationLayers");
 	if (!m_pOuter)
-	{
 		return;
-	}
 
 	m_pOuter->SetNumAnimOverlays(NUM_LAYERS_WANTED);
 	for (int i = 0; i < m_pOuter->GetNumAnimOverlays(); i++)
 	{
 		m_pOuter->GetAnimOverlay(i)->SetOrder(CBaseAnimatingOverlay::MAX_OVERLAYS);
+#ifndef CLIENT_DLL
+		m_pOuter->GetAnimOverlay(i)->m_fFlags = 0;
+#endif
 	}
 }
 
@@ -700,4 +707,105 @@ void CNEOPlayerAnimState::ComputeFireSequence(CStudioHdr *pStudioHdr)
 #else
 	// Server doesn't bother with different fire sequences.
 #endif
+}
+
+bool CNEOPlayerAnimState::ShouldBlendAimSequenceToIdle()
+{
+	const Activity act = GetCurrentMainSequenceActivity();
+	return (act == ACT_NEO_MOVE_RUN || act == ACT_NEO_MOVE_WALK || act == ACT_NEO_MOVE_CROUCH || act == ACT_NEO_RELOAD);
+}
+
+bool CNEOPlayerAnimState::ShouldBlendReloadSequenceToIdle()
+{
+	if (m_bReloading)
+	{
+		m_bReloading = m_pOuter && m_pOuter->MyCombatCharacterPointer()->GetActiveWeapon() && m_pOuter->MyCombatCharacterPointer()->GetActiveWeapon()->m_bInReload;
+	}
+
+	return (m_bReloading && m_pOuter && (static_cast<CNEO_Player*>(m_pOuter)->GetFlags() & FL_DUCKING));
+}
+
+void CNEOPlayerAnimState::ComputeAimSequence()
+{
+	if (ShouldBlendReloadSequenceToIdle())
+	{
+		//DevMsg("BLENDING REL %f\n", m_pOuter->GetCycle());
+		UpdateReloadSequenceLayers(m_pOuter->GetCycle(), RELOADSEQUENCE_LAYER, true, &m_ReloadSequenceTransitioner, 1.0f);
+	}
+	else
+	{
+		BaseClass::ComputeAimSequence();
+	}
+}
+
+void CNEOPlayerAnimState::UpdateReloadSequenceLayers(float flCycle, int iFirstLayer,
+	bool bForceIdle, CSequenceTransitioner* pTransitioner, float flWeightScale)
+{
+	float flReloadSequenceWeight = 1;
+	int iReloadSequence = CalcAimLayerSequence(&flCycle, &flReloadSequenceWeight, bForceIdle);
+	if (iReloadSequence == -1)
+		iReloadSequence = 0;
+
+	// Feed the current state of the animation parameters to the sequence transitioner.
+	// It will hand back either 1 or 2 animations in the queue to set, depending on whether
+	// it's transitioning or not. We just dump those into the animation layers.
+	pTransitioner->CheckForSequenceChange(
+		m_pOuter->GetModelPtr(),
+		iReloadSequence,
+		true,	// force transitions on the same anim
+		true	// yes, interpolate when transitioning
+	);
+
+	pTransitioner->UpdateCurrent(
+		m_pOuter->GetModelPtr(),
+		iReloadSequence,
+		flCycle,
+		GetOuter()->GetPlaybackRate(),
+		gpGlobals->curtime
+	);
+
+	CAnimationLayer* pDest0 = m_pOuter->GetAnimOverlay(iFirstLayer);
+	CAnimationLayer* pDest1 = m_pOuter->GetAnimOverlay(iFirstLayer + 1);
+
+	if (pTransitioner->m_animationQueue.Count() == 1)
+	{
+		// If only 1 animation, then blend it in fully.
+		CAnimationLayer* pSource0 = &pTransitioner->m_animationQueue[0];
+		*pDest0 = *pSource0;
+
+		pDest0->m_flWeight = 1;
+		pDest1->m_flWeight = 0;
+		pDest0->m_nOrder = iFirstLayer;
+
+#ifndef CLIENT_DLL
+		pDest0->m_fFlags |= ANIM_LAYER_ACTIVE;
+#endif
+	}
+	else if (pTransitioner->m_animationQueue.Count() >= 2)
+	{
+		// The first one should be fading out. Fade in the new one inversely.
+		CAnimationLayer* pSource0 = &pTransitioner->m_animationQueue[0];
+		CAnimationLayer* pSource1 = &pTransitioner->m_animationQueue[1];
+
+		*pDest0 = *pSource0;
+		*pDest1 = *pSource1;
+		Assert(pDest0->m_flWeight >= 0.0f && pDest0->m_flWeight <= 1.0f);
+		pDest1->m_flWeight = 1 - pDest0->m_flWeight;	// This layer just mirrors the other layer's weight (one fades in while the other fades out).
+
+		pDest0->m_nOrder = iFirstLayer;
+		pDest1->m_nOrder = iFirstLayer + 1;
+
+#ifndef CLIENT_DLL
+		pDest0->m_fFlags |= ANIM_LAYER_ACTIVE;
+		pDest1->m_fFlags |= ANIM_LAYER_ACTIVE;
+#endif
+	}
+
+	pDest0->m_flWeight *= flWeightScale * flReloadSequenceWeight;
+	pDest0->m_flWeight = clamp((float)pDest0->m_flWeight, 0.0f, 1.0f);
+
+	pDest1->m_flWeight *= flWeightScale * flReloadSequenceWeight;
+	pDest1->m_flWeight = clamp((float)pDest1->m_flWeight, 0.0f, 1.0f);
+
+	pDest0->m_flCycle = pDest1->m_flCycle = flCycle;
 }

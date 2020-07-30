@@ -353,7 +353,8 @@ CNEO_Player::CNEO_Player()
 
 	m_NeoFlags = 0;
 
-	m_pPlayerAnimState = CreatePlayerAnimState(this, CreateAnimStateHelpers(this), NEO_LEGANIM_TYPE, true);
+	m_pPlayerAnimState = CreatePlayerAnimState(this, CreateAnimStateHelpers(this),
+		NEO_ANIMSTATE_LEGANIM_TYPE, NEO_ANIMSTATE_USES_AIMSEQUENCES);
 }
 
 CNEO_Player::~CNEO_Player( void )
@@ -1052,86 +1053,7 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 	// Should clean up this unused code later.
 	return;
 
-	Activity idealActivity = ACT_NEO_MOVE_RUN;
-
-	const bool bStartedReloading = (playerAnim == PLAYER_RELOAD);
-
-	float speed;
-
-	if ((GetFlags() & (FL_FROZEN | FL_ATCONTROLS)) || (GetNeoFlags() & NEO_FL_FREEZETIME))
-	{
-		speed = 0;
-		playerAnim = PLAYER_IDLE;
-	}
-	else
-	{
-		speed = GetAbsVelocity().Length2D();
-	}
-
-	// This could stand to be redone. Why is playerAnim abstracted from activity? (sjb)
-	if (playerAnim == PLAYER_DIE)
-	{
-		if (m_lifeState == LIFE_ALIVE)
-		{
-			return;
-		}
-	}
-	else if (playerAnim == PLAYER_ATTACK1)
-	{
-		if (GetActivity() == ACT_NEO_HOVER ||
-			GetActivity() == ACT_NEO_SWIM ||
-			GetActivity() == ACT_NEO_DIE)
-		{
-			idealActivity = GetActivity();
-		}
-		else
-		{
-			idealActivity = ACT_NEO_ATTACK;
-		}
-	}
-	else if (playerAnim == PLAYER_IDLE || playerAnim == PLAYER_WALK || bStartedReloading)
-	{
-		if (GetFlags() & FL_DUCKING)
-		{
-			if (speed > 0)
-			{
-				idealActivity = ACT_NEO_MOVE_CROUCH;
-			}
-			else
-			{
-				idealActivity = ACT_NEO_IDLE_CROUCH;
-			}
-		}
-		else
-		{
-			if (speed > 0)
-			{
-				if (speed > GetWalkSpeed())
-				{
-					idealActivity = ACT_NEO_MOVE_RUN;
-				}
-				else
-				{
-					idealActivity = ACT_NEO_MOVE_WALK;
-				}
-			}
-			else
-			{
-				idealActivity = ACT_NEO_IDLE_STAND;
-			}
-		}
-	}
-
-	if (!(GetFlags() & FL_ONGROUND))	// Still jumping
-	{
-		idealActivity = ACT_NEO_JUMP;
-	}
-	else if (m_afButtonPressed & IN_JUMP) // Started jumping now
-	{
-		idealActivity = ACT_NEO_JUMP;
-	}
-
-	SetActivity(idealActivity);
+	/*
 
 	auto activeWep = GetActiveWeapon();
 
@@ -1340,6 +1262,7 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 	transitioner->CheckForSequenceChange(GetModelPtr(), GetSequence(), false, true);
 	transitioner->UpdateCurrent(GetModelPtr(), GetSequence(), GetCycle(), 1.0f, gpGlobals->curtime);
 #endif
+	*/
 }
 
 // Purpose: Suicide, but cancel the point loss.

@@ -337,7 +337,8 @@ C_NEO_Player::C_NEO_Player()
 	m_bLastTickInThermOpticCamo = false;
 	m_bIsAllowedToToggleVision = false;
 
-	m_pPlayerAnimState = CreatePlayerAnimState(this, CreateAnimStateHelpers(this), NEO_LEGANIM_TYPE, true);
+	m_pPlayerAnimState = CreatePlayerAnimState(this, CreateAnimStateHelpers(this),
+		NEO_ANIMSTATE_LEGANIM_TYPE, NEO_ANIMSTATE_USES_AIMSEQUENCES);
 }
 
 C_NEO_Player::~C_NEO_Player()
