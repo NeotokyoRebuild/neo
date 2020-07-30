@@ -99,8 +99,6 @@ void CNEOGrenadeFrag::VPhysicsUpdate(IPhysicsObject *pPhysics)
 	pPhysics->GetVelocity(&vel, &angVel);
 
 	Vector start = GetAbsOrigin();
-	// find all entities that my collision group wouldn't hit, but COLLISION_GROUP_NONE would and bounce off of them as a ray cast
-	CNEOTraceFilterCollisionGroupDelta filter(this, GetCollisionGroup(), COLLISION_GROUP_NONE);
 	trace_t tr;
 
 	UTIL_TraceLine(start, start + vel * gpGlobals->frametime, MASK_SOLID, GetThrower(), COLLISION_GROUP_PROJECTILE, &tr);
