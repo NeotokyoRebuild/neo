@@ -66,6 +66,14 @@ END_DATADESC()
 
 PRECACHE_WEAPON_REGISTER(weapon_remotedet);
 
+ConVar sv_neo_detpack_xp_limit("sv_neo_detpack_xp_limit", "4", FCVAR_REPLICATED,
+	"How many XP are required to unlock the detpack for recons (or -1 for no limit).", true, -1.0, false, 0.0);
+
+int CWeaponDetpack::GetNeoWepXPCost(const int neoClass) const
+{
+	return sv_neo_detpack_xp_limit.GetInt();
+}
+
 CWeaponDetpack::CWeaponDetpack()
 {
 	m_bWantsToThrowThisDetpack = false;

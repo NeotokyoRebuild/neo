@@ -1913,12 +1913,12 @@ void GiveDet(CNEO_Player* pPlayer)
 			auto pWeapon = dynamic_cast<CNEOBaseCombatWeapon*>((CBaseEntity*)pent);
 			if (pWeapon)
 			{
+				const int detXpCost = pWeapon->GetNeoWepXPCost(pPlayer->GetClass());
+				// Cost of -1 XP means no XP cost.
+				const bool canHaveDet = (detXpCost < 0 || pPlayer->m_iXP >= detXpCost);
+
 				pWeapon->SetSubType(0);
-				if (pPlayer->m_iXP < pWeapon->GetNeoWepXPCost(pPlayer->GetClass()))
-				{
-					UTIL_Remove(pWeapon);
-				}
-				else
+				if (canHaveDet)
 				{
 					DispatchSpawn(pent);
 
@@ -1926,6 +1926,10 @@ void GiveDet(CNEO_Player* pPlayer)
 					{
 						pent->Touch(pPlayer);
 					}
+				}
+				else
+				{
+					UTIL_Remove(pWeapon);
 				}
 			}
 		}
