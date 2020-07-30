@@ -182,6 +182,7 @@ mp/src/materialsystem/stdshaders/makefile.stdshader_dx9_30.copy
 
 # Server plugin files
 mp/game/neo/addons
+mp/game/neo/cfg/sourcemod
 
 # Excludes
 !makefile_base_posix.mak
