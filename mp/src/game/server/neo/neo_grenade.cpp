@@ -7,8 +7,12 @@
 #include "gamestats.h"
 #endif
 
+#include "vcollide_parse.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
+
+#define NADE_SOLID_TYPE SolidType_t::SOLID_BBOX
 
 LINK_ENTITY_TO_CLASS(neo_grenade_frag, CNEOGrenadeFrag);
 
@@ -44,11 +48,20 @@ void CNEOGrenadeFrag::Spawn(void)
 	m_takedamage = DAMAGE_YES;
 	m_iHealth = 1;
 
-	SetSize(-Vector(4, 4, 4), Vector(4, 4, 4));
-	SetCollisionGroup(COLLISION_GROUP_WEAPON);
+#define FRAG_RADIUS 4.0f
+#define FRAG_COLLISION_RADIUS (FRAG_RADIUS * 2.0)
+
+	SetSize(-Vector(FRAG_RADIUS, FRAG_RADIUS, FRAG_RADIUS), Vector(FRAG_RADIUS, FRAG_RADIUS, FRAG_RADIUS));
+	SetCollisionBounds(-Vector(FRAG_COLLISION_RADIUS, FRAG_COLLISION_RADIUS, FRAG_COLLISION_RADIUS), Vector(FRAG_COLLISION_RADIUS, FRAG_COLLISION_RADIUS, FRAG_COLLISION_RADIUS));
+	SetCollisionGroup(COLLISION_GROUP_PROJECTILE);
 	CreateVPhysics();
 
 	AddSolidFlags(FSOLID_NOT_STANDABLE);
+
+	// We turn off VPhysics for the nade because we want to control it with a bounding box ourselves
+	// for more consistent and controllable bouncing.
+	// This gets re-enabled on the prop if it settles before exploding (see the VPhysicsUpdate).
+	VPhysicsGetObject()->EnableCollisions(false);
 
 	m_punted = false;
 
@@ -58,12 +71,28 @@ void CNEOGrenadeFrag::Spawn(void)
 bool CNEOGrenadeFrag::CreateVPhysics()
 {
 	// Create the object in the physics system
-	VPhysicsInitNormal(SOLID_BBOX, 0, false);
+	VPhysicsInitNormal(NADE_SOLID_TYPE, 0, false);
 	return true;
 }
 
+ConVar sv_neo_frag_cor("sv_neo_frag_cor", "0.5", FCVAR_CHEAT | FCVAR_REPLICATED, "Neotokyo frag coefficient of restitution", true, 0.0, true, 1.0);
+ConVar sv_neo_frag_showdebug("sv_neo_frag_showdebug", "0", FCVAR_CHEAT, "Show frag collision debug", true, 0.0, true, 1.0);
+ConVar sv_neo_frag_vphys_reawaken_vel("sv_neo_frag_vphys_reawaken_vel", "200", FCVAR_CHEAT);
+
 void CNEOGrenadeFrag::VPhysicsUpdate(IPhysicsObject *pPhysics)
 {
+	if (sv_neo_frag_showdebug.GetBool())
+	{
+		if (NADE_SOLID_TYPE == SolidType_t::SOLID_BBOX)
+		{
+			DrawBBoxOverlay(0.1f);
+		}
+		else
+		{
+			DrawAbsBoxOverlay();
+		}
+	}
+
 	BaseClass::VPhysicsUpdate(pPhysics);
 	Vector vel;
 	AngularImpulse angVel;
@@ -74,50 +103,71 @@ void CNEOGrenadeFrag::VPhysicsUpdate(IPhysicsObject *pPhysics)
 	CNEOTraceFilterCollisionGroupDelta filter(this, GetCollisionGroup(), COLLISION_GROUP_NONE);
 	trace_t tr;
 
-	// UNDONE: Hull won't work with hitboxes - hits outer hull.  But the whole point of this test is to hit hitboxes.
-#if 0
-	UTIL_TraceHull(start, start + vel * gpGlobals->frametime, CollisionProp()->OBBMins(), CollisionProp()->OBBMaxs(), CONTENTS_HITBOX | CONTENTS_MONSTER | CONTENTS_SOLID, &filter, &tr);
-#else
-	UTIL_TraceLine(start, start + vel * gpGlobals->frametime, CONTENTS_HITBOX | CONTENTS_MONSTER | CONTENTS_SOLID, &filter, &tr);
-#endif
+	UTIL_TraceLine(start, start + vel * gpGlobals->frametime, MASK_SOLID, GetThrower(), COLLISION_GROUP_PROJECTILE, &tr);
 
-	const float GRENADE_COEFFICIENT_OF_RESTITUTION = 0.2f;
-
+	// If we clipped in a solid, undo it so we don't go out of bounds
 	if (tr.startsolid)
 	{
 		if (!m_inSolid)
 		{
-			// UNDONE: Do a better contact solution that uses relative velocity?
-			vel *= -GRENADE_COEFFICIENT_OF_RESTITUTION; // bounce backwards
+			BounceSound();
+
+			vel *= -sv_neo_frag_cor.GetFloat(); // bounce backwards
 			pPhysics->SetVelocity(&vel, NULL);
+
+			if (sv_neo_frag_showdebug.GetBool())
+			{
+				DevMsg("Frag re-bounced in solid\n");
+			}
 		}
 		m_inSolid = true;
 		return;
 	}
+
 	m_inSolid = false;
-	if (tr.DidHit())
+	
+	// Still bouncing around the world...
+	if (tr.DidHit() || tr.DidHitNonWorldEntity() || tr.DidHitWorld())
 	{
+		BounceSound();
+
 		Vector dir = vel;
 		VectorNormalize(dir);
-		// send a tiny amount of damage so the character will react to getting bonked
-		CTakeDamageInfo info(this, GetThrower(), pPhysics->GetMass() * vel, GetAbsOrigin(), 0.1f, DMG_CRUSH);
-		tr.m_pEnt->TakeDamage(info);
+
+		if (tr.m_pEnt)
+		{
+			// send a tiny amount of damage so the character will react to getting bonked
+			CTakeDamageInfo info(this, GetThrower(), pPhysics->GetMass() * vel, GetAbsOrigin(), 0.1f, DMG_CRUSH);
+			tr.m_pEnt->TakeDamage(info);
+		}
 
 		// reflect velocity around normal
 		vel = -2.0f * tr.plane.normal * DotProduct(vel, tr.plane.normal) + vel;
 
-		// absorb 80% in impact
-		vel *= GRENADE_COEFFICIENT_OF_RESTITUTION;
+		vel *= sv_neo_frag_cor.GetFloat();
 		angVel *= -0.5f;
 		pPhysics->SetVelocity(&vel, &angVel);
+	}
+	// Else, have we slowed down sufficiently for the VPhys to take over and settle the model.
+	// We do this because the BBox can't handle keeping the frag in bounds as robustly.
+	// NEO TODO (Rain): bind this compare velocity to nade release velocity, so
+	// it doesn't need manual adjustment.
+	else if (vel.Length() <= sv_neo_frag_vphys_reawaken_vel.GetFloat())
+	{
+		if (!VPhysicsGetObject()->IsCollisionEnabled())
+		{
+			VPhysicsGetObject()->EnableCollisions(true);
+			VPhysicsGetObject()->RecheckContactPoints();
+			if (sv_neo_frag_showdebug.GetBool())
+			{
+				DevMsg("Frag has settled; awoke CNEOGrenadeFrag VPhys for handling\n");
+			}
+		}
 	}
 }
 
 void CNEOGrenadeFrag::Precache(void)
 {
-	//PrecacheModel(GRENADE_MODEL);
-	//PrecacheScriptSound("Grenade.Blip");
-
 	BaseClass::Precache();
 }
 
