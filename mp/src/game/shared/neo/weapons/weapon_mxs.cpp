@@ -48,11 +48,6 @@ bool CWeaponMX_S::Deploy(void)
 	return BaseClass::Deploy();
 }
 
-void CWeaponMX_S::PrimaryAttack()
-{
-	BaseClass::PrimaryAttack();
-}
-
 void CWeaponMX_S::UpdatePenaltyTime()
 {
 	auto owner = ToBasePlayer(GetOwner());

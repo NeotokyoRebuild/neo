@@ -1056,9 +1056,16 @@ void CGameMovement::CheckParameters( void )
 		}
 	}
 
-	if ( player->GetFlags() & FL_FROZEN ||
-		 player->GetFlags() & FL_ONTRAIN || 
-		 IsDead() )
+#ifdef NEO
+	if (player->GetFlags() & FL_FROZEN ||
+		player->GetFlags() & FL_ONTRAIN ||
+		IsDead() ||
+		static_cast<CNEO_Player*>(player)->GetNeoFlags() & NEO_FL_FREEZETIME)
+#else
+	if (player->GetFlags() & FL_FROZEN ||
+		player->GetFlags() & FL_ONTRAIN ||
+		IsDead())
+#endif
 	{
 		mv->m_flForwardMove = 0;
 		mv->m_flSideMove    = 0;

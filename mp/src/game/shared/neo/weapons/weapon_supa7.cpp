@@ -217,6 +217,11 @@ void CWeaponSupa7::DryFire(void)
 
 void CWeaponSupa7::PrimaryAttack(void)
 {
+	if (ShootingIsPrevented())
+	{
+		return;
+	}
+
 	// Only the player fires this way so we can cast
 	CBasePlayer *pPlayer = ToBasePlayer(GetOwner());
 
@@ -262,6 +267,11 @@ void CWeaponSupa7::PrimaryAttack(void)
 // NEO TODO (Rain): apply single shot shells
 void CWeaponSupa7::SecondaryAttack(void)
 {
+	if (ShootingIsPrevented())
+	{
+		return;
+	}
+
 	return;
 #if(0)
 	// Only the player fires this way so we can cast

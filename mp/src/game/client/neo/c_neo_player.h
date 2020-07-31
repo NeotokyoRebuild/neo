@@ -12,8 +12,8 @@ class C_NEO_Player;
 #include "neo_player_shared.h"
 
 class C_NEOPredictedViewModel;
-
 class CNeoHudElements;
+class INEOPlayerAnimState;
 
 class C_NEO_Player : public C_HL2MP_Player
 {
@@ -73,6 +73,18 @@ public:
 
 	void Lean(void);
 
+	void AddNeoFlag(int flags)
+	{
+		m_NeoFlags = (GetNeoFlags() | flags);
+	}
+
+	void RemoveNeoFlag(int flags)
+	{
+		m_NeoFlags = (GetNeoFlags() & ~flags);
+	}
+
+	int GetNeoFlags() const { return m_NeoFlags; }
+
 	virtual const Vector GetPlayerMaxs(void) const;
 
 	// Implementing in header in hopes of compiler picking up the inlined base method
@@ -102,6 +114,8 @@ public:
 	float GetWalkSpeed(void) const;
 	float GetSprintSpeed(void) const;
 
+	virtual void SetAnimation(PLAYER_ANIM playerAnim) OVERRIDE;
+
 private:
 	float GetActiveWeaponSpeedScale() const;
 	float GetBackwardsMovementPenaltyScale() const { return ((m_nButtons & IN_BACK) ? NEO_SLOW_MODIFIER : 1.0); }
@@ -111,7 +125,7 @@ public:
 
 	int GetClass() const { return m_iNeoClass; }
 
-	bool IsCarryingGhost(void);
+	bool IsCarryingGhost(void) const;
 
 	virtual void SetLocalViewAngles( const QAngle &viewAngles ) OVERRIDE
 	{
@@ -179,6 +193,8 @@ public:
 	CNetworkVar(int, m_iNeoClass);
 	CNetworkVar(int, m_iNeoSkin);
 
+	unsigned char m_NeoFlags;
+
 protected:
 	bool m_bIsClassMenuOpen, m_bIsTeamMenuOpen;
 
@@ -189,6 +205,8 @@ private:
 	bool m_bIsAllowedToToggleVision;
 
 	CNeoHudElements *m_pNeoPanel;
+
+	INEOPlayerAnimState* m_pPlayerAnimState;
 
 	float m_flLastAirborneJumpOkTime;
 	float m_flLastSuperJumpTime;

@@ -133,7 +133,6 @@ IPhysicsObject *PhysModelCreateBox( CBaseEntity *pEntity, const Vector &mins, co
 	return PhysModelCreateCustom( pEntity, pCollide, origin, vec3_angle, STRING(pEntity->GetModelName()), isStatic, &solid );
 }
 
-
 //-----------------------------------------------------------------------------
 // Purpose: 
 // Input  : *pEntity - 

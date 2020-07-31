@@ -57,7 +57,7 @@ CNEOHud_GhostBeacon::CNEOHud_GhostBeacon(const char *pElementName, vgui::Panel *
 // NEO HACK (Rain): This is a sort of magic number to help with screenspace hud elements
 // scaling in world space. There's most likely some nicer and less confusing way to do this.
 // Check which files make reference to this, if you decide to tweak it.
-extern ConVar neo_ghost_beacon_scale_baseline("neo_ghost_beacon_scale_baseline", "0.65", FCVAR_USERINFO,
+ConVar neo_ghost_beacon_scale_baseline("neo_ghost_beacon_scale_baseline", "0.65", FCVAR_USERINFO,
 	"Scale baseline for the HUD ghost beacons.", true, 0, true, 10);
 
 ConVar neo_ghost_beacon_alpha("neo_ghost_beacon_alpha", "150", FCVAR_USERINFO,

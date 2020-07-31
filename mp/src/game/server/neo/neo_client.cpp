@@ -137,8 +137,8 @@ CBaseEntity* FindEntity( edict_t *pEdict, char *classname)
 void Precache_HL2MP( void )
 {
 	CBaseEntity::PrecacheModel("models/player.mdl");
-	CBaseEntity::PrecacheModel( "models/gibs/agibs.mdl" );
-	CBaseEntity::PrecacheModel ("models/weapons/v_hands.mdl");
+	CBaseEntity::PrecacheModel("models/gibs/agibs.mdl");
+	CBaseEntity::PrecacheModel("models/weapons/v_hands.mdl");
 
 	CBaseEntity::PrecacheScriptSound( "HUDQuickInfo.LowAmmo" );
 	CBaseEntity::PrecacheScriptSound( "HUDQuickInfo.LowHealth" );
@@ -321,9 +321,12 @@ void respawn( CBaseEntity *pEdict, bool fCopyCorpse )
 	if ( pPlayer )
 	{
 		if ( gpGlobals->curtime > pPlayer->GetDeathTime() + DEATH_ANIMATION_TIME )
-		{		
-			// respawn player
-			pPlayer->Spawn();			
+		{
+			if (NEORules()->FPlayerCanRespawn(pPlayer))
+			{
+				// respawn player
+				pPlayer->Spawn();
+			}
 		}
 		else
 		{

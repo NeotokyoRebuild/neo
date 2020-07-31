@@ -48,11 +48,6 @@ bool CWeaponZR68C::Deploy(void)
 	return BaseClass::Deploy();
 }
 
-void CWeaponZR68C::PrimaryAttack()
-{
-	BaseClass::PrimaryAttack();
-}
-
 void CWeaponZR68C::UpdatePenaltyTime()
 {
 	auto owner = ToBasePlayer(GetOwner());

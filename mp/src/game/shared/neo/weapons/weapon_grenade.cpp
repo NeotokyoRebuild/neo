@@ -25,7 +25,7 @@ ConVar sv_neo_infinite_frag_grenades("sv_neo_infinite_frag_grenades", "0", FCVAR
 ConVar sv_neo_grenade_throw_intensity("sv_neo_grenade_throw_intensity", "900.0", FCVAR_CHEAT, "How strong should regular grenade throws be.", true, 0.0, true, 9999.9); // 750 is the original NT impulse. Seems incorrect though, weight or phys difference?
 ConVar sv_neo_grenade_lob_intensity("sv_neo_grenade_lob_intensity", "375.0", FCVAR_CHEAT, "How strong should underhand grenade lobs be.", true, 0.0, true, 9999.9); // No such thing in original, but chose half of 750
 ConVar sv_neo_grenade_roll_intensity("sv_neo_grenade_roll_intensity", "375.0", FCVAR_CHEAT, "How strong should underhand grenade rolls be.", true, 0.0, true, 9999.9);
-ConVar sv_neo_grenade_blast_damage("sv_neo_grenade_blast_damage", "100.0", FCVAR_CHEAT, "How much damage should a grenade blast deal.", true, 0.0, true, 999.9);
+ConVar sv_neo_grenade_blast_damage("sv_neo_grenade_blast_damage", "200.0", FCVAR_CHEAT, "How much damage should a grenade blast deal.", true, 0.0, true, 999.9);
 ConVar sv_neo_grenade_blast_radius("sv_neo_grenade_blast_radius", "250.0", FCVAR_CHEAT, "How large should the grenade blast radius be.", true, 0.0, true, 9999.9);
 ConVar sv_neo_grenade_fuse_timer("sv_neo_grenade_fuse_timer", "2.16", FCVAR_CHEAT, "How long in seconds until a frag grenade explodes.", true, 0.1, true, 60.0); // Measured as 2.15999... in NT, ie. < 2.16
 
@@ -121,6 +121,11 @@ bool CWeaponGrenade::Reload(void)
 
 void CWeaponGrenade::SecondaryAttack(void)
 {
+	if (ShootingIsPrevented())
+	{
+		return;
+	}
+
 	if (m_bRedraw || !HasPrimaryAmmo())
 	{
 		return;
@@ -151,6 +156,11 @@ void CWeaponGrenade::SecondaryAttack(void)
 
 void CWeaponGrenade::PrimaryAttack(void)
 {
+	if (ShootingIsPrevented())
+	{
+		return;
+	}
+
 	if (m_bRedraw || !HasPrimaryAmmo())
 	{
 		return;

@@ -48,11 +48,6 @@ void CWeaponMilso::DryFire(void)
 	m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
 }
 
-void CWeaponMilso::PrimaryAttack(void)
-{
-	BaseClass::PrimaryAttack();
-}
-
 void CWeaponMilso::UpdatePenaltyTime(void)
 {
 	CBasePlayer *pOwner = ToBasePlayer(GetOwner());

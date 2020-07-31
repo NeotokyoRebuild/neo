@@ -2,8 +2,10 @@
 
 ## Pull requests are welcome!
 
-Come [join the Discord channel](https://steamcommunity.com/groups/ANPA/discussions/0/487876568238532577/) to discuss the project
-(see the "nt_semantic_sequels" and other related channels under the channel group "Architects").
+We've moved to using GitHub Issues for issue tracking. Feel free to [take a look](https://github.com/NeotokyoRevamp/neo/issues) and assign yourself if you're interested in working on something, or report bugs/features not yet included.
+
+Also come [join the Discord channel](https://steamcommunity.com/groups/ANPA/discussions/0/487876568238532577/) to discuss the project with others
+(see the *"nt_semantic_sequels"* and other related channels under the channel group "Architects").
 
 ## Goal of the project
 The overall goal is to create a reimplementation of Neotokyo for Source 2013 MP engine, with the source code opened for viewing and editing (with certain limitations; see the Source SDK license for legalese). Original NT assets/IP are mounted as dependencies, and aren't part of the repository. It's like a mod of a mod.
@@ -31,8 +33,6 @@ It's recommended you fork [the dev branch](https://github.com/NeotokyoRevamp/neo
 *Note: It's recommended you also read the [dev branch version of this document](https://github.com/NeotokyoRevamp/neo/blob/dev/CONTRIBUTING.md) to make sure the information is up to date.*
 
 The dev branch will periodically get merged back to the master branch, as new things become stable enough.
-
-For now, there's a public [Trello board](https://trello.com/b/LCDYn7Dm) for organizing who's working on what. Come ask in the Discord if you have trouble joining it. GitHub issues could also be used if there's need, but we'll see.
 
 ### Building
 

@@ -3459,7 +3459,11 @@ void C_BaseAnimating::DoAnimationEvents( CStudioHdr *pStudioHdr )
 	if ( nSeqNum >= nStudioNumSeq )
 	{
 #ifdef NEO
-		if (GetOwnerEntity()->GetFlags() & FL_FAKECLIENT)
+		if (!GetOwnerEntity())
+		{
+			return;
+		}
+		else if (GetOwnerEntity()->GetFlags() & FL_FAKECLIENT)
 		{
 #ifdef DEBUG
 			DevWarning("%s[%d]: Bot was playing sequence %d but there's only %d in total\n", GetDebugName(), entindex(), nSeqNum, nStudioNumSeq);

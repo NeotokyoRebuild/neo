@@ -9,6 +9,10 @@
 #include "player.h"
 #include "team_spawnpoint.h"
 
+#ifdef NEO
+#include "neo_player.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -336,10 +340,19 @@ int CTeam::GetAliveMembers( void )
 
 	for ( int i=0;i<iNumPlayers;i++ )
 	{
-		if ( GetPlayer(i) && GetPlayer(i)->IsAlive() )
+#ifdef NEO
+		auto player = static_cast<CNEO_Player*>(GetPlayer(i));
+		// Consider yet unspawned players as alive, too, if they're qualified to spawn for this round.
+		if (player && (player->IsAlive() || player->m_bIsPendingSpawnForThisRound))
+		{
+			++iAlive;
+		}
+#else
+		if (GetPlayer(i) && GetPlayer(i)->IsAlive())
 		{
 			iAlive++;
 		}
+#endif
 	}
 
 	return iAlive;

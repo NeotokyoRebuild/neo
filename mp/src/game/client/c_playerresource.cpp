@@ -150,6 +150,13 @@ void C_PlayerResource::ClientThink()
 //-----------------------------------------------------------------------------
 const char *C_PlayerResource::GetPlayerName( int iIndex )
 {
+#ifdef NEO
+	if (iIndex == 0)
+	{
+		return "world";
+	}
+#endif
+
 	if ( iIndex < 1 || iIndex > MAX_PLAYERS )
 	{
 		Assert( false );
@@ -177,6 +184,13 @@ bool C_PlayerResource::IsAlive(int iIndex )
 
 int C_PlayerResource::GetTeam(int iIndex )
 {
+#ifdef NEO
+	if (iIndex == 0)
+	{
+		return TEAM_UNASSIGNED;
+	}
+#endif
+
 	if ( iIndex < 1 || iIndex > MAX_PLAYERS )
 	{
 		Assert( false );

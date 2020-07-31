@@ -37,6 +37,11 @@ CWeaponKyla::CWeaponKyla(void)
 
 void CWeaponKyla::PrimaryAttack(void)
 {
+	if (ShootingIsPrevented())
+	{
+		return;
+	}
+
 	if (m_iClip1 == 0)
 	{
 		if (!m_bFireOnEmpty)

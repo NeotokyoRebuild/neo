@@ -6,6 +6,7 @@ mp/game/mod_hl2mp
 mp/game/neo/screenshots
 
 # Any debug or user specific configs that shouldn't be pushed
+mp/game/neo/cfg/config.cfg
 mp/game/neo/cfg/rain.cfg
 
 # Shader state debug image dumps
@@ -179,6 +180,10 @@ mp/src/materialsystem/stdshaders/makefile.stdshader_dx9_20b
 mp/src/materialsystem/stdshaders/makefile.stdshader_dx9_20b.copy
 mp/src/materialsystem/stdshaders/makefile.stdshader_dx9_30
 mp/src/materialsystem/stdshaders/makefile.stdshader_dx9_30.copy
+
+# Server plugin files
+mp/game/neo/addons
+mp/game/neo/cfg/sourcemod
 
 # Excludes
 !makefile_base_posix.mak

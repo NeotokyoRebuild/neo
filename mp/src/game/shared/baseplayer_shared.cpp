@@ -51,6 +51,14 @@
 #include "sixense/in_sixense.h"
 #endif
 
+#ifdef NEO
+#ifdef GAME_DLL
+#include "neo_player.h"
+#else
+#include "c_neo_player.h"
+#endif
+#endif
+
 // NVNT haptic utils
 #include "haptics/haptic_utils.h"
 // memdbgon must be the last include file in a .cpp file!!!
@@ -388,8 +396,8 @@ const Vector CBasePlayer::GetPlayerMins( void ) const
 const Vector CBasePlayer::GetPlayerMaxs( void ) const
 {	
 #ifdef NEO
-	Assert(false); // we override this, should never reach here.
-	Error("Called incorrect maxs for \"%s\"\n", m_iClassname);
+	Assert(false);
+	Error("Called base method CBasePlayer::GetPlayerMaxs instead of override. Please report this bug; this should never happen!\n");
 	return vec3_origin;
 #else
 
@@ -536,6 +544,11 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 
 	if ( GetFlags() & (FL_FROZEN|FL_ATCONTROLS))
 		return;
+	
+#ifdef NEO
+	if (static_cast<CNEO_Player*>(this)->GetNeoFlags() & NEO_FL_FREEZETIME)
+		return;
+#endif
 
 	if ( GetMoveType() == MOVETYPE_NOCLIP || GetMoveType() == MOVETYPE_OBSERVER )
 		return;

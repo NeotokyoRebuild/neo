@@ -1216,7 +1216,8 @@ void CNPC_CombineDropship::Flight( void )
 		accel.z = 2.0 * (deltaPos.z - GetAbsVelocity().z * dt + 0.5 * 384 * dt * dt) / (dt * dt);
 		
 		float flDistFromPath = 0.0f;
-		Vector vecPoint, vecDelta;
+		Vector vecPoint;
+		Vector vecDelta{ 0.0f, 0.0f, 0.0f }; // zero to silence compiler uninitialize warning
 		if ( IsOnPathTrack() && GetLandingState() == LANDING_NO )
 		{
 			// Also, add in a little force to get us closer to our current line segment if we can

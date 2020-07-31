@@ -5,6 +5,7 @@
 #endif
 
 class CNEO_Player;
+class INEOPlayerAnimState;
 
 #include "basemultiplayerplayer.h"
 #include "simtimer.h"
@@ -35,38 +36,38 @@ public:
 	DECLARE_SERVERCLASS();
 	DECLARE_DATADESC();
 
-	virtual void Precache(void);
-	virtual void Spawn(void);
-	virtual void PostThink(void);
-	virtual void PreThink(void);
-	virtual void PlayerDeathThink(void);
-	virtual void SetAnimation(PLAYER_ANIM playerAnim);
-	virtual bool HandleCommand_JoinTeam(int team);
-	virtual bool ClientCommand(const CCommand &args);
-	virtual void CreateViewModel(int viewmodelindex = 0);
-	virtual bool BecomeRagdollOnClient(const Vector &force);
-	virtual void Event_Killed(const CTakeDamageInfo &info);
-	virtual int OnTakeDamage(const CTakeDamageInfo &inputInfo);
-	virtual bool WantsLagCompensationOnEntity(const CBasePlayer *pPlayer, const CUserCmd *pCmd, const CBitVec<MAX_EDICTS> *pEntityTransmitBits) const;
-	virtual void FireBullets(const FireBulletsInfo_t &info);
-	virtual bool Weapon_Switch(CBaseCombatWeapon *pWeapon, int viewmodelindex = 0);
-	virtual bool BumpWeapon(CBaseCombatWeapon *pWeapon);
-	virtual void ChangeTeam(int iTeam);
-	virtual void PickupObject(CBaseEntity *pObject, bool bLimitMassAndSize);
-	virtual void PlayStepSound(Vector &vecOrigin, surfacedata_t *psurface, float fvol, bool force);
-	virtual void Weapon_Drop(CBaseCombatWeapon *pWeapon, const Vector *pvecTarget = NULL, const Vector *pVelocity = NULL);
-	virtual void UpdateOnRemove(void);
-	virtual void DeathSound(const CTakeDamageInfo &info);
-	virtual CBaseEntity* EntSelectSpawnPoint(void);
-	virtual void EquipSuit(bool bPlayEffects = true);
-	virtual void RemoveSuit(void);
-	virtual void GiveDefaultItems(void);
+	virtual void Precache(void) OVERRIDE;
+	virtual void Spawn(void) OVERRIDE;
+	virtual void PostThink(void) OVERRIDE;
+	virtual void PreThink(void) OVERRIDE;
+	virtual void PlayerDeathThink(void) OVERRIDE;
+	virtual void SetAnimation(PLAYER_ANIM playerAnim) OVERRIDE;
+	virtual bool HandleCommand_JoinTeam(int team) OVERRIDE;
+	virtual bool ClientCommand(const CCommand &args) OVERRIDE;
+	virtual void CreateViewModel(int viewmodelindex = 0) OVERRIDE;
+	virtual bool BecomeRagdollOnClient(const Vector &force) OVERRIDE;
+	virtual void Event_Killed(const CTakeDamageInfo &info) OVERRIDE;
+	virtual float GetReceivedDamageScale(CBaseEntity* pAttacker) OVERRIDE;
+	virtual bool WantsLagCompensationOnEntity(const CBasePlayer *pPlayer, const CUserCmd *pCmd, const CBitVec<MAX_EDICTS> *pEntityTransmitBits) const OVERRIDE;
+	virtual void FireBullets(const FireBulletsInfo_t &info) OVERRIDE;
+	virtual bool Weapon_Switch(CBaseCombatWeapon *pWeapon, int viewmodelindex = 0) OVERRIDE;
+	virtual bool BumpWeapon(CBaseCombatWeapon *pWeapon) OVERRIDE;
+	virtual void ChangeTeam(int iTeam) OVERRIDE;
+	virtual void PickupObject(CBaseEntity *pObject, bool bLimitMassAndSize) OVERRIDE;
+	virtual void PlayStepSound(Vector &vecOrigin, surfacedata_t *psurface, float fvol, bool force) OVERRIDE;
+	virtual void Weapon_Drop(CBaseCombatWeapon *pWeapon, const Vector *pvecTarget = NULL, const Vector *pVelocity = NULL) OVERRIDE;
+	virtual void UpdateOnRemove(void) OVERRIDE;
+	virtual void DeathSound(const CTakeDamageInfo &info) OVERRIDE;
+	virtual CBaseEntity* EntSelectSpawnPoint(void) OVERRIDE;
+	virtual void EquipSuit(bool bPlayEffects = true) OVERRIDE;
+	virtual void RemoveSuit(void) OVERRIDE;
+	virtual void GiveDefaultItems(void) OVERRIDE;
 
-	virtual const Vector GetPlayerMaxs(void) const;
-	virtual void InitVCollision(const Vector& vecAbsOrigin, const Vector& vecAbsVelocity);
+	virtual const Vector GetPlayerMaxs(void) const OVERRIDE;
+	virtual void InitVCollision(const Vector& vecAbsOrigin, const Vector& vecAbsVelocity) OVERRIDE;
 
 	// Implementing in header in hopes of compiler picking up the inlined base method
-	virtual float GetModelScale() const
+	virtual float GetModelScale() const OVERRIDE
 	{
 		switch (GetClass())
 		{
@@ -78,21 +79,33 @@ public:
 			return CBaseAnimating::GetModelScale() * NEO_ASSAULT_MODEL_SCALE;
 		}
 	}
-	
+
+	void AddNeoFlag(int flags)
+	{
+		m_NeoFlags.GetForModify() = (GetNeoFlags() | flags);
+	}
+
+	void RemoveNeoFlag(int flags)
+	{
+		m_NeoFlags.GetForModify() = (GetNeoFlags() & ~flags);
+	}
+
+	int GetNeoFlags() const { return m_NeoFlags.Get(); }
+
 	void GiveLoadoutWeapon(void);
 
 	void SetPlayerTeamModel(void);
-	virtual void PickDefaultSpawnTeam(void);
+	virtual void PickDefaultSpawnTeam(void) OVERRIDE;
 
-	virtual bool StartObserverMode(int mode);
-	virtual void StopObserverMode(void);
+	virtual bool StartObserverMode(int mode) OVERRIDE;
+	virtual void StopObserverMode(void) OVERRIDE;
 
-	virtual bool	CanHearAndReadChatFrom(CBasePlayer *pPlayer);
+	virtual bool	CanHearAndReadChatFrom(CBasePlayer *pPlayer) OVERRIDE;
 
-	inline bool IsCarryingGhost(void);
-	inline bool IsAllowedToDrop(CBaseCombatWeapon *pWep);
+	bool IsCarryingGhost(void) const;
+	bool IsAllowedToDrop(CBaseCombatWeapon *pWep);
 
-	inline void ZeroFriendlyPlayerLocArray(void);
+	void ZeroFriendlyPlayerLocArray(void);
 
 	void UpdateNetworkedFriendlyLocations(void);
 
@@ -117,15 +130,15 @@ public:
 
 	bool IsAirborne() const { return (!(GetFlags() & FL_ONGROUND)); }
 
-	virtual void StartAutoSprint(void);
-	virtual void StartSprinting(void);
-	virtual void StopSprinting(void);
-	virtual void InitSprinting(void);
-	virtual bool CanSprint(void);
-	virtual void EnableSprint(bool bEnable);
+	virtual void StartAutoSprint(void) OVERRIDE;
+	virtual void StartSprinting(void) OVERRIDE;
+	virtual void StopSprinting(void) OVERRIDE;
+	virtual void InitSprinting(void) OVERRIDE;
+	virtual bool CanSprint(void) OVERRIDE;
+	virtual void EnableSprint(bool bEnable) OVERRIDE;
 
-	virtual void StartWalking(void);
-	virtual void StopWalking(void);
+	virtual void StartWalking(void) OVERRIDE;
+	virtual void StopWalking(void) OVERRIDE;
 
 	float GetNormSpeed_WithActiveWepEncumberment(void) const;
 	float GetCrouchSpeed_WithActiveWepEncumberment(void) const;
@@ -182,12 +195,18 @@ public:
 
 	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
 
+	CNetworkVar(unsigned char, m_NeoFlags);
+
+	bool m_bIsPendingSpawnForThisRound;
+
 private:
 	bool m_bFirstDeathTick;
 	bool m_bPreviouslyReloading;
 
 	float m_flLastAirborneJumpOkTime;
 	float m_flLastSuperJumpTime;
+
+	INEOPlayerAnimState* m_pPlayerAnimState;
 
 private:
 	CNEO_Player(const CNEO_Player&);

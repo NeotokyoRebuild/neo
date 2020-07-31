@@ -99,6 +99,11 @@ bool CWeaponSmokeGrenade::Reload(void)
 
 void CWeaponSmokeGrenade::SecondaryAttack(void)
 {
+	if (ShootingIsPrevented())
+	{
+		return;
+	}
+
 	if (m_bRedraw || !HasPrimaryAmmo())
 	{
 		return;
@@ -129,6 +134,11 @@ void CWeaponSmokeGrenade::SecondaryAttack(void)
 
 void CWeaponSmokeGrenade::PrimaryAttack(void)
 {
+	if (ShootingIsPrevented())
+	{
+		return;
+	}
+
 	if (m_bRedraw || !HasPrimaryAmmo())
 	{
 		return;

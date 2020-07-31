@@ -16,6 +16,7 @@
 #include "dlight.h"
 
 #ifdef NEO
+#include "c_neo_player.h"
 #include "neo_player_shared.h"
 #endif
 
@@ -693,6 +694,13 @@ void C_HL2MP_Player::StopWalking( void )
 
 void C_HL2MP_Player::ItemPreFrame( void )
 {
+#ifdef NEO
+	if (static_cast<C_NEO_Player*>(this)->GetNeoFlags() & FL_FROZEN)
+	{
+		return;
+	}
+#endif
+
 	if ( GetFlags() & FL_FROZEN )
 		 return;
 
@@ -709,6 +717,13 @@ void C_HL2MP_Player::ItemPreFrame( void )
 	
 void C_HL2MP_Player::ItemPostFrame( void )
 {
+#ifdef NEO
+	if (static_cast<C_NEO_Player*>(this)->GetNeoFlags() & FL_FROZEN)
+	{
+		return;
+	}
+#endif
+
 	if ( GetFlags() & FL_FROZEN )
 		 return;
 

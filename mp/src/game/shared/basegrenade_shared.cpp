@@ -450,6 +450,19 @@ void CBaseGrenade::SlideTouch( CBaseEntity *pOther )
 void CBaseGrenade ::BounceSound( void )
 {
 	// Doesn't need to do anything anymore! Physics makes the sound.
+
+	// NEO NOTE (Rain): Except on NEO we actually want this sound.
+	// Don't have to worry about the physics sound as we temporarily disable
+	// that VPhys while bouncing the nade for our BBOX etc. implementation.
+#ifdef NEO
+#ifdef GAME_DLL
+	CRecipientFilter filter;
+	filter.AddRecipientsByPAS(GetAbsOrigin());
+	EmitSound_t type;
+	type.m_pSoundName = "Grenade.Bounce";
+	EmitSound(filter, edict()->m_EdictIndex, type);
+#endif
+#endif
 }
 
 void CBaseGrenade ::TumbleThink( void )

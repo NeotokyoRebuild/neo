@@ -15,6 +15,8 @@
 #include "neo_player.h"
 #endif
 
+#include "neo_playeranimstate.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -42,4 +44,42 @@ bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep)
 		NEO_WEP_SMOKE_GRENADE;
 
 	return !(pWep->GetNeoWepBits() & forbiddenZooms);
+}
+
+CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, int neoWepBits)
+{
+	int nonNeoWepFoundAtIndex = -1;
+	for (int i = 0; i < MAX_WEAPONS; i++)
+	{
+		auto pWep = dynamic_cast<CNEOBaseCombatWeapon*>(player->GetWeapon(i));
+		if (!pWep)
+		{
+			nonNeoWepFoundAtIndex = i;
+			continue;
+		}
+
+		if (pWep->GetNeoWepBits() & neoWepBits)
+		{
+			return pWep;
+		}
+	}
+
+	// NEO HACK (Rain): If wanted a knife, assume it's the non-CNEOBaseCombatWeapon one we found.
+	// Should clean this up once all guns inherit from CNEOBaseCombatWeapon.
+	if ((neoWepBits & NEO_WEP_KNIFE) && nonNeoWepFoundAtIndex != -1)
+	{
+		return player->GetWeapon(nonNeoWepFoundAtIndex);
+	}
+
+	return NULL;
+}
+
+bool PlayerAnimToPlayerAnimEvent(const PLAYER_ANIM playerAnim, PlayerAnimEvent_t& outAnimEvent)
+{
+	bool success = true;
+	if (playerAnim == PLAYER_ANIM::PLAYER_JUMP) { outAnimEvent = PlayerAnimEvent_t::PLAYERANIMEVENT_JUMP; }
+	else if (playerAnim == PLAYER_ANIM::PLAYER_RELOAD) { outAnimEvent = PlayerAnimEvent_t::PLAYERANIMEVENT_RELOAD; }
+	else if (playerAnim == PLAYER_ANIM::PLAYER_ATTACK1) { outAnimEvent = PlayerAnimEvent_t::PLAYERANIMEVENT_FIRE_GUN_PRIMARY; }
+	else { success = false; }
+	return success;
 }

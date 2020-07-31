@@ -361,6 +361,8 @@ void CNEOModelManager::Precache( void ) const
 	//CBaseEntity::PrecacheModel("models/player/nsf_nsfanims2.mdl");
 	CBaseEntity::PrecacheModel("models/player/vip_anims.mdl");
 
+	CBaseEntity::PrecacheModel("particle/fire.vmt");
+
 	PrecacheMaterial("toc.vmt");
 	PrecacheMaterial("toc2.vmt");
 	PrecacheMaterial("models/player/toc.vmt");

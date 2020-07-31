@@ -123,7 +123,7 @@ void CNEOGhostCapturePoint::Spawn(void)
 		// We could recover, but it's probably better to break the capzone
 		// and throw a nag message in console so the mapper can fix their error.
 		Warning("Capzone had an invalid owning team: %i. Expected %i (Jinrai), or %i (NSF).\n",
-			m_iOwningTeam, NEO_FGD_TEAMNUM_ATTACKER, NEO_FGD_TEAMNUM_DEFENDER);
+			m_iOwningTeam.Get(), NEO_FGD_TEAMNUM_ATTACKER, NEO_FGD_TEAMNUM_DEFENDER);
 
 		// Nobody will be able to cap here.
 		m_iOwningTeam = TEAM_INVALID;
@@ -133,12 +133,12 @@ void CNEOGhostCapturePoint::Spawn(void)
 	if (m_flCapzoneRadius < NEO_CAP_MIN_RADIUS)
 	{
 		Warning("Capzone had too small radius: %f, clamping! (Expected a minimum of %f)\n",
-			m_flCapzoneRadius, NEO_CAP_MIN_RADIUS);
+			m_flCapzoneRadius.Get(), NEO_CAP_MIN_RADIUS);
 	}
 	else if (m_flCapzoneRadius > NEO_CAP_MAX_RADIUS)
 	{
 		Warning("Capzone had too large radius: %f, clamping! (Expected a minimum of %f)\n",
-			m_flCapzoneRadius, NEO_CAP_MAX_RADIUS);
+			m_flCapzoneRadius.Get(), NEO_CAP_MAX_RADIUS);
 	}
 	// Actually clamp.
 	m_flCapzoneRadius = clamp(m_flCapzoneRadius, NEO_CAP_MIN_RADIUS, NEO_CAP_MAX_RADIUS);
@@ -184,35 +184,7 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 			continue;
 		}
 
-		auto weapon = dynamic_cast<CNEOBaseCombatWeapon*>(player->Weapon_GetSlot(NEO_WEAPON_PRIMARY_SLOT));
-		// NEO FIXME (Rain): we're dynamic casting because not all NT weapons inherit from a neo base wep class yet!
-		// Should fix this and switch to the approach below, instead.
-#if(0)
-		// Do we have a weapon?
-#ifdef DEBUG
-		auto baseWeapon = player->Weapon_GetSlot(NEO_WEAPON_PRIMARY_SLOT);
-		if (!baseWeapon)
-		{
-			continue;
-		}
-		// Make sure we're casting appropriately
-		auto weapon = dynamic_cast<CNEOBaseCombatWeapon*>(player->Weapon_GetSlot(NEO_WEAPON_PRIMARY_SLOT));
-		if (!weapon)
-		{
-			Assert(false);
-		}
-#else
-		auto weapon = static_cast<CNEOBaseCombatWeapon*>(player->Weapon_GetSlot(NEO_WEAPON_PRIMARY_SLOT));
-#endif
-#endif
-
-		if (!weapon)
-		{
-			continue;
-		}
-
-		// Is it a ghost?
-		if (!weapon->IsGhost())
+		if (!player->IsCarryingGhost())
 		{
 			continue;
 		}

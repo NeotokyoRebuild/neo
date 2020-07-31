@@ -23,8 +23,9 @@ public:
 
 	CWeaponKyla(void);
 
-	void PrimaryAttack(void);
-
+	virtual void	PrimaryAttack(void) OVERRIDE;
+	virtual void	SecondaryAttack(void) OVERRIDE { if (!ShootingIsPrevented()) { BaseClass::SecondaryAttack(); } }
+	
 	virtual int GetNeoWepBits(void) const { return NEO_WEP_KYLA; }
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
 
