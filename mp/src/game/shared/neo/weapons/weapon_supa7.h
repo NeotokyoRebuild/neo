@@ -67,8 +67,8 @@ public:
 	virtual float GetFireRate(void) OVERRIDE { return 0.7f; }
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
-	virtual float GetAccuracyPenalty() const OVERRIDE { Assert(false); return 0; } // Currently unused in shotgun code
-	virtual float GetMaxAccuracyPenalty() const OVERRIDE { Assert(false); return 0; } // Currently unused in shotgun code
+	virtual float GetAccuracyPenalty() const OVERRIDE { return 0; }
+	virtual float GetMaxAccuracyPenalty() const OVERRIDE { return 0; }
 
 #if(0)
 	void WeaponIdle( void );
