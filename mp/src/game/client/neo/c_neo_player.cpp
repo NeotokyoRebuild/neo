@@ -44,6 +44,8 @@
 
 #include "model_types.h"
 
+#include "neo_playeranimstate.h"
+
 // Don't alias here
 #if defined( CNEO_Player )
 #undef CNEO_Player	
@@ -76,6 +78,8 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_nVisionLastTick)),
 
 	RecvPropArray(RecvPropVector(RECVINFO(m_rvFriendlyPlayerPositions[0])), m_rvFriendlyPlayerPositions),
+
+	RecvPropInt(RECVINFO(m_NeoFlags)),
 END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA(C_NEO_Player)
@@ -332,10 +336,14 @@ C_NEO_Player::C_NEO_Player()
 	m_bPreviouslyPreparingToHideMsg = false;
 	m_bLastTickInThermOpticCamo = false;
 	m_bIsAllowedToToggleVision = false;
+
+	m_pPlayerAnimState = CreatePlayerAnimState(this, CreateAnimStateHelpers(this),
+		NEO_ANIMSTATE_LEGANIM_TYPE, NEO_ANIMSTATE_USES_AIMSEQUENCES);
 }
 
 C_NEO_Player::~C_NEO_Player()
 {
+	m_pPlayerAnimState->Release();
 }
 
 void C_NEO_Player::CheckThermOpticButtons()
@@ -849,8 +857,6 @@ void C_NEO_Player::PostThink(void)
 
 			Weapon_SetZoom(false);
 			m_bInVision = false;
-
-			gViewPortInterface->ShowPanel(PANEL_SPECGUI, true);
 		}
 
 		return;
@@ -859,8 +865,6 @@ void C_NEO_Player::PostThink(void)
 	{
 		if (!m_bFirstDeathTick)
 		{
-			gViewPortInterface->ShowPanel(PANEL_SPECGUI, false);
-
 			m_bFirstDeathTick = true;
 		}
 	}
@@ -893,6 +897,11 @@ void C_NEO_Player::PostThink(void)
 			m_bPreviouslyReloading = pWep->m_bInReload;
 		}
 	}
+
+	Vector eyeForward;
+	this->EyeVectors(&eyeForward, NULL, NULL);
+	Assert(eyeForward.IsValid());
+	m_pPlayerAnimState->Update(eyeForward[YAW], eyeForward[PITCH]);
 }
 
 bool C_NEO_Player::IsAllowedToSuperJump(void)
@@ -954,8 +963,6 @@ void C_NEO_Player::Spawn( void )
 	m_nVisionLastTick = 0;
 
 	Weapon_SetZoom(false);
-
-	gViewPortInterface->ShowPanel(PANEL_SPECGUI, true);
 
 	SetViewOffset(VEC_VIEW_NEOSCALE(this));
 
@@ -1243,25 +1250,9 @@ void C_NEO_Player::Weapon_SetZoom(const bool bZoomIn)
 	m_bInAim = bZoomIn;
 }
 
-bool C_NEO_Player::IsCarryingGhost(void)
+bool C_NEO_Player::IsCarryingGhost(void) const
 {
-#ifdef DEBUG
-	auto baseWep = GetWeapon(NEO_WEAPON_PRIMARY_SLOT);
-	if (!baseWep)
-	{
-		return false;
-	}
-
-	auto wep = dynamic_cast<CNEOBaseCombatWeapon*>(baseWep);
-	if (!wep)
-	{
-		//Assert(false); // FIXME
-	}
-#else
-	//auto wep = static_cast<CNEOBaseCombatWeapon*>(GetWeapon(NEO_WEAPON_PRIMARY_SLOT));
-	auto wep = dynamic_cast<CNEOBaseCombatWeapon*>(GetWeapon(NEO_WEAPON_PRIMARY_SLOT));
-#endif
-	return (wep && wep->IsGhost());
+	return GetNeoWepWithBits(this, NEO_WEP_GHOST) != NULL;
 }
 
 const Vector C_NEO_Player::GetPlayerMaxs(void) const
@@ -1302,4 +1293,17 @@ void C_NEO_Player::PreDataUpdate(DataUpdateType_t updateType)
 	}
 
 	BaseClass::PreDataUpdate(updateType);
+}
+
+void C_NEO_Player::SetAnimation(PLAYER_ANIM playerAnim)
+{
+	PlayerAnimEvent_t animEvent;
+	if (!PlayerAnimToPlayerAnimEvent(playerAnim, animEvent))
+	{
+		DevWarning("CLI Tried to get unknown PLAYER_ANIM %d\n", playerAnim);
+	}
+	else
+	{
+		m_pPlayerAnimState->DoAnimationEvent(animEvent);
+	}
 }

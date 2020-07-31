@@ -23,6 +23,8 @@
 // This needs to start with a -
 #define NEO_PATH_PARM_CMD "-neopath"
 
+#define NEO_MOUNT_PATHID "GAME"
+
 #ifdef LINUX
 typedef struct stat StatStruct;
 static inline int Stat(const char* path, StatStruct* buf) { return stat(path, buf); }
@@ -38,7 +40,7 @@ static inline bool DirExists(const char *path)
 // Attempts to build a valid NT game path using the provided Neo path, and Steam info.
 // Returns true/false depending on if we successfully found a valid path.
 // NOTE: this *will* modify the input path pointer, regardless of success!!
-static inline bool IsNeoGameInfoPathOK(char *out_neoPath, const int pathLen)
+bool IsNeoGameInfoPathOK(char *out_neoPath, const int pathLen)
 {
 	// This only works for Steam users, and should only be called for them.
 	if (!SteamAPI_IsSteamRunning())
@@ -168,7 +170,7 @@ static inline void FixCaseSensitivePathsForLinux(const char *neoPath)
         {
             if (DirExists(szResultBuffer))
             {
-                numSuccesses++;
+                ++numSuccesses;
             }
             else
             {
@@ -185,7 +187,7 @@ to partially lowercase:\n\"%s\" --> \"%s\"\n",
         if (rename(szOriginalCaseBuffer, szResultBuffer) == 0)
         {
             Msg("%s: Path renaming was successful; result: \"%s\"\n", szThisCaller, szResultBuffer);
-            numSuccesses++;
+            ++numSuccesses;
         }
         else
         {
@@ -206,6 +208,244 @@ See the error lines above for more info.\n", szThisCaller);
     }
 }
 #endif
+
+// Either modify Neotokyo assets upon mount to fix incompatibilities,
+// or restore those modifications by setting the restoreInstead boolean.
+// Will warn on failed initial modification, and error out if the restoration
+// of assets failed for whatever reason.
+void FixIncompatibleNeoAssets(IFileSystem* filesystem, const char* neoPath, bool restoreInstead)
+{
+	const char* szThisCaller = "FixIncompatibleNeoAssets";
+
+	Assert(neoPath != NULL && strlen(neoPath) > 0);
+
+	if (!filesystem)
+	{
+		Assert(false);
+		Error("%s: filesystem was NULL\n", szThisCaller);
+	}
+
+	if (restoreInstead)
+	{
+		Msg("%s: Restoring modified Neotokyo assets...\n", szThisCaller);
+	}
+	else
+	{
+		Msg("%s: Checking for Neotokyo assets compatibility...\n", szThisCaller);
+	}
+
+	const char* filesToFix[] = {
+		"materials/models/props_vehicles/rabbitfrog_engine_anim.vmt",
+		"materials/models/props_vehicles/rabbitfrog_engine_anim2.vmt",
+		"materials/models/props_vehicles/rabbitfrog_engine_anim3.vmt",
+	};
+	const char* disabledSuffix = ".DISABLED";
+
+	CUtlString fixFrom, fixTo;
+	int numSuccesses = 0;
+	for (int i = 0; i < ARRAYSIZE(filesToFix); ++i)
+	{
+		if (!restoreInstead)
+		{
+			fixFrom = neoPath;
+#ifdef _WIN32
+			fixFrom.FixSlashes();
+			fixFrom = fixFrom.Replace(":\\\\", ":\\");
+#endif
+			fixFrom.StripTrailingSlash();
+			fixFrom.Append("/");
+			fixFrom.Append(filesToFix[i]);
+			fixFrom.FixSlashes();
+
+			fixTo.Set(fixFrom);
+			fixTo.Append(disabledSuffix);
+		}
+		else
+		{
+			fixTo = neoPath;
+#ifdef _WIN32
+			fixTo.FixSlashes();
+			fixTo = fixTo.Replace(":\\\\", ":\\");
+#endif
+			fixTo.StripTrailingSlash();
+			fixTo.Append("/");
+			fixTo.Append(filesToFix[i]);
+			fixTo.FixSlashes();
+
+			fixFrom.Set(fixTo);
+			fixFrom.Append(disabledSuffix);
+		}
+
+		if (filesystem->FileExists(fixFrom))
+		{
+#ifdef LINUX
+            if (rename(fixFrom, fixTo) == 0)
+#else
+			if (filesystem->RenameFile(fixFrom, fixTo))
+#endif
+			{
+				Assert(!filesystem->FileExists(fixFrom));
+				Assert(filesystem->FileExists(fixTo));
+				++numSuccesses;
+			}
+			else
+			{
+				Warning("%s: Rename failed: \"%s\" -> \"%s\"\n", szThisCaller, fixFrom.String(), fixTo.String());
+			}
+		}
+		else
+		{
+			if (filesystem->FileExists(fixTo))
+			{
+				// Already handled.
+				++numSuccesses;
+			}
+			else
+			{
+				Warning("%s: File doesn't exist: %s\n", szThisCaller, fixTo.String());
+			}
+		}
+		fixFrom.Clear();
+		fixTo.Clear();
+	}
+
+	const bool allFilesOk = (numSuccesses == ARRAYSIZE(filesToFix));
+
+	if (restoreInstead)
+	{
+		if (allFilesOk)
+		{
+			Msg("%s: All Neotokyo assets restore OK.\n", szThisCaller);
+		}
+		else
+		{
+			// Something went wrong with files restore on game shutdown.
+			// Error out to make sure that user sees this message.
+			Error("%s: Failed to restore some temporarily modified Neotokyo assets!\n\n\
+Please go to original Neotokyo game properties on Steam Library, and verify files integrity \
+to ensure there aren't any corrupt files.\n\nIf you don't know why this error occurred, \
+and/or think it's a bug, please report it.\n", szThisCaller);
+		}
+	}
+	else
+	{
+		if (allFilesOk)
+		{
+			Msg("%s: All OK; scanned Neotokyo assets are compatible.\n", szThisCaller);
+		}
+		else
+		{
+			Warning("%s WARNING: Failed to temporarily rename some incompatible NT assets (is NeotokyoSource/materials write protected?);\n\
+some Neotokyo assets may not load correctly!\n", szThisCaller);
+		}
+	}
+}
+
+// Helper override when you don't have a constructed neoPath at hand.
+void FixIncompatibleNeoAssets(IFileSystem* filesystem, bool restoreInstead)
+{
+	const char* szThisCaller = "FixIncompatibleNeoAssets";
+	char neoPath[MAX_PATH];
+	bool originalNtPathOk = false;
+#ifdef LINUX
+	const bool callerIsClientDll = false; // always server here. should refactor this stuff later.
+
+	// The NeotokyoSource root asset folder should exist (or be symlinked) to one of these paths,
+	// or be specified with the NEO_PATH_PARM_CMD parm (which is currently broken on Linux, see below).
+	// We look in the order described below, and stop looking at the first matching path.
+	char neoLinuxPath_LocalSteam[MAX_PATH]{ 0 };
+	char neoLinuxPath_LocalShare[MAX_PATH]{ 0 };
+	const char* homePath = getenv("HOME");
+
+	// First lookup path: user's Steam home directory. This is where Steam and SteamCMD will install by default.
+	V_strcpy_safe(neoLinuxPath_LocalSteam, homePath);
+	V_AppendSlash(neoLinuxPath_LocalSteam, sizeof(neoLinuxPath_LocalSteam));
+	V_strcat(neoLinuxPath_LocalSteam, ".steam/steam/steamapps/common/NEOTOKYO/NeotokyoSource/", sizeof(neoLinuxPath_LocalSteam));
+
+	// Second lookup path: user's own share directory.
+	V_strcpy_safe(neoLinuxPath_LocalShare, homePath);
+	V_AppendSlash(neoLinuxPath_LocalShare, sizeof(neoLinuxPath_LocalShare));
+	V_strcat(neoLinuxPath_LocalShare, ".local/share/neotokyo/NeotokyoSource/", sizeof(neoLinuxPath_LocalShare));
+
+	// Third lookup path: machine's share directory.
+	const char* neoLinuxPath_UsrShare = "/usr/share/neotokyo/NeotokyoSource/";
+
+	// NEO FIXME (Rain): getting this ParmValue from Steam Linux client seems to be broken(?),
+	// we always fall back to hardcoded pDefaultVal.
+	V_strcpy_safe(neoPath,
+		CommandLine()->ParmValue(NEO_PATH_PARM_CMD, neoLinuxPath_LocalSteam));
+
+	const bool isUsingCustomParm = (Q_stricmp(neoPath, neoLinuxPath_LocalSteam) != 0);
+
+	if (isUsingCustomParm)
+	{
+		if (!*neoPath)
+		{
+			// We will crash with a more generic error later if Neo mount failed,
+			// so this is our only chance to throw this more specific error message.
+			Error("%s: Failed to read custom %s: '%s'\n", szThisCaller, NEO_PATH_PARM_CMD, neoPath);
+		}
+
+		if (callerIsClientDll)
+		{
+			DevMsg("Client using custom %s: %s\n", NEO_PATH_PARM_CMD, neoPath);
+		}
+		else
+		{
+			DevMsg("Server using custom %s: %s\n", NEO_PATH_PARM_CMD, neoPath);
+		}
+
+		originalNtPathOk = DirExists(neoPath);
+
+		if (!originalNtPathOk)
+		{
+			Error("%s: Failed to access custom %s: '%s'\n", szThisCaller, NEO_PATH_PARM_CMD, neoPath);
+		}
+	}
+	else
+	{
+		// Try first (default path)
+		if (DirExists(neoPath))
+		{
+			// Do nothing; path is already set
+		}
+		// Try the second path
+		else if (DirExists(neoLinuxPath_LocalShare))
+		{
+			V_strcpy_safe(neoPath, neoLinuxPath_LocalShare);
+		}
+		// Try the third path
+		else if (DirExists(neoLinuxPath_UsrShare))
+		{
+			V_strcpy_safe(neoPath, neoLinuxPath_UsrShare);
+		}
+		// None of the paths existed
+		else
+		{
+			Warning("%s: Could not locate original Neotokyo install!\n", szThisCaller);
+		}
+		
+		if (!DirExists(neoPath))
+		{
+			Error("%s: Failed to get Neo path\n", szThisCaller);
+		}
+        else
+        {
+            originalNtPathOk = true;
+        }
+	}
+#else
+	originalNtPathOk = IsNeoGameInfoPathOK(neoPath, sizeof(neoPath));
+#endif
+	if (!originalNtPathOk)
+	{
+		Error("%s: Failed to retrieve Neo path\n", szThisCaller);
+	}
+	else
+	{
+		FixIncompatibleNeoAssets(filesystem, neoPath, restoreInstead);
+	}
+}
 
 // Purpose: Find and mount files for the original Steam release of Neotokyo.
 //
@@ -232,12 +472,13 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 	const char *thisCaller = "FindOriginalNeotokyoAssets";
 	char neoPath[MAX_PATH];
 	const AppId_t neoAppId = 244630;
-	const char *pathID = "GAME";
 	const SearchPathAdd_t addType = PATH_ADD_TO_HEAD;
 
 	bool originalNtPathOk = false;
 
 #ifdef LINUX
+	// NEO TODO (Rain): this linux path get code is repeated; should turn into a function for brevity.
+
 	// The NeotokyoSource root asset folder should exist (or be symlinked) to one of these paths,
 	// or be specified with the NEO_PATH_PARM_CMD parm (which is currently broken on Linux, see below).
     // We look in the order described below, and stop looking at the first matching path.
@@ -371,7 +612,7 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 		{
 			V_AppendSlash(neoPath, sizeof(neoPath));
 
-			filesystem->AddSearchPath(neoPath, pathID, addType);
+			filesystem->AddSearchPath(neoPath, NEO_MOUNT_PATHID, addType);
 
 			if (callerIsClientDll)
 			{
@@ -384,7 +625,7 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 			{
 				if (callerIsClientDll)
 				{
-                    DevMsg("Neotokyo AppID (%i) mount OK.\n", neoAppId);
+					DevMsg("Neotokyo AppID (%i) mount OK.\n", neoAppId);
 				}
 			}
 			else
@@ -392,8 +633,6 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 				Warning("%s: Failed to mount Neotokyo AppID (%i)\n", thisCaller, neoAppId);
 				return false;
 			}
-
-            FixCaseSensitivePathsForLinux(neoPath);
 		}
 		else
 		{
@@ -401,20 +640,20 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 			return false;
 		}
 #else // If Windows
-		filesystem->AddSearchPath(neoPath, pathID, addType);
+		filesystem->AddSearchPath(neoPath, NEO_MOUNT_PATHID, addType);
 
 		if (callerIsClientDll)
 		{
 			DevMsg("%s: Added '%s' to path.\n", thisCaller, neoPath);
 		}
-		
+
 		FilesystemMountRetval_t mountStatus =
 			filesystem->MountSteamContent(-(int)neoAppId);
 		if (mountStatus == FILESYSTEM_MOUNT_OK)
 		{
 			if (callerIsClientDll)
 			{
-                DevMsg("Neotokyo AppID (%i) mount OK.\n", neoAppId);
+				DevMsg("Neotokyo AppID (%i) mount OK.\n", neoAppId);
 			}
 		}
 		else
@@ -423,6 +662,15 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 			return false;
 		}
 #endif
+		// Called by both client and server, but we only need to fix these once.
+		// Call serverside so dedicated servers get these, too.
+		if (!callerIsClientDll)
+		{
+#ifdef LINUX
+			FixCaseSensitivePathsForLinux(neoPath);
+#endif
+			FixIncompatibleNeoAssets(filesystem, neoPath, false);
+		}
 	}
 	else // originalNtPathOk
 	{

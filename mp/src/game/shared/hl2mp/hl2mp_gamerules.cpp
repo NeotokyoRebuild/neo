@@ -37,6 +37,10 @@
 	#include "hl2mp_bot_temp.h"
 #endif
 
+#ifdef NEO
+	#include "neo_gamerules.h"
+#endif
+
 extern void respawn(CBaseEntity *pEdict, bool fCopyCorpse);
 
 extern bool FindInList( const char **pStrings, const char *pToFind );
@@ -996,7 +1000,16 @@ CAmmoDef *GetAmmoDef()
 		// Ok, spawn all the bots.
 		while (--count >= 0)
 		{
+#ifdef NEO
+			// We need to catch this fake client when it connects, but control escapes
+			// to external engine code, so just kludging a status variable here for it.
+			NEORules()->m_bNextClientIsFakeClient = true;
+#endif
 			BotPutInServer(bFrozen, iTeam);
+#ifdef NEO
+			// Toggle this off after creating the bot
+			NEORules()->m_bNextClientIsFakeClient = false;
+#endif
 		}
 	}
 

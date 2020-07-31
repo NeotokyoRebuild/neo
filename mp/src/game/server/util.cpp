@@ -993,8 +993,15 @@ void UTIL_ViewPunch( const Vector &center, QAngle angPunch, float radius, bool b
 
 void UTIL_ScreenFadeBuild( ScreenFade_t &fade, const color32 &color, float fadeTime, float fadeHold, int flags )
 {
+#ifdef NEO
+	// Fix potential overflow on fades initiated by very high fall damages
+	const unsigned short maxAllowed = (1 << 15) - 1;
+	fade.duration = Min(maxAllowed, FixedUnsigned16(fadeTime, 1 << SCREENFADE_FRACBITS));		// 7.9 fixed
+	fade.holdTime = Min(maxAllowed, FixedUnsigned16(fadeHold, 1 << SCREENFADE_FRACBITS));		// 7.9 fixed
+#else
 	fade.duration = FixedUnsigned16( fadeTime, 1<<SCREENFADE_FRACBITS );		// 7.9 fixed
 	fade.holdTime = FixedUnsigned16( fadeHold, 1<<SCREENFADE_FRACBITS );		// 7.9 fixed
+#endif
 	fade.r = color.r;
 	fade.g = color.g;
 	fade.b = color.b;

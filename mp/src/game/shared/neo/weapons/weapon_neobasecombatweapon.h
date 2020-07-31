@@ -139,6 +139,22 @@ public:
 	// We do this check to avoid a player unintentionally aiming in due to holding down their aim key while an automatic wep switch occurs.
 	bool IsReadyToAimIn(void) const { return m_bReadyToAimIn; }
 
+	bool IsExplosive(void) const { return (GetNeoWepBits() & NEO_WEP_EXPLOSIVE) ? true : false; }
+
+	bool ShootingIsPrevented(void) const
+	{
+		auto owner = static_cast<CNEO_Player*>(GetOwner());
+		if (!owner)
+		{
+			return true;
+		}
+		if (owner->GetNeoFlags() & NEO_FL_FREEZETIME)
+		{
+			return true;
+		}
+		return false;
+	}
+
 	// Whether this weapon should fire automatically when holding down the attack.
 	virtual bool IsAutomatic(void) const
 	{

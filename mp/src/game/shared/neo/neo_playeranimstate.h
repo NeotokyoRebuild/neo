@@ -10,11 +10,16 @@
 #include "iplayeranimstate.h"
 #include "base_playeranimstate.h"
 
+#define FIRESEQUENCE_LAYER		(AIMSEQUENCE_LAYER+NUM_AIMSEQUENCE_LAYERS)
+#define RELOADSEQUENCE_LAYER	(FIRESEQUENCE_LAYER + 1)
+#define GRENADESEQUENCE_LAYER	(RELOADSEQUENCE_LAYER + 1)
+#define NUM_LAYERS_WANTED		(GRENADESEQUENCE_LAYER + 1)
+
 class CBaseAnimatingOverlay;
 class CBaseCombatWeapon;
 class CNEO_Player;
 
-enum PlayerAnimEvent_t
+enum PlayerAnimEvent_t : uint
 {
 	PLAYERANIMEVENT_FIRE_GUN_PRIMARY = 0,
 	PLAYERANIMEVENT_FIRE_GUN_SECONDARY,
@@ -48,6 +53,8 @@ public:
 
 INEOPlayerAnimState *CreatePlayerAnimState(CBaseAnimatingOverlay *pEntity,
 	INEOPlayerAnimStateHelpers *pHelpers, LegAnimType_t legAnimType, bool bUseAimSequences);
+
+INEOPlayerAnimStateHelpers* CreateAnimStateHelpers(CNEO_Player* pPlayer);
 
 // If this is set, then the game code needs to make sure to send player animation events
 // to the local player if he's the one being watched.

@@ -60,6 +60,12 @@ CWeaponKnife::CWeaponKnife(void)
 
 void CWeaponKnife::PrimaryAttack(void)
 {
+	auto owner = static_cast<CNEO_Player*>(GetOwner());
+	if (owner && owner->GetNeoFlags() & NEO_FL_FREEZETIME)
+	{
+		return;
+	}
+
 	BaseClass::PrimaryAttack();
 }
 

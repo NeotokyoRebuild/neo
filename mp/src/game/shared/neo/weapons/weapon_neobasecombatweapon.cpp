@@ -222,6 +222,8 @@ void CNEOBaseCombatWeapon::ItemPreFrame(void)
 
 void CNEOBaseCombatWeapon::PrimaryAttack(void)
 {
+	Assert(!ShootingIsPrevented());
+
 	if (gpGlobals->curtime < m_flSoonestAttack)
 	{
 		return;

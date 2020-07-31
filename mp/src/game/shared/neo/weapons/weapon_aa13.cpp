@@ -112,11 +112,6 @@ void CWeaponAA13::ItemBusyFrame()
 	BaseClass::ItemBusyFrame();
 }
 
-void CWeaponAA13::PrimaryAttack(void)
-{
-	BaseClass::PrimaryAttack();
-}
-
 void CWeaponAA13::AddViewKick()
 {
 	CNEO_Player *pOwner = ToNEOPlayer((GetOwner()));

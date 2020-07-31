@@ -48,11 +48,6 @@ bool CWeaponSRS::Deploy(void)
 	return BaseClass::Deploy();
 }
 
-void CWeaponSRS::PrimaryAttack()
-{
-	BaseClass::PrimaryAttack();
-}
-
 void CWeaponSRS::UpdatePenaltyTime()
 {
 	auto owner = ToBasePlayer(GetOwner());

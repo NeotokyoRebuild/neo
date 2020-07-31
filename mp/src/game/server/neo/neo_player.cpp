@@ -1,7 +1,7 @@
 #include "cbase.h"
 #include "neo_player.h"
 
-
+#include "neo_playeranimstate.h"
 #include "neo_predicted_viewmodel.h"
 #include "in_buttons.h"
 #include "neo_gamerules.h"
@@ -29,6 +29,8 @@
 #include "weapon_smokegrenade.h"
 
 #include "weapon_knife.h"
+
+#include "viewport_panel_names.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -63,6 +65,8 @@ SendPropString(SENDINFO(m_pszTestMessage)),
 SendPropVector(SENDINFO(m_vecGhostMarkerPos), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT),
 
 SendPropArray(SendPropVector(SENDINFO_ARRAY(m_rvFriendlyPlayerPositions), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rvFriendlyPlayerPositions),
+
+SendPropInt(SENDINFO(m_NeoFlags), 4, SPROP_UNSIGNED),
 END_SEND_TABLE()
 
 BEGIN_DATADESC(CNEO_Player)
@@ -90,6 +94,8 @@ DEFINE_FIELD(m_pszTestMessage, FIELD_STRING),
 DEFINE_FIELD(m_vecGhostMarkerPos, FIELD_VECTOR),
 
 DEFINE_FIELD(m_rvFriendlyPlayerPositions, FIELD_CUSTOM),
+
+DEFINE_FIELD(m_NeoFlags, FIELD_CHARACTER),
 END_DATADESC()
 
 CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
@@ -341,12 +347,19 @@ CNEO_Player::CNEO_Player()
 	m_bFirstDeathTick = true;
 	m_bPreviouslyReloading = false;
 	m_bLastTickInThermOpticCamo = false;
+	m_bIsPendingSpawnForThisRound = false;
 
 	m_flNextTeamChangeTime = gpGlobals->curtime + 0.5f;
+
+	m_NeoFlags = 0;
+
+	m_pPlayerAnimState = CreatePlayerAnimState(this, CreateAnimStateHelpers(this),
+		NEO_ANIMSTATE_LEGANIM_TYPE, NEO_ANIMSTATE_USES_AIMSEQUENCES);
 }
 
 CNEO_Player::~CNEO_Player( void )
 {
+	m_pPlayerAnimState->Release();
 }
 
 void CNEO_Player::ZeroFriendlyPlayerLocArray(void)
@@ -415,6 +428,8 @@ void CNEO_Player::Precache( void )
 
 void CNEO_Player::Spawn(void)
 {
+	ShowViewPortPanel(PANEL_SPECGUI, (GetTeamNumber() == TEAM_SPECTATOR ? true : false));
+
 	// Should do this class update first, because most of the stuff below depends on which player class we are.
 	if ((m_iNextSpawnClassChoice != -1) && (m_iNeoClass != m_iNextSpawnClassChoice))
 	{
@@ -422,6 +437,11 @@ void CNEO_Player::Spawn(void)
 	}
 
 	BaseClass::Spawn();
+
+	SetNumAnimOverlays(NUM_LAYERS_WANTED);
+	ResetAnimation();
+
+	m_bIsPendingSpawnForThisRound = false;
 
 	m_bLastTickInThermOpticCamo = m_bInThermOpticCamo = false;
 	m_flCamoAuxLastTime = 0;
@@ -959,6 +979,11 @@ void CNEO_Player::PostThink(void)
 		//DevMsg("Setspeed %f , %f\n", speedScaleX, speedScaleY);
 	}
 #endif
+
+	Vector eyeForward;
+	this->EyeVectors(&eyeForward, NULL, NULL);
+	Assert(eyeForward.IsValid());
+	m_pPlayerAnimState->Update(eyeForward[YAW], eyeForward[PITCH]);
 }
 
 void CNEO_Player::PlayerDeathThink()
@@ -1013,136 +1038,22 @@ void CNEO_Player::Weapon_SetZoom(const bool bZoomIn)
 	m_bInAim = bZoomIn;
 }
 
-void UpdateLayerSequenceGeneric(CNEO_Player *pPlayer, CStudioHdr *pStudioHdr, int iLayer, bool &bEnabled, float &flCurCycle, int &iSequence, bool bWaitAtEnd)
-{
-	if (!bEnabled)
-		return;
-
-	// Increment the fire sequence's cycle.
-	flCurCycle += pPlayer->GetSequenceCycleRate(pStudioHdr, iSequence) * gpGlobals->frametime;
-	if (flCurCycle > 1)
-	{
-		if (bWaitAtEnd)
-		{
-			flCurCycle = 1;
-		}
-		else
-		{
-			// Not firing anymore.
-			bEnabled = false;
-			iSequence = 0;
-			return;
-		}
-	}
-
-	// Now dump the state into its animation layer.
-	CAnimationLayer *pLayer = pPlayer->GetAnimOverlay(iLayer);
-
-	pLayer->m_flCycle = flCurCycle;
-	pLayer->m_nSequence = iSequence;
-
-	pLayer->m_flPlaybackRate = 1.0;
-	pLayer->m_flWeight = 1.0f;
-	pLayer->m_nOrder = iLayer;
-}
-
-// NEO FIXME (Rain): need to implement neo animstate for smoothed gestures!
-// See CSS code for basic idea.
 void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 {
-#if(0) // These should live in animstate
-#define AIMSEQUENCE_LAYER		1	// Aim sequence uses layers 0 and 1 for the weapon idle animation (needs 2 layers so it can blend).
-#define NUM_AIMSEQUENCE_LAYERS	4	// Then it uses layers 2 and 3 to blend in the weapon run/walk/crouchwalk animation.
-
-#define FIRESEQUENCE_LAYER		(AIMSEQUENCE_LAYER+NUM_AIMSEQUENCE_LAYERS)
-#define RELOADSEQUENCE_LAYER	(FIRESEQUENCE_LAYER + 1)
-#define GRENADESEQUENCE_LAYER	(RELOADSEQUENCE_LAYER + 1)
-#define NUM_LAYERS_WANTED		(GRENADESEQUENCE_LAYER + 1)
-
-	auto pAnimOverlay_Fire = GetAnimOverlay(FIRESEQUENCE_LAYER);
-	auto pAnimOverlay_Reload = GetAnimOverlay(RELOADSEQUENCE_LAYER);
-	Assert(pAnimOverlay_Fire);
-	Assert(pAnimOverlay_Reload);
-#endif
-
-	float speed;
-
-	if (GetFlags() & (FL_FROZEN | FL_ATCONTROLS))
+	PlayerAnimEvent_t animEvent;
+	if (!PlayerAnimToPlayerAnimEvent(playerAnim, animEvent))
 	{
-		speed = 0;
-		playerAnim = PLAYER_IDLE;
+		DevWarning("SRV Tried to get unknown PLAYER_ANIM %d\n", playerAnim);
 	}
 	else
 	{
-		speed = GetAbsVelocity().Length2D();
+		m_pPlayerAnimState->DoAnimationEvent(animEvent);
 	}
+	// Stopping; animations are handled by m_pPlayerAnimState->Update.
+	// Should clean up this unused code later.
+	return;
 
-	Activity idealActivity = ACT_NEO_MOVE_RUN;
-
-	const bool bStartedReloading = (playerAnim == PLAYER_RELOAD);
-
-	// This could stand to be redone. Why is playerAnim abstracted from activity? (sjb)
-	if (playerAnim == PLAYER_DIE)
-	{
-		if (m_lifeState == LIFE_ALIVE)
-		{
-			return;
-		}
-	}
-	else if (playerAnim == PLAYER_ATTACK1)
-	{
-		if (GetActivity() == ACT_NEO_HOVER ||
-			GetActivity() == ACT_NEO_SWIM ||
-			GetActivity() == ACT_NEO_DIE)
-		{
-			idealActivity = GetActivity();
-		}
-		else
-		{
-			idealActivity = ACT_NEO_ATTACK;
-		}
-	}
-	else if (playerAnim == PLAYER_IDLE || playerAnim == PLAYER_WALK || bStartedReloading)
-	{
-		if (GetFlags() & FL_DUCKING)
-		{
-			if (speed > 0)
-			{
-				idealActivity = ACT_NEO_MOVE_CROUCH;
-			}
-			else
-			{
-				idealActivity = ACT_NEO_IDLE_CROUCH;
-			}
-		}
-		else
-		{
-			if (speed > 0)
-			{
-				if (speed > GetWalkSpeed())
-				{
-					idealActivity = ACT_NEO_MOVE_RUN;
-				}
-				else
-				{
-					idealActivity = ACT_NEO_MOVE_WALK;
-				}
-			}
-			else
-			{
-				idealActivity = ACT_NEO_IDLE_STAND;
-			}
-		}
-	}
-
-	if (!(GetFlags() & FL_ONGROUND))	// Still jumping
-	{
-		idealActivity = ACT_NEO_JUMP;
-	}
-	else if (m_afButtonPressed & IN_JUMP) // Started jumping now
-	{
-		idealActivity = ACT_NEO_JUMP;
-	}
+	/*
 
 	auto activeWep = GetActiveWeapon();
 
@@ -1259,8 +1170,6 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 		iLowerSequence = 0;
 	}
 
-	SetActivity(idealActivity);
-
 	const bool bReloadAnimPlayingNow = ((bStartedReloading) || (activeWep && activeWep->m_bInReload));
 
 	// Handle lower body animation
@@ -1353,6 +1262,7 @@ void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
 	transitioner->CheckForSequenceChange(GetModelPtr(), GetSequence(), false, true);
 	transitioner->UpdateCurrent(GetModelPtr(), GetSequence(), GetCycle(), 1.0f, gpGlobals->curtime);
 #endif
+	*/
 }
 
 // Purpose: Suicide, but cancel the point loss.
@@ -1439,12 +1349,57 @@ bool CNEO_Player::BecomeRagdollOnClient( const Vector &force )
 
 void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 {
+	// Drop all weapons
+	Vector vecForward, pVecThrowDir;
+	EyeVectors(&vecForward);
+	VMatrix zRot;
+	int numExplosivesDropped = 0;
+	const int maxExplosivesToDrop = 1;
+	for (int i = 0; i < MAX_WEAPONS; ++i)
+	{
+		auto pWep = m_hMyWeapons[i].Get();
+		if (pWep)
+		{
+			auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWep);
+			if (pNeoWep && pNeoWep->IsExplosive())
+			{
+				if (++numExplosivesDropped > maxExplosivesToDrop)
+				{
+					continue;
+				}
+			}
+
+			// Nowhere in particular; just drop it.
+			MatrixBuildRotateZ(zRot, random->RandomFloat(-60.0f, 60.0f));
+			Vector3DMultiply(zRot, vecForward, pVecThrowDir);
+			pVecThrowDir.z = random->RandomFloat(-0.5f, 0.5f);
+			VectorNormalize(pVecThrowDir);
+			Assert(pVecThrowDir.IsValid());
+			pWep->Drop(pVecThrowDir);
+			pWep->SetRemoveable(false);
+			Weapon_Detach(pWep);
+		}
+	}
+
+	ShowViewPortPanel(PANEL_SPECGUI, true);
+
 	BaseClass::Event_Killed(info);
 }
 
-int CNEO_Player::OnTakeDamage( const CTakeDamageInfo &inputInfo )
+float CNEO_Player::GetReceivedDamageScale(CBaseEntity* pAttacker)
 {
-	return BaseClass::OnTakeDamage(inputInfo);
+	switch (GetClass())
+	{
+	case NEO_CLASS_RECON:
+		return NEO_RECON_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
+	case NEO_CLASS_ASSAULT:
+		return NEO_ASSAULT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
+	case NEO_CLASS_SUPPORT:
+		return NEO_SUPPORT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
+	default:
+		Assert(false);
+		return BaseClass::GetReceivedDamageScale(pAttacker);
+	}
 }
 
 bool CNEO_Player::WantsLagCompensationOnEntity( const CBasePlayer *pPlayer,
@@ -1547,25 +1502,9 @@ void CNEO_Player::PlayStepSound( Vector &vecOrigin,
 	BaseClass::PlayStepSound(vecOrigin, psurface, fvol, force);
 }
 
-bool CNEO_Player::IsCarryingGhost(void)
+bool CNEO_Player::IsCarryingGhost(void) const
 {
-#ifdef DEBUG
-	auto baseWep = GetWeapon(NEO_WEAPON_PRIMARY_SLOT);
-	if (!baseWep)
-	{
-		return false;
-	}
-
-	auto wep = dynamic_cast<CNEOBaseCombatWeapon*>(baseWep);
-	if (!wep)
-	{
-		//Assert(false); // FIXME
-	}
-#else
-	//auto wep = static_cast<CNEOBaseCombatWeapon*>(GetWeapon(NEO_WEAPON_PRIMARY_SLOT));
-	auto wep = dynamic_cast<CNEOBaseCombatWeapon*>(GetWeapon(NEO_WEAPON_PRIMARY_SLOT));
-#endif
-	return (wep && wep->IsGhost());
+	return GetNeoWepWithBits(this, NEO_WEP_GHOST) != NULL;
 }
 
 // Is the player allowed to drop a weapon of this type?
@@ -1843,31 +1782,6 @@ void CNEO_Player::PickDefaultSpawnTeam(void)
 	}
 }
 
-// NEO FIXME/HACK (Rain): bots don't properly set their fakeclient flag currently,
-// making IsFakeClient and IsBot return false. This is an ugly hack to get bots
-// joining teams. We cannot trust this player input (and it's slow), so it really
-// should be fixed properly.
-bool Hack_IsBot(CNEO_Player* player)
-{
-#ifdef DEBUG
-	DevWarning("Fixme: Using Hack_IsBot as workaround\n"); // nag to remind about fixing this whenever used
-#endif
-
-	if (!player)
-	{
-		return false;
-	}
-	else if (player->IsFakeClient())
-	{
-		return true;
-	}
-
-	const char* name = player->GetPlayerInfo()->GetName();
-
-	return (strlen(name) == 5 && name[0] == 'B' && name[1] == 'o' && name[2] == 't' &&
-		isdigit(name[3]) && isdigit(name[4]));
-}
-
 bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 {
 	if (!GetGlobalTeam(iTeam) || iTeam == 0)
@@ -1882,8 +1796,11 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 
 	const bool justJoined = (GetTeamNumber() == TEAM_UNASSIGNED);
 
-	// Player bots should initially join a player team
-	if (justJoined && Hack_IsBot(this) && !IsHLTV())
+	// Player bots should initially join a player team.
+	// Note that we can't do a ->IsBot check here, because the bot has not
+	// received its fakeclient flags yet at this point. Hence using the
+	// m_bNextClientIsFakeClient workaround.
+	if (justJoined && NEORules()->m_bNextClientIsFakeClient && !IsHLTV())
 	{
 		Assert(gpGlobals->curtime >= m_flNextTeamChangeTime);
 		iTeam = RandomInt(TEAM_JINRAI, TEAM_NSF);
@@ -1996,12 +1913,12 @@ void GiveDet(CNEO_Player* pPlayer)
 			auto pWeapon = dynamic_cast<CNEOBaseCombatWeapon*>((CBaseEntity*)pent);
 			if (pWeapon)
 			{
+				const int detXpCost = pWeapon->GetNeoWepXPCost(pPlayer->GetClass());
+				// Cost of -1 XP means no XP cost.
+				const bool canHaveDet = (detXpCost < 0 || pPlayer->m_iXP >= detXpCost);
+
 				pWeapon->SetSubType(0);
-				if (pPlayer->m_iXP < pWeapon->GetNeoWepXPCost(pPlayer->GetClass()))
-				{
-					UTIL_Remove(pWeapon);
-				}
-				else
+				if (canHaveDet)
 				{
 					DispatchSpawn(pent);
 
@@ -2009,6 +1926,10 @@ void GiveDet(CNEO_Player* pPlayer)
 					{
 						pent->Touch(pPlayer);
 					}
+				}
+				else
+				{
+					UTIL_Remove(pWeapon);
 				}
 			}
 		}

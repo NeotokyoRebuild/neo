@@ -13,6 +13,9 @@
 #include "utldict.h"
 #include "filesystem.h"
 
+#ifdef NEO
+#include "neo_playeranimstate.h"
+#endif
 
 #ifdef CLIENT_DLL
 	#include "c_baseplayer.h"
@@ -207,11 +210,15 @@ void CBasePlayerAnimState::SetOuterPoseParameter( int iParam, float flValue )
 
 void CBasePlayerAnimState::ClearAnimationLayers()
 {
+#ifdef NEO
+	Assert(false); // should call CNEOPlayerAnimState override
+#endif
+
 	VPROF( "CBasePlayerAnimState::ClearAnimationLayers" );
 	if ( !m_pOuter )
 		return;
 
-	m_pOuter->SetNumAnimOverlays( AIMSEQUENCE_LAYER+NUM_AIMSEQUENCE_LAYERS );
+	m_pOuter->SetNumAnimOverlays(AIMSEQUENCE_LAYER + NUM_AIMSEQUENCE_LAYERS);
 	for ( int i=0; i < m_pOuter->GetNumAnimOverlays(); i++ )
 	{
 		m_pOuter->GetAnimOverlay( i )->SetOrder( CBaseAnimatingOverlay::MAX_OVERLAYS );
@@ -273,8 +280,13 @@ void CBasePlayerAnimState::ComputeMainSequence()
 		return;
 #endif
 
-	if ( animDesired < 0 )
-		 animDesired = 0;
+	if (animDesired < 0)
+	{
+#ifdef DEBUG
+		DevWarning("fixme: animDesired was %d, defaulting to 3\n", animDesired); // NEO FIXME (Rain)
+#endif
+		animDesired = 3; // defaulting to some reasonable value. we should T-pose here (0) once this is properly fixed
+	}
 
 	pPlayer->ResetSequence( animDesired );
 
@@ -481,6 +493,8 @@ int CBasePlayerAnimState::CalcSequenceIndex( const char *pBaseName, ... )
 
 		iSequence = 0;
 	}
+
+	//DevMsg("CalcSeqIdx: \"%s\": %d\n", szFullName, iSequence);
 
 	return iSequence;
 }

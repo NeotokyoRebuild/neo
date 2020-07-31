@@ -68,11 +68,6 @@ void CWeaponTachi::DryFire(void)
 	m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
 }
 
-void CWeaponTachi::PrimaryAttack(void)
-{
-	BaseClass::PrimaryAttack();
-}
-
 void CWeaponTachi::SwitchFireMode( void )
 {
 	if (m_flSoonestFiremodeSwitch > gpGlobals->curtime)

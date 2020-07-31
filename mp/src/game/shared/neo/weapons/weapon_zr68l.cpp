@@ -48,11 +48,6 @@ bool CWeaponZR68L::Deploy(void)
 	return BaseClass::Deploy();
 }
 
-void CWeaponZR68L::PrimaryAttack()
-{
-	BaseClass::PrimaryAttack();
-}
-
 void CWeaponZR68L::UpdatePenaltyTime()
 {
 	m_flAccuracyPenalty -= gpGlobals->frametime;

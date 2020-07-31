@@ -36,7 +36,8 @@ public:
 	void	ItemPostFrame(void);
 	void	ItemPreFrame(void);
 	void	ItemBusyFrame(void);
-	void	PrimaryAttack(void);
+	virtual void	PrimaryAttack(void) OVERRIDE { if (!ShootingIsPrevented()) { BaseClass::PrimaryAttack(); } }
+	virtual void	SecondaryAttack(void) OVERRIDE { if (!ShootingIsPrevented()) { BaseClass::SecondaryAttack(); } }
 	void	AddViewKick(void);
 	void	DryFire(void);
 

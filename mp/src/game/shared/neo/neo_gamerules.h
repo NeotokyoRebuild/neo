@@ -28,6 +28,10 @@ enum
 
 #define NEO_GAME_NAME "Neotokyo: Revamp"
 
+#define NEO_GAME_TYPE_TDM 0
+#define NEO_GAME_TYPE_CTG 1
+#define NEO_GAME_TYPE_VIP 2
+
 #ifdef CLIENT_DLL
 	#define CNEORules C_NEORules
 	#define CNEOGameRulesProxy C_NEOGameRulesProxy
@@ -79,6 +83,14 @@ class CNEO_Player;
 class C_NEO_Player;
 #endif
 
+enum NeoRoundStatus {
+	Idle = 0,
+	//Warmup,
+	PreRoundFreeze,
+	RoundLive,
+	PostRound,
+};
+
 class CNEORules : public CHL2MPRules, public CGameEventListener
 {
 public:
@@ -102,8 +114,17 @@ public:
 	virtual void SetWinningTeam(int team, int iWinReason, bool bForceMapReset = true, bool bSwitchTeams = false, bool bDontAddScore = false, bool bFinal = false) OVERRIDE;
 
 	virtual void ChangeLevel(void) OVERRIDE;
+
+	virtual void ClientDisconnected(edict_t* pClient) OVERRIDE;
 #endif
 	virtual bool ShouldCollide( int collisionGroup0, int collisionGroup1 ) OVERRIDE;
+
+#ifdef GAME_DLL
+	virtual bool FPlayerCanRespawn(CBasePlayer* pPlayer) OVERRIDE;
+#endif
+
+	virtual int GetGameType(void) OVERRIDE { return NEO_GAME_TYPE_CTG; /*NEO TODO (Rain): modes*/ }
+	virtual const char* GetGameTypeName(void) OVERRIDE;
 
 	virtual void Think( void ) OVERRIDE;
 	virtual void CreateStandardEntities( void ) OVERRIDE;
@@ -125,6 +146,8 @@ public:
 #else
 	;
 #endif
+
+	float GetRemainingPreRoundFreezeTime(const bool clampToZero) const;
 
 	float GetMapRemainingTime();
 
@@ -159,13 +182,15 @@ public:
 #endif
 
 #ifdef GAME_DLL
-	bool IsRoundOver();
+	bool IsRoundOver() const;
 	void StartNextRound();
 
 	virtual const char* GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer) OVERRIDE;
 	virtual const char* GetChatPrefix(bool bTeamOnly, CBasePlayer* pPlayer) OVERRIDE { return ""; } // handled by GetChatFormat
 	virtual const char* GetChatLocation(bool bTeamOnly, CBasePlayer* pPlayer) OVERRIDE { return NULL; } // unimplemented
 #endif
+
+	void SetRoundStatus(NeoRoundStatus status);
 
 	// This is the supposed encrypt key on NT, although it has its issues.
 	// See https://steamcommunity.com/groups/ANPA/discussions/0/1482109512299590948/
@@ -200,18 +225,21 @@ public:
 		return GetOpposingTeam(player->GetTeamNumber());
 	}
 
+public:
 #ifdef GAME_DLL
+	// Workaround for bot spawning. See Bot_f() for details.
+	bool m_bNextClientIsFakeClient;
+#endif
+
 private:
-	bool m_bFirstRestartIsDone;
-	
+#ifdef GAME_DLL
 	CUtlVector<int> m_pGhostCaps;
+#endif
+	CNetworkVar(int, m_nRoundStatus); // NEO TODO (Rain): probably don't need to network this
+	CNetworkVar(int, m_iRoundNumber);
 
 	CNetworkVar(float, m_flNeoRoundStartTime);
 	CNetworkVar(float, m_flNeoNextRoundStartTime);
-#else
-	float m_flNeoRoundStartTime;
-	float m_flNeoNextRoundStartTime;
-#endif
 };
 
 inline CNEORules *NEORules()
