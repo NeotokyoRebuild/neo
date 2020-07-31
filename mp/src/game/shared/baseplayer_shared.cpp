@@ -396,8 +396,8 @@ const Vector CBasePlayer::GetPlayerMins( void ) const
 const Vector CBasePlayer::GetPlayerMaxs( void ) const
 {	
 #ifdef NEO
-	Assert(false); // we override this, should never reach here.
-	Error("Called incorrect maxs for \"%s\"\n", m_iClassname);
+	Assert(false);
+	Error("Called base method CBasePlayer::GetPlayerMaxs instead of override. Please report this bug; this should never happen!\n");
 	return vec3_origin;
 #else
 

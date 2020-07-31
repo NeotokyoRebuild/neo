@@ -142,6 +142,7 @@ void CNEOGrenadeFrag::VPhysicsUpdate(IPhysicsObject *pPhysics)
 		// reflect velocity around normal
 		vel = -2.0f * tr.plane.normal * DotProduct(vel, tr.plane.normal) + vel;
 
+		// Absorb some of the impact
 		vel *= sv_neo_frag_cor.GetFloat();
 		angVel *= -0.5f;
 		pPhysics->SetVelocity(&vel, &angVel);

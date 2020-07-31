@@ -113,7 +113,7 @@ void CNEOGrenadeSmoke::VPhysicsUpdate(IPhysicsObject* pPhysics)
 
 			if (sv_neo_frag_showdebug.GetBool())
 			{
-				DevMsg("Frag re-bounced in solid\n");
+				DevMsg("Smoke re-bounced in solid\n");
 			}
 		}
 		m_inSolid = true;
@@ -140,6 +140,7 @@ void CNEOGrenadeSmoke::VPhysicsUpdate(IPhysicsObject* pPhysics)
 		// reflect velocity around normal
 		vel = -2.0f * tr.plane.normal * DotProduct(vel, tr.plane.normal) + vel;
 
+		// Absorb some of the impact
 		vel *= sv_neo_frag_cor.GetFloat();
 		angVel *= -0.5f;
 		pPhysics->SetVelocity(&vel, &angVel);
@@ -156,7 +157,7 @@ void CNEOGrenadeSmoke::VPhysicsUpdate(IPhysicsObject* pPhysics)
 			VPhysicsGetObject()->RecheckContactPoints();
 			if (sv_neo_frag_showdebug.GetBool())
 			{
-				DevMsg("Smoke has settled; awoke CNEOGrenadeFrag VPhys for handling\n");
+				DevMsg("Smoke has settled; awoke CNEOGrenadeSmoke VPhys for handling\n");
 			}
 		}
 	}

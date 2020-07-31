@@ -48,9 +48,14 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 
 	m_hFont = scheme->GetFont("NHudOCRSmall");
 
-	const char spaces[] = "     ";
-	COMPILE_TIME_ASSERT(sizeof(spaces) == sizeof(m_szStatusANSI));
-	V_strcpy_safe(m_szStatusANSI, spaces);
+	{
+		int i;
+		for (i = 0; i < sizeof(m_szStatusANSI) - 1; ++i)
+		{
+			m_szStatusANSI[i] = ' ';
+		}
+		m_szStatusANSI[i] = '\0';
+	}
 	g_pVGuiLocalize->ConvertANSIToUnicode(m_szStatusANSI, m_wszStatusUnicode, sizeof(m_wszStatusUnicode));
 }
 
@@ -69,9 +74,14 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	// Exactly zero means there's no time limit, so we don't need to draw anything.
 	if (roundTimeLeft == 0)
 	{
-		const char spaces[] = "     ";
-		COMPILE_TIME_ASSERT(sizeof(spaces) == sizeof(m_szStatusANSI));
-		V_strcpy_safe(m_szStatusANSI, spaces);
+		{
+			int i;
+			for (i = 0; i < sizeof(m_szStatusANSI) - 1; ++i)
+			{
+				m_szStatusANSI[i] = ' ';
+			}
+			m_szStatusANSI[i] = '\0';
+		}
 		g_pVGuiLocalize->ConvertANSIToUnicode(m_szStatusANSI, m_wszStatusUnicode, sizeof(m_wszStatusUnicode));
 		return;
 	}

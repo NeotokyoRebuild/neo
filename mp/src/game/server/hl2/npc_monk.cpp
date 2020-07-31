@@ -271,7 +271,7 @@ void CNPC_Monk::Spawn()
 	SetMoveType( MOVETYPE_STEP );
 	SetBloodColor( BLOOD_COLOR_RED );
 	m_iHealth			= 100;
-	m_flFieldOfView		= m_flFieldOfView = -0.707; // 270`
+	m_flFieldOfView		= -0.707; // 270`
 	m_NPCState			= NPC_STATE_NONE;
 
 	m_HackedGunPos = Vector ( 0, 0, 55 );
