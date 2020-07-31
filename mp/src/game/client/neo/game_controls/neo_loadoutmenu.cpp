@@ -285,9 +285,9 @@ void CNeoLoadoutMenu::OnCommand(const char* command)
 
 			if (!allowedThisGun)
 			{
-				const char* noxpmsg = "Not enough XP for equipping this loadout!\n";
-				Msg(noxpmsg);
-				engine->Con_NPrintf(0, noxpmsg);
+#define INSUFFICIENT_LOADOUT_XP_MSG "Insufficient XP for equipping this loadout!\n"
+				Msg(INSUFFICIENT_LOADOUT_XP_MSG);
+				engine->Con_NPrintf(0, INSUFFICIENT_LOADOUT_XP_MSG);
 			}
 		}
 	}
