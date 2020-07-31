@@ -9,8 +9,7 @@
 class CNEOSpawnPoint_Jinrai : public CNEOSpawnPoint
 {
 public:
-	CNEOSpawnPoint_Jinrai::CNEOSpawnPoint_Jinrai()
-		: CNEOSpawnPoint()
+	CNEOSpawnPoint_Jinrai() : CNEOSpawnPoint()
 	{
 		m_iOwningTeam = TEAM_JINRAI;
 	}
@@ -20,8 +19,7 @@ LINK_ENTITY_TO_CLASS(info_player_attacker, CNEOSpawnPoint_Jinrai);
 class CNEOSpawnPoint_NSF : public CNEOSpawnPoint
 {
 public:
-	CNEOSpawnPoint_NSF::CNEOSpawnPoint_NSF()
-		: CNEOSpawnPoint()
+	CNEOSpawnPoint_NSF() : CNEOSpawnPoint()
 	{
 		m_iOwningTeam = TEAM_NSF;
 	}
