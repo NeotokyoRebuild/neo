@@ -220,18 +220,74 @@ void CNEOBaseCombatWeapon::ItemPreFrame(void)
 	}
 }
 
-ConVar sv_neo_wep_acc_penalty_scale("sv_neo_wep_acc_penalty_scale", "1.0", FCVAR_REPLICATED | FCVAR_CHEAT,
+ConVar sv_neo_wep_acc_penalty_scale("sv_neo_wep_acc_penalty_scale", "1.0", FCVAR_REPLICATED,
 	"Temporary global neo wep accuracy penalty scaler.", true, 0.01, true, 9999.0);
 
-ConVar sv_neo_wep_cone_min_scale("sv_neo_wep_cone_min_scale", "1.0", FCVAR_REPLICATED | FCVAR_CHEAT,
+ConVar sv_neo_wep_cone_min_scale("sv_neo_wep_cone_min_scale", "1.0", FCVAR_REPLICATED,
 	"Temporary global neo wep bloom min cone scaler.", true, 0.01, true, 10.0);
 
-ConVar sv_neo_wep_cone_max_scale("sv_neo_wep_cone_max_scale", "0.7", FCVAR_REPLICATED | FCVAR_CHEAT,
+ConVar sv_neo_wep_cone_max_scale("sv_neo_wep_cone_max_scale", "0.7", FCVAR_REPLICATED,
 	"Temporary global neo wep bloom max cone scaler.", true, 0.01, true, 10.0);
+
+// NEO HACK/FIXME (Rain): Doing some temporary bloom accuracy scaling here for easier testing.
+// Need to clean this up later once we have good values!!
+#define TEMP_WEP_STR(name) #name
+#define MAKE_TEMP_WEP_BLOOM_SCALER(weapon) ConVar sv_neo_##weapon##_bloom_scale(TEMP_WEP_STR(sv_neo_##weapon##_bloom_scale), "1.0", FCVAR_REPLICATED, TEMP_WEP_STR(Temporary weapon bloom scaler for #weapon), true, 0.01, true, 10.0)
+
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_jitte);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_jittescoped);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_kyla);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_m41);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_m41l);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_m41s);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_milso);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_mpn);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_mpn_unsilenced);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_mx);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_mx_silenced);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_pz);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_smac);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_srm);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_srm_s);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_tachi);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_zr68c);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_zr68s);
 
 const Vector& CNEOBaseCombatWeapon::GetBulletSpread(void)
 {
 	static Vector cone;
+
+	// NEO HACK/FIXME (Rain): Doing some temporary bloom accuracy scaling here for easier testing.
+	// Need to clean this up later once we have good values!!
+	std::initializer_list<ConVar*> bloomScalers = {
+		&sv_neo_weapon_jitte_bloom_scale,
+		&sv_neo_weapon_jittescoped_bloom_scale,
+		&sv_neo_weapon_kyla_bloom_scale,
+		&sv_neo_weapon_m41_bloom_scale,
+		&sv_neo_weapon_m41l_bloom_scale,
+		&sv_neo_weapon_m41s_bloom_scale,
+		&sv_neo_weapon_milso_bloom_scale,
+		&sv_neo_weapon_mpn_bloom_scale,
+		&sv_neo_weapon_mpn_unsilenced_bloom_scale,
+		&sv_neo_weapon_mx_bloom_scale,
+		&sv_neo_weapon_mx_silenced_bloom_scale,
+		&sv_neo_weapon_pz_bloom_scale,
+		&sv_neo_weapon_smac_bloom_scale,
+		&sv_neo_weapon_srm_bloom_scale,
+		&sv_neo_weapon_srm_s_bloom_scale,
+		&sv_neo_weapon_tachi_bloom_scale,
+		&sv_neo_weapon_zr68c_bloom_scale,
+		&sv_neo_weapon_zr68s_bloom_scale
+	};
+	float wepSpecificBloomScale = 1.0f;
+	for (ConVar* scaler : bloomScalers)
+	{
+		if (V_strstr(scaler->GetName(), GetName()))
+		{
+			wepSpecificBloomScale = scaler->GetFloat();
+			break;
+		}
+	}
 
 	Assert(GetInnateInaccuracy() <= GetMaxAccuracyPenalty());
 
@@ -244,7 +300,7 @@ const Vector& CNEOBaseCombatWeapon::GetBulletSpread(void)
 	// We lerp from very accurate to inaccurate over time
 	VectorLerp(
 		GetMinCone() * sv_neo_wep_cone_min_scale.GetFloat(),
-		GetMaxCone() * sv_neo_wep_cone_max_scale.GetFloat(),
+		GetMaxCone() * sv_neo_wep_cone_max_scale.GetFloat() * wepSpecificBloomScale,
 		ramp,
 		cone);
 
