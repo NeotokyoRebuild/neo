@@ -226,7 +226,7 @@ ConVar sv_neo_wep_acc_penalty_scale("sv_neo_wep_acc_penalty_scale", "1.0", FCVAR
 ConVar sv_neo_wep_cone_min_scale("sv_neo_wep_cone_min_scale", "1.0", FCVAR_REPLICATED | FCVAR_CHEAT,
 	"Temporary global neo wep bloom min cone scaler.", true, 0.01, true, 10.0);
 
-ConVar sv_neo_wep_cone_max_scale("sv_neo_wep_cone_max_scale", "1.0", FCVAR_REPLICATED | FCVAR_CHEAT,
+ConVar sv_neo_wep_cone_max_scale("sv_neo_wep_cone_max_scale", "0.7", FCVAR_REPLICATED | FCVAR_CHEAT,
 	"Temporary global neo wep bloom max cone scaler.", true, 0.01, true, 10.0);
 
 const Vector& CNEOBaseCombatWeapon::GetBulletSpread(void)

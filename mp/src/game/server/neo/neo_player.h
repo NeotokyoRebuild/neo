@@ -66,6 +66,8 @@ public:
 	virtual const Vector GetPlayerMaxs(void) const OVERRIDE;
 	virtual void InitVCollision(const Vector& vecAbsOrigin, const Vector& vecAbsVelocity) OVERRIDE;
 
+	virtual void ModifyFireBulletsDamage(CTakeDamageInfo* dmgInfo) OVERRIDE;
+
 	// Implementing in header in hopes of compiler picking up the inlined base method
 	virtual float GetModelScale() const OVERRIDE
 	{
