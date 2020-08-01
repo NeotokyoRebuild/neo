@@ -1296,19 +1296,19 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 	// Suicide
 	if (attacker == victim)
 	{
-		victim->m_iXP.GetForModify() -= 1;
+		attacker->m_iXP.GetForModify() -= 1;
 	}
 	else
 	{
 		// Team kill
 		if (attacker->GetTeamNumber() == victim->GetTeamNumber())
 		{
-			victim->m_iXP.GetForModify() -= 1;
+			attacker->m_iXP.GetForModify() -= 1;
 		}
 		// Enemy kill
 		else
 		{
-			victim->m_iXP.GetForModify() += 1;
+			attacker->m_iXP.GetForModify() += 1;
 		}
 	}
 }
