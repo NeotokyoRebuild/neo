@@ -220,6 +220,37 @@ void CNEOBaseCombatWeapon::ItemPreFrame(void)
 	}
 }
 
+ConVar sv_neo_wep_acc_penalty_scale("sv_neo_wep_acc_penalty_scale", "1.0", FCVAR_REPLICATED | FCVAR_CHEAT,
+	"Temporary global neo wep accuracy penalty scaler.", true, 0.01, true, 9999.0);
+
+ConVar sv_neo_wep_cone_min_scale("sv_neo_wep_cone_min_scale", "1.0", FCVAR_REPLICATED | FCVAR_CHEAT,
+	"Temporary global neo wep bloom min cone scaler.", true, 0.01, true, 10.0);
+
+ConVar sv_neo_wep_cone_max_scale("sv_neo_wep_cone_max_scale", "1.0", FCVAR_REPLICATED | FCVAR_CHEAT,
+	"Temporary global neo wep bloom max cone scaler.", true, 0.01, true, 10.0);
+
+const Vector& CNEOBaseCombatWeapon::GetBulletSpread(void)
+{
+	static Vector cone;
+
+	Assert(GetInnateInaccuracy() <= GetMaxAccuracyPenalty());
+
+	const float ramp = RemapValClamped(m_flAccuracyPenalty,
+		GetInnateInaccuracy(),
+		GetMaxAccuracyPenalty() / sv_neo_wep_acc_penalty_scale.GetFloat(),
+		0.0f,
+		1.0f);
+
+	// We lerp from very accurate to inaccurate over time
+	VectorLerp(
+		GetMinCone() * sv_neo_wep_cone_min_scale.GetFloat(),
+		GetMaxCone() * sv_neo_wep_cone_max_scale.GetFloat(),
+		ramp,
+		cone);
+
+	return cone;
+}
+
 void CNEOBaseCombatWeapon::PrimaryAttack(void)
 {
 	Assert(!ShootingIsPrevented());

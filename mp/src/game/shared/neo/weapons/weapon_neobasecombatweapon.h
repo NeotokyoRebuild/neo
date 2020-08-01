@@ -167,23 +167,7 @@ public:
 	virtual Vector GetMinCone() const { static Vector cone = VECTOR_CONE_1DEGREES; return cone; }
 	virtual Vector GetMaxCone() const { static Vector cone = VECTOR_CONE_10DEGREES; return cone; }
 
-	virtual const Vector& GetBulletSpread(void) OVERRIDE
-	{
-		static Vector cone;
-
-		Assert(GetInnateInaccuracy() <= GetMaxAccuracyPenalty());
-
-		const float ramp = RemapValClamped(m_flAccuracyPenalty,
-			GetInnateInaccuracy(),
-			GetMaxAccuracyPenalty(),
-			0.0f,
-			1.0f);
-
-		// We lerp from very accurate to inaccurate over time
-		VectorLerp(GetMinCone(), GetMaxCone(), ramp, cone);
-
-		return cone;
-	}
+	virtual const Vector& GetBulletSpread(void) OVERRIDE;
 
 	// Whether this weapon should fire only once per each attack command, even if held down.
 	bool IsSemiAuto(void) const { return !IsAutomatic(); }
