@@ -1,3 +1,5 @@
+*Note: It's recommended you read the [dev branch version of this document](https://github.com/NeotokyoRevamp/neo/blob/dev/CONTRIBUTING.md) to make sure all the information is up to date.*
+
 # Contributing
 
 ## Pull requests are welcome!
@@ -29,8 +31,6 @@ The end result should hopefully be a shinier and less error-prone rendition of N
 ### Cloning & merging
 
 It's recommended you fork [the dev branch](https://github.com/NeotokyoRevamp/neo/tree/dev), and pull request your work there back to it.
-
-*Note: It's recommended you also read the [dev branch version of this document](https://github.com/NeotokyoRevamp/neo/blob/dev/CONTRIBUTING.md) to make sure the information is up to date.*
 
 The dev branch will periodically get merged back to the master branch, as new things become stable enough.
 
