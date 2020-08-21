@@ -5,7 +5,7 @@ REM Note that it's not included in the default NT mount, so you'll have to provi
 SET /A IncludePBK56 = 0
 
 SET "VpcBin=devtools\bin\vpc.exe"
-SET "BuildParams=/hl2mp +everything /mksln everything.sln"
+SET "BuildParams=/2013 /sdk2013ce  +everything /mksln everything.sln"
 
 if %IncludePBK56%==1 (
 echo **NOTE**: Including PBK56S in this solution.

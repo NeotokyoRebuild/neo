@@ -5,7 +5,7 @@
 IncludePBK56=0
 
 VpcBin="devtools/bin/vpc"
-BuildParams="/hl2mp +everything /mksln everything"
+BuildParams="/sdk2013ce +everything /mksln everything"
 
 pushd `dirname $0`
 if [ $IncludePBK56 == 1 ]
