@@ -840,6 +840,9 @@ void CViewRender::SetUpViews()
 	view.fovViewmodel = g_pClientMode->GetViewModelFOV();
 #else
 	//Adjust the viewmodel's FOV to move with any FOV offsets on the viewer's end
+#ifdef SDK2013CE
+	view.fovViewmodel = fabs( g_pClientMode->GetViewModelFOV() - flFOVOffset );
+#else
 	view.fovViewmodel = g_pClientMode->GetViewModelFOV() - flFOVOffset;
 #endif
 
