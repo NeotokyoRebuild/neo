@@ -44,11 +44,15 @@ public:
 	const Vector &GetRightVector()		{ return m_vecRight; }
 	const Vector &GetUpVector()			{ return m_vecUp;}
 
+#ifdef NEO
+protected:
+#else
 private:
+#endif
 	Vector m_vecShotDirection;
+	Vector m_vecResult;
 	Vector m_vecRight;
 	Vector m_vecUp;
-	Vector m_vecResult;
 };
 
 //---------------------------------------------------------

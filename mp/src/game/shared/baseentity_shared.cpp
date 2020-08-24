@@ -13,7 +13,19 @@
 #include "gamestringpool.h"
 #include "ammodef.h"
 #include "takedamageinfo.h"
+
+#ifdef NEO
+#include "neo_shot_manipulator.h"
+#include "weapon_neobasecombatweapon.h"
+#ifdef CLIENT_DLL
+#include "c_neo_player.h"
+#else
+#include "neo_player.h"
+#endif
+#else
 #include "shot_manipulator.h"
+#endif
+
 #include "ai_debug_shared.h"
 #include "mapentities_shared.h"
 #include "debugoverlay_shared.h"
@@ -1695,7 +1707,19 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 	//-----------------------------------------------------
 	// Set up our shot manipulator.
 	//-----------------------------------------------------
+#ifdef NEO
+	auto pNeoAttacker = dynamic_cast<CNEO_Player*>(this);
+	Assert(pNeoAttacker);
+
+	auto neoWeapon = dynamic_cast<CNEOBaseCombatWeapon*>(pNeoAttacker->GetActiveWeapon());
+	Assert(neoWeapon);
+
+	const int numShotsFired = neoWeapon ? neoWeapon->GetNumShotsFired() : 0;
+
+	CNEOShotManipulator Manipulator(pNeoAttacker, numShotsFired, info.m_vecDirShooting);
+#else
 	CShotManipulator Manipulator( info.m_vecDirShooting );
+#endif
 
 	bool bDoImpacts = false;
 	bool bDoTracers = false;

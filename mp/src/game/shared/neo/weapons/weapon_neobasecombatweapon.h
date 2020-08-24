@@ -155,6 +155,10 @@ public:
 		return false;
 	}
 
+	float GetLastAttackTime(void) const { return m_flLastAttackTime; }
+
+	int GetNumShotsFired(void) const { return m_nNumShotsFired; }
+
 	// Whether this weapon should fire automatically when holding down the attack.
 	virtual bool IsAutomatic(void) const
 	{
