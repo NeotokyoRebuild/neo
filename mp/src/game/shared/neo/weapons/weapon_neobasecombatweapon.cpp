@@ -232,26 +232,26 @@ ConVar sv_neo_wep_cone_max_scale("sv_neo_wep_cone_max_scale", "0.7", FCVAR_REPLI
 // NEO HACK/FIXME (Rain): Doing some temporary bloom accuracy scaling here for easier testing.
 // Need to clean this up later once we have good values!!
 #define TEMP_WEP_STR(name) #name
-#define MAKE_TEMP_WEP_BLOOM_SCALER(weapon) ConVar sv_neo_##weapon##_bloom_scale(TEMP_WEP_STR(sv_neo_##weapon##_bloom_scale), "1.0", FCVAR_REPLICATED, TEMP_WEP_STR(Temporary weapon bloom scaler for #weapon), true, 0.01, true, 10.0)
+#define MAKE_TEMP_WEP_BLOOM_SCALER(weapon, defval) ConVar sv_neo_##weapon##_bloom_scale(TEMP_WEP_STR(sv_neo_##weapon##_bloom_scale), #defval, FCVAR_REPLICATED, TEMP_WEP_STR(Temporary weapon bloom scaler for #weapon), true, 0.01, true, 10.0)
 
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_jitte);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_jittescoped);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_kyla);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_m41);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_m41l);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_m41s);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_milso);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_mpn);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_mpn_unsilenced);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_mx);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_mx_silenced);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_pz);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_smac);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_srm);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_srm_s);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_tachi);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_zr68c);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_zr68s);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_jitte,			2.5);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_jittescoped,		2.5);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_kyla,				2.5);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_m41,				2.5);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_m41l,				2.5);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_m41s,				2.5);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_milso,			2.5);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_mpn,				3.75);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_mpn_unsilenced,	4.0);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_mx,				2.5);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_mx_silenced,		2.5);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_pz,				2.5);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_smac,				2.5);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_srm,				2.5);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_srm_s,			2.5);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_tachi,			2.5);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_zr68c,			2.5);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_zr68s,			2.5);
 
 const Vector& CNEOBaseCombatWeapon::GetBulletSpread(void)
 {
@@ -259,7 +259,7 @@ const Vector& CNEOBaseCombatWeapon::GetBulletSpread(void)
 
 	// NEO HACK/FIXME (Rain): Doing some temporary bloom accuracy scaling here for easier testing.
 	// Need to clean this up later once we have good values!!
-	std::initializer_list<ConVar*> bloomScalers = {
+	const std::initializer_list<ConVar*> bloomScalers = {
 		&sv_neo_weapon_jitte_bloom_scale,
 		&sv_neo_weapon_jittescoped_bloom_scale,
 		&sv_neo_weapon_kyla_bloom_scale,
