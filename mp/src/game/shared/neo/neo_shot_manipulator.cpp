@@ -9,27 +9,27 @@ ConVar sv_neo_recoil_viewfollow_scale("sv_neo_recoil_viewfollow_scale", "0.45", 
 // NEO HACK/FIXME (Rain): Doing some temporary recoil cvars here for testing.
 // Need to clean these up later once we have good values!!
 #define TEMP_WEP_STR(name) #name
-#define MAKE_TEMP_WEP_RECOIL_SCALER(weapon, defval) ConVar sv_neo_##weapon##_recoil_scale(TEMP_WEP_STR(sv_neo_##weapon##_recoil_scale), #defval, FCVAR_REPLICATED, TEMP_WEP_STR(Temporary recoil scaler for #weapon), true, 0.01, true, 10.0)
+#define MAKE_TEMP_WEP_RECOIL_SCALER(weapon, defval) ConVar sv_neo_##weapon##_recoil_scale(TEMP_WEP_STR(sv_neo_##weapon##_recoil_scale), #defval, FCVAR_REPLICATED, TEMP_WEP_STR(Temporary recoil scaler for #weapon), true, 0.0, true, 10.0)
 #define MAKE_TEMP_WEP_RECOIL_CAPBULLETS(weapon, defval) ConVar sv_neo_##weapon##_recoil_capbullets(TEMP_WEP_STR(sv_neo_##weapon##_recoil_capbullets), #defval, FCVAR_REPLICATED, TEMP_WEP_STR(At how many bullets should #weapon reach max recoil.), true, 0.01, true, 9999.0)
 
-MAKE_TEMP_WEP_RECOIL_SCALER(weapon_jitte,			0.01);
-MAKE_TEMP_WEP_RECOIL_SCALER(weapon_jittescoped,		0.01);
-MAKE_TEMP_WEP_RECOIL_SCALER(weapon_kyla,			0.01);
-MAKE_TEMP_WEP_RECOIL_SCALER(weapon_m41,				0.01);
-MAKE_TEMP_WEP_RECOIL_SCALER(weapon_m41l,			0.01);
-MAKE_TEMP_WEP_RECOIL_SCALER(weapon_m41s,			0.01);
-MAKE_TEMP_WEP_RECOIL_SCALER(weapon_milso,			0.01);
-MAKE_TEMP_WEP_RECOIL_SCALER(weapon_mpn,				1.15);
+MAKE_TEMP_WEP_RECOIL_SCALER(weapon_jitte,			0);
+MAKE_TEMP_WEP_RECOIL_SCALER(weapon_jittescoped,		0);
+MAKE_TEMP_WEP_RECOIL_SCALER(weapon_kyla,			0);
+MAKE_TEMP_WEP_RECOIL_SCALER(weapon_m41,				0);
+MAKE_TEMP_WEP_RECOIL_SCALER(weapon_m41l,			0);
+MAKE_TEMP_WEP_RECOIL_SCALER(weapon_m41s,			0);
+MAKE_TEMP_WEP_RECOIL_SCALER(weapon_milso,			0);
+MAKE_TEMP_WEP_RECOIL_SCALER(weapon_mpn,				0.75);
 MAKE_TEMP_WEP_RECOIL_SCALER(weapon_mpn_unsilenced,	1.25);
-MAKE_TEMP_WEP_RECOIL_SCALER(weapon_mx,				0.01);
-MAKE_TEMP_WEP_RECOIL_SCALER(weapon_mx_silenced,		0.01);
-MAKE_TEMP_WEP_RECOIL_SCALER(weapon_pz,				0.01);
-MAKE_TEMP_WEP_RECOIL_SCALER(weapon_smac,			0.01);
-MAKE_TEMP_WEP_RECOIL_SCALER(weapon_srm,				0.01);
-MAKE_TEMP_WEP_RECOIL_SCALER(weapon_srm_s,			0.01);
-MAKE_TEMP_WEP_RECOIL_SCALER(weapon_tachi,			0.01);
-MAKE_TEMP_WEP_RECOIL_SCALER(weapon_zr68c,			0.01);
-MAKE_TEMP_WEP_RECOIL_SCALER(weapon_zr68s,			0.01);
+MAKE_TEMP_WEP_RECOIL_SCALER(weapon_mx,				0);
+MAKE_TEMP_WEP_RECOIL_SCALER(weapon_mx_silenced,		0);
+MAKE_TEMP_WEP_RECOIL_SCALER(weapon_pz,				0);
+MAKE_TEMP_WEP_RECOIL_SCALER(weapon_smac,			0);
+MAKE_TEMP_WEP_RECOIL_SCALER(weapon_srm,				0);
+MAKE_TEMP_WEP_RECOIL_SCALER(weapon_srm_s,			0);
+MAKE_TEMP_WEP_RECOIL_SCALER(weapon_tachi,			0);
+MAKE_TEMP_WEP_RECOIL_SCALER(weapon_zr68c,			0);
+MAKE_TEMP_WEP_RECOIL_SCALER(weapon_zr68s,			0);
 
 MAKE_TEMP_WEP_RECOIL_CAPBULLETS(weapon_jitte,			30);
 MAKE_TEMP_WEP_RECOIL_CAPBULLETS(weapon_jittescoped,		30);
@@ -89,6 +89,11 @@ float CNEOShotManipulator::GetVerticalRecoil() const
 			wepSpecificRecoilScale = scaler->GetFloat();
 			break;
 		}
+	}
+
+	if (wepSpecificRecoilScale == 0)
+	{
+		return 0;
 	}
 
 	const std::initializer_list<ConVar*> recoilCapbulletLimits = {

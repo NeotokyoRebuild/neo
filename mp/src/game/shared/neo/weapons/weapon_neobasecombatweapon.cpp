@@ -220,7 +220,7 @@ void CNEOBaseCombatWeapon::ItemPreFrame(void)
 	}
 }
 
-ConVar sv_neo_wep_acc_penalty_scale("sv_neo_wep_acc_penalty_scale", "1.0", FCVAR_REPLICATED,
+ConVar sv_neo_wep_acc_penalty_scale("sv_neo_wep_acc_penalty_scale", "7.5", FCVAR_REPLICATED,
 	"Temporary global neo wep accuracy penalty scaler.", true, 0.01, true, 9999.0);
 
 ConVar sv_neo_wep_cone_min_scale("sv_neo_wep_cone_min_scale", "0.01", FCVAR_REPLICATED,
@@ -232,9 +232,9 @@ ConVar sv_neo_wep_cone_max_scale("sv_neo_wep_cone_max_scale", "0.7", FCVAR_REPLI
 // NEO HACK/FIXME (Rain): Doing some temporary bloom accuracy scaling here for easier testing.
 // Need to clean this up later once we have good values!!
 #define TEMP_WEP_STR(name) #name
-#define MAKE_TEMP_WEP_BLOOM_SCALER(weapon, defval) ConVar sv_neo_##weapon##_bloom_scale(TEMP_WEP_STR(sv_neo_##weapon##_bloom_scale), #defval, FCVAR_REPLICATED, TEMP_WEP_STR(Temporary weapon bloom scaler for #weapon), true, 0.01, true, 10.0)
+#define MAKE_TEMP_WEP_BLOOM_SCALER(weapon, defval) ConVar sv_neo_##weapon##_bloom_scale(TEMP_WEP_STR(sv_neo_##weapon##_bloom_scale), #defval, FCVAR_REPLICATED, TEMP_WEP_STR(Temporary weapon bloom scaler for #weapon), true, 0.01, true, 9999.0)
 
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_jitte,			2.5);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_jitte,			2);
 MAKE_TEMP_WEP_BLOOM_SCALER(weapon_jittescoped,		2.5);
 MAKE_TEMP_WEP_BLOOM_SCALER(weapon_kyla,				2.5);
 MAKE_TEMP_WEP_BLOOM_SCALER(weapon_m41,				2.5);
@@ -293,7 +293,7 @@ const Vector& CNEOBaseCombatWeapon::GetBulletSpread(void)
 
 	const float ramp = RemapValClamped(m_flAccuracyPenalty,
 		GetInnateInaccuracy(),
-		GetMaxAccuracyPenalty() / sv_neo_wep_acc_penalty_scale.GetFloat(),
+		GetMaxAccuracyPenalty() * sv_neo_wep_acc_penalty_scale.GetFloat(),
 		0.0f,
 		1.0f);
 
