@@ -223,7 +223,7 @@ void CNEOBaseCombatWeapon::ItemPreFrame(void)
 ConVar sv_neo_wep_acc_penalty_scale("sv_neo_wep_acc_penalty_scale", "1.0", FCVAR_REPLICATED,
 	"Temporary global neo wep accuracy penalty scaler.", true, 0.01, true, 9999.0);
 
-ConVar sv_neo_wep_cone_min_scale("sv_neo_wep_cone_min_scale", "1.0", FCVAR_REPLICATED,
+ConVar sv_neo_wep_cone_min_scale("sv_neo_wep_cone_min_scale", "0.01", FCVAR_REPLICATED,
 	"Temporary global neo wep bloom min cone scaler.", true, 0.01, true, 10.0);
 
 ConVar sv_neo_wep_cone_max_scale("sv_neo_wep_cone_max_scale", "0.7", FCVAR_REPLICATED,
