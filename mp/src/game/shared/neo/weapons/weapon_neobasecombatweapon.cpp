@@ -241,7 +241,7 @@ MAKE_TEMP_WEP_BLOOM_SCALER(weapon_m41,				2.5);
 MAKE_TEMP_WEP_BLOOM_SCALER(weapon_m41l,				2.5);
 MAKE_TEMP_WEP_BLOOM_SCALER(weapon_m41s,				2.5);
 MAKE_TEMP_WEP_BLOOM_SCALER(weapon_milso,			2.5);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_mpn,				3.75);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_mpn,				20.0);
 MAKE_TEMP_WEP_BLOOM_SCALER(weapon_mpn_unsilenced,	4.0);
 MAKE_TEMP_WEP_BLOOM_SCALER(weapon_mx,				2.5);
 MAKE_TEMP_WEP_BLOOM_SCALER(weapon_mx_silenced,		2.5);
