@@ -1766,18 +1766,23 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 		}
 		else
 		{
+#ifndef NEO
 			// Don't run the biasing code for the player at the moment.
 			vecDir = Manipulator.ApplySpread( info.m_vecSpread );
+#else
+			Manipulator.ApplySpread(info.m_vecSpread);
+			Vector vecRecoilDir;
+			Manipulator.GetSpreadAndRecoilDirections(vecDir, vecRecoilDir);
+			Assert(vecDir.IsValid() && vecRecoilDir.IsValid());
 
-#ifdef NEO
 			if (sv_neo_recoil_viewfollow_scale.GetFloat() != 0)
 			{
 				QAngle postRecoilViewAngle;
-				VectorAngles(vecDir, postRecoilViewAngle);
+				VectorAngles(vecRecoilDir, postRecoilViewAngle);
 				NormalizeAngles(postRecoilViewAngle);
 				// Can't follow the recoil beyond the -89,89 camera pitch range.
 				postRecoilViewAngle.x = Max(Min(postRecoilViewAngle.x, 89.0f), -89.0f);
-				// Only want to modify view pitch for the recoil, ignore any bloom spray etc.
+				// Only want to modify view pitch for the recoil.
 				postRecoilViewAngle.y = pNeoAttacker->EyeAngles().y;
 				postRecoilViewAngle.z = pNeoAttacker->EyeAngles().z;
 
