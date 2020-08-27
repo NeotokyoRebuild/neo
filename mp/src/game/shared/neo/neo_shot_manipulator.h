@@ -12,41 +12,40 @@
 #include "neo_player.h"
 #endif
 
+class CNEOBaseCombatWeapon;
+
 class CNEOShotManipulator : public CShotManipulator {
 public:
-	CNEOShotManipulator(CNEO_Player *player, int numBullet, const Vector& vecForward) : CShotManipulator(vecForward)
+	CNEOShotManipulator(int numBullet, const Vector& vecForward, CNEO_Player* player, CNEOBaseCombatWeapon* neoWep = NULL)
+		: CShotManipulator(vecForward)
 	{
-		m_iNumBullet = numBullet;
+		Assert(player);
 		m_pPlayer = player;
+
+		m_pWeapon = neoWep; // we're ok with a nullptr here (ie. not an NT gun); just handle as a non-recoiled weapon then.
+
+		m_iNumBullet = numBullet;
 	}
 
 	const Vector& ApplySpread(const Vector& vecSpread, float bias = 1.0);
 
 private:
+	float GetVerticalRecoil() const;
+
+private:
 	int m_iNumBullet;
 
 	CNEO_Player* m_pPlayer;
+
+	CNEOBaseCombatWeapon* m_pWeapon;
 };
 
-ConVar sv_neo_recoil_capbullets("sv_neo_recoil_capbullets", "10", FCVAR_CHEAT | FCVAR_REPLICATED, "Max Z recoil", true, 0.0f, false, 0.0f);
-ConVar sv_neo_recoil_capscale("sv_neo_recoil_capscale", "1", FCVAR_CHEAT | FCVAR_REPLICATED, "Max Z recoil", true, 0.0f, false, 0.0f);
-
-#ifndef GAME_DLL
-AngularImpulse WorldToLocalRotation(const VMatrix& localToWorld, const Vector& worldAxis, float rotation)
-{
-	// fix axes of rotation to match axes of vector
-	Vector rot = worldAxis * rotation;
-	// since the matrix maps local to world, do a transpose rotation to get world to local
-	AngularImpulse ang = localToWorld.VMul3x3Transpose(rot);
-
-	return ang;
-}
-#endif
+extern ConVar sv_neo_recoil_capbullets;
+extern ConVar sv_neo_recoil_capscale;
+extern ConVar sv_neo_recoil_viewfollow_scale;
 
 inline const Vector &CNEOShotManipulator::ApplySpread(const Vector& vecSpread, float bias)
 {
-	const float recoilAmount = sv_neo_recoil_capscale.GetFloat() * Min(m_iNumBullet, sv_neo_recoil_capbullets.GetInt()) / sv_neo_recoil_capbullets.GetFloat();
-	
 	QAngle myangles;
 	VectorAngles(m_vecShotDirection, myangles);
 
@@ -56,7 +55,7 @@ inline const Vector &CNEOShotManipulator::ApplySpread(const Vector& vecSpread, f
 	AngleMatrix(worldangles, attachedToWorld);
 
 	VMatrix vm = attachedToWorld;
-	MatrixBuildRotationAboutAxis(vm, m_vecRight, recoilAmount);
+	MatrixBuildRotationAboutAxis(vm, m_vecRight, GetVerticalRecoil());
 
 	m_vecShotDirection = vm.ApplyRotation(m_vecShotDirection);
 
@@ -64,5 +63,4 @@ inline const Vector &CNEOShotManipulator::ApplySpread(const Vector& vecSpread, f
 
 	return GetResult();
 }
-
 #endif

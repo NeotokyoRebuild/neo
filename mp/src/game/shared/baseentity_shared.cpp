@@ -1612,6 +1612,28 @@ public:
 typedef CTraceFilterSimpleList CBulletsTraceFilter;
 #endif
 
+#ifdef NEO
+#ifdef GAME_DLL
+void NormalizeAngles(QAngle& angles)
+{
+	int i;
+
+	// Normalize angles to -180 to 180 range
+	for (i = 0; i < 3; i++)
+	{
+		if (angles[i] > 180.0)
+		{
+			angles[i] -= 360.0;
+		}
+		else if (angles[i] < -180.0)
+		{
+			angles[i] += 360.0;
+		}
+	}
+}
+#endif
+#endif
+
 void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 {
 	static int	tracerCount;
@@ -1716,7 +1738,7 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 
 	const int numShotsFired = neoWeapon ? neoWeapon->GetNumShotsFired() : 0;
 
-	CNEOShotManipulator Manipulator(pNeoAttacker, numShotsFired, info.m_vecDirShooting);
+	CNEOShotManipulator Manipulator(numShotsFired, info.m_vecDirShooting, pNeoAttacker, neoWeapon);
 #else
 	CShotManipulator Manipulator( info.m_vecDirShooting );
 #endif
@@ -1744,9 +1766,34 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 		}
 		else
 		{
-
 			// Don't run the biasing code for the player at the moment.
 			vecDir = Manipulator.ApplySpread( info.m_vecSpread );
+
+#ifdef NEO
+			if (sv_neo_recoil_viewfollow_scale.GetFloat() != 0)
+			{
+				QAngle postRecoilViewAngle;
+				VectorAngles(vecDir, postRecoilViewAngle);
+				NormalizeAngles(postRecoilViewAngle);
+				// Can't follow the recoil beyond the -89,89 camera pitch range.
+				postRecoilViewAngle.x = Max(Min(postRecoilViewAngle.x, 89.0f), -89.0f);
+				// Only want to modify view pitch for the recoil, ignore any bloom spray etc.
+				postRecoilViewAngle.y = pNeoAttacker->EyeAngles().y;
+				postRecoilViewAngle.z = pNeoAttacker->EyeAngles().z;
+
+#if(0)
+				DevMsg("Want eye change: %f %f %f --> %f %f %f\n",
+					pNeoAttacker->EyeAngles().x, pNeoAttacker->EyeAngles().y, pNeoAttacker->EyeAngles().z,
+					postRecoilViewAngle.x, postRecoilViewAngle.y, postRecoilViewAngle.z);
+#endif
+
+#ifdef GAME_DLL
+				pNeoAttacker->SnapEyeAngles(Lerp(sv_neo_recoil_viewfollow_scale.GetFloat(), pNeoAttacker->EyeAngles(), postRecoilViewAngle));
+#else
+				pNeoAttacker->SetLocalAngles(Lerp(sv_neo_recoil_viewfollow_scale.GetFloat(), pNeoAttacker->LocalEyeAngles(), postRecoilViewAngle));
+#endif
+			}
+#endif
 		}
 
 		vecEnd = info.m_vecSrc + vecDir * info.m_flDistance;

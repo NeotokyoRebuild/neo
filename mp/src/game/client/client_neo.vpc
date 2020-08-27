@@ -196,6 +196,7 @@ $Project "Client (HL2MP)"
 			$File	"$SRCDIR\game\shared\neo\neo_predicted_viewmodel.cpp"
 			$File	"$SRCDIR\game\shared\neo\neo_predicted_viewmodel.h"
 
+			$File	"$SRCDIR\game\shared\neo\neo_shot_manipulator.cpp"
 			$File	"$SRCDIR\game\shared\neo\neo_shot_manipulator.h"
 
 			$Folder "Weapons"
