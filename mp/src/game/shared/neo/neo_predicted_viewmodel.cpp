@@ -152,10 +152,17 @@ float CNEOPredictedViewModel::freeRoomForLean(float leanAmount, CNEO_Player *pla
 	// Need this much z clearance to not "bump" our head whilst leaning
 	const Vector groundClearance(0, 0, 30);
 
+#if(0) // same view limits regardless of player class
 #define STAND_MINS (NEORules()->GetViewVectors()->m_vHullMin + groundClearance)
 #define STAND_MAXS (NEORules()->GetViewVectors()->m_vHullMax)
 #define DUCK_MINS (NEORules()->GetViewVectors()->m_vDuckHullMin + groundClearance)
 #define DUCK_MAXS (NEORules()->GetViewVectors()->m_vDuckHullMax)
+#else // class hull specific limits
+#define STAND_MINS (VEC_HULL_MIN_SCALED(player) + groundClearance)
+#define STAND_MAXS (VEC_HULL_MAX_SCALED(player))
+#define DUCK_MINS (VEC_DUCK_HULL_MIN_SCALED(player) + groundClearance)
+#define DUCK_MAXS (VEC_DUCK_HULL_MAX_SCALED(player))
+#endif
 
 	if (player->GetFlags() & FL_DUCKING)
 	{

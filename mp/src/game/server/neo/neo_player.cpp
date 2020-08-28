@@ -2273,3 +2273,10 @@ void CNEO_Player::InitVCollision(const Vector& vecAbsOrigin, const Vector& vecAb
 
 	SetupVPhysicsShadow(vecAbsOrigin, vecAbsVelocity, pModel, "player_stand", pCrouchModel, "player_crouch");
 }
+
+extern ConVar sv_neo_wep_dmg_modifier;
+
+void CNEO_Player::ModifyFireBulletsDamage(CTakeDamageInfo* dmgInfo)
+{
+	dmgInfo->SetDamage(dmgInfo->GetDamage() * sv_neo_wep_dmg_modifier.GetFloat());
+}

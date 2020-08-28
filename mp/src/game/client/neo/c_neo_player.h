@@ -59,6 +59,8 @@ public:
 	virtual void CalcView( Vector &eyeOrigin, QAngle &eyeAngles, float &zNear, float &zFar, float &fov );
 	virtual const QAngle& EyeAngles( void );
 
+	virtual void ModifyFireBulletsDamage(CTakeDamageInfo* dmgInfo) OVERRIDE;
+
 	virtual void ClientThink( void );
 	virtual void PreThink( void );
 	virtual void PostThink( void );

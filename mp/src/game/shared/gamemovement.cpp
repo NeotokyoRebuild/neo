@@ -748,7 +748,17 @@ Vector CGameMovement::GetPlayerMins( void ) const
 	}
 	else
 	{
-		return player->m_Local.m_bDucked  ? VEC_DUCK_HULL_MIN_SCALED( player ) : VEC_HULL_MIN_SCALED( player );
+#ifdef NEO
+		Vector mins = player->m_Local.m_bDucked ? VEC_DUCK_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player)) : VEC_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player));
+		// We may be leaning sideways, in which case we need to block the lean camera from clipping walls etc.
+		if (player->GetViewOffset().y < 0)
+		{
+			mins.y += player->GetViewOffset().y;
+		}
+		return mins;
+#else
+		return player->m_Local.m_bDucked ? VEC_DUCK_HULL_MIN_SCALED(player) : VEC_HULL_MIN_SCALED(player);
+#endif
 	}
 }
 
@@ -766,7 +776,13 @@ Vector CGameMovement::GetPlayerMaxs( void ) const
 	else
 	{
 #ifdef NEO
-		return player->m_Local.m_bDucked ? VEC_DUCK_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player)) : VEC_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player));
+		Vector maxs = player->m_Local.m_bDucked ? VEC_DUCK_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player)) : VEC_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player));
+		// We may be leaning sideways, in which case we need to block the lean camera from clipping walls etc.
+		if (player->GetViewOffset().y > 0)
+		{
+			maxs.y += player->GetViewOffset().y;
+		}
+		return maxs;
 #else
 		return player->m_Local.m_bDucked ? VEC_DUCK_HULL_MAX_SCALED(player) : VEC_HULL_MAX_SCALED(player);
 #endif

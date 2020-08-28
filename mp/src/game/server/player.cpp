@@ -1591,6 +1591,11 @@ const impactdamagetable_t &CBasePlayer::GetPhysicsImpactDamageTable()
 	return gDefaultPlayerImpactDamageTable;
 }
 
+#ifdef NEO
+ConVar sv_neo_bullet_physforce_scale("sv_neo_dmg_physforce_scale", "0", FCVAR_REPLICATED,
+	"How much should weapon damage apply physics forces to player, if any. 1 = HL2DM regular scaling.",
+	true, 0.0, true, 10.0);
+#endif
 
 int CBasePlayer::OnTakeDamage_Alive( const CTakeDamageInfo &info )
 {
@@ -1612,15 +1617,23 @@ int CBasePlayer::OnTakeDamage_Alive( const CTakeDamageInfo &info )
 		VectorNormalize( vecDir );
 	}
 
-	if ( info.GetInflictor() && (GetMoveType() == MOVETYPE_WALK) && 
-		( !attacker->IsSolidFlagSet(FSOLID_TRIGGER)) )
+#ifdef NEO
+	if (sv_neo_bullet_physforce_scale.GetFloat() != 0)
+#endif
 	{
-		Vector force = vecDir * -DamageForce( WorldAlignSize(), info.GetBaseDamage() );
-		if ( force.z > 250.0f )
+		if (info.GetInflictor() && (GetMoveType() == MOVETYPE_WALK) &&
+			(!attacker->IsSolidFlagSet(FSOLID_TRIGGER)))
 		{
-			force.z = 250.0f;
+			Vector force = vecDir * -DamageForce(WorldAlignSize(), info.GetBaseDamage());
+			if (force.z > 250.0f)
+			{
+				force.z = 250.0f;
+			}
+#ifdef NEO
+			force *= sv_neo_bullet_physforce_scale.GetFloat();
+#endif
+			ApplyAbsVelocityImpulse(force);
 		}
-		ApplyAbsVelocityImpulse( force );
 	}
 
 	// fire global game event

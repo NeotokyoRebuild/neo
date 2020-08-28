@@ -1307,3 +1307,13 @@ void C_NEO_Player::SetAnimation(PLAYER_ANIM playerAnim)
 		m_pPlayerAnimState->DoAnimationEvent(animEvent);
 	}
 }
+
+extern ConVar sv_neo_wep_dmg_modifier;
+
+// NEO NOTE (Rain): doesn't seem to be implemented at all clientside?
+// Don't need to do this, unless we want it for prediction with proper implementation later.
+// Keeping it for now.
+void C_NEO_Player::ModifyFireBulletsDamage(CTakeDamageInfo* dmgInfo)
+{
+	dmgInfo->SetDamage(dmgInfo->GetDamage() * sv_neo_wep_dmg_modifier.GetFloat());
+}
