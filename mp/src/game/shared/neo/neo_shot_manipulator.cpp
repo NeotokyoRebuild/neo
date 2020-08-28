@@ -2,6 +2,13 @@
 #include "neo_shot_manipulator.h"
 #include "weapon_neobasecombatweapon.h"
 
+#ifdef LINUX
+#include <initializer_list>
+#endif
+
+// memdbgon must be the last include file in a .cpp file!!!
+#include "tier0/memdbgon.h"
+
 ConVar sv_neo_recoil_capbullets("sv_neo_recoil_capbullets", "10", FCVAR_CHEAT | FCVAR_REPLICATED, "Generic fallback cvar for at how many bullets should weapons reach max recoil.", true, 0.0f, false, 0.0f);
 ConVar sv_neo_recoil_capscale("sv_neo_recoil_capscale", "1", FCVAR_CHEAT | FCVAR_REPLICATED, "Generic fallback scaler for max recoil cap.", true, 0.0f, false, 0.0f);
 ConVar sv_neo_recoil_viewfollow_scale("sv_neo_recoil_viewfollow_scale", "0.45", FCVAR_CHEAT | FCVAR_REPLICATED, "Scaler for how much should player eyeangle follow the current recoil.", true, 0.0f, false, 0.0f);

@@ -9,6 +9,10 @@
 
 #include "basecombatweapon_shared.h"
 
+#ifdef LINUX
+#include <initializer_list>
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
