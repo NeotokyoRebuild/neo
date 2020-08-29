@@ -70,6 +70,8 @@ public:
 protected:
 	virtual void ComputeAimSequence() OVERRIDE;
 
+	virtual bool ShouldResetMainSequence(int iCurrentSequence, int iNewSequence) OVERRIDE;
+
 	int CalcFireLayerSequence(PlayerAnimEvent_t event);
 	void ComputeFireSequence(CStudioHdr *pStudioHdr);
 
@@ -83,7 +85,7 @@ protected:
 	int GetOuterGrenadeThrowCounter();
 
 	const char* GetWeaponSuffix();
-	bool HandleJumping();
+	bool IsAirborne();
 
 	void UpdateLayerSequenceGeneric(CStudioHdr *pStudioHdr, int iLayer, bool &bEnabled,
 		float &flCurCycle, int &iSequence, bool bWaitAtEnd);
@@ -93,15 +95,12 @@ private:
 		CSequenceTransitioner* pTransitioner, float flWeightScale);
 
 private:
-	// Current state variables.
-	bool m_bJumping;			// Set on a jump event.
-	float m_flJumpStartTime;
-	bool m_bFirstJumpFrame;
-
 	// Aim sequence plays reload while this is on.
 	bool m_bReloading;
 	float m_flReloadCycle;
 	int m_iReloadSequence;
+
+	bool m_bFreshJump;
 
 	// This is set to true if ANY animation is being played in the fire layer.
 	bool m_bFiring;						// If this is on, then it'll continue the fire animation in the fire layer
@@ -168,8 +167,23 @@ INEOPlayerAnimStateHelpers* CreateAnimStateHelpers(CNEO_Player* pPlayer)
 // ------------------------------------------------------------------------- //
 CNEOPlayerAnimState::CNEOPlayerAnimState()
 {
-	m_pOuter = NULL;
 	m_bReloading = false;
+	m_flReloadCycle = 0;
+	m_iReloadSequence = 0;
+
+	m_bFreshJump = false;
+
+	m_bFiring = false;
+	m_iFireSequence = 0;
+	m_flFireCycle = 0;
+
+	m_bThrowingGrenade = false;
+	m_bPrimingGrenade = false;
+	m_flGrenadeCycle = 0;
+	m_iGrenadeSequence = 0;
+	m_iLastThrowGrenadeCounter = 0;
+
+	m_pHelpers = NULL;
 }
 
 CNEOPlayerAnimState::~CNEOPlayerAnimState()
@@ -192,7 +206,6 @@ void CNEOPlayerAnimState::InitNEO(CBaseAnimatingOverlay *pPlayer,
 
 void CNEOPlayerAnimState::ClearAnimationState()
 {
-	m_bJumping = false;
 	m_bFiring = false;
 	m_bReloading = false;
 
@@ -216,10 +229,7 @@ void CNEOPlayerAnimState::DoAnimationEvent(PlayerAnimEvent_t event, int nData)
 	}
 	else if (event == PLAYERANIMEVENT_JUMP)
 	{
-		// Play the jump animation.
-		m_bJumping = true;
-		m_bFirstJumpFrame = true;
-		m_flJumpStartTime = gpGlobals->curtime;
+		m_bFreshJump = true;
 	}
 	else if (event == PLAYERANIMEVENT_RELOAD)
 	{
@@ -286,7 +296,8 @@ void CNEOPlayerAnimState::UpdateLayerSequenceGeneric(CStudioHdr *pStudioHdr,
 	int iLayer, bool &bEnabled, float &flCurCycle, int &iSequence, bool bWaitAtEnd)
 {
 #ifdef GAME_DLL
-	Assert(false); // currently not expecting to do anything here serverside
+	Assert(false);
+	return;
 #else
 	if (!bEnabled)
 	{
@@ -583,35 +594,16 @@ float CNEOPlayerAnimState::GetCurrentMaxGroundSpeed()
 	}
 }
 
-bool CNEOPlayerAnimState::HandleJumping()
+bool CNEOPlayerAnimState::IsAirborne()
 {
-	if (m_bJumping)
-	{
-		if (m_bFirstJumpFrame)
-		{
-			m_bFirstJumpFrame = false;
-			RestartMainSequence();	// Reset the animation.
-		}
-
-		// Don't check if he's on the ground for a sec.. sometimes the client still has the
-		// on-ground flag set right when the message comes in.
-		if (gpGlobals->curtime - m_flJumpStartTime > 0.2f)
-		{
-			if (m_pOuter->GetFlags() & FL_ONGROUND)
-			{
-				m_bJumping = false;
-				RestartMainSequence();	// Reset the animation.
-			}
-		}
-	}
-
-	// Are we still jumping? If so, keep playing the jump animation.
-	return m_bJumping;
+	Assert(m_pOuter);
+	Assert(m_pOuter->MyCombatCharacterPointer());
+	return static_cast<CNEO_Player*>(m_pOuter->MyCombatCharacterPointer())->IsAirborne();
 }
 
 Activity CNEOPlayerAnimState::CalcMainActivity()
 {
-	if (HandleJumping())
+	if (IsAirborne())
 	{
 		return ACT_NEO_JUMP;
 	}
@@ -737,19 +729,12 @@ bool CNEOPlayerAnimState::ShouldBlendReloadSequenceToIdle()
 
 void CNEOPlayerAnimState::ComputeAimSequence()
 {
-#if(1)
 	if (ShouldBlendReloadSequenceToIdle())
 	{
-		//DevMsg("BLENDING REL %f\n", m_pOuter->GetCycle());
-		UpdateReloadSequenceLayers(m_pOuter->GetCycle(), RELOADSEQUENCE_LAYER, true, &m_ReloadSequenceTransitioner, 1.0f);
+		const float cycle = (m_pOuter->GetFlags() & FL_DUCKING) ? m_pOuter->GetAnimOverlay(RELOADSEQUENCE_LAYER)->m_flCycle : m_pOuter->GetCycle();
+		UpdateReloadSequenceLayers(cycle, RELOADSEQUENCE_LAYER, true, &m_ReloadSequenceTransitioner, 1.0f);
 	}
-	else
-	{
-		BaseClass::ComputeAimSequence();
-	}
-#else
 	BaseClass::ComputeAimSequence();
-#endif
 }
 
 void CNEOPlayerAnimState::UpdateReloadSequenceLayers(float flCycle, int iFirstLayer,
@@ -822,4 +807,19 @@ void CNEOPlayerAnimState::UpdateReloadSequenceLayers(float flCycle, int iFirstLa
 	pDest1->m_flWeight = clamp((float)pDest1->m_flWeight, 0.0f, 1.0f);
 
 	pDest0->m_flCycle = pDest1->m_flCycle = flCycle;
+}
+
+bool CNEOPlayerAnimState::ShouldResetMainSequence(int iCurrentSequence, int iNewSequence)
+{
+	if (IsAirborne())
+	{
+		if (!m_bFreshJump)
+		{
+			// Only reset active mid-air jump sequence if we're transitioning away from that animation
+			return iNewSequence != SelectWeightedSequence(TranslateActivity(ACT_HOP));
+		}
+		m_bFreshJump = false;
+	}
+
+	return BaseClass::ShouldResetMainSequence(iCurrentSequence, iNewSequence);
 }
