@@ -717,16 +717,27 @@ bool CNEOPlayerAnimState::ShouldBlendAimSequenceToIdle()
 
 bool CNEOPlayerAnimState::ShouldBlendReloadSequenceToIdle()
 {
-	if (m_bReloading)
+	Assert(!m_pOuter || m_pOuter->MyCombatCharacterPointer());
+	if (!m_pOuter || !m_pOuter->MyCombatCharacterPointer()->GetActiveWeapon())
 	{
-		m_bReloading = m_pOuter && m_pOuter->MyCombatCharacterPointer()->GetActiveWeapon() && m_pOuter->MyCombatCharacterPointer()->GetActiveWeapon()->m_bInReload;
+#ifdef DEBUG
+		DevWarning("Early return from ShouldBlendReloadSequenceToIdle\n");
+#endif
+		m_bReloading = false;
+		return false;
 	}
 
-	return (m_bReloading && m_pOuter && (static_cast<CNEO_Player*>(m_pOuter)->GetFlags() & FL_DUCKING));
+	if (m_bReloading)
+	{
+		m_bReloading = m_pOuter->MyCombatCharacterPointer()->GetActiveWeapon()->m_bInReload;
+	}
+
+	return (m_bReloading && (static_cast<CNEO_Player*>(m_pOuter)->GetFlags() & FL_DUCKING));
 }
 
 void CNEOPlayerAnimState::ComputeAimSequence()
 {
+#if(1)
 	if (ShouldBlendReloadSequenceToIdle())
 	{
 		//DevMsg("BLENDING REL %f\n", m_pOuter->GetCycle());
@@ -736,13 +747,16 @@ void CNEOPlayerAnimState::ComputeAimSequence()
 	{
 		BaseClass::ComputeAimSequence();
 	}
+#else
+	BaseClass::ComputeAimSequence();
+#endif
 }
 
 void CNEOPlayerAnimState::UpdateReloadSequenceLayers(float flCycle, int iFirstLayer,
 	bool bForceIdle, CSequenceTransitioner* pTransitioner, float flWeightScale)
 {
 	float flReloadSequenceWeight = 1;
-	int iReloadSequence = CalcAimLayerSequence(&flCycle, &flReloadSequenceWeight, bForceIdle);
+	int iReloadSequence = CalcReloadLayerSequence();
 	if (iReloadSequence == -1)
 		iReloadSequence = 0;
 
