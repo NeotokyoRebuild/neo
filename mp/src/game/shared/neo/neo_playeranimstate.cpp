@@ -462,21 +462,23 @@ int CNEOPlayerAnimState::CalcAimLayerSequence(float *flCycle,
 	{
 		switch (GetCurrentMainSequenceActivity())
 		{
-		case ACT_RUN:
+		case ACT_NEO_MOVE_RUN:
 			return CalcSequenceIndex("%s%s", DEFAULT_RUN_NAME, pSuffix);
 
-		case ACT_WALK:
 		case ACT_RUNTOIDLE:
+			Assert(false);
 		case ACT_IDLETORUN:
+			Assert(false);
+		case ACT_NEO_MOVE_WALK:
 			return CalcSequenceIndex("%s%s", DEFAULT_WALK_NAME, pSuffix);
 
-		case ACT_CROUCHIDLE:
+		case ACT_NEO_IDLE_CROUCH:
 			return CalcSequenceIndex("%s%s", DEFAULT_CROUCH_IDLE_NAME, pSuffix);
 
-		case ACT_RUN_CROUCH:
+		case ACT_NEO_MOVE_CROUCH:
 			return CalcSequenceIndex("%s%s", DEFAULT_CROUCH_WALK_NAME, pSuffix);
 
-		case ACT_IDLE:
+		case ACT_NEO_IDLE_STAND:
 		default:
 			return CalcSequenceIndex("%s%s", DEFAULT_IDLE_NAME, pSuffix);
 		}
@@ -531,27 +533,32 @@ int CNEOPlayerAnimState::CalcFireLayerSequence(PlayerAnimEvent_t event)
 	switch (GetCurrentMainSequenceActivity())
 	{
 	case ACT_PLAYER_RUN_FIRE:
-	case ACT_RUN:
+		Assert(false);
+	case ACT_NEO_MOVE_RUN:
 		res = CalcSequenceIndex("%s%s", DEFAULT_FIRE_RUN_NAME, pSuffix);
 		break;
 
 	case ACT_PLAYER_WALK_FIRE:
-	case ACT_WALK:
+		Assert(false);
+	case ACT_NEO_MOVE_WALK:
 		res = CalcSequenceIndex("%s%s", DEFAULT_FIRE_WALK_NAME, pSuffix);
 		break;
 
 	case ACT_PLAYER_CROUCH_FIRE:
-	case ACT_CROUCHIDLE:
+		Assert(false);
+	case ACT_NEO_IDLE_CROUCH:
 		res = CalcSequenceIndex("%s%s", DEFAULT_FIRE_CROUCH_NAME, pSuffix);
 		break;
 
 	case ACT_PLAYER_CROUCH_WALK_FIRE:
-	case ACT_RUN_CROUCH:
+		Assert(false);
+	case ACT_NEO_MOVE_CROUCH:
 		res = CalcSequenceIndex("%s%s", DEFAULT_FIRE_CROUCH_WALK_NAME, pSuffix);
 		break;
 
 	default:
 	case ACT_PLAYER_IDLE_FIRE:
+		Assert(false);
 		res = CalcSequenceIndex("%s%s", DEFAULT_FIRE_IDLE_NAME, pSuffix);
 		break;
 	}
@@ -572,19 +579,20 @@ float CNEOPlayerAnimState::GetCurrentMaxGroundSpeed()
 
 	Assert(dynamic_cast<CNEO_Player*>(m_pOuter));
 
-	if (currentActivity == ACT_WALK || currentActivity == ACT_IDLE)
+	if (currentActivity == ACT_NEO_MOVE_WALK || currentActivity == ACT_NEO_IDLE_STAND)
 	{
 		return static_cast<CNEO_Player*>(m_pOuter)->GetWalkSpeed_WithActiveWepEncumberment();
 	}
-	else if (currentActivity == ACT_RUN)
+	else if (currentActivity == ACT_NEO_MOVE_RUN)
 	{
 		return static_cast<CNEO_Player*>(m_pOuter)->GetNormSpeed_WithActiveWepEncumberment();
 	}
 	else if (currentActivity == ACT_SPRINT)
 	{
+		Assert(false);
 		return static_cast<CNEO_Player*>(m_pOuter)->GetSprintSpeed_WithActiveWepEncumberment();
 	}
-	else if (currentActivity == ACT_RUN_CROUCH)
+	else if (currentActivity == ACT_NEO_MOVE_CROUCH)
 	{
 		return static_cast<CNEO_Player*>(m_pOuter)->GetCrouchSpeed_WithActiveWepEncumberment();
 	}
@@ -816,7 +824,7 @@ bool CNEOPlayerAnimState::ShouldResetMainSequence(int iCurrentSequence, int iNew
 		if (!m_bFreshJump)
 		{
 			// Only reset active mid-air jump sequence if we're transitioning away from that animation
-			return iNewSequence != SelectWeightedSequence(TranslateActivity(ACT_HOP));
+			return iNewSequence != SelectWeightedSequence(TranslateActivity(ACT_NEO_JUMP));
 		}
 		m_bFreshJump = false;
 	}
