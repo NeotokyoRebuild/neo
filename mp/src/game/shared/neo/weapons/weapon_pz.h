@@ -44,7 +44,7 @@ public:
 	virtual void Spawn(void);
 	virtual bool Deploy(void);
 
-	virtual int GetNeoWepBits(void) const { return NEO_WEP_PZ; }
+	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { return NEO_WEP_PZ; }
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 20; }
 
 	virtual float GetSpeedScale(void) const { return 108.0 / 136.0; }

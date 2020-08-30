@@ -43,7 +43,7 @@ private:
 	inline void ProposeNextAttack(const float flNextAttackProposal);
 
 public:
-	virtual int GetNeoWepBits(void) const { return NEO_WEP_SUPA7; }
+	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { return NEO_WEP_SUPA7; }
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
 
 	virtual float GetSpeedScale(void) const { return 140.0 / 170.0; }

@@ -50,7 +50,7 @@ public:
 	virtual bool Deploy(void);
 
 	// FIXME: we should inherit CNEOMelee -> CNEOBaseWep etc...
-	//virtual int GetNeoWepBits(void) const { return NEO_WEP_KNIFE; }
+	//virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { return NEO_WEP_KNIFE; }
 
 protected:
 	virtual void		Swing(int bIsSecondary) OVERRIDE;

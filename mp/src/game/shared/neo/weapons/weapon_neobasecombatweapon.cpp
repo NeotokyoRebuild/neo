@@ -88,6 +88,11 @@ CNEOBaseCombatWeapon::CNEOBaseCombatWeapon( void )
 
 void CNEOBaseCombatWeapon::Spawn()
 {
+	// If this fires, either the enum bit mask has overflowed,
+	// this derived gun has no valid NeoBitFlags set,
+	// or we are spawning an instance of this base class for some reason.
+	Assert(GetNeoWepBits() > NEO_WEP_INVALID);
+
 	BaseClass::Spawn();
 
 #ifdef GAME_DLL
@@ -256,6 +261,9 @@ MAKE_TEMP_WEP_BLOOM_SCALER(weapon_srm_s,			2.5);
 MAKE_TEMP_WEP_BLOOM_SCALER(weapon_tachi,			2.5);
 MAKE_TEMP_WEP_BLOOM_SCALER(weapon_zr68c,			2.5);
 MAKE_TEMP_WEP_BLOOM_SCALER(weapon_zr68s,			2.5);
+#ifdef INCLUDE_WEP_PBK
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_pbk56s,			2.5);
+#endif
 
 const Vector& CNEOBaseCombatWeapon::GetBulletSpread(void)
 {
@@ -281,7 +289,10 @@ const Vector& CNEOBaseCombatWeapon::GetBulletSpread(void)
 		&sv_neo_weapon_srm_s_bloom_scale,
 		&sv_neo_weapon_tachi_bloom_scale,
 		&sv_neo_weapon_zr68c_bloom_scale,
-		&sv_neo_weapon_zr68s_bloom_scale
+		&sv_neo_weapon_zr68s_bloom_scale,
+#ifdef INCLUDE_WEP_PBK
+		& sv_neo_weapon_pbk56s_bloom_scale,
+#endif
 	};
 	float wepSpecificBloomScale = 1.0f;
 	for (ConVar* scaler : bloomScalers)

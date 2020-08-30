@@ -157,8 +157,9 @@ static bool IsNeoPrimary(CNEOBaseCombatWeapon *pNeoWep)
 		return false;
 	}
 
-	const int bits = pNeoWep->GetNeoWepBits();
-	const int primaryBits = NEO_WEP_AA13 | NEO_WEP_GHOST | NEO_WEP_JITTE | NEO_WEP_JITTE_S |
+	const auto bits = pNeoWep->GetNeoWepBits();
+	Assert(bits > NEO_WEP_INVALID);
+	const auto primaryBits = NEO_WEP_AA13 | NEO_WEP_GHOST | NEO_WEP_JITTE | NEO_WEP_JITTE_S |
 		NEO_WEP_M41 | NEO_WEP_M41_L | NEO_WEP_M41_S | NEO_WEP_MPN | NEO_WEP_MPN_S |
 		NEO_WEP_MX | NEO_WEP_MX_S | NEO_WEP_PZ | NEO_WEP_SMAC | NEO_WEP_SRM |
 		NEO_WEP_SRM_S | NEO_WEP_SRS | NEO_WEP_SUPA7 | NEO_WEP_ZR68_C | NEO_WEP_ZR68_L |
@@ -1538,10 +1539,10 @@ bool CNEO_Player::IsAllowedToDrop(CBaseCombatWeapon *pWep)
 	auto pNeoWep = static_cast<CNEOBaseCombatWeapon*>(pWep);
 #endif
 
-	const int wepBits = pNeoWep->GetNeoWepBits();
+	const auto wepBits = pNeoWep->GetNeoWepBits();
 	Assert(wepBits > NEO_WEP_INVALID);
 
-	const int unallowedDrops = (NEO_WEP_KNIFE | NEO_WEP_PROX_MINE | NEO_WEP_THROWABLE);
+	const auto unallowedDrops = (NEO_WEP_KNIFE | NEO_WEP_PROX_MINE | NEO_WEP_THROWABLE);
 	return ((wepBits & unallowedDrops) == 0);
 }
 

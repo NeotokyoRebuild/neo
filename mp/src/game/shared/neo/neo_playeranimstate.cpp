@@ -558,7 +558,6 @@ int CNEOPlayerAnimState::CalcFireLayerSequence(PlayerAnimEvent_t event)
 
 	default:
 	case ACT_PLAYER_IDLE_FIRE:
-		Assert(false);
 		res = CalcSequenceIndex("%s%s", DEFAULT_FIRE_IDLE_NAME, pSuffix);
 		break;
 	}

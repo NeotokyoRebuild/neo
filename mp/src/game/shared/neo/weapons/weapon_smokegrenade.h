@@ -39,7 +39,7 @@ public:
 
 	CWeaponSmokeGrenade();
 
-	virtual int GetNeoWepBits(void) const { return NEO_WEP_SMOKE_GRENADE | NEO_WEP_THROWABLE; }
+	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { return NEO_WEP_SMOKE_GRENADE | NEO_WEP_THROWABLE; }
 
 	virtual float GetSpeedScale(void) const { return 1.0; }
 

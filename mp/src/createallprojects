@@ -1,5 +1,17 @@
 #!/bin/bash
 
+# Whether to include the PBK56S in this solution.
+# Note that it's not included in the default NT mount, so you'll have to provide assets manually.
+IncludePBK56=0
+
+VpcBin="devtools/bin/vpc"
+BuildParams="/hl2mp +everything /mksln everything"
+
 pushd `dirname $0`
-devtools/bin/vpc /hl2mp +everything /mksln everything
+if [ $IncludePBK56 == 1 ]
+then
+    $VpcBin /define:INCLUDE_WEP_PBK $BuildParams
+else
+    $VpcBin $BuildParams
+fi
 popd
