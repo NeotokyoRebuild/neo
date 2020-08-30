@@ -51,14 +51,20 @@ CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, const NEO_WEP_BI
 	int nonNeoWepFoundAtIndex = -1;
 	for (int i = 0; i < MAX_WEAPONS; i++)
 	{
-		auto pWep = dynamic_cast<CNEOBaseCombatWeapon*>(player->GetWeapon(i));
+		auto pWep = player->GetWeapon(i);
 		if (!pWep)
+		{
+			continue;
+		}
+
+		auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWep);
+		if (!pNeoWep)
 		{
 			nonNeoWepFoundAtIndex = i;
 			continue;
 		}
 
-		if (pWep->GetNeoWepBits() & neoWepBits)
+		if (pNeoWep->GetNeoWepBits() & neoWepBits)
 		{
 			return pWep;
 		}
