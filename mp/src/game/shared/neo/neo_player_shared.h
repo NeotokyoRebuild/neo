@@ -6,6 +6,14 @@
 
 #include "neo_predicted_viewmodel.h"
 
+#ifdef INCLUDE_WEP_PBK
+// Type to use if we need to ensure more than 32 bits in the mask.
+#define NEO_WEP_BITS_UNDERLYING_TYPE long long int
+#else
+// Using plain int if we don't need to ensure >32 bits in the mask.
+#define NEO_WEP_BITS_UNDERLYING_TYPE int
+#endif
+
 // All of these should be able to stack create even slower speeds (at least in original NT)
 #define NEO_SPRINT_MODIFIER 1.6
 #define NEO_SLOW_MODIFIER 0.75
@@ -216,7 +224,7 @@ inline const char *GetRankName(int xp)
 	}
 }
 
-CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, int neoWepBits);
+CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, const NEO_WEP_BITS_UNDERLYING_TYPE& neoWepBits);
 
 // Temporary helper for converting between these. Should refactor this to use the same structure for both.
 // Returns true on success. If returns false, the out value will not be set.

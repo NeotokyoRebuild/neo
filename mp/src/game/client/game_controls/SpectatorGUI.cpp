@@ -535,8 +535,10 @@ void CSpectatorGUI::OnThink()
 
 	if ( IsVisible() )
 	{
+#ifdef NEO
 		// Temp fix to hide team scores etc when closing scoreboard.
-		if (C_NEO_Player::GetLocalNEOPlayer()->IsAlive())
+		auto pLocalNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
+		if (pLocalNeoPlayer && pLocalNeoPlayer->IsAlive())
 		{
 			auto scoreboard = gViewPortInterface->FindPanelByName(PANEL_SCOREBOARD);
 			Assert(scoreboard);
@@ -546,6 +548,7 @@ void CSpectatorGUI::OnThink()
 				return;
 			}
 		}
+#endif
 
 		if ( m_bSpecScoreboard != spec_scoreboard.GetBool() )
 		{
@@ -569,11 +572,17 @@ void CSpectatorGUI::OnThink()
 		Assert(jinScoreValueLabel);
 		Assert(nsfScoreValueLabel);
 
-		char scoreBuff[3];
-		V_sprintf_safe(scoreBuff, "%d", Max(0, Min(99, GetGlobalTeam(TEAM_JINRAI)->GetRoundsWon())));
-		jinScoreValueLabel->SetText(scoreBuff);
-		V_sprintf_safe(scoreBuff, "%d", Max(0, Min(99, GetGlobalTeam(TEAM_NSF)->GetRoundsWon())));
-		nsfScoreValueLabel->SetText(scoreBuff);
+		auto pJinTeam = GetGlobalTeam(TEAM_JINRAI);
+		auto pNsfTeam = GetGlobalTeam(TEAM_NSF);
+
+		if (pJinTeam && pNsfTeam)
+		{
+			char scoreBuff[3];
+			V_sprintf_safe(scoreBuff, "%d", Max(0, Min(99, pJinTeam->GetRoundsWon())));
+			jinScoreValueLabel->SetText(scoreBuff);
+			V_sprintf_safe(scoreBuff, "%d", Max(0, Min(99, pNsfTeam->GetRoundsWon())));
+			nsfScoreValueLabel->SetText(scoreBuff);
+		}
 	}
 }
 

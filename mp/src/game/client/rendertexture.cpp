@@ -295,6 +295,23 @@ ITexture *GetMVIntermediate(void)
 
 	return s_pMV_IM;
 }
+
+static CTextureReference s_pCB;
+ITexture* GetCBBuffer(void)
+{
+	if (!s_pCB)
+	{
+		s_pCB.Init(materials->FindTexture("_rt_ColorBlind", TEXTURE_GROUP_RENDER_TARGET));
+		Assert(!IsErrorTexture(s_pCB));
+		AddReleaseFunc();
+	}
+	else
+	{
+		Assert(!IsErrorTexture(s_pCB));
+	}
+
+	return s_pCB;
+}
 #endif
 
 //=============================================================================
@@ -375,5 +392,6 @@ void ReleaseRenderTargets( void )
 	s_pMV_Buffer1.Shutdown();
 	s_pMV_Buffer2.Shutdown();
 	s_pTV.Shutdown();
+	s_pCB.Shutdown();
 #endif
 }

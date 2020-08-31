@@ -234,7 +234,14 @@ private:
 
 	void				EstimateYaw();
 
-	virtual bool		ShouldResetMainSequence( int iCurrentSequence, int iNewSequence );
+#ifdef NEO
+protected:
+	virtual bool		ShouldResetMainSequence(int iCurrentSequence, int iNewSequence);
+#else
+private:
+	virtual bool		ShouldResetMainSequence(int iCurrentSequence, int iNewSequence);
+#endif
+
 	void				ComputeMainSequence();
 
 #ifdef NEO

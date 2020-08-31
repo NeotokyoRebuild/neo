@@ -222,6 +222,9 @@ const char *viewModels[NEO_VM_ENUM_COUNT * numTeams] {
 	"models/weapons/v_nsf_zr68l.mdl",
 	"models/weapons/v_nsf_zr68s.mdl",
 	"models/gameplay/v_nsf_ghost.mdl",
+	#ifdef INCLUDE_WEP_PBK
+	"models/weapons/v_nsf_pbk56.mdl",
+#endif
 
 	//////////////////
 	// Jinrai start //
@@ -253,7 +256,10 @@ const char *viewModels[NEO_VM_ENUM_COUNT * numTeams] {
 	"models/weapons/v_jinrai_zr68c.mdl",
 	"models/weapons/v_jinrai_zr68l.mdl",
 	"models/weapons/v_jinrai_zr68s.mdl",
-	"models/gameplay/v_jinrai_ghost.mdl"
+	"models/gameplay/v_jinrai_ghost.mdl",
+#ifdef INCLUDE_WEP_PBK
+	"models/weapons/v_jinrai_pbk56.mdl",
+#endif
 };
 
 const char *weapons[NEO_WEP_MDL_ENUM_COUNT] {
@@ -291,7 +297,10 @@ const char *weapons[NEO_WEP_MDL_ENUM_COUNT] {
 	"models/weapons/w_zr68c.mdl",
 	"models/weapons/w_zr68l.mdl",
 	"models/weapons/w_zr68s.mdl",
-	"models/gameplay/w_ghost.mdl"
+	"models/gameplay/w_ghost.mdl",
+#ifdef INCLUDE_WEP_PBK
+	"models/weapons/w_pbk56s.mdl",
+#endif
 };
 
 const char *vipModel = "models/player/vip.mdl";

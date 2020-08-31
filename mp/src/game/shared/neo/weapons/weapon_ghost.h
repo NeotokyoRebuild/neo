@@ -42,7 +42,7 @@ public:
 	virtual void OnPickedUp(CBaseCombatCharacter *pNewOwner);
 	void HandleGhostUnequip(void);
 
-	virtual int GetNeoWepBits(void) const { return NEO_WEP_GHOST; }
+	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { return NEO_WEP_GHOST; }
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
 
 	virtual float GetSpeedScale(void) const { return 1.0; }

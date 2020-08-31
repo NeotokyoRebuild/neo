@@ -37,6 +37,9 @@ MAKE_TEMP_WEP_RECOIL_SCALER(weapon_srm_s,			0);
 MAKE_TEMP_WEP_RECOIL_SCALER(weapon_tachi,			0);
 MAKE_TEMP_WEP_RECOIL_SCALER(weapon_zr68c,			0);
 MAKE_TEMP_WEP_RECOIL_SCALER(weapon_zr68s,			0);
+#ifdef INCLUDE_WEP_PBK
+MAKE_TEMP_WEP_RECOIL_SCALER(weapon_pbk56s,			0);
+#endif
 
 MAKE_TEMP_WEP_RECOIL_CAPBULLETS(weapon_jitte,			30);
 MAKE_TEMP_WEP_RECOIL_CAPBULLETS(weapon_jittescoped,		30);
@@ -56,6 +59,9 @@ MAKE_TEMP_WEP_RECOIL_CAPBULLETS(weapon_srm_s,			30);
 MAKE_TEMP_WEP_RECOIL_CAPBULLETS(weapon_tachi,			30);
 MAKE_TEMP_WEP_RECOIL_CAPBULLETS(weapon_zr68c,			30);
 MAKE_TEMP_WEP_RECOIL_CAPBULLETS(weapon_zr68s,			30);
+#ifdef INCLUDE_WEP_PBK
+MAKE_TEMP_WEP_RECOIL_CAPBULLETS(weapon_pbk56s,			30);
+#endif
 
 float CNEOShotManipulator::GetVerticalRecoil() const
 {
@@ -86,7 +92,10 @@ float CNEOShotManipulator::GetVerticalRecoil() const
 		&sv_neo_weapon_srm_s_recoil_scale,
 		&sv_neo_weapon_tachi_recoil_scale,
 		&sv_neo_weapon_zr68c_recoil_scale,
-		&sv_neo_weapon_zr68s_recoil_scale
+		&sv_neo_weapon_zr68s_recoil_scale,
+#ifdef INCLUDE_WEP_PBK
+		& sv_neo_weapon_pbk56s_recoil_scale,
+#endif
 	};
 	float wepSpecificRecoilScale = sv_neo_recoil_capscale.GetFloat();
 	for (ConVar* scaler : recoilScalers)
@@ -121,7 +130,10 @@ float CNEOShotManipulator::GetVerticalRecoil() const
 		&sv_neo_weapon_srm_s_recoil_capbullets,
 		&sv_neo_weapon_tachi_recoil_capbullets,
 		&sv_neo_weapon_zr68c_recoil_capbullets,
-		&sv_neo_weapon_zr68s_recoil_capbullets
+		&sv_neo_weapon_zr68s_recoil_capbullets,
+#ifdef INCLUDE_WEP_PBK
+		&sv_neo_weapon_pbk56s_recoil_capbullets,
+#endif
 	};
 	ConVar* myCapBullets = &sv_neo_recoil_capbullets;
 	for (ConVar* capbulletLimit : recoilCapbulletLimits)

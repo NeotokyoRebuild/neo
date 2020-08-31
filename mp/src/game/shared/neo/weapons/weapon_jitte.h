@@ -44,7 +44,7 @@ public:
 	virtual void Spawn(void) OVERRIDE;
 	virtual bool Deploy(void) OVERRIDE;
 
-	virtual int GetNeoWepBits(void) const OVERRIDE { return NEO_WEP_JITTE; }
+	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const OVERRIDE { return NEO_WEP_JITTE; }
 	virtual int GetNeoWepXPCost(const int neoClass) const OVERRIDE { return 0; }
 
 	virtual float GetSpeedScale(void) const OVERRIDE { return 160.0 / 170.0; }

@@ -47,6 +47,10 @@ enum NeoViewmodel {
 	NEO_VM_ZR68_S,
 	NEO_VM_GHOST,
 
+#ifdef INCLUDE_WEP_PBK
+	NEO_VM_PBK56S,
+#endif
+
 	// NOTENOTE: this *must* be last, as we are using
 	// array offsets, and VIP is not in that array
 	NEO_VM_VIP_SMAC,
@@ -91,6 +95,10 @@ enum NeoWeaponModel {
 	NEO_WEP_MDL_ZR68_L,
 	NEO_WEP_MDL_ZR68_S,
 	NEO_WEP_MDL_GHOST,
+
+#ifdef INCLUDE_WEP_PBK
+	NEO_WEP_MDL_PBK56S,
+#endif
 
 	NEO_WEP_MDL_ENUM_COUNT
 };

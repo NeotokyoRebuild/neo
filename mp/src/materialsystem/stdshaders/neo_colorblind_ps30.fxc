@@ -1,0 +1,76 @@
+#include "common_ps_fxc.h"
+
+sampler FrameBuffer									: register(s0);
+
+const float g_Mode_ReorderRgb						: register(c0);
+const float g_Mode_Deuteranopia						: register(c1);
+const float g_Mode_Deuteranopia_PostBrightness		: register(c2);
+const float g_Mode_Deuteranopia_PostSaturation		: register(c3);
+
+struct PS_INPUT
+{
+	float2 texCoord	: TEXCOORD0;
+};
+
+float4 main( const PS_INPUT i ) : COLOR
+{
+	float4 fbColor = tex2D(FrameBuffer, i.texCoord);
+
+	if (g_Mode_Deuteranopia == 0) {
+		// do nothing
+	}
+	else {
+		// correct color contrast for deuteranopia
+		if (g_Mode_Deuteranopia == 2 || g_Mode_Deuteranopia == 3) {
+			// approximation of human perceptional rgb luminance sensitivity
+			const float3 relative_luminance = float3(0.21, 0.72, 0.07);
+
+			const float luminance_before = dot(fbColor, relative_luminance);
+
+			fbColor.r -= fbColor.r * relative_luminance.g;
+			fbColor.g += fbColor.g * relative_luminance.r;
+			fbColor.b += min(1.0, max(0.0, dot(fbColor.rgb, relative_luminance) * relative_luminance.b));
+
+			fbColor.r = min(1.0, max(0.0, fbColor.r));
+			fbColor.g = min(1.0, max(0.0, fbColor.g));
+			fbColor.b = min(1.0, max(0.0, fbColor.b));
+
+			const float luminance_after = dot(fbColor.rgb, relative_luminance);
+
+			const float luminance_adjust = luminance_before / max(luminance_after, 0.001f);
+			fbColor.rgb *= luminance_adjust * g_Mode_Deuteranopia_PostSaturation;
+
+			fbColor.rgb *= g_Mode_Deuteranopia_PostBrightness;
+		}
+		// simulate deuteranopia for debug purposes (use the mode 3 to also do the correction on this pass)
+		if (g_Mode_Deuteranopia == 1 || g_Mode_Deuteranopia == 3) {
+			// approximation of deuteranopia color range
+			const float4 deut_r = float4(0.43,  0.72, -0.15, 0.0);
+			const float4 deut_g = float4(0.34,  0.57,  0.09, 0.0);
+			const float4 deut_b = float4(-0.02,  0.03,  1.00, 0.0);
+
+			fbColor.rgb = float3(dot(fbColor, deut_r), dot(fbColor, deut_g), dot(fbColor, deut_b));
+		}
+
+		fbColor.r = min(1.0, max(0.0, fbColor.r));
+		fbColor.g = min(1.0, max(0.0, fbColor.g));
+		fbColor.b = min(1.0, max(0.0, fbColor.b));
+	}
+
+	// allow arbitrary shuffling of RGB order
+	if (g_Mode_ReorderRgb == 0) {
+		// do nothing
+	} else if (g_Mode_ReorderRgb == 1) {
+		fbColor = fbColor.gbra;
+	} else if (g_Mode_ReorderRgb == 2) {
+		fbColor = fbColor.brga;
+	} else if (g_Mode_ReorderRgb == 3) {
+		fbColor = fbColor.bgra;
+	} else if (g_Mode_ReorderRgb == 4) {
+		fbColor = fbColor.grba;
+	} else if (g_Mode_ReorderRgb == 5) {
+		fbColor = fbColor.rbga;
+	}
+
+	return fbColor;
+}
