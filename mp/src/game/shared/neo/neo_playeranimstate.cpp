@@ -738,7 +738,12 @@ void CNEOPlayerAnimState::ComputeAimSequence()
 {
 	if (ShouldBlendReloadSequenceToIdle())
 	{
-		const float cycle = (m_pOuter->GetFlags() & FL_DUCKING) ? m_pOuter->GetAnimOverlay(RELOADSEQUENCE_LAYER)->m_flCycle : m_pOuter->GetCycle();
+		const float cycle = (m_pOuter->GetFlags() & FL_DUCKING) ?
+#ifdef CLIENT_DLL
+			m_pOuter->GetAnimOverlay(RELOADSEQUENCE_LAYER)->m_flCycle.GetRaw() : m_pOuter->GetCycle();
+#else
+			m_pOuter->GetAnimOverlay(RELOADSEQUENCE_LAYER)->m_flCycle.Get() : m_pOuter->GetCycle();
+#endif
 		UpdateReloadSequenceLayers(cycle, RELOADSEQUENCE_LAYER, true, &m_ReloadSequenceTransitioner, 1.0f);
 	}
 	BaseClass::ComputeAimSequence();
