@@ -26,5 +26,7 @@ $Project "Shaders ($GAMENAME)"
 		$File	"Neo_refract.cpp"
 		$File	"Neo_refract_dx9_helper.cpp"
 		$File	"Neo_refract_dx9_helper.h"
+
+		$File	"Neo_colorblind.cpp"
 	}
 }

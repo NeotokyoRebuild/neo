@@ -824,6 +824,8 @@ CLIENTEFFECT_REGISTER_BEGIN( PrecachePostProcessingEffects )
 
 	CLIENTEFFECT_MATERIAL("dev/neo_thermalvision")
 
+	CLIENTEFFECT_MATERIAL("dev/neo_colorblind_adjust")
+
 	// Note: these are referring original NeotokyoSource files
 	//CLIENTEFFECT_MATERIAL("dev/thermalvision_tv2")
 	//CLIENTEFFECT_MATERIAL("dev/vm_thermal")
