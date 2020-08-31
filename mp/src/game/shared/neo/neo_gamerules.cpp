@@ -410,7 +410,13 @@ void CNEORules::Think(void)
 		COMPILE_TIME_ASSERT((TEAM_JINRAI < TEAM_NSF) && (TEAM_JINRAI == (TEAM_NSF - 1)));
 		for (int team = TEAM_JINRAI; team <= TEAM_NSF; ++team)
 		{
-			if (GetGlobalTeam(team)->GetRoundsWon() >= neo_score_limit.GetInt())
+			auto pTeam = GetGlobalTeam(team);
+			if (!pTeam)
+			{
+				continue;
+			}
+
+			if (pTeam->GetRoundsWon() >= neo_score_limit.GetInt())
 			{
 				UTIL_CenterPrintAll(team == TEAM_JINRAI ? "JINRAI WINS THE MATCH\n" : "NSF WINS THE MATCH\n");
 				SetRoundStatus(NeoRoundStatus::PostRound);
@@ -1189,6 +1195,12 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 	SetRoundStatus(NeoRoundStatus::PostRound);
 
 	auto winningTeam = GetGlobalTeam(team);
+	if (!winningTeam)
+	{
+		Assert(false);
+		Warning("Tried to SetWinningTeam for NULL team (%d)\n", team);
+		return;
+	}
 
 	if (bForceMapReset)
 	{
