@@ -1255,6 +1255,11 @@ bool C_NEO_Player::IsCarryingGhost(void) const
 	return GetNeoWepWithBits(this, NEO_WEP_GHOST) != NULL;
 }
 
+const Vector C_NEO_Player::GetPlayerMins(void) const
+{
+	return VEC_DUCK_HULL_MIN_SCALED(this);
+}
+
 const Vector C_NEO_Player::GetPlayerMaxs(void) const
 {
 	return VEC_DUCK_HULL_MAX_SCALED(this);

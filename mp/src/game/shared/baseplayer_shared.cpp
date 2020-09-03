@@ -52,6 +52,7 @@
 #endif
 
 #ifdef NEO
+#include "neo_gamerules.h"
 #ifdef GAME_DLL
 #include "neo_player.h"
 #else
@@ -371,6 +372,12 @@ Vector CBasePlayer::EyePosition( )
 //-----------------------------------------------------------------------------
 const Vector CBasePlayer::GetPlayerMins( void ) const
 {
+#ifdef NEO
+	Assert(false);
+	Error("Called base method CBasePlayer::GetPlayerMins instead of override. Please report this bug to the %s project; this should never happen!\n",
+		NEORules()->GetGameName());
+	return vec3_origin;
+#else
 	if ( IsObserver() )
 	{
 		return VEC_OBS_HULL_MIN_SCALED( this );	
@@ -386,6 +393,7 @@ const Vector CBasePlayer::GetPlayerMins( void ) const
 			return VEC_HULL_MIN_SCALED( this );
 		}
 	}
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -397,10 +405,10 @@ const Vector CBasePlayer::GetPlayerMaxs( void ) const
 {	
 #ifdef NEO
 	Assert(false);
-	Error("Called base method CBasePlayer::GetPlayerMaxs instead of override. Please report this bug; this should never happen!\n");
+	Error("Called base method CBasePlayer::GetPlayerMaxs instead of override. Please report this bug to the %s project; this should never happen!\n",
+		NEORules()->GetGameName());
 	return vec3_origin;
 #else
-
 	if ( IsObserver() )
 	{
 		return VEC_OBS_HULL_MAX_SCALED( this );	

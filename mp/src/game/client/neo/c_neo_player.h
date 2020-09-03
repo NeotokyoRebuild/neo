@@ -87,7 +87,8 @@ public:
 
 	int GetNeoFlags() const { return m_NeoFlags; }
 
-	virtual const Vector GetPlayerMaxs(void) const;
+	virtual const Vector GetPlayerMins(void) const OVERRIDE;
+	virtual const Vector GetPlayerMaxs(void) const OVERRIDE;
 
 	// Implementing in header in hopes of compiler picking up the inlined base method
 	virtual float GetModelScale() const
