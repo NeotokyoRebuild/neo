@@ -6,6 +6,7 @@ const float g_Mode_ReorderRgb						: register(c0);
 const float g_Mode_Deuteranopia						: register(c1);
 const float g_Mode_Deuteranopia_PostBrightness		: register(c2);
 const float g_Mode_Deuteranopia_PostSaturation		: register(c3);
+const float g_Mode_Deuteranopia_PostSaturation_B	: register(c4);
 
 struct PS_INPUT
 {
@@ -29,7 +30,7 @@ float4 main( const PS_INPUT i ) : COLOR
 
 			fbColor.r -= fbColor.r * relative_luminance.g;
 			fbColor.g += fbColor.g * relative_luminance.r;
-			fbColor.b += min(1.0, max(0.0, dot(fbColor.rgb, relative_luminance) * relative_luminance.b));
+			fbColor.b *= dot(fbColor.rgb, relative_luminance.rgb) / (luminance_before != 0 ? luminance_before : 0.001f);
 
 			fbColor.r = min(1.0, max(0.0, fbColor.r));
 			fbColor.g = min(1.0, max(0.0, fbColor.g));
@@ -37,8 +38,10 @@ float4 main( const PS_INPUT i ) : COLOR
 
 			const float luminance_after = dot(fbColor.rgb, relative_luminance);
 
-			const float luminance_adjust = luminance_before / max(luminance_after, 0.001f);
+			const float luminance_adjust = luminance_before / (luminance_after != 0 ? luminance_after : 0.001f);
 			fbColor.rgb *= luminance_adjust * g_Mode_Deuteranopia_PostSaturation;
+
+			fbColor.b *= g_Mode_Deuteranopia_PostSaturation_B;
 
 			fbColor.rgb *= g_Mode_Deuteranopia_PostBrightness;
 		}
