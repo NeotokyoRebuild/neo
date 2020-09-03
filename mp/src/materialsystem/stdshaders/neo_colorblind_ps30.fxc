@@ -25,7 +25,7 @@ float4 main( const PS_INPUT i ) : COLOR
 			// approximation of human perceptional rgb luminance sensitivity
 			const float3 relative_luminance = float3(0.21, 0.72, 0.07);
 
-			const float luminance_before = dot(fbColor, relative_luminance);
+			const float luminance_before = dot(fbColor.rgb, relative_luminance);
 
 			fbColor.r -= fbColor.r * relative_luminance.g;
 			fbColor.g += fbColor.g * relative_luminance.r;
@@ -45,11 +45,14 @@ float4 main( const PS_INPUT i ) : COLOR
 		// simulate deuteranopia for debug purposes (use the mode 3 to also do the correction on this pass)
 		if (g_Mode_Deuteranopia == 1 || g_Mode_Deuteranopia == 3) {
 			// approximation of deuteranopia color range
-			const float4 deut_r = float4(0.43,  0.72, -0.15, 0.0);
-			const float4 deut_g = float4(0.34,  0.57,  0.09, 0.0);
-			const float4 deut_b = float4(-0.02,  0.03,  1.00, 0.0);
+			const float3 deut_r = float3(0.43,  0.72, -0.15);
+			const float3 deut_g = float3(0.34,  0.57,  0.09);
+			const float3 deut_b = float3(-0.02,  0.03,  1.00);
 
-			fbColor.rgb = float3(dot(fbColor, deut_r), dot(fbColor, deut_g), dot(fbColor, deut_b));
+			fbColor.rgb = float3(
+				dot(fbColor.rgb, deut_r),
+				dot(fbColor.rgb, deut_g),
+				dot(fbColor.rgb, deut_b));
 		}
 
 		fbColor.r = min(1.0, max(0.0, fbColor.r));
@@ -57,7 +60,7 @@ float4 main( const PS_INPUT i ) : COLOR
 		fbColor.b = min(1.0, max(0.0, fbColor.b));
 	}
 
-	// allow arbitrary shuffling of RGB order
+	// optional swizzling of the RGB order
 	if (g_Mode_ReorderRgb == 0) {
 		// do nothing
 	} else if (g_Mode_ReorderRgb == 1) {
