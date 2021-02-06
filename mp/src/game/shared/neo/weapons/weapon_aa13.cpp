@@ -136,3 +136,71 @@ void CWeaponAA13::DryFire()
 	SendWeaponAnim(ACT_VM_DRYFIRE);
 	m_flNextPrimaryAttack = gpGlobals->curtime + GetFastestDryRefireTime();
 }
+
+void CWeaponAA13::PrimaryAttack(void)
+{
+	// Combo of the neobasecombatweapon and the Supa7 attack
+	Assert(!ShootingIsPrevented());
+
+	if (gpGlobals->curtime < m_flSoonestAttack)
+	{
+		return;
+	}
+	else if (gpGlobals->curtime - m_flLastAttackTime < GetFireRate())
+	{
+		return;
+	}
+	else if (m_iClip1 == 0)
+	{
+		if (!m_bFireOnEmpty)
+		{
+			CheckReload();
+		}
+		else
+		{
+			WeaponSound(EMPTY);
+			SendWeaponAnim(ACT_VM_DRYFIRE);
+			m_flNextPrimaryAttack = 0.2;
+		}
+		return;
+	}
+
+    // Only the player fires this way so we can cast
+    CBasePlayer *pPlayer = ToBasePlayer(GetOwner());
+
+    if (!pPlayer)
+    {
+        return;
+    }
+
+    // MUST call sound before removing a round from the clip of a CMachineGun
+    WeaponSound(SINGLE);
+
+    pPlayer->DoMuzzleFlash();
+
+    SendWeaponAnim(ACT_VM_PRIMARYATTACK);
+
+    m_iClip1 -= 1;
+
+    // player "shoot" animation
+    pPlayer->SetAnimation(PLAYER_ATTACK1);
+
+    Vector vecSrc = pPlayer->Weapon_ShootPosition();
+    Vector vecAiming = pPlayer->GetAutoaimVector(AUTOAIM_10DEGREES);
+
+    FireBulletsInfo_t info(7, vecSrc, vecAiming, VECTOR_CONE_20DEGREES, MAX_TRACE_LENGTH, m_iPrimaryAmmoType);
+    info.m_pAttacker = pPlayer;
+
+    // Fire the bullets, and force the first shot to be perfectly accurate
+    pPlayer->FireBullets(info);
+
+    QAngle punch;
+    punch.Init(SharedRandomFloat("aa13pax", -2, -1), SharedRandomFloat("aa13pax", -1, 1), 0);
+    pPlayer->ViewPunch(punch);
+
+    if (!m_iClip1 && pPlayer->GetAmmoCount(m_iPrimaryAmmoType) <= 0)
+    {
+        // HEV suit - indicate out of ammo condition
+        pPlayer->SetSuitUpdate("!HEV_AMO0", FALSE, 0);
+    }
+}
