@@ -39,6 +39,8 @@ private:
 	CNetworkVar(bool, m_bDelayedFire1); // Fire primary when finished reloading
 	CNetworkVar(bool, m_bDelayedFire2); // Fire secondary when finished reloading
 	CNetworkVar(bool, m_bDelayedReload); // Reload when finished pump;
+    CNetworkVar(bool, m_bSlugDelayed); // Load slug into tube next
+    CNetworkVar(bool, m_bSlugLoaded); // Slug currently loaded in chamber
 
 	inline void ProposeNextAttack(const float flNextAttackProposal);
 
@@ -52,13 +54,16 @@ public:
 	virtual int GetMaxBurst() { return 3; }
 
 	bool StartReload(void);
+    bool StartReloadSlug(void);
 	bool Reload(void);
+    bool ReloadSlug(void);
 
 	void FillClip(void);
+    void FillClipSlug(void);
 	void FinishReload(void);
 	void CheckHolsterReload(void);
 	void Pump(void);
-	void ItemHolsterFrame(void);
+	// void ItemHolsterFrame(void);
 	void ItemPostFrame(void);
 	void PrimaryAttack(void);
 	void SecondaryAttack(void);

@@ -172,6 +172,10 @@ void CWeaponAA13::PrimaryAttack(void)
     {
         return;
     }
+	else if (m_iClip1 == 0 && !ClientWantsAutoReload(pPlayer))
+	{
+		return;
+	}
 
     // MUST call sound before removing a round from the clip of a CMachineGun
     WeaponSound(SINGLE);
@@ -188,14 +192,14 @@ void CWeaponAA13::PrimaryAttack(void)
     Vector vecSrc = pPlayer->Weapon_ShootPosition();
     Vector vecAiming = pPlayer->GetAutoaimVector(AUTOAIM_10DEGREES);
 
-    FireBulletsInfo_t info(7, vecSrc, vecAiming, VECTOR_CONE_20DEGREES, MAX_TRACE_LENGTH, m_iPrimaryAmmoType);
+    FireBulletsInfo_t info(7, vecSrc, vecAiming, GetBulletSpread(), MAX_TRACE_LENGTH, m_iPrimaryAmmoType);
     info.m_pAttacker = pPlayer;
 
     // Fire the bullets, and force the first shot to be perfectly accurate
     pPlayer->FireBullets(info);
 
     QAngle punch;
-    punch.Init(SharedRandomFloat("aa13pax", -2, -1), SharedRandomFloat("aa13pax", -1, 1), 0);
+    punch.Init(SharedRandomFloat("aa13pax", -2, -1), SharedRandomFloat("aa13pax", -1.5, 1.5), 0);
     pPlayer->ViewPunch(punch);
 
     if (!m_iClip1 && pPlayer->GetAmmoCount(m_iPrimaryAmmoType) <= 0)

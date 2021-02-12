@@ -20,9 +20,9 @@ WeaponData
 
 	"clip_size"			"7"
 	"default_clip"			"7"
-	
+	"default_clip2"         "7"
 	"primary_ammo"			"AMMO_10G_SHELL"
-	"secondary_ammo"		"None"
+	"secondary_ammo"		"AMMO_10G_SLUG"
 
 	"weight"			"3"
 	"item_flags"		"0"
