@@ -165,46 +165,46 @@ void CWeaponAA13::PrimaryAttack(void)
 		return;
 	}
 
-    // Only the player fires this way so we can cast
-    CBasePlayer *pPlayer = ToBasePlayer(GetOwner());
+	// Only the player fires this way so we can cast
+	CBasePlayer *pPlayer = ToBasePlayer(GetOwner());
 
-    if (!pPlayer)
-    {
-        return;
-    }
+	if (!pPlayer)
+	{
+		return;
+	}
 	else if (m_iClip1 == 0 && !ClientWantsAutoReload(pPlayer))
 	{
 		return;
 	}
 
-    // MUST call sound before removing a round from the clip of a CMachineGun
-    WeaponSound(SINGLE);
+	// MUST call sound before removing a round from the clip of a CMachineGun
+	WeaponSound(SINGLE);
 
-    pPlayer->DoMuzzleFlash();
+	pPlayer->DoMuzzleFlash();
 
-    SendWeaponAnim(ACT_VM_PRIMARYATTACK);
+	SendWeaponAnim(ACT_VM_PRIMARYATTACK);
 
-    m_iClip1 -= 1;
+	m_iClip1 -= 1;
 
-    // player "shoot" animation
-    pPlayer->SetAnimation(PLAYER_ATTACK1);
+	// player "shoot" animation
+	pPlayer->SetAnimation(PLAYER_ATTACK1);
 
-    Vector vecSrc = pPlayer->Weapon_ShootPosition();
-    Vector vecAiming = pPlayer->GetAutoaimVector(AUTOAIM_10DEGREES);
+	Vector vecSrc = pPlayer->Weapon_ShootPosition();
+	Vector vecAiming = pPlayer->GetAutoaimVector(AUTOAIM_10DEGREES);
 
-    FireBulletsInfo_t info(7, vecSrc, vecAiming, GetBulletSpread(), MAX_TRACE_LENGTH, m_iPrimaryAmmoType);
-    info.m_pAttacker = pPlayer;
+	FireBulletsInfo_t info(7, vecSrc, vecAiming, GetBulletSpread(), MAX_TRACE_LENGTH, m_iPrimaryAmmoType);
+	info.m_pAttacker = pPlayer;
 
-    // Fire the bullets, and force the first shot to be perfectly accurate
-    pPlayer->FireBullets(info);
+	// Fire the bullets, and force the first shot to be perfectly accurate
+	pPlayer->FireBullets(info);
 
-    QAngle punch;
-    punch.Init(SharedRandomFloat("aa13pax", -2, -1), SharedRandomFloat("aa13pax", -1.5, 1.5), 0);
-    pPlayer->ViewPunch(punch);
+	QAngle punch;
+	punch.Init(SharedRandomFloat("aa13pax", -2, -1), SharedRandomFloat("aa13pax", -1.5, 1.5), 0);
+	pPlayer->ViewPunch(punch);
 
-    if (!m_iClip1 && pPlayer->GetAmmoCount(m_iPrimaryAmmoType) <= 0)
-    {
-        // HEV suit - indicate out of ammo condition
-        pPlayer->SetSuitUpdate("!HEV_AMO0", FALSE, 0);
-    }
+	if (!m_iClip1 && pPlayer->GetAmmoCount(m_iPrimaryAmmoType) <= 0)
+	{
+		// HEV suit - indicate out of ammo condition
+		pPlayer->SetSuitUpdate("!HEV_AMO0", FALSE, 0);
+	}
 }
