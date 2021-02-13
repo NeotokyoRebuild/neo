@@ -80,6 +80,22 @@ inline void CWeaponSupa7::ProposeNextAttack(const float flNextAttackProposal)
 	}
 }
 
+CWeaponSupa7::CWeaponSupa7(void)
+{
+	m_bReloadsSingly = true;
+
+	m_bNeedPump = false;
+	m_bDelayedFire1 = false;
+	m_bDelayedFire2 = false;
+	m_bSlugDelayed = false;
+	m_bSlugLoaded = false;
+
+	m_fMinRange1 = 0.0;
+	m_fMaxRange1 = 500;
+	m_fMinRange2 = 0.0;
+	m_fMaxRange2 = 200;
+}
+
 // Purpose: Override so only reload one shell at a time
 bool CWeaponSupa7::StartReload(void)
 {
@@ -138,14 +154,14 @@ bool CWeaponSupa7::StartReloadSlug(void)
 		return false;
 	}
 
-    if (!m_bInReload)
-    {
-        SendWeaponAnim(ACT_SHOTGUN_RELOAD_START);
-        m_bInReload = true;
-    }
+	if (!m_bInReload)
+	{
+		SendWeaponAnim(ACT_SHOTGUN_RELOAD_START);
+		m_bInReload = true;
+	}
 
-    if (m_iClip1 >= GetMaxClip1())
-        return false;
+	if (m_iClip1 >= GetMaxClip1())
+		return false;
 
 	m_bSlugDelayed = true;
 
@@ -334,6 +350,8 @@ void CWeaponSupa7::PrimaryAttack(void)
 		return;
 	}
 
+	pPlayer->ViewPunchReset();
+
 	// MUST call sound before removing a round from the clip of a CMachineGun
 	WeaponSound(SINGLE);
 
@@ -366,15 +384,12 @@ void CWeaponSupa7::PrimaryAttack(void)
 	// Fire the bullets, and force the first shot to be perfectly accurate
 	pPlayer->FireBullets(info);
 
-	QAngle punch;
-	punch.Init(SharedRandomFloat("supapax", -2, -1), SharedRandomFloat("supapay", -1, 1), 0);
-	pPlayer->ViewPunch(punch);
-
 	if (!m_iClip1 && pPlayer->GetAmmoCount(m_iPrimaryAmmoType) <= 0)
 	{
 		// HEV suit - indicate out of ammo condition
 		pPlayer->SetSuitUpdate("!HEV_AMO0", FALSE, 0);
 	}
+	AddViewKick();
 }
 
 void CWeaponSupa7::SecondaryAttack(void)
@@ -382,7 +397,7 @@ void CWeaponSupa7::SecondaryAttack(void)
 	if (ShootingIsPrevented())
 		return;
 
-    StartReloadSlug();
+	StartReloadSlug();
 	return;
 }
 
@@ -422,7 +437,7 @@ void CWeaponSupa7::ItemPostFrame(void)
 		// If I'm secondary firing and am not already trying to load a slug queue one
 		else if ((pOwner->m_nButtons & IN_ATTACK2) && (m_iClip1 < GetMaxClip1()) && !m_bNeedPump && !m_bSlugDelayed)
 		{
-            m_bSlugDelayed = true;
+			m_bSlugDelayed = true;
 			m_bDelayedFire2 = true;
 		}
 		else if (m_flNextPrimaryAttack <= gpGlobals->curtime)
@@ -550,20 +565,16 @@ void CWeaponSupa7::ItemPostFrame(void)
 	}
 }
 
-CWeaponSupa7::CWeaponSupa7(void)
+void CWeaponSupa7::AddViewKick(void)
 {
-	m_bReloadsSingly = true;
+	CBasePlayer *pPlayer = ToBasePlayer(GetOwner());
 
-	m_bNeedPump = false;
-	m_bDelayedFire1 = false;
-	m_bDelayedFire2 = false;
-	m_bSlugDelayed = false;
-	m_bSlugLoaded = false;
+	if (pPlayer == NULL)
+		return;
 
-	m_fMinRange1 = 0.0;
-	m_fMaxRange1 = 500;
-	m_fMinRange2 = 0.0;
-	m_fMaxRange2 = 200;
+	QAngle punch;
+	punch.Init(SharedRandomFloat("supapax", -2, -1), SharedRandomFloat("supapay", -1, 1), 0);
+	pPlayer->ViewPunch(punch);
 }
 
 #if(0)

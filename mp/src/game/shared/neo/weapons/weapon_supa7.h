@@ -63,7 +63,8 @@ public:
 	void FinishReload(void);
 	void CheckHolsterReload(void);
 	void Pump(void);
-	// void ItemHolsterFrame(void);
+    void AddViewKick(void);
+    // void ItemHolsterFrame(void);
 	void ItemPostFrame(void);
 	void PrimaryAttack(void);
 	void SecondaryAttack(void);
