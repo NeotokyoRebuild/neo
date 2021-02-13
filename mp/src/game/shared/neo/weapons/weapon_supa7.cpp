@@ -138,10 +138,15 @@ bool CWeaponSupa7::StartReloadSlug(void)
 		return false;
 	}
 
-	if (m_iClip1 >= GetMaxClip1())
-		return false;
+    if (!m_bInReload)
+    {
+        SendWeaponAnim(ACT_SHOTGUN_RELOAD_START);
+        m_bInReload = true;
+    }
 
-	m_bInReload = true;
+    if (m_iClip1 >= GetMaxClip1())
+        return false;
+
 	m_bSlugDelayed = true;
 
 	// Make shotgun shell visible
@@ -377,14 +382,7 @@ void CWeaponSupa7::SecondaryAttack(void)
 	if (ShootingIsPrevented())
 		return;
 
-	if (!m_bInReload)
-	{
-		StartReloadSlug();
-	}
-	else
-	{
-		ReloadSlug();
-	}
+    StartReloadSlug();
 	return;
 }
 
@@ -424,16 +422,8 @@ void CWeaponSupa7::ItemPostFrame(void)
 		// If I'm secondary firing and am not already trying to load a slug queue one
 		else if ((pOwner->m_nButtons & IN_ATTACK2) && (m_iClip1 < GetMaxClip1()) && !m_bNeedPump && !m_bSlugDelayed)
 		{
-			/*
-				NEO HACK/FIXME (brekiy):
-				Dunno why but if we don't cancel reload first it won't trigger unless the key is spammed.
-				Unfortunately this makes it do the reload start animation again. I guess it could be tracked via another bool...
-				If SecondaryAttack() is called directly you can cancel the shell reloading instantly,
-				which doesn't seem right either.
-			*/
-			m_bInReload = false;
+            m_bSlugDelayed = true;
 			m_bDelayedFire2 = true;
-			// SecondaryAttack();
 		}
 		else if (m_flNextPrimaryAttack <= gpGlobals->curtime)
 		{
