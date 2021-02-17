@@ -61,12 +61,13 @@ WeaponData
 	SoundData
 	{
 		"reload"			"weapon_murata.reload"
-                "reload_npc"		        "weapon_murata.npc_reload"
+		"reload_npc"		"weapon_murata.npc_reload"
 		"empty"				"weapon_murata.empty"
-		"single_shot"			"weapon_murata.Single"
-                "single_shot_npc"	        "weapon_murata.npc_single"
+		"single_shot"	    "weapon_murata.Single"
+		"single_shot_npc"	"weapon_murata.npc_single"
 		"special1"			"weapon_murata.load"
 		"special2"			"weapon_murata.pump"
+		"double_shot"       "weapon_m41.single"
 	}
 
 	// Weapon Sprite data is loaded by the Client DLL.

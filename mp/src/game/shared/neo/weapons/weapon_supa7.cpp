@@ -154,14 +154,14 @@ bool CWeaponSupa7::StartReloadSlug(void)
 		return false;
 	}
 
-	if (!m_bInReload)
+    if (m_iClip1 >= GetMaxClip1())
+        return false;
+
+    if (!m_bInReload)
 	{
 		SendWeaponAnim(ACT_SHOTGUN_RELOAD_START);
 		m_bInReload = true;
 	}
-
-	if (m_iClip1 >= GetMaxClip1())
-		return false;
 
 	m_bSlugDelayed = true;
 
@@ -201,7 +201,7 @@ bool CWeaponSupa7::Reload(void)
 
 	FillClip();
 	// Play reload on different channel as otherwise steals channel away from fire sound
-	WeaponSound(RELOAD);
+	WeaponSound(SPECIAL1);
 	SendWeaponAnim(ACT_VM_RELOAD);
 
 	pOwner->m_flNextAttack = gpGlobals->curtime;
@@ -232,7 +232,7 @@ bool CWeaponSupa7::ReloadSlug(void)
 
 	FillClipSlug();
 	// Play reload on different channel as otherwise steals channel away from fire sound
-	WeaponSound(RELOAD);
+	WeaponSound(SPECIAL1);
 	SendWeaponAnim(ACT_VM_RELOAD);
 
 	pOwner->m_flNextAttack = gpGlobals->curtime;
@@ -304,8 +304,6 @@ void CWeaponSupa7::Pump(void)
 	if (pOwner == NULL)
 		return;
 
-	m_bNeedPump = false;
-
 	if (m_bDelayedReload)
 	{
 		m_bDelayedReload = false;
@@ -317,11 +315,12 @@ void CWeaponSupa7::Pump(void)
 			StartReload();
 		}
 	}
-
-	WeaponSound(SPECIAL1);
-
-	// Finish reload animation
-	SendWeaponAnim(ACT_SHOTGUN_PUMP);
+    else if (m_bNeedPump)
+    {
+        m_bNeedPump = false;
+        WeaponSound(SPECIAL2);
+        SendWeaponAnim(ACT_SHOTGUN_PUMP);
+    }
 
 	pOwner->m_flNextAttack = gpGlobals->curtime + SequenceDuration();
 	ProposeNextAttack(gpGlobals->curtime + SequenceDuration());
@@ -352,8 +351,30 @@ void CWeaponSupa7::PrimaryAttack(void)
 
 	pPlayer->ViewPunchReset();
 
-	// MUST call sound before removing a round from the clip of a CMachineGun
-	WeaponSound(SINGLE);
+    int numBullets = 7;
+    Vector bulletSpread = GetBulletSpread();
+    int ammoType = m_iPrimaryAmmoType;
+    Vector vecSrc = pPlayer->Weapon_ShootPosition();
+    Vector vecAiming = pPlayer->GetAutoaimVector(AUTOAIM_10DEGREES);
+
+    // Change the firing characteristics and sound if a slug was loaded
+    if (m_bSlugLoaded)
+    {
+        numBullets = 1;
+        bulletSpread *= 0.5;
+        ammoType = m_iSecondaryAmmoType;
+        m_bSlugLoaded = false;
+        WeaponSound(WPN_DOUBLE);
+        WeaponSound(SPECIAL2);
+    }
+    else
+    {
+        // MUST call sound before removing a round from the clip of a CMachineGun
+        WeaponSound(SINGLE);
+    }
+
+    FireBulletsInfo_t info(numBullets, vecSrc, vecAiming, bulletSpread, MAX_TRACE_LENGTH, ammoType);
+    info.m_pAttacker = pPlayer;
 
 	pPlayer->DoMuzzleFlash();
 
@@ -365,21 +386,6 @@ void CWeaponSupa7::PrimaryAttack(void)
 
 	// player "shoot" animation
 	pPlayer->SetAnimation(PLAYER_ATTACK1);
-
-	Vector vecSrc = pPlayer->Weapon_ShootPosition();
-	Vector vecAiming = pPlayer->GetAutoaimVector(AUTOAIM_10DEGREES);
-
-	int numBullets = 7;
-	Vector bulletSpread = GetBulletSpread();
-	int ammoType = m_iPrimaryAmmoType;
-	if (m_bSlugLoaded) {
-		numBullets = 1;
-		bulletSpread *= 0.5;
-		ammoType = m_iSecondaryAmmoType;
-		m_bSlugLoaded = false;
-	}
-	FireBulletsInfo_t info(numBullets, vecSrc, vecAiming, bulletSpread, MAX_TRACE_LENGTH, ammoType);
-	info.m_pAttacker = pPlayer;
 
 	// Fire the bullets, and force the first shot to be perfectly accurate
 	pPlayer->FireBullets(info);
@@ -453,7 +459,10 @@ void CWeaponSupa7::ItemPostFrame(void)
 				// If we're supposed to have a slug loaded, load it
 				if (m_bSlugDelayed)
 				{
-					ReloadSlug();
+                    if (!ReloadSlug())
+                    {
+                        m_bSlugDelayed.GetForModify() = false;
+                    }
 					return;
 				}
 				else
