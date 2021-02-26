@@ -571,7 +571,7 @@ void CWeaponSupa7::ItemHolsterFrame(void)
 		// Just load the clip with no animations
 		int ammoFill = MIN((GetMaxClip1() - m_iClip1), GetOwner()->GetAmmoCount(GetPrimaryAmmoType()));
 
-		//GetOwner()->RemoveAmmo(ammoFill, GetPrimaryAmmoType());
+		GetOwner()->RemoveAmmo(ammoFill, GetPrimaryAmmoType());
 		m_iClip1 += ammoFill;
 	}
 }
