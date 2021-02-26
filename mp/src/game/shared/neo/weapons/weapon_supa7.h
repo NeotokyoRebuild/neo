@@ -51,7 +51,6 @@ public:
 	void FillClipSlug(void);
 	void FinishReload(void);
 	void CheckHolsterReload(void);
-	void Pump(void);
 	void AddViewKick(void);
 	//void ItemHolsterFrame(void);
 	void ItemPostFrame(void);
@@ -90,7 +89,6 @@ private:
 	}
 
 private:
-	CNetworkVar(bool, m_bNeedPump); // When emptied completely
 	CNetworkVar(bool, m_bDelayedFire1); // Fire primary when finished reloading
 	CNetworkVar(bool, m_bDelayedFire2); // Fire secondary when finished reloading
 	CNetworkVar(bool, m_bDelayedReload); // Reload when finished pump;

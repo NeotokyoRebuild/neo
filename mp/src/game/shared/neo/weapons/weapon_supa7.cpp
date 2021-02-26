@@ -7,14 +7,12 @@ IMPLEMENT_NETWORKCLASS_ALIASED(WeaponSupa7, DT_WeaponSupa7)
 
 BEGIN_NETWORK_TABLE(CWeaponSupa7, DT_WeaponSupa7)
 #ifdef CLIENT_DLL
-	RecvPropBool(RECVINFO(m_bNeedPump)),
 	RecvPropBool(RECVINFO(m_bDelayedFire1)),
 	RecvPropBool(RECVINFO(m_bDelayedFire2)),
 	RecvPropBool(RECVINFO(m_bDelayedReload)),
 	RecvPropBool(RECVINFO(m_bSlugDelayed)),
 	RecvPropBool(RECVINFO(m_bSlugLoaded)),
 #else
-	SendPropBool(SENDINFO(m_bNeedPump)),
 	SendPropBool(SENDINFO(m_bDelayedFire1)),
 	SendPropBool(SENDINFO(m_bDelayedFire2)),
 	SendPropBool(SENDINFO(m_bDelayedReload)),
@@ -25,7 +23,6 @@ END_NETWORK_TABLE()
 
 #ifdef CLIENT_DLL
 BEGIN_PREDICTION_DATA(CWeaponSupa7)
-	DEFINE_PRED_FIELD(m_bNeedPump, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bDelayedFire1, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bDelayedFire2, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bDelayedReload, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
@@ -40,7 +37,6 @@ PRECACHE_WEAPON_REGISTER(weapon_supa7);
 
 #ifdef GAME_DLL
 BEGIN_DATADESC(CWeaponSupa7)
-	DEFINE_FIELD(m_bNeedPump, FIELD_BOOLEAN),
 	DEFINE_FIELD(m_bDelayedFire1, FIELD_BOOLEAN),
 	DEFINE_FIELD(m_bDelayedFire2, FIELD_BOOLEAN),
 	DEFINE_FIELD(m_bDelayedReload, FIELD_BOOLEAN),
@@ -76,7 +72,6 @@ CWeaponSupa7::CWeaponSupa7(void)
 {
 	m_bReloadsSingly = true;
 
-	m_bNeedPump = false;
 	m_bDelayedFire1 = false;
 	m_bDelayedFire2 = false;
 	m_bSlugDelayed = false;
@@ -91,9 +86,6 @@ CWeaponSupa7::CWeaponSupa7(void)
 // Purpose: Override so only reload one shell at a time
 bool CWeaponSupa7::StartReload(void)
 {
-	if (m_bNeedPump)
-		return false;
-
 	if (m_bSlugLoaded)
 		return false;
 
@@ -141,9 +133,6 @@ bool CWeaponSupa7::StartReload(void)
 // Purpose: Start loading a slug, avoid overriding the default reload functionality due to secondary ammo
 bool CWeaponSupa7::StartReloadSlug(void)
 {
-	if (m_bNeedPump)
-		return false;
-
 	if (m_bSlugLoaded)
 		return false;
 
@@ -302,36 +291,6 @@ void CWeaponSupa7::FillClipSlug(void)
 	}
 }
 
-// Purpose: Play weapon pump anim
-void CWeaponSupa7::Pump(void)
-{
-	CBaseCombatCharacter* pOwner = GetOwner();
-
-	if (pOwner == NULL)
-		return;
-
-	if (m_bDelayedReload)
-	{
-		m_bDelayedReload = false;
-		if (m_bSlugDelayed)
-		{
-			StartReloadSlug();
-		}
-		else {
-			StartReload();
-		}
-	}
-	else if (m_bNeedPump)
-	{
-		m_bNeedPump = false;
-		WeaponSound(SPECIAL2);
-		SendWeaponAnim(ACT_SHOTGUN_PUMP);
-	}
-
-	pOwner->m_flNextAttack = gpGlobals->curtime + SequenceDuration();
-	ProposeNextAttack(gpGlobals->curtime + SequenceDuration());
-}
-
 void CWeaponSupa7::DryFire(void)
 {
 	WeaponSound(EMPTY);
@@ -429,32 +388,16 @@ void CWeaponSupa7::ItemPostFrame(void)
 		return;
 	}
 
-	if (m_bNeedPump)
-	{
-		if (pOwner->m_nButtons & IN_RELOAD)
-		{
-			m_bDelayedReload = true;
-			return;
-		}
-		else if (pOwner->m_nButtons & IN_ATTACK2)
-		{
-			m_bDelayedReload = true;
-			m_bSlugDelayed = true;
-			return;
-		}
-	}
-
 	if (m_bInReload)
 	{
 		// If I'm primary firing and have one round stop reloading and fire
-		if ((pOwner->m_nButtons & IN_ATTACK) && (m_iClip1 >= 1) && !m_bNeedPump)
+		if ((pOwner->m_nButtons & IN_ATTACK) && (m_iClip1 >= 1))
 		{
 			m_bInReload = false;
-			m_bNeedPump = false;
 			m_bDelayedFire1 = true;
 		}
 		// If I'm secondary firing and am not already trying to load a slug queue one
-		else if ((pOwner->m_nButtons & IN_ATTACK2) && (m_iClip1 < GetMaxClip1()) && !m_bNeedPump && !m_bSlugDelayed)
+		else if ((pOwner->m_nButtons & IN_ATTACK2) && (m_iClip1 < GetMaxClip1()) && !m_bSlugDelayed)
 		{
 			m_bSlugDelayed = true;
 			m_bDelayedFire2 = true;
@@ -489,12 +432,6 @@ void CWeaponSupa7::ItemPostFrame(void)
 		SetShotgunShellVisible(false);
 	}
 
-	if ((m_bNeedPump) && (m_flNextPrimaryAttack <= gpGlobals->curtime))
-	{
-		Pump();
-		return;
-	}
-
 	// Shotgun uses same timing and ammo for secondary attack
 	if ((m_bDelayedFire2 || pOwner->m_nButtons & IN_ATTACK2) && (m_flNextPrimaryAttack <= gpGlobals->curtime))
 	{
@@ -525,7 +462,7 @@ void CWeaponSupa7::ItemPostFrame(void)
 			}
 		}
 		// Fire underwater?
-		else if (pOwner->GetWaterLevel() == 3 && m_bFiresUnderwater == false)
+		else if (pOwner->GetWaterLevel() == WL_Eyes && !m_bFiresUnderwater)
 		{
 			WeaponSound(EMPTY);
 			ProposeNextAttack(gpGlobals->curtime + GetFastestDryRefireTime());
