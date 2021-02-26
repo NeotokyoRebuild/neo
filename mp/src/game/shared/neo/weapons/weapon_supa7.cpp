@@ -104,13 +104,25 @@ bool CWeaponSupa7::StartReload(void)
 	if (m_bNeedPump)
 		return false;
 
-	if (m_bSlugLoaded || m_bSlugDelayed)
+	if (m_bSlugLoaded)
 		return false;
 
-	CBaseCombatCharacter *pOwner = GetOwner();
+	CBaseCombatCharacter* pOwner = GetOwner();
 
 	if (pOwner == NULL)
 		return false;
+
+	if (m_bSlugDelayed)
+	{
+		if (pOwner->GetAmmoCount(m_iSecondaryAmmoType) <= 0)
+		{
+			m_bSlugDelayed = false;
+		}
+		else
+		{
+			return false;
+		}
+	}
 
 	if (pOwner->GetAmmoCount(m_iPrimaryAmmoType) <= 0)
 		return false;
@@ -146,7 +158,7 @@ bool CWeaponSupa7::StartReloadSlug(void)
 	if (m_bSlugLoaded)
 		return false;
 
-	CBaseCombatCharacter *pOwner = GetOwner();
+	CBaseCombatCharacter* pOwner = GetOwner();
 
 	if (pOwner == NULL)
 		return false;
@@ -156,10 +168,10 @@ bool CWeaponSupa7::StartReloadSlug(void)
 		return false;
 	}
 
-    if (m_iClip1 >= GetMaxClip1())
-        return false;
+	if (m_iClip1 >= GetMaxClip1())
+		return false;
 
-    if (!m_bInReload)
+	if (!m_bInReload)
 	{
 		SendWeaponAnim(ACT_SHOTGUN_RELOAD_START);
 		m_bInReload = true;
@@ -185,7 +197,7 @@ bool CWeaponSupa7::Reload(void)
 		Warning("ERROR: Supa7 Reload called incorrectly!\n");
 	}
 
-	CBaseCombatCharacter *pOwner = GetOwner();
+	CBaseCombatCharacter* pOwner = GetOwner();
 
 	if (pOwner == NULL)
 		return false;
@@ -215,13 +227,17 @@ bool CWeaponSupa7::Reload(void)
 // Purpose: Start loading a slug, avoid overriding the default reload functionality due to secondary ammo
 bool CWeaponSupa7::ReloadSlug(void)
 {
+	// First, flip this bool to ensure we can't get stuck in the m_bSlugDelayed state
+	m_bSlugDelayed = false;
+
 	// Check that StartReload was called first
 	if (!m_bInReload)
 	{
+		Assert(false);
 		Warning("ERROR: Supa7 Reload called incorrectly!\n");
 	}
 
-	CBaseCombatCharacter *pOwner = GetOwner();
+	CBaseCombatCharacter* pOwner = GetOwner();
 
 	if (pOwner == NULL)
 		return false;
@@ -248,7 +264,7 @@ void CWeaponSupa7::FinishReload(void)
 	// Make shotgun shell invisible
 	SetBodygroup(1, 1);
 
-	CBaseCombatCharacter *pOwner = GetOwner();
+	CBaseCombatCharacter* pOwner = GetOwner();
 
 	if (pOwner == NULL)
 		return;
@@ -265,7 +281,7 @@ void CWeaponSupa7::FinishReload(void)
 // Purpose: Play finish reload anim and fill clip
 void CWeaponSupa7::FillClip(void)
 {
-	CBaseCombatCharacter *pOwner = GetOwner();
+	CBaseCombatCharacter* pOwner = GetOwner();
 
 	if (pOwner == NULL)
 		return;
@@ -284,7 +300,7 @@ void CWeaponSupa7::FillClip(void)
 // Purpose: Play finish reload anim and fill clip
 void CWeaponSupa7::FillClipSlug(void)
 {
-	CBaseCombatCharacter *pOwner = GetOwner();
+	CBaseCombatCharacter* pOwner = GetOwner();
 
 	if (pOwner == NULL)
 		return;
@@ -301,7 +317,7 @@ void CWeaponSupa7::FillClipSlug(void)
 // Purpose: Play weapon pump anim
 void CWeaponSupa7::Pump(void)
 {
-	CBaseCombatCharacter *pOwner = GetOwner();
+	CBaseCombatCharacter* pOwner = GetOwner();
 
 	if (pOwner == NULL)
 		return;
@@ -317,12 +333,12 @@ void CWeaponSupa7::Pump(void)
 			StartReload();
 		}
 	}
-    else if (m_bNeedPump)
-    {
-        m_bNeedPump = false;
-        WeaponSound(SPECIAL2);
-        SendWeaponAnim(ACT_SHOTGUN_PUMP);
-    }
+	else if (m_bNeedPump)
+	{
+		m_bNeedPump = false;
+		WeaponSound(SPECIAL2);
+		SendWeaponAnim(ACT_SHOTGUN_PUMP);
+	}
 
 	pOwner->m_flNextAttack = gpGlobals->curtime + SequenceDuration();
 	ProposeNextAttack(gpGlobals->curtime + SequenceDuration());
@@ -344,7 +360,7 @@ void CWeaponSupa7::PrimaryAttack(void)
 	}
 
 	// Only the player fires this way so we can cast
-	CBasePlayer *pPlayer = ToBasePlayer(GetOwner());
+	CBasePlayer* pPlayer = ToBasePlayer(GetOwner());
 
 	if (!pPlayer)
 	{
@@ -353,30 +369,30 @@ void CWeaponSupa7::PrimaryAttack(void)
 
 	pPlayer->ViewPunchReset();
 
-    int numBullets = 7;
-    Vector bulletSpread = GetBulletSpread();
-    int ammoType = m_iPrimaryAmmoType;
-    Vector vecSrc = pPlayer->Weapon_ShootPosition();
-    Vector vecAiming = pPlayer->GetAutoaimVector(AUTOAIM_10DEGREES);
+	int numBullets = 7;
+	Vector bulletSpread = GetBulletSpread();
+	int ammoType = m_iPrimaryAmmoType;
+	Vector vecSrc = pPlayer->Weapon_ShootPosition();
+	Vector vecAiming = pPlayer->GetAutoaimVector(AUTOAIM_10DEGREES);
 
-    // Change the firing characteristics and sound if a slug was loaded
-    if (m_bSlugLoaded)
-    {
-        numBullets = 1;
-        bulletSpread *= 0.5;
-        ammoType = m_iSecondaryAmmoType;
-        m_bSlugLoaded = false;
-        WeaponSound(WPN_DOUBLE);
-        WeaponSound(SPECIAL2);
-    }
-    else
-    {
-        // MUST call sound before removing a round from the clip of a CMachineGun
-        WeaponSound(SINGLE);
-    }
+	// Change the firing characteristics and sound if a slug was loaded
+	if (m_bSlugLoaded)
+	{
+		numBullets = 1;
+		bulletSpread *= 0.5;
+		ammoType = m_iSecondaryAmmoType;
+		m_bSlugLoaded = false;
+		WeaponSound(WPN_DOUBLE);
+		WeaponSound(SPECIAL2);
+	}
+	else
+	{
+		// MUST call sound before removing a round from the clip of a CMachineGun
+		WeaponSound(SINGLE);
+	}
 
-    FireBulletsInfo_t info(numBullets, vecSrc, vecAiming, bulletSpread, MAX_TRACE_LENGTH, ammoType);
-    info.m_pAttacker = pPlayer;
+	FireBulletsInfo_t info(numBullets, vecSrc, vecAiming, bulletSpread, MAX_TRACE_LENGTH, ammoType);
+	info.m_pAttacker = pPlayer;
 
 	pPlayer->DoMuzzleFlash();
 
@@ -406,13 +422,12 @@ void CWeaponSupa7::SecondaryAttack(void)
 		return;
 
 	StartReloadSlug();
-	return;
 }
 
 // Purpose: Override so shotgun can do multiple reloads in a row
 void CWeaponSupa7::ItemPostFrame(void)
 {
-	CBasePlayer *pOwner = ToBasePlayer(GetOwner());
+	CBasePlayer* pOwner = ToBasePlayer(GetOwner());
 	if (!pOwner)
 	{
 		return;
@@ -454,25 +469,23 @@ void CWeaponSupa7::ItemPostFrame(void)
 			if (pOwner->GetAmmoCount(m_iPrimaryAmmoType) <= 0 || m_bSlugLoaded || m_iClip1 >= GetMaxClip1())
 			{
 				FinishReload();
-				return;
 			}
 			else
 			{
 				// If we're supposed to have a slug loaded, load it
 				if (m_bSlugDelayed)
 				{
-                    if (!ReloadSlug())
-                    {
-                        m_bSlugDelayed.GetForModify() = false;
-                    }
-					return;
+					if (!ReloadSlug())
+					{
+						m_bSlugDelayed.GetForModify() = false;
+					}
 				}
 				else
 				{
 					Reload();
-					return;
 				}
 			}
+			return;
 		}
 	}
 	else
@@ -526,7 +539,7 @@ void CWeaponSupa7::ItemPostFrame(void)
 		else
 		{
 			// If the firing button was just pressed, reset the firing time
-			CBasePlayer *pPlayer = ToBasePlayer(GetOwner());
+			CBasePlayer* pPlayer = ToBasePlayer(GetOwner());
 			if (pPlayer && pPlayer->m_afButtonPressed & IN_ATTACK)
 			{
 				ProposeNextAttack(gpGlobals->curtime);
@@ -578,7 +591,7 @@ void CWeaponSupa7::ItemPostFrame(void)
 
 void CWeaponSupa7::AddViewKick(void)
 {
-	CBasePlayer *pPlayer = ToBasePlayer(GetOwner());
+	CBasePlayer* pPlayer = ToBasePlayer(GetOwner());
 
 	if (pPlayer == NULL)
 		return;
@@ -621,18 +634,18 @@ void CWeaponSupa7::ItemHolsterFrame(void)
 #endif
 
 #if(0)
-void CWeaponSupa7::WeaponIdle( void )
+void CWeaponSupa7::WeaponIdle(void)
 {
 	//Only the player fires this way so we can cast
-	CBasePlayer *pPlayer = GetOwner()
+	CBasePlayer* pPlayer = GetOwner()
 
-	if ( pPlayer == NULL )
+	if (pPlayer == NULL)
 		return;
 
 	//If we're on a target, play the new anim
-	if ( pPlayer->IsOnTarget() )
+	if (pPlayer->IsOnTarget())
 	{
-		SendWeaponAnim( ACT_VM_IDLE_ACTIVE );
+		SendWeaponAnim(ACT_VM_IDLE_ACTIVE);
 	}
 }
 #endif
