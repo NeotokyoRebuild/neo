@@ -51,8 +51,8 @@ void CWeaponKyla::PrimaryAttack(void)
 		else
 		{
 			WeaponSound(EMPTY);
-			m_flNextPrimaryAttack = 0.2;
-		}
+            m_flNextPrimaryAttack = gpGlobals->curtime + GetFastestDryRefireTime();
+        }
 
 		return;
 	}
@@ -70,7 +70,7 @@ void CWeaponKyla::PrimaryAttack(void)
 	SendWeaponAnim(ACT_VM_PRIMARYATTACK);
 	pPlayer->SetAnimation(PLAYER_ATTACK1);
 
-	m_flNextPrimaryAttack = gpGlobals->curtime + 0.35;
+	m_flNextPrimaryAttack = gpGlobals->curtime + GetFireRate();
 
 	m_iClip1--;
 
