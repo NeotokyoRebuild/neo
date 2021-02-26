@@ -19,7 +19,7 @@ WeaponData
 	"bucket_position"		"3"
 
 	"clip_size"				"16"
-	"default_clip"			"1600"
+	"default_clip"			"80"
 	
 	"primary_ammo"			"AMMO_10G_SHELL"
 	"secondary_ammo"		"None"

@@ -16,7 +16,7 @@ WeaponData
 	"TPMuzzleFlashScale"	"0.5"
 
 	"clip_size"		"30"
-	"default_clip"	"3000"
+	"default_clip"	"150"
 	"primary_ammo"		"AR2" // NEO TODO (Rain): add specific ammos
 	"secondary_ammo"	"None"
 
