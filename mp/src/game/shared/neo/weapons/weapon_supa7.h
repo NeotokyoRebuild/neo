@@ -45,13 +45,13 @@ private:
 	inline void ProposeNextAttack(const float flNextAttackProposal);
 
 public:
-	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { return NEO_WEP_SUPA7; }
-	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
+	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const OVERRIDE { return NEO_WEP_SUPA7; }
+	virtual int GetNeoWepXPCost(const int neoClass) const OVERRIDE { return 0; }
 
-	virtual float GetSpeedScale(void) const { return 140.0 / 170.0; }
+	virtual float GetSpeedScale(void) const OVERRIDE { return 140.0 / 170.0; }
 
-	virtual int GetMinBurst() { return 1; }
-	virtual int GetMaxBurst() { return 3; }
+	virtual int GetMinBurst() OVERRIDE { return 1; }
+	virtual int GetMaxBurst() OVERRIDE { return 3; }
 
 	bool StartReload(void);
 	bool StartReloadSlug(void);
@@ -64,7 +64,7 @@ public:
 	void CheckHolsterReload(void);
 	void Pump(void);
 	void AddViewKick(void);
-	// void ItemHolsterFrame(void);
+	//void ItemHolsterFrame(void);
 	void ItemPostFrame(void);
 	void PrimaryAttack(void);
 	void SecondaryAttack(void);

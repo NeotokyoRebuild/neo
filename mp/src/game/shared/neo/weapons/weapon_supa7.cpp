@@ -34,8 +34,6 @@ BEGIN_PREDICTION_DATA(CWeaponSupa7)
 END_PREDICTION_DATA()
 #endif
 
-//NEO_IMPLEMENT_ACTTABLE(CWeaponSupa7)
-
 LINK_ENTITY_TO_CLASS(weapon_supa7, CWeaponSupa7);
 
 PRECACHE_WEAPON_REGISTER(weapon_supa7);
@@ -54,6 +52,10 @@ END_DATADESC()
 extern ConVar sk_auto_reload_time;
 extern ConVar sk_plr_num_shotgun_pellets;
 
+#if(0)
+// Might be unsuitable for shell based shotgun? Should sort out the acttable at some point.
+NEO_IMPLEMENT_ACTTABLE(CWeaponSupa7)
+#else
 #ifdef GAME_DLL
 acttable_t	CWeaponSupa7::m_acttable[] =
 {
@@ -68,6 +70,7 @@ acttable_t	CWeaponSupa7::m_acttable[] =
 };
 
 IMPLEMENT_ACTTABLE(CWeaponSupa7);
+#endif
 #endif
 
 // Purpose: Only update next attack time if it's further away in the future.
