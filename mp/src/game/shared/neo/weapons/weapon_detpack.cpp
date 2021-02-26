@@ -155,6 +155,7 @@ void CWeaponDetpack::PrimaryAttack(void)
 		if (!m_bWantsToThrowThisDetpack)
 		{
 			m_bWantsToThrowThisDetpack = true;
+			WeaponSound(SINGLE);
 #if(0)
 			DevMsg("Preparing primary attack\n");
 #endif
@@ -300,8 +301,6 @@ void CWeaponDetpack::TossDetpack(CBasePlayer* pPlayer)
 		Assert(false);
 	}
 #endif
-
-	WeaponSound(SINGLE);
 
 	pPlayer->SetAnimation(PLAYER_ATTACK1);
 }
