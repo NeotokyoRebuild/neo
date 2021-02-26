@@ -165,6 +165,7 @@ server_blacklist.txt
 videoconfig_linux.cfg
 *.ain
 user_custom
+textwindow_temp.html
 
 # shader generation files
 *.tmp
