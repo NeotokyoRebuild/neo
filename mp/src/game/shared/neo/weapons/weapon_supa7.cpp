@@ -371,12 +371,26 @@ void CWeaponSupa7::SecondaryAttack(void)
 	StartReloadSlug();
 }
 
-// Purpose: Public accessor for resetting the delayed fire vars, to
-// make sure a freshly picked up supa can never misfire on its new owner.
-void CWeaponSupa7::ClearDelayedFire(void)
+// Purpose: Public accessor for resetting the reload, and any "delayed" vars, to
+// make sure a freshly picked up supa can never act on its own against user will.
+void CWeaponSupa7::ClearDelayedInputs(void)
 {
+	m_bFireOnEmpty = false;
 	m_bDelayedFire1 = false;
 	m_bDelayedFire2 = false;
+	m_bDelayedReload = false;
+	m_bSlugDelayed = false;
+
+	// Explicitly networking to DT_LocalActiveWeaponData.
+	// This helps with some edge cases where the client disagrees
+	// about the current m_bInReload state with server if the gun
+	// is dropped instantly after starting a reload.
+	// Ideally we'd always predict it, but this should be fairly
+	// low bandwith cost (only networked to current gun owner)
+	// for not having to do a larger rewrite.
+	m_bInReload.GetForModify() = false;
+
+	SetShotgunShellVisible(false);
 }
 
 // Purpose: Override so shotgun can do multiple reloads in a row
@@ -515,9 +529,7 @@ void CWeaponSupa7::ItemPostFrame(void)
 				}
 			}
 		}
-
 		WeaponIdle();
-		return;
 	}
 }
 
@@ -559,7 +571,7 @@ void CWeaponSupa7::ItemHolsterFrame(void)
 		// Just load the clip with no animations
 		int ammoFill = MIN((GetMaxClip1() - m_iClip1), GetOwner()->GetAmmoCount(GetPrimaryAmmoType()));
 
-		GetOwner()->RemoveAmmo(ammoFill, GetPrimaryAmmoType());
+		//GetOwner()->RemoveAmmo(ammoFill, GetPrimaryAmmoType());
 		m_iClip1 += ammoFill;
 	}
 }

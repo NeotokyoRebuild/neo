@@ -2612,7 +2612,6 @@ void CDmgAccumulator::Process( void )
 #if defined( CLIENT_DLL )
 
 BEGIN_PREDICTION_DATA( CBaseCombatWeapon )
-
 	DEFINE_PRED_FIELD( m_nNextThinkTick, FIELD_INTEGER, FTYPEDESC_INSENDTABLE ),
 	// Networked
 	DEFINE_PRED_FIELD( m_hOwner, FIELD_EHANDLE, FTYPEDESC_INSENDTABLE ),
@@ -2623,6 +2622,10 @@ BEGIN_PREDICTION_DATA( CBaseCombatWeapon )
 	DEFINE_PRED_FIELD_TOL( m_flNextPrimaryAttack, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE ),	
 	DEFINE_PRED_FIELD_TOL( m_flNextSecondaryAttack, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE ),
 	DEFINE_PRED_FIELD_TOL( m_flTimeWeaponIdle, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE ),
+
+#ifdef NEO
+	DEFINE_PRED_FIELD(m_bInReload, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+#endif
 
 	DEFINE_PRED_FIELD( m_iPrimaryAmmoType, FIELD_INTEGER, FTYPEDESC_INSENDTABLE ),
 	DEFINE_PRED_FIELD( m_iSecondaryAmmoType, FIELD_INTEGER, FTYPEDESC_INSENDTABLE ),
@@ -2672,7 +2675,6 @@ IMPLEMENT_NETWORKCLASS_ALIASED( BaseCombatWeapon, DT_BaseCombatWeapon )
 // Purpose: Save Data for Base Weapon object
 //-----------------------------------------------------------------------------// 
 BEGIN_DATADESC( CBaseCombatWeapon )
-
 	DEFINE_FIELD( m_flNextPrimaryAttack, FIELD_TIME ),
 	DEFINE_FIELD( m_flNextSecondaryAttack, FIELD_TIME ),
 	DEFINE_FIELD( m_flTimeWeaponIdle, FIELD_TIME ),
@@ -2849,11 +2851,20 @@ BEGIN_NETWORK_TABLE_NOBASE( CBaseCombatWeapon, DT_LocalActiveWeaponData )
 	SendPropExclude( "DT_AnimTimeMustBeFirst" , "m_flAnimTime" ),
 #endif
 
+#ifdef NEO
+	SendPropBool(SENDINFO(m_bInReload)),
+#endif
+
 #else
 	RecvPropTime( RECVINFO( m_flNextPrimaryAttack ) ),
 	RecvPropTime( RECVINFO( m_flNextSecondaryAttack ) ),
 	RecvPropInt( RECVINFO( m_nNextThinkTick ) ),
 	RecvPropTime( RECVINFO( m_flTimeWeaponIdle ) ),
+
+#ifdef NEO
+	RecvPropBool(RECVINFO(m_bInReload)),
+#endif
+
 #endif
 END_NETWORK_TABLE()
 

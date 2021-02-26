@@ -1580,14 +1580,13 @@ void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
 			return;
 		}
 
-		// Make sure a freshly picked up supa can never misfire on its new owner.
 		auto neoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWeapon);
 		if (neoWep)
 		{
 			if (neoWep->GetNeoWepBits() & NEO_WEP_SUPA7)
 			{
 				Assert(dynamic_cast<CWeaponSupa7*>(neoWep));
-				static_cast<CWeaponSupa7*>(neoWep)->ClearDelayedFire();
+				static_cast<CWeaponSupa7*>(neoWep)->ClearDelayedInputs();
 			}
 		}
 	}

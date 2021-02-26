@@ -60,7 +60,7 @@ public:
 
 	virtual float GetFireRate(void) OVERRIDE { return 0.7f; }
 
-	void ClearDelayedFire(void);
+	void ClearDelayedInputs(void);
 
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
