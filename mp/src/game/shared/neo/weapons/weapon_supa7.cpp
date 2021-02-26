@@ -3,17 +3,6 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-#ifdef GAME_DLL
-#include "recipientfilter.h"
-#else
-#include "c_recipientfilter.h"
-#endif
-
-#ifndef GAME_DLL
-#define CRecipientFilter C_RecipientFilter
-#endif
-
-
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponSupa7, DT_WeaponSupa7)
 
 BEGIN_NETWORK_TABLE(CWeaponSupa7, DT_WeaponSupa7)
