@@ -17,6 +17,7 @@ WeaponData
 
 	"primary_ammo"			"AMMO_GRENADE"
 	"secondary_ammo"		"None"
+    "autoswitchfrom"        "0"
 
 	"weight"			"1"
 	"item_flags"			"18"	// ITEM_FLAG_NOAUTORELOAD | ITEM_FLAG_EXHAUSTIBLE

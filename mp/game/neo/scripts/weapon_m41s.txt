@@ -18,11 +18,17 @@ WeaponData
 	"TPMuzzleFlashScale"	"0.5"
 
 	"clip_size"		"15"
+    "autoswitchfrom"        "0"
 	"primary_ammo"		"AMMO_PRI"
 	"secondary_ammo"	"None"
 
 	"weight"		"3"
-	"item_flags"		"0"
+	// ITEM_FLAG_SELECTONEMPTY = 1
+	// ITEM_FLAG_NOAUTOSWITCHEMPTY = (1 << 2)
+	// ITEM_FLAG_DOHITLOCATIONDMG = (1 << 5) 
+	// Combined as int = 37
+	"item_flags"		"37"
+	// "item_flags"		"0"
 	
 	
 	"AimType"		"1"
