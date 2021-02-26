@@ -16,6 +16,7 @@
 #include "neo_model_manager.h"
 
 #include "weapon_ghost.h"
+#include "weapon_supa7.h"
 
 #include "shareddefs.h"
 #include "inetchannelinfo.h"
@@ -1578,24 +1579,37 @@ void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
 
 			return;
 		}
+
+		// Make sure a freshly picked up supa can never misfire on its new owner.
+		auto neoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWeapon);
+		if (neoWep)
+		{
+			if (neoWep->GetNeoWepBits() & NEO_WEP_SUPA7)
+			{
+				Assert(dynamic_cast<CWeaponSupa7*>(neoWep));
+				static_cast<CWeaponSupa7*>(neoWep)->ClearDelayedFire();
+			}
+		}
 	}
 	else
 	{
-		// Drop a grenade if it's primed.
-		if (GetActiveWeapon())
+		auto activeWep = GetActiveWeapon();
+		if (activeWep)
 		{
 			// If player has held down an attack key since the previous frame
 			if (((m_nButtons & IN_ATTACK) && (!(m_afButtonPressed & IN_ATTACK))) ||
 				((m_nButtons & IN_ATTACK2) && (!(m_afButtonPressed & IN_ATTACK2))))
 			{
-				if (GetActiveWeapon() == Weapon_OwnsThisType("weapon_grenade"))
+				// Drop a grenade if it's primed.
+				if (activeWep == Weapon_OwnsThisType("weapon_grenade"))
 				{
 					NEODropPrimedFragGrenade(this, GetActiveWeapon());
 					return;
 				}
-				else if (GetActiveWeapon() == Weapon_OwnsThisType("weapon_smokegrenade"))
+				// Drop a smoke if it's primed.
+				else if (activeWep == Weapon_OwnsThisType("weapon_smokegrenade"))
 				{
-					NEODropPrimedSmokeGrenade(this, GetActiveWeapon());
+					NEODropPrimedSmokeGrenade(this, activeWep);
 					return;
 				}
 			}

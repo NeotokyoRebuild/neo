@@ -34,6 +34,7 @@
 #include "prediction.h"
 
 #include "neo/weapons/weapon_ghost.h"
+#include "neo/weapons/weapon_supa7.h"
 
 #include <engine/ivdebugoverlay.h>
 #include <engine/IEngineSound.h>
@@ -546,7 +547,11 @@ void C_NEO_Player::ItemPreFrame( void )
 
 	if (m_afButtonPressed & IN_DROP)
 	{
-		Weapon_Drop(GetActiveWeapon());
+		auto neoWep = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
+		if (neoWep)
+		{
+			Weapon_Drop(neoWep);
+		}
 	}
 }
 
@@ -1024,14 +1029,19 @@ bool C_NEO_Player::ShouldDrawHL2StyleQuickHud(void)
 	return cl_drawhud_quickinfo.GetBool();
 }
 
-void C_NEO_Player::Weapon_Drop(C_BaseCombatWeapon *pWeapon)
+void C_NEO_Player::Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon)
 {
 	Weapon_SetZoom(false);
 
-	C_WeaponGhost *ghost = dynamic_cast<C_WeaponGhost*>(pWeapon);
-	if (ghost)
+	if (pWeapon->IsGhost())
 	{
-		ghost->HandleGhostUnequip();
+		Assert(dynamic_cast<C_WeaponGhost*>(pWeapon));
+		static_cast<C_WeaponGhost*>(pWeapon)->HandleGhostUnequip();
+	}
+	else if (pWeapon->GetNeoWepBits() & NEO_WEP_SUPA7)
+	{
+		Assert(dynamic_cast<C_WeaponSupa7*>(pWeapon));
+		static_cast<C_WeaponSupa7*>(pWeapon)->ClearDelayedFire();
 	}
 }
 

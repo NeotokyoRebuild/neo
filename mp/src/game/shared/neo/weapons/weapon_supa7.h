@@ -34,17 +34,6 @@ public:
 
 	CWeaponSupa7();
 
-private:
-	CNetworkVar(bool, m_bNeedPump); // When emptied completely
-	CNetworkVar(bool, m_bDelayedFire1); // Fire primary when finished reloading
-	CNetworkVar(bool, m_bDelayedFire2); // Fire secondary when finished reloading
-	CNetworkVar(bool, m_bDelayedReload); // Reload when finished pump;
-	CNetworkVar(bool, m_bSlugDelayed); // Load slug into tube next
-	CNetworkVar(bool, m_bSlugLoaded); // Slug currently loaded in chamber
-
-	inline void ProposeNextAttack(const float flNextAttackProposal);
-
-public:
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const OVERRIDE { return NEO_WEP_SUPA7; }
 	virtual int GetNeoWepXPCost(const int neoClass) const OVERRIDE { return 0; }
 
@@ -71,6 +60,9 @@ public:
 	void DryFire(void);
 
 	virtual float GetFireRate(void) OVERRIDE { return 0.7f; }
+
+	void ClearDelayedFire(void);
+
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
 	virtual float GetAccuracyPenalty() const OVERRIDE { return 0; }
@@ -79,6 +71,31 @@ protected:
 #if(0)
 	void WeaponIdle( void );
 #endif
+
+private:
+	// Purpose: Only update next attack time if it's further away in the future.
+	void ProposeNextAttack(const float flNextAttackProposal)
+	{
+		if (m_flNextPrimaryAttack < flNextAttackProposal)
+		{
+			m_flNextPrimaryAttack = flNextAttackProposal;
+		}
+	}
+
+	void SetShotgunShellVisible(bool is_visible)
+	{
+		const int bodygroup_shell = 1;
+		const int shell_visible = 0, shell_invisible = 1;
+		SetBodygroup(bodygroup_shell, is_visible ? shell_visible : shell_invisible);
+	}
+
+private:
+	CNetworkVar(bool, m_bNeedPump); // When emptied completely
+	CNetworkVar(bool, m_bDelayedFire1); // Fire primary when finished reloading
+	CNetworkVar(bool, m_bDelayedFire2); // Fire secondary when finished reloading
+	CNetworkVar(bool, m_bDelayedReload); // Reload when finished pump;
+	CNetworkVar(bool, m_bSlugDelayed); // Load slug into tube next
+	CNetworkVar(bool, m_bSlugLoaded); // Slug currently loaded in chamber
 
 private:
 	CWeaponSupa7(const CWeaponSupa7 &other);

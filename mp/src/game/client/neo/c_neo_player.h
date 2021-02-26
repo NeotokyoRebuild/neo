@@ -145,7 +145,7 @@ public:
 	void Weapon_AimToggle(C_BaseCombatWeapon *pWep);
 	void Weapon_SetZoom(const bool bZoomIn);
 
-	void Weapon_Drop(C_BaseCombatWeapon *pWeapon);
+	void Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon);
 
 	C_NEOPredictedViewModel *GetNEOViewModel() { return static_cast<C_NEOPredictedViewModel*>(GetViewModel()); }
 

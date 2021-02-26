@@ -68,19 +68,9 @@ acttable_t	CWeaponSupa7::m_acttable[] =
 	{ ACT_HL2MP_JUMP, ACT_HL2MP_JUMP_SHOTGUN, false },
 	{ ACT_RANGE_ATTACK1, ACT_RANGE_ATTACK_SHOTGUN, false },
 };
-
 IMPLEMENT_ACTTABLE(CWeaponSupa7);
 #endif
 #endif
-
-// Purpose: Only update next attack time if it's further away in the future.
-inline void CWeaponSupa7::ProposeNextAttack(const float flNextAttackProposal)
-{
-	if (m_flNextPrimaryAttack < flNextAttackProposal)
-	{
-		m_flNextPrimaryAttack = flNextAttackProposal;
-	}
-}
 
 CWeaponSupa7::CWeaponSupa7(void)
 {
@@ -139,8 +129,7 @@ bool CWeaponSupa7::StartReload(void)
 #endif
 	SendWeaponAnim(ACT_SHOTGUN_RELOAD_START);
 
-	// Make shotgun shell visible
-	SetBodygroup(1, 0);
+	SetShotgunShellVisible(true);
 
 	pOwner->m_flNextAttack = gpGlobals->curtime;
 	ProposeNextAttack(gpGlobals->curtime + SequenceDuration());
@@ -180,7 +169,7 @@ bool CWeaponSupa7::StartReloadSlug(void)
 	m_bSlugDelayed = true;
 
 	// Make shotgun shell visible
-	SetBodygroup(1, 0);
+	SetShotgunShellVisible(true);
 
 	pOwner->m_flNextAttack = gpGlobals->curtime;
 	ProposeNextAttack(gpGlobals->curtime + SequenceDuration());
@@ -261,8 +250,7 @@ bool CWeaponSupa7::ReloadSlug(void)
 // Purpose: Play finish reload anim and fill clip
 void CWeaponSupa7::FinishReload(void)
 {
-	// Make shotgun shell invisible
-	SetBodygroup(1, 1);
+	SetShotgunShellVisible(false);
 
 	CBaseCombatCharacter* pOwner = GetOwner();
 
@@ -424,10 +412,18 @@ void CWeaponSupa7::SecondaryAttack(void)
 	StartReloadSlug();
 }
 
+// Purpose: Public accessor for resetting the delayed fire vars, to
+// make sure a freshly picked up supa can never misfire on its new owner.
+void CWeaponSupa7::ClearDelayedFire(void)
+{
+	m_bDelayedFire1 = false;
+	m_bDelayedFire2 = false;
+}
+
 // Purpose: Override so shotgun can do multiple reloads in a row
 void CWeaponSupa7::ItemPostFrame(void)
 {
-	CBasePlayer* pOwner = ToBasePlayer(GetOwner());
+	auto pOwner = ToBasePlayer(GetOwner());
 	if (!pOwner)
 	{
 		return;
@@ -490,8 +486,7 @@ void CWeaponSupa7::ItemPostFrame(void)
 	}
 	else
 	{
-		// Make shotgun shell invisible
-		SetBodygroup(1, 1);
+		SetShotgunShellVisible(false);
 	}
 
 	if ((m_bNeedPump) && (m_flNextPrimaryAttack <= gpGlobals->curtime))
