@@ -45,9 +45,6 @@ BEGIN_DATADESC(CWeaponSupa7)
 END_DATADESC()
 #endif
 
-extern ConVar sk_auto_reload_time;
-extern ConVar sk_plr_num_shotgun_pellets;
-
 #if(0)
 // Might be unsuitable for shell based shotgun? Should sort out the acttable at some point.
 NEO_IMPLEMENT_ACTTABLE(CWeaponSupa7)
@@ -112,13 +109,6 @@ bool CWeaponSupa7::StartReload(void)
 	if (m_iClip1 >= GetMaxClip1())
 		return false;
 
-	// (brekiy) seems redundant to me
-#if(0)
-	int j = MIN(1, pOwner->GetAmmoCount(m_iPrimaryAmmoType));
-
-	if (j <= 0)
-		return false;
-#endif
 	SendWeaponAnim(ACT_SHOTGUN_RELOAD_START);
 
 	SetShotgunShellVisible(true);
@@ -157,7 +147,6 @@ bool CWeaponSupa7::StartReloadSlug(void)
 
 	m_bSlugDelayed = true;
 
-	// Make shotgun shell visible
 	SetShotgunShellVisible(true);
 
 	pOwner->m_flNextAttack = gpGlobals->curtime;
@@ -172,6 +161,7 @@ bool CWeaponSupa7::Reload(void)
 	// Check that StartReload was called first
 	if (!m_bInReload)
 	{
+		Assert(false);
 		Warning("ERROR: Supa7 Reload called incorrectly!\n");
 	}
 
@@ -184,11 +174,6 @@ bool CWeaponSupa7::Reload(void)
 		return false;
 
 	if (m_iClip1 >= GetMaxClip1())
-		return false;
-
-	int j = MIN(1, pOwner->GetAmmoCount(m_iPrimaryAmmoType));
-
-	if (j <= 0)
 		return false;
 
 	FillClip();
@@ -212,7 +197,7 @@ bool CWeaponSupa7::ReloadSlug(void)
 	if (!m_bInReload)
 	{
 		Assert(false);
-		Warning("ERROR: Supa7 Reload called incorrectly!\n");
+		Warning("ERROR: Supa7 ReloadSlug called incorrectly!\n");
 	}
 
 	CBaseCombatCharacter* pOwner = GetOwner();
@@ -281,6 +266,7 @@ void CWeaponSupa7::FillClipSlug(void)
 
 	if (pOwner == NULL)
 		return;
+
 	// Add them to the clip
 	if (pOwner->GetAmmoCount(m_iSecondaryAmmoType) > 0 && !m_bSlugLoaded)
 	{
@@ -544,52 +530,3 @@ void CWeaponSupa7::AddViewKick(void)
 	punch.Init(SharedRandomFloat("supapax", -2, -1), SharedRandomFloat("supapay", -1, 1), 0);
 	pPlayer->ViewPunch(punch);
 }
-
-#if(0)
-void CWeaponSupa7::ItemHolsterFrame(void)
-{
-	// Must be player held
-	if (GetOwner() && GetOwner()->IsPlayer() == false)
-		return;
-
-	// We can't be active
-	if (GetOwner()->GetActiveWeapon() == this)
-		return;
-
-	// If it's been longer than three seconds, reload
-	if ((gpGlobals->curtime - m_flHolsterTime) > sk_auto_reload_time.GetFloat())
-	{
-		// Reset the timer
-		m_flHolsterTime = gpGlobals->curtime;
-
-		if (GetOwner() == NULL)
-			return;
-
-		if (m_iClip1 == GetMaxClip1())
-			return;
-
-		// Just load the clip with no animations
-		int ammoFill = MIN((GetMaxClip1() - m_iClip1), GetOwner()->GetAmmoCount(GetPrimaryAmmoType()));
-
-		GetOwner()->RemoveAmmo(ammoFill, GetPrimaryAmmoType());
-		m_iClip1 += ammoFill;
-	}
-}
-#endif
-
-#if(0)
-void CWeaponSupa7::WeaponIdle(void)
-{
-	//Only the player fires this way so we can cast
-	CBasePlayer* pPlayer = GetOwner()
-
-	if (pPlayer == NULL)
-		return;
-
-	//If we're on a target, play the new anim
-	if (pPlayer->IsOnTarget())
-	{
-		SendWeaponAnim(ACT_VM_IDLE_ACTIVE);
-	}
-}
-#endif

@@ -50,9 +50,7 @@ public:
 	void FillClip(void);
 	void FillClipSlug(void);
 	void FinishReload(void);
-	void CheckHolsterReload(void);
 	void AddViewKick(void);
-	//void ItemHolsterFrame(void);
 	void ItemPostFrame(void);
 	void PrimaryAttack(void);
 	void SecondaryAttack(void);
@@ -66,10 +64,6 @@ protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
 	virtual float GetAccuracyPenalty() const OVERRIDE { return 0; }
 	virtual float GetMaxAccuracyPenalty() const OVERRIDE { return 0; }
-
-#if(0)
-	void WeaponIdle( void );
-#endif
 
 private:
 	// Purpose: Only update next attack time if it's further away in the future.
