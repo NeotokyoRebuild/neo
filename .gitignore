@@ -52,6 +52,7 @@ ipch
 *.vcxproj.filters
 *.vcxproj.vpc_crc
 *.vpc.sentinel
+*.rsp
 .vs/
 Degub/
 Release/
