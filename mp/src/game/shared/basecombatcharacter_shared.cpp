@@ -55,8 +55,9 @@ bool CBaseCombatCharacter::Weapon_Switch( CBaseCombatWeapon *pWeapon, int viewmo
 
 	if ( m_hActiveWeapon )
 	{
-		if ( !m_hActiveWeapon->Holster( pWeapon ) )
+		if ( !m_hActiveWeapon->Holster( pWeapon ) ) {
 			return false;
+		}
 	}
 
 	m_hActiveWeapon = pWeapon;
@@ -85,13 +86,15 @@ bool CBaseCombatCharacter::Weapon_CanSwitchTo( CBaseCombatWeapon *pWeapon )
 	if ( !pWeapon->HasAnyAmmo() && !GetAmmoCount( pWeapon->m_iPrimaryAmmoType ) )
 		return false;
 
-	if ( !pWeapon->CanDeploy() )
+	if ( !pWeapon->CanDeploy() ) {
 		return false;
-	
+	}
+
 	if ( m_hActiveWeapon )
 	{
-		if ( !m_hActiveWeapon->CanHolster() && !pWeapon->ForceWeaponSwitch() )
+		if ( !m_hActiveWeapon->CanHolster() && !pWeapon->ForceWeaponSwitch() ) {
 			return false;
+		}
 
 		if ( IsPlayer() )
 		{
@@ -108,7 +111,6 @@ bool CBaseCombatCharacter::Weapon_CanSwitchTo( CBaseCombatWeapon *pWeapon )
 			}
 		}
 	}
-
 	return true;
 }
 
