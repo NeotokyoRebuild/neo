@@ -52,6 +52,7 @@ ipch
 *.vcxproj.filters
 *.vcxproj.vpc_crc
 *.vpc.sentinel
+*.rsp
 .vs/
 Degub/
 Release/
@@ -165,6 +166,7 @@ server_blacklist.txt
 videoconfig_linux.cfg
 *.ain
 user_custom
+textwindow_temp.html
 
 # shader generation files
 *.tmp
