@@ -10,7 +10,8 @@
 ConVar mat_neo_colorblind_shift_rgb("mat_neo_colorblind_shift_rgb", "0", FCVAR_USERINFO, "Reorder RGB color values.\n\t0: RGB (regular order)\n\t1: GBR\n\t2: BRG\n\t3: BGR\n\t4: GRB\n\t5: RBG", true, 0.0f, true, 5.0f);
 ConVar mat_neo_colorblind_deuteranopia_mode("mat_neo_colorblind_deuteranopia_mode", "0", FCVAR_USERINFO, "Enable deuteranopia adjustment. 0: disabled, 1: simulate deuteranopia colors, 2: apply color correction, 3: simulate color corrected deuteranopia colors", true, 0.0f, true, 3.0f);
 ConVar mat_neo_colorblind_deuteranopia_brightness("mat_neo_colorblind_deuteranopia_brightness", "1.2", FCVAR_USERINFO, "Post-effect brightness scaler", true, 0.0f, true, 2.2f);
-ConVar mat_neo_colorblind_deuteranopia_saturation("mat_neo_colorblind_deuteranopia_saturation", "1.0", FCVAR_CHEAT, "Post-effect saturation adjust", true, -10.0f, true, 10.0f);
+ConVar mat_neo_colorblind_deuteranopia_saturation("mat_neo_colorblind_deuteranopia_saturation", "1.0", FCVAR_CHEAT, "Post-effect saturation adjust", true, 0.0f, true, 2.0f);
+ConVar mat_neo_colorblind_deuteranopia_saturation_b("mat_neo_colorblind_deuteranopia_saturation_b", "1.0", FCVAR_USERINFO, "Post-effect saturation adjust exclusively for the blue channel", true, 0.0f, true, 2.0f);
 
 BEGIN_VS_SHADER_FLAGS(Neo_ColorBlind, "Help for Neo_ColorBlind", SHADER_NOT_EDITABLE)
 BEGIN_SHADER_PARAMS
@@ -76,11 +77,13 @@ SHADER_DRAW
 		const float mode_deuteranopia = mat_neo_colorblind_deuteranopia_mode.GetFloat();
 		const float deuteranopia_brightness = mat_neo_colorblind_deuteranopia_brightness.GetFloat();
 		const float deuteranopia_saturation = mat_neo_colorblind_deuteranopia_saturation.GetFloat();
+		const float deuteranopia_saturation_b = mat_neo_colorblind_deuteranopia_saturation_b.GetFloat();
 
 		pShaderAPI->SetPixelShaderConstant(0, &mode_reorder_rgb_mode);
 		pShaderAPI->SetPixelShaderConstant(1, &mode_deuteranopia);
 		pShaderAPI->SetPixelShaderConstant(2, &deuteranopia_brightness);
 		pShaderAPI->SetPixelShaderConstant(3, &deuteranopia_saturation);
+		pShaderAPI->SetPixelShaderConstant(4, &deuteranopia_saturation_b);
 
 		DECLARE_DYNAMIC_VERTEX_SHADER_X(neo_passthrough_vs30);
 		SET_DYNAMIC_VERTEX_SHADER_X(neo_passthrough_vs30);

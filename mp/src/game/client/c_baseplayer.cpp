@@ -1432,14 +1432,26 @@ Vector C_BasePlayer::GetChaseCamViewOffset( CBaseEntity *target )
 	
 	if ( player )
 	{
+#ifdef NEO
+		Assert(dynamic_cast<CNEO_Player*>(player));
+#endif
+
 		if ( player->IsAlive() )
 		{
 			if ( player->GetFlags() & FL_DUCKING )
 			{
-				return VEC_DUCK_VIEW_SCALED( player );
+#ifdef NEO
+				return VEC_DUCK_VIEW_SCALED(static_cast<CNEO_Player*>(player));
+#else
+				return VEC_DUCK_VIEW_SCALED(player);
+#endif
 			}
 
-			return VEC_VIEW_SCALED( player );
+#ifdef NEO
+			return VEC_VIEW_SCALED(static_cast<CNEO_Player*>(player));
+#else
+			return VEC_VIEW_SCALED(player);
+#endif
 		}
 		else
 		{
@@ -1637,7 +1649,13 @@ void C_BasePlayer::CalcFreezeCamView( Vector& eyeOrigin, QAngle& eyeAngles, floa
 	if ( pTarget->IsAlive() )
 	{
 		// Look at their chest, not their head
-		Vector maxs = pTarget->GetBaseAnimating() ? VEC_HULL_MAX_SCALED( pTarget->GetBaseAnimating() ) : VEC_HULL_MAX;
+#ifdef NEO
+		Assert(dynamic_cast<CNEO_Player*>(pTarget->GetBaseAnimating()));
+		Vector maxs = pTarget->GetBaseAnimating() ? VEC_HULL_MAX_SCALED(static_cast<CNEO_Player*>(pTarget->GetBaseAnimating())) : VEC_HULL_MAX;
+#else
+		Vector maxs = pTarget->GetBaseAnimating() ? VEC_HULL_MAX_SCALED(pTarget->GetBaseAnimating()) : VEC_HULL_MAX;
+#endif
+		
 		vecCamTarget.z -= (maxs.z * 0.5);
 	}
 	else
@@ -1733,13 +1751,24 @@ void C_BasePlayer::CalcInEyeCamView(Vector& eyeOrigin, QAngle& eyeAngles, float&
 #endif
 	{
 		C_BaseAnimating *pTargetAnimating = target->GetBaseAnimating();
+#ifdef NEO
+		Assert(!pTargetAnimating || dynamic_cast<CNEO_Player*>(pTargetAnimating));
+#endif
 		if ( target->GetFlags() & FL_DUCKING )
 		{
-			eyeOrigin += pTargetAnimating ? VEC_DUCK_VIEW_SCALED( pTargetAnimating ) : VEC_DUCK_VIEW;
+#ifdef NEO
+			eyeOrigin += pTargetAnimating ? VEC_DUCK_VIEW_SCALED(static_cast<CNEO_Player*>(pTargetAnimating)) : VEC_DUCK_VIEW;
+#else
+			eyeOrigin += pTargetAnimating ? VEC_DUCK_VIEW_SCALED(pTargetAnimating) : VEC_DUCK_VIEW;
+#endif
 		}
 		else
 		{
-			eyeOrigin += pTargetAnimating ? VEC_VIEW_SCALED( pTargetAnimating ) : VEC_VIEW;
+#ifdef NEO
+			eyeOrigin += pTargetAnimating ? VEC_VIEW_SCALED(static_cast<CNEO_Player*>(pTargetAnimating)) : VEC_VIEW;
+#else
+			eyeOrigin += pTargetAnimating ? VEC_VIEW_SCALED(pTargetAnimating) : VEC_VIEW;
+#endif
 		}
 	}
 	else

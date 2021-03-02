@@ -5520,7 +5520,14 @@ bool CBasePlayer::GetInVehicle( IServerVehicle *pVehicle, int nRole )
 	// We cannot be ducking -- do all this before SetPassenger because it
 	// saves our view offset for restoration when we exit the vehicle.
 	RemoveFlag( FL_DUCKING );
-	SetViewOffset( VEC_VIEW_SCALED( this ) );
+
+#ifdef NEO
+	Assert(dynamic_cast<CNEO_Player*>(this));
+	SetViewOffset(VEC_VIEW_SCALED(static_cast<CNEO_Player*>(this)));
+#else
+	SetViewOffset(VEC_VIEW_SCALED(this));
+#endif
+
 	m_Local.m_bDucked = false;
 	m_Local.m_bDucking  = false;
 	m_Local.m_flDucktime = 0.0f;
@@ -8366,7 +8373,13 @@ void CBasePlayer::RefreshCollisionBounds( void )
 	BaseClass::RefreshCollisionBounds();
 
 	InitVCollision( GetAbsOrigin(), GetAbsVelocity() );
-	SetViewOffset( VEC_VIEW_SCALED( this ) );
+
+#ifdef NEO
+	Assert(dynamic_cast<CNEO_Player*>(this));
+	SetViewOffset(VEC_VIEW_SCALED(static_cast<CNEO_Player*>(this)));
+#else
+	SetViewOffset(VEC_VIEW_SCALED(this));
+#endif
 }
 
 //-----------------------------------------------------------------------------

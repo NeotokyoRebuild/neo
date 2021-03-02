@@ -2266,6 +2266,11 @@ float CNEO_Player::GetActiveWeaponSpeedScale() const
 	return (pWep ? pWep->GetSpeedScale() : 1.0f);
 }
 
+const Vector CNEO_Player::GetPlayerMins(void) const
+{
+	return VEC_DUCK_HULL_MIN_SCALED(this);
+}
+
 const Vector CNEO_Player::GetPlayerMaxs(void) const
 {
 	return VEC_DUCK_HULL_MAX_SCALED(this);
