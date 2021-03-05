@@ -20,14 +20,14 @@ WeaponData
 
 	"clip_size"				"16"
 	"default_clip"			"48"
-    "autoswitchfrom"        "0"
+	"autoswitchfrom"        "0"
 	
 	"primary_ammo"			"AMMO_10G_SHELL"
 	"secondary_ammo"		"None"
 
 	"weight"				"3"
 	
-    // ITEM_FLAG_SELECTONEMPTY = 1
+	// ITEM_FLAG_SELECTONEMPTY = 1
 	// ITEM_FLAG_NOAUTOSWITCHEMPTY = (1 << 2)
 	// ITEM_FLAG_DOHITLOCATIONDMG = (1 << 5) 
 	// Combined as int = 37

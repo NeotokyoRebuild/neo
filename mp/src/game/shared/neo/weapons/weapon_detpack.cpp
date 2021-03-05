@@ -18,6 +18,7 @@
 #include "hl2mp_player.h"
 #include "te_effect_dispatch.h"
 #include "grenade_frag.h"
+#include "eventqueue.h"
 #endif
 
 #include "effect_dispatch_data.h"
@@ -107,7 +108,6 @@ bool CWeaponDetpack::Deploy(void)
 // Output : Returns true on success, false on failure.
 bool CWeaponDetpack::Holster(CBaseCombatWeapon* pSwitchingTo)
 {
-	const bool res = BaseClass::Holster(pSwitchingTo);
 
 	m_fDrawbackFinished = false;
 
@@ -119,6 +119,8 @@ bool CWeaponDetpack::Holster(CBaseCombatWeapon* pSwitchingTo)
 	{
 		m_bWantsToThrowThisDetpack = false;
 	}
+
+	const bool res = BaseClass::Holster(pSwitchingTo);
 
 	return res;
 }
@@ -193,7 +195,8 @@ void CWeaponDetpack::ItemPostFrame(void)
 #if(0)
 				DevMsg("REMOTE ATK\n");
 #endif
-				m_pDetpack->Detonate();
+				g_EventQueue.AddEvent(m_pDetpack, "RemoteDetonate", 0.20, GetOwner(), GetOwner());
+				// m_pDetpack->Detonate();
 				m_pDetpack = NULL;
 			}
 			else
@@ -220,8 +223,8 @@ void CWeaponDetpack::ItemPostFrame(void)
 				{
 					TossDetpack(ToBasePlayer(pOwner));
 					m_bThisDetpackHasBeenThrown = true;
-
-					SendWeaponAnim(ACT_VM_THROW);
+					// SendWeaponAnim(ACT_VM_DRAW_DEPLOYED);
+					// SendWeaponAnim(ACT_VM_THROW);
 					m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
 					m_fDrawbackFinished = false;
 				}
@@ -301,7 +304,7 @@ void CWeaponDetpack::TossDetpack(CBasePlayer* pPlayer)
 		Assert(false);
 	}
 #endif
-
+	SendWeaponAnim(ACT_VM_DRAW_DEPLOYED);
 	pPlayer->SetAnimation(PLAYER_ATTACK1);
 }
 

@@ -17,7 +17,7 @@ WeaponData
 
 	"clip_size"		"30"
 	"default_clip"	"90"
-    "autoswitchfrom"        "0"
+	"autoswitchfrom"        "0"
 	"primary_ammo"		"AR2" // NEO TODO (Rain): add specific ammos
 	"secondary_ammo"	"None"
 

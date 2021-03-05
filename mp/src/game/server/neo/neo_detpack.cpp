@@ -1,6 +1,6 @@
 #include "cbase.h"
 #include "neo_detpack.h"
-
+#include "explode.h"
 #include "neo_tracefilter_collisiongroupdelta.h"
 
 #ifdef GAME_DLL
@@ -102,6 +102,7 @@ void CNEODeployedDetpack::VPhysicsUpdate(IPhysicsObject* pPhysics)
 
 	UTIL_TraceLine(start, end, MASK_SOLID, GetThrower(), COLLISION_GROUP_PROJECTILE, &tr);
 
+	// If we clipped in a solid, undo it so we don't go out of bounds
 	if (tr.startsolid)
 	{
 		if (!m_inSolid)
@@ -189,6 +190,40 @@ void CNEODeployedDetpack::OnPhysGunPickup(CBasePlayer* pPhysGunUser, PhysGunPick
 	BaseClass::OnPhysGunPickup(pPhysGunUser, reason);
 }
 
+void CNEODeployedDetpack::DelayThink()
+{
+	if (TryDetonate())
+	{
+		return;
+	}
+
+	if (!m_bHasWarnedAI && gpGlobals->curtime >= m_flWarnAITime)
+	{
+#if !defined( CLIENT_DLL )
+		CSoundEnt::InsertSound(SOUND_DANGER, GetAbsOrigin(), 400, 1.5, this);
+#endif
+		m_bHasWarnedAI = true;
+	}
+
+	m_hasSettled = CloseEnough(m_lastPos, GetAbsOrigin(), 0.1f);
+	m_lastPos = GetAbsOrigin();
+
+	if (m_hasSettled && !m_hasBeenMadeNonSolid)
+	{
+		SetTouch(NULL);
+		SetSolid(SOLID_NONE);
+		SetAbsVelocity(vec3_origin);
+		SetMoveType(MOVETYPE_NONE);
+
+		m_hasBeenMadeNonSolid = true;
+		// Clear think function
+		SetThink(NULL);
+		return;
+	}
+
+	SetNextThink(gpGlobals->curtime + 0.1);
+}
+
 void CNEODeployedDetpack::Explode(trace_t* pTrace, int bitsDamageType)
 {
 	BaseClass::Explode(pTrace, bitsDamageType);
@@ -223,43 +258,13 @@ void CNEODeployedDetpack::Detonate(void)
 	{
 		m_hasSettled = true;
 	}
-	
+	DevMsg("neo detpack detonate\n");
 	BaseClass::Detonate();
 
 	SetThink(&CNEODeployedDetpack::SUB_Remove);
 	SetNextThink(gpGlobals->curtime);
 }
 
-void CNEODeployedDetpack::DelayThink()
-{
-	if (TryDetonate())
-	{
-		return;
-	}
-
-	if (!m_bHasWarnedAI && gpGlobals->curtime >= m_flWarnAITime)
-	{
-#if !defined( CLIENT_DLL )
-		CSoundEnt::InsertSound(SOUND_DANGER, GetAbsOrigin(), 400, 1.5, this);
-#endif
-		m_bHasWarnedAI = true;
-	}
-
-	m_hasSettled = CloseEnough(m_lastPos, GetAbsOrigin(), 0.1f);
-	m_lastPos = GetAbsOrigin();
-
-	if (m_hasSettled && !m_hasBeenMadeNonSolid)
-	{
-		SetTouch(NULL);
-		SetSolid(SOLID_NONE);
-		SetAbsVelocity(vec3_origin);
-		SetMoveType(MOVETYPE_NONE);
-
-		m_hasBeenMadeNonSolid = true;
-	}
-
-	SetNextThink(gpGlobals->curtime + 0.1);
-}
 
 void CNEODeployedDetpack::SetVelocity(const Vector& velocity, const AngularImpulse& angVelocity)
 {
@@ -278,8 +283,12 @@ int CNEODeployedDetpack::OnTakeDamage(const CTakeDamageInfo& inputInfo)
 
 void CNEODeployedDetpack::InputRemoteDetonate(inputdata_t& inputdata)
 {
+	ExplosionCreate(GetAbsOrigin() + Vector(0, 0, 16), GetAbsAngles(), GetThrower(), GetDamage(), GetDamageRadius(),
+					SF_ENVEXPLOSION_NOSPARKS | SF_ENVEXPLOSION_NODLIGHTS | SF_ENVEXPLOSION_NOSMOKE, 0.0f, this);
 	m_hasBeenTriggeredToDetonate = true;
 	DevMsg("CNEODeployedDetpack::InputRemoteDetonate triggered\n");
+    EmitSound("BaseGrenade.Explode");
+    UTIL_Remove(this);
 }
 
 CBaseGrenade* NEODeployedDetpack_Create(const Vector& position, const QAngle& angles, const Vector& velocity,

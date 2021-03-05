@@ -21,7 +21,7 @@ WeaponData
 	"clip_size"			"7"
 	"default_clip"			"7"
 	"default_clip2"         "7"
-    "autoswitchfrom"        "0"
+	"autoswitchfrom"        "0"
 	"primary_ammo"			"AMMO_10G_SHELL"
 	"secondary_ammo"		"AMMO_10G_SLUG"
 

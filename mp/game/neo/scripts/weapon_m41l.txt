@@ -18,7 +18,7 @@ WeaponData
 	"TPMuzzleFlashScale"	"0.25"
 
 	"clip_size"		"10"
-    "autoswitchfrom"        "0"
+	"autoswitchfrom"        "0"
 	"primary_ammo"		"AMMO_PRI"
 	"secondary_ammo"	"None"
 
@@ -45,14 +45,14 @@ WeaponData
 	"VMAimOffsetUp"		"6.0"
 
 	"AimFov"		"20.0"
-    
-    "ViewModelOffset"
+	
+	"ViewModelOffset"
 	{
 		"fov"		"54"
 		"forward"	"10"
 		"right"		"10"
 		"up"		"2"
-        "yaw"       "-1"
+		"yaw"       "-1"
 	}
 	
 	"AimOffset"

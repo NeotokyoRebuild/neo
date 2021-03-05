@@ -15,7 +15,7 @@ WeaponData
 
 	"clip_size"			"15"
 	"default_clip"		"45"
-    "autoswitchfrom"        "0"
+	"autoswitchfrom"        "0"
 	"primary_ammo"		"Pistol"
 	"secondary_ammo"	"None"
 
@@ -95,7 +95,7 @@ WeaponData
 		}
 	}
 
-    ModelBounds
+	ModelBounds
 	{
 		Viewmodel
 		{
