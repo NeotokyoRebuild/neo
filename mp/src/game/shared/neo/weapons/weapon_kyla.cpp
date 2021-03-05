@@ -51,8 +51,8 @@ void CWeaponKyla::PrimaryAttack(void)
 		else
 		{
 			WeaponSound(EMPTY);
-            m_flNextPrimaryAttack = gpGlobals->curtime + GetFastestDryRefireTime();
-        }
+			m_flNextPrimaryAttack = gpGlobals->curtime + GetFastestDryRefireTime();
+		}
 
 		return;
 	}
