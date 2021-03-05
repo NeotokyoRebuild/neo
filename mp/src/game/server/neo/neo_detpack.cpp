@@ -258,7 +258,6 @@ void CNEODeployedDetpack::Detonate(void)
 	{
 		m_hasSettled = true;
 	}
-	DevMsg("neo detpack detonate\n");
 	BaseClass::Detonate();
 
 	SetThink(&CNEODeployedDetpack::SUB_Remove);
@@ -287,8 +286,8 @@ void CNEODeployedDetpack::InputRemoteDetonate(inputdata_t& inputdata)
 					SF_ENVEXPLOSION_NOSPARKS | SF_ENVEXPLOSION_NODLIGHTS | SF_ENVEXPLOSION_NOSMOKE, 0.0f, this);
 	m_hasBeenTriggeredToDetonate = true;
 	DevMsg("CNEODeployedDetpack::InputRemoteDetonate triggered\n");
-    EmitSound("BaseGrenade.Explode");
-    UTIL_Remove(this);
+	EmitSound("BaseGrenade.Explode");
+	UTIL_Remove(this);
 }
 
 CBaseGrenade* NEODeployedDetpack_Create(const Vector& position, const QAngle& angles, const Vector& velocity,
