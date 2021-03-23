@@ -1425,6 +1425,38 @@ bool CNEO_Player::Weapon_Switch( CBaseCombatWeapon *pWeapon,
 	return BaseClass::Weapon_Switch(pWeapon, viewmodelindex);
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: Returns whether or not we can switch to the given weapon. Override 
+//          from the base HL2MP player to let us swap to weapons with no ammo.
+// Input  : pWeapon -
+//-----------------------------------------------------------------------------
+bool CNEO_Player::Weapon_CanSwitchTo(CBaseCombatWeapon *pWeapon)
+{
+    CBasePlayer *pPlayer = (CBasePlayer *)this;
+#if !defined(CLIENT_DLL)
+    IServerVehicle *pVehicle = pPlayer->GetVehicle();
+#else
+    IClientVehicle *pVehicle = pPlayer->GetVehicle();
+#endif
+    if (pVehicle && !pPlayer->UsingStandardWeaponsInVehicle())
+        return false;
+
+    // NEO: Needs to be commented out to let us swap to empty weapons
+    // if ( !pWeapon->HasAnyAmmo() && !GetAmmoCount( pWeapon->m_iPrimaryAmmoType ) )
+    // 	return false;
+
+    if (!pWeapon->CanDeploy())
+        return false;
+
+    if (GetActiveWeapon())
+    {
+        if (!GetActiveWeapon()->CanHolster())
+            return false;
+    }
+
+    return true;
+}
+
 bool CNEO_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 {
 	// We already have a weapon in this slot
@@ -1952,12 +1984,12 @@ void GiveDet(CNEO_Player* pPlayer)
 
 void CNEO_Player::GiveDefaultItems(void)
 {
-	CBasePlayer::GiveAmmo(150, "AR2");
+	CBasePlayer::GiveAmmo(50, "AR2");
 
-	CBasePlayer::GiveAmmo(150, "Pistol");
+	CBasePlayer::GiveAmmo(50, "Pistol");
 	CBasePlayer::GiveAmmo(30, "AMMO_10G_SHELL");
-	CBasePlayer::GiveAmmo(150, "AMMO_PRI");
-	CBasePlayer::GiveAmmo(150, "AMMO_SMAC");
+	CBasePlayer::GiveAmmo(50, "AMMO_PRI");
+	CBasePlayer::GiveAmmo(50, "AMMO_SMAC");
 	CBasePlayer::GiveAmmo(1, "AMMO_DETPACK");
 
 	const bool supportsGetKnife = true;

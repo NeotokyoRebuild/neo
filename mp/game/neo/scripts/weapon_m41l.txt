@@ -18,11 +18,17 @@ WeaponData
 	"TPMuzzleFlashScale"	"0.25"
 
 	"clip_size"		"10"
+	"autoswitchfrom"        "0"
 	"primary_ammo"		"AMMO_PRI"
 	"secondary_ammo"	"None"
 
 	"weight"		"3"
-	"item_flags"		"0"
+	// ITEM_FLAG_SELECTONEMPTY = 1
+	// ITEM_FLAG_NOAUTOSWITCHEMPTY = (1 << 2)
+	// ITEM_FLAG_DOHITLOCATIONDMG = (1 << 5) 
+	// Combined as int = 37
+	"item_flags"		"37"
+	// "item_flags"		"0"
 	
 	
 	"AimType"		"2"
@@ -39,14 +45,14 @@ WeaponData
 	"VMAimOffsetUp"		"6.0"
 
 	"AimFov"		"20.0"
-    
-    "ViewModelOffset"
+	
+	"ViewModelOffset"
 	{
 		"fov"		"54"
 		"forward"	"10"
 		"right"		"10"
 		"up"		"2"
-        "yaw"       "-1"
+		"yaw"       "-1"
 	}
 	
 	"AimOffset"

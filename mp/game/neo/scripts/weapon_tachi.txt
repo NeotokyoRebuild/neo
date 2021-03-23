@@ -14,16 +14,18 @@ WeaponData
 	"bucket_position"	"0"
 
 	"clip_size"			"15"
-	"default_clip"		"1500"
+	"default_clip"		"45"
+	"autoswitchfrom"        "0"
 	"primary_ammo"		"Pistol"
 	"secondary_ammo"	"None"
 
 	"weight"			"2"
 	
+	// ITEM_FLAG_SELECTONEMPTY = 1
 	// ITEM_FLAG_NOAUTOSWITCHEMPTY = (1 << 2)
 	// ITEM_FLAG_DOHITLOCATIONDMG = (1 << 5) 
-	// Combined as int = 36
-	"item_flags"		"36"
+	// Combined as int = 37
+	"item_flags"		"37"
 	
 	"damage"			"17"
 
@@ -93,7 +95,7 @@ WeaponData
 		}
 	}
 
-    ModelBounds
+	ModelBounds
 	{
 		Viewmodel
 		{

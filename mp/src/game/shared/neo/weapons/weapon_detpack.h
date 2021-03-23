@@ -44,7 +44,7 @@ public:
 	void	ItemPostFrame(void);
 
 	bool	Deploy(void);
-	virtual bool	Holster(CBaseCombatWeapon* pSwitchingTo = NULL);
+	virtual bool	Holster(CBaseCombatWeapon* pSwitchingTo = NULL) OVERRIDE;
 
 	bool	Reload(void) { return false; }
 

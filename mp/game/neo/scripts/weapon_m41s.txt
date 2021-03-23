@@ -18,11 +18,17 @@ WeaponData
 	"TPMuzzleFlashScale"	"0.5"
 
 	"clip_size"		"15"
+	"autoswitchfrom"        "0"
 	"primary_ammo"		"AMMO_PRI"
 	"secondary_ammo"	"None"
 
 	"weight"		"3"
-	"item_flags"		"0"
+	// ITEM_FLAG_SELECTONEMPTY = 1
+	// ITEM_FLAG_NOAUTOSWITCHEMPTY = (1 << 2)
+	// ITEM_FLAG_DOHITLOCATIONDMG = (1 << 5) 
+	// Combined as int = 37
+	"item_flags"		"37"
+	// "item_flags"		"0"
 	
 	
 	"AimType"		"1"
@@ -40,14 +46,14 @@ WeaponData
 	//"VMAimAnglePitch"		"0.5"
 	
 	"AimFov"				"45.0"
-    
-    "ViewModelOffset"
+	
+	"ViewModelOffset"
 	{
 		"fov"		"54"
 		"forward"	"10"
 		"right"		"10"
 		"up"		"2"
-        "yaw"       "-1"
+		"yaw"       "-1"
 	}
 	
 	"AimOffset"
@@ -56,7 +62,7 @@ WeaponData
 		"forward"	"8"
 		"right"		"1.305"
 		"up"		"5.1"
-        //"pitch"     "0.5"
+		//"pitch"     "0.5"
 	}
 
 	// Sounds for the weapon. There is a max of 16 sounds per category (i.e. max 16 "single_shot" sounds)
