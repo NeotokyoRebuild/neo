@@ -7,6 +7,7 @@
 #include "neo_hud_compass.h"
 #include "neo_hud_friendly_marker.h"
 #include "neo_hud_game_event.h"
+#include "neo_hud_health_thermoptic_aux.h"
 #include "neo_hud_ghost_marker.h"
 #include "neo_hud_round_state.h"
 
@@ -19,6 +20,7 @@
 
 #define UI_ELEMENT_NAME_AMMO "neo_ammo"
 #define UI_ELEMENT_NAME_COMPASS "neo_compass"
+#define UI_ELEMENT_NAME_HTA "neo_hta"
 #define UI_ELEMENT_NAME_IFF "neo_iff"
 #define UI_ELEMENT_GAME_EVENT "neo_game_event_indicator"
 #define UI_ELEMENT_NAME_GHOST_MARKER "neo_ghost_marker"
@@ -49,6 +51,7 @@ CNeoHudElements::CNeoHudElements(IViewPort *pViewPort)
 	m_pCompass = NULL;
 	m_pFriendlyMarker = NULL;
 	m_pGameEvent = NULL;
+	m_pHTA = NULL;
 	m_pRoundState = NULL;
 	m_pLastUpdater = NULL;
 }
@@ -87,6 +90,12 @@ void CNeoHudElements::FreePanelChildren()
 	{
 		m_pGameEvent->DeletePanel();
 		m_pGameEvent = NULL;
+	}
+
+	if (m_pHTA)
+	{
+		m_pHTA->DeletePanel();
+		m_pHTA = NULL;
 	}
 
 	if (m_pRoundState)
@@ -218,6 +227,7 @@ void CNeoHudElements::InitHud()
 	InitFriendlyMarker();
 	InitGameEventIndicator();
 	InitGhostMarkers();
+	InitHTA();
 	InitRoundState();
 }
 
@@ -254,6 +264,12 @@ void CNeoHudElements::InitGhostMarkers()
 		auto marker = new CNEOHud_GhostMarker(UI_ELEMENT_NAME_GHOST_MARKER, this);
 		m_vecGhostMarkers.AddToTail(marker);
 	}
+}
+
+void CNeoHudElements::InitHTA()
+{
+	Assert(!m_pHTA);
+	m_pHTA = new CNEOHud_HTA(UI_ELEMENT_NAME_HTA, this);
 }
 
 void CNeoHudElements::InitRoundState()

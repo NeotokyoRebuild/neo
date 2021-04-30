@@ -13,6 +13,7 @@ class CNEOHud_Compass;
 class CNEOHud_FriendlyMarker;
 class CNEOHud_GameEvent;
 class CNEOHud_GhostMarker;
+class CNEOHud_HTA;
 class CNEOHud_RoundState;
 class C_NEO_Player;
 
@@ -49,6 +50,7 @@ public:
 	CNEOHud_Compass *GetCompass() { return m_pCompass; }
 	CNEOHud_GameEvent *GetGameEventIndicator() { return m_pGameEvent; }
 	CNEOHud_GhostMarker *GetGhostMarker();
+	CNEOHud_HTA* GetHTA() { return m_pHTA; }
 	CNEOHud_FriendlyMarker *GetIFF() { return m_pFriendlyMarker; }
 
 	C_NEO_Player* GetLastUpdater() const { return m_pLastUpdater; }
@@ -75,6 +77,7 @@ private:
 	void InitGameEventIndicator();
 	void InitGhostMarkers();
 	void InitFriendlyMarker();
+	void InitHTA();
 	void InitRoundState();
 
 	void FreePanelChildren();
@@ -87,6 +90,7 @@ private:
 	CNEOHud_Compass *m_pCompass;
 	CNEOHud_FriendlyMarker *m_pFriendlyMarker;
 	CNEOHud_GameEvent *m_pGameEvent;
+	CNEOHud_HTA* m_pHTA;
 	CNEOHud_RoundState *m_pRoundState;
 
 	CUtlVector<CNEOHud_GhostMarker*> m_vecGhostMarkers;

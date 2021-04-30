@@ -58,8 +58,10 @@ private:
 	int		m_bitsDamage;
 };	
 
+#ifndef NEO
 DECLARE_HUDELEMENT( CHudHealth );
 DECLARE_HUD_MESSAGE( CHudHealth, Damage );
+#endif
 
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
@@ -73,6 +75,10 @@ CHudHealth::CHudHealth( const char *pElementName )
 #endif
 	)
 {
+#ifdef NEO
+	Assert(false); // Use CNEOHud_HTA
+#endif
+
 	SetHiddenBits( HIDEHUD_HEALTH | HIDEHUD_PLAYERDEAD | HIDEHUD_NEEDSUIT );
 }
 
@@ -81,7 +87,9 @@ CHudHealth::CHudHealth( const char *pElementName )
 //-----------------------------------------------------------------------------
 void CHudHealth::Init()
 {
+#ifndef NEO
 	HOOK_HUD_MESSAGE( CHudHealth, Damage );
+#endif
 	Reset();
 }
 
