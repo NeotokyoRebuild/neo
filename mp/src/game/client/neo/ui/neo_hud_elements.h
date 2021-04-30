@@ -8,6 +8,7 @@
 #include <game/client/iviewport.h>
 #include "GameEventListener.h"
 
+class CNEOHud_Ammo;
 class CNEOHud_Compass;
 class CNEOHud_FriendlyMarker;
 class CNEOHud_GameEvent;
@@ -44,6 +45,7 @@ public:
 
 	virtual void UpdatePlayerIFF(int playerIndex, KeyValues *kv);
 
+	CNEOHud_Ammo* GetAmmo() { return m_pAmmo; }
 	CNEOHud_Compass *GetCompass() { return m_pCompass; }
 	CNEOHud_GameEvent *GetGameEventIndicator() { return m_pGameEvent; }
 	CNEOHud_GhostMarker *GetGhostMarker();
@@ -68,6 +70,7 @@ protected:
 	void InitHud();
 
 private:
+	void InitAmmo();
 	void InitCompass();
 	void InitGameEventIndicator();
 	void InitGhostMarkers();
@@ -80,6 +83,7 @@ private:
 
 	IViewPort *m_pViewPort;
 
+	CNEOHud_Ammo* m_pAmmo;
 	CNEOHud_Compass *m_pCompass;
 	CNEOHud_FriendlyMarker *m_pFriendlyMarker;
 	CNEOHud_GameEvent *m_pGameEvent;

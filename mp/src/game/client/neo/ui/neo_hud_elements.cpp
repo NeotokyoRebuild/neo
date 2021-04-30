@@ -3,6 +3,7 @@
 
 #include "GameEventListener.h"
 
+#include "neo_hud_ammo.h"
 #include "neo_hud_compass.h"
 #include "neo_hud_friendly_marker.h"
 #include "neo_hud_game_event.h"
@@ -16,6 +17,7 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+#define UI_ELEMENT_NAME_AMMO "neo_ammo"
 #define UI_ELEMENT_NAME_COMPASS "neo_compass"
 #define UI_ELEMENT_NAME_IFF "neo_iff"
 #define UI_ELEMENT_GAME_EVENT "neo_game_event_indicator"
@@ -43,6 +45,7 @@ CNeoHudElements::CNeoHudElements(IViewPort *pViewPort)
 	ListenForGameEvent("player_death");
 	ListenForGameEvent("player_team");
 
+	m_pAmmo = NULL;
 	m_pCompass = NULL;
 	m_pFriendlyMarker = NULL;
 	m_pGameEvent = NULL;
@@ -62,6 +65,12 @@ void CNeoHudElements::OnThink()
 
 void CNeoHudElements::FreePanelChildren()
 {
+	if (m_pAmmo)
+	{
+		m_pAmmo->DeletePanel();
+		m_pAmmo = NULL;
+	}
+
 	if (m_pCompass)
 	{
 		m_pCompass->DeletePanel();
@@ -178,7 +187,7 @@ void CNeoHudElements::FillIFFs()
 
 	int localTeam = localPlayer->GetTeamNumber();
 
-	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	for (int i = 1; i <= gpGlobals->maxClients; ++i)
 	{
 		auto otherPlayer = UTIL_PlayerByIndex(i);
 
@@ -204,11 +213,18 @@ int CNeoHudElements::FindIFFItemIDForPlayerIndex(int playerIndex)
 
 void CNeoHudElements::InitHud()
 {
+	InitAmmo();
 	InitCompass();
 	InitFriendlyMarker();
 	InitGameEventIndicator();
 	InitGhostMarkers();
 	InitRoundState();
+}
+
+void CNeoHudElements::InitAmmo()
+{
+	Assert(!m_pAmmo);
+	m_pAmmo = new CNEOHud_Ammo(UI_ELEMENT_NAME_AMMO, this);
 }
 
 void CNeoHudElements::InitCompass()

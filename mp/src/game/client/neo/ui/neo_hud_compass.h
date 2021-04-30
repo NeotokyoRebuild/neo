@@ -28,8 +28,8 @@ protected:
 	virtual ConVar* GetUpdateFrequencyConVar() const;
 
 private:
-	void DrawCompass();
-	void DrawDebugCompass();
+	void DrawCompass() const;
+	void DrawDebugCompass() const;
 	void GetCompassUnicodeString(const float angle, wchar_t* outUnicodeStr) const;
 
 private:

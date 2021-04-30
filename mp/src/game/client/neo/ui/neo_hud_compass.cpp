@@ -192,7 +192,7 @@ void CNEOHud_Compass::ApplySchemeSettings(vgui::IScheme *pScheme)
 	SetBounds(0, 0, m_resX, m_resY);
 }
 
-void CNEOHud_Compass::DrawCompass()
+void CNEOHud_Compass::DrawCompass() const
 {
 	const Color textColor = Color(
 		neo_cl_hud_debug_compass_color_r.GetInt(),
@@ -252,7 +252,7 @@ void CNEOHud_Compass::DrawCompass()
 	}
 }
 
-void CNEOHud_Compass::DrawDebugCompass()
+void CNEOHud_Compass::DrawDebugCompass() const
 {
 	auto player = C_NEO_Player::GetLocalNEOPlayer();
 	Assert(player);
