@@ -170,6 +170,25 @@ static bool IsNeoPrimary(CNEOBaseCombatWeapon *pNeoWep)
 	return (primaryBits & bits) ? true : false;
 }
 
+void CNEO_Player::RequestSetStar(int newStar)
+{
+	const int team = GetTeamNumber();
+	if (team != TEAM_JINRAI && team != TEAM_NSF)
+	{
+		return;
+	}
+	if (newStar < STAR_NONE || newStar > STAR_FOXTROT)
+	{
+		return;
+	}
+	if (newStar == m_iNeoStar)
+	{
+		return;
+	}
+
+	m_iNeoStar.GetForModify() = newStar;
+}
+
 bool CNEO_Player::RequestSetLoadout(int loadoutNumber)
 {
 	const char *pszWepName = GetWeaponByLoadoutId(loadoutNumber);
@@ -237,7 +256,6 @@ bool CNEO_Player::RequestSetLoadout(int loadoutNumber)
 void SetClass(const CCommand &command)
 {
 	auto player = static_cast<CNEO_Player*>(UTIL_GetCommandClient());
-
 	if (!player)
 	{
 		return;
@@ -258,7 +276,6 @@ void SetClass(const CCommand &command)
 void SetSkin(const CCommand &command)
 {
 	auto player = static_cast<CNEO_Player*>(UTIL_GetCommandClient());
-
 	if (!player)
 	{
 		return;
@@ -280,7 +297,6 @@ void SetSkin(const CCommand &command)
 void SetLoadout(const CCommand &command)
 {
 	auto player = static_cast<CNEO_Player*>(UTIL_GetCommandClient());
-
 	if (!player)
 	{
 		return;
@@ -296,6 +312,16 @@ void SetLoadout(const CCommand &command)
 ConCommand setclass("setclass", SetClass, "Set class", FCVAR_USERINFO);
 ConCommand setskin("SetVariant", SetSkin, "Set skin", FCVAR_USERINFO);
 ConCommand loadout("loadout", SetLoadout, "Set loadout", FCVAR_USERINFO);
+
+CON_COMMAND_F(joinstar, "Join star", FCVAR_USERINFO)
+{
+	auto player = static_cast<CNEO_Player*>(UTIL_GetCommandClient());
+	if (player && args.ArgC() == 2)
+	{
+		const int star = atoi(args.ArgV()[1]);
+		player->RequestSetStar(star);
+	}
+}
 
 static int GetNumOtherPlayersConnected(CNEO_Player *asker)
 {

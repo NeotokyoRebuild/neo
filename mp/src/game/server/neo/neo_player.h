@@ -128,6 +128,7 @@ public:
 	void RequestSetClass(int newClass);
 	void RequestSetSkin(int newSkin);
 	bool RequestSetLoadout(int loadoutNumber);
+	void RequestSetStar(int newStar);
 
 	int GetSkin() const { return m_iNeoSkin; }
 	int GetClass() const { return m_iNeoClass; }
