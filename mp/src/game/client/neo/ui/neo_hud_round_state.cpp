@@ -218,7 +218,7 @@ void CNEOHud_RoundState::CheckActiveStar()
 	}
 
 	target->SetVisible(true);
-	target->SetDrawColor(currentTeam == TEAM_NSF ? COLOR_NSF : COLOR_JINRAI);
+	target->SetDrawColor(currentStar == STAR_NONE ? COLOR_NEO_WHITE : currentTeam == TEAM_NSF ? COLOR_NSF : COLOR_JINRAI);
 
 	m_iPreviouslyActiveStar = currentStar;
 	m_iPreviouslyActiveTeam = currentTeam;
