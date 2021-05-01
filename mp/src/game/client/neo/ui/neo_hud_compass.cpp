@@ -223,10 +223,6 @@ void CNEOHud_Compass::DrawCompass() const
 		surface()->DrawPrintText(arrowUnicode, Q_UnicodeLength(arrowUnicode));
 	}
 
-	surface()->DrawSetTextColor(textColor);
-	surface()->DrawSetTextPos(xpos - (fontWidth / 2), ypos - (fontHeight / 2));
-	surface()->DrawPrintText(m_wszCompassUnicode, UNICODE_NEO_COMPASS_STR_LENGTH);
-
 	surface()->DrawSetColor(Color(20, 20, 20, 200));
 	// Draw right half of the background fade...
 	surface()->DrawFilledRectFade(
@@ -242,6 +238,10 @@ void CNEOHud_Compass::DrawCompass() const
 		0,
 		neo_cl_hud_debug_compass_color_a.GetInt(),
 		true);
+
+	surface()->DrawSetTextColor(textColor);
+	surface()->DrawSetTextPos(xpos - (fontWidth / 2), ypos - (fontHeight / 2));
+	surface()->DrawPrintText(m_wszCompassUnicode, UNICODE_NEO_COMPASS_STR_LENGTH);
 
 	// Draw the compass "needle"
 	if (neo_cl_hud_compass_needle.GetBool())
