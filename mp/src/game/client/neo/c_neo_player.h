@@ -127,6 +127,7 @@ public:
 	bool ShouldDrawHL2StyleQuickHud( void );
 
 	int GetClass() const { return m_iNeoClass; }
+	int GetStar() const { return m_iNeoStar; }
 
 	bool IsCarryingGhost(void) const;
 
@@ -195,6 +196,7 @@ public:
 
 	CNetworkVar(int, m_iNeoClass);
 	CNetworkVar(int, m_iNeoSkin);
+	CNetworkVar(int, m_iNeoStar);
 
 	unsigned char m_NeoFlags;
 

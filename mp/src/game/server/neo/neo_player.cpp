@@ -43,6 +43,7 @@ LINK_ENTITY_TO_CLASS(player, CNEO_Player);
 IMPLEMENT_SERVERCLASS_ST(CNEO_Player, DT_NEO_Player)
 SendPropInt(SENDINFO(m_iNeoClass)),
 SendPropInt(SENDINFO(m_iNeoSkin)),
+SendPropInt(SENDINFO(m_iNeoStar)),
 SendPropInt(SENDINFO(m_iXP)),
 SendPropInt(SENDINFO(m_iCapTeam), 3),
 SendPropInt(SENDINFO(m_iGhosterTeam)),
@@ -72,6 +73,7 @@ END_SEND_TABLE()
 BEGIN_DATADESC(CNEO_Player)
 DEFINE_FIELD(m_iNeoClass, FIELD_INTEGER),
 DEFINE_FIELD(m_iNeoSkin, FIELD_INTEGER),
+DEFINE_FIELD(m_iNeoStar, FIELD_INTEGER),
 DEFINE_FIELD(m_iXP, FIELD_INTEGER),
 DEFINE_FIELD(m_iCapTeam, FIELD_INTEGER),
 DEFINE_FIELD(m_iGhosterTeam, FIELD_INTEGER),
@@ -321,6 +323,7 @@ CNEO_Player::CNEO_Player()
 {
 	m_iNeoClass = NEO_CLASS_ASSAULT;
 	m_iNeoSkin = NEO_SKIN_FIRST;
+	m_iNeoStar = NEO_DEFAULT_STAR;
 	m_iXP.GetForModify() = 0;
 
 	m_bGhostExists = false;

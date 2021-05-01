@@ -56,6 +56,7 @@ LINK_ENTITY_TO_CLASS(player, C_NEO_Player);
 IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_iNeoClass)),
 	RecvPropInt(RECVINFO(m_iNeoSkin)),
+	RecvPropInt(RECVINFO(m_iNeoStar)),
 
 	RecvPropBool(RECVINFO(m_bShowTestMessage)),
 	RecvPropString(RECVINFO(m_pszTestMessage)),
@@ -310,6 +311,7 @@ C_NEO_Player::C_NEO_Player()
 
 	m_iNeoClass = NEO_CLASS_ASSAULT;
 	m_iNeoSkin = NEO_SKIN_FIRST;
+	m_iNeoStar = NEO_DEFAULT_STAR;
 
 	m_iCapTeam = TEAM_UNASSIGNED;
 	m_iLoadoutWepChoice = 0;
