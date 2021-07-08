@@ -5,7 +5,6 @@
 * Some outline for shaders from the VDC wiki:
     * [Shader Authoring, general](https://developer.valvesoftware.com/wiki/Shader_Authoring)
     * [Example shader](https://developer.valvesoftware.com/wiki/Source_SDK_2013:_Your_First_Shader)
-* I'm unsure if the [11/7/2008 DX SDK](https://www.microsoft.com/en-us/download/details.aspx?id=4064) mentioned in the above VDC article is needed; it seems like the shaders compile just fine on modern Windows even without installing it(?)
 * You'll need Perl with the package String-CRC32.
 * Compatible pre-compiled Perl installer is available [here](https://platform.activestate.com/Rainyan/Perl-SourceSDK2013).
 
