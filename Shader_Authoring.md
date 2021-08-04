@@ -1,27 +1,25 @@
 # Shader authoring (Windows setup)
 
-## Todo: Possible to compile on Linux?
-
 ## Compiling the shaders
 
 * Some outline for shaders from the VDC wiki:
     * [Shader Authoring, general](https://developer.valvesoftware.com/wiki/Shader_Authoring)
     * [Example shader](https://developer.valvesoftware.com/wiki/Source_SDK_2013:_Your_First_Shader)
-* I'm unsure if the [11/7/2008 DX SDK](https://www.microsoft.com/en-us/download/details.aspx?id=4064) mentioned in the above VDC article is needed; it seems like the shaders compile just fine on modern Windows even without installing it(?)
-* At least on Windows, you will need Perl with the package String-CRC32.
-* Compatible pre-packaged Perl installers are available [here](https://platform.activestate.com/Rainyan/ActivePerl-5.28-SourceSDK2013).
+* You'll need Perl with the package String-CRC32.
+* Compatible pre-compiled Perl installer is available [here](https://platform.activestate.com/Rainyan/Perl-SourceSDK2013). Strawberry Perl should most likely also work, but you'll need to confirm the String-CRC32 package is available.
 
 ### Troubleshooting
 
-* If Perl was not found when running shader scripts, make sure it's included in your PATH env var.
+* If Perl was not found when running shader scripts, make sure it's included in your PATH env var (or use the ActiveState Platform [State CLI](https://docs.activestate.com/platform/state/), if applicable for your particular Perl setup).
 * You will probably need to slightly edit some of the build scripts (buildhl2mpshaders.bat/buildsdkshaders.bat/buildshaders.bat) to match your setup, and create some symlinks or copy files to get access to FileSystem_Steam.dll, and the other "\bin\..." shader compile tools.
-* If you get errors with nmake not found, make sure you're running the scripts from a Visual Studio (x86) Native Tools Command Prompt. At least the 2017 x86 Tools Prompt confirmed working.
+* If you get errors with nmake not found, make sure you're running the scripts from a Visual Studio (x86) Native Tools Command Prompt, or have the paths (VsDevCmd.bat / vsvars32.bat) set up by some other means.
     * Alternatively, edit the "buildsdkshaders.bat" to call the appropriate vsvars32.bat for setting up nmake for your particular environment.
 * If you get a "bin\something" not found error when already inside the bin folder, add a symlink for ".\bin" <--> "." as workaround.
+    * `mklink /j .\bin .`
 
 ---
 
-Finally, you should be greeted with some output akin to:
+Finally, you should be greeted with some compiler output akin to:
 ```
 == buildshaders stdshader_dx9_30 -game C:\git\neo\mp\src\materialsystem\stdshaders\..\..\..\game\neo -source ..\.. -dx9_30 -force30 ==
 10.41
