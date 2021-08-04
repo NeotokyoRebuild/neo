@@ -20,6 +20,8 @@ class C_NEO_Player;
 #define NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(HudElementId, DefaultUpdateFrequencyInSeconds) ConVar NEO_HUD_ELEMENT_FREQ_CVAR_NAME(HudElementId)(xstr(NEO_HUD_ELEMENT_FREQ_CVAR_NAME(HudElementId)), #DefaultUpdateFrequencyInSeconds, NEO_HUD_ELEMENT_FREQ_CVAR_FLAGS, NEO_HUD_ELEMENT_FREQ_CVAR_DESCRIPTION, NEO_HUD_ELEMENT_FREQ_CVAR_MINMAX_PARMS); \
 	ConVar* CNEOHud_ ## HudElementId::GetUpdateFrequencyConVar() const { return &NEO_HUD_ELEMENT_FREQ_CVAR_NAME(HudElementId); }
 
+extern ConVar neo_cl_hud_ammo_enabled;
+
 class CNEOHud_ChildElement
 {
 	DECLARE_CLASS_NOBASE(CNEOHud_ChildElement)
@@ -29,6 +31,8 @@ public:
 	virtual ~CNEOHud_ChildElement() { }
 
 protected:
+	virtual void DrawNeoHudRoundedBox(const int x0, const int y0, const int x1, const int y1) const final;
+
 	virtual void UpdateStateForNeoHudElementDraw() = 0;
 	virtual void DrawNeoHudElement() = 0;
 	virtual ConVar* GetUpdateFrequencyConVar() const = 0;
@@ -79,6 +83,9 @@ private:
 
 private:
 	CNeoHudElements* m_pNeoHud;
+
+	vgui::HTexture m_hTex_Rounded_NE, m_hTex_Rounded_NW, m_hTex_Rounded_SE, m_hTex_Rounded_SW;
+	int m_rounded_width, m_rounded_height;
 
 	float m_flLastUpdateTime;
 

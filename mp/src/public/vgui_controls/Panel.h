@@ -511,7 +511,7 @@ public:
 	virtual bool IsKeyBoardInputEnabled();
 
 	virtual void DrawTexturedBox( int x, int y, int wide, int tall, Color color, float normalizedAlpha );
-	virtual void DrawBox(int x, int y, int wide, int tall, Color color, float normalizedAlpha, bool hollow = false );
+	virtual void DrawBox(int x, int y, int wide, int tall, Color color, float normalizedAlpha, bool hollow = false);
 	virtual void DrawBoxFade(int x, int y, int wide, int tall, Color color, float normalizedAlpha, unsigned int alpha0, unsigned int alpha1, bool bHorizontal, bool hollow = false );
 	virtual void DrawHollowBox(int x, int y, int wide, int tall, Color color, float normalizedAlpha );
 	//=============================================================================
@@ -600,7 +600,7 @@ public:
 	virtual void FillRectSkippingPanel( const Color &clr, int x, int y, int w, int h, Panel *skipPanel );
 
 	virtual int	GetPaintBackgroundType();
-	virtual void GetCornerTextureSize( int& w, int& h );
+	virtual void GetCornerTextureSize(int& w, int& h);
 
 	bool		IsChildOfModalSubTree();
 	bool		IsChildOfSurfaceModalPanel();

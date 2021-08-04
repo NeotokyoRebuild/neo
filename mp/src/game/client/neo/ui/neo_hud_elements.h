@@ -8,10 +8,12 @@
 #include <game/client/iviewport.h>
 #include "GameEventListener.h"
 
+class CNEOHud_Ammo;
 class CNEOHud_Compass;
 class CNEOHud_FriendlyMarker;
 class CNEOHud_GameEvent;
 class CNEOHud_GhostMarker;
+class CNEOHud_HTA;
 class CNEOHud_RoundState;
 class C_NEO_Player;
 
@@ -44,9 +46,11 @@ public:
 
 	virtual void UpdatePlayerIFF(int playerIndex, KeyValues *kv);
 
+	CNEOHud_Ammo* GetAmmo() { return m_pAmmo; }
 	CNEOHud_Compass *GetCompass() { return m_pCompass; }
 	CNEOHud_GameEvent *GetGameEventIndicator() { return m_pGameEvent; }
 	CNEOHud_GhostMarker *GetGhostMarker();
+	CNEOHud_HTA* GetHTA() { return m_pHTA; }
 	CNEOHud_FriendlyMarker *GetIFF() { return m_pFriendlyMarker; }
 
 	C_NEO_Player* GetLastUpdater() const { return m_pLastUpdater; }
@@ -68,10 +72,12 @@ protected:
 	void InitHud();
 
 private:
+	void InitAmmo();
 	void InitCompass();
 	void InitGameEventIndicator();
 	void InitGhostMarkers();
 	void InitFriendlyMarker();
+	void InitHTA();
 	void InitRoundState();
 
 	void FreePanelChildren();
@@ -80,9 +86,11 @@ private:
 
 	IViewPort *m_pViewPort;
 
+	CNEOHud_Ammo* m_pAmmo;
 	CNEOHud_Compass *m_pCompass;
 	CNEOHud_FriendlyMarker *m_pFriendlyMarker;
 	CNEOHud_GameEvent *m_pGameEvent;
+	CNEOHud_HTA* m_pHTA;
 	CNEOHud_RoundState *m_pRoundState;
 
 	CUtlVector<CNEOHud_GhostMarker*> m_vecGhostMarkers;

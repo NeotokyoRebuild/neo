@@ -8,7 +8,7 @@
 #include "hudelement.h"
 #include <vgui_controls/Panel.h>
 
-
+class vgui::ImagePanel;
 
 class CNEOHud_RoundState : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
 {
@@ -26,12 +26,20 @@ protected:
 	virtual ConVar* GetUpdateFrequencyConVar() const;
 
 private:
+	void CheckActiveStar();
+
+private:
 	vgui::HFont m_hFont;
 
 	int m_resX, m_resY;
 
 	char m_szStatusANSI[6];
 	wchar_t m_wszStatusUnicode[6];
+
+	vgui::ImagePanel* starNone, *starA, *starB, *starC, *starD, *starE, *starF;
+
+	int m_iPreviouslyActiveStar;
+	int m_iPreviouslyActiveTeam;
 
 private:
 	CNEOHud_RoundState(const CNEOHud_RoundState &other);

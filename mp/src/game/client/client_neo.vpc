@@ -172,6 +172,13 @@ $Project "Client (HL2MP)"
 
 				$File	"neo\ui\neo_hud_elements.cpp"
 				$File	"neo\ui\neo_hud_elements.h"
+
+				$File	"neo\ui\neo_hud_ammo.cpp"
+				$File	"neo\ui\neo_hud_ammo.h"
+
+				$File	"neo\ui\neo_hud_health_thermoptic_aux.cpp"
+				$File	"neo\ui\neo_hud_health_thermoptic_aux.h"
+
 			}
 
 			////////////////

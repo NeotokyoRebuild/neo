@@ -168,6 +168,17 @@ enum NeoClass {
 	NEO_CLASS_ENUM_COUNT
 };
 
+enum NeoStar {
+	STAR_NONE = 0,
+	STAR_ALPHA,
+	STAR_BRAVO,
+	STAR_CHARLIE,
+	STAR_DELTA,
+	STAR_ECHO,
+	STAR_FOXTROT
+};
+#define NEO_DEFAULT_STAR STAR_ALPHA
+
 // Implemented by CNEOPlayer::m_fNeoFlags.
 // Rolling our own because Source FL_ flags already reserve all 32 bits,
 // and extending the type would require a larger refactor.

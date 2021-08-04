@@ -560,6 +560,10 @@ typedef enum
 #define COLOR_WHITE		Color(255, 255, 255, 255)
 #define COLOR_BLACK		Color(0, 0, 0, 255)
 
+#ifdef NEO
+#define COLOR_TRANSPARENT Color(0, 0, 0, 0)
+#endif
+
 // All NPCs need this data
 enum
 {

@@ -129,9 +129,11 @@ public:
 	void RequestSetClass(int newClass);
 	void RequestSetSkin(int newSkin);
 	bool RequestSetLoadout(int loadoutNumber);
+	void RequestSetStar(int newStar);
 
 	int GetSkin() const { return m_iNeoSkin; }
 	int GetClass() const { return m_iNeoClass; }
+	int GetStar() const { return m_iNeoStar; }
 
 	bool IsAirborne() const { return (!(GetFlags() & FL_ONGROUND)); }
 
@@ -175,6 +177,7 @@ private:
 public:
 	CNetworkVar(int, m_iNeoClass);
 	CNetworkVar(int, m_iNeoSkin);
+	CNetworkVar(int, m_iNeoStar);
 
 	CNetworkVar(int, m_iCapTeam);
 

@@ -3,9 +3,11 @@
 
 #include "GameEventListener.h"
 
+#include "neo_hud_ammo.h"
 #include "neo_hud_compass.h"
 #include "neo_hud_friendly_marker.h"
 #include "neo_hud_game_event.h"
+#include "neo_hud_health_thermoptic_aux.h"
 #include "neo_hud_ghost_marker.h"
 #include "neo_hud_round_state.h"
 
@@ -16,7 +18,9 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+#define UI_ELEMENT_NAME_AMMO "neo_ammo"
 #define UI_ELEMENT_NAME_COMPASS "neo_compass"
+#define UI_ELEMENT_NAME_HTA "neo_hta"
 #define UI_ELEMENT_NAME_IFF "neo_iff"
 #define UI_ELEMENT_GAME_EVENT "neo_game_event_indicator"
 #define UI_ELEMENT_NAME_GHOST_MARKER "neo_ghost_marker"
@@ -43,9 +47,11 @@ CNeoHudElements::CNeoHudElements(IViewPort *pViewPort)
 	ListenForGameEvent("player_death");
 	ListenForGameEvent("player_team");
 
+	m_pAmmo = NULL;
 	m_pCompass = NULL;
 	m_pFriendlyMarker = NULL;
 	m_pGameEvent = NULL;
+	m_pHTA = NULL;
 	m_pRoundState = NULL;
 	m_pLastUpdater = NULL;
 }
@@ -62,6 +68,12 @@ void CNeoHudElements::OnThink()
 
 void CNeoHudElements::FreePanelChildren()
 {
+	if (m_pAmmo)
+	{
+		m_pAmmo->DeletePanel();
+		m_pAmmo = NULL;
+	}
+
 	if (m_pCompass)
 	{
 		m_pCompass->DeletePanel();
@@ -78,6 +90,12 @@ void CNeoHudElements::FreePanelChildren()
 	{
 		m_pGameEvent->DeletePanel();
 		m_pGameEvent = NULL;
+	}
+
+	if (m_pHTA)
+	{
+		m_pHTA->DeletePanel();
+		m_pHTA = NULL;
 	}
 
 	if (m_pRoundState)
@@ -178,7 +196,7 @@ void CNeoHudElements::FillIFFs()
 
 	int localTeam = localPlayer->GetTeamNumber();
 
-	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	for (int i = 1; i <= gpGlobals->maxClients; ++i)
 	{
 		auto otherPlayer = UTIL_PlayerByIndex(i);
 
@@ -204,11 +222,19 @@ int CNeoHudElements::FindIFFItemIDForPlayerIndex(int playerIndex)
 
 void CNeoHudElements::InitHud()
 {
+	InitAmmo();
 	InitCompass();
 	InitFriendlyMarker();
 	InitGameEventIndicator();
 	InitGhostMarkers();
+	InitHTA();
 	InitRoundState();
+}
+
+void CNeoHudElements::InitAmmo()
+{
+	Assert(!m_pAmmo);
+	m_pAmmo = new CNEOHud_Ammo(UI_ELEMENT_NAME_AMMO, this);
 }
 
 void CNeoHudElements::InitCompass()
@@ -238,6 +264,12 @@ void CNeoHudElements::InitGhostMarkers()
 		auto marker = new CNEOHud_GhostMarker(UI_ELEMENT_NAME_GHOST_MARKER, this);
 		m_vecGhostMarkers.AddToTail(marker);
 	}
+}
+
+void CNeoHudElements::InitHTA()
+{
+	Assert(!m_pHTA);
+	m_pHTA = new CNEOHud_HTA(UI_ELEMENT_NAME_HTA, this);
 }
 
 void CNeoHudElements::InitRoundState()

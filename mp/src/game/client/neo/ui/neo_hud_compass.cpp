@@ -16,6 +16,8 @@
 
 #include "neo_hud_elements.h"
 
+#include "c_team.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -30,7 +32,9 @@ ConVar neo_cl_hud_compass_pos_x("neo_cl_hud_compass_pos_x", "2", FCVAR_USERINFO,
 ConVar neo_cl_hud_compass_pos_y("neo_cl_hud_compass_pos_y", "80", FCVAR_USERINFO,
 	"HUD compass Y offset divisor.", true, 1, false, 10);
 ConVar neo_cl_hud_compass_needle("neo_cl_hud_compass_needle", "1", FCVAR_USERINFO,
-	"Whether or not to show HUD compass needle.", true, 0, true, 1);
+	"Whether to show the HUD compass needle.", true, 0, true, 1);
+ConVar neo_cl_hud_compass_objective("neo_cl_hud_compass_objective", "1", FCVAR_USERINFO,
+	"Whether to show the HUD objective arrow.", true, 0, true, 1);
 
 ConVar neo_cl_hud_debug_compass_enabled("neo_cl_hud_debug_compass_enabled", "0", FCVAR_USERINFO | FCVAR_CHEAT,
 	"Whether the Debug HUD compass is enabled or not.", true, 0.0f, true, 1.0f);
@@ -77,9 +81,6 @@ CNEOHud_Compass::CNEOHud_Compass(const char *pElementName, vgui::Panel *parent)
 	m_hFont = scheme->GetFont("NHudOCRSmall");
 
 	SetVisible(neo_cl_hud_compass_enabled.GetBool());
-
-	m_flCompassPulse = 0.5f;
-	m_flPulseStep = 0.1f;
 
 	COMPILE_TIME_ASSERT(sizeof(m_wszCompassUnicode) == UNICODE_NEO_COMPASS_SIZE_BYTES);
 	Assert(g_pVGuiLocalize);
@@ -157,13 +158,6 @@ void CNEOHud_Compass::UpdateStateForNeoHudElementDraw()
 	}
 
 	GetCompassUnicodeString(angle, m_wszCompassUnicode);
-
-	const double pulseRange = 20.0;
-	m_flCompassPulse += m_flPulseStep;
-	if (m_flCompassPulse > pulseRange || m_flCompassPulse < -pulseRange)
-	{
-		m_flPulseStep = -m_flPulseStep;
-	}
 }
 
 void CNEOHud_Compass::DrawNeoHudElement(void)
@@ -192,75 +186,99 @@ void CNEOHud_Compass::ApplySchemeSettings(vgui::IScheme *pScheme)
 	SetBounds(0, 0, m_resX, m_resY);
 }
 
-void CNEOHud_Compass::DrawCompass()
+void CNEOHud_Compass::DrawCompass() const
 {
-	const Color textColor = Color(
-		neo_cl_hud_debug_compass_color_r.GetInt(),
-		neo_cl_hud_debug_compass_color_g.GetInt(),
-		neo_cl_hud_debug_compass_color_b.GetInt(),
-		neo_cl_hud_debug_compass_color_a.GetInt());
+	auto player = C_NEO_Player::GetLocalNEOPlayer();
+	Assert(player);
 
 	surface()->DrawSetTextFont(m_hFont);
 
 	int fontWidth, fontHeight;
 	surface()->GetTextSize(m_hFont, m_wszCompassUnicode, fontWidth, fontHeight);
 
-	const int xpos = m_resX - (m_resX / neo_cl_hud_compass_pos_x.GetInt());
-	const int ypos = m_resY - (m_resY / neo_cl_hud_compass_pos_y.GetInt());
+	// These are the constant res based scalings of the compass box dimensions.
+	const int xBoxWidth = m_resX * 0.2375 * 0.9;
+	const int yBoxHeight = m_resY * (0.1 / 1.5) * (1.0 / 3);
 
-	// Print compass objective arrow
-	if (neo_cl_hud_compass_needle.GetBool())
-	{
-		const Color alert = Color(180 + m_flCompassPulse, 10 + m_flCompassPulse, 0 + m_flCompassPulse, 200);
+	const int resXHalf = m_resX / 2;
+	const int xBoxWidthHalf = xBoxWidth / 2;
+	const int margin = neo_cl_hud_ammo_enabled.GetInt();
 
-		// Print a unicode arrow to signify compass needle
-		const wchar_t arrowUnicode[] = L"▼";
-		const int numCharsVisibleAroundNeedle = 24;
-		surface()->DrawSetTextColor(alert);
-		surface()->DrawSetTextPos(
-			xpos - ((fontWidth / (numCharsVisibleAroundNeedle - 1)) / 2) + (m_flCompassPulse / 2),
-			ypos - (fontHeight * 1.75f));
-		surface()->DrawPrintText(arrowUnicode, Q_UnicodeLength(arrowUnicode));
-	}
+	surface()->DrawSetColor(Color(116, 116, 116, 200));
+	surface()->DrawFilledRect(
+		resXHalf - xBoxWidthHalf, m_resY - yBoxHeight - margin,
+		resXHalf + xBoxWidthHalf, m_resY - margin);
 
-	surface()->DrawSetTextColor(textColor);
-	surface()->DrawSetTextPos(xpos - (fontWidth / 2), ypos - (fontHeight / 2));
-	surface()->DrawPrintText(m_wszCompassUnicode, UNICODE_NEO_COMPASS_STR_LENGTH);
-
-	surface()->DrawSetColor(Color(20, 20, 20, 200));
-	// Draw right half of the background fade...
+	const auto fadeColor = Color(150, 150, 150, 175);
+	surface()->DrawSetColor(fadeColor);
 	surface()->DrawFilledRectFade(
-		xpos, ypos - (fontHeight / 2),
-		xpos + (fontWidth / 2), ypos + (fontHeight / 2),
-		neo_cl_hud_debug_compass_color_a.GetInt(),
+		resXHalf - xBoxWidthHalf, m_resY - yBoxHeight - margin,
+		resXHalf, m_resY - margin,
 		0,
+		255,
 		true);
-	// ...And then the left side.
 	surface()->DrawFilledRectFade(
-		xpos - (fontWidth / 2), ypos - (fontHeight / 2),
-		xpos - 1, ypos + (fontHeight / 2),
+		resXHalf, m_resY - yBoxHeight - margin,
+		resXHalf + xBoxWidthHalf, m_resY - margin,
+		255,
 		0,
-		neo_cl_hud_debug_compass_color_a.GetInt(),
 		true);
 
 	// Draw the compass "needle"
 	if (neo_cl_hud_compass_needle.GetBool())
 	{
-		surface()->DrawSetColor((C_NEO_Player::GetLocalNEOPlayer()->GetTeamNumber() == TEAM_JINRAI) ?
-			COLOR_JINRAI : ((C_NEO_Player::GetLocalNEOPlayer()->GetTeamNumber() == TEAM_NSF) ? COLOR_NSF : COLOR_SPEC));
-		surface()->DrawFilledRect(xpos - 1, ypos - (fontHeight / 2), xpos + 1, ypos + (fontHeight / 2));
+#define COMPASS_NEEDLE_COLOR_GREEN Color(25, 255, 25, 150)
+#define COMPASS_NEEDLE_COLOR_BLUE Color(25, 25, 255, 150)
+#define COMPASS_NEEDLE_COLOR_WHITE Color(255, 255, 255, 150)
+		surface()->DrawSetColor((player->GetTeamNumber() == TEAM_JINRAI) ?
+			COMPASS_NEEDLE_COLOR_GREEN : ((player->GetTeamNumber() == TEAM_NSF) ? COMPASS_NEEDLE_COLOR_BLUE : COMPASS_NEEDLE_COLOR_WHITE));
+		surface()->DrawFilledRect(resXHalf - 1, m_resY - yBoxHeight - margin, resXHalf + 1, m_resY - margin);
+	}
+
+	surface()->DrawSetTextColor(COLOR_WHITE);
+	surface()->DrawSetTextPos(resXHalf - fontWidth / 2, m_resY - fontHeight - margin);
+	surface()->DrawPrintText(m_wszCompassUnicode, UNICODE_NEO_COMPASS_STR_LENGTH);
+
+	// Print compass objective arrow
+	if (neo_cl_hud_compass_objective.GetBool() && !player->IsCarryingGhost())
+	{
+		// Point the objective arrow to the ghost, if it exists
+		if (player->m_vecGhostMarkerPos != vec3_origin)
+		{
+			int ghostMarkerX, ghostMarkerY;
+			const bool ghostIsInView = GetVectorInScreenSpace(player->m_vecGhostMarkerPos, ghostMarkerX, ghostMarkerY);
+			if (ghostIsInView) {
+				// Print a unicode arrow to signify compass needle
+				const wchar_t arrowUnicode[] = L"▼";
+
+				ghostMarkerX = clamp(ghostMarkerX, resXHalf - xBoxWidthHalf, resXHalf + xBoxWidthHalf);
+
+				const int ghosterTeam = player->m_iGhosterTeam;
+				const int ownTeam = player->GetTeam()->GetTeamNumber();
+
+				const auto teamClr32 = player->GetTeam()->GetRenderColor();
+				const Color teamColor = Color(teamClr32.r, teamClr32.g, teamClr32.b, teamClr32.a);
+
+				const bool ghostIsBeingCarried = (ghosterTeam == TEAM_JINRAI || ghosterTeam == TEAM_NSF);
+				const bool ghostIsCarriedByEnemyTeam = (ghosterTeam != ownTeam);
+
+				surface()->DrawSetTextColor(ghostIsBeingCarried ? ghostIsCarriedByEnemyTeam ? COLOR_RED : teamColor : COLOR_WHITE);
+				surface()->DrawSetTextPos(ghostMarkerX, m_resY - fontHeight - margin * 2.25f);
+				surface()->DrawPrintText(arrowUnicode, Q_UnicodeLength(arrowUnicode));
+			}
+		}
 	}
 }
 
-void CNEOHud_Compass::DrawDebugCompass()
+void CNEOHud_Compass::DrawDebugCompass() const
 {
 	auto player = C_NEO_Player::GetLocalNEOPlayer();
 	Assert(player);
 
 	// Direction in -180 to 180
-	float angle = -1 * player->EyeAngles()[YAW];
+	float angle = -(player->EyeAngles()[YAW]);
 
-	// Bring us back to safety
+	// Clamp in 180 turn range.
 	if (angle > 180)
 	{
 		angle -= 360;
