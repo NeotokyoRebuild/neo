@@ -244,25 +244,27 @@ void CNEOHud_Compass::DrawCompass() const
 		// Point the objective arrow to the ghost, if it exists
 		if (player->m_vecGhostMarkerPos != vec3_origin)
 		{
-			// Print a unicode arrow to signify compass needle
-			const wchar_t arrowUnicode[] = L"▼";
-
 			int ghostMarkerX, ghostMarkerY;
-			GetVectorInScreenSpace(player->m_vecGhostMarkerPos, ghostMarkerX, ghostMarkerY);
-			ghostMarkerX = clamp(ghostMarkerX, resXHalf - xBoxWidthHalf, resXHalf + xBoxWidthHalf);
+			const bool ghostIsInView = GetVectorInScreenSpace(player->m_vecGhostMarkerPos, ghostMarkerX, ghostMarkerY);
+			if (ghostIsInView) {
+				// Print a unicode arrow to signify compass needle
+				const wchar_t arrowUnicode[] = L"▼";
 
-			const int ghosterTeam = player->m_iGhosterTeam;
-			const int ownTeam = player->GetTeam()->GetTeamNumber();
+				ghostMarkerX = clamp(ghostMarkerX, resXHalf - xBoxWidthHalf, resXHalf + xBoxWidthHalf);
 
-			const auto teamClr32 = player->GetTeam()->GetRenderColor();
-			const Color teamColor = Color(teamClr32.r, teamClr32.g, teamClr32.b, teamClr32.a);
+				const int ghosterTeam = player->m_iGhosterTeam;
+				const int ownTeam = player->GetTeam()->GetTeamNumber();
 
-			surface()->DrawSetTextColor((ghosterTeam != TEAM_JINRAI && ghosterTeam != TEAM_NSF) ? COLOR_WHITE :
-				ghosterTeam != ownTeam ? COLOR_RED : teamColor);
-			surface()->DrawSetTextPos(
-				ghostMarkerX,
-				m_resY - fontHeight * 2.25f);
-			surface()->DrawPrintText(arrowUnicode, Q_UnicodeLength(arrowUnicode));
+				const auto teamClr32 = player->GetTeam()->GetRenderColor();
+				const Color teamColor = Color(teamClr32.r, teamClr32.g, teamClr32.b, teamClr32.a);
+
+				const bool ghostIsBeingCarried = (ghosterTeam == TEAM_JINRAI || ghosterTeam == TEAM_NSF);
+				const bool ghostIsCarriedByEnemyTeam = (ghosterTeam != ownTeam);
+
+				surface()->DrawSetTextColor(ghostIsBeingCarried ? ghostIsCarriedByEnemyTeam ? COLOR_RED : teamColor : COLOR_WHITE);
+				surface()->DrawSetTextPos(ghostMarkerX, m_resY - fontHeight * 2.25f);
+				surface()->DrawPrintText(arrowUnicode, Q_UnicodeLength(arrowUnicode));
+			}
 		}
 	}
 }
@@ -273,9 +275,9 @@ void CNEOHud_Compass::DrawDebugCompass() const
 	Assert(player);
 
 	// Direction in -180 to 180
-	float angle = -1 * player->EyeAngles()[YAW];
+	float angle = -(player->EyeAngles()[YAW]);
 
-	// Bring us back to safety
+	// Clamp in 180 turn range.
 	if (angle > 180)
 	{
 		angle -= 360;
