@@ -122,25 +122,25 @@ void CNEOHud_HTA::DrawHTA() const
 	const int xBoxWidth = m_resX * 0.2375;
 	const int yBoxHeight = m_resY * (0.1 / 1.5);
 
-	surface()->DrawSetColor(Color(116, 116, 116, 200));
-	surface()->DrawFilledRect(0, m_resY - yBoxHeight, xBoxWidth, m_resY);
+	const int margin = neo_cl_hud_ammo_enabled.GetInt();
+	DrawNeoHudRoundedBox(margin, m_resY - yBoxHeight - margin, xBoxWidth + margin, m_resY - margin);
 
 	const int xPadding = 5; // TODO (Rain): make this relative to resolution scaling
 
 	surface()->DrawSetTextFont(m_hFont);
 	surface()->DrawSetTextColor(textColor);
-	surface()->DrawSetTextPos(xPadding, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 1);
+	surface()->DrawSetTextPos(xPadding + margin, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 1 - margin);
 	surface()->DrawPrintText(L"INTEGRITY", 9);
-	surface()->DrawSetTextPos(xPadding, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 2);
+	surface()->DrawSetTextPos(xPadding + margin, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 2 - margin);
 	surface()->DrawPrintText(L"THERM-OPTIC", 11);
-	surface()->DrawSetTextPos(xPadding, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 3);
+	surface()->DrawSetTextPos(xPadding + margin, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 3 - margin);
 	surface()->DrawPrintText(L"AUX", 3);
 
-	surface()->DrawSetTextPos(xBoxWidth - xPadding * 7, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 1);
+	surface()->DrawSetTextPos(xBoxWidth - xPadding * 7 + margin, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 1 - margin);
 	surface()->DrawPrintText(unicodeValue_Integrity, valLen_Integrity);
-	surface()->DrawSetTextPos(xBoxWidth - xPadding * 7, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 2);
+	surface()->DrawSetTextPos(xBoxWidth - xPadding * 7 + margin, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 2 - margin);
 	surface()->DrawPrintText(unicodeValue_ThermOptic, valLen_ThermOptic);
-	surface()->DrawSetTextPos(xBoxWidth - xPadding * 7, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 3);
+	surface()->DrawSetTextPos(xBoxWidth - xPadding * 7 + margin, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 3 - margin);
 	surface()->DrawPrintText(unicodeValue_Aux, valLen_Aux);
 
 	surface()->DrawSetColor(COLOR_WHITE);
@@ -151,24 +151,24 @@ void CNEOHud_HTA::DrawHTA() const
 
 	// Integrity progress bar
 	surface()->DrawFilledRect(
-		x_from,
-		1.0 * (m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 1),
-		x_to - x_len * (1 - health / 100.0),
-		m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 1.75);
+		x_from + margin,
+		1.0 * (m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 1) - margin,
+		x_to - x_len * (1 - health / 100.0) + margin,
+		m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 1.75 - margin);
 
 	// ThermOptic progress bar
 	surface()->DrawFilledRect(
-		x_from,
-		1.0 * (m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 2),
-		x_to - x_len * (1 - thermoptic / 100.0),
-		m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 2.75);
+		x_from + margin,
+		1.0 * (m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 2) - margin,
+		x_to - x_len * (1 - thermoptic / 100.0) + margin,
+		m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 2.75 - margin);
 
 	// AUX progress bar
 	surface()->DrawFilledRect(
-		x_from,
-		1.0 * (m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 3),
-		x_to - x_len * (1 - aux / 100.0),
-		m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 3.75);
+		x_from + margin,
+		1.0 * (m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 3) - margin,
+		x_to - x_len * (1 - aux / 100.0) + margin,
+		m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 3.75 - margin);
 }
 
 void CNEOHud_HTA::DrawNeoHudElement()

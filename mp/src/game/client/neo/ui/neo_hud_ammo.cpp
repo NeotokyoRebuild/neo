@@ -132,12 +132,12 @@ void CNEOHud_Ammo::DrawAmmo() const
 	const int xpos = m_resX - (m_resX * 0.2375);
 	const int ypos = m_resY - (m_resY * (0.1 / 1.5));
 
-	surface()->DrawSetColor(Color(116, 116, 116, 200));
-	surface()->DrawFilledRect(xpos, ypos, m_resX, m_resY);
+	const int margin = neo_cl_hud_ammo_enabled.GetInt();
+	DrawNeoHudRoundedBox(xpos - margin, ypos - margin, m_resX - margin, m_resY - margin);
 
 	surface()->DrawSetTextFont(m_hTextFont);
 	surface()->DrawSetTextColor(textColor);
-	surface()->DrawSetTextPos(m_resX - fontWidth * 1.5, ypos + fontHeight * 0.5);
+	surface()->DrawSetTextPos(m_resX - fontWidth * 1.5 - margin, ypos + fontHeight * 0.5 - margin);
 	surface()->DrawPrintText(unicodeWepName, textLen);
 
 	const int maxClip = activeWep->GetMaxClip1();
@@ -157,7 +157,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 			wchar_t unicodeClipsText[maxLen]{ L'\0' };
 			g_pVGuiLocalize->ConvertANSIToUnicode(clipsText, unicodeClipsText, sizeof(unicodeClipsText));
 
-			surface()->DrawSetTextPos(m_resX - fontWidth * 1.5, ypos + fontHeight * 2.5);
+			surface()->DrawSetTextPos(m_resX - fontWidth * 1.5 - margin, ypos + fontHeight * 2.5 - margin);
 			surface()->DrawPrintText(unicodeClipsText, textLen);
 		}
 
@@ -174,7 +174,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 			g_pVGuiLocalize->ConvertANSIToUnicode(bullets, unicodeBullets, sizeof(unicodeBullets));
 
 			surface()->DrawSetTextFont(m_hBulletFont);
-			surface()->DrawSetTextPos(xpos + 10, ypos + 10); // TODO: resolution scaling for the offsets here
+			surface()->DrawSetTextPos(xpos + 10 - margin, ypos + 10 - margin); // TODO: resolution scaling for the offsets here
 			surface()->DrawPrintText(unicodeBullets, activeWep->Clip1());
 		}
 	}

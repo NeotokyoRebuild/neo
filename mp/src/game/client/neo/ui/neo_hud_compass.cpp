@@ -202,23 +202,24 @@ void CNEOHud_Compass::DrawCompass() const
 
 	const int resXHalf = m_resX / 2;
 	const int xBoxWidthHalf = xBoxWidth / 2;
+	const int margin = neo_cl_hud_ammo_enabled.GetInt();
 
 	surface()->DrawSetColor(Color(116, 116, 116, 200));
 	surface()->DrawFilledRect(
-		resXHalf - xBoxWidthHalf, m_resY - yBoxHeight,
-		resXHalf + xBoxWidthHalf, m_resY);
+		resXHalf - xBoxWidthHalf, m_resY - yBoxHeight - margin,
+		resXHalf + xBoxWidthHalf, m_resY - margin);
 
 	const auto fadeColor = Color(150, 150, 150, 175);
 	surface()->DrawSetColor(fadeColor);
 	surface()->DrawFilledRectFade(
-		resXHalf - xBoxWidthHalf, m_resY - yBoxHeight,
-		resXHalf, m_resY,
+		resXHalf - xBoxWidthHalf, m_resY - yBoxHeight - margin,
+		resXHalf, m_resY - margin,
 		0,
 		255,
 		true);
 	surface()->DrawFilledRectFade(
-		resXHalf, m_resY - yBoxHeight,
-		resXHalf + xBoxWidthHalf, m_resY,
+		resXHalf, m_resY - yBoxHeight - margin,
+		resXHalf + xBoxWidthHalf, m_resY - margin,
 		255,
 		0,
 		true);
@@ -231,11 +232,11 @@ void CNEOHud_Compass::DrawCompass() const
 #define COMPASS_NEEDLE_COLOR_WHITE Color(255, 255, 255, 150)
 		surface()->DrawSetColor((player->GetTeamNumber() == TEAM_JINRAI) ?
 			COMPASS_NEEDLE_COLOR_GREEN : ((player->GetTeamNumber() == TEAM_NSF) ? COMPASS_NEEDLE_COLOR_BLUE : COMPASS_NEEDLE_COLOR_WHITE));
-		surface()->DrawFilledRect(resXHalf - 1, m_resY - yBoxHeight, resXHalf + 1, m_resY);
+		surface()->DrawFilledRect(resXHalf - 1, m_resY - yBoxHeight - margin, resXHalf + 1, m_resY - margin);
 	}
 
 	surface()->DrawSetTextColor(COLOR_WHITE);
-	surface()->DrawSetTextPos(resXHalf - fontWidth / 2, m_resY - fontHeight);
+	surface()->DrawSetTextPos(resXHalf - fontWidth / 2, m_resY - fontHeight - margin);
 	surface()->DrawPrintText(m_wszCompassUnicode, UNICODE_NEO_COMPASS_STR_LENGTH);
 
 	// Print compass objective arrow
@@ -262,7 +263,7 @@ void CNEOHud_Compass::DrawCompass() const
 				const bool ghostIsCarriedByEnemyTeam = (ghosterTeam != ownTeam);
 
 				surface()->DrawSetTextColor(ghostIsBeingCarried ? ghostIsCarriedByEnemyTeam ? COLOR_RED : teamColor : COLOR_WHITE);
-				surface()->DrawSetTextPos(ghostMarkerX, m_resY - fontHeight * 2.25f);
+				surface()->DrawSetTextPos(ghostMarkerX, m_resY - fontHeight - margin * 2.25f);
 				surface()->DrawPrintText(arrowUnicode, Q_UnicodeLength(arrowUnicode));
 			}
 		}
