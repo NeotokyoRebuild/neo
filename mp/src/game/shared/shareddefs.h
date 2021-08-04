@@ -89,27 +89,37 @@ public:
 #define NEO_ASSAULT_VIEW_OFFSET vec3_origin
 #define NEO_SUPPORT_VIEW_OFFSET Vector(0.0f, 0.0f, 2.0f)
 #define VEC_VIEW_NEOSCALE(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vView + ((NeoPlayer->GetClass() == NEO_CLASS_RECON) ? NEO_RECON_VIEW_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_SUPPORT) ? NEO_SUPPORT_VIEW_OFFSET : NEO_ASSAULT_VIEW_OFFSET))
+#define VEC_DUCK_VIEW_NEOSCALE(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vDuckView + ((NeoPlayer->GetClass() == NEO_CLASS_RECON) ? NEO_RECON_VIEW_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_SUPPORT) ? NEO_SUPPORT_VIEW_OFFSET : NEO_ASSAULT_VIEW_OFFSET))
 
 #define NEO_RECON_DUCK_MAXHULL_OFFSET Vector(0.0f, 0.0f, -4.0f)
 #define NEO_ASSAULT_DUCK_MAXHULL_OFFSET Vector(0.0f, 0.0f, -2.0f)
 #define NEO_SUPPORT_DUCK_MAXHULL_OFFSET Vector(0.0f, 0.0f, 9.0f)
+#define VEC_HULL_MIN_NEOSCALED(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vHullMin + ((NeoPlayer->GetClass() == NEO_CLASS_RECON) ? NEO_RECON_DUCK_MAXHULL_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_SUPPORT) ? NEO_SUPPORT_DUCK_MAXHULL_OFFSET : NEO_ASSAULT_DUCK_MAXHULL_OFFSET))
+#define VEC_HULL_MAX_NEOSCALED(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vHullMax + ((NeoPlayer->GetClass() == NEO_CLASS_RECON) ? NEO_RECON_DUCK_MAXHULL_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_SUPPORT) ? NEO_SUPPORT_DUCK_MAXHULL_OFFSET : NEO_ASSAULT_DUCK_MAXHULL_OFFSET))
+#define VEC_DUCK_HULL_MIN_NEOSCALED(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vDuckHullMin + ((NeoPlayer->GetClass() == NEO_CLASS_RECON) ? NEO_RECON_DUCK_MAXHULL_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_SUPPORT) ? NEO_SUPPORT_DUCK_MAXHULL_OFFSET : NEO_ASSAULT_DUCK_MAXHULL_OFFSET))
 #define VEC_DUCK_HULL_MAX_NEOSCALED(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vDuckHullMax + ((NeoPlayer->GetClass() == NEO_CLASS_RECON) ? NEO_RECON_DUCK_MAXHULL_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_SUPPORT) ? NEO_SUPPORT_DUCK_MAXHULL_OFFSET : NEO_ASSAULT_DUCK_MAXHULL_OFFSET))
 #endif
 
 // If the player (enemy bots) are scaled, adjust the hull
-#define VEC_VIEW_SCALED( player )				( g_pGameRules->GetViewVectors()->m_vView * player->GetModelScale() )
+#ifdef NEO
+#define VEC_HULL_MIN_SCALED( player )			(VEC_HULL_MIN_NEOSCALED(player) * player->GetModelScale())
+#define VEC_HULL_MAX_SCALED( player )			(VEC_HULL_MAX_NEOSCALED(player) * player->GetModelScale())
+#define VEC_VIEW_SCALED( player )				(VEC_VIEW_NEOSCALE(player) * player->GetModelScale())
+#else
 #define VEC_HULL_MIN_SCALED( player )			( g_pGameRules->GetViewVectors()->m_vHullMin * player->GetModelScale() )
 #define VEC_HULL_MAX_SCALED( player )			( g_pGameRules->GetViewVectors()->m_vHullMax * player->GetModelScale() )
-
-#define VEC_DUCK_HULL_MIN_SCALED( player )		( g_pGameRules->GetViewVectors()->m_vDuckHullMin * player->GetModelScale() )
-
-#ifdef NEO
-#define VEC_DUCK_HULL_MAX_SCALED( player )		(VEC_DUCK_HULL_MAX_NEOSCALED(player))
-#else
-#define VEC_DUCK_HULL_MAX_SCALED( player )		( g_pGameRules->GetViewVectors()->m_vDuckHullMax * player->GetModelScale() )
+#define VEC_VIEW_SCALED( player )				( g_pGameRules->GetViewVectors()->m_vView * player->GetModelScale() )
 #endif
 
+#ifdef NEO
+#define VEC_DUCK_HULL_MIN_SCALED( player )		(VEC_DUCK_HULL_MIN_NEOSCALED(player) * player->GetModelScale())
+#define VEC_DUCK_HULL_MAX_SCALED( player )		(VEC_DUCK_HULL_MAX_NEOSCALED(player) * player->GetModelScale())
+#define VEC_DUCK_VIEW_SCALED( player )			(VEC_DUCK_VIEW_NEOSCALE(player) * player->GetModelScale())
+#else
+#define VEC_DUCK_HULL_MIN_SCALED( player )		( g_pGameRules->GetViewVectors()->m_vDuckHullMin * player->GetModelScale() )
+#define VEC_DUCK_HULL_MAX_SCALED( player )		( g_pGameRules->GetViewVectors()->m_vDuckHullMax * player->GetModelScale() )
 #define VEC_DUCK_VIEW_SCALED( player )			( g_pGameRules->GetViewVectors()->m_vDuckView * player->GetModelScale() )
+#endif
 
 #define VEC_OBS_HULL_MIN_SCALED( player )		( g_pGameRules->GetViewVectors()->m_vObsHullMin * player->GetModelScale() )
 #define VEC_OBS_HULL_MAX_SCALED( player )		( g_pGameRules->GetViewVectors()->m_vObsHullMax * player->GetModelScale() )
@@ -549,6 +559,10 @@ typedef enum
 #define COLOR_GREY		Color(204, 204, 204, 255)
 #define COLOR_WHITE		Color(255, 255, 255, 255)
 #define COLOR_BLACK		Color(0, 0, 0, 255)
+
+#ifdef NEO
+#define COLOR_TRANSPARENT Color(0, 0, 0, 0)
+#endif
 
 // All NPCs need this data
 enum

@@ -95,6 +95,7 @@ ConVar mat_neo_ssao_enable("mat_neo_ssao_enable", "0", FCVAR_USERINFO, "Whether 
 //ConVar mat_neo_nv_enable("mat_neo_nv_enable", "0", FCVAR_CHEAT, "", true, 0.0f, true, 1.0f);
 ConVar mat_neo_mv_enable("mat_neo_mv_enable", "0", FCVAR_CHEAT, "", true, 0.0f, true, 1.0f);
 ConVar mat_neo_mv_noise_enable("mat_neo_noise_enable", "1", FCVAR_CHEAT, "", true, 0.0f, true, 1.0f);
+ConVar mat_neo_colorblind_enable("mat_neo_colorblind_enable", "0", FCVAR_USERINFO, "Main switch to toggle color vision deficiency adjustments.", true, 0.0f, true, 1.0f);
 #endif
 
 extern ConVar localplayer_visionflags;
@@ -2232,7 +2233,7 @@ ConVar mat_neo_ssao_dump("mat_neo_ssao_dump", "0", FCVAR_CHEAT);
 #endif
 
 #ifdef NEO
-static inline void DoSSAO(const int x, const int y, const int w, const int h)
+void DoSSAO(const int x, const int y, const int w, const int h)
 {
 	CMatRenderContextPtr pRenderContext(materials);
 
@@ -2323,7 +2324,7 @@ static inline void DoSSAO(const int x, const int y, const int w, const int h)
 	}
 }
 
-static inline void DoNightVision(const int x, const int y, const int w, const int h)
+void DoNightVision(const int x, const int y, const int w, const int h)
 {
 	CMatRenderContextPtr pRenderContext(materials);
 
@@ -2350,7 +2351,7 @@ static inline void DoNightVision(const int x, const int y, const int w, const in
 		nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
 }
 
-static inline void DoThermalVision(const int x, const int y, const int w, const int h)
+void DoThermalVision(const int x, const int y, const int w, const int h)
 {
 	CMatRenderContextPtr pRenderContext(materials);
 
@@ -2386,7 +2387,7 @@ static inline void DoThermalVision(const int x, const int y, const int w, const 
 ConVar mat_neo_mv_1("mat_neo_mv_1", "1");
 ConVar mat_neo_mv_2("mat_neo_mv_2", "1");
 
-static inline void DoMotionVision(const int x, const int y, const int w, const int h)
+void DoMotionVision(const int x, const int y, const int w, const int h)
 {
 	CMatRenderContextPtr pRenderContext(materials);
 
@@ -2460,6 +2461,33 @@ static inline void DoMotionVision(const int x, const int y, const int w, const i
 			0, 0, nSrcWidth - 1, nSrcHeight - 1,
 			nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
 	}
+}
+
+void DoColorblindnessPostProcessing(const int x, const int y, const int w, const int h)
+{
+	CMatRenderContextPtr pRenderContext(materials);
+
+	ITexture* pFbTex = GetCBBuffer();
+	Assert((pFbTex != NULL) && (!pFbTex->IsError()));
+	const int nSrcWidth = pFbTex->GetActualWidth();
+	const int nSrcHeight = pFbTex->GetActualHeight();
+
+	IMaterial* pTvMat = materials->FindMaterial("dev/neo_colorblind_adjust", TEXTURE_GROUP_OTHER, true);
+	if (!pTvMat || pTvMat->IsErrorMaterial())
+	{
+		Assert(false);
+		return;
+	}
+
+	Rect_t DestRect{ 0, 0, nSrcWidth, nSrcHeight };
+	const int renderTargetId = 0;
+
+	pRenderContext->CopyRenderTargetToTextureEx(pFbTex, renderTargetId, &DestRect, NULL);
+
+	pRenderContext->DrawScreenSpaceRectangle(pTvMat,
+		0, 0, w, h,
+		0, 0, nSrcWidth - 1, nSrcHeight - 1,
+		nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
 }
 #endif
 
@@ -2919,8 +2947,15 @@ void DoEnginePostProcessing( int x, int y, int w, int h, bool bFlashlightIsOn, b
 				DoThermalVision(x, y, w, h);
 				break;
 			}
+			default:
+				Assert(false);
 			}
 		}
+	}
+
+	if (mat_neo_colorblind_enable.GetBool())
+	{
+		DoColorblindnessPostProcessing(x, y, w, h);
 	}
 #endif
 }

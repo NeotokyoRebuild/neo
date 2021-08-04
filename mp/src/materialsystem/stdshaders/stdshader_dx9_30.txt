@@ -22,6 +22,7 @@ neo_noise_ps30.fxc
 neo_ssao_combine_ps30.fxc
 neo_ssao_ps30.fxc
 neo_thermalvision_ps30.fxc
+neo_colorblind_ps30.fxc
 
 ////////////////////////
 // NEO VERTEX SHADERS //

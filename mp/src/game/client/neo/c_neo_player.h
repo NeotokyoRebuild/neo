@@ -59,6 +59,8 @@ public:
 	virtual void CalcView( Vector &eyeOrigin, QAngle &eyeAngles, float &zNear, float &zFar, float &fov );
 	virtual const QAngle& EyeAngles( void );
 
+	virtual void ModifyFireBulletsDamage(CTakeDamageInfo* dmgInfo) OVERRIDE;
+
 	virtual void ClientThink( void );
 	virtual void PreThink( void );
 	virtual void PostThink( void );
@@ -85,7 +87,8 @@ public:
 
 	int GetNeoFlags() const { return m_NeoFlags; }
 
-	virtual const Vector GetPlayerMaxs(void) const;
+	virtual const Vector GetPlayerMins(void) const OVERRIDE;
+	virtual const Vector GetPlayerMaxs(void) const OVERRIDE;
 
 	// Implementing in header in hopes of compiler picking up the inlined base method
 	virtual float GetModelScale() const
@@ -124,6 +127,7 @@ public:
 	bool ShouldDrawHL2StyleQuickHud( void );
 
 	int GetClass() const { return m_iNeoClass; }
+	int GetStar() const { return m_iNeoStar; }
 
 	bool IsCarryingGhost(void) const;
 
@@ -143,7 +147,7 @@ public:
 	void Weapon_AimToggle(C_BaseCombatWeapon *pWep);
 	void Weapon_SetZoom(const bool bZoomIn);
 
-	void Weapon_Drop(C_BaseCombatWeapon *pWeapon);
+	void Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon);
 
 	C_NEOPredictedViewModel *GetNEOViewModel() { return static_cast<C_NEOPredictedViewModel*>(GetViewModel()); }
 
@@ -192,6 +196,7 @@ public:
 
 	CNetworkVar(int, m_iNeoClass);
 	CNetworkVar(int, m_iNeoSkin);
+	CNetworkVar(int, m_iNeoStar);
 
 	unsigned char m_NeoFlags;
 

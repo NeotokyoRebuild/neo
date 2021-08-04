@@ -44,7 +44,7 @@ public:
 	virtual void Spawn(void);
 	virtual bool Deploy(void);
 
-	virtual int GetNeoWepBits(void) const { return NEO_WEP_SRM_S; }
+	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { return NEO_WEP_SRM_S; }
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
 
 	virtual float GetSpeedScale(void) const { return 1.0; }
@@ -53,7 +53,7 @@ public:
 
 	Activity	GetPrimaryAttackActivity(void);
 
-	virtual float GetFireRate(void) OVERRIDE { return 0.1f; }
+	virtual float GetFireRate(void) OVERRIDE { return 0.08f; }
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
 	virtual float GetAccuracyPenalty() const OVERRIDE { return 0.2f; }

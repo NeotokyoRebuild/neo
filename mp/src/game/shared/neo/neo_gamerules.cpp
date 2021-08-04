@@ -24,6 +24,8 @@
 ConVar mp_neo_preround_freeze_time("mp_neo_preround_freeze_time", "10", FCVAR_REPLICATED, "The pre-round freeze time, in seconds.", true, 0.0, false, 0);
 ConVar mp_neo_latespawn_max_time("mp_neo_latespawn_max_time", "15", FCVAR_REPLICATED, "How many seconds late are players still allowed to spawn.", true, 0.0, false, 0);
 
+ConVar sv_neo_wep_dmg_modifier("sv_neo_wep_dmg_modifier", "0.5", FCVAR_REPLICATED, "Temp global weapon damage modifier.", true, 0.0, true, 100.0);
+
 REGISTER_GAMERULES_CLASS( CNEORules );
 
 BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
@@ -314,7 +316,9 @@ CAmmoDef *GetAmmoDef_HL2MP()
 CAmmoDef *GetAmmoDef()
 {
 	NEO_AMMO_DEF_START();
-		ADD_NEO_AMMO_TYPE(AMMO_10G_SHELL, DMG_BULLET | DMG_BUCKSHOT, TRACER_LINE, BULLET_IMPULSE(400, 1200));
+        // NEO TODO (brekiy/Rain): add specific ammo types
+		ADD_NEO_AMMO_TYPE(AMMO_10G_SHELL, DMG_BULLET | DMG_BUCKSHOT, TRACER_NONE, BULLET_IMPULSE(400, 1200));
+		ADD_NEO_AMMO_TYPE(AMMO_10G_SLUG, DMG_BULLET, TRACER_NONE, BULLET_IMPULSE(400, 1500));
 		ADD_NEO_AMMO_TYPE(AMMO_GRENADE, DMG_BLAST, TRACER_NONE, 0);
 		ADD_NEO_AMMO_TYPE(AMMO_SMOKEGRENADE, DMG_BLAST, TRACER_NONE, 0);
 		ADD_NEO_AMMO_TYPE(AMMO_DETPACK, DMG_BLAST, TRACER_NONE, 0);
@@ -408,7 +412,13 @@ void CNEORules::Think(void)
 		COMPILE_TIME_ASSERT((TEAM_JINRAI < TEAM_NSF) && (TEAM_JINRAI == (TEAM_NSF - 1)));
 		for (int team = TEAM_JINRAI; team <= TEAM_NSF; ++team)
 		{
-			if (GetGlobalTeam(team)->GetRoundsWon() >= neo_score_limit.GetInt())
+			auto pTeam = GetGlobalTeam(team);
+			if (!pTeam)
+			{
+				continue;
+			}
+
+			if (pTeam->GetRoundsWon() >= neo_score_limit.GetInt())
 			{
 				UTIL_CenterPrintAll(team == TEAM_JINRAI ? "JINRAI WINS THE MATCH\n" : "NSF WINS THE MATCH\n");
 				SetRoundStatus(NeoRoundStatus::PostRound);
@@ -1187,6 +1197,12 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 	SetRoundStatus(NeoRoundStatus::PostRound);
 
 	auto winningTeam = GetGlobalTeam(team);
+	if (!winningTeam)
+	{
+		Assert(false);
+		Warning("Tried to SetWinningTeam for NULL team (%d)\n", team);
+		return;
+	}
 
 	if (bForceMapReset)
 	{
@@ -1296,19 +1312,19 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 	// Suicide
 	if (attacker == victim)
 	{
-		victim->m_iXP.GetForModify() -= 1;
+		attacker->m_iXP.GetForModify() -= 1;
 	}
 	else
 	{
 		// Team kill
 		if (attacker->GetTeamNumber() == victim->GetTeamNumber())
 		{
-			victim->m_iXP.GetForModify() -= 1;
+			attacker->m_iXP.GetForModify() -= 1;
 		}
 		// Enemy kill
 		else
 		{
-			victim->m_iXP.GetForModify() += 1;
+			attacker->m_iXP.GetForModify() += 1;
 		}
 	}
 }

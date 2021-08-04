@@ -4,8 +4,6 @@
 #include "in_buttons.h"
 #include "neo_gamerules.h"
 
-#include "weapon_neobasecombatweapon.h"
-
 #ifdef CLIENT_DLL
 #include "c_neo_player.h"
 #ifndef CNEO_Player
@@ -16,6 +14,8 @@
 #endif
 
 #include "neo_playeranimstate.h"
+
+#include "weapon_neobasecombatweapon.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -35,7 +35,7 @@ bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep)
 	}
 
 	// These weapons are not allowed to be zoomed in with.
-	const int forbiddenZooms =
+	const auto forbiddenZooms =
 		NEO_WEP_DETPACK |
 		NEO_WEP_FRAG_GRENADE |
 		NEO_WEP_GHOST |
@@ -46,19 +46,25 @@ bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep)
 	return !(pWep->GetNeoWepBits() & forbiddenZooms);
 }
 
-CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, int neoWepBits)
+CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, const NEO_WEP_BITS_UNDERLYING_TYPE& neoWepBits)
 {
 	int nonNeoWepFoundAtIndex = -1;
 	for (int i = 0; i < MAX_WEAPONS; i++)
 	{
-		auto pWep = dynamic_cast<CNEOBaseCombatWeapon*>(player->GetWeapon(i));
+		auto pWep = player->GetWeapon(i);
 		if (!pWep)
+		{
+			continue;
+		}
+
+		auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWep);
+		if (!pNeoWep)
 		{
 			nonNeoWepFoundAtIndex = i;
 			continue;
 		}
 
-		if (pWep->GetNeoWepBits() & neoWepBits)
+		if (pNeoWep->GetNeoWepBits() & neoWepBits)
 		{
 			return pWep;
 		}

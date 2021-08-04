@@ -34,7 +34,7 @@ public:
 
 	CWeaponDetpack();
 
-	virtual int GetNeoWepBits(void) const { return NEO_WEP_DETPACK | NEO_WEP_THROWABLE | NEO_WEP_EXPLOSIVE; }
+	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { return NEO_WEP_DETPACK | NEO_WEP_THROWABLE | NEO_WEP_EXPLOSIVE; }
 	virtual int GetNeoWepXPCost(const int neoClass) const OVERRIDE;
 
 	void	Precache(void);
@@ -44,7 +44,7 @@ public:
 	void	ItemPostFrame(void);
 
 	bool	Deploy(void);
-	virtual bool	Holster(CBaseCombatWeapon* pSwitchingTo = NULL);
+	virtual bool	Holster(CBaseCombatWeapon* pSwitchingTo = NULL) OVERRIDE;
 
 	bool	Reload(void) { return false; }
 

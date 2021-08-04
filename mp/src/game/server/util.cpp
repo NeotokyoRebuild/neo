@@ -42,6 +42,10 @@
 //#include "Portal_PhysicsEnvironmentMgr.h"
 #endif
 
+#ifdef NEO
+#include "neo_player.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -2934,7 +2938,21 @@ void CC_KDTreeTest( const CCommand &args )
 //	CBaseEntity *pSpot = gEntList.FindEntityByClassname( NULL, "info_player_start" );
 //	Vector vecStart = pSpot->GetAbsOrigin();
 
-	CBasePlayer *pPlayer = static_cast<CBasePlayer*>( UTIL_GetLocalPlayer() );
+#ifdef NEO
+#ifdef DEBUG
+	auto pBasePlayer = UTIL_GetLocalPlayer();
+	auto pPlayer = dynamic_cast<CNEO_Player*>(pBasePlayer);
+	if (!pPlayer)
+	{
+		Assert(!pBasePlayer);
+	}
+#else
+	auto pPlayer = static_cast<CNEO_Player*>(UTIL_GetLocalPlayer());
+#endif
+#else
+	CBasePlayer* pPlayer = static_cast<CBasePlayer*>(UTIL_GetLocalPlayer());
+#endif
+	
 	Vector vecStart = pPlayer->GetAbsOrigin();
 
 	static Vector *vecTargets = NULL;
@@ -3108,7 +3126,17 @@ void CC_VoxelTreePlayerView( void )
 {
 	Msg( "VoxelTreePlayerView\n" );
 
-	CBasePlayer *pPlayer = static_cast<CBasePlayer*>( UTIL_GetLocalPlayer() );
+#ifdef NEO
+#ifdef DEBUG
+	auto pPlayer = dynamic_cast<CNEO_Player*>(UTIL_GetLocalPlayer());
+	Assert(pPlayer);
+#else
+	auto pPlayer = static_cast<CNEO_Player*>(UTIL_GetLocalPlayer());
+#endif
+#else
+	CBasePlayer* pPlayer = static_cast<CBasePlayer*>(UTIL_GetLocalPlayer());
+#endif
+
 	Vector vecStart = pPlayer->GetAbsOrigin();
 	partition->RenderObjectsInPlayerLeafs( vecStart - VEC_HULL_MIN_SCALED( pPlayer ), vecStart + VEC_HULL_MAX_SCALED( pPlayer ), 3.0f  );
 }

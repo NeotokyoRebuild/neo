@@ -399,6 +399,13 @@ void CViewRender::Init( void )
 			flags, 0);
 
 #ifdef DEBUG
+	ITexture* pCbTex =
+#endif
+	materials->CreateNamedRenderTargetTextureEx("_rt_ColorBlind", iW, iH,
+		RT_SIZE_FULL_FRAME_BUFFER, materials->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED,
+		flags, 0);
+
+#ifdef DEBUG
 	Assert(pSSAOTex != NULL && !pSSAOTex->IsError());
 	Assert(pSSAO_ImTex != NULL && !pSSAO_ImTex->IsError());
 	Assert(pNVTex != NULL && !pNVTex->IsError());
@@ -408,6 +415,7 @@ void CViewRender::Init( void )
 	Assert(pMVTexBuff1 != NULL && !pMVTexBuff1->IsError());
 	Assert(pMVTexBuff2 != NULL && !pMVTexBuff2->IsError());
 	Assert(pTvTex != NULL && !pTvTex->IsError());
+	Assert(pCbTex != NULL && !pCbTex->IsError());
 #endif
 
 	materials->EndRenderTargetAllocation();

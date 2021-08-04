@@ -9,6 +9,10 @@
 
 #include "basecombatweapon_shared.h"
 
+#ifdef LINUX
+#include <initializer_list>
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -84,6 +88,11 @@ CNEOBaseCombatWeapon::CNEOBaseCombatWeapon( void )
 
 void CNEOBaseCombatWeapon::Spawn()
 {
+	// If this fires, either the enum bit mask has overflowed,
+	// this derived gun has no valid NeoBitFlags set,
+	// or we are spawning an instance of this base class for some reason.
+	Assert(GetNeoWepBits() > NEO_WEP_INVALID);
+
 	BaseClass::Spawn();
 
 #ifdef GAME_DLL
@@ -218,6 +227,99 @@ void CNEOBaseCombatWeapon::ItemPreFrame(void)
 			m_bReadyToAimIn = true;
 		}
 	}
+}
+
+ConVar sv_neo_wep_acc_penalty_scale("sv_neo_wep_acc_penalty_scale", "7.5", FCVAR_REPLICATED,
+	"Temporary global neo wep accuracy penalty scaler.", true, 0.01, true, 9999.0);
+
+ConVar sv_neo_wep_cone_min_scale("sv_neo_wep_cone_min_scale", "0.01", FCVAR_REPLICATED,
+	"Temporary global neo wep bloom min cone scaler.", true, 0.01, true, 10.0);
+
+ConVar sv_neo_wep_cone_max_scale("sv_neo_wep_cone_max_scale", "0.7", FCVAR_REPLICATED,
+	"Temporary global neo wep bloom max cone scaler.", true, 0.01, true, 10.0);
+
+// NEO HACK/FIXME (Rain): Doing some temporary bloom accuracy scaling here for easier testing.
+// Need to clean this up later once we have good values!!
+#define TEMP_WEP_STR(name) #name
+#define MAKE_TEMP_WEP_BLOOM_SCALER(weapon, defval) ConVar sv_neo_##weapon##_bloom_scale(TEMP_WEP_STR(sv_neo_##weapon##_bloom_scale), #defval, FCVAR_REPLICATED, TEMP_WEP_STR(Temporary weapon bloom scaler for #weapon), true, 0.01, true, 9999.0)
+
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_jitte,			2);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_jittescoped,		2.5);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_kyla,				2.5);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_m41,				2.5);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_m41l,				2.5);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_m41s,				2.5);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_milso,			2.5);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_mpn,				20.0);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_mpn_unsilenced,	4.0);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_mx,				2.5);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_mx_silenced,		2.5);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_pz,				2.5);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_smac,				2.5);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_srm,				2.5);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_srm_s,			2.5);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_tachi,			2.5);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_zr68c,			2.5);
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_zr68s,			2.5);
+#ifdef INCLUDE_WEP_PBK
+MAKE_TEMP_WEP_BLOOM_SCALER(weapon_pbk56s,			2.5);
+#endif
+
+const Vector& CNEOBaseCombatWeapon::GetBulletSpread(void)
+{
+	static Vector cone;
+
+	// NEO HACK/FIXME (Rain): Doing some temporary bloom accuracy scaling here for easier testing.
+	// Need to clean this up later once we have good values!!
+	const std::initializer_list<ConVar*> bloomScalers = {
+		&sv_neo_weapon_jitte_bloom_scale,
+		&sv_neo_weapon_jittescoped_bloom_scale,
+		&sv_neo_weapon_kyla_bloom_scale,
+		&sv_neo_weapon_m41_bloom_scale,
+		&sv_neo_weapon_m41l_bloom_scale,
+		&sv_neo_weapon_m41s_bloom_scale,
+		&sv_neo_weapon_milso_bloom_scale,
+		&sv_neo_weapon_mpn_bloom_scale,
+		&sv_neo_weapon_mpn_unsilenced_bloom_scale,
+		&sv_neo_weapon_mx_bloom_scale,
+		&sv_neo_weapon_mx_silenced_bloom_scale,
+		&sv_neo_weapon_pz_bloom_scale,
+		&sv_neo_weapon_smac_bloom_scale,
+		&sv_neo_weapon_srm_bloom_scale,
+		&sv_neo_weapon_srm_s_bloom_scale,
+		&sv_neo_weapon_tachi_bloom_scale,
+		&sv_neo_weapon_zr68c_bloom_scale,
+		&sv_neo_weapon_zr68s_bloom_scale,
+#ifdef INCLUDE_WEP_PBK
+		& sv_neo_weapon_pbk56s_bloom_scale,
+#endif
+	};
+	float wepSpecificBloomScale = 1.0f;
+	for (ConVar* scaler : bloomScalers)
+	{
+		if (V_strstr(scaler->GetName(), GetName()))
+		{
+			wepSpecificBloomScale = scaler->GetFloat();
+			break;
+		}
+	}
+
+	Assert(GetInnateInaccuracy() <= GetMaxAccuracyPenalty());
+
+	const float ramp = RemapValClamped(m_flAccuracyPenalty,
+		GetInnateInaccuracy(),
+		GetMaxAccuracyPenalty() * sv_neo_wep_acc_penalty_scale.GetFloat(),
+		0.0f,
+		1.0f);
+
+	// We lerp from very accurate to inaccurate over time
+	VectorLerp(
+		GetMinCone() * sv_neo_wep_cone_min_scale.GetFloat(),
+		GetMaxCone() * sv_neo_wep_cone_max_scale.GetFloat() * wepSpecificBloomScale,
+		ramp,
+		cone);
+
+	return cone;
 }
 
 void CNEOBaseCombatWeapon::PrimaryAttack(void)

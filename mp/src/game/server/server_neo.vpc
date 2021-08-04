@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-//	SERVER_HL2MP.VPC
+//	SERVER_NEO.VPC
 //
 //	Project Script
 //-----------------------------------------------------------------------------
@@ -16,7 +16,8 @@ $Configuration
 	$Compiler
 	{
 		$AdditionalIncludeDirectories	"$BASE;$SRCDIR\game\shared\hl2,.\neo,.\hl2,.\hl2mp,$SRCDIR\game\shared\hl2mp,$SRCDIR\game\shared\neo,$SRCDIR\game\shared\neo\weapons"
-		$PreprocessorDefinitions		"$BASE;NEO;HL2MP;HL2_DLL"
+		$PreprocessorDefinitions		"$BASE;NEO;HL2MP;HL2_DLL" [!$INCLUDE_WEP_PBK]
+		$PreprocessorDefinitions		"$BASE;NEO;HL2MP;HL2_DLL;INCLUDE_WEP_PBK" [$INCLUDE_WEP_PBK]
 	}
 }
 
@@ -295,6 +296,9 @@ $Project "Server (HL2MP)"
 			$File	"$SRCDIR\game\shared\neo\neo_predicted_viewmodel.cpp"
 			$File	"$SRCDIR\game\shared\neo\neo_predicted_viewmodel.h"
 
+			$File	"$SRCDIR\game\shared\neo\neo_shot_manipulator.cpp"
+			$File	"$SRCDIR\game\shared\neo\neo_shot_manipulator.h"
+
 			$Folder "Weapons"
 			{
 				$File	"$SRCDIR\game\shared\neo\weapons\weapon_neobasecombatweapon.cpp"
@@ -332,6 +336,8 @@ $Project "Server (HL2MP)"
 				$File	"$SRCDIR\game\shared\neo\weapons\weapon_mx.h"
 				$File	"$SRCDIR\game\shared\neo\weapons\weapon_mxs.cpp"
 				$File	"$SRCDIR\game\shared\neo\weapons\weapon_mxs.h"
+				$File	"$SRCDIR\game\shared\neo\weapons\weapon_pbk56s.cpp"	[$INCLUDE_WEP_PBK]
+				$File	"$SRCDIR\game\shared\neo\weapons\weapon_pbk56s.h"	[$INCLUDE_WEP_PBK]
 				$File	"$SRCDIR\game\shared\neo\weapons\weapon_proxmine.cpp"
 				$File	"$SRCDIR\game\shared\neo\weapons\weapon_proxmine.h"
 				$File	"$SRCDIR\game\shared\neo\weapons\weapon_pz.cpp"

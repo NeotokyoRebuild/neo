@@ -51,6 +51,7 @@ public:
 	virtual bool WantsLagCompensationOnEntity(const CBasePlayer *pPlayer, const CUserCmd *pCmd, const CBitVec<MAX_EDICTS> *pEntityTransmitBits) const OVERRIDE;
 	virtual void FireBullets(const FireBulletsInfo_t &info) OVERRIDE;
 	virtual bool Weapon_Switch(CBaseCombatWeapon *pWeapon, int viewmodelindex = 0) OVERRIDE;
+	virtual bool Weapon_CanSwitchTo(CBaseCombatWeapon *pWeapon) OVERRIDE;
 	virtual bool BumpWeapon(CBaseCombatWeapon *pWeapon) OVERRIDE;
 	virtual void ChangeTeam(int iTeam) OVERRIDE;
 	virtual void PickupObject(CBaseEntity *pObject, bool bLimitMassAndSize) OVERRIDE;
@@ -63,8 +64,12 @@ public:
 	virtual void RemoveSuit(void) OVERRIDE;
 	virtual void GiveDefaultItems(void) OVERRIDE;
 
-	virtual const Vector GetPlayerMaxs(void) const OVERRIDE;
 	virtual void InitVCollision(const Vector& vecAbsOrigin, const Vector& vecAbsVelocity) OVERRIDE;
+
+	virtual void ModifyFireBulletsDamage(CTakeDamageInfo* dmgInfo) OVERRIDE;
+
+	virtual const Vector GetPlayerMins(void) const OVERRIDE;
+	virtual const Vector GetPlayerMaxs(void) const OVERRIDE;
 
 	// Implementing in header in hopes of compiler picking up the inlined base method
 	virtual float GetModelScale() const OVERRIDE
@@ -124,9 +129,11 @@ public:
 	void RequestSetClass(int newClass);
 	void RequestSetSkin(int newSkin);
 	bool RequestSetLoadout(int loadoutNumber);
+	void RequestSetStar(int newStar);
 
 	int GetSkin() const { return m_iNeoSkin; }
 	int GetClass() const { return m_iNeoClass; }
+	int GetStar() const { return m_iNeoStar; }
 
 	bool IsAirborne() const { return (!(GetFlags() & FL_ONGROUND)); }
 
@@ -170,6 +177,7 @@ private:
 public:
 	CNetworkVar(int, m_iNeoClass);
 	CNetworkVar(int, m_iNeoSkin);
+	CNetworkVar(int, m_iNeoStar);
 
 	CNetworkVar(int, m_iCapTeam);
 

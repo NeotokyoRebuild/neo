@@ -53,13 +53,19 @@ private:
 	CHudTexture *m_iconPrimaryAmmo;
 };
 
+#ifndef NEO // CNEOHud_Ammo
 DECLARE_HUDELEMENT( CHudAmmo );
+#endif
 
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
 CHudAmmo::CHudAmmo( const char *pElementName ) : BaseClass(NULL, "HudAmmo"), CHudElement( pElementName )
 {
+#ifdef NEO
+	Assert(false); // Use CNEOHud_Ammo
+#endif
+
 	SetHiddenBits( HIDEHUD_HEALTH | HIDEHUD_PLAYERDEAD | HIDEHUD_NEEDSUIT | HIDEHUD_WEAPONSELECTION );
 
 	hudlcd->SetGlobalStat( "(ammo_primary)", "0" );
@@ -73,6 +79,10 @@ CHudAmmo::CHudAmmo( const char *pElementName ) : BaseClass(NULL, "HudAmmo"), CHu
 //-----------------------------------------------------------------------------
 void CHudAmmo::Init( void )
 {
+#ifdef NEO
+	Assert(false); // Use CNEOHud_Ammo
+#endif
+
 	m_iAmmo		= -1;
 	m_iAmmo2	= -1;
 	

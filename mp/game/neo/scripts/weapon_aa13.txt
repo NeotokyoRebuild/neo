@@ -19,17 +19,19 @@ WeaponData
 	"bucket_position"		"3"
 
 	"clip_size"				"16"
-	"default_clip"			"1600"
+	"default_clip"			"48"
+	"autoswitchfrom"        "0"
 	
 	"primary_ammo"			"AMMO_10G_SHELL"
 	"secondary_ammo"		"None"
 
 	"weight"				"3"
 	
+	// ITEM_FLAG_SELECTONEMPTY = 1
 	// ITEM_FLAG_NOAUTOSWITCHEMPTY = (1 << 2)
 	// ITEM_FLAG_DOHITLOCATIONDMG = (1 << 5) 
-	// Combined as int = 36
-	"item_flags"		"36"
+	// Combined as int = 37
+	"item_flags"		"37"
 	
 	"AimType"				"1"
 	

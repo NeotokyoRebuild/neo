@@ -16,6 +16,7 @@
 #include "neo_model_manager.h"
 
 #include "weapon_ghost.h"
+#include "weapon_supa7.h"
 
 #include "shareddefs.h"
 #include "inetchannelinfo.h"
@@ -43,6 +44,7 @@ LINK_ENTITY_TO_CLASS(player, CNEO_Player);
 IMPLEMENT_SERVERCLASS_ST(CNEO_Player, DT_NEO_Player)
 SendPropInt(SENDINFO(m_iNeoClass)),
 SendPropInt(SENDINFO(m_iNeoSkin)),
+SendPropInt(SENDINFO(m_iNeoStar)),
 SendPropInt(SENDINFO(m_iXP)),
 SendPropInt(SENDINFO(m_iCapTeam), 3),
 SendPropInt(SENDINFO(m_iGhosterTeam)),
@@ -72,6 +74,7 @@ END_SEND_TABLE()
 BEGIN_DATADESC(CNEO_Player)
 DEFINE_FIELD(m_iNeoClass, FIELD_INTEGER),
 DEFINE_FIELD(m_iNeoSkin, FIELD_INTEGER),
+DEFINE_FIELD(m_iNeoStar, FIELD_INTEGER),
 DEFINE_FIELD(m_iXP, FIELD_INTEGER),
 DEFINE_FIELD(m_iCapTeam, FIELD_INTEGER),
 DEFINE_FIELD(m_iGhosterTeam, FIELD_INTEGER),
@@ -157,14 +160,34 @@ static bool IsNeoPrimary(CNEOBaseCombatWeapon *pNeoWep)
 		return false;
 	}
 
-	const int bits = pNeoWep->GetNeoWepBits();
-	const int primaryBits = NEO_WEP_AA13 | NEO_WEP_GHOST | NEO_WEP_JITTE | NEO_WEP_JITTE_S |
+	const auto bits = pNeoWep->GetNeoWepBits();
+	Assert(bits > NEO_WEP_INVALID);
+	const auto primaryBits = NEO_WEP_AA13 | NEO_WEP_GHOST | NEO_WEP_JITTE | NEO_WEP_JITTE_S |
 		NEO_WEP_M41 | NEO_WEP_M41_L | NEO_WEP_M41_S | NEO_WEP_MPN | NEO_WEP_MPN_S |
 		NEO_WEP_MX | NEO_WEP_MX_S | NEO_WEP_PZ | NEO_WEP_SMAC | NEO_WEP_SRM |
 		NEO_WEP_SRM_S | NEO_WEP_SRS | NEO_WEP_SUPA7 | NEO_WEP_ZR68_C | NEO_WEP_ZR68_L |
 		NEO_WEP_ZR68_S;
 
 	return (primaryBits & bits) ? true : false;
+}
+
+void CNEO_Player::RequestSetStar(int newStar)
+{
+	const int team = GetTeamNumber();
+	if (team != TEAM_JINRAI && team != TEAM_NSF)
+	{
+		return;
+	}
+	if (newStar < STAR_NONE || newStar > STAR_FOXTROT)
+	{
+		return;
+	}
+	if (newStar == m_iNeoStar)
+	{
+		return;
+	}
+
+	m_iNeoStar.GetForModify() = newStar;
 }
 
 bool CNEO_Player::RequestSetLoadout(int loadoutNumber)
@@ -234,7 +257,6 @@ bool CNEO_Player::RequestSetLoadout(int loadoutNumber)
 void SetClass(const CCommand &command)
 {
 	auto player = static_cast<CNEO_Player*>(UTIL_GetCommandClient());
-
 	if (!player)
 	{
 		return;
@@ -255,7 +277,6 @@ void SetClass(const CCommand &command)
 void SetSkin(const CCommand &command)
 {
 	auto player = static_cast<CNEO_Player*>(UTIL_GetCommandClient());
-
 	if (!player)
 	{
 		return;
@@ -277,7 +298,6 @@ void SetSkin(const CCommand &command)
 void SetLoadout(const CCommand &command)
 {
 	auto player = static_cast<CNEO_Player*>(UTIL_GetCommandClient());
-
 	if (!player)
 	{
 		return;
@@ -293,6 +313,16 @@ void SetLoadout(const CCommand &command)
 ConCommand setclass("setclass", SetClass, "Set class", FCVAR_USERINFO);
 ConCommand setskin("SetVariant", SetSkin, "Set skin", FCVAR_USERINFO);
 ConCommand loadout("loadout", SetLoadout, "Set loadout", FCVAR_USERINFO);
+
+CON_COMMAND_F(joinstar, "Join star", FCVAR_USERINFO)
+{
+	auto player = static_cast<CNEO_Player*>(UTIL_GetCommandClient());
+	if (player && args.ArgC() == 2)
+	{
+		const int star = atoi(args.ArgV()[1]);
+		player->RequestSetStar(star);
+	}
+}
 
 static int GetNumOtherPlayersConnected(CNEO_Player *asker)
 {
@@ -320,6 +350,7 @@ CNEO_Player::CNEO_Player()
 {
 	m_iNeoClass = NEO_CLASS_ASSAULT;
 	m_iNeoSkin = NEO_SKIN_FIRST;
+	m_iNeoStar = NEO_DEFAULT_STAR;
 	m_iXP.GetForModify() = 0;
 
 	m_bGhostExists = false;
@@ -1423,6 +1454,38 @@ bool CNEO_Player::Weapon_Switch( CBaseCombatWeapon *pWeapon,
 	return BaseClass::Weapon_Switch(pWeapon, viewmodelindex);
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: Returns whether or not we can switch to the given weapon. Override 
+//          from the base HL2MP player to let us swap to weapons with no ammo.
+// Input  : pWeapon -
+//-----------------------------------------------------------------------------
+bool CNEO_Player::Weapon_CanSwitchTo(CBaseCombatWeapon *pWeapon)
+{
+    CBasePlayer *pPlayer = (CBasePlayer *)this;
+#if !defined(CLIENT_DLL)
+    IServerVehicle *pVehicle = pPlayer->GetVehicle();
+#else
+    IClientVehicle *pVehicle = pPlayer->GetVehicle();
+#endif
+    if (pVehicle && !pPlayer->UsingStandardWeaponsInVehicle())
+        return false;
+
+    // NEO: Needs to be commented out to let us swap to empty weapons
+    // if ( !pWeapon->HasAnyAmmo() && !GetAmmoCount( pWeapon->m_iPrimaryAmmoType ) )
+    // 	return false;
+
+    if (!pWeapon->CanDeploy())
+        return false;
+
+    if (GetActiveWeapon())
+    {
+        if (!GetActiveWeapon()->CanHolster())
+            return false;
+    }
+
+    return true;
+}
+
 bool CNEO_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 {
 	// We already have a weapon in this slot
@@ -1538,10 +1601,10 @@ bool CNEO_Player::IsAllowedToDrop(CBaseCombatWeapon *pWep)
 	auto pNeoWep = static_cast<CNEOBaseCombatWeapon*>(pWep);
 #endif
 
-	const int wepBits = pNeoWep->GetNeoWepBits();
+	const auto wepBits = pNeoWep->GetNeoWepBits();
 	Assert(wepBits > NEO_WEP_INVALID);
 
-	const int unallowedDrops = (NEO_WEP_KNIFE | NEO_WEP_PROX_MINE | NEO_WEP_THROWABLE);
+	const auto unallowedDrops = (NEO_WEP_KNIFE | NEO_WEP_PROX_MINE | NEO_WEP_THROWABLE);
 	return ((wepBits & unallowedDrops) == 0);
 }
 
@@ -1577,24 +1640,36 @@ void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
 
 			return;
 		}
+
+		auto neoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWeapon);
+		if (neoWep)
+		{
+			if (neoWep->GetNeoWepBits() & NEO_WEP_SUPA7)
+			{
+				Assert(dynamic_cast<CWeaponSupa7*>(neoWep));
+				static_cast<CWeaponSupa7*>(neoWep)->ClearDelayedInputs();
+			}
+		}
 	}
 	else
 	{
-		// Drop a grenade if it's primed.
-		if (GetActiveWeapon())
+		auto activeWep = GetActiveWeapon();
+		if (activeWep)
 		{
 			// If player has held down an attack key since the previous frame
 			if (((m_nButtons & IN_ATTACK) && (!(m_afButtonPressed & IN_ATTACK))) ||
 				((m_nButtons & IN_ATTACK2) && (!(m_afButtonPressed & IN_ATTACK2))))
 			{
-				if (GetActiveWeapon() == Weapon_OwnsThisType("weapon_grenade"))
+				// Drop a grenade if it's primed.
+				if (activeWep == Weapon_OwnsThisType("weapon_grenade"))
 				{
 					NEODropPrimedFragGrenade(this, GetActiveWeapon());
 					return;
 				}
-				else if (GetActiveWeapon() == Weapon_OwnsThisType("weapon_smokegrenade"))
+				// Drop a smoke if it's primed.
+				else if (activeWep == Weapon_OwnsThisType("weapon_smokegrenade"))
 				{
-					NEODropPrimedSmokeGrenade(this, GetActiveWeapon());
+					NEODropPrimedSmokeGrenade(this, activeWep);
 					return;
 				}
 			}
@@ -1938,12 +2013,12 @@ void GiveDet(CNEO_Player* pPlayer)
 
 void CNEO_Player::GiveDefaultItems(void)
 {
-	CBasePlayer::GiveAmmo(150, "AR2");
+	CBasePlayer::GiveAmmo(50, "AR2");
 
-	CBasePlayer::GiveAmmo(150, "Pistol");
+	CBasePlayer::GiveAmmo(50, "Pistol");
 	CBasePlayer::GiveAmmo(30, "AMMO_10G_SHELL");
-	CBasePlayer::GiveAmmo(150, "AMMO_PRI");
-	CBasePlayer::GiveAmmo(150, "AMMO_SMAC");
+	CBasePlayer::GiveAmmo(50, "AMMO_PRI");
+	CBasePlayer::GiveAmmo(50, "AMMO_SMAC");
 	CBasePlayer::GiveAmmo(1, "AMMO_DETPACK");
 
 	const bool supportsGetKnife = true;
@@ -2252,6 +2327,11 @@ float CNEO_Player::GetActiveWeaponSpeedScale() const
 	return (pWep ? pWep->GetSpeedScale() : 1.0f);
 }
 
+const Vector CNEO_Player::GetPlayerMins(void) const
+{
+	return VEC_DUCK_HULL_MIN_SCALED(this);
+}
+
 const Vector CNEO_Player::GetPlayerMaxs(void) const
 {
 	return VEC_DUCK_HULL_MAX_SCALED(this);
@@ -2272,4 +2352,11 @@ void CNEO_Player::InitVCollision(const Vector& vecAbsOrigin, const Vector& vecAb
 	CPhysCollide* pCrouchModel = PhysCreateBbox(VEC_DUCK_HULL_MIN_SCALED(this), VEC_DUCK_HULL_MAX_SCALED(this));
 
 	SetupVPhysicsShadow(vecAbsOrigin, vecAbsVelocity, pModel, "player_stand", pCrouchModel, "player_crouch");
+}
+
+extern ConVar sv_neo_wep_dmg_modifier;
+
+void CNEO_Player::ModifyFireBulletsDamage(CTakeDamageInfo* dmgInfo)
+{
+	dmgInfo->SetDamage(dmgInfo->GetDamage() * sv_neo_wep_dmg_modifier.GetFloat());
 }

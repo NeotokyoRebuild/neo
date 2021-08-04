@@ -718,7 +718,12 @@ bool CGameMovement::CheckInterval( IntervalType_t type )
 //-----------------------------------------------------------------------------
 Vector CGameMovement::GetPlayerMins( bool ducked ) const
 {
+#ifdef NEO
+	Assert(dynamic_cast<CNEO_Player*>(player));
+	return ducked ? VEC_DUCK_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player)) : VEC_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player));
+#else
 	return ducked ? VEC_DUCK_HULL_MIN_SCALED( player ) : VEC_HULL_MIN_SCALED( player );
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -729,6 +734,7 @@ Vector CGameMovement::GetPlayerMins( bool ducked ) const
 Vector CGameMovement::GetPlayerMaxs( bool ducked ) const
 {	
 #ifdef NEO
+	Assert(dynamic_cast<CNEO_Player*>(player));
 	return ducked ? VEC_DUCK_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player)) : VEC_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player));
 #else
 	return ducked ? VEC_DUCK_HULL_MAX_SCALED(player) : VEC_HULL_MAX_SCALED(player);
@@ -748,7 +754,18 @@ Vector CGameMovement::GetPlayerMins( void ) const
 	}
 	else
 	{
-		return player->m_Local.m_bDucked  ? VEC_DUCK_HULL_MIN_SCALED( player ) : VEC_HULL_MIN_SCALED( player );
+#ifdef NEO
+		Assert(dynamic_cast<CNEO_Player*>(player));
+		Vector mins = player->m_Local.m_bDucked ? VEC_DUCK_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player)) : VEC_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player));
+		// We may be leaning sideways, in which case we need to block the lean camera from clipping walls etc.
+		if (player->GetViewOffset().y < 0)
+		{
+			mins.y += player->GetViewOffset().y;
+		}
+		return mins;
+#else
+		return player->m_Local.m_bDucked ? VEC_DUCK_HULL_MIN_SCALED(player) : VEC_HULL_MIN_SCALED(player);
+#endif
 	}
 }
 
@@ -766,7 +783,14 @@ Vector CGameMovement::GetPlayerMaxs( void ) const
 	else
 	{
 #ifdef NEO
-		return player->m_Local.m_bDucked ? VEC_DUCK_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player)) : VEC_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player));
+		Assert(dynamic_cast<CNEO_Player*>(player));
+		Vector maxs = player->m_Local.m_bDucked ? VEC_DUCK_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player)) : VEC_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player));
+		// We may be leaning sideways, in which case we need to block the lean camera from clipping walls etc.
+		if (player->GetViewOffset().y > 0)
+		{
+			maxs.y += player->GetViewOffset().y;
+		}
+		return maxs;
 #else
 		return player->m_Local.m_bDucked ? VEC_DUCK_HULL_MAX_SCALED(player) : VEC_HULL_MAX_SCALED(player);
 #endif
@@ -780,7 +804,12 @@ Vector CGameMovement::GetPlayerMaxs( void ) const
 //-----------------------------------------------------------------------------
 Vector CGameMovement::GetPlayerViewOffset( bool ducked ) const
 {
-	return ducked ? VEC_DUCK_VIEW_SCALED( player ) : VEC_VIEW_SCALED( player );
+#ifdef NEO
+	Assert(dynamic_cast<CNEO_Player*>(player));
+	return ducked ? VEC_DUCK_VIEW_SCALED(static_cast<CNEO_Player*>(player)) : VEC_VIEW_SCALED(static_cast<CNEO_Player*>(player));
+#else
+	return ducked ? VEC_DUCK_VIEW_SCALED(player) : VEC_VIEW_SCALED(player);
+#endif
 }
 
 #if 0
@@ -4136,6 +4165,10 @@ void CGameMovement::FixPlayerCrouchStuck( bool upward )
 
 bool CGameMovement::CanUnduck()
 {
+#ifdef NEO
+	Assert(dynamic_cast<CNEO_Player*>(player));
+#endif
+
 	int i;
 	trace_t trace;
 	Vector newOrigin;
@@ -4146,14 +4179,22 @@ bool CGameMovement::CanUnduck()
 	{
 		for ( i = 0; i < 3; i++ )
 		{
-			newOrigin[i] += ( VEC_DUCK_HULL_MIN_SCALED( player )[i] - VEC_HULL_MIN_SCALED( player )[i] );
+#ifdef NEO
+			newOrigin[i] += (VEC_DUCK_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player))[i] - VEC_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player))[i]);
+#else
+			newOrigin[i] += (VEC_DUCK_HULL_MIN_SCALED(player)[i] - VEC_HULL_MIN_SCALED(player)[i]);
+#endif
 		}
 	}
 	else
 	{
 		// If in air an letting go of crouch, make sure we can offset origin to make
 		//  up for uncrouching
-		Vector hullSizeNormal = VEC_HULL_MAX_SCALED( player ) - VEC_HULL_MIN_SCALED( player );
+#ifdef NEO
+		Vector hullSizeNormal = VEC_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player)) - VEC_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player));
+#else
+		Vector hullSizeNormal = VEC_HULL_MAX_SCALED(player) - VEC_HULL_MIN_SCALED(player);
+#endif
 
 #ifdef NEO
 		Vector hullSizeCrouch = VEC_DUCK_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player)) - VEC_DUCK_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player));
@@ -4181,6 +4222,8 @@ bool CGameMovement::CanUnduck()
 //-----------------------------------------------------------------------------
 void CGameMovement::FinishUnDuck( void )
 {
+	Assert(dynamic_cast<CNEO_Player*>(player));
+
 	int i;
 	trace_t trace;
 	Vector newOrigin;
@@ -4191,18 +4234,22 @@ void CGameMovement::FinishUnDuck( void )
 	{
 		for ( i = 0; i < 3; i++ )
 		{
-			newOrigin[i] += ( VEC_DUCK_HULL_MIN_SCALED( player )[i] - VEC_HULL_MIN_SCALED( player )[i] );
+#ifdef NEO
+			newOrigin[i] += (VEC_DUCK_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player))[i] - VEC_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player))[i]);
+#else
+			newOrigin[i] += (VEC_DUCK_HULL_MIN_SCALED(player)[i] - VEC_HULL_MIN_SCALED(player)[i]);
+#endif
 		}
 	}
 	else
 	{
 		// If in air an letting go of crouch, make sure we can offset origin to make
 		//  up for uncrouching
-		Vector hullSizeNormal = VEC_HULL_MAX_SCALED( player ) - VEC_HULL_MIN_SCALED( player );
-
 #ifdef NEO
+		Vector hullSizeNormal = VEC_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player)) - VEC_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player));
 		Vector hullSizeCrouch = VEC_DUCK_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player)) - VEC_DUCK_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player));
 #else
+		Vector hullSizeNormal = VEC_HULL_MAX_SCALED(player) - VEC_HULL_MIN_SCALED(player);
 		Vector hullSizeCrouch = VEC_DUCK_HULL_MAX_SCALED(player) - VEC_DUCK_HULL_MIN_SCALED(player);
 #endif
 		
@@ -4262,15 +4309,17 @@ void CGameMovement::UpdateDuckJumpEyeOffset( void )
 //-----------------------------------------------------------------------------
 void CGameMovement::FinishUnDuckJump( trace_t &trace )
 {
+	Assert(dynamic_cast<CNEO_Player*>(player));
+
 	Vector vecNewOrigin;
 	VectorCopy( mv->GetAbsOrigin(), vecNewOrigin );
 
 	//  Up for uncrouching.
-	Vector hullSizeNormal = VEC_HULL_MAX_SCALED( player ) - VEC_HULL_MIN_SCALED( player );
-
 #ifdef NEO
+	Vector hullSizeNormal = VEC_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player)) - VEC_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player));
 	Vector hullSizeCrouch = VEC_DUCK_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player)) - VEC_DUCK_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player));
 #else
+	Vector hullSizeNormal = VEC_HULL_MAX_SCALED(player) - VEC_HULL_MIN_SCALED(player);
 	Vector hullSizeCrouch = VEC_DUCK_HULL_MAX_SCALED(player) - VEC_DUCK_HULL_MIN_SCALED(player);
 #endif
 
@@ -4304,6 +4353,10 @@ void CGameMovement::FinishUnDuckJump( trace_t &trace )
 //-----------------------------------------------------------------------------
 void CGameMovement::FinishDuck( void )
 {
+#ifdef NEO
+	Assert(dynamic_cast<CNEO_Player*>(player));
+#endif
+
 	if ( player->GetFlags() & FL_DUCKING )
 		return;
 
@@ -4319,17 +4372,21 @@ void CGameMovement::FinishDuck( void )
 		for ( int i = 0; i < 3; i++ )
 		{
 			Vector org = mv->GetAbsOrigin();
-			org[ i ]-= ( VEC_DUCK_HULL_MIN_SCALED( player )[i] - VEC_HULL_MIN_SCALED( player )[i] );
+#ifdef NEO
+			org[i] -= (VEC_DUCK_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player))[i] - VEC_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player))[i]);
+#else
+			org[i] -= (VEC_DUCK_HULL_MIN_SCALED(player)[i] - VEC_HULL_MIN_SCALED(player)[i]);
+#endif
 			mv->SetAbsOrigin( org );
 		}
 	}
 	else
 	{
-		Vector hullSizeNormal = VEC_HULL_MAX_SCALED( player ) - VEC_HULL_MIN_SCALED( player );
-
 #ifdef NEO
+		Vector hullSizeNormal = VEC_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player)) - VEC_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player));
 		Vector hullSizeCrouch = VEC_DUCK_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player)) - VEC_DUCK_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player));
 #else
+		Vector hullSizeNormal = VEC_HULL_MAX_SCALED(player) - VEC_HULL_MIN_SCALED(player);
 		Vector hullSizeCrouch = VEC_DUCK_HULL_MAX_SCALED(player) - VEC_DUCK_HULL_MIN_SCALED(player);
 #endif
 		
@@ -4362,17 +4419,21 @@ void CGameMovement::FinishDuck( void )
 //-----------------------------------------------------------------------------
 void CGameMovement::StartUnDuckJump( void )
 {
+#ifdef NEO
+	Assert(dynamic_cast<CNEO_Player*>(player));
+#endif
+
 	player->AddFlag( FL_DUCKING );
 	player->m_Local.m_bDucked = true;
 	player->m_Local.m_bDucking = false;
 
 	player->SetViewOffset( GetPlayerViewOffset( true ) );
 
-	Vector hullSizeNormal = VEC_HULL_MAX_SCALED( player ) - VEC_HULL_MIN_SCALED( player );
-
 #ifdef NEO
+	Vector hullSizeNormal = VEC_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player)) - VEC_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player));
 	Vector hullSizeCrouch = VEC_DUCK_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player)) - VEC_DUCK_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player));
 #else
+	Vector hullSizeNormal = VEC_HULL_MAX_SCALED(player) - VEC_HULL_MIN_SCALED(player);
 	Vector hullSizeCrouch = VEC_DUCK_HULL_MAX_SCALED(player) - VEC_DUCK_HULL_MIN_SCALED(player);
 #endif
 

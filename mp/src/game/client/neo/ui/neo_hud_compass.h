@@ -28,17 +28,14 @@ protected:
 	virtual ConVar* GetUpdateFrequencyConVar() const;
 
 private:
-	void DrawCompass();
-	void DrawDebugCompass();
+	void DrawCompass() const;
+	void DrawDebugCompass() const;
 	void GetCompassUnicodeString(const float angle, wchar_t* outUnicodeStr) const;
 
 private:
 	vgui::HFont m_hFont;
 
 	int m_resX, m_resY;
-
-	float m_flCompassPulse;
-	float m_flPulseStep;
 
 	wchar_t m_wszCompassUnicode[UNICODE_NEO_COMPASS_STR_LENGTH];
 

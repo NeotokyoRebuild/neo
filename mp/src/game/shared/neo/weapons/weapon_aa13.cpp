@@ -35,6 +35,14 @@ LINK_ENTITY_TO_CLASS(weapon_aa13, CWeaponAA13);
 
 PRECACHE_WEAPON_REGISTER(weapon_aa13);
 
+CWeaponAA13::CWeaponAA13(void)
+{
+	m_flSoonestAttack = gpGlobals->curtime;
+	// m_flAccuracyPenalty = 0.0f;
+
+	// m_nNumShotsFired = 0;
+}
+
 Activity CWeaponAA13::GetPrimaryAttackActivity()
 {
 	if (m_nNumShotsFired < 1)
@@ -49,19 +57,36 @@ Activity CWeaponAA13::GetPrimaryAttackActivity()
 	return ACT_VM_RECOIL3;
 }
 
-CWeaponAA13::CWeaponAA13(void)
-{
-	m_flSoonestAttack = gpGlobals->curtime;
-	m_flAccuracyPenalty = 0.0f;
-
-	m_nNumShotsFired = 0;
-}
-
 void CWeaponAA13::UpdatePenaltyTime()
 {
-	// Update the penalty time decay
-	m_flAccuracyPenalty -= gpGlobals->frametime;
-	m_flAccuracyPenalty = clamp(m_flAccuracyPenalty, 0.0f, GetMaxAccuracyPenalty());
+	auto owner = ToBasePlayer(GetOwner());
+
+	if (!owner)
+	{
+		return;
+	}
+
+	if (((owner->m_nButtons & IN_ATTACK) == false) &&
+		(m_flSoonestAttack < gpGlobals->curtime))
+	{
+		// Update the penalty time decay
+		m_flAccuracyPenalty -= gpGlobals->frametime;
+		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty, 0.0f, GetMaxAccuracyPenalty());
+	}
+}
+
+void CWeaponAA13::ItemPreFrame()
+{
+	UpdatePenaltyTime();
+
+	BaseClass::ItemPreFrame();
+}
+
+void CWeaponAA13::ItemBusyFrame()
+{
+	UpdatePenaltyTime();
+
+	BaseClass::ItemBusyFrame();
 }
 
 void CWeaponAA13::ItemPostFrame()
@@ -88,7 +113,6 @@ void CWeaponAA13::ItemPostFrame()
 			{
 				DryFire();
 				m_flSoonestAttack = gpGlobals->curtime + GetFastestDryRefireTime();
-				return;
 			}
 			else
 			{
@@ -96,20 +120,6 @@ void CWeaponAA13::ItemPostFrame()
 			}
 		}
 	}
-}
-
-void CWeaponAA13::ItemPreFrame()
-{
-	UpdatePenaltyTime();
-
-	BaseClass::ItemPreFrame();
-}
-
-void CWeaponAA13::ItemBusyFrame()
-{
-	UpdatePenaltyTime();
-
-	BaseClass::ItemBusyFrame();
 }
 
 void CWeaponAA13::AddViewKick()
@@ -124,7 +134,7 @@ void CWeaponAA13::AddViewKick()
 	QAngle viewPunch;
 
 	viewPunch.x = SharedRandomFloat("aa13px", 0.33f, 0.5f);
-	viewPunch.y = SharedRandomFloat("aa13py", -0.6f, 0.6f);
+	viewPunch.y = SharedRandomFloat("aa13py", -1.5f, 1.5f);
 	viewPunch.z = 0.0f;
 
 	pOwner->ViewPunch(viewPunch);
@@ -134,5 +144,70 @@ void CWeaponAA13::DryFire()
 {
 	WeaponSound(EMPTY);
 	SendWeaponAnim(ACT_VM_DRYFIRE);
-	m_flNextPrimaryAttack = gpGlobals->curtime + GetFastestDryRefireTime();
+	m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
+}
+
+void CWeaponAA13::PrimaryAttack(void)
+{
+	// Combo of the neobasecombatweapon and the Supa7 attack
+	Assert(!ShootingIsPrevented());
+
+	if (gpGlobals->curtime < m_flSoonestAttack)
+	{
+		return;
+	}
+	else if (gpGlobals->curtime - m_flLastAttackTime < GetFireRate())
+	{
+		return;
+	}
+	else if (m_iClip1 == 0)
+	{
+		if (!m_bFireOnEmpty)
+		{
+			CheckReload();
+		}
+		else
+		{
+			DryFire();
+		}
+		return;
+	}
+
+	// Only the player fires this way so we can cast
+	CBasePlayer *pPlayer = ToBasePlayer(GetOwner());
+
+	if (!pPlayer)
+	{
+		return;
+	}
+
+	pPlayer->ViewPunchReset();
+
+	// MUST call sound before removing a round from the clip of a CMachineGun
+	WeaponSound(SINGLE);
+
+	pPlayer->DoMuzzleFlash();
+
+	SendWeaponAnim(ACT_VM_PRIMARYATTACK);
+
+	m_iClip1 -= 1;
+
+	// player "shoot" animation
+	pPlayer->SetAnimation(PLAYER_ATTACK1);
+
+	Vector vecSrc = pPlayer->Weapon_ShootPosition();
+	Vector vecAiming = pPlayer->GetAutoaimVector(AUTOAIM_10DEGREES);
+
+	FireBulletsInfo_t info(7, vecSrc, vecAiming, GetBulletSpread(), MAX_TRACE_LENGTH, m_iPrimaryAmmoType);
+	info.m_pAttacker = pPlayer;
+
+	// Fire the bullets, and force the first shot to be perfectly accurate
+	pPlayer->FireBullets(info);
+
+	if (!m_iClip1 && pPlayer->GetAmmoCount(m_iPrimaryAmmoType) <= 0)
+	{
+		// HEV suit - indicate out of ammo condition
+		pPlayer->SetSuitUpdate("!HEV_AMO0", FALSE, 0);
+	}
+	AddViewKick();
 }

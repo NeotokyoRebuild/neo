@@ -153,5 +153,4 @@ ISaveRestoreBlockHandler *GetAchievementSaveRestoreBlockHandler()
 	return &g_AchievementSaveRestoreBlockHandler;
 }
 
-
 #endif // GAME_DLL

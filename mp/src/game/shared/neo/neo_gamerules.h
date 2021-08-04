@@ -119,6 +119,8 @@ public:
 #endif
 	virtual bool ShouldCollide( int collisionGroup0, int collisionGroup1 ) OVERRIDE;
 
+	virtual const char* GetGameName() { return NEO_GAME_NAME; }
+
 #ifdef GAME_DLL
 	virtual bool FPlayerCanRespawn(CBasePlayer* pPlayer) OVERRIDE;
 #endif

@@ -1,0 +1,28 @@
+#include "cbase.h"
+#include "weapon_pbk56s.h"
+
+// memdbgon must be the last include file in a .cpp file!!!
+#include "tier0/memdbgon.h"
+
+IMPLEMENT_NETWORKCLASS_ALIASED(WeaponPBK56S, DT_WeaponPBK56S)
+
+BEGIN_NETWORK_TABLE(CWeaponPBK56S, DT_WeaponPBK56S)
+	DEFINE_NEO_BASE_WEP_NETWORK_TABLE
+END_NETWORK_TABLE()
+
+#ifdef CLIENT_DLL
+BEGIN_PREDICTION_DATA(CWeaponPBK56S)
+DEFINE_NEO_BASE_WEP_PREDICTION
+END_PREDICTION_DATA()
+#endif
+
+NEO_IMPLEMENT_ACTTABLE(CWeaponPBK56S)
+
+LINK_ENTITY_TO_CLASS(weapon_pbk56s, CWeaponPBK56S);
+
+PRECACHE_WEAPON_REGISTER(weapon_pbk56s);
+
+CWeaponPBK56S::CWeaponPBK56S()
+{
+
+}

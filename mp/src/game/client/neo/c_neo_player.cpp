@@ -34,6 +34,7 @@
 #include "prediction.h"
 
 #include "neo/weapons/weapon_ghost.h"
+#include "neo/weapons/weapon_supa7.h"
 
 #include <engine/ivdebugoverlay.h>
 #include <engine/IEngineSound.h>
@@ -56,6 +57,7 @@ LINK_ENTITY_TO_CLASS(player, C_NEO_Player);
 IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_iNeoClass)),
 	RecvPropInt(RECVINFO(m_iNeoSkin)),
+	RecvPropInt(RECVINFO(m_iNeoStar)),
 
 	RecvPropBool(RECVINFO(m_bShowTestMessage)),
 	RecvPropString(RECVINFO(m_pszTestMessage)),
@@ -310,6 +312,7 @@ C_NEO_Player::C_NEO_Player()
 
 	m_iNeoClass = NEO_CLASS_ASSAULT;
 	m_iNeoSkin = NEO_SKIN_FIRST;
+	m_iNeoStar = NEO_DEFAULT_STAR;
 
 	m_iCapTeam = TEAM_UNASSIGNED;
 	m_iLoadoutWepChoice = 0;
@@ -546,7 +549,11 @@ void C_NEO_Player::ItemPreFrame( void )
 
 	if (m_afButtonPressed & IN_DROP)
 	{
-		Weapon_Drop(GetActiveWeapon());
+		auto neoWep = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
+		if (neoWep)
+		{
+			Weapon_Drop(neoWep);
+		}
 	}
 }
 
@@ -1024,14 +1031,19 @@ bool C_NEO_Player::ShouldDrawHL2StyleQuickHud(void)
 	return cl_drawhud_quickinfo.GetBool();
 }
 
-void C_NEO_Player::Weapon_Drop(C_BaseCombatWeapon *pWeapon)
+void C_NEO_Player::Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon)
 {
 	Weapon_SetZoom(false);
 
-	C_WeaponGhost *ghost = dynamic_cast<C_WeaponGhost*>(pWeapon);
-	if (ghost)
+	if (pWeapon->IsGhost())
 	{
-		ghost->HandleGhostUnequip();
+		Assert(dynamic_cast<C_WeaponGhost*>(pWeapon));
+		static_cast<C_WeaponGhost*>(pWeapon)->HandleGhostUnequip();
+	}
+	else if (pWeapon->GetNeoWepBits() & NEO_WEP_SUPA7)
+	{
+		Assert(dynamic_cast<C_WeaponSupa7*>(pWeapon));
+		static_cast<C_WeaponSupa7*>(pWeapon)->ClearDelayedInputs();
 	}
 }
 
@@ -1255,6 +1267,11 @@ bool C_NEO_Player::IsCarryingGhost(void) const
 	return GetNeoWepWithBits(this, NEO_WEP_GHOST) != NULL;
 }
 
+const Vector C_NEO_Player::GetPlayerMins(void) const
+{
+	return VEC_DUCK_HULL_MIN_SCALED(this);
+}
+
 const Vector C_NEO_Player::GetPlayerMaxs(void) const
 {
 	return VEC_DUCK_HULL_MAX_SCALED(this);
@@ -1306,4 +1323,14 @@ void C_NEO_Player::SetAnimation(PLAYER_ANIM playerAnim)
 	{
 		m_pPlayerAnimState->DoAnimationEvent(animEvent);
 	}
+}
+
+extern ConVar sv_neo_wep_dmg_modifier;
+
+// NEO NOTE (Rain): doesn't seem to be implemented at all clientside?
+// Don't need to do this, unless we want it for prediction with proper implementation later.
+// Keeping it for now.
+void C_NEO_Player::ModifyFireBulletsDamage(CTakeDamageInfo* dmgInfo)
+{
+	dmgInfo->SetDamage(dmgInfo->GetDamage() * sv_neo_wep_dmg_modifier.GetFloat());
 }

@@ -9,6 +9,10 @@
 
 #include "neo_gamerules.h"
 
+#include <vgui_controls/ImagePanel.h>
+
+#include "c_neo_player.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -57,6 +61,46 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 		m_szStatusANSI[i] = '\0';
 	}
 	g_pVGuiLocalize->ConvertANSIToUnicode(m_szStatusANSI, m_wszStatusUnicode, sizeof(m_wszStatusUnicode));
+
+	// Initialize star textures
+	const bool starsHwFiltered = false;
+	starNone = new vgui::ImagePanel(this, "star_none");
+	starNone->SetImage(vgui::scheme()->GetImage("hud/star_none", starsHwFiltered));
+
+	starA = new vgui::ImagePanel(this, "star_alpha");
+	starA->SetImage(vgui::scheme()->GetImage("hud/star_alpha", starsHwFiltered));
+
+	starB = new vgui::ImagePanel(this, "star_bravo");
+	starB->SetImage(vgui::scheme()->GetImage("hud/star_bravo", starsHwFiltered));
+
+	starC = new vgui::ImagePanel(this, "star_charlie");
+	starC->SetImage(vgui::scheme()->GetImage("hud/star_charlie", starsHwFiltered));
+
+	starD = new vgui::ImagePanel(this, "star_delta");
+	starD->SetImage(vgui::scheme()->GetImage("hud/star_delta", starsHwFiltered));
+
+	starE = new vgui::ImagePanel(this, "star_echo");
+	starE->SetImage(vgui::scheme()->GetImage("hud/star_echo", starsHwFiltered));
+
+	starF = new vgui::ImagePanel(this, "star_foxtrot");
+	starF->SetImage(vgui::scheme()->GetImage("hud/star_foxtrot", starsHwFiltered));
+
+	const auto stars = { starNone, starA, starB, starC, starD, starE, starF };
+
+	const bool starAutoDelete = true;
+	COMPILE_TIME_ASSERT(starAutoDelete); // If not, we need to handle that memory on dtor manually
+
+	for (auto star : stars) {
+		star->SetDrawColor(COLOR_NSF); // This will get updated in the draw check as required
+		star->SetAlpha(1.0f);
+		star->SetWide(192 * m_resX / 1920.0); // The icons are downscaled to 192*48 on a 1080p res.
+		star->SetTall(48 * m_resY / 1080.0);
+		star->SetShouldScaleImage(true);
+		star->SetAutoDelete(starAutoDelete);
+		star->SetVisible(false);
+	}
+
+	m_iPreviouslyActiveStar = m_iPreviouslyActiveTeam  = -1;
 }
 
 void CNEOHud_RoundState::ApplySchemeSettings(vgui::IScheme* pScheme)
@@ -117,6 +161,67 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 	surface()->DrawSetTextColor(Color(255, 255, 255, 255));
 	surface()->DrawSetTextPos(xpos - (fontWidth / 2), ypos - (fontHeight / 2));
 	surface()->DrawPrintText(m_wszStatusUnicode, sizeof(m_szStatusANSI));
+
+	CheckActiveStar();
+}
+
+void CNEOHud_RoundState::CheckActiveStar()
+{
+	auto player = C_NEO_Player::GetLocalNEOPlayer();
+	Assert(player);
+
+	const int currentStar = player->GetStar();
+	const int currentTeam = player->GetTeamNumber();
+
+	if (m_iPreviouslyActiveStar == currentStar && m_iPreviouslyActiveTeam == currentTeam)
+	{
+		return;
+	}
+
+	starNone->SetVisible(false);
+	starA->SetVisible(false);
+	starB->SetVisible(false);
+	starC->SetVisible(false);
+	starD->SetVisible(false);
+	starE->SetVisible(false);
+	starF->SetVisible(false);
+
+	if (currentTeam != TEAM_JINRAI && currentTeam != TEAM_NSF)
+	{
+		return;
+	}
+
+	vgui::ImagePanel* target;
+
+	switch (currentStar) {
+	case STAR_ALPHA:
+		target = starA;
+		break;
+	case STAR_BRAVO:
+		target = starB;
+		break;
+	case STAR_CHARLIE:
+		target = starC;
+		break;
+	case STAR_DELTA:
+		target = starD;
+		break;
+	case STAR_ECHO:
+		target = starE;
+		break;
+	case STAR_FOXTROT:
+		target = starF;
+		break;
+	default:
+		target = starNone;
+		break;
+	}
+
+	target->SetVisible(true);
+	target->SetDrawColor(currentStar == STAR_NONE ? COLOR_NEO_WHITE : currentTeam == TEAM_NSF ? COLOR_NSF : COLOR_JINRAI);
+
+	m_iPreviouslyActiveStar = currentStar;
+	m_iPreviouslyActiveTeam = currentTeam;
 }
 
 void CNEOHud_RoundState::Paint()
