@@ -166,25 +166,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 		if (activeWep->UsesClipsForAmmo1())
 		{
 			// Get character representation of ammo type
-			int ammoType = activeWep->GetPrimaryAmmoType();
-			char* ammoChar = null;
-			switch (ammoType) {
-			case 1:
-				ammoChar = "a";
-				break;
-			case 3:
-				ammoChar = "b";
-				break;
-			case 12:
-				ammoChar = "d";
-				break;
-			case 17:
-				ammoChar = "c";
-				break;
-			default:
-				ammoChar = "a";
-				break;
-			}
+			char* ammoChar = (char*)activeWep->GetWpnData().szBulletCharacter;
 
 			const int maxBulletsInClip = 63 + 1;
 			char bullets[maxBulletsInClip]{ '\0' };
