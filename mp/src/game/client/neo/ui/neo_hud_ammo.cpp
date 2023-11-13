@@ -146,7 +146,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 	{
 		const auto ammo = GetAmmoDef()->GetAmmoOfIndex(activeWep->GetPrimaryAmmoType());
 		const int ammoCount = activeWep->GetOwner()->GetAmmoCount(ammo->pName);
-		const int numClips = abs(ammoCount / activeWep->GetMaxClip1()); // abs because grenades return negative values (???)
+		const int numClips = ceil(abs((float)ammoCount / activeWep->GetMaxClip1())); // abs because grenades return negative values (???) // casting division to float in case we have a half-empty mag, rounding up to show the half mag as one more mag
 		
 		// Render amount of clips remaining. Sort of an approximation, should revisit once unfinished mag "reload dumping" is implemented.
 		if (numClips != 0)
@@ -163,12 +163,33 @@ void CNEOHud_Ammo::DrawAmmo() const
 		}
 
 		// Render the bullet icons representing the amount of bullets in current clip.
-		if (ammoCount != 0 && activeWep->UsesClipsForAmmo1())
+		if (activeWep->UsesClipsForAmmo1())
 		{
+			// Get character representation of ammo type
+			int ammoType = activeWep->GetPrimaryAmmoType();
+			char* ammoChar = null;
+			switch (ammoType) {
+			case 1:
+				ammoChar = "a";
+				break;
+			case 3:
+				ammoChar = "b";
+				break;
+			case 12:
+				ammoChar = "d";
+				break;
+			case 17:
+				ammoChar = "c";
+				break;
+			default:
+				ammoChar = "a";
+				break;
+			}
+
 			const int maxBulletsInClip = 63 + 1;
 			char bullets[maxBulletsInClip]{ '\0' };
 			for (int i = 0, numBulletsInCurClip = activeWep->Clip1(); i < maxBulletsInClip && numBulletsInCurClip != 0; ++i) {
-				V_strcat_safe(bullets, "a");
+				V_strcat_safe(bullets, ammoChar);
 				--numBulletsInCurClip;
 			}
 			wchar_t unicodeBullets[maxBulletsInClip]{ L'\0' };
