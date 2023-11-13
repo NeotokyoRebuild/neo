@@ -142,7 +142,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 	surface()->DrawPrintText(unicodeWepName, textLen);
 
 	const int maxClip = activeWep->GetMaxClip1();
-	if (maxClip != 0)
+	if (maxClip != 0 && !activeWep->IsMeleeWeapon())
 	{
 		const auto ammo = GetAmmoDef()->GetAmmoOfIndex(activeWep->GetPrimaryAmmoType());
 		const int ammoCount = activeWep->GetOwner()->GetAmmoCount(ammo->pName);

@@ -14,6 +14,7 @@ WeaponData
 	"clip_size"				"-1"
 	"primary_ammo"			"None"
 	"secondary_ammo"		"None"
+	"MeleeWeapon"			"1"
 
 	"weight"				"0"
 	"item_flags"			"0"
