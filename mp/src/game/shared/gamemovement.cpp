@@ -4268,7 +4268,6 @@ void CGameMovement::FinishUnDuck( void )
 	finalOffset.x = currentOffset.x;
 	finalOffset.y = currentOffset.y;
 
-	player->SetViewOffset(finalOffset);
 	player->SetViewOffset( finalOffset );
 	player->m_Local.m_flDucktime = 0;
 
