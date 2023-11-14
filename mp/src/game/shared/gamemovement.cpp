@@ -4262,7 +4262,14 @@ void CGameMovement::FinishUnDuck( void )
 	player->RemoveFlag( FL_DUCKING );
 	player->m_Local.m_bDucking  = false;
 	player->m_Local.m_bInDuckJump  = false;
-	player->SetViewOffset( GetPlayerViewOffset( false ) );
+
+	Vector currentOffset = player->GetViewOffset();
+	Vector finalOffset = GetPlayerViewOffset(false);
+	finalOffset.x = currentOffset.x;
+	finalOffset.y = currentOffset.y;
+
+	player->SetViewOffset(finalOffset);
+	player->SetViewOffset( finalOffset );
 	player->m_Local.m_flDucktime = 0;
 
 	mv->SetAbsOrigin( newOrigin );
@@ -4364,7 +4371,12 @@ void CGameMovement::FinishDuck( void )
 	player->m_Local.m_bDucked = true;
 	player->m_Local.m_bDucking = false;
 
-	player->SetViewOffset( GetPlayerViewOffset( true ) );
+	Vector currentOffset = player->GetViewOffset();
+	Vector finalOffset = GetPlayerViewOffset(true);
+	finalOffset.x = currentOffset.x;
+	finalOffset.y = currentOffset.y;
+
+	player->SetViewOffset( finalOffset );
 
 	// HACKHACK - Fudge for collision bug - no time to fix this properly
 	if ( player->GetGroundEntity() != NULL )
