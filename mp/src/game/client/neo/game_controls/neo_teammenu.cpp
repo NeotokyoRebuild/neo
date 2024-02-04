@@ -285,11 +285,11 @@ void CNeoTeamMenu::Update()
 	wchar_t textUnicode_Jinrai[sizeof(wchar_t) * sizeof(textAscii)];
 	wchar_t textUnicode_NSF[sizeof(wchar_t) * sizeof(textAscii)];
 
-	itoa(numPlayersJinrai, textAscii, sizeof(numPlayersJinrai));
+	snprintf(textAscii, 3, "%d", numPlayersJinrai);
 	g_pVGuiLocalize->ConvertANSIToUnicode(textAscii, textUnicode_Jinrai, sizeof(textUnicode_Jinrai));
 	m_pJinrai_PlayercountLabel->SetText(textUnicode_Jinrai);
 
-	itoa(numPlayersNSF, textAscii, sizeof(numPlayersNSF));
+	snprintf(textAscii, 3, "%d", numPlayersNSF);
 	g_pVGuiLocalize->ConvertANSIToUnicode(textAscii, textUnicode_NSF, sizeof(textUnicode_NSF));
 	m_pNSF_PlayercountLabel->SetText(textUnicode_NSF);
 #endif

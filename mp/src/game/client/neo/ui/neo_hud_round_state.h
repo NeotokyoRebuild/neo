@@ -36,7 +36,7 @@ private:
 	char m_szStatusANSI[6];
 	wchar_t m_wszStatusUnicode[6];
 
-	vgui::ImagePanel* starNone, *starA, *starB, *starC, *starD, *starE, *starF;
+	vgui::ImagePanel *starNone, *starA, *starB, *starC, *starD, *starE, *starF;
 
 	int m_iPreviouslyActiveStar;
 	int m_iPreviouslyActiveTeam;

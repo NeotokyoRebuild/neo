@@ -669,7 +669,7 @@ void GDinputvariable::ToKeyValue(MDkeyvalue *pkv)
 	}
 	else if (eStoreAs == INTEGER)
 	{
-		itoa(m_nValue, pkv->szValue, 10);
+		snprintf(pkv->szValue, KEYVALUE_MAX_VALUE_LENGTH, "%d", m_nValue);
 	}
 }
 

@@ -85,7 +85,7 @@ bool IsNeoGameInfoPathOK(char *out_neoPath, const int pathLen)
 		for (int i = 1; i <= maxExtraLibs; i++)
 		{
 			char libStr[3];
-			itoa(i, libStr, sizeof(libStr));
+			snprintf(libStr, 3, "%d", i);
 
 			KeyValues *pKvLib = pKvLibFolders->FindKey(libStr);
 			if (!pKvLib)

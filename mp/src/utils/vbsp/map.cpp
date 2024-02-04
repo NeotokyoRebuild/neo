@@ -1271,7 +1271,7 @@ void ConvertSideList( entity_t *mapent, char *key )
 					}
 
 					char szIndex[15];
-					itoa( nIndex, szIndex, 10 );
+					snprintf(szIndex, 15, "%d", nIndex);
 					strcat( szNewValue, szIndex );
 				}
 			}
