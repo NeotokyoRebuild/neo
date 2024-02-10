@@ -9,6 +9,7 @@
 #include "shareddefs.h"
 #include "steam/steam_api.h"
 #include "filesystem.h"
+#include "inttostr.h"
 
 #ifdef LINUX
 // User for renaming folder paths.
@@ -85,7 +86,7 @@ bool IsNeoGameInfoPathOK(char *out_neoPath, const int pathLen)
 		for (int i = 1; i <= maxExtraLibs; i++)
 		{
 			char libStr[3];
-			snprintf(libStr, 3, "%d", i);
+			inttostr(libStr, 3, i);
 
 			KeyValues *pKvLib = pKvLibFolders->FindKey(libStr);
 			if (!pKvLib)

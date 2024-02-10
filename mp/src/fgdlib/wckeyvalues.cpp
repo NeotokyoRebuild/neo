@@ -6,6 +6,10 @@
 
 #include "fgdlib/WCKeyValues.h"
 
+#ifdef _WIN32
+#define snprintf _snprintf
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include <tier0/memdbgon.h>
 

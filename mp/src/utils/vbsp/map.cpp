@@ -16,6 +16,10 @@
 #include "fgdlib/fgdlib.h"
 #include "manifest.h"
 
+#ifdef _WIN32
+#define snprintf _snprintf
+#endif
+
 #ifdef VSVMFIO
 #include "VmfImport.h"
 #endif // VSVMFIO
