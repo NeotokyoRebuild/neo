@@ -267,6 +267,11 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 		}
 	}
 
+	if (!(player->GetFlags() & FL_ONGROUND)) {
+		//mid-air; move towards zero
+		Yfinal = 0;
+	}
+
 	const float dY = Yfinal - Ycurrent;
 
 	if (dY != 0){
