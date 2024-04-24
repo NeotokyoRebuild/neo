@@ -454,15 +454,31 @@ void CPlayerAnimState::ComputePoseParam_BodyXY(void)
 		sideSign = -1;
 	}
 
-	float speed_x = speedScale * forwardSign;
-	float speed_y = speedScale * sideSign;	
+
+	Vector eyeForward;
+	GetOuter()->EyeVectors(&eyeForward, NULL, NULL);
+	Assert(eyeForward.IsValid());
+	Vector velocity = GetOuter()->GetLocalVelocity();
+
+	Vector2D eyeForward2D = eyeForward.AsVector2D();
+	Vector2D velocity2D = velocity.AsVector2D();
+
+	eyeForward2D.NormalizeInPlace();
+	velocity2D.NormalizeInPlace();
+
+	float forwardDot = eyeForward2D[0] * velocity2D[0] + eyeForward2D[1] * velocity2D[1];
+	Vector2D eyeRight2D = Vector2D(eyeForward2D[1], eyeForward2D[0] * -1); // eyeForward2D rotated by 90 degrees
+	float sideDot = eyeRight2D[0] * velocity2D[0] + eyeRight2D[1] * velocity2D[1];
+
+	float speed_x = speedScale * forwardDot;
+	float speed_y = speedScale * sideDot;	
 
 	GetOuter()->SetPoseParameter(poseparam_move_x, speed_x);
 	GetOuter()->SetPoseParameter("move_y", speed_y);
 
 	bool bIsMoving;
 	const float flPlaybackRate = CalcMovementPlaybackRate(speed, GetOuter()->GetSequenceGroundSpeed(GetOuter()->GetSequence()), &bIsMoving) * sv_neo_animrate_scale.GetFloat();
-	
+
 	if (bIsMoving)
 	{
 		GetOuter()->SetPlaybackRate(flPlaybackRate);

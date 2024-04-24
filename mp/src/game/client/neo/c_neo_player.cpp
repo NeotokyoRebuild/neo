@@ -916,7 +916,10 @@ void C_NEO_Player::PostThink(void)
 	Vector eyeForward;
 	this->EyeVectors(&eyeForward, NULL, NULL);
 	Assert(eyeForward.IsValid());
-	m_pPlayerAnimState->Update(eyeForward[YAW], eyeForward[PITCH]);
+
+	float flPitch = asin(-eyeForward[2]);
+	float flYaw = atan2(eyeForward[1], eyeForward[0]);
+	m_pPlayerAnimState->Update(RAD2DEG(flYaw), RAD2DEG(flPitch));
 }
 
 bool C_NEO_Player::IsAllowedToSuperJump(void)
