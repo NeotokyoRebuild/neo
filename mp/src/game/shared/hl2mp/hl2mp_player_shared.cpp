@@ -428,33 +428,6 @@ void CPlayerAnimState::ComputePoseParam_BodyXY(void)
 		((speed / ((GetOuter()->GetFlags() & FL_DUCKING) ? NEO_RECON_CROUCH_SPEED : NEO_RECON_NORM_SPEED))),
 		0, 1);
 
-	int forwardSign = 0;
-	if (GetOuter()->m_nButtons & IN_FORWARD)
-	{
-		if (!(GetOuter()->m_nButtons & IN_BACK))
-		{
-			forwardSign = 1;
-		}
-	}
-	else if (GetOuter()->m_nButtons & IN_BACK)
-	{
-		forwardSign = -1;
-	}
-
-	int sideSign = 0;
-	if (GetOuter()->m_nButtons & IN_MOVERIGHT)
-	{
-		if (!(GetOuter()->m_nButtons & IN_MOVELEFT))
-		{
-			sideSign = 1;
-		}
-	}
-	else if (GetOuter()->m_nButtons & IN_MOVELEFT)
-	{
-		sideSign = -1;
-	}
-
-
 	Vector eyeForward;
 	GetOuter()->EyeVectors(&eyeForward, NULL, NULL);
 	Assert(eyeForward.IsValid());
