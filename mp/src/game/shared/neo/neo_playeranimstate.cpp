@@ -1,5 +1,6 @@
 #include "cbase.h"
 #include "base_playeranimstate.h"
+#include "weapon_grenade.h"
 
 #include "tier0/vprof.h"
 #include "animation.h"
@@ -48,6 +49,8 @@ public:
 	virtual bool IsThrowingGrenade();
 	virtual int CalcAimLayerSequence(float *flCycle, float *flAimSequenceWeight, bool bForceIdle);
 	virtual void ClearAnimationState();
+	virtual void ClearAnimationFlags();
+	virtual void UpdateAnimationFlags();
 	virtual bool CanThePlayerMove();
 	virtual float GetCurrentMaxGroundSpeed();
 	virtual Activity CalcMainActivity();
@@ -206,13 +209,69 @@ void CNEOPlayerAnimState::InitNEO(CBaseAnimatingOverlay *pPlayer,
 
 void CNEOPlayerAnimState::ClearAnimationState()
 {
+	ClearAnimationFlags();
+	BaseClass::ClearAnimationState();
+}
+
+void CNEOPlayerAnimState::ClearAnimationFlags()
+{
 	m_bFiring = false;
 	m_bReloading = false;
 
 	m_bThrowingGrenade = m_bPrimingGrenade = false;
 	m_iLastThrowGrenadeCounter = GetOuterGrenadeThrowCounter();
+}
 
-	BaseClass::ClearAnimationState();
+
+void CNEOPlayerAnimState::UpdateAnimationFlags()
+{
+	CWeaponGrenade* grenadeWeapon = dynamic_cast<CWeaponGrenade*>(m_pOuter->MyCombatCharacterPointer()->GetActiveWeapon());
+	if (grenadeWeapon != nullptr) 
+	{ // Current weapon is a grenade
+		m_bFiring = false;
+		m_bReloading = false;
+		m_bThrowingGrenade = false;
+
+		if (!m_bThrowingGrenade && m_flGrenadeCycle < 1)
+		{ // Grenade was recently thrown, continue playing throw animation
+			return;
+		}
+
+		if (m_bPrimingGrenade && !grenadeWeapon->IsPrimed()) 
+		{ // Play throw sequence if grenade was primed but now isn't, grenade was thrown (unless user switched to a different grenade after priming a grenade, need to keep track of grenade names? NEO FIXME)
+			m_bPrimingGrenade = false;
+			m_bThrowingGrenade = true;
+			m_iGrenadeSequence = CalcGrenadePrimeSequence(); // This should be ThrowSequence but ThrowSequence returns 0 NEO FIXME
+			m_flGrenadeCycle = 0;
+			return;
+		}
+
+		if (m_bPrimingGrenade && grenadeWeapon->IsPrimed())
+		{// Still priming grenade
+			return;
+		}
+
+		m_bPrimingGrenade = grenadeWeapon->IsPrimed();
+		if (m_bPrimingGrenade)
+		{ // Begin prime sequence
+			//m_iGrenadeSequence = CalcGrenadePrimeSequence(); // Can add a grenade priming animation here, there is no such animation in the orignal game NEO TODO
+			m_flGrenadeCycle = 0;
+			return;
+		}
+		return;
+	}
+	CBaseCombatWeapon* currentWeapon = dynamic_cast<CBaseCombatWeapon*>(m_pOuter->MyCombatCharacterPointer()->GetActiveWeapon());
+	if (currentWeapon != nullptr) 
+	{ // Current weapon is a firearm/melee weapon
+		ClearAnimationFlags();
+
+		m_bFiring = !((gpGlobals->curtime - currentWeapon->m_flNextPrimaryAttack.Get()) > 0.5f);
+		m_bReloading = currentWeapon->m_bInReload.Get();
+		return;
+	}
+	// Character hands are empty?
+	ClearAnimationFlags();
+	return;
 }
 
 void CNEOPlayerAnimState::DoAnimationEvent(PlayerAnimEvent_t event, int nData)
@@ -295,10 +354,6 @@ int CNEOPlayerAnimState::CalcReloadLayerSequence()
 void CNEOPlayerAnimState::UpdateLayerSequenceGeneric(CStudioHdr *pStudioHdr,
 	int iLayer, bool &bEnabled, float &flCurCycle, int &iSequence, bool bWaitAtEnd)
 {
-#ifdef GAME_DLL
-	Assert(false);
-	return;
-#else
 	if (!bEnabled)
 	{
 		return;
@@ -311,6 +366,7 @@ void CNEOPlayerAnimState::UpdateLayerSequenceGeneric(CStudioHdr *pStudioHdr,
 		if (bWaitAtEnd)
 		{
 			flCurCycle = 1;
+			return;
 		}
 		else
 		{
@@ -330,7 +386,6 @@ void CNEOPlayerAnimState::UpdateLayerSequenceGeneric(CStudioHdr *pStudioHdr,
 	pLayer->m_flPlaybackRate = 1.0;
 	pLayer->m_flWeight = 1.0f;
 	pLayer->m_nOrder = iLayer;
-#endif
 }
 
 // We don't have a concept of cooking grenades, so checking for the actual moment of tossing it.
@@ -350,58 +405,22 @@ bool CNEOPlayerAnimState::IsOuterGrenadePrimed()
 
 void CNEOPlayerAnimState::ComputeGrenadeSequence(CStudioHdr *pStudioHdr)
 {
-#ifdef CLIENT_DLL
 	if (m_bThrowingGrenade)
 	{
 		UpdateLayerSequenceGeneric(pStudioHdr, GRENADESEQUENCE_LAYER, m_bThrowingGrenade,
 			m_flGrenadeCycle, m_iGrenadeSequence, false);
 	}
-	else
+	if (m_bPrimingGrenade) 
 	{
-		// Priming the grenade isn't an event.. we just watch the player for it.
-		// Also play the prime animation first if he wants to throw the grenade.
-		bool bThrowPending = (m_iLastThrowGrenadeCounter != GetOuterGrenadeThrowCounter());
-		if (IsOuterGrenadePrimed() || bThrowPending)
-		{
-			if (!m_bPrimingGrenade)
-			{
-				// If this guy just popped into our PVS, and he's got his grenade primed, then
-				// let's assume that it's all the way primed rather than playing the prime
-				// animation from the start.
-				if (TimeSinceLastAnimationStateClear() < 0.4f)
-					m_flGrenadeCycle = 1;
-				else
-					m_flGrenadeCycle = 0;
-
-				m_iGrenadeSequence = CalcGrenadePrimeSequence();
-			}
-
-			m_bPrimingGrenade = true;
-			UpdateLayerSequenceGeneric(pStudioHdr, GRENADESEQUENCE_LAYER, m_bPrimingGrenade,
-				m_flGrenadeCycle, m_iGrenadeSequence, true);
-
-			// If we're waiting to throw and we're done playing the prime animation...
-			if (bThrowPending && m_flGrenadeCycle == 1)
-			{
-				m_iLastThrowGrenadeCounter = GetOuterGrenadeThrowCounter();
-
-				// Now play the throw animation.
-				m_iGrenadeSequence = CalcGrenadeThrowSequence();
-				if (m_iGrenadeSequence != -1)
-				{
-					// Configure to start playing 
-					m_bThrowingGrenade = true;
-					m_bPrimingGrenade = false;
-					m_flGrenadeCycle = 0;
-				}
-			}
-		}
-		else
-		{
-			m_bPrimingGrenade = false;
-		}
+		UpdateLayerSequenceGeneric(pStudioHdr, GRENADESEQUENCE_LAYER, m_bPrimingGrenade,
+			m_flGrenadeCycle, m_iGrenadeSequence, true);
 	}
-#endif
+	bool grenadeBeingThrown = m_flGrenadeCycle < 1;
+	if (!m_bThrowingGrenade && grenadeBeingThrown)
+	{
+		UpdateLayerSequenceGeneric(pStudioHdr, GRENADESEQUENCE_LAYER, grenadeBeingThrown,
+			m_flGrenadeCycle, m_iGrenadeSequence, false);
+	}
 }
 
 int CNEOPlayerAnimState::CalcGrenadePrimeSequence()
@@ -430,12 +449,8 @@ int CNEOPlayerAnimState::GetOuterGrenadeThrowCounter()
 
 void CNEOPlayerAnimState::ComputeReloadSequence(CStudioHdr *pStudioHdr)
 {
-#ifdef CLIENT_DLL
 	UpdateLayerSequenceGeneric(pStudioHdr, RELOADSEQUENCE_LAYER, m_bReloading,
 		m_flReloadCycle, m_iReloadSequence, false);
-#else
-	// Server doesn't bother with different fire sequences.
-#endif
 }
 
 int CNEOPlayerAnimState::CalcAimLayerSequence(float *flCycle,
@@ -660,7 +675,6 @@ Activity CNEOPlayerAnimState::CalcMainActivity()
 
 void CNEOPlayerAnimState::DebugShowAnimState(int iStartLine)
 {
-#ifdef CLIENT_DLL
 	engine->Con_NPrintf(iStartLine++, "fire  : %s, cycle: %.2f\n",
 		m_bFiring ? GetSequenceName(m_pOuter->GetModelPtr(), m_iFireSequence) :
 		"[not firing]", m_flFireCycle);
@@ -670,12 +684,12 @@ void CNEOPlayerAnimState::DebugShowAnimState(int iStartLine)
 		"[not reloading]", m_flReloadCycle);
 	
 	BaseClass::DebugShowAnimState(iStartLine);
-#endif
 }
 
 void CNEOPlayerAnimState::ComputeSequences(CStudioHdr *pStudioHdr)
 {
 	BaseClass::ComputeSequences(pStudioHdr);
+	UpdateAnimationFlags();
 
 	ComputeFireSequence(pStudioHdr);
 	ComputeReloadSequence(pStudioHdr);
@@ -700,12 +714,8 @@ void CNEOPlayerAnimState::ClearAnimationLayers()
 
 void CNEOPlayerAnimState::ComputeFireSequence(CStudioHdr *pStudioHdr)
 {
-#ifdef CLIENT_DLL
 	UpdateLayerSequenceGeneric(pStudioHdr, FIRESEQUENCE_LAYER, m_bFiring,
 		m_flFireCycle, m_iFireSequence, false);
-#else
-	// Server doesn't bother with different fire sequences.
-#endif
 }
 
 bool CNEOPlayerAnimState::ShouldBlendAimSequenceToIdle()
@@ -731,7 +741,7 @@ bool CNEOPlayerAnimState::ShouldBlendReloadSequenceToIdle()
 		m_bReloading = m_pOuter->MyCombatCharacterPointer()->GetActiveWeapon()->m_bInReload;
 	}
 
-	return (m_bReloading && (static_cast<CNEO_Player*>(m_pOuter)->GetFlags() & FL_DUCKING));
+	return (m_bReloading && ((m_pOuter)->GetFlags() & FL_DUCKING));
 }
 
 void CNEOPlayerAnimState::ComputeAimSequence()
