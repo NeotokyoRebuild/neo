@@ -130,6 +130,39 @@ bool CNEOBaseCombatWeapon::Reload( void )
 #endif
 }
 
+
+//-----------------------------------------------------------------------------
+// Purpose: Reload has finished.
+//-----------------------------------------------------------------------------
+void CNEOBaseCombatWeapon::FinishReload(void)
+{
+	CBaseCombatCharacter* pOwner = GetOwner();
+
+	if (pOwner)
+	{
+		// If I use primary clips, reload primary
+		if (UsesClipsForAmmo1())
+		{
+			int primary = MIN(GetMaxClip1(), pOwner->GetAmmoCount(m_iPrimaryAmmoType));
+			m_iClip1 = primary;
+			pOwner->RemoveAmmo(primary, m_iPrimaryAmmoType);
+		}
+
+		// If I use secondary clips, reload secondary
+		if (UsesClipsForAmmo2())
+		{
+			int secondary = MIN(GetMaxClip2() - m_iClip2, pOwner->GetAmmoCount(m_iSecondaryAmmoType));
+			m_iClip2 += secondary;
+			pOwner->RemoveAmmo(secondary, m_iSecondaryAmmoType);
+		}
+
+		if (m_bReloadsSingly)
+		{
+			m_bInReload = false;
+		}
+	}
+}
+
 bool CNEOBaseCombatWeapon::CanBeSelected(void)
 {
 	if (GetWeaponFlags() & ITEM_FLAG_NOAUTOSWITCHEMPTY)
@@ -203,6 +236,11 @@ bool CNEOBaseCombatWeapon::Holster(CBaseCombatWeapon* pSwitchingTo)
 	}
 
 	return BaseClass::Holster(pSwitchingTo);
+}
+
+void CNEOBaseCombatWeapon::ItemHolsterFrame(void)
+{ // Overrides the base class behaviour of reloading the weapon after its been holstered for 3 seconds
+	return;
 }
 #endif
 
