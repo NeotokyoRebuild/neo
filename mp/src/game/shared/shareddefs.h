@@ -94,9 +94,9 @@ public:
 #define NEO_RECON_DUCK_MAXHULL_OFFSET Vector(0.0f, 0.0f, -4.0f)
 #define NEO_ASSAULT_DUCK_MAXHULL_OFFSET Vector(0.0f, 0.0f, -2.0f)
 #define NEO_SUPPORT_DUCK_MAXHULL_OFFSET Vector(0.0f, 0.0f, 9.0f)
-#define VEC_HULL_MIN_NEOSCALED(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vHullMin + ((NeoPlayer->GetClass() == NEO_CLASS_RECON) ? NEO_RECON_DUCK_MAXHULL_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_SUPPORT) ? NEO_SUPPORT_DUCK_MAXHULL_OFFSET : NEO_ASSAULT_DUCK_MAXHULL_OFFSET))
-#define VEC_HULL_MAX_NEOSCALED(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vHullMax + ((NeoPlayer->GetClass() == NEO_CLASS_RECON) ? NEO_RECON_DUCK_MAXHULL_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_SUPPORT) ? NEO_SUPPORT_DUCK_MAXHULL_OFFSET : NEO_ASSAULT_DUCK_MAXHULL_OFFSET))
-#define VEC_DUCK_HULL_MIN_NEOSCALED(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vDuckHullMin + ((NeoPlayer->GetClass() == NEO_CLASS_RECON) ? NEO_RECON_DUCK_MAXHULL_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_SUPPORT) ? NEO_SUPPORT_DUCK_MAXHULL_OFFSET : NEO_ASSAULT_DUCK_MAXHULL_OFFSET))
+#define VEC_HULL_MIN_NEOSCALED(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vHullMin)
+#define VEC_HULL_MAX_NEOSCALED(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vHullMax)
+#define VEC_DUCK_HULL_MIN_NEOSCALED(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vDuckHullMin)
 #define VEC_DUCK_HULL_MAX_NEOSCALED(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vDuckHullMax + ((NeoPlayer->GetClass() == NEO_CLASS_RECON) ? NEO_RECON_DUCK_MAXHULL_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_SUPPORT) ? NEO_SUPPORT_DUCK_MAXHULL_OFFSET : NEO_ASSAULT_DUCK_MAXHULL_OFFSET))
 #endif
 
