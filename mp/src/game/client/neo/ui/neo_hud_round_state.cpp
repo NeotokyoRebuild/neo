@@ -8,6 +8,7 @@
 #include <vgui/ISurface.h>
 
 #include "neo_gamerules.h"
+#include <initializer_list>
 
 #include <vgui_controls/ImagePanel.h>
 

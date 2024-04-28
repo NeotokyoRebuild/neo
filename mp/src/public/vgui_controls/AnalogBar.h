@@ -28,7 +28,7 @@ class AnalogBar : public Panel
 
 public:
 	AnalogBar(Panel *parent, const char *panelName);
-	~AnalogBar();
+	virtual ~AnalogBar();
 
 	// 'analogValue' is in the range [0.0f, 1.0f]
 	MESSAGE_FUNC_FLOAT( SetAnalogValue, "SetAnalogValue", analogValue );

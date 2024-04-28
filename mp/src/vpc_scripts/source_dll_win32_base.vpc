@@ -44,7 +44,7 @@ $Configuration
 	
 	$Linker
 	{
-		$AdditionalDependencies				"$BASE shell32.lib user32.lib advapi32.lib gdi32.lib comdlg32.lib ole32.lib" [$WIN32||$WIN64]
+		$AdditionalDependencies				"$BASE shell32.lib user32.lib advapi32.lib gdi32.lib comdlg32.lib ole32.lib legacy_stdio_definitions.lib" [$WIN32||$WIN64]
 		$TargetMachine						"MachineX86 (/MACHINE:X86)"	[$WIN32]
 		$TargetMachine						"MachineX64 (/MACHINE:X64)"	[$WIN64]
 		// Suppress this pointless warning using the undocumented /ignore linker switch
@@ -102,22 +102,6 @@ $Project
 				{
 					$Create/UsePrecompiledHeader	"Not Using Precompiled Headers"
 				}
-			}
-		}
-
-		// Implement __imp__EncodePointer and __imp__DecodePointer so that we can run on XP SP1
-		// when building with VS 2010 and higher.
-		$File	"$SRCDIR\public\tier0\pointeroverride.asm" [$WIN32]
-		{
-			$Configuration
-			{	
-				$CustomBuildStep
-				{
-					// General
-					$CommandLine				"$QUOTE$(VCInstallDir)bin\ml.exe$QUOTE /safeseh /c /Cp /Zi /Fo$QUOTE$(IntDir)\$(InputName).obj$QUOTE $QUOTE$(InputPath)$QUOTE"
-					$Description				"Compiling pointeroverride.asm"
-					$Outputs					"$(IntDir)\$(InputName).obj"
-				}		
 			}
 		}
 
