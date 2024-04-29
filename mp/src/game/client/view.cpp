@@ -837,13 +837,12 @@ void CViewRender::SetUpViews()
 	float flFOVOffset = fDefaultFov - view.fov;
 
 #ifdef NEO // Decouple viewmodel FOV from view FOV.
-	view.fovViewmodel = g_pClientMode->GetViewModelFOV();
-#else
 	//Adjust the viewmodel's FOV to move with any FOV offsets on the viewer's end
 #ifdef SDK2013CE
 	view.fovViewmodel = fabs( g_pClientMode->GetViewModelFOV() - flFOVOffset );
 #else
 	view.fovViewmodel = g_pClientMode->GetViewModelFOV() - flFOVOffset;
+#endif
 #endif
 
 	if ( UseVR() )
