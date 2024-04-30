@@ -190,12 +190,18 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 		}
 
 		const int team = player->GetTeamNumber();
+		const bool alternate = NEORules()->roundAlternate();
 
 		Assert(team == TEAM_JINRAI || team == TEAM_NSF);
+		bool isNotTeamCap = team != m_iOwningTeam;
+		if (!alternate)
+		{
+			isNotTeamCap = !isNotTeamCap;
+		}
 
 		// Is this our team's capzone?
 		// NEO TODO (Rain): newbie UI helpers for attempting wrong team cap
-		if (team != m_iOwningTeam)
+		if (isNotTeamCap)
 		{
 			continue;
 		}
