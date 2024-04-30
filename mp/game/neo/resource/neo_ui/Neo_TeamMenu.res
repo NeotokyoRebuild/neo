@@ -4,8 +4,8 @@
 	{
 		"ControlName"		"CNeoTeamMenu"
 		"fieldName"		"team"
-		"xpos"		"332"
-		"ypos"		"276"
+		"xpos" 		"cs-0.5"
+		"ypos" 		"cs-0.5"
 		"wide"		"360"
 		"tall"		"215"
 		"autoResize"		"0"
@@ -18,10 +18,10 @@
 	}
 	"neo_IconPanel1"
 	{
-		"ControlName"		"IconPanel"
+		"ControlName"		"ImagePanel"
 		"fieldName"		"neo_IconPanel1"
 		"xpos"		"10"
-		"ypos"		"17"
+		"ypos"		"18"
 		"wide"		"110"
 		"tall"		"110"
 		"autoResize"		"0"
@@ -29,12 +29,12 @@
 		"visible"		"1"
 		"enabled"		"1"
 		"tabPosition"		"0"
-		"image"		"vgui/jinrai_128tm"
+		"image"		"jinrai_128tm"
 		"scaleImage"		"1"
 	}
 	"neo_IconPanel2"
 	{
-		"ControlName"		"IconPanel"
+		"ControlName"		"ImagePanel"
 		"fieldName"		"neo_IconPanel2"
 		"xpos"		"125"
 		"ypos"		"18"
@@ -45,7 +45,7 @@
 		"visible"		"1"
 		"enabled"		"1"
 		"tabPosition"		"0"
-		"image"		"vgui/nsf_128tm"
+		"image"		"nsf_128tm"
 		"scaleImage"		"1"
 	}
 	"neo_Label1"
@@ -70,7 +70,7 @@
 	}
 	"neo_IconPanel3"
 	{
-		"ControlName"		"IconPanel"
+		"ControlName"		"ImagePanel"
 		"fieldName"		"neo_IconPanel3"
 		"xpos"		"10"
 		"ypos"		"166"
@@ -82,7 +82,7 @@
 		"enabled"		"1"
 		"tabPosition"		"0"
 		"fillcolor"		"black"
-		"image"			"vgui/darkgrey_background"
+		"image"			"darkgrey_background"
 		"scaleImage"		"1"
 	}
 	"neo_jplayercountlabel"

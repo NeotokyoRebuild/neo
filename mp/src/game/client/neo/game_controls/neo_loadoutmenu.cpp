@@ -38,9 +38,9 @@ using namespace vgui;
 #define CONTROL_BUTTON14 "Button14"
 
 static const char *szButtons[] = {
-    CONTROL_SCOUT_BUTTON,
+    /*CONTROL_SCOUT_BUTTON,
     CONTROL_MISC2_BUTTON,
-    CONTROL_DONE_BUTTON,
+    CONTROL_DONE_BUTTON,*/
     CONTROL_BUTTON1,
     CONTROL_BUTTON2,
     CONTROL_BUTTON3,
@@ -93,21 +93,21 @@ CNeoLoadoutMenu::CNeoLoadoutMenu(IViewPort *pViewPort)
 	LoadControlSettings(GetResFile());
 
 	SetVisible(false);
-	SetProportional(true);
+	SetProportional(false);
 	SetMouseInputEnabled(true);
 	SetKeyBoardInputEnabled(true);
 
 	SetTitleBarVisible(false);
 
-	m_pWeapon_ImagePanel = new ImagePanel(this, "Weapon_ImagePanel");
-	m_pWeapon_ImagePanel->SetAutoDelete(true);
+	/*m_pWeapon_ImagePanel = new ImagePanel(this, "Weapon_ImagePanel");
+	m_pWeapon_ImagePanel->SetAutoDelete(true);*/
 
 	m_pTitleLabel = new Label(this, "TitleLabel", "labelText");
 	m_pTitleLabel->SetAutoDelete(true);
 
-	m_pScout_Button = FindControl<Button>(CONTROL_SCOUT_BUTTON);
+	/*m_pScout_Button = FindControl<Button>(CONTROL_SCOUT_BUTTON);
 	m_pMisc2 = FindControl<Button>(CONTROL_MISC2_BUTTON);
-	m_pDone_Button = FindControl<Button>(CONTROL_DONE_BUTTON);
+	m_pDone_Button = FindControl<Button>(CONTROL_DONE_BUTTON);*/
 	m_pButton1 = FindControl<Button>(CONTROL_BUTTON1);
 	m_pButton2 = FindControl<Button>(CONTROL_BUTTON2);
 	m_pButton3 = FindControl<Button>(CONTROL_BUTTON3);
@@ -314,6 +314,9 @@ void CNeoLoadoutMenu::OnButtonPressed(KeyValues *data)
 
 void CNeoLoadoutMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 {
+	SetPaintBorderEnabled(false);
+	SetBorder(NULL);
+
 	BaseClass::ApplySchemeSettings(pScheme);
 
 	if (!pScheme)
@@ -343,8 +346,7 @@ void CNeoLoadoutMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
     }
 
 	LoadControlSettings(GetResFile());
-
-	SetBgColor(Color(0, 0, 0, 196));
+	SetBgColor(Color(204, 204, 204, 255));
 
 	const Color selectedBgColor(75, 75, 75), selectedFgColor(255, 0, 0, 128),
 		armedBgColor(50, 50, 50, 128), armedFgColor(0, 255, 0, 128);
@@ -402,17 +404,15 @@ void CNeoLoadoutMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 			}
 		}
 
+		auto returnButton = FindControl<Button>(szButtons[13]);
+		returnButton->SetBgColor(COLOR_BLACK);
+
         button->SetFont(scheme->GetFont(font, IsProportional()));
 		button->SetUseCaptureMouse(true);
 		button->SetSelectedColor(selectedFgColor, selectedBgColor);
 		button->SetArmedColor(armedFgColor, armedBgColor);
 		button->SetMouseInputEnabled(true);
 		button->InstallMouseHandler(this);
+		
 	}
-
-	SetPaintBorderEnabled(false);
-
-	SetBorder(NULL);
-
-	SetMinimumSize(1280, 1280);
 }

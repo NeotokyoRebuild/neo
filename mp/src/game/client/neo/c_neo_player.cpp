@@ -125,22 +125,13 @@ public:
 			return;
 		}
 
+		panel->SetProportional(false); // Fixes wrong menu size when in windowed mode, regardless of whether proportional is set to false in the res file (NEOWTF)
 		panel->ApplySchemeSettings(vgui::scheme()->GetIScheme(panel->GetScheme()));
-
-		int panelWide = 960, panelTall = 700, screenWide, screenTall;
-		surface()->GetScreenSize(screenWide, screenTall);
-		// Resize panel, but make sure it fits the resolution.
-		panel->SetSize(Min(screenWide, panelWide), Min(screenTall, panelTall));
-		panel->SetPos((screenWide / 2) - (panelWide / 2),
-			(screenTall / 2) - (panelTall / 2));
 
 		panel->SetMouseInputEnabled(true);
 		panel->SetKeyBoardInputEnabled(true);
 		panel->SetCursorAlwaysVisible(true);
 
-		panel->SetControlEnabled("Scout_Button", true);
-		panel->SetControlEnabled("Misc2", true);
-		panel->SetControlEnabled("Done_Button", true);
 		panel->SetControlEnabled("Button1", true);
 		panel->SetControlEnabled("Button2", true);
 		panel->SetControlEnabled("Button3", true);
@@ -196,15 +187,8 @@ public:
 			Warning("Couldn't find class panel\n");
 			return;
 		}
-
+		panel->SetProportional(false);
 		panel->ApplySchemeSettings(vgui::scheme()->GetIScheme(panel->GetScheme()));
-
-		int panelWide = 650, panelTall = 280, screenWide, screenTall;
-		surface()->GetScreenSize(screenWide, screenTall);
-		// Resize panel, but make sure it fits the resolution.
-		panel->SetSize(Min(screenWide, panelWide), Min(screenTall, panelTall));
-		panel->SetPos((screenWide / 2) - (panelWide / 2),
-			(screenTall / 2) - (panelTall / 2));
 
 		panel->SetMouseInputEnabled(true);
 		panel->SetKeyBoardInputEnabled(true);
@@ -251,15 +235,8 @@ public:
 			return;
 		}
 
+		panel->SetProportional(false);
 		panel->ApplySchemeSettings(vgui::scheme()->GetIScheme(panel->GetScheme()));
-
-		int panelWide = 360, panelTall = 215, screenWide, screenTall;
-		panelWide *= 1.5; panelTall *= 1.5;
-		surface()->GetScreenSize(screenWide, screenTall);
-		// Resize panel, but make sure it fits the resolution.
-		panel->SetSize(Min(screenWide, panelWide), Min(screenTall, panelTall));
-		panel->SetPos((screenWide / 2) - (panelWide / 2),
-			(screenTall / 2) - (panelTall / 2));
 
 		panel->SetMouseInputEnabled(true);
 		panel->SetKeyBoardInputEnabled(true);

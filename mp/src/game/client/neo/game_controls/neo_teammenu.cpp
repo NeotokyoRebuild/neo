@@ -155,15 +155,15 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 	m_pNSF_PlayercountLabel->SetAutoResize(vgui::Panel::PinCorner_e::PIN_CENTER_RIGHT, vgui::Panel::AutoResize_e::AUTORESIZE_RIGHT, 0, 0, 0, 0);
 	m_pNSF_ScoreLabel->SetAutoResize(vgui::Panel::PinCorner_e::PIN_CENTER_RIGHT, vgui::Panel::AutoResize_e::AUTORESIZE_RIGHT, 0, 0, 0, 0);
 
-	m_pJinrai_TeamImage = FindControl<IconPanel>(CONTROL_JINRAI_IMAGE, true);
-	m_pNSF_TeamImage = FindControl<IconPanel>(CONTROL_NSF_IMAGE, true);
-	m_pBgDarkGrey = FindControl<IconPanel>(CONTROL_BG_IMAGE, true);
+	m_pJinrai_TeamImage = FindControl<ImagePanel>(CONTROL_JINRAI_IMAGE, true);
+	m_pNSF_TeamImage = FindControl<ImagePanel>(CONTROL_NSF_IMAGE, true);
+	m_pBgDarkGrey = FindControl<ImagePanel>(CONTROL_BG_IMAGE, true);
 
 	m_pDivider = FindControl<Divider>(CONTROL_DIVIDER);
 
 	if (!m_pJinrai_TeamImage)
 	{
-		m_pJinrai_TeamImage = new IconPanel(this, CONTROL_JINRAI_IMAGE);
+		m_pJinrai_TeamImage = new ImagePanel(this, CONTROL_JINRAI_IMAGE);
 		Assert(m_pJinrai_TeamImage);
 
 		m_pJinrai_TeamImage->SetPos(10, 17);
@@ -174,12 +174,12 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 			0, 0, 0, 0);
 		m_pJinrai_TeamImage->SetEnabled(true);
 		m_pJinrai_TeamImage->SetTabPosition(0);
-		m_pJinrai_TeamImage->SetIcon("vgui/jinrai_128tm");
+		m_pJinrai_TeamImage->SetImage("jinrai_128tm");
 	}
 
 	if (!m_pNSF_TeamImage)
 	{
-		m_pNSF_TeamImage = new IconPanel(this, CONTROL_NSF_IMAGE);
+		m_pNSF_TeamImage = new ImagePanel(this, CONTROL_NSF_IMAGE);
 		Assert(m_pNSF_TeamImage);
 
 		m_pNSF_TeamImage->SetPos(125, 18);
@@ -190,12 +190,12 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 			0, 0, 0, 0);
 		m_pNSF_TeamImage->SetEnabled(true);
 		m_pNSF_TeamImage->SetTabPosition(0);
-		m_pNSF_TeamImage->SetIcon("vgui/nsf_128tm");
+		m_pNSF_TeamImage->SetImage("nsf_128tm");
 	}
 
 	if (!m_pBgDarkGrey)
 	{
-		m_pBgDarkGrey = new IconPanel(this, CONTROL_BG_IMAGE);
+		m_pBgDarkGrey = new ImagePanel(this, CONTROL_BG_IMAGE);
 		Assert(m_pBgDarkGrey);
 
 		m_pBgDarkGrey->SetPos(10, 166);
@@ -206,8 +206,7 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 			0, 0, 0, 0);
 		m_pBgDarkGrey->SetEnabled(true);
 		m_pBgDarkGrey->SetTabPosition(0);
-		m_pBgDarkGrey->SetIconColor(COLOR_BLACK);
-		m_pBgDarkGrey->SetIcon("vgui/darkgrey_background");
+		m_pBgDarkGrey->SetImage("darkgrey_background");
 	}
 
 #ifdef DEBUG
@@ -383,9 +382,6 @@ void CNeoTeamMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 
 	SetBgColor(Color(0, 0, 0, 196));
 
-	this->SetPos(332, 276);
-	this->SetSize(360, 215);
-
 	//vgui::HScheme neoScheme = vgui::scheme()->LoadSchemeFromFileEx(
 	//	enginevgui->GetPanel(PANEL_CLIENTDLL), "resource/ClientScheme_Neo.res", "ClientScheme_Neo");
 	//vgui::IScheme* neoIScheme = vgui::scheme()->GetIScheme(neoScheme);
@@ -466,8 +462,6 @@ void CNeoTeamMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
     SetPaintBorderEnabled(false);
 
     SetBorder( NULL );
-
-	SetMinimumSize(900, 900);
 
 	auto pJinrai = GetGlobalTeam(TEAM_JINRAI);
 	auto pNsf = GetGlobalTeam(TEAM_NSF);

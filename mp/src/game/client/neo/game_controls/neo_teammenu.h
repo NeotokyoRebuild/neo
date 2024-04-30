@@ -10,6 +10,7 @@
 #include <vgui_controls/EditablePanel.h>
 #include <vgui_controls/Button.h>
 #include <vgui_controls/ComboBox.h>
+#include <vgui_controls/ImagePanel.h>
 #include <igameevents.h>
 #include "GameEventListener.h"
 
@@ -80,9 +81,9 @@ protected:
 	//vgui::ImagePanel *m_pJinrai_TeamImage;
 	//vgui::ImagePanel *m_pNSF_TeamImage;
 
-   IconPanel* m_pJinrai_TeamImage;
-   IconPanel* m_pNSF_TeamImage;
-   IconPanel* m_pBgDarkGrey;
+    vgui::ImagePanel* m_pJinrai_TeamImage;
+    vgui::ImagePanel* m_pNSF_TeamImage;
+    vgui::ImagePanel* m_pBgDarkGrey;
 #if(1)
 	//vgui::ImagePanel *m_pBackgroundImage;
 
