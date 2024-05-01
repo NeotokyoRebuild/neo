@@ -92,18 +92,6 @@ void CWeaponMilso::ItemBusyFrame(void)
 void CWeaponMilso::ItemPostFrame(void)
 {
 	BaseClass::ItemPostFrame();
-
-	if (m_bInReload)
-	{
-		return;
-	}
-
-	CBasePlayer *pOwner = ToBasePlayer(GetOwner());
-
-	if (pOwner == NULL)
-	{
-		return;
-	}
 }
 
 Activity CWeaponMilso::GetPrimaryAttackActivity(void)
