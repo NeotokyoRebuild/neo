@@ -33,8 +33,6 @@ class CNeoClassMenu : public vgui::Frame,
 {
     DECLARE_CLASS_SIMPLE( CNeoClassMenu, vgui::Frame );
 
-    MESSAGE_FUNC_PARAMS(OnButtonPressed, "PressButton", data);
-
 public:
     CNeoClassMenu(IViewPort *pViewPort);
     virtual ~CNeoClassMenu();
@@ -66,10 +64,13 @@ public:
 
 protected:
     void OnCommand(const char *command);
+    void ChangeMenu(const char *menuName);
 
     void SetLabelText(const char *textEntryName, const char *text);
 	void SetLabelText(const char *textEntryName, wchar_t *text);
 	void MoveLabelToFront(const char *textEntryName);
+	void FindButtons();
+	void UpdateSkinImages(int classNumber);
 	void UpdateTimer() { }
 
     // vgui overrides
@@ -80,57 +81,26 @@ protected:
     // Menu pieces. These are defined in the GetResFile() file.
     // --------------------------------------------------------
 
-	vgui::IImage *m_pImage_Jinrai_Recon_Skin1;
-	vgui::IImage *m_pImage_Jinrai_Recon_Skin2;
-	vgui::IImage *m_pImage_Jinrai_Recon_Skin3;
-	vgui::IImage *m_pImage_Jinrai_Assault_Skin1;
-	vgui::IImage *m_pImage_Jinrai_Assault_Skin2;
-	vgui::IImage *m_pImage_Jinrai_Assault_Skin3;
-	vgui::IImage *m_pImage_Jinrai_Support_Skin1;
-	vgui::IImage *m_pImage_Jinrai_Support_Skin2;
-	vgui::IImage *m_pImage_Jinrai_Support_Skin3;
-	vgui::IImage *m_pImage_NSF_Recon_Skin1;
-	vgui::IImage *m_pImage_NSF_Recon_Skin2;
-	vgui::IImage *m_pImage_NSF_Recon_Skin3;
-	vgui::IImage *m_pImage_NSF_Assault_Skin1;
-	vgui::IImage *m_pImage_NSF_Assault_Skin2;
-	vgui::IImage *m_pImage_NSF_Assault_Skin3;
-	vgui::IImage *m_pImage_NSF_Support_Skin1;
-	vgui::IImage *m_pImage_NSF_Support_Skin2;
-	vgui::IImage *m_pImage_NSF_Support_Skin3;
-
     // Image panels
     vgui::ImagePanel *m_pSkinPanel1;
     vgui::ImagePanel *m_pSkinPanel2;
     vgui::ImagePanel *m_pSkinPanel3;
-	vgui::ImagePanel *m_pChooseClassIcon;
-	vgui::ImagePanel *m_pChooseChooseSkinIcon;
-
-    // Class menu label
-    vgui::Label *m_pClassMenuLabel;
-
-    // Divider
-    vgui::Divider *m_pDivider;
 
     // Buttons
     vgui::Button *m_pRecon_Button;
     vgui::Button *m_pAssault_Button;
     vgui::Button *m_pSupport_Button;
+	vgui::Button *m_pSkin1_Button;
+	vgui::Button *m_pSkin2_Button;
+	vgui::Button *m_pSkin3_Button;
     vgui::Button *m_pBack_Button;
-
-    // Our viewport interface accessor
-    IViewPort *m_pViewPort;
 
     // Which class to highlight for auto selection
     int m_iDefaultClass;
-
     bool m_bClassMenu;
 
 protected:
 	void CommandCompletion();
-
-private:
-    inline vgui::Button *GetPressedButton();
 };
 
 extern CNeoClassMenu *g_pNeoClassMenu;
