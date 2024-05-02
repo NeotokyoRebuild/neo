@@ -688,7 +688,7 @@ void CNEOPlayerAnimState::ClearAnimationLayers()
 	if (!m_pOuter)
 		return;
 
-	m_pOuter->SetNumAnimOverlays(NUM_LAYERS_WANTED);
+	//m_pOuter->SetNumAnimOverlays(NUM_LAYERS_WANTED);
 	for (int i = 0; i < m_pOuter->GetNumAnimOverlays(); i++)
 	{
 		m_pOuter->GetAnimOverlay(i)->SetOrder(CBaseAnimatingOverlay::MAX_OVERLAYS);
