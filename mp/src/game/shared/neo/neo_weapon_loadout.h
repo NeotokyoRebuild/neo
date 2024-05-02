@@ -183,7 +183,7 @@ CLoadoutWeaponClass CNEOWeaponLoadout::s_AssaultLoadoutWeapons[12] =
 	{ "SRM", 0, "/loadout/loadout_srm", "loadout/loadout_srm_no", "weapon_srm", "AMMO_PRI" },
 	{ "Jitte", 0, "/loadout/loadout_jitte", "loadout/loadout_jitte_no", "weapon_jitte", "AMMO_PRI" },
 	{ "ZR68C", 0, "/loadout/loadout_zr68c", "loadout/loadout_zr68c_no", "weapon_zr68c", "AMMO_PRI" },
-	{ "ZR68-S (silenced)", 4, "loadout/loadout_zr68s", "loadout/loadout_zr68s_no", "weapon_zr68s", "AMMO_PRI" },
+	{ "ZR68-S (silenced)", 0, "loadout/loadout_zr68s", "loadout/loadout_zr68s_no", "weapon_zr68s", "AMMO_PRI" },
 	{ "Murata Supa-7", 4, "/loadout/loadout_supa7", "loadout/loadout_supa7_no", "weapon_supa7", "AMMO_10G_SHELL" },
 	{ "Mosok", 4, "/loadout/loadout_mosok", "/loadout/loadout_mosok_no", "weapon_m41", "AMMO_PRI" },
 	{ "Mosok Silenced", 10, "/loadout/loadout_mosokl", "loadout/loadout_mosokl_no", "weapon_m41s", "AMMO_PRI" },
