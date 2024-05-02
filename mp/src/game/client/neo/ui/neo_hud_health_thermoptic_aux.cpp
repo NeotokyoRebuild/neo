@@ -104,9 +104,9 @@ void CNEOHud_HTA::DrawHTA() const
 	const int thermoptic = player->m_HL2Local.m_flSuitPower;
 	const int aux = player->m_HL2Local.m_flSuitPower;
 
-	inttostr(value_Integrity, 4, health);
-	inttostr(value_ThermOptic, 4, thermoptic);
-	inttostr(value_Aux, 4, aux);
+	inttostr(value_Integrity, 10, health);
+	inttostr(value_ThermOptic, 10, thermoptic);
+	inttostr(value_Aux, 10, aux);
 
 	const int valLen_Integrity = V_strlen(value_Integrity);
 	const int valLen_ThermOptic = V_strlen(value_ThermOptic);
