@@ -129,7 +129,7 @@ public:
 		panel->ApplySchemeSettings(vgui::scheme()->GetIScheme(panel->GetScheme()));
 
 		panel->SetMouseInputEnabled(true);
-		panel->SetKeyBoardInputEnabled(true);
+		//panel->SetKeyBoardInputEnabled(true);
 		panel->SetCursorAlwaysVisible(true);
 
 		panel->SetControlEnabled("Button1", true);
@@ -190,7 +190,7 @@ public:
 		panel->ApplySchemeSettings(vgui::scheme()->GetIScheme(panel->GetScheme()));
 
 		panel->SetMouseInputEnabled(true);
-		panel->SetKeyBoardInputEnabled(true);
+		//panel->SetKeyBoardInputEnabled(true);
 		panel->SetCursorAlwaysVisible(true);
 
 		panel->SetControlEnabled("Scout_Button", true);
@@ -238,7 +238,7 @@ public:
 		panel->ApplySchemeSettings(vgui::scheme()->GetIScheme(panel->GetScheme()));
 
 		panel->SetMouseInputEnabled(true);
-		panel->SetKeyBoardInputEnabled(true);
+		//panel->SetKeyBoardInputEnabled(true);
 		panel->SetCursorAlwaysVisible(true);
 
 		panel->SetControlEnabled("jinraibutton", true);

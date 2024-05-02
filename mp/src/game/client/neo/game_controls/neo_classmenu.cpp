@@ -99,7 +99,7 @@ CNeoClassMenu::CNeoClassMenu(IViewPort *pViewPort)
 	SetVisible(false);
 	SetProportional(false);
 	SetMouseInputEnabled(true);
-	SetKeyBoardInputEnabled(true);
+	//SetKeyBoardInputEnabled(true);
 	SetTitleBarVisible(false);
 
 	FindButtons();
@@ -149,7 +149,7 @@ void CNeoClassMenu::CommandCompletion()
 	SetEnabled(false);
 
 	SetMouseInputEnabled(false);
-	SetKeyBoardInputEnabled(false);
+	//SetKeyBoardInputEnabled(false);
 	SetCursorAlwaysVisible(false);
 }
 

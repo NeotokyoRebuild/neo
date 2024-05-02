@@ -106,7 +106,7 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 	SetVisible(false);
 	SetProportional(false);
 	SetMouseInputEnabled(true);
-	SetKeyBoardInputEnabled(true);
+	//SetKeyBoardInputEnabled(true);
 	SetTitleBarVisible(false);
 
 	FindButtons();

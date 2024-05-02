@@ -12,101 +12,12 @@
 
 #include "c_neo_player.h"
 #include "weapon_neobasecombatweapon.h"
+#include "neo_weapon_loadout.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
 using namespace vgui;
-
-CLoadoutWeaponClass s_DevLoadoutWeapons[]
-{
-	{ "MPN45", -255, "loadout/loadout_mpn", "loadout/loadout_mpn_no", "weapon_mpn", "AMMO_PRI" },
-	{ "SRM", -255, "/loadout/loadout_srm", "loadout/loadout_srm_no", "weapon_srm", "AMMO_PRI" },
-	{ "SRM (silenced)", -255, "loadout/loadout_srms", "loadout/loadout_srms_no", "weapon_srm_s", "AMMO_PRI" },
-	{ "Jitte", -255, "/loadout/loadout_jitte", "loadout/loadout_jitte_no", "weapon_jitte", "AMMO_PRI" },
-	{ "Jitte (with scope)", -255, "/loadout/loadout_jittes", "loadout/loadout_jittes_no", "weapon_jittescoped", "AMMO_PRI" },
-	{ "ZR68C", -255, "/loadout/loadout_zr68c", "weapon_zr68c", "loadout/loadout_zr68c_no", "AMMO_PRI" },
-	{ "ZR68-S (silenced)", -255, "loadout/loadout_zr68s", "loadout/loadout_zr68s_no", "weapon_zr68s", "AMMO_PRI" },
-	{ "ZR68-L (accurized)", -255, "/loadout/loadout_zr68l", "loadout/loadout_zr68l_no", "weapon_zr68l", "AMMO_PRI" },
-	{ "MX", -255, "loadout/loadout_mx", "loadout/loadout_mx_no", "weapon_mx", "AMMO_PRI" },
-	{ "PZ252", -255, "loadout/loadout_pz", "loadout/loadout_pz_no", "weapon_pz", "AMMO_PRI" },
-	{ "Murata Supa-7", -255, "loadout/loadout_supa7", "loadout/loadout_supa7_no", "weapon_supa7", "AMMO_PRI" },
-	{ "Mosok", -255, "loadout/loadout_mosok", "loadout/loadout_mosok_no", "weapon_m41", "AMMO_PRI" },
-	{ "Mosok (with scope)", -255, "loadout/loadout_mosokl", "loadout/loadout_mosokl_no", "weapon_m41l", "AMMO_PRI" }
-};
-static const int i_DevLoadoutWeaponsSize = ARRAYSIZE(s_DevLoadoutWeapons);
-
-CLoadoutWeaponClass s_ReconLoadoutWeapons[]
-{
-	{ "MPN45", -255, "loadout/loadout_mpn", "loadout/loadout_mpn_no", "weapon_mpn", "AMMO_PRI" },
-	{ "SRM", 0, "/loadout/loadout_srm", "loadout/loadout_srm_no", "weapon_srm", "AMMO_PRI" },
-	{ "Jitte", 0, "/loadout/loadout_jitte", "loadout/loadout_jitte_no", "weapon_jitte", "AMMO_PRI" },
-	{ "SRM (silenced)", 4, "/loadout/loadout_srms", "loadout/loadout_srms_no", "weapon_srm_s", "AMMO_PRI" },
-	{ "Jitte (with scope)", 4, "/loadout/loadout_jittes", "loadout/loadout_jittes_no", "weapon_jittescoped", "AMMO_PRI" },
-	{ "ZR68-L (accurized)", 4, "/loadout/loadout_zr68l", "loadout/loadout_zr68l_no", "weapon_zr68l", "AMMO_PRI" },
-	{ "ZR68C", 10, "/loadout/loadout_zr68c", "loadout/loadout_zr68c_no", "weapon_zr68c", "AMMO_PRI" },
-	{ "Murata Supa-7", 20, "/loadout/loadout_supa7", "loadout/loadout_supa7_no", "weapon_supa7", "AMMO_10G_SHELL" },
-	{ "Mosok Silenced", 20, "/loadout/loadout_mosokl", "loadout/loadout_mosokl_no", "weapon_m41s", "AMMO_PRI" }
-};
-static const int i_ReconLoadoutWeaponsSize = ARRAYSIZE(s_ReconLoadoutWeapons);
-
-CLoadoutWeaponClass s_AssaultLoadoutWeapons[]
-{
-	{ "MPN45", -255, "loadout/loadout_mpn", "loadout/loadout_mpn_no", "weapon_mpn", "AMMO_PRI" },
-	{ "SRM", 0, "/loadout/loadout_srm", "loadout/loadout_srm_no", "weapon_srm", "AMMO_PRI" },
-	{ "Jitte", 0, "/loadout/loadout_jitte", "loadout/loadout_jitte_no", "weapon_jitte", "AMMO_PRI" },
-	{ "ZR68C", 0, "/loadout/loadout_zr68c", "loadout/loadout_zr68c_no", "weapon_zr68c", "AMMO_PRI" },
-	{ "ZR68-S (silenced)", 4, "loadout/loadout_zr68s", "loadout/loadout_zr68s_no", "weapon_zr68s", "AMMO_PRI" },
-	{ "Murata Supa-7", 4, "/loadout/loadout_supa7", "loadout/loadout_supa7_no", "weapon_supa7", "AMMO_10G_SHELL" },
-	{ "Mosok", 4, "/loadout/loadout_mosok", "/loadout/loadout_mosok_no", "weapon_m41", "AMMO_PRI" },
-	{ "Mosok Silenced", 10, "/loadout/loadout_mosokl", "loadout/loadout_mosokl_no", "weapon_m41s", "AMMO_PRI" },
-	{ "MX", 10, "loadout/loadout_mx", "loadout/loadout_mx_no", "weapon_mx", "AMMO_PRI" },
-	{ "MX Silenced", 10, "/loadout/loadout_mxs", "/loadout/loadout_mxs_no", "weapon_mx_silenced", "AMMO_PRI" },
-	{ "AA13", 20, "/loadout/loadout_aa13", "/loadout/loadout_aa13_no", "weapon_aa13", "AMMO_10G_SHELL" },
-	{ "SRS", 20, "/loadout/loadout_srs", "/loadout/loadout_srs_no", "weapon_srs", "AMMO_PRI" }
-};
-static const int i_AssaultLoadoutWeaponsSize = ARRAYSIZE(s_AssaultLoadoutWeapons);
-
-CLoadoutWeaponClass s_SupportLoadoutWeapons[]
-{
-	{ "MPN45", -255, "loadout/loadout_mpn", "loadout/loadout_mpn_no", "weapon_mpn", "AMMO_PRI" },
-	{ "SRM", 0, "/loadout/loadout_srm", "loadout/loadout_srm_no", "weapon_srm", "AMMO_PRI" },
-	{ "ZR68C", 0, "/loadout/loadout_zr68c", "loadout/loadout_zr68c_no", "weapon_zr68c", "AMMO_PRI" },
-	{ "Mosok", 0, "/loadout/loadout_mosok", "/loadout/loadout_mosok_no", "weapon_m41", "AMMO_PRI" },
-	{ "Murata Supa-7", 0, "/loadout/loadout_supa7", "loadout/loadout_supa7_no", "weapon_supa7", "AMMO_10G_SHELL" },
-	{ "MX", 4, "loadout/loadout_mx", "loadout/loadout_mx_no", "weapon_mx", "AMMO_PRI" },
-	{ "Mosok Silenced", 4, "/loadout/loadout_mosokl", "loadout/loadout_mosokl_no", "weapon_m41s", "AMMO_PRI" },
-	{ "MX Silenced", 10, "/loadout/loadout_mxs", "/loadout/loadout_mxs_no", "weapon_mx_silenced", "AMMO_PRI" },
-	{ "PZ252", 20, "loadout/loadout_pz", "loadout/loadout_pz_no", "weapon_pz", "AMMO_PRI" }
-};
-static const int i_SupportLoadoutWeaponsSize = ARRAYSIZE(s_SupportLoadoutWeapons);
-
-
-CLoadoutWeaponClass::CLoadoutWeaponClass(const char* weaponName, int weaponPrice, const char* vguiImage, const char* vguiImageNo, const char* weaponEntityName, const char* ammoType)
-{
-	m_szWeaponName = weaponName;
-	m_iWeaponPrice = weaponPrice;
-	m_szVguiImage = vguiImage;
-	m_szVguiImageNo = vguiImageNo;
-	m_szWeaponEntityName = weaponEntityName;
-	m_szAmmoType = ammoType;
-}
-
-int GetNumberOfLoadoutWeapons(int rank, int classType, CLoadoutWeaponClass* pLoadout, int selectedLoadoutSize)
-{
-	int ammount = 0;
-	int i = 0;
-
-	for (i; i < selectedLoadoutSize; i++)
-	{
-		if (pLoadout[i].m_iWeaponPrice > rank)
-		{
-			return ammount;
-		}
-		ammount++;
-	}
-	return ammount;
-}
 
 // These are defined in the .res file
 #define CONTROL_BUTTON1 "Button1"
@@ -195,7 +106,7 @@ CNeoLoadoutMenu::CNeoLoadoutMenu(IViewPort *pViewPort)
 	SetVisible(false);
 	SetProportional(false);
 	SetMouseInputEnabled(true);
-	SetKeyBoardInputEnabled(true);
+	//SetKeyBoardInputEnabled(true);
 	SetTitleBarVisible(false);
 	
 	FindButtons();
@@ -268,7 +179,7 @@ void CNeoLoadoutMenu::CommandCompletion()
 
 		button->SetEnabled(false);
 	}
-
+	
 	returnButton->SetEnabled(false);
 
 	SetVisible(false);
@@ -314,44 +225,6 @@ extern ConCommand loadoutmenu;
 
 extern ConVar neo_sv_ignore_wep_xp_limit;
 
-static bool IsAllowedGun(const int loadoutId, const int currentXP)
-{
-	if (neo_sv_ignore_wep_xp_limit.GetBool())
-	{
-		return true;
-	}
-
-	// NEO TODO (Rain): set reasonably
-	const int xpLimits[] = {
-		-255,	// MPN
-		0,		// SRM
-		0,		// SRM-S
-		0,		// Jitte
-		0,		// Jittescoped
-		0,		// ZR68C
-		0,		// ZR68S
-		0,		// ZR68L
-		10,		// MX
-		20,		// PZ
-		10,		// Supa7
-		0,		// M41
-		0,		// M41L
-	};
-
-	bool allowedThisGun = false;
-
-	if (loadoutId < 0 || loadoutId > ARRAYSIZE(xpLimits))
-	{
-		DevWarning("Weapon choice out of XP check range: %i\n", loadoutId);
-	}
-	else
-	{
-		allowedThisGun = (currentXP >= xpLimits[loadoutId]);
-	}
-
-	return allowedThisGun;
-}
-
 void CNeoLoadoutMenu::OnCommand(const char* command)
 {
 	BaseClass::OnCommand(command);
@@ -395,10 +268,7 @@ void CNeoLoadoutMenu::OnCommand(const char* command)
 
 		int currentXP = localPlayer->m_iXP.Get();
 		int currentClass = localPlayer->m_iNextSpawnClassChoice != -1 ? localPlayer->m_iNextSpawnClassChoice : localPlayer->GetClass();
-		CLoadoutWeaponClass* selectedLoadout = isDev ? s_DevLoadoutWeapons : (currentClass == NEO_CLASS_RECON ? s_ReconLoadoutWeapons : (currentClass == NEO_CLASS_ASSAULT ? s_AssaultLoadoutWeapons : s_SupportLoadoutWeapons)); // might need an empty loadout if can't find class
-		int selectedLoadoutSize = isDev ? i_DevLoadoutWeaponsSize : (currentClass == NEO_CLASS_RECON ? i_ReconLoadoutWeaponsSize : (currentClass == NEO_CLASS_ASSAULT ? i_AssaultLoadoutWeaponsSize : i_SupportLoadoutWeaponsSize));
-
-		int numWeapons = GetNumberOfLoadoutWeapons(currentXP, currentClass, selectedLoadout, selectedLoadoutSize);
+		int numWeapons = CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(currentXP, currentClass, isDev);
 			
 		if (choiceNum+1 > numWeapons)
 		{
@@ -442,32 +312,27 @@ void CNeoLoadoutMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 
 	int currentXP = localPlayer->m_iXP.Get();
 	int currentClass = localPlayer->m_iNextSpawnClassChoice != -1 ? localPlayer->m_iNextSpawnClassChoice : localPlayer->GetClass();
-	CLoadoutWeaponClass* selectedLoadout = isDev ? s_DevLoadoutWeapons : (currentClass == NEO_CLASS_RECON ? s_ReconLoadoutWeapons : (currentClass == NEO_CLASS_ASSAULT ? s_AssaultLoadoutWeapons : s_SupportLoadoutWeapons)); // might need an empty loadout if can't find class
-	int selectedLoadoutSize = isDev ? i_DevLoadoutWeaponsSize : (currentClass == NEO_CLASS_RECON ? i_ReconLoadoutWeaponsSize : (currentClass == NEO_CLASS_ASSAULT ? i_AssaultLoadoutWeaponsSize : i_SupportLoadoutWeaponsSize));
-	
-	int numWeapons = GetNumberOfLoadoutWeapons(currentXP, currentClass, selectedLoadout, selectedLoadoutSize);
+
+	int numWeapons = CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(currentXP, currentClass, isDev);
 	int i = 0;
 	for (i; i < MIN(iNumButtonStrings,numWeapons); i++)
 	{ // update all available weapons
 		auto button = FindControl<Button>(szButtons[i]);
-		/*char command[64]; 
-		sprintf(command, "loadout %s", selectedLoadout[i].m_szWeaponEntityName);
-		button->SetCommand(command);*/
 		button->SetUseCaptureMouse(true);
 		button->SetMouseInputEnabled(true);
 
 		auto image = FindControl<ImagePanel>(szButtonImages[i]);
-		image->SetImage(selectedLoadout[i].m_szVguiImage);
+		image->SetImage(CNEOWeaponLoadout::GetLoadoutVguiWeaponName(currentClass, i, isDev));
 	}
 
-	for (i; i < MIN(iNumButtonStrings,selectedLoadoutSize); i++)
+	for (i; i < MIN(iNumButtonStrings, CNEOWeaponLoadout::GetTotalLoadoutSize(currentClass, isDev)); i++)
 	{ // update all locked weapons
 		auto button = FindControl<Button>(szButtons[i]);
 		const char* command = ("");
 		button->SetCommand(command);
 
 		auto image = FindControl<ImagePanel>(szButtonImages[i]);
-		image->SetImage(selectedLoadout[i].m_szVguiImageNo);
+		image->SetImage(CNEOWeaponLoadout::GetLoadoutVguiWeaponNameNo(currentClass, i, isDev));
 	}
 	for (i; i < iNumButtonStrings; i++)
 	{ // fill rest with dummy locked weapon

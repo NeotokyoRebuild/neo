@@ -33,6 +33,8 @@
 
 #include "viewport_panel_names.h"
 
+#include "neo_weapon_loadout.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -194,7 +196,8 @@ void CNEO_Player::RequestSetStar(int newStar)
 
 bool CNEO_Player::RequestSetLoadout(int loadoutNumber)
 {
-	const char *pszWepName = GetWeaponByLoadoutId(loadoutNumber);
+	int classChosen = m_iNextSpawnClassChoice.Get() != -1 ? m_iNextSpawnClassChoice.Get() : m_iNeoClass.Get();
+	const char *pszWepName = CNEOWeaponLoadout::GetLoadoutWeaponEntityName(classChosen, loadoutNumber, false);
 
 	if (FStrEq(pszWepName, ""))
 	{
@@ -2173,7 +2176,7 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 		return;
 	}
 
-	const char *szWep = GetWeaponByLoadoutId(m_iLoadoutWepChoice);
+	const char* szWep = CNEOWeaponLoadout::GetLoadoutWeaponEntityName(m_iNeoClass.Get(), m_iLoadoutWepChoice, false);
 #if DEBUG
 	DevMsg("Loadout slot: %i (\"%s\")\n", m_iLoadoutWepChoice, szWep);
 #endif
