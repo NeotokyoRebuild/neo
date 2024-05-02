@@ -69,7 +69,7 @@
 	{
 		"ControlName"		"Label"
 		"fieldName"		"TitleLabel"
-		"xpos" 		"0`"
+		"xpos" 		"0"
 		"ypos"		"0"
 		"wide"		"430"
 		"tall"		"16"
