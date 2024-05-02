@@ -185,6 +185,13 @@ void CNeoTeamMenu::OnCommand(const char *command)
 		return;
 	}
 
+	if (Q_strcmp(commandBuffer, "jointeam 0") == 0)
+	{ // joining unnasigned
+		ChangeMenu(NULL);
+		engine->ClientCmd(commandBuffer);
+		return;
+	}
+
 	if (Q_stristr(commandBuffer, "jointeam") != 0) // Note using stristr, not strcmp. Equates to true when jointeam in commandBuffer
 	{ // joining jinrai or nsf
 		ChangeMenu("classmenu");
