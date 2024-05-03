@@ -15,7 +15,6 @@
 #include <vgui_controls/MenuItem.h>
 #include <vgui_controls/TextImage.h>
 #include <vgui_controls/Divider.h>
-#include "vgui/KeyCode.h"
 
 #include <game_controls/IconPanel.h>
 
