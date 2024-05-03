@@ -108,8 +108,15 @@ void CHL2MP_Player::PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, f
 		Q_snprintf( szStepSound, sizeof( szStepSound ), "%s.RunFootstepRight", g_ppszPlayerSoundPrefixNames[m_iPlayerSoundType] );
 	}
 
+	unsigned short stepSoundName = m_Local.m_nStepside ? psurface->sounds.stepleft : psurface->sounds.stepright;
+
+	if (!stepSoundName)
+		return;
+
+	const char* pSoundName = physprops->GetString(stepSoundName);
+
 	CSoundParameters params;
-	if ( GetParametersForSound( szStepSound, params, NULL ) == false )
+	if ( GetParametersForSound(pSoundName, params, NULL ) == false )
 		return;
 
 	CRecipientFilter filter;
