@@ -46,6 +46,9 @@ public:
 
 protected:
 	void OnCommand(const char *command);
+	void ChangeMenu(const char* menuName);
+	void OnKeyCodeReleased(vgui::KeyCode code);
+
 	void SetLabelText(const char *textEntryName, const char *text);
 	void SetLabelText(const char *textEntryName, wchar_t *text);
 	void MoveLabelToFront(const char *textEntryName);

@@ -106,7 +106,7 @@ CNeoLoadoutMenu::CNeoLoadoutMenu(IViewPort *pViewPort)
 	SetVisible(false);
 	SetProportional(false);
 	SetMouseInputEnabled(true);
-	//SetKeyBoardInputEnabled(true);
+	//SetKeyBoardInputEnabled(true); // Leaving here to highlight menu navigation with keyboard is possible atm
 	SetTitleBarVisible(false);
 	
 	FindButtons();
@@ -162,6 +162,10 @@ void CNeoLoadoutMenu::FindButtons()
 
 	returnButton->SetUseCaptureMouse(true);
 	returnButton->SetMouseInputEnabled(true);
+	if (!returnButton)
+	{
+		Assert(false);
+	}
 }
 
 void CNeoLoadoutMenu::CommandCompletion()
@@ -237,18 +241,8 @@ void CNeoLoadoutMenu::OnCommand(const char* command)
 	if (Q_stristr(command, "classmenu"))
 	{ // return to class selection 
 		CommandCompletion();
-		ShowPanel(false);
-		m_bLoadoutMenu = false;
-		engine->ClientCmd("classmenu");
-		C_NEO_Player* player = C_NEO_Player::GetLocalNEOPlayer();
-		if (player)
-		{
-			player->m_bShowClassMenu = true;
-		}
-		else
-		{
-			Assert(false);
-		}
+		ChangeMenu("classmenu");
+		engine->ClientCmd(command);
 		return;
 	}
 
@@ -267,7 +261,7 @@ void CNeoLoadoutMenu::OnCommand(const char* command)
 		if (!localPlayer) { return; }
 
 		int currentXP = localPlayer->m_iXP.Get();
-		int currentClass = localPlayer->m_iNextSpawnClassChoice != -1 ? localPlayer->m_iNextSpawnClassChoice : localPlayer->GetClass();
+		int currentClass = localPlayer->m_iNextSpawnClassChoice.Get() != -1 ? localPlayer->m_iNextSpawnClassChoice.Get() : localPlayer->m_iNeoClass.Get();
 		int numWeapons = CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(currentXP, currentClass, isDev);
 			
 		if (choiceNum+1 > numWeapons)
@@ -285,33 +279,63 @@ void CNeoLoadoutMenu::OnCommand(const char* command)
 	CommandCompletion();
 }
 
+
+void CNeoLoadoutMenu::ChangeMenu(const char* menuName = NULL)
+{
+	CommandCompletion();
+	ShowPanel(false);
+	C_NEO_Player* player = C_NEO_Player::GetLocalNEOPlayer();
+	if (player)
+	{
+		m_bLoadoutMenu = false;
+		if (menuName == NULL)
+		{
+			return;
+		}
+		if (Q_stricmp(menuName, "classmenu") == 0)
+		{
+			player->m_bShowClassMenu = true;
+		}
+	}
+	else
+	{
+		Assert(false);
+	}
+}
+
+void CNeoLoadoutMenu::OnKeyCodeReleased(vgui::KeyCode code)
+{
+	switch (code) {
+	case 94: // F3 - Close the menu
+		ChangeMenu(NULL);
+	case 65: // Spacebar - Try to equip weapon in the second slot like in the base game
+		OnCommand("loadout 1");
+	}
+
+	// Ignore other Key presses
+	//BaseClass::OnKeyCodeReleased(code);
+}
+
 void CNeoLoadoutMenu::OnButtonPressed(KeyValues *data)
 {
 }
 
 void CNeoLoadoutMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 {
+	BaseClass::ApplySchemeSettings(pScheme);
+	LoadControlSettings(GetResFile());
 	SetPaintBorderEnabled(false);
 	SetPaintBackgroundEnabled(false);
 	SetBorder(NULL);
-
-	BaseClass::ApplySchemeSettings(pScheme);
-
-	if (!pScheme)
-	{
-		Assert(false);
-		Warning("Failed to ApplySchemeSettings for CNeoLoadoutMenu\n");
-		return;
-	}
-
-	LoadControlSettings(GetResFile());
+	
+	// FindButtons(); Doing this further down for all enabled buttons
 
 	bool isDev = false;
 	auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if (!localPlayer) { return; }
 
 	int currentXP = localPlayer->m_iXP.Get();
-	int currentClass = localPlayer->m_iNextSpawnClassChoice != -1 ? localPlayer->m_iNextSpawnClassChoice : localPlayer->GetClass();
+	int currentClass = localPlayer->m_iNextSpawnClassChoice.Get() != -1 ? localPlayer->m_iNextSpawnClassChoice.Get() : localPlayer->m_iNeoClass.Get();
 
 	int numWeapons = CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(currentXP, currentClass, isDev);
 	int i = 0;
@@ -340,6 +364,7 @@ void CNeoLoadoutMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 		image->SetImage("loadout/loadout_none");
 	}
 
+	returnButton = FindControl<Button>("ReturnButton");
 	returnButton->SetUseCaptureMouse(true);
 	returnButton->SetMouseInputEnabled(true);
 	InvalidateLayout();

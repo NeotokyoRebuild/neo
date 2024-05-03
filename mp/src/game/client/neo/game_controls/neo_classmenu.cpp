@@ -99,7 +99,7 @@ CNeoClassMenu::CNeoClassMenu(IViewPort *pViewPort)
 	SetVisible(false);
 	SetProportional(false);
 	SetMouseInputEnabled(true);
-	//SetKeyBoardInputEnabled(true);
+	//SetKeyBoardInputEnabled(true); // Leaving here to highlight menu navigation with keyboard is possible atm
 	SetTitleBarVisible(false);
 
 	FindButtons();
@@ -132,7 +132,7 @@ void CNeoClassMenu::FindButtons()
 	m_pSupport_Button = FindControl<Button>("Heavy_Button");
 	m_pBack_Button = FindControl<Button>("Back_Button");
 
-	UpdateSkinImages(NULL);
+	UpdateSkinImages(-1);
 }
 
 void CNeoClassMenu::CommandCompletion()
@@ -211,6 +211,39 @@ void CNeoClassMenu::ChangeMenu(const char* menuName = NULL)
 	{
 		Assert(false);
 	}
+}
+
+void CNeoClassMenu::OnKeyCodeReleased(vgui::KeyCode code)
+{
+	switch (code) {
+	case 93: // F2 - Close the menu
+		ChangeMenu(NULL);
+		break;
+	case 2: // 1 - Pick Recon and go straight to loadout
+		UpdateSkinImages(0);
+		engine->ClientCmd("setclass 1");
+		/*engine->ClientCmd("loadoutmenu");		NEO FIXME If player picking loadout with keyboard probably doesn't care about skin should go straight to loadout menu but loadout menu opens before player class and even player wanted class updates resulting in missmatch of showed loadout. Should edit loadoutmenu command to take class parameter? Can't think of case where player picked class isn't accepted unless using max players per class plugin
+		ChangeMenu("loadoutmenu");*/
+		break;
+	case 3: // 2 - Pick Assault and go straight to loadout
+		UpdateSkinImages(1);
+		engine->ClientCmd("setclass 2");
+		/*engine->ClientCmd("loadoutmenu");		NEO FIXME ==
+		ChangeMenu("loadoutmenu");*/
+		break;
+	case 4: // 3 - Pick Support and go straight to loadout
+		UpdateSkinImages(2);
+		engine->ClientCmd("setclass 3");
+		/*engine->ClientCmd("loadoutmenu");		NEO FIXME ==
+		ChangeMenu("loadoutmenu");*/
+		break;
+	case 65: // Spacebar - Continue with currently selected class and skin (player is initialised with a default class and skin. If not need to set one here)
+		engine->ClientCmd("loadoutmenu");
+		ChangeMenu("loadoutmenu");
+		break;
+	}
+	// Ignore other Key presses
+	//BaseClass::OnKeyCodeReleased(code);
 }
 
 void CNeoClassMenu::UpdateSkinImages(int classNumber = -1)

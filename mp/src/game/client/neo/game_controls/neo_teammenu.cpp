@@ -15,6 +15,7 @@
 #include <vgui_controls/MenuItem.h>
 #include <vgui_controls/TextImage.h>
 #include <vgui_controls/Divider.h>
+#include "vgui/KeyCode.h"
 
 #include <game_controls/IconPanel.h>
 
@@ -106,7 +107,7 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 	SetVisible(false);
 	SetProportional(false);
 	SetMouseInputEnabled(true);
-	//SetKeyBoardInputEnabled(true);
+	//SetKeyBoardInputEnabled(true); // Leaving here to highlight menu navigation with keyboard is possible atm
 	SetTitleBarVisible(false);
 
 	FindButtons();
@@ -170,8 +171,12 @@ void CNeoTeamMenu::OnCommand(const char *command)
 	V_strcpy_safe(commandBuffer, command);
 
 	if (Q_strcmp(commandBuffer, "jointeam a") == 0)
-	{ // pick a team automatically 
-		int randomTeam = RandomInt(TEAM_JINRAI, TEAM_NSF);
+	{ // pick a team automatically
+		auto pJinrai = GetGlobalTeam(TEAM_JINRAI);
+		auto pNsf = GetGlobalTeam(TEAM_NSF);
+		const int jinNumPlayers = (pJinrai != NULL ? pJinrai->Get_Number_Players() : 0);
+		const int nsfNumPlayers = (pNsf != NULL ? pNsf->Get_Number_Players() : 0);
+		int randomTeam = jinNumPlayers > nsfNumPlayers ? TEAM_NSF : (nsfNumPlayers > jinNumPlayers ? TEAM_JINRAI : RandomInt(TEAM_JINRAI, TEAM_NSF));
 		V_sprintf_safe(commandBuffer, "jointeam %i", randomTeam);
 		ChangeMenu("classmenu");
 		engine->ClientCmd(commandBuffer);
@@ -229,6 +234,21 @@ void CNeoTeamMenu::ChangeMenu(const char* menuName = NULL)
 	{
 		Assert(false);
 	}
+}
+
+void CNeoTeamMenu::OnKeyCodeReleased(vgui::KeyCode code)
+{ // Navigating using the keyboard hack
+	switch (code) {
+	case 92: // F1 - Close the menu
+		ChangeMenu(NULL);
+	}
+	// Leaving this here, useful to check what key is being pressed
+	/*char buffer[8] = "";
+	Q_snprintf(buffer, sizeof(buffer), "%i\n", code);
+	Msg(buffer);*/
+
+	// Ignore other Key presses
+	//BaseClass::OnKeyCodeReleased(code);
 }
 
 void CNeoTeamMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
