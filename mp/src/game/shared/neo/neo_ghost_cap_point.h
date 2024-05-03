@@ -19,7 +19,11 @@
 #include <vgui_controls/Controls.h>
 #include <vgui_controls/Panel.h>
 
+#include <vgui/ILocalize.h>
+#include "tier3/tier3.h"
+#include "vphysics_interface.h"
 #include "c_neo_player.h"
+#include "ienginevgui.h"
 #endif
 
 #ifdef CLIENT_DLL
@@ -50,11 +54,18 @@ public:
 		m_flCapTexScale = 1.0f;
 		m_flMyRadius = 0;
 
+		memset(m_szMarkerText, 0, sizeof(m_szMarkerText));
+		memset(m_wszMarkerTextUnicode, 0, sizeof(m_wszMarkerTextUnicode));
+
 		m_vecMyPos = vec3_origin;
 
 		SetAutoDelete(true);
 
-		SetScheme("ClientScheme.res");
+#ifdef CLIENT_DLL
+		vgui::HScheme neoscheme = vgui::scheme()->LoadSchemeFromFileEx(
+			enginevgui->GetPanel(PANEL_CLIENTDLL), "resource/ClientScheme_Neo.res", "ClientScheme_Neo");
+		SetScheme(neoscheme);
+#endif
 
 		if (parent)
 		{
@@ -69,10 +80,14 @@ public:
 		SetBounds(0, 0, m_iPosX, m_iPosY);
 
 		// NEO HACK (Rain): this is kind of awkward, we should get the handle on ApplySchemeSettings
-		vgui::IScheme *scheme = vgui::scheme()->GetIScheme(vgui::scheme()->GetDefaultScheme());
-		Assert(scheme);
-
-		m_hFont = scheme->GetFont("Default", true);
+#ifdef CLIENT_DLL
+		vgui::IScheme *scheme = vgui::scheme()->GetIScheme(neoscheme);
+		if (!scheme) {
+			Assert(scheme);
+			Error("CNEOHud_GhostCapPoint: Failed to load neoscheme\n");
+		}
+		m_hFont = scheme->GetFont("NHudOCRSmall");
+#endif
 
 		m_hCapTex = vgui::surface()->CreateNewTextureID();
 		Assert(m_hCapTex > 0);
@@ -84,6 +99,9 @@ public:
 
 	virtual void Paint()
 	{
+		SetFgColor(COLOR_TRANSPARENT);
+		SetBgColor(COLOR_TRANSPARENT);
+
 		BaseClass::Paint();
 
 		const Color jinColor = Color(38, 127, 0, 255),
@@ -94,7 +112,8 @@ public:
 
 		C_NEO_Player *player = C_NEO_Player::GetLocalNEOPlayer();
 
-		if (player->GetTeamNumber() == TEAM_JINRAI || player->GetTeamNumber() == TEAM_NSF)
+		const bool playerIsPlaying = (player->GetTeamNumber() == TEAM_JINRAI || player->GetTeamNumber() == TEAM_NSF);
+		if (playerIsPlaying)
 		{
 			if (player->GetTeamNumber() != m_iMyTeam)
 			{
@@ -114,6 +133,28 @@ public:
 
 		const int offset_X = x - ((m_iCapTexWidth / 2) * scale);
 		const int offset_Y = y - ((m_iCapTexHeight / 2) * scale);
+
+#ifdef CLIENT_DLL
+		if (playerIsPlaying)
+		{
+			const float distance = METERS_PER_INCH * player->GetAbsOrigin().DistTo(m_vecMyPos);
+			if (distance > 0.2)
+			{
+				// TODO (nullsystem): None of this is particularly efficient, but it works so
+				V_snprintf(m_szMarkerText, sizeof(m_szMarkerText), "RETRIEVAL ZONE DISTANCE: %.0f m", distance);
+				g_pVGuiLocalize->ConvertANSIToUnicode(m_szMarkerText, m_wszMarkerTextUnicode, sizeof(m_wszMarkerTextUnicode));
+
+				int xWide = 0;
+				int yTall = 0;
+				vgui::surface()->GetTextSize(m_hFont, m_wszMarkerTextUnicode, xWide, yTall);
+				vgui::surface()->DrawSetColor(COLOR_TRANSPARENT);
+				vgui::surface()->DrawSetTextColor(COLOR_TINTGREY);
+				vgui::surface()->DrawSetTextFont(m_hFont);
+				vgui::surface()->DrawSetTextPos(x - (xWide / 2), offset_Y + (m_iCapTexHeight * scale) + (yTall / 2));
+				vgui::surface()->DrawPrintText(m_wszMarkerTextUnicode, sizeof(m_szMarkerText));
+			}
+		}
+#endif
 
 		vgui::surface()->DrawSetColor(*targetColor);
 		vgui::surface()->DrawSetTexture(m_hCapTex);
@@ -136,6 +177,9 @@ private:
 
 	int m_iMyTeam;
 	int m_flMyRadius;
+
+	char m_szMarkerText[64 + 1];
+	wchar_t m_wszMarkerTextUnicode[64 + 1];
 
 	Vector m_vecMyPos;
 
