@@ -256,7 +256,7 @@ struct typedescription_t
 {
 	fieldtype_t			fieldType;
 	const char			*fieldName;
-	int					fieldOffset[ TD_OFFSET_COUNT ]; // 0 == normal, 1 == packed offset
+	size_t				fieldOffset[ TD_OFFSET_COUNT ]; // 0 == normal, 1 == packed offset
 	unsigned short		fieldSize;
 	short				flags;
 	// the name of the variable in the map/fgd data, or the name of the action
