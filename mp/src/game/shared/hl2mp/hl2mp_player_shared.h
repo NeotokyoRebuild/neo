@@ -98,6 +98,15 @@ private:
 	QAngle				m_angRender;
 
 	float				m_flTurnCorrectionTime;
+
+	struct StepSoundCache_t
+	{
+		StepSoundCache_t() : m_usSoundNameIndex(0) {}
+		CSoundParameters	m_SoundParameters;
+		unsigned short		m_usSoundNameIndex;
+	};
+	// One for left and one for right side of step
+	StepSoundCache_t		m_StepSoundCache[2];
 };
 
 #endif //HL2MP_PLAYER_SHARED_h

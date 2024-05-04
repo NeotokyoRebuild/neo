@@ -85,15 +85,13 @@ void CHL2MP_Player::PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, f
 {
 	if ( gpGlobals->maxClients > 1 && !sv_footsteps.GetFloat() )
 		return;
-
+#ifndef NEO
 #if defined( CLIENT_DLL )
 	// during prediction play footstep sounds only once
-	if ( !prediction->IsFirstTimePredicted() )
+	if (!prediction->IsFirstTimePredicted())
 		return;
 #endif
-
-	if ( GetFlags() & FL_DUCKING )
-		return;
+#endif
 
 	m_Local.m_nStepside = !m_Local.m_nStepside;
 
@@ -122,11 +120,14 @@ void CHL2MP_Player::PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, f
 	CRecipientFilter filter;
 	filter.AddRecipientsByPAS( vecOrigin );
 
+	// Going to network all sounds for now instead of predicting them I guess?
+#ifndef NEO
 #ifndef CLIENT_DLL
 	// im MP, server removed all players in origins PVS, these players 
 	// generate the footsteps clientside
 	if ( gpGlobals->maxClients > 1 )
 		filter.RemoveRecipientsByPVS( vecOrigin );
+#endif
 #endif
 
 	EmitSound_t ep;
