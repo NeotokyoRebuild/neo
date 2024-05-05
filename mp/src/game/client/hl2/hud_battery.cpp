@@ -46,7 +46,9 @@ private:
 	int		m_iNewBat;
 };
 
+#ifndef NEO
 DECLARE_HUDELEMENT( CHudBattery );
+#endif
 DECLARE_HUD_MESSAGE( CHudBattery, Battery );
 
 //-----------------------------------------------------------------------------
