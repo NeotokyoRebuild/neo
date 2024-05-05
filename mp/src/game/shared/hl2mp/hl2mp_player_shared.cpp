@@ -85,12 +85,11 @@ void CHL2MP_Player::PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, f
 {
 	if ( gpGlobals->maxClients > 1 && !sv_footsteps.GetFloat() )
 		return;
-#ifndef NEO
+
 #if defined( CLIENT_DLL )
 	// during prediction play footstep sounds only once
 	if (!prediction->IsFirstTimePredicted())
 		return;
-#endif
 #endif
 
 	m_Local.m_nStepside = !m_Local.m_nStepside;
@@ -107,11 +106,10 @@ void CHL2MP_Player::PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, f
 	}
 
 	unsigned short stepSoundName = m_Local.m_nStepside ? psurface->sounds.stepleft : psurface->sounds.stepright;
-
-	if (!stepSoundName)
-		return;
-
 	const char* pSoundName = physprops->GetString(stepSoundName);
+
+	if (!stepSoundName) // If can't find material step sound use default footstep sound
+		pSoundName = szStepSound;
 
 	CSoundParameters params;
 	if ( GetParametersForSound(pSoundName, params, NULL ) == false )
@@ -120,14 +118,11 @@ void CHL2MP_Player::PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, f
 	CRecipientFilter filter;
 	filter.AddRecipientsByPAS( vecOrigin );
 
-	// Going to network all sounds for now instead of predicting them I guess?
-#ifndef NEO
 #ifndef CLIENT_DLL
 	// im MP, server removed all players in origins PVS, these players 
 	// generate the footsteps clientside
 	if ( gpGlobals->maxClients > 1 )
 		filter.RemoveRecipientsByPVS( vecOrigin );
-#endif
 #endif
 
 	EmitSound_t ep;
