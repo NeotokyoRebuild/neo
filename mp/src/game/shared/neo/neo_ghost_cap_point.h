@@ -175,6 +175,8 @@ public:
 	virtual void Precache(void);
 	virtual void Spawn(void);
 
+	int owningTeamAlternate() const;
+
 #ifdef CLIENT_DLL
 	virtual void ClientThink(void);
 #endif
