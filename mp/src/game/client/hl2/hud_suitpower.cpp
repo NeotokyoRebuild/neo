@@ -20,7 +20,9 @@ using namespace vgui;
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+#ifndef NEO // CHudSuitPower
 DECLARE_HUDELEMENT( CHudSuitPower );
+#endif
 
 #define SUITPOWER_INIT -1
 
