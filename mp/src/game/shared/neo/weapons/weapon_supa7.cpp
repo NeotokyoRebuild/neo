@@ -332,7 +332,7 @@ void CWeaponSupa7::PrimaryAttack(void)
 	SendWeaponAnim(ACT_VM_PRIMARYATTACK);
 
 	// Don't fire again until fire animation has completed
-	ProposeNextAttack(gpGlobals->curtime + SequenceDuration());
+	ProposeNextAttack(gpGlobals->curtime + (SequenceDuration() * 0.75));
 	m_iClip1 -= 1;
 
 	// player "shoot" animation
