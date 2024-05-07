@@ -87,9 +87,12 @@ void CHL2MP_Player::PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, f
 		return;
 
 #if defined( CLIENT_DLL )
-	// during prediction play footstep sounds only once
-	if (!prediction->IsFirstTimePredicted())
-		return;
+	// during prediction play footstep sounds only once NEOTODO this should be done for all players but currently works only if done for local player only
+	if (IsLocalPlayer())
+	{
+		if (!prediction->IsFirstTimePredicted())
+			return;
+	}
 #endif
 
 	m_Local.m_nStepside = !m_Local.m_nStepside;
@@ -119,10 +122,12 @@ void CHL2MP_Player::PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, f
 	filter.AddRecipientsByPAS( vecOrigin );
 
 #ifndef CLIENT_DLL
-	// im MP, server removed all players in origins PVS, these players 
-	// generate the footsteps clientside
-	if ( gpGlobals->maxClients > 1 )
-		filter.RemoveRecipientsByPVS( vecOrigin );
+	if (gpGlobals->maxClients > 1)
+	{
+		// im MP, server removed all players in origins PVS, these players 
+		// generate the footsteps clientside NEOTODO this is not true atm I think?
+		filter.RemoveRecipientsByPVS(vecOrigin);
+	}
 #endif
 
 	EmitSound_t ep;
