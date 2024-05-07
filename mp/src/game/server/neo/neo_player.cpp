@@ -462,7 +462,7 @@ void CNEO_Player::Precache( void )
 void CNEO_Player::Spawn(void)
 {
 	ShowViewPortPanel(PANEL_SPECGUI, (GetTeamNumber() == TEAM_SPECTATOR ? true : false));
-
+	
 	// Should do this class update first, because most of the stuff below depends on which player class we are.
 	if ((m_iNextSpawnClassChoice != -1) && (m_iNeoClass != m_iNextSpawnClassChoice))
 	{
@@ -1471,12 +1471,12 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 			Weapon_Detach(pWep);
 		}
 	}
+	BaseClass::Event_Killed(info);
 
 	m_bEnterObserver = true;
 	StartObserverMode(OBS_MODE_CHASE);
+	RemoveAllWeapons();
 	ShowViewPortPanel(PANEL_SPECGUI, true);
-
-	BaseClass::Event_Killed(info);
 }
 
 float CNEO_Player::GetReceivedDamageScale(CBaseEntity* pAttacker)
