@@ -659,6 +659,9 @@ void CNEORules::FireGameEvent(IGameEvent* event)
 
 	if (Q_strcmp(type, "round_start") == 0)
 	{
+#ifdef CLIENT_DLL
+		engine->ClientCmd("classmenu");
+#endif
 		m_flNeoRoundStartTime = gpGlobals->curtime;
 		m_flNeoNextRoundStartTime = 0;
 	}
