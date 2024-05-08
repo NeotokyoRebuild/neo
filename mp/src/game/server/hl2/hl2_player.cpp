@@ -2007,6 +2007,10 @@ bool CHL2_Player::SuitPower_RemoveDevice( const CSuitPowerDevice &device )
 	// because the battery is drained, no harm done, the battery charge cannot go below 0. 
 	// This code in combination with the delay before the suit can start recharging are a defense
 	// against exploits where the player could rapidly tap sprint and never run out of power.
+#ifdef NEO
+	if (static_cast<CNEO_Player*>(this)->GetClass() == NEO_CLASS_RECON)
+		return true;
+#endif
 	SuitPower_Drain( device.GetDeviceDrainRate() * 0.1f );
 
 	m_HL2Local.m_bitsActiveDevices &= ~device.GetDeviceID();
