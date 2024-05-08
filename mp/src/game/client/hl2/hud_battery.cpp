@@ -48,8 +48,8 @@ private:
 
 #ifndef NEO
 DECLARE_HUDELEMENT( CHudBattery );
-#endif
 DECLARE_HUD_MESSAGE( CHudBattery, Battery );
+#endif
 
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
@@ -64,7 +64,9 @@ CHudBattery::CHudBattery( const char *pElementName ) : BaseClass(NULL, "HudSuit"
 //-----------------------------------------------------------------------------
 void CHudBattery::Init( void )
 {
+#ifndef NEO
 	HOOK_HUD_MESSAGE( CHudBattery, Battery);
+#endif
 	Reset();
 	m_iBat		= INIT_BAT;
 	m_iNewBat   = 0;
