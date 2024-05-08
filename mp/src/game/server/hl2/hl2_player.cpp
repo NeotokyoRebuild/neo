@@ -2003,16 +2003,6 @@ bool CHL2_Player::SuitPower_RemoveDevice( const CSuitPowerDevice &device )
 	if( !IsSuitEquipped() )
 		return false;
 
-	// Take a little bit of suit power when you disable a device. If the device is shutting off
-	// because the battery is drained, no harm done, the battery charge cannot go below 0. 
-	// This code in combination with the delay before the suit can start recharging are a defense
-	// against exploits where the player could rapidly tap sprint and never run out of power.
-#ifdef NEO
-	if (static_cast<CNEO_Player*>(this)->GetClass() == NEO_CLASS_RECON)
-		return true;
-#endif
-	SuitPower_Drain( device.GetDeviceDrainRate() * 0.1f );
-
 	m_HL2Local.m_bitsActiveDevices &= ~device.GetDeviceID();
 	m_flSuitPowerLoad -= device.GetDeviceDrainRate();
 
@@ -2022,6 +2012,16 @@ bool CHL2_Player::SuitPower_RemoveDevice( const CSuitPowerDevice &device )
 		// suit power system entered a no-load state.
 		m_flTimeAllSuitDevicesOff = gpGlobals->curtime;
 	}
+
+#ifdef NEO
+	if (static_cast<CNEO_Player*>(this)->GetClass() == NEO_CLASS_RECON)
+		return true;
+#endif
+	// Take a little bit of suit power when you disable a device. If the device is shutting off
+	// because the battery is drained, no harm done, the battery charge cannot go below 0. 
+	// This code in combination with the delay before the suit can start recharging are a defense
+	// against exploits where the player could rapidly tap sprint and never run out of power.
+	SuitPower_Drain( device.GetDeviceDrainRate() * 0.1f );
 
 	return true;
 }
