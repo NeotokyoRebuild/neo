@@ -2287,14 +2287,11 @@ void CNEO_Player::StartSprinting(void)
 		return;
 	}
 
-	if (!(m_nButtons & IN_FORWARD))
-	{ // Only forward sprinting allowed
-		return;
+	if ((m_nButtons & IN_FORWARD) || (m_nButtons & IN_BACK) || (m_nButtons & IN_LEFT) || (m_nButtons & IN_RIGHT))
+	{ //  ensure any direction button is pressed before sprinting
+		BaseClass::StartSprinting();
+		SetMaxSpeed(GetSprintSpeed());
 	}
-
-	BaseClass::StartSprinting();
-
-	SetMaxSpeed(GetSprintSpeed());
 }
 
 void CNEO_Player::StopSprinting(void)
