@@ -2011,17 +2011,17 @@ bool CHL2_Player::SuitPower_RemoveDevice( const CSuitPowerDevice &device )
 	m_HL2Local.m_bitsActiveDevices &= ~device.GetDeviceID();
 	m_flSuitPowerLoad -= device.GetDeviceDrainRate();
 
+#ifdef NEO
+	if (static_cast<CNEO_Player*>(this)->GetClass() == NEO_CLASS_RECON)
+		return true;
+#endif
+	
 	if( m_HL2Local.m_bitsActiveDevices == 0x00000000 )
 	{
 		// With this device turned off, we can set this timer which tells us when the
 		// suit power system entered a no-load state.
 		m_flTimeAllSuitDevicesOff = gpGlobals->curtime;
 	}
-
-#ifdef NEO
-	if (static_cast<CNEO_Player*>(this)->GetClass() == NEO_CLASS_RECON)
-		return true;
-#endif
 	// Take a little bit of suit power when you disable a device. If the device is shutting off
 	// because the battery is drained, no harm done, the battery charge cannot go below 0. 
 	// This code in combination with the delay before the suit can start recharging are a defense
