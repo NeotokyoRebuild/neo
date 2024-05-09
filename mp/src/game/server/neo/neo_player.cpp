@@ -956,6 +956,9 @@ void CNEO_Player::SuperJump(void)
 
 bool CNEO_Player::IsAllowedToSuperJump(void)
 {
+	if (!IsSprinting())
+		return false;
+
 	if (IsCarryingGhost())
 		return false;
 
@@ -2287,7 +2290,7 @@ void CNEO_Player::StartSprinting(void)
 		return;
 	}
 
-	if ((m_nButtons & IN_FORWARD) || (m_nButtons & IN_BACK) || (m_nButtons & IN_LEFT) || (m_nButtons & IN_RIGHT))
+	if (m_nButtons & IN_FORWARD || m_nButtons & IN_BACK || m_nButtons & IN_MOVELEFT || m_nButtons & IN_MOVERIGHT)
 	{ //  ensure any direction button is pressed before sprinting
 		BaseClass::StartSprinting();
 		SetMaxSpeed(GetSprintSpeed());

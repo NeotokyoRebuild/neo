@@ -921,6 +921,9 @@ void C_NEO_Player::PostThink(void)
 
 bool C_NEO_Player::IsAllowedToSuperJump(void)
 {
+	if (!IsSprinting())
+		return false;
+
 	if (IsCarryingGhost())
 		return false;
 
@@ -1089,7 +1092,10 @@ void C_NEO_Player::StartSprinting(void)
 		return;
 	}
 
-	SetMaxSpeed(GetSprintSpeed());
+	if (m_nButtons & IN_FORWARD || m_nButtons & IN_BACK || m_nButtons & IN_MOVELEFT || m_nButtons & IN_MOVERIGHT)
+	{ //  ensure any direction button is pressed before sprinting
+		SetMaxSpeed(GetSprintSpeed());
+	}
 }
 
 void C_NEO_Player::StopSprinting(void)

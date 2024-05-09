@@ -520,8 +520,8 @@ void CHL2_Player::HandleSpeedChanges( void )
 
 	bool bCanSprint = CanSprint();
 	bool bIsSprinting = IsSprinting();
-	bool bWantSprint = ( bCanSprint && IsSuitEquipped() && (m_nButtons & IN_SPEED) );
-	if ( bIsSprinting != bWantSprint && (buttonsChanged & IN_SPEED) )
+	bool bWantSprint = ( bCanSprint && IsSuitEquipped() && (m_nButtons & IN_SPEED) && (m_nButtons & IN_FORWARD || m_nButtons & IN_BACK || m_nButtons & IN_MOVELEFT || m_nButtons & IN_MOVERIGHT));
+	if ( bIsSprinting != bWantSprint && (buttonsChanged & IN_SPEED)  )
 	{
 		// If someone wants to sprint, make sure they've pressed the button to do so. We want to prevent the
 		// case where a player can hold down the sprint key and burn tiny bursts of sprint as the suit recharges
@@ -546,6 +546,11 @@ void CHL2_Player::HandleSpeedChanges( void )
 			// Reset key, so it will be activated post whatever is suppressing it.
 			m_nButtons &= ~IN_SPEED;
 		}
+	}
+
+	if (bIsSprinting && !(m_nButtons & IN_FORWARD || m_nButtons & IN_BACK || m_nButtons & IN_MOVELEFT || m_nButtons & IN_MOVERIGHT))
+	{
+		StopSprinting();
 	}
 
 	bool bIsWalking = IsWalking();
