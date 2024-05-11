@@ -304,13 +304,13 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 	switch (player->GetClass())
 	{
 	case NEO_CLASS_RECON:
-		viewOffset.z = ((player->GetFlags() & FL_DUCKING) ? VEC_DUCK_VIEW_SCALED(player).z : VEC_VIEW_SCALED(player).z) - (neo_lean_fp_lower_eyes_scale.GetFloat() * leanRatio);
+		viewOffset.z = ((player->GetFlags() & FL_DUCKING) ? NEO_RECON_EYE_HEIGHT_DUCKING + NEO_RECON_VIEW_OFFSET.z : NEO_RECON_EYE_HEIGHT_STANDING + NEO_RECON_VIEW_OFFSET.z) - (neo_lean_fp_lower_eyes_scale.GetFloat() * leanRatio);
 		break;
 	case NEO_CLASS_ASSAULT:
-		viewOffset.z = ((player->GetFlags() & FL_DUCKING) ? VEC_DUCK_VIEW_SCALED(player).z : VEC_VIEW_SCALED(player).z) - (neo_lean_fp_lower_eyes_scale.GetFloat() * leanRatio);
+		viewOffset.z = ((player->GetFlags() & FL_DUCKING) ? NEO_ASSAULT_EYE_HEIGHT_DUCKING + NEO_ASSAULT_VIEW_OFFSET.z : NEO_ASSAULT_EYE_HEIGHT_STANDING + NEO_ASSAULT_VIEW_OFFSET.z) - (neo_lean_fp_lower_eyes_scale.GetFloat() * leanRatio);
 		break;
 	case NEO_CLASS_SUPPORT:
-		viewOffset.z = ((player->GetFlags() & FL_DUCKING) ? VEC_DUCK_VIEW_SCALED(player).z : VEC_VIEW_SCALED(player).z) - (neo_lean_fp_lower_eyes_scale.GetFloat() * leanRatio);
+		viewOffset.z = ((player->GetFlags() & FL_DUCKING) ? NEO_SUPPORT_EYE_HEIGHT_DUCKING + NEO_SUPPORT_VIEW_OFFSET.z : NEO_SUPPORT_EYE_HEIGHT_STANDING + NEO_SUPPORT_VIEW_OFFSET.z) - (neo_lean_fp_lower_eyes_scale.GetFloat() * leanRatio);
 		break;
 	default:
 		Assert(false);
@@ -318,6 +318,7 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 		break;
 	}
 
+	player->m_vecLean = Vector(0, viewOffset.y, -(neo_lean_fp_lower_eyes_scale.GetFloat() * leanRatio));
 	player->SetViewOffset(viewOffset);
 
 	viewAng.z = leanAngle;

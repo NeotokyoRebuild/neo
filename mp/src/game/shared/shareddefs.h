@@ -85,9 +85,9 @@ public:
 #define VEC_DEAD_VIEWHEIGHT	g_pGameRules->GetViewVectors()->m_vDeadViewHeight
 
 #ifdef NEO
-#define NEO_RECON_VIEW_OFFSET Vector(0.0f, 0.0f, -1.0f)
-#define NEO_ASSAULT_VIEW_OFFSET vec3_origin
-#define NEO_SUPPORT_VIEW_OFFSET Vector(0.0f, 0.0f, 2.0f)
+#define NEO_RECON_VIEW_OFFSET Vector(0.0f, 0.0f, -6.0f)
+#define NEO_ASSAULT_VIEW_OFFSET Vector(0.0f, 0.0f, -3.75f)
+#define NEO_SUPPORT_VIEW_OFFSET Vector(0.0f, 0.0f, 3.0f)
 #define VEC_VIEW_NEOSCALE(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vView + ((NeoPlayer->GetClass() == NEO_CLASS_RECON) ? NEO_RECON_VIEW_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_SUPPORT) ? NEO_SUPPORT_VIEW_OFFSET : NEO_ASSAULT_VIEW_OFFSET))
 #define VEC_DUCK_VIEW_NEOSCALE(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vDuckView + ((NeoPlayer->GetClass() == NEO_CLASS_RECON) ? NEO_RECON_VIEW_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_SUPPORT) ? NEO_SUPPORT_VIEW_OFFSET : NEO_ASSAULT_VIEW_OFFSET))
 
