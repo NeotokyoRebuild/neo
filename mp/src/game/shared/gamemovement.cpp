@@ -807,7 +807,7 @@ Vector CGameMovement::GetPlayerViewOffset( bool ducked ) const
 #ifdef NEO
 	Assert(dynamic_cast<CNEO_Player*>(player));
 	auto thisPlayer = static_cast<CNEO_Player*>(player);
-	return ducked ? VEC_DUCK_VIEW_SCALED(static_cast<CNEO_Player*>(player)) + thisPlayer->m_vecLean : VEC_VIEW_SCALED(static_cast<CNEO_Player*>(player)) + thisPlayer->m_vecLean;
+	return ducked ? VEC_DUCK_VIEW_SCALED(thisPlayer) + thisPlayer->m_vecLean : VEC_VIEW_SCALED(thisPlayer) + thisPlayer->m_vecLean;
 #else
 	return ducked ? VEC_DUCK_VIEW_SCALED(player) : VEC_VIEW_SCALED(player);
 #endif
