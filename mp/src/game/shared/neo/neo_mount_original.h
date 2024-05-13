@@ -436,7 +436,46 @@ void FixIncompatibleNeoAssets(IFileSystem* filesystem, bool restoreInstead)
         }
 	}
 #else
-	originalNtPathOk = IsNeoGameInfoPathOK(neoPath, sizeof(neoPath));
+
+	const char* noNeoPathId = "0";
+	Q_strncpy(neoPath, CommandLine()->ParmValue(NEO_PATH_PARM_CMD, noNeoPathId), sizeof(neoPath));
+
+	// There was no NEO_PATH_PARM_CMD provided
+	if (!*neoPath || FStrEq(neoPath, noNeoPathId))
+	{
+		// User has Steam running, use it to deduce the NT path.
+		if (SteamAPI_IsSteamRunning())
+		{
+			originalNtPathOk = IsNeoGameInfoPathOK(neoPath, sizeof(neoPath));
+		}
+		else
+		{
+			// We don't have Steam running, and there is no NEO_PATH_PARM_CMD specified.
+			// This is a failure state on Windows.
+			originalNtPathOk = false;
+		}
+	}
+	/// There is a NEO_PATH_PARM_CMD
+	else
+	{
+		// Make sure the path is valid
+		if (filesystem->IsDirectory(neoPath))
+		{
+			// Make sure there's actually a GameInfo.txt in the path, otherwise we will crash on mount.
+			// We make the assumption that any GameInfo.txt found will be valid format.
+			char gameInfoPath[MAX_PATH];
+			V_strcpy_safe(gameInfoPath, neoPath);
+			V_AppendSlash(gameInfoPath, sizeof(gameInfoPath));
+			V_strcat(gameInfoPath, "GameInfo.txt", sizeof(gameInfoPath));
+
+			originalNtPathOk = filesystem->FileExists(gameInfoPath);
+		}
+
+		// NEO TODO (Rain): check reg entries:
+		//	HKEY_LOCAL_MACHINE\SOFTWARE\Valve\Steam (32bit) and HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Valve\Steam (64bit)
+		// for a Steam installation as fallback on client systems.
+	}
+
 #endif
 	if (!originalNtPathOk)
 	{
