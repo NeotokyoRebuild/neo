@@ -23,6 +23,7 @@ IMPLEMENT_SERVERCLASS_ST_NOBASE(CPlayerResource, DT_PlayerResource)
 //	SendPropArray( SendPropInt( SENDINFO_ARRAY(m_iPacketloss), 7, SPROP_UNSIGNED ), m_iPacketloss ),
 #ifdef NEO
 	SendPropArray3(SENDINFO_ARRAY3(m_iXP), SendPropInt(SENDINFO_ARRAY(m_iXP), 12)),
+	SendPropArray3(SENDINFO_ARRAY3(m_iClass), SendPropInt(SENDINFO_ARRAY(m_iClass), 12)),
 #endif
 	SendPropArray3( SENDINFO_ARRAY3(m_iScore), SendPropInt( SENDINFO_ARRAY(m_iScore), 12 ) ),
 	SendPropArray3( SENDINFO_ARRAY3(m_iDeaths), SendPropInt( SENDINFO_ARRAY(m_iDeaths), 12 ) ),
@@ -63,6 +64,7 @@ void CPlayerResource::Spawn( void )
 	{
 #ifdef NEO
 		m_iXP.Set(i, 0);
+		m_iClass.Set(i, 0);
 #endif
 		m_iPing.Set( i, 0 );
 		m_iScore.Set( i, 0 );
@@ -111,6 +113,7 @@ void CPlayerResource::UpdatePlayerData( void )
 		{
 #ifdef NEO
 			m_iXP.Set(i, static_cast<CNEO_Player*>(pPlayer)->m_iXP.Get());
+			m_iClass.Set(i, static_cast<CNEO_Player*>(pPlayer)->m_iNeoClass.Get());
 #endif
 			m_iScore.Set( i, pPlayer->FragCount() );
 			m_iDeaths.Set( i, pPlayer->DeathCount() );

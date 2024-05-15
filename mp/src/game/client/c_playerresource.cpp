@@ -27,6 +27,7 @@ IMPLEMENT_CLIENTCLASS_DT_NOBASE(C_PlayerResource, DT_PlayerResource, CPlayerReso
 	RecvPropArray3( RECVINFO_ARRAY(m_iPing), RecvPropInt( RECVINFO(m_iPing[0]))),
 #ifdef NEO
 	RecvPropArray3(RECVINFO_ARRAY(m_iXP), RecvPropInt(RECVINFO(m_iXP[0]))),
+	RecvPropArray3(RECVINFO_ARRAY(m_iClass), RecvPropInt(RECVINFO(m_iClass[0]))),
 #endif
 	RecvPropArray3( RECVINFO_ARRAY(m_iScore), RecvPropInt( RECVINFO(m_iScore[0]))),
 	RecvPropArray3( RECVINFO_ARRAY(m_iDeaths), RecvPropInt( RECVINFO(m_iDeaths[0]))),
@@ -42,6 +43,7 @@ BEGIN_PREDICTION_DATA( C_PlayerResource )
 	DEFINE_PRED_ARRAY( m_iPing, FIELD_INTEGER, MAX_PLAYERS+1, FTYPEDESC_PRIVATE ),
 #ifdef NEO
 	DEFINE_PRED_ARRAY(m_iXP, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_PRIVATE),
+	DEFINE_PRED_ARRAY(m_iClass, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_PRIVATE),
 #endif
 	DEFINE_PRED_ARRAY( m_iScore, FIELD_INTEGER, MAX_PLAYERS+1, FTYPEDESC_PRIVATE ),
 	DEFINE_PRED_ARRAY( m_iDeaths, FIELD_INTEGER, MAX_PLAYERS+1, FTYPEDESC_PRIVATE ),
@@ -65,6 +67,7 @@ C_PlayerResource::C_PlayerResource()
 //	memset( m_iPacketloss, 0, sizeof( m_iPacketloss ) );
 #ifdef NEO
 	memset(m_iXP, 0, sizeof(m_iXP));
+	memset(m_iClass, 0, sizeof(m_iClass));
 #endif
 	memset( m_iScore, 0, sizeof( m_iScore ) );
 	memset( m_iDeaths, 0, sizeof( m_iDeaths ) );
@@ -230,6 +233,16 @@ int C_PlayerResource::GetXP(int index)
 	}
 
 	return m_iXP[index];
+}
+
+int C_PlayerResource::GetClass(int index)
+{
+	if (!IsConnected(index))
+	{
+		return -1;
+	}
+
+	return m_iClass[index];
 }
 
 int C_PlayerResource::GetFrags(int index )
