@@ -345,7 +345,19 @@ void CNEORules::ClientSpawned(edict_t* pPlayer)
 
 bool CNEORules::ShouldCollide(int collisionGroup0, int collisionGroup1)
 {
-	return BaseClass::ShouldCollide(collisionGroup0, collisionGroup1);
+	if (collisionGroup0 > collisionGroup1)
+	{
+		// swap so that lowest is always first
+		V_swap(collisionGroup0, collisionGroup1);
+	}
+
+	if ((collisionGroup0 == COLLISION_GROUP_PLAYER || collisionGroup0 == COLLISION_GROUP_PLAYER_MOVEMENT) &&
+		((collisionGroup1 == COLLISION_GROUP_WEAPON) || (collisionGroup1 == COLLISION_GROUP_PLAYER || collisionGroup1 == COLLISION_GROUP_PLAYER_MOVEMENT)))
+	{
+		return false;
+	}
+
+	return CTeamplayRules::ShouldCollide(collisionGroup0, collisionGroup1);
 }
 
 extern ConVar mp_chattime;
