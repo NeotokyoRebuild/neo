@@ -93,27 +93,46 @@ void CNEOHud_GhostMarker::DrawNeoHudElement()
 		return;
 	}
 
-	surface()->DrawSetTextColor(COLOR_GREY);
-	surface()->DrawSetTextFont(m_hFont);
-	surface()->DrawSetTextPos(m_iPosX, m_iPosY);
-	surface()->DrawPrintText(m_wszMarkerTextUnicode, sizeof(m_szMarkerText));
-
 	const float scale = neo_ghost_marker_hud_scale_factor.GetFloat();
 
 	const int offset_X = m_iPosX - ((m_iMarkerTexWidth * 0.5f) * scale);
 	const int offset_Y = m_iPosY - ((m_iMarkerTexHeight * 0.5f) * scale);
 
-	surface()->DrawSetColor(m_iGhostingTeam == TEAM_JINRAI ? COLOR_JINRAI : (m_iGhostingTeam == TEAM_NSF ? COLOR_NSF : COLOR_GREY));
+	Color ghostColor = COLOR_GREY;
+	if (m_iGhostingTeam == TEAM_JINRAI || m_iGhostingTeam == TEAM_NSF)
+	{
+		if ((m_iClientTeam == TEAM_JINRAI || m_iClientTeam == TEAM_NSF) && (m_iClientTeam != m_iGhostingTeam))
+		{
+			// If viewing from playing player, but opposite of ghosting team, show red
+			ghostColor = COLOR_RED;
+		}
+		else
+		{
+			// Otherwise show ghosting team color (if friendly or spec)
+			ghostColor = (m_iGhostingTeam == TEAM_JINRAI) ? COLOR_JINRAI : COLOR_NSF;
+		}
+	}
+	surface()->DrawSetColor(ghostColor);
 	surface()->DrawSetTexture(m_hTex);
 	surface()->DrawTexturedRect(
 		offset_X,
 		offset_Y,
 		offset_X + (m_iMarkerTexWidth * scale),
 		offset_Y + (m_iMarkerTexHeight * scale));
+
+	surface()->DrawSetTextColor(COLOR_GREY);
+	int xWide = 0;
+	int yTall = 0;
+	surface()->GetTextSize(m_hFont, m_wszMarkerTextUnicode, xWide, yTall);
+	surface()->DrawSetTextFont(m_hFont);
+	surface()->DrawSetTextPos(m_iPosX - (xWide / 2), offset_Y + (m_iMarkerTexHeight * scale) + (yTall / 2));
+	surface()->DrawPrintText(m_wszMarkerTextUnicode, sizeof(m_szMarkerText));
 }
 
 void CNEOHud_GhostMarker::Paint()
 {
+	SetFgColor(COLOR_TRANSPARENT);
+	SetBgColor(COLOR_TRANSPARENT);
 	BaseClass::Paint();
 	PaintNeoElement();
 }
@@ -121,6 +140,11 @@ void CNEOHud_GhostMarker::Paint()
 void CNEOHud_GhostMarker::SetGhostingTeam(int team)
 {
 	m_iGhostingTeam = team;
+}
+
+void CNEOHud_GhostMarker::SetClientCurrentTeam(int team)
+{
+	m_iClientTeam = team;
 }
 
 void CNEOHud_GhostMarker::SetScreenPosition(int x, int y)

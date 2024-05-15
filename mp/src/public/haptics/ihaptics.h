@@ -49,6 +49,7 @@ public: // Initialization.
 		IEngineVGui* newvgui,
 		ActivityList_IndexForName_t actIndexForName,
 		ActivityList_NameForIndex_t actNameForIndex) = 0;
+	virtual ~IHaptics() {}
 
 public: // Device methods
 

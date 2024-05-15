@@ -73,7 +73,8 @@ COMPILE_TIME_ASSERT(NEO_RECON_CROUCH_SPEED > NEO_ASSAULT_CROUCH_SPEED);
 COMPILE_TIME_ASSERT(NEO_ASSAULT_CROUCH_SPEED > NEO_SUPPORT_CROUCH_SPEED);
 
 #define SUPER_JMP_COST 45.0f
-#define CLOAK_AUX_COST ((GetClass() == NEO_CLASS_RECON) ? 17.5f : 19.0f)
+#define CLOAK_AUX_COST 1.0f
+#define SPRINT_START_MIN (2.0f)
 
 // Original NT allows chaining superjumps up ramps,
 // so leaving this zeroed for enabling movement tricks.
@@ -240,5 +241,21 @@ CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, const NEO_WEP_BI
 // Temporary helper for converting between these. Should refactor this to use the same structure for both.
 // Returns true on success. If returns false, the out value will not be set.
 bool PlayerAnimToPlayerAnimEvent(const PLAYER_ANIM playerAnim, PlayerAnimEvent_t& outAnimEvent);
+
+enum NeoLeanDirectionE {
+	NEO_LEAN_NONE = 0,
+	NEO_LEAN_LEFT,
+	NEO_LEAN_RIGHT,
+};
+
+bool ClientWantsLeanToggle(const CNEO_Player* player);
+
+enum NeoWeponAimToggleE {
+	NEO_TOGGLE_DEFAULT = 0,
+	NEO_TOGGLE_FORCE_AIM,
+	NEO_TOGGLE_FORCE_UN_AIM,
+};
+
+bool ClientWantsAimHold(const CNEO_Player* player);
 
 #endif // NEO_PLAYER_SHARED_H

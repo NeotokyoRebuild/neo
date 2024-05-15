@@ -91,7 +91,7 @@ bool CNEOGhostCapturePoint::IsGhostCaptured(int& outTeamNumber, int& outCaptorCl
 {
 	if (m_bIsActive && m_bGhostHasBeenCaptured)
 	{
-		outTeamNumber = m_iOwningTeam;
+		outTeamNumber = owningTeamAlternate();
 		outCaptorClientIndex = m_iSuccessfulCaptorClientIndex;
 
 		return true;
@@ -100,6 +100,14 @@ bool CNEOGhostCapturePoint::IsGhostCaptured(int& outTeamNumber, int& outCaptorCl
 	return false;
 }
 #endif
+
+int CNEOGhostCapturePoint::owningTeamAlternate() const
+{
+	const bool alternate = NEORules()->roundAlternate();
+	int owningTeam = m_iOwningTeam;
+	if (!alternate) owningTeam = (owningTeam == TEAM_JINRAI) ? TEAM_NSF : (owningTeam == TEAM_NSF) ? TEAM_JINRAI : owningTeam;
+	return owningTeam;
+}
 
 void CNEOGhostCapturePoint::Spawn(void)
 {
@@ -192,10 +200,11 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 		const int team = player->GetTeamNumber();
 
 		Assert(team == TEAM_JINRAI || team == TEAM_NSF);
+		bool isNotTeamCap = team != owningTeamAlternate();
 
 		// Is this our team's capzone?
 		// NEO TODO (Rain): newbie UI helpers for attempting wrong team cap
-		if (team != m_iOwningTeam)
+		if (isNotTeamCap)
 		{
 			continue;
 		}
@@ -268,7 +277,7 @@ void CNEOGhostCapturePoint::ClientThink(void)
 
 	m_pHUDCapPoint->SetPos(GetAbsOrigin());
 	m_pHUDCapPoint->SetRadius(m_flCapzoneRadius);
-	m_pHUDCapPoint->SetTeam(m_iOwningTeam);
+	m_pHUDCapPoint->SetTeam(m_iOwningTeam); // TODO (nullsystem): Refactor to owningTeamAlternate()
 
 	m_pHUDCapPoint->SetVisible(true);
 

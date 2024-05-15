@@ -34,6 +34,7 @@
 		"weapon"	"string" 	// weapon name killed used
 		// inherited from NT
 		"icon"		"short"		// icon
+		"assists"	"short"		// user ID who assists
 	}
 	
 	"teamplay_round_start"			// round restart

@@ -85,7 +85,7 @@ class C_NEO_Player;
 
 enum NeoRoundStatus {
 	Idle = 0,
-	//Warmup,
+	Warmup,
 	PreRoundFreeze,
 	RoundLive,
 	PostRound,
@@ -193,6 +193,7 @@ public:
 #endif
 
 	void SetRoundStatus(NeoRoundStatus status);
+	NeoRoundStatus GetRoundStatus() const;
 
 	// This is the supposed encrypt key on NT, although it has its issues.
 	// See https://steamcommunity.com/groups/ANPA/discussions/0/1482109512299590948/
@@ -207,6 +208,9 @@ public:
 		NEO_VICTORY_FORFEIT,
 		NEO_VICTORY_STALEMATE // Not actually a victory
 	};
+
+	int ghosterTeam() const { return m_iGhosterTeam; }
+	int GetGhosterPlayer() const { return m_iGhosterPlayer; }
 
 	int GetOpposingTeam(const int team) const
 	{
@@ -227,6 +231,9 @@ public:
 		return GetOpposingTeam(player->GetTeamNumber());
 	}
 
+        int roundNumber() const { return m_iRoundNumber; }
+        bool roundAlternate() const { return static_cast<bool>(m_iRoundNumber % 2 == 0); }
+
 public:
 #ifdef GAME_DLL
 	// Workaround for bot spawning. See Bot_f() for details.
@@ -239,6 +246,8 @@ private:
 #endif
 	CNetworkVar(int, m_nRoundStatus); // NEO TODO (Rain): probably don't need to network this
 	CNetworkVar(int, m_iRoundNumber);
+	CNetworkVar(int, m_iGhosterTeam);
+	CNetworkVar(int, m_iGhosterPlayer);
 
 	CNetworkVar(float, m_flNeoRoundStartTime);
 	CNetworkVar(float, m_flNeoNextRoundStartTime);
