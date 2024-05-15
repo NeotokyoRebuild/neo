@@ -146,6 +146,7 @@ void CNEOScoreBoard::AddHeader()
 	ADD_COL(0, "xp", "XP", COL_RIGHT, NEO_SCORE_WIDTH, hFallbackFont);
 	ADD_COL(0, "deaths", "#PlayerDeath", COL_RIGHT, NEO_DEATH_WIDTH, hFallbackFont);
 	ADD_COL(0, "ping", "#PlayerPing", COL_RIGHT, NEO_PING_WIDTH, hFallbackFont);
+	ADD_COL(0, "status", "Status", COL_RIGHT, NEO_STATUS_WIDTH, hFallbackFont);
 	//ADD_COL(0, "voice", "#PlayerVoice", COL_IMAGE, NEO_VOICE_WIDTH, hFallbackFont);
 	//ADD_COL(0, "tracker", "#PlayerTracker", COL_IMAGE, NEO_FRIENDS_WIDTH, hFallbackFont);
 }
