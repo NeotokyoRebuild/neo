@@ -520,8 +520,8 @@ void CHL2_Player::HandleSpeedChanges( void )
 
 	bool bCanSprint = CanSprint();
 	bool bIsSprinting = IsSprinting();
-	bool bWantSprint = ( bCanSprint && IsSuitEquipped() && (m_nButtons & IN_SPEED) );
-	if ( bIsSprinting != bWantSprint && (buttonsChanged & IN_SPEED) )
+	bool bWantSprint = ( bCanSprint && IsSuitEquipped() && (m_nButtons & IN_SPEED) && (m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)));
+	if ( bIsSprinting != bWantSprint && (buttonsChanged & IN_SPEED)  )
 	{
 		// If someone wants to sprint, make sure they've pressed the button to do so. We want to prevent the
 		// case where a player can hold down the sprint key and burn tiny bursts of sprint as the suit recharges
@@ -546,6 +546,11 @@ void CHL2_Player::HandleSpeedChanges( void )
 			// Reset key, so it will be activated post whatever is suppressing it.
 			m_nButtons &= ~IN_SPEED;
 		}
+	}
+
+	if (bIsSprinting && !(m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)))
+	{
+		StopSprinting();
 	}
 
 	bool bIsWalking = IsWalking();
@@ -2005,21 +2010,25 @@ bool CHL2_Player::SuitPower_RemoveDevice( const CSuitPowerDevice &device )
 	if( !IsSuitEquipped() )
 		return false;
 
-	// Take a little bit of suit power when you disable a device. If the device is shutting off
-	// because the battery is drained, no harm done, the battery charge cannot go below 0. 
-	// This code in combination with the delay before the suit can start recharging are a defense
-	// against exploits where the player could rapidly tap sprint and never run out of power.
-	SuitPower_Drain( device.GetDeviceDrainRate() * 0.1f );
-
 	m_HL2Local.m_bitsActiveDevices &= ~device.GetDeviceID();
 	m_flSuitPowerLoad -= device.GetDeviceDrainRate();
 
+#ifdef NEO
+	if (static_cast<CNEO_Player*>(this)->GetClass() == NEO_CLASS_RECON)
+		return true;
+#endif
+	
 	if( m_HL2Local.m_bitsActiveDevices == 0x00000000 )
 	{
 		// With this device turned off, we can set this timer which tells us when the
 		// suit power system entered a no-load state.
 		m_flTimeAllSuitDevicesOff = gpGlobals->curtime;
 	}
+	// Take a little bit of suit power when you disable a device. If the device is shutting off
+	// because the battery is drained, no harm done, the battery charge cannot go below 0. 
+	// This code in combination with the delay before the suit can start recharging are a defense
+	// against exploits where the player could rapidly tap sprint and never run out of power.
+	SuitPower_Drain( device.GetDeviceDrainRate() * 0.1f );
 
 	return true;
 }
