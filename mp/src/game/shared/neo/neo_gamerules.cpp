@@ -19,8 +19,11 @@
 	#include "mapentities.h"
 	#include "hl2mp_gameinterface.h"
 	#include "player_resource.h"
+	#include "inetchannelinfo.h"
 #endif
 
+ConVar mp_neo_loopback_warmup_round("mp_neo_loopback_warmup_round", "0", FCVAR_REPLICATED, "Allow loopback server to do warmup rounds.", true, 0.0f, true, 1.0f);
+ConVar mp_neo_warmup_round_time("mp_neo_warmup_round_time", "45", FCVAR_REPLICATED, "The warmup round time, in seconds.", true, 0.0f, false, 0.0f);
 ConVar mp_neo_preround_freeze_time("mp_neo_preround_freeze_time", "10", FCVAR_REPLICATED, "The pre-round freeze time, in seconds.", true, 0.0, false, 0);
 ConVar mp_neo_latespawn_max_time("mp_neo_latespawn_max_time", "15", FCVAR_REPLICATED, "How many seconds late are players still allowed to spawn.", true, 0.0, false, 0);
 
@@ -403,11 +406,29 @@ bool CNEORules::CheckGameOver(void)
 void CNEORules::Think(void)
 {
 #ifdef GAME_DLL
-	if (m_nRoundStatus == NeoRoundStatus::Idle && gpGlobals->curtime > m_flNeoNextRoundStartTime)
+	if ((m_nRoundStatus == NeoRoundStatus::Idle || m_nRoundStatus == NeoRoundStatus::Warmup) && gpGlobals->curtime > m_flNeoNextRoundStartTime)
 	{
 		StartNextRound();
 		return;
 	}
+
+#if 0	// TODO (nullsystem): Allow respawn if it also respawns with menu
+	if (m_nRoundStatus == NeoRoundStatus::Idle || m_nRoundStatus == NeoRoundStatus::Warmup)
+	{
+		for (int i = 1; i <= gpGlobals->maxClients; i++)
+		{
+			auto player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
+			if (player && player->IsDead())
+			{
+				const int playerTeam = player->GetTeamNumber();
+				if (playerTeam == TEAM_JINRAI || playerTeam == TEAM_NSF)
+				{
+					respawn(player, false);
+				}
+			}
+		}
+	}
+#endif
 
 	if (g_fGameOver)   // someone else quit the game already
 	{
@@ -615,12 +636,14 @@ void CNEORules::AwardRankUp(CNEO_Player *pClient)
 // Return remaining time in seconds. Zero means there is no time limit.
 float CNEORules::GetRoundRemainingTime()
 {
-	if (neo_round_timelimit.GetFloat() == 0 || m_nRoundStatus == NeoRoundStatus::Idle)
+	if ((m_nRoundStatus != NeoRoundStatus::Warmup && neo_round_timelimit.GetFloat() == 0) ||
+			m_nRoundStatus == NeoRoundStatus::Idle)
 	{
 		return 0;
 	}
 
-	return (m_flNeoRoundStartTime + (neo_round_timelimit.GetFloat() * 60.0f)) - gpGlobals->curtime;
+	const float roundTimeLimit = (m_nRoundStatus == NeoRoundStatus::Warmup) ? (mp_neo_warmup_round_time.GetFloat()) : (neo_round_timelimit.GetFloat() * 60.0f);
+	return (m_flNeoRoundStartTime + roundTimeLimit) - gpGlobals->curtime;
 }
 
 void CNEORules::FireGameEvent(IGameEvent* event)
@@ -788,11 +811,50 @@ void CNEORules::StartNextRound()
 		return;
 	}
 
+	if (m_nRoundStatus == NeoRoundStatus::Idle)
+	{
+		// NOTE (nullsystem): If it's a loopback server, then go straight in. Mostly ease for testing other stuff.
+		bool loopbackSkipWarmup = false;
+		if (!mp_neo_loopback_warmup_round.GetBool())
+		{
+			for (int i = 1; i <= gpGlobals->maxClients; i++)
+			{
+				if (auto* pPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i)))
+				{
+					const int teamNum = pPlayer->GetTeamNumber();
+					if (!pPlayer->IsBot() && (teamNum == TEAM_JINRAI || teamNum == TEAM_NSF))
+					{
+						INetChannelInfo* nci = engine->GetPlayerNetInfo(i);
+						loopbackSkipWarmup = nci->IsLoopback();
+						if (!loopbackSkipWarmup)
+						{
+							break;
+						}
+					}
+				}
+			}
+		}
+
+		if (!loopbackSkipWarmup)
+		{
+			// Moving from 0 players from either team to playable at team state
+			UTIL_CenterPrintAll("Warmup countdown started.\n");
+			SetRoundStatus(NeoRoundStatus::Warmup);
+			m_flNeoRoundStartTime = gpGlobals->curtime;
+			m_flNeoNextRoundStartTime = gpGlobals->curtime + mp_neo_warmup_round_time.GetFloat();
+			return;
+		}
+	}
+
 	m_flNeoRoundStartTime = gpGlobals->curtime;
 	m_flNeoNextRoundStartTime = 0;
 
 	CleanUpMap();
 
+	// TODO (nullsystem): There should be a more sophisticated logic to be able to restore XP
+	// for when moving from idle to preroundfreeze, or in the future, competitive with whatever
+	// extra stuff in there. But to keep it simple: just clear if it was a warmup.
+	const bool clearXP = (m_nRoundStatus == NeoRoundStatus::Warmup);
 	SetRoundStatus(NeoRoundStatus::PreRoundFreeze);
 
 	char RoundMsg[11];
@@ -824,6 +886,12 @@ void CNEORules::StartNextRound()
 		pPlayer->m_bInAim = false;
 		pPlayer->m_bInThermOpticCamo = false;
 		pPlayer->m_bInVision = false;
+
+		if (clearXP)
+		{
+			pPlayer->Reset();
+			pPlayer->m_iXP.Set(0);
+		}
 
 		pPlayer->SetTestMessageVisible(false);
 	}
@@ -1687,7 +1755,7 @@ bool CNEORules::FPlayerCanRespawn(CBasePlayer* pPlayer)
 
 	if (jinrai && nsf)
 	{
-		if (jinrai->GetNumPlayers() == 0 || nsf->GetNumPlayers() == 0)
+		if (m_nRoundStatus == NeoRoundStatus::Warmup || m_nRoundStatus == NeoRoundStatus::Idle)
 		{
 			return true;
 		}
@@ -1709,7 +1777,7 @@ bool CNEORules::FPlayerCanRespawn(CBasePlayer* pPlayer)
 
 void CNEORules::SetRoundStatus(NeoRoundStatus status)
 {
-	if (status == NeoRoundStatus::RoundLive || status == NeoRoundStatus::Idle)
+	if (status == NeoRoundStatus::RoundLive || status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup)
 	{
 		for (int i = 1; i <= gpGlobals->maxClients; ++i)
 		{
@@ -1729,6 +1797,11 @@ void CNEORules::SetRoundStatus(NeoRoundStatus status)
 	}
 
 	m_nRoundStatus = status;
+}
+
+NeoRoundStatus CNEORules::GetRoundStatus() const
+{
+	return static_cast<NeoRoundStatus>(m_nRoundStatus.Get());
 }
 
 const char* CNEORules::GetGameTypeName(void)

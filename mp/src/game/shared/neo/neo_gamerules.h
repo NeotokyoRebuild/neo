@@ -85,7 +85,7 @@ class C_NEO_Player;
 
 enum NeoRoundStatus {
 	Idle = 0,
-	//Warmup,
+	Warmup,
 	PreRoundFreeze,
 	RoundLive,
 	PostRound,
@@ -193,6 +193,7 @@ public:
 #endif
 
 	void SetRoundStatus(NeoRoundStatus status);
+	NeoRoundStatus GetRoundStatus() const;
 
 	// This is the supposed encrypt key on NT, although it has its issues.
 	// See https://steamcommunity.com/groups/ANPA/discussions/0/1482109512299590948/
