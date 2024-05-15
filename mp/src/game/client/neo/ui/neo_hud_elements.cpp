@@ -26,6 +26,7 @@
 #define UI_ELEMENT_NAME_GHOST_MARKER "neo_ghost_marker"
 #define UI_ELEMENT_NAME_GHOST_BEACON "neo_ghost_beacon"
 #define UI_ELEMENT_ROUND_STATE "neo_round_state"
+#define UI_ELEMENT_TARGET_ID "target_id"
 
 using namespace vgui;
 
@@ -54,6 +55,7 @@ CNeoHudElements::CNeoHudElements(IViewPort *pViewPort)
 	m_pHTA = NULL;
 	m_pRoundState = NULL;
 	m_pLastUpdater = NULL;
+	m_pTargetID = NULL;
 }
 
 CNeoHudElements::~CNeoHudElements()
@@ -102,6 +104,12 @@ void CNeoHudElements::FreePanelChildren()
 	{
 		m_pRoundState->DeletePanel();
 		m_pRoundState = NULL;
+	}
+
+	if (m_pTargetID)
+	{
+		m_pTargetID->DeletePanel();
+		m_pTargetID = NULL;
 	}
 
 	for (int i = 0; i < m_vecGhostMarkers.Count(); i++)
@@ -229,6 +237,7 @@ void CNeoHudElements::InitHud()
 	InitGhostMarkers();
 	InitHTA();
 	InitRoundState();
+	InitTargetID();
 }
 
 void CNeoHudElements::InitAmmo()
@@ -276,6 +285,12 @@ void CNeoHudElements::InitRoundState()
 {
 	Assert(!m_pRoundState);
 	m_pRoundState = new CNEOHud_RoundState(UI_ELEMENT_ROUND_STATE, this);
+}
+
+void CNeoHudElements::InitTargetID()
+{
+	Assert(!m_pTargetID);
+	m_pTargetID = new CTargetID(UI_ELEMENT_TARGET_ID);
 }
 
 CNEOHud_GhostMarker* CNeoHudElements::GetGhostMarker()
