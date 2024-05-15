@@ -617,32 +617,30 @@ void CNEO_Player::PreThink(void)
 {
 	BaseClass::PreThink();
 
-	if (!m_bInThermOpticCamo)
+	float speed = GetNormSpeed();
+	if (m_nButtons & IN_DUCK && m_nButtons & IN_WALK)
+	{ // 1.77x slower
+		speed /= 1.777;
+	}
+	else if (m_nButtons & IN_DUCK || m_nButtons & IN_WALK)
+	{ // 1.33x slower
+		speed /= 1.333;
+	}
+	if (IsSprinting())
 	{
-		CloakPower_Update();
+		speed *= m_iNeoClass == NEO_CLASS_RECON ? 1.333 : 1.6;
+	}
+	if (m_bInAim.Get())
+	{
+		speed /= 1.666;
+	}
+	auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
+	if (pNeoWep)
+	{
+		speed *= pNeoWep->GetSpeedScale();
 	}
 
-	if ((!GetActiveWeapon() && IsAlive()) ||
-		// Whether or not we move backwards affects max speed
-		((m_afButtonPressed | m_afButtonReleased) & IN_BACK))
-	{
-		if (GetFlags() & FL_DUCKING)
-		{
-			SetMaxSpeed(GetCrouchSpeed());
-		}
-		else if (IsWalking())
-		{
-			SetMaxSpeed(GetWalkSpeed());
-		}
-		else if (IsSprinting())
-		{
-			SetMaxSpeed(GetSprintSpeed());
-		}
-		else
-		{
-			SetMaxSpeed(GetNormSpeed());
-		}
-	}
+	SetMaxSpeed(speed);
 
 	CheckThermOpticButtons();
 	CheckVisionButtons();
@@ -2306,15 +2304,11 @@ void CNEO_Player::StartSprinting(void)
 	}
 
 	BaseClass::StartSprinting();
-
-	SetMaxSpeed(GetSprintSpeed());
 }
 
 void CNEO_Player::StopSprinting(void)
 {
 	BaseClass::StopSprinting();
-
-	SetMaxSpeed(GetNormSpeed());
 }
 
 void CNEO_Player::InitSprinting(void)
@@ -2335,19 +2329,15 @@ bool CNEO_Player::CanSprint(void)
 void CNEO_Player::EnableSprint(bool bEnable)
 {
 	BaseClass::EnableSprint(bEnable);
-
-	SetMaxSpeed(GetSprintSpeed());
 }
 
 void CNEO_Player::StartWalking(void)
 {
-	SetMaxSpeed(GetWalkSpeed());
 	m_fIsWalking = true;
 }
 
 void CNEO_Player::StopWalking(void)
 {
-	SetMaxSpeed(GetNormSpeed());
 	m_fIsWalking = false;
 }
 

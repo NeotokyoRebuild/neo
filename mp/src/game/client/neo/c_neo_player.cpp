@@ -594,28 +594,31 @@ void C_NEO_Player::PreThink( void )
 {
 	BaseClass::PreThink();
 
-	if ((!GetActiveWeapon() && IsAlive()) ||
-		// Whether or not we move backwards affects max speed
-		((m_afButtonPressed | m_afButtonReleased) & IN_BACK))
+	float speed = GetNormSpeed();
+	if (m_nButtons & IN_DUCK && m_nButtons & IN_WALK)
+	{ // 1.77x slower
+		speed /= 1.777;
+	}
+	else if (m_nButtons & IN_DUCK || m_nButtons & IN_WALK)
+	{ // 1.33x slower
+		speed /= 1.333;
+	}
+	if (IsSprinting())
 	{
-		if (GetFlags() & FL_DUCKING)
-		{
-			SetMaxSpeed(GetCrouchSpeed());
-		}
-		else if (IsWalking())
-		{
-			SetMaxSpeed(GetWalkSpeed());
-		}
-		else if (IsSprinting())
-		{
-			SetMaxSpeed(GetSprintSpeed());
-		}
-		else
-		{
-			SetMaxSpeed(GetNormSpeed());
-		}
+		speed *= m_iNeoClass == NEO_CLASS_RECON ? 1.333 : 1.6;
+	}
+	if (IsInAim())
+	{
+		speed /= 1.666;
+	}
+	auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
+	if (pNeoWep)
+	{
+		speed *= pNeoWep->GetSpeedScale();
 	}
 
+	SetMaxSpeed(speed);
+	
 	CheckThermOpticButtons();
 	CheckVisionButtons();
 
@@ -1069,13 +1072,11 @@ void C_NEO_Player::StartSprinting(void)
 		return;
 	}
 
-	SetMaxSpeed(GetSprintSpeed());
+	m_fIsSprinting = true;
 }
 
 void C_NEO_Player::StopSprinting(void)
 {
-	SetMaxSpeed(GetNormSpeed());
-
 	m_fIsSprinting = false;
 }
 
@@ -1091,16 +1092,12 @@ bool C_NEO_Player::CanSprint(void)
 
 void C_NEO_Player::StartWalking(void)
 {
-	SetMaxSpeed(GetWalkSpeed());
-
 	m_fIsWalking = true;
 }
 
 void C_NEO_Player::StopWalking(void)
 {
-	SetMaxSpeed(GetNormSpeed());
-
-	m_fIsWalking = true;
+	m_fIsWalking = false;
 }
 
 float C_NEO_Player::GetCrouchSpeed_WithActiveWepEncumberment(void) const
