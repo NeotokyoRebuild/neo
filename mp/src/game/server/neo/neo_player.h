@@ -50,6 +50,7 @@ public:
 	virtual float GetReceivedDamageScale(CBaseEntity* pAttacker) OVERRIDE;
 	virtual bool WantsLagCompensationOnEntity(const CBasePlayer *pPlayer, const CUserCmd *pCmd, const CBitVec<MAX_EDICTS> *pEntityTransmitBits) const OVERRIDE;
 	virtual void FireBullets(const FireBulletsInfo_t &info) OVERRIDE;
+	virtual void Weapon_Equip(CBaseCombatWeapon* pWeapon) OVERRIDE;
 	virtual bool Weapon_Switch(CBaseCombatWeapon *pWeapon, int viewmodelindex = 0) OVERRIDE;
 	virtual bool Weapon_CanSwitchTo(CBaseCombatWeapon *pWeapon) OVERRIDE;
 	virtual bool BumpWeapon(CBaseCombatWeapon *pWeapon) OVERRIDE;

@@ -1506,8 +1506,47 @@ void CNEO_Player::FireBullets ( const FireBulletsInfo_t &info )
 	BaseClass::FireBullets(info);
 }
 
+void CNEO_Player::Weapon_Equip(CBaseCombatWeapon* pWeapon)
+{
+	for (int i=0;i<MAX_WEAPONS;i++) 
+	{
+		if (!m_hMyWeapons[i]) 
+		{
+			m_hMyWeapons.Set( i, pWeapon );
+			break;
+		}
+	}
+	
+	pWeapon->ChangeTeam( GetTeamNumber() );
+	
+	if (pWeapon->GetMaxClip1() == -1)
+	{
+			GiveAmmo(pWeapon->GetDefaultClip1(), pWeapon->m_iPrimaryAmmoType, false); 
+	}
+	else if(pWeapon->m_iClip1 > pWeapon->GetMaxClip1())
+	{
+		pWeapon->m_iClip1 = pWeapon->GetMaxClip1();
+		GiveAmmo( pWeapon->GetDefaultClip1() - pWeapon->GetMaxClip1(), pWeapon->m_iPrimaryAmmoType, false); 
+	}
+
+	if (pWeapon->GetMaxClip2() == -1)
+	{
+		GiveAmmo(pWeapon->GetDefaultClip2(), pWeapon->m_iSecondaryAmmoType, false); 
+	}
+	else if(pWeapon->m_iClip2 > pWeapon->GetMaxClip2())
+	{
+		pWeapon->m_iClip2 = pWeapon->GetMaxClip2();
+		GiveAmmo( pWeapon->GetDefaultClip2() - pWeapon->GetMaxClip2(), pWeapon->m_iSecondaryAmmoType, false); 
+	}
+	
+	pWeapon->Equip( this );
+
+	// Pass the lighting origin over to the weapon if we have one
+	pWeapon->SetLightingOriginRelative( GetLightingOriginRelative() );
+}	
+
 bool CNEO_Player::Weapon_Switch( CBaseCombatWeapon *pWeapon,
-	int viewmodelindex )
+                                 int viewmodelindex )
 {
 	ShowCrosshair(false);
 
