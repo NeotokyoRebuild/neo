@@ -1,7 +1,7 @@
 "GameInfo"
 {
 	game	"Neotokyo: Revamp"
-	title	"neatbkyoc"
+	title	"neatokyocuebeat"
 	title2	""
 	type multiplayer_only
 	nomodels 0

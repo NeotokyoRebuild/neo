@@ -1154,7 +1154,7 @@ static inline void UpdateBgm(ConVar *volCvar)
 #error Unimplemented!
 #endif
 	const char* bgmFiles[] = {
-		"ui"		DIR_SLASH "gamestartup1.mp3", // main menu bgm should be at first index
+		"ui"		DIR_SLASH "gamestartup2.mp3", // main menu bgm should be at first index
 		"gameplay"	DIR_SLASH "draw.mp3",
 		"gameplay"	DIR_SLASH "jinrai.mp3",
 		"gameplay"	DIR_SLASH "nsf.mp3",
