@@ -617,6 +617,11 @@ void CNEO_Player::PreThink(void)
 {
 	BaseClass::PreThink();
 
+	if (!m_bInThermOpticCamo)
+	{
+		CloakPower_Update();
+	}
+
 	float speed = GetNormSpeed();
 	if (m_nButtons & IN_DUCK && m_nButtons & IN_WALK)
 	{ // 1.77x slower
