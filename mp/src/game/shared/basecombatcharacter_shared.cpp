@@ -24,6 +24,13 @@ bool CBaseCombatCharacter::SwitchToNextBestWeapon(CBaseCombatWeapon *pCurrent)
 	
 	if ( ( pNewWeapon != NULL ) && ( pNewWeapon != pCurrent ) )
 	{
+#ifndef CLIENT_DLL
+		// If current weapon is exhaustible, remove it
+		if ((pCurrent->GetWeaponFlags() & ITEM_FLAG_EXHAUSTIBLE) != false) {
+			UTIL_Remove(pCurrent);
+		}
+#endif // !CLIENT_DLL
+
 		return Weapon_Switch( pNewWeapon );
 	}
 

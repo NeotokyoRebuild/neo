@@ -654,12 +654,74 @@ CGameRules::~CGameRules()
 
 bool CGameRules::SwitchToNextBestWeapon( CBaseCombatCharacter *pPlayer, CBaseCombatWeapon *pCurrentWeapon )
 {
-	return false;
+	return true;
 }
 
 CBaseCombatWeapon *CGameRules::GetNextBestWeapon( CBaseCombatCharacter *pPlayer, CBaseCombatWeapon *pCurrentWeapon )
 {
-	return NULL;
+	CBaseCombatWeapon* pCheck;
+	CBaseCombatWeapon* pBest;// this will be used in the event that we don't find a weapon in the same category.
+
+	int iCurrentWeight = -1;
+	int iBestWeight = -1;// no weapon lower than -1 can be autoswitched to
+	pBest = NULL;
+
+	// If I have a weapon, make sure I'm allowed to holster it
+	if (pCurrentWeapon)
+	{
+		if (!pCurrentWeapon->AllowsAutoSwitchFrom() || !pCurrentWeapon->CanHolster())
+		{
+			// Either this weapon doesn't allow autoswitching away from it or I
+			// can't put this weapon away right now, so I can't switch.
+			return NULL;
+		}
+
+		iCurrentWeight = pCurrentWeapon->GetWeight();
+	}
+
+	for (int i = 0; i < pPlayer->WeaponCount(); ++i)
+	{
+		pCheck = pPlayer->GetWeapon(i);
+		if (!pCheck)
+			continue;
+
+		// If we have an active weapon and this weapon doesn't allow autoswitching away
+		// from another weapon, skip it.
+		if (pCurrentWeapon && !pCheck->AllowsAutoSwitchTo())
+			continue;
+
+		if (pCheck->GetWeight() > -1 && pCheck->GetWeight() == iCurrentWeight && pCheck != pCurrentWeapon)
+		{
+			// this weapon is from the same category. 
+			if (pCheck->HasAnyAmmo())
+			{
+				if (pPlayer->Weapon_CanSwitchTo(pCheck))
+				{
+					return pCheck;
+				}
+			}
+		}
+		else if (pCheck->GetWeight() > iBestWeight && pCheck != pCurrentWeapon)// don't reselect the weapon we're trying to get rid of
+		{
+			//Msg( "Considering %s\n", STRING( pCheck->GetClassname() );
+			// we keep updating the 'best' weapon just in case we can't find a weapon of the same weight
+			// that the player was using. This will end up leaving the player with his heaviest-weighted 
+			// weapon. 
+			if (pCheck->HasAnyAmmo())
+			{
+				// if this weapon is useable, flag it as the best
+				iBestWeight = pCheck->GetWeight();
+				pBest = pCheck;
+			}
+		}
+	}
+
+	// if we make it here, we've checked all the weapons and found no useable 
+	// weapon in the same catagory as the current weapon. 
+
+	// if pBest is null, we didn't find ANYTHING. Shouldn't be possible- should always 
+	// at least get the crowbar, but ya never know.
+	return pBest;
 }
 
 bool CGameRules::ShouldCollide( int collisionGroup0, int collisionGroup1 )
