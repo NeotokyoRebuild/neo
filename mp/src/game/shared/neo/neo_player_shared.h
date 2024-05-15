@@ -212,6 +212,18 @@ extern ConVar neo_recon_superjump_intensity;
 
 //ConVar sv_neo_resupply_anywhere("sv_neo_resupply_anywhere", "0", FCVAR_CHEAT | FCVAR_REPLICATED);
 
+inline const char* GetNeoClassName(int neoClassIdx)
+{
+	switch (neoClassIdx)
+	{
+	case NEO_CLASS_RECON: return "Recon";
+	case NEO_CLASS_ASSAULT: return "Assault";
+	case NEO_CLASS_SUPPORT: return "Support";
+	case NEO_CLASS_VIP: return "VIP";
+	default: return "";
+	}
+}
+
 inline const char *GetRankName(int xp)
 {
 	if (xp < 0)

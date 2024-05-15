@@ -141,7 +141,7 @@ void CNEOScoreBoard::AddHeader()
 	m_pPlayerList->AddSection(0, "");
 	m_pPlayerList->SetSectionAlwaysVisible(0);
 	ADD_COL(0, "name", "", 0, NEO_NAME_WIDTH, hFallbackFont);
-	ADD_COL(0, "class", "", 0, NEO_CLASS_WIDTH, hFallbackFont);
+	ADD_COL(0, "class", "Class", COL_RIGHT, NEO_CLASS_WIDTH, hFallbackFont);
 	ADD_COL(0, "rank", "Rank", COL_RIGHT, NEO_NAME_WIDTH / 4, hFallbackFont);
 	ADD_COL(0, "xp", "XP", COL_RIGHT, NEO_SCORE_WIDTH, hFallbackFont);
 	ADD_COL(0, "deaths", "#PlayerDeath", COL_RIGHT, NEO_DEATH_WIDTH, hFallbackFont);
