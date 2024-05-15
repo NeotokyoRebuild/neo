@@ -11,7 +11,7 @@
 
 using vgui::surface;
 
-#define NEO_HUDBOX_COLOR Color(116, 116, 116, 200)
+#define NEO_HUDBOX_COLOR Color(116, 116, 116, 178)
 #define NEO_HUDBOX_CORNER_SCALE 1.0
 
 // NEO TODO (Rain): this should be expanded into two margin_width/height cvars, so players can tweak their HUD position if they wish to.
@@ -75,3 +75,9 @@ void CNEOHud_ChildElement::DrawNeoHudRoundedBox(const int x0, const int y0, cons
 	surface()->DrawFilledRect(x0, y0h, x0w, y1h);
 	surface()->DrawFilledRect(x1w, y0h, x1, y1h);
 }
+
+int CNEOHud_ChildElement::GetMargin()
+{
+	return neo_cl_hud_margin.GetInt();
+}
+

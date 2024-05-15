@@ -46,6 +46,7 @@ public:
 	bool StartReloadSlug(void);
 	bool Reload(void);
 	bool ReloadSlug(void);
+	bool SlugLoaded(void) const;
 
 	void FillClip(void);
 	void FillClipSlug(void);
