@@ -547,10 +547,17 @@ void CNEORules::Think(void)
 				}
 
 				auto player = UTIL_PlayerByIndex(i);
-				if (player && player->GetTeamNumber() == captorTeam &&
-					player->IsAlive())
+				if (player && player->GetTeamNumber() == captorTeam)
 				{
-					AwardRankUp(i);
+					if (player->IsAlive())
+					{
+						AwardRankUp(i);
+					}
+					else
+					{
+						auto* neoPlayer = static_cast<CNEO_Player*>(player);
+						neoPlayer->m_iXP.GetForModify()++;
+					}
 				}
 			}
 
@@ -1383,23 +1390,41 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 	soundParams.m_bWarnOnDirectWaveReference = false;
 	soundParams.m_bEmitCloseCaption = false;
 
+	const int winningTeamNum = winningTeam->GetTeamNumber();
+
 	for (int i = 1; i <= gpGlobals->maxClients; ++i)
 	{
 		CBasePlayer* basePlayer = UTIL_PlayerByIndex(i);
 		auto player = static_cast<CNEO_Player*>(basePlayer);
-		if (player && (!player->IsBot() || player->IsHLTV()))
+		if (player)
 		{
-			engine->ClientPrintf(player->edict(), victoryMsg);
-			UTIL_ClientPrintAll((gotMatchWinner ? HUD_PRINTTALK : HUD_PRINTCENTER), victoryMsg);
+			if (!player->IsBot() || player->IsHLTV())
+			{
+				engine->ClientPrintf(player->edict(), victoryMsg);
+				UTIL_ClientPrintAll((gotMatchWinner ? HUD_PRINTTALK : HUD_PRINTCENTER), victoryMsg);
 
-			const char* volStr = engine->GetClientConVarValue(i, snd_victory_volume.GetName());
-			const float jingleVolume = volStr ? atof(volStr) : 0.33f;
-			soundParams.m_flVolume = jingleVolume;
+				const char* volStr = engine->GetClientConVarValue(i, snd_victory_volume.GetName());
+				const float jingleVolume = volStr ? atof(volStr) : 0.33f;
+				soundParams.m_flVolume = jingleVolume;
 
-			CRecipientFilter soundFilter;
-			soundFilter.AddRecipient(basePlayer);
-			soundFilter.MakeReliable();
-			player->EmitSound(soundFilter, i, soundParams);
+				CRecipientFilter soundFilter;
+				soundFilter.AddRecipient(basePlayer);
+				soundFilter.MakeReliable();
+				player->EmitSound(soundFilter, i, soundParams);
+			}
+
+			// Ghost-caps are handled separately
+			if (iWinReason != NEO_VICTORY_GHOST_CAPTURE && player->GetTeamNumber() == winningTeamNum)
+			{
+				int xpAward = 1;	// Base reward for being on winning team
+				if (player->IsAlive())
+				{
+					++xpAward;
+					xpAward += static_cast<int>(player->IsCarryingGhost());
+				}
+				player->m_iXP.GetForModify() += xpAward;
+			}
+
 		}
 	}
 
