@@ -1764,20 +1764,27 @@ void CHL2_Player::CheatImpulseCommands( int iImpulse )
 
 	case 51:
 	{
-		// Cheat to create a dynamic resupply item
-		Vector vecForward;
-		AngleVectors( EyeAngles(), &vecForward );
-		CBaseEntity *pItem = (CBaseEntity *)CreateEntityByName( "item_dynamic_resupply" );
-		if ( pItem )
+	#ifdef SDK2013CE
+		if ( sv_cheats->GetBool() )
 		{
-			Vector vecOrigin = GetAbsOrigin() + vecForward * 256 + Vector(0,0,64);
-			QAngle vecAngles( 0, GetAbsAngles().y - 90, 0 );
-			pItem->SetAbsOrigin( vecOrigin );
-			pItem->SetAbsAngles( vecAngles );
-			pItem->KeyValue( "targetname", "resupply" );
-			pItem->Spawn();
-			pItem->Activate();
+	#endif
+			// Cheat to create a dynamic resupply item
+			Vector vecForward;
+			AngleVectors( EyeAngles(), &vecForward );
+			CBaseEntity *pItem = (CBaseEntity *)CreateEntityByName( "item_dynamic_resupply" );
+			if ( pItem )
+			{
+				Vector vecOrigin = GetAbsOrigin() + vecForward * 256 + Vector(0,0,64);
+				QAngle vecAngles( 0, GetAbsAngles().y - 90, 0 );
+				pItem->SetAbsOrigin( vecOrigin );
+				pItem->SetAbsAngles( vecAngles );
+				pItem->KeyValue( "targetname", "resupply" );
+				pItem->Spawn();
+				pItem->Activate();
+			}
+	#ifdef SDK2013CE
 		}
+	#endif
 		break;
 	}
 
@@ -2166,7 +2173,7 @@ bool CHL2_Player::IsIlluminatedByFlashlight( CBaseEntity *pEntity, float *flRetu
 	}
 
 	// Within 50 feet?
- 	float flDistSqr = GetAbsOrigin().DistToSqr(pEntity->GetAbsOrigin());
+	float flDistSqr = GetAbsOrigin().DistToSqr(pEntity->GetAbsOrigin());
 	if( flDistSqr > FLASHLIGHT_RANGE )
 		return false;
 
@@ -2242,7 +2249,7 @@ void CHL2_Player::SetPlayerUnderwater( bool state )
 	}
 	else
 	{
-  		SuitPower_RemoveDevice( SuitDeviceBreather );
+		SuitPower_RemoveDevice( SuitDeviceBreather );
 	}
 
 	BaseClass::SetPlayerUnderwater( state );
@@ -3251,6 +3258,10 @@ float CHL2_Player::GetHeldObjectMass( IPhysicsObject *pHeldObject )
 	return mass;
 }
 
+CBaseEntity	*CHL2_Player::GetHeldObject( void )
+{
+	return PhysCannonGetHeldEntity( GetActiveWeapon() );
+}
 //-----------------------------------------------------------------------------
 // Purpose: Force the player to drop any physics objects he's carrying
 //-----------------------------------------------------------------------------

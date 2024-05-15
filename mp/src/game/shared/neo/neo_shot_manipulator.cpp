@@ -1,10 +1,7 @@
 #include "cbase.h"
 #include "neo_shot_manipulator.h"
 #include "weapon_neobasecombatweapon.h"
-
-#ifdef LINUX
 #include <initializer_list>
-#endif
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"

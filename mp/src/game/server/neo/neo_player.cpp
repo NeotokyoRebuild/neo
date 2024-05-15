@@ -1702,17 +1702,18 @@ CBaseEntity* CNEO_Player::EntSelectSpawnPoint( void )
 	CBaseEntity *pSpot = NULL;
 	CBaseEntity *pLastSpawnPoint = g_pLastSpawn;
 	const char *pSpawnpointName = "info_player_start";
+	const auto alternate = NEORules()->roundAlternate();
 
 	if (NEORules()->IsTeamplay())
 	{
 		if (GetTeamNumber() == TEAM_JINRAI)
 		{
-			pSpawnpointName = "info_player_attacker";
+			pSpawnpointName = alternate ? "info_player_attacker" : "info_player_defender";
 			pLastSpawnPoint = g_pLastJinraiSpawn;
 		}
 		else if (GetTeamNumber() == TEAM_NSF)
 		{
-			pSpawnpointName = "info_player_defender";
+			pSpawnpointName = alternate ? "info_player_defender" : "info_player_attacker";
 			pLastSpawnPoint = g_pLastNSFSpawn;
 		}
 
