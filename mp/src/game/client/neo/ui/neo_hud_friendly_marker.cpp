@@ -113,6 +113,9 @@ void CNEOHud_FriendlyMarker::DrawNeoHudElement()
 		return;
 	}
 
+	SetFgColor(Color(0, 0, 0, 0));
+	SetBgColor(Color(0, 0, 0, 0));
+
 	const Color teamColor = (C_NEO_Player::GetLocalNEOPlayer()->GetTeamNumber() == TEAM_NSF) ? COLOR_NSF : COLOR_JINRAI;
 
 	surface()->DrawSetTextFont(m_hFont);
