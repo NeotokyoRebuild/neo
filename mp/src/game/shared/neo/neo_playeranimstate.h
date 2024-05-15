@@ -49,6 +49,7 @@ class INEOPlayerAnimStateHelpers
 public:
 	virtual CBaseCombatWeapon* NEOAnim_GetActiveWeapon() = 0;
 	virtual bool NEOAnim_CanMove() = 0;
+	virtual ~INEOPlayerAnimStateHelpers() {}
 };
 
 INEOPlayerAnimState *CreatePlayerAnimState(CBaseAnimatingOverlay *pEntity,
