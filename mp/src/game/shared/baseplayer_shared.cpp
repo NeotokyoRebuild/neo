@@ -683,7 +683,11 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 	{
 		fvol *= 0.65;
 	}
-
+#ifdef NEO
+	if (speed < 90) { //In Neotokyo players don't make footstep noise when moving slower than this
+		return;
+	}
+#endif
 	PlayStepSound( feet, psurface, fvol, false );
 }
 
