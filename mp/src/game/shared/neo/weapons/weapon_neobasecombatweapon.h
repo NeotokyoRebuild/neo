@@ -135,6 +135,7 @@ public:
 	virtual	void CheckReload(void);
 
 	virtual bool Reload( void );
+	virtual void FinishReload(void) OVERRIDE;
 
 	virtual bool CanBeSelected(void);
 
@@ -196,6 +197,7 @@ public:
 
 #ifdef CLIENT_DLL
 	virtual bool Holster(CBaseCombatWeapon* pSwitchingTo);
+	virtual void ItemHolsterFrame() OVERRIDE;
 #endif
 
 	virtual bool Deploy(void);
