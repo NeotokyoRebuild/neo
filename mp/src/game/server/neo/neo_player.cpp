@@ -33,6 +33,8 @@
 
 #include "viewport_panel_names.h"
 
+#include "neo_weapon_loadout.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -58,6 +60,7 @@ SendPropBool(SENDINFO(m_bInVision)),
 SendPropBool(SENDINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 SendPropBool(SENDINFO(m_bShowTestMessage)),
 SendPropBool(SENDINFO(m_bInAim)),
+SendPropBool(SENDINFO(m_bDroppedAnything)),
 
 SendPropTime(SENDINFO(m_flCamoAuxLastTime)),
 SendPropInt(SENDINFO(m_nVisionLastTick)),
@@ -79,6 +82,7 @@ DEFINE_FIELD(m_iNeoStar, FIELD_INTEGER),
 DEFINE_FIELD(m_iXP, FIELD_INTEGER),
 DEFINE_FIELD(m_iCapTeam, FIELD_INTEGER),
 DEFINE_FIELD(m_iLoadoutWepChoice, FIELD_INTEGER),
+DEFINE_FIELD(m_bDroppedAnything, FIELD_BOOLEAN),
 DEFINE_FIELD(m_iNextSpawnClassChoice, FIELD_INTEGER),
 DEFINE_FIELD(m_bInLean, FIELD_INTEGER),
 
@@ -104,6 +108,7 @@ DEFINE_FIELD(m_NeoFlags, FIELD_CHARACTER),
 END_DATADESC()
 
 CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
+CNEOGameRulesProxy* neoGameRules;
 extern CBaseEntity *g_pLastSpawn;
 
 extern ConVar neo_sv_ignore_wep_xp_limit;
@@ -119,7 +124,7 @@ void CNEO_Player::RequestSetClass(int newClass)
 		return;
 	}
 
-	if (IsDead() || sv_neo_can_change_classes_anytime.GetBool())
+	if (IsDead() || sv_neo_can_change_classes_anytime.GetBool() || (!m_bDroppedAnything && NEORules()->GetRemainingPreRoundFreezeTime(false) > 0))
 	{
 		m_iNeoClass = newClass;
 		m_iNextSpawnClassChoice = -1;
@@ -127,6 +132,8 @@ void CNEO_Player::RequestSetClass(int newClass)
 		SetPlayerTeamModel();
 		SetViewOffset(VEC_VIEW_NEOSCALE(this));
 		InitSprinting();
+		RemoveAllItems(false);
+		GiveDefaultItems();
 	}
 	else
 	{
@@ -194,7 +201,8 @@ void CNEO_Player::RequestSetStar(int newStar)
 
 bool CNEO_Player::RequestSetLoadout(int loadoutNumber)
 {
-	const char *pszWepName = GetWeaponByLoadoutId(loadoutNumber);
+	int classChosen = m_iNextSpawnClassChoice.Get() != -1 ? m_iNextSpawnClassChoice.Get() : m_iNeoClass.Get();
+	const char *pszWepName = CNEOWeaponLoadout::GetLoadoutWeaponEntityName(classChosen, loadoutNumber, false);
 
 	if (FStrEq(pszWepName, ""))
 	{
@@ -237,7 +245,7 @@ bool CNEO_Player::RequestSetLoadout(int loadoutNumber)
 		result = false;
 	}
 
-	if (!neo_sv_ignore_wep_xp_limit.GetBool() && m_iXP < pNeoWeapon->GetNeoWepXPCost(GetClass()))
+	if (!neo_sv_ignore_wep_xp_limit.GetBool() && loadoutNumber+1 > CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(m_iXP, classChosen, false))
 	{
 		DevMsg("Insufficient XP for %s\n", pszWepName);
 		result = false;
@@ -246,6 +254,7 @@ bool CNEO_Player::RequestSetLoadout(int loadoutNumber)
 	if (result)
 	{
 		m_iLoadoutWepChoice = loadoutNumber;
+		GiveLoadoutWeapon();
 	}
 	
 	if (pEnt != NULL && !(pEnt->IsMarkedForDeletion()))
@@ -1714,6 +1723,7 @@ bool CNEO_Player::IsAllowedToDrop(CBaseCombatWeapon *pWep)
 void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
 	const Vector *pvecTarget, const Vector *pVelocity )
 {
+	m_bDroppedAnything = true;
 	if (!IsDead() && pWeapon)
 	{
 		if (!IsAllowedToDrop(pWeapon))
@@ -2149,7 +2159,7 @@ void CNEO_Player::GiveDefaultItems(void)
 	case NEO_CLASS_RECON:
 		GiveNamedItem("weapon_knife");
 		GiveNamedItem("weapon_milso");
-		GiveDet(this);
+		if (this->m_iXP >= 4) { GiveDet(this); }
 		Weapon_Switch(Weapon_OwnsThisType("weapon_milso"));
 		break;
 	case NEO_CLASS_ASSAULT:
@@ -2172,12 +2182,12 @@ void CNEO_Player::GiveDefaultItems(void)
 
 void CNEO_Player::GiveLoadoutWeapon(void)
 {
-	if (IsObserver() || IsDead())
+	if (IsObserver() || IsDead() || m_bDroppedAnything || ((NEORules()->GetRemainingPreRoundFreezeTime(false)) < 0))
 	{
 		return;
 	}
 
-	const char *szWep = GetWeaponByLoadoutId(m_iLoadoutWepChoice);
+	const char* szWep = CNEOWeaponLoadout::GetLoadoutWeaponEntityName(m_iNeoClass.Get(), m_iLoadoutWepChoice, false);
 #if DEBUG
 	DevMsg("Loadout slot: %i (\"%s\")\n", m_iLoadoutWepChoice, szWep);
 #endif
@@ -2205,7 +2215,7 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 	CNEOBaseCombatWeapon *pNeoWeapon = dynamic_cast<CNEOBaseCombatWeapon*>((CBaseEntity*)pEnt);
 	if (pNeoWeapon)
 	{
-		if (neo_sv_ignore_wep_xp_limit.GetBool() || (m_iXP >= pNeoWeapon->GetNeoWepXPCost(GetClass())))
+		if (neo_sv_ignore_wep_xp_limit.GetBool() || m_iLoadoutWepChoice+1 <= CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(m_iXP, m_iNeoClass.Get(), false))
 		{
 			pNeoWeapon->SetSubType(wepSubType);
 
@@ -2213,6 +2223,8 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 
 			if (pEnt != NULL && !(pEnt->IsMarkedForDeletion()))
 			{
+				RemoveAllItems(false);
+				GiveDefaultItems();
 				pEnt->Touch(this);
 				Weapon_Switch(Weapon_OwnsThisType(szWep));
 			}

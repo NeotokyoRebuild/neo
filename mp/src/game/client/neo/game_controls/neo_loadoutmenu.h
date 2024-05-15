@@ -46,10 +46,13 @@ public:
 
 protected:
 	void OnCommand(const char *command);
+	void ChangeMenu(const char* menuName);
+	void OnKeyCodeReleased(vgui::KeyCode code);
 
 	void SetLabelText(const char *textEntryName, const char *text);
 	void SetLabelText(const char *textEntryName, wchar_t *text);
 	void MoveLabelToFront(const char *textEntryName);
+	void FindButtons();
 	void UpdateTimer() { }
 
 	// vgui overrides
@@ -59,14 +62,6 @@ protected:
 	// --------------------------------------------------------
 	// Menu pieces. These are defined in the GetResFile() file.
 	// --------------------------------------------------------
-
-	vgui::ImagePanel *m_pWeapon_ImagePanel;
-
-	vgui::Label *m_pTitleLabel;
-
-	vgui::Button *m_pScout_Button;
-	vgui::Button *m_pMisc2;
-	vgui::Button *m_pDone_Button;
 	vgui::Button *m_pButton1;
 	vgui::Button *m_pButton2;
 	vgui::Button *m_pButton3;
@@ -79,13 +74,11 @@ protected:
 	vgui::Button *m_pButton10;
 	vgui::Button *m_pButton11;
 	vgui::Button *m_pButton12;
-	vgui::Button *m_pButton13;
-	vgui::Button *m_pButton14;
+	vgui::Button *returnButton;
 
 	// Our viewport interface accessor
 	IViewPort *m_pViewPort;
 
 	bool m_bLoadoutMenu;
 };
-
 #endif // NEO_LOADOUT_MENU_H
