@@ -227,6 +227,9 @@ public:
 		return GetOpposingTeam(player->GetTeamNumber());
 	}
 
+        int roundNumber() const { return m_iRoundNumber; }
+        bool roundAlternate() const { return static_cast<bool>(m_iRoundNumber % 2 == 0); }
+
 public:
 #ifdef GAME_DLL
 	// Workaround for bot spawning. See Bot_f() for details.

@@ -90,13 +90,20 @@ public:
 			nsfColor = Color(0, 38, 127, 255),
 			redColor = Color(255, 0, 0, 255);
 
-		const Color *targetColor = (m_iMyTeam == TEAM_JINRAI) ? &jinColor : &nsfColor;
-
 		C_NEO_Player *player = C_NEO_Player::GetLocalNEOPlayer();
+
+		const bool alternate = NEORules()->roundAlternate();
+		const Color* targetColor = (m_iMyTeam == TEAM_JINRAI) ? (alternate ? &jinColor : &nsfColor) : (alternate ? &nsfColor : &jinColor);
 
 		if (player->GetTeamNumber() == TEAM_JINRAI || player->GetTeamNumber() == TEAM_NSF)
 		{
-			if (player->GetTeamNumber() != m_iMyTeam)
+			bool targetIsToDefend = player->GetTeamNumber() != m_iMyTeam;
+			if (!alternate)
+			{
+				targetIsToDefend = !targetIsToDefend;
+			}
+
+			if (targetIsToDefend)
 			{
 				targetColor = &redColor;
 			}
@@ -167,6 +174,8 @@ public:
 	
 	virtual void Precache(void);
 	virtual void Spawn(void);
+
+	int owningTeamAlternate() const;
 
 #ifdef CLIENT_DLL
 	virtual void ClientThink(void);
