@@ -25,7 +25,8 @@ using namespace vgui;
 
 enum EScoreboardSections
 {
-	SCORESECTION_JINRAI = 1,
+	SCORESECTION_HEADER = 0,
+	SCORESECTION_JINRAI,
 	SCORESECTION_NSF,
 	SCORESECTION_SPECTATOR,
 };
@@ -44,7 +45,23 @@ CNEOScoreBoard::~CNEOScoreBoard()
 
 void CNEOScoreBoard::InitScoreboardSections()
 {
-	BaseClass::InitScoreboardSections();
+	m_pPlayerList->SetBgColor(Color(0, 0, 0, 0));
+	m_pPlayerList->SetBorder(NULL);
+
+	vgui::IScheme* scheme = vgui::scheme()->GetIScheme(GetScheme());
+	Assert(scheme);
+	m_pPlayerList->SetProportional(true);
+	auto hFont = scheme->GetFont("DefaultBold", true);
+	m_pPlayerList->SetHeaderFont(hFont);
+	m_pPlayerList->SetRowFont(hFont);
+
+	// fill out the structure of the scoreboard
+	AddHeader();
+
+	// add the team sections
+	AddSection(TYPE_TEAM, TEAM_JINRAI);
+	AddSection(TYPE_TEAM, TEAM_NSF);
+	AddSection(TYPE_SPECTATORS, TEAM_SPECTATOR);
 }
 
 // Purpose: Update the scoreboard rows with currently connected players' info
@@ -58,8 +75,10 @@ void CNEOScoreBoard::UpdatePlayerInfo()
 	CBasePlayer *player = C_BasePlayer::GetLocalPlayer();
 	Assert(player);
 
-	const Color test = Color(255, 0, 0, 255);
-	surface()->DrawSetTextColor(test);
+	//const Color test = Color(255, 0, 0, 255);
+	//surface()->DrawSetTextColor(test);
+	int teamCountJinrai = 0;
+	int teamCountNSF = 0;
 
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
@@ -70,24 +89,21 @@ void CNEOScoreBoard::UpdatePlayerInfo()
 			KeyValues *playerData = new KeyValues("data");
 
 			GetPlayerScoreInfo(i, playerData);
-			int sectionId = GetSectionFromTeamNumber(g_PR->GetTeam(i));
+			const int playerTeam = g_PR->GetTeam(i);
+			int sectionId = GetSectionFromTeamNumber(playerTeam);
+
+			if (playerTeam == TEAM_JINRAI) ++teamCountJinrai;
+			else if (playerTeam == TEAM_NSF) ++teamCountNSF;
 
 			// We aren't in the scoreboard yet
 			if (itemId == -1)
 			{
 				itemId = m_pPlayerList->AddItem(sectionId, playerData);
+				m_pPlayerList->SetItemFgColor(itemId, GameResources()->GetTeamColor(playerTeam));
 			}
 			else
 			{
 				m_pPlayerList->ModifyItem(itemId, sectionId, playerData);
-			}
-
-			// Highlight the row if this is the local player
-			if (player && i == player->entindex())
-			{
-				Assert(itemId != -1);
-				m_pPlayerList->SetSelectedItem(itemId);
-				m_pPlayerList->SetFgColor(test);
 			}
 
 			playerData->deleteThis();
@@ -97,6 +113,25 @@ void CNEOScoreBoard::UpdatePlayerInfo()
 		{
 			m_pPlayerList->RemoveItem(itemId);
 		}
+	}
+
+	// Update team headers
+	auto *teamJinrai = GetGlobalTeam(TEAM_JINRAI);
+	auto *teamNSF = GetGlobalTeam(TEAM_NSF);
+	if (teamJinrai && teamNSF)
+	{
+		char szTeamHeaderText[256];
+		wchar_t wszTeamHeaderText[256];
+
+		memset(szTeamHeaderText, 0, sizeof(szTeamHeaderText));
+		V_snprintf(szTeamHeaderText, sizeof(szTeamHeaderText), "JINRAI:       Score: %d    Players: %d", teamJinrai->GetRoundsWon(), teamCountJinrai);
+		g_pVGuiLocalize->ConvertANSIToUnicode(szTeamHeaderText, wszTeamHeaderText, sizeof(wszTeamHeaderText));
+		m_pPlayerList->ModifyColumn(SCORESECTION_JINRAI, "name", wszTeamHeaderText);
+
+		memset(szTeamHeaderText, 0, sizeof(szTeamHeaderText));
+		V_snprintf(szTeamHeaderText, sizeof(szTeamHeaderText), "NSF:           Score: %d    Players: %d", teamNSF->GetRoundsWon(), teamCountNSF);
+		g_pVGuiLocalize->ConvertANSIToUnicode(szTeamHeaderText, wszTeamHeaderText, sizeof(wszTeamHeaderText));
+		m_pPlayerList->ModifyColumn(SCORESECTION_NSF, "name", wszTeamHeaderText);
 	}
 
 	m_pPlayerList->SetVisible(true);
@@ -130,7 +165,6 @@ void CNEOScoreBoard::ApplySchemeSettings(vgui::IScheme *pScheme)
 #define ADD_COL(sectionId, columnName, columnText, columnFlags, width, fallbackFont) \
 	m_pPlayerList->AddColumnToSection(sectionId, columnName, columnText, columnFlags, \
 	scheme()->GetProportionalScaledValueEx(GetScheme(), width), fallbackFont)
-#define COL_RIGHT SectionedListPanel::COLUMN_RIGHT
 #define COL_IMAGE SectionedListPanel::COLUMN_IMAGE
 
 void CNEOScoreBoard::AddHeader()
@@ -141,19 +175,46 @@ void CNEOScoreBoard::AddHeader()
 	m_pPlayerList->AddSection(0, "");
 	m_pPlayerList->SetSectionAlwaysVisible(0);
 	ADD_COL(0, "name", "", 0, NEO_NAME_WIDTH, hFallbackFont);
-	ADD_COL(0, "class", "Class", COL_RIGHT, NEO_CLASS_WIDTH, hFallbackFont);
-	ADD_COL(0, "rank", "Rank", COL_RIGHT, NEO_NAME_WIDTH / 4, hFallbackFont);
-	ADD_COL(0, "xp", "XP", COL_RIGHT, NEO_SCORE_WIDTH, hFallbackFont);
-	ADD_COL(0, "deaths", "#PlayerDeath", COL_RIGHT, NEO_DEATH_WIDTH, hFallbackFont);
-	ADD_COL(0, "ping", "#PlayerPing", COL_RIGHT, NEO_PING_WIDTH, hFallbackFont);
-	ADD_COL(0, "status", "Status", COL_RIGHT, NEO_STATUS_WIDTH, hFallbackFont);
+	ADD_COL(0, "rank", "Rank", 0, NEO_NAME_WIDTH / 4, hFallbackFont);
+	ADD_COL(0, "class", "Class", 0, NEO_CLASS_WIDTH, hFallbackFont);
+	ADD_COL(0, "xp", "XP", 0, NEO_SCORE_WIDTH, hFallbackFont);
+	ADD_COL(0, "deaths", "#PlayerDeath", 0, NEO_DEATH_WIDTH, hFallbackFont);
+	ADD_COL(0, "ping", "Ping", 0, NEO_PING_WIDTH, hFallbackFont);
+	ADD_COL(0, "status", "Status", 0, NEO_STATUS_WIDTH, hFallbackFont);
 	//ADD_COL(0, "voice", "#PlayerVoice", COL_IMAGE, NEO_VOICE_WIDTH, hFallbackFont);
 	//ADD_COL(0, "tracker", "#PlayerTracker", COL_IMAGE, NEO_FRIENDS_WIDTH, hFallbackFont);
 }
 
 void CNEOScoreBoard::AddSection(int teamType, int teamNumber)
 {
-	BaseClass::AddSection(teamType, teamNumber);
+	HFont hFallbackFont = scheme()->GetIScheme(GetScheme())->
+		GetFont("DefaultVerySmallFallBack", false);
+
+	const int sectionID = GetSectionFromTeamNumber(teamNumber);
+	m_pPlayerList->AddSection(sectionID, "", (teamNumber == TEAM_SPECTATOR) ? NULL : StaticPlayerSortFunc);
+	m_pPlayerList->SetSectionAlwaysVisible(sectionID);
+
+	// setup the columns
+	if (teamType == TYPE_TEAM)
+	{
+		ADD_COL(sectionID, "name", "", 0, NEO_NAME_WIDTH, hFallbackFont);
+		ADD_COL(sectionID, "rank", "", 0, NEO_NAME_WIDTH / 4, hFallbackFont);
+		ADD_COL(sectionID, "class", "", 0, NEO_CLASS_WIDTH, hFallbackFont);
+		ADD_COL(sectionID, "xp", "", 0, NEO_SCORE_WIDTH, hFallbackFont);
+		ADD_COL(sectionID, "deaths", "", 0, NEO_DEATH_WIDTH, hFallbackFont);
+		ADD_COL(sectionID, "ping", "", 0, NEO_PING_WIDTH, hFallbackFont);
+		ADD_COL(sectionID, "status", "", 0, NEO_STATUS_WIDTH, hFallbackFont);
+	}
+	else if (teamType == TYPE_SPECTATORS)
+	{
+		ADD_COL(sectionID, "name", "Spectator", 0, NEO_NAME_WIDTH, hFallbackFont);
+	}
+
+	// set the section to have the team color
+	if (GameResources())
+	{
+		m_pPlayerList->SetSectionFgColor(sectionID, (teamNumber == TEAM_SPECTATOR) ? COLOR_NEO_WHITE : GameResources()->GetTeamColor(teamNumber));
+	}
 }
 
 int CNEOScoreBoard::GetSectionFromTeamNumber(int teamNumber)

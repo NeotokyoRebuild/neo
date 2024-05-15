@@ -84,7 +84,7 @@ C_PlayerResource::C_PlayerResource()
 
 #ifdef NEO
 	m_Colors[TEAM_UNASSIGNED] = COLOR_NEO_WHITE;
-	m_Colors[TEAM_SPECTATOR] = COLOR_NEO_ORANGE;
+	m_Colors[TEAM_SPECTATOR] = COLOR_SPEC;
 	m_Colors[TEAM_JINRAI] = COLOR_JINRAI;
 	m_Colors[TEAM_NSF] = COLOR_NSF;
 #else
