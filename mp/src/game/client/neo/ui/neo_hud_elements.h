@@ -8,6 +8,7 @@
 #include <game/client/iviewport.h>
 #include "GameEventListener.h"
 #include "hl2mp_hud_target_id.h"
+#include "neo_hud_ghost_beacons.h"
 
 class CNEOHud_Ammo;
 class CNEOHud_Compass;
@@ -82,6 +83,7 @@ private:
 	void InitHTA();
 	void InitRoundState();
 	void InitTargetID();
+	void InitGhostBeacons();
 
 	void FreePanelChildren();
 
@@ -96,6 +98,7 @@ private:
 	CNEOHud_HTA* m_pHTA;
 	CNEOHud_RoundState *m_pRoundState;
 	CTargetID* m_pTargetID;
+	CNEOHud_GhostBeacons* m_pGhostBeacons;
 
 	CUtlVector<CNEOHud_GhostMarker*> m_vecGhostMarkers;
 
