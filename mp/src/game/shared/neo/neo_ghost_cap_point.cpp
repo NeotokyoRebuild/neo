@@ -87,6 +87,11 @@ CNEOGhostCapturePoint::~CNEOGhostCapturePoint()
 }
 
 #ifdef GAME_DLL
+int CNEOGhostCapturePoint::UpdateTransmitState()
+{
+	return FL_EDICT_ALWAYS;
+}
+
 bool CNEOGhostCapturePoint::IsGhostCaptured(int& outTeamNumber, int& outCaptorClientIndex)
 {
 	if (m_bIsActive && m_bGhostHasBeenCaptured)

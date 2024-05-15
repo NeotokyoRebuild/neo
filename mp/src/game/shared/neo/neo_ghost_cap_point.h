@@ -233,7 +233,7 @@ public:
 	}
 
 #ifdef GAME_DLL
-	int ShouldTransmit(const CCheckTransmitInfo *pInfo) { return EF_BRIGHTLIGHT; }
+	int UpdateTransmitState() OVERRIDE;
 
 	bool IsGhostCaptured(int &outTeamNumber, int &outCaptorClientIndex);
 #endif
