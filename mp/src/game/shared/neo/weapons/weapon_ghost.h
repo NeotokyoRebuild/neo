@@ -55,7 +55,6 @@ private:
 
 #ifdef CLIENT_DLL
 	float ShowEnemies(void);
-	void HideEnemies(void);
 	void Debug_ShowPos(const Vector &pos, bool pvs);
 	void PlayGhostSound(float volume = 1.0f);
 	void StopGhostSound(void);
@@ -74,9 +73,7 @@ private:
 
 	float m_flLastGhostBeepTime;
 
-	// NEO TODO (Rain): It's probably better to just have one beacon,
-	// and call it numplayers times on each update between hud buffer swaps
-	CNEOHud_GhostBeacon *m_pGhostBeacons[MAX_PLAYERS];
+	CNEOHud_GhostBeacon *m_pGhostBeacons;
 #else
 	
 #endif

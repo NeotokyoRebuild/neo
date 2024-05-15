@@ -658,6 +658,7 @@ $Project
 		$File	"world.cpp"
 		$File	"world.h"
 		$File	"$SRCDIR\game\shared\mp_shareddefs.cpp"
+		$File	"$SRCDIR\game\shared\inttostr.cpp"
 		$File	"$SRCDIR\game\shared\SharedFunctorUtils.h"
 		$File	"$SRCDIR\game\server\vote_controller.h"
 		$File	"$SRCDIR\game\server\vote_controller.cpp"
@@ -993,6 +994,7 @@ $Project
 		$File	"$SRCDIR\public\worldsize.h"
 		$File	"$SRCDIR\public\zip_uncompressed.h"
 		$File	"$SRCDIR\game\shared\mp_shareddefs.h"
+		$File	"$SRCDIR\game\shared\inttostr.h"
 		$File	"$SRCDIR\game\shared\econ\ihasowner.h"
 		//Haptics
 		$File	"$SRCDIR\public\haptics\haptic_utils.h"	[$WIN32]

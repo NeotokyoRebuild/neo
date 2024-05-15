@@ -7,6 +7,10 @@
 #include "fgdlib/WCKeyValues.h"
 #include "fgdlib/gdvar.h"
 
+#ifdef _WIN32
+#define snprintf _snprintf
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include <tier0/memdbgon.h>
 
@@ -669,7 +673,7 @@ void GDinputvariable::ToKeyValue(MDkeyvalue *pkv)
 	}
 	else if (eStoreAs == INTEGER)
 	{
-		itoa(m_nValue, pkv->szValue, 10);
+		snprintf(pkv->szValue, KEYVALUE_MAX_VALUE_LENGTH, "%d", m_nValue);
 	}
 }
 

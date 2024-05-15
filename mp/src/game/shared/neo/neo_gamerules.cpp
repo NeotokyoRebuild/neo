@@ -19,8 +19,11 @@
 	#include "mapentities.h"
 	#include "hl2mp_gameinterface.h"
 	#include "player_resource.h"
+	#include "inetchannelinfo.h"
 #endif
 
+ConVar mp_neo_loopback_warmup_round("mp_neo_loopback_warmup_round", "0", FCVAR_REPLICATED, "Allow loopback server to do warmup rounds.", true, 0.0f, true, 1.0f);
+ConVar mp_neo_warmup_round_time("mp_neo_warmup_round_time", "45", FCVAR_REPLICATED, "The warmup round time, in seconds.", true, 0.0f, false, 0.0f);
 ConVar mp_neo_preround_freeze_time("mp_neo_preround_freeze_time", "10", FCVAR_REPLICATED, "The pre-round freeze time, in seconds.", true, 0.0, false, 0);
 ConVar mp_neo_latespawn_max_time("mp_neo_latespawn_max_time", "15", FCVAR_REPLICATED, "How many seconds late are players still allowed to spawn.", true, 0.0, false, 0);
 
@@ -35,11 +38,15 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropFloat(RECVINFO(m_flNeoRoundStartTime)),
 	RecvPropInt(RECVINFO(m_nRoundStatus)),
 	RecvPropInt(RECVINFO(m_iRoundNumber)),
+	RecvPropInt(RECVINFO(m_iGhosterTeam)),
+	RecvPropInt(RECVINFO(m_iGhosterPlayer)),
 #else
 	SendPropFloat(SENDINFO(m_flNeoNextRoundStartTime)),
 	SendPropFloat(SENDINFO(m_flNeoRoundStartTime)),
 	SendPropInt(SENDINFO(m_nRoundStatus)),
 	SendPropInt(SENDINFO(m_iRoundNumber)),
+	SendPropInt(SENDINFO(m_iGhosterTeam)),
+	SendPropInt(SENDINFO(m_iGhosterPlayer)),
 #endif
 END_NETWORK_TABLE()
 
@@ -237,6 +244,8 @@ CNEORules::CNEORules()
 	m_flNeoRoundStartTime = m_flNeoNextRoundStartTime = 0;
 	SetRoundStatus(NeoRoundStatus::Idle);
 	m_iRoundNumber = 0;
+	m_iGhosterTeam = TEAM_UNASSIGNED;
+	m_iGhosterPlayer = 0;
 
 	ListenForGameEvent("round_start");
 }
@@ -345,7 +354,19 @@ void CNEORules::ClientSpawned(edict_t* pPlayer)
 
 bool CNEORules::ShouldCollide(int collisionGroup0, int collisionGroup1)
 {
-	return BaseClass::ShouldCollide(collisionGroup0, collisionGroup1);
+	if (collisionGroup0 > collisionGroup1)
+	{
+		// swap so that lowest is always first
+		V_swap(collisionGroup0, collisionGroup1);
+	}
+
+	if ((collisionGroup0 == COLLISION_GROUP_PLAYER || collisionGroup0 == COLLISION_GROUP_PLAYER_MOVEMENT) &&
+		((collisionGroup1 == COLLISION_GROUP_WEAPON) || (collisionGroup1 == COLLISION_GROUP_PLAYER || collisionGroup1 == COLLISION_GROUP_PLAYER_MOVEMENT)))
+	{
+		return false;
+	}
+
+	return CTeamplayRules::ShouldCollide(collisionGroup0, collisionGroup1);
 }
 
 extern ConVar mp_chattime;
@@ -355,6 +376,8 @@ void CNEORules::ChangeLevel(void)
 {
 	SetRoundStatus(NeoRoundStatus::Idle);
 	m_iRoundNumber = 0;
+	m_iGhosterTeam = TEAM_UNASSIGNED;
+	m_iGhosterPlayer = 0;
 	m_flNeoRoundStartTime = 0;
 	m_flNeoNextRoundStartTime = 0;
 
@@ -371,6 +394,8 @@ bool CNEORules::CheckGameOver(void)
 	{
 		SetRoundStatus(NeoRoundStatus::Idle);
 		m_iRoundNumber = 0;
+		m_iGhosterTeam = TEAM_UNASSIGNED;
+		m_iGhosterPlayer = 0;
 		m_flNeoRoundStartTime = 0;
 		m_flNeoNextRoundStartTime = 0;
 	}
@@ -381,11 +406,29 @@ bool CNEORules::CheckGameOver(void)
 void CNEORules::Think(void)
 {
 #ifdef GAME_DLL
-	if (m_nRoundStatus == NeoRoundStatus::Idle && gpGlobals->curtime > m_flNeoNextRoundStartTime)
+	if ((m_nRoundStatus == NeoRoundStatus::Idle || m_nRoundStatus == NeoRoundStatus::Warmup) && gpGlobals->curtime > m_flNeoNextRoundStartTime)
 	{
 		StartNextRound();
 		return;
 	}
+
+#if 0	// TODO (nullsystem): Allow respawn if it also respawns with menu
+	if (m_nRoundStatus == NeoRoundStatus::Idle || m_nRoundStatus == NeoRoundStatus::Warmup)
+	{
+		for (int i = 1; i <= gpGlobals->maxClients; i++)
+		{
+			auto player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
+			if (player && player->IsDead())
+			{
+				const int playerTeam = player->GetTeamNumber();
+				if (playerTeam == TEAM_JINRAI || playerTeam == TEAM_NSF)
+				{
+					respawn(player, false);
+				}
+			}
+		}
+	}
+#endif
 
 	if (g_fGameOver)   // someone else quit the game already
 	{
@@ -454,6 +497,23 @@ void CNEORules::Think(void)
 		SetWinningTeam(TEAM_SPECTATOR, NEO_VICTORY_STALEMATE, false, false, true, false);
 	}
 
+	// Update ghosting team info
+	int nextGhosterTeam = TEAM_UNASSIGNED;
+	int nextGhosterPlayer = 0;
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		auto player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
+		if (player && player->IsCarryingGhost())
+		{
+			nextGhosterTeam = player->GetTeamNumber();
+			nextGhosterPlayer = i;
+			Assert(nextGhosterTeam == TEAM_JINRAI || nextGhosterTeam == TEAM_NSF);
+			break;
+		}
+	}
+	m_iGhosterTeam = nextGhosterTeam;
+	m_iGhosterPlayer = nextGhosterPlayer;
+
 	// Check if the ghost was capped during this Think
 	int captorTeam, captorClient;
 	for (int i = 0; i < m_pGhostCaps.Count(); i++)
@@ -487,10 +547,17 @@ void CNEORules::Think(void)
 				}
 
 				auto player = UTIL_PlayerByIndex(i);
-				if (player && player->GetTeamNumber() == captorTeam &&
-					player->IsAlive())
+				if (player && player->GetTeamNumber() == captorTeam)
 				{
-					AwardRankUp(i);
+					if (player->IsAlive())
+					{
+						AwardRankUp(i);
+					}
+					else
+					{
+						auto* neoPlayer = static_cast<CNEO_Player*>(player);
+						neoPlayer->m_iXP.GetForModify()++;
+					}
 				}
 			}
 
@@ -576,12 +643,14 @@ void CNEORules::AwardRankUp(CNEO_Player *pClient)
 // Return remaining time in seconds. Zero means there is no time limit.
 float CNEORules::GetRoundRemainingTime()
 {
-	if (neo_round_timelimit.GetFloat() == 0 || m_nRoundStatus == NeoRoundStatus::Idle)
+	if ((m_nRoundStatus != NeoRoundStatus::Warmup && neo_round_timelimit.GetFloat() == 0) ||
+			m_nRoundStatus == NeoRoundStatus::Idle)
 	{
 		return 0;
 	}
 
-	return (m_flNeoRoundStartTime + (neo_round_timelimit.GetFloat() * 60.0f)) - gpGlobals->curtime;
+	const float roundTimeLimit = (m_nRoundStatus == NeoRoundStatus::Warmup) ? (mp_neo_warmup_round_time.GetFloat()) : (neo_round_timelimit.GetFloat() * 60.0f);
+	return (m_flNeoRoundStartTime + roundTimeLimit) - gpGlobals->curtime;
 }
 
 void CNEORules::FireGameEvent(IGameEvent* event)
@@ -749,11 +818,50 @@ void CNEORules::StartNextRound()
 		return;
 	}
 
+	if (m_nRoundStatus == NeoRoundStatus::Idle)
+	{
+		// NOTE (nullsystem): If it's a loopback server, then go straight in. Mostly ease for testing other stuff.
+		bool loopbackSkipWarmup = false;
+		if (!mp_neo_loopback_warmup_round.GetBool())
+		{
+			for (int i = 1; i <= gpGlobals->maxClients; i++)
+			{
+				if (auto* pPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i)))
+				{
+					const int teamNum = pPlayer->GetTeamNumber();
+					if (!pPlayer->IsBot() && (teamNum == TEAM_JINRAI || teamNum == TEAM_NSF))
+					{
+						INetChannelInfo* nci = engine->GetPlayerNetInfo(i);
+						loopbackSkipWarmup = nci->IsLoopback();
+						if (!loopbackSkipWarmup)
+						{
+							break;
+						}
+					}
+				}
+			}
+		}
+
+		if (!loopbackSkipWarmup)
+		{
+			// Moving from 0 players from either team to playable at team state
+			UTIL_CenterPrintAll("Warmup countdown started.\n");
+			SetRoundStatus(NeoRoundStatus::Warmup);
+			m_flNeoRoundStartTime = gpGlobals->curtime;
+			m_flNeoNextRoundStartTime = gpGlobals->curtime + mp_neo_warmup_round_time.GetFloat();
+			return;
+		}
+	}
+
 	m_flNeoRoundStartTime = gpGlobals->curtime;
 	m_flNeoNextRoundStartTime = 0;
 
 	CleanUpMap();
 
+	// TODO (nullsystem): There should be a more sophisticated logic to be able to restore XP
+	// for when moving from idle to preroundfreeze, or in the future, competitive with whatever
+	// extra stuff in there. But to keep it simple: just clear if it was a warmup.
+	const bool clearXP = (m_nRoundStatus == NeoRoundStatus::Warmup);
 	SetRoundStatus(NeoRoundStatus::PreRoundFreeze);
 
 	char RoundMsg[11];
@@ -785,6 +893,12 @@ void CNEORules::StartNextRound()
 		pPlayer->m_bInAim = false;
 		pPlayer->m_bInThermOpticCamo = false;
 		pPlayer->m_bInVision = false;
+
+		if (clearXP)
+		{
+			pPlayer->Reset();
+			pPlayer->m_iXP.Set(0);
+		}
 
 		pPlayer->SetTestMessageVisible(false);
 	}
@@ -1115,6 +1229,7 @@ void CNEORules::RestartGame()
 	m_flRestartGameTime = 0.0;
 	m_bCompleteReset = false;
 	m_iRoundNumber = 0;
+	m_iGhosterTeam = TEAM_UNASSIGNED;
 	m_flNeoNextRoundStartTime = FLT_MAX;
 	m_flNeoRoundStartTime = FLT_MAX;
 
@@ -1267,26 +1382,49 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 	}
 
 	EmitSound_t soundParams;
-	soundParams.m_nChannel = CHAN_VOICE;
+	soundParams.m_nChannel = CHAN_AUTO;
+	soundParams.m_SoundLevel = SNDLVL_NONE;
+	soundParams.m_flVolume = 0.33f;
 	// Referencing sounds directly because we can't override the soundscript volume level otherwise
 	soundParams.m_pSoundName = (team == TEAM_JINRAI) ? "gameplay/jinrai.mp3" : (team == TEAM_NSF) ? "gameplay/nsf.mp3" : "gameplay/draw.mp3";
 	soundParams.m_bWarnOnDirectWaveReference = false;
+	soundParams.m_bEmitCloseCaption = false;
 
-	CRecipientFilter soundFilter;
-	soundFilter.AddAllPlayers();
-	soundFilter.MakeReliable();
+	const int winningTeamNum = winningTeam->GetTeamNumber();
 
 	for (int i = 1; i <= gpGlobals->maxClients; ++i)
 	{
-		auto player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
-		if (player && (!player->IsBot() || player->IsHLTV()))
+		CBasePlayer* basePlayer = UTIL_PlayerByIndex(i);
+		auto player = static_cast<CNEO_Player*>(basePlayer);
+		if (player)
 		{
-			engine->ClientPrintf(player->edict(), victoryMsg);
-			UTIL_ClientPrintAll((gotMatchWinner ? HUD_PRINTTALK : HUD_PRINTCENTER), victoryMsg);
+			if (!player->IsBot() || player->IsHLTV())
+			{
+				engine->ClientPrintf(player->edict(), victoryMsg);
+				UTIL_ClientPrintAll((gotMatchWinner ? HUD_PRINTTALK : HUD_PRINTCENTER), victoryMsg);
 
-			float jingleVolume = atof(engine->GetClientConVarValue(i, snd_victory_volume.GetName()));
-			soundParams.m_flVolume = jingleVolume;
-			player->EmitSound(soundFilter, i, soundParams);
+				const char* volStr = engine->GetClientConVarValue(i, snd_victory_volume.GetName());
+				const float jingleVolume = volStr ? atof(volStr) : 0.33f;
+				soundParams.m_flVolume = jingleVolume;
+
+				CRecipientFilter soundFilter;
+				soundFilter.AddRecipient(basePlayer);
+				soundFilter.MakeReliable();
+				player->EmitSound(soundFilter, i, soundParams);
+			}
+
+			// Ghost-caps are handled separately
+			if (iWinReason != NEO_VICTORY_GHOST_CAPTURE && player->GetTeamNumber() == winningTeamNum)
+			{
+				int xpAward = 1;	// Base reward for being on winning team
+				if (player->IsAlive())
+				{
+					++xpAward;
+					xpAward += static_cast<int>(player->IsCarryingGhost());
+				}
+				player->m_iXP.GetForModify() += xpAward;
+			}
+
 		}
 	}
 
@@ -1296,6 +1434,35 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 	}
 }
 #endif
+
+// NEO JANK (nullsystem): Dont like how this is fetched twice (PlayerKilled, DeathNotice),
+// but blame the structure of the base classes
+static CNEO_Player* FetchAssists(CNEO_Player* attacker, CNEO_Player* victim)
+{
+	// Non-CNEO_Player, return NULL
+	if (!attacker || !victim)
+	{
+		return NULL;
+	}
+
+	// Check for assistance (> 50 dmg, not final attacker)
+	const int attackerIdx = attacker->entindex();
+	for (int assistIdx = 1; assistIdx <= gpGlobals->maxClients; ++assistIdx)
+	{
+		if (assistIdx == attackerIdx)
+		{
+			continue;
+		}
+
+		const float assistDmg = victim->GetAttackersScores(assistIdx);
+		static const float MIN_DMG_QUALIFY_ASSIST = 50.0f;
+		if (assistDmg >= MIN_DMG_QUALIFY_ASSIST)
+		{
+			return static_cast<CNEO_Player*>(UTIL_PlayerByIndex(assistIdx));
+		}
+	}
+	return NULL;
+}
 
 void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 {
@@ -1325,6 +1492,20 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 		else
 		{
 			attacker->m_iXP.GetForModify() += 1;
+		}
+
+		if (auto *assister = FetchAssists(attacker, victim))
+		{
+			// Team kill assist
+			if (assister->GetTeamNumber() == victim->GetTeamNumber())
+			{
+				assister->m_iXP.GetForModify() -= 1;
+			}
+			// Enemy kill assist
+			else
+			{
+				assister->m_iXP.GetForModify() += 1;
+			}
 		}
 	}
 }
@@ -1424,6 +1605,8 @@ void CNEORules::DeathNotice(CBasePlayer* pVictim, const CTakeDamageInfo& info)
 	CBaseEntity* pInflictor = info.GetInflictor();
 	CBaseEntity* pKiller = info.GetAttacker();
 	CBasePlayer* pScorer = GetDeathScorer(pKiller, pInflictor);
+	CBasePlayer* pAssister = FetchAssists(dynamic_cast<CNEO_Player*>(pKiller), dynamic_cast<CNEO_Player*>(pVictim));
+	const int assists_ID = (pAssister) ? pAssister->GetUserID() : 0;
 
 	bool isExplosiveKill = false;
 	bool isANeoDerivedWeapon = false;
@@ -1510,6 +1693,7 @@ void CNEORules::DeathNotice(CBasePlayer* pVictim, const CTakeDamageInfo& info)
 	{
 		event->SetInt("userid", pVictim->GetUserID());
 		event->SetInt("attacker", killer_ID);
+		event->SetInt("assists", assists_ID);
 		event->SetString("weapon", killer_weapon_name);
 		event->SetInt("priority", 7);
 
@@ -1596,7 +1780,7 @@ bool CNEORules::FPlayerCanRespawn(CBasePlayer* pPlayer)
 
 	if (jinrai && nsf)
 	{
-		if (jinrai->GetNumPlayers() == 0 || nsf->GetNumPlayers() == 0)
+		if (m_nRoundStatus == NeoRoundStatus::Warmup || m_nRoundStatus == NeoRoundStatus::Idle)
 		{
 			return true;
 		}
@@ -1618,7 +1802,7 @@ bool CNEORules::FPlayerCanRespawn(CBasePlayer* pPlayer)
 
 void CNEORules::SetRoundStatus(NeoRoundStatus status)
 {
-	if (status == NeoRoundStatus::RoundLive || status == NeoRoundStatus::Idle)
+	if (status == NeoRoundStatus::RoundLive || status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup)
 	{
 		for (int i = 1; i <= gpGlobals->maxClients; ++i)
 		{
@@ -1638,6 +1822,11 @@ void CNEORules::SetRoundStatus(NeoRoundStatus status)
 	}
 
 	m_nRoundStatus = status;
+}
+
+NeoRoundStatus CNEORules::GetRoundStatus() const
+{
+	return static_cast<NeoRoundStatus>(m_nRoundStatus.Get());
 }
 
 const char* CNEORules::GetGameTypeName(void)

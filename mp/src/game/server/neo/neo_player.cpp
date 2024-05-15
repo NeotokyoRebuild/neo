@@ -47,9 +47,9 @@ SendPropInt(SENDINFO(m_iNeoSkin)),
 SendPropInt(SENDINFO(m_iNeoStar)),
 SendPropInt(SENDINFO(m_iXP)),
 SendPropInt(SENDINFO(m_iCapTeam), 3),
-SendPropInt(SENDINFO(m_iGhosterTeam)),
 SendPropInt(SENDINFO(m_iLoadoutWepChoice)),
 SendPropInt(SENDINFO(m_iNextSpawnClassChoice)),
+SendPropInt(SENDINFO(m_bInLean)),
 
 SendPropBool(SENDINFO(m_bGhostExists)),
 SendPropBool(SENDINFO(m_bInThermOpticCamo)),
@@ -67,6 +67,7 @@ SendPropString(SENDINFO(m_pszTestMessage)),
 SendPropVector(SENDINFO(m_vecGhostMarkerPos), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT),
 
 SendPropArray(SendPropVector(SENDINFO_ARRAY(m_rvFriendlyPlayerPositions), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rvFriendlyPlayerPositions),
+SendPropArray(SendPropFloat(SENDINFO_ARRAY(m_rfAttackersScores), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rfAttackersScores),
 
 SendPropInt(SENDINFO(m_NeoFlags), 4, SPROP_UNSIGNED),
 END_SEND_TABLE()
@@ -77,9 +78,9 @@ DEFINE_FIELD(m_iNeoSkin, FIELD_INTEGER),
 DEFINE_FIELD(m_iNeoStar, FIELD_INTEGER),
 DEFINE_FIELD(m_iXP, FIELD_INTEGER),
 DEFINE_FIELD(m_iCapTeam, FIELD_INTEGER),
-DEFINE_FIELD(m_iGhosterTeam, FIELD_INTEGER),
 DEFINE_FIELD(m_iLoadoutWepChoice, FIELD_INTEGER),
 DEFINE_FIELD(m_iNextSpawnClassChoice, FIELD_INTEGER),
+DEFINE_FIELD(m_bInLean, FIELD_INTEGER),
 
 DEFINE_FIELD(m_bGhostExists, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bInThermOpticCamo, FIELD_BOOLEAN),
@@ -97,6 +98,7 @@ DEFINE_FIELD(m_pszTestMessage, FIELD_STRING),
 DEFINE_FIELD(m_vecGhostMarkerPos, FIELD_VECTOR),
 
 DEFINE_FIELD(m_rvFriendlyPlayerPositions, FIELD_CUSTOM),
+DEFINE_FIELD(m_rfAttackersScores, FIELD_CUSTOM),
 
 DEFINE_FIELD(m_NeoFlags, FIELD_CHARACTER),
 END_DATADESC()
@@ -357,9 +359,9 @@ CNEO_Player::CNEO_Player()
 	m_bInThermOpticCamo = m_bInVision = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
 	m_bInAim = false;
+	m_bInLean = NEO_LEAN_NONE;
 
 	m_iCapTeam = TEAM_UNASSIGNED;
-	m_iGhosterTeam = TEAM_UNASSIGNED;
 	m_iLoadoutWepChoice = 0;
 	m_iNextSpawnClassChoice = -1;
 
@@ -472,6 +474,8 @@ void CNEO_Player::Spawn(void)
 	SetNumAnimOverlays(NUM_LAYERS_WANTED);
 	ResetAnimation();
 
+	m_HL2Local.m_cloakPower = CloakPower_Cap();
+
 	m_bIsPendingSpawnForThisRound = false;
 
 	m_bLastTickInThermOpticCamo = m_bInThermOpticCamo = false;
@@ -479,6 +483,12 @@ void CNEO_Player::Spawn(void)
 
 	m_bInVision = false;
 	m_nVisionLastTick = 0;
+	m_bInLean = NEO_LEAN_NONE;
+
+	for (int i = 0; i < m_rfAttackersScores.Count(); ++i)
+	{
+		m_rfAttackersScores.Set(i, 0.0f);
+	}
 
 	Weapon_SetZoom(false);
 
@@ -562,9 +572,46 @@ void CNEO_Player::CheckVisionButtons()
 	}
 }
 
+void CNEO_Player::CheckLeanButtons()
+{
+	if (IsAlive())
+	{
+		if (ClientWantsLeanToggle(this))
+		{
+			if (m_afButtonPressed & IN_LEAN_LEFT)
+			{
+				if (m_bInLean == NEO_LEAN_LEFT) m_bInLean = NEO_LEAN_NONE;
+				else m_bInLean = NEO_LEAN_LEFT;
+			}
+			if (m_afButtonPressed & IN_LEAN_RIGHT)
+			{
+				if (m_bInLean == NEO_LEAN_RIGHT) m_bInLean = NEO_LEAN_NONE;
+				else m_bInLean = NEO_LEAN_RIGHT;
+			}
+		}
+		else
+		{
+			m_bInLean = NEO_LEAN_NONE;
+			if ((m_nButtons & IN_LEAN_LEFT) && !(m_nButtons & IN_LEAN_RIGHT))
+			{
+				m_bInLean = NEO_LEAN_LEFT;
+			}
+			else if ((m_nButtons & IN_LEAN_RIGHT) && !(m_nButtons & IN_LEAN_LEFT))
+			{
+				m_bInLean = NEO_LEAN_RIGHT;
+			}
+		}
+	}
+}
+
 void CNEO_Player::PreThink(void)
 {
 	BaseClass::PreThink();
+
+	if (!m_bInThermOpticCamo)
+	{
+		CloakPower_Update();
+	}
 
 	if ((!GetActiveWeapon() && IsAlive()) ||
 		// Whether or not we move backwards affects max speed
@@ -595,7 +642,7 @@ void CNEO_Player::PreThink(void)
 	{
 		if (m_flCamoAuxLastTime == 0)
 		{
-			if (SuitPower_GetCurrentPercentage() >= CLOAK_AUX_COST)
+			if (m_HL2Local.m_cloakPower >= CLOAK_AUX_COST)
 			{
 				m_flCamoAuxLastTime = gpGlobals->curtime;
 			}
@@ -605,16 +652,14 @@ void CNEO_Player::PreThink(void)
 			const float deltaTime = gpGlobals->curtime - m_flCamoAuxLastTime;
 			if (deltaTime >= 1)
 			{
-				// Need to have at least this much spare AUX to enable.
-				// This prevents AUX spam abuse where player has a sliver of AUX
+				// Need to have at least this much spare camo to enable.
+				// This prevents camo spam abuse where player has a sliver of camo
 				// each frame to never really run out.
-				SuitPower_Drain(deltaTime * CLOAK_AUX_COST);
+				CloakPower_Drain(deltaTime * CLOAK_AUX_COST);
 
-				if (SuitPower_GetCurrentPercentage() < CLOAK_AUX_COST)
+				if (m_HL2Local.m_cloakPower <= 0.1f)
 				{
 					m_bInThermOpticCamo = false;
-
-					SuitPower_SetCharge(0);
 					m_flCamoAuxLastTime = 0;
 				}
 				else
@@ -716,7 +761,21 @@ void CNEO_Player::PreThink(void)
 
 		if (ghost->GetAbsOrigin().IsValid())
 		{
-			m_vecGhostMarkerPos = ghost->GetAbsOrigin();
+			Vector vecNextGhostMarkerPos = ghost->GetAbsOrigin();
+			const int ghosterTeam = NEORules()->ghosterTeam();
+			if (ghosterTeam == TEAM_JINRAI || ghosterTeam == TEAM_NSF)
+			{
+				// Someone's carrying it, center at their body
+				const int playerIdx = NEORules()->GetGhosterPlayer();
+				if (auto player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(playerIdx)))
+				{
+					const Vector playerEye = player->EyePosition();
+					const Vector playerBase = player->GetAbsOrigin();
+					const float playerMidZ = (playerEye.z - playerBase.z) / 2.0f;
+					vecNextGhostMarkerPos = Vector(playerBase.x, playerBase.y, playerBase.z + playerMidZ);
+				}
+			}
+			m_vecGhostMarkerPos = vecNextGhostMarkerPos;
 		}
 		else
 		{
@@ -824,7 +883,7 @@ void CNEO_Player::CheckThermOpticButtons()
 			return;
 		}
 
-		if (SuitPower_GetCurrentPercentage() >= CLOAK_AUX_COST)
+		if (m_HL2Local.m_cloakPower >= CLOAK_AUX_COST)
 		{
 			m_bInThermOpticCamo = !m_bInThermOpticCamo;
 
@@ -952,6 +1011,8 @@ void CNEO_Player::PostThink(void)
 		m_bFirstDeathTick = true;
 	}
 
+	CheckLeanButtons();
+
 	auto pWep = GetActiveWeapon();
 	CNEOBaseCombatWeapon* pNeoWep = NULL;
 
@@ -973,15 +1034,14 @@ void CNEO_Player::PostThink(void)
 			{
 				static_cast<CWeaponGrenade*>(pNeoWep)->SecondaryAttack();
 			}
-			else
+			else if (ClientWantsAimHold(this))
 			{
-				// NEO TODO (Rain): customizations for aim pressed/released/held behavior
-				//if (pNeoWep != NULL) { Weapon_AimToggle(pWep); }
+				Weapon_AimToggle(pWep, NEO_TOGGLE_FORCE_AIM);
 			}
 		}
 		else if (m_afButtonReleased & IN_AIM)
 		{
-			Weapon_AimToggle(pWep);
+			Weapon_AimToggle(pWep, ClientWantsAimHold(this) ? NEO_TOGGLE_FORCE_UN_AIM : NEO_TOGGLE_DEFAULT);
 		}
 		m_bPreviouslyReloading = pWep->m_bInReload;
 
@@ -1022,7 +1082,7 @@ void CNEO_Player::PlayerDeathThink()
 	BaseClass::PlayerDeathThink();
 }
 
-void CNEO_Player::Weapon_AimToggle(CNEOBaseCombatWeapon* pNeoWep)
+void CNEO_Player::Weapon_AimToggle(CNEOBaseCombatWeapon* pNeoWep, const NeoWeponAimToggleE toggleType)
 {
 	if (!pNeoWep)
 	{
@@ -1031,23 +1091,23 @@ void CNEO_Player::Weapon_AimToggle(CNEOBaseCombatWeapon* pNeoWep)
 
 	if (IsAllowedToZoom(pNeoWep))
 	{
-		if (pNeoWep->IsReadyToAimIn())
+		if (toggleType != NEO_TOGGLE_FORCE_UN_AIM && pNeoWep->IsReadyToAimIn())
 		{
 			const bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR) == HIDEHUD_CROSSHAIR;
 			Weapon_SetZoom(showCrosshair);
 		}
-		else
+		else if (toggleType != NEO_TOGGLE_FORCE_AIM)
 		{
 			Weapon_SetZoom(false);
 		}
 	}
 }
 
-void CNEO_Player::Weapon_AimToggle(CBaseCombatWeapon *pWep)
+void CNEO_Player::Weapon_AimToggle(CBaseCombatWeapon *pWep, const NeoWeponAimToggleE toggleType)
 {
 	// NEO TODO/HACK: Not all neo weapons currently inherit
 	// through a base neo class, so we can't static_cast!!
-	Weapon_AimToggle(dynamic_cast<CNEOBaseCombatWeapon*>(pWep));
+	Weapon_AimToggle(dynamic_cast<CNEOBaseCombatWeapon*>(pWep), toggleType);
 }
 
 void CNEO_Player::Weapon_SetZoom(const bool bZoomIn)
@@ -1702,17 +1762,18 @@ CBaseEntity* CNEO_Player::EntSelectSpawnPoint( void )
 	CBaseEntity *pSpot = NULL;
 	CBaseEntity *pLastSpawnPoint = g_pLastSpawn;
 	const char *pSpawnpointName = "info_player_start";
+	const auto alternate = NEORules()->roundAlternate();
 
 	if (NEORules()->IsTeamplay())
 	{
 		if (GetTeamNumber() == TEAM_JINRAI)
 		{
-			pSpawnpointName = "info_player_attacker";
+			pSpawnpointName = alternate ? "info_player_attacker" : "info_player_defender";
 			pLastSpawnPoint = g_pLastJinraiSpawn;
 		}
 		else if (GetTeamNumber() == TEAM_NSF)
 		{
-			pSpawnpointName = "info_player_defender";
+			pSpawnpointName = alternate ? "info_player_defender" : "info_player_attacker";
 			pLastSpawnPoint = g_pLastNSFSpawn;
 		}
 
@@ -1969,6 +2030,23 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	return true;
 }
 
+float CNEO_Player::GetAttackersScores(const int attackerIdx) const
+{
+	return m_rfAttackersScores.Get(attackerIdx);
+}
+
+int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
+{
+	if (m_takedamage != DAMAGE_EVENTS_ONLY)
+	{
+		if (auto* attacker = dynamic_cast<CNEO_Player*>(info.GetAttacker()))
+		{
+			m_rfAttackersScores.GetForModify(attacker->entindex()) += info.GetDamage();
+		}
+	}
+	return BaseClass::OnTakeDamage_Alive(info);
+}
+
 void GiveDet(CNEO_Player* pPlayer)
 {
 	const char* detpackClassname = "weapon_remotedet";
@@ -2160,7 +2238,7 @@ void CNEO_Player::StartAutoSprint(void)
 
 void CNEO_Player::StartSprinting(void)
 {
-	if (GetClass() != NEO_CLASS_RECON && m_HL2Local.m_flSuitPower < 10)
+	if (GetClass() != NEO_CLASS_RECON && m_HL2Local.m_flSuitPower < SPRINT_START_MIN)
 	{
 		return;
 	}
@@ -2214,6 +2292,66 @@ void CNEO_Player::StopWalking(void)
 {
 	SetMaxSpeed(GetNormSpeed());
 	m_fIsWalking = false;
+}
+
+void CNEO_Player::CloakPower_Update(void)
+{
+	if (m_HL2Local.m_cloakPower < CloakPower_Cap())
+	{
+		float chargeRate = 0.0f;
+		switch (GetClass())
+		{
+		case NEO_CLASS_RECON:
+			chargeRate = 0.55f;
+			break;
+		case NEO_CLASS_ASSAULT:
+			chargeRate = 0.25f;
+			break;
+		default:
+			break;
+		}
+		CloakPower_Charge(chargeRate * gpGlobals->frametime);
+	}
+}
+
+bool CNEO_Player::CloakPower_Drain(float flPower)
+{
+	m_HL2Local.m_cloakPower -= flPower;
+
+	if (m_HL2Local.m_cloakPower < 0.0)
+	{
+		// Camo is depleted: clamp and fail
+		m_HL2Local.m_cloakPower = 0.0;
+		return false;
+	}
+
+	return true;
+}
+
+void CNEO_Player::CloakPower_Charge(float flPower)
+{
+	m_HL2Local.m_cloakPower += flPower;
+
+	const float cloakCap = CloakPower_Cap();
+	if (m_HL2Local.m_cloakPower > cloakCap)
+	{
+		// Full charge, clamp.
+		m_HL2Local.m_cloakPower = cloakCap;
+	}
+}
+
+float CNEO_Player::CloakPower_Cap() const
+{
+	switch (GetClass())
+	{
+	case NEO_CLASS_RECON:
+		return 13.0f;
+	case NEO_CLASS_ASSAULT:
+		return 8.0f;
+	default:
+		break;
+	}
+	return 0.0f;
 }
 
 float CNEO_Player::GetCrouchSpeed_WithActiveWepEncumberment(void) const

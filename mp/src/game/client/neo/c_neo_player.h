@@ -104,6 +104,8 @@ public:
 		}
 	}
 
+	float CloakPower_CurrentVisualPercentage(void) const;
+
 	float GetNormSpeed_WithActiveWepEncumberment(void) const;
 	float GetCrouchSpeed_WithActiveWepEncumberment(void) const;
 	float GetWalkSpeed_WithActiveWepEncumberment(void) const;
@@ -144,7 +146,7 @@ public:
 
 	void DrawCompass(void);
 
-	void Weapon_AimToggle(C_BaseCombatWeapon *pWep);
+	void Weapon_AimToggle(C_BaseCombatWeapon *pWep, const NeoWeponAimToggleE toggleType);
 	void Weapon_SetZoom(const bool bZoomIn);
 
 	void Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon);
@@ -157,6 +159,8 @@ public:
 	bool IsAirborne() const { return (!(GetFlags() & FL_ONGROUND)); }
 	bool IsInVision() const { return m_bInVision; }
 	bool IsInAim() const { return m_bInAim; }
+
+	float GetAttackersScores(const int attackerIdx) const;
 
 private:
 	void CheckThermOpticButtons();
@@ -176,6 +180,7 @@ public:
 	CNetworkVar(int, m_iNextSpawnClassChoice);
 
 	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
+	CNetworkArray(float, m_rfAttackersScores, (MAX_PLAYERS + 1));
 
 	bool m_bShowClassMenu, m_bShowTeamMenu;
 	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
@@ -187,12 +192,11 @@ public:
 
 	CNetworkVector(m_vecGhostMarkerPos);
 
-	CNetworkVar(int, m_iGhosterTeam);
-
 	CNetworkVar(bool, m_bInThermOpticCamo);
 	CNetworkVar(bool, m_bLastTickInThermOpticCamo);
 	CNetworkVar(bool, m_bInVision);
 	CNetworkVar(bool, m_bInAim);
+	CNetworkVar(int, m_bInLean);
 
 	CNetworkVar(int, m_iNeoClass);
 	CNetworkVar(int, m_iNeoSkin);

@@ -8,6 +8,7 @@
 #include <vgui/ISurface.h>
 
 #include "neo_gamerules.h"
+#include <initializer_list>
 
 #include <vgui_controls/ImagePanel.h>
 
@@ -85,7 +86,7 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 	starF = new vgui::ImagePanel(this, "star_foxtrot");
 	starF->SetImage(vgui::scheme()->GetImage("hud/star_foxtrot", starsHwFiltered));
 
-	const auto stars = { starNone, starA, starB, starC, starD, starE, starF };
+	vgui::ImagePanel *stars[] = { starNone, starA, starB, starC, starD, starE, starF };
 
 	const bool starAutoDelete = true;
 	COMPILE_TIME_ASSERT(starAutoDelete); // If not, we need to handle that memory on dtor manually
@@ -114,6 +115,7 @@ void CNEOHud_RoundState::ApplySchemeSettings(vgui::IScheme* pScheme)
 void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 {
 	float roundTimeLeft = NEORules()->GetRoundRemainingTime();
+	const NeoRoundStatus roundStatus = NEORules()->GetRoundStatus();
 
 	// Exactly zero means there's no time limit, so we don't need to draw anything.
 	if (roundTimeLeft == 0)
@@ -139,7 +141,8 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	const int secsRemainder = secsTotal % 60;
 	const int minutes = (secsTotal - secsRemainder) / 60;
 
-	V_sprintf_safe(m_szStatusANSI, "%02d:%02d", minutes, secsRemainder);
+	V_sprintf_safe(m_szStatusANSI, "%s%02d:%02d", (roundStatus == NeoRoundStatus::Warmup) ? "(Warmup) " : "", minutes, secsRemainder);
+	memset(m_wszStatusUnicode, 0, sizeof(m_wszStatusUnicode)); // NOTE (nullsystem): Clear it or get junk after warmup ends
 	g_pVGuiLocalize->ConvertANSIToUnicode(m_szStatusANSI, m_wszStatusUnicode, sizeof(m_wszStatusUnicode));
 }
 

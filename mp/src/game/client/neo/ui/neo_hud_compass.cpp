@@ -253,7 +253,7 @@ void CNEOHud_Compass::DrawCompass() const
 
 				ghostMarkerX = clamp(ghostMarkerX, resXHalf - xBoxWidthHalf, resXHalf + xBoxWidthHalf);
 
-				const int ghosterTeam = player->m_iGhosterTeam;
+				const int ghosterTeam = NEORules()->ghosterTeam();
 				const int ownTeam = player->GetTeam()->GetTeamNumber();
 
 				const auto teamClr32 = player->GetTeam()->GetRenderColor();

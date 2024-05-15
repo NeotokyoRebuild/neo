@@ -16,6 +16,10 @@
 #include "fgdlib/fgdlib.h"
 #include "manifest.h"
 
+#ifdef _WIN32
+#define snprintf _snprintf
+#endif
+
 #ifdef VSVMFIO
 #include "VmfImport.h"
 #endif // VSVMFIO
@@ -1271,7 +1275,7 @@ void ConvertSideList( entity_t *mapent, char *key )
 					}
 
 					char szIndex[15];
-					itoa( nIndex, szIndex, 10 );
+					snprintf(szIndex, 15, "%d", nIndex);
 					strcat( szNewValue, szIndex );
 				}
 			}

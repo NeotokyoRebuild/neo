@@ -66,9 +66,9 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_iCapTeam)),
 	RecvPropInt(RECVINFO(m_iLoadoutWepChoice)),
 	RecvPropInt(RECVINFO(m_iNextSpawnClassChoice)),
+	RecvPropInt(RECVINFO(m_bInLean)),
 
 	RecvPropVector(RECVINFO(m_vecGhostMarkerPos)),
-	RecvPropInt(RECVINFO(m_iGhosterTeam)),
 	RecvPropBool(RECVINFO(m_bGhostExists)),
 	RecvPropBool(RECVINFO(m_bInThermOpticCamo)),
 	RecvPropBool(RECVINFO(m_bLastTickInThermOpticCamo)),
@@ -80,12 +80,14 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_nVisionLastTick)),
 
 	RecvPropArray(RecvPropVector(RECVINFO(m_rvFriendlyPlayerPositions[0])), m_rvFriendlyPlayerPositions),
+	RecvPropArray(RecvPropFloat(RECVINFO(m_rfAttackersScores[0])), m_rfAttackersScores),
 
 	RecvPropInt(RECVINFO(m_NeoFlags)),
 END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA(C_NEO_Player)
 	DEFINE_PRED_FIELD(m_rvFriendlyPlayerPositions, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_rfAttackersScores, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_vecGhostMarkerPos, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
 
 	DEFINE_PRED_FIELD_TOL(m_flCamoAuxLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
@@ -93,6 +95,7 @@ BEGIN_PREDICTION_DATA(C_NEO_Player)
 	DEFINE_PRED_FIELD(m_bInThermOpticCamo, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bLastTickInThermOpticCamo, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bInAim, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bInLean, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bInVision, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bHasBeenAirborneForTooLongToSuperJump, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 
@@ -317,7 +320,6 @@ C_NEO_Player::C_NEO_Player()
 	m_iCapTeam = TEAM_UNASSIGNED;
 	m_iLoadoutWepChoice = 0;
 	m_iNextSpawnClassChoice = -1;
-	m_iGhosterTeam = TEAM_UNASSIGNED;
 	m_iXP.GetForModify() = 0;
 
 	m_vecGhostMarkerPos = vec3_origin;
@@ -326,6 +328,7 @@ C_NEO_Player::C_NEO_Player()
 	m_bInThermOpticCamo = m_bInVision = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
 	m_bInAim = false;
+	m_bInLean = NEO_LEAN_NONE;
 
 	m_pNeoPanel = NULL;
 
@@ -360,7 +363,7 @@ void C_NEO_Player::CheckThermOpticButtons()
 			return;
 		}
 
-		if (m_HL2Local.m_flSuitPower >= CLOAK_AUX_COST)
+		if (m_HL2Local.m_cloakPower >= CLOAK_AUX_COST)
 		{
 			m_bInThermOpticCamo = !m_bInThermOpticCamo;
 		}
@@ -416,6 +419,11 @@ void C_NEO_Player::ZeroFriendlyPlayerLocArray()
 	{
 		m_rvFriendlyPlayerPositions.GetForModify(i) = vec3_origin;
 	}
+}
+
+float C_NEO_Player::GetAttackersScores(const int attackerIdx) const
+{
+	return m_rfAttackersScores.Get(attackerIdx);
 }
 
 int C_NEO_Player::DrawModel( int flags )
@@ -641,7 +649,7 @@ void C_NEO_Player::PreThink( void )
 		{
 			// NEO TODO (Rain): add server style interface for accessor,
 			// so we can share code
-			if (m_HL2Local.m_flSuitPower >= CLOAK_AUX_COST)
+			if (m_HL2Local.m_cloakPower >= CLOAK_AUX_COST)
 			{
 				m_flCamoAuxLastTime = gpGlobals->curtime;
 			}
@@ -652,19 +660,18 @@ void C_NEO_Player::PreThink( void )
 			if (deltaTime >= 1)
 			{
 				// NEO TODO (Rain): add interface for predicting this
-				//SuitPower_Drain(deltaTime * CLOAK_AUX_COST);
 
 				const float auxToDrain = deltaTime * CLOAK_AUX_COST;
-				if (m_HL2Local.m_flSuitPower <= auxToDrain)
+				if (m_HL2Local.m_cloakPower <= auxToDrain)
 				{
-					m_HL2Local.m_flSuitPower = 0;
+					m_HL2Local.m_cloakPower = 0.0f;
 				}
 
-				if (m_HL2Local.m_flSuitPower < CLOAK_AUX_COST)
+				if (m_HL2Local.m_cloakPower < CLOAK_AUX_COST)
 				{
 					m_bInThermOpticCamo = false;
 
-					m_HL2Local.m_flSuitPower = 0;
+					m_HL2Local.m_cloakPower = 0.0f;
 					m_flCamoAuxLastTime = 0;
 				}
 				else
@@ -759,9 +766,7 @@ void C_NEO_Player::PreThink( void )
 				const float distance = METERS_PER_INCH *
 					GetAbsOrigin().DistTo(m_vecGhostMarkerPos);
 
-				// NEO HACK (Rain): We should test if we're holding a ghost
-				// instead of relying on a distance check.
-				if (m_iGhosterTeam != GetTeamNumber() || distance > 0.2)
+				if (!IsCarryingGhost())
 				{
 					ghostMarker->SetVisible(true);
 
@@ -769,9 +774,8 @@ void C_NEO_Player::PreThink( void )
 					GetVectorInScreenSpace(m_vecGhostMarkerPos, ghostMarkerX, ghostMarkerY);
 
 					ghostMarker->SetScreenPosition(ghostMarkerX, ghostMarkerY);
-					ghostMarker->SetGhostingTeam(m_iGhosterTeam);
-
-
+					ghostMarker->SetGhostingTeam(NEORules()->ghosterTeam());
+					ghostMarker->SetClientCurrentTeam(GetTeamNumber());
 					ghostMarker->SetGhostDistance(distance);
 				}
 				else
@@ -888,9 +892,13 @@ void C_NEO_Player::PostThink(void)
 		{
 			Weapon_SetZoom(false);
 		}
+		else if (ClientWantsAimHold(this) && m_afButtonPressed & IN_AIM)
+		{
+			Weapon_AimToggle(pWep, NEO_TOGGLE_FORCE_AIM);
+		}
 		else if ((m_afButtonReleased & IN_AIM) && (!(m_nButtons & IN_SPEED)))
 		{
-			Weapon_AimToggle(pWep);
+			Weapon_AimToggle(pWep, ClientWantsAimHold(this) ? NEO_TOGGLE_FORCE_UN_AIM : NEO_TOGGLE_DEFAULT);
 		}
 
 #if !defined( NO_ENTITY_PREDICTION )
@@ -959,6 +967,21 @@ void C_NEO_Player::SuperJump(void)
 	ApplyAbsVelocityImpulse(forward * neo_recon_superjump_intensity.GetFloat());
 }
 
+float C_NEO_Player::CloakPower_CurrentVisualPercentage(void) const
+{
+	const float cloakPowerRounded = roundf(m_HL2Local.m_cloakPower);
+	switch (GetClass())
+	{
+	case NEO_CLASS_RECON:
+		return (cloakPowerRounded / 13.0f) * 100.0f;
+	case NEO_CLASS_ASSAULT:
+		return (cloakPowerRounded / 8.0f) * 100.0f;
+	default:
+		break;
+	}
+	return 0.0f;
+}
+
 void C_NEO_Player::Spawn( void )
 {
 	BaseClass::Spawn();
@@ -968,6 +991,12 @@ void C_NEO_Player::Spawn( void )
 
 	m_bInVision = false;
 	m_nVisionLastTick = 0;
+	m_bInLean = NEO_LEAN_NONE;
+
+	for (int i = 0; i < m_rfAttackersScores.Count(); ++i)
+	{
+		m_rfAttackersScores.Set(i, 0.0f);
+	}
 
 	Weapon_SetZoom(false);
 
@@ -1037,6 +1066,7 @@ void C_NEO_Player::Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon)
 
 	if (pWeapon->IsGhost())
 	{
+		pWeapon->Holster(NULL);
 		Assert(dynamic_cast<C_WeaponGhost*>(pWeapon));
 		static_cast<C_WeaponGhost*>(pWeapon)->HandleGhostUnequip();
 	}
@@ -1049,7 +1079,7 @@ void C_NEO_Player::Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon)
 
 void C_NEO_Player::StartSprinting(void)
 {
-	if (m_HL2Local.m_flSuitPower < 10)
+	if (m_HL2Local.m_flSuitPower < SPRINT_START_MIN)
 	{
 		return;
 	}
@@ -1204,7 +1234,7 @@ float C_NEO_Player::GetActiveWeaponSpeedScale() const
 	return (pWep ? pWep->GetSpeedScale() : 1.0f);
 }
 
-void C_NEO_Player::Weapon_AimToggle(C_BaseCombatWeapon *pWep)
+void C_NEO_Player::Weapon_AimToggle(C_BaseCombatWeapon *pWep, const NeoWeponAimToggleE toggleType)
 {
 	// NEO TODO/HACK: Not all neo weapons currently inherit
 	// through a base neo class, so we can't static_cast!!
@@ -1217,12 +1247,12 @@ void C_NEO_Player::Weapon_AimToggle(C_BaseCombatWeapon *pWep)
 	// This implies the wep ptr is valid, so we don't bother checking
 	if (IsAllowedToZoom(neoCombatWep))
 	{
-		if (neoCombatWep->IsReadyToAimIn())
+		if (toggleType != NEO_TOGGLE_FORCE_UN_AIM && neoCombatWep->IsReadyToAimIn())
 		{
 			const bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR) == HIDEHUD_CROSSHAIR;
 			Weapon_SetZoom(showCrosshair);
 		}
-		else
+		else if (toggleType != NEO_TOGGLE_FORCE_AIM)
 		{
 			Weapon_SetZoom(false);
 		}

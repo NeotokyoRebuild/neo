@@ -56,11 +56,22 @@ void CWeaponMilso::UpdatePenaltyTime(void)
 		return;
 
 	// Check our penalty time decay
-	if (((pOwner->m_nButtons & IN_ATTACK) == false) &&
-		(m_flSoonestAttack < gpGlobals->curtime))
+	if ((pOwner->m_nButtons & IN_ATTACK) == false)
 	{
-		m_flAccuracyPenalty -= gpGlobals->frametime;
-		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty, 0.0f, GetMaxAccuracyPenalty());
+		if (m_flSoonestAttack < gpGlobals->curtime)
+		{
+			m_flAccuracyPenalty -= gpGlobals->frametime;
+			m_flAccuracyPenalty = clamp(m_flAccuracyPenalty, 0.0f, GetMaxAccuracyPenalty());
+		}
+	}
+	else
+	{
+		m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
+	}
+
+	if (m_flSoonestAttack > gpGlobals->curtime)
+	{
+		m_flSoonestAttack -= (gpGlobals->curtime - m_flLastAttackTime);
 	}
 }
 
@@ -81,43 +92,6 @@ void CWeaponMilso::ItemBusyFrame(void)
 void CWeaponMilso::ItemPostFrame(void)
 {
 	BaseClass::ItemPostFrame();
-
-	if (m_bInReload)
-	{
-		return;
-	}
-
-	CBasePlayer *pOwner = ToBasePlayer(GetOwner());
-
-	if (pOwner == NULL)
-	{
-		return;
-	}
-
-	if (m_iClip1 <= 0)
-	{
-		return;
-	}
-
-	if (pOwner->m_nButtons & IN_ATTACK)
-	{
-		if (m_flSoonestAttack < gpGlobals->curtime)
-		{
-			if (m_iClip1 <= 0)
-			{
-				DryFire();
-				m_flSoonestAttack = gpGlobals->curtime + GetFastestDryRefireTime();
-			}
-			else
-			{
-				m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
-			}
-		}
-	}
-	else if (pOwner->m_afButtonReleased & IN_ATTACK)
-	{
-		m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
-	}
 }
 
 Activity CWeaponMilso::GetPrimaryAttackActivity(void)

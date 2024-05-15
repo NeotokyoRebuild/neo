@@ -500,6 +500,7 @@ $Project
 		$File	"$SRCDIR\game\shared\mp_shareddefs.cpp"
 		$File	"$SRCDIR\game\client\c_vote_controller.h"
 		$File	"$SRCDIR\game\client\c_vote_controller.cpp"
+		$File	"$SRCDIR\game\shared\inttostr.cpp"
 		//Haptics
 		$File	"$SRCDIR\public\haptics\haptic_msgs.cpp"	[!$X360]
 		$File	"$SRCDIR\public\haptics\haptic_utils.cpp"	[$WIN32&&!$X360]
@@ -1219,6 +1220,7 @@ $Project
 		$File	"$SRCDIR\game\shared\weapon_proficiency.h"
 		$File	"$SRCDIR\game\shared\weapon_ifmsteadycam.h"
 		$File	"$SRCDIR\game\shared\mp_shareddefs.h"
+		$File	"$SRCDIR\game\shared\inttostr.h"
 	}
 
 	$Folder	"game_controls Header Files"
