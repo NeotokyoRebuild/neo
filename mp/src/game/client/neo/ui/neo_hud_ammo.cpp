@@ -140,22 +140,22 @@ void CNEOHud_Ammo::DrawAmmo() const
 	}
 	g_pVGuiLocalize->ConvertANSIToUnicode(wepName, unicodeWepName, sizeof(unicodeWepName));
 
-	const int margin = GetMargin(); //Get this from scheme?
+	//const int margin = GetMargin(); //Get this from scheme?
 	
 	// These are the constant res based scalings of the NT ammo/health box dimensions.
-	const int xPos1 = m_resX - neo_cl_hud_ammo_pos_x.GetInt();
-	const int yPos1 = m_resY - neo_cl_hud_ammo_pos_y.GetInt();
-	const int xPos0 = xPos1 - ((m_resX * 0.2375) + (margin * 2));
-	const int yPos0 = yPos1 - (((m_bulletFontHeight * 0.8) + m_smallFontHeight + margin * 2) + (margin * 2));
+	//const int xPos1 = m_resX - neo_cl_hud_ammo_pos_x.GetInt();
+	//const int yPos1 = m_resY - neo_cl_hud_ammo_pos_y.GetInt();
+	//const int xPos0 = xPos1 - ((m_resX * 0.2375) + (margin * 2));
+	//const int yPos0 = yPos1 - (((m_bulletFontHeight * 0.8) + m_smallFontHeight + margin * 2) + (margin * 2));
 	
-	
-	DrawNeoHudRoundedBox(xPos0, yPos0, xPos1, yPos1);
+	DrawNeoHudRoundedBox(xpos, ypos, xpos + wide, ypos + tall);
 
 	surface()->DrawSetTextFont(m_hSmallTextFont);
 	surface()->DrawSetTextColor(textColorTransparent);
-	int weaponNamePixelWidth, weaponNamePixelHeight;
-	surface()->GetTextSize(m_hSmallTextFont, unicodeWepName, weaponNamePixelWidth, weaponNamePixelHeight);
-	surface()->DrawSetTextPos(xPos1 - ((margin * 2) + weaponNamePixelWidth + m_fontWidth / 2), yPos0 + (margin / 2));
+
+	int fontWidth, fontHeight;
+	surface()->GetTextSize(m_hSmallTextFont, unicodeWepName, fontWidth, fontHeight);
+	surface()->DrawSetTextPos((text_xpos + xpos) - fontWidth, text_ypos + ypos);
 	surface()->DrawPrintText(unicodeWepName, textLen);
 
 	if(dynamic_cast<C_WeaponGhost*> (activeWep))
@@ -188,7 +188,9 @@ void CNEOHud_Ammo::DrawAmmo() const
 		int clipsTextWidth, clipsTextHeight;
 		surface()->GetTextSize(m_hTextFont, unicodeClipsText, clipsTextWidth, clipsTextHeight);
 		surface()->DrawSetTextFont(m_hTextFont);
-		surface()->DrawSetTextPos(xPos1 - (clipsTextWidth + margin), yPos0 + (margin * 2) + m_smallFontHeight);
+
+		surface()->GetTextSize(m_hTextFont, unicodeClipsText, fontWidth, fontHeight);
+		surface()->DrawSetTextPos(digit2_xpos + xpos - fontWidth, digit2_ypos + ypos);
 		surface()->DrawPrintText(unicodeClipsText, textLen);
 
 		const auto neoWep = dynamic_cast<C_NEOBaseCombatWeapon*> (activeWep);
@@ -223,7 +225,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 				g_pVGuiLocalize->ConvertANSIToUnicode(fireModeText, unicodeFireModeText, sizeof(unicodeFireModeText));
 
 				surface()->DrawSetTextFont(m_hBulletFont);
-				surface()->DrawSetTextPos(xPos0 + margin, yPos0 + ((((yPos1 - margin) - yPos0) / 2) - ((m_bulletFontHeight * 0.8) / 2)));
+				surface()->DrawSetTextPos(icon_xpos + xpos, icon_ypos + ypos);
 				surface()->DrawPrintText(unicodeFireModeText, V_strlen(fireModeText));
 
 				surface()->GetTextSize(m_hBulletFont, unicodeFireModeText, fireModeWidth, fireModeHeight);
@@ -241,11 +243,11 @@ void CNEOHud_Ammo::DrawAmmo() const
 			}			
 		}
 
-		auto maxSpaceAvaliableForBullets = (xPos1 - (margin + max(clipsTextWidth, m_fontWidth))) - (xPos0 + fireModeWidth + (margin * 2));
+		auto maxSpaceAvaliableForBullets = digit_max_width;
 		auto bulletWidth = surface()->GetCharacterWidth(m_hBulletFont, *ammoChar);
 		auto plusWidth = surface()->GetCharacterWidth(m_hBulletFont, '+');
-		auto maxBulletsWeCanDisplay = maxSpaceAvaliableForBullets / bulletWidth;
-		auto maxBulletsWeCanDisplayWithPlus = (maxSpaceAvaliableForBullets - plusWidth) / bulletWidth;
+		auto maxBulletsWeCanDisplay = (maxSpaceAvaliableForBullets / bulletWidth);
+		auto maxBulletsWeCanDisplayWithPlus = ((maxSpaceAvaliableForBullets - plusWidth) / bulletWidth);
 		auto bulletsOverflowing = maxBulletsWeCanDisplay < magSizeMax;
 
 		if(bulletsOverflowing)
@@ -281,15 +283,20 @@ void CNEOHud_Ammo::DrawAmmo() const
 		wchar_t unicodeBullets[64];
 		g_pVGuiLocalize->ConvertANSIToUnicode(bullets, unicodeBullets, sizeof(unicodeBullets));
 		
-		surface()->DrawSetTextFont(m_hBulletFont);
-		surface()->DrawSetTextPos(xPos0 + fireModeWidth + (margin * 2), (yPos0 + margin + m_smallFontHeight) - (m_bulletFontHeight * 0.2));
-		surface()->DrawPrintText(unicodeBullets, magAmountToDrawFilled);
+		if (magAmountToDrawFilled > 0)
+		{
+			surface()->DrawSetTextFont(m_hBulletFont);
+			surface()->DrawSetTextPos(digit_xpos + xpos, digit_ypos + ypos); //NEO FIXME this should use digit_xpos as the first argument
+			surface()->DrawPrintText(unicodeBullets, magAmountToDrawFilled);
+		}
 
 		if(maxClip > 0)
 		{
-			surface()->DrawSetColor(textColor);
-			surface()->DrawSetTextPos(xPos0 + fireModeWidth + (margin * 2), (yPos0 + margin + m_smallFontHeight) - (m_bulletFontHeight * 0.2));
-			surface()->DrawPrintText(unicodeBullets, magSizeMax);
+			if (magSizeMax > 0) {
+				surface()->DrawSetColor(textColor);
+				surface()->DrawSetTextPos(digit_xpos + xpos, digit_ypos + ypos); //NEO FIXME this should use digit_xpos as the first argument
+				surface()->DrawPrintText(unicodeBullets, magSizeMax);
+			}
 		}
 	}
 }

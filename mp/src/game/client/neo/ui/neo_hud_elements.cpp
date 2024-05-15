@@ -18,15 +18,15 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-#define UI_ELEMENT_NAME_AMMO "neo_ammo"
+#define UI_ELEMENT_NAME_AMMO "NHudWeapon"
 #define UI_ELEMENT_NAME_COMPASS "neo_compass"
-#define UI_ELEMENT_NAME_HTA "neo_hta"
+#define UI_ELEMENT_NAME_HTA "NHudHealth"
 #define UI_ELEMENT_NAME_IFF "neo_iff"
 #define UI_ELEMENT_GAME_EVENT "neo_game_event_indicator"
 #define UI_ELEMENT_NAME_GHOST_MARKER "neo_ghost_marker"
 #define UI_ELEMENT_NAME_GHOST_BEACONS "neo_ghost_beacons"
 #define UI_ELEMENT_ROUND_STATE "neo_round_state"
-#define UI_ELEMENT_TARGET_ID "target_id"
+#define UI_ELEMENT_TARGET_ID "TargetID"
 
 using namespace vgui;
 
@@ -257,7 +257,7 @@ void CNeoHudElements::InitGhostBeacons()
 void CNeoHudElements::InitAmmo()
 {
 	Assert(!m_pAmmo);
-	m_pAmmo = new CNEOHud_Ammo(UI_ELEMENT_NAME_AMMO, this);
+	m_pAmmo = new CNEOHud_Ammo(UI_ELEMENT_NAME_AMMO, NULL);
 }
 
 void CNeoHudElements::InitCompass()
@@ -292,7 +292,7 @@ void CNeoHudElements::InitGhostMarkers()
 void CNeoHudElements::InitHTA()
 {
 	Assert(!m_pHTA);
-	m_pHTA = new CNEOHud_HTA(UI_ELEMENT_NAME_HTA, this);
+	m_pHTA = new CNEOHud_HTA(UI_ELEMENT_NAME_HTA, NULL);
 }
 
 void CNeoHudElements::InitRoundState()

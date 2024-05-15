@@ -56,6 +56,8 @@ CNEOHud_HTA::CNEOHud_HTA(const char* pElementName, vgui::Panel* parent)
 
 	m_hFont = scheme->GetFont("NHudOCRSmall");
 
+	InvalidateLayout();
+
 	SetVisible(neo_cl_hud_hta_enabled.GetBool());
 
 	SetHiddenBits(HIDEHUD_HEALTH | HIDEHUD_PLAYERDEAD | HIDEHUD_NEEDSUIT | HIDEHUD_WEAPONSELECTION);
@@ -123,68 +125,77 @@ void CNEOHud_HTA::DrawHTA() const
 		g_pVGuiLocalize->ConvertANSIToUnicode(value_Aux, unicodeValue_Aux, sizeof(unicodeValue_Aux));
 	}
 
-	int fontWidth, fontHeight;
-	surface()->GetTextSize(m_hFont, L"THERM-OPTIC", fontWidth, fontHeight);
-
-	// These are the constant res based scalings of the NT ammo/health box dimensions.
-	const int xBoxWidth = m_resX * 0.2375;
-	const int yBoxHeight = m_resY * (0.1 / 1.5);
-
-	const int margin = neo_cl_hud_ammo_enabled.GetInt();
-	DrawNeoHudRoundedBox(margin, m_resY - yBoxHeight - margin, xBoxWidth + margin, m_resY - margin);
-
-	const int xPadding = 5; // TODO (Rain): make this relative to resolution scaling
+	DrawNeoHudRoundedBox(xpos, ypos, xpos + wide, ypos + tall);
 
 	surface()->DrawSetTextFont(m_hFont);
 	surface()->DrawSetTextColor(textColor);
-	surface()->DrawSetTextPos(xPadding + margin, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 1 - margin);
+	surface()->DrawSetTextPos(healthtext_xpos + xpos, healthtext_ypos + ypos);
 	surface()->DrawPrintText(L"INTEGRITY", 9);
 	if (playerIsNotSupport)
 	{
-		surface()->DrawSetTextPos(xPadding + margin, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 2 - margin);
+		surface()->DrawSetTextPos(camotext_xpos + xpos, camotext_ypos + ypos);
 		surface()->DrawPrintText(L"THERM-OPTIC", 11);
-		surface()->DrawSetTextPos(xPadding + margin, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 3 - margin);
+		surface()->DrawSetTextPos(sprinttext_xpos + xpos, sprinttext_ypos + ypos);
 		surface()->DrawPrintText(L"AUX", 3);
 	}
 
-	surface()->DrawSetTextPos(xBoxWidth - xPadding * 7 + margin, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 1 - margin);
+	int fontWidth, fontHeight;
+	surface()->GetTextSize(m_hFont, unicodeValue_Integrity, fontWidth, fontHeight);
+	surface()->DrawSetTextPos(healthnum_xpos + xpos - fontWidth, healthnum_ypos + ypos);
 	surface()->DrawPrintText(unicodeValue_Integrity, valLen_Integrity);
 	if (playerIsNotSupport)
 	{
-		surface()->DrawSetTextPos(xBoxWidth - xPadding * 7 + margin, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 2 - margin);
+		surface()->GetTextSize(m_hFont, unicodeValue_ThermOptic, fontWidth, fontHeight);
+		surface()->DrawSetTextPos(camonum_xpos + xpos - fontWidth, camonum_ypos + ypos);
 		surface()->DrawPrintText(unicodeValue_ThermOptic, valLen_ThermOptic);
-		surface()->DrawSetTextPos(xBoxWidth - xPadding * 7 + margin, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 3 - margin);
+		surface()->GetTextSize(m_hFont, unicodeValue_Aux, fontWidth, fontHeight);
+		surface()->DrawSetTextPos(sprintnum_xpos + xpos - fontWidth, sprintnum_ypos + ypos);
 		surface()->DrawPrintText(unicodeValue_Aux, valLen_Aux);
 	}
 
 	surface()->DrawSetColor(COLOR_WHITE);
 
-	const int x_from = xPadding * 2 + fontWidth;
-	const int x_to = xBoxWidth - xPadding * 8;
-	const int x_len = x_to - x_from;
-
 	// Integrity progress bar
 	surface()->DrawFilledRect(
-		x_from + margin,
-		1.0 * (m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 1) - margin,
-		x_to - x_len * (1 - health / 100.0) + margin,
-		m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 1.75 - margin);
+		healthbar_xpos + xpos,
+		healthbar_ypos + ypos,
+		healthbar_xpos + xpos + (healthbar_w * (health / 100.0)),
+		healthbar_ypos + ypos + healthbar_h);
+
+	surface()->DrawOutlinedRect(
+		healthbar_xpos + xpos,
+		healthbar_ypos + ypos,
+		healthbar_xpos + xpos + healthbar_w,
+		healthbar_ypos + ypos + healthbar_h);
 
 	if (playerIsNotSupport)
 	{
 		// ThermOptic progress bar
 		surface()->DrawFilledRect(
-			x_from + margin,
-			1.0 * (m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 2) - margin,
-			x_to - x_len * (1 - thermopticPercent / 100.0) + margin,
-			m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 2.75 - margin);
+			camobar_xpos + xpos,
+			camobar_ypos + ypos,
+			camobar_xpos + xpos + (camobar_w * (thermopticPercent / 100.0)),
+			camobar_ypos + ypos + camobar_h);
+
+		surface()->DrawOutlinedRect(
+			camobar_xpos + xpos,
+			camobar_ypos + ypos,
+			camobar_xpos + xpos + camobar_w,
+			camobar_ypos + ypos + camobar_h);
 
 		// AUX progress bar
 		surface()->DrawFilledRect(
-			x_from + margin,
-			1.0 * (m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 3) - margin,
-			x_to - x_len * (1 - aux / 100.0) + margin,
-			m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 3.75 - margin);
+			sprintbar_xpos + xpos,
+			sprintbar_ypos + ypos,
+			sprintbar_xpos + xpos + (sprintbar_w * (aux / 100.0)),
+			sprintbar_ypos + ypos + sprintbar_h);
+
+
+		surface()->DrawOutlinedRect(
+			sprintbar_xpos + xpos,
+			sprintbar_ypos + ypos,
+			sprintbar_xpos + xpos + sprintbar_w,
+			sprintbar_ypos + ypos + sprintbar_h);
 	}
 }
 
