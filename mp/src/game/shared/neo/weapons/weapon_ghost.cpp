@@ -62,10 +62,7 @@ CWeaponGhost::CWeaponGhost(void)
 
 	m_flLastGhostBeepTime = 0;
 
-	for (int i = 0; i < ARRAYSIZE(m_pGhostBeacons); i++)
-	{
-		m_pGhostBeacons[i] = new CNEOHud_GhostBeacon("ghostBeacon");
-	}
+	m_pGhostBeacons = new CNEOHud_GhostBeacon("ghostBeacon");
 #endif
 
 	// This is just always on for now.
@@ -79,13 +76,7 @@ CWeaponGhost::CWeaponGhost(void)
 CWeaponGhost::~CWeaponGhost(void)
 {
 #ifdef CLIENT_DLL
-	for (int i = 0; i < ARRAYSIZE(m_pGhostBeacons); i++)
-	{
-		if (m_pGhostBeacons[i])
-		{
-			delete m_pGhostBeacons[i];
-		}
-	}
+	delete m_pGhostBeacons;
 #endif
 
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
@@ -136,6 +127,7 @@ void CWeaponGhost::HandleGhostEquip(void)
 		PlayGhostSound();
 		m_bHavePlayedGhostEquipSound = true;
 		m_bHaveHolsteredTheGhost = false;
+		m_pGhostBeacons->SetActive(true);
 	}
 }
 
@@ -162,10 +154,11 @@ void CWeaponGhost::HandleGhostUnequip(void)
 {
 	if (!m_bHaveHolsteredTheGhost)
 	{
-		HideEnemies();
+		m_pGhostBeacons->m_bitsVisiblePlayers = 0LL;
 		StopGhostSound();
 		m_bHaveHolsteredTheGhost = true;
 		m_bHavePlayedGhostEquipSound = false;
+		m_pGhostBeacons->SetActive(false);
 	}
 }
 
@@ -227,14 +220,6 @@ ConVar neo_ghost_debug_hudinfo("neo_ghost_debug_hudinfo", "0", FCVAR_CHEAT | FCV
 	"Whether to overlay debug text information to screen about ghosting targets.", true, 0.0, true, 1.0);
 
 #ifdef CLIENT_DLL
-void CWeaponGhost::HideEnemies(void)
-{
-	for (int i = 1; i <= gpGlobals->maxClients; i++)
-	{
-		HideBeacon(i);
-	}
-}
-
 // Purpose: Iterate through all enemies and give ghoster their position info,
 // either via client's own PVS information or networked by the server when needed.
 // Returns distance to closest enemy, or -1 if no enemies.
@@ -248,10 +233,9 @@ float CWeaponGhost::ShowEnemies(void)
 
 	float closestDistance = 1000;
 
+	m_pGhostBeacons->m_bitsVisiblePlayers = 0LL;
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
-		HideBeacon(i);
-
 		auto otherPlayer = ToBasePlayer( ClientEntityList().GetEnt( i ) );
 
 		// Only ghost valid clients that aren't ourselves
@@ -278,65 +262,30 @@ float CWeaponGhost::ShowEnemies(void)
 			}
 		}
 
+		// If it's in my PVS already take it, else, the server will provide us with this enemy's position info
 		const bool isInPVS = otherPlayer->IsVisible();
-
-		// If it's in my PVS already
-		if (isInPVS)
+		const Vector otherPlayerAbsOrigin = (isInPVS) ? otherPlayer->GetAbsOrigin() : m_rvPlayerPositions[i];
+		ShowBeacon(i, otherPlayerAbsOrigin);
+		if (neo_ghost_debug_spew.GetBool())
 		{
-			ShowBeacon(i, otherPlayer->GetAbsOrigin());
-
-			if (neo_ghost_debug_spew.GetBool())
-			{
-				DevMsg("Ghosting enemy from my PVS: %f %f %f\n",
-					otherPlayer->GetAbsOrigin().x,
-					otherPlayer->GetAbsOrigin().y,
-					otherPlayer->GetAbsOrigin().z);
-			}
-			
-			if (neo_ghost_debug_hudinfo.GetBool())
-			{
-				Debug_ShowPos(otherPlayer->GetAbsOrigin(), isInPVS);
-			}
-
-			const float distance = (player->GetAbsOrigin().DistTo(otherPlayer->GetAbsOrigin()) / METERS_PER_INCH / 1000.0f);
-			if (distance < closestDistance)
-			{
-				closestDistance = distance;
-			}
+			DevMsg("Ghosting enemy from %s: %f %f %f\n",
+				(isInPVS) ? "my PVS" : "server pos",
+				otherPlayerAbsOrigin.x,
+				otherPlayerAbsOrigin.y,
+				otherPlayerAbsOrigin.z);
 		}
-		// Else, the server will provide us with this enemy's position info
-		else
+		if (neo_ghost_debug_hudinfo.GetBool())
 		{
-			ShowBeacon(i, m_rvPlayerPositions[i]);
-
-			if (neo_ghost_debug_spew.GetBool())
-			{
-				DevMsg("Ghosting enemy from server pos: %f %f %f\n",
-					m_rvPlayerPositions[i].x,
-					m_rvPlayerPositions[i].y,
-					m_rvPlayerPositions[i].z);
-			}
-			
-			if (neo_ghost_debug_hudinfo.GetBool())
-			{
-				Debug_ShowPos(m_rvPlayerPositions[i], isInPVS);
-			}
-
-			const float distance = (player->GetAbsOrigin().DistTo(m_rvPlayerPositions[i]) / METERS_PER_INCH / 1000.0f);
-
-			if (distance < closestDistance)
-			{
-				closestDistance = distance;
-			}
+			Debug_ShowPos(otherPlayerAbsOrigin, isInPVS);
+		}
+		const float distance = (player->GetAbsOrigin().DistTo(otherPlayerAbsOrigin) / METERS_PER_INCH / 1000.0f);
+		if (distance < closestDistance)
+		{
+			closestDistance = distance;
 		}
 	}
 
 	return closestDistance == 1000 ? -1 : closestDistance;
-}
-
-void CWeaponGhost::HideBeacon(int clientIndex)
-{
-	m_pGhostBeacons[clientIndex]->SetVisible(false);
 }
 
 using vgui::surface;
@@ -345,12 +294,6 @@ extern ConVar neo_ghost_beacon_scale_baseline;
 
 void CWeaponGhost::ShowBeacon(int clientIndex, const Vector &pos)
 {
-	if (!m_pGhostBeacons[clientIndex])
-	{
-		Assert(false);
-		return;
-	}
-
 	Vector dir = GetOwner()->EyePosition() - pos;
 
 	// NEO TODO (Rain): make server cvar in shared code
@@ -385,24 +328,14 @@ void CWeaponGhost::ShowBeacon(int clientIndex, const Vector &pos)
 	int x, y;
 	GetVectorInScreenSpace(temp, x, y); // this is pixels from top-left
 
-	m_pGhostBeacons[clientIndex]->SetGhostTargetPos(x, y, scaling, distMeters);
-	m_pGhostBeacons[clientIndex]->SetVisible(true);
+	m_pGhostBeacons->SetVisibleGhostTargetPos(clientIndex, x, y, scaling, distMeters);
 }
 
 void CWeaponGhost::Debug_ShowPos(const Vector &pos, bool pvs)
 {
 	int x, y;
 	GetVectorInScreenSpace(pos, x, y);
-
-	// Whether target originated from client PVS or was sent by server
-	if (pvs)
-	{
-		debugoverlay->AddTextOverlay(pos, gpGlobals->frametime, "GHOST TARGET (PVS)");
-	}
-	else
-	{
-		debugoverlay->AddTextOverlay(pos, gpGlobals->frametime, "GHOST TARGET (SERVER)");
-	}
+	debugoverlay->AddTextOverlay(pos, gpGlobals->frametime, "GHOST TARGET (%s)", pvs ? "PVS" : "SERVER");
 }
 #endif
 
