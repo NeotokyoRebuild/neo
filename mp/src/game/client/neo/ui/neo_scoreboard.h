@@ -41,7 +41,7 @@ private:
 
 	// These mimic hl2mpclientscoreboard values, for now
 	enum {
-		NEO_NAME_WIDTH = 320,
+		NEO_NAME_WIDTH = 264,
 		NEO_CLASS_WIDTH = 56,
 		NEO_SCORE_WIDTH = 40,
 		NEO_DEATH_WIDTH = 46,
