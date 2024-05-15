@@ -14,6 +14,7 @@
 #include "ienginevgui.h"
 
 #include "neo_hud_elements.h"
+#include "inttostr.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"

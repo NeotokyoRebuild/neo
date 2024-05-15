@@ -66,6 +66,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_iCapTeam)),
 	RecvPropInt(RECVINFO(m_iLoadoutWepChoice)),
 	RecvPropInt(RECVINFO(m_iNextSpawnClassChoice)),
+	RecvPropInt(RECVINFO(m_bInLean)),
 
 	RecvPropVector(RECVINFO(m_vecGhostMarkerPos)),
 	RecvPropInt(RECVINFO(m_iGhosterTeam)),
@@ -93,6 +94,7 @@ BEGIN_PREDICTION_DATA(C_NEO_Player)
 	DEFINE_PRED_FIELD(m_bInThermOpticCamo, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bLastTickInThermOpticCamo, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bInAim, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bInLean, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bInVision, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bHasBeenAirborneForTooLongToSuperJump, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 
@@ -326,6 +328,7 @@ C_NEO_Player::C_NEO_Player()
 	m_bInThermOpticCamo = m_bInVision = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
 	m_bInAim = false;
+	m_bInLean = NEO_LEAN_NONE;
 
 	m_pNeoPanel = NULL;
 
@@ -887,9 +890,13 @@ void C_NEO_Player::PostThink(void)
 		{
 			Weapon_SetZoom(false);
 		}
+		else if (ClientWantsAimHold(this) && m_afButtonPressed & IN_AIM)
+		{
+			Weapon_AimToggle(pWep, NEO_TOGGLE_FORCE_AIM);
+		}
 		else if ((m_afButtonReleased & IN_AIM) && (!(m_nButtons & IN_SPEED)))
 		{
-			Weapon_AimToggle(pWep);
+			Weapon_AimToggle(pWep, ClientWantsAimHold(this) ? NEO_TOGGLE_FORCE_UN_AIM : NEO_TOGGLE_DEFAULT);
 		}
 
 #if !defined( NO_ENTITY_PREDICTION )
@@ -982,6 +989,7 @@ void C_NEO_Player::Spawn( void )
 
 	m_bInVision = false;
 	m_nVisionLastTick = 0;
+	m_bInLean = NEO_LEAN_NONE;
 
 	Weapon_SetZoom(false);
 
@@ -1218,7 +1226,7 @@ float C_NEO_Player::GetActiveWeaponSpeedScale() const
 	return (pWep ? pWep->GetSpeedScale() : 1.0f);
 }
 
-void C_NEO_Player::Weapon_AimToggle(C_BaseCombatWeapon *pWep)
+void C_NEO_Player::Weapon_AimToggle(C_BaseCombatWeapon *pWep, const NeoWeponAimToggleE toggleType)
 {
 	// NEO TODO/HACK: Not all neo weapons currently inherit
 	// through a base neo class, so we can't static_cast!!
@@ -1231,12 +1239,12 @@ void C_NEO_Player::Weapon_AimToggle(C_BaseCombatWeapon *pWep)
 	// This implies the wep ptr is valid, so we don't bother checking
 	if (IsAllowedToZoom(neoCombatWep))
 	{
-		if (neoCombatWep->IsReadyToAimIn())
+		if (toggleType != NEO_TOGGLE_FORCE_UN_AIM && neoCombatWep->IsReadyToAimIn())
 		{
 			const bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR) == HIDEHUD_CROSSHAIR;
 			Weapon_SetZoom(showCrosshair);
 		}
-		else
+		else if (toggleType != NEO_TOGGLE_FORCE_AIM)
 		{
 			Weapon_SetZoom(false);
 		}

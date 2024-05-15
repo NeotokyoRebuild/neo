@@ -242,4 +242,20 @@ CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, const NEO_WEP_BI
 // Returns true on success. If returns false, the out value will not be set.
 bool PlayerAnimToPlayerAnimEvent(const PLAYER_ANIM playerAnim, PlayerAnimEvent_t& outAnimEvent);
 
+enum NeoLeanDirectionE {
+	NEO_LEAN_NONE = 0,
+	NEO_LEAN_LEFT,
+	NEO_LEAN_RIGHT,
+};
+
+bool ClientWantsLeanToggle(const CNEO_Player* player);
+
+enum NeoWeponAimToggleE {
+	NEO_TOGGLE_DEFAULT = 0,
+	NEO_TOGGLE_FORCE_AIM,
+	NEO_TOGGLE_FORCE_UN_AIM,
+};
+
+bool ClientWantsAimHold(const CNEO_Player* player);
+
 #endif // NEO_PLAYER_SHARED_H

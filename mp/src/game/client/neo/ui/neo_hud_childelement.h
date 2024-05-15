@@ -31,7 +31,7 @@ public:
 	virtual ~CNEOHud_ChildElement() { }
 
 protected:
-	virtual void DrawNeoHudRoundedBox(const int x0, const int y0, const int x1, const int y1) const final;
+	virtual void DrawNeoHudRoundedBox(const int x0, const int y0, const int x1, const int y1) const;
 
 	virtual void UpdateStateForNeoHudElementDraw() = 0;
 	virtual void DrawNeoHudElement() = 0;

@@ -251,19 +251,19 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 	float Ycurrent = m_flYPrevious;
 	float Yfinal = 0;
 
-	const int leanButtons = player->m_nButtons;
 	if (player->IsAlive())
 	{
-		if ((leanButtons & IN_LEAN_LEFT) && !(leanButtons & IN_LEAN_RIGHT)) {
-			//leaning left
+		switch (player->m_bInLean.Get())
+		{
+		case NEO_LEAN_LEFT:
 			Yfinal = freeRoomForLean(neo_lean_yaw_peek_left_amount.GetFloat(), player);
-		}
-		else if ((leanButtons & IN_LEAN_RIGHT) && !(leanButtons & IN_LEAN_LEFT)) {
-			//leaning right
+			break;
+		case NEO_LEAN_RIGHT:
 			Yfinal = -freeRoomForLean(-neo_lean_yaw_peek_right_amount.GetFloat(), player);
-		}
-		else {
-			//not leaning, or leaning both ways; move towards zero
+			break;
+		default:
+			// not leaning, or leaning both ways; move towards zero
+			break;
 		}
 	}
 

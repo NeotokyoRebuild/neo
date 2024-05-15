@@ -8,6 +8,7 @@
 #include <vgui/ISurface.h>
 
 #include "neo_gamerules.h"
+#include <initializer_list>
 
 #include <vgui_controls/ImagePanel.h>
 
@@ -85,7 +86,7 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 	starF = new vgui::ImagePanel(this, "star_foxtrot");
 	starF->SetImage(vgui::scheme()->GetImage("hud/star_foxtrot", starsHwFiltered));
 
-	const auto stars = { starNone, starA, starB, starC, starD, starE, starF };
+	vgui::ImagePanel *stars[] = { starNone, starA, starB, starC, starD, starE, starF };
 
 	const bool starAutoDelete = true;
 	COMPILE_TIME_ASSERT(starAutoDelete); // If not, we need to handle that memory on dtor manually

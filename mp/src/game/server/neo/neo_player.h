@@ -114,8 +114,8 @@ public:
 
 	void UpdateNetworkedFriendlyLocations(void);
 
-	void Weapon_AimToggle(CBaseCombatWeapon *pWep);
-	void Weapon_AimToggle(CNEOBaseCombatWeapon* pWep);
+	void Weapon_AimToggle(CBaseCombatWeapon *pWep, const NeoWeponAimToggleE toggleType);
+	void Weapon_AimToggle(CNEOBaseCombatWeapon* pWep, const NeoWeponAimToggleE toggleType);
 
 	void Lean(void);
 	void SoftSuicide(void);
@@ -175,6 +175,7 @@ private:
 private:
 	void CheckThermOpticButtons();
 	void CheckVisionButtons();
+	void CheckLeanButtons();
 	void PlayCloakSound();
 	void CloakFlash();
 
@@ -203,6 +204,7 @@ public:
 	CNetworkVar(bool, m_bInVision);
 	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
 	CNetworkVar(bool, m_bInAim);
+	CNetworkVar(int, m_bInLean);
 
 	CNetworkVar(float, m_flCamoAuxLastTime);
 	CNetworkVar(int, m_nVisionLastTick);
