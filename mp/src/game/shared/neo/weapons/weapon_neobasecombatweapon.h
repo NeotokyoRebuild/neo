@@ -145,6 +145,7 @@ public:
 	virtual float GetSpeedScale(void) const { Assert(false); return 1.0; } // Should never call this base class; implement in children.
 
 	virtual void ItemPreFrame(void);
+	virtual void ItemPostFrame(void);
 
 	virtual void PrimaryAttack(void);
 
@@ -172,6 +173,9 @@ public:
 	}
 
 	float GetLastAttackTime(void) const { return m_flLastAttackTime; }
+
+	virtual void ProcessAnimationEvents(void);
+	bool m_bWeaponIsLowered;
 
 	int GetNumShotsFired(void) const { return m_nNumShotsFired; }
 

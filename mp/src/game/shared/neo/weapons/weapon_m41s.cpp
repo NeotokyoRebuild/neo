@@ -83,6 +83,8 @@ void CWeaponM41S::ItemBusyFrame()
 
 void CWeaponM41S::ItemPostFrame()
 {
+	ProcessAnimationEvents();
+
 	BaseClass::ItemPostFrame();
 }
 

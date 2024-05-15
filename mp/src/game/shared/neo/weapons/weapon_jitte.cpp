@@ -82,6 +82,8 @@ void CWeaponJitte::ItemBusyFrame()
 
 void CWeaponJitte::ItemPostFrame()
 {
+	ProcessAnimationEvents();
+
 	BaseClass::ItemPostFrame();
 
 	if (m_bInReload)

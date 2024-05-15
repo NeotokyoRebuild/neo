@@ -234,6 +234,8 @@ void CWeaponSmokeGrenade::ItemPostFrame(void)
 		}
 	}
 
+	ProcessAnimationEvents();
+
 	BaseClass::ItemPostFrame();
 }
 

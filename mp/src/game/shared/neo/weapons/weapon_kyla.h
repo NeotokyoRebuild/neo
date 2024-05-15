@@ -23,6 +23,8 @@ public:
 
 	CWeaponKyla(void);
 
+	void	ItemPostFrame(void);
+
 	virtual void	PrimaryAttack(void) OVERRIDE;
 	virtual void	SecondaryAttack(void) OVERRIDE { if (!ShootingIsPrevented()) { BaseClass::SecondaryAttack(); } }
 	

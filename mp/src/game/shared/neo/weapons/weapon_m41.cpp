@@ -72,6 +72,8 @@ void CWeaponM41::ItemBusyFrame()
 
 void CWeaponM41::ItemPostFrame()
 {
+	ProcessAnimationEvents();
+
 	BaseClass::ItemPostFrame();
 
 	if (m_bInReload)

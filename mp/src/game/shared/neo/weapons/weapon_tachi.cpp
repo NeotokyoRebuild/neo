@@ -149,6 +149,8 @@ void CWeaponTachi::ItemBusyFrame( void )
 
 void CWeaponTachi::ItemPostFrame( void )
 {
+	ProcessAnimationEvents();
+
 	BaseClass::ItemPostFrame();
 
 	if ( m_bInReload )
