@@ -63,6 +63,7 @@ public:
 	virtual void EquipSuit(bool bPlayEffects = true) OVERRIDE;
 	virtual void RemoveSuit(void) OVERRIDE;
 	virtual void GiveDefaultItems(void) OVERRIDE;
+	virtual int	OnTakeDamage_Alive(const CTakeDamageInfo& info) OVERRIDE;
 
 	virtual void InitVCollision(const Vector& vecAbsOrigin, const Vector& vecAbsVelocity) OVERRIDE;
 
@@ -114,8 +115,8 @@ public:
 
 	void UpdateNetworkedFriendlyLocations(void);
 
-	void Weapon_AimToggle(CBaseCombatWeapon *pWep);
-	void Weapon_AimToggle(CNEOBaseCombatWeapon* pWep);
+	void Weapon_AimToggle(CBaseCombatWeapon *pWep, const NeoWeponAimToggleE toggleType);
+	void Weapon_AimToggle(CNEOBaseCombatWeapon* pWep, const NeoWeponAimToggleE toggleType);
 
 	void Lean(void);
 	void SoftSuicide(void);
@@ -147,6 +148,12 @@ public:
 	virtual void StartWalking(void) OVERRIDE;
 	virtual void StopWalking(void) OVERRIDE;
 
+	// Cloak Power Interface
+	void CloakPower_Update(void);
+	bool CloakPower_Drain(float flPower);
+	void CloakPower_Charge(float flPower);
+	float CloakPower_Cap() const;
+
 	float GetNormSpeed_WithActiveWepEncumberment(void) const;
 	float GetCrouchSpeed_WithActiveWepEncumberment(void) const;
 	float GetWalkSpeed_WithActiveWepEncumberment(void) const;
@@ -160,6 +167,8 @@ public:
 	float GetWalkSpeed(void) const;
 	float GetSprintSpeed(void) const;
 
+	float GetAttackersScores(const int attackerIdx) const;
+
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);
 
 private:
@@ -169,6 +178,7 @@ private:
 private:
 	void CheckThermOpticButtons();
 	void CheckVisionButtons();
+	void CheckLeanButtons();
 	void PlayCloakSound();
 	void CloakFlash();
 
@@ -190,18 +200,19 @@ public:
 	CNetworkString(m_pszTestMessage, 32 * 2 + 1);
 
 	CNetworkVector(m_vecGhostMarkerPos);
-	CNetworkVar(int, m_iGhosterTeam);
 	CNetworkVar(bool, m_bGhostExists);
 	CNetworkVar(bool, m_bInThermOpticCamo);
 	CNetworkVar(bool, m_bLastTickInThermOpticCamo);
 	CNetworkVar(bool, m_bInVision);
 	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
 	CNetworkVar(bool, m_bInAim);
+	CNetworkVar(int, m_bInLean);
 
 	CNetworkVar(float, m_flCamoAuxLastTime);
 	CNetworkVar(int, m_nVisionLastTick);
 
 	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
+	CNetworkArray(float, m_rfAttackersScores, (MAX_PLAYERS + 1));
 
 	CNetworkVar(unsigned char, m_NeoFlags);
 

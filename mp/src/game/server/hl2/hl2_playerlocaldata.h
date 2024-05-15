@@ -29,6 +29,9 @@ public:
 	CHL2PlayerLocalData();
 
 	CNetworkVar( float, m_flSuitPower );
+#if NEO
+	CNetworkVar( float, m_cloakPower );
+#endif
 	CNetworkVar( bool,	m_bZooming );
 	CNetworkVar( int,	m_bitsActiveDevices );
 	CNetworkVar( int,	m_iSquadMemberCount );

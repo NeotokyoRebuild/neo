@@ -16,8 +16,8 @@ $Configuration
 	$Compiler
 	{
 		$AdditionalIncludeDirectories	"$BASE;$SRCDIR\game\shared\hl2,.\neo,.\hl2,.\hl2mp,$SRCDIR\game\shared\hl2mp,$SRCDIR\game\shared\neo,$SRCDIR\game\shared\neo\weapons"
-		$PreprocessorDefinitions		"$BASE;NEO;HL2MP;HL2_DLL" [!$INCLUDE_WEP_PBK]
-		$PreprocessorDefinitions		"$BASE;NEO;HL2MP;HL2_DLL;INCLUDE_WEP_PBK" [$INCLUDE_WEP_PBK]
+		$PreprocessorDefinitions		"$BASE;NEO;HL2MP;HL2_DLL;SDK2013CE" [!$INCLUDE_WEP_PBK]
+		$PreprocessorDefinitions		"$BASE;NEO;HL2MP;HL2_DLL;SDK2013CE;INCLUDE_WEP_PBK" [$INCLUDE_WEP_PBK]
 	}
 }
 

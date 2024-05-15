@@ -13,6 +13,9 @@
 
 BEGIN_RECV_TABLE_NOBASE( C_HL2PlayerLocalData, DT_HL2Local )
 	RecvPropFloat( RECVINFO(m_flSuitPower) ),
+#ifdef NEO
+	RecvPropFloat(RECVINFO(m_cloakPower)),
+#endif
 	RecvPropInt( RECVINFO(m_bZooming) ),
 	RecvPropInt( RECVINFO(m_bitsActiveDevices) ),
 	RecvPropInt( RECVINFO(m_iSquadMemberCount) ),
@@ -38,6 +41,9 @@ END_PREDICTION_DATA()
 C_HL2PlayerLocalData::C_HL2PlayerLocalData()
 {
 	m_flSuitPower = 0.0;
+#ifdef NEO
+	m_cloakPower = 0.0;
+#endif
 	m_bZooming = false;
 	m_iSquadMemberCount = 0;
 	m_iSquadMedicCount = 0;

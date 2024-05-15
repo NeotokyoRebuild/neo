@@ -419,23 +419,22 @@ static inline float GetAuxChargeRate(CBaseCombatCharacter *player)
 {
 	auto neoPlayer = static_cast<CNEO_Player*>(player);
 
-#define BASE_AUX_RATE 10.0
-
 	switch (neoPlayer->GetClass())
 	{
 	case NEO_CLASS_RECON:
-		return BASE_AUX_RATE * 1.2;
+		return 5.0f;	// 100 units in 20 seconds
 	case NEO_CLASS_ASSAULT:
-		return BASE_AUX_RATE;
-	case NEO_CLASS_SUPPORT:
-		return BASE_AUX_RATE * 0.8;
+		return 2.5f;	// 100 units in 40 seconds
 	default:
-		return BASE_AUX_RATE;
+		break;
 	}
+	return 0.0f;
 }
 #endif
 
-#ifdef HL2MP
+#if defined(NEO)
+	CSuitPowerDevice SuitDeviceSprint( bits_SUIT_DEVICE_SPRINT, 5.0f );					// 100 units in 20 seconds
+#elif defined(HL2MP)
 	CSuitPowerDevice SuitDeviceSprint( bits_SUIT_DEVICE_SPRINT, 25.0f );				// 100 units in 4 seconds
 #else
 	CSuitPowerDevice SuitDeviceSprint( bits_SUIT_DEVICE_SPRINT, 12.5f );				// 100 units in 8 seconds
@@ -1230,7 +1229,11 @@ void CHL2_Player::StartAutoSprint()
 //-----------------------------------------------------------------------------
 void CHL2_Player::StartSprinting( void )
 {
-	if( m_HL2Local.m_flSuitPower < 10 )
+#ifndef NEO
+	if ( m_HL2Local.m_flSuitPower < 10 )
+#else
+	if (m_HL2Local.m_flSuitPower < SPRINT_START_MIN)
+#endif
 	{
 #ifndef NEO
 		// debounce the button for sound playing
@@ -1764,20 +1767,27 @@ void CHL2_Player::CheatImpulseCommands( int iImpulse )
 
 	case 51:
 	{
-		// Cheat to create a dynamic resupply item
-		Vector vecForward;
-		AngleVectors( EyeAngles(), &vecForward );
-		CBaseEntity *pItem = (CBaseEntity *)CreateEntityByName( "item_dynamic_resupply" );
-		if ( pItem )
+	#ifdef SDK2013CE
+		if ( sv_cheats->GetBool() )
 		{
-			Vector vecOrigin = GetAbsOrigin() + vecForward * 256 + Vector(0,0,64);
-			QAngle vecAngles( 0, GetAbsAngles().y - 90, 0 );
-			pItem->SetAbsOrigin( vecOrigin );
-			pItem->SetAbsAngles( vecAngles );
-			pItem->KeyValue( "targetname", "resupply" );
-			pItem->Spawn();
-			pItem->Activate();
+	#endif
+			// Cheat to create a dynamic resupply item
+			Vector vecForward;
+			AngleVectors( EyeAngles(), &vecForward );
+			CBaseEntity *pItem = (CBaseEntity *)CreateEntityByName( "item_dynamic_resupply" );
+			if ( pItem )
+			{
+				Vector vecOrigin = GetAbsOrigin() + vecForward * 256 + Vector(0,0,64);
+				QAngle vecAngles( 0, GetAbsAngles().y - 90, 0 );
+				pItem->SetAbsOrigin( vecOrigin );
+				pItem->SetAbsAngles( vecAngles );
+				pItem->KeyValue( "targetname", "resupply" );
+				pItem->Spawn();
+				pItem->Activate();
+			}
+	#ifdef SDK2013CE
 		}
+	#endif
 		break;
 	}
 
@@ -2166,7 +2176,7 @@ bool CHL2_Player::IsIlluminatedByFlashlight( CBaseEntity *pEntity, float *flRetu
 	}
 
 	// Within 50 feet?
- 	float flDistSqr = GetAbsOrigin().DistToSqr(pEntity->GetAbsOrigin());
+	float flDistSqr = GetAbsOrigin().DistToSqr(pEntity->GetAbsOrigin());
 	if( flDistSqr > FLASHLIGHT_RANGE )
 		return false;
 
@@ -2242,7 +2252,7 @@ void CHL2_Player::SetPlayerUnderwater( bool state )
 	}
 	else
 	{
-  		SuitPower_RemoveDevice( SuitDeviceBreather );
+		SuitPower_RemoveDevice( SuitDeviceBreather );
 	}
 
 	BaseClass::SetPlayerUnderwater( state );
@@ -3251,6 +3261,10 @@ float CHL2_Player::GetHeldObjectMass( IPhysicsObject *pHeldObject )
 	return mass;
 }
 
+CBaseEntity	*CHL2_Player::GetHeldObject( void )
+{
+	return PhysCannonGetHeldEntity( GetActiveWeapon() );
+}
 //-----------------------------------------------------------------------------
 // Purpose: Force the player to drop any physics objects he's carrying
 //-----------------------------------------------------------------------------

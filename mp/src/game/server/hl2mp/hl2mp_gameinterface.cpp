@@ -18,8 +18,14 @@
 
 void CServerGameClients::GetPlayerLimits( int& minplayers, int& maxplayers, int &defaultMaxPlayers ) const
 {
-	minplayers = defaultMaxPlayers = 2; 
+#ifdef NEO
+	minplayers = 2;
+	defaultMaxPlayers = 24;
+	maxplayers = MAX_PLAYERS;
+#else
+	minplayers = defaultMaxPlayers = 2;
 	maxplayers = 16;
+#endif
 }
 
 // -------------------------------------------------------------------------------------------- //

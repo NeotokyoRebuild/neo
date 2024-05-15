@@ -467,7 +467,7 @@ void CHL2MPClientScoreBoardDialog::AddHeader()
 	m_pPlayerList->SetSectionAlwaysVisible(0);
 	HFont hFallbackFont = scheme()->GetIScheme( GetScheme() )->GetFont( "DefaultVerySmallFallBack", false );
 	m_pPlayerList->AddColumnToSection(0, "name", "", 0, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_NAME_WIDTH ), hFallbackFont );
-	m_pPlayerList->AddColumnToSection(0, "class", "", 0, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_CLASS_WIDTH ) );
+	m_pPlayerList->AddColumnToSection(0, "class", "Class", 0 | SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx(GetScheme(), CSTRIKE_CLASS_WIDTH));
 #ifdef NEO
 	m_pPlayerList->AddColumnToSection(0, "rank", "Rank", 0 | SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx(GetScheme(), CSTRIKE_NAME_WIDTH / 4));
 	m_pPlayerList->AddColumnToSection(0, "xp", "#PlayerScore", 0 | SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx(GetScheme(), CSTRIKE_SCORE_WIDTH));
@@ -497,7 +497,7 @@ void CHL2MPClientScoreBoardDialog::AddSection(int teamType, int teamNumber)
 
 		// setup the columns
 		m_pPlayerList->AddColumnToSection(sectionID, "name", "", 0, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_NAME_WIDTH ), hFallbackFont );
-		m_pPlayerList->AddColumnToSection(sectionID, "class", "" , 0, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_CLASS_WIDTH ) );
+		m_pPlayerList->AddColumnToSection(sectionID, "class", "", SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx(GetScheme(), CSTRIKE_CLASS_WIDTH));
 #ifdef NEO
 		m_pPlayerList->AddColumnToSection(sectionID, "rank", "", SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_NAME_WIDTH / 4 ) );
 		m_pPlayerList->AddColumnToSection(sectionID, "xp", "", SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_SCORE_WIDTH ) );
@@ -558,7 +558,8 @@ bool CHL2MPClientScoreBoardDialog::GetPlayerScoreInfo(int playerIndex, KeyValues
 	kv->SetString("name", g_PR->GetPlayerName(playerIndex) );
 	kv->SetInt("deaths", g_PR->GetDeaths( playerIndex ));
 #ifdef NEO
-	int xp = g_PR->GetXP(playerIndex);
+	const int xp = g_PR->GetXP(playerIndex);
+	const int neoClassIdx = g_PR->GetClass(playerIndex);
 	kv->SetString("rank", GetRankName(xp));
 	kv->SetInt("xp", xp);
 
@@ -572,10 +573,10 @@ bool CHL2MPClientScoreBoardDialog::GetPlayerScoreInfo(int playerIndex, KeyValues
 		statusText = (oppositeTeam || g_PR->IsAlive(playerIndex)) ? "" : "Dead";
 	}
 	kv->SetString("status", statusText);
+	kv->SetString("class", oppositeTeam ? "" : GetNeoClassName(neoClassIdx));
 #else
 	kv->SetInt("frags", g_PR->GetPlayerScore(playerIndex));
 #endif
-	kv->SetString("class", "");
 	
 	if (g_PR->GetPing( playerIndex ) < 1)
 	{

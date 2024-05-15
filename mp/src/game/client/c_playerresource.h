@@ -52,6 +52,7 @@ public : // IGameResources intreface
 	virtual int		GetTeam( int index );
 #ifdef NEO
 	virtual int		GetXP(int index);
+	virtual int     GetClass(int index);
 #endif
 	virtual int		GetFrags( int index );
 	virtual int		GetHealth( int index );
@@ -68,6 +69,7 @@ protected:
 	int		m_iPing[MAX_PLAYERS+1];
 #ifdef NEO
 	int		m_iXP[MAX_PLAYERS + 1];
+	int     m_iClass[MAX_PLAYERS + 1];
 #endif
 	int		m_iScore[MAX_PLAYERS+1];
 	int		m_iDeaths[MAX_PLAYERS+1];

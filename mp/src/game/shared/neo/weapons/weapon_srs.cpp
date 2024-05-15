@@ -57,11 +57,22 @@ void CWeaponSRS::UpdatePenaltyTime()
 		return;
 	}
 
-	if (((owner->m_nButtons & IN_ATTACK) == false) &&
-		(m_flSoonestAttack < gpGlobals->curtime))
+	if ((owner->m_nButtons & IN_ATTACK) == false)
 	{
-		m_flAccuracyPenalty -= gpGlobals->frametime;
-		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty, 0.0f, GetMaxAccuracyPenalty());
+		if (m_flSoonestAttack < gpGlobals->curtime)
+		{
+			m_flAccuracyPenalty -= gpGlobals->frametime;
+			m_flAccuracyPenalty = clamp(m_flAccuracyPenalty, 0.0f, GetMaxAccuracyPenalty());
+		}
+	}
+	else
+	{
+		m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
+	}
+
+	if (m_flSoonestAttack > gpGlobals->curtime)
+	{
+		m_flSoonestAttack -= (gpGlobals->curtime - m_flLastAttackTime);
 	}
 }
 
@@ -82,35 +93,6 @@ void CWeaponSRS::ItemBusyFrame()
 void CWeaponSRS::ItemPostFrame()
 {
 	BaseClass::ItemPostFrame();
-
-	if (m_bInReload)
-	{
-		return;
-	}
-
-	auto owner = ToBasePlayer(GetOwner());
-
-	if (!owner)
-	{
-		return;
-	}
-
-	if (owner->m_nButtons & IN_ATTACK)
-	{
-		if (m_flSoonestAttack < gpGlobals->curtime)
-		{
-			if (m_iClip1 <= 0)
-			{
-				DryFire();
-
-				m_flSoonestAttack = gpGlobals->curtime + GetFastestDryRefireTime();
-			}
-			else
-			{
-				m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
-			}
-		}
-	}
 }
 
 Activity CWeaponSRS::GetPrimaryAttackActivity()
