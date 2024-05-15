@@ -1071,6 +1071,7 @@ void C_NEO_Player::Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon)
 
 	if (pWeapon->IsGhost())
 	{
+		pWeapon->Holster(NULL);
 		Assert(dynamic_cast<C_WeaponGhost*>(pWeapon));
 		static_cast<C_WeaponGhost*>(pWeapon)->HandleGhostUnequip();
 	}

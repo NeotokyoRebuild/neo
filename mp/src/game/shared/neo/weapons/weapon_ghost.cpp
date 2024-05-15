@@ -255,7 +255,7 @@ float CWeaponGhost::ShowEnemies(void)
 		auto otherPlayer = ToBasePlayer( ClientEntityList().GetEnt( i ) );
 
 		// Only ghost valid clients that aren't ourselves
-		if (!otherPlayer || otherPlayer == player)
+		if (!otherPlayer || otherPlayer == player || otherPlayer->IsPlayerDead() || otherPlayer->IsHLTV())
 		{
 			continue;
 		}
