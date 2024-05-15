@@ -17,10 +17,8 @@ NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(GhostBeacon, 0.01)
 CNEOHud_GhostBeacon::CNEOHud_GhostBeacon(const char *pElementName, vgui::Panel *parent)
 	: CHudElement(pElementName), Panel(parent, pElementName)
 {
-	m_posX = 0;
-	m_posY = 0;
-	m_flTexScale = 1.0f;
-	m_flDistMeters = 0;
+	m_bitsVisiblePlayers = 0LL;
+	memset(m_playersInfo, 0, sizeof(CNEOHud_GhostBeacon::PlayerInfo) * MAX_PLAYERS);
 
 	SetAutoDelete(true);
 
@@ -51,7 +49,8 @@ CNEOHud_GhostBeacon::CNEOHud_GhostBeacon(const char *pElementName, vgui::Panel *
 
 	surface()->DrawGetTextureSize(m_hTex, m_beaconTexWidth, m_beaconTexHeight);
 
-	SetVisible(false);
+	SetVisible(true);
+	SetActive(false);
 }
 
 // NEO HACK (Rain): This is a sort of magic number to help with screenspace hud elements
@@ -79,8 +78,7 @@ static inline double GetColorPulse()
 
 void CNEOHud_GhostBeacon::UpdateStateForNeoHudElementDraw()
 {
-	V_snprintf(m_szBeaconTextANSI, sizeof(m_szBeaconTextANSI), "%02d M", FastFloatToSmallInt(m_flDistMeters));
-	g_pVGuiLocalize->ConvertANSIToUnicode(m_szBeaconTextANSI, m_wszBeaconTextUnicode, sizeof(m_wszBeaconTextUnicode));
+	// no-op
 }
 
 void CNEOHud_GhostBeacon::DrawNeoHudElement()
@@ -91,43 +89,69 @@ void CNEOHud_GhostBeacon::DrawNeoHudElement()
 	}
 
 	const Color textColor = Color(220, 180, 180, neo_ghost_beacon_alpha.GetInt());
-
 	surface()->DrawSetTextColor(textColor);
 	surface()->DrawSetTextFont(m_hFont);
-	//surface()->DrawSetTextScale(1.0f, 1.0f);
-	surface()->DrawSetTextPos(m_posX, m_posY);
-	surface()->DrawPrintText(m_wszBeaconTextUnicode, sizeof(m_szBeaconTextANSI));
-	//surface()->SwapBuffers(g_pClientMode->GetViewport()->GetVPanel());
 
 	const double colorPulse = GetColorPulse();
-
 	const Color beaconColor = Color(
 		colorPulse * 255,
 		colorPulse * 20,
 		colorPulse * 20,
 		neo_ghost_beacon_alpha.GetInt());
-
 	surface()->DrawSetColor(beaconColor);
 	surface()->DrawSetTexture(m_hTex);
 
-	// This is kind of awful, see the cvar comments for details.
-	const float hackyScale = (neo_ghost_beacon_scale_baseline.GetFloat() - m_flTexScale);
+	for (int i = 1; i <= gpGlobals->maxClients; ++i)
+	{
+		if (!(m_bitsVisiblePlayers & (1LL << i)))
+		{
+			continue;
+		}
 
-	// Offset screen space starting positions by half of the texture x/y coords,
-	// so it starts centered on target.
-	const int posfix_X = m_posX - ((m_beaconTexWidth / 2) * hackyScale);
-	const int posfix_Y = m_posY - ((m_beaconTexHeight / 2) * hackyScale);
+		const CNEOHud_GhostBeacon::PlayerInfo* playerInfo = &m_playersInfo[i];
 
-	// End coordinates according to art size (and our distance scaling)
-	surface()->DrawTexturedRect(
-		posfix_X,
-		posfix_Y,
-		posfix_X + (m_beaconTexWidth * hackyScale),
-		posfix_Y + (m_beaconTexHeight * hackyScale));
+		char szBeaconTextANSI[5 + 1];
+		wchar_t wszBeaconTextUnicode[5 + 1];
+		memset(szBeaconTextANSI, 0, sizeof(szBeaconTextANSI));
+		V_snprintf(szBeaconTextANSI, sizeof(szBeaconTextANSI), "%02d M", FastFloatToSmallInt(playerInfo->flDistMeters));
+		g_pVGuiLocalize->ConvertANSIToUnicode(szBeaconTextANSI, wszBeaconTextUnicode, sizeof(wszBeaconTextUnicode));
+
+		//surface()->DrawSetTextScale(1.0f, 1.0f);
+		surface()->DrawSetTextPos(playerInfo->x, playerInfo->y);
+		surface()->DrawPrintText(wszBeaconTextUnicode, sizeof(szBeaconTextANSI));
+		//surface()->SwapBuffers(g_pClientMode->GetViewport()->GetVPanel());
+
+		// This is kind of awful, see the cvar comments for details.
+		const float hackyScale = (neo_ghost_beacon_scale_baseline.GetFloat() - playerInfo->flTexScale);
+
+		// Offset screen space starting positions by half of the texture x/y coords,
+		// so it starts centered on target.
+		const int posfix_X = playerInfo->x - ((m_beaconTexWidth / 2) * hackyScale);
+		const int posfix_Y = playerInfo->y - ((m_beaconTexHeight / 2) * hackyScale);
+
+		// End coordinates according to art size (and our distance scaling)
+		surface()->DrawTexturedRect(
+			posfix_X,
+			posfix_Y,
+			posfix_X + (m_beaconTexWidth * hackyScale),
+			posfix_Y + (m_beaconTexHeight * hackyScale));
+	}
 }
 
 void CNEOHud_GhostBeacon::Paint()
 {
 	BaseClass::Paint();
 	PaintNeoElement();
+}
+
+void CNEOHud_GhostBeacon::SetVisibleGhostTargetPos(const int clientIndex,
+		const int x, const int y,
+		const float textureScale, const float distMeters)
+{
+	m_bitsVisiblePlayers |= (1LL << clientIndex);
+	CNEOHud_GhostBeacon::PlayerInfo* playerInfo = &m_playersInfo[clientIndex];
+	playerInfo->x = x;
+	playerInfo->y = y;
+	playerInfo->flTexScale = textureScale;
+	playerInfo->flDistMeters = distMeters;
 }
