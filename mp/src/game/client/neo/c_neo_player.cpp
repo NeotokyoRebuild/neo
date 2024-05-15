@@ -363,7 +363,7 @@ void C_NEO_Player::CheckThermOpticButtons()
 			return;
 		}
 
-		if (m_HL2Local.m_flSuitPower >= CLOAK_AUX_COST)
+		if (m_HL2Local.m_cloakPower >= CLOAK_AUX_COST)
 		{
 			m_bInThermOpticCamo = !m_bInThermOpticCamo;
 		}
@@ -644,7 +644,7 @@ void C_NEO_Player::PreThink( void )
 		{
 			// NEO TODO (Rain): add server style interface for accessor,
 			// so we can share code
-			if (m_HL2Local.m_flSuitPower >= CLOAK_AUX_COST)
+			if (m_HL2Local.m_cloakPower >= CLOAK_AUX_COST)
 			{
 				m_flCamoAuxLastTime = gpGlobals->curtime;
 			}
@@ -655,19 +655,18 @@ void C_NEO_Player::PreThink( void )
 			if (deltaTime >= 1)
 			{
 				// NEO TODO (Rain): add interface for predicting this
-				//SuitPower_Drain(deltaTime * CLOAK_AUX_COST);
 
 				const float auxToDrain = deltaTime * CLOAK_AUX_COST;
-				if (m_HL2Local.m_flSuitPower <= auxToDrain)
+				if (m_HL2Local.m_cloakPower <= auxToDrain)
 				{
-					m_HL2Local.m_flSuitPower = 0;
+					m_HL2Local.m_cloakPower = 0.0f;
 				}
 
-				if (m_HL2Local.m_flSuitPower < CLOAK_AUX_COST)
+				if (m_HL2Local.m_cloakPower < CLOAK_AUX_COST)
 				{
 					m_bInThermOpticCamo = false;
 
-					m_HL2Local.m_flSuitPower = 0;
+					m_HL2Local.m_cloakPower = 0.0f;
 					m_flCamoAuxLastTime = 0;
 				}
 				else
@@ -966,6 +965,21 @@ void C_NEO_Player::SuperJump(void)
 	ApplyAbsVelocityImpulse(forward * neo_recon_superjump_intensity.GetFloat());
 }
 
+float C_NEO_Player::CloakPower_CurrentVisualPercentage(void) const
+{
+	const float cloakPowerRounded = roundf(m_HL2Local.m_cloakPower);
+	switch (GetClass())
+	{
+	case NEO_CLASS_RECON:
+		return (cloakPowerRounded / 13.0f) * 100.0f;
+	case NEO_CLASS_ASSAULT:
+		return (cloakPowerRounded / 8.0f) * 100.0f;
+	default:
+		break;
+	}
+	return 0.0f;
+}
+
 void C_NEO_Player::Spawn( void )
 {
 	BaseClass::Spawn();
@@ -1057,7 +1071,7 @@ void C_NEO_Player::Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon)
 
 void C_NEO_Player::StartSprinting(void)
 {
-	if (m_HL2Local.m_flSuitPower < 10)
+	if (m_HL2Local.m_flSuitPower < SPRINT_START_MIN)
 	{
 		return;
 	}
