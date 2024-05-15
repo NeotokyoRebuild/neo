@@ -69,7 +69,6 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_bInLean)),
 
 	RecvPropVector(RECVINFO(m_vecGhostMarkerPos)),
-	RecvPropInt(RECVINFO(m_iGhosterTeam)),
 	RecvPropBool(RECVINFO(m_bGhostExists)),
 	RecvPropBool(RECVINFO(m_bInThermOpticCamo)),
 	RecvPropBool(RECVINFO(m_bLastTickInThermOpticCamo)),
@@ -321,7 +320,6 @@ C_NEO_Player::C_NEO_Player()
 	m_iCapTeam = TEAM_UNASSIGNED;
 	m_iLoadoutWepChoice = 0;
 	m_iNextSpawnClassChoice = -1;
-	m_iGhosterTeam = TEAM_UNASSIGNED;
 	m_iXP.GetForModify() = 0;
 
 	m_vecGhostMarkerPos = vec3_origin;
@@ -768,9 +766,7 @@ void C_NEO_Player::PreThink( void )
 				const float distance = METERS_PER_INCH *
 					GetAbsOrigin().DistTo(m_vecGhostMarkerPos);
 
-				// NEO HACK (Rain): We should test if we're holding a ghost
-				// instead of relying on a distance check.
-				if (m_iGhosterTeam != GetTeamNumber() || distance > 0.2)
+				if (!IsCarryingGhost())
 				{
 					ghostMarker->SetVisible(true);
 
@@ -778,9 +774,8 @@ void C_NEO_Player::PreThink( void )
 					GetVectorInScreenSpace(m_vecGhostMarkerPos, ghostMarkerX, ghostMarkerY);
 
 					ghostMarker->SetScreenPosition(ghostMarkerX, ghostMarkerY);
-					ghostMarker->SetGhostingTeam(m_iGhosterTeam);
-
-
+					ghostMarker->SetGhostingTeam(NEORules()->ghosterTeam());
+					ghostMarker->SetClientCurrentTeam(GetTeamNumber());
 					ghostMarker->SetGhostDistance(distance);
 				}
 				else

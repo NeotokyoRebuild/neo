@@ -192,8 +192,6 @@ public:
 
 	CNetworkVector(m_vecGhostMarkerPos);
 
-	CNetworkVar(int, m_iGhosterTeam);
-
 	CNetworkVar(bool, m_bInThermOpticCamo);
 	CNetworkVar(bool, m_bLastTickInThermOpticCamo);
 	CNetworkVar(bool, m_bInVision);
