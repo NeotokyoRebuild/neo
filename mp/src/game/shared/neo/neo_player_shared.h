@@ -249,4 +249,12 @@ enum NeoLeanDirectionE {
 
 bool ClientWantsLeanToggle(const CNEO_Player* player);
 
+enum NeoWeponAimToggleE {
+	NEO_TOGGLE_DEFAULT = 0,
+	NEO_TOGGLE_FORCE_AIM,
+	NEO_TOGGLE_FORCE_UN_AIM,
+};
+
+bool ClientWantsAimHold(const CNEO_Player* player);
+
 #endif // NEO_PLAYER_SHARED_H

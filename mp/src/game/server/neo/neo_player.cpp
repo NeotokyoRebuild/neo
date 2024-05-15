@@ -1011,15 +1011,14 @@ void CNEO_Player::PostThink(void)
 			{
 				static_cast<CWeaponGrenade*>(pNeoWep)->SecondaryAttack();
 			}
-			else
+			else if (ClientWantsAimHold(this))
 			{
-				// NEO TODO (Rain): customizations for aim pressed/released/held behavior
-				//if (pNeoWep != NULL) { Weapon_AimToggle(pWep); }
+				Weapon_AimToggle(pWep, NEO_TOGGLE_FORCE_AIM);
 			}
 		}
 		else if (m_afButtonReleased & IN_AIM)
 		{
-			Weapon_AimToggle(pWep);
+			Weapon_AimToggle(pWep, ClientWantsAimHold(this) ? NEO_TOGGLE_FORCE_UN_AIM : NEO_TOGGLE_DEFAULT);
 		}
 		m_bPreviouslyReloading = pWep->m_bInReload;
 
@@ -1060,7 +1059,7 @@ void CNEO_Player::PlayerDeathThink()
 	BaseClass::PlayerDeathThink();
 }
 
-void CNEO_Player::Weapon_AimToggle(CNEOBaseCombatWeapon* pNeoWep)
+void CNEO_Player::Weapon_AimToggle(CNEOBaseCombatWeapon* pNeoWep, const NeoWeponAimToggleE toggleType)
 {
 	if (!pNeoWep)
 	{
@@ -1069,23 +1068,23 @@ void CNEO_Player::Weapon_AimToggle(CNEOBaseCombatWeapon* pNeoWep)
 
 	if (IsAllowedToZoom(pNeoWep))
 	{
-		if (pNeoWep->IsReadyToAimIn())
+		if (toggleType != NEO_TOGGLE_FORCE_UN_AIM && pNeoWep->IsReadyToAimIn())
 		{
 			const bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR) == HIDEHUD_CROSSHAIR;
 			Weapon_SetZoom(showCrosshair);
 		}
-		else
+		else if (toggleType != NEO_TOGGLE_FORCE_AIM)
 		{
 			Weapon_SetZoom(false);
 		}
 	}
 }
 
-void CNEO_Player::Weapon_AimToggle(CBaseCombatWeapon *pWep)
+void CNEO_Player::Weapon_AimToggle(CBaseCombatWeapon *pWep, const NeoWeponAimToggleE toggleType)
 {
 	// NEO TODO/HACK: Not all neo weapons currently inherit
 	// through a base neo class, so we can't static_cast!!
-	Weapon_AimToggle(dynamic_cast<CNEOBaseCombatWeapon*>(pWep));
+	Weapon_AimToggle(dynamic_cast<CNEOBaseCombatWeapon*>(pWep), toggleType);
 }
 
 void CNEO_Player::Weapon_SetZoom(const bool bZoomIn)
@@ -1740,17 +1739,18 @@ CBaseEntity* CNEO_Player::EntSelectSpawnPoint( void )
 	CBaseEntity *pSpot = NULL;
 	CBaseEntity *pLastSpawnPoint = g_pLastSpawn;
 	const char *pSpawnpointName = "info_player_start";
+	const auto alternate = NEORules()->roundAlternate();
 
 	if (NEORules()->IsTeamplay())
 	{
 		if (GetTeamNumber() == TEAM_JINRAI)
 		{
-			pSpawnpointName = "info_player_attacker";
+			pSpawnpointName = alternate ? "info_player_attacker" : "info_player_defender";
 			pLastSpawnPoint = g_pLastJinraiSpawn;
 		}
 		else if (GetTeamNumber() == TEAM_NSF)
 		{
-			pSpawnpointName = "info_player_defender";
+			pSpawnpointName = alternate ? "info_player_defender" : "info_player_attacker";
 			pLastSpawnPoint = g_pLastNSFSpawn;
 		}
 

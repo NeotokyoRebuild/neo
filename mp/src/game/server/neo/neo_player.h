@@ -114,8 +114,8 @@ public:
 
 	void UpdateNetworkedFriendlyLocations(void);
 
-	void Weapon_AimToggle(CBaseCombatWeapon *pWep);
-	void Weapon_AimToggle(CNEOBaseCombatWeapon* pWep);
+	void Weapon_AimToggle(CBaseCombatWeapon *pWep, const NeoWeponAimToggleE toggleType);
+	void Weapon_AimToggle(CNEOBaseCombatWeapon* pWep, const NeoWeponAimToggleE toggleType);
 
 	void Lean(void);
 	void SoftSuicide(void);

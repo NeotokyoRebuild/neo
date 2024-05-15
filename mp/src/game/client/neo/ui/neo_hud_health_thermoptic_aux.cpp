@@ -14,6 +14,7 @@
 #include "ienginevgui.h"
 
 #include "neo_hud_elements.h"
+#include "inttostr.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -103,9 +104,9 @@ void CNEOHud_HTA::DrawHTA() const
 	const int thermoptic = player->m_HL2Local.m_flSuitPower;
 	const int aux = player->m_HL2Local.m_flSuitPower;
 
-	itoa(health, value_Integrity, 10);
-	itoa(thermoptic, value_ThermOptic, 10);
-	itoa(aux, value_Aux, 10);
+	inttostr(value_Integrity, 10, health);
+	inttostr(value_ThermOptic, 10, thermoptic);
+	inttostr(value_Aux, 10, aux);
 
 	const int valLen_Integrity = V_strlen(value_Integrity);
 	const int valLen_ThermOptic = V_strlen(value_ThermOptic);

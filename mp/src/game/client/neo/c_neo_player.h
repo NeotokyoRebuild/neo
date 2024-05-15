@@ -144,7 +144,7 @@ public:
 
 	void DrawCompass(void);
 
-	void Weapon_AimToggle(C_BaseCombatWeapon *pWep);
+	void Weapon_AimToggle(C_BaseCombatWeapon *pWep, const NeoWeponAimToggleE toggleType);
 	void Weapon_SetZoom(const bool bZoomIn);
 
 	void Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon);
