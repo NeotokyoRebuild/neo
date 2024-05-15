@@ -56,14 +56,14 @@ public:
 
 	void	TossDetpack(CBasePlayer* pPlayer);
 
-private:
-	// Check a throw from vecSrc.  If not valid, move the position back along the line to vecEye
-	void	CheckTossPosition(CBasePlayer* pPlayer, const Vector& vecEye, Vector& vecSrc);
-
 	CNetworkVar(bool, m_fDrawbackFinished);
 	CNetworkVar(bool, m_bWantsToThrowThisDetpack);
 	CNetworkVar(bool, m_bThisDetpackHasBeenThrown);
 	CNetworkVar(bool, m_bRemoteHasBeenTriggered);
+
+private:
+	// Check a throw from vecSrc.  If not valid, move the position back along the line to vecEye
+	void	CheckTossPosition(CBasePlayer* pPlayer, const Vector& vecEye, Vector& vecSrc);
 
 	CWeaponDetpack(const CWeaponDetpack &other);
 
