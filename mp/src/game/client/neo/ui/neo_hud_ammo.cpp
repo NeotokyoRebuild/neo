@@ -18,13 +18,13 @@
 
 #include "ammodef.h"
 
-// memdbgon must be the last include file in a .cpp file!!!
-#include <algorithm>
-
+#include "weapon_ghost.h"
 #include "weapon_grenade.h"
 #include "weapon_neobasecombatweapon.h"
 #include "weapon_smokegrenade.h"
 #include "weapon_supa7.h"
+
+// memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(Ammo, 0.00695);
@@ -126,7 +126,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 	}
 
 	const Color textColor = COLOR_WHITE;
-	auto textColorTransparent = *new Color(textColor.r(), textColor.g(), textColor.b(), 127);
+	auto textColorTransparent = Color(textColor.r(), textColor.g(), textColor.b(), 127);
 
 	const size_t maxWepnameLen = 64;
 	char wepName[maxWepnameLen]{ '\0' };
@@ -157,6 +157,11 @@ void CNEOHud_Ammo::DrawAmmo() const
 	surface()->GetTextSize(m_hSmallTextFont, unicodeWepName, weaponNamePixelWidth, weaponNamePixelHeight);
 	surface()->DrawSetTextPos(xPos1 - ((margin * 2) + weaponNamePixelWidth + m_fontWidth / 2), yPos0 + (margin / 2));
 	surface()->DrawPrintText(unicodeWepName, textLen);
+
+	if(dynamic_cast<C_WeaponGhost*> (activeWep))
+	{
+		return;
+	}
 
 	const int maxClip = activeWep->GetMaxClip1();
 	if (maxClip != 0 && !activeWep->IsMeleeWeapon())
@@ -236,7 +241,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 			}			
 		}
 
-		auto maxSpaceAvaliableForBullets = (xPos1 - (margin + clipsTextWidth)) - (xPos0 + fireModeWidth + (margin * 2));
+		auto maxSpaceAvaliableForBullets = (xPos1 - (margin + max(clipsTextWidth, m_fontWidth))) - (xPos0 + fireModeWidth + (margin * 2));
 		auto bulletWidth = surface()->GetCharacterWidth(m_hBulletFont, *ammoChar);
 		auto plusWidth = surface()->GetCharacterWidth(m_hBulletFont, '+');
 		auto maxBulletsWeCanDisplay = maxSpaceAvaliableForBullets / bulletWidth;
