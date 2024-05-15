@@ -963,6 +963,9 @@ void CNEO_Player::SuperJump(void)
 
 bool CNEO_Player::IsAllowedToSuperJump(void)
 {
+	if (!IsSprinting())
+		return false;
+
 	if (IsCarryingGhost())
 		return false;
 
@@ -2303,7 +2306,11 @@ void CNEO_Player::StartSprinting(void)
 		return;
 	}
 
-	BaseClass::StartSprinting();
+	if (m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT))
+	{ //  ensure any direction button is pressed before sprinting
+		BaseClass::StartSprinting();
+		SetMaxSpeed(GetSprintSpeed());
+	}
 }
 
 void CNEO_Player::StopSprinting(void)
