@@ -100,21 +100,28 @@ void CNEOHud_HTA::DrawHTA() const
 	wchar_t unicodeValue_Aux[4]{ L'\0' };
 
 	const int health = player->GetHealth();
-	// FIXME/TODO (Rain): decouple ThermOptic power from AUX
-	const int thermoptic = player->m_HL2Local.m_flSuitPower;
+	const int thermopticValue = static_cast<int>(roundf(player->m_HL2Local.m_cloakPower));
+	const float thermopticPercent = player->CloakPower_CurrentVisualPercentage();
 	const int aux = player->m_HL2Local.m_flSuitPower;
+	const bool playerIsNotSupport = (player->GetClass() != NEO_CLASS_SUPPORT);
 
 	inttostr(value_Integrity, 10, health);
-	inttostr(value_ThermOptic, 10, thermoptic);
-	inttostr(value_Aux, 10, aux);
+	if (playerIsNotSupport)
+	{
+		inttostr(value_ThermOptic, 10, thermopticValue);
+		inttostr(value_Aux, 10, aux);
+	}
 
 	const int valLen_Integrity = V_strlen(value_Integrity);
 	const int valLen_ThermOptic = V_strlen(value_ThermOptic);
 	const int valLen_Aux = V_strlen(value_Aux);
 
 	g_pVGuiLocalize->ConvertANSIToUnicode(value_Integrity, unicodeValue_Integrity, sizeof(unicodeValue_Integrity));
-	g_pVGuiLocalize->ConvertANSIToUnicode(value_ThermOptic, unicodeValue_ThermOptic, sizeof(unicodeValue_ThermOptic));
-	g_pVGuiLocalize->ConvertANSIToUnicode(value_Aux, unicodeValue_Aux, sizeof(unicodeValue_Aux));
+	if (playerIsNotSupport)
+	{
+		g_pVGuiLocalize->ConvertANSIToUnicode(value_ThermOptic, unicodeValue_ThermOptic, sizeof(unicodeValue_ThermOptic));
+		g_pVGuiLocalize->ConvertANSIToUnicode(value_Aux, unicodeValue_Aux, sizeof(unicodeValue_Aux));
+	}
 
 	int fontWidth, fontHeight;
 	surface()->GetTextSize(m_hFont, L"THERM-OPTIC", fontWidth, fontHeight);
@@ -132,17 +139,23 @@ void CNEOHud_HTA::DrawHTA() const
 	surface()->DrawSetTextColor(textColor);
 	surface()->DrawSetTextPos(xPadding + margin, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 1 - margin);
 	surface()->DrawPrintText(L"INTEGRITY", 9);
-	surface()->DrawSetTextPos(xPadding + margin, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 2 - margin);
-	surface()->DrawPrintText(L"THERM-OPTIC", 11);
-	surface()->DrawSetTextPos(xPadding + margin, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 3 - margin);
-	surface()->DrawPrintText(L"AUX", 3);
+	if (playerIsNotSupport)
+	{
+		surface()->DrawSetTextPos(xPadding + margin, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 2 - margin);
+		surface()->DrawPrintText(L"THERM-OPTIC", 11);
+		surface()->DrawSetTextPos(xPadding + margin, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 3 - margin);
+		surface()->DrawPrintText(L"AUX", 3);
+	}
 
 	surface()->DrawSetTextPos(xBoxWidth - xPadding * 7 + margin, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 1 - margin);
 	surface()->DrawPrintText(unicodeValue_Integrity, valLen_Integrity);
-	surface()->DrawSetTextPos(xBoxWidth - xPadding * 7 + margin, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 2 - margin);
-	surface()->DrawPrintText(unicodeValue_ThermOptic, valLen_ThermOptic);
-	surface()->DrawSetTextPos(xBoxWidth - xPadding * 7 + margin, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 3 - margin);
-	surface()->DrawPrintText(unicodeValue_Aux, valLen_Aux);
+	if (playerIsNotSupport)
+	{
+		surface()->DrawSetTextPos(xBoxWidth - xPadding * 7 + margin, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 2 - margin);
+		surface()->DrawPrintText(unicodeValue_ThermOptic, valLen_ThermOptic);
+		surface()->DrawSetTextPos(xBoxWidth - xPadding * 7 + margin, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 3 - margin);
+		surface()->DrawPrintText(unicodeValue_Aux, valLen_Aux);
+	}
 
 	surface()->DrawSetColor(COLOR_WHITE);
 
@@ -157,19 +170,22 @@ void CNEOHud_HTA::DrawHTA() const
 		x_to - x_len * (1 - health / 100.0) + margin,
 		m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 1.75 - margin);
 
-	// ThermOptic progress bar
-	surface()->DrawFilledRect(
-		x_from + margin,
-		1.0 * (m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 2) - margin,
-		x_to - x_len * (1 - thermoptic / 100.0) + margin,
-		m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 2.75 - margin);
+	if (playerIsNotSupport)
+	{
+		// ThermOptic progress bar
+		surface()->DrawFilledRect(
+			x_from + margin,
+			1.0 * (m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 2) - margin,
+			x_to - x_len * (1 - thermopticPercent / 100.0) + margin,
+			m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 2.75 - margin);
 
-	// AUX progress bar
-	surface()->DrawFilledRect(
-		x_from + margin,
-		1.0 * (m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 3) - margin,
-		x_to - x_len * (1 - aux / 100.0) + margin,
-		m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 3.75 - margin);
+		// AUX progress bar
+		surface()->DrawFilledRect(
+			x_from + margin,
+			1.0 * (m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 3) - margin,
+			x_to - x_len * (1 - aux / 100.0) + margin,
+			m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 3.75 - margin);
+	}
 }
 
 void CNEOHud_HTA::DrawNeoHudElement()

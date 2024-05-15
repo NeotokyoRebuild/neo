@@ -104,6 +104,8 @@ public:
 		}
 	}
 
+	float CloakPower_CurrentVisualPercentage(void) const;
+
 	float GetNormSpeed_WithActiveWepEncumberment(void) const;
 	float GetCrouchSpeed_WithActiveWepEncumberment(void) const;
 	float GetWalkSpeed_WithActiveWepEncumberment(void) const;

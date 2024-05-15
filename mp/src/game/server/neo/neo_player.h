@@ -147,6 +147,12 @@ public:
 	virtual void StartWalking(void) OVERRIDE;
 	virtual void StopWalking(void) OVERRIDE;
 
+	// Cloak Power Interface
+	void CloakPower_Update(void);
+	bool CloakPower_Drain(float flPower);
+	void CloakPower_Charge(float flPower);
+	float CloakPower_Cap() const;
+
 	float GetNormSpeed_WithActiveWepEncumberment(void) const;
 	float GetCrouchSpeed_WithActiveWepEncumberment(void) const;
 	float GetWalkSpeed_WithActiveWepEncumberment(void) const;

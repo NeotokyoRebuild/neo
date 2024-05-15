@@ -475,6 +475,8 @@ void CNEO_Player::Spawn(void)
 	SetNumAnimOverlays(NUM_LAYERS_WANTED);
 	ResetAnimation();
 
+	m_HL2Local.m_cloakPower = CloakPower_Cap();
+
 	m_bIsPendingSpawnForThisRound = false;
 
 	m_bLastTickInThermOpticCamo = m_bInThermOpticCamo = false;
@@ -602,6 +604,11 @@ void CNEO_Player::PreThink(void)
 {
 	BaseClass::PreThink();
 
+	if (!m_bInThermOpticCamo)
+	{
+		CloakPower_Update();
+	}
+
 	if ((!GetActiveWeapon() && IsAlive()) ||
 		// Whether or not we move backwards affects max speed
 		((m_afButtonPressed | m_afButtonReleased) & IN_BACK))
@@ -631,7 +638,7 @@ void CNEO_Player::PreThink(void)
 	{
 		if (m_flCamoAuxLastTime == 0)
 		{
-			if (SuitPower_GetCurrentPercentage() >= CLOAK_AUX_COST)
+			if (m_HL2Local.m_cloakPower >= CLOAK_AUX_COST)
 			{
 				m_flCamoAuxLastTime = gpGlobals->curtime;
 			}
@@ -641,16 +648,14 @@ void CNEO_Player::PreThink(void)
 			const float deltaTime = gpGlobals->curtime - m_flCamoAuxLastTime;
 			if (deltaTime >= 1)
 			{
-				// Need to have at least this much spare AUX to enable.
-				// This prevents AUX spam abuse where player has a sliver of AUX
+				// Need to have at least this much spare camo to enable.
+				// This prevents camo spam abuse where player has a sliver of camo
 				// each frame to never really run out.
-				SuitPower_Drain(deltaTime * CLOAK_AUX_COST);
+				CloakPower_Drain(deltaTime * CLOAK_AUX_COST);
 
-				if (SuitPower_GetCurrentPercentage() < CLOAK_AUX_COST)
+				if (m_HL2Local.m_cloakPower <= 0.1f)
 				{
 					m_bInThermOpticCamo = false;
-
-					SuitPower_SetCharge(0);
 					m_flCamoAuxLastTime = 0;
 				}
 				else
@@ -860,7 +865,7 @@ void CNEO_Player::CheckThermOpticButtons()
 			return;
 		}
 
-		if (SuitPower_GetCurrentPercentage() >= CLOAK_AUX_COST)
+		if (m_HL2Local.m_cloakPower >= CLOAK_AUX_COST)
 		{
 			m_bInThermOpticCamo = !m_bInThermOpticCamo;
 
@@ -2198,7 +2203,7 @@ void CNEO_Player::StartAutoSprint(void)
 
 void CNEO_Player::StartSprinting(void)
 {
-	if (GetClass() != NEO_CLASS_RECON && m_HL2Local.m_flSuitPower < 10)
+	if (GetClass() != NEO_CLASS_RECON && m_HL2Local.m_flSuitPower < SPRINT_START_MIN)
 	{
 		return;
 	}
@@ -2252,6 +2257,66 @@ void CNEO_Player::StopWalking(void)
 {
 	SetMaxSpeed(GetNormSpeed());
 	m_fIsWalking = false;
+}
+
+void CNEO_Player::CloakPower_Update(void)
+{
+	if (m_HL2Local.m_cloakPower < CloakPower_Cap())
+	{
+		float chargeRate = 0.0f;
+		switch (GetClass())
+		{
+		case NEO_CLASS_RECON:
+			chargeRate = 0.55f;
+			break;
+		case NEO_CLASS_ASSAULT:
+			chargeRate = 0.25f;
+			break;
+		default:
+			break;
+		}
+		CloakPower_Charge(chargeRate * gpGlobals->frametime);
+	}
+}
+
+bool CNEO_Player::CloakPower_Drain(float flPower)
+{
+	m_HL2Local.m_cloakPower -= flPower;
+
+	if (m_HL2Local.m_cloakPower < 0.0)
+	{
+		// Camo is depleted: clamp and fail
+		m_HL2Local.m_cloakPower = 0.0;
+		return false;
+	}
+
+	return true;
+}
+
+void CNEO_Player::CloakPower_Charge(float flPower)
+{
+	m_HL2Local.m_cloakPower += flPower;
+
+	const float cloakCap = CloakPower_Cap();
+	if (m_HL2Local.m_cloakPower > cloakCap)
+	{
+		// Full charge, clamp.
+		m_HL2Local.m_cloakPower = cloakCap;
+	}
+}
+
+float CNEO_Player::CloakPower_Cap() const
+{
+	switch (GetClass())
+	{
+	case NEO_CLASS_RECON:
+		return 13.0f;
+	case NEO_CLASS_ASSAULT:
+		return 8.0f;
+	default:
+		break;
+	}
+	return 0.0f;
 }
 
 float CNEO_Player::GetCrouchSpeed_WithActiveWepEncumberment(void) const

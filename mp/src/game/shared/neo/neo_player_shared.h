@@ -73,7 +73,8 @@ COMPILE_TIME_ASSERT(NEO_RECON_CROUCH_SPEED > NEO_ASSAULT_CROUCH_SPEED);
 COMPILE_TIME_ASSERT(NEO_ASSAULT_CROUCH_SPEED > NEO_SUPPORT_CROUCH_SPEED);
 
 #define SUPER_JMP_COST 45.0f
-#define CLOAK_AUX_COST ((GetClass() == NEO_CLASS_RECON) ? 17.5f : 19.0f)
+#define CLOAK_AUX_COST 1.0f
+#define SPRINT_START_MIN (2.0f)
 
 // Original NT allows chaining superjumps up ramps,
 // so leaving this zeroed for enabling movement tricks.

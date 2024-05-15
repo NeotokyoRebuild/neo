@@ -30,6 +30,10 @@ public:
 	C_HL2PlayerLocalData();
 
 	float	m_flSuitPower;
+#ifdef NEO
+	// In NEO, m_flSuitPower will be treated instead as just running power
+	float	m_cloakPower;
+#endif
 	bool	m_bZooming;
 	int		m_bitsActiveDevices;
 	int		m_iSquadMemberCount;
