@@ -1267,25 +1267,30 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 	}
 
 	EmitSound_t soundParams;
-	soundParams.m_nChannel = CHAN_VOICE;
+	soundParams.m_nChannel = CHAN_AUTO;
+	soundParams.m_SoundLevel = SNDLVL_NONE;
+	soundParams.m_flVolume = 0.33f;
 	// Referencing sounds directly because we can't override the soundscript volume level otherwise
 	soundParams.m_pSoundName = (team == TEAM_JINRAI) ? "gameplay/jinrai.mp3" : (team == TEAM_NSF) ? "gameplay/nsf.mp3" : "gameplay/draw.mp3";
 	soundParams.m_bWarnOnDirectWaveReference = false;
-
-	CRecipientFilter soundFilter;
-	soundFilter.AddAllPlayers();
-	soundFilter.MakeReliable();
+	soundParams.m_bEmitCloseCaption = false;
 
 	for (int i = 1; i <= gpGlobals->maxClients; ++i)
 	{
-		auto player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
+		CBasePlayer* basePlayer = UTIL_PlayerByIndex(i);
+		auto player = static_cast<CNEO_Player*>(basePlayer);
 		if (player && (!player->IsBot() || player->IsHLTV()))
 		{
 			engine->ClientPrintf(player->edict(), victoryMsg);
 			UTIL_ClientPrintAll((gotMatchWinner ? HUD_PRINTTALK : HUD_PRINTCENTER), victoryMsg);
 
-			float jingleVolume = atof(engine->GetClientConVarValue(i, snd_victory_volume.GetName()));
+			const char* volStr = engine->GetClientConVarValue(i, snd_victory_volume.GetName());
+			const float jingleVolume = volStr ? atof(volStr) : 0.33f;
 			soundParams.m_flVolume = jingleVolume;
+
+			CRecipientFilter soundFilter;
+			soundFilter.AddRecipient(basePlayer);
+			soundFilter.MakeReliable();
 			player->EmitSound(soundFilter, i, soundParams);
 		}
 	}
