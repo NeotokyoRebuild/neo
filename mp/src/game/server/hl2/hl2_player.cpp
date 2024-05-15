@@ -520,7 +520,7 @@ void CHL2_Player::HandleSpeedChanges( void )
 
 	bool bCanSprint = CanSprint();
 	bool bIsSprinting = IsSprinting();
-	bool bWantSprint = ( bCanSprint && IsSuitEquipped() && (m_nButtons & IN_SPEED) && (m_nButtons & IN_FORWARD || m_nButtons & IN_BACK || m_nButtons & IN_MOVELEFT || m_nButtons & IN_MOVERIGHT));
+	bool bWantSprint = ( bCanSprint && IsSuitEquipped() && (m_nButtons & IN_SPEED) && (m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)));
 	if ( bIsSprinting != bWantSprint && (buttonsChanged & IN_SPEED)  )
 	{
 		// If someone wants to sprint, make sure they've pressed the button to do so. We want to prevent the
@@ -548,7 +548,7 @@ void CHL2_Player::HandleSpeedChanges( void )
 		}
 	}
 
-	if (bIsSprinting && !(m_nButtons & IN_FORWARD || m_nButtons & IN_BACK || m_nButtons & IN_MOVELEFT || m_nButtons & IN_MOVERIGHT))
+	if (bIsSprinting && !(m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)))
 	{
 		StopSprinting();
 	}

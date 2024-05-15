@@ -627,16 +627,16 @@ void C_HL2MP_Player::HandleSpeedChanges( void )
 {
 	int buttonsChanged = m_afButtonPressed | m_afButtonReleased;
 
-	if( buttonsChanged & IN_SPEED || buttonsChanged & IN_FORWARD || buttonsChanged & IN_BACK || buttonsChanged & IN_MOVELEFT || buttonsChanged & IN_MOVERIGHT)
+	if( buttonsChanged & (IN_SPEED | IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT) )
 	{
 		// The state of the sprint/run button has changed.
 		if ( IsSuitEquipped() )
 		{
-			if ( (!(m_nButtons & IN_SPEED) || !(m_nButtons & IN_FORWARD || m_nButtons & IN_BACK || m_nButtons & IN_MOVELEFT || m_nButtons & IN_MOVERIGHT)) && IsSprinting())
+			if ( !(m_nButtons & (IN_SPEED | IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)) && IsSprinting())
 			{
 				StopSprinting();
 			}
-			else if ( (m_afButtonPressed & IN_SPEED) && (m_nButtons & IN_FORWARD || m_nButtons & IN_BACK || m_nButtons & IN_MOVELEFT || m_nButtons & IN_MOVERIGHT) && !IsSprinting() )
+			else if ( (m_afButtonPressed & IN_SPEED) && (m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)) && !IsSprinting() )
 			{
 				if ( CanSprint() )
 				{

@@ -2290,7 +2290,7 @@ void CNEO_Player::StartSprinting(void)
 		return;
 	}
 
-	if (m_nButtons & IN_FORWARD || m_nButtons & IN_BACK || m_nButtons & IN_MOVELEFT || m_nButtons & IN_MOVERIGHT)
+	if (m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT))
 	{ //  ensure any direction button is pressed before sprinting
 		BaseClass::StartSprinting();
 		SetMaxSpeed(GetSprintSpeed());
