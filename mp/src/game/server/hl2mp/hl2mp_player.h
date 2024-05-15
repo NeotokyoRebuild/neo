@@ -71,6 +71,7 @@ public:
 	virtual int OnTakeDamage( const CTakeDamageInfo &inputInfo );
 	virtual bool WantsLagCompensationOnEntity( const CBasePlayer *pPlayer, const CUserCmd *pCmd, const CBitVec<MAX_EDICTS> *pEntityTransmitBits ) const;
 	virtual void FireBullets ( const FireBulletsInfo_t &info );
+	virtual void Weapon_Equip(CBaseCombatWeapon* pWeapon) override;
 	virtual bool Weapon_Switch( CBaseCombatWeapon *pWeapon, int viewmodelindex = 0);
 	virtual bool BumpWeapon( CBaseCombatWeapon *pWeapon );
 	virtual void ChangeTeam( int iTeam );

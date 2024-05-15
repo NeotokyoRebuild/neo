@@ -609,6 +609,11 @@ void CHL2MP_Player::FireBullets ( const FireBulletsInfo_t &info )
 	lagcompensation->FinishLagCompensation( this );
 }
 
+void CHL2MP_Player::Weapon_Equip(CBaseCombatWeapon* pWeapon)
+{
+	CHL2_Player::Weapon_Equip(pWeapon);
+}
+
 void CHL2MP_Player::NoteWeaponFired( void )
 {
 	Assert( m_pCurrentCommand );
