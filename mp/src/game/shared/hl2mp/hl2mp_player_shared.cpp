@@ -87,13 +87,13 @@ void CHL2MP_Player::PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, f
 		return;
 
 #if defined( CLIENT_DLL )
-	// during prediction play footstep sounds only once
-	if ( !prediction->IsFirstTimePredicted() )
-		return;
+	// during prediction play footstep sounds only once NEOTODO this should be done for all players but currently works only if done for local player only
+	if (IsLocalPlayer())
+	{
+		if (!prediction->IsFirstTimePredicted())
+			return;
+	}
 #endif
-
-	if ( GetFlags() & FL_DUCKING )
-		return;
 
 	m_Local.m_nStepside = !m_Local.m_nStepside;
 
@@ -108,18 +108,26 @@ void CHL2MP_Player::PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, f
 		Q_snprintf( szStepSound, sizeof( szStepSound ), "%s.RunFootstepRight", g_ppszPlayerSoundPrefixNames[m_iPlayerSoundType] );
 	}
 
+	unsigned short stepSoundName = m_Local.m_nStepside ? psurface->sounds.stepleft : psurface->sounds.stepright;
+	const char* pSoundName = physprops->GetString(stepSoundName);
+
+	if (!stepSoundName) // If can't find material step sound use default footstep sound
+		pSoundName = szStepSound;
+
 	CSoundParameters params;
-	if ( GetParametersForSound( szStepSound, params, NULL ) == false )
+	if ( GetParametersForSound(pSoundName, params, NULL ) == false )
 		return;
 
 	CRecipientFilter filter;
 	filter.AddRecipientsByPAS( vecOrigin );
 
 #ifndef CLIENT_DLL
-	// im MP, server removed all players in origins PVS, these players 
-	// generate the footsteps clientside
-	if ( gpGlobals->maxClients > 1 )
-		filter.RemoveRecipientsByPVS( vecOrigin );
+	if (gpGlobals->maxClients > 1)
+	{
+		// im MP, server removed all players in origins PVS, these players 
+		// generate the footsteps clientside NEOTODO this is not true atm I think?
+		filter.RemoveRecipientsByPVS(vecOrigin);
+	}
 #endif
 
 	EmitSound_t ep;
