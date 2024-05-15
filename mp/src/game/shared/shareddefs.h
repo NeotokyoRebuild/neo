@@ -557,6 +557,7 @@ typedef enum
 #define COLOR_YELLOW	Color(255, 178, 0, 255)
 #define COLOR_GREEN		Color(153, 255, 153, 255)
 #define COLOR_GREY		Color(204, 204, 204, 255)
+#define COLOR_TINTGREY	Color(164, 164, 164, 255)
 #define COLOR_WHITE		Color(255, 255, 255, 255)
 #define COLOR_BLACK		Color(0, 0, 0, 255)
 
