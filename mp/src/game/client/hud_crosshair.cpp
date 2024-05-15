@@ -43,7 +43,7 @@ int ScreenTransform( const Vector& point, Vector& screen );
 #ifdef TF_CLIENT_DLL
 // If running TF, we use CHudTFCrosshair instead (which is derived from CHudCrosshair)
 #else
-DECLARE_HUDELEMENT( CHudCrosshair );
+DECLARE_HUDELEMENT_DEPTH(CHudCrosshair, 9999);
 #endif
 
 CHudCrosshair::CHudCrosshair( const char *pElementName ) :
