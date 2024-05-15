@@ -24,6 +24,8 @@ ConVar cl_autoreload_when_empty("cl_autoreload_when_empty", "1", FCVAR_USERINFO,
 	"Automatically start reloading when the active weapon becomes empty.",
 	true, 0.0f, true, 1.0f);
 
+ConVar neo_aim_hold("neo_aim_hold", "0", FCVAR_USERINFO, "Hold to aim as opposed to toggle aim.", true, 0.0f, true, 1.0f);
+
 ConVar neo_recon_superjump_intensity("neo_recon_superjump_intensity", "250", FCVAR_REPLICATED | FCVAR_CHEAT,
 	"Recon superjump intensity multiplier.", true, 1.0, false, 0);
 
@@ -89,3 +91,22 @@ bool PlayerAnimToPlayerAnimEvent(const PLAYER_ANIM playerAnim, PlayerAnimEvent_t
 	else { success = false; }
 	return success;
 }
+
+bool ClientWantsAimHold(const CNEO_Player* player)
+{
+#ifdef CLIENT_DLL
+	return neo_aim_hold.GetBool();
+#else
+	if (!player)
+	{
+		return false;
+	}
+	else if (player->GetFlags() & FL_FAKECLIENT)
+	{
+		return true;
+	}
+
+	return 1 == atoi(engine->GetClientConVarValue(engine->IndexOfEdict(player->edict()), "neo_aim_hold"));
+#endif
+}
+
