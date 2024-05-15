@@ -36,6 +36,12 @@ public:
 	void SecondaryAttack(void) { }
 	void Drop(const Vector &vecVelocity) { /* knives shouldn't drop */ }
 
+#ifdef CLIENT_DLL
+	virtual bool ShouldDraw() OVERRIDE;
+#else
+	virtual bool IsViewable() OVERRIDE;
+#endif
+
 	float GetRange(void) const { return KNIFE_RANGE; }
 	
 	virtual	float GetDamageForActivity(Activity hitActivity) OVERRIDE

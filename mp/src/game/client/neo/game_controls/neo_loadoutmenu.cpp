@@ -12,6 +12,7 @@
 
 #include "c_neo_player.h"
 #include "weapon_neobasecombatweapon.h"
+#include "neo_weapon_loadout.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -19,9 +20,6 @@
 using namespace vgui;
 
 // These are defined in the .res file
-#define CONTROL_SCOUT_BUTTON "Scout_Button"
-#define CONTROL_MISC2_BUTTON "Misc2"
-#define CONTROL_DONE_BUTTON "Done_Button"
 #define CONTROL_BUTTON1 "Button1"
 #define CONTROL_BUTTON2 "Button2"
 #define CONTROL_BUTTON3 "Button3"
@@ -34,13 +32,23 @@ using namespace vgui;
 #define CONTROL_BUTTON10 "Button10"
 #define CONTROL_BUTTON11 "Button11"
 #define CONTROL_BUTTON12 "Button12"
-#define CONTROL_BUTTON13 "Button13"
-#define CONTROL_BUTTON14 "Button14"
+
+#define IMAGE_BUTTON1 "Button1Image"
+#define IMAGE_BUTTON2 "Button2Image"
+#define IMAGE_BUTTON3 "Button3Image"
+#define IMAGE_BUTTON4 "Button4Image"
+#define IMAGE_BUTTON5 "Button5Image"
+#define IMAGE_BUTTON6 "Button6Image"
+#define IMAGE_BUTTON7 "Button7Image"
+#define IMAGE_BUTTON8 "Button8Image"
+#define IMAGE_BUTTON9 "Button9Image"
+#define IMAGE_BUTTON10 "Button10Image"
+#define IMAGE_BUTTON11 "Button11Image"
+#define IMAGE_BUTTON12 "Button12Image"
+
+#define concat(first, second) first second
 
 static const char *szButtons[] = {
-    CONTROL_SCOUT_BUTTON,
-    CONTROL_MISC2_BUTTON,
-    CONTROL_DONE_BUTTON,
     CONTROL_BUTTON1,
     CONTROL_BUTTON2,
     CONTROL_BUTTON3,
@@ -53,8 +61,20 @@ static const char *szButtons[] = {
     CONTROL_BUTTON10,
     CONTROL_BUTTON11,
     CONTROL_BUTTON12,
-    CONTROL_BUTTON13,
-    CONTROL_BUTTON14,
+};
+static const char* szButtonImages[] = {
+	IMAGE_BUTTON1,
+	IMAGE_BUTTON2,
+	IMAGE_BUTTON3,
+	IMAGE_BUTTON4,
+	IMAGE_BUTTON5,
+	IMAGE_BUTTON6,
+	IMAGE_BUTTON7,
+	IMAGE_BUTTON8,
+	IMAGE_BUTTON9,
+	IMAGE_BUTTON10,
+	IMAGE_BUTTON11,
+	IMAGE_BUTTON12,
 };
 
 const int iNumButtonStrings = ARRAYSIZE(szButtons);
@@ -66,13 +86,10 @@ Panel *NeoLoadout_Factory()
 
 DECLARE_BUILD_FACTORY_CUSTOM(CNeoLoadoutMenu, NeoLoadout_Factory);
 
-CNeoLoadoutMenu *g_pNeoLoadoutMenu = NULL;
-
 CNeoLoadoutMenu::CNeoLoadoutMenu(IViewPort *pViewPort)
 	: BaseClass(NULL, PANEL_NEO_LOADOUT)
 {
 	Assert(pViewPort);
-
 	// Quiet "parent not sized yet" spew
 	SetSize(10, 10);
 
@@ -80,34 +97,40 @@ CNeoLoadoutMenu::CNeoLoadoutMenu(IViewPort *pViewPort)
 
 	m_bLoadoutMenu = false;
 
-	// NEO TODO (Rain): It appears that original Neotokyo
-	// hardcodes its scheme. We probably need to make our
-	// own res definition file to mimic it.
-	const char *schemeName = "ClientScheme";
-
-	vgui::HScheme neoscheme = vgui::scheme()->LoadSchemeFromFileEx(
-		enginevgui->GetPanel(VGuiPanel_t::PANEL_CLIENTDLL), GetResFile(), schemeName);
-
-	vgui::IScheme *pScheme = vgui::scheme()->GetIScheme(neoscheme);
-
 	LoadControlSettings(GetResFile());
 
+	SetPaintBorderEnabled(false);
+	SetPaintBackgroundEnabled(false);
+	SetBorder(NULL);
+
 	SetVisible(false);
-	SetProportional(true);
+	SetProportional(false);
 	SetMouseInputEnabled(true);
-	SetKeyBoardInputEnabled(true);
-
+	//SetKeyBoardInputEnabled(true); // Leaving here to highlight menu navigation with keyboard is possible atm
 	SetTitleBarVisible(false);
+	
+	FindButtons();
+}
 
-	m_pWeapon_ImagePanel = new ImagePanel(this, "Weapon_ImagePanel");
-	m_pWeapon_ImagePanel->SetAutoDelete(true);
+CNeoLoadoutMenu::~CNeoLoadoutMenu()
+{
+	m_pButton1->SetAutoDelete(true);
+	m_pButton2->SetAutoDelete(true);
+	m_pButton3->SetAutoDelete(true);
+	m_pButton4->SetAutoDelete(true);
+	m_pButton5->SetAutoDelete(true);
+	m_pButton6->SetAutoDelete(true);
+	m_pButton7->SetAutoDelete(true);
+	m_pButton8->SetAutoDelete(true);
+	m_pButton9->SetAutoDelete(true);
+	m_pButton10->SetAutoDelete(true);
+	m_pButton11->SetAutoDelete(true);
+	m_pButton12->SetAutoDelete(true);
+	returnButton->SetAutoDelete(true);
+}
 
-	m_pTitleLabel = new Label(this, "TitleLabel", "labelText");
-	m_pTitleLabel->SetAutoDelete(true);
-
-	m_pScout_Button = FindControl<Button>(CONTROL_SCOUT_BUTTON);
-	m_pMisc2 = FindControl<Button>(CONTROL_MISC2_BUTTON);
-	m_pDone_Button = FindControl<Button>(CONTROL_DONE_BUTTON);
+void CNeoLoadoutMenu::FindButtons()
+{
 	m_pButton1 = FindControl<Button>(CONTROL_BUTTON1);
 	m_pButton2 = FindControl<Button>(CONTROL_BUTTON2);
 	m_pButton3 = FindControl<Button>(CONTROL_BUTTON3);
@@ -120,18 +143,11 @@ CNeoLoadoutMenu::CNeoLoadoutMenu(IViewPort *pViewPort)
 	m_pButton10 = FindControl<Button>(CONTROL_BUTTON10);
 	m_pButton11 = FindControl<Button>(CONTROL_BUTTON11);
 	m_pButton12 = FindControl<Button>(CONTROL_BUTTON12);
-	m_pButton13 = FindControl<Button>(CONTROL_BUTTON13);
-	m_pButton14 = FindControl<Button>(CONTROL_BUTTON14);
+	returnButton = FindControl<Button>("ReturnButton");
 
-	const char *fontName = "Default";
-	auto fontHandle = pScheme->GetFont(fontName, IsProportional());
-
-	const Color selectedBgColor(0, 0, 0), selectedFgColor(255, 0, 0),
-		armedBgColor(0, 0, 0), armedFgColor(0, 255, 0);
-
-    for (int i = 0; i < iNumButtonStrings; i++)
+	for (int i = 0; i < iNumButtonStrings; i++)
 	{
-        auto button = FindControl<Button>(szButtons[i]);
+		auto button = FindControl<Button>(szButtons[i]); // Duplicate FindControl NEO FIXME
 
 		if (!button)
 		{
@@ -140,25 +156,16 @@ CNeoLoadoutMenu::CNeoLoadoutMenu(IViewPort *pViewPort)
 			continue;
 		}
 
-		button->AddActionSignalTarget(this);
-		button->SetAutoDelete(true);
-
-		button->SetFont(fontHandle);
-
 		button->SetUseCaptureMouse(true);
-		button->SetSelectedColor(selectedFgColor, selectedBgColor);
-		button->SetArmedColor(armedFgColor, armedBgColor);
 		button->SetMouseInputEnabled(true);
-		button->InstallMouseHandler(this);
 	}
 
-	InvalidateLayout();
-
-	g_pNeoLoadoutMenu = this;
-}
-
-CNeoLoadoutMenu::~CNeoLoadoutMenu()
-{
+	returnButton->SetUseCaptureMouse(true);
+	returnButton->SetMouseInputEnabled(true);
+	if (!returnButton)
+	{
+		Assert(false);
+	}
 }
 
 void CNeoLoadoutMenu::CommandCompletion()
@@ -176,6 +183,8 @@ void CNeoLoadoutMenu::CommandCompletion()
 
 		button->SetEnabled(false);
 	}
+	
+	returnButton->SetEnabled(false);
 
 	SetVisible(false);
 	SetEnabled(false);
@@ -220,44 +229,6 @@ extern ConCommand loadoutmenu;
 
 extern ConVar neo_sv_ignore_wep_xp_limit;
 
-static bool IsAllowedGun(const int loadoutId, const int currentXP)
-{
-	if (neo_sv_ignore_wep_xp_limit.GetBool())
-	{
-		return true;
-	}
-
-	// NEO TODO (Rain): set reasonably
-	const int xpLimits[] = {
-		-255,	// MPN
-		0,		// SRM
-		0,		// SRM-S
-		0,		// Jitte
-		0,		// Jittescoped
-		0,		// ZR68C
-		0,		// ZR68S
-		0,		// ZR68L
-		10,		// MX
-		20,		// PZ
-		10,		// Supa7
-		0,		// M41
-		0,		// M41L
-	};
-
-	bool allowedThisGun = false;
-
-	if (loadoutId < 0 || loadoutId > ARRAYSIZE(xpLimits))
-	{
-		DevWarning("Weapon choice out of XP check range: %i\n", loadoutId);
-	}
-	else
-	{
-		allowedThisGun = (currentXP >= xpLimits[loadoutId]);
-	}
-
-	return allowedThisGun;
-}
-
 void CNeoLoadoutMenu::OnCommand(const char* command)
 {
 	BaseClass::OnCommand(command);
@@ -267,152 +238,134 @@ void CNeoLoadoutMenu::OnCommand(const char* command)
 		return;
 	}
 
-	bool allowedThisGun = false;
-	CUtlStringList loadoutArgs;
-	V_SplitString(command, " ", loadoutArgs);
+	if (Q_stristr(command, "classmenu"))
+	{ // return to class selection 
+		CommandCompletion();
+		ChangeMenu("classmenu");
+		engine->ClientCmd(command);
+		return;
+	}
 
-	if (loadoutArgs.Size() == 2)
-	{
+	if (Q_stristr(command, "loadout "))
+	{ // set player loadout
+		CUtlStringList loadoutArgs;
+		V_SplitString(command, " ", loadoutArgs);
+
+		if (loadoutArgs.Size() != 2) {return;}
+
 		Q_StripPrecedingAndTrailingWhitespace(loadoutArgs[1]);
 		const int choiceNum = atoi(loadoutArgs[1]);
 
-		auto localplayer = C_NEO_Player::GetLocalNEOPlayer();
-		Assert(localplayer);
-		if (localplayer)
+		bool isDev = false;
+		auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
+		if (!localPlayer) { return; }
+
+		int currentXP = localPlayer->m_iXP.Get();
+		int currentClass = localPlayer->m_iNextSpawnClassChoice.Get() != -1 ? localPlayer->m_iNextSpawnClassChoice.Get() : localPlayer->m_iNeoClass.Get();
+		int numWeapons = CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(currentXP, currentClass, isDev);
+			
+		if (choiceNum+1 > numWeapons)
 		{
-			const int myXp = localplayer->m_iXP;
-			allowedThisGun = IsAllowedGun(choiceNum, myXp);
-
-			if (!allowedThisGun)
-			{
 #define INSUFFICIENT_LOADOUT_XP_MSG "Insufficient XP for equipping this loadout!\n"
-				Msg(INSUFFICIENT_LOADOUT_XP_MSG);
-				engine->Con_NPrintf(0, INSUFFICIENT_LOADOUT_XP_MSG);
-			}
+			Msg(INSUFFICIENT_LOADOUT_XP_MSG);
+			engine->Con_NPrintf(0, INSUFFICIENT_LOADOUT_XP_MSG);
+			engine->ClientCmd(loadoutmenu.GetName());
+		}else
+		{
+			engine->ClientCmd(command);
 		}
-	}
 
-	if (allowedThisGun)
+	}
+	CommandCompletion();
+}
+
+
+void CNeoLoadoutMenu::ChangeMenu(const char* menuName = NULL)
+{
+	CommandCompletion();
+	ShowPanel(false);
+	C_NEO_Player* player = C_NEO_Player::GetLocalNEOPlayer();
+	if (player)
 	{
-		engine->ClientCmd(command);
+		m_bLoadoutMenu = false;
+		if (menuName == NULL)
+		{
+			return;
+		}
+		if (Q_stricmp(menuName, "classmenu") == 0)
+		{
+			player->m_bShowClassMenu = true;
+		}
 	}
 	else
 	{
-		engine->ClientCmd(loadoutmenu.GetName());
+		Assert(false);
+	}
+}
+
+void CNeoLoadoutMenu::OnKeyCodeReleased(vgui::KeyCode code)
+{
+	switch (code) {
+	case 94: // F3 - Close the menu
+		ChangeMenu(NULL);
+	case 65: // Spacebar - Try to equip weapon in the second slot like in the base game
+		OnCommand("loadout 1");
 	}
 
-	CommandCompletion();
+	// Ignore other Key presses
+	//BaseClass::OnKeyCodeReleased(code);
 }
 
 void CNeoLoadoutMenu::OnButtonPressed(KeyValues *data)
 {
-#if(0)
-	DevMsg("Loadout button pressed\n");
-	KeyValuesDumpAsDevMsg(data);
-#endif
 }
 
 void CNeoLoadoutMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 {
 	BaseClass::ApplySchemeSettings(pScheme);
-
-	if (!pScheme)
-	{
-		Assert(false);
-		Warning("Failed to ApplySchemeSettings for CNeoLoadoutMenu\n");
-		return;
-	}
-
-    const char *schemeName = "ClientScheme";
-
-    vgui::HScheme neoscheme = vgui::scheme()->LoadSchemeFromFileEx(
-        enginevgui->GetPanel(VGuiPanel_t::PANEL_CLIENTDLL), GetResFile(), schemeName);
-    if (!neoscheme)
-    {
-        Assert(false);
-        Warning("Failed to ApplySchemeSettings for CNeoLoadoutMenu\n");
-        return;
-    }
-
-    vgui::IScheme *scheme = vgui::scheme()->GetIScheme(neoscheme);
-    if (!scheme)
-    {
-        Assert(false);
-        Warning("Failed to ApplySchemeSettings for CNeoLoadoutMenu\n");
-        return;
-    }
-
 	LoadControlSettings(GetResFile());
+	SetPaintBorderEnabled(false);
+	SetPaintBackgroundEnabled(false);
+	SetBorder(NULL);
+	
+	// FindButtons(); Doing this further down for all enabled buttons
 
-	SetBgColor(Color(0, 0, 0, 196));
+	bool isDev = false;
+	auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if (!localPlayer) { return; }
 
-	const Color selectedBgColor(75, 75, 75), selectedFgColor(255, 0, 0, 128),
-		armedBgColor(50, 50, 50, 128), armedFgColor(0, 255, 0, 128);
+	int currentXP = localPlayer->m_iXP.Get();
+	int currentClass = localPlayer->m_iNextSpawnClassChoice.Get() != -1 ? localPlayer->m_iNextSpawnClassChoice.Get() : localPlayer->m_iNeoClass.Get();
 
-	const char *font = "Default";
-
-    for (int i = 0; i < iNumButtonStrings; i++)
-	{
-        auto button = FindControl<Button>(szButtons[i]);
-
-		if (!button)
-		{
-			Assert(false);
-			continue;
-		}
-
-		auto str = button->GetCommand()->GetString("Command");
-		if (V_stristr(str, "loadout") > 0)
-		{
-			CUtlStringList loadoutArgs;
-			V_SplitString(str, " ", loadoutArgs);
-			if (loadoutArgs.Size() == 2)
-			{
-				Q_StripPrecedingAndTrailingWhitespace(loadoutArgs[1]);
-				const int loadoutId = atoi(loadoutArgs[1]);
-				if (loadoutId < NEO_WEP_LOADOUT_ID_COUNT)
-				{
-					auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
-					if (localPlayer)
-					{
-						if (!IsAllowedGun(loadoutId, localPlayer->m_iXP))
-						{
-							const char noxp[] = " -- [insufficient XP!]";
-							char wepname[48 + sizeof(noxp)];
-							button->GetText(wepname, sizeof(wepname));
-							V_strcat_safe(wepname, noxp);
-							button->SetText(wepname);
-
-							button->SetTextColorState(Label::EColorState::CS_DULL);
-							button->SetBgColor(COLOR_RED);
-						}
-						else
-						{
-							button->SetTextColorState(Label::EColorState::CS_NORMAL);
-							button->SetBgColor(COLOR_GREEN);
-						}
-					}
-
-					button->SetPaintBackgroundEnabled(true);
-				}
-			}
-			else
-			{
-				Assert(false);
-			}
-		}
-
-        button->SetFont(scheme->GetFont(font, IsProportional()));
+	int numWeapons = CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(currentXP, currentClass, isDev);
+	int i = 0;
+	for (i; i < MIN(iNumButtonStrings,numWeapons); i++)
+	{ // update all available weapons
+		auto button = FindControl<Button>(szButtons[i]);
 		button->SetUseCaptureMouse(true);
-		button->SetSelectedColor(selectedFgColor, selectedBgColor);
-		button->SetArmedColor(armedFgColor, armedBgColor);
 		button->SetMouseInputEnabled(true);
-		button->InstallMouseHandler(this);
+
+		auto image = FindControl<ImagePanel>(szButtonImages[i]);
+		image->SetImage(CNEOWeaponLoadout::GetLoadoutVguiWeaponName(currentClass, i, isDev));
 	}
 
-	SetPaintBorderEnabled(false);
+	for (i; i < MIN(iNumButtonStrings, CNEOWeaponLoadout::GetTotalLoadoutSize(currentClass, isDev)); i++)
+	{ // update all locked weapons
+		auto button = FindControl<Button>(szButtons[i]);
+		const char* command = ("");
+		button->SetCommand(command);
 
-	SetBorder(NULL);
+		auto image = FindControl<ImagePanel>(szButtonImages[i]);
+		image->SetImage(CNEOWeaponLoadout::GetLoadoutVguiWeaponNameNo(currentClass, i, isDev));
+	}
+	for (i; i < iNumButtonStrings; i++)
+	{ // fill rest with dummy locked weapon
+		auto image = FindControl<ImagePanel>(szButtonImages[i]);
+		image->SetImage("loadout/loadout_none");
+	}
 
-	SetMinimumSize(1280, 1280);
+	returnButton = FindControl<Button>("ReturnButton");
+	returnButton->SetUseCaptureMouse(true);
+	returnButton->SetMouseInputEnabled(true);
+	InvalidateLayout();
 }

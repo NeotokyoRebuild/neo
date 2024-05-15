@@ -164,9 +164,11 @@ void CHudCredits::PrepareCredits( const char *pKeyName )
 
 using namespace vgui;
 
+#ifndef NEO // CNHudCredits
 DECLARE_HUDELEMENT( CHudCredits );
 DECLARE_HUD_MESSAGE( CHudCredits, CreditsMsg );
 DECLARE_HUD_MESSAGE( CHudCredits, LogoTimeMsg );
+#endif
 
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
@@ -196,8 +198,11 @@ void CHudCredits::Clear( void )
 //-----------------------------------------------------------------------------
 void CHudCredits::Init()
 {
+
+#ifndef NEO // CNEOHud_Ammo
 	HOOK_HUD_MESSAGE( CHudCredits, CreditsMsg );
 	HOOK_HUD_MESSAGE( CHudCredits, LogoTimeMsg );
+#endif
 	SetActive( false );
 }
 

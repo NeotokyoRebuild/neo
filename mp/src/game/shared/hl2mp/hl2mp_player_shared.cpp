@@ -87,13 +87,13 @@ void CHL2MP_Player::PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, f
 		return;
 
 #if defined( CLIENT_DLL )
-	// during prediction play footstep sounds only once
-	if ( !prediction->IsFirstTimePredicted() )
-		return;
+	// during prediction play footstep sounds only once NEOTODO this should be done for all players but currently works only if done for local player only
+	if (IsLocalPlayer())
+	{
+		if (!prediction->IsFirstTimePredicted())
+			return;
+	}
 #endif
-
-	if ( GetFlags() & FL_DUCKING )
-		return;
 
 	m_Local.m_nStepside = !m_Local.m_nStepside;
 
@@ -108,18 +108,26 @@ void CHL2MP_Player::PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, f
 		Q_snprintf( szStepSound, sizeof( szStepSound ), "%s.RunFootstepRight", g_ppszPlayerSoundPrefixNames[m_iPlayerSoundType] );
 	}
 
+	unsigned short stepSoundName = m_Local.m_nStepside ? psurface->sounds.stepleft : psurface->sounds.stepright;
+	const char* pSoundName = physprops->GetString(stepSoundName);
+
+	if (!stepSoundName) // If can't find material step sound use default footstep sound
+		pSoundName = szStepSound;
+
 	CSoundParameters params;
-	if ( GetParametersForSound( szStepSound, params, NULL ) == false )
+	if ( GetParametersForSound(pSoundName, params, NULL ) == false )
 		return;
 
 	CRecipientFilter filter;
 	filter.AddRecipientsByPAS( vecOrigin );
 
 #ifndef CLIENT_DLL
-	// im MP, server removed all players in origins PVS, these players 
-	// generate the footsteps clientside
-	if ( gpGlobals->maxClients > 1 )
-		filter.RemoveRecipientsByPVS( vecOrigin );
+	if (gpGlobals->maxClients > 1)
+	{
+		// im MP, server removed all players in origins PVS, these players 
+		// generate the footsteps clientside NEOTODO this is not true atm I think?
+		filter.RemoveRecipientsByPVS(vecOrigin);
+	}
 #endif
 
 	EmitSound_t ep;
@@ -428,41 +436,30 @@ void CPlayerAnimState::ComputePoseParam_BodyXY(void)
 		((speed / ((GetOuter()->GetFlags() & FL_DUCKING) ? NEO_RECON_CROUCH_SPEED : NEO_RECON_NORM_SPEED))),
 		0, 1);
 
-	int forwardSign = 0;
-	if (GetOuter()->m_nButtons & IN_FORWARD)
-	{
-		if (!(GetOuter()->m_nButtons & IN_BACK))
-		{
-			forwardSign = 1;
-		}
-	}
-	else if (GetOuter()->m_nButtons & IN_BACK)
-	{
-		forwardSign = -1;
-	}
+	Vector eyeForward;
+	GetOuter()->EyeVectors(&eyeForward, NULL, NULL);
+	Assert(eyeForward.IsValid());
+	Vector velocity = GetOuter()->GetLocalVelocity();
 
-	int sideSign = 0;
-	if (GetOuter()->m_nButtons & IN_MOVERIGHT)
-	{
-		if (!(GetOuter()->m_nButtons & IN_MOVELEFT))
-		{
-			sideSign = 1;
-		}
-	}
-	else if (GetOuter()->m_nButtons & IN_MOVELEFT)
-	{
-		sideSign = -1;
-	}
+	Vector2D eyeForward2D = eyeForward.AsVector2D();
+	Vector2D velocity2D = velocity.AsVector2D();
 
-	float speed_x = speedScale * forwardSign;
-	float speed_y = speedScale * sideSign;	
+	eyeForward2D.NormalizeInPlace();
+	velocity2D.NormalizeInPlace();
+
+	float forwardDot = eyeForward2D[0] * velocity2D[0] + eyeForward2D[1] * velocity2D[1];
+	Vector2D eyeRight2D = Vector2D(eyeForward2D[1], eyeForward2D[0] * -1); // eyeForward2D rotated by 90 degrees
+	float sideDot = eyeRight2D[0] * velocity2D[0] + eyeRight2D[1] * velocity2D[1];
+
+	float speed_x = speedScale * forwardDot;
+	float speed_y = speedScale * sideDot;	
 
 	GetOuter()->SetPoseParameter(poseparam_move_x, speed_x);
 	GetOuter()->SetPoseParameter("move_y", speed_y);
 
 	bool bIsMoving;
 	const float flPlaybackRate = CalcMovementPlaybackRate(speed, GetOuter()->GetSequenceGroundSpeed(GetOuter()->GetSequence()), &bIsMoving) * sv_neo_animrate_scale.GetFloat();
-	
+
 	if (bIsMoving)
 	{
 		GetOuter()->SetPlaybackRate(flPlaybackRate);

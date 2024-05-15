@@ -78,6 +78,8 @@ protected:
 
 	CNeoHudElements* GetRootNeoHud() const { return m_pNeoHud; }
 
+	static int GetMargin();
+
 private:
 	float GetUpdateFrequency() const { return GetUpdateFrequencyConVar()->GetFloat(); }
 

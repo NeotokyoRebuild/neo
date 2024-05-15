@@ -135,6 +135,7 @@ public:
 	virtual	void CheckReload(void);
 
 	virtual bool Reload( void );
+	virtual void FinishReload(void) OVERRIDE;
 
 	virtual bool CanBeSelected(void);
 
@@ -144,6 +145,7 @@ public:
 	virtual float GetSpeedScale(void) const { Assert(false); return 1.0; } // Should never call this base class; implement in children.
 
 	virtual void ItemPreFrame(void);
+	virtual void ItemPostFrame(void);
 
 	virtual void PrimaryAttack(void);
 
@@ -172,6 +174,9 @@ public:
 
 	float GetLastAttackTime(void) const { return m_flLastAttackTime; }
 
+	virtual void ProcessAnimationEvents(void);
+	bool m_bWeaponIsLowered;
+
 	int GetNumShotsFired(void) const { return m_nNumShotsFired; }
 
 	// Whether this weapon should fire automatically when holding down the attack.
@@ -196,6 +201,7 @@ public:
 
 #ifdef CLIENT_DLL
 	virtual bool Holster(CBaseCombatWeapon* pSwitchingTo);
+	virtual void ItemHolsterFrame() OVERRIDE;
 #endif
 
 	virtual bool Deploy(void);

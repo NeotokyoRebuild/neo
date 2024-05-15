@@ -91,6 +91,8 @@ void CWeaponAA13::ItemBusyFrame()
 
 void CWeaponAA13::ItemPostFrame()
 {
+	ProcessAnimationEvents();
+
 	BaseClass::ItemPostFrame();
 
 	if (m_bInReload)

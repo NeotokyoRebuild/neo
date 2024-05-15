@@ -6856,6 +6856,7 @@ void CBasePlayer::UpdateClientData( void )
 	{
 		m_iClientBattery = m_ArmorValue;
 
+#ifndef NEO
 		// send "battery" update message
 		if ( usermessages->LookupUserMessage( "Battery" ) != -1 )
 		{
@@ -6863,6 +6864,7 @@ void CBasePlayer::UpdateClientData( void )
 				WRITE_SHORT( (int)m_ArmorValue);
 			MessageEnd();
 		}
+#endif
 	}
 
 #if 0 // BYE BYE!!

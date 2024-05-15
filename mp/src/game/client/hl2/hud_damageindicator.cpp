@@ -380,16 +380,6 @@ void CHudDamageIndicator::MsgFunc_Damage( bf_read &msg )
 	VectorNormalize( vecDelta );
 
 	int highDamage = DAMAGE_LOW;
-	if ( damageTaken > 25 )
-	{
-		highDamage = DAMAGE_HIGH;
-	}
-
-	// if we have no suit, all damage is high
-	if ( !pPlayer->IsSuitEquipped() )
-	{
-		highDamage = DAMAGE_HIGH;
-	}
 
 	if ( damageTaken > 0 || armor > 0 )
 	{

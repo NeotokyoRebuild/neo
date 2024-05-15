@@ -75,6 +75,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropBool(RECVINFO(m_bInVision)),
 	RecvPropBool(RECVINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 	RecvPropBool(RECVINFO(m_bInAim)),
+	RecvPropBool(RECVINFO(m_bDroppedAnything)),
 
 	RecvPropTime(RECVINFO(m_flCamoAuxLastTime)),
 	RecvPropInt(RECVINFO(m_nVisionLastTick)),
@@ -125,22 +126,13 @@ public:
 			return;
 		}
 
+		panel->SetProportional(false); // Fixes wrong menu size when in windowed mode, regardless of whether proportional is set to false in the res file (NEOWTF)
 		panel->ApplySchemeSettings(vgui::scheme()->GetIScheme(panel->GetScheme()));
 
-		int panelWide = 960, panelTall = 700, screenWide, screenTall;
-		surface()->GetScreenSize(screenWide, screenTall);
-		// Resize panel, but make sure it fits the resolution.
-		panel->SetSize(Min(screenWide, panelWide), Min(screenTall, panelTall));
-		panel->SetPos((screenWide / 2) - (panelWide / 2),
-			(screenTall / 2) - (panelTall / 2));
-
 		panel->SetMouseInputEnabled(true);
-		panel->SetKeyBoardInputEnabled(true);
+		//panel->SetKeyBoardInputEnabled(true);
 		panel->SetCursorAlwaysVisible(true);
 
-		panel->SetControlEnabled("Scout_Button", true);
-		panel->SetControlEnabled("Misc2", true);
-		panel->SetControlEnabled("Done_Button", true);
 		panel->SetControlEnabled("Button1", true);
 		panel->SetControlEnabled("Button2", true);
 		panel->SetControlEnabled("Button3", true);
@@ -153,8 +145,7 @@ public:
 		panel->SetControlEnabled("Button10", true);
 		panel->SetControlEnabled("Button11", true);
 		panel->SetControlEnabled("Button12", true);
-		panel->SetControlEnabled("Button13", true);
-		panel->SetControlEnabled("Button14", true);
+		panel->SetControlEnabled("ReturnButton", true);
 
 		panel->MoveToFront();
 
@@ -196,18 +187,11 @@ public:
 			Warning("Couldn't find class panel\n");
 			return;
 		}
-
+		panel->SetProportional(false);
 		panel->ApplySchemeSettings(vgui::scheme()->GetIScheme(panel->GetScheme()));
 
-		int panelWide = 650, panelTall = 280, screenWide, screenTall;
-		surface()->GetScreenSize(screenWide, screenTall);
-		// Resize panel, but make sure it fits the resolution.
-		panel->SetSize(Min(screenWide, panelWide), Min(screenTall, panelTall));
-		panel->SetPos((screenWide / 2) - (panelWide / 2),
-			(screenTall / 2) - (panelTall / 2));
-
 		panel->SetMouseInputEnabled(true);
-		panel->SetKeyBoardInputEnabled(true);
+		//panel->SetKeyBoardInputEnabled(true);
 		panel->SetCursorAlwaysVisible(true);
 
 		panel->SetControlEnabled("Scout_Button", true);
@@ -251,18 +235,11 @@ public:
 			return;
 		}
 
+		panel->SetProportional(false);
 		panel->ApplySchemeSettings(vgui::scheme()->GetIScheme(panel->GetScheme()));
 
-		int panelWide = 360, panelTall = 215, screenWide, screenTall;
-		panelWide *= 1.5; panelTall *= 1.5;
-		surface()->GetScreenSize(screenWide, screenTall);
-		// Resize panel, but make sure it fits the resolution.
-		panel->SetSize(Min(screenWide, panelWide), Min(screenTall, panelTall));
-		panel->SetPos((screenWide / 2) - (panelWide / 2),
-			(screenTall / 2) - (panelTall / 2));
-
 		panel->SetMouseInputEnabled(true);
-		panel->SetKeyBoardInputEnabled(true);
+		//panel->SetKeyBoardInputEnabled(true);
 		panel->SetCursorAlwaysVisible(true);
 
 		panel->SetControlEnabled("jinraibutton", true);
@@ -270,8 +247,6 @@ public:
 		panel->SetControlEnabled("specbutton", true);
 		panel->SetControlEnabled("autobutton", true);
 		panel->SetControlEnabled("CancelButton", true);
-
-		panel->MoveToFront();
 
 		if (panel->IsKeyBoardInputEnabled())
 		{
@@ -328,6 +303,7 @@ C_NEO_Player::C_NEO_Player()
 	m_bInThermOpticCamo = m_bInVision = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
 	m_bInAim = false;
+	m_bDroppedAnything = false;
 	m_bInLean = NEO_LEAN_NONE;
 
 	m_pNeoPanel = NULL;
@@ -618,28 +594,31 @@ void C_NEO_Player::PreThink( void )
 {
 	BaseClass::PreThink();
 
-	if ((!GetActiveWeapon() && IsAlive()) ||
-		// Whether or not we move backwards affects max speed
-		((m_afButtonPressed | m_afButtonReleased) & IN_BACK))
+	float speed = GetNormSpeed();
+	if (m_nButtons & IN_DUCK && m_nButtons & IN_WALK)
+	{ // 1.77x slower
+		speed /= 1.777;
+	}
+	else if (m_nButtons & IN_DUCK || m_nButtons & IN_WALK)
+	{ // 1.33x slower
+		speed /= 1.333;
+	}
+	if (IsSprinting())
 	{
-		if (GetFlags() & FL_DUCKING)
-		{
-			SetMaxSpeed(GetCrouchSpeed());
-		}
-		else if (IsWalking())
-		{
-			SetMaxSpeed(GetWalkSpeed());
-		}
-		else if (IsSprinting())
-		{
-			SetMaxSpeed(GetSprintSpeed());
-		}
-		else
-		{
-			SetMaxSpeed(GetNormSpeed());
-		}
+		speed *= m_iNeoClass == NEO_CLASS_RECON ? 1.333 : 1.6;
+	}
+	if (IsInAim())
+	{
+		speed /= 1.666;
+	}
+	auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
+	if (pNeoWep)
+	{
+		speed *= pNeoWep->GetSpeedScale();
 	}
 
+	SetMaxSpeed(speed);
+	
 	CheckThermOpticButtons();
 	CheckVisionButtons();
 
@@ -916,7 +895,10 @@ void C_NEO_Player::PostThink(void)
 	Vector eyeForward;
 	this->EyeVectors(&eyeForward, NULL, NULL);
 	Assert(eyeForward.IsValid());
-	m_pPlayerAnimState->Update(eyeForward[YAW], eyeForward[PITCH]);
+
+	float flPitch = asin(-eyeForward[2]);
+	float flYaw = atan2(eyeForward[1], eyeForward[0]);
+	m_pPlayerAnimState->Update(RAD2DEG(flYaw), RAD2DEG(flPitch));
 }
 
 bool C_NEO_Player::IsAllowedToSuperJump(void)
@@ -1065,6 +1047,7 @@ bool C_NEO_Player::ShouldDrawHL2StyleQuickHud(void)
 
 void C_NEO_Player::Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon)
 {
+	m_bDroppedAnything = true;
 	Weapon_SetZoom(false);
 
 	if (pWeapon->IsGhost())
@@ -1095,13 +1078,12 @@ void C_NEO_Player::StartSprinting(void)
 	if (m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT))
 	{ //  ensure any direction button is pressed before sprinting
 		SetMaxSpeed(GetSprintSpeed());
+	  m_fIsSprinting = true;
 	}
 }
 
 void C_NEO_Player::StopSprinting(void)
 {
-	SetMaxSpeed(GetNormSpeed());
-
 	m_fIsSprinting = false;
 }
 
@@ -1117,16 +1099,12 @@ bool C_NEO_Player::CanSprint(void)
 
 void C_NEO_Player::StartWalking(void)
 {
-	SetMaxSpeed(GetWalkSpeed());
-
 	m_fIsWalking = true;
 }
 
 void C_NEO_Player::StopWalking(void)
 {
-	SetMaxSpeed(GetNormSpeed());
-
-	m_fIsWalking = true;
+	m_fIsWalking = false;
 }
 
 float C_NEO_Player::GetCrouchSpeed_WithActiveWepEncumberment(void) const

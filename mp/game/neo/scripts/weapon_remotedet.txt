@@ -18,6 +18,7 @@ WeaponData
 	"clip_size"		"1"
 	"primary_ammo"		"AMMO_DETPACK"
 	"secondary_ammo"	"None"
+	"autoswitchfrom"        "1"
 
 	"weight"		"1"
 	"item_flags"		"0"

@@ -56,7 +56,9 @@ private:
 	CMaterialReference m_ZoomMaterial;
 };
 
+#ifndef NEO // CHudZoom
 DECLARE_HUDELEMENT( CHudZoom );
+#endif
 
 using namespace vgui;
 

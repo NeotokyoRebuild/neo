@@ -149,7 +149,7 @@ void CWeaponDetpack::PrimaryAttack(void)
 		DevMsg("Pulling remote trigger\n");
 #endif
 		SendWeaponAnim(ACT_VM_PRIMARYATTACK_DEPLOYED);
-		m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
+		m_flNextPrimaryAttack = gpGlobals->curtime + (SequenceDuration() / 3);
 		m_flTimeWeaponIdle = FLT_MAX;
 	}
 	else
@@ -195,7 +195,7 @@ void CWeaponDetpack::ItemPostFrame(void)
 #if(0)
 				DevMsg("REMOTE ATK\n");
 #endif
-				g_EventQueue.AddEvent(m_pDetpack, "RemoteDetonate", 0.20, GetOwner(), GetOwner());
+				g_EventQueue.AddEvent(m_pDetpack, "RemoteDetonate", 0, GetOwner(), GetOwner());
 				// m_pDetpack->Detonate();
 				m_pDetpack = NULL;
 			}

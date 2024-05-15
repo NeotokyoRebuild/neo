@@ -332,7 +332,7 @@ void CWeaponSupa7::PrimaryAttack(void)
 	SendWeaponAnim(ACT_VM_PRIMARYATTACK);
 
 	// Don't fire again until fire animation has completed
-	ProposeNextAttack(gpGlobals->curtime + SequenceDuration());
+	ProposeNextAttack(gpGlobals->curtime + (SequenceDuration() * 0.75));
 	m_iClip1 -= 1;
 
 	// player "shoot" animation
@@ -517,6 +517,7 @@ void CWeaponSupa7::ItemPostFrame(void)
 		}
 		WeaponIdle();
 	}
+	ProcessAnimationEvents();
 }
 
 void CWeaponSupa7::AddViewKick(void)
@@ -529,4 +530,9 @@ void CWeaponSupa7::AddViewKick(void)
 	QAngle punch;
 	punch.Init(SharedRandomFloat("supapax", -2, -1), SharedRandomFloat("supapay", -1, 1), 0);
 	pPlayer->ViewPunch(punch);
+}
+
+bool CWeaponSupa7::SlugLoaded() const
+{
+	return m_bSlugLoaded;
 }
