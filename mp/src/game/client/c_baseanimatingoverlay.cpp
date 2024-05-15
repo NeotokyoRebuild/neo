@@ -15,7 +15,7 @@
 
 #include "dt_utlvector_recv.h"
 
-#ifdef NEO
+#ifndef NEO
 #include "neo_playeranimstate.h"
 #endif
 
@@ -47,7 +47,7 @@ void ResizeAnimationLayerCallback(void* pStruct, int offsetToUtlVector, int len)
 
 C_BaseAnimatingOverlay::C_BaseAnimatingOverlay()
 {
-#ifdef NEO
+#ifndef NEO
 	const int wantedSize = NUM_LAYERS_WANTED;
 	COMPILE_TIME_ASSERT(wantedSize > 0 && wantedSize < C_BaseAnimatingOverlay::MAX_OVERLAYS);
 
