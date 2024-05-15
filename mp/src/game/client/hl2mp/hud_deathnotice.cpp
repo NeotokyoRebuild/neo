@@ -41,6 +41,9 @@ struct DeathNoticePlayer
 struct DeathNoticeItem 
 {
 	DeathNoticePlayer	Killer;
+#ifdef NEO
+	DeathNoticePlayer	Assists;
+#endif
 	DeathNoticePlayer   Victim;
 	CHudTexture *iconDeath;
 	int			iSuicide;
@@ -158,6 +161,11 @@ void CHudDeathNotice::Paint()
 	}
 
 #ifdef NEO
+	// TODO (nullsystem): Just create this once rather than every paint
+	wchar_t assistsPlusSign[64];
+	g_pVGuiLocalize->ConvertANSIToUnicode(" + ", assistsPlusSign, sizeof(assistsPlusSign));
+	const int assistsPlusSignWidth = UTIL_ComputeStringWidth(m_hTextFont, assistsPlusSign);
+
 	if (g_hFontKillfeed != vgui::INVALID_FONT)
 	{
 		m_hTextFont = g_hFontKillfeed;
@@ -206,6 +214,17 @@ void CHudDeathNotice::Paint()
 		g_pVGuiLocalize->ConvertANSIToUnicode( m_DeathNotices[i].Victim.szName, victim, sizeof( victim ) );
 		g_pVGuiLocalize->ConvertANSIToUnicode( m_DeathNotices[i].Killer.szName, killer, sizeof( killer ) );
 
+#ifdef NEO
+		wchar_t assists[256];
+		int iAssistsTeam = 0;
+		const bool hasAssists = m_DeathNotices[i].Assists.iEntIndex > 0;
+		if (g_PR)
+		{
+			iAssistsTeam = g_PR->GetTeam(m_DeathNotices[i].Assists.iEntIndex);
+		}
+		g_pVGuiLocalize->ConvertANSIToUnicode(m_DeathNotices[i].Assists.szName, assists, sizeof(assists));
+#endif
+
 		// Get the local position for this notice
 		int len = UTIL_ComputeStringWidth( m_hTextFont, victim );
 		int y = yStart + (m_flLineHeight * i);
@@ -248,12 +267,23 @@ void CHudDeathNotice::Paint()
 			x = 0;
 		}
 		
+#ifdef NEO
+		// Only draw killers name if it wasn't a suicide or has an assists in it
+		if (!m_DeathNotices[i].iSuicide || hasAssists)
+#else
 		// Only draw killers name if it wasn't a suicide
 		if ( !m_DeathNotices[i].iSuicide )
+#endif
 		{
 			if ( m_bRightJustify )
 			{
 				x -= UTIL_ComputeStringWidth( m_hTextFont, killer );
+#ifdef NEO
+				if (hasAssists)
+				{
+					x -= (UTIL_ComputeStringWidth(m_hTextFont, assists) + assistsPlusSignWidth);
+				}
+#endif
 			}
 
 			SetColorForNoticePlayer( iKillerTeam );
@@ -263,6 +293,25 @@ void CHudDeathNotice::Paint()
 			surface()->DrawSetTextFont(m_hTextFont);
 			surface()->DrawUnicodeString( killer );
 			surface()->DrawGetTextPos( x, y );
+
+#ifdef NEO
+			if (hasAssists)
+			{
+				SetColorForNoticePlayer(iAssistsTeam);
+
+				// Draw +
+				surface()->DrawSetTextPos(x, y);
+				surface()->DrawSetTextFont(m_hTextFont);
+				surface()->DrawUnicodeString(assistsPlusSign);
+				surface()->DrawGetTextPos(x, y);
+
+				// Draw assists's name
+				surface()->DrawSetTextPos(x, y);
+				surface()->DrawSetTextFont(m_hTextFont);
+				surface()->DrawUnicodeString(assists);
+				surface()->DrawGetTextPos(x, y);
+			}
+#endif
 		}
 
 		// Draw death weapon
@@ -308,23 +357,28 @@ void CHudDeathNotice::RetireExpiredDeathNotices( void )
 //-----------------------------------------------------------------------------
 // Purpose: Server's told us that someone's died
 //-----------------------------------------------------------------------------
-void CHudDeathNotice::FireGameEvent( IGameEvent * event )
+void CHudDeathNotice::FireGameEvent(IGameEvent* event)
 {
 	if (!g_PR)
 		return;
 
-	if ( hud_deathnotice_time.GetFloat() == 0 )
+	if (hud_deathnotice_time.GetFloat() == 0)
 		return;
 
 	// the event should be "player_death"
-	int killer = engine->GetPlayerForUserID( event->GetInt("attacker") );
-	int victim = engine->GetPlayerForUserID( event->GetInt("userid") );
-	const char *killedwith = event->GetString( "weapon" );
+	int killer = engine->GetPlayerForUserID(event->GetInt("attacker"));
+	int victim = engine->GetPlayerForUserID(event->GetInt("userid"));
+#ifdef NEO
+	const int assistsInt = event->GetInt("assists");
+	int assists = engine->GetPlayerForUserID(assistsInt);
+	bool hasAssists = assists > 0;
+#endif
+	const char* killedwith = event->GetString("weapon");
 
 	char fullkilledwith[128];
-	if ( killedwith && *killedwith )
+	if (killedwith && *killedwith)
 	{
-		Q_snprintf( fullkilledwith, sizeof(fullkilledwith), "death_%s", killedwith );
+		Q_snprintf(fullkilledwith, sizeof(fullkilledwith), "death_%s", killedwith);
 	}
 	else
 	{
@@ -332,32 +386,40 @@ void CHudDeathNotice::FireGameEvent( IGameEvent * event )
 	}
 
 	// Do we have too many death messages in the queue?
-	if ( m_DeathNotices.Count() > 0 &&
-		m_DeathNotices.Count() >= (int)m_flMaxDeathNotices )
+	if (m_DeathNotices.Count() > 0 &&
+		m_DeathNotices.Count() >= (int)m_flMaxDeathNotices)
 	{
 		// Remove the oldest one in the queue, which will always be the first
 		m_DeathNotices.Remove(0);
 	}
 
 	// Get the names of the players
-	const char *killer_name = g_PR->GetPlayerName( killer );
-	const char *victim_name = g_PR->GetPlayerName( victim );
+	const char* killer_name = g_PR->GetPlayerName(killer);
+	const char* victim_name = g_PR->GetPlayerName(victim);
+#ifdef NEO
+	const char* assists_name = g_PR->GetPlayerName(assists);
+	if (!assists_name)
+		assists_name = "";
+#endif
 
-	if ( !killer_name )
+	if (!killer_name)
 		killer_name = "";
-	if ( !victim_name )
+	if (!victim_name)
 		victim_name = "";
 
 	// Make a new death notice
 	DeathNoticeItem deathMsg;
 	deathMsg.Killer.iEntIndex = killer;
 	deathMsg.Victim.iEntIndex = victim;
-	Q_strncpy( deathMsg.Killer.szName, killer_name, MAX_PLAYER_NAME_LENGTH );
-	Q_strncpy( deathMsg.Victim.szName, victim_name, MAX_PLAYER_NAME_LENGTH );
+	Q_strncpy(deathMsg.Killer.szName, killer_name, MAX_PLAYER_NAME_LENGTH);
+	Q_strncpy(deathMsg.Victim.szName, victim_name, MAX_PLAYER_NAME_LENGTH);
 	deathMsg.flDisplayTime = gpGlobals->curtime + hud_deathnotice_time.GetFloat();
-	deathMsg.iSuicide = ( !killer || killer == victim );
+	deathMsg.iSuicide = (!killer || killer == victim);
 
 #ifdef NEO
+	deathMsg.Assists.iEntIndex = assists;
+	Q_strncpy(deathMsg.Assists.szName, assists_name, MAX_PLAYER_NAME_LENGTH);
+
 	// NEO TODO (Rain): we're passing an event->"icon" as short here.
 	// Only headshot's icon is implemented thus far, but we should
 	// implement them all and use them to determine what to draw here
@@ -391,9 +453,9 @@ void CHudDeathNotice::FireGameEvent( IGameEvent * event )
 	}
 #else
 	// Try and find the death identifier in the icon list
-	deathMsg.iconDeath = gHUD.GetIcon( fullkilledwith );
+	deathMsg.iconDeath = gHUD.GetIcon(fullkilledwith);
 
-	if ( !deathMsg.iconDeath || deathMsg.iSuicide )
+	if (!deathMsg.iconDeath || deathMsg.iSuicide)
 	{
 		// Can't find it, so use the default skull & crossbones icon
 		deathMsg.iconDeath = m_iconD_skull;
@@ -401,20 +463,28 @@ void CHudDeathNotice::FireGameEvent( IGameEvent * event )
 #endif
 
 	// Add it to our list of death notices
-	m_DeathNotices.AddToTail( deathMsg );
+	m_DeathNotices.AddToTail(deathMsg);
 
 	char sDeathMsg[512];
 
 	// Record the death notice in the console
-	if ( deathMsg.iSuicide )
+	if (deathMsg.iSuicide)
 	{
-		if ( !strcmp( fullkilledwith, "d_worldspawn" ) )
+		if (!strcmp(fullkilledwith, "d_worldspawn"))
 		{
-			Q_snprintf( sDeathMsg, sizeof( sDeathMsg ), "%s died.\n", deathMsg.Victim.szName );
+#ifdef NEO
+			Q_snprintf(sDeathMsg, sizeof(sDeathMsg), "%s died.", deathMsg.Victim.szName);
+#else
+			Q_snprintf(sDeathMsg, sizeof(sDeathMsg), "%s died.\n", deathMsg.Victim.szName);
+#endif
 		}
 		else	//d_world
 		{
-			Q_snprintf( sDeathMsg, sizeof( sDeathMsg ), "%s suicided.\n", deathMsg.Victim.szName );
+#ifdef NEO
+			Q_snprintf(sDeathMsg, sizeof(sDeathMsg), "%s suicided.", deathMsg.Victim.szName);
+#else
+			Q_snprintf(sDeathMsg, sizeof(sDeathMsg), "%s suicided.\n", deathMsg.Victim.szName);
+#endif
 		}
 	}
 	else
@@ -425,22 +495,35 @@ void CHudDeathNotice::FireGameEvent( IGameEvent * event )
 #define NON_HEADSHOT_LINGO "killed"
 #endif
 
-		Q_snprintf( sDeathMsg, sizeof( sDeathMsg ), "%s %s %s",
+		Q_snprintf(sDeathMsg, sizeof(sDeathMsg), "%s %s %s",
 			deathMsg.Killer.szName,
 #ifdef NEO
 			(deathMsg.bHeadshot ? HEADSHOT_LINGO : NON_HEADSHOT_LINGO),
 #else
 			"killed"
 #endif
-			deathMsg.Victim.szName );
+			deathMsg.Victim.szName);
 
-		if ( (*fullkilledwith != NULL) && (*fullkilledwith > 13 ) )
+		if ((*fullkilledwith != NULL) && (*fullkilledwith > 13))
 		{
-			Q_strncat( sDeathMsg, VarArgs( " with %s.\n", fullkilledwith+6 ), sizeof( sDeathMsg ), COPY_ALL_CHARACTERS );
+#ifdef NEO
+			Q_strncat(sDeathMsg, VarArgs(" with %s.", fullkilledwith + 6), sizeof(sDeathMsg), COPY_ALL_CHARACTERS);
+#else
+			Q_strncat(sDeathMsg, VarArgs(" with %s.\n", fullkilledwith + 6), sizeof(sDeathMsg), COPY_ALL_CHARACTERS);
+#endif
 		}
 	}
 
+#ifdef NEO
+	if (hasAssists)
+	{
+		Q_strncat(sDeathMsg, VarArgs(" Assists: %s.", assists_name), sizeof(sDeathMsg), COPY_ALL_CHARACTERS);
+	}
+	Msg("%s\n", sDeathMsg);
+#else
 	Msg( "%s", sDeathMsg );
+#endif
+
 }
 
 

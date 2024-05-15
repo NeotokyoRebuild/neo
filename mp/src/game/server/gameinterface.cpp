@@ -713,7 +713,12 @@ bool CServerGameDLL::DLLInit( CreateInterfaceFn appSystemFactory,
 	IGameSystem::Add( SoundEmitterSystem() );
 
 	// load Mod specific game events ( MUST be before InitAllSystems() so it can pickup the mod specific events)
+#ifdef NEO
+	// Because the base-game override is overriding our nod events, use a separate one
+	gameeventmanager->LoadEventsFromFile("resource/NeoModEvents.res");
+#else
 	gameeventmanager->LoadEventsFromFile("resource/ModEvents.res");
+#endif
 
 #ifdef CSTRIKE_DLL // BOTPORT: TODO: move these ifdefs out
 	InstallBotControl();

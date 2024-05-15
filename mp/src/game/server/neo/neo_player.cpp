@@ -68,6 +68,7 @@ SendPropString(SENDINFO(m_pszTestMessage)),
 SendPropVector(SENDINFO(m_vecGhostMarkerPos), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT),
 
 SendPropArray(SendPropVector(SENDINFO_ARRAY(m_rvFriendlyPlayerPositions), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rvFriendlyPlayerPositions),
+SendPropArray(SendPropFloat(SENDINFO_ARRAY(m_rfAttackersScores), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rfAttackersScores),
 
 SendPropInt(SENDINFO(m_NeoFlags), 4, SPROP_UNSIGNED),
 END_SEND_TABLE()
@@ -99,6 +100,7 @@ DEFINE_FIELD(m_pszTestMessage, FIELD_STRING),
 DEFINE_FIELD(m_vecGhostMarkerPos, FIELD_VECTOR),
 
 DEFINE_FIELD(m_rvFriendlyPlayerPositions, FIELD_CUSTOM),
+DEFINE_FIELD(m_rfAttackersScores, FIELD_CUSTOM),
 
 DEFINE_FIELD(m_NeoFlags, FIELD_CHARACTER),
 END_DATADESC()
@@ -485,6 +487,11 @@ void CNEO_Player::Spawn(void)
 	m_bInVision = false;
 	m_nVisionLastTick = 0;
 	m_bInLean = NEO_LEAN_NONE;
+
+	for (int i = 0; i < m_rfAttackersScores.Count(); ++i)
+	{
+		m_rfAttackersScores.Set(i, 0.0f);
+	}
 
 	Weapon_SetZoom(false);
 
@@ -2010,6 +2017,23 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	CHL2_Player::ChangeTeam(iTeam, false, justJoined);
 
 	return true;
+}
+
+float CNEO_Player::GetAttackersScores(const int attackerIdx) const
+{
+	return m_rfAttackersScores.Get(attackerIdx);
+}
+
+int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
+{
+	if (m_takedamage != DAMAGE_EVENTS_ONLY)
+	{
+		if (auto* attacker = dynamic_cast<CNEO_Player*>(info.GetAttacker()))
+		{
+			m_rfAttackersScores.GetForModify(attacker->entindex()) += info.GetDamage();
+		}
+	}
+	return BaseClass::OnTakeDamage_Alive(info);
 }
 
 void GiveDet(CNEO_Player* pPlayer)
