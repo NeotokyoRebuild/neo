@@ -31,10 +31,14 @@ private:
 	void DrawAmmo() const;
 
 private:
+	vgui::HFont m_hSmallTextFont;
 	vgui::HFont m_hTextFont;
 	vgui::HFont m_hBulletFont;
 
 	int m_resX, m_resY;
+	int m_smallFontWidth, m_smallFontHeight;
+	int m_fontWidth;
+	int m_bulletFontWidth, m_bulletFontHeight;
 
 private:
 	CNEOHud_Ammo(const CNEOHud_Ammo& other);
