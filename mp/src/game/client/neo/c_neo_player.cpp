@@ -81,12 +81,14 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_nVisionLastTick)),
 
 	RecvPropArray(RecvPropVector(RECVINFO(m_rvFriendlyPlayerPositions[0])), m_rvFriendlyPlayerPositions),
+	RecvPropArray(RecvPropFloat(RECVINFO(m_rfAttackersScores[0])), m_rfAttackersScores),
 
 	RecvPropInt(RECVINFO(m_NeoFlags)),
 END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA(C_NEO_Player)
 	DEFINE_PRED_FIELD(m_rvFriendlyPlayerPositions, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_rfAttackersScores, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_vecGhostMarkerPos, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
 
 	DEFINE_PRED_FIELD_TOL(m_flCamoAuxLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
@@ -419,6 +421,11 @@ void C_NEO_Player::ZeroFriendlyPlayerLocArray()
 	{
 		m_rvFriendlyPlayerPositions.GetForModify(i) = vec3_origin;
 	}
+}
+
+float C_NEO_Player::GetAttackersScores(const int attackerIdx) const
+{
+	return m_rfAttackersScores.Get(attackerIdx);
 }
 
 int C_NEO_Player::DrawModel( int flags )
@@ -990,6 +997,11 @@ void C_NEO_Player::Spawn( void )
 	m_bInVision = false;
 	m_nVisionLastTick = 0;
 	m_bInLean = NEO_LEAN_NONE;
+
+	for (int i = 0; i < m_rfAttackersScores.Count(); ++i)
+	{
+		m_rfAttackersScores.Set(i, 0.0f);
+	}
 
 	Weapon_SetZoom(false);
 

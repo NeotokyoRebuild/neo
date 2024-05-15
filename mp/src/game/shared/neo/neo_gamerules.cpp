@@ -1314,6 +1314,35 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 }
 #endif
 
+// NEO JANK (nullsystem): Dont like how this is fetched twice (PlayerKilled, DeathNotice),
+// but blame the structure of the base classes
+static CNEO_Player* FetchAssists(CNEO_Player* attacker, CNEO_Player* victim)
+{
+	// Non-CNEO_Player, return NULL
+	if (!attacker || !victim)
+	{
+		return NULL;
+	}
+
+	// Check for assistance (> 50 dmg, not final attacker)
+	const int attackerIdx = attacker->entindex();
+	for (int assistIdx = 1; assistIdx <= gpGlobals->maxClients; ++assistIdx)
+	{
+		if (assistIdx == attackerIdx)
+		{
+			continue;
+		}
+
+		const float assistDmg = victim->GetAttackersScores(assistIdx);
+		static const float MIN_DMG_QUALIFY_ASSIST = 50.0f;
+		if (assistDmg >= MIN_DMG_QUALIFY_ASSIST)
+		{
+			return static_cast<CNEO_Player*>(UTIL_PlayerByIndex(assistIdx));
+		}
+	}
+	return NULL;
+}
+
 void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 {
 	BaseClass::PlayerKilled(pVictim, info);
@@ -1342,6 +1371,20 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 		else
 		{
 			attacker->m_iXP.GetForModify() += 1;
+		}
+
+		if (auto *assister = FetchAssists(attacker, victim))
+		{
+			// Team kill assist
+			if (assister->GetTeamNumber() == victim->GetTeamNumber())
+			{
+				assister->m_iXP.GetForModify() -= 1;
+			}
+			// Enemy kill assist
+			else
+			{
+				assister->m_iXP.GetForModify() += 1;
+			}
 		}
 	}
 }
@@ -1441,6 +1484,8 @@ void CNEORules::DeathNotice(CBasePlayer* pVictim, const CTakeDamageInfo& info)
 	CBaseEntity* pInflictor = info.GetInflictor();
 	CBaseEntity* pKiller = info.GetAttacker();
 	CBasePlayer* pScorer = GetDeathScorer(pKiller, pInflictor);
+	CBasePlayer* pAssister = FetchAssists(dynamic_cast<CNEO_Player*>(pKiller), dynamic_cast<CNEO_Player*>(pVictim));
+	const int assists_ID = (pAssister) ? pAssister->GetUserID() : 0;
 
 	bool isExplosiveKill = false;
 	bool isANeoDerivedWeapon = false;
@@ -1527,6 +1572,7 @@ void CNEORules::DeathNotice(CBasePlayer* pVictim, const CTakeDamageInfo& info)
 	{
 		event->SetInt("userid", pVictim->GetUserID());
 		event->SetInt("attacker", killer_ID);
+		event->SetInt("assists", assists_ID);
 		event->SetString("weapon", killer_weapon_name);
 		event->SetInt("priority", 7);
 
