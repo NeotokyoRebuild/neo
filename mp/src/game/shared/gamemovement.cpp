@@ -806,7 +806,8 @@ Vector CGameMovement::GetPlayerViewOffset( bool ducked ) const
 {
 #ifdef NEO
 	Assert(dynamic_cast<CNEO_Player*>(player));
-	return ducked ? VEC_DUCK_VIEW_SCALED(static_cast<CNEO_Player*>(player)) : VEC_VIEW_SCALED(static_cast<CNEO_Player*>(player));
+	auto thisPlayer = static_cast<CNEO_Player*>(player);
+	return ducked ? VEC_DUCK_VIEW_SCALED(thisPlayer) + thisPlayer->m_vecLean : VEC_VIEW_SCALED(thisPlayer) + thisPlayer->m_vecLean;
 #else
 	return ducked ? VEC_DUCK_VIEW_SCALED(player) : VEC_VIEW_SCALED(player);
 #endif
@@ -2516,12 +2517,12 @@ bool CGameMovement::CheckJumpButton( void )
 // Because jump heights depend on the hull values, ducked
 // hull values, and gravity settings, need some magical
 // multipliers here to actually hit the correct values in-game.
-#define NEO_JUMP_SCALE_RECON_CORRECTION 0.7221
+#define NEO_JUMP_SCALE_RECON_CORRECTION 0.775 //0.7221 for correct jump followed by duck at the apex of jump
 #define NEO_JUMP_SCALE_ASSAULT_CORRECTION 0.79
 #define NEO_JUMP_SCALE_SUPPORT_CORRECTION 0.872
 
 // The final NT class specific multipliers to be applied in jump calculations below.
-#define RECON_JUMP_MULTIPLIER ((RECON_SHOULD_REACH_HEIGHT / HL2DM_DEFAULT_MAX_JUMP_REACH_UNITS) * NEO_JUMP_SCALE_RECON_CORRECTION)
+#define RECON_JUMP_MULTIPLIER ((RECON_SHOULD_REACH_HEIGHT / HL2DM_DEFAULT_MAX_JUMP_REACH_UNITS) * NEO_JUMP_SCALE_RECON_CORRECTION) // This value is wrong, Recon's standard jump should be weaker and recon should have it's own duck jump multiplier which 
 #define ASSAULT_JUMP_MULTIPLIER ((ASSAULT_SHOULD_REACH_HEIGHT / HL2DM_DEFAULT_MAX_JUMP_REACH_UNITS) * NEO_JUMP_SCALE_ASSAULT_CORRECTION)
 #define SUPPORT_JUMP_MULTIPLIER ((SUPPORT_SHOULD_REACH_HEIGHT / HL2DM_DEFAULT_MAX_JUMP_REACH_UNITS) * NEO_JUMP_SCALE_SUPPORT_CORRECTION)
 
@@ -4402,6 +4403,9 @@ void CGameMovement::FinishDuck( void )
 #endif
 		
 		Vector viewDelta = ( hullSizeNormal - hullSizeCrouch );
+		if (static_cast<CNEO_Player*>(player)->GetClass() == NEO_CLASS_RECON) { // Lower how far bottom of hull travels upwards during a duck jump
+			viewDelta = viewDelta * 0.6;
+		}
 		Vector out;
    		VectorAdd( mv->GetAbsOrigin(), viewDelta, out );
 		mv->SetAbsOrigin( out );
