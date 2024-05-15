@@ -1300,8 +1300,8 @@ Scheme
 		{
 			"1"
 			{
-				"name"  "HL2MP"
-				"tall"  "46"
+				"name"  "neotokyo_press_n2" // CSlogo.ttf
+				"tall"  "60"
 				"weight" "0"
 				"additive" "0"
 				"antialias" "1"
@@ -2130,6 +2130,6 @@ Scheme
 		"10"	"resource/AFL.ttf"
 		"11"	"resource/nocr.ttf"
 		"12"	"resource/NEUROPOL2.ttf"
-		"13"	"resource/neotokyo_press_n.ttf"
+		"13"	"resource/neotokyo_press_n2.ttf"
 	}
 }
