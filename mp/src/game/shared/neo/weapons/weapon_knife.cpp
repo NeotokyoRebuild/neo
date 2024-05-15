@@ -69,6 +69,20 @@ void CWeaponKnife::PrimaryAttack(void)
 	BaseClass::PrimaryAttack();
 }
 
+#ifdef CLIENT_DLL
+bool CWeaponKnife::ShouldDraw()
+{
+	auto owner = static_cast<CNEO_Player*>(GetOwner());
+	return (owner && owner->IsAlive() && owner->GetActiveWeapon() == this);
+}
+#else
+bool CWeaponKnife::IsViewable()
+{
+	auto owner = static_cast<CNEO_Player*>(GetOwner());
+	return (owner && owner->IsAlive() && owner->GetActiveWeapon() == this);
+}
+#endif
+
 // NEO TODO (Rain): inherit from CNEOBaseCombatWeapon or related,
 // so we can do this in the base class Deploy method together
 // with other NEO weps.
