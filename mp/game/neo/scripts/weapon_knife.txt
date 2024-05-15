@@ -15,6 +15,7 @@ WeaponData
 	"primary_ammo"			"None"
 	"secondary_ammo"		"None"
 	"MeleeWeapon"			"1"
+	"autoswitchto"			"1"
 
 	"weight"				"0"
 	"item_flags"			"0"
