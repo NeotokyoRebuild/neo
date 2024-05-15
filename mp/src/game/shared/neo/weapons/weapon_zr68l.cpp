@@ -91,6 +91,8 @@ void CWeaponZR68L::ItemBusyFrame()
 
 void CWeaponZR68L::ItemPostFrame()
 {
+	ProcessAnimationEvents();
+
 	BaseClass::ItemPostFrame();
 }
 

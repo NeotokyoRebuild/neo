@@ -92,6 +92,8 @@ void CWeaponSRS::ItemBusyFrame()
 
 void CWeaponSRS::ItemPostFrame()
 {
+	ProcessAnimationEvents();
+
 	BaseClass::ItemPostFrame();
 }
 
