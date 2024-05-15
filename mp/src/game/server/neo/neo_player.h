@@ -208,6 +208,7 @@ public:
 	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
 	CNetworkVar(bool, m_bInAim);
 	CNetworkVar(int, m_bInLean);
+	CNetworkVar(bool, m_bDroppedAnything);
 
 	CNetworkVar(float, m_flCamoAuxLastTime);
 	CNetworkVar(int, m_nVisionLastTick);
