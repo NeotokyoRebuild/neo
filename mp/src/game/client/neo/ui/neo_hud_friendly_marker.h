@@ -21,6 +21,7 @@ public:
 
 protected:
 	virtual void DrawNeoHudElement();
+	void DrawPlayerForTeam(C_Team* team, const C_NEO_Player* localPlayer) const;
 	virtual ConVar* GetUpdateFrequencyConVar() const;
 	virtual void UpdateStateForNeoHudElementDraw();
 

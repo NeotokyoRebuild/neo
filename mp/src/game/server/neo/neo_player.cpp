@@ -2512,17 +2512,20 @@ int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 	if(player)
 	{
 		auto neoPlayer = dynamic_cast<CNEO_Player*>(player);
-		if(player->GetTeamNumber() == TEAM_SPECTATOR
+		if(neoPlayer)
+		{
+			if(player->GetTeamNumber() == TEAM_SPECTATOR
 			|| this->GetTeamNumber() == player->GetTeamNumber())
-		{
-			return FL_EDICT_ALWAYS;
-		}
+			{
+				return FL_EDICT_ALWAYS;
+			}
 
-		auto ghost = dynamic_cast<CWeaponGhost*>(neoPlayer->GetActiveWeapon());
-		if(ghost && ghost->IsPosWithinViewDistance(this->GetAbsOrigin()))
-		{
-			return FL_EDICT_ALWAYS;
-		}		
+			auto ghost = dynamic_cast<CWeaponGhost*>(neoPlayer->GetActiveWeapon());
+			if(ghost && ghost->IsPosWithinViewDistance(this->GetAbsOrigin()))	//Check if ghost equip delay has passed here before distance
+			{
+				return FL_EDICT_ALWAYS;
+			}	
+		}	
 	}
 	
 	return BaseClass::ShouldTransmit(pInfo);

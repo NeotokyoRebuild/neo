@@ -83,40 +83,39 @@ void CNEOHud_FriendlyMarker::DrawNeoHudElement()
 	auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	auto team = localPlayer->GetTeam();
 	m_IsSpectator = team->GetTeamNumber() == TEAM_SPECTATOR;
-	auto memberCount = team->GetNumPlayers();
+	
 	
 	if(m_IsSpectator)
 	{
-		for(int t = 0; t < 2; ++t)
-		{
-			team = GetGlobalTeam(TEAM_SPECTATOR + t + 1);
-			memberCount = team->GetNumPlayers();
-			for (int i = 0; i < memberCount; ++i)
-			{
-				auto player = team->GetPlayer(i);
-				if(player && player->IsAlive())
-				{
-					DrawPlayer(GetTeamColour(team->GetTeamNumber()), player);
-				}		
-			}
-		}
+		auto nsf = GetGlobalTeam(TEAM_NSF);
+		DrawPlayerForTeam(nsf, localPlayer);
+		
+		auto jinrai = GetGlobalTeam(TEAM_JINRAI);
+		DrawPlayerForTeam(jinrai, localPlayer);
 	} else
 	{
-		for (int i = 0; i < memberCount; ++i)
+		DrawPlayerForTeam(team, localPlayer);
+	}
+}
+
+void CNEOHud_FriendlyMarker::DrawPlayerForTeam(C_Team* team, const C_NEO_Player* localPlayer) const
+{
+	auto memberCount = team->GetNumPlayers();
+	for (int i = 0; i < memberCount; ++i)
+	{
+		auto player = team->GetPlayer(i);
+		auto teamColour = GetTeamColour(team->GetTeamNumber());
+		if(player && localPlayer->entindex() != player->entindex() && player->IsAlive())
 		{
-			auto player = team->GetPlayer(i);
-			if(player && localPlayer->entindex() != player->entindex() && player->IsAlive())
-			{
-				DrawPlayer(GetTeamColour(team->GetTeamNumber()), player);
-			}		
-		}
+			DrawPlayer(teamColour, player);
+		}		
 	}
 }
 
 void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_BasePlayer* player) const
 {
 	int x, y;
-	constexpr float heightOffset = 48.0f;
+	static const float heightOffset = 48.0f;
 	auto pPos = player->GetAbsOrigin();
 	auto pos = Vector(
 		pPos.x,
@@ -127,7 +126,7 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_BasePlayer* player) c
 	{
 		auto n = dynamic_cast<C_NEO_Player*>(player);
 		auto a = n->m_rvFriendlyPlayerPositions;
-		constexpr int maxNameLenght = 32 + 1;		
+		static const int maxNameLenght = 32 + 1;		
 		auto playerName = player->GetPlayerName();
 
 		wchar_t playerNameUnicode[maxNameLenght];

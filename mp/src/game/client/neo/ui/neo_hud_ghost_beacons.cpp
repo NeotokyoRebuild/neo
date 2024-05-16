@@ -89,7 +89,7 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 
 	auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	auto ghost = dynamic_cast<C_WeaponGhost*>(localPlayer->GetActiveWeapon());
-	if(!ghost)
+	if(!ghost) //Check ghost ready here as players might be in PVS
 	{
 		return;
 	}
@@ -102,12 +102,15 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 
 	for(int i = 0; i < enemyTeamCount; ++i)
 	{
-		auto enemyToShow = dynamic_cast<C_NEO_Player*>(enemyTeam->GetPlayer(i));
-		auto enemyPos = enemyToShow->GetAbsOrigin();
-		float distance;
-		if(ghost->IsPosWithinViewDistance(enemyPos, distance) && !enemyToShow->IsDormant())
+		auto enemyToShow = enemyTeam->GetPlayer(i);
+		if(enemyToShow)
 		{
-			DrawPlayer(enemyPos);
+			auto enemyPos = enemyToShow->GetAbsOrigin();
+			float distance;
+			if(ghost->IsPosWithinViewDistance(enemyPos, distance) && !enemyToShow->IsDormant())
+			{
+				DrawPlayer(enemyPos);
+			}
 		}
 	}
 
