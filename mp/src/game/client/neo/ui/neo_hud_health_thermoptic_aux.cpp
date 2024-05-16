@@ -61,6 +61,7 @@ CNEOHud_HTA::CNEOHud_HTA(const char* pElementName, vgui::Panel* parent)
 	SetVisible(neo_cl_hud_hta_enabled.GetBool());
 
 	SetHiddenBits(HIDEHUD_HEALTH | HIDEHUD_PLAYERDEAD | HIDEHUD_NEEDSUIT | HIDEHUD_WEAPONSELECTION);
+	engine->ClientCmd("hud_reloadscheme"); //NEO FIXME this reloads the scheme of all elements, is there a way to do it just for this one?
 }
 
 void CNEOHud_HTA::Paint()

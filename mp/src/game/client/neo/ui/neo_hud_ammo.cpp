@@ -33,10 +33,6 @@ using vgui::surface;
 
 ConVar neo_cl_hud_ammo_enabled("neo_cl_hud_ammo_enabled", "1", FCVAR_USERINFO,
 	"Whether the HUD ammo is enabled or not.", true, 0, true, 1);
-ConVar neo_cl_hud_ammo_pos_x("neo_cl_hud_ammo_pos_x", "5", FCVAR_USERINFO,
-	"HUD ammo X offset divisor.", true, 1, false, 0);
-ConVar neo_cl_hud_ammo_pos_y("neo_cl_hud_ammo_pos_y", "5", FCVAR_USERINFO,
-	"HUD ammo Y offset divisor.", true, 1, false, 0);
 
 ConVar neo_cl_hud_debug_ammo_color_r("neo_cl_hud_debug_ammo_color_r", "190", FCVAR_USERINFO | FCVAR_CHEAT,
 	"Red color value of the ammo, in range 0 - 255.", true, 0.0f, true, 255.0f);
@@ -79,9 +75,12 @@ CNEOHud_Ammo::CNEOHud_Ammo(const char* pElementName, vgui::Panel* parent)
 	m_hBulletFont = scheme->GetFont("NHudBullets");
 	m_hTextFont = scheme->GetFont("NHudOCR");
 
+	InvalidateLayout();
+
 	SetVisible(neo_cl_hud_ammo_enabled.GetBool());
 
 	SetHiddenBits(HIDEHUD_HEALTH | HIDEHUD_PLAYERDEAD | HIDEHUD_NEEDSUIT | HIDEHUD_WEAPONSELECTION);
+	engine->ClientCmd("hud_reloadscheme"); //NEO FIXME this reloads the scheme of all elements, is there a way to do it just for this one?
 }
 
 void CNEOHud_Ammo::Paint()
@@ -139,15 +138,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 		wepName[textLen] = toupper(wepName[textLen]);
 	}
 	g_pVGuiLocalize->ConvertANSIToUnicode(wepName, unicodeWepName, sizeof(unicodeWepName));
-
-	//const int margin = GetMargin(); //Get this from scheme?
-	
-	// These are the constant res based scalings of the NT ammo/health box dimensions.
-	//const int xPos1 = m_resX - neo_cl_hud_ammo_pos_x.GetInt();
-	//const int yPos1 = m_resY - neo_cl_hud_ammo_pos_y.GetInt();
-	//const int xPos0 = xPos1 - ((m_resX * 0.2375) + (margin * 2));
-	//const int yPos0 = yPos1 - (((m_bulletFontHeight * 0.8) + m_smallFontHeight + margin * 2) + (margin * 2));
-	
+		
 	DrawNeoHudRoundedBox(xpos, ypos, xpos + wide, ypos + tall);
 
 	surface()->DrawSetTextFont(m_hSmallTextFont);
@@ -286,7 +277,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 		if (magAmountToDrawFilled > 0)
 		{
 			surface()->DrawSetTextFont(m_hBulletFont);
-			surface()->DrawSetTextPos(digit_xpos + xpos, digit_ypos + ypos); //NEO FIXME this should use digit_xpos as the first argument
+			surface()->DrawSetTextPos(digit_xpos + xpos, digit_ypos + ypos);
 			surface()->DrawPrintText(unicodeBullets, magAmountToDrawFilled);
 		}
 
@@ -294,7 +285,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 		{
 			if (magSizeMax > 0) {
 				surface()->DrawSetColor(textColor);
-				surface()->DrawSetTextPos(digit_xpos + xpos, digit_ypos + ypos); //NEO FIXME this should use digit_xpos as the first argument
+				surface()->DrawSetTextPos(digit_xpos + xpos, digit_ypos + ypos);
 				surface()->DrawPrintText(unicodeBullets, magSizeMax);
 			}
 		}
