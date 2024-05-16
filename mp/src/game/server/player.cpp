@@ -5736,9 +5736,65 @@ CBaseEntity	*CBasePlayer::GiveNamedItem( const char *pszName, int iSubType )
 
 	// Msg( "giving %s\n", pszName );
 
-	EHANDLE pent;
+	EHANDLE pent = NULL;
 
+#ifdef NEO
+	// NEO NOTE (nullsystem): Only need to check for weapons that are not stubbed out
+	// of the code base due to it being too deep into it and just do a name check
+	static const char *DISABLE_WEPS[] = {
+		// Too deep in the codebase, just do a string match
+		"weapon_rpg",
+		"weapon_physcannon",
+		"weapon_bugbait",
+		"weapon_frag",
+		NULL, // END
+
+		// THE REST HERE ARE ALREADY REMOVED FROM THE CODEBASE, dont need to string check them:
+		/*
+		"weapon_annabelle",
+		"weapon_crowbar",
+		"weapon_tripwire",
+		"weapon_thumper",
+		"weapon_stunstick",
+		"weapon_sniperrifle",
+		"weapon_smg2",
+		"weapon_smg1",
+		"weapon_slam",
+		"weapon_pistol",
+		"weapon_extinguisher",
+		"weapon_molotov",
+		"weapon_alyxgun",
+		"weapon_shotgun",
+		"weapon_357",
+		"weapon_cguard",
+		"weapon_citizenpackage",
+		"weapon_manhack",
+		"weapon_crossbow",
+		"weapon_immolator",
+		"weapon_irifle",
+		"weapon_brickbat",
+		"weapon_ar2",
+		"weapon_ar1",
+		*/
+	};
+	bool blockWeapon = false;
+	for (int i = 0; DISABLE_WEPS[i] != NULL; ++i)
+	{
+		if (Q_strcmp(pszName, DISABLE_WEPS[i]) == 0)
+		{
+			Warning("Attempted to create unknown entity type %s!\n", pszName);
+			blockWeapon = true;
+			break;
+		}
+	}
+
+	if (!blockWeapon)
+	{
+		pent = CreateEntityByName(pszName);
+	}
+#else
 	pent = CreateEntityByName(pszName);
+#endif
 	if ( pent == NULL )
 	{
 		Msg( "NULL Ent in GiveNamedItem!\n" );

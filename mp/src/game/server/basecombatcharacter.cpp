@@ -1912,6 +1912,7 @@ void CBaseCombatCharacter::Weapon_Drop( CBaseCombatWeapon *pWeapon, const Vector
 		{
 			pWeapon->m_iClip1 = pWeapon->GetDefaultClip1();
 
+#ifndef NEO
 			if( FClassnameIs( pWeapon, "weapon_smg1" ) )
 			{
 				// Drop enough ammo to kill 2 of me.
@@ -1919,6 +1920,7 @@ void CBaseCombatCharacter::Weapon_Drop( CBaseCombatWeapon *pWeapon, const Vector
 				float flAmmoDamage = g_pGameRules->GetAmmoDamage( UTIL_PlayerByIndex(1), this, pWeapon->GetPrimaryAmmoType() );
 				pWeapon->m_iClip1 = (GetMaxHealth() / flAmmoDamage) * 2;
 			}
+#endif
 		}
 		if ( pWeapon->UsesClipsForAmmo2() )
 		{
