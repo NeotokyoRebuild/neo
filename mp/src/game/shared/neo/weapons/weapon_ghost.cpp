@@ -46,7 +46,13 @@ CWeaponGhost::CWeaponGhost(void)
 	m_bHaveHolsteredTheGhost = false;
 
 	m_flLastGhostBeepTime = 0;
+#endif
+}
 
+void CWeaponGhost::ItemPreFrame(void)
+{
+#ifdef CLIENT_DLL
+	HandleGhostEquip();
 #endif
 }
 
