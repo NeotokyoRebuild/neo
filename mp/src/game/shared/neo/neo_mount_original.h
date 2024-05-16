@@ -345,10 +345,10 @@ some Neotokyo assets may not load correctly!\n", szThisCaller);
 // Helper override when you don't have a constructed neoPath at hand.
 void FixIncompatibleNeoAssets(IFileSystem* filesystem, bool restoreInstead)
 {
-	const char* szThisCaller = "FixIncompatibleNeoAssets";
 	char neoPath[MAX_PATH];
 	bool originalNtPathOk = false;
 #ifdef LINUX
+	const char* szThisCaller = "FixIncompatibleNeoAssets";
 	const bool callerIsClientDll = false; // always server here. should refactor this stuff later.
 
 	// The NeotokyoSource root asset folder should exist (or be symlinked) to one of these paths,
@@ -440,7 +440,7 @@ void FixIncompatibleNeoAssets(IFileSystem* filesystem, bool restoreInstead)
 #endif
 	if (!originalNtPathOk)
 	{
-		Error("%s: Failed to retrieve Neo path\n", szThisCaller);
+		// Error("%s: Failed to retrieve Neo path\n", szThisCaller);
 	}
 	else
 	{
