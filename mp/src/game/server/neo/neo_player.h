@@ -167,6 +167,8 @@ public:
 	float GetCrouchSpeed(void) const;
 	float GetWalkSpeed(void) const;
 	float GetSprintSpeed(void) const;
+	
+	int ShouldTransmit( const CCheckTransmitInfo *pInfo) OVERRIDE;
 
 	float GetAttackersScores(const int attackerIdx) const;
 

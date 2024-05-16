@@ -8,9 +8,11 @@
 #include "hudelement.h"
 #include <vgui_controls/Panel.h>
 
-class CNEOHud_GhostMarker : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
+#include "neo_hud_worldpos_marker.h"
+
+class CNEOHud_GhostMarker : public CNEOHud_WorldPosMarker
 {
-	DECLARE_CLASS_SIMPLE(CNEOHud_GhostMarker, Panel);
+	DECLARE_CLASS_SIMPLE(CNEOHud_GhostMarker, CNEOHud_WorldPosMarker)
 
 public:
 	CNEOHud_GhostMarker(const char *pElemName, vgui::Panel *parent = NULL);
@@ -18,7 +20,6 @@ public:
 	virtual void Paint();
 
 	void SetGhostingTeam(int team);
-	void SetClientCurrentTeam(int team);
 	void SetScreenPosition(int x, int y);
 	void SetGhostDistance(float distance);
 
@@ -31,7 +32,6 @@ private:
 	int m_iMarkerTexWidth, m_iMarkerTexHeight;
 	int m_iPosX, m_iPosY;
 	int m_iGhostingTeam;
-	int m_iClientTeam;
 
 	char m_szMarkerText[12 + 1];
 	wchar_t m_wszMarkerTextUnicode[12 + 1];

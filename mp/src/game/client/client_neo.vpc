@@ -155,8 +155,8 @@ $Project "Client (HL2MP)"
 				$File	"neo\ui\neo_hud_game_event.cpp"
 				$File	"neo\ui\neo_hud_game_event.h"
 
-				$File	"neo\ui\neo_hud_ghostbeacon.cpp"
-				$File	"neo\ui\neo_hud_ghostbeacon.h"
+				$File	"neo\ui\neo_hud_ghost_beacons.cpp"
+				$File	"neo\ui\neo_hud_ghost_beacons.h"
 
 				$File	"neo\ui\neo_hud_ghost_marker.cpp"
 				$File	"neo\ui\neo_hud_ghost_marker.h"
@@ -178,6 +178,9 @@ $Project "Client (HL2MP)"
 
 				$File	"neo\ui\neo_hud_health_thermoptic_aux.cpp"
 				$File	"neo\ui\neo_hud_health_thermoptic_aux.h"
+				
+				$File	"neo\ui\neo_hud_worldpos_marker.cpp"
+				$File	"neo\ui\neo_hud_worldpos_marker.h"
 
 			}
 

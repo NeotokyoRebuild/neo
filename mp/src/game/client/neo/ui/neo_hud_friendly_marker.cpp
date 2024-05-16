@@ -16,6 +16,7 @@
 #include "c_neo_player.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
+#include "c_team.h"
 #include "tier0/memdbgon.h"
 
 using vgui::surface;
@@ -25,11 +26,13 @@ ConVar neo_friendly_marker_hud_scale_factor("neo_friendly_marker_hud_scale_facto
 
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(FriendlyMarker, 0.01)
 
-CNEOHud_FriendlyMarker::CNEOHud_FriendlyMarker(const char* pElemName, vgui::Panel* parent)
-	: CHudElement(pElemName), Panel(parent, pElemName)
+void CNEOHud_FriendlyMarker::UpdateStateForNeoHudElementDraw()
 {
-	m_iPosX = m_iPosY = 0;
+}
 
+CNEOHud_FriendlyMarker::CNEOHud_FriendlyMarker(const char* pElemName, vgui::Panel* parent)
+	: CNEOHud_WorldPosMarker(pElemName, parent)
+{
 	SetAutoDelete(true);
 
 	vgui::HScheme neoscheme = vgui::scheme()->LoadSchemeFromFileEx(
@@ -66,85 +69,100 @@ CNEOHud_FriendlyMarker::CNEOHud_FriendlyMarker(const char* pElemName, vgui::Pane
 
 	SetVisible(true);
 }
-
-void CNEOHud_FriendlyMarker::UpdateStateForNeoHudElementDraw()
-{
-	int x, y;
-	const float scale = neo_friendly_marker_hud_scale_factor.GetFloat();
-	const float heightOffset = 48.0f;
-	Vector pos;
-
-	auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
-
-	Assert(localPlayer->m_rvFriendlyPlayerPositions.Count() == MAX_PLAYERS);
-
-	COMPILE_TIME_ASSERT(ARRAYSIZE(m_x0) == MAX_PLAYERS);
-	COMPILE_TIME_ASSERT(ARRAYSIZE(m_x1) == MAX_PLAYERS);
-	COMPILE_TIME_ASSERT(ARRAYSIZE(m_y0) == MAX_PLAYERS);
-	COMPILE_TIME_ASSERT(ARRAYSIZE(m_y1) == MAX_PLAYERS);
-
-	for (int i = 0; i < MAX_PLAYERS; ++i)
-	{
-		if ((localPlayer->entindex() == i + 1) || // Skip self
-			(localPlayer->m_rvFriendlyPlayerPositions[i] == vec3_origin)) // Skip unused positions
-		{
-			continue;
-		}
-
-		pos = Vector(
-			localPlayer->m_rvFriendlyPlayerPositions[i].x,
-			localPlayer->m_rvFriendlyPlayerPositions[i].y,
-			localPlayer->m_rvFriendlyPlayerPositions[i].z + heightOffset);
-
-		if (GetVectorInScreenSpace(pos, x, y))
-		{
-			m_x0[i] = RoundFloatToInt((x - ((m_iMarkerTexWidth * 0.5f) * scale)));
-			m_x1[i] = RoundFloatToInt((x + ((m_iMarkerTexWidth * 0.5f) * scale)));
-			m_y0[i] = RoundFloatToInt((y - ((m_iMarkerTexHeight * 0.5f) * scale)));
-			m_y1[i] = RoundFloatToInt((y + ((m_iMarkerTexHeight * 0.5f) * scale)));
-		}
-	}
-}
-
 void CNEOHud_FriendlyMarker::DrawNeoHudElement()
 {
 	if (!ShouldDraw())
 	{
 		return;
 	}
+	const float scale = neo_friendly_marker_hud_scale_factor.GetFloat();
 
-	SetFgColor(Color(0, 0, 0, 0));
-	SetBgColor(Color(0, 0, 0, 0));
-
-	const Color teamColor = (C_NEO_Player::GetLocalNEOPlayer()->GetTeamNumber() == TEAM_NSF) ? COLOR_NSF : COLOR_JINRAI;
-
-	surface()->DrawSetTextFont(m_hFont);
-	surface()->DrawSetTextColor(teamColor);
-
-	surface()->DrawSetColor(teamColor);
-	surface()->DrawSetTexture(m_hTex);
+	m_iMarkerWidth = (m_iMarkerTexWidth * 0.5f) * scale;
+	m_iMarkerHeight = (m_iMarkerTexHeight * 0.5f) * scale;	
 
 	auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
-
-	for (int i = 0; i < MAX_PLAYERS; ++i)
+	auto team = localPlayer->GetTeam();
+	m_IsSpectator = team->GetTeamNumber() == TEAM_SPECTATOR;
+	
+	
+	if(m_IsSpectator)
 	{
-		// Skip self
-		if (localPlayer->entindex() == (i + 1))
-		{
-			continue;
-		}
-		// Skip unused
-		if ((m_x0[i] == 0) && (m_x1[i] == 0) && (m_y0[i] == 0) && (m_y1[i] == 0))
-		{
-			continue;
-		}
-
-		surface()->DrawTexturedRect(m_x0[i], m_y0[i], m_x1[i], m_y1[i]);
-#if(0)
-		DevMsg("Drawing %i @ X:%i--%i AND Y:%i--%i. I am %i.\n",
-			i, m_x0[i], m_x1[i], m_y0[i], m_y1[i], localPlayer->entindex());
-#endif
+		auto nsf = GetGlobalTeam(TEAM_NSF);
+		DrawPlayerForTeam(nsf, localPlayer);
+		
+		auto jinrai = GetGlobalTeam(TEAM_JINRAI);
+		DrawPlayerForTeam(jinrai, localPlayer);
+	} else
+	{
+		DrawPlayerForTeam(team, localPlayer);
 	}
+}
+
+void CNEOHud_FriendlyMarker::DrawPlayerForTeam(C_Team* team, const C_NEO_Player* localPlayer) const
+{
+	auto memberCount = team->GetNumPlayers();
+	for (int i = 0; i < memberCount; ++i)
+	{
+		auto player = team->GetPlayer(i);
+		auto teamColour = GetTeamColour(team->GetTeamNumber());
+		if(player && localPlayer->entindex() != player->entindex() && player->IsAlive())
+		{
+			DrawPlayer(teamColour, player);
+		}		
+	}
+}
+
+void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_BasePlayer* player) const
+{
+	int x, y;
+	static const float heightOffset = 48.0f;
+	auto pPos = player->GetAbsOrigin();
+	auto pos = Vector(
+		pPos.x,
+		pPos.y,
+		pPos.z + heightOffset);
+
+	if (GetVectorInScreenSpace(pos, x, y))
+	{
+		auto n = dynamic_cast<C_NEO_Player*>(player);
+		auto a = n->m_rvFriendlyPlayerPositions;
+		static const int maxNameLenght = 32 + 1;		
+		auto playerName = player->GetPlayerName();
+
+		wchar_t playerNameUnicode[maxNameLenght];
+		char playerNameTrimmed[maxNameLenght];
+		snprintf(playerNameTrimmed, maxNameLenght, "%s", playerName);
+		auto textLen = V_strlen(playerNameTrimmed);
+		g_pVGuiLocalize->ConvertANSIToUnicode(playerNameTrimmed, playerNameUnicode, sizeof(playerNameUnicode));
+
+		auto fadeTextMultiplier = GetFadeValueTowardsScreenCentreInAndOut(x, y, 0.05);
+		if(fadeTextMultiplier > 0.001)
+		{
+			surface()->DrawSetTextFont(m_hFont);
+			surface()->DrawSetTextColor(FadeColour(teamColor, fadeTextMultiplier));
+			int textWidth, textHeight;
+			surface()->GetTextSize(m_hFont, playerNameUnicode, textWidth, textHeight);
+			surface()->DrawSetTextPos(x - (textWidth / 2), y + m_iMarkerHeight);
+			surface()->DrawPrintText(playerNameUnicode, textLen);
+		}
+			
+		auto fadeMarkerMultiplier = GetFadeValueTowardsScreenCentreInverted(x, y, 0.05);
+		auto fadedMarkerColour = FadeColour(teamColor, fadeMarkerMultiplier);
+
+		surface()->DrawSetTexture(m_hTex);
+		surface()->DrawSetColor(fadedMarkerColour);
+		surface()->DrawTexturedRect(
+			x - m_iMarkerWidth,
+			y - m_iMarkerHeight,
+			x + m_iMarkerWidth,
+			y + m_iMarkerHeight
+		);
+	}
+}
+
+Color CNEOHud_FriendlyMarker::GetTeamColour(int team)
+{
+	return (team == TEAM_NSF) ? COLOR_NSF : COLOR_JINRAI;
 }
 
 void CNEOHud_FriendlyMarker::Paint()
