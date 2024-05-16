@@ -754,7 +754,6 @@ void C_NEO_Player::PreThink( void )
 
 					ghostMarker->SetScreenPosition(ghostMarkerX, ghostMarkerY);
 					ghostMarker->SetGhostingTeam(NEORules()->ghosterTeam());
-					ghostMarker->SetClientCurrentTeam(GetTeamNumber());
 					ghostMarker->SetGhostDistance(distance);
 				}
 				else

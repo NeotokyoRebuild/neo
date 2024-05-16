@@ -4,30 +4,31 @@
 #pragma once
 #endif
 
-#include "neo_hud_childelement.h"
 #include "hudelement.h"
 #include <vgui_controls/Panel.h>
 
-#include "c_neo_player.h"
 #include "neo_gamerules.h"
+#include "neo_hud_worldpos_marker.h"
 
-class CNEOHud_FriendlyMarker : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
+class CNEOHud_FriendlyMarker : public CNEOHud_WorldPosMarker
 {
-	DECLARE_CLASS_SIMPLE(CNEOHud_FriendlyMarker, Panel);
+	DECLARE_CLASS_SIMPLE(CNEOHud_FriendlyMarker, CNEOHud_WorldPosMarker)
 
 public:
 	CNEOHud_FriendlyMarker(const char *pElemName, vgui::Panel *parent = NULL);
-
+	
 	virtual void Paint();
 
 protected:
-	virtual void UpdateStateForNeoHudElementDraw();
 	virtual void DrawNeoHudElement();
+	void DrawPlayerForTeam(C_Team* team, const C_NEO_Player* localPlayer) const;
 	virtual ConVar* GetUpdateFrequencyConVar() const;
+	virtual void UpdateStateForNeoHudElementDraw();
 
 private:
 	int m_iMarkerTexWidth, m_iMarkerTexHeight;
-	int m_iPosX, m_iPosY;
+	int m_iMarkerWidth, m_iMarkerHeight;
+	bool m_IsSpectator;
 
 	int m_x0[MAX_PLAYERS];
 	int m_x1[MAX_PLAYERS];
@@ -36,6 +37,10 @@ private:
 
 	vgui::HTexture m_hTex;
 	vgui::HFont m_hFont;
+
+	void DrawPlayer(Color teamColor, C_BasePlayer* player) const;
+	static Color GetTeamColour(int team);
+
 };
 
 #endif // NEO_HUD_FRIENDLY_MARKER_H

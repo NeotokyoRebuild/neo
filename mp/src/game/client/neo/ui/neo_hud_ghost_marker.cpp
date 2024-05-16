@@ -15,6 +15,7 @@
 #include "ienginevgui.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
+#include "neo_hud_worldpos_marker.h"
 #include "tier0/memdbgon.h"
 
 using vgui::surface;
@@ -25,7 +26,7 @@ ConVar neo_ghost_marker_hud_scale_factor("neo_ghost_marker_hud_scale_factor", "0
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(GhostMarker, 0.01)
 
 CNEOHud_GhostMarker::CNEOHud_GhostMarker(const char* pElemName, vgui::Panel* parent)
-	: CHudElement(pElemName), Panel(parent, pElemName)
+	: CNEOHud_WorldPosMarker(pElemName, parent)
 {
 	m_flDistMeters = 0;
 
@@ -93,40 +94,34 @@ void CNEOHud_GhostMarker::DrawNeoHudElement()
 		return;
 	}
 
+	auto fadeMultiplier = GetFadeValueTowardsScreenCentre(m_iPosX, m_iPosY);
+
+	if(fadeMultiplier > 0.001)
+	{
+		auto adjustedGrey = Color(COLOR_GREY.r(), COLOR_GREY.b(), COLOR_GREY.g(), COLOR_GREY.a() * fadeMultiplier);
+	
+		surface()->DrawSetTextColor(adjustedGrey);
+		surface()->DrawSetTextFont(m_hFont);
+		int textSizeX, textSizeY;
+		surface()->GetTextSize(m_hFont, m_wszMarkerTextUnicode, textSizeX, textSizeY);
+		surface()->DrawSetTextPos(m_iPosX - (textSizeX / 2), m_iPosY + textSizeY);
+		surface()->DrawPrintText(m_wszMarkerTextUnicode, sizeof(m_szMarkerText));
+	}
+
 	const float scale = neo_ghost_marker_hud_scale_factor.GetFloat();
 
 	const int offset_X = m_iPosX - ((m_iMarkerTexWidth * 0.5f) * scale);
 	const int offset_Y = m_iPosY - ((m_iMarkerTexHeight * 0.5f) * scale);
 
-	Color ghostColor = COLOR_GREY;
-	if (m_iGhostingTeam == TEAM_JINRAI || m_iGhostingTeam == TEAM_NSF)
-	{
-		if ((m_iClientTeam == TEAM_JINRAI || m_iClientTeam == TEAM_NSF) && (m_iClientTeam != m_iGhostingTeam))
-		{
-			// If viewing from playing player, but opposite of ghosting team, show red
-			ghostColor = COLOR_RED;
-		}
-		else
-		{
-			// Otherwise show ghosting team color (if friendly or spec)
-			ghostColor = (m_iGhostingTeam == TEAM_JINRAI) ? COLOR_JINRAI : COLOR_NSF;
-		}
-	}
-	surface()->DrawSetColor(ghostColor);
+	auto color = m_iGhostingTeam == TEAM_JINRAI ? COLOR_JINRAI : (m_iGhostingTeam == TEAM_NSF ? COLOR_NSF : COLOR_GREY);
+
+	surface()->DrawSetColor(color);
 	surface()->DrawSetTexture(m_hTex);
 	surface()->DrawTexturedRect(
 		offset_X,
 		offset_Y,
 		offset_X + (m_iMarkerTexWidth * scale),
 		offset_Y + (m_iMarkerTexHeight * scale));
-
-	surface()->DrawSetTextColor(COLOR_GREY);
-	int xWide = 0;
-	int yTall = 0;
-	surface()->GetTextSize(m_hFont, m_wszMarkerTextUnicode, xWide, yTall);
-	surface()->DrawSetTextFont(m_hFont);
-	surface()->DrawSetTextPos(m_iPosX - (xWide / 2), offset_Y + (m_iMarkerTexHeight * scale) + (yTall / 2));
-	surface()->DrawPrintText(m_wszMarkerTextUnicode, sizeof(m_szMarkerText));
 }
 
 void CNEOHud_GhostMarker::Paint()
@@ -140,11 +135,6 @@ void CNEOHud_GhostMarker::Paint()
 void CNEOHud_GhostMarker::SetGhostingTeam(int team)
 {
 	m_iGhostingTeam = team;
-}
-
-void CNEOHud_GhostMarker::SetClientCurrentTeam(int team)
-{
-	m_iClientTeam = team;
 }
 
 void CNEOHud_GhostMarker::SetScreenPosition(int x, int y)

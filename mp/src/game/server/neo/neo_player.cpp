@@ -2517,6 +2517,32 @@ float CNEO_Player::GetSprintSpeed(void) const
 	}
 }
 
+int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
+{
+	auto player = Instance(pInfo->m_pClientEnt);
+	
+	if(player)
+	{
+		auto neoPlayer = dynamic_cast<CNEO_Player*>(player);
+		if(neoPlayer)
+		{
+			if(player->GetTeamNumber() == TEAM_SPECTATOR
+			|| this->GetTeamNumber() == player->GetTeamNumber())
+			{
+				return FL_EDICT_ALWAYS;
+			}
+
+			auto ghost = dynamic_cast<CWeaponGhost*>(neoPlayer->GetActiveWeapon());
+			if(ghost && ghost->IsPosWithinViewDistance(this->GetAbsOrigin()))	//Check if ghost equip delay has passed here before distance
+			{
+				return FL_EDICT_ALWAYS;
+			}	
+		}	
+	}
+	
+	return BaseClass::ShouldTransmit(pInfo);
+}
+
 float CNEO_Player::GetActiveWeaponSpeedScale() const
 {
 	// NEO TODO (Rain): change to static cast once all weapons are guaranteed to derive from the class

@@ -24,7 +24,7 @@
 #define UI_ELEMENT_NAME_IFF "neo_iff"
 #define UI_ELEMENT_GAME_EVENT "neo_game_event_indicator"
 #define UI_ELEMENT_NAME_GHOST_MARKER "neo_ghost_marker"
-#define UI_ELEMENT_NAME_GHOST_BEACON "neo_ghost_beacon"
+#define UI_ELEMENT_NAME_GHOST_BEACONS "neo_ghost_beacons"
 #define UI_ELEMENT_ROUND_STATE "neo_round_state"
 #define UI_ELEMENT_TARGET_ID "target_id"
 
@@ -56,6 +56,7 @@ CNeoHudElements::CNeoHudElements(IViewPort *pViewPort)
 	m_pRoundState = NULL;
 	m_pLastUpdater = NULL;
 	m_pTargetID = NULL;
+	m_pGhostBeacons = NULL;
 }
 
 CNeoHudElements::~CNeoHudElements()
@@ -110,6 +111,12 @@ void CNeoHudElements::FreePanelChildren()
 	{
 		m_pTargetID->DeletePanel();
 		m_pTargetID = NULL;
+	}
+
+	if(m_pGhostBeacons)
+	{
+		m_pGhostBeacons->DeletePanel();
+		m_pGhostBeacons = NULL;
 	}
 
 	for (int i = 0; i < m_vecGhostMarkers.Count(); i++)
@@ -238,6 +245,13 @@ void CNeoHudElements::InitHud()
 	InitHTA();
 	InitRoundState();
 	InitTargetID();
+	InitGhostBeacons();
+}
+
+void CNeoHudElements::InitGhostBeacons()
+{
+	Assert(!m_pGhostBeacons);
+	m_pGhostBeacons = new CNEOHud_GhostBeacons(UI_ELEMENT_NAME_GHOST_BEACONS, this);
 }
 
 void CNeoHudElements::InitAmmo()
