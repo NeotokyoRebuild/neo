@@ -46,10 +46,10 @@ private:
 	CPanelAnimationVarAliasType(int, tall, "tall", "32", "proportional_ypos");
 	CPanelAnimationVarAliasType(int, visible, "visible", "1", "int");
 	CPanelAnimationVarAliasType(int, enabled, "enabled", "1", "int");
-	CPanelAnimationVarAliasType(int, box_color_r, "box_color_r", "255", "int");
-	CPanelAnimationVarAliasType(int, box_color_g, "box_color_g", "255", "int");
-	CPanelAnimationVarAliasType(int, box_color_b, "box_color_b", "255", "int");
-	CPanelAnimationVarAliasType(int, box_color_a, "box_color_a", "255", "int");
+	CPanelAnimationVarAliasType(int, box_color_r, "box_color_r", "116", "int");
+	CPanelAnimationVarAliasType(int, box_color_g, "box_color_g", "116", "int");
+	CPanelAnimationVarAliasType(int, box_color_b, "box_color_b", "116", "int");
+	CPanelAnimationVarAliasType(int, box_color_a, "box_color_a", "178", "int");
 
 	CPanelAnimationVarAliasType(bool, top_left_corner, "top_left_corner", "1", "bool");
 	CPanelAnimationVarAliasType(bool, top_right_corner, "top_right_corner", "1", "bool");
@@ -69,7 +69,7 @@ private:
 	CPanelAnimationVarAliasType(int, ammo_color_r, "ammo_color_r", "255", "int");
 	CPanelAnimationVarAliasType(int, ammo_color_g, "ammo_color_g", "255", "int");
 	CPanelAnimationVarAliasType(int, ammo_color_b, "ammo_color_b", "255", "int");
-	CPanelAnimationVarAliasType(int, ammo_color_a, "ammo_color_a", "255", "int");
+	CPanelAnimationVarAliasType(int, ammo_color_a, "ammo_color_a", "178", "int");
 private:
 	CNEOHud_Ammo(const CNEOHud_Ammo& other);
 };
