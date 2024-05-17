@@ -100,6 +100,10 @@
 ConVar mp_usehwmmodels( "mp_usehwmmodels", "0", NULL, "Enable the use of the hw morph models. (-1 = never, 1 = always, 0 = based upon GPU)" ); // -1 = never, 0 = if hasfastvertextextures, 1 = always
 #endif
 
+#ifdef NEO
+ConVar neo_fov("neo_fov", "90", FCVAR_USERINFO, "Set the normal FOV.", true, 60.0f, true, (float)(MAX_FOV));
+#endif
+
 bool UseHWMorphModels()
 {
 // #ifdef CLIENT_DLL 
@@ -1889,6 +1893,26 @@ void CBasePlayer::SharedSpawn()
 #endif
 }
 
+#ifdef NEO
+int ClientFOV(const CBasePlayer* player)
+{
+	int fov = DEFAULT_FOV;
+	int type = 0;
+#ifdef CLIENT_DLL
+	//fov = neo_fov.GetFloat();
+	fov = player->m_iDefaultFOV;
+	type = 1;
+#else
+	if (player && !(player->GetFlags() & FL_FAKECLIENT))
+	{
+		fov = atoi(engine->GetClientConVarValue(engine->IndexOfEdict(player->edict()), "neo_fov"));
+	}
+	type = 2;
+#endif
+	return fov;
+}
+#endif
+
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -1908,7 +1932,11 @@ int CBasePlayer::GetDefaultFOV( void ) const
 	}
 #endif
 
+#ifndef NEO
 	int iFOV = ( m_iDefaultFOV == 0 ) ? g_pGameRules->DefaultFOV() : m_iDefaultFOV;
+#else
+	int iFOV = ClientFOV(this);
+#endif
 	if ( iFOV > MAX_FOV )
 		iFOV = MAX_FOV;
 

@@ -79,6 +79,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 
 	RecvPropTime(RECVINFO(m_flCamoAuxLastTime)),
 	RecvPropInt(RECVINFO(m_nVisionLastTick)),
+	RecvPropInt(RECVINFO(m_nNeoFOV)),
 
 	RecvPropArray(RecvPropVector(RECVINFO(m_rvFriendlyPlayerPositions[0])), m_rvFriendlyPlayerPositions),
 	RecvPropArray(RecvPropFloat(RECVINFO(m_rfAttackersScores[0])), m_rfAttackersScores),
@@ -101,6 +102,7 @@ BEGIN_PREDICTION_DATA(C_NEO_Player)
 	DEFINE_PRED_FIELD(m_bHasBeenAirborneForTooLongToSuperJump, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 
 	DEFINE_PRED_FIELD(m_nVisionLastTick, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_nNeoFOV, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 
 ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
@@ -310,6 +312,7 @@ C_NEO_Player::C_NEO_Player()
 
 	m_flCamoAuxLastTime = 0;
 	m_nVisionLastTick = 0;
+	m_nNeoFOV = DEFAULT_FOV;
 	m_flLastAirborneJumpOkTime = 0;
 	m_flLastSuperJumpTime = 0;
 
@@ -1267,18 +1270,19 @@ void C_NEO_Player::Weapon_SetZoom(const bool bZoomIn)
 #endif
 #endif
 
+	const int fov = GetDefaultFOV();
 	if (bZoomIn)
 	{
 		m_Local.m_iHideHUD &= ~HIDEHUD_CROSSHAIR;
 
 		const int zoomAmount = 30;
-		SetFOV((CBaseEntity*)this, GetDefaultFOV() - zoomAmount, zoomSpeedSecs);
+		SetFOV((CBaseEntity*)this, fov - zoomAmount, zoomSpeedSecs);
 	}
 	else
 	{
 		m_Local.m_iHideHUD |= HIDEHUD_CROSSHAIR;
 
-		SetFOV((CBaseEntity*)this, GetDefaultFOV(), zoomSpeedSecs);
+		SetFOV((CBaseEntity*)this, fov, zoomSpeedSecs);
 	}
 
 	m_bInAim = bZoomIn;

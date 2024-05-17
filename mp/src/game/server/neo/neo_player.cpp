@@ -64,6 +64,7 @@ SendPropBool(SENDINFO(m_bDroppedAnything)),
 
 SendPropTime(SENDINFO(m_flCamoAuxLastTime)),
 SendPropInt(SENDINFO(m_nVisionLastTick)),
+SendPropInt(SENDINFO(m_nNeoFOV)),
 
 SendPropString(SENDINFO(m_pszTestMessage)),
 
@@ -105,6 +106,7 @@ DEFINE_FIELD(m_rvFriendlyPlayerPositions, FIELD_CUSTOM),
 DEFINE_FIELD(m_rfAttackersScores, FIELD_CUSTOM),
 
 DEFINE_FIELD(m_NeoFlags, FIELD_CHARACTER),
+DEFINE_FIELD(m_nNeoFOV, FIELD_INTEGER),
 END_DATADESC()
 
 CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
@@ -385,6 +387,7 @@ CNEO_Player::CNEO_Player()
 	m_nVisionLastTick = 0;
 	m_flLastAirborneJumpOkTime = 0;
 	m_flLastSuperJumpTime = 0;
+	m_nNeoFOV = atoi(engine->GetClientConVarValue(engine->IndexOfEdict(edict()), "neo_fov"));
 
 	m_bFirstDeathTick = true;
 	m_bPreviouslyReloading = false;
@@ -493,6 +496,7 @@ void CNEO_Player::Spawn(void)
 	m_bInVision = false;
 	m_nVisionLastTick = 0;
 	m_bInLean = NEO_LEAN_NONE;
+	m_nNeoFOV = atoi(engine->GetClientConVarValue(engine->IndexOfEdict(edict()), "neo_fov"));
 
 	for (int i = 0; i < m_rfAttackersScores.Count(); ++i)
 	{
@@ -1142,15 +1146,27 @@ void CNEO_Player::Weapon_SetZoom(const bool bZoomIn)
 	const float zoomSpeedSecs = 0.25f;
 
 	ShowCrosshair(bZoomIn);
+
+	int checkFov = DEFAULT_FOV;
+	if (!(GetFlags() & FL_FAKECLIENT))
+	{
+		checkFov = atoi(engine->GetClientConVarValue(engine->IndexOfEdict(edict()), "neo_fov"));
+	}
+
+	if (checkFov != m_nNeoFOV)
+	{
+		m_nNeoFOV = checkFov;
+	}
 	
+	const int fov = GetDefaultFOV();
 	if (bZoomIn)
 	{
 		const int zoomAmount = 30;
-		SetFOV((CBaseEntity*)this, GetDefaultFOV() - zoomAmount, zoomSpeedSecs);
+		SetFOV((CBaseEntity*)this, fov - zoomAmount, zoomSpeedSecs);
 	}
 	else
 	{
-		SetFOV((CBaseEntity*)this, GetDefaultFOV(), zoomSpeedSecs);
+		SetFOV((CBaseEntity*)this, fov, zoomSpeedSecs);
 	}
 
 	m_bInAim = bZoomIn;

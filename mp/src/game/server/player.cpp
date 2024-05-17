@@ -84,6 +84,7 @@
 
 #ifdef NEO
 #include "neo_player.h"
+extern int ClientFOV(const CBasePlayer* player);
 #endif
 
 ConVar autoaim_max_dist( "autoaim_max_dist", "2160" ); // 2160 = 180 feet
@@ -593,7 +594,11 @@ CBasePlayer::CBasePlayer( )
 	m_qangLockViewangles.Init();
 
 	// Setup our default FOV
+#ifndef NEO
 	m_iDefaultFOV = g_pGameRules->DefaultFOV();
+#else
+	m_iDefaultFOV = ClientFOV(this);
+#endif
 
 	m_hZoomOwner = NULL;
 
@@ -8628,7 +8633,11 @@ float CBasePlayer::GetFOVDistanceAdjustFactorForNetworking()
 //-----------------------------------------------------------------------------
 void CBasePlayer::SetDefaultFOV( int FOV )
 {
+#ifndef NEO
 	m_iDefaultFOV = ( FOV == 0 ) ? g_pGameRules->DefaultFOV() : FOV;
+#else
+	m_iDefaultFOV = ClientFOV(this);
+#endif
 }
 
 //-----------------------------------------------------------------------------
