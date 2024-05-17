@@ -28,6 +28,8 @@ protected:
 private:
 	int m_beaconTexWidth, m_beaconTexHeight;
 	C_WeaponGhost* m_pGhost;
+	float m_flNextAllowGhostShowTime;
+	bool m_curGhostHolding;
 
 	vgui::HFont m_hFont;
 

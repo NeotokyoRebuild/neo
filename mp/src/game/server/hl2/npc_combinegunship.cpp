@@ -38,7 +38,9 @@
 #include "physics_prop_ragdoll.h"
 #include "iservervehicle.h"
 #include "soundent.h"
+#ifndef NEO
 #include "npc_citizen17.h"
+#endif
 #include "physics_saverestore.h"
 #include "hl2_shareddefs.h"
 #include "props.h"
@@ -2503,11 +2505,13 @@ void CNPC_CombineGunship::SelfDestruct( void )
 
 	UTIL_Remove( this );
 
+#ifndef NEO
 	// Record this so a nearby citizen can respond.
 	if ( GetCitizenResponse() )
 	{
 		GetCitizenResponse()->AddResponseTrigger( CR_PLAYER_KILLED_GUNSHIP );
 	}
+#endif
 
 #ifdef HL2_EPISODIC
 	NPCEventResponse()->TriggerEvent( "TLK_CITIZEN_RESPONSE_KILLED_GUNSHIP", false, false );
@@ -2851,10 +2855,12 @@ void CNPC_CombineGunship::TraceAttack( const CTakeDamageInfo &info, const Vector
 		// If this is from a player, record it so a nearby citizen can respond.
 		if ( info.GetAttacker()->IsPlayer() )
 		{
+#ifndef NEO
 			if ( GetCitizenResponse() )
 			{
 				GetCitizenResponse()->AddResponseTrigger( CR_PLAYER_SHOT_GUNSHIP );
 			}
+#endif
 
 #ifdef HL2_EPISODIC
 			NPCEventResponse()->TriggerEvent( "TLK_CITIZEN_RESPONSE_SHOT_GUNSHIP", false, false );

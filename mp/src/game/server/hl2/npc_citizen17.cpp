@@ -16,11 +16,12 @@
 #include "hl2_player.h"
 #include "items.h"
 
-
+#ifndef NEO
 #ifdef HL2MP
 #include "hl2mp/weapon_crowbar.h"
 #else
 #include "weapon_crowbar.h"
+#endif
 #endif
 
 #include "eventqueue.h"

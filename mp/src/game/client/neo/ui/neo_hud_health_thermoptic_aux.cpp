@@ -197,7 +197,6 @@ void CNEOHud_HTA::DrawHTA() const
 			camobar_xpos + xpos + camobar_w,
 			camobar_ypos + ypos + camobar_h);
 
-
 		surface()->DrawOutlinedRect(
 			sprintbar_xpos + xpos,
 			sprintbar_ypos + ypos,

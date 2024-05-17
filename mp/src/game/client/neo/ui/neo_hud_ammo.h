@@ -70,7 +70,6 @@ private:
 	CPanelAnimationVarAliasType(int, ammo_color_g, "ammo_color_g", "255", "int");
 	CPanelAnimationVarAliasType(int, ammo_color_b, "ammo_color_b", "255", "int");
 	CPanelAnimationVarAliasType(int, ammo_color_a, "ammo_color_a", "255", "int");
-
 private:
 	CNEOHud_Ammo(const CNEOHud_Ammo& other);
 };

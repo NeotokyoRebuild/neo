@@ -138,7 +138,6 @@ void CNEOHud_Ammo::DrawAmmo() const
 		wepName[textLen] = toupper(wepName[textLen]);
 	}
 	g_pVGuiLocalize->ConvertANSIToUnicode(wepName, unicodeWepName, sizeof(unicodeWepName));
-
 	Color box_color = Color(box_color_r, box_color_g, box_color_b, box_color_a);
 	Color ammo_color = Color(ammo_color_r, ammo_color_g, ammo_color_b, ammo_color_a);
 	DrawNeoHudRoundedBox(xpos, ypos, xpos + wide, ypos + tall, box_color, top_left_corner, top_right_corner, bottom_left_corner, bottom_right_corner);

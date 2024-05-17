@@ -28,6 +28,7 @@ public:
 
 	CWeaponGhost(void);
 	
+	virtual void ItemPreFrame(void) OVERRIDE;
 	virtual void PrimaryAttack(void) OVERRIDE { }
 	virtual void SecondaryAttack(void) OVERRIDE { }
 

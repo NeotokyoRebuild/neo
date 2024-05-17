@@ -25,11 +25,15 @@ ConVar neo_ghost_beacon_scale_baseline("neo_ghost_beacon_scale_baseline", "150",
 ConVar neo_ghost_beacon_alpha("neo_ghost_beacon_alpha", "150", FCVAR_USERINFO,
 	"Alpha channel transparency of HUD ghost beacons.", true, 0, true, 255);
 
+ConVar neo_ghost_delay_secs("neo_ghost_delay_secs", "3.3", FCVAR_CHEAT | FCVAR_REPLICATED,
+	"The delay in seconds until the ghost shows up after pick up.", true, 0.0, false, 0.0);
+
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(GhostBeacons, 0.01)
 
 CNEOHud_GhostBeacons::CNEOHud_GhostBeacons(const char *pElementName, vgui::Panel *parent)
 	: CHudElement(pElementName), Panel(parent, pElementName)
 {
+	m_curGhostHolding = false;
 	SetAutoDelete(true);
 
 	SetScheme("ClientScheme.res");
@@ -89,12 +93,25 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 
 	auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	auto ghost = dynamic_cast<C_WeaponGhost*>(localPlayer->GetActiveWeapon());
-	if(!ghost) //Check ghost ready here as players might be in PVS
+	if (!ghost) //Check ghost ready here as players might be in PVS
 	{
+		m_curGhostHolding = false;
 		return;
 	}
 
+	if (!m_curGhostHolding)
+	{
+		// Just changed to holding the ghost, start delay timer
+		m_flNextAllowGhostShowTime = gpGlobals->curtime + neo_ghost_delay_secs.GetFloat();
+	}
+	m_curGhostHolding = true;
+
 	m_pGhost = ghost;
+	const bool showGhost = (gpGlobals->curtime > m_flNextAllowGhostShowTime);
+	if (!showGhost)
+	{
+		return;
+	}
 
 	auto enemyTeamId = localPlayer->GetTeamNumber() == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI;
 	auto enemyTeam = GetGlobalTeam(enemyTeamId);
@@ -113,8 +130,6 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 			}
 		}
 	}
-
-	
 }
 
 void CNEOHud_GhostBeacons::Paint()
