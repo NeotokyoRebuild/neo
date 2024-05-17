@@ -13,7 +13,9 @@
 #include "beam_shared.h"
 #include "globalstate.h"
 #include "soundent.h"
+#ifndef NEO
 #include "npc_citizen17.h"
+#endif
 #include "gib.h"
 #include "spotlightend.h"
 #include "IEffects.h"
@@ -623,10 +625,12 @@ bool CNPC_CScanner::IsValidInspectTarget(CBaseEntity *pEntity)
 	// If a citizen, make sure he can be inspected again
 	if (pEntity->Classify() == CLASS_CITIZEN_PASSIVE)
 	{
+#ifndef NEO
 		if (((CNPC_Citizen*)pEntity)->GetNextScannerInspectTime() > gpGlobals->curtime)
 		{
 			return false;
 		}
+#endif
 	}
 
 	// Make sure no other squad member has already chosen to 
@@ -2080,12 +2084,14 @@ void CNPC_CScanner::StartTask( const Task_t *pTask )
 				}
 			}
 
+#ifndef NEO
 			// Don't try and inspect this target again for a few seconds
 			CNPC_Citizen *pCitizen = dynamic_cast<CNPC_Citizen *>( GetTarget() );
 			if ( pCitizen )
 			{
 				pCitizen->SetNextScannerInspectTime( gpGlobals->curtime + 5.0 );
 			}
+#endif
 
 			TaskFail("No route to inspection target!\n");
 		}
