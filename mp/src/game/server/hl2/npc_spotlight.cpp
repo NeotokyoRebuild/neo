@@ -18,7 +18,9 @@
 #include "soundent.h"
 #include "ndebugoverlay.h"
 #include "entitylist.h"
+#ifndef NEO
 #include "npc_citizen17.h"
+#endif
 #include "scriptedtarget.h"
 #include "ai_interactions.h"
 #include "spotlightend.h"

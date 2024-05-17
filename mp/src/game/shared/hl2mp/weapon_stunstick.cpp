@@ -222,7 +222,9 @@ float CWeaponStunStick::GetDamageForActivity( Activity hitActivity )
 //-----------------------------------------------------------------------------
 // Attempt to lead the target (needed because citizens can't hit manhacks with the crowbar!)
 //-----------------------------------------------------------------------------
+#ifndef NEO
 extern ConVar sk_crowbar_lead_time;
+#endif
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -261,7 +263,11 @@ int CWeaponStunStick::WeaponMeleeAttack1Condition( float flDot, float flDist )
 	pEnemy->GetVelocity( &vecVelocity, &angVelocity );
 
 	// Project where the enemy will be in a little while, add some randomness so he doesn't always hit
+#ifndef NEO
 	float dt = sk_crowbar_lead_time.GetFloat();
+#else
+	float dt = 0.9f; // Stub
+#endif
 	dt += random->RandomFloat( -0.3f, 0.2f );
 	if ( dt < 0.0f )
 		dt = 0.0f;
