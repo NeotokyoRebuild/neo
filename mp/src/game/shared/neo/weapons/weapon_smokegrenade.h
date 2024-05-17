@@ -53,6 +53,8 @@ public:
 	bool	Holster(CBaseCombatWeapon* pSwitchingTo = NULL);
 
 	bool	Reload(void);
+	void	Drop(const Vector& vecVelocity) override;
+	bool	CanDrop() override;
 
 #ifndef CLIENT_DLL
 	void Operator_HandleAnimEvent(animevent_t* pEvent, CBaseCombatCharacter* pOperator);

@@ -1609,17 +1609,18 @@ bool CNEO_Player::Weapon_CanSwitchTo(CBaseCombatWeapon *pWeapon)
 bool CNEO_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 {
 	// We already have a weapon in this slot
-	if (Weapon_GetSlot(pWeapon->GetSlot()))
+	auto weaponSlot = pWeapon->GetSlot();
+	if (weaponSlot != 3 && Weapon_GetSlot(weaponSlot))
 	{
 		return false;
 	}
-	else if (GetClass() == NEO_CLASS_RECON)
+	
+	auto neoWeapon = dynamic_cast<CNEOBaseCombatWeapon*>(pWeapon);
+	if(neoWeapon)
 	{
-		auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWeapon);
-		// Recons can't carry a PZ
-		if ((pNeoWep) && (pNeoWep->GetNeoWepBits() & NEO_WEP_PZ))
+		if(!neoWeapon->CanBePickedUpByClass(GetClass()))
 		{
-			return false;
+			return false;	
 		}
 	}
 
@@ -1690,114 +1691,48 @@ bool CNEO_Player::IsCarryingGhost(void) const
 	return GetNeoWepWithBits(this, NEO_WEP_GHOST) != NULL;
 }
 
-// Is the player allowed to drop a weapon of this type?
-bool CNEO_Player::IsAllowedToDrop(CBaseCombatWeapon *pWep)
-{
-	if (!pWep)
-	{
-		return false;
-	}
-
-	// We can static_cast if it's guaranteed that all weapons will be Neotokyo type.
-	// Allowing HL2DM weapons, for now.
-#define SUPPORT_NON_NEOTOKYO_WEAPONS 1 // NEO FIXME (Rain): knife is not yet a neo inherited weapon
-
-#if SUPPORT_NON_NEOTOKYO_WEAPONS
-	auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWep);
-	if (!pNeoWep)
-	{
-		if (dynamic_cast<CWeaponKnife*>(pWep))
-		{
-			return false;
-		}
-		// This was not a Neotokyo weapon. Don't know what it is, but allow dropping.
-		else
-		{
-			return true;
-		}
-	}
-#else
-	Assert(dynamic_cast<CNEOBaseCombatWeapon*>(pWep));
-	auto pNeoWep = static_cast<CNEOBaseCombatWeapon*>(pWep);
-#endif
-
-	const auto wepBits = pNeoWep->GetNeoWepBits();
-	Assert(wepBits > NEO_WEP_INVALID);
-
-	const auto unallowedDrops = (NEO_WEP_KNIFE | NEO_WEP_PROX_MINE | NEO_WEP_THROWABLE);
-	return ((wepBits & unallowedDrops) == 0);
-}
-
 void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
 	const Vector *pvecTarget, const Vector *pVelocity )
 {
 	m_bDroppedAnything = true;
-	if (!IsDead() && pWeapon)
+	auto neoWeapon = dynamic_cast<CNEOBaseCombatWeapon*>(pWeapon);
+	if(neoWeapon && neoWeapon->CanDrop())
 	{
-		if (!IsAllowedToDrop(pWeapon))
+		if (IsDead() && pWeapon)
 		{
-			// NEO TODO (Rain): No need for server to tell
-			// client to play a sound effect, move this to client.
+			auto activeWep = GetActiveWeapon();
+			if (activeWep)
 			{
-#if (0)
-				CRecipientFilter filter;
-				filter.AddRecipient(this);
-
-				EmitSound_t sound;
-				sound.m_nChannel = CHAN_ITEM;
-				// NEO TODO (Rain): Find appropriate sound for denying drop.
-				// Possibly the original NT "can't +use" sound.
-				sound.m_pSoundName = "player/CPneutral.wav";
-				sound.m_SoundLevel = SNDLVL_30dB;
-				sound.m_flVolume = VOL_NORM;
-
-				// NEO HACK/FIXME (Rain): This should get early precached
-				// as part of our regular sound scripts on this::Precache()
-				PrecacheScriptSound(sound.m_pSoundName);
-
-				EmitSound(filter, edict()->m_EdictIndex, sound);
-#endif
+				// If player has held down an attack key since the previous frame
+				if (((m_nButtons & IN_ATTACK) && (!(m_afButtonPressed & IN_ATTACK))) ||
+					((m_nButtons & IN_ATTACK2) && (!(m_afButtonPressed & IN_ATTACK2))))
+				{
+					// Drop a grenade if it's primed.
+					if (activeWep == Weapon_OwnsThisType("weapon_grenade"))
+					{
+						NEODropPrimedFragGrenade(this, GetActiveWeapon());
+						return;
+					}
+					// Drop a smoke if it's primed.
+					else if (activeWep == Weapon_OwnsThisType("weapon_smokegrenade"))
+					{
+						NEODropPrimedSmokeGrenade(this, activeWep);
+						return;
+					}
+				}
 			}
-
+		}
+		
+		BaseClass::Weapon_Drop(pWeapon, pvecTarget, pVelocity);
+	} else if(!neoWeapon)
+	{
+		if(dynamic_cast<CWeaponKnife*>(pWeapon)) //TODO: Remove once knife is neoweapon
+		{
 			return;
 		}
-
-		auto neoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWeapon);
-		if (neoWep)
-		{
-			if (neoWep->GetNeoWepBits() & NEO_WEP_SUPA7)
-			{
-				Assert(dynamic_cast<CWeaponSupa7*>(neoWep));
-				static_cast<CWeaponSupa7*>(neoWep)->ClearDelayedInputs();
-			}
-		}
-	}
-	else
-	{
-		auto activeWep = GetActiveWeapon();
-		if (activeWep)
-		{
-			// If player has held down an attack key since the previous frame
-			if (((m_nButtons & IN_ATTACK) && (!(m_afButtonPressed & IN_ATTACK))) ||
-				((m_nButtons & IN_ATTACK2) && (!(m_afButtonPressed & IN_ATTACK2))))
-			{
-				// Drop a grenade if it's primed.
-				if (activeWep == Weapon_OwnsThisType("weapon_grenade"))
-				{
-					NEODropPrimedFragGrenade(this, GetActiveWeapon());
-					return;
-				}
-				// Drop a smoke if it's primed.
-				else if (activeWep == Weapon_OwnsThisType("weapon_smokegrenade"))
-				{
-					NEODropPrimedSmokeGrenade(this, activeWep);
-					return;
-				}
-			}
-		}
-	}
-
-	BaseClass::Weapon_Drop(pWeapon, pvecTarget, pVelocity);
+		
+		BaseClass::Weapon_Drop(pWeapon, pvecTarget, pVelocity);
+	}	
 }
 
 void CNEO_Player::UpdateOnRemove( void )

@@ -2203,7 +2203,7 @@ bool CBaseCombatCharacter::Weapon_EquipAmmoOnly( CBaseCombatWeapon *pWeapon )
 			}
 			
 			//Only succeed if we've taken ammo from the weapon
-			if ( takenPrimary > 0 || takenSecondary > 0 )
+			if ((takenPrimary > 0 || takenSecondary > 0) && (pWeapon->GetPrimaryAmmoCount() < 1 && pWeapon->GetSecondaryAmmoCount() < 1))
 				return true;
 			
 			return false;
