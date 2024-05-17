@@ -617,6 +617,15 @@ void C_NEO_Player::PreThink( void )
 		speed *= pNeoWep->GetSpeedScale();
 	}
 
+	if (!IsAirborne() && m_iNeoClass != NEO_CLASS_RECON)
+	{
+		const float deltaTime = gpGlobals->curtime - m_flLastAirborneJumpOkTime;
+		const float leeway = 1.0f;
+		if (deltaTime < leeway)
+		{
+			speed = (speed / 2) + (deltaTime / 2 * (speed));
+		}
+	}
 	SetMaxSpeed(speed);
 	
 	CheckThermOpticButtons();
