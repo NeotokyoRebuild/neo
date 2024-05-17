@@ -49,31 +49,43 @@ CNEOHud_ChildElement::CNEOHud_ChildElement()
 	Assert(m_rounded_width > 0 && m_rounded_height > 0);
 }
 
-void CNEOHud_ChildElement::DrawNeoHudRoundedBox(const int x0, const int y0, const int x1, const int y1) const
+void CNEOHud_ChildElement::DrawNeoHudRoundedBox(const int x0, const int y0, const int x1, const int y1, Color color, bool topLeft, bool topRight, bool bottomLeft, bool bottomRight) const
 {
 	const int x0w = x0 + m_rounded_width;
 	const int x1w = x1 - m_rounded_width;
 	const int y0h = y0 + m_rounded_height;
 	const int y1h = y1 - m_rounded_height;
 
-	surface()->DrawSetColor(NEO_HUDBOX_COLOR);
+	surface()->DrawSetColor(color);
 
 	// Rounded corner pieces
-	surface()->DrawSetTexture(m_hTex_Rounded_NW);
-	surface()->DrawTexturedRect(x0, y0, x0w, y0h);
-	surface()->DrawSetTexture(m_hTex_Rounded_NE);
-	surface()->DrawTexturedRect(x1w, y0, x1, y0h);
-	surface()->DrawSetTexture(m_hTex_Rounded_SE);
-	surface()->DrawTexturedRect(x0, y1h, x0w, y1);
-	surface()->DrawSetTexture(m_hTex_Rounded_SW);
-	surface()->DrawTexturedRect(x1w, y1h, x1, y1);
+	if (topLeft)
+	{
+		surface()->DrawSetTexture(m_hTex_Rounded_NW);
+		surface()->DrawTexturedRect(x0, y0, x0w, y0h);
+	}
+	if (topRight)
+	{
+		surface()->DrawSetTexture(m_hTex_Rounded_NE);
+		surface()->DrawTexturedRect(x1w, y0, x1, y0h);
+	}
+	if (bottomLeft)
+	{
+		surface()->DrawSetTexture(m_hTex_Rounded_SE);
+		surface()->DrawTexturedRect(x0, y1h, x0w, y1);
+	}
+	if (bottomRight)
+	{
+		surface()->DrawSetTexture(m_hTex_Rounded_SW);
+		surface()->DrawTexturedRect(x1w, y1h, x1, y1);
+	}
 
 	// Large middle rectangle
 	surface()->DrawFilledRect(x0w, y0, x1w, y1);
 
 	// Small side rectangles
-	surface()->DrawFilledRect(x0, y0h, x0w, y1h);
-	surface()->DrawFilledRect(x1w, y0h, x1, y1h);
+	surface()->DrawFilledRect(x0, topLeft? y0h: y0, x0w, bottomLeft? y1h: y1);
+	surface()->DrawFilledRect(x1w, topRight? y0h: y0, x1, bottomRight? y1h: y1);
 }
 
 int CNEOHud_ChildElement::GetMargin()

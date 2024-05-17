@@ -138,11 +138,13 @@ void CNEOHud_Ammo::DrawAmmo() const
 		wepName[textLen] = toupper(wepName[textLen]);
 	}
 	g_pVGuiLocalize->ConvertANSIToUnicode(wepName, unicodeWepName, sizeof(unicodeWepName));
-		
-	DrawNeoHudRoundedBox(xpos, ypos, xpos + wide, ypos + tall);
+	Color box_color = Color(box_color_r, box_color_g, box_color_b, box_color_a);
+	Color ammo_color = Color(ammo_color_r, ammo_color_g, ammo_color_b, ammo_color_a);
+	DrawNeoHudRoundedBox(xpos, ypos, xpos + wide, ypos + tall, box_color, top_left_corner, top_right_corner, bottom_left_corner, bottom_right_corner);
 
 	surface()->DrawSetTextFont(m_hSmallTextFont);
-	surface()->DrawSetTextColor(textColorTransparent);
+	surface()->DrawSetColor(ammo_color);
+	surface()->DrawSetTextColor(ammo_color);
 
 	int fontWidth, fontHeight;
 	surface()->GetTextSize(m_hSmallTextFont, unicodeWepName, fontWidth, fontHeight);
@@ -232,6 +234,16 @@ void CNEOHud_Ammo::DrawAmmo() const
 				ammoChar = new char[2] { 'g', '\0' };
 				magSizeMax = magSizeCurrent = ammoCount;
 			}			
+		}
+
+		if (digit_as_number)
+		{ // Draw bullets in magazine in number form
+			surface()->DrawSetTextFont(m_hBulletFont);
+			surface()->DrawSetTextPos(digit_xpos + xpos, digit_ypos + ypos);
+			wchar_t bullets[22];
+			swprintf_s(bullets, L"%d/%d\0", magSizeCurrent, magSizeMax);
+			surface()->DrawPrintText(bullets, (int)(log10(magSizeCurrent) + 1) + (int)(log10(magSizeMax) + 1) + 1);
+			return;
 		}
 
 		auto maxSpaceAvaliableForBullets = digit_max_width;

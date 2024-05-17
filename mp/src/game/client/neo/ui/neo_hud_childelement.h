@@ -7,6 +7,7 @@
 class CNeoHudElements;
 class C_NEO_Player;
 
+#define NEO_HUDBOX_COLOR Color(116, 116, 116, 178)
 #define NEO_HUD_ELEMENT_FREQ_CVAR_NAME(Name) cl_neo_hud_ ## Name ## _update_freq
 #ifndef xstr
 #define xstr(a) str(a)
@@ -31,7 +32,7 @@ public:
 	virtual ~CNEOHud_ChildElement() { }
 
 protected:
-	virtual void DrawNeoHudRoundedBox(const int x0, const int y0, const int x1, const int y1) const;
+	virtual void DrawNeoHudRoundedBox(const int x0, const int y0, const int x1, const int y1, Color colour = NEO_HUDBOX_COLOR, bool topLeft = TRUE, bool topRight = TRUE, bool bottomLeft = TRUE, bool bottomRight = TRUE) const;
 
 	virtual void UpdateStateForNeoHudElementDraw() = 0;
 	virtual void DrawNeoHudElement() = 0;
