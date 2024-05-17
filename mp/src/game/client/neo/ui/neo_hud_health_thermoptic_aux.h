@@ -40,10 +40,10 @@ private:
 	CPanelAnimationVarAliasType(float, tall, "tall", "32", "proportional_float");
 	CPanelAnimationVarAliasType(float, visible, "visible", "1", "proportional_float");
 	CPanelAnimationVarAliasType(float, enabled, "enabled", "1", "proportional_float");
-	CPanelAnimationVarAliasType(int, box_color_r, "box_color_r", "255", "int");
-	CPanelAnimationVarAliasType(int, box_color_g, "box_color_g", "255", "int");
-	CPanelAnimationVarAliasType(int, box_color_b, "box_color_b", "255", "int");
-	CPanelAnimationVarAliasType(int, box_color_a, "box_color_a", "255", "int");
+	CPanelAnimationVarAliasType(int, box_color_r, "box_color_r", "116", "int");
+	CPanelAnimationVarAliasType(int, box_color_g, "box_color_g", "116", "int");
+	CPanelAnimationVarAliasType(int, box_color_b, "box_color_b", "116", "int");
+	CPanelAnimationVarAliasType(int, box_color_a, "box_color_a", "178", "int");
 
 	CPanelAnimationVarAliasType(bool, top_left_corner, "top_left_corner", "1", "bool");
 	CPanelAnimationVarAliasType(bool, top_right_corner, "top_right_corner", "1", "bool");
@@ -61,7 +61,7 @@ private:
 	CPanelAnimationVarAliasType(int, health_color_r, "health_color_r", "255", "int");
 	CPanelAnimationVarAliasType(int, health_color_g, "health_color_g", "255", "int");
 	CPanelAnimationVarAliasType(int, health_color_b, "health_color_b", "255", "int");
-	CPanelAnimationVarAliasType(int, health_color_a, "health_color_a", "255", "int");
+	CPanelAnimationVarAliasType(int, health_color_a, "health_color_a", "178", "int");
 
 	CPanelAnimationVarAliasType(int, camotext_xpos, "camotext_xpos", "6", "proportional_xpos");
 	CPanelAnimationVarAliasType(int, camotext_ypos, "camotext_ypos", "12", "proportional_ypos");
@@ -74,7 +74,7 @@ private:
 	CPanelAnimationVarAliasType(int, camo_color_r, "camo_color_r", "255", "int");
 	CPanelAnimationVarAliasType(int, camo_color_g, "camo_color_g", "255", "int");
 	CPanelAnimationVarAliasType(int, camo_color_b, "camo_color_b", "255", "int");
-	CPanelAnimationVarAliasType(int, camo_color_a, "camo_color_a", "255", "int");
+	CPanelAnimationVarAliasType(int, camo_color_a, "camo_color_a", "178", "int");
 
 	CPanelAnimationVarAliasType(int, sprinttext_xpos, "sprinttext_xpos", "6", "proportional_xpos");
 	CPanelAnimationVarAliasType(int, sprinttext_ypos, "sprinttext_ypos", "22", "proportional_ypos");
@@ -87,7 +87,7 @@ private:
 	CPanelAnimationVarAliasType(int, sprint_color_r, "sprint_color_r", "255", "int");
 	CPanelAnimationVarAliasType(int, sprint_color_g, "sprint_color_g", "255", "int");
 	CPanelAnimationVarAliasType(int, sprint_color_b, "sprint_color_b", "255", "int");
-	CPanelAnimationVarAliasType(int, sprint_color_a, "sprint_color_a", "255", "int");
+	CPanelAnimationVarAliasType(int, sprint_color_a, "sprint_color_a", "178", "int");
 
 private:
 	CNEOHud_HTA(const CNEOHud_HTA& other);
