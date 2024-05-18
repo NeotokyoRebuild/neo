@@ -134,6 +134,11 @@ Activity CWeaponPZ::GetPrimaryAttackActivity()
 	return ACT_VM_RECOIL3;
 }
 
+bool CWeaponPZ::CanBePickedUpByClass(int classId)
+{
+	return classId != NEO_CLASS_RECON;
+}
+
 void CWeaponPZ::AddViewKick()
 {
 	auto owner = ToBasePlayer(GetOwner());

@@ -857,12 +857,15 @@ extern int	gEvilImpulse101;
 //-----------------------------------------------------------------------------
 bool CHL2MP_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 {
+#ifndef NEO
 	CBaseCombatCharacter *pOwner = pWeapon->GetOwner();
-
+#endif
+	
 	// Can I have this weapon type?
 	if ( !IsAllowedToPickupWeapons() )
 		return false;
 
+#ifndef NEO
 	if ( pOwner || !Weapon_CanUse( pWeapon ) || !g_pGameRules->CanHavePlayerItem( this, pWeapon ) )
 	{
 		if ( gEvilImpulse101 )
@@ -871,6 +874,7 @@ bool CHL2MP_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 		}
 		return false;
 	}
+#endif
 
 	// Don't let the player fetch weapons through walls (use MASK_SOLID so that you can't pickup through windows)
 	if( !pWeapon->FVisible( this, MASK_SOLID ) && !(GetFlags() & FL_NOTARGET) )

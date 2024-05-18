@@ -510,3 +510,18 @@ void CWeaponGrenade::Operator_HandleAnimEvent(animevent_t *pEvent, CBaseCombatCh
 	}
 }
 #endif
+
+bool CWeaponGrenade::CanDrop()
+{
+	auto owner = GetOwner(); 
+	return owner && !owner->IsAlive();
+}
+
+void CWeaponGrenade::Drop(const Vector& vecVelocity)
+{
+	auto owner = GetOwner();
+	auto ammoFromPlayer = owner->GetAmmoCount(m_iPrimaryAmmoType);
+	owner->SetAmmoCount(0, m_iPrimaryAmmoType);
+	SetPrimaryAmmoCount(ammoFromPlayer);
+	BaseClass::Drop(vecVelocity);
+}

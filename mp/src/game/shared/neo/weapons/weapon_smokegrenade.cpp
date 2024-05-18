@@ -444,6 +444,21 @@ void CWeaponSmokeGrenade::RollGrenade(CBasePlayer* pPlayer)
 	}
 }
 
+bool CWeaponSmokeGrenade::CanDrop()
+{
+	auto owner = GetOwner(); 
+	return owner && !owner->IsAlive();
+}
+
+void CWeaponSmokeGrenade::Drop(const Vector& vecVelocity)
+{
+	auto owner = GetOwner();
+	auto ammoFromPlayer = owner->GetAmmoCount(m_iPrimaryAmmoType);
+	owner->SetAmmoCount(0, m_iPrimaryAmmoType);
+	SetPrimaryAmmoCount(ammoFromPlayer);
+	BaseClass::Drop(vecVelocity);
+}
+
 #ifndef CLIENT_DLL
 void CWeaponSmokeGrenade::Operator_HandleAnimEvent(animevent_t* pEvent, CBaseCombatCharacter* pOperator)
 {

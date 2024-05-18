@@ -536,3 +536,9 @@ bool CWeaponSupa7::SlugLoaded() const
 {
 	return m_bSlugLoaded;
 }
+
+void CWeaponSupa7::Drop(const Vector& vecVelocity)
+{
+	ClearDelayedInputs();
+	CNEOBaseCombatWeapon::Drop(vecVelocity);
+}

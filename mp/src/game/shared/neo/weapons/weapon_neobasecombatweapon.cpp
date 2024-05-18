@@ -589,3 +589,13 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 
 	m_flAccuracyPenalty += GetAccuracyPenalty();
 }
+
+bool CNEOBaseCombatWeapon::CanBePickedUpByClass(int classId)
+{
+	return true;
+}
+
+bool CNEOBaseCombatWeapon::CanDrop()
+{
+	return true;
+}
