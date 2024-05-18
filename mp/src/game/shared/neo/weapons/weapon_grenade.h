@@ -55,7 +55,7 @@ public:
 
 	bool	Reload(void);
 
-	void	Drop(const Vector& vecVelocity) override;
+	void	Drop(const Vector& vecVelocity) OVERRIDE;
 	bool	CanDrop(void) OVERRIDE;
 
 #ifndef CLIENT_DLL
