@@ -858,10 +858,7 @@ float CServerGameDLL::GetTickInterval( void ) const
 	{
 #ifdef NEO
 		const int tickrateAsInt = CommandLine()->ParmValue("-tickrate", 0);
-		if (tickrateAsInt != 66)
-		{
-			Warning("WARNING: Server is only recommended to run at ~66 tickrate. Current tickrate: %d\n", tickrateAsInt);
-		}
+		Warning("WARNING: Setting -tickrate is not recommended. Server is only recommended to run at the default ~66.67 tickrate. Current tickrate: %d\n", tickrateAsInt);
 		const float tickrate = static_cast<float>(tickrateAsInt);
 #else
 		float tickrate = CommandLine()->ParmValue("-tickrate", 0);
