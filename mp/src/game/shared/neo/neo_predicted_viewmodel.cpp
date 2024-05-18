@@ -363,7 +363,16 @@ void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 
 	AngleVectors(newAng, &vForward, &vRight, &vUp);
 
-	vOffset = data.m_vecVMPosOffset;
+	auto neoPlayer = static_cast<CNEO_Player*>(pOwner);
+	if (neoPlayer && neoPlayer->IsInAim())
+	{
+		vOffset = data.m_vecVMAimPosOffset;
+	}
+	else
+	{
+		vOffset = data.m_vecVMPosOffset;
+	}
+	
 	angOffset = data.m_angVMAngOffset;
 
 	newPos += vForward * vOffset.x;

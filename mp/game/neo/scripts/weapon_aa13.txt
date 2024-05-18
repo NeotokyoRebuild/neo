@@ -56,6 +56,14 @@ WeaponData
 		"right"		"12"
 		"up"		"1"
 	}
+
+	"ZoomOffset"
+	{
+		"fov"		"54"
+		"forward"	"15"
+		"right"		"12"
+		"up"		"1"
+	}
 	
 	"AimOffset"
 	{
