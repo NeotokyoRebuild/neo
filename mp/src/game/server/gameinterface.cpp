@@ -856,7 +856,13 @@ float CServerGameDLL::GetTickInterval( void ) const
 	// override if tick rate specified in command line
 	if ( CommandLine()->CheckParm( "-tickrate" ) )
 	{
-		float tickrate = CommandLine()->ParmValue( "-tickrate", 0 );
+#ifdef NEO
+		const int tickrateAsInt = CommandLine()->ParmValue("-tickrate", 0);
+		Warning("WARNING: Setting -tickrate is not recommended. Server is only recommended to run at the default ~66.67 tickrate. Current tickrate: %d\n", tickrateAsInt);
+		const float tickrate = static_cast<float>(tickrateAsInt);
+#else
+		float tickrate = CommandLine()->ParmValue("-tickrate", 0);
+#endif
 		if ( tickrate > 10 )
 			tickinterval = 1.0f / tickrate;
 	}
