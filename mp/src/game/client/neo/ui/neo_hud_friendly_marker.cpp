@@ -75,6 +75,10 @@ void CNEOHud_FriendlyMarker::DrawNeoHudElement()
 	{
 		return;
 	}
+
+	SetFgColor(Color(0, 0, 0, 0));
+	SetBgColor(Color(0, 0, 0, 0));
+
 	const float scale = neo_friendly_marker_hud_scale_factor.GetFloat();
 
 	m_iMarkerWidth = (m_iMarkerTexWidth * 0.5f) * scale;
