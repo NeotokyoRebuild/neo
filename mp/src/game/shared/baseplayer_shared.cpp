@@ -1894,20 +1894,18 @@ void CBasePlayer::SharedSpawn()
 }
 
 #ifdef NEO
-int ClientFOV(const CBasePlayer* player)
+int CBasePlayer::ClientFOV() const
 {
 	int fov = DEFAULT_FOV;
-	int type = 0;
 #ifdef CLIENT_DLL
-	//fov = neo_fov.GetFloat();
-	fov = player->m_iDefaultFOV;
-	type = 1;
+	// neo_fov.GetFloat() doesn't work, so utilize m_iDefaultFOV
+	fov = m_iDefaultFOV;
 #else
-	if (player && !(player->GetFlags() & FL_FAKECLIENT))
+	if (!(GetFlags() & FL_FAKECLIENT))
 	{
-		fov = atoi(engine->GetClientConVarValue(engine->IndexOfEdict(player->edict()), "neo_fov"));
+		// NOTE (nullsystem): Think this only called once in a while so not too bad
+		fov = atoi(engine->GetClientConVarValue(engine->IndexOfEdict(edict()), "neo_fov"));
 	}
-	type = 2;
 #endif
 	return fov;
 }
@@ -1935,7 +1933,7 @@ int CBasePlayer::GetDefaultFOV( void ) const
 #ifndef NEO
 	int iFOV = ( m_iDefaultFOV == 0 ) ? g_pGameRules->DefaultFOV() : m_iDefaultFOV;
 #else
-	int iFOV = ClientFOV(this);
+	int iFOV = ClientFOV();
 #endif
 	if ( iFOV > MAX_FOV )
 		iFOV = MAX_FOV;

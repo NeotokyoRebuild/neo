@@ -840,14 +840,16 @@ void CViewRender::SetUpViews()
 		}
 	}
 
+#ifndef NEO
 	//Find the offset our current FOV is from the default value
 	float fDefaultFov = default_fov.GetFloat();
 	float flFOVOffset = fDefaultFov - view.fov;
+#endif
 
 	//Adjust the viewmodel's FOV to move with any FOV offsets on the viewer's end
 #ifdef SDK2013CE
 #ifdef NEO // Decouple viewmodel FOV from view FOV.
-	float fovMultiplier = view.fov / fDefaultFov;
+	float fovMultiplier = view.fov / static_cast<float>(DEFAULT_FOV);
 	view.fovViewmodel = g_pClientMode->GetViewModelFOV() * fovMultiplier;
 #else
 	view.fovViewmodel = fabs(g_pClientMode->GetViewModelFOV() - flFOVOffset);
@@ -860,11 +862,13 @@ void CViewRender::SetUpViews()
 	{
 		// Let the headtracking read the status of the HMD, etc.
 		// This call can go almost anywhere, but it needs to know the player FOV for sniper weapon zoom, etc
+#ifndef NEO
 		if ( flFOVOffset == 0.0f )
 		{
 			g_ClientVirtualReality.ProcessCurrentTrackingState ( 0.0f );
 		}
 		else
+#endif
 		{
 			g_ClientVirtualReality.ProcessCurrentTrackingState ( view.fov );
 		}

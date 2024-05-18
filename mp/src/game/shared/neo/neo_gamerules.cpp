@@ -22,8 +22,6 @@
 	#include "inetchannelinfo.h"
 #endif
 
-extern int ClientFOV(const CBasePlayer* player);
-
 ConVar mp_neo_loopback_warmup_round("mp_neo_loopback_warmup_round", "0", FCVAR_REPLICATED, "Allow loopback server to do warmup rounds.", true, 0.0f, true, 1.0f);
 ConVar mp_neo_warmup_round_time("mp_neo_warmup_round_time", "45", FCVAR_REPLICATED, "The warmup round time, in seconds.", true, 0.0f, false, 0.0f);
 ConVar mp_neo_preround_freeze_time("mp_neo_preround_freeze_time", "10", FCVAR_REPLICATED, "The pre-round freeze time, in seconds.", true, 0.0, false, 0);
@@ -357,7 +355,7 @@ void CNEORules::ClientSpawned(edict_t* pPlayer)
 int CNEORules::DefaultFOV(void)
 {
 #ifdef CLIENT_DLL
-	return ClientFOV(C_NEO_Player::GetLocalNEOPlayer());
+	return C_NEO_Player::GetLocalNEOPlayer()->ClientFOV();
 #else
 	return 90;
 #endif
