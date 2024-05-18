@@ -57,6 +57,8 @@ public:
 private:
 	float m_flYPrevious;
 	float m_flLastLeanTime;
+	float m_flStartAimingChange;
+	bool m_bViewAim;
 };
 
 #endif // NEO_PREDICTED_VIEWMODEL_H

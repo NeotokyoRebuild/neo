@@ -54,7 +54,13 @@ void CHL2MPSWeaponInfo::Parse( KeyValues *pKeyValuesData, const char *szWeaponNa
 	// NEO TODO (Rain): add optional ironsight offsets
 	// in addition to "traditional" NT aim
 
+	// AimOffset = Ironsight ADS offset (Disabled)
+	// ZoomOffset = Traditional ADS offset
+#if 0
 	KeyValues *pAimOffset = pKeyValuesData->FindKey("AimOffset");
+#else
+	KeyValues* pAimOffset = pKeyValuesData->FindKey("ZoomOffset");
+#endif
 	if (pAimOffset)
 	{
 		m_flVMAimFov = pAimOffset->GetFloat("fov", 55);

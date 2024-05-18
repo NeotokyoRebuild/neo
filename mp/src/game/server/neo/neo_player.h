@@ -137,6 +137,7 @@ public:
 	int GetSkin() const { return m_iNeoSkin; }
 	int GetClass() const { return m_iNeoClass; }
 	int GetStar() const { return m_iNeoStar; }
+	bool IsInAim() const { return m_bInAim; }
 
 	bool IsAirborne() const { return (!(GetFlags() & FL_ONGROUND)); }
 
