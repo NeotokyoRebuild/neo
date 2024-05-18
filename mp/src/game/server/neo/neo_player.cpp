@@ -1144,19 +1144,17 @@ void CNEO_Player::Weapon_AimToggle(CBaseCombatWeapon *pWep, const NeoWeponAimTog
 
 void CNEO_Player::Weapon_SetZoom(const bool bZoomIn)
 {
-	const float zoomSpeedSecs = 0.25f;
-
 	ShowCrosshair(bZoomIn);
 	
 	const int fov = GetDefaultFOV();
 	if (bZoomIn)
 	{
 		const int zoomAmount = 30;
-		SetFOV((CBaseEntity*)this, fov - zoomAmount, zoomSpeedSecs);
+		SetFOV((CBaseEntity*)this, fov - zoomAmount, NEO_ZOOM_SPEED);
 	}
 	else
 	{
-		SetFOV((CBaseEntity*)this, fov, zoomSpeedSecs);
+		SetFOV((CBaseEntity*)this, fov, NEO_ZOOM_SPEED);
 	}
 
 	m_bInAim = bZoomIn;

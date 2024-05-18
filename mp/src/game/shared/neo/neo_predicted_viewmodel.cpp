@@ -369,7 +369,6 @@ void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 	{
 		const bool playerAiming = neoPlayer->IsInAim();
 		const float currentTime = gpGlobals->curtime;
-		static const float timePeriod = 0.2f;
 		if (m_bViewAim && !playerAiming)
 		{
 			// From aiming to not aiming
@@ -382,27 +381,30 @@ void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 			m_flStartAimingChange = currentTime;
 			m_bViewAim = true;
 		}
-		const float endAimingChange = m_flStartAimingChange + timePeriod;
+		const float endAimingChange = m_flStartAimingChange + NEO_ZOOM_SPEED;
 		const bool inAimingChange = (m_flStartAimingChange <= currentTime && currentTime < endAimingChange);
 		if (inAimingChange)
 		{
-			float percentage = (currentTime - m_flStartAimingChange) / timePeriod;
+			float percentage = (currentTime - m_flStartAimingChange) / NEO_ZOOM_SPEED;
 			if (percentage > 1.0f) percentage = 1.0f;
 			else if (percentage < 0.0f) percentage = 0.0f;
 
 			Vector vecVMDelta = data.m_vecVMAimPosOffset - data.m_vecVMPosOffset;
 			vecVMDelta *= percentage;
+
+			QAngle angVMDelta = data.m_angVMAimAngOffset - data.m_angVMAngOffset;
+			angVMDelta *= percentage;
 			if (playerAiming)
 			{
 				// From not aiming to aiming gradual
 				vOffset = data.m_vecVMPosOffset + vecVMDelta;
-				angOffset = data.m_angVMAimAngOffset;
+				angOffset = data.m_angVMAngOffset + angVMDelta;
 			}
 			else
 			{
 				// From aiming to not aiming gradual
 				vOffset = data.m_vecVMAimPosOffset - vecVMDelta;
-				angOffset = data.m_angVMAngOffset;
+				angOffset = data.m_angVMAimAngOffset - angVMDelta;
 			}
 		}
 		else
