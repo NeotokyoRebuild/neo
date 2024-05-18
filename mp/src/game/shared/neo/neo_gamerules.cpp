@@ -1385,6 +1385,14 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 		}
 	}
 
+	CRecipientFilter filter;
+	filter.AddAllPlayers();
+	UserMessageBegin(filter, "RoundResult");
+	WRITE_STRING(team == TEAM_JINRAI ? "jinrai" : team == TEAM_NSF ? "nsf" : "tie");	// which team won
+	WRITE_FLOAT(gpGlobals->curtime);													// when did they win
+	WRITE_STRING(victoryMsg);															// extra message (who capped or last kill or who got the most points or whatever)
+	MessageEnd();
+
 	EmitSound_t soundParams;
 	soundParams.m_nChannel = CHAN_AUTO;
 	soundParams.m_SoundLevel = SNDLVL_NONE;
@@ -1404,8 +1412,8 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 		{
 			if (!player->IsBot() || player->IsHLTV())
 			{
-				engine->ClientPrintf(player->edict(), victoryMsg);
-				UTIL_ClientPrintAll((gotMatchWinner ? HUD_PRINTTALK : HUD_PRINTCENTER), victoryMsg);
+				/*engine->ClientPrintf(player->edict(), victoryMsg);
+				UTIL_ClientPrintAll((gotMatchWinner ? HUD_PRINTTALK : HUD_PRINTCENTER), victoryMsg);*/
 
 				const char* volStr = engine->GetClientConVarValue(i, snd_victory_volume.GetName());
 				const float jingleVolume = volStr ? atof(volStr) : 0.33f;
