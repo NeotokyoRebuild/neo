@@ -56,6 +56,8 @@ public:
 	void PrimaryAttack(void);
 	void SecondaryAttack(void);
 	void DryFire(void);
+	
+	void Drop(const Vector& vecVelocity) OVERRIDE;
 
 	virtual float GetFireRate(void) OVERRIDE { return 0.7f; }
 

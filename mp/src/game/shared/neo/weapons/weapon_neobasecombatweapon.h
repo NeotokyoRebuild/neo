@@ -199,6 +199,9 @@ public:
 
 	virtual const Vector& GetBulletSpread(void) OVERRIDE;
 
+	virtual bool CanBePickedUpByClass(int classId);
+	virtual bool CanDrop(void);
+
 #ifdef CLIENT_DLL
 	virtual bool Holster(CBaseCombatWeapon* pSwitchingTo);
 	virtual void ItemHolsterFrame() OVERRIDE;

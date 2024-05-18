@@ -258,6 +258,12 @@ void CWeaponDetpack::CheckTossPosition(CBasePlayer* pPlayer, const Vector& vecEy
 	}
 }
 
+bool CWeaponDetpack::CanDrop()
+{
+	auto owner = GetOwner();
+	return m_bThisDetpackHasBeenThrown && owner && !GetOwner()->IsAlive();
+}
+
 void CWeaponDetpack::TossDetpack(CBasePlayer* pPlayer)
 {
 	Assert(HasPrimaryAmmo());
