@@ -71,6 +71,10 @@ bool ToolFramework_SetupEngineMicrophone( Vector &origin, QAngle &angles );
 extern ConVar default_fov;
 extern bool g_bRenderingScreenshot;
 
+#ifdef NEO
+extern ConVar neo_fov;
+#endif
+
 #if !defined( _X360 )
 #define SAVEGAME_SCREENSHOT_WIDTH	180
 #define SAVEGAME_SCREENSHOT_HEIGHT	100
@@ -752,7 +756,11 @@ void CViewRender::SetUpViews()
 	//  closest point of approach seems to be view center to top of crouched box
 	view.zNear			    = GetZNear();
 	view.zNearViewmodel	    = 1;
+#ifndef NEO
 	view.fov = default_fov.GetFloat();
+#else
+	view.fov = neo_fov.GetFloat();
+#endif
 
 	view.m_bOrtho			= false;
     view.m_bViewToProjectionOverride = false;
@@ -832,14 +840,17 @@ void CViewRender::SetUpViews()
 		}
 	}
 
+#ifndef NEO
 	//Find the offset our current FOV is from the default value
 	float fDefaultFov = default_fov.GetFloat();
 	float flFOVOffset = fDefaultFov - view.fov;
+#endif
 
 	//Adjust the viewmodel's FOV to move with any FOV offsets on the viewer's end
 #ifdef SDK2013CE
-#ifdef NEO // Decouple viewmodel FOV from view FOV.
-	view.fovViewmodel = g_pClientMode->GetViewModelFOV();
+#ifdef NEO // Viewmodel FOV determined by multiplier from default FOV off its own FOV
+	float fovMultiplier = view.fov / static_cast<float>(DEFAULT_FOV);
+	view.fovViewmodel = g_pClientMode->GetViewModelFOV() * fovMultiplier;
 #else
 	view.fovViewmodel = fabs(g_pClientMode->GetViewModelFOV() - flFOVOffset);
 #endif
@@ -851,11 +862,13 @@ void CViewRender::SetUpViews()
 	{
 		// Let the headtracking read the status of the HMD, etc.
 		// This call can go almost anywhere, but it needs to know the player FOV for sniper weapon zoom, etc
+#ifndef NEO
 		if ( flFOVOffset == 0.0f )
 		{
 			g_ClientVirtualReality.ProcessCurrentTrackingState ( 0.0f );
 		}
 		else
+#endif
 		{
 			g_ClientVirtualReality.ProcessCurrentTrackingState ( view.fov );
 		}

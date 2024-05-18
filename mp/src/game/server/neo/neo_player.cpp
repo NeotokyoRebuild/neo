@@ -463,6 +463,11 @@ void CNEO_Player::UpdateNetworkedFriendlyLocations()
 	}
 }
 
+void CNEO_Player::SetDefaultFOV(const int fov)
+{
+	m_iDefaultFOV.Set(fov);
+}
+
 void CNEO_Player::Precache( void )
 {
 	BaseClass::Precache();
@@ -1143,14 +1148,15 @@ void CNEO_Player::Weapon_SetZoom(const bool bZoomIn)
 
 	ShowCrosshair(bZoomIn);
 	
+	const int fov = GetDefaultFOV();
 	if (bZoomIn)
 	{
 		const int zoomAmount = 30;
-		SetFOV((CBaseEntity*)this, GetDefaultFOV() - zoomAmount, zoomSpeedSecs);
+		SetFOV((CBaseEntity*)this, fov - zoomAmount, zoomSpeedSecs);
 	}
 	else
 	{
-		SetFOV((CBaseEntity*)this, GetDefaultFOV(), zoomSpeedSecs);
+		SetFOV((CBaseEntity*)this, fov, zoomSpeedSecs);
 	}
 
 	m_bInAim = bZoomIn;

@@ -1267,18 +1267,19 @@ void C_NEO_Player::Weapon_SetZoom(const bool bZoomIn)
 #endif
 #endif
 
+	const int fov = GetDefaultFOV();
 	if (bZoomIn)
 	{
 		m_Local.m_iHideHUD &= ~HIDEHUD_CROSSHAIR;
 
 		const int zoomAmount = 30;
-		SetFOV((CBaseEntity*)this, GetDefaultFOV() - zoomAmount, zoomSpeedSecs);
+		SetFOV((CBaseEntity*)this, fov - zoomAmount, zoomSpeedSecs);
 	}
 	else
 	{
 		m_Local.m_iHideHUD |= HIDEHUD_CROSSHAIR;
 
-		SetFOV((CBaseEntity*)this, GetDefaultFOV(), zoomSpeedSecs);
+		SetFOV((CBaseEntity*)this, fov, zoomSpeedSecs);
 	}
 
 	m_bInAim = bZoomIn;
