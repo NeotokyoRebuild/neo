@@ -956,9 +956,7 @@ protected:
 
 	CNetworkVar( int, m_iObserverMode );	// if in spectator mode != 0
 	CNetworkVar( int,	m_iFOV );			// field of view
-public:
 	CNetworkVar( int,	m_iDefaultFOV );	// default field of view
-protected:
 	CNetworkVar( int,	m_iFOVStart );		// What our FOV started at
 	CNetworkVar( float,	m_flFOVTime );		// Time our FOV change started
 	

@@ -848,7 +848,7 @@ void CViewRender::SetUpViews()
 
 	//Adjust the viewmodel's FOV to move with any FOV offsets on the viewer's end
 #ifdef SDK2013CE
-#ifdef NEO // Decouple viewmodel FOV from view FOV.
+#ifdef NEO // Viewmodel FOV determined by multiplier from default FOV off its own FOV
 	float fovMultiplier = view.fov / static_cast<float>(DEFAULT_FOV);
 	view.fovViewmodel = g_pClientMode->GetViewModelFOV() * fovMultiplier;
 #else

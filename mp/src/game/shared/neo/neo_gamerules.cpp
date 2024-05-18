@@ -1305,7 +1305,7 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 	{
 		pNEOPlayer->SetPlayerTeamModel();
 	}
-	pNEOPlayer->m_iDefaultFOV = atoi(engine->GetClientConVarValue(engine->IndexOfEdict(pNEOPlayer->edict()), "neo_fov"));
+	pNEOPlayer->SetDefaultFOV(pNEOPlayer->ClientFOV());
 
 	// We're skipping calling the base CHL2MPRules method here
 	CTeamplayRules::ClientSettingsChanged(pPlayer);

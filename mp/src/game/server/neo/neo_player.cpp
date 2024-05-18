@@ -463,6 +463,11 @@ void CNEO_Player::UpdateNetworkedFriendlyLocations()
 	}
 }
 
+void CNEO_Player::SetDefaultFOV(const int fov)
+{
+	m_iDefaultFOV.Set(fov);
+}
+
 void CNEO_Player::Precache( void )
 {
 	BaseClass::Precache();

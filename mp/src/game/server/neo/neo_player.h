@@ -116,6 +116,8 @@ public:
 
 	void UpdateNetworkedFriendlyLocations(void);
 
+	void SetDefaultFOV(const int fov);
+
 	void Weapon_AimToggle(CBaseCombatWeapon *pWep, const NeoWeponAimToggleE toggleType);
 	void Weapon_AimToggle(CNEOBaseCombatWeapon* pWep, const NeoWeponAimToggleE toggleType);
 
