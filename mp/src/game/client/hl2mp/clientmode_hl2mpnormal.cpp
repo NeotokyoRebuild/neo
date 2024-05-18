@@ -128,6 +128,8 @@ ClientModeHL2MPNormal::ClientModeHL2MPNormal()
 {
 	m_pViewport = new CHudViewport();
 	m_pViewport->Start(gameuifuncs, gameeventmanager);
+	m_flStartAimingChange = 0.0f;
+	m_bViewAim = false;
 }
 
 
@@ -225,7 +227,47 @@ float ClientModeHL2MPNormal::GetViewModelFOV()
 			}
 
 			static float flCurrentFov = pWepInfo->m_flVMFov;
-			const float flTargetFov = pOwner->IsInAim() ? (pWepInfo->m_flVMAimFov) : (pWepInfo->m_flVMFov);
+			const bool playerAiming = pOwner->IsInAim();
+			const float currentTime = gpGlobals->curtime;
+			static const float timePeriod = 0.2f;
+			if (m_bViewAim && !playerAiming)
+			{
+				// From aiming to not aiming
+				m_flStartAimingChange = currentTime;
+				m_bViewAim = false;
+			}
+			else if (!m_bViewAim && playerAiming)
+			{
+				// From not aiming to aiming
+				m_flStartAimingChange = currentTime;
+				m_bViewAim = true;
+			}
+			const float endAimingChange = m_flStartAimingChange + timePeriod;
+			const bool inAimingChange = (m_flStartAimingChange <= currentTime && currentTime < endAimingChange);
+			float flTargetFov = 0.0f;
+			if (inAimingChange)
+			{
+				float percentage = (currentTime - m_flStartAimingChange) / timePeriod;
+				if (percentage > 1.0f) percentage = 1.0f;
+				else if (percentage < 0.0f) percentage = 0.0f;
+
+				float flVMFovDelta = pWepInfo->m_flVMAimFov - pWepInfo->m_flVMFov;
+				flVMFovDelta *= percentage;
+				if (playerAiming)
+				{
+					// From not aiming to aiming gradual
+					flTargetFov = pWepInfo->m_flVMFov + flVMFovDelta;
+				}
+				else
+				{
+					// From aiming to not aiming gradual
+					flTargetFov = pWepInfo->m_flVMAimFov - flVMFovDelta;
+				}
+			}
+			else
+			{
+				flTargetFov = playerAiming ? (pWepInfo->m_flVMAimFov) : (pWepInfo->m_flVMFov);
+			}
 
 			// Get delta time
 			const float flThisTime = gpGlobals->curtime;

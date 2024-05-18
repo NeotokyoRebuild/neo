@@ -41,6 +41,8 @@ CNEOPredictedViewModel::CNEOPredictedViewModel()
 
 	m_flYPrevious = 0;
 	m_flLastLeanTime = 0;
+	m_flStartAimingChange = 0;
+	m_bViewAim = false;
 }
 
 CNEOPredictedViewModel::~CNEOPredictedViewModel()
@@ -363,18 +365,61 @@ void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 
 	AngleVectors(newAng, &vForward, &vRight, &vUp);
 
-	auto neoPlayer = static_cast<CNEO_Player*>(pOwner);
-	if (neoPlayer && neoPlayer->IsInAim())
+	if (auto neoPlayer = static_cast<CNEO_Player*>(pOwner))
 	{
-		vOffset = data.m_vecVMAimPosOffset;
-	}
-	else
-	{
-		vOffset = data.m_vecVMPosOffset;
+		const bool playerAiming = neoPlayer->IsInAim();
+		const float currentTime = gpGlobals->curtime;
+		static const float timePeriod = 0.2f;
+		if (m_bViewAim && !playerAiming)
+		{
+			// From aiming to not aiming
+			m_flStartAimingChange = currentTime;
+			m_bViewAim = false;
+		}
+		else if (!m_bViewAim && playerAiming)
+		{
+			// From not aiming to aiming
+			m_flStartAimingChange = currentTime;
+			m_bViewAim = true;
+		}
+		const float endAimingChange = m_flStartAimingChange + timePeriod;
+		const bool inAimingChange = (m_flStartAimingChange <= currentTime && currentTime < endAimingChange);
+		if (inAimingChange)
+		{
+			float percentage = (currentTime - m_flStartAimingChange) / timePeriod;
+			if (percentage > 1.0f) percentage = 1.0f;
+			else if (percentage < 0.0f) percentage = 0.0f;
+
+			Vector vecVMDelta = data.m_vecVMAimPosOffset - data.m_vecVMPosOffset;
+			vecVMDelta *= percentage;
+			if (playerAiming)
+			{
+				// From not aiming to aiming gradual
+				vOffset = data.m_vecVMPosOffset + vecVMDelta;
+				angOffset = data.m_angVMAimAngOffset;
+			}
+			else
+			{
+				// From aiming to not aiming gradual
+				vOffset = data.m_vecVMAimPosOffset - vecVMDelta;
+				angOffset = data.m_angVMAngOffset;
+			}
+		}
+		else
+		{
+			if (playerAiming)
+			{
+				vOffset = data.m_vecVMAimPosOffset;
+				angOffset = data.m_angVMAimAngOffset;
+			}
+			else
+			{
+				vOffset = data.m_vecVMPosOffset;
+				angOffset = data.m_angVMAngOffset;
+			}
+		}
 	}
 	
-	angOffset = data.m_angVMAngOffset;
-
 	newPos += vForward * vOffset.x;
 	newPos += vRight * vOffset.y;
 	newPos += vUp * vOffset.z;
