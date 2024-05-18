@@ -352,6 +352,15 @@ void CNEORules::ClientSpawned(edict_t* pPlayer)
 #endif
 }
 
+int CNEORules::DefaultFOV(void)
+{
+#ifdef CLIENT_DLL
+	return C_NEO_Player::GetLocalNEOPlayer()->ClientFOV();
+#else
+	return 90;
+#endif
+}
+
 bool CNEORules::ShouldCollide(int collisionGroup0, int collisionGroup1)
 {
 	if (collisionGroup0 > collisionGroup1)
@@ -1296,6 +1305,7 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 	{
 		pNEOPlayer->SetPlayerTeamModel();
 	}
+	pNEOPlayer->SetDefaultFOV(pNEOPlayer->ClientFOV());
 
 	// We're skipping calling the base CHL2MPRules method here
 	CTeamplayRules::ClientSettingsChanged(pPlayer);

@@ -149,6 +149,8 @@ public:
 	;
 #endif
 
+	virtual int DefaultFOV(void) OVERRIDE;
+
 	float GetRemainingPreRoundFreezeTime(const bool clampToZero) const;
 
 	float GetMapRemainingTime();
