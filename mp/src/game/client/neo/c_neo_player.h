@@ -189,7 +189,6 @@ public:
 
 	CNetworkVar(float, m_flCamoAuxLastTime);
 	CNetworkVar(int, m_nVisionLastTick);
-	CNetworkVar(int, m_nNeoFOV);
 
 	CNetworkVector(m_vecGhostMarkerPos);
 
