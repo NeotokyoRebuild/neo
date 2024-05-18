@@ -53,6 +53,14 @@ WeaponData
 		"up"		"0"
 		//"yaw"		"-2"
 	}
+
+	"ZoomOffset"
+	{
+		"fov"		"54"
+		"forward"	"-10"
+		"right"		"1.5"
+		"up"		"2"
+	}
 	
 	"AimOffset"
 	{

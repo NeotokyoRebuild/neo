@@ -40,6 +40,8 @@ public:
 
 #ifdef NEO
 	virtual float	GetViewModelFOV(void);
+	float m_flStartAimingChange;
+	bool m_bViewAim;
 #endif
 };
 

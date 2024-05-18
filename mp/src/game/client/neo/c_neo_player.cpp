@@ -1253,7 +1253,7 @@ void C_NEO_Player::Weapon_AimToggle(C_BaseCombatWeapon *pWep, const NeoWeponAimT
 
 void C_NEO_Player::Weapon_SetZoom(const bool bZoomIn)
 {
-	float zoomSpeedSecs = 0.25f;
+	float zoomSpeedSecs = NEO_ZOOM_SPEED;
 
 #if(0)
 #if !defined( NO_ENTITY_PREDICTION )
