@@ -48,10 +48,10 @@ WeaponData
 
 	"ZoomOffset"
 	{
-		"fov"		"60"
-		"forward"	"22"
-		"right"		"6"
-		"up"		"-2"
+		"fov"		"10.0"
+		"forward"	"-5.0"
+		"right"		"1.0"
+		"up"		"7.0"
 	}
 	
 	"AimOffset"
