@@ -232,7 +232,6 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 
 		DevMsg("Player got ghost inside my radius\n");
 
-		player->SendTestMessage("Player captured the ghost!");
 		player->m_iCapTeam = player->GetTeamNumber();
 
 		// Center print the cap message.
@@ -249,16 +248,18 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 		V_swprintf_safe(wmsg, L"%s wins\n%s captured the ghost",
 			player->GetTeamNumber() == TEAM_JINRAI ? L"Jinrai" : L"NSF",
 			wPlayerName);
-#else
+#endif
 		char msg[64 + MAX_PLACE_NAME_LENGTH];
 		COMPILE_TIME_ASSERT(sizeof(msg) <= 512); // max supported
 
-		V_sprintf_safe(msg, "%s wins\n%s captured the ghost",
-			player->GetTeamNumber() == TEAM_JINRAI ? "Jinrai" : "NSF",
-			player->GetPlayerName());
-#endif
+		V_sprintf_safe(msg, "%s captured the ghost\0",
+		player->GetPlayerName());
 
-		UTIL_ClientPrintFilter(filter, HUD_PRINTCENTER, msg);
+		UserMessageBegin(filter, "RoundResult");
+		WRITE_STRING(player->GetTeamNumber() == TEAM_JINRAI ? "jinrai": "nsf");	// which team won
+		WRITE_FLOAT(gpGlobals->curtime);										// when did they win
+		WRITE_STRING(msg);														// extra message (who capped or last kill or who got the most points or whatever)
+		MessageEnd();
 
 		// Return early; we pass next think responsibility to gamerules,
 		// whenever it sees fit to start capzone thinking again.

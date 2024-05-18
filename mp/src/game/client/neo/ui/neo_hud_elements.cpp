@@ -22,7 +22,7 @@
 #define UI_ELEMENT_NAME_COMPASS "neo_compass"
 #define UI_ELEMENT_NAME_HTA "NHudHealth"
 #define UI_ELEMENT_NAME_IFF "neo_iff"
-#define UI_ELEMENT_GAME_EVENT "neo_game_event_indicator"
+#define UI_ELEMENT_GAME_EVENT "CNEOHud_GameEvent"
 #define UI_ELEMENT_NAME_GHOST_MARKER "neo_ghost_marker"
 #define UI_ELEMENT_NAME_GHOST_BEACONS "neo_ghost_beacons"
 #define UI_ELEMENT_ROUND_STATE "neo_round_state"
@@ -89,11 +89,12 @@ void CNeoHudElements::FreePanelChildren()
 		m_pFriendlyMarker = NULL;
 	}
 
-	if (m_pGameEvent)
+	// now that the game event hud is added to gHud, gHud should take care of deleting it itself?
+	/*if (m_pGameEvent)
 	{
 		m_pGameEvent->DeletePanel();
 		m_pGameEvent = NULL;
-	}
+	}*/
 
 	if (m_pHTA)
 	{
