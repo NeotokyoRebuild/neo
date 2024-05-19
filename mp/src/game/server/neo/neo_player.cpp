@@ -14,6 +14,7 @@
 #include "datacache/imdlcache.h"
 
 #include "neo_model_manager.h"
+#include "gib.h"
 
 #include "weapon_ghost.h"
 #include "weapon_supa7.h"
@@ -106,6 +107,8 @@ DEFINE_FIELD(m_rfAttackersScores, FIELD_CUSTOM),
 
 DEFINE_FIELD(m_NeoFlags, FIELD_CHARACTER),
 END_DATADESC()
+
+#define DISMEMBER_DAMAGE_THRESHOLD 10
 
 CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
 CNEOGameRulesProxy* neoGameRules;
@@ -1504,12 +1507,126 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 			Weapon_Detach(pWep);
 		}
 	}
+
+	// Handle Corpse and Gibs
+	if (m_bFirstDeathTick && info.GetDamage() >= DISMEMBER_DAMAGE_THRESHOLD)
+	{
+		int deadModelType = getDeadModel();
+		if (info.GetDamageType() & (1 << 6) || info.GetDamage() >= 100)
+		{ // Died to blast damage or last shot did over 100 damage, just remove all the limbs
+			deadModelType = 0;
+		}
+
+		if (deadModelType != -1)
+			SetPlayerCorpseModel(deadModelType);
+
+		CNEOModelManager* modelManager = CNEOModelManager::Instance();
+		if (!modelManager)
+		{
+			Assert(false);
+			Warning("Failed to get Neo model manager\n");
+			return;
+		}
+
+		switch (deadModelType)
+		{
+		case 0: // Spawn all gibs
+			CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(
+				static_cast<NeoSkin>(GetSkin()),
+				static_cast<NeoClass>(GetClass()),
+				GetTeamNumber(),
+				NEO_GIB_LIMB_HEAD));
+			CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(
+				static_cast<NeoSkin>(GetSkin()),
+				static_cast<NeoClass>(GetClass()),
+				GetTeamNumber(),
+				NEO_GIB_LIMB_LARM));
+			CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(
+				static_cast<NeoSkin>(GetSkin()),
+				static_cast<NeoClass>(GetClass()),
+				GetTeamNumber(),
+				NEO_GIB_LIMB_LLEG));
+			CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(
+				static_cast<NeoSkin>(GetSkin()),
+				static_cast<NeoClass>(GetClass()),
+				GetTeamNumber(),
+				NEO_GIB_LIMB_RARM));
+			CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(
+				static_cast<NeoSkin>(GetSkin()),
+				static_cast<NeoClass>(GetClass()),
+				GetTeamNumber(),
+				NEO_GIB_LIMB_RLEG));
+			break;
+		case 1: // Spawn head
+			CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(
+				static_cast<NeoSkin>(GetSkin()),
+				static_cast<NeoClass>(GetClass()),
+				GetTeamNumber(),
+				NEO_GIB_LIMB_HEAD));
+			break;
+		case 2: // Spawn left arm
+			CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(
+				static_cast<NeoSkin>(GetSkin()),
+				static_cast<NeoClass>(GetClass()),
+				GetTeamNumber(),
+				NEO_GIB_LIMB_LARM));
+			break;
+		case 3: // Spawn left leg
+			CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(
+				static_cast<NeoSkin>(GetSkin()),
+				static_cast<NeoClass>(GetClass()),
+				GetTeamNumber(),
+				NEO_GIB_LIMB_LLEG));
+			break;
+		case 4: // Spawn right arm
+			CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(
+				static_cast<NeoSkin>(GetSkin()),
+				static_cast<NeoClass>(GetClass()),
+				GetTeamNumber(),
+				NEO_GIB_LIMB_RARM));
+			break;
+		case 5: // Spawn right leg
+			CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(
+				static_cast<NeoSkin>(GetSkin()),
+				static_cast<NeoClass>(GetClass()),
+				GetTeamNumber(),
+				NEO_GIB_LIMB_RLEG));
+			break;
+		default:
+			break;
+		}
+	}
+
 	BaseClass::Event_Killed(info);
 
 	m_bEnterObserver = true;
 	StartObserverMode(OBS_MODE_CHASE);
 	RemoveAllWeapons();
 	ShowViewPortPanel(PANEL_SPECGUI, true);
+}
+
+int CNEO_Player::getDeadModel()
+{
+	int deadModelType = -1;
+	switch (LastHitGroup())
+	{
+	case 1: // No head?
+		deadModelType = 1;
+		break;
+	case 4: // Left Arm
+		deadModelType = 2;
+		break;
+	case 5: // Right Arm
+		deadModelType = 4;
+		break;
+	case 6: // Left Leg
+		deadModelType = 3;
+		break;
+	case 7: // Right Leg
+		deadModelType = 5;
+		break;
+	}
+	return deadModelType;
 }
 
 float CNEO_Player::GetReceivedDamageScale(CBaseEntity* pAttacker)
@@ -1687,6 +1804,33 @@ void CNEO_Player::SetPlayerTeamModel( void )
 	const model_t *modelType = modelinfo->GetModel(modelIndex);
 	MDLHandle_t modelCache = modelinfo->GetCacheHandle(modelType);
 #endif
+}
+
+void CNEO_Player::SetPlayerCorpseModel(int type)
+{
+	CNEOModelManager* modelManager = CNEOModelManager::Instance();
+	if (!modelManager)
+	{
+		Assert(false);
+		Warning("Failed to get Neo model manager\n");
+		return;
+	}
+
+	const char* model = modelManager->GetCorpseModel(
+		static_cast<NeoSkin>(GetSkin()),
+		static_cast<NeoClass>(GetClass()),
+		GetTeamNumber(), NeoGib(type));
+
+	if (!*model)
+	{
+		Assert(false);
+		Warning("Failed to find model string for Neo player\n");
+		return;
+	}
+
+	SetModel(model);
+	SetPlaybackRate(1.0f);
+	ResetAnimation();
 }
 
 void CNEO_Player::PickupObject( CBaseEntity *pObject,
