@@ -102,6 +102,8 @@ public:
 	void GiveLoadoutWeapon(void);
 
 	void SetPlayerTeamModel(void);
+	void SetPlayerCorpseModel(int type);
+	int GetDeadModel();
 	virtual void PickDefaultSpawnTeam(void) OVERRIDE;
 
 	virtual bool StartObserverMode(int mode) OVERRIDE;
