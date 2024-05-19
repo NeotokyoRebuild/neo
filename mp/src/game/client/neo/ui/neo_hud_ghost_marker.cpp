@@ -31,6 +31,7 @@ CNEOHud_GhostMarker::CNEOHud_GhostMarker(const char* pElemName, vgui::Panel* par
 	m_flDistMeters = 0;
 
 	m_iGhostingTeam = TEAM_UNASSIGNED;
+	m_iClientTeam = TEAM_UNASSIGNED;
 	m_iPosX = m_iPosY = 0;
 
 	{
@@ -113,9 +114,22 @@ void CNEOHud_GhostMarker::DrawNeoHudElement()
 	const int offset_X = m_iPosX - ((m_iMarkerTexWidth * 0.5f) * scale);
 	const int offset_Y = m_iPosY - ((m_iMarkerTexHeight * 0.5f) * scale);
 
-	auto color = m_iGhostingTeam == TEAM_JINRAI ? COLOR_JINRAI : (m_iGhostingTeam == TEAM_NSF ? COLOR_NSF : COLOR_GREY);
+	Color ghostColor = COLOR_GREY;
+	if (m_iGhostingTeam == TEAM_JINRAI || m_iGhostingTeam == TEAM_NSF)
+	{
+		if ((m_iClientTeam == TEAM_JINRAI || m_iClientTeam == TEAM_NSF) && (m_iClientTeam != m_iGhostingTeam))
+		{
+			// If viewing from playing player, but opposite of ghosting team, show red
+			ghostColor = COLOR_RED;
+		}
+		else
+		{
+			// Otherwise show ghosting team color (if friendly or spec)
+			ghostColor = (m_iGhostingTeam == TEAM_JINRAI) ? COLOR_JINRAI : COLOR_NSF;
+		}
+	}
 
-	surface()->DrawSetColor(color);
+	surface()->DrawSetColor(ghostColor);
 	surface()->DrawSetTexture(m_hTex);
 	surface()->DrawTexturedRect(
 		offset_X,
@@ -135,6 +149,11 @@ void CNEOHud_GhostMarker::Paint()
 void CNEOHud_GhostMarker::SetGhostingTeam(int team)
 {
 	m_iGhostingTeam = team;
+}
+
+void CNEOHud_GhostMarker::SetClientCurrentTeam(int team)
+{
+	m_iClientTeam = team;
 }
 
 void CNEOHud_GhostMarker::SetScreenPosition(int x, int y)
