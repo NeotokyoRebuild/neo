@@ -241,7 +241,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 			surface()->DrawSetTextFont(m_hBulletFont);
 			surface()->DrawSetTextPos(digit_xpos + xpos, digit_ypos + ypos);
 			wchar_t bullets[22];
-			swprintf_s(bullets, L"%d/%d\0", magSizeCurrent, magSizeMax);
+			V_swprintf_safe(bullets, L"%d/%d\0", magSizeCurrent, magSizeMax);
 			surface()->DrawPrintText(bullets, (int)(log10(magSizeCurrent) + 1) + (int)(log10(magSizeMax) + 1) + 1);
 			return;
 		}
