@@ -104,7 +104,7 @@ public:
 	void SetPlayerTeamModel(void);
 	void SetPlayerGibPrefix(const char* model);
 	void SetPlayerCorpseModel(int type);
-	int getDeadModel();
+	int GetDeadModel();
 	virtual void PickDefaultSpawnTeam(void) OVERRIDE;
 
 	virtual bool StartObserverMode(int mode) OVERRIDE;

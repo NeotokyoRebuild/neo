@@ -1605,7 +1605,7 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 	ShowViewPortPanel(PANEL_SPECGUI, true);
 }
 
-int CNEO_Player::getDeadModel()
+int CNEO_Player::GetDeadModel()
 {
 	int deadModelType = -1;
 	switch (LastHitGroup())
