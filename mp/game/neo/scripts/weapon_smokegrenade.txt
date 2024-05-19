@@ -11,7 +11,7 @@ WeaponData
 
 	"clip_size"			"-1"
 	"clip2_size"			"-1"
-	"default_clip"			"3"
+	"default_clip"			"2"
 	"default_clip2"			"-1"
 
 	"primary_ammo"			"AMMO_SMOKEGRENADE"
