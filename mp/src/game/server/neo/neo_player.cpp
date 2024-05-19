@@ -115,6 +115,8 @@ extern ConVar neo_sv_ignore_wep_xp_limit;
 
 ConVar sv_neo_can_change_classes_anytime("sv_neo_can_change_classes_anytime", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "Can players change classes at any moment, even mid-round?",
 	true, 0.0f, true, 1.0f);
+ConVar sv_neo_change_suicide_player("sv_neo_change_suicide_player", "0", FCVAR_REPLICATED, "Kill the player if they change the team and they're alive.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_change_threshold_interval("sv_neo_change_threshold_interval", "0.25", FCVAR_REPLICATED, "The interval threshold limit in seconds before the player is allowed to change team.", true, 0.0f, true, 1000.0f);
 
 void CNEO_Player::RequestSetClass(int newClass)
 {
@@ -1935,10 +1937,6 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 		return false;
 	}
 
-	// NEO TODO (Rain): add server cvars
-#define TEAM_CHANGE_SUICIDE true
-#define TEAM_CHANGE_INTERVAL 5.0f
-
 	const bool justJoined = (GetTeamNumber() == TEAM_UNASSIGNED);
 
 	// Player bots should initially join a player team.
@@ -1963,6 +1961,7 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 		}
 	}
 
+	const bool suicidePlayerIfAlive = sv_neo_change_suicide_player.GetBool();
 	if (iTeam == TEAM_SPECTATOR)
 	{
 		if (!mp_allowspectators.GetInt())
@@ -1978,7 +1977,7 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 			return false;
 		}
 
-		if (TEAM_CHANGE_SUICIDE)
+		if (suicidePlayerIfAlive)
 		{
 			// Unassigned implies we just joined.
 			if (!justJoined && !IsDead())
@@ -2001,9 +2000,17 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	}
 	else if (iTeam == TEAM_JINRAI || iTeam == TEAM_NSF)
 	{
-		if (TEAM_CHANGE_SUICIDE && !justJoined && GetTeamNumber() != TEAM_SPECTATOR && !IsDead())
+		if (!justJoined && GetTeamNumber() != TEAM_SPECTATOR && !IsDead())
 		{
-			SoftSuicide();
+			if (suicidePlayerIfAlive)
+			{
+				SoftSuicide();
+			}
+			else if (!suicidePlayerIfAlive)
+			{
+				ClientPrint(this, HUD_PRINTCENTER, "You can't switch teams while you are alive.");
+				return false;
+			}
 		}
 
 		StopObserverMode();
@@ -2022,7 +2029,7 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 		return false;
 	}
 
-	m_flNextTeamChangeTime = gpGlobals->curtime + TEAM_CHANGE_INTERVAL;
+	m_flNextTeamChangeTime = gpGlobals->curtime + sv_neo_change_threshold_interval.GetFloat();
 	
 	RemoveAllItems(true);
 	ShowCrosshair(false);
