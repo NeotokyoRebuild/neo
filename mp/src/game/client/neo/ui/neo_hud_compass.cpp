@@ -84,7 +84,7 @@ CNEOHud_Compass::CNEOHud_Compass(const char *pElementName, vgui::Panel *parent)
 
 	COMPILE_TIME_ASSERT(sizeof(m_wszCompassUnicode) == UNICODE_NEO_COMPASS_SIZE_BYTES);
 	Assert(g_pVGuiLocalize);
-	g_pVGuiLocalize->ConvertANSIToUnicode('\0', m_wszCompassUnicode, UNICODE_NEO_COMPASS_SIZE_BYTES);
+	g_pVGuiLocalize->ConvertANSIToUnicode("\0", m_wszCompassUnicode, UNICODE_NEO_COMPASS_SIZE_BYTES);
 }
 
 void CNEOHud_Compass::Paint()

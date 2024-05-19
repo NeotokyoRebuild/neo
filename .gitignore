@@ -1,5 +1,11 @@
 # Files to ignore when considering what GIT should commit.
 
+# CMake build dir
+mp/src/build
+out
+
+mp/src/CMakeSettings.json
+
 # Possible symlink for fixing tools that hardcode "game/mod_hl2mp" - we use "game/neo".
 mp/game/mod_hl2mp
 
