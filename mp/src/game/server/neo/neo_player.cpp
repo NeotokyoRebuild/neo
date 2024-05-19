@@ -1511,7 +1511,7 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 	// Handle Corpse and Gibs
 	if (m_bFirstDeathTick && info.GetDamage() >= DISMEMBER_DAMAGE_THRESHOLD)
 	{
-		int deadModelType = getDeadModel();
+		int deadModelType = GetDeadModel();
 		if (info.GetDamageType() & (1 << 6) || info.GetDamage() >= 100)
 		{ // Died to blast damage or last shot did over 100 damage, just remove all the limbs
 			deadModelType = 0;
