@@ -18,6 +18,16 @@ enum NeoGib {
 	NEO_GIB_ENUM_COUNT
 };
 
+enum NeoGibLimb {
+	NEO_GIB_LIMB_HEAD = 0,
+	NEO_GIB_LIMB_LARM,
+	NEO_GIB_LIMB_LLEG,
+	NEO_GIB_LIMB_RARM,
+	NEO_GIB_LIMB_RLEG,
+
+	NEO_GIB_LIMB_ENUM_COUNT
+};
+
 enum NeoViewmodel {
 	NEO_VM_AA13 = 0,
 	NEO_VM_DETPACK,
@@ -127,6 +137,9 @@ public:
 
 	const char *GetCorpseModel(NeoSkin nSkin, NeoClass nClass,
 		int iTeam, NeoGib nGib = NEO_GIB_ALL) const;
+
+	const char* GetGibModel(NeoSkin nSkin, NeoClass nClass,
+		int iTeam, NeoGibLimb nGib = NEO_GIB_LIMB_HEAD) const;
 	
 	const char *GetPlayerModel(NeoSkin nSkin,
 		NeoClass nClass, int iTeam) const;
