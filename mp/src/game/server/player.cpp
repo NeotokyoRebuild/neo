@@ -84,6 +84,7 @@
 
 #ifdef NEO
 #include "neo_player.h"
+#include "weapon_tachi.h"
 #endif
 
 ConVar autoaim_max_dist( "autoaim_max_dist", "2160" ); // 2160 = 180 feet
@@ -3710,8 +3711,13 @@ void CBasePlayer::PlayerRunCommand(CUserCmd *ucmd, IMoveHelper *moveHelper)
 #ifdef NEO
 		if (!originalCheck && static_cast<CNEO_Player*>(this)->GetNeoFlags() & NEO_FL_FREEZETIME)
 		{
-			ucmd->buttons &= ~(IN_ATTACK | IN_ATTACK2 | IN_ATTACK3 | IN_JUMP | IN_SPEED |
+			ucmd->buttons &= ~(IN_ATTACK | IN_ATTACK3 | IN_JUMP | IN_SPEED |
 				IN_ALT1 | IN_ALT2 | IN_BACK | IN_FORWARD | IN_MOVELEFT | IN_MOVERIGHT | IN_RUN | IN_ZOOM);
+			const bool isTachi = (dynamic_cast<CWeaponTachi*>(GetActiveWeapon()) != NULL);
+			if (!isTachi)
+			{
+				ucmd->buttons &= ~IN_ATTACK2;
+			}
 		}
 #else
 		ucmd->buttons = 0;
