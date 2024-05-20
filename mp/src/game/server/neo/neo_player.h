@@ -100,10 +100,9 @@ public:
 	int GetNeoFlags() const { return m_NeoFlags.Get(); }
 
 	void GiveLoadoutWeapon(void);
-
 	void SetPlayerTeamModel(void);
+	void SpawnDeadModel(const CTakeDamageInfo& info);
 	void SetPlayerCorpseModel(int type);
-	int GetDeadModel();
 	virtual void PickDefaultSpawnTeam(void) OVERRIDE;
 
 	virtual bool StartObserverMode(int mode) OVERRIDE;
@@ -228,6 +227,7 @@ public:
 
 private:
 	bool m_bFirstDeathTick;
+	bool m_bCorpseSpawned;
 	bool m_bPreviouslyReloading;
 
 	float m_flLastAirborneJumpOkTime;
