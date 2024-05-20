@@ -314,7 +314,6 @@ void CWeaponSupa7::PrimaryAttack(void)
 		numBullets = 1;
 		bulletSpread *= 0.5;
 		ammoType = m_iSecondaryAmmoType;
-		m_bSlugLoaded = false;
 		WeaponSound(WPN_DOUBLE);
 		WeaponSound(SPECIAL2);
 	}
@@ -329,7 +328,8 @@ void CWeaponSupa7::PrimaryAttack(void)
 
 	pPlayer->DoMuzzleFlash();
 
-	SendWeaponAnim(ACT_VM_PRIMARYATTACK);
+	SendWeaponAnim(m_bSlugLoaded ? ACT_VM_PRIMARYATTACK : ACT_VM_SECONDARYATTACK);
+	m_bSlugLoaded = false;
 
 	// Don't fire again until fire animation has completed
 	ProposeNextAttack(gpGlobals->curtime + (SequenceDuration() * 0.75));
