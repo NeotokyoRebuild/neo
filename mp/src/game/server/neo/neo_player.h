@@ -13,7 +13,6 @@ class INEOPlayerAnimState;
 #include "utldict.h"
 #include "hl2mp_player.h"
 #include "in_buttons.h"
-#include "neo_model_manager.h"
 
 #include "neo_player_shared.h"
 
@@ -103,7 +102,7 @@ public:
 	void GiveLoadoutWeapon(void);
 	void SetPlayerTeamModel(void);
 	void SpawnDeadModel(const CTakeDamageInfo& info);
-	void SetPlayerCorpseModel(CNEOModelManager* modelManager, int type);
+	void SetPlayerCorpseModel(int type);
 	virtual void PickDefaultSpawnTeam(void) OVERRIDE;
 
 	virtual bool StartObserverMode(int mode) OVERRIDE;

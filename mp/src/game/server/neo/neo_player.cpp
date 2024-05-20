@@ -13,6 +13,7 @@
 #include "ilagcompensationmanager.h"
 #include "datacache/imdlcache.h"
 
+#include "neo_model_manager.h"
 #include "gib.h"
 
 #include "weapon_ghost.h"
@@ -109,6 +110,7 @@ END_DATADESC()
 
 #define DISMEMBER_LIMB_THRESHOLD 10
 #define DISMEMBER_HEAD_THRESHOLD (DISMEMBER_LIMB_THRESHOLD * 3)
+#define ANNHILATE_LIMB_THRESHOLD (DISMEMBER_HEAD_THRESHOLD * 3)
 
 CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
 CNEOGameRulesProxy* neoGameRules;
@@ -139,6 +141,7 @@ void CNEO_Player::RequestSetClass(int newClass)
 		InitSprinting();
 		RemoveAllItems(false);
 		GiveDefaultItems();
+		m_HL2Local.m_cloakPower = CloakPower_Cap();
 	}
 	else
 	{
@@ -504,6 +507,7 @@ void CNEO_Player::Spawn(void)
 	m_bInVision = false;
 	m_nVisionLastTick = 0;
 	m_bInLean = NEO_LEAN_NONE;
+	m_bCorpseSpawned = false;
 
 	for (int i = 0; i < m_rfAttackersScores.Count(); ++i)
 	{
@@ -1512,7 +1516,6 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 	// Handle Corpse and Gibs
 	if (!m_bCorpseSpawned) // Event_Killed can be called multiple times, only spawn the dead model once
 	{
-		m_bCorpseSpawned = true;
 		SpawnDeadModel(info);
 	}
 
@@ -1573,40 +1576,57 @@ void CNEO_Player::SpawnDeadModel(const CTakeDamageInfo& info)
 		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_LLEG));
 		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_RARM));
 		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_RLEG));
-		SetPlayerCorpseModel(modelManager, deadModelType);
+		SetPlayerCorpseModel(deadModelType);
 		break;
-	case 1: // Spawn head
-		if (info.GetDamage() >= DISMEMBER_HEAD_THRESHOLD)
-			CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_HEAD));
-			SetPlayerCorpseModel(modelManager, deadModelType);
+	case 1: // head
+		if (info.GetDamage() >= DISMEMBER_HEAD_THRESHOLD) {
+			SetPlayerCorpseModel(deadModelType);
+			if (info.GetDamage() <= ANNHILATE_LIMB_THRESHOLD)
+				CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_HEAD));
+		}
 		break;
-	case 2: // Spawn left arm
-		if (info.GetDamage() >= DISMEMBER_LIMB_THRESHOLD)
-			CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_LARM));
-			SetPlayerCorpseModel(modelManager, deadModelType);
+	case 2: // left arm
+		if (info.GetDamage() >= DISMEMBER_LIMB_THRESHOLD) {
+			SetPlayerCorpseModel(deadModelType);
+			if (info.GetDamage() <= ANNHILATE_LIMB_THRESHOLD)
+				CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_LARM));
+		}
 		break;
-	case 3: // Spawn left leg
-		if (info.GetDamage() >= DISMEMBER_LIMB_THRESHOLD)
-			CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_LLEG));
-			SetPlayerCorpseModel(modelManager, deadModelType);
+	case 3: // left leg
+		if (info.GetDamage() >= DISMEMBER_LIMB_THRESHOLD) {
+			SetPlayerCorpseModel(deadModelType);
+			if (info.GetDamage() <= ANNHILATE_LIMB_THRESHOLD)
+				CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_LLEG));
+		}
 		break;
-	case 4: // Spawn right arm
-		if (info.GetDamage() >= DISMEMBER_LIMB_THRESHOLD)
-			CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_RARM));
-			SetPlayerCorpseModel(modelManager, deadModelType);
+	case 4: // right arm
+		if (info.GetDamage() >= DISMEMBER_LIMB_THRESHOLD) {
+			SetPlayerCorpseModel(deadModelType);
+			if (info.GetDamage() <= ANNHILATE_LIMB_THRESHOLD)
+				CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_RARM));
+		}
 		break;
-	case 5: // Spawn right leg
-		if (info.GetDamage() >= DISMEMBER_LIMB_THRESHOLD)
-			CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(),	NEO_GIB_LIMB_RLEG));
-			SetPlayerCorpseModel(modelManager, deadModelType);
+	case 5: // right leg
+		if (info.GetDamage() >= DISMEMBER_LIMB_THRESHOLD) {
+			SetPlayerCorpseModel(deadModelType);
+			if (info.GetDamage() <= ANNHILATE_LIMB_THRESHOLD)
+				CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_RLEG));
+		}
 		break;
 	default:
 		break;
 	}
 }
 
-void CNEO_Player::SetPlayerCorpseModel(CNEOModelManager* modelManager, int type)
+void CNEO_Player::SetPlayerCorpseModel(int type)
 {
+	CNEOModelManager* modelManager = CNEOModelManager::Instance();
+	if (!modelManager)
+	{
+		Assert(false);
+		Warning("Failed to get Neo model manager\n");
+		return;
+	}
 	const char* model = modelManager->GetCorpseModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NeoGib(type));
 
 	if (!*model)
