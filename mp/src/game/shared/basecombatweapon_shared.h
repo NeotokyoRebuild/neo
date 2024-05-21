@@ -604,9 +604,6 @@ private:
 
 	bool					m_bRemoveable;
 
-	int						m_iPrimaryAmmoCount;
-	int						m_iSecondaryAmmoCount;
-
 public:
 
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED( m_nNextThinkTick );
@@ -623,6 +620,8 @@ public:
 	CNetworkVar( int, m_iSecondaryAmmoType );	// "secondary" ammo index into the ammo info array
 	CNetworkVar( int, m_iClip1 );				// number of shots left in the primary weapon clip, -1 it not used
 	CNetworkVar( int, m_iClip2 );				// number of shots left in the secondary weapon clip, -1 it not used
+	CNetworkVar(int, m_iPrimaryAmmoCount );				// number of shots left in the primary weapon clip, -1 it not used
+	CNetworkVar(int, m_iSecondaryAmmoCount );				// number of shots left in the secondary weapon clip, -1 it not used
 	bool					m_bFiresUnderwater;		// true if this weapon can fire underwater
 	bool					m_bAltFiresUnderwater;		// true if this weapon can fire underwater
 	float					m_fMinRange1;			// What's the closest this weapon can be used?
