@@ -1444,6 +1444,31 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 		}
 		return true;
 	}
+	else if (FStrEq(args[0], "menuselect"))
+	{
+		// TODO (nullsystem): It's just only being "used" by the dismiss stats info
+		// Eventually should expand further to more general menus.
+		// So for now, it doesn't do anything and returns true.
+#define MENU_SELECT_DO_SOMETHING (0)
+#if MENU_SELECT_DO_SOMETHING
+		if (args.ArgC() < 2)
+		{
+			return true;
+		}
+
+		// select the item from the current menu
+		const int slot = atoi(args[1]);
+		switch (slot)
+		{
+		case 1:
+			break;
+		default:
+			break;
+		}
+#endif
+
+		return true;
+	}
 
 	return BaseClass::ClientCommand(args);
 }
@@ -1518,6 +1543,63 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 	{
 		SpawnDeadModel(info);
 	}
+
+	// Show attackers+victim infos to user
+	static char infoStr[512];
+	memset(infoStr, 0, sizeof(infoStr));
+	Q_strncpy(infoStr, "Damage infos:\n\n", sizeof(infoStr));
+	static const int TITLE_LEN = 16;
+	static const int POSTFIX_LEN = 15;
+
+	int infoStrLen = TITLE_LEN;
+	static const int INFO_MAX_LEN = 512 - TITLE_LEN - POSTFIX_LEN - 2;
+	const int thisIdx = entindex();
+	for (int pIdx = 1; pIdx <= gpGlobals->maxClients; ++pIdx)
+	{
+		if (pIdx == thisIdx)
+		{
+			continue;
+		}
+
+		auto* neoAttacker = dynamic_cast<CNEO_Player*>(UTIL_PlayerByIndex(pIdx));
+		if (!neoAttacker || neoAttacker->IsHLTV())
+		{
+			continue;
+		}
+
+		const float dmgTo = neoAttacker->GetAttackersScores(thisIdx);
+		const float dmgFrom = GetAttackersScores(pIdx);
+		const char* dmgerName = neoAttacker->GetPlayerName();
+		if (dmgerName && (dmgTo > 0.0f || dmgFrom > 0.0f))
+		{
+			static char infoLine[512];
+			memset(infoLine, 0, sizeof(infoLine));
+			Q_snprintf(infoLine, sizeof(infoLine), "%s: Dealt: %.2f | From: %.2f\n", dmgerName, dmgTo, dmgFrom);
+			const int infoLineLen = Q_strlen(infoLine);
+			if ((infoStrLen + infoLineLen) >= INFO_MAX_LEN)
+			{
+				// Truncate | TODO (nullsystem): Make it the next page
+				break;
+			}
+			
+			Q_strncat(infoStr, infoLine, sizeof(infoStr), COPY_ALL_CHARACTERS);
+			infoStrLen += infoLineLen;
+		}
+	}
+	Q_strncat(infoStr, " \n->1. Dismiss", sizeof(infoStr), COPY_ALL_CHARACTERS);
+
+	CSingleUserRecipientFilter filter(this);
+	filter.MakeReliable();
+
+	// TODO (nullsystem): Make it have "pages" if it flows more than 512 chars
+	UserMessageBegin(filter, "ShowMenu");
+	{
+		WRITE_SHORT(static_cast<short>(1<<0));		// Amount of options
+		WRITE_CHAR(static_cast<char>(10));			// Time in seconds to stay open
+		WRITE_BYTE(static_cast<unsigned int>(0));
+		WRITE_STRING(infoStr);
+	}
+	MessageEnd();
 
 	BaseClass::Event_Killed(info);
 

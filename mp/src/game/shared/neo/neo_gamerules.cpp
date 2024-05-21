@@ -1281,6 +1281,24 @@ bool CNEORules::ClientConnected(edict_t *pEntity, const char *pszName, const cha
 	return canJoin;
 #endif
 }
+
+bool CNEORules::ClientCommand(CBaseEntity* pEdict, const CCommand& args)
+{
+	if (auto* neoPlayer = dynamic_cast<CNEO_Player*>(pEdict))
+	{
+		if (neoPlayer->ClientCommand(args))
+		{
+			return true;
+		}
+	}
+
+	if (BaseClass::ClientCommand(pEdict, args))
+	{
+		return true;
+	}
+
+	return false;
+}
 #endif
 
 void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
