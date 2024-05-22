@@ -82,13 +82,15 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 
 	RecvPropArray(RecvPropVector(RECVINFO(m_rvFriendlyPlayerPositions[0])), m_rvFriendlyPlayerPositions),
 	RecvPropArray(RecvPropFloat(RECVINFO(m_rfAttackersScores[0])), m_rfAttackersScores),
+	RecvPropArray(RecvPropInt(RECVINFO(m_rfAttackersHits[0])), m_rfAttackersHits),
 
 	RecvPropInt(RECVINFO(m_NeoFlags)),
 END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA(C_NEO_Player)
 	DEFINE_PRED_FIELD(m_rvFriendlyPlayerPositions, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
-	DEFINE_PRED_FIELD(m_rfAttackersScores, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_ARRAY(m_rfAttackersScores, FIELD_FLOAT, MAX_PLAYERS + 1, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_ARRAY(m_rfAttackersHits, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_vecGhostMarkerPos, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
 
 	DEFINE_PRED_FIELD_TOL(m_flCamoAuxLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
@@ -990,6 +992,10 @@ void C_NEO_Player::Spawn( void )
 	for (int i = 0; i < m_rfAttackersScores.Count(); ++i)
 	{
 		m_rfAttackersScores.Set(i, 0.0f);
+	}
+	for (int i = 0; i < m_rfAttackersHits.Count(); ++i)
+	{
+		m_rfAttackersHits.Set(i, 0);
 	}
 
 	Weapon_SetZoom(false);

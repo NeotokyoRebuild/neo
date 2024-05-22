@@ -181,6 +181,7 @@ public:
 
 	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
 	CNetworkArray(float, m_rfAttackersScores, (MAX_PLAYERS + 1));
+	CNetworkArray(int, m_rfAttackersHits, (MAX_PLAYERS + 1));
 
 	bool m_bShowClassMenu, m_bShowTeamMenu;
 	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
