@@ -113,6 +113,7 @@ END_DATADESC()
 #define DISMEMBER_LIMB_THRESHOLD 10
 #define DISMEMBER_HEAD_THRESHOLD (DISMEMBER_LIMB_THRESHOLD * 3)
 #define ANNHILATE_LIMB_THRESHOLD (DISMEMBER_HEAD_THRESHOLD * 3)
+#define SHOWMENU_STRLIMIT (512)
 
 CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
 CNEOGameRulesProxy* neoGameRules;
@@ -1467,16 +1468,19 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 			switch (slot)
 			{
 			case 1: // Dismiss
+			{
 				m_iDmgMenuCurPage = 0;
 				m_iDmgMenuNextPage = 0;
 				break;
+			}
 			case 2: // Next-page
 			{
-				char infoStr[512];
+				char infoStr[SHOWMENU_STRLIMIT];
 				int infoStrSize = 0;
+				bool showMenu = false;
 				m_iDmgMenuCurPage = m_iDmgMenuNextPage;
-				m_iDmgMenuNextPage = SetDmgListStr(infoStr, sizeof(infoStr), m_iDmgMenuNextPage, &infoStrSize);
-				ShowDmgInfo(infoStr, infoStrSize);
+				m_iDmgMenuNextPage = SetDmgListStr(infoStr, sizeof(infoStr), m_iDmgMenuNextPage, &infoStrSize, &showMenu);
+				if (showMenu) ShowDmgInfo(infoStr, infoStrSize);
 				break;
 			}
 			default:
@@ -1526,13 +1530,15 @@ void CNEO_Player::ShowDmgInfo(char* infoStr, int infoStrSize)
 	CSingleUserRecipientFilter filter(this);
 	filter.MakeReliable();
 
+	// UserMessage has limits, so need to send more than once if it
+	// doesn't fit in one UserMessage packet
 	static const int MAX_INFOSTR_PER_UMSG = 240;
 	int infoStrOffset = 0;
 	int infoStrOffsetMax = MAX_INFOSTR_PER_UMSG;
 	while (infoStrSize > 0)
 	{
 		char tmpCh = '\0';
-		if (infoStrOffsetMax < 512)
+		if (infoStrOffsetMax < SHOWMENU_STRLIMIT)
 		{
 			tmpCh = infoStr[infoStrOffsetMax];
 			infoStr[infoStrOffsetMax] = '\0';
@@ -1545,7 +1551,7 @@ void CNEO_Player::ShowDmgInfo(char* infoStr, int infoStrSize)
 			WRITE_STRING(infoStr + infoStrOffset);
 		}
 		MessageEnd();
-		if (infoStrOffsetMax < 512)
+		if (infoStrOffsetMax < SHOWMENU_STRLIMIT)
 		{
 			infoStr[infoStrOffsetMax] = tmpCh;
 		}
@@ -1555,12 +1561,15 @@ void CNEO_Player::ShowDmgInfo(char* infoStr, int infoStrSize)
 	}
 }
 
-int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int playerIdxStart, int *infoStrSize) const
+int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int playerIdxStart, int *infoStrSize, bool *showMenu) const
 {
+	Assert(infoStrSize != NULL);
+	Assert(showMenu != NULL);
+	*showMenu = false;
 	static const int TITLE_LEN = 16;
 	static const int POSTFIX_LEN = 15 + 12;
 	static const int TOTALLINE_LEN = 64; // Rough-approximate
-	static const int INFO_MAX_LEN = 512 - TITLE_LEN - POSTFIX_LEN - TOTALLINE_LEN - 2;
+	static const int INFO_MAX_LEN = SHOWMENU_STRLIMIT - TITLE_LEN - POSTFIX_LEN - TOTALLINE_LEN - 2;
 	memset(infoStr, 0, infoStrMax);
 	Q_strncpy(infoStr, "Damage infos:\n \n", infoStrMax);
 	int infoStrLen = TITLE_LEN;
@@ -1589,9 +1598,10 @@ int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int pl
 		if (dmgerName && (dmgTo > 0.0f || dmgFrom > 0.0f))
 #endif
 		{
+			*showMenu = true;
 			const int hitsTo = neoAttacker->GetAttackerHits(thisIdx);
 			const int hitsFrom = GetAttackerHits(pIdx);
-			static char infoLine[512];
+			static char infoLine[SHOWMENU_STRLIMIT];
 			memset(infoLine, 0, sizeof(infoLine));
 			Q_snprintf(infoLine, sizeof(infoLine), "%s: Dealt: %.0f in %d hits | Taken: %.0f in %d hits\n",
 					dmgerName, dmgTo, hitsTo, dmgFrom, hitsFrom);
@@ -1608,8 +1618,13 @@ int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int pl
 		}
 	}
 
+	if (!*showMenu)
+	{
+		return 0;
+	}
+
 	const AttackersTotals attackersTotals = GetAttackersTotals();
-	static char totalInfoLine[512];
+	static char totalInfoLine[SHOWMENU_STRLIMIT];
 	memset(totalInfoLine, 0, sizeof(totalInfoLine));
 	Q_snprintf(totalInfoLine, sizeof(totalInfoLine), " \nTOTAL: Dealt: %.0f in %d hits | Taken: %.0f in %d hits\n",
 			attackersTotals.dealtTotalDmgs, attackersTotals.dealtTotalHits,
@@ -1623,6 +1638,16 @@ int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int pl
 	*infoStrSize = Q_strlen(infoStr);
 
 	return nextPage;
+}
+
+void CNEO_Player::StartShowDmgStats()
+{
+	char infoStr[SHOWMENU_STRLIMIT];
+	int infoStrSize = 0;
+	bool showMenu = false;
+	m_iDmgMenuCurPage = 1;
+	m_iDmgMenuNextPage = SetDmgListStr(infoStr, sizeof(infoStr), m_iDmgMenuCurPage, &infoStrSize, &showMenu);
+	if (showMenu) ShowDmgInfo(infoStr, infoStrSize);
 }
 
 void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
@@ -1667,11 +1692,7 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 
 	if (!IsBot() && !IsHLTV())
 	{
-		char infoStr[512];
-		int infoStrSize = 0;
-		m_iDmgMenuCurPage = 1;
-		m_iDmgMenuNextPage = SetDmgListStr(infoStr, sizeof(infoStr), m_iDmgMenuCurPage, &infoStrSize);
-		ShowDmgInfo(infoStr, infoStrSize);
+		StartShowDmgStats();
 	}
 
 	BaseClass::Event_Killed(info);
