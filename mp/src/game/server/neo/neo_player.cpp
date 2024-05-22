@@ -1566,12 +1566,12 @@ int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int pl
 	Assert(infoStrSize != NULL);
 	Assert(showMenu != NULL);
 	*showMenu = false;
-	static const int TITLE_LEN = 16;
+	static const int TITLE_LEN = 30;
 	static const int POSTFIX_LEN = 15 + 12;
 	static const int TOTALLINE_LEN = 64; // Rough-approximate
 	static const int INFO_MAX_LEN = SHOWMENU_STRLIMIT - TITLE_LEN - POSTFIX_LEN - TOTALLINE_LEN - 2;
 	memset(infoStr, 0, infoStrMax);
-	Q_strncpy(infoStr, "Damage infos:\n \n", infoStrMax);
+	Q_snprintf(infoStr, infoStrMax, "Damage infos (Round %d):\n \n", NEORules()->roundNumber());
 	int infoStrLen = TITLE_LEN;
 	const int thisIdx = entindex();
 	int nextPage = 0;
@@ -1599,12 +1599,27 @@ int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int pl
 #endif
 		{
 			*showMenu = true;
+			const char* dmgerClass = GetNeoClassName(neoAttacker->GetClass());
 			const int hitsTo = neoAttacker->GetAttackerHits(thisIdx);
 			const int hitsFrom = GetAttackerHits(pIdx);
 			static char infoLine[SHOWMENU_STRLIMIT];
 			memset(infoLine, 0, sizeof(infoLine));
-			Q_snprintf(infoLine, sizeof(infoLine), "%s: Dealt: %.0f in %d hits | Taken: %.0f in %d hits\n",
-					dmgerName, dmgTo, hitsTo, dmgFrom, hitsFrom);
+			if (dmgTo > 0.0f && dmgFrom > 0.0f)
+			{
+				Q_snprintf(infoLine, sizeof(infoLine), "%s [%s]: Dealt: %.0f in %d hits | Taken: %.0f in %d hits\n",
+					dmgerName, dmgerClass,
+					dmgTo, hitsTo, dmgFrom, hitsFrom);
+			}
+			else if (dmgTo > 0.0f)
+			{
+				Q_snprintf(infoLine, sizeof(infoLine), "%s [%s]: Dealt: %.0f in %d hits\n",
+					dmgerName, dmgerClass, dmgTo, hitsTo);
+			}
+			else if (dmgFrom > 0.0f)
+			{
+				Q_snprintf(infoLine, sizeof(infoLine), "%s [%s]: Taken: %.0f in %d hits\n",
+					dmgerName, dmgerClass, dmgFrom, hitsFrom);
+			}
 			const int infoLineLen = Q_strlen(infoLine);
 			if ((infoStrLen + infoLineLen) >= INFO_MAX_LEN)
 			{
