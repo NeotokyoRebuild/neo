@@ -1561,6 +1561,29 @@ void CNEO_Player::ShowDmgInfo(char* infoStr, int infoStrSize)
 	}
 }
 
+static int DmgLineStr(char* infoLine, const int infoLineMax,
+		const char *dmgerName, const char *dmgerClass,
+		const float dmgTo, const float dmgFrom, const int hitsTo, const int hitsFrom)
+{
+	if (dmgTo > 0.0f && dmgFrom > 0.0f)
+	{
+		Q_snprintf(infoLine, infoLineMax, "%s [%s]: Dealt: %.0f in %d hits | Taken: %.0f in %d hits\n",
+			dmgerName, dmgerClass,
+			dmgTo, hitsTo, dmgFrom, hitsFrom);
+	}
+	else if (dmgTo > 0.0f)
+	{
+		Q_snprintf(infoLine, infoLineMax, "%s [%s]: Dealt: %.0f in %d hits\n",
+			dmgerName, dmgerClass, dmgTo, hitsTo);
+	}
+	else if (dmgFrom > 0.0f)
+	{
+		Q_snprintf(infoLine, infoLineMax, "%s [%s]: Taken: %.0f in %d hits\n",
+			dmgerName, dmgerClass, dmgFrom, hitsFrom);
+	}
+	return Q_strlen(infoLine);
+}
+
 int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int playerIdxStart, int *infoStrSize, bool *showMenu) const
 {
 	Assert(infoStrSize != NULL);
@@ -1590,7 +1613,7 @@ int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int pl
 
 		const float dmgTo = min(neoAttacker->GetAttackersScores(thisIdx), 100.0f);
 		const float dmgFrom = min(GetAttackersScores(pIdx), 100.0f);
-		const char* dmgerName = neoAttacker->GetPlayerName();
+		const char *dmgerName = neoAttacker->GetPlayerName();
 #define DEBUG_SHOW_ALL (0)
 #if DEBUG_SHOW_ALL
 		if (dmgerName)
@@ -1599,28 +1622,13 @@ int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int pl
 #endif
 		{
 			*showMenu = true;
-			const char* dmgerClass = GetNeoClassName(neoAttacker->GetClass());
+			const char *dmgerClass = GetNeoClassName(neoAttacker->GetClass());
 			const int hitsTo = neoAttacker->GetAttackerHits(thisIdx);
 			const int hitsFrom = GetAttackerHits(pIdx);
 			static char infoLine[SHOWMENU_STRLIMIT];
 			memset(infoLine, 0, sizeof(infoLine));
-			if (dmgTo > 0.0f && dmgFrom > 0.0f)
-			{
-				Q_snprintf(infoLine, sizeof(infoLine), "%s [%s]: Dealt: %.0f in %d hits | Taken: %.0f in %d hits\n",
-					dmgerName, dmgerClass,
-					dmgTo, hitsTo, dmgFrom, hitsFrom);
-			}
-			else if (dmgTo > 0.0f)
-			{
-				Q_snprintf(infoLine, sizeof(infoLine), "%s [%s]: Dealt: %.0f in %d hits\n",
-					dmgerName, dmgerClass, dmgTo, hitsTo);
-			}
-			else if (dmgFrom > 0.0f)
-			{
-				Q_snprintf(infoLine, sizeof(infoLine), "%s [%s]: Taken: %.0f in %d hits\n",
-					dmgerName, dmgerClass, dmgFrom, hitsFrom);
-			}
-			const int infoLineLen = Q_strlen(infoLine);
+			const int infoLineLen = DmgLineStr(infoLine, sizeof(infoLine),
+					dmgerName, dmgerClass, dmgTo, dmgFrom, hitsTo, hitsFrom);
 			if ((infoStrLen + infoLineLen) >= INFO_MAX_LEN)
 			{
 				// Truncate for this page
@@ -1663,6 +1671,61 @@ void CNEO_Player::StartShowDmgStats()
 	m_iDmgMenuCurPage = 1;
 	m_iDmgMenuNextPage = SetDmgListStr(infoStr, sizeof(infoStr), m_iDmgMenuCurPage, &infoStrSize, &showMenu);
 	if (showMenu) ShowDmgInfo(infoStr, infoStrSize);
+
+	// Print to console
+	AttackersTotals totals;
+	totals.dealtTotalDmgs = 0.0f;
+	totals.dealtTotalHits = 0;
+	totals.takenTotalDmgs = 0.0f;
+	totals.takenTotalHits = 0;
+
+	static const char *BORDER = "==========================\n";
+	Msg(BORDER);
+	Msg("Damage infos (Round %d):\n\n", NEORules()->roundNumber());
+	const int thisIdx = entindex();
+	for (int pIdx = 1; pIdx <= gpGlobals->maxClients; ++pIdx)
+	{
+		if (pIdx == thisIdx)
+		{
+			continue;
+		}
+
+		auto* neoAttacker = dynamic_cast<CNEO_Player*>(UTIL_PlayerByIndex(pIdx));
+		if (!neoAttacker || neoAttacker->IsHLTV())
+		{
+			continue;
+		}
+
+		const char* dmgerName = neoAttacker->GetPlayerName();
+		if (!dmgerName)
+		{
+			continue;
+		}
+
+		const float dmgTo = min(neoAttacker->GetAttackersScores(thisIdx), 100.0f);
+		const float dmgFrom = min(GetAttackersScores(pIdx), 100.0f);
+		if (dmgTo > 0.0f || dmgFrom > 0.0f)
+		{
+			const int hitsTo = neoAttacker->GetAttackerHits(thisIdx);
+			const int hitsFrom = GetAttackerHits(pIdx);
+			const char *dmgerClass = GetNeoClassName(neoAttacker->GetClass());
+
+			static char infoLine[900];
+			memset(infoLine, 0, sizeof(infoLine));
+			DmgLineStr(infoLine, sizeof(infoLine), dmgerName, dmgerClass,
+					dmgTo, dmgFrom, hitsTo, hitsFrom);
+			Msg("%s", infoLine);
+
+			totals.dealtTotalDmgs += dmgTo;
+			totals.takenTotalDmgs += dmgFrom;
+			totals.dealtTotalHits += hitsTo;
+			totals.takenTotalHits += hitsFrom;
+		}
+	}
+	Msg("\nTOTAL: Dealt: %.0f in %d hits | Taken: %.0f in %d hits\n",
+			totals.dealtTotalDmgs, totals.dealtTotalHits,
+			totals.takenTotalDmgs, totals.takenTotalHits);
+	Msg(BORDER);
 }
 
 void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
