@@ -22,11 +22,15 @@ BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 	RecvPropTime(RECVINFO(m_flLastAttackTime)),
 	RecvPropFloat(RECVINFO(m_flAccuracyPenalty)),
 	RecvPropInt(RECVINFO(m_nNumShotsFired)),
+	RecvPropBool(RECVINFO(m_bRoundChambered)),
+	RecvPropBool(RECVINFO(m_bRoundBeingChambered)),
 #else
 	SendPropTime(SENDINFO(m_flSoonestAttack)),
 	SendPropTime(SENDINFO(m_flLastAttackTime)),
 	SendPropFloat(SENDINFO(m_flAccuracyPenalty)),
 	SendPropInt(SENDINFO(m_nNumShotsFired)),
+	SendPropBool(SENDINFO(m_bRoundChambered)),
+	SendPropBool(SENDINFO(m_bRoundBeingChambered)),
 #endif
 END_NETWORK_TABLE()
 
@@ -36,6 +40,8 @@ BEGIN_PREDICTION_DATA(CNEOBaseCombatWeapon)
 	DEFINE_PRED_FIELD(m_flLastAttackTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_flAccuracyPenalty, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_nNumShotsFired, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bRoundChambered, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bRoundBeingChambered, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 #endif
 
@@ -47,6 +53,8 @@ BEGIN_DATADESC( CNEOBaseCombatWeapon )
 	DEFINE_FIELD(m_flLastAttackTime, FIELD_TIME),
 	DEFINE_FIELD(m_flAccuracyPenalty, FIELD_FLOAT),
 	DEFINE_FIELD(m_nNumShotsFired, FIELD_INTEGER),
+	DEFINE_FIELD(m_bRoundChambered, FIELD_BOOLEAN),
+	DEFINE_FIELD(m_bRoundBeingChambered, FIELD_BOOLEAN),
 END_DATADESC()
 #endif
 
@@ -272,7 +280,7 @@ void CNEOBaseCombatWeapon::ProcessAnimationEvents(void)
 	if (!pOwner)
 		return;
 
-	if (!m_bLowered && (pOwner->IsSprinting()) && !m_bInReload)
+	if (!m_bLowered && (pOwner->IsSprinting()) && !m_bInReload && !m_bRoundBeingChambered)
 	{
 		m_bLowered = true;
 		SendWeaponAnim(ACT_VM_IDLE_LOWERED);
@@ -283,6 +291,13 @@ void CNEOBaseCombatWeapon::ProcessAnimationEvents(void)
 	{
 		m_bLowered = false;
 		SendWeaponAnim(ACT_VM_IDLE);
+		m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
+		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
+	}
+	else if (m_bLowered && m_bRoundBeingChambered)
+	{ // For bolt action weapons
+		m_bLowered = false;
+		SendWeaponAnim(ACT_VM_PULLBACK);
 		m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
 		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
 	}
@@ -370,7 +385,8 @@ void CNEOBaseCombatWeapon::ItemPostFrame(void)
 		if (!IsMeleeWeapon() &&
 			((UsesClipsForAmmo1() && m_iClip1 <= 0) || (!UsesClipsForAmmo1() && pOwner->GetAmmoCount(m_iPrimaryAmmoType) <= 0)))
 		{
-			HandleFireOnEmpty();
+			if (m_bRoundChambered) // bolt action rifles can have this value set to false, prevents empty clicking when holding the attack button when looking through scope to prevent bolting/reloading
+				HandleFireOnEmpty();
 		}
 		else if (pOwner->GetWaterLevel() == 3 && m_bFiresUnderwater == false)
 		{
