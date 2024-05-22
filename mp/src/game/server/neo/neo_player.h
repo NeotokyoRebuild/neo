@@ -190,6 +190,9 @@ private:
 
 	bool IsAllowedToSuperJump(void);
 
+	void ShowDmgInfo(char *infoStr, int infoStrSize);
+	int SetDmgListStr(char *infoStr, const int infoStrMax, const int playerIdxStart, int *infoStrSize) const;
+
 public:
 	CNetworkVar(int, m_iNeoClass);
 	CNetworkVar(int, m_iNeoSkin);
@@ -232,6 +235,9 @@ private:
 
 	float m_flLastAirborneJumpOkTime;
 	float m_flLastSuperJumpTime;
+
+	int m_iDmgMenuCurPage;
+	int m_iDmgMenuNextPage;
 
 	INEOPlayerAnimState* m_pPlayerAnimState;
 
