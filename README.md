@@ -13,7 +13,9 @@
     * Full IDE/tooling: Visual Studio 2022
     * or just the [Microsoft C/C++ Build Tools v17](https://aka.ms/vs/17/release/vs_BuildTools.exe)
 * Linux: Steam-runtimes chroot/docker
-* Both: cmake, ninja
+* Both:
+    * cmake
+    * ninja (optional, can use nmake/make/VS instead)
 
 ### Building
 If using VS2022/qtcreator, you can go through there to build the project, otherwise if using CLI:
@@ -28,6 +30,8 @@ $ # To build in Debug mode:
 $ cmake -S . -B build/debug -G Ninja
 $ cmake --build build/debug --parallel
 ```
+
+On Windows CLI, make sure the "x86 Native Tools Command Prompt for VS2022" is used instead of the default.
 
 ### Additional setup + steam mod setup
 See instructions for your platform, refer to the VDC wiki on setting up extras, chroot/containers, etc...:
