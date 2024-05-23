@@ -1617,7 +1617,7 @@ int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int pl
 			const int hitsFrom = GetAttackerHits(pIdx);
 			static char infoLine[SHOWMENU_STRLIMIT];
 			const int infoLineLen = DmgLineStr(infoLine, sizeof(infoLine),
-					dmgerName, dmgerClass, dmgTo, dmgFrom, hitsTo, hitsFrom, true);
+					dmgerName, dmgerClass, dmgTo, dmgFrom, hitsTo, hitsFrom);
 			if ((infoStrLen + infoLineLen) >= FILLSTR_END)
 			{
 				// Truncate for this page

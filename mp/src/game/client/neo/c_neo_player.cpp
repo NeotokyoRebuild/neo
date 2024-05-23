@@ -178,7 +178,7 @@ static void __MsgFunc_DamageInfo(bf_read& msg)
 
 			static char infoLine[128];
 			DmgLineStr(infoLine, sizeof(infoLine), dmgerName, dmgerClass,
-				dmgTo, dmgFrom, hitsTo, hitsFrom, true);
+				dmgTo, dmgFrom, hitsTo, hitsFrom);
 			ConMsg("%s", infoLine);
 
 			totals.dealtTotalDmgs += dmgTo;

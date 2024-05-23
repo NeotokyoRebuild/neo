@@ -274,8 +274,7 @@ bool ClientWantsAimHold(const CNEO_Player* player);
 
 int DmgLineStr(char* infoLine, const int infoLineMax,
 	const char* dmgerName, const char* dmgerClass,
-	const float dmgTo, const float dmgFrom, const int hitsTo, const int hitsFrom,
-	const bool newline);
+	const float dmgTo, const float dmgFrom, const int hitsTo, const int hitsFrom);
 
 void KillerLineStr(char* killByLine, const int killByLineMax,
 	CNEO_Player* neoAttacker, const CNEO_Player* neoVictim);

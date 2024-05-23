@@ -130,28 +130,24 @@ bool ClientWantsLeanToggle(const CNEO_Player* player)
 
 int DmgLineStr(char* infoLine, const int infoLineMax,
 	const char* dmgerName, const char* dmgerClass,
-	const float dmgTo, const float dmgFrom, const int hitsTo, const int hitsFrom,
-	const bool newline)
+	const float dmgTo, const float dmgFrom, const int hitsTo, const int hitsFrom)
 {
 	memset(infoLine, 0, infoLineMax);
 	if (dmgTo > 0.0f && dmgFrom > 0.0f)
 	{
-		Q_snprintf(infoLine, infoLineMax, "%s [%s]: Dealt: %.0f in %d hits | Taken: %.0f in %d hits%s",
+		Q_snprintf(infoLine, infoLineMax, "%s [%s]: Dealt: %.0f in %d hits | Taken: %.0f in %d hits\n",
 			dmgerName, dmgerClass,
-			dmgTo, hitsTo, dmgFrom, hitsFrom,
-			newline ? "\n" : "");
+			dmgTo, hitsTo, dmgFrom, hitsFrom);
 	}
 	else if (dmgTo > 0.0f)
 	{
-		Q_snprintf(infoLine, infoLineMax, "%s [%s]: Dealt: %.0f in %d hits%s",
-			dmgerName, dmgerClass, dmgTo, hitsTo,
-			newline ? "\n" : "");
+		Q_snprintf(infoLine, infoLineMax, "%s [%s]: Dealt: %.0f in %d hits\n",
+			dmgerName, dmgerClass, dmgTo, hitsTo);
 	}
 	else if (dmgFrom > 0.0f)
 	{
-		Q_snprintf(infoLine, infoLineMax, "%s [%s]: Taken: %.0f in %d hits%s",
-			dmgerName, dmgerClass, dmgFrom, hitsFrom,
-			newline ? "\n" : "");
+		Q_snprintf(infoLine, infoLineMax, "%s [%s]: Taken: %.0f in %d hits\n",
+			dmgerName, dmgerClass, dmgFrom, hitsFrom);
 	}
 	return Q_strlen(infoLine);
 }
