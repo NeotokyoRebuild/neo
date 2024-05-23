@@ -2,7 +2,7 @@
 
 * NEOTOKYO rebuild in Source SDK 2013 Multiplayer
 * Forked from: https://github.com/NeotokyoRevamp/neo
-* License: SOURCE 1 SDK LICENSE, see LICENSE for details
+* License: SOURCE 1 SDK LICENSE, see [[LICENSE]] for details
 
 ## Building the SDK
 
@@ -104,4 +104,10 @@ shaders\fxc\sdk_screenspaceeffect_vs20.vcs
 9 File(s) copied
 10.41
 ```
+
+## Credits
+* [NeotokyoRevamp/neo](https://github.com/NeotokyoRevamp/neo) - Where this is forked from
+* [ValveSoftware/source-sdk-2013](https://github.com/ValveSoftware/source-sdk-2013) - Source SDK 2013
+* [Nbc66/source-sdk-2013-ce](https://github.com/Nbc66/source-sdk-2013-ce) - Community Edition for additional fixes
+* [tonysergi/source-sdk-2013](https://github.com/tonysergi/source-sdk-2013) - tonysergi's commits that were missing from the original SDK
 
