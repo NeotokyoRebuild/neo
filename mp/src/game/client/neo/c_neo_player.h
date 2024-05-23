@@ -161,6 +161,7 @@ public:
 	bool IsInAim() const { return m_bInAim; }
 
 	float GetAttackersScores(const int attackerIdx) const;
+	int GetAttackerHits(const int attackerIdx) const;
 
 private:
 	void CheckThermOpticButtons();
