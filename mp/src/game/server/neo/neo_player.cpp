@@ -1479,7 +1479,7 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 				int infoStrSize = 0;
 				bool showMenu = false;
 				m_iDmgMenuCurPage = m_iDmgMenuNextPage;
-				m_iDmgMenuNextPage = SetDmgListStr(infoStr, sizeof(infoStr), m_iDmgMenuNextPage, &infoStrSize, &showMenu);
+				m_iDmgMenuNextPage = SetDmgListStr(infoStr, sizeof(infoStr), m_iDmgMenuNextPage, &infoStrSize, &showMenu, NULL);
 				if (showMenu) ShowDmgInfo(infoStr, infoStrSize);
 				break;
 			}
@@ -1565,6 +1565,7 @@ static int DmgLineStr(char* infoLine, const int infoLineMax,
 		const char *dmgerName, const char *dmgerClass,
 		const float dmgTo, const float dmgFrom, const int hitsTo, const int hitsFrom)
 {
+	memset(infoLine, 0, infoLineMax);
 	if (dmgTo > 0.0f && dmgFrom > 0.0f)
 	{
 		Q_snprintf(infoLine, infoLineMax, "%s [%s]: Dealt: %.0f in %d hits | Taken: %.0f in %d hits\n",
@@ -1584,18 +1585,46 @@ static int DmgLineStr(char* infoLine, const int infoLineMax,
 	return Q_strlen(infoLine);
 }
 
-int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int playerIdxStart, int *infoStrSize, bool *showMenu) const
+static void KillerLineStr(char *killByLine, const int killByLineMax,
+		CNEO_Player *neoAttacker, const CNEO_Player *neoVictim)
+{
+	const char* dmgerName = neoAttacker->GetPlayerName();
+	const char* dmgerClass = GetNeoClassName(neoAttacker->GetClass());
+	const int dmgerHP = neoAttacker->GetHealth();
+	auto* dmgerWep = neoAttacker->GetActiveWeapon();
+	const char* dmgerWepName = dmgerWep ? dmgerWep->GetPrintName() : "";
+	const float distance = METERS_PER_INCH * neoAttacker->GetAbsOrigin().DistTo(neoVictim->GetAbsOrigin());
+
+	memset(killByLine, 0, killByLineMax);
+	Q_snprintf(killByLine, killByLineMax, "Killed by: %s [%s | %d hp] with %s at %.0f m\n",
+		dmgerName, dmgerClass, dmgerHP, dmgerWepName, distance);
+}
+
+int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int playerIdxStart,
+		int *infoStrSize, bool *showMenu, const CTakeDamageInfo *info) const
 {
 	Assert(infoStrSize != NULL);
 	Assert(showMenu != NULL);
 	*showMenu = false;
-	static const int TITLE_LEN = 30;
+	static const int TITLE_LEN = 30; // Rough-approximate
 	static const int POSTFIX_LEN = 15 + 12;
 	static const int TOTALLINE_LEN = 64; // Rough-approximate
-	static const int INFO_MAX_LEN = SHOWMENU_STRLIMIT - TITLE_LEN - POSTFIX_LEN - TOTALLINE_LEN - 2;
+	static int FILLSTR_END = SHOWMENU_STRLIMIT - POSTFIX_LEN - TOTALLINE_LEN - 2;
 	memset(infoStr, 0, infoStrMax);
-	Q_snprintf(infoStr, infoStrMax, "Damage infos (Round %d):\n \n", NEORules()->roundNumber());
-	int infoStrLen = TITLE_LEN;
+	Q_snprintf(infoStr, infoStrMax, "Damage infos (Round %d):\n", NEORules()->roundNumber());
+	if (info)
+	{
+		// If CTakeDamageInfo pointer given, then also show killed by information
+		auto* neoAttacker = dynamic_cast<CNEO_Player*>(info->GetAttacker());
+		if (neoAttacker && neoAttacker->entindex() != entindex())
+		{
+			char killByLine[SHOWMENU_STRLIMIT];
+			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, this);
+			Q_strncat(infoStr, killByLine, infoStrMax, COPY_ALL_CHARACTERS);
+		}
+	}
+	Q_strncat(infoStr, " \n", infoStrMax, COPY_ALL_CHARACTERS);
+	int infoStrLen = Q_strlen(infoStr);
 	const int thisIdx = entindex();
 	int nextPage = 0;
 	for (int pIdx = playerIdxStart; pIdx <= gpGlobals->maxClients; ++pIdx)
@@ -1626,10 +1655,9 @@ int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int pl
 			const int hitsTo = neoAttacker->GetAttackerHits(thisIdx);
 			const int hitsFrom = GetAttackerHits(pIdx);
 			static char infoLine[SHOWMENU_STRLIMIT];
-			memset(infoLine, 0, sizeof(infoLine));
 			const int infoLineLen = DmgLineStr(infoLine, sizeof(infoLine),
 					dmgerName, dmgerClass, dmgTo, dmgFrom, hitsTo, hitsFrom);
-			if ((infoStrLen + infoLineLen) >= INFO_MAX_LEN)
+			if ((infoStrLen + infoLineLen) >= FILLSTR_END)
 			{
 				// Truncate for this page
 				nextPage = pIdx;
@@ -1663,13 +1691,13 @@ int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int pl
 	return nextPage;
 }
 
-void CNEO_Player::StartShowDmgStats()
+void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo *info)
 {
 	char infoStr[SHOWMENU_STRLIMIT];
 	int infoStrSize = 0;
 	bool showMenu = false;
 	m_iDmgMenuCurPage = 1;
-	m_iDmgMenuNextPage = SetDmgListStr(infoStr, sizeof(infoStr), m_iDmgMenuCurPage, &infoStrSize, &showMenu);
+	m_iDmgMenuNextPage = SetDmgListStr(infoStr, sizeof(infoStr), m_iDmgMenuCurPage, &infoStrSize, &showMenu, info);
 	if (showMenu) ShowDmgInfo(infoStr, infoStrSize);
 
 	// Print to console
@@ -1681,7 +1709,18 @@ void CNEO_Player::StartShowDmgStats()
 
 	static const char *BORDER = "==========================\n";
 	Msg(BORDER);
-	Msg("Damage infos (Round %d):\n\n", NEORules()->roundNumber());
+	Msg("Damage infos (Round %d):\n", NEORules()->roundNumber());
+	if (info)
+	{
+		auto* neoAttacker = dynamic_cast<CNEO_Player*>(info->GetAttacker());
+		if (neoAttacker && neoAttacker->entindex() != entindex())
+		{
+			char killByLine[SHOWMENU_STRLIMIT];
+			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, this);
+			Msg("%s", killByLine);
+		}
+	}
+	Msg("\n");
 	const int thisIdx = entindex();
 	for (int pIdx = 1; pIdx <= gpGlobals->maxClients; ++pIdx)
 	{
@@ -1711,7 +1750,6 @@ void CNEO_Player::StartShowDmgStats()
 			const char *dmgerClass = GetNeoClassName(neoAttacker->GetClass());
 
 			static char infoLine[900];
-			memset(infoLine, 0, sizeof(infoLine));
 			DmgLineStr(infoLine, sizeof(infoLine), dmgerName, dmgerClass,
 					dmgTo, dmgFrom, hitsTo, hitsFrom);
 			Msg("%s", infoLine);
@@ -1770,7 +1808,7 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 
 	if (!IsBot() && !IsHLTV())
 	{
-		StartShowDmgStats();
+		StartShowDmgStats(&info);
 	}
 
 	BaseClass::Event_Killed(info);

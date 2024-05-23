@@ -184,7 +184,7 @@ public:
 		int takenTotalHits;
 	};
 	AttackersTotals GetAttackersTotals() const;
-	void StartShowDmgStats();
+	void StartShowDmgStats(const CTakeDamageInfo *info);
 
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);
 
@@ -202,7 +202,9 @@ private:
 	bool IsAllowedToSuperJump(void);
 
 	void ShowDmgInfo(char *infoStr, int infoStrSize);
-	int SetDmgListStr(char *infoStr, const int infoStrMax, const int playerIdxStart, int *infoStrSize, bool *showMenu) const;
+	int SetDmgListStr(char *infoStr, const int infoStrMax, const int playerIdxStart,
+		int *infoStrSize, bool *showMenu,
+		const CTakeDamageInfo *info) const;
 
 public:
 	CNetworkVar(int, m_iNeoClass);

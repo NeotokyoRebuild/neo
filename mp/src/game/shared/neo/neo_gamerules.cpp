@@ -1468,7 +1468,7 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 			// Any human player still alive, show them damage stats in round end
 			if (!player->IsBot() && !player->IsHLTV() && player->IsAlive())
 			{
-				player->StartShowDmgStats();
+				player->StartShowDmgStats(NULL);
 			}
 		}
 	}
