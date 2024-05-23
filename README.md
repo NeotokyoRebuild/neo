@@ -2,7 +2,8 @@
 
 * NEOTOKYO rebuild in Source SDK 2013 Multiplayer
 * Forked from: https://github.com/NeotokyoRevamp/neo
-* License: SOURCE 1 SDK LICENSE, see [[LICENSE]] for details
+* License: SOURCE 1 SDK LICENSE, see [LICENSE](LICENSE) for details
+* See [CONTRIBUTING.md](CONTRIBUTING.md) for instructions on how the codebase work and contribute
 
 ## Building the SDK
 

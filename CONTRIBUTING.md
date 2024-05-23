@@ -1,10 +1,10 @@
-*Note: It's recommended you read the [dev branch version of this document](https://github.com/NeotokyoRevamp/neo/blob/dev/CONTRIBUTING.md) to make sure all the information is up to date.*
+*Note: It's recommended you read the [master branch version of this document](https://github.com/NeotokyoRebuild/neo/blob/master/CONTRIBUTING.md) to make sure all the information is up to date.*
 
 # Contributing
 
 ## Pull requests are welcome!
 
-We've moved to using GitHub Issues for issue tracking. Feel free to [take a look](https://github.com/NeotokyoRevamp/neo/issues) and assign yourself if you're interested in working on something, or report bugs/features not yet included.
+We've moved to using GitHub Issues for issue tracking. Feel free to [take a look](https://github.com/NeotokyoRebuild/neo/issues) and assign yourself if you're interested in working on something, or report bugs/features not yet included.
 
 Also come [join the Discord channel](https://steamcommunity.com/groups/ANPA/discussions/0/487876568238532577/) to discuss the project with others
 (see the *"nt_semantic_sequels"* and other related channels under the channel group "Architects").
@@ -30,13 +30,13 @@ The end result should hopefully be a shinier and less error-prone rendition of N
 
 ### Cloning & merging
 
-It's recommended you fork [the dev branch](https://github.com/NeotokyoRevamp/neo/tree/dev), and pull request your work there back to it.
+It's recommended you fork [the master branch](https://github.com/NeotokyoRebuild/neo/tree/master), and pull request your work there back to it.
 
-The dev branch will periodically get merged back to the master branch, as new things become stable enough.
+The master branch will periodically get merged back to the master branch, as new things become stable enough.
 
 ### Building
 
-See [build instructions](BUILD_INSTRUCTIONS.md) in this repo for setting up your build environment (currently supporting Windows/Linux).
+See [README.md](README.md) in this repo for setting up your build environment (currently supporting Windows/Linux).
 
 ### Debugging
 To be safe and avoid problems with VAC, it's recommended to add a [-insecure](https://developer.valvesoftware.com/wiki/Command_Line_Options) launch flag before attaching your debugger.
@@ -49,6 +49,34 @@ Example settings for debugging from Visual Studio solutions:
 | Command Arguments | -allowdebug -insecure -dev -sw -game "C:\git\neo\mp\game\neo" |
 | Working Directory | C:\Program Files (x86)\Steam\steamapps\common\Source SDK Base 2013 Multiplayer |
 
+#### cmake - VS2022
+In the CMake Target View, right-click "client (shared library)" and click on "Add Debug Configuration". This should show a json file. Then, make sure it's similar to this (changing the game path to where you have it):
+
+```
+{
+  "version": "0.2.1",
+  "defaults": {},
+  "configurations": [
+    {
+      "type": "dll",
+      "exe": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Source SDK Base 2013 Multiplayer\\hl2.exe",
+      "project": "CMakeLists.txt",
+      "projectTarget": "client.dll (game\\client\\client.dll)",
+      "name": "client.dll (game\\client\\client.dll)",
+      "currentDir": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Source SDK Base 2013 Multiplayer",
+      "args": [
+        "-allowdebug",
+        "-insecure",
+        "-dev",
+        "-sw",
+        "-game",
+        "C:\\PATH\\TO\\REPO_ROOT\\neo\\mp\\game\\neo"
+      ]
+    }
+  ]
+}
+```
+
 ### Game loop and reference material
 
 [Break pointing and stepping](https://developer.valvesoftware.com/wiki/Installing_and_Debugging_the_Source_Code) the method [CServerGameDLL::GameFrame](mp/src/game/server/gameinterface.cpp), or relevant methods in [C_NEO_Player](mp/src/game/client/neo/c_neo_player.h) (clientside player) / [CNEO_Player](mp/src/game/server/neo/neo_player.h) (serverside player) can help with figuring out the general game loop. Neo specific files usually live in [game/client/neo](mp/src/game/client/neo), [game/server/neo](mp/src/game/server/neo), or [game/shared/neo](mp/src/game/shared/neo), similar to how most hl2mp code is laid out.
@@ -57,9 +85,13 @@ Ochii's impressive [reverse engineering project](https://github.com/Ochii/neotok
 
 ## Good to know
 
-### Solutions/makefiles
+### Current: cmake
 
-This project uses Valve's [VPC system](https://developer.valvesoftware.com/wiki/VPC) to generate its makefiles and VS solutions. When modifying the project file structure, instead of pushing your solution/makefile, edit the relevant VPC files instead (most commonly "[client_neo.vpc](mp/src/game/client/client_neo.vpc)" and "[server_neo.vpc](mp/src/game/server/server_neo.vpc)").
+This project currently use the [cmake](https://cmake.org/) build system to generate ninja/makefiles and is integrated with IDEs such as VS2022 and qtcreator. When modifying the project file structure, look into `CMakeLists.txt` and `cmake/*.cmake`.
+
+### Legacy: Solutions/makefiles
+
+This project used to use Valve's [VPC system](https://developer.valvesoftware.com/wiki/VPC) to generate its makefiles and VS solutions. When modifying the project file structure, instead of pushing your solution/makefile, edit the relevant VPC files instead (most commonly "[client_neo.vpc](mp/src/game/client/client_neo.vpc)" and "[server_neo.vpc](mp/src/game/server/server_neo.vpc)").
 
 Running the VPC scripts in mp/src/... after a change will regenerate the solutions and makefiles on all platforms. You may sometimes have to purge your object file cache if you get linker errors after restructuring existing translation units.
 
@@ -70,8 +102,11 @@ In shared code, clientside code can be differentiated with CLIENT_DLL, vs. serve
 
 No big restrictions on general code format, just try to more or less match the other SDK code style.
 
-* C++11, generally within v143 MSVC toolset on Windows and GCC 13+ on Linux supports
+* C++11 but within GCC 4.6+ supports. This means:
+    * No `constexpr`
+    * Use `OVERRIDE` instead of `override`
+    * STL generally shouldn't be included in as it may conflicts with existing similar functions
 * Valve likes to ( space ) their arguments, especially with macros, but it's not necessary to strictly follow everywhere.
 * Tabs are preferred for indentation, to be consistent with the SDK code.
 * When using a TODO/FIXME/HACK... style comment, use the format "// NEO TODO (Your-username): Example comment." to make it easier to search NEO specific todos/fixmes (opposed to Valve ones), and at a glance figure out who has written them.
-* For classes running on both client and server, you should generally follow Valve's <i>C_Thing</i> (client) -- <i>CThing</i> (server) convention. On shared files, this might mean #defining serverclass for client, or vice versa. There's plenty of examples of this pattern in Valve's classes for reference, [for example here](https://github.com/NeotokyoRevamp/neo/blob/f749c07a4701d285bbb463686d5a5a50c20b9528/mp/src/game/shared/hl2mp/weapon_357.cpp#L20).
+* For classes running on both client and server, you should generally follow Valve's <i>C_Thing</i> (client) -- <i>CThing</i> (server) convention. On shared files, this might mean #defining serverclass for client, or vice versa. There's plenty of examples of this pattern in Valve's classes for reference, [for example here](https://github.com/NeotokyoRebuild/neo/blob/f749c07a4701d285bbb463686d5a5a50c20b9528/mp/src/game/shared/hl2mp/weapon_357.cpp#L20).
