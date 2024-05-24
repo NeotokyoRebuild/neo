@@ -116,6 +116,7 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 {
 	float roundTimeLeft = NEORules()->GetRoundRemainingTime();
 	const NeoRoundStatus roundStatus = NEORules()->GetRoundStatus();
+	const bool inSuddenDeath = NEORules()->RoundIsInSuddenDeath();
 
 	// Exactly zero means there's no time limit, so we don't need to draw anything.
 	if (roundTimeLeft == 0)
@@ -140,8 +141,13 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	const int secsTotal = RoundFloatToInt(roundTimeLeft);
 	const int secsRemainder = secsTotal % 60;
 	const int minutes = (secsTotal - secsRemainder) / 60;
+	const char *prefixStr = (roundStatus == NeoRoundStatus::Warmup) ? "(Warmup) " : "";
+	if (inSuddenDeath)
+	{
+		prefixStr = "(Sudden death) ";
+	}
 
-	V_sprintf_safe(m_szStatusANSI, "%s%02d:%02d", (roundStatus == NeoRoundStatus::Warmup) ? "(Warmup) " : "", minutes, secsRemainder);
+	V_sprintf_safe(m_szStatusANSI, "%s%02d:%02d", prefixStr, minutes, secsRemainder);
 	memset(m_wszStatusUnicode, 0, sizeof(m_wszStatusUnicode)); // NOTE (nullsystem): Clear it or get junk after warmup ends
 	g_pVGuiLocalize->ConvertANSIToUnicode(m_szStatusANSI, m_wszStatusUnicode, sizeof(m_wszStatusUnicode));
 }
