@@ -27,6 +27,8 @@ protected:
 
 private:
 	void CheckActiveStar();
+	void DrawFriend(int playerIndex, int teamIndex, int xpos, int boxWidth);
+	void DrawEnemy(int playerIndex, int teamIndex, int xpos, int boxWidth);
 
 private:
 	vgui::HFont m_hFont;
@@ -35,11 +37,34 @@ private:
 
 	char m_szStatusANSI[24];
 	wchar_t m_wszStatusUnicode[24];
+	wchar_t m_wszJinraiScore[2];
+	wchar_t m_wszNSFScore[2];
+	wchar_t m_wszRound[2];
 
 	vgui::ImagePanel *starNone, *starA, *starB, *starC, *starD, *starE, *starF;
-
 	int m_iPreviouslyActiveStar;
 	int m_iPreviouslyActiveTeam;
+
+	int m_iJinraiID;
+	int m_iJinraiTotalID;
+	int m_iNSFID;
+	int m_iNSFTotalID;
+	int m_iFriendlyLogo;
+	int m_iEnemyLogo;
+	int m_iFriendlyTotalLogo;
+	int m_iEnemyTotalLogo;
+
+	int m_ilogoSize;
+	int m_ilogoTotalSize;
+	int m_iFriendsAlive;
+	int m_iFriendsTotal;
+	int m_iEnemiesAlive;
+	int m_iEnemiesTotal;
+
+	wchar_t m_wszFriendsAlive[2];
+	wchar_t m_wszEnemiesAlive[2];
+
+	int box_color_r, box_color_g, box_color_b, box_color_a;
 
 private:
 	CNEOHud_RoundState(const CNEOHud_RoundState &other);
