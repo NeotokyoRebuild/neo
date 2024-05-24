@@ -1121,6 +1121,10 @@ void CNEO_Player::PostThink(void)
 
 void CNEO_Player::PlayerDeathThink()
 {
+	if (m_nButtons & ~IN_SCORE)
+	{
+		m_bEnterObserver = true;
+	}
 	BaseClass::PlayerDeathThink();
 }
 
@@ -1521,10 +1525,7 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 
 	BaseClass::Event_Killed(info);
 
-	m_bEnterObserver = true;
-	StartObserverMode(OBS_MODE_CHASE);
 	RemoveAllWeapons();
-	ShowViewPortPanel(PANEL_SPECGUI, true);
 }
 
 void CNEO_Player::SpawnDeadModel(const CTakeDamageInfo& info)
