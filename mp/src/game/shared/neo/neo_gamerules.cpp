@@ -1303,6 +1303,23 @@ bool CNEORules::RoundIsInSuddenDeath() const
 	return false;
 }
 
+bool CNEORules::RoundIsMatchPoint() const
+{
+	auto teamJinrai = GetGlobalTeam(TEAM_JINRAI);
+	auto teamNSF = GetGlobalTeam(TEAM_NSF);
+	if (teamJinrai && teamNSF)
+	{
+		if (neo_round_limit.GetInt() != 0)
+		{
+			const int roundDiff = neo_round_limit.GetInt() - (m_iRoundNumber - 1);
+			return (!RoundIsInSuddenDeath() &&
+				((teamJinrai->GetRoundsWon() + 1) > (teamNSF->GetRoundsWon() + roundDiff)) ||
+				((teamNSF->GetRoundsWon() + 1) > (teamJinrai->GetRoundsWon() + roundDiff)));
+		}
+	}
+	return false;
+}
+
 ConVar snd_victory_volume("snd_victory_volume", "0.33", FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_USERINFO, "Loudness of the victory jingle (0-1).", true, 0.0, true, 1.0);
 
 #ifdef GAME_DLL
@@ -1344,6 +1361,9 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 
 	if (!bForceMapReset)
 	{
+		auto teamJinrai = GetGlobalTeam(TEAM_JINRAI);
+		auto teamNSF = GetGlobalTeam(TEAM_NSF);
+
 		if (neo_score_limit.GetInt() != 0)
 		{
 #ifdef DEBUG
@@ -1361,11 +1381,20 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 
 		// If a hard round limit is set, end the game and show the team
 		// that won with the most score, sudden death, or tie out
-		if (neo_round_limit.GetInt() != 0 && (m_iRoundNumber >= neo_round_limit.GetInt()))
+		if (neo_round_limit.GetInt() != 0 && teamJinrai && teamNSF)
 		{
-			auto teamJinrai = GetGlobalTeam(TEAM_JINRAI);
-			auto teamNSF = GetGlobalTeam(TEAM_NSF);
-			if (teamJinrai && teamNSF)
+			// If there's a round limit and the other team cannot really catch up with the
+			// winning team, then end the match early.
+			const int roundDiff = neo_round_limit.GetInt() - (m_iRoundNumber - 1);
+			if (!RoundIsInSuddenDeath() &&
+				(teamJinrai->GetRoundsWon() > (teamNSF->GetRoundsWon() + roundDiff)) ||
+				(teamNSF->GetRoundsWon() > (teamJinrai->GetRoundsWon() + roundDiff)))
+			{
+				V_sprintf_safe(victoryMsg, "Team %s wins the match!\n",
+						((teamJinrai->GetRoundsWon() > teamNSF->GetRoundsWon()) ? "Jinrai" : "NSF"));
+				gotMatchWinner = true;
+			}
+			else if (m_iRoundNumber >= neo_round_limit.GetInt())
 			{
 				if (teamJinrai->GetRoundsWon() == teamNSF->GetRoundsWon())
 				{

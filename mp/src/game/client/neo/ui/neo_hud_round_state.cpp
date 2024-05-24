@@ -117,6 +117,7 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	float roundTimeLeft = NEORules()->GetRoundRemainingTime();
 	const NeoRoundStatus roundStatus = NEORules()->GetRoundStatus();
 	const bool inSuddenDeath = NEORules()->RoundIsInSuddenDeath();
+	const bool inMatchPoint = NEORules()->RoundIsMatchPoint();
 
 	// Exactly zero means there's no time limit, so we don't need to draw anything.
 	if (roundTimeLeft == 0)
@@ -145,6 +146,10 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	if (inSuddenDeath)
 	{
 		prefixStr = "(Sudden death) ";
+	}
+	else if (inMatchPoint)
+	{
+		prefixStr = "(Match point) ";
 	}
 
 	V_sprintf_safe(m_szStatusANSI, "%s%02d:%02d", prefixStr, minutes, secsRemainder);
