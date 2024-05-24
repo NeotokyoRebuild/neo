@@ -626,7 +626,7 @@ void C_NEO_Player::PreThink( void )
 			speed = (speed / 2) + (deltaTime / 2 * (speed));
 		}
 	}
-	SetMaxSpeed(speed);
+	SetMaxSpeed(MAX(speed, 56));
 	
 	CheckThermOpticButtons();
 	CheckVisionButtons();
