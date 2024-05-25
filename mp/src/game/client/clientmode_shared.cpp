@@ -65,6 +65,10 @@ extern ConVar replay_rendersetting_renderglow;
 #include "econ_item_description.h"
 #endif
 
+#ifdef NEO
+#include "c_neo_player.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -1128,8 +1132,8 @@ void ClientModeShared::FireGameEvent( IGameEvent *event )
 			return;
 
 #ifdef NEO
-		const bool showChange = event->GetBool("showchange");
-		if (Q_strcmp("player_changeneoname", eventname) == 0 && !showChange)
+		const bool thisClientShowChange = C_NEO_Player::GetLocalNEOPlayer()->ClientWantNeoName();
+		if (Q_strcmp("player_changeneoname", eventname) == 0 && !thisClientShowChange)
 		{
 			// The client dont want to see neo_name changes so return early.
 			return;

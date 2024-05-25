@@ -1322,7 +1322,7 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 	// only set a name, otherwise message everyone if someone changes their neo_name
 	if (pszOldNeoName == NULL || Q_strcmp(pszOldNeoName, pszNeoName))
 	{
-		if (pszOldNeoName != NULL)
+		if (pszOldNeoName != NULL && clientAllowsNeoName)
 		{
 			// This is basically player_changename but allows for client to filter it out with cl_fakenick toggle
 			IGameEvent *event = gameeventmanager->CreateEvent("player_changeneoname");
@@ -1331,7 +1331,6 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 				event->SetInt("userid", pNEOPlayer->GetUserID());
 				event->SetString("oldname", (pszOldNeoName[0] == '\0') ? pszSteamName : pszOldNeoName);
 				event->SetString("newname", (pszNeoName[0] == '\0') ? pszSteamName : pszNeoName);
-				event->SetBool("showchange", clientAllowsNeoName);	// Can't rely on client's cl_fakenick variable over there
 				gameeventmanager->FireEvent(event);
 			}
 		}
