@@ -405,7 +405,7 @@ float C_NEO_Player::GetAttackersScores(const int attackerIdx) const
 
 const char *C_NEO_Player::GetNeoPlayerName() const
 {
-	return m_szNeoName.Get();
+	return (m_szNeoName.Get()[0] != '\0') ? m_szNeoName.Get() : const_cast<C_NEO_Player *>(this)->GetPlayerName();
 }
 
 int C_NEO_Player::DrawModel( int flags )

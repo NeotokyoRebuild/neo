@@ -121,10 +121,10 @@ public:
 	void Weapon_AimToggle(CBaseCombatWeapon *pWep, const NeoWeponAimToggleE toggleType);
 	void Weapon_AimToggle(CNEOBaseCombatWeapon* pWep, const NeoWeponAimToggleE toggleType);
 
-	// GetNeoPlayerName if available otherwise GetPlayerName
-	const char *GetSelectedPlayerName();
-
+	// "neo_name" if available otherwise "name"
 	const char *GetNeoPlayerName() const;
+	// "neo_name" even if it's nothing
+	const char *GetNeoPlayerNameDirect() const;
 	void SetNeoPlayerName(const char *newNeoName);
 
 	void Lean(void);

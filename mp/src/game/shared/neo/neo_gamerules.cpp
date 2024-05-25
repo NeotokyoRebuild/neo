@@ -1310,24 +1310,52 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 	}
 	pNEOPlayer->SetDefaultFOV(pNEOPlayer->ClientFOV());
 
-	const char *pszNeoName = engine->GetClientConVarValue(pNEOPlayer->entindex(), neo_name.GetName());
-	const char *pszOldNeoName = pNEOPlayer->GetNeoPlayerName();
+	const char *pszSteamName = engine->GetClientConVarValue(pPlayer->entindex(), "name");
 
-	// msg everyone if someone changes their name,  and it isn't the first time (changing no name to current name)
-	// Note, not using FStrEq so that this is case sensitive
+	const char *pszNeoName = engine->GetClientConVarValue(pNEOPlayer->entindex(), neo_name.GetName());
+	const char *pszOldNeoName = pNEOPlayer->GetNeoPlayerNameDirect();
+
+	// NEO NOTE: msg everyone if someone changes their name
 	if (Q_strcmp(pszOldNeoName, pszNeoName))
 	{
 		IGameEvent *event = gameeventmanager->CreateEvent("player_changename");
 		if (event)
 		{
-			// TODO (nullsystem): Use steam name if NULL
+			// NEO NOTE (nullsystem): Show steam name if old/new neo_name is NULL
 			event->SetInt("userid", pNEOPlayer->GetUserID());
-			event->SetString("oldname", pszOldNeoName);
-			event->SetString("newname", pszNeoName);
+			event->SetString("oldname", (pszOldNeoName[0] == '\0') ? pszSteamName : pszOldNeoName);
+			event->SetString("newname", (pszNeoName[0] == '\0') ? pszSteamName : pszNeoName);
 			gameeventmanager->FireEvent(event);
 		}
 
 		pNEOPlayer->SetNeoPlayerName(pszNeoName);
+	}
+
+	const char *pszName = pszSteamName;
+	const char *pszOldName = pPlayer->GetPlayerName();
+
+	// msg everyone if someone changes their name,  and it isn't the first time (changing no name to current name)
+	// Note, not using FStrEq so that this is case sensitive
+	if (pszOldName[0] != 0 && Q_strcmp(pszOldName, pszName))
+	{
+		if (!pszNeoName || pszNeoName[0] == '\0')
+		{
+			char text[256];
+			Q_snprintf(text, sizeof(text), "%s changed name to %s\n", pszOldName, pszName);
+
+			UTIL_ClientPrintAll(HUD_PRINTTALK, text);
+
+			IGameEvent *event = gameeventmanager->CreateEvent("player_changename");
+			if (event)
+			{
+				event->SetInt("userid", pPlayer->GetUserID());
+				event->SetString("oldname", pszOldName);
+				event->SetString("newname", pszName);
+				gameeventmanager->FireEvent(event);
+			}
+		}
+
+		pPlayer->SetPlayerName(pszName);
 	}
 
 	// We're skipping calling the base CHL2MPRules method here
