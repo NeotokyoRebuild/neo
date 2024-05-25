@@ -371,6 +371,7 @@ CNEO_Player::CNEO_Player()
 	m_iNeoSkin = NEO_SKIN_FIRST;
 	m_iNeoStar = NEO_DEFAULT_STAR;
 	m_iXP.GetForModify() = 0;
+	memset(m_szNeoName, 0, sizeof(m_szNeoName));
 
 	m_bGhostExists = false;
 	m_bInThermOpticCamo = m_bInVision = false;
@@ -1154,6 +1155,25 @@ void CNEO_Player::Weapon_AimToggle(CBaseCombatWeapon *pWep, const NeoWeponAimTog
 	// NEO TODO/HACK: Not all neo weapons currently inherit
 	// through a base neo class, so we can't static_cast!!
 	Weapon_AimToggle(dynamic_cast<CNEOBaseCombatWeapon*>(pWep), toggleType);
+}
+
+const char *CNEO_Player::GetSelectedPlayerName()
+{
+	return (m_szNeoName[0] != '\0') ? m_szNeoName : GetPlayerName();
+}
+
+const char *CNEO_Player::GetNeoPlayerName() const
+{
+	return m_szNeoName;
+}
+
+void CNEO_Player::SetNeoPlayerName(const char *newNeoName)
+{
+	if (newNeoName)
+	{
+		Assert(strlen(newNeoName) > 0);
+		Q_strncpy(m_szNeoName, newNeoName, sizeof(m_szNeoName));
+	}
 }
 
 void CNEO_Player::Weapon_SetZoom(const bool bZoomIn)

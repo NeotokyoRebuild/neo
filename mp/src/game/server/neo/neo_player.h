@@ -121,6 +121,12 @@ public:
 	void Weapon_AimToggle(CBaseCombatWeapon *pWep, const NeoWeponAimToggleE toggleType);
 	void Weapon_AimToggle(CNEOBaseCombatWeapon* pWep, const NeoWeponAimToggleE toggleType);
 
+	// GetNeoPlayerName if available otherwise GetPlayerName
+	const char *GetSelectedPlayerName();
+
+	const char *GetNeoPlayerName() const;
+	void SetNeoPlayerName(const char *newNeoName);
+
 	void Lean(void);
 	void SoftSuicide(void);
 	void GiveAllItems(void);
@@ -232,6 +238,8 @@ private:
 
 	float m_flLastAirborneJumpOkTime;
 	float m_flLastSuperJumpTime;
+
+	char m_szNeoName[MAX_PLAYER_NAME_LENGTH];
 
 	INEOPlayerAnimState* m_pPlayerAnimState;
 
