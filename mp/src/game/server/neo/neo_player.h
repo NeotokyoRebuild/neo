@@ -231,6 +231,10 @@ public:
 	CNetworkVar(unsigned char, m_NeoFlags);
 	CNetworkString(m_szNeoName, MAX_PLAYER_NAME_LENGTH);
 
+	// NEO NOTE (nullsystem): As dumb as client sets -> server -> client it may sound,
+	// cl_fakenick directly doesn't even work properly for client set convars anyway
+	CNetworkVar(bool, m_bClientWantNeoName);
+
 	bool m_bIsPendingSpawnForThisRound;
 
 private:
@@ -238,7 +242,6 @@ private:
 	bool m_bCorpseSpawned;
 	bool m_bPreviouslyReloading;
 	bool m_szNeoNameHasSet;
-	bool m_bClientWantNeoName;
 
 	float m_flLastAirborneJumpOkTime;
 	float m_flLastSuperJumpTime;

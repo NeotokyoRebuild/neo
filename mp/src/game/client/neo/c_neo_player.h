@@ -163,6 +163,7 @@ public:
 	float GetAttackersScores(const int attackerIdx) const;
 
 	const char *GetNeoPlayerName() const;
+	bool ClientWantNeoName() const;
 
 private:
 	void CheckThermOpticButtons();
@@ -206,6 +207,7 @@ public:
 	CNetworkVar(int, m_iNeoStar);
 
 	CNetworkString(m_szNeoName, MAX_PLAYER_NAME_LENGTH);
+	CNetworkVar(bool, m_bClientWantNeoName);
 
 	unsigned char m_NeoFlags;
 

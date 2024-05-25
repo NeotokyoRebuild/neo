@@ -272,6 +272,4 @@ enum NeoWeponAimToggleE {
 
 bool ClientWantsAimHold(const CNEO_Player* player);
 
-bool ClientAllowsNeoName(const CNEO_Player *player);
-
 #endif // NEO_PLAYER_SHARED_H

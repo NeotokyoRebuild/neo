@@ -14,6 +14,7 @@
 #endif
 
 #include "neo_playeranimstate.h"
+#include "convar.h"
 
 #include "weapon_neobasecombatweapon.h"
 
@@ -28,7 +29,6 @@ ConVar neo_lean_toggle("neo_lean_toggle", "0", FCVAR_USERINFO, "Set leaning to t
 ConVar neo_aim_hold("neo_aim_hold", "0", FCVAR_USERINFO, "Hold to aim as opposed to toggle aim.", true, 0.0f, true, 1.0f);
 ConVar neo_recon_superjump_intensity("neo_recon_superjump_intensity", "250", FCVAR_REPLICATED | FCVAR_CHEAT,
 	"Recon superjump intensity multiplier.", true, 1.0, false, 0);
-ConVar cl_fakenick("cl_fakenick", "1", FCVAR_USERINFO, "Show players set neo_name, otherwise only show Steam names.", true, 0.0f, true, 1.0f);
 
 bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep)
 {
@@ -126,23 +126,5 @@ bool ClientWantsLeanToggle(const CNEO_Player* player)
 	}
 
 	return 1 == atoi(engine->GetClientConVarValue(engine->IndexOfEdict(player->edict()), "neo_lean_toggle"));
-#endif
-}
-
-bool ClientAllowsNeoName(const CNEO_Player *player)
-{
-#ifdef CLIENT_DLL
-	return cl_fakenick.GetBool();
-#else
-	if (!player)
-	{
-		return false;
-	}
-	else if (player->GetFlags() & FL_FAKECLIENT)
-	{
-		return true;
-	}
-
-	return 1 == atoi(engine->GetClientConVarValue(engine->IndexOfEdict(player->edict()), "cl_fakenick"));
 #endif
 }

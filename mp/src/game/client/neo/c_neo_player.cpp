@@ -85,6 +85,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 
 	RecvPropInt(RECVINFO(m_NeoFlags)),
 	RecvPropString(RECVINFO(m_szNeoName)),
+	RecvPropBool(RECVINFO(m_bClientWantNeoName)),
 END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA(C_NEO_Player)
@@ -405,7 +406,12 @@ float C_NEO_Player::GetAttackersScores(const int attackerIdx) const
 
 const char *C_NEO_Player::GetNeoPlayerName() const
 {
-	return (m_szNeoName.Get()[0] != '\0' && ClientAllowsNeoName(GetLocalNEOPlayer())) ? m_szNeoName.Get() : const_cast<C_NEO_Player *>(this)->GetPlayerName();
+	return (m_szNeoName.Get()[0] != '\0' && GetLocalNEOPlayer()->ClientWantNeoName()) ? m_szNeoName.Get() : const_cast<C_NEO_Player *>(this)->GetPlayerName();
+}
+
+bool C_NEO_Player::ClientWantNeoName() const
+{
+	return m_bClientWantNeoName;
 }
 
 int C_NEO_Player::DrawModel( int flags )

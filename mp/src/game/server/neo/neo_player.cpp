@@ -75,6 +75,7 @@ SendPropArray(SendPropFloat(SENDINFO_ARRAY(m_rfAttackersScores), -1, SPROP_COORD
 
 SendPropInt(SENDINFO(m_NeoFlags), 4, SPROP_UNSIGNED),
 SendPropString(SENDINFO(m_szNeoName)),
+SendPropBool(SENDINFO(m_bClientWantNeoName)),
 END_SEND_TABLE()
 
 BEGIN_DATADESC(CNEO_Player)
@@ -109,6 +110,7 @@ DEFINE_FIELD(m_rfAttackersScores, FIELD_CUSTOM),
 DEFINE_FIELD(m_NeoFlags, FIELD_CHARACTER),
 
 DEFINE_FIELD(m_szNeoName, FIELD_STRING),
+DEFINE_FIELD(m_bClientWantNeoName, FIELD_BOOLEAN),
 END_DATADESC()
 
 #define DISMEMBER_LIMB_THRESHOLD 10
