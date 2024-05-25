@@ -84,6 +84,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropArray(RecvPropFloat(RECVINFO(m_rfAttackersScores[0])), m_rfAttackersScores),
 
 	RecvPropInt(RECVINFO(m_NeoFlags)),
+	RecvPropString(RECVINFO(m_szNeoName)),
 END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA(C_NEO_Player)
@@ -400,6 +401,11 @@ void C_NEO_Player::ZeroFriendlyPlayerLocArray()
 float C_NEO_Player::GetAttackersScores(const int attackerIdx) const
 {
 	return m_rfAttackersScores.Get(attackerIdx);
+}
+
+const char *C_NEO_Player::GetNeoPlayerName() const
+{
+	return m_szNeoName.Get();
 }
 
 int C_NEO_Player::DrawModel( int flags )

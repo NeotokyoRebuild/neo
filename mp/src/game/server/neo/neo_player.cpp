@@ -74,6 +74,7 @@ SendPropArray(SendPropVector(SENDINFO_ARRAY(m_rvFriendlyPlayerPositions), -1, SP
 SendPropArray(SendPropFloat(SENDINFO_ARRAY(m_rfAttackersScores), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rfAttackersScores),
 
 SendPropInt(SENDINFO(m_NeoFlags), 4, SPROP_UNSIGNED),
+SendPropString(SENDINFO(m_szNeoName)),
 END_SEND_TABLE()
 
 BEGIN_DATADESC(CNEO_Player)
@@ -107,7 +108,7 @@ DEFINE_FIELD(m_rfAttackersScores, FIELD_CUSTOM),
 
 DEFINE_FIELD(m_NeoFlags, FIELD_CHARACTER),
 
-DEFINE_ARRAY(m_szNeoName, FIELD_CHARACTER, MAX_PLAYER_NAME_LENGTH),
+DEFINE_FIELD(m_szNeoName, FIELD_STRING),
 END_DATADESC()
 
 #define DISMEMBER_LIMB_THRESHOLD 10
@@ -373,7 +374,7 @@ CNEO_Player::CNEO_Player()
 	m_iNeoSkin = NEO_SKIN_FIRST;
 	m_iNeoStar = NEO_DEFAULT_STAR;
 	m_iXP.GetForModify() = 0;
-	memset(m_szNeoName, 0, sizeof(m_szNeoName));
+	V_memset(m_szNeoName.GetForModify(), 0, sizeof(m_szNeoName));
 
 	m_bGhostExists = false;
 	m_bInThermOpticCamo = m_bInVision = false;
@@ -1161,20 +1162,19 @@ void CNEO_Player::Weapon_AimToggle(CBaseCombatWeapon *pWep, const NeoWeponAimTog
 
 const char *CNEO_Player::GetSelectedPlayerName()
 {
-	return (m_szNeoName[0] != '\0') ? m_szNeoName : GetPlayerName();
+	return (m_szNeoName.Get()[0] != '\0') ? m_szNeoName.Get() : GetPlayerName();
 }
 
 const char *CNEO_Player::GetNeoPlayerName() const
 {
-	return m_szNeoName;
+	return m_szNeoName.Get();
 }
 
 void CNEO_Player::SetNeoPlayerName(const char *newNeoName)
 {
 	if (newNeoName)
 	{
-		Assert(strlen(newNeoName) > 0);
-		Q_strncpy(m_szNeoName, newNeoName, sizeof(m_szNeoName));
+		V_memcpy(m_szNeoName.GetForModify(), newNeoName, sizeof(m_szNeoName));
 	}
 }
 
@@ -1452,7 +1452,7 @@ bool CNEO_Player::HandleCommand_JoinTeam( int team )
 		SetPlayerTeamModel();
 
 		UTIL_ClientPrintAll(HUD_PRINTTALK, "%s1 joined team %s2\n",
-			GetPlayerName(), GetTeam()->GetName());
+			GetNeoPlayerName(), GetTeam()->GetName());
 	}
 
 	return isAllowedToJoin;

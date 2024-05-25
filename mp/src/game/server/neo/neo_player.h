@@ -228,6 +228,7 @@ public:
 	CNetworkArray(float, m_rfAttackersScores, (MAX_PLAYERS + 1));
 
 	CNetworkVar(unsigned char, m_NeoFlags);
+	CNetworkString(m_szNeoName, MAX_PLAYER_NAME_LENGTH);
 
 	bool m_bIsPendingSpawnForThisRound;
 
@@ -238,8 +239,6 @@ private:
 
 	float m_flLastAirborneJumpOkTime;
 	float m_flLastSuperJumpTime;
-
-	char m_szNeoName[MAX_PLAYER_NAME_LENGTH];
 
 	INEOPlayerAnimState* m_pPlayerAnimState;
 

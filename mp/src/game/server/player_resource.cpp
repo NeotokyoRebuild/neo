@@ -48,6 +48,8 @@ BEGIN_DATADESC( CPlayerResource )
 	// DEFINE_ARRAY( m_bAlive, FIELD_INTEGER, MAX_PLAYERS+1 ),
 	// DEFINE_ARRAY( m_iHealth, FIELD_INTEGER, MAX_PLAYERS+1 ),
 	// DEFINE_FIELD( m_nUpdateCounter, FIELD_INTEGER ),
+
+#if 0 // NEO TODO (nullsystem): Unneeded?
 	DEFINE_KEYFIELD(m_szNeoName[0], FIELD_STRING, "NeoName1"),
 	DEFINE_KEYFIELD(m_szNeoName[1], FIELD_STRING, "NeoName2"),
 	DEFINE_KEYFIELD(m_szNeoName[2], FIELD_STRING, "NeoName3"),
@@ -60,6 +62,7 @@ BEGIN_DATADESC( CPlayerResource )
 	DEFINE_KEYFIELD(m_szNeoName[9], FIELD_STRING, "NeoName10"),
 	DEFINE_KEYFIELD(m_szNeoName[10], FIELD_STRING, "NeoName11"),
 	DEFINE_KEYFIELD(m_szNeoName[11], FIELD_STRING, "NeoName12"),
+#endif
 
 	// Function Pointers
 	DEFINE_FUNCTION( ResourceThink ),
