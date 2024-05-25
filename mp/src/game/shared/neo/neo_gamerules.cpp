@@ -227,10 +227,10 @@ CNEORules::CNEORules()
 
 	Q_strncpy(g_Teams[TEAM_JINRAI]->m_szTeamname.GetForModify(),
 		TEAM_STR_JINRAI, MAX_TEAM_NAME_LENGTH);
-	
+
 	Q_strncpy(g_Teams[TEAM_NSF]->m_szTeamname.GetForModify(),
 		TEAM_STR_NSF, MAX_TEAM_NAME_LENGTH);
-		
+
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
 		CBasePlayer *player = UTIL_PlayerByIndex(i);
@@ -1316,6 +1316,7 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 	const bool clientAllowsNeoName = (1 == atoi(engine->GetClientConVarValue(engine->IndexOfEdict(pNEOPlayer->edict()), "cl_fakenick")));
 	const char *pszNeoName = engine->GetClientConVarValue(pNEOPlayer->entindex(), neo_name.GetName());
 	const char *pszOldNeoName = pNEOPlayer->GetNeoPlayerNameDirect();
+	bool updateDupeCheck = false;
 
 	// NEO NOTE (nullsystem): Dont notify if client is new (pszOldNeoName is NULL, server-only check)
 	// only set a name, otherwise message everyone if someone changes their neo_name
@@ -1336,6 +1337,7 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 		}
 
 		pNEOPlayer->SetNeoPlayerName(pszNeoName);
+		updateDupeCheck = true;
 	}
 	pNEOPlayer->SetClientWantNeoName(clientAllowsNeoName);
 
@@ -1344,26 +1346,54 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 
 	// msg everyone if someone changes their name,  and it isn't the first time (changing no name to current name)
 	// Note, not using FStrEq so that this is case sensitive
-	if (pszOldName[0] != 0 && Q_strcmp(pszOldName, pszName))
+	if (Q_strcmp(pszOldName, pszName))
 	{
-		if (!pszNeoName || pszNeoName[0] == '\0')
+		if (pszOldName[0] != 0)
 		{
-			char text[256];
-			Q_snprintf(text, sizeof(text), "%s changed name to %s\n", pszOldName, pszName);
-
-			UTIL_ClientPrintAll(HUD_PRINTTALK, text);
-
-			IGameEvent *event = gameeventmanager->CreateEvent("player_changename");
-			if (event)
+			if (!pszNeoName || pszNeoName[0] == '\0')
 			{
-				event->SetInt("userid", pPlayer->GetUserID());
-				event->SetString("oldname", pszOldName);
-				event->SetString("newname", pszName);
-				gameeventmanager->FireEvent(event);
+				char text[256];
+				Q_snprintf(text, sizeof(text), "%s changed name to %s\n", pszOldName, pszName);
+
+				UTIL_ClientPrintAll(HUD_PRINTTALK, text);
+
+				IGameEvent *event = gameeventmanager->CreateEvent("player_changename");
+				if (event)
+				{
+					event->SetInt("userid", pPlayer->GetUserID());
+					event->SetString("oldname", pszOldName);
+					event->SetString("newname", pszName);
+					gameeventmanager->FireEvent(event);
+				}
+			}
+
+			pPlayer->SetPlayerName(pszName);
+		}
+		updateDupeCheck = true;
+	}
+
+	if (updateDupeCheck)
+	{
+		// Update name duplication checker (only used if cl_fakenick=1/neo_name is used, but always set)
+		KeyValues *dupeData = new KeyValues("dupeData");
+		for (int i = 1; i <= gpGlobals->maxClients; ++i)
+		{
+			auto neoPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(i));
+			if (neoPlayer && !neoPlayer->IsHLTV())
+			{
+				int dupePos = 0;
+				const char *neoPlayerName = neoPlayer->GetNeoPlayerName();
+
+				if (neoPlayerName && neoPlayerName[0] != '\0')
+				{
+					const int namePos = dupeData->GetInt(neoPlayerName);
+					dupePos = namePos;
+					dupeData->SetInt(neoPlayerName, namePos + 1);
+				}
+				neoPlayer->SetNameDupePos(dupePos);
 			}
 		}
-
-		pPlayer->SetPlayerName(pszName);
+		dupeData->deleteThis();
 	}
 
 	// We're skipping calling the base CHL2MPRules method here

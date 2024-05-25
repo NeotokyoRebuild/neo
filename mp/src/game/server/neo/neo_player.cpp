@@ -75,6 +75,7 @@ SendPropArray(SendPropFloat(SENDINFO_ARRAY(m_rfAttackersScores), -1, SPROP_COORD
 
 SendPropInt(SENDINFO(m_NeoFlags), 4, SPROP_UNSIGNED),
 SendPropString(SENDINFO(m_szNeoName)),
+SendPropInt(SENDINFO(m_szNameDupePos)),
 SendPropBool(SENDINFO(m_bClientWantNeoName)),
 END_SEND_TABLE()
 
@@ -110,6 +111,7 @@ DEFINE_FIELD(m_rfAttackersScores, FIELD_CUSTOM),
 DEFINE_FIELD(m_NeoFlags, FIELD_CHARACTER),
 
 DEFINE_FIELD(m_szNeoName, FIELD_STRING),
+DEFINE_FIELD(m_szNameDupePos, FIELD_INTEGER),
 DEFINE_FIELD(m_bClientWantNeoName, FIELD_BOOLEAN),
 END_DATADESC()
 
@@ -413,6 +415,10 @@ CNEO_Player::CNEO_Player()
 
 	m_pPlayerAnimState = CreatePlayerAnimState(this, CreateAnimStateHelpers(this),
 		NEO_ANIMSTATE_LEGANIM_TYPE, NEO_ANIMSTATE_USES_AIMSEQUENCES);
+
+	memset(m_szNeoNameWDupeIdx, 0, sizeof(m_szNeoNameWDupeIdx));
+	m_szNeoNameWDupeIdxNeedUpdate = true;
+	m_szNameDupePos = 0;
 }
 
 CNEO_Player::~CNEO_Player( void )
@@ -1163,9 +1169,46 @@ void CNEO_Player::Weapon_AimToggle(CBaseCombatWeapon *pWep, const NeoWeponAimTog
 	Weapon_AimToggle(dynamic_cast<CNEOBaseCombatWeapon*>(pWep), toggleType);
 }
 
+void CNEO_Player::SetNameDupePos(const int dupePos)
+{
+	m_szNameDupePos = dupePos;
+	m_szNeoNameWDupeIdxNeedUpdate = true;
+}
+
+int CNEO_Player::NameDupePos() const
+{
+	return m_szNameDupePos;
+}
+
 const char *CNEO_Player::GetNeoPlayerName() const
 {
-	return (m_bClientWantNeoName && m_szNeoName.Get()[0] != '\0') ? m_szNeoName.Get() : const_cast<CNEO_Player *>(this)->GetPlayerName();
+	const int dupePos = m_szNameDupePos;
+	if (m_bClientWantNeoName && m_szNeoName.Get()[0] != '\0')
+	{
+		const char *neoName = m_szNeoName.Get();
+		if (dupePos > 0)
+		{
+			if (m_szNeoNameWDupeIdxNeedUpdate)
+			{
+				m_szNeoNameWDupeIdxNeedUpdate = false;
+				V_snprintf(m_szNeoNameWDupeIdx, sizeof(m_szNeoNameWDupeIdx), "%s (%d)", neoName, dupePos);
+			}
+			return m_szNeoNameWDupeIdx;
+		}
+		return neoName;
+	}
+
+	const char *stndName = const_cast<CNEO_Player *>(this)->GetPlayerName();
+	if (m_bClientWantNeoName && dupePos > 0)
+	{
+		if (m_szNeoNameWDupeIdxNeedUpdate)
+		{
+			m_szNeoNameWDupeIdxNeedUpdate = false;
+			V_snprintf(m_szNeoNameWDupeIdx, sizeof(m_szNeoNameWDupeIdx), "%s (%d)", stndName, dupePos);
+		}
+		return m_szNeoNameWDupeIdx;
+	}
+	return stndName;
 }
 
 const char *CNEO_Player::GetNeoPlayerNameDirect() const

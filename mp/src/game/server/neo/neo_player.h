@@ -181,6 +181,8 @@ public:
 	int ShouldTransmit( const CCheckTransmitInfo *pInfo) OVERRIDE;
 
 	float GetAttackersScores(const int attackerIdx) const;
+	void SetNameDupePos(const int dupePos);
+	int NameDupePos() const;
 
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);
 
@@ -230,6 +232,7 @@ public:
 
 	CNetworkVar(unsigned char, m_NeoFlags);
 	CNetworkString(m_szNeoName, MAX_PLAYER_NAME_LENGTH);
+	CNetworkVar(int, m_szNameDupePos);
 
 	// NEO NOTE (nullsystem): As dumb as client sets -> server -> client it may sound,
 	// cl_fakenick directly doesn't even work properly for client set convars anyway
@@ -245,6 +248,10 @@ private:
 
 	float m_flLastAirborneJumpOkTime;
 	float m_flLastSuperJumpTime;
+
+	// Non-network version of m_szNeoName with dupe checker index
+	mutable char m_szNeoNameWDupeIdx[MAX_PLAYER_NAME_LENGTH + 10];
+	mutable bool m_szNeoNameWDupeIdxNeedUpdate;
 
 	INEOPlayerAnimState* m_pPlayerAnimState;
 

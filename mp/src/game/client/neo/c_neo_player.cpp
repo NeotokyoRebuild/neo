@@ -85,6 +85,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 
 	RecvPropInt(RECVINFO(m_NeoFlags)),
 	RecvPropString(RECVINFO(m_szNeoName)),
+	RecvPropInt(RECVINFO(m_szNameDupePos)),
 	RecvPropBool(RECVINFO(m_bClientWantNeoName)),
 END_RECV_TABLE()
 
@@ -323,6 +324,9 @@ C_NEO_Player::C_NEO_Player()
 
 	m_pPlayerAnimState = CreatePlayerAnimState(this, CreateAnimStateHelpers(this),
 		NEO_ANIMSTATE_LEGANIM_TYPE, NEO_ANIMSTATE_USES_AIMSEQUENCES);
+
+	memset(m_szNeoNameWDupeIdx, 0, sizeof(m_szNeoNameWDupeIdx));
+	m_szNameDupePos = 0;
 }
 
 C_NEO_Player::~C_NEO_Player()
@@ -406,7 +410,34 @@ float C_NEO_Player::GetAttackersScores(const int attackerIdx) const
 
 const char *C_NEO_Player::GetNeoPlayerName() const
 {
-	return (m_szNeoName.Get()[0] != '\0' && GetLocalNEOPlayer()->ClientWantNeoName()) ? m_szNeoName.Get() : const_cast<C_NEO_Player *>(this)->GetPlayerName();
+	const int dupePos = m_szNameDupePos;
+	const bool localWantNeoName = GetLocalNEOPlayer()->ClientWantNeoName();
+	if (localWantNeoName && m_szNeoName.Get()[0] != '\0')
+	{
+		const char *neoName = m_szNeoName.Get();
+		if (dupePos > 0)
+		{
+			if (dupePos != m_szNeoNameLocalDupeIdx)
+			{
+				m_szNeoNameLocalDupeIdx = dupePos;
+				V_snprintf(m_szNeoNameWDupeIdx, sizeof(m_szNeoNameWDupeIdx), "%s (%d)", neoName, dupePos);
+			}
+			return m_szNeoNameWDupeIdx;
+		}
+		return neoName;
+	}
+
+	const char *stndName = const_cast<C_NEO_Player *>(this)->GetPlayerName();
+	if (localWantNeoName && dupePos > 0)
+	{
+		if (dupePos != m_szNeoNameLocalDupeIdx)
+		{
+			m_szNeoNameLocalDupeIdx = dupePos;
+			V_snprintf(m_szNeoNameWDupeIdx, sizeof(m_szNeoNameWDupeIdx), "%s (%d)", stndName, dupePos);
+		}
+		return m_szNeoNameWDupeIdx;
+	}
+	return stndName;
 }
 
 bool C_NEO_Player::ClientWantNeoName() const

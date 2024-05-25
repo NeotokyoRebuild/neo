@@ -70,7 +70,9 @@ protected:
 #ifdef NEO
 	int		m_iXP[MAX_PLAYERS + 1];
 	int     m_iClass[MAX_PLAYERS + 1];
-	char m_szNeoName[MAX_PLAYERS + 1][MAX_PLAYER_NAME_LENGTH];
+	char    m_szNeoName[MAX_PLAYERS + 1][MAX_PLAYER_NAME_LENGTH];
+	int     m_szNeoNameDupeIdx[MAX_PLAYERS + 1];
+	char    m_szDispNameWDupeIdx[MAX_PLAYERS + 1][MAX_PLAYER_NAME_LENGTH + 10];  // Non-networked, includes dupe index
 #endif
 	int		m_iScore[MAX_PLAYERS+1];
 	int		m_iDeaths[MAX_PLAYERS+1];
