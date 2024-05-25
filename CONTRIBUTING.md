@@ -1,10 +1,8 @@
-*Note: It's recommended you read the [dev branch version of this document](https://github.com/NeotokyoRevamp/neo/blob/dev/CONTRIBUTING.md) to make sure all the information is up to date.*
-
 # Contributing
 
 ## Pull requests are welcome!
 
-We've moved to using GitHub Issues for issue tracking. Feel free to [take a look](https://github.com/NeotokyoRevamp/neo/issues) and assign yourself if you're interested in working on something, or report bugs/features not yet included.
+We've moved to using GitHub Issues for issue tracking. Feel free to [take a look](https://github.com/NeotokyoRebuild/neo/issues) and assign yourself if you're interested in working on something, or report bugs/features not yet included.
 
 Also come [join the Discord channel](https://steamcommunity.com/groups/ANPA/discussions/0/487876568238532577/) to discuss the project with others
 (see the *"nt_semantic_sequels"* and other related channels under the channel group "Architects").
@@ -17,7 +15,6 @@ The end result should hopefully be a shinier and less error-prone rendition of N
 ## Table of contents
 <!-- Generated with: https://github.com/jonschlinkert/markdown-toc -->
 * [Getting started](#getting-started)
-	+ [Cloning & merging](#cloning--merging)
     + [Building](#building)
     + [Debugging](#debugging)
     + [Game loop and reference material](#game-loop-and-reference-material)
@@ -27,12 +24,6 @@ The end result should hopefully be a shinier and less error-prone rendition of N
     + [Code style](#code-style)
 
 ## Getting started
-
-### Cloning & merging
-
-It's recommended you fork [the dev branch](https://github.com/NeotokyoRevamp/neo/tree/dev), and pull request your work there back to it.
-
-The dev branch will periodically get merged back to the master branch, as new things become stable enough.
 
 ### Building
 
@@ -74,4 +65,4 @@ No big restrictions on general code format, just try to more or less match the o
 * Valve likes to ( space ) their arguments, especially with macros, but it's not necessary to strictly follow everywhere.
 * Tabs are preferred for indentation, to be consistent with the SDK code.
 * When using a TODO/FIXME/HACK... style comment, use the format "// NEO TODO (Your-username): Example comment." to make it easier to search NEO specific todos/fixmes (opposed to Valve ones), and at a glance figure out who has written them.
-* For classes running on both client and server, you should generally follow Valve's <i>C_Thing</i> (client) -- <i>CThing</i> (server) convention. On shared files, this might mean #defining serverclass for client, or vice versa. There's plenty of examples of this pattern in Valve's classes for reference, [for example here](https://github.com/NeotokyoRevamp/neo/blob/f749c07a4701d285bbb463686d5a5a50c20b9528/mp/src/game/shared/hl2mp/weapon_357.cpp#L20).
+* For classes running on both client and server, you should generally follow Valve's <i>C_Thing</i> (client) -- <i>CThing</i> (server) convention. On shared files, this might mean #defining serverclass for client, or vice versa. There's plenty of examples of this pattern in Valve's classes for reference, [for example here](https://github.com/NeotokyoRebuild/neo/blob/f749c07a4701d285bbb463686d5a5a50c20b9528/mp/src/game/shared/hl2mp/weapon_357.cpp#L20).
