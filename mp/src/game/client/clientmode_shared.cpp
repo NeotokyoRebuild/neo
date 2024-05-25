@@ -352,6 +352,9 @@ void ClientModeShared::Init()
 	ListenForGameEvent( "player_team" );
 	ListenForGameEvent( "server_cvar" );
 	ListenForGameEvent( "player_changename" );
+#ifdef NEO
+	ListenForGameEvent("player_changeneoname");
+#endif
 	ListenForGameEvent( "teamplay_broadcast_audio" );
 	ListenForGameEvent( "achievement_earned" );
 
@@ -1111,7 +1114,11 @@ void ClientModeShared::FireGameEvent( IGameEvent *event )
 			pPlayer->TeamChange( team );
 		}
 	}
+#ifdef NEO
+	else if (Q_strcmp("player_changename", eventname) == 0 || Q_strcmp("player_changeneoname", eventname) == 0)
+#else
 	else if ( Q_strcmp( "player_changename", eventname ) == 0 )
+#endif
 	{
 		if ( !hudChat )
 			return;
@@ -1119,6 +1126,15 @@ void ClientModeShared::FireGameEvent( IGameEvent *event )
 		const char *pszOldName = event->GetString("oldname");
 		if ( PlayerNameNotSetYet(pszOldName) )
 			return;
+
+#ifdef NEO
+		const bool showChange = event->GetBool("showchange");
+		if (Q_strcmp("player_changeneoname", eventname) == 0 && !showChange)
+		{
+			// The client dont want to see neo_name changes so return early.
+			return;
+		}
+#endif
 
 		wchar_t wszOldName[MAX_PLAYER_NAME_LENGTH];
 		g_pVGuiLocalize->ConvertANSIToUnicode( pszOldName, wszOldName, sizeof(wszOldName) );

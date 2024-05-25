@@ -1163,7 +1163,7 @@ void CNEO_Player::Weapon_AimToggle(CBaseCombatWeapon *pWep, const NeoWeponAimTog
 
 const char *CNEO_Player::GetNeoPlayerName() const
 {
-	return (m_szNeoName.Get()[0] != '\0') ? m_szNeoName.Get() : const_cast<CNEO_Player*>(this)->GetPlayerName();
+	return (m_bClientWantNeoName && m_szNeoName.Get()[0] != '\0') ? m_szNeoName.Get() : const_cast<CNEO_Player *>(this)->GetPlayerName();
 }
 
 const char *CNEO_Player::GetNeoPlayerNameDirect() const
@@ -1179,6 +1179,11 @@ void CNEO_Player::SetNeoPlayerName(const char *newNeoName)
 		V_memcpy(m_szNeoName.GetForModify(), newNeoName, sizeof(m_szNeoName));
 		m_szNeoNameHasSet = true;
 	}
+}
+
+void CNEO_Player::SetClientWantNeoName(const bool b)
+{
+	m_bClientWantNeoName = b;
 }
 
 void CNEO_Player::Weapon_SetZoom(const bool bZoomIn)

@@ -1312,6 +1312,7 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 
 	const char *pszSteamName = engine->GetClientConVarValue(pPlayer->entindex(), "name");
 
+	const bool clientAllowsNeoName = ClientAllowsNeoName(pNEOPlayer);
 	const char *pszNeoName = engine->GetClientConVarValue(pNEOPlayer->entindex(), neo_name.GetName());
 	const char *pszOldNeoName = pNEOPlayer->GetNeoPlayerNameDirect();
 
@@ -1321,18 +1322,21 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 	{
 		if (pszOldNeoName != NULL)
 		{
-			IGameEvent *event = gameeventmanager->CreateEvent("player_changename");
+			// This is basically player_changename but allows for client to filter it out with cl_fakenick toggle
+			IGameEvent *event = gameeventmanager->CreateEvent("player_changeneoname");
 			if (event)
 			{
 				event->SetInt("userid", pNEOPlayer->GetUserID());
 				event->SetString("oldname", (pszOldNeoName[0] == '\0') ? pszSteamName : pszOldNeoName);
 				event->SetString("newname", (pszNeoName[0] == '\0') ? pszSteamName : pszNeoName);
+				event->SetBool("showchange", clientAllowsNeoName);	// Can't rely on client's cl_fakenick variable over there
 				gameeventmanager->FireEvent(event);
 			}
 		}
 
 		pNEOPlayer->SetNeoPlayerName(pszNeoName);
 	}
+	pNEOPlayer->SetClientWantNeoName(clientAllowsNeoName);
 
 	const char *pszName = pszSteamName;
 	const char *pszOldName = pPlayer->GetPlayerName();

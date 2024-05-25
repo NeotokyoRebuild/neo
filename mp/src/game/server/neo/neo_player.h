@@ -126,6 +126,7 @@ public:
 	// "neo_name" even if it's nothing
 	const char *GetNeoPlayerNameDirect() const;
 	void SetNeoPlayerName(const char *newNeoName);
+	void SetClientWantNeoName(const bool b);
 
 	void Lean(void);
 	void SoftSuicide(void);
@@ -237,6 +238,7 @@ private:
 	bool m_bCorpseSpawned;
 	bool m_bPreviouslyReloading;
 	bool m_szNeoNameHasSet;
+	bool m_bClientWantNeoName;
 
 	float m_flLastAirborneJumpOkTime;
 	float m_flLastSuperJumpTime;

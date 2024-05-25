@@ -180,7 +180,7 @@ const char *C_PlayerResource::GetPlayerName( int iIndex )
 	}
 
 #ifdef NEO
-	if (m_szNeoName[iIndex][0] != '\0')
+	if (ClientAllowsNeoName(C_NEO_Player::GetLocalNEOPlayer()) && m_szNeoName[iIndex][0] != '\0')
 	{
 		return m_szNeoName[iIndex];
 	}
