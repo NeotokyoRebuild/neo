@@ -1315,17 +1315,20 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 	const char *pszNeoName = engine->GetClientConVarValue(pNEOPlayer->entindex(), neo_name.GetName());
 	const char *pszOldNeoName = pNEOPlayer->GetNeoPlayerNameDirect();
 
-	// NEO NOTE: msg everyone if someone changes their name
-	if (Q_strcmp(pszOldNeoName, pszNeoName))
+	// NEO NOTE (nullsystem): Dont notify if client is new (pszOldNeoName is NULL, server-only check)
+	// only set a name, otherwise message everyone if someone changes their neo_name
+	if (pszOldNeoName == NULL || Q_strcmp(pszOldNeoName, pszNeoName))
 	{
-		IGameEvent *event = gameeventmanager->CreateEvent("player_changename");
-		if (event)
+		if (pszOldNeoName != NULL)
 		{
-			// NEO NOTE (nullsystem): Show steam name if old/new neo_name is NULL
-			event->SetInt("userid", pNEOPlayer->GetUserID());
-			event->SetString("oldname", (pszOldNeoName[0] == '\0') ? pszSteamName : pszOldNeoName);
-			event->SetString("newname", (pszNeoName[0] == '\0') ? pszSteamName : pszNeoName);
-			gameeventmanager->FireEvent(event);
+			IGameEvent *event = gameeventmanager->CreateEvent("player_changename");
+			if (event)
+			{
+				event->SetInt("userid", pNEOPlayer->GetUserID());
+				event->SetString("oldname", (pszOldNeoName[0] == '\0') ? pszSteamName : pszOldNeoName);
+				event->SetString("newname", (pszNeoName[0] == '\0') ? pszSteamName : pszNeoName);
+				gameeventmanager->FireEvent(event);
+			}
 		}
 
 		pNEOPlayer->SetNeoPlayerName(pszNeoName);

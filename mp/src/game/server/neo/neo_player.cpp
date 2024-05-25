@@ -375,6 +375,7 @@ CNEO_Player::CNEO_Player()
 	m_iNeoStar = NEO_DEFAULT_STAR;
 	m_iXP.GetForModify() = 0;
 	V_memset(m_szNeoName.GetForModify(), 0, sizeof(m_szNeoName));
+	m_szNeoNameHasSet = false;
 
 	m_bGhostExists = false;
 	m_bInThermOpticCamo = m_bInVision = false;
@@ -1167,7 +1168,7 @@ const char *CNEO_Player::GetNeoPlayerName() const
 
 const char *CNEO_Player::GetNeoPlayerNameDirect() const
 {
-	return m_szNeoName.Get();
+	return m_szNeoNameHasSet ? m_szNeoName.Get() : NULL;
 }
 
 void CNEO_Player::SetNeoPlayerName(const char *newNeoName)
@@ -1176,6 +1177,7 @@ void CNEO_Player::SetNeoPlayerName(const char *newNeoName)
 	if (newNeoName)
 	{
 		V_memcpy(m_szNeoName.GetForModify(), newNeoName, sizeof(m_szNeoName));
+		m_szNeoNameHasSet = true;
 	}
 }
 

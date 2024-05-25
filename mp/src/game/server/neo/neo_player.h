@@ -236,6 +236,7 @@ private:
 	bool m_bFirstDeathTick;
 	bool m_bCorpseSpawned;
 	bool m_bPreviouslyReloading;
+	bool m_szNeoNameHasSet;
 
 	float m_flLastAirborneJumpOkTime;
 	float m_flLastSuperJumpTime;
