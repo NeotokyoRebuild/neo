@@ -89,6 +89,10 @@ void CNEOScoreBoard::UpdatePlayerInfo()
 			KeyValues *playerData = new KeyValues("data");
 
 			GetPlayerScoreInfo(i, playerData);
+			if (auto cNeoPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(i)))
+			{
+				;
+			}
 			const int playerTeam = g_PR->GetTeam(i);
 			int sectionId = GetSectionFromTeamNumber(playerTeam);
 

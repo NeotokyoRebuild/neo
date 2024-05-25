@@ -29,7 +29,7 @@ ConVar mp_neo_latespawn_max_time("mp_neo_latespawn_max_time", "15", FCVAR_REPLIC
 
 ConVar sv_neo_wep_dmg_modifier("sv_neo_wep_dmg_modifier", "0.5", FCVAR_REPLICATED, "Temp global weapon damage modifier.", true, 0.0, true, 100.0);
 
-ConVar neo_name("neo_name", "", FCVAR_USERINFO, "The nickname to set instead of the steam profile name.");
+ConVar neo_name("neo_name", "", FCVAR_USERINFO | FCVAR_ARCHIVE, "The nickname to set instead of the steam profile name.");
 
 REGISTER_GAMERULES_CLASS( CNEORules );
 
@@ -1310,16 +1310,17 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 	}
 	pNEOPlayer->SetDefaultFOV(pNEOPlayer->ClientFOV());
 
-	const char *pszNeoName = engine->GetClientConVarValue(pNEOPlayer->entindex(), "neo_name");
+	const char *pszNeoName = engine->GetClientConVarValue(pNEOPlayer->entindex(), neo_name.GetName());
 	const char *pszOldNeoName = pNEOPlayer->GetNeoPlayerName();
 
 	// msg everyone if someone changes their name,  and it isn't the first time (changing no name to current name)
 	// Note, not using FStrEq so that this is case sensitive
-	if (pszOldNeoName[0] != 0 && Q_strcmp(pszOldNeoName, pszNeoName))
+	if (Q_strcmp(pszOldNeoName, pszNeoName))
 	{
 		IGameEvent *event = gameeventmanager->CreateEvent("player_changename");
 		if (event)
 		{
+			// TODO (nullsystem): Use steam name if NULL
 			event->SetInt("userid", pNEOPlayer->GetUserID());
 			event->SetString("oldname", pszOldNeoName);
 			event->SetString("newname", pszNeoName);
