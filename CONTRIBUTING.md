@@ -125,10 +125,8 @@ In shared code, clientside code can be differentiated with CLIENT_DLL, vs. serve
 
 No big restrictions on general code format, just try to more or less match the other SDK code style.
 
-* C++11 but within GCC 4.6+ supports. This means:
-    * No `constexpr`
-    * Use `OVERRIDE` instead of `override`
-    * STL generally shouldn't be included in as it may conflicts with existing similar functions
+* C++11 within GCC 10+ and MSVC v143+ support.
+* STL generally shouldn't be included in as it may conflicts with existing similar functions.
 * Valve likes to ( space ) their arguments, especially with macros, but it's not necessary to strictly follow everywhere.
 * Tabs are preferred for indentation, to be consistent with the SDK code.
 * When using a TODO/FIXME/HACK... style comment, use the format "// NEO TODO (Your-username): Example comment." to make it easier to search NEO specific todos/fixmes (opposed to Valve ones), and at a glance figure out who has written them.
