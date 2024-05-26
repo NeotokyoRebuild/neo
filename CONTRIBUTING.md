@@ -20,6 +20,8 @@ The end result should hopefully be a shinier and less error-prone rendition of N
 	+ [Cloning & merging](#cloning--merging)
     + [Building](#building)
     + [Debugging](#debugging)
+        + [VS2022 + cmake (Windows)](#vs2022--cmake-windows)
+        + [Qt Creator 13 (Linux)](#qt-creator-13-linux)
     + [Game loop and reference material](#game-loop-and-reference-material)
 * [Good to know](#good-to-know)
     + [Solutions/makefiles](#solutionsmakefiles)

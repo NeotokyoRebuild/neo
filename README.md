@@ -28,12 +28,13 @@ NT;RE can be built using [VS2022 IDE](#visual-studio-2022-windows), [Qt Creator 
 4. Click on the dropdown, go to: "Manage Configurations..."
 5. Click the green plus button and select "x86-Debug" for debug or "x86-Release" for release mode and apply the configuration.
 6. Then make sure to change it over to "x86-Debug" or "x86-Release".
+7. In the "Solution Explorer", it'll be under the "Folder View". To switch to the cmake view, right-click and click on "Switch to CMake Targets View".
 
 After that, it should be able to compile. For debugger/run cmake configuration, refer to: [CONTRIBUTING.md - Debugging - VS2022 + cmake (Windows)](CONTRIBUTING.md#vs2022--cmake-windows).
 
 #### Qt Creator 13 (Linux)
 1. On the "Welcome" screen, click on "Open Project..."
-2. Open the `CMakeLists.txt` found in `mp\src`
+2. Open the `CMakeLists.txt` found in `mp/src`
 3. It may ask about kit configuration, tick both Debug and Release configuration and set their build directories ending in "...build/debug" and "...build/release" respectively.
 4. On the "Projects" screen, in [YOUR KIT (under Build & Run)] > Build, go to "Build Steps" section, expand by clicking on "Details", and add `--parallel` to the CMake arguments.
 
