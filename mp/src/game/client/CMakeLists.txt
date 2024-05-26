@@ -1688,8 +1688,9 @@ target_sources_grouped(
     hl2mp/ui/hl2mptextwindow.h
 )
 
-if(NEO_COPY_LIBRARIES)
-    add_custom_command(TARGET client POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:client> "${NEO_OUTPUT_LIBRARY_PATH}/"
-    )
-endif()
+add_custom_target(
+    client_copy_lib
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:client> "${NEO_OUTPUT_LIBRARY_PATH}/"
+    DEPENDS client
+    VERBATIM
+)
