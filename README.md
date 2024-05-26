@@ -15,11 +15,33 @@
     * GCC/G++ 10 toolchain
     * Compiled in the sniper's Docker/Podman/Toolbx container, schroot, or systemd-nspawn
 * Both:
-    * cmake
-    * ninja (optional, can use nmake/make/VS instead)
+    * [cmake](https://cmake.org/)
+    * [ninja](https://ninja-build.org/) (optional, can use nmake/make/VS instead)
 
 ### Building
-If using VS2022/qtcreator, you can go through there to build the project, otherwise if using CLI:
+NT;RE can be built using VS2022 IDE, Qt Creator 13 IDE, and the CLI directly.
+
+#### Visual Studio 2022 (Windows)
+1. Open up VS2022 without a project, then go to: `File > Open > CMake...`
+2. Open the `CMakeLists.txt` found in `mp\src`
+3. In the top section, you may see "x64-Debug"/"x64-Release" as a selected profile. This needs to be changed to "x86-Debug"/"x86-Release" as this is a 32-bit project. To do so...
+4. Click on the dropdown, go to: "Manage Configurations..."
+5. Click the green plus button and select "x86-Debug" for debug or "x86-Release" for release mode and apply the configuration.
+6. Then make sure to change it over to "x86-Debug" or "x86-Release".
+
+After that, it should be able to compile. For debugger/run cmake configuration, refer to: [CONTRIBUTING.md - Debugging - VS2022 + cmake (Windows)](CONTRIBUTING.md#vs2022--cmake-windows).
+
+#### Qt Creator 13 (Linux)
+1. On the "Welcome" screen, click on "Open Project..."
+2. Open the `CMakeLists.txt` found in `mp\src`
+3. It may ask about kit configuration, tick both Debug and Release configuration and set their build directories ending in "...build/debug" and "...build/release" respectively.
+4. On the "Projects" screen, in [YOUR KIT (under Build & Run)] > Build, go to "Build Steps" section, expand by clicking on "Details", and add `--parallel` to the CMake arguments.
+
+After that, it should be able to compile. For debugger/running configuration, refer to: [CONTRIBUTING.md - Debugging - Qt Creator 13 (Linux)](CONTRIBUTING.md#qt-creator-13-linux)
+
+#### CLI (with ninja, Windows + Linux)
+If on Windows, make sure the "x86 Native Tools Command Prompt for VS2022" is used instead of the default. Using with the ninja build system, to build NT;RE using the CLI can be done with:
+
 ```
 $ cd /PATH_TO_REPO/neo/mp/src
 
@@ -31,13 +53,6 @@ $ # To build in Debug mode:
 $ cmake -S . -B build/debug -G Ninja
 $ cmake --build build/debug --parallel
 ```
-
-On Windows CLI, make sure the "x86 Native Tools Command Prompt for VS2022" is used instead of the default.
-
-#### QtCreator
-Generally setting it up "just works", however by default builds are not done in parallel. To fix this, just
-from the sidebar go to: Project > [YOUR KIT (under Build & Run)] > Build > Build Steps. Just add `--parallel` to
-CMake arguments.
 
 ### Steam mod setup - Symlink mod directory
 The following examples assumes the default directory, but adjust if needed:
