@@ -33,6 +33,11 @@ $ cmake --build build/debug --parallel
 
 On Windows CLI, make sure the "x86 Native Tools Command Prompt for VS2022" is used instead of the default.
 
+#### QtCreator
+Generally setting it up "just works", however by default builds are not done in parallel. To fix this, just
+from the sidebar go to: Project > [YOUR KIT (under Build & Run)] > Build > Build Steps. Just add `--parallel` to
+CMake arguments.
+
 ### Additional setup + steam mod setup
 See instructions for your platform, refer to the VDC wiki on setting up extras, chroot/containers, etc...:
 https://developer.valvesoftware.com/wiki/Source_SDK_2013

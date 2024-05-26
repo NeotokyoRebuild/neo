@@ -49,7 +49,7 @@ Example settings for debugging from Visual Studio solutions:
 | Command Arguments | -allowdebug -insecure -dev -sw -game "C:\git\neo\mp\game\neo" |
 | Working Directory | C:\Program Files (x86)\Steam\steamapps\common\Source SDK Base 2013 Multiplayer |
 
-#### cmake - VS2022
+#### VS2022 + cmake (Windows)
 In the CMake Target View, right-click "client (shared library)" and click on "Add Debug Configuration". This should show a json file. Then, make sure it's similar to this (changing the game path to where you have it):
 
 ```
@@ -75,6 +75,26 @@ In the CMake Target View, right-click "client (shared library)" and click on "Ad
     }
   ]
 }
+```
+
+#### Qt Creator 13 (Linux)
+On the sidebar, click "Projects" then under your current kit, click "Run". Set the following:
+
+| Executable | `~/.steam/steam/steamapps/common/Source SDK Base 2013 Multiplayer/hl2_linux` |
+| Command line arguments | `-allowdebug -insecure -dev -sw -game "/PATH/TO/NEO_REPO/mp/game/neo"` |
+| Working directory | `~/.steam/steam/steamapps/common/Source SDK Base 2013 Multiplayer` |
+
+Then under **Environment**, expand by clicking "Details" and add in:
+```
+LD_LIBRARY_PATH=[INSERT_OUTPUT_HERE]:/home/YOUR_USER/.steam/steam/steamapps/common/Source SDK Base 2013 Multiplayer/bin
+SDL_VIDEODRIVER=x11
+SteamEnv=1
+```
+
+Where replacing `[INSERT_OUTPUT_HERE]` is the output of:
+```
+$ LD_LIBRARY_PATH="$(~/.local/share/Steam/ubuntu12_32/steam-runtime/run.sh printenv LD_LIBRARY_PATH):$HOME/.steam/steam/steamapps/common/Source SDK Base 2013 Multiplayer/bin"
+$ echo "$LD_LIBRARY_PATH"
 ```
 
 ### Game loop and reference material
