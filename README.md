@@ -39,8 +39,25 @@ Generally setting it up "just works", however by default builds are not done in 
 from the sidebar go to: Project > [YOUR KIT (under Build & Run)] > Build > Build Steps. Just add `--parallel` to
 CMake arguments.
 
-### Additional setup + steam mod setup
-See instructions for your platform, refer to the VDC wiki on setting up extras, chroot/containers, etc...:
+### Steam mod setup - Symlink mod directory
+The following examples assumes the default directory, but adjust if needed:
+
+#### Windows
+```
+> cd C:\Program Files (x86)\Steam\steamapps\sourcemods
+> mklink /J neo "<PATH_TO_NEO_SOURCE>/mp/game/neo"
+```
+
+#### Linux
+```
+$ cd $HOME/.steam/steam/steamapps/sourcemods
+$ mkdir neo && sudo mount --bind <PATH_TO_NEO_SOURCE>/mp/game/neo neo
+```
+
+Then after that, launch/restart Steam and "Neotokyo: Revamp" should appear.
+
+### Further information
+For further information for your platform, refer to the VDC wiki on setting up extras, chroot/containers, etc...:
 https://developer.valvesoftware.com/wiki/Source_SDK_2013
 
 For setting up the Steam mod:
@@ -48,7 +65,8 @@ https://developer.valvesoftware.com/wiki/Setup_mod_on_steam
 
 ### Linux extra notes
 #### Arch Linux
-Install `lib32-gperftools`, and set: `LD_PRELOAD=/usr/lib32/libtcmalloc.so %command% -game /path/to/mp/game/neo` as launch argument
+You may or may not need this, but if NT;RE crashes/segfaults on launch, then install `lib32-gperftools`,
+and set: `LD_PRELOAD=/usr/lib32/libtcmalloc.so %command%` as the launch argument.
 
 ## Server instructions
 1. To run a server, install "Source SDK Base 2013 Dedicated Server".
