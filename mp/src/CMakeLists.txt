@@ -25,7 +25,7 @@ option(NEO_RAD_TELEMETRY_DISABLED "Telemetry disabled" ON)
 option(NEO_QUICKTIME_VIDEO "Use Quicktime video on Windows" OFF)
 option(NEO_BUILD_REPLAY "Build replay system" OFF) # NOTE not implemented for neo
 option(NEO_BUILD_WEAPON_PBK56S "Build PBK56S weapon" OFF)
-option(NEO_COPY_LIBRARIES "Copy libraries to bin directory" ON)
+option(NEO_COPY_LIBRARIES "Copy libraries to bin directory by default" ON)
 set(NEO_OUTPUT_LIBRARY_PATH "${CMAKE_SOURCE_DIR}/../game/neo/bin" CACHE PATH "Directory for output libraries")
 
 if(OS_WINDOWS)
@@ -52,7 +52,11 @@ message(STATUS "Build PBK56S weapon (INCLUDE_WEP_PBK): ${NEO_BUILD_WEAPON_PBK56S
 message(STATUS "Build tier1 library: ${NEO_BUILD_TIER1}")
 message(STATUS "Build mathlib library: ${NEO_BUILD_MATHLIB}")
 message(STATUS "Build vgui_controls library: ${NEO_BUILD_VGUI_CONTROLS}")
-message(STATUS "Copy libraries to bin directory: ${NEO_COPY_LIBRARIES}")
+message(STATUS "Copy libraries to bin directory by default: ${NEO_COPY_LIBRARIES}")
+message(STATUS "Directory for output libraries: ${NEO_OUTPUT_LIBRARY_PATH}")
+
+
+file(MAKE_DIRECTORY "${NEO_OUTPUT_LIBRARY_PATH}")
 
 if(CMAKE_VERBOSE_MAKEFILE)
     set(CMAKE_EXECUTE_PROCESS_COMMAND_ECHO STDOUT)
@@ -220,6 +224,12 @@ endif()
 if(OS_LINUX OR OS_MACOS)
     set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 
+    # Set default optimization option to O2 instead of O3
+    string(REGEX REPLACE "([\\/\\-]O)3" "\\12" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    string(REGEX REPLACE "([\\/\\-]O)3" "\\12" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
+    string(REGEX REPLACE "([\\/\\-]O)3" "\\12" CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL}")
+    string(REGEX REPLACE "([\\/\\-]O)3" "\\12" CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
+
     # Disable exceptions
     string(REGEX REPLACE "-fexceptions" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
@@ -260,13 +270,21 @@ if(OS_LINUX OR OS_MACOS)
         -Wno-float-equal
         -Wno-unused-local-typedefs
         -Wno-switch
+        -Wno-strict-aliasing
 
         -Werror=return-type
         -fdiagnostics-show-option
         -Wformat -Wformat-security
 
+
         -Usprintf
         -Ustrncpy
+
+        # Fix for non-clickable vgui buttons when using -O2
+        -fno-devirtualize-speculatively
+
+        # Fix for non-clickable vgui buttons when using -O3
+        -fno-ipa-cp-clone
     )
 
     # Disable option for older compiler in docker
@@ -361,6 +379,18 @@ if(NOT NEO_DEDICATED)
 endif()
 
 add_subdirectory(game/server)
+
+if(NEO_COPY_LIBRARIES)
+    set(COPY_ALL_LIBS_FLAG ALL)
+else()
+    unset(COPY_ALL_LIBS_FLAG)
+endif()
+
+add_custom_target(
+    copy_all_libs ${COPY_ALL_LIBS_FLAG}
+    DEPENDS client_copy_lib server_copy_lib game_shader_dx9_copy_lib
+    VERBATIM
+)
 
 # TODO add later?
 # $Project "raytrace" "raytrace\raytrace.vpc" [$WIN32||$X360||$POSIX]
