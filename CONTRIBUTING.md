@@ -80,6 +80,8 @@ In the CMake Target View, right-click "client (shared library)" and click on "Ad
 #### Qt Creator 13 (Linux)
 On the sidebar, click "Projects" then under your current kit, click "Run". Set the following:
 
+| Property | Example value |
+| :---------------------------------- | :------------ |
 | Executable | `~/.steam/steam/steamapps/common/Source SDK Base 2013 Multiplayer/hl2_linux` |
 | Command line arguments | `-allowdebug -insecure -dev -sw -game "/PATH/TO/NEO_REPO/mp/game/neo"` |
 | Working directory | `~/.steam/steam/steamapps/common/Source SDK Base 2013 Multiplayer` |
@@ -93,9 +95,10 @@ SteamEnv=1
 
 Where replacing `[INSERT_OUTPUT_HERE]` is the output of:
 ```
-$ LD_LIBRARY_PATH="$(~/.local/share/Steam/ubuntu12_32/steam-runtime/run.sh printenv LD_LIBRARY_PATH):$HOME/.steam/steam/steamapps/common/Source SDK Base 2013 Multiplayer/bin"
-$ echo "$LD_LIBRARY_PATH"
+$ ~/.local/share/Steam/ubuntu12_32/steam-runtime/run.sh printenv LD_LIBRARY_PATH
 ```
+
+After this, you should be able to run and debug NT;RE, just make sure to have Steam open in the background.
 
 ### Game loop and reference material
 

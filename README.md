@@ -9,10 +9,11 @@
 
 ### Building requirements
 
-* Windows: MSVC v143, use either:
-    * Full IDE/tooling: Visual Studio 2022
-    * or just the [Microsoft C/C++ Build Tools v17](https://aka.ms/vs/17/release/vs_BuildTools.exe)
-* Linux: Steam-runtimes chroot/docker
+* Windows: [Visual Studio 2022 (MSVC v143)](https://visualstudio.microsoft.com/downloads/)
+    * Make sure to include C++ development environment, C++ MFC Library, Windows 10/11 SDK, and cmake during installation
+* Linux: [Steam Runtime 3 "Sniper"](https://gitlab.steamos.cloud/steamrt/sniper/sdk)
+    * GCC/G++ 10 toolchain
+    * Compiled in the sniper's Docker/Podman/Toolbx container, schroot, or systemd-nspawn
 * Both:
     * cmake
     * ninja (optional, can use nmake/make/VS instead)
