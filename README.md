@@ -5,9 +5,9 @@
 * License: SOURCE 1 SDK LICENSE, see [LICENSE](LICENSE) for details
 * See [CONTRIBUTING.md](CONTRIBUTING.md) for instructions on how the codebase work and contribute
 
-## Building the SDK
+## Building NT;RE
 
-### Building requirements
+### Requirements
 
 * Windows: [Visual Studio 2022 (MSVC v143)](https://visualstudio.microsoft.com/downloads/)
     * Make sure to include C++ development environment, C++ MFC Library, Windows 10/11 SDK, and cmake during installation
@@ -68,16 +68,16 @@ $ cmake -S . -B build/debug -G Ninja
 $ cmake --build build/debug --parallel
 ```
 
-### Steam mod setup - Symlink mod directory
+## Steam mod setup - Symlink mod directory
 The following examples assumes the default directory, but adjust if needed:
 
-#### Windows
+### Windows
 ```
 > cd C:\Program Files (x86)\Steam\steamapps\sourcemods
 > mklink /J neo "<PATH_TO_NEO_SOURCE>/mp/game/neo"
 ```
 
-#### Linux
+### Linux
 ```
 $ cd $HOME/.steam/steam/steamapps/sourcemods
 $ mkdir neo && sudo mount --bind <PATH_TO_NEO_SOURCE>/mp/game/neo neo
@@ -85,7 +85,7 @@ $ mkdir neo && sudo mount --bind <PATH_TO_NEO_SOURCE>/mp/game/neo neo
 
 Then after that, launch/restart Steam and "Neotokyo: Revamp" should appear.
 
-### Further information
+## Further information
 For further information for your platform, refer to the VDC wiki on setting up extras, chroot/containers, etc...:
 https://developer.valvesoftware.com/wiki/Source_SDK_2013
 
