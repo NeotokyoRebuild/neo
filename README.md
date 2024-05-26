@@ -19,7 +19,7 @@
     * [ninja](https://ninja-build.org/) (optional, can use nmake/make/VS instead)
 
 ### Building
-NT;RE can be built using VS2022 IDE, Qt Creator 13 IDE, and the CLI directly.
+NT;RE can be built using [VS2022 IDE](#visual-studio-2022-windows), [Qt Creator 13 IDE](#qt-creator-13-linux), and the [CLI](#cli-with-ninja-windows--linux) directly.
 
 #### Visual Studio 2022 (Windows)
 1. Open up VS2022 without a project, then go to: `File > Open > CMake...`
@@ -40,7 +40,20 @@ After that, it should be able to compile. For debugger/run cmake configuration, 
 After that, it should be able to compile. For debugger/running configuration, refer to: [CONTRIBUTING.md - Debugging - Qt Creator 13 (Linux)](CONTRIBUTING.md#qt-creator-13-linux)
 
 #### CLI (with ninja, Windows + Linux)
-If on Windows, make sure the "x86 Native Tools Command Prompt for VS2022" is used instead of the default. Using with the ninja build system, to build NT;RE using the CLI can be done with:
+##### Windows prerequisite
+Make sure the "x86 Native Tools Command Prompt for VS2022" is used instead of the default.
+
+##### Linux prerequisite - Steam Runtime 3 "Sniper" Container
+Just download and use the OCI image for Docker/Podman/Toolbx:
+* [Docker](https://www.docker.com/): `sudo docker pull registry.gitlab.steamos.cloud/steamrt/sniper/sdk`
+* [Podman](https://podman.io/): `podman pull registry.gitlab.steamos.cloud/steamrt/sniper/sdk`
+* [Toolbx](https://containertoolbx.org/): `toolbox create -i registry.gitlab.steamos.cloud/steamrt/sniper/sdk sniper; toolbox enter sniper`
+
+Depending on the terminal, you may need to install an additional terminfo in the container just to make it usable.
+The container is based on Debian 11 "bullseye", just look for and install the relevant terminfo package if needed.
+
+##### CLI Building steps
+Using with the ninja build system, to build NT;RE using the CLI can be done with:
 
 ```
 $ cd /PATH_TO_REPO/neo/mp/src
