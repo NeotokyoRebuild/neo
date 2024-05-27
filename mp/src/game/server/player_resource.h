@@ -33,6 +33,7 @@ protected:
 #ifdef NEO
 	CNetworkArray(int, m_iXP, MAX_PLAYERS + 1);
 	CNetworkArray(int, m_iClass, MAX_PLAYERS + 1);
+	CNetworkArray(int, m_iStar, MAX_PLAYERS + 1);
 #endif
 	CNetworkArray( int, m_iScore, MAX_PLAYERS+1 );
 	CNetworkArray( int, m_iDeaths, MAX_PLAYERS+1 );
