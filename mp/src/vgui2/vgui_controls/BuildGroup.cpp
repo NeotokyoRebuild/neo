@@ -851,7 +851,7 @@ void BuildGroup::PanelAdded(Panel *panel)
 {
 	Assert(panel);
 
-	PHandle temp;
+	vgui::PHandle temp;
 	temp = panel;
 	int c = _panelDar.Count();
 	for ( int i = 0; i < c; ++i )
