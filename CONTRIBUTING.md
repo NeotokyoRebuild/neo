@@ -1,10 +1,10 @@
-*Note: It's recommended you read the [dev branch version of this document](https://github.com/NeotokyoRevamp/neo/blob/dev/CONTRIBUTING.md) to make sure all the information is up to date.*
+*Note: It's recommended you read the [master branch version of this document](https://github.com/NeotokyoRebuild/neo/blob/master/CONTRIBUTING.md) to make sure all the information is up to date.*
 
 # Contributing
 
 ## Pull requests are welcome!
 
-We've moved to using GitHub Issues for issue tracking. Feel free to [take a look](https://github.com/NeotokyoRevamp/neo/issues) and assign yourself if you're interested in working on something, or report bugs/features not yet included.
+We've moved to using GitHub Issues for issue tracking. Feel free to [take a look](https://github.com/NeotokyoRebuild/neo/issues) and assign yourself if you're interested in working on something, or report bugs/features not yet included.
 
 Also come [join the Discord channel](https://steamcommunity.com/groups/ANPA/discussions/0/487876568238532577/) to discuss the project with others
 (see the *"nt_semantic_sequels"* and other related channels under the channel group "Architects").
@@ -17,12 +17,16 @@ The end result should hopefully be a shinier and less error-prone rendition of N
 ## Table of contents
 <!-- Generated with: https://github.com/jonschlinkert/markdown-toc -->
 * [Getting started](#getting-started)
-	+ [Cloning & merging](#cloning--merging)
+    + [Cloning & merging](#cloning--merging)
     + [Building](#building)
     + [Debugging](#debugging)
+        - [VS2022 + CMake (Windows)](#vs2022--cmake-windows)
+        - [Qt Creator (Linux)](#qt-creator-linux)
+        - [VS2022 Visual Studio Solutions (Windows)](#vs2022-visual-studio-solutions-windows)
     + [Game loop and reference material](#game-loop-and-reference-material)
 * [Good to know](#good-to-know)
-    + [Solutions/makefiles](#solutionsmakefiles)
+    + [Current: CMake](#current-cmake)
+    + [Legacy: Solutions/makefiles](#legacy-solutionsmakefiles)
     + [Preprocessor definitions](#preprocessor-definitions)
     + [Code style](#code-style)
 
@@ -30,17 +34,76 @@ The end result should hopefully be a shinier and less error-prone rendition of N
 
 ### Cloning & merging
 
-It's recommended you fork [the dev branch](https://github.com/NeotokyoRevamp/neo/tree/dev), and pull request your work there back to it.
-
-The dev branch will periodically get merged back to the master branch, as new things become stable enough.
+It's recommended you fork [the master branch](https://github.com/NeotokyoRebuild/neo/tree/master), and pull request your work there back to it.
 
 ### Building
 
-See [build instructions](BUILD_INSTRUCTIONS.md) in this repo for setting up your build environment (currently supporting Windows/Linux).
+See [README.md](README.md) in this repo for setting up your build environment (currently supporting Windows/Linux).
 
 ### Debugging
 To be safe and avoid problems with VAC, it's recommended to add a [-insecure](https://developer.valvesoftware.com/wiki/Command_Line_Options) launch flag before attaching your debugger.
 
+#### VS2022 + CMake (Windows)
+In the CMake Target View, right-click "client (shared library)" and click on "Add Debug Configuration". This should show a json file. Then, make sure it's similar to this (changing the game path to where you have it):
+
+```
+{
+  "version": "0.2.1",
+  "defaults": {},
+  "configurations": [
+    {
+      "type": "dll",
+      "exe": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Source SDK Base 2013 Multiplayer\\hl2.exe",
+      "project": "CMakeLists.txt",
+      "projectTarget": "client.dll (game\\client\\client.dll)",
+      "name": "client.dll (game\\client\\client.dll)",
+      "currentDir": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Source SDK Base 2013 Multiplayer",
+      "args": [
+        "-allowdebug",
+        "-insecure",
+        "-dev",
+        "-sw",
+        "-game",
+        "C:\\PATH\\TO\\REPO_ROOT\\neo\\mp\\game\\neo"
+      ]
+    }
+  ]
+}
+```
+
+#### Qt Creator (Linux)
+On the sidebar, click "Projects" then under your current kit, click "Run". Set the following:
+
+| Property | Example value |
+| :---------------------------------- | :------------ |
+| Executable | `~/.steam/steam/steamapps/common/Source SDK Base 2013 Multiplayer/hl2_linux` |
+| Command line arguments | `-allowdebug -insecure -dev -sw -game "/PATH/TO/NEO_REPO/mp/game/neo"` |
+| Working directory | `~/.steam/steam/steamapps/common/Source SDK Base 2013 Multiplayer` |
+
+Then under **Environment**, expand by clicking "Details" and add in:
+```
+LD_LIBRARY_PATH=[INSERT_OUTPUT_HERE]:/home/YOUR_USER/.steam/steam/steamapps/common/Source SDK Base 2013 Multiplayer/bin
+SDL_VIDEODRIVER=x11
+SteamEnv=1
+```
+
+Next is finding the steam-runtime under the Steam installation. This can be found
+using the following command, replacing `$HOME` if Steam is installed at another directory:
+```
+$ find "$HOME" -type d -name 'steam-runtime' 2> /dev/null
+```
+
+Assuming default directory, it might be in either: `~/.local/share/Steam/ubuntu12_32/steam-runtime/` or if using a Debian based distribution: `~/.steam/debian-installation/ubuntu12_32/steam-runtime/`.
+
+Then change to that directory and replace `[INSERT_OUTPUT_HERE]` to the output of:
+```
+$ cd <STEAM-RUNTIME-DIR>
+$ run.sh printenv LD_LIBRARY_PATH
+```
+
+After this, you should be able to run and debug NT;RE, just make sure to have Steam open in the background.
+
+#### VS2022 Visual Studio Solutions (Windows)
 Example settings for debugging from Visual Studio solutions:
 
 | Configuration Properties->Debugging | Example value |
@@ -57,9 +120,13 @@ Ochii's impressive [reverse engineering project](https://github.com/Ochii/neotok
 
 ## Good to know
 
-### Solutions/makefiles
+### Current: CMake
 
-This project uses Valve's [VPC system](https://developer.valvesoftware.com/wiki/VPC) to generate its makefiles and VS solutions. When modifying the project file structure, instead of pushing your solution/makefile, edit the relevant VPC files instead (most commonly "[client_neo.vpc](mp/src/game/client/client_neo.vpc)" and "[server_neo.vpc](mp/src/game/server/server_neo.vpc)").
+This project currently use the [CMake](https://cmake.org/) build system to generate ninja/makefiles and is integrated with IDEs such as VS2022 and qtcreator. When modifying the project file structure, look into `CMakeLists.txt` and `cmake/*.cmake`.
+
+### Legacy: Solutions/makefiles
+
+This project used to use Valve's [VPC system](https://developer.valvesoftware.com/wiki/VPC) to generate its makefiles and VS solutions. When modifying the project file structure, instead of pushing your solution/makefile, edit the relevant VPC files instead (most commonly "[client_neo.vpc](mp/src/game/client/client_neo.vpc)" and "[server_neo.vpc](mp/src/game/server/server_neo.vpc)").
 
 Running the VPC scripts in mp/src/... after a change will regenerate the solutions and makefiles on all platforms. You may sometimes have to purge your object file cache if you get linker errors after restructuring existing translation units.
 
@@ -70,8 +137,9 @@ In shared code, clientside code can be differentiated with CLIENT_DLL, vs. serve
 
 No big restrictions on general code format, just try to more or less match the other SDK code style.
 
-* C++11, generally within v143 MSVC toolset on Windows and GCC 13+ on Linux supports
+* C++11 within GCC 10+ and MSVC v143+ support.
+* STL generally shouldn't be included in as it may conflicts with existing similar functions.
 * Valve likes to ( space ) their arguments, especially with macros, but it's not necessary to strictly follow everywhere.
 * Tabs are preferred for indentation, to be consistent with the SDK code.
 * When using a TODO/FIXME/HACK... style comment, use the format "// NEO TODO (Your-username): Example comment." to make it easier to search NEO specific todos/fixmes (opposed to Valve ones), and at a glance figure out who has written them.
-* For classes running on both client and server, you should generally follow Valve's <i>C_Thing</i> (client) -- <i>CThing</i> (server) convention. On shared files, this might mean #defining serverclass for client, or vice versa. There's plenty of examples of this pattern in Valve's classes for reference, [for example here](https://github.com/NeotokyoRevamp/neo/blob/f749c07a4701d285bbb463686d5a5a50c20b9528/mp/src/game/shared/hl2mp/weapon_357.cpp#L20).
+* For classes running on both client and server, you should generally follow Valve's <i>C_Thing</i> (client) -- <i>CThing</i> (server) convention. On shared files, this might mean #defining serverclass for client, or vice versa. There's plenty of examples of this pattern in Valve's classes for reference, [for example here](https://github.com/NeotokyoRebuild/neo/blob/f749c07a4701d285bbb463686d5a5a50c20b9528/mp/src/game/shared/hl2mp/weapon_357.cpp#L20).
