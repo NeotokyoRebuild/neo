@@ -216,8 +216,8 @@ public:
 	virtual void SUB_Remove(void) { }
 
 	virtual float GetFireRate(void) OVERRIDE { Assert(false); return BaseClass::GetFireRate(); } // Should never call this base class; override in children.
-	virtual bool GetRoundChambered() const { Assert(false); return 0; }
-	virtual bool GetRoundBeingChambered() const { Assert(false); return 0; }
+	virtual bool GetRoundChambered() const { return 0; }
+	virtual bool GetRoundBeingChambered() const { return 0; }
 
 protected:
 	virtual float GetAccuracyPenalty() const { Assert(false); return 0; } // Should never call this base class; implement in children.
