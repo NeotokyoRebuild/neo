@@ -49,6 +49,10 @@ private:
 	int m_iJinraiTotalID;
 	int m_iNSFID;
 	int m_iNSFTotalID;
+	int m_iSupportID;
+	int m_iAssaultID;
+	int m_iReconID;
+	int m_iVIPID;
 	int m_iFriendlyLogo;
 	int m_iEnemyLogo;
 	int m_iFriendlyTotalLogo;

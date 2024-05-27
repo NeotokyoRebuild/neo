@@ -112,6 +112,18 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 	m_iNSFID = surface()->CreateNewTextureID();
 	surface()->DrawSetTextureFile(m_iNSFID, "vgui/nsf_128tm", true, false);
 
+	m_iSupportID = surface()->CreateNewTextureID();
+	surface()->DrawSetTextureFile(m_iSupportID, "vgui/support", true, false);
+
+	m_iAssaultID = surface()->CreateNewTextureID();
+	surface()->DrawSetTextureFile(m_iAssaultID, "vgui/assault", true, false);
+
+	m_iReconID = surface()->CreateNewTextureID();
+	surface()->DrawSetTextureFile(m_iReconID, "vgui/recon", true, false);
+
+	m_iVIPID = surface()->CreateNewTextureID();
+	surface()->DrawSetTextureFile(m_iVIPID, "vgui/vip", true, false);
+
 	m_iJinraiTotalID = surface()->CreateNewTextureID();
 	surface()->DrawSetTextureFile(m_iJinraiTotalID, "vgui/ts_jinrai", true, false);
 
@@ -230,21 +242,20 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 	int enemyCount = 0;
 	for (int i = 0; i < (MAX_PLAYERS + 1); i++) {
 		if (g_PR->IsConnected(i)) {
-			if (g_PR->GetTeam(i) == localPlayerTeam && g_PR->GetStar(i) == g_PR->GetStar(localPlayerIndex)) {
-				DrawFriend(i, friendCount, xpos, boxWidth);
-				friendCount++;
-			}
-			else if (g_PR->GetTeam(i) == enemyTeam) {
-				DrawEnemy(i, enemyCount, xpos, boxWidth);
-				enemyCount++;
-			}
-
 			if (g_PR->GetTeam(i) == localPlayerTeam) {
+				if (g_PR->GetStar(i) == g_PR->GetStar(localPlayerIndex)) {
+					DrawFriend(i, friendCount, xpos, boxWidth);
+					friendCount++;
+				}
+
 				if (g_PR->IsAlive(i))
 					m_iFriendsAlive++;
 				m_iFriendsTotal++;
 			}
 			else if (g_PR->GetTeam(i) == enemyTeam) {
+				DrawEnemy(i, enemyCount, xpos, boxWidth);
+				enemyCount++;
+
 				if (g_PR->IsAlive(i))
 					m_iEnemiesAlive++;
 				m_iEnemiesTotal++;
@@ -291,12 +302,22 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 
 void CNEOHud_RoundState::DrawFriend(int playerIndex, int teamIndex, int xpos, int boxWidth) {
 	surface()->DrawSetTexture(m_iFriendlyLogo);
+	if (g_PR->GetClass(playerIndex) == NEO_CLASS_SUPPORT)
+		surface()->DrawSetTexture(m_iSupportID);
+	else if (g_PR->GetClass(playerIndex) == NEO_CLASS_ASSAULT)
+		surface()->DrawSetTexture(m_iAssaultID);
+	else if (g_PR->GetClass(playerIndex) == NEO_CLASS_RECON)
+		surface()->DrawSetTexture(m_iReconID);
+	else if (g_PR->GetClass(playerIndex) == NEO_CLASS_VIP)
+		surface()->DrawSetTexture(m_iVIPID);
+
 	int xOffset = xpos - (boxWidth / 2) - 6 - (m_ilogoSize * 1.25) - ((teamIndex + 1) * m_ilogoSize) - (teamIndex * 2);
 	surface()->DrawSetColor(Color(55, 55, 55, 255));
 	surface()->DrawFilledRect(xOffset, 1, xOffset + m_ilogoSize, 1 + m_ilogoSize);
 	if (g_PR->IsAlive(playerIndex))
 		surface()->DrawSetColor(Color(255, 255, 255, 176));
 		surface()->DrawFilledRect(xOffset, 1.0f + ((1.0f - (g_PR->GetHealth(playerIndex) / 100.0f)) * m_ilogoSize), xOffset + m_ilogoSize, 1 + m_ilogoSize);
+	surface()->DrawSetColor(Color(0, 0, 0, 176));
 	surface()->DrawTexturedRect(xOffset, 1, xOffset + m_ilogoSize, 1 + m_ilogoSize);
 }
 
