@@ -154,9 +154,11 @@ and set: `LD_PRELOAD=/usr/lib32/libtcmalloc.so %command%` as the launch argument
     * 27005 UDP
     * 26900 UDP
 3. After it installed, go to the install directory in CMD, should see `srcds.exe`
-4. Link neo:
+4. Optional: Link or copy over neo, otherwise `-game <path_to_source>/mp/game/neo` can be used also:
     * Windows: `mklink /J neo "<path_to_source>/mp/game/neo"`
-    * Linux: `mkdir neo && sudo mount --bind <path_to_source>/mp/game/neo neo`
+    * Linux:
+        * Non-persistent bind mount: `mkdir neo && sudo mount --bind <path_to_source>/mp/game/neo neo`
+        * Or just copy over or use the directory directly
 5. Linux-only: Symlink the names in "Source SDK Base 2013 Dedicated Server" "bin" directory:
 ```
 ln -s vphysics_srv.so vphysics.so;
