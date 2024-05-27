@@ -34,22 +34,12 @@ The end result should hopefully be a shinier and less error-prone rendition of N
 
 It's recommended you fork [the master branch](https://github.com/NeotokyoRebuild/neo/tree/master), and pull request your work there back to it.
 
-The master branch will periodically get merged back to the master branch, as new things become stable enough.
-
 ### Building
 
 See [README.md](README.md) in this repo for setting up your build environment (currently supporting Windows/Linux).
 
 ### Debugging
 To be safe and avoid problems with VAC, it's recommended to add a [-insecure](https://developer.valvesoftware.com/wiki/Command_Line_Options) launch flag before attaching your debugger.
-
-Example settings for debugging from Visual Studio solutions:
-
-| Configuration Properties->Debugging | Example value |
-| :---------------------------------- | :------------ |
-| Command | C:\Program Files (x86)\Steam\steamapps\common\Source SDK Base 2013 Multiplayer\hl2.exe |
-| Command Arguments | -allowdebug -insecure -dev -sw -game "C:\git\neo\mp\game\neo" |
-| Working Directory | C:\Program Files (x86)\Steam\steamapps\common\Source SDK Base 2013 Multiplayer |
 
 #### VS2022 + cmake (Windows)
 In the CMake Target View, right-click "client (shared library)" and click on "Add Debug Configuration". This should show a json file. Then, make sure it's similar to this (changing the game path to where you have it):
@@ -101,6 +91,15 @@ $ ~/.local/share/Steam/ubuntu12_32/steam-runtime/run.sh printenv LD_LIBRARY_PATH
 ```
 
 After this, you should be able to run and debug NT;RE, just make sure to have Steam open in the background.
+
+#### VS2022 Visual Studio Solutions (Windows)
+Example settings for debugging from Visual Studio solutions:
+
+| Configuration Properties->Debugging | Example value |
+| :---------------------------------- | :------------ |
+| Command | C:\Program Files (x86)\Steam\steamapps\common\Source SDK Base 2013 Multiplayer\hl2.exe |
+| Command Arguments | -allowdebug -insecure -dev -sw -game "C:\git\neo\mp\game\neo" |
+| Working Directory | C:\Program Files (x86)\Steam\steamapps\common\Source SDK Base 2013 Multiplayer |
 
 ### Game loop and reference material
 
