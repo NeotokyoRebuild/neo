@@ -104,7 +104,8 @@ from a tagged build, copying over the directory is fine. If you are developing o
 git branches, symlinking or just using `-game` is preferred.
 
 After apply the file copy or symlink to the sourcemods directory, launch/restart Steam
-and "Neotokyo: Revamp" should appear.
+and "Neotokyo: Revamp" should appear. To run the game, original [NEOTOKYO](https://store.steampowered.com/app/244630/NEOTOKYO/)
+have to be installed and NT;RE will try to automatically mount it.
 
 The following examples assumes the default directory, but adjust if needed:
 
