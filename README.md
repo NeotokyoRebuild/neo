@@ -5,6 +5,29 @@
 * License: SOURCE 1 SDK LICENSE, see [LICENSE](LICENSE) for details
 * See [CONTRIBUTING.md](CONTRIBUTING.md) for instructions on how the codebase work and contribute
 
+## Table of contents
+<!-- Generated with: https://github.com/jonschlinkert/markdown-toc -->
+* [Building NT;RE](#building-ntre)
+    + [Requirements](#requirements)
+    + [Building](#building)
+        - [Visual Studio 2022 (Windows)](#visual-studio-2022-windows)
+        - [Qt Creator 13 (Linux)](#qt-creator-13-linux)
+        - [CLI (with ninja, Windows + Linux)](#cli-with-ninja-windows--linux)
+            * [Windows prerequisite](#windows-prerequisite)
+            * [Linux prerequisite - Steam Runtime 3 "Sniper" Container](#linux-prerequisite---steam-runtime-3-sniper-container)
+            * [CLI Building steps](#cli-building-steps)
+* [Steam mod setup - Symlink mod directory](#steam-mod-setup---symlink-mod-directory)
+    + [Windows](#windows)
+    + [Linux](#linux)
+* [Further information](#further-information)
+    + [Linux extra notes](#linux-extra-notes)
+        - [Arch Linux](#arch-linux)
+* [Server instructions](#server-instructions)
+* [Shader authoring (Windows setup)](#shader-authoring-windows-setup)
+    + [Compiling the shaders](#compiling-the-shaders)
+        - [Troubleshooting](#troubleshooting)
+* [Credits](#credits)
+
 ## Building NT;RE
 
 ### Requirements

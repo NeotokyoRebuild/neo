@@ -17,14 +17,16 @@ The end result should hopefully be a shinier and less error-prone rendition of N
 ## Table of contents
 <!-- Generated with: https://github.com/jonschlinkert/markdown-toc -->
 * [Getting started](#getting-started)
-	+ [Cloning & merging](#cloning--merging)
+    + [Cloning & merging](#cloning--merging)
     + [Building](#building)
     + [Debugging](#debugging)
-        + [VS2022 + cmake (Windows)](#vs2022--cmake-windows)
-        + [Qt Creator 13 (Linux)](#qt-creator-13-linux)
+        - [VS2022 + cmake (Windows)](#vs2022--cmake-windows)
+        - [Qt Creator 13 (Linux)](#qt-creator-13-linux)
+        - [VS2022 Visual Studio Solutions (Windows)](#vs2022-visual-studio-solutions-windows)
     + [Game loop and reference material](#game-loop-and-reference-material)
 * [Good to know](#good-to-know)
-    + [Solutions/makefiles](#solutionsmakefiles)
+    + [Current: cmake](#current-cmake)
+    + [Legacy: Solutions/makefiles](#legacy-solutionsmakefiles)
     + [Preprocessor definitions](#preprocessor-definitions)
     + [Code style](#code-style)
 
