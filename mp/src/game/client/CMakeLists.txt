@@ -1691,6 +1691,7 @@ target_sources_grouped(
 add_custom_target(
     client_copy_lib
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:client> "${NEO_OUTPUT_LIBRARY_PATH}/"
+    COMMAND ${CMAKE_COMMAND} -E create_symlink "${NEO_OUTPUT_LIBRARY_PATH}/client.so" "${NEO_OUTPUT_LIBRARY_PATH}/client_srv.so"
     DEPENDS client
     VERBATIM
 )
