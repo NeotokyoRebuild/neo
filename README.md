@@ -11,14 +11,16 @@
     + [Requirements](#requirements)
     + [Building](#building)
         - [Visual Studio 2022 (Windows)](#visual-studio-2022-windows)
-        - [Qt Creator 13 (Linux)](#qt-creator-13-linux)
+        - [Qt Creator 6+ (Linux)](#qt-creator-6-linux)
         - [CLI (with ninja, Windows + Linux)](#cli-with-ninja-windows--linux)
             * [Windows prerequisite](#windows-prerequisite)
             * [Linux prerequisite - Steam Runtime 3 "Sniper" Container](#linux-prerequisite---steam-runtime-3-sniper-container)
             * [CLI Building steps](#cli-building-steps)
-* [Steam mod setup - Symlink mod directory](#steam-mod-setup---symlink-mod-directory)
-    + [Windows](#windows)
-    + [Linux](#linux)
+* [Steam mod setup](#steam-mod-setup)
+    + [Windows symlink](#windows-symlink)
+    + [Linux symlink](#linux-symlink)
+    + [`-game` option in Source SDK 2013MP launch option](#-game-option-in-source-sdk-2013mp-launch-option)
+    + [`-neopath` - Pointing to a non-default original NEOTOKYO directory](#-neopath---pointing-to-a-non-default-original-neotokyo-directory)
 * [Further information](#further-information)
     + [Linux extra notes](#linux-extra-notes)
         - [Arch Linux](#arch-linux)
@@ -37,12 +39,13 @@
 * Linux: [Steam Runtime 3 "Sniper"](https://gitlab.steamos.cloud/steamrt/sniper/sdk)
     * GCC/G++ 10 toolchain
     * Compiled in the sniper's Docker/Podman/Toolbx container, schroot, or systemd-nspawn
+    * This can also work on native even with newer GCC/G++, mostly for development setup. At least install GCC and G++ multilib from your distro's package manager.
 * Both:
     * [cmake](https://cmake.org/)
     * [ninja](https://ninja-build.org/) (optional, can use nmake/make/VS instead)
 
 ### Building
-NT;RE can be built using [VS2022 IDE](#visual-studio-2022-windows), [Qt Creator 13 IDE](#qt-creator-13-linux), and the [CLI](#cli-with-ninja-windows--linux) directly.
+NT;RE can be built using [VS2022 IDE](#visual-studio-2022-windows), [Qt Creator 6+ IDE](#qt-creator-6-linux), and the [CLI](#cli-with-ninja-windows--linux) directly.
 
 #### Visual Studio 2022 (Windows)
 1. Open up VS2022 without a project, then go to: `File > Open > CMake...`
@@ -55,13 +58,13 @@ NT;RE can be built using [VS2022 IDE](#visual-studio-2022-windows), [Qt Creator 
 
 After that, it should be able to compile. For debugger/run cmake configuration, refer to: [CONTRIBUTING.md - Debugging - VS2022 + cmake (Windows)](CONTRIBUTING.md#vs2022--cmake-windows).
 
-#### Qt Creator 13 (Linux)
+#### Qt Creator 6+ (Linux)
 1. On the "Welcome" screen, click on "Open Project..."
 2. Open the `CMakeLists.txt` found in `mp/src`
 3. It may ask about kit configuration, tick both Debug and Release configuration and set their build directories ending in "...build/debug" and "...build/release" respectively.
-4. On the "Projects" screen, in [YOUR KIT (under Build & Run)] > Build, go to "Build Steps" section, expand by clicking on "Details", and add `--parallel` to the CMake arguments.
+4. By default, the build is not done in parallel but rather sequentiality. Note, parallel builds at the default setting could deadlock the system or make it unresponsive during the process. Available since cmake 3.12, the amount of jobs can be tweaked using `--parallel <jobs>` where `<jobs>` is a number to specify parallel build level, or just simply don't apply it to turn it off. To turn on parallel builds in Qt Creator: On the "Projects" screen, in [YOUR KIT (under Build & Run)] > Build, go to "Build Steps" section, expand by clicking on "Details", and add `--parallel` to the CMake arguments.
 
-After that, it should be able to compile. For debugger/running configuration, refer to: [CONTRIBUTING.md - Debugging - Qt Creator 13 (Linux)](CONTRIBUTING.md#qt-creator-13-linux)
+After that, it should be able to compile. For debugger/running configuration, refer to: [CONTRIBUTING.md - Debugging - Qt Creator 6+ (Linux)](CONTRIBUTING.md#qt-creator-6-linux)
 
 #### CLI (with ninja, Windows + Linux)
 ##### Windows prerequisite
@@ -91,22 +94,44 @@ $ cmake -S . -B build/debug -G Ninja
 $ cmake --build build/debug --parallel
 ```
 
-## Steam mod setup - Symlink mod directory
+## Steam mod setup
+To make it appear in Steam, the install files have to appear under the sourcemods directory or
+be directed to it.
+
+There are three options: copying the files over to the sourcemods directory, symlinking to the
+sourcemods directory, or using `-game` option and pointing to it. If you are installing
+from a tagged build, copying over the directory is fine. If you are developing or tracking
+git branches, symlinking or just using `-game` is preferred.
+
+After apply the file copy or symlink to the sourcemods directory, launch/restart Steam
+and "Neotokyo: Revamp" should appear.
+
 The following examples assumes the default directory, but adjust if needed:
 
-### Windows
+### Windows symlink
 ```
 > cd C:\Program Files (x86)\Steam\steamapps\sourcemods
 > mklink /J neo "<PATH_TO_NEO_SOURCE>/mp/game/neo"
 ```
 
-### Linux
+### Linux symlink
+NOTE: This is not persistent, use `-game` method instead for persistent usage (`/etc/fstab`
+might not work for persistent mount bind and could cause boot error if not careful):
 ```
 $ cd $HOME/.steam/steam/steamapps/sourcemods
 $ mkdir neo && sudo mount --bind <PATH_TO_NEO_SOURCE>/mp/game/neo neo
 ```
 
-Then after that, launch/restart Steam and "Neotokyo: Revamp" should appear.
+### `-game` option in Source SDK 2013MP launch option
+Another way is just add the `-game` option to "Source SDK Base 2013 Multiplayer":
+```
+%command% -game <PATH_TO_NEO_SOURCE>/mp/game/neo
+```
+
+### `-neopath` - Pointing to a non-default original NEOTOKYO directory
+This is generally isn't necessary if NEOTOKYO is installed at a default location. However,
+if you have it installed at a different location, adding `-neopath` to the launch option
+can be used to direct to it.
 
 ## Further information
 For further information for your platform, refer to the VDC wiki on setting up extras, chroot/containers, etc...:

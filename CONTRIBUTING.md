@@ -21,7 +21,7 @@ The end result should hopefully be a shinier and less error-prone rendition of N
     + [Building](#building)
     + [Debugging](#debugging)
         - [VS2022 + cmake (Windows)](#vs2022--cmake-windows)
-        - [Qt Creator 13 (Linux)](#qt-creator-13-linux)
+        - [Qt Creator 6+ (Linux)](#qt-creator-6-linux)
         - [VS2022 Visual Studio Solutions (Windows)](#vs2022-visual-studio-solutions-windows)
     + [Game loop and reference material](#game-loop-and-reference-material)
 * [Good to know](#good-to-know)
@@ -71,7 +71,7 @@ In the CMake Target View, right-click "client (shared library)" and click on "Ad
 }
 ```
 
-#### Qt Creator 13 (Linux)
+#### Qt Creator 6+ (Linux)
 On the sidebar, click "Projects" then under your current kit, click "Run". Set the following:
 
 | Property | Example value |
@@ -87,9 +87,18 @@ SDL_VIDEODRIVER=x11
 SteamEnv=1
 ```
 
-Where replacing `[INSERT_OUTPUT_HERE]` is the output of:
+Next is finding the steam-runtime under the Steam installation. This can be found
+using the following command, replacing `$HOME` if Steam is installed at another directory:
 ```
-$ ~/.local/share/Steam/ubuntu12_32/steam-runtime/run.sh printenv LD_LIBRARY_PATH
+$ find "$HOME" -type d -name 'steam-runtime' 2> /dev/null
+```
+
+Assuming default directory, it might be in either: `~/.local/share/Steam/ubuntu12_32/steam-runtime/` or if using a Debian based distribution: `~/.steam/debian-installation/ubuntu12_32/steam-runtime/`.
+
+Then change to that directory and replace `[INSERT_OUTPUT_HERE]` to the output of:
+```
+$ cd <STEAM-RUNTIME-DIR>
+$ run.sh printenv LD_LIBRARY_PATH
 ```
 
 After this, you should be able to run and debug NT;RE, just make sure to have Steam open in the background.
