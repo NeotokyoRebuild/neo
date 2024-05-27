@@ -1284,6 +1284,24 @@ bool CNEORules::ClientConnected(edict_t *pEntity, const char *pszName, const cha
 	return canJoin;
 #endif
 }
+
+bool CNEORules::ClientCommand(CBaseEntity* pEdict, const CCommand& args)
+{
+	if (auto* neoPlayer = dynamic_cast<CNEO_Player*>(pEdict))
+	{
+		if (neoPlayer->ClientCommand(args))
+		{
+			return true;
+		}
+	}
+
+	if (BaseClass::ClientCommand(pEdict, args))
+	{
+		return true;
+	}
+
+	return false;
+}
 #endif
 
 void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
@@ -1450,6 +1468,11 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 				player->m_iXP.GetForModify() += xpAward;
 			}
 
+			// Any human player still alive, show them damage stats in round end
+			if (!player->IsBot() && !player->IsHLTV() && player->IsAlive())
+			{
+				player->StartShowDmgStats(NULL);
+			}
 		}
 	}
 

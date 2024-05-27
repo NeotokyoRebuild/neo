@@ -111,6 +111,8 @@ public:
 
 	virtual bool ClientConnected(edict_t *pEntity, const char *pszName, const char *pszAddress, char *reject, int maxrejectlen) OVERRIDE;
 
+	virtual bool ClientCommand(CBaseEntity* pEdict, const CCommand& args) OVERRIDE;
+
 	virtual void SetWinningTeam(int team, int iWinReason, bool bForceMapReset = true, bool bSwitchTeams = false, bool bDontAddScore = false, bool bFinal = false) OVERRIDE;
 
 	virtual void ChangeLevel(void) OVERRIDE;
