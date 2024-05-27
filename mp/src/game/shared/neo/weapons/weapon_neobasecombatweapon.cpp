@@ -89,9 +89,15 @@ void CNEOBaseCombatWeapon::Spawn()
 	// If this fires, either the enum bit mask has overflowed,
 	// this derived gun has no valid NeoBitFlags set,
 	// or we are spawning an instance of this base class for some reason.
-	Assert(GetNeoWepBits() > NEO_WEP_INVALID);
+	Assert(GetNeoWepBits() > NEO_WEP_INVALID); 
 
 	BaseClass::Spawn();
+
+	m_iClip1 = GetWpnData().iMaxClip1;
+	m_iPrimaryAmmoCount = GetWpnData().iDefaultClip1;
+
+	m_iClip2 = GetWpnData().iMaxClip2;
+	m_iSecondaryAmmoCount = GetWpnData().iDefaultClip2;
 
 #ifdef GAME_DLL
 	AddSpawnFlags(SF_NORESPAWN);
@@ -143,17 +149,17 @@ void CNEOBaseCombatWeapon::FinishReload(void)
 		// If I use primary clips, reload primary
 		if (UsesClipsForAmmo1())
 		{
-			int primary = MIN(GetMaxClip1(), pOwner->GetAmmoCount(m_iPrimaryAmmoType));
+			int primary = MIN(GetMaxClip1(), m_iPrimaryAmmoCount);
 			m_iClip1 = primary;
-			pOwner->RemoveAmmo(primary, m_iPrimaryAmmoType);
+			m_iPrimaryAmmoCount -= primary;
 		}
 
 		// If I use secondary clips, reload secondary
 		if (UsesClipsForAmmo2())
 		{
-			int secondary = MIN(GetMaxClip2() - m_iClip2, pOwner->GetAmmoCount(m_iSecondaryAmmoType));
+			int secondary = MIN(GetMaxClip2() - m_iClip2, m_iSecondaryAmmoCount);
 			m_iClip2 += secondary;
-			pOwner->RemoveAmmo(secondary, m_iSecondaryAmmoType);
+			m_iSecondaryAmmoCount -= secondary;
 		}
 
 		if (m_bReloadsSingly)
@@ -321,7 +327,7 @@ void CNEOBaseCombatWeapon::ItemPostFrame(void)
 	// Secondary attack has priority
 	if ((pOwner->m_nButtons & IN_ATTACK2) && CanPerformSecondaryAttack())
 	{
-		if (UsesSecondaryAmmo() && pOwner->GetAmmoCount(m_iSecondaryAmmoType) <= 0)
+		if (UsesSecondaryAmmo() && m_iSecondaryAmmoCount <= 0)
 		{
 			if (m_flNextEmptySoundTime < gpGlobals->curtime)
 			{
@@ -357,7 +363,7 @@ void CNEOBaseCombatWeapon::ItemPostFrame(void)
 				// reload clip2 if empty
 				if (m_iClip2 < 1)
 				{
-					pOwner->RemoveAmmo(1, m_iSecondaryAmmoType);
+					m_iSecondaryAmmoCount -= 1;
 					m_iClip2 = m_iClip2 + 1;
 				}
 			}
@@ -368,7 +374,7 @@ void CNEOBaseCombatWeapon::ItemPostFrame(void)
 	{
 		// Clip empty? Or out of ammo on a no-clip weapon?
 		if (!IsMeleeWeapon() &&
-			((UsesClipsForAmmo1() && m_iClip1 <= 0) || (!UsesClipsForAmmo1() && pOwner->GetAmmoCount(m_iPrimaryAmmoType) <= 0)))
+			((UsesClipsForAmmo1() && m_iClip1 <= 0) || (!UsesClipsForAmmo1() && m_iPrimaryAmmoCount <= 0)))
 		{
 			HandleFireOnEmpty();
 		}

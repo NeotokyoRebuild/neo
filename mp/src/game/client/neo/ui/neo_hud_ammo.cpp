@@ -159,32 +159,33 @@ void CNEOHud_Ammo::DrawAmmo() const
 	const int maxClip = activeWep->GetMaxClip1();
 	if (maxClip != 0 && !activeWep->IsMeleeWeapon())
 	{
-		const auto ammo = GetAmmoDef()->GetAmmoOfIndex(activeWep->GetPrimaryAmmoType());
-		const int ammoCount = activeWep->GetOwner()->GetAmmoCount(ammo->pName);
+		const int ammoCount = activeWep->m_iPrimaryAmmoCount;
 		const int numClips = ceil(abs((float)ammoCount / activeWep->GetMaxClip1())); // abs because grenades return negative values (???) // casting division to float in case we have a half-empty mag, rounding up to show the half mag as one more mag
 		const auto isSupa = dynamic_cast<CWeaponSupa7*>(activeWep);
 		
-		const int maxLen = 5;
-		char clipsText[maxLen]{ '\0' };
-		if(isSupa)
-		{
-			const auto secondaryAmmo = GetAmmoDef()->GetAmmoOfIndex(activeWep->GetSecondaryAmmoType());
-			snprintf(clipsText, 10, "%d+%d", ammoCount, activeWep->GetOwner()->GetAmmoCount(secondaryAmmo->pName));
-		} else
-		{
-			snprintf(clipsText, 10, "%d", numClips);
+		if (activeWep->UsesClipsForAmmo1()) {
+			const int maxLen = 5;
+			char clipsText[maxLen]{ '\0' };
+			if(isSupa)
+			{
+				snprintf(clipsText, 10, "%d+%d", ammoCount, activeWep->m_iSecondaryAmmoCount.Get());
+			} else
+			{
+				snprintf(clipsText, 10, "%d", numClips);
+			}
+
+			textLen = V_strlen(clipsText);
+			wchar_t unicodeClipsText[maxLen]{ L'\0' };
+			g_pVGuiLocalize->ConvertANSIToUnicode(clipsText, unicodeClipsText, sizeof(unicodeClipsText));
+
+			int clipsTextWidth, clipsTextHeight;
+			surface()->GetTextSize(m_hTextFont, unicodeClipsText, clipsTextWidth, clipsTextHeight);
+			surface()->DrawSetTextFont(m_hTextFont);
+
+			surface()->GetTextSize(m_hTextFont, unicodeClipsText, fontWidth, fontHeight);
+			surface()->DrawSetTextPos(digit2_xpos + xpos - fontWidth, digit2_ypos + ypos);
+			surface()->DrawPrintText(unicodeClipsText, textLen);
 		}
-		textLen = V_strlen(clipsText);
-		wchar_t unicodeClipsText[maxLen]{ L'\0' };
-		g_pVGuiLocalize->ConvertANSIToUnicode(clipsText, unicodeClipsText, sizeof(unicodeClipsText));
-
-		int clipsTextWidth, clipsTextHeight;
-		surface()->GetTextSize(m_hTextFont, unicodeClipsText, clipsTextWidth, clipsTextHeight);
-		surface()->DrawSetTextFont(m_hTextFont);
-
-		surface()->GetTextSize(m_hTextFont, unicodeClipsText, fontWidth, fontHeight);
-		surface()->DrawSetTextPos(digit2_xpos + xpos - fontWidth, digit2_ypos + ypos);
-		surface()->DrawPrintText(unicodeClipsText, textLen);
 
 		const auto neoWep = dynamic_cast<C_NEOBaseCombatWeapon*> (activeWep);
 		
@@ -236,13 +237,13 @@ void CNEOHud_Ammo::DrawAmmo() const
 			}			
 		}
 
-		if (digit_as_number)
+		if (digit_as_number && activeWep->UsesClipsForAmmo1())
 		{ // Draw bullets in magazine in number form
 			surface()->DrawSetTextFont(m_hBulletFont);
 			surface()->DrawSetTextPos(digit_xpos + xpos, digit_ypos + ypos);
 			wchar_t bullets[22];
-			V_swprintf_safe(bullets, L"%d/%d\0", magSizeCurrent, magSizeMax);
-			surface()->DrawPrintText(bullets, (int)(log10(magSizeCurrent) + 1) + (int)(log10(magSizeMax) + 1) + 1);
+			V_swprintf_safe(bullets, L"%i/%i\0", magSizeCurrent, magSizeMax);
+			surface()->DrawPrintText(bullets, (int)(magSizeCurrent == 0 ? 1 : log10(magSizeCurrent) + 1) + (int)(log10(magSizeMax) + 1) + 1);
 			return;
 		}
 

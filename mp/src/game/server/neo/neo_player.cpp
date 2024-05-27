@@ -1673,7 +1673,7 @@ void CNEO_Player::FireBullets ( const FireBulletsInfo_t &info )
 
 void CNEO_Player::Weapon_Equip(CBaseCombatWeapon* pWeapon)
 {
-	for (int i=0;i<MAX_WEAPONS;i++) 
+ 	for (int i=0;i<MAX_WEAPONS;i++) 
 	{
 		if (!m_hMyWeapons[i]) 
 		{
@@ -1683,27 +1683,6 @@ void CNEO_Player::Weapon_Equip(CBaseCombatWeapon* pWeapon)
 	}
 	
 	pWeapon->ChangeTeam( GetTeamNumber() );
-	
-	if (pWeapon->GetMaxClip1() == -1)
-	{
-			GiveAmmo(pWeapon->GetDefaultClip1(), pWeapon->m_iPrimaryAmmoType, false); 
-	}
-	else if(pWeapon->m_iClip1 > pWeapon->GetMaxClip1())
-	{
-		pWeapon->m_iClip1 = pWeapon->GetMaxClip1();
-		GiveAmmo( pWeapon->GetDefaultClip1() - pWeapon->GetMaxClip1(), pWeapon->m_iPrimaryAmmoType, false); 
-	}
-
-	if (pWeapon->GetMaxClip2() == -1)
-	{
-		GiveAmmo(pWeapon->GetDefaultClip2(), pWeapon->m_iSecondaryAmmoType, false); 
-	}
-	else if(pWeapon->m_iClip2 > pWeapon->GetMaxClip2())
-	{
-		pWeapon->m_iClip2 = pWeapon->GetMaxClip2();
-		GiveAmmo( pWeapon->GetDefaultClip2() - pWeapon->GetMaxClip2(), pWeapon->m_iSecondaryAmmoType, false); 
-	}
-	
 	pWeapon->Equip( this );
 
 	// Pass the lighting origin over to the weapon if we have one
@@ -2237,14 +2216,6 @@ void GiveDet(CNEO_Player* pPlayer)
 
 void CNEO_Player::GiveDefaultItems(void)
 {
-	CBasePlayer::GiveAmmo(50, "AR2");
-
-	CBasePlayer::GiveAmmo(50, "Pistol");
-	CBasePlayer::GiveAmmo(30, "AMMO_10G_SHELL");
-	CBasePlayer::GiveAmmo(50, "AMMO_PRI");
-	CBasePlayer::GiveAmmo(50, "AMMO_SMAC");
-	CBasePlayer::GiveAmmo(1, "AMMO_DETPACK");
-
 	const bool supportsGetKnife = true;
 
 	switch (GetClass())

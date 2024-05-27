@@ -192,7 +192,7 @@ void CWeaponGrenade::PrimaryAttack(void)
 
 void CWeaponGrenade::DecrementAmmo(CBaseCombatCharacter *pOwner)
 {
-	pOwner->RemoveAmmo(1, m_iPrimaryAmmoType);
+	m_iPrimaryAmmoCount -= 1;
 }
 
 void CWeaponGrenade::ItemPostFrame(void)

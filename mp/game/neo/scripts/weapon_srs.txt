@@ -18,8 +18,9 @@ WeaponData
 	"TPMuzzleFlashScale"	"0.25"
 
 	"clip_size"		"5"
+	"default_clip"	"15"
 	"autoswitchfrom"        "0"
-	"primary_ammo"		"AR2"
+	"primary_ammo"		"AMMO_SNIPER"
 	"secondary_ammo"	"None"
 
 	"weight"		"3"
