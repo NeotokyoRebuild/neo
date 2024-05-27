@@ -174,9 +174,9 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	memset(m_wszStatusUnicode, 0, sizeof(m_wszStatusUnicode)); // NOTE (nullsystem): Clear it or get junk after warmup ends
 	g_pVGuiLocalize->ConvertANSIToUnicode(m_szStatusANSI, m_wszStatusUnicode, sizeof(m_wszStatusUnicode));
 
-	V_snwprintf(m_wszJinraiScore, 2, L"%i", GetGlobalTeam(TEAM_JINRAI)->GetRoundsWon());
-	V_snwprintf(m_wszNSFScore, 2, L"%i", GetGlobalTeam(TEAM_NSF)->GetRoundsWon());
-	V_snwprintf(m_wszRound, 2, L"%i", NEORules()->roundNumber());
+	V_snwprintf(m_wszJinraiScore, 3, L"%i", GetGlobalTeam(TEAM_JINRAI)->GetRoundsWon());
+	V_snwprintf(m_wszNSFScore, 3, L"%i", GetGlobalTeam(TEAM_NSF)->GetRoundsWon());
+	V_snwprintf(m_wszRound, 3, L"%i", NEORules()->roundNumber());
 }
 
 void CNEOHud_RoundState::DrawNeoHudElement()
@@ -265,7 +265,6 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 	g_PR->GetTeam(localPlayerIndex);
 
 	// Draw total players alive
-
 	surface()->DrawSetTexture(m_iFriendlyTotalLogo);
 	int xOffset = xpos - (boxWidth / 2) - 4 - m_ilogoTotalSize;
 	surface()->DrawSetColor(Color(55, 55, 55, 255));
@@ -283,17 +282,14 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 	surface()->DrawTexturedRect(xOffset, 1, xOffset + m_ilogoTotalSize, 1 + m_ilogoTotalSize);
 	
 	// Draw total players alive numbers
-	V_snwprintf(m_wszFriendsAlive, 2, L"%i", m_iFriendsAlive);
-	V_snwprintf(m_wszEnemiesAlive, 2, L"%i", m_iEnemiesAlive);
+	V_snwprintf(m_wszFriendsAlive, 4, L"%i", m_iFriendsAlive);
+	V_snwprintf(m_wszEnemiesAlive, 4, L"%i", m_iEnemiesAlive);
 	surface()->GetTextSize(m_hFont, m_wszFriendsAlive, fontWidth, fontHeight);
-
-	/*surface()->DrawSetTextColor(Color(255, 15, 50, 255));
-	surface()->DrawSetTextPos(xpos - (boxWidth / 2) - 4 - (m_ilogoTotalSize / 2) - (fontWidth / 2) -4, 1 + (m_ilogoTotalSize / 2) - (fontHeight / 2) + 4);
-	surface()->DrawPrintText(m_wszFriendsAlive, 2);*/
 
 	surface()->DrawSetTextColor(Color(255, 255, 255, 255));
 	surface()->DrawSetTextPos(xpos - (boxWidth / 2) - 4 - (m_ilogoTotalSize / 2) - (fontWidth / 2), 1 + (m_ilogoTotalSize / 2) - (fontHeight / 2));
 	surface()->DrawPrintText(m_wszFriendsAlive, 2);
+	surface()->GetTextSize(m_hFont, m_wszEnemiesAlive, fontWidth, fontHeight);
 	surface()->DrawSetTextPos(xpos + (boxWidth / 2) + 4 + (m_ilogoTotalSize / 2) - (fontWidth / 2), 1 + (m_ilogoTotalSize / 2) - (fontHeight / 2));
 	surface()->DrawPrintText(m_wszEnemiesAlive, 2);
 

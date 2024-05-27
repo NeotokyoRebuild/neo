@@ -37,9 +37,9 @@ private:
 
 	char m_szStatusANSI[24];
 	wchar_t m_wszStatusUnicode[24];
-	wchar_t m_wszJinraiScore[2];
-	wchar_t m_wszNSFScore[2];
-	wchar_t m_wszRound[2];
+	wchar_t m_wszJinraiScore[3];
+	wchar_t m_wszNSFScore[3];
+	wchar_t m_wszRound[3];
 
 	vgui::ImagePanel *starNone, *starA, *starB, *starC, *starD, *starE, *starF;
 	int m_iPreviouslyActiveStar;
@@ -65,8 +65,8 @@ private:
 	int m_iEnemiesAlive;
 	int m_iEnemiesTotal;
 
-	wchar_t m_wszFriendsAlive[2];
-	wchar_t m_wszEnemiesAlive[2];
+	wchar_t m_wszFriendsAlive[4];
+	wchar_t m_wszEnemiesAlive[4];
 
 	int box_color_r, box_color_g, box_color_b, box_color_a;
 
