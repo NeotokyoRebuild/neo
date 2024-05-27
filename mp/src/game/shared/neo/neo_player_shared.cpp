@@ -31,7 +31,7 @@ ConVar neo_recon_superjump_intensity("neo_recon_superjump_intensity", "250", FCV
 
 bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep)
 {
-	if (!pWep || pWep->m_bInReload)
+	if (!pWep || pWep->m_bInReload || pWep->GetRoundBeingChambered())
 	{
 		return false;
 	}
