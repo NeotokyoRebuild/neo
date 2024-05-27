@@ -182,6 +182,7 @@ and set: `LD_PRELOAD=/usr/lib32/libtcmalloc.so %command%` as the launch argument
     * Linux:
         * Non-persistent bind mount: `mkdir neo && sudo mount --bind <path_to_source>/mp/game/neo neo`
         * Or just copy over or use the directory directly
+    * Linux NOTE: Also make sure the `neo/bin` directory includes `client_srv.so` and `server_srv.so`
 5. Linux-only: Symlink the names in "Source SDK Base 2013 Dedicated Server" "bin" directory:
 ```
 ln -s vphysics_srv.so vphysics.so;
@@ -195,6 +196,7 @@ ln -s materialsystem_srv.so materialsystem.so;
 6. Run: `srcds.exe +sv_lan 0 -insecure -game neo +map <some map> +maxplayers 24 -autoupdate -console`
     * It'll be `./srcds_run` for Linux
     * Double check on the log that VAC is disabled before continuing
+    * Linux will also require something like `-steam_dir $HOME/.steam/bin/ -steamcmd_script $HOME/.steam/steamcmd/steamcmd.sh` for `-autoupdate` to work
 7. In-game, it'll showup in the server list
 
 ## Shader authoring (Windows setup)
