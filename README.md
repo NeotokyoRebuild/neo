@@ -11,10 +11,12 @@
     + [Requirements](#requirements)
     + [Building](#building)
         - [Visual Studio 2022 (Windows)](#visual-studio-2022-windows)
-        - [Qt Creator 6+ (Linux)](#qt-creator-6-linux)
+        - [Qt Creator (Linux)](#qt-creator-linux)
         - [CLI (with ninja, Windows + Linux)](#cli-with-ninja-windows--linux)
             * [Windows prerequisite](#windows-prerequisite)
             * [Linux prerequisite - Steam Runtime 3 "Sniper" Container](#linux-prerequisite---steam-runtime-3-sniper-container)
+                + [Fetching the container](#fetching-the-container)
+                + [Running the container](#running-the-container)
             * [CLI Building steps](#cli-building-steps)
 * [Steam mod setup](#steam-mod-setup)
     + [Windows symlink](#windows-symlink)
@@ -35,17 +37,17 @@
 ### Requirements
 
 * Windows: [Visual Studio 2022 (MSVC v143)](https://visualstudio.microsoft.com/downloads/)
-    * Make sure to include C++ development environment, C++ MFC Library, Windows 10/11 SDK, and cmake during installation
+    * Make sure to include C++ development environment, C++ MFC Library, Windows 10/11 SDK, and CMake during installation
 * Linux: [Steam Runtime 3 "Sniper"](https://gitlab.steamos.cloud/steamrt/sniper/sdk)
     * GCC/G++ 10 toolchain
     * Compiled in the sniper's Docker/Podman/Toolbx container, schroot, or systemd-nspawn
     * This can also work on native even with newer GCC/G++, mostly for development setup. At least install GCC and G++ multilib from your distro's package manager.
 * Both:
-    * [cmake](https://cmake.org/)
+    * [CMake](https://cmake.org/)
     * [ninja](https://ninja-build.org/) (optional, can use nmake/make/VS instead)
 
 ### Building
-NT;RE can be built using [VS2022 IDE](#visual-studio-2022-windows), [Qt Creator 6+ IDE](#qt-creator-6-linux), and the [CLI](#cli-with-ninja-windows--linux) directly.
+NT;RE can be built using [VS2022 IDE](#visual-studio-2022-windows), [Qt Creator IDE](#qt-creator-linux), and the [CLI](#cli-with-ninja-windows--linux) directly.
 
 #### Visual Studio 2022 (Windows)
 1. Open up VS2022 without a project, then go to: `File > Open > CMake...`
@@ -54,17 +56,17 @@ NT;RE can be built using [VS2022 IDE](#visual-studio-2022-windows), [Qt Creator 
 4. Click on the dropdown, go to: "Manage Configurations..."
 5. Click the green plus button and select "x86-Debug" for debug or "x86-Release" for release mode and apply the configuration.
 6. Then make sure to change it over to "x86-Debug" or "x86-Release".
-7. In the "Solution Explorer", it'll be under the "Folder View". To switch to the cmake view, right-click and click on "Switch to CMake Targets View".
+7. In the "Solution Explorer", it'll be under the "Folder View". To switch to the CMake view, right-click and click on "Switch to CMake Targets View".
 
-After that, it should be able to compile. For debugger/run cmake configuration, refer to: [CONTRIBUTING.md - Debugging - VS2022 + cmake (Windows)](CONTRIBUTING.md#vs2022--cmake-windows).
+After that, it should be able to compile. For debugger/run CMake configuration, refer to: [CONTRIBUTING.md - Debugging - VS2022 + CMake (Windows)](CONTRIBUTING.md#vs2022--cmake-windows).
 
-#### Qt Creator 6+ (Linux)
+#### Qt Creator (Linux)
 1. On the "Welcome" screen, click on "Open Project..."
 2. Open the `CMakeLists.txt` found in `mp/src`
 3. It may ask about kit configuration, tick both Debug and Release configuration and set their build directories ending in "...build/debug" and "...build/release" respectively.
-4. By default, the build is not done in parallel but rather sequentiality. Note, parallel builds at the default setting could deadlock the system or make it unresponsive during the process. Available since cmake 3.12, the amount of jobs can be tweaked using `--parallel <jobs>` where `<jobs>` is a number to specify parallel build level, or just simply don't apply it to turn it off. To turn on parallel builds in Qt Creator: On the "Projects" screen, in [YOUR KIT (under Build & Run)] > Build, go to "Build Steps" section, expand by clicking on "Details", and add `--parallel` to the CMake arguments.
+4. By default, the build is not done in parallel but rather sequentiality. Note, parallel builds at the default setting could deadlock the system or make it unresponsive during the process. Available since CMake 3.12, the amount of jobs can be tweaked using `--parallel <jobs>` where `<jobs>` is a number to specify parallel build level, or just simply don't apply it to turn it off. To turn on parallel builds in Qt Creator: On the "Projects" screen, in [YOUR KIT (under Build & Run)] > Build, go to "Build Steps" section, expand by clicking on "Details", and add `--parallel` to the CMake arguments.
 
-After that, it should be able to compile. For debugger/running configuration, refer to: [CONTRIBUTING.md - Debugging - Qt Creator 6+ (Linux)](CONTRIBUTING.md#qt-creator-6-linux)
+After that, it should be able to compile. For debugger/running configuration, refer to: [CONTRIBUTING.md - Debugging - Qt Creator (Linux)](CONTRIBUTING.md#qt-creator-linux)
 
 #### CLI (with ninja, Windows + Linux)
 ##### Windows prerequisite
@@ -72,9 +74,30 @@ Make sure the "x86 Native Tools Command Prompt for VS2022" is used instead of th
 
 ##### Linux prerequisite - Steam Runtime 3 "Sniper" Container
 Just download and use the OCI image for Docker/Podman/Toolbx:
+
+###### Fetching the container
 * [Docker](https://www.docker.com/): `sudo docker pull registry.gitlab.steamos.cloud/steamrt/sniper/sdk`
 * [Podman](https://podman.io/): `podman pull registry.gitlab.steamos.cloud/steamrt/sniper/sdk`
-* [Toolbx](https://containertoolbx.org/): `toolbox create -i registry.gitlab.steamos.cloud/steamrt/sniper/sdk sniper; toolbox enter sniper`
+* [Toolbx](https://containertoolbx.org/): `toolbox create -i registry.gitlab.steamos.cloud/steamrt/sniper/sdk sniper`
+
+###### Running the container
+Docker:
+```
+# docker run -v /PATH_TO_REPO/neo/mp/src:/root/neo/mp/src --rm -it --entrypoint /bin/bash registry.gitlab.steamos.cloud/steamrt/sniper/sdk
+$ cd /root/neo/mp/src/
+```
+
+Podman: 
+```
+$ podman run -v /PATH_TO_REPO/neo/mp/src:/root/neo/mp/src --rm -it --entrypoint /bin/bash registry.gitlab.steamos.cloud/steamrt/sniper/sdk
+$ cd /root/neo/mp/src/
+```
+
+Toolbx: 
+```
+$ toolbox enter sniper
+$ cd /PATH_TO_REPO/neo/mp/src
+```
 
 Depending on the terminal, you may need to install an additional terminfo in the container just to make it usable.
 The container is based on Debian 11 "bullseye", just look for and install the relevant terminfo package if needed.

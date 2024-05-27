@@ -20,12 +20,12 @@ The end result should hopefully be a shinier and less error-prone rendition of N
     + [Cloning & merging](#cloning--merging)
     + [Building](#building)
     + [Debugging](#debugging)
-        - [VS2022 + cmake (Windows)](#vs2022--cmake-windows)
-        - [Qt Creator 6+ (Linux)](#qt-creator-6-linux)
+        - [VS2022 + CMake (Windows)](#vs2022--cmake-windows)
+        - [Qt Creator (Linux)](#qt-creator-linux)
         - [VS2022 Visual Studio Solutions (Windows)](#vs2022-visual-studio-solutions-windows)
     + [Game loop and reference material](#game-loop-and-reference-material)
 * [Good to know](#good-to-know)
-    + [Current: cmake](#current-cmake)
+    + [Current: CMake](#current-cmake)
     + [Legacy: Solutions/makefiles](#legacy-solutionsmakefiles)
     + [Preprocessor definitions](#preprocessor-definitions)
     + [Code style](#code-style)
@@ -43,7 +43,7 @@ See [README.md](README.md) in this repo for setting up your build environment (c
 ### Debugging
 To be safe and avoid problems with VAC, it's recommended to add a [-insecure](https://developer.valvesoftware.com/wiki/Command_Line_Options) launch flag before attaching your debugger.
 
-#### VS2022 + cmake (Windows)
+#### VS2022 + CMake (Windows)
 In the CMake Target View, right-click "client (shared library)" and click on "Add Debug Configuration". This should show a json file. Then, make sure it's similar to this (changing the game path to where you have it):
 
 ```
@@ -71,7 +71,7 @@ In the CMake Target View, right-click "client (shared library)" and click on "Ad
 }
 ```
 
-#### Qt Creator 6+ (Linux)
+#### Qt Creator (Linux)
 On the sidebar, click "Projects" then under your current kit, click "Run". Set the following:
 
 | Property | Example value |
@@ -120,9 +120,9 @@ Ochii's impressive [reverse engineering project](https://github.com/Ochii/neotok
 
 ## Good to know
 
-### Current: cmake
+### Current: CMake
 
-This project currently use the [cmake](https://cmake.org/) build system to generate ninja/makefiles and is integrated with IDEs such as VS2022 and qtcreator. When modifying the project file structure, look into `CMakeLists.txt` and `cmake/*.cmake`.
+This project currently use the [CMake](https://cmake.org/) build system to generate ninja/makefiles and is integrated with IDEs such as VS2022 and qtcreator. When modifying the project file structure, look into `CMakeLists.txt` and `cmake/*.cmake`.
 
 ### Legacy: Solutions/makefiles
 
