@@ -1672,7 +1672,7 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo* info)
 	UserMessageBegin(filter, "DamageInfo");
 	{
 		short attackerIdx = 0;
-		auto* neoAttacker = dynamic_cast<CNEO_Player*>(info->GetAttacker());
+		auto* neoAttacker = info ? dynamic_cast<CNEO_Player*>(info->GetAttacker()) : NULL;
 		if (neoAttacker && neoAttacker->entindex() != entindex())
 		{
 			attackerIdx = static_cast<short>(neoAttacker->entindex());
