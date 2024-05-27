@@ -161,6 +161,7 @@ public:
 	bool IsInAim() const { return m_bInAim; }
 
 	float GetAttackersScores(const int attackerIdx) const;
+	int GetAttackerHits(const int attackerIdx) const;
 
 private:
 	void CheckThermOpticButtons();
@@ -181,6 +182,7 @@ public:
 
 	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
 	CNetworkArray(float, m_rfAttackersScores, (MAX_PLAYERS + 1));
+	CNetworkArray(int, m_rfAttackersHits, (MAX_PLAYERS + 1));
 
 	bool m_bShowClassMenu, m_bShowTeamMenu;
 	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);

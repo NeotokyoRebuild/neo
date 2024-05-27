@@ -174,6 +174,17 @@ public:
 	int ShouldTransmit( const CCheckTransmitInfo *pInfo) OVERRIDE;
 
 	float GetAttackersScores(const int attackerIdx) const;
+	int GetAttackerHits(const int attackerIdx) const;
+
+	struct AttackersTotals
+	{
+		float dealtTotalDmgs;
+		int dealtTotalHits;
+		float takenTotalDmgs;
+		int takenTotalHits;
+	};
+	AttackersTotals GetAttackersTotals() const;
+	void StartShowDmgStats(const CTakeDamageInfo *info);
 
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);
 
@@ -189,6 +200,11 @@ private:
 	void CloakFlash();
 
 	bool IsAllowedToSuperJump(void);
+
+	void ShowDmgInfo(char *infoStr, int infoStrSize);
+	int SetDmgListStr(char *infoStr, const int infoStrMax, const int playerIdxStart,
+		int *infoStrSize, bool *showMenu,
+		const CTakeDamageInfo *info) const;
 
 public:
 	CNetworkVar(int, m_iNeoClass);
@@ -220,6 +236,7 @@ public:
 
 	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
 	CNetworkArray(float, m_rfAttackersScores, (MAX_PLAYERS + 1));
+	CNetworkArray(int, m_rfAttackersHits, (MAX_PLAYERS + 1));
 
 	CNetworkVar(unsigned char, m_NeoFlags);
 
@@ -232,6 +249,9 @@ private:
 
 	float m_flLastAirborneJumpOkTime;
 	float m_flLastSuperJumpTime;
+
+	int m_iDmgMenuCurPage;
+	int m_iDmgMenuNextPage;
 
 	INEOPlayerAnimState* m_pPlayerAnimState;
 

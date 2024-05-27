@@ -82,13 +82,15 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 
 	RecvPropArray(RecvPropVector(RECVINFO(m_rvFriendlyPlayerPositions[0])), m_rvFriendlyPlayerPositions),
 	RecvPropArray(RecvPropFloat(RECVINFO(m_rfAttackersScores[0])), m_rfAttackersScores),
+	RecvPropArray(RecvPropInt(RECVINFO(m_rfAttackersHits[0])), m_rfAttackersHits),
 
 	RecvPropInt(RECVINFO(m_NeoFlags)),
 END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA(C_NEO_Player)
 	DEFINE_PRED_FIELD(m_rvFriendlyPlayerPositions, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
-	DEFINE_PRED_FIELD(m_rfAttackersScores, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_ARRAY(m_rfAttackersScores, FIELD_FLOAT, MAX_PLAYERS + 1, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_ARRAY(m_rfAttackersHits, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_vecGhostMarkerPos, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
 
 	DEFINE_PRED_FIELD_TOL(m_flCamoAuxLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
@@ -102,6 +104,96 @@ BEGIN_PREDICTION_DATA(C_NEO_Player)
 
 	DEFINE_PRED_FIELD(m_nVisionLastTick, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
+
+static void __MsgFunc_DamageInfo(bf_read& msg)
+{
+	const int killerIdx = msg.ReadShort();
+
+	auto *localPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if (!localPlayer)
+	{
+		return;
+	}
+
+	// Print damage stats into the console
+	// Print to console
+	struct AttackersTotals
+	{
+		float dealtTotalDmgs;
+		int dealtTotalHits;
+		float takenTotalDmgs;
+		int takenTotalHits;
+	};
+	AttackersTotals totals;
+	totals.dealtTotalDmgs = 0.0f;
+	totals.dealtTotalHits = 0;
+	totals.takenTotalDmgs = 0.0f;
+	totals.takenTotalHits = 0;
+
+	const int thisIdx = localPlayer->entindex();
+
+	// Can't rely on Msg as it can print out of order, so do it in chunks
+	static char killByLine[512];
+
+	static const char* BORDER = "==========================\n";
+	bool setKillByLine = false;
+	if (killerIdx > 0)
+	{
+		auto* neoAttacker = dynamic_cast<C_NEO_Player*>(UTIL_PlayerByIndex(killerIdx));
+		if (neoAttacker && neoAttacker->entindex() != thisIdx)
+		{
+			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, localPlayer);
+			setKillByLine = true;
+		}
+	}
+
+	ConMsg("%sDamage infos (Round %d):\n%s\n", BORDER, NEORules()->roundNumber(), setKillByLine ? killByLine : "");
+	
+	for (int pIdx = 1; pIdx <= gpGlobals->maxClients; ++pIdx)
+	{
+		if (pIdx == thisIdx)
+		{
+			continue;
+		}
+
+		auto* neoAttacker = dynamic_cast<C_NEO_Player*>(UTIL_PlayerByIndex(pIdx));
+		if (!neoAttacker || neoAttacker->IsHLTV())
+		{
+			continue;
+		}
+
+		const char* dmgerName = neoAttacker->GetPlayerName();
+		if (!dmgerName)
+		{
+			continue;
+		}
+
+		const float dmgTo = min(neoAttacker->GetAttackersScores(thisIdx), 100.0f);
+		const float dmgFrom = min(localPlayer->GetAttackersScores(pIdx), 100.0f);
+		if (dmgTo > 0.0f || dmgFrom > 0.0f)
+		{
+			const int hitsTo = neoAttacker->GetAttackerHits(thisIdx);
+			const int hitsFrom = localPlayer->GetAttackerHits(pIdx);
+			const char* dmgerClass = GetNeoClassName(neoAttacker->GetClass());
+
+			static char infoLine[128];
+			DmgLineStr(infoLine, sizeof(infoLine), dmgerName, dmgerClass,
+				dmgTo, dmgFrom, hitsTo, hitsFrom);
+			ConMsg("%s", infoLine);
+
+			totals.dealtTotalDmgs += dmgTo;
+			totals.takenTotalDmgs += dmgFrom;
+			totals.dealtTotalHits += hitsTo;
+			totals.takenTotalHits += hitsFrom;
+		}
+	}
+
+	ConMsg("\nTOTAL: Dealt: %.0f in %d hits | Taken: %.0f in %d hits\n%s\n",
+		totals.dealtTotalDmgs, totals.dealtTotalHits,
+		totals.takenTotalDmgs, totals.takenTotalHits,
+		BORDER);
+}
+static bool g_hasHookDamageInfo = false;
 
 ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
 	"Whether to display HL2 style ammo/health info near crosshair.",
@@ -321,6 +413,12 @@ C_NEO_Player::C_NEO_Player()
 
 	m_pPlayerAnimState = CreatePlayerAnimState(this, CreateAnimStateHelpers(this),
 		NEO_ANIMSTATE_LEGANIM_TYPE, NEO_ANIMSTATE_USES_AIMSEQUENCES);
+
+	if (!g_hasHookDamageInfo)
+	{
+		usermessages->HookMessage("DamageInfo", __MsgFunc_DamageInfo);
+		g_hasHookDamageInfo = true;
+	}
 }
 
 C_NEO_Player::~C_NEO_Player()
@@ -400,6 +498,11 @@ void C_NEO_Player::ZeroFriendlyPlayerLocArray()
 float C_NEO_Player::GetAttackersScores(const int attackerIdx) const
 {
 	return m_rfAttackersScores.Get(attackerIdx);
+}
+
+int C_NEO_Player::GetAttackerHits(const int attackerIdx) const
+{
+	return m_rfAttackersHits.Get(attackerIdx);
 }
 
 int C_NEO_Player::DrawModel( int flags )
@@ -990,6 +1093,10 @@ void C_NEO_Player::Spawn( void )
 	for (int i = 0; i < m_rfAttackersScores.Count(); ++i)
 	{
 		m_rfAttackersScores.Set(i, 0.0f);
+	}
+	for (int i = 0; i < m_rfAttackersHits.Count(); ++i)
+	{
+		m_rfAttackersHits.Set(i, 0);
 	}
 
 	Weapon_SetZoom(false);
