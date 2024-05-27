@@ -7,6 +7,7 @@
 
 #ifdef CLIENT_DLL
 	#include "c_neo_player.h"
+	#include "c_team.h"
 #else
 	#include "neo_player.h"
 	#include "team.h"
@@ -120,6 +121,9 @@ static NEOViewVectors g_NEOViewVectors(
 
 
 ConVar neo_score_limit("neo_score_limit", "7", FCVAR_REPLICATED, "Neo score limit.", true, 0.0f, true, 99.0f);
+ConVar neo_round_limit("neo_round_limit", "0", FCVAR_REPLICATED, "Max amount of rounds, 0 for no limit.", true, 0.0f, false, 0.0f);
+ConVar neo_round_sudden_death("neo_round_sudden_death", "1", FCVAR_REPLICATED, "If neo_round_limit is not 0 and round is past "
+	"neo_round_limit, go into sudden death where match won't end until a team won.", true, 0.0f, true, 1.0f);
 
 ConVar neo_round_timelimit("neo_round_timelimit", "2.75", FCVAR_REPLICATED, "Neo round timelimit, in minutes.",
 	true, 0.0f, false, 600.0f);
@@ -394,6 +398,7 @@ void CNEORules::ChangeLevel(void)
 
 	BaseClass::ChangeLevel();
 }
+
 #endif
 
 bool CNEORules::CheckGameOver(void)
@@ -454,32 +459,6 @@ void CNEORules::Think(void)
 		}
 
 		return;
-	}
-
-	if (neo_score_limit.GetInt() != 0)
-	{
-#ifdef DEBUG
-		float neoScoreLimitMin = -1.0f;
-		AssertOnce(neo_score_limit.GetMin(neoScoreLimitMin));
-		AssertOnce(neoScoreLimitMin >= 0);
-#endif
-		COMPILE_TIME_ASSERT((TEAM_JINRAI < TEAM_NSF) && (TEAM_JINRAI == (TEAM_NSF - 1)));
-		for (int team = TEAM_JINRAI; team <= TEAM_NSF; ++team)
-		{
-			auto pTeam = GetGlobalTeam(team);
-			if (!pTeam)
-			{
-				continue;
-			}
-
-			if (pTeam->GetRoundsWon() >= neo_score_limit.GetInt())
-			{
-				UTIL_CenterPrintAll(team == TEAM_JINRAI ? "JINRAI WINS THE MATCH\n" : "NSF WINS THE MATCH\n");
-				SetRoundStatus(NeoRoundStatus::PostRound);
-				GoToIntermission();
-				return;
-			}
-		}
 	}
 #endif
 
@@ -1333,6 +1312,34 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 #endif
 }
 
+bool CNEORules::RoundIsInSuddenDeath() const
+{
+	auto teamJinrai = GetGlobalTeam(TEAM_JINRAI);
+	auto teamNSF = GetGlobalTeam(TEAM_NSF);
+	if (teamJinrai && teamNSF)
+	{
+		return (neo_round_limit.GetInt() != 0 && (m_iRoundNumber > neo_round_limit.GetInt()) && teamJinrai->GetRoundsWon() == teamNSF->GetRoundsWon());
+	}
+	return false;
+}
+
+bool CNEORules::RoundIsMatchPoint() const
+{
+	auto teamJinrai = GetGlobalTeam(TEAM_JINRAI);
+	auto teamNSF = GetGlobalTeam(TEAM_NSF);
+	if (teamJinrai && teamNSF)
+	{
+		if (neo_round_limit.GetInt() != 0)
+		{
+			const int roundDiff = neo_round_limit.GetInt() - (m_iRoundNumber - 1);
+			return (!RoundIsInSuddenDeath() &&
+				((teamJinrai->GetRoundsWon() + 1) > (teamNSF->GetRoundsWon() + roundDiff)) ||
+				((teamNSF->GetRoundsWon() + 1) > (teamJinrai->GetRoundsWon() + roundDiff)));
+		}
+	}
+	return false;
+}
+
 ConVar snd_victory_volume("snd_victory_volume", "0.33", FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_USERINFO, "Loudness of the victory jingle (0-1).", true, 0.0, true, 1.0);
 
 #ifdef GAME_DLL
@@ -1370,23 +1377,69 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 
 	char victoryMsg[128];
 	bool gotMatchWinner = false;
+	bool isSuddenDeath = false;
 
-	if (!bForceMapReset && neo_score_limit.GetInt() != 0)
+	if (!bForceMapReset)
 	{
-#ifdef DEBUG
-		float neoScoreLimitMin = -1.0f;
-		AssertOnce(neo_score_limit.GetMin(neoScoreLimitMin));
-		AssertOnce(neoScoreLimitMin >= 0);
-#endif
-		if (winningTeam->GetRoundsWon() >= neo_score_limit.GetInt())
+		auto teamJinrai = GetGlobalTeam(TEAM_JINRAI);
+		auto teamNSF = GetGlobalTeam(TEAM_NSF);
+
+		if (neo_score_limit.GetInt() != 0)
 		{
-			V_sprintf_safe(victoryMsg, "Team %s wins the match!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
-			m_flNeoNextRoundStartTime = FLT_MAX;
-			gotMatchWinner = true;
+#ifdef DEBUG
+			float neoScoreLimitMin = -1.0f;
+			AssertOnce(neo_score_limit.GetMin(neoScoreLimitMin));
+			AssertOnce(neoScoreLimitMin >= 0);
+#endif
+			if (winningTeam->GetRoundsWon() >= neo_score_limit.GetInt())
+			{
+				V_sprintf_safe(victoryMsg, "Team %s wins the match!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
+				m_flNeoNextRoundStartTime = FLT_MAX;
+				gotMatchWinner = true;
+			}
+		}
+
+		// If a hard round limit is set, end the game and show the team
+		// that won with the most score, sudden death, or tie out
+		if (neo_round_limit.GetInt() != 0 && teamJinrai && teamNSF)
+		{
+			// If there's a round limit and the other team cannot really catch up with the
+			// winning team, then end the match early.
+			const int roundDiff = neo_round_limit.GetInt() - (m_iRoundNumber - 1);
+			if (!RoundIsInSuddenDeath() &&
+				(teamJinrai->GetRoundsWon() > (teamNSF->GetRoundsWon() + roundDiff)) ||
+				(teamNSF->GetRoundsWon() > (teamJinrai->GetRoundsWon() + roundDiff)))
+			{
+				V_sprintf_safe(victoryMsg, "Team %s wins the match!\n",
+						((teamJinrai->GetRoundsWon() > teamNSF->GetRoundsWon()) ? "Jinrai" : "NSF"));
+				gotMatchWinner = true;
+			}
+			else if (m_iRoundNumber >= neo_round_limit.GetInt())
+			{
+				if (teamJinrai->GetRoundsWon() == teamNSF->GetRoundsWon())
+				{
+					// Sudden death - Don't end the match until we get a winning team
+					if (neo_round_sudden_death.GetBool())
+					{
+						V_sprintf_safe(victoryMsg, "Next round: Sudden death!\n");
+						isSuddenDeath = true;
+					}
+					else
+					{
+						V_sprintf_safe(victoryMsg, "The match is tied!\n");
+						gotMatchWinner = true;
+					}
+				}
+				else
+				{
+					V_sprintf_safe(victoryMsg, "Team %s wins the match!\n", ((teamJinrai->GetRoundsWon() > teamNSF->GetRoundsWon()) ? "Jinrai" : "NSF"));
+					gotMatchWinner = true;
+				}
+			}
 		}
 	}
 
-	if (!gotMatchWinner)
+	if (!gotMatchWinner && !isSuddenDeath)
 	{
 		if (iWinReason == NEO_VICTORY_GHOST_CAPTURE)
 		{
