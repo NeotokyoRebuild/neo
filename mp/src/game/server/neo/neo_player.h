@@ -122,7 +122,8 @@ public:
 	void Weapon_AimToggle(CNEOBaseCombatWeapon* pWep, const NeoWeponAimToggleE toggleType);
 
 	// "neo_name" if available otherwise "name"
-	const char *GetNeoPlayerName() const;
+	// Set "viewFrom" if fetching the name in the view of another player
+	const char *GetNeoPlayerName(const CNEO_Player *viewFrom = nullptr) const;
 	// "neo_name" even if it's nothing
 	const char *GetNeoPlayerNameDirect() const;
 	void SetNeoPlayerName(const char *newNeoName);
@@ -186,13 +187,6 @@ public:
 	void SetNameDupePos(const int dupePos);
 	int NameDupePos() const;
 
-	struct AttackersTotals
-	{
-		float dealtTotalDmgs;
-		int dealtTotalHits;
-		float takenTotalDmgs;
-		int takenTotalHits;
-	};
 	AttackersTotals GetAttackersTotals() const;
 	void StartShowDmgStats(const CTakeDamageInfo *info);
 

@@ -1190,10 +1190,12 @@ int CNEO_Player::NameDupePos() const
 	return m_szNameDupePos;
 }
 
-const char *CNEO_Player::GetNeoPlayerName() const
+const char *CNEO_Player::GetNeoPlayerName(const CNEO_Player *viewFrom) const
 {
+	const bool nameFetchWantNeoName = (viewFrom) ? viewFrom->m_bClientWantNeoName : m_bClientWantNeoName;
+
 	const int dupePos = m_szNameDupePos;
-	if (m_bClientWantNeoName && m_szNeoName.Get()[0] != '\0')
+	if (nameFetchWantNeoName && m_szNeoName.Get()[0] != '\0')
 	{
 		const char *neoName = m_szNeoName.Get();
 		if (dupePos > 0)
@@ -1209,7 +1211,7 @@ const char *CNEO_Player::GetNeoPlayerName() const
 	}
 
 	const char *stndName = const_cast<CNEO_Player *>(this)->GetPlayerName();
-	if (m_bClientWantNeoName && dupePos > 0)
+	if (nameFetchWantNeoName && dupePos > 0)
 	{
 		if (m_szNeoNameWDupeIdxNeedUpdate)
 		{
@@ -1682,7 +1684,7 @@ int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int pl
 
 		const float dmgTo = min(neoAttacker->GetAttackersScores(thisIdx), 100.0f);
 		const float dmgFrom = min(GetAttackersScores(pIdx), 100.0f);
-		const char *dmgerName = neoAttacker->GetPlayerName();
+		const char *dmgerName = neoAttacker->GetNeoPlayerName(this);
 #define DEBUG_SHOW_ALL (0)
 #if DEBUG_SHOW_ALL
 		if (dmgerName)
@@ -2444,7 +2446,7 @@ int CNEO_Player::GetAttackerHits(const int attackerIdx) const
 	return m_rfAttackersHits.Get(attackerIdx);
 }
 
-CNEO_Player::AttackersTotals CNEO_Player::GetAttackersTotals() const
+AttackersTotals CNEO_Player::GetAttackersTotals() const
 {
 	AttackersTotals totals;
 	totals.dealtTotalDmgs = 0.0f;

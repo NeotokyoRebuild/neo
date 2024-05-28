@@ -279,4 +279,12 @@ int DmgLineStr(char* infoLine, const int infoLineMax,
 void KillerLineStr(char* killByLine, const int killByLineMax,
 	CNEO_Player* neoAttacker, const CNEO_Player* neoVictim);
 
+struct AttackersTotals
+{
+	float dealtTotalDmgs;
+	int dealtTotalHits;
+	float takenTotalDmgs;
+	int takenTotalHits;
+};
+
 #endif // NEO_PLAYER_SHARED_H

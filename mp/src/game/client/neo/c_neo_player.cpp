@@ -120,13 +120,6 @@ static void __MsgFunc_DamageInfo(bf_read& msg)
 
 	// Print damage stats into the console
 	// Print to console
-	struct AttackersTotals
-	{
-		float dealtTotalDmgs;
-		int dealtTotalHits;
-		float takenTotalDmgs;
-		int takenTotalHits;
-	};
 	AttackersTotals totals;
 	totals.dealtTotalDmgs = 0.0f;
 	totals.dealtTotalHits = 0;
@@ -142,7 +135,7 @@ static void __MsgFunc_DamageInfo(bf_read& msg)
 	bool setKillByLine = false;
 	if (killerIdx > 0)
 	{
-		auto* neoAttacker = dynamic_cast<C_NEO_Player*>(UTIL_PlayerByIndex(killerIdx));
+		auto *neoAttacker = dynamic_cast<C_NEO_Player*>(UTIL_PlayerByIndex(killerIdx));
 		if (neoAttacker && neoAttacker->entindex() != thisIdx)
 		{
 			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, localPlayer);
@@ -165,7 +158,7 @@ static void __MsgFunc_DamageInfo(bf_read& msg)
 			continue;
 		}
 
-		const char* dmgerName = neoAttacker->GetPlayerName();
+		const char *dmgerName = neoAttacker->GetNeoPlayerName();
 		if (!dmgerName)
 		{
 			continue;
@@ -177,7 +170,7 @@ static void __MsgFunc_DamageInfo(bf_read& msg)
 		{
 			const int hitsTo = neoAttacker->GetAttackerHits(thisIdx);
 			const int hitsFrom = localPlayer->GetAttackerHits(pIdx);
-			const char* dmgerClass = GetNeoClassName(neoAttacker->GetClass());
+			const char *dmgerClass = GetNeoClassName(neoAttacker->GetClass());
 
 			static char infoLine[128];
 			DmgLineStr(infoLine, sizeof(infoLine), dmgerName, dmgerClass,

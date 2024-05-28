@@ -156,7 +156,7 @@ int DmgLineStr(char* infoLine, const int infoLineMax,
 void KillerLineStr(char* killByLine, const int killByLineMax,
 	CNEO_Player* neoAttacker, const CNEO_Player* neoVictim)
 {
-	const char* dmgerName = neoAttacker->GetPlayerName();
+	const char* dmgerName = neoAttacker->GetNeoPlayerName();
 	const char* dmgerClass = GetNeoClassName(neoAttacker->GetClass());
 	const int dmgerHP = neoAttacker->GetHealth();
 	auto* dmgerWep = neoAttacker->GetActiveWeapon();
