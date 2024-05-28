@@ -285,6 +285,9 @@ if(OS_LINUX OR OS_MACOS)
 
         # Fix for non-clickable vgui buttons when using -O3
         -fno-ipa-cp-clone
+
+        # Fix for "error: cast from pointer to smaller type 'unsigned int' loses information"
+        #-fms-extensions
     )
 
     # Disable option for older compiler in docker
