@@ -222,7 +222,6 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/igamesystem.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/igamesystem.h
     ${CMAKE_SOURCE_DIR}/game/shared/interval.h
-    ${CMAKE_SOURCE_DIR}/game/shared/inttostr.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/iscenetokenprocessor.h
     ${CMAKE_SOURCE_DIR}/game/shared/mapentities_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/movevars_shared.cpp
@@ -841,7 +840,6 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/igamemovement.h
     ${CMAKE_SOURCE_DIR}/game/shared/imovehelper.h
     ${CMAKE_SOURCE_DIR}/game/shared/in_buttons.h
-    ${CMAKE_SOURCE_DIR}/game/shared/inttostr.h
     ${CMAKE_SOURCE_DIR}/game/shared/iplayeranimstate.h
     ${CMAKE_SOURCE_DIR}/game/shared/ipredictionsystem.h
     ${CMAKE_SOURCE_DIR}/game/shared/itempents.h
