@@ -170,7 +170,7 @@ You may or may not need this, but if NT;RE crashes/segfaults on launch, then ins
 and set: `LD_PRELOAD=/usr/lib32/libtcmalloc.so %command%` as the launch argument.
 
 ## Server instructions
-1. To run a server, install "Source SDK Base 2013 Dedicated Server" (appid 243750).
+1. To run a server, install "Source SDK Base 2013 Dedicated Server" (appid 244310).
 2. For firewall, open the following ports:
     * 27015 TCP+UDP
     * 27020 UDP
