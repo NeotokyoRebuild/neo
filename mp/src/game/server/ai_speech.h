@@ -117,7 +117,7 @@ class AI_Response;
 class CAI_ExpresserSink
 {
 public:
-	virtual void OnSpokeConcept( AIConcept_t aiaiconcept, AI_Response *response )	{};
+	virtual void OnSpokeConcept( AIConcept_t aiconcept, AI_Response *response )	{};
 	virtual void OnStartSpeaking()						{}
 	virtual bool UseSemaphore()							{ return true; }
 };
