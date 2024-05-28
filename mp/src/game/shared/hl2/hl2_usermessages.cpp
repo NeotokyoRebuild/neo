@@ -47,6 +47,10 @@ void RegisterUserMessages( void )
 	usermessages->Register( "UpdateJalopyRadar", -1 );
 	usermessages->Register( "RoundResult", -1 );
 
+#ifdef NEO
+	usermessages->Register( "DamageInfo", -1 );
+#endif
+
 #ifndef _X360
 	// NVNT register haptic user messages
 	RegisterHapticMessages();

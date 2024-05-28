@@ -72,6 +72,7 @@ SendPropVector(SENDINFO(m_vecGhostMarkerPos), -1, SPROP_COORD_MP_LOWPRECISION | 
 
 SendPropArray(SendPropVector(SENDINFO_ARRAY(m_rvFriendlyPlayerPositions), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rvFriendlyPlayerPositions),
 SendPropArray(SendPropFloat(SENDINFO_ARRAY(m_rfAttackersScores), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rfAttackersScores),
+SendPropArray(SendPropInt(SENDINFO_ARRAY(m_rfAttackersHits)), m_rfAttackersHits),
 
 SendPropInt(SENDINFO(m_NeoFlags), 4, SPROP_UNSIGNED),
 SendPropString(SENDINFO(m_szNeoName)),
@@ -107,6 +108,7 @@ DEFINE_FIELD(m_vecGhostMarkerPos, FIELD_VECTOR),
 
 DEFINE_FIELD(m_rvFriendlyPlayerPositions, FIELD_CUSTOM),
 DEFINE_FIELD(m_rfAttackersScores, FIELD_CUSTOM),
+DEFINE_FIELD(m_rfAttackersHits, FIELD_CUSTOM),
 
 DEFINE_FIELD(m_NeoFlags, FIELD_CHARACTER),
 
@@ -118,6 +120,7 @@ END_DATADESC()
 #define DISMEMBER_LIMB_THRESHOLD 10
 #define DISMEMBER_HEAD_THRESHOLD (DISMEMBER_LIMB_THRESHOLD * 3)
 #define ANNHILATE_LIMB_THRESHOLD (DISMEMBER_HEAD_THRESHOLD * 3)
+#define SHOWMENU_STRLIMIT (512)
 
 CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
 CNEOGameRulesProxy* neoGameRules;
@@ -419,6 +422,9 @@ CNEO_Player::CNEO_Player()
 	memset(m_szNeoNameWDupeIdx, 0, sizeof(m_szNeoNameWDupeIdx));
 	m_szNeoNameWDupeIdxNeedUpdate = true;
 	m_szNameDupePos = 0;
+
+	m_iDmgMenuCurPage = 0;
+	m_iDmgMenuNextPage = 0;
 }
 
 CNEO_Player::~CNEO_Player( void )
@@ -525,6 +531,10 @@ void CNEO_Player::Spawn(void)
 	for (int i = 0; i < m_rfAttackersScores.Count(); ++i)
 	{
 		m_rfAttackersScores.Set(i, 0.0f);
+	}
+	for (int i = 0; i < m_rfAttackersHits.Count(); ++i)
+	{
+		m_rfAttackersHits.Set(i, 0);
 	}
 
 	Weapon_SetZoom(false);
@@ -1523,6 +1533,42 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 		}
 		return true;
 	}
+	else if (FStrEq(args[0], "menuselect"))
+	{
+		if (args.ArgC() < 2)
+		{
+			return true;
+		}
+		const int slot = atoi(args[1]);
+
+		if (m_iDmgMenuCurPage > 0)
+		{
+			// menuselect being used by damage stats
+			switch (slot)
+			{
+			case 1: // Dismiss
+			{
+				m_iDmgMenuCurPage = 0;
+				m_iDmgMenuNextPage = 0;
+				break;
+			}
+			case 2: // Next-page
+			{
+				char infoStr[SHOWMENU_STRLIMIT];
+				int infoStrSize = 0;
+				bool showMenu = false;
+				m_iDmgMenuCurPage = m_iDmgMenuNextPage;
+				m_iDmgMenuNextPage = SetDmgListStr(infoStr, sizeof(infoStr), m_iDmgMenuNextPage, &infoStrSize, &showMenu, NULL);
+				if (showMenu) ShowDmgInfo(infoStr, infoStrSize);
+				break;
+			}
+			default:
+				break;
+			}
+		}
+
+		return true;
+	}
 
 	return BaseClass::ClientCommand(args);
 }
@@ -1556,6 +1602,159 @@ void CNEO_Player::CreateViewModel( int index )
 bool CNEO_Player::BecomeRagdollOnClient( const Vector &force )
 {
 	return BaseClass::BecomeRagdollOnClient(force);
+}
+
+void CNEO_Player::ShowDmgInfo(char* infoStr, int infoStrSize)
+{
+	CSingleUserRecipientFilter filter(this);
+	filter.MakeReliable();
+
+	// UserMessage has limits, so need to send more than once if it
+	// doesn't fit in one UserMessage packet
+	static const int MAX_INFOSTR_PER_UMSG = 240;
+	int infoStrOffset = 0;
+	int infoStrOffsetMax = MAX_INFOSTR_PER_UMSG;
+	while (infoStrSize > 0)
+	{
+		char tmpCh = '\0';
+		if (infoStrOffsetMax < SHOWMENU_STRLIMIT)
+		{
+			tmpCh = infoStr[infoStrOffsetMax];
+			infoStr[infoStrOffsetMax] = '\0';
+		}
+		UserMessageBegin(filter, "ShowMenu");
+		{
+			WRITE_SHORT(static_cast<short>(m_iDmgMenuNextPage ? 3 : 1));		// Amount of options
+			WRITE_CHAR(static_cast<char>(10));			// Time in seconds to stay open
+			WRITE_BYTE(static_cast<unsigned int>(infoStrSize > MAX_INFOSTR_PER_UMSG));
+			WRITE_STRING(infoStr + infoStrOffset);
+		}
+		MessageEnd();
+		if (infoStrOffsetMax < SHOWMENU_STRLIMIT)
+		{
+			infoStr[infoStrOffsetMax] = tmpCh;
+		}
+		infoStrOffset += MAX_INFOSTR_PER_UMSG;
+		infoStrOffsetMax += MAX_INFOSTR_PER_UMSG;
+		infoStrSize -= MAX_INFOSTR_PER_UMSG;
+	}
+}
+
+int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int playerIdxStart,
+		int *infoStrSize, bool *showMenu, const CTakeDamageInfo *info) const
+{
+	Assert(infoStrSize != NULL);
+	Assert(showMenu != NULL);
+	*showMenu = false;
+	static const int TITLE_LEN = 30; // Rough-approximate
+	static const int POSTFIX_LEN = 15 + 12;
+	static const int TOTALLINE_LEN = 64; // Rough-approximate
+	static int FILLSTR_END = SHOWMENU_STRLIMIT - POSTFIX_LEN - TOTALLINE_LEN - 2;
+	memset(infoStr, 0, infoStrMax);
+	Q_snprintf(infoStr, infoStrMax, "Damage infos (Round %d):\n", NEORules()->roundNumber());
+	if (info)
+	{
+		// If CTakeDamageInfo pointer given, then also show killed by information
+		auto* neoAttacker = dynamic_cast<CNEO_Player*>(info->GetAttacker());
+		if (neoAttacker && neoAttacker->entindex() != entindex())
+		{
+			char killByLine[SHOWMENU_STRLIMIT];
+			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, this);
+			Q_strncat(infoStr, killByLine, infoStrMax, COPY_ALL_CHARACTERS);
+		}
+	}
+	Q_strncat(infoStr, " \n", infoStrMax, COPY_ALL_CHARACTERS);
+	int infoStrLen = Q_strlen(infoStr);
+	const int thisIdx = entindex();
+	int nextPage = 0;
+	for (int pIdx = playerIdxStart; pIdx <= gpGlobals->maxClients; ++pIdx)
+	{
+		if (pIdx == thisIdx)
+		{
+			continue;
+		}
+
+		auto* neoAttacker = dynamic_cast<CNEO_Player*>(UTIL_PlayerByIndex(pIdx));
+		if (!neoAttacker || neoAttacker->IsHLTV())
+		{
+			continue;
+		}
+
+		const float dmgTo = min(neoAttacker->GetAttackersScores(thisIdx), 100.0f);
+		const float dmgFrom = min(GetAttackersScores(pIdx), 100.0f);
+		const char *dmgerName = neoAttacker->GetPlayerName();
+#define DEBUG_SHOW_ALL (0)
+#if DEBUG_SHOW_ALL
+		if (dmgerName)
+#else
+		if (dmgerName && (dmgTo > 0.0f || dmgFrom > 0.0f))
+#endif
+		{
+			*showMenu = true;
+			const char *dmgerClass = GetNeoClassName(neoAttacker->GetClass());
+			const int hitsTo = neoAttacker->GetAttackerHits(thisIdx);
+			const int hitsFrom = GetAttackerHits(pIdx);
+			static char infoLine[SHOWMENU_STRLIMIT];
+			const int infoLineLen = DmgLineStr(infoLine, sizeof(infoLine),
+					dmgerName, dmgerClass, dmgTo, dmgFrom, hitsTo, hitsFrom);
+			if ((infoStrLen + infoLineLen) >= FILLSTR_END)
+			{
+				// Truncate for this page
+				nextPage = pIdx;
+				break;
+			}
+
+			Q_strncat(infoStr, infoLine, infoStrMax, COPY_ALL_CHARACTERS);
+			infoStrLen += infoLineLen;
+		}
+	}
+
+	if (!*showMenu)
+	{
+		return 0;
+	}
+
+	const AttackersTotals attackersTotals = GetAttackersTotals();
+	static char totalInfoLine[SHOWMENU_STRLIMIT];
+	memset(totalInfoLine, 0, sizeof(totalInfoLine));
+	Q_snprintf(totalInfoLine, sizeof(totalInfoLine), " \nTOTAL: Dealt: %.0f in %d hits | Taken: %.0f in %d hits\n",
+			attackersTotals.dealtTotalDmgs, attackersTotals.dealtTotalHits,
+			attackersTotals.takenTotalDmgs, attackersTotals.takenTotalHits);
+	Q_strncat(infoStr, totalInfoLine, infoStrMax, COPY_ALL_CHARACTERS);
+	Q_strncat(infoStr, "->1. Dismiss", infoStrMax, COPY_ALL_CHARACTERS);
+	if (nextPage > 0)
+	{
+		Q_strncat(infoStr, "\n->2. Next", infoStrMax, COPY_ALL_CHARACTERS);
+	}
+	*infoStrSize = Q_strlen(infoStr);
+
+	return nextPage;
+}
+
+void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo* info)
+{
+	char infoStr[SHOWMENU_STRLIMIT];
+	int infoStrSize = 0;
+	bool showMenu = false;
+	m_iDmgMenuCurPage = 1;
+	m_iDmgMenuNextPage = SetDmgListStr(infoStr, sizeof(infoStr), m_iDmgMenuCurPage, &infoStrSize, &showMenu, info);
+	if (showMenu) ShowDmgInfo(infoStr, infoStrSize);
+
+	// Notify the client to print it out in the console
+	CSingleUserRecipientFilter filter(this);
+	filter.MakeReliable();
+
+	UserMessageBegin(filter, "DamageInfo");
+	{
+		short attackerIdx = 0;
+		auto* neoAttacker = info ? dynamic_cast<CNEO_Player*>(info->GetAttacker()) : NULL;
+		if (neoAttacker && neoAttacker->entindex() != entindex())
+		{
+			attackerIdx = static_cast<short>(neoAttacker->entindex());
+		}
+		WRITE_SHORT(attackerIdx);
+	}
+	MessageEnd();
 }
 
 void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
@@ -1596,6 +1795,11 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 	if (!m_bCorpseSpawned) // Event_Killed can be called multiple times, only spawn the dead model once
 	{
 		SpawnDeadModel(info);
+	}
+
+	if (!IsBot() && !IsHLTV())
+	{
+		StartShowDmgStats(&info);
 	}
 
 	BaseClass::Event_Killed(info);
@@ -1748,7 +1952,7 @@ void CNEO_Player::FireBullets ( const FireBulletsInfo_t &info )
 
 void CNEO_Player::Weapon_Equip(CBaseCombatWeapon* pWeapon)
 {
-	for (int i=0;i<MAX_WEAPONS;i++) 
+ 	for (int i=0;i<MAX_WEAPONS;i++) 
 	{
 		if (!m_hMyWeapons[i]) 
 		{
@@ -1758,27 +1962,6 @@ void CNEO_Player::Weapon_Equip(CBaseCombatWeapon* pWeapon)
 	}
 	
 	pWeapon->ChangeTeam( GetTeamNumber() );
-	
-	if (pWeapon->GetMaxClip1() == -1)
-	{
-			GiveAmmo(pWeapon->GetDefaultClip1(), pWeapon->m_iPrimaryAmmoType, false); 
-	}
-	else if(pWeapon->m_iClip1 > pWeapon->GetMaxClip1())
-	{
-		pWeapon->m_iClip1 = pWeapon->GetMaxClip1();
-		GiveAmmo( pWeapon->GetDefaultClip1() - pWeapon->GetMaxClip1(), pWeapon->m_iPrimaryAmmoType, false); 
-	}
-
-	if (pWeapon->GetMaxClip2() == -1)
-	{
-		GiveAmmo(pWeapon->GetDefaultClip2(), pWeapon->m_iSecondaryAmmoType, false); 
-	}
-	else if(pWeapon->m_iClip2 > pWeapon->GetMaxClip2())
-	{
-		pWeapon->m_iClip2 = pWeapon->GetMaxClip2();
-		GiveAmmo( pWeapon->GetDefaultClip2() - pWeapon->GetMaxClip2(), pWeapon->m_iSecondaryAmmoType, false); 
-	}
-	
 	pWeapon->Equip( this );
 
 	// Pass the lighting origin over to the weapon if we have one
@@ -2256,13 +2439,50 @@ float CNEO_Player::GetAttackersScores(const int attackerIdx) const
 	return m_rfAttackersScores.Get(attackerIdx);
 }
 
+int CNEO_Player::GetAttackerHits(const int attackerIdx) const
+{
+	return m_rfAttackersHits.Get(attackerIdx);
+}
+
+CNEO_Player::AttackersTotals CNEO_Player::GetAttackersTotals() const
+{
+	AttackersTotals totals;
+	totals.dealtTotalDmgs = 0.0f;
+	totals.dealtTotalHits = 0;
+	totals.takenTotalDmgs = 0.0f;
+	totals.takenTotalHits = 0;
+
+	const int thisIdx = entindex();
+	for (int pIdx = 1; pIdx <= gpGlobals->maxClients; ++pIdx)
+	{
+		if (pIdx == thisIdx)
+		{
+			continue;
+		}
+
+		auto* neoAttacker = dynamic_cast<CNEO_Player*>(UTIL_PlayerByIndex(pIdx));
+		if (!neoAttacker || neoAttacker->IsHLTV())
+		{
+			continue;
+		}
+
+		totals.dealtTotalDmgs += min(neoAttacker->GetAttackersScores(thisIdx), 100.0f);
+		totals.takenTotalDmgs += min(GetAttackersScores(pIdx), 100.0f);
+		totals.dealtTotalHits += neoAttacker->GetAttackerHits(thisIdx);
+		totals.takenTotalHits += GetAttackerHits(pIdx);
+	}
+	return totals;
+}
+
 int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 {
 	if (m_takedamage != DAMAGE_EVENTS_ONLY)
 	{
 		if (auto* attacker = dynamic_cast<CNEO_Player*>(info.GetAttacker()))
 		{
-			m_rfAttackersScores.GetForModify(attacker->entindex()) += info.GetDamage();
+			const int attackerIdx = attacker->entindex();
+			m_rfAttackersScores.GetForModify(attackerIdx) += info.GetDamage();
+			m_rfAttackersHits.GetForModify(attackerIdx) += 1;
 		}
 	}
 	return BaseClass::OnTakeDamage_Alive(info);
@@ -2312,14 +2532,6 @@ void GiveDet(CNEO_Player* pPlayer)
 
 void CNEO_Player::GiveDefaultItems(void)
 {
-	CBasePlayer::GiveAmmo(50, "AR2");
-
-	CBasePlayer::GiveAmmo(50, "Pistol");
-	CBasePlayer::GiveAmmo(30, "AMMO_10G_SHELL");
-	CBasePlayer::GiveAmmo(50, "AMMO_PRI");
-	CBasePlayer::GiveAmmo(50, "AMMO_SMAC");
-	CBasePlayer::GiveAmmo(1, "AMMO_DETPACK");
-
 	const bool supportsGetKnife = true;
 
 	switch (GetClass())

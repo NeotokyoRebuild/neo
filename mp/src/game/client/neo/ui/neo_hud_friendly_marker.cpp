@@ -139,7 +139,7 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_BasePlayer* player) c
 		auto textLen = V_strlen(playerNameTrimmed);
 		g_pVGuiLocalize->ConvertANSIToUnicode(playerNameTrimmed, playerNameUnicode, sizeof(playerNameUnicode));
 
-		auto fadeTextMultiplier = GetFadeValueTowardsScreenCentreInAndOut(x, y, 0.05);
+		auto fadeTextMultiplier = GetFadeValueTowardsScreenCentre(x, y);
 		if(fadeTextMultiplier > 0.001)
 		{
 			surface()->DrawSetTextFont(m_hFont);
@@ -149,12 +149,9 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_BasePlayer* player) c
 			surface()->DrawSetTextPos(x - (textWidth / 2), y + m_iMarkerHeight);
 			surface()->DrawPrintText(playerNameUnicode, textLen);
 		}
-			
-		auto fadeMarkerMultiplier = GetFadeValueTowardsScreenCentreInverted(x, y, 0.05);
-		auto fadedMarkerColour = FadeColour(teamColor, fadeMarkerMultiplier);
 
 		surface()->DrawSetTexture(m_hTex);
-		surface()->DrawSetColor(fadedMarkerColour);
+		surface()->DrawSetColor(teamColor);
 		surface()->DrawTexturedRect(
 			x - m_iMarkerWidth,
 			y - m_iMarkerHeight,

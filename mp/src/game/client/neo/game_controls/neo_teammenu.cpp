@@ -283,10 +283,10 @@ void CNeoTeamMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 	auto pJinrai = GetGlobalTeam(TEAM_JINRAI);
 	auto pNsf = GetGlobalTeam(TEAM_NSF);
 
-	const int jinScore = (pJinrai != NULL ? pJinrai->Get_Score() : 0);
+	const int jinScore = (pJinrai != NULL ? pJinrai->GetRoundsWon() : 0);
 	const int jinNumPlayers = (pJinrai != NULL ? pJinrai->Get_Number_Players() : 0);
 
-	const int nsfScore = (pNsf != NULL ? pNsf->Get_Score() : 0);
+	const int nsfScore = (pNsf != NULL ? pNsf->GetRoundsWon() : 0);
 	const int nsfNumPlayers = (pNsf != NULL ? pNsf->Get_Number_Players() : 0);
 
 	Assert(m_pJinrai_ScoreLabel);

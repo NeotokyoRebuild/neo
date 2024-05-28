@@ -53,6 +53,7 @@ public : // IGameResources intreface
 #ifdef NEO
 	virtual int		GetXP(int index);
 	virtual int     GetClass(int index);
+	virtual int		GetStar(int index);
 #endif
 	virtual int		GetFrags( int index );
 	virtual int		GetHealth( int index );
@@ -73,6 +74,7 @@ protected:
 	char    m_szNeoName[MAX_PLAYERS + 1][MAX_PLAYER_NAME_LENGTH];
 	int     m_szNeoNameDupeIdx[MAX_PLAYERS + 1];
 	char    m_szDispNameWDupeIdx[MAX_PLAYERS + 1][MAX_PLAYER_NAME_LENGTH + 10];  // Non-networked, includes dupe index
+	int     m_iStar[MAX_PLAYERS + 1];
 #endif
 	int		m_iScore[MAX_PLAYERS+1];
 	int		m_iDeaths[MAX_PLAYERS+1];

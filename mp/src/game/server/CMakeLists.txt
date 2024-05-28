@@ -1462,8 +1462,10 @@ target_sources_grouped(
     hl2mp/te_hl2mp_shotgun_shot.h
 )
 
-if(NEO_COPY_LIBRARIES)
-    add_custom_command(TARGET server POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:server> "${NEO_OUTPUT_LIBRARY_PATH}/"
-    )
-endif()
+add_custom_target(
+    server_copy_lib
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:server> "${NEO_OUTPUT_LIBRARY_PATH}/"
+    COMMAND ${CMAKE_COMMAND} -E create_symlink "${NEO_OUTPUT_LIBRARY_PATH}/server.so" "${NEO_OUTPUT_LIBRARY_PATH}/server_srv.so"
+    DEPENDS server
+    VERBATIM
+)

@@ -48,6 +48,16 @@ bool CWeaponSRS::Deploy(void)
 	return BaseClass::Deploy();
 }
 
+void CWeaponSRS::PrimaryAttack(void)
+{
+	if (!ShootingIsPrevented() && GetRoundChambered()) {
+		BaseClass::PrimaryAttack();
+		if (m_flLastAttackTime == gpGlobals->curtime) {
+			m_bRoundChambered = false;
+		}
+	}
+}
+
 void CWeaponSRS::UpdatePenaltyTime()
 {
 	auto owner = ToBasePlayer(GetOwner());
@@ -60,25 +70,38 @@ void CWeaponSRS::UpdatePenaltyTime()
 	if ((owner->m_nButtons & IN_ATTACK) == false)
 	{
 		if (m_flSoonestAttack < gpGlobals->curtime)
-		{
+		{ 
 			m_flAccuracyPenalty -= gpGlobals->frametime;
 			m_flAccuracyPenalty = clamp(m_flAccuracyPenalty, 0.0f, GetMaxAccuracyPenalty());
 		}
-	}
-	else
-	{
-		m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
-	}
-
-	if (m_flSoonestAttack > gpGlobals->curtime)
-	{
-		m_flSoonestAttack -= (gpGlobals->curtime - m_flLastAttackTime);
 	}
 }
 
 void CWeaponSRS::ItemPreFrame()
 {
 	UpdatePenaltyTime();
+
+	if (m_flChamberFinishTime <= gpGlobals->curtime && m_bRoundBeingChambered == true)
+	{ // Finished chambering a round, enable Primary attack
+		m_bRoundBeingChambered = false;
+		m_bRoundChambered = true;
+	}
+
+	if (m_flNextPrimaryAttack <= gpGlobals->curtime && !m_bRoundChambered && !m_bRoundBeingChambered && m_iClip1 > 0)
+	{ // Primary attack animation finished, begin chambering a round
+		if (CNEO_Player* pOwner = static_cast<CNEO_Player*>(ToBasePlayer(GetOwner()))) {
+			if (pOwner->m_nButtons & IN_ATTACK)
+			{
+				BaseClass::ItemPreFrame();
+				return;
+			}
+			pOwner->Weapon_SetZoom(false);
+		}
+		m_bRoundBeingChambered = true;
+		m_flChamberFinishTime = gpGlobals->curtime + 1.3f;
+		WeaponSound(SPECIAL1);
+		SendWeaponAnim(ACT_VM_PULLBACK);
+	}
 
 	BaseClass::ItemPreFrame();
 }

@@ -28,6 +28,7 @@ IMPLEMENT_SERVERCLASS_ST_NOBASE(CPlayerResource, DT_PlayerResource)
 	SendPropArray3(SENDINFO_ARRAY3(m_iClass), SendPropInt(SENDINFO_ARRAY(m_iClass), 12)),
 	SendPropArray3(SENDINFO_ARRAY3(m_szNeoName), SendPropString(SENDINFO_ARRAY(m_szNeoName), 0, SendProxy_String_tToString)),
 	SendPropArray3(SENDINFO_ARRAY3(m_szNeoNameDupeIdx), SendPropInt(SENDINFO_ARRAY(m_szNeoNameDupeIdx), 12)),
+	SendPropArray3(SENDINFO_ARRAY3(m_iStar), SendPropInt(SENDINFO_ARRAY(m_iStar), 12)),
 #endif
 	SendPropArray3( SENDINFO_ARRAY3(m_iScore), SendPropInt( SENDINFO_ARRAY(m_iScore), 12 ) ),
 	SendPropArray3( SENDINFO_ARRAY3(m_iDeaths), SendPropInt( SENDINFO_ARRAY(m_iDeaths), 12 ) ),
@@ -75,6 +76,7 @@ void CPlayerResource::Spawn( void )
 		m_iClass.Set(i, 0);
 		m_szNeoName.Set(i, m_szNeoNameNone);
 		m_szNeoNameDupeIdx.Set(i, 0);
+		m_iStar.Set(i, 0);
 #endif
 		m_iPing.Set( i, 0 );
 		m_iScore.Set( i, 0 );
@@ -125,6 +127,7 @@ void CPlayerResource::UpdatePlayerData( void )
 			auto *neoPlayer = static_cast<CNEO_Player *>(pPlayer);
 			m_iXP.Set(i, neoPlayer->m_iXP.Get());
 			m_iClass.Set(i, neoPlayer->m_iNeoClass.Get());
+			m_iStar.Set(i, neoPlayer->m_iNeoStar.Get());
 			const char *neoPlayerName = neoPlayer->GetNeoPlayerName();
 			// NEO JANK (nullsystem): Possible memory hog from this? Although "The memory is freed on behalf of clients
 			// at level transition." could indicate it get freed on level transition anyway.

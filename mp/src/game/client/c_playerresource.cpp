@@ -30,6 +30,7 @@ IMPLEMENT_CLIENTCLASS_DT_NOBASE(C_PlayerResource, DT_PlayerResource, CPlayerReso
 	RecvPropArray3(RECVINFO_ARRAY(m_iClass), RecvPropInt(RECVINFO(m_iClass[0]))),
 	RecvPropArray3(RECVINFO_ARRAY(m_szNeoName), RecvPropString(RECVINFO(m_szNeoName[0]))),
 	RecvPropArray3(RECVINFO_ARRAY(m_szNeoNameDupeIdx), RecvPropInt(RECVINFO(m_szNeoNameDupeIdx[0]))),
+	RecvPropArray3(RECVINFO_ARRAY(m_iStar), RecvPropInt(RECVINFO(m_iStar[0]))),
 #endif
 	RecvPropArray3( RECVINFO_ARRAY(m_iScore), RecvPropInt( RECVINFO(m_iScore[0]))),
 	RecvPropArray3( RECVINFO_ARRAY(m_iDeaths), RecvPropInt( RECVINFO(m_iDeaths[0]))),
@@ -48,6 +49,7 @@ BEGIN_PREDICTION_DATA( C_PlayerResource )
 	DEFINE_PRED_ARRAY(m_iClass, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_PRIVATE),
 	DEFINE_PRED_ARRAY(m_szNeoName, FIELD_STRING, MAX_PLAYERS + 1, FTYPEDESC_PRIVATE),
 	DEFINE_PRED_ARRAY(m_szNeoNameDupeIdx, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_PRIVATE),
+	DEFINE_PRED_ARRAY(m_iStar, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_PRIVATE),
 #endif
 	DEFINE_PRED_ARRAY( m_iScore, FIELD_INTEGER, MAX_PLAYERS+1, FTYPEDESC_PRIVATE ),
 	DEFINE_PRED_ARRAY( m_iDeaths, FIELD_INTEGER, MAX_PLAYERS+1, FTYPEDESC_PRIVATE ),
@@ -75,6 +77,7 @@ C_PlayerResource::C_PlayerResource()
 	memset(m_szNeoName, 0, sizeof(m_szNeoName));
 	memset(m_szNeoNameDupeIdx, 0, sizeof(m_szNeoNameDupeIdx));
 	memset(m_szDispNameWDupeIdx, 0, sizeof(m_szDispNameWDupeIdx));
+	memset(m_iStar, 0, sizeof(m_iStar));
 #endif
 	memset( m_iScore, 0, sizeof( m_iScore ) );
 	memset( m_iDeaths, 0, sizeof( m_iDeaths ) );
@@ -271,6 +274,16 @@ int C_PlayerResource::GetClass(int index)
 	}
 
 	return m_iClass[index];
+}
+
+int C_PlayerResource::GetStar(int index)
+{
+	if (!IsConnected(index))
+	{
+		return -1;
+	}
+
+	return m_iStar[index];
 }
 
 int C_PlayerResource::GetFrags(int index )
