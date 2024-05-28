@@ -1460,10 +1460,24 @@ target_sources_grouped(
     hl2mp/te_hl2mp_shotgun_shot.h
 )
 
+# Copy libraries and make symbolic links
 add_custom_target(
     server_copy_lib
+    DEPENDS server server_copy_lib_command
+)
+
+add_custom_command(
+    OUTPUT server_copy_lib_command
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:server> "${NEO_OUTPUT_LIBRARY_PATH}/"
-    COMMAND ${CMAKE_COMMAND} -E create_symlink "${NEO_OUTPUT_LIBRARY_PATH}/server.so" "${NEO_OUTPUT_LIBRARY_PATH}/server_srv.so"
-    DEPENDS server
     VERBATIM
 )
+
+if(OS_LINUX)
+    add_custom_command(
+        OUTPUT server_copy_lib_command APPEND
+        COMMAND ${CMAKE_COMMAND} -E create_symlink "${NEO_OUTPUT_LIBRARY_PATH}/server.so" "${NEO_OUTPUT_LIBRARY_PATH}/server_srv.so"
+        VERBATIM
+    )
+endif()
+
+set_source_files_properties(server_copy_lib_command PROPERTIES SYMBOLIC "true")
