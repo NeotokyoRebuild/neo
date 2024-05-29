@@ -18,10 +18,14 @@
 using namespace vgui;
 
 
+#ifndef NEO
 enum
 {
 	SPLITTER_HANDLE_WIDTH = 4
 };
+#else
+static constexpr int SPLITTER_HANDLE_WIDTH = 4;
+#endif
 
 
 //-----------------------------------------------------------------------------

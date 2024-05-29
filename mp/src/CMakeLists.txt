@@ -271,6 +271,7 @@ if(OS_LINUX OR OS_MACOS)
         -Wno-unused-local-typedefs
         -Wno-switch
         -Wno-strict-aliasing
+        -Wno-address
 
         -Werror=return-type
         -fdiagnostics-show-option

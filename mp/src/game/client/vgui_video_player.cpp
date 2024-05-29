@@ -194,7 +194,7 @@ void VideoPlayerPanel::OnClose( void )
 
 //	enginesound->NotifyEndMoviePlayback();
 
-	vgui::surface()->RestrictPaintToSinglePanel( NULL );
+	vgui::surface()->RestrictPaintToSinglePanel( 0 );
 
 	SetVisible( false );
 	MarkForDeletion();

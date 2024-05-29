@@ -504,7 +504,7 @@ void CHudDeathNotice::FireGameEvent(IGameEvent* event)
 #endif
 			deathMsg.Victim.szName);
 
-		if ((*fullkilledwith != NULL) && (*fullkilledwith > 13))
+		if ((*fullkilledwith != '\0') && (*fullkilledwith > 13))
 		{
 #ifdef NEO
 			Q_strncat(sDeathMsg, VarArgs(" with %s.", fullkilledwith + 6), sizeof(sDeathMsg), COPY_ALL_CHARACTERS);

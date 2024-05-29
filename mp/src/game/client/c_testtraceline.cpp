@@ -60,10 +60,14 @@ C_TestTraceline::~C_TestTraceline()
 }
 
 
+#ifndef NEO
 enum
 {
 	CUBE_SIZE = 5
 };
+#else
+static constexpr float CUBE_SIZE = 5.0f;
+#endif
 
 void C_TestTraceline::DrawCube( Vector& center, unsigned char* pColor )
 {

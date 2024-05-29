@@ -21,6 +21,11 @@
 
 #define SUBINCH_PRECISION	3
 
+#ifdef NEO
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnonnull"
+#endif
+
 #ifdef CLIENT_DLL
 
 	#include "dt_recv.h"
@@ -136,6 +141,10 @@
 
 	END_SEND_TABLE()
 
+#endif
+
+#ifdef NEO
+#pragma GCC diagnostic pop
 #endif
 
 #ifdef CLIENT_DLL

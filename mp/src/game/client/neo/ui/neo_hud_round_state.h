@@ -7,8 +7,7 @@
 #include "neo_hud_childelement.h"
 #include "hudelement.h"
 #include <vgui_controls/Panel.h>
-
-class vgui::ImagePanel;
+#include <vgui_controls/ImagePanel.h>
 
 class CNEOHud_RoundState : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
 {

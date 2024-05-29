@@ -322,8 +322,10 @@ void CNEOHud_RoundState::DrawFriend(int playerIndex, int teamIndex, int xpos, in
 	surface()->DrawSetColor(Color(55, 55, 55, 255));
 	surface()->DrawFilledRect(xOffset, 1, xOffset + m_ilogoSize, 1 + m_ilogoSize);
 	if (g_PR->IsAlive(playerIndex))
+	{
 		surface()->DrawSetColor(Color(255, 255, 255, 176));
 		surface()->DrawFilledRect(xOffset, 1.0f + ((1.0f - (g_PR->GetHealth(playerIndex) / 100.0f)) * m_ilogoSize), xOffset + m_ilogoSize, 1 + m_ilogoSize);
+	}
 	surface()->DrawSetColor(Color(0, 0, 0, 176));
 	surface()->DrawTexturedRect(xOffset, 1, xOffset + m_ilogoSize, 1 + m_ilogoSize);
 }
