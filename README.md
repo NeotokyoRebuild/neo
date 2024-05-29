@@ -41,7 +41,7 @@
 * Linux: [Steam Runtime 3 "Sniper"](https://gitlab.steamos.cloud/steamrt/sniper/sdk)
     * GCC/G++ 10 toolchain
     * Compiled in the sniper's Docker/Podman/Toolbx container, schroot, or systemd-nspawn
-    * This can also work on native even with newer GCC/G++, mostly for development setup. At least install GCC and G++ multilib from your distro's package manager.
+    * This can also work on native (as long as it supports C++20) even with newer GCC/G++, mostly for development setup. At least install GCC and G++ multilib from your distro's package manager.
 * Both:
     * [CMake](https://cmake.org/)
     * [ninja](https://ninja-build.org/) (optional, can use nmake/make/VS instead)
@@ -170,20 +170,22 @@ You may or may not need this, but if NT;RE crashes/segfaults on launch, then ins
 and set: `LD_PRELOAD=/usr/lib32/libtcmalloc.so %command%` as the launch argument.
 
 ## Server instructions
-1. To run a server, install "Source SDK Base 2013 Dedicated Server".
+1. To run a server, install "Source SDK Base 2013 Dedicated Server" (appid 244310).
 2. For firewall, open the following ports:
     * 27015 TCP+UDP
     * 27020 UDP
     * 27005 UDP
     * 26900 UDP
-3. After it installed, go to the install directory in CMD, should see `srcds.exe`
+3. After it installed, go to the install directory in CMD, should see:
+    * Windows: `srcds.exe`
+    * Linux: `srcds_linux`
+        * You'll also see `srcds_run` but that doesn't work properly with NT;RE so ignore it
 4. Optional: Link or copy over neo, otherwise `-game <path_to_source>/mp/game/neo` can be used also:
     * Windows: `mklink /J neo "<path_to_source>/mp/game/neo"`
     * Linux:
         * Non-persistent bind mount: `mkdir neo && sudo mount --bind <path_to_source>/mp/game/neo neo`
         * Or just copy over or use the directory directly
-    * Linux NOTE: Also make sure the `neo/bin` directory includes `client_srv.so` and `server_srv.so`
-5. Linux-only: Symlink the names in "Source SDK Base 2013 Dedicated Server" "bin" directory:
+5. Linux-only: Symlink the names in `<PATH_TO_STEAM>/common/Source SDK Base 2013 Dedicated Server/bin` directory:
 ```
 ln -s vphysics_srv.so vphysics.so;
 ln -s studiorender_srv.so studiorender.so;
@@ -193,11 +195,13 @@ ln -s scenefilecache_srv.so scenefilecache.so;
 ln -s replay_srv.so replay.so;
 ln -s materialsystem_srv.so materialsystem.so;
 ```
-6. Run: `srcds.exe +sv_lan 0 -insecure -game neo +map <some map> +maxplayers 24 -autoupdate -console`
-    * It'll be `./srcds_run` for Linux
+6. Linux-only: Before running `srcds_linux`, some few environment variables need to setup:
+    * `SteamEnv=1`
+    * `LD_LIBRARY_PATH=$(<STEAM-RUNTIME-DIR>/run.sh printenv LD_LIBRARY_PATH):/home/YOUR_USER/.steam/steam/steamapps/Source SDK Base 2013 Dedicated Server/bin`
+        * Where `<STEAM-RUNTIME-DIR>` can be found from: `$ find "$HOME" -type d -name 'steam-runtime' 2> /dev/null`
+7. Run: `<srcds.exe|srcds_linux> +sv_lan 0 -insecure -game neo +map <some map> +maxplayers 24 -autoupdate -console`
     * Double check on the log that VAC is disabled before continuing
-    * Linux will also require something like `-steam_dir $HOME/.steam/bin/ -steamcmd_script $HOME/.steam/steamcmd/steamcmd.sh` for `-autoupdate` to work
-7. In-game, it'll showup in the server list
+7. In-game on Windows it'll showup in the server list, on Linux it probably won't and you'll have to use `connect` command directly (EX: `connect 192.168.1.###` for LAN server)
 
 ## Shader authoring (Windows setup)
 

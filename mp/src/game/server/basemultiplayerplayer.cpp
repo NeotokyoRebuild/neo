@@ -65,13 +65,13 @@ void CBaseMultiplayerPlayer::ModifyOrAppendCriteria( AI_CriteriaSet& criteriaSet
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-bool CBaseMultiplayerPlayer::SpeakIfAllowed( AIConcept_t concept, const char *modifiers, char *pszOutResponseChosen, size_t bufsize, IRecipientFilter *filter ) 
+bool CBaseMultiplayerPlayer::SpeakIfAllowed( AIConcept_t aiconcept, const char *modifiers, char *pszOutResponseChosen, size_t bufsize, IRecipientFilter *filter )
 { 
 	if ( !IsAlive() )
 		return false;
 
-	//if ( IsAllowedToSpeak( concept, bRespondingToPlayer ) )
-	return Speak( concept, modifiers, pszOutResponseChosen, bufsize, filter );
+	//if ( IsAllowedToSpeak( aiconcept, bRespondingToPlayer ) )
+	return Speak( aiconcept, modifiers, pszOutResponseChosen, bufsize, filter );
 }
 
 //-----------------------------------------------------------------------------

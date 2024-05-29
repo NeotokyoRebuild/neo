@@ -62,7 +62,7 @@ if(CMAKE_VERBOSE_MAKEFILE)
     set(CMAKE_EXECUTE_PROCESS_COMMAND_ECHO STDOUT)
 endif()
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE OFF)
 
@@ -285,6 +285,9 @@ if(OS_LINUX OR OS_MACOS)
 
         # Fix for non-clickable vgui buttons when using -O3
         -fno-ipa-cp-clone
+
+        # Fix for "error: cast from pointer to smaller type 'unsigned int' loses information"
+        #-fms-extensions
     )
 
     # Disable option for older compiler in docker
