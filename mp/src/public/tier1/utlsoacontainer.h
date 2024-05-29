@@ -311,7 +311,7 @@ public:
 
 };
 
-#ifdef NEO // NEO NOTE (nullsystem): Mute this pointless warning
+#if defined(NEO) && defined(LINUX) // NEO NOTE (nullsystem): Mute this pointless warning
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wignored-attributes"
 #endif
@@ -335,7 +335,7 @@ class CFltX4AttributeWriteIterator : public CStridedPtr<fltx4>
 	
 };
 
-#ifdef NEO
+#if defined(NEO) && defined(LINUX)
 #pragma GCC diagnostic pop
 #endif
 

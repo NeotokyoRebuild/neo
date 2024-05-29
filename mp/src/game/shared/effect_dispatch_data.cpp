@@ -21,7 +21,7 @@
 
 #define SUBINCH_PRECISION	3
 
-#ifdef NEO
+#if defined(NEO) && defined(LINUX)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnonnull"
 #endif
@@ -143,7 +143,7 @@
 
 #endif
 
-#ifdef NEO
+#if defined(NEO) && defined(LINUX)
 #pragma GCC diagnostic pop
 #endif
 

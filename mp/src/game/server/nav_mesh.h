@@ -184,7 +184,7 @@ struct NavVisPair_t
 	CNavArea *pAreas[2];
 };
 
-#ifdef NEO
+#if defined(NEO) && defined(LINUX)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnarrowing"
 #endif
@@ -208,7 +208,7 @@ public:
 	}
 };
 
-#ifdef NEO
+#if defined(NEO) && defined(LINUX)
 #pragma GCC diagnostic pop
 #endif
 
