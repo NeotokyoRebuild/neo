@@ -2255,9 +2255,9 @@ FORCEINLINE int CParticleCollection::GetControlPointParent( int nControlPoint ) 
 	return m_ControlPoints[nControlPoint].m_nParent;
 }
 
-FORCEINLINE bool CParticleCollection::IsValid( void ) const 
-{ 
-	return ( m_pDef != NULL && m_pDef->GetMaterial() );  
+FORCEINLINE bool CParticleCollection::IsValid( void ) const
+{
+	return ( m_pDef() != nullptr && m_pDef->GetMaterial() );
 }
 
 
