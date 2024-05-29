@@ -32,7 +32,9 @@ private:
 	void DrawEnemy(int playerIndex, int teamIndex);
 
 private:
-	vgui::HFont m_hFont;
+	vgui::HFont m_hOCRSmallFont;
+	vgui::HFont m_hOCRFont;
+	vgui::HFont m_hOCRLargeFont;
 
 	int m_resX, m_resY;
 	int m_iXpos, m_iYpos;
@@ -41,15 +43,28 @@ private:
 	int m_iBoxWidth, m_iBoxHeight;
 	int m_iBoxX0, m_iBoxY0, m_iBoxX1, m_iBoxY1;
 
+	int m_iSmallFontWidth, m_iSmallFontHeight;
+	int m_iFontWidth, m_iFontHeight;
+
 	// Center Box info
-	char m_szStatusANSI[24];
-	wchar_t m_wszStatusUnicode[24];
+	char m_szRoundANSI[9];
+	wchar_t m_wszRoundUnicode[9];
 	wchar_t m_wszTime[6];
 	int m_iJinraiScore;
 	int m_iNSFScore;
 	wchar_t m_wszFriendlyScore[3];
 	wchar_t m_wszEnemyScore[3];
-	wchar_t m_wszRound[3];
+
+	// Totals info
+	int m_iFriendsAlive;
+	int m_iFriendsTotal;
+	int m_iEnemiesAlive;
+	int m_iEnemiesTotal;
+	char m_szPlayersAliveANSI[9];
+	wchar_t m_wszPlayersAliveUnicode[9];
+
+	char m_szStatusANSI[24];
+	wchar_t m_wszStatusUnicode[24];
 
 	// Element Positions
 	int m_iTimeYpos; // time changes often, don't bother keeping track of time x pos
@@ -59,8 +74,7 @@ private:
 	int m_iRoundStatusYpos;
 	int m_iFriendlyTotalLogoX0, m_iFriendlyTotalLogoY0, m_iFriendlyTotalLogoX1, m_iFriendlyTotalLogoY1;
 	int m_iEnemyTotalLogoX0, m_iEnemyTotalLogoY0, m_iEnemyTotalLogoX1, m_iEnemyTotalLogoY1;
-	int m_iFriendlyNumXpos, m_iFriendlyNumYpos;
-	int m_iEnemyNumXpos, m_iEnemyNumYpos;
+	int m_iPlayersAliveNumXpos, m_iPlayersAliveNumYpos;
 	int m_ilogoSize;
 	int m_ilogoTotalSize;
 	int m_iFriendlyLogoXOffset;
@@ -92,14 +106,6 @@ private:
 	Color fadedDarkColor = Color(55, 55, 55, 176);
 	Color friendlyColor;
 	Color enemyColor;
-
-	// Totals info
-	int m_iFriendsAlive;
-	int m_iFriendsTotal;
-	int m_iEnemiesAlive;
-	int m_iEnemiesTotal;
-	wchar_t m_wszFriendsAlive[4];
-	wchar_t m_wszEnemiesAlive[4];
 
 	CPanelAnimationVarAliasType(int, box_color_r, "box_color_r", "116", "int");
 	CPanelAnimationVarAliasType(int, box_color_g, "box_color_g", "116", "int");

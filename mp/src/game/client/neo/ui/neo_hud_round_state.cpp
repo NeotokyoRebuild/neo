@@ -16,6 +16,8 @@
 #include "c_team.h"
 #include "c_playerresource.h"
 
+#include "vgui_avatarimage.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -45,7 +47,9 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 	vgui::IScheme *scheme = vgui::scheme()->GetIScheme(neoscheme);
 	Assert(scheme);
 
-	m_hFont = scheme->GetFont("NHudOCRSmall");
+	m_hOCRSmallFont = scheme->GetFont("NHudOCRSmall");
+	m_hOCRFont = scheme->GetFont("NHudOCR");
+	m_hOCRLargeFont = scheme->GetFont("NHudNumbers");
 
 	{
 		int i;
@@ -60,31 +64,37 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 	// Screen dimensions
 	surface()->GetScreenSize(m_resX, m_resY);
 	m_iXpos = (m_resX / 2);
-	m_iYpos = (m_resY * 0.01);
+	m_iYpos = 2;
 
 	// Box dimensions
-	surface()->GetTextSize(m_hFont, L"00:00:00", m_iBoxWidth, m_iBoxHeight);
-	m_iBoxHeight = (m_iBoxHeight * 2);
-	m_iBoxWidth += 2;
+	surface()->GetTextSize(m_hOCRSmallFont, L"ROUND 99", m_iSmallFontWidth, m_iSmallFontHeight);
+	surface()->GetTextSize(m_hOCRFont, L"ROUND 99", m_iFontWidth, m_iFontHeight);
+	m_iSmallFontHeight *= 0.85;
+	m_iFontHeight *= 0.85;
+
+	m_iBoxHeight = (m_iSmallFontHeight * 2) + m_iFontHeight;
+	m_iBoxWidth = m_iSmallFontWidth + 2;
 	m_iBoxX0 = m_iXpos - (m_iBoxWidth / 2);
-	m_iBoxY0 = m_iYpos - (m_resY * 0.01);
+	m_iBoxY0 = m_iYpos;
 	m_iBoxX1 = m_iXpos + (m_iBoxWidth / 2);
-	m_iBoxY1 = m_iYpos - (m_resY * 0.005) + m_iBoxHeight;
+	m_iBoxY1 = m_iYpos + m_iBoxHeight;
 
 	// Logo dimensions
-	m_ilogoSize = m_iBoxHeight;
-	m_ilogoTotalSize = m_iBoxY1;
-
-	// Time positions
-	m_iTimeYpos = m_iYpos - (m_iBoxHeight / 4);
+	m_ilogoSize = m_iFontHeight * 2;
+	m_ilogoTotalSize = m_iBoxHeight;
 
 	// Score positions
-	m_iFriendlyScoreXpos = m_iXpos - (m_iBoxWidth / 2) + 2;
-	m_iFriendlyScoreYpos = m_iYpos + (m_iBoxHeight / 4);
-	m_iEnemyScoreXpos = m_iXpos + (m_iBoxWidth / 2) - 2;
-	m_iEnemyScoreYpos = m_iYpos + (m_iBoxHeight / 4);
+	m_iFriendlyScoreXpos = m_iXpos - (m_iBoxWidth / 2) - 2 - (m_ilogoTotalSize / 2);
+	m_iFriendlyScoreYpos = m_iYpos + (m_ilogoTotalSize / 2) - ((m_iFontHeight / 0.85) / 2);
+	m_iEnemyScoreXpos = m_iXpos + (m_iBoxWidth / 2) + 2 + (m_ilogoTotalSize / 2);
+	m_iEnemyScoreYpos = m_iYpos + (m_ilogoTotalSize / 2) - ((m_iFontHeight / 0.85) / 2);
+
+	// Round positions
 	m_iRoundXpos = m_iXpos;
-	m_iRoundYpos = m_iYpos + (m_iBoxHeight / 4);
+	m_iRoundYpos = m_iYpos - 2;
+
+	// Time positions
+	m_iTimeYpos = m_iYpos + m_iSmallFontHeight - 2;
 
 	// Round status position
 	m_iRoundStatusYpos = m_iBoxY1;
@@ -92,26 +102,23 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 	// Total positions
 	m_iFriendlyTotalLogoX0 = m_iXpos - (m_iBoxWidth / 2) - 2 - m_ilogoTotalSize;
 	m_iFriendlyTotalLogoX1 = m_iXpos - (m_iBoxWidth / 2) - 2;
-	m_iFriendlyTotalLogoY0 = 1;
-	m_iFriendlyTotalLogoY1 = 1 + m_ilogoTotalSize;
+	m_iFriendlyTotalLogoY0 = m_iYpos;
+	m_iFriendlyTotalLogoY1 = m_iYpos + m_ilogoTotalSize;
 
 	m_iEnemyTotalLogoX0 = m_iXpos + (m_iBoxWidth / 2) + 2;
 	m_iEnemyTotalLogoX1 = m_iXpos + (m_iBoxWidth / 2) + 2 + m_ilogoTotalSize;
-	m_iEnemyTotalLogoY0 = 1;
-	m_iEnemyTotalLogoY1 = 1 + m_ilogoTotalSize;
+	m_iEnemyTotalLogoY0 = m_iYpos;
+	m_iEnemyTotalLogoY1 = m_iYpos + m_ilogoTotalSize;
 
 	// Total num positions
-	m_iFriendlyNumXpos = m_iFriendlyTotalLogoX0 + (m_ilogoTotalSize / 2);
-	m_iFriendlyNumYpos = m_iFriendlyTotalLogoY0 + (m_ilogoTotalSize / 2) - (m_iBoxHeight / 4);
-
-	m_iEnemyNumXpos = m_iEnemyTotalLogoX0 + (m_ilogoTotalSize / 2);
-	m_iEnemyNumYpos = m_iEnemyTotalLogoY0 + (m_ilogoTotalSize / 2) - (m_iBoxHeight / 4);
+	m_iPlayersAliveNumXpos = m_iXpos;
+	m_iPlayersAliveNumYpos = m_iYpos + m_iSmallFontHeight + m_iFontHeight - 2;
 
 	// Logos offsets
 	m_iFriendlyLogoXOffset = m_iXpos - (m_iBoxWidth / 2) - 4 - m_ilogoTotalSize;
 	m_iEnemyLogoXOffset = m_iXpos + (m_iBoxWidth / 2) + 4 + m_ilogoTotalSize;
 
-	SetBounds(0, 0, m_resX, m_iBoxY1 + (m_iBoxHeight / 2));
+	SetBounds(0, m_iYpos, m_resX, m_iBoxY1 + m_iSmallFontHeight);
 
 	// Initialize star textures
 	const bool starsHwFiltered = false;
@@ -192,7 +199,7 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 	//ListenForGameEvent("player_hurt");
 	//ListenForGameEvent("player_death");
 	//ListenForGameEvent("player_disconnect");
-	ListenForGameEvent("round_start");
+	//ListenForGameEvent("round_start");
 }
 
 void CNEOHud_RoundState::ApplySchemeSettings(vgui::IScheme* pScheme)
@@ -229,6 +236,7 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	memset(m_wszStatusUnicode, 0, sizeof(m_wszStatusUnicode)); // NOTE (nullsystem): Clear it or get junk after warmup ends
 	g_pVGuiLocalize->ConvertANSIToUnicode(m_szStatusANSI, m_wszStatusUnicode, sizeof(m_wszStatusUnicode));
 
+
 	// Exactly zero means there's no time limit, so we don't need to draw anything.
 	if (roundTimeLeft == 0)
 	{
@@ -239,6 +247,10 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	{
 		roundTimeLeft = 0;
 	}
+
+	V_sprintf_safe(m_szRoundANSI, "ROUND %i", NEORules()->roundNumber());
+	memset(m_wszRoundUnicode, 0, sizeof(m_wszRoundUnicode));
+	g_pVGuiLocalize->ConvertANSIToUnicode(m_szRoundANSI, m_wszRoundUnicode, sizeof(m_wszRoundUnicode));
 
 	const int secsTotal = RoundFloatToInt(roundTimeLeft);
 	const int secsRemainder = secsTotal % 60;
@@ -253,6 +265,10 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 		V_snwprintf(m_wszFriendlyScore, 3, L"%i", GetGlobalTeam(TEAM_JINRAI)->GetRoundsWon());
 		V_snwprintf(m_wszEnemyScore, 3, L"%i", GetGlobalTeam(TEAM_NSF)->GetRoundsWon());
 	}
+
+	V_sprintf_safe(m_szPlayersAliveANSI, "%i vs %i", m_iFriendsAlive, m_iEnemiesAlive);
+	memset(m_wszPlayersAliveUnicode, 0, sizeof(m_wszPlayersAliveUnicode));
+	g_pVGuiLocalize->ConvertANSIToUnicode(m_szPlayersAliveANSI, m_wszPlayersAliveUnicode, sizeof(m_wszPlayersAliveUnicode));
 }
 
 void CNEOHud_RoundState::DrawNeoHudElement()
@@ -262,36 +278,27 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 		return;
 	}
 
-	surface()->DrawSetTextFont(m_hFont);
+	surface()->DrawSetTextFont(m_hOCRFont);
 
 	// Draw Box
 	Color box_color = Color(box_color_r, box_color_g, box_color_b, box_color_a);
-	DrawNeoHudRoundedBox(m_iBoxX0, m_iBoxY0, m_iBoxX1, m_iBoxY1, box_color, false, false, true, true);
+	DrawNeoHudRoundedBox(m_iBoxX0, m_iBoxY0, m_iBoxX1, m_iBoxY1, box_color, true, true, true, true);
 
 	// Draw time
 	int fontWidth, fontHeight;
-	surface()->GetTextSize(m_hFont, m_wszTime, fontWidth, fontHeight);
+	surface()->GetTextSize(m_hOCRFont, m_wszTime, fontWidth, fontHeight);
 	surface()->DrawSetTextColor(whiteColor);
 	surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), m_iTimeYpos);
 	surface()->DrawPrintText(m_wszTime, 6);
 
 	// Draw round
-	surface()->GetTextSize(m_hFont, m_wszRound, fontWidth, fontHeight);
+	surface()->DrawSetTextFont(m_hOCRSmallFont);
+	surface()->GetTextSize(m_hOCRSmallFont, m_wszRoundUnicode, fontWidth, fontHeight);
 	surface()->DrawSetTextPos(m_iRoundXpos - (fontWidth / 2), m_iRoundYpos);
-	surface()->DrawPrintText(m_wszRound, 2);
-
-	// Draw score
-	surface()->DrawSetTextPos(m_iFriendlyScoreXpos, m_iFriendlyScoreYpos);
-	surface()->DrawSetTextColor(friendlyColor);
-	surface()->DrawPrintText(m_wszFriendlyScore, 2);
-
-	surface()->GetTextSize(m_hFont, m_wszEnemyScore, fontWidth, fontHeight);
-	surface()->DrawSetTextPos(m_iEnemyScoreXpos - fontWidth, m_iEnemyScoreYpos);
-	surface()->DrawSetTextColor(enemyColor);
-	surface()->DrawPrintText(m_wszEnemyScore, 2);
+	surface()->DrawPrintText(m_wszRoundUnicode, 9);
 
 	// Draw round status
-	surface()->GetTextSize(m_hFont, m_wszStatusUnicode, fontWidth, fontHeight);
+	surface()->GetTextSize(m_hOCRSmallFont, m_wszStatusUnicode, fontWidth, fontHeight);
 	surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), m_iRoundStatusYpos);
 	surface()->DrawSetTextColor(whiteColor);
 	surface()->DrawPrintText(m_wszStatusUnicode, 24);
@@ -334,7 +341,7 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 	}
 	g_PR->GetTeam(localPlayerIndex);
 
-	// Draw total players alive
+	// Draw score logo
 	surface()->DrawSetTexture(m_iFriendlyTotalLogo);
 	surface()->DrawSetColor(fadedDarkColor);
 	surface()->DrawFilledRect(m_iFriendlyTotalLogoX0, m_iFriendlyTotalLogoY0, m_iFriendlyTotalLogoX1, m_iFriendlyTotalLogoY1);
@@ -343,18 +350,25 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 	surface()->DrawSetTexture(m_iEnemyTotalLogo);
 	surface()->DrawFilledRect(m_iEnemyTotalLogoX0, m_iEnemyTotalLogoY0, m_iEnemyTotalLogoX1, m_iEnemyTotalLogoY1);
 	surface()->DrawTexturedRect(m_iEnemyTotalLogoX0, m_iEnemyTotalLogoY0, m_iEnemyTotalLogoX1, m_iEnemyTotalLogoY1);
-	
-	// Draw total players alive numbers
-	V_snwprintf(m_wszFriendsAlive, 4, L"%i", m_iFriendsAlive);
-	surface()->GetTextSize(m_hFont, m_wszFriendsAlive, fontWidth, fontHeight);
-	surface()->DrawSetTextColor(whiteColor);
-	surface()->DrawSetTextPos(m_iFriendlyNumXpos - (fontWidth / 2), m_iFriendlyNumYpos);
-	surface()->DrawPrintText(m_wszFriendsAlive, 2);
 
-	V_snwprintf(m_wszEnemiesAlive, 4, L"%i", m_iEnemiesAlive);
-	surface()->GetTextSize(m_hFont, m_wszEnemiesAlive, fontWidth, fontHeight);
-	surface()->DrawSetTextPos(m_iEnemyNumXpos - (fontWidth / 2), m_iEnemyNumYpos);
-	surface()->DrawPrintText(m_wszEnemiesAlive, 2);
+	// Draw score
+	surface()->GetTextSize(m_hOCRFont, m_wszFriendlyScore, fontWidth, fontHeight);
+	surface()->DrawSetTextFont(m_hOCRFont);
+	surface()->DrawSetTextPos(m_iFriendlyScoreXpos - (fontWidth / 2), m_iFriendlyScoreYpos);
+	surface()->DrawSetTextColor(friendlyColor);
+	surface()->DrawPrintText(m_wszFriendlyScore, 2);
+
+	surface()->GetTextSize(m_hOCRFont, m_wszEnemyScore, fontWidth, fontHeight);
+	surface()->DrawSetTextPos(m_iEnemyScoreXpos - (fontWidth / 2), m_iEnemyScoreYpos);
+	surface()->DrawSetTextColor(enemyColor);
+	surface()->DrawPrintText(m_wszEnemyScore, 2);
+	
+	// Draw total players alive
+	surface()->DrawSetTextFont(m_hOCRSmallFont);
+	surface()->GetTextSize(m_hOCRSmallFont, m_wszPlayersAliveUnicode, fontWidth, fontHeight);
+	surface()->DrawSetTextColor(whiteColor);
+	surface()->DrawSetTextPos(m_iPlayersAliveNumXpos - (fontWidth / 2), m_iPlayersAliveNumYpos);
+	surface()->DrawPrintText(m_wszPlayersAliveUnicode, 9);
 
 	CheckActiveStar();
 }
@@ -381,26 +395,27 @@ void CNEOHud_RoundState::DrawFriend(int playerIndex, int teamIndex) {
 
 	int xOffset = m_iFriendlyLogoXOffset - ((teamIndex + 1) * m_ilogoSize) - (teamIndex * 2);
 	surface()->DrawSetColor(darkColor);
-	surface()->DrawFilledRect(xOffset, 1, xOffset + m_ilogoSize, 1 + m_ilogoSize);
+	surface()->DrawFilledRect(xOffset, m_iYpos, xOffset + m_ilogoSize, m_iYpos + m_ilogoSize);
 	if (g_PR->IsAlive(playerIndex))
 		surface()->DrawSetColor(friendlyColor);
-		surface()->DrawFilledRect(xOffset, 1.0f + ((1.0f - (g_PR->GetHealth(playerIndex) / 100.0f)) * m_ilogoSize), xOffset + m_ilogoSize, 1 + m_ilogoSize);
+		surface()->DrawFilledRect(xOffset, m_iYpos + ((1.0f - (g_PR->GetHealth(playerIndex) / 100.0f)) * m_ilogoSize), xOffset + m_ilogoSize, m_iYpos + m_ilogoSize);
 	surface()->DrawSetColor(Color(0, 0, 0, 176));
-	surface()->DrawTexturedRect(xOffset, 1, xOffset + m_ilogoSize, 1 + m_ilogoSize);
+	surface()->DrawTexturedRect(xOffset, m_iYpos, xOffset + m_ilogoSize, m_iYpos + m_ilogoSize);
 }
 
 void CNEOHud_RoundState::DrawEnemy(int playerIndex, int teamIndex) {
 	surface()->DrawSetTexture(m_iEnemyLogo);
+
 	int xOffset = m_iEnemyLogoXOffset + (teamIndex * m_ilogoSize) + (teamIndex * 2);
 	if (g_PR->IsAlive(playerIndex)) {
 		surface()->DrawSetColor(enemyColor);
-		surface()->DrawFilledRect(xOffset, 1, xOffset + m_ilogoSize, 1 + m_ilogoSize);
+		surface()->DrawFilledRect(xOffset, m_iYpos, xOffset + m_ilogoSize, m_iYpos + m_ilogoSize);
 	}
 	else {
 		surface()->DrawSetColor(darkColor);
-		surface()->DrawFilledRect(xOffset, 1, xOffset + m_ilogoSize, 1 + m_ilogoSize);
+		surface()->DrawFilledRect(xOffset, m_iYpos, xOffset + m_ilogoSize, m_iYpos + m_ilogoSize);
 	}
-	surface()->DrawTexturedRect(xOffset, 1, xOffset + m_ilogoSize, 1 + m_ilogoSize);
+	surface()->DrawTexturedRect(xOffset, m_iYpos, xOffset + m_ilogoSize, m_iYpos + m_ilogoSize);
 }
 
 void CNEOHud_RoundState::FireGameEvent(IGameEvent* event)
@@ -426,9 +441,6 @@ void CNEOHud_RoundState::FireGameEvent(IGameEvent* event)
 				enemyColor = COLOR_JINRAI;
 			}
 		}
-	} else if (Q_strcmp(event->GetName(), "round_start") == 0)
-	{ // New round started
-		V_snwprintf(m_wszRound, 3, L"%i", NEORules()->roundNumber());
 	}
 }
 
