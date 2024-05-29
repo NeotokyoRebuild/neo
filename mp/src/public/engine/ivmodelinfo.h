@@ -48,7 +48,7 @@ public:
 protected:
 	// Protected destructor so that nobody tries to delete via this interface.
 	// Automatically unregisters if the callback is destroyed while still pending.
-	~IModelLoadCallback();
+	virtual ~IModelLoadCallback();
 };
 
 
