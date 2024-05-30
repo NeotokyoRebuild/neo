@@ -75,6 +75,8 @@ void CNEOScoreBoard::UpdatePlayerInfo()
 	CBasePlayer *player = C_BasePlayer::GetLocalPlayer();
 	Assert(player);
 
+	int selectedRow = -1;
+
 	//const Color test = Color(255, 0, 0, 255);
 	//surface()->DrawSetTextColor(test);
 	int teamCountJinrai = 0;
@@ -89,11 +91,17 @@ void CNEOScoreBoard::UpdatePlayerInfo()
 			KeyValues *playerData = new KeyValues("data");
 
 			GetPlayerScoreInfo(i, playerData);
+			UpdatePlayerAvatar(i, playerData);
 			const int playerTeam = g_PR->GetTeam(i);
 			int sectionId = GetSectionFromTeamNumber(playerTeam);
 
 			if (playerTeam == TEAM_JINRAI) ++teamCountJinrai;
 			else if (playerTeam == TEAM_NSF) ++teamCountNSF;
+
+			if (GameResources()->IsLocalPlayer(i))
+			{
+				selectedRow = itemId;
+			}
 
 			// We aren't in the scoreboard yet
 			if (itemId == -1)
@@ -113,6 +121,11 @@ void CNEOScoreBoard::UpdatePlayerInfo()
 		{
 			m_pPlayerList->RemoveItem(itemId);
 		}
+	}
+
+	if (selectedRow != -1)
+	{
+		m_pPlayerList->SetSelectedItem(selectedRow);
 	}
 
 	// Update team headers
@@ -162,11 +175,6 @@ void CNEOScoreBoard::ApplySchemeSettings(vgui::IScheme *pScheme)
 	BaseClass::ApplySchemeSettings(pScheme);
 }
 
-#define ADD_COL(sectionId, columnName, columnText, columnFlags, width, fallbackFont) \
-	m_pPlayerList->AddColumnToSection(sectionId, columnName, columnText, columnFlags, \
-	scheme()->GetProportionalScaledValueEx(GetScheme(), width), fallbackFont)
-#define COL_IMAGE SectionedListPanel::COLUMN_IMAGE
-
 void CNEOScoreBoard::AddHeader()
 {
 	HFont hFallbackFont = scheme()->GetIScheme(GetScheme())->
@@ -174,15 +182,13 @@ void CNEOScoreBoard::AddHeader()
 
 	m_pPlayerList->AddSection(0, "");
 	m_pPlayerList->SetSectionAlwaysVisible(0);
-	ADD_COL(0, "name", "", 0, NEO_NAME_WIDTH, hFallbackFont);
-	ADD_COL(0, "rank", "Rank", 0, NEO_NAME_WIDTH / 4, hFallbackFont);
-	ADD_COL(0, "class", "Class", 0, NEO_CLASS_WIDTH, hFallbackFont);
-	ADD_COL(0, "xp", "XP", 0, NEO_SCORE_WIDTH, hFallbackFont);
-	ADD_COL(0, "deaths", "#PlayerDeath", 0, NEO_DEATH_WIDTH, hFallbackFont);
-	ADD_COL(0, "ping", "Ping", 0, NEO_PING_WIDTH, hFallbackFont);
-	ADD_COL(0, "status", "Status", 0, NEO_STATUS_WIDTH, hFallbackFont);
-	//ADD_COL(0, "voice", "#PlayerVoice", COL_IMAGE, NEO_VOICE_WIDTH, hFallbackFont);
-	//ADD_COL(0, "tracker", "#PlayerTracker", COL_IMAGE, NEO_FRIENDS_WIDTH, hFallbackFont);
+	m_pPlayerList->AddColumnToSection(0, "name", "", 0, m_iNameWidth, hFallbackFont);
+	m_pPlayerList->AddColumnToSection(0, "rank", "Rank", 0, m_iRankWidth, hFallbackFont);
+	m_pPlayerList->AddColumnToSection(0, "class", "Class", 0, m_iClassWidth, hFallbackFont);
+	m_pPlayerList->AddColumnToSection(0, "xp", "XP", 0, m_iScoreWidth, hFallbackFont);
+	m_pPlayerList->AddColumnToSection(0, "deaths", "#PlayerDeath", 0, m_iDeathWidth, hFallbackFont);
+	m_pPlayerList->AddColumnToSection(0, "ping", "Ping", 0, m_iPingWidth, hFallbackFont);
+	m_pPlayerList->AddColumnToSection(0, "status", "Status", 0, m_iStatusWidth, hFallbackFont);
 }
 
 void CNEOScoreBoard::AddSection(int teamType, int teamNumber)
@@ -197,17 +203,25 @@ void CNEOScoreBoard::AddSection(int teamType, int teamNumber)
 	// setup the columns
 	if (teamType == TYPE_TEAM)
 	{
-		ADD_COL(sectionID, "name", "", 0, NEO_NAME_WIDTH, hFallbackFont);
-		ADD_COL(sectionID, "rank", "", 0, NEO_NAME_WIDTH / 4, hFallbackFont);
-		ADD_COL(sectionID, "class", "", 0, NEO_CLASS_WIDTH, hFallbackFont);
-		ADD_COL(sectionID, "xp", "", 0, NEO_SCORE_WIDTH, hFallbackFont);
-		ADD_COL(sectionID, "deaths", "", 0, NEO_DEATH_WIDTH, hFallbackFont);
-		ADD_COL(sectionID, "ping", "", 0, NEO_PING_WIDTH, hFallbackFont);
-		ADD_COL(sectionID, "status", "", 0, NEO_STATUS_WIDTH, hFallbackFont);
+		if (ShowAvatars())
+		{
+			m_pPlayerList->AddColumnToSection(sectionID, "avatar", "", SectionedListPanel::COLUMN_IMAGE, m_iAvatarWidth);
+		}
+		m_pPlayerList->AddColumnToSection(sectionID, "name", "", 0, m_iNameWidth - m_iAvatarWidth, hFallbackFont );
+		m_pPlayerList->AddColumnToSection(sectionID, "rank", "", 0, m_iRankWidth, hFallbackFont);
+		m_pPlayerList->AddColumnToSection(sectionID, "class", "", 0, m_iClassWidth, hFallbackFont);
+		m_pPlayerList->AddColumnToSection(sectionID, "xp", "", 0, m_iScoreWidth, hFallbackFont);
+		m_pPlayerList->AddColumnToSection(sectionID, "deaths", "", 0, m_iDeathWidth, hFallbackFont);
+		m_pPlayerList->AddColumnToSection(sectionID, "ping", "", 0, m_iPingWidth, hFallbackFont);
+		m_pPlayerList->AddColumnToSection(sectionID, "status", "", 0, m_iStatusWidth, hFallbackFont);
 	}
 	else if (teamType == TYPE_SPECTATORS)
 	{
-		ADD_COL(sectionID, "name", "Spectator", 0, NEO_NAME_WIDTH, hFallbackFont);
+		if (ShowAvatars())
+		{
+			m_pPlayerList->AddColumnToSection(sectionID, "avatar", "", 0, m_iAvatarWidth);
+		}
+		m_pPlayerList->AddColumnToSection(sectionID, "name", "", 0, scheme()->GetProportionalScaledValueEx( GetScheme(), m_iNameWidth) - m_iAvatarWidth, hFallbackFont );
 	}
 
 	// set the section to have the team color
@@ -222,7 +236,7 @@ int CNEOScoreBoard::GetSectionFromTeamNumber(int teamNumber)
 	if (teamNumber == TEAM_JINRAI) { return SCORESECTION_JINRAI; }
 	else if (teamNumber == TEAM_NSF) { return SCORESECTION_NSF; }
 	else if (teamNumber == TEAM_SPECTATOR) { return SCORESECTION_SPECTATOR; }
-	
+
 	// We shouldn't ever fall through
 	Assert(false);
 
