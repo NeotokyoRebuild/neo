@@ -157,8 +157,9 @@ void CNeoClassMenu::OnCommand(const char *command)
 {
 	BaseClass::OnCommand(command);
 
-	if (*command == NULL)
-	{ // No command
+	if (command == nullptr || *command == '\0')
+	{
+		// No command
 		return;
 	}
 

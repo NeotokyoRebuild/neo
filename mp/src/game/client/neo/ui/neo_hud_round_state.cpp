@@ -1,4 +1,6 @@
 #include "cbase.h"
+
+#include <vgui_controls/ImagePanel.h>
 #include "neo_hud_round_state.h"
 
 #include "iclientmode.h"
@@ -9,8 +11,6 @@
 
 #include "neo_gamerules.h"
 #include <initializer_list>
-
-#include <vgui_controls/ImagePanel.h>
 
 #include "c_neo_player.h"
 #include "c_team.h"
@@ -322,8 +322,10 @@ void CNEOHud_RoundState::DrawFriend(int playerIndex, int teamIndex, int xpos, in
 	surface()->DrawSetColor(Color(55, 55, 55, 255));
 	surface()->DrawFilledRect(xOffset, 1, xOffset + m_ilogoSize, 1 + m_ilogoSize);
 	if (g_PR->IsAlive(playerIndex))
+	{
 		surface()->DrawSetColor(Color(255, 255, 255, 176));
 		surface()->DrawFilledRect(xOffset, 1.0f + ((1.0f - (g_PR->GetHealth(playerIndex) / 100.0f)) * m_ilogoSize), xOffset + m_ilogoSize, 1 + m_ilogoSize);
+	}
 	surface()->DrawSetColor(Color(0, 0, 0, 176));
 	surface()->DrawTexturedRect(xOffset, 1, xOffset + m_ilogoSize, 1 + m_ilogoSize);
 }

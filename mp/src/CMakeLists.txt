@@ -132,15 +132,16 @@ if(OS_WINDOWS)
         /W4
         /Gw # Optimize Global Data
 
+        /wd4456
+        /wd4457
+        /wd4458
+        /wd4459
+        /wd4559
+        /wd5054
+        /wd4838
         #/wd4316
-        #/wd4456
-        #/wd4459
-        #/wd4457
-        #/wd4838
-        #/wd26945
-        #/wd4458
-        #/wd4559
         #/wd4565
+	#/wd26945 # This is an IntelliSense not build warning, this won't even mask it anyway
     )
 
     add_compile_definitions(
@@ -271,6 +272,7 @@ if(OS_LINUX OR OS_MACOS)
         -Wno-unused-local-typedefs
         -Wno-switch
         -Wno-strict-aliasing
+        -Wno-address
 
         -Werror=return-type
         -fdiagnostics-show-option

@@ -86,6 +86,9 @@ public:
 	// XXX(johns): This should have a virtual destructor, but would be ABI breaking (non-versioned interface implemented
 	//             by the game)
 	// virtual ~IPartitionEnumerator(){}
+#ifdef NEO // Break the ABI
+	virtual ~IPartitionEnumerator(){}
+#endif
 };
 
 

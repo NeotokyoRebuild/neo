@@ -185,7 +185,7 @@ CMessageCharsPanel::message_t *CMessageCharsPanel::AllocMessage( void )
 	msg->y		= 0;
 	msg->text	= NULL;
 
-	msg->hCustomFont = NULL;
+	msg->hCustomFont = 0;
 
 	return msg;
 }

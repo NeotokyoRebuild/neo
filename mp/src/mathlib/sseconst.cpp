@@ -38,6 +38,9 @@ const fltx4 g_QuatMultRowSign[4] =
 	{ -1.0f, -1.0f, -1.0f, 1.0f }
 };
 
+#if defined(_WIN32) && defined(NEO)
+#pragma warning(disable:4838)
+#endif
 const int32 ALIGN16 g_SIMD_clear_signmask[4] ALIGN16_POST = {0x7fffffff,0x7fffffff,0x7fffffff,0x7fffffff};
 const int32 ALIGN16 g_SIMD_signmask[4] ALIGN16_POST = { 0x80000000, 0x80000000, 0x80000000, 0x80000000 };
 const int32 ALIGN16 g_SIMD_lsbmask[4] ALIGN16_POST = { 0xfffffffe, 0xfffffffe, 0xfffffffe, 0xfffffffe };

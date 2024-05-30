@@ -1389,7 +1389,10 @@ private:
 	friend class CParticleOperatorInstance;
 };
 
-
+#ifdef NEO // NEO NOTE (nullsystem): Mute this pointless warning
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wignored-attributes"
+#endif
 
 class CM128InitialAttributeIterator : public CStridedConstPtr<fltx4>
 {
@@ -1462,6 +1465,9 @@ public:
 	}
 };
 
+#ifdef NEO
+#pragma GCC diagnostic pop
+#endif
 
 //-----------------------------------------------------------------------------
 // Inline methods of CParticleCollection

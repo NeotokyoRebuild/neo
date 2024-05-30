@@ -18,8 +18,14 @@ enum
 	DEATH_FRAME_RIGHTARM,
 	DEATH_FRAME_LEFTLEG,
 	DEATH_FRAME_RIGHTLEG,
+#ifndef NEO
 	MAX_DEATHPOSE_FRAMES  = DEATH_FRAME_RIGHTLEG
+#endif
 };
+
+#ifdef NEO
+static constexpr float MAX_DEATHPOSE_FRAMES = static_cast<float>(DEATH_FRAME_RIGHTLEG);
+#endif
 
 #ifdef CLIENT_DLL
 

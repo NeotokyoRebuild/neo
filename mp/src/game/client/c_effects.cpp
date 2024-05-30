@@ -1036,61 +1036,61 @@ void CClient_Precipitation::EmitParticles( float fTimeDelta )
 	Vector2D size;
 	Vector vel, org;
 
-		C_BasePlayer *pPlayer = C_BasePlayer::GetLocalPlayer();
-		if ( !pPlayer )
+	C_BasePlayer *pPlayer = C_BasePlayer::GetLocalPlayer();
+	if ( !pPlayer )
 		return;
-		Vector vPlayerCenter = pPlayer->WorldSpaceCenter();
+	Vector vPlayerCenter = pPlayer->WorldSpaceCenter();
 
 		// Compute where to emit
 	if (!ComputeEmissionArea( org, size ))
 		return;
 
-		// clamp this to prevent creating a bunch of rain or snow at one time.
-		if( fTimeDelta > 0.075f )
-			fTimeDelta = 0.075f;
+	// clamp this to prevent creating a bunch of rain or snow at one time.
+	if( fTimeDelta > 0.075f )
+		fTimeDelta = 0.075f;
 
-		// FIXME: Compute the precipitation density based on computational power
+	// FIXME: Compute the precipitation density based on computational power
 	float density = m_flDensity;
 
-		if (density > 0.01f) 
-			density = 0.01f;
+	if (density > 0.01f)
+		density = 0.01f;
 
-		// Compute number of particles to emit based on precip density and emission area and dt
-		float fParticles = size[0] * size[1] * density * fTimeDelta + m_Remainder; 
-		int cParticles = (int)fParticles;
-		m_Remainder = fParticles - cParticles;
+	// Compute number of particles to emit based on precip density and emission area and dt
+	float fParticles = size[0] * size[1] * density * fTimeDelta + m_Remainder;
+	int cParticles = (int)fParticles;
+	m_Remainder = fParticles - cParticles;
 
-		// calculate the max amount of time it will take this flake to fall.
-		// This works if we assume the wind doesn't have a z component
-		VectorCopy( s_WindVector, vel );
-		vel[2] -= GetSpeed();
+	// calculate the max amount of time it will take this flake to fall.
+	// This works if we assume the wind doesn't have a z component
+	VectorCopy( s_WindVector, vel );
+	vel[2] -= GetSpeed();
 
-		// Emit all the particles
-		for ( int i = 0 ; i < cParticles ; i++ )
+	// Emit all the particles
+	for ( int i = 0 ; i < cParticles ; i++ )
+	{
+		Vector vParticlePos = org;
+		vParticlePos[ 0 ] += size[ 0 ] * random->RandomFloat(0, 1);
+		vParticlePos[ 1 ] += size[ 1 ] * random->RandomFloat(0, 1);
+
+		// Figure out where the particle should lie in Z by tracing a line from the player's height up to the
+		// desired height and making sure it doesn't hit a wall.
+		Vector vPlayerHeight = vParticlePos;
+		vPlayerHeight.z = vPlayerCenter.z;
+
+		trace_t trace;
+		UTIL_TraceLine( vPlayerHeight, vParticlePos, MASK_SOLID_BRUSHONLY, NULL, COLLISION_GROUP_NONE, &trace );
+		if ( trace.fraction < 1 )
 		{
-			Vector vParticlePos = org;
-			vParticlePos[ 0 ] += size[ 0 ] * random->RandomFloat(0, 1);
-			vParticlePos[ 1 ] += size[ 1 ] * random->RandomFloat(0, 1);
-
-			// Figure out where the particle should lie in Z by tracing a line from the player's height up to the 
-			// desired height and making sure it doesn't hit a wall.
-			Vector vPlayerHeight = vParticlePos;
-			vPlayerHeight.z = vPlayerCenter.z;
-
-			trace_t trace;
-			UTIL_TraceLine( vPlayerHeight, vParticlePos, MASK_SOLID_BRUSHONLY, NULL, COLLISION_GROUP_NONE, &trace );
-			if ( trace.fraction < 1 )
+			// If we hit a brush, then don't spawn the particle.
+			if ( trace.surface.flags & SURF_SKY )
 			{
-				// If we hit a brush, then don't spawn the particle.
-				if ( trace.surface.flags & SURF_SKY )
-				{
-					vParticlePos = trace.endpos;
-				}
-				else
-				{
-					continue;
-				}
+				vParticlePos = trace.endpos;
 			}
+			else
+			{
+				continue;
+			}
+		}
 
 		CreateRainOrSnowParticle( vParticlePos, vel );
 	}
