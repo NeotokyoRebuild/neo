@@ -161,7 +161,7 @@ void CNeoTeamMenu::OnCommand(const char *command)
 {
 	BaseClass::OnCommand(command);
 
-	if (*command == NULL)
+	if (command == nullptr || *command == '\0')
 	{
 		return;
 	}

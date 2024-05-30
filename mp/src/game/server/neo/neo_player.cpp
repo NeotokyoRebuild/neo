@@ -2494,7 +2494,7 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 
 	const char* szWep = CNEOWeaponLoadout::GetLoadoutWeaponEntityName(m_iNeoClass.Get(), m_iLoadoutWepChoice, false);
 #if DEBUG
-	DevMsg("Loadout slot: %i (\"%s\")\n", m_iLoadoutWepChoice, szWep);
+	DevMsg("Loadout slot: %i (\"%s\")\n", m_iLoadoutWepChoice.Get(), szWep);
 #endif
 
 	// If I already own this type don't create one

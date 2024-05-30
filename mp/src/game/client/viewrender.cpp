@@ -4058,7 +4058,7 @@ void CRendering3dView::DrawOpaqueRenderables( ERenderDepthMode DepthMode )
 					arrBoneSetupNpcsLast[ numOpaqueEnts - numNpcs ] = pba;
 					
 					itEntity->m_pRenderable = NULL;		// We will render NPCs separately
-					itEntity->m_RenderHandle = NULL;
+					itEntity->m_RenderHandle = 0;
 					
 					continue;
 				}
@@ -5285,11 +5285,11 @@ void CBaseWorldView::PopView()
 			// these renders paths used their surfaces, so blit their results
 			if ( m_DrawFlags & DF_RENDER_REFRACTION )
 			{
-				pRenderContext->CopyRenderTargetToTextureEx( GetWaterRefractionTexture(), NULL, NULL );
+				pRenderContext->CopyRenderTargetToTextureEx( GetWaterRefractionTexture(), 0, NULL );
 			}
 			if ( m_DrawFlags & DF_RENDER_REFLECTION )
 			{
-				pRenderContext->CopyRenderTargetToTextureEx( GetWaterReflectionTexture(), NULL, NULL );
+				pRenderContext->CopyRenderTargetToTextureEx( GetWaterReflectionTexture(), 0, NULL );
 			}
 		}
 

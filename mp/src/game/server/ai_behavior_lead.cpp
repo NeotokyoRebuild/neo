@@ -265,8 +265,8 @@ bool CAI_LeadBehavior::GetClosestPointOnRoute( const Vector &targetPos, Vector *
 	}
 
 	// Find the nearest node to the target (going forward)
-	float		flNearestDist2D	= 999999999;
-	float		flNearestDist	= 999999999;
+	float		flNearestDist2D	= 999999999.0f;
+	float		flNearestDist	= 999999999.0f;
 	float		flPathDist, flPathDist2D;
 
 	Vector vecNearestPoint(0, 0, 0);
@@ -1543,7 +1543,7 @@ void CAI_LeadGoal::InputActivate( inputdata_t &inputdata )
 	AI_LeadArgs_t leadArgs = { 
 		GetGoalEntityName(), 
 		STRING(m_iszWaitPointName), 
-		m_spawnflags, 
+		static_cast<unsigned int>(m_spawnflags),
 		m_flWaitDistance, 
 		m_flLeadDistance, 
 		m_flRetrieveDistance, 

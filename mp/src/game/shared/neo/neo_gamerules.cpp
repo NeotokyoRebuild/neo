@@ -852,14 +852,14 @@ void CNEORules::StartNextRound()
 
 	CleanUpMap();
 
-	// TODO (nullsystem): There should be a more sophisticated logic to be able to restore XP
+	// NEO TODO (nullsystem): There should be a more sophisticated logic to be able to restore XP
 	// for when moving from idle to preroundfreeze, or in the future, competitive with whatever
 	// extra stuff in there. But to keep it simple: just clear if it was a warmup.
 	const bool clearXP = (m_nRoundStatus == NeoRoundStatus::Warmup);
 	SetRoundStatus(NeoRoundStatus::PreRoundFreeze);
 
 	char RoundMsg[11];
-	COMPILE_TIME_ASSERT(sizeof(RoundMsg) == sizeof("Round 99\n\0"));
+	static_assert(sizeof(RoundMsg) == sizeof("Round 99\n\0"), "RoundMsg requires to fit round numbers up to 2 digits");
 	V_sprintf_safe(RoundMsg, "Round %d\n", Min(99, ++m_iRoundNumber));
 	UTIL_CenterPrintAll(RoundMsg);
 
@@ -1327,15 +1327,13 @@ bool CNEORules::RoundIsMatchPoint() const
 {
 	auto teamJinrai = GetGlobalTeam(TEAM_JINRAI);
 	auto teamNSF = GetGlobalTeam(TEAM_NSF);
-	if (teamJinrai && teamNSF)
+	if (teamJinrai && teamNSF && neo_round_limit.GetInt() != 0)
 	{
-		if (neo_round_limit.GetInt() != 0)
-		{
-			const int roundDiff = neo_round_limit.GetInt() - (m_iRoundNumber - 1);
-			return (!RoundIsInSuddenDeath() &&
-				((teamJinrai->GetRoundsWon() + 1) > (teamNSF->GetRoundsWon() + roundDiff)) ||
-				((teamNSF->GetRoundsWon() + 1) > (teamJinrai->GetRoundsWon() + roundDiff)));
-		}
+		if (RoundIsInSuddenDeath()) return false;
+		const int roundDiff = neo_round_limit.GetInt() - (m_iRoundNumber - 1);
+		if ((teamJinrai->GetRoundsWon() + 1) > (teamNSF->GetRoundsWon() + roundDiff)) return true;
+		if ((teamNSF->GetRoundsWon() + 1) > (teamJinrai->GetRoundsWon() + roundDiff)) return true;
+		return false;
 	}
 	return false;
 }
@@ -1405,10 +1403,14 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 		{
 			// If there's a round limit and the other team cannot really catch up with the
 			// winning team, then end the match early.
-			const int roundDiff = neo_round_limit.GetInt() - (m_iRoundNumber - 1);
-			if (!RoundIsInSuddenDeath() &&
-				(teamJinrai->GetRoundsWon() > (teamNSF->GetRoundsWon() + roundDiff)) ||
-				(teamNSF->GetRoundsWon() > (teamJinrai->GetRoundsWon() + roundDiff)))
+			bool earlyWin = false;
+			if (!RoundIsInSuddenDeath())
+			{
+				const int roundDiff = neo_round_limit.GetInt() - (m_iRoundNumber - 1);
+				earlyWin = (earlyWin || (teamJinrai->GetRoundsWon() > (teamNSF->GetRoundsWon() + roundDiff)));
+				earlyWin = (earlyWin || (teamNSF->GetRoundsWon() > (teamJinrai->GetRoundsWon() + roundDiff)));
+			}
+			if (earlyWin)
 			{
 				V_sprintf_safe(victoryMsg, "Team %s wins the match!\n",
 						((teamJinrai->GetRoundsWon() > teamNSF->GetRoundsWon()) ? "Jinrai" : "NSF"));
@@ -1464,7 +1466,7 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 		else
 		{
 			V_sprintf_safe(victoryMsg, "Unknown Neotokyo victory reason %i\n", iWinReason);
-			Warning(victoryMsg);
+			Warning("%s", victoryMsg);
 			Assert(false);
 		}
 	}
