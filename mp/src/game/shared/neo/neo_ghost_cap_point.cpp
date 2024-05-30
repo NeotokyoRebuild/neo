@@ -215,13 +215,13 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 		}
 
 		const Vector dir = player->GetAbsOrigin() - GetAbsOrigin();
-		const float distance = dir.Length2D();
+		const float distance = dir.Length();
 
 		Assert(distance >= 0);
 
 		// Has the ghost carrier reached inside our radius?
 		// NEO TODO (Rain): newbie UI helpers for approaching wrong team cap
-		if (distance >= (m_flCapzoneRadius / 2.0f))
+		if (distance > m_flCapzoneRadius)
 		{
 			continue;
 		}
