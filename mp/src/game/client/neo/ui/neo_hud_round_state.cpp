@@ -1,4 +1,6 @@
 #include "cbase.h"
+
+#include <vgui_controls/ImagePanel.h>
 #include "neo_hud_round_state.h"
 
 #include "iclientmode.h"
@@ -9,8 +11,6 @@
 
 #include "neo_gamerules.h"
 #include <initializer_list>
-
-#include <vgui_controls/ImagePanel.h>
 
 #include "c_neo_player.h"
 #include "c_team.h"

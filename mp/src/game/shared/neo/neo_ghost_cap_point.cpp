@@ -252,8 +252,7 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 		char msg[64 + MAX_PLACE_NAME_LENGTH];
 		COMPILE_TIME_ASSERT(sizeof(msg) <= 512); // max supported
 
-		V_sprintf_safe(msg, "%s captured the ghost\0",
-		player->GetPlayerName());
+		V_sprintf_safe(msg, "%s captured the ghost", player->GetPlayerName());
 
 		UserMessageBegin(filter, "RoundResult");
 		WRITE_STRING(player->GetTeamNumber() == TEAM_JINRAI ? "jinrai": "nsf");	// which team won

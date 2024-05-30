@@ -852,14 +852,14 @@ void CNEORules::StartNextRound()
 
 	CleanUpMap();
 
-	// TODO (nullsystem): There should be a more sophisticated logic to be able to restore XP
+	// NEO TODO (nullsystem): There should be a more sophisticated logic to be able to restore XP
 	// for when moving from idle to preroundfreeze, or in the future, competitive with whatever
 	// extra stuff in there. But to keep it simple: just clear if it was a warmup.
 	const bool clearXP = (m_nRoundStatus == NeoRoundStatus::Warmup);
 	SetRoundStatus(NeoRoundStatus::PreRoundFreeze);
 
 	char RoundMsg[11];
-	COMPILE_TIME_ASSERT(sizeof(RoundMsg) == sizeof("Round 99\n\0"));
+	static_assert(sizeof(RoundMsg) == sizeof("Round 99\n\0"), "RoundMsg requires to fit round numbers up to 2 digits");
 	V_sprintf_safe(RoundMsg, "Round %d\n", Min(99, ++m_iRoundNumber));
 	UTIL_CenterPrintAll(RoundMsg);
 
