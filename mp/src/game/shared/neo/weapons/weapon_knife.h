@@ -32,12 +32,12 @@ public:
 
 	CWeaponKnife();
 
-	virtual void PrimaryAttack(void) final;
-	virtual void SecondaryAttack(void) final;
+	virtual void PrimaryAttack() final;
+	virtual void SecondaryAttack() final;
 	virtual void Drop(const Vector &vecVelocity) final { /* knives shouldn't drop */ }
 
 	virtual bool CanBePickedUpByClass(int classId) final;
-	virtual bool CanDrop(void) final { return false; }
+	virtual bool CanDrop() final { return false; }
 
 #ifdef CLIENT_DLL
 	virtual bool ShouldDraw() final;
@@ -45,16 +45,16 @@ public:
 	virtual bool IsViewable() final;
 #endif
 
-	virtual	void Spawn(void) final;
-	virtual void ItemPreFrame(void) final;
-	virtual void ItemBusyFrame(void) final;
-	virtual void ItemPostFrame(void) final;
+	virtual	void Spawn() final;
+	virtual void ItemPreFrame() final;
+	virtual void ItemBusyFrame() final;
+	virtual void ItemPostFrame() final;
 
-	virtual Activity GetPrimaryAttackActivity(void) final { return ACT_VM_HITCENTER; }
-	virtual Activity GetSecondaryAttackActivity(void) final { return ACT_VM_HITCENTER2; }
-	virtual float GetFireRate(void) final { return 0.534f; }
-	virtual float GetSpeedScale(void) const final { return 1.0; }
-	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { return NEO_WEP_KNIFE; }
+	virtual Activity GetPrimaryAttackActivity() final { return ACT_VM_HITCENTER; }
+	virtual Activity GetSecondaryAttackActivity() final { return ACT_VM_HITCENTER2; }
+	virtual float GetFireRate() final { return 0.534f; }
+	virtual float GetSpeedScale() const final { return 1.0; }
+	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits() const { return NEO_WEP_KNIFE; }
 
 protected:
 	void		ImpactEffect(trace_t &traceHit);

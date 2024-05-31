@@ -65,12 +65,12 @@ constexpr float KNIFE_RANGE = 51.0f;
 constexpr float KNIFE_DAMAGE = 25.0f;
 }
 
-CWeaponKnife::CWeaponKnife(void)
+CWeaponKnife::CWeaponKnife()
 {
 	m_bFiresUnderwater = true;
 }
 
-void CWeaponKnife::Spawn(void)
+void CWeaponKnife::Spawn()
 {
 	m_fMinRange1 = 0;
 	m_fMinRange2 = 0;
@@ -79,23 +79,23 @@ void CWeaponKnife::Spawn(void)
 	BaseClass::Spawn();
 }
 
-void CWeaponKnife::ItemPreFrame(void)
+void CWeaponKnife::ItemPreFrame()
 {
 	BaseClass::ItemPreFrame();
 }
 
-void CWeaponKnife::ItemBusyFrame(void)
+void CWeaponKnife::ItemBusyFrame()
 {
 	BaseClass::ItemBusyFrame();
 }
 
-void CWeaponKnife::ItemPostFrame(void)
+void CWeaponKnife::ItemPostFrame()
 {
 	ProcessAnimationEvents();
 	BaseClass::ItemPostFrame();
 }
 
-void CWeaponKnife::PrimaryAttack(void)
+void CWeaponKnife::PrimaryAttack()
 {
 	auto owner = static_cast<CNEO_Player*>(GetOwner());
 	if (owner && owner->GetNeoFlags() & NEO_FL_FREEZETIME)
@@ -115,7 +115,7 @@ void CWeaponKnife::PrimaryAttack(void)
 #endif
 }
 
-void CWeaponKnife::SecondaryAttack(void)
+void CWeaponKnife::SecondaryAttack()
 {
 	Swing(true);
 }
