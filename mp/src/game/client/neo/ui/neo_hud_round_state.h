@@ -18,10 +18,10 @@ class CNEOHud_RoundState : public CNEOHud_ChildElement, public CHudElement, publ
 
 public:
 	CNEOHud_RoundState(const char *pElementName, vgui::Panel *parent = NULL);
+	~CNEOHud_RoundState();
 
 	virtual void ApplySchemeSettings(vgui::IScheme *pScheme);
 	virtual void Paint();
-	virtual void DeleteImageList() { if (m_pImageList) { delete m_pImageList; } };
 
 protected:
 	virtual void UpdateStateForNeoHudElementDraw();
@@ -115,6 +115,8 @@ private:
 
 	vgui::ImageList* m_pImageList;
 	CUtlMap<CSteamID, int>		m_mapAvatarsToImageList;
+
+	int m_iNextAvatarUpdate;
 
 	CPanelAnimationVarAliasType(int, box_color_r, "box_color_r", "116", "int");
 	CPanelAnimationVarAliasType(int, box_color_g, "box_color_g", "116", "int");
