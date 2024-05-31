@@ -32,30 +32,28 @@ public:
 
 	CWeaponKnife();
 
-	virtual void PrimaryAttack(void) override;
-	virtual void SecondaryAttack(void) override;
-	virtual void Drop(const Vector &vecVelocity) override { /* knives shouldn't drop */ }
+	virtual void PrimaryAttack(void) final;
+	virtual void SecondaryAttack(void) final;
+	virtual void Drop(const Vector &vecVelocity) final { /* knives shouldn't drop */ }
 
-	virtual bool CanBePickedUpByClass(int classId) override;
-	virtual bool CanDrop(void) override { return false; }
+	virtual bool CanBePickedUpByClass(int classId) final;
+	virtual bool CanDrop(void) final { return false; }
 
 #ifdef CLIENT_DLL
-	virtual bool ShouldDraw() override;
+	virtual bool ShouldDraw() final;
 #else
-	virtual bool IsViewable() override;
+	virtual bool IsViewable() final;
 #endif
 
-	virtual	void Spawn(void) override;
-	virtual void ItemPreFrame(void) override;
-	virtual void ItemBusyFrame(void) override;
-	virtual void ItemPostFrame(void) override;
+	virtual	void Spawn(void) final;
+	virtual void ItemPreFrame(void) final;
+	virtual void ItemBusyFrame(void) final;
+	virtual void ItemPostFrame(void) final;
 
-	virtual Activity GetPrimaryAttackActivity(void) override { return ACT_VM_HITCENTER; }
-	virtual Activity GetSecondaryAttackActivity(void) override { return ACT_VM_HITCENTER2; }
-	float GetRange(void) const { return 51.0f; }
-	float GetDamageForActivity(Activity hitActivity) { return 25.0f; }
-	virtual float GetFireRate(void) const { return 0.534f; }
-	virtual float GetSpeedScale(void) const { return 1.0; }
+	virtual Activity GetPrimaryAttackActivity(void) final { return ACT_VM_HITCENTER; }
+	virtual Activity GetSecondaryAttackActivity(void) final { return ACT_VM_HITCENTER2; }
+	virtual float GetFireRate(void) final { return 0.534f; }
+	virtual float GetSpeedScale(void) const final { return 1.0; }
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { return NEO_WEP_KNIFE; }
 
 protected:

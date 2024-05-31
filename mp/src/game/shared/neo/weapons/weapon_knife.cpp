@@ -60,6 +60,11 @@ acttable_t	CWeaponKnife::m_acttable[] =
 IMPLEMENT_ACTTABLE(CWeaponKnife);
 #endif
 
+namespace {
+constexpr float KNIFE_RANGE = 51.0f;
+constexpr float KNIFE_DAMAGE = 25.0f;
+}
+
 CWeaponKnife::CWeaponKnife(void)
 {
 	m_bFiresUnderwater = true;
@@ -148,13 +153,13 @@ void CWeaponKnife::Swing(int bIsSecondary)
 
 	pOwner->EyeVectors(&forward, NULL, NULL);
 
-	Vector swingEnd = swingStart + forward * GetRange();
+	Vector swingEnd = swingStart + forward * KNIFE_RANGE;
 	UTIL_TraceLine(swingStart, swingEnd, MASK_SHOT_HULL, pOwner, COLLISION_GROUP_NONE, &traceHit);
 	const Activity nHitActivity = KNIFE_VM_ATTACK_ACT;
 
 #ifndef CLIENT_DLL
 	// Like bullets, bludgeon traces have to trace against triggers.
-	CTakeDamageInfo triggerInfo(GetOwner(), GetOwner(), GetDamageForActivity(nHitActivity), DMG_SLASH);
+	CTakeDamageInfo triggerInfo(GetOwner(), GetOwner(), KNIFE_DAMAGE, DMG_SLASH);
 	TraceAttackToTriggers(triggerInfo, traceHit.startpos, traceHit.endpos, vec3_origin);
 #endif
 
@@ -194,7 +199,7 @@ void CWeaponKnife::Swing(int bIsSecondary)
 	if (traceHit.fraction == 1.0f)
 	{
 		// We want to test the first swing again
-		Vector testEnd = swingStart + forward * GetRange();
+		Vector testEnd = swingStart + forward * KNIFE_RANGE;
 
 		// See if we happened to hit water
 		ImpactWater(swingStart, testEnd);
@@ -265,6 +270,7 @@ Activity CWeaponKnife::ChooseIntersectionPointAndActivity(trace_t& hitTrace, con
 
 void CWeaponKnife::Hit(trace_t& traceHit, Activity nHitActivity)
 {
+	NOTE_UNUSED(nHitActivity);
 	Assert(nHitActivity == KNIFE_VM_ATTACK_ACT);
 
 	CBasePlayer *pPlayer = ToBasePlayer(GetOwner());
@@ -285,7 +291,7 @@ void CWeaponKnife::Hit(trace_t& traceHit, Activity nHitActivity)
 		VectorNormalize(hitDirection);
 
 #ifndef CLIENT_DLL
-		CTakeDamageInfo info(GetOwner(), GetOwner(), GetDamageForActivity(nHitActivity), DMG_SLASH);
+		CTakeDamageInfo info(GetOwner(), GetOwner(), KNIFE_DAMAGE, DMG_SLASH);
 
 		CalculateMeleeDamageForce(&info, hitDirection, traceHit.endpos);
 
