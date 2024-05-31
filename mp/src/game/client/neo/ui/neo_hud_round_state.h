@@ -34,7 +34,7 @@ private:
 	void DrawFriend(int playerIndex, int teamIndex);
 	void DrawEnemy(int playerIndex, int teamIndex);
 	void UpdatePlayerAvatar(int playerIndex);
-	void CNEOHud_RoundState::SetTextureToAvatar(int playerIndex);
+	void SetTextureToAvatar(int playerIndex);
 
 private:
 	vgui::HFont m_hOCRSmallFont;
