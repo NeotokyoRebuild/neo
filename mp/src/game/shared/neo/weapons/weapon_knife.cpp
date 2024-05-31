@@ -1,6 +1,12 @@
 #include "cbase.h"
 #include "weapon_knife.h"
 
+#ifndef CLIENT_DLL
+#include "ilagcompensationmanager.h"
+#include "effect_dispatch_data.h"
+#include "te_effect_dispatch.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -56,6 +62,51 @@ IMPLEMENT_ACTTABLE(CWeaponKnife);
 
 CWeaponKnife::CWeaponKnife(void)
 {
+	m_bFiresUnderwater = true;
+}
+
+void CWeaponKnife::Spawn(void)
+{
+	m_fMinRange1 = 0;
+	m_fMinRange2 = 0;
+	m_fMaxRange1 = 64;
+	m_fMaxRange2 = 64;
+	BaseClass::Spawn();
+}
+
+void CWeaponKnife::UpdatePenaltyTime(void)
+{
+	CBasePlayer *pOwner = ToBasePlayer(GetOwner());
+	if (pOwner == nullptr) return;
+
+	if ((IsAutomatic() && (!(pOwner->m_afButtonLast & IN_ATTACK))) &&
+			(gpGlobals->curtime - m_flLastAttackTime > GetFireRate()))
+	{
+		m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
+	}
+
+	if (m_flSoonestAttack > gpGlobals->curtime)
+	{
+		m_flSoonestAttack -= (gpGlobals->curtime - m_flLastAttackTime);
+	}
+}
+
+void CWeaponKnife::ItemPreFrame(void)
+{
+	UpdatePenaltyTime();
+	BaseClass::ItemPreFrame();
+}
+
+void CWeaponKnife::ItemBusyFrame(void)
+{
+	UpdatePenaltyTime();
+	BaseClass::ItemBusyFrame();
+}
+
+void CWeaponKnife::ItemPostFrame(void)
+{
+	ProcessAnimationEvents();
+	BaseClass::ItemPostFrame();
 }
 
 void CWeaponKnife::PrimaryAttack(void)
@@ -66,20 +117,34 @@ void CWeaponKnife::PrimaryAttack(void)
 		return;
 	}
 
-	BaseClass::PrimaryAttack();
+#ifndef CLIENT_DLL
+	CHL2MP_Player *pPlayer = ToHL2MPPlayer(GetPlayerOwner());
+	// Move other players back to history positions based on local player's lag
+	lagcompensation->StartLagCompensation(pPlayer, pPlayer->GetCurrentCommand());
+#endif
+	Swing(false);
+#ifndef CLIENT_DLL
+	// Move other players back to history positions based on local player's lag
+	lagcompensation->FinishLagCompensation(pPlayer);
+#endif
+}
+
+void CWeaponKnife::SecondaryAttack(void)
+{
+	Swing(true);
 }
 
 #ifdef CLIENT_DLL
 bool CWeaponKnife::ShouldDraw()
 {
 	auto owner = static_cast<CNEO_Player*>(GetOwner());
-	return (owner && owner->IsAlive() && owner->GetActiveWeapon() == this);
+	return (!owner || (owner && owner->IsAlive() && owner->GetActiveWeapon() == this));
 }
 #else
 bool CWeaponKnife::IsViewable()
 {
 	auto owner = static_cast<CNEO_Player*>(GetOwner());
-	return (owner && owner->IsAlive() && owner->GetActiveWeapon() == this);
+	return (!owner || (owner && owner->IsAlive() && owner->GetActiveWeapon() == this));
 }
 #endif
 
@@ -261,12 +326,12 @@ void CWeaponKnife::Hit(trace_t& traceHit, Activity nHitActivity)
 {
 	Assert(nHitActivity == KNIFE_VM_ATTACK_ACT);
 
-	CBasePlayer* pPlayer = ToBasePlayer(GetOwner());
+	CBasePlayer *pPlayer = ToBasePlayer(GetOwner());
 
-	//Do view kick
-//	AddViewKick();
+	// Do view kick
+	//AddViewKick();
 
-	CBaseEntity* pHitEntity = traceHit.m_pEnt;
+	CBaseEntity *pHitEntity = traceHit.m_pEnt;
 
 	//Apply damage to a hit target
 	if (pHitEntity != NULL)
@@ -294,4 +359,54 @@ void CWeaponKnife::Hit(trace_t& traceHit, Activity nHitActivity)
 
 	// Apply an impact effect
 	ImpactEffect(traceHit);
+}
+
+void CWeaponKnife::ImpactEffect(trace_t &traceHit)
+{
+	// See if we hit water (we don't do the other impact effects in this case)
+	if (ImpactWater(traceHit.startpos, traceHit.endpos))
+		return;
+
+	//FIXME: need new decals
+	UTIL_ImpactTrace(&traceHit, DMG_CLUB);
+}
+
+bool CWeaponKnife::ImpactWater(const Vector &start, const Vector &end)
+{
+	//FIXME: This doesn't handle the case of trying to splash while being underwater, but that's not going to look good
+	//		 right now anyway...
+
+	// We must start outside the water
+	if (UTIL_PointContents(start) & (CONTENTS_WATER | CONTENTS_SLIME))
+		return false;
+
+	// We must end inside of water
+	if (!(UTIL_PointContents(end) & (CONTENTS_WATER | CONTENTS_SLIME)))
+		return false;
+
+	trace_t	waterTrace;
+
+	UTIL_TraceLine(start, end, (CONTENTS_WATER | CONTENTS_SLIME), GetOwner(), COLLISION_GROUP_NONE, &waterTrace);
+
+	if (waterTrace.fraction < 1.0f)
+	{
+#ifndef CLIENT_DLL
+		CEffectData	data;
+
+		data.m_fFlags = 0;
+		data.m_vOrigin = waterTrace.endpos;
+		data.m_vNormal = waterTrace.plane.normal;
+		data.m_flScale = 8.0f;
+
+		// See if we hit slime
+		if (waterTrace.contents & CONTENTS_SLIME)
+		{
+			data.m_fFlags |= FX_WATER_IN_SLIME;
+		}
+
+		DispatchEffect("watersplash", data);
+#endif
+	}
+
+	return true;
 }
