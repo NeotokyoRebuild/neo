@@ -79,7 +79,7 @@ void CWeaponKnife::UpdatePenaltyTime(void)
 	CBasePlayer *pOwner = ToBasePlayer(GetOwner());
 	if (pOwner == nullptr) return;
 
-	if ((IsAutomatic() && (!(pOwner->m_afButtonLast & IN_ATTACK))) &&
+	if ((!(pOwner->m_afButtonLast & IN_ATTACK)) &&
 			(gpGlobals->curtime - m_flLastAttackTime > GetFireRate()))
 	{
 		m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
@@ -132,6 +132,11 @@ void CWeaponKnife::PrimaryAttack(void)
 void CWeaponKnife::SecondaryAttack(void)
 {
 	Swing(true);
+}
+
+bool CWeaponKnife::CanBePickedUpByClass(int classId)
+{
+	return classId != NEO_CLASS_SUPPORT;
 }
 
 #ifdef CLIENT_DLL

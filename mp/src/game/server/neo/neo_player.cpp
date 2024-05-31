@@ -39,9 +39,6 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-void NEODropPrimedFragGrenade(CNEO_Player *pPlayer, CBaseCombatWeapon *pGrenade);
-void NEODropPrimedSmokeGrenade(CNEO_Player* pPlayer, CBaseCombatWeapon* pSmokeGrenade);
-
 LINK_ENTITY_TO_CLASS(player, CNEO_Player);
 
 IMPLEMENT_SERVERCLASS_ST(CNEO_Player, DT_NEO_Player)
@@ -1942,11 +1939,6 @@ bool CNEO_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 	{
 		return false;
 	}
-
-	if (GetClass() == NEO_CLASS_SUPPORT && dynamic_cast<CWeaponKnife *>(pWeapon))
-	{
-		return false;
-	}
 	
 	auto neoWeapon = dynamic_cast<CNEOBaseCombatWeapon*>(pWeapon);
 	if(neoWeapon)
@@ -2028,44 +2020,39 @@ void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
 	const Vector *pvecTarget, const Vector *pVelocity )
 {
 	m_bDroppedAnything = true;
-	auto neoWeapon = dynamic_cast<CNEOBaseCombatWeapon*>(pWeapon);
-	if(neoWeapon && neoWeapon->CanDrop())
+	if(auto neoWeapon = dynamic_cast<CNEOBaseCombatWeapon *>(pWeapon))
 	{
-		if (IsDead() && pWeapon)
+		if (neoWeapon->CanDrop() && IsDead() && pWeapon)
 		{
-			auto activeWep = GetActiveWeapon();
-			if (activeWep)
+			if (auto *activeWep = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon()))
 			{
 				// If player has held down an attack key since the previous frame
 				if (((m_nButtons & IN_ATTACK) && (!(m_afButtonPressed & IN_ATTACK))) ||
 					((m_nButtons & IN_ATTACK2) && (!(m_afButtonPressed & IN_ATTACK2))))
 				{
 					// Drop a grenade if it's primed.
-					if (activeWep == Weapon_OwnsThisType("weapon_grenade"))
+					if (auto pWeaponFrag = dynamic_cast<CWeaponGrenade *>(activeWep))
 					{
-						NEODropPrimedFragGrenade(this, GetActiveWeapon());
+						pWeaponFrag->ThrowGrenade(this);
+						pWeaponFrag->DecrementAmmo(this);
 						return;
 					}
 					// Drop a smoke if it's primed.
-					else if (activeWep == Weapon_OwnsThisType("weapon_smokegrenade"))
+					else if (auto pWeaponSmoke = dynamic_cast<CWeaponSmokeGrenade *>(activeWep))
 					{
-						NEODropPrimedSmokeGrenade(this, activeWep);
+						pWeaponSmoke->ThrowGrenade(this);
+						pWeaponSmoke->DecrementAmmo(this);
 						return;
 					}
 				}
 			}
 		}
-		
-		BaseClass::Weapon_Drop(pWeapon, pvecTarget, pVelocity);
-	} else if(!neoWeapon)
-	{
-		if(dynamic_cast<CWeaponKnife*>(pWeapon)) //TODO: Remove once knife is neoweapon
+		else if (!neoWeapon->CanDrop())
 		{
-			return;
+			return; // Return early to not drop weapon
 		}
-		
-		BaseClass::Weapon_Drop(pWeapon, pvecTarget, pVelocity);
-	}	
+	}
+	BaseClass::Weapon_Drop(pWeapon, pvecTarget, pVelocity);
 }
 
 void CNEO_Player::UpdateOnRemove( void )

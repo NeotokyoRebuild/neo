@@ -35,6 +35,8 @@ public:
 	virtual void PrimaryAttack(void) override;
 	virtual void SecondaryAttack(void) override;
 	virtual void Drop(const Vector &vecVelocity) override { /* knives shouldn't drop */ }
+
+	virtual bool CanBePickedUpByClass(int classId) override;
 	virtual bool CanDrop(void) override { return false; }
 
 #ifdef CLIENT_DLL
