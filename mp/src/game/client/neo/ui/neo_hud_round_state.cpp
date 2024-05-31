@@ -1,4 +1,6 @@
 #include "cbase.h"
+
+#include <vgui_controls/ImagePanel.h>
 #include "neo_hud_round_state.h"
 
 #include "iclientmode.h"

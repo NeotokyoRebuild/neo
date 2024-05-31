@@ -3273,7 +3273,7 @@ void MissingSceneWarning( char const *scenename )
 	static CUtlSymbolTable missing;
 
 	// Make sure we only show the message once
-	if ( UTL_INVAL_SYMBOL == missing.Find( scenename ) )
+	if ( !missing.Find( scenename ).IsValid() )
 	{
 		missing.AddString( scenename );
 

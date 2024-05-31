@@ -62,7 +62,7 @@ if(CMAKE_VERBOSE_MAKEFILE)
     set(CMAKE_EXECUTE_PROCESS_COMMAND_ECHO STDOUT)
 endif()
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE OFF)
 
@@ -132,15 +132,16 @@ if(OS_WINDOWS)
         /W4
         /Gw # Optimize Global Data
 
+        /wd4456
+        /wd4457
+        /wd4458
+        /wd4459
+        /wd4559
+        /wd5054
+        /wd4838
         #/wd4316
-        #/wd4456
-        #/wd4459
-        #/wd4457
-        #/wd4838
-        #/wd26945
-        #/wd4458
-        #/wd4559
         #/wd4565
+	#/wd26945 # This is an IntelliSense not build warning, this won't even mask it anyway
     )
 
     add_compile_definitions(
@@ -271,6 +272,7 @@ if(OS_LINUX OR OS_MACOS)
         -Wno-unused-local-typedefs
         -Wno-switch
         -Wno-strict-aliasing
+        -Wno-address
 
         -Werror=return-type
         -fdiagnostics-show-option
@@ -285,6 +287,9 @@ if(OS_LINUX OR OS_MACOS)
 
         # Fix for non-clickable vgui buttons when using -O3
         -fno-ipa-cp-clone
+
+        # Fix for "error: cast from pointer to smaller type 'unsigned int' loses information"
+        #-fms-extensions
     )
 
     # Disable option for older compiler in docker

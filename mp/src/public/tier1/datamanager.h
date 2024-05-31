@@ -133,10 +133,10 @@ class CDataManager : public CDataManagerBase
 	typedef CDataManagerBase BaseClass;
 public:
 
-	CDataManager<STORAGE_TYPE, CREATE_PARAMS, LOCK_TYPE, MUTEX_TYPE>( unsigned int size = (unsigned)-1 ) : BaseClass(size) {}
+	CDataManager( unsigned int size = (unsigned)-1 ) : BaseClass(size) {}
 	
 
-	~CDataManager<STORAGE_TYPE, CREATE_PARAMS, LOCK_TYPE, MUTEX_TYPE>()
+	~CDataManager()
 	{
 		// NOTE: This must be called in all implementations of CDataManager
 		FreeAllLists();
@@ -251,7 +251,7 @@ private:
 
 inline unsigned short CDataManagerBase::FromHandle( memhandle_t handle )
 {
-	unsigned int fullWord = (unsigned int)handle;
+	unsigned int fullWord = (unsigned int)(size_t)handle;
 	unsigned short serial = fullWord>>16;
 	unsigned short index = fullWord & 0xFFFF;
 	index--;

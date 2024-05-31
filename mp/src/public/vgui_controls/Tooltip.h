@@ -26,6 +26,9 @@ class BaseTooltip
 {
 public:
 	BaseTooltip(Panel *parent, const char *text = NULL);
+#ifdef NEO
+	virtual ~BaseTooltip() {}
+#endif
 
 	virtual void SetText(const char *text);
 	virtual const char *GetText();

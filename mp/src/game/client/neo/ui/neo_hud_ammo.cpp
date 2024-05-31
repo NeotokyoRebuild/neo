@@ -14,7 +14,6 @@
 #include "ienginevgui.h"
 
 #include "neo_hud_elements.h"
-#include "inttostr.h"
 
 #include "ammodef.h"
 
@@ -242,7 +241,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 			surface()->DrawSetTextFont(m_hBulletFont);
 			surface()->DrawSetTextPos(digit_xpos + xpos, digit_ypos + ypos);
 			wchar_t bullets[22];
-			V_swprintf_safe(bullets, L"%i/%i\0", magSizeCurrent, magSizeMax);
+			V_swprintf_safe(bullets, L"%i/%i", magSizeCurrent, magSizeMax);
 			surface()->DrawPrintText(bullets, (int)(magSizeCurrent == 0 ? 1 : log10(magSizeCurrent) + 1) + (int)(log10(magSizeMax) + 1) + 1);
 			return;
 		}

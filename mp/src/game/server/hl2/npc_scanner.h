@@ -48,7 +48,7 @@ public:
 	void			Precache(void);
 	void			RunTask( const Task_t *pTask );
 	int				SelectSchedule(void);
-	virtual char	*GetScannerSoundPrefix( void );
+	virtual const char	*GetScannerSoundPrefix( void ) override;
 	void			Spawn(void);
 	void			Activate();
 	void			StartTask( const Task_t *pTask );

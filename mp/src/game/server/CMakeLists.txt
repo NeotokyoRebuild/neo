@@ -222,7 +222,6 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/igamesystem.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/igamesystem.h
     ${CMAKE_SOURCE_DIR}/game/shared/interval.h
-    ${CMAKE_SOURCE_DIR}/game/shared/inttostr.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/iscenetokenprocessor.h
     ${CMAKE_SOURCE_DIR}/game/shared/mapentities_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/movevars_shared.cpp
@@ -841,7 +840,6 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/igamemovement.h
     ${CMAKE_SOURCE_DIR}/game/shared/imovehelper.h
     ${CMAKE_SOURCE_DIR}/game/shared/in_buttons.h
-    ${CMAKE_SOURCE_DIR}/game/shared/inttostr.h
     ${CMAKE_SOURCE_DIR}/game/shared/iplayeranimstate.h
     ${CMAKE_SOURCE_DIR}/game/shared/ipredictionsystem.h
     ${CMAKE_SOURCE_DIR}/game/shared/itempents.h
@@ -1462,10 +1460,4 @@ target_sources_grouped(
     hl2mp/te_hl2mp_shotgun_shot.h
 )
 
-add_custom_target(
-    server_copy_lib
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:server> "${NEO_OUTPUT_LIBRARY_PATH}/"
-    COMMAND ${CMAKE_COMMAND} -E create_symlink "${NEO_OUTPUT_LIBRARY_PATH}/server.so" "${NEO_OUTPUT_LIBRARY_PATH}/server_srv.so"
-    DEPENDS server
-    VERBATIM
-)
+add_library_copy_and_symlink(TARGET server CREATE_SRV)

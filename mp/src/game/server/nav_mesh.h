@@ -184,6 +184,10 @@ struct NavVisPair_t
 	CNavArea *pAreas[2];
 };
 
+#if defined(NEO) && defined(LINUX)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnarrowing"
+#endif
 
 // for nav mesh visibilty computation
 class CVisPairHashFuncs
@@ -200,10 +204,13 @@ public:
 	{
 		COMPILE_TIME_ASSERT( sizeof(CNavArea *) == 4 );
 		int key[2] = { (int)item.pAreas[0] + item.pAreas[1]->GetID(), (int)item.pAreas[1] + item.pAreas[0]->GetID() };
-		return Hash8( key );	
+		return Hash8( key );
 	}
 };
 
+#if defined(NEO) && defined(LINUX)
+#pragma GCC diagnostic pop
+#endif
 
 //--------------------------------------------------------------------------------------------------------------
 //
