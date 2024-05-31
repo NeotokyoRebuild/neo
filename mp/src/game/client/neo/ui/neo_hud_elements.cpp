@@ -3,6 +3,8 @@
 
 #include "GameEventListener.h"
 
+#include <vgui_controls/ImagePanel.h>
+
 #include "neo_hud_ammo.h"
 #include "neo_hud_compass.h"
 #include "neo_hud_friendly_marker.h"

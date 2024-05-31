@@ -156,8 +156,9 @@ enum NeoSkin {
 	NEO_SKIN_SECOND,
 	NEO_SKIN_THIRD,
 
-	NEO_SKIN_ENUM_COUNT
+	NEO_SKIN__ENUM_COUNT
 };
+static constexpr int NEO_SKIN_ENUM_COUNT = NEO_SKIN__ENUM_COUNT;
 
 enum NeoClass {
 	NEO_CLASS_RECON = 0,
@@ -168,8 +169,9 @@ enum NeoClass {
 	// using array offsets for recon/assault/support
 	NEO_CLASS_VIP,
 
-	NEO_CLASS_ENUM_COUNT
+	NEO_CLASS__ENUM_COUNT
 };
+static constexpr int NEO_CLASS_ENUM_COUNT = NEO_CLASS__ENUM_COUNT;
 
 enum NeoStar {
 	STAR_NONE = 0,

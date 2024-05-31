@@ -19,11 +19,11 @@
 // but it seems not even offical maps follow it. I haven't actually checked
 // if there's clamping in the original, but setting some sane limits here
 // anyways. These are in Hammer units.
-#define NEO_CAP_MIN_RADIUS 8
-#define NEO_CAP_MAX_RADIUS 10240
+static constexpr float NEO_CAP_MIN_RADIUS = 8.0f;
+static constexpr float NEO_CAP_MAX_RADIUS = 10240.0f;
 
-#define NEO_FGD_TEAMNUM_ATTACKER 0
-#define NEO_FGD_TEAMNUM_DEFENDER 1
+static constexpr int NEO_FGD_TEAMNUM_ATTACKER = 0;
+static constexpr int NEO_FGD_TEAMNUM_DEFENDER = 1;
 
 LINK_ENTITY_TO_CLASS(neo_ghost_retrieval_point, CNEOGhostCapturePoint);
 
@@ -252,8 +252,7 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 		char msg[64 + MAX_PLACE_NAME_LENGTH];
 		COMPILE_TIME_ASSERT(sizeof(msg) <= 512); // max supported
 
-		V_sprintf_safe(msg, "%s captured the ghost\0",
-		player->GetPlayerName());
+		V_sprintf_safe(msg, "%s captured the ghost", player->GetPlayerName());
 
 		UserMessageBegin(filter, "RoundResult");
 		WRITE_STRING(player->GetTeamNumber() == TEAM_JINRAI ? "jinrai": "nsf");	// which team won

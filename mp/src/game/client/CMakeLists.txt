@@ -367,7 +367,6 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/hintmessage.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hintsystem.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/igamesystem.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/inttostr.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/mapentities_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/movevars_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/mp_shareddefs.cpp
@@ -1291,7 +1290,6 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/imovehelper.h
     ${CMAKE_SOURCE_DIR}/game/shared/in_buttons.h
     ${CMAKE_SOURCE_DIR}/game/shared/interval.h
-    ${CMAKE_SOURCE_DIR}/game/shared/inttostr.h
     ${CMAKE_SOURCE_DIR}/game/shared/iplayeranimstate.h
     ${CMAKE_SOURCE_DIR}/game/shared/ipredictionsystem.h
     ${CMAKE_SOURCE_DIR}/game/shared/itempents.h
@@ -1688,10 +1686,4 @@ target_sources_grouped(
     hl2mp/ui/hl2mptextwindow.h
 )
 
-add_custom_target(
-    client_copy_lib
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:client> "${NEO_OUTPUT_LIBRARY_PATH}/"
-    COMMAND ${CMAKE_COMMAND} -E create_symlink "${NEO_OUTPUT_LIBRARY_PATH}/client.so" "${NEO_OUTPUT_LIBRARY_PATH}/client_srv.so"
-    DEPENDS client
-    VERBATIM
-)
+add_library_copy_and_symlink(TARGET client CREATE_SRV)

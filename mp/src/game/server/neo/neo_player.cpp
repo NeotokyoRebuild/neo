@@ -2019,6 +2019,11 @@ bool CNEO_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 	{
 		return false;
 	}
+
+	if (GetClass() == NEO_CLASS_SUPPORT && dynamic_cast<CWeaponKnife *>(pWeapon))
+	{
+		return false;
+	}
 	
 	auto neoWeapon = dynamic_cast<CNEOBaseCombatWeapon*>(pWeapon);
 	if(neoWeapon)
@@ -2534,8 +2539,6 @@ void GiveDet(CNEO_Player* pPlayer)
 
 void CNEO_Player::GiveDefaultItems(void)
 {
-	const bool supportsGetKnife = true;
-
 	switch (GetClass())
 	{
 	case NEO_CLASS_RECON:
@@ -2551,7 +2554,6 @@ void CNEO_Player::GiveDefaultItems(void)
 		Weapon_Switch(Weapon_OwnsThisType("weapon_tachi"));
 		break;
 	case NEO_CLASS_SUPPORT:
-		if (supportsGetKnife) { GiveNamedItem("weapon_knife"); }
 		GiveNamedItem("weapon_kyla");
 		GiveNamedItem("weapon_smokegrenade");
 		Weapon_Switch(Weapon_OwnsThisType("weapon_kyla"));
@@ -2571,7 +2573,7 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 
 	const char* szWep = CNEOWeaponLoadout::GetLoadoutWeaponEntityName(m_iNeoClass.Get(), m_iLoadoutWepChoice, false);
 #if DEBUG
-	DevMsg("Loadout slot: %i (\"%s\")\n", m_iLoadoutWepChoice, szWep);
+	DevMsg("Loadout slot: %i (\"%s\")\n", m_iLoadoutWepChoice.Get(), szWep);
 #endif
 
 	// If I already own this type don't create one

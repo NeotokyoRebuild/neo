@@ -113,9 +113,4 @@ target_sources_grouped(
     Neo_refract_dx9_helper.h
 )
 
-add_custom_target(
-    game_shader_dx9_copy_lib
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:game_shader_dx9> "${NEO_OUTPUT_LIBRARY_PATH}/"
-    DEPENDS game_shader_dx9
-    VERBATIM
-)
+add_library_copy_and_symlink(TARGET game_shader_dx9)

@@ -144,8 +144,13 @@ private:
 	enum
 	{
 		NEARNODE_CACHE_SIZE = 32,
+#ifndef NEO
 		NEARNODE_CACHE_LIFE = 10,
+#endif
 	};
+#ifdef NEO
+	static constexpr float NEARNODE_CACHE_LIFE = 10.0f;
+#endif
 
 	struct NearNodeCache_T
 	{

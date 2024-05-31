@@ -47,3 +47,39 @@ function(target_sources_grouped)
 
     source_group(${PARSED_ARGS_NAME} FILES ${PARSED_ARGS_FILES})
 endfunction()
+
+function(add_library_copy_and_symlink)
+    cmake_parse_arguments(
+        PARSED_ARGS
+        "CREATE_SRV"
+        "TARGET"
+        ""
+        ${ARGN}
+    )
+
+    if(NOT PARSED_ARGS_TARGET)
+        message(FATAL_ERROR "You must provide a target name")
+    endif()
+
+    add_custom_target(
+        ${PARSED_ARGS_TARGET}_copy_lib
+        DEPENDS ${PARSED_ARGS_TARGET} ${PARSED_ARGS_TARGET}_copy_lib_command
+    )
+
+    add_custom_command(
+        OUTPUT ${PARSED_ARGS_TARGET}_copy_lib_command
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PARSED_ARGS_TARGET}> "${NEO_OUTPUT_LIBRARY_PATH}/"
+        WORKING_DIRECTORY "${NEO_OUTPUT_LIBRARY_PATH}"
+        VERBATIM
+    )
+
+    if(OS_LINUX AND PARSED_ARGS_CREATE_SRV)
+        add_custom_command(
+            OUTPUT ${PARSED_ARGS_TARGET}_copy_lib_command APPEND
+            COMMAND ln -sf ${PARSED_ARGS_TARGET}.so ${PARSED_ARGS_TARGET}_srv.so
+            VERBATIM
+        )
+    endif()
+
+    set_source_files_properties(${PARSED_ARGS_TARGET}_copy_lib_command PROPERTIES SYMBOLIC "true")
+endfunction()

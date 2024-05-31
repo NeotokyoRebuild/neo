@@ -215,7 +215,7 @@ void VideoPanel::OnClose( void )
 		vgui::input()->ReleaseAppModalSurface();
 	}
 
-	vgui::surface()->RestrictPaintToSinglePanel( NULL );
+	vgui::surface()->RestrictPaintToSinglePanel( 0 );
 
 	// Fire an exit command if we're asked to do so
 	if ( m_szExitCommand[0] )

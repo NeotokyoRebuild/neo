@@ -79,13 +79,13 @@ void PropertyPage::OnKeyCodeTyped(KeyCode code)
         // left and right only get propogated to parents if our tab has focus
 	case KEY_RIGHT:
 		{
-            if (_pageTab != 0 && _pageTab->HasFocus())
+			if (_pageTab.Get() && _pageTab->HasFocus())
                 BaseClass::OnKeyCodeTyped(code);
 			break;
 		}
 	case KEY_LEFT:
 		{
-            if (_pageTab != 0 && _pageTab->HasFocus())
+			if (_pageTab.Get() && _pageTab->HasFocus())
                 BaseClass::OnKeyCodeTyped(code);
 			break;
 		}
