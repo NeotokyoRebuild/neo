@@ -11,11 +11,11 @@
 #include <initializer_list>
 
 #include <vgui_controls/ImagePanel.h>
+#include <vgui_controls/ImageList.h>
 
 #include "c_neo_player.h"
 #include "c_team.h"
 #include "c_playerresource.h"
-
 #include "vgui_avatarimage.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -80,7 +80,7 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 	m_iBoxY1 = m_iYpos + m_iBoxHeight;
 
 	// Logo dimensions
-	m_ilogoSize = m_iFontHeight * 2;
+	m_ilogoSize = m_iSmallFontHeight + m_iFontHeight;
 	m_ilogoTotalSize = m_iBoxHeight;
 
 	// Score positions
@@ -165,16 +165,16 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 	surface()->DrawSetTextureFile(m_iNSFID, "vgui/nsf_128tm", true, false);
 
 	m_iSupportID = surface()->CreateNewTextureID();
-	surface()->DrawSetTextureFile(m_iSupportID, "vgui/support", true, false);
+	surface()->DrawSetTextureFile(m_iSupportID, "vgui/supportSmall", true, false);
 
 	m_iAssaultID = surface()->CreateNewTextureID();
-	surface()->DrawSetTextureFile(m_iAssaultID, "vgui/assault", true, false);
+	surface()->DrawSetTextureFile(m_iAssaultID, "vgui/assaultSmall", true, false);
 
 	m_iReconID = surface()->CreateNewTextureID();
-	surface()->DrawSetTextureFile(m_iReconID, "vgui/recon", true, false);
+	surface()->DrawSetTextureFile(m_iReconID, "vgui/reconSmall", true, false);
 
 	m_iVIPID = surface()->CreateNewTextureID();
-	surface()->DrawSetTextureFile(m_iVIPID, "vgui/vip", true, false);
+	surface()->DrawSetTextureFile(m_iVIPID, "vgui/vipSmall", true, false);
 
 	m_iJinraiTotalID = surface()->CreateNewTextureID();
 	surface()->DrawSetTextureFile(m_iJinraiTotalID, "vgui/ts_jinrai", true, false);
@@ -192,14 +192,15 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 
 	m_iPreviouslyActiveStar = m_iPreviouslyActiveTeam  = -1;
 
+	if (m_pImageList)
+		delete m_pImageList;
+	m_pImageList = new vgui::ImageList(false);
+
+	m_mapAvatarsToImageList.SetLessFunc(DefLessFunc(CSteamID));
+	m_mapAvatarsToImageList.RemoveAll();
+
 	// register for events as client listener
 	ListenForGameEvent("player_team");
-	//ListenForGameEvent("player_star");
-	//ListenForGameEvent("player_spawn");
-	//ListenForGameEvent("player_hurt");
-	//ListenForGameEvent("player_death");
-	//ListenForGameEvent("player_disconnect");
-	//ListenForGameEvent("round_start");
 }
 
 void CNEOHud_RoundState::ApplySchemeSettings(vgui::IScheme* pScheme)
@@ -236,6 +237,13 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	memset(m_wszStatusUnicode, 0, sizeof(m_wszStatusUnicode)); // NOTE (nullsystem): Clear it or get junk after warmup ends
 	g_pVGuiLocalize->ConvertANSIToUnicode(m_szStatusANSI, m_wszStatusUnicode, sizeof(m_wszStatusUnicode));
 
+	// Update steam images
+	for (int i = 1; i <= gpGlobals->maxClients; ++i)
+	{
+		if (g_PR && g_PR->IsConnected(i)) {
+			UpdatePlayerAvatar(i);
+		}
+	}
 
 	// Exactly zero means there's no time limit, so we don't need to draw anything.
 	if (roundTimeLeft == 0)
@@ -374,7 +382,25 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 }
 
 void CNEOHud_RoundState::DrawFriend(int playerIndex, int teamIndex) {
+	// Drawing Avatar
 	surface()->DrawSetTexture(m_iFriendlyLogo);
+
+	int xOffset = m_iFriendlyLogoXOffset - ((teamIndex + 1) * m_ilogoSize) - (teamIndex * 2);
+	if (g_PR->IsAlive(playerIndex)) {
+		surface()->DrawSetColor(friendlyColor);
+		surface()->DrawFilledRect(xOffset, m_iYpos, xOffset + m_ilogoSize, m_iYpos + m_ilogoSize);
+	}
+	else {
+		surface()->DrawSetColor(darkColor);
+		surface()->DrawFilledRect(xOffset, m_iYpos, xOffset + m_ilogoSize, m_iYpos + m_ilogoSize);
+	}
+	
+	SetTextureToAvatar(playerIndex);
+	if (!g_PR->IsAlive(playerIndex))
+		surface()->DrawSetColor(darkColor);
+	surface()->DrawTexturedRect(xOffset, m_iYpos, xOffset + m_ilogoSize, m_iYpos + m_ilogoSize);
+
+	// Drawing Class Icon
 	switch (g_PR->GetClass(playerIndex)) {
 	case NEO_CLASS_SUPPORT:
 		surface()->DrawSetTexture(m_iSupportID);
@@ -388,24 +414,20 @@ void CNEOHud_RoundState::DrawFriend(int playerIndex, int teamIndex) {
 	case NEO_CLASS_VIP:
 		surface()->DrawSetTexture(m_iVIPID);
 		break;
-	default:
-		surface()->DrawSetTexture(m_iFriendlyLogo);
-		break;
 	}
 
-	int xOffset = m_iFriendlyLogoXOffset - ((teamIndex + 1) * m_ilogoSize) - (teamIndex * 2);
-	surface()->DrawSetColor(darkColor);
-	surface()->DrawFilledRect(xOffset, m_iYpos, xOffset + m_ilogoSize, m_iYpos + m_ilogoSize);
+	surface()->DrawSetColor(friendlyColor);
+	surface()->DrawTexturedRect(xOffset, m_iYpos + m_ilogoSize + 6, xOffset + m_ilogoSize, m_iYpos + m_ilogoSize + 70);
+
+	// Drawing Healthbar
 	if (g_PR->IsAlive(playerIndex))
-		surface()->DrawSetColor(friendlyColor);
-		surface()->DrawFilledRect(xOffset, m_iYpos + ((1.0f - (g_PR->GetHealth(playerIndex) / 100.0f)) * m_ilogoSize), xOffset + m_ilogoSize, m_iYpos + m_ilogoSize);
-	surface()->DrawSetColor(Color(0, 0, 0, 176));
-	surface()->DrawTexturedRect(xOffset, m_iYpos, xOffset + m_ilogoSize, m_iYpos + m_ilogoSize);
+		surface()->DrawSetColor(whiteColor);
+		surface()->DrawFilledRect(xOffset, m_iYpos + m_ilogoSize + 1, xOffset + (g_PR->GetHealth(playerIndex) / 100.0f * m_ilogoSize), m_iYpos + m_ilogoSize + 5);
 }
 
 void CNEOHud_RoundState::DrawEnemy(int playerIndex, int teamIndex) {
+	// Drawing Avatar
 	surface()->DrawSetTexture(m_iEnemyLogo);
-
 	int xOffset = m_iEnemyLogoXOffset + (teamIndex * m_ilogoSize) + (teamIndex * 2);
 	if (g_PR->IsAlive(playerIndex)) {
 		surface()->DrawSetColor(enemyColor);
@@ -415,6 +437,10 @@ void CNEOHud_RoundState::DrawEnemy(int playerIndex, int teamIndex) {
 		surface()->DrawSetColor(darkColor);
 		surface()->DrawFilledRect(xOffset, m_iYpos, xOffset + m_ilogoSize, m_iYpos + m_ilogoSize);
 	}
+
+	SetTextureToAvatar(playerIndex);
+	if (!g_PR->IsAlive(playerIndex))
+		surface()->DrawSetColor(darkColor);
 	surface()->DrawTexturedRect(xOffset, m_iYpos, xOffset + m_ilogoSize, m_iYpos + m_ilogoSize);
 }
 
@@ -501,6 +527,60 @@ void CNEOHud_RoundState::CheckActiveStar()
 
 	m_iPreviouslyActiveStar = currentStar;
 	m_iPreviouslyActiveTeam = currentTeam;
+}
+
+void CNEOHud_RoundState::UpdatePlayerAvatar(int playerIndex)
+{
+	// Update their avatar
+	if (steamapicontext->SteamUtils())
+	{
+		player_info_t pi;
+		if (engine->GetPlayerInfo(playerIndex, &pi))
+		{
+			if (pi.friendsID)
+			{
+				CSteamID steamIDForPlayer(pi.friendsID, 1, steamapicontext->SteamUtils()->GetConnectedUniverse(), k_EAccountTypeIndividual);
+
+				// See if we already have that avatar in our list
+				int iMapIndex = m_mapAvatarsToImageList.Find(steamIDForPlayer);
+				int iImageIndex;
+				if (iMapIndex == m_mapAvatarsToImageList.InvalidIndex())
+				{
+					CAvatarImage* pImage = new CAvatarImage();
+					pImage->SetAvatarSteamID(steamIDForPlayer, k_EAvatarSize64x64);
+					pImage->SetAvatarSize(64, 64);	// Deliberately non scaling
+					iImageIndex = m_pImageList->AddImage(pImage);
+
+					m_mapAvatarsToImageList.Insert(steamIDForPlayer, iImageIndex);
+				}
+				else
+				{
+					iImageIndex = m_mapAvatarsToImageList[iMapIndex];
+				}
+			}
+		}
+	}
+}
+
+void CNEOHud_RoundState::SetTextureToAvatar(int playerIndex) {
+	if (!m_pImageList)
+		return;
+
+	player_info_t pi;
+	if (!engine->GetPlayerInfo(playerIndex, &pi))
+		return;
+	
+	if (!pi.friendsID)
+		return;
+	
+	CSteamID steamIDForPlayer(pi.friendsID, 1, steamapicontext->SteamUtils()->GetConnectedUniverse(), k_EAccountTypeIndividual);
+	int mapIndex = m_mapAvatarsToImageList.Find(steamIDForPlayer);
+	if ((mapIndex == m_mapAvatarsToImageList.InvalidIndex()))
+		return; 
+
+	CAvatarImage* pAvIm = (CAvatarImage*)m_pImageList->GetImage(m_mapAvatarsToImageList[mapIndex]);
+	surface()->DrawSetTexture(pAvIm->getTextureID());
+	surface()->DrawSetColor(whiteColor);
 }
 
 void CNEOHud_RoundState::Paint()

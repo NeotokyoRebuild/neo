@@ -119,6 +119,9 @@ public:
 	int		GetTall() { return m_tall; }
 	int		GetAvatarWide() { return m_avatarWide; }
 	int		GetAvatarTall() { return m_avatarTall; }
+#ifdef NEO
+	int		getTextureID() { return m_iTextureID; }
+#endif
 
 	//=============================================================================
 	// HPE_BEGIN:

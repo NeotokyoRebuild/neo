@@ -19,6 +19,7 @@ public:
 
 	virtual void ApplySchemeSettings(vgui::IScheme *pScheme);
 	virtual void Paint();
+	virtual void DeleteImageList() { if (m_pImageList) { delete m_pImageList; } };
 
 protected:
 	virtual void UpdateStateForNeoHudElementDraw();
@@ -30,6 +31,8 @@ private:
 	void CheckActiveStar();
 	void DrawFriend(int playerIndex, int teamIndex);
 	void DrawEnemy(int playerIndex, int teamIndex);
+	void UpdatePlayerAvatar(int playerIndex);
+	void CNEOHud_RoundState::SetTextureToAvatar(int playerIndex);
 
 private:
 	vgui::HFont m_hOCRSmallFont;
@@ -106,6 +109,10 @@ private:
 	Color fadedDarkColor = Color(55, 55, 55, 176);
 	Color friendlyColor;
 	Color enemyColor;
+	Color deadColor = Color(155, 155, 155, 255);
+
+	vgui::ImageList* m_pImageList;
+	CUtlMap<CSteamID, int>		m_mapAvatarsToImageList;
 
 	CPanelAnimationVarAliasType(int, box_color_r, "box_color_r", "116", "int");
 	CPanelAnimationVarAliasType(int, box_color_g, "box_color_g", "116", "int");

@@ -104,6 +104,7 @@ void CNeoHudElements::FreePanelChildren()
 
 	if (m_pRoundState)
 	{
+		m_pRoundState->DeleteImageList();
 		m_pRoundState->DeletePanel();
 		m_pRoundState = NULL;
 	}
