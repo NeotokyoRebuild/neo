@@ -72,7 +72,7 @@ protected:
 	int		m_iXP[MAX_PLAYERS + 1];
 	int     m_iClass[MAX_PLAYERS + 1];
 	char    m_szNeoName[MAX_PLAYERS + 1][MAX_PLAYER_NAME_LENGTH];
-	int     m_szNeoNameDupeIdx[MAX_PLAYERS + 1];
+	int     m_iNeoNameDupeIdx[MAX_PLAYERS + 1];
 	char    m_szDispNameWDupeIdx[MAX_PLAYERS + 1][MAX_PLAYER_NAME_LENGTH + 10];  // Non-networked, includes dupe index
 	int     m_iStar[MAX_PLAYERS + 1];
 #endif

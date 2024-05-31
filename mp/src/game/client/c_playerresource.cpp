@@ -29,7 +29,7 @@ IMPLEMENT_CLIENTCLASS_DT_NOBASE(C_PlayerResource, DT_PlayerResource, CPlayerReso
 	RecvPropArray3(RECVINFO_ARRAY(m_iXP), RecvPropInt(RECVINFO(m_iXP[0]))),
 	RecvPropArray3(RECVINFO_ARRAY(m_iClass), RecvPropInt(RECVINFO(m_iClass[0]))),
 	RecvPropArray3(RECVINFO_ARRAY(m_szNeoName), RecvPropString(RECVINFO(m_szNeoName[0]))),
-	RecvPropArray3(RECVINFO_ARRAY(m_szNeoNameDupeIdx), RecvPropInt(RECVINFO(m_szNeoNameDupeIdx[0]))),
+	RecvPropArray3(RECVINFO_ARRAY(m_iNeoNameDupeIdx), RecvPropInt(RECVINFO(m_iNeoNameDupeIdx[0]))),
 	RecvPropArray3(RECVINFO_ARRAY(m_iStar), RecvPropInt(RECVINFO(m_iStar[0]))),
 #endif
 	RecvPropArray3( RECVINFO_ARRAY(m_iScore), RecvPropInt( RECVINFO(m_iScore[0]))),
@@ -48,7 +48,7 @@ BEGIN_PREDICTION_DATA( C_PlayerResource )
 	DEFINE_PRED_ARRAY(m_iXP, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_PRIVATE),
 	DEFINE_PRED_ARRAY(m_iClass, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_PRIVATE),
 	DEFINE_PRED_ARRAY(m_szNeoName, FIELD_STRING, MAX_PLAYERS + 1, FTYPEDESC_PRIVATE),
-	DEFINE_PRED_ARRAY(m_szNeoNameDupeIdx, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_PRIVATE),
+	DEFINE_PRED_ARRAY(m_iNeoNameDupeIdx, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_PRIVATE),
 	DEFINE_PRED_ARRAY(m_iStar, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_PRIVATE),
 #endif
 	DEFINE_PRED_ARRAY( m_iScore, FIELD_INTEGER, MAX_PLAYERS+1, FTYPEDESC_PRIVATE ),
@@ -75,7 +75,7 @@ C_PlayerResource::C_PlayerResource()
 	memset(m_iXP, 0, sizeof(m_iXP));
 	memset(m_iClass, 0, sizeof(m_iClass));
 	memset(m_szNeoName, 0, sizeof(m_szNeoName));
-	memset(m_szNeoNameDupeIdx, 0, sizeof(m_szNeoNameDupeIdx));
+	memset(m_iNeoNameDupeIdx, 0, sizeof(m_iNeoNameDupeIdx));
 	memset(m_szDispNameWDupeIdx, 0, sizeof(m_szDispNameWDupeIdx));
 	memset(m_iStar, 0, sizeof(m_iStar));
 #endif
@@ -188,7 +188,7 @@ const char *C_PlayerResource::GetPlayerName( int iIndex )
 
 #ifdef NEO
 	const bool clientWantNeoName = C_NEO_Player::GetLocalNEOPlayer()->ClientWantNeoName();
-	const int dupeIdx = m_szNeoNameDupeIdx[iIndex];
+	const int dupeIdx = m_iNeoNameDupeIdx[iIndex];
 
 	if (clientWantNeoName && m_szNeoName[iIndex][0] != '\0')
 	{
