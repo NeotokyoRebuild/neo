@@ -4,6 +4,11 @@
 #include "in_buttons.h"
 #include "neo_gamerules.h"
 
+#include "tier0/valve_minmax_off.h"
+#include <system_error>
+#include <charconv>
+#include "tier0/valve_minmax_on.h"
+
 #ifdef CLIENT_DLL
 #include "c_neo_player.h"
 #ifndef CNEO_Player
@@ -166,4 +171,14 @@ void KillerLineStr(char* killByLine, const int killByLineMax,
 	memset(killByLine, 0, killByLineMax);
 	Q_snprintf(killByLine, killByLineMax, "Killed by: %s [%s | %d hp] with %s at %.0f m\n",
 		dmgerName, dmgerClass, dmgerHP, dmgerWepName, distance);
+}
+
+[[nodiscard]] auto StrToInt(std::string_view strView) -> std::optional<int>
+{
+	int value{};
+	if (std::from_chars(strView.data(), strView.data() + strView.size(), value).ec == std::errc{})
+	{
+		return value;
+	}
+	return std::nullopt;
 }

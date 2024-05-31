@@ -4,6 +4,16 @@
 #pragma once
 #endif
 
+#include "tier0/valve_minmax_off.h"
+#include <string_view>
+#include <optional>
+#ifndef min
+	#define min(a,b)  (((a) < (b)) ? (a) : (b))
+#endif
+#ifndef max
+	#define max(a,b)  (((a) > (b)) ? (a) : (b))
+#endif
+
 #include "neo_predicted_viewmodel.h"
 
 #ifdef INCLUDE_WEP_PBK
@@ -288,5 +298,7 @@ struct AttackersTotals
 	float takenTotalDmgs;
 	int takenTotalHits;
 };
+
+[[nodiscard]] auto StrToInt(std::string_view strView) -> std::optional<int>;
 
 #endif // NEO_PLAYER_SHARED_H
