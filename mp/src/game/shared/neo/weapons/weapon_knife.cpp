@@ -74,32 +74,13 @@ void CWeaponKnife::Spawn(void)
 	BaseClass::Spawn();
 }
 
-void CWeaponKnife::UpdatePenaltyTime(void)
-{
-	CBasePlayer *pOwner = ToBasePlayer(GetOwner());
-	if (pOwner == nullptr) return;
-
-	if ((!(pOwner->m_afButtonLast & IN_ATTACK)) &&
-			(gpGlobals->curtime - m_flLastAttackTime > GetFireRate()))
-	{
-		m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
-	}
-
-	if (m_flSoonestAttack > gpGlobals->curtime)
-	{
-		m_flSoonestAttack -= (gpGlobals->curtime - m_flLastAttackTime);
-	}
-}
-
 void CWeaponKnife::ItemPreFrame(void)
 {
-	UpdatePenaltyTime();
 	BaseClass::ItemPreFrame();
 }
 
 void CWeaponKnife::ItemBusyFrame(void)
 {
-	UpdatePenaltyTime();
 	BaseClass::ItemBusyFrame();
 }
 
@@ -143,60 +124,15 @@ bool CWeaponKnife::CanBePickedUpByClass(int classId)
 bool CWeaponKnife::ShouldDraw()
 {
 	auto owner = static_cast<CNEO_Player*>(GetOwner());
-	return (!owner || (owner && owner->IsAlive() && owner->GetActiveWeapon() == this));
+	return (owner && owner->IsAlive() && owner->GetActiveWeapon() == this);
 }
 #else
 bool CWeaponKnife::IsViewable()
 {
 	auto owner = static_cast<CNEO_Player*>(GetOwner());
-	return (!owner || (owner && owner->IsAlive() && owner->GetActiveWeapon() == this));
+	return (owner && owner->IsAlive() && owner->GetActiveWeapon() == this);
 }
 #endif
-
-// NEO TODO (Rain): inherit from CNEOBaseCombatWeapon or related,
-// so we can do this in the base class Deploy method together
-// with other NEO weps.
-bool CWeaponKnife::Deploy(void)
-{
-	const bool ret = BaseClass::Deploy();
-
-	if (ret)
-	{
-#ifdef DEBUG
-		CNEO_Player* pOwner = NULL;
-		if (GetOwner())
-		{
-			pOwner = dynamic_cast<CNEO_Player*>(GetOwner());
-			Assert(pOwner);
-		}
-#else
-		auto pOwner = static_cast<CNEO_Player*>(GetOwner());
-#endif
-		if (pOwner)
-		{
-			// This wep incurs no speed penalty, so we return class max speed as-is.
-
-			if (pOwner->GetFlags() & FL_DUCKING)
-			{
-				pOwner->SetMaxSpeed(pOwner->GetCrouchSpeed());
-			}
-			else if (pOwner->IsWalking())
-			{
-				pOwner->SetMaxSpeed(pOwner->GetWalkSpeed());
-			}
-			else if (pOwner->IsSprinting())
-			{
-				pOwner->SetMaxSpeed(pOwner->GetSprintSpeed());
-			}
-			else
-			{
-				pOwner->SetMaxSpeed(pOwner->GetNormSpeed());
-			}
-		}
-	}
-
-	return ret;
-}
 
 void CWeaponKnife::Swing(int bIsSecondary)
 {

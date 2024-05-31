@@ -49,8 +49,6 @@ public:
 	virtual void ItemPreFrame(void) override;
 	virtual void ItemBusyFrame(void) override;
 	virtual void ItemPostFrame(void) override;
-	virtual bool Deploy(void);
-	void UpdatePenaltyTime(void);
 
 	virtual Activity GetPrimaryAttackActivity(void) override { return ACT_VM_HITCENTER; }
 	virtual Activity GetSecondaryAttackActivity(void) override { return ACT_VM_HITCENTER2; }
