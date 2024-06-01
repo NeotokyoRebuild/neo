@@ -874,12 +874,15 @@ void CNEO_Player::PlayCloakSound()
 		}
 
 		auto player = UTIL_PlayerByIndex(i);
-		if (!player || !player->IsDead() || player->GetObserverMode() != OBS_MODE_IN_EYE)
+		if (!player || (player->IsDead() && player->GetObserverMode() == OBS_MODE_NONE))
 		{
 			continue;
 		}
 
-		if (player->GetObserverTarget() == this)
+		static constexpr float MAX_CLOAK_DISTANCE = 50.0f;
+		const auto dir = EyePosition() - player->GetAbsOrigin();
+		const float distance = dir.Length2D();
+		if (distance < MAX_CLOAK_DISTANCE)
 		{
 			filter.AddRecipient(player);
 		}
