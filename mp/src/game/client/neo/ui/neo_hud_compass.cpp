@@ -70,7 +70,6 @@ CNEOHud_Compass::CNEOHud_Compass(const char *pElementName, vgui::Panel *parent)
 	COMPILE_TIME_ASSERT(sizeof(m_wszCompassUnicode) == UNICODE_NEO_COMPASS_SIZE_BYTES);
 	Assert(g_pVGuiLocalize);
 	g_pVGuiLocalize->ConvertANSIToUnicode("\0", m_wszCompassUnicode, UNICODE_NEO_COMPASS_SIZE_BYTES);
-	engine->ClientCmd("hud_reloadscheme");
 }
 
 void CNEOHud_Compass::Paint()
@@ -168,6 +167,7 @@ void CNEOHud_Compass::ApplySchemeSettings(vgui::IScheme *pScheme)
 	BaseClass::ApplySchemeSettings(pScheme);
 
 	m_hFont = pScheme->GetFont("NHudOCRSmall");
+	m_savedXBoxWidth = 0;
 
 	surface()->GetScreenSize(m_resX, m_resY);
 	SetBounds(0, 0, m_resX, m_resY);
@@ -183,9 +183,14 @@ void CNEOHud_Compass::DrawCompass() const
 	int fontWidth, fontHeight;
 	surface()->GetTextSize(m_hFont, m_wszCompassUnicode, fontWidth, fontHeight);
 
-	// These are the constant res based scalings of the compass box dimensions.
-	const int xBoxWidth = m_resX * 0.25 * 0.9;
-	const int yBoxHeight = fontHeight; // m_resY *(0.1 / 1.5) *(1.0 / 3);
+	if (m_savedXBoxWidth == 0)
+	{
+		// Using the fontHeight for padding works out
+		m_savedXBoxWidth = fontWidth + fontHeight;
+	}
+	// These are the compass box dimension, just based on the font's dimensions
+	const int xBoxWidth = m_savedXBoxWidth;
+	const int yBoxHeight = fontHeight;
 
 	const int resXHalf = m_resX / 2;
 	const int xBoxWidthHalf = xBoxWidth / 2;
@@ -251,15 +256,16 @@ void CNEOHud_Compass::DrawCompass() const
 		}
 	}
 
+	static const Color FADE_END_COLOR(116, 116, 116, 255);
 	DrawNeoHudRoundedBoxFaded(
 		resXHalf - xBoxWidthHalf, m_resY - yBoxHeight - margin,
 		resXHalf, m_resY - margin,
-		NEO_HUDBOX_COLOR, 255, 0, true,
+		FADE_END_COLOR, 255, 0, true,
 		true, false, true, false);
 	DrawNeoHudRoundedBoxFaded(
 		resXHalf, m_resY - yBoxHeight - margin,
 		resXHalf + xBoxWidthHalf, m_resY - margin,
-		NEO_HUDBOX_COLOR, 0, 255, true,
+		FADE_END_COLOR, 0, 255, true,
 		false, true, false, true);
 }
 

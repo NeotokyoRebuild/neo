@@ -37,6 +37,7 @@ private:
 	vgui::HFont m_hFont;
 
 	int m_resX, m_resY;
+	mutable int m_savedXBoxWidth = 0;
 
 	wchar_t m_wszCompassUnicode[UNICODE_NEO_COMPASS_STR_LENGTH];
 
