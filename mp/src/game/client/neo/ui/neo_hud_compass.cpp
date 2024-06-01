@@ -31,8 +31,10 @@ ConVar neo_cl_hud_compass_pos_x("neo_cl_hud_compass_pos_x", "2", FCVAR_USERINFO,
 	"HUD compass X offset divisor.", true, 1, false, 10);
 ConVar neo_cl_hud_compass_pos_y("neo_cl_hud_compass_pos_y", "80", FCVAR_USERINFO,
 	"HUD compass Y offset divisor.", true, 1, false, 10);
-ConVar neo_cl_hud_compass_needle("neo_cl_hud_compass_needle", "1", FCVAR_USERINFO,
+ConVar neo_cl_hud_compass_needle("neo_cl_hud_compass_needle", "0", FCVAR_USERINFO,
 	"Whether to show the HUD compass needle.", true, 0, true, 1);
+ConVar neo_cl_hud_compass_needle_colored("neo_cl_hud_compass_needle_colored", "0", FCVAR_USERINFO,
+	"Whether to color the HUD compass needle by their own team.", true, 0, true, 1);
 ConVar neo_cl_hud_compass_objective("neo_cl_hud_compass_objective", "1", FCVAR_USERINFO,
 	"Whether to show the HUD objective arrow.", true, 0, true, 1);
 
@@ -202,12 +204,12 @@ void CNEOHud_Compass::DrawCompass() const
 
 	const int resXHalf = m_resX / 2;
 	const int xBoxWidthHalf = xBoxWidth / 2;
-	const int margin = neo_cl_hud_ammo_enabled.GetInt();
+	const int margin = 1; //neo_cl_hud_compass_pos_y.GetInt();
 
-	surface()->DrawSetColor(Color(116, 116, 116, 200));
-	surface()->DrawFilledRect(
+	DrawNeoHudRoundedBox(
 		resXHalf - xBoxWidthHalf, m_resY - yBoxHeight - margin,
-		resXHalf + xBoxWidthHalf, m_resY - margin);
+		resXHalf + xBoxWidthHalf, m_resY - margin,
+		Color(116, 116, 116, 200));
 
 	const auto fadeColor = Color(150, 150, 150, 175);
 	surface()->DrawSetColor(fadeColor);
@@ -227,11 +229,21 @@ void CNEOHud_Compass::DrawCompass() const
 	// Draw the compass "needle"
 	if (neo_cl_hud_compass_needle.GetBool())
 	{
-#define COMPASS_NEEDLE_COLOR_GREEN Color(25, 255, 25, 150)
-#define COMPASS_NEEDLE_COLOR_BLUE Color(25, 25, 255, 150)
-#define COMPASS_NEEDLE_COLOR_WHITE Color(255, 255, 255, 150)
-		surface()->DrawSetColor((player->GetTeamNumber() == TEAM_JINRAI) ?
-			COMPASS_NEEDLE_COLOR_GREEN : ((player->GetTeamNumber() == TEAM_NSF) ? COMPASS_NEEDLE_COLOR_BLUE : COMPASS_NEEDLE_COLOR_WHITE));
+		static const Color COMPASS_NEEDLE_COLOR_GREEN{25, 255, 25, 150};
+		static const Color COMPASS_NEEDLE_COLOR_BLUE{25, 25, 255, 150};
+		static const Color COMPASS_NEEDLE_COLOR_WHITE{255, 255, 255, 150};
+		Color needleColor = COMPASS_NEEDLE_COLOR_WHITE;
+		if (neo_cl_hud_compass_needle_colored.GetBool())
+		{
+			const int playerTeam = player->GetTeamNumber();
+			switch (playerTeam)
+			{
+			break; case TEAM_JINRAI: needleColor = COMPASS_NEEDLE_COLOR_GREEN;
+			break; case TEAM_NSF: needleColor = COMPASS_NEEDLE_COLOR_BLUE;
+			break; default: break;
+			}
+		}
+		surface()->DrawSetColor(needleColor);
 		surface()->DrawFilledRect(resXHalf - 1, m_resY - yBoxHeight - margin, resXHalf + 1, m_resY - margin);
 	}
 
