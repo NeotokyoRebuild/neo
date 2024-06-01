@@ -36,19 +36,8 @@
 	}
 	"7"
 	{
-		"label" "#GameUI_GameMenu_ActivateVR"
-		"command" "engine vr_activate"
-		"InGameOrder" "40"
-		"OnlyWhenVREnabled" "1"
-		"OnlyWhenVRInactive" "1"
-	}
-	"8"
-	{
-		"label" "#GameUI_GameMenu_DeactivateVR"
-		"command" "engine vr_deactivate"
-		"InGameOrder" "40"
-		"OnlyWhenVREnabled" "1"
-		"OnlyWhenVRActive" "1"
+		"label" "#GameUI_GameMenu_Friends"
+		"command" "OpenFriendsDialog"
 	}
 	"10"
 	{
