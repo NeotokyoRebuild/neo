@@ -102,7 +102,7 @@ void CNEOHud_Compass::Paint()
 void CNEOHud_Compass::GetCompassUnicodeString(const float angle, wchar_t* outUnicodeStr) const
 {
 	// Char representation of the compass strip
-	const char rose[] =
+	static const char rose[] =
 		"N                |                NE                |\
                 E                |                SE                |\
                 S                |                SW                |\
@@ -112,21 +112,17 @@ void CNEOHud_Compass::GetCompassUnicodeString(const float angle, wchar_t* outUni
 	// One compass tick represents this many degrees of rotation
 	const float unitAccuracy = 360.0f / sizeof(rose);
 
-	// How many characters should be visible around each side of the needle position
-	const int numCharsVisibleAroundNeedle = 24;
-
 	// Get index offset for this angle's compass position
-	int offset = RoundFloatToInt(angle / unitAccuracy) - numCharsVisibleAroundNeedle;
+	int offset = RoundFloatToInt(angle / unitAccuracy) - UNICODE_NEO_COMPASS_VIS_AROUND;
 	if (offset < 0)
 	{
 		offset += sizeof(rose);
 	}
 
 	// Both sides + center + terminator
-	const size_t compassStrSize = numCharsVisibleAroundNeedle * 2 + 2;
-	char compass[compassStrSize];
+	char compass[UNICODE_NEO_COMPASS_STR_LENGTH];
 	int i;
-	for (i = 0; i < sizeof(compass) - 1; i++)
+	for (i = 0; i < UNICODE_NEO_COMPASS_STR_LENGTH - 1; i++)
 	{
 		// Get our index by circling around the compass strip.
 		// We do modulo -1, because sizeof would land us on NULL
@@ -138,7 +134,6 @@ void CNEOHud_Compass::GetCompassUnicodeString(const float angle, wchar_t* outUni
 	// Finally, make sure we have a null terminator
 	compass[i] = '\0';
 
-	Assert(compassStrSize == UNICODE_NEO_COMPASS_STR_LENGTH);
 	g_pVGuiLocalize->ConvertANSIToUnicode(compass, outUnicodeStr, UNICODE_NEO_COMPASS_SIZE_BYTES);
 }
 
@@ -146,19 +141,23 @@ void CNEOHud_Compass::UpdateStateForNeoHudElementDraw()
 {
 	Assert(C_NEO_Player::GetLocalNEOPlayer());
 
+	static auto safeAngle = [](const float angle) -> float {
+		if (angle > 180)
+		{
+			return angle - 360;
+		}
+		else if (angle < -180)
+		{
+			return angle + 360;
+		}
+		return angle;
+	};
+
 	// Direction in -180 to 180
-	float angle = -1 * C_NEO_Player::GetLocalNEOPlayer()->EyeAngles()[YAW];
-
-	// Bring us back to safety
-	if (angle > 180)
-	{
-		angle -= 360;
-	}
-	else if (angle < -180)
-	{
-		angle += 360;
-	}
-
+	float angle = C_NEO_Player::GetLocalNEOPlayer()->EyeAngles()[YAW] * -1;
+	angle = safeAngle(angle);
+	angle += 180;	// NEO NOTE (nullsystem): Adjust it again to match OG:NT's compass angle
+	angle = safeAngle(angle);
 	GetCompassUnicodeString(angle, m_wszCompassUnicode);
 }
 
@@ -199,8 +198,8 @@ void CNEOHud_Compass::DrawCompass() const
 	surface()->GetTextSize(m_hFont, m_wszCompassUnicode, fontWidth, fontHeight);
 
 	// These are the constant res based scalings of the compass box dimensions.
-	const int xBoxWidth = m_resX * 0.2375 * 0.9;
-	const int yBoxHeight = m_resY * (0.1 / 1.5) * (1.0 / 3);
+	const int xBoxWidth = m_resX * 0.25 * 0.9;
+	const int yBoxHeight = fontHeight; // m_resY *(0.1 / 1.5) *(1.0 / 3);
 
 	const int resXHalf = m_resX / 2;
 	const int xBoxWidthHalf = xBoxWidth / 2;
@@ -209,22 +208,7 @@ void CNEOHud_Compass::DrawCompass() const
 	DrawNeoHudRoundedBox(
 		resXHalf - xBoxWidthHalf, m_resY - yBoxHeight - margin,
 		resXHalf + xBoxWidthHalf, m_resY - margin,
-		Color(116, 116, 116, 200));
-
-	const auto fadeColor = Color(150, 150, 150, 175);
-	surface()->DrawSetColor(fadeColor);
-	surface()->DrawFilledRectFade(
-		resXHalf - xBoxWidthHalf, m_resY - yBoxHeight - margin,
-		resXHalf, m_resY - margin,
-		0,
-		255,
-		true);
-	surface()->DrawFilledRectFade(
-		resXHalf, m_resY - yBoxHeight - margin,
-		resXHalf + xBoxWidthHalf, m_resY - margin,
-		255,
-		0,
-		true);
+		NEO_HUDBOX_COLOR);
 
 	// Draw the compass "needle"
 	if (neo_cl_hud_compass_needle.GetBool())
@@ -280,6 +264,17 @@ void CNEOHud_Compass::DrawCompass() const
 			}
 		}
 	}
+
+	DrawNeoHudRoundedBoxFaded(
+		resXHalf - xBoxWidthHalf, m_resY - yBoxHeight - margin,
+		resXHalf, m_resY - margin,
+		NEO_HUDBOX_COLOR, 255, 0, true,
+		true, false, true, false);
+	DrawNeoHudRoundedBoxFaded(
+		resXHalf, m_resY - yBoxHeight - margin,
+		resXHalf + xBoxWidthHalf, m_resY - margin,
+		NEO_HUDBOX_COLOR, 0, 255, true,
+		false, true, false, true);
 }
 
 void CNEOHud_Compass::DrawDebugCompass() const
