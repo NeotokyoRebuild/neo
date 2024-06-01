@@ -12,15 +12,15 @@
 #include "neo_player.h"
 #endif
 
+#include "weapon_neobasecombatweapon.h"
+
 #ifdef CLIENT_DLL
 #define CWeaponKnife C_WeaponKnife
 #endif
 
-#define KNIFE_RANGE 51.0f
-
-class CWeaponKnife : public CBaseHL2MPBludgeonWeapon
+class CWeaponKnife : public CNEOBaseCombatWeapon
 {
-	DECLARE_CLASS(CWeaponKnife, CBaseHL2MPBludgeonWeapon);
+	DECLARE_CLASS(CWeaponKnife, CNEOBaseCombatWeapon);
 public:
 	DECLARE_NETWORKCLASS();
 	DECLARE_PREDICTABLE();
@@ -32,37 +32,36 @@ public:
 
 	CWeaponKnife();
 
-	void PrimaryAttack(void);
-	void SecondaryAttack(void) { }
-	void Drop(const Vector &vecVelocity) { /* knives shouldn't drop */ }
+	virtual void PrimaryAttack() final;
+	virtual void SecondaryAttack() final;
+	virtual void Drop(const Vector &vecVelocity) final { /* knives shouldn't drop */ }
+
+	virtual bool CanBePickedUpByClass(int classId) final;
+	virtual bool CanDrop() final { return false; }
 
 #ifdef CLIENT_DLL
-	virtual bool ShouldDraw() OVERRIDE;
+	virtual bool ShouldDraw() final;
 #else
-	virtual bool IsViewable() OVERRIDE;
+	virtual bool IsViewable() final;
 #endif
 
-	float GetRange(void) const { return KNIFE_RANGE; }
-	
-	virtual	float GetDamageForActivity(Activity hitActivity) OVERRIDE
-	{
-		return 25.0f;
-	}
+	virtual	void Spawn() final;
+	virtual void ItemPreFrame() final;
+	virtual void ItemBusyFrame() final;
+	virtual void ItemPostFrame() final;
 
-	virtual float GetFireRate(void) const { return 0.534f; }
-
-	virtual float GetSpeedScale(void) const { return 1.0; }
-
-	virtual bool Deploy(void);
-
-	// FIXME: we should inherit CNEOMelee -> CNEOBaseWep etc...
-	//virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { return NEO_WEP_KNIFE; }
+	virtual Activity GetPrimaryAttackActivity() final { return ACT_VM_HITCENTER; }
+	virtual Activity GetSecondaryAttackActivity() final { return ACT_VM_HITCENTER2; }
+	virtual float GetFireRate() final { return 0.534f; }
+	virtual float GetSpeedScale() const final { return 1.0; }
+	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits() const { return NEO_WEP_KNIFE; }
 
 protected:
-	virtual void		Swing(int bIsSecondary) OVERRIDE;
-	virtual Activity	ChooseIntersectionPointAndActivity(trace_t& hitTrace, const Vector& mins,
-		const Vector& maxs, CBasePlayer* pOwner) OVERRIDE;
-	virtual void		Hit(trace_t& traceHit, Activity nHitActivity) OVERRIDE;
+	void		ImpactEffect(trace_t &traceHit);
+	void		Swing(int bIsSecondary);
+	Activity	ChooseIntersectionPointAndActivity(trace_t& hitTrace, const Vector& mins, const Vector& maxs, CBasePlayer* pOwner);
+	bool		ImpactWater(const Vector &start, const Vector &end);
+	void		Hit(trace_t& traceHit, Activity nHitActivity);
 private:
 	CWeaponKnife(const CWeaponKnife &other);
 };

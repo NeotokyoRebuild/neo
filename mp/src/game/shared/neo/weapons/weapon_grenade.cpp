@@ -275,17 +275,6 @@ void CWeaponGrenade::CheckThrowPosition(CBasePlayer *pPlayer, const Vector &vecE
 	}
 }
 
-void NEODropPrimedFragGrenade(CNEO_Player *pPlayer, CBaseCombatWeapon *pGrenade)
-{
-	auto pWeaponFrag = dynamic_cast<CWeaponGrenade*>(pGrenade);
-
-	if (pWeaponFrag)
-	{
-		pWeaponFrag->ThrowGrenade(pPlayer);
-		pWeaponFrag->DecrementAmmo(pPlayer);
-	}
-}
-
 void CWeaponGrenade::ThrowGrenade(CBasePlayer *pPlayer)
 {
 	if (!sv_neo_infinite_frag_grenades.GetBool())
