@@ -17,6 +17,11 @@
 #include <vgui/ISurface.h>
 #include <vgui/IScheme.h>
 
+#ifdef NEO
+#include "cdll_client_int.h"
+#include "ienginevgui.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -77,6 +82,14 @@ CCenterStringLabel::CCenterStringLabel( vgui::VPANEL parent ) :
 	SetMouseInputEnabled( false );
 	SetContentAlignment( vgui::Label::a_center );
 
+#ifdef NEO
+	vgui::HScheme neoscheme = vgui::scheme()->LoadSchemeFromFileEx(
+				enginevgui->GetPanel(PANEL_CLIENTDLL),
+				"resource/ClientScheme_Neo.res", "ClientScheme_Neo");
+	SetScheme(neoscheme);
+	SetBgColor(COLOR_TRANSPARENT);
+#endif
+
 	m_hFont = 0;
 	SetFgColor( Color( 255, 255, 255, 255 ) );
 
@@ -122,8 +135,17 @@ void CCenterStringLabel::ApplySchemeSettings(vgui::IScheme *pScheme)
 {
 	BaseClass::ApplySchemeSettings(pScheme);
 
+#ifdef NEO
+	m_hFont = pScheme->GetFont("MVP");
+	SetFgColor(Color(255, 255, 255, 255)); // Color reset by here, so set it back to white
+	using vgui::ISurface;
+	vgui::surface()->SetFontGlyphSet(m_hFont, "xscale", 40, 600, 0, 0,
+									 ISurface::FONTFLAG_ANTIALIAS,
+									 0, 0x017F);
+#else
 	// Use a large font
 	m_hFont = pScheme->GetFont( "Trebuchet24" );
+#endif
 	assert( m_hFont );
 	SetFont( m_hFont );
 
