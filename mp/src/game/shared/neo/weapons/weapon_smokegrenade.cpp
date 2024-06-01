@@ -253,17 +253,6 @@ void CWeaponSmokeGrenade::CheckThrowPosition(CBasePlayer* pPlayer, const Vector&
 	}
 }
 
-void NEODropPrimedSmokeGrenade(CNEO_Player* pPlayer, CBaseCombatWeapon* pSmokeGrenade)
-{
-	auto pWeaponSmoke = dynamic_cast<CWeaponSmokeGrenade*>(pSmokeGrenade);
-
-	if (pWeaponSmoke)
-	{
-		pWeaponSmoke->ThrowGrenade(pPlayer);
-		pWeaponSmoke->DecrementAmmo(pPlayer);
-	}
-}
-
 void CWeaponSmokeGrenade::ThrowGrenade(CBasePlayer* pPlayer)
 {
 	if (!sv_neo_infinite_smoke_grenades.GetBool())
