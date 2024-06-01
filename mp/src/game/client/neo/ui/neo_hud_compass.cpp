@@ -25,19 +25,6 @@
 
 using vgui::surface;
 
-ConVar neo_cl_hud_compass_enabled("neo_cl_hud_compass_enabled", "1", FCVAR_USERINFO,
-	"Whether the HUD compass is enabled or not.", true, 0, true, 1);
-ConVar neo_cl_hud_compass_pos_x("neo_cl_hud_compass_pos_x", "2", FCVAR_USERINFO,
-	"HUD compass X offset divisor.", true, 1, false, 10);
-ConVar neo_cl_hud_compass_pos_y("neo_cl_hud_compass_pos_y", "80", FCVAR_USERINFO,
-	"HUD compass Y offset divisor.", true, 1, false, 10);
-ConVar neo_cl_hud_compass_needle("neo_cl_hud_compass_needle", "0", FCVAR_USERINFO,
-	"Whether to show the HUD compass needle.", true, 0, true, 1);
-ConVar neo_cl_hud_compass_needle_colored("neo_cl_hud_compass_needle_colored", "0", FCVAR_USERINFO,
-	"Whether to color the HUD compass needle by their own team.", true, 0, true, 1);
-ConVar neo_cl_hud_compass_objective("neo_cl_hud_compass_objective", "1", FCVAR_USERINFO,
-	"Whether to show the HUD objective arrow.", true, 0, true, 1);
-
 ConVar neo_cl_hud_debug_compass_enabled("neo_cl_hud_debug_compass_enabled", "0", FCVAR_USERINFO | FCVAR_CHEAT,
 	"Whether the Debug HUD compass is enabled or not.", true, 0.0f, true, 1.0f);
 ConVar neo_cl_hud_debug_compass_pos_x("neo_cl_hud_debug_compass_pos_x", "0.45", FCVAR_USERINFO | FCVAR_CHEAT,
@@ -76,17 +63,14 @@ CNEOHud_Compass::CNEOHud_Compass(const char *pElementName, vgui::Panel *parent)
 	surface()->GetScreenSize(m_resX, m_resY);
 	SetBounds(0, 0, m_resX, m_resY);
 
-	// NEO HACK (Rain): this is kind of awkward, we should get the handle on ApplySchemeSettings
-	vgui::IScheme *scheme = vgui::scheme()->GetIScheme(neoscheme);
-	Assert(scheme);
+	m_hFont = 0;
 
-	m_hFont = scheme->GetFont("NHudOCRSmall");
-
-	SetVisible(neo_cl_hud_compass_enabled.GetBool());
+	SetVisible(true);
 
 	COMPILE_TIME_ASSERT(sizeof(m_wszCompassUnicode) == UNICODE_NEO_COMPASS_SIZE_BYTES);
 	Assert(g_pVGuiLocalize);
 	g_pVGuiLocalize->ConvertANSIToUnicode("\0", m_wszCompassUnicode, UNICODE_NEO_COMPASS_SIZE_BYTES);
+	engine->ClientCmd("hud_reloadscheme");
 }
 
 void CNEOHud_Compass::Paint()
@@ -102,7 +86,7 @@ void CNEOHud_Compass::Paint()
 void CNEOHud_Compass::GetCompassUnicodeString(const float angle, wchar_t* outUnicodeStr) const
 {
 	// Char representation of the compass strip
-	static const char rose[] =
+	static constexpr char ROSE[] =
 		"N                |                NE                |\
                 E                |                SE                |\
                 S                |                SW                |\
@@ -110,13 +94,13 @@ void CNEOHud_Compass::GetCompassUnicodeString(const float angle, wchar_t* outUni
                 ";
 
 	// One compass tick represents this many degrees of rotation
-	const float unitAccuracy = 360.0f / sizeof(rose);
+	const float unitAccuracy = 360.0f / sizeof(ROSE);
 
 	// Get index offset for this angle's compass position
 	int offset = RoundFloatToInt(angle / unitAccuracy) - UNICODE_NEO_COMPASS_VIS_AROUND;
 	if (offset < 0)
 	{
-		offset += sizeof(rose);
+		offset += sizeof(ROSE);
 	}
 
 	// Both sides + center + terminator
@@ -127,9 +111,9 @@ void CNEOHud_Compass::GetCompassUnicodeString(const float angle, wchar_t* outUni
 		// Get our index by circling around the compass strip.
 		// We do modulo -1, because sizeof would land us on NULL
 		// and terminate the string early.
-		const int wrappedIndex = (offset + i) % (sizeof(rose) - 1);
+		const int wrappedIndex = (offset + i) % (sizeof(ROSE) - 1);
 
-		compass[i] = rose[wrappedIndex];
+		compass[i] = ROSE[wrappedIndex];
 	}
 	// Finally, make sure we have a null terminator
 	compass[i] = '\0';
@@ -142,13 +126,13 @@ void CNEOHud_Compass::UpdateStateForNeoHudElementDraw()
 	Assert(C_NEO_Player::GetLocalNEOPlayer());
 
 	static auto safeAngle = [](const float angle) -> float {
-		if (angle > 180)
+		if (angle > 180.0f)
 		{
-			return angle - 360;
+			return angle - 360.0f;
 		}
-		else if (angle < -180)
+		else if (angle < -180.0f)
 		{
-			return angle + 360;
+			return angle + 360.0f;
 		}
 		return angle;
 	};
@@ -156,7 +140,7 @@ void CNEOHud_Compass::UpdateStateForNeoHudElementDraw()
 	// Direction in -180 to 180
 	float angle = C_NEO_Player::GetLocalNEOPlayer()->EyeAngles()[YAW] * -1;
 	angle = safeAngle(angle);
-	angle += 180;	// NEO NOTE (nullsystem): Adjust it again to match OG:NT's compass angle
+	angle += 180.0f;	// NEO NOTE (nullsystem): Adjust it again to match OG:NT's compass angle
 	angle = safeAngle(angle);
 	GetCompassUnicodeString(angle, m_wszCompassUnicode);
 }
@@ -168,7 +152,7 @@ void CNEOHud_Compass::DrawNeoHudElement(void)
 		return;
 	}
 
-	if (neo_cl_hud_compass_enabled.GetBool())
+	if (m_showCompass)
 	{
 		DrawCompass();
 	}
@@ -182,6 +166,8 @@ void CNEOHud_Compass::DrawNeoHudElement(void)
 void CNEOHud_Compass::ApplySchemeSettings(vgui::IScheme *pScheme)
 {
 	BaseClass::ApplySchemeSettings(pScheme);
+
+	m_hFont = pScheme->GetFont("NHudOCRSmall");
 
 	surface()->GetScreenSize(m_resX, m_resY);
 	SetBounds(0, 0, m_resX, m_resY);
@@ -203,7 +189,7 @@ void CNEOHud_Compass::DrawCompass() const
 
 	const int resXHalf = m_resX / 2;
 	const int xBoxWidthHalf = xBoxWidth / 2;
-	const int margin = 1; //neo_cl_hud_compass_pos_y.GetInt();
+	const int margin = m_yFromBottomPos;
 
 	DrawNeoHudRoundedBox(
 		resXHalf - xBoxWidthHalf, m_resY - yBoxHeight - margin,
@@ -211,13 +197,13 @@ void CNEOHud_Compass::DrawCompass() const
 		NEO_HUDBOX_COLOR);
 
 	// Draw the compass "needle"
-	if (neo_cl_hud_compass_needle.GetBool())
+	if (m_needleVisible)
 	{
 		static const Color COMPASS_NEEDLE_COLOR_GREEN{25, 255, 25, 150};
 		static const Color COMPASS_NEEDLE_COLOR_BLUE{25, 25, 255, 150};
 		static const Color COMPASS_NEEDLE_COLOR_WHITE{255, 255, 255, 150};
 		Color needleColor = COMPASS_NEEDLE_COLOR_WHITE;
-		if (neo_cl_hud_compass_needle_colored.GetBool())
+		if (m_needleColored)
 		{
 			const int playerTeam = player->GetTeamNumber();
 			switch (playerTeam)
@@ -236,7 +222,7 @@ void CNEOHud_Compass::DrawCompass() const
 	surface()->DrawPrintText(m_wszCompassUnicode, UNICODE_NEO_COMPASS_STR_LENGTH);
 
 	// Print compass objective arrow
-	if (neo_cl_hud_compass_objective.GetBool() && !player->IsCarryingGhost())
+	if (m_objectiveVisible && !player->IsCarryingGhost())
 	{
 		// Point the objective arrow to the ghost, if it exists
 		if (player->m_vecGhostMarkerPos != vec3_origin)

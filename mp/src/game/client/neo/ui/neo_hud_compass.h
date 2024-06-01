@@ -40,6 +40,12 @@ private:
 
 	wchar_t m_wszCompassUnicode[UNICODE_NEO_COMPASS_STR_LENGTH];
 
+	CPanelAnimationVarAliasType(bool, m_showCompass, "visible", "1", "bool");
+	CPanelAnimationVarAliasType(int, m_yFromBottomPos, "y_bottom_pos", "3", "proportional_ypos");
+	CPanelAnimationVarAliasType(bool, m_needleVisible, "needle_visible", "0", "bool");
+	CPanelAnimationVarAliasType(bool, m_needleColored, "needle_colored", "0", "bool");
+	CPanelAnimationVarAliasType(bool, m_objectiveVisible, "objective_visible", "1", "bool");
+
 private:
 	CNEOHud_Compass(const CNEOHud_Compass &other);
 };
