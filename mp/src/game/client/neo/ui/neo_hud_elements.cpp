@@ -92,11 +92,11 @@ void CNeoHudElements::FreePanelChildren()
 	}
 
 	// now that the game event hud is added to gHud, gHud should take care of deleting it itself?
-	/*if (m_pGameEvent)
+	if (m_pGameEvent)
 	{
 		m_pGameEvent->DeletePanel();
 		m_pGameEvent = NULL;
-	}*/
+	}
 
 	if (m_pHTA)
 	{
