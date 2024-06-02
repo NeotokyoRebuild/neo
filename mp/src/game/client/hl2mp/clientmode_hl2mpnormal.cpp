@@ -19,6 +19,7 @@
 #ifdef NEO
 	#include "neo/ui/neo_scoreboard.h"
 	#include "neo/ui/neo_hud_elements.h"
+	extern ConVar v_viewmodel_fov;
 #else
 	#include "hl2mpclientscoreboard.h"
 #endif
@@ -226,7 +227,7 @@ float ClientModeHL2MPNormal::GetViewModelFOV()
 				}
 			}
 
-			static float flCurrentFov = pWepInfo->m_flVMFov;
+			float flCurrentFov = v_viewmodel_fov.GetFloat();
 			const bool playerAiming = pOwner->IsInAim();
 			const float currentTime = gpGlobals->curtime;
 			if (m_bViewAim && !playerAiming)
