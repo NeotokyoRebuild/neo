@@ -393,7 +393,7 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 }
 
 void CNEOHud_RoundState::DrawFriend(int playerIndex, int teamIndex) {
-	int xOffset = m_iFriendlyLogoXOffset - ((teamIndex + 1) * m_ilogoSize) - (teamIndex * 2);
+	const int xOffset = m_iFriendlyLogoXOffset - ((teamIndex + 1) * m_ilogoSize) - (teamIndex * 2);
 	
 	// Draw Outline
 	Color box_color = Color(box_color_r, box_color_g, box_color_b, box_color_a);
@@ -458,7 +458,7 @@ void CNEOHud_RoundState::DrawFriend(int playerIndex, int teamIndex) {
 void CNEOHud_RoundState::DrawEnemy(int playerIndex, int teamIndex) {
 	// Drawing Avatar
 	surface()->DrawSetTexture(m_iEnemyLogo);
-	int xOffset = m_iEnemyLogoXOffset + (teamIndex * m_ilogoSize) + (teamIndex * 2);
+	const int xOffset = m_iEnemyLogoXOffset + (teamIndex * m_ilogoSize) + (teamIndex * 2);
 	if (g_PR->IsAlive(playerIndex)) {
 		surface()->DrawSetColor(enemyColor);
 		surface()->DrawFilledRect(xOffset, m_iYpos, xOffset + m_ilogoSize, m_iYpos + m_ilogoSize);
@@ -599,7 +599,7 @@ void CNEOHud_RoundState::SetTextureToAvatar(int playerIndex) {
 		return;
 	
 	CSteamID steamIDForPlayer(pi.friendsID, 1, steamapicontext->SteamUtils()->GetConnectedUniverse(), k_EAccountTypeIndividual);
-	int mapIndex = m_mapAvatarsToImageList.Find(steamIDForPlayer);
+	const int mapIndex = m_mapAvatarsToImageList.Find(steamIDForPlayer);
 	if ((mapIndex == m_mapAvatarsToImageList.InvalidIndex()))
 		return; 
 
