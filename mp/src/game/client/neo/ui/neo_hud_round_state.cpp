@@ -456,9 +456,15 @@ void CNEOHud_RoundState::DrawFriend(int playerIndex, int teamIndex) {
 }
 
 void CNEOHud_RoundState::DrawEnemy(int playerIndex, int teamIndex) {
+	const int xOffset = m_iEnemyLogoXOffset + (teamIndex * m_ilogoSize) + (teamIndex * 2);
+
+	// Draw Outline
+	Color box_color = Color(box_color_r, box_color_g, box_color_b, box_color_a);
+	surface()->DrawSetColor(box_color);
+	surface()->DrawFilledRect(xOffset - 1, m_iYpos - 1, xOffset + m_ilogoSize + 1, m_iYpos + m_ilogoSize + 1);
+
 	// Drawing Avatar
 	surface()->DrawSetTexture(m_iEnemyLogo);
-	const int xOffset = m_iEnemyLogoXOffset + (teamIndex * m_ilogoSize) + (teamIndex * 2);
 	if (g_PR->IsAlive(playerIndex)) {
 		surface()->DrawSetColor(enemyColor);
 		surface()->DrawFilledRect(xOffset, m_iYpos, xOffset + m_ilogoSize, m_iYpos + m_ilogoSize);
