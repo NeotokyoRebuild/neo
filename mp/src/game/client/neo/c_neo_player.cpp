@@ -915,7 +915,7 @@ void C_NEO_Player::PreThink( void )
 			Warning("Couldn't find ghostMarker\n");
 		}
 
-		auto indicator = m_pNeoPanel->GetGameEventIndicator();
+		auto indicator = GET_HUDELEMENT(CNEOHud_GameEvent);
 
 		if (indicator)
 		{
@@ -970,9 +970,10 @@ void C_NEO_Player::PostThink(void)
 
 	if (!preparingToHideMsg && m_bPreviouslyPreparingToHideMsg)
 	{
-		if (m_pNeoPanel && m_pNeoPanel->GetGameEventIndicator())
+		auto indicator = GET_HUDELEMENT(CNEOHud_GameEvent);
+		if (indicator)
 		{
-			m_pNeoPanel->GetGameEventIndicator()->SetVisible(false);
+			indicator->SetVisible(false);
 			m_bPreviouslyPreparingToHideMsg = false;
 		}
 		else
