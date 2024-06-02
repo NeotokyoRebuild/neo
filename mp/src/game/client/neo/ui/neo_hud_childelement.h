@@ -32,7 +32,19 @@ public:
 	virtual ~CNEOHud_ChildElement() { }
 
 protected:
-	virtual void DrawNeoHudRoundedBox(const int x0, const int y0, const int x1, const int y1, Color colour = NEO_HUDBOX_COLOR, bool topLeft = TRUE, bool topRight = TRUE, bool bottomLeft = TRUE, bool bottomRight = TRUE) const;
+	virtual void DrawNeoHudRoundedBox(const int x0, const int y0, const int x1, const int y1, Color color = NEO_HUDBOX_COLOR,
+			bool topLeft = true, bool topRight = true, bool bottomLeft = true, bool bottomRight = true) const;
+	virtual void DrawNeoHudRoundedBoxFaded(const int x0, const int y0, const int x1, const int y1, Color color,
+		unsigned int alpha0, unsigned int alpha1, bool bHorizontal,
+		bool topLeft = true, bool topRight = true, bool bottomLeft = true, bool bottomRight = true) const;
+	struct XYHudPos {
+		int x0w;
+		int x1w;
+		int y0h;
+		int y1h;
+	};
+	XYHudPos DrawNeoHudRoundedCommon(const int x0, const int y0, const int x1, const int y1, Color color,
+		bool topLeft, bool topRight, bool bottomLeft, bool bottomRight) const;
 
 	virtual void UpdateStateForNeoHudElementDraw() = 0;
 	virtual void DrawNeoHudElement() = 0;
