@@ -228,9 +228,6 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	if (roundStatus == NeoRoundStatus::Idle) {
 		prefixStr = "(Waiting for players)";
 	}
-	else if (roundStatus == NeoRoundStatus::PreRoundFreeze) {
-		prefixStr = "(Pre-round freeze)";
-	}
 	else if (inSuddenDeath)
 	{
 		prefixStr = "(Sudden death)";
@@ -245,7 +242,7 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 
 	// Update steam images
 	if (gpGlobals->curtime > m_iNextAvatarUpdate) {
-		m_iNextAvatarUpdate++;
+		m_iNextAvatarUpdate = gpGlobals->curtime + 1;
 		for (int i = 1; i <= gpGlobals->maxClients; ++i)
 		{
 			if (g_PR && g_PR->IsConnected(i)) {
@@ -269,10 +266,14 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	memset(m_wszRoundUnicode, 0, sizeof(m_wszRoundUnicode));
 	g_pVGuiLocalize->ConvertANSIToUnicode(m_szRoundANSI, m_wszRoundUnicode, sizeof(m_wszRoundUnicode));
 
+	if (roundStatus == NeoRoundStatus::PreRoundFreeze)
+		roundTimeLeft = NEORules()->GetRemainingPreRoundFreezeTime(true);
+
 	const int secsTotal = RoundFloatToInt(roundTimeLeft);
 	const int secsRemainder = secsTotal % 60;
 	const int minutes = (secsTotal - secsRemainder) / 60;
 	V_snwprintf(m_wszTime, 6, L"%02d:%02d", minutes, secsRemainder);
+
 	const int localPlayerTeam = GetLocalPlayerTeam();
 	if (localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF) {
 		V_snwprintf(m_wszFriendlyScore, 3, L"%i", GetGlobalTeam(localPlayerTeam)->GetRoundsWon());
@@ -304,7 +305,10 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 	// Draw time
 	int fontWidth, fontHeight;
 	surface()->GetTextSize(m_hOCRFont, m_wszTime, fontWidth, fontHeight);
-	surface()->DrawSetTextColor(whiteColor);
+	if (NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze)
+		surface()->DrawSetTextColor(COLOR_RED);
+	else
+		surface()->DrawSetTextColor(whiteColor);
 	surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), m_iTimeYpos);
 	surface()->DrawPrintText(m_wszTime, 6);
 
@@ -312,12 +316,12 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 	surface()->DrawSetTextFont(m_hOCRSmallFont);
 	surface()->GetTextSize(m_hOCRSmallFont, m_wszRoundUnicode, fontWidth, fontHeight);
 	surface()->DrawSetTextPos(m_iRoundXpos - (fontWidth / 2), m_iRoundYpos);
+	surface()->DrawSetTextColor(whiteColor);
 	surface()->DrawPrintText(m_wszRoundUnicode, 9);
 
 	// Draw round status
 	surface()->GetTextSize(m_hOCRSmallFont, m_wszStatusUnicode, fontWidth, fontHeight);
 	surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), m_iRoundStatusYpos);
-	surface()->DrawSetTextColor(whiteColor);
 	surface()->DrawPrintText(m_wszStatusUnicode, 24);
 
 	const int localPlayerTeam = GetLocalPlayerTeam();
