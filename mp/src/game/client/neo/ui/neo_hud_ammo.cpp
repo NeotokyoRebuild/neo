@@ -296,7 +296,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 		if(maxClip > 0)
 		{
 			if (magSizeMax > 0) {
-				surface()->DrawSetColor(textColor);
+				surface()->DrawSetTextColor(textColorTransparent);
 				surface()->DrawSetTextPos(digit_xpos + xpos, digit_ypos + ypos);
 				surface()->DrawPrintText(unicodeBullets, magSizeMax);
 			}
