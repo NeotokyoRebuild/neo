@@ -502,4 +502,12 @@
 		"visible"		"0"
 		"enabled"		"0"
 	}
+	NHudCompass
+	{
+		"fieldName"		"NHudCompass"
+		"visible"		"1"
+		"needle_visible"	"0"
+		"needle_colored"	"0"
+		"objective_visible"	"1"
+	}
 }

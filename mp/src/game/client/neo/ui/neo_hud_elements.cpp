@@ -21,7 +21,7 @@
 #include "tier0/memdbgon.h"
 
 #define UI_ELEMENT_NAME_AMMO "NHudWeapon"
-#define UI_ELEMENT_NAME_COMPASS "neo_compass"
+#define UI_ELEMENT_NAME_COMPASS "NHudCompass"
 #define UI_ELEMENT_NAME_HTA "NHudHealth"
 #define UI_ELEMENT_NAME_IFF "neo_iff"
 #define UI_ELEMENT_GAME_EVENT "CNEOHud_GameEvent"
@@ -266,7 +266,7 @@ void CNeoHudElements::InitAmmo()
 void CNeoHudElements::InitCompass()
 {
 	Assert(!m_pCompass);
-	m_pCompass = new CNEOHud_Compass(UI_ELEMENT_NAME_COMPASS, this);
+	m_pCompass = new CNEOHud_Compass(UI_ELEMENT_NAME_COMPASS, NULL);
 }
 
 void CNeoHudElements::InitFriendlyMarker()

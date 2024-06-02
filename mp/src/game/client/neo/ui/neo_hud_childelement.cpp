@@ -49,12 +49,16 @@ CNEOHud_ChildElement::CNEOHud_ChildElement()
 	Assert(m_rounded_width > 0 && m_rounded_height > 0);
 }
 
-void CNEOHud_ChildElement::DrawNeoHudRoundedBox(const int x0, const int y0, const int x1, const int y1, Color color, bool topLeft, bool topRight, bool bottomLeft, bool bottomRight) const
+CNEOHud_ChildElement::XYHudPos CNEOHud_ChildElement::DrawNeoHudRoundedCommon(
+	const int x0, const int y0, const int x1, const int y1, Color color,
+	bool topLeft, bool topRight, bool bottomLeft, bool bottomRight) const
 {
-	const int x0w = x0 + m_rounded_width;
-	const int x1w = x1 - m_rounded_width;
-	const int y0h = y0 + m_rounded_height;
-	const int y1h = y1 - m_rounded_height;
+	const XYHudPos p{
+		.x0w = x0 + m_rounded_width,
+		.x1w = x1 - m_rounded_width,
+		.y0h = y0 + m_rounded_height,
+		.y1h = y1 - m_rounded_height,
+	};
 
 	surface()->DrawSetColor(color);
 
@@ -62,30 +66,52 @@ void CNEOHud_ChildElement::DrawNeoHudRoundedBox(const int x0, const int y0, cons
 	if (topLeft)
 	{
 		surface()->DrawSetTexture(m_hTex_Rounded_NW);
-		surface()->DrawTexturedRect(x0, y0, x0w, y0h);
+		surface()->DrawTexturedRect(x0, y0, p.x0w, p.y0h);
 	}
 	if (topRight)
 	{
 		surface()->DrawSetTexture(m_hTex_Rounded_NE);
-		surface()->DrawTexturedRect(x1w, y0, x1, y0h);
+		surface()->DrawTexturedRect(p.x1w, y0, x1, p.y0h);
 	}
 	if (bottomLeft)
 	{
 		surface()->DrawSetTexture(m_hTex_Rounded_SE);
-		surface()->DrawTexturedRect(x0, y1h, x0w, y1);
+		surface()->DrawTexturedRect(x0, p.y1h, p.x0w, y1);
 	}
 	if (bottomRight)
 	{
 		surface()->DrawSetTexture(m_hTex_Rounded_SW);
-		surface()->DrawTexturedRect(x1w, y1h, x1, y1);
+		surface()->DrawTexturedRect(p.x1w, p.y1h, x1, y1);
 	}
 
+	return p;
+}
+
+void CNEOHud_ChildElement::DrawNeoHudRoundedBox(const int x0, const int y0, const int x1, const int y1, Color color,
+	bool topLeft, bool topRight, bool bottomLeft, bool bottomRight) const
+{
+	const auto p = DrawNeoHudRoundedCommon(x0, y0, x1, y1, color, topLeft, topRight, bottomLeft, bottomRight);
+
 	// Large middle rectangle
-	surface()->DrawFilledRect(x0w, y0, x1w, y1);
+	surface()->DrawFilledRect(p.x0w, y0, p.x1w, y1);
 
 	// Small side rectangles
-	surface()->DrawFilledRect(x0, topLeft? y0h: y0, x0w, bottomLeft? y1h: y1);
-	surface()->DrawFilledRect(x1w, topRight? y0h: y0, x1, bottomRight? y1h: y1);
+	surface()->DrawFilledRect(x0, topLeft ? p.y0h : y0, p.x0w, bottomLeft ? p.y1h : y1);
+	surface()->DrawFilledRect(p.x1w, topRight ? p.y0h : y0, x1, bottomRight ? p.y1h : y1);
+}
+
+void CNEOHud_ChildElement::DrawNeoHudRoundedBoxFaded(const int x0, const int y0, const int x1, const int y1, Color color,
+	unsigned int alpha0, unsigned int alpha1, bool bHorizontal,
+	bool topLeft, bool topRight, bool bottomLeft, bool bottomRight) const
+{
+	const auto p = DrawNeoHudRoundedCommon(x0, y0, x1, y1, color, topLeft, topRight, bottomLeft, bottomRight);
+
+	// Large middle rectangle
+	surface()->DrawFilledRectFade(p.x0w, y0, p.x1w, y1, alpha0, alpha1, bHorizontal);
+
+	// Small side rectangles
+	surface()->DrawFilledRectFade(x0, topLeft ? p.y0h : y0, p.x0w, bottomLeft ? p.y1h : y1, alpha0, alpha0, bHorizontal);
+	surface()->DrawFilledRectFade(p.x1w, topRight ? p.y0h : y0, x1, bottomRight ? p.y1h : y1, alpha1, alpha1, bHorizontal);
 }
 
 int CNEOHud_ChildElement::GetMargin()

@@ -10,7 +10,8 @@
 
 class CNeoHudElements;
 
-#define UNICODE_NEO_COMPASS_STR_LENGTH 50
+static constexpr size_t UNICODE_NEO_COMPASS_VIS_AROUND = 33; // How many characters should be visible around each side of the needle position
+static constexpr size_t UNICODE_NEO_COMPASS_STR_LENGTH = ((UNICODE_NEO_COMPASS_VIS_AROUND * 2) + 2);
 
 class CNEOHud_Compass : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
 {
@@ -36,8 +37,15 @@ private:
 	vgui::HFont m_hFont;
 
 	int m_resX, m_resY;
+	mutable int m_savedXBoxWidth = 0;
 
 	wchar_t m_wszCompassUnicode[UNICODE_NEO_COMPASS_STR_LENGTH];
+
+	CPanelAnimationVarAliasType(bool, m_showCompass, "visible", "1", "bool");
+	CPanelAnimationVarAliasType(int, m_yFromBottomPos, "y_bottom_pos", "3", "proportional_ypos");
+	CPanelAnimationVarAliasType(bool, m_needleVisible, "needle_visible", "0", "bool");
+	CPanelAnimationVarAliasType(bool, m_needleColored, "needle_colored", "0", "bool");
+	CPanelAnimationVarAliasType(bool, m_objectiveVisible, "objective_visible", "1", "bool");
 
 private:
 	CNEOHud_Compass(const CNEOHud_Compass &other);
