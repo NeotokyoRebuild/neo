@@ -881,7 +881,7 @@ void CNEO_Player::PlayCloakSound()
 
 		static constexpr float MAX_CLOAK_DISTANCE = 50.0f;
 		const auto dir = EyePosition() - player->GetAbsOrigin();
-		const float distance = dir.Length2D();
+		const float distance = dir.Length();
 		if (distance < MAX_CLOAK_DISTANCE)
 		{
 			filter.AddRecipient(player);
