@@ -163,6 +163,9 @@ public:
 	float GetAttackersScores(const int attackerIdx) const;
 	int GetAttackerHits(const int attackerIdx) const;
 
+	const char *GetNeoPlayerName() const;
+	bool ClientWantNeoName() const;
+
 private:
 	void CheckThermOpticButtons();
 	void CheckVisionButtons();
@@ -205,6 +208,10 @@ public:
 	CNetworkVar(int, m_iNeoSkin);
 	CNetworkVar(int, m_iNeoStar);
 
+	CNetworkString(m_szNeoName, MAX_PLAYER_NAME_LENGTH);
+	CNetworkVar(int, m_szNameDupePos);
+	CNetworkVar(bool, m_bClientWantNeoName);
+
 	unsigned char m_NeoFlags;
 
 protected:
@@ -222,6 +229,10 @@ private:
 
 	float m_flLastAirborneJumpOkTime;
 	float m_flLastSuperJumpTime;
+
+	// Non-network version of m_szNeoName with dupe checker index
+	mutable char m_szNeoNameWDupeIdx[MAX_PLAYER_NAME_LENGTH + 10];
+	mutable int m_szNeoNameLocalDupeIdx;
 
 private:
 	C_NEO_Player(const C_NEO_Player &);

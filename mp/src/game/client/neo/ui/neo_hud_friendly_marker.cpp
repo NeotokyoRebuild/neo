@@ -131,7 +131,7 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_BasePlayer* player) c
 		auto n = dynamic_cast<C_NEO_Player*>(player);
 		auto a = n->m_rvFriendlyPlayerPositions;
 		static const int maxNameLenght = 32 + 1;		
-		auto playerName = player->GetPlayerName();
+		auto playerName = n->GetNeoPlayerName();
 
 		wchar_t playerNameUnicode[maxNameLenght];
 		char playerNameTrimmed[maxNameLenght];

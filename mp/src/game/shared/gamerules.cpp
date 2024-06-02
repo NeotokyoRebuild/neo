@@ -892,6 +892,7 @@ void CGameRules::CheckHaptics(CBasePlayer* pPlayer)
 
 void CGameRules::ClientSettingsChanged( CBasePlayer *pPlayer )
 {
+#ifndef NEO	// NOTE (nullsystem): This is handled by CNEORules::ClientSettingsChanged now
 	const char *pszName = engine->GetClientConVarValue( pPlayer->entindex(), "name" );
 
 	const char *pszOldName = pPlayer->GetPlayerName();
@@ -916,6 +917,7 @@ void CGameRules::ClientSettingsChanged( CBasePlayer *pPlayer )
 		
 		pPlayer->SetPlayerName( pszName );
 	}
+#endif
 
 	const char *pszFov = engine->GetClientConVarValue( pPlayer->entindex(), "fov_desired" );
 	if ( pszFov )

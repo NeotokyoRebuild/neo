@@ -85,6 +85,9 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropArray(RecvPropInt(RECVINFO(m_rfAttackersHits[0])), m_rfAttackersHits),
 
 	RecvPropInt(RECVINFO(m_NeoFlags)),
+	RecvPropString(RECVINFO(m_szNeoName)),
+	RecvPropInt(RECVINFO(m_szNameDupePos)),
+	RecvPropBool(RECVINFO(m_bClientWantNeoName)),
 END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA(C_NEO_Player)
@@ -117,13 +120,6 @@ static void __MsgFunc_DamageInfo(bf_read& msg)
 
 	// Print damage stats into the console
 	// Print to console
-	struct AttackersTotals
-	{
-		float dealtTotalDmgs;
-		int dealtTotalHits;
-		float takenTotalDmgs;
-		int takenTotalHits;
-	};
 	AttackersTotals totals;
 	totals.dealtTotalDmgs = 0.0f;
 	totals.dealtTotalHits = 0;
@@ -139,7 +135,7 @@ static void __MsgFunc_DamageInfo(bf_read& msg)
 	bool setKillByLine = false;
 	if (killerIdx > 0)
 	{
-		auto* neoAttacker = dynamic_cast<C_NEO_Player*>(UTIL_PlayerByIndex(killerIdx));
+		auto *neoAttacker = dynamic_cast<C_NEO_Player*>(UTIL_PlayerByIndex(killerIdx));
 		if (neoAttacker && neoAttacker->entindex() != thisIdx)
 		{
 			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, localPlayer);
@@ -162,7 +158,7 @@ static void __MsgFunc_DamageInfo(bf_read& msg)
 			continue;
 		}
 
-		const char* dmgerName = neoAttacker->GetPlayerName();
+		const char *dmgerName = neoAttacker->GetNeoPlayerName();
 		if (!dmgerName)
 		{
 			continue;
@@ -174,7 +170,7 @@ static void __MsgFunc_DamageInfo(bf_read& msg)
 		{
 			const int hitsTo = neoAttacker->GetAttackerHits(thisIdx);
 			const int hitsFrom = localPlayer->GetAttackerHits(pIdx);
-			const char* dmgerClass = GetNeoClassName(neoAttacker->GetClass());
+			const char *dmgerClass = GetNeoClassName(neoAttacker->GetClass());
 
 			static char infoLine[128];
 			DmgLineStr(infoLine, sizeof(infoLine), dmgerName, dmgerClass,
@@ -414,6 +410,8 @@ C_NEO_Player::C_NEO_Player()
 	m_pPlayerAnimState = CreatePlayerAnimState(this, CreateAnimStateHelpers(this),
 		NEO_ANIMSTATE_LEGANIM_TYPE, NEO_ANIMSTATE_USES_AIMSEQUENCES);
 
+	memset(m_szNeoNameWDupeIdx, 0, sizeof(m_szNeoNameWDupeIdx));
+	m_szNameDupePos = 0;
 	if (!g_hasHookDamageInfo)
 	{
 		usermessages->HookMessage("DamageInfo", __MsgFunc_DamageInfo);
@@ -498,6 +496,43 @@ void C_NEO_Player::ZeroFriendlyPlayerLocArray()
 float C_NEO_Player::GetAttackersScores(const int attackerIdx) const
 {
 	return m_rfAttackersScores.Get(attackerIdx);
+}
+
+const char *C_NEO_Player::GetNeoPlayerName() const
+{
+	const int dupePos = m_szNameDupePos;
+	const bool localWantNeoName = GetLocalNEOPlayer()->ClientWantNeoName();
+	if (localWantNeoName && m_szNeoName.Get()[0] != '\0')
+	{
+		const char *neoName = m_szNeoName.Get();
+		if (dupePos > 0)
+		{
+			if (dupePos != m_szNeoNameLocalDupeIdx)
+			{
+				m_szNeoNameLocalDupeIdx = dupePos;
+				V_snprintf(m_szNeoNameWDupeIdx, sizeof(m_szNeoNameWDupeIdx), "%s (%d)", neoName, dupePos);
+			}
+			return m_szNeoNameWDupeIdx;
+		}
+		return neoName;
+	}
+
+	const char *stndName = const_cast<C_NEO_Player *>(this)->GetPlayerName();
+	if (localWantNeoName && dupePos > 0)
+	{
+		if (dupePos != m_szNeoNameLocalDupeIdx)
+		{
+			m_szNeoNameLocalDupeIdx = dupePos;
+			V_snprintf(m_szNeoNameWDupeIdx, sizeof(m_szNeoNameWDupeIdx), "%s (%d)", stndName, dupePos);
+		}
+		return m_szNeoNameWDupeIdx;
+	}
+	return stndName;
+}
+
+bool C_NEO_Player::ClientWantNeoName() const
+{
+	return m_bClientWantNeoName;
 }
 
 int C_NEO_Player::GetAttackerHits(const int attackerIdx) const

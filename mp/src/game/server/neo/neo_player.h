@@ -121,6 +121,14 @@ public:
 	void Weapon_AimToggle(CBaseCombatWeapon *pWep, const NeoWeponAimToggleE toggleType);
 	void Weapon_AimToggle(CNEOBaseCombatWeapon* pWep, const NeoWeponAimToggleE toggleType);
 
+	// "neo_name" if available otherwise "name"
+	// Set "viewFrom" if fetching the name in the view of another player
+	const char *GetNeoPlayerName(const CNEO_Player *viewFrom = nullptr) const;
+	// "neo_name" even if it's nothing
+	const char *GetNeoPlayerNameDirect() const;
+	void SetNeoPlayerName(const char *newNeoName);
+	void SetClientWantNeoName(const bool b);
+
 	void Lean(void);
 	void SoftSuicide(void);
 	void GiveAllItems(void);
@@ -176,13 +184,9 @@ public:
 	float GetAttackersScores(const int attackerIdx) const;
 	int GetAttackerHits(const int attackerIdx) const;
 
-	struct AttackersTotals
-	{
-		float dealtTotalDmgs;
-		int dealtTotalHits;
-		float takenTotalDmgs;
-		int takenTotalHits;
-	};
+	void SetNameDupePos(const int dupePos);
+	int NameDupePos() const;
+
 	AttackersTotals GetAttackersTotals() const;
 	void StartShowDmgStats(const CTakeDamageInfo *info);
 
@@ -239,6 +243,12 @@ public:
 	CNetworkArray(int, m_rfAttackersHits, (MAX_PLAYERS + 1));
 
 	CNetworkVar(unsigned char, m_NeoFlags);
+	CNetworkString(m_szNeoName, MAX_PLAYER_NAME_LENGTH);
+	CNetworkVar(int, m_szNameDupePos);
+
+	// NEO NOTE (nullsystem): As dumb as client sets -> server -> client it may sound,
+	// cl_fakenick directly doesn't even work properly for client set convars anyway
+	CNetworkVar(bool, m_bClientWantNeoName);
 
 	bool m_bIsPendingSpawnForThisRound;
 
@@ -246,9 +256,14 @@ private:
 	bool m_bFirstDeathTick;
 	bool m_bCorpseSpawned;
 	bool m_bPreviouslyReloading;
+	bool m_szNeoNameHasSet;
 
 	float m_flLastAirborneJumpOkTime;
 	float m_flLastSuperJumpTime;
+
+	// Non-network version of m_szNeoName with dupe checker index
+	mutable char m_szNeoNameWDupeIdx[MAX_PLAYER_NAME_LENGTH + 10];
+	mutable bool m_szNeoNameWDupeIdxNeedUpdate;
 
 	int m_iDmgMenuCurPage;
 	int m_iDmgMenuNextPage;

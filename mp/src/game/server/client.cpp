@@ -45,6 +45,10 @@
 #include "weapon_physcannon.h"
 #endif
 
+#ifdef NEO
+#include "neo_player.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -214,7 +218,14 @@ void Host_Say( edict_t *pEdict, const CCommand &args, bool teamonly )
 		pPlayer->CheckChatText( p, 127 );	// though the buffer szTemp that p points to is 256, 
 											// chat text is capped to 127 in CheckChatText above
 
+#ifdef NEO
+		if (auto *neoPlayer = static_cast<CNEO_Player *>(pPlayer))
+		{
+			Assert(strlen(neoPlayer->GetNeoPlayerName()) > 0);
+		}
+#else
 		Assert( strlen( pPlayer->GetPlayerName() ) > 0 );
+#endif
 
 		bSenderDead = ( pPlayer->m_lifeState != LIFE_ALIVE );
 	}
@@ -233,7 +244,15 @@ void Host_Say( edict_t *pEdict, const CCommand &args, bool teamonly )
 		pszLocation = g_pGameRules->GetChatLocation( teamonly, pPlayer );
 	}
 
+#ifdef NEO
+	const char *pszPlayerName = pPlayer ? pPlayer->GetPlayerName() : "Console";
+	if (auto *neoPlayer = static_cast<CNEO_Player *>(pPlayer))
+	{
+		pszPlayerName = neoPlayer->GetNeoPlayerName();
+	}
+#else
 	const char *pszPlayerName = pPlayer ? pPlayer->GetPlayerName():"Console";
+#endif
 
 	if ( pszPrefix && strlen( pszPrefix ) > 0 )
 	{

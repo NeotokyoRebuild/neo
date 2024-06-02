@@ -36,6 +36,12 @@
 		"icon"		"short"		// icon
 		"assists"	"short"		// user ID who assists
 	}
+	"player_changeneoname"			// player_changename, but for neo_name
+	{
+		"userid"	"short"   	// user ID who neo_name changed
+		"oldname"	"string" 	// user's old name
+		"newname"	"string" 	// user's new name
+	}
 	
 	"teamplay_round_start"			// round restart
 	{

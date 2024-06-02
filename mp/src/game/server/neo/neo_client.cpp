@@ -34,7 +34,7 @@ void FinishClientPutInServer( CNEO_Player *pPlayer )
 	pPlayer->Spawn();
 
 	char sName[128];
-	Q_strncpy( sName, pPlayer->GetPlayerName(), sizeof( sName ) );
+	Q_strncpy( sName, pPlayer->GetNeoPlayerName(), sizeof( sName ) );
 	
 	// First parse the name and remove any %'s
 	for ( char *pApersand = sName; pApersand != NULL && *pApersand != 0; pApersand++ )
