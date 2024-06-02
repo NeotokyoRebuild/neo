@@ -29,6 +29,7 @@
 #ifdef NEO
 #include "neo_gamerules.h"
 #include "neo_player_shared.h"
+#include "c_neo_player.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -1862,7 +1863,12 @@ void CBaseHudChat::ChatPrintf( int iPlayerIndex, int iFilter, const char *fmt, .
 		g_pVGuiLocalize->ConvertANSIToUnicode( pmsg, wbuf, bufSize);
 
 		// find the player's name in the unicode string, in case there is no color markup
+#ifdef NEO
+		auto neoPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(iPlayerIndex));
+		const char *pName = neoPlayer ? neoPlayer->GetNeoPlayerName() : sPlayerInfo.name;
+#else
 		const char *pName = sPlayerInfo.name;
+#endif
 
 		if ( pName )
 		{

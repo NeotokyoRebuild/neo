@@ -65,6 +65,10 @@ extern ConVar replay_rendersetting_renderglow;
 #include "econ_item_description.h"
 #endif
 
+#ifdef NEO
+#include "c_neo_player.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -352,6 +356,9 @@ void ClientModeShared::Init()
 	ListenForGameEvent( "player_team" );
 	ListenForGameEvent( "server_cvar" );
 	ListenForGameEvent( "player_changename" );
+#ifdef NEO
+	ListenForGameEvent("player_changeneoname");
+#endif
 	ListenForGameEvent( "teamplay_broadcast_audio" );
 	ListenForGameEvent( "achievement_earned" );
 
@@ -1111,7 +1118,11 @@ void ClientModeShared::FireGameEvent( IGameEvent *event )
 			pPlayer->TeamChange( team );
 		}
 	}
+#ifdef NEO
+	else if (Q_strcmp("player_changename", eventname) == 0 || Q_strcmp("player_changeneoname", eventname) == 0)
+#else
 	else if ( Q_strcmp( "player_changename", eventname ) == 0 )
+#endif
 	{
 		if ( !hudChat )
 			return;
@@ -1119,6 +1130,15 @@ void ClientModeShared::FireGameEvent( IGameEvent *event )
 		const char *pszOldName = event->GetString("oldname");
 		if ( PlayerNameNotSetYet(pszOldName) )
 			return;
+
+#ifdef NEO
+		const bool thisClientShowChange = C_NEO_Player::GetLocalNEOPlayer()->ClientWantNeoName();
+		if (Q_strcmp("player_changeneoname", eventname) == 0 && !thisClientShowChange)
+		{
+			// The client dont want to see neo_name changes so return early.
+			return;
+		}
+#endif
 
 		wchar_t wszOldName[MAX_PLAYER_NAME_LENGTH];
 		g_pVGuiLocalize->ConvertANSIToUnicode( pszOldName, wszOldName, sizeof(wszOldName) );

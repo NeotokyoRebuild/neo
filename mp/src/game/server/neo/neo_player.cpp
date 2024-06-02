@@ -72,6 +72,9 @@ SendPropArray(SendPropFloat(SENDINFO_ARRAY(m_rfAttackersScores), -1, SPROP_COORD
 SendPropArray(SendPropInt(SENDINFO_ARRAY(m_rfAttackersHits)), m_rfAttackersHits),
 
 SendPropInt(SENDINFO(m_NeoFlags), 4, SPROP_UNSIGNED),
+SendPropString(SENDINFO(m_szNeoName)),
+SendPropInt(SENDINFO(m_szNameDupePos)),
+SendPropBool(SENDINFO(m_bClientWantNeoName)),
 END_SEND_TABLE()
 
 BEGIN_DATADESC(CNEO_Player)
@@ -105,6 +108,10 @@ DEFINE_FIELD(m_rfAttackersScores, FIELD_CUSTOM),
 DEFINE_FIELD(m_rfAttackersHits, FIELD_CUSTOM),
 
 DEFINE_FIELD(m_NeoFlags, FIELD_CHARACTER),
+
+DEFINE_FIELD(m_szNeoName, FIELD_STRING),
+DEFINE_FIELD(m_szNameDupePos, FIELD_INTEGER),
+DEFINE_FIELD(m_bClientWantNeoName, FIELD_BOOLEAN),
 END_DATADESC()
 
 #define DISMEMBER_LIMB_THRESHOLD 10
@@ -371,6 +378,8 @@ CNEO_Player::CNEO_Player()
 	m_iNeoSkin = NEO_SKIN_FIRST;
 	m_iNeoStar = NEO_DEFAULT_STAR;
 	m_iXP.GetForModify() = 0;
+	V_memset(m_szNeoName.GetForModify(), 0, sizeof(m_szNeoName));
+	m_szNeoNameHasSet = false;
 
 	m_bGhostExists = false;
 	m_bInThermOpticCamo = m_bInVision = false;
@@ -406,6 +415,10 @@ CNEO_Player::CNEO_Player()
 
 	m_pPlayerAnimState = CreatePlayerAnimState(this, CreateAnimStateHelpers(this),
 		NEO_ANIMSTATE_LEGANIM_TYPE, NEO_ANIMSTATE_USES_AIMSEQUENCES);
+
+	memset(m_szNeoNameWDupeIdx, 0, sizeof(m_szNeoNameWDupeIdx));
+	m_szNeoNameWDupeIdxNeedUpdate = true;
+	m_szNameDupePos = 0;
 
 	m_iDmgMenuCurPage = 0;
 	m_iDmgMenuNextPage = 0;
@@ -1163,6 +1176,70 @@ void CNEO_Player::Weapon_AimToggle(CBaseCombatWeapon *pWep, const NeoWeponAimTog
 	Weapon_AimToggle(dynamic_cast<CNEOBaseCombatWeapon*>(pWep), toggleType);
 }
 
+void CNEO_Player::SetNameDupePos(const int dupePos)
+{
+	m_szNameDupePos = dupePos;
+	m_szNeoNameWDupeIdxNeedUpdate = true;
+}
+
+int CNEO_Player::NameDupePos() const
+{
+	return m_szNameDupePos;
+}
+
+const char *CNEO_Player::GetNeoPlayerName(const CNEO_Player *viewFrom) const
+{
+	const bool nameFetchWantNeoName = (viewFrom) ? viewFrom->m_bClientWantNeoName : m_bClientWantNeoName;
+
+	const int dupePos = m_szNameDupePos;
+	if (nameFetchWantNeoName && m_szNeoName.Get()[0] != '\0')
+	{
+		const char *neoName = m_szNeoName.Get();
+		if (dupePos > 0)
+		{
+			if (m_szNeoNameWDupeIdxNeedUpdate)
+			{
+				m_szNeoNameWDupeIdxNeedUpdate = false;
+				V_snprintf(m_szNeoNameWDupeIdx, sizeof(m_szNeoNameWDupeIdx), "%s (%d)", neoName, dupePos);
+			}
+			return m_szNeoNameWDupeIdx;
+		}
+		return neoName;
+	}
+
+	const char *stndName = const_cast<CNEO_Player *>(this)->GetPlayerName();
+	if (nameFetchWantNeoName && dupePos > 0)
+	{
+		if (m_szNeoNameWDupeIdxNeedUpdate)
+		{
+			m_szNeoNameWDupeIdxNeedUpdate = false;
+			V_snprintf(m_szNeoNameWDupeIdx, sizeof(m_szNeoNameWDupeIdx), "%s (%d)", stndName, dupePos);
+		}
+		return m_szNeoNameWDupeIdx;
+	}
+	return stndName;
+}
+
+const char *CNEO_Player::GetNeoPlayerNameDirect() const
+{
+	return m_szNeoNameHasSet ? m_szNeoName.Get() : NULL;
+}
+
+void CNEO_Player::SetNeoPlayerName(const char *newNeoName)
+{
+	// NEO NOTE (nullsystem): Generally it's never NULL but just incase
+	if (newNeoName)
+	{
+		V_memcpy(m_szNeoName.GetForModify(), newNeoName, sizeof(m_szNeoName));
+		m_szNeoNameHasSet = true;
+	}
+}
+
+void CNEO_Player::SetClientWantNeoName(const bool b)
+{
+	m_bClientWantNeoName = b;
+}
+
 void CNEO_Player::Weapon_SetZoom(const bool bZoomIn)
 {
 	ShowCrosshair(bZoomIn);
@@ -1437,7 +1514,7 @@ bool CNEO_Player::HandleCommand_JoinTeam( int team )
 		SetPlayerTeamModel();
 
 		UTIL_ClientPrintAll(HUD_PRINTTALK, "%s1 joined team %s2\n",
-			GetPlayerName(), GetTeam()->GetName());
+			GetNeoPlayerName(), GetTeam()->GetName());
 	}
 
 	return isAllowedToJoin;
@@ -1604,7 +1681,7 @@ int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int pl
 
 		const float dmgTo = min(neoAttacker->GetAttackersScores(thisIdx), 100.0f);
 		const float dmgFrom = min(GetAttackersScores(pIdx), 100.0f);
-		const char *dmgerName = neoAttacker->GetPlayerName();
+		const char *dmgerName = neoAttacker->GetNeoPlayerName(this);
 #define DEBUG_SHOW_ALL (0)
 #if DEBUG_SHOW_ALL
 		if (dmgerName)
@@ -2361,7 +2438,7 @@ int CNEO_Player::GetAttackerHits(const int attackerIdx) const
 	return m_rfAttackersHits.Get(attackerIdx);
 }
 
-CNEO_Player::AttackersTotals CNEO_Player::GetAttackersTotals() const
+AttackersTotals CNEO_Player::GetAttackersTotals() const
 {
 	AttackersTotals totals;
 	totals.dealtTotalDmgs = 0.0f;
