@@ -98,11 +98,6 @@ void CNEOScoreBoard::UpdatePlayerInfo()
 			if (playerTeam == TEAM_JINRAI) ++teamCountJinrai;
 			else if (playerTeam == TEAM_NSF) ++teamCountNSF;
 
-			if (GameResources()->IsLocalPlayer(i))
-			{
-				selectedRow = itemId;
-			}
-
 			// We aren't in the scoreboard yet
 			if (itemId == -1)
 			{
@@ -112,6 +107,11 @@ void CNEOScoreBoard::UpdatePlayerInfo()
 			else
 			{
 				m_pPlayerList->ModifyItem(itemId, sectionId, playerData);
+			}
+
+			if (g_PR->IsLocalPlayer(i))
+			{
+				selectedRow = itemId;
 			}
 
 			playerData->deleteThis();
@@ -137,12 +137,12 @@ void CNEOScoreBoard::UpdatePlayerInfo()
 		wchar_t wszTeamHeaderText[256];
 
 		memset(szTeamHeaderText, 0, sizeof(szTeamHeaderText));
-		V_snprintf(szTeamHeaderText, sizeof(szTeamHeaderText), "JINRAI:       Score: %d    Players: %d", teamJinrai->GetRoundsWon(), teamCountJinrai);
+		V_snprintf(szTeamHeaderText, sizeof(szTeamHeaderText), "JINRAI       Score: %d    Players: %d", teamJinrai->GetRoundsWon(), teamCountJinrai);
 		g_pVGuiLocalize->ConvertANSIToUnicode(szTeamHeaderText, wszTeamHeaderText, sizeof(wszTeamHeaderText));
 		m_pPlayerList->ModifyColumn(SCORESECTION_JINRAI, "name", wszTeamHeaderText);
 
 		memset(szTeamHeaderText, 0, sizeof(szTeamHeaderText));
-		V_snprintf(szTeamHeaderText, sizeof(szTeamHeaderText), "NSF:           Score: %d    Players: %d", teamNSF->GetRoundsWon(), teamCountNSF);
+		V_snprintf(szTeamHeaderText, sizeof(szTeamHeaderText), "NSF          Score: %d    Players: %d", teamNSF->GetRoundsWon(), teamCountNSF);
 		g_pVGuiLocalize->ConvertANSIToUnicode(szTeamHeaderText, wszTeamHeaderText, sizeof(wszTeamHeaderText));
 		m_pPlayerList->ModifyColumn(SCORESECTION_NSF, "name", wszTeamHeaderText);
 	}

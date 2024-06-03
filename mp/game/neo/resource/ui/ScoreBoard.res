@@ -37,7 +37,7 @@
 		"labelText"			""
 		"textAlignment"		"north-west"
 		"dulltext"			"0"
-		"brighttext"		"1"
+		"brighttext"		"0"
 	}
 	"PlayerList"
 	{
@@ -52,6 +52,6 @@
 		"visible"			"1"
 		"enabled"			"1"
 		"tabPosition"		"0"
-		"linespacing"		"22"
+		"linespacing"		"16"
 	}
 }

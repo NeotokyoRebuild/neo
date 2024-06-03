@@ -22,7 +22,7 @@ Scheme
 		"Orange"			"200 200 200 255"
 		"OrangeDim"			"155 155 155 120"
 		"LightOrange"		"255 255 255 128"
-		
+
 		"Red"				"55 55 55 255"
 		"Black"				"80 80 80 255"
 		"TransparentBlack"	"0 0 0 196"
@@ -147,7 +147,7 @@ Scheme
 		SectionedListPanel.SelectedTextColor			"Black"
 		SectionedListPanel.SelectedBgColor				"Red"
 		SectionedListPanel.OutOfFocusSelectedTextColor	"Black"
-		SectionedListPanel.OutOfFocusSelectedBgColor	"255 255 255 32"
+		SectionedListPanel.OutOfFocusSelectedBgColor	"255 255 255 8"
 
 		Slider.NobColor				"108 108 108 255"
 		Slider.TextColor			"127 140 127 255"
@@ -300,7 +300,7 @@ Scheme
 				"weight"		"800"
 			}
 
-			
+
 		}
 		"DefaultUnderline"
 		{
@@ -594,7 +594,7 @@ Scheme
 		   }
 		  }
 
-		CSweaponsSmall 
+		CSweaponsSmall
 		  {
 		   "1"
 		   {
@@ -606,7 +606,7 @@ Scheme
 		   }
 		  }
 
-		
+
 		CSTypeSmall
 		  {
 		   "1"
@@ -618,7 +618,7 @@ Scheme
 			"antialias" "1"
 		   }
 		  }
-		  
+
 		  CSTypelr
 		  {
 		   "1"
@@ -642,7 +642,7 @@ Scheme
 			"antialias" "1"
 		   }
 		  }
-		
+
 		Icons
 		{
 			"1"
@@ -902,7 +902,7 @@ Scheme
 				"yres"	"1200 6000"
 				"antialias"	"1"
 				//"additive"	"1"
-			}			
+			}
 		}
 		NHudOCRSmall
 		{
@@ -953,7 +953,7 @@ Scheme
 				"yres"	"1200 6000"
 				"antialias"	"1"
 				"additive"	"1"
-			}			
+			}
 		}
 		NHudOCR
 		{
@@ -1004,7 +1004,7 @@ Scheme
 				"yres"	"1200 6000"
 				"antialias"	"1"
 				"additive"	"1"
-			}			
+			}
 		}
 		NHudOCRBlur
 		{
@@ -1037,7 +1037,7 @@ Scheme
 				"additive"	"1"
 				"blur"		"4"
 				//"scanlines" "2"
-				"custom"	"1"				
+				"custom"	"1"
 			}
 			"4"
 			{
@@ -1058,7 +1058,7 @@ Scheme
 				"yres"	"1200 6000"
 				"antialias"	"1"
 				//"additive"	"1"
-			}			
+			}
 		}
 		NHudBullets
 		{
@@ -1109,8 +1109,8 @@ Scheme
 				"yres"	"1200 6000"
 				"antialias"	"1"
 				"additive"	"1"
-			}			
-		}								
+			}
+		}
 		NHudNumbers
 		{
 			"1"
@@ -1142,7 +1142,7 @@ Scheme
 				//"additive"	"1"
 				//"blur"		"3"
 				//"scanlines" "2"
-				//"custom"	"1"				
+				//"custom"	"1"
 			}
 			"4"
 			{
@@ -1163,7 +1163,7 @@ Scheme
 				"yres"	"1200 6000"
 				"antialias"	"1"
 				//"additive"	"1"
-			}			
+			}
 		}
 		NHudNumbersBlur
 		{
@@ -1196,7 +1196,7 @@ Scheme
 				"additive"	"1"
 				"blur"		"4"
 				"scanlines" "2"
-				"custom"	"1"				
+				"custom"	"1"
 			}
 			"4"
 			{
@@ -1217,8 +1217,8 @@ Scheme
 				"yres"	"1200 6000"
 				"antialias"	"1"
 				//"additive"	"1"
-			}			
-		}		
+			}
+		}
 		NHudNumbersSmall
 		{
 			"1"
@@ -1268,7 +1268,7 @@ Scheme
 				"yres"	"1200 6000"
 				"antialias"	"1"
 				//"additive"	"1"
-			}			
+			}
 		}
 		MVP
 		{
@@ -1319,7 +1319,7 @@ Scheme
 				"yres"		"1200 6000"
 				"antialias"	"1"
 				"additive"	"1"
-			}			
+			}
 		}
 		BOOT
 		{
@@ -1367,8 +1367,8 @@ Scheme
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"		"1200 6000"
 				"antialias"	"1"
-			}			
-		}										
+			}
+		}
 	}
 
 	//
@@ -1416,7 +1416,7 @@ Scheme
 				}
 			}
 		}
-		
+
 		TitleButtonBorder
 		{
 			"inset" "0 0 1 1"
@@ -1615,7 +1615,7 @@ Scheme
 				}
 			}
 		}
-		
+
 		ButtonBorder
 		{
 			"inset" "0 0 0 0"
