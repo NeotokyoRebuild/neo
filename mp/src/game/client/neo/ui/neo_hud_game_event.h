@@ -15,7 +15,7 @@ class CNEOHud_GameEvent : public CNEOHud_ChildElement, public CHudElement, publi
 {
 	DECLARE_CLASS_SIMPLE(CNEOHud_GameEvent, vgui::Panel);
 public:
-	CNEOHud_GameEvent(const char *pElementName, vgui::Panel *parent);
+	CNEOHud_GameEvent(const char *pElementName, vgui::Panel *parent = nullptr);
 
 	void SetMessage(const char *message, size_t size);
 	void SetMessage(const wchar_t *message, size_t size);
