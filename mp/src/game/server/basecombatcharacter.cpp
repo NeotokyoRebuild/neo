@@ -1709,7 +1709,9 @@ bool CBaseCombatCharacter::Weapon_Detach( CBaseCombatWeapon *pWeapon )
 			}
 			m_hMyWeapons.Set( i, NULL );
 			pWeapon->SetOwner( NULL );
-
+#ifdef NEO
+			pWeapon->SetParent( NULL, 0 ); // Removes the attachment point of the weapon
+#endif
 			if ( pWeapon == m_hActiveWeapon )
 				ClearActiveWeapon();
 			return true;
@@ -2343,6 +2345,10 @@ void CBaseCombatCharacter::RemoveAllWeapons()
 		if ( m_hMyWeapons[i] )
 		{
 			m_hMyWeapons[i]->Delete( );
+#ifdef NEO
+			m_hMyWeapons[i]->SetParent(NULL, 0);
+			m_hMyWeapons[i]->AddEffects(EF_NODRAW);
+#endif
 			m_hMyWeapons.Set( i, NULL );
 		}
 	}

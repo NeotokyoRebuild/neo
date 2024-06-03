@@ -132,6 +132,7 @@ public:
 	CNEOBaseCombatWeapon();
 
 	virtual void Spawn();
+	virtual void Equip(CBaseCombatCharacter* pOwner) OVERRIDE;
 	virtual	void CheckReload(void);
 
 	virtual bool Reload( void );

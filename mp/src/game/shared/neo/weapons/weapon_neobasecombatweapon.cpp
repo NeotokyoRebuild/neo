@@ -112,6 +112,43 @@ void CNEOBaseCombatWeapon::Spawn()
 #endif
 }
 
+void CNEOBaseCombatWeapon::Equip(CBaseCombatCharacter* pOwner)
+{
+	BaseClass::Equip(pOwner);
+#ifndef CLIENT_DLL
+	NEO_WEP_BITS_UNDERLYING_TYPE weapon = GetNeoWepBits();
+	if (weapon & NEO_WEP_KYLA || weapon & NEO_WEP_MILSO || weapon & NEO_WEP_TACHI)
+		SetParentAttachment("SetParentAttachment", "pistol", false);
+	else if (weapon & NEO_WEP_FRAG_GRENADE)
+	{
+		SetLocalOrigin(Vector(-1.5, 5, -1.5));
+		SetLocalAngles(QAngle(0, 0, 90));
+		SetParentAttachment("SetParentAttachment", "defusekit", true);
+	}
+	else if (weapon & NEO_WEP_SMOKE_GRENADE)
+	{
+		SetLocalOrigin(Vector(-1.5, 5, -3.5));
+		SetLocalAngles(QAngle(0, 0, 90));
+		SetParentAttachment("SetParentAttachment", "defusekit", true);
+	}
+	else if (weapon & NEO_WEP_DETPACK)
+	{
+		SetLocalOrigin(Vector(3, 1, -9));
+		SetLocalAngles(QAngle(-50, -30, 90));
+		SetParentAttachment("SetParentAttachment", "defusekit", true);
+	}
+	else if (weapon & NEO_WEP_KNIFE)
+	{
+		SetLocalOrigin(Vector(3, 1, -13));
+		SetLocalAngles(QAngle(-50, -30, 90));
+		SetParentAttachment("SetParentAttachment", "defusekit", true);
+	}
+	else
+		SetParentAttachment("SetParentAttachment", "primary", false);
+#endif
+}
+
+
 bool CNEOBaseCombatWeapon::Reload( void )
 {
 	return BaseClass::Reload();
@@ -193,6 +230,8 @@ bool CNEOBaseCombatWeapon::Deploy(void)
 
 	if (ret)
 	{
+		AddEffects(EF_BONEMERGE);
+
 		m_bReadyToAimIn = false;
 
 #ifdef DEBUG

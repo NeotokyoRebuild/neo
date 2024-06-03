@@ -431,10 +431,11 @@ bool C_BaseCombatWeapon::ShouldDraw( void )
 	 // carried by local player?
 	if ( pOwner == pLocalPlayer )
 	{
+#ifndef NEO
 		// Only ever show the active weapon
 		if ( !bIsActive )
 			return false;
-
+#endif
 		if ( !pOwner->ShouldDraw() )
 		{
 			// Our owner is invisible.
@@ -450,12 +451,14 @@ bool C_BaseCombatWeapon::ShouldDraw( void )
 		return false;
 	}
 
+#ifndef NEO
 	// If it's a player, then only show active weapons
 	if ( pOwner->IsPlayer() )
 	{
 		// Show it if it's active...
 		return bIsActive;
 	}
+#endif
 
 	// FIXME: We may want to only show active weapons on NPCs
 	// These are carried by AIs; always show them
