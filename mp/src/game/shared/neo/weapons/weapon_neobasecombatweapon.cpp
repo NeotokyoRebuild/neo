@@ -139,9 +139,7 @@ void CNEOBaseCombatWeapon::Equip(CBaseCombatCharacter* pOwner)
 	}
 	else if (weapon & NEO_WEP_KNIFE)
 	{
-		SetLocalOrigin(Vector(3, 1, -13));
-		SetLocalAngles(QAngle(-50, -30, 90));
-		SetParentAttachment("SetParentAttachment", "defusekit", true);
+		return;
 	}
 	else
 		SetParentAttachment("SetParentAttachment", "primary", false);
