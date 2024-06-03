@@ -53,7 +53,6 @@ CNeoHudElements::CNeoHudElements(IViewPort *pViewPort)
 	m_pAmmo = NULL;
 	m_pCompass = NULL;
 	m_pFriendlyMarker = NULL;
-	m_pGameEvent = NULL;
 	m_pHTA = NULL;
 	m_pRoundState = NULL;
 	m_pLastUpdater = NULL;
@@ -89,13 +88,6 @@ void CNeoHudElements::FreePanelChildren()
 	{
 		m_pFriendlyMarker->DeletePanel();
 		m_pFriendlyMarker = NULL;
-	}
-
-	// now that the game event hud is added to gHud, gHud should take care of deleting it itself?
-	if (m_pGameEvent)
-	{
-		m_pGameEvent->DeletePanel();
-		m_pGameEvent = NULL;
 	}
 
 	if (m_pHTA)
@@ -243,7 +235,6 @@ void CNeoHudElements::InitHud()
 	InitAmmo();
 	InitCompass();
 	InitFriendlyMarker();
-	InitGameEventIndicator();
 	InitGhostMarkers();
 	InitHTA();
 	InitRoundState();
@@ -273,12 +264,6 @@ void CNeoHudElements::InitFriendlyMarker()
 {
 	Assert(!m_pFriendlyMarker);
 	m_pFriendlyMarker = new CNEOHud_FriendlyMarker(UI_ELEMENT_NAME_IFF, this);
-}
-
-void CNeoHudElements::InitGameEventIndicator()
-{
-	Assert(!m_pGameEvent);
-	m_pGameEvent = new CNEOHud_GameEvent(UI_ELEMENT_GAME_EVENT, this);
 }
 
 void CNeoHudElements::InitGhostMarkers()
