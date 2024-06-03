@@ -184,6 +184,7 @@ void ClientModeHL2MPNormal::Init()
 #ifdef NEO
 ConVar cl_neo_decouple_vm_fov("cl_neo_decouple_vm_fov", "1", FCVAR_CHEAT, "Whether to decouple aim FOV from viewmodel FOV.", true, 0.0f, true, 1.0f);
 ConVar cl_neo_decoupled_vm_fov_lerp_scale("cl_neo_decoupled_vm_fov_lerp_scale", "10", FCVAR_CHEAT, "Multiplier for decoupled FOV lerp speed.", true, 0.01, false, 0);
+ConVar neo_viewmodel_fov_offset("neo_viewmodel_fov_offset", "0", FCVAR_ARCHIVE, "Sets the field-of-view offset for the viewmodel.", true, -20.0f, true, 40.0f);
 
 //-----------------------------------------------------------------------------
 // Purpose: Use correct view model FOV
@@ -227,7 +228,6 @@ float ClientModeHL2MPNormal::GetViewModelFOV()
 				}
 			}
 
-			float flCurrentFov = v_viewmodel_fov.GetFloat();
 			const bool playerAiming = pOwner->IsInAim();
 			const float currentTime = gpGlobals->curtime;
 			if (m_bViewAim && !playerAiming)
@@ -248,8 +248,9 @@ float ClientModeHL2MPNormal::GetViewModelFOV()
 			if (inAimingChange)
 			{
 				float percentage = (currentTime - m_flStartAimingChange) / NEO_ZOOM_SPEED;
-				if (percentage > 1.0f) percentage = 1.0f;
-				else if (percentage < 0.0f) percentage = 0.0f;
+				static constexpr float SNAP_PERCENTAGE = 0.05f;
+				if (percentage > (1.0f - SNAP_PERCENTAGE)) percentage = 1.0f;
+				else if (percentage < SNAP_PERCENTAGE) percentage = 0.0f;
 
 				float flVMFovDelta = pWepInfo->m_flVMAimFov - pWepInfo->m_flVMFov;
 				flVMFovDelta *= percentage;
@@ -268,24 +269,7 @@ float ClientModeHL2MPNormal::GetViewModelFOV()
 			{
 				flTargetFov = playerAiming ? (pWepInfo->m_flVMAimFov) : (pWepInfo->m_flVMFov);
 			}
-
-			// Get delta time
-			const float flThisTime = gpGlobals->curtime;
-			static float flLastTime = flThisTime;
-			const float flDeltaTime = flThisTime - flLastTime;
-			flLastTime = flThisTime;
-
-			// Lerp towards the desired fov
-			flCurrentFov = Lerp(flDeltaTime * flScale, flCurrentFov, flTargetFov);
-
-			// Snap to target when approximately equal
-			const float flThreshold = 0.001f;
-			if (fabs(flTargetFov - flCurrentFov) < flThreshold)
-			{
-				flCurrentFov = flTargetFov;
-			}
-
-			return flCurrentFov;
+			return flTargetFov + neo_viewmodel_fov_offset.GetFloat();
 		}
 	}
 
