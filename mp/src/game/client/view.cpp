@@ -111,7 +111,7 @@ extern ConVar cl_forwardspeed;
 static ConVar v_centermove( "v_centermove", "0.15");
 static ConVar v_centerspeed( "v_centerspeed","500" );
 
-#ifdef TF_CLIENT_DLL
+#if defined(NEO) || defined(TF_CLIENT_DLL)
 // 54 degrees approximates a 35mm camera - we determined that this makes the viewmodels
 // and motions look the most natural.
 ConVar v_viewmodel_fov( "viewmodel_fov", "54", FCVAR_ARCHIVE, "Sets the field-of-view for the viewmodel.", true, 0.1, true, 179.9 );
@@ -848,9 +848,8 @@ void CViewRender::SetUpViews()
 
 	//Adjust the viewmodel's FOV to move with any FOV offsets on the viewer's end
 #ifdef SDK2013CE
-#ifdef NEO // Viewmodel FOV determined by multiplier from default FOV off its own FOV
-	float fovMultiplier = view.fov / static_cast<float>(DEFAULT_FOV);
-	view.fovViewmodel = g_pClientMode->GetViewModelFOV() * fovMultiplier;
+#ifdef NEO // NEO NOTE: Viewmodel FOV and (neo_fov) FOV are decoupled
+	view.fovViewmodel = g_pClientMode->GetViewModelFOV();
 #else
 	view.fovViewmodel = fabs(g_pClientMode->GetViewModelFOV() - flFOVOffset);
 #endif
