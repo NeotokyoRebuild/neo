@@ -1,5 +1,6 @@
 #include "cbase.h"
 #include "weapon_neobasecombatweapon.h"
+#include "particle_parse.h"
 
 #include "in_buttons.h"
 
@@ -608,6 +609,12 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 	m_flLastAttackTime = gpGlobals->curtime;
 
 	BaseClass::PrimaryAttack();
+
+	Vector vecShootOrigin2; //The origin of the shot 
+	QAngle	angShootDir2;    //The angle of the shot
+
+	GetAttachment(LookupAttachment("muzzle"), vecShootOrigin2, angShootDir2);
+	//DispatchParticleEffect("weapon_muzzle_flash_pistol", ParticleAttachment_t::PATTACH_POINT_FOLLOW, this, "muzzle");
 
 	m_flAccuracyPenalty += GetAccuracyPenalty();
 }
