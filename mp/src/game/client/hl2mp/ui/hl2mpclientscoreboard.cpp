@@ -1,6 +1,6 @@
 //========= Copyright Valve Corporation, All rights reserved. ============//
 //
-// Purpose: 
+// Purpose:
 //
 // $NoKeywords: $
 //=============================================================================//
@@ -186,7 +186,7 @@ void CHL2MPClientScoreBoardDialog::PaintBackground()
 	y1 = 0;
 	y2 = tall;
 	surface()->DrawFilledRect( x1, y1, x2, y2 );
-	
+
 	// paint between top right and bottom right -------------------------------
 	x1 = wide - coord[NumSegments];
 	x2 = wide;
@@ -369,7 +369,7 @@ void CHL2MPClientScoreBoardDialog::UpdateTeamInfo()
 	int iNumPlayersInGame = 0;
 
 	for ( int j = 1; j <= gpGlobals->maxClients; j++ )
-	{	
+	{
 		if ( g_PR->IsConnected( j ) )
 		{
 			iNumPlayersInGame++;
@@ -386,7 +386,7 @@ void CHL2MPClientScoreBoardDialog::UpdateTeamInfo()
 		if ( team )
 		{
 			sectionID = GetSectionFromTeamNumber( i );
-	
+
 			// update team name
 			wchar_t name[64];
 			wchar_t string1[1024];
@@ -400,7 +400,7 @@ void CHL2MPClientScoreBoardDialog::UpdateTeamInfo()
 #else
 				_snwprintf( name, ARRAYSIZE(name), L"%S", g_pVGuiLocalize->Find("#ScoreBoard_Deathmatch") );
 #endif
-				
+
 				teamName = name;
 
 				if ( iNumPlayersInGame == 1)
@@ -439,7 +439,7 @@ void CHL2MPClientScoreBoardDialog::UpdateTeamInfo()
 #else
 				m_pPlayerList->ModifyColumn(sectionID, "frags", val);
 #endif
-				
+
 				if (team->Get_Ping() < 1)
 				{
 					m_pPlayerList->ModifyColumn(sectionID, "ping", L"");
@@ -451,7 +451,7 @@ void CHL2MPClientScoreBoardDialog::UpdateTeamInfo()
 				}
 
 			}
-		
+
 			m_pPlayerList->ModifyColumn(sectionID, "name", string1);
 		}
 	}
@@ -468,17 +468,9 @@ void CHL2MPClientScoreBoardDialog::AddHeader()
 	HFont hFallbackFont = scheme()->GetIScheme( GetScheme() )->GetFont( "DefaultVerySmallFallBack", false );
 	m_pPlayerList->AddColumnToSection(0, "name", "", 0, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_NAME_WIDTH ), hFallbackFont );
 	m_pPlayerList->AddColumnToSection(0, "class", "Class", 0 | SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx(GetScheme(), CSTRIKE_CLASS_WIDTH));
-#ifdef NEO
-	m_pPlayerList->AddColumnToSection(0, "rank", "Rank", 0 | SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx(GetScheme(), CSTRIKE_NAME_WIDTH / 4));
-	m_pPlayerList->AddColumnToSection(0, "xp", "#PlayerScore", 0 | SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx(GetScheme(), CSTRIKE_SCORE_WIDTH));
-#else
 	m_pPlayerList->AddColumnToSection(0, "frags", "#PlayerScore", 0 | SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx(GetScheme(), CSTRIKE_SCORE_WIDTH));
-#endif
 	m_pPlayerList->AddColumnToSection(0, "deaths", "#PlayerDeath", 0 | SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_DEATH_WIDTH ) );
 	m_pPlayerList->AddColumnToSection(0, "ping", "#PlayerPing", 0 | SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_PING_WIDTH ) );
-#ifdef NEO
-	m_pPlayerList->AddColumnToSection(0, "status", "Status", 0 | SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx(GetScheme(), NEO_STATUS_WIDTH));
-#endif
 //	m_pPlayerList->AddColumnToSection(0, "voice", "#PlayerVoice", SectionedListPanel::COLUMN_IMAGE | SectionedListPanel::HEADER_TEXT| SectionedListPanel::COLUMN_CENTER, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_VOICE_WIDTH ) );
 //	m_pPlayerList->AddColumnToSection(0, "tracker", "#PlayerTracker", SectionedListPanel::COLUMN_IMAGE | SectionedListPanel::HEADER_TEXT, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_FRIENDS_WIDTH ) );
 }
@@ -498,17 +490,9 @@ void CHL2MPClientScoreBoardDialog::AddSection(int teamType, int teamNumber)
 		// setup the columns
 		m_pPlayerList->AddColumnToSection(sectionID, "name", "", 0, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_NAME_WIDTH ), hFallbackFont );
 		m_pPlayerList->AddColumnToSection(sectionID, "class", "", SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx(GetScheme(), CSTRIKE_CLASS_WIDTH));
-#ifdef NEO
-		m_pPlayerList->AddColumnToSection(sectionID, "rank", "", SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_NAME_WIDTH / 4 ) );
-		m_pPlayerList->AddColumnToSection(sectionID, "xp", "", SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_SCORE_WIDTH ) );
-#else
 		m_pPlayerList->AddColumnToSection(sectionID, "frags", "", SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx(GetScheme(), CSTRIKE_SCORE_WIDTH));
-#endif
 		m_pPlayerList->AddColumnToSection(sectionID, "deaths", "", SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_DEATH_WIDTH ) );
 		m_pPlayerList->AddColumnToSection(sectionID, "ping", "", SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx( GetScheme(), CSTRIKE_PING_WIDTH ) );
-#ifdef NEO
-		m_pPlayerList->AddColumnToSection(sectionID, "status", "", SectionedListPanel::COLUMN_RIGHT, scheme()->GetProportionalScaledValueEx(GetScheme(), NEO_STATUS_WIDTH));
-#endif
 
 		// set the section to have the team color
 		if ( teamNumber )
@@ -577,7 +561,7 @@ bool CHL2MPClientScoreBoardDialog::GetPlayerScoreInfo(int playerIndex, KeyValues
 #else
 	kv->SetInt("frags", g_PR->GetPlayerScore(playerIndex));
 #endif
-	
+
 	if (g_PR->GetPing( playerIndex ) < 1)
 	{
 		if ( g_PR->IsFakePlayer( playerIndex ) )
@@ -593,7 +577,7 @@ bool CHL2MPClientScoreBoardDialog::GetPlayerScoreInfo(int playerIndex, KeyValues
 	{
 		kv->SetInt("ping", g_PR->GetPing( playerIndex ));
 	}
-	
+
 	return true;
 }
 
@@ -654,7 +638,7 @@ int PlayerScoreInfoSort( const PlayerScoreInfo *p1, const PlayerScoreInfo *p2 )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //-----------------------------------------------------------------------------
 void CHL2MPClientScoreBoardDialog::UpdatePlayerInfo()
 {
@@ -678,7 +662,7 @@ void CHL2MPClientScoreBoardDialog::UpdatePlayerInfo()
 			GetPlayerScoreInfo( i, playerData );
 			int itemID = FindItemIDForPlayerIndex( i );
   			int sectionID = GetSectionFromTeamNumber( g_PR->GetTeam( i ) );
-						
+
 			if (itemID == -1)
 			{
 				// add a new row
@@ -716,5 +700,5 @@ void CHL2MPClientScoreBoardDialog::UpdatePlayerInfo()
 		m_pPlayerList->SetSelectedItem(selectedRow);
 	}
 
-	
+
 }
