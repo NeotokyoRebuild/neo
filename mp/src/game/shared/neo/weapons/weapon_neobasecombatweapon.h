@@ -52,11 +52,12 @@ enum NeoWepBits : NEO_WEP_BITS_UNDERLYING_TYPE {
 	NEO_WEP_ZR68_S =			(static_cast<NEO_WEP_BITS_UNDERLYING_TYPE>(1) << 27),
 	NEO_WEP_SCOPEDWEAPON =		(static_cast<NEO_WEP_BITS_UNDERLYING_TYPE>(1) << 28), // Scoped weapons should OR this in their flags.
 	NEO_WEP_THROWABLE =			(static_cast<NEO_WEP_BITS_UNDERLYING_TYPE>(1) << 29), // Generic for grenades
+	NEO_WEP_SUPPRESSED =		(static_cast<NEO_WEP_BITS_UNDERLYING_TYPE>(1) << 30), // Suppressed weapons
 	
 	// NOTE!!! remember to update NEP_WEP_BITS_LAST_VALUE below, if editing this/these last values!
-	NEO_WEP_EXPLOSIVE =			(static_cast<NEO_WEP_BITS_UNDERLYING_TYPE>(1) << 30), // Generic for weapons that count as explosive kills on killfeed.
+	NEO_WEP_EXPLOSIVE =			(static_cast<NEO_WEP_BITS_UNDERLYING_TYPE>(1) << 31), // Generic for weapons that count as explosive kills on killfeed.
 #ifdef INCLUDE_WEP_PBK
-	NEO_WEP_PBK56S =			(static_cast <NEO_WEP_BITS_UNDERLYING_TYPE>(1) << 31),
+	NEO_WEP_PBK56S =			(static_cast <NEO_WEP_BITS_UNDERLYING_TYPE>(1) << 32),
 #endif
 	
 #ifndef INCLUDE_WEP_PBK
@@ -148,6 +149,7 @@ public:
 	virtual void ItemPostFrame(void);
 
 	virtual void PrimaryAttack(void);
+	virtual void DispatchMuzzleParticleEffect(void);
 
 	virtual float GetInnateInaccuracy(void) const { return 0.0f; } // NEO TODO (Rain): make this abstract & implement some amount of inaccuracy (spread) for weapons?
 

@@ -8,6 +8,14 @@
 #include "player.h"
 #endif
 
+#ifdef GAME_DLL
+#include "te_effect_dispatch.h"
+#include "networkstringtable_gamedll.h"
+#else
+#include "c_te_effect_dispatch.h"
+#include "networkstringtable_clientdll.h"
+#endif
+
 #include "basecombatweapon_shared.h"
 
 #include <initializer_list>
@@ -95,6 +103,7 @@ CNEOBaseCombatWeapon::CNEOBaseCombatWeapon( void )
 
 void CNEOBaseCombatWeapon::Spawn()
 {
+	PrecacheParticleSystem("ntr_muzzle_source");
 	// If this fires, either the enum bit mask has overflowed,
 	// this derived gun has no valid NeoBitFlags set,
 	// or we are spawning an instance of this base class for some reason.
@@ -610,11 +619,8 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 
 	BaseClass::PrimaryAttack();
 
-	Vector vecShootOrigin2; //The origin of the shot 
-	QAngle	angShootDir2;    //The angle of the shot
-
-	GetAttachment(LookupAttachment("muzzle"), vecShootOrigin2, angShootDir2);
-	//DispatchParticleEffect("weapon_muzzle_flash_pistol", ParticleAttachment_t::PATTACH_POINT_FOLLOW, this, "muzzle");
+	if (!(GetNeoWepBits() & NEO_WEP_SUPPRESSED))
+		DispatchMuzzleParticleEffect();
 
 	m_flAccuracyPenalty += GetAccuracyPenalty();
 }
@@ -622,6 +628,51 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 bool CNEOBaseCombatWeapon::CanBePickedUpByClass(int classId)
 {
 	return true;
+}
+
+void CNEOBaseCombatWeapon::DispatchMuzzleParticleEffect() {
+	const char* particleName = "ntr_muzzle_source";
+	const bool reselAllParticlesOnEntity = false;
+	const ParticleAttachment_t iAttachType = ParticleAttachment_t::PATTACH_POINT_FOLLOW;
+
+	int iAttachment = -1;
+	if (GetBaseAnimating()) {
+		// Find the attachment point index
+		iAttachment = GetBaseAnimating()->LookupAttachment("muzzle");
+		if (iAttachment <= 0)
+		{
+			Warning("Model '%s' doesn't have attachment '%s' to attach particle system '%s' to.\n", GetPrintName(), "muzzle", particleName);
+			return;
+		}
+	}
+
+	CEffectData	data;
+
+	data.m_nHitBox = GetParticleSystemIndex(particleName);
+
+#ifdef CLIENT_DLL
+	data.m_hEntity = this;
+#else
+	data.m_nEntIndex = entindex();
+#endif
+	data.m_fFlags |= PARTICLE_DISPATCH_FROM_ENTITY;
+	data.m_vOrigin = GetAbsOrigin();
+
+	data.m_nDamageType = iAttachType;
+	data.m_nAttachmentIndex = iAttachment;
+
+	if (reselAllParticlesOnEntity)
+	{
+		data.m_fFlags |= PARTICLE_DISPATCH_RESET_PARTICLES;
+	}
+
+#ifdef GAME_DLL
+	//CReliableBroadcastRecipientFilter filter;
+	//filter.RemoveRecipient(ToBasePlayer(GetOwner()));
+	CBroadcastNonOwnerRecipientFilter filter(ToBasePlayer(GetOwner()));
+	te->DispatchEffect(filter, 0.0, data.m_vOrigin, "ParticleEffect", data);
+#endif
+
 }
 
 bool CNEOBaseCombatWeapon::CanDrop()
