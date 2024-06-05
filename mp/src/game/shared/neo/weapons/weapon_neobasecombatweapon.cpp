@@ -107,7 +107,7 @@ void CNEOBaseCombatWeapon::Spawn()
 	// If this fires, either the enum bit mask has overflowed,
 	// this derived gun has no valid NeoBitFlags set,
 	// or we are spawning an instance of this base class for some reason.
-	Assert(GetNeoWepBits() > NEO_WEP_INVALID); 
+	Assert(GetNeoWepBits() != NEO_WEP_INVALID); 
 
 	BaseClass::Spawn();
 
@@ -631,8 +631,8 @@ bool CNEOBaseCombatWeapon::CanBePickedUpByClass(int classId)
 }
 
 void CNEOBaseCombatWeapon::DispatchMuzzleParticleEffect() {
-	const char* particleName = "ntr_muzzle_source";
-	const bool reselAllParticlesOnEntity = false;
+	static constexpr char particleName[] = "ntr_muzzle_source";
+	constexpr bool resetAllParticlesOnEntity = false;
 	const ParticleAttachment_t iAttachType = ParticleAttachment_t::PATTACH_POINT_FOLLOW;
 
 	int iAttachment = -1;
@@ -661,7 +661,7 @@ void CNEOBaseCombatWeapon::DispatchMuzzleParticleEffect() {
 	data.m_nDamageType = iAttachType;
 	data.m_nAttachmentIndex = iAttachment;
 
-	if (reselAllParticlesOnEntity)
+	if (resetAllParticlesOnEntity)
 	{
 		data.m_fFlags |= PARTICLE_DISPATCH_RESET_PARTICLES;
 	}
