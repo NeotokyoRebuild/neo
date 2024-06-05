@@ -111,31 +111,49 @@ void CNEOHud_GhostMarker::DrawNeoHudElement()
 
 	const float scale = neo_ghost_marker_hud_scale_factor.GetFloat();
 
-	const int offset_X = m_iPosX - ((m_iMarkerTexWidth * 0.5f) * scale);
-	const int offset_Y = m_iPosY - ((m_iMarkerTexHeight * 0.5f) * scale);
+	// The increase and decrease in alpha over 6 seconds
+	float alpha6 = remainder(gpGlobals->curtime, 6) + 3;
+	alpha6 = alpha6 / 6;
+	if (alpha6 > 0.5)
+		alpha6 = 1 - alpha6;
+	alpha6 = 128 * alpha6;
 
-	Color ghostColor = COLOR_GREY;
-	if (m_iGhostingTeam == TEAM_JINRAI || m_iGhostingTeam == TEAM_NSF)
-	{
-		if ((m_iClientTeam == TEAM_JINRAI || m_iClientTeam == TEAM_NSF) && (m_iClientTeam != m_iGhostingTeam))
+	for (int i = 0; i < 4; i++) {
+		m_fMarkerScalesCurrent[i] = (remainder(gpGlobals->curtime, 2) / 2) + 0.5 + m_fMarkerScalesStart[i];
+		if (m_fMarkerScalesCurrent[i] > 1)
+			m_fMarkerScalesCurrent[i] -= 1;
+
+		const int offset_X = m_iPosX - ((m_iMarkerTexWidth * 0.5f * m_fMarkerScalesCurrent[i]) * scale);
+		const int offset_Y = m_iPosY - ((m_iMarkerTexHeight * 0.5f * m_fMarkerScalesCurrent[i]) * scale);
+
+		int alpha = 64 + alpha6;
+		if (m_fMarkerScalesCurrent[i] > 0.5)
+			alpha *= ((0.5 - (m_fMarkerScalesCurrent[i] - 0.5)) * 2);
+
+		Color ghostColor = Color(204, 204, 204, alpha);
+		if (m_iGhostingTeam == TEAM_JINRAI || m_iGhostingTeam == TEAM_NSF)
 		{
-			// If viewing from playing player, but opposite of ghosting team, show red
-			ghostColor = COLOR_RED;
+			if ((m_iClientTeam == TEAM_JINRAI || m_iClientTeam == TEAM_NSF) && (m_iClientTeam != m_iGhostingTeam))
+			{
+				// If viewing from playing player, but opposite of ghosting team, show red
+				ghostColor = COLOR_RED;
+			}
+			else
+			{
+				// Otherwise show ghosting team color (if friendly or spec)
+				ghostColor = (m_iGhostingTeam == TEAM_JINRAI) ? COLOR_JINRAI : COLOR_NSF;
+			}
 		}
-		else
-		{
-			// Otherwise show ghosting team color (if friendly or spec)
-			ghostColor = (m_iGhostingTeam == TEAM_JINRAI) ? COLOR_JINRAI : COLOR_NSF;
-		}
+
+		surface()->DrawSetColor(ghostColor);
+		surface()->DrawSetTexture(m_hTex);
+		surface()->DrawTexturedRect(
+			offset_X,
+			offset_Y,
+			offset_X + (m_iMarkerTexWidth * m_fMarkerScalesCurrent[i] * scale),
+			offset_Y + (m_iMarkerTexHeight * m_fMarkerScalesCurrent[i] * scale));
 	}
 
-	surface()->DrawSetColor(ghostColor);
-	surface()->DrawSetTexture(m_hTex);
-	surface()->DrawTexturedRect(
-		offset_X,
-		offset_Y,
-		offset_X + (m_iMarkerTexWidth * scale),
-		offset_Y + (m_iMarkerTexHeight * scale));
 }
 
 void CNEOHud_GhostMarker::Paint()

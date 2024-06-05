@@ -131,6 +131,7 @@ if(OS_WINDOWS)
         /errorReport:prompt # ErrorReporting - Prompt Immediately
         /W4
         /Gw # Optimize Global Data
+        /ZI
 
         /wd4456
         /wd4457
