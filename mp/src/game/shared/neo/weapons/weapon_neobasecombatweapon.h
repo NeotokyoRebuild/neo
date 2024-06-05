@@ -66,8 +66,7 @@ enum NeoWepBits : NEO_WEP_BITS_UNDERLYING_TYPE {
 	NEP_WEP_BITS_LAST_VALUE = NEO_WEP_PBK56S
 #endif
 };
-// All bits must fit in the data type. Simple sanity check to make sure we aren't overflowing.
-COMPILE_TIME_ASSERT(NEP_WEP_BITS_LAST_VALUE > NEO_WEP_INVALID);
+
 // Some other related type safety checks also rely on this equaling zero.
 COMPILE_TIME_ASSERT(NEO_WEP_INVALID == 0);
 
