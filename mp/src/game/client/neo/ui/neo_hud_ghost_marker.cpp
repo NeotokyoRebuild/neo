@@ -20,7 +20,7 @@
 
 using vgui::surface;
 
-ConVar neo_ghost_marker_hud_scale_factor("neo_ghost_marker_hud_scale_factor", "0.125", FCVAR_USERINFO,
+ConVar neo_ghost_marker_hud_scale_factor("neo_ghost_marker_hud_scale_factor", "0.5", FCVAR_USERINFO,
 	"Ghost marker HUD element scaling factor", true, 0.01, false, 0);
 
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(GhostMarker, 0.01)
@@ -109,11 +109,6 @@ void CNEOHud_GhostMarker::DrawNeoHudElement()
 		surface()->DrawPrintText(m_wszMarkerTextUnicode, sizeof(m_szMarkerText));
 	}
 
-	const float scale = neo_ghost_marker_hud_scale_factor.GetFloat();
-
-	const int offset_X = m_iPosX - ((m_iMarkerTexWidth * 0.5f) * scale);
-	const int offset_Y = m_iPosY - ((m_iMarkerTexHeight * 0.5f) * scale);
-
 	Color ghostColor = COLOR_GREY;
 	if (m_iGhostingTeam == TEAM_JINRAI || m_iGhostingTeam == TEAM_NSF)
 	{
@@ -129,13 +124,38 @@ void CNEOHud_GhostMarker::DrawNeoHudElement()
 		}
 	}
 
-	surface()->DrawSetColor(ghostColor);
-	surface()->DrawSetTexture(m_hTex);
-	surface()->DrawTexturedRect(
-		offset_X,
-		offset_Y,
-		offset_X + (m_iMarkerTexWidth * scale),
-		offset_Y + (m_iMarkerTexHeight * scale));
+	const float scale = neo_ghost_marker_hud_scale_factor.GetFloat();
+
+	// The increase and decrease in alpha over 6 seconds
+	float alpha6 = remainder(gpGlobals->curtime, 6) + 3;
+	alpha6 = alpha6 / 6;
+	if (alpha6 > 0.5)
+		alpha6 = 1 - alpha6;
+	alpha6 = 128 * alpha6;
+
+	for (int i = 0; i < 4; i++) {
+		m_fMarkerScalesCurrent[i] = (remainder(gpGlobals->curtime, 2) / 2) + 0.5 + m_fMarkerScalesStart[i];
+		if (m_fMarkerScalesCurrent[i] > 1)
+			m_fMarkerScalesCurrent[i] -= 1;
+
+		const int offset_X = m_iPosX - ((m_iMarkerTexWidth * 0.5f * m_fMarkerScalesCurrent[i]) * scale);
+		const int offset_Y = m_iPosY - ((m_iMarkerTexHeight * 0.5f * m_fMarkerScalesCurrent[i]) * scale);
+
+		int alpha = 64 + alpha6;
+		if (m_fMarkerScalesCurrent[i] > 0.5)
+			alpha *= ((0.5 - (m_fMarkerScalesCurrent[i] - 0.5)) * 2);
+
+		ghostColor[3] = alpha;
+
+		surface()->DrawSetColor(ghostColor);
+		surface()->DrawSetTexture(m_hTex);
+		surface()->DrawTexturedRect(
+			offset_X,
+			offset_Y,
+			offset_X + (m_iMarkerTexWidth * m_fMarkerScalesCurrent[i] * scale),
+			offset_Y + (m_iMarkerTexHeight * m_fMarkerScalesCurrent[i] * scale));
+	}
+
 }
 
 void CNEOHud_GhostMarker::Paint()
