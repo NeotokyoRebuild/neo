@@ -1254,13 +1254,7 @@ void CNEO_Player::Weapon_SetZoom(const bool bZoomIn)
 		auto neoWep = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
 		if (neoWep)
 		{
-			if (neoWep->GetNeoWepBits() & NEO_WEP_SRS)
-				SetFOV((CBaseEntity*)this, 16, NEO_ZOOM_SPEED);
-			else if (neoWep->GetNeoWepBits() & NEO_WEP_ZR68_L)
-				SetFOV((CBaseEntity*)this, 26, NEO_ZOOM_SPEED);
-			else {
-				SetFOV((CBaseEntity*)this, fov - zoomAmount, NEO_ZOOM_SPEED);
-			}
+			SetFOV((CBaseEntity*)this, neoWep->GetWpnData().iAimFOV, NEO_ZOOM_SPEED);
 		}
 		else {
 			SetFOV((CBaseEntity*)this, fov - zoomAmount, NEO_ZOOM_SPEED);
