@@ -130,18 +130,18 @@ void CNEOHud_GhostMarker::DrawNeoHudElement()
 		if (m_fMarkerScalesCurrent[i] > 0.5)
 			alpha *= ((0.5 - (m_fMarkerScalesCurrent[i] - 0.5)) * 2);
 
-		Color ghostColor = Color(204, 204, 204, alpha);
+		Color ghostColor = Color(204, 204, 204, alpha); // COLOR_GREY
 		if (m_iGhostingTeam == TEAM_JINRAI || m_iGhostingTeam == TEAM_NSF)
 		{
 			if ((m_iClientTeam == TEAM_JINRAI || m_iClientTeam == TEAM_NSF) && (m_iClientTeam != m_iGhostingTeam))
 			{
 				// If viewing from playing player, but opposite of ghosting team, show red
-				ghostColor = COLOR_RED;
+				ghostColor = Color(255, 64, 64, alpha); // COLOR_RED
 			}
 			else
 			{
 				// Otherwise show ghosting team color (if friendly or spec)
-				ghostColor = (m_iGhostingTeam == TEAM_JINRAI) ? COLOR_JINRAI : COLOR_NSF;
+				ghostColor = (m_iGhostingTeam == TEAM_JINRAI) ? Color(192, 244, 196, alpha) /*COLOR_JINRAI*/ : Color(181, 216, 248, alpha); /*COLOR_NSF*/;
 			}
 		}
 
