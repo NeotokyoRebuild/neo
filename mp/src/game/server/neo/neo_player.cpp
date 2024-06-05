@@ -1250,6 +1250,7 @@ void CNEO_Player::Weapon_SetZoom(const bool bZoomIn)
 	const int fov = GetDefaultFOV();
 	if (bZoomIn)
 	{
+		const int zoomAmount = 30;
 		auto neoWep = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
 		if (neoWep)
 		{
@@ -1258,12 +1259,10 @@ void CNEO_Player::Weapon_SetZoom(const bool bZoomIn)
 			else if (neoWep->GetNeoWepBits() & NEO_WEP_ZR68_L)
 				SetFOV((CBaseEntity*)this, 26, NEO_ZOOM_SPEED);
 			else {
-				const int zoomAmount = 30;
 				SetFOV((CBaseEntity*)this, fov - zoomAmount, NEO_ZOOM_SPEED);
 			}
 		}
 		else {
-			const int zoomAmount = 30;
 			SetFOV((CBaseEntity*)this, fov - zoomAmount, NEO_ZOOM_SPEED);
 		}
 	}
