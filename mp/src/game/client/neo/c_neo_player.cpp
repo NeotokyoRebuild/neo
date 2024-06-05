@@ -1416,7 +1416,7 @@ void C_NEO_Player::Weapon_SetZoom(const bool bZoomIn)
 		m_Local.m_iHideHUD &= ~HIDEHUD_CROSSHAIR;
 		const int zoomAmount = 30;
 		auto neoWep = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
-		if (neoWep)
+		if (neoWep && neoWep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
 		{
 			SetFOV((CBaseEntity*)this, neoWep->GetWpnData().iAimFOV, zoomSpeedSecs);
 		}
