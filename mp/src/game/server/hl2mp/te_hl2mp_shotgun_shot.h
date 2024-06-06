@@ -18,7 +18,11 @@ void TE_HL2MPFireBullets(
 	int	iAmmoID,
 	int iSeed,
 	int iShots,
+#ifdef NEO
+	const Vector &vSpread,
+#else
 	float flSpread, 
+#endif
 	bool bDoTracers,
 	bool bDoImpacts );
 
