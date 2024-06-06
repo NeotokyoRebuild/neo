@@ -104,14 +104,14 @@ public:
 
 		BaseClass::Paint();
 
-		const Color jinColor = Color(38, 127, 0, 255),
-			nsfColor = Color(0, 38, 127, 255),
+		const Color jinColor = Color(76, 255, 0, 255),
+			nsfColor = Color(0, 76, 255, 255),
 			redColor = Color(255, 0, 0, 255);
 
 		C_NEO_Player *player = C_NEO_Player::GetLocalNEOPlayer();
 
 		const bool alternate = NEORules()->roundAlternate();
-		const Color* targetColor = (m_iMyTeam == TEAM_JINRAI) ? (alternate ? &jinColor : &nsfColor) : (alternate ? &nsfColor : &jinColor);
+		Color targetColor = (m_iMyTeam == TEAM_JINRAI) ? (alternate ? jinColor : nsfColor) : (alternate ? nsfColor : jinColor);
 
 		const bool playerIsPlaying = (player->GetTeamNumber() == TEAM_JINRAI || player->GetTeamNumber() == TEAM_NSF);
 		if (playerIsPlaying)
@@ -124,7 +124,7 @@ public:
 
 			if (targetIsToDefend)
 			{
-				targetColor = &redColor;
+				targetColor = redColor;
 			}
 		}
 
@@ -163,8 +163,41 @@ public:
 		}
 #endif
 
-		vgui::surface()->DrawSetColor(*targetColor);
+		// The 4 arrows that slowly expand and dissapear
 		vgui::surface()->DrawSetTexture(m_hCapTex);
+		for (int i = 0; i < 4; i++) {
+			m_fMarkerScalesCurrent[i] = (remainder(gpGlobals->curtime, 2) / 2) + 0.5 + m_fMarkerScalesStart[i];
+			if (m_fMarkerScalesCurrent[i] > 1)
+				m_fMarkerScalesCurrent[i] -= 1;
+
+			int alpha = 32;
+			if (m_fMarkerScalesCurrent[i] > 0.5)
+				alpha *= ((0.5 - (m_fMarkerScalesCurrent[i] - 0.5)) * 2);
+			
+			targetColor[3] = alpha;
+			vgui::surface()->DrawSetColor(targetColor);
+
+			const int offset_X2 = x - ((m_iCapTexWidth / 2) * m_fMarkerScalesCurrent[i] * scale);
+			const int offset_Y2 = y - ((m_iCapTexHeight / 2) * m_fMarkerScalesCurrent[i] * scale);
+
+			vgui::surface()->DrawTexturedRect(
+				offset_X2,
+				offset_Y2,
+				offset_X2 + (m_iCapTexWidth * m_fMarkerScalesCurrent[i] * scale),
+				offset_Y2 + (m_iCapTexHeight * m_fMarkerScalesCurrent[i] * scale));
+		}
+
+		// The increase and decrease in alpha over 6 seconds
+		float alpha6 = remainder(gpGlobals->curtime, 6) + 3;
+		alpha6 = alpha6 / 6;
+		if (alpha6 > 0.5)
+			alpha6 = 1 - alpha6;
+		alpha6 = 255 * alpha6;
+
+		targetColor[3] = alpha6;
+		
+		// The main arrow that stays the same size but dissappears and reappears on a 6 second loop
+		vgui::surface()->DrawSetColor(targetColor);
 		vgui::surface()->DrawTexturedRect(
 			offset_X,
 			offset_Y,
@@ -178,6 +211,10 @@ public:
 
 private:
 	int m_iPosX, m_iPosY;
+
+	float m_fMarkerScalesStart[4] = { 0.78f, 0.6f, 0.38f, 0.0f };
+	float m_fMarkerScalesCurrent[4] = { 0.78f, 0.6f, 0.38f, 0.0f };
+
 	int m_iCapTexWidth, m_iCapTexHeight;
 
 	float m_flCapTexScale;
