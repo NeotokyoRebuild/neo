@@ -17,9 +17,8 @@
 
 #define MENU_SELECTION_TIMEOUT	5.0f
 
-void OpenBrowser(const CCommand& args);
-
 #ifdef NEO
+void OpenBrowser(const CCommand& args);
 static ConCommand firstperson("OpenBrowser", OpenBrowser, "Open the default web browser with URL");
 #endif
 
