@@ -275,7 +275,6 @@ CNEORules::CNEORules()
 	ListenForGameEvent("round_start");
 
 #ifdef GAME_DLL
-	FnChangeCallback_t;
 	weaponstay.InstallChangeCallback(CvarChanged_WeaponStay);
 #endif
 }
