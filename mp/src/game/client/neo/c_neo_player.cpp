@@ -195,7 +195,12 @@ USER_MESSAGE_REGISTER(DamageInfo);
 
 static void __MsgFunc_IdleRespawnShowMenu(bf_read &)
 {
-	engine->ClientCmd("classmenu");
+	if (auto *localPlayer = C_NEO_Player::GetLocalNEOPlayer())
+	{
+		localPlayer->m_bShowTeamMenu = false;
+		localPlayer->m_bShowClassMenu = true;
+		localPlayer->m_bIsClassMenuOpen = false;
+	}
 }
 USER_MESSAGE_REGISTER(IdleRespawnShowMenu);
 
@@ -220,6 +225,11 @@ public:
 			Assert(false);
 			Warning("Couldn't find weapon loadout panel\n");
 			return;
+		}
+
+		if (panel->IsVisible() && panel->IsEnabled())
+		{
+			return;	// Prevent cursor stuck
 		}
 
 		panel->SetProportional(false); // Fixes wrong menu size when in windowed mode, regardless of whether proportional is set to false in the res file (NEOWTF)
@@ -283,6 +293,12 @@ public:
 			Warning("Couldn't find class panel\n");
 			return;
 		}
+
+		if (panel->IsVisible() && panel->IsEnabled())
+		{
+			return;	// Prevent cursor stuck
+		}
+
 		panel->SetProportional(false);
 		panel->ApplySchemeSettings(vgui::scheme()->GetIScheme(panel->GetScheme()));
 
@@ -329,6 +345,11 @@ public:
 			Assert(false);
 			Warning("Couldn't find team panel\n");
 			return;
+		}
+
+		if (panel->IsVisible() && panel->IsEnabled())
+		{
+			return;	// Prevent cursor stuck
 		}
 
 		panel->SetProportional(false);

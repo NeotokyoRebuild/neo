@@ -214,7 +214,6 @@ public:
 
 	unsigned char m_NeoFlags;
 
-protected:
 	bool m_bIsClassMenuOpen, m_bIsTeamMenuOpen;
 
 private:
