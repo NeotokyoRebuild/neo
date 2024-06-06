@@ -552,7 +552,14 @@ void OpenBrowser(const CCommand& args)
 		return;
 	}
 
-	constexpr std::string cmd{
+	if (!uri.starts_with("http://") &&
+		!uri.starts_with("https://"))
+	{
+		Warning("Attempted to open invalid URL: \"%s\"", uri.c_str());
+		return;
+	}
+
+	const std::string cmd{
 #ifdef _WIN32
 		"start"
 #elif defined(LINUX)
