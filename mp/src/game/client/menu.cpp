@@ -28,6 +28,11 @@ char g_szPrelocalisedMenuString[MAX_MENU_STRING];
 
 #include "menu.h"
 
+#ifdef NEO
+#include <format>
+#include <string>
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -531,3 +536,31 @@ void CHudMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 
 	ProcessText();
 }
+
+#ifdef NEO
+void OpenBrowser(const CCommand& args)
+{
+	if (args.ArgC() != 2)
+	{
+		return;
+	}
+
+	const std::string uri{ args.ArgV()[1] };
+	if (uri.empty())
+	{
+		return;
+	}
+
+	constexpr std::string cmd{
+#ifdef _WIN32
+		"start"
+#elif defined(LINUX)
+		"xdg-open"
+#else
+#error Unimplemented
+#endif
+	};
+
+	system(std::format("{} {}", cmd, uri).c_str());
+}
+#endif
