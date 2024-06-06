@@ -281,6 +281,9 @@ CNEORules::CNEORules()
 
 CNEORules::~CNEORules()
 {
+#ifdef GAME_DLL
+	weaponstay.InstallChangeCallback(nullptr);
+#endif
 }
 
 #ifdef GAME_DLL
