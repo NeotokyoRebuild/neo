@@ -47,15 +47,21 @@ DESCRIPTION INFO_OPTIONS
 		{ STRING }
 		{ "Neotokyo Noob" }
 	}
+	"cl_fakenick"
+	{
+		"Use Fake Name"
+		{ BOOL }
+		{ 1 }
+	}
 	"neo_fov"
 	{
-		"FOV (60-110)"
+		"FOV (60 - 110)"
 		{ NUMBER 60 110 } // Alternatively SLIDER, but can't have both?
 		{ 90 }
 	}
 	"neo_viewmodel_fov_offset"
 	{
-		"Viewmodel FOV Offset"
+		"Viewmodel FOV Offset (-20 - 40)"
 		{ NUMBER -20 40 } // Alternatively SLIDER, but can't have both?
 		{ 0 }
 	}
