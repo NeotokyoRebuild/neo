@@ -45,6 +45,14 @@ public:
 	bool IsPosWithinViewDistance(const Vector &otherPlayerPos, float &dist);
 	float DistanceToPos(const Vector& otherPlayerPos);
 
+#if _DEBUG
+	virtual void SUB_Remove(void) override
+	{
+		DevWarning("SUB_Remove called on ghost!"); // this is probably a mistake if it ever happens
+		BaseClass::SUB_Remove();
+	}
+#endif
+
 #ifdef CLIENT_DLL
 	void PlayGhostSound(float volume = 1.0f);
 	void StopGhostSound(void);
