@@ -20,7 +20,7 @@
 void OpenBrowser(const CCommand& args);
 
 #ifdef NEO
-static ConCommand firstperson("OpenBrowser", OpenBrowser, "Open the default web browser with URI");
+static ConCommand firstperson("OpenBrowser", OpenBrowser, "Open the default web browser with URL");
 #endif
 
 //-----------------------------------------------------------------------------
