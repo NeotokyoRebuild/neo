@@ -47,9 +47,9 @@ DESCRIPTION INFO_OPTIONS
 		{ STRING }
 		{ "Neotokyo Noob" }
 	}
-	"cl_fakenick"
+	"cl_onlysteamnick"
 	{
-		"Use Fake Name"
+		"Only use Steam names"
 		{ BOOL }
 		{ 1 }
 	}

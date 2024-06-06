@@ -31,7 +31,7 @@ ConVar mp_neo_latespawn_max_time("mp_neo_latespawn_max_time", "15", FCVAR_REPLIC
 ConVar sv_neo_wep_dmg_modifier("sv_neo_wep_dmg_modifier", "0.5", FCVAR_REPLICATED, "Temp global weapon damage modifier.", true, 0.0, true, 100.0);
 
 ConVar neo_name("neo_name", "", FCVAR_USERINFO | FCVAR_ARCHIVE, "The nickname to set instead of the steam profile name.");
-ConVar cl_fakenick("cl_fakenick", "1", FCVAR_USERINFO | FCVAR_ARCHIVE, "Show players set neo_name, otherwise only show Steam names.", true, 0.0f, true, 1.0f);
+ConVar cl_fakenick("cl_onlysteamnick", "1", FCVAR_USERINFO | FCVAR_ARCHIVE, "Only show players Steam names, otherwise show player set names.", true, 0.0f, true, 1.0f);
 
 REGISTER_GAMERULES_CLASS( CNEORules );
 
@@ -1312,7 +1312,7 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 
 	const char *pszSteamName = engine->GetClientConVarValue(pPlayer->entindex(), "name");
 
-	const bool clientAllowsNeoName = (1 == StrToInt(engine->GetClientConVarValue(engine->IndexOfEdict(pNEOPlayer->edict()), "cl_fakenick")));
+	const bool clientAllowsNeoName = (0 == StrToInt(engine->GetClientConVarValue(engine->IndexOfEdict(pNEOPlayer->edict()), "cl_onlysteamnick")));
 	const char *pszNeoName = engine->GetClientConVarValue(pNEOPlayer->entindex(), neo_name.GetName());
 	const char *pszOldNeoName = pNEOPlayer->GetNeoPlayerNameDirect();
 	bool updateDupeCheck = false;

@@ -198,3 +198,4 @@ mp/game/neo/cfg/sourcemod
 !sourcesdk_def.mak
 
 /sp
+/mp/game/neo/cfg/user.scr
