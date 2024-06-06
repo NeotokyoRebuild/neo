@@ -29,7 +29,6 @@ char g_szPrelocalisedMenuString[MAX_MENU_STRING];
 #include "menu.h"
 
 #ifdef NEO
-#include <format>
 #include <string>
 #endif
 
@@ -561,6 +560,6 @@ void OpenBrowser(const CCommand& args)
 #endif
 	};
 
-	system(std::format("{} {}", cmd, uri).c_str());
+	system((cmd + " " + uri).c_str());
 }
 #endif
