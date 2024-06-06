@@ -619,8 +619,10 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 
 	BaseClass::PrimaryAttack();
 
+#ifdef GAME_DLL
 	if (!(GetNeoWepBits() & NEO_WEP_SUPPRESSED))
 		DispatchMuzzleParticleEffect();
+#endif
 
 	m_flAccuracyPenalty += GetAccuracyPenalty();
 }
@@ -630,6 +632,7 @@ bool CNEOBaseCombatWeapon::CanBePickedUpByClass(int classId)
 	return true;
 }
 
+#ifdef GAME_DLL
 void CNEOBaseCombatWeapon::DispatchMuzzleParticleEffect() {
 	static constexpr char particleName[] = "ntr_muzzle_source";
 	constexpr bool resetAllParticlesOnEntity = false;
@@ -649,31 +652,19 @@ void CNEOBaseCombatWeapon::DispatchMuzzleParticleEffect() {
 	CEffectData	data;
 
 	data.m_nHitBox = GetParticleSystemIndex(particleName);
-
-#ifdef CLIENT_DLL
-	data.m_hEntity = this;
-#else
 	data.m_nEntIndex = entindex();
-#endif
 	data.m_fFlags |= PARTICLE_DISPATCH_FROM_ENTITY;
 	data.m_vOrigin = GetAbsOrigin();
-
 	data.m_nDamageType = iAttachType;
 	data.m_nAttachmentIndex = iAttachment;
 
 	if (resetAllParticlesOnEntity)
-	{
 		data.m_fFlags |= PARTICLE_DISPATCH_RESET_PARTICLES;
-	}
 
-#ifdef GAME_DLL
-	//CReliableBroadcastRecipientFilter filter;
-	//filter.RemoveRecipient(ToBasePlayer(GetOwner()));
 	CBroadcastNonOwnerRecipientFilter filter(ToBasePlayer(GetOwner()));
 	te->DispatchEffect(filter, 0.0, data.m_vOrigin, "ParticleEffect", data);
-#endif
-
 }
+#endif
 
 bool CNEOBaseCombatWeapon::CanDrop()
 {
