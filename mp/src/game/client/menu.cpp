@@ -29,7 +29,9 @@ char g_szPrelocalisedMenuString[MAX_MENU_STRING];
 #include "menu.h"
 
 #ifdef NEO
+#include "valve_minmax_off.h"
 #include <string>
+#include "valve_minmax_on.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
