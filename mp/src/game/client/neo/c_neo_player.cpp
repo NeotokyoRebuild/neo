@@ -47,6 +47,8 @@
 
 #include "neo_playeranimstate.h"
 
+#include "c_user_message_register.h"
+
 // Don't alias here
 #if defined( CNEO_Player )
 #undef CNEO_Player	
@@ -189,7 +191,13 @@ static void __MsgFunc_DamageInfo(bf_read& msg)
 		totals.takenTotalDmgs, totals.takenTotalHits,
 		BORDER);
 }
-static bool g_hasHookDamageInfo = false;
+USER_MESSAGE_REGISTER(DamageInfo);
+
+static void __MsgFunc_IdleRespawnShowMenu(bf_read &)
+{
+	engine->ClientCmd("classmenu");
+}
+USER_MESSAGE_REGISTER(IdleRespawnShowMenu);
 
 ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
 	"Whether to display HL2 style ammo/health info near crosshair.",
@@ -412,11 +420,6 @@ C_NEO_Player::C_NEO_Player()
 
 	memset(m_szNeoNameWDupeIdx, 0, sizeof(m_szNeoNameWDupeIdx));
 	m_szNameDupePos = 0;
-	if (!g_hasHookDamageInfo)
-	{
-		usermessages->HookMessage("DamageInfo", __MsgFunc_DamageInfo);
-		g_hasHookDamageInfo = true;
-	}
 }
 
 C_NEO_Player::~C_NEO_Player()

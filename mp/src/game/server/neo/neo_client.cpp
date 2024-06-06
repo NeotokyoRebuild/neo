@@ -314,7 +314,7 @@ void ClientGamePrecache( void )
 }
 
 // called by ClientKill and DeadThink
-void respawn( CBaseEntity *pEdict, bool fCopyCorpse )
+bool RespawnWithRet( CBaseEntity *pEdict, bool fCopyCorpse )
 {
 	CNEO_Player *pPlayer = ToNEOPlayer( pEdict );
 
@@ -326,6 +326,7 @@ void respawn( CBaseEntity *pEdict, bool fCopyCorpse )
 			{
 				// respawn player
 				pPlayer->Spawn();
+				return true;
 			}
 		}
 		else
@@ -333,6 +334,12 @@ void respawn( CBaseEntity *pEdict, bool fCopyCorpse )
 			pPlayer->SetNextThink( gpGlobals->curtime + 0.1f );
 		}
 	}
+	return false;
+}
+
+void respawn(CBaseEntity *pEdict, bool fCopyCorpse)
+{
+	RespawnWithRet(pEdict, fCopyCorpse);
 }
 
 ConVar sv_neo_bot_think("sv_neo_bot_think",

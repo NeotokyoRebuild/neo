@@ -58,6 +58,7 @@ LINK_ENTITY_TO_CLASS( neo_gamerules, CNEOGameRulesProxy );
 IMPLEMENT_NETWORKCLASS_ALIASED( NEOGameRulesProxy, DT_NEOGameRulesProxy );
 
 extern void respawn(CBaseEntity *pEdict, bool fCopyCorpse);
+extern bool RespawnWithRet(CBaseEntity *pEdict, bool fCopyCorpse);
 
 // NEO TODO (Rain): check against a test map
 static NEOViewVectors g_NEOViewVectors(
@@ -431,23 +432,37 @@ void CNEORules::Think(void)
 		return;
 	}
 
-#if 0	// TODO (nullsystem): Allow respawn if it also respawns with menu
+	// Allow respawn if it's an idle or warmup round
 	if (m_nRoundStatus == NeoRoundStatus::Idle || m_nRoundStatus == NeoRoundStatus::Warmup)
 	{
+		CRecipientFilter filter;
+		filter.MakeReliable();
+
 		for (int i = 1; i <= gpGlobals->maxClients; i++)
 		{
-			auto player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
-			if (player && player->IsDead())
+			auto player = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(i));
+			if (player && player->IsDead() && player->DeathCount() > 0)
 			{
 				const int playerTeam = player->GetTeamNumber();
-				if (playerTeam == TEAM_JINRAI || playerTeam == TEAM_NSF)
+				if ((playerTeam == TEAM_JINRAI || playerTeam == TEAM_NSF) && RespawnWithRet(player, false))
 				{
-					respawn(player, false);
+					filter.AddRecipient(player);
+
+					player->m_bInAim = false;
+					player->m_bInThermOpticCamo = false;
+					player->m_bInVision = false;
+					player->m_bDroppedAnything = false;
+					player->SetTestMessageVisible(false);
 				}
 			}
 		}
+
+		if (filter.GetRecipientCount() > 0)
+		{
+			UserMessageBegin(filter, "IdleRespawnShowMenu");
+			MessageEnd();
+		}
 	}
-#endif
 
 	if (g_fGameOver)   // someone else quit the game already
 	{
