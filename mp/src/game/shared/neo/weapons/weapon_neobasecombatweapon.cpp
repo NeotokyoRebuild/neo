@@ -8,13 +8,10 @@
 #include "player.h"
 #endif
 
-#ifdef GAME_DLL
-#include "networkstringtable_gamedll.h"
-#else
+#ifdef CLIENT_DLL
 #include "dlight.h"
 #include "iefx.h"
 #include "c_te_effect_dispatch.h"
-#include "networkstringtable_clientdll.h"
 #endif
 
 #include "basecombatweapon_shared.h"
@@ -631,6 +628,9 @@ bool CNEOBaseCombatWeapon::CanBePickedUpByClass(int classId)
 #ifdef CLIENT_DLL
 void CNEOBaseCombatWeapon::ProcessMuzzleFlashEvent()
 {
+	if (GetPlayerOwner() == NULL)
+		return; // If using a view model in first person, muzzle flashes are not processed until the player drops their weapon. In that case, do not play a muzzle flash effect. Need to change how this is calculated if we want to allow dropped weapons to cook off for example
+
 	if ((GetNeoWepBits() & NEO_WEP_SUPPRESSED))
 		return;
 
