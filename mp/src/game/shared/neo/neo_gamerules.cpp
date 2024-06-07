@@ -31,7 +31,7 @@ ConVar mp_neo_latespawn_max_time("mp_neo_latespawn_max_time", "15", FCVAR_REPLIC
 ConVar sv_neo_wep_dmg_modifier("sv_neo_wep_dmg_modifier", "0.5", FCVAR_REPLICATED, "Temp global weapon damage modifier.", true, 0.0, true, 100.0);
 
 ConVar neo_name("neo_name", "", FCVAR_USERINFO | FCVAR_ARCHIVE, "The nickname to set instead of the steam profile name.");
-ConVar cl_fakenick("cl_onlysteamnick", "1", FCVAR_USERINFO | FCVAR_ARCHIVE, "Only show players Steam names, otherwise show player set names.", true, 0.0f, true, 1.0f);
+ConVar cl_onlysteamnick("cl_onlysteamnick", "0", FCVAR_USERINFO | FCVAR_ARCHIVE, "Only show players Steam names, otherwise show player set names.", true, 0.0f, true, 1.0f);
 
 REGISTER_GAMERULES_CLASS( CNEORules );
 
@@ -1323,7 +1323,7 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 	{
 		if (pszOldNeoName != NULL && clientAllowsNeoName)
 		{
-			// This is basically player_changename but allows for client to filter it out with cl_fakenick toggle
+			// This is basically player_changename but allows for client to filter it out with cl_onlysteamnick toggle
 			IGameEvent *event = gameeventmanager->CreateEvent("player_changeneoname");
 			if (event)
 			{
@@ -1372,7 +1372,7 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 
 	if (updateDupeCheck)
 	{
-		// Update name duplication checker (only used if cl_fakenick=1/neo_name is used, but always set)
+		// Update name duplication checker (only used if cl_onlysteamnick=0/neo_name is used, but always set)
 		KeyValues *dupeData = new KeyValues("dupeData");
 		for (int i = 1; i <= gpGlobals->maxClients; ++i)
 		{
