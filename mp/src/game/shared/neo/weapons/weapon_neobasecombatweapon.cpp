@@ -9,9 +9,10 @@
 #endif
 
 #ifdef GAME_DLL
-#include "te_effect_dispatch.h"
 #include "networkstringtable_gamedll.h"
 #else
+#include "dlight.h"
+#include "iefx.h"
 #include "c_te_effect_dispatch.h"
 #include "networkstringtable_clientdll.h"
 #endif
@@ -619,11 +620,6 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 
 	BaseClass::PrimaryAttack();
 
-#ifdef GAME_DLL
-	if (!(GetNeoWepBits() & NEO_WEP_SUPPRESSED))
-		DispatchMuzzleParticleEffect();
-#endif
-
 	m_flAccuracyPenalty += GetAccuracyPenalty();
 }
 
@@ -632,36 +628,61 @@ bool CNEOBaseCombatWeapon::CanBePickedUpByClass(int classId)
 	return true;
 }
 
-#ifdef GAME_DLL
-void CNEOBaseCombatWeapon::DispatchMuzzleParticleEffect() {
-	static constexpr char particleName[] = "ntr_muzzle_source";
-	constexpr bool resetAllParticlesOnEntity = false;
-	const ParticleAttachment_t iAttachType = ParticleAttachment_t::PATTACH_POINT_FOLLOW;
+#ifdef CLIENT_DLL
+void CNEOBaseCombatWeapon::ProcessMuzzleFlashEvent()
+{
+	if ((GetNeoWepBits() & NEO_WEP_SUPPRESSED))
+		return;
 
 	int iAttachment = -1;
 	if (GetBaseAnimating()) {
 		// Find the attachment point index
-		iAttachment = GetBaseAnimating()->LookupAttachment("muzzle");
+		iAttachment = GetBaseAnimating()->LookupAttachment("muzzle_flash");
 		if (iAttachment <= 0)
 		{
-			Warning("Model '%s' doesn't have attachment '%s' to attach particle system '%s' to.\n", GetPrintName(), "muzzle", particleName);
+			Warning("Model '%s' doesn't have attachment '%s'\n", GetPrintName(), "muzzle_flash");
 			return;
 		}
 	}
 
+	// Muzzle flash light
+	Vector vAttachment;
+	QAngle dummyAngles;
+	GetAttachment(iAttachment, vAttachment, dummyAngles);
+
+	// Make an elight
+	dlight_t* el = effects->CL_AllocElight(LIGHT_INDEX_MUZZLEFLASH + index);
+	el->origin = vAttachment;
+	el->radius = random->RandomInt(32, 64);
+	el->decay = el->radius / 0.05f;
+	el->die = gpGlobals->curtime + 0.05f;
+	el->color.r = 255;
+	el->color.g = 192;
+	el->color.b = 64;
+	el->color.exponent = 5;
+
+	// Muzzle flash particle
+	DispatchMuzzleParticleEffect(iAttachment);
+}
+
+void CNEOBaseCombatWeapon::DispatchMuzzleParticleEffect(int iAttachment) {
+	static constexpr char particleName[] = "ntr_muzzle_source";
+	constexpr bool resetAllParticlesOnEntity = false;
+	const ParticleAttachment_t iAttachType = ParticleAttachment_t::PATTACH_POINT_FOLLOW;
+
 	CEffectData	data;
 
 	data.m_nHitBox = GetParticleSystemIndex(particleName);
-	data.m_nEntIndex = entindex();
+	data.m_hEntity = this;
 	data.m_fFlags |= PARTICLE_DISPATCH_FROM_ENTITY;
 	data.m_vOrigin = GetAbsOrigin();
 	data.m_nDamageType = iAttachType;
-	data.m_nAttachmentIndex = iAttachment;
+	data.m_nAttachmentIndex = 1;
 
 	if (resetAllParticlesOnEntity)
 		data.m_fFlags |= PARTICLE_DISPATCH_RESET_PARTICLES;
 
-	CBroadcastNonOwnerRecipientFilter filter(ToBasePlayer(GetOwner()));
+	CSingleUserRecipientFilter filter(UTIL_PlayerByIndex(GetLocalPlayerIndex()));
 	te->DispatchEffect(filter, 0.0, data.m_vOrigin, "ParticleEffect", data);
 }
 #endif

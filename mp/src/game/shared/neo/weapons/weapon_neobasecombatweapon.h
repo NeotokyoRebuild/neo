@@ -148,8 +148,9 @@ public:
 	virtual void ItemPostFrame(void);
 
 	virtual void PrimaryAttack(void);
-#ifdef GAME_DLL
-	virtual void DispatchMuzzleParticleEffect(void);
+#ifdef CLIENT_DLL
+	void DispatchMuzzleParticleEffect(int iAttachment);
+	virtual void ProcessMuzzleFlashEvent(void) OVERRIDE;
 #endif
 
 	virtual float GetInnateInaccuracy(void) const { return 0.0f; } // NEO TODO (Rain): make this abstract & implement some amount of inaccuracy (spread) for weapons?
