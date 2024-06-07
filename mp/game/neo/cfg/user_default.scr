@@ -51,7 +51,7 @@ DESCRIPTION INFO_OPTIONS
 	{
 		"Only use Steam names"
 		{ BOOL }
-		{ 1 }
+		{ 0 }
 	}
 	"neo_fov"
 	{
