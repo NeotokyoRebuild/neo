@@ -130,6 +130,7 @@ public:
 #endif
 
 	CNEOBaseCombatWeapon();
+	virtual void Precache() OVERRIDE;
 
 	virtual void Spawn();
 	virtual	void CheckReload(void);

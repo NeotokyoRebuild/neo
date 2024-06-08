@@ -99,9 +99,16 @@ CNEOBaseCombatWeapon::CNEOBaseCombatWeapon( void )
 	m_bReadyToAimIn = false;
 }
 
+void CNEOBaseCombatWeapon::Precache()
+{
+	BaseClass::Precache();
+
+	if ((GetNeoWepBits() & NEO_WEP_SUPPRESSED))
+		PrecacheParticleSystem("ntr_muzzle_source");
+}
+
 void CNEOBaseCombatWeapon::Spawn()
 {
-	PrecacheParticleSystem("ntr_muzzle_source");
 	// If this fires, either the enum bit mask has overflowed,
 	// this derived gun has no valid NeoBitFlags set,
 	// or we are spawning an instance of this base class for some reason.
@@ -635,27 +642,28 @@ void CNEOBaseCombatWeapon::ProcessMuzzleFlashEvent()
 		return;
 
 	int iAttachment = -1;
-	if (GetBaseAnimating()) {
-		// Find the attachment point index
-		iAttachment = GetBaseAnimating()->LookupAttachment("muzzle_flash");
-		if (iAttachment <= 0)
-		{
-			Warning("Model '%s' doesn't have attachment '%s'\n", GetPrintName(), "muzzle_flash");
-			return;
-		}
+	if (!GetBaseAnimating())
+		return;
+	
+	// Find the attachment point index
+	iAttachment = GetBaseAnimating()->LookupAttachment("muzzle_flash");
+	if (iAttachment <= 0)
+	{
+		Warning("Model '%s' doesn't have attachment '%s'\n", GetPrintName(), "muzzle_flash");
+		return;
 	}
 
 	// Muzzle flash light
 	Vector vAttachment;
-	QAngle dummyAngles;
-	GetAttachment(iAttachment, vAttachment, dummyAngles);
+	if (!GetAttachment(iAttachment, vAttachment))
+		return;
 
-	// Make an elight
-	dlight_t* el = effects->CL_AllocElight(LIGHT_INDEX_MUZZLEFLASH + index);
+	// environment light
+	dlight_t* el = effects->CL_AllocDlight(LIGHT_INDEX_MUZZLEFLASH + index);
 	el->origin = vAttachment;
-	el->radius = random->RandomInt(32, 64);
-	el->decay = el->radius / 0.05f;
-	el->die = gpGlobals->curtime + 0.05f;
+	el->radius = random->RandomInt(64, 96);
+	el->decay = el->radius / 0.1f;
+	el->die = gpGlobals->curtime + 0.1f;
 	el->color.r = 255;
 	el->color.g = 192;
 	el->color.b = 64;
@@ -677,7 +685,7 @@ void CNEOBaseCombatWeapon::DispatchMuzzleParticleEffect(int iAttachment) {
 	data.m_fFlags |= PARTICLE_DISPATCH_FROM_ENTITY;
 	data.m_vOrigin = GetAbsOrigin();
 	data.m_nDamageType = iAttachType;
-	data.m_nAttachmentIndex = 1;
+	data.m_nAttachmentIndex = iAttachment;
 
 	if (resetAllParticlesOnEntity)
 		data.m_fFlags |= PARTICLE_DISPATCH_RESET_PARTICLES;
