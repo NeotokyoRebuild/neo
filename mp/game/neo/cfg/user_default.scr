@@ -45,7 +45,7 @@ DESCRIPTION INFO_OPTIONS
 	{
 		"Fake Name"
 		{ STRING }
-		{ "Neotokyo Noob" }
+		{ "" }
 	}
 	"cl_onlysteamnick"
 	{
