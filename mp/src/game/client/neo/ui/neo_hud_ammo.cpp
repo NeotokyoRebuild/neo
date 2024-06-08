@@ -108,7 +108,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 {
 	Assert(C_NEO_Player::GetLocalNEOPlayer());
 
-	C_BaseCombatWeapon* activeWep = C_NEO_Player::GetLocalNEOPlayer()->GetActiveWeapon();
+	C_NEOBaseCombatWeapon* activeWep = dynamic_cast<C_NEOBaseCombatWeapon*>(C_NEO_Player::GetLocalNEOPlayer()->GetActiveWeapon());
 	if (!activeWep)
 		return;
 
@@ -149,10 +149,10 @@ void CNEOHud_Ammo::DrawAmmo() const
 		char clipsText[maxLen]{ '\0' };
 		if(isSupa)
 		{
-			snprintf(clipsText, 10, "%d+%d", ammoCount, activeWep->m_iSecondaryAmmoCount.Get());
+			V_sprintf_safe(clipsText, "%d+%d", ammoCount, activeWep->m_iSecondaryAmmoCount.Get());
 		} else
 		{
-			snprintf(clipsText, 10, "%d", numClips);
+			V_sprintf_safe(clipsText, "%d", numClips);
 		}
 
 		textLen = V_strlen(clipsText);
@@ -170,14 +170,14 @@ void CNEOHud_Ammo::DrawAmmo() const
 
 	const auto neoWep = dynamic_cast<C_NEOBaseCombatWeapon*> (activeWep);
 		
-	char* ammoChar = nullptr;
+	const char* ammoChar = nullptr;
 	int fireModeWidth = 0, fireModeHeight = 0;
 	int magSizeMax = 0;
 	int magSizeCurrent = 0;
 		
 	if (activeWep->UsesClipsForAmmo1()) 
 	{
-		char fireModeText[2]{ L'\0' };
+		char fireModeText[2]{ '\0' };
 
 		ammoChar = const_cast<char*>(activeWep->GetWpnData().szBulletCharacter);
 		magSizeMax = activeWep->GetMaxClip1();
@@ -207,13 +207,13 @@ void CNEOHud_Ammo::DrawAmmo() const
 		}
 	} else 
 	{
-		if(dynamic_cast<CWeaponSmokeGrenade*> (activeWep))
+		if(activeWep->GetNeoWepBits() & NEO_WEP_SMOKE_GRENADE)
 		{
-			ammoChar = new char[2] { 'f', '\0' };
+			ammoChar = "f";
 			magSizeMax = magSizeCurrent = ammoCount;
-		} else if(dynamic_cast<CWeaponGrenade*> (activeWep))
+		} else if(activeWep->GetNeoWepBits() & NEO_WEP_FRAG_GRENADE)
 		{
-			ammoChar = new char[2] { 'g', '\0' };
+			ammoChar = "g";
 			magSizeMax = magSizeCurrent = ammoCount;
 		}			
 	}
@@ -228,24 +228,30 @@ void CNEOHud_Ammo::DrawAmmo() const
 		return;
 	}
 
-	const int maxSpaceAvaliableForBullets = digit_max_width;
+	const int maxSpaceAvailableForBullets = digit_max_width;
 	const int bulletWidth = surface()->GetCharacterWidth(m_hBulletFont, *ammoChar);
 	const int plusWidth = surface()->GetCharacterWidth(m_hBulletFont, '+');
-	const int maxBulletsWeCanDisplay = (maxSpaceAvaliableForBullets / bulletWidth);
-	const int maxBulletsWeCanDisplayWithPlus = ((maxSpaceAvaliableForBullets - plusWidth) / bulletWidth);
-	const int bulletsOverflowing = maxBulletsWeCanDisplay < magSizeMax;
+	const int maxBulletsWeCanDisplay = bulletWidth == 0 ? 0 : (maxSpaceAvailableForBullets / bulletWidth);
+
+	if (maxBulletsWeCanDisplay == 0)
+		return;
+
+	const int maxBulletsWeCanDisplayWithPlus = bulletWidth == 0 ? 0 : ((maxSpaceAvailableForBullets - plusWidth) / bulletWidth);
+	const bool bulletsOverflowing = maxBulletsWeCanDisplay < magSizeMax;
 
 	if(bulletsOverflowing)
 	{
 		magSizeMax = maxBulletsWeCanDisplayWithPlus + 1;
 	}
 
-	magSizeMax = min(magSizeMax, 100);
-	char bullets[100]{ '\0' };
-	for(int i = 0; i < magSizeMax; i++)
+	char bullets[100]; // PZ Mag size
+	magSizeMax = min(magSizeMax, sizeof(bullets));
+	int i;
+	for(i = 0; i < magSizeMax; i++)
 	{
 		bullets[i] = *ammoChar;
 	}
+	bullets[i] = '\0';
 
 	int magAmountToDrawFilled = magSizeCurrent;
 		
@@ -278,10 +284,9 @@ void CNEOHud_Ammo::DrawAmmo() const
 	if(maxClip > 0)
 	{
 		if (magSizeMax > 0) {
-			const wchar_t* firstEmptyRound = unicodeBullets + magAmountToDrawFilled;
 			surface()->DrawSetTextColor(transparent_ammo_color);
 			surface()->DrawSetTextPos(digit_xpos + xpos + (bulletWidth * magAmountToDrawFilled), digit_ypos + ypos);
-			surface()->DrawPrintText(firstEmptyRound, magSizeMax - magAmountToDrawFilled);
+			surface()->DrawPrintText(&unicodeBullets[magAmountToDrawFilled], magSizeMax - magAmountToDrawFilled);
 		}
 	}
 }
