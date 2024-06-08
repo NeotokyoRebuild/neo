@@ -2,6 +2,26 @@ add_library(client SHARED)
 
 set_target_properties(client PROPERTIES PREFIX "")
 
+add_custom_command(
+    OUTPUT
+        ${CMAKE_SOURCE_DIR}/../game/neo/resource/GameMenu.res
+        ALL
+    COMMAND
+        ${CMAKE_COMMAND} -P ${CMAKE_SOURCE_DIR}/cmake/git_hash.cmake
+    WORKING_DIRECTORY
+        ${CMAKE_SOURCE_DIR}
+)
+
+# rebuild GameMenu.res every time
+add_custom_target(
+    get_git_hash
+    ALL
+    DEPENDS
+        ${CMAKE_SOURCE_DIR}/../game/neo/resource/GameMenu.res
+)
+
+add_dependencies(client get_git_hash)
+
 target_include_directories(client
     PRIVATE
     ${CMAKE_SOURCE_DIR}/common

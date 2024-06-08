@@ -49,5 +49,15 @@
 		"label" "#GameUI_GameMenu_Quit"
 		"command" "Quit"
 	}
+	"12"
+	{
+		"label" ""
+		"command" ""
+	}
+	"13"
+	{
+		"label" "Build @BUILD_DATE@_@GIT_HASH@"
+		"command" ""
+	}
 }
 
