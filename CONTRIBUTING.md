@@ -98,7 +98,7 @@ Assuming default directory, it might be in either: `~/.local/share/Steam/ubuntu1
 Then change to that directory and replace `[INSERT_OUTPUT_HERE]` to the output of:
 ```
 $ cd <STEAM-RUNTIME-DIR>
-$ run.sh printenv LD_LIBRARY_PATH
+$ ./run.sh printenv LD_LIBRARY_PATH
 ```
 
 After this, you should be able to run and debug NT;RE, just make sure to have Steam open in the background.
