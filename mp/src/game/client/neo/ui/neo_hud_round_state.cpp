@@ -442,7 +442,7 @@ void CNEOHud_RoundState::DrawFriend(int playerIndex, int teamIndex) {
 
 	if (health_monochrome) {
 		const int greenBlueValue = (g_PR->GetHealth(playerIndex) / 100.0f) * 255;
-		surface()->DrawSetColor(Color(255, greenBlueValue, greenBlueValue));
+		surface()->DrawSetColor(Color(255, greenBlueValue, greenBlueValue, 255));
 	}
 	else {
 		if (g_PR->GetHealth(playerIndex) <= 20)
