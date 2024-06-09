@@ -227,7 +227,7 @@ float ClientModeHL2MPNormal::GetViewModelFOV()
 			}
 
 			Assert(pWepInfo->m_flVMAimFov < pWepInfo->m_flVMFov);
-			static constexpr float DELTA_SPEED = 6.0f;
+			static constexpr float DELTA_SPEED = 5.5f;
 			const float flDeltaAiming = (pOwner->IsInAim() ? -DELTA_SPEED : DELTA_SPEED) * (pWepInfo->m_flVMFov - pWepInfo->m_flVMAimFov);
 			m_flCurrentFov += flDeltaAiming * (gpGlobals->interpolation_amount * 0.01f);
 			m_flCurrentFov = Clamp(m_flCurrentFov, pWepInfo->m_flVMAimFov, pWepInfo->m_flVMFov);
