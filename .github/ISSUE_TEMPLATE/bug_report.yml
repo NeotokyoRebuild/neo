@@ -1,0 +1,103 @@
+name: Bug report
+description: General bugs, program crashes, broken files, wrong values, etc...
+title: "[BUG]"
+labels: bug
+projects: ["NeotokyoRebuild/1"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **ATTENTION:**
+        Before you file an issue, please look if there's already the same
+        issue before filing one. Otherwise it'll just get closed as a duplicate.
+
+        **DO NOT** put in chatlogs and instead formulate them into detailed
+        description and reproduction steps.
+
+        Fill in the title after the **[BUG]** tag.
+  - type: input
+    id: build
+    attributes:
+      label: Build Info
+      description: |
+        Which build this bug is seen? Replace [DATE] with YYYYMMDD
+        and [GIT HASH] with the Git short hash the build was built on.
+        The main menu will show the build's date and Git hash.
+      placeholder: "[DATE]_[GIT HASH] (EX: 20240609_759f6e5)"
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: |
+        A clear and concise description of what the bug is.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce_steps
+    attributes:
+      label: To Reproduce
+      description: |
+        Steps to reproduce the behavior. Walk us through step by step.
+      placeholder: |
+        1. Go to...
+        2. Click on...
+        3. Do this...
+        4. See error
+        ...
+    validations:
+      required: true
+  - type: textarea
+    id: behavior_expected
+    attributes:
+      label: Expected behavior
+      description: |
+        A clear and concise description of what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior_actual
+    attributes:
+      label: Actual behavior
+      description: |
+        A clear and concise description of what actually happens.
+    validations:
+      required: true
+  - type: checkboxes
+    id: machine_os
+    attributes:
+      label: Operating System
+      description: "You may select more than one."
+      options:
+        - label: Windows
+        - label: Linux
+    validations:
+      required: true
+  - type: input
+    id: machine_os_detail
+    attributes:
+      label: Version/Distro
+      description: "Detailed info about the OS itself."
+      placeholder: "For Windows: EX: 10 or 11; For Linux: EX: Arch, Debian, Fedora, SteamOS, etc..."
+    validations:
+      required: true
+  - type: input
+    id: machine_cpu
+    attributes:
+      label: Machine's CPU
+      description: "If applicable, put in CPU info."
+      placeholder: "EX: Intel i5-4670k, AMD Ryzen 7500f, Intel Xeon E3-1275 v3, etc..."
+  - type: input
+    id: machine_gpu
+    attributes:
+      label: Machine's GPU
+      description: "If applicable, put in GPU info."
+      placeholder: "EX: AMD RX 580, NVIDIA RTX 4070, Intel iGPU, AMD APU, etc..."
+  - type: textarea
+    id: additional_info
+    attributes:
+      label: Additional context and Screenshots
+      description: |
+        If applicable, add any other context and screenshots to help explain your problem.
+
