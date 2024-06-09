@@ -117,7 +117,7 @@ void CNEOBaseCombatWeapon::Equip(CBaseCombatCharacter* pOwner)
 	BaseClass::Equip(pOwner);
 #ifndef CLIENT_DLL
 	NEO_WEP_BITS_UNDERLYING_TYPE weapon = GetNeoWepBits();
-	if (weapon & NEO_WEP_KYLA || weapon & NEO_WEP_MILSO || weapon & NEO_WEP_TACHI)
+	if (weapon & (NEO_WEP_KYLA + NEO_WEP_MILSO + NEO_WEP_TACHI))
 		SetParentAttachment("SetParentAttachment", "pistol", false);
 	else if (weapon & NEO_WEP_FRAG_GRENADE)
 	{
