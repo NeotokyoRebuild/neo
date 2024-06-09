@@ -26,7 +26,7 @@ Build: [DATE]_[GIT HASH]
 <!--
 Build, Description, "To Reproduce", "Expected/Actual behavior", and
 "Machine info" ALL MUST be completed in. DO NOT put in chatlogs
-and instead forumlate them into detailed description and
+and instead formulate them into detailed description and
 reproduction steps.
 -->
 A clear and concise description of what the bug is.

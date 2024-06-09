@@ -27,7 +27,6 @@ If there's a related PR but don't want to resolve/close the issue, mark them wit
 
 See: https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword
 -->
-
-* resolves #
-* related #
+- fixes #
+- related #
 
