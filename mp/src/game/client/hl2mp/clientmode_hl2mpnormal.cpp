@@ -129,8 +129,6 @@ ClientModeHL2MPNormal::ClientModeHL2MPNormal()
 {
 	m_pViewport = new CHudViewport();
 	m_pViewport->Start(gameuifuncs, gameeventmanager);
-	m_flStartAimingChange = 0.0f;
-	m_bViewAim = false;
 }
 
 
@@ -228,48 +226,12 @@ float ClientModeHL2MPNormal::GetViewModelFOV()
 				}
 			}
 
-			const bool playerAiming = pOwner->IsInAim();
-			const float currentTime = gpGlobals->curtime;
-			if (m_bViewAim && !playerAiming)
-			{
-				// From aiming to not aiming
-				m_flStartAimingChange = currentTime;
-				m_bViewAim = false;
-			}
-			else if (!m_bViewAim && playerAiming)
-			{
-				// From not aiming to aiming
-				m_flStartAimingChange = currentTime;
-				m_bViewAim = true;
-			}
-			const float endAimingChange = m_flStartAimingChange + NEO_ZOOM_SPEED;
-			const bool inAimingChange = (m_flStartAimingChange <= currentTime && currentTime < endAimingChange);
-			float flTargetFov = 0.0f;
-			if (inAimingChange)
-			{
-				float percentage = (currentTime - m_flStartAimingChange) / NEO_ZOOM_SPEED;
-				static constexpr float SNAP_PERCENTAGE = 0.05f;
-				if (percentage > (1.0f - SNAP_PERCENTAGE)) percentage = 1.0f;
-				else if (percentage < SNAP_PERCENTAGE) percentage = 0.0f;
-
-				float flVMFovDelta = pWepInfo->m_flVMAimFov - pWepInfo->m_flVMFov;
-				flVMFovDelta *= percentage;
-				if (playerAiming)
-				{
-					// From not aiming to aiming gradual
-					flTargetFov = pWepInfo->m_flVMFov + flVMFovDelta;
-				}
-				else
-				{
-					// From aiming to not aiming gradual
-					flTargetFov = pWepInfo->m_flVMAimFov - flVMFovDelta;
-				}
-			}
-			else
-			{
-				flTargetFov = playerAiming ? (pWepInfo->m_flVMAimFov) : (pWepInfo->m_flVMFov);
-			}
-			return flTargetFov + neo_viewmodel_fov_offset.GetFloat();
+			Assert(pWepInfo->m_flVMAimFov < pWepInfo->m_flVMFov);
+			static constexpr float DELTA_SPEED = 6.0f;
+			const float flDeltaAiming = (pOwner->IsInAim() ? -DELTA_SPEED : DELTA_SPEED) * (pWepInfo->m_flVMFov - pWepInfo->m_flVMAimFov);
+			m_flCurrentFov += flDeltaAiming * (gpGlobals->interpolation_amount * 0.01f);
+			m_flCurrentFov = Clamp(m_flCurrentFov, pWepInfo->m_flVMAimFov, pWepInfo->m_flVMFov);
+			return m_flCurrentFov + neo_viewmodel_fov_offset.GetFloat();
 		}
 	}
 

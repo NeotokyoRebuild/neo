@@ -14,6 +14,7 @@
 #include "model_types.h"
 #include "prediction.h"
 #include "viewrender.h"
+#include "c_playerresource.h"
 #else
 #include "neo_player.h"
 #endif
@@ -41,8 +42,6 @@ CNEOPredictedViewModel::CNEOPredictedViewModel()
 
 	m_flYPrevious = 0;
 	m_flLastLeanTime = 0;
-	m_flStartAimingChange = 0;
-	m_bViewAim = false;
 }
 
 CNEOPredictedViewModel::~CNEOPredictedViewModel()
@@ -381,44 +380,22 @@ void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 			m_flStartAimingChange = currentTime;
 			m_bViewAim = true;
 		}
+
 		const float endAimingChange = m_flStartAimingChange + NEO_ZOOM_SPEED;
 		const bool inAimingChange = (m_flStartAimingChange <= currentTime && currentTime < endAimingChange);
 		if (inAimingChange)
 		{
 			float percentage = (currentTime - m_flStartAimingChange) / NEO_ZOOM_SPEED;
-			if (percentage > 1.0f) percentage = 1.0f;
-			else if (percentage < 0.0f) percentage = 0.0f;
+			percentage = clamp(percentage, 0.0f, 1.0f);
+			if (playerAiming) percentage = 1.0f - percentage;
 
-			Vector vecVMDelta = data.m_vecVMAimPosOffset - data.m_vecVMPosOffset;
-			vecVMDelta *= percentage;
-
-			QAngle angVMDelta = data.m_angVMAimAngOffset - data.m_angVMAngOffset;
-			angVMDelta *= percentage;
-			if (playerAiming)
-			{
-				// From not aiming to aiming gradual
-				vOffset = data.m_vecVMPosOffset + vecVMDelta;
-				angOffset = data.m_angVMAngOffset + angVMDelta;
-			}
-			else
-			{
-				// From aiming to not aiming gradual
-				vOffset = data.m_vecVMAimPosOffset - vecVMDelta;
-				angOffset = data.m_angVMAimAngOffset - angVMDelta;
-			}
+			vOffset = Lerp(percentage, data.m_vecVMAimPosOffset, data.m_vecVMPosOffset);
+			angOffset = Lerp(percentage, data.m_angVMAimAngOffset, data.m_angVMAngOffset);
 		}
 		else
 		{
-			if (playerAiming)
-			{
-				vOffset = data.m_vecVMAimPosOffset;
-				angOffset = data.m_angVMAimAngOffset;
-			}
-			else
-			{
-				vOffset = data.m_vecVMPosOffset;
-				angOffset = data.m_angVMAngOffset;
-			}
+			vOffset = (playerAiming) ? data.m_vecVMAimPosOffset : data.m_vecVMPosOffset;
+			angOffset = (playerAiming) ? data.m_angVMAimAngOffset : data.m_angVMAngOffset;
 		}
 	}
 	
