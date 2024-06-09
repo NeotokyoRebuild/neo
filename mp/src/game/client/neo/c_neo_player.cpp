@@ -1011,6 +1011,7 @@ void C_NEO_Player::PostThink(void)
 
 	if (pWep)
 	{
+		const bool clientAimHold = ClientWantsAimHold(this);
 		if (pWep->m_bInReload && !m_bPreviouslyReloading)
 		{
 			Weapon_SetZoom(false);
@@ -1019,13 +1020,13 @@ void C_NEO_Player::PostThink(void)
 		{
 			Weapon_SetZoom(false);
 		}
-		else if (ClientWantsAimHold(this) && m_afButtonPressed & IN_AIM)
+		else if ((m_afButtonPressed & IN_AIM) && (!(m_nButtons & IN_SPEED)))
 		{
-			Weapon_AimToggle(pWep, NEO_TOGGLE_FORCE_AIM);
+			Weapon_AimToggle(pWep, clientAimHold ? NEO_TOGGLE_FORCE_AIM : NEO_TOGGLE_DEFAULT);
 		}
-		else if ((m_afButtonReleased & IN_AIM) && (!(m_nButtons & IN_SPEED)))
+		else if (clientAimHold && (m_afButtonReleased & IN_AIM))
 		{
-			Weapon_AimToggle(pWep, ClientWantsAimHold(this) ? NEO_TOGGLE_FORCE_UN_AIM : NEO_TOGGLE_DEFAULT);
+			Weapon_AimToggle(pWep, NEO_TOGGLE_FORCE_UN_AIM);
 		}
 
 #if !defined( NO_ENTITY_PREDICTION )
