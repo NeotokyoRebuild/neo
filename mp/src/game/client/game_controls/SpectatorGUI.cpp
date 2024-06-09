@@ -85,6 +85,10 @@ ConVar cl_spec_mode(
 	FCVAR_ARCHIVE | FCVAR_USERINFO | FCVAR_SERVER_CAN_EXECUTE,
 	"spectator mode" );
 
+namespace {
+constexpr char LABEL_JINRAI[] = "CTScoreValue";
+constexpr char LABEL_NSF[] = "TERScoreValue";
+}
 
 
 //-----------------------------------------------------------------------------
@@ -496,6 +500,11 @@ void CSpectatorGUI::ApplySchemeSettings(IScheme *pScheme)
 	m_pBottomBarBlank->SetVisible( true );
 	m_pTopBar->SetVisible( true );
 
+#ifdef NEO
+	m_scoreValueLabelJinrai = nullptr;
+	m_scoreValueLabelNSF = nullptr;
+#endif
+
 	BaseClass::ApplySchemeSettings( pScheme );
 	SetBgColor(Color( 0,0,0,0 ) ); // make the background transparent
 	m_pTopBar->SetBgColor(GetBlackBarColor());
@@ -559,30 +568,29 @@ void CSpectatorGUI::OnThink()
 			}
 		}
 
-		static Label* jinScoreValueLabel = NULL;
-		static Label* nsfScoreValueLabel = NULL;
-		if (!jinScoreValueLabel)
+#ifdef NEO
+		if (!m_scoreValueLabelJinrai)
 		{
-			jinScoreValueLabel = dynamic_cast<Label*>(FindChildByName("CTScoreValue"));
+			m_scoreValueLabelJinrai = static_cast<Label*>(FindChildByName(LABEL_JINRAI));
 		}
-		if (!nsfScoreValueLabel)
+		if (!m_scoreValueLabelNSF)
 		{
-			nsfScoreValueLabel = dynamic_cast<Label*>(FindChildByName("TERScoreValue"));
+			m_scoreValueLabelNSF = static_cast<Label*>(FindChildByName(LABEL_NSF));
 		}
-		Assert(jinScoreValueLabel);
-		Assert(nsfScoreValueLabel);
+		Assert(m_scoreValueLabelJinrai);
+		Assert(m_scoreValueLabelNSF);
 
 		auto pJinTeam = GetGlobalTeam(TEAM_JINRAI);
 		auto pNsfTeam = GetGlobalTeam(TEAM_NSF);
-
-		if (pJinTeam && pNsfTeam)
+		if (m_scoreValueLabelJinrai && m_scoreValueLabelNSF && pJinTeam && pNsfTeam)
 		{
 			char scoreBuff[3];
 			V_sprintf_safe(scoreBuff, "%d", Max(0, Min(99, pJinTeam->GetRoundsWon())));
-			jinScoreValueLabel->SetText(scoreBuff);
+			m_scoreValueLabelJinrai->SetText(scoreBuff);
 			V_sprintf_safe(scoreBuff, "%d", Max(0, Min(99, pNsfTeam->GetRoundsWon())));
-			nsfScoreValueLabel->SetText(scoreBuff);
+			m_scoreValueLabelNSF->SetText(scoreBuff);
 		}
+#endif
 	}
 }
 
