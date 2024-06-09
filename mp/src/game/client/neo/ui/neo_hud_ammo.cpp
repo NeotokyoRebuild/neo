@@ -142,7 +142,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 
 	const int ammoCount = activeWep->m_iPrimaryAmmoCount;
 	const int numClips = ceil(abs((float)ammoCount / activeWep->GetMaxClip1())); // abs because grenades return negative values (???) // casting division to float in case we have a half-empty mag, rounding up to show the half mag as one more mag
-	const auto isSupa = dynamic_cast<CWeaponSupa7*>(activeWep);
+	const bool isSupa = activeWep->GetNeoWepBits() & NEO_WEP_SUPA7;
 		
 	if (activeWep->UsesClipsForAmmo1()) {
 		const int maxLen = 5;
@@ -186,7 +186,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 			if(activeWep->IsAutomatic())
 				fireModeText[0] = 'j';
 			else if(isSupa)
-				if(isSupa->SlugLoaded())
+				if(dynamic_cast<CWeaponSupa7*>(activeWep)->SlugLoaded())
 					fireModeText[0] = 'h';
 				else
 					fireModeText[0] = 'l';
@@ -245,7 +245,9 @@ void CNEOHud_Ammo::DrawAmmo() const
 		magSizeMax = maxBulletsWeCanDisplayWithPlus + 1;
 	}
 
-	char bullets[101]; // PZ Mag size plus null character
+	constexpr auto maxBullets = 100; // PZ Mag Size
+
+	char bullets[maxBullets + 1];
 	magSizeMax = min(magSizeMax, sizeof(bullets));
 	int i;
 	for(i = 0; i < magSizeMax; i++)
@@ -272,7 +274,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 		}
 	}
 		
-	wchar_t unicodeBullets[100];
+	wchar_t unicodeBullets[maxBullets + 1];
 	g_pVGuiLocalize->ConvertANSIToUnicode(bullets, unicodeBullets, sizeof(unicodeBullets));
 		
 	if (magAmountToDrawFilled > 0)
