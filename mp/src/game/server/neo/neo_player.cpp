@@ -2333,6 +2333,13 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 
 	const bool justJoined = (GetTeamNumber() == TEAM_UNASSIGNED);
 
+	// Outside the below statement scope because this incorrectly triggers warnings on MSVC otherwise:
+	// https://developercommunity.visualstudio.com/t/fallthrough-does-not-suppress-warning-c26819-when/1206339
+	enum JoinMode {
+		Random = -2,
+		TeamWithLessPlayers = -1,
+	};
+
 	// Player bots should initially join a player team.
 	// Note that we can't do a ->IsBot check here, because the bot has not
 	// received its fakeclient flags yet at this point. Hence using the
@@ -2340,7 +2347,30 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	if (justJoined && NEORules()->m_bNextClientIsFakeClient && !IsHLTV())
 	{
 		Assert(gpGlobals->curtime >= m_flNextTeamChangeTime);
-		iTeam = RandomInt(TEAM_JINRAI, TEAM_NSF);
+		
+		ConVarRef joinMode{ "bot_next_team" };
+
+		int numJin, numNsf;
+		switch (joinMode.GetInt())
+		{
+		case JoinMode::TeamWithLessPlayers:
+			numJin = GetGlobalTeam(TEAM_JINRAI) ? GetGlobalTeam(TEAM_JINRAI)->GetNumPlayers() : 0;
+			numNsf = GetGlobalTeam(TEAM_NSF) ? GetGlobalTeam(TEAM_NSF)->GetNumPlayers() : 0;
+			if (numJin < numNsf) {
+				iTeam = TEAM_JINRAI;
+				break;
+			}
+			else if (numNsf < numJin) {
+				iTeam = TEAM_NSF;
+				break;
+			}
+			[[fallthrough]];
+		case JoinMode::Random:
+			iTeam = RandomInt(TEAM_JINRAI, TEAM_NSF);
+			break;
+		default:
+			iTeam = joinMode.GetInt();
+		}
 	}
 	// Limit team join spam, unless this is a newly joined player
 	else if (!justJoined && m_flNextTeamChangeTime > gpGlobals->curtime)
