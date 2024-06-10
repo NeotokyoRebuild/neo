@@ -620,6 +620,7 @@ void C_BasePlayer::SetObserverMode ( int iNewMode )
 	}
 }
 
+#ifdef NEO
 int C_BasePlayer::GetNextObserverSearchStartPoint(bool bReverse)
 {
 	int iDir = bReverse ? -1 : 1;
@@ -723,6 +724,7 @@ bool C_BasePlayer::IsValidObserverTarget(CBaseEntity* target)
 
 	return true;	// passed all test
 }
+#endif
 
 int C_BasePlayer::GetObserverMode() const 
 { 
