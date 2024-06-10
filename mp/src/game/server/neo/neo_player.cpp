@@ -75,6 +75,8 @@ SendPropInt(SENDINFO(m_NeoFlags), 4, SPROP_UNSIGNED),
 SendPropString(SENDINFO(m_szNeoName)),
 SendPropInt(SENDINFO(m_szNameDupePos)),
 SendPropBool(SENDINFO(m_bClientWantNeoName)),
+
+SendPropTime(SENDINFO(m_flDeathTime)),
 END_SEND_TABLE()
 
 BEGIN_DATADESC(CNEO_Player)
