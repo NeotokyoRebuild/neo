@@ -620,6 +620,109 @@ void C_BasePlayer::SetObserverMode ( int iNewMode )
 	}
 }
 
+int C_BasePlayer::GetNextObserverSearchStartPoint(bool bReverse)
+{
+	int iDir = bReverse ? -1 : 1;
+
+	int startIndex;
+
+	if (m_hObserverTarget)
+	{
+		// start using last followed player
+		startIndex = m_hObserverTarget->entindex();
+	}
+	else
+	{
+		// start using own player index
+		startIndex = this->entindex();
+	}
+
+	startIndex += iDir;
+	if (startIndex > gpGlobals->maxClients)
+		startIndex = 1;
+	else if (startIndex < 1)
+		startIndex = gpGlobals->maxClients;
+
+	return startIndex;
+}
+
+CBaseEntity* C_BasePlayer::FindNextObserverTarget(bool bReverse)
+{
+	int startIndex = GetNextObserverSearchStartPoint(bReverse);
+
+	int	currentIndex = startIndex;
+	int iDir = bReverse ? -1 : 1;
+
+	do
+	{
+		CBaseEntity* nextTarget = UTIL_PlayerByIndex(currentIndex);
+
+		if (IsValidObserverTarget(nextTarget))
+		{
+			return nextTarget;	// found next valid player
+		}
+
+		currentIndex += iDir;
+
+		// Loop through the clients
+		if (currentIndex > gpGlobals->maxClients)
+			currentIndex = 1;
+		else if (currentIndex < 1)
+			currentIndex = gpGlobals->maxClients;
+
+	} while (currentIndex != startIndex);
+
+	return nullptr;
+}
+
+bool C_BasePlayer::IsValidObserverTarget(CBaseEntity* target)
+{
+	if (target == NULL)
+		return false;
+
+	// MOD AUTHORS: Add checks on target here or in derived method
+
+	if (!target->IsPlayer())	// only track players
+		return false;
+
+	C_BasePlayer* player = ToBasePlayer(target);
+
+	/* Don't spec observers or players who haven't picked a class yet
+	if ( player->IsObserver() )
+		return false;	*/
+
+	if (player == this)
+		return false; // We can't observe ourselves.
+
+	if (player->IsEffectActive(EF_NODRAW)) // don't watch invisible players
+		return false;
+
+	if (player->m_lifeState == LIFE_RESPAWNABLE) // target is dead, waiting for respawn
+		return false;
+
+	if (player->m_lifeState == LIFE_DEAD || player->m_lifeState == LIFE_DYING)
+	{
+		if ((player->m_flDeathTime + DEATH_ANIMATION_TIME) < gpGlobals->curtime)
+		{
+			return false;	// allow watching until 3 seconds after death to see death animation
+		}
+	}
+
+	// check forcecamera settings for active players
+	if (GetTeamNumber() != TEAM_SPECTATOR)
+	{
+		switch (mp_forcecamera.GetInt())
+		{
+		case OBS_ALLOW_ALL:	break;
+		case OBS_ALLOW_TEAM:	if (GetTeamNumber() != target->GetTeamNumber())
+			return false;
+			break;
+		case OBS_ALLOW_NONE:	return false;
+		}
+	}
+
+	return true;	// passed all test
+}
 
 int C_BasePlayer::GetObserverMode() const 
 { 

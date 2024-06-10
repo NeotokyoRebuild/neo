@@ -88,6 +88,8 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropString(RECVINFO(m_szNeoName)),
 	RecvPropInt(RECVINFO(m_szNameDupePos)),
 	RecvPropBool(RECVINFO(m_bClientWantNeoName)),
+
+	RecvPropTime(RECVINFO(m_flDeathTime)),
 END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA(C_NEO_Player)
@@ -1361,6 +1363,53 @@ float C_NEO_Player::GetSprintSpeed(void) const
 	default:
 		return NEO_BASE_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
 	}
+}
+
+void C_NEO_Player::CalcChaseCamView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov)
+{
+	if (!HandleDeathSpecCamSwitch(eyeOrigin, eyeAngles, fov))
+	{
+		BaseClass::CalcChaseCamView(eyeOrigin, eyeAngles, fov);
+	}
+}
+
+void C_NEO_Player::CalcInEyeCamView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov)
+{
+	if (!HandleDeathSpecCamSwitch(eyeOrigin, eyeAngles, fov))
+	{
+		BaseClass::CalcInEyeCamView(eyeOrigin, eyeAngles, fov);
+	}
+}
+
+bool C_NEO_Player::HandleDeathSpecCamSwitch(Vector& eyeOrigin, QAngle& eyeAngles, float& fov)
+{
+	fov = GetFOV(); // jic the caller relies on us initializing this
+
+	auto target = GetObserverTarget();
+	if (!target || !target->IsAlive())
+	{
+		if (target && !target->IsAlive())
+		{
+			auto playerTarget = ToBasePlayer(target);
+			if (playerTarget)
+			{
+				const auto dtDeath = gpGlobals->curtime - playerTarget->GetDeathTime();
+				constexpr auto specDeathCamTime = 3;
+				if (dtDeath > specDeathCamTime)
+				{
+					auto nextTarget = FindNextObserverTarget(false);
+					if (nextTarget && nextTarget != target)
+					{
+						SetObserverTarget(nextTarget);
+					}
+				}
+			}
+		}
+		VectorCopy(EyePosition(), eyeOrigin);
+		VectorCopy(EyeAngles(), eyeAngles);
+		return true;
+	}
+	return false;
 }
 
 float C_NEO_Player::GetActiveWeaponSpeedScale() const
