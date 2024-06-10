@@ -1384,26 +1384,13 @@ void C_NEO_Player::CalcInEyeCamView(Vector& eyeOrigin, QAngle& eyeAngles, float&
 bool C_NEO_Player::HandleDeathSpecCamSwitch(Vector& eyeOrigin, QAngle& eyeAngles, float& fov)
 {
 	fov = GetFOV(); // jic the caller relies on us initializing this
-
 	auto target = GetObserverTarget();
-	if (!target || !target->IsAlive())
+	if (!IsValidObserverTarget(target))
 	{
-		if (target && !target->IsAlive())
+		auto nextTarget = FindNextObserverTarget(false);
+		if (nextTarget && nextTarget != target)
 		{
-			auto playerTarget = ToBasePlayer(target);
-			if (playerTarget)
-			{
-				const auto dtDeath = gpGlobals->curtime - playerTarget->GetDeathTime();
-				constexpr auto specDeathCamTime = 3;
-				if (dtDeath > specDeathCamTime)
-				{
-					auto nextTarget = FindNextObserverTarget(false);
-					if (nextTarget && nextTarget != target)
-					{
-						SetObserverTarget(nextTarget);
-					}
-				}
-			}
+			SetObserverTarget(nextTarget);
 		}
 		VectorCopy(EyePosition(), eyeOrigin);
 		VectorCopy(EyeAngles(), eyeAngles);
