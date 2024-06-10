@@ -57,12 +57,11 @@ protected:
 	MESSAGE_FUNC_INT( OnPollHideCode, "PollHideCode", code );
 
 	// functions to override
-	virtual bool GetPlayerScoreInfo(int playerIndex, KeyValues *outPlayerInfo);
+	virtual void GetPlayerScoreInfo(int playerIndex, KeyValues *outPlayerInfo);
 	virtual void InitScoreboardSections();
 	virtual void UpdateTeamInfo();
 	virtual void UpdatePlayerInfo();
 	virtual void OnThink();
-	virtual void AddHeader(); // add the start header of the scoreboard
 	virtual void AddSection(int teamType, int teamNumber); // add a new section header for a team
 	virtual int GetAdditionalHeight() { return 12; }
 

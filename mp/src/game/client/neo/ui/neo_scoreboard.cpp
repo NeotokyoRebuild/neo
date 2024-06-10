@@ -172,12 +172,6 @@ void CNEOScoreBoard::Reset()
 //-----------------------------------------------------------------------------
 void CNEOScoreBoard::InitScoreboardSections()
 {
-	// m_pPlayerList->SetBgColor( Color(0, 0, 0, 0) );
-	// m_pPlayerList->SetBorder(NULL);
-
-	// fill out the structure of the scoreboard
-	AddHeader();
-
 	// add the team sections
 	AddSection( TYPE_TEAM, TEAM_JINRAI );
 	AddSection( TYPE_TEAM, TEAM_NSF );
@@ -353,7 +347,7 @@ void CNEOScoreBoard::Update( void )
 //-----------------------------------------------------------------------------
 void CNEOScoreBoard::UpdateTeamInfo()
 {
-	if ( g_PR == NULL )
+	if ( !g_PR )
 		return;
 
 	int iNumPlayersInGame = 0;
@@ -418,7 +412,11 @@ void CNEOScoreBoard::UpdateTeamInfo()
 
 				if (i != TEAM_SPECTATOR)
 				{
+#ifdef WIN32
 					V_snwprintf(val, ARRAYSIZE(val), L"%s: %d", teamName, team->Get_Score());
+#else
+					V_snwprintf(val, ARRAYSIZE(val), L"%S: %d", teamName, team->Get_Score());
+#endif
 					pPlayerList->ModifyColumn(sectionID, "ping", val);
 					V_snwprintf(string1, ARRAYSIZE(string1), L"Players: %s", wNumPlayers);
 					pPlayerList->ModifyColumn(sectionID, "name", string1);
@@ -480,12 +478,14 @@ void CNEOScoreBoard::RemoveItemForPlayerIndex(int index)
 //-----------------------------------------------------------------------------
 void CNEOScoreBoard::UpdatePlayerInfo()
 {
+	IGameResources *gr = GameResources();
+	if ( !gr )
+		return;
+
 	// walk all the players and make sure they're in the scoreboard
 	for ( int i = 1; i <= gpGlobals->maxClients; ++i )
 	{
-		IGameResources *gr = GameResources();
-
-		if ( gr && gr->IsConnected( i ) )
+		if ( gr->IsConnected( i ) )
 		{
 			// add the player to the list
 			KeyValues *playerData = new KeyValues("data");
@@ -552,19 +552,11 @@ void CNEOScoreBoard::UpdatePlayerInfo()
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: adds the top header of the scoreboars
-//-----------------------------------------------------------------------------
-void CNEOScoreBoard::AddHeader()
-{
-}
-
-//-----------------------------------------------------------------------------
 // Purpose: Adds a new section to the scoreboard (i.e the team header)
 //-----------------------------------------------------------------------------
 void CNEOScoreBoard::AddSection(int teamType, int teamNumber)
 {
 	IGameResources *gr = GameResources();
-
 	if ( !gr )
 		return;
 
@@ -635,8 +627,11 @@ bool CNEOScoreBoard::StaticPlayerSortFunc(vgui::SectionedListPanel *list, int it
 //-----------------------------------------------------------------------------
 // Purpose: Adds a new row to the scoreboard, from the playerinfo structure
 //-----------------------------------------------------------------------------
-bool CNEOScoreBoard::GetPlayerScoreInfo(int playerIndex, KeyValues *kv)
+void CNEOScoreBoard::GetPlayerScoreInfo(int playerIndex, KeyValues *kv)
 {
+	if ( !g_PR )
+		return;
+
 	kv->SetInt("playerIndex", playerIndex);
 	const int neoTeam = g_PR->GetTeam(playerIndex);
 	kv->SetInt("team", neoTeam);
@@ -660,23 +655,16 @@ bool CNEOScoreBoard::GetPlayerScoreInfo(int playerIndex, KeyValues *kv)
 	kv->SetInt("status", statusIcon);
 	kv->SetString("class", oppositeTeam ? "" : GetNeoClassName(neoClassIdx));
 
-	if (g_PR->GetPing( playerIndex ) < 1)
+	if ( g_PR->IsFakePlayer( playerIndex ) )
 	{
-		if ( g_PR->IsFakePlayer( playerIndex ) )
-		{
-			kv->SetString("ping", "BOT");
-		}
-		else
-		{
-			kv->SetString("ping", "");
-		}
+		kv->SetString("ping", "BOT");
 	}
 	else
 	{
 		kv->SetInt("ping", g_PR->GetPing( playerIndex ));
 	}
 
-	return true;
+	return;
 }
 
 //-----------------------------------------------------------------------------
@@ -712,9 +700,6 @@ void CNEOScoreBoard::UpdatePlayerAvatar( int playerIndex, KeyValues *kv )
 				}
 
 				kv->SetInt( "avatar", iImageIndex );
-
-				CAvatarImage *pAvIm = (CAvatarImage *)m_pImageList->GetImage( iImageIndex );
-				pAvIm->UpdateFriendStatus();
 			}
 		}
 	}
