@@ -395,7 +395,7 @@ void CNEOScoreBoard::UpdateTeamInfo()
 			}
 			else
 			{
-				_snwprintf(wNumPlayers, ARRAYSIZE(wNumPlayers), L"%i", team->Get_Number_Players());
+				V_snwprintf(wNumPlayers, ARRAYSIZE(wNumPlayers), L"%i", team->Get_Number_Players());
 
 				if (!teamName && team)
 				{
