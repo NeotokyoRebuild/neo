@@ -379,12 +379,8 @@ void CNEOScoreBoard::UpdateTeamInfo()
 
 			if ( HL2MPRules()->IsTeamplay() == false )
 			{
-				_snwprintf( wNumPlayers, ARRAYSIZE(wNumPlayers), L"%i", iNumPlayersInGame );
-#ifdef WIN32
-				_snwprintf( name, ARRAYSIZE(name), L"%s", g_pVGuiLocalize->Find("#ScoreBoard_Deathmatch") );
-#else
-				_snwprintf( name, ARRAYSIZE(name), L"%S", g_pVGuiLocalize->Find("#ScoreBoard_Deathmatch") );
-#endif
+				V_snwprintf( wNumPlayers, ARRAYSIZE(wNumPlayers), L"%i", iNumPlayersInGame );
+				V_snwprintf( name, ARRAYSIZE(name), L"%ls", g_pVGuiLocalize->Find("#ScoreBoard_Deathmatch") );
 
 				teamName = name;
 
@@ -412,13 +408,9 @@ void CNEOScoreBoard::UpdateTeamInfo()
 
 				if (i != TEAM_SPECTATOR)
 				{
-#ifdef WIN32
-					V_snwprintf(val, ARRAYSIZE(val), L"%s: %d", teamName, team->Get_Score());
-#else
-					V_snwprintf(val, ARRAYSIZE(val), L"%S: %d", teamName, team->Get_Score());
-#endif
+					V_snwprintf(val, ARRAYSIZE(val), L"%ls: %d", teamName, team->Get_Score());
 					pPlayerList->ModifyColumn(sectionID, "ping", val);
-					V_snwprintf(string1, ARRAYSIZE(string1), L"Players: %s", wNumPlayers);
+					V_snwprintf(string1, ARRAYSIZE(string1), L"Players: %ls", wNumPlayers);
 					pPlayerList->ModifyColumn(sectionID, "name", string1);
 				}
 
