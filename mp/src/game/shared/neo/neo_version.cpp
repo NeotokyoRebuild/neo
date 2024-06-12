@@ -7,7 +7,7 @@ namespace {
 void neoVersionCallback()
 {
 #if defined(GAME_DLL)
-	static constexpr char HEADER[] = "neo_sv_version (Server's build info):";
+	static constexpr char HEADER[] = "neo_version (Server's build info):";
 #else defined(CLIENT_DLL)
 	static constexpr char HEADER[] = "neo_version (Client's build info):";
 #endif
