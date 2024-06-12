@@ -2,25 +2,7 @@ add_library(client SHARED)
 
 set_target_properties(client PROPERTIES PREFIX "")
 
-add_custom_command(
-    OUTPUT
-        ${CMAKE_SOURCE_DIR}/../game/neo/resource/GameMenu.res
-        ALL
-    COMMAND
-        ${CMAKE_COMMAND} -P ${CMAKE_SOURCE_DIR}/cmake/git_hash.cmake
-    WORKING_DIRECTORY
-        ${CMAKE_SOURCE_DIR}
-)
-
-# rebuild GameMenu.res every time
-add_custom_target(
-    get_git_hash
-    ALL
-    DEPENDS
-        ${CMAKE_SOURCE_DIR}/../game/neo/resource/GameMenu.res
-)
-
-add_dependencies(client get_git_hash)
+add_dependencies(client get_build_info)
 
 target_include_directories(client
     PRIVATE
@@ -1567,6 +1549,8 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_shot_manipulator.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_shot_manipulator.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.h
 )
 
 target_sources_grouped(
