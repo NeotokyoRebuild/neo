@@ -20,7 +20,7 @@
 		"class_width"		"40"
 		"rank_width"		"60"
 		"score_width"		"25"
-		"deaths_width"		"25"
+		"death_width"		"30"
 	}
 	"ServerName"
 	{

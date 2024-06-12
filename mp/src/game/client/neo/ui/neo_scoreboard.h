@@ -101,7 +101,7 @@ protected:
 	CPanelAnimationVarAliasType( int, m_iClassWidth, "class_width", "40", "proportional_int" );
 	CPanelAnimationVarAliasType(int, m_iRankWidth, "rank_width", "60", "proportional_int");
 	CPanelAnimationVarAliasType( int, m_iScoreWidth, "score_width", "25", "proportional_int" );
-	CPanelAnimationVarAliasType( int, m_iDeathWidth, "death_width", "25", "proportional_int" );
+	CPanelAnimationVarAliasType( int, m_iDeathWidth, "death_width", "30", "proportional_int" );
 
 private:
 	int			m_iPlayerIndexSymbol;
