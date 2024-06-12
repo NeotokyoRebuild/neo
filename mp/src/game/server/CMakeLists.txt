@@ -1317,7 +1317,6 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_shot_manipulator.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_shot_manipulator.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.h
     neo/neo_client.cpp
     neo/neo_detpack.cpp
     neo/neo_detpack.h
