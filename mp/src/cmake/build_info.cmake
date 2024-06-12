@@ -18,6 +18,7 @@ if (GIT_FOUND)
         OUTPUT_STRIP_TRAILING_WHITESPACE
         ERROR_QUIET
     )
+    string(SUBSTRING "${GIT_HASH}" 0 7 GIT_HASH)
 endif()
 
 configure_file(
