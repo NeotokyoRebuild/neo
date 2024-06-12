@@ -25,10 +25,10 @@ void neoVersionCallback()
 		COMPILER_ID, COMPILER_VERSION);
 }
 
-#ifdef GAME_DLL
-ConCommand neo_version("neo_sv_version", neoVersionCallback, "Print out server's build's information.", FCVAR_GAMEDLL);
-#endif
 #ifdef CLIENT_DLL
-ConCommand neo_version("neo_version", neoVersionCallback, "Print out client's build's information.", FCVAR_CLIENTDLL);
+constexpr int NEO_VERSION_FLAGS = 0;
+#else
+constexpr int NEO_VERSION_FLAGS = FCVAR_HIDDEN;
 #endif
+ConCommand neo_version("neo_version", neoVersionCallback, "Print out client/server's build's information.", NEO_VERSION_FLAGS);
 }
