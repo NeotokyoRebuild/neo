@@ -6,31 +6,7 @@
 * See [CONTRIBUTING.md](CONTRIBUTING.md) for instructions on how the codebase work and contribute
 
 ## Table of contents
-<!-- Generated with: https://github.com/jonschlinkert/markdown-toc -->
-* [Building NT;RE](#building-ntre)
-    + [Requirements](#requirements)
-    + [Building](#building)
-        - [Visual Studio 2022 (Windows)](#visual-studio-2022-windows)
-        - [Qt Creator (Linux)](#qt-creator-linux)
-        - [CLI (with ninja, Windows + Linux)](#cli-with-ninja-windows--linux)
-            * [Windows prerequisite](#windows-prerequisite)
-            * [Linux prerequisite - Steam Runtime 3 "Sniper" Container](#linux-prerequisite---steam-runtime-3-sniper-container)
-                + [Fetching the container](#fetching-the-container)
-                + [Running the container](#running-the-container)
-            * [CLI Building steps](#cli-building-steps)
-* [Steam mod setup](#steam-mod-setup)
-    + [Windows symlink](#windows-symlink)
-    + [Linux symlink](#linux-symlink)
-    + [`-game` option in Source SDK 2013MP launch option](#-game-option-in-source-sdk-2013mp-launch-option)
-    + [`-neopath` - Pointing to a non-default original NEOTOKYO directory](#-neopath---pointing-to-a-non-default-original-neotokyo-directory)
-* [Further information](#further-information)
-    + [Linux extra notes](#linux-extra-notes)
-        - [Arch Linux](#arch-linux)
-* [Server instructions](#server-instructions)
-* [Shader authoring (Windows setup)](#shader-authoring-windows-setup)
-    + [Compiling the shaders](#compiling-the-shaders)
-        - [Troubleshooting](#troubleshooting)
-* [Credits](#credits)
+To see the Table of Contents, please use the "Outline" feature on GitHub by clicking the button located in the top right of this document.
 
 ## Building NT;RE
 
