@@ -2,6 +2,8 @@ add_library(client SHARED)
 
 set_target_properties(client PROPERTIES PREFIX "")
 
+add_dependencies(client get_build_info)
+
 target_include_directories(client
     PRIVATE
     ${CMAKE_SOURCE_DIR}/common
@@ -1547,6 +1549,7 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_shot_manipulator.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_shot_manipulator.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version.cpp
 )
 
 target_sources_grouped(
