@@ -14,6 +14,7 @@
 #include "ienginevgui.h"
 
 #include "neo_hud_elements.h"
+#include "neo_version_info.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -54,6 +55,12 @@ CNEOHud_HTA::CNEOHud_HTA(const char* pElementName, vgui::Panel* parent)
 	}
 
 	m_hFont = scheme->GetFont("NHudOCRSmall");
+	m_hFontBuildInfo = scheme->GetFont("Default");
+
+	if (!g_pVGuiLocalize->ConvertANSIToUnicode(GIT_HASH, m_wszBuildInfo, sizeof(m_wszBuildInfo)))
+	{
+		m_wszBuildInfo[0] = L'\0';
+	}
 
 	InvalidateLayout();
 
@@ -84,6 +91,25 @@ void CNEOHud_HTA::ApplySchemeSettings(vgui::IScheme* pScheme)
 
 	surface()->GetScreenSize(m_resX, m_resY);
 	SetBounds(0, 0, m_resX, m_resY);
+}
+
+void CNEOHud_HTA::DrawBuildInfo() const
+{
+	surface()->DrawSetTextFont(m_hFontBuildInfo);
+	int charWidth, charHeight;
+	surface()->GetTextSize(m_hFontBuildInfo, L"a", charWidth, charHeight);
+
+	const int x = xpos + 0.1f * charWidth;
+	const int y = ypos - charHeight;
+
+	// DIY text shadow for contrast
+	surface()->DrawSetTextColor(COLOR_BLACK);
+	surface()->DrawSetTextPos(x + 2, y + 2);
+	surface()->DrawPrintText(m_wszBuildInfo, ARRAYSIZE(m_wszBuildInfo) - 1);
+
+	surface()->DrawSetTextColor(COLOR_WHITE);
+	surface()->DrawSetTextPos(x, y);
+	surface()->DrawPrintText(m_wszBuildInfo, ARRAYSIZE(m_wszBuildInfo) - 1);
 }
 
 void CNEOHud_HTA::DrawHTA() const
@@ -213,6 +239,8 @@ void CNEOHud_HTA::DrawHTA() const
 
 void CNEOHud_HTA::DrawNeoHudElement()
 {
+	DrawBuildInfo(); // Always draw build info
+
 	if (!ShouldDraw())
 	{
 		return;
