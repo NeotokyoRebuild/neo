@@ -160,6 +160,7 @@ COMPILE_TIME_ASSERT(NEO_ASSAULT_CROUCH_SPEED == NEO_SUPPORT_CROUCH_SPEED);
 #define NEO_ANIMSTATE_MAX_BODY_YAW_DEGREES 90.0f
 
 static constexpr float NEO_ZOOM_SPEED = 0.115f;
+static_assert(NEO_ZOOM_SPEED != 0.0f, "Divide by zero");
 
 enum NeoSkin {
 	NEO_SKIN_FIRST = 0,
