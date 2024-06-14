@@ -190,19 +190,20 @@ const char *gibs[NEO_GIB_ENUM_COUNT * NEO_SKIN_ENUM_COUNT * numClasses * numTeam
 	"models/player/mhm3_dead_rleg.mdl"
 };
 
-const char* gibLimbs[(NEO_GIB_LIMB_ENUM_COUNT * numClasses * numTeams) + NEO_GIB_LIMB_ENUM_COUNT]{ // nsf recons have two gib limb varieties (male and female)
+// nsf recons have two gib limb varieties (male and female)
+static const char* gibLimbs[(NEO_GIB_LIMB_ENUM_COUNT * numClasses * numTeams) + NEO_GIB_LIMB_ENUM_COUNT] {
 	///////////////
 	// NSF start //
 	///////////////
 
-	// Recon 
+	// Recon (male)
 	"models/player/playergib/gsf3_head_gib.mdl",
 	"models/player/playergib/gsf3_leftArm_gib.mdl",
 	"models/player/playergib/gsf3_leftLeg_gib.mdl",
 	"models/player/playergib/gsf3_rightArm_gib.mdl",
 	"models/player/playergib/gsf3_rightLeg_gib.mdl",
 
-	// Recon
+	// Recon (female)
 	"models/player/playergib/gsf_head_gib.mdl",
 	"models/player/playergib/gsf_leftArm_gib.mdl",
 	"models/player/playergib/gsf_leftLeg_gib.mdl",
@@ -487,6 +488,7 @@ const char* CNEOModelManager::GetCorpseModel(NeoSkin nSkin, NeoClass nClass,
 const char* CNEOModelManager::GetGibModel(NeoSkin nSkin, NeoClass nClass,
 	int iTeam, NeoGibLimb nGib) const
 {
+	// NEO FIXME (Rain): Shouldn't we get the "models/nt/vipgib..." variants here?
 	if (nClass == NEO_CLASS_VIP)
 	{
 		return "models/player/playergib/gsf3_head_gib.mdl";
