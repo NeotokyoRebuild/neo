@@ -83,3 +83,27 @@ function(add_library_copy_and_symlink)
 
     set_source_files_properties(${PARSED_ARGS_TARGET}_copy_lib_command PROPERTIES SYMBOLIC "true")
 endfunction()
+
+add_custom_command(
+    OUTPUT
+        ${CMAKE_SOURCE_DIR}/../game/neo/resource/GameMenu.res
+        ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.h
+        ALL
+    COMMAND
+        ${CMAKE_COMMAND}
+            -D OS_BUILD=${CMAKE_SYSTEM_NAME}
+            -D COMPILER_ID=${CMAKE_CXX_COMPILER_ID}
+            -D COMPILER_VERSION=${CMAKE_CXX_COMPILER_VERSION}
+            -P ${CMAKE_SOURCE_DIR}/cmake/build_info.cmake
+    WORKING_DIRECTORY
+        ${CMAKE_SOURCE_DIR}
+)
+
+# rebuild GameMenu.res + neo_version_info.h every time
+add_custom_target(
+    get_build_info
+    ALL
+    DEPENDS
+        ${CMAKE_SOURCE_DIR}/../game/neo/resource/GameMenu.res
+        ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.h
+)
