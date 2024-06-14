@@ -43,7 +43,7 @@ ConVar neo_cl_hud_debug_ammo_color_a("neo_cl_hud_debug_ammo_color_a", "255", FCV
 	"Alpha color value of the ammo, in range 0 - 255.", true, 0.0f, true, 255.0f);
 
 CNEOHud_Ammo::CNEOHud_Ammo(const char* pElementName, vgui::Panel* parent)
-	: CHudElement(pElementName), Panel(parent, pElementName)
+	: CHudElement(pElementName), EditablePanel(parent, pElementName)
 {
 	SetAutoDelete(true);
 
@@ -60,23 +60,9 @@ CNEOHud_Ammo::CNEOHud_Ammo(const char* pElementName, vgui::Panel* parent)
 		SetParent(g_pClientMode->GetViewport());
 	}
 
-	// NEO HACK (Rain): this is kind of awkward, we should get the handle on ApplySchemeSettings
-	vgui::IScheme* scheme = vgui::scheme()->GetIScheme(neoscheme);
-	if (!scheme) {
-		Assert(scheme);
-		Error("CNEOHud_Ammo: Failed to load neoscheme\n");
-	}
-
-	m_hSmallTextFont = scheme->GetFont("NHudOCRSmall");
-	m_hBulletFont = scheme->GetFont("NHudBullets");
-	m_hTextFont = scheme->GetFont("NHudOCR");
-
-	InvalidateLayout();
-
 	SetVisible(neo_cl_hud_ammo_enabled.GetBool());
 
 	SetHiddenBits(HIDEHUD_HEALTH | HIDEHUD_PLAYERDEAD | HIDEHUD_NEEDSUIT | HIDEHUD_WEAPONSELECTION);
-	engine->ClientCmd("hud_reloadscheme"); //NEO FIXME (Adam) this reloads the scheme of all elements, is there a way to do it just for this one?
 }
 
 void CNEOHud_Ammo::Paint()
@@ -93,6 +79,14 @@ void CNEOHud_Ammo::UpdateStateForNeoHudElementDraw()
 void CNEOHud_Ammo::ApplySchemeSettings(vgui::IScheme* pScheme)
 {
 	BaseClass::ApplySchemeSettings(pScheme);
+
+	LoadControlSettings("scripts/HudLayout.res");
+
+	m_hSmallTextFont = pScheme->GetFont("NHudOCRSmall");
+	m_hBulletFont = pScheme->GetFont("NHudBullets");
+	m_hTextFont = pScheme->GetFont("NHudOCR");
+
+	InvalidateLayout();
 
 	surface()->GetScreenSize(m_resX, m_resY);
 	SetBounds(0, 0, m_resX, m_resY);
