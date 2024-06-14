@@ -492,11 +492,17 @@ const char* CNEOModelManager::GetGibModel(NeoSkin nSkin, NeoClass nClass,
 		return "models/player/playergib/gsf3_head_gib.mdl";
 	}
 	
+	const auto isMaleNsfRecon = (nSkin == NEO_SKIN_THIRD) &&
+		(iTeam == TEAM_NSF) &&
+		(nClass == NEO_CLASS_RECON);
+
 	const int index =
 		(NEO_GIB_LIMB_ENUM_COUNT * numClasses * GetTeamArrOffset(iTeam))
 		+ (NEO_GIB_LIMB_ENUM_COUNT * nClass)
 		+ nGib
-		+ ((nSkin == 1 && nClass == 0 && GetTeamArrOffset(iTeam) == 0) ? 0 : NEO_GIB_LIMB_ENUM_COUNT); // If not male nsf recon, offset by 5
+		// Because the NSF recon has gender specific gibs,
+		// offset all gibs except the male NSF recon ones.
+		+ (isMaleNsfRecon ? 0 : NEO_GIB_LIMB_ENUM_COUNT);
 
 	if (index < 0 || index >= ARRAYSIZE(gibLimbs))
 	{
