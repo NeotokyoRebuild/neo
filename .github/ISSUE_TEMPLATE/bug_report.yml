@@ -14,7 +14,8 @@ body:
         **DO NOT** put in chatlogs and instead formulate them into detailed
         description and reproduction steps.
 
-        Fill in the title after the **[BUG]** tag.
+        Fill in the title after the **[BUG]** tag and make sure it's
+        in the **"current state of things"** wording.
   - type: input
     id: build
     attributes:
@@ -22,7 +23,8 @@ body:
       description: |
         Which build this bug is seen? Replace [DATE] with YYYYMMDD
         and [GIT HASH] with the Git short hash the build was built on.
-        The main menu will show the build's date and Git hash.
+        Both the main menu and `neo_version` command can be used to
+        retrieve this information.
       placeholder: "[DATE]_[GIT HASH] (EX: 20240609_759f6e5)"
     validations:
       required: true
@@ -68,7 +70,7 @@ body:
     id: machine_os
     attributes:
       label: Operating System
-      description: "You may select more than one."
+      description: "You may select more than one, select only the operating systems this bug has been replicated on."
       options:
         - label: Windows
         - label: Linux
@@ -78,22 +80,36 @@ body:
     id: machine_os_detail
     attributes:
       label: Version/Distro
-      description: "Detailed info about the OS itself."
-      placeholder: "For Windows: EX: 10 or 11; For Linux: EX: Arch, Debian, Fedora, SteamOS, etc..."
+      description: "Distribution and version of the OS itself."
+      placeholder: "For Windows: EX: 10 or 11; For Linux: EX: Arch, Debian 12, Fedora 40, SteamOS, etc..."
     validations:
       required: true
   - type: input
     id: machine_cpu
     attributes:
       label: Machine's CPU
-      description: "If applicable, put in CPU info."
+      description: "If applicable, put in the model of the CPU."
       placeholder: "EX: Intel i5-4670k, AMD Ryzen 7500f, Intel Xeon E3-1275 v3, etc..."
   - type: input
     id: machine_gpu
     attributes:
       label: Machine's GPU
-      description: "If applicable, put in GPU info."
+      description: "If applicable, put in the model of the GPU."
       placeholder: "EX: AMD RX 580, NVIDIA RTX 4070, Intel iGPU, AMD APU, etc..."
+  - type: input
+    id: gpu_driver
+    attributes:
+      label: GPU's driver
+      description: "If applicable, put in the driver for the GPU."
+      placeholder: "EX: NVIDIA 555.99, AMD Adrenalin 24.5.1, Mesa, etc..."
+  - type: input
+    id: build_compiler
+    attributes:
+      label: Build's compiler
+      description: |
+        If applicable, put in the compiler the build is built on. This information
+        can be retrieved using the `neo_version` command.
+      placeholder: "EX: GNU 10.3.0, MSVC 19.39.33523.0, etc..."
   - type: textarea
     id: additional_info
     attributes:
