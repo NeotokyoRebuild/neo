@@ -202,18 +202,14 @@ public:
 	virtual bool CanBePickedUpByClass(int classId);
 	virtual bool CanDrop(void);
 
+	virtual void SetPickupTouch(void) override;
+
 #ifdef CLIENT_DLL
 	virtual bool Holster(CBaseCombatWeapon* pSwitchingTo);
 	virtual void ItemHolsterFrame() OVERRIDE;
 #endif
 
 	virtual bool Deploy(void);
-
-	// NEO HACK/FIXME (Rain):
-	// We override with empty implementation to avoid getting removed by
-	// some game logic somewhere. There's probably some flag we could set
-	// somewhere to achieve the same without having to do this.
-	virtual void SUB_Remove(void) { }
 
 	virtual float GetFireRate(void) OVERRIDE { Assert(false); return BaseClass::GetFireRate(); } // Should never call this base class; override in children.
 	virtual bool GetRoundChambered() const { return 0; }
