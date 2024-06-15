@@ -12,7 +12,6 @@ class C_NEO_Player;
 #include "neo_player_shared.h"
 
 class C_NEOPredictedViewModel;
-class CNeoHudElements;
 class INEOPlayerAnimState;
 
 class C_NEO_Player : public C_HL2MP_Player
@@ -226,8 +225,6 @@ private:
 	bool m_bPreviouslyReloading;
 	bool m_bPreviouslyPreparingToHideMsg;
 	bool m_bIsAllowedToToggleVision;
-
-	CNeoHudElements *m_pNeoPanel;
 
 	INEOPlayerAnimState* m_pPlayerAnimState;
 
