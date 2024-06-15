@@ -714,11 +714,14 @@ bool C_BasePlayer::IsValidObserverTarget(CBaseEntity* target)
 	{
 		switch (mp_forcecamera.GetInt())
 		{
-		case OBS_ALLOW_ALL:	break;
-		case OBS_ALLOW_TEAM:	if (GetTeamNumber() != target->GetTeamNumber())
-			return false;
+		case OBS_ALLOW_ALL:
 			break;
-		case OBS_ALLOW_NONE:	return false;
+		case OBS_ALLOW_TEAM:
+			if (GetTeamNumber() != target->GetTeamNumber())
+				return false;
+			break;
+		case OBS_ALLOW_NONE:
+			return false;
 		}
 	}
 
