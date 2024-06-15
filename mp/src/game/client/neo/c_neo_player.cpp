@@ -540,33 +540,15 @@ int C_NEO_Player::GetAttackerHits(const int attackerIdx) const
 	return m_rfAttackersHits.Get(attackerIdx);
 }
 
-int C_NEO_Player::DrawModel( int flags )
+int C_NEO_Player::DrawModel(int flags)
 {
-	// Do cloak if cloaked
-	if (IsCloaked())
-	{
-		IMaterial *pass = materials->FindMaterial("dev/toc_cloakpass", TEXTURE_GROUP_CLIENT_EFFECTS);
-		Assert(pass && !pass->IsErrorMaterial());
-
-		if (pass && !pass->IsErrorMaterial())
-		{
-			//const int extraFlags = STUDIO_RENDER | STUDIO_TRANSPARENCY | STUDIO_NOSHADOWS | STUDIO_DRAWTRANSLUCENTSUBMODELS;
-			modelrender->ForcedMaterialOverride(pass);
-			const int ret = BaseClass::DrawModel(flags /*| extraFlags*/);
-			modelrender->ForcedMaterialOverride(NULL);
-
-			return ret;
-		}
-	}
-
 	int ret = BaseClass::DrawModel(flags);
 
 	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if (pLocalPlayer && pLocalPlayer->IsInVision())
 	{
-#define SPEED_BETWEEN_WALK_AND_RUN ((NEO_ASSAULT_WALK_SPEED + NEO_ASSAULT_NORM_SPEED) / 2.0)
-		if ((pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT) &&
-			(GetAbsVelocity().Length() >= SPEED_BETWEEN_WALK_AND_RUN))
+		auto vel = GetAbsVelocity().Length2D();
+		if ((pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT) && vel > 1)
 		{
 			IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
 			Assert(pass && !pass->IsErrorMaterial());
@@ -577,31 +559,11 @@ int C_NEO_Player::DrawModel( int flags )
 				modelrender->ForcedMaterialOverride(pass);
 				ret = BaseClass::DrawModel(flags | STUDIO_RENDER | STUDIO_TRANSPARENCY);
 				modelrender->ForcedMaterialOverride(NULL);
-#if(0)
-				// Send to mv buffer
-				static int bufferIdx = 0;
-				const int numBuffers = 2;
-				ITexture* pVM_Buffer = GetMVBuffer(bufferIdx);
-				bufferIdx = (bufferIdx + 1) % numBuffers;
-				Assert(pVM_Buffer && !pVM_Buffer->IsError());
 
-				ITexture* pSrc = materials->FindTexture("_rt_FullFrameFB", TEXTURE_GROUP_RENDER_TARGET);
-				Assert(pSrc && !pSrc->IsError());
-
-				const int nSrcWidth = pSrc->GetActualWidth();
-				const int nSrcHeight = pSrc->GetActualHeight();
-				Rect_t DestRect{ 0, 0, nSrcWidth, nSrcHeight };
-
-				CMatRenderContextPtr pRenderContext(materials);
-				pRenderContext->CopyRenderTargetToTextureEx(pVM_Buffer, 0, &DestRect, NULL);
-
-				// Render without effect
-				//ret = BaseClass::DrawModel(flags);
-				rendered = false;
-#endif
+				return ret;
 			}
 		}
-		else if (pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT)
+		else if (pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT && !IsCloaked())
 		{
 			IMaterial* pass = materials->FindMaterial("dev/thermal_third", TEXTURE_GROUP_MODEL);
 			Assert(pass && !pass->IsErrorMaterial());
@@ -612,7 +574,23 @@ int C_NEO_Player::DrawModel( int flags )
 				modelrender->ForcedMaterialOverride(pass);
 				ret = BaseClass::DrawModel(flags | STUDIO_RENDER | STUDIO_TRANSPARENCY);
 				modelrender->ForcedMaterialOverride(NULL);
+
+				return ret;
 			}
+		}
+	}
+	
+	if (IsCloaked())
+	{
+		IMaterial* pass = materials->FindMaterial("dev/toc_cloakpass", TEXTURE_GROUP_CLIENT_EFFECTS);
+		Assert(pass && !pass->IsErrorMaterial());
+
+		if (pass && !pass->IsErrorMaterial())
+		{
+			//const int extraFlags = STUDIO_RENDER | STUDIO_TRANSPARENCY | STUDIO_NOSHADOWS | STUDIO_DRAWTRANSLUCENTSUBMODELS;
+			modelrender->ForcedMaterialOverride(pass);
+			ret = BaseClass::DrawModel(flags /*| extraFlags*/);
+			modelrender->ForcedMaterialOverride(NULL);
 		}
 	}
 
