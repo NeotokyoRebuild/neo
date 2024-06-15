@@ -14,8 +14,6 @@
 #include <engine/ivdebugoverlay.h>
 #include "ienginevgui.h"
 
-#include "neo_hud_elements.h"
-
 #include "c_team.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -39,6 +37,8 @@ ConVar neo_cl_hud_debug_compass_color_b("neo_cl_hud_debug_compass_color_b", "205
 	"Blue value of the Debug compass, in range 0 - 255.", true, 0.0f, true, 255.0f);
 ConVar neo_cl_hud_debug_compass_color_a("neo_cl_hud_debug_compass_color_a", "255", FCVAR_USERINFO | FCVAR_CHEAT,
 	"Alpha color value of the Debug compass, in range 0 - 255.", true, 0.0f, true, 255.0f);
+
+DECLARE_NAMED_HUDELEMENT(CNEOHud_Compass, UI_ELEMENT_NAME_COMPASS);
 
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(Compass, 0.00695)
 

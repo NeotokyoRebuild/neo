@@ -8,14 +8,12 @@
 #include "hudelement.h"
 #include <vgui_controls/EditablePanel.h>
 
-class CNeoHudElements;
-
 class CNEOHud_Ammo : public CNEOHud_ChildElement, public CHudElement, public vgui::EditablePanel
 {
 	DECLARE_CLASS_SIMPLE(CNEOHud_Ammo, EditablePanel);
 
 public:
-	CNEOHud_Ammo(const char* pElementName, vgui::Panel* parent);
+	CNEOHud_Ammo(const char *pElementName, vgui::Panel *parent = nullptr);
 
 	virtual ~CNEOHud_Ammo() { }
 

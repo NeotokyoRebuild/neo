@@ -12,6 +12,10 @@
 
 using namespace vgui;
 
+#ifdef NEO
+DECLARE_NAMED_HUDELEMENT(CTargetID, UI_ELEMENT_TARGET_ID);
+#endif
+
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------

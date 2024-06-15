@@ -13,8 +13,6 @@
 #include <engine/ivdebugoverlay.h>
 #include "ienginevgui.h"
 
-#include "neo_hud_elements.h"
-
 #include "ammodef.h"
 
 #include "weapon_ghost.h"
@@ -25,8 +23,6 @@
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
-
-NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(Ammo, 0.00695);
 
 using vgui::surface;
 
@@ -41,6 +37,10 @@ ConVar neo_cl_hud_debug_ammo_color_b("neo_cl_hud_debug_ammo_color_b", "205", FCV
 	"Blue value of the ammo, in range 0 - 255.", true, 0.0f, true, 255.0f);
 ConVar neo_cl_hud_debug_ammo_color_a("neo_cl_hud_debug_ammo_color_a", "255", FCVAR_USERINFO | FCVAR_CHEAT,
 	"Alpha color value of the ammo, in range 0 - 255.", true, 0.0f, true, 255.0f);
+
+DECLARE_NAMED_HUDELEMENT(CNEOHud_Ammo, UI_ELEMENT_NAME_AMMO);
+
+NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(Ammo, 0.00695);
 
 CNEOHud_Ammo::CNEOHud_Ammo(const char* pElementName, vgui::Panel* parent)
 	: CHudElement(pElementName), EditablePanel(parent, pElementName)

@@ -25,6 +25,8 @@
 
 using vgui::surface;
 
+DECLARE_NAMED_HUDELEMENT(CNEOHud_RoundState, UI_ELEMENT_ROUND_STATE);
+
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(RoundState, 0.1)
 
 CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *parent)
