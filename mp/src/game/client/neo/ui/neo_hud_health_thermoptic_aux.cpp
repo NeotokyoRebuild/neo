@@ -13,18 +13,19 @@
 #include <engine/ivdebugoverlay.h>
 #include "ienginevgui.h"
 
-#include "neo_hud_elements.h"
 #include "neo_version_info.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(HTA, 0.00695);
-
 using vgui::surface;
 
 ConVar neo_cl_hud_hta_enabled("neo_cl_hud_hta_enabled", "1", FCVAR_USERINFO,
 	"Whether the HUD Health/ThermOptic/AUX module is enabled or not.", true, 0, true, 1);
+
+DECLARE_NAMED_HUDELEMENT(CNEOHud_HTA, UI_ELEMENT_NAME_HTA);
+
+NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(HTA, 0.00695);
 
 CNEOHud_HTA::CNEOHud_HTA(const char* pElementName, vgui::Panel* parent)
 	: CHudElement(pElementName), EditablePanel(parent, pElementName)

@@ -25,7 +25,6 @@
 #include "ui/neo_hud_game_event.h"
 #include "ui/neo_hud_ghost_marker.h"
 #include "ui/neo_hud_friendly_marker.h"
-#include "ui/neo_hud_elements.h"
 
 #include "neo/game_controls/neo_loadoutmenu.h"
 
@@ -424,8 +423,6 @@ C_NEO_Player::C_NEO_Player()
 	m_bInAim = false;
 	m_bDroppedAnything = false;
 	m_bInLean = NEO_LEAN_NONE;
-
-	m_pNeoPanel = NULL;
 
 	m_flCamoAuxLastTime = 0;
 	m_nVisionLastTick = 0;
@@ -896,68 +893,55 @@ void C_NEO_Player::PreThink( void )
 		engine->ClientCmd(teammenu.GetName());
 	}
 
-	// NEO TODO (Rain): marker should be responsible for its own vis control instead
-	CNEOHud_GhostMarker *ghostMarker = NULL;
-	if (m_pNeoPanel)
+	if (auto *ghostMarker = GET_NAMED_HUDELEMENT(CNEOHud_GhostMarker, UI_ELEMENT_NAME_GHOST_MARKER))
 	{
-		m_pNeoPanel->SetLastUpdater(this);
-
-		ghostMarker = m_pNeoPanel->GetGhostMarker();
-
-		if (ghostMarker)
+		if (!m_bGhostExists)
 		{
-			if (!m_bGhostExists)
-			{
-				ghostMarker->SetVisible(false);
+			ghostMarker->SetVisible(false);
+		}
+		else
+		{
+			const float distance = METERS_PER_INCH *
+				GetAbsOrigin().DistTo(m_vecGhostMarkerPos);
 
-				//m_pGhostMarker->SetVisible(false);
+			if (!IsCarryingGhost())
+			{
+				ghostMarker->SetVisible(true);
+
+				int ghostMarkerX, ghostMarkerY;
+				GetVectorInScreenSpace(m_vecGhostMarkerPos, ghostMarkerX, ghostMarkerY);
+
+				ghostMarker->SetScreenPosition(ghostMarkerX, ghostMarkerY);
+				ghostMarker->SetGhostingTeam(NEORules()->ghosterTeam());
+				ghostMarker->SetClientCurrentTeam(GetTeamNumber());
+				ghostMarker->SetGhostDistance(distance);
 			}
 			else
 			{
-				const float distance = METERS_PER_INCH *
-					GetAbsOrigin().DistTo(m_vecGhostMarkerPos);
-
-				if (!IsCarryingGhost())
-				{
-					ghostMarker->SetVisible(true);
-
-					int ghostMarkerX, ghostMarkerY;
-					GetVectorInScreenSpace(m_vecGhostMarkerPos, ghostMarkerX, ghostMarkerY);
-
-					ghostMarker->SetScreenPosition(ghostMarkerX, ghostMarkerY);
-					ghostMarker->SetGhostingTeam(NEORules()->ghosterTeam());
-					ghostMarker->SetClientCurrentTeam(GetTeamNumber());
-					ghostMarker->SetGhostDistance(distance);
-				}
-				else
-				{
-					ghostMarker->SetVisible(false);
-				}
+				ghostMarker->SetVisible(false);
 			}
 		}
-		else
+	}
+	else
+	{
+		Warning("Couldn't find ghostMarker\n");
+	}
+
+	if (auto *indicator = GET_HUDELEMENT(CNEOHud_GameEvent))
+	{
+		if (m_bShowTestMessage)
 		{
-			Warning("Couldn't find ghostMarker\n");
+			indicator->SetMessage(m_pszTestMessage, sizeof(m_pszTestMessage));
 		}
 
-		auto indicator = GET_HUDELEMENT(CNEOHud_GameEvent);
-
-		if (indicator)
+		if (indicator->IsVisible() != m_bShowTestMessage)
 		{
-			if (m_bShowTestMessage)
-			{
-				indicator->SetMessage(m_pszTestMessage, sizeof(m_pszTestMessage));
-			}
-
-			if (indicator->IsVisible() != m_bShowTestMessage)
-			{
-				indicator->SetVisible(m_bShowTestMessage);
-			}
+			indicator->SetVisible(m_bShowTestMessage);
 		}
-		else
-		{
-			Warning("Couldn't find GameEventIndicator\n");
-		}
+	}
+	else
+	{
+		Warning("Couldn't find GameEventIndicator\n");
 	}
 }
 
@@ -1179,23 +1163,6 @@ void C_NEO_Player::Spawn( void )
 	if (GetTeamNumber() == TEAM_UNASSIGNED)
 	{
 		m_bShowTeamMenu = true;
-	}
-
-	// NEO TODO (Rain): UI elements should do this themselves
-	if (!m_pNeoPanel)
-	{
-		m_pNeoPanel = dynamic_cast<CNeoHudElements*>
-			(GetClientModeNormal()->GetViewport()->FindChildByName(PANEL_NEO_HUD));
-
-		if (!m_pNeoPanel)
-		{
-			Assert(false);
-			Warning("Couldn't find CNeoHudElements panel\n");
-		}
-		else
-		{
-			m_pNeoPanel->ShowPanel(true);
-		}
 	}
 
 #if(0)

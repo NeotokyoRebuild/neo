@@ -9,8 +9,6 @@
 #include "neo_hud_childelement.h"
 #include "vgui_controls/Panel.h"
 
-class CNeoHudElements;
-
 abstract_class CNEOHud_WorldPosMarker : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
 {
     DECLARE_CLASS_SIMPLE(CNEOHud_WorldPosMarker, Panel)

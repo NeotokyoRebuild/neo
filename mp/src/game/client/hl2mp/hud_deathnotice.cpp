@@ -18,7 +18,6 @@
 #include "c_team.h"
 
 #ifdef NEO
-#include "../neo/ui/neo_hud_elements.h"
 #include "../neo/ui/neo_hud_game_event.h"
 #include "neo_player_shared.h"
 #include "spectatorgui.h"

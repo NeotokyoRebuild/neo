@@ -36,7 +36,6 @@
 #define PANEL_COMMENTARY_MODELVIEWER	"commentary_modelviewer"
 
 #ifdef NEO
-#define PANEL_NEO_HUD "neo_hud"
 #define PANEL_NEO_LOADOUT "neo_loadoutmenu"
 #endif
 
