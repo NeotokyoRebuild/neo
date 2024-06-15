@@ -5,6 +5,8 @@
 
 #ifdef GAME_DLL
 #include "player.h"
+
+extern ConVar weaponstay;
 #endif
 
 #include "basecombatweapon_shared.h"
@@ -620,4 +622,32 @@ bool CNEOBaseCombatWeapon::CanBePickedUpByClass(int classId)
 bool CNEOBaseCombatWeapon::CanDrop()
 {
 	return true;
+}
+
+void CNEOBaseCombatWeapon::SetPickupTouch(void)
+{
+#if GAME_DLL
+	SetTouch(&CBaseCombatWeapon::DefaultTouch);
+
+	// Ghosts should never get removed by deferred think tick,
+	// regardless of whether other kinds of guns remain in the world.
+	if (IsGhost())
+	{
+		return;
+	}
+
+	if (!weaponstay.GetBool())
+	{
+		BaseClass::SetPickupTouch();
+		return;
+	}
+
+	// If we previously scheduled a removal, but the cvar was changed before it fired,
+	// cancel that scheduled removal.
+	if (this->m_pfnThink == &CBaseEntity::SUB_Remove)
+	{
+		SetNextThink(TICK_NEVER_THINK);
+		SetThink(NULL);
+	}
+#endif
 }

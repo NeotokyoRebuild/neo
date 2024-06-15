@@ -21,6 +21,8 @@
 	#include "hl2mp_gameinterface.h"
 	#include "player_resource.h"
 	#include "inetchannelinfo.h"
+
+extern ConVar weaponstay;
 #endif
 
 ConVar mp_neo_loopback_warmup_round("mp_neo_loopback_warmup_round", "0", FCVAR_REPLICATED, "Allow loopback server to do warmup rounds.", true, 0.0f, true, 1.0f);
@@ -224,6 +226,22 @@ static inline void FireLegacyEvent_NeoRoundEnd()
 #endif
 }
 
+#ifdef GAME_DLL
+static void CvarChanged_WeaponStay(IConVar* convar, const char* pOldVal, float flOldVal)
+{
+	auto wep = gEntList.NextEntByClass((CNEOBaseCombatWeapon*)NULL);
+	while (wep)
+	{
+		// Don't schedule removal for guns currently held by someone
+		if (!wep->GetOwner())
+		{
+			wep->SetPickupTouch();
+		}
+		wep = gEntList.NextEntByClass(wep);
+	}
+}
+#endif
+
 CNEORules::CNEORules()
 {
 #ifdef GAME_DLL
@@ -255,10 +273,17 @@ CNEORules::CNEORules()
 	m_iGhosterPlayer = 0;
 
 	ListenForGameEvent("round_start");
+
+#ifdef GAME_DLL
+	weaponstay.InstallChangeCallback(CvarChanged_WeaponStay);
+#endif
 }
 
 CNEORules::~CNEORules()
 {
+#ifdef GAME_DLL
+	weaponstay.InstallChangeCallback(nullptr);
+#endif
 }
 
 #ifdef GAME_DLL
@@ -958,11 +983,6 @@ void CNEORules::CreateStandardEntities(void)
 		CBaseEntity::Create("neo_gamerules", vec3_origin, vec3_angle);
 	Assert(pEnt);
 #endif
-}
-
-int CNEORules::WeaponShouldRespawn(CBaseCombatWeapon *pWeapon)
-{
-	return GR_NONE;
 }
 
 const char *CNEORules::GetGameDescription(void)

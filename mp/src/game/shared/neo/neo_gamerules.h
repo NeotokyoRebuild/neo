@@ -133,8 +133,6 @@ public:
 	virtual void Think( void ) OVERRIDE;
 	virtual void CreateStandardEntities( void ) OVERRIDE;
 
-	virtual int WeaponShouldRespawn(CBaseCombatWeapon* pWeapon) OVERRIDE;
-
 	virtual const char *GetGameDescription( void ) OVERRIDE;
 	virtual const CViewVectors* GetViewVectors() const OVERRIDE;
 
