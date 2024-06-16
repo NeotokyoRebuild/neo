@@ -32,17 +32,20 @@ void FinishClientPutInServer( CNEO_Player *pPlayer )
 {
 	// NEO NOTE (nullsystem): CNEORules::ClientConnected is done before even CNEO_Player is
 	// created, so that's why this is here and not in CNEORules
-	const CSteamID steamID = GetSteamIDForPlayerIndex(pPlayer->entindex());
-	if (steamID.IsValid())
+	if (neo_sv_player_restore.GetBool())
 	{
-		const uint32 accountID = steamID.GetAccountID();
-		const auto &restoredInfos = NEORules()->m_pRestoredInfos;
-		if (const auto hdl = restoredInfos.Find(accountID); restoredInfos.IsValidHandle(hdl))
+		const CSteamID steamID = GetSteamIDForPlayerIndex(pPlayer->entindex());
+		if (steamID.IsValid())
 		{
-			const CNEORules::RestoreInfo &restoreInfo = restoredInfos.Element(hdl);
-			pPlayer->m_iXP.Set(restoreInfo.xp);
-			pPlayer->SetDeathCount(restoreInfo.deaths);
-			ClientPrint(pPlayer, HUD_PRINTTALK, "Your XP and death count restored!\n");
+			const uint32 accountID = steamID.GetAccountID();
+			const auto &restoredInfos = NEORules()->m_pRestoredInfos;
+			if (const auto hdl = restoredInfos.Find(accountID); restoredInfos.IsValidHandle(hdl))
+			{
+				const CNEORules::RestoreInfo &restoreInfo = restoredInfos.Element(hdl);
+				pPlayer->m_iXP.Set(restoreInfo.xp);
+				pPlayer->SetDeathCount(restoreInfo.deaths);
+				ClientPrint(pPlayer, HUD_PRINTTALK, "Your XP and death count restored!\n");
+			}
 		}
 	}
 

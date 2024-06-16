@@ -84,6 +84,8 @@ class CNEO_Player;
 class C_NEO_Player;
 #endif
 
+extern ConVar neo_sv_player_restore;
+
 enum NeoRoundStatus {
 	Idle = 0,
 	Warmup,
