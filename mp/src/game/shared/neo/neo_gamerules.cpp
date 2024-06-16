@@ -266,12 +266,7 @@ CNEORules::CNEORules()
 	ResetGhostCapPoints();
 #endif
 
-	m_flNeoRoundStartTime = m_flNeoNextRoundStartTime = 0;
-	SetRoundStatus(NeoRoundStatus::Idle);
-	m_iRoundNumber = 0;
-	m_iGhosterTeam = TEAM_UNASSIGNED;
-	m_iGhosterPlayer = 0;
-
+	ResetMapSessionCommon();
 	ListenForGameEvent("round_start");
 
 #ifdef GAME_DLL
@@ -414,17 +409,23 @@ bool CNEORules::ShouldCollide(int collisionGroup0, int collisionGroup1)
 
 extern ConVar mp_chattime;
 
-#ifdef GAME_DLL
-void CNEORules::ChangeLevel(void)
+void CNEORules::ResetMapSessionCommon()
 {
 	SetRoundStatus(NeoRoundStatus::Idle);
 	m_iRoundNumber = 0;
 	m_iGhosterTeam = TEAM_UNASSIGNED;
 	m_iGhosterPlayer = 0;
-	m_flNeoRoundStartTime = 0;
-	m_flNeoNextRoundStartTime = 0;
+	m_flNeoRoundStartTime = 0.0f;
+	m_flNeoNextRoundStartTime = 0.0f;
+#ifdef GAME_DLL
 	m_pRestoredInfos.Purge();
+#endif
+}
 
+#ifdef GAME_DLL
+void CNEORules::ChangeLevel(void)
+{
+	ResetMapSessionCommon();
 	BaseClass::ChangeLevel();
 }
 
@@ -437,12 +438,7 @@ bool CNEORules::CheckGameOver(void)
 
 	if (gameOver)
 	{
-		SetRoundStatus(NeoRoundStatus::Idle);
-		m_iRoundNumber = 0;
-		m_iGhosterTeam = TEAM_UNASSIGNED;
-		m_iGhosterPlayer = 0;
-		m_flNeoRoundStartTime = 0;
-		m_flNeoNextRoundStartTime = 0;
+		ResetMapSessionCommon();
 	}
 
 	return gameOver;
@@ -930,6 +926,10 @@ void CNEORules::StartNextRound()
 	m_flIntermissionEndTime = 0;
 	m_flRestartGameTime = 0;
 	m_bCompleteReset = false;
+	if (clearXP)
+	{
+		m_pRestoredInfos.Purge();
+	}
 
 	IGameEvent *event = gameeventmanager->CreateEvent("round_start");
 	if (event)
@@ -1247,12 +1247,8 @@ void CNEORules::RestartGame()
 	m_flIntermissionEndTime = 0;
 	m_flRestartGameTime = 0.0;
 	m_bCompleteReset = false;
-	m_iRoundNumber = 0;
-	m_iGhosterTeam = TEAM_UNASSIGNED;
-	m_flNeoNextRoundStartTime = FLT_MAX;
-	m_flNeoRoundStartTime = FLT_MAX;
 
-	SetRoundStatus(NeoRoundStatus::Idle);
+	ResetMapSessionCommon();
 
 	IGameEvent * event = gameeventmanager->CreateEvent("round_start");
 	if (event)

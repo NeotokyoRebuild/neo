@@ -254,6 +254,8 @@ public:
 #endif
 
 private:
+	void ResetMapSessionCommon();
+
 #ifdef GAME_DLL
 	CUtlVector<int> m_pGhostCaps;
 #endif
