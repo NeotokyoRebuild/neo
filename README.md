@@ -218,11 +218,11 @@ Now you have a dedicated server setup for NT;RE. To run it, you will need to be 
 #### Dedicated Server on Windows
 These instructions were tested on Windows Server 2016 and Windows 11 machines, they will probably work in all Windows versions.
 1. Install SteamCMD following these instructions: [LINK](https://developer.valvesoftware.com/wiki/SteamCMD#Windows)
-2. Choose a location for your server to be installed into, for example, `C:\NeotokyoServer\`, and create it. (In my case SteamCMD was also in this location)
+2. Choose a location for your server to be installed into, for example, `C:\NeotokyoServer\`, and create it. (In this case SteamCMD is also installed in this location)
 3. Run SteamCMD: `steamcmd.exe`
-4. Enter the following commands in SteamCMD (Note that you need to use an absolute path for the install dir):
+4. Enter the following commands in SteamCMD:
     ```
-    force_install_dir <YOUR_LOCATION>\ognt\
+    force_install_dir .\ognt\
     login anonymous
     app_update 313600 validate
     (wait for it to install)
@@ -230,23 +230,22 @@ These instructions were tested on Windows Server 2016 and Windows 11 machines, t
     ```
 5. Run SteamCMD again, and enter these commands:
     ```
-    force_install_dir <YOUR_LOCATION>\ntrebuild\
+    force_install_dir .\ntrebuild\
     (this will be the main directory of your server)
     login anonymous
     app_update 244310 validate
     (wait for it to install)
     quit
     ```
-6.  Copy all files from the latest release of NT;RE under `mp\game\neo\` into `<YOUR_LOCATION>\ognt\NeotokyoSource` and replace all existing files.
-7.  Extract the latest release of NT;RE into `<YOUR_LOCATION>\ntrebuild`, so you will have a directory `<YOUR_LOCATION>\ntrebuild\neo` with a `gameinfo.txt` inside.
-8. Allow all Inbound and Outbound TCP and UDP requests for the following ports via Windows Firewall. [See how](https://learn.microsoft.com/en-us/windows/security/operating-system-security/network-security/windows-firewall/configure#create-an-inbound-port-rule)
+6. Extract the latest release of NT;RE into `<YOUR_LOCATION>\ntrebuild`, so you will have a directory `<YOUR_LOCATION>\ntrebuild\neo` with a `gameinfo.txt` inside.
+7. Allow all Inbound and Outbound TCP and UDP requests for the following ports via Windows Firewall. [See how](https://learn.microsoft.com/en-us/windows/security/operating-system-security/network-security/windows-firewall/configure#create-an-inbound-port-rule)
     * 27015 TCP+UDP (you can keep the TCP port closed if you don't need RCON support)
     * 27020 UDP
     * 27005 UDP
     * 26900 UDP
-9. Your server should be ready to go, launch it inside your main directory (`...\ntrebuild\`) with the following command: (You can alter any argument to your liking, except `-game` and `-neopath`) 
+8. Your server should be ready to go, launch it inside your main directory (`(...)\ntrebuild\`) with the following command: (You can alter any argument to your liking, except `-game` and `-neopath`) 
 ```
-srcds.exe -game neo -neopath "<YOUR_LOCATION>\ognt\NeotokyoSource" +ip <YOUR_IP> -maxplayers <1-32> +map <MAP_NAME>
+srcds.exe -game neo -neopath "..\ognt\NeotokyoSource" +ip <YOUR_IP> -maxplayers <1-32> +map <MAP_NAME>
 ```
 
 ### Testers/Devs
