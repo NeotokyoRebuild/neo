@@ -2953,11 +2953,13 @@ void CBasePlayer::IncrementDeathCount( int nCount )
 	pl.deaths = m_iDeaths;
 }
 
+#ifdef NEO
 void CBasePlayer::SetDeathCount(int nCount)
 {
 	m_iDeaths = nCount;
 	pl.deaths = m_iDeaths;
 }
+#endif
 
 void CBasePlayer::AddPoints( int score, bool bAllowNegativeScore )
 {
