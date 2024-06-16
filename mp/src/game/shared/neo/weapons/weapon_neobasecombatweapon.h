@@ -211,7 +211,7 @@ public:
 
 	virtual bool Deploy(void);
 
-	virtual float GetFireRate() final;
+	virtual float GetFireRate() override final;
 	virtual bool GetRoundChambered() const { return 0; }
 	virtual bool GetRoundBeingChambered() const { return 0; }
 

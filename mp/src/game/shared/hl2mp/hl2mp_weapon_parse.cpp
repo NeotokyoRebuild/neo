@@ -81,7 +81,13 @@ void CHL2MPSWeaponInfo::Parse( KeyValues *pKeyValuesData, const char *szWeaponNa
 
 	// Get CycleTime AKA Fire-rate
 	m_flCycleTime = pKeyValuesData->GetFloat("CycleTime", 0.0f);
-	Assert(m_flCycleTime != 0.0f);
+#ifdef _DEBUG
+	const char *printName = pKeyValuesData->GetString("printname");
+	if (!V_strstr(printName, "#HL2"))
+	{
+		Assert(m_flCycleTime != 0.0f);
+	}
+#endif
 #endif
 }
 
