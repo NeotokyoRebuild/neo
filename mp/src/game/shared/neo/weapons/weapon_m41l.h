@@ -44,7 +44,7 @@ public:
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const OVERRIDE { return NEO_WEP_M41_L; }
 	virtual int GetNeoWepXPCost(const int neoClass) const OVERRIDE { return 0; }
 
-	virtual float GetSpeedScale(void) const OVERRIDE { return 145.0 / 170.0; }
+	virtual float GetSpeedScale(void) const OVERRIDE { return 116.0 / 136.0; }
 
 	void	UpdatePenaltyTime(void);
 

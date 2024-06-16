@@ -36,7 +36,7 @@ public:
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const OVERRIDE { return NEO_WEP_AA13; }
 	virtual int GetNeoWepXPCost(const int neoClass) const OVERRIDE { return 20; }
 
-	virtual float GetSpeedScale(void) const OVERRIDE { return 145.0 / 170.0; }
+	virtual float GetSpeedScale(void) const OVERRIDE { return 116.0 / 136.0; }
 
 	Activity GetPrimaryAttackActivity(void) OVERRIDE;
 	
