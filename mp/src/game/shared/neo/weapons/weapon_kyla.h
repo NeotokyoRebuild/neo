@@ -31,7 +31,7 @@ public:
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { return NEO_WEP_KYLA; }
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
 
-	virtual float GetSpeedScale(void) const { return 1.0; }
+	virtual float GetSpeedScale(void) const override { return 1.0; }
 
 	virtual float GetFireRate(void) OVERRIDE { return 0.35f; }
 protected:

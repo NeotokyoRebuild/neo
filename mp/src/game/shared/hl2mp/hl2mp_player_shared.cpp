@@ -430,29 +430,26 @@ void CPlayerAnimState::ComputePoseParam_BodyXY(void)
 		return;
 	}
 
-	const float speed = GetOuter()->GetLocalVelocity().Length2D();
-
-	float speedScale = clamp(
-		((speed / ((GetOuter()->GetFlags() & FL_DUCKING) ? NEO_RECON_CROUCH_SPEED : NEO_RECON_NORM_SPEED))),
-		0, 1);
+	auto* player = static_cast<CNEO_Player*>(GetOuter());
+	const float speed = player->GetLocalVelocity().Length2D();
+	const float speedScale = clamp(speed / player->GetCrouchSpeed(), 0.f, 1.f);
 
 	Vector eyeForward;
-	GetOuter()->EyeVectors(&eyeForward, NULL, NULL);
+	player->EyeVectors(&eyeForward, NULL, NULL);
 	Assert(eyeForward.IsValid());
-	Vector velocity = GetOuter()->GetLocalVelocity();
+	const Vector velocity = player->GetLocalVelocity();
 
 	Vector2D eyeForward2D = eyeForward.AsVector2D();
 	Vector2D velocity2D = velocity.AsVector2D();
-
 	eyeForward2D.NormalizeInPlace();
 	velocity2D.NormalizeInPlace();
 
-	float forwardDot = eyeForward2D[0] * velocity2D[0] + eyeForward2D[1] * velocity2D[1];
+	const float forwardDot = DotProduct2D(eyeForward2D, velocity2D);
 	Vector2D eyeRight2D = Vector2D(eyeForward2D[1], eyeForward2D[0] * -1); // eyeForward2D rotated by 90 degrees
-	float sideDot = eyeRight2D[0] * velocity2D[0] + eyeRight2D[1] * velocity2D[1];
+	const float sideDot = DotProduct2D(eyeRight2D, velocity2D);
 
-	float speed_x = speedScale * forwardDot;
-	float speed_y = speedScale * sideDot;	
+	const float speed_x = speedScale * forwardDot;
+	const float speed_y = speedScale * sideDot;
 
 	GetOuter()->SetPoseParameter(poseparam_move_x, speed_x);
 	GetOuter()->SetPoseParameter("move_y", speed_y);
