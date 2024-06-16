@@ -423,6 +423,7 @@ void CNEORules::ChangeLevel(void)
 	m_iGhosterPlayer = 0;
 	m_flNeoRoundStartTime = 0;
 	m_flNeoNextRoundStartTime = 0;
+	m_pRestoredInfos.Purge();
 
 	BaseClass::ChangeLevel();
 }
@@ -1961,6 +1962,19 @@ void CNEORules::ClientDisconnected(edict_t* pClient)
 			ghost->Drop(vec3_origin);
 			ghost->SetRemoveable(false);
 			pNeoPlayer->Weapon_Detach(ghost);
+		}
+
+		// Save XP/death counts
+		const CSteamID steamID = GetSteamIDForPlayerIndex(pNeoPlayer->entindex());
+		if (steamID.IsValid())
+		{
+			const uint32 accountID = steamID.GetAccountID();
+			const RestoreInfo restoreInfo{
+				.xp = pNeoPlayer->m_iXP.Get(),
+				.deaths = pNeoPlayer->DeathCount(),
+			};
+			m_pRestoredInfos.Remove(accountID); // Insert doesn't override so attempt remove first
+			m_pRestoredInfos.Insert(accountID, restoreInfo);
 		}
 	}
 

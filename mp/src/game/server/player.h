@@ -690,6 +690,9 @@ public:
 
 	void	ResetDeathCount();
 	void	IncrementDeathCount( int nCount );
+#ifdef NEO
+	void	SetDeathCount(int nCount); // Used only for restore
+#endif
 
 	void	SetArmorValue( int value );
 	void	IncrementArmorValue( int nCount, int nMaxValue = -1 );

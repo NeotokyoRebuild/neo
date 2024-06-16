@@ -2953,6 +2953,12 @@ void CBasePlayer::IncrementDeathCount( int nCount )
 	pl.deaths = m_iDeaths;
 }
 
+void CBasePlayer::SetDeathCount(int nCount)
+{
+	m_iDeaths = nCount;
+	pl.deaths = m_iDeaths;
+}
+
 void CBasePlayer::AddPoints( int score, bool bAllowNegativeScore )
 {
 	// Positive score always adds

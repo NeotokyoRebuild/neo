@@ -14,6 +14,7 @@
 
 #ifndef CLIENT_DLL
 	#include "neo_player.h"
+	#include "utlhashtable.h"
 #endif
 
 enum
@@ -243,6 +244,13 @@ public:
 #ifdef GAME_DLL
 	// Workaround for bot spawning. See Bot_f() for details.
 	bool m_bNextClientIsFakeClient;
+	struct RestoreInfo
+	{
+		int xp;
+		int deaths;
+	};
+	// uint32 <- CSteamID::GetAccountID - For DefaultHashFunctor
+	CUtlHashtable<uint32, RestoreInfo> m_pRestoredInfos;
 #endif
 
 private:
