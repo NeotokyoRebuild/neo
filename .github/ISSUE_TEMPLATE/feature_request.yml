@@ -38,6 +38,7 @@ body:
         A clear and concise description of what you want to happen. Create a [user story](https://en.wikipedia.org/wiki/User_story#Common_templates)
         in the perspective of the end user.
       placeholder: |
+        * "As <who> <when> <where>, I want <what> because <why>"
         Examples:
         * "As a player, I often get bored during the warmup, so it would be fun to have a football physics object to mess around with."
         * "As a plugin developer, I would really like feature ABC so that I can XYZ."
