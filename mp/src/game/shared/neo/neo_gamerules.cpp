@@ -1967,13 +1967,26 @@ void CNEORules::ClientDisconnected(edict_t* pClient)
 			const CSteamID steamID = GetSteamIDForPlayerIndex(pNeoPlayer->entindex());
 			if (steamID.IsValid())
 			{
-				const uint32 accountID = steamID.GetAccountID();
+				const auto accountID = steamID.GetAccountID();
 				const RestoreInfo restoreInfo{
 					.xp = pNeoPlayer->m_iXP.Get(),
 					.deaths = pNeoPlayer->DeathCount(),
 				};
-				m_pRestoredInfos.Remove(accountID); // Insert doesn't override so attempt remove first
-				m_pRestoredInfos.Insert(accountID, restoreInfo);
+
+				if (restoreInfo.xp == 0 && restoreInfo.deaths == 0)
+				{
+					m_pRestoredInfos.Remove(accountID);
+				}
+				else
+				{
+					bool didInsert = false;
+					const auto hdl = m_pRestoredInfos.Insert(accountID, restoreInfo, &didInsert);
+					if (!didInsert)
+					{
+						// It already exists, so assign it instead
+						m_pRestoredInfos[hdl] = restoreInfo;
+					}
+				}
 			}
 		}
 	}

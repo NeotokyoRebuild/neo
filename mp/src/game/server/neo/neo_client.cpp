@@ -37,13 +37,14 @@ void FinishClientPutInServer( CNEO_Player *pPlayer )
 		const CSteamID steamID = GetSteamIDForPlayerIndex(pPlayer->entindex());
 		if (steamID.IsValid())
 		{
-			const uint32 accountID = steamID.GetAccountID();
+			const auto accountID = steamID.GetAccountID();
 			const auto &restoredInfos = NEORules()->m_pRestoredInfos;
 			if (const auto hdl = restoredInfos.Find(accountID); restoredInfos.IsValidHandle(hdl))
 			{
+				Assert(pPlayer->DeathCount() == 0);
 				const CNEORules::RestoreInfo &restoreInfo = restoredInfos.Element(hdl);
 				pPlayer->m_iXP.Set(restoreInfo.xp);
-				pPlayer->SetDeathCount(restoreInfo.deaths);
+				pPlayer->IncrementDeathCount(restoreInfo.deaths);
 				ClientPrint(pPlayer, HUD_PRINTTALK, "Your XP and death count restored!\n");
 			}
 		}

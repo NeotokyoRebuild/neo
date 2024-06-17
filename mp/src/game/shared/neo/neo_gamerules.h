@@ -251,8 +251,8 @@ public:
 		int xp;
 		int deaths;
 	};
-	// uint32 <- CSteamID::GetAccountID - For DefaultHashFunctor
-	CUtlHashtable<uint32, RestoreInfo> m_pRestoredInfos;
+	// AccountID_t <- CSteamID::GetAccountID
+	CUtlHashtable<AccountID_t, RestoreInfo> m_pRestoredInfos;
 #endif
 
 private:
