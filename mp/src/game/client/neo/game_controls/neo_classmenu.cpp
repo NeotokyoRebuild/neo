@@ -153,6 +153,12 @@ void CNeoClassMenu::CommandCompletion()
 	SetCursorAlwaysVisible(false);
 }
 
+void CNeoClassMenu::OnClose()
+{
+	CommandCompletion();
+	BaseClass::OnClose();
+}
+
 void CNeoClassMenu::OnCommand(const char *command)
 {
 	BaseClass::OnCommand(command);

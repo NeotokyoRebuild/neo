@@ -229,6 +229,12 @@ extern ConCommand loadoutmenu;
 
 extern ConVar neo_sv_ignore_wep_xp_limit;
 
+void CNeoLoadoutMenu::OnClose()
+{
+	CommandCompletion();
+	BaseClass::OnClose();
+}
+
 void CNeoLoadoutMenu::OnCommand(const char* command)
 {
 	BaseClass::OnCommand(command);
