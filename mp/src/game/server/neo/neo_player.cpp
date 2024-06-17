@@ -1075,35 +1075,33 @@ void CNEO_Player::PostThink(void)
 
 	CheckLeanButtons();
 
-	auto pWep = GetActiveWeapon();
-	CNEOBaseCombatWeapon* pNeoWep = NULL;
-
-	if (pWep)
+	if (CBaseCombatWeapon *pWep = GetActiveWeapon())
 	{
+		const bool clientAimHold = ClientWantsAimHold(this);
 		if (pWep->m_bInReload && !m_bPreviouslyReloading)
 		{
 			Weapon_SetZoom(false);
 		}
-		else if (m_afButtonPressed & IN_SPEED)
+		else if (CanSprint() && m_afButtonPressed & IN_SPEED)
 		{
 			Weapon_SetZoom(false);
 		}
-		else if (m_afButtonPressed & IN_AIM)
+		else if ((m_afButtonPressed & IN_AIM) && (!CanSprint() || !(m_nButtons & IN_SPEED)))
 		{
-			pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWep);
 			// Binds hack: we want grenade secondary attack to trigger on aim (mouse button 2)
-			if (pNeoWep && pNeoWep->GetNeoWepBits() & NEO_WEP_THROWABLE)
+			if (auto *pNeoWep = dynamic_cast<CNEOBaseCombatWeapon *>(pWep);
+					pNeoWep && pNeoWep->GetNeoWepBits() & NEO_WEP_THROWABLE)
 			{
-				static_cast<CWeaponGrenade*>(pNeoWep)->SecondaryAttack();
+				pNeoWep->SecondaryAttack();
 			}
-			else if (ClientWantsAimHold(this))
+			else
 			{
-				Weapon_AimToggle(pWep, NEO_TOGGLE_FORCE_AIM);
+				Weapon_AimToggle(pWep, clientAimHold ? NEO_TOGGLE_FORCE_AIM : NEO_TOGGLE_DEFAULT);
 			}
 		}
-		else if (m_afButtonReleased & IN_AIM)
+		else if (clientAimHold && (m_afButtonReleased & IN_AIM))
 		{
-			Weapon_AimToggle(pWep, ClientWantsAimHold(this) ? NEO_TOGGLE_FORCE_UN_AIM : NEO_TOGGLE_DEFAULT);
+			Weapon_AimToggle(pWep, NEO_TOGGLE_FORCE_UN_AIM);
 		}
 		m_bPreviouslyReloading = pWep->m_bInReload;
 
