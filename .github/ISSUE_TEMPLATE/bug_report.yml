@@ -11,8 +11,8 @@ body:
         Before you file an issue, please look if there's already the same
         issue before filing one. Otherwise it'll just get closed as a duplicate.
 
-        **DO NOT** put in chatlogs and instead formulate them into detailed
-        description and reproduction steps.
+        **DO NOT** paste chatlogs. Formulate the bug into a detailed
+        description and reproducible steps using the form below.
 
         Fill in the title after the **[BUG]** tag and make sure it's
         in the **"current state of things"** wording.
@@ -21,10 +21,11 @@ body:
     attributes:
       label: Build Info
       description: |
-        Which build this bug is seen? Replace [DATE] with YYYYMMDD
+        In which build was this bug seen? Replace [DATE] with YYYYMMDD
         and [GIT HASH] with the Git short hash the build was built on.
-        Both the main menu and `neo_version` command can be used to
-        retrieve this information.
+        The main menu contains this in the bottom left corner
+        and the `neo_version` command can also be used to retrieve this
+        information.
       placeholder: "[DATE]_[GIT HASH] (EX: 20240609_759f6e5)"
     validations:
       required: true
@@ -63,7 +64,7 @@ body:
     attributes:
       label: Actual behavior
       description: |
-        A clear and concise description of what actually happens.
+        A clear and concise description of what happened instead of the expected behavior.
     validations:
       required: true
   - type: checkboxes
