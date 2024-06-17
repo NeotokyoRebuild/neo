@@ -1,6 +1,6 @@
 name: Feature request
 description: Suggest an idea for NT;RE
-title: "[FEATURE]"
+title: "[FEATURE] "
 labels: enhancement
 projects: ["NeotokyoRebuild/1"]
 body:
@@ -35,8 +35,13 @@ body:
     attributes:
       label: Proposed Solution
       description: |
-        A clear and concise description of what you want to happen.
-      placeholder: At the RoundStart event trigger during warmup, spawn a football physics object to mess around with
+        A clear and concise description of what you want to happen. Create a [user story](https://en.wikipedia.org/wiki/User_story#Common_templates)
+        in the perspective of the end user.
+      placeholder: |
+        Examples:
+        * "As a player, I often get bored during the warmup, so it would be fun to have a football physics object to mess around with."
+        * "As a plugin developer, I would really like feature ABC so that I can XYZ."
+        * "As a mapper, I want to have bullet proof textures so I can make my bullet proof windows less thick."
     validations:
       required: true
   - type: textarea
