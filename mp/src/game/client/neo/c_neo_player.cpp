@@ -42,6 +42,7 @@
 #include <materialsystem/imaterialsystem.h>
 #include <materialsystem/itexture.h>
 #include "rendertexture.h"
+#include "ivieweffects.h"
 
 #include "model_types.h"
 
@@ -995,6 +996,20 @@ void C_NEO_Player::PostThink(void)
 
 			Weapon_SetZoom(false);
 			m_bInVision = false;
+
+			if (this == GetLocalNEOPlayer())
+			{
+				ScreenFade_t sfade{
+					.duration = static_cast<unsigned short>(static_cast<float>(1<<SCREENFADE_FRACBITS) * 3.0f),
+					.holdTime = static_cast<unsigned short>(static_cast<float>(1<<SCREENFADE_FRACBITS) * 1.0f),
+					.fadeFlags = FFADE_OUT,
+					.r = 0,
+					.g = 0,
+					.b = 0,
+					.a = 255,
+				};
+				vieweffects->Fade(sfade);
+			}
 		}
 
 		return;
