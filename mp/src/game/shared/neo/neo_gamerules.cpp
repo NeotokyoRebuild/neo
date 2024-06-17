@@ -404,7 +404,8 @@ bool CNEORules::ShouldCollide(int collisionGroup0, int collisionGroup1)
 	}
 
 	if ((collisionGroup0 == COLLISION_GROUP_PLAYER || collisionGroup0 == COLLISION_GROUP_PLAYER_MOVEMENT) &&
-		((collisionGroup1 == COLLISION_GROUP_WEAPON) || (collisionGroup1 == COLLISION_GROUP_PLAYER || collisionGroup1 == COLLISION_GROUP_PLAYER_MOVEMENT)))
+		(collisionGroup1 == COLLISION_GROUP_PROJECTILE || collisionGroup1 == COLLISION_GROUP_WEAPON ||
+		 collisionGroup1 == COLLISION_GROUP_PLAYER || collisionGroup1 == COLLISION_GROUP_PLAYER_MOVEMENT))
 	{
 		return false;
 	}
