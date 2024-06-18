@@ -60,6 +60,7 @@
 #ifdef NEO
 #include "c_neo_player.h"
 #include "weapon_tachi.h"
+#include "ivieweffects.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -616,6 +617,12 @@ void C_BasePlayer::SetObserverMode ( int iNewMode )
 		{
 			// On a change of viewing mode or target, we may want to reset both head and torso to point at the new target.
 			g_ClientVirtualReality.AlignTorsoAndViewToWeapon();
+#ifdef NEO
+			if (iNewMode != OBS_MODE_DEATHCAM)
+			{
+				vieweffects->ClearAllFades();
+			}
+#endif
 		}
 	}
 }
