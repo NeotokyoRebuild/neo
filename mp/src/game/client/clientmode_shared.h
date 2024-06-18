@@ -16,6 +16,12 @@
 #include "GameEventListener.h"
 #include <baseviewport.h>
 
+#ifdef NEO
+#include "vguitextwindow.h"
+
+extern ConVar cl_disablehtmlmotd;
+#endif
+
 class CBaseHudChat;
 class CBaseHudWeaponSelection;
 class CViewSetup;
@@ -130,9 +136,27 @@ public:
 	virtual void	DisplayReplayMessage( const char *pLocalizeName, float flDuration, bool bUrgent,
 										  const char *pSound, bool bDlg );
 
-	virtual bool	IsInfoPanelAllowed() OVERRIDE { return true; }
+	virtual bool	IsInfoPanelAllowed() OVERRIDE
+	{
+#ifdef NEO
+		if (cl_disablehtmlmotd.GetInt() == MotdPreference::ShowNothing)
+		{
+			return false;
+		}
+#endif
+		return true;
+	}
+
 	virtual void	InfoPanelDisplayed() OVERRIDE { }
-	virtual bool	IsHTMLInfoPanelAllowed() OVERRIDE { return true; }
+
+	virtual bool	IsHTMLInfoPanelAllowed() OVERRIDE
+	{
+#ifdef NEO
+		return (cl_disablehtmlmotd.GetInt() == MotdPreference::ShowFullHtml);
+#else
+		return true;
+#endif
+	}
 
 protected:
 	CBaseViewport			*m_pViewport;

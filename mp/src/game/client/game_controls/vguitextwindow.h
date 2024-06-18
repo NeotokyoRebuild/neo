@@ -18,6 +18,14 @@
 #include <game/client/iviewport.h>
 #include "shareddefs.h"
 
+enum MotdPreference {
+	ShowFullHtml = 0,
+	ShowTextOnly,
+	ShowNothing,
+
+	EnumCount,
+};
+
 namespace vgui
 {
 	class TextEntry;
