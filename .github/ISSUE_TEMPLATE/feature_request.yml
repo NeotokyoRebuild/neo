@@ -1,0 +1,62 @@
+name: Feature request
+description: Suggest an idea for NT;RE
+title: "[FEATURE] "
+labels: enhancement
+projects: ["NeotokyoRebuild/1"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **ATTENTION:**
+        Before you file an issue, please look if there's already a similar
+        issue before filing one. Otherwise it'll just get closed as a duplicate.
+        
+        **NOTE:**
+        If your suggestion is a major rework or would require balancing, 
+        changes the fundamental way the game works, or is a large time investment, 
+        please consider using the "game change suggestion template" from here:
+        https://drive.google.com/drive/u/0/folders/1y0P76BTGmBfp3mFf8HroEH-g_tIIGu81
+
+        **DO NOT** put in chatlogs and instead formulate them into detailed
+        description and reproduction steps.
+
+        Fill in the title after the **[FEATURE]** tag.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: |
+        A short description of an idea or some problem(s) it may solve
+      placeholder: Add a football physics object in each spawn during warmup
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Solution
+      description: |
+        A clear and concise description of what you want to happen. Create a [user story](https://en.wikipedia.org/wiki/User_story#Common_templates)
+        in the perspective of the end user.
+      placeholder: |
+        * "As <who> <when> <where>, I want <what> because <why>"
+        Examples:
+        * "As a player, I often get bored during the warmup, so it would be fun to have a football physics object to mess around with."
+        * "As a plugin developer, I would really like feature ABC so that I can XYZ."
+        * "As a mapper, I want to have bullet proof textures so I can make my bullet proof windows less thick."
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: |
+        A clear and concise description of any alternative solutions or features
+        you've considered.
+      placeholder: A hockey puck would not work as well, as it's not meant to bounce.
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: |
+        Add any other context or screenshots about the feature request here.
+
