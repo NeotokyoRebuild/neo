@@ -170,6 +170,8 @@ public:
 	const char *GetNeoPlayerName() const;
 	bool ClientWantNeoName() const;
 
+	virtual void CalcDeathCamView( Vector& eyeOrigin, QAngle& eyeAngles, float& fov ) override;
+
 private:
 	void CheckThermOpticButtons();
 	void CheckVisionButtons();
@@ -226,6 +228,7 @@ private:
 	bool m_bPreviouslyReloading;
 	bool m_bPreviouslyPreparingToHideMsg;
 	bool m_bIsAllowedToToggleVision;
+	int m_iSavedObserverMode = 0;
 
 	INEOPlayerAnimState* m_pPlayerAnimState;
 

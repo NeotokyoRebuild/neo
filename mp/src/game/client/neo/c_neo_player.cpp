@@ -1008,12 +1008,15 @@ void C_NEO_Player::PostThink(void)
 			Weapon_SetZoom(false);
 			m_bInVision = false;
 
-			if (this == GetLocalNEOPlayer())
+			if (IsLocalPlayer() && (GetTeamNumber() == TEAM_JINRAI || GetTeamNumber() == TEAM_NSF))
 			{
+				m_iSavedObserverMode = GetObserverMode();
+				SetObserverMode(OBS_MODE_DEATHCAM);
+				// Fade out 8s to blackout + 2s full blackout
 				ScreenFade_t sfade{
-					.duration = static_cast<unsigned short>(static_cast<float>(1<<SCREENFADE_FRACBITS) * 3.0f),
-					.holdTime = static_cast<unsigned short>(static_cast<float>(1<<SCREENFADE_FRACBITS) * 1.0f),
-					.fadeFlags = FFADE_OUT,
+					.duration = static_cast<unsigned short>(static_cast<float>(1<<SCREENFADE_FRACBITS) * 8.0f),
+					.holdTime = static_cast<unsigned short>(static_cast<float>(1<<SCREENFADE_FRACBITS) * 2.0f),
+					.fadeFlags = FFADE_OUT|FFADE_PURGE,
 					.r = 0,
 					.g = 0,
 					.b = 0,
@@ -1022,7 +1025,6 @@ void C_NEO_Player::PostThink(void)
 				vieweffects->Fade(sfade);
 			}
 		}
-
 		return;
 	}
 	else
@@ -1030,6 +1032,10 @@ void C_NEO_Player::PostThink(void)
 		if (!m_bFirstDeathTick)
 		{
 			m_bFirstDeathTick = true;
+			if (IsLocalPlayer())
+			{
+				SetObserverMode(OBS_MODE_NONE);
+			}
 		}
 	}
 
@@ -1083,6 +1089,41 @@ void C_NEO_Player::PostThink(void)
 	float flPitch = asin(-eyeForward[2]);
 	float flYaw = atan2(eyeForward[1], eyeForward[0]);
 	m_pPlayerAnimState->Update(RAD2DEG(flYaw), RAD2DEG(flPitch));
+}
+
+void C_NEO_Player::CalcDeathCamView(Vector &eyeOrigin, QAngle &eyeAngles, float &fov)
+{
+	if (auto *pRagdoll = static_cast<C_HL2MPRagdoll *>(m_hRagdoll.Get()))
+	{
+		// First person death cam
+		pRagdoll->GetAttachment(pRagdoll->LookupAttachment("eyes"), eyeOrigin, eyeAngles);
+		Vector vForward;
+		AngleVectors(eyeAngles, &vForward);
+		fov = GetFOV();
+
+		if (IsLocalPlayer() && gpGlobals->curtime >= (GetDeathTime() + 10.0f))
+		{
+			m_iObserverMode = m_iSavedObserverMode;
+			g_ClientVirtualReality.AlignTorsoAndViewToWeapon();
+
+			// Fade in 2s from blackout
+			ScreenFade_t sfade{
+				.duration = static_cast<unsigned short>(static_cast<float>(1<<SCREENFADE_FRACBITS) * 2.0f),
+				.holdTime = static_cast<unsigned short>(0),
+				.fadeFlags = FFADE_IN|FFADE_PURGE,
+				.r = 0,
+				.g = 0,
+				.b = 0,
+				.a = 255,
+			};
+			vieweffects->Fade(sfade);
+		}
+	}
+	else
+	{
+		// Fallback just in-case it somehow doesn't do m_hRagdoll
+		BaseClass::CalcDeathCamView(eyeOrigin, eyeAngles, fov);
+	}
 }
 
 bool C_NEO_Player::IsAllowedToSuperJump(void)
