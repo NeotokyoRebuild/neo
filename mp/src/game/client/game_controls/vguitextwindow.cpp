@@ -445,7 +445,13 @@ void CTextWindow::ShowPanel( bool bShow )
 		SetVisible( false );
 		SetMouseInputEnabled( false );
 
-		if ( UnloadOnDismissal() && m_bShownURL && m_pHTMLMessage)
+		if ((
+#ifdef NEO
+				UnloadOnDismissal()
+#else
+				m_bUnloadOnDismissal
+#endif
+			) && m_bShownURL && m_pHTMLMessage)
 		{
 			m_pHTMLMessage->OpenURL( "about:blank", NULL );
 			m_bShownURL = false;
