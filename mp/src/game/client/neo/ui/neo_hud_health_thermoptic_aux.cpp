@@ -81,8 +81,6 @@ void CNEOHud_HTA::ApplySchemeSettings(vgui::IScheme* pScheme)
 	m_hFont = pScheme->GetFont("NHudOCRSmall");
 	m_hFontBuildInfo = pScheme->GetFont("Default");
 
-	InvalidateLayout();
-
 	surface()->GetScreenSize(m_resX, m_resY);
 	SetBounds(0, 0, m_resX, m_resY);
 }

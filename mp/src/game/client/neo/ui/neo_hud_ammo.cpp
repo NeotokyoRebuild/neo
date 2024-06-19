@@ -86,8 +86,6 @@ void CNEOHud_Ammo::ApplySchemeSettings(vgui::IScheme* pScheme)
 	m_hBulletFont = pScheme->GetFont("NHudBullets");
 	m_hTextFont = pScheme->GetFont("NHudOCR");
 
-	InvalidateLayout();
-
 	surface()->GetScreenSize(m_resX, m_resY);
 	SetBounds(0, 0, m_resX, m_resY);
 	SetFgColor(COLOR_TRANSPARENT);
