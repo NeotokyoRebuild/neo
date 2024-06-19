@@ -47,6 +47,8 @@
 
 #include "neo_playeranimstate.h"
 
+#include "c_user_message_register.h"
+
 // Don't alias here
 #if defined( CNEO_Player )
 #undef CNEO_Player	
@@ -189,7 +191,18 @@ static void __MsgFunc_DamageInfo(bf_read& msg)
 		totals.takenTotalDmgs, totals.takenTotalHits,
 		BORDER);
 }
-static bool g_hasHookDamageInfo = false;
+USER_MESSAGE_REGISTER(DamageInfo);
+
+static void __MsgFunc_IdleRespawnShowMenu(bf_read &)
+{
+	if (auto *localPlayer = C_NEO_Player::GetLocalNEOPlayer())
+	{
+		localPlayer->m_bShowTeamMenu = false;
+		localPlayer->m_bShowClassMenu = true;
+		localPlayer->m_bIsClassMenuOpen = false;
+	}
+}
+USER_MESSAGE_REGISTER(IdleRespawnShowMenu);
 
 ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
 	"Whether to display HL2 style ammo/health info near crosshair.",
@@ -212,6 +225,11 @@ public:
 			Assert(false);
 			Warning("Couldn't find weapon loadout panel\n");
 			return;
+		}
+
+		if (panel->IsVisible() && panel->IsEnabled())
+		{
+			return;	// Prevent cursor stuck
 		}
 
 		panel->SetProportional(false); // Fixes wrong menu size when in windowed mode, regardless of whether proportional is set to false in the res file (NEOWTF)
@@ -275,6 +293,12 @@ public:
 			Warning("Couldn't find class panel\n");
 			return;
 		}
+
+		if (panel->IsVisible() && panel->IsEnabled())
+		{
+			return;	// Prevent cursor stuck
+		}
+
 		panel->SetProportional(false);
 		panel->ApplySchemeSettings(vgui::scheme()->GetIScheme(panel->GetScheme()));
 
@@ -321,6 +345,11 @@ public:
 			Assert(false);
 			Warning("Couldn't find team panel\n");
 			return;
+		}
+
+		if (panel->IsVisible() && panel->IsEnabled())
+		{
+			return;	// Prevent cursor stuck
 		}
 
 		panel->SetProportional(false);
@@ -412,11 +441,6 @@ C_NEO_Player::C_NEO_Player()
 
 	memset(m_szNeoNameWDupeIdx, 0, sizeof(m_szNeoNameWDupeIdx));
 	m_szNameDupePos = 0;
-	if (!g_hasHookDamageInfo)
-	{
-		usermessages->HookMessage("DamageInfo", __MsgFunc_DamageInfo);
-		g_hasHookDamageInfo = true;
-	}
 }
 
 C_NEO_Player::~C_NEO_Player()
