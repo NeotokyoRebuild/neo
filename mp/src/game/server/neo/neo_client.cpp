@@ -20,7 +20,7 @@
 void Host_Say( edict_t *pEdict, bool teamonly );
 
 ConVar sv_motd_unload_on_dismissal( "sv_motd_unload_on_dismissal",
-	"0", 0,
+	"1", 0,
 	"If enabled, the MOTD contents will be unloaded when the player \
 closes the MOTD." );
 
