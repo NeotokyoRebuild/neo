@@ -138,7 +138,10 @@ void CNEO_Player::RequestSetClass(int newClass)
 		return;
 	}
 
-	if (IsDead() || sv_neo_can_change_classes_anytime.GetBool() || (!m_bDroppedAnything && NEORules()->GetRemainingPreRoundFreezeTime(false) > 0))
+	const NeoRoundStatus status = NEORules()->GetRoundStatus();
+	if (IsDead() || sv_neo_can_change_classes_anytime.GetBool() ||
+		(!m_bDroppedAnything && NEORules()->GetRemainingPreRoundFreezeTime(false) > 0) ||
+		(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup))
 	{
 		m_iNeoClass = newClass;
 		m_iNextSpawnClassChoice = -1;
@@ -2561,7 +2564,9 @@ void CNEO_Player::GiveDefaultItems(void)
 
 void CNEO_Player::GiveLoadoutWeapon(void)
 {
-	if (IsObserver() || IsDead() || m_bDroppedAnything || ((NEORules()->GetRemainingPreRoundFreezeTime(false)) < 0))
+	const NeoRoundStatus status = NEORules()->GetRoundStatus();
+	if (!(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup) && 
+		(IsObserver() || IsDead() || m_bDroppedAnything || ((NEORules()->GetRemainingPreRoundFreezeTime(false)) < 0)))
 	{
 		return;
 	}
