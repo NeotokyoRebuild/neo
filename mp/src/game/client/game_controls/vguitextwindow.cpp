@@ -36,6 +36,9 @@ ConVar cl_disablehtmlmotd("cl_disablehtmlmotd", "1", FCVAR_ARCHIVE,
 	"0: Show full HTML MOTD. 1: Disable HTML but show text MOTD. 2: Hide all MOTDs.",
 	true, 0.f, true, static_cast<float>(MotdPreference::EnumCount - 1));
 
+ConVar cl_motd_unload_on_dismissal("cl_motd_unload_on_dismissal", "1", FCVAR_ARCHIVE,
+	"If enabled, the MOTD contents will be unloaded when you close the MOTD.");
+
 //=============================================================================
 // HPE_BEGIN:
 // [Forrest] Replaced text window command string with TEXTWINDOW_CMD enumeration
@@ -385,6 +388,15 @@ void CTextWindow::OnKeyCodePressed( vgui::KeyCode code )
 	BaseClass::OnKeyCodePressed(code);
 }
 
+bool CTextWindow::UnloadOnDismissal() const
+{
+	if (cl_motd_unload_on_dismissal.GetBool())
+	{
+		return true;
+	}
+	return m_bUnloadOnDismissal;
+}
+
 void CTextWindow::SetData(KeyValues *data)
 {
 #ifdef SDK2013CE
@@ -425,7 +437,7 @@ void CTextWindow::ShowPanel( bool bShow )
 		SetVisible( false );
 		SetMouseInputEnabled( false );
 
-		if ( m_bUnloadOnDismissal && m_bShownURL && m_pHTMLMessage )
+		if ( UnloadOnDismissal() && m_bShownURL && m_pHTMLMessage)
 		{
 			m_pHTMLMessage->OpenURL( "about:blank", NULL );
 			m_bShownURL = false;

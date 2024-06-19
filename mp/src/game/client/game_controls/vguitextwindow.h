@@ -73,6 +73,8 @@ protected:
 
 	void OnKeyCodePressed( vgui::KeyCode code );
 
+	bool UnloadOnDismissal() const;
+
 	IViewPort	*m_pViewPort;
 	char		m_szTitle[255];
 	char		m_szMessage[2048];
