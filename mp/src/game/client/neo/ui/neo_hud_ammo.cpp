@@ -60,6 +60,9 @@ CNEOHud_Ammo::CNEOHud_Ammo(const char* pElementName, vgui::Panel* parent)
 		SetParent(g_pClientMode->GetViewport());
 	}
 
+	surface()->GetScreenSize(m_resX, m_resY);
+	SetBounds(0, 0, m_resX, m_resY);
+
 	SetVisible(neo_cl_hud_ammo_enabled.GetBool());
 
 	SetHiddenBits(HIDEHUD_HEALTH | HIDEHUD_PLAYERDEAD | HIDEHUD_NEEDSUIT | HIDEHUD_WEAPONSELECTION);
