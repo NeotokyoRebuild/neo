@@ -85,6 +85,7 @@
 #ifdef NEO
 #include "neo_player.h"
 #include "weapon_tachi.h"
+#include "neo_gamerules.h"
 #endif
 
 ConVar autoaim_max_dist( "autoaim_max_dist", "2160" ); // 2160 = 180 feet
@@ -648,6 +649,10 @@ CBasePlayer::CBasePlayer( )
 	m_flMovementTimeForUserCmdProcessingRemaining = 0.0f;
 
 	m_flLastObjectiveTime = -1.f;
+
+#ifdef NEO
+	m_flDeathTime = 0.0f;
+#endif
 }
 
 CBasePlayer::~CBasePlayer( )
@@ -3751,6 +3756,19 @@ void CBasePlayer::PlayerRunCommand(CUserCmd *ucmd, IMoveHelper *moveHelper)
 			}
 		}
 	}
+
+#ifdef NEO
+	if (!IsAlive() && (GetTeamNumber() == TEAM_JINRAI || GetTeamNumber() == TEAM_NSF) &&
+			NEORules()->GetRoundStatus() == RoundLive &&
+			(gpGlobals->curtime < (GetDeathTime() + 10.0f)))
+	{
+		ucmd->forwardmove = 0;
+		ucmd->sidemove = 0;
+		ucmd->upmove = 0;
+		ucmd->impulse = 0;
+		ucmd->buttons &= ~(IN_ATTACK | IN_ATTACK2 | IN_ATTACK3 | IN_JUMP | IN_ALT1 | IN_ALT2 | IN_ZOOM);
+	}
+#endif
 	
 	PlayerMove()->RunCommand(this, ucmd, moveHelper);
 }
