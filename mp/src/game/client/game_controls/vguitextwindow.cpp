@@ -32,12 +32,18 @@ extern INetworkStringTable *g_pStringTableInfoPanel;
 
 #define TEMP_HTML_FILE	"textwindow_temp.html"
 
+#ifdef NEO
 ConVar cl_disablehtmlmotd("cl_disablehtmlmotd", "1", FCVAR_ARCHIVE,
 	"0: Show full HTML MOTD. 1: Disable HTML but show text MOTD. 2: Hide all MOTDs.",
 	true, 0.f, true, static_cast<float>(MotdPreference::EnumCount - 1));
+#else
+ConVar cl_disablehtmlmotd("cl_disablehtmlmotd", "0", FCVAR_ARCHIVE, "Disable HTML motds.");
+#endif
 
+#ifdef NEO
 ConVar cl_motd_unload_on_dismissal("cl_motd_unload_on_dismissal", "1", FCVAR_ARCHIVE,
 	"If enabled, the MOTD contents will be unloaded when you close the MOTD.");
+#endif
 
 //=============================================================================
 // HPE_BEGIN:
@@ -388,6 +394,7 @@ void CTextWindow::OnKeyCodePressed( vgui::KeyCode code )
 	BaseClass::OnKeyCodePressed(code);
 }
 
+#ifdef NEO
 bool CTextWindow::UnloadOnDismissal() const
 {
 	if (cl_motd_unload_on_dismissal.GetBool())
@@ -396,6 +403,7 @@ bool CTextWindow::UnloadOnDismissal() const
 	}
 	return m_bUnloadOnDismissal;
 }
+#endif
 
 void CTextWindow::SetData(KeyValues *data)
 {

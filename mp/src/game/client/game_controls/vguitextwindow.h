@@ -73,7 +73,9 @@ protected:
 
 	void OnKeyCodePressed( vgui::KeyCode code );
 
+#ifdef NEO
 	bool UnloadOnDismissal() const;
+#endif
 
 	IViewPort	*m_pViewPort;
 	char		m_szTitle[255];
