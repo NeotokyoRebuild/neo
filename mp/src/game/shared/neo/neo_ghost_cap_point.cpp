@@ -12,8 +12,17 @@
 #endif
 #endif
 
+#ifdef CLIENT_DLL
+#include "ui/neo_hud_ghost_cap_point.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
+
+// In seconds, how often should the client think to update capzone graphics info.
+// This is *not* the framerate, only info like which team it belongs to, etc.
+// Actual rendering happens in the element's Paint() loop.
+static constexpr int NEO_GHOSTCAP_GRAPHICS_THINK_INTERVAL = 1;
 
 // NEO NOTE (Rain). These limits defined in original NT FGD as (48 - 256),
 // but it seems not even offical maps follow it. I haven't actually checked
