@@ -291,8 +291,7 @@ void CNEOGhostCapturePoint::ClientThink(void)
 
 	m_pHUDCapPoint->SetPos(GetAbsOrigin());
 	m_pHUDCapPoint->SetRadius(m_flCapzoneRadius);
-	m_pHUDCapPoint->SetTeam(m_iOwningTeam); // TODO (nullsystem): Refactor to owningTeamAlternate()
-
+	m_pHUDCapPoint->SetTeam(owningTeamAlternate());
 	m_pHUDCapPoint->SetVisible(true);
 
 	SetNextClientThink(gpGlobals->curtime + NEO_GHOSTCAP_GRAPHICS_THINK_INTERVAL);

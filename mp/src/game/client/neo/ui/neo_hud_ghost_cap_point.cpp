@@ -79,27 +79,21 @@ void CNEOHud_GhostCapPoint::DrawNeoHudElement()
 		return;
 	}
 
-	const Color jinColor = Color(76, 255, 0, 255),
-		nsfColor = Color(0, 76, 255, 255),
-		redColor = Color(255, 0, 0, 255);
+	auto *player = C_NEO_Player::GetLocalNEOPlayer();
+	const int playerTeam = player->GetTeamNumber();
 
-	C_NEO_Player *player = C_NEO_Player::GetLocalNEOPlayer();
+	static const Color COLORCAP_JINRAI(76, 255, 0, 255);
+	static const Color COLORCAP_NSF(0, 76, 255, 255);
+	Color targetColor = (m_iCapTeam == TEAM_JINRAI) ? COLORCAP_JINRAI : COLORCAP_NSF;
 
-	const bool alternate = NEORules()->roundAlternate();
-	Color targetColor = (m_iMyTeam == TEAM_JINRAI) ? (alternate ? jinColor : nsfColor) : (alternate ? nsfColor : jinColor);
-
-	const bool playerIsPlaying = (player->GetTeamNumber() == TEAM_JINRAI || player->GetTeamNumber() == TEAM_NSF);
+	const bool playerIsPlaying = (playerTeam == TEAM_JINRAI || playerTeam == TEAM_NSF);
 	if (playerIsPlaying)
 	{
-		bool targetIsToDefend = player->GetTeamNumber() != m_iMyTeam;
-		if (!alternate)
-		{
-			targetIsToDefend = !targetIsToDefend;
-		}
-
+		const bool targetIsToDefend = (playerTeam != m_iCapTeam);
 		if (targetIsToDefend)
 		{
-			targetColor = redColor;
+			static const Color COLORCAP_RED(255, 0, 0, 255);
+			targetColor = COLORCAP_RED;
 		}
 	}
 
