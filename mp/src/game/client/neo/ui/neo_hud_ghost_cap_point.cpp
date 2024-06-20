@@ -10,6 +10,8 @@
 
 ConVar neo_ghost_cap_point_hud_scale_factor("neo_ghost_cap_point_hud_scale_factor", "0.33", FCVAR_USERINFO,
 	"Ghost cap HUD element scaling factor", true, 0.01, false, 0);
+ConVar neo_cl_hud_center_ghost_cap_size("neo_cl_hud_center_ghost_cap_size", "12.5", FCVAR_USERINFO,
+	"HUD center size in percentage to fade ghost cap point.", true, 1, false, 0);
 
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(GhostCapPoint, 0.01)
 
@@ -34,14 +36,6 @@ CNEOHud_GhostCapPoint::CNEOHud_GhostCapPoint(const char *pElementName, vgui::Pan
 	vgui::surface()->GetScreenSize(m_iPosX, m_iPosY);
 	SetBounds(0, 0, m_iPosX, m_iPosY);
 
-	// NEO HACK (Rain): this is kind of awkward, we should get the handle on ApplySchemeSettings
-	vgui::IScheme *scheme = vgui::scheme()->GetIScheme(neoscheme);
-	if (!scheme) {
-		Assert(scheme);
-		Error("CNEOHud_GhostCapPoint: Failed to load neoscheme\n");
-	}
-	m_hFont = scheme->GetFont("NHudOCRSmall");
-
 	m_hCapTex = vgui::surface()->CreateNewTextureID();
 	Assert(m_hCapTex > 0);
 	vgui::surface()->DrawSetTextureFile(m_hCapTex, "vgui/hud/ctg/g_beacon_arrow_down", 1, false);
@@ -50,12 +44,40 @@ CNEOHud_GhostCapPoint::CNEOHud_GhostCapPoint(const char *pElementName, vgui::Pan
 	SetVisible(false);
 }
 
-void CNEOHud_GhostCapPoint::Paint()
+void CNEOHud_GhostCapPoint::ApplySchemeSettings(vgui::IScheme *pScheme)
 {
-	SetFgColor(COLOR_TRANSPARENT);
-	SetBgColor(COLOR_TRANSPARENT);
+	BaseClass::ApplySchemeSettings(pScheme);
 
-	BaseClass::Paint();
+	m_hFont = pScheme->GetFont("NHudOCRSmall");
+
+	vgui::surface()->GetScreenSize(m_iPosX, m_iPosY);
+	SetBounds(0, 0, m_iPosX, m_iPosY);
+
+	// Override CNEOHud_WorldPosMarker's sizing with our own
+	const int widerAxis = max(m_viewWidth, m_viewHeight);
+	m_viewCentreSize = widerAxis * (neo_cl_hud_center_ghost_cap_size.GetFloat() / 100.0f);
+}
+
+void CNEOHud_GhostCapPoint::UpdateStateForNeoHudElementDraw()
+{
+	auto *player = C_NEO_Player::GetLocalNEOPlayer();
+	if (!player) return;
+
+	const bool playerIsPlaying = (player->GetTeamNumber() == TEAM_JINRAI || player->GetTeamNumber() == TEAM_NSF);
+	if (playerIsPlaying)
+	{
+		m_flDistance = METERS_PER_INCH * player->GetAbsOrigin().DistTo(m_vecMyPos);
+		V_snprintf(m_szMarkerText, sizeof(m_szMarkerText), "RETRIEVAL ZONE DISTANCE: %.0f m", m_flDistance);
+		g_pVGuiLocalize->ConvertANSIToUnicode(m_szMarkerText, m_wszMarkerTextUnicode, sizeof(m_wszMarkerTextUnicode));
+	}
+}
+
+void CNEOHud_GhostCapPoint::DrawNeoHudElement()
+{
+	if (!ShouldDraw())
+	{
+		return;
+	}
 
 	const Color jinColor = Color(76, 255, 0, 255),
 		nsfColor = Color(0, 76, 255, 255),
@@ -81,11 +103,6 @@ void CNEOHud_GhostCapPoint::Paint()
 		}
 	}
 
-#if(0)
-	const Vector dir = player->GetAbsOrigin() - m_vecMyPos;
-	const float distScale = dir.Length2D();
-#endif
-
 	int x, y;
 	GetVectorInScreenSpace(m_vecMyPos, x, y);
 
@@ -96,27 +113,21 @@ void CNEOHud_GhostCapPoint::Paint()
 
 	if (playerIsPlaying)
 	{
-		const float distance = METERS_PER_INCH * player->GetAbsOrigin().DistTo(m_vecMyPos);
-		if (distance > 0.2)
+		const float fadeTextMultiplier = GetFadeValueTowardsScreenCentre(x, y);
+		if (m_flDistance > 0.2f && fadeTextMultiplier > 0.001f)
 		{
-			// TODO (nullsystem): None of this is particularly efficient, but it works so
-			V_snprintf(m_szMarkerText, sizeof(m_szMarkerText), "RETRIEVAL ZONE DISTANCE: %.0f m", distance);
-			g_pVGuiLocalize->ConvertANSIToUnicode(m_szMarkerText, m_wszMarkerTextUnicode, sizeof(m_wszMarkerTextUnicode));
-
-			auto fadeTextMultiplier = GetFadeValueTowardsScreenCentreInAndOut(x, y, 0.05);
-
 			int xWide = 0;
 			int yTall = 0;
 			vgui::surface()->GetTextSize(m_hFont, m_wszMarkerTextUnicode, xWide, yTall);
 			vgui::surface()->DrawSetColor(COLOR_TRANSPARENT);
-			vgui::surface()->DrawSetTextColor(COLOR_TINTGREY);
+			vgui::surface()->DrawSetTextColor(FadeColour(COLOR_TINTGREY, fadeTextMultiplier));
 			vgui::surface()->DrawSetTextFont(m_hFont);
 			vgui::surface()->DrawSetTextPos(x - (xWide / 2), offset_Y + (m_iCapTexHeight * scale) + (yTall / 2));
 			vgui::surface()->DrawPrintText(m_wszMarkerTextUnicode, sizeof(m_szMarkerText));
 		}
 	}
 
-	// The 4 arrows that slowly expand and dissapear
+	// The 4 arrows that slowly expand and disappear
 	vgui::surface()->DrawSetTexture(m_hCapTex);
 	for (int i = 0; i < 4; i++) {
 		m_fMarkerScalesCurrent[i] = (remainder(gpGlobals->curtime, 2) / 2) + 0.5 + m_fMarkerScalesStart[i];
@@ -158,3 +169,10 @@ void CNEOHud_GhostCapPoint::Paint()
 		offset_Y + (m_iCapTexHeight * scale));
 }
 
+void CNEOHud_GhostCapPoint::Paint()
+{
+	SetFgColor(COLOR_TRANSPARENT);
+	SetBgColor(COLOR_TRANSPARENT);
+	BaseClass::Paint();
+	PaintNeoElement();
+}

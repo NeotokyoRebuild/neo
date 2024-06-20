@@ -14,10 +14,11 @@ public:
 	CNEOHud_GhostCapPoint(const char *pElementName, vgui::Panel *parent = nullptr);
 	CNEOHud_GhostCapPoint(const CNEOHud_GhostCapPoint &other) = delete;
 
-	void Paint() override;
-	void UpdateStateForNeoHudElementDraw() override {}
-	void DrawNeoHudElement() override {}
-	ConVar *GetUpdateFrequencyConVar() const override;
+	virtual void ApplySchemeSettings(vgui::IScheme *pScheme) override;
+	virtual void Paint() override;
+	virtual void UpdateStateForNeoHudElementDraw() override;
+	virtual void DrawNeoHudElement() override;
+	virtual ConVar *GetUpdateFrequencyConVar() const override;
 
 	void SetTeam(const int team) { m_iMyTeam = team; }
 	void SetRadius(const float radius) { m_flMyRadius = radius; }
@@ -30,6 +31,7 @@ private:
 	int m_iCapTexHeight = 0;
 	int m_flMyRadius = 0;
 	int m_iMyTeam = TEAM_INVALID;
+	float m_flDistance = 0.0f;
 	float m_flCapTexScale = 1.0f;
 	float m_fMarkerScalesStart[4] = { 0.78f, 0.6f, 0.38f, 0.0f };
 	float m_fMarkerScalesCurrent[4] = { 0.78f, 0.6f, 0.38f, 0.0f };
