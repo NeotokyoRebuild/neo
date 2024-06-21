@@ -544,10 +544,14 @@ int C_NEO_Player::DrawModel(int flags)
 {
 	int ret = BaseClass::DrawModel(flags);
 
+	if (!ret) {
+		return ret;
+	}
+
 	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if (pLocalPlayer && pLocalPlayer->IsInVision())
 	{
-		auto vel = GetAbsVelocity().Length2D();
+		auto vel = GetAbsVelocity().Length();
 		if ((pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT) && vel > 1)
 		{
 			IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
@@ -587,9 +591,8 @@ int C_NEO_Player::DrawModel(int flags)
 
 		if (pass && !pass->IsErrorMaterial())
 		{
-			//const int extraFlags = STUDIO_RENDER | STUDIO_TRANSPARENCY | STUDIO_NOSHADOWS | STUDIO_DRAWTRANSLUCENTSUBMODELS;
 			modelrender->ForcedMaterialOverride(pass);
-			ret = BaseClass::DrawModel(flags /*| extraFlags*/);
+			ret = BaseClass::DrawModel(flags);
 			modelrender->ForcedMaterialOverride(NULL);
 		}
 	}
