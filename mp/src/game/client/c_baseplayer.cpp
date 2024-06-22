@@ -129,6 +129,10 @@ ConVar cl_meathook_neck_pivot_ingame_fwd( "cl_meathook_neck_pivot_ingame_fwd", "
 
 static ConVar	cl_clean_textures_on_death( "cl_clean_textures_on_death", "0", FCVAR_DEVELOPMENTONLY,  "If enabled, attempts to purge unused textures every time a freeze cam is shown" );
 
+#ifdef NEO
+extern ConVar neo_fov;
+#endif
+
 
 void RecvProxy_LocalVelocityX( const CRecvProxyData *pData, void *pStruct, void *pOut );
 void RecvProxy_LocalVelocityY( const CRecvProxyData *pData, void *pStruct, void *pOut );
@@ -2450,6 +2454,7 @@ float C_BasePlayer::GetFOV( void )
 		return clamp( demo_fov_override.GetFloat(), 10.0f, 90.0f );
 	}
 
+#ifndef NEO
 	if ( GetObserverMode() == OBS_MODE_IN_EYE )
 	{
 		C_BasePlayer *pTargetPlayer = dynamic_cast<C_BasePlayer*>( GetObserverTarget() );
@@ -2460,6 +2465,21 @@ float C_BasePlayer::GetFOV( void )
 			return pTargetPlayer->GetFOV();
 		}
 	}
+#else
+	if ( GetObserverMode() == OBS_MODE_IN_EYE )
+	{
+		auto *pTargetPlayer = dynamic_cast<CNEO_Player*>(GetObserverTarget());
+
+		// get fov from observer target. Not if target is observer itself
+		if ( pTargetPlayer && !pTargetPlayer->IsObserver() )
+		{
+			if (pTargetPlayer->m_bInAim)
+			{
+				return neo_fov.GetFloat() - 30.0f;
+			}
+		}
+	}
+#endif
 
 	// Allow our vehicle to override our FOV if it's currently at the default FOV.
 	float flDefaultFOV;
@@ -2471,7 +2491,11 @@ float C_BasePlayer::GetFOV( void )
 	}
 	else
 	{
+#ifdef NEO
+		flDefaultFOV = neo_fov.GetFloat();
+#else
 		flDefaultFOV = GetDefaultFOV();
+#endif
 	}
 	
 	float fFOV = ( m_iFOV == 0 ) ? flDefaultFOV : m_iFOV;

@@ -72,7 +72,7 @@ extern ConVar default_fov;
 extern bool g_bRenderingScreenshot;
 
 #ifdef NEO
-extern ConVar neo_fov;
+ConVar neo_fov("neo_fov", "90", FCVAR_USERINFO, "Set the normal FOV.", true, 60.0f, true, (float)(MAX_FOV));
 #endif
 
 #if !defined( _X360 )
@@ -621,10 +621,16 @@ void CViewRender::OnRenderStart()
 	C_BasePlayer *player = C_BasePlayer::GetLocalPlayer();
 	if ( player )
 	{
+#ifndef NEO
 		default_fov.SetValue( player->m_iDefaultFOV );
+#endif
 
 		//Update our FOV, including any zooms going on
+#ifdef NEO
+		int iDefaultFOV = neo_fov.GetInt();
+#else
 		int iDefaultFOV = default_fov.GetInt();
+#endif
 		int	localFOV	= player->GetFOV();
 		int min_fov		= player->GetMinFOV();
 

@@ -594,10 +594,10 @@ CBasePlayer::CBasePlayer( )
 	m_qangLockViewangles.Init();
 
 	// Setup our default FOV
-#ifndef NEO
-	m_iDefaultFOV = g_pGameRules->DefaultFOV();
+#ifdef NEO
+	m_iDefaultFOV = 0;
 #else
-	m_iDefaultFOV = ClientFOV();
+	m_iDefaultFOV = g_pGameRules->DefaultFOV();
 #endif
 
 	m_hZoomOwner = NULL;
@@ -8642,8 +8642,8 @@ void CBasePlayer::SetDefaultFOV( int FOV )
 #ifndef NEO
 	m_iDefaultFOV = ( FOV == 0 ) ? g_pGameRules->DefaultFOV() : FOV;
 #else
-	(void)FOV;	// Unused - Override to take from ClientFOV instead
-	m_iDefaultFOV = ClientFOV();
+	NOTE_UNUSED(FOV);
+	m_iDefaultFOV = 0;
 #endif
 }
 

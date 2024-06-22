@@ -137,6 +137,10 @@ ConVar neo_round_timelimit("neo_round_timelimit", "2.75", FCVAR_REPLICATED, "Neo
 ConVar neo_sv_ignore_wep_xp_limit("neo_sv_ignore_wep_xp_limit", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "If true, allow equipping any loadout regardless of player XP.",
 	true, 0.0f, true, 1.0f);
 
+#ifdef CLIENT_DLL
+extern ConVar neo_fov;
+#endif
+
 extern CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
 
 static const char *s_NeoPreserveEnts[] =
@@ -390,7 +394,7 @@ void CNEORules::ClientSpawned(edict_t* pPlayer)
 int CNEORules::DefaultFOV(void)
 {
 #ifdef CLIENT_DLL
-	return C_NEO_Player::GetLocalNEOPlayer()->ClientFOV();
+	return neo_fov.GetFloat();
 #else
 	return 90;
 #endif
@@ -1344,7 +1348,6 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 	{
 		pNEOPlayer->SetPlayerTeamModel();
 	}
-	pNEOPlayer->SetDefaultFOV(pNEOPlayer->ClientFOV());
 
 	const char *pszSteamName = engine->GetClientConVarValue(pPlayer->entindex(), "name");
 

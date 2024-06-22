@@ -152,7 +152,7 @@ public:
 	bool RoundIsInSuddenDeath() const;
 	bool RoundIsMatchPoint() const;
 
-	virtual int DefaultFOV(void) OVERRIDE;
+	virtual int DefaultFOV(void) override;
 
 	float GetRemainingPreRoundFreezeTime(const bool clampToZero) const;
 
