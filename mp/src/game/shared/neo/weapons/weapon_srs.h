@@ -55,7 +55,6 @@ public:
 
 	Activity	GetPrimaryAttackActivity(void);
 
-	virtual float GetFireRate(void) OVERRIDE { return 0.4f; }
 	float m_flChamberFinishTime = maxfloat16bits;
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
