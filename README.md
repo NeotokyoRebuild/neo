@@ -282,6 +282,13 @@ ln -s materialsystem_srv.so materialsystem.so;
     * Double check on the log that VAC is disabled before continuing
 7. In-game on Windows it'll showup in the server list, on Linux it probably won't and you'll have to use `connect` command directly (EX: `connect 192.168.1.###` for LAN server)
 
+### SourceMod server modification plugins
+[SourceMod](https://www.sourcemod.net/) plugins should generally work with NT;RE, however they have to be added to the `ShowMenu` whitelist to make the menu display properly. To do this:
+1. Go to directory `addons/sourcemod/gamedata/core.games` where you should find `common.games.txt`
+2. Create the directory `custom` and make a copy of `common.games.txt` into it
+3. Open `custom/common.games.txt` and look for a comment that says "Which games support ShowMenu?"
+4. Add `neo` to that list like this: `"game" "neo"`
+
 ## Shader authoring (Windows setup)
 
 ### Compiling the shaders
