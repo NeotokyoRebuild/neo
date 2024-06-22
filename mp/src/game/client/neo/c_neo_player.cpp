@@ -229,6 +229,7 @@ public:
 
 		if (panel->IsVisible() && panel->IsEnabled())
 		{
+			panel->MoveToFront();
 			return;	// Prevent cursor stuck
 		}
 
@@ -296,6 +297,7 @@ public:
 
 		if (panel->IsVisible() && panel->IsEnabled())
 		{
+			panel->MoveToFront();
 			return;	// Prevent cursor stuck
 		}
 
@@ -349,6 +351,7 @@ public:
 
 		if (panel->IsVisible() && panel->IsEnabled())
 		{
+			panel->MoveToFront();
 			return;	// Prevent cursor stuck
 		}
 
