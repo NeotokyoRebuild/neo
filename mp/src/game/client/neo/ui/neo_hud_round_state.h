@@ -38,9 +38,7 @@ protected:
 
 private:
 	void CheckActiveStar();
-	void DrawFriend(int playerIndex, int teamIndex, const TeamLogoColor &teamLogoColor,
-					const bool localPlayerInGame);
-	void DrawEnemy(int playerIndex, int teamIndex, const TeamLogoColor &teamLogoColor);
+	void DrawPlayer(int playerIndex, int teamIndex, const TeamLogoColor &teamLogoColor, const int xOffset, const bool drawHealthClass);
 	void UpdatePlayerAvatar(int playerIndex);
 	void SetTextureToAvatar(int playerIndex);
 
