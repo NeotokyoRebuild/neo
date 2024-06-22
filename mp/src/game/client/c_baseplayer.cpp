@@ -2473,10 +2473,22 @@ float C_BasePlayer::GetFOV( void )
 		// get fov from observer target. Not if target is observer itself
 		if ( pTargetPlayer && !pTargetPlayer->IsObserver() )
 		{
-			if (pTargetPlayer->m_bInAim)
+			// NEO NOTE (nullsystem): This uses a percentage based
+			float fov = pTargetPlayer->m_flSpecFOV;
+			if (!prediction->InPrediction())
 			{
-				return neo_fov.GetFloat() - 30.0f;
+				if ((pTargetPlayer->m_bInAim && (fov == neo_fov.GetFloat() - 30.0f)) ||
+						(!pTargetPlayer->m_bInAim && (fov == neo_fov.GetFloat())))
+				{
+					return fov;
+				}
+				float perc = (gpGlobals->curtime - pTargetPlayer->m_flFOVTime) / NEO_ZOOM_SPEED;
+				if (pTargetPlayer->m_bInAim) perc = 1.0f - perc;
+				perc = clamp(perc, 0.0f, 1.0f);
+				fov = SimpleSplineRemapValClamped( perc, 0.0f, 1.0f, neo_fov.GetFloat() - 30.0f, neo_fov.GetFloat());
+				pTargetPlayer->m_flSpecFOV = fov;
 			}
+			return fov;
 		}
 	}
 #endif
