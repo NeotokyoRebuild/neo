@@ -380,7 +380,7 @@ inline bool CShader_IsFlag2Set( IMaterialVar **params, MaterialVarFlags2_t _flag
 
 // vsh ## shader is used here to generate a warning if you don't ever call SET_STATIC_VERTEX_SHADER
 #define DECLARE_STATIC_VERTEX_SHADER( shader ) \
-	[[maybe_unused]]int declarestaticvertshader_ ## shader ## _missingcurlybraces = 0; \
+	[[maybe_unused]] int declarestaticvertshader_ ## shader ## _missingcurlybraces = 0; \
 	shader ## _Static_Index _vshIndex; \
 	int vsh ## shader = 0
 
