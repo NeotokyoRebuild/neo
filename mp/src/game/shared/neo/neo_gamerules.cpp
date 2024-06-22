@@ -31,7 +31,7 @@ ConVar mp_neo_preround_freeze_time("mp_neo_preround_freeze_time", "10", FCVAR_RE
 ConVar mp_neo_latespawn_max_time("mp_neo_latespawn_max_time", "15", FCVAR_REPLICATED, "How many seconds late are players still allowed to spawn.", true, 0.0, false, 0);
 
 ConVar sv_neo_wep_dmg_modifier("sv_neo_wep_dmg_modifier", "0.5", FCVAR_REPLICATED, "Temp global weapon damage modifier.", true, 0.0, true, 100.0);
-ConVar neo_sv_player_restore("neo_sv_player_restore", "1", FCVAR_REPLICATED, "If enabled, the server will save and restore players XP and deaths per match session.", true, 0.0f, true, 1.0f);
+ConVar neo_sv_player_restore("neo_sv_player_restore", "1", FCVAR_REPLICATED, "If enabled, the server will save players XP and deaths per match session and restore them if they reconnect.", true, 0.0f, true, 1.0f);
 
 ConVar neo_name("neo_name", "", FCVAR_USERINFO | FCVAR_ARCHIVE, "The nickname to set instead of the steam profile name.");
 ConVar cl_fakenick("cl_fakenick", "1", FCVAR_USERINFO | FCVAR_ARCHIVE, "Show players set neo_name, otherwise only show Steam names.", true, 0.0f, true, 1.0f);

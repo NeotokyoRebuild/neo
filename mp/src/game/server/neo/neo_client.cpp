@@ -45,7 +45,7 @@ void FinishClientPutInServer( CNEO_Player *pPlayer )
 				const CNEORules::RestoreInfo &restoreInfo = restoredInfos.Element(hdl);
 				pPlayer->m_iXP.Set(restoreInfo.xp);
 				pPlayer->IncrementDeathCount(restoreInfo.deaths);
-				ClientPrint(pPlayer, HUD_PRINTTALK, "Your XP and death count restored!\n");
+				ClientPrint(pPlayer, HUD_PRINTTALK, "Your XP and death count have been restored.\n");
 			}
 		}
 	}
