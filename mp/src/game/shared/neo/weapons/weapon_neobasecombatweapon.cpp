@@ -232,6 +232,11 @@ bool CNEOBaseCombatWeapon::Deploy(void)
 	return ret;
 }
 
+float CNEOBaseCombatWeapon::GetFireRate()
+{
+	return GetHL2MPWpnData().m_flCycleTime;
+}
+
 #ifdef CLIENT_DLL
 bool CNEOBaseCombatWeapon::Holster(CBaseCombatWeapon* pSwitchingTo)
 {

@@ -211,7 +211,7 @@ public:
 
 	virtual bool Deploy(void);
 
-	virtual float GetFireRate(void) OVERRIDE { Assert(false); return BaseClass::GetFireRate(); } // Should never call this base class; override in children.
+	virtual float GetFireRate() override final;
 	virtual bool GetRoundChambered() const { return 0; }
 	virtual bool GetRoundBeingChambered() const { return 0; }
 
