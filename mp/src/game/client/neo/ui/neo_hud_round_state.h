@@ -17,13 +17,6 @@ class CNEOHud_RoundState : public CNEOHud_ChildElement, public CHudElement, publ
 {
 	DECLARE_CLASS_SIMPLE(CNEOHud_RoundState, Panel);
 
-	struct TeamLogoColor
-	{
-		int logo;
-		int totalLogo;
-		Color color;
-	};
-
 public:
 	CNEOHud_RoundState(const char *pElementName, vgui::Panel *parent = NULL);
 	~CNEOHud_RoundState();
@@ -37,8 +30,16 @@ protected:
 	virtual ConVar* GetUpdateFrequencyConVar() const;
 
 private:
+	struct TeamLogoColor
+	{
+		int logo;
+		int totalLogo;
+		Color color;
+	};
+
 	void CheckActiveStar();
-	void DrawPlayer(int playerIndex, int teamIndex, const TeamLogoColor &teamLogoColor, const int xOffset, const bool drawHealthClass);
+	void DrawPlayer(int playerIndex, int teamIndex, const TeamLogoColor &teamLogoColor,
+					const int xOffset, const bool drawHealthClass);
 	void UpdatePlayerAvatar(int playerIndex);
 	void SetTextureToAvatar(int playerIndex);
 

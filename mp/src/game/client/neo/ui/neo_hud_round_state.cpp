@@ -322,10 +322,11 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 	const int localPlayerTeam = GetLocalPlayerTeam();
 	const int localPlayerIndex = GetLocalPlayerIndex();
 	const bool localPlayerSpec = !(localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF);
+
 	const int leftTeam = localPlayerSpec ? TEAM_JINRAI : localPlayerTeam;
-	const int enemyTeam = (leftTeam == TEAM_JINRAI) ? TEAM_NSF : TEAM_JINRAI;
+	const int rightTeam = (leftTeam == TEAM_JINRAI) ? TEAM_NSF : TEAM_JINRAI;
 	const auto leftTeamInfo = m_teamLogoColors[leftTeam];
-	const auto rightTeamInfo = m_teamLogoColors[enemyTeam];
+	const auto rightTeamInfo = m_teamLogoColors[rightTeam];
 
 	// Draw players
 	if (!g_PR)
@@ -335,27 +336,32 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 	m_iFriendsTotal = 0;
 	m_iEnemiesAlive = 0;
 	m_iEnemiesTotal = 0;
-	int friendCount = 0;
-	int enemyCount = 0;
-	for (int i = 0; i < (MAX_PLAYERS + 1); i++) {
-		if (g_PR->IsConnected(i)) {
+	int leftCount = 0;
+	int rightCount = 0;
+	for (int i = 0; i < (MAX_PLAYERS + 1); i++)
+	{
+		if (g_PR->IsConnected(i))
+		{
 			const int playerTeam = g_PR->GetTeam(i);
-			if (playerTeam == leftTeam) {
+			if (playerTeam == leftTeam)
+			{
 				const bool isSameSquad = g_PR->GetStar(i) == g_PR->GetStar(localPlayerIndex);
-				if (localPlayerSpec || isSameSquad) {
-					const int xOffset = m_iFriendlyLogoXOffset - ((friendCount + 1) * m_ilogoSize) - (friendCount * 2);
-					DrawPlayer(i, friendCount, leftTeamInfo, xOffset, true);
-					friendCount++;
+				if (localPlayerSpec || isSameSquad)
+				{
+					const int xOffset = m_iFriendlyLogoXOffset - ((leftCount + 1) * m_ilogoSize) - (leftCount * 2);
+					DrawPlayer(i, leftCount, leftTeamInfo, xOffset, true);
+					leftCount++;
 				}
 
 				if (g_PR->IsAlive(i))
 					m_iFriendsAlive++;
 				m_iFriendsTotal++;
 			}
-			else if (playerTeam == enemyTeam) {
-				const int xOffset = m_iEnemyLogoXOffset + (enemyCount * m_ilogoSize) + (enemyCount * 2);
-				DrawPlayer(i, enemyCount, rightTeamInfo, xOffset, localPlayerSpec);
-				enemyCount++;
+			else if (playerTeam == rightTeam)
+			{
+				const int xOffset = m_iEnemyLogoXOffset + (rightCount * m_ilogoSize) + (rightCount * 2);
+				DrawPlayer(i, rightCount, rightTeamInfo, xOffset, localPlayerSpec);
+				rightCount++;
 
 				if (g_PR->IsAlive(i))
 					m_iEnemiesAlive++;
