@@ -1,8 +1,12 @@
 add_library(server SHARED)
 
+add_library_copy_target(TARGET server CREATE_SRV)
+
 set_target_properties(server PROPERTIES PREFIX "")
 
-add_dependencies(server get_build_info)
+if(NEO_DEDICATED AND OS_LINUX)
+    set_target_properties(server PROPERTIES OUTPUT_NAME server_srv)
+endif()
 
 target_include_directories(server
     PRIVATE
@@ -1317,6 +1321,8 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_shot_manipulator.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_shot_manipulator.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.h
     neo/neo_client.cpp
     neo/neo_detpack.cpp
     neo/neo_detpack.h
@@ -1462,5 +1468,3 @@ target_sources_grouped(
     hl2mp/te_hl2mp_shotgun_shot.cpp
     hl2mp/te_hl2mp_shotgun_shot.h
 )
-
-add_library_copy_and_symlink(TARGET server CREATE_SRV)

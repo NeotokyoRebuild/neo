@@ -1,5 +1,7 @@
 add_library(game_shader_dx9 SHARED)
 
+add_library_copy_target(TARGET game_shader_dx9)
+
 set_target_properties(game_shader_dx9 PROPERTIES PREFIX "")
 
 target_include_directories(game_shader_dx9
@@ -112,5 +114,3 @@ target_sources_grouped(
     Neo_refract_dx9_helper.cpp
     Neo_refract_dx9_helper.h
 )
-
-add_library_copy_and_symlink(TARGET game_shader_dx9)

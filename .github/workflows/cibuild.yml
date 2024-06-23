@@ -1,0 +1,105 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: ${{ matrix.platform.name }} ${{ matrix.build_type }}
+
+    runs-on: ${{ matrix.platform.os }}
+
+    defaults:
+      run:
+        shell: ${{ matrix.platform.shell || 'bash -e {0}' }}
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        platform:
+        - { name: 'Ubuntu native', os: ubuntu-latest, c_compiler: gcc, cpp_compiler: g++ }
+        - { name: 'Windows native', os: windows-latest, c_compiler: cl, cpp_compiler: cl }
+
+        build_type: [Debug, RelWithDebInfo]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install packages
+      if: ${{ matrix.platform.os == 'ubuntu-latest' }}
+      run: |
+        sudo apt update
+        sudo apt install gcc-multilib g++-multilib -y
+
+    - name: Set reusable strings
+      run: |
+        workspace_dir="${{ github.workspace }}"
+        echo "source_dir=${workspace_dir//\\//}/mp/src" >> "$GITHUB_ENV"
+        echo "build_dir=${workspace_dir//\\//}/mp/src/build" >> "$GITHUB_ENV"
+
+    # Libraries
+
+    - name: CMake configure libraries build
+      run: >
+        cmake
+        -G Ninja
+        -S ${{ env.source_dir }}
+        -B ${{ env.build_dir }}
+        -DCMAKE_CXX_COMPILER=${{ matrix.platform.cpp_compiler }}
+        -DCMAKE_C_COMPILER=${{ matrix.platform.c_compiler }}
+        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -DNEO_USE_CCACHE=OFF
+        -DNEO_INSTALL_LIBRARIES=ON
+        -DNEO_INSTALL_RESOURCES=OFF
+
+    - name: CMake libraries build
+      run: cmake --build ${{ env.build_dir }} --parallel --verbose
+
+    - name: CPack libraries
+      working-directory: ${{ env.build_dir }}
+      run: cpack --verbose
+
+    # Dedicated library
+
+    - name: CMake reconfigure dedicated library build
+      run: >
+        cmake
+        -S ${{ env.source_dir }}
+        -B ${{ github.workspace }}/build
+        -DNEO_DEDICATED=ON
+
+    - name: CMake dedicated library build
+      run: cmake --build ${{ env.build_dir }} --parallel --verbose
+
+    - name: CPack dedicated library
+      working-directory: ${{ env.build_dir }}
+      run: cpack --verbose
+
+    # Resources
+
+    - name: CMake reconfigure resources build
+      if: ${{ env.resources_uploaded != 'true' }}
+      run: >
+        cmake
+        -S ${{ env.source_dir }}
+        -B ${{ env.build_dir }}
+        -DNEO_INSTALL_LIBRARIES=OFF
+        -DNEO_INSTALL_RESOURCES=ON
+
+    - name: CPack resources
+      if: ${{ env.resources_uploaded != 'true' }}
+      working-directory: ${{ env.build_dir }}
+      run: |
+        cpack --verbose
+        echo "resources_uploaded=true" >> "$GITHUB_ENV"
+
+    # Artifacts
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@main
+      with:
+        name: ${{ matrix.platform.name }} ${{ matrix.build_type }} github-${{ github.run_number }})
+        path: ${{ env.build_dir }}/neo-*-*.*
