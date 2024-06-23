@@ -1917,16 +1917,19 @@ int CBasePlayer::GetDefaultFOV( void ) const
 	int iFOV = ( m_iDefaultFOV == 0 ) ? g_pGameRules->DefaultFOV() : m_iDefaultFOV;
 #else
 #ifdef CLIENT_DLL
-	int iFOV = neo_fov.GetFloat();
+	int iFOV = neo_fov.GetInt();
 #else
 	int iFOV = ( m_iDefaultFOV == 0 ) ? g_pGameRules->DefaultFOV() : m_iDefaultFOV;
 	if (!(GetFlags() & FL_FAKECLIENT))
 	{
 		// NOTE (nullsystem): Think this only called once in a while so not too bad
-		iFOV = atoi(engine->GetClientConVarValue(engine->IndexOfEdict(edict()), "neo_fov"));
+		if (auto fovOpt = StrToInt(engine->GetClientConVarValue(engine->IndexOfEdict(edict()), "neo_fov")))
+		{
+			iFOV = *fovOpt;
+		}
 	}
-#endif
-#endif
+#endif // CLIENT_DLL
+#endif // NEO
 	if ( iFOV > MAX_FOV )
 		iFOV = MAX_FOV;
 

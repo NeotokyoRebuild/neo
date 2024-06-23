@@ -394,7 +394,7 @@ void CNEORules::ClientSpawned(edict_t* pPlayer)
 int CNEORules::DefaultFOV(void)
 {
 #ifdef CLIENT_DLL
-	return neo_fov.GetFloat();
+	return neo_fov.GetInt();
 #else
 	return 90;
 #endif
@@ -1347,6 +1347,10 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 	if (V_stricmp(pCurrentModel, pTargetModel))
 	{
 		pNEOPlayer->SetPlayerTeamModel();
+	}
+	if (auto fovOpt = StrToInt(engine->GetClientConVarValue(engine->IndexOfEdict(pNEOPlayer->edict()), "neo_fov")))
+	{
+		pNEOPlayer->SetDefaultFOV(*fovOpt);
 	}
 
 	const char *pszSteamName = engine->GetClientConVarValue(pPlayer->entindex(), "name");

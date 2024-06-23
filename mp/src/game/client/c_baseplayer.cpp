@@ -2474,11 +2474,6 @@ float C_BasePlayer::GetFOV( void )
 		// get fov from observer target. Not if target is observer itself
 		if (pTargetPlayer && !pTargetPlayer->IsObserver())
 		{
-			if (neo_fov_relay_spec.GetBool())
-			{
-				return pTargetPlayer->GetFOV();
-			}
-
 			// NEO NOTE (nullsystem): This uses a percentage based rather than delta, but it's good enough
 			// to provide a motion of going between ADS states rather than immediate for the spectator viewing
 			// in first person
@@ -2486,7 +2481,7 @@ float C_BasePlayer::GetFOV( void )
 			if (!prediction->InPrediction())
 			{
 				auto *neoWep = dynamic_cast<CNEOBaseCombatWeapon *>(pTargetPlayer->GetActiveWeapon());
-				const float fovNorm = neo_fov.GetFloat();
+				const float fovNorm = (neo_fov_relay_spec.GetBool()) ? pTargetPlayer->m_iDefaultFOV : neo_fov.GetFloat();
 				const float fovAim = (neoWep && neoWep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON) ?
 						neoWep->GetWpnData().iAimFOV :
 						fovNorm - NEO_FOV_AIM_OFFSET;
