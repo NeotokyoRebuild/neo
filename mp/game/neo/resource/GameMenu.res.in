@@ -56,7 +56,7 @@
 	}
 	"13"
 	{
-		"label" "Build @BUILD_DATE@_@GIT_HASH@ (@OS_BUILD@)"
+		"label" "Build @BUILD_DATE_SHORT@_@GIT_HASH@ (@OS_BUILD@)"
 		"command" ""
 	}
 }

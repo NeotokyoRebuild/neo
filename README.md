@@ -28,19 +28,14 @@ NT;RE can be built using [VS2022 IDE](#visual-studio-2022-windows), [Qt Creator 
 #### Visual Studio 2022 (Windows)
 1. Open up VS2022 without a project, then go to: `File > Open > CMake...`
 2. Open the `CMakeLists.txt` found in `mp\src`
-3. In the top section, you may see "x64-Debug"/"x64-Release" as a selected profile. This needs to be changed to "x86-Debug"/"x86-Release" as this is a 32-bit project. To do so...
-4. Click on the dropdown, go to: "Manage Configurations..."
-5. Click the green plus button and select "x86-Debug" for debug or "x86-Release" for release mode and apply the configuration.
-6. Then make sure to change it over to "x86-Debug" or "x86-Release".
-7. In the "Solution Explorer", it'll be under the "Folder View". To switch to the CMake view, right-click and click on "Switch to CMake Targets View".
+3. To switch to the CMake view, right-click and click on "Switch to CMake Targets View" in the "Solution Explorer", it'll be under the "Folder View".
 
 After that, it should be able to compile. For debugger/run CMake configuration, refer to: [CONTRIBUTING.md - Debugging - VS2022 + CMake (Windows)](CONTRIBUTING.md#vs2022--cmake-windows).
 
 #### Qt Creator (Linux)
 1. On the "Welcome" screen, click on "Open Project..."
 2. Open the `CMakeLists.txt` found in `mp/src`
-3. It may ask about kit configuration, tick both Debug and Release configuration and set their build directories ending in "...build/debug" and "...build/release" respectively.
-4. By default, the build is not done in parallel but rather sequentiality. Note, parallel builds at the default setting could deadlock the system or make it unresponsive during the process. Available since CMake 3.12, the amount of jobs can be tweaked using `--parallel <jobs>` where `<jobs>` is a number to specify parallel build level, or just simply don't apply it to turn it off. To turn on parallel builds in Qt Creator: On the "Projects" screen, in [YOUR KIT (under Build & Run)] > Build, go to "Build Steps" section, expand by clicking on "Details", and add `--parallel` to the CMake arguments.
+3. By default, the build is not done in parallel but rather sequentiality. Note, parallel builds at the default setting could deadlock the system or make it unresponsive during the process. Available since CMake 3.12, the amount of jobs can be tweaked using `--parallel <jobs>` where `<jobs>` is a number to specify parallel build level, or just simply don't apply it to turn it off. To turn on parallel builds in Qt Creator: On the "Projects" screen, in [YOUR KIT (under Build & Run)] > Build, go to "Build Steps" section, expand by clicking on "Details", and add `--parallel` to the CMake arguments.
 
 After that, it should be able to compile. For debugger/running configuration, refer to: [CONTRIBUTING.md - Debugging - Qt Creator (Linux)](CONTRIBUTING.md#qt-creator-linux)
 
@@ -83,15 +78,11 @@ Using with the ninja build system, to build NT;RE using the CLI can be done with
 
 ```
 $ cd /PATH_TO_REPO/neo/mp/src
-
-$ # To build in Release mode:
-$ cmake -S . -B build/release -G Ninja -DCMAKE_BUILD_TYPE=Release
-$ cmake --build build/release --parallel
-
-$ # To build in Debug mode:
-$ cmake -S . -B build/debug -G Ninja
-$ cmake --build build/debug --parallel
+$ cmake --preset PRESET_NAME
+$ cmake --build --preset PRESET_NAME
 ```
+
+Available PRESET_NAME values: `windows-debug`, `windows-release`, `linux-debug`, `linux-release`.
 
 ## Steam mod setup
 To make it appear in Steam, the install files have to appear under the sourcemods directory or

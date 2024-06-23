@@ -1,14 +1,5 @@
-string(TIMESTAMP BUILD_DATE "%Y%m%d")
-string(TIMESTAMP BUILD_DATETIME UTC)
-
 find_package(Git REQUIRED)
-execute_process(
-    COMMAND git log -1 --format=%h
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    OUTPUT_VARIABLE GIT_HASH
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-    ERROR_QUIET
-)
+
 execute_process(
     COMMAND git log -1 --format=%H
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
@@ -16,16 +7,23 @@ execute_process(
     OUTPUT_STRIP_TRAILING_WHITESPACE
     ERROR_QUIET
 )
-string(SUBSTRING "${GIT_HASH}" 0 7 GIT_HASH)
+string(SUBSTRING "${GIT_LONGHASH}" 0 7 GIT_HASH)
+
+string(TIMESTAMP BUILD_DATE_SHORT "%Y%m%d")
+string(TIMESTAMP BUILD_DATE_LONG "%Y-%m-%d")
+
+set(OS_BUILD "${CMAKE_SYSTEM_NAME}")
+set(COMPILER_ID "${CMAKE_CXX_COMPILER_ID}")
+set(COMPILER_VERSION "${CMAKE_CXX_COMPILER_VERSION}")
 
 configure_file(
-    ${CMAKE_SOURCE_DIR}/../game/neo/resource/GameMenu.preproc.res
+    ${CMAKE_SOURCE_DIR}/../game/neo/resource/GameMenu.res.in
     ${CMAKE_SOURCE_DIR}/../game/neo/resource/GameMenu.res
     @ONLY
 )
 
 configure_file(
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.preproc.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.cpp.in
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.cpp
     @ONLY
 )
