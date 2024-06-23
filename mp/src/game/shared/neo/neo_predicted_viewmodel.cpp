@@ -347,6 +347,18 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 	const Vector& eyePosition, const QAngle& eyeAngles)
 {
+	if (pOwner->GetObserverMode() == OBS_MODE_IN_EYE)
+	{
+		if (auto *pTargetPlayer = dynamic_cast<CNEO_Player *>(pOwner->GetObserverTarget());
+				pTargetPlayer && !pTargetPlayer->IsObserver())
+		{
+			// NEO NOTE (nullsystem): 1st person mode pOwner = pTargetPlayer eye position
+			// Take the target player's viewmodel FOV instead, otherwise it'll just look like it doesn't
+			// change viewmodel FOV on 1st spectate
+			return CalcViewModelView(pTargetPlayer, eyePosition, eyeAngles);
+		}
+	}
+
 	// Is there a nicer way to do this?
 	auto weapon = static_cast<CWeaponHL2MPBase*>(GetOwningWeapon());
 
