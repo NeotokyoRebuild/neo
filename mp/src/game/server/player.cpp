@@ -8637,12 +8637,11 @@ float CBasePlayer::GetFOVDistanceAdjustFactorForNetworking()
 // Purpose: Sets the default FOV for the player if nothing else is going on
 // Input  : FOV - the new base FOV for this player
 //-----------------------------------------------------------------------------
-void CBasePlayer::SetDefaultFOV( int FOV )
+void CBasePlayer::SetDefaultFOV( [[maybe_unused]] int FOV )
 {
 #ifndef NEO
 	m_iDefaultFOV = ( FOV == 0 ) ? g_pGameRules->DefaultFOV() : FOV;
 #else
-	NOTE_UNUSED(FOV);
 	m_iDefaultFOV = 0;
 #endif
 }

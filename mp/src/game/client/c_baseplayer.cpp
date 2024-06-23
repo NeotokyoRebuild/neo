@@ -131,6 +131,7 @@ static ConVar	cl_clean_textures_on_death( "cl_clean_textures_on_death", "0", FCV
 
 #ifdef NEO
 extern ConVar neo_fov;
+extern ConVar neo_fov_relay_spec;
 #endif
 
 
@@ -2466,26 +2467,40 @@ float C_BasePlayer::GetFOV( void )
 		}
 	}
 #else
-	if ( GetObserverMode() == OBS_MODE_IN_EYE )
+	if (GetObserverMode() == OBS_MODE_IN_EYE)
 	{
-		auto *pTargetPlayer = dynamic_cast<CNEO_Player*>(GetObserverTarget());
+		auto *pTargetPlayer = dynamic_cast<CNEO_Player *>(GetObserverTarget());
 
 		// get fov from observer target. Not if target is observer itself
-		if ( pTargetPlayer && !pTargetPlayer->IsObserver() )
+		if (pTargetPlayer && !pTargetPlayer->IsObserver())
 		{
-			// NEO NOTE (nullsystem): This uses a percentage based
+			if (neo_fov_relay_spec.GetBool())
+			{
+				return pTargetPlayer->GetFOV();
+			}
+
+			// NEO NOTE (nullsystem): This uses a percentage based rather than delta, but it's good enough
+			// to provide a motion of going between ADS states rather than immediate for the spectator viewing
+			// in first person
 			float fov = pTargetPlayer->m_flSpecFOV;
 			if (!prediction->InPrediction())
 			{
-				if ((pTargetPlayer->m_bInAim && (fov == neo_fov.GetFloat() - 30.0f)) ||
-						(!pTargetPlayer->m_bInAim && (fov == neo_fov.GetFloat())))
+				auto *neoWep = dynamic_cast<CNEOBaseCombatWeapon *>(pTargetPlayer->GetActiveWeapon());
+				const float fovNorm = neo_fov.GetFloat();
+				const float fovAim = (neoWep && neoWep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON) ?
+						neoWep->GetWpnData().iAimFOV :
+						fovNorm - NEO_FOV_AIM_OFFSET;
+
+				// Don't spline/lerp when we're already at the desired FOV
+				if ((pTargetPlayer->m_bInAim && (fov == fovAim)) ||
+						(!pTargetPlayer->m_bInAim && (fov == fovNorm)))
 				{
 					return fov;
 				}
 				float perc = (gpGlobals->curtime - pTargetPlayer->m_flFOVTime) / NEO_ZOOM_SPEED;
-				if (pTargetPlayer->m_bInAim) perc = 1.0f - perc;
 				perc = clamp(perc, 0.0f, 1.0f);
-				fov = SimpleSplineRemapValClamped( perc, 0.0f, 1.0f, neo_fov.GetFloat() - 30.0f, neo_fov.GetFloat());
+				if (pTargetPlayer->m_bInAim) perc = 1.0f - perc;
+				fov = SimpleSplineRemapValClamped( perc, 0.0f, 1.0f, fovAim, fovNorm);
 				pTargetPlayer->m_flSpecFOV = fov;
 			}
 			return fov;

@@ -72,7 +72,8 @@ extern ConVar default_fov;
 extern bool g_bRenderingScreenshot;
 
 #ifdef NEO
-ConVar neo_fov("neo_fov", "90", FCVAR_USERINFO, "Set the normal FOV.", true, 60.0f, true, (float)(MAX_FOV));
+ConVar neo_fov("neo_fov", "90", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the normal FOV.", true, 60.0f, true, (float)(MAX_FOV));
+ConVar neo_fov_relay_spec("neo_fov_relay_spec", "0", FCVAR_ARCHIVE | FCVAR_USERINFO, "If enabled, it will relay the player's neo_fov to the spectators.", true, 0.0f, true, 1.0f);
 #endif
 
 #if !defined( _X360 )
