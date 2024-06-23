@@ -347,19 +347,15 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 	const Vector& eyePosition, const QAngle& eyeAngles)
 {
-	const int observerMode = pOwner->GetObserverMode();
-	if (observerMode != OBS_MODE_NONE)
+	if (pOwner->GetObserverMode() == OBS_MODE_IN_EYE)
 	{
-		if (observerMode == OBS_MODE_IN_EYE)
+		if (auto *pTargetPlayer = dynamic_cast<CNEO_Player *>(pOwner->GetObserverTarget());
+				pTargetPlayer && !pTargetPlayer->IsObserver())
 		{
-			if (auto *pTargetPlayer = dynamic_cast<CNEO_Player *>(pOwner->GetObserverTarget());
-					pTargetPlayer && !pTargetPlayer->IsObserver())
-			{
-				// NEO NOTE (nullsystem): 1st person mode pOwner = pTargetPlayer eye position
-				// Take the target player's viewmodel FOV instead, otherwise it'll just look like it doesn't
-				// change viewmodel FOV on 1st spectate
-				return CalcViewModelView(pTargetPlayer, eyePosition, eyeAngles);
-			}
+			// NEO NOTE (nullsystem): 1st person mode pOwner = pTargetPlayer eye position
+			// Take the target player's viewmodel FOV instead, otherwise it'll just look like it doesn't
+			// change viewmodel FOV on 1st spectate
+			return CalcViewModelView(pTargetPlayer, eyePosition, eyeAngles);
 		}
 	}
 
