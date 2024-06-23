@@ -30,6 +30,26 @@ extern bool			g_fGameOver;
 
 void FinishClientPutInServer( CNEO_Player *pPlayer )
 {
+	// NEO NOTE (nullsystem): CNEORules::ClientConnected is done before even CNEO_Player is
+	// created, so that's why this is here and not in CNEORules
+	if (neo_sv_player_restore.GetBool())
+	{
+		const CSteamID steamID = GetSteamIDForPlayerIndex(pPlayer->entindex());
+		if (steamID.IsValid())
+		{
+			const auto accountID = steamID.GetAccountID();
+			const auto &restoredInfos = NEORules()->m_pRestoredInfos;
+			if (const auto hdl = restoredInfos.Find(accountID); restoredInfos.IsValidHandle(hdl))
+			{
+				Assert(pPlayer->DeathCount() == 0);
+				const CNEORules::RestoreInfo &restoreInfo = restoredInfos.Element(hdl);
+				pPlayer->m_iXP.Set(restoreInfo.xp);
+				pPlayer->IncrementDeathCount(restoreInfo.deaths);
+				ClientPrint(pPlayer, HUD_PRINTTALK, "Your XP and death count have been restored.\n");
+			}
+		}
+	}
+
 	pPlayer->InitialSpawn();
 	pPlayer->Spawn();
 
