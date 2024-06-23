@@ -2480,11 +2480,9 @@ float C_BasePlayer::GetFOV( void )
 			float fov = pTargetPlayer->m_flSpecFOV;
 			if (!prediction->InPrediction())
 			{
-				auto *neoWep = dynamic_cast<CNEOBaseCombatWeapon *>(pTargetPlayer->GetActiveWeapon());
-				const float fovNorm = (neo_fov_relay_spec.GetBool()) ? pTargetPlayer->m_iDefaultFOV : neo_fov.GetFloat();
-				const float fovAim = (neoWep && neoWep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON) ?
-						neoWep->GetWpnData().iAimFOV :
-						fovNorm - NEO_FOV_AIM_OFFSET;
+				const int fovNormInt = (neo_fov_relay_spec.GetBool()) ? pTargetPlayer->m_iDefaultFOV : neo_fov.GetInt();
+				const float fovNorm = static_cast<float>(fovNormInt);
+				const float fovAim = static_cast<float>(NeoAimFOV(fovNormInt, pTargetPlayer->GetActiveWeapon()));
 
 				// Don't spline/lerp when we're already at the desired FOV
 				if ((pTargetPlayer->m_bInAim && (fov == fovAim)) ||

@@ -182,3 +182,10 @@ void KillerLineStr(char* killByLine, const int killByLineMax,
 	}
 	return std::nullopt;
 }
+
+[[nodiscard]] int NeoAimFOV(const int fovDef, CBaseCombatWeapon *wep)
+{
+	static constexpr float FOV_AIM_OFFSET_FALLBACK = 30.0f;
+	auto *neoWep = dynamic_cast<CNEOBaseCombatWeapon *>(wep);
+	return (neoWep) ? neoWep->GetWpnData().iAimFOV : fovDef - FOV_AIM_OFFSET_FALLBACK;
+}

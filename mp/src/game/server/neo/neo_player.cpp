@@ -1244,22 +1244,7 @@ void CNEO_Player::Weapon_SetZoom(const bool bZoomIn)
 	ShowCrosshair(bZoomIn);
 	
 	const int fov = GetDefaultFOV();
-	if (bZoomIn)
-	{
-		auto neoWep = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
-		if (neoWep && neoWep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
-		{
-			SetFOV((CBaseEntity*)this, neoWep->GetWpnData().iAimFOV, NEO_ZOOM_SPEED);
-		}
-		else {
-			SetFOV((CBaseEntity*)this, fov - static_cast<int>(NEO_FOV_AIM_OFFSET), NEO_ZOOM_SPEED);
-		}
-	}
-	else
-	{
-		SetFOV((CBaseEntity*)this, fov, NEO_ZOOM_SPEED);
-	}
-
+	SetFOV(static_cast<CBaseEntity *>(this), bZoomIn ? NeoAimFOV(fov, GetActiveWeapon()) : fov, NEO_ZOOM_SPEED);
 	m_bInAim = bZoomIn;
 }
 
