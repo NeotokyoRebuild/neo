@@ -358,25 +358,9 @@ void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 				// NEO NOTE (nullsystem): 1st person mode pOwner = pTargetPlayer eye position
 				// Take the target player's viewmodel FOV instead, otherwise it'll just look like it doesn't
 				// change viewmodel FOV on 1st spectate
-#ifdef CLIENT_DLL
-				if (pTargetPlayer->m_bInAim)
-				{
-					pOwner->m_Local.m_iHideHUD &= ~HIDEHUD_CROSSHAIR;
-				}
-				else
-				{
-					pOwner->m_Local.m_iHideHUD |= HIDEHUD_CROSSHAIR;
-				}
-#endif
 				return CalcViewModelView(pTargetPlayer, eyePosition, eyeAngles);
 			}
 		}
-#ifdef CLIENT_DLL
-		else
-		{
-			pOwner->m_Local.m_iHideHUD &= ~HIDEHUD_CROSSHAIR;
-		}
-#endif
 	}
 
 	// Is there a nicer way to do this?

@@ -1726,6 +1726,9 @@ void CBasePlayer::CalcVehicleView(
 void CBasePlayer::CalcObserverView( Vector& eyeOrigin, QAngle& eyeAngles, float& fov )
 {
 #if defined( CLIENT_DLL )
+#ifdef NEO
+	m_Local.m_iHideHUD &= ~HIDEHUD_CROSSHAIR;
+#endif
 	switch ( GetObserverMode() )
 	{
 
