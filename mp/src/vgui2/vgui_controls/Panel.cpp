@@ -5173,8 +5173,7 @@ void Panel::OnMessage(const KeyValues *params, VPANEL ifromPanel)
 	for ( ; panelMap != NULL && !bFound; panelMap = panelMap->baseMap )
 	{
 #if defined( _DEBUG )
-//		char const *className = panelMap->pfnClassName();
-//		NOTE_UNUSED( className );
+//		[[maybe_unused]] char const *className = panelMap->pfnClassName();
 #endif
 
 		// iterate all the entries in the panel map
