@@ -710,7 +710,7 @@ void C_NEO_Player::ItemPostFrame( void )
 
 float C_NEO_Player::GetMinFOV() const
 {
-	return static_cast<float>(MIN_FOV);
+	return BaseClass::GetMinFOV();
 }
 
 Vector C_NEO_Player::GetAutoaimVector( float flDelta )
