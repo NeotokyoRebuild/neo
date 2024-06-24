@@ -516,21 +516,6 @@ void C_NEO_Player::CheckLeanButtons()
 	{
 		return;
 	}
-
-	if (ClientWantsLeanToggle(this))
-	{
-		if (m_afButtonPressed & IN_LEAN_LEFT)
-		{
-			if (m_bInLean == NEO_LEAN_LEFT) m_bInLean = NEO_LEAN_NONE;
-			else m_bInLean = NEO_LEAN_LEFT;
-		}
-		if (m_afButtonPressed & IN_LEAN_RIGHT)
-		{
-			if (m_bInLean == NEO_LEAN_RIGHT) m_bInLean = NEO_LEAN_NONE;
-			else m_bInLean = NEO_LEAN_RIGHT;
-		}
-		return;
-	}
 	
 	m_bInLean = NEO_LEAN_NONE;
 	if ((m_nButtons & IN_LEAN_LEFT) && !(m_nButtons & IN_LEAN_RIGHT))

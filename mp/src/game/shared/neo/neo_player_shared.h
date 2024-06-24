@@ -275,8 +275,6 @@ enum NeoLeanDirectionE {
 	NEO_LEAN_RIGHT,
 };
 
-bool ClientWantsLeanToggle(const CNEO_Player* player);
-
 enum NeoWeponAimToggleE {
 	NEO_TOGGLE_DEFAULT = 0,
 	NEO_TOGGLE_FORCE_AIM,
