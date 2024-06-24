@@ -285,14 +285,7 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 		}
 		else {
 #ifdef CLIENT_DLL
-			// Less than 0.1 ms latency, this must be a LAN connection. Don't interpolate.
-			if (engine->GetNetChannelInfo()->GetAvgLatency(FLOW_OUTGOING) < 0.0001) {
-				Ycurrent = Lerp(leanStep * neo_lean_speed.GetFloat() * 1.5f, Ycurrent, Yfinal);
-			}
-			// We have to interpolate here to avoid prediction error jitter over network connections.
-			else {
-				Ycurrent = Lerp(leanStep * neo_lean_speed.GetFloat() * gpGlobals->interpolation_amount, Ycurrent, Yfinal);
-			}
+			Ycurrent = Lerp(leanStep * neo_lean_speed.GetFloat() * gpGlobals->interpolation_amount, Ycurrent, Yfinal);
 #else
 			Ycurrent = Lerp(leanStep * neo_lean_speed.GetFloat(), Ycurrent, Yfinal);
 #endif
