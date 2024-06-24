@@ -83,7 +83,7 @@ void CHL2MPSWeaponInfo::Parse( KeyValues *pKeyValuesData, const char *szWeaponNa
 	m_flCycleTime = pKeyValuesData->GetFloat("CycleTime", 0.0f);
 #ifdef _DEBUG
 	const char *printName = pKeyValuesData->GetString("printname");
-	if (!V_strstr(printName, "#HL2"))
+	if (!V_strstr(printName, "#HL2") && !V_strstr(printName, "Grenade"))
 	{
 		Assert(m_flCycleTime != 0.0f);
 	}
