@@ -111,6 +111,12 @@ class NeoLoadoutMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback(const CCommand& command)
 	{
+		auto team = GetLocalPlayerTeam();
+
+		if (team == TEAM_UNASSIGNED || team == TEAM_SPECTATOR) {
+			return;
+		}
+
 #if DEBUG
 		DevMsg("Loadout access cb\n");
 #endif
@@ -187,6 +193,12 @@ class NeoClassMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback(const CCommand& command)
 	{
+		auto team = GetLocalPlayerTeam();
+
+		if (team == TEAM_UNASSIGNED || team == TEAM_SPECTATOR) {
+			return;
+		}
+
 		vgui::EditablePanel *panel = dynamic_cast<vgui::EditablePanel*>
 			(GetClientModeNormal()->GetViewport()->FindChildByName(PANEL_CLASS));
 
