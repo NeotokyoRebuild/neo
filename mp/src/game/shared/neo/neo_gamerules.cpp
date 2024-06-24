@@ -396,7 +396,7 @@ int CNEORules::DefaultFOV(void)
 #ifdef CLIENT_DLL
 	return neo_fov.GetInt();
 #else
-	return 90;
+	return DEFAULT_FOV;
 #endif
 }
 
@@ -1351,6 +1351,7 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 	if (auto fovOpt = StrToInt(engine->GetClientConVarValue(engine->IndexOfEdict(pNEOPlayer->edict()), "neo_fov")))
 	{
 		pNEOPlayer->SetDefaultFOV(*fovOpt);
+		pNEOPlayer->Weapon_SetZoom(pNEOPlayer->m_bInAim);
 	}
 
 	const char *pszSteamName = engine->GetClientConVarValue(pPlayer->entindex(), "name");
