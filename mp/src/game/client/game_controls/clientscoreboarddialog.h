@@ -111,10 +111,6 @@ protected:
 	CPanelAnimationVarAliasType( int, m_iScoreWidth, "score_width", "35", "proportional_int" );
 	CPanelAnimationVarAliasType( int, m_iDeathWidth, "death_width", "35", "proportional_int" );
 	CPanelAnimationVarAliasType( int, m_iPingWidth, "ping_width", "23", "proportional_int" );
-#ifdef NEO
-	CPanelAnimationVarAliasType(int, m_iRankWidth, "rank_width", "68", "proportional_int");
-	CPanelAnimationVarAliasType(int, m_iStatusWidth, "status_width", "68", "proportional_int");
-#endif
 
 private:
 	int			m_iPlayerIndexSymbol;
