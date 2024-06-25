@@ -1,5 +1,3 @@
-// NOTE:  THIS FILE IS AUTOMATICALLY REGENERATED, 
-//DO NOT EDIT THIS HEADER, YOUR COMMENTS WILL BE LOST IF YOU DO
 // User options script
 //
 // Format:
@@ -51,66 +49,71 @@ DESCRIPTION INFO_OPTIONS
 	{
 		"Only use Steam names"
 		{ BOOL }
-		{ 0 }
+		{ "0" }
 	}
 	"neo_fov"
 	{
 		"FOV (60 - 110)"
 		{ NUMBER 60 110 } // Alternatively SLIDER, but can't have both?
-		{ 90 }
+		{ "90" }
 	}
 	"neo_viewmodel_fov_offset"
 	{
 		"Viewmodel FOV Offset (-20 - 40)"
 		{ NUMBER -20 40 } // Alternatively SLIDER, but can't have both?
-		{ 0 }
+		{ "0" }
 	}
 	"neo_lean_toggle"
 	{
 		"Toggle Lean"
 		{ BOOL }
-		{ 0 }
+		{ "0" }
 	}
 	"neo_aim_hold"
 	{
 		"Hold To Aim"
 		{ BOOL }
-		{ 0 }
+		{ "0" }
 	}
 	"cl_autoreload_when_empty"
 	{
 		"Reload When Empty"
 		{ BOOL }
-		{ 1 }
+		{ "1" }
 	}
 	cl_righthand
 	{
 		"Right-handed Viewmodel"
 		{ BOOL }
-		{ 1 }
+		{ "1" }
 	}
 	cl_first_person_uses_world_model
 	{
 		"Use third person model instead of view model in first person"
 		{ BOOL }
-		{ 0 }
+		{ "0" }
 	}
 	cl_playerspraydisable
 	{
 		"Disable player sprays"
 		{ BOOL }
-		{ 0 }
+		{ "0" }
 	}
 	cl_showpos
 	{
 		"Show Pos"
 		{ BOOL }
-		{ 0 }
+		{ "0" }
 	}
 	cl_showfps
 	{
-		"Show FPS 0 - Disabled, 1 - fps, 2 - smooth fps"
-		{ NUMBER 0 2 }
-		{ 0 }
+		"Show FPS"
+		{
+			LIST
+			"Disabled" "0"
+			"FPS" "1"
+			"Smooth FPS" "2"
+		}
+		{ "0" }
 	}
 }
