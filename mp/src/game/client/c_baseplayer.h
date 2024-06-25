@@ -150,6 +150,12 @@ public:
 	virtual CBaseEntity	*GetObserverTarget() const;
 	void			SetObserverTarget( EHANDLE hObserverTarget );
 
+#ifdef NEO
+	virtual int				GetNextObserverSearchStartPoint(bool bReverse); // Where we should start looping the player list in a FindNextObserverTarget call
+	virtual CBaseEntity* FindNextObserverTarget(bool bReverse); // returns next/prev player to follow or nullptr
+	virtual bool			IsValidObserverTarget(CBaseEntity* target); // true, if player is allowed to see this target
+#endif
+
 	bool			AudioStateIsUnderwater( Vector vecMainViewOrigin );
 
 	bool IsObserver() const;
@@ -454,7 +460,12 @@ protected:
 							float& zNear, float& zFar, float& fov );
 	virtual void		CalcObserverView( Vector& eyeOrigin, QAngle& eyeAngles, float& fov );
 	virtual Vector		GetChaseCamViewOffset( CBaseEntity *target );
-	void				CalcChaseCamView( Vector& eyeOrigin, QAngle& eyeAngles, float& fov );
+
+#ifdef NEO
+	virtual
+#endif
+		void				CalcChaseCamView( Vector& eyeOrigin, QAngle& eyeAngles, float& fov );
+
 	virtual void		CalcInEyeCamView( Vector& eyeOrigin, QAngle& eyeAngles, float& fov );
 
 	virtual float		GetDeathCamInterpolationTime();
