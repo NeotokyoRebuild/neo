@@ -112,3 +112,10 @@ void CWeaponKyla::PrimaryAttack(void)
 		pPlayer->SetSuitUpdate("!HEV_AMO0", FALSE, 0);
 	}
 }
+
+void CWeaponKyla::ItemPostFrame()
+{
+	ProcessAnimationEvents();
+
+	BaseClass::ItemPostFrame();
+}

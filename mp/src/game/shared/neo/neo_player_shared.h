@@ -4,6 +4,16 @@
 #pragma once
 #endif
 
+#include "tier0/valve_minmax_off.h"
+#include <string_view>
+#include <optional>
+#ifndef min
+	#define min(a,b)  (((a) < (b)) ? (a) : (b))
+#endif
+#ifndef max
+	#define max(a,b)  (((a) > (b)) ? (a) : (b))
+#endif
+
 #include "neo_predicted_viewmodel.h"
 
 #ifdef INCLUDE_WEP_PBK
@@ -25,7 +35,7 @@
 
 #define NEO_RECON_SPEED_MODIFIER 1.25
 #define NEO_ASSAULT_SPEED_MODIFIER 1.0
-#define NEO_SUPPORT_SPEED_MODIFIER 0.75
+#define NEO_SUPPORT_SPEED_MODIFIER 1.0
 
 #define NEO_RECON_NORM_SPEED (NEO_BASE_NORM_SPEED * NEO_RECON_SPEED_MODIFIER)
 #define NEO_RECON_SPRINT_SPEED (NEO_BASE_SPRINT_SPEED * NEO_RECON_SPEED_MODIFIER)
@@ -61,16 +71,16 @@ COMPILE_TIME_ASSERT(NEO_SUPPORT_CROUCH_SPEED > 0);
 
 // Class speeds hierarchy should be: recon > assault > support.
 COMPILE_TIME_ASSERT(NEO_RECON_NORM_SPEED > NEO_ASSAULT_NORM_SPEED);
-COMPILE_TIME_ASSERT(NEO_ASSAULT_NORM_SPEED > NEO_SUPPORT_NORM_SPEED);
+COMPILE_TIME_ASSERT(NEO_ASSAULT_NORM_SPEED == NEO_SUPPORT_NORM_SPEED);
 
 COMPILE_TIME_ASSERT(NEO_RECON_SPRINT_SPEED > NEO_ASSAULT_SPRINT_SPEED);
-COMPILE_TIME_ASSERT(NEO_ASSAULT_SPRINT_SPEED > NEO_SUPPORT_SPRINT_SPEED);
+//COMPILE_TIME_ASSERT(NEO_ASSAULT_SPRINT_SPEED > NEO_SUPPORT_SPRINT_SPEED);
 
 COMPILE_TIME_ASSERT(NEO_RECON_WALK_SPEED > NEO_ASSAULT_WALK_SPEED);
-COMPILE_TIME_ASSERT(NEO_ASSAULT_WALK_SPEED > NEO_SUPPORT_WALK_SPEED);
+COMPILE_TIME_ASSERT(NEO_ASSAULT_WALK_SPEED == NEO_SUPPORT_WALK_SPEED);
 
 COMPILE_TIME_ASSERT(NEO_RECON_CROUCH_SPEED > NEO_ASSAULT_CROUCH_SPEED);
-COMPILE_TIME_ASSERT(NEO_ASSAULT_CROUCH_SPEED > NEO_SUPPORT_CROUCH_SPEED);
+COMPILE_TIME_ASSERT(NEO_ASSAULT_CROUCH_SPEED == NEO_SUPPORT_CROUCH_SPEED);
 
 #define SUPER_JMP_COST 45.0f
 #define CLOAK_AUX_COST 1.0f
@@ -149,13 +159,16 @@ COMPILE_TIME_ASSERT(NEO_ASSAULT_CROUCH_SPEED > NEO_SUPPORT_CROUCH_SPEED);
 #define NEO_ANIMSTATE_USES_AIMSEQUENCES true
 #define NEO_ANIMSTATE_MAX_BODY_YAW_DEGREES 90.0f
 
+#define NEO_ZOOM_SPEED (0.25f)
+
 enum NeoSkin {
 	NEO_SKIN_FIRST = 0,
 	NEO_SKIN_SECOND,
 	NEO_SKIN_THIRD,
 
-	NEO_SKIN_ENUM_COUNT
+	NEO_SKIN__ENUM_COUNT
 };
+static constexpr int NEO_SKIN_ENUM_COUNT = NEO_SKIN__ENUM_COUNT;
 
 enum NeoClass {
 	NEO_CLASS_RECON = 0,
@@ -166,8 +179,9 @@ enum NeoClass {
 	// using array offsets for recon/assault/support
 	NEO_CLASS_VIP,
 
-	NEO_CLASS_ENUM_COUNT
+	NEO_CLASS__ENUM_COUNT
 };
+static constexpr int NEO_CLASS_ENUM_COUNT = NEO_CLASS__ENUM_COUNT;
 
 enum NeoStar {
 	STAR_NONE = 0,
@@ -211,6 +225,18 @@ bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep);
 extern ConVar neo_recon_superjump_intensity;
 
 //ConVar sv_neo_resupply_anywhere("sv_neo_resupply_anywhere", "0", FCVAR_CHEAT | FCVAR_REPLICATED);
+
+inline const char* GetNeoClassName(int neoClassIdx)
+{
+	switch (neoClassIdx)
+	{
+	case NEO_CLASS_RECON: return "Recon";
+	case NEO_CLASS_ASSAULT: return "Assault";
+	case NEO_CLASS_SUPPORT: return "Support";
+	case NEO_CLASS_VIP: return "VIP";
+	default: return "";
+	}
+}
 
 inline const char *GetRankName(int xp)
 {
@@ -257,5 +283,22 @@ enum NeoWeponAimToggleE {
 };
 
 bool ClientWantsAimHold(const CNEO_Player* player);
+
+int DmgLineStr(char* infoLine, const int infoLineMax,
+	const char* dmgerName, const char* dmgerClass,
+	const float dmgTo, const float dmgFrom, const int hitsTo, const int hitsFrom);
+
+void KillerLineStr(char* killByLine, const int killByLineMax,
+	CNEO_Player* neoAttacker, const CNEO_Player* neoVictim);
+
+struct AttackersTotals
+{
+	float dealtTotalDmgs;
+	int dealtTotalHits;
+	float takenTotalDmgs;
+	int takenTotalHits;
+};
+
+[[nodiscard]] auto StrToInt(std::string_view strView) -> std::optional<int>;
 
 #endif // NEO_PLAYER_SHARED_H

@@ -12,18 +12,27 @@
 #endif
 #endif
 
+#ifdef CLIENT_DLL
+#include "ui/neo_hud_ghost_cap_point.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
+
+// In seconds, how often should the client think to update capzone graphics info.
+// This is *not* the framerate, only info like which team it belongs to, etc.
+// Actual rendering happens in the element's Paint() loop.
+static constexpr int NEO_GHOSTCAP_GRAPHICS_THINK_INTERVAL = 1;
 
 // NEO NOTE (Rain). These limits defined in original NT FGD as (48 - 256),
 // but it seems not even offical maps follow it. I haven't actually checked
 // if there's clamping in the original, but setting some sane limits here
 // anyways. These are in Hammer units.
-#define NEO_CAP_MIN_RADIUS 8
-#define NEO_CAP_MAX_RADIUS 10240
+static constexpr float NEO_CAP_MIN_RADIUS = 8.0f;
+static constexpr float NEO_CAP_MAX_RADIUS = 10240.0f;
 
-#define NEO_FGD_TEAMNUM_ATTACKER 0
-#define NEO_FGD_TEAMNUM_DEFENDER 1
+static constexpr int NEO_FGD_TEAMNUM_ATTACKER = 0;
+static constexpr int NEO_FGD_TEAMNUM_DEFENDER = 1;
 
 LINK_ENTITY_TO_CLASS(neo_ghost_retrieval_point, CNEOGhostCapturePoint);
 
@@ -87,6 +96,11 @@ CNEOGhostCapturePoint::~CNEOGhostCapturePoint()
 }
 
 #ifdef GAME_DLL
+int CNEOGhostCapturePoint::UpdateTransmitState()
+{
+	return FL_EDICT_ALWAYS;
+}
+
 bool CNEOGhostCapturePoint::IsGhostCaptured(int& outTeamNumber, int& outCaptorClientIndex)
 {
 	if (m_bIsActive && m_bGhostHasBeenCaptured)
@@ -210,13 +224,13 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 		}
 
 		const Vector dir = player->GetAbsOrigin() - GetAbsOrigin();
-		const float distance = dir.Length2D();
+		const float distance = dir.Length();
 
 		Assert(distance >= 0);
 
 		// Has the ghost carrier reached inside our radius?
 		// NEO TODO (Rain): newbie UI helpers for approaching wrong team cap
-		if (distance >= (m_flCapzoneRadius / 2.0f))
+		if (distance > m_flCapzoneRadius)
 		{
 			continue;
 		}
@@ -227,7 +241,6 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 
 		DevMsg("Player got ghost inside my radius\n");
 
-		player->SendTestMessage("Player captured the ghost!");
 		player->m_iCapTeam = player->GetTeamNumber();
 
 		// Center print the cap message.
@@ -244,16 +257,17 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 		V_swprintf_safe(wmsg, L"%s wins\n%s captured the ghost",
 			player->GetTeamNumber() == TEAM_JINRAI ? L"Jinrai" : L"NSF",
 			wPlayerName);
-#else
+#endif
 		char msg[64 + MAX_PLACE_NAME_LENGTH];
 		COMPILE_TIME_ASSERT(sizeof(msg) <= 512); // max supported
 
-		V_sprintf_safe(msg, "%s wins\n%s captured the ghost",
-			player->GetTeamNumber() == TEAM_JINRAI ? "Jinrai" : "NSF",
-			player->GetPlayerName());
-#endif
+		V_sprintf_safe(msg, "%s captured the ghost", player->GetPlayerName());
 
-		UTIL_ClientPrintFilter(filter, HUD_PRINTCENTER, msg);
+		UserMessageBegin(filter, "RoundResult");
+		WRITE_STRING(player->GetTeamNumber() == TEAM_JINRAI ? "jinrai": "nsf");	// which team won
+		WRITE_FLOAT(gpGlobals->curtime);										// when did they win
+		WRITE_STRING(msg);														// extra message (who capped or last kill or who got the most points or whatever)
+		MessageEnd();
 
 		// Return early; we pass next think responsibility to gamerules,
 		// whenever it sees fit to start capzone thinking again.
@@ -277,8 +291,7 @@ void CNEOGhostCapturePoint::ClientThink(void)
 
 	m_pHUDCapPoint->SetPos(GetAbsOrigin());
 	m_pHUDCapPoint->SetRadius(m_flCapzoneRadius);
-	m_pHUDCapPoint->SetTeam(m_iOwningTeam); // TODO (nullsystem): Refactor to owningTeamAlternate()
-
+	m_pHUDCapPoint->SetTeam(owningTeamAlternate());
 	m_pHUDCapPoint->SetVisible(true);
 
 	SetNextClientThink(gpGlobals->curtime + NEO_GHOSTCAP_GRAPHICS_THINK_INTERVAL);

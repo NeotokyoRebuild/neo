@@ -7,6 +7,7 @@
 class CNeoHudElements;
 class C_NEO_Player;
 
+#define NEO_HUDBOX_COLOR Color(116, 116, 116, 178)
 #define NEO_HUD_ELEMENT_FREQ_CVAR_NAME(Name) cl_neo_hud_ ## Name ## _update_freq
 #ifndef xstr
 #define xstr(a) str(a)
@@ -31,7 +32,19 @@ public:
 	virtual ~CNEOHud_ChildElement() { }
 
 protected:
-	virtual void DrawNeoHudRoundedBox(const int x0, const int y0, const int x1, const int y1) const;
+	virtual void DrawNeoHudRoundedBox(const int x0, const int y0, const int x1, const int y1, Color color = NEO_HUDBOX_COLOR,
+			bool topLeft = true, bool topRight = true, bool bottomLeft = true, bool bottomRight = true) const;
+	virtual void DrawNeoHudRoundedBoxFaded(const int x0, const int y0, const int x1, const int y1, Color color,
+		unsigned int alpha0, unsigned int alpha1, bool bHorizontal,
+		bool topLeft = true, bool topRight = true, bool bottomLeft = true, bool bottomRight = true) const;
+	struct XYHudPos {
+		int x0w;
+		int x1w;
+		int y0h;
+		int y1h;
+	};
+	XYHudPos DrawNeoHudRoundedCommon(const int x0, const int y0, const int x1, const int y1, Color color,
+		bool topLeft, bool topRight, bool bottomLeft, bool bottomRight) const;
 
 	virtual void UpdateStateForNeoHudElementDraw() = 0;
 	virtual void DrawNeoHudElement() = 0;
@@ -77,6 +90,8 @@ protected:
 	}
 
 	CNeoHudElements* GetRootNeoHud() const { return m_pNeoHud; }
+
+	static int GetMargin();
 
 private:
 	float GetUpdateFrequency() const { return GetUpdateFrequencyConVar()->GetFloat(); }

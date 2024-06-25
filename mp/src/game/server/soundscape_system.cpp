@@ -329,8 +329,7 @@ void CSoundscapeSystem::FrameUpdatePostEntityThink()
 				CEnvSoundscape *pCurrent = (CEnvSoundscape *)( audio.ent.Get() );
 				if ( pCurrent )
 				{
-					int nEntIndex = pCurrent->m_soundscapeEntityId - 1;
-					NOTE_UNUSED( nEntIndex );
+					[[maybe_unused]] int nEntIndex = pCurrent->m_soundscapeEntityId - 1;
 					Assert( m_soundscapeEntities[nEntIndex] == pCurrent );
 				}
 				ss_update_t update;

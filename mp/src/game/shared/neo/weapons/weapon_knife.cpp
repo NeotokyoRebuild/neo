@@ -1,6 +1,12 @@
 #include "cbase.h"
 #include "weapon_knife.h"
 
+#ifndef CLIENT_DLL
+#include "ilagcompensationmanager.h"
+#include "effect_dispatch_data.h"
+#include "te_effect_dispatch.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -54,11 +60,42 @@ acttable_t	CWeaponKnife::m_acttable[] =
 IMPLEMENT_ACTTABLE(CWeaponKnife);
 #endif
 
-CWeaponKnife::CWeaponKnife(void)
-{
+namespace {
+constexpr float KNIFE_RANGE = 51.0f;
+constexpr float KNIFE_DAMAGE = 25.0f;
 }
 
-void CWeaponKnife::PrimaryAttack(void)
+CWeaponKnife::CWeaponKnife()
+{
+	m_bFiresUnderwater = true;
+}
+
+void CWeaponKnife::Spawn()
+{
+	m_fMinRange1 = 0;
+	m_fMinRange2 = 0;
+	m_fMaxRange1 = 64;
+	m_fMaxRange2 = 64;
+	BaseClass::Spawn();
+}
+
+void CWeaponKnife::ItemPreFrame()
+{
+	BaseClass::ItemPreFrame();
+}
+
+void CWeaponKnife::ItemBusyFrame()
+{
+	BaseClass::ItemBusyFrame();
+}
+
+void CWeaponKnife::ItemPostFrame()
+{
+	ProcessAnimationEvents();
+	BaseClass::ItemPostFrame();
+}
+
+void CWeaponKnife::PrimaryAttack()
 {
 	auto owner = static_cast<CNEO_Player*>(GetOwner());
 	if (owner && owner->GetNeoFlags() & NEO_FL_FREEZETIME)
@@ -66,53 +103,41 @@ void CWeaponKnife::PrimaryAttack(void)
 		return;
 	}
 
-	BaseClass::PrimaryAttack();
-}
-
-// NEO TODO (Rain): inherit from CNEOBaseCombatWeapon or related,
-// so we can do this in the base class Deploy method together
-// with other NEO weps.
-bool CWeaponKnife::Deploy(void)
-{
-	const bool ret = BaseClass::Deploy();
-
-	if (ret)
-	{
-#ifdef DEBUG
-		CNEO_Player* pOwner = NULL;
-		if (GetOwner())
-		{
-			pOwner = dynamic_cast<CNEO_Player*>(GetOwner());
-			Assert(pOwner);
-		}
-#else
-		auto pOwner = static_cast<CNEO_Player*>(GetOwner());
+#ifndef CLIENT_DLL
+	CHL2MP_Player *pPlayer = ToHL2MPPlayer(GetPlayerOwner());
+	// Move other players back to history positions based on local player's lag
+	lagcompensation->StartLagCompensation(pPlayer, pPlayer->GetCurrentCommand());
 #endif
-		if (pOwner)
-		{
-			// This wep incurs no speed penalty, so we return class max speed as-is.
-
-			if (pOwner->GetFlags() & FL_DUCKING)
-			{
-				pOwner->SetMaxSpeed(pOwner->GetCrouchSpeed());
-			}
-			else if (pOwner->IsWalking())
-			{
-				pOwner->SetMaxSpeed(pOwner->GetWalkSpeed());
-			}
-			else if (pOwner->IsSprinting())
-			{
-				pOwner->SetMaxSpeed(pOwner->GetSprintSpeed());
-			}
-			else
-			{
-				pOwner->SetMaxSpeed(pOwner->GetNormSpeed());
-			}
-		}
-	}
-
-	return ret;
+	Swing(false);
+#ifndef CLIENT_DLL
+	// Move other players back to history positions based on local player's lag
+	lagcompensation->FinishLagCompensation(pPlayer);
+#endif
 }
+
+void CWeaponKnife::SecondaryAttack()
+{
+	Swing(true);
+}
+
+bool CWeaponKnife::CanBePickedUpByClass(int classId)
+{
+	return classId != NEO_CLASS_SUPPORT;
+}
+
+#ifdef CLIENT_DLL
+bool CWeaponKnife::ShouldDraw()
+{
+	auto owner = static_cast<CNEO_Player*>(GetOwner());
+	return (owner && owner->IsAlive() && owner->GetActiveWeapon() == this);
+}
+#else
+bool CWeaponKnife::IsViewable()
+{
+	auto owner = static_cast<CNEO_Player*>(GetOwner());
+	return (owner && owner->IsAlive() && owner->GetActiveWeapon() == this);
+}
+#endif
 
 void CWeaponKnife::Swing(int bIsSecondary)
 {
@@ -128,13 +153,13 @@ void CWeaponKnife::Swing(int bIsSecondary)
 
 	pOwner->EyeVectors(&forward, NULL, NULL);
 
-	Vector swingEnd = swingStart + forward * GetRange();
+	Vector swingEnd = swingStart + forward * KNIFE_RANGE;
 	UTIL_TraceLine(swingStart, swingEnd, MASK_SHOT_HULL, pOwner, COLLISION_GROUP_NONE, &traceHit);
 	const Activity nHitActivity = KNIFE_VM_ATTACK_ACT;
 
 #ifndef CLIENT_DLL
 	// Like bullets, bludgeon traces have to trace against triggers.
-	CTakeDamageInfo triggerInfo(GetOwner(), GetOwner(), GetDamageForActivity(nHitActivity), DMG_SLASH);
+	CTakeDamageInfo triggerInfo(GetOwner(), GetOwner(), KNIFE_DAMAGE, DMG_SLASH);
 	TraceAttackToTriggers(triggerInfo, traceHit.startpos, traceHit.endpos, vec3_origin);
 #endif
 
@@ -174,7 +199,7 @@ void CWeaponKnife::Swing(int bIsSecondary)
 	if (traceHit.fraction == 1.0f)
 	{
 		// We want to test the first swing again
-		Vector testEnd = swingStart + forward * GetRange();
+		Vector testEnd = swingStart + forward * KNIFE_RANGE;
 
 		// See if we happened to hit water
 		ImpactWater(swingStart, testEnd);
@@ -243,16 +268,16 @@ Activity CWeaponKnife::ChooseIntersectionPointAndActivity(trace_t& hitTrace, con
 	return KNIFE_VM_ATTACK_ACT;
 }
 
-void CWeaponKnife::Hit(trace_t& traceHit, Activity nHitActivity)
+void CWeaponKnife::Hit(trace_t& traceHit, [[maybe_unused]] Activity nHitActivity)
 {
 	Assert(nHitActivity == KNIFE_VM_ATTACK_ACT);
 
-	CBasePlayer* pPlayer = ToBasePlayer(GetOwner());
+	CBasePlayer *pPlayer = ToBasePlayer(GetOwner());
 
-	//Do view kick
-//	AddViewKick();
+	// Do view kick
+	//AddViewKick();
 
-	CBaseEntity* pHitEntity = traceHit.m_pEnt;
+	CBaseEntity *pHitEntity = traceHit.m_pEnt;
 
 	//Apply damage to a hit target
 	if (pHitEntity != NULL)
@@ -265,7 +290,7 @@ void CWeaponKnife::Hit(trace_t& traceHit, Activity nHitActivity)
 		VectorNormalize(hitDirection);
 
 #ifndef CLIENT_DLL
-		CTakeDamageInfo info(GetOwner(), GetOwner(), GetDamageForActivity(nHitActivity), DMG_SLASH);
+		CTakeDamageInfo info(GetOwner(), GetOwner(), KNIFE_DAMAGE, DMG_SLASH);
 
 		CalculateMeleeDamageForce(&info, hitDirection, traceHit.endpos);
 
@@ -280,4 +305,54 @@ void CWeaponKnife::Hit(trace_t& traceHit, Activity nHitActivity)
 
 	// Apply an impact effect
 	ImpactEffect(traceHit);
+}
+
+void CWeaponKnife::ImpactEffect(trace_t &traceHit)
+{
+	// See if we hit water (we don't do the other impact effects in this case)
+	if (ImpactWater(traceHit.startpos, traceHit.endpos))
+		return;
+
+	//FIXME: need new decals
+	UTIL_ImpactTrace(&traceHit, DMG_CLUB);
+}
+
+bool CWeaponKnife::ImpactWater(const Vector &start, const Vector &end)
+{
+	//FIXME: This doesn't handle the case of trying to splash while being underwater, but that's not going to look good
+	//		 right now anyway...
+
+	// We must start outside the water
+	if (UTIL_PointContents(start) & (CONTENTS_WATER | CONTENTS_SLIME))
+		return false;
+
+	// We must end inside of water
+	if (!(UTIL_PointContents(end) & (CONTENTS_WATER | CONTENTS_SLIME)))
+		return false;
+
+	trace_t	waterTrace;
+
+	UTIL_TraceLine(start, end, (CONTENTS_WATER | CONTENTS_SLIME), GetOwner(), COLLISION_GROUP_NONE, &waterTrace);
+
+	if (waterTrace.fraction < 1.0f)
+	{
+#ifndef CLIENT_DLL
+		CEffectData	data;
+
+		data.m_fFlags = 0;
+		data.m_vOrigin = waterTrace.endpos;
+		data.m_vNormal = waterTrace.plane.normal;
+		data.m_flScale = 8.0f;
+
+		// See if we hit slime
+		if (waterTrace.contents & CONTENTS_SLIME)
+		{
+			data.m_fFlags |= FX_WATER_IN_SLIME;
+		}
+
+		DispatchEffect("watersplash", data);
+#endif
+	}
+
+	return true;
 }

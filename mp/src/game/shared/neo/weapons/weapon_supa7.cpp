@@ -93,7 +93,7 @@ bool CWeaponSupa7::StartReload(void)
 
 	if (m_bSlugDelayed)
 	{
-		if (pOwner->GetAmmoCount(m_iSecondaryAmmoType) <= 0)
+		if (m_iSecondaryAmmoCount <= 0)
 		{
 			m_bSlugDelayed = false;
 		}
@@ -103,7 +103,7 @@ bool CWeaponSupa7::StartReload(void)
 		}
 	}
 
-	if (pOwner->GetAmmoCount(m_iPrimaryAmmoType) <= 0)
+	if (m_iPrimaryAmmoCount <= 0)
 		return false;
 
 	if (m_iClip1 >= GetMaxClip1())
@@ -131,7 +131,7 @@ bool CWeaponSupa7::StartReloadSlug(void)
 	if (pOwner == NULL)
 		return false;
 
-	if (pOwner->GetAmmoCount(m_iSecondaryAmmoType) <= 0)
+	if (m_iSecondaryAmmoCount <= 0)
 	{
 		return false;
 	}
@@ -170,7 +170,7 @@ bool CWeaponSupa7::Reload(void)
 	if (pOwner == NULL)
 		return false;
 
-	if (pOwner->GetAmmoCount(m_iPrimaryAmmoType) <= 0)
+	if (m_iPrimaryAmmoCount <= 0)
 		return false;
 
 	if (m_iClip1 >= GetMaxClip1())
@@ -205,7 +205,7 @@ bool CWeaponSupa7::ReloadSlug(void)
 	if (pOwner == NULL)
 		return false;
 
-	if (pOwner->GetAmmoCount(m_iSecondaryAmmoType) <= 0)
+	if (m_iSecondaryAmmoCount <= 0)
 		return false;
 
 	if (m_iClip1 >= GetMaxClip1())
@@ -249,12 +249,12 @@ void CWeaponSupa7::FillClip(void)
 		return;
 
 	// Add them to the clip
-	if (pOwner->GetAmmoCount(m_iPrimaryAmmoType) > 0)
+	if (m_iPrimaryAmmoCount > 0)
 	{
 		if (Clip1() < GetMaxClip1())
 		{
 			m_iClip1++;
-			pOwner->RemoveAmmo(1, m_iPrimaryAmmoType);
+			m_iPrimaryAmmoCount -= 1;
 		}
 	}
 }
@@ -268,10 +268,10 @@ void CWeaponSupa7::FillClipSlug(void)
 		return;
 
 	// Add them to the clip
-	if (pOwner->GetAmmoCount(m_iSecondaryAmmoType) > 0 && !m_bSlugLoaded)
+	if (m_iSecondaryAmmoCount > 0 && !m_bSlugLoaded)
 	{
 		m_iClip1++;
-		pOwner->RemoveAmmo(1, m_iSecondaryAmmoType);
+		m_iSecondaryAmmoCount -= 1;
 		m_bSlugLoaded = true;
 		m_bSlugDelayed = false;
 	}
@@ -314,7 +314,6 @@ void CWeaponSupa7::PrimaryAttack(void)
 		numBullets = 1;
 		bulletSpread *= 0.5;
 		ammoType = m_iSecondaryAmmoType;
-		m_bSlugLoaded = false;
 		WeaponSound(WPN_DOUBLE);
 		WeaponSound(SPECIAL2);
 	}
@@ -329,10 +328,11 @@ void CWeaponSupa7::PrimaryAttack(void)
 
 	pPlayer->DoMuzzleFlash();
 
-	SendWeaponAnim(ACT_VM_PRIMARYATTACK);
+	SendWeaponAnim(m_bSlugLoaded ? ACT_VM_PRIMARYATTACK : ACT_VM_SECONDARYATTACK);
+	m_bSlugLoaded = false;
 
 	// Don't fire again until fire animation has completed
-	ProposeNextAttack(gpGlobals->curtime + SequenceDuration());
+	ProposeNextAttack(gpGlobals->curtime + (SequenceDuration() * 0.75));
 	m_iClip1 -= 1;
 
 	// player "shoot" animation
@@ -341,7 +341,7 @@ void CWeaponSupa7::PrimaryAttack(void)
 	// Fire the bullets, and force the first shot to be perfectly accurate
 	pPlayer->FireBullets(info);
 
-	if (!m_iClip1 && pPlayer->GetAmmoCount(m_iPrimaryAmmoType) <= 0)
+	if (!m_iClip1 && m_iPrimaryAmmoCount <= 0)
 	{
 		// HEV suit - indicate out of ammo condition
 		pPlayer->SetSuitUpdate("!HEV_AMO0", FALSE, 0);
@@ -405,7 +405,7 @@ void CWeaponSupa7::ItemPostFrame(void)
 		else if (m_flNextPrimaryAttack <= gpGlobals->curtime)
 		{
 			// If out of ammo end reload
-			if (pOwner->GetAmmoCount(m_iPrimaryAmmoType) <= 0 || m_bSlugLoaded || m_iClip1 >= GetMaxClip1())
+			if (m_iPrimaryAmmoCount <= 0 || m_bSlugLoaded || m_iClip1 >= GetMaxClip1())
 			{
 				FinishReload();
 			}
@@ -437,7 +437,7 @@ void CWeaponSupa7::ItemPostFrame(void)
 	{
 		m_bDelayedFire2 = false;
 
-		if (pOwner->GetAmmoCount(m_iSecondaryAmmoType))
+		if (m_iSecondaryAmmoCount)
 		{
 			// If the firing button was just pressed, reset the firing time
 			if (pOwner->m_afButtonPressed & IN_ATTACK2)
@@ -450,9 +450,9 @@ void CWeaponSupa7::ItemPostFrame(void)
 	else if ((m_bDelayedFire1 || pOwner->m_nButtons & IN_ATTACK) && m_flNextPrimaryAttack <= gpGlobals->curtime)
 	{
 		m_bDelayedFire1 = false;
-		if ((m_iClip1 <= 0 && UsesClipsForAmmo1()) || (!UsesClipsForAmmo1() && !pOwner->GetAmmoCount(m_iPrimaryAmmoType)))
+		if ((m_iClip1 <= 0 && UsesClipsForAmmo1()) || (!UsesClipsForAmmo1() && !m_iPrimaryAmmoCount))
 		{
-			if (!pOwner->GetAmmoCount(m_iPrimaryAmmoType))
+			if (!m_iPrimaryAmmoCount)
 			{
 				DryFire();
 			}
@@ -517,6 +517,7 @@ void CWeaponSupa7::ItemPostFrame(void)
 		}
 		WeaponIdle();
 	}
+	ProcessAnimationEvents();
 }
 
 void CWeaponSupa7::AddViewKick(void)
@@ -529,4 +530,15 @@ void CWeaponSupa7::AddViewKick(void)
 	QAngle punch;
 	punch.Init(SharedRandomFloat("supapax", -2, -1), SharedRandomFloat("supapay", -1, 1), 0);
 	pPlayer->ViewPunch(punch);
+}
+
+bool CWeaponSupa7::SlugLoaded() const
+{
+	return m_bSlugLoaded;
+}
+
+void CWeaponSupa7::Drop(const Vector& vecVelocity)
+{
+	ClearDelayedInputs();
+	CNEOBaseCombatWeapon::Drop(vecVelocity);
 }

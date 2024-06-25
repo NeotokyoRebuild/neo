@@ -116,15 +116,7 @@ void CWeaponTachi::UpdatePenaltyTime( void )
 	}
 	else
 	{
-		if ((IsAutomatic() && (!(pOwner->m_afButtonLast & IN_ATTACK))) &&
-			(gpGlobals->curtime - m_flLastAttackTime > TACHI_SEMIAUTO_FIRERATE))
-		{
-			m_flSoonestAttack = gpGlobals->curtime + TACHI_SEMIAUTO_FIRERATE;
-		}
-		else
-		{
-			m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
-		}
+		m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
 	}
 
 	if (m_flSoonestAttack > gpGlobals->curtime)
@@ -149,6 +141,8 @@ void CWeaponTachi::ItemBusyFrame( void )
 
 void CWeaponTachi::ItemPostFrame( void )
 {
+	ProcessAnimationEvents();
+
 	BaseClass::ItemPostFrame();
 
 	if ( m_bInReload )

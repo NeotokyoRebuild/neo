@@ -20,7 +20,7 @@ WeaponData
 	"clip_size"		"30"
 	"default_clip"	"90"
 	"autoswitchfrom"        "0"
-	"primary_ammo"		"AR2" // NEO TODO (Rain): add specific ammos
+	"primary_ammo"		"AMMO_PRI" // NEO TODO (Rain): add specific ammos
 	"secondary_ammo"	"None"
 
 	"weight"		"3"
@@ -52,6 +52,14 @@ WeaponData
 		"right"		"7.0"
 		"up"		"0.0"
 		"yaw"		"-2"
+	}
+
+	"ZoomOffset"
+	{
+		"fov"		"40"
+		"forward"	"7"
+		"right"		"5"
+		"up"		"2.5"
 	}
 	
 	"AimOffset"

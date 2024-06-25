@@ -24,7 +24,7 @@ BitmapImage::BitmapImage()
 {
 	m_clr.SetColor( 255, 255, 255, 255 );
 	m_pos[ 0 ] = m_pos[ 1 ]  = 0;
-	m_pPanelSize = NULL;
+	m_pPanelSize = 0;
 	m_nTextureId = -1;
 	m_bProcedural = false;
 

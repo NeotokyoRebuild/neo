@@ -84,6 +84,7 @@
 
 #ifdef NEO
 #include "neo_player.h"
+#include "weapon_tachi.h"
 #endif
 
 ConVar autoaim_max_dist( "autoaim_max_dist", "2160" ); // 2160 = 180 feet
@@ -593,7 +594,11 @@ CBasePlayer::CBasePlayer( )
 	m_qangLockViewangles.Init();
 
 	// Setup our default FOV
+#ifndef NEO
 	m_iDefaultFOV = g_pGameRules->DefaultFOV();
+#else
+	m_iDefaultFOV = ClientFOV();
+#endif
 
 	m_hZoomOwner = NULL;
 
@@ -2148,6 +2153,7 @@ void CBasePlayer::PlayerDeathThink(void)
 		fAnyButtonDown &= ~IN_DUCK;
 	}
 
+#ifndef NEO
 	// wait for all buttons released
 	if (m_lifeState == LIFE_DEAD)
 	{
@@ -2158,10 +2164,10 @@ void CBasePlayer::PlayerDeathThink(void)
 		{
 			m_lifeState = LIFE_RESPAWNABLE;
 		}
-		
+
 		return;
 	}
-
+#endif
 // if the player has been dead for one second longer than allowed by forcerespawn, 
 // forcerespawn isn't on. Send the player off to an intermission camera until they 
 // choose to respawn.
@@ -3706,8 +3712,13 @@ void CBasePlayer::PlayerRunCommand(CUserCmd *ucmd, IMoveHelper *moveHelper)
 #ifdef NEO
 		if (!originalCheck && static_cast<CNEO_Player*>(this)->GetNeoFlags() & NEO_FL_FREEZETIME)
 		{
-			ucmd->buttons &= ~(IN_ATTACK | IN_ATTACK2 | IN_ATTACK3 | IN_JUMP | IN_SPEED |
+			ucmd->buttons &= ~(IN_ATTACK | IN_ATTACK3 | IN_JUMP | IN_SPEED |
 				IN_ALT1 | IN_ALT2 | IN_BACK | IN_FORWARD | IN_MOVELEFT | IN_MOVERIGHT | IN_RUN | IN_ZOOM);
+			const bool isTachi = (dynamic_cast<CWeaponTachi*>(GetActiveWeapon()) != NULL);
+			if (!isTachi)
+			{
+				ucmd->buttons &= ~IN_ATTACK2;
+			}
 		}
 #else
 		ucmd->buttons = 0;
@@ -5736,9 +5747,65 @@ CBaseEntity	*CBasePlayer::GiveNamedItem( const char *pszName, int iSubType )
 
 	// Msg( "giving %s\n", pszName );
 
-	EHANDLE pent;
+	EHANDLE pent = NULL;
 
+#ifdef NEO
+	// NEO NOTE (nullsystem): Only need to check for weapons that are not stubbed out
+	// of the code base due to it being too deep into it and just do a name check
+	static const char *DISABLE_WEPS[] = {
+		// Too deep in the codebase, just do a string match
+		"weapon_rpg",
+		"weapon_physcannon",
+		"weapon_bugbait",
+		"weapon_frag",
+		NULL, // END
+
+		// THE REST HERE ARE ALREADY REMOVED FROM THE CODEBASE, dont need to string check them:
+		/*
+		"weapon_annabelle",
+		"weapon_crowbar",
+		"weapon_tripwire",
+		"weapon_thumper",
+		"weapon_stunstick",
+		"weapon_sniperrifle",
+		"weapon_smg2",
+		"weapon_smg1",
+		"weapon_slam",
+		"weapon_pistol",
+		"weapon_extinguisher",
+		"weapon_molotov",
+		"weapon_alyxgun",
+		"weapon_shotgun",
+		"weapon_357",
+		"weapon_cguard",
+		"weapon_citizenpackage",
+		"weapon_manhack",
+		"weapon_crossbow",
+		"weapon_immolator",
+		"weapon_irifle",
+		"weapon_brickbat",
+		"weapon_ar2",
+		"weapon_ar1",
+		*/
+	};
+	bool blockWeapon = false;
+	for (int i = 0; DISABLE_WEPS[i] != NULL; ++i)
+	{
+		if (Q_strcmp(pszName, DISABLE_WEPS[i]) == 0)
+		{
+			Warning("Attempted to create unknown entity type %s!\n", pszName);
+			blockWeapon = true;
+			break;
+		}
+	}
+
+	if (!blockWeapon)
+	{
+		pent = CreateEntityByName(pszName);
+	}
+#else
 	pent = CreateEntityByName(pszName);
+#endif
 	if ( pent == NULL )
 	{
 		Msg( "NULL Ent in GiveNamedItem!\n" );
@@ -6856,6 +6923,7 @@ void CBasePlayer::UpdateClientData( void )
 	{
 		m_iClientBattery = m_ArmorValue;
 
+#ifndef NEO
 		// send "battery" update message
 		if ( usermessages->LookupUserMessage( "Battery" ) != -1 )
 		{
@@ -6863,6 +6931,7 @@ void CBasePlayer::UpdateClientData( void )
 				WRITE_SHORT( (int)m_ArmorValue);
 			MessageEnd();
 		}
+#endif
 	}
 
 #if 0 // BYE BYE!!
@@ -8570,7 +8639,12 @@ float CBasePlayer::GetFOVDistanceAdjustFactorForNetworking()
 //-----------------------------------------------------------------------------
 void CBasePlayer::SetDefaultFOV( int FOV )
 {
+#ifndef NEO
 	m_iDefaultFOV = ( FOV == 0 ) ? g_pGameRules->DefaultFOV() : FOV;
+#else
+	(void)FOV;	// Unused - Override to take from ClientFOV instead
+	m_iDefaultFOV = ClientFOV();
+#endif
 }
 
 //-----------------------------------------------------------------------------

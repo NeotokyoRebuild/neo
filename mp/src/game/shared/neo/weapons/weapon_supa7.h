@@ -46,6 +46,7 @@ public:
 	bool StartReloadSlug(void);
 	bool Reload(void);
 	bool ReloadSlug(void);
+	bool SlugLoaded(void) const;
 
 	void FillClip(void);
 	void FillClipSlug(void);
@@ -55,8 +56,8 @@ public:
 	void PrimaryAttack(void);
 	void SecondaryAttack(void);
 	void DryFire(void);
-
-	virtual float GetFireRate(void) OVERRIDE { return 0.7f; }
+	
+	void Drop(const Vector& vecVelocity) OVERRIDE;
 
 	void ClearDelayedInputs(void);
 

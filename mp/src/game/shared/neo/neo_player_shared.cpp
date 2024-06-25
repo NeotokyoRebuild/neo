@@ -4,6 +4,11 @@
 #include "in_buttons.h"
 #include "neo_gamerules.h"
 
+#include "tier0/valve_minmax_off.h"
+#include <system_error>
+#include <charconv>
+#include "tier0/valve_minmax_on.h"
+
 #ifdef CLIENT_DLL
 #include "c_neo_player.h"
 #ifndef CNEO_Player
@@ -14,6 +19,7 @@
 #endif
 
 #include "neo_playeranimstate.h"
+#include "convar.h"
 
 #include "weapon_neobasecombatweapon.h"
 
@@ -31,7 +37,7 @@ ConVar neo_recon_superjump_intensity("neo_recon_superjump_intensity", "250", FCV
 
 bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep)
 {
-	if (!pWep || pWep->m_bInReload)
+	if (!pWep || pWep->m_bInReload || pWep->GetRoundBeingChambered())
 	{
 		return false;
 	}
@@ -126,4 +132,53 @@ bool ClientWantsLeanToggle(const CNEO_Player* player)
 
 	return 1 == atoi(engine->GetClientConVarValue(engine->IndexOfEdict(player->edict()), "neo_lean_toggle"));
 #endif
+}
+
+int DmgLineStr(char* infoLine, const int infoLineMax,
+	const char* dmgerName, const char* dmgerClass,
+	const float dmgTo, const float dmgFrom, const int hitsTo, const int hitsFrom)
+{
+	memset(infoLine, 0, infoLineMax);
+	if (dmgTo > 0.0f && dmgFrom > 0.0f)
+	{
+		Q_snprintf(infoLine, infoLineMax, "%s [%s]: Dealt: %.0f in %d hits | Taken: %.0f in %d hits\n",
+			dmgerName, dmgerClass,
+			dmgTo, hitsTo, dmgFrom, hitsFrom);
+	}
+	else if (dmgTo > 0.0f)
+	{
+		Q_snprintf(infoLine, infoLineMax, "%s [%s]: Dealt: %.0f in %d hits\n",
+			dmgerName, dmgerClass, dmgTo, hitsTo);
+	}
+	else if (dmgFrom > 0.0f)
+	{
+		Q_snprintf(infoLine, infoLineMax, "%s [%s]: Taken: %.0f in %d hits\n",
+			dmgerName, dmgerClass, dmgFrom, hitsFrom);
+	}
+	return Q_strlen(infoLine);
+}
+
+void KillerLineStr(char* killByLine, const int killByLineMax,
+	CNEO_Player* neoAttacker, const CNEO_Player* neoVictim)
+{
+	const char* dmgerName = neoAttacker->GetNeoPlayerName();
+	const char* dmgerClass = GetNeoClassName(neoAttacker->GetClass());
+	const int dmgerHP = neoAttacker->GetHealth();
+	auto* dmgerWep = neoAttacker->GetActiveWeapon();
+	const char* dmgerWepName = dmgerWep ? dmgerWep->GetPrintName() : "";
+	const float distance = METERS_PER_INCH * neoAttacker->GetAbsOrigin().DistTo(neoVictim->GetAbsOrigin());
+
+	memset(killByLine, 0, killByLineMax);
+	Q_snprintf(killByLine, killByLineMax, "Killed by: %s [%s | %d hp] with %s at %.0f m\n",
+		dmgerName, dmgerClass, dmgerHP, dmgerWepName, distance);
+}
+
+[[nodiscard]] auto StrToInt(std::string_view strView) -> std::optional<int>
+{
+	int value{};
+	if (std::from_chars(strView.data(), strView.data() + strView.size(), value).ec == std::errc{})
+	{
+		return value;
+	}
+	return std::nullopt;
 }

@@ -14,7 +14,7 @@
 #include "ienginevgui.h"
 
 #include "neo_hud_elements.h"
-#include "inttostr.h"
+#include "neo_version_info.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -55,10 +55,19 @@ CNEOHud_HTA::CNEOHud_HTA(const char* pElementName, vgui::Panel* parent)
 	}
 
 	m_hFont = scheme->GetFont("NHudOCRSmall");
+	m_hFontBuildInfo = scheme->GetFont("Default");
+
+	if (!g_pVGuiLocalize->ConvertANSIToUnicode(GIT_HASH, m_wszBuildInfo, sizeof(m_wszBuildInfo)))
+	{
+		m_wszBuildInfo[0] = L'\0';
+	}
+
+	InvalidateLayout();
 
 	SetVisible(neo_cl_hud_hta_enabled.GetBool());
 
 	SetHiddenBits(HIDEHUD_HEALTH | HIDEHUD_PLAYERDEAD | HIDEHUD_NEEDSUIT | HIDEHUD_WEAPONSELECTION);
+	engine->ClientCmd("hud_reloadscheme"); //NEO FIXME this reloads the scheme of all elements, is there a way to do it just for this one?
 }
 
 void CNEOHud_HTA::Paint()
@@ -84,12 +93,32 @@ void CNEOHud_HTA::ApplySchemeSettings(vgui::IScheme* pScheme)
 	SetBounds(0, 0, m_resX, m_resY);
 }
 
+void CNEOHud_HTA::DrawBuildInfo() const
+{
+	surface()->DrawSetTextFont(m_hFontBuildInfo);
+	int charWidth, charHeight;
+	surface()->GetTextSize(m_hFontBuildInfo, L"a", charWidth, charHeight);
+
+	const int x = xpos + 0.1f * charWidth;
+	const int y = ypos - charHeight;
+
+	// DIY text shadow for contrast
+	surface()->DrawSetTextColor(COLOR_BLACK);
+	surface()->DrawSetTextPos(x + 2, y + 2);
+	surface()->DrawPrintText(m_wszBuildInfo, ARRAYSIZE(m_wszBuildInfo) - 1);
+
+	surface()->DrawSetTextColor(COLOR_WHITE);
+	surface()->DrawSetTextPos(x, y);
+	surface()->DrawPrintText(m_wszBuildInfo, ARRAYSIZE(m_wszBuildInfo) - 1);
+}
+
 void CNEOHud_HTA::DrawHTA() const
 {
 	auto player = C_NEO_Player::GetLocalNEOPlayer();
 	Assert(player);
 
 	const Color textColor = COLOR_WHITE;
+	auto textColorTransparent = Color(textColor.r(), textColor.g(), textColor.b(), 127);
 
 	char value_Integrity[4]{ '\0' };
 	char value_ThermOptic[4]{ '\0' };
@@ -105,11 +134,11 @@ void CNEOHud_HTA::DrawHTA() const
 	const int aux = player->m_HL2Local.m_flSuitPower;
 	const bool playerIsNotSupport = (player->GetClass() != NEO_CLASS_SUPPORT);
 
-	inttostr(value_Integrity, 10, health);
+	V_sprintf_safe(value_Integrity, "%d", health);
 	if (playerIsNotSupport)
 	{
-		inttostr(value_ThermOptic, 10, thermopticValue);
-		inttostr(value_Aux, 10, aux);
+		V_sprintf_safe(value_ThermOptic, "%d", thermopticValue);
+		V_sprintf_safe(value_Aux, "%d", aux);
 	}
 
 	const int valLen_Integrity = V_strlen(value_Integrity);
@@ -123,73 +152,95 @@ void CNEOHud_HTA::DrawHTA() const
 		g_pVGuiLocalize->ConvertANSIToUnicode(value_Aux, unicodeValue_Aux, sizeof(unicodeValue_Aux));
 	}
 
-	int fontWidth, fontHeight;
-	surface()->GetTextSize(m_hFont, L"THERM-OPTIC", fontWidth, fontHeight);
-
-	// These are the constant res based scalings of the NT ammo/health box dimensions.
-	const int xBoxWidth = m_resX * 0.2375;
-	const int yBoxHeight = m_resY * (0.1 / 1.5);
-
-	const int margin = neo_cl_hud_ammo_enabled.GetInt();
-	DrawNeoHudRoundedBox(margin, m_resY - yBoxHeight - margin, xBoxWidth + margin, m_resY - margin);
-
-	const int xPadding = 5; // TODO (Rain): make this relative to resolution scaling
+	Color box_color = Color(box_color_r, box_color_g, box_color_b, box_color_a);
+	Color healthColor = Color(health_color_r, health_color_g, health_color_b, health_color_a);
+	Color camoColor = Color(camo_color_r, camo_color_g, camo_color_b, camo_color_a);
+	Color sprintColor = Color(sprint_color_r, sprint_color_g, sprint_color_b, sprint_color_a);
+	DrawNeoHudRoundedBox(xpos, ypos, xpos + wide, ypos + tall, box_color, top_left_corner, top_right_corner, bottom_left_corner, bottom_right_corner);
 
 	surface()->DrawSetTextFont(m_hFont);
-	surface()->DrawSetTextColor(textColor);
-	surface()->DrawSetTextPos(xPadding + margin, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 1 - margin);
+	surface()->DrawSetTextColor(healthColor);
+	surface()->DrawSetTextPos(healthtext_xpos + xpos, healthtext_ypos + ypos);
 	surface()->DrawPrintText(L"INTEGRITY", 9);
 	if (playerIsNotSupport)
 	{
-		surface()->DrawSetTextPos(xPadding + margin, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 2 - margin);
+		surface()->DrawSetTextColor(camoColor);
+		surface()->DrawSetTextPos(camotext_xpos + xpos, camotext_ypos + ypos);
 		surface()->DrawPrintText(L"THERM-OPTIC", 11);
-		surface()->DrawSetTextPos(xPadding + margin, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 3 - margin);
+		surface()->DrawSetTextColor(sprintColor);
+		surface()->DrawSetTextPos(sprinttext_xpos + xpos, sprinttext_ypos + ypos);
 		surface()->DrawPrintText(L"AUX", 3);
 	}
 
-	surface()->DrawSetTextPos(xBoxWidth - xPadding * 7 + margin, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 1 - margin);
+	int fontWidth, fontHeight;
+	surface()->DrawSetTextColor(healthColor);
+	surface()->GetTextSize(m_hFont, unicodeValue_Integrity, fontWidth, fontHeight);
+	surface()->DrawSetTextPos(healthnum_xpos + xpos - fontWidth, healthnum_ypos + ypos);
 	surface()->DrawPrintText(unicodeValue_Integrity, valLen_Integrity);
 	if (playerIsNotSupport)
 	{
-		surface()->DrawSetTextPos(xBoxWidth - xPadding * 7 + margin, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 2 - margin);
+		surface()->DrawSetTextColor(camoColor);
+		surface()->GetTextSize(m_hFont, unicodeValue_ThermOptic, fontWidth, fontHeight);
+		surface()->DrawSetTextPos(camonum_xpos + xpos - fontWidth, camonum_ypos + ypos);
 		surface()->DrawPrintText(unicodeValue_ThermOptic, valLen_ThermOptic);
-		surface()->DrawSetTextPos(xBoxWidth - xPadding * 7 + margin, m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 3 - margin);
+		surface()->DrawSetTextColor(sprintColor);
+		surface()->GetTextSize(m_hFont, unicodeValue_Aux, fontWidth, fontHeight);
+		surface()->DrawSetTextPos(sprintnum_xpos + xpos - fontWidth, sprintnum_ypos + ypos);
 		surface()->DrawPrintText(unicodeValue_Aux, valLen_Aux);
 	}
 
-	surface()->DrawSetColor(COLOR_WHITE);
-
-	const int x_from = xPadding * 2 + fontWidth;
-	const int x_to = xBoxWidth - xPadding * 8;
-	const int x_len = x_to - x_from;
-
 	// Integrity progress bar
+	surface()->DrawSetColor(healthColor);
 	surface()->DrawFilledRect(
-		x_from + margin,
-		1.0 * (m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 1) - margin,
-		x_to - x_len * (1 - health / 100.0) + margin,
-		m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 1.75 - margin);
+		healthbar_xpos + xpos,
+		healthbar_ypos + ypos,
+		healthbar_xpos + xpos + (healthbar_w * (health / 100.0)),
+		healthbar_ypos + ypos + healthbar_h);
 
 	if (playerIsNotSupport)
 	{
 		// ThermOptic progress bar
+		surface()->DrawSetColor(camoColor);
 		surface()->DrawFilledRect(
-			x_from + margin,
-			1.0 * (m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 2) - margin,
-			x_to - x_len * (1 - thermopticPercent / 100.0) + margin,
-			m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 2.75 - margin);
+			camobar_xpos + xpos,
+			camobar_ypos + ypos,
+			camobar_xpos + xpos + (camobar_w * (thermopticPercent / 100.0)),
+			camobar_ypos + ypos + camobar_h);
 
 		// AUX progress bar
+		surface()->DrawSetColor(sprintColor);
 		surface()->DrawFilledRect(
-			x_from + margin,
-			1.0 * (m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 3) - margin,
-			x_to - x_len * (1 - aux / 100.0) + margin,
-			m_resY - yBoxHeight - (fontHeight / 1.5) + fontHeight * 3.75 - margin);
+			sprintbar_xpos + xpos,
+			sprintbar_ypos + ypos,
+			sprintbar_xpos + xpos + (sprintbar_w * (aux / 100.0)),
+			sprintbar_ypos + ypos + sprintbar_h);
+
+		surface()->DrawSetColor(textColorTransparent);
+		surface()->DrawOutlinedRect(
+			camobar_xpos + xpos,
+			camobar_ypos + ypos,
+			camobar_xpos + xpos + camobar_w,
+			camobar_ypos + ypos + camobar_h);
+
+		surface()->DrawOutlinedRect(
+			sprintbar_xpos + xpos,
+			sprintbar_ypos + ypos,
+			sprintbar_xpos + xpos + sprintbar_w,
+			sprintbar_ypos + ypos + sprintbar_h);
 	}
+
+	surface()->DrawSetColor(textColorTransparent);
+	surface()->DrawOutlinedRect(
+		healthbar_xpos + xpos,
+		healthbar_ypos + ypos,
+		healthbar_xpos + xpos + healthbar_w,
+		healthbar_ypos + ypos + healthbar_h);
 }
 
 void CNEOHud_HTA::DrawNeoHudElement()
 {
+	DrawBuildInfo(); // Always draw build info
+
 	if (!ShouldDraw())
 	{
 		return;

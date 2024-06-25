@@ -71,6 +71,10 @@ bool ToolFramework_SetupEngineMicrophone( Vector &origin, QAngle &angles );
 extern ConVar default_fov;
 extern bool g_bRenderingScreenshot;
 
+#ifdef NEO
+extern ConVar neo_fov;
+#endif
+
 #if !defined( _X360 )
 #define SAVEGAME_SCREENSHOT_WIDTH	180
 #define SAVEGAME_SCREENSHOT_HEIGHT	100
@@ -107,7 +111,7 @@ extern ConVar cl_forwardspeed;
 static ConVar v_centermove( "v_centermove", "0.15");
 static ConVar v_centerspeed( "v_centerspeed","500" );
 
-#ifdef TF_CLIENT_DLL
+#if defined(NEO) || defined(TF_CLIENT_DLL)
 // 54 degrees approximates a 35mm camera - we determined that this makes the viewmodels
 // and motions look the most natural.
 ConVar v_viewmodel_fov( "viewmodel_fov", "54", FCVAR_ARCHIVE, "Sets the field-of-view for the viewmodel.", true, 0.1, true, 179.9 );
@@ -752,7 +756,11 @@ void CViewRender::SetUpViews()
 	//  closest point of approach seems to be view center to top of crouched box
 	view.zNear			    = GetZNear();
 	view.zNearViewmodel	    = 1;
+#ifndef NEO
 	view.fov = default_fov.GetFloat();
+#else
+	view.fov = neo_fov.GetFloat();
+#endif
 
 	view.m_bOrtho			= false;
     view.m_bViewToProjectionOverride = false;
@@ -832,28 +840,34 @@ void CViewRender::SetUpViews()
 		}
 	}
 
+#ifndef NEO
 	//Find the offset our current FOV is from the default value
 	float fDefaultFov = default_fov.GetFloat();
 	float flFOVOffset = fDefaultFov - view.fov;
+#endif
 
-#ifdef NEO // Decouple viewmodel FOV from view FOV.
 	//Adjust the viewmodel's FOV to move with any FOV offsets on the viewer's end
 #ifdef SDK2013CE
-	view.fovViewmodel = fabs( g_pClientMode->GetViewModelFOV() - flFOVOffset );
+#ifdef NEO // NEO NOTE: Viewmodel FOV and (neo_fov) FOV are decoupled
+	view.fovViewmodel = g_pClientMode->GetViewModelFOV();
+#else
+	view.fovViewmodel = fabs(g_pClientMode->GetViewModelFOV() - flFOVOffset);
+#endif
 #else
 	view.fovViewmodel = g_pClientMode->GetViewModelFOV() - flFOVOffset;
-#endif
 #endif
 
 	if ( UseVR() )
 	{
 		// Let the headtracking read the status of the HMD, etc.
 		// This call can go almost anywhere, but it needs to know the player FOV for sniper weapon zoom, etc
+#ifndef NEO
 		if ( flFOVOffset == 0.0f )
 		{
 			g_ClientVirtualReality.ProcessCurrentTrackingState ( 0.0f );
 		}
 		else
+#endif
 		{
 			g_ClientVirtualReality.ProcessCurrentTrackingState ( view.fov );
 		}

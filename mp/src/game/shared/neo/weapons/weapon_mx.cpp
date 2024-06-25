@@ -81,6 +81,8 @@ void CWeaponMX::ItemBusyFrame()
 
 void CWeaponMX::ItemPostFrame()
 {
+	ProcessAnimationEvents();
+
 	BaseClass::ItemPostFrame();
 
 	if (m_bInReload)

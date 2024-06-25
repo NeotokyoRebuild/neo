@@ -15,8 +15,20 @@ enum NeoGib {
 	NEO_GIB_RARM,
 	NEO_GIB_RLEG,
 
-	NEO_GIB_ENUM_COUNT
+	NEO_GIB__ENUM_COUNT
 };
+static constexpr int NEO_GIB_ENUM_COUNT = NEO_GIB__ENUM_COUNT;
+
+enum NeoGibLimb {
+	NEO_GIB_LIMB_HEAD = 0,
+	NEO_GIB_LIMB_LARM,
+	NEO_GIB_LIMB_LLEG,
+	NEO_GIB_LIMB_RARM,
+	NEO_GIB_LIMB_RLEG,
+
+	NEO_GIB_LIMB__ENUM_COUNT
+};
+static constexpr int NEO_GIB_LIMB_ENUM_COUNT = NEO_GIB_LIMB__ENUM_COUNT;
 
 enum NeoViewmodel {
 	NEO_VM_AA13 = 0,
@@ -55,8 +67,9 @@ enum NeoViewmodel {
 	// array offsets, and VIP is not in that array
 	NEO_VM_VIP_SMAC,
 
-	NEO_VM_ENUM_COUNT
+	NEO_VM__ENUM_COUNT
 };
+static constexpr int NEO_VM_ENUM_COUNT = NEO_VM__ENUM_COUNT;
 
 enum NeoWeaponModel {
 	NEO_WEP_MDL_AA13 = 0,
@@ -100,8 +113,9 @@ enum NeoWeaponModel {
 	NEO_WEP_MDL_PBK56S,
 #endif
 
-	NEO_WEP_MDL_ENUM_COUNT
+	NEO_WEP_MDL__ENUM_COUNT
 };
+static constexpr int NEO_WEP_MDL_ENUM_COUNT = NEO_WEP_MDL__ENUM_COUNT;
 
 class CNEOModelManager;
 
@@ -127,6 +141,9 @@ public:
 
 	const char *GetCorpseModel(NeoSkin nSkin, NeoClass nClass,
 		int iTeam, NeoGib nGib = NEO_GIB_ALL) const;
+
+	const char* GetGibModel(NeoSkin nSkin, NeoClass nClass,
+		int iTeam, NeoGibLimb nGib = NEO_GIB_LIMB_HEAD) const;
 	
 	const char *GetPlayerModel(NeoSkin nSkin,
 		NeoClass nClass, int iTeam) const;

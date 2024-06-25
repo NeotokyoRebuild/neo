@@ -161,6 +161,10 @@ public:
 	bool IsInAim() const { return m_bInAim; }
 
 	float GetAttackersScores(const int attackerIdx) const;
+	int GetAttackerHits(const int attackerIdx) const;
+
+	const char *GetNeoPlayerName() const;
+	bool ClientWantNeoName() const;
 
 private:
 	void CheckThermOpticButtons();
@@ -181,6 +185,7 @@ public:
 
 	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
 	CNetworkArray(float, m_rfAttackersScores, (MAX_PLAYERS + 1));
+	CNetworkArray(int, m_rfAttackersHits, (MAX_PLAYERS + 1));
 
 	bool m_bShowClassMenu, m_bShowTeamMenu;
 	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
@@ -197,14 +202,18 @@ public:
 	CNetworkVar(bool, m_bInVision);
 	CNetworkVar(bool, m_bInAim);
 	CNetworkVar(int, m_bInLean);
+	CNetworkVar(bool, m_bDroppedAnything);
 
 	CNetworkVar(int, m_iNeoClass);
 	CNetworkVar(int, m_iNeoSkin);
 	CNetworkVar(int, m_iNeoStar);
 
+	CNetworkString(m_szNeoName, MAX_PLAYER_NAME_LENGTH);
+	CNetworkVar(int, m_szNameDupePos);
+	CNetworkVar(bool, m_bClientWantNeoName);
+
 	unsigned char m_NeoFlags;
 
-protected:
 	bool m_bIsClassMenuOpen, m_bIsTeamMenuOpen;
 
 private:
@@ -219,6 +228,10 @@ private:
 
 	float m_flLastAirborneJumpOkTime;
 	float m_flLastSuperJumpTime;
+
+	// Non-network version of m_szNeoName with dupe checker index
+	mutable char m_szNeoNameWDupeIdx[MAX_PLAYER_NAME_LENGTH + 10];
+	mutable int m_szNeoNameLocalDupeIdx;
 
 private:
 	C_NEO_Player(const C_NEO_Player &);

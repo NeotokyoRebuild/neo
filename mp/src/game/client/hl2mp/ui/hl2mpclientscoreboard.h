@@ -48,11 +48,18 @@ private:
 	int GetSectionFromTeamNumber( int teamNumber );
 	enum 
 	{ 
+#ifdef NEO
+		CSTRIKE_NAME_WIDTH = 264,
+#else
 		CSTRIKE_NAME_WIDTH = 320,
+#endif
 		CSTRIKE_CLASS_WIDTH = 56,
 		CSTRIKE_SCORE_WIDTH = 40,
 		CSTRIKE_DEATH_WIDTH = 46,
 		CSTRIKE_PING_WIDTH = 46,
+#ifdef NEO
+		NEO_STATUS_WIDTH = 56,
+#endif
 //		CSTRIKE_VOICE_WIDTH = 40, 
 //		CSTRIKE_FRIENDS_WIDTH = 24,
 	};

@@ -97,7 +97,11 @@
 #endif
 
 #ifdef CLIENT_DLL
-ConVar mp_usehwmmodels( "mp_usehwmmodels", "0", NULL, "Enable the use of the hw morph models. (-1 = never, 1 = always, 0 = based upon GPU)" ); // -1 = never, 0 = if hasfastvertextextures, 1 = always
+ConVar mp_usehwmmodels( "mp_usehwmmodels", "0", FCVAR_NONE, "Enable the use of the hw morph models. (-1 = never, 1 = always, 0 = based upon GPU)" ); // -1 = never, 0 = if hasfastvertextextures, 1 = always
+#endif
+
+#ifdef NEO
+ConVar neo_fov("neo_fov", "90", FCVAR_USERINFO, "Set the normal FOV.", true, 60.0f, true, (float)(MAX_FOV));
 #endif
 
 bool UseHWMorphModels()
@@ -683,7 +687,11 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 	{
 		fvol *= 0.65;
 	}
-
+#ifdef NEO
+	if (speed < 90) { //In Neotokyo players don't make footstep noise when moving slower than this
+		return;
+	}
+#endif
 	PlayStepSound( feet, psurface, fvol, false );
 }
 
@@ -1885,6 +1893,24 @@ void CBasePlayer::SharedSpawn()
 #endif
 }
 
+#ifdef NEO
+int CBasePlayer::ClientFOV() const
+{
+	int fov = DEFAULT_FOV;
+#ifdef CLIENT_DLL
+	// neo_fov.GetFloat() doesn't work, so utilize m_iDefaultFOV
+	fov = m_iDefaultFOV;
+#else
+	if (!(GetFlags() & FL_FAKECLIENT))
+	{
+		// NOTE (nullsystem): Think this only called once in a while so not too bad
+		fov = atoi(engine->GetClientConVarValue(engine->IndexOfEdict(edict()), "neo_fov"));
+	}
+#endif
+	return fov;
+}
+#endif
+
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -1904,7 +1930,11 @@ int CBasePlayer::GetDefaultFOV( void ) const
 	}
 #endif
 
+#ifndef NEO
 	int iFOV = ( m_iDefaultFOV == 0 ) ? g_pGameRules->DefaultFOV() : m_iDefaultFOV;
+#else
+	int iFOV = ClientFOV();
+#endif
 	if ( iFOV > MAX_FOV )
 		iFOV = MAX_FOV;
 

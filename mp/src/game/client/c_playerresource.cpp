@@ -27,6 +27,10 @@ IMPLEMENT_CLIENTCLASS_DT_NOBASE(C_PlayerResource, DT_PlayerResource, CPlayerReso
 	RecvPropArray3( RECVINFO_ARRAY(m_iPing), RecvPropInt( RECVINFO(m_iPing[0]))),
 #ifdef NEO
 	RecvPropArray3(RECVINFO_ARRAY(m_iXP), RecvPropInt(RECVINFO(m_iXP[0]))),
+	RecvPropArray3(RECVINFO_ARRAY(m_iClass), RecvPropInt(RECVINFO(m_iClass[0]))),
+	RecvPropArray3(RECVINFO_ARRAY(m_szNeoName), RecvPropString(RECVINFO(m_szNeoName[0]))),
+	RecvPropArray3(RECVINFO_ARRAY(m_iNeoNameDupeIdx), RecvPropInt(RECVINFO(m_iNeoNameDupeIdx[0]))),
+	RecvPropArray3(RECVINFO_ARRAY(m_iStar), RecvPropInt(RECVINFO(m_iStar[0]))),
 #endif
 	RecvPropArray3( RECVINFO_ARRAY(m_iScore), RecvPropInt( RECVINFO(m_iScore[0]))),
 	RecvPropArray3( RECVINFO_ARRAY(m_iDeaths), RecvPropInt( RECVINFO(m_iDeaths[0]))),
@@ -42,6 +46,10 @@ BEGIN_PREDICTION_DATA( C_PlayerResource )
 	DEFINE_PRED_ARRAY( m_iPing, FIELD_INTEGER, MAX_PLAYERS+1, FTYPEDESC_PRIVATE ),
 #ifdef NEO
 	DEFINE_PRED_ARRAY(m_iXP, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_PRIVATE),
+	DEFINE_PRED_ARRAY(m_iClass, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_PRIVATE),
+	DEFINE_PRED_ARRAY(m_szNeoName, FIELD_STRING, MAX_PLAYERS + 1, FTYPEDESC_PRIVATE),
+	DEFINE_PRED_ARRAY(m_iNeoNameDupeIdx, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_PRIVATE),
+	DEFINE_PRED_ARRAY(m_iStar, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_PRIVATE),
 #endif
 	DEFINE_PRED_ARRAY( m_iScore, FIELD_INTEGER, MAX_PLAYERS+1, FTYPEDESC_PRIVATE ),
 	DEFINE_PRED_ARRAY( m_iDeaths, FIELD_INTEGER, MAX_PLAYERS+1, FTYPEDESC_PRIVATE ),
@@ -65,6 +73,11 @@ C_PlayerResource::C_PlayerResource()
 //	memset( m_iPacketloss, 0, sizeof( m_iPacketloss ) );
 #ifdef NEO
 	memset(m_iXP, 0, sizeof(m_iXP));
+	memset(m_iClass, 0, sizeof(m_iClass));
+	memset(m_szNeoName, 0, sizeof(m_szNeoName));
+	memset(m_iNeoNameDupeIdx, 0, sizeof(m_iNeoNameDupeIdx));
+	memset(m_szDispNameWDupeIdx, 0, sizeof(m_szDispNameWDupeIdx));
+	memset(m_iStar, 0, sizeof(m_iStar));
 #endif
 	memset( m_iScore, 0, sizeof( m_iScore ) );
 	memset( m_iDeaths, 0, sizeof( m_iDeaths ) );
@@ -81,7 +94,7 @@ C_PlayerResource::C_PlayerResource()
 
 #ifdef NEO
 	m_Colors[TEAM_UNASSIGNED] = COLOR_NEO_WHITE;
-	m_Colors[TEAM_SPECTATOR] = COLOR_NEO_ORANGE;
+	m_Colors[TEAM_SPECTATOR] = COLOR_SPEC;
 	m_Colors[TEAM_JINRAI] = COLOR_JINRAI;
 	m_Colors[TEAM_NSF] = COLOR_NSF;
 #else
@@ -173,6 +186,27 @@ const char *C_PlayerResource::GetPlayerName( int iIndex )
 		UpdatePlayerName( iIndex );
 	}
 
+#ifdef NEO
+	const bool clientWantNeoName = C_NEO_Player::GetLocalNEOPlayer()->ClientWantNeoName();
+	const int dupeIdx = m_iNeoNameDupeIdx[iIndex];
+
+	if (clientWantNeoName && m_szNeoName[iIndex][0] != '\0')
+	{
+		if (dupeIdx > 0)
+		{
+			Q_snprintf(m_szDispNameWDupeIdx[iIndex], sizeof(m_szDispNameWDupeIdx[iIndex]), "%s (%d)", m_szNeoName[iIndex], dupeIdx);
+			return m_szDispNameWDupeIdx[iIndex];
+		}
+		return m_szNeoName[iIndex];
+	}
+
+	if (clientWantNeoName && dupeIdx > 0)
+	{
+		Q_snprintf(m_szDispNameWDupeIdx[iIndex], sizeof(m_szDispNameWDupeIdx[iIndex]), "%s (%d)", m_szName[iIndex], dupeIdx);
+		return m_szDispNameWDupeIdx[iIndex];
+	}
+#endif
+
 	// This gets updated in ClientThink, so it could be up to 1 second out of date, oh well.
 	return m_szName[iIndex];
 }
@@ -230,6 +264,26 @@ int C_PlayerResource::GetXP(int index)
 	}
 
 	return m_iXP[index];
+}
+
+int C_PlayerResource::GetClass(int index)
+{
+	if (!IsConnected(index))
+	{
+		return -1;
+	}
+
+	return m_iClass[index];
+}
+
+int C_PlayerResource::GetStar(int index)
+{
+	if (!IsConnected(index))
+	{
+		return -1;
+	}
+
+	return m_iStar[index];
 }
 
 int C_PlayerResource::GetFrags(int index )

@@ -14,6 +14,7 @@
 #include "datacache/imdlcache.h"
 
 #include "neo_model_manager.h"
+#include "gib.h"
 
 #include "weapon_ghost.h"
 #include "weapon_supa7.h"
@@ -33,11 +34,10 @@
 
 #include "viewport_panel_names.h"
 
+#include "neo_weapon_loadout.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
-
-void NEODropPrimedFragGrenade(CNEO_Player *pPlayer, CBaseCombatWeapon *pGrenade);
-void NEODropPrimedSmokeGrenade(CNEO_Player* pPlayer, CBaseCombatWeapon* pSmokeGrenade);
 
 LINK_ENTITY_TO_CLASS(player, CNEO_Player);
 
@@ -58,6 +58,7 @@ SendPropBool(SENDINFO(m_bInVision)),
 SendPropBool(SENDINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 SendPropBool(SENDINFO(m_bShowTestMessage)),
 SendPropBool(SENDINFO(m_bInAim)),
+SendPropBool(SENDINFO(m_bDroppedAnything)),
 
 SendPropTime(SENDINFO(m_flCamoAuxLastTime)),
 SendPropInt(SENDINFO(m_nVisionLastTick)),
@@ -68,8 +69,12 @@ SendPropVector(SENDINFO(m_vecGhostMarkerPos), -1, SPROP_COORD_MP_LOWPRECISION | 
 
 SendPropArray(SendPropVector(SENDINFO_ARRAY(m_rvFriendlyPlayerPositions), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rvFriendlyPlayerPositions),
 SendPropArray(SendPropFloat(SENDINFO_ARRAY(m_rfAttackersScores), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rfAttackersScores),
+SendPropArray(SendPropInt(SENDINFO_ARRAY(m_rfAttackersHits)), m_rfAttackersHits),
 
 SendPropInt(SENDINFO(m_NeoFlags), 4, SPROP_UNSIGNED),
+SendPropString(SENDINFO(m_szNeoName)),
+SendPropInt(SENDINFO(m_szNameDupePos)),
+SendPropBool(SENDINFO(m_bClientWantNeoName)),
 END_SEND_TABLE()
 
 BEGIN_DATADESC(CNEO_Player)
@@ -79,6 +84,7 @@ DEFINE_FIELD(m_iNeoStar, FIELD_INTEGER),
 DEFINE_FIELD(m_iXP, FIELD_INTEGER),
 DEFINE_FIELD(m_iCapTeam, FIELD_INTEGER),
 DEFINE_FIELD(m_iLoadoutWepChoice, FIELD_INTEGER),
+DEFINE_FIELD(m_bDroppedAnything, FIELD_BOOLEAN),
 DEFINE_FIELD(m_iNextSpawnClassChoice, FIELD_INTEGER),
 DEFINE_FIELD(m_bInLean, FIELD_INTEGER),
 
@@ -99,17 +105,30 @@ DEFINE_FIELD(m_vecGhostMarkerPos, FIELD_VECTOR),
 
 DEFINE_FIELD(m_rvFriendlyPlayerPositions, FIELD_CUSTOM),
 DEFINE_FIELD(m_rfAttackersScores, FIELD_CUSTOM),
+DEFINE_FIELD(m_rfAttackersHits, FIELD_CUSTOM),
 
 DEFINE_FIELD(m_NeoFlags, FIELD_CHARACTER),
+
+DEFINE_FIELD(m_szNeoName, FIELD_STRING),
+DEFINE_FIELD(m_szNameDupePos, FIELD_INTEGER),
+DEFINE_FIELD(m_bClientWantNeoName, FIELD_BOOLEAN),
 END_DATADESC()
 
+#define DISMEMBER_LIMB_THRESHOLD 10
+#define DISMEMBER_HEAD_THRESHOLD (DISMEMBER_LIMB_THRESHOLD * 3)
+#define ANNHILATE_LIMB_THRESHOLD (DISMEMBER_HEAD_THRESHOLD * 3)
+#define SHOWMENU_STRLIMIT (512)
+
 CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
+CNEOGameRulesProxy* neoGameRules;
 extern CBaseEntity *g_pLastSpawn;
 
 extern ConVar neo_sv_ignore_wep_xp_limit;
 
 ConVar sv_neo_can_change_classes_anytime("sv_neo_can_change_classes_anytime", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "Can players change classes at any moment, even mid-round?",
 	true, 0.0f, true, 1.0f);
+ConVar sv_neo_change_suicide_player("sv_neo_change_suicide_player", "0", FCVAR_REPLICATED, "Kill the player if they change the team and they're alive.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_change_threshold_interval("sv_neo_change_threshold_interval", "0.25", FCVAR_REPLICATED, "The interval threshold limit in seconds before the player is allowed to change team.", true, 0.0f, true, 1000.0f);
 
 void CNEO_Player::RequestSetClass(int newClass)
 {
@@ -119,7 +138,10 @@ void CNEO_Player::RequestSetClass(int newClass)
 		return;
 	}
 
-	if (IsDead() || sv_neo_can_change_classes_anytime.GetBool())
+	const NeoRoundStatus status = NEORules()->GetRoundStatus();
+	if (IsDead() || sv_neo_can_change_classes_anytime.GetBool() ||
+		(!m_bDroppedAnything && NEORules()->GetRemainingPreRoundFreezeTime(false) > 0) ||
+		(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup))
 	{
 		m_iNeoClass = newClass;
 		m_iNextSpawnClassChoice = -1;
@@ -127,6 +149,9 @@ void CNEO_Player::RequestSetClass(int newClass)
 		SetPlayerTeamModel();
 		SetViewOffset(VEC_VIEW_NEOSCALE(this));
 		InitSprinting();
+		RemoveAllItems(false);
+		GiveDefaultItems();
+		m_HL2Local.m_cloakPower = CloakPower_Cap();
 	}
 	else
 	{
@@ -194,7 +219,8 @@ void CNEO_Player::RequestSetStar(int newStar)
 
 bool CNEO_Player::RequestSetLoadout(int loadoutNumber)
 {
-	const char *pszWepName = GetWeaponByLoadoutId(loadoutNumber);
+	int classChosen = m_iNextSpawnClassChoice.Get() != -1 ? m_iNextSpawnClassChoice.Get() : m_iNeoClass.Get();
+	const char *pszWepName = CNEOWeaponLoadout::GetLoadoutWeaponEntityName(classChosen, loadoutNumber, false);
 
 	if (FStrEq(pszWepName, ""))
 	{
@@ -237,7 +263,7 @@ bool CNEO_Player::RequestSetLoadout(int loadoutNumber)
 		result = false;
 	}
 
-	if (!neo_sv_ignore_wep_xp_limit.GetBool() && m_iXP < pNeoWeapon->GetNeoWepXPCost(GetClass()))
+	if (!neo_sv_ignore_wep_xp_limit.GetBool() && loadoutNumber+1 > CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(m_iXP, classChosen, false))
 	{
 		DevMsg("Insufficient XP for %s\n", pszWepName);
 		result = false;
@@ -246,6 +272,7 @@ bool CNEO_Player::RequestSetLoadout(int loadoutNumber)
 	if (result)
 	{
 		m_iLoadoutWepChoice = loadoutNumber;
+		GiveLoadoutWeapon();
 	}
 	
 	if (pEnt != NULL && !(pEnt->IsMarkedForDeletion()))
@@ -354,6 +381,8 @@ CNEO_Player::CNEO_Player()
 	m_iNeoSkin = NEO_SKIN_FIRST;
 	m_iNeoStar = NEO_DEFAULT_STAR;
 	m_iXP.GetForModify() = 0;
+	V_memset(m_szNeoName.GetForModify(), 0, sizeof(m_szNeoName));
+	m_szNeoNameHasSet = false;
 
 	m_bGhostExists = false;
 	m_bInThermOpticCamo = m_bInVision = false;
@@ -378,6 +407,7 @@ CNEO_Player::CNEO_Player()
 	m_flLastSuperJumpTime = 0;
 
 	m_bFirstDeathTick = true;
+	m_bCorpseSpawned = false;
 	m_bPreviouslyReloading = false;
 	m_bLastTickInThermOpticCamo = false;
 	m_bIsPendingSpawnForThisRound = false;
@@ -388,6 +418,13 @@ CNEO_Player::CNEO_Player()
 
 	m_pPlayerAnimState = CreatePlayerAnimState(this, CreateAnimStateHelpers(this),
 		NEO_ANIMSTATE_LEGANIM_TYPE, NEO_ANIMSTATE_USES_AIMSEQUENCES);
+
+	memset(m_szNeoNameWDupeIdx, 0, sizeof(m_szNeoNameWDupeIdx));
+	m_szNeoNameWDupeIdxNeedUpdate = true;
+	m_szNameDupePos = 0;
+
+	m_iDmgMenuCurPage = 0;
+	m_iDmgMenuNextPage = 0;
 }
 
 CNEO_Player::~CNEO_Player( void )
@@ -454,6 +491,11 @@ void CNEO_Player::UpdateNetworkedFriendlyLocations()
 	}
 }
 
+void CNEO_Player::SetDefaultFOV(const int fov)
+{
+	m_iDefaultFOV.Set(fov);
+}
+
 void CNEO_Player::Precache( void )
 {
 	BaseClass::Precache();
@@ -462,7 +504,7 @@ void CNEO_Player::Precache( void )
 void CNEO_Player::Spawn(void)
 {
 	ShowViewPortPanel(PANEL_SPECGUI, (GetTeamNumber() == TEAM_SPECTATOR ? true : false));
-
+	
 	// Should do this class update first, because most of the stuff below depends on which player class we are.
 	if ((m_iNextSpawnClassChoice != -1) && (m_iNeoClass != m_iNextSpawnClassChoice))
 	{
@@ -484,10 +526,15 @@ void CNEO_Player::Spawn(void)
 	m_bInVision = false;
 	m_nVisionLastTick = 0;
 	m_bInLean = NEO_LEAN_NONE;
+	m_bCorpseSpawned = false;
 
 	for (int i = 0; i < m_rfAttackersScores.Count(); ++i)
 	{
 		m_rfAttackersScores.Set(i, 0.0f);
+	}
+	for (int i = 0; i < m_rfAttackersHits.Count(); ++i)
+	{
+		m_rfAttackersHits.Set(i, 0);
 	}
 
 	Weapon_SetZoom(false);
@@ -613,27 +660,39 @@ void CNEO_Player::PreThink(void)
 		CloakPower_Update();
 	}
 
-	if ((!GetActiveWeapon() && IsAlive()) ||
-		// Whether or not we move backwards affects max speed
-		((m_afButtonPressed | m_afButtonReleased) & IN_BACK))
+	float speed = GetNormSpeed();
+	if (m_nButtons & IN_DUCK && m_nButtons & IN_WALK)
+	{ // 1.77x slower
+		speed /= 1.777;
+	}
+	else if (m_nButtons & IN_DUCK || m_nButtons & IN_WALK)
+	{ // 1.33x slower
+		speed /= 1.333;
+	}
+	if (IsSprinting())
 	{
-		if (GetFlags() & FL_DUCKING)
+		speed *= m_iNeoClass == NEO_CLASS_RECON ? 1.333 : 1.6;
+	}
+	if (m_bInAim.Get())
+	{
+		speed /= 1.666;
+	}
+	auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
+	if (pNeoWep)
+	{
+		speed *= pNeoWep->GetSpeedScale();
+	}
+
+	if (!IsAirborne() && m_iNeoClass != NEO_CLASS_RECON)
+	{
+		const float deltaTime = gpGlobals->curtime - m_flLastAirborneJumpOkTime;
+		const float leeway = 1.0f;
+		if (deltaTime < leeway)
 		{
-			SetMaxSpeed(GetCrouchSpeed());
-		}
-		else if (IsWalking())
-		{
-			SetMaxSpeed(GetWalkSpeed());
-		}
-		else if (IsSprinting())
-		{
-			SetMaxSpeed(GetSprintSpeed());
-		}
-		else
-		{
-			SetMaxSpeed(GetNormSpeed());
+			speed = (speed / 2) + (deltaTime / 2 * (speed));
 		}
 	}
+	SetMaxSpeed(MAX(speed, 56));
 
 	CheckThermOpticButtons();
 	CheckVisionButtons();
@@ -828,12 +887,15 @@ void CNEO_Player::PlayCloakSound()
 		}
 
 		auto player = UTIL_PlayerByIndex(i);
-		if (!player || !player->IsDead() || player->GetObserverMode() != OBS_MODE_IN_EYE)
+		if (!player || (player->IsDead() && player->GetObserverMode() == OBS_MODE_NONE))
 		{
 			continue;
 		}
 
-		if (player->GetObserverTarget() == this)
+		static constexpr float MAX_CLOAK_DISTANCE = 50.0f;
+		const auto dir = EyePosition() - player->GetAbsOrigin();
+		const float distance = dir.Length();
+		if (distance < MAX_CLOAK_DISTANCE)
 		{
 			filter.AddRecipient(player);
 		}
@@ -956,6 +1018,9 @@ void CNEO_Player::SuperJump(void)
 
 bool CNEO_Player::IsAllowedToSuperJump(void)
 {
+	if (!IsSprinting())
+		return false;
+
 	if (IsCarryingGhost())
 		return false;
 
@@ -1013,35 +1078,33 @@ void CNEO_Player::PostThink(void)
 
 	CheckLeanButtons();
 
-	auto pWep = GetActiveWeapon();
-	CNEOBaseCombatWeapon* pNeoWep = NULL;
-
-	if (pWep)
+	if (CBaseCombatWeapon *pWep = GetActiveWeapon())
 	{
+		const bool clientAimHold = ClientWantsAimHold(this);
 		if (pWep->m_bInReload && !m_bPreviouslyReloading)
 		{
 			Weapon_SetZoom(false);
 		}
-		else if (m_afButtonPressed & IN_SPEED)
+		else if (CanSprint() && m_afButtonPressed & IN_SPEED)
 		{
 			Weapon_SetZoom(false);
 		}
-		else if (m_afButtonPressed & IN_AIM)
+		else if ((m_afButtonPressed & IN_AIM) && (!CanSprint() || !(m_nButtons & IN_SPEED)))
 		{
-			pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWep);
 			// Binds hack: we want grenade secondary attack to trigger on aim (mouse button 2)
-			if (pNeoWep && pNeoWep->GetNeoWepBits() & NEO_WEP_THROWABLE)
+			if (auto *pNeoWep = dynamic_cast<CNEOBaseCombatWeapon *>(pWep);
+					pNeoWep && pNeoWep->GetNeoWepBits() & NEO_WEP_THROWABLE)
 			{
-				static_cast<CWeaponGrenade*>(pNeoWep)->SecondaryAttack();
+				pNeoWep->SecondaryAttack();
 			}
-			else if (ClientWantsAimHold(this))
+			else
 			{
-				Weapon_AimToggle(pWep, NEO_TOGGLE_FORCE_AIM);
+				Weapon_AimToggle(pWep, clientAimHold ? NEO_TOGGLE_FORCE_AIM : NEO_TOGGLE_DEFAULT);
 			}
 		}
-		else if (m_afButtonReleased & IN_AIM)
+		else if (clientAimHold && (m_afButtonReleased & IN_AIM))
 		{
-			Weapon_AimToggle(pWep, ClientWantsAimHold(this) ? NEO_TOGGLE_FORCE_UN_AIM : NEO_TOGGLE_DEFAULT);
+			Weapon_AimToggle(pWep, NEO_TOGGLE_FORCE_UN_AIM);
 		}
 		m_bPreviouslyReloading = pWep->m_bInReload;
 
@@ -1074,11 +1137,18 @@ void CNEO_Player::PostThink(void)
 	Vector eyeForward;
 	this->EyeVectors(&eyeForward, NULL, NULL);
 	Assert(eyeForward.IsValid());
-	m_pPlayerAnimState->Update(eyeForward[YAW], eyeForward[PITCH]);
+
+	float flPitch = asin(-eyeForward[2]);
+	float flYaw = atan2(eyeForward[1], eyeForward[0]);
+	m_pPlayerAnimState->Update(RAD2DEG(flYaw), RAD2DEG(flPitch));
 }
 
 void CNEO_Player::PlayerDeathThink()
 {
+	if (m_nButtons & ~IN_SCORE)
+	{
+		m_bEnterObserver = true;
+	}
 	BaseClass::PlayerDeathThink();
 }
 
@@ -1110,20 +1180,90 @@ void CNEO_Player::Weapon_AimToggle(CBaseCombatWeapon *pWep, const NeoWeponAimTog
 	Weapon_AimToggle(dynamic_cast<CNEOBaseCombatWeapon*>(pWep), toggleType);
 }
 
+void CNEO_Player::SetNameDupePos(const int dupePos)
+{
+	m_szNameDupePos = dupePos;
+	m_szNeoNameWDupeIdxNeedUpdate = true;
+}
+
+int CNEO_Player::NameDupePos() const
+{
+	return m_szNameDupePos;
+}
+
+const char *CNEO_Player::GetNeoPlayerName(const CNEO_Player *viewFrom) const
+{
+	const bool nameFetchWantNeoName = (viewFrom) ? viewFrom->m_bClientWantNeoName : m_bClientWantNeoName;
+
+	const int dupePos = m_szNameDupePos;
+	if (nameFetchWantNeoName && m_szNeoName.Get()[0] != '\0')
+	{
+		const char *neoName = m_szNeoName.Get();
+		if (dupePos > 0)
+		{
+			if (m_szNeoNameWDupeIdxNeedUpdate)
+			{
+				m_szNeoNameWDupeIdxNeedUpdate = false;
+				V_snprintf(m_szNeoNameWDupeIdx, sizeof(m_szNeoNameWDupeIdx), "%s (%d)", neoName, dupePos);
+			}
+			return m_szNeoNameWDupeIdx;
+		}
+		return neoName;
+	}
+
+	const char *stndName = const_cast<CNEO_Player *>(this)->GetPlayerName();
+	if (nameFetchWantNeoName && dupePos > 0)
+	{
+		if (m_szNeoNameWDupeIdxNeedUpdate)
+		{
+			m_szNeoNameWDupeIdxNeedUpdate = false;
+			V_snprintf(m_szNeoNameWDupeIdx, sizeof(m_szNeoNameWDupeIdx), "%s (%d)", stndName, dupePos);
+		}
+		return m_szNeoNameWDupeIdx;
+	}
+	return stndName;
+}
+
+const char *CNEO_Player::GetNeoPlayerNameDirect() const
+{
+	return m_szNeoNameHasSet ? m_szNeoName.Get() : NULL;
+}
+
+void CNEO_Player::SetNeoPlayerName(const char *newNeoName)
+{
+	// NEO NOTE (nullsystem): Generally it's never NULL but just incase
+	if (newNeoName)
+	{
+		V_memcpy(m_szNeoName.GetForModify(), newNeoName, sizeof(m_szNeoName));
+		m_szNeoNameHasSet = true;
+	}
+}
+
+void CNEO_Player::SetClientWantNeoName(const bool b)
+{
+	m_bClientWantNeoName = b;
+}
+
 void CNEO_Player::Weapon_SetZoom(const bool bZoomIn)
 {
-	const float zoomSpeedSecs = 0.25f;
-
 	ShowCrosshair(bZoomIn);
 	
+	const int fov = GetDefaultFOV();
 	if (bZoomIn)
 	{
 		const int zoomAmount = 30;
-		SetFOV((CBaseEntity*)this, GetDefaultFOV() - zoomAmount, zoomSpeedSecs);
+		auto neoWep = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
+		if (neoWep && neoWep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
+		{
+			SetFOV((CBaseEntity*)this, neoWep->GetWpnData().iAimFOV, NEO_ZOOM_SPEED);
+		}
+		else {
+			SetFOV((CBaseEntity*)this, fov - zoomAmount, NEO_ZOOM_SPEED);
+		}
 	}
 	else
 	{
-		SetFOV((CBaseEntity*)this, GetDefaultFOV(), zoomSpeedSecs);
+		SetFOV((CBaseEntity*)this, fov, NEO_ZOOM_SPEED);
 	}
 
 	m_bInAim = bZoomIn;
@@ -1385,7 +1525,7 @@ bool CNEO_Player::HandleCommand_JoinTeam( int team )
 		SetPlayerTeamModel();
 
 		UTIL_ClientPrintAll(HUD_PRINTTALK, "%s1 joined team %s2\n",
-			GetPlayerName(), GetTeam()->GetName());
+			GetNeoPlayerName(), GetTeam()->GetName());
 	}
 
 	return isAllowedToJoin;
@@ -1401,6 +1541,42 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 			// so allow instantly switching teams again.
 			m_flNextTeamChangeTime = 0;
 		}
+		return true;
+	}
+	else if (FStrEq(args[0], "menuselect"))
+	{
+		if (args.ArgC() < 2)
+		{
+			return true;
+		}
+		const int slot = atoi(args[1]);
+
+		if (m_iDmgMenuCurPage > 0)
+		{
+			// menuselect being used by damage stats
+			switch (slot)
+			{
+			case 1: // Dismiss
+			{
+				m_iDmgMenuCurPage = 0;
+				m_iDmgMenuNextPage = 0;
+				break;
+			}
+			case 2: // Next-page
+			{
+				char infoStr[SHOWMENU_STRLIMIT];
+				int infoStrSize = 0;
+				bool showMenu = false;
+				m_iDmgMenuCurPage = m_iDmgMenuNextPage;
+				m_iDmgMenuNextPage = SetDmgListStr(infoStr, sizeof(infoStr), m_iDmgMenuNextPage, &infoStrSize, &showMenu, NULL);
+				if (showMenu) ShowDmgInfo(infoStr, infoStrSize);
+				break;
+			}
+			default:
+				break;
+			}
+		}
+
 		return true;
 	}
 
@@ -1438,6 +1614,159 @@ bool CNEO_Player::BecomeRagdollOnClient( const Vector &force )
 	return BaseClass::BecomeRagdollOnClient(force);
 }
 
+void CNEO_Player::ShowDmgInfo(char* infoStr, int infoStrSize)
+{
+	CSingleUserRecipientFilter filter(this);
+	filter.MakeReliable();
+
+	// UserMessage has limits, so need to send more than once if it
+	// doesn't fit in one UserMessage packet
+	static const int MAX_INFOSTR_PER_UMSG = 240;
+	int infoStrOffset = 0;
+	int infoStrOffsetMax = MAX_INFOSTR_PER_UMSG;
+	while (infoStrSize > 0)
+	{
+		char tmpCh = '\0';
+		if (infoStrOffsetMax < SHOWMENU_STRLIMIT)
+		{
+			tmpCh = infoStr[infoStrOffsetMax];
+			infoStr[infoStrOffsetMax] = '\0';
+		}
+		UserMessageBegin(filter, "ShowMenu");
+		{
+			WRITE_SHORT(static_cast<short>(m_iDmgMenuNextPage ? 3 : 1));		// Amount of options
+			WRITE_CHAR(static_cast<char>(10));			// Time in seconds to stay open
+			WRITE_BYTE(static_cast<unsigned int>(infoStrSize > MAX_INFOSTR_PER_UMSG));
+			WRITE_STRING(infoStr + infoStrOffset);
+		}
+		MessageEnd();
+		if (infoStrOffsetMax < SHOWMENU_STRLIMIT)
+		{
+			infoStr[infoStrOffsetMax] = tmpCh;
+		}
+		infoStrOffset += MAX_INFOSTR_PER_UMSG;
+		infoStrOffsetMax += MAX_INFOSTR_PER_UMSG;
+		infoStrSize -= MAX_INFOSTR_PER_UMSG;
+	}
+}
+
+int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int playerIdxStart,
+		int *infoStrSize, bool *showMenu, const CTakeDamageInfo *info) const
+{
+	Assert(infoStrSize != NULL);
+	Assert(showMenu != NULL);
+	*showMenu = false;
+	static const int TITLE_LEN = 30; // Rough-approximate
+	static const int POSTFIX_LEN = 15 + 12;
+	static const int TOTALLINE_LEN = 64; // Rough-approximate
+	static int FILLSTR_END = SHOWMENU_STRLIMIT - POSTFIX_LEN - TOTALLINE_LEN - 2;
+	memset(infoStr, 0, infoStrMax);
+	Q_snprintf(infoStr, infoStrMax, "Damage infos (Round %d):\n", NEORules()->roundNumber());
+	if (info)
+	{
+		// If CTakeDamageInfo pointer given, then also show killed by information
+		auto* neoAttacker = dynamic_cast<CNEO_Player*>(info->GetAttacker());
+		if (neoAttacker && neoAttacker->entindex() != entindex())
+		{
+			char killByLine[SHOWMENU_STRLIMIT];
+			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, this);
+			Q_strncat(infoStr, killByLine, infoStrMax, COPY_ALL_CHARACTERS);
+		}
+	}
+	Q_strncat(infoStr, " \n", infoStrMax, COPY_ALL_CHARACTERS);
+	int infoStrLen = Q_strlen(infoStr);
+	const int thisIdx = entindex();
+	int nextPage = 0;
+	for (int pIdx = playerIdxStart; pIdx <= gpGlobals->maxClients; ++pIdx)
+	{
+		if (pIdx == thisIdx)
+		{
+			continue;
+		}
+
+		auto* neoAttacker = dynamic_cast<CNEO_Player*>(UTIL_PlayerByIndex(pIdx));
+		if (!neoAttacker || neoAttacker->IsHLTV())
+		{
+			continue;
+		}
+
+		const float dmgTo = min(neoAttacker->GetAttackersScores(thisIdx), 100.0f);
+		const float dmgFrom = min(GetAttackersScores(pIdx), 100.0f);
+		const char *dmgerName = neoAttacker->GetNeoPlayerName(this);
+#define DEBUG_SHOW_ALL (0)
+#if DEBUG_SHOW_ALL
+		if (dmgerName)
+#else
+		if (dmgerName && (dmgTo > 0.0f || dmgFrom > 0.0f))
+#endif
+		{
+			*showMenu = true;
+			const char *dmgerClass = GetNeoClassName(neoAttacker->GetClass());
+			const int hitsTo = neoAttacker->GetAttackerHits(thisIdx);
+			const int hitsFrom = GetAttackerHits(pIdx);
+			static char infoLine[SHOWMENU_STRLIMIT];
+			const int infoLineLen = DmgLineStr(infoLine, sizeof(infoLine),
+					dmgerName, dmgerClass, dmgTo, dmgFrom, hitsTo, hitsFrom);
+			if ((infoStrLen + infoLineLen) >= FILLSTR_END)
+			{
+				// Truncate for this page
+				nextPage = pIdx;
+				break;
+			}
+
+			Q_strncat(infoStr, infoLine, infoStrMax, COPY_ALL_CHARACTERS);
+			infoStrLen += infoLineLen;
+		}
+	}
+
+	if (!*showMenu)
+	{
+		return 0;
+	}
+
+	const AttackersTotals attackersTotals = GetAttackersTotals();
+	static char totalInfoLine[SHOWMENU_STRLIMIT];
+	memset(totalInfoLine, 0, sizeof(totalInfoLine));
+	Q_snprintf(totalInfoLine, sizeof(totalInfoLine), " \nTOTAL: Dealt: %.0f in %d hits | Taken: %.0f in %d hits\n",
+			attackersTotals.dealtTotalDmgs, attackersTotals.dealtTotalHits,
+			attackersTotals.takenTotalDmgs, attackersTotals.takenTotalHits);
+	Q_strncat(infoStr, totalInfoLine, infoStrMax, COPY_ALL_CHARACTERS);
+	Q_strncat(infoStr, "->1. Dismiss", infoStrMax, COPY_ALL_CHARACTERS);
+	if (nextPage > 0)
+	{
+		Q_strncat(infoStr, "\n->2. Next", infoStrMax, COPY_ALL_CHARACTERS);
+	}
+	*infoStrSize = Q_strlen(infoStr);
+
+	return nextPage;
+}
+
+void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo* info)
+{
+	char infoStr[SHOWMENU_STRLIMIT];
+	int infoStrSize = 0;
+	bool showMenu = false;
+	m_iDmgMenuCurPage = 1;
+	m_iDmgMenuNextPage = SetDmgListStr(infoStr, sizeof(infoStr), m_iDmgMenuCurPage, &infoStrSize, &showMenu, info);
+	if (showMenu) ShowDmgInfo(infoStr, infoStrSize);
+
+	// Notify the client to print it out in the console
+	CSingleUserRecipientFilter filter(this);
+	filter.MakeReliable();
+
+	UserMessageBegin(filter, "DamageInfo");
+	{
+		short attackerIdx = 0;
+		auto* neoAttacker = info ? dynamic_cast<CNEO_Player*>(info->GetAttacker()) : NULL;
+		if (neoAttacker && neoAttacker->entindex() != entindex())
+		{
+			attackerIdx = static_cast<short>(neoAttacker->entindex());
+		}
+		WRITE_SHORT(attackerIdx);
+	}
+	MessageEnd();
+}
+
 void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 {
 	// Drop all weapons
@@ -1472,9 +1801,134 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 		}
 	}
 
-	ShowViewPortPanel(PANEL_SPECGUI, true);
+	// Handle Corpse and Gibs
+	if (!m_bCorpseSpawned) // Event_Killed can be called multiple times, only spawn the dead model once
+	{
+		SpawnDeadModel(info);
+	}
+
+	if (!IsBot() && !IsHLTV())
+	{
+		StartShowDmgStats(&info);
+	}
 
 	BaseClass::Event_Killed(info);
+
+	RemoveAllWeapons();
+}
+
+void CNEO_Player::SpawnDeadModel(const CTakeDamageInfo& info)
+{
+	m_bCorpseSpawned = true;
+
+	int deadModelType = -1;
+	if (info.GetDamageType() & (1 << 6)) //info.GetDamage() >= 100
+	{ // Died to blast damage, remove all limbs
+		deadModelType = 0;
+	}
+	else
+	{ // Set model based on last hitgroup
+		switch (LastHitGroup())
+		{
+		case 1: // Head
+			deadModelType = 1;
+			break;
+		case 4: // Left Arm
+			deadModelType = 2;
+			break;
+		case 5: // Right Arm
+			deadModelType = 4;
+			break;
+		case 6: // Left Leg
+			deadModelType = 3;
+			break;
+		case 7: // Right Leg
+			deadModelType = 5;
+			break;
+		}
+	}
+
+	if (deadModelType == -1)
+		return;
+
+	CNEOModelManager* modelManager = CNEOModelManager::Instance();
+	if (!modelManager)
+	{
+		Assert(false);
+		Warning("Failed to get Neo model manager\n");
+		return;
+	}
+	switch (deadModelType)
+	{
+	case 0: // Spawn all gibs
+		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_HEAD));
+		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_LARM));
+		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_LLEG));
+		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_RARM));
+		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_RLEG));
+		SetPlayerCorpseModel(deadModelType);
+		break;
+	case 1: // head
+		if (info.GetDamage() >= DISMEMBER_HEAD_THRESHOLD) {
+			SetPlayerCorpseModel(deadModelType);
+			if (info.GetDamage() <= ANNHILATE_LIMB_THRESHOLD)
+				CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_HEAD));
+		}
+		break;
+	case 2: // left arm
+		if (info.GetDamage() >= DISMEMBER_LIMB_THRESHOLD) {
+			SetPlayerCorpseModel(deadModelType);
+			if (info.GetDamage() <= ANNHILATE_LIMB_THRESHOLD)
+				CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_LARM));
+		}
+		break;
+	case 3: // left leg
+		if (info.GetDamage() >= DISMEMBER_LIMB_THRESHOLD) {
+			SetPlayerCorpseModel(deadModelType);
+			if (info.GetDamage() <= ANNHILATE_LIMB_THRESHOLD)
+				CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_LLEG));
+		}
+		break;
+	case 4: // right arm
+		if (info.GetDamage() >= DISMEMBER_LIMB_THRESHOLD) {
+			SetPlayerCorpseModel(deadModelType);
+			if (info.GetDamage() <= ANNHILATE_LIMB_THRESHOLD)
+				CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_RARM));
+		}
+		break;
+	case 5: // right leg
+		if (info.GetDamage() >= DISMEMBER_LIMB_THRESHOLD) {
+			SetPlayerCorpseModel(deadModelType);
+			if (info.GetDamage() <= ANNHILATE_LIMB_THRESHOLD)
+				CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_RLEG));
+		}
+		break;
+	default:
+		break;
+	}
+}
+
+void CNEO_Player::SetPlayerCorpseModel(int type)
+{
+	CNEOModelManager* modelManager = CNEOModelManager::Instance();
+	if (!modelManager)
+	{
+		Assert(false);
+		Warning("Failed to get Neo model manager\n");
+		return;
+	}
+	const char* model = modelManager->GetCorpseModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NeoGib(type));
+
+	if (!*model)
+	{
+		Assert(false);
+		Warning("Failed to find model string for Neo player corpse\n");
+		return;
+	}
+
+	SetModel(model);
+	SetPlaybackRate(1.0f);
+	ResetAnimation();
 }
 
 float CNEO_Player::GetReceivedDamageScale(CBaseEntity* pAttacker)
@@ -1506,10 +1960,29 @@ void CNEO_Player::FireBullets ( const FireBulletsInfo_t &info )
 	BaseClass::FireBullets(info);
 }
 
+void CNEO_Player::Weapon_Equip(CBaseCombatWeapon* pWeapon)
+{
+ 	for (int i=0;i<MAX_WEAPONS;i++) 
+	{
+		if (!m_hMyWeapons[i]) 
+		{
+			m_hMyWeapons.Set( i, pWeapon );
+			break;
+		}
+	}
+	
+	pWeapon->ChangeTeam( GetTeamNumber() );
+	pWeapon->Equip( this );
+
+	// Pass the lighting origin over to the weapon if we have one
+	pWeapon->SetLightingOriginRelative( GetLightingOriginRelative() );
+}	
+
 bool CNEO_Player::Weapon_Switch( CBaseCombatWeapon *pWeapon,
-	int viewmodelindex )
+                                 int viewmodelindex )
 {
 	ShowCrosshair(false);
+	Weapon_SetZoom(false);
 
 	return BaseClass::Weapon_Switch(pWeapon, viewmodelindex);
 }
@@ -1549,17 +2022,18 @@ bool CNEO_Player::Weapon_CanSwitchTo(CBaseCombatWeapon *pWeapon)
 bool CNEO_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 {
 	// We already have a weapon in this slot
-	if (Weapon_GetSlot(pWeapon->GetSlot()))
+	auto weaponSlot = pWeapon->GetSlot();
+	if (weaponSlot != 3 && Weapon_GetSlot(weaponSlot))
 	{
 		return false;
 	}
-	else if (GetClass() == NEO_CLASS_RECON)
+	
+	auto neoWeapon = dynamic_cast<CNEOBaseCombatWeapon*>(pWeapon);
+	if(neoWeapon)
 	{
-		auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWeapon);
-		// Recons can't carry a PZ
-		if ((pNeoWep) && (pNeoWep->GetNeoWepBits() & NEO_WEP_PZ))
+		if(!neoWeapon->CanBePickedUpByClass(GetClass()))
 		{
-			return false;
+			return false;	
 		}
 	}
 
@@ -1630,112 +2104,42 @@ bool CNEO_Player::IsCarryingGhost(void) const
 	return GetNeoWepWithBits(this, NEO_WEP_GHOST) != NULL;
 }
 
-// Is the player allowed to drop a weapon of this type?
-bool CNEO_Player::IsAllowedToDrop(CBaseCombatWeapon *pWep)
-{
-	if (!pWep)
-	{
-		return false;
-	}
-
-	// We can static_cast if it's guaranteed that all weapons will be Neotokyo type.
-	// Allowing HL2DM weapons, for now.
-#define SUPPORT_NON_NEOTOKYO_WEAPONS 1 // NEO FIXME (Rain): knife is not yet a neo inherited weapon
-
-#if SUPPORT_NON_NEOTOKYO_WEAPONS
-	auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWep);
-	if (!pNeoWep)
-	{
-		if (dynamic_cast<CWeaponKnife*>(pWep))
-		{
-			return false;
-		}
-		// This was not a Neotokyo weapon. Don't know what it is, but allow dropping.
-		else
-		{
-			return true;
-		}
-	}
-#else
-	Assert(dynamic_cast<CNEOBaseCombatWeapon*>(pWep));
-	auto pNeoWep = static_cast<CNEOBaseCombatWeapon*>(pWep);
-#endif
-
-	const auto wepBits = pNeoWep->GetNeoWepBits();
-	Assert(wepBits > NEO_WEP_INVALID);
-
-	const auto unallowedDrops = (NEO_WEP_KNIFE | NEO_WEP_PROX_MINE | NEO_WEP_THROWABLE);
-	return ((wepBits & unallowedDrops) == 0);
-}
-
 void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
 	const Vector *pvecTarget, const Vector *pVelocity )
 {
-	if (!IsDead() && pWeapon)
+	m_bDroppedAnything = true;
+	if(auto neoWeapon = dynamic_cast<CNEOBaseCombatWeapon *>(pWeapon))
 	{
-		if (!IsAllowedToDrop(pWeapon))
+		if (neoWeapon->CanDrop() && IsDead() && pWeapon)
 		{
-			// NEO TODO (Rain): No need for server to tell
-			// client to play a sound effect, move this to client.
+			if (auto *activeWep = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon()))
 			{
-#if (0)
-				CRecipientFilter filter;
-				filter.AddRecipient(this);
-
-				EmitSound_t sound;
-				sound.m_nChannel = CHAN_ITEM;
-				// NEO TODO (Rain): Find appropriate sound for denying drop.
-				// Possibly the original NT "can't +use" sound.
-				sound.m_pSoundName = "player/CPneutral.wav";
-				sound.m_SoundLevel = SNDLVL_30dB;
-				sound.m_flVolume = VOL_NORM;
-
-				// NEO HACK/FIXME (Rain): This should get early precached
-				// as part of our regular sound scripts on this::Precache()
-				PrecacheScriptSound(sound.m_pSoundName);
-
-				EmitSound(filter, edict()->m_EdictIndex, sound);
-#endif
-			}
-
-			return;
-		}
-
-		auto neoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWeapon);
-		if (neoWep)
-		{
-			if (neoWep->GetNeoWepBits() & NEO_WEP_SUPA7)
-			{
-				Assert(dynamic_cast<CWeaponSupa7*>(neoWep));
-				static_cast<CWeaponSupa7*>(neoWep)->ClearDelayedInputs();
-			}
-		}
-	}
-	else
-	{
-		auto activeWep = GetActiveWeapon();
-		if (activeWep)
-		{
-			// If player has held down an attack key since the previous frame
-			if (((m_nButtons & IN_ATTACK) && (!(m_afButtonPressed & IN_ATTACK))) ||
-				((m_nButtons & IN_ATTACK2) && (!(m_afButtonPressed & IN_ATTACK2))))
-			{
-				// Drop a grenade if it's primed.
-				if (activeWep == Weapon_OwnsThisType("weapon_grenade"))
+				// If player has held down an attack key since the previous frame
+				if (((m_nButtons & IN_ATTACK) && (!(m_afButtonPressed & IN_ATTACK))) ||
+					((m_nButtons & IN_ATTACK2) && (!(m_afButtonPressed & IN_ATTACK2))))
 				{
-					NEODropPrimedFragGrenade(this, GetActiveWeapon());
-					return;
-				}
-				// Drop a smoke if it's primed.
-				else if (activeWep == Weapon_OwnsThisType("weapon_smokegrenade"))
-				{
-					NEODropPrimedSmokeGrenade(this, activeWep);
-					return;
+					// Drop a grenade if it's primed.
+					if (auto pWeaponFrag = dynamic_cast<CWeaponGrenade *>(activeWep))
+					{
+						pWeaponFrag->ThrowGrenade(this);
+						pWeaponFrag->DecrementAmmo(this);
+						return;
+					}
+					// Drop a smoke if it's primed.
+					else if (auto pWeaponSmoke = dynamic_cast<CWeaponSmokeGrenade *>(activeWep))
+					{
+						pWeaponSmoke->ThrowGrenade(this);
+						pWeaponSmoke->DecrementAmmo(this);
+						return;
+					}
 				}
 			}
 		}
+		else if (!neoWeapon->CanDrop())
+		{
+			return; // Return early to not drop weapon
+		}
 	}
-
 	BaseClass::Weapon_Drop(pWeapon, pvecTarget, pVelocity);
 }
 
@@ -1926,10 +2330,6 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 		return false;
 	}
 
-	// NEO TODO (Rain): add server cvars
-#define TEAM_CHANGE_SUICIDE true
-#define TEAM_CHANGE_INTERVAL 5.0f
-
 	const bool justJoined = (GetTeamNumber() == TEAM_UNASSIGNED);
 
 	// Player bots should initially join a player team.
@@ -1954,6 +2354,7 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 		}
 	}
 
+	const bool suicidePlayerIfAlive = sv_neo_change_suicide_player.GetBool();
 	if (iTeam == TEAM_SPECTATOR)
 	{
 		if (!mp_allowspectators.GetInt())
@@ -1969,7 +2370,7 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 			return false;
 		}
 
-		if (TEAM_CHANGE_SUICIDE)
+		if (suicidePlayerIfAlive)
 		{
 			// Unassigned implies we just joined.
 			if (!justJoined && !IsDead())
@@ -1992,9 +2393,17 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	}
 	else if (iTeam == TEAM_JINRAI || iTeam == TEAM_NSF)
 	{
-		if (TEAM_CHANGE_SUICIDE && !justJoined && GetTeamNumber() != TEAM_SPECTATOR && !IsDead())
+		if (!justJoined && GetTeamNumber() != TEAM_SPECTATOR && !IsDead())
 		{
-			SoftSuicide();
+			if (suicidePlayerIfAlive)
+			{
+				SoftSuicide();
+			}
+			else if (!suicidePlayerIfAlive)
+			{
+				ClientPrint(this, HUD_PRINTCENTER, "You can't switch teams while you are alive.");
+				return false;
+			}
 		}
 
 		StopObserverMode();
@@ -2013,7 +2422,7 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 		return false;
 	}
 
-	m_flNextTeamChangeTime = gpGlobals->curtime + TEAM_CHANGE_INTERVAL;
+	m_flNextTeamChangeTime = gpGlobals->curtime + sv_neo_change_threshold_interval.GetFloat();
 	
 	RemoveAllItems(true);
 	ShowCrosshair(false);
@@ -2035,13 +2444,50 @@ float CNEO_Player::GetAttackersScores(const int attackerIdx) const
 	return m_rfAttackersScores.Get(attackerIdx);
 }
 
+int CNEO_Player::GetAttackerHits(const int attackerIdx) const
+{
+	return m_rfAttackersHits.Get(attackerIdx);
+}
+
+AttackersTotals CNEO_Player::GetAttackersTotals() const
+{
+	AttackersTotals totals;
+	totals.dealtTotalDmgs = 0.0f;
+	totals.dealtTotalHits = 0;
+	totals.takenTotalDmgs = 0.0f;
+	totals.takenTotalHits = 0;
+
+	const int thisIdx = entindex();
+	for (int pIdx = 1; pIdx <= gpGlobals->maxClients; ++pIdx)
+	{
+		if (pIdx == thisIdx)
+		{
+			continue;
+		}
+
+		auto* neoAttacker = dynamic_cast<CNEO_Player*>(UTIL_PlayerByIndex(pIdx));
+		if (!neoAttacker || neoAttacker->IsHLTV())
+		{
+			continue;
+		}
+
+		totals.dealtTotalDmgs += min(neoAttacker->GetAttackersScores(thisIdx), 100.0f);
+		totals.takenTotalDmgs += min(GetAttackersScores(pIdx), 100.0f);
+		totals.dealtTotalHits += neoAttacker->GetAttackerHits(thisIdx);
+		totals.takenTotalHits += GetAttackerHits(pIdx);
+	}
+	return totals;
+}
+
 int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 {
 	if (m_takedamage != DAMAGE_EVENTS_ONLY)
 	{
 		if (auto* attacker = dynamic_cast<CNEO_Player*>(info.GetAttacker()))
 		{
-			m_rfAttackersScores.GetForModify(attacker->entindex()) += info.GetDamage();
+			const int attackerIdx = attacker->entindex();
+			m_rfAttackersScores.GetForModify(attackerIdx) += info.GetDamage();
+			m_rfAttackersHits.GetForModify(attackerIdx) += 1;
 		}
 	}
 	return BaseClass::OnTakeDamage_Alive(info);
@@ -2091,22 +2537,12 @@ void GiveDet(CNEO_Player* pPlayer)
 
 void CNEO_Player::GiveDefaultItems(void)
 {
-	CBasePlayer::GiveAmmo(50, "AR2");
-
-	CBasePlayer::GiveAmmo(50, "Pistol");
-	CBasePlayer::GiveAmmo(30, "AMMO_10G_SHELL");
-	CBasePlayer::GiveAmmo(50, "AMMO_PRI");
-	CBasePlayer::GiveAmmo(50, "AMMO_SMAC");
-	CBasePlayer::GiveAmmo(1, "AMMO_DETPACK");
-
-	const bool supportsGetKnife = true;
-
 	switch (GetClass())
 	{
 	case NEO_CLASS_RECON:
 		GiveNamedItem("weapon_knife");
 		GiveNamedItem("weapon_milso");
-		GiveDet(this);
+		if (this->m_iXP >= 4) { GiveDet(this); }
 		Weapon_Switch(Weapon_OwnsThisType("weapon_milso"));
 		break;
 	case NEO_CLASS_ASSAULT:
@@ -2116,7 +2552,6 @@ void CNEO_Player::GiveDefaultItems(void)
 		Weapon_Switch(Weapon_OwnsThisType("weapon_tachi"));
 		break;
 	case NEO_CLASS_SUPPORT:
-		if (supportsGetKnife) { GiveNamedItem("weapon_knife"); }
 		GiveNamedItem("weapon_kyla");
 		GiveNamedItem("weapon_smokegrenade");
 		Weapon_Switch(Weapon_OwnsThisType("weapon_kyla"));
@@ -2129,14 +2564,16 @@ void CNEO_Player::GiveDefaultItems(void)
 
 void CNEO_Player::GiveLoadoutWeapon(void)
 {
-	if (IsObserver() || IsDead())
+	const NeoRoundStatus status = NEORules()->GetRoundStatus();
+	if (!(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup) && 
+		(IsObserver() || IsDead() || m_bDroppedAnything || ((NEORules()->GetRemainingPreRoundFreezeTime(false)) < 0)))
 	{
 		return;
 	}
 
-	const char *szWep = GetWeaponByLoadoutId(m_iLoadoutWepChoice);
+	const char* szWep = CNEOWeaponLoadout::GetLoadoutWeaponEntityName(m_iNeoClass.Get(), m_iLoadoutWepChoice, false);
 #if DEBUG
-	DevMsg("Loadout slot: %i (\"%s\")\n", m_iLoadoutWepChoice, szWep);
+	DevMsg("Loadout slot: %i (\"%s\")\n", m_iLoadoutWepChoice.Get(), szWep);
 #endif
 
 	// If I already own this type don't create one
@@ -2162,7 +2599,7 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 	CNEOBaseCombatWeapon *pNeoWeapon = dynamic_cast<CNEOBaseCombatWeapon*>((CBaseEntity*)pEnt);
 	if (pNeoWeapon)
 	{
-		if (neo_sv_ignore_wep_xp_limit.GetBool() || (m_iXP >= pNeoWeapon->GetNeoWepXPCost(GetClass())))
+		if (neo_sv_ignore_wep_xp_limit.GetBool() || m_iLoadoutWepChoice+1 <= CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(m_iXP, m_iNeoClass.Get(), false))
 		{
 			pNeoWeapon->SetSubType(wepSubType);
 
@@ -2170,6 +2607,8 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 
 			if (pEnt != NULL && !(pEnt->IsMarkedForDeletion()))
 			{
+				RemoveAllItems(false);
+				GiveDefaultItems();
 				pEnt->Touch(this);
 				Weapon_Switch(Weapon_OwnsThisType(szWep));
 			}
@@ -2248,16 +2687,16 @@ void CNEO_Player::StartSprinting(void)
 		return;
 	}
 
-	BaseClass::StartSprinting();
-
-	SetMaxSpeed(GetSprintSpeed());
+	if (m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT))
+	{ //  ensure any direction button is pressed before sprinting
+		BaseClass::StartSprinting();
+		SetMaxSpeed(GetSprintSpeed());
+	}
 }
 
 void CNEO_Player::StopSprinting(void)
 {
 	BaseClass::StopSprinting();
-
-	SetMaxSpeed(GetNormSpeed());
 }
 
 void CNEO_Player::InitSprinting(void)
@@ -2278,19 +2717,15 @@ bool CNEO_Player::CanSprint(void)
 void CNEO_Player::EnableSprint(bool bEnable)
 {
 	BaseClass::EnableSprint(bEnable);
-
-	SetMaxSpeed(GetSprintSpeed());
 }
 
 void CNEO_Player::StartWalking(void)
 {
-	SetMaxSpeed(GetWalkSpeed());
 	m_fIsWalking = true;
 }
 
 void CNEO_Player::StopWalking(void)
 {
-	SetMaxSpeed(GetNormSpeed());
 	m_fIsWalking = false;
 }
 
@@ -2456,6 +2891,32 @@ float CNEO_Player::GetSprintSpeed(void) const
 	default:
 		return NEO_BASE_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
 	}
+}
+
+int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
+{
+	auto player = Instance(pInfo->m_pClientEnt);
+	
+	if(player)
+	{
+		auto neoPlayer = dynamic_cast<CNEO_Player*>(player);
+		if(neoPlayer)
+		{
+			if(player->GetTeamNumber() == TEAM_SPECTATOR
+			|| this->GetTeamNumber() == player->GetTeamNumber())
+			{
+				return FL_EDICT_ALWAYS;
+			}
+
+			auto ghost = dynamic_cast<CWeaponGhost*>(neoPlayer->GetActiveWeapon());
+			if(ghost && ghost->IsPosWithinViewDistance(this->GetAbsOrigin()))	//Check if ghost equip delay has passed here before distance
+			{
+				return FL_EDICT_ALWAYS;
+			}	
+		}	
+	}
+	
+	return BaseClass::ShouldTransmit(pInfo);
 }
 
 float CNEO_Player::GetActiveWeaponSpeedScale() const

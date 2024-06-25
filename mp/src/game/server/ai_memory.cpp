@@ -535,7 +535,7 @@ bool CAI_Enemies::HasFreeKnowledgeOf( CBaseEntity *pEnemy )
 {
 	// I've never seen something that doesn't exist
 	if (!pEnemy)
-		return 0;
+		return false;
 
 	AI_EnemyInfo_t *pMemory = Find( pEnemy, true );
 	if ( pMemory )
@@ -546,7 +546,11 @@ bool CAI_Enemies::HasFreeKnowledgeOf( CBaseEntity *pEnemy )
 
 	if ( pEnemy != AI_UNKNOWN_ENEMY )
 		DevWarning( 2,"Asking HasFreeKnowledgeOf for enemy that's not in my memory!!\n");
+#ifdef NEO	// NEO NOTE (nullsystem): Keep close to original behavior even if it seems odd. Just cast it for C++20
+	return static_cast<bool>(AI_INVALID_TIME);
+#else
 	return AI_INVALID_TIME;
+#endif
 }
 
 //-----------------------------------------------------------------------------

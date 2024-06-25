@@ -3,6 +3,8 @@
 
 #include "GameEventListener.h"
 
+#include <vgui_controls/ImagePanel.h>
+
 #include "neo_hud_ammo.h"
 #include "neo_hud_compass.h"
 #include "neo_hud_friendly_marker.h"
@@ -18,14 +20,15 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-#define UI_ELEMENT_NAME_AMMO "neo_ammo"
-#define UI_ELEMENT_NAME_COMPASS "neo_compass"
-#define UI_ELEMENT_NAME_HTA "neo_hta"
+#define UI_ELEMENT_NAME_AMMO "NHudWeapon"
+#define UI_ELEMENT_NAME_COMPASS "NHudCompass"
+#define UI_ELEMENT_NAME_HTA "NHudHealth"
 #define UI_ELEMENT_NAME_IFF "neo_iff"
-#define UI_ELEMENT_GAME_EVENT "neo_game_event_indicator"
+#define UI_ELEMENT_GAME_EVENT "CNEOHud_GameEvent"
 #define UI_ELEMENT_NAME_GHOST_MARKER "neo_ghost_marker"
-#define UI_ELEMENT_NAME_GHOST_BEACON "neo_ghost_beacon"
+#define UI_ELEMENT_NAME_GHOST_BEACONS "neo_ghost_beacons"
 #define UI_ELEMENT_ROUND_STATE "neo_round_state"
+#define UI_ELEMENT_TARGET_ID "TargetID"
 
 using namespace vgui;
 
@@ -50,10 +53,11 @@ CNeoHudElements::CNeoHudElements(IViewPort *pViewPort)
 	m_pAmmo = NULL;
 	m_pCompass = NULL;
 	m_pFriendlyMarker = NULL;
-	m_pGameEvent = NULL;
 	m_pHTA = NULL;
 	m_pRoundState = NULL;
 	m_pLastUpdater = NULL;
+	m_pTargetID = NULL;
+	m_pGhostBeacons = NULL;
 }
 
 CNeoHudElements::~CNeoHudElements()
@@ -86,12 +90,6 @@ void CNeoHudElements::FreePanelChildren()
 		m_pFriendlyMarker = NULL;
 	}
 
-	if (m_pGameEvent)
-	{
-		m_pGameEvent->DeletePanel();
-		m_pGameEvent = NULL;
-	}
-
 	if (m_pHTA)
 	{
 		m_pHTA->DeletePanel();
@@ -102,6 +100,18 @@ void CNeoHudElements::FreePanelChildren()
 	{
 		m_pRoundState->DeletePanel();
 		m_pRoundState = NULL;
+	}
+
+	if (m_pTargetID)
+	{
+		m_pTargetID->DeletePanel();
+		m_pTargetID = NULL;
+	}
+
+	if(m_pGhostBeacons)
+	{
+		m_pGhostBeacons->DeletePanel();
+		m_pGhostBeacons = NULL;
 	}
 
 	for (int i = 0; i < m_vecGhostMarkers.Count(); i++)
@@ -225,34 +235,35 @@ void CNeoHudElements::InitHud()
 	InitAmmo();
 	InitCompass();
 	InitFriendlyMarker();
-	InitGameEventIndicator();
 	InitGhostMarkers();
 	InitHTA();
 	InitRoundState();
+	InitTargetID();
+	InitGhostBeacons();
+}
+
+void CNeoHudElements::InitGhostBeacons()
+{
+	Assert(!m_pGhostBeacons);
+	m_pGhostBeacons = new CNEOHud_GhostBeacons(UI_ELEMENT_NAME_GHOST_BEACONS, this);
 }
 
 void CNeoHudElements::InitAmmo()
 {
 	Assert(!m_pAmmo);
-	m_pAmmo = new CNEOHud_Ammo(UI_ELEMENT_NAME_AMMO, this);
+	m_pAmmo = new CNEOHud_Ammo(UI_ELEMENT_NAME_AMMO, NULL);
 }
 
 void CNeoHudElements::InitCompass()
 {
 	Assert(!m_pCompass);
-	m_pCompass = new CNEOHud_Compass(UI_ELEMENT_NAME_COMPASS, this);
+	m_pCompass = new CNEOHud_Compass(UI_ELEMENT_NAME_COMPASS, NULL);
 }
 
 void CNeoHudElements::InitFriendlyMarker()
 {
 	Assert(!m_pFriendlyMarker);
 	m_pFriendlyMarker = new CNEOHud_FriendlyMarker(UI_ELEMENT_NAME_IFF, this);
-}
-
-void CNeoHudElements::InitGameEventIndicator()
-{
-	Assert(!m_pGameEvent);
-	m_pGameEvent = new CNEOHud_GameEvent(UI_ELEMENT_GAME_EVENT, this);
 }
 
 void CNeoHudElements::InitGhostMarkers()
@@ -269,13 +280,19 @@ void CNeoHudElements::InitGhostMarkers()
 void CNeoHudElements::InitHTA()
 {
 	Assert(!m_pHTA);
-	m_pHTA = new CNEOHud_HTA(UI_ELEMENT_NAME_HTA, this);
+	m_pHTA = new CNEOHud_HTA(UI_ELEMENT_NAME_HTA, NULL);
 }
 
 void CNeoHudElements::InitRoundState()
 {
 	Assert(!m_pRoundState);
 	m_pRoundState = new CNEOHud_RoundState(UI_ELEMENT_ROUND_STATE, this);
+}
+
+void CNeoHudElements::InitTargetID()
+{
+	Assert(!m_pTargetID);
+	m_pTargetID = new CTargetID(UI_ELEMENT_TARGET_ID);
 }
 
 CNEOHud_GhostMarker* CNeoHudElements::GetGhostMarker()

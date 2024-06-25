@@ -18,6 +18,7 @@ WeaponData
 	"clip_size"		"1"
 	"primary_ammo"		"AMMO_DETPACK"
 	"secondary_ammo"	"None"
+	"autoswitchfrom"        "1"
 
 	"weight"		"1"
 	"item_flags"		"0"
@@ -36,6 +37,15 @@ WeaponData
 		"right"		"0"
 		"up"		"-2"
 	}
+
+	"ZoomOffset"
+	{
+		"fov"		"55"
+		"forward"	"-5"
+		"right"		"0"
+		"up"		"-2"
+	}
+
 	
 	"AimOffset"
 	{

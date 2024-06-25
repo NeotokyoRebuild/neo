@@ -13,13 +13,14 @@ WeaponData
 	"bucket_position"	"0"
 	"Damage"		"100"
 	"Penetration"		"65.0"
-	"CycleTime"		"1.0"		 // time between shots
+	"CycleTime"		"1.0"
 	
 	"TPMuzzleFlashScale"	"0.25"
 
 	"clip_size"		"5"
+	"default_clip"	"15"
 	"autoswitchfrom"        "0"
-	"primary_ammo"		"AR2"
+	"primary_ammo"		"AMMO_SNIPER"
 	"secondary_ammo"	"None"
 
 	"weight"		"3"
@@ -52,6 +53,14 @@ WeaponData
 		"forward"	"25"
 		"right"		"12"
 		"up"		"0"
+	}
+
+	"ZoomOffset"
+	{
+		"fov"		"20"
+		"forward"	"5"
+		"right"		"0.8"
+		"up"		"4"
 	}
 	
 	"AimOffset"

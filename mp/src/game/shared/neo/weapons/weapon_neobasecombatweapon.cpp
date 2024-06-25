@@ -1,10 +1,19 @@
 #include "cbase.h"
 #include "weapon_neobasecombatweapon.h"
+#include "particle_parse.h"
 
 #include "in_buttons.h"
 
 #ifdef GAME_DLL
 #include "player.h"
+
+extern ConVar weaponstay;
+#endif
+
+#ifdef CLIENT_DLL
+#include "dlight.h"
+#include "iefx.h"
+#include "c_te_effect_dispatch.h"
 #endif
 
 #include "basecombatweapon_shared.h"
@@ -22,11 +31,15 @@ BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 	RecvPropTime(RECVINFO(m_flLastAttackTime)),
 	RecvPropFloat(RECVINFO(m_flAccuracyPenalty)),
 	RecvPropInt(RECVINFO(m_nNumShotsFired)),
+	RecvPropBool(RECVINFO(m_bRoundChambered)),
+	RecvPropBool(RECVINFO(m_bRoundBeingChambered)),
 #else
 	SendPropTime(SENDINFO(m_flSoonestAttack)),
 	SendPropTime(SENDINFO(m_flLastAttackTime)),
 	SendPropFloat(SENDINFO(m_flAccuracyPenalty)),
 	SendPropInt(SENDINFO(m_nNumShotsFired)),
+	SendPropBool(SENDINFO(m_bRoundChambered)),
+	SendPropBool(SENDINFO(m_bRoundBeingChambered)),
 #endif
 END_NETWORK_TABLE()
 
@@ -36,6 +49,8 @@ BEGIN_PREDICTION_DATA(CNEOBaseCombatWeapon)
 	DEFINE_PRED_FIELD(m_flLastAttackTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_flAccuracyPenalty, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_nNumShotsFired, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bRoundChambered, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bRoundBeingChambered, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 #endif
 
@@ -47,6 +62,8 @@ BEGIN_DATADESC( CNEOBaseCombatWeapon )
 	DEFINE_FIELD(m_flLastAttackTime, FIELD_TIME),
 	DEFINE_FIELD(m_flAccuracyPenalty, FIELD_FLOAT),
 	DEFINE_FIELD(m_nNumShotsFired, FIELD_INTEGER),
+	DEFINE_FIELD(m_bRoundChambered, FIELD_BOOLEAN),
+	DEFINE_FIELD(m_bRoundBeingChambered, FIELD_BOOLEAN),
 END_DATADESC()
 #endif
 
@@ -84,14 +101,28 @@ CNEOBaseCombatWeapon::CNEOBaseCombatWeapon( void )
 	m_bReadyToAimIn = false;
 }
 
+void CNEOBaseCombatWeapon::Precache()
+{
+	BaseClass::Precache();
+
+	if ((GetNeoWepBits() & NEO_WEP_SUPPRESSED))
+		PrecacheParticleSystem("ntr_muzzle_source");
+}
+
 void CNEOBaseCombatWeapon::Spawn()
 {
 	// If this fires, either the enum bit mask has overflowed,
 	// this derived gun has no valid NeoBitFlags set,
 	// or we are spawning an instance of this base class for some reason.
-	Assert(GetNeoWepBits() > NEO_WEP_INVALID);
+	Assert(GetNeoWepBits() != NEO_WEP_INVALID); 
 
 	BaseClass::Spawn();
+
+	m_iClip1 = GetWpnData().iMaxClip1;
+	m_iPrimaryAmmoCount = GetWpnData().iDefaultClip1;
+
+	m_iClip2 = GetWpnData().iMaxClip2;
+	m_iSecondaryAmmoCount = GetWpnData().iDefaultClip2;
 
 #ifdef GAME_DLL
 	AddSpawnFlags(SF_NORESPAWN);
@@ -128,6 +159,39 @@ bool CNEOBaseCombatWeapon::Reload( void )
 
 	return DefaultReload( GetMaxClip1(), GetMaxClip2(), ACT_VM_RELOAD );
 #endif
+}
+
+
+//-----------------------------------------------------------------------------
+// Purpose: Reload has finished.
+//-----------------------------------------------------------------------------
+void CNEOBaseCombatWeapon::FinishReload(void)
+{
+	CBaseCombatCharacter* pOwner = GetOwner();
+
+	if (pOwner)
+	{
+		// If I use primary clips, reload primary
+		if (UsesClipsForAmmo1())
+		{
+			int primary = MIN(GetMaxClip1(), m_iPrimaryAmmoCount);
+			m_iClip1 = primary;
+			m_iPrimaryAmmoCount -= primary;
+		}
+
+		// If I use secondary clips, reload secondary
+		if (UsesClipsForAmmo2())
+		{
+			int secondary = MIN(GetMaxClip2() - m_iClip2, m_iSecondaryAmmoCount);
+			m_iClip2 += secondary;
+			m_iSecondaryAmmoCount -= secondary;
+		}
+
+		if (m_bReloadsSingly)
+		{
+			m_bInReload = false;
+		}
+	}
 }
 
 bool CNEOBaseCombatWeapon::CanBeSelected(void)
@@ -183,6 +247,11 @@ bool CNEOBaseCombatWeapon::Deploy(void)
 	return ret;
 }
 
+float CNEOBaseCombatWeapon::GetFireRate()
+{
+	return GetHL2MPWpnData().m_flCycleTime;
+}
+
 #ifdef CLIENT_DLL
 bool CNEOBaseCombatWeapon::Holster(CBaseCombatWeapon* pSwitchingTo)
 {
@@ -204,6 +273,11 @@ bool CNEOBaseCombatWeapon::Holster(CBaseCombatWeapon* pSwitchingTo)
 
 	return BaseClass::Holster(pSwitchingTo);
 }
+
+void CNEOBaseCombatWeapon::ItemHolsterFrame(void)
+{ // Overrides the base class behaviour of reloading the weapon after its been holstered for 3 seconds
+	return;
+}
 #endif
 
 void CNEOBaseCombatWeapon::CheckReload(void)
@@ -223,6 +297,178 @@ void CNEOBaseCombatWeapon::ItemPreFrame(void)
 		if (gpGlobals->curtime >= m_flNextPrimaryAttack)
 		{
 			m_bReadyToAimIn = true;
+		}
+	}
+}
+
+// Handles lowering the weapon view model when character is sprinting
+void CNEOBaseCombatWeapon::ProcessAnimationEvents(void)
+{
+	CNEO_Player* pOwner = static_cast<CNEO_Player*>(ToBasePlayer(GetOwner()));
+	if (!pOwner)
+		return;
+
+	if (!m_bLowered && (pOwner->IsSprinting()) && !m_bInReload && !m_bRoundBeingChambered)
+	{
+		m_bLowered = true;
+		SendWeaponAnim(ACT_VM_IDLE_LOWERED);
+		m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
+		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
+	}
+	else if (m_bLowered && !(pOwner->IsSprinting()))
+	{
+		m_bLowered = false;
+		SendWeaponAnim(ACT_VM_IDLE);
+		m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
+		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
+	}
+	else if (m_bLowered && m_bRoundBeingChambered)
+	{ // For bolt action weapons
+		m_bLowered = false;
+		SendWeaponAnim(ACT_VM_PULLBACK);
+		m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
+		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
+	}
+
+	if (m_bLowered)
+	{
+		if (gpGlobals->curtime > m_flNextPrimaryAttack)
+		{
+			SendWeaponAnim(ACT_VM_IDLE_LOWERED);
+			m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
+			m_flNextSecondaryAttack = m_flNextPrimaryAttack;
+		}
+	}
+}
+
+void CNEOBaseCombatWeapon::ItemPostFrame(void)
+{
+	CNEO_Player* pOwner = static_cast<CNEO_Player*>(ToBasePlayer(GetOwner()));
+	if (!pOwner)
+		return;
+
+	UpdateAutoFire();
+
+	//Track the duration of the fire
+	//FIXME: Check for IN_ATTACK2 as well?
+	//FIXME: What if we're calling ItemBusyFrame?
+	m_fFireDuration = (pOwner->m_nButtons & IN_ATTACK) ? (m_fFireDuration + gpGlobals->frametime) : 0.0f;
+
+	if (UsesClipsForAmmo1())
+	{
+		CheckReload();
+	}
+
+	bool bFired = false;
+
+	// Secondary attack has priority
+	if ((pOwner->m_nButtons & IN_ATTACK2) && CanPerformSecondaryAttack())
+	{
+		if (UsesSecondaryAmmo() && m_iSecondaryAmmoCount <= 0)
+		{
+			if (m_flNextEmptySoundTime < gpGlobals->curtime)
+			{
+				WeaponSound(EMPTY);
+				m_flNextSecondaryAttack = m_flNextEmptySoundTime = gpGlobals->curtime + 0.5;
+			}
+		}
+		else if (pOwner->GetWaterLevel() == 3 && m_bAltFiresUnderwater == false)
+		{
+			// This weapon doesn't fire underwater
+			WeaponSound(EMPTY);
+			m_flNextPrimaryAttack = gpGlobals->curtime + 0.2;
+			return;
+		}
+		else
+		{
+			// FIXME: This isn't necessarily true if the weapon doesn't have a secondary fire!
+			// For instance, the crossbow doesn't have a 'real' secondary fire, but it still 
+			// stops the crossbow from firing on the 360 if the player chooses to hold down their
+			// zoom button. (sjb) Orange Box 7/25/2007
+#if !defined(CLIENT_DLL)
+			if (!IsX360() || !ClassMatches("weapon_crossbow"))
+#endif
+			{
+				bFired = ShouldBlockPrimaryFire();
+			}
+
+			SecondaryAttack();
+
+			// Secondary ammo doesn't have a reload animation
+			if (UsesClipsForAmmo2())
+			{
+				// reload clip2 if empty
+				if (m_iClip2 < 1)
+				{
+					m_iSecondaryAmmoCount -= 1;
+					m_iClip2 = m_iClip2 + 1;
+				}
+			}
+		}
+	}
+
+	if (!bFired && (pOwner->m_nButtons & IN_ATTACK) && (m_flNextPrimaryAttack <= gpGlobals->curtime))
+	{
+		// Clip empty? Or out of ammo on a no-clip weapon?
+		if (!IsMeleeWeapon() &&
+			((UsesClipsForAmmo1() && m_iClip1 <= 0) || (!UsesClipsForAmmo1() && m_iPrimaryAmmoCount <= 0)))
+		{
+			if (m_bRoundChambered) // bolt action rifles can have this value set to false, prevents empty clicking when holding the attack button when looking through scope to prevent bolting/reloading
+				HandleFireOnEmpty();
+		}
+		else if (pOwner->GetWaterLevel() == 3 && m_bFiresUnderwater == false)
+		{
+			// This weapon doesn't fire underwater
+			WeaponSound(EMPTY);
+			m_flNextPrimaryAttack = gpGlobals->curtime + 0.2;
+			return;
+		}
+		else
+		{
+			//NOTENOTE: There is a bug with this code with regards to the way machine guns catch the leading edge trigger
+			//			on the player hitting the attack key.  It relies on the gun catching that case in the same frame.
+			//			However, because the player can also be doing a secondary attack, the edge trigger may be missed.
+			//			We really need to hold onto the edge trigger and only clear the condition when the gun has fired its
+			//			first shot.  Right now that's too much of an architecture change -- jdw
+
+			// If the firing button was just pressed, or the alt-fire just released, reset the firing time
+			if ((pOwner->m_afButtonPressed & IN_ATTACK) || (pOwner->m_afButtonReleased & IN_ATTACK2))
+			{
+				m_flNextPrimaryAttack = gpGlobals->curtime;
+			}
+
+			PrimaryAttack();
+
+			if (AutoFiresFullClip())
+			{
+				m_bFiringWholeClip = true;
+			}
+
+#ifdef CLIENT_DLL
+			pOwner->SetFiredWeapon(true);
+#endif
+		}
+	}
+
+	// -----------------------
+	//  Reload pressed / Clip Empty
+	//  Can only start the Reload Cycle after the firing cycle
+	if ((pOwner->m_nButtons & IN_RELOAD) && m_flNextPrimaryAttack <= gpGlobals->curtime && UsesClipsForAmmo1() && !m_bInReload)
+	{
+		// reload when reload is pressed, or if no buttons are down and weapon is empty.
+		Reload();
+		m_fFireDuration = 0.0f;
+	}
+
+	// -----------------------
+	//  No buttons down
+	// -----------------------
+	if (!(((pOwner->m_nButtons & IN_ATTACK) && !(pOwner->IsSprinting())) || (pOwner->m_nButtons & IN_ATTACK2) || (CanReload() && pOwner->m_nButtons & IN_RELOAD)))
+	{
+		// no fire buttons down or reloading
+		if (!ReloadOrSwitchWeapons() && (m_bInReload == false))
+		{
+			WeaponIdle();
 		}
 	}
 }
@@ -386,4 +632,105 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 	BaseClass::PrimaryAttack();
 
 	m_flAccuracyPenalty += GetAccuracyPenalty();
+}
+
+bool CNEOBaseCombatWeapon::CanBePickedUpByClass(int classId)
+{
+	return true;
+}
+
+#ifdef CLIENT_DLL
+void CNEOBaseCombatWeapon::ProcessMuzzleFlashEvent()
+{
+	if (GetPlayerOwner() == NULL)
+		return; // If using a view model in first person, muzzle flashes are not processed until the player drops their weapon. In that case, do not play a muzzle flash effect. Need to change how this is calculated if we want to allow dropped weapons to cook off for example
+
+	if ((GetNeoWepBits() & NEO_WEP_SUPPRESSED))
+		return;
+
+	int iAttachment = -1;
+	if (!GetBaseAnimating())
+		return;
+	
+	// Find the attachment point index
+	iAttachment = GetBaseAnimating()->LookupAttachment("muzzle_flash");
+	if (iAttachment <= 0)
+	{
+		Warning("Model '%s' doesn't have attachment '%s'\n", GetPrintName(), "muzzle_flash");
+		return;
+	}
+
+	// Muzzle flash light
+	Vector vAttachment;
+	if (!GetAttachment(iAttachment, vAttachment))
+		return;
+
+	// environment light
+	dlight_t* el = effects->CL_AllocDlight(LIGHT_INDEX_MUZZLEFLASH + index);
+	el->origin = vAttachment;
+	el->radius = random->RandomInt(64, 96);
+	el->decay = el->radius / 0.1f;
+	el->die = gpGlobals->curtime + 0.1f;
+	el->color.r = 255;
+	el->color.g = 192;
+	el->color.b = 64;
+	el->color.exponent = 5;
+
+	// Muzzle flash particle
+	DispatchMuzzleParticleEffect(iAttachment);
+}
+
+void CNEOBaseCombatWeapon::DispatchMuzzleParticleEffect(int iAttachment) {
+	static constexpr char particleName[] = "ntr_muzzle_source";
+	constexpr bool resetAllParticlesOnEntity = false;
+	const ParticleAttachment_t iAttachType = ParticleAttachment_t::PATTACH_POINT_FOLLOW;
+
+	CEffectData	data;
+
+	data.m_nHitBox = GetParticleSystemIndex(particleName);
+	data.m_hEntity = this;
+	data.m_fFlags |= PARTICLE_DISPATCH_FROM_ENTITY;
+	data.m_vOrigin = GetAbsOrigin();
+	data.m_nDamageType = iAttachType;
+	data.m_nAttachmentIndex = iAttachment;
+
+	if (resetAllParticlesOnEntity)
+		data.m_fFlags |= PARTICLE_DISPATCH_RESET_PARTICLES;
+
+	CSingleUserRecipientFilter filter(UTIL_PlayerByIndex(GetLocalPlayerIndex()));
+	te->DispatchEffect(filter, 0.0, data.m_vOrigin, "ParticleEffect", data);
+}
+#endif
+
+bool CNEOBaseCombatWeapon::CanDrop()
+{
+	return true;
+}
+
+void CNEOBaseCombatWeapon::SetPickupTouch(void)
+{
+#if GAME_DLL
+	SetTouch(&CBaseCombatWeapon::DefaultTouch);
+
+	// Ghosts should never get removed by deferred think tick,
+	// regardless of whether other kinds of guns remain in the world.
+	if (IsGhost())
+	{
+		return;
+	}
+
+	if (!weaponstay.GetBool())
+	{
+		BaseClass::SetPickupTouch();
+		return;
+	}
+
+	// If we previously scheduled a removal, but the cvar was changed before it fired,
+	// cancel that scheduled removal.
+	if (this->m_pfnThink == &CBaseEntity::SUB_Remove)
+	{
+		SetNextThink(TICK_NEVER_THINK);
+		SetThink(NULL);
+	}
+#endif
 }

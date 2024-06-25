@@ -11,11 +11,12 @@ WeaponData
 
 	"clip_size"			"-1"
 	"clip2_size"			"-1"
-	"default_clip"			"3"
+	"default_clip"			"2"
 	"default_clip2"			"-1"
 
 	"primary_ammo"			"AMMO_SMOKEGRENADE"
 	"secondary_ammo"		"None"
+	"autoswitchfrom"        "1"
 
 	"weight"			"1"
 	"item_flags"			"18"	// ITEM_FLAG_NOAUTORELOAD | ITEM_FLAG_EXHAUSTIBLE
@@ -28,6 +29,14 @@ WeaponData
 	"VMOffsetUp"		"2.0"	
     
     "ViewModelOffset"
+	{
+		"fov"		"55.0"
+		"forward"	"2.0"
+		"right"		"5.0"
+		"up"		"2.0"
+	}
+
+	"ZoomOffset"
 	{
 		"fov"		"55.0"
 		"forward"	"2.0"

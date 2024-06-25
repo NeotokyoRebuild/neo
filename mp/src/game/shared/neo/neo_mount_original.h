@@ -9,7 +9,6 @@
 #include "shareddefs.h"
 #include "steam/steam_api.h"
 #include "filesystem.h"
-#include "inttostr.h"
 
 #ifdef LINUX
 // User for renaming folder paths.
@@ -86,7 +85,7 @@ bool IsNeoGameInfoPathOK(char *out_neoPath, const int pathLen)
 		for (int i = 1; i <= maxExtraLibs; i++)
 		{
 			char libStr[3];
-			inttostr(libStr, 3, i);
+			V_sprintf_safe(libStr, "%d", i);
 
 			KeyValues *pKvLib = pKvLibFolders->FindKey(libStr);
 			if (!pKvLib)
@@ -345,10 +344,10 @@ some Neotokyo assets may not load correctly!\n", szThisCaller);
 // Helper override when you don't have a constructed neoPath at hand.
 void FixIncompatibleNeoAssets(IFileSystem* filesystem, bool restoreInstead)
 {
-	const char* szThisCaller = "FixIncompatibleNeoAssets";
 	char neoPath[MAX_PATH];
 	bool originalNtPathOk = false;
 #ifdef LINUX
+	const char* szThisCaller = "FixIncompatibleNeoAssets";
 	const bool callerIsClientDll = false; // always server here. should refactor this stuff later.
 
 	// The NeotokyoSource root asset folder should exist (or be symlinked) to one of these paths,
@@ -425,7 +424,7 @@ void FixIncompatibleNeoAssets(IFileSystem* filesystem, bool restoreInstead)
 		{
 			Warning("%s: Could not locate original Neotokyo install!\n", szThisCaller);
 		}
-		
+
 		if (!DirExists(neoPath))
 		{
 			Error("%s: Failed to get Neo path\n", szThisCaller);
@@ -440,7 +439,7 @@ void FixIncompatibleNeoAssets(IFileSystem* filesystem, bool restoreInstead)
 #endif
 	if (!originalNtPathOk)
 	{
-		Error("%s: Failed to retrieve Neo path\n", szThisCaller);
+		// Error("%s: Failed to retrieve Neo path\n", szThisCaller);
 	}
 	else
 	{
@@ -499,7 +498,7 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 
     // Third lookup path: machine's share directory.
     const char *neoLinuxPath_UsrShare = "/usr/share/neotokyo/NeotokyoSource/";
-	
+
 	// NEO FIXME (Rain): getting this ParmValue from Steam Linux client seems to be broken(?),
 	// we always fall back to hardcoded pDefaultVal.
 	V_strcpy_safe(neoPath,
@@ -603,7 +602,7 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 		//	HKEY_LOCAL_MACHINE\SOFTWARE\Valve\Steam (32bit) and HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Valve\Steam (64bit)
 		// for a Steam installation as fallback on client systems.
 	}
-	
+
 #endif
 
 	if (originalNtPathOk)
@@ -614,6 +613,15 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 			V_AppendSlash(neoPath, sizeof(neoPath));
 
 			filesystem->AddSearchPath(neoPath, NEO_MOUNT_PATHID, addType);
+
+			char modPath[MAX_PATH];
+			filesystem->GetSearchPath("mod", false, modPath, sizeof(modPath));
+			// Find path delimiter
+			char* delim = V_stristr(modPath, ";");
+			if (delim != nullptr) {
+				modPath[(int)(delim - modPath)] = '\0';
+			}
+			filesystem->AddSearchPath(modPath, NEO_MOUNT_PATHID, addType);
 
 			if (callerIsClientDll)
 			{
@@ -642,6 +650,15 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 		}
 #else // If Windows
 		filesystem->AddSearchPath(neoPath, NEO_MOUNT_PATHID, addType);
+
+		char modPath[MAX_PATH];
+		filesystem->GetSearchPath("mod", false, modPath, sizeof(modPath));
+		// Find path delimiter
+		char *delim = V_stristr(modPath, ";");
+		if (delim != nullptr) {
+			modPath[(int)(delim - modPath)] = '\0';
+		}
+		filesystem->AddSearchPath(modPath, NEO_MOUNT_PATHID, addType);
 
 		if (callerIsClientDll)
 		{

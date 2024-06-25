@@ -21,10 +21,7 @@ CHL2MPSWeaponInfo::CHL2MPSWeaponInfo()
 	m_iPlayerDamage = 0;
 
 #ifdef NEO
-	m_flVMFov = m_flVMAimFov = 0;
-
 	m_vecVMPosOffset = m_vecVMAimPosOffset = vec3_origin;
-
 	m_angVMAngOffset = m_angVMAimAngOffset = vec3_angle;
 #endif
 }
@@ -34,9 +31,17 @@ void CHL2MPSWeaponInfo::Parse( KeyValues *pKeyValuesData, const char *szWeaponNa
 {
 	BaseClass::Parse( pKeyValuesData, szWeaponName );
 
+#ifndef NEO
 	m_iPlayerDamage = pKeyValuesData->GetInt( "damage", 0 );
+#endif
 
 #ifdef NEO
+	m_iPlayerDamage = pKeyValuesData->GetInt("Damage", 0);
+	if (m_iPlayerDamage == 0)
+	{
+		m_iPlayerDamage = pKeyValuesData->GetInt("damage", 0);
+	}
+
 	KeyValues *pViewModel = pKeyValuesData->FindKey("ViewModelOffset");
 	if (pViewModel)
 	{
@@ -54,7 +59,13 @@ void CHL2MPSWeaponInfo::Parse( KeyValues *pKeyValuesData, const char *szWeaponNa
 	// NEO TODO (Rain): add optional ironsight offsets
 	// in addition to "traditional" NT aim
 
+	// AimOffset = Ironsight ADS offset (Disabled)
+	// ZoomOffset = Traditional ADS offset
+#if 0
 	KeyValues *pAimOffset = pKeyValuesData->FindKey("AimOffset");
+#else
+	KeyValues* pAimOffset = pKeyValuesData->FindKey("ZoomOffset");
+#endif
 	if (pAimOffset)
 	{
 		m_flVMAimFov = pAimOffset->GetFloat("fov", 55);
@@ -67,6 +78,16 @@ void CHL2MPSWeaponInfo::Parse( KeyValues *pKeyValuesData, const char *szWeaponNa
 		m_angVMAimAngOffset[YAW] = pAimOffset->GetFloat("yaw", 0);
 		m_angVMAimAngOffset[ROLL] = pAimOffset->GetFloat("roll", 0);
 	}
+
+	// Get CycleTime AKA Fire-rate
+	m_flCycleTime = pKeyValuesData->GetFloat("CycleTime", 0.0f);
+#ifdef _DEBUG
+	const char *printName = pKeyValuesData->GetString("printname");
+	if (!V_strstr(printName, "#HL2") && !V_strstr(printName, "Grenade"))
+	{
+		Assert(m_flCycleTime != 0.0f);
+	}
+#endif
 #endif
 }
 

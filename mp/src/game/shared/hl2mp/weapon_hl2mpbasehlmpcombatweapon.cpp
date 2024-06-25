@@ -59,6 +59,9 @@ void CBaseHL2MPCombatWeapon::ItemHolsterFrame( void )
 {
 	BaseClass::ItemHolsterFrame();
 
+#ifdef NEO
+	return;
+#endif
 	// Must be player held
 	if ( GetOwner() && GetOwner()->IsPlayer() == false )
 		return;

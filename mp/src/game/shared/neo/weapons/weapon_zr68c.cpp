@@ -81,6 +81,8 @@ void CWeaponZR68C::ItemBusyFrame()
 
 void CWeaponZR68C::ItemPostFrame()
 {
+	ProcessAnimationEvents();
+
 	BaseClass::ItemPostFrame();
 
 	if (m_bInReload)

@@ -81,6 +81,8 @@ void CWeaponMPN::ItemBusyFrame()
 
 void CWeaponMPN::ItemPostFrame()
 {
+	ProcessAnimationEvents();
+
 	BaseClass::ItemPostFrame();
 
 	if (m_bInReload)

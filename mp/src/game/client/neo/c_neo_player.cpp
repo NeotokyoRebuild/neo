@@ -47,6 +47,8 @@
 
 #include "neo_playeranimstate.h"
 
+#include "c_user_message_register.h"
+
 // Don't alias here
 #if defined( CNEO_Player )
 #undef CNEO_Player	
@@ -75,19 +77,25 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropBool(RECVINFO(m_bInVision)),
 	RecvPropBool(RECVINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 	RecvPropBool(RECVINFO(m_bInAim)),
+	RecvPropBool(RECVINFO(m_bDroppedAnything)),
 
 	RecvPropTime(RECVINFO(m_flCamoAuxLastTime)),
 	RecvPropInt(RECVINFO(m_nVisionLastTick)),
 
 	RecvPropArray(RecvPropVector(RECVINFO(m_rvFriendlyPlayerPositions[0])), m_rvFriendlyPlayerPositions),
 	RecvPropArray(RecvPropFloat(RECVINFO(m_rfAttackersScores[0])), m_rfAttackersScores),
+	RecvPropArray(RecvPropInt(RECVINFO(m_rfAttackersHits[0])), m_rfAttackersHits),
 
 	RecvPropInt(RECVINFO(m_NeoFlags)),
+	RecvPropString(RECVINFO(m_szNeoName)),
+	RecvPropInt(RECVINFO(m_szNameDupePos)),
+	RecvPropBool(RECVINFO(m_bClientWantNeoName)),
 END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA(C_NEO_Player)
 	DEFINE_PRED_FIELD(m_rvFriendlyPlayerPositions, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
-	DEFINE_PRED_FIELD(m_rfAttackersScores, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_ARRAY(m_rfAttackersScores, FIELD_FLOAT, MAX_PLAYERS + 1, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_ARRAY(m_rfAttackersHits, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_vecGhostMarkerPos, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
 
 	DEFINE_PRED_FIELD_TOL(m_flCamoAuxLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
@@ -101,6 +109,100 @@ BEGIN_PREDICTION_DATA(C_NEO_Player)
 
 	DEFINE_PRED_FIELD(m_nVisionLastTick, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
+
+static void __MsgFunc_DamageInfo(bf_read& msg)
+{
+	const int killerIdx = msg.ReadShort();
+
+	auto *localPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if (!localPlayer)
+	{
+		return;
+	}
+
+	// Print damage stats into the console
+	// Print to console
+	AttackersTotals totals;
+	totals.dealtTotalDmgs = 0.0f;
+	totals.dealtTotalHits = 0;
+	totals.takenTotalDmgs = 0.0f;
+	totals.takenTotalHits = 0;
+
+	const int thisIdx = localPlayer->entindex();
+
+	// Can't rely on Msg as it can print out of order, so do it in chunks
+	static char killByLine[512];
+
+	static const char* BORDER = "==========================\n";
+	bool setKillByLine = false;
+	if (killerIdx > 0)
+	{
+		auto *neoAttacker = dynamic_cast<C_NEO_Player*>(UTIL_PlayerByIndex(killerIdx));
+		if (neoAttacker && neoAttacker->entindex() != thisIdx)
+		{
+			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, localPlayer);
+			setKillByLine = true;
+		}
+	}
+
+	ConMsg("%sDamage infos (Round %d):\n%s\n", BORDER, NEORules()->roundNumber(), setKillByLine ? killByLine : "");
+	
+	for (int pIdx = 1; pIdx <= gpGlobals->maxClients; ++pIdx)
+	{
+		if (pIdx == thisIdx)
+		{
+			continue;
+		}
+
+		auto* neoAttacker = dynamic_cast<C_NEO_Player*>(UTIL_PlayerByIndex(pIdx));
+		if (!neoAttacker || neoAttacker->IsHLTV())
+		{
+			continue;
+		}
+
+		const char *dmgerName = neoAttacker->GetNeoPlayerName();
+		if (!dmgerName)
+		{
+			continue;
+		}
+
+		const float dmgTo = min(neoAttacker->GetAttackersScores(thisIdx), 100.0f);
+		const float dmgFrom = min(localPlayer->GetAttackersScores(pIdx), 100.0f);
+		if (dmgTo > 0.0f || dmgFrom > 0.0f)
+		{
+			const int hitsTo = neoAttacker->GetAttackerHits(thisIdx);
+			const int hitsFrom = localPlayer->GetAttackerHits(pIdx);
+			const char *dmgerClass = GetNeoClassName(neoAttacker->GetClass());
+
+			static char infoLine[128];
+			DmgLineStr(infoLine, sizeof(infoLine), dmgerName, dmgerClass,
+				dmgTo, dmgFrom, hitsTo, hitsFrom);
+			ConMsg("%s", infoLine);
+
+			totals.dealtTotalDmgs += dmgTo;
+			totals.takenTotalDmgs += dmgFrom;
+			totals.dealtTotalHits += hitsTo;
+			totals.takenTotalHits += hitsFrom;
+		}
+	}
+
+	ConMsg("\nTOTAL: Dealt: %.0f in %d hits | Taken: %.0f in %d hits\n%s\n",
+		totals.dealtTotalDmgs, totals.dealtTotalHits,
+		totals.takenTotalDmgs, totals.takenTotalHits,
+		BORDER);
+}
+USER_MESSAGE_REGISTER(DamageInfo);
+
+static void __MsgFunc_IdleRespawnShowMenu(bf_read &)
+{
+	if (auto *localPlayer = C_NEO_Player::GetLocalNEOPlayer())
+	{
+		localPlayer->m_bShowTeamMenu = false;
+		localPlayer->m_bShowClassMenu = true;
+		localPlayer->m_bIsClassMenuOpen = false;
+	}
+}
+USER_MESSAGE_REGISTER(IdleRespawnShowMenu);
 
 ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
 	"Whether to display HL2 style ammo/health info near crosshair.",
@@ -131,22 +233,18 @@ public:
 			return;
 		}
 
+		if (panel->IsVisible() && panel->IsEnabled())
+		{
+			return;	// Prevent cursor stuck
+		}
+
+		panel->SetProportional(false); // Fixes wrong menu size when in windowed mode, regardless of whether proportional is set to false in the res file (NEOWTF)
 		panel->ApplySchemeSettings(vgui::scheme()->GetIScheme(panel->GetScheme()));
 
-		int panelWide = 960, panelTall = 700, screenWide, screenTall;
-		surface()->GetScreenSize(screenWide, screenTall);
-		// Resize panel, but make sure it fits the resolution.
-		panel->SetSize(Min(screenWide, panelWide), Min(screenTall, panelTall));
-		panel->SetPos((screenWide / 2) - (panelWide / 2),
-			(screenTall / 2) - (panelTall / 2));
-
 		panel->SetMouseInputEnabled(true);
-		panel->SetKeyBoardInputEnabled(true);
+		//panel->SetKeyBoardInputEnabled(true);
 		panel->SetCursorAlwaysVisible(true);
 
-		panel->SetControlEnabled("Scout_Button", true);
-		panel->SetControlEnabled("Misc2", true);
-		panel->SetControlEnabled("Done_Button", true);
 		panel->SetControlEnabled("Button1", true);
 		panel->SetControlEnabled("Button2", true);
 		panel->SetControlEnabled("Button3", true);
@@ -159,8 +257,7 @@ public:
 		panel->SetControlEnabled("Button10", true);
 		panel->SetControlEnabled("Button11", true);
 		panel->SetControlEnabled("Button12", true);
-		panel->SetControlEnabled("Button13", true);
-		panel->SetControlEnabled("Button14", true);
+		panel->SetControlEnabled("ReturnButton", true);
 
 		panel->MoveToFront();
 
@@ -209,17 +306,16 @@ public:
 			return;
 		}
 
+		if (panel->IsVisible() && panel->IsEnabled())
+		{
+			return;	// Prevent cursor stuck
+		}
+
+		panel->SetProportional(false);
 		panel->ApplySchemeSettings(vgui::scheme()->GetIScheme(panel->GetScheme()));
 
-		int panelWide = 650, panelTall = 280, screenWide, screenTall;
-		surface()->GetScreenSize(screenWide, screenTall);
-		// Resize panel, but make sure it fits the resolution.
-		panel->SetSize(Min(screenWide, panelWide), Min(screenTall, panelTall));
-		panel->SetPos((screenWide / 2) - (panelWide / 2),
-			(screenTall / 2) - (panelTall / 2));
-
 		panel->SetMouseInputEnabled(true);
-		panel->SetKeyBoardInputEnabled(true);
+		//panel->SetKeyBoardInputEnabled(true);
 		panel->SetCursorAlwaysVisible(true);
 
 		panel->SetControlEnabled("Scout_Button", true);
@@ -263,18 +359,16 @@ public:
 			return;
 		}
 
+		if (panel->IsVisible() && panel->IsEnabled())
+		{
+			return;	// Prevent cursor stuck
+		}
+
+		panel->SetProportional(false);
 		panel->ApplySchemeSettings(vgui::scheme()->GetIScheme(panel->GetScheme()));
 
-		int panelWide = 360, panelTall = 215, screenWide, screenTall;
-		panelWide *= 1.5; panelTall *= 1.5;
-		surface()->GetScreenSize(screenWide, screenTall);
-		// Resize panel, but make sure it fits the resolution.
-		panel->SetSize(Min(screenWide, panelWide), Min(screenTall, panelTall));
-		panel->SetPos((screenWide / 2) - (panelWide / 2),
-			(screenTall / 2) - (panelTall / 2));
-
 		panel->SetMouseInputEnabled(true);
-		panel->SetKeyBoardInputEnabled(true);
+		//panel->SetKeyBoardInputEnabled(true);
 		panel->SetCursorAlwaysVisible(true);
 
 		panel->SetControlEnabled("jinraibutton", true);
@@ -282,8 +376,6 @@ public:
 		panel->SetControlEnabled("specbutton", true);
 		panel->SetControlEnabled("autobutton", true);
 		panel->SetControlEnabled("CancelButton", true);
-
-		panel->MoveToFront();
 
 		if (panel->IsKeyBoardInputEnabled())
 		{
@@ -340,6 +432,7 @@ C_NEO_Player::C_NEO_Player()
 	m_bInThermOpticCamo = m_bInVision = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
 	m_bInAim = false;
+	m_bDroppedAnything = false;
 	m_bInLean = NEO_LEAN_NONE;
 
 	m_pNeoPanel = NULL;
@@ -357,6 +450,9 @@ C_NEO_Player::C_NEO_Player()
 
 	m_pPlayerAnimState = CreatePlayerAnimState(this, CreateAnimStateHelpers(this),
 		NEO_ANIMSTATE_LEGANIM_TYPE, NEO_ANIMSTATE_USES_AIMSEQUENCES);
+
+	memset(m_szNeoNameWDupeIdx, 0, sizeof(m_szNeoNameWDupeIdx));
+	m_szNameDupePos = 0;
 }
 
 C_NEO_Player::~C_NEO_Player()
@@ -438,33 +534,61 @@ float C_NEO_Player::GetAttackersScores(const int attackerIdx) const
 	return m_rfAttackersScores.Get(attackerIdx);
 }
 
-int C_NEO_Player::DrawModel( int flags )
+const char *C_NEO_Player::GetNeoPlayerName() const
 {
-	// Do cloak if cloaked
-	if (IsCloaked())
+	const int dupePos = m_szNameDupePos;
+	const bool localWantNeoName = GetLocalNEOPlayer()->ClientWantNeoName();
+	if (localWantNeoName && m_szNeoName.Get()[0] != '\0')
 	{
-		IMaterial *pass = materials->FindMaterial("dev/toc_cloakpass", TEXTURE_GROUP_CLIENT_EFFECTS);
-		Assert(pass && !pass->IsErrorMaterial());
-
-		if (pass && !pass->IsErrorMaterial())
+		const char *neoName = m_szNeoName.Get();
+		if (dupePos > 0)
 		{
-			//const int extraFlags = STUDIO_RENDER | STUDIO_TRANSPARENCY | STUDIO_NOSHADOWS | STUDIO_DRAWTRANSLUCENTSUBMODELS;
-			modelrender->ForcedMaterialOverride(pass);
-			const int ret = BaseClass::DrawModel(flags /*| extraFlags*/);
-			modelrender->ForcedMaterialOverride(NULL);
-
-			return ret;
+			if (dupePos != m_szNeoNameLocalDupeIdx)
+			{
+				m_szNeoNameLocalDupeIdx = dupePos;
+				V_snprintf(m_szNeoNameWDupeIdx, sizeof(m_szNeoNameWDupeIdx), "%s (%d)", neoName, dupePos);
+			}
+			return m_szNeoNameWDupeIdx;
 		}
+		return neoName;
 	}
 
+	const char *stndName = const_cast<C_NEO_Player *>(this)->GetPlayerName();
+	if (localWantNeoName && dupePos > 0)
+	{
+		if (dupePos != m_szNeoNameLocalDupeIdx)
+		{
+			m_szNeoNameLocalDupeIdx = dupePos;
+			V_snprintf(m_szNeoNameWDupeIdx, sizeof(m_szNeoNameWDupeIdx), "%s (%d)", stndName, dupePos);
+		}
+		return m_szNeoNameWDupeIdx;
+	}
+	return stndName;
+}
+
+bool C_NEO_Player::ClientWantNeoName() const
+{
+	return m_bClientWantNeoName;
+}
+
+int C_NEO_Player::GetAttackerHits(const int attackerIdx) const
+{
+	return m_rfAttackersHits.Get(attackerIdx);
+}
+
+int C_NEO_Player::DrawModel(int flags)
+{
 	int ret = BaseClass::DrawModel(flags);
+
+	if (!ret) {
+		return ret;
+	}
 
 	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if (pLocalPlayer && pLocalPlayer->IsInVision())
 	{
-#define SPEED_BETWEEN_WALK_AND_RUN ((NEO_ASSAULT_WALK_SPEED + NEO_ASSAULT_NORM_SPEED) / 2.0)
-		if ((pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT) &&
-			(GetAbsVelocity().Length() >= SPEED_BETWEEN_WALK_AND_RUN))
+		auto vel = GetAbsVelocity().Length();
+		if ((pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT) && vel > 1)
 		{
 			IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
 			Assert(pass && !pass->IsErrorMaterial());
@@ -475,31 +599,11 @@ int C_NEO_Player::DrawModel( int flags )
 				modelrender->ForcedMaterialOverride(pass);
 				ret = BaseClass::DrawModel(flags | STUDIO_RENDER | STUDIO_TRANSPARENCY);
 				modelrender->ForcedMaterialOverride(NULL);
-#if(0)
-				// Send to mv buffer
-				static int bufferIdx = 0;
-				const int numBuffers = 2;
-				ITexture* pVM_Buffer = GetMVBuffer(bufferIdx);
-				bufferIdx = (bufferIdx + 1) % numBuffers;
-				Assert(pVM_Buffer && !pVM_Buffer->IsError());
 
-				ITexture* pSrc = materials->FindTexture("_rt_FullFrameFB", TEXTURE_GROUP_RENDER_TARGET);
-				Assert(pSrc && !pSrc->IsError());
-
-				const int nSrcWidth = pSrc->GetActualWidth();
-				const int nSrcHeight = pSrc->GetActualHeight();
-				Rect_t DestRect{ 0, 0, nSrcWidth, nSrcHeight };
-
-				CMatRenderContextPtr pRenderContext(materials);
-				pRenderContext->CopyRenderTargetToTextureEx(pVM_Buffer, 0, &DestRect, NULL);
-
-				// Render without effect
-				//ret = BaseClass::DrawModel(flags);
-				rendered = false;
-#endif
+				return ret;
 			}
 		}
-		else if (pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT)
+		else if (pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT && !IsCloaked())
 		{
 			IMaterial* pass = materials->FindMaterial("dev/thermal_third", TEXTURE_GROUP_MODEL);
 			Assert(pass && !pass->IsErrorMaterial());
@@ -510,7 +614,22 @@ int C_NEO_Player::DrawModel( int flags )
 				modelrender->ForcedMaterialOverride(pass);
 				ret = BaseClass::DrawModel(flags | STUDIO_RENDER | STUDIO_TRANSPARENCY);
 				modelrender->ForcedMaterialOverride(NULL);
+
+				return ret;
 			}
+		}
+	}
+	
+	if (IsCloaked())
+	{
+		IMaterial* pass = materials->FindMaterial("dev/toc_cloakpass", TEXTURE_GROUP_CLIENT_EFFECTS);
+		Assert(pass && !pass->IsErrorMaterial());
+
+		if (pass && !pass->IsErrorMaterial())
+		{
+			modelrender->ForcedMaterialOverride(pass);
+			ret = BaseClass::DrawModel(flags);
+			modelrender->ForcedMaterialOverride(NULL);
 		}
 	}
 
@@ -630,28 +749,40 @@ void C_NEO_Player::PreThink( void )
 {
 	BaseClass::PreThink();
 
-	if ((!GetActiveWeapon() && IsAlive()) ||
-		// Whether or not we move backwards affects max speed
-		((m_afButtonPressed | m_afButtonReleased) & IN_BACK))
+	float speed = GetNormSpeed();
+	if (m_nButtons & IN_DUCK && m_nButtons & IN_WALK)
+	{ // 1.77x slower
+		speed /= 1.777;
+	}
+	else if (m_nButtons & IN_DUCK || m_nButtons & IN_WALK)
+	{ // 1.33x slower
+		speed /= 1.333;
+	}
+	if (IsSprinting())
 	{
-		if (GetFlags() & FL_DUCKING)
-		{
-			SetMaxSpeed(GetCrouchSpeed());
-		}
-		else if (IsWalking())
-		{
-			SetMaxSpeed(GetWalkSpeed());
-		}
-		else if (IsSprinting())
-		{
-			SetMaxSpeed(GetSprintSpeed());
-		}
-		else
-		{
-			SetMaxSpeed(GetNormSpeed());
-		}
+		speed *= m_iNeoClass == NEO_CLASS_RECON ? 1.333 : 1.6;
+	}
+	if (IsInAim())
+	{
+		speed /= 1.666;
+	}
+	auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
+	if (pNeoWep)
+	{
+		speed *= pNeoWep->GetSpeedScale();
 	}
 
+	if (!IsAirborne() && m_iNeoClass != NEO_CLASS_RECON)
+	{
+		const float deltaTime = gpGlobals->curtime - m_flLastAirborneJumpOkTime;
+		const float leeway = 1.0f;
+		if (deltaTime < leeway)
+		{
+			speed = (speed / 2) + (deltaTime / 2 * (speed));
+		}
+	}
+	SetMaxSpeed(MAX(speed, 56));
+	
 	CheckThermOpticButtons();
 	CheckVisionButtons();
 
@@ -801,7 +932,7 @@ void C_NEO_Player::PreThink( void )
 			Warning("Couldn't find ghostMarker\n");
 		}
 
-		auto indicator = m_pNeoPanel->GetGameEventIndicator();
+		auto indicator = GET_HUDELEMENT(CNEOHud_GameEvent);
 
 		if (indicator)
 		{
@@ -856,9 +987,10 @@ void C_NEO_Player::PostThink(void)
 
 	if (!preparingToHideMsg && m_bPreviouslyPreparingToHideMsg)
 	{
-		if (m_pNeoPanel && m_pNeoPanel->GetGameEventIndicator())
+		auto indicator = GET_HUDELEMENT(CNEOHud_GameEvent);
+		if (indicator)
 		{
-			m_pNeoPanel->GetGameEventIndicator()->SetVisible(false);
+			indicator->SetVisible(false);
 			m_bPreviouslyPreparingToHideMsg = false;
 		}
 		else
@@ -892,25 +1024,33 @@ void C_NEO_Player::PostThink(void)
 		}
 	}
 
-	C_BaseCombatWeapon *pWep = GetActiveWeapon();
-
-	if (pWep)
+	if (C_BaseCombatWeapon *pWep = GetActiveWeapon())
 	{
+		const bool clientAimHold = ClientWantsAimHold(this);
 		if (pWep->m_bInReload && !m_bPreviouslyReloading)
 		{
 			Weapon_SetZoom(false);
 		}
-		else if (m_afButtonPressed & IN_SPEED)
+		else if (CanSprint() && m_afButtonPressed & IN_SPEED)
 		{
 			Weapon_SetZoom(false);
 		}
-		else if (ClientWantsAimHold(this) && m_afButtonPressed & IN_AIM)
+		else if ((m_afButtonPressed & IN_AIM) && (!CanSprint() || !(m_nButtons & IN_SPEED)))
 		{
-			Weapon_AimToggle(pWep, NEO_TOGGLE_FORCE_AIM);
+			// Binds hack: we want grenade secondary attack to trigger on aim (mouse button 2)
+			if (auto *pNeoWep = dynamic_cast<C_NEOBaseCombatWeapon *>(pWep);
+					pNeoWep && pNeoWep->GetNeoWepBits() & NEO_WEP_THROWABLE)
+			{
+				pNeoWep->SecondaryAttack();
+			}
+			else
+			{
+				Weapon_AimToggle(pWep, clientAimHold ? NEO_TOGGLE_FORCE_AIM : NEO_TOGGLE_DEFAULT);
+			}
 		}
-		else if ((m_afButtonReleased & IN_AIM) && (!(m_nButtons & IN_SPEED)))
+		else if (clientAimHold && (m_afButtonReleased & IN_AIM))
 		{
-			Weapon_AimToggle(pWep, ClientWantsAimHold(this) ? NEO_TOGGLE_FORCE_UN_AIM : NEO_TOGGLE_DEFAULT);
+			Weapon_AimToggle(pWep, NEO_TOGGLE_FORCE_UN_AIM);
 		}
 
 #if !defined( NO_ENTITY_PREDICTION )
@@ -928,11 +1068,17 @@ void C_NEO_Player::PostThink(void)
 	Vector eyeForward;
 	this->EyeVectors(&eyeForward, NULL, NULL);
 	Assert(eyeForward.IsValid());
-	m_pPlayerAnimState->Update(eyeForward[YAW], eyeForward[PITCH]);
+
+	float flPitch = asin(-eyeForward[2]);
+	float flYaw = atan2(eyeForward[1], eyeForward[0]);
+	m_pPlayerAnimState->Update(RAD2DEG(flYaw), RAD2DEG(flPitch));
 }
 
 bool C_NEO_Player::IsAllowedToSuperJump(void)
 {
+	if (!IsSprinting())
+		return false;
+
 	if (IsCarryingGhost())
 		return false;
 
@@ -1009,6 +1155,10 @@ void C_NEO_Player::Spawn( void )
 	{
 		m_rfAttackersScores.Set(i, 0.0f);
 	}
+	for (int i = 0; i < m_rfAttackersHits.Count(); ++i)
+	{
+		m_rfAttackersHits.Set(i, 0);
+	}
 
 	Weapon_SetZoom(false);
 
@@ -1074,6 +1224,7 @@ bool C_NEO_Player::ShouldDrawHL2StyleQuickHud(void)
 
 void C_NEO_Player::Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon)
 {
+	m_bDroppedAnything = true;
 	Weapon_SetZoom(false);
 
 	if (pWeapon->IsGhost())
@@ -1101,13 +1252,15 @@ void C_NEO_Player::StartSprinting(void)
 		return;
 	}
 
-	SetMaxSpeed(GetSprintSpeed());
+	if (m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT))
+	{ //  ensure any direction button is pressed before sprinting
+		SetMaxSpeed(GetSprintSpeed());
+	  m_fIsSprinting = true;
+	}
 }
 
 void C_NEO_Player::StopSprinting(void)
 {
-	SetMaxSpeed(GetNormSpeed());
-
 	m_fIsSprinting = false;
 }
 
@@ -1123,16 +1276,12 @@ bool C_NEO_Player::CanSprint(void)
 
 void C_NEO_Player::StartWalking(void)
 {
-	SetMaxSpeed(GetWalkSpeed());
-
 	m_fIsWalking = true;
 }
 
 void C_NEO_Player::StopWalking(void)
 {
-	SetMaxSpeed(GetNormSpeed());
-
-	m_fIsWalking = true;
+	m_fIsWalking = false;
 }
 
 float C_NEO_Player::GetCrouchSpeed_WithActiveWepEncumberment(void) const
@@ -1273,7 +1422,7 @@ void C_NEO_Player::Weapon_AimToggle(C_BaseCombatWeapon *pWep, const NeoWeponAimT
 
 void C_NEO_Player::Weapon_SetZoom(const bool bZoomIn)
 {
-	float zoomSpeedSecs = 0.25f;
+	float zoomSpeedSecs = NEO_ZOOM_SPEED;
 
 #if(0)
 #if !defined( NO_ENTITY_PREDICTION )
@@ -1287,18 +1436,25 @@ void C_NEO_Player::Weapon_SetZoom(const bool bZoomIn)
 #endif
 #endif
 
+	const int fov = GetDefaultFOV();
 	if (bZoomIn)
 	{
 		m_Local.m_iHideHUD &= ~HIDEHUD_CROSSHAIR;
-
 		const int zoomAmount = 30;
-		SetFOV((CBaseEntity*)this, GetDefaultFOV() - zoomAmount, zoomSpeedSecs);
+		auto neoWep = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
+		if (neoWep && neoWep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
+		{
+			SetFOV((CBaseEntity*)this, neoWep->GetWpnData().iAimFOV, zoomSpeedSecs);
+		}
+		else {
+			SetFOV((CBaseEntity*)this, fov - zoomAmount, zoomSpeedSecs);
+		}
 	}
 	else
 	{
 		m_Local.m_iHideHUD |= HIDEHUD_CROSSHAIR;
 
-		SetFOV((CBaseEntity*)this, GetDefaultFOV(), zoomSpeedSecs);
+		SetFOV((CBaseEntity*)this, fov, zoomSpeedSecs);
 	}
 
 	m_bInAim = bZoomIn;

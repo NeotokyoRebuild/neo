@@ -50,20 +50,22 @@ public:
 
 	virtual float GetSpeedScale(void) const { return 1.0; }
 
+	bool	CanDrop(void) OVERRIDE;
+
 #ifndef CLIENT_DLL
 	void Operator_HandleAnimEvent(animevent_t* pEvent, CBaseCombatCharacter* pOperator);
 #endif
 
 	void	TossDetpack(CBasePlayer* pPlayer);
 
-private:
-	// Check a throw from vecSrc.  If not valid, move the position back along the line to vecEye
-	void	CheckTossPosition(CBasePlayer* pPlayer, const Vector& vecEye, Vector& vecSrc);
-
 	CNetworkVar(bool, m_fDrawbackFinished);
 	CNetworkVar(bool, m_bWantsToThrowThisDetpack);
 	CNetworkVar(bool, m_bThisDetpackHasBeenThrown);
 	CNetworkVar(bool, m_bRemoteHasBeenTriggered);
+
+private:
+	// Check a throw from vecSrc.  If not valid, move the position back along the line to vecEye
+	void	CheckTossPosition(CBasePlayer* pPlayer, const Vector& vecEye, Vector& vecSrc);
 
 	CWeaponDetpack(const CWeaponDetpack &other);
 

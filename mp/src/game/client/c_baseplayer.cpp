@@ -59,6 +59,7 @@
 
 #ifdef NEO
 #include "c_neo_player.h"
+#include "weapon_tachi.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -2373,8 +2374,13 @@ void C_BasePlayer::PhysicsSimulate( void )
 		ctx->cmd.sidemove = 0;
 		ctx->cmd.upmove = 0;
 		ctx->cmd.impulse = 0;
-		ctx->cmd.buttons &= ~(IN_ATTACK | IN_ATTACK2 | IN_ATTACK3 | IN_JUMP | IN_SPEED |
+		ctx->cmd.buttons &= ~(IN_ATTACK | IN_ATTACK3 | IN_JUMP | IN_SPEED |
 			IN_ALT1 | IN_ALT2 | IN_BACK | IN_FORWARD | IN_MOVELEFT | IN_MOVERIGHT | IN_RUN | IN_ZOOM);
+		const bool isTachi = (dynamic_cast<CWeaponTachi*>(GetActiveWeapon()) != NULL);
+		if (!isTachi)
+		{
+			ctx->cmd.buttons &= ~IN_ATTACK2;
+		}
 	}
 #endif
 

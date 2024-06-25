@@ -16,6 +16,8 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+extern void SendProxy_String_tToString(const SendProp *pProp, const void *pStruct, const void *pData, DVariant *pOut, int iElement, int objectID);
+
 // Datatable
 IMPLEMENT_SERVERCLASS_ST_NOBASE(CPlayerResource, DT_PlayerResource)
 //	SendPropArray( SendPropString( SENDINFO(m_szName[0]) ), SENDARRAYINFO(m_szName) ),
@@ -23,6 +25,10 @@ IMPLEMENT_SERVERCLASS_ST_NOBASE(CPlayerResource, DT_PlayerResource)
 //	SendPropArray( SendPropInt( SENDINFO_ARRAY(m_iPacketloss), 7, SPROP_UNSIGNED ), m_iPacketloss ),
 #ifdef NEO
 	SendPropArray3(SENDINFO_ARRAY3(m_iXP), SendPropInt(SENDINFO_ARRAY(m_iXP), 12)),
+	SendPropArray3(SENDINFO_ARRAY3(m_iClass), SendPropInt(SENDINFO_ARRAY(m_iClass), 12)),
+	SendPropArray3(SENDINFO_ARRAY3(m_szNeoName), SendPropString(SENDINFO_ARRAY(m_szNeoName), 0, SendProxy_String_tToString)),
+	SendPropArray3(SENDINFO_ARRAY3(m_iNeoNameDupeIdx), SendPropInt(SENDINFO_ARRAY(m_iNeoNameDupeIdx), 12)),
+	SendPropArray3(SENDINFO_ARRAY3(m_iStar), SendPropInt(SENDINFO_ARRAY(m_iStar), 12)),
 #endif
 	SendPropArray3( SENDINFO_ARRAY3(m_iScore), SendPropInt( SENDINFO_ARRAY(m_iScore), 12 ) ),
 	SendPropArray3( SENDINFO_ARRAY3(m_iDeaths), SendPropInt( SENDINFO_ARRAY(m_iDeaths), 12 ) ),
@@ -59,10 +65,18 @@ CPlayerResource *g_pPlayerResource;
 //-----------------------------------------------------------------------------
 void CPlayerResource::Spawn( void )
 {
+	if (!m_szNeoNameNone || FindPooledString("") == NULL_STRING)
+	{
+		m_szNeoNameNone = AllocPooledString("");
+	}
 	for ( int i=0; i < MAX_PLAYERS+1; i++ )
 	{
 #ifdef NEO
 		m_iXP.Set(i, 0);
+		m_iClass.Set(i, 0);
+		m_szNeoName.Set(i, m_szNeoNameNone);
+		m_iNeoNameDupeIdx.Set(i, 0);
+		m_iStar.Set(i, 0);
 #endif
 		m_iPing.Set( i, 0 );
 		m_iScore.Set( i, 0 );
@@ -110,7 +124,24 @@ void CPlayerResource::UpdatePlayerData( void )
 		if ( pPlayer && pPlayer->IsConnected() )
 		{
 #ifdef NEO
-			m_iXP.Set(i, static_cast<CNEO_Player*>(pPlayer)->m_iXP.Get());
+			auto *neoPlayer = static_cast<CNEO_Player *>(pPlayer);
+			m_iXP.Set(i, neoPlayer->m_iXP.Get());
+			m_iClass.Set(i, neoPlayer->m_iNeoClass.Get());
+			m_iStar.Set(i, neoPlayer->m_iNeoStar.Get());
+			const char *neoPlayerName = neoPlayer->GetNeoPlayerName();
+			// NEO JANK (nullsystem): Possible memory hog from this? Although "The memory is freed on behalf of clients
+			// at level transition." could indicate it get freed on level transition anyway.
+			string_t strt;
+			if (neoPlayerName[0] != '\0')
+			{
+				strt = AllocPooledString(neoPlayerName);
+			}
+			else
+			{
+				strt = m_szNeoNameNone;
+			}
+			m_szNeoName.Set(i, strt);
+			m_iNeoNameDupeIdx.Set(i, neoPlayer->NameDupePos());
 #endif
 			m_iScore.Set( i, pPlayer->FragCount() );
 			m_iDeaths.Set( i, pPlayer->DeathCount() );

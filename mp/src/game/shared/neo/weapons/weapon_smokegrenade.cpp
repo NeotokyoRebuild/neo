@@ -68,6 +68,7 @@ bool CWeaponSmokeGrenade::Holster(CBaseCombatWeapon* pSwitchingTo)
 {
 	m_bRedraw = false;
 	m_fDrawbackFinished = false;
+	m_AttackPaused = GRENADE_PAUSED_NO;
 
 	return BaseClass::Holster(pSwitchingTo);
 }
@@ -169,7 +170,7 @@ void CWeaponSmokeGrenade::PrimaryAttack(void)
 
 void CWeaponSmokeGrenade::DecrementAmmo(CBaseCombatCharacter* pOwner)
 {
-	pOwner->RemoveAmmo(1, m_iPrimaryAmmoType);
+	m_iPrimaryAmmoCount -= 1;
 }
 
 void CWeaponSmokeGrenade::ItemPostFrame(void)
@@ -233,6 +234,8 @@ void CWeaponSmokeGrenade::ItemPostFrame(void)
 		}
 	}
 
+	ProcessAnimationEvents();
+
 	BaseClass::ItemPostFrame();
 }
 
@@ -247,17 +250,6 @@ void CWeaponSmokeGrenade::CheckThrowPosition(CBasePlayer* pPlayer, const Vector&
 	if (tr.DidHit())
 	{
 		vecSrc = tr.endpos;
-	}
-}
-
-void NEODropPrimedSmokeGrenade(CNEO_Player* pPlayer, CBaseCombatWeapon* pSmokeGrenade)
-{
-	auto pWeaponSmoke = dynamic_cast<CWeaponSmokeGrenade*>(pSmokeGrenade);
-
-	if (pWeaponSmoke)
-	{
-		pWeaponSmoke->ThrowGrenade(pPlayer);
-		pWeaponSmoke->DecrementAmmo(pPlayer);
 	}
 }
 
@@ -439,6 +431,21 @@ void CWeaponSmokeGrenade::RollGrenade(CBasePlayer* pPlayer)
 	{
 		pPlayer->SwitchToNextBestWeapon(this);
 	}
+}
+
+bool CWeaponSmokeGrenade::CanDrop()
+{
+	auto owner = GetOwner(); 
+	return owner && !owner->IsAlive();
+}
+
+void CWeaponSmokeGrenade::Drop(const Vector& vecVelocity)
+{
+	auto owner = GetOwner();
+	auto ammoFromPlayer = owner->GetAmmoCount(m_iPrimaryAmmoType);
+	owner->SetAmmoCount(0, m_iPrimaryAmmoType);
+	SetPrimaryAmmoCount(ammoFromPlayer);
+	BaseClass::Drop(vecVelocity);
 }
 
 #ifndef CLIENT_DLL

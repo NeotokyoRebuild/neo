@@ -90,6 +90,7 @@ bool CWeaponGrenade::Holster(CBaseCombatWeapon *pSwitchingTo)
 {
 	m_bRedraw = false;
 	m_fDrawbackFinished = false;
+	m_AttackPaused = GRENADE_PAUSED_NO;
 
 	return BaseClass::Holster(pSwitchingTo);
 }
@@ -191,7 +192,7 @@ void CWeaponGrenade::PrimaryAttack(void)
 
 void CWeaponGrenade::DecrementAmmo(CBaseCombatCharacter *pOwner)
 {
-	pOwner->RemoveAmmo(1, m_iPrimaryAmmoType);
+	m_iPrimaryAmmoCount -= 1;
 }
 
 void CWeaponGrenade::ItemPostFrame(void)
@@ -255,6 +256,8 @@ void CWeaponGrenade::ItemPostFrame(void)
 		}
 	}
 
+	ProcessAnimationEvents();
+
 	BaseClass::ItemPostFrame();
 }
 
@@ -269,17 +272,6 @@ void CWeaponGrenade::CheckThrowPosition(CBasePlayer *pPlayer, const Vector &vecE
 	if (tr.DidHit())
 	{
 		vecSrc = tr.endpos;
-	}
-}
-
-void NEODropPrimedFragGrenade(CNEO_Player *pPlayer, CBaseCombatWeapon *pGrenade)
-{
-	auto pWeaponFrag = dynamic_cast<CWeaponGrenade*>(pGrenade);
-
-	if (pWeaponFrag)
-	{
-		pWeaponFrag->ThrowGrenade(pPlayer);
-		pWeaponFrag->DecrementAmmo(pPlayer);
 	}
 }
 
@@ -507,3 +499,18 @@ void CWeaponGrenade::Operator_HandleAnimEvent(animevent_t *pEvent, CBaseCombatCh
 	}
 }
 #endif
+
+bool CWeaponGrenade::CanDrop()
+{
+	auto owner = GetOwner(); 
+	return owner && !owner->IsAlive();
+}
+
+void CWeaponGrenade::Drop(const Vector& vecVelocity)
+{
+	auto owner = GetOwner();
+	auto ammoFromPlayer = owner->GetAmmoCount(m_iPrimaryAmmoType);
+	owner->SetAmmoCount(0, m_iPrimaryAmmoType);
+	SetPrimaryAmmoCount(ammoFromPlayer);
+	BaseClass::Drop(vecVelocity);
+}

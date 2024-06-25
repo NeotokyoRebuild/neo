@@ -311,6 +311,11 @@ public:
 
 };
 
+#if defined(NEO) && defined(LINUX) // NEO NOTE (nullsystem): Mute this pointless warning
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wignored-attributes"
+#endif
+
 class CFltX4AttributeIterator : public CStridedConstPtr<fltx4>
 {
 	FORCEINLINE CFltX4AttributeIterator( CSOAContainer const *pContainer, int nAttribute, int nRowNumber = 0 )
@@ -330,5 +335,8 @@ class CFltX4AttributeWriteIterator : public CStridedPtr<fltx4>
 	
 };
 
+#if defined(NEO) && defined(LINUX)
+#pragma GCC diagnostic pop
+#endif
 
 #endif

@@ -16,6 +16,7 @@ WeaponData
 	"TPMuzzleFlashScale"	"0.5"
 	
 	"clip_size"		"12"
+	"default_clip"	"36"
 	"autoswitchfrom"        "0"
 	"primary_ammo"		"Pistol"
 	"secondary_ammo"	"None"
@@ -39,7 +40,12 @@ WeaponData
 	"VMAimOffsetForward"	"-8.0"
 	"VMAimOffsetRight"		"-3.425"	
 	"VMAimOffsetUp"			"6.6"
-	
+
+	"VMAimFov"		"40.0"	
+	"VMAimOffsetForward"	"-5.0"
+	"VMAimOffsetRight"	"1.0"	
+	"VMAimOffsetUp"		"7.0"
+
 	"AimFov"		"55.0"
 	
 	"ViewModelOffset"
@@ -49,7 +55,15 @@ WeaponData
 		"right"		"5"
 		"up"		"0"
 	}
-	
+
+	"ZoomOffset"
+	{
+		"fov"		"40.0"
+		"forward"	"-5.0"
+		"right"		"1.0"
+		"up"		"7.0"
+	}
+
 	"AimOffset"
 	{
 		"fov"		"40"

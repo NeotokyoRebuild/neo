@@ -50,6 +50,7 @@ public:
 	virtual float GetReceivedDamageScale(CBaseEntity* pAttacker) OVERRIDE;
 	virtual bool WantsLagCompensationOnEntity(const CBasePlayer *pPlayer, const CUserCmd *pCmd, const CBitVec<MAX_EDICTS> *pEntityTransmitBits) const OVERRIDE;
 	virtual void FireBullets(const FireBulletsInfo_t &info) OVERRIDE;
+	virtual void Weapon_Equip(CBaseCombatWeapon* pWeapon) OVERRIDE;
 	virtual bool Weapon_Switch(CBaseCombatWeapon *pWeapon, int viewmodelindex = 0) OVERRIDE;
 	virtual bool Weapon_CanSwitchTo(CBaseCombatWeapon *pWeapon) OVERRIDE;
 	virtual bool BumpWeapon(CBaseCombatWeapon *pWeapon) OVERRIDE;
@@ -99,8 +100,9 @@ public:
 	int GetNeoFlags() const { return m_NeoFlags.Get(); }
 
 	void GiveLoadoutWeapon(void);
-
 	void SetPlayerTeamModel(void);
+	void SpawnDeadModel(const CTakeDamageInfo& info);
+	void SetPlayerCorpseModel(int type);
 	virtual void PickDefaultSpawnTeam(void) OVERRIDE;
 
 	virtual bool StartObserverMode(int mode) OVERRIDE;
@@ -109,14 +111,23 @@ public:
 	virtual bool	CanHearAndReadChatFrom(CBasePlayer *pPlayer) OVERRIDE;
 
 	bool IsCarryingGhost(void) const;
-	bool IsAllowedToDrop(CBaseCombatWeapon *pWep);
 
 	void ZeroFriendlyPlayerLocArray(void);
 
 	void UpdateNetworkedFriendlyLocations(void);
 
+	void SetDefaultFOV(const int fov);
+
 	void Weapon_AimToggle(CBaseCombatWeapon *pWep, const NeoWeponAimToggleE toggleType);
 	void Weapon_AimToggle(CNEOBaseCombatWeapon* pWep, const NeoWeponAimToggleE toggleType);
+
+	// "neo_name" if available otherwise "name"
+	// Set "viewFrom" if fetching the name in the view of another player
+	const char *GetNeoPlayerName(const CNEO_Player *viewFrom = nullptr) const;
+	// "neo_name" even if it's nothing
+	const char *GetNeoPlayerNameDirect() const;
+	void SetNeoPlayerName(const char *newNeoName);
+	void SetClientWantNeoName(const bool b);
 
 	void Lean(void);
 	void SoftSuicide(void);
@@ -135,6 +146,7 @@ public:
 	int GetSkin() const { return m_iNeoSkin; }
 	int GetClass() const { return m_iNeoClass; }
 	int GetStar() const { return m_iNeoStar; }
+	bool IsInAim() const { return m_bInAim; }
 
 	bool IsAirborne() const { return (!(GetFlags() & FL_ONGROUND)); }
 
@@ -166,8 +178,17 @@ public:
 	float GetCrouchSpeed(void) const;
 	float GetWalkSpeed(void) const;
 	float GetSprintSpeed(void) const;
+	
+	int ShouldTransmit( const CCheckTransmitInfo *pInfo) OVERRIDE;
 
 	float GetAttackersScores(const int attackerIdx) const;
+	int GetAttackerHits(const int attackerIdx) const;
+
+	void SetNameDupePos(const int dupePos);
+	int NameDupePos() const;
+
+	AttackersTotals GetAttackersTotals() const;
+	void StartShowDmgStats(const CTakeDamageInfo *info);
 
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);
 
@@ -183,6 +204,11 @@ private:
 	void CloakFlash();
 
 	bool IsAllowedToSuperJump(void);
+
+	void ShowDmgInfo(char *infoStr, int infoStrSize);
+	int SetDmgListStr(char *infoStr, const int infoStrMax, const int playerIdxStart,
+		int *infoStrSize, bool *showMenu,
+		const CTakeDamageInfo *info) const;
 
 public:
 	CNetworkVar(int, m_iNeoClass);
@@ -207,23 +233,40 @@ public:
 	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
 	CNetworkVar(bool, m_bInAim);
 	CNetworkVar(int, m_bInLean);
+	CNetworkVar(bool, m_bDroppedAnything);
 
 	CNetworkVar(float, m_flCamoAuxLastTime);
 	CNetworkVar(int, m_nVisionLastTick);
 
 	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
 	CNetworkArray(float, m_rfAttackersScores, (MAX_PLAYERS + 1));
+	CNetworkArray(int, m_rfAttackersHits, (MAX_PLAYERS + 1));
 
 	CNetworkVar(unsigned char, m_NeoFlags);
+	CNetworkString(m_szNeoName, MAX_PLAYER_NAME_LENGTH);
+	CNetworkVar(int, m_szNameDupePos);
+
+	// NEO NOTE (nullsystem): As dumb as client sets -> server -> client it may sound,
+	// cl_fakenick directly doesn't even work properly for client set convars anyway
+	CNetworkVar(bool, m_bClientWantNeoName);
 
 	bool m_bIsPendingSpawnForThisRound;
 
 private:
 	bool m_bFirstDeathTick;
+	bool m_bCorpseSpawned;
 	bool m_bPreviouslyReloading;
+	bool m_szNeoNameHasSet;
 
 	float m_flLastAirborneJumpOkTime;
 	float m_flLastSuperJumpTime;
+
+	// Non-network version of m_szNeoName with dupe checker index
+	mutable char m_szNeoNameWDupeIdx[MAX_PLAYER_NAME_LENGTH + 10];
+	mutable bool m_szNeoNameWDupeIdxNeedUpdate;
+
+	int m_iDmgMenuCurPage;
+	int m_iDmgMenuNextPage;
 
 	INEOPlayerAnimState* m_pPlayerAnimState;
 

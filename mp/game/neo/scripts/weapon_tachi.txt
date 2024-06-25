@@ -27,7 +27,9 @@ WeaponData
 	// Combined as int = 37
 	"item_flags"		"37"
 	
-	"damage"			"17"
+	"Damage"			"17"
+	"Penetration"           "19.0"
+	"CycleTime"             "0.12"
 
 	"ViewModelOffset"
 	{
@@ -35,6 +37,14 @@ WeaponData
 		"forward"	"5"
 		"right"		"5"
 		"up"		"0"
+	}
+
+	"ZoomOffset"
+	{
+		"fov"		"40"
+		"forward"	"-5"
+		"right"		"1"
+		"up"		"7"
 	}
 	
 	"AimOffset"

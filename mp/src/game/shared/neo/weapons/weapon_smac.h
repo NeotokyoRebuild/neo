@@ -53,7 +53,6 @@ public:
 
 	Activity	GetPrimaryAttackActivity(void);
 
-	virtual float GetFireRate(void) OVERRIDE { return 0.085f; }
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
 	virtual float GetAccuracyPenalty() const OVERRIDE { return 0.2f; }

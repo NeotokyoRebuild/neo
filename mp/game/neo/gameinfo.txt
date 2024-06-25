@@ -1,7 +1,7 @@
 "GameInfo"
 {
-	game	"Neotokyo: Revamp"
-	title	"neatbkyoc"
+	game	"Neotokyo: Rebuild"
+	title	"neatokyoc ue"
 	title2	""
 	type multiplayer_only
 	nomodels 0
@@ -12,13 +12,13 @@
 		"test_speakers"		1
 		"test_hardware"		1
 	}
-	supportsvr	1
+	supportsvr	0
 
 
 	FileSystem
 	{
 		SteamAppId				243750
-		
+
 		//
 		// The code that loads this file automatically does a few things here:
 		//
@@ -51,7 +51,7 @@
 			// Now search loose files.  We'll set the directory containing the gameinfo.txt file
 			// as the first "mod" search path (after any user customizations).  This is also the one
 			// that's used when writing to the "mod" path.
-			game+mod+mod_write+default_write_path		|gameinfo_path|.
+			mod+mod_write+default_write_path		|gameinfo_path|.
 			gamebin				|gameinfo_path|bin
 
 			// We search VPK files before ordinary folders, because most files will be found in

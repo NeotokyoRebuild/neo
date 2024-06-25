@@ -17,8 +17,10 @@
 #include "iinput.h"
 
 #ifdef NEO
+	#include "prediction.h"
 	#include "neo/ui/neo_scoreboard.h"
 	#include "neo/ui/neo_hud_elements.h"
+	extern ConVar v_viewmodel_fov;
 #else
 	#include "hl2mpclientscoreboard.h"
 #endif
@@ -128,6 +130,8 @@ ClientModeHL2MPNormal::ClientModeHL2MPNormal()
 {
 	m_pViewport = new CHudViewport();
 	m_pViewport->Start(gameuifuncs, gameeventmanager);
+	m_flStartAimingChange = 0.0f;
+	m_bViewAim = false;
 }
 
 
@@ -181,6 +185,7 @@ void ClientModeHL2MPNormal::Init()
 #ifdef NEO
 ConVar cl_neo_decouple_vm_fov("cl_neo_decouple_vm_fov", "1", FCVAR_CHEAT, "Whether to decouple aim FOV from viewmodel FOV.", true, 0.0f, true, 1.0f);
 ConVar cl_neo_decoupled_vm_fov_lerp_scale("cl_neo_decoupled_vm_fov_lerp_scale", "10", FCVAR_CHEAT, "Multiplier for decoupled FOV lerp speed.", true, 0.01, false, 0);
+ConVar neo_viewmodel_fov_offset("neo_viewmodel_fov_offset", "0", FCVAR_ARCHIVE, "Sets the field-of-view offset for the viewmodel.", true, -20.0f, true, 40.0f);
 
 //-----------------------------------------------------------------------------
 // Purpose: Use correct view model FOV
@@ -224,26 +229,38 @@ float ClientModeHL2MPNormal::GetViewModelFOV()
 				}
 			}
 
-			static float flCurrentFov = pWepInfo->m_flVMFov;
-			const float flTargetFov = pOwner->IsInAim() ? (pWepInfo->m_flVMAimFov) : (pWepInfo->m_flVMFov);
-
-			// Get delta time
-			const float flThisTime = gpGlobals->curtime;
-			static float flLastTime = flThisTime;
-			const float flDeltaTime = flThisTime - flLastTime;
-			flLastTime = flThisTime;
-
-			// Lerp towards the desired fov
-			flCurrentFov = Lerp(flDeltaTime * flScale, flCurrentFov, flTargetFov);
-
-			// Snap to target when approximately equal
-			const float flThreshold = 0.001f;
-			if (fabs(flTargetFov - flCurrentFov) < flThreshold)
+			float flTargetFov = m_flVMFOV;
+			if (!prediction->InPrediction())
 			{
-				flCurrentFov = flTargetFov;
+				const bool playerAiming = pOwner->IsInAim();
+				const float currentTime = gpGlobals->curtime;
+				if (m_bViewAim && !playerAiming)
+				{
+					// From aiming to not aiming
+					m_flStartAimingChange = currentTime;
+					m_bViewAim = false;
+				}
+				else if (!m_bViewAim && playerAiming)
+				{
+					// From not aiming to aiming
+					m_flStartAimingChange = currentTime;
+					m_bViewAim = true;
+				}
+				const float endAimingChange = m_flStartAimingChange + NEO_ZOOM_SPEED;
+				const bool inAimingChange = (m_flStartAimingChange <= currentTime && currentTime < endAimingChange);
+				if (inAimingChange)
+				{
+					float percentage = clamp((currentTime - m_flStartAimingChange) / NEO_ZOOM_SPEED, 0.0f, 1.0f);
+					if (playerAiming) percentage = 1.0f - percentage;
+					flTargetFov = Lerp(percentage, pWepInfo->m_flVMAimFov, pWepInfo->m_flVMFov);
+				}
+				else
+				{
+					flTargetFov = playerAiming ? (pWepInfo->m_flVMAimFov) : (pWepInfo->m_flVMFov);
+				}
+				m_flVMFOV = flTargetFov;
 			}
-
-			return flCurrentFov;
+			return flTargetFov + neo_viewmodel_fov_offset.GetFloat();
 		}
 	}
 

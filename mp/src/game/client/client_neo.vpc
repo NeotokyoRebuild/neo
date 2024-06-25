@@ -155,8 +155,8 @@ $Project "Client (HL2MP)"
 				$File	"neo\ui\neo_hud_game_event.cpp"
 				$File	"neo\ui\neo_hud_game_event.h"
 
-				$File	"neo\ui\neo_hud_ghostbeacon.cpp"
-				$File	"neo\ui\neo_hud_ghostbeacon.h"
+				$File	"neo\ui\neo_hud_ghost_beacons.cpp"
+				$File	"neo\ui\neo_hud_ghost_beacons.h"
 
 				$File	"neo\ui\neo_hud_ghost_marker.cpp"
 				$File	"neo\ui\neo_hud_ghost_marker.h"
@@ -178,6 +178,9 @@ $Project "Client (HL2MP)"
 
 				$File	"neo\ui\neo_hud_health_thermoptic_aux.cpp"
 				$File	"neo\ui\neo_hud_health_thermoptic_aux.h"
+				
+				$File	"neo\ui\neo_hud_worldpos_marker.cpp"
+				$File	"neo\ui\neo_hud_worldpos_marker.h"
 
 			}
 
@@ -289,11 +292,11 @@ $Project "Client (HL2MP)"
 
 			$Folder	"Weapons"
 			{
-				$File	"$SRCDIR\game\shared\hl2mp\weapon_357.cpp"
-				$File	"$SRCDIR\game\shared\hl2mp\weapon_ar2.cpp"
-				$File	"$SRCDIR\game\shared\hl2mp\weapon_ar2.h"
-				$File	"$SRCDIR\game\shared\hl2mp\weapon_crossbow.cpp"
-				$File	"$SRCDIR\game\shared\hl2mp\weapon_crowbar.cpp"
+				// $File	"$SRCDIR\game\shared\hl2mp\weapon_357.cpp"
+				// $File	"$SRCDIR\game\shared\hl2mp\weapon_ar2.cpp"
+				// $File	"$SRCDIR\game\shared\hl2mp\weapon_ar2.h"
+				// $File	"$SRCDIR\game\shared\hl2mp\weapon_crossbow.cpp"
+				// $File	"$SRCDIR\game\shared\hl2mp\weapon_crowbar.cpp"
 				$File	"$SRCDIR\game\shared\hl2mp\weapon_frag.cpp"
 				$File	"$SRCDIR\game\shared\hl2mp\weapon_hl2mpbase.cpp"
 				$File	"$SRCDIR\game\shared\hl2mp\weapon_hl2mpbase.h"
@@ -304,14 +307,14 @@ $Project "Client (HL2MP)"
 				$File	"$SRCDIR\game\shared\hl2mp\weapon_hl2mpbasehlmpcombatweapon.h"
 				$File	"$SRCDIR\game\shared\hl2mp\weapon_physcannon.cpp"
 				$File	"$SRCDIR\game\shared\hl2mp\weapon_physcannon.h"
-				$File	"$SRCDIR\game\shared\hl2mp\weapon_pistol.cpp"
+				// $File	"$SRCDIR\game\shared\hl2mp\weapon_pistol.cpp"
 				$File	"$SRCDIR\game\shared\hl2mp\weapon_rpg.cpp"
 				$File	"$SRCDIR\game\shared\hl2mp\weapon_rpg.h"
-				$File	"$SRCDIR\game\shared\hl2mp\weapon_shotgun.cpp"
-				$File	"$SRCDIR\game\shared\hl2mp\weapon_slam.cpp"
-				$File	"$SRCDIR\game\shared\hl2mp\weapon_slam.h"
-				$File	"$SRCDIR\game\shared\hl2mp\weapon_smg1.cpp"
-				$File	"$SRCDIR\game\shared\hl2mp\weapon_stunstick.cpp"
+				// $File	"$SRCDIR\game\shared\hl2mp\weapon_shotgun.cpp"
+				// $File	"$SRCDIR\game\shared\hl2mp\weapon_slam.cpp"
+				// $File	"$SRCDIR\game\shared\hl2mp\weapon_slam.h"
+				// $File	"$SRCDIR\game\shared\hl2mp\weapon_smg1.cpp"
+				// $File	"$SRCDIR\game\shared\hl2mp\weapon_stunstick.cpp"
 			}
 
 			$Folder	"UI"

@@ -32,6 +32,11 @@ protected:
 	CNetworkArray( int, m_iPing, MAX_PLAYERS+1 );
 #ifdef NEO
 	CNetworkArray(int, m_iXP, MAX_PLAYERS + 1);
+	CNetworkArray(int, m_iClass, MAX_PLAYERS + 1);
+	CNetworkArray(string_t, m_szNeoName, MAX_PLAYERS + 1);
+	CNetworkArray(int, m_iNeoNameDupeIdx, MAX_PLAYERS + 1);
+	string_t m_szNeoNameNone;
+	CNetworkArray(int, m_iStar, MAX_PLAYERS + 1);
 #endif
 	CNetworkArray( int, m_iScore, MAX_PLAYERS+1 );
 	CNetworkArray( int, m_iDeaths, MAX_PLAYERS+1 );

@@ -190,6 +190,66 @@ const char *gibs[NEO_GIB_ENUM_COUNT * NEO_SKIN_ENUM_COUNT * numClasses * numTeam
 	"models/player/mhm3_dead_rleg.mdl"
 };
 
+// nsf recons have two gib limb varieties (male and female)
+static const char* gibLimbs[(NEO_GIB_LIMB_ENUM_COUNT * numClasses * numTeams) + NEO_GIB_LIMB_ENUM_COUNT] {
+	///////////////
+	// NSF start //
+	///////////////
+
+	// Recon (male)
+	"models/player/playergib/gsf3_head_gib.mdl",
+	"models/player/playergib/gsf3_leftArm_gib.mdl",
+	"models/player/playergib/gsf3_leftLeg_gib.mdl",
+	"models/player/playergib/gsf3_rightArm_gib.mdl",
+	"models/player/playergib/gsf3_rightLeg_gib.mdl",
+
+	// Recon (female)
+	"models/player/playergib/gsf_head_gib.mdl",
+	"models/player/playergib/gsf_leftArm_gib.mdl",
+	"models/player/playergib/gsf_leftLeg_gib.mdl",
+	"models/player/playergib/gsf_rightArm_gib.mdl",
+	"models/player/playergib/gsf_rightLeg_gib.mdl",
+
+	// Assault
+	"models/player/playergib/gam_head_gib.mdl",
+	"models/player/playergib/gam_leftArm_gib.mdl",
+	"models/player/playergib/gam_leftLeg_gib.mdl",
+	"models/player/playergib/gam_rightArm_gib.mdl",
+	"models/player/playergib/gam_rightLeg_gib.mdl",
+
+	// Heavy
+	"models/player/playergib/ghm_head_gib.mdl",
+	"models/player/playergib/ghm_leftArm_gib.mdl",
+	"models/player/playergib/ghm_leftLeg_gib.mdl",
+	"models/player/playergib/ghm_rightArm_gib.mdl",
+	"models/player/playergib/ghm_rightLeg_gib.mdl",
+
+	//////////////////
+	// Jinrai start //
+	//////////////////
+
+	// Recon
+	"models/player/playergib/msf_head_gib.mdl",
+	"models/player/playergib/msf_leftArm_gib.mdl",
+	"models/player/playergib/msf_leftLeg_gib.mdl",
+	"models/player/playergib/msf_rightArm_gib.mdl",
+	"models/player/playergib/msf_rightLeg_gib.mdl",
+
+	// Assault
+	"models/player/playergib/mam_head_gib.mdl",
+	"models/player/playergib/mam_leftArm_gib.mdl",
+	"models/player/playergib/mam_leftLeg_gib.mdl",
+	"models/player/playergib/mam_rightArm_gib.mdl",
+	"models/player/playergib/mam_rightLeg_gib.mdl",
+
+	// Support
+	"models/player/playergib/mhm_head_gib.mdl",
+	"models/player/playergib/mhm_leftArm_gib.mdl",
+	"models/player/playergib/mhm_leftLeg_gib.mdl",
+	"models/player/playergib/mhm_rightArm_gib.mdl",
+	"models/player/playergib/mhm_rightLeg_gib.mdl",
+};
+
 const char *viewModels[NEO_VM_ENUM_COUNT * numTeams] {
 	///////////////
 	// NSF start //
@@ -329,6 +389,15 @@ static inline void PrecacheGibs( void )
 	CBaseEntity::PrecacheModel(vipModelDead);
 }
 
+static inline void PrecacheGibLimbs(void)
+{
+	const int size = ARRAYSIZE(gibLimbs);
+	for (int i = 0; i < size; i++)
+	{
+		CBaseEntity::PrecacheModel(gibLimbs[i]);
+	}
+}
+
 static inline void PrecacheViewModels( void )
 {
 	const int size = ARRAYSIZE(viewModels);
@@ -358,6 +427,7 @@ void CNEOModelManager::Precache( void ) const
 	PrecacheViewModels();
 	PrecacheWeapons();
 	PrecacheGibs();
+	PrecacheGibLimbs();
 
 	CBaseEntity::PrecacheModel("models/player/jinrai_mamanims.mdl");
 	CBaseEntity::PrecacheModel("models/player/jinrai_mhmanims.mdl");
@@ -391,7 +461,7 @@ static inline int GetTeamArrOffset(int iTeam)
 }
 
 // Returns a third person corpse, or if defined, a related gib body part.
-const char *CNEOModelManager::GetCorpseModel(NeoSkin nSkin, NeoClass nClass,
+const char* CNEOModelManager::GetCorpseModel(NeoSkin nSkin, NeoClass nClass,
 	int iTeam, NeoGib nGib) const
 {
 	if (nClass == NEO_CLASS_VIP)
@@ -412,6 +482,37 @@ const char *CNEOModelManager::GetCorpseModel(NeoSkin nSkin, NeoClass nClass,
 	}
 
 	return gibs[index];
+}
+
+// Returns a gib body part.
+const char* CNEOModelManager::GetGibModel(NeoSkin nSkin, NeoClass nClass,
+	int iTeam, NeoGibLimb nGib) const
+{
+	// NEO FIXME (Rain): Shouldn't we get the "models/nt/vipgib..." variants here?
+	if (nClass == NEO_CLASS_VIP)
+	{
+		return "models/player/playergib/gsf3_head_gib.mdl";
+	}
+	
+	const auto isMaleNsfRecon = (nSkin == NEO_SKIN_THIRD) &&
+		(iTeam == TEAM_NSF) &&
+		(nClass == NEO_CLASS_RECON);
+
+	const int index =
+		(NEO_GIB_LIMB_ENUM_COUNT * numClasses * GetTeamArrOffset(iTeam))
+		+ (NEO_GIB_LIMB_ENUM_COUNT * nClass)
+		+ nGib
+		// Because the NSF recon has gender specific gibs,
+		// offset all gibs except the male NSF recon ones.
+		+ (isMaleNsfRecon ? 0 : NEO_GIB_LIMB_ENUM_COUNT);
+
+	if (index < 0 || index >= ARRAYSIZE(gibLimbs))
+	{
+		Assert(false);
+		return gibLimbs[0];
+	}
+
+	return gibLimbs[index];
 }
 
 // Returns a third person player model.

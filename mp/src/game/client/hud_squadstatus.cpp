@@ -251,7 +251,7 @@ void CHudSquadStatus::Paint()
 
 		if (!text)
 		{
-			text = L"SQUAD FOLLOWING";
+			text = (wchar_t *)L"SQUAD FOLLOWING";
 		}
 	}
 	else
@@ -262,7 +262,7 @@ void CHudSquadStatus::Paint()
 
 			if (!text)
 			{
-				text = L"SQUAD STATIONED";
+				text = (wchar_t *)L"SQUAD STATIONED";
 			}
 		}
 	}

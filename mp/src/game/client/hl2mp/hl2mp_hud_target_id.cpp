@@ -5,47 +5,10 @@
 // $NoKeywords: $
 //=============================================================================//
 #include "cbase.h"
-#include "hud.h"
-#include "hudelement.h"
-#include "c_hl2mp_player.h"
-#include "c_playerresource.h"
-#include "vgui_entitypanel.h"
-#include "iclientmode.h"
-#include "vgui/ILocalize.h"
-#include "hl2mp_gamerules.h"
+#include "hl2mp_hud_target_id.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
-
-#define PLAYER_HINT_DISTANCE	150
-#define PLAYER_HINT_DISTANCE_SQ	(PLAYER_HINT_DISTANCE*PLAYER_HINT_DISTANCE)
-
-static ConVar hud_centerid( "hud_centerid", "1" );
-static ConVar hud_showtargetid( "hud_showtargetid", "1" );
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-class CTargetID : public CHudElement, public vgui::Panel
-{
-	DECLARE_CLASS_SIMPLE( CTargetID, vgui::Panel );
-
-public:
-	CTargetID( const char *pElementName );
-	void Init( void );
-	virtual void	ApplySchemeSettings( vgui::IScheme *scheme );
-	virtual void	Paint( void );
-	void VidInit( void );
-
-private:
-	Color			GetColorForTargetTeam( int iTeamNumber );
-
-	vgui::HFont		m_hFont;
-	int				m_iLastEntIndex;
-	float			m_flLastChangeTime;
-};
-
-DECLARE_HUDELEMENT( CTargetID );
 
 using namespace vgui;
 
@@ -79,6 +42,7 @@ void CTargetID::ApplySchemeSettings( vgui::IScheme *scheme )
 	m_hFont = scheme->GetFont( "TargetID", IsProportional() );
 
 	SetPaintBackgroundEnabled( false );
+	SetSize(ScreenWidth(), ScreenHeight());
 }
 
 //-----------------------------------------------------------------------------
@@ -176,23 +140,21 @@ void CTargetID::Paint()
 			}
 		}
 
+		wchar_t formatString[8];
+		formatString[0] = 37;
+		formatString[1] = 115;
+		formatString[2] = 49;
+		formatString[3] = 58;
+		formatString[4] = 37;
+		formatString[5] = 115;
+		formatString[6] = 50;
+		formatString[7] = 0;
+
 		if ( printFormatString )
 		{
 			if ( bShowPlayerName && bShowHealth )
 			{
-				g_pVGuiLocalize->ConstructString( sIDString, sizeof(sIDString), g_pVGuiLocalize->Find(printFormatString), 2, wszPlayerName, wszHealthText );
-			}
-			else if ( bShowPlayerName )
-			{
-				g_pVGuiLocalize->ConstructString( sIDString, sizeof(sIDString), g_pVGuiLocalize->Find(printFormatString), 1, wszPlayerName );
-			}
-			else if ( bShowHealth )
-			{
-				g_pVGuiLocalize->ConstructString( sIDString, sizeof(sIDString), g_pVGuiLocalize->Find(printFormatString), 1, wszHealthText );
-			}
-			else
-			{
-				g_pVGuiLocalize->ConstructString( sIDString, sizeof(sIDString), g_pVGuiLocalize->Find(printFormatString), 0 );
+				g_pVGuiLocalize->ConstructString( sIDString, sizeof(sIDString), formatString, 2, wszPlayerName, wszHealthText );
 			}
 		}
 
@@ -212,11 +174,11 @@ void CTargetID::Paint()
 			{
 				xpos = (ScreenWidth() - wide) / 2;
 			}
-			
+
 			vgui::surface()->DrawSetTextFont( m_hFont );
 			vgui::surface()->DrawSetTextPos( xpos, ypos );
 			vgui::surface()->DrawSetTextColor( c );
-			vgui::surface()->DrawPrintText( sIDString, wcslen(sIDString) );
+			vgui::surface()->DrawPrintText( sIDString, (int)wcslen(sIDString), FONT_DRAW_DEFAULT);
 		}
 	}
 }

@@ -18,6 +18,7 @@ WeaponData
 	"TPMuzzleFlashScale"	"0.5"
 
 	"clip_size"		"30"
+	"default_clip"	"90"
 	"autoswitchfrom"        "0"
 	"primary_ammo"		"AMMO_PRI"
 	"secondary_ammo"	"None"
@@ -41,6 +42,15 @@ WeaponData
 	"AimFov"		"45.0"	//40
 	
 	"ViewModelOffset"
+	{
+		"fov"		"60.0"
+		"forward"	"10.0"
+		"right"		"8.0"
+		"up"		"0.0"
+		//"yaw"		"-2"
+	}
+
+	"ZoomOffset"
 	{
 		"fov"		"60.0"
 		"forward"	"10.0"

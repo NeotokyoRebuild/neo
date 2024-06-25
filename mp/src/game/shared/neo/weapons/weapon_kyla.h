@@ -23,6 +23,8 @@ public:
 
 	CWeaponKyla(void);
 
+	void	ItemPostFrame(void);
+
 	virtual void	PrimaryAttack(void) OVERRIDE;
 	virtual void	SecondaryAttack(void) OVERRIDE { if (!ShootingIsPrevented()) { BaseClass::SecondaryAttack(); } }
 	
@@ -31,7 +33,6 @@ public:
 
 	virtual float GetSpeedScale(void) const { return 1.0; }
 
-	virtual float GetFireRate(void) OVERRIDE { return 0.35f; }
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
 	virtual float GetAccuracyPenalty() const OVERRIDE { return 0.2f; }

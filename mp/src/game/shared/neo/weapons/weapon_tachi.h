@@ -22,9 +22,6 @@
 
 class CWeaponTachi : public CNEOBaseCombatWeapon
 {
-#define TACHI_SEMIAUTO_FIRERATE 0.2f
-#define TACHI_MAGDUMP_FIRERATE 0.1f
-
 	DECLARE_CLASS(CWeaponTachi, CNEOBaseCombatWeapon);
 public:
 	DECLARE_NETWORKCLASS(); 
@@ -66,8 +63,6 @@ public:
 	{
 		return (m_bIsPrimaryFireMode == false);
 	}
-
-	virtual float GetFireRate(void) OVERRIDE { return (m_bIsPrimaryFireMode ? TACHI_SEMIAUTO_FIRERATE : TACHI_MAGDUMP_FIRERATE); }
 
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }

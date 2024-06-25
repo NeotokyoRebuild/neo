@@ -8,9 +8,11 @@
 #include "hudelement.h"
 #include <vgui_controls/Panel.h>
 
-class CNEOHud_GhostMarker : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
+#include "neo_hud_worldpos_marker.h"
+
+class CNEOHud_GhostMarker : public CNEOHud_WorldPosMarker
 {
-	DECLARE_CLASS_SIMPLE(CNEOHud_GhostMarker, Panel);
+	DECLARE_CLASS_SIMPLE(CNEOHud_GhostMarker, CNEOHud_WorldPosMarker)
 
 public:
 	CNEOHud_GhostMarker(const char *pElemName, vgui::Panel *parent = NULL);
@@ -28,6 +30,8 @@ protected:
 	virtual ConVar* GetUpdateFrequencyConVar() const;
 
 private:
+	float m_fMarkerScalesStart[4] = { 0.78f, 0.6f, 0.38f, 0.0f };
+	float m_fMarkerScalesCurrent[4] = { 0.78f, 0.6f, 0.38f, 0.0f };
 	int m_iMarkerTexWidth, m_iMarkerTexHeight;
 	int m_iPosX, m_iPosY;
 	int m_iGhostingTeam;

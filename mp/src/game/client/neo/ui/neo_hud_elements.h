@@ -7,6 +7,8 @@
 #include <vgui_controls/EditablePanel.h>
 #include <game/client/iviewport.h>
 #include "GameEventListener.h"
+#include "hl2mp_hud_target_id.h"
+#include "neo_hud_ghost_beacons.h"
 
 class CNEOHud_Ammo;
 class CNEOHud_Compass;
@@ -48,10 +50,10 @@ public:
 
 	CNEOHud_Ammo* GetAmmo() { return m_pAmmo; }
 	CNEOHud_Compass *GetCompass() { return m_pCompass; }
-	CNEOHud_GameEvent *GetGameEventIndicator() { return m_pGameEvent; }
 	CNEOHud_GhostMarker *GetGhostMarker();
 	CNEOHud_HTA* GetHTA() { return m_pHTA; }
 	CNEOHud_FriendlyMarker *GetIFF() { return m_pFriendlyMarker; }
+	CTargetID* GetTargetID() { return m_pTargetID; }
 
 	C_NEO_Player* GetLastUpdater() const { return m_pLastUpdater; }
 	void SetLastUpdater(C_NEO_Player* player) { m_pLastUpdater = player; }
@@ -74,11 +76,12 @@ protected:
 private:
 	void InitAmmo();
 	void InitCompass();
-	void InitGameEventIndicator();
 	void InitGhostMarkers();
 	void InitFriendlyMarker();
 	void InitHTA();
 	void InitRoundState();
+	void InitTargetID();
+	void InitGhostBeacons();
 
 	void FreePanelChildren();
 
@@ -89,9 +92,10 @@ private:
 	CNEOHud_Ammo* m_pAmmo;
 	CNEOHud_Compass *m_pCompass;
 	CNEOHud_FriendlyMarker *m_pFriendlyMarker;
-	CNEOHud_GameEvent *m_pGameEvent;
 	CNEOHud_HTA* m_pHTA;
 	CNEOHud_RoundState *m_pRoundState;
+	CTargetID* m_pTargetID;
+	CNEOHud_GhostBeacons* m_pGhostBeacons;
 
 	CUtlVector<CNEOHud_GhostMarker*> m_vecGhostMarkers;
 

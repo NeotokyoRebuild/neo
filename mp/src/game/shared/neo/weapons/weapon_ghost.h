@@ -13,10 +13,6 @@
 #define CNEO_Player C_NEO_Player
 #endif
 
-#ifdef CLIENT_DLL
-class CNEOHud_GhostBeacon;
-#endif
-
 class CNEO_Player;
 
 class CWeaponGhost : public CNEOBaseCombatWeapon
@@ -28,13 +24,11 @@ public:
 
 #ifdef GAME_DLL
 	DECLARE_ACTTABLE();
-	DECLARE_DATADESC();
 #endif
 
 	CWeaponGhost(void);
-	virtual ~CWeaponGhost(void);
-
-	void ItemPreFrame(void);
+	
+	virtual void ItemPreFrame(void) OVERRIDE;
 	virtual void PrimaryAttack(void) OVERRIDE { }
 	virtual void SecondaryAttack(void) OVERRIDE { }
 
@@ -46,23 +40,25 @@ public:
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
 
 	virtual float GetSpeedScale(void) const { return 1.0; }
+	float GetGhostRangeInHammerUnits() const;
+	bool IsPosWithinViewDistance(const Vector &otherPlayerPos);
+	bool IsPosWithinViewDistance(const Vector &otherPlayerPos, float &dist);
+	float DistanceToPos(const Vector& otherPlayerPos);
 
-private:
-	void ZeroGhostedPlayerLocArray(void);
-	void ShowBeacon(int clientIndex, const Vector &pos);
-	void HideBeacon(int clientIndex);
-	void SetShowEnemies(bool enabled);
+#if _DEBUG
+	virtual void SUB_Remove(void) override
+	{
+		DevWarning("SUB_Remove called on ghost!"); // this is probably a mistake if it ever happens
+		BaseClass::SUB_Remove();
+	}
+#endif
 
 #ifdef CLIENT_DLL
-	float ShowEnemies(void);
-	void Debug_ShowPos(const Vector &pos, bool pvs);
 	void PlayGhostSound(float volume = 1.0f);
 	void StopGhostSound(void);
 	void HandleGhostEquip(void);
 
 	void TryGhostPing(float closestEnemy);
-#else
-	void UpdateNetworkedEnemyLocations(void);
 #endif
 
 private:
@@ -72,13 +68,7 @@ private:
 	bool m_bHaveHolsteredTheGhost;
 
 	float m_flLastGhostBeepTime;
-
-	CNEOHud_GhostBeacon *m_pGhostBeacons;
-#else
-	
 #endif
-	CNetworkVar(bool, m_bShouldShowEnemies);
-	CNetworkArray(Vector, m_rvPlayerPositions, MAX_PLAYERS);
 
 	CWeaponGhost(const CWeaponGhost &other);
 };

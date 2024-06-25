@@ -265,8 +265,8 @@ bool CAI_LeadBehavior::GetClosestPointOnRoute( const Vector &targetPos, Vector *
 	}
 
 	// Find the nearest node to the target (going forward)
-	float		flNearestDist2D	= 999999999;
-	float		flNearestDist	= 999999999;
+	float		flNearestDist2D	= 999999999.0f;
+	float		flNearestDist	= 999999999.0f;
 	float		flPathDist, flPathDist2D;
 
 	Vector vecNearestPoint(0, 0, 0);
@@ -996,7 +996,7 @@ void CAI_LeadBehavior::RunTask( const Task_t *pTask )
 
 //-------------------------------------
 
-bool CAI_LeadBehavior::Speak( AIConcept_t concept )
+bool CAI_LeadBehavior::Speak( AIConcept_t aiconcept )
 {
 	CAI_Expresser *pExpresser = GetOuter()->GetExpresser();
 	if ( !pExpresser )
@@ -1007,7 +1007,7 @@ bool CAI_LeadBehavior::Speak( AIConcept_t concept )
 		return false;
 
 	// If we haven't said the start speech, don't nag
-	bool bNag = ( FStrEq(concept,TLK_LEAD_COMINGBACK) || FStrEq(concept, TLK_LEAD_CATCHUP) || FStrEq(concept, TLK_LEAD_RETRIEVE) );
+	bool bNag = ( FStrEq(aiconcept,TLK_LEAD_COMINGBACK) || FStrEq(aiconcept, TLK_LEAD_CATCHUP) || FStrEq(aiconcept, TLK_LEAD_RETRIEVE) );
 	if ( !m_hasspokenstart && bNag )
 		return false;
 
@@ -1018,7 +1018,7 @@ bool CAI_LeadBehavior::Speak( AIConcept_t concept )
 		// We ignore nag timers for this, because the response rules will control refire rates.
 		CAI_PlayerAlly *pAlly = dynamic_cast<CAI_PlayerAlly*>(GetOuter());
 		if ( pAlly )
- 			return pAlly->SpeakIfAllowed( concept, GetConceptModifiers( concept ) );
+			return pAlly->SpeakIfAllowed( aiconcept, GetConceptModifiers( aiconcept ) );
 	}
 
 	// Don't spam Nags
@@ -1031,7 +1031,7 @@ bool CAI_LeadBehavior::Speak( AIConcept_t concept )
 		}
 	}
 	
-	if ( pExpresser->Speak( concept, GetConceptModifiers( concept ) ) )
+	if ( pExpresser->Speak( aiconcept, GetConceptModifiers( aiconcept ) ) )
 	{
 		m_flSpeakNextNagTime = gpGlobals->curtime + LEAD_NAG_TIME;
 		return true;
@@ -1543,7 +1543,7 @@ void CAI_LeadGoal::InputActivate( inputdata_t &inputdata )
 	AI_LeadArgs_t leadArgs = { 
 		GetGoalEntityName(), 
 		STRING(m_iszWaitPointName), 
-		m_spawnflags, 
+		static_cast<unsigned int>(m_spawnflags),
 		m_flWaitDistance, 
 		m_flLeadDistance, 
 		m_flRetrieveDistance, 

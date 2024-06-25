@@ -41,6 +41,8 @@ CNEOPredictedViewModel::CNEOPredictedViewModel()
 
 	m_flYPrevious = 0;
 	m_flLastLeanTime = 0;
+	m_flStartAimingChange = 0;
+	m_bViewAim = false;
 }
 
 CNEOPredictedViewModel::~CNEOPredictedViewModel()
@@ -267,6 +269,11 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 		}
 	}
 
+	if (!(player->GetFlags() & FL_ONGROUND)) {
+		//mid-air; move towards zero
+		Yfinal = 0;
+	}
+
 	const float dY = Yfinal - Ycurrent;
 
 	if (dY != 0){
@@ -304,13 +311,13 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 	switch (player->GetClass())
 	{
 	case NEO_CLASS_RECON:
-		viewOffset.z = ((player->GetFlags() & FL_DUCKING) ? NEO_RECON_EYE_HEIGHT_DUCKING : NEO_RECON_EYE_HEIGHT_STANDING) - (neo_lean_fp_lower_eyes_scale.GetFloat() * leanRatio);
+		viewOffset.z = ((player->GetFlags() & FL_DUCKING) ? NEO_RECON_EYE_HEIGHT_DUCKING + NEO_RECON_VIEW_OFFSET.z : NEO_RECON_EYE_HEIGHT_STANDING + NEO_RECON_VIEW_OFFSET.z) - (neo_lean_fp_lower_eyes_scale.GetFloat() * leanRatio);
 		break;
 	case NEO_CLASS_ASSAULT:
-		viewOffset.z = ((player->GetFlags() & FL_DUCKING) ? NEO_ASSAULT_EYE_HEIGHT_DUCKING : NEO_ASSAULT_EYE_HEIGHT_STANDING) - (neo_lean_fp_lower_eyes_scale.GetFloat() * leanRatio);
+		viewOffset.z = ((player->GetFlags() & FL_DUCKING) ? NEO_ASSAULT_EYE_HEIGHT_DUCKING + NEO_ASSAULT_VIEW_OFFSET.z : NEO_ASSAULT_EYE_HEIGHT_STANDING + NEO_ASSAULT_VIEW_OFFSET.z) - (neo_lean_fp_lower_eyes_scale.GetFloat() * leanRatio);
 		break;
 	case NEO_CLASS_SUPPORT:
-		viewOffset.z = ((player->GetFlags() & FL_DUCKING) ? NEO_SUPPORT_EYE_HEIGHT_DUCKING : NEO_SUPPORT_EYE_HEIGHT_STANDING) - (neo_lean_fp_lower_eyes_scale.GetFloat() * leanRatio);
+		viewOffset.z = ((player->GetFlags() & FL_DUCKING) ? NEO_SUPPORT_EYE_HEIGHT_DUCKING + NEO_SUPPORT_VIEW_OFFSET.z : NEO_SUPPORT_EYE_HEIGHT_STANDING + NEO_SUPPORT_VIEW_OFFSET.z) - (neo_lean_fp_lower_eyes_scale.GetFloat() * leanRatio);
 		break;
 	default:
 		Assert(false);
@@ -318,6 +325,7 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 		break;
 	}
 
+	player->m_vecLean = Vector(0, viewOffset.y, -(neo_lean_fp_lower_eyes_scale.GetFloat() * leanRatio));
 	player->SetViewOffset(viewOffset);
 
 	viewAng.z = leanAngle;
@@ -357,9 +365,47 @@ void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 
 	AngleVectors(newAng, &vForward, &vRight, &vUp);
 
-	vOffset = data.m_vecVMPosOffset;
-	angOffset = data.m_angVMAngOffset;
-
+	if (auto neoPlayer = static_cast<CNEO_Player*>(pOwner))
+	{
+		vOffset = m_vOffset;
+		angOffset = m_angOffset;
+#ifdef CLIENT_DLL
+		if (!prediction->InPrediction())
+#endif
+		{
+			const bool playerAiming = neoPlayer->IsInAim();
+			const float currentTime = gpGlobals->curtime;
+			if (m_bViewAim && !playerAiming)
+			{
+				// From aiming to not aiming
+				m_flStartAimingChange = currentTime;
+				m_bViewAim = false;
+			}
+			else if (!m_bViewAim && playerAiming)
+			{
+				// From not aiming to aiming
+				m_flStartAimingChange = currentTime;
+				m_bViewAim = true;
+			}
+			const float endAimingChange = m_flStartAimingChange + NEO_ZOOM_SPEED;
+			const bool inAimingChange = (m_flStartAimingChange <= currentTime && currentTime < endAimingChange);
+			if (inAimingChange)
+			{
+				float percentage = clamp((currentTime - m_flStartAimingChange) / NEO_ZOOM_SPEED, 0.0f, 1.0f);
+				if (playerAiming) percentage = 1.0f - percentage;
+				vOffset = Lerp(percentage, data.m_vecVMAimPosOffset, data.m_vecVMPosOffset);
+				angOffset = Lerp(percentage, data.m_angVMAimAngOffset, data.m_angVMAngOffset);
+			}
+			else
+			{
+				vOffset = (playerAiming) ? data.m_vecVMAimPosOffset : data.m_vecVMPosOffset;
+				angOffset = (playerAiming) ? data.m_angVMAimAngOffset : data.m_angVMAngOffset;
+			}
+			m_vOffset = vOffset;
+			m_angOffset = angOffset;
+		}
+	}
+	
 	newPos += vForward * vOffset.x;
 	newPos += vRight * vOffset.y;
 	newPos += vUp * vOffset.z;

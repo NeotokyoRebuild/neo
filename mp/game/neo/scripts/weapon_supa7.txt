@@ -19,7 +19,8 @@ WeaponData
 	"bucket_position"		"0"
 
 	"clip_size"			"7"
-	"default_clip"			"7"
+	"default_clip"			"28"
+	"clip_size2"			"-1"
 	"default_clip2"         "7"
 	"autoswitchfrom"        "0"
 	"primary_ammo"			"AMMO_10G_SHELL"
@@ -53,6 +54,15 @@ WeaponData
 		"forward"	"15"
 		"right"		"12"
 		"up"		"1"
+	}
+
+	"ZoomOffset"
+	{
+		"fov"		"45"
+		"forward"	"-2"
+		"right"		"6"
+		"up"		"4"
+		"yaw"		"-2.5"
 	}
 	
 	"AimOffset"

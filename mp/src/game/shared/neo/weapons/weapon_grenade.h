@@ -55,6 +55,9 @@ public:
 
 	bool	Reload(void);
 
+	void	Drop(const Vector& vecVelocity) OVERRIDE;
+	bool	CanDrop(void) OVERRIDE;
+
 #ifndef CLIENT_DLL
 	void Operator_HandleAnimEvent(animevent_t *pEvent, CBaseCombatCharacter *pOperator);
 #endif

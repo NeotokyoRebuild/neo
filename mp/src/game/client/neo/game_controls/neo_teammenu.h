@@ -10,6 +10,7 @@
 #include <vgui_controls/EditablePanel.h>
 #include <vgui_controls/Button.h>
 #include <vgui_controls/ComboBox.h>
+#include <vgui_controls/ImagePanel.h>
 #include <igameevents.h>
 #include "GameEventListener.h"
 
@@ -34,8 +35,6 @@ class CNeoTeamMenu : public vgui::Frame,
 {
     DECLARE_CLASS_SIMPLE( CNeoTeamMenu, vgui::Frame );
 
-    MESSAGE_FUNC_PARAMS(OnButtonPressed, "PressButton", data);
-
 public:
     CNeoTeamMenu(IViewPort *pViewPort);
     virtual ~CNeoTeamMenu();
@@ -43,7 +42,7 @@ public:
     virtual const char *GetName( void ) { return PANEL_TEAM; }
 	virtual void SetData(KeyValues *data) { }
 	virtual void Reset() { }
-	virtual void Update();
+    virtual void Update() { /* Do things! */ }
 	virtual bool NeedsUpdate( void ) { return false; }
 	virtual bool HasInputElements( void ) { return true; }
 	virtual void ShowPanel( bool bShow );
@@ -61,7 +60,10 @@ public:
     }
 
 protected:
+    void FindButtons();
     void OnCommand(const char *command);
+    void ChangeMenu(const char* menuName);
+    void OnKeyCodeReleased(vgui::KeyCode code);
 
     void SetLabelText(const char *textEntryName, const char *text);
 	void SetLabelText(const char *textEntryName, wchar_t *text);
@@ -75,29 +77,15 @@ protected:
     // --------------------------------------------------------
     // Menu pieces. These are defined in the GetResFile() file.
     // --------------------------------------------------------
-
-    // Image textures
-	//vgui::ImagePanel *m_pJinrai_TeamImage;
-	//vgui::ImagePanel *m_pNSF_TeamImage;
-
-   IconPanel* m_pJinrai_TeamImage;
-   IconPanel* m_pNSF_TeamImage;
-   IconPanel* m_pBgDarkGrey;
 #if(1)
-	//vgui::ImagePanel *m_pBackgroundImage;
-
     // Team menu label
     vgui::Label *m_pTeamMenuLabel;
-
     // Jinrai playercount & score labels
     vgui::Label *m_pJinrai_PlayercountLabel;
     vgui::Label *m_pJinrai_ScoreLabel;
     // NSF playercount & score labels
     vgui::Label *m_pNSF_PlayercountLabel;
     vgui::Label *m_pNSF_ScoreLabel;
-
-    // Divider
-    vgui::Divider *m_pDivider;
 #endif
 
     // Buttons
