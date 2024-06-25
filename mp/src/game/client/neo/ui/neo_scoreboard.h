@@ -39,17 +39,6 @@ private:
 
 	int GetSectionFromTeamNumber(int teamNumber);
 
-	// These mimic hl2mpclientscoreboard values, for now
-	enum {
-		NEO_NAME_WIDTH = 264,
-		NEO_CLASS_WIDTH = 56,
-		NEO_SCORE_WIDTH = 40,
-		NEO_DEATH_WIDTH = 46,
-		NEO_PING_WIDTH = 46,
-		NEO_VOICE_WIDTH =  40,
-		NEO_FRIENDS_WIDTH = 24,
-	};
-
 	Color m_bgColor;
 	Color m_borderColor;
 };

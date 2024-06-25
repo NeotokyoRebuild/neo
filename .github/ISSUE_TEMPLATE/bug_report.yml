@@ -1,0 +1,120 @@
+name: Bug report
+description: General bugs, program crashes, broken files, wrong values, etc...
+title: "[BUG] "
+labels: bug
+projects: ["NeotokyoRebuild/1"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **ATTENTION:**
+        Before you file an issue, please look if there's already the same
+        issue before filing one. Otherwise it'll just get closed as a duplicate.
+
+        **DO NOT** paste chatlogs. Formulate the bug into a detailed
+        description and reproducible steps using the form below.
+
+        Fill in the title after the **[BUG]** tag and make sure it's
+        in the **"current state of things"** wording.
+  - type: input
+    id: build
+    attributes:
+      label: Build Info
+      description: |
+        In which build was this bug seen? Replace [DATE] with YYYYMMDD
+        and [GIT HASH] with the Git short hash the build was built on.
+        The main menu contains this in the bottom left corner
+        and the `neo_version` command can also be used to retrieve this
+        information.
+      placeholder: "[DATE]_[GIT HASH] (EX: 20240609_759f6e5)"
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: |
+        A clear and concise description of what the bug is.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce_steps
+    attributes:
+      label: To Reproduce
+      description: |
+        Steps to reproduce the behavior. Walk us through step by step.
+      placeholder: |
+        1. Go to...
+        2. Click on...
+        3. Do this...
+        4. See error
+        ...
+    validations:
+      required: true
+  - type: textarea
+    id: behavior_expected
+    attributes:
+      label: Expected behavior
+      description: |
+        A clear and concise description of what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior_actual
+    attributes:
+      label: Actual behavior
+      description: |
+        A clear and concise description of what happened instead of the expected behavior.
+    validations:
+      required: true
+  - type: checkboxes
+    id: machine_os
+    attributes:
+      label: Operating System
+      description: "You may select more than one, select only the operating systems this bug has been replicated on."
+      options:
+        - label: Windows
+        - label: Linux
+    validations:
+      required: true
+  - type: input
+    id: machine_os_detail
+    attributes:
+      label: Version/Distro
+      description: "Distribution and version of the OS itself."
+      placeholder: "For Windows: EX: 10 or 11; For Linux: EX: Arch, Debian 12, Fedora 40, SteamOS, etc..."
+    validations:
+      required: true
+  - type: input
+    id: machine_cpu
+    attributes:
+      label: Machine's CPU
+      description: "If applicable, put in the model of the CPU."
+      placeholder: "EX: Intel i5-4670k, AMD Ryzen 7500f, Intel Xeon E3-1275 v3, etc..."
+  - type: input
+    id: machine_gpu
+    attributes:
+      label: Machine's GPU
+      description: "If applicable, put in the model of the GPU."
+      placeholder: "EX: AMD RX 580, NVIDIA RTX 4070, Intel iGPU, AMD APU, etc..."
+  - type: input
+    id: gpu_driver
+    attributes:
+      label: GPU's driver
+      description: "If applicable, put in the driver for the GPU."
+      placeholder: "EX: NVIDIA 555.99, AMD Adrenalin 24.5.1, Mesa, etc..."
+  - type: input
+    id: build_compiler
+    attributes:
+      label: Build's compiler
+      description: |
+        If applicable, put in the compiler the build is built on. This information
+        can be retrieved using the `neo_version` command.
+      placeholder: "EX: GNU 10.3.0, MSVC 19.39.33523.0, etc..."
+  - type: textarea
+    id: additional_info
+    attributes:
+      label: Additional context and Screenshots
+      description: |
+        If applicable, add any other context and screenshots to help explain your problem.
+

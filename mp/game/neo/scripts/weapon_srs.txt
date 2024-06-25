@@ -13,7 +13,7 @@ WeaponData
 	"bucket_position"	"0"
 	"Damage"		"100"
 	"Penetration"		"65.0"
-	"CycleTime"		"0.7"		 // time between shots (this value is not used and instead hardcoded in the srs header file)
+	"CycleTime"		"1.0"
 	
 	"TPMuzzleFlashScale"	"0.25"
 

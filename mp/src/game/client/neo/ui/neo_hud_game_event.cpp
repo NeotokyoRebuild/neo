@@ -19,6 +19,8 @@
 
 using vgui::surface;
 
+DECLARE_HUDELEMENT(CNEOHud_GameEvent);
+
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(GameEvent, 0.1)
 
 DECLARE_HUD_MESSAGE(CNEOHud_GameEvent, RoundResult);
@@ -60,8 +62,6 @@ CNEOHud_GameEvent::CNEOHud_GameEvent(const char *pElementName, vgui::Panel *pare
 	Assert(scheme);
 
 	m_hFont = scheme->GetFont("NHudOCR");
-
-	gHUD.AddHudElement(this);
 
 	SetMessage("", 1);
 

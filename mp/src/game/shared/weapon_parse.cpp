@@ -350,6 +350,7 @@ FileWeaponInfo_t::FileWeaponInfo_t()
 #ifdef NEO
 	vecVmOffset = vec3_origin;
 	szBulletCharacter[0] = 0;
+	iAimFOV = 0;
 #endif
 }
 
@@ -427,6 +428,7 @@ void FileWeaponInfo_t::Parse( KeyValues *pKeyValuesData, const char *szWeaponNam
 	const float VMOffsetUp = pKeyValuesData->GetFloat("VMOffsetUp");
 	vecVmOffset = Vector(VMOffsetForward, VMOffsetRight, VMOffsetUp);
 	Q_strncpy( szBulletCharacter, pKeyValuesData->GetString("BulletCharacter", "a"), MAX_BULLET_CHARACTER);
+	iAimFOV = pKeyValuesData->GetInt("AimFov", 45);
 #endif
 
 	bShowUsageHint = ( pKeyValuesData->GetInt( "showusagehint", 0 ) != 0 ) ? true : false;

@@ -1,6 +1,6 @@
 //========= Copyright Valve Corporation, All rights reserved. ============//
 //
-// Purpose: 
+// Purpose:
 //
 // $NoKeywords: $
 //=============================================================================//
@@ -16,7 +16,7 @@
 #include "GameEventListener.h"
 
 #define TYPE_NOTEAM			0	// NOTEAM must be zero :)
-#define TYPE_TEAM			1	// a section for a single team	
+#define TYPE_TEAM			1	// a section for a single team
 #define TYPE_PLAYERS		2
 #define TYPE_SPECTATORS		3	// a section for a spectator group
 #define TYPE_BLANK			4
@@ -47,24 +47,24 @@ public:
 	virtual bool HasInputElements( void ) { return true; }
 	virtual void ShowPanel( bool bShow );
 
-	virtual bool ShowAvatars() 
-	{ 
+	virtual bool ShowAvatars()
+	{
 #ifdef CSS_PERF_TEST
 		return false;
 #endif
-		return IsPC(); 
+		return IsPC();
 	}
 
 	// both vgui::Frame and IViewPortPanel define these, so explicitly define them here as passthroughs to vgui
 	vgui::VPANEL GetVPanel( void ) { return BaseClass::GetVPanel(); }
   	virtual bool IsVisible() { return BaseClass::IsVisible(); }
   	virtual void SetParent( vgui::VPANEL parent ) { BaseClass::SetParent( parent ); }
- 	
+
 	// IGameEventListener interface:
 	virtual void FireGameEvent( IGameEvent *event);
 
 	virtual void UpdatePlayerAvatar( int playerIndex, KeyValues *kv );
-			
+
 protected:
 	MESSAGE_FUNC_INT( OnPollHideCode, "PollHideCode", code );
 
@@ -113,6 +113,7 @@ protected:
 	CPanelAnimationVarAliasType( int, m_iPingWidth, "ping_width", "23", "proportional_int" );
 #ifdef NEO
 	CPanelAnimationVarAliasType(int, m_iRankWidth, "rank_width", "68", "proportional_int");
+	CPanelAnimationVarAliasType(int, m_iStatusWidth, "status_width", "68", "proportional_int");
 #endif
 
 private:

@@ -40,6 +40,8 @@ private:
 	int m_fontWidth;
 	int m_bulletFontWidth, m_bulletFontHeight;
 
+	Color box_color, ammo_color, transparent_ammo_color;
+
 	CPanelAnimationVarAliasType(int, xpos, "xpos", "r203", "proportional_xpos");
 	CPanelAnimationVarAliasType(int, ypos, "ypos", "446", "proportional_ypos");
 	CPanelAnimationVarAliasType(int, wide, "wide", "203", "proportional_xpos");
