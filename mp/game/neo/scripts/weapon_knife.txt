@@ -20,8 +20,9 @@ WeaponData
 	"weight"				"0"
 	"item_flags"			"0"
 
-	"damage"				"25"
-	"cycletime"				"0.534"
+	"Damage"			"15"
+        "Penetration"			"38.0"
+	"CycleTime"			"0.534"
 
 	ViewModelData
 	{

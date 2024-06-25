@@ -75,7 +75,7 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 	m_iFontHeight *= 0.85;
 
 	m_iBoxHeight = (m_iSmallFontHeight * 2) + m_iFontHeight;
-	m_iBoxWidth = m_iSmallFontWidth + 2;
+	m_iBoxWidth = m_iSmallFontWidth + (m_iBoxHeight * 2) + 2;
 	m_iBoxX0 = m_iXpos - (m_iBoxWidth / 2);
 	m_iBoxY0 = m_iYpos;
 	m_iBoxX1 = m_iXpos + (m_iBoxWidth / 2);
@@ -84,12 +84,6 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 	// Logo dimensions
 	m_ilogoSize = m_iSmallFontHeight + m_iFontHeight;
 	m_ilogoTotalSize = m_iBoxHeight;
-
-	// Score positions
-	m_iFriendlyScoreXpos = m_iXpos - (m_iBoxWidth / 2) - 2 - (m_ilogoTotalSize / 2);
-	m_iFriendlyScoreYpos = m_iYpos + (m_ilogoTotalSize / 2) - ((m_iFontHeight / 0.85) / 2);
-	m_iEnemyScoreXpos = m_iXpos + (m_iBoxWidth / 2) + 2 + (m_ilogoTotalSize / 2);
-	m_iEnemyScoreYpos = m_iYpos + (m_ilogoTotalSize / 2) - ((m_iFontHeight / 0.85) / 2);
 
 	// Round positions
 	m_iRoundXpos = m_iXpos;
@@ -102,23 +96,29 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 	m_iRoundStatusYpos = m_iBoxY1;
 
 	// Total positions
-	m_iFriendlyTotalLogoX0 = m_iXpos - (m_iBoxWidth / 2) - 2 - m_ilogoTotalSize;
-	m_iFriendlyTotalLogoX1 = m_iXpos - (m_iBoxWidth / 2) - 2;
+	m_iFriendlyTotalLogoX0 = m_iXpos - (m_iBoxWidth / 2);
+	m_iFriendlyTotalLogoX1 = m_iFriendlyTotalLogoX0 + m_ilogoTotalSize;
 	m_iFriendlyTotalLogoY0 = m_iYpos;
 	m_iFriendlyTotalLogoY1 = m_iYpos + m_ilogoTotalSize;
 
-	m_iEnemyTotalLogoX0 = m_iXpos + (m_iBoxWidth / 2) + 2;
-	m_iEnemyTotalLogoX1 = m_iXpos + (m_iBoxWidth / 2) + 2 + m_ilogoTotalSize;
+	m_iEnemyTotalLogoX0 = m_iXpos + (m_iBoxWidth / 2) - m_ilogoTotalSize;
+	m_iEnemyTotalLogoX1 = m_iXpos + (m_iBoxWidth / 2);
 	m_iEnemyTotalLogoY0 = m_iYpos;
 	m_iEnemyTotalLogoY1 = m_iYpos + m_ilogoTotalSize;
+
+	// Score positions
+	m_iFriendlyScoreXpos = m_iFriendlyTotalLogoX0 + (m_ilogoTotalSize / 2);
+	m_iFriendlyScoreYpos = m_iYpos + (m_ilogoTotalSize / 2) - ((m_iFontHeight / 0.85) / 2);
+	m_iEnemyScoreXpos = m_iEnemyTotalLogoX0 + (m_ilogoTotalSize / 2);
+	m_iEnemyScoreYpos = m_iYpos + (m_ilogoTotalSize / 2) - ((m_iFontHeight / 0.85) / 2);
 
 	// Total num positions
 	m_iPlayersAliveNumXpos = m_iXpos;
 	m_iPlayersAliveNumYpos = m_iYpos + m_iSmallFontHeight + m_iFontHeight - 2;
 
 	// Logos offsets
-	m_iFriendlyLogoXOffset = m_iXpos - (m_iBoxWidth / 2) - 4 - m_ilogoTotalSize;
-	m_iEnemyLogoXOffset = m_iXpos + (m_iBoxWidth / 2) + 4 + m_ilogoTotalSize;
+	m_iFriendlyLogoXOffset = m_iXpos - (m_iBoxWidth / 2) - 4;
+	m_iEnemyLogoXOffset = m_iXpos + (m_iBoxWidth / 2) + 4;
 
 	SetBounds(0, m_iYpos, m_resX, m_iBoxY1 + m_iSmallFontHeight);
 
@@ -365,11 +365,9 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 	// Draw score logo
 	surface()->DrawSetTexture(m_iFriendlyTotalLogo);
 	surface()->DrawSetColor(fadedDarkColor);
-	surface()->DrawFilledRect(m_iFriendlyTotalLogoX0, m_iFriendlyTotalLogoY0, m_iFriendlyTotalLogoX1, m_iFriendlyTotalLogoY1);
 	surface()->DrawTexturedRect(m_iFriendlyTotalLogoX0, m_iFriendlyTotalLogoY0, m_iFriendlyTotalLogoX1, m_iFriendlyTotalLogoY1);
 
 	surface()->DrawSetTexture(m_iEnemyTotalLogo);
-	surface()->DrawFilledRect(m_iEnemyTotalLogoX0, m_iEnemyTotalLogoY0, m_iEnemyTotalLogoX1, m_iEnemyTotalLogoY1);
 	surface()->DrawTexturedRect(m_iEnemyTotalLogoX0, m_iEnemyTotalLogoY0, m_iEnemyTotalLogoX1, m_iEnemyTotalLogoY1);
 
 	// Draw score
@@ -395,10 +393,16 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 }
 
 void CNEOHud_RoundState::DrawFriend(int playerIndex, int teamIndex) {
+	const int xOffset = m_iFriendlyLogoXOffset - ((teamIndex + 1) * m_ilogoSize) - (teamIndex * 2);
+	
+	// Draw Outline
+	Color box_color = Color(box_color_r, box_color_g, box_color_b, box_color_a);
+	surface()->DrawSetColor(box_color);
+	surface()->DrawFilledRect(xOffset - 1, m_iYpos - 1, xOffset + m_ilogoSize + 1, m_iYpos + m_ilogoSize + 5 + 1);
+
 	// Drawing Avatar
 	surface()->DrawSetTexture(m_iFriendlyLogo);
 
-	int xOffset = m_iFriendlyLogoXOffset - ((teamIndex + 1) * m_ilogoSize) - (teamIndex * 2);
 	if (g_PR->IsAlive(playerIndex)) {
 		surface()->DrawSetColor(friendlyColor);
 		surface()->DrawFilledRect(xOffset, m_iYpos, xOffset + m_ilogoSize, m_iYpos + m_ilogoSize);
@@ -433,16 +437,34 @@ void CNEOHud_RoundState::DrawFriend(int playerIndex, int teamIndex) {
 	surface()->DrawTexturedRect(xOffset, m_iYpos + m_ilogoSize + 6, xOffset + m_ilogoSize, m_iYpos + m_ilogoSize + 70);
 
 	// Drawing Healthbar
-	if (g_PR->IsAlive(playerIndex)) {
-		surface()->DrawSetColor(whiteColor);
-		surface()->DrawFilledRect(xOffset, m_iYpos + m_ilogoSize + 1, xOffset + (g_PR->GetHealth(playerIndex) / 100.0f * m_ilogoSize), m_iYpos + m_ilogoSize + 5);
+	if (!g_PR->IsAlive(playerIndex))
+		return;
+
+	if (health_monochrome) {
+		const int greenBlueValue = (g_PR->GetHealth(playerIndex) / 100.0f) * 255;
+		surface()->DrawSetColor(Color(255, greenBlueValue, greenBlueValue, 255));
+	}
+	else {
+		if (g_PR->GetHealth(playerIndex) <= 20)
+			surface()->DrawSetColor(COLOR_RED);
+		else if (g_PR->GetHealth(playerIndex) <= 80)
+			surface()->DrawSetColor(COLOR_YELLOW);
+		else
+			surface()->DrawSetColor(COLOR_WHITE);
 	}	
+	surface()->DrawFilledRect(xOffset, m_iYpos + m_ilogoSize + 1, xOffset + (g_PR->GetHealth(playerIndex) / 100.0f * m_ilogoSize), m_iYpos + m_ilogoSize + 5);
 }
 
 void CNEOHud_RoundState::DrawEnemy(int playerIndex, int teamIndex) {
+	const int xOffset = m_iEnemyLogoXOffset + (teamIndex * m_ilogoSize) + (teamIndex * 2);
+
+	// Draw Outline
+	Color box_color = Color(box_color_r, box_color_g, box_color_b, box_color_a);
+	surface()->DrawSetColor(box_color);
+	surface()->DrawFilledRect(xOffset - 1, m_iYpos - 1, xOffset + m_ilogoSize + 1, m_iYpos + m_ilogoSize + 1);
+
 	// Drawing Avatar
 	surface()->DrawSetTexture(m_iEnemyLogo);
-	int xOffset = m_iEnemyLogoXOffset + (teamIndex * m_ilogoSize) + (teamIndex * 2);
 	if (g_PR->IsAlive(playerIndex)) {
 		surface()->DrawSetColor(enemyColor);
 		surface()->DrawFilledRect(xOffset, m_iYpos, xOffset + m_ilogoSize, m_iYpos + m_ilogoSize);
@@ -583,7 +605,7 @@ void CNEOHud_RoundState::SetTextureToAvatar(int playerIndex) {
 		return;
 	
 	CSteamID steamIDForPlayer(pi.friendsID, 1, steamapicontext->SteamUtils()->GetConnectedUniverse(), k_EAccountTypeIndividual);
-	int mapIndex = m_mapAvatarsToImageList.Find(steamIDForPlayer);
+	const int mapIndex = m_mapAvatarsToImageList.Find(steamIDForPlayer);
 	if ((mapIndex == m_mapAvatarsToImageList.InvalidIndex()))
 		return; 
 

@@ -106,6 +106,7 @@ public:
 #ifdef NEO
 	Vector					vecVmOffset;
 	char					szBulletCharacter[MAX_BULLET_CHARACTER];// character used to display ammunition in current clip
+	int						iAimFOV;
 #endif
 
 	// Sound blocks

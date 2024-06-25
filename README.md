@@ -6,31 +6,7 @@
 * See [CONTRIBUTING.md](CONTRIBUTING.md) for instructions on how the codebase work and contribute
 
 ## Table of contents
-<!-- Generated with: https://github.com/jonschlinkert/markdown-toc -->
-* [Building NT;RE](#building-ntre)
-    + [Requirements](#requirements)
-    + [Building](#building)
-        - [Visual Studio 2022 (Windows)](#visual-studio-2022-windows)
-        - [Qt Creator (Linux)](#qt-creator-linux)
-        - [CLI (with ninja, Windows + Linux)](#cli-with-ninja-windows--linux)
-            * [Windows prerequisite](#windows-prerequisite)
-            * [Linux prerequisite - Steam Runtime 3 "Sniper" Container](#linux-prerequisite---steam-runtime-3-sniper-container)
-                + [Fetching the container](#fetching-the-container)
-                + [Running the container](#running-the-container)
-            * [CLI Building steps](#cli-building-steps)
-* [Steam mod setup](#steam-mod-setup)
-    + [Windows symlink](#windows-symlink)
-    + [Linux symlink](#linux-symlink)
-    + [`-game` option in Source SDK 2013MP launch option](#-game-option-in-source-sdk-2013mp-launch-option)
-    + [`-neopath` - Pointing to a non-default original NEOTOKYO directory](#-neopath---pointing-to-a-non-default-original-neotokyo-directory)
-* [Further information](#further-information)
-    + [Linux extra notes](#linux-extra-notes)
-        - [Arch Linux](#arch-linux)
-* [Server instructions](#server-instructions)
-* [Shader authoring (Windows setup)](#shader-authoring-windows-setup)
-    + [Compiling the shaders](#compiling-the-shaders)
-        - [Troubleshooting](#troubleshooting)
-* [Credits](#credits)
+To see the Table of Contents, please use the "Outline" feature on GitHub by clicking the button located in the top right of this document.
 
 ## Building NT;RE
 
@@ -153,6 +129,8 @@ Another way is just add the `-game` option to "Source SDK Base 2013 Multiplayer"
 ```
 
 ### `-neopath` - Pointing to a non-default original NEOTOKYO directory
+NOTE: This doesn't work on linux when running the mod from Steam.
+
 This is generally isn't necessary if NEOTOKYO is installed at a default location. However,
 if you have it installed at a different location, adding `-neopath` to the launch option
 can be used to direct to it.
@@ -167,12 +145,113 @@ https://developer.valvesoftware.com/wiki/Setup_mod_on_steam
 ### Linux extra notes
 #### Arch Linux
 You may or may not need this, but if NT;RE crashes/segfaults on launch, then install `lib32-gperftools`,
-and set: `LD_PRELOAD=/usr/lib32/libtcmalloc.so %command%` as the launch argument.
+and set: `LD_PRELOAD=/usr/lib32/libtcmalloc.so %command%` as the launch options.
+
+Source 2013 Multiplayer also bundles with itself an outdated version of SDL2, due to which there might be false key presses (see: [link](https://github.com/ValveSoftware/Source-1-Games/issues/3335)) and doubled mouse sensitivity when compared to windows/other source games (see: [link](https://github.com/ValveSoftware/Source-1-Games/issues/1834)).
+To fix these issues as well, install `lib32-sdl2`, and set: `LD_PRELOAD=/usr/lib32/libtcmalloc.so:/usr/lib32/libSDL2-2.0.so.0 %command%` as the launch options instead.
 
 ## Server instructions
+### Server Ops
+#### Dedicated Server on Linux
+These instructions have been written with a Debian 12 machine in mind, but they should work for other systems as well.
+1. Install SteamCMD following these instructions: [LINK](https://developer.valvesoftware.com/wiki/SteamCMD#Linux)
+2. Decide on a location you'd like to install the server to, for example, `/home/<username>/neoserver`, and create it.
+3. Run SteamCMD: `steamcmd`
+4. Enter the following commands in SteamCMD (Note that you need to use an absolute path for the install dir):
+    ```
+    force_install_dir <YOUR_LOCATION>/ognt/
+    login anonymous
+    app_update 313600 validate
+    (wait for it to install)
+    quit
+    ```
+5. Run SteamCMD again, and enter these commands:
+    ```
+    force_install_dir <YOUR_LOCATION>/ntrebuild/
+    login anonymous
+    app_update 244310 validate
+    (wait for it to install)
+    quit
+    ```
+6. Make a symlink for original NEOTOKYO so that NT;RE can find it's assets:
+
+    Run the following command as root:
+    ```
+    ln -s <YOUR_LOCATION>/ognt /usr/share/neotokyo
+    ```
+    It should now be possible to access `/usr/share/neotokyo/NeotokyoSource`.
+   
+    This is the only command that needs root, so you can logout from root.
+8. Make a symlink so that Src2013 dedicated server can see SteamCMD's binaries:
+
+    (NOTE: I'm NOT sure if this is how it is on other systems other than Debian 12, so please, check first if you have `~/.steam/sdk32` before running these! If you have Desktop Steam installed, then you should have this directory, but it doesn't seem to be the case with SteamCMD, which is why we need to do this.)
+    ```
+    ln -s ~/.steam/sdk32 ~/.steam/steam/steamcmd/linux32
+    ```
+9. For firewall, open the following ports:
+    * 27015 TCP+UDP (you can keep the TCP port closed if you don't need RCON support)
+    * 27020 UDP
+    * 27005 UDP
+    * 26900 UDP
+10. `cd` into `<YOUR_LOCATION>/ntrebuild/bin`.
+11. Run these commands to make symlinks for needed files:
+    ```
+    ln -s vphysics_srv.so vphysics.so;
+    ln -s studiorender_srv.so studiorender.so;
+    ln -s soundemittersystem_srv.so soundemittersystem.so;
+    ln -s shaderapiempty_srv.so shaderapiempty.so;
+    ln -s scenefilecache_srv.so scenefilecache.so;
+    ln -s replay_srv.so replay.so;
+    ln -s materialsystem_srv.so materialsystem.so;
+    ```
+12. Run the following command to rename a file that is incompatible with NT;RE:
+     ```
+     mv libstdc++.so.6 libstdc++.so.6.bak
+     ```
+13. `cd` up a folder, so that you will be in `<YOUR_LOCATION>/ntrebuild`.
+14. Extract the latest release of NT;RE into `<YOUR_LOCATION>/ntrebuild`, so you will have a directory `<YOUR_LOCATION>/ntrebuild/neo` with a `gameinfo.txt` inside.
+
+Now you have a dedicated server setup for NT;RE. To run it, you will need to be in the `<YOUR_LOCATION>/ntrebuild` directory and run `srcds_run` with whatever arguments. You can adapt the following command to your own liking:
+```
+./srcds_run +sv_lan 0 -insecure -console -game neo +ip <YOUR_IP> -maxplayers <1-32> +map <MAP_NAME>
+```
+#### Dedicated Server on Windows
+These instructions were tested on Windows Server 2016 and Windows 11 machines, they will probably work in all Windows versions.
+1. Install SteamCMD following these instructions: [LINK](https://developer.valvesoftware.com/wiki/SteamCMD#Windows)
+2. Choose a location for your server to be installed into, for example, `C:\NeotokyoServer\`, and create it. (In this case SteamCMD is also installed in this location)
+3. Run SteamCMD: `steamcmd.exe`
+4. Enter the following commands in SteamCMD:
+    ```
+    force_install_dir .\ognt\
+    login anonymous
+    app_update 313600 validate
+    (wait for it to install)
+    quit
+    ```
+5. Run SteamCMD again, and enter these commands:
+    ```
+    force_install_dir .\ntrebuild\
+    (this will be the main directory of your server)
+    login anonymous
+    app_update 244310 validate
+    (wait for it to install)
+    quit
+    ```
+6. Extract the latest release of NT;RE into `<YOUR_LOCATION>\ntrebuild`, so you will have a directory `<YOUR_LOCATION>\ntrebuild\neo` with a `gameinfo.txt` inside.
+7. Allow all Inbound and Outbound TCP and UDP requests for the following ports via Windows Firewall. [See how](https://learn.microsoft.com/en-us/windows/security/operating-system-security/network-security/windows-firewall/configure#create-an-inbound-port-rule)
+    * 27015 TCP+UDP (you can keep the TCP port closed if you don't need RCON support)
+    * 27020 UDP
+    * 27005 UDP
+    * 26900 UDP
+8. Your server should be ready to go, launch it inside your main directory (`(...)\ntrebuild\`) with the following command: (You can alter any argument to your liking, except `-game` and `-neopath`) 
+```
+srcds.exe -game neo -neopath "..\ognt\NeotokyoSource" +ip <YOUR_IP> -maxplayers <1-32> +map <MAP_NAME>
+```
+
+### Testers/Devs
 1. To run a server, install "Source SDK Base 2013 Dedicated Server" (appid 244310).
 2. For firewall, open the following ports:
-    * 27015 TCP+UDP
+    * 27015 TCP+UDP (you can keep the TCP port closed if you don't need RCON support)
     * 27020 UDP
     * 27005 UDP
     * 26900 UDP
@@ -202,6 +281,13 @@ ln -s materialsystem_srv.so materialsystem.so;
 7. Run: `<srcds.exe|srcds_linux> +sv_lan 0 -insecure -game neo +map <some map> +maxplayers 24 -autoupdate -console`
     * Double check on the log that VAC is disabled before continuing
 7. In-game on Windows it'll showup in the server list, on Linux it probably won't and you'll have to use `connect` command directly (EX: `connect 192.168.1.###` for LAN server)
+
+### SourceMod server modification plugins
+[SourceMod](https://www.sourcemod.net/) plugins should generally work with NT;RE, however they have to be added to the `ShowMenu` whitelist to make the menu display properly. To do this:
+1. Go to directory `addons/sourcemod/gamedata/core.games` where you should find `common.games.txt`
+2. Create the directory `custom` and make a copy of `common.games.txt` into it
+3. Open `custom/common.games.txt` and look for a comment that says "Which games support ShowMenu?"
+4. Add `neo` to that list like this: `"game" "neo"`
 
 ## Shader authoring (Windows setup)
 

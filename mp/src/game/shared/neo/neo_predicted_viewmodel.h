@@ -59,6 +59,8 @@ private:
 	float m_flLastLeanTime;
 	float m_flStartAimingChange;
 	bool m_bViewAim;
+	Vector m_vOffset;
+	QAngle m_angOffset;
 };
 
 #endif // NEO_PREDICTED_VIEWMODEL_H

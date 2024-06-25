@@ -27,7 +27,9 @@ WeaponData
 	// Combined as int = 37
 	"item_flags"		"37"
 	
-	"damage"			"17"
+	"Damage"			"17"
+	"Penetration"           "19.0"
+	"CycleTime"             "0.12"
 
 	"ViewModelOffset"
 	{

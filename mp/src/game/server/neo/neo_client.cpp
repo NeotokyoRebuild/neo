@@ -30,6 +30,26 @@ extern bool			g_fGameOver;
 
 void FinishClientPutInServer( CNEO_Player *pPlayer )
 {
+	// NEO NOTE (nullsystem): CNEORules::ClientConnected is done before even CNEO_Player is
+	// created, so that's why this is here and not in CNEORules
+	if (neo_sv_player_restore.GetBool())
+	{
+		const CSteamID steamID = GetSteamIDForPlayerIndex(pPlayer->entindex());
+		if (steamID.IsValid())
+		{
+			const auto accountID = steamID.GetAccountID();
+			const auto &restoredInfos = NEORules()->m_pRestoredInfos;
+			if (const auto hdl = restoredInfos.Find(accountID); restoredInfos.IsValidHandle(hdl))
+			{
+				Assert(pPlayer->DeathCount() == 0);
+				const CNEORules::RestoreInfo &restoreInfo = restoredInfos.Element(hdl);
+				pPlayer->m_iXP.Set(restoreInfo.xp);
+				pPlayer->IncrementDeathCount(restoreInfo.deaths);
+				ClientPrint(pPlayer, HUD_PRINTTALK, "Your XP and death count have been restored.\n");
+			}
+		}
+	}
+
 	pPlayer->InitialSpawn();
 	pPlayer->Spawn();
 
@@ -314,7 +334,7 @@ void ClientGamePrecache( void )
 }
 
 // called by ClientKill and DeadThink
-void respawn( CBaseEntity *pEdict, bool fCopyCorpse )
+bool RespawnWithRet( CBaseEntity *pEdict, bool fCopyCorpse )
 {
 	CNEO_Player *pPlayer = ToNEOPlayer( pEdict );
 
@@ -326,6 +346,7 @@ void respawn( CBaseEntity *pEdict, bool fCopyCorpse )
 			{
 				// respawn player
 				pPlayer->Spawn();
+				return true;
 			}
 		}
 		else
@@ -333,6 +354,12 @@ void respawn( CBaseEntity *pEdict, bool fCopyCorpse )
 			pPlayer->SetNextThink( gpGlobals->curtime + 0.1f );
 		}
 	}
+	return false;
+}
+
+void respawn(CBaseEntity *pEdict, bool fCopyCorpse)
+{
+	RespawnWithRet(pEdict, fCopyCorpse);
 }
 
 ConVar sv_neo_bot_think("sv_neo_bot_think",

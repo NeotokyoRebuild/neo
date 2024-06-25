@@ -98,7 +98,7 @@ void CWeaponSRS::ItemPreFrame()
 			pOwner->Weapon_SetZoom(false);
 		}
 		m_bRoundBeingChambered = true;
-		m_flChamberFinishTime = gpGlobals->curtime + 1.3f;
+		m_flChamberFinishTime = gpGlobals->curtime + GetFireRate();
 		WeaponSound(SPECIAL1);
 		SendWeaponAnim(ACT_VM_PULLBACK);
 	}
