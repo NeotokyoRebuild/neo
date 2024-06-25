@@ -39,8 +39,6 @@ public:
 	virtual float GetSpeedScale(void) const OVERRIDE { return 145.0 / 170.0; }
 
 	Activity GetPrimaryAttackActivity(void) OVERRIDE;
-
-	virtual float GetFireRate() OVERRIDE { return 0.333f; }
 	
 	virtual const Vector& GetBulletSpread(void) OVERRIDE { static const Vector cone = VECTOR_CONE_7DEGREES; return cone; };
 
