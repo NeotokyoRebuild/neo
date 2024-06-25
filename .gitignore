@@ -1,5 +1,8 @@
 # Files to ignore when considering what GIT should commit.
 
+# Qt Creator
+mp/build-src-*
+
 # CMake build dir
 mp/src/build
 out
