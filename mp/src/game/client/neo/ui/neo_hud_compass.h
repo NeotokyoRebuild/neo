@@ -6,16 +6,16 @@
 
 #include "neo_hud_childelement.h"
 #include "hudelement.h"
-#include <vgui_controls/Panel.h>
+#include <vgui_controls/EditablePanel.h>
 
 class CNeoHudElements;
 
 static constexpr size_t UNICODE_NEO_COMPASS_VIS_AROUND = 33; // How many characters should be visible around each side of the needle position
 static constexpr size_t UNICODE_NEO_COMPASS_STR_LENGTH = ((UNICODE_NEO_COMPASS_VIS_AROUND * 2) + 2);
 
-class CNEOHud_Compass : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
+class CNEOHud_Compass : public CNEOHud_ChildElement, public CHudElement, public vgui::EditablePanel
 {
-	DECLARE_CLASS_SIMPLE(CNEOHud_Compass, Panel);
+	DECLARE_CLASS_SIMPLE(CNEOHud_Compass, EditablePanel);
 
 public:
 	CNEOHud_Compass(const char *pElementName, vgui::Panel *parent = NULL);

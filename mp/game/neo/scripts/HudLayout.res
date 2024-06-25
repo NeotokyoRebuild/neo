@@ -480,7 +480,7 @@
 	{
 		"ControlName"		"EditablePanel"
 		"fieldName" 		"HudChat"
-		"visible" 		"1"
+		"visible" 		"0"
 		"enabled" 		"1"
 		"xpos"			"10"
 		"ypos"			"275"
