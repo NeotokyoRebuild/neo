@@ -90,6 +90,9 @@ public:
 	virtual const Vector GetPlayerMins(void) const OVERRIDE;
 	virtual const Vector GetPlayerMaxs(void) const OVERRIDE;
 
+	virtual void CalcChaseCamView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov) override;
+	virtual void CalcInEyeCamView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov) override;
+
 	// Implementing in header in hopes of compiler picking up the inlined base method
 	virtual float GetModelScale() const
 	{
@@ -124,6 +127,8 @@ public:
 private:
 	float GetActiveWeaponSpeedScale() const;
 	float GetBackwardsMovementPenaltyScale() const { return ((m_nButtons & IN_BACK) ? NEO_SLOW_MODIFIER : 1.0); }
+
+	bool HandleDeathSpecCamSwitch(Vector& eyeOrigin, QAngle& eyeAngles, float& fov);
 
 public:
 	float m_flSpecFOV = 0.0f;

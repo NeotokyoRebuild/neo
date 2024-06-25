@@ -245,7 +245,7 @@ public:
 	CNetworkVar(int, m_szNameDupePos);
 
 	// NEO NOTE (nullsystem): As dumb as client sets -> server -> client it may sound,
-	// cl_fakenick directly doesn't even work properly for client set convars anyway
+	// cl_onlysteamnick directly doesn't even work properly for client set convars anyway
 	CNetworkVar(bool, m_bClientWantNeoName);
 
 	bool m_bIsPendingSpawnForThisRound;

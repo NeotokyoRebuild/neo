@@ -1,5 +1,6 @@
 #include "cbase.h"
 #include "weapon_neobasecombatweapon.h"
+#include "particle_parse.h"
 
 #include "in_buttons.h"
 
@@ -7,6 +8,12 @@
 #include "player.h"
 
 extern ConVar weaponstay;
+#endif
+
+#ifdef CLIENT_DLL
+#include "dlight.h"
+#include "iefx.h"
+#include "c_te_effect_dispatch.h"
 #endif
 
 #include "basecombatweapon_shared.h"
@@ -94,12 +101,20 @@ CNEOBaseCombatWeapon::CNEOBaseCombatWeapon( void )
 	m_bReadyToAimIn = false;
 }
 
+void CNEOBaseCombatWeapon::Precache()
+{
+	BaseClass::Precache();
+
+	if ((GetNeoWepBits() & NEO_WEP_SUPPRESSED))
+		PrecacheParticleSystem("ntr_muzzle_source");
+}
+
 void CNEOBaseCombatWeapon::Spawn()
 {
 	// If this fires, either the enum bit mask has overflowed,
 	// this derived gun has no valid NeoBitFlags set,
 	// or we are spawning an instance of this base class for some reason.
-	Assert(GetNeoWepBits() > NEO_WEP_INVALID); 
+	Assert(GetNeoWepBits() != NEO_WEP_INVALID); 
 
 	BaseClass::Spawn();
 
@@ -623,6 +638,69 @@ bool CNEOBaseCombatWeapon::CanBePickedUpByClass(int classId)
 {
 	return true;
 }
+
+#ifdef CLIENT_DLL
+void CNEOBaseCombatWeapon::ProcessMuzzleFlashEvent()
+{
+	if (GetPlayerOwner() == NULL)
+		return; // If using a view model in first person, muzzle flashes are not processed until the player drops their weapon. In that case, do not play a muzzle flash effect. Need to change how this is calculated if we want to allow dropped weapons to cook off for example
+
+	if ((GetNeoWepBits() & NEO_WEP_SUPPRESSED))
+		return;
+
+	int iAttachment = -1;
+	if (!GetBaseAnimating())
+		return;
+	
+	// Find the attachment point index
+	iAttachment = GetBaseAnimating()->LookupAttachment("muzzle_flash");
+	if (iAttachment <= 0)
+	{
+		Warning("Model '%s' doesn't have attachment '%s'\n", GetPrintName(), "muzzle_flash");
+		return;
+	}
+
+	// Muzzle flash light
+	Vector vAttachment;
+	if (!GetAttachment(iAttachment, vAttachment))
+		return;
+
+	// environment light
+	dlight_t* el = effects->CL_AllocDlight(LIGHT_INDEX_MUZZLEFLASH + index);
+	el->origin = vAttachment;
+	el->radius = random->RandomInt(64, 96);
+	el->decay = el->radius / 0.1f;
+	el->die = gpGlobals->curtime + 0.1f;
+	el->color.r = 255;
+	el->color.g = 192;
+	el->color.b = 64;
+	el->color.exponent = 5;
+
+	// Muzzle flash particle
+	DispatchMuzzleParticleEffect(iAttachment);
+}
+
+void CNEOBaseCombatWeapon::DispatchMuzzleParticleEffect(int iAttachment) {
+	static constexpr char particleName[] = "ntr_muzzle_source";
+	constexpr bool resetAllParticlesOnEntity = false;
+	const ParticleAttachment_t iAttachType = ParticleAttachment_t::PATTACH_POINT_FOLLOW;
+
+	CEffectData	data;
+
+	data.m_nHitBox = GetParticleSystemIndex(particleName);
+	data.m_hEntity = this;
+	data.m_fFlags |= PARTICLE_DISPATCH_FROM_ENTITY;
+	data.m_vOrigin = GetAbsOrigin();
+	data.m_nDamageType = iAttachType;
+	data.m_nAttachmentIndex = iAttachment;
+
+	if (resetAllParticlesOnEntity)
+		data.m_fFlags |= PARTICLE_DISPATCH_RESET_PARTICLES;
+
+	CSingleUserRecipientFilter filter(UTIL_PlayerByIndex(GetLocalPlayerIndex()));
+	te->DispatchEffect(filter, 0.0, data.m_vOrigin, "ParticleEffect", data);
+}
+#endif
 
 bool CNEOBaseCombatWeapon::CanDrop()
 {

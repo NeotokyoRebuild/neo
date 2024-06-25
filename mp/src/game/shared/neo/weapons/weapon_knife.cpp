@@ -268,9 +268,8 @@ Activity CWeaponKnife::ChooseIntersectionPointAndActivity(trace_t& hitTrace, con
 	return KNIFE_VM_ATTACK_ACT;
 }
 
-void CWeaponKnife::Hit(trace_t& traceHit, Activity nHitActivity)
+void CWeaponKnife::Hit(trace_t& traceHit, [[maybe_unused]] Activity nHitActivity)
 {
-	NOTE_UNUSED(nHitActivity);
 	Assert(nHitActivity == KNIFE_VM_ATTACK_ACT);
 
 	CBasePlayer *pPlayer = ToBasePlayer(GetOwner());

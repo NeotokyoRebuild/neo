@@ -1518,6 +1518,8 @@ target_sources_grouped(
     neo/ui/neo_hud_game_event.h
     neo/ui/neo_hud_ghost_beacons.cpp
     neo/ui/neo_hud_ghost_beacons.h
+    neo/ui/neo_hud_ghost_cap_point.cpp
+    neo/ui/neo_hud_ghost_cap_point.h
     neo/ui/neo_hud_ghost_marker.cpp
     neo/ui/neo_hud_ghost_marker.h
     neo/ui/neo_hud_health_thermoptic_aux.cpp

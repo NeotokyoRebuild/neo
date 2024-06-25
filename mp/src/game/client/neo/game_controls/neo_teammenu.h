@@ -104,6 +104,7 @@ protected:
     bool m_bTeamMenu;
 
 protected:
+	virtual void OnClose() override;
 	void CommandCompletion();
 
 private:

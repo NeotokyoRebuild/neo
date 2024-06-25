@@ -68,9 +68,9 @@ const char* playerModels[]{
 	"cm/jinrai_heavy01",
 	"cm/jinrai_heavy02",
 	"cm/jinrai_heavy03",
+	"cm/nsf_scout01",
 	"cm/nsf_scout02",
 	"cm/nsf_scout03",
-	"cm/nsf_scout01",
 	"cm/nsf_assault01",
 	"cm/nsf_assault02",
 	"cm/nsf_assault03",
@@ -151,6 +151,12 @@ void CNeoClassMenu::CommandCompletion()
 	SetMouseInputEnabled(false);
 	//SetKeyBoardInputEnabled(false);
 	SetCursorAlwaysVisible(false);
+}
+
+void CNeoClassMenu::OnClose()
+{
+	CommandCompletion();
+	BaseClass::OnClose();
 }
 
 void CNeoClassMenu::OnCommand(const char *command)

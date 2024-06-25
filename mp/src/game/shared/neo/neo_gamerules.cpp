@@ -31,9 +31,10 @@ ConVar mp_neo_preround_freeze_time("mp_neo_preround_freeze_time", "10", FCVAR_RE
 ConVar mp_neo_latespawn_max_time("mp_neo_latespawn_max_time", "15", FCVAR_REPLICATED, "How many seconds late are players still allowed to spawn.", true, 0.0, false, 0);
 
 ConVar sv_neo_wep_dmg_modifier("sv_neo_wep_dmg_modifier", "0.5", FCVAR_REPLICATED, "Temp global weapon damage modifier.", true, 0.0, true, 100.0);
+ConVar neo_sv_player_restore("neo_sv_player_restore", "1", FCVAR_REPLICATED, "If enabled, the server will save players XP and deaths per match session and restore them if they reconnect.", true, 0.0f, true, 1.0f);
 
 ConVar neo_name("neo_name", "", FCVAR_USERINFO | FCVAR_ARCHIVE, "The nickname to set instead of the steam profile name.");
-ConVar cl_fakenick("cl_fakenick", "1", FCVAR_USERINFO | FCVAR_ARCHIVE, "Show players set neo_name, otherwise only show Steam names.", true, 0.0f, true, 1.0f);
+ConVar cl_onlysteamnick("cl_onlysteamnick", "0", FCVAR_USERINFO | FCVAR_ARCHIVE, "Only show players Steam names, otherwise show player set names.", true, 0.0f, true, 1.0f);
 
 REGISTER_GAMERULES_CLASS( CNEORules );
 
@@ -271,12 +272,7 @@ CNEORules::CNEORules()
 	ResetGhostCapPoints();
 #endif
 
-	m_flNeoRoundStartTime = m_flNeoNextRoundStartTime = 0;
-	SetRoundStatus(NeoRoundStatus::Idle);
-	m_iRoundNumber = 0;
-	m_iGhosterTeam = TEAM_UNASSIGNED;
-	m_iGhosterPlayer = 0;
-
+	ResetMapSessionCommon();
 	ListenForGameEvent("round_start");
 
 #ifdef GAME_DLL
@@ -420,16 +416,23 @@ bool CNEORules::ShouldCollide(int collisionGroup0, int collisionGroup1)
 
 extern ConVar mp_chattime;
 
-#ifdef GAME_DLL
-void CNEORules::ChangeLevel(void)
+void CNEORules::ResetMapSessionCommon()
 {
 	SetRoundStatus(NeoRoundStatus::Idle);
 	m_iRoundNumber = 0;
 	m_iGhosterTeam = TEAM_UNASSIGNED;
 	m_iGhosterPlayer = 0;
-	m_flNeoRoundStartTime = 0;
-	m_flNeoNextRoundStartTime = 0;
+	m_flNeoRoundStartTime = 0.0f;
+	m_flNeoNextRoundStartTime = 0.0f;
+#ifdef GAME_DLL
+	m_pRestoredInfos.Purge();
+#endif
+}
 
+#ifdef GAME_DLL
+void CNEORules::ChangeLevel(void)
+{
+	ResetMapSessionCommon();
 	BaseClass::ChangeLevel();
 }
 
@@ -442,12 +445,7 @@ bool CNEORules::CheckGameOver(void)
 
 	if (gameOver)
 	{
-		SetRoundStatus(NeoRoundStatus::Idle);
-		m_iRoundNumber = 0;
-		m_iGhosterTeam = TEAM_UNASSIGNED;
-		m_iGhosterPlayer = 0;
-		m_flNeoRoundStartTime = 0;
-		m_flNeoNextRoundStartTime = 0;
+		ResetMapSessionCommon();
 	}
 
 	return gameOver;
@@ -949,6 +947,10 @@ void CNEORules::StartNextRound()
 	m_flIntermissionEndTime = 0;
 	m_flRestartGameTime = 0;
 	m_bCompleteReset = false;
+	if (clearXP)
+	{
+		m_pRestoredInfos.Purge();
+	}
 
 	IGameEvent *event = gameeventmanager->CreateEvent("round_start");
 	if (event)
@@ -1266,12 +1268,8 @@ void CNEORules::RestartGame()
 	m_flIntermissionEndTime = 0;
 	m_flRestartGameTime = 0.0;
 	m_bCompleteReset = false;
-	m_iRoundNumber = 0;
-	m_iGhosterTeam = TEAM_UNASSIGNED;
-	m_flNeoNextRoundStartTime = FLT_MAX;
-	m_flNeoRoundStartTime = FLT_MAX;
 
-	SetRoundStatus(NeoRoundStatus::Idle);
+	ResetMapSessionCommon();
 
 	IGameEvent * event = gameeventmanager->CreateEvent("round_start");
 	if (event)
@@ -1356,7 +1354,7 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 
 	const char *pszSteamName = engine->GetClientConVarValue(pPlayer->entindex(), "name");
 
-	const bool clientAllowsNeoName = (1 == StrToInt(engine->GetClientConVarValue(engine->IndexOfEdict(pNEOPlayer->edict()), "cl_fakenick")));
+	const bool clientAllowsNeoName = (0 == StrToInt(engine->GetClientConVarValue(engine->IndexOfEdict(pNEOPlayer->edict()), "cl_onlysteamnick")));
 	const char *pszNeoName = engine->GetClientConVarValue(pNEOPlayer->entindex(), neo_name.GetName());
 	const char *pszOldNeoName = pNEOPlayer->GetNeoPlayerNameDirect();
 	bool updateDupeCheck = false;
@@ -1367,7 +1365,7 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 	{
 		if (pszOldNeoName != NULL && clientAllowsNeoName)
 		{
-			// This is basically player_changename but allows for client to filter it out with cl_fakenick toggle
+			// This is basically player_changename but allows for client to filter it out with cl_onlysteamnick toggle
 			IGameEvent *event = gameeventmanager->CreateEvent("player_changeneoname");
 			if (event)
 			{
@@ -1416,7 +1414,7 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 
 	if (updateDupeCheck)
 	{
-		// Update name duplication checker (only used if cl_fakenick=1/neo_name is used, but always set)
+		// Update name duplication checker (only used if cl_onlysteamnick=0/neo_name is used, but always set)
 		KeyValues *dupeData = new KeyValues("dupeData");
 		for (int i = 1; i <= gpGlobals->maxClients; ++i)
 		{
@@ -1985,6 +1983,35 @@ void CNEORules::ClientDisconnected(edict_t* pClient)
 			ghost->Drop(vec3_origin);
 			ghost->SetRemoveable(false);
 			pNeoPlayer->Weapon_Detach(ghost);
+		}
+
+		// Save XP/death counts
+		if (neo_sv_player_restore.GetBool())
+		{
+			const CSteamID steamID = GetSteamIDForPlayerIndex(pNeoPlayer->entindex());
+			if (steamID.IsValid())
+			{
+				const auto accountID = steamID.GetAccountID();
+				const RestoreInfo restoreInfo{
+					.xp = pNeoPlayer->m_iXP.Get(),
+					.deaths = pNeoPlayer->DeathCount(),
+				};
+
+				if (restoreInfo.xp == 0 && restoreInfo.deaths == 0)
+				{
+					m_pRestoredInfos.Remove(accountID);
+				}
+				else
+				{
+					bool didInsert = false;
+					const auto hdl = m_pRestoredInfos.Insert(accountID, restoreInfo, &didInsert);
+					if (!didInsert)
+					{
+						// It already exists, so assign it instead
+						m_pRestoredInfos[hdl] = restoreInfo;
+					}
+				}
+			}
 		}
 	}
 

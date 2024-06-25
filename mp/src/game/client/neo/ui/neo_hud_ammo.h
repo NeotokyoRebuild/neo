@@ -6,13 +6,13 @@
 
 #include "neo_hud_childelement.h"
 #include "hudelement.h"
-#include <vgui_controls/Panel.h>
+#include <vgui_controls/EditablePanel.h>
 
 class CNeoHudElements;
 
-class CNEOHud_Ammo : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
+class CNEOHud_Ammo : public CNEOHud_ChildElement, public CHudElement, public vgui::EditablePanel
 {
-	DECLARE_CLASS_SIMPLE(CNEOHud_Ammo, Panel);
+	DECLARE_CLASS_SIMPLE(CNEOHud_Ammo, EditablePanel);
 
 public:
 	CNEOHud_Ammo(const char* pElementName, vgui::Panel* parent);
@@ -31,9 +31,9 @@ private:
 	void DrawAmmo() const;
 
 private:
-	vgui::HFont m_hSmallTextFont;
-	vgui::HFont m_hTextFont;
-	vgui::HFont m_hBulletFont;
+	vgui::HFont m_hSmallTextFont = 0;
+	vgui::HFont m_hTextFont = 0;
+	vgui::HFont m_hBulletFont = 0;
 
 	int m_resX, m_resY;
 	int m_smallFontWidth, m_smallFontHeight;

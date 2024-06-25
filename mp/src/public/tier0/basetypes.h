@@ -247,15 +247,12 @@ inline bool color32::operator!=( const color32 &other ) const
 	return r != other.r || g != other.g || b != other.b || a != other.a;
 }
 
+
 struct colorVec
 {
 	unsigned r, g, b, a;
 };
 
-
-#ifndef NOTE_UNUSED
-#define NOTE_UNUSED(x)	(void)(x)	// for pesky compiler / lint warnings
-#endif
 
 struct vrect_t
 {

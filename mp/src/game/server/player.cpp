@@ -2707,15 +2707,18 @@ bool CBasePlayer::IsValidObserverTarget(CBaseEntity * target)
 	}
 		
 	// check forcecamera settings for active players
-	if ( GetTeamNumber() != TEAM_SPECTATOR )
+	if (GetTeamNumber() != TEAM_SPECTATOR)
 	{
-		switch ( mp_forcecamera.GetInt() )	
+		switch (mp_forcecamera.GetInt())
 		{
-			case OBS_ALLOW_ALL	:	break;
-			case OBS_ALLOW_TEAM :	if ( GetTeamNumber() != target->GetTeamNumber() )
-										 return false;
-									break;
-			case OBS_ALLOW_NONE :	return false;
+		case OBS_ALLOW_ALL:
+			break;
+		case OBS_ALLOW_TEAM:
+			if (GetTeamNumber() != target->GetTeamNumber())
+				return false;
+			break;
+		case OBS_ALLOW_NONE:
+			return false;
 		}
 	}
 	

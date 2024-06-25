@@ -11,6 +11,7 @@
 #include "team.h"
 #include "viewport_panel_names.h"
 #include "neo_model_manager.h"
+#include "inetchannelinfo.h"
 
 #include "tier0/vprof.h"
 
@@ -24,12 +25,36 @@ ConVar sv_motd_unload_on_dismissal( "sv_motd_unload_on_dismissal",
 	"If enabled, the MOTD contents will be unloaded when the player \
 closes the MOTD." );
 
+ConVar neo_sv_show_motd("neo_sv_show_motd", "0", FCVAR_REPLICATED,
+						"If enabled, the MOTD will be shown on player entering the server.",
+						true, 0.0f, true, 1.0f);
+
 extern CBaseEntity*	FindPickerEntityClass( CBasePlayer *pPlayer,
 	char *classname );
 extern bool			g_fGameOver;
 
 void FinishClientPutInServer( CNEO_Player *pPlayer )
 {
+	// NEO NOTE (nullsystem): CNEORules::ClientConnected is done before even CNEO_Player is
+	// created, so that's why this is here and not in CNEORules
+	if (neo_sv_player_restore.GetBool())
+	{
+		const CSteamID steamID = GetSteamIDForPlayerIndex(pPlayer->entindex());
+		if (steamID.IsValid())
+		{
+			const auto accountID = steamID.GetAccountID();
+			const auto &restoredInfos = NEORules()->m_pRestoredInfos;
+			if (const auto hdl = restoredInfos.Find(accountID); restoredInfos.IsValidHandle(hdl))
+			{
+				Assert(pPlayer->DeathCount() == 0);
+				const CNEORules::RestoreInfo &restoreInfo = restoredInfos.Element(hdl);
+				pPlayer->m_iXP.Set(restoreInfo.xp);
+				pPlayer->IncrementDeathCount(restoreInfo.deaths);
+				ClientPrint(pPlayer, HUD_PRINTTALK, "Your XP and death count have been restored.\n");
+			}
+		}
+	}
+
 	pPlayer->InitialSpawn();
 	pPlayer->Spawn();
 
@@ -55,18 +80,22 @@ void FinishClientPutInServer( CNEO_Player *pPlayer )
 		ClientPrint( pPlayer, HUD_PRINTTALK, "You are on team %s1\n", pPlayer->GetTeam()->GetName() );
 	}
 
-	const ConVar *hostname = cvar->FindVar( "hostname" );
-	const char *title = (hostname) ? hostname->GetString() : "MESSAGE OF THE DAY";
+	INetChannelInfo *nci = engine->GetPlayerNetInfo(pPlayer->entindex());
+	if (nci && !nci->IsLoopback() && neo_sv_show_motd.GetBool())
+	{
+		const ConVar *hostname = cvar->FindVar( "hostname" );
+		const char *title = (hostname) ? hostname->GetString() : "MESSAGE OF THE DAY";
 
-	KeyValues *data = new KeyValues("data");
-	data->SetString( "title", title );		// info panel title
-	data->SetString( "type", "1" );			// show userdata from stringtable entry
-	data->SetString( "msg",	"motd" );		// use this stringtable entry
-	data->SetBool( "unload", sv_motd_unload_on_dismissal.GetBool() );
+		KeyValues *data = new KeyValues("data");
+		data->SetString( "title", title );		// info panel title
+		data->SetString( "type", "1" );			// show userdata from stringtable entry
+		data->SetString( "message",	"motd" );		// use this stringtable entry
+		data->SetBool( "unload", sv_motd_unload_on_dismissal.GetBool() );
 
-	pPlayer->ShowViewPortPanel( PANEL_INFO, true, data );
+		pPlayer->ShowViewPortPanel( PANEL_INFO, true, data );
 
-	data->deleteThis();
+		data->deleteThis();
+	}
 
 	// NEO TODO (Rain): Team selection HUD here.
 
@@ -349,6 +378,8 @@ ConVar sv_neo_bot_think("sv_neo_bot_think",
 	"0",
 #endif
 	FCVAR_NONE, "Run think on debug bots.", true, 0.0, true, 1.0);
+
+ConVar bot_next_team("bot_next_team", "-1", FCVAR_NONE, "Which team the next bot should join. -1: Choose the playing team with less players in it. -2: Random playing team. Any other value: The corresponding team index.");
 
 void GameStartFrame( void )
 {
