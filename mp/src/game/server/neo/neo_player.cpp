@@ -2371,7 +2371,9 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 			iTeam = RandomInt(TEAM_JINRAI, TEAM_NSF);
 			break;
 		default:
-			iTeam = joinMode.GetInt();
+			const auto lastGameTeam = GetNumberOfTeams() - LAST_SHARED_TEAM;
+			Assert(FIRST_GAME_TEAM <= lastGameTeam);
+			iTeam = Clamp(joinMode.GetInt(), FIRST_GAME_TEAM, lastGameTeam);
 		}
 	}
 	// Limit team join spam, unless this is a newly joined player
