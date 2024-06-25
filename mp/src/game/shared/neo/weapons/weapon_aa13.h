@@ -42,7 +42,7 @@ public:
 
 	virtual float GetFireRate() OVERRIDE { return 0.333f; }
 	
-	virtual const Vector& GetBulletSpread(void) OVERRIDE { return VECTOR_CONE_7DEGREES; };
+	virtual const Vector& GetBulletSpread(void) OVERRIDE { static const Vector cone = VECTOR_CONE_7DEGREES; return cone; };
 
 protected:
 	virtual float GetAccuracyPenalty() const OVERRIDE { return 0.2f; }
