@@ -36,12 +36,17 @@ CAvatarImage::CAvatarImage( void )
 	m_bLoadPending = false;
 	m_fNextLoadTime = 0.0f;
 	m_AvatarSize = k_EAvatarSize32x32;
-	
+
 	//=============================================================================
 	// HPE_BEGIN:
 	//=============================================================================
 	// [tj] Default to drawing the friend icon for avatars
+#ifdef NEO
+	// Agiel: The avatars on the scoreboard get weirdly offset when this is true.
+	m_bDrawFriend = false;
+#else
 	m_bDrawFriend = true;
+#endif
 
 	// [menglish] Default icon for avatar icons if there is no avatar icon for the player
 	m_iTextureID = -1;
@@ -57,7 +62,7 @@ CAvatarImage::CAvatarImage( void )
 	// HPE_END
 	//=============================================================================
 
-	if ( !m_sbInitializedAvatarCache) 
+	if ( !m_sbInitializedAvatarCache)
 	{
 		m_sbInitializedAvatarCache = true;
 		SetDefLessFunc( s_AvatarImageCache );
@@ -128,13 +133,13 @@ void CAvatarImage::LoadAvatarImage()
 			int iAvatar = 0;
 			switch( m_AvatarSize )
 			{
-				case k_EAvatarSize32x32: 
+				case k_EAvatarSize32x32:
 					iAvatar = steamapicontext->SteamFriends()->GetSmallFriendAvatar( m_SteamID );
 					break;
-				case k_EAvatarSize64x64: 
+				case k_EAvatarSize64x64:
 					iAvatar = steamapicontext->SteamFriends()->GetMediumFriendAvatar( m_SteamID );
 					break;
-				case k_EAvatarSize184x184: 
+				case k_EAvatarSize184x184:
 					iAvatar = steamapicontext->SteamFriends()->GetLargeFriendAvatar( m_SteamID );
 					break;
 			}
@@ -150,7 +155,7 @@ void CAvatarImage::LoadAvatarImage()
 					byte *rgbDest = (byte*)stackalloc( destBufferSize );
 					if ( steamapicontext->SteamUtils()->GetImageRGBA( iAvatar, rgbDest, destBufferSize ) )
 						InitFromRGBA( iAvatar, rgbDest, wide, tall );
-					
+
 					stackfree( rgbDest );
 				}
 			}
@@ -197,7 +202,7 @@ void CAvatarImage::InitFromRGBA( int iAvatar, const byte *rgba, int width, int h
 	}
 	else
 		m_iTextureID = s_AvatarImageCache[ iTexIndex ];
-	
+
 	m_bValid = true;
 }
 
@@ -219,7 +224,7 @@ void CAvatarImage::Paint( void )
 		posX += FRIEND_ICON_AVATAR_INDENT_X * m_avatarWide / DEFAULT_AVATAR_SIZE;
 		posY += FRIEND_ICON_AVATAR_INDENT_Y * m_avatarTall / DEFAULT_AVATAR_SIZE;
 	}
-	
+
 	if ( m_bLoadPending )
 	{
 		LoadAvatarImage();
@@ -343,7 +348,7 @@ void CAvatarImagePanel::SetPlayer( int entindex, EAvatarSize avatarSize )
 	if ( engine->GetPlayerInfo(entindex, &pi) )
 	{
 		if ( pi.friendsID != 0 	&& steamapicontext->SteamUtils() )
-		{		
+		{
 			CSteamID steamIDForPlayer( pi.friendsID, 1, steamapicontext->SteamUtils()->GetConnectedUniverse(), k_EAccountTypeIndividual );
 			SetPlayer(steamIDForPlayer, avatarSize);
 		}

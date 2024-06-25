@@ -96,7 +96,11 @@ void SectionedListPanelHeader::Paint()
 	y = (tall - 2);	// draw the line under the panel
 
 	surface()->DrawSetColor(m_SectionDividerColor);
+#ifdef NEO
+	surface()->DrawFilledRect(1, y, GetWide() - 1, y + 1);
+#else
 	surface()->DrawFilledRect(1, y, GetWide() - 2, y + 1);
+#endif
 }
 
 void SectionedListPanelHeader::SetColor(Color col)
