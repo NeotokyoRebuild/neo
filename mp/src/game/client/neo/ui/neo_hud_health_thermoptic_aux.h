@@ -27,12 +27,15 @@ protected:
 	virtual ConVar* GetUpdateFrequencyConVar() const;
 
 private:
+	void DrawBuildInfo() const;
 	void DrawHTA() const;
 
 private:
-	vgui::HFont m_hFont;
+	vgui::HFont m_hFont, m_hFontBuildInfo;
 
 	int m_resX, m_resY;
+
+	wchar_t m_wszBuildInfo[8];
 
 	CPanelAnimationVarAliasType(int, xpos, "xpos", "0", "proportional_xpos");
 	CPanelAnimationVarAliasType(int, ypos, "ypos", "446", "proportional_ypos");

@@ -15,20 +15,7 @@ The overall goal is to create a reimplementation of Neotokyo for Source 2013 MP 
 The end result should hopefully be a shinier and less error-prone rendition of NT, with the source code and more cvars providing room to fine tune game balance, or come up with completely new modes entirely.
 
 ## Table of contents
-<!-- Generated with: https://github.com/jonschlinkert/markdown-toc -->
-* [Getting started](#getting-started)
-    + [Cloning & merging](#cloning--merging)
-    + [Building](#building)
-    + [Debugging](#debugging)
-        - [VS2022 + CMake (Windows)](#vs2022--cmake-windows)
-        - [Qt Creator (Linux)](#qt-creator-linux)
-        - [VS2022 Visual Studio Solutions (Windows)](#vs2022-visual-studio-solutions-windows)
-    + [Game loop and reference material](#game-loop-and-reference-material)
-* [Good to know](#good-to-know)
-    + [Current: CMake](#current-cmake)
-    + [Legacy: Solutions/makefiles](#legacy-solutionsmakefiles)
-    + [Preprocessor definitions](#preprocessor-definitions)
-    + [Code style](#code-style)
+To see the Table of Contents, please use the "Outline" feature on GitHub by clicking the button located in the top right of this document.
 
 ## Getting started
 
@@ -98,7 +85,7 @@ Assuming default directory, it might be in either: `~/.local/share/Steam/ubuntu1
 Then change to that directory and replace `[INSERT_OUTPUT_HERE]` to the output of:
 ```
 $ cd <STEAM-RUNTIME-DIR>
-$ run.sh printenv LD_LIBRARY_PATH
+$ ./run.sh printenv LD_LIBRARY_PATH
 ```
 
 After this, you should be able to run and debug NT;RE, just make sure to have Steam open in the background.

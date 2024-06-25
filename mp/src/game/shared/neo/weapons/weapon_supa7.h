@@ -59,8 +59,6 @@ public:
 	
 	void Drop(const Vector& vecVelocity) OVERRIDE;
 
-	virtual float GetFireRate(void) OVERRIDE { return 0.7f; }
-
 	void ClearDelayedInputs(void);
 
 protected:

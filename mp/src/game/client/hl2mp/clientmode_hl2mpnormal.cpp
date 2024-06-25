@@ -17,6 +17,7 @@
 #include "iinput.h"
 
 #ifdef NEO
+	#include "prediction.h"
 	#include "neo/ui/neo_scoreboard.h"
 	#include "neo/ui/neo_hud_elements.h"
 	extern ConVar v_viewmodel_fov;
@@ -228,46 +229,36 @@ float ClientModeHL2MPNormal::GetViewModelFOV()
 				}
 			}
 
-			const bool playerAiming = pOwner->IsInAim();
-			const float currentTime = gpGlobals->curtime;
-			if (m_bViewAim && !playerAiming)
+			float flTargetFov = m_flVMFOV;
+			if (!prediction->InPrediction())
 			{
-				// From aiming to not aiming
-				m_flStartAimingChange = currentTime;
-				m_bViewAim = false;
-			}
-			else if (!m_bViewAim && playerAiming)
-			{
-				// From not aiming to aiming
-				m_flStartAimingChange = currentTime;
-				m_bViewAim = true;
-			}
-			const float endAimingChange = m_flStartAimingChange + NEO_ZOOM_SPEED;
-			const bool inAimingChange = (m_flStartAimingChange <= currentTime && currentTime < endAimingChange);
-			float flTargetFov = 0.0f;
-			if (inAimingChange)
-			{
-				float percentage = (currentTime - m_flStartAimingChange) / NEO_ZOOM_SPEED;
-				static constexpr float SNAP_PERCENTAGE = 0.05f;
-				if (percentage > (1.0f - SNAP_PERCENTAGE)) percentage = 1.0f;
-				else if (percentage < SNAP_PERCENTAGE) percentage = 0.0f;
-
-				float flVMFovDelta = pWepInfo->m_flVMAimFov - pWepInfo->m_flVMFov;
-				flVMFovDelta *= percentage;
-				if (playerAiming)
+				const bool playerAiming = pOwner->IsInAim();
+				const float currentTime = gpGlobals->curtime;
+				if (m_bViewAim && !playerAiming)
 				{
-					// From not aiming to aiming gradual
-					flTargetFov = pWepInfo->m_flVMFov + flVMFovDelta;
+					// From aiming to not aiming
+					m_flStartAimingChange = currentTime;
+					m_bViewAim = false;
+				}
+				else if (!m_bViewAim && playerAiming)
+				{
+					// From not aiming to aiming
+					m_flStartAimingChange = currentTime;
+					m_bViewAim = true;
+				}
+				const float endAimingChange = m_flStartAimingChange + NEO_ZOOM_SPEED;
+				const bool inAimingChange = (m_flStartAimingChange <= currentTime && currentTime < endAimingChange);
+				if (inAimingChange)
+				{
+					float percentage = clamp((currentTime - m_flStartAimingChange) / NEO_ZOOM_SPEED, 0.0f, 1.0f);
+					if (playerAiming) percentage = 1.0f - percentage;
+					flTargetFov = Lerp(percentage, pWepInfo->m_flVMAimFov, pWepInfo->m_flVMFov);
 				}
 				else
 				{
-					// From aiming to not aiming gradual
-					flTargetFov = pWepInfo->m_flVMAimFov - flVMFovDelta;
+					flTargetFov = playerAiming ? (pWepInfo->m_flVMAimFov) : (pWepInfo->m_flVMFov);
 				}
-			}
-			else
-			{
-				flTargetFov = playerAiming ? (pWepInfo->m_flVMAimFov) : (pWepInfo->m_flVMFov);
+				m_flVMFOV = flTargetFov;
 			}
 			return flTargetFov + neo_viewmodel_fov_offset.GetFloat();
 		}

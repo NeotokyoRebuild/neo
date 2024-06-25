@@ -122,6 +122,7 @@ private:
 	CPanelAnimationVarAliasType(int, box_color_g, "box_color_g", "116", "int");
 	CPanelAnimationVarAliasType(int, box_color_b, "box_color_b", "116", "int");
 	CPanelAnimationVarAliasType(int, box_color_a, "box_color_a", "178", "int");
+	CPanelAnimationVarAliasType(bool, health_monochrome, "health_monochrome", "1", "bool");
 
 private:
 	CNEOHud_RoundState(const CNEOHud_RoundState &other);

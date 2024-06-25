@@ -22,10 +22,8 @@
 using namespace vgui;
 
 
-static int ListFileNameSortFunc(ListPanel *pPanel, const ListPanelItem &item1, const ListPanelItem &item2 )
+static int ListFileNameSortFunc([[maybe_unused]] ListPanel *pPanel, const ListPanelItem &item1, const ListPanelItem &item2 )
 {
-	NOTE_UNUSED( pPanel );
-
 	bool dir1 = item1.kv->GetInt("directory") == 1;
 	bool dir2 = item2.kv->GetInt("directory") == 1;
 

@@ -21,6 +21,8 @@
 	#include "hl2mp_gameinterface.h"
 	#include "player_resource.h"
 	#include "inetchannelinfo.h"
+
+extern ConVar weaponstay;
 #endif
 
 ConVar mp_neo_loopback_warmup_round("mp_neo_loopback_warmup_round", "0", FCVAR_REPLICATED, "Allow loopback server to do warmup rounds.", true, 0.0f, true, 1.0f);
@@ -29,6 +31,7 @@ ConVar mp_neo_preround_freeze_time("mp_neo_preround_freeze_time", "10", FCVAR_RE
 ConVar mp_neo_latespawn_max_time("mp_neo_latespawn_max_time", "15", FCVAR_REPLICATED, "How many seconds late are players still allowed to spawn.", true, 0.0, false, 0);
 
 ConVar sv_neo_wep_dmg_modifier("sv_neo_wep_dmg_modifier", "0.5", FCVAR_REPLICATED, "Temp global weapon damage modifier.", true, 0.0, true, 100.0);
+ConVar neo_sv_player_restore("neo_sv_player_restore", "1", FCVAR_REPLICATED, "If enabled, the server will save players XP and deaths per match session and restore them if they reconnect.", true, 0.0f, true, 1.0f);
 
 ConVar neo_name("neo_name", "", FCVAR_USERINFO | FCVAR_ARCHIVE, "The nickname to set instead of the steam profile name.");
 ConVar cl_onlysteamnick("cl_onlysteamnick", "0", FCVAR_USERINFO | FCVAR_ARCHIVE, "Only show players Steam names, otherwise show player set names.", true, 0.0f, true, 1.0f);
@@ -58,6 +61,7 @@ LINK_ENTITY_TO_CLASS( neo_gamerules, CNEOGameRulesProxy );
 IMPLEMENT_NETWORKCLASS_ALIASED( NEOGameRulesProxy, DT_NEOGameRulesProxy );
 
 extern void respawn(CBaseEntity *pEdict, bool fCopyCorpse);
+extern bool RespawnWithRet(CBaseEntity *pEdict, bool fCopyCorpse);
 
 // NEO TODO (Rain): check against a test map
 static NEOViewVectors g_NEOViewVectors(
@@ -224,6 +228,22 @@ static inline void FireLegacyEvent_NeoRoundEnd()
 #endif
 }
 
+#ifdef GAME_DLL
+static void CvarChanged_WeaponStay(IConVar* convar, const char* pOldVal, float flOldVal)
+{
+	auto wep = gEntList.NextEntByClass((CNEOBaseCombatWeapon*)NULL);
+	while (wep)
+	{
+		// Don't schedule removal for guns currently held by someone
+		if (!wep->GetOwner())
+		{
+			wep->SetPickupTouch();
+		}
+		wep = gEntList.NextEntByClass(wep);
+	}
+}
+#endif
+
 CNEORules::CNEORules()
 {
 #ifdef GAME_DLL
@@ -248,17 +268,19 @@ CNEORules::CNEORules()
 	ResetGhostCapPoints();
 #endif
 
-	m_flNeoRoundStartTime = m_flNeoNextRoundStartTime = 0;
-	SetRoundStatus(NeoRoundStatus::Idle);
-	m_iRoundNumber = 0;
-	m_iGhosterTeam = TEAM_UNASSIGNED;
-	m_iGhosterPlayer = 0;
-
+	ResetMapSessionCommon();
 	ListenForGameEvent("round_start");
+
+#ifdef GAME_DLL
+	weaponstay.InstallChangeCallback(CvarChanged_WeaponStay);
+#endif
 }
 
 CNEORules::~CNEORules()
 {
+#ifdef GAME_DLL
+	weaponstay.InstallChangeCallback(nullptr);
+#endif
 }
 
 #ifdef GAME_DLL
@@ -379,7 +401,8 @@ bool CNEORules::ShouldCollide(int collisionGroup0, int collisionGroup1)
 	}
 
 	if ((collisionGroup0 == COLLISION_GROUP_PLAYER || collisionGroup0 == COLLISION_GROUP_PLAYER_MOVEMENT) &&
-		((collisionGroup1 == COLLISION_GROUP_WEAPON) || (collisionGroup1 == COLLISION_GROUP_PLAYER || collisionGroup1 == COLLISION_GROUP_PLAYER_MOVEMENT)))
+		(collisionGroup1 == COLLISION_GROUP_PROJECTILE || collisionGroup1 == COLLISION_GROUP_WEAPON ||
+		 collisionGroup1 == COLLISION_GROUP_PLAYER || collisionGroup1 == COLLISION_GROUP_PLAYER_MOVEMENT))
 	{
 		return false;
 	}
@@ -389,16 +412,23 @@ bool CNEORules::ShouldCollide(int collisionGroup0, int collisionGroup1)
 
 extern ConVar mp_chattime;
 
-#ifdef GAME_DLL
-void CNEORules::ChangeLevel(void)
+void CNEORules::ResetMapSessionCommon()
 {
 	SetRoundStatus(NeoRoundStatus::Idle);
 	m_iRoundNumber = 0;
 	m_iGhosterTeam = TEAM_UNASSIGNED;
 	m_iGhosterPlayer = 0;
-	m_flNeoRoundStartTime = 0;
-	m_flNeoNextRoundStartTime = 0;
+	m_flNeoRoundStartTime = 0.0f;
+	m_flNeoNextRoundStartTime = 0.0f;
+#ifdef GAME_DLL
+	m_pRestoredInfos.Purge();
+#endif
+}
 
+#ifdef GAME_DLL
+void CNEORules::ChangeLevel(void)
+{
+	ResetMapSessionCommon();
 	BaseClass::ChangeLevel();
 }
 
@@ -411,12 +441,7 @@ bool CNEORules::CheckGameOver(void)
 
 	if (gameOver)
 	{
-		SetRoundStatus(NeoRoundStatus::Idle);
-		m_iRoundNumber = 0;
-		m_iGhosterTeam = TEAM_UNASSIGNED;
-		m_iGhosterPlayer = 0;
-		m_flNeoRoundStartTime = 0;
-		m_flNeoNextRoundStartTime = 0;
+		ResetMapSessionCommon();
 	}
 
 	return gameOver;
@@ -431,23 +456,37 @@ void CNEORules::Think(void)
 		return;
 	}
 
-#if 0	// TODO (nullsystem): Allow respawn if it also respawns with menu
+	// Allow respawn if it's an idle or warmup round
 	if (m_nRoundStatus == NeoRoundStatus::Idle || m_nRoundStatus == NeoRoundStatus::Warmup)
 	{
+		CRecipientFilter filter;
+		filter.MakeReliable();
+
 		for (int i = 1; i <= gpGlobals->maxClients; i++)
 		{
-			auto player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
-			if (player && player->IsDead())
+			auto player = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(i));
+			if (player && player->IsDead() && player->DeathCount() > 0)
 			{
 				const int playerTeam = player->GetTeamNumber();
-				if (playerTeam == TEAM_JINRAI || playerTeam == TEAM_NSF)
+				if ((playerTeam == TEAM_JINRAI || playerTeam == TEAM_NSF) && RespawnWithRet(player, false))
 				{
-					respawn(player, false);
+					filter.AddRecipient(player);
+
+					player->m_bInAim = false;
+					player->m_bInThermOpticCamo = false;
+					player->m_bInVision = false;
+					player->m_bDroppedAnything = false;
+					player->SetTestMessageVisible(false);
 				}
 			}
 		}
+
+		if (filter.GetRecipientCount() > 0)
+		{
+			UserMessageBegin(filter, "IdleRespawnShowMenu");
+			MessageEnd();
+		}
 	}
-#endif
 
 	if (g_fGameOver)   // someone else quit the game already
 	{
@@ -904,6 +943,10 @@ void CNEORules::StartNextRound()
 	m_flIntermissionEndTime = 0;
 	m_flRestartGameTime = 0;
 	m_bCompleteReset = false;
+	if (clearXP)
+	{
+		m_pRestoredInfos.Purge();
+	}
 
 	IGameEvent *event = gameeventmanager->CreateEvent("round_start");
 	if (event)
@@ -958,11 +1001,6 @@ void CNEORules::CreateStandardEntities(void)
 		CBaseEntity::Create("neo_gamerules", vec3_origin, vec3_angle);
 	Assert(pEnt);
 #endif
-}
-
-int CNEORules::WeaponShouldRespawn(CBaseCombatWeapon *pWeapon)
-{
-	return GR_NONE;
 }
 
 const char *CNEORules::GetGameDescription(void)
@@ -1226,12 +1264,8 @@ void CNEORules::RestartGame()
 	m_flIntermissionEndTime = 0;
 	m_flRestartGameTime = 0.0;
 	m_bCompleteReset = false;
-	m_iRoundNumber = 0;
-	m_iGhosterTeam = TEAM_UNASSIGNED;
-	m_flNeoNextRoundStartTime = FLT_MAX;
-	m_flNeoRoundStartTime = FLT_MAX;
 
-	SetRoundStatus(NeoRoundStatus::Idle);
+	ResetMapSessionCommon();
 
 	IGameEvent * event = gameeventmanager->CreateEvent("round_start");
 	if (event)
@@ -1941,6 +1975,35 @@ void CNEORules::ClientDisconnected(edict_t* pClient)
 			ghost->Drop(vec3_origin);
 			ghost->SetRemoveable(false);
 			pNeoPlayer->Weapon_Detach(ghost);
+		}
+
+		// Save XP/death counts
+		if (neo_sv_player_restore.GetBool())
+		{
+			const CSteamID steamID = GetSteamIDForPlayerIndex(pNeoPlayer->entindex());
+			if (steamID.IsValid())
+			{
+				const auto accountID = steamID.GetAccountID();
+				const RestoreInfo restoreInfo{
+					.xp = pNeoPlayer->m_iXP.Get(),
+					.deaths = pNeoPlayer->DeathCount(),
+				};
+
+				if (restoreInfo.xp == 0 && restoreInfo.deaths == 0)
+				{
+					m_pRestoredInfos.Remove(accountID);
+				}
+				else
+				{
+					bool didInsert = false;
+					const auto hdl = m_pRestoredInfos.Insert(accountID, restoreInfo, &didInsert);
+					if (!didInsert)
+					{
+						// It already exists, so assign it instead
+						m_pRestoredInfos[hdl] = restoreInfo;
+					}
+				}
+			}
 		}
 	}
 

@@ -138,7 +138,10 @@ void CNEO_Player::RequestSetClass(int newClass)
 		return;
 	}
 
-	if (IsDead() || sv_neo_can_change_classes_anytime.GetBool() || (!m_bDroppedAnything && NEORules()->GetRemainingPreRoundFreezeTime(false) > 0))
+	const NeoRoundStatus status = NEORules()->GetRoundStatus();
+	if (IsDead() || sv_neo_can_change_classes_anytime.GetBool() ||
+		(!m_bDroppedAnything && NEORules()->GetRemainingPreRoundFreezeTime(false) > 0) ||
+		(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup))
 	{
 		m_iNeoClass = newClass;
 		m_iNextSpawnClassChoice = -1;
@@ -1075,35 +1078,33 @@ void CNEO_Player::PostThink(void)
 
 	CheckLeanButtons();
 
-	auto pWep = GetActiveWeapon();
-	CNEOBaseCombatWeapon* pNeoWep = NULL;
-
-	if (pWep)
+	if (CBaseCombatWeapon *pWep = GetActiveWeapon())
 	{
+		const bool clientAimHold = ClientWantsAimHold(this);
 		if (pWep->m_bInReload && !m_bPreviouslyReloading)
 		{
 			Weapon_SetZoom(false);
 		}
-		else if (m_afButtonPressed & IN_SPEED)
+		else if (CanSprint() && m_afButtonPressed & IN_SPEED)
 		{
 			Weapon_SetZoom(false);
 		}
-		else if (m_afButtonPressed & IN_AIM)
+		else if ((m_afButtonPressed & IN_AIM) && (!CanSprint() || !(m_nButtons & IN_SPEED)))
 		{
-			pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pWep);
 			// Binds hack: we want grenade secondary attack to trigger on aim (mouse button 2)
-			if (pNeoWep && pNeoWep->GetNeoWepBits() & NEO_WEP_THROWABLE)
+			if (auto *pNeoWep = dynamic_cast<CNEOBaseCombatWeapon *>(pWep);
+					pNeoWep && pNeoWep->GetNeoWepBits() & NEO_WEP_THROWABLE)
 			{
-				static_cast<CWeaponGrenade*>(pNeoWep)->SecondaryAttack();
+				pNeoWep->SecondaryAttack();
 			}
-			else if (ClientWantsAimHold(this))
+			else
 			{
-				Weapon_AimToggle(pWep, NEO_TOGGLE_FORCE_AIM);
+				Weapon_AimToggle(pWep, clientAimHold ? NEO_TOGGLE_FORCE_AIM : NEO_TOGGLE_DEFAULT);
 			}
 		}
-		else if (m_afButtonReleased & IN_AIM)
+		else if (clientAimHold && (m_afButtonReleased & IN_AIM))
 		{
-			Weapon_AimToggle(pWep, ClientWantsAimHold(this) ? NEO_TOGGLE_FORCE_UN_AIM : NEO_TOGGLE_DEFAULT);
+			Weapon_AimToggle(pWep, NEO_TOGGLE_FORCE_UN_AIM);
 		}
 		m_bPreviouslyReloading = pWep->m_bInReload;
 
@@ -1251,7 +1252,14 @@ void CNEO_Player::Weapon_SetZoom(const bool bZoomIn)
 	if (bZoomIn)
 	{
 		const int zoomAmount = 30;
-		SetFOV((CBaseEntity*)this, fov - zoomAmount, NEO_ZOOM_SPEED);
+		auto neoWep = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
+		if (neoWep && neoWep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
+		{
+			SetFOV((CBaseEntity*)this, neoWep->GetWpnData().iAimFOV, NEO_ZOOM_SPEED);
+		}
+		else {
+			SetFOV((CBaseEntity*)this, fov - zoomAmount, NEO_ZOOM_SPEED);
+		}
 	}
 	else
 	{
@@ -2556,7 +2564,9 @@ void CNEO_Player::GiveDefaultItems(void)
 
 void CNEO_Player::GiveLoadoutWeapon(void)
 {
-	if (IsObserver() || IsDead() || m_bDroppedAnything || ((NEORules()->GetRemainingPreRoundFreezeTime(false)) < 0))
+	const NeoRoundStatus status = NEORules()->GetRoundStatus();
+	if (!(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup) && 
+		(IsObserver() || IsDead() || m_bDroppedAnything || ((NEORules()->GetRemainingPreRoundFreezeTime(false)) < 0)))
 	{
 		return;
 	}

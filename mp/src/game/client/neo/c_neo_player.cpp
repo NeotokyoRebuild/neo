@@ -47,6 +47,8 @@
 
 #include "neo_playeranimstate.h"
 
+#include "c_user_message_register.h"
+
 // Don't alias here
 #if defined( CNEO_Player )
 #undef CNEO_Player	
@@ -189,7 +191,18 @@ static void __MsgFunc_DamageInfo(bf_read& msg)
 		totals.takenTotalDmgs, totals.takenTotalHits,
 		BORDER);
 }
-static bool g_hasHookDamageInfo = false;
+USER_MESSAGE_REGISTER(DamageInfo);
+
+static void __MsgFunc_IdleRespawnShowMenu(bf_read &)
+{
+	if (auto *localPlayer = C_NEO_Player::GetLocalNEOPlayer())
+	{
+		localPlayer->m_bShowTeamMenu = false;
+		localPlayer->m_bShowClassMenu = true;
+		localPlayer->m_bIsClassMenuOpen = false;
+	}
+}
+USER_MESSAGE_REGISTER(IdleRespawnShowMenu);
 
 ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
 	"Whether to display HL2 style ammo/health info near crosshair.",
@@ -212,6 +225,11 @@ public:
 			Assert(false);
 			Warning("Couldn't find weapon loadout panel\n");
 			return;
+		}
+
+		if (panel->IsVisible() && panel->IsEnabled())
+		{
+			return;	// Prevent cursor stuck
 		}
 
 		panel->SetProportional(false); // Fixes wrong menu size when in windowed mode, regardless of whether proportional is set to false in the res file (NEOWTF)
@@ -275,6 +293,12 @@ public:
 			Warning("Couldn't find class panel\n");
 			return;
 		}
+
+		if (panel->IsVisible() && panel->IsEnabled())
+		{
+			return;	// Prevent cursor stuck
+		}
+
 		panel->SetProportional(false);
 		panel->ApplySchemeSettings(vgui::scheme()->GetIScheme(panel->GetScheme()));
 
@@ -321,6 +345,11 @@ public:
 			Assert(false);
 			Warning("Couldn't find team panel\n");
 			return;
+		}
+
+		if (panel->IsVisible() && panel->IsEnabled())
+		{
+			return;	// Prevent cursor stuck
 		}
 
 		panel->SetProportional(false);
@@ -412,11 +441,6 @@ C_NEO_Player::C_NEO_Player()
 
 	memset(m_szNeoNameWDupeIdx, 0, sizeof(m_szNeoNameWDupeIdx));
 	m_szNameDupePos = 0;
-	if (!g_hasHookDamageInfo)
-	{
-		usermessages->HookMessage("DamageInfo", __MsgFunc_DamageInfo);
-		g_hasHookDamageInfo = true;
-	}
 }
 
 C_NEO_Player::~C_NEO_Player()
@@ -540,33 +564,19 @@ int C_NEO_Player::GetAttackerHits(const int attackerIdx) const
 	return m_rfAttackersHits.Get(attackerIdx);
 }
 
-int C_NEO_Player::DrawModel( int flags )
+int C_NEO_Player::DrawModel(int flags)
 {
-	// Do cloak if cloaked
-	if (IsCloaked())
-	{
-		IMaterial *pass = materials->FindMaterial("dev/toc_cloakpass", TEXTURE_GROUP_CLIENT_EFFECTS);
-		Assert(pass && !pass->IsErrorMaterial());
-
-		if (pass && !pass->IsErrorMaterial())
-		{
-			//const int extraFlags = STUDIO_RENDER | STUDIO_TRANSPARENCY | STUDIO_NOSHADOWS | STUDIO_DRAWTRANSLUCENTSUBMODELS;
-			modelrender->ForcedMaterialOverride(pass);
-			const int ret = BaseClass::DrawModel(flags /*| extraFlags*/);
-			modelrender->ForcedMaterialOverride(NULL);
-
-			return ret;
-		}
-	}
-
 	int ret = BaseClass::DrawModel(flags);
+
+	if (!ret) {
+		return ret;
+	}
 
 	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if (pLocalPlayer && pLocalPlayer->IsInVision())
 	{
-#define SPEED_BETWEEN_WALK_AND_RUN ((NEO_ASSAULT_WALK_SPEED + NEO_ASSAULT_NORM_SPEED) / 2.0)
-		if ((pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT) &&
-			(GetAbsVelocity().Length() >= SPEED_BETWEEN_WALK_AND_RUN))
+		auto vel = GetAbsVelocity().Length();
+		if ((pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT) && vel > 1)
 		{
 			IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
 			Assert(pass && !pass->IsErrorMaterial());
@@ -577,31 +587,11 @@ int C_NEO_Player::DrawModel( int flags )
 				modelrender->ForcedMaterialOverride(pass);
 				ret = BaseClass::DrawModel(flags | STUDIO_RENDER | STUDIO_TRANSPARENCY);
 				modelrender->ForcedMaterialOverride(NULL);
-#if(0)
-				// Send to mv buffer
-				static int bufferIdx = 0;
-				const int numBuffers = 2;
-				ITexture* pVM_Buffer = GetMVBuffer(bufferIdx);
-				bufferIdx = (bufferIdx + 1) % numBuffers;
-				Assert(pVM_Buffer && !pVM_Buffer->IsError());
 
-				ITexture* pSrc = materials->FindTexture("_rt_FullFrameFB", TEXTURE_GROUP_RENDER_TARGET);
-				Assert(pSrc && !pSrc->IsError());
-
-				const int nSrcWidth = pSrc->GetActualWidth();
-				const int nSrcHeight = pSrc->GetActualHeight();
-				Rect_t DestRect{ 0, 0, nSrcWidth, nSrcHeight };
-
-				CMatRenderContextPtr pRenderContext(materials);
-				pRenderContext->CopyRenderTargetToTextureEx(pVM_Buffer, 0, &DestRect, NULL);
-
-				// Render without effect
-				//ret = BaseClass::DrawModel(flags);
-				rendered = false;
-#endif
+				return ret;
 			}
 		}
-		else if (pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT)
+		else if (pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT && !IsCloaked())
 		{
 			IMaterial* pass = materials->FindMaterial("dev/thermal_third", TEXTURE_GROUP_MODEL);
 			Assert(pass && !pass->IsErrorMaterial());
@@ -612,7 +602,22 @@ int C_NEO_Player::DrawModel( int flags )
 				modelrender->ForcedMaterialOverride(pass);
 				ret = BaseClass::DrawModel(flags | STUDIO_RENDER | STUDIO_TRANSPARENCY);
 				modelrender->ForcedMaterialOverride(NULL);
+
+				return ret;
 			}
+		}
+	}
+	
+	if (IsCloaked())
+	{
+		IMaterial* pass = materials->FindMaterial("dev/toc_cloakpass", TEXTURE_GROUP_CLIENT_EFFECTS);
+		Assert(pass && !pass->IsErrorMaterial());
+
+		if (pass && !pass->IsErrorMaterial())
+		{
+			modelrender->ForcedMaterialOverride(pass);
+			ret = BaseClass::DrawModel(flags);
+			modelrender->ForcedMaterialOverride(NULL);
 		}
 	}
 
@@ -1007,25 +1012,33 @@ void C_NEO_Player::PostThink(void)
 		}
 	}
 
-	C_BaseCombatWeapon *pWep = GetActiveWeapon();
-
-	if (pWep)
+	if (C_BaseCombatWeapon *pWep = GetActiveWeapon())
 	{
+		const bool clientAimHold = ClientWantsAimHold(this);
 		if (pWep->m_bInReload && !m_bPreviouslyReloading)
 		{
 			Weapon_SetZoom(false);
 		}
-		else if (m_afButtonPressed & IN_SPEED)
+		else if (CanSprint() && m_afButtonPressed & IN_SPEED)
 		{
 			Weapon_SetZoom(false);
 		}
-		else if (ClientWantsAimHold(this) && m_afButtonPressed & IN_AIM)
+		else if ((m_afButtonPressed & IN_AIM) && (!CanSprint() || !(m_nButtons & IN_SPEED)))
 		{
-			Weapon_AimToggle(pWep, NEO_TOGGLE_FORCE_AIM);
+			// Binds hack: we want grenade secondary attack to trigger on aim (mouse button 2)
+			if (auto *pNeoWep = dynamic_cast<C_NEOBaseCombatWeapon *>(pWep);
+					pNeoWep && pNeoWep->GetNeoWepBits() & NEO_WEP_THROWABLE)
+			{
+				pNeoWep->SecondaryAttack();
+			}
+			else
+			{
+				Weapon_AimToggle(pWep, clientAimHold ? NEO_TOGGLE_FORCE_AIM : NEO_TOGGLE_DEFAULT);
+			}
 		}
-		else if ((m_afButtonReleased & IN_AIM) && (!(m_nButtons & IN_SPEED)))
+		else if (clientAimHold && (m_afButtonReleased & IN_AIM))
 		{
-			Weapon_AimToggle(pWep, ClientWantsAimHold(this) ? NEO_TOGGLE_FORCE_UN_AIM : NEO_TOGGLE_DEFAULT);
+			Weapon_AimToggle(pWep, NEO_TOGGLE_FORCE_UN_AIM);
 		}
 
 #if !defined( NO_ENTITY_PREDICTION )
@@ -1415,9 +1428,15 @@ void C_NEO_Player::Weapon_SetZoom(const bool bZoomIn)
 	if (bZoomIn)
 	{
 		m_Local.m_iHideHUD &= ~HIDEHUD_CROSSHAIR;
-
 		const int zoomAmount = 30;
-		SetFOV((CBaseEntity*)this, fov - zoomAmount, zoomSpeedSecs);
+		auto neoWep = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
+		if (neoWep && neoWep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
+		{
+			SetFOV((CBaseEntity*)this, neoWep->GetWpnData().iAimFOV, zoomSpeedSecs);
+		}
+		else {
+			SetFOV((CBaseEntity*)this, fov - zoomAmount, zoomSpeedSecs);
+		}
 	}
 	else
 	{
