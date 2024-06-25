@@ -206,6 +206,7 @@ public:
 #ifdef CLIENT_DLL
 	virtual bool Holster(CBaseCombatWeapon* pSwitchingTo);
 	virtual void ItemHolsterFrame() OVERRIDE;
+	virtual bool ShouldDraw(void) OVERRIDE;
 #endif
 
 	virtual bool Deploy(void);

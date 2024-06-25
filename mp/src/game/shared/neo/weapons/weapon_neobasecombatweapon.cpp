@@ -658,3 +658,58 @@ bool CNEOBaseCombatWeapon::CanDrop()
 {
 	return true;
 }
+
+#ifdef CLIENT_DLL
+
+static inline bool ShouldDrawLocalPlayerViewModel(void)
+{
+	return !C_BasePlayer::ShouldDrawLocalPlayer();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+// Output : Returns true on success, false on failure.
+//-----------------------------------------------------------------------------
+bool CNEOBaseCombatWeapon::ShouldDraw(void)
+{
+	if (m_iWorldModelIndex == 0)
+		return false;
+
+	// FIXME: All weapons with owners are set to transmit in CBaseCombatWeapon::UpdateTransmitState,
+	// even if they have EF_NODRAW set, so we have to check this here. Ideally they would never
+	// transmit except for the weapons owned by the local player.
+	if (IsEffectActive(EF_NODRAW))
+		return false;
+
+	C_BaseCombatCharacter* pOwner = GetOwner();
+
+	// weapon has no owner, always draw it
+	if (!pOwner)
+		return true;
+
+	C_BasePlayer* pLocalPlayer = C_BasePlayer::GetLocalPlayer();
+
+	// carried by local player?
+	if (pOwner == pLocalPlayer)
+	{
+		if (!pOwner->ShouldDraw())
+		{
+			// Our owner is invisible.
+			// This also tests whether the player is zoomed in, in which case you don't want to draw the weapon.
+			return false;
+		}
+
+		// 3rd person mode?
+		if (!ShouldDrawLocalPlayerViewModel())
+			return true;
+
+		// don't draw active weapon if not in some kind of 3rd person mode, the viewmodel will do that
+		return false;
+	}
+
+	// FIXME: We may want to only show active weapons on NPCs
+	// These are carried by AIs; always show them
+	return true;
+}
+
+#endif

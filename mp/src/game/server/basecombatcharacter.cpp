@@ -2344,11 +2344,11 @@ void CBaseCombatCharacter::RemoveAllWeapons()
 	{
 		if ( m_hMyWeapons[i] )
 		{
-			m_hMyWeapons[i]->Delete( );
 #ifdef NEO
 			m_hMyWeapons[i]->SetParent(NULL, 0);
 			m_hMyWeapons[i]->AddEffects(EF_NODRAW);
 #endif
+			m_hMyWeapons[i]->Delete( );
 			m_hMyWeapons.Set( i, NULL );
 		}
 	}
