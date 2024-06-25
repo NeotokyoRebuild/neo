@@ -2356,11 +2356,13 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 		case JoinMode::TeamWithLessPlayers:
 			numJin = GetGlobalTeam(TEAM_JINRAI) ? GetGlobalTeam(TEAM_JINRAI)->GetNumPlayers() : 0;
 			numNsf = GetGlobalTeam(TEAM_NSF) ? GetGlobalTeam(TEAM_NSF)->GetNumPlayers() : 0;
-			if (numJin < numNsf) {
+			if (numJin < numNsf)
+			{
 				iTeam = TEAM_JINRAI;
 				break;
 			}
-			else if (numNsf < numJin) {
+			else if (numNsf < numJin)
+			{
 				iTeam = TEAM_NSF;
 				break;
 			}
