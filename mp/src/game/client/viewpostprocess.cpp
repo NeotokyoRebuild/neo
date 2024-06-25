@@ -2528,6 +2528,22 @@ void DoEnginePostProcessing( int x, int y, int w, int h, bool bFlashlightIsOn, b
 	float flBloomScale = GetBloomAmount();
 
 	HDRType_t hdrType = g_pMaterialSystemHardwareConfig->GetHDRType();
+#ifdef NEO
+	auto target = C_NEO_Player::GetLocalNEOPlayer();
+	if (target)
+	{
+		if (target->GetObserverMode() == OBS_MODE_IN_EYE)
+		{
+			AssertMsg(!target->GetObserverTarget() || dynamic_cast<C_NEO_Player*>(target->GetObserverTarget()), "can't cast obs target into neo player");
+			target = static_cast<C_NEO_Player*>(target->GetObserverTarget());
+		}
+		if (target && target->IsInVision()) // don't want HDR to interfere with vision effects
+		{
+			hdrType = HDR_TYPE_NONE;
+			flBloomScale = 0.f;
+		}
+	}
+#endif
 
 	g_bFlashlightIsOn = bFlashlightIsOn;
 
