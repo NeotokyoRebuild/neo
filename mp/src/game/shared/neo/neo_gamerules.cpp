@@ -34,7 +34,7 @@ ConVar sv_neo_wep_dmg_modifier("sv_neo_wep_dmg_modifier", "0.5", FCVAR_REPLICATE
 ConVar neo_sv_player_restore("neo_sv_player_restore", "1", FCVAR_REPLICATED, "If enabled, the server will save players XP and deaths per match session and restore them if they reconnect.", true, 0.0f, true, 1.0f);
 
 ConVar neo_name("neo_name", "", FCVAR_USERINFO | FCVAR_ARCHIVE, "The nickname to set instead of the steam profile name.");
-ConVar cl_fakenick("cl_fakenick", "1", FCVAR_USERINFO | FCVAR_ARCHIVE, "Show players set neo_name, otherwise only show Steam names.", true, 0.0f, true, 1.0f);
+ConVar cl_onlysteamnick("cl_onlysteamnick", "0", FCVAR_USERINFO | FCVAR_ARCHIVE, "Only show players Steam names, otherwise show player set names.", true, 0.0f, true, 1.0f);
 
 REGISTER_GAMERULES_CLASS( CNEORules );
 
@@ -1346,7 +1346,7 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 
 	const char *pszSteamName = engine->GetClientConVarValue(pPlayer->entindex(), "name");
 
-	const bool clientAllowsNeoName = (1 == StrToInt(engine->GetClientConVarValue(engine->IndexOfEdict(pNEOPlayer->edict()), "cl_fakenick")));
+	const bool clientAllowsNeoName = (0 == StrToInt(engine->GetClientConVarValue(engine->IndexOfEdict(pNEOPlayer->edict()), "cl_onlysteamnick")));
 	const char *pszNeoName = engine->GetClientConVarValue(pNEOPlayer->entindex(), neo_name.GetName());
 	const char *pszOldNeoName = pNEOPlayer->GetNeoPlayerNameDirect();
 	bool updateDupeCheck = false;
@@ -1357,7 +1357,7 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 	{
 		if (pszOldNeoName != NULL && clientAllowsNeoName)
 		{
-			// This is basically player_changename but allows for client to filter it out with cl_fakenick toggle
+			// This is basically player_changename but allows for client to filter it out with cl_onlysteamnick toggle
 			IGameEvent *event = gameeventmanager->CreateEvent("player_changeneoname");
 			if (event)
 			{
@@ -1406,7 +1406,7 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 
 	if (updateDupeCheck)
 	{
-		// Update name duplication checker (only used if cl_fakenick=1/neo_name is used, but always set)
+		// Update name duplication checker (only used if cl_onlysteamnick=0/neo_name is used, but always set)
 		KeyValues *dupeData = new KeyValues("dupeData");
 		for (int i = 1; i <= gpGlobals->maxClients; ++i)
 		{
