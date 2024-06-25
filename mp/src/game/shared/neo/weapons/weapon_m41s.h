@@ -41,7 +41,7 @@ public:
 	virtual void	AddViewKick(void) OVERRIDE;
 	void	DryFire(void);
 
-	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const OVERRIDE { return NEO_WEP_M41_S; }
+	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const OVERRIDE { return NEO_WEP_M41_S | NEO_WEP_SUPPRESSED; }
 	virtual int GetNeoWepXPCost(const int neoClass) const OVERRIDE { return 0; }
 
 	virtual float GetSpeedScale(void) const OVERRIDE { return 145.0 / 170.0; }
@@ -50,7 +50,6 @@ public:
 
 	virtual Activity	GetPrimaryAttackActivity(void) OVERRIDE;
 
-	virtual float GetFireRate(void) OVERRIDE { return 0.1f; }
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
 	virtual float GetAccuracyPenalty() const OVERRIDE { return 0.2f; }

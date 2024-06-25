@@ -31,14 +31,15 @@ public:
 	int m_iPlayerDamage;
 
 #ifdef NEO
-	float m_flVMFov;
-
+	float m_flVMFov = 0.0f;
 	Vector m_vecVMPosOffset;
 	QAngle m_angVMAngOffset;
 
-	float m_flVMAimFov;
+	float m_flVMAimFov = 0.0f;
 	Vector m_vecVMAimPosOffset;
 	QAngle m_angVMAimAngOffset;
+
+	float m_flCycleTime = 0.0f;
 #endif
 };
 

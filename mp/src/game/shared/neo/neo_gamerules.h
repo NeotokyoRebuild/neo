@@ -14,6 +14,7 @@
 
 #ifndef CLIENT_DLL
 	#include "neo_player.h"
+	#include "utlhashtable.h"
 #endif
 
 enum
@@ -83,6 +84,8 @@ class CNEO_Player;
 class C_NEO_Player;
 #endif
 
+extern ConVar neo_sv_player_restore;
+
 enum NeoRoundStatus {
 	Idle = 0,
 	Warmup,
@@ -132,8 +135,6 @@ public:
 
 	virtual void Think( void ) OVERRIDE;
 	virtual void CreateStandardEntities( void ) OVERRIDE;
-
-	virtual int WeaponShouldRespawn(CBaseCombatWeapon* pWeapon) OVERRIDE;
 
 	virtual const char *GetGameDescription( void ) OVERRIDE;
 	virtual const CViewVectors* GetViewVectors() const OVERRIDE;
@@ -245,9 +246,18 @@ public:
 #ifdef GAME_DLL
 	// Workaround for bot spawning. See Bot_f() for details.
 	bool m_bNextClientIsFakeClient;
+	struct RestoreInfo
+	{
+		int xp;
+		int deaths;
+	};
+	// AccountID_t <- CSteamID::GetAccountID
+	CUtlHashtable<AccountID_t, RestoreInfo> m_pRestoredInfos;
 #endif
 
 private:
+	void ResetMapSessionCommon();
+
 #ifdef GAME_DLL
 	CUtlVector<int> m_pGhostCaps;
 #endif

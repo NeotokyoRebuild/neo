@@ -367,58 +367,42 @@ void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 
 	if (auto neoPlayer = static_cast<CNEO_Player*>(pOwner))
 	{
-		const bool playerAiming = neoPlayer->IsInAim();
-		const float currentTime = gpGlobals->curtime;
-		if (m_bViewAim && !playerAiming)
+		vOffset = m_vOffset;
+		angOffset = m_angOffset;
+#ifdef CLIENT_DLL
+		if (!prediction->InPrediction())
+#endif
 		{
-			// From aiming to not aiming
-			m_flStartAimingChange = currentTime;
-			m_bViewAim = false;
-		}
-		else if (!m_bViewAim && playerAiming)
-		{
-			// From not aiming to aiming
-			m_flStartAimingChange = currentTime;
-			m_bViewAim = true;
-		}
-		const float endAimingChange = m_flStartAimingChange + NEO_ZOOM_SPEED;
-		const bool inAimingChange = (m_flStartAimingChange <= currentTime && currentTime < endAimingChange);
-		if (inAimingChange)
-		{
-			float percentage = (currentTime - m_flStartAimingChange) / NEO_ZOOM_SPEED;
-			if (percentage > 1.0f) percentage = 1.0f;
-			else if (percentage < 0.0f) percentage = 0.0f;
-
-			Vector vecVMDelta = data.m_vecVMAimPosOffset - data.m_vecVMPosOffset;
-			vecVMDelta *= percentage;
-
-			QAngle angVMDelta = data.m_angVMAimAngOffset - data.m_angVMAngOffset;
-			angVMDelta *= percentage;
-			if (playerAiming)
+			const bool playerAiming = neoPlayer->IsInAim();
+			const float currentTime = gpGlobals->curtime;
+			if (m_bViewAim && !playerAiming)
 			{
-				// From not aiming to aiming gradual
-				vOffset = data.m_vecVMPosOffset + vecVMDelta;
-				angOffset = data.m_angVMAngOffset + angVMDelta;
+				// From aiming to not aiming
+				m_flStartAimingChange = currentTime;
+				m_bViewAim = false;
+			}
+			else if (!m_bViewAim && playerAiming)
+			{
+				// From not aiming to aiming
+				m_flStartAimingChange = currentTime;
+				m_bViewAim = true;
+			}
+			const float endAimingChange = m_flStartAimingChange + NEO_ZOOM_SPEED;
+			const bool inAimingChange = (m_flStartAimingChange <= currentTime && currentTime < endAimingChange);
+			if (inAimingChange)
+			{
+				float percentage = clamp((currentTime - m_flStartAimingChange) / NEO_ZOOM_SPEED, 0.0f, 1.0f);
+				if (playerAiming) percentage = 1.0f - percentage;
+				vOffset = Lerp(percentage, data.m_vecVMAimPosOffset, data.m_vecVMPosOffset);
+				angOffset = Lerp(percentage, data.m_angVMAimAngOffset, data.m_angVMAngOffset);
 			}
 			else
 			{
-				// From aiming to not aiming gradual
-				vOffset = data.m_vecVMAimPosOffset - vecVMDelta;
-				angOffset = data.m_angVMAimAngOffset - angVMDelta;
+				vOffset = (playerAiming) ? data.m_vecVMAimPosOffset : data.m_vecVMPosOffset;
+				angOffset = (playerAiming) ? data.m_angVMAimAngOffset : data.m_angVMAngOffset;
 			}
-		}
-		else
-		{
-			if (playerAiming)
-			{
-				vOffset = data.m_vecVMAimPosOffset;
-				angOffset = data.m_angVMAimAngOffset;
-			}
-			else
-			{
-				vOffset = data.m_vecVMPosOffset;
-				angOffset = data.m_angVMAngOffset;
-			}
+			m_vOffset = vOffset;
+			m_angOffset = angOffset;
 		}
 	}
 	
