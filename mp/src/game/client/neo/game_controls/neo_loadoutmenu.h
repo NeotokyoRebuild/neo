@@ -45,6 +45,7 @@ public:
 	}
 
 protected:
+	virtual void OnClose() override;
 	void OnCommand(const char *command);
 	void ChangeMenu(const char* menuName);
 	void OnKeyCodeReleased(vgui::KeyCode code);
