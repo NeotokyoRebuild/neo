@@ -41,6 +41,8 @@ public:
 	Activity GetPrimaryAttackActivity(void) OVERRIDE;
 
 	virtual float GetFireRate() OVERRIDE { return 0.333f; }
+	
+	virtual const Vector& GetBulletSpread(void) OVERRIDE { return VECTOR_CONE_7DEGREES; };
 
 protected:
 	virtual float GetAccuracyPenalty() const OVERRIDE { return 0.2f; }
