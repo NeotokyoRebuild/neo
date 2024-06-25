@@ -1727,7 +1727,7 @@ void CBasePlayer::CalcObserverView( Vector& eyeOrigin, QAngle& eyeAngles, float&
 {
 #if defined( CLIENT_DLL )
 #ifdef NEO
-	m_Local.m_iHideHUD &= ~HIDEHUD_CROSSHAIR;
+	m_Local.m_iHideHUD |= HIDEHUD_CROSSHAIR;
 #endif
 	switch ( GetObserverMode() )
 	{
