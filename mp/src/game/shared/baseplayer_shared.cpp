@@ -101,7 +101,7 @@ ConVar mp_usehwmmodels( "mp_usehwmmodels", "0", FCVAR_NONE, "Enable the use of t
 #endif
 
 #ifdef NEO
-ConVar neo_fov("neo_fov", "90", FCVAR_USERINFO, "Set the normal FOV.", true, 60.0f, true, (float)(MAX_FOV));
+ConVar neo_fov("neo_fov", "90", FCVAR_USERINFO | FCVAR_ARCHIVE, "Set the normal FOV.", true, 60.0f, true, (float)(MAX_FOV));
 #endif
 
 bool UseHWMorphModels()
