@@ -43,7 +43,7 @@ ConVar neo_cl_hud_debug_compass_color_a("neo_cl_hud_debug_compass_color_a", "255
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(Compass, 0.00695)
 
 CNEOHud_Compass::CNEOHud_Compass(const char *pElementName, vgui::Panel *parent)
-	: CHudElement(pElementName), Panel(parent, pElementName)
+	: CHudElement(pElementName), EditablePanel(parent, pElementName)
 {
 	SetAutoDelete(true);
 
@@ -165,6 +165,8 @@ void CNEOHud_Compass::DrawNeoHudElement(void)
 void CNEOHud_Compass::ApplySchemeSettings(vgui::IScheme *pScheme)
 {
 	BaseClass::ApplySchemeSettings(pScheme);
+
+	LoadControlSettings("scripts/HudLayout.res");
 
 	m_hFont = pScheme->GetFont("NHudOCRSmall");
 	m_savedXBoxWidth = 0;

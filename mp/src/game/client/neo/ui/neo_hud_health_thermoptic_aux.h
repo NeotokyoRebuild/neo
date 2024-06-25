@@ -6,13 +6,13 @@
 
 #include "neo_hud_childelement.h"
 #include "hudelement.h"
-#include <vgui_controls/Panel.h>
+#include <vgui_controls/EditablePanel.h>
 
 class CNeoHudElements;
 
-class CNEOHud_HTA : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
+class CNEOHud_HTA : public CNEOHud_ChildElement, public CHudElement, public vgui::EditablePanel
 {
-	DECLARE_CLASS_SIMPLE(CNEOHud_HTA, Panel);
+	DECLARE_CLASS_SIMPLE(CNEOHud_HTA, EditablePanel);
 public:
 	CNEOHud_HTA(const char* pElementName, vgui::Panel* parent);
 
@@ -31,7 +31,8 @@ private:
 	void DrawHTA() const;
 
 private:
-	vgui::HFont m_hFont, m_hFontBuildInfo;
+	vgui::HFont m_hFont = 0;
+	vgui::HFont m_hFontBuildInfo = 0;
 
 	int m_resX, m_resY;
 
