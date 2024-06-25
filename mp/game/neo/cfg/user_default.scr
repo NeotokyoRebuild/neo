@@ -53,9 +53,9 @@ DESCRIPTION INFO_OPTIONS
 	}
 	"neo_fov"
 	{
-		"FOV (60 - 110)"
-		{ NUMBER 60 110 } // Alternatively SLIDER, but can't have both?
-		{ "90" }
+		"FOV (75 - 110)"
+		{ NUMBER 75 110 } // Alternatively SLIDER, but can't have both?
+		{ "75" }
 	}
 	"neo_viewmodel_fov_offset"
 	{
