@@ -2100,7 +2100,11 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 #if defined( HL2MP ) && defined( GAME_DLL )
 	if ( bDoServerEffects == false )
 	{
+#ifdef NEO
+		TE_HL2MPFireBullets(entindex(), tr.startpos, info.m_vecDirShooting, info.m_iAmmoType, iEffectSeed, info.m_iShots, info.m_vecSpread, bDoTracers, bDoImpacts);
+#else
 		TE_HL2MPFireBullets( entindex(), tr.startpos, info.m_vecDirShooting, info.m_iAmmoType, iEffectSeed, info.m_iShots, info.m_vecSpread.x, bDoTracers, bDoImpacts );
+#endif
 	}
 #endif
 
