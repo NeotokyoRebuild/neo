@@ -149,7 +149,11 @@ bool CBaseHL2MPCombatWeapon::Holster( CBaseCombatWeapon *pSwitchingTo )
 {
 	if ( BaseClass::Holster( pSwitchingTo ) )
 	{
+#ifdef NEO
+		RemoveEffects(EF_BONEMERGE);
+#else
 		SetWeaponVisible( false );
+#endif
 		m_flHolsterTime = gpGlobals->curtime;
 		return true;
 	}
