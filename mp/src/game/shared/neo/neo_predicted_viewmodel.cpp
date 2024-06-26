@@ -21,14 +21,29 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-LINK_ENTITY_TO_CLASS(neo_predicted_viewmodel, CNEOPredictedViewModel);
 
-IMPLEMENT_NETWORKCLASS_ALIASED( NEOPredictedViewModel, DT_NEOPredictedViewModel )
+IMPLEMENT_NETWORKCLASS_ALIASED(NEOPredictedViewModel, DT_NEOPredictedViewModel)
 
-BEGIN_NETWORK_TABLE( CNEOPredictedViewModel, DT_NEOPredictedViewModel )
+BEGIN_NETWORK_TABLE(CNEOPredictedViewModel, DT_NEOPredictedViewModel)
+#ifdef CLIENT_DLL
+RecvPropFloat(RECVINFO(m_flYPrevious)),
+#else
+SendPropFloat(SENDINFO(m_flYPrevious)),
+#endif
 END_NETWORK_TABLE()
 
+#ifdef CLIENT_DLL
+BEGIN_PREDICTION_DATA(CNEOPredictedViewModel)
+DEFINE_PRED_FIELD(m_flYPrevious, FIELD_FLOAT, FTYPEDESC_INSENDTABLE),
+END_PREDICTION_DATA()
+#endif
+
+LINK_ENTITY_TO_CLASS(neo_predicted_viewmodel, CNEOPredictedViewModel);
+
 CNEOPredictedViewModel::CNEOPredictedViewModel()
+#ifdef CLIENT_DLL
+	: m_iv_flYPrevious("CNEOPredictedViewModel::m_iv_flYPrevious")
+#endif
 {
 #ifdef CLIENT_DLL
 #ifdef DEBUG
@@ -36,20 +51,16 @@ CNEOPredictedViewModel::CNEOPredictedViewModel()
 	Assert(pass && pass->IsPrecached());
 #endif
 
-	AddToInterpolationList();
+	AddVar(&m_flYPrevious, &m_iv_flYPrevious, LATCH_SIMULATION_VAR);
 #endif
 
 	m_flYPrevious = 0;
-	m_flLastLeanTime = 0;
 	m_flStartAimingChange = 0;
 	m_bViewAim = false;
 }
 
 CNEOPredictedViewModel::~CNEOPredictedViewModel()
 {
-#ifdef CLIENT_DLL
-	RemoveFromInterpolationList();
-#endif
 }
 
 #ifdef CLIENT_DLL
@@ -197,11 +208,21 @@ float CNEOPredictedViewModel::freeRoomForLean(float leanAmount, CNEO_Player *pla
 }
 
 #ifdef CLIENT_DLL
+void CNEOPredictedViewModel::PostDataUpdate(DataUpdateType_t updateType)
+{
+	SetNextClientThink(CLIENT_THINK_ALWAYS);
+	BaseClass::PostDataUpdate(updateType);
+}
+
+void CNEOPredictedViewModel::ClientThink()
+{
+	SetNextClientThink(CLIENT_THINK_ALWAYS);
+	BaseClass::ClientThink();
+}
+
 int CNEOPredictedViewModel::DrawModel(int flags)
 {
 	auto pPlayer = static_cast<C_NEO_Player*>(GetOwner());
-
-	Assert(pPlayer);
 
 	if (pPlayer)
 	{
@@ -276,6 +297,7 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 
 	const float dY = Yfinal - Ycurrent;
 
+
 	if (dY != 0){
 		const float leanStep = 0.25f;
 
@@ -284,18 +306,7 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 			Ycurrent = Yfinal;
 		}
 		else {
-#ifdef CLIENT_DLL
-			// Less than 0.1 ms latency, this must be a LAN connection. Don't interpolate.
-			if (engine->GetNetChannelInfo()->GetAvgLatency(FLOW_OUTGOING) < 0.0001) {
-				Ycurrent = Lerp(leanStep * neo_lean_speed.GetFloat() * 1.5f, Ycurrent, Yfinal);
-			}
-			// We have to interpolate here to avoid prediction error jitter over network connections.
-			else {
-				Ycurrent = Lerp(leanStep * neo_lean_speed.GetFloat() * gpGlobals->interpolation_amount, Ycurrent, Yfinal);
-			}
-#else
 			Ycurrent = Lerp(leanStep * neo_lean_speed.GetFloat(), Ycurrent, Yfinal);
-#endif
 		}
 	}
 
@@ -331,6 +342,11 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 	viewAng.z = leanAngle;
 #ifdef CLIENT_DLL
 	engine->SetViewAngles(viewAng);
+#endif
+
+#ifdef GAME_DLL
+	SetSimulationTime(gpGlobals->curtime);
+	SetNextThink(gpGlobals->curtime);
 #endif
 
 	if (leanAngle >= 0)
@@ -419,8 +435,6 @@ void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 RenderGroup_t CNEOPredictedViewModel::GetRenderGroup()
 {
 	auto pPlayer = static_cast<C_NEO_Player*>(GetOwner());
-	Assert(pPlayer);
-
 	if (pPlayer)
 	{
 		return pPlayer->IsCloaked() ? RENDER_GROUP_VIEW_MODEL_TRANSLUCENT : RENDER_GROUP_VIEW_MODEL_OPAQUE;
