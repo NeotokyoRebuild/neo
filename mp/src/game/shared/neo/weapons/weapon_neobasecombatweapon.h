@@ -133,6 +133,7 @@ public:
 	virtual void Precache() OVERRIDE;
 
 	virtual void Spawn();
+	virtual void Equip(CBaseCombatCharacter* pOwner) OVERRIDE;
 	virtual	void CheckReload(void);
 
 	virtual bool Reload( void );
@@ -212,6 +213,7 @@ public:
 #ifdef CLIENT_DLL
 	virtual bool Holster(CBaseCombatWeapon* pSwitchingTo);
 	virtual void ItemHolsterFrame() OVERRIDE;
+	virtual bool ShouldDraw(void) OVERRIDE;
 #endif
 
 	virtual bool Deploy(void);

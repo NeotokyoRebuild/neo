@@ -129,6 +129,41 @@ void CNEOBaseCombatWeapon::Spawn()
 #endif
 }
 
+void CNEOBaseCombatWeapon::Equip(CBaseCombatCharacter* pOwner)
+{
+	BaseClass::Equip(pOwner);
+#ifndef CLIENT_DLL
+	NEO_WEP_BITS_UNDERLYING_TYPE weapon = GetNeoWepBits();
+	if (weapon & (NEO_WEP_KYLA | NEO_WEP_MILSO | NEO_WEP_TACHI))
+		SetParentAttachment("SetParentAttachment", "pistol", false);
+	else if (weapon & NEO_WEP_FRAG_GRENADE)
+	{
+		SetLocalOrigin(Vector(-1.5, 5, -1.5));
+		SetLocalAngles(QAngle(0, 0, 90));
+		SetParentAttachment("SetParentAttachment", "defusekit", true);
+	}
+	else if (weapon & NEO_WEP_SMOKE_GRENADE)
+	{
+		SetLocalOrigin(Vector(-1.5, 5, -3.5));
+		SetLocalAngles(QAngle(0, 0, 90));
+		SetParentAttachment("SetParentAttachment", "defusekit", true);
+	}
+	else if (weapon & NEO_WEP_DETPACK)
+	{
+		SetLocalOrigin(Vector(3, 1, -9));
+		SetLocalAngles(QAngle(-50, -30, 90));
+		SetParentAttachment("SetParentAttachment", "defusekit", true);
+	}
+	else if (weapon & NEO_WEP_KNIFE)
+	{
+		return;
+	}
+	else
+		SetParentAttachment("SetParentAttachment", "primary", false);
+#endif
+}
+
+
 bool CNEOBaseCombatWeapon::Reload( void )
 {
 	return BaseClass::Reload();
@@ -210,6 +245,8 @@ bool CNEOBaseCombatWeapon::Deploy(void)
 
 	if (ret)
 	{
+		AddEffects(EF_BONEMERGE);
+
 		m_bReadyToAimIn = false;
 
 #ifdef DEBUG
@@ -699,6 +736,57 @@ void CNEOBaseCombatWeapon::DispatchMuzzleParticleEffect(int iAttachment) {
 
 	CSingleUserRecipientFilter filter(UTIL_PlayerByIndex(GetLocalPlayerIndex()));
 	te->DispatchEffect(filter, 0.0, data.m_vOrigin, "ParticleEffect", data);
+}
+
+static inline bool ShouldDrawLocalPlayerViewModel(void)
+{
+	return !C_BasePlayer::ShouldDrawLocalPlayer();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+// Output : Returns true on success, false on failure.
+//-----------------------------------------------------------------------------
+bool CNEOBaseCombatWeapon::ShouldDraw(void)
+{
+	if (m_iWorldModelIndex == 0)
+		return false;
+
+	// FIXME: All weapons with owners are set to transmit in CBaseCombatWeapon::UpdateTransmitState,
+	// even if they have EF_NODRAW set, so we have to check this here. Ideally they would never
+	// transmit except for the weapons owned by the local player.
+	if (IsEffectActive(EF_NODRAW))
+		return false;
+
+	C_BaseCombatCharacter* pOwner = GetOwner();
+
+	// weapon has no owner, always draw it
+	if (!pOwner)
+		return true;
+
+	C_BasePlayer* pLocalPlayer = C_BasePlayer::GetLocalPlayer();
+
+	// carried by local player?
+	if (pOwner == pLocalPlayer)
+	{
+		if (!pOwner->ShouldDraw())
+		{
+			// Our owner is invisible.
+			// This also tests whether the player is zoomed in, in which case you don't want to draw the weapon.
+			return false;
+		}
+
+		// 3rd person mode?
+		if (!ShouldDrawLocalPlayerViewModel())
+			return true;
+
+		// don't draw active weapon if not in some kind of 3rd person mode, the viewmodel will do that
+		return false;
+	}
+
+	// FIXME: We may want to only show active weapons on NPCs
+	// These are carried by AIs; always show them
+	return true;
 }
 #endif
 
