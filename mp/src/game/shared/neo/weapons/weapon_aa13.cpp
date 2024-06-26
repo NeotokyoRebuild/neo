@@ -200,7 +200,8 @@ void CWeaponAA13::PrimaryAttack(void)
 	Vector vecSrc = pPlayer->Weapon_ShootPosition();
 	Vector vecAiming = pPlayer->GetAutoaimVector(AUTOAIM_10DEGREES);
 
-	FireBulletsInfo_t info(7, vecSrc, vecAiming, GetBulletSpread(), MAX_TRACE_LENGTH, m_iPrimaryAmmoType);
+	Vector vecSpread = GetBulletSpread();
+	FireBulletsInfo_t info(5, vecSrc, vecAiming, vecSpread, MAX_TRACE_LENGTH, m_iPrimaryAmmoType);
 	info.m_pAttacker = pPlayer;
 
 	// Fire the bullets, and force the first shot to be perfectly accurate
