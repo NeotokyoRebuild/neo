@@ -408,7 +408,7 @@ void CNEOScoreBoard::UpdateTeamInfo()
 
 				if (i != TEAM_SPECTATOR)
 				{
-					V_snwprintf(val, ARRAYSIZE(val), L"%ls: %d", teamName, team->Get_Score());
+					V_snwprintf(val, ARRAYSIZE(val), L"%ls: %d", teamName, team->GetRoundsWon());
 					pPlayerList->ModifyColumn(sectionID, "ping", val);
 					V_snwprintf(string1, ARRAYSIZE(string1), L"Players: %ls", wNumPlayers);
 					pPlayerList->ModifyColumn(sectionID, "name", string1);
