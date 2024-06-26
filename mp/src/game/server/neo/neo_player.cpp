@@ -493,11 +493,6 @@ void CNEO_Player::UpdateNetworkedFriendlyLocations()
 	}
 }
 
-void CNEO_Player::SetDefaultFOV(const int fov)
-{
-	m_iDefaultFOV.Set(fov);
-}
-
 void CNEO_Player::Precache( void )
 {
 	BaseClass::Precache();
@@ -1237,23 +1232,7 @@ void CNEO_Player::Weapon_SetZoom(const bool bZoomIn)
 	ShowCrosshair(bZoomIn);
 	
 	const int fov = GetDefaultFOV();
-	if (bZoomIn)
-	{
-		const int zoomAmount = 30;
-		auto neoWep = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
-		if (neoWep && neoWep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
-		{
-			SetFOV((CBaseEntity*)this, neoWep->GetWpnData().iAimFOV, NEO_ZOOM_SPEED);
-		}
-		else {
-			SetFOV((CBaseEntity*)this, fov - zoomAmount, NEO_ZOOM_SPEED);
-		}
-	}
-	else
-	{
-		SetFOV((CBaseEntity*)this, fov, NEO_ZOOM_SPEED);
-	}
-
+	SetFOV(static_cast<CBaseEntity *>(this), bZoomIn ? NeoAimFOV(fov, GetActiveWeapon()) : fov, NEO_ZOOM_SPEED);
 	m_bInAim = bZoomIn;
 }
 

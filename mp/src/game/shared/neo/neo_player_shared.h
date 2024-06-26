@@ -215,6 +215,7 @@ enum NeoStar {
 
 class CNEO_Player;
 class CNEOBaseCombatWeapon;
+class C_BaseCombatWeapon;
 enum PlayerAnimEvent_t : uint;
 
 extern bool IsThereRoomForLeanSlide(CNEO_Player *player,
@@ -299,5 +300,6 @@ struct AttackersTotals
 };
 
 [[nodiscard]] auto StrToInt(std::string_view strView) -> std::optional<int>;
+[[nodiscard]] int NeoAimFOV(const int fovDef, CBaseCombatWeapon *wep);
 
 #endif // NEO_PLAYER_SHARED_H
