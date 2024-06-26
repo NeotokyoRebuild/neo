@@ -174,6 +174,7 @@ public:
 private:
 	void CheckThermOpticButtons();
 	void CheckVisionButtons();
+	void CheckLeanButtons();
 	void PlayCloakSound();
 
 	bool IsAllowedToSuperJump(void);

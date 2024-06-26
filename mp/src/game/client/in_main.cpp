@@ -518,6 +518,32 @@ void IN_ThermOpticDown(const CCommand &args) { KeyDown(&in_thermoptic, args[1]);
 
 void IN_VisionUp(const CCommand &args) { KeyUp(&in_vision, args[1]); }
 void IN_VisionDown(const CCommand &args) { KeyDown(&in_vision, args[1]); }
+
+void IN_LeanLeftToggle(const CCommand& args)
+{
+	if (::input->KeyState(&in_lean_left))
+	{
+		KeyUp(&in_lean_left, args[1]);
+	}
+	else
+	{
+		KeyDown(&in_lean_left, args[1]);
+		KeyUp(&in_lean_right, args[1]);
+	}
+}
+
+void IN_LeanRightToggle(const CCommand& args)
+{
+	if (::input->KeyState(&in_lean_right))
+	{
+		KeyUp(&in_lean_right, args[1]);
+	}
+	else
+	{
+		KeyDown(&in_lean_right, args[1]);
+		KeyUp(&in_lean_left, args[1]);
+	}
+}
 #endif
 
 void IN_DuckToggle( const CCommand &args ) 
@@ -1696,6 +1722,9 @@ static ConCommand endthermoptic("-thermoptic", IN_ThermOpticUp);
 
 static ConCommand startvision("+vision", IN_VisionDown);
 static ConCommand endvision("-vision", IN_VisionUp);
+
+static ConCommand toggle_leanleft("toggle_leanl", IN_LeanLeftToggle);
+static ConCommand toggle_leanright("toggle_leanr", IN_LeanRightToggle);
 #endif
 
 /*
