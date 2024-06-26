@@ -4,6 +4,7 @@
 #pragma once
 #endif
 
+#include "neo_gamerules.h"
 #include "neo_hud_childelement.h"
 #include "hudelement.h"
 #include <vgui_controls/Panel.h>
@@ -29,10 +30,16 @@ protected:
 	virtual ConVar* GetUpdateFrequencyConVar() const;
 
 private:
-	void FireGameEvent(IGameEvent* event) OVERRIDE;
+	struct TeamLogoColor
+	{
+		int logo;
+		int totalLogo;
+		Color color;
+	};
+
 	void CheckActiveStar();
-	void DrawFriend(int playerIndex, int teamIndex);
-	void DrawEnemy(int playerIndex, int teamIndex);
+	void DrawPlayer(int playerIndex, int teamIndex, const TeamLogoColor &teamLogoColor,
+					const int xOffset, const bool drawHealthClass);
 	void UpdatePlayerAvatar(int playerIndex);
 	void SetTextureToAvatar(int playerIndex);
 
@@ -90,27 +97,17 @@ private:
 	int m_iPreviouslyActiveTeam;
 
 	// Graphic IDs
-	int m_iJinraiID;
-	int m_iJinraiTotalID;
-	int m_iNSFID;
-	int m_iNSFTotalID;
 	int m_iSupportID;
 	int m_iAssaultID;
 	int m_iReconID;
 	int m_iVIPID;
-	
-	// Graphic IDs used
-	int m_iFriendlyLogo;
-	int m_iFriendlyTotalLogo;
-	int m_iEnemyLogo;
-	int m_iEnemyTotalLogo;
+
+	TeamLogoColor m_teamLogoColors[TEAM__TOTAL] = {};
 
 	Color whiteColor = Color(255, 255, 255, 255);
 	Color fadedWhiteColor = Color(255, 255, 255, 176);
 	Color darkColor = Color(55, 55, 55, 255);
 	Color fadedDarkColor = Color(55, 55, 55, 176);
-	Color friendlyColor;
-	Color enemyColor;
 	Color deadColor = Color(155, 155, 155, 255);
 
 	vgui::ImageList* m_pImageList;
