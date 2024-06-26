@@ -263,8 +263,10 @@ enum CastVote
 #define MAX_PLACE_NAME_LENGTH		18
 
 #ifdef NEO
-#define MAX_FOV						110
-#define DEFAULT_FOV					90
+// NEO NOTE (nullsystem): DEFAULT_FOV done as macro so V_STRINGIFY can be used for ConVar
+static constexpr int MAX_FOV = 110;
+#define DEFAULT_FOV 75
+static constexpr int MIN_FOV = 75;
 #else
 #define MAX_FOV						90
 #endif

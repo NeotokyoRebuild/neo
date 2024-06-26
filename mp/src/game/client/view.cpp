@@ -72,7 +72,10 @@ extern ConVar default_fov;
 extern bool g_bRenderingScreenshot;
 
 #ifdef NEO
-extern ConVar neo_fov;
+ConVar neo_fov("neo_fov", V_STRINGIFY(DEFAULT_FOV), FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the normal FOV.", true, static_cast<float>(MIN_FOV), true, static_cast<float>(MAX_FOV));
+ConVar neo_fov_relay_spec("neo_fov_relay_spec", "0", FCVAR_ARCHIVE | FCVAR_USERINFO,
+		"If enabled, during first-person spectating, it will relay the target player's neo_fov to the spectator."
+		" This ConVar is controlled by the spectator, not the target player.", true, 0.0f, true, 1.0f);
 #endif
 
 #if !defined( _X360 )
@@ -621,10 +624,16 @@ void CViewRender::OnRenderStart()
 	C_BasePlayer *player = C_BasePlayer::GetLocalPlayer();
 	if ( player )
 	{
+#ifndef NEO
 		default_fov.SetValue( player->m_iDefaultFOV );
+#endif
 
 		//Update our FOV, including any zooms going on
+#ifdef NEO
+		int iDefaultFOV = neo_fov.GetInt();
+#else
 		int iDefaultFOV = default_fov.GetInt();
+#endif
 		int	localFOV	= player->GetFOV();
 		int min_fov		= player->GetMinFOV();
 

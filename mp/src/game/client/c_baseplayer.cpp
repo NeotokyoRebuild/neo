@@ -130,6 +130,11 @@ ConVar cl_meathook_neck_pivot_ingame_fwd( "cl_meathook_neck_pivot_ingame_fwd", "
 
 static ConVar	cl_clean_textures_on_death( "cl_clean_textures_on_death", "0", FCVAR_DEVELOPMENTONLY,  "If enabled, attempts to purge unused textures every time a freeze cam is shown" );
 
+#ifdef NEO
+extern ConVar neo_fov;
+extern ConVar neo_fov_relay_spec;
+#endif
+
 
 void RecvProxy_LocalVelocityX( const CRecvProxyData *pData, void *pStruct, void *pOut );
 void RecvProxy_LocalVelocityY( const CRecvProxyData *pData, void *pStruct, void *pOut );
@@ -2573,6 +2578,7 @@ float C_BasePlayer::GetFOV( void )
 		return clamp( demo_fov_override.GetFloat(), 10.0f, 90.0f );
 	}
 
+#ifndef NEO
 	if ( GetObserverMode() == OBS_MODE_IN_EYE )
 	{
 		C_BasePlayer *pTargetPlayer = dynamic_cast<C_BasePlayer*>( GetObserverTarget() );
@@ -2583,6 +2589,40 @@ float C_BasePlayer::GetFOV( void )
 			return pTargetPlayer->GetFOV();
 		}
 	}
+#else
+	if (GetObserverMode() == OBS_MODE_IN_EYE)
+	{
+		auto *pTargetPlayer = dynamic_cast<CNEO_Player *>(GetObserverTarget());
+
+		// get fov from observer target. Not if target is observer itself
+		if (pTargetPlayer && !pTargetPlayer->IsObserver())
+		{
+			// NEO NOTE (nullsystem): This uses a percentage based rather than delta, but it's good enough
+			// to provide a motion of going between ADS states rather than immediate for the spectator viewing
+			// in first person
+			float fov = pTargetPlayer->m_flSpecFOV;
+			if (!prediction->InPrediction())
+			{
+				const int fovNormInt = (neo_fov_relay_spec.GetBool()) ? pTargetPlayer->m_iDefaultFOV : neo_fov.GetInt();
+				const float fovNorm = static_cast<float>(fovNormInt);
+				const float fovAim = static_cast<float>(NeoAimFOV(fovNormInt, pTargetPlayer->GetActiveWeapon()));
+
+				// Don't spline/lerp when we're already at the desired FOV
+				if ((pTargetPlayer->m_bInAim && (fov == fovAim)) ||
+						(!pTargetPlayer->m_bInAim && (fov == fovNorm)))
+				{
+					return fov;
+				}
+				float perc = (gpGlobals->curtime - pTargetPlayer->m_flFOVTime) / NEO_ZOOM_SPEED;
+				perc = clamp(perc, 0.0f, 1.0f);
+				if (pTargetPlayer->m_bInAim) perc = 1.0f - perc;
+				fov = SimpleSplineRemapValClamped( perc, 0.0f, 1.0f, fovAim, fovNorm);
+				pTargetPlayer->m_flSpecFOV = fov;
+			}
+			return fov;
+		}
+	}
+#endif
 
 	// Allow our vehicle to override our FOV if it's currently at the default FOV.
 	float flDefaultFOV;
@@ -2594,7 +2634,11 @@ float C_BasePlayer::GetFOV( void )
 	}
 	else
 	{
+#ifdef NEO
+		flDefaultFOV = neo_fov.GetFloat();
+#else
 		flDefaultFOV = GetDefaultFOV();
+#endif
 	}
 	
 	float fFOV = ( m_iFOV == 0 ) ? flDefaultFOV : m_iFOV;

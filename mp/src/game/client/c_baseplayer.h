@@ -164,10 +164,6 @@ public:
 	void ResetObserverMode();
 	bool IsBot( void ) const { return false; }
 
-#ifdef NEO
-	int ClientFOV() const;
-#endif
-
 	// Eye position..
 	virtual Vector		 EyePosition();
 	virtual const QAngle &EyeAngles();		// Direction of eyes
