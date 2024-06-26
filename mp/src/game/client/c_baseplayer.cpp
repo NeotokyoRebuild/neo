@@ -1902,6 +1902,17 @@ void C_BasePlayer::CalcInEyeCamView(Vector& eyeOrigin, QAngle& eyeAngles, float&
 	}
 
 	engine->SetViewAngles( eyeAngles );
+
+#ifdef NEO
+	if (static_cast<CNEO_Player *>(target)->m_bInAim)
+	{
+		m_Local.m_iHideHUD &= ~HIDEHUD_CROSSHAIR;
+	}
+	else
+	{
+		m_Local.m_iHideHUD |= HIDEHUD_CROSSHAIR;
+	}
+#endif
 }
 
 float C_BasePlayer::GetDeathCamInterpolationTime()
