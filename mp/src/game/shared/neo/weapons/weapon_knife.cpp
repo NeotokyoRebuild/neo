@@ -305,7 +305,7 @@ void CWeaponKnife::Hit(trace_t& traceHit, [[maybe_unused]] Activity nHitActivity
 
 		//engine->Con_NPrintf(3, "Angle: %f", dotProduct);
 
-		CTakeDamageInfo info(GetOwner(), GetOwner(), (dotProduct > 0.475 ? KNIFE_DAMAGE : (100 * (1 / NEO_SUPPORT_DAMAGE_MODIFIER)) + 1), DMG_SLASH);
+		CTakeDamageInfo info(GetOwner(), GetOwner(), (dotProduct > 0.6435 ? KNIFE_DAMAGE : (100 * (1 / NEO_SUPPORT_DAMAGE_MODIFIER)) + 1), DMG_SLASH);
 
 		CalculateMeleeDamageForce(&info, hitDirection, traceHit.endpos, 0.f);
 
