@@ -6,11 +6,15 @@
 
 #include "neo_gamerules.h"
 #include "neo_hud_childelement.h"
+#include "neo_player_shared.h"
 #include "hudelement.h"
+
+#include <vgui/ISurface.h>
 #include <vgui_controls/Panel.h>
 
 namespace vgui {
 class ImagePanel;
+class ImageList;
 }
 
 class CNEOHud_RoundState : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
@@ -44,76 +48,49 @@ private:
 	void SetTextureToAvatar(int playerIndex);
 
 private:
-	vgui::HFont m_hOCRSmallFont;
-	vgui::HFont m_hOCRFont;
-	vgui::HFont m_hOCRLargeFont;
+	vgui::HFont m_hOCRSmallFont = 0UL;
+	vgui::HFont m_hOCRFont = 0UL;
 
-	int m_resX, m_resY;
-	int m_iXpos, m_iYpos;
+	int m_iXpos = 0;
 
 	// Center Box
-	int m_iBoxWidth, m_iBoxHeight;
-	int m_iBoxX0, m_iBoxY0, m_iBoxX1, m_iBoxY1;
-
-	int m_iSmallFontWidth, m_iSmallFontHeight;
-	int m_iFontWidth, m_iFontHeight;
+	int m_iBoxYEnd = 0;
+	int m_iSmallFontHeight = 0;
 
 	// Center Box info
-	char m_szRoundANSI[9];
-	wchar_t m_wszRoundUnicode[9];
-	wchar_t m_wszTime[6];
-	int m_iJinraiScore;
-	int m_iNSFScore;
-	wchar_t m_wszFriendlyScore[3];
-	wchar_t m_wszEnemyScore[3];
+	wchar_t m_wszRoundUnicode[9] = {};
+	wchar_t m_wszTime[6] = {};
+	wchar_t m_wszLeftTeamScore[3] = {};
+	wchar_t m_wszRightTeamScore[3] = {};
+	wchar_t m_wszPlayersAliveUnicode[9] = {};
+	wchar_t m_wszStatusUnicode[24] = {};
 
 	// Totals info
-	int m_iFriendsAlive;
-	int m_iFriendsTotal;
-	int m_iEnemiesAlive;
-	int m_iEnemiesTotal;
-	char m_szPlayersAliveANSI[9];
-	wchar_t m_wszPlayersAliveUnicode[9];
-
-	char m_szStatusANSI[24];
-	wchar_t m_wszStatusUnicode[24];
+	int m_iLeftPlayersAlive = 0;
+	int m_iLeftPlayersTotal = 0;
+	int m_iRightPlayersAlive = 0;
+	int m_iRightPlayersTotal = 0;
 
 	// Element Positions
-	int m_iTimeYpos; // time changes often, don't bother keeping track of time x pos
-	int m_iFriendlyScoreXpos, m_iFriendlyScoreYpos;
-	int m_iEnemyScoreXpos, m_iEnemyScoreYpos;
-	int m_iRoundXpos, m_iRoundYpos;
-	int m_iRoundStatusYpos;
-	int m_iFriendlyTotalLogoX0, m_iFriendlyTotalLogoY0, m_iFriendlyTotalLogoX1, m_iFriendlyTotalLogoY1;
-	int m_iEnemyTotalLogoX0, m_iEnemyTotalLogoY0, m_iEnemyTotalLogoX1, m_iEnemyTotalLogoY1;
-	int m_iPlayersAliveNumXpos, m_iPlayersAliveNumYpos;
-	int m_ilogoSize;
-	int m_ilogoTotalSize;
-	int m_iFriendlyLogoXOffset;
-	int m_iEnemyLogoXOffset;
+	IntPos m_posLeftTeamScore = {};
+	IntPos m_posRightTeamScore = {};
+	int m_iLeftOffset = 0;
+	int m_iRightOffset = 0;
+	vgui::IntRect m_rectLeftTeamTotalLogo = {};
+	vgui::IntRect m_rectRightTeamTotalLogo = {};
+	int m_ilogoSize = 0;
 
-	vgui::ImagePanel *starNone, *starA, *starB, *starC, *starD, *starE, *starF;
-	int m_iPreviouslyActiveStar;
-	int m_iPreviouslyActiveTeam;
+	vgui::ImagePanel *m_ipStars[STAR__TOTAL] = {};
+	int m_iPreviouslyActiveStar = -1;
+	int m_iPreviouslyActiveTeam = -1;
 
-	// Graphic IDs
-	int m_iSupportID;
-	int m_iAssaultID;
-	int m_iReconID;
-	int m_iVIPID;
-
+	int m_iGraphicID[NEO_CLASS__ENUM_COUNT] = {};
 	TeamLogoColor m_teamLogoColors[TEAM__TOTAL] = {};
 
-	Color whiteColor = Color(255, 255, 255, 255);
-	Color fadedWhiteColor = Color(255, 255, 255, 176);
-	Color darkColor = Color(55, 55, 55, 255);
-	Color fadedDarkColor = Color(55, 55, 55, 176);
-	Color deadColor = Color(155, 155, 155, 255);
+	vgui::ImageList *m_pImageList = nullptr;
+	CUtlMap<CSteamID, int> m_mapAvatarsToImageList;
 
-	vgui::ImageList* m_pImageList;
-	CUtlMap<CSteamID, int>		m_mapAvatarsToImageList;
-
-	int m_iNextAvatarUpdate;
+	int m_iNextAvatarUpdate = 0;
 
 	CPanelAnimationVarAliasType(int, box_color_r, "box_color_r", "116", "int");
 	CPanelAnimationVarAliasType(int, box_color_g, "box_color_g", "116", "int");
