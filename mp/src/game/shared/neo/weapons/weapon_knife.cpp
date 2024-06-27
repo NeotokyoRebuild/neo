@@ -290,9 +290,24 @@ void CWeaponKnife::Hit(trace_t& traceHit, [[maybe_unused]] Activity nHitActivity
 		VectorNormalize(hitDirection);
 
 #ifndef CLIENT_DLL
-		CTakeDamageInfo info(GetOwner(), GetOwner(), KNIFE_DAMAGE, DMG_SLASH);
 
-		CalculateMeleeDamageForce(&info, hitDirection, traceHit.endpos);
+		Vector forward;
+		AngleVectors(pHitEntity->GetAbsAngles(), &forward);
+
+		Vector2D forward2D = Vector2D(forward.x, forward.y);
+		forward2D.NormalizeInPlace();
+		
+		Vector attackerToTarget = pHitEntity->GetAbsOrigin() - pPlayer->GetAbsOrigin();
+		Vector2D attackerToTarget2D = Vector2D(attackerToTarget.x, attackerToTarget.y);
+		attackerToTarget2D.NormalizeInPlace();
+
+		float dotProduct = acos(DotProduct2D(forward2D, attackerToTarget2D));
+
+		//engine->Con_NPrintf(3, "Angle: %f", dotProduct);
+
+		CTakeDamageInfo info(GetOwner(), GetOwner(), (dotProduct > 0.475 ? KNIFE_DAMAGE : (100 * (1 / NEO_SUPPORT_DAMAGE_MODIFIER)) + 1), DMG_SLASH);
+
+		CalculateMeleeDamageForce(&info, hitDirection, traceHit.endpos, 0.f);
 
 		pHitEntity->DispatchTraceAttack(info, hitDirection, &traceHit);
 		ApplyMultiDamage();
