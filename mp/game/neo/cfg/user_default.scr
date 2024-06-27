@@ -63,12 +63,6 @@ DESCRIPTION INFO_OPTIONS
 		{ NUMBER -20 40 } // Alternatively SLIDER, but can't have both?
 		{ "0" }
 	}
-	"neo_lean_toggle"
-	{
-		"Toggle Lean"
-		{ BOOL }
-		{ "0" }
-	}
 	"neo_aim_hold"
 	{
 		"Hold To Aim"
