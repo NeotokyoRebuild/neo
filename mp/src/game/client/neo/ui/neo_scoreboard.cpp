@@ -47,6 +47,8 @@ using namespace vgui;
 
 #define SHOW_ENEMY_STATUS true
 
+ConVar neo_show_scoreboard_avatars("neo_show_scoreboard_avatars", "1", FCVAR_ARCHIVE, "Show avatars on scoreboard.", true, 0.0, true, 1.0 );
+
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
@@ -89,6 +91,7 @@ CNEOScoreBoard::CNEOScoreBoard(IViewPort *pViewPort) : EditablePanel( NULL, PANE
 	// update scoreboard instantly if on of these events occure
 	ListenForGameEvent( "hltv_status" );
 	ListenForGameEvent( "server_spawn" );
+	ListenForGameEvent( "game_newmap" );
 
 	m_pImageList = NULL;
 
@@ -260,6 +263,11 @@ void CNEOScoreBoard::ShowPanel(bool bShow)
 	}
 }
 
+bool CNEOScoreBoard::ShowAvatars()
+{
+	return neo_show_scoreboard_avatars.GetBool();
+}
+
 void CNEOScoreBoard::FireGameEvent( IGameEvent *event )
 {
 	const char * type = event->GetName();
@@ -279,6 +287,16 @@ void CNEOScoreBoard::FireGameEvent( IGameEvent *event )
 		if ( control )
 		{
 			PostMessage( control, new KeyValues( "SetText", "text", hostname ) );
+			control->MoveToFront();
+		}
+	}
+	else if (Q_strcmp(type, "game_newmap") == 0)
+	{
+		const char *mapname = event->GetString("mapname");
+		Panel *control = FindChildByName("MapName");
+		if (control)
+		{
+			PostMessage(control, new KeyValues("SetText", "text", mapname));
 			control->MoveToFront();
 		}
 	}
@@ -404,14 +422,12 @@ void CNEOScoreBoard::UpdateTeamInfo()
 				}
 
 				// update stats
-				wchar_t val[12];
+				wchar_t val[32];
 
 				if (i != TEAM_SPECTATOR)
 				{
-					V_snwprintf(val, ARRAYSIZE(val), L"%ls: %d", teamName, team->Get_Score());
+					V_snwprintf(val, ARRAYSIZE(val), L"%ls: %d        Players: %ls", teamName, team->GetRoundsWon(), wNumPlayers);
 					pPlayerList->ModifyColumn(sectionID, "ping", val);
-					V_snwprintf(string1, ARRAYSIZE(string1), L"Players: %ls", wNumPlayers);
-					pPlayerList->ModifyColumn(sectionID, "name", string1);
 				}
 
 				// if (team->Get_Ping() < 1)
@@ -525,11 +541,11 @@ void CNEOScoreBoard::UpdatePlayerInfo()
 					CBasePlayer* player = C_BasePlayer::GetLocalPlayer();
 					const int playerTeam = player->GetTeamNumber();
 					const bool oppositeTeam = playerTeam >= TEAM_JINRAI && team != playerTeam;
-					pPlayerList->SetItemBgColor( itemID, !oppositeTeam && gr->IsAlive(i) ? Color(255,255,255,4) : Color(0,0,0,0));
+					pPlayerList->SetItemBgColor( itemID, !oppositeTeam && gr->IsAlive(i) ? Color(240,240,240,4) : Color(0,0,0,0));
 				}
 				else
 				{
-					pPlayerList->SetItemBgColor( itemID, gr->IsAlive(i) ? Color(255,255,255,4) : Color(0,0,0,0));
+					pPlayerList->SetItemBgColor( itemID, gr->IsAlive(i) ? Color(240,240,240,4) : Color(0,0,0,0));
 				}
 			}
 
@@ -559,12 +575,12 @@ void CNEOScoreBoard::AddSection(int teamType, int teamNumber)
 		pPlayerList->AddSection(sectionID, "", StaticPlayerSortFunc);
 		pPlayerList->SetSectionAlwaysVisible(sectionID);
 
-		pPlayerList->AddColumnToSection(sectionID, "ping", "", 0, m_iPingWidth );
+		pPlayerList->AddColumnToSection(sectionID, "ping", "", SectionedListPanel::COLUMN_BRIGHT, m_iPingWidth );
 		if ( ShowAvatars() )
 		{
-			pPlayerList->AddColumnToSection( sectionID, "avatar", "", SectionedListPanel::COLUMN_IMAGE | SectionedListPanel::COLUMN_CENTER, m_iAvatarWidth );
+			pPlayerList->AddColumnToSection( sectionID, "avatar", "", SectionedListPanel::COLUMN_IMAGE, m_iAvatarWidth );
 		}
-		pPlayerList->AddColumnToSection(sectionID, "name", "", 0, m_iNameWidth - m_iAvatarWidth );
+		pPlayerList->AddColumnToSection(sectionID, "name", "", 0, ShowAvatars() ? m_iNameWidth - m_iAvatarWidth : m_iNameWidth );
 		pPlayerList->AddColumnToSection(sectionID, "status", "", SectionedListPanel::COLUMN_IMAGE, m_iStatusWidth);
 		pPlayerList->AddColumnToSection(sectionID, "class", "Class", 0, m_iClassWidth);
 		pPlayerList->AddColumnToSection(sectionID, "rank", "Rank", 0, m_iRankWidth);
@@ -575,12 +591,13 @@ void CNEOScoreBoard::AddSection(int teamType, int teamNumber)
 	{
 		pPlayerList->AddSection(sectionID, "");
 
+		pPlayerList->AddColumnToSection(sectionID, "ping", "", SectionedListPanel::COLUMN_BRIGHT, m_iPingWidth );
 		// Avatars are always displayed at 32x32 regardless of resolution
 		if ( ShowAvatars() )
 		{
-			pPlayerList->AddColumnToSection( sectionID, "avatar", teamNumber == TEAM_UNASSIGNED ? "Unassigned" : "Spectators", SectionedListPanel::COLUMN_IMAGE | SectionedListPanel::COLUMN_CENTER, m_iAvatarWidth );
+			pPlayerList->AddColumnToSection( sectionID, "avatar", teamNumber == TEAM_UNASSIGNED ? "Unassigned" : "Spectators", SectionedListPanel::COLUMN_IMAGE, m_iAvatarWidth );
 		}
-		pPlayerList->AddColumnToSection(sectionID, "name", "", 0, m_iNameWidth - m_iAvatarWidth );
+		pPlayerList->AddColumnToSection(sectionID, "name", "", 0, ShowAvatars() ? m_iNameWidth - m_iAvatarWidth : m_iNameWidth );
 	}
 
 	// set the section to have the team color
