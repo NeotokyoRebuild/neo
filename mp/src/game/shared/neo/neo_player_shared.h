@@ -159,7 +159,8 @@ COMPILE_TIME_ASSERT(NEO_ASSAULT_CROUCH_SPEED == NEO_SUPPORT_CROUCH_SPEED);
 #define NEO_ANIMSTATE_USES_AIMSEQUENCES true
 #define NEO_ANIMSTATE_MAX_BODY_YAW_DEGREES 90.0f
 
-#define NEO_ZOOM_SPEED (0.25f)
+static constexpr float NEO_ZOOM_SPEED = 0.115f;
+static_assert(NEO_ZOOM_SPEED != 0.0f, "Divide by zero");
 
 enum NeoSkin {
 	NEO_SKIN_FIRST = 0,
@@ -214,6 +215,7 @@ enum NeoStar {
 
 class CNEO_Player;
 class CNEOBaseCombatWeapon;
+class C_BaseCombatWeapon;
 enum PlayerAnimEvent_t : uint;
 
 extern bool IsThereRoomForLeanSlide(CNEO_Player *player,
@@ -274,8 +276,6 @@ enum NeoLeanDirectionE {
 	NEO_LEAN_RIGHT,
 };
 
-bool ClientWantsLeanToggle(const CNEO_Player* player);
-
 enum NeoWeponAimToggleE {
 	NEO_TOGGLE_DEFAULT = 0,
 	NEO_TOGGLE_FORCE_AIM,
@@ -300,5 +300,6 @@ struct AttackersTotals
 };
 
 [[nodiscard]] auto StrToInt(std::string_view strView) -> std::optional<int>;
+[[nodiscard]] int NeoAimFOV(const int fovDef, CBaseCombatWeapon *wep);
 
 #endif // NEO_PLAYER_SHARED_H

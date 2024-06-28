@@ -98,10 +98,9 @@
 
 #ifdef CLIENT_DLL
 ConVar mp_usehwmmodels( "mp_usehwmmodels", "0", FCVAR_NONE, "Enable the use of the hw morph models. (-1 = never, 1 = always, 0 = based upon GPU)" ); // -1 = never, 0 = if hasfastvertextextures, 1 = always
-#endif
-
 #ifdef NEO
-ConVar neo_fov("neo_fov", "90", FCVAR_USERINFO, "Set the normal FOV.", true, 60.0f, true, (float)(MAX_FOV));
+extern ConVar neo_fov;
+#endif
 #endif
 
 bool UseHWMorphModels()
@@ -1726,6 +1725,9 @@ void CBasePlayer::CalcVehicleView(
 void CBasePlayer::CalcObserverView( Vector& eyeOrigin, QAngle& eyeAngles, float& fov )
 {
 #if defined( CLIENT_DLL )
+#ifdef NEO
+	m_Local.m_iHideHUD |= HIDEHUD_CROSSHAIR;
+#endif
 	switch ( GetObserverMode() )
 	{
 
@@ -1893,24 +1895,6 @@ void CBasePlayer::SharedSpawn()
 #endif
 }
 
-#ifdef NEO
-int CBasePlayer::ClientFOV() const
-{
-	int fov = DEFAULT_FOV;
-#ifdef CLIENT_DLL
-	// neo_fov.GetFloat() doesn't work, so utilize m_iDefaultFOV
-	fov = m_iDefaultFOV;
-#else
-	if (!(GetFlags() & FL_FAKECLIENT))
-	{
-		// NOTE (nullsystem): Think this only called once in a while so not too bad
-		fov = atoi(engine->GetClientConVarValue(engine->IndexOfEdict(edict()), "neo_fov"));
-	}
-#endif
-	return fov;
-}
-#endif
-
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -1919,6 +1903,7 @@ int CBasePlayer::ClientFOV() const
 int CBasePlayer::GetDefaultFOV( void ) const
 {
 #if defined( CLIENT_DLL )
+#ifndef NEO
 	if ( GetObserverMode() == OBS_MODE_IN_EYE )
 	{
 		C_BasePlayer *pTargetPlayer = dynamic_cast<C_BasePlayer*>( GetObserverTarget() );
@@ -1929,12 +1914,25 @@ int CBasePlayer::GetDefaultFOV( void ) const
 		}
 	}
 #endif
+#endif
 
 #ifndef NEO
 	int iFOV = ( m_iDefaultFOV == 0 ) ? g_pGameRules->DefaultFOV() : m_iDefaultFOV;
 #else
-	int iFOV = ClientFOV();
-#endif
+#ifdef CLIENT_DLL
+	int iFOV = neo_fov.GetInt();
+#else
+	int iFOV = ( m_iDefaultFOV == 0 ) ? g_pGameRules->DefaultFOV() : m_iDefaultFOV;
+	if (!(GetFlags() & FL_FAKECLIENT))
+	{
+		// NOTE (nullsystem): Think this only called once in a while so not too bad
+		if (auto fovOpt = StrToInt(engine->GetClientConVarValue(engine->IndexOfEdict(edict()), "neo_fov")))
+		{
+			iFOV = *fovOpt;
+		}
+	}
+#endif // CLIENT_DLL
+#endif // NEO
 	if ( iFOV > MAX_FOV )
 		iFOV = MAX_FOV;
 

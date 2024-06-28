@@ -1,7 +1,6 @@
 #include "cbase.h"
 #include "neo_hud_childelement.h"
 
-#include "neo_hud_elements.h"
 #include "c_neo_player.h"
 
 #include "clientmode_hl2mpnormal.h"
@@ -19,9 +18,6 @@ ConVar neo_cl_hud_margin("neo_cl_hud_margin", "2", FCVAR_USERINFO, "Neo HUD marg
 
 CNEOHud_ChildElement::CNEOHud_ChildElement()
 {
-	m_pNeoHud = dynamic_cast<CNeoHudElements*>(GetClientModeNormal()->GetViewport()->FindChildByName(PANEL_NEO_HUD));
-	Assert(m_pNeoHud);
-
 	m_flLastUpdateTime = 0;
 
 	m_hTex_Rounded_NW = surface()->DrawGetTextureId("vgui/hud/800corner1");

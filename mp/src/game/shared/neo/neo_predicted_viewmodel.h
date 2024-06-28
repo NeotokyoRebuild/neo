@@ -23,6 +23,7 @@ class CNEOPredictedViewModel : public CPredictedViewModel
 	DECLARE_CLASS(CNEOPredictedViewModel, CPredictedViewModel);
 public:
 	DECLARE_NETWORKCLASS();
+	DECLARE_PREDICTABLE();
 
 	CNEOPredictedViewModel(void);
 	virtual ~CNEOPredictedViewModel( void );
@@ -36,6 +37,9 @@ public:
 	float lean(CNEO_Player *player);
 
 #ifdef CLIENT_DLL
+	virtual void PostDataUpdate(DataUpdateType_t updateType) override;
+	virtual void ClientThink() override;
+
 	virtual int DrawModel(int flags);
 
 	virtual RenderGroup_t GetRenderGroup();
@@ -54,9 +58,14 @@ public:
 		const char *message = "", const Vector &vecOrigin = vec3_origin);
 #endif
 
-private:
+#ifdef GAME_DLL
+	CNetworkVar(float, m_flYPrevious);
+#else
 	float m_flYPrevious;
-	float m_flLastLeanTime;
+	CInterpolatedVar<float> m_iv_flYPrevious;
+#endif
+
+private:
 	float m_flStartAimingChange;
 	bool m_bViewAim;
 	Vector m_vOffset;

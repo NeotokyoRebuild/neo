@@ -85,6 +85,7 @@
 #ifdef NEO
 #include "neo_player.h"
 #include "weapon_tachi.h"
+#include "neo_gamerules.h"
 #endif
 
 ConVar autoaim_max_dist( "autoaim_max_dist", "2160" ); // 2160 = 180 feet
@@ -594,11 +595,7 @@ CBasePlayer::CBasePlayer( )
 	m_qangLockViewangles.Init();
 
 	// Setup our default FOV
-#ifndef NEO
 	m_iDefaultFOV = g_pGameRules->DefaultFOV();
-#else
-	m_iDefaultFOV = ClientFOV();
-#endif
 
 	m_hZoomOwner = NULL;
 
@@ -648,6 +645,10 @@ CBasePlayer::CBasePlayer( )
 	m_flMovementTimeForUserCmdProcessingRemaining = 0.0f;
 
 	m_flLastObjectiveTime = -1.f;
+
+#ifdef NEO
+	m_flDeathTime = 0.0f;
+#endif
 }
 
 CBasePlayer::~CBasePlayer( )
@@ -2711,15 +2712,18 @@ bool CBasePlayer::IsValidObserverTarget(CBaseEntity * target)
 	}
 		
 	// check forcecamera settings for active players
-	if ( GetTeamNumber() != TEAM_SPECTATOR )
+	if (GetTeamNumber() != TEAM_SPECTATOR)
 	{
-		switch ( mp_forcecamera.GetInt() )	
+		switch (mp_forcecamera.GetInt())
 		{
-			case OBS_ALLOW_ALL	:	break;
-			case OBS_ALLOW_TEAM :	if ( GetTeamNumber() != target->GetTeamNumber() )
-										 return false;
-									break;
-			case OBS_ALLOW_NONE :	return false;
+		case OBS_ALLOW_ALL:
+			break;
+		case OBS_ALLOW_TEAM:
+			if (GetTeamNumber() != target->GetTeamNumber())
+				return false;
+			break;
+		case OBS_ALLOW_NONE:
+			return false;
 		}
 	}
 	
@@ -3751,6 +3755,19 @@ void CBasePlayer::PlayerRunCommand(CUserCmd *ucmd, IMoveHelper *moveHelper)
 			}
 		}
 	}
+
+#ifdef NEO
+	if (!IsAlive() && (GetTeamNumber() == TEAM_JINRAI || GetTeamNumber() == TEAM_NSF) &&
+			NEORules()->GetRoundStatus() == RoundLive &&
+			(gpGlobals->curtime < (GetDeathTime() + 10.0f)))
+	{
+		ucmd->forwardmove = 0;
+		ucmd->sidemove = 0;
+		ucmd->upmove = 0;
+		ucmd->impulse = 0;
+		ucmd->buttons &= ~(IN_ATTACK | IN_ATTACK2 | IN_ATTACK3 | IN_JUMP | IN_ALT1 | IN_ALT2 | IN_ZOOM);
+	}
+#endif
 	
 	PlayerMove()->RunCommand(this, ucmd, moveHelper);
 }
@@ -8639,12 +8656,7 @@ float CBasePlayer::GetFOVDistanceAdjustFactorForNetworking()
 //-----------------------------------------------------------------------------
 void CBasePlayer::SetDefaultFOV( int FOV )
 {
-#ifndef NEO
 	m_iDefaultFOV = ( FOV == 0 ) ? g_pGameRules->DefaultFOV() : FOV;
-#else
-	(void)FOV;	// Unused - Override to take from ClientFOV instead
-	m_iDefaultFOV = ClientFOV();
-#endif
 }
 
 //-----------------------------------------------------------------------------

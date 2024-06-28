@@ -21,6 +21,8 @@ enum
 {
 	TEAM_JINRAI = LAST_SHARED_TEAM + 1,
 	TEAM_NSF,
+
+	TEAM__TOTAL, // Always last enum in here
 };
 
 #define TEAM_STR_JINRAI "Jinrai"
@@ -155,7 +157,7 @@ public:
 	bool RoundIsInSuddenDeath() const;
 	bool RoundIsMatchPoint() const;
 
-	virtual int DefaultFOV(void) OVERRIDE;
+	virtual int DefaultFOV(void) override;
 
 	float GetRemainingPreRoundFreezeTime(const bool clampToZero) const;
 

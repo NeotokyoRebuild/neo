@@ -18,6 +18,14 @@
 #include <game/client/iviewport.h>
 #include "shareddefs.h"
 
+enum MotdPreference {
+	ShowFullHtml = 0,
+	ShowTextOnly,
+	ShowNothing,
+
+	EnumCount,
+};
+
 namespace vgui
 {
 	class TextEntry;
@@ -64,6 +72,10 @@ protected:
 	virtual void OnCommand( const char *command );
 
 	void OnKeyCodePressed( vgui::KeyCode code );
+
+#ifdef NEO
+	bool UnloadOnDismissal() const;
+#endif
 
 	IViewPort	*m_pViewPort;
 	char		m_szTitle[255];

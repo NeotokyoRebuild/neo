@@ -1510,8 +1510,6 @@ target_sources_grouped(
     neo/ui/neo_hud_childelement.h
     neo/ui/neo_hud_compass.cpp
     neo/ui/neo_hud_compass.h
-    neo/ui/neo_hud_elements.cpp
-    neo/ui/neo_hud_elements.h
     neo/ui/neo_hud_friendly_marker.cpp
     neo/ui/neo_hud_friendly_marker.h
     neo/ui/neo_hud_game_event.cpp

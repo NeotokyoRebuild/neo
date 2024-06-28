@@ -4,7 +4,6 @@
 #pragma once
 #endif
 
-class CNeoHudElements;
 class C_NEO_Player;
 
 #define NEO_HUDBOX_COLOR Color(116, 116, 116, 178)
@@ -89,16 +88,12 @@ protected:
 		}
 	}
 
-	CNeoHudElements* GetRootNeoHud() const { return m_pNeoHud; }
-
 	static int GetMargin();
 
 private:
 	float GetUpdateFrequency() const { return GetUpdateFrequencyConVar()->GetFloat(); }
 
 private:
-	CNeoHudElements* m_pNeoHud;
-
 	vgui::HTexture m_hTex_Rounded_NE, m_hTex_Rounded_NW, m_hTex_Rounded_SE, m_hTex_Rounded_SW;
 	int m_rounded_width, m_rounded_height;
 

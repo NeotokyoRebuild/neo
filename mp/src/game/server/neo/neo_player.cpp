@@ -75,6 +75,8 @@ SendPropInt(SENDINFO(m_NeoFlags), 4, SPROP_UNSIGNED),
 SendPropString(SENDINFO(m_szNeoName)),
 SendPropInt(SENDINFO(m_szNameDupePos)),
 SendPropBool(SENDINFO(m_bClientWantNeoName)),
+
+SendPropTime(SENDINFO(m_flDeathTime)),
 END_SEND_TABLE()
 
 BEGIN_DATADESC(CNEO_Player)
@@ -491,11 +493,6 @@ void CNEO_Player::UpdateNetworkedFriendlyLocations()
 	}
 }
 
-void CNEO_Player::SetDefaultFOV(const int fov)
-{
-	m_iDefaultFOV.Set(fov);
-}
-
 void CNEO_Player::Precache( void )
 {
 	BaseClass::Precache();
@@ -621,33 +618,19 @@ void CNEO_Player::CheckVisionButtons()
 
 void CNEO_Player::CheckLeanButtons()
 {
-	if (IsAlive())
+	if (!IsAlive())
 	{
-		if (ClientWantsLeanToggle(this))
-		{
-			if (m_afButtonPressed & IN_LEAN_LEFT)
-			{
-				if (m_bInLean == NEO_LEAN_LEFT) m_bInLean = NEO_LEAN_NONE;
-				else m_bInLean = NEO_LEAN_LEFT;
-			}
-			if (m_afButtonPressed & IN_LEAN_RIGHT)
-			{
-				if (m_bInLean == NEO_LEAN_RIGHT) m_bInLean = NEO_LEAN_NONE;
-				else m_bInLean = NEO_LEAN_RIGHT;
-			}
-		}
-		else
-		{
-			m_bInLean = NEO_LEAN_NONE;
-			if ((m_nButtons & IN_LEAN_LEFT) && !(m_nButtons & IN_LEAN_RIGHT))
-			{
-				m_bInLean = NEO_LEAN_LEFT;
-			}
-			else if ((m_nButtons & IN_LEAN_RIGHT) && !(m_nButtons & IN_LEAN_LEFT))
-			{
-				m_bInLean = NEO_LEAN_RIGHT;
-			}
-		}
+		return;
+	}
+	
+	m_bInLean = NEO_LEAN_NONE;
+	if ((m_nButtons & IN_LEAN_LEFT) && !(m_nButtons & IN_LEAN_RIGHT))
+	{
+		m_bInLean = NEO_LEAN_LEFT;
+	}
+	else if ((m_nButtons & IN_LEAN_RIGHT) && !(m_nButtons & IN_LEAN_LEFT))
+	{
+		m_bInLean = NEO_LEAN_RIGHT;
 	}
 }
 
@@ -1249,23 +1232,7 @@ void CNEO_Player::Weapon_SetZoom(const bool bZoomIn)
 	ShowCrosshair(bZoomIn);
 	
 	const int fov = GetDefaultFOV();
-	if (bZoomIn)
-	{
-		const int zoomAmount = 30;
-		auto neoWep = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
-		if (neoWep && neoWep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
-		{
-			SetFOV((CBaseEntity*)this, neoWep->GetWpnData().iAimFOV, NEO_ZOOM_SPEED);
-		}
-		else {
-			SetFOV((CBaseEntity*)this, fov - zoomAmount, NEO_ZOOM_SPEED);
-		}
-	}
-	else
-	{
-		SetFOV((CBaseEntity*)this, fov, NEO_ZOOM_SPEED);
-	}
-
+	SetFOV(static_cast<CBaseEntity *>(this), bZoomIn ? NeoAimFOV(fov, GetActiveWeapon()) : fov, NEO_ZOOM_SPEED);
 	m_bInAim = bZoomIn;
 }
 
@@ -2332,6 +2299,13 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 
 	const bool justJoined = (GetTeamNumber() == TEAM_UNASSIGNED);
 
+	// Outside the below statement scope because this incorrectly triggers warnings on MSVC otherwise:
+	// https://developercommunity.visualstudio.com/t/fallthrough-does-not-suppress-warning-c26819-when/1206339
+	enum JoinMode {
+		Random = -2,
+		TeamWithLessPlayers = -1,
+	};
+
 	// Player bots should initially join a player team.
 	// Note that we can't do a ->IsBot check here, because the bot has not
 	// received its fakeclient flags yet at this point. Hence using the
@@ -2339,7 +2313,34 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	if (justJoined && NEORules()->m_bNextClientIsFakeClient && !IsHLTV())
 	{
 		Assert(gpGlobals->curtime >= m_flNextTeamChangeTime);
-		iTeam = RandomInt(TEAM_JINRAI, TEAM_NSF);
+		
+		ConVarRef joinMode{ "bot_next_team" };
+
+		int numJin, numNsf;
+		switch (joinMode.GetInt())
+		{
+		case JoinMode::TeamWithLessPlayers:
+			numJin = GetGlobalTeam(TEAM_JINRAI) ? GetGlobalTeam(TEAM_JINRAI)->GetNumPlayers() : 0;
+			numNsf = GetGlobalTeam(TEAM_NSF) ? GetGlobalTeam(TEAM_NSF)->GetNumPlayers() : 0;
+			if (numJin < numNsf)
+			{
+				iTeam = TEAM_JINRAI;
+				break;
+			}
+			else if (numNsf < numJin)
+			{
+				iTeam = TEAM_NSF;
+				break;
+			}
+			[[fallthrough]];
+		case JoinMode::Random:
+			iTeam = RandomInt(TEAM_JINRAI, TEAM_NSF);
+			break;
+		default:
+			const auto lastGameTeam = GetNumberOfTeams() - LAST_SHARED_TEAM;
+			Assert(FIRST_GAME_TEAM <= lastGameTeam);
+			iTeam = Clamp(joinMode.GetInt(), FIRST_GAME_TEAM, lastGameTeam);
+		}
 	}
 	// Limit team join spam, unless this is a newly joined player
 	else if (!justJoined && m_flNextTeamChangeTime > gpGlobals->curtime)

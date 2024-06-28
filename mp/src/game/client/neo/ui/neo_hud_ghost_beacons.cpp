@@ -28,6 +28,8 @@ ConVar neo_ghost_beacon_alpha("neo_ghost_beacon_alpha", "150", FCVAR_USERINFO,
 ConVar neo_ghost_delay_secs("neo_ghost_delay_secs", "3.3", FCVAR_CHEAT | FCVAR_REPLICATED,
 	"The delay in seconds until the ghost shows up after pick up.", true, 0.0, false, 0.0);
 
+DECLARE_NAMED_HUDELEMENT(CNEOHud_GhostBeacons, UI_ELEMENT_NAME_GHOST_BEACONS);
+
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(GhostBeacons, 0.01)
 
 CNEOHud_GhostBeacons::CNEOHud_GhostBeacons(const char *pElementName, vgui::Panel *parent)

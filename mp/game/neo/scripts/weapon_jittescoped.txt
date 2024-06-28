@@ -44,7 +44,7 @@ WeaponData
 	"VMAimOffsetUp"			"2.53"
 	//"VMAimAnglePitch"		"1.0"
 	
-	"AimFov"				"28.0"	//40
+	"AimFov"		"38.0"	//40
 	
 	"ViewModelOffset"
 	{

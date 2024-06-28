@@ -19,7 +19,6 @@
 #ifdef NEO
 	#include "prediction.h"
 	#include "neo/ui/neo_scoreboard.h"
-	#include "neo/ui/neo_hud_elements.h"
 	extern ConVar v_viewmodel_fov;
 #else
 	#include "hl2mpclientscoreboard.h"
@@ -111,14 +110,6 @@ IViewPortPanel* CHudViewport::CreatePanelByName(const char *szPanelName)
 		newpanel = new CHL2MPSpectatorGUI(this);
 		return newpanel;
 	}
-#ifdef NEO
-	else if (Q_strcmp(PANEL_NEO_HUD, szPanelName) == 0)
-	{
-		newpanel = new CNeoHudElements(this);
-		return newpanel;
-	}
-#endif
-
 
 	return BaseClass::CreatePanelByName(szPanelName);
 }

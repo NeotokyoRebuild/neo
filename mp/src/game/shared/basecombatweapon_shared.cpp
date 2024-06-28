@@ -759,6 +759,9 @@ void CBaseCombatWeapon::OnPickedUp( CBaseCombatCharacter *pNewOwner )
 {
 #if !defined( CLIENT_DLL )
 	RemoveEffects( EF_ITEM_BLINK );
+#ifdef NEO
+	RemoveEffects( EF_BONEMERGE );
+#endif
 
 	if( pNewOwner->IsPlayer() )
 	{
@@ -1511,7 +1514,11 @@ bool CBaseCombatWeapon::Holster( CBaseCombatWeapon *pSwitchingTo )
 	// If we don't have a holster anim, hide immediately to avoid timing issues
 	if ( !flSequenceDuration )
 	{
+#ifdef NEO
+		RemoveEffects(EF_BONEMERGE);
+#else
 		SetWeaponVisible( false );
+#endif
 	}
 	else
 	{
@@ -1559,7 +1566,11 @@ void CBaseCombatWeapon::InputHideWeapon( inputdata_t &inputdata )
 	// Only hide if we're still the active weapon. If we're not the active weapon
 	if ( GetOwner() && GetOwner()->GetActiveWeapon() == this )
 	{
+#ifdef NEO
+		RemoveEffects(EF_BONEMERGE);
+#else
 		SetWeaponVisible( false );
+#endif
 	}
 }
 #endif
@@ -1572,7 +1583,11 @@ void CBaseCombatWeapon::HideThink( void )
 	// Only hide if we're still the active weapon. If we're not the active weapon
 	if ( GetOwner() && GetOwner()->GetActiveWeapon() == this )
 	{
+#ifdef NEO
+		RemoveEffects(EF_BONEMERGE);
+#else
 		SetWeaponVisible( false );
+#endif
 	}
 }
 

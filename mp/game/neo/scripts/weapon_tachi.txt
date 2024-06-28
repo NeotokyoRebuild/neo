@@ -27,7 +27,8 @@ WeaponData
 	// Combined as int = 37
 	"item_flags"		"37"
 	
-	"Damage"			"17"
+	"AimFov"		"55.0"
+	"Damage"		"17"
 	"Penetration"           "19.0"
 	"CycleTime"             "0.12"
 

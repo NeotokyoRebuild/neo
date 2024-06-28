@@ -12,7 +12,6 @@ class C_NEO_Player;
 #include "neo_player_shared.h"
 
 class C_NEOPredictedViewModel;
-class CNeoHudElements;
 class INEOPlayerAnimState;
 
 class C_NEO_Player : public C_HL2MP_Player
@@ -90,6 +89,9 @@ public:
 	virtual const Vector GetPlayerMins(void) const OVERRIDE;
 	virtual const Vector GetPlayerMaxs(void) const OVERRIDE;
 
+	virtual void CalcChaseCamView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov) override;
+	virtual void CalcInEyeCamView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov) override;
+
 	// Implementing in header in hopes of compiler picking up the inlined base method
 	virtual float GetModelScale() const
 	{
@@ -125,7 +127,10 @@ private:
 	float GetActiveWeaponSpeedScale() const;
 	float GetBackwardsMovementPenaltyScale() const { return ((m_nButtons & IN_BACK) ? NEO_SLOW_MODIFIER : 1.0); }
 
+	bool HandleDeathSpecCamSwitch(Vector& eyeOrigin, QAngle& eyeAngles, float& fov);
+
 public:
+	float m_flSpecFOV = 0.0f;
 	bool ShouldDrawHL2StyleQuickHud( void );
 
 	int GetClass() const { return m_iNeoClass; }
@@ -166,9 +171,12 @@ public:
 	const char *GetNeoPlayerName() const;
 	bool ClientWantNeoName() const;
 
+	virtual void CalcDeathCamView( Vector& eyeOrigin, QAngle& eyeAngles, float& fov ) override;
+
 private:
 	void CheckThermOpticButtons();
 	void CheckVisionButtons();
+	void CheckLeanButtons();
 	void PlayCloakSound();
 
 	bool IsAllowedToSuperJump(void);
@@ -221,8 +229,7 @@ private:
 	bool m_bPreviouslyReloading;
 	bool m_bPreviouslyPreparingToHideMsg;
 	bool m_bIsAllowedToToggleVision;
-
-	CNeoHudElements *m_pNeoPanel;
+	int m_iSavedObserverMode = 0;
 
 	INEOPlayerAnimState* m_pPlayerAnimState;
 

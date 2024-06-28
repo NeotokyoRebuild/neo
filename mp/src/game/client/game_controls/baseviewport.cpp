@@ -254,8 +254,6 @@ void CBaseViewport::CreateDefaultPanels( void )
 	AddNewPanel(CreatePanelByName(PANEL_TEAM), "PANEL_TEAM");
 	AddNewPanel(CreatePanelByName(PANEL_CLASS), "PANEL_CLASS");
 	AddNewPanel(CreatePanelByName(PANEL_NEO_LOADOUT), "PANEL_NEO_LOADOUT");
-
-	AddNewPanel(CreatePanelByName(PANEL_NEO_HUD), "PANEL_NEO_HUD");
 #endif
 #endif // !_XBOX
 }

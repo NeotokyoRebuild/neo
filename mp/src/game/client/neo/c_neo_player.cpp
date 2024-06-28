@@ -25,7 +25,6 @@
 #include "ui/neo_hud_game_event.h"
 #include "ui/neo_hud_ghost_marker.h"
 #include "ui/neo_hud_friendly_marker.h"
-#include "ui/neo_hud_elements.h"
 
 #include "neo/game_controls/neo_loadoutmenu.h"
 
@@ -42,6 +41,7 @@
 #include <materialsystem/imaterialsystem.h>
 #include <materialsystem/itexture.h>
 #include "rendertexture.h"
+#include "ivieweffects.h"
 
 #include "model_types.h"
 
@@ -90,6 +90,8 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropString(RECVINFO(m_szNeoName)),
 	RecvPropInt(RECVINFO(m_szNameDupePos)),
 	RecvPropBool(RECVINFO(m_bClientWantNeoName)),
+
+	RecvPropTime(RECVINFO(m_flDeathTime)),
 END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA(C_NEO_Player)
@@ -229,6 +231,7 @@ public:
 
 		if (panel->IsVisible() && panel->IsEnabled())
 		{
+			panel->MoveToFront();
 			return;	// Prevent cursor stuck
 		}
 
@@ -296,6 +299,7 @@ public:
 
 		if (panel->IsVisible() && panel->IsEnabled())
 		{
+			panel->MoveToFront();
 			return;	// Prevent cursor stuck
 		}
 
@@ -349,6 +353,7 @@ public:
 
 		if (panel->IsVisible() && panel->IsEnabled())
 		{
+			panel->MoveToFront();
 			return;	// Prevent cursor stuck
 		}
 
@@ -422,8 +427,6 @@ C_NEO_Player::C_NEO_Player()
 	m_bInAim = false;
 	m_bDroppedAnything = false;
 	m_bInLean = NEO_LEAN_NONE;
-
-	m_pNeoPanel = NULL;
 
 	m_flCamoAuxLastTime = 0;
 	m_nVisionLastTick = 0;
@@ -505,6 +508,24 @@ void C_NEO_Player::CheckVisionButtons()
 				EmitSound(filter, entindex(), params);
 			}
 		}
+	}
+}
+
+void C_NEO_Player::CheckLeanButtons()
+{
+	if (!IsAlive())
+	{
+		return;
+	}
+	
+	m_bInLean = NEO_LEAN_NONE;
+	if ((m_nButtons & IN_LEAN_LEFT) && !(m_nButtons & IN_LEAN_RIGHT))
+	{
+		m_bInLean = NEO_LEAN_LEFT;
+	}
+	else if ((m_nButtons & IN_LEAN_RIGHT) && !(m_nButtons & IN_LEAN_LEFT))
+	{
+		m_bInLean = NEO_LEAN_RIGHT;
 	}
 }
 
@@ -876,68 +897,55 @@ void C_NEO_Player::PreThink( void )
 		engine->ClientCmd(teammenu.GetName());
 	}
 
-	// NEO TODO (Rain): marker should be responsible for its own vis control instead
-	CNEOHud_GhostMarker *ghostMarker = NULL;
-	if (m_pNeoPanel)
+	if (auto *ghostMarker = GET_NAMED_HUDELEMENT(CNEOHud_GhostMarker, UI_ELEMENT_NAME_GHOST_MARKER))
 	{
-		m_pNeoPanel->SetLastUpdater(this);
-
-		ghostMarker = m_pNeoPanel->GetGhostMarker();
-
-		if (ghostMarker)
+		if (!m_bGhostExists)
 		{
-			if (!m_bGhostExists)
-			{
-				ghostMarker->SetVisible(false);
+			ghostMarker->SetVisible(false);
+		}
+		else
+		{
+			const float distance = METERS_PER_INCH *
+				GetAbsOrigin().DistTo(m_vecGhostMarkerPos);
 
-				//m_pGhostMarker->SetVisible(false);
+			if (!IsCarryingGhost())
+			{
+				ghostMarker->SetVisible(true);
+
+				int ghostMarkerX, ghostMarkerY;
+				GetVectorInScreenSpace(m_vecGhostMarkerPos, ghostMarkerX, ghostMarkerY);
+
+				ghostMarker->SetScreenPosition(ghostMarkerX, ghostMarkerY);
+				ghostMarker->SetGhostingTeam(NEORules()->ghosterTeam());
+				ghostMarker->SetClientCurrentTeam(GetTeamNumber());
+				ghostMarker->SetGhostDistance(distance);
 			}
 			else
 			{
-				const float distance = METERS_PER_INCH *
-					GetAbsOrigin().DistTo(m_vecGhostMarkerPos);
-
-				if (!IsCarryingGhost())
-				{
-					ghostMarker->SetVisible(true);
-
-					int ghostMarkerX, ghostMarkerY;
-					GetVectorInScreenSpace(m_vecGhostMarkerPos, ghostMarkerX, ghostMarkerY);
-
-					ghostMarker->SetScreenPosition(ghostMarkerX, ghostMarkerY);
-					ghostMarker->SetGhostingTeam(NEORules()->ghosterTeam());
-					ghostMarker->SetClientCurrentTeam(GetTeamNumber());
-					ghostMarker->SetGhostDistance(distance);
-				}
-				else
-				{
-					ghostMarker->SetVisible(false);
-				}
+				ghostMarker->SetVisible(false);
 			}
 		}
-		else
+	}
+	else
+	{
+		Warning("Couldn't find ghostMarker\n");
+	}
+
+	if (auto *indicator = GET_HUDELEMENT(CNEOHud_GameEvent))
+	{
+		if (m_bShowTestMessage)
 		{
-			Warning("Couldn't find ghostMarker\n");
+			indicator->SetMessage(m_pszTestMessage, sizeof(m_pszTestMessage));
 		}
 
-		auto indicator = GET_HUDELEMENT(CNEOHud_GameEvent);
-
-		if (indicator)
+		if (indicator->IsVisible() != m_bShowTestMessage)
 		{
-			if (m_bShowTestMessage)
-			{
-				indicator->SetMessage(m_pszTestMessage, sizeof(m_pszTestMessage));
-			}
-
-			if (indicator->IsVisible() != m_bShowTestMessage)
-			{
-				indicator->SetVisible(m_bShowTestMessage);
-			}
+			indicator->SetVisible(m_bShowTestMessage);
 		}
-		else
-		{
-			Warning("Couldn't find GameEventIndicator\n");
-		}
+	}
+	else
+	{
+		Warning("Couldn't find GameEventIndicator\n");
 	}
 }
 
@@ -963,6 +971,8 @@ static ConVar neo_this_client_speed("neo_this_client_speed", "0", FCVAR_SPONLY);
 void C_NEO_Player::PostThink(void)
 {
 	BaseClass::PostThink();
+
+	SetNextClientThink(CLIENT_THINK_ALWAYS);
 
 	if (GetLocalNEOPlayer() == this)
 	{
@@ -1000,8 +1010,24 @@ void C_NEO_Player::PostThink(void)
 
 			Weapon_SetZoom(false);
 			m_bInVision = false;
-		}
 
+			if (IsLocalPlayer() && (GetTeamNumber() == TEAM_JINRAI || GetTeamNumber() == TEAM_NSF))
+			{
+				m_iSavedObserverMode = GetObserverMode();
+				SetObserverMode(OBS_MODE_DEATHCAM);
+				// Fade out 8s to blackout + 2s full blackout
+				ScreenFade_t sfade{
+					.duration = static_cast<unsigned short>(static_cast<float>(1<<SCREENFADE_FRACBITS) * 8.0f),
+					.holdTime = static_cast<unsigned short>(static_cast<float>(1<<SCREENFADE_FRACBITS) * 2.0f),
+					.fadeFlags = FFADE_OUT|FFADE_PURGE,
+					.r = 0,
+					.g = 0,
+					.b = 0,
+					.a = 255,
+				};
+				vieweffects->Fade(sfade);
+			}
+		}
 		return;
 	}
 	else
@@ -1009,8 +1035,14 @@ void C_NEO_Player::PostThink(void)
 		if (!m_bFirstDeathTick)
 		{
 			m_bFirstDeathTick = true;
+			if (IsLocalPlayer())
+			{
+				SetObserverMode(OBS_MODE_NONE);
+			}
 		}
 	}
+
+	CheckLeanButtons();
 
 	if (C_BaseCombatWeapon *pWep = GetActiveWeapon())
 	{
@@ -1060,6 +1092,41 @@ void C_NEO_Player::PostThink(void)
 	float flPitch = asin(-eyeForward[2]);
 	float flYaw = atan2(eyeForward[1], eyeForward[0]);
 	m_pPlayerAnimState->Update(RAD2DEG(flYaw), RAD2DEG(flPitch));
+}
+
+void C_NEO_Player::CalcDeathCamView(Vector &eyeOrigin, QAngle &eyeAngles, float &fov)
+{
+	if (auto *pRagdoll = static_cast<C_HL2MPRagdoll *>(m_hRagdoll.Get()))
+	{
+		// First person death cam
+		pRagdoll->GetAttachment(pRagdoll->LookupAttachment("eyes"), eyeOrigin, eyeAngles);
+		Vector vForward;
+		AngleVectors(eyeAngles, &vForward);
+		fov = GetFOV();
+
+		if (IsLocalPlayer() && gpGlobals->curtime >= (GetDeathTime() + 10.0f))
+		{
+			m_iObserverMode = m_iSavedObserverMode;
+			g_ClientVirtualReality.AlignTorsoAndViewToWeapon();
+
+			// Fade in 2s from blackout
+			ScreenFade_t sfade{
+				.duration = static_cast<unsigned short>(static_cast<float>(1<<SCREENFADE_FRACBITS) * 2.0f),
+				.holdTime = static_cast<unsigned short>(0),
+				.fadeFlags = FFADE_IN|FFADE_PURGE,
+				.r = 0,
+				.g = 0,
+				.b = 0,
+				.a = 255,
+			};
+			vieweffects->Fade(sfade);
+		}
+	}
+	else
+	{
+		// Fallback just in-case it somehow doesn't do m_hRagdoll
+		BaseClass::CalcDeathCamView(eyeOrigin, eyeAngles, fov);
+	}
 }
 
 bool C_NEO_Player::IsAllowedToSuperJump(void)
@@ -1155,23 +1222,6 @@ void C_NEO_Player::Spawn( void )
 	if (GetTeamNumber() == TEAM_UNASSIGNED)
 	{
 		m_bShowTeamMenu = true;
-	}
-
-	// NEO TODO (Rain): UI elements should do this themselves
-	if (!m_pNeoPanel)
-	{
-		m_pNeoPanel = dynamic_cast<CNeoHudElements*>
-			(GetClientModeNormal()->GetViewport()->FindChildByName(PANEL_NEO_HUD));
-
-		if (!m_pNeoPanel)
-		{
-			Assert(false);
-			Warning("Couldn't find CNeoHudElements panel\n");
-		}
-		else
-		{
-			m_pNeoPanel->ShowPanel(true);
-		}
 	}
 
 #if(0)
@@ -1376,6 +1426,40 @@ float C_NEO_Player::GetSprintSpeed(void) const
 	}
 }
 
+void C_NEO_Player::CalcChaseCamView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov)
+{
+	if (!HandleDeathSpecCamSwitch(eyeOrigin, eyeAngles, fov))
+	{
+		BaseClass::CalcChaseCamView(eyeOrigin, eyeAngles, fov);
+	}
+}
+
+void C_NEO_Player::CalcInEyeCamView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov)
+{
+	if (!HandleDeathSpecCamSwitch(eyeOrigin, eyeAngles, fov))
+	{
+		BaseClass::CalcInEyeCamView(eyeOrigin, eyeAngles, fov);
+	}
+}
+
+bool C_NEO_Player::HandleDeathSpecCamSwitch(Vector& eyeOrigin, QAngle& eyeAngles, float& fov)
+{
+	fov = GetFOV(); // jic the caller relies on us initializing this
+	auto target = GetObserverTarget();
+	if (!IsValidObserverTarget(target))
+	{
+		auto nextTarget = FindNextObserverTarget(false);
+		if (nextTarget && nextTarget != target)
+		{
+			SetObserverTarget(nextTarget);
+		}
+		VectorCopy(EyePosition(), eyeOrigin);
+		VectorCopy(EyeAngles(), eyeAngles);
+		return true;
+	}
+	return false;
+}
+
 float C_NEO_Player::GetActiveWeaponSpeedScale() const
 {
 	// NEO TODO (Rain): change to static cast once all weapons are guaranteed to derive from the class
@@ -1424,27 +1508,17 @@ void C_NEO_Player::Weapon_SetZoom(const bool bZoomIn)
 #endif
 #endif
 
-	const int fov = GetDefaultFOV();
 	if (bZoomIn)
 	{
 		m_Local.m_iHideHUD &= ~HIDEHUD_CROSSHAIR;
-		const int zoomAmount = 30;
-		auto neoWep = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
-		if (neoWep && neoWep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
-		{
-			SetFOV((CBaseEntity*)this, neoWep->GetWpnData().iAimFOV, zoomSpeedSecs);
-		}
-		else {
-			SetFOV((CBaseEntity*)this, fov - zoomAmount, zoomSpeedSecs);
-		}
 	}
 	else
 	{
 		m_Local.m_iHideHUD |= HIDEHUD_CROSSHAIR;
-
-		SetFOV((CBaseEntity*)this, fov, zoomSpeedSecs);
 	}
 
+	const int fov = GetDefaultFOV();
+	SetFOV(static_cast<CBaseEntity *>(this), bZoomIn ? NeoAimFOV(fov, GetActiveWeapon()) : fov, zoomSpeedSecs);
 	m_bInAim = bZoomIn;
 }
 

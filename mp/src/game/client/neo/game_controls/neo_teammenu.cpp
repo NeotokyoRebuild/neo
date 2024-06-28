@@ -142,6 +142,12 @@ void CNeoTeamMenu::FindButtons()
 	m_pCancel_Button = FindControl<Button>(CONTROL_CANCEL_BUTTON);
 }
 
+void CNeoTeamMenu::OnClose()
+{
+	CommandCompletion();
+	BaseClass::OnClose();
+}
+
 void CNeoTeamMenu::CommandCompletion()
 {	
 	SetControlEnabled(CONTROL_JINRAI_BUTTON, false);

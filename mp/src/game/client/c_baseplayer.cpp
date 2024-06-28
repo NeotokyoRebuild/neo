@@ -60,6 +60,7 @@
 #ifdef NEO
 #include "c_neo_player.h"
 #include "weapon_tachi.h"
+#include "ivieweffects.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -128,6 +129,11 @@ ConVar cl_meathook_neck_pivot_ingame_up( "cl_meathook_neck_pivot_ingame_up", "7.
 ConVar cl_meathook_neck_pivot_ingame_fwd( "cl_meathook_neck_pivot_ingame_fwd", "3.0" );
 
 static ConVar	cl_clean_textures_on_death( "cl_clean_textures_on_death", "0", FCVAR_DEVELOPMENTONLY,  "If enabled, attempts to purge unused textures every time a freeze cam is shown" );
+
+#ifdef NEO
+extern ConVar neo_fov;
+extern ConVar neo_fov_relay_spec;
+#endif
 
 
 void RecvProxy_LocalVelocityX( const CRecvProxyData *pData, void *pStruct, void *pOut );
@@ -616,10 +622,124 @@ void C_BasePlayer::SetObserverMode ( int iNewMode )
 		{
 			// On a change of viewing mode or target, we may want to reset both head and torso to point at the new target.
 			g_ClientVirtualReality.AlignTorsoAndViewToWeapon();
+#ifdef NEO
+			if (iNewMode != OBS_MODE_DEATHCAM)
+			{
+				vieweffects->ClearAllFades();
+			}
+#endif
 		}
 	}
 }
 
+#ifdef NEO
+int C_BasePlayer::GetNextObserverSearchStartPoint(bool bReverse)
+{
+	int iDir = bReverse ? -1 : 1;
+
+	int startIndex;
+
+	if (m_hObserverTarget)
+	{
+		// start using last followed player
+		startIndex = m_hObserverTarget->entindex();
+	}
+	else
+	{
+		// start using own player index
+		startIndex = this->entindex();
+	}
+
+	startIndex += iDir;
+	if (startIndex > gpGlobals->maxClients)
+		startIndex = 1;
+	else if (startIndex < 1)
+		startIndex = gpGlobals->maxClients;
+
+	return startIndex;
+}
+
+CBaseEntity* C_BasePlayer::FindNextObserverTarget(bool bReverse)
+{
+	int startIndex = GetNextObserverSearchStartPoint(bReverse);
+
+	int	currentIndex = startIndex;
+	int iDir = bReverse ? -1 : 1;
+
+	do
+	{
+		CBaseEntity* nextTarget = UTIL_PlayerByIndex(currentIndex);
+
+		if (IsValidObserverTarget(nextTarget))
+		{
+			return nextTarget;	// found next valid player
+		}
+
+		currentIndex += iDir;
+
+		// Loop through the clients
+		if (currentIndex > gpGlobals->maxClients)
+			currentIndex = 1;
+		else if (currentIndex < 1)
+			currentIndex = gpGlobals->maxClients;
+
+	} while (currentIndex != startIndex);
+
+	return nullptr;
+}
+
+bool C_BasePlayer::IsValidObserverTarget(CBaseEntity* target)
+{
+	if (target == NULL)
+		return false;
+
+	// MOD AUTHORS: Add checks on target here or in derived method
+
+	if (!target->IsPlayer())	// only track players
+		return false;
+
+	C_BasePlayer* player = ToBasePlayer(target);
+
+	/* Don't spec observers or players who haven't picked a class yet
+	if ( player->IsObserver() )
+		return false;	*/
+
+	if (player == this)
+		return false; // We can't observe ourselves.
+
+	if (player->IsEffectActive(EF_NODRAW)) // don't watch invisible players
+		return false;
+
+	if (player->m_lifeState == LIFE_RESPAWNABLE) // target is dead, waiting for respawn
+		return false;
+
+	if (player->m_lifeState == LIFE_DEAD || player->m_lifeState == LIFE_DYING)
+	{
+		if ((player->m_flDeathTime + DEATH_ANIMATION_TIME) < gpGlobals->curtime)
+		{
+			return false;	// allow watching until 3 seconds after death to see death animation
+		}
+	}
+
+	// check forcecamera settings for active players
+	if (GetTeamNumber() != TEAM_SPECTATOR)
+	{
+		switch (mp_forcecamera.GetInt())
+		{
+		case OBS_ALLOW_ALL:
+			break;
+		case OBS_ALLOW_TEAM:
+			if (GetTeamNumber() != target->GetTeamNumber())
+				return false;
+			break;
+		case OBS_ALLOW_NONE:
+			return false;
+		}
+	}
+
+	return true;	// passed all test
+}
+#endif
 
 int C_BasePlayer::GetObserverMode() const 
 { 
@@ -1782,6 +1902,17 @@ void C_BasePlayer::CalcInEyeCamView(Vector& eyeOrigin, QAngle& eyeAngles, float&
 	}
 
 	engine->SetViewAngles( eyeAngles );
+
+#ifdef NEO
+	if (static_cast<CNEO_Player *>(target)->m_bInAim)
+	{
+		m_Local.m_iHideHUD &= ~HIDEHUD_CROSSHAIR;
+	}
+	else
+	{
+		m_Local.m_iHideHUD |= HIDEHUD_CROSSHAIR;
+	}
+#endif
 }
 
 float C_BasePlayer::GetDeathCamInterpolationTime()
@@ -2368,6 +2499,14 @@ void C_BasePlayer::PhysicsSimulate( void )
 		//VectorCopy ( pl.v_angle, ctx->cmd.viewangles );
 	}
 #ifdef NEO
+	else if (GetObserverMode() == OBS_MODE_DEATHCAM)
+	{
+		ctx->cmd.forwardmove = 0;
+		ctx->cmd.sidemove = 0;
+		ctx->cmd.upmove = 0;
+		ctx->cmd.impulse = 0;
+		ctx->cmd.buttons &= ~(IN_ATTACK | IN_ATTACK2 | IN_ATTACK3 | IN_JUMP | IN_ALT1 | IN_ALT2 | IN_ZOOM);
+	}
 	else if (static_cast<C_NEO_Player*>(this)->GetNeoFlags() & NEO_FL_FREEZETIME)
 	{
 		ctx->cmd.forwardmove = 0;
@@ -2450,6 +2589,7 @@ float C_BasePlayer::GetFOV( void )
 		return clamp( demo_fov_override.GetFloat(), 10.0f, 90.0f );
 	}
 
+#ifndef NEO
 	if ( GetObserverMode() == OBS_MODE_IN_EYE )
 	{
 		C_BasePlayer *pTargetPlayer = dynamic_cast<C_BasePlayer*>( GetObserverTarget() );
@@ -2460,6 +2600,40 @@ float C_BasePlayer::GetFOV( void )
 			return pTargetPlayer->GetFOV();
 		}
 	}
+#else
+	if (GetObserverMode() == OBS_MODE_IN_EYE)
+	{
+		auto *pTargetPlayer = dynamic_cast<CNEO_Player *>(GetObserverTarget());
+
+		// get fov from observer target. Not if target is observer itself
+		if (pTargetPlayer && !pTargetPlayer->IsObserver())
+		{
+			// NEO NOTE (nullsystem): This uses a percentage based rather than delta, but it's good enough
+			// to provide a motion of going between ADS states rather than immediate for the spectator viewing
+			// in first person
+			float fov = pTargetPlayer->m_flSpecFOV;
+			if (!prediction->InPrediction())
+			{
+				const int fovNormInt = (neo_fov_relay_spec.GetBool()) ? pTargetPlayer->m_iDefaultFOV : neo_fov.GetInt();
+				const float fovNorm = static_cast<float>(fovNormInt);
+				const float fovAim = static_cast<float>(NeoAimFOV(fovNormInt, pTargetPlayer->GetActiveWeapon()));
+
+				// Don't spline/lerp when we're already at the desired FOV
+				if ((pTargetPlayer->m_bInAim && (fov == fovAim)) ||
+						(!pTargetPlayer->m_bInAim && (fov == fovNorm)))
+				{
+					return fov;
+				}
+				float perc = (gpGlobals->curtime - pTargetPlayer->m_flFOVTime) / NEO_ZOOM_SPEED;
+				perc = clamp(perc, 0.0f, 1.0f);
+				if (pTargetPlayer->m_bInAim) perc = 1.0f - perc;
+				fov = SimpleSplineRemapValClamped( perc, 0.0f, 1.0f, fovAim, fovNorm);
+				pTargetPlayer->m_flSpecFOV = fov;
+			}
+			return fov;
+		}
+	}
+#endif
 
 	// Allow our vehicle to override our FOV if it's currently at the default FOV.
 	float flDefaultFOV;
@@ -2471,7 +2645,11 @@ float C_BasePlayer::GetFOV( void )
 	}
 	else
 	{
+#ifdef NEO
+		flDefaultFOV = neo_fov.GetFloat();
+#else
 		flDefaultFOV = GetDefaultFOV();
+#endif
 	}
 	
 	float fFOV = ( m_iFOV == 0 ) ? flDefaultFOV : m_iFOV;

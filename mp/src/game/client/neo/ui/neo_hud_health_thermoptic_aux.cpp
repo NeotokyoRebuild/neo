@@ -13,21 +13,22 @@
 #include <engine/ivdebugoverlay.h>
 #include "ienginevgui.h"
 
-#include "neo_hud_elements.h"
 #include "neo_version_info.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
-
-NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(HTA, 0.00695);
 
 using vgui::surface;
 
 ConVar neo_cl_hud_hta_enabled("neo_cl_hud_hta_enabled", "1", FCVAR_USERINFO,
 	"Whether the HUD Health/ThermOptic/AUX module is enabled or not.", true, 0, true, 1);
 
+DECLARE_NAMED_HUDELEMENT(CNEOHud_HTA, UI_ELEMENT_NAME_HTA);
+
+NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(HTA, 0.00695);
+
 CNEOHud_HTA::CNEOHud_HTA(const char* pElementName, vgui::Panel* parent)
-	: CHudElement(pElementName), Panel(parent, pElementName)
+	: CHudElement(pElementName), EditablePanel(parent, pElementName)
 {
 	SetAutoDelete(true);
 
@@ -47,27 +48,14 @@ CNEOHud_HTA::CNEOHud_HTA(const char* pElementName, vgui::Panel* parent)
 	surface()->GetScreenSize(m_resX, m_resY);
 	SetBounds(0, 0, m_resX, m_resY);
 
-	// NEO HACK (Rain): this is kind of awkward, we should get the handle on ApplySchemeSettings
-	vgui::IScheme* scheme = vgui::scheme()->GetIScheme(neoscheme);
-	if (!scheme) {
-		Assert(scheme);
-		Error("CNEOHud_Ammo: Failed to load neoscheme\n");
-	}
-
-	m_hFont = scheme->GetFont("NHudOCRSmall");
-	m_hFontBuildInfo = scheme->GetFont("Default");
-
 	if (!g_pVGuiLocalize->ConvertANSIToUnicode(GIT_HASH, m_wszBuildInfo, sizeof(m_wszBuildInfo)))
 	{
 		m_wszBuildInfo[0] = L'\0';
 	}
 
-	InvalidateLayout();
-
 	SetVisible(neo_cl_hud_hta_enabled.GetBool());
 
 	SetHiddenBits(HIDEHUD_HEALTH | HIDEHUD_PLAYERDEAD | HIDEHUD_NEEDSUIT | HIDEHUD_WEAPONSELECTION);
-	engine->ClientCmd("hud_reloadscheme"); //NEO FIXME this reloads the scheme of all elements, is there a way to do it just for this one?
 }
 
 void CNEOHud_HTA::Paint()
@@ -88,6 +76,11 @@ void CNEOHud_HTA::UpdateStateForNeoHudElementDraw()
 void CNEOHud_HTA::ApplySchemeSettings(vgui::IScheme* pScheme)
 {
 	BaseClass::ApplySchemeSettings(pScheme);
+
+	LoadControlSettings("scripts/HudLayout.res");
+
+	m_hFont = pScheme->GetFont("NHudOCRSmall");
+	m_hFontBuildInfo = pScheme->GetFont("Default");
 
 	surface()->GetScreenSize(m_resX, m_resY);
 	SetBounds(0, 0, m_resX, m_resY);
