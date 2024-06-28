@@ -14,10 +14,12 @@ body:
         **DO NOT** paste chatlogs. Formulate the bug into a detailed
         description and reproducible steps using the form below.
 
-        Make sure the title describes the current state of the world
-        (ie. if the bug is that recons can see through walls when
-        using their NVGs, the title should be "recons can see
-        through walls with NVGs").
+        Make sure the title describes the desired state of the world
+        with an imperative statement (ie. if the bug is that recons
+        can see through walls when using their NVGs, the title should
+        be "recons shouldn't see through walls with NVGs" and if the
+        bug is that NVGs don't light up dark areas the title should be
+        "recons should be able to see in the dark with NVGs").
   - type: input
     id: build
     attributes:
