@@ -301,11 +301,11 @@ void CWeaponKnife::Hit(trace_t& traceHit, [[maybe_unused]] Activity nHitActivity
 		Vector2D attackerToTarget2D = Vector2D(attackerToTarget.x, attackerToTarget.y);
 		attackerToTarget2D.NormalizeInPlace();
 
-		float dotProduct = acos(DotProduct2D(forward2D, attackerToTarget2D));
+		const float currentAngle = acos(DotProduct2D(forward2D, attackerToTarget2D));
 
-		//engine->Con_NPrintf(3, "Angle: %f", dotProduct);
+		static constexpr float maxBackStabAngle = 0.6435011; // ~ asin(0.6);
 
-		CTakeDamageInfo info(GetOwner(), GetOwner(), (dotProduct > 0.6435 ? KNIFE_DAMAGE : (100 * (1 / NEO_SUPPORT_DAMAGE_MODIFIER)) + 1), DMG_SLASH);
+		CTakeDamageInfo info(GetOwner(), GetOwner(), (currentAngle > maxBackStabAngle ? KNIFE_DAMAGE : (100 * (1 / NEO_SUPPORT_DAMAGE_MODIFIER)) + 1), DMG_SLASH);
 
 		CalculateMeleeDamageForce(&info, hitDirection, traceHit.endpos, 0.f);
 
