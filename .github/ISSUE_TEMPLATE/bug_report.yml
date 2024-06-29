@@ -1,6 +1,5 @@
 name: Bug report
 description: General bugs, program crashes, broken files, wrong values, etc...
-title: "Title goes here"
 labels: "Bug Report"
 projects: ["NeotokyoRebuild/1"]
 body:
