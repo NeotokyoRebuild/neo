@@ -35,8 +35,12 @@ enum
 	BUTTON_HEIGHT_DEFAULT = 20,
 	BUTTON_HEIGHT_SPACER = 7,
 	DEFAULT_LINE_SPACING = 20,
-	DEFAULT_SECTION_GAP = 8, 
+	DEFAULT_SECTION_GAP = 8,
+#ifdef NEO
+	COLUMN_DATA_INDENT = 4,
+#else
 	COLUMN_DATA_INDENT = 6,
+#endif
 	COLUMN_DATA_GAP = 2,
 };
 
@@ -413,6 +417,19 @@ public:
 							{
 								textImage->SetColor(m_ArmedFgColor2);
 							}
+#ifdef NEO
+							else if (columnFlags & SectionedListPanel::COLUMN_BRIGHT)
+							{
+								auto fgColor = GetFgColor();
+								auto multiply = m_ArmedFgColor1; 
+								textImage->SetColor(Color(
+									fgColor.r() * multiply.r() / 255, 
+									fgColor.g() * multiply.g() / 255,
+									fgColor.b() * multiply.b() / 255,
+									fgColor.a() * multiply.a() / 255
+								));
+							}
+#endif
 							else
 							{
 								textImage->SetColor(GetFgColor());
