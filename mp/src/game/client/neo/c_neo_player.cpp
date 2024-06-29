@@ -1219,6 +1219,20 @@ void C_NEO_Player::Spawn( void )
 
 	SetViewOffset(VEC_VIEW_NEOSCALE(this));
 
+	// NEO NOTE (nullsystem): Reset Vis/Enabled/MouseInput/Cursor state here, otherwise it can get stuck at situations
+	for (const auto pname : {PANEL_CLASS, PANEL_TEAM, PANEL_NEO_LOADOUT})
+	{
+		if (auto *panel = static_cast<vgui::EditablePanel*>
+				(GetClientModeNormal()->GetViewport()->FindChildByName(pname)))
+		{
+			panel->SetVisible(false);
+			panel->SetEnabled(false);
+			panel->SetMouseInputEnabled(false);
+			panel->SetCursorAlwaysVisible(false);
+			//panel->SetKeyBoardInputEnabled(false);
+		}
+	}
+
 	if (GetTeamNumber() == TEAM_UNASSIGNED)
 	{
 		m_bShowTeamMenu = true;
