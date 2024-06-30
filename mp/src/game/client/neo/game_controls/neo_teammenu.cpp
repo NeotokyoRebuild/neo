@@ -197,9 +197,13 @@ void CNeoTeamMenu::OnCommand(const char *command)
 		return;
 	}
 
-	if (Q_stristr(commandBuffer, "jointeam") != 0) // Note using stristr, not strcmp. Equates to true when jointeam in commandBuffer
+	if (Q_stristr(commandBuffer, "jointeam ") != 0) // Note using stristr, not strcmp. Equates to true when jointeam in commandBuffer
 	{ // joining jinrai or nsf
-		engine->ExecuteClientCmd(commandBuffer);
+		engine->ClientCmd(commandBuffer);
+		auto teamToJoin = commandBuffer[9] - '0';
+		if (teamToJoin == TEAM_JINRAI || teamToJoin == TEAM_NSF) {
+			C_NEO_Player::GetLocalPlayer()->m_iTeamNum = teamToJoin;
+		}
 		ChangeMenu("classmenu");
 		return;
 	}
