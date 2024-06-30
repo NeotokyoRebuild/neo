@@ -23,7 +23,7 @@ using vgui::surface;
 ConVar neo_cl_hud_hta_enabled("neo_cl_hud_hta_enabled", "1", FCVAR_USERINFO,
 	"Whether the HUD Health/ThermOptic/AUX module is enabled or not.", true, 0, true, 1);
 
-DECLARE_NAMED_HUDELEMENT(CNEOHud_HTA, UI_ELEMENT_NAME_HTA);
+DECLARE_NAMED_HUDELEMENT(CNEOHud_HTA, NHudHealth);
 
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(HTA, 0.00695);
 
