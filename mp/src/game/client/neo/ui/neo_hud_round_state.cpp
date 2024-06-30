@@ -218,6 +218,13 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 		}
 	}
 
+	// Clear the strings so zero roundTimeLeft also picks it up as to not draw
+	memset(m_wszRoundUnicode, 0, sizeof(m_wszRoundUnicode));
+	memset(m_wszPlayersAliveUnicode, 0, sizeof(m_wszPlayersAliveUnicode));
+	memset(m_wszTime, 0, sizeof(m_wszTime));
+	memset(m_wszLeftTeamScore, 0, sizeof(m_wszLeftTeamScore));
+	memset(m_wszRightTeamScore, 0, sizeof(m_wszRightTeamScore));
+
 	// Exactly zero means there's no time limit, so we don't need to draw anything.
 	if (roundTimeLeft == 0)
 	{
@@ -231,7 +238,6 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 
 	char szRoundANSI[9] = {};
 	V_sprintf_safe(szRoundANSI, "ROUND %i", NEORules()->roundNumber());
-	memset(m_wszRoundUnicode, 0, sizeof(m_wszRoundUnicode));
 	g_pVGuiLocalize->ConvertANSIToUnicode(szRoundANSI, m_wszRoundUnicode, sizeof(m_wszRoundUnicode));
 
 	if (roundStatus == NeoRoundStatus::PreRoundFreeze)
@@ -254,7 +260,6 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 
 	char szPlayersAliveANSI[9] = {};
 	V_sprintf_safe(szPlayersAliveANSI, "%i vs %i", m_iLeftPlayersAlive, m_iRightPlayersAlive);
-	memset(m_wszPlayersAliveUnicode, 0, sizeof(m_wszPlayersAliveUnicode));
 	g_pVGuiLocalize->ConvertANSIToUnicode(szPlayersAliveANSI, m_wszPlayersAliveUnicode, sizeof(m_wszPlayersAliveUnicode));
 }
 
