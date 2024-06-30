@@ -177,6 +177,7 @@ void CNeoTeamMenu::OnCommand(const char *command)
 		const int nsfNumPlayers = (pNsf != NULL ? pNsf->Get_Number_Players() : 0);
 		int randomTeam = jinNumPlayers > nsfNumPlayers ? TEAM_NSF : (nsfNumPlayers > jinNumPlayers ? TEAM_JINRAI : RandomInt(TEAM_JINRAI, TEAM_NSF));
 		V_sprintf_safe(commandBuffer, "jointeam %i", randomTeam);
+		C_NEO_Player::GetLocalPlayer()->m_iTeamNum = randomTeam;
 		ChangeMenu("classmenu");
 		engine->ClientCmd(commandBuffer);
 		return;
@@ -198,8 +199,8 @@ void CNeoTeamMenu::OnCommand(const char *command)
 
 	if (Q_stristr(commandBuffer, "jointeam") != 0) // Note using stristr, not strcmp. Equates to true when jointeam in commandBuffer
 	{ // joining jinrai or nsf
+		engine->ExecuteClientCmd(commandBuffer);
 		ChangeMenu("classmenu");
-		engine->ClientCmd(commandBuffer);
 		return;
 	}
 

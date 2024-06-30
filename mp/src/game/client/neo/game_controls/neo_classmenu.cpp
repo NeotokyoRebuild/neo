@@ -198,7 +198,7 @@ void CNeoClassMenu::ChangeMenu(const char* menuName = NULL)
 	C_NEO_Player* player = C_NEO_Player::GetLocalNEOPlayer();
 	if (player)
 	{
-		player->m_bShowClassMenu = false;
+		player->m_bShowClassMenu = player->m_bIsClassMenuOpen = false;
 		if (menuName == NULL)
 		{
 			return;
