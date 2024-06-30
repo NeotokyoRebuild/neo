@@ -191,7 +191,9 @@ enum NeoStar {
 	STAR_CHARLIE,
 	STAR_DELTA,
 	STAR_ECHO,
-	STAR_FOXTROT
+	STAR_FOXTROT,
+
+	STAR__TOTAL
 };
 #define NEO_DEFAULT_STAR STAR_ALPHA
 
@@ -301,5 +303,17 @@ struct AttackersTotals
 
 [[nodiscard]] auto StrToInt(std::string_view strView) -> std::optional<int>;
 [[nodiscard]] int NeoAimFOV(const int fovDef, CBaseCombatWeapon *wep);
+
+struct IntPos
+{
+	int x;
+	int y;
+};
+
+struct IntDim
+{
+	int w;
+	int h;
+};
 
 #endif // NEO_PLAYER_SHARED_H
