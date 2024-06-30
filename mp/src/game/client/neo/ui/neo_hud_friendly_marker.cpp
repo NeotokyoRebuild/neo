@@ -24,7 +24,7 @@ using vgui::surface;
 ConVar neo_friendly_marker_hud_scale_factor("neo_friendly_marker_hud_scale_factor", "0.5", FCVAR_USERINFO,
 	"Friendly player marker HUD element scaling factor", true, 0.01, false, 0);
 
-DECLARE_NAMED_HUDELEMENT(CNEOHud_FriendlyMarker, UI_ELEMENT_NAME_IFF);
+DECLARE_NAMED_HUDELEMENT(CNEOHud_FriendlyMarker, neo_iff);
 
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(FriendlyMarker, 0.01)
 
