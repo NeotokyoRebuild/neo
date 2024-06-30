@@ -29,6 +29,8 @@ class CNEOHud_ChildElement
 public:
 	CNEOHud_ChildElement();
 	virtual ~CNEOHud_ChildElement() { }
+	CNEOHud_ChildElement(CNEOHud_ChildElement &other) = delete;
+	void resetLastUpdateTime();
 
 protected:
 	virtual void DrawNeoHudRoundedBox(const int x0, const int y0, const int x1, const int y1, Color color = NEO_HUDBOX_COLOR,
@@ -72,7 +74,7 @@ protected:
 		else if (frequency > 0)
 		{
 			const float deltaTime = gpGlobals->curtime - m_flLastUpdateTime;
-			if (deltaTime < frequency)
+			if ((m_flLastUpdateTime > 0.0f) && (deltaTime < frequency))
 			{
 				return false;
 			}
@@ -98,9 +100,6 @@ private:
 	int m_rounded_width, m_rounded_height;
 
 	float m_flLastUpdateTime;
-
-private:
-	CNEOHud_ChildElement(CNEOHud_ChildElement& other);
 };
 
 #endif // NEO_HUD_CHILDELEMENT_H

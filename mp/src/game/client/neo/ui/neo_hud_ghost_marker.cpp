@@ -23,7 +23,7 @@ using vgui::surface;
 ConVar neo_ghost_marker_hud_scale_factor("neo_ghost_marker_hud_scale_factor", "0.5", FCVAR_USERINFO,
 	"Ghost marker HUD element scaling factor", true, 0.01, false, 0);
 
-DECLARE_NAMED_HUDELEMENT(CNEOHud_GhostMarker, UI_ELEMENT_NAME_GHOST_MARKER);
+DECLARE_NAMED_HUDELEMENT(CNEOHud_GhostMarker, neo_ghost_marker);
 
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(GhostMarker, 0.01)
 

@@ -25,6 +25,7 @@
 #include "ui/neo_hud_game_event.h"
 #include "ui/neo_hud_ghost_marker.h"
 #include "ui/neo_hud_friendly_marker.h"
+#include "ui/neo_hud_round_state.h"
 
 #include "neo/game_controls/neo_loadoutmenu.h"
 
@@ -897,7 +898,7 @@ void C_NEO_Player::PreThink( void )
 		engine->ClientCmd(teammenu.GetName());
 	}
 
-	if (auto *ghostMarker = GET_NAMED_HUDELEMENT(CNEOHud_GhostMarker, UI_ELEMENT_NAME_GHOST_MARKER))
+	if (auto *ghostMarker = GET_NAMED_HUDELEMENT(CNEOHud_GhostMarker, neo_ghost_marker))
 	{
 		if (!m_bGhostExists)
 		{
@@ -1230,6 +1231,14 @@ void C_NEO_Player::Spawn( void )
 			panel->SetMouseInputEnabled(false);
 			panel->SetCursorAlwaysVisible(false);
 			//panel->SetKeyBoardInputEnabled(false);
+		}
+	}
+
+	for (auto *hud : gHUD.m_HudList)
+	{
+		if (auto *neoHud = dynamic_cast<CNEOHud_ChildElement *>(hud))
+		{
+			neoHud->resetLastUpdateTime();
 		}
 	}
 

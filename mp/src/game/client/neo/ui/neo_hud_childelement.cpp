@@ -45,6 +45,11 @@ CNEOHud_ChildElement::CNEOHud_ChildElement()
 	Assert(m_rounded_width > 0 && m_rounded_height > 0);
 }
 
+void CNEOHud_ChildElement::resetLastUpdateTime()
+{
+	m_flLastUpdateTime = 0.0f;
+}
+
 CNEOHud_ChildElement::XYHudPos CNEOHud_ChildElement::DrawNeoHudRoundedCommon(
 	const int x0, const int y0, const int x1, const int y1, Color color,
 	bool topLeft, bool topRight, bool bottomLeft, bool bottomRight) const
