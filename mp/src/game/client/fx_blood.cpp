@@ -501,6 +501,16 @@ DECLARE_CLIENT_EFFECT( "bloodspray", BloodSprayCallback );
 //-----------------------------------------------------------------------------
 void BloodImpactCallback( const CEffectData & data )
 {
+#ifdef NEO
+	Vector vecPosition;
+	vecPosition = data.m_vOrigin;
+
+	// Fetch the blood color.
+	colorentry_t color;
+	GetBloodColor(data.m_nColor, color);
+
+	FX_BloodBulletImpact(vecPosition, data.m_vNormal, data.m_flScale, color.r, color.g, color.b);
+#else
 	bool bFoundBlood = false;
 
 	// Find which sort of blood we are
@@ -527,9 +537,14 @@ void BloodImpactCallback( const CEffectData & data )
 
 		FX_BloodBulletImpact( vecPosition, data.m_vNormal, data.m_flScale, color.r, color.g, color.b );
 	}
+#endif
 }
 
-DECLARE_CLIENT_EFFECT( "BloodImpact", BloodImpactCallback );
+#ifdef NEO
+DECLARE_CLIENT_EFFECT( "bloodimpact", BloodImpactCallback);
+#else
+DECLARE_CLIENT_EFFECT( "BloodImpact", BloodImpactCallback);
+#endif
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
