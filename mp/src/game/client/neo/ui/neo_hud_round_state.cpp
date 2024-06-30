@@ -28,7 +28,10 @@ DECLARE_NAMED_HUDELEMENT(CNEOHud_RoundState, neo_round_state);
 
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(RoundState, 0.1)
 
-static constexpr int Y_POS = 2;
+namespace {
+constexpr int Y_POS = 2;
+constexpr bool STARS_HW_FILTERED = false;
+}
 
 CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *parent)
 	: CHudElement(pElementName)
@@ -56,14 +59,12 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 
 	for (int i = 0; i < STAR__TOTAL; ++i)
 	{
-		static constexpr bool STARS_HW_FILTERED = false;
-
-		static const char *IP_STAR_NAMES[STAR__TOTAL] = {
+		static constexpr const char *IP_STAR_NAMES[STAR__TOTAL] = {
 			"none", "alpha", "bravo", "charlie", "delta", "echo", "foxtrot"
 		};
 		const char *name = IP_STAR_NAMES[i];
-		char ipName[32] = {};
-		char hudName[32] = {};
+		char ipName[32];
+		char hudName[32];
 		V_snprintf(ipName, sizeof(ipName), "star_%s", name);
 		V_snprintf(hudName, sizeof(hudName), "hud/star_%s", name);
 
@@ -79,24 +80,26 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 
 	for (int i = 0; i < NEO_CLASS__ENUM_COUNT; ++i)
 	{
-		static const char *TEX_NAMES[NEO_CLASS__ENUM_COUNT] = {
+		static constexpr const char *TEX_NAMES[NEO_CLASS__ENUM_COUNT] = {
 			"vgui/reconSmall", "vgui/assaultSmall", "vgui/supportSmall", "vgui/vipSmall"
 		};
 		m_iGraphicID[i] = surface()->CreateNewTextureID();
 		surface()->DrawSetTextureFile(m_iGraphicID[i], TEX_NAMES[i], true, false);
 	}
 
-	for (int i = TEAM_JINRAI; i < TEAM__TOTAL; ++i)
+	struct TeamLogoColorInfo
 	{
-		static const struct {
-			const char *logo;
-			const char *totalLogo;
-			Color color;
-		} TEAM_TEX_INFO[TEAM__TOTAL - TEAM_JINRAI] = {
+		const char *logo;
+		const char *totalLogo;
+		Color color;
+	};
+	for (int i = FIRST_GAME_TEAM; i < TEAM__TOTAL; ++i)
+	{
+		static const TeamLogoColorInfo TEAM_TEX_INFO[TEAM__TOTAL - FIRST_GAME_TEAM] = {
 			{.logo = "vgui/jinrai_128tm", .totalLogo = "vgui/ts_jinrai", .color = COLOR_JINRAI},
 			{.logo = "vgui/nsf_128tm", .totalLogo = "vgui/ts_nsf", .color = COLOR_NSF},
 		};
-		const int texIdx = i - TEAM_JINRAI;
+		const int texIdx = i - FIRST_GAME_TEAM;
 		m_teamLogoColors[i] = TeamLogoColor{
 			.logo = surface()->CreateNewTextureID(),
 			.totalLogo = surface()->CreateNewTextureID(),
