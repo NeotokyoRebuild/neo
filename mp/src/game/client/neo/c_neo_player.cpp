@@ -215,7 +215,7 @@ public:
 	{
 		auto team = GetLocalPlayerTeam();
 
-		if (team == TEAM_UNASSIGNED || team == TEAM_SPECTATOR) {
+		if (team < FIRST_GAME_TEAM) {
 			return;
 		}
 
