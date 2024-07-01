@@ -372,8 +372,12 @@ void CNEOBaseCombatWeapon::ProcessAnimationEvents(void)
 		if (gpGlobals->curtime > m_flNextPrimaryAttack)
 		{
 			SendWeaponAnim(ACT_VM_IDLE_LOWERED);
-			m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
-			m_flNextSecondaryAttack = m_flNextPrimaryAttack;
+			// NEO NOTE (nullsystem): Do not block Frag/Smoke grenades on run aka lowered
+			if (!(GetNeoWepBits() & NEO_WEP_THROWABLE))
+			{
+				m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
+				m_flNextSecondaryAttack = m_flNextPrimaryAttack;
+			}
 		}
 	}
 }
