@@ -38,18 +38,13 @@ private:
 	int m_fontWidth;
 	int m_bulletFontWidth, m_bulletFontHeight;
 
-	Color box_color, ammo_color, transparent_ammo_color;
-
 	CPanelAnimationVarAliasType(int, xpos, "xpos", "r203", "proportional_xpos");
 	CPanelAnimationVarAliasType(int, ypos, "ypos", "446", "proportional_ypos");
 	CPanelAnimationVarAliasType(int, wide, "wide", "203", "proportional_xpos");
 	CPanelAnimationVarAliasType(int, tall, "tall", "32", "proportional_ypos");
 	CPanelAnimationVarAliasType(int, visible, "visible", "1", "int");
 	CPanelAnimationVarAliasType(int, enabled, "enabled", "1", "int");
-	CPanelAnimationVarAliasType(int, box_color_r, "box_color_r", "116", "int");
-	CPanelAnimationVarAliasType(int, box_color_g, "box_color_g", "116", "int");
-	CPanelAnimationVarAliasType(int, box_color_b, "box_color_b", "116", "int");
-	CPanelAnimationVarAliasType(int, box_color_a, "box_color_a", "178", "int");
+	CPanelAnimationVar(Color, box_color, "box_color", "100 100 100 178");
 
 	CPanelAnimationVarAliasType(bool, top_left_corner, "top_left_corner", "1", "bool");
 	CPanelAnimationVarAliasType(bool, top_right_corner, "top_right_corner", "1", "bool");
@@ -66,10 +61,8 @@ private:
 	CPanelAnimationVarAliasType(int, digit2_ypos, "digit2_ypos", "16", "proportional_ypos");
 	CPanelAnimationVarAliasType(int, icon_xpos, "icon_xpos", "3", "proportional_xpos");
 	CPanelAnimationVarAliasType(int, icon_ypos, "icon_ypos", "5", "proportional_ypos");
-	CPanelAnimationVarAliasType(int, ammo_color_r, "ammo_color_r", "255", "int");
-	CPanelAnimationVarAliasType(int, ammo_color_g, "ammo_color_g", "255", "int");
-	CPanelAnimationVarAliasType(int, ammo_color_b, "ammo_color_b", "255", "int");
-	CPanelAnimationVarAliasType(int, ammo_color_a, "ammo_color_a", "178", "int");
+	CPanelAnimationVar(Color, ammo_color, "ammo_color", "255 255 255 178");
+	CPanelAnimationVar(Color, emptied_ammo_color, "emptied_ammo_color", "255 255 255 89");
 private:
 	CNEOHud_Ammo(const CNEOHud_Ammo& other);
 };

@@ -201,7 +201,7 @@ void CNEOHud_Compass::DrawCompass() const
 	DrawNeoHudRoundedBox(
 		resXHalf - xBoxWidthHalf, m_resY - yBoxHeight - margin,
 		resXHalf + xBoxWidthHalf, m_resY - margin,
-		NEO_HUDBOX_COLOR);
+		m_boxColor);
 
 	// Draw the compass "needle"
 	if (m_needleVisible)
@@ -258,16 +258,16 @@ void CNEOHud_Compass::DrawCompass() const
 		}
 	}
 
-	static const Color FADE_END_COLOR(116, 116, 116, 255);
+	const Color fadeEndColor(m_boxColor.r(), m_boxColor.g(), m_boxColor.b(), 255);
 	DrawNeoHudRoundedBoxFaded(
 		resXHalf - xBoxWidthHalf, m_resY - yBoxHeight - margin,
 		resXHalf, m_resY - margin,
-		FADE_END_COLOR, 255, 0, true,
+		fadeEndColor, 255, 0, true,
 		true, false, true, false);
 	DrawNeoHudRoundedBoxFaded(
 		resXHalf, m_resY - yBoxHeight - margin,
 		resXHalf + xBoxWidthHalf, m_resY - margin,
-		FADE_END_COLOR, 0, 255, true,
+		fadeEndColor, 0, 255, true,
 		false, true, false, true);
 }
 
