@@ -1056,7 +1056,7 @@ void C_NEO_Player::PostThink(void)
 		{
 			Weapon_SetZoom(false);
 		}
-		else if ((m_afButtonPressed & IN_AIM) && (!CanSprint() || !(m_nButtons & IN_SPEED)))
+		else if (m_afButtonPressed & IN_AIM)
 		{
 			// Binds hack: we want grenade secondary attack to trigger on aim (mouse button 2)
 			if (auto *pNeoWep = dynamic_cast<C_NEOBaseCombatWeapon *>(pWep);
@@ -1064,7 +1064,7 @@ void C_NEO_Player::PostThink(void)
 			{
 				pNeoWep->SecondaryAttack();
 			}
-			else
+			else if (!CanSprint() || !(m_nButtons & IN_SPEED))
 			{
 				Weapon_AimToggle(pWep, clientAimHold ? NEO_TOGGLE_FORCE_AIM : NEO_TOGGLE_DEFAULT);
 			}
