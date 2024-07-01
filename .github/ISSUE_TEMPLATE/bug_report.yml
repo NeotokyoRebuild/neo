@@ -1,7 +1,6 @@
 name: Bug report
 description: General bugs, program crashes, broken files, wrong values, etc...
-title: "[BUG] "
-labels: bug
+labels: "Bug Report"
 projects: ["NeotokyoRebuild/1"]
 body:
   - type: markdown
@@ -14,8 +13,12 @@ body:
         **DO NOT** paste chatlogs. Formulate the bug into a detailed
         description and reproducible steps using the form below.
 
-        Fill in the title after the **[BUG]** tag and make sure it's
-        in the **"current state of things"** wording.
+        Make sure the title describes the issue with the current state
+        of the game ie. if the bug is that recons can see through
+        walls when using their NVGs, the title should
+        be "recons can see through walls with NVGs" and if the
+        bug is that NVGs don't light up dark areas the title should be
+        "recons can't see in the dark with NVGs").
   - type: input
     id: build
     attributes:
