@@ -785,8 +785,8 @@ Vector CGameMovement::GetPlayerMaxs( void ) const
 #ifdef NEO
 		Assert(dynamic_cast<CNEO_Player*>(player));
 		Vector maxs = player->m_Local.m_bDucked ? VEC_DUCK_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player)) : VEC_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player));
-		//engine->Con_NPrintf(10, "x:%f, y:%f, z:%f", maxs.x, maxs.y, maxs.z); // NEO FIX (Adam) Remove these before merging
-		//engine->Con_NPrintf(11, "Player Scale:%f", player->GetModelScale());
+		engine->Con_NPrintf(10, "x:%f, y:%f, z:%f", maxs.x, maxs.y, maxs.z); // NEO FIX (Adam) Remove these before merging
+		engine->Con_NPrintf(11, "Player Scale:%f", player->GetModelScale());
 		// We may be leaning sideways, in which case we need to block the lean camera from clipping walls etc.
 		if (player->GetViewOffset().y > 0)
 		{
