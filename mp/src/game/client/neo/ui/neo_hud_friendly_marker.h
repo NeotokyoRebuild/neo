@@ -22,7 +22,7 @@ public:
 
 protected:
 	virtual void DrawNeoHudElement() override;
-	void DrawPlayerForTeam(C_Team* team, const C_NEO_Player* localPlayer) const;
+	void DrawPlayerForTeam(C_Team *team, const C_NEO_Player *localPlayer, const C_NEO_Player *pTargetPlayer) const;
 	virtual ConVar* GetUpdateFrequencyConVar() const override;
 	virtual void UpdateStateForNeoHudElementDraw() override;
 
