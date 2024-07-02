@@ -174,6 +174,9 @@ if(OS_WINDOWS)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "")
 
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+
+        string(REGEX REPLACE "/Zi" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS}")
+
         add_compile_options(
             #/Wp64 # Detect64bitPortabilityIssues
             #/Od # Optimization - Disabled
@@ -184,6 +187,7 @@ if(OS_WINDOWS)
             /Zc:forScope
             /Oy-
             /MTd
+            /ZI
         )
 
         add_compile_definitions(
