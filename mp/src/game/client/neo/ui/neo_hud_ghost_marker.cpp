@@ -86,7 +86,7 @@ CNEOHud_GhostMarker::CNEOHud_GhostMarker(const char* pElemName, vgui::Panel* par
 
 void CNEOHud_GhostMarker::UpdateStateForNeoHudElementDraw()
 {
-	V_snprintf(m_szMarkerText, sizeof(m_szMarkerText), "GHOST %.0f M", m_flDistMeters);
+	V_snprintf(m_szMarkerText, sizeof(m_szMarkerText), "GHOST DISTANCE: %.0fm", m_flDistMeters);
 	g_pVGuiLocalize->ConvertANSIToUnicode(m_szMarkerText, m_wszMarkerTextUnicode, sizeof(m_wszMarkerTextUnicode));
 }
 
@@ -97,20 +97,7 @@ void CNEOHud_GhostMarker::DrawNeoHudElement()
 		return;
 	}
 
-	auto fadeMultiplier = GetFadeValueTowardsScreenCentre(m_iPosX, m_iPosY);
-
-	if(fadeMultiplier > 0.001)
-	{
-		auto adjustedGrey = Color(COLOR_GREY.r(), COLOR_GREY.b(), COLOR_GREY.g(), COLOR_GREY.a() * fadeMultiplier);
-	
-		surface()->DrawSetTextColor(adjustedGrey);
-		surface()->DrawSetTextFont(m_hFont);
-		int textSizeX, textSizeY;
-		surface()->GetTextSize(m_hFont, m_wszMarkerTextUnicode, textSizeX, textSizeY);
-		surface()->DrawSetTextPos(m_iPosX - (textSizeX / 2), m_iPosY + textSizeY);
-		surface()->DrawPrintText(m_wszMarkerTextUnicode, sizeof(m_szMarkerText));
-	}
-
+	bool hideText = false;
 	Color ghostColor = COLOR_GREY;
 	if (m_iGhostingTeam == TEAM_JINRAI || m_iGhostingTeam == TEAM_NSF)
 	{
@@ -123,7 +110,23 @@ void CNEOHud_GhostMarker::DrawNeoHudElement()
 		{
 			// Otherwise show ghosting team color (if friendly or spec)
 			ghostColor = (m_iGhostingTeam == TEAM_JINRAI) ? COLOR_JINRAI : COLOR_NSF;
+
+			// Use the friendly HUD text for distance display instead if spectator team or same team
+			hideText = (m_iClientTeam < FIRST_GAME_TEAM || m_iGhostingTeam == m_iClientTeam);
 		}
+	}
+
+	const float fadeMultiplier = GetFadeValueTowardsScreenCentre(m_iPosX, m_iPosY);
+	if (!hideText && fadeMultiplier > 0.001f)
+	{
+		auto adjustedGrey = Color(COLOR_GREY.r(), COLOR_GREY.b(), COLOR_GREY.g(), COLOR_GREY.a() * fadeMultiplier);
+	
+		surface()->DrawSetTextColor(adjustedGrey);
+		surface()->DrawSetTextFont(m_hFont);
+		int textSizeX, textSizeY;
+		surface()->GetTextSize(m_hFont, m_wszMarkerTextUnicode, textSizeX, textSizeY);
+		surface()->DrawSetTextPos(m_iPosX - (textSizeX / 2), m_iPosY + (2 * textSizeY));
+		surface()->DrawPrintText(m_wszMarkerTextUnicode, sizeof(m_szMarkerText));
 	}
 
 	const float scale = neo_ghost_marker_hud_scale_factor.GetFloat();
