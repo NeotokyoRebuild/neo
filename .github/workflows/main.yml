@@ -17,5 +17,5 @@ jobs:
           uses: ViRGiL175/github-project-issue-to-sheets@dev
           with:
             google-api-service-account-credentials: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_DATA }}
-            document-id: '1cuGeJlPIoKEo6su2vGx1wmkAi0l5o_7ZXCFH0dA5CAA'
+            document-id: '${{ vars.DOCUMENT_ID }}'
             sheet-name: 'NT;RE Github Issues Statistics'
