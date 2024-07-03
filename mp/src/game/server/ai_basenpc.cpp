@@ -124,6 +124,9 @@ bool RagdollManager_SaveImportant( CAI_BaseNPC *pNPC );
 
 #define	NPC_GRENADE_FEAR_DIST		200
 #define	MAX_GLASS_PENETRATION_DEPTH	16.0f
+#ifdef NEO
+#define MAX_PENETRATION_DEPTH 11.f
+#endif
 
 #define FINDNAMEDENTITY_MAX_ENTITIES	32		// max number of entities to be considered for random entity selection in FindNamedEntity
 
@@ -1532,6 +1535,65 @@ void CBaseEntity::HandleShotImpactingGlass( const FireBulletsInfo_t &info,
 	CBaseEntity::FireBullets(behindGlassInfo);
 #else
 	FireBullets( behindGlassInfo );
+#endif
+}
+
+
+//-----------------------------------------------------------------------------
+// Handle shot penetration
+//-----------------------------------------------------------------------------
+void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
+	const trace_t& tr, const Vector& vecDir, ITraceFilter* pTraceFilter)
+{
+	// Move through the material until we're at the other side or bullet has run out of penetrative power
+	Vector	testPos = tr.endpos + (vecDir * MAX_PENETRATION_DEPTH);
+
+	CEffectData	data;
+
+	data.m_vNormal = tr.plane.normal;
+	data.m_vOrigin = tr.endpos;
+
+	DispatchEffect("GlassImpact", data);
+
+	trace_t	penetrationTrace;
+
+	// Re-trace as if the bullet had passed right through
+	UTIL_TraceLine(testPos, tr.endpos, MASK_SHOT, pTraceFilter, &penetrationTrace);
+
+	// See if we found the surface again
+	if (penetrationTrace.startsolid || tr.fraction == 0.0f || penetrationTrace.fraction == 1.0f)
+		return;
+
+	//FIXME: This is technically frustrating MultiDamage, but multiple shots hitting multiple targets in one call
+	//		 would do exactly the same anyway...
+
+	// Impact the other side (will look like an exit effect)
+	DoImpactEffect(penetrationTrace, GetAmmoDef()->DamageType(info.m_iAmmoType));
+
+	data.m_vNormal = penetrationTrace.plane.normal;
+	data.m_vOrigin = penetrationTrace.endpos;
+
+	DispatchEffect("GlassImpact", data);
+
+	// Refire the round, as if starting from behind the glass
+	FireBulletsInfo_t behindGlassInfo;
+	behindGlassInfo.m_iShots = 1;
+	behindGlassInfo.m_vecSrc = penetrationTrace.endpos;
+	behindGlassInfo.m_vecDirShooting = vecDir;
+	behindGlassInfo.m_vecSpread = vec3_origin;
+	behindGlassInfo.m_flDistance = info.m_flDistance * (1.0f - tr.fraction);
+	behindGlassInfo.m_iAmmoType = info.m_iAmmoType;
+	behindGlassInfo.m_iTracerFreq = info.m_iTracerFreq;
+	behindGlassInfo.m_flDamage = info.m_flDamage;
+	behindGlassInfo.m_pAttacker = info.m_pAttacker ? info.m_pAttacker : this;
+	behindGlassInfo.m_nFlags = info.m_nFlags;
+
+#ifdef NEO
+	// NEO FIX (Rain): skip the vtable, because this is a recursive call,
+	// and otherwise we'd be trying to initiate multiple lag compensations within each other.
+	CBaseEntity::FireBullets(behindGlassInfo);
+#else
+	FireBullets(behindGlassInfo);
 #endif
 }
 
