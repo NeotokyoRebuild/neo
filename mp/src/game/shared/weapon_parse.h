@@ -107,6 +107,7 @@ public:
 	Vector					vecVmOffset;
 	char					szBulletCharacter[MAX_BULLET_CHARACTER];// character used to display ammunition in current clip
 	int						iAimFOV;
+	float					m_flPenetration;
 #endif
 
 	// Sound blocks

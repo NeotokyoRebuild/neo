@@ -2032,6 +2032,9 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 					bHitGlass = true;
 				}
 			}
+
+			// Bullet penetration
+			HandleShotPenetration(info, tr, vecDir, &traceFilter);
 #endif
 		}
 

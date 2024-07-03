@@ -107,6 +107,10 @@ extern ConVar sk_healthkit;
 #include "utlbuffer.h"
 #include "gamestats.h"
 
+#ifdef NEO
+#include <map>
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -1545,6 +1549,15 @@ void CBaseEntity::HandleShotImpactingGlass( const FireBulletsInfo_t &info,
 void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 	const trace_t& tr, const Vector& vecDir, ITraceFilter* pTraceFilter)
 {
+	float penResistance = 0;
+	int material = physprops->GetSurfaceData(tr.surface.surfaceProps)->game.material;
+
+	if (material == CHAR_TEX_GLASS) { penResistance = 1; }
+	else if (material == CHAR_TEX_WOOD) { penResistance = 0.8; }
+	else if (material == CHAR_TEX_METAL || material == CHAR_TEX_TILE) { penResistance = 0.5; }
+	else if (material == CHAR_TEX_CONCRETE || /*material == CHAR_TEX_GRAVEL ||*/ material == CHAR_TEX_DIRT) { penResistance = 0.3; }
+	//else if (material == CHAR_TEX_GRASS || material == CHAR_TEX_CARPET) { penResistance = 0.2; }
+
 	// Move through the material until we're at the other side or bullet has run out of penetrative power
 	Vector	testPos = tr.endpos + (vecDir * MAX_PENETRATION_DEPTH);
 
@@ -1552,8 +1565,6 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 
 	data.m_vNormal = tr.plane.normal;
 	data.m_vOrigin = tr.endpos;
-
-	DispatchEffect("GlassImpact", data);
 
 	trace_t	penetrationTrace;
 
@@ -1564,6 +1575,13 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 	if (penetrationTrace.startsolid || tr.fraction == 0.0f || penetrationTrace.fraction == 1.0f)
 		return;
 
+	// See if we have enough pen to penetrate
+	float penUsed = ((1.0f - penetrationTrace.fraction) * MAX_PENETRATION_DEPTH) / penResistance;
+	if (penUsed > info.m_flPenetration)
+		return;
+
+	engine->Con_NPrintf(12, "Pen used: %f", penUsed); // NEO FIXME (Adam) Remove before merging. NOTE Will be overwritten if bullet penetrates multiple surfaces, use action breakpoints for detail
+
 	//FIXME: This is technically frustrating MultiDamage, but multiple shots hitting multiple targets in one call
 	//		 would do exactly the same anyway...
 
@@ -1573,28 +1591,21 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 	data.m_vNormal = penetrationTrace.plane.normal;
 	data.m_vOrigin = penetrationTrace.endpos;
 
-	DispatchEffect("GlassImpact", data);
+	// Refire the round, as if starting from behind the material
+	FireBulletsInfo_t behindMaterialInfo;
+	behindMaterialInfo.m_iShots = 1;
+	behindMaterialInfo.m_vecSrc = penetrationTrace.endpos;
+	behindMaterialInfo.m_vecDirShooting = vecDir;
+	behindMaterialInfo.m_vecSpread = vec3_origin;
+	behindMaterialInfo.m_flDistance = info.m_flDistance * (1.0f - tr.fraction);
+	behindMaterialInfo.m_iAmmoType = info.m_iAmmoType;
+	behindMaterialInfo.m_iTracerFreq = info.m_iTracerFreq;
+	behindMaterialInfo.m_flDamage = info.m_flDamage * (1.f - (penUsed / info.m_flPenetration));
+	behindMaterialInfo.m_pAttacker = info.m_pAttacker ? info.m_pAttacker : this;
+	behindMaterialInfo.m_nFlags = info.m_nFlags;
+	behindMaterialInfo.m_flPenetration = info.m_flPenetration - penUsed;
 
-	// Refire the round, as if starting from behind the glass
-	FireBulletsInfo_t behindGlassInfo;
-	behindGlassInfo.m_iShots = 1;
-	behindGlassInfo.m_vecSrc = penetrationTrace.endpos;
-	behindGlassInfo.m_vecDirShooting = vecDir;
-	behindGlassInfo.m_vecSpread = vec3_origin;
-	behindGlassInfo.m_flDistance = info.m_flDistance * (1.0f - tr.fraction);
-	behindGlassInfo.m_iAmmoType = info.m_iAmmoType;
-	behindGlassInfo.m_iTracerFreq = info.m_iTracerFreq;
-	behindGlassInfo.m_flDamage = info.m_flDamage;
-	behindGlassInfo.m_pAttacker = info.m_pAttacker ? info.m_pAttacker : this;
-	behindGlassInfo.m_nFlags = info.m_nFlags;
-
-#ifdef NEO
-	// NEO FIX (Rain): skip the vtable, because this is a recursive call,
-	// and otherwise we'd be trying to initiate multiple lag compensations within each other.
-	CBaseEntity::FireBullets(behindGlassInfo);
-#else
-	FireBullets(behindGlassInfo);
-#endif
+	CBaseEntity::FireBullets(behindMaterialInfo);
 }
 
 
