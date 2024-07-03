@@ -175,7 +175,7 @@ if(OS_WINDOWS)
 
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 
-        string(REGEX REPLACE "/Zi" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS}")
+        string(REGEX REPLACE "/Zi" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
 
         add_compile_options(
             #/Wp64 # Detect64bitPortabilityIssues
