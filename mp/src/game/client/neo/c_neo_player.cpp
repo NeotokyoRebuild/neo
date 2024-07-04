@@ -71,8 +71,6 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_iNextSpawnClassChoice)),
 	RecvPropInt(RECVINFO(m_bInLean)),
 
-	RecvPropVector(RECVINFO(m_vecGhostMarkerPos)),
-	RecvPropBool(RECVINFO(m_bGhostExists)),
 	RecvPropBool(RECVINFO(m_bInThermOpticCamo)),
 	RecvPropBool(RECVINFO(m_bLastTickInThermOpticCamo)),
 	RecvPropBool(RECVINFO(m_bInVision)),
@@ -99,7 +97,6 @@ BEGIN_PREDICTION_DATA(C_NEO_Player)
 	DEFINE_PRED_FIELD(m_rvFriendlyPlayerPositions, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_ARRAY(m_rfAttackersScores, FIELD_FLOAT, MAX_PLAYERS + 1, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_ARRAY(m_rfAttackersHits, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_INSENDTABLE),
-	DEFINE_PRED_FIELD(m_vecGhostMarkerPos, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
 
 	DEFINE_PRED_FIELD_TOL(m_flCamoAuxLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
 	
@@ -420,8 +417,6 @@ C_NEO_Player::C_NEO_Player()
 	m_iNextSpawnClassChoice = -1;
 	m_iXP.GetForModify() = 0;
 
-	m_vecGhostMarkerPos = vec3_origin;
-	m_bGhostExists = false;
 	m_bShowClassMenu = m_bShowTeamMenu = m_bIsClassMenuOpen = m_bIsTeamMenuOpen = false;
 	m_bInThermOpticCamo = m_bInVision = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
@@ -896,40 +891,6 @@ void C_NEO_Player::PreThink( void )
 		m_bIsTeamMenuOpen = true;
 		m_bIsClassMenuOpen = false;
 		engine->ClientCmd(teammenu.GetName());
-	}
-
-	if (auto *ghostMarker = GET_NAMED_HUDELEMENT(CNEOHud_GhostMarker, neo_ghost_marker))
-	{
-		if (!m_bGhostExists)
-		{
-			ghostMarker->SetVisible(false);
-		}
-		else
-		{
-			const float distance = METERS_PER_INCH *
-				GetAbsOrigin().DistTo(m_vecGhostMarkerPos);
-
-			if (!IsCarryingGhost())
-			{
-				ghostMarker->SetVisible(true);
-
-				int ghostMarkerX, ghostMarkerY;
-				GetVectorInScreenSpace(m_vecGhostMarkerPos, ghostMarkerX, ghostMarkerY);
-
-				ghostMarker->SetScreenPosition(ghostMarkerX, ghostMarkerY);
-				ghostMarker->SetGhostingTeam(NEORules()->ghosterTeam());
-				ghostMarker->SetClientCurrentTeam(GetTeamNumber());
-				ghostMarker->SetGhostDistance(distance);
-			}
-			else
-			{
-				ghostMarker->SetVisible(false);
-			}
-		}
-	}
-	else
-	{
-		Warning("Couldn't find ghostMarker\n");
 	}
 
 	if (auto *indicator = GET_HUDELEMENT(CNEOHud_GameEvent))

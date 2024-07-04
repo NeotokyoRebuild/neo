@@ -47,6 +47,8 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropInt(RECVINFO(m_iRoundNumber)),
 	RecvPropInt(RECVINFO(m_iGhosterTeam)),
 	RecvPropInt(RECVINFO(m_iGhosterPlayer)),
+	RecvPropBool(RECVINFO(m_bGhostExists)),
+	RecvPropVector(RECVINFO(m_vecGhostMarkerPos)),
 #else
 	SendPropFloat(SENDINFO(m_flNeoNextRoundStartTime)),
 	SendPropFloat(SENDINFO(m_flNeoRoundStartTime)),
@@ -54,6 +56,8 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropInt(SENDINFO(m_iRoundNumber)),
 	SendPropInt(SENDINFO(m_iGhosterTeam)),
 	SendPropInt(SENDINFO(m_iGhosterPlayer)),
+	SendPropBool(SENDINFO(m_bGhostExists)),
+	SendPropVector(SENDINFO(m_vecGhostMarkerPos), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT),
 #endif
 END_NETWORK_TABLE()
 
@@ -422,6 +426,8 @@ void CNEORules::ResetMapSessionCommon()
 	m_iRoundNumber = 0;
 	m_iGhosterTeam = TEAM_UNASSIGNED;
 	m_iGhosterPlayer = 0;
+	m_bGhostExists = false;
+	m_vecGhostMarkerPos = vec3_origin;
 	m_flNeoRoundStartTime = 0.0f;
 	m_flNeoNextRoundStartTime = 0.0f;
 #ifdef GAME_DLL
@@ -536,19 +542,72 @@ void CNEORules::Think(void)
 	// Update ghosting team info
 	int nextGhosterTeam = TEAM_UNASSIGNED;
 	int nextGhosterPlayer = 0;
+	CWeaponGhost *ghost = nullptr;
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
-		auto player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
-		if (player && player->IsCarryingGhost())
+		if (auto player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i)))
 		{
-			nextGhosterTeam = player->GetTeamNumber();
-			nextGhosterPlayer = i;
-			Assert(nextGhosterTeam == TEAM_JINRAI || nextGhosterTeam == TEAM_NSF);
-			break;
+			ghost = static_cast<CWeaponGhost *>(GetNeoWepWithBits(player, NEO_WEP_GHOST));
+			if (ghost)
+			{
+				nextGhosterTeam = player->GetTeamNumber();
+				nextGhosterPlayer = i;
+				Assert(nextGhosterTeam == TEAM_JINRAI || nextGhosterTeam == TEAM_NSF);
+				break;
+			}
 		}
 	}
 	m_iGhosterTeam = nextGhosterTeam;
 	m_iGhosterPlayer = nextGhosterPlayer;
+
+	static int ghostEdict = -1;
+	if (!ghost)
+	{
+		ghost = dynamic_cast<CWeaponGhost*>(UTIL_EntityByIndex(ghostEdict));
+		if (!ghost)
+		{
+			auto entIter = gEntList.FirstEnt();
+			while (entIter)
+			{
+				ghost = dynamic_cast<CWeaponGhost*>(entIter);
+
+				if (ghost)
+				{
+					ghostEdict = ghost->edict()->m_EdictIndex;
+					break;
+				}
+
+				entIter = gEntList.NextEnt(entIter);
+			}
+		}
+	}
+
+	m_bGhostExists = (ghost != nullptr);
+
+	if (m_bGhostExists)
+	{
+		Assert(UTIL_IsValidEntity(ghost));
+		Assert(ghostEdict == ghost->edict()->m_EdictIndex);
+
+		if (ghost->GetAbsOrigin().IsValid())
+		{
+			Vector vecNextGhostMarkerPos = ghost->GetAbsOrigin();
+			const int ghosterTeam = GetGhosterTeam();
+			if (ghosterTeam == TEAM_JINRAI || ghosterTeam == TEAM_NSF)
+			{
+				// Someone's carrying it, center at their body
+				if (auto player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(m_iGhosterPlayer)))
+				{
+					vecNextGhostMarkerPos = player->EyePosition();
+				}
+			}
+			m_vecGhostMarkerPos = vecNextGhostMarkerPos;
+		}
+		else
+		{
+			Assert(false);
+		}
+	}
 
 	// Check if the ghost was capped during this Think
 	int captorTeam, captorClient;

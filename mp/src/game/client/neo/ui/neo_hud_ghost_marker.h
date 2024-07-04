@@ -17,34 +17,24 @@ class CNEOHud_GhostMarker : public CNEOHud_WorldPosMarker
 public:
 	CNEOHud_GhostMarker(const char *pElemName, vgui::Panel *parent = NULL);
 
-	virtual void Paint();
-
-	void SetGhostingTeam(int team);
-	void SetClientCurrentTeam(int team);
-	void SetScreenPosition(int x, int y);
-	void SetGhostDistance(float distance);
+	virtual void ApplySchemeSettings(vgui::IScheme *pScheme) override;
+	virtual void Paint() override;
 
 protected:
-	virtual void UpdateStateForNeoHudElementDraw();
-	virtual void DrawNeoHudElement();
-	virtual ConVar* GetUpdateFrequencyConVar() const;
+	virtual void UpdateStateForNeoHudElementDraw() override;
+	virtual void DrawNeoHudElement() override;
+	virtual ConVar *GetUpdateFrequencyConVar() const override;
 
 private:
 	float m_fMarkerScalesStart[4] = { 0.78f, 0.6f, 0.38f, 0.0f };
 	float m_fMarkerScalesCurrent[4] = { 0.78f, 0.6f, 0.38f, 0.0f };
 	int m_iMarkerTexWidth, m_iMarkerTexHeight;
-	int m_iPosX, m_iPosY;
-	int m_iGhostingTeam;
-	int m_iClientTeam;
 
 	char m_szMarkerText[32 + 1];
 	wchar_t m_wszMarkerTextUnicode[32 + 1];
 
-	float m_flDistMeters;
-
-	vgui::HTexture m_hTex;
-
-	vgui::HFont m_hFont;
+	vgui::HTexture m_hTex = 0UL;
+	vgui::HFont m_hFont = 0UL;
 };
 
 #endif // NEO_HUD_GHOST_MARKER_H

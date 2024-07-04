@@ -219,8 +219,10 @@ public:
 		NEO_VICTORY_STALEMATE // Not actually a victory
 	};
 
-	int ghosterTeam() const { return m_iGhosterTeam; }
+	int GetGhosterTeam() const { return m_iGhosterTeam; }
 	int GetGhosterPlayer() const { return m_iGhosterPlayer; }
+	bool GhostExists() const { return m_bGhostExists; }
+	Vector GetGhostPos() const { return m_vecGhostMarkerPos; }
 
 	int GetOpposingTeam(const int team) const
 	{
@@ -265,8 +267,12 @@ private:
 #endif
 	CNetworkVar(int, m_nRoundStatus); // NEO TODO (Rain): probably don't need to network this
 	CNetworkVar(int, m_iRoundNumber);
+
+	// Ghost networked variables
 	CNetworkVar(int, m_iGhosterTeam);
 	CNetworkVar(int, m_iGhosterPlayer);
+	CNetworkVector(m_vecGhostMarkerPos);
+	CNetworkVar(bool, m_bGhostExists);
 
 	CNetworkVar(float, m_flNeoRoundStartTime);
 	CNetworkVar(float, m_flNeoNextRoundStartTime);

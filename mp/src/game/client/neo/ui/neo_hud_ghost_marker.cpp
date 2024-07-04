@@ -3,6 +3,7 @@
 
 #include "neo_gamerules.h"
 #include "neo_player_shared.h"
+#include "c_neo_player.h"
 
 #include "iclientmode.h"
 #include <vgui/ILocalize.h>
@@ -30,12 +31,6 @@ NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(GhostMarker, 0.01)
 CNEOHud_GhostMarker::CNEOHud_GhostMarker(const char* pElemName, vgui::Panel* parent)
 	: CNEOHud_WorldPosMarker(pElemName, parent)
 {
-	m_flDistMeters = 0;
-
-	m_iGhostingTeam = TEAM_UNASSIGNED;
-	m_iClientTeam = TEAM_UNASSIGNED;
-	m_iPosX = m_iPosY = 0;
-
 	{
 		int i;
 		for (i = 0; i < sizeof(m_szMarkerText) - 1; ++i)
@@ -66,12 +61,6 @@ CNEOHud_GhostMarker::CNEOHud_GhostMarker(const char* pElemName, vgui::Panel* par
 	surface()->GetScreenSize(wide, tall);
 	SetBounds(0, 0, wide, tall);
 
-	// NEO HACK (Rain): this is kind of awkward, we should get the handle on ApplySchemeSettings
-	vgui::IScheme *scheme = vgui::scheme()->GetIScheme(neoscheme);
-	Assert(scheme);
-
-	m_hFont = scheme->GetFont("NHudOCRSmall", true);
-
 	m_hTex = surface()->CreateNewTextureID();
 	Assert(m_hTex > 0);
 	surface()->DrawSetTextureFile(m_hTex, "vgui/hud/ctg/g_beacon_circle", 1, false);
@@ -84,9 +73,17 @@ CNEOHud_GhostMarker::CNEOHud_GhostMarker(const char* pElemName, vgui::Panel* par
 	SetBgColor(Color(0, 0, 0, 0));
 }
 
+void CNEOHud_GhostMarker::ApplySchemeSettings(vgui::IScheme *pScheme)
+{
+	BaseClass::ApplySchemeSettings(pScheme);
+
+	m_hFont = pScheme->GetFont("NHudOCRSmall", true);
+}
+
 void CNEOHud_GhostMarker::UpdateStateForNeoHudElementDraw()
 {
-	V_snprintf(m_szMarkerText, sizeof(m_szMarkerText), "GHOST DISTANCE: %.0fm", m_flDistMeters);
+	const float flDistMeters = METERS_PER_INCH * C_NEO_Player::GetLocalPlayer()->GetAbsOrigin().DistTo(NEORules()->GetGhostPos());
+	V_snprintf(m_szMarkerText, sizeof(m_szMarkerText), "GHOST DISTANCE: %.0fm", flDistMeters);
 	g_pVGuiLocalize->ConvertANSIToUnicode(m_szMarkerText, m_wszMarkerTextUnicode, sizeof(m_wszMarkerTextUnicode));
 }
 
@@ -97,11 +94,19 @@ void CNEOHud_GhostMarker::DrawNeoHudElement()
 		return;
 	}
 
+	const auto localPlayer = static_cast<C_NEO_Player *>(C_NEO_Player::GetLocalPlayer());
+	if (!NEORules()->GhostExists() || localPlayer->IsCarryingGhost())
+	{
+		return;
+	}
+
 	bool hideText = false;
 	Color ghostColor = COLOR_GREY;
-	if (m_iGhostingTeam == TEAM_JINRAI || m_iGhostingTeam == TEAM_NSF)
+	const int iGhostingTeam = NEORules()->GetGhosterTeam();
+	const int iClientTeam = localPlayer->GetTeamNumber();
+	if (iGhostingTeam == TEAM_JINRAI || iGhostingTeam == TEAM_NSF)
 	{
-		if ((m_iClientTeam == TEAM_JINRAI || m_iClientTeam == TEAM_NSF) && (m_iClientTeam != m_iGhostingTeam))
+		if ((iClientTeam == TEAM_JINRAI || iClientTeam == TEAM_NSF) && (iClientTeam != iGhostingTeam))
 		{
 			// If viewing from playing player, but opposite of ghosting team, show red
 			ghostColor = COLOR_RED;
@@ -109,14 +114,28 @@ void CNEOHud_GhostMarker::DrawNeoHudElement()
 		else
 		{
 			// Otherwise show ghosting team color (if friendly or spec)
-			ghostColor = (m_iGhostingTeam == TEAM_JINRAI) ? COLOR_JINRAI : COLOR_NSF;
+			ghostColor = (iGhostingTeam == TEAM_JINRAI) ? COLOR_JINRAI : COLOR_NSF;
 
 			// Use the friendly HUD text for distance display instead if spectator team or same team
-			hideText = (m_iClientTeam < FIRST_GAME_TEAM || m_iGhostingTeam == m_iClientTeam);
+			hideText = (iClientTeam < FIRST_GAME_TEAM || iGhostingTeam == iClientTeam);
 		}
 	}
 
-	const float fadeMultiplier = GetFadeValueTowardsScreenCentre(m_iPosX, m_iPosY);
+	int iPosX, iPosY;
+	Vector ghostPos = NEORules()->GetGhostPos();
+	// Use PVS over networked-given position if possible as it'll give a smoother visual
+	if (const int ghosterPlayerIdx = NEORules()->GetGhosterPlayer();
+			ghosterPlayerIdx > 0)
+	{
+		if (auto ghosterPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(ghosterPlayerIdx));
+				ghosterPlayer->IsVisible())
+		{
+			ghostPos = ghosterPlayer->EyePosition();
+		}
+	}
+	GetVectorInScreenSpace(ghostPos, iPosX, iPosY);
+
+	const float fadeMultiplier = GetFadeValueTowardsScreenCentre(iPosX, iPosY);
 	if (!hideText && fadeMultiplier > 0.001f)
 	{
 		auto adjustedGrey = Color(COLOR_GREY.r(), COLOR_GREY.b(), COLOR_GREY.g(), COLOR_GREY.a() * fadeMultiplier);
@@ -125,7 +144,7 @@ void CNEOHud_GhostMarker::DrawNeoHudElement()
 		surface()->DrawSetTextFont(m_hFont);
 		int textSizeX, textSizeY;
 		surface()->GetTextSize(m_hFont, m_wszMarkerTextUnicode, textSizeX, textSizeY);
-		surface()->DrawSetTextPos(m_iPosX - (textSizeX / 2), m_iPosY + (2 * textSizeY));
+		surface()->DrawSetTextPos(iPosX - (textSizeX / 2), iPosY + (2 * textSizeY));
 		surface()->DrawPrintText(m_wszMarkerTextUnicode, sizeof(m_szMarkerText));
 	}
 
@@ -143,8 +162,8 @@ void CNEOHud_GhostMarker::DrawNeoHudElement()
 		if (m_fMarkerScalesCurrent[i] > 1)
 			m_fMarkerScalesCurrent[i] -= 1;
 
-		const int offset_X = m_iPosX - ((m_iMarkerTexWidth * 0.5f * m_fMarkerScalesCurrent[i]) * scale);
-		const int offset_Y = m_iPosY - ((m_iMarkerTexHeight * 0.5f * m_fMarkerScalesCurrent[i]) * scale);
+		const int offset_X = iPosX - ((m_iMarkerTexWidth * 0.5f * m_fMarkerScalesCurrent[i]) * scale);
+		const int offset_Y = iPosY - ((m_iMarkerTexHeight * 0.5f * m_fMarkerScalesCurrent[i]) * scale);
 
 		int alpha = 64 + alpha6;
 		if (m_fMarkerScalesCurrent[i] > 0.5)
@@ -169,25 +188,4 @@ void CNEOHud_GhostMarker::Paint()
 	SetBgColor(COLOR_TRANSPARENT);
 	BaseClass::Paint();
 	PaintNeoElement();
-}
-
-void CNEOHud_GhostMarker::SetGhostingTeam(int team)
-{
-	m_iGhostingTeam = team;
-}
-
-void CNEOHud_GhostMarker::SetClientCurrentTeam(int team)
-{
-	m_iClientTeam = team;
-}
-
-void CNEOHud_GhostMarker::SetScreenPosition(int x, int y)
-{
-	m_iPosX = x;
-	m_iPosY = y;
-}
-
-void CNEOHud_GhostMarker::SetGhostDistance(float distance)
-{
-	m_flDistMeters = distance;
 }
