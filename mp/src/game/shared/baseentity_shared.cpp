@@ -2125,7 +2125,6 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 
 #ifdef NEO
 #define MAX_PENETRATION_DEPTH 11.f
-#endif
 
 #define MATERIALS_NUM 26
 static float penetrationResistance[MATERIALS_NUM] =
@@ -2133,7 +2132,7 @@ static float penetrationResistance[MATERIALS_NUM] =
 	0.85,						// CHAR_TEX_ANTLION
 	0.85,						// CHAR_TEX_BLOODYFLESH	
 	0.29,						// CHAR_TEX_CONCRETE		
-	0.2,						// CHAR_TEX_DIRT			
+	0.19,						// CHAR_TEX_DIRT			
 	0.85,						// CHAR_TEX_EGGSHELL		
 	0.85,						// CHAR_TEX_FLESH			
 	0.85,						// CHAR_TEX_GRATE			
@@ -2142,17 +2141,17 @@ static float penetrationResistance[MATERIALS_NUM] =
 	0,							// CHAR_TEX_UNUSED		
 	0,							// CHAR_TEX_UNUSED		
 	0.85,						// CHAR_TEX_PLASTIC		
-	0.45,						// CHAR_TEX_METAL			
-	0.2,						// CHAR_TEX_SAND			
-	0.68,						// CHAR_TEX_FOLIAGE		
+	0.49,						// CHAR_TEX_METAL			
+	0.19,						// CHAR_TEX_SAND			
+	0.73,						// CHAR_TEX_FOLIAGE		
 	0.85,						// CHAR_TEX_COMPUTER		
 	0,							// CHAR_TEX_UNUSED		
 	0,							// CHAR_TEX_UNUSED		
 	0.29,						// CHAR_TEX_SLOSH			
-	0.45,						// CHAR_TEX_TILE			
+	0.49,						// CHAR_TEX_TILE			
 	0,							// CHAR_TEX_UNUSED		
 	0.85,						// CHAR_TEX_VENT			
-	0.68,						// CHAR_TEX_WOOD			
+	0.73,						// CHAR_TEX_WOOD			
 	0,							// CHAR_TEX_UNUSED		
 	0.85,						// CHAR_TEX_GLASS			
 	0,							// CHAR_TEX_WARPSHIELD
@@ -2219,6 +2218,7 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 
 	CBaseEntity::FireBullets(behindMaterialInfo);
 }
+#endif
 
 //-----------------------------------------------------------------------------
 // Should we draw bubbles underwater?
