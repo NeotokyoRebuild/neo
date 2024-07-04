@@ -184,7 +184,6 @@ if(OS_WINDOWS)
             /Zc:forScope
             /Oy-
             /MTd
-            /ZI
         )
 
         add_compile_definitions(
