@@ -175,7 +175,6 @@ void ClientModeHL2MPNormal::Init()
 
 #ifdef NEO
 ConVar cl_neo_decouple_vm_fov("cl_neo_decouple_vm_fov", "1", FCVAR_CHEAT, "Whether to decouple aim FOV from viewmodel FOV.", true, false, true, true);
-ConVar cl_neo_decoupled_vm_fov_lerp_scale("cl_neo_decoupled_vm_fov_lerp_scale", "10", FCVAR_CHEAT, "Multiplier for decoupled FOV lerp speed.", true, 0.01, false, 0);
 ConVar neo_viewmodel_fov_offset("neo_viewmodel_fov_offset", "0", FCVAR_ARCHIVE, "Sets the field-of-view offset for the viewmodel.", true, -20.0f, true, 40.0f);
 
 //-----------------------------------------------------------------------------
