@@ -174,7 +174,7 @@ void ClientModeHL2MPNormal::Init()
 }
 
 #ifdef NEO
-ConVar cl_neo_decouple_vm_fov("cl_neo_decouple_vm_fov", "1", FCVAR_CHEAT, "Whether to decouple aim FOV from viewmodel FOV.", true, 0.0f, true, 1.0f);
+ConVar cl_neo_decouple_vm_fov("cl_neo_decouple_vm_fov", "1", FCVAR_CHEAT, "Whether to decouple aim FOV from viewmodel FOV.", true, false, true, true);
 ConVar cl_neo_decoupled_vm_fov_lerp_scale("cl_neo_decoupled_vm_fov_lerp_scale", "10", FCVAR_CHEAT, "Multiplier for decoupled FOV lerp speed.", true, 0.01, false, 0);
 ConVar neo_viewmodel_fov_offset("neo_viewmodel_fov_offset", "0", FCVAR_ARCHIVE, "Sets the field-of-view offset for the viewmodel.", true, -20.0f, true, 40.0f);
 
@@ -183,73 +183,76 @@ ConVar neo_viewmodel_fov_offset("neo_viewmodel_fov_offset", "0", FCVAR_ARCHIVE, 
 //-----------------------------------------------------------------------------
 float ClientModeHL2MPNormal::GetViewModelFOV()
 {
-	if (cl_neo_decouple_vm_fov.GetBool())
+	if (!cl_neo_decouple_vm_fov.GetBool())
 	{
-		// NEO TODO (Rain): switch to static cast when all weapons
-		// inherit in such a way that downcast is guaranteed to be valid.
-		auto pWeapon = dynamic_cast<C_NEOBaseCombatWeapon*>(GetActiveWeapon());
-		if (pWeapon)
+		return BaseClass::GetViewModelFOV();
+	}
+
+	Assert(!GetActiveWeapon() || dynamic_cast<C_NEOBaseCombatWeapon*>(GetActiveWeapon()));
+	auto pWeapon = static_cast<C_NEOBaseCombatWeapon*>(GetActiveWeapon());
+	if (!pWeapon)
+	{
+		return BaseClass::GetViewModelFOV();
+	}
+
+	auto pOwner = static_cast<C_NEO_Player*>(pWeapon->GetOwner());
+	if (!pOwner)
+	{
+		return BaseClass::GetViewModelFOV();
+	}
+
+	auto pVm = pOwner->GetViewModel();
+	if (pVm)
+	{
+		// Toggle sniper viewmodel rendering according to scoped status.
+		if (pWeapon->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
 		{
-			auto pOwner = static_cast<C_NEO_Player*>(pWeapon->GetOwner());
-			if (pOwner)
+			if (pOwner->IsInAim())
 			{
-				const CHL2MPSWeaponInfo* pWepInfo = &pWeapon->GetHL2MPWpnData();
-				Assert(pWepInfo);
-
-				auto pVm = pOwner->GetViewModel();
-				if (pVm)
-				{
-					// Toggle sniper viewmodel rendering according to scoped status.
-					if (pWeapon->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
-					{
-						if (pOwner->IsInAim())
-						{
-							pVm->AddEffects(EF_NODRAW);
-						}
-						else
-						{
-							pVm->RemoveEffects(EF_NODRAW);
-						}
-					}
-				}
-
-				float flTargetFov = m_flVMFOV;
-				if (!prediction->InPrediction())
-				{
-					const bool playerAiming = pOwner->IsInAim();
-					const float currentTime = gpGlobals->curtime;
-					if (m_bViewAim && !playerAiming)
-					{
-						// From aiming to not aiming
-						m_flStartAimingChange = currentTime;
-						m_bViewAim = false;
-					}
-					else if (!m_bViewAim && playerAiming)
-					{
-						// From not aiming to aiming
-						m_flStartAimingChange = currentTime;
-						m_bViewAim = true;
-					}
-					const float endAimingChange = m_flStartAimingChange + NEO_ZOOM_SPEED;
-					const bool inAimingChange = (m_flStartAimingChange <= currentTime && currentTime < endAimingChange);
-					if (inAimingChange)
-					{
-						float percentage = clamp((currentTime - m_flStartAimingChange) / NEO_ZOOM_SPEED, 0.0f, 1.0f);
-						if (playerAiming) percentage = 1.0f - percentage;
-						flTargetFov = Lerp(percentage, pWepInfo->m_flVMAimFov, pWepInfo->m_flVMFov);
-					}
-					else
-					{
-						flTargetFov = playerAiming ? (pWepInfo->m_flVMAimFov) : (pWepInfo->m_flVMFov);
-					}
-					m_flVMFOV = flTargetFov;
-				}
-				return flTargetFov + neo_viewmodel_fov_offset.GetFloat();
+				pVm->AddEffects(EF_NODRAW);
+			}
+			else
+			{
+				pVm->RemoveEffects(EF_NODRAW);
 			}
 		}
 	}
 
-	return BaseClass::GetViewModelFOV();
+	float flTargetFov = m_flVMFOV;
+	if (!prediction->InPrediction())
+	{
+		const bool playerAiming = pOwner->IsInAim();
+		const float currentTime = gpGlobals->curtime;
+		if (m_bViewAim && !playerAiming)
+		{
+			// From aiming to not aiming
+			m_flStartAimingChange = currentTime;
+			m_bViewAim = false;
+		}
+		else if (!m_bViewAim && playerAiming)
+		{
+			// From not aiming to aiming
+			m_flStartAimingChange = currentTime;
+			m_bViewAim = true;
+		}
+
+		const CHL2MPSWeaponInfo* pWepInfo = &pWeapon->GetHL2MPWpnData();
+		Assert(pWepInfo);
+
+		const float endAimingChange = m_flStartAimingChange + NEO_ZOOM_SPEED;
+		const bool inAimingChange = (m_flStartAimingChange <= currentTime && currentTime < endAimingChange);
+		if (inAimingChange)
+		{
+			float percentage = clamp((currentTime - m_flStartAimingChange) / NEO_ZOOM_SPEED, 0.0f, 1.0f);
+			if (playerAiming) percentage = 1.0f - percentage;
+			flTargetFov = Lerp(percentage, pWepInfo->m_flVMAimFov, pWepInfo->m_flVMFov);
+		}
+		else
+		{
+			flTargetFov = playerAiming ? (pWepInfo->m_flVMAimFov) : (pWepInfo->m_flVMFov);
+		}
+		m_flVMFOV = flTargetFov;
+	}
+	return flTargetFov + neo_viewmodel_fov_offset.GetFloat();
 }
 #endif
-
