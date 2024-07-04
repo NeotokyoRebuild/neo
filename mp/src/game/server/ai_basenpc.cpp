@@ -124,9 +124,6 @@ bool RagdollManager_SaveImportant( CAI_BaseNPC *pNPC );
 
 #define	NPC_GRENADE_FEAR_DIST		200
 #define	MAX_GLASS_PENETRATION_DEPTH	16.0f
-#ifdef NEO
-#define MAX_PENETRATION_DEPTH 11.f
-#endif
 
 #define FINDNAMEDENTITY_MAX_ENTITIES	32		// max number of entities to be considered for random entity selection in FindNamedEntity
 
@@ -1537,73 +1534,6 @@ void CBaseEntity::HandleShotImpactingGlass( const FireBulletsInfo_t &info,
 	FireBullets( behindGlassInfo );
 #endif
 }
-
-
-//-----------------------------------------------------------------------------
-// Handle shot penetration
-//-----------------------------------------------------------------------------
-void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
-	const trace_t& tr, const Vector& vecDir, ITraceFilter* pTraceFilter)
-{
-	float penResistance = 0;
-	int material = physprops->GetSurfaceData(tr.surface.surfaceProps)->game.material;
-
-	if (material == CHAR_TEX_GLASS) { penResistance = 1; }
-	else if (material == CHAR_TEX_WOOD) { penResistance = 0.8; }
-	else if (material == CHAR_TEX_METAL || material == CHAR_TEX_TILE) { penResistance = 0.5; }
-	else if (material == CHAR_TEX_CONCRETE || /*material == CHAR_TEX_GRAVEL ||*/ material == CHAR_TEX_DIRT) { penResistance = 0.3; }
-	//else if (material == CHAR_TEX_GRASS || material == CHAR_TEX_CARPET) { penResistance = 0.2; }
-
-	// Move through the material until we're at the other side or bullet has run out of penetrative power
-	Vector	testPos = tr.endpos + (vecDir * MAX_PENETRATION_DEPTH);
-
-	CEffectData	data;
-
-	data.m_vNormal = tr.plane.normal;
-	data.m_vOrigin = tr.endpos;
-
-	trace_t	penetrationTrace;
-
-	// Re-trace as if the bullet had passed right through
-	UTIL_TraceLine(testPos, tr.endpos, MASK_SHOT, pTraceFilter, &penetrationTrace);
-
-	// See if we found the surface again
-	if (penetrationTrace.startsolid || tr.fraction == 0.0f || penetrationTrace.fraction == 1.0f)
-		return;
-
-	// See if we have enough pen to penetrate
-	float penUsed = ((1.0f - penetrationTrace.fraction) * MAX_PENETRATION_DEPTH) / penResistance;
-	if (penUsed > info.m_flPenetration)
-		return;
-
-	engine->Con_NPrintf(12, "Pen used: %f", penUsed); // NEO FIXME (Adam) Remove before merging. NOTE Will be overwritten if bullet penetrates multiple surfaces, use action breakpoints for detail
-
-	//FIXME: This is technically frustrating MultiDamage, but multiple shots hitting multiple targets in one call
-	//		 would do exactly the same anyway...
-
-	// Impact the other side (will look like an exit effect)
-	DoImpactEffect(penetrationTrace, GetAmmoDef()->DamageType(info.m_iAmmoType));
-
-	data.m_vNormal = penetrationTrace.plane.normal;
-	data.m_vOrigin = penetrationTrace.endpos;
-
-	// Refire the round, as if starting from behind the material
-	FireBulletsInfo_t behindMaterialInfo;
-	behindMaterialInfo.m_iShots = 1;
-	behindMaterialInfo.m_vecSrc = penetrationTrace.endpos;
-	behindMaterialInfo.m_vecDirShooting = vecDir;
-	behindMaterialInfo.m_vecSpread = vec3_origin;
-	behindMaterialInfo.m_flDistance = info.m_flDistance * (1.0f - tr.fraction);
-	behindMaterialInfo.m_iAmmoType = info.m_iAmmoType;
-	behindMaterialInfo.m_iTracerFreq = info.m_iTracerFreq;
-	behindMaterialInfo.m_flDamage = info.m_flDamage * (1.f - (penUsed / info.m_flPenetration));
-	behindMaterialInfo.m_pAttacker = info.m_pAttacker ? info.m_pAttacker : this;
-	behindMaterialInfo.m_nFlags = info.m_nFlags;
-	behindMaterialInfo.m_flPenetration = info.m_flPenetration - penUsed;
-
-	CBaseEntity::FireBullets(behindMaterialInfo);
-}
-
 
 //-----------------------------------------------------------------------------
 // Computes the tracer start position
