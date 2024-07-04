@@ -112,7 +112,7 @@ void CNEOHud_FriendlyMarker::DrawPlayerForTeam(C_Team* team, const C_NEO_Player*
 	auto teamColour = GetTeamColour(team->GetTeamNumber());
 	for (int i = 0; i < memberCount; ++i)
 	{
-		auto player = dynamic_cast<C_NEO_Player *>(team->GetPlayer(i));
+		auto player = static_cast<C_NEO_Player *>(team->GetPlayer(i));
 		if(player && localPlayer->entindex() != player->entindex() && player->IsAlive())
 		{
 			DrawPlayer(teamColour, player, localPlayer);
@@ -153,7 +153,7 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 			};
 
 			// Draw player's name and health
-			snprintf(textASCII, MAX_MARKER_STRLEN, "%s", playerName);
+			V_snprintf(textASCII, MAX_MARKER_STRLEN, "%s", playerName);
 			DisplayText(textASCII);
 
 			// Draw distance to player - Only if local player alive and same team
@@ -162,13 +162,13 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 					((!localPlayerAlive || localPlayerSpec) && player->IsCarryingGhost()))
 			{
 				const float flDistance = METERS_PER_INCH * player->GetAbsOrigin().DistTo(localPlayer->GetAbsOrigin());
-				snprintf(textASCII, MAX_MARKER_STRLEN, "%s: %.0fm",
+				V_snprintf(textASCII, MAX_MARKER_STRLEN, "%s: %.0fm",
 						 player->IsCarryingGhost() ? "GHOST DISTANCE" : "DISTANCE",
 						 flDistance);
 				DisplayText(textASCII);
 			}
 
-			snprintf(textASCII, MAX_MARKER_STRLEN, "%d%%", player->GetHealth());
+			V_snprintf(textASCII, MAX_MARKER_STRLEN, "%d%%", player->GetHealth());
 			DisplayText(textASCII);
 		}
 
