@@ -2124,37 +2124,37 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 }
 
 #ifdef NEO
-#define MAX_PENETRATION_DEPTH 11.f
+#define MAX_PENETRATION_DEPTH 12.f
 
 #define MATERIALS_NUM 26
 static float penetrationResistance[MATERIALS_NUM] =
 {
-	0.85,						// CHAR_TEX_ANTLION
-	0.85,						// CHAR_TEX_BLOODYFLESH	
-	0.29,						// CHAR_TEX_CONCRETE		
-	0.19,						// CHAR_TEX_DIRT			
-	0.85,						// CHAR_TEX_EGGSHELL		
-	0.85,						// CHAR_TEX_FLESH			
-	0.85,						// CHAR_TEX_GRATE			
-	0.85,						// CHAR_TEX_ALIENFLESH		
-	0,							// CHAR_TEX_CLIP			
-	0,							// CHAR_TEX_UNUSED		
-	0,							// CHAR_TEX_UNUSED		
-	0.85,						// CHAR_TEX_PLASTIC		
-	0.49,						// CHAR_TEX_METAL			
-	0.19,						// CHAR_TEX_SAND			
-	0.73,						// CHAR_TEX_FOLIAGE		
-	0.85,						// CHAR_TEX_COMPUTER		
-	0,							// CHAR_TEX_UNUSED		
-	0,							// CHAR_TEX_UNUSED		
-	0.29,						// CHAR_TEX_SLOSH			
-	0.49,						// CHAR_TEX_TILE			
-	0,							// CHAR_TEX_UNUSED		
-	0.85,						// CHAR_TEX_VENT			
-	0.73,						// CHAR_TEX_WOOD			
-	0,							// CHAR_TEX_UNUSED		
-	0.85,						// CHAR_TEX_GLASS			
-	0,							// CHAR_TEX_WARPSHIELD
+	1.0,						// CHAR_TEX_ANTLION
+	1.0,						// CHAR_TEX_BLOODYFLESH	
+	0.3,						// CHAR_TEX_CONCRETE		
+	0.2,						// CHAR_TEX_DIRT			
+	1.0,						// CHAR_TEX_EGGSHELL		
+	0.6,						// CHAR_TEX_FLESH			
+	0.75,						// CHAR_TEX_GRATE			
+	0.6,						// CHAR_TEX_ALIENFLESH		
+	1.0,						// CHAR_TEX_CLIP			
+	1.0,						// CHAR_TEX_UNUSED		
+	1.0,						// CHAR_TEX_UNUSED		
+	0.8,						// CHAR_TEX_PLASTIC		
+	0.5,						// CHAR_TEX_METAL			
+	0.2,						// CHAR_TEX_SAND			
+	0.8,						// CHAR_TEX_FOLIAGE		
+	0.5,						// CHAR_TEX_COMPUTER		
+	1.0,						// CHAR_TEX_UNUSED		
+	1.0,						// CHAR_TEX_UNUSED		
+	1.0,						// CHAR_TEX_SLOSH			
+	0.5,						// CHAR_TEX_TILE			
+	1.0,						// CHAR_TEX_UNUSED		
+	0.75,						// CHAR_TEX_VENT			
+	0.75,						// CHAR_TEX_WOOD			
+	1.0,						// CHAR_TEX_UNUSED		
+	0.9,						// CHAR_TEX_GLASS			
+	1.0,						// CHAR_TEX_WARPSHIELD
 };
 
 //-----------------------------------------------------------------------------
