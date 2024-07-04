@@ -2127,6 +2127,37 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 #define MAX_PENETRATION_DEPTH 11.f
 #endif
 
+#define MATERIALS_NUM 26
+static float penetrationResistance[MATERIALS_NUM] =
+{
+	0.85,						// CHAR_TEX_ANTLION
+	0.85,						// CHAR_TEX_BLOODYFLESH	
+	0.29,						// CHAR_TEX_CONCRETE		
+	0.2,						// CHAR_TEX_DIRT			
+	0.85,						// CHAR_TEX_EGGSHELL		
+	0.85,						// CHAR_TEX_FLESH			
+	0.85,						// CHAR_TEX_GRATE			
+	0.85,						// CHAR_TEX_ALIENFLESH		
+	0,							// CHAR_TEX_CLIP			
+	0,							// CHAR_TEX_UNUSED		
+	0,							// CHAR_TEX_UNUSED		
+	0.85,						// CHAR_TEX_PLASTIC		
+	0.45,						// CHAR_TEX_METAL			
+	0.2,						// CHAR_TEX_SAND			
+	0.68,						// CHAR_TEX_FOLIAGE		
+	0.85,						// CHAR_TEX_COMPUTER		
+	0,							// CHAR_TEX_UNUSED		
+	0,							// CHAR_TEX_UNUSED		
+	0.29,						// CHAR_TEX_SLOSH			
+	0.45,						// CHAR_TEX_TILE			
+	0,							// CHAR_TEX_UNUSED		
+	0.85,						// CHAR_TEX_VENT			
+	0.68,						// CHAR_TEX_WOOD			
+	0,							// CHAR_TEX_UNUSED		
+	0.85,						// CHAR_TEX_GLASS			
+	0,							// CHAR_TEX_WARPSHIELD
+};
+
 //-----------------------------------------------------------------------------
 // Handle shot penetration
 //-----------------------------------------------------------------------------
@@ -2135,15 +2166,12 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 {
 	float penResistance = 0;
 	int material = physprops->GetSurfaceData(tr.surface.surfaceProps)->game.material;
-
-	if (material == CHAR_TEX_GLASS) { penResistance = 1; }
-	else if (material == CHAR_TEX_WOOD) { penResistance = 0.8; }
-	else if (material == CHAR_TEX_METAL || material == CHAR_TEX_TILE) { penResistance = 0.5; }
-	else if (material == CHAR_TEX_CONCRETE || /*material == CHAR_TEX_GRAVEL ||*/ material == CHAR_TEX_DIRT) { penResistance = 0.3; }
-	//else if (material == CHAR_TEX_GRASS || material == CHAR_TEX_CARPET) { penResistance = 0.2; }
+	material -= 'A';
+	if (material > 0 && material < MATERIALS_NUM)
+		penResistance = penetrationResistance[material];
 
 	// Move through the material until we're at the other side or bullet has run out of penetrative power
-	Vector	testPos = tr.endpos + (vecDir * MAX_PENETRATION_DEPTH);
+	Vector	testPos = tr.endpos + (vecDir.Normalized() * MAX_PENETRATION_DEPTH);
 
 	CEffectData	data;
 
