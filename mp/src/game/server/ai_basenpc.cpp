@@ -107,10 +107,6 @@ extern ConVar sk_healthkit;
 #include "utlbuffer.h"
 #include "gamestats.h"
 
-#ifdef NEO
-#include <map>
-#endif
-
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
