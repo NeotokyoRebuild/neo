@@ -1535,6 +1535,7 @@ void CBaseEntity::HandleShotImpactingGlass( const FireBulletsInfo_t &info,
 #endif
 }
 
+
 //-----------------------------------------------------------------------------
 // Computes the tracer start position
 //-----------------------------------------------------------------------------
