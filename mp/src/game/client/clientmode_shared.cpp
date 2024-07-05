@@ -1116,12 +1116,6 @@ void ClientModeShared::FireGameEvent( IGameEvent *event )
 		{
 			// that's me
 			pPlayer->TeamChange( team );
-
-			auto neoPlayer = dynamic_cast<C_NEO_Player*>(pPlayer);
-			if(neoPlayer)
-			{
-				engine->ClientCmd("classmenu");
-			}
 		}
 	}
 #ifdef NEO

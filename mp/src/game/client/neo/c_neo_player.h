@@ -172,6 +172,7 @@ public:
 	bool ClientWantNeoName() const;
 
 	virtual void CalcDeathCamView( Vector& eyeOrigin, QAngle& eyeAngles, float& fov ) override;
+	virtual void TeamChange(int iNewTeam) override;
 
 private:
 	void CheckThermOpticButtons();

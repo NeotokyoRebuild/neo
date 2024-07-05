@@ -1122,6 +1122,12 @@ void C_NEO_Player::CalcDeathCamView(Vector &eyeOrigin, QAngle &eyeAngles, float 
 	}
 }
 
+void C_NEO_Player::TeamChange(int iNewTeam)
+{
+	engine->ClientCmd(classmenu.GetName());
+	BaseClass::TeamChange(iNewTeam);
+}
+
 bool C_NEO_Player::IsAllowedToSuperJump(void)
 {
 	if (!IsSprinting())
