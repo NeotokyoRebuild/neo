@@ -300,7 +300,7 @@ void CNeoLoadoutMenu::ChangeMenu(const char* menuName = NULL)
 		}
 		if (Q_stricmp(menuName, "classmenu") == 0)
 		{
-			player->m_bShowClassMenu = true;
+			engine->ClientCmd(menuName);
 		}
 	}
 	else

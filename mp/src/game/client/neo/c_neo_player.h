@@ -194,8 +194,7 @@ public:
 	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
 	CNetworkArray(float, m_rfAttackersScores, (MAX_PLAYERS + 1));
 	CNetworkArray(int, m_rfAttackersHits, (MAX_PLAYERS + 1));
-
-	bool m_bShowClassMenu, m_bShowTeamMenu;
+	
 	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
 
 	CNetworkVar(bool, m_bGhostExists);
@@ -221,8 +220,6 @@ public:
 	CNetworkVar(bool, m_bClientWantNeoName);
 
 	unsigned char m_NeoFlags;
-
-	bool m_bIsClassMenuOpen, m_bIsTeamMenuOpen;
 
 private:
 	bool m_bFirstDeathTick;
