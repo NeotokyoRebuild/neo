@@ -373,6 +373,7 @@ void CBaseHudWeaponSelection::UserCmd_Slot10(void)
 	SelectSlot( 10 );
 }
 
+#ifdef NEO
 void CBaseHudWeaponSelection::UserCmd_SlotGrenade(void)
 {
 	SelectWeaponInSlotBucket(4, 0);
@@ -387,7 +388,7 @@ void CBaseHudWeaponSelection::UserCmd_SlotRemoteDet(void)
 {
 	SelectWeaponInSlotBucket(4, 2);
 }
-
+#endif
 
 //-----------------------------------------------------------------------------
 // Purpose: returns true if the CHudMenu should take slot1, etc commands
