@@ -221,6 +221,7 @@ public:
 	virtual float GetFireRate() override final;
 	virtual bool GetRoundChambered() const { return 0; }
 	virtual bool GetRoundBeingChambered() const { return 0; }
+	float GetPenetration();
 
 protected:
 	virtual float GetAccuracyPenalty() const { Assert(false); return 0; } // Should never call this base class; implement in children.

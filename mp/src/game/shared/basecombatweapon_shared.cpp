@@ -1896,13 +1896,6 @@ const WeaponProficiencyInfo_t *CBaseCombatWeapon::GetProficiencyValues()
 	return defaultWeaponProficiencyTable;
 }
 
-#ifdef NEO
-float CBaseCombatWeapon::GetPenetration()
-{
-	return GetWpnData().m_flPenetration;
-}
-#endif
-
 //-----------------------------------------------------------------------------
 // Purpose: Base class default for getting firerate
 // Input  :
@@ -2386,10 +2379,6 @@ void CBaseCombatWeapon::PrimaryAttack( void )
 	//!!!HACKHACK - what does the client want this function for? 
 	info.m_vecSpread = GetActiveWeapon()->GetBulletSpread();
 #endif // CLIENT_DLL
-
-#ifdef NEO
-	info.m_flPenetration = GetPenetration();
-#endif
 
 	pPlayer->FireBullets( info );
 
