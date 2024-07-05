@@ -5,7 +5,7 @@ WeaponData
 	// Weapon characteristics:
 	"Damage"			"18"
 	"Bullets"			"8"
-	"CycleTime"			"0.875"
+	"CycleTime"			"0.8"
 	
 	// Weapon data is loaded by both the Game and Client DLLs.
 	"printname"			"MURATA SUPA 7"
