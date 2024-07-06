@@ -2127,7 +2127,7 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 #define MAX_PENETRATION_DEPTH 12.f
 
 #define MATERIALS_NUM 26
-static float penetrationResistance[MATERIALS_NUM] =
+static const float penetrationResistance[MATERIALS_NUM] =
 {
 	1.0,						// CHAR_TEX_ANTLION
 	1.0,						// CHAR_TEX_BLOODYFLESH	

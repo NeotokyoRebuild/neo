@@ -289,7 +289,7 @@ float CNEOBaseCombatWeapon::GetFireRate()
 	return GetHL2MPWpnData().m_flCycleTime;
 }
 
-float CNEOBaseCombatWeapon::GetPenetration()
+const float CNEOBaseCombatWeapon::GetPenetration()
 {
 	return GetWpnData().m_flPenetration;
 }
