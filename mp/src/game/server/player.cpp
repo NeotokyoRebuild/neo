@@ -183,11 +183,19 @@ extern void AddMultiDamage( const CTakeDamageInfo &info, CBaseEntity *pEntity );
 //#define MAX_SAFE_FALL_UNITS			( PLAYER_MAX_SAFE_FALL_DIST * 12 )
 
 // player damage adjusters
+#ifdef NEO
+ConVar	sk_player_head( "sk_player_head","1" );
+ConVar	sk_player_chest( "sk_player_chest","1" );
+ConVar	sk_player_stomach( "sk_player_stomach","0.75" );
+ConVar	sk_player_arm( "sk_player_arm","0.75" );
+ConVar	sk_player_leg( "sk_player_leg","0.6" );
+#else
 ConVar	sk_player_head( "sk_player_head","2" );
 ConVar	sk_player_chest( "sk_player_chest","1" );
 ConVar	sk_player_stomach( "sk_player_stomach","1" );
 ConVar	sk_player_arm( "sk_player_arm","1" );
 ConVar	sk_player_leg( "sk_player_leg","1" );
+#endif
 
 //ConVar	player_usercommand_timeout( "player_usercommand_timeout", "10", 0, "After this many seconds without a usercommand from a player, the client is kicked." );
 #ifdef _DEBUG
