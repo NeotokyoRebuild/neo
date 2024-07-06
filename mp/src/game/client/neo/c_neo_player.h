@@ -229,7 +229,6 @@ private:
 	bool m_bPreviouslyReloading;
 	bool m_bPreviouslyPreparingToHideMsg;
 	bool m_bIsAllowedToToggleVision;
-	int m_iSavedObserverMode = 0;
 
 	INEOPlayerAnimState* m_pPlayerAnimState;
 

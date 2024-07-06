@@ -971,6 +971,7 @@ void C_NEO_Player::ClientThink(void)
 }
 
 static ConVar neo_this_client_speed("neo_this_client_speed", "0", FCVAR_SPONLY);
+extern ConVar cl_spec_mode;
 
 void C_NEO_Player::PostThink(void)
 {
@@ -1018,7 +1019,6 @@ void C_NEO_Player::PostThink(void)
 
 			if (IsLocalPlayer() && (GetTeamNumber() == TEAM_JINRAI || GetTeamNumber() == TEAM_NSF))
 			{
-				m_iSavedObserverMode = GetObserverMode();
 				SetObserverMode(OBS_MODE_DEATHCAM);
 				// Fade out 8s to blackout + 2s full blackout
 				ScreenFade_t sfade{
@@ -1031,6 +1031,43 @@ void C_NEO_Player::PostThink(void)
 					.a = 255,
 				};
 				vieweffects->Fade(sfade);
+
+				m_Local.m_iHideHUD = HIDEHUD_HEALTH;
+				cl_spec_mode.SetValue(OBS_MODE_IN_EYE);
+				if (auto *viewport = gViewPortInterface->FindPanelByName("specgui"))
+				{
+					viewport->ShowPanel(true);
+				}
+				engine->ClientCmd("spec_mode");
+			}
+		}
+
+		if (IsLocalPlayer() && GetObserverMode() == OBS_MODE_DEATHCAM && gpGlobals->curtime >= (GetDeathTime() + 10.0f))
+		{
+			// Deathcam -> None so you view your own body for a bit before proper spec
+			m_iObserverMode = OBS_MODE_NONE;
+			g_ClientVirtualReality.AlignTorsoAndViewToWeapon();
+
+			// Fade in 2s from blackout
+			ScreenFade_t sfade{
+				.duration = static_cast<unsigned short>(static_cast<float>(1<<SCREENFADE_FRACBITS) * 2.0f),
+				.holdTime = static_cast<unsigned short>(0),
+				.fadeFlags = FFADE_IN|FFADE_PURGE,
+				.r = 0,
+				.g = 0,
+				.b = 0,
+				.a = 255,
+			};
+			vieweffects->Fade(sfade);
+
+			auto target = GetObserverTarget();
+			if (!IsValidObserverTarget(target))
+			{
+				auto nextTarget = FindNextObserverTarget(false);
+				if (nextTarget && nextTarget != target)
+				{
+					SetObserverTarget(nextTarget);
+				}
 			}
 		}
 		return;
@@ -1108,24 +1145,6 @@ void C_NEO_Player::CalcDeathCamView(Vector &eyeOrigin, QAngle &eyeAngles, float 
 		Vector vForward;
 		AngleVectors(eyeAngles, &vForward);
 		fov = GetFOV();
-
-		if (IsLocalPlayer() && gpGlobals->curtime >= (GetDeathTime() + 10.0f))
-		{
-			m_iObserverMode = m_iSavedObserverMode;
-			g_ClientVirtualReality.AlignTorsoAndViewToWeapon();
-
-			// Fade in 2s from blackout
-			ScreenFade_t sfade{
-				.duration = static_cast<unsigned short>(static_cast<float>(1<<SCREENFADE_FRACBITS) * 2.0f),
-				.holdTime = static_cast<unsigned short>(0),
-				.fadeFlags = FFADE_IN|FFADE_PURGE,
-				.r = 0,
-				.g = 0,
-				.b = 0,
-				.a = 255,
-			};
-			vieweffects->Fade(sfade);
-		}
 	}
 	else
 	{
