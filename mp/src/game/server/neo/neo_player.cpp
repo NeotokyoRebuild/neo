@@ -716,7 +716,10 @@ void CNEO_Player::PreThink(void)
 		m_flCamoAuxLastTime = 0;
 	}
 
-	Lean();
+	if (IsAlive())
+	{
+		Lean();
+	}
 
 	// NEO HACK (Rain): Just bodging together a check for if we're allowed
 	// to superjump, or if we've been airborne too long for that.
@@ -1047,6 +1050,7 @@ void CNEO_Player::PostThink(void)
 
 			Weapon_SetZoom(false);
 			m_bInVision = false;
+			m_bInLean = NEO_LEAN_NONE;
 		}
 
 		return;

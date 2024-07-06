@@ -839,7 +839,10 @@ void C_NEO_Player::PreThink( void )
 		m_flCamoAuxLastTime = 0;
 	}
 
-	Lean();
+	if (IsAlive())
+	{
+		Lean();
+	}
 
 	// Eek. See rationale for this thing in CNEO_Player::PreThink
 	if (IsAirborne())
@@ -1011,6 +1014,7 @@ void C_NEO_Player::PostThink(void)
 
 			Weapon_SetZoom(false);
 			m_bInVision = false;
+			m_bInLean = NEO_LEAN_NONE;
 
 			if (IsLocalPlayer() && (GetTeamNumber() == TEAM_JINRAI || GetTeamNumber() == TEAM_NSF))
 			{
