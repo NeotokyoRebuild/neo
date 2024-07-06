@@ -811,10 +811,7 @@ void CNEO_Player::PreThink(void)
 				const int playerIdx = NEORules()->GetGhosterPlayer();
 				if (auto player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(playerIdx)))
 				{
-					const Vector playerEye = player->EyePosition();
-					const Vector playerBase = player->GetAbsOrigin();
-					const float playerMidZ = (playerEye.z - playerBase.z) / 2.0f;
-					vecNextGhostMarkerPos = Vector(playerBase.x, playerBase.y, playerBase.z + playerMidZ);
+					vecNextGhostMarkerPos = player->EyePosition();
 				}
 			}
 			m_vecGhostMarkerPos = vecNextGhostMarkerPos;

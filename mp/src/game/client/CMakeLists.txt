@@ -1678,7 +1678,7 @@ target_sources_grouped(
     FILES
     hl2mp/hl2mp_hud_chat.cpp
     hl2mp/hl2mp_hud_chat.h
-    hl2mp/hl2mp_hud_target_id.cpp
+    #hl2mp/hl2mp_hud_target_id.cpp
     hl2mp/hl2mp_hud_team.cpp
     hl2mp/hud_deathnotice.cpp
     hl2mp/ui/backgroundpanel.cpp
