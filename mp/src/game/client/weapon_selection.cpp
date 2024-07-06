@@ -376,17 +376,17 @@ void CBaseHudWeaponSelection::UserCmd_Slot10(void)
 #ifdef NEO
 void CBaseHudWeaponSelection::UserCmd_SlotGrenade(void)
 {
-	SelectWeaponInSlotBucket(4, 0);
+	SelectWeaponInSlotPos(4, 0);
 }
 
 void CBaseHudWeaponSelection::UserCmd_SlotSmoke(void)
 {
-	SelectWeaponInSlotBucket(4, 1);
+	SelectWeaponInSlotPos(4, 1);
 }
 
 void CBaseHudWeaponSelection::UserCmd_SlotRemoteDet(void)
 {
-	SelectWeaponInSlotBucket(4, 2);
+	SelectWeaponInSlotPos(4, 2);
 }
 #endif
 
@@ -663,7 +663,7 @@ C_BaseCombatWeapon *CBaseHudWeaponSelection::GetNextActivePos( int iSlot, int iS
 
 #ifdef NEO
 
-void CBaseHudWeaponSelection::SelectWeaponInSlotBucket(int iSlot, int iBucket)
+void CBaseHudWeaponSelection::SelectWeaponInSlotPos(int iSlot, int iSlotPos)
 {
 	// A menu may be overriding weapon selection commands
 	if (HandleHudMenuInput(iSlot))
@@ -698,12 +698,13 @@ void CBaseHudWeaponSelection::SelectWeaponInSlotBucket(int iSlot, int iBucket)
 	if (pPlayer->IsAllowedToSwitchWeapons() == false)
 		return;
 
-	C_BaseCombatWeapon *pWeaponInSlot = GetWeaponInSlot(iSlot, iBucket);
+	C_BaseCombatWeapon *pWeaponInSlot = GetWeaponInSlot(iSlot, iSlotPos);
 	if (pWeaponInSlot)
 	{
 		::input->MakeWeaponSelection(pWeaponInSlot);
+		return;
 	}
 
-	pPlayer->EmitSound("Player.WeaponSelectionMoveSlot");
+	pPlayer->EmitSound("Player.DenyWeaponSelection");
 }
 #endif

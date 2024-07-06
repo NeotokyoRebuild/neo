@@ -50,7 +50,7 @@ public:
 	virtual C_BaseCombatWeapon *GetWeaponInSlot( int iSlot, int iSlotPos ) = 0;
 	virtual void SelectWeaponSlot( int iSlot ) = 0;
 #ifdef NEO
-	void SelectWeaponInSlotBucket(int iSlot, int iBucket);
+	void SelectWeaponInSlotPos(int iSlot, int iSlotPos);
 #endif
 	virtual C_BaseCombatWeapon	*GetFirstPos( int iSlot );
 	virtual C_BaseCombatWeapon	*GetNextActivePos( int iSlot, int iSlotPos );
