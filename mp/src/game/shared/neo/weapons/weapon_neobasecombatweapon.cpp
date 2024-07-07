@@ -98,7 +98,6 @@ const char *GetWeaponByLoadoutId(int id)
 
 CNEOBaseCombatWeapon::CNEOBaseCombatWeapon( void )
 {
-	m_bReadyToAimIn = false;
 }
 
 void CNEOBaseCombatWeapon::Precache()
@@ -247,8 +246,6 @@ bool CNEOBaseCombatWeapon::Deploy(void)
 	{
 		AddEffects(EF_BONEMERGE);
 
-		m_bReadyToAimIn = false;
-
 #ifdef DEBUG
 		CNEO_Player* pOwner = NULL;
 		if (GetOwner())
@@ -325,17 +322,6 @@ void CNEOBaseCombatWeapon::CheckReload(void)
 	}
 
 	BaseClass::CheckReload();
-}
-
-void CNEOBaseCombatWeapon::ItemPreFrame(void)
-{
-	if (!m_bReadyToAimIn)
-	{
-		if (gpGlobals->curtime >= m_flNextPrimaryAttack)
-		{
-			m_bReadyToAimIn = true;
-		}
-	}
 }
 
 // Handles lowering the weapon view model when character is sprinting
