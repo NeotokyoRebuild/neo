@@ -1,5 +1,0 @@
-"Neo_MotionVision_Pass1"
-{
-	"$motionorigin" "_rt_MotionVision_Buffer1"
-	"$intermediate" "_rt_MotionVision_Buffer2"
-}
