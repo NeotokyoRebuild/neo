@@ -1,5 +1,0 @@
-"neo_ssao_combine"
-{
-	"$ssaotexture" "_rt_SSAO"
-	"$intermediate" "_rt_SSAO_Intermediate"
-}
