@@ -160,11 +160,7 @@ void CHudDeathNotice::Paint()
 	}
 
 #ifdef NEO
-	// TODO (nullsystem): Just create this once rather than every paint
-	wchar_t assistsPlusSign[64];
-	g_pVGuiLocalize->ConvertANSIToUnicode(" + ", assistsPlusSign, sizeof(assistsPlusSign));
-	const int assistsPlusSignWidth = UTIL_ComputeStringWidth(m_hTextFont, assistsPlusSign);
-
+	static constexpr wchar_t ASSIST_SEPARATOR[] = L" + ";
 	if (g_hFontKillfeed != vgui::INVALID_FONT)
 	{
 		m_hTextFont = g_hFontKillfeed;
@@ -280,7 +276,7 @@ void CHudDeathNotice::Paint()
 #ifdef NEO
 				if (hasAssists)
 				{
-					x -= (UTIL_ComputeStringWidth(m_hTextFont, assists) + assistsPlusSignWidth);
+					x -= (UTIL_ComputeStringWidth(m_hTextFont, assists) + UTIL_ComputeStringWidth(m_hTextFont, ASSIST_SEPARATOR));
 				}
 #endif
 			}
@@ -296,15 +292,15 @@ void CHudDeathNotice::Paint()
 #ifdef NEO
 			if (hasAssists)
 			{
-				SetColorForNoticePlayer(iAssistsTeam);
-
 				// Draw +
+				surface()->DrawSetTextColor(COLOR_NEO_WHITE);
 				surface()->DrawSetTextPos(x, y);
 				surface()->DrawSetTextFont(m_hTextFont);
-				surface()->DrawUnicodeString(assistsPlusSign);
+				surface()->DrawUnicodeString(ASSIST_SEPARATOR);
 				surface()->DrawGetTextPos(x, y);
 
 				// Draw assists's name
+				SetColorForNoticePlayer(iAssistsTeam);
 				surface()->DrawSetTextPos(x, y);
 				surface()->DrawSetTextFont(m_hTextFont);
 				surface()->DrawUnicodeString(assists);
