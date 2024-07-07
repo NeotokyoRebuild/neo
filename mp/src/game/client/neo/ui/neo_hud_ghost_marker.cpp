@@ -23,6 +23,9 @@ using vgui::surface;
 
 ConVar neo_ghost_marker_hud_scale_factor("neo_ghost_marker_hud_scale_factor", "0.5", FCVAR_USERINFO,
 	"Ghost marker HUD element scaling factor", true, 0.01, false, 0);
+ConVar neo_cl_hud_center_ghost_marker_size("neo_cl_hud_center_ghost_marker_size", "12.5", FCVAR_USERINFO,
+	"HUD center size in percentage to fade ghost marker.", true, 1, false, 0);
+
 
 DECLARE_NAMED_HUDELEMENT(CNEOHud_GhostMarker, neo_ghost_marker);
 
@@ -78,6 +81,10 @@ void CNEOHud_GhostMarker::ApplySchemeSettings(vgui::IScheme *pScheme)
 	BaseClass::ApplySchemeSettings(pScheme);
 
 	m_hFont = pScheme->GetFont("NHudOCRSmall", true);
+
+	// Override CNEOHud_WorldPosMarker's sizing with our own
+	const int widerAxis = max(m_viewWidth, m_viewHeight);
+	m_viewCentreSize = widerAxis * (neo_cl_hud_center_ghost_marker_size.GetFloat() / 100.0f);
 }
 
 void CNEOHud_GhostMarker::UpdateStateForNeoHudElementDraw()
@@ -95,7 +102,14 @@ void CNEOHud_GhostMarker::DrawNeoHudElement()
 	}
 
 	const auto localPlayer = static_cast<C_NEO_Player *>(C_NEO_Player::GetLocalPlayer());
-	if (!NEORules()->GhostExists() || localPlayer->IsCarryingGhost())
+	bool hideGhostMarker = (!NEORules()->GhostExists() || localPlayer->IsCarryingGhost());
+	if (!hideGhostMarker && (localPlayer->GetObserverMode() == OBS_MODE_IN_EYE))
+	{
+		// NEO NOTE (nullsystem): Skip this if we're observing a player in first person
+		auto *pTargetPlayer = dynamic_cast<C_NEO_Player *>(localPlayer->GetObserverTarget());
+		hideGhostMarker = (pTargetPlayer && !pTargetPlayer->IsObserver() && pTargetPlayer->IsCarryingGhost());
+	}
+	if (hideGhostMarker)
 	{
 		return;
 	}
