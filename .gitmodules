@@ -1,0 +1,3 @@
+[submodule "mp/game/neo"]
+	path = mp/game/neo
+	url = https://github.com/NeotokyoRebuild/assets
