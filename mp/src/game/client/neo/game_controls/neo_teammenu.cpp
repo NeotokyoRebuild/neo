@@ -29,8 +29,6 @@
 #include "replay/replaycamera.h"
 #endif
 
-#include "c_neo_player.h"
-
 //#include <game_controls/IconPanel.h>
 
 #include <vgui_controls/TextEntry.h>
@@ -227,7 +225,7 @@ void CNeoTeamMenu::CloseMenu()
 void CNeoTeamMenu::OnKeyCodeReleased(vgui::KeyCode code)
 { // Navigating using the keyboard hack
 	switch (code) {
-	case 92: // F1 - Close the menu
+	case KEY_F1: // F1 - Close the menu
 		CloseMenu();
 	}
 	// Leaving this here, useful to check what key is being pressed
