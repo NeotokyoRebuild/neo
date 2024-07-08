@@ -2191,8 +2191,6 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 	if (penUsed > info.m_flPenetration)
 		return;
 
-	engine->Con_NPrintf(12, "Pen used: %f", penUsed); // NEO FIXME (Adam) Remove before merging. NOTE Will be overwritten if bullet penetrates multiple surfaces, use action breakpoints for detail
-
 	//FIXME: This is technically frustrating MultiDamage, but multiple shots hitting multiple targets in one call
 	//		 would do exactly the same anyway...
 
