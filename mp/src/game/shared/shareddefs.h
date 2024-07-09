@@ -85,12 +85,12 @@ public:
 #define VEC_DEAD_VIEWHEIGHT	g_pGameRules->GetViewVectors()->m_vDeadViewHeight
 
 #ifdef NEO
-#define NEO_RECON_VIEW_OFFSET Vector(0.0f, 0.0f, 0.0f)
+#define NEO_RECON_VIEW_OFFSET Vector(0.0f, 0.0f, -1.f)
 #define NEO_ASSAULT_VIEW_OFFSET Vector(0.0f, 0.0f, -0.5f)
-#define NEO_SUPPORT_VIEW_OFFSET Vector(0.0f, 0.0f, 0.0f)
-#define NEO_RECON_DUCKED_VIEW_OFFSET Vector(0.0f, 0.0f, -2.f)
-#define NEO_ASSAULT_DUCKED_VIEW_OFFSET Vector(0.0f, 0.0f, -3.f)
-#define NEO_SUPPORT_DUCKED_VIEW_OFFSET Vector(0.0f, 0.0f, 3.f)
+#define NEO_SUPPORT_VIEW_OFFSET Vector(0.0f, 0.0f, 2.0f)
+#define NEO_RECON_DUCKED_VIEW_OFFSET Vector(0.0f, 0.0f, -4.f)
+#define NEO_ASSAULT_DUCKED_VIEW_OFFSET Vector(0.0f, 0.0f, -4.f)
+#define NEO_SUPPORT_DUCKED_VIEW_OFFSET Vector(0.0f, 0.0f, 5.f)
 
 #define VEC_VIEW_NEOSCALE(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vView + ((NeoPlayer->GetClass() == NEO_CLASS_RECON) ? NEO_RECON_VIEW_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_SUPPORT) ? NEO_SUPPORT_VIEW_OFFSET : NEO_ASSAULT_VIEW_OFFSET))
 #define VEC_DUCK_VIEW_NEOSCALE(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vDuckView + ((NeoPlayer->GetClass() == NEO_CLASS_RECON) ? NEO_RECON_DUCKED_VIEW_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_SUPPORT) ? NEO_SUPPORT_DUCKED_VIEW_OFFSET : NEO_ASSAULT_DUCKED_VIEW_OFFSET))

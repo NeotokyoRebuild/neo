@@ -4597,6 +4597,18 @@ void CBasePlayer::PostThink()
 		{
 			// set correct collision bounds (may have changed in player movement code)
 			VPROF_SCOPE_BEGIN( "CBasePlayer::PostThink-Bounds" );
+
+#ifdef NEO
+			CNEO_Player* neoPlayer = static_cast<CNEO_Player*>(this);
+			if (GetFlags() & FL_DUCKING)
+			{
+				SetCollisionBounds(VEC_DUCK_HULL_MIN_NEOSCALED(neoPlayer), VEC_DUCK_HULL_MAX_NEOSCALED(neoPlayer));
+			}
+			else
+			{
+				SetCollisionBounds(VEC_HULL_MIN_NEOSCALED(neoPlayer), VEC_HULL_MAX_NEOSCALED(neoPlayer));
+			}
+#else
 			if ( GetFlags() & FL_DUCKING )
 			{
 				SetCollisionBounds( VEC_DUCK_HULL_MIN, VEC_DUCK_HULL_MAX );
@@ -4605,6 +4617,7 @@ void CBasePlayer::PostThink()
 			{
 				SetCollisionBounds( VEC_HULL_MIN, VEC_HULL_MAX );
 			}
+#endif
 			VPROF_SCOPE_END();
 
 			VPROF_SCOPE_BEGIN( "CBasePlayer::PostThink-Use" );
