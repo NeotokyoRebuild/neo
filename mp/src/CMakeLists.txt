@@ -411,8 +411,14 @@ add_custom_target(
 )
 
 if(NEO_INSTALL_LIBRARIES)
+    if("${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
+        set(BUILD_TYPE_NAME "Release")
+    else()
+        set(BUILD_TYPE_NAME "${CMAKE_BUILD_TYPE}")
+    endif()
+
     if(NEO_DEDICATED)
-        set(LIBRARY_INSTALL_PATH "neo-${BUILD_DATE_SHORT}-${GIT_HASH}-dedicated-${CMAKE_SYSTEM_NAME}-${CMAKE_BUILD_TYPE}/bin")
+        set(LIBRARY_INSTALL_PATH "neo-${BUILD_DATE_SHORT}-${GIT_HASH}-dedicated-${CMAKE_SYSTEM_NAME}-${BUILD_TYPE_NAME}/bin")
 
         install(
             TARGETS server
@@ -420,7 +426,7 @@ if(NEO_INSTALL_LIBRARIES)
             RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}"
         )
 
-        set(SPLIT_DEBUG_INFO_INSTALL_PATH "neo-${BUILD_DATE_SHORT}-${GIT_HASH}-dedicated-debuginfo-${CMAKE_SYSTEM_NAME}-${CMAKE_BUILD_TYPE}/bin")
+        set(SPLIT_DEBUG_INFO_INSTALL_PATH "neo-${BUILD_DATE_SHORT}-${GIT_HASH}-dedicated-debuginfo-${CMAKE_SYSTEM_NAME}-${BUILD_TYPE_NAME}/bin")
 
         if(OS_WINDOWS)
             install(
@@ -437,7 +443,7 @@ if(NEO_INSTALL_LIBRARIES)
             )
         endif()
     else()
-        set(LIBRARY_INSTALL_PATH "neo-${BUILD_DATE_SHORT}-${GIT_HASH}-libraries-${CMAKE_SYSTEM_NAME}-${CMAKE_BUILD_TYPE}/bin")
+        set(LIBRARY_INSTALL_PATH "neo-${BUILD_DATE_SHORT}-${GIT_HASH}-libraries-${CMAKE_SYSTEM_NAME}-${BUILD_TYPE_NAME}/bin")
 
         install(
             TARGETS client game_shader_dx9 server
@@ -445,7 +451,7 @@ if(NEO_INSTALL_LIBRARIES)
             RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}"
         )
 
-        set(SPLIT_DEBUG_INFO_INSTALL_PATH "neo-${BUILD_DATE_SHORT}-${GIT_HASH}-libraries-debuginfo-${CMAKE_SYSTEM_NAME}-${CMAKE_BUILD_TYPE}/bin")
+        set(SPLIT_DEBUG_INFO_INSTALL_PATH "neo-${BUILD_DATE_SHORT}-${GIT_HASH}-libraries-debuginfo-${CMAKE_SYSTEM_NAME}-${BUILD_TYPE_NAME}/bin")
 
         if(OS_WINDOWS)
             install(
