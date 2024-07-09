@@ -410,15 +410,18 @@ add_custom_target(
     VERBATIM
 )
 
-if(NEO_INSTALL_LIBRARIES)
-    if("${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
-        set(BUILD_TYPE_NAME "Release")
-    else()
-        set(BUILD_TYPE_NAME "${CMAKE_BUILD_TYPE}")
-    endif()
+if("${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
+    set(BUILD_TYPE_NAME "Release")
+else()
+    set(BUILD_TYPE_NAME "${CMAKE_BUILD_TYPE}")
+endif()
 
+set(INSTALL_PATH_PREFIX "neo-${BUILD_DATE_SHORT}-${GIT_HASH}")
+set(INSTALL_PATH_SUFFIX "${CMAKE_SYSTEM_NAME}-${BUILD_TYPE_NAME}/neo/bin")
+
+if(NEO_INSTALL_LIBRARIES)
     if(NEO_DEDICATED)
-        set(LIBRARY_INSTALL_PATH "neo-${BUILD_DATE_SHORT}-${GIT_HASH}-dedicated-${CMAKE_SYSTEM_NAME}-${BUILD_TYPE_NAME}/bin")
+        set(LIBRARY_INSTALL_PATH "${INSTALL_PATH_PREFIX}-dedicated-${INSTALL_PATH_SUFFIX}")
 
         install(
             TARGETS server
@@ -426,24 +429,24 @@ if(NEO_INSTALL_LIBRARIES)
             RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}"
         )
 
-        set(SPLIT_DEBUG_INFO_INSTALL_PATH "neo-${BUILD_DATE_SHORT}-${GIT_HASH}-dedicated-debuginfo-${CMAKE_SYSTEM_NAME}-${BUILD_TYPE_NAME}/bin")
+        if(NEO_USE_SEPARATE_BUILD_INFO)
+            set(SPLIT_DEBUG_INFO_INSTALL_PATH "${INSTALL_PATH_PREFIX}-dedicated-debuginfo-${INSTALL_PATH_SUFFIX}")
 
-        if(OS_WINDOWS)
-            install(
-                FILES "$<TARGET_PDB_FILE:server>"
-                DESTINATION "${SPLIT_DEBUG_INFO_INSTALL_PATH}"
-                #OPTIONAL
-            )
-        else()
-            get_target_property(SERVER_SPLIT_DEBUG_INFO_FILE server SPLIT_DEBUG_INFO_FILE)
-            install(
-                FILES ${SERVER_SPLIT_DEBUG_INFO_FILE}
-                DESTINATION "${SPLIT_DEBUG_INFO_INSTALL_PATH}"
-                OPTIONAL
-            )
+            if(OS_WINDOWS)
+                install(
+                    FILES "$<TARGET_PDB_FILE:server>"
+                    DESTINATION "${SPLIT_DEBUG_INFO_INSTALL_PATH}"
+                )
+            else()
+                get_target_property(SERVER_SPLIT_DEBUG_INFO_FILE server SPLIT_DEBUG_INFO_FILE)
+                install(
+                    FILES ${SERVER_SPLIT_DEBUG_INFO_FILE}
+                    DESTINATION "${SPLIT_DEBUG_INFO_INSTALL_PATH}"
+                )
+            endif()
         endif()
     else()
-        set(LIBRARY_INSTALL_PATH "neo-${BUILD_DATE_SHORT}-${GIT_HASH}-libraries-${CMAKE_SYSTEM_NAME}-${BUILD_TYPE_NAME}/bin")
+        set(LIBRARY_INSTALL_PATH "${INSTALL_PATH_PREFIX}-libraries-${INSTALL_PATH_SUFFIX}")
 
         install(
             TARGETS client game_shader_dx9 server
@@ -451,28 +454,29 @@ if(NEO_INSTALL_LIBRARIES)
             RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}"
         )
 
-        set(SPLIT_DEBUG_INFO_INSTALL_PATH "neo-${BUILD_DATE_SHORT}-${GIT_HASH}-libraries-debuginfo-${CMAKE_SYSTEM_NAME}-${BUILD_TYPE_NAME}/bin")
+        if(NEO_USE_SEPARATE_BUILD_INFO)
+            set(SPLIT_DEBUG_INFO_INSTALL_PATH "${INSTALL_PATH_PREFIX}-libraries-debuginfo-${INSTALL_PATH_SUFFIX}")
 
-        if(OS_WINDOWS)
-            install(
-                FILES
-                    $<TARGET_PDB_FILE:client>
-                    $<TARGET_PDB_FILE:game_shader_dx9>
-                    $<TARGET_PDB_FILE:server>
-                DESTINATION "${SPLIT_DEBUG_INFO_INSTALL_PATH}"
-            )
-        else()
-            get_target_property(CLIENT_SPLIT_DEBUG_INFO_FILE client SPLIT_DEBUG_INFO_FILE)
-            get_target_property(SHADER_SPLIT_DEBUG_INFO_FILE game_shader_dx9 SPLIT_DEBUG_INFO_FILE)
-            get_target_property(SERVER_SPLIT_DEBUG_INFO_FILE server SPLIT_DEBUG_INFO_FILE)
-            install(
-                FILES
-                    ${CLIENT_SPLIT_DEBUG_INFO_FILE}
-                    ${SHADER_SPLIT_DEBUG_INFO_FILE}
-                    ${SERVER_SPLIT_DEBUG_INFO_FILE}
-                DESTINATION "${SPLIT_DEBUG_INFO_INSTALL_PATH}"
-                OPTIONAL
-            )
+            if(OS_WINDOWS)
+                install(
+                    FILES
+                        $<TARGET_PDB_FILE:client>
+                        $<TARGET_PDB_FILE:game_shader_dx9>
+                        $<TARGET_PDB_FILE:server>
+                    DESTINATION "${SPLIT_DEBUG_INFO_INSTALL_PATH}"
+                )
+            else()
+                get_target_property(CLIENT_SPLIT_DEBUG_INFO_FILE client SPLIT_DEBUG_INFO_FILE)
+                get_target_property(SHADER_SPLIT_DEBUG_INFO_FILE game_shader_dx9 SPLIT_DEBUG_INFO_FILE)
+                get_target_property(SERVER_SPLIT_DEBUG_INFO_FILE server SPLIT_DEBUG_INFO_FILE)
+                install(
+                    FILES
+                        ${CLIENT_SPLIT_DEBUG_INFO_FILE}
+                        ${SHADER_SPLIT_DEBUG_INFO_FILE}
+                        ${SERVER_SPLIT_DEBUG_INFO_FILE}
+                    DESTINATION "${SPLIT_DEBUG_INFO_INSTALL_PATH}"
+                )
+            endif()
         endif()
     endif()
 endif()
@@ -480,6 +484,6 @@ endif()
 if(NEO_INSTALL_RESOURCES)
     install(
         DIRECTORY ${CMAKE_SOURCE_DIR}/../game/
-        DESTINATION "neo-${BUILD_DATE_SHORT}-${GIT_HASH}-resources"
+        DESTINATION "${INSTALL_PATH_PREFIX}-resources"
     )
 endif()
