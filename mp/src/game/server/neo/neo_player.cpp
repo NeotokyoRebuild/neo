@@ -68,7 +68,8 @@ SendPropString(SENDINFO(m_pszTestMessage)),
 SendPropVector(SENDINFO(m_vecGhostMarkerPos), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT),
 
 SendPropArray(SendPropVector(SENDINFO_ARRAY(m_rvFriendlyPlayerPositions), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rvFriendlyPlayerPositions),
-SendPropArray(SendPropFloat(SENDINFO_ARRAY(m_rfAttackersScores), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rfAttackersScores),
+SendPropArray(SendPropInt(SENDINFO_ARRAY(m_rfAttackersScores)), m_rfAttackersScores),
+SendPropArray(SendPropFloat(SENDINFO_ARRAY(m_rfAttackersAccumlator), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rfAttackersAccumlator),
 SendPropArray(SendPropInt(SENDINFO_ARRAY(m_rfAttackersHits)), m_rfAttackersHits),
 
 SendPropInt(SENDINFO(m_NeoFlags), 4, SPROP_UNSIGNED),
@@ -107,6 +108,7 @@ DEFINE_FIELD(m_vecGhostMarkerPos, FIELD_VECTOR),
 
 DEFINE_FIELD(m_rvFriendlyPlayerPositions, FIELD_CUSTOM),
 DEFINE_FIELD(m_rfAttackersScores, FIELD_CUSTOM),
+DEFINE_FIELD(m_rfAttackersAccumlator, FIELD_CUSTOM),
 DEFINE_FIELD(m_rfAttackersHits, FIELD_CUSTOM),
 
 DEFINE_FIELD(m_NeoFlags, FIELD_CHARACTER),
@@ -527,7 +529,11 @@ void CNEO_Player::Spawn(void)
 
 	for (int i = 0; i < m_rfAttackersScores.Count(); ++i)
 	{
-		m_rfAttackersScores.Set(i, 0.0f);
+		m_rfAttackersScores.Set(i, 0);
+	}
+	for (int i = 0; i < m_rfAttackersAccumlator.Count(); ++i)
+	{
+		m_rfAttackersAccumlator.Set(i, 0.0f);
 	}
 	for (int i = 0; i < m_rfAttackersHits.Count(); ++i)
 	{
@@ -1602,8 +1608,8 @@ void CNEO_Player::ShowDmgInfo(char* infoStr, int infoStrSize)
 		}
 		UserMessageBegin(filter, "ShowMenu");
 		{
-			WRITE_SHORT(static_cast<short>(m_iDmgMenuNextPage ? 3 : 1));		// Amount of options
-			WRITE_CHAR(static_cast<char>(10));			// Time in seconds to stay open
+			WRITE_SHORT(static_cast<short>(m_iDmgMenuNextPage ? 3 : 1)); // Amount of options
+			WRITE_CHAR(static_cast<char>(60)); // 60s timeout
 			WRITE_BYTE(static_cast<unsigned int>(infoStrSize > MAX_INFOSTR_PER_UMSG));
 			WRITE_STRING(infoStr + infoStrOffset);
 		}
@@ -1658,23 +1664,25 @@ int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int pl
 			continue;
 		}
 
-		const float dmgTo = min(neoAttacker->GetAttackersScores(thisIdx), 100.0f);
-		const float dmgFrom = min(GetAttackersScores(pIdx), 100.0f);
+		const AttackersTotals attackerInfo = {
+			.dealtDmgs = neoAttacker->GetAttackersScores(thisIdx),
+			.dealtHits = neoAttacker->GetAttackerHits(thisIdx),
+			.takenDmgs = GetAttackersScores(pIdx),
+			.takenHits = GetAttackerHits(pIdx),
+		};
 		const char *dmgerName = neoAttacker->GetNeoPlayerName(this);
 #define DEBUG_SHOW_ALL (0)
 #if DEBUG_SHOW_ALL
 		if (dmgerName)
 #else
-		if (dmgerName && (dmgTo > 0.0f || dmgFrom > 0.0f))
+		if (dmgerName && (attackerInfo.dealtDmgs > 0 || attackerInfo.takenDmgs > 0))
 #endif
 		{
 			*showMenu = true;
 			const char *dmgerClass = GetNeoClassName(neoAttacker->GetClass());
-			const int hitsTo = neoAttacker->GetAttackerHits(thisIdx);
-			const int hitsFrom = GetAttackerHits(pIdx);
 			static char infoLine[SHOWMENU_STRLIMIT];
 			const int infoLineLen = DmgLineStr(infoLine, sizeof(infoLine),
-					dmgerName, dmgerClass, dmgTo, dmgFrom, hitsTo, hitsFrom);
+					dmgerName, dmgerClass, attackerInfo);
 			if ((infoStrLen + infoLineLen) >= FILLSTR_END)
 			{
 				// Truncate for this page
@@ -1695,9 +1703,9 @@ int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int pl
 	const AttackersTotals attackersTotals = GetAttackersTotals();
 	static char totalInfoLine[SHOWMENU_STRLIMIT];
 	memset(totalInfoLine, 0, sizeof(totalInfoLine));
-	Q_snprintf(totalInfoLine, sizeof(totalInfoLine), " \nTOTAL: Dealt: %.0f in %d hits | Taken: %.0f in %d hits\n",
-			attackersTotals.dealtTotalDmgs, attackersTotals.dealtTotalHits,
-			attackersTotals.takenTotalDmgs, attackersTotals.takenTotalHits);
+	Q_snprintf(totalInfoLine, sizeof(totalInfoLine), " \nTOTAL: Dealt: %d in %d hits | Taken: %d in %d hits\n",
+			attackersTotals.dealtDmgs, attackersTotals.dealtHits,
+			attackersTotals.takenDmgs, attackersTotals.takenHits);
 	Q_strncat(infoStr, totalInfoLine, infoStrMax, COPY_ALL_CHARACTERS);
 	Q_strncat(infoStr, "->1. Dismiss", infoStrMax, COPY_ALL_CHARACTERS);
 	if (nextPage > 0)
@@ -2441,9 +2449,9 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	return true;
 }
 
-float CNEO_Player::GetAttackersScores(const int attackerIdx) const
+int CNEO_Player::GetAttackersScores(const int attackerIdx) const
 {
-	return m_rfAttackersScores.Get(attackerIdx);
+	return min(m_rfAttackersScores.Get(attackerIdx), 100);
 }
 
 int CNEO_Player::GetAttackerHits(const int attackerIdx) const
@@ -2453,11 +2461,7 @@ int CNEO_Player::GetAttackerHits(const int attackerIdx) const
 
 AttackersTotals CNEO_Player::GetAttackersTotals() const
 {
-	AttackersTotals totals;
-	totals.dealtTotalDmgs = 0.0f;
-	totals.dealtTotalHits = 0;
-	totals.takenTotalDmgs = 0.0f;
-	totals.takenTotalHits = 0;
+	AttackersTotals totals = {};
 
 	const int thisIdx = entindex();
 	for (int pIdx = 1; pIdx <= gpGlobals->maxClients; ++pIdx)
@@ -2473,10 +2477,10 @@ AttackersTotals CNEO_Player::GetAttackersTotals() const
 			continue;
 		}
 
-		totals.dealtTotalDmgs += min(neoAttacker->GetAttackersScores(thisIdx), 100.0f);
-		totals.takenTotalDmgs += min(GetAttackersScores(pIdx), 100.0f);
-		totals.dealtTotalHits += neoAttacker->GetAttackerHits(thisIdx);
-		totals.takenTotalHits += GetAttackerHits(pIdx);
+		totals.dealtDmgs += neoAttacker->GetAttackersScores(thisIdx);
+		totals.takenDmgs += GetAttackersScores(pIdx);
+		totals.dealtHits += neoAttacker->GetAttackerHits(thisIdx);
+		totals.takenHits += GetAttackerHits(pIdx);
 	}
 	return totals;
 }
@@ -2485,11 +2489,28 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 {
 	if (m_takedamage != DAMAGE_EVENTS_ONLY)
 	{
-		if (auto* attacker = dynamic_cast<CNEO_Player*>(info.GetAttacker()))
+		// Dynamic cast, attacker might be prop/this player fallen
+		if (auto *attacker = dynamic_cast<CNEO_Player *>(info.GetAttacker()))
 		{
 			const int attackerIdx = attacker->entindex();
-			m_rfAttackersScores.GetForModify(attackerIdx) += info.GetDamage();
-			m_rfAttackersHits.GetForModify(attackerIdx) += 1;
+
+			// Separate the fractional amount of damage from the whole
+			const float flFractionalDamage = info.GetDamage() - floor(info.GetDamage());
+			int iDamage = static_cast<int>(info.GetDamage() - flFractionalDamage);
+
+			float flDmgAccumlator = m_rfAttackersAccumlator.Get(attackerIdx);
+			flDmgAccumlator += flFractionalDamage;
+			if (flDmgAccumlator >= 1.0f)
+			{
+				++iDamage;
+				flDmgAccumlator -= 1.0f;
+			}
+			if (iDamage > 0)
+			{
+				m_rfAttackersScores.GetForModify(attackerIdx) += iDamage;
+				m_rfAttackersAccumlator.Set(attackerIdx, flDmgAccumlator);
+				m_rfAttackersHits.GetForModify(attackerIdx) += 1;
+			}
 		}
 	}
 	return BaseClass::OnTakeDamage_Alive(info);

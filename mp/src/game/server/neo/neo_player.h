@@ -179,7 +179,7 @@ public:
 	
 	int ShouldTransmit( const CCheckTransmitInfo *pInfo) OVERRIDE;
 
-	float GetAttackersScores(const int attackerIdx) const;
+	int GetAttackersScores(const int attackerIdx) const;
 	int GetAttackerHits(const int attackerIdx) const;
 
 	void SetNameDupePos(const int dupePos);
@@ -237,7 +237,8 @@ public:
 	CNetworkVar(int, m_nVisionLastTick);
 
 	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
-	CNetworkArray(float, m_rfAttackersScores, (MAX_PLAYERS + 1));
+	CNetworkArray(int, m_rfAttackersScores, (MAX_PLAYERS + 1));
+	CNetworkArray(float, m_rfAttackersAccumlator, (MAX_PLAYERS + 1));
 	CNetworkArray(int, m_rfAttackersHits, (MAX_PLAYERS + 1));
 
 	CNetworkVar(unsigned char, m_NeoFlags);

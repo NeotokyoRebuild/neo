@@ -111,6 +111,7 @@ void CHudMenu::VidInit( void )
 //-----------------------------------------------------------------------------
 void CHudMenu::OnThink()
 {
+#ifndef NEO // NEO NOTE (nullsystem): Disable global set timeout which restricted it to 5s max
 	float flSelectionTimeout = MENU_SELECTION_TIMEOUT;
 
 	// If we've been open for a while without input, hide
@@ -118,6 +119,7 @@ void CHudMenu::OnThink()
 	{
 		m_bMenuDisplayed = false;
 	}
+#endif
 }
 
 //-----------------------------------------------------------------------------

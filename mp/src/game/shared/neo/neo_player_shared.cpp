@@ -117,24 +117,26 @@ bool ClientWantsAimHold(const CNEO_Player* player)
 
 int DmgLineStr(char* infoLine, const int infoLineMax,
 	const char* dmgerName, const char* dmgerClass,
-	const float dmgTo, const float dmgFrom, const int hitsTo, const int hitsFrom)
+	const AttackersTotals &totals)
 {
 	memset(infoLine, 0, infoLineMax);
-	if (dmgTo > 0.0f && dmgFrom > 0.0f)
+	if (totals.dealtDmgs > 0 && totals.takenDmgs > 0)
 	{
-		Q_snprintf(infoLine, infoLineMax, "%s [%s]: Dealt: %.0f in %d hits | Taken: %.0f in %d hits\n",
-			dmgerName, dmgerClass,
-			dmgTo, hitsTo, dmgFrom, hitsFrom);
+		Q_snprintf(infoLine, infoLineMax, "%s [%s]: Dealt: %d in %d hits | Taken: %d in %d hits\n",
+				   dmgerName, dmgerClass,
+				   totals.dealtDmgs, totals.dealtHits, totals.takenDmgs, totals.takenHits);
 	}
-	else if (dmgTo > 0.0f)
+	else if (totals.dealtDmgs > 0)
 	{
-		Q_snprintf(infoLine, infoLineMax, "%s [%s]: Dealt: %.0f in %d hits\n",
-			dmgerName, dmgerClass, dmgTo, hitsTo);
+		Q_snprintf(infoLine, infoLineMax, "%s [%s]: Dealt: %d in %d hits\n",
+				   dmgerName, dmgerClass,
+				   totals.dealtDmgs, totals.dealtHits);
 	}
-	else if (dmgFrom > 0.0f)
+	else if (totals.takenDmgs > 0)
 	{
-		Q_snprintf(infoLine, infoLineMax, "%s [%s]: Taken: %.0f in %d hits\n",
-			dmgerName, dmgerClass, dmgFrom, hitsFrom);
+		Q_snprintf(infoLine, infoLineMax, "%s [%s]: Taken: %d in %d hits\n",
+				   dmgerName, dmgerClass,
+				   totals.takenDmgs, totals.takenHits);
 	}
 	return Q_strlen(infoLine);
 }

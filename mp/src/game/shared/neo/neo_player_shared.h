@@ -286,20 +286,28 @@ enum NeoWeponAimToggleE {
 
 bool ClientWantsAimHold(const CNEO_Player* player);
 
+struct AttackersTotals
+{
+	int dealtDmgs;
+	int dealtHits;
+	int takenDmgs;
+	int takenHits;
+
+	void operator+=(const AttackersTotals &other)
+	{
+		dealtDmgs += other.dealtDmgs;
+		dealtHits += other.dealtHits;
+		takenDmgs += other.takenDmgs;
+		takenHits += other.takenHits;
+	}
+};
+
 int DmgLineStr(char* infoLine, const int infoLineMax,
 	const char* dmgerName, const char* dmgerClass,
-	const float dmgTo, const float dmgFrom, const int hitsTo, const int hitsFrom);
+	const AttackersTotals &totals);
 
 void KillerLineStr(char* killByLine, const int killByLineMax,
 	CNEO_Player* neoAttacker, const CNEO_Player* neoVictim);
-
-struct AttackersTotals
-{
-	float dealtTotalDmgs;
-	int dealtTotalHits;
-	float takenTotalDmgs;
-	int takenTotalHits;
-};
 
 [[nodiscard]] auto StrToInt(std::string_view strView) -> std::optional<int>;
 [[nodiscard]] int NeoAimFOV(const int fovDef, CBaseCombatWeapon *wep);
