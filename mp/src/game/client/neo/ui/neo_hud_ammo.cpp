@@ -93,10 +93,6 @@ void CNEOHud_Ammo::ApplySchemeSettings(vgui::IScheme* pScheme)
 	SetBounds(0, 0, m_resX, m_resY);
 	SetFgColor(COLOR_TRANSPARENT);
 	SetBgColor(COLOR_TRANSPARENT);
-
-	box_color = Color(box_color_r, box_color_g, box_color_b, box_color_a);
-	ammo_color = Color(ammo_color_r, ammo_color_g, ammo_color_b, ammo_color_a);
-	transparent_ammo_color = Color(ammo_color_r, ammo_color_g, ammo_color_b, ammo_color_a/2);
 }
 
 void CNEOHud_Ammo::DrawAmmo() const
@@ -282,7 +278,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 	if(maxClip > 0)
 	{
 		if (magSizeMax > 0) {
-			surface()->DrawSetTextColor(transparent_ammo_color);
+			surface()->DrawSetTextColor(emptied_ammo_color);
 			surface()->DrawSetTextPos(digit_xpos + xpos + (bulletWidth * magAmountToDrawFilled), digit_ypos + ypos);
 			surface()->DrawPrintText(&unicodeBullets[magAmountToDrawFilled], magSizeMax - magAmountToDrawFilled);
 		}

@@ -37,8 +37,8 @@ private:
 	int m_iGhostingTeam;
 	int m_iClientTeam;
 
-	char m_szMarkerText[12 + 1];
-	wchar_t m_wszMarkerTextUnicode[12 + 1];
+	char m_szMarkerText[32 + 1];
+	wchar_t m_wszMarkerTextUnicode[32 + 1];
 
 	float m_flDistMeters;
 

@@ -2320,6 +2320,15 @@ bool CBasePlayer::SetObserverMode(int mode )
 	if ( mode < OBS_MODE_NONE || mode >= NUM_OBSERVER_MODES )
 		return false;
 
+#ifdef NEO
+	// NEO NOTE (nullsystem): Skip over OBS_MODE_POI as it's practically OBS_MODE_CHASE
+	// with different HUD in NT;RE. Use either prev/next enum.
+	if (mode == OBS_MODE_POI)
+	{
+		if (m_iObserverMode < OBS_MODE_POI) mode = OBS_MODE_ROAMING;
+		else mode = OBS_MODE_CHASE;
+	}
+#endif
 
 	// check mp_forcecamera settings for dead players
 	if ( mode > OBS_MODE_FIXED && GetTeamNumber() > TEAM_SPECTATOR )

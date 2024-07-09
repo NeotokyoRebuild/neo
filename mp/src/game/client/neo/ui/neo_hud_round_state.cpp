@@ -24,7 +24,7 @@
 
 using vgui::surface;
 
-DECLARE_NAMED_HUDELEMENT(CNEOHud_RoundState, neo_round_state);
+DECLARE_NAMED_HUDELEMENT(CNEOHud_RoundState, NRoundState);
 
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(RoundState, 0.1)
 
@@ -276,7 +276,6 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 	surface()->DrawSetTextFont(m_hOCRFont);
 
 	// Draw Box
-	Color box_color = Color(box_color_r, box_color_g, box_color_b, box_color_a);
 	DrawNeoHudRoundedBox(m_iLeftOffset, Y_POS, m_iRightOffset, m_iBoxYEnd, box_color, true, true, true, true);
 
 	// Draw time
@@ -390,7 +389,6 @@ void CNEOHud_RoundState::DrawPlayer(int playerIndex, int teamIndex, const TeamLo
 									const int xOffset, const bool drawHealthClass)
 {
 	// Draw Outline
-	Color box_color = Color(box_color_r, box_color_g, box_color_b, box_color_a);
 	surface()->DrawSetColor(box_color);
 	surface()->DrawFilledRect(xOffset - 1, Y_POS - 1, xOffset + m_ilogoSize + 1,
 							  Y_POS + m_ilogoSize + 1 + (drawHealthClass ? 5 : 0));

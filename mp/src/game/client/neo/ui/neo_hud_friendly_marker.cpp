@@ -54,16 +54,9 @@ CNEOHud_FriendlyMarker::CNEOHud_FriendlyMarker(const char* pElemName, vgui::Pane
 	surface()->GetScreenSize(wide, tall);
 	SetBounds(0, 0, wide, tall);
 
-	// NEO HACK (Rain): this is kind of awkward, we should get the handle on ApplySchemeSettings
-	vgui::IScheme *scheme = vgui::scheme()->GetIScheme(neoscheme);
-	Assert(scheme);
-
-	m_hFont = scheme->GetFont("NHudOCRSmall", true);
-
 	m_hTex = surface()->CreateNewTextureID();
 	Assert(m_hTex > 0);
 	surface()->DrawSetTextureFile(m_hTex, "vgui/hud/star", 1, false);
-
 	surface()->DrawGetTextureSize(m_hTex, m_iMarkerTexWidth, m_iMarkerTexHeight);
 
 	SetFgColor(Color(0, 0, 0, 0));
@@ -71,6 +64,14 @@ CNEOHud_FriendlyMarker::CNEOHud_FriendlyMarker(const char* pElemName, vgui::Pane
 
 	SetVisible(true);
 }
+
+void CNEOHud_FriendlyMarker::ApplySchemeSettings(vgui::IScheme *pScheme)
+{
+	BaseClass::ApplySchemeSettings(pScheme);
+
+	m_hFont = pScheme->GetFont("NHudOCRSmall", true);
+}
+
 void CNEOHud_FriendlyMarker::DrawNeoHudElement()
 {
 	if (!ShouldDraw())
@@ -91,14 +92,15 @@ void CNEOHud_FriendlyMarker::DrawNeoHudElement()
 	m_IsSpectator = team->GetTeamNumber() == TEAM_SPECTATOR;
 	
 	
-	if(m_IsSpectator)
+	if (m_IsSpectator)
 	{
 		auto nsf = GetGlobalTeam(TEAM_NSF);
 		DrawPlayerForTeam(nsf, localPlayer);
 		
 		auto jinrai = GetGlobalTeam(TEAM_JINRAI);
 		DrawPlayerForTeam(jinrai, localPlayer);
-	} else
+	}
+	else
 	{
 		DrawPlayerForTeam(team, localPlayer);
 	}
@@ -107,49 +109,67 @@ void CNEOHud_FriendlyMarker::DrawNeoHudElement()
 void CNEOHud_FriendlyMarker::DrawPlayerForTeam(C_Team* team, const C_NEO_Player* localPlayer) const
 {
 	auto memberCount = team->GetNumPlayers();
+	auto teamColour = GetTeamColour(team->GetTeamNumber());
 	for (int i = 0; i < memberCount; ++i)
 	{
-		auto player = team->GetPlayer(i);
-		auto teamColour = GetTeamColour(team->GetTeamNumber());
+		auto player = static_cast<C_NEO_Player *>(team->GetPlayer(i));
 		if(player && localPlayer->entindex() != player->entindex() && player->IsAlive())
 		{
-			DrawPlayer(teamColour, player);
+			DrawPlayer(teamColour, player, localPlayer);
 		}		
 	}
 }
 
-void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_BasePlayer* player) const
+void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, const C_NEO_Player *localPlayer) const
 {
 	int x, y;
 	static const float heightOffset = 48.0f;
-	auto pPos = player->GetAbsOrigin();
-	auto pos = Vector(
-		pPos.x,
-		pPos.y,
-		pPos.z + heightOffset);
+	auto pos = player->EyePosition();
 
 	if (GetVectorInScreenSpace(pos, x, y))
 	{
-		auto n = dynamic_cast<C_NEO_Player*>(player);
-		auto a = n->m_rvFriendlyPlayerPositions;
-		static const int maxNameLenght = 32 + 1;		
-		auto playerName = n->GetNeoPlayerName();
+		auto playerName = player->GetNeoPlayerName();
 
-		wchar_t playerNameUnicode[maxNameLenght];
-		char playerNameTrimmed[maxNameLenght];
-		snprintf(playerNameTrimmed, maxNameLenght, "%s", playerName);
-		auto textLen = V_strlen(playerNameTrimmed);
-		g_pVGuiLocalize->ConvertANSIToUnicode(playerNameTrimmed, playerNameUnicode, sizeof(playerNameUnicode));
-
-		auto fadeTextMultiplier = GetFadeValueTowardsScreenCentre(x, y);
-		if(fadeTextMultiplier > 0.001)
+		const float fadeTextMultiplier = GetFadeValueTowardsScreenCentre(x, y);
+		if (fadeTextMultiplier > 0.001f)
 		{
+			static constexpr int MAX_MARKER_STRLEN = 48 + 1;
+			const bool localPlayerAlive = const_cast<C_NEO_Player *>(localPlayer)->IsAlive();
+			const bool localPlayerSpec = (localPlayer->GetTeamNumber() < FIRST_GAME_TEAM);
+
 			surface()->DrawSetTextFont(m_hFont);
 			surface()->DrawSetTextColor(FadeColour(teamColor, fadeTextMultiplier));
-			int textWidth, textHeight;
-			surface()->GetTextSize(m_hFont, playerNameUnicode, textWidth, textHeight);
-			surface()->DrawSetTextPos(x - (textWidth / 2), y + m_iMarkerHeight);
-			surface()->DrawPrintText(playerNameUnicode, textLen);
+			int textYOffset = 0;
+			char textASCII[MAX_MARKER_STRLEN];
+
+			auto DisplayText = [this, &textYOffset, x, y](const char *textASCII) {
+				wchar_t textUTF[MAX_MARKER_STRLEN];
+				g_pVGuiLocalize->ConvertANSIToUnicode(textASCII, textUTF, sizeof(textUTF));
+				int textWidth, textHeight;
+				surface()->GetTextSize(m_hFont, textUTF, textWidth, textHeight);
+				surface()->DrawSetTextPos(x - (textWidth / 2), y + m_iMarkerHeight + textYOffset);
+				surface()->DrawPrintText(textUTF, V_strlen(textASCII));
+				textYOffset += textHeight;
+			};
+
+			// Draw player's name and health
+			V_snprintf(textASCII, MAX_MARKER_STRLEN, "%s", playerName);
+			DisplayText(textASCII);
+
+			// Draw distance to player - Only if local player alive and same team
+			// OR local not alive or spectator and this player has ghost
+			if ((localPlayerAlive && localPlayer->GetTeamNumber() == player->GetTeamNumber()) ||
+					((!localPlayerAlive || localPlayerSpec) && player->IsCarryingGhost()))
+			{
+				const float flDistance = METERS_PER_INCH * player->GetAbsOrigin().DistTo(localPlayer->GetAbsOrigin());
+				V_snprintf(textASCII, MAX_MARKER_STRLEN, "%s: %.0fm",
+						 player->IsCarryingGhost() ? "GHOST DISTANCE" : "DISTANCE",
+						 flDistance);
+				DisplayText(textASCII);
+			}
+
+			V_snprintf(textASCII, MAX_MARKER_STRLEN, "%d%%", player->GetHealth());
+			DisplayText(textASCII);
 		}
 
 		surface()->DrawSetTexture(m_hTex);

@@ -12,7 +12,7 @@
 
 using namespace vgui;
 
-#ifdef NEO
+#ifndef NEO
 DECLARE_NAMED_HUDELEMENT(CTargetID, TargetID);
 #endif
 
