@@ -7,13 +7,13 @@
 #include "neo_hud_childelement.h"
 #include "hudelement.h"
 #include "hud_macros.h"
-#include "vgui_controls/Panel.h"
+#include <vgui_controls/EditablePanel.h>
 
 #define NEO_MAX_HUD_GAME_EVENT_MSG_SIZE 32 + 1
 
-class CNEOHud_GameEvent : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
+class CNEOHud_GameEvent : public CNEOHud_ChildElement, public CHudElement, public vgui::EditablePanel
 {
-	DECLARE_CLASS_SIMPLE(CNEOHud_GameEvent, vgui::Panel);
+	DECLARE_CLASS_SIMPLE(CNEOHud_GameEvent, vgui::EditablePanel);
 public:
 	CNEOHud_GameEvent(const char *pElementName, vgui::Panel *parent = nullptr);
 
@@ -21,12 +21,13 @@ public:
 	void SetMessage(const wchar_t *message, size_t size);
 	void MsgFunc_RoundResult(bf_read& msg);
 
-	virtual void Paint();
+	virtual void ApplySchemeSettings(vgui::IScheme *pScheme) override;
+	virtual void Paint() override;
 
 protected:
-	virtual void UpdateStateForNeoHudElementDraw();
-	virtual void DrawNeoHudElement();
-	virtual ConVar* GetUpdateFrequencyConVar() const;
+	virtual void UpdateStateForNeoHudElementDraw() override;
+	virtual void DrawNeoHudElement() override;
+	virtual ConVar* GetUpdateFrequencyConVar() const override;
 
 private:
 	vgui::HFont m_hFont;
