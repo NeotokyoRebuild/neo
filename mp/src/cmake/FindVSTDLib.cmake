@@ -9,6 +9,7 @@ endif()
 find_library(VSTDLIB_LIBRARY
     NAMES ${VSTDLIB_LIBRARY_NAME}
     PATHS "${LIBPUBLIC}"
+    NO_CACHE
     NO_DEFAULT_PATH
     REQUIRED
 )

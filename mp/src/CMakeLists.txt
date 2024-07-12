@@ -7,18 +7,18 @@ set(CMAKE_VERBOSE_MAKEFILE TRUE)
 message(STATUS "CMAKE_VERSION: ${CMAKE_VERSION}")
 
 string(TIMESTAMP BUILD_DATETIME UTC)
-message(STATUS "${BUILD_DATETIME}")
+message(STATUS "TIMESTAMP: ${BUILD_DATETIME}")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 include(cmake/utils.cmake)
 include(cmake/build_info.cmake)
-include(cmake/packaging.cmake)
 
 if(NOT OS_WINDOWS AND NOT OS_LINUX AND NOT OS_MACOS)
     message(FATAL_ERROR "Unknown OS")
 endif()
 
+option(NEO_CI_BUILD "CI build mode" OFF)
 option(NEO_CHROOT_BUILD "chroot build mode" OFF)
 option(NEO_USE_CCACHE "Use ccache" ${OS_LINUX})
 option(NEO_USE_VALVE_BINDIR "Use /valve bindir" OFF) # NOTE probably should be used with NEO_DEDICATED
@@ -30,21 +30,17 @@ option(NEO_RAD_TELEMETRY_DISABLED "Telemetry disabled" ON)
 option(NEO_QUICKTIME_VIDEO "Use Quicktime video on Windows" OFF)
 option(NEO_BUILD_REPLAY "Build replay system" OFF) # NOTE not implemented for neo
 option(NEO_BUILD_WEAPON_PBK56S "Build PBK56S weapon" OFF)
-if(OS_WINDOWS)
-    set(NEO_BUILD_TIER1 ON CACHE BOOL "" FORCE)
-    set(NEO_BUILD_MATHLIB ON CACHE BOOL "" FORCE)
-    set(NEO_BUILD_VGUI_CONTROLS ON CACHE BOOL "" FORCE)
-else()
-    option(NEO_BUILD_TIER1 "Build tier1 library" ON)
-    option(NEO_BUILD_MATHLIB "Build mathlib library" ON)
-    option(NEO_BUILD_VGUI_CONTROLS "Build vgui_controls library" ON)
-endif()
+option(NEO_BUILD_TIER1 "Build tier1 library" ON)
+option(NEO_BUILD_MATHLIB "Build mathlib library" ON)
+option(NEO_BUILD_VGUI_CONTROLS "Build vgui_controls library" ON)
 option(NEO_COPY_LIBRARIES "Copy libraries to bin directory by default" ON)
 set(NEO_OUTPUT_LIBRARY_PATH "${CMAKE_SOURCE_DIR}/../game/neo/bin" CACHE PATH "Directory for output libraries")
 option(NEO_INSTALL_LIBRARIES "Install game libraries" OFF)
 option(NEO_INSTALL_RESOURCES "Install game resources" OFF)
 option(NEO_USE_SEPARATE_BUILD_INFO "Use separate build info on Linux" OFF)
+option(NEO_ENABLE_CPACK "Enable CPack" OFF)
 
+message(STATUS "CI build mode: ${NEO_CI_BUILD}")
 message(STATUS "chroot build mode: ${NEO_CHROOT_BUILD}")
 message(STATUS "Use ccache: ${NEO_USE_CCACHE}")
 message(STATUS "Use /valve bindir: ${NEO_USE_VALVE_BINDIR}")
@@ -64,9 +60,15 @@ message(STATUS "Directory for output libraries: ${NEO_OUTPUT_LIBRARY_PATH}")
 message(STATUS "Install game libraries: ${NEO_INSTALL_LIBRARIES}")
 message(STATUS "Install game resources: ${NEO_INSTALL_RESOURCES}")
 message(STATUS "Use separate build info on Linux: ${NEO_USE_SEPARATE_BUILD_INFO}")
+message(STATUS "Enable CPack: ${NEO_ENABLE_CPACK}")
+message("")
 
 if(NEO_COPY_LIBRARIES)
     file(MAKE_DIRECTORY "${NEO_OUTPUT_LIBRARY_PATH}")
+endif()
+
+if(NEO_ENABLE_CPACK)
+    include(cmake/packaging.cmake)
 endif()
 
 if(CMAKE_VERBOSE_MAKEFILE)
@@ -410,7 +412,7 @@ add_custom_target(
     VERBATIM
 )
 
-if("${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
+if(NEO_CI_BUILD AND "${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
     set(BUILD_TYPE_NAME "Release")
 else()
     set(BUILD_TYPE_NAME "${CMAKE_BUILD_TYPE}")

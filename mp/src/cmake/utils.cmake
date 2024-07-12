@@ -149,8 +149,9 @@ function(split_debug_information)
         SPLIT_DEBUG_INFO_FILE ${SPLITDEBUG_TARGET}
     )
 
-    # Make sure the file is deleted on `make clean`
-    set_property(DIRECTORY APPEND
-        PROPERTY ADDITIONAL_MAKE_CLEAN_FILES ${SPLITDEBUG_TARGET}
+    # Make sure the file is deleted when cleaning
+    set_target_properties(${PARSED_ARGS_TARGET}
+        PROPERTIES
+        ADDITIONAL_CLEAN_FILES ${SPLITDEBUG_TARGET}
     )
 endfunction()

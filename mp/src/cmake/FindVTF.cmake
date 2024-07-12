@@ -7,6 +7,7 @@ endif()
 find_file(VTF_LIBRARY
     NAMES ${VTF_LIBRARY_NAME}
     PATHS "${LIBPUBLIC}"
+    NO_CACHE
     NO_DEFAULT_PATH
     REQUIRED
 )

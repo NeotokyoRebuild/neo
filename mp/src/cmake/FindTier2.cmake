@@ -7,6 +7,7 @@ endif()
 find_library(TIER2_LIBRARY
     NAMES ${TIER2_LIBRARY_NAME}
     PATHS "${LIBPUBLIC}"
+    NO_CACHE
     NO_DEFAULT_PATH
     REQUIRED
 )
