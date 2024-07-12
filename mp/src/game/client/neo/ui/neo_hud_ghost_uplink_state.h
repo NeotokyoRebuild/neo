@@ -8,8 +8,6 @@
 #include "hudelement.h"
 #include <vgui_controls/Panel.h>
 
-#include "weapon_ghost.h"
-
 class CNEOHud_GhostUplinkState : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
 {
 	DECLARE_CLASS_SIMPLE(CNEOHud_GhostUplinkState, Panel);
@@ -28,11 +26,8 @@ protected:
 private:
 	float m_flTimeGhostEquip = 0.f;
 
-	vgui::HTexture m_hTex0;
-	vgui::HTexture m_hTex1;
-	vgui::HTexture m_hTex2;
-	vgui::HTexture m_hTex3;
-	vgui::HTexture m_pUplinkTextures[4];
+	static constexpr int numUplinkTextures = 4;
+	vgui::HTexture m_pUplinkTextures[numUplinkTextures];
 
 	static constexpr int numTextureStartTimes = 11;
 	int textureOrder[numTextureStartTimes] = {0, 1, 2, 3, 2, 0, 1, 2, 3, 0, 1};
