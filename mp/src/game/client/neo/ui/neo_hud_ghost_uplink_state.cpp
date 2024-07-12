@@ -52,12 +52,10 @@ void CNEOHud_GhostUplinkState::ApplySchemeSettings(vgui::IScheme* pScheme)
 	surface()->GetScreenSize(wide, tall);
 	int centerX = wide / 2;
 	int centerY = tall / 2;
-
 	textureXPos = centerX - (m_uplinkTexWidth / 2);
 	constexpr int compassHeightPlusMargins = 30;
 	textureYPos = tall - m_uplinkTexHeight - compassHeightPlusMargins;
-
-	SetBounds(0, 0, wide, tall);
+	SetBounds(textureXPos, textureYPos, m_uplinkTexWidth, m_uplinkTexHeight);
 
 	BaseClass::ApplySchemeSettings(pScheme);
 }
@@ -91,11 +89,13 @@ void CNEOHud_GhostUplinkState::DrawNeoHudElement()
 
 	surface()->DrawSetColor(COLOR_RED);
 	surface()->DrawSetTexture(m_pUplinkTextures[textureOrder[currentTexture]]);
-	surface()->DrawTexturedRect(textureXPos, textureYPos, textureXPos + m_uplinkTexWidth, textureYPos + m_uplinkTexHeight);
+	surface()->DrawTexturedRect(0, 0, m_uplinkTexWidth, m_uplinkTexHeight);
 }
 
 void CNEOHud_GhostUplinkState::Paint()
 {
 	BaseClass::Paint();
+	SetFgColor(COLOR_TRANSPARENT);
+	SetBgColor(COLOR_TRANSPARENT);
 	PaintNeoElement();
 }
