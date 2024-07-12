@@ -30,11 +30,8 @@ CNEOHud_GhostUplinkState::CNEOHud_GhostUplinkState(const char *pElementName, vgu
 		SetParent(g_pClientMode->GetViewport());
 	}
 
-	m_pUplinkTextures[0] = surface()->CreateNewTextureID();
-	m_pUplinkTextures[1] = surface()->CreateNewTextureID();
-	m_pUplinkTextures[2] = surface()->CreateNewTextureID();
-	m_pUplinkTextures[3] = surface()->CreateNewTextureID();
 	for (int i = 0; i < numUplinkTextures; i++) {
+		m_pUplinkTextures[i] = surface()->CreateNewTextureID();
 		Assert(m_pUplinkTextures[i] > 0);
 		char textureFilePath[24];
 		V_sprintf_safe(textureFilePath, "%s%i", "vgui/hud/ctg/g_gscan_0", i);
