@@ -771,6 +771,11 @@ void CBaseCombatCharacter::Spawn( void )
 	m_aliveTimer.Start();
 	m_hasBeenInjured = 0;
 
+#ifdef NEO
+	// NEO FIX: Accumulator wasn't zeroed on spawning
+	m_flDamageAccumulator = 0.0f;
+#endif
+
 	for( int t=0; t<MAX_DAMAGE_TEAMS; ++t )
 	{
 		m_damageHistory[t].team = TEAM_INVALID;

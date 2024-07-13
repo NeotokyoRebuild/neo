@@ -84,7 +84,8 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_nVisionLastTick)),
 
 	RecvPropArray(RecvPropVector(RECVINFO(m_rvFriendlyPlayerPositions[0])), m_rvFriendlyPlayerPositions),
-	RecvPropArray(RecvPropFloat(RECVINFO(m_rfAttackersScores[0])), m_rfAttackersScores),
+	RecvPropArray(RecvPropInt(RECVINFO(m_rfAttackersScores[0])), m_rfAttackersScores),
+	RecvPropArray(RecvPropFloat(RECVINFO(m_rfAttackersAccumlator[0])), m_rfAttackersAccumlator),
 	RecvPropArray(RecvPropInt(RECVINFO(m_rfAttackersHits[0])), m_rfAttackersHits),
 
 	RecvPropInt(RECVINFO(m_NeoFlags)),
@@ -97,7 +98,8 @@ END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA(C_NEO_Player)
 	DEFINE_PRED_FIELD(m_rvFriendlyPlayerPositions, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
-	DEFINE_PRED_ARRAY(m_rfAttackersScores, FIELD_FLOAT, MAX_PLAYERS + 1, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_ARRAY(m_rfAttackersScores, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_ARRAY(m_rfAttackersAccumlator, FIELD_FLOAT, MAX_PLAYERS + 1, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_ARRAY(m_rfAttackersHits, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_vecGhostMarkerPos, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
 
@@ -125,11 +127,7 @@ static void __MsgFunc_DamageInfo(bf_read& msg)
 
 	// Print damage stats into the console
 	// Print to console
-	AttackersTotals totals;
-	totals.dealtTotalDmgs = 0.0f;
-	totals.dealtTotalHits = 0;
-	totals.takenTotalDmgs = 0.0f;
-	totals.takenTotalHits = 0;
+	AttackersTotals totals = {};
 
 	const int thisIdx = localPlayer->entindex();
 
@@ -169,29 +167,27 @@ static void __MsgFunc_DamageInfo(bf_read& msg)
 			continue;
 		}
 
-		const float dmgTo = min(neoAttacker->GetAttackersScores(thisIdx), 100.0f);
-		const float dmgFrom = min(localPlayer->GetAttackersScores(pIdx), 100.0f);
-		if (dmgTo > 0.0f || dmgFrom > 0.0f)
+		const AttackersTotals attackerInfo = {
+			.dealtDmgs = neoAttacker->GetAttackersScores(thisIdx),
+			.dealtHits = neoAttacker->GetAttackerHits(thisIdx),
+			.takenDmgs = localPlayer->GetAttackersScores(pIdx),
+			.takenHits = localPlayer->GetAttackerHits(pIdx),
+		};
+		if (attackerInfo.dealtDmgs > 0 || attackerInfo.takenDmgs > 0)
 		{
-			const int hitsTo = neoAttacker->GetAttackerHits(thisIdx);
-			const int hitsFrom = localPlayer->GetAttackerHits(pIdx);
 			const char *dmgerClass = GetNeoClassName(neoAttacker->GetClass());
 
 			static char infoLine[128];
-			DmgLineStr(infoLine, sizeof(infoLine), dmgerName, dmgerClass,
-				dmgTo, dmgFrom, hitsTo, hitsFrom);
+			DmgLineStr(infoLine, sizeof(infoLine), dmgerName, dmgerClass, attackerInfo);
 			ConMsg("%s", infoLine);
 
-			totals.dealtTotalDmgs += dmgTo;
-			totals.takenTotalDmgs += dmgFrom;
-			totals.dealtTotalHits += hitsTo;
-			totals.takenTotalHits += hitsFrom;
+			totals += attackerInfo;
 		}
 	}
 
-	ConMsg("\nTOTAL: Dealt: %.0f in %d hits | Taken: %.0f in %d hits\n%s\n",
-		totals.dealtTotalDmgs, totals.dealtTotalHits,
-		totals.takenTotalDmgs, totals.takenTotalHits,
+	ConMsg("\nTOTAL: Dealt: %d in %d hits | Taken: %d in %d hits\n%s\n",
+		totals.dealtDmgs, totals.dealtHits,
+		totals.takenDmgs, totals.takenHits,
 		BORDER);
 }
 USER_MESSAGE_REGISTER(DamageInfo);
@@ -539,9 +535,9 @@ void C_NEO_Player::ZeroFriendlyPlayerLocArray()
 	}
 }
 
-float C_NEO_Player::GetAttackersScores(const int attackerIdx) const
+int C_NEO_Player::GetAttackersScores(const int attackerIdx) const
 {
-	return m_rfAttackersScores.Get(attackerIdx);
+	return min(m_rfAttackersScores.Get(attackerIdx), 100);
 }
 
 const char *C_NEO_Player::GetNeoPlayerName() const
@@ -1222,7 +1218,11 @@ void C_NEO_Player::Spawn( void )
 
 	for (int i = 0; i < m_rfAttackersScores.Count(); ++i)
 	{
-		m_rfAttackersScores.Set(i, 0.0f);
+		m_rfAttackersScores.Set(i, 0);
+	}
+	for (int i = 0; i < m_rfAttackersAccumlator.Count(); ++i)
+	{
+		m_rfAttackersAccumlator.Set(i, 0.0f);
 	}
 	for (int i = 0; i < m_rfAttackersHits.Count(); ++i)
 	{
