@@ -912,7 +912,16 @@ void C_NEO_Player::PreThink( void )
 			const float distance = METERS_PER_INCH *
 				GetAbsOrigin().DistTo(m_vecGhostMarkerPos);
 
-			if (!IsCarryingGhost())
+			bool hideGhostMarker = false;
+			if (GetObserverMode() == OBS_MODE_IN_EYE)
+			{
+				// NEO NOTE (nullsystem): Skip this if we're observing a player in first person
+				auto *pTargetPlayer = dynamic_cast<C_NEO_Player *>(GetObserverTarget());
+				hideGhostMarker = (pTargetPlayer && !pTargetPlayer->IsObserver() && pTargetPlayer->IsCarryingGhost());
+			}
+			hideGhostMarker = (hideGhostMarker || IsCarryingGhost());
+
+			if (!hideGhostMarker)
 			{
 				ghostMarker->SetVisible(true);
 
