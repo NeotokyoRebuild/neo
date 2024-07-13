@@ -566,7 +566,11 @@ void CHL2MP_Player::PostThink( void )
 	
 	if ( GetFlags() & FL_DUCKING )
 	{
+#ifdef NEO
+		SetCollisionBounds( VEC_DUCK_HULL_MIN, VEC_DUCK_HULL_MAX );
+#else
 		SetCollisionBounds( VEC_CROUCH_TRACE_MIN, VEC_CROUCH_TRACE_MAX );
+#endif
 	}
 
 	m_PlayerAnimState.Update();

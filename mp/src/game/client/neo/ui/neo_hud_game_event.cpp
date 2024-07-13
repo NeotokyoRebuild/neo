@@ -25,7 +25,7 @@ NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(GameEvent, 0.1)
 
 DECLARE_HUD_MESSAGE(CNEOHud_GameEvent, RoundResult);
 CNEOHud_GameEvent::CNEOHud_GameEvent(const char *pElementName, vgui::Panel *parent)
-	: CHudElement(pElementName), Panel(parent, pElementName)
+	: CHudElement(pElementName), EditablePanel(parent, pElementName)
 {
 	SetAutoDelete(true);
 
@@ -57,15 +57,21 @@ CNEOHud_GameEvent::CNEOHud_GameEvent(const char *pElementName, vgui::Panel *pare
 	surface()->GetScreenSize(m_iResX, m_iResY);
 	SetBounds(0, 0, m_iResX, m_iResY);
 
-	// NEO HACK (Rain): this is kind of awkward, we should get the handle on ApplySchemeSettings
-	vgui::IScheme *scheme = vgui::scheme()->GetIScheme(neoscheme);
-	Assert(scheme);
-
-	m_hFont = scheme->GetFont("NHudOCR");
-
 	SetMessage("", 1);
 
 	SetVisible(false);
+}
+
+void CNEOHud_GameEvent::ApplySchemeSettings(vgui::IScheme *pScheme)
+{
+	BaseClass::ApplySchemeSettings(pScheme);
+
+	LoadControlSettings("scripts/HudLayout.res");
+
+	m_hFont = pScheme->GetFont("NHudOCRNoAdditive");
+
+	surface()->GetScreenSize(m_iResX, m_iResY);
+	SetBounds(0, 0, m_iResX, m_iResY);
 }
 
 void CNEOHud_GameEvent::SetMessage(const wchar_t *message, size_t size)
@@ -107,9 +113,6 @@ void CNEOHud_GameEvent::DrawNeoHudElement()
 		return;
 	}
 
-	SetFgColor(Color(0, 0, 0, 0));
-	SetBgColor(Color(0, 0, 0, 0));
-
 	float timeSinceWon = gpGlobals->curtime - timeWon;
 	if (timeSinceWon < 2)
 	{
@@ -130,6 +133,17 @@ void CNEOHud_GameEvent::DrawNeoHudElement()
 		alpha *= (1 - ((timeSinceWon-8) / 2));
 	}
 
+	surface()->DrawSetTextFont(m_hFont);
+
+	const int textPosX = (m_iResX / 2) - (messageWidth /2);
+	surface()->DrawSetTextColor(Color(0, 0, 0, alpha));
+	surface()->DrawSetTextPos(textPosX + 2, text_y_offset + 2);
+	surface()->DrawPrintText(messageWord, messageLength); // the address of the null character minus the address of the first character
+
+	surface()->DrawSetTextColor(Color(255, 255, 255, alpha));
+	surface()->DrawSetTextPos(textPosX, text_y_offset);
+	surface()->DrawPrintText(messageWord, messageLength); // the address of the null character minus the address of the first character
+
 	if (Q_stristr(teamWon, "jinrai"))
 	{
 		surface()->DrawSetTexture(jinraiWin);
@@ -142,17 +156,24 @@ void CNEOHud_GameEvent::DrawNeoHudElement()
 	{
 		surface()->DrawSetTexture(tie);
 	}
-	surface()->DrawSetColor(Color(255, 255, 255, alpha));
-	surface()->DrawTexturedRect((m_iResX/2) - 256, image_y_offset, (m_iResX / 2) + 256, image_y_offset + 256);
 
-	surface()->DrawSetTextColor(255, 255, 255, alpha);
-	surface()->DrawSetTextPos((m_iResX / 2) - (messageWidth /2), text_y_offset);
-	surface()->DrawSetTextFont(m_hFont);
-	surface()->DrawPrintText(messageWord, messageLength); // the address of the null character minus the address of the first character
+	const vgui::IntRect texRect{
+		.x0 = (m_iResX/2) - 256,
+		.y0 = image_y_offset,
+		.x1 = (m_iResX / 2) + 256,
+		.y1 = image_y_offset + 256,
+	};
+	surface()->DrawSetColor(Color(0, 0, 0, alpha));
+	surface()->DrawTexturedRect(texRect.x0 + 2, texRect.y0 + 2, texRect.x1 + 2, texRect.y1 + 2);
+
+	surface()->DrawSetColor(Color(255, 255, 255, alpha));
+	surface()->DrawTexturedRect(texRect.x0, texRect.y0, texRect.x1, texRect.y1);
 }
 
 void CNEOHud_GameEvent::Paint()
 {
-	BaseClass::Paint();
 	PaintNeoElement();
+	SetFgColor(COLOR_TRANSPARENT);
+	SetBgColor(COLOR_TRANSPARENT);
+	BaseClass::Paint();
 }

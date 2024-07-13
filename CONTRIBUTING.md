@@ -50,6 +50,8 @@ In the CMake Target View, right-click "client (shared library)" and click on "Ad
         "-insecure",
         "-dev",
         "-sw",
+        "-neopath",
+        "C:\\PATH\\TO\\NEOTOKYOSOURCE"
         "-game",
         "C:\\PATH\\TO\\REPO_ROOT\\neo\\mp\\game\\neo"
       ]

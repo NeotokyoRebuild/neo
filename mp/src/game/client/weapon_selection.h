@@ -49,6 +49,9 @@ public:
 	virtual void SwitchToLastWeapon( void );
 	virtual C_BaseCombatWeapon *GetWeaponInSlot( int iSlot, int iSlotPos ) = 0;
 	virtual void SelectWeaponSlot( int iSlot ) = 0;
+#ifdef NEO
+	void SelectWeaponInSlotPos(int iSlot, int iSlotPos);
+#endif
 	virtual C_BaseCombatWeapon	*GetFirstPos( int iSlot );
 	virtual C_BaseCombatWeapon	*GetNextActivePos( int iSlot, int iSlotPos );
 	virtual void				SetWeaponSelected( void );
@@ -70,6 +73,11 @@ public:
 	void UserCmd_Slot9( void );
 	void UserCmd_Slot0( void );
 	void UserCmd_Slot10( void );
+#ifdef NEO
+	void UserCmd_SlotGrenade(void);
+	void UserCmd_SlotSmoke(void);
+	void UserCmd_SlotRemoteDet(void);
+#endif
 	void UserCmd_Close( void );
 	void UserCmd_NextWeapon( void );
 	void UserCmd_PrevWeapon( void );

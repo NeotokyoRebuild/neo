@@ -332,7 +332,7 @@ void CWeaponSupa7::PrimaryAttack(void)
 	m_bSlugLoaded = false;
 
 	// Don't fire again until fire animation has completed
-	ProposeNextAttack(gpGlobals->curtime + (SequenceDuration() * 0.75));
+	ProposeNextAttack(gpGlobals->curtime + GetFireRate());
 	m_iClip1 -= 1;
 
 	// player "shoot" animation

@@ -90,31 +90,38 @@ void CNEOHud_FriendlyMarker::DrawNeoHudElement()
 	auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	auto team = localPlayer->GetTeam();
 	m_IsSpectator = team->GetTeamNumber() == TEAM_SPECTATOR;
-	
+	const auto *pTargetPlayer = (localPlayer->GetObserverMode() == OBS_MODE_IN_EYE) ?
+				dynamic_cast<C_NEO_Player *>(localPlayer->GetObserverTarget()) : nullptr;
 	
 	if (m_IsSpectator)
 	{
 		auto nsf = GetGlobalTeam(TEAM_NSF);
-		DrawPlayerForTeam(nsf, localPlayer);
+		DrawPlayerForTeam(nsf, localPlayer, pTargetPlayer);
 		
 		auto jinrai = GetGlobalTeam(TEAM_JINRAI);
-		DrawPlayerForTeam(jinrai, localPlayer);
+		DrawPlayerForTeam(jinrai, localPlayer, pTargetPlayer);
 	}
 	else
 	{
-		DrawPlayerForTeam(team, localPlayer);
+		DrawPlayerForTeam(team, localPlayer, pTargetPlayer);
 	}
 }
 
-void CNEOHud_FriendlyMarker::DrawPlayerForTeam(C_Team* team, const C_NEO_Player* localPlayer) const
+void CNEOHud_FriendlyMarker::DrawPlayerForTeam(C_Team *team, const C_NEO_Player *localPlayer,
+											   const C_NEO_Player *pTargetPlayer) const
 {
 	auto memberCount = team->GetNumPlayers();
 	auto teamColour = GetTeamColour(team->GetTeamNumber());
 	for (int i = 0; i < memberCount; ++i)
 	{
 		auto player = static_cast<C_NEO_Player *>(team->GetPlayer(i));
-		if(player && localPlayer->entindex() != player->entindex() && player->IsAlive())
+		if (player && localPlayer->entindex() != player->entindex() && player->IsAlive())
 		{
+			if (pTargetPlayer && player->entindex() == pTargetPlayer->entindex())
+			{
+				// NEO NOTE (nullsystem): Skip this if we're observing this player in first person
+				continue;
+			}
 			DrawPlayer(teamColour, player, localPlayer);
 		}		
 	}

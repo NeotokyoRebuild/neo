@@ -40,6 +40,11 @@ DECLARE_HUD_COMMAND_NAME(CBaseHudWeaponSelection, Close, "CHudWeaponSelection");
 DECLARE_HUD_COMMAND_NAME(CBaseHudWeaponSelection, NextWeapon, "CHudWeaponSelection");
 DECLARE_HUD_COMMAND_NAME(CBaseHudWeaponSelection, PrevWeapon, "CHudWeaponSelection");
 DECLARE_HUD_COMMAND_NAME(CBaseHudWeaponSelection, LastWeapon, "CHudWeaponSelection");
+#ifdef NEO
+DECLARE_HUD_COMMAND_NAME(CBaseHudWeaponSelection, SlotGrenade, "CHudWeaponSelection")
+DECLARE_HUD_COMMAND_NAME(CBaseHudWeaponSelection, SlotSmoke, "CHudWeaponSelection")
+DECLARE_HUD_COMMAND_NAME(CBaseHudWeaponSelection, SlotRemoteDet, "CHudWeaponSelection")
+#endif
 
 HOOK_COMMAND( slot1, Slot1 );
 HOOK_COMMAND( slot2, Slot2 );
@@ -56,6 +61,11 @@ HOOK_COMMAND( cancelselect, Close );
 HOOK_COMMAND( invnext, NextWeapon );
 HOOK_COMMAND( invprev, PrevWeapon );
 HOOK_COMMAND( lastinv, LastWeapon );
+#ifdef NEO
+HOOK_COMMAND(slotgrenade, SlotGrenade);
+HOOK_COMMAND(slotsmoke, SlotSmoke);
+HOOK_COMMAND(slotremotedet, SlotRemoteDet);
+#endif
 
 // instance info
 CBaseHudWeaponSelection *CBaseHudWeaponSelection::s_pInstance = NULL;
@@ -363,6 +373,23 @@ void CBaseHudWeaponSelection::UserCmd_Slot10(void)
 	SelectSlot( 10 );
 }
 
+#ifdef NEO
+void CBaseHudWeaponSelection::UserCmd_SlotGrenade(void)
+{
+	SelectWeaponInSlotPos(4, 0);
+}
+
+void CBaseHudWeaponSelection::UserCmd_SlotSmoke(void)
+{
+	SelectWeaponInSlotPos(4, 1);
+}
+
+void CBaseHudWeaponSelection::UserCmd_SlotRemoteDet(void)
+{
+	SelectWeaponInSlotPos(4, 2);
+}
+#endif
+
 //-----------------------------------------------------------------------------
 // Purpose: returns true if the CHudMenu should take slot1, etc commands
 //-----------------------------------------------------------------------------
@@ -633,3 +660,51 @@ C_BaseCombatWeapon *CBaseHudWeaponSelection::GetNextActivePos( int iSlot, int iS
 
 	return pNextWeapon;
 }
+
+#ifdef NEO
+
+void CBaseHudWeaponSelection::SelectWeaponInSlotPos(int iSlot, int iSlotPos)
+{
+	// A menu may be overriding weapon selection commands
+	if (HandleHudMenuInput(iSlot))
+	{
+		return;
+	}
+
+	// If we're not allowed to draw, ignore weapon selections
+	if (!BaseClass::ShouldDraw())
+	{
+		return;
+	}
+
+	UpdateSelectionTime();
+
+	// iSlot is one higher than it should be, since it's the number key, not the 0-based index into the weapons
+	--iSlot;
+
+	// Get the local player.
+	C_BasePlayer* pPlayer = C_BasePlayer::GetLocalPlayer();
+	if (!pPlayer)
+		return;
+
+	// Don't try and read past our possible number of slots
+	if (iSlot > MAX_WEAPON_SLOTS)
+		return;
+
+	if (iSlot < 0)
+		return;
+
+	// Make sure the player's allowed to switch weapons
+	if (pPlayer->IsAllowedToSwitchWeapons() == false)
+		return;
+
+	C_BaseCombatWeapon *pWeaponInSlot = GetWeaponInSlot(iSlot, iSlotPos);
+	if (pWeaponInSlot)
+	{
+		::input->MakeWeaponSelection(pWeaponInSlot);
+		return;
+	}
+
+	pPlayer->EmitSound("Player.DenyWeaponSelection");
+}
+#endif

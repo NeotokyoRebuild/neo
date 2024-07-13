@@ -591,11 +591,11 @@ void CNEOScoreBoard::AddSection(int teamType, int teamNumber)
 	{
 		pPlayerList->AddSection(sectionID, "");
 
-		pPlayerList->AddColumnToSection(sectionID, "ping", "", SectionedListPanel::COLUMN_BRIGHT, m_iPingWidth );
+		pPlayerList->AddColumnToSection(sectionID, "ping", teamNumber == TEAM_UNASSIGNED ? "Unassigned" : "Spectators", SectionedListPanel::COLUMN_BRIGHT, m_iPingWidth );
 		// Avatars are always displayed at 32x32 regardless of resolution
 		if ( ShowAvatars() )
 		{
-			pPlayerList->AddColumnToSection( sectionID, "avatar", teamNumber == TEAM_UNASSIGNED ? "Unassigned" : "Spectators", SectionedListPanel::COLUMN_IMAGE, m_iAvatarWidth );
+			pPlayerList->AddColumnToSection( sectionID, "avatar", "", SectionedListPanel::COLUMN_IMAGE, m_iAvatarWidth );
 		}
 		pPlayerList->AddColumnToSection(sectionID, "name", "", 0, ShowAvatars() ? m_iNameWidth - m_iAvatarWidth : m_iNameWidth );
 	}
@@ -666,7 +666,8 @@ void CNEOScoreBoard::GetPlayerScoreInfo(int playerIndex, KeyValues *kv)
 
 	if ( g_PR->IsFakePlayer( playerIndex ) )
 	{
-		kv->SetString("ping", "BOT");
+		// Assume bots in spec are SourceTV etc. Looks cleaner if their ping is just empty string.
+		kv->SetString("ping", g_PR->GetTeam(playerIndex) <= TEAM_SPECTATOR ? "" : "BOT");
 	}
 	else
 	{

@@ -736,12 +736,22 @@ int ClientModeShared::HandleSpectatorKeyInput( int down, ButtonCode_t keynum, co
 #endif
 		return 0; // we handled it, don't handle twice or send to server
 	}
+#ifdef NEO
+	else if (down && pszCurrentBinding &&
+			 (Q_strcmp(pszCurrentBinding, "+specnextplayer") == 0 || Q_strcmp(pszCurrentBinding, "+attack") == 0))
+#else
 	else if ( down && pszCurrentBinding && Q_strcmp( pszCurrentBinding, "+attack" ) == 0 )
+#endif
 	{
 		engine->ClientCmd( "spec_next" );
 		return 0;
 	}
+#ifdef NEO
+	else if (down && pszCurrentBinding &&
+			 (Q_strcmp(pszCurrentBinding, "+specprevplayer") == 0 || Q_strcmp(pszCurrentBinding, "+aim") == 0))
+#else
 	else if ( down && pszCurrentBinding && Q_strcmp( pszCurrentBinding, "+attack2" ) == 0 )
+#endif
 	{
 		engine->ClientCmd( "spec_prev" );
 		return 0;
