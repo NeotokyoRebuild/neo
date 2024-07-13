@@ -124,7 +124,7 @@ void CWeaponSmokeGrenade::SecondaryAttack(void)
 
 		// Don't let weapon idle interfere in the middle of a throw!
 		m_flTimeWeaponIdle = FLT_MAX;
-		m_flNextPrimaryAttack = gpGlobals->curtime + RETHROW_DELAY;
+		m_flNextSecondaryAttack = gpGlobals->curtime + RETHROW_DELAY;
 	}
 	// If I'm now out of ammo, switch away
 	if (!HasPrimaryAmmo())
@@ -203,7 +203,7 @@ void CWeaponSmokeGrenade::ItemPostFrame(void)
 				break;
 
 			case GRENADE_PAUSED_SECONDARY:
-				if (!(pOwner->m_nButtons & IN_ATTACK2))
+				if (!(pOwner->m_nButtons & IN_AIM))
 				{
 					//See if we're ducking
 					if (pOwner->m_nButtons & IN_DUCK)
@@ -233,8 +233,6 @@ void CWeaponSmokeGrenade::ItemPostFrame(void)
 			}
 		}
 	}
-
-	ProcessAnimationEvents();
 
 	BaseClass::ItemPostFrame();
 }
@@ -323,7 +321,7 @@ void CWeaponSmokeGrenade::ThrowGrenade(CBasePlayer* pPlayer)
 void CWeaponSmokeGrenade::LobGrenade(CBasePlayer* pPlayer)
 {
 	// Binds hack: we want grenade secondary attack to trigger on aim, not the attack2 bind.
-	if (pPlayer->m_afButtonPressed & IN_ATTACK2)
+	if (pPlayer->m_afButtonPressed & IN_AIM)
 	{
 		return;
 	}
@@ -370,7 +368,7 @@ void CWeaponSmokeGrenade::LobGrenade(CBasePlayer* pPlayer)
 void CWeaponSmokeGrenade::RollGrenade(CBasePlayer* pPlayer)
 {
 	// Binds hack: we want grenade secondary attack to trigger on aim, not the attack2 bind.
-	if (pPlayer->m_afButtonPressed & IN_ATTACK2)
+	if (pPlayer->m_afButtonPressed & IN_AIM)
 	{
 		return;
 	}
