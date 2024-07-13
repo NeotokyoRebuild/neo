@@ -92,20 +92,6 @@ public:
 	virtual void CalcChaseCamView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov) override;
 	virtual void CalcInEyeCamView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov) override;
 
-	// Implementing in header in hopes of compiler picking up the inlined base method
-	virtual float GetModelScale() const
-	{
-		switch (GetClass())
-		{
-		case NEO_CLASS_RECON:
-			return C_BaseAnimating::GetModelScale() * NEO_RECON_MODEL_SCALE;
-		case NEO_CLASS_SUPPORT:
-			return C_BaseAnimating::GetModelScale() * NEO_SUPPORT_MODEL_SCALE;
-		default:
-			return C_BaseAnimating::GetModelScale() * NEO_ASSAULT_MODEL_SCALE;
-		}
-	}
-
 	float CloakPower_CurrentVisualPercentage(void) const;
 
 	float GetNormSpeed_WithActiveWepEncumberment(void) const;

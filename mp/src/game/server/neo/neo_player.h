@@ -73,20 +73,6 @@ public:
 	virtual const Vector GetPlayerMins(void) const OVERRIDE;
 	virtual const Vector GetPlayerMaxs(void) const OVERRIDE;
 
-	// Implementing in header in hopes of compiler picking up the inlined base method
-	virtual float GetModelScale() const OVERRIDE
-	{
-		switch (GetClass())
-		{
-		case NEO_CLASS_RECON:
-			return CBaseAnimating::GetModelScale() * NEO_RECON_MODEL_SCALE;
-		case NEO_CLASS_SUPPORT:
-			return CBaseAnimating::GetModelScale() * NEO_SUPPORT_MODEL_SCALE;
-		default:
-			return CBaseAnimating::GetModelScale() * NEO_ASSAULT_MODEL_SCALE;
-		}
-	}
-
 	void AddNeoFlag(int flags)
 	{
 		m_NeoFlags.GetForModify() = (GetNeoFlags() | flags);
