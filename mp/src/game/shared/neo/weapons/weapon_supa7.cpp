@@ -387,6 +387,7 @@ void CWeaponSupa7::ItemPostFrame(void)
 	{
 		return;
 	}
+	ProcessAnimationEvents();
 
 	if (m_bInReload)
 	{
@@ -517,7 +518,6 @@ void CWeaponSupa7::ItemPostFrame(void)
 		}
 		WeaponIdle();
 	}
-	ProcessAnimationEvents();
 }
 
 void CWeaponSupa7::AddViewKick(void)
