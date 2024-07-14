@@ -30,7 +30,7 @@ CNEOHud_GhostUplinkState::CNEOHud_GhostUplinkState(const char *pElementName, vgu
 		SetParent(g_pClientMode->GetViewport());
 	}
 
-	for (int i = 0; i < numUplinkTextures; i++) {
+	for (int i = 0; i < NUM_UPLINK_TEXTURES; i++) {
 		m_pUplinkTextures[i] = surface()->CreateNewTextureID();
 		Assert(m_pUplinkTextures[i] > 0);
 		char textureFilePath[24];
@@ -38,30 +38,33 @@ CNEOHud_GhostUplinkState::CNEOHud_GhostUplinkState(const char *pElementName, vgu
 		surface()->DrawSetTextureFile(m_pUplinkTextures[i], textureFilePath, 1, false);
 	}
 
-	surface()->DrawGetTextureSize(m_pUplinkTextures[0], m_uplinkTexWidth, m_uplinkTexHeight);
+	surface()->DrawGetTextureSize(m_pUplinkTextures[0], m_iUplinkTextureWidth, m_iUplinkTextureHeight);
 
 	SetVisible(true);
 }
 
 void CNEOHud_GhostUplinkState::ApplySchemeSettings(vgui::IScheme* pScheme)
 {
-	vgui::IScheme* scheme = vgui::scheme()->GetIScheme(vgui::scheme()->GetDefaultScheme());
-	Assert(scheme);
-
-	int wide, tall;
-	surface()->GetScreenSize(wide, tall);
-	int centerX = wide / 2;
-	int centerY = tall / 2;
-	textureXPos = centerX - (m_uplinkTexWidth / 2);
-	constexpr int compassHeightPlusMargins = 30;
-	textureYPos = tall - m_uplinkTexHeight - compassHeightPlusMargins;
-	SetBounds(textureXPos, textureYPos, m_uplinkTexWidth, m_uplinkTexHeight);
+	int screenWidth, screenHeight;
+	surface()->GetScreenSize(screenWidth, screenHeight);
+	int centerX = screenWidth / 2;
+	int centerY = screenHeight / 2;
+	int textureXPos = centerX - (m_iUplinkTextureWidth / 2);
+	static constexpr int COMPASS_HEIGHT_PLUS_MARGINS = 30;
+	int textureYPos = screenHeight - m_iUplinkTextureHeight - COMPASS_HEIGHT_PLUS_MARGINS;
+	SetBounds(textureXPos, textureYPos, m_iUplinkTextureWidth, m_iUplinkTextureHeight);
+	SetFgColor(COLOR_TRANSPARENT);
+	SetBgColor(COLOR_TRANSPARENT);
 
 	BaseClass::ApplySchemeSettings(pScheme);
 }
 
 void CNEOHud_GhostUplinkState::UpdateStateForNeoHudElementDraw()
 {
+	if (m_iCurrentTextureIndex < (NUM_TEXTURE_START_TIMES - 1)) {
+		if ((gpGlobals->curtime - m_flTimeGhostEquip) >= textureStartTimes[m_iCurrentTextureIndex + 1])
+			m_iCurrentTextureIndex++;
+	}
 }
 
 void CNEOHud_GhostUplinkState::DrawNeoHudElement()
@@ -74,7 +77,7 @@ void CNEOHud_GhostUplinkState::DrawNeoHudElement()
 	auto ghost = dynamic_cast<C_WeaponGhost*>(localPlayer->GetActiveWeapon());
 	if (!ghost) {
 		m_flTimeGhostEquip = 0.f;
-		currentTexture = 0;
+		m_iCurrentTextureIndex = 0;
 		return;
 	}
 
@@ -82,20 +85,15 @@ void CNEOHud_GhostUplinkState::DrawNeoHudElement()
 		m_flTimeGhostEquip = gpGlobals->curtime;
 	}
 
-	if (currentTexture < (numTextureStartTimes - 1)) {
-		if ((gpGlobals->curtime - m_flTimeGhostEquip) >= textureStartTimes[currentTexture + 1])
-			currentTexture++;
-	}
+	UpdateStateForNeoHudElementDraw();
 
 	surface()->DrawSetColor(COLOR_RED);
-	surface()->DrawSetTexture(m_pUplinkTextures[textureOrder[currentTexture]]);
-	surface()->DrawTexturedRect(0, 0, m_uplinkTexWidth, m_uplinkTexHeight);
+	surface()->DrawSetTexture(m_pUplinkTextures[textureOrder[m_iCurrentTextureIndex]]);
+	surface()->DrawTexturedRect(0, 0, m_iUplinkTextureWidth, m_iUplinkTextureHeight);
 }
 
 void CNEOHud_GhostUplinkState::Paint()
 {
 	BaseClass::Paint();
-	SetFgColor(COLOR_TRANSPARENT);
-	SetBgColor(COLOR_TRANSPARENT);
 	PaintNeoElement();
 }

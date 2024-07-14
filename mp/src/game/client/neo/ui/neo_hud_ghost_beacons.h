@@ -16,28 +16,23 @@ class CNEOHud_GhostBeacons : public CNEOHud_ChildElement, public CHudElement, pu
 
 public:
 	CNEOHud_GhostBeacons(const char *pElementName, vgui::Panel *parent = NULL);
-	virtual void ApplySchemeSettings(vgui::IScheme* pScheme);
+	virtual void ApplySchemeSettings(vgui::IScheme* pScheme) override;
+	virtual void Paint() override;
 
-	virtual void Paint();
 	void DrawPlayer(const Vector& playerPos) const;
 
-	Vector ghostBeaconOffset = Vector(0, 0, 0);
-	Vector* m_pGhostBeaconOffset = &ghostBeaconOffset;
-
 protected:
-	virtual void UpdateStateForNeoHudElementDraw();
-	virtual void DrawNeoHudElement();
-	virtual ConVar* GetUpdateFrequencyConVar() const;
+	virtual void UpdateStateForNeoHudElementDraw() override;
+	virtual void DrawNeoHudElement() override;
+	virtual ConVar* GetUpdateFrequencyConVar() const override;
 
 private:
-	int m_beaconTexWidth, m_beaconTexHeight;
+	int m_iBeaconTextureWidth, m_iBeaconTextureHeight;
 	C_WeaponGhost* m_pGhost;
 	float m_flNextAllowGhostShowTime;
-	bool m_curGhostHolding;
+	bool m_bHoldingGhost = false;
 
 	vgui::HFont m_hFont;
-	Color fontColor = COLOR_WHITE;
-
 	vgui::HTexture m_hTex;
 
 private:

@@ -40,7 +40,6 @@ NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(GhostBeacons, 0.01)
 CNEOHud_GhostBeacons::CNEOHud_GhostBeacons(const char *pElementName, vgui::Panel *parent)
 	: CHudElement(pElementName), EditablePanel(parent, pElementName)
 {
-	m_curGhostHolding = false;
 	SetAutoDelete(true);
 
 	vgui::HScheme neoscheme = vgui::scheme()->LoadSchemeFromFileEx(
@@ -56,15 +55,15 @@ CNEOHud_GhostBeacons::CNEOHud_GhostBeacons(const char *pElementName, vgui::Panel
 		SetParent(g_pClientMode->GetViewport());
 	}
 
-	int wide, tall;
-	surface()->GetScreenSize(wide, tall);
-	SetBounds(0, 0, wide, tall);
+	int screenWidth, screenHeight;
+	surface()->GetScreenSize(screenWidth, screenHeight);
+	SetBounds(0, 0, screenWidth, screenHeight);
 	
 	m_hTex = surface()->CreateNewTextureID();
 	Assert(m_hTex > 0);
 	surface()->DrawSetTextureFile(m_hTex, "vgui/hud/ctg/g_beacon_enemy", 1, false);
 
-	surface()->DrawGetTextureSize(m_hTex, m_beaconTexWidth, m_beaconTexHeight);
+	surface()->DrawGetTextureSize(m_hTex, m_iBeaconTextureWidth, m_iBeaconTextureHeight);
 
 	SetVisible(true);
 }
@@ -79,9 +78,9 @@ void CNEOHud_GhostBeacons::ApplySchemeSettings(vgui::IScheme* pScheme)
 
 	m_hFont = pScheme->GetFont("NHudOCRSmall", true);
 
-	int wide, tall;
-	surface()->GetScreenSize(wide, tall);
-	SetBounds(0, 0, wide, tall);
+	int screenWidth, screenHeight;
+	surface()->GetScreenSize(screenWidth, screenHeight);
+	SetBounds(0, 0, screenWidth, screenHeight);
 	SetFgColor(COLOR_TRANSPARENT);
 	SetBgColor(COLOR_TRANSPARENT);
 }
@@ -97,16 +96,16 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 	auto ghost = dynamic_cast<C_WeaponGhost*>(localPlayer->GetActiveWeapon());
 	if (!ghost) //Check ghost ready here as players might be in PVS
 	{
-		m_curGhostHolding = false;
+		m_bHoldingGhost = false;
 		return;
 	}
 
-	if (!m_curGhostHolding)
+	if (!m_bHoldingGhost)
 	{
 		// Just changed to holding the ghost, start delay timer
 		m_flNextAllowGhostShowTime = gpGlobals->curtime + neo_ghost_delay_secs.GetFloat();
 	}
-	m_curGhostHolding = true;
+	m_bHoldingGhost = true;
 
 	m_pGhost = ghost;
 	const bool showGhost = (gpGlobals->curtime > m_flNextAllowGhostShowTime);
@@ -147,10 +146,10 @@ void CNEOHud_GhostBeacons::DrawPlayer(const Vector& playerPos) const
 
 	int posX, posY;
 	if (neo_ghost_beacon_scale_toggle.GetInt() == 0) {
-		constexpr int distanceAtWhichRaiseGhostBeacon = 25;
-		constexpr int maxDistanceGhostBeaconRaised = distanceAtWhichRaiseGhostBeacon * 2;
-		m_pGhostBeaconOffset->z = (maxDistanceGhostBeaconRaised - (distInMeters * 2));
-		GetVectorInScreenSpace(playerPos, posX, posY, m_pGhostBeaconOffset);
+		static constexpr int DISTANCE_AT_WHICH_MARKER_ON_FLOOR = 25;
+		static constexpr int MAX_DISTANCE_TO_RAISE_GHOST_BREACON = DISTANCE_AT_WHICH_MARKER_ON_FLOOR * 2;
+		Vector ghostBeaconOffset = Vector(0, 0, (MAX_DISTANCE_TO_RAISE_GHOST_BREACON - (distInMeters * 2)));
+		GetVectorInScreenSpace(playerPos, posX, posY, &ghostBeaconOffset);
 	} else {
 		GetVectorInScreenSpace(playerPos, posX, posY);
 	}
@@ -176,13 +175,13 @@ void CNEOHud_GhostBeacons::DrawPlayer(const Vector& playerPos) const
 
 	// Offset screen space starting positions by half of the texture x/y coords,
 	// so it starts centered on target.
-	const int posfix_X = posX - ((m_beaconTexWidth / 2) * scale);
-	const int posfix_Y = posY - (m_beaconTexHeight * scale);
+	const int posfix_X = posX - ((m_iBeaconTextureWidth / 2) * scale);
+	const int posfix_Y = posY - (m_iBeaconTextureHeight * scale);
 
 	// End coordinates according to art size (and our distance scaling)
 	surface()->DrawTexturedRect(
 		posfix_X,
 		posfix_Y,
-		posfix_X + (m_beaconTexWidth * scale),
-		posfix_Y + (m_beaconTexHeight * scale));
+		posfix_X + (m_iBeaconTextureWidth * scale),
+		posfix_Y + (m_iBeaconTextureHeight * scale));
 }
