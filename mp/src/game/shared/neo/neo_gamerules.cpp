@@ -881,6 +881,7 @@ static inline void SpawnTheGhost()
 					else
 					{
 						ghost->SetAbsOrigin(ghostSpawn->GetAbsOrigin());
+						ghost->Drop(Vector{0.0f, 0.0f, 0.0f});
 					}
 
 					break;
@@ -2039,10 +2040,16 @@ void CNEORules::ClientDisconnected(edict_t* pClient)
 		auto ghost = GetNeoWepWithBits(pNeoPlayer, NEO_WEP_GHOST);
 		if (ghost)
 		{
-			ghost->Drop(vec3_origin);
-			ghost->SetRemoveable(false);
+			// NEO JANK (nullsystem): Teleport so that disconnected player don't noclips the ghost?
+			Vector stillVec{0.0f, 0.0f, 0.0f};
+			QAngle angles;
+			ghost->Drop(stillVec);
 			pNeoPlayer->Weapon_Detach(ghost);
+			Vector origin = ghost->GetAbsOrigin();
+			ghost->Teleport(&origin, &angles, NULL);
+			ghost->SetMoveType(MOVETYPE_FLYGRAVITY);
 		}
+		pNeoPlayer->RemoveAllWeapons();
 
 		// Save XP/death counts
 		if (neo_sv_player_restore.GetBool())

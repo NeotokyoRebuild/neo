@@ -193,9 +193,7 @@ static void __MsgFunc_IdleRespawnShowMenu(bf_read &)
 {
 	if (auto *localPlayer = C_NEO_Player::GetLocalNEOPlayer())
 	{
-		localPlayer->m_bShowTeamMenu = false;
-		localPlayer->m_bShowClassMenu = true;
-		localPlayer->m_bIsClassMenuOpen = false;
+		engine->ClientCmd("classmenu");
 	}
 }
 USER_MESSAGE_REGISTER(IdleRespawnShowMenu);
@@ -212,6 +210,12 @@ public:
 #if DEBUG
 		DevMsg("Loadout access cb\n");
 #endif
+
+		auto team = GetLocalPlayerTeam();
+		if(team < FIRST_GAME_TEAM)
+		{
+			return;
+		}
 
 		auto panel = dynamic_cast<vgui::EditablePanel*>(GetClientModeNormal()->
 			GetViewport()->FindChildByName(PANEL_NEO_LOADOUT));
@@ -281,6 +285,13 @@ class NeoClassMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback(const CCommand& command)
 	{
+		auto team = GetLocalPlayerTeam();
+
+		if(team < FIRST_GAME_TEAM)
+		{
+			return;
+		}
+		
 		vgui::EditablePanel *panel = dynamic_cast<vgui::EditablePanel*>
 			(GetClientModeNormal()->GetViewport()->FindChildByName(PANEL_CLASS));
 
@@ -413,7 +424,6 @@ C_NEO_Player::C_NEO_Player()
 	m_iNextSpawnClassChoice = -1;
 	m_iXP.GetForModify() = 0;
 
-	m_bShowClassMenu = m_bShowTeamMenu = m_bIsClassMenuOpen = m_bIsTeamMenuOpen = false;
 	m_bInThermOpticCamo = m_bInVision = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
 	m_bInAim = false;
@@ -874,24 +884,6 @@ void C_NEO_Player::PreThink( void )
 		}
 	}
 
-	if (m_bShowTeamMenu && !m_bIsTeamMenuOpen)
-	{
-		m_bIsTeamMenuOpen = true;
-		engine->ClientCmd(teammenu.GetName());
-	}
-	else if (m_bShowClassMenu && !m_bIsClassMenuOpen)
-	{
-		m_bIsClassMenuOpen = true;
-		engine->ClientCmd(classmenu.GetName());
-	}
-	else if (m_bShowTeamMenu && m_bShowClassMenu)
-	{
-		m_bShowClassMenu = false;
-		m_bIsTeamMenuOpen = true;
-		m_bIsClassMenuOpen = false;
-		engine->ClientCmd(teammenu.GetName());
-	}
-
 	if (auto *indicator = GET_HUDELEMENT(CNEOHud_GameEvent))
 	{
 		if (m_bShowTestMessage)
@@ -1091,6 +1083,12 @@ void C_NEO_Player::CalcDeathCamView(Vector &eyeOrigin, QAngle &eyeAngles, float 
 	}
 }
 
+void C_NEO_Player::TeamChange(int iNewTeam)
+{
+	engine->ClientCmd(classmenu.GetName());
+	BaseClass::TeamChange(iNewTeam);
+}
+
 bool C_NEO_Player::IsAllowedToSuperJump(void)
 {
 	if (!IsSprinting())
@@ -1209,7 +1207,7 @@ void C_NEO_Player::Spawn( void )
 
 	if (GetTeamNumber() == TEAM_UNASSIGNED)
 	{
-		m_bShowTeamMenu = true;
+		engine->ClientCmd(teammenu.GetName());
 	}
 
 #if(0)

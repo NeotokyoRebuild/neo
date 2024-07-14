@@ -111,7 +111,7 @@ Ochii's impressive [reverse engineering project](https://github.com/Ochii/neotok
 
 ### Current: CMake
 
-This project currently use the [CMake](https://cmake.org/) build system to generate ninja/makefiles and is integrated with IDEs such as VS2022 and qtcreator. When modifying the project file structure, look into `CMakeLists.txt` and `cmake/*.cmake`.
+This project currently use the [CMake](https://cmake.org/) build system to generate ninja/makefiles and is integrated with IDEs such as VS2022 and Qt Creator. When modifying the project file structure, look into `CMakeLists.txt` and `cmake/*.cmake`.
 
 ### Legacy: Solutions/makefiles
 

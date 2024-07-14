@@ -1698,9 +1698,7 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 			pVecThrowDir.z = random->RandomFloat(-0.5f, 0.5f);
 			VectorNormalize(pVecThrowDir);
 			Assert(pVecThrowDir.IsValid());
-			pWep->Drop(pVecThrowDir);
-			pWep->SetRemoveable(false);
-			Weapon_Detach(pWep);
+			Weapon_Drop(pWep, NULL, &pVecThrowDir);
 		}
 	}
 

@@ -169,6 +169,14 @@ void CWeaponGhost::OnPickedUp(CBaseCombatCharacter *pNewOwner)
 	}
 }
 
+void CWeaponGhost::Drop(const Vector &vecVelocity)
+{
+	BaseClass::Drop(vecVelocity);
+#if !defined( CLIENT_DLL )
+	SetRemoveable(false);
+#endif
+}
+
 float CWeaponGhost::DistanceToPos(const Vector& otherPlayerPos)
 {
 	auto owner = GetOwner();

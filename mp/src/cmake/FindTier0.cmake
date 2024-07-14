@@ -9,6 +9,7 @@ endif()
 find_file(TIER0_LIBRARY
     NAMES ${TIER0_LIBRARY_NAME}
     PATHS "${LIBPUBLIC}"
+    NO_CACHE
     NO_DEFAULT_PATH
     REQUIRED
 )

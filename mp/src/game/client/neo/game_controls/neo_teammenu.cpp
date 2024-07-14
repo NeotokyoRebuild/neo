@@ -29,8 +29,6 @@
 #include "replay/replaycamera.h"
 #endif
 
-#include "c_neo_player.h"
-
 //#include <game_controls/IconPanel.h>
 
 #include <vgui_controls/TextEntry.h>
@@ -183,69 +181,52 @@ void CNeoTeamMenu::OnCommand(const char *command)
 		const int nsfNumPlayers = (pNsf != NULL ? pNsf->Get_Number_Players() : 0);
 		int randomTeam = jinNumPlayers > nsfNumPlayers ? TEAM_NSF : (nsfNumPlayers > jinNumPlayers ? TEAM_JINRAI : RandomInt(TEAM_JINRAI, TEAM_NSF));
 		V_sprintf_safe(commandBuffer, "jointeam %i", randomTeam);
-		ChangeMenu("classmenu");
+		CloseMenu();
 		engine->ClientCmd(commandBuffer);
 		return;
 	}
 
 	if (Q_strcmp(commandBuffer, "jointeam 1") == 0)
 	{ // joining spectators
-		ChangeMenu(NULL);
+		CloseMenu();
 		engine->ClientCmd(commandBuffer);
 		return;
 	}
 
 	if (Q_strcmp(commandBuffer, "jointeam 0") == 0)
 	{ // joining unnasigned
-		ChangeMenu(NULL);
+		CloseMenu();
 		engine->ClientCmd(commandBuffer);
 		return;
 	}
 
 	if (Q_stristr(commandBuffer, "jointeam") != 0) // Note using stristr, not strcmp. Equates to true when jointeam in commandBuffer
 	{ // joining jinrai or nsf
-		ChangeMenu("classmenu");
+		CloseMenu();
 		engine->ClientCmd(commandBuffer);
 		return;
 	}
 
 	if (Q_stricmp(commandBuffer, "vguicancel") == 0)
 	{ // cancel, close menu
-		ChangeMenu(NULL);
+		CloseMenu();
 	}
 	
 	// new command, should we sanitize and return without executing? (Players can edit button commands with ctrl-alt-shift-b) NEO FIXME
 	engine->ClientCmd(command);
 }
 
-void CNeoTeamMenu::ChangeMenu(const char* menuName = NULL)
+void CNeoTeamMenu::CloseMenu()
 {
 	CommandCompletion();
 	ShowPanel(false);
-	C_NEO_Player* player = C_NEO_Player::GetLocalNEOPlayer();
-	if (player)
-	{
-		player->m_bShowTeamMenu = false;
-		if (menuName == NULL)
-		{
-			return;
-		}
-		if (Q_stricmp(menuName, "classmenu") == 0)
-		{
-			player->m_bShowClassMenu = true;
-		}
-	}
-	else
-	{
-		Assert(false);
-	}
 }
 
 void CNeoTeamMenu::OnKeyCodeReleased(vgui::KeyCode code)
 { // Navigating using the keyboard hack
 	switch (code) {
-	case 92: // F1 - Close the menu
-		ChangeMenu(NULL);
+	case KEY_F1: // F1 - Close the menu
+		CloseMenu();
 	}
 	// Leaving this here, useful to check what key is being pressed
 	/*char buffer[8] = "";

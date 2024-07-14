@@ -2,7 +2,11 @@ add_library(client SHARED)
 
 set_target_properties(client PROPERTIES PREFIX "")
 
-add_dependencies(client get_build_info)
+if(NEO_USE_SEPARATE_BUILD_INFO)
+    split_debug_information(TARGET client)
+endif()
+
+add_library_copy_target(TARGET client)
 
 target_include_directories(client
     PRIVATE
@@ -1550,6 +1554,8 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_shot_manipulator.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_shot_manipulator.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.h
 )
 
 target_sources_grouped(
@@ -1688,5 +1694,3 @@ target_sources_grouped(
     hl2mp/ui/hl2mptextwindow.cpp
     hl2mp/ui/hl2mptextwindow.h
 )
-
-add_library_copy_and_symlink(TARGET client CREATE_SRV)

@@ -32,6 +32,7 @@ public:
 	virtual void PrimaryAttack(void) OVERRIDE { }
 	virtual void SecondaryAttack(void) OVERRIDE { }
 
+	virtual void Drop(const Vector &vecVelocity) override;
 	virtual void ItemHolsterFrame(void);
 	virtual void OnPickedUp(CBaseCombatCharacter *pNewOwner);
 	void HandleGhostUnequip(void);

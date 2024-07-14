@@ -204,14 +204,13 @@ void CNeoClassMenu::ChangeMenu(const char* menuName = NULL)
 	C_NEO_Player* player = C_NEO_Player::GetLocalNEOPlayer();
 	if (player)
 	{
-		player->m_bShowClassMenu = false;
 		if (menuName == NULL)
 		{
 			return;
 		}
 		if (Q_stricmp(menuName, "teammenu") == 0)
 		{
-			player->m_bShowTeamMenu = true;
+			engine->ClientCmd(menuName);
 		}
 	}
 	else

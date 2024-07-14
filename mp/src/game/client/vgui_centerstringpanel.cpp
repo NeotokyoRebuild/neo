@@ -98,6 +98,13 @@ CCenterStringLabel::CCenterStringLabel( vgui::VPANEL parent ) :
 	m_flCentertimeOff = 0.0;
 
 	vgui::ivgui()->AddTickSignal( GetVPanel(), 100 );
+
+#ifdef NEO
+	// NEO HACK (nullsystem): It's to workaround the font settings not being
+	// applied properly
+	vgui::IScheme *pScheme = vgui::scheme()->GetIScheme(neoscheme);
+	ApplySchemeSettings(pScheme);
+#endif
 }
 
 //-----------------------------------------------------------------------------

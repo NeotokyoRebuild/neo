@@ -172,6 +172,7 @@ public:
 	bool ClientWantNeoName() const;
 
 	virtual void CalcDeathCamView( Vector& eyeOrigin, QAngle& eyeAngles, float& fov ) override;
+	virtual void TeamChange(int iNewTeam) override;
 
 private:
 	void CheckThermOpticButtons();
@@ -195,8 +196,7 @@ public:
 	CNetworkArray(int, m_rfAttackersScores, (MAX_PLAYERS + 1));
 	CNetworkArray(float, m_rfAttackersAccumlator, (MAX_PLAYERS + 1));
 	CNetworkArray(int, m_rfAttackersHits, (MAX_PLAYERS + 1));
-
-	bool m_bShowClassMenu, m_bShowTeamMenu;
+	
 	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
 
 	CNetworkVar(float, m_flCamoAuxLastTime);
@@ -218,8 +218,6 @@ public:
 	CNetworkVar(bool, m_bClientWantNeoName);
 
 	unsigned char m_NeoFlags;
-
-	bool m_bIsClassMenuOpen, m_bIsTeamMenuOpen;
 
 private:
 	bool m_bFirstDeathTick;

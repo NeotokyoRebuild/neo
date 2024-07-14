@@ -2,6 +2,12 @@ add_library(game_shader_dx9 SHARED)
 
 set_target_properties(game_shader_dx9 PROPERTIES PREFIX "")
 
+if(NEO_USE_SEPARATE_BUILD_INFO)
+    split_debug_information(TARGET game_shader_dx9)
+endif()
+
+add_library_copy_target(TARGET game_shader_dx9)
+
 target_include_directories(game_shader_dx9
     PRIVATE
         ${CMAKE_SOURCE_DIR}/common
@@ -112,5 +118,3 @@ target_sources_grouped(
     Neo_refract_dx9_helper.cpp
     Neo_refract_dx9_helper.h
 )
-
-add_library_copy_and_symlink(TARGET game_shader_dx9)
