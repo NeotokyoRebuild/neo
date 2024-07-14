@@ -194,7 +194,7 @@ USER_MESSAGE_REGISTER(DamageInfo);
 
 static void __MsgFunc_IdleRespawnShowMenu(bf_read &)
 {
-	if (auto *localPlayer = C_NEO_Player::GetLocalNEOPlayer())
+	if (C_NEO_Player::GetLocalNEOPlayer())
 	{
 		engine->ClientCmd("classmenu");
 	}
@@ -975,7 +975,7 @@ void C_NEO_Player::PostThink(void)
 
 	SetNextClientThink(CLIENT_THINK_ALWAYS);
 
-	if (GetLocalNEOPlayer() == this)
+	if (IsLocalPlayer())
 	{
 		neo_this_client_speed.SetValue(MIN(GetAbsVelocity().Length2D() / GetNormSpeed(), 1.0f));
 	}
@@ -1133,7 +1133,10 @@ void C_NEO_Player::CalcDeathCamView(Vector &eyeOrigin, QAngle &eyeAngles, float 
 
 void C_NEO_Player::TeamChange(int iNewTeam)
 {
-	engine->ClientCmd(classmenu.GetName());
+	if (IsLocalPlayer())
+	{
+		engine->ClientCmd(classmenu.GetName());
+	}
 	BaseClass::TeamChange(iNewTeam);
 }
 
@@ -1231,31 +1234,35 @@ void C_NEO_Player::Spawn( void )
 
 	SetViewOffset(VEC_VIEW_NEOSCALE(this));
 
-	// NEO NOTE (nullsystem): Reset Vis/Enabled/MouseInput/Cursor state here, otherwise it can get stuck at situations
-	for (const auto pname : {PANEL_CLASS, PANEL_TEAM, PANEL_NEO_LOADOUT})
+	auto *localPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if (localPlayer == nullptr || localPlayer == this)
 	{
-		if (auto *panel = static_cast<vgui::EditablePanel*>
-				(GetClientModeNormal()->GetViewport()->FindChildByName(pname)))
+		// NEO NOTE (nullsystem): Reset Vis/Enabled/MouseInput/Cursor state here, otherwise it can get stuck at situations
+		for (const auto pname : {PANEL_CLASS, PANEL_TEAM, PANEL_NEO_LOADOUT})
 		{
-			panel->SetVisible(false);
-			panel->SetEnabled(false);
-			panel->SetMouseInputEnabled(false);
-			panel->SetCursorAlwaysVisible(false);
-			//panel->SetKeyBoardInputEnabled(false);
+			if (auto *panel = static_cast<vgui::EditablePanel*>
+					(GetClientModeNormal()->GetViewport()->FindChildByName(pname)))
+			{
+				panel->SetVisible(false);
+				panel->SetEnabled(false);
+				panel->SetMouseInputEnabled(false);
+				panel->SetCursorAlwaysVisible(false);
+				//panel->SetKeyBoardInputEnabled(false);
+			}
 		}
-	}
 
-	for (auto *hud : gHUD.m_HudList)
-	{
-		if (auto *neoHud = dynamic_cast<CNEOHud_ChildElement *>(hud))
+		for (auto *hud : gHUD.m_HudList)
 		{
-			neoHud->resetLastUpdateTime();
+			if (auto *neoHud = dynamic_cast<CNEOHud_ChildElement *>(hud))
+			{
+				neoHud->resetLastUpdateTime();
+			}
 		}
-	}
 
-	if (GetTeamNumber() == TEAM_UNASSIGNED)
-	{
-		engine->ClientCmd(teammenu.GetName());
+		if (GetTeamNumber() == TEAM_UNASSIGNED)
+		{
+			engine->ClientCmd(teammenu.GetName());
+		}
 	}
 
 #if(0)
