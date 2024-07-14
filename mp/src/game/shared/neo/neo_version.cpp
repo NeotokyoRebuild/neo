@@ -13,13 +13,13 @@ void neoVersionCallback()
 #endif
 	Msg("%s\n"
 		"Build version: %s_%s\n"
-		"Build datetime: %s\n"
+		"Build date: %s\n"
 		"Git hash: %s\n"
 		"OS: %s\n"
 		"Compiler: %s %s\n",
 		HEADER,
-		BUILD_DATE, GIT_HASH,
-		BUILD_DATETIME,
+		BUILD_DATE_SHORT, GIT_HASH,
+		BUILD_DATE_LONG,
 		GIT_LONGHASH,
 		OS_BUILD,
 		COMPILER_ID, COMPILER_VERSION);

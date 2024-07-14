@@ -1,6 +1,7 @@
 find_library(MATHLIB_LIBRARY
     NAMES mathlib.a
     PATHS "${LIBPUBLIC}"
+    NO_CACHE
     NO_DEFAULT_PATH
     REQUIRED
 )

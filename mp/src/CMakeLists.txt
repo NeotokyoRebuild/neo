@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18.4)
+cmake_minimum_required(VERSION 3.25)
 
 cmake_policy(SET CMP0091 NEW)
 
@@ -6,14 +6,19 @@ project(neo)
 set(CMAKE_VERBOSE_MAKEFILE TRUE)
 message(STATUS "CMAKE_VERSION: ${CMAKE_VERSION}")
 
+string(TIMESTAMP BUILD_DATETIME UTC)
+message(STATUS "TIMESTAMP: ${BUILD_DATETIME}")
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 include(cmake/utils.cmake)
+include(cmake/build_info.cmake)
 
 if(NOT OS_WINDOWS AND NOT OS_LINUX AND NOT OS_MACOS)
     message(FATAL_ERROR "Unknown OS")
 endif()
 
+option(NEO_CI_BUILD "CI build mode" OFF)
 option(NEO_CHROOT_BUILD "chroot build mode" OFF)
 option(NEO_USE_CCACHE "Use ccache" ${OS_LINUX})
 option(NEO_USE_VALVE_BINDIR "Use /valve bindir" OFF) # NOTE probably should be used with NEO_DEDICATED
@@ -25,19 +30,17 @@ option(NEO_RAD_TELEMETRY_DISABLED "Telemetry disabled" ON)
 option(NEO_QUICKTIME_VIDEO "Use Quicktime video on Windows" OFF)
 option(NEO_BUILD_REPLAY "Build replay system" OFF) # NOTE not implemented for neo
 option(NEO_BUILD_WEAPON_PBK56S "Build PBK56S weapon" OFF)
+option(NEO_BUILD_TIER1 "Build tier1 library" ON)
+option(NEO_BUILD_MATHLIB "Build mathlib library" ON)
+option(NEO_BUILD_VGUI_CONTROLS "Build vgui_controls library" ON)
 option(NEO_COPY_LIBRARIES "Copy libraries to bin directory by default" ON)
 set(NEO_OUTPUT_LIBRARY_PATH "${CMAKE_SOURCE_DIR}/../game/neo/bin" CACHE PATH "Directory for output libraries")
+option(NEO_INSTALL_LIBRARIES "Install game libraries" OFF)
+option(NEO_INSTALL_RESOURCES "Install game resources" OFF)
+option(NEO_USE_SEPARATE_BUILD_INFO "Use separate build info on Linux" OFF)
+option(NEO_ENABLE_CPACK "Enable CPack" OFF)
 
-if(OS_WINDOWS)
-    set(NEO_BUILD_TIER1 ON CACHE BOOL "" FORCE)
-    set(NEO_BUILD_MATHLIB ON CACHE BOOL "" FORCE)
-    set(NEO_BUILD_VGUI_CONTROLS ON CACHE BOOL "" FORCE)
-else()
-    option(NEO_BUILD_TIER1 "Build tier1 library" ON)
-    option(NEO_BUILD_MATHLIB "Build mathlib library" ON)
-    option(NEO_BUILD_VGUI_CONTROLS "Build vgui_controls library" ON)
-endif()
-
+message(STATUS "CI build mode: ${NEO_CI_BUILD}")
 message(STATUS "chroot build mode: ${NEO_CHROOT_BUILD}")
 message(STATUS "Use ccache: ${NEO_USE_CCACHE}")
 message(STATUS "Use /valve bindir: ${NEO_USE_VALVE_BINDIR}")
@@ -54,17 +57,29 @@ message(STATUS "Build mathlib library: ${NEO_BUILD_MATHLIB}")
 message(STATUS "Build vgui_controls library: ${NEO_BUILD_VGUI_CONTROLS}")
 message(STATUS "Copy libraries to bin directory by default: ${NEO_COPY_LIBRARIES}")
 message(STATUS "Directory for output libraries: ${NEO_OUTPUT_LIBRARY_PATH}")
+message(STATUS "Install game libraries: ${NEO_INSTALL_LIBRARIES}")
+message(STATUS "Install game resources: ${NEO_INSTALL_RESOURCES}")
+message(STATUS "Use separate build info on Linux: ${NEO_USE_SEPARATE_BUILD_INFO}")
+message(STATUS "Enable CPack: ${NEO_ENABLE_CPACK}")
+message("")
 
+if(NEO_COPY_LIBRARIES)
+    file(MAKE_DIRECTORY "${NEO_OUTPUT_LIBRARY_PATH}")
+endif()
 
-file(MAKE_DIRECTORY "${NEO_OUTPUT_LIBRARY_PATH}")
+if(NEO_ENABLE_CPACK)
+    include(cmake/packaging.cmake)
+endif()
 
 if(CMAKE_VERBOSE_MAKEFILE)
     set(CMAKE_EXECUTE_PROCESS_COMMAND_ECHO STDOUT)
 endif()
 
+set(CMAKE_SKIP_RPATH TRUE)
+
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_POSITION_INDEPENDENT_CODE OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
+set(CMAKE_POSITION_INDEPENDENT_CODE FALSE)
 
 set(SOURCESDK TRUE)
 
@@ -397,24 +412,80 @@ add_custom_target(
     VERBATIM
 )
 
-# TODO add later?
-# $Project "raytrace" "raytrace\raytrace.vpc" [$WIN32||$X360||$POSIX]
+if(NEO_CI_BUILD AND "${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
+    set(BUILD_TYPE_NAME "Release")
+else()
+    set(BUILD_TYPE_NAME "${CMAKE_BUILD_TYPE}")
+endif()
 
-# Not needed?
-# $Project "serverplugin_empty" "utils\serverplugin_sample\serverplugin_empty.vpc" [$WIN32||$POSIX]
-# $Project "captioncompiler" "utils\captioncompiler\captioncompiler.vpc" [$WIN32]
-# $Project "fgdlib" "fgdlib\fgdlib.vpc" [$WIN32]
-# $Project "glview" "utils\glview\glview.vpc" [$WIN32]
-# $Project "height2normal" "utils\height2normal\height2normal.vpc" [$WIN32]
-# $Project "motionmapper" "utils\motionmapper\motionmapper.vpc" [$WIN32]
-# $Project "phonemeextractor" "utils\phonemeextractor\phonemeextractor.vpc" [$WIN32]
-# $Project "qc_eyes" "utils\qc_eyes\qc_eyes.vpc" [$WIN32]
-# $Project "tgadiff" "utils\tgadiff\tgadiff.vpc" [$WIN32]
-# $Project "vbsp" "utils\vbsp\vbsp.vpc" [$WIN32]
-# $Project "vice" "utils\vice\vice.vpc" [$WIN32]
-# $Project "vrad_dll" "utils\vrad\vrad_dll.vpc" [$WIN32]
-# $Project "vrad_launcher" "utils\vrad_launcher\vrad_launcher.vpc" [$WIN32]
-# $Project "vtf2tga" "utils\vtf2tga\vtf2tga.vpc" [$WIN32]
-# $Project "vtfdiff" "utils\vtfdiff\vtfdiff.vpc" [$WIN32]
-# $Project "vvis_dll" "utils\vvis\vvis_dll.vpc" [$WIN32]
-# $Project "vvis_launcher" "utils\vvis_launcher\vvis_launcher.vpc" [$WIN32]
+set(INSTALL_PATH_PREFIX "neo-${BUILD_DATE_SHORT}-${GIT_HASH}")
+set(INSTALL_PATH_SUFFIX "${CMAKE_SYSTEM_NAME}-${BUILD_TYPE_NAME}/neo/bin")
+
+if(NEO_INSTALL_LIBRARIES)
+    if(NEO_DEDICATED)
+        set(LIBRARY_INSTALL_PATH "${INSTALL_PATH_PREFIX}-dedicated-${INSTALL_PATH_SUFFIX}")
+
+        install(
+            TARGETS server
+            LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}"
+            RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}"
+        )
+
+        if(NEO_USE_SEPARATE_BUILD_INFO)
+            set(SPLIT_DEBUG_INFO_INSTALL_PATH "${INSTALL_PATH_PREFIX}-dedicated-debuginfo-${INSTALL_PATH_SUFFIX}")
+
+            if(OS_WINDOWS)
+                install(
+                    FILES "$<TARGET_PDB_FILE:server>"
+                    DESTINATION "${SPLIT_DEBUG_INFO_INSTALL_PATH}"
+                )
+            else()
+                get_target_property(SERVER_SPLIT_DEBUG_INFO_FILE server SPLIT_DEBUG_INFO_FILE)
+                install(
+                    FILES ${SERVER_SPLIT_DEBUG_INFO_FILE}
+                    DESTINATION "${SPLIT_DEBUG_INFO_INSTALL_PATH}"
+                )
+            endif()
+        endif()
+    else()
+        set(LIBRARY_INSTALL_PATH "${INSTALL_PATH_PREFIX}-libraries-${INSTALL_PATH_SUFFIX}")
+
+        install(
+            TARGETS client game_shader_dx9 server
+            LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}"
+            RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}"
+        )
+
+        if(NEO_USE_SEPARATE_BUILD_INFO)
+            set(SPLIT_DEBUG_INFO_INSTALL_PATH "${INSTALL_PATH_PREFIX}-libraries-debuginfo-${INSTALL_PATH_SUFFIX}")
+
+            if(OS_WINDOWS)
+                install(
+                    FILES
+                        $<TARGET_PDB_FILE:client>
+                        $<TARGET_PDB_FILE:game_shader_dx9>
+                        $<TARGET_PDB_FILE:server>
+                    DESTINATION "${SPLIT_DEBUG_INFO_INSTALL_PATH}"
+                )
+            else()
+                get_target_property(CLIENT_SPLIT_DEBUG_INFO_FILE client SPLIT_DEBUG_INFO_FILE)
+                get_target_property(SHADER_SPLIT_DEBUG_INFO_FILE game_shader_dx9 SPLIT_DEBUG_INFO_FILE)
+                get_target_property(SERVER_SPLIT_DEBUG_INFO_FILE server SPLIT_DEBUG_INFO_FILE)
+                install(
+                    FILES
+                        ${CLIENT_SPLIT_DEBUG_INFO_FILE}
+                        ${SHADER_SPLIT_DEBUG_INFO_FILE}
+                        ${SERVER_SPLIT_DEBUG_INFO_FILE}
+                    DESTINATION "${SPLIT_DEBUG_INFO_INSTALL_PATH}"
+                )
+            endif()
+        endif()
+    endif()
+endif()
+
+if(NEO_INSTALL_RESOURCES)
+    install(
+        DIRECTORY ${CMAKE_SOURCE_DIR}/../game/
+        DESTINATION "${INSTALL_PATH_PREFIX}-resources"
+    )
+endif()

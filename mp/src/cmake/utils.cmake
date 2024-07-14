@@ -48,10 +48,10 @@ function(target_sources_grouped)
     source_group(${PARSED_ARGS_NAME} FILES ${PARSED_ARGS_FILES})
 endfunction()
 
-function(add_library_copy_and_symlink)
+function(add_library_copy_target)
     cmake_parse_arguments(
         PARSED_ARGS
-        "CREATE_SRV"
+        ""
         "TARGET"
         ""
         ${ARGN}
@@ -72,38 +72,86 @@ function(add_library_copy_and_symlink)
         WORKING_DIRECTORY "${NEO_OUTPUT_LIBRARY_PATH}"
         VERBATIM
     )
-
-    if(OS_LINUX AND PARSED_ARGS_CREATE_SRV)
-        add_custom_command(
-            OUTPUT ${PARSED_ARGS_TARGET}_copy_lib_command APPEND
-            COMMAND ln -sf ${PARSED_ARGS_TARGET}.so ${PARSED_ARGS_TARGET}_srv.so
-            VERBATIM
-        )
-    endif()
-
-    set_source_files_properties(${PARSED_ARGS_TARGET}_copy_lib_command PROPERTIES SYMBOLIC "true")
 endfunction()
 
-add_custom_command(
-    OUTPUT
-        ${CMAKE_SOURCE_DIR}/../game/neo/resource/GameMenu.res
-        ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.h
-        ALL
-    COMMAND
-        ${CMAKE_COMMAND}
-            -D OS_BUILD=${CMAKE_SYSTEM_NAME}
-            -D COMPILER_ID=${CMAKE_CXX_COMPILER_ID}
-            -D COMPILER_VERSION=${CMAKE_CXX_COMPILER_VERSION}
-            -P ${CMAKE_SOURCE_DIR}/cmake/build_info.cmake
-    WORKING_DIRECTORY
-        ${CMAKE_SOURCE_DIR}
-)
+# Used by split_debug_information
+if(NOT MSVC)
+    include(CMakeFindBinUtils)
+endif()
 
-# rebuild GameMenu.res + neo_version_info.h every time
-add_custom_target(
-    get_build_info
-    ALL
-    DEPENDS
-        ${CMAKE_SOURCE_DIR}/../game/neo/resource/GameMenu.res
-        ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.h
-)
+function(split_debug_information)
+    cmake_parse_arguments(
+        PARSED_ARGS
+        ""
+        "TARGET"
+        ""
+        ${ARGN}
+    )
+
+    if(MSVC)
+        # MSVC splits debug information by itself
+        return()
+    elseif(NOT CMAKE_OBJCOPY)
+        message(FATAL_ERROR "'objcopy' is not found")
+    elseif(NOT CMAKE_STRIP)
+        message(FATAL_ERROR "'strip' is not found")
+    endif()
+
+    # If the linker doesn't support --compress-debug-sections=zlib, check if objcopy supports --compress-debug-sections
+    if(LDFLAG_--compress-debug-sections)
+        # ld supports --compress-debug-sections=zlib.
+        set(OBJCOPY_COMPRESS_DEBUG_SECTIONS_PARAM "" CACHE INTERNAL "objcopy parameter to compress debug sections")
+    elseif(NOT LDFLAG_--compress-debug-sections AND NOT DEFINED OBJCOPY_COMPRESS_DEBUG_SECTIONS_PARAM)
+        # Check for objcopy --compress-debug-sections.
+        message(STATUS "Checking if objcopy supports --compress-debug-sections")
+        execute_process(COMMAND ${CMAKE_OBJCOPY} --help
+            OUTPUT_VARIABLE xc_out
+            ERROR_QUIET
+        )
+        if(xc_out MATCHES "--compress-debug-sections")
+            # objcopy has --compress-debug-sections
+            message(STATUS "Checking if objcopy supports --compress-debug-sections - yes")
+            set(OBJCOPY_COMPRESS_DEBUG_SECTIONS_PARAM "--compress-debug-sections" CACHE INTERNAL "objcopy parameter to compress debug sections")
+        else()
+            # objcopy does *not* have --compress-debug-sections
+            message(STATUS "Checking if objcopy supports --compress-debug-sections - no")
+            set(OBJCOPY_COMPRESS_DEBUG_SECTIONS_PARAM "" CACHE INTERNAL "objcopy parameter to compress debug sections")
+        endif()
+        unset(xc_out)
+    endif()
+
+    # NOTE: Prefix expression was simplified - it probably doesn't work for static libraries
+    get_property(TARGET_PREFIX TARGET ${PARSED_ARGS_TARGET} PROPERTY PREFIX)
+    get_property(TARGET_POSTFIX TARGET ${PARSED_ARGS_TARGET} PROPERTY POSTFIX)
+    get_property(TARGET_OUTPUT_NAME TARGET ${PARSED_ARGS_TARGET} PROPERTY OUTPUT_NAME)
+
+    if("${TARGET_OUTPUT_NAME}" STREQUAL "")
+        set(TARGET_OUTPUT_NAME "${PARSED_ARGS_TARGET}")
+    endif()
+
+    set(OUTPUT_NAME_FULL "${TARGET_PREFIX}${TARGET_OUTPUT_NAME}${TARGET_POSTFIX}.debug")
+
+    set(SPLITDEBUG_SOURCE "$<TARGET_FILE:${PARSED_ARGS_TARGET}>")
+    set(SPLITDEBUG_TARGET "$<TARGET_FILE_DIR:${PARSED_ARGS_TARGET}>/${OUTPUT_NAME_FULL}")
+
+    # NOTE: objcopy --strip-debug does NOT fully strip the binary; two sections are left:
+    # - .symtab: Symbol table.
+    # - .strtab: String table.
+    # These sections are split into the .debug file, so there's no reason to keep them in the executable
+    add_custom_command(TARGET ${PARSED_ARGS_TARGET} POST_BUILD
+        COMMAND ${CMAKE_OBJCOPY} --only-keep-debug ${OBJCOPY_COMPRESS_DEBUG_SECTIONS_PARAM} ${SPLITDEBUG_SOURCE} ${SPLITDEBUG_TARGET}
+        COMMAND ${CMAKE_STRIP} ${SPLITDEBUG_SOURCE}
+        COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink="${SPLITDEBUG_TARGET}" ${SPLITDEBUG_SOURCE}
+    )
+
+    # Set the target property to allow installation
+    set_target_properties(${PARSED_ARGS_TARGET} PROPERTIES
+        SPLIT_DEBUG_INFO_FILE ${SPLITDEBUG_TARGET}
+    )
+
+    # Make sure the file is deleted when cleaning
+    set_target_properties(${PARSED_ARGS_TARGET}
+        PROPERTIES
+        ADDITIONAL_CLEAN_FILES ${SPLITDEBUG_TARGET}
+    )
+endfunction()
