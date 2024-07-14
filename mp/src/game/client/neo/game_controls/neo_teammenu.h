@@ -62,7 +62,7 @@ public:
 protected:
     void FindButtons();
     void OnCommand(const char *command);
-    void ChangeMenu(const char* menuName);
+    void CloseMenu();
     void OnKeyCodeReleased(vgui::KeyCode code);
 
     void SetLabelText(const char *textEntryName, const char *text);
