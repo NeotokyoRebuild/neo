@@ -62,8 +62,10 @@ void CNEOHud_GhostUplinkState::ApplySchemeSettings(vgui::IScheme* pScheme)
 void CNEOHud_GhostUplinkState::UpdateStateForNeoHudElementDraw()
 {
 	if (m_iCurrentTextureIndex < (NUM_TEXTURE_START_TIMES - 1)) {
-		if ((gpGlobals->curtime - m_flTimeGhostEquip) >= textureStartTimes[m_iCurrentTextureIndex + 1])
+		static constexpr float textureStartTimes[NUM_TEXTURE_START_TIMES] = { 0, 0.2, 0.5, 0.6, 1.0, 1.1, 1.4, 1.8, 2.5, 2.7, 3.0 };
+		if ((gpGlobals->curtime - m_flTimeGhostEquip) >= textureStartTimes[m_iCurrentTextureIndex + 1]) {
 			m_iCurrentTextureIndex++;
+		}
 	}
 }
 
@@ -85,9 +87,8 @@ void CNEOHud_GhostUplinkState::DrawNeoHudElement()
 		m_flTimeGhostEquip = gpGlobals->curtime;
 	}
 
-	UpdateStateForNeoHudElementDraw();
-
 	surface()->DrawSetColor(COLOR_RED);
+	static constexpr int textureOrder[NUM_TEXTURE_START_TIMES] = { 0, 1, 2, 3, 2, 0, 1, 2, 3, 0, 1 };
 	surface()->DrawSetTexture(m_pUplinkTextures[textureOrder[m_iCurrentTextureIndex]]);
 	surface()->DrawTexturedRect(0, 0, m_iUplinkTextureWidth, m_iUplinkTextureHeight);
 }
