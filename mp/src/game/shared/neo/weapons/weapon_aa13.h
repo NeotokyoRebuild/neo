@@ -25,7 +25,6 @@ public:
 
 	virtual void	ItemPostFrame(void) OVERRIDE;
 	virtual void	PrimaryAttack(void) OVERRIDE;
-	virtual void	SecondaryAttack(void) OVERRIDE { if (!ShootingIsPrevented()) { BaseClass::SecondaryAttack(); } }
 	virtual void	AddViewKick(void) OVERRIDE;
 	void	DryFire(void);
 
@@ -33,8 +32,6 @@ public:
 	virtual int GetNeoWepXPCost(const int neoClass) const OVERRIDE { return 20; }
 
 	virtual float GetSpeedScale(void) const OVERRIDE { return 145.0 / 170.0; }
-
-	Activity GetPrimaryAttackActivity(void) OVERRIDE;
 
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }

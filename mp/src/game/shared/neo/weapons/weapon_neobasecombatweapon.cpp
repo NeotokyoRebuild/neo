@@ -607,8 +607,10 @@ const Vector &CNEOBaseCombatWeapon::GetBulletSpread(void)
 
 void CNEOBaseCombatWeapon::PrimaryAttack(void)
 {
-	Assert(!ShootingIsPrevented());
-
+	if (ShootingIsPrevented())
+	{
+		return;
+	}
 	if (gpGlobals->curtime < m_flSoonestAttack)
 	{
 		return;
@@ -671,6 +673,28 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 	BaseClass::PrimaryAttack();
 
 	m_flAccuracyPenalty = min(GetMaxAccuracyPenalty(), m_flAccuracyPenalty + GetAccuracyPenalty());
+}
+
+void CNEOBaseCombatWeapon::SecondaryAttack()
+{
+	if (!ShootingIsPrevented())
+	{
+		BaseClass::SecondaryAttack();
+	}
+}
+
+Activity CNEOBaseCombatWeapon::GetPrimaryAttackActivity()
+{
+	if (m_nNumShotsFired < 1)
+		return ACT_VM_PRIMARYATTACK;
+
+	if (m_nNumShotsFired < 2)
+		return ACT_VM_RECOIL1;
+
+	if (m_nNumShotsFired < 3)
+		return ACT_VM_RECOIL2;
+
+	return ACT_VM_RECOIL3;
 }
 
 bool CNEOBaseCombatWeapon::CanBePickedUpByClass(int classId)

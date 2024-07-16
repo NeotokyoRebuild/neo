@@ -43,20 +43,6 @@ CWeaponAA13::CWeaponAA13(void)
 	// m_nNumShotsFired = 0;
 }
 
-Activity CWeaponAA13::GetPrimaryAttackActivity()
-{
-	if (m_nNumShotsFired < 1)
-		return ACT_VM_PRIMARYATTACK;
-
-	if (m_nNumShotsFired < 2)
-		return ACT_VM_RECOIL1;
-
-	if (m_nNumShotsFired < 3)
-		return ACT_VM_RECOIL2;
-
-	return ACT_VM_RECOIL3;
-}
-
 void CWeaponAA13::ItemPostFrame()
 {
 	ProcessAnimationEvents();
@@ -120,8 +106,10 @@ void CWeaponAA13::DryFire()
 void CWeaponAA13::PrimaryAttack(void)
 {
 	// Combo of the neobasecombatweapon and the Supa7 attack
-	Assert(!ShootingIsPrevented());
-
+	if (ShootingIsPrevented())
+	{
+		return;
+	}
 	if (gpGlobals->curtime < m_flSoonestAttack)
 	{
 		return;

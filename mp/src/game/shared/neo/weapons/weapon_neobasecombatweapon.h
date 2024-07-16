@@ -150,6 +150,9 @@ public:
 	virtual void ItemPostFrame(void) override;
 
 	virtual void PrimaryAttack(void) override;
+	virtual void SecondaryAttack(void) override;
+
+	virtual Activity GetPrimaryAttackActivity(void) override;
 #ifdef CLIENT_DLL
 	void DispatchMuzzleParticleEffect(int iAttachment);
 	virtual void ProcessMuzzleFlashEvent(void) override;

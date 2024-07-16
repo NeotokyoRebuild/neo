@@ -34,12 +34,8 @@ public:
 	CWeaponMilso();
 
 	void	ItemPostFrame(void);
-	virtual void	PrimaryAttack(void) OVERRIDE { if (!ShootingIsPrevented()) { BaseClass::PrimaryAttack(); } }
-	virtual void	SecondaryAttack(void) OVERRIDE { if (!ShootingIsPrevented()) { BaseClass::SecondaryAttack(); } }
 	void	AddViewKick(void);
 	void	DryFire(void);
-
-	Activity	GetPrimaryAttackActivity(void);
 
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { return NEO_WEP_MILSO | NEO_WEP_SUPPRESSED; }
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }

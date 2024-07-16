@@ -34,8 +34,6 @@ public:
 	CWeaponPZ();
 
 	void	ItemPostFrame(void);
-	virtual void	PrimaryAttack(void) OVERRIDE { if (!ShootingIsPrevented()) { BaseClass::PrimaryAttack(); } }
-	virtual void	SecondaryAttack(void) OVERRIDE { if (!ShootingIsPrevented()) { BaseClass::SecondaryAttack(); } }
 	void	AddViewKick(void);
 	void	DryFire(void);
 
@@ -43,8 +41,6 @@ public:
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 20; }
 
 	virtual float GetSpeedScale(void) const { return 108.0 / 136.0; }
-
-	Activity	GetPrimaryAttackActivity(void);
 
 	bool CanBePickedUpByClass(int classId) OVERRIDE;
 protected:

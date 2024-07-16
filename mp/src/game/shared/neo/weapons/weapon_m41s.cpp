@@ -45,26 +45,6 @@ void CWeaponM41S::ItemPostFrame()
 	BaseClass::ItemPostFrame();
 }
 
-Activity CWeaponM41S::GetPrimaryAttackActivity()
-{
-	if (m_nNumShotsFired < 1)
-	{
-		return ACT_VM_PRIMARYATTACK;
-	}
-
-	if (m_nNumShotsFired < 2)
-	{
-		return ACT_VM_RECOIL1;
-	}
-
-	if (m_nNumShotsFired < 3)
-	{
-		return ACT_VM_RECOIL2;
-	}
-
-	return ACT_VM_RECOIL3;
-}
-
 void CWeaponM41S::AddViewKick()
 {
 	auto pOwner = ToBasePlayer(GetOwner());

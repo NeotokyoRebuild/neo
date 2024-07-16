@@ -34,8 +34,6 @@ public:
 	CWeaponM41L();
 
 	virtual void	ItemPostFrame(void) OVERRIDE;
-	virtual void	PrimaryAttack(void) OVERRIDE { if (!ShootingIsPrevented()) { BaseClass::PrimaryAttack(); } }
-	virtual void	SecondaryAttack(void) OVERRIDE { if (!ShootingIsPrevented()) { BaseClass::SecondaryAttack(); } }
 	virtual void	AddViewKick(void) OVERRIDE;
 	void	DryFire(void);
 
@@ -43,8 +41,6 @@ public:
 	virtual int GetNeoWepXPCost(const int neoClass) const OVERRIDE { return 0; }
 
 	virtual float GetSpeedScale(void) const OVERRIDE { return 145.0 / 170.0; }
-
-	virtual Activity	GetPrimaryAttackActivity(void) OVERRIDE;
 
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }

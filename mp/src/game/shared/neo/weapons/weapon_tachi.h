@@ -35,12 +35,8 @@ public:
 	CWeaponTachi();
 
 	void	ItemPostFrame( void );
-	virtual void	PrimaryAttack(void) OVERRIDE { if (!ShootingIsPrevented()) { BaseClass::PrimaryAttack(); } }
-	virtual void	SecondaryAttack(void) OVERRIDE { if (!ShootingIsPrevented()) { BaseClass::SecondaryAttack(); } }
 	void	AddViewKick( void );
 	void	DryFire( void );
-
-	Activity	GetPrimaryAttackActivity( void );
 
     virtual void SwitchFireMode( void );
     virtual void ForceSetFireMode( bool bPrimaryMode,

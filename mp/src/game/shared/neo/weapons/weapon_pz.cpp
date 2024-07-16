@@ -73,26 +73,6 @@ void CWeaponPZ::ItemPostFrame()
 	}
 }
 
-Activity CWeaponPZ::GetPrimaryAttackActivity()
-{
-	if (m_nNumShotsFired < 1)
-	{
-		return ACT_VM_PRIMARYATTACK;
-	}
-
-	if (m_nNumShotsFired < 2)
-	{
-		return ACT_VM_RECOIL1;
-	}
-
-	if (m_nNumShotsFired < 3)
-	{
-		return ACT_VM_RECOIL2;
-	}
-
-	return ACT_VM_RECOIL3;
-}
-
 bool CWeaponPZ::CanBePickedUpByClass(int classId)
 {
 	return classId != NEO_CLASS_RECON;

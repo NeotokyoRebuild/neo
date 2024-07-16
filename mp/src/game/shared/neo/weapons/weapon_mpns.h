@@ -34,8 +34,6 @@ public:
 	CWeaponMPN_S();
 
 	void	ItemPostFrame(void);
-	virtual void	PrimaryAttack(void) OVERRIDE { if (!ShootingIsPrevented()) { BaseClass::PrimaryAttack(); } }
-	virtual void	SecondaryAttack(void) OVERRIDE { if (!ShootingIsPrevented()) { BaseClass::SecondaryAttack(); } }
 	void	AddViewKick(void);
 	void	DryFire(void);
 
@@ -45,8 +43,6 @@ public:
 	virtual float GetSpeedScale(void) const { return 1.0; }
 
 	void	UpdatePenaltyTime(void);
-
-	Activity	GetPrimaryAttackActivity(void);
 
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }

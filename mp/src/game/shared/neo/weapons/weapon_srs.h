@@ -36,7 +36,6 @@ public:
 	void	ItemPostFrame(void);
 	void	ItemPreFrame(void);
 	void	PrimaryAttack(void) OVERRIDE;
-	virtual void	SecondaryAttack(void) OVERRIDE { if (!ShootingIsPrevented()) { BaseClass::SecondaryAttack(); } }
 	virtual bool	Reload(void) OVERRIDE { if (auto owner = ToBasePlayer(GetOwner())) { if (!(owner->m_nButtons & IN_ATTACK)) { return BaseClass::Reload(); } return false; } return false; }
 	virtual void	FinishReload(void) OVERRIDE { m_bRoundChambered = true; BaseClass::FinishReload(); }
 	void	AddViewKick(void);
@@ -46,8 +45,6 @@ public:
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 20; }
 
 	virtual float GetSpeedScale(void) const { return 116.0 / 136.0; }
-
-	Activity	GetPrimaryAttackActivity(void);
 
 	float m_flChamberFinishTime = maxfloat16bits;
 protected:
