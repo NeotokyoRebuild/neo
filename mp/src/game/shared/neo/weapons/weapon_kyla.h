@@ -27,7 +27,7 @@ public:
 
 	virtual void	PrimaryAttack(void) OVERRIDE;
 	virtual void	SecondaryAttack(void) OVERRIDE { if (!ShootingIsPrevented()) { BaseClass::SecondaryAttack(); } }
-	
+
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { return NEO_WEP_KYLA; }
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
 
@@ -35,8 +35,6 @@ public:
 
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
-	virtual float GetAccuracyPenalty() const OVERRIDE { return 0.2f; }
-	virtual float GetMaxAccuracyPenalty() const OVERRIDE { return 0.5f; }
 
 private:
 	CWeaponKyla(const CWeaponKyla &other);

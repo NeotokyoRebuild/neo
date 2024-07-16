@@ -38,38 +38,6 @@ void CWeaponM41::DryFire()
 	m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
 }
 
-void CWeaponM41::UpdatePenaltyTime()
-{
-	auto owner = ToBasePlayer(GetOwner());
-
-	if (!owner)
-	{
-		return;
-	}
-
-	if (((owner->m_nButtons & IN_ATTACK) == false) &&
-		(m_flSoonestAttack < gpGlobals->curtime))
-	{
-		m_flAccuracyPenalty -= gpGlobals->frametime;
-		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty,
-			0.0f, GetMaxAccuracyPenalty());
-	}
-}
-
-void CWeaponM41::ItemPreFrame()
-{
-	UpdatePenaltyTime();
-
-	BaseClass::ItemPreFrame();
-}
-
-void CWeaponM41::ItemBusyFrame()
-{
-	UpdatePenaltyTime();
-
-	BaseClass::ItemBusyFrame();
-}
-
 void CWeaponM41::ItemPostFrame()
 {
 	ProcessAnimationEvents();

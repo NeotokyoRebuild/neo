@@ -24,7 +24,7 @@ class CWeaponTachi : public CNEOBaseCombatWeapon
 {
 	DECLARE_CLASS(CWeaponTachi, CNEOBaseCombatWeapon);
 public:
-	DECLARE_NETWORKCLASS(); 
+	DECLARE_NETWORKCLASS();
 	DECLARE_PREDICTABLE();
 
 #ifdef GAME_DLL
@@ -34,16 +34,11 @@ public:
 
 	CWeaponTachi();
 
-	void	Precache( void );
 	void	ItemPostFrame( void );
-	void	ItemPreFrame( void );
-	void	ItemBusyFrame( void );
 	virtual void	PrimaryAttack(void) OVERRIDE { if (!ShootingIsPrevented()) { BaseClass::PrimaryAttack(); } }
 	virtual void	SecondaryAttack(void) OVERRIDE { if (!ShootingIsPrevented()) { BaseClass::SecondaryAttack(); } }
 	void	AddViewKick( void );
 	void	DryFire( void );
-
-	void	UpdatePenaltyTime( void );
 
 	Activity	GetPrimaryAttackActivity( void );
 
@@ -55,7 +50,7 @@ public:
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
 
 	virtual float GetSpeedScale(void) const { return 1.0; }
-	
+
 	virtual int	GetMinBurst() OVERRIDE { return 1; }
 	virtual int	GetMaxBurst() OVERRIDE { return 3; }
 
@@ -66,8 +61,6 @@ public:
 
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
-	virtual float GetAccuracyPenalty() const OVERRIDE { return 0.2f; }
-	virtual float GetMaxAccuracyPenalty() const OVERRIDE { return 1.5f; }
 
 private:
 	CNetworkVar(float, m_flSoonestFiremodeSwitch);

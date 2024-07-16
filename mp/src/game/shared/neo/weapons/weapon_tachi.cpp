@@ -55,11 +55,6 @@ CWeaponTachi::CWeaponTachi()
 	m_bIsPrimaryFireMode = true;
 }
 
-void CWeaponTachi::Precache(void)
-{
-	BaseClass::Precache();
-}
-
 void CWeaponTachi::DryFire(void)
 {
 	WeaponSound(EMPTY);
@@ -98,47 +93,6 @@ void CWeaponTachi::ForceSetFireMode( bool bPrimaryMode, bool bPlaySound,
 	}
 }
 
-void CWeaponTachi::UpdatePenaltyTime( void )
-{
-	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
-
-	if ( pOwner == NULL )
-		return;
-
-	// Check our penalty time decay
-	if ( ( pOwner->m_nButtons & IN_ATTACK ) == false )
-	{
-		if (m_flSoonestAttack < gpGlobals->curtime)
-		{
-			m_flAccuracyPenalty -= gpGlobals->frametime;
-			m_flAccuracyPenalty = clamp(m_flAccuracyPenalty, 0.0f, GetMaxAccuracyPenalty());
-		}
-	}
-	else
-	{
-		m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
-	}
-
-	if (m_flSoonestAttack > gpGlobals->curtime)
-	{
-		m_flSoonestAttack -= (gpGlobals->curtime - m_flLastAttackTime);
-	}
-}
-
-void CWeaponTachi::ItemPreFrame( void )
-{
-	UpdatePenaltyTime();
-
-	BaseClass::ItemPreFrame();
-}
-
-void CWeaponTachi::ItemBusyFrame( void )
-{
-	UpdatePenaltyTime();
-
-	BaseClass::ItemBusyFrame();
-}
-
 void CWeaponTachi::ItemPostFrame( void )
 {
 	ProcessAnimationEvents();
@@ -155,7 +109,7 @@ void CWeaponTachi::ItemPostFrame( void )
 	if ( pOwner == NULL )
 	{
 		return;
-	}	
+	}
 
 	if ( (pOwner->m_nButtons & IN_ATTACK2) && (!(pOwner->m_afButtonLast & IN_ATTACK2)) )
 	{
@@ -171,7 +125,7 @@ void CWeaponTachi::ItemPostFrame( void )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 // Output : int
 //-----------------------------------------------------------------------------
 Activity CWeaponTachi::GetPrimaryAttackActivity( void )
@@ -189,12 +143,12 @@ Activity CWeaponTachi::GetPrimaryAttackActivity( void )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //-----------------------------------------------------------------------------
 void CWeaponTachi::AddViewKick( void )
 {
 	CBasePlayer *pPlayer  = ToBasePlayer( GetOwner() );
-	
+
 	if ( pPlayer == NULL )
 		return;
 

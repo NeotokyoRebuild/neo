@@ -56,15 +56,13 @@ public:
 	void PrimaryAttack(void);
 	void SecondaryAttack(void);
 	void DryFire(void);
-	
+
 	void Drop(const Vector& vecVelocity) OVERRIDE;
 
 	void ClearDelayedInputs(void);
 
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
-	virtual float GetAccuracyPenalty() const OVERRIDE { return 0; }
-	virtual float GetMaxAccuracyPenalty() const OVERRIDE { return 0; }
 
 private:
 	// Purpose: Only update next attack time if it's further away in the future.

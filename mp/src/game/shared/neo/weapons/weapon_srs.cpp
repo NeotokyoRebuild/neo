@@ -38,16 +38,6 @@ void CWeaponSRS::DryFire()
 	m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
 }
 
-void CWeaponSRS::Spawn()
-{
-	BaseClass::Spawn();
-}
-
-bool CWeaponSRS::Deploy(void)
-{
-	return BaseClass::Deploy();
-}
-
 void CWeaponSRS::PrimaryAttack(void)
 {
 	if (!ShootingIsPrevented() && GetRoundChambered()) {
@@ -58,29 +48,8 @@ void CWeaponSRS::PrimaryAttack(void)
 	}
 }
 
-void CWeaponSRS::UpdatePenaltyTime()
-{
-	auto owner = ToBasePlayer(GetOwner());
-
-	if (!owner)
-	{
-		return;
-	}
-
-	if ((owner->m_nButtons & IN_ATTACK) == false)
-	{
-		if (m_flSoonestAttack < gpGlobals->curtime)
-		{ 
-			m_flAccuracyPenalty -= gpGlobals->frametime;
-			m_flAccuracyPenalty = clamp(m_flAccuracyPenalty, 0.0f, GetMaxAccuracyPenalty());
-		}
-	}
-}
-
 void CWeaponSRS::ItemPreFrame()
 {
-	UpdatePenaltyTime();
-
 	if (m_flChamberFinishTime <= gpGlobals->curtime && m_bRoundBeingChambered == true)
 	{ // Finished chambering a round, enable Primary attack
 		m_bRoundBeingChambered = false;
@@ -104,13 +73,6 @@ void CWeaponSRS::ItemPreFrame()
 	}
 
 	BaseClass::ItemPreFrame();
-}
-
-void CWeaponSRS::ItemBusyFrame()
-{
-	UpdatePenaltyTime();
-
-	BaseClass::ItemBusyFrame();
 }
 
 void CWeaponSRS::ItemPostFrame()

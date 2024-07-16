@@ -57,38 +57,6 @@ Activity CWeaponAA13::GetPrimaryAttackActivity()
 	return ACT_VM_RECOIL3;
 }
 
-void CWeaponAA13::UpdatePenaltyTime()
-{
-	auto owner = ToBasePlayer(GetOwner());
-
-	if (!owner)
-	{
-		return;
-	}
-
-	if (((owner->m_nButtons & IN_ATTACK) == false) &&
-		(m_flSoonestAttack < gpGlobals->curtime))
-	{
-		// Update the penalty time decay
-		m_flAccuracyPenalty -= gpGlobals->frametime;
-		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty, 0.0f, GetMaxAccuracyPenalty());
-	}
-}
-
-void CWeaponAA13::ItemPreFrame()
-{
-	UpdatePenaltyTime();
-
-	BaseClass::ItemPreFrame();
-}
-
-void CWeaponAA13::ItemBusyFrame()
-{
-	UpdatePenaltyTime();
-
-	BaseClass::ItemBusyFrame();
-}
-
 void CWeaponAA13::ItemPostFrame()
 {
 	ProcessAnimationEvents();

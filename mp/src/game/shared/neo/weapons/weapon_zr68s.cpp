@@ -38,47 +38,6 @@ void CWeaponZR68S::DryFire()
 	m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
 }
 
-void CWeaponZR68S::Spawn()
-{
-	BaseClass::Spawn();
-}
-
-bool CWeaponZR68S::Deploy(void)
-{
-	return BaseClass::Deploy();
-}
-
-void CWeaponZR68S::UpdatePenaltyTime()
-{
-	auto owner = ToBasePlayer(GetOwner());
-
-	if (!owner)
-	{
-		return;
-	}
-
-	if (((owner->m_nButtons & IN_ATTACK) == false) &&
-		(m_flSoonestAttack < gpGlobals->curtime))
-	{
-		m_flAccuracyPenalty -= gpGlobals->frametime;
-		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty, 0.0f, GetMaxAccuracyPenalty());
-	}
-}
-
-void CWeaponZR68S::ItemPreFrame()
-{
-	UpdatePenaltyTime();
-
-	BaseClass::ItemPreFrame();
-}
-
-void CWeaponZR68S::ItemBusyFrame()
-{
-	UpdatePenaltyTime();
-
-	BaseClass::ItemBusyFrame();
-}
-
 void CWeaponZR68S::ItemPostFrame()
 {
 	ProcessAnimationEvents();

@@ -27,17 +27,7 @@ CWeaponMilso::CWeaponMilso()
 	m_flSoonestAttack = gpGlobals->curtime;
 	m_flAccuracyPenalty = 0.0f;
 
-	m_fMinRange1 = 24;
-	m_fMaxRange2 = 1500;
-	m_fMinRange2 = 24;
-	m_fMaxRange2 = 200;
-
 	m_bFiresUnderwater = true;
-}
-
-void CWeaponMilso::Precache(void)
-{
-	BaseClass::Precache();
 }
 
 void CWeaponMilso::DryFire(void)
@@ -46,47 +36,6 @@ void CWeaponMilso::DryFire(void)
 	SendWeaponAnim(ACT_VM_DRYFIRE);
 
 	m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
-}
-
-void CWeaponMilso::UpdatePenaltyTime(void)
-{
-	CBasePlayer *pOwner = ToBasePlayer(GetOwner());
-
-	if (pOwner == NULL)
-		return;
-
-	// Check our penalty time decay
-	if ((pOwner->m_nButtons & IN_ATTACK) == false)
-	{
-		if (m_flSoonestAttack < gpGlobals->curtime)
-		{
-			m_flAccuracyPenalty -= gpGlobals->frametime;
-			m_flAccuracyPenalty = clamp(m_flAccuracyPenalty, 0.0f, GetMaxAccuracyPenalty());
-		}
-	}
-	else
-	{
-		m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
-	}
-
-	if (m_flSoonestAttack > gpGlobals->curtime)
-	{
-		m_flSoonestAttack -= (gpGlobals->curtime - m_flLastAttackTime);
-	}
-}
-
-void CWeaponMilso::ItemPreFrame(void)
-{
-	UpdatePenaltyTime();
-
-	BaseClass::ItemPreFrame();
-}
-
-void CWeaponMilso::ItemBusyFrame(void)
-{
-	UpdatePenaltyTime();
-
-	BaseClass::ItemBusyFrame();
 }
 
 void CWeaponMilso::ItemPostFrame(void)

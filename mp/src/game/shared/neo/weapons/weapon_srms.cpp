@@ -38,48 +38,6 @@ void CWeaponSRM_S::DryFire()
 	m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
 }
 
-void CWeaponSRM_S::Spawn()
-{
-	BaseClass::Spawn();
-}
-
-bool CWeaponSRM_S::Deploy(void)
-{
-	return BaseClass::Deploy();
-}
-
-void CWeaponSRM_S::UpdatePenaltyTime()
-{
-	auto owner = ToBasePlayer(GetOwner());
-
-	if (!owner)
-	{
-		return;
-	}
-
-	if (((owner->m_nButtons & IN_ATTACK) == false) &&
-		(m_flSoonestAttack < gpGlobals->curtime))
-	{
-		m_flAccuracyPenalty -= gpGlobals->frametime;
-		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty,
-			0.0f, GetMaxAccuracyPenalty());
-	}
-}
-
-void CWeaponSRM_S::ItemPreFrame()
-{
-	UpdatePenaltyTime();
-
-	BaseClass::ItemPreFrame();
-}
-
-void CWeaponSRM_S::ItemBusyFrame()
-{
-	UpdatePenaltyTime();
-
-	BaseClass::ItemBusyFrame();
-}
-
 void CWeaponSRM_S::ItemPostFrame()
 {
 	ProcessAnimationEvents();

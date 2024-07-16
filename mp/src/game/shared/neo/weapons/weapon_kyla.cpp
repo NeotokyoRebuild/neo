@@ -111,6 +111,8 @@ void CWeaponKyla::PrimaryAttack(void)
 		// HEV suit - indicate out of ammo condition
 		pPlayer->SetSuitUpdate("!HEV_AMO0", FALSE, 0);
 	}
+
+	m_flAccuracyPenalty = min(GetMaxAccuracyPenalty(), m_flAccuracyPenalty + GetAccuracyPenalty());
 }
 
 void CWeaponKyla::ItemPostFrame()

@@ -23,11 +23,7 @@ public:
 
 	CWeaponAA13(void);
 
-	void UpdatePenaltyTime(void);
-
 	virtual void	ItemPostFrame(void) OVERRIDE;
-	virtual void	ItemPreFrame(void) OVERRIDE;
-	virtual void	ItemBusyFrame(void) OVERRIDE;
 	virtual void	PrimaryAttack(void) OVERRIDE;
 	virtual void	SecondaryAttack(void) OVERRIDE { if (!ShootingIsPrevented()) { BaseClass::SecondaryAttack(); } }
 	virtual void	AddViewKick(void) OVERRIDE;
@@ -39,12 +35,8 @@ public:
 	virtual float GetSpeedScale(void) const OVERRIDE { return 145.0 / 170.0; }
 
 	Activity GetPrimaryAttackActivity(void) OVERRIDE;
-	
-	virtual const Vector& GetBulletSpread(void) OVERRIDE { static const Vector cone = VECTOR_CONE_7DEGREES; return cone; };
 
 protected:
-	virtual float GetAccuracyPenalty() const OVERRIDE { return 0.2f; }
-	virtual float GetMaxAccuracyPenalty() const OVERRIDE { return 1.5f; }
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
 
 private:

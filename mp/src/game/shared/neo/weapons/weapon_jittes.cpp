@@ -38,48 +38,6 @@ void CWeaponJitteS::DryFire()
 	m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
 }
 
-void CWeaponJitteS::Spawn()
-{
-	BaseClass::Spawn();
-}
-
-bool CWeaponJitteS::Deploy(void)
-{
-	return BaseClass::Deploy();
-}
-
-void CWeaponJitteS::UpdatePenaltyTime()
-{
-	auto owner = ToBasePlayer(GetOwner());
-
-	if (!owner)
-	{
-		return;
-	}
-
-	if (((owner->m_nButtons & IN_ATTACK) == false) &&
-		(m_flSoonestAttack < gpGlobals->curtime))
-	{
-		m_flAccuracyPenalty -= gpGlobals->frametime;
-		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty,
-			0.0f, GetMaxAccuracyPenalty());
-	}
-}
-
-void CWeaponJitteS::ItemPreFrame()
-{
-	UpdatePenaltyTime();
-
-	BaseClass::ItemPreFrame();
-}
-
-void CWeaponJitteS::ItemBusyFrame()
-{
-	UpdatePenaltyTime();
-
-	BaseClass::ItemBusyFrame();
-}
-
 void CWeaponJitteS::ItemPostFrame()
 {
 	ProcessAnimationEvents();

@@ -34,15 +34,10 @@ public:
 	CWeaponMPN_S();
 
 	void	ItemPostFrame(void);
-	void	ItemPreFrame(void);
-	void	ItemBusyFrame(void);
 	virtual void	PrimaryAttack(void) OVERRIDE { if (!ShootingIsPrevented()) { BaseClass::PrimaryAttack(); } }
 	virtual void	SecondaryAttack(void) OVERRIDE { if (!ShootingIsPrevented()) { BaseClass::SecondaryAttack(); } }
 	void	AddViewKick(void);
 	void	DryFire(void);
-
-	virtual void Spawn(void);
-	virtual bool Deploy(void);
 
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { return NEO_WEP_MPN_S | NEO_WEP_SUPPRESSED; }
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
@@ -55,8 +50,6 @@ public:
 
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
-	virtual float GetAccuracyPenalty() const OVERRIDE { return 0.025f; }
-	virtual float GetMaxAccuracyPenalty() const OVERRIDE { return 0.5f; }
 
 private:
 	CWeaponMPN_S(const CWeaponMPN_S &other);
