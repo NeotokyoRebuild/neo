@@ -971,15 +971,18 @@ void CNEORules::StartNextRound()
 
 	DevMsg("New round start here!\n");
 }
+#endif
 
 bool CNEORules::IsRoundOver() const
 {
+#ifdef GAME_DLL
 	// We don't want to start preparing for a new round
 	// if the game has ended for the current map.
 	if (g_fGameOver)
 	{
 		return false;
 	}
+#endif
 
 	// Next round start has been scheduled, so current round must be over.
 	if (m_flNeoNextRoundStartTime != 0)
@@ -990,7 +993,6 @@ bool CNEORules::IsRoundOver() const
 
 	return false;
 }
-#endif
 
 void CNEORules::CreateStandardEntities(void)
 {

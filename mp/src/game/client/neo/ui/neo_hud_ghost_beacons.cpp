@@ -94,9 +94,10 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 	}
 
 	auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if (localPlayer->GetTeamNumber() < FIRST_GAME_TEAM || !localPlayer->IsAlive())
+	if (localPlayer->GetTeamNumber() < FIRST_GAME_TEAM || !localPlayer->IsAlive() || NEORules()->IsRoundOver())
 	{
 		// NEO NOTE (nullsystem): Spectator and dead players even in spec shouldn't see beacons
+		// Post-round also should switch off beacon
 		return;
 	}
 

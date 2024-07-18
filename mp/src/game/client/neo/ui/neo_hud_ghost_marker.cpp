@@ -92,7 +92,7 @@ void CNEOHud_GhostMarker::UpdateStateForNeoHudElementDraw()
 
 void CNEOHud_GhostMarker::DrawNeoHudElement()
 {
-	if (!ShouldDraw())
+	if (!ShouldDraw() || NEORules()->IsRoundOver())
 	{
 		return;
 	}

@@ -74,7 +74,7 @@ void CNEOHud_GhostCapPoint::UpdateStateForNeoHudElementDraw()
 
 void CNEOHud_GhostCapPoint::DrawNeoHudElement()
 {
-	if (!ShouldDraw())
+	if (!ShouldDraw() || NEORules()->IsRoundOver())
 	{
 		return;
 	}

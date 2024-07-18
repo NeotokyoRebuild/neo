@@ -213,8 +213,6 @@ public:
 	CNetworkVar(int, m_iNeoSkin);
 	CNetworkVar(int, m_iNeoStar);
 
-	CNetworkVar(int, m_iCapTeam);
-
 	CNetworkVar(int, m_iXP);
 
 	CNetworkVar(int, m_iLoadoutWepChoice);

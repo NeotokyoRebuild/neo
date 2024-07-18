@@ -193,8 +193,8 @@ public:
 	virtual float FlPlayerFallDamage(CBasePlayer* pPlayer) OVERRIDE;
 #endif
 
-#ifdef GAME_DLL
 	bool IsRoundOver() const;
+#ifdef GAME_DLL
 	void StartNextRound();
 
 	virtual const char* GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer) OVERRIDE;
