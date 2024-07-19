@@ -46,6 +46,10 @@ public:
 	bool IsPosWithinViewDistance(const Vector &otherPlayerPos, float &dist);
 	float DistanceToPos(const Vector& otherPlayerPos);
 
+#ifdef GAME_DLL
+	int UpdateTransmitState() override;
+#endif
+
 #if _DEBUG
 	virtual void SUB_Remove(void) override
 	{

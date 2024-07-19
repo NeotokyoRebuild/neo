@@ -56,6 +56,13 @@ void CWeaponGhost::ItemPreFrame(void)
 #endif
 }
 
+#ifdef GAME_DLL
+int CWeaponGhost::UpdateTransmitState()
+{
+	return FL_EDICT_ALWAYS;
+}
+#endif
+
 #ifdef CLIENT_DLL
 void CWeaponGhost::HandleGhostEquip(void)
 {

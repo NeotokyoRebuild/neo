@@ -14,6 +14,8 @@
 
 #include <engine/ivdebugoverlay.h>
 #include "ienginevgui.h"
+#include "prediction.h"
+#include "weapon_ghost.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "neo_hud_worldpos_marker.h"
@@ -89,6 +91,10 @@ void CNEOHud_GhostMarker::ApplySchemeSettings(vgui::IScheme *pScheme)
 
 void CNEOHud_GhostMarker::UpdateStateForNeoHudElementDraw()
 {
+	if (m_ghostInPVS && NEORules()->IsRoundOver())
+	{
+		m_ghostInPVS = nullptr;
+	}
 	const float flDistMeters = METERS_PER_INCH * C_NEO_Player::GetLocalPlayer()->GetAbsOrigin().DistTo(NEORules()->GetGhostPos());
 	V_snprintf(m_szMarkerText, sizeof(m_szMarkerText), "GHOST DISTANCE: %.0fm", flDistMeters);
 	g_pVGuiLocalize->ConvertANSIToUnicode(m_szMarkerText, m_wszMarkerTextUnicode, sizeof(m_wszMarkerTextUnicode));
@@ -96,18 +102,33 @@ void CNEOHud_GhostMarker::UpdateStateForNeoHudElementDraw()
 
 void CNEOHud_GhostMarker::DrawNeoHudElement()
 {
-	if (!ShouldDraw())
+	if (!ShouldDraw() || NEORules()->IsRoundOver())
 	{
 		return;
 	}
 
+	// NOTE (nullsystem): m_ghostInPVS: To workaround the SDK not easily just giving us the ghost entity when it's
+	// in PVS, we'll just try to get it when possible. Considering the ghost is typically stationary until the
+	// first player fetches the ghost, it'll be fine relying on server-side position till that point.
+	// Once a player carrys the ghost, get the ghost pointer and hold it until the round is over. The ghost is
+	// always in PVS as it's marked as such. Preferring PVS is purely so the visual can be much smoother to look at.
+
+	const bool ghostExists = NEORules()->GhostExists();
 	const auto localPlayer = static_cast<C_NEO_Player *>(C_NEO_Player::GetLocalPlayer());
-	bool hideGhostMarker = (!NEORules()->GhostExists() || localPlayer->IsCarryingGhost());
+	bool hideGhostMarker = (!ghostExists || localPlayer->IsCarryingGhost());
+	if (!m_ghostInPVS && ghostExists && localPlayer->IsCarryingGhost())
+	{
+		m_ghostInPVS = static_cast<C_WeaponGhost *>(GetNeoWepWithBits(localPlayer, NEO_WEP_GHOST));
+	}
 	if (!hideGhostMarker && (localPlayer->GetObserverMode() == OBS_MODE_IN_EYE))
 	{
 		// NEO NOTE (nullsystem): Skip this if we're observing a player in first person
 		auto *pTargetPlayer = dynamic_cast<C_NEO_Player *>(localPlayer->GetObserverTarget());
 		hideGhostMarker = (pTargetPlayer && !pTargetPlayer->IsObserver() && pTargetPlayer->IsCarryingGhost());
+		if (!m_ghostInPVS && hideGhostMarker)
+		{
+			m_ghostInPVS = static_cast<C_WeaponGhost *>(GetNeoWepWithBits(pTargetPlayer, NEO_WEP_GHOST));
+		}
 	}
 	if (hideGhostMarker)
 	{
@@ -135,16 +156,23 @@ void CNEOHud_GhostMarker::DrawNeoHudElement()
 		}
 	}
 
-	int iPosX, iPosY;
-	Vector ghostPos = NEORules()->GetGhostPos();
 	// Use PVS over networked-given position if possible as it'll give a smoother visual
+	int iPosX, iPosY;
+	Vector ghostPos = (m_ghostInPVS && m_ghostInPVS->IsVisible()) ?
+				m_ghostInPVS->GetAbsOrigin() : NEORules()->GetGhostPos();
 	if (const int ghosterPlayerIdx = NEORules()->GetGhosterPlayer();
 			ghosterPlayerIdx > 0)
 	{
-		if (auto ghosterPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(ghosterPlayerIdx));
-				ghosterPlayer->IsVisible())
+		if (auto ghosterPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(ghosterPlayerIdx)))
 		{
-			ghostPos = ghosterPlayer->EyePosition();
+			if (ghosterPlayer->IsVisible())
+			{
+				ghostPos = ghosterPlayer->EyePosition();
+			}
+			if (!m_ghostInPVS)
+			{
+				m_ghostInPVS = static_cast<C_WeaponGhost *>(GetNeoWepWithBits(ghosterPlayer, NEO_WEP_GHOST));
+			}
 		}
 	}
 	GetVectorInScreenSpace(ghostPos, iPosX, iPosY);

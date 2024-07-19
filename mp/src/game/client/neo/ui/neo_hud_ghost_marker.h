@@ -10,6 +10,8 @@
 
 #include "neo_hud_worldpos_marker.h"
 
+class C_WeaponGhost;
+
 class CNEOHud_GhostMarker : public CNEOHud_WorldPosMarker
 {
 	DECLARE_CLASS_SIMPLE(CNEOHud_GhostMarker, CNEOHud_WorldPosMarker)
@@ -26,6 +28,7 @@ protected:
 	virtual ConVar *GetUpdateFrequencyConVar() const override;
 
 private:
+	C_WeaponGhost *m_ghostInPVS = nullptr;
 	float m_fMarkerScalesStart[4] = { 0.78f, 0.6f, 0.38f, 0.0f };
 	float m_fMarkerScalesCurrent[4] = { 0.78f, 0.6f, 0.38f, 0.0f };
 	int m_iMarkerTexWidth, m_iMarkerTexHeight;

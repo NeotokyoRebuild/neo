@@ -82,6 +82,7 @@ public:
 #ifdef GAME_DLL
 class CNEOGhostCapturePoint;
 class CNEO_Player;
+class CWeaponGhost;
 #else
 class C_NEO_Player;
 #endif
@@ -193,8 +194,8 @@ public:
 	virtual float FlPlayerFallDamage(CBasePlayer* pPlayer) OVERRIDE;
 #endif
 
-#ifdef GAME_DLL
 	bool IsRoundOver() const;
+#ifdef GAME_DLL
 	void StartNextRound();
 
 	virtual const char* GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer) OVERRIDE;
@@ -263,7 +264,10 @@ private:
 	void ResetMapSessionCommon();
 
 #ifdef GAME_DLL
+	void SpawnTheGhost();
+
 	CUtlVector<int> m_pGhostCaps;
+	CWeaponGhost *m_pGhost = nullptr;
 #endif
 	CNetworkVar(int, m_nRoundStatus); // NEO TODO (Rain): probably don't need to network this
 	CNetworkVar(int, m_iRoundNumber);
