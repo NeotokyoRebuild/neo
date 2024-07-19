@@ -406,6 +406,8 @@ void CNEOBaseCombatWeapon::ItemPostFrame(void)
 	if (!pOwner)
 		return;
 
+	ProcessAnimationEvents();
+
 	UpdateAutoFire();
 
 	//Track the duration of the fire
@@ -605,6 +607,13 @@ const Vector &CNEOBaseCombatWeapon::GetBulletSpread(void)
 	return cone;
 }
 
+void CNEOBaseCombatWeapon::DryFire()
+{
+	WeaponSound(EMPTY);
+	SendWeaponAnim(ACT_VM_DRYFIRE);
+	m_flNextPrimaryAttack = gpGlobals->curtime + GetFastestDryRefireTime(); // SequenceDuration();
+}
+
 void CNEOBaseCombatWeapon::PrimaryAttack(void)
 {
 	if (ShootingIsPrevented())
@@ -628,9 +637,7 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 		}
 		else
 		{
-			WeaponSound(EMPTY);
-			SendWeaponAnim(ACT_VM_DRYFIRE);
-			m_flNextPrimaryAttack = 0.2;
+			DryFire();
 		}
 		return;
 	}

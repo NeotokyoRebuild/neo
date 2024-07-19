@@ -43,41 +43,6 @@ CWeaponAA13::CWeaponAA13(void)
 	// m_nNumShotsFired = 0;
 }
 
-void CWeaponAA13::ItemPostFrame()
-{
-	ProcessAnimationEvents();
-
-	BaseClass::ItemPostFrame();
-
-	if (m_bInReload)
-	{
-		return;
-	}
-
-	CNEO_Player *pOwner = ToNEOPlayer((GetOwner()));
-
-	if (!pOwner)
-	{
-		return;
-	}
-
-	if (pOwner->m_nButtons & IN_ATTACK)
-	{
-		if (m_flSoonestAttack < gpGlobals->curtime)
-		{
-			if (m_iClip1 <= 0)
-			{
-				DryFire();
-				m_flSoonestAttack = gpGlobals->curtime + GetFastestDryRefireTime();
-			}
-			else
-			{
-				m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
-			}
-		}
-	}
-}
-
 void CWeaponAA13::AddViewKick()
 {
 	CNEO_Player *pOwner = ToNEOPlayer((GetOwner()));
@@ -94,13 +59,6 @@ void CWeaponAA13::AddViewKick()
 	viewPunch.z = 0.0f;
 
 	pOwner->ViewPunch(viewPunch);
-}
-
-void CWeaponAA13::DryFire()
-{
-	WeaponSound(EMPTY);
-	SendWeaponAnim(ACT_VM_DRYFIRE);
-	m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
 }
 
 void CWeaponAA13::PrimaryAttack(void)

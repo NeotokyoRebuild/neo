@@ -33,14 +33,12 @@ public:
 
 	CWeaponMilso();
 
-	void	ItemPostFrame(void);
-	void	AddViewKick(void);
-	void	DryFire(void);
+	void	AddViewKick(void) override;
 
-	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { return NEO_WEP_MILSO | NEO_WEP_SUPPRESSED; }
-	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
+	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const override { return NEO_WEP_MILSO | NEO_WEP_SUPPRESSED; }
+	virtual int GetNeoWepXPCost(const int neoClass) const override { return 0; }
 
-	virtual float GetSpeedScale(void) const { return 1.0; }
+	virtual float GetSpeedScale(void) const override { return 1.0; }
 
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }

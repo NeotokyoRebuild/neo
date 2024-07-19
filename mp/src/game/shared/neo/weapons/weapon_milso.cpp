@@ -30,21 +30,6 @@ CWeaponMilso::CWeaponMilso()
 	m_bFiresUnderwater = true;
 }
 
-void CWeaponMilso::DryFire(void)
-{
-	WeaponSound(EMPTY);
-	SendWeaponAnim(ACT_VM_DRYFIRE);
-
-	m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
-}
-
-void CWeaponMilso::ItemPostFrame(void)
-{
-	ProcessAnimationEvents();
-
-	BaseClass::ItemPostFrame();
-}
-
 void CWeaponMilso::AddViewKick(void)
 {
 	CBasePlayer *pPlayer = ToBasePlayer(GetOwner());

@@ -33,14 +33,12 @@ public:
 
 	CWeaponPZ();
 
-	void	ItemPostFrame(void);
-	void	AddViewKick(void);
-	void	DryFire(void);
+	void	AddViewKick(void) override;
 
-	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { return NEO_WEP_PZ; }
-	virtual int GetNeoWepXPCost(const int neoClass) const { return 20; }
+	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const override { return NEO_WEP_PZ; }
+	virtual int GetNeoWepXPCost(const int neoClass) const override { return 20; }
 
-	virtual float GetSpeedScale(void) const { return 108.0 / 136.0; }
+	virtual float GetSpeedScale(void) const override { return 108.0 / 136.0; }
 
 	bool CanBePickedUpByClass(int classId) OVERRIDE;
 protected:

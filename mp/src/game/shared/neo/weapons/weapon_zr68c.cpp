@@ -30,50 +30,6 @@ CWeaponZR68C::CWeaponZR68C()
 	m_nNumShotsFired = 0;
 }
 
-void CWeaponZR68C::DryFire()
-{
-	WeaponSound(EMPTY);
-	SendWeaponAnim(ACT_VM_DRYFIRE);
-
-	m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
-}
-
-void CWeaponZR68C::ItemPostFrame()
-{
-	ProcessAnimationEvents();
-
-	BaseClass::ItemPostFrame();
-
-	if (m_bInReload)
-	{
-		return;
-	}
-
-	auto owner = ToBasePlayer(GetOwner());
-
-	if (!owner)
-	{
-		return;
-	}
-
-	if (owner->m_nButtons & IN_ATTACK)
-	{
-		if (m_flSoonestAttack < gpGlobals->curtime)
-		{
-			if (m_iClip1 <= 0)
-			{
-				DryFire();
-
-				m_flSoonestAttack = gpGlobals->curtime + GetFastestDryRefireTime();
-			}
-			else
-			{
-				m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
-			}
-		}
-	}
-}
-
 void CWeaponZR68C::AddViewKick()
 {
 	auto owner = ToBasePlayer(GetOwner());

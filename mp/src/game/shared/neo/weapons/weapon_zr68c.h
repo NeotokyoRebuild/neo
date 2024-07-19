@@ -33,14 +33,12 @@ public:
 
 	CWeaponZR68C();
 
-	void	ItemPostFrame(void);
-	void	AddViewKick(void);
-	void	DryFire(void);
+	void	AddViewKick(void) override;
 
-	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { return NEO_WEP_ZR68_C; }
-	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
+	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const override { return NEO_WEP_ZR68_C; }
+	virtual int GetNeoWepXPCost(const int neoClass) const override { return 0; }
 
-	virtual float GetSpeedScale(void) const { return 160.0 / 170.0; }
+	virtual float GetSpeedScale(void) const override { return 160.0 / 170.0; }
 
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }

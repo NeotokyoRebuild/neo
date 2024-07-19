@@ -23,10 +23,8 @@ public:
 
 	CWeaponAA13(void);
 
-	virtual void	ItemPostFrame(void) OVERRIDE;
 	virtual void	PrimaryAttack(void) OVERRIDE;
 	virtual void	AddViewKick(void) OVERRIDE;
-	void	DryFire(void);
 
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const OVERRIDE { return NEO_WEP_AA13; }
 	virtual int GetNeoWepXPCost(const int neoClass) const OVERRIDE { return 20; }

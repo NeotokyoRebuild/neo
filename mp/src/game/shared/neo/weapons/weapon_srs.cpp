@@ -30,14 +30,6 @@ CWeaponSRS::CWeaponSRS()
 	m_nNumShotsFired = 0;
 }
 
-void CWeaponSRS::DryFire()
-{
-	WeaponSound(EMPTY);
-	SendWeaponAnim(ACT_VM_DRYFIRE);
-
-	m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
-}
-
 void CWeaponSRS::PrimaryAttack(void)
 {
 	if (!ShootingIsPrevented() && GetRoundChambered()) {
@@ -75,11 +67,23 @@ void CWeaponSRS::ItemPreFrame()
 	BaseClass::ItemPreFrame();
 }
 
-void CWeaponSRS::ItemPostFrame()
+bool CWeaponSRS::Reload()
 {
-	ProcessAnimationEvents();
+	if (auto owner = ToBasePlayer(GetOwner()))
+	{
+		if (!(owner->m_nButtons & IN_ATTACK))
+		{
+			return BaseClass::Reload();
+		}
+		return false;
+	}
+	return false;
+}
 
-	BaseClass::ItemPostFrame();
+void CWeaponSRS::FinishReload()
+{
+	m_bRoundChambered = true;
+	BaseClass::FinishReload();
 }
 
 void CWeaponSRS::AddViewKick()

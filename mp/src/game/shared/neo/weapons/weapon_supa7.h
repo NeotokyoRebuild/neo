@@ -55,7 +55,6 @@ public:
 	void ItemPostFrame(void);
 	void PrimaryAttack(void);
 	void SecondaryAttack(void);
-	void DryFire(void);
 
 	void Drop(const Vector& vecVelocity) OVERRIDE;
 

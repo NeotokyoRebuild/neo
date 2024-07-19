@@ -50,8 +50,7 @@ void CWeaponKyla::PrimaryAttack(void)
 		}
 		else
 		{
-			WeaponSound(EMPTY);
-			m_flNextPrimaryAttack = gpGlobals->curtime + GetFastestDryRefireTime();
+			DryFire();
 		}
 
 		return;
@@ -113,11 +112,4 @@ void CWeaponKyla::PrimaryAttack(void)
 	}
 
 	m_flAccuracyPenalty = min(GetMaxAccuracyPenalty(), m_flAccuracyPenalty + GetAccuracyPenalty());
-}
-
-void CWeaponKyla::ItemPostFrame()
-{
-	ProcessAnimationEvents();
-
-	BaseClass::ItemPostFrame();
 }

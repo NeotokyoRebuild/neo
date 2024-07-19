@@ -152,6 +152,8 @@ public:
 	virtual void PrimaryAttack(void) override;
 	virtual void SecondaryAttack(void) override;
 
+	virtual void DryFire(void);
+
 	virtual Activity GetPrimaryAttackActivity(void) override;
 #ifdef CLIENT_DLL
 	void DispatchMuzzleParticleEffect(int iAttachment);

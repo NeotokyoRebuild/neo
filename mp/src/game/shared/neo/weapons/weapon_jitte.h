@@ -33,9 +33,7 @@ public:
 
 	CWeaponJitte();
 
-	virtual void	ItemPostFrame(void) OVERRIDE;
 	virtual void	AddViewKick(void) OVERRIDE;
-	void	DryFire(void);
 
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const OVERRIDE { return NEO_WEP_JITTE; }
 	virtual int GetNeoWepXPCost(const int neoClass) const OVERRIDE { return 0; }

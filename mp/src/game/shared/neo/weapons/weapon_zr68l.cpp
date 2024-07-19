@@ -30,21 +30,6 @@ CWeaponZR68L::CWeaponZR68L()
 	m_nNumShotsFired = 0;
 }
 
-void CWeaponZR68L::DryFire()
-{
-	WeaponSound(EMPTY);
-	SendWeaponAnim(ACT_VM_DRYFIRE);
-
-	m_flNextPrimaryAttack = gpGlobals->curtime + GetFastestDryRefireTime();
-}
-
-void CWeaponZR68L::ItemPostFrame()
-{
-	ProcessAnimationEvents();
-
-	BaseClass::ItemPostFrame();
-}
-
 void CWeaponZR68L::AddViewKick()
 {
 	auto owner = ToBasePlayer(GetOwner());

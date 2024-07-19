@@ -30,21 +30,6 @@ CWeaponM41S::CWeaponM41S()
 	m_nNumShotsFired = 0;
 }
 
-void CWeaponM41S::DryFire()
-{
-	WeaponSound(EMPTY);
-	SendWeaponAnim(ACT_VM_DRYFIRE);
-
-	m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
-}
-
-void CWeaponM41S::ItemPostFrame()
-{
-	ProcessAnimationEvents();
-
-	BaseClass::ItemPostFrame();
-}
-
 void CWeaponM41S::AddViewKick()
 {
 	auto pOwner = ToBasePlayer(GetOwner());

@@ -55,14 +55,6 @@ CWeaponTachi::CWeaponTachi()
 	m_bIsPrimaryFireMode = true;
 }
 
-void CWeaponTachi::DryFire(void)
-{
-	WeaponSound(EMPTY);
-	SendWeaponAnim(ACT_VM_DRYFIRE);
-
-	m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
-}
-
 void CWeaponTachi::SwitchFireMode( void )
 {
 	if (m_flSoonestFiremodeSwitch > gpGlobals->curtime)
@@ -95,8 +87,6 @@ void CWeaponTachi::ForceSetFireMode( bool bPrimaryMode, bool bPlaySound,
 
 void CWeaponTachi::ItemPostFrame( void )
 {
-	ProcessAnimationEvents();
-
 	BaseClass::ItemPostFrame();
 
 	if ( m_bInReload )
