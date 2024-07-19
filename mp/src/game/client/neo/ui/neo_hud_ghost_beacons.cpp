@@ -145,12 +145,15 @@ void CNEOHud_GhostBeacons::DrawPlayer(const Vector& playerPos) const
 	auto distInMeters = dist * METERS_PER_INCH;
 
 	int posX, posY;
-	if (neo_ghost_beacon_scale_toggle.GetInt() == 0) {
+	if (neo_ghost_beacon_scale_toggle.GetInt() == 0)
+	{
 		static constexpr int DISTANCE_AT_WHICH_MARKER_ON_FLOOR = 25;
 		static constexpr int MAX_DISTANCE_TO_RAISE_GHOST_BREACON = DISTANCE_AT_WHICH_MARKER_ON_FLOOR * 2;
 		Vector ghostBeaconOffset = Vector(0, 0, (MAX_DISTANCE_TO_RAISE_GHOST_BREACON - (distInMeters * 2)));
 		GetVectorInScreenSpace(playerPos, posX, posY, &ghostBeaconOffset);
-	} else {
+	} 
+	else
+	{
 		GetVectorInScreenSpace(playerPos, posX, posY);
 	}
 	
@@ -171,7 +174,7 @@ void CNEOHud_GhostBeacons::DrawPlayer(const Vector& playerPos) const
 	surface()->DrawSetColor(255, 20, 20, alpha);
 	surface()->DrawSetTexture(m_hTex);
 
-	float scale = neo_ghost_beacon_scale_toggle.GetInt() ? (neo_ghost_beacon_scale_baseline.GetInt() / dist) : 0.25;
+	float scale = neo_ghost_beacon_scale_toggle.GetBool() ? (neo_ghost_beacon_scale_baseline.GetInt() / dist) : 0.25;
 
 	// Offset screen space starting positions by half of the texture x/y coords,
 	// so it starts centered on target.

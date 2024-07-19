@@ -26,11 +26,13 @@ CNEOHud_GhostUplinkState::CNEOHud_GhostUplinkState(const char *pElementName, vgu
 	if (parent) {
 		SetParent(parent);
 	}
-	else {
+	else
+	{
 		SetParent(g_pClientMode->GetViewport());
 	}
 
-	for (int i = 0; i < NUM_UPLINK_TEXTURES; i++) {
+	for (int i = 0; i < NUM_UPLINK_TEXTURES; i++)
+	{
 		m_pUplinkTextures[i] = surface()->CreateNewTextureID();
 		Assert(m_pUplinkTextures[i] > 0);
 		char textureFilePath[24];
@@ -48,7 +50,6 @@ void CNEOHud_GhostUplinkState::ApplySchemeSettings(vgui::IScheme* pScheme)
 	int screenWidth, screenHeight;
 	surface()->GetScreenSize(screenWidth, screenHeight);
 	int centerX = screenWidth / 2;
-	int centerY = screenHeight / 2;
 	int textureXPos = centerX - (m_iUplinkTextureWidth / 2);
 	static constexpr int COMPASS_HEIGHT_PLUS_MARGINS = 30;
 	int textureYPos = screenHeight - m_iUplinkTextureHeight - COMPASS_HEIGHT_PLUS_MARGINS;
@@ -61,9 +62,11 @@ void CNEOHud_GhostUplinkState::ApplySchemeSettings(vgui::IScheme* pScheme)
 
 void CNEOHud_GhostUplinkState::UpdateStateForNeoHudElementDraw()
 {
-	if (m_iCurrentTextureIndex < (NUM_TEXTURE_START_TIMES - 1)) {
+	if (m_iCurrentTextureIndex < (NUM_TEXTURE_START_TIMES - 1))
+	{
 		static constexpr float textureStartTimes[NUM_TEXTURE_START_TIMES] = { 0, 0.2, 0.5, 0.6, 1.0, 1.1, 1.4, 1.8, 2.5, 2.7, 3.0 };
-		if ((gpGlobals->curtime - m_flTimeGhostEquip) >= textureStartTimes[m_iCurrentTextureIndex + 1]) {
+		if ((gpGlobals->curtime - m_flTimeGhostEquip) >= textureStartTimes[m_iCurrentTextureIndex + 1])
+		{
 			m_iCurrentTextureIndex++;
 		}
 	}
@@ -71,19 +74,22 @@ void CNEOHud_GhostUplinkState::UpdateStateForNeoHudElementDraw()
 
 void CNEOHud_GhostUplinkState::DrawNeoHudElement()
 {
-	if (!ShouldDraw()) {
+	if (!ShouldDraw())
+	{
 		return;
 	}
 
 	auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	auto ghost = dynamic_cast<C_WeaponGhost*>(localPlayer->GetActiveWeapon());
-	if (!ghost) {
+	const auto wep = static_cast<C_NEOBaseCombatWeapon*>(localPlayer->GetActiveWeapon());
+	if (!wep || !wep->IsGhost())
+	{
 		m_flTimeGhostEquip = 0.f;
 		m_iCurrentTextureIndex = 0;
 		return;
 	}
 
-	if (m_flTimeGhostEquip == 0.f) {
+	if (m_flTimeGhostEquip == 0.f)
+	{
 		m_flTimeGhostEquip = gpGlobals->curtime;
 	}
 
