@@ -1524,6 +1524,8 @@ target_sources_grouped(
     neo/ui/neo_hud_ghost_cap_point.h
     neo/ui/neo_hud_ghost_marker.cpp
     neo/ui/neo_hud_ghost_marker.h
+    neo/ui/neo_hud_ghost_uplink_state.cpp
+    neo/ui/neo_hud_ghost_uplink_state.h
     neo/ui/neo_hud_health_thermoptic_aux.cpp
     neo/ui/neo_hud_health_thermoptic_aux.h
     neo/ui/neo_hud_round_state.cpp
