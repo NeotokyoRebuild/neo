@@ -1227,6 +1227,7 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/public/vtf/vtf.h
     ${CMAKE_SOURCE_DIR}/public/worldsize.h
     ${CMAKE_SOURCE_DIR}/public/zip_uncompressed.h
+    ${CMAKE_SOURCE_DIR}/public/ivoicetweak.h
 )
 
 if(OS_WINDOWS)
@@ -1508,6 +1509,10 @@ target_sources_grouped(
     TARGET client
     NAME "Source Files\\NEO\\UI"
     FILES
+    neo/ui/neo_root.cpp
+    neo/ui/neo_root.h
+    neo/ui/IOverrideInterface.h
+    neo/ui/OverrideInterface.cpp
     neo/ui/neo_hud_ammo.cpp
     neo/ui/neo_hud_ammo.h
     neo/ui/neo_hud_childelement.cpp
