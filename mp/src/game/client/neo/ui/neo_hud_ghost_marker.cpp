@@ -100,6 +100,11 @@ void CNEOHud_GhostMarker::UpdateStateForNeoHudElementDraw()
 	g_pVGuiLocalize->ConvertANSIToUnicode(m_szMarkerText, m_wszMarkerTextUnicode, sizeof(m_wszMarkerTextUnicode));
 }
 
+void CNEOHud_GhostMarker::resetHUDState()
+{
+	m_ghostInPVS = nullptr;
+}
+
 void CNEOHud_GhostMarker::DrawNeoHudElement()
 {
 	if (!ShouldDraw() || !NEORules()->GhostExists() || NEORules()->IsRoundOver())

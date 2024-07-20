@@ -21,6 +21,7 @@ public:
 
 	virtual void ApplySchemeSettings(vgui::IScheme *pScheme) override;
 	virtual void Paint() override;
+	virtual void resetHUDState() override;
 
 protected:
 	virtual void UpdateStateForNeoHudElementDraw() override;

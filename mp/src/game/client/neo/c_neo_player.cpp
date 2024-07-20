@@ -1202,31 +1202,37 @@ void C_NEO_Player::Spawn( void )
 
 	SetViewOffset(VEC_VIEW_NEOSCALE(this));
 
-	// NEO NOTE (nullsystem): Reset Vis/Enabled/MouseInput/Cursor state here, otherwise it can get stuck at situations
-	for (const auto pname : {PANEL_CLASS, PANEL_TEAM, PANEL_NEO_LOADOUT})
-	{
-		if (auto *panel = static_cast<vgui::EditablePanel*>
-				(GetClientModeNormal()->GetViewport()->FindChildByName(pname)))
-		{
-			panel->SetVisible(false);
-			panel->SetEnabled(false);
-			panel->SetMouseInputEnabled(false);
-			panel->SetCursorAlwaysVisible(false);
-			//panel->SetKeyBoardInputEnabled(false);
-		}
-	}
+	auto *localPlayer = C_NEO_Player::GetLocalNEOPlayer();
 
-	for (auto *hud : gHUD.m_HudList)
+	if (localPlayer == nullptr || localPlayer == this)
 	{
-		if (auto *neoHud = dynamic_cast<CNEOHud_ChildElement *>(hud))
+		// NEO NOTE (nullsystem): Reset Vis/Enabled/MouseInput/Cursor state here, otherwise it can get stuck at situations
+		for (const auto pname : {PANEL_CLASS, PANEL_TEAM, PANEL_NEO_LOADOUT})
 		{
-			neoHud->resetLastUpdateTime();
+			if (auto *panel = static_cast<vgui::EditablePanel*>
+					(GetClientModeNormal()->GetViewport()->FindChildByName(pname)))
+			{
+				panel->SetVisible(false);
+				panel->SetEnabled(false);
+				panel->SetMouseInputEnabled(false);
+				panel->SetCursorAlwaysVisible(false);
+				//panel->SetKeyBoardInputEnabled(false);
+			}
 		}
-	}
 
-	if (GetTeamNumber() == TEAM_UNASSIGNED)
-	{
-		engine->ClientCmd(teammenu.GetName());
+		for (auto *hud : gHUD.m_HudList)
+		{
+			if (auto *neoHud = dynamic_cast<CNEOHud_ChildElement *>(hud))
+			{
+				neoHud->resetLastUpdateTime();
+				neoHud->resetHUDState();
+			}
+		}
+
+		if (GetTeamNumber() == TEAM_UNASSIGNED)
+		{
+			engine->ClientCmd(teammenu.GetName());
+		}
 	}
 
 #if(0)
