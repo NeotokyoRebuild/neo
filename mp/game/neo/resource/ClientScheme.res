@@ -1,13 +1,13 @@
-//
-// TRACKER SCHEME RESOURCE FILE
+///////////////////////////////////////////////////////////
+// Tracker scheme resource file
 //
 // sections:
-//		colors			- all the colors used by the scheme
-//		basesettings	- contains settings for app to use to draw controls
-//		fonts			- list of all the fonts used by app
-//		borders			- description of all the borders
+//		Colors			- all the colors used by the scheme
+//		BaseSettings	- contains settings for app to use to draw controls
+//		Fonts			- list of all the fonts used by app
+//		Borders			- description of all the borders
 //
-//
+///////////////////////////////////////////////////////////
 Scheme
 {
 	//Name - currently overriden in code
@@ -25,6 +25,7 @@ Scheme
 
 		"Red"				"55 55 55 255"
 		"Black"				"80 80 80 255"
+
 		"TransparentBlack"	"0 0 0 196"
 		"TransparentLightBlack"	"0 0 0 90"
 
@@ -247,60 +248,56 @@ Scheme
 				"name"		"Verdana"
 				"tall"		"12"
 				"weight"	"900"
-				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"yres"	"480 599"
+				"antialias"	"1"
+				"yres"		"480 599"
 			}
 			"2"
 			{
 				"name"		"Verdana"
 				"tall"		"13"
 				"weight"	"900"
-				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"yres"	"600 767"
+				"antialias"	"1"
+				"yres"		"600 767"
 			}
 			"3"
 			{
 				"name"		"Verdana"
 				"tall"		"14"
 				"weight"	"900"
-				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"antialias" "1"
 				"yres"	"768 1023"
-				"antialias"	"1"
 			}
 			"4"
 			{
 				"name"		"Verdana"
-				"tall"		"16" //"20"
+				"tall"		"16" // "20"
 				"weight"	"900"
-				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"antialias" "1"
 				"yres"	"1024 1199"
-				"antialias"	"1"
 			}
 			"5"
 			{
 				"name"		"Verdana"
-				"tall"		"16" //"24"
+				"tall"		"16" // "24"
 				"weight"	"900"
-				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"yres"	"1200 6000"
-				"antialias"	"1"
+				"antialias" "1"
+				"yres"	"1200 10000"
+				"additive"	"1"
 			}
 			"6"
 			{
 				"name"		"Verdana"
 				"tall"		"12"
-				"range" 		"0x0000 0x00FF"
-				"weight"		"900"
+				"range"		"0x0000 0x00FF"
+				"weight"	"900"
 			}
 			"7"
 			{
 				"name"		"Arial"
 				"tall"		"12"
-				"range" 		"0x0000 0x00FF"
-				"weight"		"800"
+				"range"		"0x0000 0x00FF"
+				"weight"	"800"
 			}
-
-
 		}
 		"DefaultUnderline"
 		{
@@ -471,6 +468,30 @@ Scheme
 				"yres"	"1200 10000"
 			}
 		}
+		HudHintTextLarge
+		{
+			"1"
+			{
+				"name"		"Verdana" [!$OSX]
+				"name"		"Helvetica Bold" [$OSX]
+				"tall"		"14"
+				"weight"	"1000"
+				"antialias" "1"
+				"additive"	"1"
+			}
+		}
+		HudHintTextSmall
+		{
+			"1"
+			{
+				"name"		"Verdana" [!$OSX]
+				"name"		"Helvetica" [$OSX]
+				"tall"		"11"
+				"weight"	"0"
+				"antialias" "1"
+				"additive"	"1"
+			}
+		}
 		HudNumbersSmall
 		{
 			"1"
@@ -502,7 +523,7 @@ Scheme
 			"1"
 			{
 				"name"		"Verdana"
-				"tall"		"11"
+				"tall"		"8"
 				"weight"	"700"
 				"antialias" "1"
 				"yres"	"1 599"
@@ -512,7 +533,7 @@ Scheme
 			"2"
 			{
 				"name"		"Verdana"
-				"tall"		"11"
+				"tall"		"10"
 				"weight"	"700"
 				"antialias" "1"
 				"yres"	"600 767"
@@ -679,10 +700,46 @@ Scheme
 				"additive"	"0"
 			}
 		}
+		Crosshairs
+		{
+			"1"
+			{
+				"name"		"HalfLife2"
+				"tall"		"40" [!$OSX]
+				"tall"		"41" [$OSX]
+				"weight"	"0"
+				"antialias" "0"
+				"additive"	"1"
+				"custom"	"1"
+				"yres"		"1 10000"
+			}
+		}
+		QuickInfo
+		{
+			"1"
+			{
+				"name"		"HL2cross"
+				"tall"		"28" [!$OSX]
+				"tall"		"50" [$OSX]
+				"weight"	"0"
+				"antialias" "1"
+				"additive"	"1"
+				"custom"	"1" [!$OSX]
+			}
+		}
 
 		HudNumbers
 		{
 			"1"
+			{
+				"name"		"HalfLife2"
+				"tall"		"32"
+				"weight"	"0"
+				"antialias" "1"
+				"additive"	"1"
+				"custom"	"1"
+			}
+			"2"
 			{
 				"name"  "Counter-Strike" // Cstrike.ttf
 				"tall"  "28"
@@ -690,7 +747,7 @@ Scheme
 				"additive" "1"
 				"antialias" "1"
 			}
-			"2"
+			"3"
 			{
 				"name"  "Verdana"
 				"tall"  "28"
@@ -698,46 +755,95 @@ Scheme
 				"additive" "1"
 				"antialias" "1"
 			}
+
+		}
+		HudNumbersGlow
+		{
+			"1"
+			{
+				"name"		"HalfLife2"
+				"tall"		"32"
+				"weight"	"0"
+				"blur"		"4"
+				"scanlines" "2"
+				"antialias" "1"
+				"additive"	"1"
+				"custom"	"1"
+			}
+		}
+		HudNumbersSmall
+		{
+			"1"
+			{
+				"name"		"HalfLife2" [!$OSX]
+				"name"		"Helvetica Bold" [$OSX]
+				"tall"		"16"
+				"weight"	"1000"
+				"additive"	"1"
+				"antialias" "1"
+				"custom"	"1"
+			}
 		}
 		"CloseCaption_Normal"
 		{
 			"1"
 			{
-				"name"		"Tahoma"
-				"tall"		"16"
+				"name"		"Tahoma" [!$OSX]
+				"name"		"Verdana" [$OSX]
+				"tall"		"26" [!$OSX]
+				"tall"		"24" [$OSX]
+				"tall"		"26"
 				"weight"	"500"
-				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 			}
 		}
 		"CloseCaption_Italic"
 		{
 			"1"
 			{
-				"name"		"Tahoma"
-				"tall"		"16"
+				"name"		"Tahoma" [!$OSX]
+				"name"		"Verdana Italic" [$OSX]
+				"tall"		"26" [!$OSX]
+				"tall"		"24" [$OSX]
+				"tall"		"26"
 				"weight"	"500"
 				"italic"	"1"
-				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 			}
 		}
 		"CloseCaption_Bold"
 		{
 			"1"
 			{
-				"name"		"Tahoma"
-				"tall"		"16"
+				"name"		"Tahoma" [!$OSX]
+				"name"		"Verdana Bold" [$OSX]
+				"tall"		"26" [!$OSX]
+				"tall"		"24" [$OSX]
+				"tall"		"26"
 				"weight"	"900"
-				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 			}
 		}
 		"CloseCaption_BoldItalic"
 		{
 			"1"
 			{
-				"name"		"Tahoma"
-				"tall"		"16"
+				"name"		"Tahoma" [!$OSX]
+				"name"		"Verdana Bold Italic" [$OSX]
+				"tall"		"26" [!$OSX]
+				"tall"		"24" [$OSX]
+				"tall"		"26"
 				"weight"	"900"
 				"italic"	"1"
+			}
+		}
+		"CloseCaption_Small"
+		{
+			"1"
+			{
+				"name"		"Tahoma" [!$OSX]
+				"name"		"Verdana" [$OSX]
+				"tall"		"16" [!$OSX]
+				"tall"		"14" [$OSX]
+ 				"tall_hidef"	"24"
+				"weight"	"900"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 			}
 		}
@@ -747,7 +853,7 @@ Scheme
 			"1"
 			{
 				"name"		"Marlett"
-				"tall"		"11"
+				"tall"		"14"
 				"weight"	"0"
 				"symbol"	"1"
 				"range"		"0x0000 0x007F"	//	Basic Latin
@@ -762,6 +868,33 @@ Scheme
 				"weight"	"500"
 			}
 		}
+		// NT;RE doesn't use WeaponIcons
+		//WeaponIcons
+		//{
+		//	"1"
+		//	{
+		//		"name"		"HalfLife2"
+		//		"tall"		"64"
+		//		"weight"	"0"
+		//		"antialias" "1"
+		//		"additive"	"1"
+		//		"custom"	"1"
+		//	}
+		//}
+		//WeaponIconsSelected
+		//{
+		//	"1"
+		//	{
+		//		"name"		"HalfLife2"
+		//		"tall"		"64"
+		//		"weight"	"0"
+		//		"antialias" "1"
+		//		"blur"		"5"
+		//		"scanlines"	"2"
+		//		"additive"	"1"
+		//		"custom"	"1"
+		//	}
+		//}
 		"Trebuchet24"
 		{
 			"1"
@@ -853,6 +986,78 @@ Scheme
 				"dropshadow"	"1"
 			}
 		}
+		CreditsLogo
+		{
+			"1"
+			{
+				"name"		"HalfLife2"
+				"tall"		"128"
+				"weight"	"0"
+				"antialias" "1"
+				"additive"	"1"
+				"custom"	"1"
+			}
+		}
+		CreditsText
+		{
+			"1"
+			{
+				"name"		"Trebuchet MS"
+				"tall"		"20"
+				"weight"	"900"
+				"antialias" "1"
+				"additive"	"1"
+			}
+		}
+		CreditsOutroLogos
+		{
+			"1"
+			{
+				"name"		"HalfLife2"
+				"tall"		"48"
+				"weight"	"0"
+				"antialias" "1"
+				"additive"	"1"
+				"custom"	"1"
+			}
+		}
+		CreditsOutroText
+		{
+			"1"
+			{
+				"name"		"Verdana"
+				"tall"		"9"
+				"weight"	"900"
+				"antialias" "1"
+			}
+		}
+
+		CenterPrintText
+		{
+			// note that this scales with the screen resolution
+			"1"
+			{
+				"name"		"Trebuchet MS" [!$OSX]
+				"name"		"Helvetica" [$OSX]
+				"tall"		"18"
+				"weight"	"900"
+				"antialias" "1"
+				"additive"	"1"
+			}
+		}
+
+		"HL2MPTypeDeath"
+		{
+			"1"
+			{
+				"name"  "HL2MP" // csd.ttf
+				"tall"  "32"
+				"weight" "0"
+				"additive" "1"
+				"antialias" "1"
+				"custom" "1" [$OSX]
+			}
+		}	
 		NHudText
 		{
 			"1"
@@ -1415,7 +1620,69 @@ Scheme
 				"antialias"	"1"
 			}
 		}
+		"joinmenus"
+		{
+			"1"
+			{
+				"name"        "greenm03"
+				"tall"        "12"
+				"weight"      "600"
+				"antialias"   "1"
+			}
+		}
+		"DebugFixed"
+		{
+			"1"
+			{
+				"name"		"Courier New"
+				"tall"		"14"
+				"weight"	"400"
+				"antialias" "1"
+			}
+		}
+		"DebugFixedSmall"
+		{
+			"1"
+			{
+				"name"		"Courier New"
+				"tall"		"14"
+				"weight"	"400"
+				"antialias" "1"
+			}
+		}
+		// Used by scoreboard and spectator UI for names which don't map in the normal fashion
+		"DefaultVerySmallFallBack"
+		{
+			"1"
+			{
+				"name"		"Verdana"
+				"tall"		"10"
+				"weight"	"0"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"		"480 599"
+				"antialias"	"1"
+			}
+			"2"
+			{
+				"name"		"Verdana"
+				"tall"		"12"
+				"weight"	"0"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"		"600 1199"
+				"antialias"	"1"
+			}
+			"3"
+			{
+				"name"		"Verdana"
+				"tall"		"15"
+				"weight"	"0"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"		"1200 6000"
+				"antialias"	"1"
+			}
+		}
 	}
+
 
 	//
 	//////////////////// BORDERS //////////////////////////////
@@ -2069,16 +2336,19 @@ Scheme
 	// specifies all the custom (non-system) font files that need to be loaded to service the above described fonts
 	CustomFontFiles
 	{
-		"1"		"resource/cs.ttf"
-		"2"		"resource/csd.ttf"
-		"3"		"resource/Cstrike.ttf"
-		"4"		"resource/X-SCALE_.TTF"
-		"5"		"resource/greenm03.ttf"
-		"6"		"resource/zrnic___.ttf"
-		"7"		"resource/AFL.ttf"
-		"8"		"resource/nocr.ttf"
-		"9"		"resource/NEUROPOL2.ttf"
-		"10"		"resource/neotokyo_press_n.ttf"
+		"1"		"resource/HALFLIFE2.ttf"
+		"2"		"resource/HL2MP.ttf"
+		"3"		"resource/HL2crosshairs.ttf"
+		"4"		"resource/cs.ttf"
+		"5"		"resource/csd.ttf"
+		"6"		"resource/Cstrike.ttf"
+		"7"		"resource/X-SCALE_.TTF"
+		"8"		"resource/greenm03.ttf"
+		"9"		"resource/zrnic___.ttf"
+		"10"		"resource/AFL.ttf"
+		"11"		"resource/nocr.ttf"
+		"12"		"resource/NEUROPOL2.ttf"
+		"13"		"resource/neotokyo_press_n.ttf"
 	}
 
 }
