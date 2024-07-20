@@ -193,17 +193,17 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	const bool inSuddenDeath = NEORules()->RoundIsInSuddenDeath();
 	const bool inMatchPoint = NEORules()->RoundIsMatchPoint();
 
-	const char *prefixStr = (roundStatus == NeoRoundStatus::Warmup) ? "(Warmup)" : "";
+	const char *prefixStr = (roundStatus == NeoRoundStatus::Warmup) ? "Warmup" : "";
 	if (roundStatus == NeoRoundStatus::Idle) {
-		prefixStr = "(Waiting for players)";
+		prefixStr = "Waiting for players";
 	}
 	else if (inSuddenDeath)
 	{
-		prefixStr = "(Sudden death)";
+		prefixStr = "Sudden death";
 	}
 	else if (inMatchPoint)
 	{
-		prefixStr = "(Match point)";
+		prefixStr = "Match point";
 	}
 	char szStatusANSI[24] = {};
 	V_sprintf_safe(szStatusANSI, "%s", prefixStr);
