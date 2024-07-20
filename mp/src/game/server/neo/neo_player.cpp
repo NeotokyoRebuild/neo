@@ -2843,24 +2843,30 @@ float CNEO_Player::GetSprintSpeed(void) const
 
 int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 {
-	auto player = Instance(pInfo->m_pClientEnt);
-	
-	if(player)
+	if (auto ent = Instance(pInfo->m_pClientEnt))
 	{
-		auto neoPlayer = dynamic_cast<CNEO_Player*>(player);
-		if(neoPlayer)
+		if (auto *otherNeoPlayer = dynamic_cast<CNEO_Player *>(ent))
 		{
-			if(player->GetTeamNumber() == TEAM_SPECTATOR
-			|| this->GetTeamNumber() == player->GetTeamNumber())
+			// If other is spectator or same team
+			if (otherNeoPlayer->GetTeamNumber() == TEAM_SPECTATOR ||
+					GetTeamNumber() == otherNeoPlayer->GetTeamNumber())
 			{
 				return FL_EDICT_ALWAYS;
 			}
 
-			auto ghost = dynamic_cast<CWeaponGhost*>(neoPlayer->GetActiveWeapon());
-			if(ghost && ghost->IsPosWithinViewDistance(this->GetAbsOrigin()))	//Check if ghost equip delay has passed here before distance
+			// If the other player is actively using the ghost and therefore fetching beacons
+			auto otherWep = static_cast<CNEOBaseCombatWeapon *>(otherNeoPlayer->GetActiveWeapon());
+			if (otherWep && otherWep->GetNeoWepBits() & NEO_WEP_GHOST &&
+					static_cast<CWeaponGhost *>(otherWep)->IsPosWithinViewDistance(GetAbsOrigin()))
 			{
 				return FL_EDICT_ALWAYS;
-			}	
+			}
+
+			// If this player is carrying the ghost (wether active or not)
+			if (IsCarryingGhost())
+			{
+				return FL_EDICT_ALWAYS;
+			}
 		}	
 	}
 	

@@ -59,7 +59,19 @@ void CWeaponGhost::ItemPreFrame(void)
 #ifdef GAME_DLL
 int CWeaponGhost::UpdateTransmitState()
 {
-	return FL_EDICT_ALWAYS;
+	return SetTransmitState(FL_EDICT_ALWAYS);
+}
+
+int CWeaponGhost::ShouldTransmit(const CCheckTransmitInfo *pInfo)
+{
+	if (auto ent = Instance(pInfo->m_pClientEnt))
+	{
+		if (auto *otherNeoPlayer = dynamic_cast<CNEO_Player *>(ent))
+		{
+			return FL_EDICT_ALWAYS;
+		}
+	}
+	return BaseClass::ShouldTransmit(pInfo);
 }
 #endif
 

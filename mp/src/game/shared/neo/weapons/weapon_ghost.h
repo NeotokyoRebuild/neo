@@ -48,6 +48,7 @@ public:
 
 #ifdef GAME_DLL
 	int UpdateTransmitState() override;
+	int ShouldTransmit(const CCheckTransmitInfo *pInfo) override;
 #endif
 
 #if _DEBUG

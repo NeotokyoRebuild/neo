@@ -91,7 +91,7 @@ void CNEOHud_GhostMarker::ApplySchemeSettings(vgui::IScheme *pScheme)
 
 void CNEOHud_GhostMarker::UpdateStateForNeoHudElementDraw()
 {
-	if (m_ghostInPVS && NEORules()->IsRoundOver())
+	if (m_ghostInPVS && (!NEORules()->GhostExists() || NEORules()->IsRoundOver()))
 	{
 		m_ghostInPVS = nullptr;
 	}
@@ -102,37 +102,44 @@ void CNEOHud_GhostMarker::UpdateStateForNeoHudElementDraw()
 
 void CNEOHud_GhostMarker::DrawNeoHudElement()
 {
-	if (!ShouldDraw() || NEORules()->IsRoundOver())
+	if (!ShouldDraw() || !NEORules()->GhostExists() || NEORules()->IsRoundOver())
 	{
 		return;
 	}
 
-	// NOTE (nullsystem): m_ghostInPVS: To workaround the SDK not easily just giving us the ghost entity when it's
-	// in PVS, we'll just try to get it when possible. Considering the ghost is typically stationary until the
-	// first player fetches the ghost, it'll be fine relying on server-side position till that point.
-	// Once a player carrys the ghost, get the ghost pointer and hold it until the round is over. The ghost is
-	// always in PVS as it's marked as such. Preferring PVS is purely so the visual can be much smoother to look at.
-
 	const bool ghostExists = NEORules()->GhostExists();
 	const auto localPlayer = static_cast<C_NEO_Player *>(C_NEO_Player::GetLocalPlayer());
 	bool hideGhostMarker = (!ghostExists || localPlayer->IsCarryingGhost());
-	if (!m_ghostInPVS && ghostExists && localPlayer->IsCarryingGhost())
-	{
-		m_ghostInPVS = static_cast<C_WeaponGhost *>(GetNeoWepWithBits(localPlayer, NEO_WEP_GHOST));
-	}
 	if (!hideGhostMarker && (localPlayer->GetObserverMode() == OBS_MODE_IN_EYE))
 	{
 		// NEO NOTE (nullsystem): Skip this if we're observing a player in first person
 		auto *pTargetPlayer = dynamic_cast<C_NEO_Player *>(localPlayer->GetObserverTarget());
 		hideGhostMarker = (pTargetPlayer && !pTargetPlayer->IsObserver() && pTargetPlayer->IsCarryingGhost());
-		if (!m_ghostInPVS && hideGhostMarker)
-		{
-			m_ghostInPVS = static_cast<C_WeaponGhost *>(GetNeoWepWithBits(pTargetPlayer, NEO_WEP_GHOST));
-		}
 	}
 	if (hideGhostMarker)
 	{
 		return;
+	}
+
+	// NEO NOTE (nullsystem): Fetch client-side ghost entity when possible, it should be always emitted and therefore
+	// be able to be given on each round start. This itself is an expensive operation but only done once per round
+	// start. The usage of PVS is preferred since it'll give a smoother visual to the player verses relying on server
+	// side positioning.
+	if (!m_ghostInPVS)
+	{
+		C_AllBaseEntityIterator itr;
+		C_BaseEntity *ent = nullptr;
+		while ((ent = itr.Next()) != nullptr)
+		{
+			if (auto *ghostEnt = dynamic_cast<C_WeaponGhost *>(ent))
+			{
+				m_ghostInPVS = ghostEnt;
+				break;
+			}
+		}
+		// It should be valid at this point since it passed hideGhostMarker. Otherwise something very wrong
+		// happened.
+		Assert(m_ghostInPVS);
 	}
 
 	bool hideText = false;
@@ -168,10 +175,6 @@ void CNEOHud_GhostMarker::DrawNeoHudElement()
 			if (ghosterPlayer->IsVisible())
 			{
 				ghostPos = ghosterPlayer->EyePosition();
-			}
-			if (!m_ghostInPVS)
-			{
-				m_ghostInPVS = static_cast<C_WeaponGhost *>(GetNeoWepWithBits(ghosterPlayer, NEO_WEP_GHOST));
 			}
 		}
 	}
