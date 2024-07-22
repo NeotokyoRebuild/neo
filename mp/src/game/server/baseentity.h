@@ -1576,6 +1576,10 @@ private:
 	// Handle shot entering water
 	void HandleShotImpactingGlass( const FireBulletsInfo_t &info, const trace_t &tr, const Vector &vecDir, ITraceFilter *pTraceFilter );
 
+#ifdef NEO
+	void HandleShotPenetration(const FireBulletsInfo_t& info, const trace_t& tr, const Vector& vecDir, ITraceFilter* pTraceFilter);
+#endif
+
 	// Should we draw bubbles underwater?
 	bool ShouldDrawUnderwaterBulletBubbles();
 

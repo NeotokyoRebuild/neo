@@ -630,6 +630,10 @@ public:
 
 	static bool IsSimulatingOnAlternateTicks();
 
+#ifdef NEO
+	void HandleShotPenetration(const FireBulletsInfo_t& info, const trace_t& tr, const Vector& vecDir, ITraceFilter* pTraceFilter);
+#endif
+
 // C_BaseEntity local functions
 public:
 
