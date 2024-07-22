@@ -83,9 +83,10 @@ CCenterStringLabel::CCenterStringLabel( vgui::VPANEL parent ) :
 	SetContentAlignment( vgui::Label::a_center );
 
 #ifdef NEO
+	// NEO HACK (nullsystem): This is still needed for ClientScheme.res
 	vgui::HScheme neoscheme = vgui::scheme()->LoadSchemeFromFileEx(
 				enginevgui->GetPanel(PANEL_CLIENTDLL),
-				"resource/ClientScheme_Neo.res", "ClientScheme_Neo");
+				"resource/ClientScheme.res", "ClientScheme");
 	SetScheme(neoscheme);
 	SetBgColor(COLOR_TRANSPARENT);
 #endif

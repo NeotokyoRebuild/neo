@@ -47,10 +47,6 @@ CNEOHud_Compass::CNEOHud_Compass(const char *pElementName, vgui::Panel *parent)
 {
 	SetAutoDelete(true);
 
-	vgui::HScheme neoscheme = vgui::scheme()->LoadSchemeFromFileEx(
-		enginevgui->GetPanel(PANEL_CLIENTDLL), "resource/ClientScheme_Neo.res", "ClientScheme_Neo");
-	SetScheme(neoscheme);
-
 	if (parent)
 	{
 		SetParent(parent);

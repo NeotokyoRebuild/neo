@@ -37,10 +37,6 @@ CNEOHud_FriendlyMarker::CNEOHud_FriendlyMarker(const char* pElemName, vgui::Pane
 {
 	SetAutoDelete(true);
 
-	vgui::HScheme neoscheme = vgui::scheme()->LoadSchemeFromFileEx(
-		enginevgui->GetPanel(PANEL_CLIENTDLL), "resource/ClientScheme_Neo.res", "ClientScheme_Neo");
-	SetScheme(neoscheme);
-
 	if (parent)
 	{
 		SetParent(parent);
