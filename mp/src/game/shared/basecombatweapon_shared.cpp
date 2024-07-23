@@ -1334,6 +1334,9 @@ void CBaseCombatWeapon::SetWeaponVisible( bool visible )
 	if ( visible )
 	{
 		RemoveEffects( EF_NODRAW );
+#ifdef NEO
+		AddEffects(EF_BONEMERGE);
+#endif
 		if ( vm )
 		{
 			vm->RemoveEffects( EF_NODRAW );
@@ -1341,7 +1344,11 @@ void CBaseCombatWeapon::SetWeaponVisible( bool visible )
 	}
 	else
 	{
+#ifdef NEO
+		RemoveEffects(EF_BONEMERGE);
+#else
 		AddEffects( EF_NODRAW );
+#endif
 		if ( vm )
 		{
 			vm->AddEffects( EF_NODRAW );
@@ -1514,11 +1521,7 @@ bool CBaseCombatWeapon::Holster( CBaseCombatWeapon *pSwitchingTo )
 	// If we don't have a holster anim, hide immediately to avoid timing issues
 	if ( !flSequenceDuration )
 	{
-#ifdef NEO
-		RemoveEffects(EF_BONEMERGE);
-#else
 		SetWeaponVisible( false );
-#endif
 	}
 	else
 	{
@@ -1566,11 +1569,7 @@ void CBaseCombatWeapon::InputHideWeapon( inputdata_t &inputdata )
 	// Only hide if we're still the active weapon. If we're not the active weapon
 	if ( GetOwner() && GetOwner()->GetActiveWeapon() == this )
 	{
-#ifdef NEO
-		RemoveEffects(EF_BONEMERGE);
-#else
 		SetWeaponVisible( false );
-#endif
 	}
 }
 #endif
@@ -1583,11 +1582,7 @@ void CBaseCombatWeapon::HideThink( void )
 	// Only hide if we're still the active weapon. If we're not the active weapon
 	if ( GetOwner() && GetOwner()->GetActiveWeapon() == this )
 	{
-#ifdef NEO
-		RemoveEffects(EF_BONEMERGE);
-#else
 		SetWeaponVisible( false );
-#endif
 	}
 }
 
