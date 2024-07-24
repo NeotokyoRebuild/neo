@@ -788,6 +788,15 @@ bool CNEOBaseCombatWeapon::ShouldDraw(void)
 	// These are carried by AIs; always show them
 	return true;
 }
+
+int CNEOBaseCombatWeapon::DrawModel(int flags)
+{
+	C_BaseCombatCharacter* localPlayer = C_BasePlayer::GetLocalPlayer();
+	if (GetOwner() == localPlayer && ShouldDrawLocalPlayerViewModel())
+		return 0;
+	
+	return BaseClass::DrawModel(flags);
+}
 #endif
 
 bool CNEOBaseCombatWeapon::CanDrop()

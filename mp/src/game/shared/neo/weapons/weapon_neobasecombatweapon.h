@@ -214,6 +214,7 @@ public:
 	virtual bool Holster(CBaseCombatWeapon* pSwitchingTo);
 	virtual void ItemHolsterFrame() OVERRIDE;
 	virtual bool ShouldDraw(void) OVERRIDE;
+	virtual int DrawModel(int flags) OVERRIDE;
 #endif
 
 	virtual bool Deploy(void);
