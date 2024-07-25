@@ -495,14 +495,7 @@ void CHud::InitFonts()
 	g_hFontTrebuchet24 = pScheme->GetFont("CenterPrintText", true);
 
 #ifdef NEO
-	vgui::HScheme neoscheme = vgui::scheme()->LoadSchemeFromFile(
-		"resource/ClientScheme_Neo.res", "ClientScheme_Neo");
-	vgui::IScheme *neoPScheme = vgui::scheme()->GetIScheme(neoscheme);
-	Assert(neoPScheme);
-	if (neoPScheme)
-	{
-		g_hFontKillfeed = neoPScheme->GetFont("NHudOCRSmall", true);
-	}
+	g_hFontKillfeed = pScheme->GetFont("NHudOCRSmall", true);
 
 	if (g_hFontKillfeed == vgui::INVALID_FONT)
 	{

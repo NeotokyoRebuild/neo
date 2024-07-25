@@ -49,10 +49,6 @@ CNEOHud_GhostMarker::CNEOHud_GhostMarker(const char* pElemName, vgui::Panel* par
 
 	SetAutoDelete(true);
 
-	vgui::HScheme neoscheme = vgui::scheme()->LoadSchemeFromFileEx(
-		enginevgui->GetPanel(PANEL_CLIENTDLL), "resource/ClientScheme_Neo.res", "ClientScheme_Neo");
-	SetScheme(neoscheme);
-
 	if (parent)
 	{
 		SetParent(parent);
@@ -74,8 +70,22 @@ CNEOHud_GhostMarker::CNEOHud_GhostMarker(const char* pElemName, vgui::Panel* par
 
 	SetVisible(false);
 
-	SetFgColor(Color(0, 0, 0, 0));
-	SetBgColor(Color(0, 0, 0, 0));
+	SetFgColor(COLOR_TRANSPARENT);
+	SetBgColor(COLOR_TRANSPARENT);
+}
+
+void CNEOHud_GhostMarker::ApplySchemeSettings(vgui::IScheme *pScheme)
+{
+	BaseClass::ApplySchemeSettings(pScheme);
+
+	m_hFont = pScheme->GetFont("NHudOCRSmall", true);
+
+	int wide, tall;
+	surface()->GetScreenSize(wide, tall);
+	SetBounds(0, 0, wide, tall);
+
+	SetFgColor(COLOR_TRANSPARENT);
+	SetBgColor(COLOR_TRANSPARENT);
 }
 
 void CNEOHud_GhostMarker::ApplySchemeSettings(vgui::IScheme *pScheme)

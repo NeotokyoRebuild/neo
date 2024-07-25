@@ -351,6 +351,7 @@ FileWeaponInfo_t::FileWeaponInfo_t()
 	vecVmOffset = vec3_origin;
 	szBulletCharacter[0] = 0;
 	iAimFOV = 0;
+	m_flPenetration = 0.f;
 #endif
 }
 
@@ -429,6 +430,7 @@ void FileWeaponInfo_t::Parse( KeyValues *pKeyValuesData, const char *szWeaponNam
 	vecVmOffset = Vector(VMOffsetForward, VMOffsetRight, VMOffsetUp);
 	Q_strncpy( szBulletCharacter, pKeyValuesData->GetString("BulletCharacter", "a"), MAX_BULLET_CHARACTER);
 	iAimFOV = pKeyValuesData->GetInt("AimFov", 45);
+	m_flPenetration = pKeyValuesData->GetFloat("Penetration", 0);
 #endif
 
 	bShowUsageHint = ( pKeyValuesData->GetInt( "showusagehint", 0 ) != 0 ) ? true : false;
