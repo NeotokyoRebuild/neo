@@ -86,13 +86,6 @@ void CNEOHud_GhostMarker::ApplySchemeSettings(vgui::IScheme *pScheme)
 
 	SetFgColor(COLOR_TRANSPARENT);
 	SetBgColor(COLOR_TRANSPARENT);
-}
-
-void CNEOHud_GhostMarker::ApplySchemeSettings(vgui::IScheme *pScheme)
-{
-	BaseClass::ApplySchemeSettings(pScheme);
-
-	m_hFont = pScheme->GetFont("NHudOCRSmall", true);
 
 	// Override CNEOHud_WorldPosMarker's sizing with our own
 	const int widerAxis = max(m_viewWidth, m_viewHeight);
