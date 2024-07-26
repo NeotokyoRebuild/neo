@@ -46,7 +46,6 @@ SendPropInt(SENDINFO(m_iNeoClass)),
 SendPropInt(SENDINFO(m_iNeoSkin)),
 SendPropInt(SENDINFO(m_iNeoStar)),
 SendPropInt(SENDINFO(m_iXP)),
-SendPropInt(SENDINFO(m_iCapTeam), 3),
 SendPropInt(SENDINFO(m_iLoadoutWepChoice)),
 SendPropInt(SENDINFO(m_iNextSpawnClassChoice)),
 SendPropInt(SENDINFO(m_bInLean)),
@@ -85,7 +84,6 @@ DEFINE_FIELD(m_iNeoClass, FIELD_INTEGER),
 DEFINE_FIELD(m_iNeoSkin, FIELD_INTEGER),
 DEFINE_FIELD(m_iNeoStar, FIELD_INTEGER),
 DEFINE_FIELD(m_iXP, FIELD_INTEGER),
-DEFINE_FIELD(m_iCapTeam, FIELD_INTEGER),
 DEFINE_FIELD(m_iLoadoutWepChoice, FIELD_INTEGER),
 DEFINE_FIELD(m_bDroppedAnything, FIELD_BOOLEAN),
 DEFINE_FIELD(m_iNextSpawnClassChoice, FIELD_INTEGER),
@@ -394,7 +392,6 @@ CNEO_Player::CNEO_Player()
 	m_bInAim = false;
 	m_bInLean = NEO_LEAN_NONE;
 
-	m_iCapTeam = TEAM_UNASSIGNED;
 	m_iLoadoutWepChoice = 0;
 	m_iNextSpawnClassChoice = -1;
 

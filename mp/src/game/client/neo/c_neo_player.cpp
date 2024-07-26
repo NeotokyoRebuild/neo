@@ -66,7 +66,6 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropString(RECVINFO(m_pszTestMessage)),
 
 	RecvPropInt(RECVINFO(m_iXP)),
-	RecvPropInt(RECVINFO(m_iCapTeam)),
 	RecvPropInt(RECVINFO(m_iLoadoutWepChoice)),
 	RecvPropInt(RECVINFO(m_iNextSpawnClassChoice)),
 	RecvPropInt(RECVINFO(m_bInLean)),
@@ -422,7 +421,6 @@ C_NEO_Player::C_NEO_Player()
 	m_iNeoSkin = NEO_SKIN_FIRST;
 	m_iNeoStar = NEO_DEFAULT_STAR;
 
-	m_iCapTeam = TEAM_UNASSIGNED;
 	m_iLoadoutWepChoice = 0;
 	m_iNextSpawnClassChoice = -1;
 	m_iXP.GetForModify() = 0;
@@ -442,7 +440,6 @@ C_NEO_Player::C_NEO_Player()
 
 	m_bFirstDeathTick = true;
 	m_bPreviouslyReloading = false;
-	m_bPreviouslyPreparingToHideMsg = false;
 	m_bLastTickInThermOpticCamo = false;
 	m_bIsAllowedToToggleVision = false;
 
@@ -979,28 +976,6 @@ void C_NEO_Player::PostThink(void)
 	if (GetLocalNEOPlayer() == this)
 	{
 		neo_this_client_speed.SetValue(MIN(GetAbsVelocity().Length2D() / GetNormSpeed(), 1.0f));
-	}
-
-	//DevMsg("Roll: %f\n", m_angEyeAngles[2]);
-
-	bool preparingToHideMsg = (m_iCapTeam != TEAM_UNASSIGNED);
-
-	if (!preparingToHideMsg && m_bPreviouslyPreparingToHideMsg)
-	{
-		auto indicator = GET_HUDELEMENT(CNEOHud_GameEvent);
-		if (indicator)
-		{
-			indicator->SetVisible(false);
-			m_bPreviouslyPreparingToHideMsg = false;
-		}
-		else
-		{
-			Assert(false);
-		}
-	}
-	else
-	{
-		m_bPreviouslyPreparingToHideMsg = preparingToHideMsg;
 	}
 
 	if (!IsAlive())
