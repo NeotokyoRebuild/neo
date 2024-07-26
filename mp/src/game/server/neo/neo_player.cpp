@@ -663,8 +663,7 @@ void CNEO_Player::PreThink(void)
 	{
 		speed /= 1.666;
 	}
-	auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
-	if (pNeoWep)
+	if (auto pNeoWep = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon()))
 	{
 		speed *= pNeoWep->GetSpeedScale();
 	}
@@ -1065,10 +1064,10 @@ void CNEO_Player::PostThink(void)
 
 	CheckLeanButtons();
 
-	if (CBaseCombatWeapon *pWep = GetActiveWeapon())
+	if (auto *pNeoWep = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon()))
 	{
 		const bool clientAimHold = ClientWantsAimHold(this);
-		if (pWep->m_bInReload && !m_bPreviouslyReloading)
+		if (pNeoWep->m_bInReload && !m_bPreviouslyReloading)
 		{
 			Weapon_SetZoom(false);
 		}
@@ -1079,21 +1078,20 @@ void CNEO_Player::PostThink(void)
 		else if (m_afButtonPressed & IN_AIM)
 		{
 			// Binds hack: we want grenade secondary attack to trigger on aim (mouse button 2)
-			if (auto *pNeoWep = dynamic_cast<CNEOBaseCombatWeapon *>(pWep);
-					pNeoWep && pNeoWep->GetNeoWepBits() & NEO_WEP_THROWABLE)
+			if (pNeoWep->GetNeoWepBits() & NEO_WEP_THROWABLE)
 			{
 				pNeoWep->SecondaryAttack();
 			}
 			else if (!CanSprint() || !(m_nButtons & IN_SPEED))
 			{
-				Weapon_AimToggle(pWep, clientAimHold ? NEO_TOGGLE_FORCE_AIM : NEO_TOGGLE_DEFAULT);
+				Weapon_AimToggle(pNeoWep, clientAimHold ? NEO_TOGGLE_FORCE_AIM : NEO_TOGGLE_DEFAULT);
 			}
 		}
 		else if (clientAimHold && (m_afButtonReleased & IN_AIM))
 		{
-			Weapon_AimToggle(pWep, NEO_TOGGLE_FORCE_UN_AIM);
+			Weapon_AimToggle(pNeoWep, NEO_TOGGLE_FORCE_UN_AIM);
 		}
-		m_bPreviouslyReloading = pWep->m_bInReload;
+		m_bPreviouslyReloading = pNeoWep->m_bInReload;
 
 		if (m_afButtonPressed & IN_DROP)
 		{
@@ -1101,7 +1099,7 @@ void CNEO_Player::PostThink(void)
 			EyeVectors(&eyeForward);
 			const float forwardOffset = 250.0f;
 			eyeForward *= forwardOffset;
-			Weapon_Drop(pWep, NULL, &eyeForward);
+			Weapon_Drop(pNeoWep, NULL, &eyeForward);
 		}
 	}
 
@@ -1139,16 +1137,11 @@ void CNEO_Player::PlayerDeathThink()
 	BaseClass::PlayerDeathThink();
 }
 
-void CNEO_Player::Weapon_AimToggle(CNEOBaseCombatWeapon* pNeoWep, const NeoWeponAimToggleE toggleType)
+void CNEO_Player::Weapon_AimToggle(CNEOBaseCombatWeapon *pNeoWep, const NeoWeponAimToggleE toggleType)
 {
-	if (!pNeoWep)
-	{
-		return;
-	}
-
 	if (IsAllowedToZoom(pNeoWep))
 	{
-		if (toggleType != NEO_TOGGLE_FORCE_UN_AIM && pNeoWep->IsReadyToAimIn())
+		if (toggleType != NEO_TOGGLE_FORCE_UN_AIM)
 		{
 			const bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR) == HIDEHUD_CROSSHAIR;
 			Weapon_SetZoom(showCrosshair);
@@ -1158,13 +1151,6 @@ void CNEO_Player::Weapon_AimToggle(CNEOBaseCombatWeapon* pNeoWep, const NeoWepon
 			Weapon_SetZoom(false);
 		}
 	}
-}
-
-void CNEO_Player::Weapon_AimToggle(CBaseCombatWeapon *pWep, const NeoWeponAimToggleE toggleType)
-{
-	// NEO TODO/HACK: Not all neo weapons currently inherit
-	// through a base neo class, so we can't static_cast!!
-	Weapon_AimToggle(dynamic_cast<CNEOBaseCombatWeapon*>(pWep), toggleType);
 }
 
 void CNEO_Player::SetNameDupePos(const int dupePos)
@@ -2939,8 +2925,7 @@ int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 
 float CNEO_Player::GetActiveWeaponSpeedScale() const
 {
-	// NEO TODO (Rain): change to static cast once all weapons are guaranteed to derive from the class
-	auto pWep = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
+	auto pWep = static_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
 	return (pWep ? pWep->GetSpeedScale() : 1.0f);
 }
 

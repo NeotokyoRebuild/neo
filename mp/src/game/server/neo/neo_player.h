@@ -116,8 +116,7 @@ public:
 
 	void UpdateNetworkedFriendlyLocations(void);
 
-	void Weapon_AimToggle(CBaseCombatWeapon *pWep, const NeoWeponAimToggleE toggleType);
-	void Weapon_AimToggle(CNEOBaseCombatWeapon* pWep, const NeoWeponAimToggleE toggleType);
+	void Weapon_AimToggle(CNEOBaseCombatWeapon *pWep, const NeoWeponAimToggleE toggleType);
 
 	// "neo_name" if available otherwise "name"
 	// Set "viewFrom" if fetching the name in the view of another player

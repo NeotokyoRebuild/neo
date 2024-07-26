@@ -146,7 +146,6 @@ public:
 
 	virtual float GetSpeedScale(void) const { Assert(false); return 1.0; } // Should never call this base class; implement in children.
 
-	virtual void ItemPreFrame(void);
 	virtual void ItemPostFrame(void);
 
 	virtual void PrimaryAttack(void);
@@ -158,9 +157,6 @@ public:
 	virtual float GetInnateInaccuracy(void) const { return 0.0f; } // NEO TODO (Rain): make this abstract & implement some amount of inaccuracy (spread) for weapons?
 
 	bool IsGhost(void) const { return (GetNeoWepBits() & NEO_WEP_GHOST) ? true : false; }
-
-	// We do this check to avoid a player unintentionally aiming in due to holding down their aim key while an automatic wep switch occurs.
-	bool IsReadyToAimIn(void) const { return m_bReadyToAimIn; }
 
 	bool IsExplosive(void) const { return (GetNeoWepBits() & NEO_WEP_EXPLOSIVE) ? true : false; }
 
@@ -236,9 +232,6 @@ protected:
 	CNetworkVar(int, m_nNumShotsFired);
 	CNetworkVar(bool, m_bRoundChambered);
 	CNetworkVar(bool, m_bRoundBeingChambered);
-
-private:
-	bool m_bReadyToAimIn;
 
 private:
 	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &other);
