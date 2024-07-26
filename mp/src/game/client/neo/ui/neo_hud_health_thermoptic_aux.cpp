@@ -226,7 +226,8 @@ void CNEOHud_HTA::DrawNeoHudElement()
 {
 	DrawBuildInfo(); // Always draw build info
 
-	if (!ShouldDraw())
+	auto *localPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if (!ShouldDraw() || (!localPlayer || localPlayer->IsObserver()))
 	{
 		return;
 	}

@@ -151,7 +151,7 @@ public:
 
 	void DrawCompass(void);
 
-	void Weapon_AimToggle(C_BaseCombatWeapon *pWep, const NeoWeponAimToggleE toggleType);
+	void Weapon_AimToggle(C_NEOBaseCombatWeapon *pNeoWep, const NeoWeponAimToggleE toggleType);
 	void Weapon_SetZoom(const bool bZoomIn);
 
 	void Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon);
@@ -188,7 +188,6 @@ public:
 	//wchar_t m_pszTestMessage;
 
 	CNetworkVar(int, m_iXP);
-	CNetworkVar(int, m_iCapTeam);
 	CNetworkVar(int, m_iLoadoutWepChoice);
 	CNetworkVar(int, m_iNextSpawnClassChoice);
 
@@ -222,7 +221,6 @@ public:
 private:
 	bool m_bFirstDeathTick;
 	bool m_bPreviouslyReloading;
-	bool m_bPreviouslyPreparingToHideMsg;
 	bool m_bIsAllowedToToggleVision;
 
 	INEOPlayerAnimState* m_pPlayerAnimState;

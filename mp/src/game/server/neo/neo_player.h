@@ -116,8 +116,7 @@ public:
 
 	void UpdateNetworkedFriendlyLocations(void);
 
-	void Weapon_AimToggle(CBaseCombatWeapon *pWep, const NeoWeponAimToggleE toggleType);
-	void Weapon_AimToggle(CNEOBaseCombatWeapon* pWep, const NeoWeponAimToggleE toggleType);
+	void Weapon_AimToggle(CNEOBaseCombatWeapon *pWep, const NeoWeponAimToggleE toggleType);
 
 	// "neo_name" if available otherwise "name"
 	// Set "viewFrom" if fetching the name in the view of another player
@@ -212,8 +211,6 @@ public:
 	CNetworkVar(int, m_iNeoClass);
 	CNetworkVar(int, m_iNeoSkin);
 	CNetworkVar(int, m_iNeoStar);
-
-	CNetworkVar(int, m_iCapTeam);
 
 	CNetworkVar(int, m_iXP);
 
