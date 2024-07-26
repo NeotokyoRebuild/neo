@@ -200,18 +200,13 @@ jobs:
       uses: actions/download-artifact@v4
 
     - name: Packing artifacts
-      run: |
-        for i in neo-*
-        do
-          7z a -tzip -mx=9 "${i}.zip" "./${i}/*"
-        done
+      run: 'parallel 7z a -tzip -mx=9 "{}.zip" "./{}/*" ::: neo-*'
         
     - name: Create latest release
-      uses: mathieucarbou/marvinpinto-action-automatic-releases@latest
+      uses: slord399/action-automatic-releases@v1.0.1
       with:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
         prerelease: true
         automatic_release_tag: "latest"
         title: "Latest Build"
-        files: |
-          neo-*.zip
+        files: neo-*.zip
