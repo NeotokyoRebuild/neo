@@ -199,6 +199,13 @@ jobs:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
 
+    - name: Packing artifacts
+      run: |
+        for i in neo-*
+        do
+          7z a -tzip -mx=9 "${i}.zip" "${i}"
+        done
+        
     - name: Create latest release
       if: github.ref == 'refs/heads/master'
       uses: mathieucarbou/marvinpinto-action-automatic-releases@latest
@@ -208,4 +215,4 @@ jobs:
         automatic_release_tag: "latest"
         title: "Latest Build"
         files: |
-          *.zip
+          neo-*.zip
