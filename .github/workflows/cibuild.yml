@@ -203,7 +203,7 @@ jobs:
       run: |
         for i in neo-*
         do
-          7z a -tzip -mx=9 "${i}.zip" "${i}"
+          7z a -tzip -mx=9 "${i}.zip" "./${i}/*"
         done
         
     - name: Create latest release
