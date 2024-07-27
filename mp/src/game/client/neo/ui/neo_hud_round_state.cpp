@@ -69,6 +69,8 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 		star->SetImage(vgui::scheme()->GetImage(hudName, STARS_HW_FILTERED));
 		star->SetDrawColor(COLOR_NSF); // This will get updated in the draw check as required
 		star->SetAlpha(1.0f);
+		star->SetWide(192);
+		star->SetTall(48);
 		star->SetShouldScaleImage(true);
 		star->SetAutoDelete(starAutoDelete);
 		star->SetVisible(false);
@@ -129,13 +131,6 @@ void CNEOHud_RoundState::ApplySchemeSettings(vgui::IScheme* pScheme)
 	IntDim res = {};
 	surface()->GetScreenSize(res.w, res.h);
 	m_iXpos = (res.w / 2);
-
-	for (auto *star : m_ipStars)
-	{
-		// The icons are downscaled to 192*48 on a 1080p res.
-		star->SetWide(192 * res.w / 1920.0);
-		star->SetTall(48 * res.h / 1080.0);
-	}
 
 	// Box dimensions
 	int iSmallFontWidth = 0;
