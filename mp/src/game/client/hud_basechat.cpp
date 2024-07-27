@@ -1872,15 +1872,26 @@ void CBaseHudChat::ChatPrintf( int iPlayerIndex, int iFilter, const char *fmt, .
 
 		if ( pName )
 		{
+#ifdef NEO
+			wchar_t wideName[MAX_PLAYER_NAME_LENGTH+1];
+			char pNameWithColon[MAX_PLAYER_NAME_LENGTH+1];
+			V_snprintf(pNameWithColon, MAX_PLAYER_NAME_LENGTH+1, "%s:", pName);
+			g_pVGuiLocalize->ConvertANSIToUnicode(pNameWithColon, wideName, sizeof( wideName ) );
+#else
 			wchar_t wideName[MAX_PLAYER_NAME_LENGTH];
 			g_pVGuiLocalize->ConvertANSIToUnicode( pName, wideName, sizeof( wideName ) );
+#endif
 
 			const wchar_t *nameInString = wcsstr( wbuf, wideName );
 
 			if ( nameInString )
 			{
 				iNameStart = (nameInString - wbuf);
+#ifdef NEO
+				iNameLength = wcslen( wideName ) - 1;
+#else
 				iNameLength = wcslen( wideName );
+#endif
 			}
 		}
 

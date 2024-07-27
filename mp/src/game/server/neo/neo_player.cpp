@@ -1224,7 +1224,7 @@ void CNEO_Player::SetNeoPlayerName(const char *newNeoName)
 	// NEO NOTE (nullsystem): Generally it's never NULL but just incase
 	if (newNeoName)
 	{
-		V_memcpy(m_szNeoName.GetForModify(), newNeoName, sizeof(m_szNeoName));
+		V_memcpy(m_szNeoName.GetForModify(), newNeoName, sizeof(m_szNeoName)-1);
 		m_szNeoNameHasSet = true;
 	}
 }
