@@ -28,7 +28,9 @@ DECLARE_NAMED_HUDELEMENT(CNEOHud_RoundState, NRoundState);
 
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(RoundState, 0.1)
 
-ConVar neo_old_squad_hud("neo_old_squad_hud", "0", FCVAR_ARCHIVE, "Use the old squad HUD", true, 0.0, true, 1.0);
+ConVar neo_cl_squad_hud_original("neo_cl_squad_hud_original", "0", FCVAR_ARCHIVE, "Use the old squad HUD", true, 0.0, true, 1.0);
+
+ConVar neo_cl_squad_hud_star_scale("neo_cl_squad_hud_star_scale", "0", FCVAR_ARCHIVE, "Scaling to apply from 1080p, 0 disables scaling");
 
 namespace {
 constexpr int Y_POS = 2;
@@ -71,8 +73,6 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 		star->SetImage(vgui::scheme()->GetImage(hudName, STARS_HW_FILTERED));
 		star->SetDrawColor(COLOR_NSF); // This will get updated in the draw check as required
 		star->SetAlpha(1.0f);
-		star->SetWide(192);
-		star->SetTall(48);
 		star->SetShouldScaleImage(true);
 		star->SetAutoDelete(starAutoDelete);
 		star->SetVisible(false);
@@ -133,6 +133,23 @@ void CNEOHud_RoundState::ApplySchemeSettings(vgui::IScheme* pScheme)
 	IntDim res = {};
 	surface()->GetScreenSize(res.w, res.h);
 	m_iXpos = (res.w / 2);
+
+	if (neo_cl_squad_hud_star_scale.GetFloat())
+	{
+		const float scale = neo_cl_squad_hud_star_scale.GetFloat() * (res.h / 1080.0);
+		for (auto* star : m_ipStars)
+		{
+			star->SetWide(192 * scale);
+			star->SetTall(48 * scale);
+		}
+	}
+	else {
+		for (auto* star : m_ipStars)
+		{
+			star->SetWide(192);
+			star->SetTall(48);
+		}
+	}
 
 	// Box dimensions
 	int iSmallFontWidth = 0;
@@ -274,7 +291,7 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 	int fontWidth, fontHeight;
 	surface()->GetTextSize(m_hOCRFont, m_wszTime, fontWidth, fontHeight);
 
-	if (!neo_old_squad_hud.GetBool())
+	if (!neo_cl_squad_hud_original.GetBool())
 	{
 		// Draw Box
 		DrawNeoHudRoundedBox(m_iLeftOffset, Y_POS, m_iRightOffset, m_iBoxYEnd, box_color, false, false, true, true);
@@ -443,9 +460,9 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 	}
 
 	// Draw time
-	surface()->DrawSetTextColor(neo_old_squad_hud.GetBool() ? COLOR_FADED_WHITE : (NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze) ?
+	surface()->DrawSetTextColor(neo_cl_squad_hud_original.GetBool() ? COLOR_FADED_WHITE : (NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze) ?
 									COLOR_RED : COLOR_WHITE);
-	surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), neo_old_squad_hud.GetBool() ? Y_POS : m_iSmallFontHeight);
+	surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), neo_cl_squad_hud_original.GetBool() ? Y_POS : m_iSmallFontHeight);
 	surface()->DrawPrintText(m_wszTime, 6);
 
 	CheckActiveStar();
