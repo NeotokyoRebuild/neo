@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.25)
 
 cmake_policy(SET CMP0091 NEW)
+cmake_policy(SET CMP0141 NEW)
 
 project(neo)
 set(CMAKE_VERBOSE_MAKEFILE TRUE)
@@ -174,9 +175,6 @@ if(OS_WINDOWS)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "")
 
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-
-        string(REGEX REPLACE "/Zi" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
-
         add_compile_options(
             #/Wp64 # Detect64bitPortabilityIssues
             #/Od # Optimization - Disabled
@@ -187,7 +185,6 @@ if(OS_WINDOWS)
             /Zc:forScope
             /Oy-
             /MTd
-            /ZI
         )
 
         add_compile_definitions(
