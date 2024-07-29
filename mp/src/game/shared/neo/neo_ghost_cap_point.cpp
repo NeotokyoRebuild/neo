@@ -224,7 +224,7 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 		}
 
 		const Vector dir = player->GetAbsOrigin() - GetAbsOrigin();
-		const float distance = dir.Length();
+		const int distance = dir.Length();
 
 		Assert(distance >= 0);
 
