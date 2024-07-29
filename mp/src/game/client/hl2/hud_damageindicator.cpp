@@ -363,53 +363,17 @@ void CHudDamageIndicator::MsgFunc_Damage( bf_read &msg )
 	if ( !pPlayer )
 		return;
 
-	// player has just died, just run the dead damage animation
+	// player has just died, return
 	if ( pPlayer->GetHealth() <= 0 )
 	{
-		g_pClientMode->GetViewportAnimationController()->StartAnimationSequence( "HudPlayerDeath" );
 		return;
 	}
 
-	// ignore damage without direction
-	// this should never happen, unless it's drowning damage, 
-	// or the player is forcibly killed, handled above
-	if ( vecFrom == vec3_origin && !(bitsDamage & DMG_DROWN))
-		return;
-
-	Vector vecDelta = (vecFrom - MainViewOrigin());
-	VectorNormalize( vecDelta );
-
-	int highDamage = DAMAGE_LOW;
-
 	if ( damageTaken > 0 || armor > 0 )
 	{
-		// see which quandrant the effect is in
-		float angle;
-		GetDamagePosition( vecDelta, &angle );
-
 		// see which effect to play
-		DamageAnimation_t *dmgAnim = g_DamageAnimations;
-		for ( ; dmgAnim->name != NULL; ++dmgAnim )
-		{
-			if ( dmgAnim->bitsDamage && !(bitsDamage & dmgAnim->bitsDamage) )
-				continue;
-
-			if ( dmgAnim->angleMinimum && angle < dmgAnim->angleMinimum )
-				continue;
-
-			if ( dmgAnim->angleMaximum && angle > dmgAnim->angleMaximum )
-				continue;
-
-			if ( dmgAnim->damage && dmgAnim->damage != highDamage )
-				continue;
-
-			// we have a match, break
-			break;
-		}
-
-		if ( dmgAnim->name )
-		{
-			g_pClientMode->GetViewportAnimationController()->StartAnimationSequence( dmgAnim->name );
+		if (bitsDamage & DMG_BULLET || bitsDamage & DMG_SLASH || bitsDamage & DMG_CLUB) {
+			g_pClientMode->GetViewportAnimationController()->StartAnimationSequence("HudTakeDamageFront");
 		}
 	}
 }
