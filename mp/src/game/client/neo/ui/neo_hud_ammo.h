@@ -44,7 +44,7 @@ private:
 	CPanelAnimationVarAliasType(int, tall, "tall", "32", "proportional_ypos");
 	CPanelAnimationVarAliasType(int, visible, "visible", "1", "int");
 	CPanelAnimationVarAliasType(int, enabled, "enabled", "1", "int");
-	CPanelAnimationVar(Color, box_color, "box_color", "100 100 100 178");
+	CPanelAnimationVar(Color, box_color, "box_color", "200 200 200 40");
 
 	CPanelAnimationVarAliasType(bool, top_left_corner, "top_left_corner", "1", "bool");
 	CPanelAnimationVarAliasType(bool, top_right_corner, "top_right_corner", "1", "bool");
@@ -61,8 +61,9 @@ private:
 	CPanelAnimationVarAliasType(int, digit2_ypos, "digit2_ypos", "16", "proportional_ypos");
 	CPanelAnimationVarAliasType(int, icon_xpos, "icon_xpos", "3", "proportional_xpos");
 	CPanelAnimationVarAliasType(int, icon_ypos, "icon_ypos", "5", "proportional_ypos");
-	CPanelAnimationVar(Color, ammo_color, "ammo_color", "255 255 255 178");
-	CPanelAnimationVar(Color, emptied_ammo_color, "emptied_ammo_color", "255 255 255 89");
+	CPanelAnimationVar(Color, ammo_text_color, "ammo_text_color", "255 255 255 100");
+	CPanelAnimationVar(Color, ammo_color, "ammo_color", "255 255 255 150");
+	CPanelAnimationVar(Color, emptied_ammo_color, "emptied_ammo_color", "255 255 255 50");
 private:
 	CNEOHud_Ammo(const CNEOHud_Ammo& other);
 };

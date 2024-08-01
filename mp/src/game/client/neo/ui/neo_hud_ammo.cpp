@@ -114,7 +114,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 	DrawNeoHudRoundedBox(xpos, ypos, xpos + wide, ypos + tall, box_color, top_left_corner, top_right_corner, bottom_left_corner, bottom_right_corner);
 
 	surface()->DrawSetTextFont(m_hSmallTextFont);
-	surface()->DrawSetTextColor(ammo_color);
+	surface()->DrawSetTextColor(ammo_text_color);
 	int fontWidth, fontHeight;
 	surface()->GetTextSize(m_hSmallTextFont, unicodeWepName, fontWidth, fontHeight);
 	surface()->DrawSetTextPos((text_xpos + xpos) - fontWidth, text_ypos + ypos);
@@ -154,7 +154,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 		surface()->DrawSetTextPos(digit2_xpos + xpos - fontWidth, digit2_ypos + ypos);
 		surface()->DrawPrintText(unicodeClipsText, textLen);
 	}
-		
+
 	const char* ammoChar = nullptr;
 	int fireModeWidth = 0, fireModeHeight = 0;
 	int magSizeMax = 0;
@@ -203,6 +203,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 		}			
 	}
 
+	surface()->DrawSetTextColor(ammo_color);
 	if (digit_as_number && activeWep->UsesClipsForAmmo1())
 	{ // Draw bullets in magazine in number form
 		surface()->DrawSetTextFont(m_hBulletFont);
