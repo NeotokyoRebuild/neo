@@ -127,7 +127,7 @@ void C_PlayerResource::OnDataChanged(DataUpdateType_t updateType)
 
 void C_PlayerResource::UpdatePlayerName( int slot )
 {
-	if ( slot < 1 || slot > MAX_PLAYERS )
+	if ( slot < 1 || slot > gpGlobals->maxClients )
 	{
 		Error( "UpdatePlayerName with bogus slot %d\n", slot );
 		return;
@@ -149,8 +149,7 @@ void C_PlayerResource::UpdatePlayerName( int slot )
 void C_PlayerResource::ClientThink()
 {
 	BaseClass::ClientThink();
-
-	for ( int i = 1; i <= gpGlobals->maxClients; ++i )
+	for ( int i = 1; i <= gpGlobals->maxClients; i++ )
 	{
 		UpdatePlayerName( i );
 	}
