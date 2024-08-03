@@ -1824,20 +1824,20 @@ const char* CNEORules::GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer)
 		{
 			switch (pPlayer->GetTeamNumber())
 			{
-			case TEAM_JINRAI: return FMT_TEAM_JINRAI " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
-			case TEAM_NSF: return FMT_TEAM_NSF " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
-			case TEAM_SPECTATOR: return FMT_TEAM_SPECTATOR " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
-			default: return FMT_TEAM_UNASSIGNED " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_JINRAI: return FMT_TEAM_JINRAI " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_NSF: return FMT_TEAM_NSF " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_SPECTATOR: return FMT_TEAM_SPECTATOR " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			default: return FMT_TEAM_UNASSIGNED " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
 			}
 		}
 		else
 		{
 			switch (pPlayer->GetTeamNumber())
 			{
-			case TEAM_JINRAI: return FMT_TEAM_JINRAI " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
-			case TEAM_NSF: return FMT_TEAM_NSF " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
-			case TEAM_SPECTATOR: return FMT_TEAM_SPECTATOR " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
-			default: return FMT_TEAM_UNASSIGNED " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_JINRAI: return FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_NSF: return FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_SPECTATOR: return FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			default: return FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
 			}
 		}
 	}
@@ -1847,20 +1847,20 @@ const char* CNEORules::GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer)
 		{
 			switch (pPlayer->GetTeamNumber())
 			{
-			case TEAM_JINRAI: return FMT_DEAD " " FMT_TEAM_JINRAI " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
-			case TEAM_NSF: return FMT_DEAD " " FMT_TEAM_NSF " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
-			case TEAM_SPECTATOR: return FMT_TEAM_SPECTATOR " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
-			default: return FMT_TEAM_UNASSIGNED " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_JINRAI: return FMT_DEAD FMT_TEAM_JINRAI " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_NSF: return FMT_DEAD FMT_TEAM_NSF " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_SPECTATOR: return FMT_TEAM_SPECTATOR " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			default: return FMT_TEAM_UNASSIGNED " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
 			}
 		}
 		else
 		{
 			switch (pPlayer->GetTeamNumber())
 			{
-			case TEAM_JINRAI: return FMT_DEAD " " FMT_TEAM_JINRAI " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
-			case TEAM_NSF: return FMT_DEAD " " FMT_TEAM_NSF " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
-			case TEAM_SPECTATOR: return FMT_TEAM_SPECTATOR " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
-			default: return FMT_TEAM_UNASSIGNED " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_JINRAI: return FMT_DEAD " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_NSF: return FMT_DEAD " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_SPECTATOR: return FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			default: return FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
 			}
 		}
 	}
