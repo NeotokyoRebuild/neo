@@ -3,12 +3,11 @@
 #include "convar.h"
 #include "dbg.h"
 
-namespace {
-void neoVersionCallback()
+void NeoVersionPrint()
 {
 #if defined(GAME_DLL)
 	static constexpr char HEADER[] = "neo_version (Server's build info):";
-#else defined(CLIENT_DLL)
+#elif defined(CLIENT_DLL)
 	static constexpr char HEADER[] = "neo_version (Client's build info):";
 #endif
 	Msg("%s\n"
@@ -25,10 +24,31 @@ void neoVersionCallback()
 		COMPILER_ID, COMPILER_VERSION);
 }
 
+namespace {
 #ifdef CLIENT_DLL
 constexpr int NEO_VERSION_FLAGS = 0;
 #else
 constexpr int NEO_VERSION_FLAGS = FCVAR_HIDDEN;
 #endif
-ConCommand neo_version("neo_version", neoVersionCallback, "Print out client/server's build's information.", NEO_VERSION_FLAGS);
+ConCommand neo_version("neo_version", NeoVersionPrint, "Print out client/server's build's information.", NEO_VERSION_FLAGS);
+
+#ifdef CLIENT_DLL
+ConVar __neo_cl_git_hash("__neo_cl_git_hash", GIT_LONGHASH,
+						 FCVAR_USERINFO | FCVAR_HIDDEN | FCVAR_DONTRECORD | FCVAR_NOT_CONNECTED
+#ifndef DEBUG
+						 | FCVAR_PRINTABLEONLY
+#endif
+						 );
+#endif
 }
+
+#if defined(CLIENT_DLL) && defined(DEBUG)
+void InitializeDbgNeoClGitHashEdit()
+{
+	static char static_dbgHash[sizeof(GIT_LONGHASH) + 1];
+	V_strcpy_safe(static_dbgHash, GIT_LONGHASH);
+	static_dbgHash[0] = static_dbgHash[0] | 0b1000'0000;
+	__neo_cl_git_hash.SetDefault(static_dbgHash);
+	__neo_cl_git_hash.Revert(); // It just sets to the default
+}
+#endif

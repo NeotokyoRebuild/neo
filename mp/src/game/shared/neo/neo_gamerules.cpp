@@ -1,5 +1,6 @@
 #include "cbase.h"
 #include "neo_gamerules.h"
+#include "neo_version_info.h"
 #include "in_buttons.h"
 #include "ammodef.h"
 
@@ -35,6 +36,23 @@ ConVar neo_sv_player_restore("neo_sv_player_restore", "1", FCVAR_REPLICATED, "If
 
 ConVar neo_name("neo_name", "", FCVAR_USERINFO | FCVAR_ARCHIVE, "The nickname to set instead of the steam profile name.");
 ConVar cl_onlysteamnick("cl_onlysteamnick", "0", FCVAR_USERINFO | FCVAR_ARCHIVE, "Only show players Steam names, otherwise show player set names.", true, 0.0f, true, 1.0f);
+
+#ifdef GAME_DLL
+#ifdef DEBUG
+// Debug build by default relax integrity check requirement among debug clients
+static constexpr char INTEGRITY_CHECK_DBG[] = "1";
+#else
+static constexpr char INTEGRITY_CHECK_DBG[] = "0";
+#endif
+ConVar neo_sv_build_integrity_check("neo_sv_build_integrity_check", "1", FCVAR_GAMEDLL | FCVAR_REPLICATED,
+									"If enabled, the server checks the build's Git hash between the client and"
+									" the server. If it doesn't match, the server rejects and disconnects the client.",
+									true, 0.0f, true, 1.0f);
+ConVar neo_sv_build_integrity_check_allow_debug("neo_sv_build_integrity_check_allow_debug", INTEGRITY_CHECK_DBG, FCVAR_GAMEDLL | FCVAR_REPLICATED,
+									"If enabled, when the server checks the client hashes, it'll also allow debug"
+									" builds which has a given special bit to bypass the check.",
+									true, 0.0f, true, 1.0f);
+#endif
 
 REGISTER_GAMERULES_CLASS( CNEORules );
 
@@ -1294,6 +1312,28 @@ void CNEORules::RestartGame()
 #ifdef GAME_DLL
 bool CNEORules::ClientConnected(edict_t *pEntity, const char *pszName, const char *pszAddress, char *reject, int maxrejectlen)
 {
+	if (neo_sv_build_integrity_check.GetBool())
+	{
+		const char *clientGitHash = engine->GetClientConVarValue(engine->IndexOfEdict(pEntity), "__neo_cl_git_hash");
+		const bool dbgBuildSkip = (neo_sv_build_integrity_check_allow_debug.GetBool()) ? (clientGitHash[0] & 0b1000'0000) : false;
+		if (dbgBuildSkip)
+		{
+			DevWarning("Client debug build integrity check bypass! Client: %s | Server: %s\n", clientGitHash, GIT_LONGHASH);
+		}
+		// NEO NOTE (nullsystem): Due to debug builds, if we're to match exactly, we'll have to mask out final bit first
+		char cmpClientGitHash[sizeof(GIT_LONGHASH) + 1];
+		V_strcpy_safe(cmpClientGitHash, clientGitHash);
+		cmpClientGitHash[0] &= 0b0111'1111;
+		if (!dbgBuildSkip && V_strcmp(cmpClientGitHash, GIT_LONGHASH))
+		{
+			// Truncate the git hash so it's short hash and doesn't make message too long
+			static constexpr int MAX_GITHASH_SHOW = 7;
+			V_snprintf(reject, maxrejectlen, "Build integrity failed! Client vs server mis-match: Check your neo_version. "
+											 "Client: %.*s | Server: %.*s",
+					   MAX_GITHASH_SHOW, cmpClientGitHash, MAX_GITHASH_SHOW, GIT_LONGHASH);
+			return false;
+		}
+	}
 	return BaseClass::ClientConnected(pEntity, pszName, pszAddress,
 		reject, maxrejectlen);
 #if(0)
