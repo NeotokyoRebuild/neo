@@ -1321,7 +1321,7 @@ bool CNEORules::ClientConnected(edict_t *pEntity, const char *pszName, const cha
 			DevWarning("Client debug build integrity check bypass! Client: %s | Server: %s\n", clientGitHash, GIT_LONGHASH);
 		}
 		// NEO NOTE (nullsystem): Due to debug builds, if we're to match exactly, we'll have to mask out final bit first
-		char cmpClientGitHash[sizeof(GIT_LONGHASH) + 1];
+		char cmpClientGitHash[GIT_LONGHASH_SIZE + 1];
 		V_strcpy_safe(cmpClientGitHash, clientGitHash);
 		cmpClientGitHash[0] &= 0b0111'1111;
 		if (!dbgBuildSkip && V_strcmp(cmpClientGitHash, GIT_LONGHASH))

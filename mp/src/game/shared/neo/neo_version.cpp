@@ -45,7 +45,7 @@ ConVar __neo_cl_git_hash("__neo_cl_git_hash", GIT_LONGHASH,
 #if defined(CLIENT_DLL) && defined(DEBUG)
 void InitializeDbgNeoClGitHashEdit()
 {
-	static char static_dbgHash[sizeof(GIT_LONGHASH) + 1];
+	static char static_dbgHash[GIT_LONGHASH_SIZE];
 	V_strcpy_safe(static_dbgHash, GIT_LONGHASH);
 	static_dbgHash[0] = static_dbgHash[0] | 0b1000'0000;
 	__neo_cl_git_hash.SetDefault(static_dbgHash);
