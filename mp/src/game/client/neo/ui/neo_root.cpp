@@ -50,7 +50,9 @@ CNeoRoot *g_pNeoRoot = nullptr;
 namespace {
 
 int g_iRowTall = 40;
-int g_iMargin = 10;
+int g_iMarginX = 10;
+int g_iMarginY = 10;
+int g_iAvatar = 64;
 int g_iRootSubPanelWide = 600;
 HFont g_neoFont;
 
@@ -416,7 +418,7 @@ void CNeoSettings_Dynamic::Paint()
 		}
 		else
 		{
-			surface()->DrawSetTextPos(g_iMargin, yPos + fontStartYPos);
+			surface()->DrawSetTextPos(g_iMarginX, yPos + fontStartYPos);
 		}
 		surface()->DrawPrintText(ndv->label, ndv->labelSize);
 
@@ -474,20 +476,20 @@ void CNeoSettings_Dynamic::Paint()
 		case CNeoDataVariant::TEXTENTRY:
 		{
 			CNeoDataTextEntry *te = &ndv->textEntry;
-			surface()->DrawSetTextPos(wgXPos + g_iMargin, yPos + fontStartYPos);
+			surface()->DrawSetTextPos(wgXPos + g_iMarginX, yPos + fontStartYPos);
 			surface()->DrawPrintText(te->wszEntry, V_wcslen(te->wszEntry));
 			if (te->bEditing)
 			{
 				int textWide, textTall;
 				surface()->GetTextSize(g_neoFont, te->wszEntry, textWide, textTall);
-				surface()->DrawSetTextPos(wgXPos + g_iMargin + textWide, yPos + fontStartYPos);
+				surface()->DrawSetTextPos(wgXPos + g_iMarginX + textWide, yPos + fontStartYPos);
 				surface()->DrawPrintText(L"_", 1);
 			}
 		}
 		break;
 		case CNeoDataVariant::S_DISPLAYNAME:
 		{
-			surface()->DrawSetTextPos(wgXPos + g_iMargin, yPos + fontStartYPos);
+			surface()->DrawSetTextPos(wgXPos + g_iMarginX, yPos + fontStartYPos);
 
 			const wchar_t *wszNeoName = m_ndsMulti.m_ndvList[CNeoDataSettings_Multiplayer::OPT_MULTI_NEONAME].textEntry.wszEntry;
 			const bool bOnlySteamNick = static_cast<bool>(m_ndsMulti.m_ndvList[CNeoDataSettings_Multiplayer::OPT_MULTI_ONLYSTEAMNICK].ringBox.iCurIdx);
@@ -572,7 +574,7 @@ void CNeoSettings_Dynamic::Paint()
 		for (int i = 0, xPosTab = 0; i < TAB__TOTAL; ++i, xPosTab += iTabWide)
 		{
 			if (i == m_iNdsCurrent) surface()->DrawFilledRect(xPosTab, 0, xPosTab + iTabWide, g_iRowTall);
-			surface()->DrawSetTextPos(xPosTab + g_iMargin, fontStartYPos);
+			surface()->DrawSetTextPos(xPosTab + g_iMarginX, fontStartYPos);
 			surface()->DrawPrintText(TAB_NAMES[i].text, TAB_NAMES[i].size);
 		}
 	}
@@ -595,7 +597,7 @@ void CNeoSettings_Dynamic::Paint()
 			{
 				surface()->DrawSetColor((m_iBottomHover == i) ? Color(40, 10, 10, 255) : Color(40, 40, 40, 255));
 				surface()->DrawFilledRect(xPosTab, bottomYStart, xPosTab + iTabWide, panelTall);
-				surface()->DrawSetTextPos(xPosTab + g_iMargin, bottomYStart + fontStartYPos);
+				surface()->DrawSetTextPos(xPosTab + g_iMarginX, bottomYStart + fontStartYPos);
 				surface()->DrawPrintText(BBTN_NAMES[i].text, BBTN_NAMES[i].size);
 			}
 		}
@@ -1877,9 +1879,12 @@ void CNeoRoot::ApplySchemeSettings(IScheme *pScheme)
 	SetFgColor(COLOR_TRANSPARENT);
 	SetBgColor(COLOR_TRANSPARENT);
 
-	// In 1080p, g_iRowTall == 40, g_iMargin = 10, other resolution scales up/down from it
+	// In 1080p, g_iRowTall == 40, g_iMarginX = 10, g_iAvatar = 64,
+	// other resolution scales up/down from it
 	g_iRowTall = tall / 27;
-	g_iMargin = wide / 192;
+	g_iMarginX = wide / 192;
+	g_iMarginY = tall / 108;
+	g_iAvatar = wide / 30;
 	g_iRootSubPanelWide = static_cast<int>(static_cast<float>(wide) * 0.65f);
 
 	g_neoFont = m_hTextFonts[FONT_NTSMALL];
@@ -1898,7 +1903,12 @@ void CNeoRoot::Paint()
 	const bool bInSettings = m_state == STATE_SETTINGS;
 	if (!bInSettings)
 	{
+		const int btnWide = wide / 4;
+		const int iBtnPlaceXMid = (wide / 4);
 		const int yTopPos = tall / 2 - ((g_iRowTall * BTN__TOTAL) / 2);
+
+		const int iRightXPos = iBtnPlaceXMid + (btnWide / 2) + g_iMarginX;
+		int iRightSideYStart = yTopPos;
 
 		// Draw title
 		static constexpr wchar_t WSZ_GAME_TITLE[] = L"neatbkyoc ue";
@@ -1907,7 +1917,7 @@ void CNeoRoot::Paint()
 		surface()->GetTextSize(m_hTextFonts[FONT_LOGO], WSZ_GAME_TITLE, textWidth, textHeight);
 
 		surface()->DrawSetTextColor(Color(128, 128, 128, 255));
-		surface()->DrawSetTextPos(wide / 2 - (textWidth / 2), yTopPos - textHeight);
+		surface()->DrawSetTextPos(iBtnPlaceXMid - (textWidth / 2), yTopPos - textHeight);
 		surface()->DrawPrintText(WSZ_GAME_TITLE, sizeof(WSZ_GAME_TITLE) / sizeof(wchar_t));
 
 		surface()->DrawSetTextColor(Color(255, 255, 255, 255));
@@ -1915,6 +1925,8 @@ void CNeoRoot::Paint()
 		ISteamFriends *steamFriends = steamapicontext->SteamFriends();
 		if (steamUser && steamFriends)
 		{
+			const int iSteamPlaceXStart = iRightXPos;
+
 			// Draw player info (top left corner)
 			const CSteamID steamID = steamUser->GetSteamID();
 			if (!m_avImage)
@@ -1922,30 +1934,87 @@ void CNeoRoot::Paint()
 				m_avImage = new CAvatarImage;
 				m_avImage->SetAvatarSteamID(steamID, k_EAvatarSize64x64);
 			}
-			m_avImage->SetPos(10, 10);
-			m_avImage->SetSize(64, 64);
+			m_avImage->SetPos(iSteamPlaceXStart + g_iMarginX, iRightSideYStart + g_iMarginY);
+			m_avImage->SetSize(g_iAvatar, g_iAvatar);
 			m_avImage->Paint();
 
-			char szAll[512] = {};
-			const char *name = steamFriends->GetPersonaName();
-			V_sprintf_safe(szAll, "Steam name: %s", name);
-			const int textLen = V_strlen(szAll);
+			char szTextBuf[512] = {};
+			const char *szSteamName = steamFriends->GetPersonaName();
+			const char *szNeoName = neo_name.GetString();
+			const bool bUseNeoName = (szNeoName && szNeoName[0] != '\0' && !cl_onlysteamnick.GetBool());
+			V_sprintf_safe(szTextBuf, "%s", (bUseNeoName) ? szNeoName : szSteamName);
 
-			wchar_t steamInfo[512] = {};
-			g_pVGuiLocalize->ConvertANSIToUnicode(szAll, steamInfo, sizeof(steamInfo));
+			wchar_t wszTextBuf[512] = {};
+			g_pVGuiLocalize->ConvertANSIToUnicode(szTextBuf, wszTextBuf, sizeof(wszTextBuf));
 
-			int textWidth, textHeight;
+			int iMainTextWidth, iMainTextHeight;
 			surface()->DrawSetTextFont(m_hTextFonts[FONT_NTNORMAL]);
-			surface()->GetTextSize(m_hTextFonts[FONT_NTNORMAL], steamInfo, textWidth, textHeight);
+			surface()->GetTextSize(m_hTextFonts[FONT_NTNORMAL], wszTextBuf, iMainTextWidth, iMainTextHeight);
 
-			surface()->DrawSetTextPos(20 + 64, 10);
-			surface()->DrawPrintText(steamInfo, textLen);
+			const int iMainTextStartPosX = g_iMarginX + g_iAvatar + g_iMarginX;
+			surface()->DrawSetTextPos(iSteamPlaceXStart + iMainTextStartPosX, iRightSideYStart + g_iMarginY);
+			surface()->DrawPrintText(wszTextBuf, V_strlen(szTextBuf));
+
+			if (bUseNeoName)
+			{
+				V_sprintf_safe(szTextBuf, "(Steam name: %s)", szSteamName);
+				g_pVGuiLocalize->ConvertANSIToUnicode(szTextBuf, wszTextBuf, sizeof(wszTextBuf));
+
+				surface()->DrawSetTextFont(m_hTextFonts[FONT_NTSMALL]);
+				surface()->DrawSetTextPos(iSteamPlaceXStart + iMainTextStartPosX + iMainTextWidth + g_iMarginX,
+										  iRightSideYStart + g_iMarginY);
+				surface()->DrawPrintText(wszTextBuf, V_strlen(szTextBuf));
+			}
+
+			static constexpr wchar_t *WSZ_PERSONA_STATES[k_EPersonaStateMax] = {
+				L"Offline", L"Online", L"Busy", L"Away", L"Snooze", L"Trading", L"Looking to play"
+			};
+			const auto eCurStatus = steamFriends->GetPersonaState();
+			if (eCurStatus != k_EPersonaStateMax)
+			{
+				const wchar_t *wszState = WSZ_PERSONA_STATES[static_cast<int>(eCurStatus)];
+				const int iStatusTextStartPosY = g_iMarginY + iMainTextHeight + g_iMarginY;
+
+				surface()->DrawSetTextFont(m_hTextFonts[FONT_NTSMALL]);
+				surface()->DrawSetTextPos(iSteamPlaceXStart + iMainTextStartPosX,
+										  iRightSideYStart + iStatusTextStartPosY);
+				surface()->DrawPrintText(wszState, V_wcslen(wszState));
+			}
+
+			iRightSideYStart += g_iAvatar + (g_iMarginX * 2);
+		}
+
+		{
+			// Show the news
+			static constexpr wchar_t WSZ_NEWS_TITLE[] = L"News";
+
+			int iMainTextWidth, iMainTextHeight;
+			surface()->DrawSetTextFont(m_hTextFonts[FONT_NTNORMAL]);
+			surface()->GetTextSize(m_hTextFonts[FONT_NTNORMAL], WSZ_NEWS_TITLE, iMainTextWidth, iMainTextHeight);
+			surface()->DrawSetTextPos(iRightXPos, iRightSideYStart + g_iMarginY);
+			surface()->DrawPrintText(WSZ_NEWS_TITLE, WSZ_LEN(WSZ_NEWS_TITLE));
+
+			// Write some headlines
+			static constexpr const wchar_t *WSZ_NEWS_HEADLINES[] = {
+				L"2024-08-03: NT;RE v7.1 Released",
+			};
+
+			int iHlYPos = iRightSideYStart + (2 * g_iMarginY) + iMainTextHeight;
+			for (const wchar_t *wszHeadline : WSZ_NEWS_HEADLINES)
+			{
+				int iHlTextWidth, iHlTextHeight;
+				surface()->DrawSetTextFont(m_hTextFonts[FONT_NTSMALL]);
+				surface()->GetTextSize(m_hTextFonts[FONT_NTSMALL], wszHeadline, iHlTextWidth, iHlTextHeight);
+				surface()->DrawSetTextPos(iRightXPos, iHlYPos);
+				surface()->DrawPrintText(wszHeadline, V_wcslen(wszHeadline));
+
+				iHlYPos += g_iMarginY + iHlTextHeight;
+			}
 		}
 
 		// Draw buttons
-		const int btnWide = wide / 4;
 		IntPos btnPos{
-			.x = (wide / 2) - (btnWide / 2),
+			.x = iBtnPlaceXMid - (btnWide / 2),
 			.y = yTopPos,
 		};
 		const int flagToMatch = engine->IsInGame() ? FLAG_SHOWINGAME : FLAG_SHOWINMAIN;
@@ -1959,7 +2028,7 @@ void CNeoRoot::Paint()
 				surface()->DrawSetColor((m_iHoverBtn == i) ? Color(0, 0, 0, 255) : Color(40, 40, 40, 255));
 				surface()->DrawFilledRect(btnPos.x, btnPos.y, btnPos.x + btnWide, btnPos.y + g_iRowTall);
 
-				surface()->DrawSetTextPos(btnPos.x + g_iMargin, btnPos.y + fontStartYPos);
+				surface()->DrawSetTextPos(btnPos.x + g_iMarginX, btnPos.y + fontStartYPos);
 				surface()->DrawPrintText(m_wszDispBtnTexts[i], m_iWszDispBtnTextsSizes[i]);
 
 				btnPos.y += g_iRowTall;
@@ -1973,7 +2042,7 @@ void CNeoRoot::Paint()
 	surface()->DrawSetTextFont(m_hTextFonts[FONT_NTSMALL]);
 	surface()->GetTextSize(m_hTextFonts[FONT_NTSMALL], BUILD_DISPLAY, textWidth, textHeight);
 
-	surface()->DrawSetTextPos(10, tall - textHeight - 10);
+	surface()->DrawSetTextPos(g_iMarginX, tall - textHeight - g_iMarginY);
 	surface()->DrawPrintText(BUILD_DISPLAY, *BUILD_DISPLAY_SIZE);
 }
 
@@ -2008,7 +2077,7 @@ void CNeoRoot::OnCursorMoved(int x, int y)
 	m_iHoverBtn = -1;
 	const int wide = GetWide();
 	const int btnWide = wide / 4;
-	const int iStartX = (wide / 2) - (btnWide / 2);
+	const int iStartX = (wide / 4) - (btnWide / 2);
 	if (inSettings || x < iStartX || x >= (iStartX + btnWide)) return;
 
 	const int flagToMatch = engine->IsInGame() ? FLAG_SHOWINGAME : FLAG_SHOWINMAIN;
