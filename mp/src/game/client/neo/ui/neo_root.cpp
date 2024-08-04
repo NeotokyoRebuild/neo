@@ -886,9 +886,11 @@ void CNeoSettings_Dynamic::OnKeyTyped(wchar_t unichar)
 		CNeoDataSlider *sl = &ndv->slider;
 		if (sl->iWszCacheLabelSize < sl->iChMax)
 		{
+			// Prevent minus usage if minimum is a positive
 			// Prevent dot usage if flMulti = 1.0f, aka integer direct
+			const bool bHasMinus = (sl->iValMin >= 0) || sl->wszCacheLabel[0] == L'-';
 			const bool bHasDot = (sl->flMulti == 1.0f) || wmemchr(sl->wszCacheLabel, L'.', sl->iWszCacheLabelSize) != nullptr;
-			if (iswdigit(unichar) || (!bHasDot && unichar == L'.'))
+			if (iswdigit(unichar) || (!bHasDot && unichar == L'.') || (!bHasMinus && unichar == L'-'))
 			{
 				sl->wszCacheLabel[sl->iWszCacheLabelSize++] = unichar;
 				sl->wszCacheLabel[sl->iWszCacheLabelSize] = '\0';
@@ -1160,7 +1162,7 @@ CNeoDataSettings_Multiplayer::CNeoDataSettings_Multiplayer()
 			NDV_INIT_RINGBOX_ONOFF(L"Show only steam name"),
 			NDV_INIT_S_DISPLAYNAME(L"Display name"),
 			NDV_INIT_SLIDER(L"FOV", 75, 110, 1, 1.0f, 3),
-			NDV_INIT_SLIDER(L"Viewmodel FOV Offset", -20, 40, 1, 1.0f, 2),
+			NDV_INIT_SLIDER(L"Viewmodel FOV Offset", -20, 40, 1, 1.0f, 3),
 			NDV_INIT_RINGBOX_ONOFF(L"Aim hold"),
 			NDV_INIT_RINGBOX_ONOFF(L"Reload empty"),
 			NDV_INIT_RINGBOX_ONOFF(L"Right hand viewmodel"),
@@ -1357,7 +1359,7 @@ void CNeoDataSettings_Keys::UserSettingsSave()
 
 CNeoDataSettings_Mouse::CNeoDataSettings_Mouse()
 	: m_ndvList{
-			NDV_INIT_SLIDER(L"Sensitivity", 0, 100, 1, 10.0f, 4),
+			NDV_INIT_SLIDER(L"Sensitivity", 10, 1000, 10, 100.0f, 4),
 			NDV_INIT_RINGBOX_ONOFF(L"Raw input"),
 			NDV_INIT_RINGBOX_ONOFF(L"Mouse Filter"),
 			NDV_INIT_RINGBOX_ONOFF(L"Mouse Reverse"),
@@ -1417,7 +1419,7 @@ CNeoDataSettings_Audio::CNeoDataSettings_Audio()
 			NDV_INIT_RINGBOX_ONOFF(L"Mute Audio on un-focus"),
 			NDV_INIT_RINGBOX_ONOFF(L"Voice Enabled"),
 			NDV_INIT_SLIDER(L"Voice Receive", 0, 100, 5, SLT_VOL, 4),
-			//NDV_INIT_SLIDER(L"Voice Send", 0, 100, 5, SLT_VOL, 4),
+			//NDV_INIT_SLIDER(L"Voice Send", 0, 100, 1, SLT_VOL, 4),
 			NDV_INIT_RINGBOX_ONOFF(L"Microphone Boost"),
 			NDV_INIT_S_MICTESTER(L"Microphone Tester"),
 		}
@@ -1579,7 +1581,7 @@ CNeoDataSettings_Video::CNeoDataSettings_Video()
 			NDV_INIT_RINGBOX(L"V-Sync", ENABLED_LABELS, 2),
 			NDV_INIT_RINGBOX(L"Motion blur", ENABLED_LABELS, 2),
 			NDV_INIT_RINGBOX(L"HDR", HDR_LABELS, ARRAYSIZE(HDR_LABELS)),
-			NDV_INIT_SLIDER(L"Gamma", 160, 260, 1, 100.0f, 3),
+			NDV_INIT_SLIDER(L"Gamma", 160, 260, 5, 100.0f, 4),
 		}
 	, m_cvrMatQueueMode("mat_queue_mode")
 	, m_cvrRRootLod("r_rootlod")
