@@ -395,8 +395,12 @@ void CNeoSettings_Dynamic::Paint()
 		}
 		break;
 		case CNeoDataVariant::BINDENTRY:
+		case CNeoDataVariant::S_MICTESTER:
 		{
-			if (i != m_iNdvActive) surface()->DrawSetColor((i % 2 == 0) ? Color(40, 40, 40, 255) : Color(0, 0, 0, 255));
+			if (ndv->type == CNeoDataVariant::BINDENTRY && i != m_iNdvActive)
+			{
+				surface()->DrawSetColor((i % 2 == 0) ? Color(40, 40, 40, 255) : Color(0, 0, 0, 255));
+			}
 			surface()->DrawFilledRect(wgXPos, yPos, wgXPos + widgetWide, yPos + widgetTall);
 		}
 		break;
@@ -501,6 +505,43 @@ void CNeoSettings_Dynamic::Paint()
 			{
 				surface()->DrawPrintText(wszNeoName, V_wcslen(wszNeoName));
 			}
+		}
+		break;
+		case CNeoDataVariant::S_MICTESTER:
+		{
+			CNeoDataMicTester *mt = &ndv->micTester;
+			IVoiceTweak_s *voiceTweak = engine->GetVoiceTweakAPI();
+
+#define WSZ_LEN(wlabel) ((sizeof(wlabel) / sizeof(wchar_t)) - 1)
+			static constexpr wchar_t WSZ_MICTESTENTER[] = L"Start testing";
+			static constexpr wchar_t WSZ_MICTESTEXIT[] = L"Stop testing";
+
+			const bool bIsTweaking = voiceTweak->IsStillTweaking();
+			if (bIsTweaking)
+			{
+				// Only fetch the value at interval as immediate is too quick/flickers, and give a longer delay when
+				// it goes from sound to no sound.
+				static constexpr float FL_FETCH_INTERVAL = 0.1f;
+				static constexpr float FL_SILENCE_INTERVAL = 0.4f;
+				const float flSpeaking = voiceTweak->GetControlFloat(SpeakingVolume);
+				if ((flSpeaking > 0.0f && mt->flLastFetchInterval + FL_FETCH_INTERVAL < gpGlobals->curtime) ||
+						(flSpeaking == 0.0f && mt->flSpeakingVol > 0.0f && mt->flLastFetchInterval + FL_SILENCE_INTERVAL < gpGlobals->curtime))
+				{
+					mt->flSpeakingVol = flSpeaking;
+					mt->flLastFetchInterval = gpGlobals->curtime;
+				}
+				surface()->DrawSetColor(Color(30, 90, 30, 255));
+				surface()->DrawFilledRect(wgXPos,
+										  yPos,
+										  wgXPos + static_cast<int>(mt->flSpeakingVol * static_cast<float>(widgetWide)),
+										  yPos + widgetTall);
+			}
+
+			int fontWide, fontTall;
+			surface()->GetTextSize(g_neoFont, bIsTweaking ? WSZ_MICTESTEXIT : WSZ_MICTESTENTER, fontWide, fontTall);
+			surface()->DrawSetTextPos(wgXPos + (widgetWide / 2) - (fontWide / 2), yPos + fontStartYPos);
+			surface()->DrawPrintText(bIsTweaking ? WSZ_MICTESTEXIT : WSZ_MICTESTENTER,
+									 bIsTweaking ? WSZ_LEN(WSZ_MICTESTEXIT) : WSZ_LEN(WSZ_MICTESTENTER));
 		}
 		break;
 		}
@@ -608,8 +649,14 @@ void CNeoSettings_Dynamic::OnMousePressed(vgui::MouseCode code)
 	}
 	break;
 	case CNeoDataVariant::BINDENTRY:
-		OnEnterBindEntry(ndv);
+		if (m_curMouse == WDG_CENTER) OnEnterBindEntry(ndv);
 		break;
+	case CNeoDataVariant::S_MICTESTER:
+	{
+		IVoiceTweak_s *voiceTweak = engine->GetVoiceTweakAPI();
+		voiceTweak->IsStillTweaking() ? (void)voiceTweak->EndVoiceTweakMode() : (void)voiceTweak->StartVoiceTweakMode();
+	}
+	break;
 	}
 }
 
@@ -766,6 +813,11 @@ void CNeoSettings_Dynamic::OnKeyCodeTyped(vgui::KeyCode code)
 		else if (ndv->type == CNeoDataVariant::BINDENTRY)
 		{
 			OnEnterBindEntry(ndv);
+		}
+		else if (ndv->type == CNeoDataVariant::S_MICTESTER)
+		{
+			IVoiceTweak_s *voiceTweak = engine->GetVoiceTweakAPI();
+			voiceTweak->IsStillTweaking() ? (void)voiceTweak->EndVoiceTweakMode() : (void)voiceTweak->StartVoiceTweakMode();
 		}
 		return;
 	}
@@ -947,6 +999,8 @@ void CNeoSettings_Dynamic::OnCursorMoved(int x, int y)
 		}
 		break;
 	case CNeoDataVariant::TEXTENTRY:
+	case CNeoDataVariant::BINDENTRY:
+	case CNeoDataVariant::S_MICTESTER:
 		if (wgXPos <= x && x < g_iRootSubPanelWide)
 		{
 			m_curMouse = WDG_CENTER;
@@ -996,6 +1050,12 @@ void CNeoSettings_Dynamic::OnBottomAction(BottomBtns btn)
 
 void CNeoSettings_Dynamic::ExitSettings()
 {
+	IVoiceTweak_s *voiceTweak = engine->GetVoiceTweakAPI();
+	if (voiceTweak->IsStillTweaking())
+	{
+		voiceTweak->EndVoiceTweakMode();
+	}
+
 	if (m_bModified)
 	{
 		// Ask user if they want to discard or save changes
@@ -1333,6 +1393,7 @@ CNeoDataSettings_Audio::CNeoDataSettings_Audio()
 			NDV_INIT_SLIDER(L"Voice Receive", 0, 100, 5, SLT_VOL, 4),
 			//NDV_INIT_SLIDER(L"Voice Send", 0, 100, 5, SLT_VOL, 4),
 			NDV_INIT_RINGBOX_ONOFF(L"Microphone Boost"),
+			NDV_INIT_S_MICTESTER(L"Microphone Tester"),
 		}
 	, m_cvrVolume("volume")
 	, m_cvrSndMusicVolume("snd_musicvolume")
@@ -1685,7 +1746,6 @@ constexpr WidgetInfo BTNS_INFO[CNeoRoot::BTN__TOTAL] = {
 	{ "#GameUI_GameMenu_CreateServer", "OpenCreateMultiplayerGameDialog", FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
 	{ "#GameUI_GameMenu_Disconnect", "Disconnect", FLAG_SHOWINGAME },
 	{ "#GameUI_GameMenu_PlayerList", "OpenPlayerListDialog", FLAG_SHOWINGAME },
-	{ "#GameUI_GameMenu_Friends", "OpenFriendsDialog", FLAG_SHOWINGAME },
 	{ "#GameUI_GameMenu_Options", nullptr, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
 	{ "#GameUI_GameMenu_Quit", "Quit", FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
 };

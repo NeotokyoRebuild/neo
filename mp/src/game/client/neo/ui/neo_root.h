@@ -91,6 +91,12 @@ struct CNeoDataTextLabel
 	wchar_t wszLabel[LABEL_MAX + 1] = {};
 };
 
+struct CNeoDataMicTester
+{
+	float flSpeakingVol;
+	float flLastFetchInterval;
+};
+
 struct CNeoDataVariant
 {
 	enum Type
@@ -103,6 +109,7 @@ struct CNeoDataVariant
 
 		// S_ = Special type for specific use
 		S_DISPLAYNAME,
+		S_MICTESTER,
 	};
 	Type type;
 	const wchar_t *label;
@@ -115,6 +122,7 @@ struct CNeoDataVariant
 		CNeoDataTextEntry textEntry;
 		CNeoDataBindEntry bindEntry;
 		CNeoDataTextLabel textLabel;
+		CNeoDataMicTester micTester;
 	};
 };
 
@@ -131,6 +139,8 @@ struct CNeoDataVariant
 	.textEntry = {} }
 #define NDV_INIT_S_DISPLAYNAME(wlabel) { \
 	.type = CNeoDataVariant::S_DISPLAYNAME, NDV_LABEL(wlabel) }
+#define NDV_INIT_S_MICTESTER(wlabel) { \
+	.type = CNeoDataVariant::S_MICTESTER, NDV_LABEL(wlabel) }
 
 struct CNeoDataSettings_Base
 {
@@ -234,6 +244,7 @@ struct CNeoDataSettings_Audio : public CNeoDataSettings_Base
 		OPT_AUDIO_OUT_VOICERECV,
 		//OPT_AUDIO_OUT_VOICESEND,	// This doesn't actually work, original dialog also fails on this
 		OPT_AUDIO_OUT_MICBOOST,
+		OPT_AUDIO_OUT_MICTESTER,
 
 		OPT_AUDIO__TOTAL,
 	};
@@ -441,7 +452,6 @@ public:
 		BTN_SERVERCREATE,
 		BTN_DISCONNECT,
 		BTN_PLAYERLIST,
-		BTN_FRIENDSLIST,
 		BTN_SETTINGS,
 		BTN_QUIT,
 
