@@ -681,7 +681,8 @@ Scheme
 			"1"
 			{
 				"name"  "neotokyo_press_N" // CSlogo.ttf
-				"tall"  "72"
+				"tall"  "42" [$WINDOWS]
+				"tall"  "72" [$LINUX]
 				"weight" "0"
 				"additive" "0"
 				"antialias" "1"

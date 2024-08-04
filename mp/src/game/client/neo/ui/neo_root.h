@@ -1,3 +1,5 @@
+#pragma once
+
 #include <vgui_controls/EditablePanel.h>
 #include <vgui_controls/Frame.h>
 #include "GameUI/IGameUI.h"

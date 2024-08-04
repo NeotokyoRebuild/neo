@@ -173,6 +173,7 @@ extern vgui::IInputInternal *g_InputInternal;
 #ifdef NEO
 #include "neo_version.h"
 #include "neo_mount_original.h"
+extern bool NeoRootCaptureESC();
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -2620,11 +2621,6 @@ void CHLClient::ReloadFilesInList( IFileList *pFilesToReload )
 	ReloadSoundEntriesInList( pFilesToReload );
 }
 
-#ifdef NEO
-#include "neo/ui/neo_root.h"
-extern CNeoRoot *g_pNeoRoot;
-#endif
-
 bool CHLClient::HandleUiToggle()
 {
 #if defined( REPLAY_ENABLED )
@@ -2642,8 +2638,7 @@ bool CHLClient::HandleUiToggle()
 #else
 #ifdef NEO
 	// NEO NOTE (nullsystem): Required for the sub-panels of override UI to utilize ESCAPE key properly
-	return (g_pNeoRoot &&
-			(g_pNeoRoot->m_panelSettings->IsVisible() || g_pNeoRoot->m_panelSettings->m_opConfirm->IsVisible()));
+	return NeoRootCaptureESC();
 #else
 	return false;
 #endif

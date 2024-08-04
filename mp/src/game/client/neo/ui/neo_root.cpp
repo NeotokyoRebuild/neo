@@ -555,7 +555,7 @@ void CNeoSettings_Dynamic::Paint()
 	const int iTabWide = g_iRootSubPanelWide / TAB__TOTAL;
 	struct WLabelWSize
 	{
-		wchar_t *text;
+		const wchar_t *text;
 		int size;
 	};
 #define LWSNULL { nullptr, 0 }
@@ -1863,7 +1863,7 @@ void CNeoRoot::ApplySchemeSettings(IScheme *pScheme)
 	SetFgColor(COLOR_TRANSPARENT);
 	SetBgColor(COLOR_TRANSPARENT);
 
-	static constexpr char *FONT_NAMES[FONT__TOTAL] = {
+	static constexpr const char *FONT_NAMES[FONT__TOTAL] = {
 		"NHudOCR", "NHudOCRSmallNoAdditive", "ClientTitleFont"
 	};
 	for (int i = 0; i < FONT__TOTAL; ++i)
@@ -1909,7 +1909,7 @@ void CNeoRoot::Paint()
 
 		surface()->DrawSetTextColor(Color(128, 128, 128, 255));
 		surface()->DrawSetTextPos(iBtnPlaceXMid - (iTitleWidth / 2), yTopPos - iTitleHeight);
-		surface()->DrawPrintText(WSZ_GAME_TITLE, sizeof(WSZ_GAME_TITLE) / sizeof(wchar_t));
+		surface()->DrawPrintText(WSZ_GAME_TITLE, (sizeof(WSZ_GAME_TITLE) / sizeof(wchar_t)) - 1);
 
 		surface()->DrawSetTextColor(Color(255, 255, 255, 255));
 		ISteamUser *steamUser = steamapicontext->SteamUser();
@@ -1969,7 +1969,7 @@ void CNeoRoot::Paint()
 				surface()->DrawPrintText(wszTextBuf, V_strlen(szTextBuf));
 			}
 
-			static constexpr wchar_t *WSZ_PERSONA_STATES[k_EPersonaStateMax] = {
+			static constexpr const wchar_t *WSZ_PERSONA_STATES[k_EPersonaStateMax] = {
 				L"Offline", L"Online", L"Busy", L"Away", L"Snooze", L"Trading", L"Looking to play"
 			};
 			const auto eCurStatus = steamFriends->GetPersonaState();
@@ -2133,4 +2133,10 @@ void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 	{
 		OnMousePressed(MOUSE_LEFT);
 	}
+}
+
+bool NeoRootCaptureESC()
+{
+	return (g_pNeoRoot &&
+		(g_pNeoRoot->m_panelSettings->IsVisible() || g_pNeoRoot->m_panelSettings->m_opConfirm->IsVisible()));
 }
