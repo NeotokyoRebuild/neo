@@ -1492,6 +1492,7 @@ CNeoDataSettings_Video::CNeoDataSettings_Video()
 			NDV_INIT_RINGBOX(L"V-Sync", ENABLED_LABELS, 2),
 			NDV_INIT_RINGBOX(L"Motion blur", ENABLED_LABELS, 2),
 			NDV_INIT_RINGBOX(L"HDR", HDR_LABELS, sizeof(HDR_LABELS) / sizeof(wchar_t *)),
+			NDV_INIT_SLIDER(L"Gamma", 160, 260, 1, 100.0f, 3),
 		}
 	, m_cvrMatQueueMode("mat_queue_mode")
 	, m_cvrRRootLod("r_rootlod")
@@ -1508,6 +1509,7 @@ CNeoDataSettings_Video::CNeoDataSettings_Video()
 	, m_cvrMatVsync("mat_vsync")
 	, m_cvrMatMotionBlurEnabled("mat_motion_blur_enabled")
 	, m_cvrMatHdrLevel("mat_hdr_level")
+	, m_cvrMatMonitorGamma("mat_monitorgamma")
 {
 	gameuifuncs->GetVideoModes(&m_vmList, &m_vmListSize);
 	// NEO JANK (nullsystem): This is utter crap but it works out, one long array for storing the data, the other
@@ -1601,8 +1603,7 @@ void CNeoDataSettings_Video::UserSettingsRestore()
 	m_ndvList[OPT_VIDEO_VSYNC].ringBox.iCurIdx = static_cast<int>(m_cvrMatVsync.GetBool());
 	m_ndvList[OPT_VIDEO_MOTIONBLUR].ringBox.iCurIdx = static_cast<int>(m_cvrMatMotionBlurEnabled.GetBool());
 	m_ndvList[OPT_VIDEO_HDR].ringBox.iCurIdx = m_cvrMatHdrLevel.GetInt();
-
-	// | mat_monitorgamma | Gamma | 1.6 - 2.6
+	m_ndvList[OPT_VIDEO_GAMMA].slider.SetValue(m_cvrMatMonitorGamma.GetFloat());
 }
 
 void CNeoDataSettings_Video::UserSettingsSave()
@@ -1636,6 +1637,7 @@ void CNeoDataSettings_Video::UserSettingsSave()
 	m_cvrMatVsync.SetValue(static_cast<bool>(m_ndvList[OPT_VIDEO_VSYNC].ringBox.iCurIdx));
 	m_cvrMatMotionBlurEnabled.SetValue(static_cast<bool>(m_ndvList[OPT_VIDEO_MOTIONBLUR].ringBox.iCurIdx));
 	m_cvrMatHdrLevel.SetValue(m_ndvList[OPT_VIDEO_HDR].ringBox.iCurIdx);
+	m_cvrMatMonitorGamma.SetValue(m_ndvList[OPT_VIDEO_GAMMA].slider.GetValue());
 }
 
 CNeoRootInput::CNeoRootInput(CNeoRoot *rootPanel)

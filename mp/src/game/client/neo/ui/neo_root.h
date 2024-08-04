@@ -273,6 +273,7 @@ struct CNeoDataSettings_Video : public CNeoDataSettings_Base
 		OPT_VIDEO_VSYNC,
 		OPT_VIDEO_MOTIONBLUR,
 		OPT_VIDEO_HDR,
+		OPT_VIDEO_GAMMA,
 
 		OPT_VIDEO__TOTAL,
 	};
@@ -299,6 +300,7 @@ struct CNeoDataSettings_Video : public CNeoDataSettings_Base
 	ConVarRef m_cvrMatVsync;
 	ConVarRef m_cvrMatMotionBlurEnabled;
 	ConVarRef m_cvrMatHdrLevel;
+	ConVarRef m_cvrMatMonitorGamma;
 
 	int m_vmListSize = 0;
 	vmode_t *m_vmList = nullptr;
