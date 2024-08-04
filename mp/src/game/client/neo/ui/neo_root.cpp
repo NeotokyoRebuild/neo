@@ -66,6 +66,7 @@ HFont g_neoFont;
 #define COLOR_NEOPANELBAR Color(20, 20, 20, 255)
 #define COLOR_NEOPANELMICTEST Color(30, 90, 30, 255)
 static constexpr wchar_t WSZ_GAME_TITLE[] = L"neatbkyoc ue";
+#define SZWSZ_LEN(wlabel) ((sizeof(wlabel) / sizeof(wlabel[0])) - 1)
 
 const wchar_t *QUALITY_LABELS[] = {
 	L"Low",
@@ -155,7 +156,7 @@ void CNeoOverlay_KeyCapture::Paint()
 		surface()->DrawSetTextFont(m_fontSub);
 		surface()->GetTextSize(m_fontSub, SUB_INFO, textWidth, textHeight);
 		surface()->DrawSetTextPos((wide - textWidth) / 2, yPos + (textHeight / 2));
-		surface()->DrawPrintText(SUB_INFO, sizeof(SUB_INFO) / sizeof(wchar_t));
+		surface()->DrawPrintText(SUB_INFO, SZWSZ_LEN(SUB_INFO));
 	}
 }
 
@@ -218,7 +219,7 @@ void CNeoOverlay_Confirm::Paint()
 		surface()->GetTextSize(m_fontMain, CONFIRM_TEXT, textWidth, textHeight);
 		const int textYPos = tallSplit + (tallSplit / 3) - (textHeight / 2);
 		surface()->DrawSetTextPos((wide - textWidth) / 2, textYPos);
-		surface()->DrawPrintText(CONFIRM_TEXT, (sizeof(CONFIRM_TEXT) / sizeof(wchar_t)) - 1);
+		surface()->DrawPrintText(CONFIRM_TEXT, SZWSZ_LEN(CONFIRM_TEXT));
 	}
 	{
 		const int buttonYPos = tallSplit + (tallSplit * 0.67f) - (g_iRowTall / 2);
@@ -233,7 +234,7 @@ void CNeoOverlay_Confirm::Paint()
 			surface()->DrawSetColor((m_buttonHover == BUTTON_APPLY) ? COLOR_NEOPANELSELECTBG : COLOR_NEOPANELACCENTBG);
 			surface()->DrawFilledRect(buttonXPos, buttonYPos, buttonXPos + btnWide, buttonYPos + g_iRowTall);
 			surface()->DrawSetTextPos(buttonXPos + ((btnWide / 2) - (textWidth / 2)), buttonYPos + ((g_iRowTall / 2) - (textHeight / 2)));
-			surface()->DrawPrintText(APPLY_TEXT, (sizeof(APPLY_TEXT) / sizeof(wchar_t)) - 1);
+			surface()->DrawPrintText(APPLY_TEXT, SZWSZ_LEN(APPLY_TEXT));
 		}
 		{
 			static constexpr wchar_t DISCARD_TEXT[] = L"Discard (ESC)";
@@ -244,7 +245,7 @@ void CNeoOverlay_Confirm::Paint()
 			surface()->DrawSetColor((m_buttonHover == BUTTON_DISCARD) ? COLOR_NEOPANELSELECTBG : COLOR_NEOPANELACCENTBG);
 			surface()->DrawFilledRect(buttonXPos, buttonYPos, buttonXPos + btnWide, buttonYPos + g_iRowTall);
 			surface()->DrawSetTextPos(buttonXPos + ((btnWide / 2) - (textWidth / 2)), buttonYPos + ((g_iRowTall / 2) - (textHeight / 2)));
-			surface()->DrawPrintText(DISCARD_TEXT, (sizeof(DISCARD_TEXT) / sizeof(wchar_t)) - 1);
+			surface()->DrawPrintText(DISCARD_TEXT, SZWSZ_LEN(DISCARD_TEXT));
 		}
 	}
 }
@@ -536,7 +537,6 @@ void CNeoSettings_Dynamic::Paint()
 			CNeoDataMicTester *mt = &ndv->micTester;
 			IVoiceTweak_s *voiceTweak = engine->GetVoiceTweakAPI();
 
-#define WSZ_LEN(wlabel) ((sizeof(wlabel) / sizeof(wchar_t)) - 1)
 			static constexpr wchar_t WSZ_MICTESTENTER[] = L"Start testing";
 			static constexpr wchar_t WSZ_MICTESTEXIT[] = L"Stop testing";
 
@@ -565,7 +565,7 @@ void CNeoSettings_Dynamic::Paint()
 			surface()->GetTextSize(g_neoFont, bIsTweaking ? WSZ_MICTESTEXIT : WSZ_MICTESTENTER, fontWide, fontTall);
 			surface()->DrawSetTextPos(wgXPos + (widgetWide / 2) - (fontWide / 2), yPos + fontStartYPos);
 			surface()->DrawPrintText(bIsTweaking ? WSZ_MICTESTEXIT : WSZ_MICTESTENTER,
-									 bIsTweaking ? WSZ_LEN(WSZ_MICTESTEXIT) : WSZ_LEN(WSZ_MICTESTENTER));
+									 bIsTweaking ? SZWSZ_LEN(WSZ_MICTESTEXIT) : SZWSZ_LEN(WSZ_MICTESTENTER));
 		}
 		break;
 		}
@@ -580,7 +580,7 @@ void CNeoSettings_Dynamic::Paint()
 		int size;
 	};
 #define LWSNULL { nullptr, 0 }
-#define LWS(wlabel) { wlabel, (sizeof(wlabel) / sizeof(wchar_t)) - 1}
+#define LWS(wlabel) { wlabel, SZWSZ_LEN(wlabel)}
 	{
 		// Draw the top part
 		surface()->DrawSetColor(COLOR_NEOPANELNORMALBG);
@@ -1146,7 +1146,7 @@ static const char *DLFILTER_STRMAP[] = {
 	"all", "nosounds", "mapsonly", "none"
 };
 
-static constexpr int DLFILTER_SIZE = sizeof(DLFILTER_LABELS) / sizeof(wchar_t *);
+static constexpr int DLFILTER_SIZE = ARRAYSIZE(DLFILTER_LABELS);
 
 static const wchar_t *SHOWFPS_LABELS[] = {
 	L"Disabled",
@@ -1166,7 +1166,7 @@ CNeoDataSettings_Multiplayer::CNeoDataSettings_Multiplayer()
 			NDV_INIT_RINGBOX_ONOFF(L"Right hand viewmodel"),
 			NDV_INIT_RINGBOX_ONOFF(L"Show player spray"),
 			NDV_INIT_RINGBOX_ONOFF(L"Show position"),
-			NDV_INIT_RINGBOX(L"Show FPS", SHOWFPS_LABELS, sizeof(SHOWFPS_LABELS) / sizeof(wchar_t *)),
+			NDV_INIT_RINGBOX(L"Show FPS", SHOWFPS_LABELS, ARRAYSIZE(SHOWFPS_LABELS)),
 			NDV_INIT_RINGBOX(L"Download filter", DLFILTER_LABELS, DLFILTER_SIZE),
 		}
 	, m_cvrClPlayerSprayDisable("cl_playerspraydisable")
@@ -1412,7 +1412,7 @@ CNeoDataSettings_Audio::CNeoDataSettings_Audio()
 			NDV_INIT_SLIDER(L"Main Volume", 0, 100, 5, SLT_VOL, 4),
 			NDV_INIT_SLIDER(L"Music Volume", 0, 100, 5, SLT_VOL, 4),
 			NDV_INIT_SLIDER(L"Victory Volume", 0, 100, 5, SLT_VOL, 4),
-			NDV_INIT_RINGBOX(L"Sound Setup", SPEAKER_CFG_LABELS, sizeof(SPEAKER_CFG_LABELS) / sizeof(wchar_t *)),
+			NDV_INIT_RINGBOX(L"Sound Setup", SPEAKER_CFG_LABELS, ARRAYSIZE(SPEAKER_CFG_LABELS)),
 			NDV_INIT_RINGBOX(L"Sound Quality", QUALITY_LABELS, 3),
 			NDV_INIT_RINGBOX_ONOFF(L"Mute Audio on un-focus"),
 			NDV_INIT_RINGBOX_ONOFF(L"Voice Enabled"),
@@ -1566,19 +1566,19 @@ static const wchar_t *HDR_LABELS[] = {
 CNeoDataSettings_Video::CNeoDataSettings_Video()
 	: m_ndvList{
 			NDV_INIT_RINGBOX(L"Resolution", nullptr, 0),
-			NDV_INIT_RINGBOX(L"Window", WINDOW_MODE, sizeof(WINDOW_MODE) / sizeof(wchar_t *)),
-			NDV_INIT_RINGBOX(L"Core Rendering", QUEUE_MODE, sizeof(QUEUE_MODE) / sizeof(wchar_t *)),
+			NDV_INIT_RINGBOX(L"Window", WINDOW_MODE, ARRAYSIZE(WINDOW_MODE)),
+			NDV_INIT_RINGBOX(L"Core Rendering", QUEUE_MODE, ARRAYSIZE(QUEUE_MODE)),
 			NDV_INIT_RINGBOX(L"Model detail", QUALITY_LABELS, 3),
 			NDV_INIT_RINGBOX(L"Texture detail", QUALITY_LABELS, 4),
 			NDV_INIT_RINGBOX(L"Shader detail", QUALITY2_LABELS, 2),
-			NDV_INIT_RINGBOX(L"Water detail", WATER_LABELS, sizeof(WATER_LABELS) / sizeof(wchar_t *)),
+			NDV_INIT_RINGBOX(L"Water detail", WATER_LABELS, ARRAYSIZE(WATER_LABELS)),
 			NDV_INIT_RINGBOX(L"Shadow detail", QUALITY_LABELS, 3),
 			NDV_INIT_RINGBOX(L"Color correction", ENABLED_LABELS, 2),
-			NDV_INIT_RINGBOX(L"Anti-aliasing", MSAA_LABELS, sizeof(MSAA_LABELS) / sizeof(wchar_t *)),
+			NDV_INIT_RINGBOX(L"Anti-aliasing", MSAA_LABELS, ARRAYSIZE(MSAA_LABELS)),
 			NDV_INIT_RINGBOX(L"Filtering mode", FILTERING_LABELS, FILTERING__TOTAL),
 			NDV_INIT_RINGBOX(L"V-Sync", ENABLED_LABELS, 2),
 			NDV_INIT_RINGBOX(L"Motion blur", ENABLED_LABELS, 2),
-			NDV_INIT_RINGBOX(L"HDR", HDR_LABELS, sizeof(HDR_LABELS) / sizeof(wchar_t *)),
+			NDV_INIT_RINGBOX(L"HDR", HDR_LABELS, ARRAYSIZE(HDR_LABELS)),
 			NDV_INIT_SLIDER(L"Gamma", 160, 260, 1, 100.0f, 3),
 		}
 	, m_cvrMatQueueMode("mat_queue_mode")
@@ -1938,7 +1938,7 @@ void CNeoRoot::Paint()
 
 		surface()->DrawSetTextColor(COLOR_NEOTITLE);
 		surface()->DrawSetTextPos(iBtnPlaceXMid - (iTitleWidth / 2), yTopPos - iTitleHeight);
-		surface()->DrawPrintText(WSZ_GAME_TITLE, (sizeof(WSZ_GAME_TITLE) / sizeof(wchar_t)) - 1);
+		surface()->DrawPrintText(WSZ_GAME_TITLE, SZWSZ_LEN(WSZ_GAME_TITLE));
 
 		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
 		ISteamUser *steamUser = steamapicontext->SteamUser();
@@ -2029,7 +2029,7 @@ void CNeoRoot::Paint()
 			surface()->DrawSetTextFont(m_hTextFonts[FONT_NTNORMAL]);
 			surface()->GetTextSize(m_hTextFonts[FONT_NTNORMAL], WSZ_NEWS_TITLE, iMainTextWidth, iMainTextHeight);
 			surface()->DrawSetTextPos(iRightXPos, iRightSideYStart + g_iMarginY);
-			surface()->DrawPrintText(WSZ_NEWS_TITLE, WSZ_LEN(WSZ_NEWS_TITLE));
+			surface()->DrawPrintText(WSZ_NEWS_TITLE, SZWSZ_LEN(WSZ_NEWS_TITLE));
 
 			// Write some headlines
 			static constexpr const wchar_t *WSZ_NEWS_HEADLINES[] = {
