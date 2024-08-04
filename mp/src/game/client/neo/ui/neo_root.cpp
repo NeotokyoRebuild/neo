@@ -140,7 +140,7 @@ void CNeoOverlay_KeyCapture::Paint()
 		yPos = textYPos + textHeight;
 	}
 	{
-		static constexpr wchar_t SUB_INFO[] = L"Press ESC/BACKSPACE to cancel or DEL to remove keybind";
+		static constexpr wchar_t SUB_INFO[] = L"Press ESC to cancel or DEL to remove keybind";
 		int textWidth, textHeight;
 		surface()->DrawSetTextFont(m_fontSub);
 		surface()->GetTextSize(m_fontSub, SUB_INFO, textWidth, textHeight);
@@ -153,7 +153,7 @@ void CNeoOverlay_KeyCapture::OnThink()
 {
 	if (ButtonCode_t code; engine->CheckDoneKeyTrapping(code))
 	{
-		const bool bUpdate = (code != KEY_ESCAPE && code != KEY_BACKSPACE);
+		const bool bUpdate = (code != KEY_ESCAPE);
 		if (bUpdate)
 		{
 			m_iButtonCode = (code == KEY_DELETE) ? BUTTON_CODE_NONE : code;
@@ -225,7 +225,7 @@ void CNeoOverlay_Confirm::Paint()
 			surface()->DrawPrintText(APPLY_TEXT, (sizeof(APPLY_TEXT) / sizeof(wchar_t)) - 1);
 		}
 		{
-			static constexpr wchar_t DISCARD_TEXT[] = L"Discard (Backspace)";
+			static constexpr wchar_t DISCARD_TEXT[] = L"Discard (ESC)";
 			int textWidth, textHeight;
 			surface()->GetTextSize(m_fontMain, DISCARD_TEXT, textWidth, textHeight);
 
@@ -240,7 +240,7 @@ void CNeoOverlay_Confirm::Paint()
 
 void CNeoOverlay_Confirm::OnKeyCodePressed(vgui::KeyCode code)
 {
-	if (code == KEY_BACKSPACE || code == KEY_ENTER)
+	if (code == KEY_ESCAPE || code == KEY_ENTER)
 	{
 		m_bChoice = (code == KEY_ENTER);
 

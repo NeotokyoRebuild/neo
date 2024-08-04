@@ -2620,6 +2620,11 @@ void CHLClient::ReloadFilesInList( IFileList *pFilesToReload )
 	ReloadSoundEntriesInList( pFilesToReload );
 }
 
+#ifdef NEO
+#include "neo/ui/neo_root.h"
+extern CNeoRoot *g_pNeoRoot;
+#endif
+
 bool CHLClient::HandleUiToggle()
 {
 #if defined( REPLAY_ENABLED )
@@ -2635,7 +2640,13 @@ bool CHLClient::HandleUiToggle()
 	return true;
 
 #else
+#ifdef NEO
+	// NEO NOTE (nullsystem): Required for the sub-panels of override UI to utilize ESCAPE key properly
+	return (g_pNeoRoot &&
+			(g_pNeoRoot->m_panelSettings->IsVisible() || g_pNeoRoot->m_panelSettings->m_opConfirm->IsVisible()));
+#else
 	return false;
+#endif
 #endif
 }
 
