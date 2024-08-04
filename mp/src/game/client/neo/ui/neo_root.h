@@ -490,6 +490,7 @@ public:
 
 	wchar_t m_wszDispBtnTexts[BTN__TOTAL][64] = {};
 	int m_iWszDispBtnTextsSizes[BTN__TOTAL] = {};
+	int m_iBtnWide = 0;
 
 	void OnRelayedKeyCodeTyped(vgui::KeyCode code);
 protected:

@@ -681,7 +681,7 @@ Scheme
 			"1"
 			{
 				"name"  "neotokyo_press_N" // CSlogo.ttf
-				"tall"  "60"
+				"tall"  "72"
 				"weight" "0"
 				"additive" "0"
 				"antialias" "1"

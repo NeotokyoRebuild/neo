@@ -55,6 +55,7 @@ int g_iMarginY = 10;
 int g_iAvatar = 64;
 int g_iRootSubPanelWide = 600;
 HFont g_neoFont;
+static constexpr wchar_t WSZ_GAME_TITLE[] = L"neatbkyoc ue";
 
 const wchar_t *QUALITY_LABELS[] = {
 	L"Low",
@@ -1788,6 +1789,9 @@ CNeoRoot::CNeoRoot(VPANEL parent)
 	SetKeyBoardInputEnabled(true);
 	SetMouseInputEnabled(true);
 	UpdateControls();
+
+	vgui::IScheme *pScheme = vgui::scheme()->GetIScheme(neoscheme);
+	ApplySchemeSettings(pScheme);
 }
 
 CNeoRoot::~CNeoRoot()
@@ -1812,23 +1816,16 @@ void CNeoRoot::UpdateControls()
 	int wide, tall;
 	GetSize(wide, tall);
 
-	const int flagToMatch = engine->IsInGame() ? FLAG_SHOWINGAME : FLAG_SHOWINMAIN;
-	const int btnWide = wide / 4;
-	const int yTopPos = tall / 2 - ((g_iRowTall * BTN__TOTAL) / 2);
-	const bool inSettings = m_state == STATE_SETTINGS;
-
-	IntPos ipStartPos{
-		.x = (wide / 2) - (g_iRootSubPanelWide / 2),
-		.y = yTopPos,
-	};
-	m_panelSettings->SetVisible(inSettings);
-	m_panelSettings->SetEnabled(inSettings);
-	if (inSettings)
+	const bool bInSettings = m_state == STATE_SETTINGS;
+	m_panelSettings->SetVisible(bInSettings);
+	m_panelSettings->SetEnabled(bInSettings);
+	if (bInSettings)
 	{
 		m_panelSettings->m_iNdvActive = -1;
 		m_panelSettings->m_curMouse = CNeoSettings_Dynamic::WDG_NONE;
 		m_panelSettings->PerformLayout();
-		m_panelSettings->SetPos(ipStartPos.x, (tall / 2) - (m_panelSettings->GetTall() / 2));
+		m_panelSettings->SetPos((wide / 2) - (g_iRootSubPanelWide / 2),
+								(tall / 2) - (m_panelSettings->GetTall() / 2));
 		m_panelSettings->RequestFocus();
 		m_panelSettings->MoveToFront();
 	}
@@ -1859,25 +1856,20 @@ void CNeoRoot::ApplySchemeSettings(IScheme *pScheme)
 	// NEO TODO (nullsystem): If we're to provide color scheme controls:
 	// LoadControlSettings("resource/NeoRootScheme.res");
 
+	// Resize the panel to the screen size
+	int wide, tall;
+	surface()->GetScreenSize(wide, tall);
+	SetSize(wide, tall);
+	SetFgColor(COLOR_TRANSPARENT);
+	SetBgColor(COLOR_TRANSPARENT);
+
 	static constexpr char *FONT_NAMES[FONT__TOTAL] = {
 		"NHudOCR", "NHudOCRSmallNoAdditive", "ClientTitleFont"
 	};
 	for (int i = 0; i < FONT__TOTAL; ++i)
 	{
-		m_hTextFonts[i] = pScheme->GetFont(FONT_NAMES[i]);
-		if (i == FONT_LOGO)
-		{
-			surface()->SetFontGlyphSet(m_hTextFonts[i], "neotokyo_press_N", 180, 0, 0, 0,
-									   ISurface::FONTFLAG_ANTIALIAS | ISurface::FONTFLAG_ADDITIVE | ISurface::FONTFLAG_SYMBOL);
-		}
+		m_hTextFonts[i] = pScheme->GetFont(FONT_NAMES[i], true);
 	}
-
-	// Resize the panel to the screen size
-	int wide, tall;
-	vgui::surface()->GetScreenSize(wide, tall);
-	SetSize(wide, tall);
-	SetFgColor(COLOR_TRANSPARENT);
-	SetBgColor(COLOR_TRANSPARENT);
 
 	// In 1080p, g_iRowTall == 40, g_iMarginX = 10, g_iAvatar = 64,
 	// other resolution scales up/down from it
@@ -1903,21 +1895,20 @@ void CNeoRoot::Paint()
 	const bool bInSettings = m_state == STATE_SETTINGS;
 	if (!bInSettings)
 	{
-		const int btnWide = wide / 4;
 		const int iBtnPlaceXMid = (wide / 4);
 		const int yTopPos = tall / 2 - ((g_iRowTall * BTN__TOTAL) / 2);
 
-		const int iRightXPos = iBtnPlaceXMid + (btnWide / 2) + g_iMarginX;
+		const int iRightXPos = iBtnPlaceXMid + (m_iBtnWide / 2) + g_iMarginX;
 		int iRightSideYStart = yTopPos;
 
 		// Draw title
-		static constexpr wchar_t WSZ_GAME_TITLE[] = L"neatbkyoc ue";
-		int textWidth, textHeight;
+		int iTitleWidth, iTitleHeight;
 		surface()->DrawSetTextFont(m_hTextFonts[FONT_LOGO]);
-		surface()->GetTextSize(m_hTextFonts[FONT_LOGO], WSZ_GAME_TITLE, textWidth, textHeight);
+		surface()->GetTextSize(m_hTextFonts[FONT_LOGO], WSZ_GAME_TITLE, iTitleWidth, iTitleHeight);
+		m_iBtnWide = iTitleWidth + (2 * g_iMarginX);
 
 		surface()->DrawSetTextColor(Color(128, 128, 128, 255));
-		surface()->DrawSetTextPos(iBtnPlaceXMid - (textWidth / 2), yTopPos - textHeight);
+		surface()->DrawSetTextPos(iBtnPlaceXMid - (iTitleWidth / 2), yTopPos - iTitleHeight);
 		surface()->DrawPrintText(WSZ_GAME_TITLE, sizeof(WSZ_GAME_TITLE) / sizeof(wchar_t));
 
 		surface()->DrawSetTextColor(Color(255, 255, 255, 255));
@@ -1960,9 +1951,21 @@ void CNeoRoot::Paint()
 				V_sprintf_safe(szTextBuf, "(Steam name: %s)", szSteamName);
 				g_pVGuiLocalize->ConvertANSIToUnicode(szTextBuf, wszTextBuf, sizeof(wszTextBuf));
 
+				int iSteamSubTextWidth, iSteamSubTextHeight;
 				surface()->DrawSetTextFont(m_hTextFonts[FONT_NTSMALL]);
-				surface()->DrawSetTextPos(iSteamPlaceXStart + iMainTextStartPosX + iMainTextWidth + g_iMarginX,
-										  iRightSideYStart + g_iMarginY);
+				surface()->GetTextSize(m_hTextFonts[FONT_NTSMALL], wszTextBuf, iSteamSubTextWidth, iSteamSubTextHeight);
+
+				const int iRightOfNicknameXPos = iSteamPlaceXStart + iMainTextStartPosX + iMainTextWidth + g_iMarginX;
+				// If we have space on the right, set it, otherwise on top of nickname
+				if ((iRightOfNicknameXPos + iSteamSubTextWidth) < wide)
+				{
+					surface()->DrawSetTextPos(iRightOfNicknameXPos, iRightSideYStart + g_iMarginY);
+				}
+				else
+				{
+					surface()->DrawSetTextPos(iSteamPlaceXStart + iMainTextStartPosX,
+											  iRightSideYStart - iSteamSubTextHeight);
+				}
 				surface()->DrawPrintText(wszTextBuf, V_strlen(szTextBuf));
 			}
 
@@ -1970,18 +1973,23 @@ void CNeoRoot::Paint()
 				L"Offline", L"Online", L"Busy", L"Away", L"Snooze", L"Trading", L"Looking to play"
 			};
 			const auto eCurStatus = steamFriends->GetPersonaState();
+			int iStatusTall = 0;
 			if (eCurStatus != k_EPersonaStateMax)
 			{
 				const wchar_t *wszState = WSZ_PERSONA_STATES[static_cast<int>(eCurStatus)];
 				const int iStatusTextStartPosY = g_iMarginY + iMainTextHeight + g_iMarginY;
 
+				[[maybe_unused]] int iStatusWide;
 				surface()->DrawSetTextFont(m_hTextFonts[FONT_NTSMALL]);
+				surface()->GetTextSize(m_hTextFonts[FONT_NTSMALL], wszState, iStatusWide, iStatusTall);
 				surface()->DrawSetTextPos(iSteamPlaceXStart + iMainTextStartPosX,
 										  iRightSideYStart + iStatusTextStartPosY);
 				surface()->DrawPrintText(wszState, V_wcslen(wszState));
 			}
 
-			iRightSideYStart += g_iAvatar + (g_iMarginX * 2);
+			// Put the news title in either from avatar or text end Y position
+			const int iTextTotalTall = iMainTextHeight + iStatusTall;
+			iRightSideYStart += (g_iMarginX * 2) + ((iTextTotalTall > g_iAvatar) ? iTextTotalTall : g_iAvatar);
 		}
 
 		{
@@ -2014,7 +2022,7 @@ void CNeoRoot::Paint()
 
 		// Draw buttons
 		IntPos btnPos{
-			.x = iBtnPlaceXMid - (btnWide / 2),
+			.x = iBtnPlaceXMid - (m_iBtnWide / 2),
 			.y = yTopPos,
 		};
 		const int flagToMatch = engine->IsInGame() ? FLAG_SHOWINGAME : FLAG_SHOWINMAIN;
@@ -2026,7 +2034,7 @@ void CNeoRoot::Paint()
 			if (BTNS_INFO[i].flags & flagToMatch)
 			{
 				surface()->DrawSetColor((m_iHoverBtn == i) ? Color(0, 0, 0, 255) : Color(40, 40, 40, 255));
-				surface()->DrawFilledRect(btnPos.x, btnPos.y, btnPos.x + btnWide, btnPos.y + g_iRowTall);
+				surface()->DrawFilledRect(btnPos.x, btnPos.y, btnPos.x + m_iBtnWide, btnPos.y + g_iRowTall);
 
 				surface()->DrawSetTextPos(btnPos.x + g_iMarginX, btnPos.y + fontStartYPos);
 				surface()->DrawPrintText(m_wszDispBtnTexts[i], m_iWszDispBtnTextsSizes[i]);
@@ -2076,9 +2084,8 @@ void CNeoRoot::OnCursorMoved(int x, int y)
 
 	m_iHoverBtn = -1;
 	const int wide = GetWide();
-	const int btnWide = wide / 4;
-	const int iStartX = (wide / 4) - (btnWide / 2);
-	if (inSettings || x < iStartX || x >= (iStartX + btnWide)) return;
+	const int iStartX = (wide / 4) - (m_iBtnWide / 2);
+	if (inSettings || x < iStartX || x >= (iStartX + m_iBtnWide)) return;
 
 	const int flagToMatch = engine->IsInGame() ? FLAG_SHOWINGAME : FLAG_SHOWINMAIN;
 	int iTotal = 0;
