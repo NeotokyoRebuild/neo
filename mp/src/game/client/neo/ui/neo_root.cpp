@@ -49,12 +49,9 @@ CNeoRoot *g_pNeoRoot = nullptr;
 
 namespace {
 
-// NEO TODO (nullsystem): Should be varied
-constexpr int BTN_TALL = 40;
-constexpr int TAB_TALL = 40;
-constexpr int BOTTOM_TALL = 40;
-constexpr int MARGIN = 10;
-int g_SettingsWide = 600;
+int g_iRowTall = 40;
+int g_iMargin = 10;
+int g_iRootSubPanelWide = 600;
 HFont g_neoFont;
 
 const wchar_t *QUALITY_LABELS[] = {
@@ -211,28 +208,29 @@ void CNeoOverlay_Confirm::Paint()
 		surface()->DrawPrintText(CONFIRM_TEXT, (sizeof(CONFIRM_TEXT) / sizeof(wchar_t)) - 1);
 	}
 	{
-		const int buttonYPos = tallSplit + (tallSplit * 0.67f) - (BTN_TALL / 2);
+		const int buttonYPos = tallSplit + (tallSplit * 0.67f) - (g_iRowTall / 2);
+		surface()->DrawSetTextFont(g_neoFont);
 
 		{
 			static constexpr wchar_t APPLY_TEXT[] = L"Apply (Enter)";
 			int textWidth, textHeight;
-			surface()->GetTextSize(m_fontMain, APPLY_TEXT, textWidth, textHeight);
+			surface()->GetTextSize(g_neoFont, APPLY_TEXT, textWidth, textHeight);
 
 			const int buttonXPos = (wide / 2) - btnWide;
 			surface()->DrawSetColor((m_buttonHover == BUTTON_APPLY) ? Color(40, 10, 10, 255) : Color(0, 0, 0, 255));
-			surface()->DrawFilledRect(buttonXPos, buttonYPos, buttonXPos + btnWide, buttonYPos + BTN_TALL);
-			surface()->DrawSetTextPos(buttonXPos + ((btnWide / 2) - (textWidth / 2)), buttonYPos + (textHeight / 2));
+			surface()->DrawFilledRect(buttonXPos, buttonYPos, buttonXPos + btnWide, buttonYPos + g_iRowTall);
+			surface()->DrawSetTextPos(buttonXPos + ((btnWide / 2) - (textWidth / 2)), buttonYPos + ((g_iRowTall / 2) - (textHeight / 2)));
 			surface()->DrawPrintText(APPLY_TEXT, (sizeof(APPLY_TEXT) / sizeof(wchar_t)) - 1);
 		}
 		{
 			static constexpr wchar_t DISCARD_TEXT[] = L"Discard (ESC)";
 			int textWidth, textHeight;
-			surface()->GetTextSize(m_fontMain, DISCARD_TEXT, textWidth, textHeight);
+			surface()->GetTextSize(g_neoFont, DISCARD_TEXT, textWidth, textHeight);
 
 			const int buttonXPos = (wide / 2);
 			surface()->DrawSetColor((m_buttonHover == BUTTON_DISCARD) ? Color(40, 10, 10, 255) : Color(0, 0, 0, 255));
-			surface()->DrawFilledRect(buttonXPos, buttonYPos, buttonXPos + btnWide, buttonYPos + BTN_TALL);
-			surface()->DrawSetTextPos(buttonXPos + ((btnWide / 2) - (textWidth / 2)), buttonYPos + (textHeight / 2));
+			surface()->DrawFilledRect(buttonXPos, buttonYPos, buttonXPos + btnWide, buttonYPos + g_iRowTall);
+			surface()->DrawSetTextPos(buttonXPos + ((btnWide / 2) - (textWidth / 2)), buttonYPos + ((g_iRowTall / 2) - (textHeight / 2)));
 			surface()->DrawPrintText(DISCARD_TEXT, (sizeof(DISCARD_TEXT) / sizeof(wchar_t)) - 1);
 		}
 	}
@@ -269,10 +267,10 @@ void CNeoOverlay_Confirm::OnCursorMoved(int x, int y)
 
 	const int tallSplit = tall / 3;
 	const int btnWide = wide / 6;
-	const int buttonYPos = tallSplit + (tallSplit * 0.67f) - (BTN_TALL / 2);
+	const int buttonYPos = tallSplit + (tallSplit * 0.67f) - (g_iRowTall / 2);
 
 	m_buttonHover = BUTTON_NONE;
-	if (y >= buttonYPos && y < (buttonYPos + BTN_TALL))
+	if (y >= buttonYPos && y < (buttonYPos + g_iRowTall))
 	{
 		if (x >= ((wide / 2) - btnWide) && x < (wide / 2))
 		{
@@ -345,7 +343,7 @@ void CNeoSettings_Dynamic::PerformLayout()
 	vgui::surface()->GetScreenSize(wide, tall);
 
 	BaseClass::PerformLayout();
-	SetSize(g_SettingsWide, TAB_TALL + (tall * 0.8f) + BOTTOM_TALL);
+	SetSize(g_iRootSubPanelWide, g_iRowTall + (tall * 0.8f) + g_iRowTall);
 	SetBgColor(Color(40, 40, 40, 150));
 	SetFgColor(Color(40, 40, 40, 150));
 }
@@ -356,20 +354,20 @@ void CNeoSettings_Dynamic::Paint()
 
 	CNeoDataSettings_Base *tab = m_pNdsBases[m_iNdsCurrent];
 	surface()->DrawSetTextFont(g_neoFont);
-	const int wgXPos = static_cast<int>(g_SettingsWide * 0.4f);
-	const int widgetWide = g_SettingsWide - wgXPos;
-	const int widgetTall = BTN_TALL;
+	const int wgXPos = static_cast<int>(g_iRootSubPanelWide * 0.4f);
+	const int widgetWide = g_iRootSubPanelWide - wgXPos;
+	const int widgetTall = g_iRowTall;
 	int fontWide, fontTall;
 	surface()->GetTextSize(g_neoFont, L"<", fontWide, fontTall);
 	const int fontStartXPos = (widgetTall / 2) - (fontWide / 2);
 	const int fontStartYPos = (widgetTall / 2) - (fontTall / 2);
-	const int tabFullYSize = (m_pNdsBases[m_iNdsCurrent]->NdvListSize() * BTN_TALL);
+	const int tabFullYSize = (m_pNdsBases[m_iNdsCurrent]->NdvListSize() * g_iRowTall);
 	const int panelTall = GetTall();
 
-	const int yOvershoot = m_iScrollOffset % BTN_TALL;
-	int yPos = TAB_TALL - yOvershoot;
-	for (int i = (m_iScrollOffset / BTN_TALL);
-		 yPos < (panelTall - BOTTOM_TALL) && i < tab->NdvListSize();
+	const int yOvershoot = m_iScrollOffset % g_iRowTall;
+	int yPos = g_iRowTall - yOvershoot;
+	for (int i = (m_iScrollOffset / g_iRowTall);
+		 yPos < (panelTall - g_iRowTall) && i < tab->NdvListSize();
 		 ++i)
 	{
 		CNeoDataVariant *ndv = &tab->NdvList()[i];
@@ -410,11 +408,11 @@ void CNeoSettings_Dynamic::Paint()
 		{
 			int fontWide, fontTall;
 			surface()->GetTextSize(g_neoFont, ndv->label, fontWide, fontTall);
-			surface()->DrawSetTextPos((g_SettingsWide / 2) - (fontWide / 2), yPos + fontStartYPos);
+			surface()->DrawSetTextPos((g_iRootSubPanelWide / 2) - (fontWide / 2), yPos + fontStartYPos);
 		}
 		else
 		{
-			surface()->DrawSetTextPos(MARGIN, yPos + fontStartYPos);
+			surface()->DrawSetTextPos(g_iMargin, yPos + fontStartYPos);
 		}
 		surface()->DrawPrintText(ndv->label, ndv->labelSize);
 
@@ -472,20 +470,20 @@ void CNeoSettings_Dynamic::Paint()
 		case CNeoDataVariant::TEXTENTRY:
 		{
 			CNeoDataTextEntry *te = &ndv->textEntry;
-			surface()->DrawSetTextPos(wgXPos + MARGIN, yPos + fontStartYPos);
+			surface()->DrawSetTextPos(wgXPos + g_iMargin, yPos + fontStartYPos);
 			surface()->DrawPrintText(te->wszEntry, V_wcslen(te->wszEntry));
 			if (te->bEditing)
 			{
 				int textWide, textTall;
 				surface()->GetTextSize(g_neoFont, te->wszEntry, textWide, textTall);
-				surface()->DrawSetTextPos(wgXPos + MARGIN + textWide, yPos + fontStartYPos);
+				surface()->DrawSetTextPos(wgXPos + g_iMargin + textWide, yPos + fontStartYPos);
 				surface()->DrawPrintText(L"_", 1);
 			}
 		}
 		break;
 		case CNeoDataVariant::S_DISPLAYNAME:
 		{
-			surface()->DrawSetTextPos(wgXPos + MARGIN, yPos + fontStartYPos);
+			surface()->DrawSetTextPos(wgXPos + g_iMargin, yPos + fontStartYPos);
 
 			const wchar_t *wszNeoName = m_ndsMulti.m_ndvList[CNeoDataSettings_Multiplayer::OPT_MULTI_NEONAME].textEntry.wszEntry;
 			const bool bOnlySteamNick = static_cast<bool>(m_ndsMulti.m_ndvList[CNeoDataSettings_Multiplayer::OPT_MULTI_ONLYSTEAMNICK].ringBox.iCurIdx);
@@ -510,7 +508,7 @@ void CNeoSettings_Dynamic::Paint()
 		yPos += widgetTall;
 	}
 
-	const int iTabWide = g_SettingsWide / TAB__TOTAL;
+	const int iTabWide = g_iRootSubPanelWide / TAB__TOTAL;
 	struct WLabelWSize
 	{
 		wchar_t *text;
@@ -521,7 +519,7 @@ void CNeoSettings_Dynamic::Paint()
 	{
 		// Draw the top part
 		surface()->DrawSetColor(Color(40, 40, 40, 255));
-		surface()->DrawFilledRect(0, 0, g_SettingsWide, TAB_TALL);
+		surface()->DrawFilledRect(0, 0, g_iRootSubPanelWide, g_iRowTall);
 
 		surface()->DrawSetColor(Color(40, 10, 10, 255));
 		surface()->DrawSetTextColor(Color(200, 200, 200, 255));
@@ -532,17 +530,17 @@ void CNeoSettings_Dynamic::Paint()
 		};
 		for (int i = 0, xPosTab = 0; i < TAB__TOTAL; ++i, xPosTab += iTabWide)
 		{
-			if (i == m_iNdsCurrent) surface()->DrawFilledRect(xPosTab, 0, xPosTab + iTabWide, TAB_TALL);
-			surface()->DrawSetTextPos(xPosTab + MARGIN, fontStartYPos);
+			if (i == m_iNdsCurrent) surface()->DrawFilledRect(xPosTab, 0, xPosTab + iTabWide, g_iRowTall);
+			surface()->DrawSetTextPos(xPosTab + g_iMargin, fontStartYPos);
 			surface()->DrawPrintText(TAB_NAMES[i].text, TAB_NAMES[i].size);
 		}
 	}
 
-	const int bottomYStart = (panelTall - BOTTOM_TALL);
+	const int bottomYStart = (panelTall - g_iRowTall);
 	{
 		// Draw the bottom part
 		surface()->DrawSetColor(Color(40, 40, 40, 255));
-		surface()->DrawFilledRect(0, bottomYStart, g_SettingsWide, panelTall);
+		surface()->DrawFilledRect(0, bottomYStart, g_iRootSubPanelWide, panelTall);
 
 		// Draw the buttons on bottom
 		static constexpr WLabelWSize BBTN_NAMES[BBTN__TOTAL] = {
@@ -556,7 +554,7 @@ void CNeoSettings_Dynamic::Paint()
 			{
 				surface()->DrawSetColor((m_iBottomHover == i) ? Color(40, 10, 10, 255) : Color(40, 40, 40, 255));
 				surface()->DrawFilledRect(xPosTab, bottomYStart, xPosTab + iTabWide, panelTall);
-				surface()->DrawSetTextPos(xPosTab + MARGIN, bottomYStart + fontStartYPos);
+				surface()->DrawSetTextPos(xPosTab + g_iMargin, bottomYStart + fontStartYPos);
 				surface()->DrawPrintText(BBTN_NAMES[i].text, BBTN_NAMES[i].size);
 			}
 		}
@@ -650,8 +648,8 @@ void CNeoSettings_Dynamic::OnMouseWheeled(int delta)
 	const float flScrollSpeed = static_cast<float>(iScreenHeight) * 0.05f;
 
 	CNeoDataSettings_Base *tab = m_pNdsBases[m_iNdsCurrent];
-	const int iWidgetSectionTall = GetTall() - TAB_TALL - BOTTOM_TALL;
-	int iMaxScrollOffset = (tab->NdvListSize() * BTN_TALL) - iWidgetSectionTall;
+	const int iWidgetSectionTall = GetTall() - g_iRowTall - g_iRowTall;
+	int iMaxScrollOffset = (tab->NdvListSize() * g_iRowTall) - iWidgetSectionTall;
 	if (iMaxScrollOffset < 0) iMaxScrollOffset = 0;
 	m_iScrollOffset += (int)((float)(-delta) * flScrollSpeed);
 	m_iScrollOffset = clamp(m_iScrollOffset, 0, iMaxScrollOffset);
@@ -702,15 +700,15 @@ void CNeoSettings_Dynamic::OnKeyCodeTyped(vgui::KeyCode code)
 		}
 
 		// Re-adjust scroll offset
-		const int iWdgArea = GetTall() - TAB_TALL - BOTTOM_TALL;
-		const int iWdgYPos = BTN_TALL * m_iNdvActive;
+		const int iWdgArea = GetTall() - g_iRowTall - g_iRowTall;
+		const int iWdgYPos = g_iRowTall * m_iNdvActive;
 		if (iWdgYPos < m_iScrollOffset)
 		{
 			m_iScrollOffset = iWdgYPos;
 		}
-		else if ((iWdgYPos + BTN_TALL) >= (m_iScrollOffset + iWdgArea))
+		else if ((iWdgYPos + g_iRowTall) >= (m_iScrollOffset + iWdgArea))
 		{
-			m_iScrollOffset = (iWdgYPos - iWdgArea + BTN_TALL);
+			m_iScrollOffset = (iWdgYPos - iWdgArea + g_iRowTall);
 		}
 		return;
 	}
@@ -881,37 +879,37 @@ void CNeoSettings_Dynamic::OnCursorMoved(int x, int y)
 	m_iBottomHover = -1;
 	m_curMouse = WDG_NONE;
 
-	if (x < 0 || x >= g_SettingsWide)
+	if (x < 0 || x >= g_iRootSubPanelWide)
 	{
 		return;
 	}
 
 	CNeoDataSettings_Base *tab = m_pNdsBases[m_iNdsCurrent];
-	if (y < TAB_TALL)
+	if (y < g_iRowTall)
 	{
-		const int iTabWide = g_SettingsWide / TAB__TOTAL;
+		const int iTabWide = g_iRootSubPanelWide / TAB__TOTAL;
 		m_iNdsHover = x / iTabWide;
 		return;
 	}
-	else if (y > (GetTall() - BOTTOM_TALL))
+	else if (y > (GetTall() - g_iRowTall))
 	{
-		const int iTabWide = g_SettingsWide / BBTN__TOTAL;
+		const int iTabWide = g_iRootSubPanelWide / BBTN__TOTAL;
 		m_iBottomHover = x / iTabWide;
 		return;
 	}
 
 	const int iPrevNdvActive = m_iNdvActive;
-	y -= TAB_TALL - m_iScrollOffset;
-	m_iNdvActive = y / BTN_TALL;
+	y -= g_iRowTall - m_iScrollOffset;
+	m_iNdvActive = y / g_iRowTall;
 	ResetPrevNdvActive(iPrevNdvActive);
 	if (m_iNdvActive < 0 || m_iNdvActive >= tab->NdvListSize())
 	{
 		return;
 	}
 
-	const int wgXPos = static_cast<int>(g_SettingsWide * 0.4f);
-	const int widgetWide = g_SettingsWide - wgXPos;
-	const int widgetTall = BTN_TALL;
+	const int wgXPos = static_cast<int>(g_iRootSubPanelWide * 0.4f);
+	const int widgetWide = g_iRootSubPanelWide - wgXPos;
+	const int widgetTall = g_iRowTall;
 
 	CNeoDataVariant *ndv = &tab->NdvList()[m_iNdvActive];
 	switch (ndv->type)
@@ -926,7 +924,7 @@ void CNeoSettings_Dynamic::OnCursorMoved(int x, int y)
 		{
 			m_curMouse = WDG_LEFT;
 		}
-		else if (x > (g_SettingsWide - widgetTall))
+		else if (x > (g_iRootSubPanelWide - widgetTall))
 		{
 			m_curMouse = WDG_RIGHT;
 		}
@@ -949,7 +947,7 @@ void CNeoSettings_Dynamic::OnCursorMoved(int x, int y)
 		}
 		break;
 	case CNeoDataVariant::TEXTENTRY:
-		if (wgXPos <= x && x < g_SettingsWide)
+		if (wgXPos <= x && x < g_iRootSubPanelWide)
 		{
 			m_curMouse = WDG_CENTER;
 		}
@@ -1752,11 +1750,11 @@ void CNeoRoot::UpdateControls()
 
 	const int flagToMatch = engine->IsInGame() ? FLAG_SHOWINGAME : FLAG_SHOWINMAIN;
 	const int btnWide = wide / 4;
-	const int yTopPos = tall / 2 - ((BTN_TALL * BTN__TOTAL) / 2);
+	const int yTopPos = tall / 2 - ((g_iRowTall * BTN__TOTAL) / 2);
 	const bool inSettings = m_state == STATE_SETTINGS;
 
 	IntPos ipStartPos{
-		.x = (wide / 2) - (g_SettingsWide / 2),
+		.x = (wide / 2) - (g_iRootSubPanelWide / 2),
 		.y = yTopPos,
 	};
 	m_panelSettings->SetVisible(inSettings);
@@ -1817,7 +1815,11 @@ void CNeoRoot::ApplySchemeSettings(IScheme *pScheme)
 	SetFgColor(COLOR_TRANSPARENT);
 	SetBgColor(COLOR_TRANSPARENT);
 
-	g_SettingsWide = static_cast<int>(static_cast<float>(wide) * 0.65f);
+	// In 1080p, g_iRowTall == 40, g_iMargin = 10, other resolution scales up/down from it
+	g_iRowTall = tall / 27;
+	g_iMargin = wide / 192;
+	g_iRootSubPanelWide = static_cast<int>(static_cast<float>(wide) * 0.65f);
+
 	g_neoFont = m_hTextFonts[FONT_NTSMALL];
 	m_opKeyCapture->m_fontMain = m_hTextFonts[FONT_NTNORMAL];
 	m_opKeyCapture->m_fontSub = m_hTextFonts[FONT_NTSMALL];
@@ -1834,7 +1836,7 @@ void CNeoRoot::Paint()
 	const bool bInSettings = m_state == STATE_SETTINGS;
 	if (!bInSettings)
 	{
-		const int yTopPos = tall / 2 - ((BTN_TALL * BTN__TOTAL) / 2);
+		const int yTopPos = tall / 2 - ((g_iRowTall * BTN__TOTAL) / 2);
 
 		// Draw title
 		static constexpr wchar_t WSZ_GAME_TITLE[] = L"neatbkyoc ue";
@@ -1885,20 +1887,20 @@ void CNeoRoot::Paint()
 			.y = yTopPos,
 		};
 		const int flagToMatch = engine->IsInGame() ? FLAG_SHOWINGAME : FLAG_SHOWINMAIN;
-		surface()->DrawSetTextFont(m_hTextFonts[FONT_NTNORMAL]);
-		const int fontTall = surface()->GetFontTall(m_hTextFonts[FONT_NTNORMAL]);
-		const int fontStartYPos = (BTN_TALL / 2) - (fontTall / 2);
+		surface()->DrawSetTextFont(m_hTextFonts[FONT_NTSMALL]);
+		const int fontTall = surface()->GetFontTall(m_hTextFonts[FONT_NTSMALL]);
+		const int fontStartYPos = (g_iRowTall / 2) - (fontTall / 2);
 		for (int i = 0; i < BTN__TOTAL; ++i)
 		{
 			if (BTNS_INFO[i].flags & flagToMatch)
 			{
 				surface()->DrawSetColor((m_iHoverBtn == i) ? Color(0, 0, 0, 255) : Color(40, 40, 40, 255));
-				surface()->DrawFilledRect(btnPos.x, btnPos.y, btnPos.x + btnWide, btnPos.y + BTN_TALL);
+				surface()->DrawFilledRect(btnPos.x, btnPos.y, btnPos.x + btnWide, btnPos.y + g_iRowTall);
 
-				surface()->DrawSetTextPos(btnPos.x + MARGIN, btnPos.y + fontStartYPos);
+				surface()->DrawSetTextPos(btnPos.x + g_iMargin, btnPos.y + fontStartYPos);
 				surface()->DrawPrintText(m_wszDispBtnTexts[i], m_iWszDispBtnTextsSizes[i]);
 
-				btnPos.y += BTN_TALL;
+				btnPos.y += g_iRowTall;
 			}
 		}
 	}
@@ -1959,11 +1961,11 @@ void CNeoRoot::OnCursorMoved(int x, int y)
 		}
 	}
 
-	const int yTopPos = GetTall() / 2 - ((BTN_TALL * BTN__TOTAL) / 2);
-	if (y >= yTopPos && y < yTopPos + (BTN_TALL * iTotal))
+	const int yTopPos = GetTall() / 2 - ((g_iRowTall * BTN__TOTAL) / 2);
+	if (y >= yTopPos && y < yTopPos + (g_iRowTall * iTotal))
 	{
 		y -= yTopPos;
-		const int num = y / BTN_TALL;
+		const int num = y / g_iRowTall;
 		if (num >= 0 && num < iTotal)
 		{
 			m_iHoverBtn = iMapIdx[num];
