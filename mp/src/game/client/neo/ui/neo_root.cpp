@@ -55,6 +55,16 @@ int g_iMarginY = 10;
 int g_iAvatar = 64;
 int g_iRootSubPanelWide = 600;
 HFont g_neoFont;
+#define COLOR_NEOPANELNORMALBG Color(40, 40, 40, 255)
+#define COLOR_NEOPANELSELECTBG Color(40, 10, 10, 255)
+#define COLOR_NEOPANELACCENTBG Color(0, 0, 0, 255)
+#define COLOR_NEOPANELTEXTNORMAL Color(200, 200, 200, 255)
+#define COLOR_NEOPANELTEXTBRIGHT Color(255, 255, 255, 255)
+#define COLOR_NEOPANELPOPUPBG Color(0, 0, 0, 170)
+#define COLOR_NEOPANELFRAMEBG Color(40, 40, 40, 150)
+#define COLOR_NEOTITLE Color(128, 128, 128, 255)
+#define COLOR_NEOPANELBAR Color(20, 20, 20, 255)
+#define COLOR_NEOPANELMICTEST Color(30, 90, 30, 255)
 static constexpr wchar_t WSZ_GAME_TITLE[] = L"neatbkyoc ue";
 
 const wchar_t *QUALITY_LABELS[] = {
@@ -99,8 +109,8 @@ CNeoOverlay_KeyCapture::CNeoOverlay_KeyCapture(Panel *parent)
 	MakePopup(true);
 	SetKeyBoardInputEnabled(true);
 	SetMouseInputEnabled(true);
-	SetBgColor(Color(40, 40, 40, 255));
-	SetFgColor(Color(40, 40, 40, 255));
+	SetBgColor(COLOR_NEOPANELNORMALBG);
+	SetFgColor(COLOR_NEOPANELNORMALBG);
 	SetVisible(false);
 	SetEnabled(false);
 }
@@ -113,8 +123,8 @@ void CNeoOverlay_KeyCapture::PerformLayout()
 
 	SetPos(0, 0);
 	SetSize(wide, tall);
-	SetFgColor(Color(0, 0, 0, 170));
-	SetBgColor(Color(0, 0, 0, 170));
+	SetFgColor(COLOR_NEOPANELPOPUPBG);
+	SetBgColor(COLOR_NEOPANELPOPUPBG);
 }
 
 void CNeoOverlay_KeyCapture::Paint()
@@ -125,11 +135,11 @@ void CNeoOverlay_KeyCapture::Paint()
 	GetSize(wide, tall);
 
 	const int tallSplit = tall / 3;
-	surface()->DrawSetColor(Color(40, 40, 40, 255));
+	surface()->DrawSetColor(COLOR_NEOPANELNORMALBG);
 	surface()->DrawFilledRect(0, tallSplit, wide, tall - tallSplit);
 
 	int yPos = 0;
-	surface()->DrawSetTextColor(Color(255, 255, 255, 255));
+	surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
 	{
 		int textWidth, textHeight;
 		surface()->DrawSetTextFont(m_fontMain);
@@ -170,8 +180,8 @@ CNeoOverlay_Confirm::CNeoOverlay_Confirm(Panel *parent)
 	MakePopup(true);
 	SetKeyBoardInputEnabled(true);
 	SetMouseInputEnabled(true);
-	SetBgColor(Color(40, 40, 40, 255));
-	SetFgColor(Color(40, 40, 40, 255));
+	SetBgColor(COLOR_NEOPANELNORMALBG);
+	SetFgColor(COLOR_NEOPANELNORMALBG);
 	SetVisible(false);
 	SetEnabled(false);
 }
@@ -183,8 +193,8 @@ void CNeoOverlay_Confirm::PerformLayout()
 
 	SetPos(0, 0);
 	SetSize(wide, tall);
-	SetFgColor(Color(0, 0, 0, 170));
-	SetBgColor(Color(0, 0, 0, 170));
+	SetFgColor(COLOR_NEOPANELPOPUPBG);
+	SetBgColor(COLOR_NEOPANELPOPUPBG);
 }
 
 void CNeoOverlay_Confirm::Paint()
@@ -196,10 +206,10 @@ void CNeoOverlay_Confirm::Paint()
 
 	const int tallSplit = tall / 3;
 	const int btnWide = wide / 6;
-	surface()->DrawSetColor(Color(40, 40, 40, 255));
+	surface()->DrawSetColor(COLOR_NEOPANELNORMALBG);
 	surface()->DrawFilledRect(0, tallSplit, wide, tall - tallSplit);
 
-	surface()->DrawSetTextColor(Color(255, 255, 255, 255));
+	surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
 	surface()->DrawSetTextFont(m_fontMain);
 	{
 		static constexpr wchar_t CONFIRM_TEXT[] = L"Settings changed: Do you want to apply the settings?";
@@ -220,7 +230,7 @@ void CNeoOverlay_Confirm::Paint()
 			surface()->GetTextSize(g_neoFont, APPLY_TEXT, textWidth, textHeight);
 
 			const int buttonXPos = (wide / 2) - btnWide;
-			surface()->DrawSetColor((m_buttonHover == BUTTON_APPLY) ? Color(40, 10, 10, 255) : Color(0, 0, 0, 255));
+			surface()->DrawSetColor((m_buttonHover == BUTTON_APPLY) ? COLOR_NEOPANELSELECTBG : COLOR_NEOPANELACCENTBG);
 			surface()->DrawFilledRect(buttonXPos, buttonYPos, buttonXPos + btnWide, buttonYPos + g_iRowTall);
 			surface()->DrawSetTextPos(buttonXPos + ((btnWide / 2) - (textWidth / 2)), buttonYPos + ((g_iRowTall / 2) - (textHeight / 2)));
 			surface()->DrawPrintText(APPLY_TEXT, (sizeof(APPLY_TEXT) / sizeof(wchar_t)) - 1);
@@ -231,7 +241,7 @@ void CNeoOverlay_Confirm::Paint()
 			surface()->GetTextSize(g_neoFont, DISCARD_TEXT, textWidth, textHeight);
 
 			const int buttonXPos = (wide / 2);
-			surface()->DrawSetColor((m_buttonHover == BUTTON_DISCARD) ? Color(40, 10, 10, 255) : Color(0, 0, 0, 255));
+			surface()->DrawSetColor((m_buttonHover == BUTTON_DISCARD) ? COLOR_NEOPANELSELECTBG : COLOR_NEOPANELACCENTBG);
 			surface()->DrawFilledRect(buttonXPos, buttonYPos, buttonXPos + btnWide, buttonYPos + g_iRowTall);
 			surface()->DrawSetTextPos(buttonXPos + ((btnWide / 2) - (textWidth / 2)), buttonYPos + ((g_iRowTall / 2) - (textHeight / 2)));
 			surface()->DrawPrintText(DISCARD_TEXT, (sizeof(DISCARD_TEXT) / sizeof(wchar_t)) - 1);
@@ -352,8 +362,8 @@ void CNeoSettings_Dynamic::PerformLayout()
 
 	BaseClass::PerformLayout();
 	SetSize(g_iRootSubPanelWide, g_iRowTall + (tall * 0.8f) + g_iRowTall);
-	SetBgColor(Color(40, 40, 40, 150));
-	SetFgColor(Color(40, 40, 40, 150));
+	SetBgColor(COLOR_NEOPANELFRAMEBG);
+	SetFgColor(COLOR_NEOPANELFRAMEBG);
 }
 
 void CNeoSettings_Dynamic::Paint()
@@ -382,8 +392,8 @@ void CNeoSettings_Dynamic::Paint()
 		CNeoDataVariant *ndv = &tab->NdvList()[i];
 		const bool bThisActive = (i == m_iNdvActive);
 
-		surface()->DrawSetColor(bThisActive ? Color(40, 10, 10, 255) : Color(0, 0, 0, 255));
-		surface()->DrawSetTextColor(Color(200, 200, 200, 255));
+		surface()->DrawSetColor(bThisActive ? COLOR_NEOPANELSELECTBG : COLOR_NEOPANELACCENTBG);
+		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
 
 		switch (ndv->type)
 		{
@@ -409,7 +419,7 @@ void CNeoSettings_Dynamic::Paint()
 		{
 			if (ndv->type == CNeoDataVariant::BINDENTRY && i != m_iNdvActive)
 			{
-				surface()->DrawSetColor((i % 2 == 0) ? Color(40, 40, 40, 255) : Color(0, 0, 0, 255));
+				surface()->DrawSetColor((i % 2 == 0) ? COLOR_NEOPANELNORMALBG : COLOR_NEOPANELACCENTBG);
 			}
 			surface()->DrawFilledRect(wgXPos, yPos, wgXPos + widgetWide, yPos + widgetTall);
 		}
@@ -449,7 +459,7 @@ void CNeoSettings_Dynamic::Paint()
 			CNeoDataSlider *sl = &ndv->slider;
 
 			// Draw the background percentage bar
-			surface()->DrawSetColor(Color(20, 20, 20, 255));
+			surface()->DrawSetColor(COLOR_NEOPANELBAR);
 			const float perc = static_cast<float>(sl->iValCur - sl->iValMin) / static_cast<float>(sl->iValMax - sl->iValMin);
 			surface()->DrawFilledRect(wgXPos + widgetTall,
 									  yPos,
@@ -544,7 +554,7 @@ void CNeoSettings_Dynamic::Paint()
 					mt->flSpeakingVol = flSpeaking;
 					mt->flLastFetchInterval = gpGlobals->curtime;
 				}
-				surface()->DrawSetColor(Color(30, 90, 30, 255));
+				surface()->DrawSetColor(COLOR_NEOPANELMICTEST);
 				surface()->DrawFilledRect(wgXPos,
 										  yPos,
 										  wgXPos + static_cast<int>(mt->flSpeakingVol * static_cast<float>(widgetWide)),
@@ -573,11 +583,11 @@ void CNeoSettings_Dynamic::Paint()
 #define LWS(wlabel) { wlabel, (sizeof(wlabel) / sizeof(wchar_t)) - 1}
 	{
 		// Draw the top part
-		surface()->DrawSetColor(Color(40, 40, 40, 255));
+		surface()->DrawSetColor(COLOR_NEOPANELNORMALBG);
 		surface()->DrawFilledRect(0, 0, g_iRootSubPanelWide, g_iRowTall);
 
-		surface()->DrawSetColor(Color(40, 10, 10, 255));
-		surface()->DrawSetTextColor(Color(200, 200, 200, 255));
+		surface()->DrawSetColor(COLOR_NEOPANELSELECTBG);
+		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
 
 		// Draw the tabs buttons on top
 		static constexpr WLabelWSize TAB_NAMES[TAB__TOTAL] = {
@@ -594,7 +604,7 @@ void CNeoSettings_Dynamic::Paint()
 	const int bottomYStart = (panelTall - g_iRowTall);
 	{
 		// Draw the bottom part
-		surface()->DrawSetColor(Color(40, 40, 40, 255));
+		surface()->DrawSetColor(COLOR_NEOPANELNORMALBG);
 		surface()->DrawFilledRect(0, bottomYStart, g_iRootSubPanelWide, panelTall);
 
 		// Draw the buttons on bottom
@@ -607,7 +617,7 @@ void CNeoSettings_Dynamic::Paint()
 
 			if (BBTN_NAMES[i].text)
 			{
-				surface()->DrawSetColor((m_iBottomHover == i) ? Color(40, 10, 10, 255) : Color(40, 40, 40, 255));
+				surface()->DrawSetColor((m_iBottomHover == i) ? COLOR_NEOPANELSELECTBG : COLOR_NEOPANELNORMALBG);
 				surface()->DrawFilledRect(xPosTab, bottomYStart, xPosTab + iTabWide, panelTall);
 				surface()->DrawSetTextPos(xPosTab + g_iMarginX, bottomYStart + fontStartYPos);
 				surface()->DrawPrintText(BBTN_NAMES[i].text, BBTN_NAMES[i].size);
@@ -1926,11 +1936,11 @@ void CNeoRoot::Paint()
 		surface()->GetTextSize(m_hTextFonts[FONT_LOGO], WSZ_GAME_TITLE, iTitleWidth, iTitleHeight);
 		m_iBtnWide = iTitleWidth + (2 * g_iMarginX);
 
-		surface()->DrawSetTextColor(Color(128, 128, 128, 255));
+		surface()->DrawSetTextColor(COLOR_NEOTITLE);
 		surface()->DrawSetTextPos(iBtnPlaceXMid - (iTitleWidth / 2), yTopPos - iTitleHeight);
 		surface()->DrawPrintText(WSZ_GAME_TITLE, (sizeof(WSZ_GAME_TITLE) / sizeof(wchar_t)) - 1);
 
-		surface()->DrawSetTextColor(Color(255, 255, 255, 255));
+		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
 		ISteamUser *steamUser = steamapicontext->SteamUser();
 		ISteamFriends *steamFriends = steamapicontext->SteamFriends();
 		if (steamUser && steamFriends)
@@ -2052,7 +2062,7 @@ void CNeoRoot::Paint()
 		{
 			if (BTNS_INFO[i].flags & flagToMatch)
 			{
-				surface()->DrawSetColor((m_iHoverBtn == i) ? Color(0, 0, 0, 255) : Color(40, 40, 40, 255));
+				surface()->DrawSetColor((m_iHoverBtn == i) ? COLOR_NEOPANELACCENTBG : COLOR_NEOPANELNORMALBG);
 				surface()->DrawFilledRect(btnPos.x, btnPos.y, btnPos.x + m_iBtnWide, btnPos.y + g_iRowTall);
 
 				surface()->DrawSetTextPos(btnPos.x + g_iMarginX, btnPos.y + fontStartYPos);
@@ -2064,7 +2074,7 @@ void CNeoRoot::Paint()
 	}
 
 	// Draw version info (bottom left corner) - Always
-	surface()->DrawSetTextColor(Color(255, 255, 255, 255));
+	surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
 	int textWidth, textHeight;
 	surface()->DrawSetTextFont(m_hTextFonts[FONT_NTSMALL]);
 	surface()->GetTextSize(m_hTextFonts[FONT_NTSMALL], BUILD_DISPLAY, textWidth, textHeight);
