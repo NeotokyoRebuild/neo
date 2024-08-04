@@ -322,6 +322,11 @@ CNeoSettings_Dynamic::CNeoSettings_Dynamic(Panel *parent)
 	SetMouseInputEnabled(true);
 }
 
+CNeoSettings_Dynamic::~CNeoSettings_Dynamic()
+{
+	m_opConfirm->DeletePanel();
+}
+
 void CNeoSettings_Dynamic::UserSettingsRestore()
 {
 	for (CNeoDataSettings_Base *nds : m_pNdsBases)
@@ -366,6 +371,7 @@ void CNeoSettings_Dynamic::Paint()
 	const int fontStartYPos = (widgetTall / 2) - (fontTall / 2);
 	const int tabFullYSize = (m_pNdsBases[m_iNdsCurrent]->NdvListSize() * g_iRowTall);
 	const int panelTall = GetTall();
+	const bool bEditBlinkShow = (static_cast<int>(gpGlobals->curtime * 1.5f) % 2 == 0);
 
 	const int yOvershoot = m_iScrollOffset % g_iRowTall;
 	int yPos = g_iRowTall - yOvershoot;
@@ -374,8 +380,9 @@ void CNeoSettings_Dynamic::Paint()
 		 ++i)
 	{
 		CNeoDataVariant *ndv = &tab->NdvList()[i];
+		const bool bThisActive = (i == m_iNdvActive);
 
-		surface()->DrawSetColor((i == m_iNdvActive) ? Color(40, 10, 10, 255) : Color(0, 0, 0, 255));
+		surface()->DrawSetColor(bThisActive ? Color(40, 10, 10, 255) : Color(0, 0, 0, 255));
 		surface()->DrawSetTextColor(Color(200, 200, 200, 255));
 
 		switch (ndv->type)
@@ -452,12 +459,16 @@ void CNeoSettings_Dynamic::Paint()
 			// Draw center text - Generally size 0 never happens but sanity check
 			if (sl->iWszCacheLabelSize > 0)
 			{
-				surface()->DrawSetTextColor(sl->bTextEditMode ? Color(255, 150, 150, 255) : Color(200, 200, 200, 255));
-
 				int fontWide, fontTall;
 				surface()->GetTextSize(g_neoFont, sl->wszCacheLabel, fontWide, fontTall);
 				surface()->DrawSetTextPos(wgXPos + (widgetWide / 2) - (fontWide / 2), yPos + fontStartYPos);
 				surface()->DrawPrintText(sl->wszCacheLabel, sl->iWszCacheLabelSize);
+				if (m_bTextEditMode && bThisActive && bEditBlinkShow)
+				{
+					surface()->DrawSetTextPos(wgXPos + (widgetWide / 2) - (fontWide / 2) + fontWide,
+											  yPos + fontStartYPos);
+					surface()->DrawPrintText(L"_", 1);
+				}
 			}
 		}
 		break;
@@ -479,7 +490,7 @@ void CNeoSettings_Dynamic::Paint()
 			CNeoDataTextEntry *te = &ndv->textEntry;
 			surface()->DrawSetTextPos(wgXPos + g_iMarginX, yPos + fontStartYPos);
 			surface()->DrawPrintText(te->wszEntry, V_wcslen(te->wszEntry));
-			if (te->bEditing)
+			if (m_bTextEditMode && bThisActive && bEditBlinkShow)
 			{
 				int textWide, textTall;
 				surface()->GetTextSize(g_neoFont, te->wszEntry, textWide, textTall);
@@ -608,6 +619,7 @@ void CNeoSettings_Dynamic::Paint()
 
 void CNeoSettings_Dynamic::OnMousePressed(vgui::MouseCode code)
 {
+	OnExitTextEditMode();
 	CNeoDataSettings_Base *tab = m_pNdsBases[m_iNdsCurrent];
 	if (m_iNdsHover >= 0 && m_iNdsHover < TAB__TOTAL)
 	{
@@ -665,24 +677,19 @@ void CNeoSettings_Dynamic::OnMousePressed(vgui::MouseCode code)
 
 void CNeoSettings_Dynamic::OnMouseDoublePressed(vgui::MouseCode code)
 {
+	OnExitTextEditMode();
+
 	CNeoDataSettings_Base *tab = m_pNdsBases[m_iNdsCurrent];
 	if (m_iNdvActive < 0 || m_iNdvActive >= tab->NdvListSize()) return;
 	CNeoDataVariant *ndv = &tab->NdvList()[m_iNdvActive];
 	switch (ndv->type)
 	{
 	case CNeoDataVariant::SLIDER:
-	{
-		CNeoDataSlider *sl = &ndv->slider;
-		if (m_curMouse != WDG_CENTER || code != MOUSE_LEFT) return;
-		sl->bTextEditMode = true;
-		RequestFocus();
-	}
-	break;
 	case CNeoDataVariant::TEXTENTRY:
 	{
 		if (m_curMouse == WDG_CENTER && code == MOUSE_LEFT)
 		{
-			ndv->textEntry.bEditing = true;
+			m_bTextEditMode = true;
 			RequestFocus();
 		}
 	}
@@ -736,6 +743,7 @@ void CNeoSettings_Dynamic::OnKeyCodeTyped(vgui::KeyCode code)
 	const int iNdvListSize = tab->NdvListSize();
 	if (code == KEY_DOWN || code == KEY_UP)
 	{
+		OnExitTextEditMode();
 		const int iIncr = (code == KEY_DOWN) ? +1 : -1;
 
 		// Increment or decrement to the next valid NDV
@@ -764,6 +772,7 @@ void CNeoSettings_Dynamic::OnKeyCodeTyped(vgui::KeyCode code)
 	}
 	else if (code == KEY_TAB)
 	{
+		OnExitTextEditMode();
 		const bool bShift = (input()->IsKeyDown(KEY_LSHIFT) || input()->IsKeyDown(KEY_RSHIFT));
 		const int iIncr = (bShift) ? -1 : +1;
 		m_iNdsCurrent += iIncr;
@@ -800,18 +809,19 @@ void CNeoSettings_Dynamic::OnKeyCodeTyped(vgui::KeyCode code)
 		default: break;
 		}
 
+		OnExitTextEditMode();
 		return;
 	}
 	else if (code == KEY_ENTER)
 	{
 		// Change editing mode
-		if (ndv->type == CNeoDataVariant::SLIDER)
+		if (ndv->type == CNeoDataVariant::SLIDER || ndv->type == CNeoDataVariant::TEXTENTRY)
 		{
-			ndv->slider.bTextEditMode = !ndv->slider.bTextEditMode;
-		}
-		else if (ndv->type == CNeoDataVariant::TEXTENTRY)
-		{
-			ndv->textEntry.bEditing = !ndv->textEntry.bEditing;
+			if (m_bTextEditMode && ndv->type == CNeoDataVariant::SLIDER)
+			{
+				ndv->slider.ClampAndUpdate();
+			}
+			m_bTextEditMode = !m_bTextEditMode;
 		}
 		else if (ndv->type == CNeoDataVariant::BINDENTRY)
 		{
@@ -831,7 +841,7 @@ void CNeoSettings_Dynamic::OnKeyCodeTyped(vgui::KeyCode code)
 		case CNeoDataVariant::SLIDER:
 		{
 			CNeoDataSlider *sl = &ndv->slider;
-			if (sl->bTextEditMode && code == KEY_BACKSPACE && sl->iWszCacheLabelSize > 0)
+			if (m_bTextEditMode && code == KEY_BACKSPACE && sl->iWszCacheLabelSize > 0)
 			{
 				sl->wszCacheLabel[--sl->iWszCacheLabelSize] = '\0';
 				m_bModified = true;
@@ -842,7 +852,7 @@ void CNeoSettings_Dynamic::OnKeyCodeTyped(vgui::KeyCode code)
 		{
 			CNeoDataTextEntry *te = &ndv->textEntry;
 			int iWszSize = V_wcslen(te->wszEntry);
-			if (te->bEditing && code == KEY_BACKSPACE && iWszSize > 0)
+			if (m_bTextEditMode && code == KEY_BACKSPACE && iWszSize > 0)
 			{
 				te->wszEntry[--iWszSize] = '\0';
 				m_bModified = true;
@@ -857,14 +867,14 @@ void CNeoSettings_Dynamic::OnKeyCodeTyped(vgui::KeyCode code)
 void CNeoSettings_Dynamic::OnKeyTyped(wchar_t unichar)
 {
 	CNeoDataSettings_Base *tab = m_pNdsBases[m_iNdsCurrent];
-	if (m_iNdvActive < 0 || m_iNdvActive >= tab->NdvListSize()) return;
+	if (m_iNdvActive < 0 || m_iNdvActive >= tab->NdvListSize() || !m_bTextEditMode) return;
 	CNeoDataVariant *ndv = &tab->NdvList()[m_iNdvActive];
 	switch (ndv->type)
 	{
 	case CNeoDataVariant::SLIDER:
 	{
 		CNeoDataSlider *sl = &ndv->slider;
-		if (sl->bTextEditMode && sl->iWszCacheLabelSize < sl->iChMax)
+		if (sl->iWszCacheLabelSize < sl->iChMax)
 		{
 			// Prevent dot usage if flMulti = 1.0f, aka integer direct
 			const bool bHasDot = (sl->flMulti == 1.0f) || wmemchr(sl->wszCacheLabel, L'.', sl->iWszCacheLabelSize) != nullptr;
@@ -891,7 +901,7 @@ void CNeoSettings_Dynamic::OnKeyTyped(wchar_t unichar)
 	{
 		CNeoDataTextEntry *te = &ndv->textEntry;
 		int iWszSize = V_wcslen(te->wszEntry);
-		if (te->bEditing && iWszSize < CNeoDataTextEntry::ENTRY_MAX && iswprint(unichar))
+		if (iWszSize < CNeoDataTextEntry::ENTRY_MAX && iswprint(unichar))
 		{
 			te->wszEntry[iWszSize++] = unichar;
 			te->wszEntry[iWszSize] = '\0';
@@ -903,31 +913,11 @@ void CNeoSettings_Dynamic::OnKeyTyped(wchar_t unichar)
 	}
 }
 
-void CNeoSettings_Dynamic::ResetPrevNdvActive(const int iPrevNdvActive)
-{
-	CNeoDataSettings_Base *tab = m_pNdsBases[m_iNdsCurrent];
-
-	if (m_iNdvActive != iPrevNdvActive && 0 <= iPrevNdvActive && iPrevNdvActive < tab->NdvListSize())
-	{
-		CNeoDataVariant *ndv = &tab->NdvList()[iPrevNdvActive];
-		switch (ndv->type)
-		{
-		case CNeoDataVariant::SLIDER:
-			ndv->slider.bTextEditMode = false; // TEMP?
-			break;
-		case CNeoDataVariant::TEXTENTRY:
-			ndv->textEntry.bEditing = false;
-			break;
-		default:
-			break;
-		}
-	}
-}
-
 // Use the y position to get the y-axis partition, then
 // use the x position to get the buttons
 void CNeoSettings_Dynamic::OnCursorMoved(int x, int y)
 {
+	const int iPrevNdsActive = m_iNdvActive;
 	m_iPosX = clamp(x, 0, GetWide());
 	m_iNdvActive = -1;
 	m_iNdsHover = -1;
@@ -944,19 +934,23 @@ void CNeoSettings_Dynamic::OnCursorMoved(int x, int y)
 	{
 		const int iTabWide = g_iRootSubPanelWide / TAB__TOTAL;
 		m_iNdsHover = x / iTabWide;
+		OnExitTextEditMode(iPrevNdsActive);
 		return;
 	}
 	else if (y > (GetTall() - g_iRowTall))
 	{
 		const int iTabWide = g_iRootSubPanelWide / BBTN__TOTAL;
 		m_iBottomHover = x / iTabWide;
+		OnExitTextEditMode(iPrevNdsActive);
 		return;
 	}
 
-	const int iPrevNdvActive = m_iNdvActive;
 	y -= g_iRowTall - m_iScrollOffset;
 	m_iNdvActive = y / g_iRowTall;
-	ResetPrevNdvActive(iPrevNdvActive);
+	if (m_iNdvActive != iPrevNdsActive)
+	{
+		OnExitTextEditMode(iPrevNdsActive);
+	}
 	if (m_iNdvActive < 0 || m_iNdvActive >= tab->NdvListSize())
 	{
 		return;
@@ -1032,6 +1026,7 @@ void CNeoSettings_Dynamic::OnEnterBindEntry(CNeoDataVariant *ndv)
 
 void CNeoSettings_Dynamic::OnBottomAction(BottomBtns btn)
 {
+	OnExitTextEditMode();
 	switch (btn)
 	{
 	case BBTN_BACK:
@@ -1049,6 +1044,24 @@ void CNeoSettings_Dynamic::OnBottomAction(BottomBtns btn)
 	default:
 		break;
 	}
+}
+
+void CNeoSettings_Dynamic::OnExitTextEditMode(const int iOverrideNdsActive)
+{
+	if (m_bTextEditMode)
+	{
+		const int iUneditNdv = (iOverrideNdsActive == -1) ? m_iNdvActive : iOverrideNdsActive;
+		CNeoDataSettings_Base *tab = m_pNdsBases[m_iNdsCurrent];
+		if (iUneditNdv >= 0 && iUneditNdv < tab->NdvListSize())
+		{
+			CNeoDataVariant *ndv = &tab->NdvList()[iUneditNdv];
+			if (ndv->type == CNeoDataVariant::SLIDER)
+			{
+				ndv->slider.ClampAndUpdate();
+			}
+		}
+	}
+	m_bTextEditMode = false;
 }
 
 void CNeoSettings_Dynamic::ExitSettings()
@@ -1598,6 +1611,12 @@ CNeoDataSettings_Video::CNeoDataSettings_Video()
 	m_ndvList[OPT_VIDEO_RESOLUTION].ringBox.iItemsSize = m_vmListSize;
 }
 
+CNeoDataSettings_Video::~CNeoDataSettings_Video()
+{
+	delete m_wszVmDispMem;
+	delete m_wszVmDispList;
+}
+
 void CNeoDataSettings_Video::UserSettingsRestore()
 {
 	const int preVmListSize = m_vmListSize;
@@ -1797,8 +1816,8 @@ CNeoRoot::CNeoRoot(VPANEL parent)
 CNeoRoot::~CNeoRoot()
 {
 	m_panelCaptureInput->DeletePanel();
-	m_panelSettings->DeletePanel();
 	m_opKeyCapture->DeletePanel();
+	m_panelSettings->DeletePanel();
 	if (m_avImage) delete m_avImage;
 
 	m_gameui = nullptr;

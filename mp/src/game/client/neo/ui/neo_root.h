@@ -3,7 +3,6 @@
 #include <vgui_controls/EditablePanel.h>
 #include <vgui_controls/Frame.h>
 #include "GameUI/IGameUI.h"
-#include "neo_player_shared.h"
 
 class CAvatarImage;
 
@@ -64,7 +63,6 @@ struct CNeoDataSlider
 
 	wchar_t wszCacheLabel[LABEL_MAX + 1] = {};
 	int iWszCacheLabelSize = 0;
-	bool bTextEditMode = false;
 
 	void SetValue(const float value);
 	float GetValue() const;
@@ -76,7 +74,6 @@ struct CNeoDataTextEntry
 {
 	static constexpr int ENTRY_MAX = 64;
 	wchar_t wszEntry[ENTRY_MAX + 1] = {};
-	bool bEditing = false;
 };
 
 struct CNeoDataBindEntry
@@ -293,6 +290,7 @@ struct CNeoDataSettings_Video : public CNeoDataSettings_Base
 	CNeoDataVariant m_ndvList[OPT_VIDEO__TOTAL] = {};
 
 	CNeoDataSettings_Video();
+	~CNeoDataSettings_Video();
 	CNeoDataVariant *NdvList() final { return m_ndvList; }
 	int NdvListSize() final { return OPT_VIDEO__TOTAL; }
 	void UserSettingsRestore() final;
@@ -333,6 +331,7 @@ class CNeoSettings_Dynamic : public vgui::EditablePanel
 	DECLARE_CLASS_SIMPLE(CNeoSettings_Dynamic, vgui::EditablePanel);
 public:
 	CNeoSettings_Dynamic(vgui::Panel *parent);
+	~CNeoSettings_Dynamic();
 	void UserSettingsRestore();
 	void UserSettingsSave();
 
@@ -367,11 +366,11 @@ public:
 	void OnKeyCodeTyped(vgui::KeyCode code) final;
 	void OnKeyTyped(wchar_t unichar) final;
 
-	void ResetPrevNdvActive(const int iPrevNdvActive);
 	void OnCursorMoved(int x, int y) final;
 
 	void OnEnterBindEntry(CNeoDataVariant *ndv);
 	void OnBottomAction(BottomBtns btn);
+	void OnExitTextEditMode(const int iOverrideNdsActive = -1);
 
 	void ExitSettings();
 
@@ -395,6 +394,7 @@ public:
 	int m_iNdvActive = -1;
 	int m_iBottomHover = -1;
 	int m_iScrollOffset = 0;
+	bool m_bTextEditMode = false;
 
 	// NEO NOTE (nullsystem): Just to make it simple, any actions that changes
 	// settings (key or mouse) just trigger this regardless if the value has been changed or not
