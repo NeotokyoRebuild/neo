@@ -127,11 +127,6 @@ void CWeaponSmokeGrenade::SecondaryAttack(void)
 		m_flNextSecondaryAttack = gpGlobals->curtime + RETHROW_DELAY;
 		m_fDrawbackFinished = false;
 	}
-	// If I'm now out of ammo, switch away
-	if (!HasPrimaryAmmo())
-	{
-		pPlayer->SwitchToNextBestWeapon(this);
-	}
 }
 
 void CWeaponSmokeGrenade::PrimaryAttack(void)
@@ -163,11 +158,6 @@ void CWeaponSmokeGrenade::PrimaryAttack(void)
 		m_flNextPrimaryAttack = gpGlobals->curtime + RETHROW_DELAY;
 		m_fDrawbackFinished = false;
 	}
-	// If I'm now out of ammo, switch away
-	if (!HasPrimaryAmmo())
-	{
-		pPlayer->SwitchToNextBestWeapon(this);
-	}
 }
 
 void CWeaponSmokeGrenade::DecrementAmmo(CBaseCombatCharacter* pOwner)
@@ -177,6 +167,20 @@ void CWeaponSmokeGrenade::DecrementAmmo(CBaseCombatCharacter* pOwner)
 
 void CWeaponSmokeGrenade::ItemPostFrame(void)
 {
+	if (!HasPrimaryAmmo() && GetIdealActivity() == ACT_VM_IDLE) {
+		// Finished Throwing Animation, switch to next weapon and destroy this one
+		CBasePlayer* pOwner = ToBasePlayer(GetOwner());
+		if (pOwner) {
+			pOwner->SwitchToNextBestWeapon(this);
+			return;
+		}
+#ifdef GAME_DLL
+		// Grenade with no owner and no ammo, just destroy it
+		UTIL_Remove(this);
+#endif
+		return;
+	}
+
 	if (!m_fDrawbackFinished)
 	{
 		if ((m_flNextPrimaryAttack <= gpGlobals->curtime) && (m_flNextSecondaryAttack <= gpGlobals->curtime))
@@ -312,12 +316,6 @@ void CWeaponSmokeGrenade::ThrowGrenade(CBasePlayer* pPlayer)
 
 	// player "shoot" animation
 	pPlayer->SetAnimation(PLAYER_ATTACK1);
-
-	// If I'm now out of ammo, switch away
-	if (!HasPrimaryAmmo())
-	{
-		pPlayer->SwitchToNextBestWeapon(this);
-	}
 }
 
 void CWeaponSmokeGrenade::LobGrenade(CBasePlayer* pPlayer)
@@ -359,12 +357,6 @@ void CWeaponSmokeGrenade::LobGrenade(CBasePlayer* pPlayer)
 	pPlayer->SetAnimation(PLAYER_ATTACK1);
 
 	m_bRedraw = true;
-
-	// If I'm now out of ammo, switch away
-	if (!HasPrimaryAmmo())
-	{
-		pPlayer->SwitchToNextBestWeapon(this);
-	}
 }
 
 void CWeaponSmokeGrenade::RollGrenade(CBasePlayer* pPlayer)
@@ -425,12 +417,6 @@ void CWeaponSmokeGrenade::RollGrenade(CBasePlayer* pPlayer)
 	pPlayer->SetAnimation(PLAYER_ATTACK1);
 
 	m_bRedraw = true;
-
-	// If I'm now out of ammo, switch away
-	if (!HasPrimaryAmmo())
-	{
-		pPlayer->SwitchToNextBestWeapon(this);
-	}
 }
 
 bool CWeaponSmokeGrenade::CanDrop()
