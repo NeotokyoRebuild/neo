@@ -392,9 +392,6 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 		surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), m_ilogoSize);
 		surface()->DrawPrintText(m_wszPlayersAliveUnicode, 9);
 
-		// Set Font for Draw Time
-		surface()->DrawSetTextFont(m_hOCRFont);
-		surface()->GetTextSize(m_hOCRFont, m_wszTime, fontWidth, fontHeight);
 	}
 	else
 	{
@@ -455,11 +452,11 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 				}
 			}
 		}
-
-		surface()->GetTextSize(m_hOCRSmallFont, m_wszTime, fontWidth, fontHeight);
 	}
 
 	// Draw time
+	surface()->DrawSetTextFont(m_hOCRFont);
+	surface()->GetTextSize(m_hOCRFont, m_wszTime, fontWidth, fontHeight);
 	surface()->DrawSetTextColor(neo_cl_squad_hud_original.GetBool() ? COLOR_FADED_WHITE : (NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze) ?
 									COLOR_RED : COLOR_WHITE);
 	surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), neo_cl_squad_hud_original.GetBool() ? Y_POS : m_iSmallFontHeight);
