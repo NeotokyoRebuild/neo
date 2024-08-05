@@ -54,6 +54,7 @@ public:
 	virtual bool Weapon_Switch(CBaseCombatWeapon *pWeapon, int viewmodelindex = 0) OVERRIDE;
 	virtual bool Weapon_CanSwitchTo(CBaseCombatWeapon *pWeapon) OVERRIDE;
 	virtual bool BumpWeapon(CBaseCombatWeapon *pWeapon) OVERRIDE;
+	bool Weapon_GetPosition(int slot, int position);
 	virtual void ChangeTeam(int iTeam) OVERRIDE;
 	virtual void PickupObject(CBaseEntity *pObject, bool bLimitMassAndSize) OVERRIDE;
 	virtual void PlayStepSound(Vector &vecOrigin, surfacedata_t *psurface, float fvol, bool force) OVERRIDE;

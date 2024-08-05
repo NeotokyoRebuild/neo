@@ -2022,8 +2022,14 @@ bool CNEO_Player::Weapon_CanSwitchTo(CBaseCombatWeapon *pWeapon)
 
 bool CNEO_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 {
-	// We already have a weapon in this slot
 	auto weaponSlot = pWeapon->GetSlot();
+	// Only pick up grenades if we don't have grenades of that type NEOTODO (Adam) What if we have less than the maximum of that type (i.e one smoke grenade)? Can I carry more of a grenade than I spawn with?
+	if (weaponSlot == 3 && Weapon_GetPosition(weaponSlot, pWeapon->GetPosition()))
+	{
+		return false;
+	}
+
+	// We already have a weapon in this slot
 	if (weaponSlot != 3 && Weapon_GetSlot(weaponSlot))
 	{
 		return false;
@@ -2039,6 +2045,22 @@ bool CNEO_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 	}
 
 	return BaseClass::BumpWeapon(pWeapon);
+}
+
+bool CNEO_Player::Weapon_GetPosition(int slot, int position)
+{
+	// Check for that slot being occupied already
+	for (int i = 0; i < MAX_WEAPONS; i++)
+	{
+		if (m_hMyWeapons[i].Get() != NULL)
+		{
+			// If the slots match, it's already occupied
+			if (m_hMyWeapons[i]->GetSlot() == slot && m_hMyWeapons[i]->GetPosition() == position)
+				return m_hMyWeapons[i];
+		}
+	}
+
+	return NULL;
 }
 
 void CNEO_Player::ChangeTeam( int iTeam )
