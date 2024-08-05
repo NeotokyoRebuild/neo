@@ -1601,6 +1601,7 @@ void CBaseCombatCharacter::Event_Killed( const CTakeDamageInfo &info )
 		forceVector += pMagnet->GetForceVector( this );
 	}
 
+#ifndef NEO
 	CBaseCombatWeapon *pDroppedWeapon = m_hActiveWeapon.Get();
 
 	// Drop any weapon that I own
@@ -1613,7 +1614,8 @@ void CBaseCombatCharacter::Event_Killed( const CTakeDamageInfo &info )
 	{
 		Weapon_Drop( m_hActiveWeapon );
 	}
-	
+#endif
+
 	// if flagged to drop a health kit
 	if (HasSpawnFlags(SF_NPC_DROP_HEALTHKIT))
 	{
@@ -1644,12 +1646,15 @@ void CBaseCombatCharacter::Event_Killed( const CTakeDamageInfo &info )
 
 			bRagdollCreated = Dissolve( NULL, gpGlobals->curtime, false, nDissolveType );
 
+#ifndef NEO
 			// Also dissolve any weapons we dropped
 			if ( pDroppedWeapon )
 			{
 				pDroppedWeapon->Dissolve( NULL, gpGlobals->curtime, false, nDissolveType );
 			}
+#endif
 		}
+#ifndef NEO
 #ifdef HL2_DLL
 		else if ( PlayerHasMegaPhysCannon() )
 		{
@@ -1658,6 +1663,7 @@ void CBaseCombatCharacter::Event_Killed( const CTakeDamageInfo &info )
 				pDroppedWeapon->Dissolve( NULL, gpGlobals->curtime, false, ENTITY_DISSOLVE_NORMAL );
 			}
 		}
+#endif
 #endif
 
 		if ( !bRagdollCreated && ( info.GetDamageType() & DMG_REMOVENORAGDOLL ) == 0 )

@@ -1728,6 +1728,9 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo* info)
 
 void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 {
+	// Calculate force for weapon drop
+	Vector forceVector = CalcDamageForceVector(info);
+
 	// Drop all weapons
 	Vector vecForward, pVecThrowDir;
 	EyeVectors(&vecForward);
@@ -1749,12 +1752,7 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 			}
 
 			// Nowhere in particular; just drop it.
-			MatrixBuildRotateZ(zRot, random->RandomFloat(-60.0f, 60.0f));
-			Vector3DMultiply(zRot, vecForward, pVecThrowDir);
-			pVecThrowDir.z = random->RandomFloat(-0.5f, 0.5f);
-			VectorNormalize(pVecThrowDir);
-			Assert(pVecThrowDir.IsValid());
-			Weapon_Drop(pWep, NULL, &pVecThrowDir);
+			Weapon_DropOnDeath(pWep, forceVector);
 		}
 	}
 
@@ -1770,8 +1768,54 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 	}
 
 	BaseClass::Event_Killed(info);
+}
 
-	RemoveAllWeapons();
+void CNEO_Player::Weapon_DropOnDeath(CBaseCombatWeapon* pWeapon, Vector velocity)
+{
+	CNEOBaseCombatWeapon* pNeoWeapon = static_cast<CNEOBaseCombatWeapon*>(pWeapon);
+	if (!pNeoWeapon)
+		return;
+	if (!pNeoWeapon->GetWpnData().m_bDropOnDeath)
+		return;
+
+	// If attack button was held down when player died, drop a live grenade. NEOTODO (Adam) Add delay between pressing an attack button and the pin being fully pulled out. If pin not out when dead do not drop a live grenade
+	if (pNeoWeapon->GetNeoWepBits() & NEO_WEP_FRAG_GRENADE) {
+		if (((m_nButtons & IN_ATTACK) && (!(m_afButtonPressed & IN_ATTACK))) ||
+			((m_nButtons & IN_ATTACK2) && (!(m_afButtonPressed & IN_ATTACK2)))) {
+			auto pWeaponFrag = static_cast<CWeaponGrenade*>(pNeoWeapon);
+			pWeaponFrag->DropLiveGrenade(this, velocity);
+			return;
+		}
+	}
+	if (pNeoWeapon->GetNeoWepBits() & NEO_WEP_SMOKE_GRENADE) {
+		if (((m_nButtons & IN_ATTACK) && (!(m_afButtonPressed & IN_ATTACK))) ||
+			((m_nButtons & IN_ATTACK2) && (!(m_afButtonPressed & IN_ATTACK2)))) {
+			auto pWeaponSmoke = static_cast<CWeaponSmokeGrenade*>(pNeoWeapon);
+			pWeaponSmoke->DropLiveGrenade(this, velocity);
+			return;
+		}
+	}
+	
+	if (pWeapon->IsEffectActive( EF_BONEMERGE ))
+	{
+		//int iBIndex = LookupBone("valveBiped.Bip01_R_Hand"); NEOTODO (Adam) Should mimic the behaviour in basecombatcharacter that places the weapon such that the bones used in the bonemerge overlap
+		Vector vFacingDir = BodyDirection2D();
+		pWeapon->SetAbsOrigin(Weapon_ShootPosition() + vFacingDir);
+	}
+
+	pWeapon->AddEffects(EF_BONEMERGE);
+	Vector playerVelocity = vec3_origin;
+	GetVelocity(&playerVelocity, NULL);
+	
+	if (VPhysicsGetObject())
+	{
+		playerVelocity += velocity * VPhysicsGetObject()->GetInvMass();
+	}
+	else {
+		playerVelocity += velocity;
+	}
+	pWeapon->Drop(playerVelocity);
+	Weapon_Detach(pWeapon);
 }
 
 void CNEO_Player::SpawnDeadModel(const CTakeDamageInfo& info)

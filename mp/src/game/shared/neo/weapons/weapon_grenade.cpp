@@ -273,6 +273,66 @@ void CWeaponGrenade::CheckThrowPosition(CBasePlayer *pPlayer, const Vector &vecE
 	}
 }
 
+void CWeaponGrenade::DropLiveGrenade(CBasePlayer* pPlayer, Vector velocity)
+{
+	if (!sv_neo_infinite_frag_grenades.GetBool())
+	{
+		Assert(HasPrimaryAmmo());
+	}
+
+#ifndef CLIENT_DLL
+	Vector	vecEye = pPlayer->EyePosition();
+	Vector	vForward, vRight;
+
+	pPlayer->EyeVectors(&vForward, &vRight, NULL);
+	Vector vecSrc = vecEye + vForward * 18.0f + vRight * 8.0f;
+	CheckThrowPosition(pPlayer, vecEye, vecSrc);
+	vForward.z += 0.1f;
+
+	// Upwards at 1 + 0.1226 direction sampled from original NT frag spawn event to next tick pos delta.
+	VectorMA(vForward, 0.1226, Vector(0, 0, 1), vForward);
+	Assert(vForward.IsValid());
+
+	Vector vecThrow;
+	pPlayer->GetVelocity(&vecThrow, NULL);
+	vecThrow += vForward;
+	if (VPhysicsGetObject())
+	{
+		vecThrow += velocity * VPhysicsGetObject()->GetInvMass();
+	}
+	else {
+		vecThrow += velocity;
+	}
+	Assert(vecThrow.IsValid());
+
+	// Sampled angular impulses from original NT frags:
+	// x: -584, 630, -1028, 967, -466, -535 (random, seems roughly in the same (-1200, 1200) range)
+	// y: 0 (constant)
+	// z: 600 (constant)
+	// This SDK original impulse line: AngularImpulse(600, random->RandomInt(-1200, 1200), 0)
+
+	CBaseGrenade* pGrenade = NEOFraggrenade_Create(vecSrc, vec3_angle, vecThrow, AngularImpulse(random->RandomInt(-1200, 1200), 0, 600), pPlayer, sv_neo_grenade_fuse_timer.GetFloat(), false);
+
+	if (pGrenade)
+	{
+		Assert(pPlayer);
+
+		IPhysicsObject* pPhysicsObject = pGrenade->VPhysicsGetObject();
+		if (pPhysicsObject)
+		{
+			pPhysicsObject->SetVelocity(&vecThrow, NULL);
+		}
+
+		pGrenade->SetDamage(sv_neo_grenade_blast_damage.GetFloat());
+		pGrenade->SetDamageRadius(sv_neo_grenade_blast_radius.GetFloat());
+	}
+#endif
+
+	m_bRedraw = true;
+
+	WeaponSound(SINGLE);
+}
+
 void CWeaponGrenade::ThrowGrenade(CBasePlayer *pPlayer)
 {
 	if (!sv_neo_infinite_frag_grenades.GetBool())
@@ -506,9 +566,6 @@ bool CWeaponGrenade::CanDrop()
 
 void CWeaponGrenade::Drop(const Vector& vecVelocity)
 {
-	auto owner = GetOwner();
-	auto ammoFromPlayer = owner->GetAmmoCount(m_iPrimaryAmmoType);
-	owner->SetAmmoCount(0, m_iPrimaryAmmoType);
-	SetPrimaryAmmoCount(ammoFromPlayer);
+	SetPrimaryAmmoCount(m_iClip1);
 	BaseClass::Drop(vecVelocity);
 }
