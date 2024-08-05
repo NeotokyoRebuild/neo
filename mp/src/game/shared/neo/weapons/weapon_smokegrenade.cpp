@@ -497,7 +497,6 @@ bool CWeaponSmokeGrenade::CanDrop()
 
 void CWeaponSmokeGrenade::Drop(const Vector& vecVelocity)
 {
-	SetPrimaryAmmoCount(m_iClip1);
 	BaseClass::Drop(vecVelocity);
 }
 
