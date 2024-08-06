@@ -24,6 +24,12 @@
 #include "filesystem.h"
 #include "matsys_controls/matsyscontrols.h"
 
+#ifdef NEO
+#include "ui/IOverrideInterface.h"
+#include "ui/neo_root.h"
+extern void OverrideGameUI();
+#endif
+
 #ifdef SIXENSE
 #include "sixense/in_sixense.h"
 #endif
@@ -200,6 +206,12 @@ void VGui_CreateGlobalPanels( void )
 #if defined( TRACK_BLOCKING_IO )
 	VPANEL gameDLLPanel = enginevgui->GetPanel( PANEL_GAMEDLL );
 #endif
+
+#ifdef NEO
+	OverrideUI->Create(0U);
+	OverrideGameUI();
+#endif
+
 	// Part of game
 	internalCenterPrint->Create( gameToolParent );
 	loadingdisc->Create( gameToolParent );

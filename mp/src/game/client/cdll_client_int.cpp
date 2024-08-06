@@ -173,6 +173,7 @@ extern vgui::IInputInternal *g_InputInternal;
 #ifdef NEO
 #include "neo_version.h"
 #include "neo_mount_original.h"
+extern bool NeoRootCaptureESC();
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -2635,7 +2636,12 @@ bool CHLClient::HandleUiToggle()
 	return true;
 
 #else
+#ifdef NEO
+	// NEO NOTE (nullsystem): Required for the sub-panels of override UI to utilize ESCAPE key properly
+	return NeoRootCaptureESC();
+#else
 	return false;
+#endif
 #endif
 }
 
