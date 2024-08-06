@@ -30,6 +30,7 @@ public:
 	virtual ~CNEOHud_ChildElement() { }
 	CNEOHud_ChildElement(CNEOHud_ChildElement &other) = delete;
 	void resetLastUpdateTime();
+	virtual void resetHUDState() {}
 
 protected:
 	virtual void DrawNeoHudRoundedBox(const int x0, const int y0, const int x1, const int y1, Color color,

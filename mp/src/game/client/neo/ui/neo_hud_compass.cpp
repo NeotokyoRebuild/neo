@@ -228,17 +228,17 @@ void CNEOHud_Compass::DrawCompass() const
 	if (m_objectiveVisible && !player->IsCarryingGhost())
 	{
 		// Point the objective arrow to the ghost, if it exists
-		if (player->m_vecGhostMarkerPos != vec3_origin)
+		if (NEORules()->GhostExists())
 		{
 			int ghostMarkerX, ghostMarkerY;
-			const bool ghostIsInView = GetVectorInScreenSpace(player->m_vecGhostMarkerPos, ghostMarkerX, ghostMarkerY);
+			const bool ghostIsInView = GetVectorInScreenSpace(NEORules()->GetGhostPos(), ghostMarkerX, ghostMarkerY);
 			if (ghostIsInView) {
 				// Print a unicode arrow to signify compass needle
 				const wchar_t arrowUnicode[] = L"▼";
 
 				ghostMarkerX = clamp(ghostMarkerX, resXHalf - xBoxWidthHalf, resXHalf + xBoxWidthHalf);
 
-				const int ghosterTeam = NEORules()->ghosterTeam();
+				const int ghosterTeam = NEORules()->GetGhosterTeam();
 				const int ownTeam = player->GetTeam()->GetTeamNumber();
 
 				const auto teamClr32 = player->GetTeam()->GetRenderColor();
