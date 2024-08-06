@@ -74,7 +74,7 @@ private:
 	CNetworkVar(bool, m_bRedraw);	//Draw the weapon again after throwing a grenade
 
 	CNetworkVar(int, m_AttackPaused);
-	CNetworkVar(bool, m_fDrawbackFinished);
+	CNetworkVar(bool, m_bDrawbackFinished);
 
 	CWeaponGrenade(const CWeaponGrenade &other);
 };
