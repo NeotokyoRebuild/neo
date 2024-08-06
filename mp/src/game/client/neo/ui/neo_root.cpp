@@ -595,7 +595,11 @@ void CNeoSettings_Dynamic::Paint()
 		};
 		for (int i = 0, xPosTab = 0; i < TAB__TOTAL; ++i, xPosTab += iTabWide)
 		{
-			if (i == m_iNdsCurrent) surface()->DrawFilledRect(xPosTab, 0, xPosTab + iTabWide, g_iRowTall);
+			if (i == m_iNdsCurrent || i == m_iNdsHover)
+			{
+				surface()->DrawSetColor((i == m_iNdsHover) ? COLOR_NEOPANELSELECTBG : COLOR_NEOPANELACCENTBG);
+				surface()->DrawFilledRect(xPosTab, 0, xPosTab + iTabWide, g_iRowTall);
+			}
 			surface()->DrawSetTextPos(xPosTab + g_iMarginX, fontStartYPos);
 			surface()->DrawPrintText(TAB_NAMES[i].text, TAB_NAMES[i].size);
 		}
@@ -2089,6 +2093,7 @@ void CNeoRoot::OnMousePressed(vgui::MouseCode code)
 {
 	if (code != MOUSE_LEFT || m_iHoverBtn < 0 || m_iHoverBtn >= BTN__TOTAL) return;
 
+	surface()->PlaySound("ui/buttonclickrelease.wav");
 	const auto btnInfo = BTNS_INFO[m_iHoverBtn];
 	if (m_iHoverBtn == BTN_SETTINGS)
 	{
@@ -2113,6 +2118,7 @@ void CNeoRoot::OnCursorMoved(int x, int y)
 {
 	const bool inSettings = m_state == STATE_SETTINGS;
 
+	const int iPrevHoverBtn = m_iHoverBtn;
 	m_iHoverBtn = -1;
 	const int wide = GetWide();
 	const int iStartX = (wide / 4) - (m_iBtnWide / 2);
@@ -2138,6 +2144,10 @@ void CNeoRoot::OnCursorMoved(int x, int y)
 		if (num >= 0 && num < iTotal)
 		{
 			m_iHoverBtn = iMapIdx[num];
+			if (iPrevHoverBtn != m_iHoverBtn)
+			{
+				surface()->PlaySound("ui/buttonrollover.wav");
+			}
 		}
 	}
 }
