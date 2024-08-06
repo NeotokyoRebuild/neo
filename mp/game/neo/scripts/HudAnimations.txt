@@ -159,6 +159,8 @@ event SuitFlashlightOff
 
 event HudTakeDamageFront
 {
+	Animate HudDamageIndicator DmgFullscreenColor	"255 88 0 25"	Linear 0.0 0.0
+	Animate HudDamageIndicator DmgFullscreenColor	"255 0 0 0"	Deaccel 0.0 1.0
 }
 
 event HudTakeDamageLeft
