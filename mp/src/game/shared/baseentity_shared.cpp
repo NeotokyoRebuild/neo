@@ -2056,8 +2056,6 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 				}
 #endif //#ifdef PORTAL
 
-				MakeTracer( vecTracerSrc, Tracer, pAmmoDef->TracerType(info.m_iAmmoType) );
-
 #ifdef PORTAL
 				if ( pShootThroughPortal )
 				{
