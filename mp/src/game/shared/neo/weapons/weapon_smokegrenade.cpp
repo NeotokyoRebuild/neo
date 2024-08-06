@@ -264,7 +264,7 @@ void CWeaponSmokeGrenade::ThrowGrenade(CBasePlayer* pPlayer)
 	Vector	vForward, vRight;
 
 	pPlayer->EyeVectors(&vForward, &vRight, NULL);
-	Vector vecSrc = vecEye + vForward * 18.0f + vRight * 8.0f;
+	Vector vecSrc = vecEye + vForward * 2.0f;
 	CheckThrowPosition(pPlayer, vecEye, vecSrc);
 	vForward.z += 0.1f;
 
@@ -336,7 +336,7 @@ void CWeaponSmokeGrenade::LobGrenade(CBasePlayer* pPlayer)
 	Vector	vForward, vRight;
 
 	pPlayer->EyeVectors(&vForward, &vRight, NULL);
-	Vector vecSrc = vecEye + vForward * 18.0f + vRight * 8.0f + Vector(0, 0, -8);
+	Vector vecSrc = vecEye + vForward * 2.0f + Vector(0, 0, -8);
 	CheckThrowPosition(pPlayer, vecEye, vecSrc);
 
 	Vector vecThrow;
@@ -397,7 +397,7 @@ void CWeaponSmokeGrenade::RollGrenade(CBasePlayer* pPlayer)
 		CrossProduct(vecFacing, tr.plane.normal, tangent);
 		CrossProduct(tr.plane.normal, tangent, vecFacing);
 	}
-	vecSrc += (vecFacing * 18.0);
+	vecSrc += (vecFacing * 2.0);
 	CheckThrowPosition(pPlayer, pPlayer->WorldSpaceCenter(), vecSrc);
 
 	Vector vecThrow;
