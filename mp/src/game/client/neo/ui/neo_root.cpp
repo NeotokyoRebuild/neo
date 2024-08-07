@@ -565,8 +565,8 @@ void CNeoPanel_Base::Paint()
 		yPos += widgetTall;
 	}
 
-	const int iTabWide = g_iRootSubPanelWide / TabsListSize();
 	{
+		const int iTabWide = g_iRootSubPanelWide / TabsListSize();
 		// Draw the top part
 		surface()->DrawSetColor(COLOR_NEOPANELNORMALBG);
 		surface()->DrawFilledRect(0, 0, g_iRootSubPanelWide, g_iRowTall);
@@ -590,18 +590,20 @@ void CNeoPanel_Base::Paint()
 
 	const int bottomYStart = (panelTall - g_iRowTall);
 	{
+		const int iBtnWide = g_iRootSubPanelWide / BottomSectionListSize();
+
 		// Draw the bottom part
 		surface()->DrawSetColor(COLOR_NEOPANELNORMALBG);
 		surface()->DrawFilledRect(0, bottomYStart, g_iRootSubPanelWide, panelTall);
 
 		// Draw the buttons on bottom
-		for (int i = 0, xPosTab = 0; i < BottomSectionListSize(); ++i, xPosTab += iTabWide)
+		for (int i = 0, xPosTab = 0; i < BottomSectionListSize(); ++i, xPosTab += iBtnWide)
 		{
 			const auto bottomInfo = BottomSectionList()[i];
 			if (bottomInfo.text)
 			{
 				surface()->DrawSetColor((m_iBottomHover == i) ? COLOR_NEOPANELSELECTBG : COLOR_NEOPANELNORMALBG);
-				surface()->DrawFilledRect(xPosTab, bottomYStart, xPosTab + iTabWide, panelTall);
+				surface()->DrawFilledRect(xPosTab, bottomYStart, xPosTab + iBtnWide, panelTall);
 				surface()->DrawSetTextPos(xPosTab + g_iMarginX, bottomYStart + fontStartYPos);
 				surface()->DrawPrintText(bottomInfo.text, bottomInfo.size);
 			}
@@ -1065,6 +1067,23 @@ void CNeoPanel_Settings::OnConfirmDialogUpdate(KeyValues *data)
 	g_pNeoRoot->m_state = CNeoRoot::STATE_ROOT;
 	g_pNeoRoot->UpdateControls();
 }
+
+const WLabelWSize *CNeoPanel_Settings::BottomSectionList() const
+{
+	if (m_bModified)
+	{
+		static constexpr WLabelWSize BBTN_NAMES[BBTN__TOTAL] = {
+			LWS(L"Back (ESC)"), LWS(L"Legacy (Shift+F3)"), LWS(L"Reset (Ctrl+Z)"), LWSNULL, LWS(L"Apply (Ctrl+S)")
+		};
+		return BBTN_NAMES;
+	}
+
+	static constexpr WLabelWSize BBTN_NAMES[BBTN__TOTAL] = {
+		LWS(L"Back (ESC)"), LWS(L"Legacy (Shift+F3)"), LWSNULL, LWSNULL, LWSNULL
+	};
+	return BBTN_NAMES;
+}
+
 
 int CNeoPanel_Settings::KeyCodeToBottomAction(vgui::KeyCode code) const
 {
@@ -1733,6 +1752,93 @@ void CNeoDataSettings_Video::UserSettingsSave()
 	m_cvrMatMonitorGamma.SetValue(m_ndvList[OPT_VIDEO_GAMMA].slider.GetValue());
 }
 
+///////////////
+// PANEL: NEW GAME
+///////////////
+CNeoDataNewGame_General::CNeoDataNewGame_General()
+	: m_ndvList{
+		NDV_INIT_TEXTENTRY(L"Map"),
+		NDV_INIT_TEXTENTRY(L"Hostname"),
+		NDV_INIT_SLIDER(L"Max players", 1, (MAX_PLAYERS - 1), 1, 1.0f, 2),
+		NDV_INIT_TEXTENTRY(L"Password"),
+		NDV_INIT_RINGBOX_ONOFF(L"Friendly fire"),
+	}
+{
+	V_swprintf_safe(m_ndvList[OPT_NEW_MAPLIST].textEntry.wszEntry, L"nt_oilstain_ctg");
+	V_swprintf_safe(m_ndvList[OPT_NEW_HOSTNAME].textEntry.wszEntry, L"Diejoubu's corner");
+	m_ndvList[OPT_NEW_MAXPLAYERS].slider.iValCur = 24;
+	m_ndvList[OPT_NEW_MAXPLAYERS].slider.ClampAndUpdate();
+	V_swprintf_safe(m_ndvList[OPT_NEW_SVPASSWORD].textEntry.wszEntry, L"diejoubu");
+	m_ndvList[OPT_NEW_FRIENDLYFIRE].ringBox.iCurIdx = 1;
+}
+
+CNeoPanel_NewGame::CNeoPanel_NewGame(vgui::Panel *parent)
+	: CNeoPanel_Base(parent)
+{
+}
+
+void CNeoPanel_NewGame::OnBottomAction(const int btn)
+{
+	switch (btn)
+	{
+	case BBTN_GO:
+	{
+		if (engine->IsInGame())
+		{
+			engine->ClientCmd_Unrestricted("disconnect");
+		}
+
+		using General = CNeoDataNewGame_General;
+		static constexpr int ENTRY_MAX = CNeoDataTextEntry::ENTRY_MAX;
+
+		char szMap[ENTRY_MAX + 1] = {};
+		char szHostname[ENTRY_MAX + 1] = {};
+		char szPassword[ENTRY_MAX + 1] = {};
+		g_pVGuiLocalize->ConvertUnicodeToANSI(m_ndsGeneral.m_ndvList[General::OPT_NEW_MAPLIST].textEntry.wszEntry, szMap, sizeof(szMap));
+		g_pVGuiLocalize->ConvertUnicodeToANSI(m_ndsGeneral.m_ndvList[General::OPT_NEW_HOSTNAME].textEntry.wszEntry, szHostname, sizeof(szHostname));
+		g_pVGuiLocalize->ConvertUnicodeToANSI(m_ndsGeneral.m_ndvList[General::OPT_NEW_SVPASSWORD].textEntry.wszEntry, szPassword, sizeof(szPassword));
+		const int iPlayers = m_ndsGeneral.m_ndvList[General::OPT_NEW_MAXPLAYERS].slider.iValCur;
+		const bool bFriendlyFire = static_cast<bool>(m_ndsGeneral.m_ndvList[General::OPT_NEW_FRIENDLYFIRE].ringBox.iCurIdx);
+
+		ConVarRef cvrHostname("hostname");
+		ConVarRef cvrSvPassowrd("sv_password");
+		ConVarRef cvrMpFriendlyFire("mp_friendlyfire");
+
+		cvrHostname.SetValue(szHostname);
+		cvrSvPassowrd.SetValue(szPassword);
+		cvrMpFriendlyFire.SetValue(bFriendlyFire);
+
+		char cmdStr[256];
+		V_sprintf_safe(cmdStr, "maxplayers %d; progress_enable; map \"%s\"", iPlayers, szMap);
+		engine->ClientCmd_Unrestricted(cmdStr);
+	}
+		[[fallthrough]]; // Also reset the main menu back to root state
+	case BBTN_BACK:
+		g_pNeoRoot->m_state = CNeoRoot::STATE_ROOT;
+		g_pNeoRoot->UpdateControls();
+		break;
+	}
+}
+
+const WLabelWSize *CNeoPanel_NewGame::BottomSectionList() const
+{
+	static constexpr WLabelWSize BBTN_NAMES[BBTN__TOTAL] = {
+		LWS(L"Back (ESC)"), LWSNULL, LWSNULL, LWSNULL, LWS(L"Start (F1)"),
+	};
+	return BBTN_NAMES;
+}
+
+int CNeoPanel_NewGame::KeyCodeToBottomAction(vgui::KeyCode code) const
+{
+	switch (code)
+	{
+	case KEY_ESCAPE: return BBTN_BACK;
+	case KEY_F1: return BBTN_GO;
+	default: break;
+	}
+	return -1;
+}
+
 CNeoRootInput::CNeoRootInput(CNeoRoot *rootPanel)
 	: Panel(rootPanel, "NeoRootPanelInput")
 	, m_pNeoRoot(rootPanel)
@@ -1785,6 +1891,7 @@ constexpr WidgetInfo BTNS_INFO[CNeoRoot::BTN__TOTAL] = {
 CNeoRoot::CNeoRoot(VPANEL parent)
 	: EditablePanel(nullptr, "NeoRootPanel")
 	, m_panelSettings(new CNeoPanel_Settings(this))
+	, m_panelNewGame(new CNeoPanel_NewGame(this))
 	, m_opKeyCapture(new CNeoOverlay_KeyCapture(this))
 	, m_panelCaptureInput(new CNeoRootInput(this))
 {
@@ -1827,6 +1934,7 @@ CNeoRoot::~CNeoRoot()
 {
 	m_panelCaptureInput->DeletePanel();
 	m_opKeyCapture->DeletePanel();
+	m_panelNewGame->DeletePanel();
 	m_panelSettings->DeletePanel();
 	if (m_avImage) delete m_avImage;
 
@@ -1848,6 +1956,11 @@ void CNeoRoot::UpdateControls()
 	const bool bInSettings = m_state == STATE_SETTINGS;
 	m_panelSettings->SetVisible(bInSettings);
 	m_panelSettings->SetEnabled(bInSettings);
+
+	const bool bInNewGame = m_state == STATE_NEWGAME;
+	m_panelNewGame->SetVisible(bInNewGame);
+	m_panelNewGame->SetEnabled(bInNewGame);
+
 	if (bInSettings)
 	{
 		m_panelSettings->m_iNdvActive = -1;
@@ -1857,6 +1970,16 @@ void CNeoRoot::UpdateControls()
 								(tall / 2) - (m_panelSettings->GetTall() / 2));
 		m_panelSettings->RequestFocus();
 		m_panelSettings->MoveToFront();
+	}
+	else if (bInNewGame)
+	{
+		m_panelNewGame->m_iNdvActive = -1;
+		m_panelNewGame->m_curMouse = CNeoPanel_Base::WDG_NONE;
+		m_panelNewGame->PerformLayout();
+		m_panelNewGame->SetPos((wide / 2) - (g_iRootSubPanelWide / 2),
+								(tall / 2) - (m_panelNewGame->GetTall() / 2));
+		m_panelNewGame->RequestFocus();
+		m_panelNewGame->MoveToFront();
 	}
 	else
 	{
@@ -1921,8 +2044,8 @@ void CNeoRoot::Paint()
 	GetSize(wide, tall);
 
 	const bool bNextIsInGame = engine->IsInGame();
-	const bool bInSettings = m_state == STATE_SETTINGS;
-	if (!bInSettings)
+	const bool bInRoot = m_state == STATE_ROOT;
+	if (bInRoot)
 	{
 		const int iBtnPlaceXMid = (wide / 4);
 		const int yTopPos = tall / 2 - ((g_iRowTall * BTN__TOTAL) / 2);
@@ -2095,6 +2218,11 @@ void CNeoRoot::OnMousePressed(vgui::MouseCode code)
 		m_panelSettings->UserSettingsRestore();
 		UpdateControls();
 	}
+	else if (m_iHoverBtn == BTN_SERVERCREATE)
+	{
+		m_state = STATE_NEWGAME;
+		UpdateControls();
+	}
 	else if (btnInfo.gamemenucommand)
 	{
 		m_state = STATE_ROOT;
@@ -2172,6 +2300,8 @@ void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 
 bool NeoRootCaptureESC()
 {
-	return (g_pNeoRoot &&
-		(g_pNeoRoot->m_panelSettings->IsVisible() || g_pNeoRoot->m_panelSettings->m_opConfirm->IsVisible()));
+	return (g_pNeoRoot && (
+			(g_pNeoRoot->m_panelSettings->IsVisible() || g_pNeoRoot->m_panelSettings->m_opConfirm->IsVisible()) ||
+			(g_pNeoRoot->m_panelNewGame->IsVisible())
+				));
 }

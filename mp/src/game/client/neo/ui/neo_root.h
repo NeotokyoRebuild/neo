@@ -440,21 +440,7 @@ public:
 	CNeoDataSettings_Base **TabsList() final { return m_pNdsBases; };
 	int TabsListSize() const final { return TAB__TOTAL; };
 
-	const WLabelWSize *BottomSectionList() const override
-	{
-		if (m_bModified)
-		{
-			static constexpr WLabelWSize BBTN_NAMES[BBTN__TOTAL] = {
-				LWS(L"Back (ESC)"), LWS(L"Legacy (Shift+F3)"), LWS(L"Reset (Ctrl+Z)"), LWSNULL, LWS(L"Apply (Ctrl+S)")
-			};
-			return BBTN_NAMES;
-		}
-
-		static constexpr WLabelWSize BBTN_NAMES[BBTN__TOTAL] = {
-			LWS(L"Back (ESC)"), LWS(L"Legacy (Shift+F3)"), LWSNULL, LWSNULL, LWSNULL
-		};
-		return BBTN_NAMES;
-	}
+	const WLabelWSize *BottomSectionList() const override;
 	int BottomSectionListSize() const override { return BBTN__TOTAL; }
 	int KeyCodeToBottomAction(vgui::KeyCode code) const override;
 	void OnBottomAction(const int btn) final;
@@ -467,6 +453,65 @@ public:
 
 	CNeoOverlay_Confirm *m_opConfirm = nullptr;
 	MESSAGE_FUNC_PARAMS(OnConfirmDialogUpdate, "ConfirmDialogUpdate", data);
+};
+
+struct CNeoDataNewGame_General : CNeoDataSettings_Base
+{
+	enum Options
+	{
+		OPT_NEW_MAPLIST = 0,
+		OPT_NEW_HOSTNAME,
+		OPT_NEW_MAXPLAYERS,
+		OPT_NEW_SVPASSWORD,
+		OPT_NEW_FRIENDLYFIRE,
+
+		OPT_NEW__TOTAL,
+	};
+	CNeoDataVariant m_ndvList[OPT_NEW__TOTAL];
+
+	CNeoDataNewGame_General();
+	CNeoDataVariant *NdvList() override { return m_ndvList; }
+	int NdvListSize() override { return OPT_NEW__TOTAL; }
+	void UserSettingsRestore() override {}
+	void UserSettingsSave() override {}
+	WLabelWSize Title() override { return LWS(L"New Game"); }
+};
+
+class CNeoPanel_NewGame : public CNeoPanel_Base
+{
+	DECLARE_CLASS_SIMPLE(CNeoPanel_NewGame, CNeoPanel_Base);
+public:
+	CNeoPanel_NewGame(vgui::Panel *parent);
+	~CNeoPanel_NewGame() override {}
+
+	void OnEnterBindEntry(CNeoDataVariant *ndv) override {}
+	void OnBottomAction(const int btn) override;
+
+	enum Tabs
+	{
+		TAB_GENERAL = 0,
+		TAB__TOTAL,
+	};
+	CNeoDataNewGame_General m_ndsGeneral;
+	CNeoDataSettings_Base *m_pNdsBases[TAB__TOTAL] = {
+		&m_ndsGeneral,
+	};
+	CNeoDataSettings_Base **TabsList() final { return m_pNdsBases; };
+	int TabsListSize() const final { return TAB__TOTAL; }
+
+	enum BottomBtns
+	{
+		BBTN_BACK = 0,
+		BBTN_UNUSEDIDX1,
+		BBTN_UNUSEDIDX2,
+		BBTN_UNUSEDIDX3,
+		BBTN_GO,
+
+		BBTN__TOTAL,
+	};
+	const WLabelWSize *BottomSectionList() const override;
+	int BottomSectionListSize() const override { return BBTN__TOTAL; }
+	int KeyCodeToBottomAction(vgui::KeyCode code) const override;
 };
 
 class CNeoRoot;
@@ -525,6 +570,7 @@ public:
 	{
 		STATE_ROOT,
 		STATE_SETTINGS,
+		STATE_NEWGAME,
 
 		STATE__TOTAL,
 	};
@@ -538,7 +584,10 @@ public:
 	CAvatarImage *m_avImage = nullptr;
 
 	vgui::HFont m_hTextFonts[FONT__TOTAL] = {};
+
 	CNeoPanel_Settings *m_panelSettings = nullptr;
+	CNeoPanel_NewGame *m_panelNewGame = nullptr;
+
 	CNeoOverlay_KeyCapture *m_opKeyCapture = nullptr;
 	CNeoRootInput *m_panelCaptureInput = nullptr;
 
