@@ -6,6 +6,15 @@
 
 class CAvatarImage;
 
+struct WLabelWSize
+{
+	const wchar_t *text;
+	int size;
+};
+#define SZWSZ_LEN(wlabel) ((sizeof(wlabel) / sizeof(wlabel[0])) - 1)
+#define LWSNULL WLabelWSize{ nullptr, 0 }
+#define LWS(wlabel) WLabelWSize{ wlabel, SZWSZ_LEN(wlabel)}
+
 class CNeoOverlay_KeyCapture : public vgui::EditablePanel
 {
 	DECLARE_CLASS_SIMPLE(CNeoOverlay_KeyCapture, vgui::EditablePanel);
@@ -148,9 +157,10 @@ struct CNeoDataSettings_Base
 	virtual int NdvListSize() = 0;
 	virtual void UserSettingsRestore() = 0;
 	virtual void UserSettingsSave() = 0;
+	virtual WLabelWSize Title() = 0;
 };
 
-struct CNeoDataSettings_Multiplayer : public CNeoDataSettings_Base
+struct CNeoDataSettings_Multiplayer : CNeoDataSettings_Base
 {
 	enum Options
 	{
@@ -176,12 +186,13 @@ struct CNeoDataSettings_Multiplayer : public CNeoDataSettings_Base
 	int NdvListSize() final { return OPT_MULTI__TOTAL; }
 	void UserSettingsRestore() final;
 	void UserSettingsSave() final;
+	WLabelWSize Title() final { return LWS(L"Multiplayer"); }
 
 	ConVarRef m_cvrClPlayerSprayDisable;
 	ConVarRef m_cvrClDownloadFilter;
 };
 
-struct CNeoDataSettings_Keys : public CNeoDataSettings_Base
+struct CNeoDataSettings_Keys : CNeoDataSettings_Base
 {
 	enum OptionsFixed
 	{
@@ -198,9 +209,10 @@ struct CNeoDataSettings_Keys : public CNeoDataSettings_Base
 	int NdvListSize() final { return m_ndvVec.Size(); }
 	void UserSettingsRestore() final;
 	void UserSettingsSave() final;
+	WLabelWSize Title() final { return LWS(L"Keybinds"); }
 };
 
-struct CNeoDataSettings_Mouse : public CNeoDataSettings_Base
+struct CNeoDataSettings_Mouse : CNeoDataSettings_Base
 {
 	enum Options
 	{
@@ -220,6 +232,7 @@ struct CNeoDataSettings_Mouse : public CNeoDataSettings_Base
 	int NdvListSize() final { return OPT_MOUSE__TOTAL; }
 	void UserSettingsRestore() final;
 	void UserSettingsSave() final;
+	WLabelWSize Title() final { return LWS(L"Mouse"); }
 
 	ConVarRef m_cvrMFilter;
 	ConVarRef m_cvrPitch;
@@ -228,7 +241,7 @@ struct CNeoDataSettings_Mouse : public CNeoDataSettings_Base
 	ConVarRef m_cvrMRawInput;
 };
 
-struct CNeoDataSettings_Audio : public CNeoDataSettings_Base
+struct CNeoDataSettings_Audio : CNeoDataSettings_Base
 {
 	enum Options
 	{
@@ -254,6 +267,7 @@ struct CNeoDataSettings_Audio : public CNeoDataSettings_Base
 	int NdvListSize() final { return OPT_AUDIO__TOTAL; }
 	void UserSettingsRestore() final;
 	void UserSettingsSave() final;
+	WLabelWSize Title() final { return LWS(L"Sound"); }
 
 	ConVarRef m_cvrVolume;
 	ConVarRef m_cvrSndMusicVolume;
@@ -265,7 +279,7 @@ struct CNeoDataSettings_Audio : public CNeoDataSettings_Base
 	ConVarRef m_cvrDspSlowCpu;
 };
 
-struct CNeoDataSettings_Video : public CNeoDataSettings_Base
+struct CNeoDataSettings_Video : CNeoDataSettings_Base
 {
 	enum LabelRingBoxEnum
 	{
@@ -295,6 +309,7 @@ struct CNeoDataSettings_Video : public CNeoDataSettings_Base
 	int NdvListSize() final { return OPT_VIDEO__TOTAL; }
 	void UserSettingsRestore() final;
 	void UserSettingsSave() final;
+	WLabelWSize Title() final { return LWS(L"Video"); }
 
 	ConVarRef m_cvrMatQueueMode;
 	ConVarRef m_cvrRRootLod;
@@ -326,14 +341,66 @@ struct CNeoDataSettings_Video : public CNeoDataSettings_Base
 // AKA they've been defined in both client + server when it should only be for client
 //
 // TODO: Partition to deal with > 1 row length widgets?
-class CNeoSettings_Dynamic : public vgui::EditablePanel
+class CNeoPanel_Base : public vgui::EditablePanel
 {
-	DECLARE_CLASS_SIMPLE(CNeoSettings_Dynamic, vgui::EditablePanel);
+	DECLARE_CLASS_SIMPLE(CNeoPanel_Base, vgui::EditablePanel);
 public:
-	CNeoSettings_Dynamic(vgui::Panel *parent);
-	~CNeoSettings_Dynamic();
+	CNeoPanel_Base(vgui::Panel *parent);
+	virtual ~CNeoPanel_Base() {}
 	void UserSettingsRestore();
 	void UserSettingsSave();
+
+	void PerformLayout() final;
+	void Paint() final;
+	void OnMousePressed(vgui::MouseCode code) final;
+	void OnMouseDoublePressed(vgui::MouseCode code) final;
+	void OnMouseWheeled(int delta) final;
+
+	void OnKeyCodeTyped(vgui::KeyCode code) final;
+	void OnKeyTyped(wchar_t unichar) final;
+
+	void OnCursorMoved(int x, int y) final;
+
+	virtual void OnEnterBindEntry(CNeoDataVariant *ndv) = 0;
+	virtual void OnBottomAction(const int btn) = 0;
+	void OnExitTextEditMode(const int iOverrideNdsActive = -1);
+
+	virtual CNeoDataSettings_Base **TabsList() = 0;
+	virtual int TabsListSize() const = 0;
+	virtual const WLabelWSize *BottomSectionList() const = 0;
+	virtual int BottomSectionListSize() const = 0;
+	virtual int KeyCodeToBottomAction(vgui::KeyCode code) const = 0;
+
+	int m_iNdsCurrent = 0;
+	int m_iNdsHover = -1;
+
+	int m_iPosX = 0;
+	int m_iNdvActive = -1;
+	int m_iBottomHover = -1;
+	int m_iScrollOffset = 0;
+	bool m_bTextEditMode = false;
+
+	// NEO NOTE (nullsystem): Just to make it simple, any actions that changes
+	// settings (key or mouse) just trigger this regardless if the value has been changed or not
+	bool m_bModified = false;
+
+	enum WidgetPos
+	{
+		WDG_NONE = 0,
+		WDG_LEFT,
+		WDG_CENTER,
+		WDG_RIGHT,
+	};
+	WidgetPos m_curMouse = WDG_NONE;
+};
+
+class CNeoPanel_Settings : public CNeoPanel_Base
+{
+	DECLARE_CLASS_SIMPLE(CNeoPanel_Settings, CNeoPanel_Base);
+public:
+	CNeoPanel_Settings(vgui::Panel *parent);
+	~CNeoPanel_Settings() override;
+	void ExitSettings();
 
 	enum Tabs
 	{
@@ -357,28 +424,12 @@ public:
 		BBTN__TOTAL,
 	};
 
-	void PerformLayout() final;
-	void Paint() final;
-	void OnMousePressed(vgui::MouseCode code) final;
-	void OnMouseDoublePressed(vgui::MouseCode code) final;
-	void OnMouseWheeled(int delta) final;
-
-	void OnKeyCodeTyped(vgui::KeyCode code) final;
-	void OnKeyTyped(wchar_t unichar) final;
-
-	void OnCursorMoved(int x, int y) final;
-
-	void OnEnterBindEntry(CNeoDataVariant *ndv);
-	void OnBottomAction(BottomBtns btn);
-	void OnExitTextEditMode(const int iOverrideNdsActive = -1);
-
-	void ExitSettings();
-
 	CNeoDataSettings_Multiplayer m_ndsMulti;
 	CNeoDataSettings_Keys m_ndsKeys;
 	CNeoDataSettings_Mouse m_ndsMouse;
 	CNeoDataSettings_Audio m_ndsSound;
 	CNeoDataSettings_Video m_ndsVideo;
+
 	CNeoDataSettings_Base *m_pNdsBases[TAB__TOTAL] = {
 		&m_ndsMulti,
 		&m_ndsKeys,
@@ -386,19 +437,29 @@ public:
 		&m_ndsSound,
 		&m_ndsVideo,
 	};
+	CNeoDataSettings_Base **TabsList() final { return m_pNdsBases; };
+	int TabsListSize() const final { return TAB__TOTAL; };
 
-	int m_iNdsCurrent = 0;
-	int m_iNdsHover = -1;
+	const WLabelWSize *BottomSectionList() const override
+	{
+		if (m_bModified)
+		{
+			static constexpr WLabelWSize BBTN_NAMES[BBTN__TOTAL] = {
+				LWS(L"Back (ESC)"), LWS(L"Legacy (Shift+F3)"), LWS(L"Reset (Ctrl+Z)"), LWSNULL, LWS(L"Apply (Ctrl+S)")
+			};
+			return BBTN_NAMES;
+		}
 
-	int m_iPosX = 0;
-	int m_iNdvActive = -1;
-	int m_iBottomHover = -1;
-	int m_iScrollOffset = 0;
-	bool m_bTextEditMode = false;
+		static constexpr WLabelWSize BBTN_NAMES[BBTN__TOTAL] = {
+			LWS(L"Back (ESC)"), LWS(L"Legacy (Shift+F3)"), LWSNULL, LWSNULL, LWSNULL
+		};
+		return BBTN_NAMES;
+	}
+	int BottomSectionListSize() const override { return BBTN__TOTAL; }
+	int KeyCodeToBottomAction(vgui::KeyCode code) const override;
+	void OnBottomAction(const int btn) final;
 
-	// NEO NOTE (nullsystem): Just to make it simple, any actions that changes
-	// settings (key or mouse) just trigger this regardless if the value has been changed or not
-	bool m_bModified = false;
+	void OnEnterBindEntry(CNeoDataVariant *ndv) override;
 
 	// Only for keybindings
 	CNeoOverlay_KeyCapture *m_opKeyCapture = nullptr;
@@ -406,15 +467,6 @@ public:
 
 	CNeoOverlay_Confirm *m_opConfirm = nullptr;
 	MESSAGE_FUNC_PARAMS(OnConfirmDialogUpdate, "ConfirmDialogUpdate", data);
-
-	enum WidgetPos
-	{
-		WDG_NONE = 0,
-		WDG_LEFT,
-		WDG_CENTER,
-		WDG_RIGHT,
-	};
-	WidgetPos m_curMouse = WDG_NONE;
 };
 
 class CNeoRoot;
@@ -486,7 +538,7 @@ public:
 	CAvatarImage *m_avImage = nullptr;
 
 	vgui::HFont m_hTextFonts[FONT__TOTAL] = {};
-	CNeoSettings_Dynamic *m_panelSettings = nullptr;
+	CNeoPanel_Settings *m_panelSettings = nullptr;
 	CNeoOverlay_KeyCapture *m_opKeyCapture = nullptr;
 	CNeoRootInput *m_panelCaptureInput = nullptr;
 

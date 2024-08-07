@@ -66,7 +66,6 @@ HFont g_neoFont;
 #define COLOR_NEOPANELBAR Color(20, 20, 20, 255)
 #define COLOR_NEOPANELMICTEST Color(30, 90, 30, 255)
 static constexpr wchar_t WSZ_GAME_TITLE[] = L"neatbkyoc ue";
-#define SZWSZ_LEN(wlabel) ((sizeof(wlabel) / sizeof(wlabel[0])) - 1)
 
 const wchar_t *QUALITY_LABELS[] = {
 	L"Low",
@@ -322,41 +321,33 @@ void CNeoDataSlider::ClampAndUpdate()
 	if (iWszCacheLabelSize < 0) iWszCacheLabelSize = 0;
 }
 
-CNeoSettings_Dynamic::CNeoSettings_Dynamic(Panel *parent)
-	: EditablePanel(parent, "CNeoSettings_Dynamic")
-	, m_opConfirm(new CNeoOverlay_Confirm(this))
+CNeoPanel_Base::CNeoPanel_Base(Panel *parent)
+	: EditablePanel(parent, "CNeoPanel_Base")
 {
-	m_opConfirm->AddActionSignalTarget(this);
-
 	MakePopup(true);
 	SetKeyBoardInputEnabled(true);
 	SetMouseInputEnabled(true);
 }
 
-CNeoSettings_Dynamic::~CNeoSettings_Dynamic()
+void CNeoPanel_Base::UserSettingsRestore()
 {
-	m_opConfirm->DeletePanel();
-}
-
-void CNeoSettings_Dynamic::UserSettingsRestore()
-{
-	for (CNeoDataSettings_Base *nds : m_pNdsBases)
+	for (int i = 0; i < TabsListSize(); ++i)
 	{
-		nds->UserSettingsRestore();
+		TabsList()[i]->UserSettingsRestore();
 	}
 	m_bModified = false;
 }
 
-void CNeoSettings_Dynamic::UserSettingsSave()
+void CNeoPanel_Base::UserSettingsSave()
 {
-	for (CNeoDataSettings_Base *nds : m_pNdsBases)
+	for (int i = 0; i < TabsListSize(); ++i)
 	{
-		nds->UserSettingsSave();
+		TabsList()[i]->UserSettingsSave();
 	}
 	m_bModified = false;
 }
 
-void CNeoSettings_Dynamic::PerformLayout()
+void CNeoPanel_Base::PerformLayout()
 {
 	int wide, tall;
 	vgui::surface()->GetScreenSize(wide, tall);
@@ -367,11 +358,11 @@ void CNeoSettings_Dynamic::PerformLayout()
 	SetFgColor(COLOR_NEOPANELFRAMEBG);
 }
 
-void CNeoSettings_Dynamic::Paint()
+void CNeoPanel_Base::Paint()
 {
 	BaseClass::Paint();
 
-	CNeoDataSettings_Base *tab = m_pNdsBases[m_iNdsCurrent];
+	CNeoDataSettings_Base *tab = TabsList()[m_iNdsCurrent];
 	surface()->DrawSetTextFont(g_neoFont);
 	const int wgXPos = static_cast<int>(g_iRootSubPanelWide * 0.4f);
 	const int widgetWide = g_iRootSubPanelWide - wgXPos;
@@ -380,7 +371,7 @@ void CNeoSettings_Dynamic::Paint()
 	surface()->GetTextSize(g_neoFont, L"<", fontWide, fontTall);
 	const int fontStartXPos = (widgetTall / 2) - (fontWide / 2);
 	const int fontStartYPos = (widgetTall / 2) - (fontTall / 2);
-	const int tabFullYSize = (m_pNdsBases[m_iNdsCurrent]->NdvListSize() * g_iRowTall);
+	const int tabFullYSize = (TabsList()[m_iNdsCurrent]->NdvListSize() * g_iRowTall);
 	const int panelTall = GetTall();
 	const bool bEditBlinkShow = (static_cast<int>(gpGlobals->curtime * 1.5f) % 2 == 0);
 
@@ -514,8 +505,9 @@ void CNeoSettings_Dynamic::Paint()
 		{
 			surface()->DrawSetTextPos(wgXPos + g_iMarginX, yPos + fontStartYPos);
 
-			const wchar_t *wszNeoName = m_ndsMulti.m_ndvList[CNeoDataSettings_Multiplayer::OPT_MULTI_NEONAME].textEntry.wszEntry;
-			const bool bOnlySteamNick = static_cast<bool>(m_ndsMulti.m_ndvList[CNeoDataSettings_Multiplayer::OPT_MULTI_ONLYSTEAMNICK].ringBox.iCurIdx);
+			const auto *ndvMultiList = TabsList()[CNeoPanel_Settings::TAB_MULTI]->NdvList();
+			const wchar_t *wszNeoName = ndvMultiList[CNeoDataSettings_Multiplayer::OPT_MULTI_NEONAME].textEntry.wszEntry;
+			const bool bOnlySteamNick = static_cast<bool>(ndvMultiList[CNeoDataSettings_Multiplayer::OPT_MULTI_ONLYSTEAMNICK].ringBox.iCurIdx);
 			if (bOnlySteamNick || !wszNeoName || wszNeoName[0] == '\0')
 			{
 				wchar_t wszSteamName[33];
@@ -573,14 +565,7 @@ void CNeoSettings_Dynamic::Paint()
 		yPos += widgetTall;
 	}
 
-	const int iTabWide = g_iRootSubPanelWide / TAB__TOTAL;
-	struct WLabelWSize
-	{
-		const wchar_t *text;
-		int size;
-	};
-#define LWSNULL { nullptr, 0 }
-#define LWS(wlabel) { wlabel, SZWSZ_LEN(wlabel)}
+	const int iTabWide = g_iRootSubPanelWide / TabsListSize();
 	{
 		// Draw the top part
 		surface()->DrawSetColor(COLOR_NEOPANELNORMALBG);
@@ -590,10 +575,7 @@ void CNeoSettings_Dynamic::Paint()
 		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
 
 		// Draw the tabs buttons on top
-		static constexpr WLabelWSize TAB_NAMES[TAB__TOTAL] = {
-			LWS(L"Multiplayer"), LWS(L"Keybinds"), LWS(L"Mouse"), LWS(L"Sound"), LWS(L"Video")
-		};
-		for (int i = 0, xPosTab = 0; i < TAB__TOTAL; ++i, xPosTab += iTabWide)
+		for (int i = 0, xPosTab = 0; i < TabsListSize(); ++i, xPosTab += iTabWide)
 		{
 			if (i == m_iNdsCurrent || i == m_iNdsHover)
 			{
@@ -601,7 +583,8 @@ void CNeoSettings_Dynamic::Paint()
 				surface()->DrawFilledRect(xPosTab, 0, xPosTab + iTabWide, g_iRowTall);
 			}
 			surface()->DrawSetTextPos(xPosTab + g_iMarginX, fontStartYPos);
-			surface()->DrawPrintText(TAB_NAMES[i].text, TAB_NAMES[i].size);
+			const auto titleInfo = TabsList()[i]->Title();
+			surface()->DrawPrintText(titleInfo.text, titleInfo.size);
 		}
 	}
 
@@ -612,30 +595,25 @@ void CNeoSettings_Dynamic::Paint()
 		surface()->DrawFilledRect(0, bottomYStart, g_iRootSubPanelWide, panelTall);
 
 		// Draw the buttons on bottom
-		static constexpr WLabelWSize BBTN_NAMES[BBTN__TOTAL] = {
-			LWS(L"Back (ESC)"), LWS(L"Legacy (Shift+F3)"), LWS(L"Reset (Ctrl+Z)"), LWSNULL, LWS(L"Apply (Ctrl+S)")
-		};
-		for (int i = 0, xPosTab = 0; i < BBTN__TOTAL; ++i, xPosTab += iTabWide)
+		for (int i = 0, xPosTab = 0; i < BottomSectionListSize(); ++i, xPosTab += iTabWide)
 		{
-			if (!m_bModified && (i == BBTN_RESET || i == BBTN_APPLY)) continue;
-
-			if (BBTN_NAMES[i].text)
+			const auto bottomInfo = BottomSectionList()[i];
+			if (bottomInfo.text)
 			{
 				surface()->DrawSetColor((m_iBottomHover == i) ? COLOR_NEOPANELSELECTBG : COLOR_NEOPANELNORMALBG);
 				surface()->DrawFilledRect(xPosTab, bottomYStart, xPosTab + iTabWide, panelTall);
 				surface()->DrawSetTextPos(xPosTab + g_iMarginX, bottomYStart + fontStartYPos);
-				surface()->DrawPrintText(BBTN_NAMES[i].text, BBTN_NAMES[i].size);
+				surface()->DrawPrintText(bottomInfo.text, bottomInfo.size);
 			}
 		}
 	}
-#undef LWS
 }
 
-void CNeoSettings_Dynamic::OnMousePressed(vgui::MouseCode code)
+void CNeoPanel_Base::OnMousePressed(vgui::MouseCode code)
 {
 	OnExitTextEditMode();
-	CNeoDataSettings_Base *tab = m_pNdsBases[m_iNdsCurrent];
-	if (m_iNdsHover >= 0 && m_iNdsHover < TAB__TOTAL)
+	CNeoDataSettings_Base *tab = TabsList()[m_iNdsCurrent];
+	if (m_iNdsHover >= 0 && m_iNdsHover < TabsListSize())
 	{
 		m_iNdsCurrent = m_iNdsHover;
 		m_iScrollOffset = 0;
@@ -644,9 +622,9 @@ void CNeoSettings_Dynamic::OnMousePressed(vgui::MouseCode code)
 		RequestFocus();
 		return;
 	}
-	if (m_iBottomHover >= 0 && m_iBottomHover < BBTN__TOTAL)
+	if (m_iBottomHover >= 0 && m_iBottomHover < BottomSectionListSize())
 	{
-		OnBottomAction(static_cast<BottomBtns>(m_iBottomHover));
+		OnBottomAction(m_iBottomHover);
 		return;
 	}
 
@@ -689,11 +667,11 @@ void CNeoSettings_Dynamic::OnMousePressed(vgui::MouseCode code)
 	}
 }
 
-void CNeoSettings_Dynamic::OnMouseDoublePressed(vgui::MouseCode code)
+void CNeoPanel_Base::OnMouseDoublePressed(vgui::MouseCode code)
 {
 	OnExitTextEditMode();
 
-	CNeoDataSettings_Base *tab = m_pNdsBases[m_iNdsCurrent];
+	CNeoDataSettings_Base *tab = TabsList()[m_iNdsCurrent];
 	if (m_iNdvActive < 0 || m_iNdvActive >= tab->NdvListSize()) return;
 	CNeoDataVariant *ndv = &tab->NdvList()[m_iNdvActive];
 	switch (ndv->type)
@@ -711,14 +689,14 @@ void CNeoSettings_Dynamic::OnMouseDoublePressed(vgui::MouseCode code)
 	}
 }
 
-void CNeoSettings_Dynamic::OnMouseWheeled(int delta)
+void CNeoPanel_Base::OnMouseWheeled(int delta)
 {
 	int iScreenWidth, iScreenHeight;
 	engine->GetScreenSize(iScreenWidth, iScreenHeight);
 
 	const float flScrollSpeed = static_cast<float>(iScreenHeight) * 0.05f;
 
-	CNeoDataSettings_Base *tab = m_pNdsBases[m_iNdsCurrent];
+	CNeoDataSettings_Base *tab = TabsList()[m_iNdsCurrent];
 	const int iWidgetSectionTall = GetTall() - g_iRowTall - g_iRowTall;
 	int iMaxScrollOffset = (tab->NdvListSize() * g_iRowTall) - iWidgetSectionTall;
 	if (iMaxScrollOffset < 0) iMaxScrollOffset = 0;
@@ -726,34 +704,16 @@ void CNeoSettings_Dynamic::OnMouseWheeled(int delta)
 	m_iScrollOffset = clamp(m_iScrollOffset, 0, iMaxScrollOffset);
 }
 
-void CNeoSettings_Dynamic::OnKeyCodeTyped(vgui::KeyCode code)
+void CNeoPanel_Base::OnKeyCodeTyped(vgui::KeyCode code)
 {
-	const bool bCtrlMod = (input()->IsKeyDown(KEY_LCONTROL) || input()->IsKeyDown(KEY_RCONTROL));
-	BottomBtns bbBottomBtns = BBTN__TOTAL;
-	if (code == KEY_ESCAPE)
-	{
-		bbBottomBtns = BBTN_BACK;
-	}
-	else if (code == KEY_F3 && (input()->IsKeyDown(KEY_LSHIFT) || input()->IsKeyDown(KEY_RSHIFT)))
-	{
-		bbBottomBtns = BBTN_LEGACY;
-	}
-	else if (code == KEY_S && bCtrlMod)
-	{
-		bbBottomBtns = BBTN_APPLY;
-	}
-	else if (code == KEY_Z && bCtrlMod)
-	{
-		bbBottomBtns = BBTN_RESET;
-	}
-
-	if (bbBottomBtns != BBTN__TOTAL)
+	const int bbBottomBtns = KeyCodeToBottomAction(code);
+	if (bbBottomBtns >= 0 && bbBottomBtns < BottomSectionListSize())
 	{
 		OnBottomAction(bbBottomBtns);
 		return;
 	}
 
-	CNeoDataSettings_Base *tab = m_pNdsBases[m_iNdsCurrent];
+	CNeoDataSettings_Base *tab = TabsList()[m_iNdsCurrent];
 	const int iNdvListSize = tab->NdvListSize();
 	if (code == KEY_DOWN || code == KEY_UP)
 	{
@@ -790,8 +750,8 @@ void CNeoSettings_Dynamic::OnKeyCodeTyped(vgui::KeyCode code)
 		const bool bShift = (input()->IsKeyDown(KEY_LSHIFT) || input()->IsKeyDown(KEY_RSHIFT));
 		const int iIncr = (bShift) ? -1 : +1;
 		m_iNdsCurrent += iIncr;
-		if (m_iNdsCurrent >= TAB__TOTAL) m_iNdsCurrent = 0;
-		else if (m_iNdsCurrent < 0) m_iNdsCurrent = (TAB__TOTAL - 1);
+		if (m_iNdsCurrent >= TabsListSize()) m_iNdsCurrent = 0;
+		else if (m_iNdsCurrent < 0) m_iNdsCurrent = (TabsListSize() - 1);
 		m_iNdvActive = 0;
 		return;
 	}
@@ -878,9 +838,9 @@ void CNeoSettings_Dynamic::OnKeyCodeTyped(vgui::KeyCode code)
 	}
 }
 
-void CNeoSettings_Dynamic::OnKeyTyped(wchar_t unichar)
+void CNeoPanel_Base::OnKeyTyped(wchar_t unichar)
 {
-	CNeoDataSettings_Base *tab = m_pNdsBases[m_iNdsCurrent];
+	CNeoDataSettings_Base *tab = TabsList()[m_iNdsCurrent];
 	if (m_iNdvActive < 0 || m_iNdvActive >= tab->NdvListSize() || !m_bTextEditMode) return;
 	CNeoDataVariant *ndv = &tab->NdvList()[m_iNdvActive];
 	switch (ndv->type)
@@ -931,7 +891,7 @@ void CNeoSettings_Dynamic::OnKeyTyped(wchar_t unichar)
 
 // Use the y position to get the y-axis partition, then
 // use the x position to get the buttons
-void CNeoSettings_Dynamic::OnCursorMoved(int x, int y)
+void CNeoPanel_Base::OnCursorMoved(int x, int y)
 {
 	const int iPrevNdsActive = m_iNdvActive;
 	m_iPosX = clamp(x, 0, GetWide());
@@ -945,17 +905,17 @@ void CNeoSettings_Dynamic::OnCursorMoved(int x, int y)
 		return;
 	}
 
-	CNeoDataSettings_Base *tab = m_pNdsBases[m_iNdsCurrent];
+	CNeoDataSettings_Base *tab = TabsList()[m_iNdsCurrent];
 	if (y < g_iRowTall)
 	{
-		const int iTabWide = g_iRootSubPanelWide / TAB__TOTAL;
+		const int iTabWide = g_iRootSubPanelWide / TabsListSize();
 		m_iNdsHover = x / iTabWide;
 		OnExitTextEditMode(iPrevNdsActive);
 		return;
 	}
 	else if (y > (GetTall() - g_iRowTall))
 	{
-		const int iTabWide = g_iRootSubPanelWide / BBTN__TOTAL;
+		const int iTabWide = g_iRootSubPanelWide / BottomSectionListSize();
 		m_iBottomHover = x / iTabWide;
 		OnExitTextEditMode(iPrevNdsActive);
 		return;
@@ -1023,51 +983,12 @@ void CNeoSettings_Dynamic::OnCursorMoved(int x, int y)
 	}
 }
 
-void CNeoSettings_Dynamic::OnEnterBindEntry(CNeoDataVariant *ndv)
-{
-	if (m_opKeyCapture)
-	{
-		CNeoDataBindEntry *be = &ndv->bindEntry;
-		engine->StartKeyTrapMode();
-		m_opKeyCapture->m_iButtonCode = be->bcNext;
-		m_opKeyCapture->m_iIndex = m_iNdvActive;
-		V_swprintf_safe(m_opKeyCapture->m_wszBindingText, L"Change binding for: %ls", be->wszDisplayText);
-		m_opKeyCapture->SetVisible(true);
-		m_opKeyCapture->SetEnabled(true);
-		m_opKeyCapture->PerformLayout();
-		m_opKeyCapture->MoveToFront();
-		m_opKeyCapture->RequestFocus();
-	}
-}
-
-void CNeoSettings_Dynamic::OnBottomAction(BottomBtns btn)
-{
-	OnExitTextEditMode();
-	switch (btn)
-	{
-	case BBTN_BACK:
-		ExitSettings();
-		break;
-	case BBTN_LEGACY:
-		g_pNeoRoot->GetGameUI()->SendMainMenuCommand("OpenOptionsDialog");
-		break;
-	case BBTN_RESET:
-		if (m_bModified) UserSettingsRestore();
-		break;
-	case BBTN_APPLY:
-		if (m_bModified) UserSettingsSave();
-		break;
-	default:
-		break;
-	}
-}
-
-void CNeoSettings_Dynamic::OnExitTextEditMode(const int iOverrideNdsActive)
+void CNeoPanel_Base::OnExitTextEditMode(const int iOverrideNdsActive)
 {
 	if (m_bTextEditMode)
 	{
 		const int iUneditNdv = (iOverrideNdsActive == -1) ? m_iNdvActive : iOverrideNdsActive;
-		CNeoDataSettings_Base *tab = m_pNdsBases[m_iNdsCurrent];
+		CNeoDataSettings_Base *tab = TabsList()[m_iNdsCurrent];
 		if (iUneditNdv >= 0 && iUneditNdv < tab->NdvListSize())
 		{
 			CNeoDataVariant *ndv = &tab->NdvList()[iUneditNdv];
@@ -1080,7 +1001,19 @@ void CNeoSettings_Dynamic::OnExitTextEditMode(const int iOverrideNdsActive)
 	m_bTextEditMode = false;
 }
 
-void CNeoSettings_Dynamic::ExitSettings()
+CNeoPanel_Settings::CNeoPanel_Settings(Panel *parent)
+	: CNeoPanel_Base(parent)
+	, m_opConfirm(new CNeoOverlay_Confirm(this))
+{
+	m_opConfirm->AddActionSignalTarget(this);
+}
+
+CNeoPanel_Settings::~CNeoPanel_Settings()
+{
+	m_opConfirm->DeletePanel();
+}
+
+void CNeoPanel_Settings::ExitSettings()
 {
 	IVoiceTweak_s *voiceTweak = engine->GetVoiceTweakAPI();
 	if (voiceTweak->IsStillTweaking())
@@ -1105,7 +1038,7 @@ void CNeoSettings_Dynamic::ExitSettings()
 	}
 }
 
-void CNeoSettings_Dynamic::OnKeybindUpdate(KeyValues *data)
+void CNeoPanel_Settings::OnKeybindUpdate(KeyValues *data)
 {
 	if (data->GetBool("UpdateKey"))
 	{
@@ -1126,11 +1059,72 @@ void CNeoSettings_Dynamic::OnKeybindUpdate(KeyValues *data)
 	RequestFocus();
 }
 
-void CNeoSettings_Dynamic::OnConfirmDialogUpdate(KeyValues *data)
+void CNeoPanel_Settings::OnConfirmDialogUpdate(KeyValues *data)
 {
 	(m_opConfirm->m_bChoice) ? UserSettingsSave() : UserSettingsRestore();
 	g_pNeoRoot->m_state = CNeoRoot::STATE_ROOT;
 	g_pNeoRoot->UpdateControls();
+}
+
+int CNeoPanel_Settings::KeyCodeToBottomAction(vgui::KeyCode code) const
+{
+	const bool bCtrlMod = (input()->IsKeyDown(KEY_LCONTROL) || input()->IsKeyDown(KEY_RCONTROL));
+	if (code == KEY_ESCAPE)
+	{
+		return BBTN_BACK;
+	}
+	else if (code == KEY_F3 && (input()->IsKeyDown(KEY_LSHIFT) || input()->IsKeyDown(KEY_RSHIFT)))
+	{
+		return BBTN_LEGACY;
+	}
+	else if (code == KEY_S && bCtrlMod)
+	{
+		return BBTN_APPLY;
+	}
+	else if (code == KEY_Z && bCtrlMod)
+	{
+		return BBTN_RESET;
+	}
+	return -1;
+}
+
+void CNeoPanel_Settings::OnBottomAction(const int btn)
+{
+	OnExitTextEditMode();
+	switch (btn)
+	{
+	case BBTN_BACK:
+		ExitSettings();
+		break;
+	case BBTN_LEGACY:
+		g_pNeoRoot->GetGameUI()->SendMainMenuCommand("OpenOptionsDialog");
+		break;
+	case BBTN_RESET:
+		if (m_bModified) UserSettingsRestore();
+		break;
+	case BBTN_APPLY:
+		if (m_bModified) UserSettingsSave();
+		break;
+	default:
+		break;
+	}
+}
+
+void CNeoPanel_Settings::OnEnterBindEntry(CNeoDataVariant *ndv)
+{
+	if (m_opKeyCapture)
+	{
+		CNeoDataBindEntry *be = &ndv->bindEntry;
+		engine->StartKeyTrapMode();
+		m_opKeyCapture->m_iButtonCode = be->bcNext;
+		m_opKeyCapture->m_iIndex = m_iNdvActive;
+		V_swprintf_safe(m_opKeyCapture->m_wszBindingText, L"Change binding for: %ls", be->wszDisplayText);
+		m_opKeyCapture->SetVisible(true);
+		m_opKeyCapture->SetEnabled(true);
+		m_opKeyCapture->PerformLayout();
+		m_opKeyCapture->MoveToFront();
+		m_opKeyCapture->RequestFocus();
+	}
 }
 
 extern ConVar neo_fov;
@@ -1790,7 +1784,7 @@ constexpr WidgetInfo BTNS_INFO[CNeoRoot::BTN__TOTAL] = {
 
 CNeoRoot::CNeoRoot(VPANEL parent)
 	: EditablePanel(nullptr, "NeoRootPanel")
-	, m_panelSettings(new CNeoSettings_Dynamic(this))
+	, m_panelSettings(new CNeoPanel_Settings(this))
 	, m_opKeyCapture(new CNeoOverlay_KeyCapture(this))
 	, m_panelCaptureInput(new CNeoRootInput(this))
 {
@@ -1857,7 +1851,7 @@ void CNeoRoot::UpdateControls()
 	if (bInSettings)
 	{
 		m_panelSettings->m_iNdvActive = -1;
-		m_panelSettings->m_curMouse = CNeoSettings_Dynamic::WDG_NONE;
+		m_panelSettings->m_curMouse = CNeoPanel_Base::WDG_NONE;
 		m_panelSettings->PerformLayout();
 		m_panelSettings->SetPos((wide / 2) - (g_iRootSubPanelWide / 2),
 								(tall / 2) - (m_panelSettings->GetTall() / 2));
