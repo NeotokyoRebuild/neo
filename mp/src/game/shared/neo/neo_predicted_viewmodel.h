@@ -5,6 +5,7 @@
 #endif
 
 #include "predicted_viewmodel.h"
+#include "neo_predicted_viewmodel_muzzleflash.h"
 
 #ifdef CLIENT_DLL
 //#include "clienteffectprecachesystem.h"
@@ -64,6 +65,7 @@ public:
 	float m_flYPrevious;
 	CInterpolatedVar<float> m_iv_flYPrevious;
 #endif
+	CNEOPredictedViewModelMuzzleFlash *m_pFirstPersonMuzzleFlash;
 
 private:
 	float m_flStartAimingChange;

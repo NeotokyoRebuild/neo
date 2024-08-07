@@ -1558,6 +1558,13 @@ void CNEO_Player::CreateViewModel( int index )
 		DispatchSpawn( vm );
 		vm->FollowEntity( this, false );
 		m_hViewModel.Set( index, vm );
+		vm->m_pFirstPersonMuzzleFlash = (CNEOPredictedViewModelMuzzleFlash*)CreateEntityByName("neo_predicted_viewmodel_muzzleflash");
+		if (vm->m_pFirstPersonMuzzleFlash)
+		{
+			vm->m_pFirstPersonMuzzleFlash->SetOwnerEntity(vm);
+			vm->m_pFirstPersonMuzzleFlash->SetParent(vm);
+			DispatchSpawn(vm->m_pFirstPersonMuzzleFlash);
+		}
 	}
 	else
 	{

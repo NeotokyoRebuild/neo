@@ -275,7 +275,6 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 	float Ycurrent = m_flYPrevious;
 	float Yfinal = 0;
 
-	//NEOTODO (Adam) This does not belong here, work out where the viewmodel model is set when weapons are changed and update the attachment point there
 #ifdef GAME_DLL
 	if (m_pFirstPersonMuzzleFlash)
 	{
