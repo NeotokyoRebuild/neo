@@ -44,7 +44,16 @@ public:
 	virtual int DrawModel(int flags);
 
 	virtual RenderGroup_t GetRenderGroup();
+
 #endif
+	virtual void DoMuzzleFlash()
+	{
+		if (m_pFirstPersonMuzzleFlash)
+		{
+			m_pFirstPersonMuzzleFlash->DoMuzzleFlash();
+		}
+		BaseClass::DoMuzzleFlash();
+	}
 
 #ifdef CLIENT_DLL
 	float GetLeanInterp()

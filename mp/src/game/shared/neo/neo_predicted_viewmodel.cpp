@@ -58,6 +58,18 @@ CNEOPredictedViewModel::CNEOPredictedViewModel()
 	m_flYPrevious = 0;
 	m_flStartAimingChange = 0;
 	m_bViewAim = false;
+	m_pFirstPersonMuzzleFlash = (CNEOPredictedViewModelMuzzleFlash*)CreateEntityByName("neo_predicted_viewmodel_muzzleflash");
+	if (m_pFirstPersonMuzzleFlash)
+	{
+		m_pFirstPersonMuzzleFlash->SetOwnerEntity(this);
+		m_pFirstPersonMuzzleFlash->SetParent(this);
+		m_pFirstPersonMuzzleFlash->SetModelScale(1);
+#ifdef GAME_DLL
+		m_pFirstPersonMuzzleFlash->Spawn();
+#else
+		clienttools->SetRenderGroup(m_pFirstPersonMuzzleFlash, RENDER_GROUP_VIEW_MODEL_OPAQUE);
+#endif
+	}
 }
 
 CNEOPredictedViewModel::~CNEOPredictedViewModel()
@@ -275,14 +287,6 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 	float Ycurrent = m_flYPrevious;
 	float Yfinal = 0;
 
-	//NEOTODO (Adam) This does not belong here, work out where the viewmodel model is set when weapons are changed and update the attachment point there
-#ifdef GAME_DLL
-	if (m_pFirstPersonMuzzleFlash)
-	{
-		m_pFirstPersonMuzzleFlash->SetParentAttachment("SetParentAttachment", "Muzzle", false);
-	}
-#endif	
-
 	if (player->IsAlive())
 	{
 		switch (player->m_bInLean.Get())
@@ -376,6 +380,14 @@ void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 	{
 		return;
 	}
+
+#ifdef GAME_DLL
+	if (LookupAttachment("Muzzle") > 0)
+	{
+		m_pFirstPersonMuzzleFlash->SetParent(this);
+		m_pFirstPersonMuzzleFlash->SetParentAttachment("SetParentAttachment", "Muzzle", false);
+	}
+#endif
 
 	CHL2MPSWeaponInfo data = weapon->GetHL2MPWpnData();
 

@@ -32,15 +32,11 @@ public:
 	bool			IsViewModel() const override { return true; };
 	RenderGroup_t	GetRenderGroup() override { return RENDER_GROUP_VIEW_MODEL_OPAQUE; };
 	bool			ShouldDraw() override { return true; };
+	int				DrawModel(int flags) override;
 #endif
 
 	void Spawn(void);
 	void Precache(void);
-
-	void MoveThink(void);
-
-	// Input function
-	void InputToggle(inputdata_t& inputData);
 
 private:
 

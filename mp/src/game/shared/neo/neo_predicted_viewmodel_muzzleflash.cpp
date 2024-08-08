@@ -1,4 +1,5 @@
 #include "cbase.h"
+#include "model_types.h"
 
 #ifdef GAME_DLL
 #include "baseanimating.h"
@@ -41,9 +42,27 @@ void CNEOPredictedViewModelMuzzleFlash::Spawn(void)
 
 	SetModel(MUZZLE_FLASH_ENTITY_MODEL);
 	SetSolid(SOLID_NONE);
+	SetMoveType(MOVETYPE_NONE);
 	AddEffects(EF_NOSHADOW);
 	AddEffects(EF_NORECEIVESHADOW);
-#ifdef CLIENT_DLL
-	clienttools->SetRenderGroup(this, RENDER_GROUP_VIEW_MODEL_OPAQUE);
-#endif;
 }
+
+#ifdef CLIENT_DLL
+int CNEOPredictedViewModelMuzzleFlash::DrawModel(int flags)
+{
+	IMaterial* pass = materials->FindMaterial("effects/fpmf/fpmf01.vmt", TEXTURE_GROUP_VIEW_MODEL);
+	if (!ShouldMuzzleFlash())
+	{
+		pass->SetMaterialVarFlag(MATERIAL_VAR_NO_DRAW, true);
+	}
+	else
+	{
+		SetLocalAnglesDim( 1, AngleNormalize(random->RandomInt(-1200, 1200)));
+		pass->SetMaterialVarFlag(MATERIAL_VAR_NO_DRAW, false);
+	}
+	DisableMuzzleFlash();
+	pass->SetMaterialVarFlag(MATERIAL_VAR_IGNOREZ, true);
+	int ret = BaseClass::DrawModel(flags);
+	return ret;
+}
+#endif
