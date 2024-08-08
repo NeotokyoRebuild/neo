@@ -3,6 +3,7 @@
 #include <vgui_controls/EditablePanel.h>
 #include <vgui_controls/Frame.h>
 #include "GameUI/IGameUI.h"
+#include <steam/isteammatchmaking.h>
 
 class CAvatarImage;
 
@@ -514,6 +515,70 @@ public:
 	int KeyCodeToBottomAction(vgui::KeyCode code) const override;
 };
 
+struct CNeoDataServerBrowser_General : CNeoDataSettings_Base
+{
+	CUtlVector<CNeoDataVariant> m_ndvVec;
+
+	CNeoDataServerBrowser_General();
+	CNeoDataVariant *NdvList() override { return m_ndvVec.Base(); }
+	int NdvListSize() override { return m_ndvVec.Size(); }
+	void UserSettingsRestore() override {}
+	void UserSettingsSave() override {}
+	WLabelWSize Title() override { return LWS(L"Server Browser"); }
+};
+
+class CNeoPanel_ServerBrowser;
+
+class SteamMMResponseImpl : public ISteamMatchmakingServerListResponse
+{
+public:
+	void ServerResponded(HServerListRequest hRequest, int iServer) final;
+	void ServerFailedToRespond(HServerListRequest hRequest, int iServer) final;
+	void RefreshComplete(HServerListRequest hRequest, EMatchMakingServerResponse response) final;
+
+	CNeoPanel_ServerBrowser *m_panelServerBrowser = nullptr;
+	HServerListRequest m_hdlRequest;
+};
+
+class CNeoPanel_ServerBrowser : public CNeoPanel_Base
+{
+	DECLARE_CLASS_SIMPLE(CNeoPanel_ServerBrowser, CNeoPanel_Base);
+public:
+	CNeoPanel_ServerBrowser(vgui::Panel *parent);
+	~CNeoPanel_ServerBrowser() override {}
+
+	void OnEnterBindEntry(CNeoDataVariant *ndv) override {}
+	void OnBottomAction(const int btn) override;
+
+	enum Tabs
+	{
+		TAB_GENERAL = 0,
+		TAB__TOTAL,
+	};
+	CNeoDataServerBrowser_General m_ndsGeneral;
+	CNeoDataSettings_Base *m_pNdsBases[TAB__TOTAL] = {
+		&m_ndsGeneral,
+	};
+	CNeoDataSettings_Base **TabsList() final { return m_pNdsBases; };
+	int TabsListSize() const final { return TAB__TOTAL; }
+
+	enum BottomBtns
+	{
+		BBTN_BACK = 0,
+		BBTN_LEGACY,
+		BBTN_UNUSEDIDX2,
+		BBTN_REFRESH,
+		BBTN_GO,
+
+		BBTN__TOTAL,
+	};
+	const WLabelWSize *BottomSectionList() const override;
+	int BottomSectionListSize() const override { return BBTN__TOTAL; }
+	int KeyCodeToBottomAction(vgui::KeyCode code) const override;
+
+	SteamMMResponseImpl m_responseImpl;
+};
+
 class CNeoRoot;
 // NEO JANK (nullsystem): This is really more of a workaround that
 // keyboard inputs are not sent to panels (even if they're marked
@@ -571,6 +636,7 @@ public:
 		STATE_ROOT,
 		STATE_SETTINGS,
 		STATE_NEWGAME,
+		STATE_SERVERBROWSER,
 
 		STATE__TOTAL,
 	};
@@ -587,6 +653,7 @@ public:
 
 	CNeoPanel_Settings *m_panelSettings = nullptr;
 	CNeoPanel_NewGame *m_panelNewGame = nullptr;
+	CNeoPanel_ServerBrowser *m_panelServerBrowser = nullptr;
 
 	CNeoOverlay_KeyCapture *m_opKeyCapture = nullptr;
 	CNeoRootInput *m_panelCaptureInput = nullptr;

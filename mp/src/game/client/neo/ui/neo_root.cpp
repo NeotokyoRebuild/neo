@@ -420,17 +420,20 @@ void CNeoPanel_Base::Paint()
 		}
 
 		// Draw the left-side label
+		const wchar_t *wszLeftLabel = ndv->label;
 		if (ndv->type == CNeoDataVariant::TEXTLABEL)
 		{
+			wszLeftLabel = ndv->textLabel.wszLabel;
+
 			int fontWide, fontTall;
-			surface()->GetTextSize(g_neoFont, ndv->label, fontWide, fontTall);
+			surface()->GetTextSize(g_neoFont, ndv->textLabel.wszLabel, fontWide, fontTall);
 			surface()->DrawSetTextPos((g_iRootSubPanelWide / 2) - (fontWide / 2), yPos + fontStartYPos);
 		}
 		else
 		{
 			surface()->DrawSetTextPos(g_iMarginX, yPos + fontStartYPos);
 		}
-		surface()->DrawPrintText(ndv->label, ndv->labelSize);
+		surface()->DrawPrintText(wszLeftLabel, ndv->labelSize);
 
 		// Draw the right-side widget - widget specific
 		switch (ndv->type)
@@ -1839,6 +1842,117 @@ int CNeoPanel_NewGame::KeyCodeToBottomAction(vgui::KeyCode code) const
 	return -1;
 }
 
+// Server has responded ok with updated data
+void SteamMMResponseImpl::ServerResponded(HServerListRequest hRequest, int iServer)
+{
+	if (hRequest != m_hdlRequest) return;
+
+	ISteamMatchmakingServers *steamMM = steamapicontext->SteamMatchmakingServers();
+	gameserveritem_t *pServerDetails = steamMM->GetServerDetails(hRequest, iServer);
+	if (pServerDetails)
+	{
+		CNeoDataVariant ndv = { .type = CNeoDataVariant::TEXTLABEL, };
+		char szStr[64];
+		ndv.labelSize = V_sprintf_safe(szStr, "%s | %s", pServerDetails->GetName(), pServerDetails->m_szMap);
+		g_pVGuiLocalize->ConvertANSIToUnicode(szStr, ndv.textLabel.wszLabel, sizeof(ndv.textLabel.wszLabel));
+		m_panelServerBrowser->m_ndsGeneral.m_ndvVec.AddToTail(ndv);
+	}
+}
+
+// Server has failed to respond
+void SteamMMResponseImpl::ServerFailedToRespond(HServerListRequest hRequest, [[maybe_unused]] int iServer)
+{
+	if (hRequest != m_hdlRequest) return;
+}
+
+// A list refresh you had initiated is now 100% completed
+void SteamMMResponseImpl::RefreshComplete(HServerListRequest hRequest, [[maybe_unused]] EMatchMakingServerResponse response)
+{
+	if (hRequest != m_hdlRequest) return;
+}
+
+/////////////////
+// SERVER BROWSER
+/////////////////
+
+CNeoDataServerBrowser_General::CNeoDataServerBrowser_General()
+{
+}
+
+CNeoPanel_ServerBrowser::CNeoPanel_ServerBrowser(vgui::Panel *parent)
+	: CNeoPanel_Base(parent)
+{
+	m_responseImpl.m_panelServerBrowser = this;
+}
+
+void CNeoPanel_ServerBrowser::OnBottomAction(const int btn)
+{
+	switch (btn)
+	{
+	case BBTN_LEGACY:
+		g_pNeoRoot->GetGameUI()->SendMainMenuCommand("OpenServerBrowser");
+		break;
+	case BBTN_REFRESH:
+	{
+		ISteamMatchmakingServers *steamMM = steamapicontext->SteamMatchmakingServers();
+		if (m_responseImpl.m_hdlRequest)
+		{
+			steamMM->CancelQuery(m_responseImpl.m_hdlRequest);
+			steamMM->ReleaseRequest(m_responseImpl.m_hdlRequest);
+			m_responseImpl.m_hdlRequest = nullptr;
+		}
+		m_ndsGeneral.m_ndvVec.RemoveAll();
+		static MatchMakingKeyValuePair_t mmFilters[] = {
+			{"gamedir", "neo"},
+		};
+		MatchMakingKeyValuePair_t *pMMFilters = mmFilters;
+		m_responseImpl.m_hdlRequest = steamMM->RequestInternetServerList(engine->GetAppID(), &pMMFilters, 1, &m_responseImpl);
+	}
+	break;
+	case BBTN_GO:
+	{
+#if 0
+		if (engine->IsInGame())
+		{
+			engine->ClientCmd_Unrestricted("disconnect");
+		}
+
+		char cmdStr[256];
+		V_sprintf_safe(cmdStr, "progress_enable; connect \"%s\"", "0.0.0.0");
+		engine->ClientCmd_Unrestricted(cmdStr);
+#endif
+	}
+		[[fallthrough]]; // Also reset the main menu back to root state
+	case BBTN_BACK:
+		g_pNeoRoot->m_state = CNeoRoot::STATE_ROOT;
+		g_pNeoRoot->UpdateControls();
+		break;
+	}
+}
+
+const WLabelWSize *CNeoPanel_ServerBrowser::BottomSectionList() const
+{
+	static constexpr WLabelWSize BBTN_NAMES[BBTN__TOTAL] = {
+		LWS(L"Back (ESC)"), LWS(L"Legacy"), LWSNULL, LWS(L"Refresh"), LWS(L"Start (F1)"),
+	};
+	return BBTN_NAMES;
+}
+
+int CNeoPanel_ServerBrowser::KeyCodeToBottomAction(vgui::KeyCode code) const
+{
+	switch (code)
+	{
+	case KEY_ESCAPE: return BBTN_BACK;
+	case KEY_F1: return BBTN_GO;
+	default: break;
+	}
+	return -1;
+}
+
+///////
+// MAIN ROOT PANEL
+///////
+
 CNeoRootInput::CNeoRootInput(CNeoRoot *rootPanel)
 	: Panel(rootPanel, "NeoRootPanelInput")
 	, m_pNeoRoot(rootPanel)
@@ -1880,8 +1994,8 @@ struct WidgetInfo
 
 constexpr WidgetInfo BTNS_INFO[CNeoRoot::BTN__TOTAL] = {
 	{ "#GameUI_GameMenu_ResumeGame", "ResumeGame", FLAG_SHOWINGAME },
-	{ "#GameUI_GameMenu_FindServers", "OpenServerBrowser", FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
-	{ "#GameUI_GameMenu_CreateServer", "OpenCreateMultiplayerGameDialog", FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
+	{ "#GameUI_GameMenu_FindServers", nullptr, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
+	{ "#GameUI_GameMenu_CreateServer", nullptr, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
 	{ "#GameUI_GameMenu_Disconnect", "Disconnect", FLAG_SHOWINGAME },
 	{ "#GameUI_GameMenu_PlayerList", "OpenPlayerListDialog", FLAG_SHOWINGAME },
 	{ "#GameUI_GameMenu_Options", nullptr, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
@@ -1892,6 +2006,7 @@ CNeoRoot::CNeoRoot(VPANEL parent)
 	: EditablePanel(nullptr, "NeoRootPanel")
 	, m_panelSettings(new CNeoPanel_Settings(this))
 	, m_panelNewGame(new CNeoPanel_NewGame(this))
+	, m_panelServerBrowser(new CNeoPanel_ServerBrowser(this))
 	, m_opKeyCapture(new CNeoOverlay_KeyCapture(this))
 	, m_panelCaptureInput(new CNeoRootInput(this))
 {
@@ -1935,6 +2050,7 @@ CNeoRoot::~CNeoRoot()
 	m_panelCaptureInput->DeletePanel();
 	m_opKeyCapture->DeletePanel();
 	m_panelNewGame->DeletePanel();
+	m_panelServerBrowser->DeletePanel();
 	m_panelSettings->DeletePanel();
 	if (m_avImage) delete m_avImage;
 
@@ -1953,33 +2069,32 @@ void CNeoRoot::UpdateControls()
 	int wide, tall;
 	GetSize(wide, tall);
 
+	CNeoPanel_Base *pPanel = nullptr;
+
 	const bool bInSettings = m_state == STATE_SETTINGS;
 	m_panelSettings->SetVisible(bInSettings);
 	m_panelSettings->SetEnabled(bInSettings);
+	if (bInSettings) pPanel = m_panelSettings;
 
 	const bool bInNewGame = m_state == STATE_NEWGAME;
 	m_panelNewGame->SetVisible(bInNewGame);
 	m_panelNewGame->SetEnabled(bInNewGame);
+	if (bInNewGame) pPanel = m_panelNewGame;
 
-	if (bInSettings)
+	const bool bInServerBrowser = m_state == STATE_SERVERBROWSER;
+	m_panelServerBrowser->SetVisible(bInServerBrowser);
+	m_panelServerBrowser->SetEnabled(bInServerBrowser);
+	if (bInServerBrowser) pPanel = m_panelServerBrowser;
+
+	if (pPanel)
 	{
-		m_panelSettings->m_iNdvActive = -1;
-		m_panelSettings->m_curMouse = CNeoPanel_Base::WDG_NONE;
-		m_panelSettings->PerformLayout();
-		m_panelSettings->SetPos((wide / 2) - (g_iRootSubPanelWide / 2),
-								(tall / 2) - (m_panelSettings->GetTall() / 2));
-		m_panelSettings->RequestFocus();
-		m_panelSettings->MoveToFront();
-	}
-	else if (bInNewGame)
-	{
-		m_panelNewGame->m_iNdvActive = -1;
-		m_panelNewGame->m_curMouse = CNeoPanel_Base::WDG_NONE;
-		m_panelNewGame->PerformLayout();
-		m_panelNewGame->SetPos((wide / 2) - (g_iRootSubPanelWide / 2),
-								(tall / 2) - (m_panelNewGame->GetTall() / 2));
-		m_panelNewGame->RequestFocus();
-		m_panelNewGame->MoveToFront();
+		pPanel->m_iNdvActive = -1;
+		pPanel->m_curMouse = CNeoPanel_Base::WDG_NONE;
+		pPanel->PerformLayout();
+		pPanel->SetPos((wide / 2) - (g_iRootSubPanelWide / 2),
+								(tall / 2) - (pPanel->GetTall() / 2));
+		pPanel->RequestFocus();
+		pPanel->MoveToFront();
 	}
 	else
 	{
@@ -2223,6 +2338,11 @@ void CNeoRoot::OnMousePressed(vgui::MouseCode code)
 		m_state = STATE_NEWGAME;
 		UpdateControls();
 	}
+	else if (m_iHoverBtn == BTN_SERVERBROWSER)
+	{
+		m_state = STATE_SERVERBROWSER;
+		UpdateControls();
+	}
 	else if (btnInfo.gamemenucommand)
 	{
 		m_state = STATE_ROOT;
@@ -2302,6 +2422,6 @@ bool NeoRootCaptureESC()
 {
 	return (g_pNeoRoot && (
 			(g_pNeoRoot->m_panelSettings->IsVisible() || g_pNeoRoot->m_panelSettings->m_opConfirm->IsVisible()) ||
-			(g_pNeoRoot->m_panelNewGame->IsVisible())
+			(g_pNeoRoot->m_panelNewGame->IsVisible() || g_pNeoRoot->m_panelServerBrowser->IsVisible())
 				));
 }
