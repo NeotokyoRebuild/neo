@@ -16,6 +16,18 @@ struct WLabelWSize
 #define LWSNULL WLabelWSize{ nullptr, 0 }
 #define LWS(wlabel) WLabelWSize{ wlabel, SZWSZ_LEN(wlabel)}
 
+enum GameServerType
+{
+	GS_INTERNET = 0,
+	GS_LAN,
+	GS_FRIENDS,
+	GS_FAVORITES,
+	GS_HISTORY,
+	GS_SPEC,
+
+	GS__TOTAL,
+};
+
 class CNeoOverlay_KeyCapture : public vgui::EditablePanel
 {
 	DECLARE_CLASS_SIMPLE(CNeoOverlay_KeyCapture, vgui::EditablePanel);
@@ -106,6 +118,12 @@ struct CNeoDataMicTester
 	float flLastFetchInterval;
 };
 
+struct CNeoDataGameServer
+{
+	GameServerType type; // TODO: Probably don't need this
+	gameserveritem_t info;
+};
+
 struct CNeoDataVariant
 {
 	enum Type
@@ -115,6 +133,7 @@ struct CNeoDataVariant
 		TEXTENTRY,
 		BINDENTRY,
 		TEXTLABEL,
+		GAMESERVER,
 
 		// S_ = Special type for specific use
 		S_DISPLAYNAME,
@@ -132,6 +151,7 @@ struct CNeoDataVariant
 		CNeoDataBindEntry bindEntry;
 		CNeoDataTextLabel textLabel;
 		CNeoDataMicTester micTester;
+		CNeoDataGameServer gameServer;
 	};
 };
 
@@ -371,11 +391,13 @@ public:
 	virtual const WLabelWSize *BottomSectionList() const = 0;
 	virtual int BottomSectionListSize() const = 0;
 	virtual int KeyCodeToBottomAction(vgui::KeyCode code) const = 0;
+	virtual void OnEnterServer([[maybe_unused]] const gameserveritem_t gameserver) { Assert(false); }
 
 	int m_iNdsCurrent = 0;
 	int m_iNdsHover = -1;
 
 	int m_iPosX = 0;
+	//int m_iNdvHover = -1; // TODO: Also m_iNdvActive replaces m_bTextEditMode
 	int m_iNdvActive = -1;
 	int m_iBottomHover = -1;
 	int m_iScrollOffset = 0;
@@ -517,27 +539,51 @@ public:
 
 struct CNeoDataServerBrowser_General : CNeoDataSettings_Base
 {
+	int m_iType;
 	CUtlVector<CNeoDataVariant> m_ndvVec;
+	// CUtlVector<CNeoDataVariant> m_ndvFilteredVec;
 
 	CNeoDataServerBrowser_General();
 	CNeoDataVariant *NdvList() override { return m_ndvVec.Base(); }
 	int NdvListSize() override { return m_ndvVec.Size(); }
 	void UserSettingsRestore() override {}
 	void UserSettingsSave() override {}
-	WLabelWSize Title() override { return LWS(L"Server Browser"); }
+	WLabelWSize Title() override;
 };
+
+struct CNeoDataServerBrowser_Filters : CNeoDataSettings_Base
+{
+	enum Options
+	{
+		OPT_FILTER_VAC = 0,
+
+		OPT_FILTER__TOTAL,
+	};
+	CNeoDataVariant m_ndvList[OPT_FILTER__TOTAL];
+
+	CNeoDataServerBrowser_Filters();
+	CNeoDataVariant *NdvList() override { return m_ndvList; }
+	int NdvListSize() override { return OPT_FILTER__TOTAL; }
+	void UserSettingsRestore() override {}
+	void UserSettingsSave() override {}
+	WLabelWSize Title() override { return LWS(L"Filters"); }
+};
+
 
 class CNeoPanel_ServerBrowser;
 
 class SteamMMResponseImpl : public ISteamMatchmakingServerListResponse
 {
 public:
+	void RequestList(MatchMakingKeyValuePair_t **filters, const uint32 iFiltersSize);
+
 	void ServerResponded(HServerListRequest hRequest, int iServer) final;
 	void ServerFailedToRespond(HServerListRequest hRequest, int iServer) final;
 	void RefreshComplete(HServerListRequest hRequest, EMatchMakingServerResponse response) final;
 
 	CNeoPanel_ServerBrowser *m_panelServerBrowser = nullptr;
 	HServerListRequest m_hdlRequest;
+	GameServerType m_type;
 };
 
 class CNeoPanel_ServerBrowser : public CNeoPanel_Base
@@ -549,15 +595,23 @@ public:
 
 	void OnEnterBindEntry(CNeoDataVariant *ndv) override {}
 	void OnBottomAction(const int btn) override;
+	void OnEnterServer(const gameserveritem_t gameserver) override;
 
 	enum Tabs
 	{
-		TAB_GENERAL = 0,
+		TAB_FILTERS = GS__TOTAL,
 		TAB__TOTAL,
 	};
-	CNeoDataServerBrowser_General m_ndsGeneral;
+	CNeoDataServerBrowser_General m_ndsGeneral[GS__TOTAL];
+	CNeoDataServerBrowser_Filters m_ndsFilters;
 	CNeoDataSettings_Base *m_pNdsBases[TAB__TOTAL] = {
-		&m_ndsGeneral,
+		&m_ndsGeneral[GS_INTERNET],
+		&m_ndsGeneral[GS_LAN],
+		&m_ndsGeneral[GS_FRIENDS],
+		&m_ndsGeneral[GS_FAVORITES],
+		&m_ndsGeneral[GS_HISTORY],
+		&m_ndsGeneral[GS_SPEC],
+		&m_ndsFilters,
 	};
 	CNeoDataSettings_Base **TabsList() final { return m_pNdsBases; };
 	int TabsListSize() const final { return TAB__TOTAL; }
@@ -576,7 +630,7 @@ public:
 	int BottomSectionListSize() const override { return BBTN__TOTAL; }
 	int KeyCodeToBottomAction(vgui::KeyCode code) const override;
 
-	SteamMMResponseImpl m_responseImpl;
+	SteamMMResponseImpl m_responseImpl[GS__TOTAL];
 };
 
 class CNeoRoot;

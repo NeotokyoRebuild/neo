@@ -376,16 +376,51 @@ void CNeoPanel_Base::Paint()
 	const bool bEditBlinkShow = (static_cast<int>(gpGlobals->curtime * 1.5f) % 2 == 0);
 
 	const int yOvershoot = m_iScrollOffset % g_iRowTall;
-	int yPos = g_iRowTall - yOvershoot;
-	for (int i = (m_iScrollOffset / g_iRowTall);
+	for (int i = (m_iScrollOffset / g_iRowTall), yPos = g_iRowTall - yOvershoot;
 		 yPos < (panelTall - g_iRowTall) && i < tab->NdvListSize();
-		 ++i)
+		 ++i, yPos += widgetTall)
 	{
 		CNeoDataVariant *ndv = &tab->NdvList()[i];
 		const bool bThisActive = (i == m_iNdvActive);
+		const bool bThisHover = (i == m_iNdsHover);
 
 		surface()->DrawSetColor(bThisActive ? COLOR_NEOPANELSELECTBG : COLOR_NEOPANELACCENTBG);
 		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
+
+		if (ndv->type == CNeoDataVariant::GAMESERVER)
+		{
+			if (!bThisActive) surface()->DrawSetColor((i % 2 == 0) ? COLOR_NEOPANELNORMALBG : COLOR_NEOPANELACCENTBG);
+			surface()->DrawFilledRect(0, yPos, g_iRootSubPanelWide, yPos + widgetTall);
+
+			const gameserveritem_t *gameserver = &ndv->gameServer.info;
+			// TODO/TEMP (nullsystem): Probably should be more "custom" struct verse gameserveritem_t?
+			{
+				// Print server name
+				static constexpr int LEFT_MAX = k_cbMaxGameServerName + 16;
+				wchar_t wszLeft[LEFT_MAX];
+				const int iSize = V_swprintf_safe(wszLeft, L"%c%c | %s",
+												  gameserver->m_bPassword ? 'P' : ' ',
+												  gameserver->m_bSecure ? 'S' : ' ',
+												  gameserver->GetName());
+				surface()->DrawSetTextPos(g_iMarginX, yPos + fontStartYPos);
+				surface()->DrawPrintText(wszLeft, iSize);
+			}
+			{
+				// Print current map
+				static constexpr int RIGHT_MAX = k_cbMaxGameServerMapName + 64;
+				wchar_t wszRight[RIGHT_MAX];
+				const int iSize = V_swprintf_safe(wszRight, L"%s | %d/%d | %d", gameserver->m_szMap, gameserver->m_nPlayers,
+												  gameserver->m_nMaxPlayers, gameserver->m_nPing);
+				int iWide, iTall;
+				surface()->GetTextSize(g_neoFont, wszRight, iWide, iTall);
+
+				surface()->DrawFilledRect(g_iRootSubPanelWide - iWide - (2 * g_iMarginX), yPos,
+										  g_iRootSubPanelWide, yPos + widgetTall);
+				surface()->DrawSetTextPos(g_iRootSubPanelWide - iWide - g_iMarginX, yPos + fontStartYPos);
+				surface()->DrawPrintText(wszRight, iSize);
+			}
+			continue;
+		}
 
 		switch (ndv->type)
 		{
@@ -409,7 +444,7 @@ void CNeoPanel_Base::Paint()
 		case CNeoDataVariant::BINDENTRY:
 		case CNeoDataVariant::S_MICTESTER:
 		{
-			if (ndv->type == CNeoDataVariant::BINDENTRY && i != m_iNdvActive)
+			if (ndv->type == CNeoDataVariant::BINDENTRY && !bThisActive)
 			{
 				surface()->DrawSetColor((i % 2 == 0) ? COLOR_NEOPANELNORMALBG : COLOR_NEOPANELACCENTBG);
 			}
@@ -564,8 +599,6 @@ void CNeoPanel_Base::Paint()
 		}
 		break;
 		}
-
-		yPos += widgetTall;
 	}
 
 	{
@@ -689,8 +722,11 @@ void CNeoPanel_Base::OnMouseDoublePressed(vgui::MouseCode code)
 			m_bTextEditMode = true;
 			RequestFocus();
 		}
+		break;
 	}
-	break;
+	case CNeoDataVariant::GAMESERVER:
+		OnEnterServer(ndv->gameServer.info);
+		break;
 	}
 }
 
@@ -794,22 +830,32 @@ void CNeoPanel_Base::OnKeyCodeTyped(vgui::KeyCode code)
 	else if (code == KEY_ENTER)
 	{
 		// Change editing mode
-		if (ndv->type == CNeoDataVariant::SLIDER || ndv->type == CNeoDataVariant::TEXTENTRY)
+		switch (ndv->type)
+		{
+		case CNeoDataVariant::SLIDER:
+		case CNeoDataVariant::TEXTENTRY:
 		{
 			if (m_bTextEditMode && ndv->type == CNeoDataVariant::SLIDER)
 			{
 				ndv->slider.ClampAndUpdate();
 			}
 			m_bTextEditMode = !m_bTextEditMode;
+			break;
 		}
-		else if (ndv->type == CNeoDataVariant::BINDENTRY)
-		{
+		case CNeoDataVariant::BINDENTRY:
 			OnEnterBindEntry(ndv);
-		}
-		else if (ndv->type == CNeoDataVariant::S_MICTESTER)
+			break;
+		case CNeoDataVariant::S_MICTESTER:
 		{
 			IVoiceTweak_s *voiceTweak = engine->GetVoiceTweakAPI();
 			voiceTweak->IsStillTweaking() ? (void)voiceTweak->EndVoiceTweakMode() : (void)voiceTweak->StartVoiceTweakMode();
+			break;
+		}
+		case CNeoDataVariant::GAMESERVER:
+			OnEnterServer(ndv->gameServer.info);
+			break;
+		default:
+			break;
 		}
 		return;
 	}
@@ -1768,10 +1814,10 @@ CNeoDataNewGame_General::CNeoDataNewGame_General()
 	}
 {
 	V_swprintf_safe(m_ndvList[OPT_NEW_MAPLIST].textEntry.wszEntry, L"nt_oilstain_ctg");
-	V_swprintf_safe(m_ndvList[OPT_NEW_HOSTNAME].textEntry.wszEntry, L"Diejoubu's corner");
+	V_swprintf_safe(m_ndvList[OPT_NEW_HOSTNAME].textEntry.wszEntry, L"NeoTokyo Rebuild");
 	m_ndvList[OPT_NEW_MAXPLAYERS].slider.iValCur = 24;
 	m_ndvList[OPT_NEW_MAXPLAYERS].slider.ClampAndUpdate();
-	V_swprintf_safe(m_ndvList[OPT_NEW_SVPASSWORD].textEntry.wszEntry, L"diejoubu");
+	V_swprintf_safe(m_ndvList[OPT_NEW_SVPASSWORD].textEntry.wszEntry, L"neo");
 	m_ndvList[OPT_NEW_FRIENDLYFIRE].ringBox.iCurIdx = 1;
 }
 
@@ -1842,6 +1888,28 @@ int CNeoPanel_NewGame::KeyCodeToBottomAction(vgui::KeyCode code) const
 	return -1;
 }
 
+//////
+// SERVER BROWSER - Request + Response handling
+//////
+
+void SteamMMResponseImpl::RequestList(MatchMakingKeyValuePair_t **filters, const uint32 iFiltersSize)
+{
+	static constexpr HServerListRequest (ISteamMatchmakingServers::*pFnReq[GS__TOTAL])(
+				AppId_t, MatchMakingKeyValuePair_t **, uint32, ISteamMatchmakingServerListResponse *) = {
+		&ISteamMatchmakingServers::RequestInternetServerList,
+		nullptr,
+		&ISteamMatchmakingServers::RequestFriendsServerList,
+		&ISteamMatchmakingServers::RequestFavoritesServerList,
+		&ISteamMatchmakingServers::RequestHistoryServerList,
+		&ISteamMatchmakingServers::RequestSpectatorServerList,
+	};
+
+	ISteamMatchmakingServers *steamMM = steamapicontext->SteamMatchmakingServers();
+	m_hdlRequest = (m_type == GS_LAN) ?
+				steamMM->RequestLANServerList(engine->GetAppID(), this) :
+				(steamMM->*pFnReq[m_type])(engine->GetAppID(), filters, iFiltersSize, this);
+}
+
 // Server has responded ok with updated data
 void SteamMMResponseImpl::ServerResponded(HServerListRequest hRequest, int iServer)
 {
@@ -1851,11 +1919,10 @@ void SteamMMResponseImpl::ServerResponded(HServerListRequest hRequest, int iServ
 	gameserveritem_t *pServerDetails = steamMM->GetServerDetails(hRequest, iServer);
 	if (pServerDetails)
 	{
-		CNeoDataVariant ndv = { .type = CNeoDataVariant::TEXTLABEL, };
-		char szStr[64];
-		ndv.labelSize = V_sprintf_safe(szStr, "%s | %s", pServerDetails->GetName(), pServerDetails->m_szMap);
-		g_pVGuiLocalize->ConvertANSIToUnicode(szStr, ndv.textLabel.wszLabel, sizeof(ndv.textLabel.wszLabel));
-		m_panelServerBrowser->m_ndsGeneral.m_ndvVec.AddToTail(ndv);
+		CNeoDataVariant ndv = { .type = CNeoDataVariant::GAMESERVER, };
+		ndv.gameServer.type = m_type;
+		ndv.gameServer.info = *pServerDetails;
+		m_panelServerBrowser->m_ndsGeneral[m_type].m_ndvVec.AddToTail(ndv);
 	}
 }
 
@@ -1879,10 +1946,30 @@ CNeoDataServerBrowser_General::CNeoDataServerBrowser_General()
 {
 }
 
+WLabelWSize CNeoDataServerBrowser_General::Title()
+{
+	static constexpr WLabelWSize BBTN_NAMES[GS__TOTAL] = {
+		LWS(L"Internet"), LWS(L"LAN"), LWS(L"Friends"), LWS(L"Fav"), LWS(L"History"), LWS(L"Spec")
+	};
+	return BBTN_NAMES[m_iType];
+}
+
+CNeoDataServerBrowser_Filters::CNeoDataServerBrowser_Filters()
+	: m_ndvList{
+		NDV_INIT_RINGBOX_ONOFF(L"VAC"),
+	}
+{
+}
+
 CNeoPanel_ServerBrowser::CNeoPanel_ServerBrowser(vgui::Panel *parent)
 	: CNeoPanel_Base(parent)
 {
-	m_responseImpl.m_panelServerBrowser = this;
+	for (int i = 0; i < GS__TOTAL; ++i)
+	{
+		m_ndsGeneral[i].m_iType = i;
+		m_responseImpl[i].m_panelServerBrowser = this;
+		m_responseImpl[i].m_type = static_cast<GameServerType>(i);
+	}
 }
 
 void CNeoPanel_ServerBrowser::OnBottomAction(const int btn)
@@ -1894,39 +1981,60 @@ void CNeoPanel_ServerBrowser::OnBottomAction(const int btn)
 		break;
 	case BBTN_REFRESH:
 	{
-		ISteamMatchmakingServers *steamMM = steamapicontext->SteamMatchmakingServers();
-		if (m_responseImpl.m_hdlRequest)
+		if (m_iNdsCurrent < 0 || m_iNdsCurrent >= GS__TOTAL)
 		{
-			steamMM->CancelQuery(m_responseImpl.m_hdlRequest);
-			steamMM->ReleaseRequest(m_responseImpl.m_hdlRequest);
-			m_responseImpl.m_hdlRequest = nullptr;
+			return;
 		}
-		m_ndsGeneral.m_ndvVec.RemoveAll();
+
+		ISteamMatchmakingServers *steamMM = steamapicontext->SteamMatchmakingServers();
+		m_ndsGeneral[m_iNdsCurrent].m_ndvVec.RemoveAll();
+
+		if (m_responseImpl[m_iNdsCurrent].m_hdlRequest)
+		{
+			steamMM->CancelQuery(m_responseImpl[m_iNdsCurrent].m_hdlRequest);
+			steamMM->ReleaseRequest(m_responseImpl[m_iNdsCurrent].m_hdlRequest);
+			m_responseImpl[m_iNdsCurrent].m_hdlRequest = nullptr;
+		}
 		static MatchMakingKeyValuePair_t mmFilters[] = {
 			{"gamedir", "neo"},
 		};
 		MatchMakingKeyValuePair_t *pMMFilters = mmFilters;
-		m_responseImpl.m_hdlRequest = steamMM->RequestInternetServerList(engine->GetAppID(), &pMMFilters, 1, &m_responseImpl);
+		m_responseImpl[m_iNdsCurrent].RequestList(&pMMFilters, 1);
+		break;
 	}
-	break;
 	case BBTN_GO:
 	{
-#if 0
-		if (engine->IsInGame())
-		{
-			engine->ClientCmd_Unrestricted("disconnect");
-		}
-
-		char cmdStr[256];
-		V_sprintf_safe(cmdStr, "progress_enable; connect \"%s\"", "0.0.0.0");
-		engine->ClientCmd_Unrestricted(cmdStr);
-#endif
+		//OnEnterServer(ndv->gameserver);
 	}
 		[[fallthrough]]; // Also reset the main menu back to root state
 	case BBTN_BACK:
 		g_pNeoRoot->m_state = CNeoRoot::STATE_ROOT;
 		g_pNeoRoot->UpdateControls();
 		break;
+	}
+}
+
+void CNeoPanel_ServerBrowser::OnEnterServer(const gameserveritem_t gameserver)
+{
+	if (engine->IsInGame())
+	{
+		engine->ClientCmd_Unrestricted("disconnect");
+	}
+
+	// TODO (nullsystem): Deal with password protected server
+	if (gameserver.m_bPassword)
+	{
+		// TODO
+	}
+	else
+	{
+		char connectCmd[256];
+		const char *szAddress = gameserver.m_NetAdr.GetConnectionAddressString();
+		V_sprintf_safe(connectCmd, "progress_enable; wait; connect %s", szAddress);
+		engine->ClientCmd_Unrestricted(connectCmd);
+
+		g_pNeoRoot->m_state = CNeoRoot::STATE_ROOT;
+		g_pNeoRoot->UpdateControls();
 	}
 }
 
