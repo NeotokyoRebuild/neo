@@ -2513,7 +2513,10 @@ void CNeoRoot::ApplySchemeSettings(IScheme *pScheme)
 	g_iMarginX = wide / 192;
 	g_iMarginY = tall / 108;
 	g_iAvatar = wide / 30;
-	g_iRootSubPanelWide = static_cast<int>(static_cast<float>(wide) * 0.65f);
+	const float flWide = static_cast<float>(wide);
+	float flWideAs43 = static_cast<float>(tall) * (4.0f / 3.0f);
+	if (flWideAs43 > flWide) flWideAs43 = flWide;
+	g_iRootSubPanelWide = static_cast<int>(flWideAs43 * 0.9f);
 
 	g_neoFont = m_hTextFonts[FONT_NTSMALL];
 	m_opKeyCapture->m_fontMain = m_hTextFonts[FONT_NTNORMAL];
@@ -2524,8 +2527,8 @@ void CNeoRoot::ApplySchemeSettings(IScheme *pScheme)
 	const int iSubDiv = g_iRootSubPanelWide / PARTITION;
 	g_iGSIX[GSIW_LOCKED] = iSubDiv * 2;
 	g_iGSIX[GSIW_VAC] = iSubDiv * 2;
-	g_iGSIX[GSIW_NAME] = iSubDiv * 9;
-	g_iGSIX[GSIW_MAP] = iSubDiv * 6;
+	g_iGSIX[GSIW_NAME] = iSubDiv * 10;
+	g_iGSIX[GSIW_MAP] = iSubDiv * 5;
 	g_iGSIX[GSIW_PLAYERS] = iSubDiv * 3;
 	g_iGSIX[GSIW_PING] = iSubDiv * 2;
 
