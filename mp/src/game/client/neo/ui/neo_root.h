@@ -28,6 +28,18 @@ enum GameServerType
 	GS__TOTAL,
 };
 
+enum GameServerInfoW
+{
+	GSIW_LOCKED = 0,
+	GSIW_VAC,
+	GSIW_NAME,
+	GSIW_MAP,
+	GSIW_PLAYERS,
+	GSIW_PING,
+
+	GSIW__TOTAL,
+};
+
 class CNeoOverlay_KeyCapture : public vgui::EditablePanel
 {
 	DECLARE_CLASS_SIMPLE(CNeoOverlay_KeyCapture, vgui::EditablePanel);
@@ -120,7 +132,6 @@ struct CNeoDataMicTester
 
 struct CNeoDataGameServer
 {
-	GameServerType type; // TODO: Probably don't need this
 	gameserveritem_t info;
 };
 
@@ -392,6 +403,10 @@ public:
 	virtual int BottomSectionListSize() const = 0;
 	virtual int KeyCodeToBottomAction(vgui::KeyCode code) const = 0;
 	virtual void OnEnterServer([[maybe_unused]] const gameserveritem_t gameserver) { Assert(false); }
+	virtual int TopAreaRows() const = 0;
+	int TopAreaTall() const;
+	virtual void TopAreaPaint() {}
+	virtual void OnCursorMovedTopArea([[maybe_unused]] int x, [[maybe_unused]] int y) {}
 
 	int m_iNdsCurrent = 0;
 	int m_iNdsHover = -1;
@@ -467,6 +482,7 @@ public:
 	int BottomSectionListSize() const override { return BBTN__TOTAL; }
 	int KeyCodeToBottomAction(vgui::KeyCode code) const override;
 	void OnBottomAction(const int btn) final;
+	int TopAreaRows() const final { return 1; }
 
 	void OnEnterBindEntry(CNeoDataVariant *ndv) override;
 
@@ -535,6 +551,7 @@ public:
 	const WLabelWSize *BottomSectionList() const override;
 	int BottomSectionListSize() const override { return BBTN__TOTAL; }
 	int KeyCodeToBottomAction(vgui::KeyCode code) const override;
+	int TopAreaRows() const final { return 0; }
 };
 
 class CNeoDataServerBrowser_General : public CNeoDataSettings_Base, public ISteamMatchmakingServerListResponse
@@ -619,6 +636,9 @@ public:
 	const WLabelWSize *BottomSectionList() const override;
 	int BottomSectionListSize() const override { return BBTN__TOTAL; }
 	int KeyCodeToBottomAction(vgui::KeyCode code) const override;
+	int TopAreaRows() const final { return m_iNdsCurrent == TAB_FILTERS ? 1 : 2; }
+	void TopAreaPaint() final;
+	void OnCursorMovedTopArea(int x, int y) final;
 };
 
 class CNeoRoot;

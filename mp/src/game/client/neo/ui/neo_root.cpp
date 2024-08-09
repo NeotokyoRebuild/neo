@@ -54,6 +54,7 @@ int g_iMarginX = 10;
 int g_iMarginY = 10;
 int g_iAvatar = 64;
 int g_iRootSubPanelWide = 600;
+int g_iGSIX[GSIW__TOTAL] = {};
 HFont g_neoFont;
 #define COLOR_NEOPANELNORMALBG Color(40, 40, 40, 255)
 #define COLOR_NEOPANELSELECTBG Color(40, 10, 10, 255)
@@ -371,12 +372,11 @@ void CNeoPanel_Base::Paint()
 	surface()->GetTextSize(g_neoFont, L"<", fontWide, fontTall);
 	const int fontStartXPos = (widgetTall / 2) - (fontWide / 2);
 	const int fontStartYPos = (widgetTall / 2) - (fontTall / 2);
-	const int tabFullYSize = (TabsList()[m_iNdsCurrent]->NdvListSize() * g_iRowTall);
 	const int panelTall = GetTall();
 	const bool bEditBlinkShow = (static_cast<int>(gpGlobals->curtime * 1.5f) % 2 == 0);
 
 	const int yOvershoot = m_iScrollOffset % g_iRowTall;
-	for (int i = (m_iScrollOffset / g_iRowTall), yPos = g_iRowTall - yOvershoot;
+	for (int i = (m_iScrollOffset / g_iRowTall), yPos = TopAreaTall() - yOvershoot;
 		 yPos < (panelTall - g_iRowTall) && i < tab->NdvListSize();
 		 ++i, yPos += widgetTall)
 	{
@@ -392,33 +392,59 @@ void CNeoPanel_Base::Paint()
 			if (!bThisActive) surface()->DrawSetColor((i % 2 == 0) ? COLOR_NEOPANELNORMALBG : COLOR_NEOPANELACCENTBG);
 			surface()->DrawFilledRect(0, yPos, g_iRootSubPanelWide, yPos + widgetTall);
 
-			const gameserveritem_t *gameserver = &ndv->gameServer.info;
 			// TODO/TEMP (nullsystem): Probably should be more "custom" struct verse gameserveritem_t?
-			{
-				// Print server name
-				static constexpr int LEFT_MAX = k_cbMaxGameServerName + 16;
-				wchar_t wszLeft[LEFT_MAX];
-				const int iSize = V_swprintf_safe(wszLeft, L"%c%c | %s",
-												  gameserver->m_bPassword ? 'P' : ' ',
-												  gameserver->m_bSecure ? 'S' : ' ',
-												  gameserver->GetName());
-				surface()->DrawSetTextPos(g_iMarginX, yPos + fontStartYPos);
-				surface()->DrawPrintText(wszLeft, iSize);
-			}
-			{
-				// Print current map
-				static constexpr int RIGHT_MAX = k_cbMaxGameServerMapName + 64;
-				wchar_t wszRight[RIGHT_MAX];
-				const int iSize = V_swprintf_safe(wszRight, L"%s | %d/%d | %d", gameserver->m_szMap, gameserver->m_nPlayers,
-												  gameserver->m_nMaxPlayers, gameserver->m_nPing);
-				int iWide, iTall;
-				surface()->GetTextSize(g_neoFont, wszRight, iWide, iTall);
+			const gameserveritem_t *gameserver = &ndv->gameServer.info;
+			int xPos = 0;
 
-				surface()->DrawFilledRect(g_iRootSubPanelWide - iWide - (2 * g_iMarginX), yPos,
-										  g_iRootSubPanelWide, yPos + widgetTall);
-				surface()->DrawSetTextPos(g_iRootSubPanelWide - iWide - g_iMarginX, yPos + fontStartYPos);
-				surface()->DrawPrintText(wszRight, iSize);
+			if (gameserver->m_bPassword)
+			{
+				surface()->DrawSetTextPos(xPos + g_iMarginX, yPos + fontStartYPos);
+				surface()->DrawPrintText(L"P", 1);
 			}
+			xPos += g_iGSIX[GSIW_LOCKED];
+
+			if (gameserver->m_bSecure)
+			{
+				surface()->DrawSetTextPos(xPos + g_iMarginX, yPos + fontStartYPos);
+				surface()->DrawPrintText(L"S", 1);
+			}
+			xPos += g_iGSIX[GSIW_VAC];
+
+			{
+				wchar_t wszServerName[k_cbMaxGameServerName];
+				const int iSize = g_pVGuiLocalize->ConvertANSIToUnicode(gameserver->GetName(), wszServerName, sizeof(wszServerName));
+				surface()->DrawSetTextPos(xPos + g_iMarginX, yPos + fontStartYPos);
+				surface()->DrawPrintText(wszServerName, iSize);
+			}
+			xPos += g_iGSIX[GSIW_NAME];
+
+			{
+				// In lower resolution, it may overlap from name, so paint a block here
+				surface()->DrawFilledRect(xPos, yPos, g_iRootSubPanelWide, yPos + widgetTall);
+
+				wchar_t wszMapName[k_cbMaxGameServerMapName];
+				const int iSize = g_pVGuiLocalize->ConvertANSIToUnicode(gameserver->m_szMap, wszMapName, sizeof(wszMapName));
+				surface()->DrawSetTextPos(xPos + g_iMarginX, yPos + fontStartYPos);
+				surface()->DrawPrintText(wszMapName, iSize);
+			}
+			xPos += g_iGSIX[GSIW_MAP];
+
+			{
+				wchar_t wszPlayers[10];
+				const int iSize = V_swprintf_safe(wszPlayers, L"%d/%d", gameserver->m_nPlayers, gameserver->m_nMaxPlayers);
+				surface()->DrawSetTextPos(xPos + g_iMarginX, yPos + fontStartYPos);
+				surface()->DrawPrintText(wszPlayers, iSize);
+			}
+			xPos += g_iGSIX[GSIW_PLAYERS];
+
+			{
+				wchar_t wszPing[10];
+				const int iSize = V_swprintf_safe(wszPing, L"%d", gameserver->m_nPing);
+				surface()->DrawSetTextPos(xPos + g_iMarginX, yPos + fontStartYPos);
+				surface()->DrawPrintText(wszPing, iSize);
+			}
+			xPos += g_iGSIX[GSIW_PING];
+
 			continue;
 		}
 
@@ -601,11 +627,12 @@ void CNeoPanel_Base::Paint()
 		}
 	}
 
+	if (TopAreaRows() > 0)
 	{
 		const int iTabWide = g_iRootSubPanelWide / TabsListSize();
 		// Draw the top part
 		surface()->DrawSetColor(COLOR_NEOPANELNORMALBG);
-		surface()->DrawFilledRect(0, 0, g_iRootSubPanelWide, g_iRowTall);
+		surface()->DrawFilledRect(0, 0, g_iRootSubPanelWide, TopAreaTall());
 
 		surface()->DrawSetColor(COLOR_NEOPANELSELECTBG);
 		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
@@ -622,6 +649,7 @@ void CNeoPanel_Base::Paint()
 			const auto titleInfo = TabsList()[i]->Title();
 			surface()->DrawPrintText(titleInfo.text, titleInfo.size);
 		}
+		TopAreaPaint();
 	}
 
 	const int bottomYStart = (panelTall - g_iRowTall);
@@ -738,7 +766,7 @@ void CNeoPanel_Base::OnMouseWheeled(int delta)
 	const float flScrollSpeed = static_cast<float>(iScreenHeight) * 0.05f;
 
 	CNeoDataSettings_Base *tab = TabsList()[m_iNdsCurrent];
-	const int iWidgetSectionTall = GetTall() - g_iRowTall - g_iRowTall;
+	const int iWidgetSectionTall = GetTall() - g_iRowTall - TopAreaTall();
 	int iMaxScrollOffset = (tab->NdvListSize() * g_iRowTall) - iWidgetSectionTall;
 	if (iMaxScrollOffset < 0) iMaxScrollOffset = 0;
 	m_iScrollOffset += (int)((float)(-delta) * flScrollSpeed);
@@ -773,7 +801,7 @@ void CNeoPanel_Base::OnKeyCodeTyped(vgui::KeyCode code)
 		}
 
 		// Re-adjust scroll offset
-		const int iWdgArea = GetTall() - g_iRowTall - g_iRowTall;
+		const int iWdgArea = GetTall() - g_iRowTall - TopAreaTall();
 		const int iWdgYPos = g_iRowTall * m_iNdvActive;
 		if (iWdgYPos < m_iScrollOffset)
 		{
@@ -957,11 +985,18 @@ void CNeoPanel_Base::OnCursorMoved(int x, int y)
 	}
 
 	CNeoDataSettings_Base *tab = TabsList()[m_iNdsCurrent];
-	if (y < g_iRowTall)
+	if (y < TopAreaTall())
 	{
-		const int iTabWide = g_iRootSubPanelWide / TabsListSize();
-		m_iNdsHover = x / iTabWide;
-		OnExitTextEditMode(iPrevNdsActive);
+		if (y < g_iRowTall)
+		{
+			const int iTabWide = g_iRootSubPanelWide / TabsListSize();
+			m_iNdsHover = x / iTabWide;
+			OnExitTextEditMode(iPrevNdsActive);
+		}
+		else
+		{
+			OnCursorMovedTopArea(x, y);
+		}
 		return;
 	}
 	else if (y > (GetTall() - g_iRowTall))
@@ -972,7 +1007,7 @@ void CNeoPanel_Base::OnCursorMoved(int x, int y)
 		return;
 	}
 
-	y -= g_iRowTall - m_iScrollOffset;
+	y -= TopAreaTall() - m_iScrollOffset;
 	m_iNdvActive = y / g_iRowTall;
 	if (m_iNdvActive != iPrevNdsActive)
 	{
@@ -1050,6 +1085,11 @@ void CNeoPanel_Base::OnExitTextEditMode(const int iOverrideNdsActive)
 		}
 	}
 	m_bTextEditMode = false;
+}
+
+int CNeoPanel_Base::TopAreaTall() const
+{
+	return g_iRowTall * TopAreaRows();
 }
 
 CNeoPanel_Settings::CNeoPanel_Settings(Panel *parent)
@@ -1933,7 +1973,6 @@ void CNeoDataServerBrowser_General::ServerResponded(HServerListRequest hRequest,
 	if (pServerDetails)
 	{
 		CNeoDataVariant ndv = { .type = CNeoDataVariant::GAMESERVER, };
-		ndv.gameServer.type = m_iType; // TODO remove?
 		ndv.gameServer.info = *pServerDetails;
 		m_ndvVec.AddToTail(ndv);
 	}
@@ -2056,6 +2095,36 @@ int CNeoPanel_ServerBrowser::KeyCodeToBottomAction(vgui::KeyCode code) const
 	default: break;
 	}
 	return -1;
+}
+
+void CNeoPanel_ServerBrowser::TopAreaPaint()
+{
+	if (m_iNdsCurrent == TAB_FILTERS)
+	{
+		return;
+	}
+
+	const int iFontTall = surface()->GetFontTall(g_neoFont);
+	const int iFontStartYPos = (g_iRowTall / 2) - (iFontTall / 2);
+
+	static constexpr WLabelWSize SBLABEL_NAMES[GSIW__TOTAL] = {
+		LWS(L"Lock"), LWS(L"VAC"), LWS(L"Name"), LWS(L"Map"), LWS(L"Players"), LWS(L"Ping"),
+	};
+
+	for (int i = 0, xPos = 0; i < GSIW__TOTAL; ++i)
+	{
+		if (SBLABEL_NAMES[i].text)
+		{
+			surface()->DrawSetTextPos(xPos + g_iMarginX, g_iRowTall + iFontStartYPos);
+			surface()->DrawPrintText(SBLABEL_NAMES[i].text, SBLABEL_NAMES[i].size);
+		}
+		xPos += g_iGSIX[i];
+	}
+}
+
+void CNeoPanel_ServerBrowser::OnCursorMovedTopArea(int x, int y)
+{
+
 }
 
 ///////
@@ -2259,6 +2328,16 @@ void CNeoRoot::ApplySchemeSettings(IScheme *pScheme)
 	m_opKeyCapture->m_fontMain = m_hTextFonts[FONT_NTNORMAL];
 	m_opKeyCapture->m_fontSub = m_hTextFonts[FONT_NTSMALL];
 	m_panelSettings->m_opConfirm->m_fontMain = m_hTextFonts[FONT_NTNORMAL];
+
+	constexpr int PARTITION = GSIW__TOTAL * 4;
+	const int iSubDiv = g_iRootSubPanelWide / PARTITION;
+	g_iGSIX[GSIW_LOCKED] = iSubDiv * 2;
+	g_iGSIX[GSIW_VAC] = iSubDiv * 2;
+	g_iGSIX[GSIW_NAME] = iSubDiv * 9;
+	g_iGSIX[GSIW_MAP] = iSubDiv * 6;
+	g_iGSIX[GSIW_PLAYERS] = iSubDiv * 3;
+	g_iGSIX[GSIW_PING] = iSubDiv * 2;
+
 	UpdateControls();
 }
 
