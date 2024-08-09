@@ -537,9 +537,10 @@ public:
 	int KeyCodeToBottomAction(vgui::KeyCode code) const override;
 };
 
-struct CNeoDataServerBrowser_General : CNeoDataSettings_Base
+class CNeoDataServerBrowser_General : public CNeoDataSettings_Base, public ISteamMatchmakingServerListResponse
 {
-	int m_iType;
+public:
+	GameServerType m_iType;
 	CUtlVector<CNeoDataVariant> m_ndvVec;
 	// CUtlVector<CNeoDataVariant> m_ndvFilteredVec;
 
@@ -549,6 +550,12 @@ struct CNeoDataServerBrowser_General : CNeoDataSettings_Base
 	void UserSettingsRestore() override {}
 	void UserSettingsSave() override {}
 	WLabelWSize Title() override;
+
+	void RequestList(MatchMakingKeyValuePair_t **filters, const uint32 iFiltersSize);
+	void ServerResponded(HServerListRequest hRequest, int iServer) final;
+	void ServerFailedToRespond(HServerListRequest hRequest, int iServer) final;
+	void RefreshComplete(HServerListRequest hRequest, EMatchMakingServerResponse response) final;
+	HServerListRequest m_hdlRequest;
 };
 
 struct CNeoDataServerBrowser_Filters : CNeoDataSettings_Base
@@ -567,23 +574,6 @@ struct CNeoDataServerBrowser_Filters : CNeoDataSettings_Base
 	void UserSettingsRestore() override {}
 	void UserSettingsSave() override {}
 	WLabelWSize Title() override { return LWS(L"Filters"); }
-};
-
-
-class CNeoPanel_ServerBrowser;
-
-class SteamMMResponseImpl : public ISteamMatchmakingServerListResponse
-{
-public:
-	void RequestList(MatchMakingKeyValuePair_t **filters, const uint32 iFiltersSize);
-
-	void ServerResponded(HServerListRequest hRequest, int iServer) final;
-	void ServerFailedToRespond(HServerListRequest hRequest, int iServer) final;
-	void RefreshComplete(HServerListRequest hRequest, EMatchMakingServerResponse response) final;
-
-	CNeoPanel_ServerBrowser *m_panelServerBrowser = nullptr;
-	HServerListRequest m_hdlRequest;
-	GameServerType m_type;
 };
 
 class CNeoPanel_ServerBrowser : public CNeoPanel_Base
@@ -629,8 +619,6 @@ public:
 	const WLabelWSize *BottomSectionList() const override;
 	int BottomSectionListSize() const override { return BBTN__TOTAL; }
 	int KeyCodeToBottomAction(vgui::KeyCode code) const override;
-
-	SteamMMResponseImpl m_responseImpl[GS__TOTAL];
 };
 
 class CNeoRoot;

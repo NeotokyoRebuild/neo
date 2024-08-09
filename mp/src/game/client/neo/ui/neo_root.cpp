@@ -1888,11 +1888,24 @@ int CNeoPanel_NewGame::KeyCodeToBottomAction(vgui::KeyCode code) const
 	return -1;
 }
 
-//////
-// SERVER BROWSER - Request + Response handling
-//////
+/////////////////
+// SERVER BROWSER
+/////////////////
 
-void SteamMMResponseImpl::RequestList(MatchMakingKeyValuePair_t **filters, const uint32 iFiltersSize)
+static constexpr WLabelWSize GS_NAMES[GS__TOTAL] = {
+	LWS(L"Internet"), LWS(L"LAN"), LWS(L"Friends"), LWS(L"Fav"), LWS(L"History"), LWS(L"Spec")
+};
+
+CNeoDataServerBrowser_General::CNeoDataServerBrowser_General()
+{
+}
+
+WLabelWSize CNeoDataServerBrowser_General::Title()
+{
+	return GS_NAMES[m_iType];
+}
+
+void CNeoDataServerBrowser_General::RequestList(MatchMakingKeyValuePair_t **filters, const uint32 iFiltersSize)
 {
 	static constexpr HServerListRequest (ISteamMatchmakingServers::*pFnReq[GS__TOTAL])(
 				AppId_t, MatchMakingKeyValuePair_t **, uint32, ISteamMatchmakingServerListResponse *) = {
@@ -1905,13 +1918,13 @@ void SteamMMResponseImpl::RequestList(MatchMakingKeyValuePair_t **filters, const
 	};
 
 	ISteamMatchmakingServers *steamMM = steamapicontext->SteamMatchmakingServers();
-	m_hdlRequest = (m_type == GS_LAN) ?
+	m_hdlRequest = (m_iType == GS_LAN) ?
 				steamMM->RequestLANServerList(engine->GetAppID(), this) :
-				(steamMM->*pFnReq[m_type])(engine->GetAppID(), filters, iFiltersSize, this);
+				(steamMM->*pFnReq[m_iType])(engine->GetAppID(), filters, iFiltersSize, this);
 }
 
 // Server has responded ok with updated data
-void SteamMMResponseImpl::ServerResponded(HServerListRequest hRequest, int iServer)
+void CNeoDataServerBrowser_General::ServerResponded(HServerListRequest hRequest, int iServer)
 {
 	if (hRequest != m_hdlRequest) return;
 
@@ -1920,38 +1933,29 @@ void SteamMMResponseImpl::ServerResponded(HServerListRequest hRequest, int iServ
 	if (pServerDetails)
 	{
 		CNeoDataVariant ndv = { .type = CNeoDataVariant::GAMESERVER, };
-		ndv.gameServer.type = m_type;
+		ndv.gameServer.type = m_iType; // TODO remove?
 		ndv.gameServer.info = *pServerDetails;
-		m_panelServerBrowser->m_ndsGeneral[m_type].m_ndvVec.AddToTail(ndv);
+		m_ndvVec.AddToTail(ndv);
 	}
 }
 
 // Server has failed to respond
-void SteamMMResponseImpl::ServerFailedToRespond(HServerListRequest hRequest, [[maybe_unused]] int iServer)
+void CNeoDataServerBrowser_General::ServerFailedToRespond(HServerListRequest hRequest, [[maybe_unused]] int iServer)
 {
 	if (hRequest != m_hdlRequest) return;
 }
 
 // A list refresh you had initiated is now 100% completed
-void SteamMMResponseImpl::RefreshComplete(HServerListRequest hRequest, [[maybe_unused]] EMatchMakingServerResponse response)
+void CNeoDataServerBrowser_General::RefreshComplete(HServerListRequest hRequest, EMatchMakingServerResponse response)
 {
 	if (hRequest != m_hdlRequest) return;
-}
 
-/////////////////
-// SERVER BROWSER
-/////////////////
-
-CNeoDataServerBrowser_General::CNeoDataServerBrowser_General()
-{
-}
-
-WLabelWSize CNeoDataServerBrowser_General::Title()
-{
-	static constexpr WLabelWSize BBTN_NAMES[GS__TOTAL] = {
-		LWS(L"Internet"), LWS(L"LAN"), LWS(L"Friends"), LWS(L"Fav"), LWS(L"History"), LWS(L"Spec")
-	};
-	return BBTN_NAMES[m_iType];
+	if (response == eNoServersListedOnMasterServer && m_ndvVec.IsEmpty())
+	{
+		CNeoDataVariant ndv = { .type = CNeoDataVariant::TEXTLABEL, };
+		ndv.labelSize = V_swprintf_safe(ndv.textLabel.wszLabel, L"No %ls queries found.", GS_NAMES[m_iType].text);
+		m_ndvVec.AddToTail(ndv);
+	}
 }
 
 CNeoDataServerBrowser_Filters::CNeoDataServerBrowser_Filters()
@@ -1966,9 +1970,7 @@ CNeoPanel_ServerBrowser::CNeoPanel_ServerBrowser(vgui::Panel *parent)
 {
 	for (int i = 0; i < GS__TOTAL; ++i)
 	{
-		m_ndsGeneral[i].m_iType = i;
-		m_responseImpl[i].m_panelServerBrowser = this;
-		m_responseImpl[i].m_type = static_cast<GameServerType>(i);
+		m_ndsGeneral[i].m_iType = static_cast<GameServerType>(i);
 	}
 }
 
@@ -1988,18 +1990,17 @@ void CNeoPanel_ServerBrowser::OnBottomAction(const int btn)
 
 		ISteamMatchmakingServers *steamMM = steamapicontext->SteamMatchmakingServers();
 		m_ndsGeneral[m_iNdsCurrent].m_ndvVec.RemoveAll();
-
-		if (m_responseImpl[m_iNdsCurrent].m_hdlRequest)
+		if (m_ndsGeneral[m_iNdsCurrent].m_hdlRequest)
 		{
-			steamMM->CancelQuery(m_responseImpl[m_iNdsCurrent].m_hdlRequest);
-			steamMM->ReleaseRequest(m_responseImpl[m_iNdsCurrent].m_hdlRequest);
-			m_responseImpl[m_iNdsCurrent].m_hdlRequest = nullptr;
+			steamMM->CancelQuery(m_ndsGeneral[m_iNdsCurrent].m_hdlRequest);
+			steamMM->ReleaseRequest(m_ndsGeneral[m_iNdsCurrent].m_hdlRequest);
+			m_ndsGeneral[m_iNdsCurrent].m_hdlRequest = nullptr;
 		}
 		static MatchMakingKeyValuePair_t mmFilters[] = {
 			{"gamedir", "neo"},
 		};
 		MatchMakingKeyValuePair_t *pMMFilters = mmFilters;
-		m_responseImpl[m_iNdsCurrent].RequestList(&pMMFilters, 1);
+		m_ndsGeneral[m_iNdsCurrent].RequestList(&pMMFilters, 1);
 		break;
 	}
 	case BBTN_GO:
