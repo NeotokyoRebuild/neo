@@ -324,7 +324,7 @@ if(OS_LINUX OR OS_MACOS)
         -Wl,--build-id
         -static-libgcc
         -Wl,--no-undefined
-        -Wl,--version-script=${CMAKE_SOURCE_DIR}/devtools/version_script.linux.txt
+        -Wl,--version-script=${CMAKE_SOURCE_DIR}/version_script.linux.txt
     )
 
     # Fix undefined references in static libraries
@@ -372,8 +372,6 @@ endif()
 if(NEO_USE_CCACHE)
     find_program(CCACHE_PATH
         NAMES ccache
-        PATHS ${CMAKE_SOURCE_DIR}/devtools/bin/linux
-        #NO_DEFAULT_PATH
         REQUIRED
     )
 
@@ -385,11 +383,6 @@ if(NEO_USE_CCACHE)
         #-fcolor-diagnostics
     )
 endif()
-
-# TODO create separate debug info?
-# devtools/gendbg.sh
-
-# TODO add option to create _srv copies?
 
 add_subdirectory(lib)
 
