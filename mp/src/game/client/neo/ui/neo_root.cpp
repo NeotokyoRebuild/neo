@@ -978,6 +978,7 @@ void CNeoPanel_Base::OnCursorMoved(int x, int y)
 	m_iNdsHover = -1;
 	m_iBottomHover = -1;
 	m_curMouse = WDG_NONE;
+	m_bTopArea = false;
 
 	if (x < 0 || x >= g_iRootSubPanelWide)
 	{
@@ -995,6 +996,7 @@ void CNeoPanel_Base::OnCursorMoved(int x, int y)
 		}
 		else
 		{
+			m_bTopArea = true;
 			OnCursorMovedTopArea(x, y);
 		}
 		return;
@@ -1932,12 +1934,128 @@ int CNeoPanel_NewGame::KeyCodeToBottomAction(vgui::KeyCode code) const
 // SERVER BROWSER
 /////////////////
 
+enum AnitCheatMode
+{
+	ANTICHEAT_ANY,
+	ANTICHEAT_ON,
+	ANTICHEAT_OFF,
+
+	ANTICHEAT__TOTAL,
+};
+
+static const wchar_t *ANTICHEAT_LABELS[ANTICHEAT__TOTAL] = {
+	L"<Any>", L"On", L"Off"
+};
+
 static constexpr WLabelWSize GS_NAMES[GS__TOTAL] = {
 	LWS(L"Internet"), LWS(L"LAN"), LWS(L"Friends"), LWS(L"Fav"), LWS(L"History"), LWS(L"Spec")
 };
 
 CNeoDataServerBrowser_General::CNeoDataServerBrowser_General()
 {
+}
+
+void CNeoDataServerBrowser_General::UpdateFilteredList()
+{
+	m_ndvFilteredVec.RemoveAll();
+
+	const auto ndvFilters = m_filters->m_ndvList;
+	for (const CNeoDataVariant &ndv : m_ndvVec)
+	{
+		using SBFilter = CNeoDataServerBrowser_Filters;
+		if (    (ndvFilters[SBFilter::OPT_FILTER_NOTFULL].ringBox.iCurIdx &&
+					(ndv.gameServer.info.m_nPlayers == ndv.gameServer.info.m_nMaxPlayers))
+				|| (ndvFilters[SBFilter::OPT_FILTER_HASPLAYERS].ringBox.iCurIdx &&
+					(ndv.gameServer.info.m_nPlayers == 0))
+				|| (ndvFilters[SBFilter::OPT_FILTER_NOTLOCKED].ringBox.iCurIdx &&
+					(ndv.gameServer.info.m_bPassword))
+				|| (ndvFilters[SBFilter::OPT_FILTER_VACMODE].ringBox.iCurIdx == ANTICHEAT_OFF &&
+					(ndv.gameServer.info.m_bSecure))
+				|| (ndvFilters[SBFilter::OPT_FILTER_VACMODE].ringBox.iCurIdx == ANTICHEAT_ON &&
+					(!ndv.gameServer.info.m_bSecure))
+				)
+		{
+			continue;
+		}
+
+		m_ndvFilteredVec.AddToTail(ndv);
+	}
+
+	if (m_ndvFilteredVec.IsEmpty())
+	{
+		CNeoDataVariant ndv = { .type = CNeoDataVariant::TEXTLABEL, };
+		ndv.labelSize = V_swprintf_safe(ndv.textLabel.wszLabel, L"No %ls queries found.", GS_NAMES[m_iType].text);
+		m_ndvFilteredVec.AddToTail(ndv);
+	}
+	else
+	{
+		// Can't use lamda capture for this, so pass through context
+		V_qsort_s(m_ndvFilteredVec.Base(), m_ndvFilteredVec.Size(), sizeof(CNeoDataVariant),
+				  [](void *vpCtx, const void *vpLeft, const void *vpRight) -> int {
+			const GameServerSortContext gsCtx = *(static_cast<GameServerSortContext *>(vpCtx));
+			auto *ndvLeft = static_cast<const CNeoDataVariant *>(vpLeft);
+			auto *ndvRight = static_cast<const CNeoDataVariant *>(vpRight);
+
+			// Always set szLeft/szRight to name as fallback
+			const char *szLeft = ndvLeft->gameServer.info.GetName();
+			const char *szRight = ndvRight->gameServer.info.GetName();
+			int iLeft, iRight;
+			bool bLeft, bRight;
+			switch (gsCtx.col)
+			{
+			break; case GSIW_LOCKED:
+				bLeft = ndvLeft->gameServer.info.m_bPassword;
+				bRight = ndvRight->gameServer.info.m_bPassword;
+			break; case GSIW_VAC:
+				bLeft = ndvLeft->gameServer.info.m_bSecure;
+				bRight = ndvRight->gameServer.info.m_bSecure;
+			break; case GSIW_MAP:
+			{
+				const char *szMapLeft = ndvLeft->gameServer.info.m_szMap;
+				const char *szMapRight = ndvRight->gameServer.info.m_szMap;
+				if (V_strcmp(szMapLeft, szMapRight) != 0)
+				{
+					szLeft = szMapLeft;
+					szRight = szMapRight;
+				}
+			}
+			break; case GSIW_PLAYERS:
+				iLeft = ndvLeft->gameServer.info.m_nPlayers;
+				iRight = ndvRight->gameServer.info.m_nPlayers;
+				if (iLeft == iRight)
+				{
+					iLeft = ndvLeft->gameServer.info.m_nMaxPlayers;
+					iRight = ndvRight->gameServer.info.m_nMaxPlayers;
+				}
+			break; case GSIW_PING:
+				iLeft = ndvLeft->gameServer.info.m_nPing;
+				iRight = ndvRight->gameServer.info.m_nPing;
+			break; case GSIW_NAME: default: break;
+				// no-op, already assigned (default)
+			}
+
+			switch (gsCtx.col)
+			{
+			case GSIW_LOCKED:
+			case GSIW_VAC:
+				if (bLeft != bRight) return (gsCtx.bDescending) ? bLeft < bRight : bLeft > bRight;
+				break;
+			case GSIW_PLAYERS:
+			case GSIW_PING:
+				if (iLeft != iRight) return (gsCtx.bDescending) ? iLeft < iRight : iLeft > iRight;
+				break;
+			default:
+				break;
+			}
+
+			return (gsCtx.bDescending) ? V_strcmp(szRight, szLeft) : V_strcmp(szLeft, szRight);
+		}, m_pSortCtx);
+	}
+}
+
+CNeoDataVariant *CNeoDataServerBrowser_General::NdvList()
+{
+	return m_ndvFilteredVec.Base();
 }
 
 WLabelWSize CNeoDataServerBrowser_General::Title()
@@ -1975,6 +2093,7 @@ void CNeoDataServerBrowser_General::ServerResponded(HServerListRequest hRequest,
 		CNeoDataVariant ndv = { .type = CNeoDataVariant::GAMESERVER, };
 		ndv.gameServer.info = *pServerDetails;
 		m_ndvVec.AddToTail(ndv);
+		m_bModified = true;
 	}
 }
 
@@ -1991,15 +2110,16 @@ void CNeoDataServerBrowser_General::RefreshComplete(HServerListRequest hRequest,
 
 	if (response == eNoServersListedOnMasterServer && m_ndvVec.IsEmpty())
 	{
-		CNeoDataVariant ndv = { .type = CNeoDataVariant::TEXTLABEL, };
-		ndv.labelSize = V_swprintf_safe(ndv.textLabel.wszLabel, L"No %ls queries found.", GS_NAMES[m_iType].text);
-		m_ndvVec.AddToTail(ndv);
+		m_bModified = true;
 	}
 }
 
 CNeoDataServerBrowser_Filters::CNeoDataServerBrowser_Filters()
 	: m_ndvList{
-		NDV_INIT_RINGBOX_ONOFF(L"VAC"),
+		NDV_INIT_RINGBOX_ONOFF(L"Server not full"),
+		NDV_INIT_RINGBOX_ONOFF(L"Has users playing"),
+		NDV_INIT_RINGBOX_ONOFF(L"Is not password protected"),
+		NDV_INIT_RINGBOX(L"Anti-cheat", ANTICHEAT_LABELS, ARRAYSIZE(ANTICHEAT_LABELS)),
 	}
 {
 }
@@ -2010,7 +2130,10 @@ CNeoPanel_ServerBrowser::CNeoPanel_ServerBrowser(vgui::Panel *parent)
 	for (int i = 0; i < GS__TOTAL; ++i)
 	{
 		m_ndsGeneral[i].m_iType = static_cast<GameServerType>(i);
+		m_ndsGeneral[i].m_filters = &m_ndsFilters;
+		m_ndsGeneral[i].m_pSortCtx = &m_sortCtx;
 	}
+	ivgui()->AddTickSignal(GetVPanel(), 200);
 }
 
 void CNeoPanel_ServerBrowser::OnBottomAction(const int btn)
@@ -2029,6 +2152,13 @@ void CNeoPanel_ServerBrowser::OnBottomAction(const int btn)
 
 		ISteamMatchmakingServers *steamMM = steamapicontext->SteamMatchmakingServers();
 		m_ndsGeneral[m_iNdsCurrent].m_ndvVec.RemoveAll();
+		m_ndsGeneral[m_iNdsCurrent].m_ndvFilteredVec.RemoveAll();
+		{
+			CNeoDataVariant ndv = { .type = CNeoDataVariant::TEXTLABEL, };
+			ndv.labelSize = V_swprintf_safe(ndv.textLabel.wszLabel, L"Searching %ls queries...", GS_NAMES[m_iNdsCurrent].text);
+			m_ndsGeneral[m_iNdsCurrent].m_ndvFilteredVec.AddToTail(ndv);
+		}
+
 		if (m_ndsGeneral[m_iNdsCurrent].m_hdlRequest)
 		{
 			steamMM->CancelQuery(m_ndsGeneral[m_iNdsCurrent].m_hdlRequest);
@@ -2113,18 +2243,79 @@ void CNeoPanel_ServerBrowser::TopAreaPaint()
 
 	for (int i = 0, xPos = 0; i < GSIW__TOTAL; ++i)
 	{
-		if (SBLABEL_NAMES[i].text)
+		if (m_sortCtx.col == i)
 		{
-			surface()->DrawSetTextPos(xPos + g_iMarginX, g_iRowTall + iFontStartYPos);
-			surface()->DrawPrintText(SBLABEL_NAMES[i].text, SBLABEL_NAMES[i].size);
+			const int xPosEnd = xPos + g_iGSIX[i];
+			const int yPosEnd = g_iRowTall + g_iRowTall;
+			int iHintTall = g_iMarginY / 3;
+			if (iHintTall <= 0) iHintTall = 1;
+
+			// Background color
+			surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
+			surface()->DrawFilledRect(xPos, g_iRowTall, xPosEnd, yPosEnd);
+
+			// Ascending/descending hint
+			surface()->DrawSetColor(COLOR_NEOPANELTEXTNORMAL);
+			if (!m_sortCtx.bDescending)	surface()->DrawFilledRect(xPos, g_iRowTall, xPosEnd, g_iRowTall + iHintTall);
+			else						surface()->DrawFilledRect(xPos, yPosEnd - iHintTall, xPosEnd, yPosEnd);
+		}
+		surface()->DrawSetTextPos(xPos + g_iMarginX, g_iRowTall + iFontStartYPos);
+		surface()->DrawPrintText(SBLABEL_NAMES[i].text, SBLABEL_NAMES[i].size);
+		xPos += g_iGSIX[i];
+	}
+	surface()->DrawSetColor(COLOR_NEOPANELNORMALBG);
+}
+
+void CNeoPanel_ServerBrowser::OnMousePressed(vgui::MouseCode code)
+{
+	if (m_iNdsCurrent != TAB_FILTERS && m_bTopArea)
+	{
+		if (m_sortCtx.col == m_hoverGSCol)
+		{
+			m_sortCtx.bDescending = !m_sortCtx.bDescending;
+		}
+		m_sortCtx.col = m_hoverGSCol;
+		m_bModified = true;
+	}
+	BaseClass::OnMousePressed(code);
+}
+
+void CNeoPanel_ServerBrowser::OnCursorMovedTopArea(int x, int y)
+{
+	if (m_iNdsCurrent == TAB_FILTERS)
+	{
+		return;
+	}
+
+	for (int i = 0, xPos = 0; i < GSIW__TOTAL; ++i)
+	{
+		if (x >= xPos && x < (xPos + g_iGSIX[i]))
+		{
+			m_hoverGSCol = static_cast<GameServerInfoW>(i);
+			return;
 		}
 		xPos += g_iGSIX[i];
 	}
 }
 
-void CNeoPanel_ServerBrowser::OnCursorMovedTopArea(int x, int y)
+void CNeoPanel_ServerBrowser::OnTick()
 {
+	if (m_bModified)
+	{
+		// Pass modified over to the tabs so it doesn't trigger
+		// the filter refresh immeditely
+		for (int i = 0; i < GS__TOTAL; ++i)
+		{
+			m_ndsGeneral[i].m_bModified = true;
+		}
+		m_bModified = false;
+	}
 
+	if (m_ndsGeneral[m_iNdsCurrent].m_bModified)
+	{
+		m_ndsGeneral[m_iNdsCurrent].UpdateFilteredList();
+		m_ndsGeneral[m_iNdsCurrent].m_bModified = false;
+	}
 }
 
 ///////

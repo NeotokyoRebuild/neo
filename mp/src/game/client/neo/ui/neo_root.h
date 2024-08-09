@@ -40,6 +40,12 @@ enum GameServerInfoW
 	GSIW__TOTAL,
 };
 
+struct GameServerSortContext
+{
+	GameServerInfoW col = GSIW_NAME;
+	bool bDescending = false;
+};
+
 class CNeoOverlay_KeyCapture : public vgui::EditablePanel
 {
 	DECLARE_CLASS_SIMPLE(CNeoOverlay_KeyCapture, vgui::EditablePanel);
@@ -384,9 +390,9 @@ public:
 
 	void PerformLayout() final;
 	void Paint() final;
-	void OnMousePressed(vgui::MouseCode code) final;
-	void OnMouseDoublePressed(vgui::MouseCode code) final;
-	void OnMouseWheeled(int delta) final;
+	void OnMousePressed(vgui::MouseCode code) override;
+	void OnMouseDoublePressed(vgui::MouseCode code) override;
+	void OnMouseWheeled(int delta) override;
 
 	void OnKeyCodeTyped(vgui::KeyCode code) final;
 	void OnKeyTyped(wchar_t unichar) final;
@@ -430,6 +436,7 @@ public:
 		WDG_RIGHT,
 	};
 	WidgetPos m_curMouse = WDG_NONE;
+	bool m_bTopArea = false;
 };
 
 class CNeoPanel_Settings : public CNeoPanel_Base
@@ -554,32 +561,42 @@ public:
 	int TopAreaRows() const final { return 0; }
 };
 
+class CNeoDataServerBrowser_Filters;
+class CNeoPanel_ServerBrowser;
+
 class CNeoDataServerBrowser_General : public CNeoDataSettings_Base, public ISteamMatchmakingServerListResponse
 {
 public:
 	GameServerType m_iType;
 	CUtlVector<CNeoDataVariant> m_ndvVec;
-	// CUtlVector<CNeoDataVariant> m_ndvFilteredVec;
+	CUtlVector<CNeoDataVariant> m_ndvFilteredVec;
 
 	CNeoDataServerBrowser_General();
-	CNeoDataVariant *NdvList() override { return m_ndvVec.Base(); }
-	int NdvListSize() override { return m_ndvVec.Size(); }
+	CNeoDataVariant *NdvList() override;
+	int NdvListSize() override { NdvList(); return m_ndvFilteredVec.Size(); }
 	void UserSettingsRestore() override {}
 	void UserSettingsSave() override {}
 	WLabelWSize Title() override;
+	void UpdateFilteredList();
 
 	void RequestList(MatchMakingKeyValuePair_t **filters, const uint32 iFiltersSize);
 	void ServerResponded(HServerListRequest hRequest, int iServer) final;
 	void ServerFailedToRespond(HServerListRequest hRequest, int iServer) final;
 	void RefreshComplete(HServerListRequest hRequest, EMatchMakingServerResponse response) final;
 	HServerListRequest m_hdlRequest;
+	CNeoDataServerBrowser_Filters *m_filters = nullptr;
+	bool m_bModified = false;
+	GameServerSortContext *m_pSortCtx = nullptr;
 };
 
 struct CNeoDataServerBrowser_Filters : CNeoDataSettings_Base
 {
 	enum Options
 	{
-		OPT_FILTER_VAC = 0,
+		OPT_FILTER_NOTFULL = 0,
+		OPT_FILTER_HASPLAYERS,
+		OPT_FILTER_NOTLOCKED,
+		OPT_FILTER_VACMODE,
 
 		OPT_FILTER__TOTAL,
 	};
@@ -639,6 +656,10 @@ public:
 	int TopAreaRows() const final { return m_iNdsCurrent == TAB_FILTERS ? 1 : 2; }
 	void TopAreaPaint() final;
 	void OnCursorMovedTopArea(int x, int y) final;
+	void OnTick() final;
+	void OnMousePressed(vgui::MouseCode code) override;
+	GameServerSortContext m_sortCtx;
+	GameServerInfoW m_hoverGSCol;
 };
 
 class CNeoRoot;
