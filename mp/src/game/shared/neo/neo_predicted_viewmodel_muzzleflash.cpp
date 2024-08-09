@@ -40,6 +40,11 @@ void CNEOPredictedViewModelMuzzleFlash::Spawn(void)
 {
 	Precache();
 
+#ifdef CLIENT_DLL
+	starFlash = materials->FindMaterial("effects/fpmf/fpmf01.vmt", TEXTURE_GROUP_VIEW_MODEL);
+	circleFlash = materials->FindMaterial("effects/fpmf/fpmf02.vmt", TEXTURE_GROUP_VIEW_MODEL);
+#endif
+
 	SetModel(MUZZLE_FLASH_ENTITY_MODEL);
 	SetSolid(SOLID_NONE);
 	SetMoveType(MOVETYPE_NONE);
@@ -50,18 +55,22 @@ void CNEOPredictedViewModelMuzzleFlash::Spawn(void)
 #ifdef CLIENT_DLL
 int CNEOPredictedViewModelMuzzleFlash::DrawModel(int flags)
 {
-	IMaterial* pass = materials->FindMaterial("effects/fpmf/fpmf01.vmt", TEXTURE_GROUP_VIEW_MODEL);
 	if (!ShouldMuzzleFlash())
 	{
-		pass->SetMaterialVarFlag(MATERIAL_VAR_NO_DRAW, true);
+		starFlash = materials->FindMaterial("effects/fpmf/fpmf01.vmt", TEXTURE_GROUP_VIEW_MODEL);
+		circleFlash = materials->FindMaterial("effects/fpmf/fpmf02.vmt", TEXTURE_GROUP_VIEW_MODEL);
+		starFlash->SetMaterialVarFlag(MATERIAL_VAR_NO_DRAW, true);
+		circleFlash->SetMaterialVarFlag(MATERIAL_VAR_NO_DRAW, true);
+		return 0;
 	}
-	else
-	{
-		SetLocalAnglesDim( 1, AngleNormalize(random->RandomInt(-1200, 1200)));
-		pass->SetMaterialVarFlag(MATERIAL_VAR_NO_DRAW, false);
-	}
+	starFlash = materials->FindMaterial("effects/fpmf/fpmf01.vmt", TEXTURE_GROUP_VIEW_MODEL);
+	circleFlash = materials->FindMaterial("effects/fpmf/fpmf02.vmt", TEXTURE_GROUP_VIEW_MODEL);
 	DisableMuzzleFlash();
-	pass->SetMaterialVarFlag(MATERIAL_VAR_IGNOREZ, true);
+	starFlash->SetMaterialVarFlag(MATERIAL_VAR_NO_DRAW, false);
+	starFlash->SetMaterialVarFlag(MATERIAL_VAR_IGNOREZ, true);
+	circleFlash->SetMaterialVarFlag(MATERIAL_VAR_NO_DRAW, false);
+	circleFlash->SetMaterialVarFlag(MATERIAL_VAR_IGNOREZ, true);
+	
 	int ret = BaseClass::DrawModel(flags);
 	return ret;
 }
