@@ -426,14 +426,25 @@ public:
 	virtual void OnCursorMovedTopArea([[maybe_unused]] int x, [[maybe_unused]] int y) {}
 
 	int m_iNdsCurrent = 0;
-	int m_iNdsHover = -1;
-
 	int m_iPosX = 0;
-	//int m_iNdvHover = -1; // TODO: Also m_iNdvActive replaces m_bTextEditMode
-	int m_iNdvActive = -1;
-	int m_iBottomHover = -1;
 	int m_iScrollOffset = 0;
-	bool m_bTextEditMode = false;
+
+	int m_iNdsHover = -1; // TODO: Replaced by new system
+	int m_iBottomHover = -1; // TODO: Replaced by new system
+	bool m_bTextEditMode = false; // TODO: Replaced by new system
+
+	enum eSectionActive
+	{
+		SECTION_MAIN = 0,
+		SECTION_BOTTOM,
+		SECTION_TOP, // Only used if TopAreaRows() set to 2
+
+		SECTION__TOTAL,
+	};
+	int m_iSectionActive = 0;
+	int m_iNdvHover = -1;
+	int m_iNdvActive = -1;
+
 
 	// NEO NOTE (nullsystem): Just to make it simple, any actions that changes
 	// settings (key or mouse) just trigger this regardless if the value has been changed or not

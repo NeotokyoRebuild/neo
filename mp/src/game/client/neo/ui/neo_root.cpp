@@ -807,6 +807,8 @@ void CNeoPanel_Base::OnKeyCodeTyped(vgui::KeyCode code)
 	const int iNdvListSize = tab->NdvListSize();
 	if (code == KEY_DOWN || code == KEY_UP)
 	{
+		if (iNdvListSize == 0) return;
+
 		OnExitTextEditMode();
 		const int iIncr = (code == KEY_DOWN) ? +1 : -1;
 
@@ -2667,12 +2669,30 @@ void CNeoRoot::Paint()
 	GetSize(wide, tall);
 
 	const bool bNextIsInGame = engine->IsInGame();
-	const bool bInRoot = m_state == STATE_ROOT;
-	if (bInRoot)
+	if (m_state != STATE_ROOT)
+	{
+		// Print the title
+		static constexpr int STATE_TO_BTN_MAP[STATE__TOTAL] = {
+			0, BTN_SETTINGS, BTN_SERVERCREATE, BTN_SERVERBROWSER,
+		};
+		const int iBtnIdx = STATE_TO_BTN_MAP[m_state];
+
+		surface()->DrawSetTextFont(m_hTextFonts[FONT_NTNORMAL]);
+		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
+
+		const int iPanelTall = g_iRowTall + (tall * 0.8f) + g_iRowTall;
+		const int yTopPos = (tall - iPanelTall) / 2;
+		int iTitleWidth, iTitleHeight;
+		surface()->GetTextSize(m_hTextFonts[FONT_NTNORMAL], m_wszDispBtnTexts[iBtnIdx], iTitleWidth, iTitleHeight);
+		surface()->DrawSetTextPos((wide / 2) - (g_iRootSubPanelWide / 2),
+								  (yTopPos / 2) - (iTitleHeight / 2));
+		surface()->DrawPrintText(m_wszDispBtnTexts[iBtnIdx], m_iWszDispBtnTextsSizes[iBtnIdx]);
+	}
+	else
 	{
 		const int iBtnPlaceXMid = (wide / 4);
-		const int yTopPos = tall / 2 - ((g_iRowTall * BTN__TOTAL) / 2);
 
+		const int yTopPos = tall / 2 - ((g_iRowTall * BTN__TOTAL) / 2);
 		const int iRightXPos = iBtnPlaceXMid + (m_iBtnWide / 2) + g_iMarginX;
 		int iRightSideYStart = yTopPos;
 
@@ -2930,6 +2950,7 @@ bool NeoRootCaptureESC()
 {
 	return (g_pNeoRoot && (
 			(g_pNeoRoot->m_panelSettings->IsVisible() || g_pNeoRoot->m_panelSettings->m_opConfirm->IsVisible()) ||
-			(g_pNeoRoot->m_panelNewGame->IsVisible() || g_pNeoRoot->m_panelServerBrowser->IsVisible())
+			(g_pNeoRoot->m_panelNewGame->IsVisible() || g_pNeoRoot->m_panelServerBrowser->IsVisible()) ||
+			(g_pNeoRoot->m_panelNewGame->m_mapList->IsVisible())
 				));
 }
