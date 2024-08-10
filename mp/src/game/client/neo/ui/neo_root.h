@@ -405,7 +405,7 @@ public:
 	void OnMouseDoublePressed(vgui::MouseCode code) override;
 	void OnMouseWheeled(int delta) override;
 
-	void OnKeyCodeTyped(vgui::KeyCode code) final;
+	void OnKeyCodeTyped(vgui::KeyCode code) override;
 	void OnKeyTyped(wchar_t unichar) final;
 
 	void OnCursorMoved(int x, int y) final;
@@ -455,7 +455,6 @@ public:
 		WDG_RIGHT,
 	};
 	WidgetPos m_curMouse = WDG_NONE;
-	bool m_bTopArea = false;
 };
 
 class CNeoPanel_Settings : public CNeoPanel_Base
@@ -623,7 +622,6 @@ public:
 };
 
 class CNeoDataServerBrowser_Filters;
-class CNeoPanel_ServerBrowser;
 
 class CNeoDataServerBrowser_General : public CNeoDataSettings_Base, public ISteamMatchmakingServerListResponse
 {
@@ -680,6 +678,7 @@ public:
 
 	void OnBottomAction(const int btn) override;
 	void OnEnterServer(const gameserveritem_t gameserver) override;
+	void OnKeyCodeTyped(vgui::KeyCode code) override;
 
 	enum Tabs
 	{
@@ -718,8 +717,8 @@ public:
 	void OnCursorMovedTopArea(int x, int y) final;
 	void OnTick() final;
 	void OnMousePressed(vgui::MouseCode code) override;
+	void OnSetSortCol();
 	GameServerSortContext m_sortCtx;
-	GameServerInfoW m_hoverGSCol;
 };
 
 class CNeoRoot;

@@ -68,17 +68,22 @@ HFont g_neoFont;
 #define COLOR_NEOPANELMICTEST Color(30, 90, 30, 255)
 static constexpr wchar_t WSZ_GAME_TITLE[] = L"neatbkyoc ue";
 
-[[nodiscard]] int LoopAroundInArray(const int iValue, const int iSize)
+[[nodiscard]] int LoopAroundMinMax(const int iValue, const int iMin, const int iMax)
 {
-	if (iValue < 0)
+	if (iValue < iMin)
 	{
-		return iSize - 1;
+		return iMax;
 	}
-	else if (iValue >= iSize)
+	else if (iValue > iMax)
 	{
-		return 0;
+		return iMin;
 	}
 	return iValue;
+}
+
+[[nodiscard]] int LoopAroundInArray(const int iValue, const int iSize)
+{
+	return LoopAroundMinMax(iValue, 0, iSize - 1);
 }
 
 const wchar_t *QUALITY_LABELS[] = {
@@ -718,11 +723,14 @@ void CNeoPanel_Base::OnMousePressed(vgui::MouseCode code)
 	{
 	break; case SECTION_TOP:
 	{
-		m_iNdsCurrent = m_iNdvHover;
-		m_iScrollOffset = 0;
-		InvalidateLayout();
-		PerformLayout();
-		RequestFocus();
+		if (m_iNdvHover >= 0 && m_iNdvHover < TabsListSize())
+		{
+			m_iNdsCurrent = m_iNdvHover;
+			m_iScrollOffset = 0;
+			InvalidateLayout();
+			PerformLayout();
+			RequestFocus();
+		}
 	}
 	break; case SECTION_MAIN:
 	{
@@ -856,7 +864,9 @@ void CNeoPanel_Base::OnKeyCodeTyped(vgui::KeyCode code)
 		iSectionActive = LoopAroundInArray(iSectionActive, SECTION__TOTAL);
 		if (iSectionActive == SECTION_TOP && TopAreaRows() <= 1) iSectionActive = SECTION_MAIN;
 		m_eSectionActive = static_cast<eSectionActive>(iSectionActive);
-		m_iNdvHover = 0;
+		// Set to TabsListSize if top-section with extra widgets as that'll be used for first
+		// non-tabbed widget there
+		m_iNdvHover = (iSectionActive == SECTION_TOP && TopAreaRows() >= 2) ? TabsListSize() : 0;
 		return;
 	}
 
@@ -865,7 +875,7 @@ void CNeoPanel_Base::OnKeyCodeTyped(vgui::KeyCode code)
 	{
 	break; case SECTION_TOP:
 	{
-		// TODO: Deal with it via function?
+		// no-op, override this function method when needed
 	}
 	break; case SECTION_MAIN:
 	{
@@ -881,24 +891,35 @@ void CNeoPanel_Base::OnKeyCodeTyped(vgui::KeyCode code)
 
 			// Increment or decrement to the next valid NDV
 			CNeoDataVariant::Type type;
+			int iSeenZero = 0;
 			do
 			{
 				m_iNdvHover += iIncr;
 				m_iNdvHover = LoopAroundInArray(m_iNdvHover, iNdvListSize);
 				type = tab->NdvList()[m_iNdvHover].type;
+				iSeenZero += (m_iNdvHover == 0);
+				// If iSeenZero is >= 2, then there isn't really an item we can key to hover at
 			}
-			while (type == CNeoDataVariant::TEXTLABEL || type == CNeoDataVariant::S_DISPLAYNAME);
+			while (iSeenZero < 2 && (type == CNeoDataVariant::TEXTLABEL || type == CNeoDataVariant::S_DISPLAYNAME));
 
-			// Re-adjust scroll offset
-			const int iWdgArea = GetTall() - g_iRowTall - TopAreaTall();
-			const int iWdgYPos = g_iRowTall * m_iNdvHover;
-			if (iWdgYPos < m_iScrollOffset)
+			if (iSeenZero >= 2)
 			{
-				m_iScrollOffset = iWdgYPos;
+				m_iNdvHover = -1;
 			}
-			else if ((iWdgYPos + g_iRowTall) >= (m_iScrollOffset + iWdgArea))
+
+			if (m_iNdvHover >= 0)
 			{
-				m_iScrollOffset = (iWdgYPos - iWdgArea + g_iRowTall);
+				// Re-adjust scroll offset
+				const int iWdgArea = GetTall() - g_iRowTall - TopAreaTall();
+				const int iWdgYPos = g_iRowTall * m_iNdvHover;
+				if (iWdgYPos < m_iScrollOffset)
+				{
+					m_iScrollOffset = iWdgYPos;
+				}
+				else if ((iWdgYPos + g_iRowTall) >= (m_iScrollOffset + iWdgArea))
+				{
+					m_iScrollOffset = (iWdgYPos - iWdgArea + g_iRowTall);
+				}
 			}
 
 			m_iNdvFocus = -1;
@@ -1077,7 +1098,6 @@ void CNeoPanel_Base::OnCursorMoved(int x, int y)
 	m_eSectionActive = SECTION_MAIN;
 	m_iNdvHover = -1;
 	m_curMouse = WDG_NONE;
-	m_bTopArea = false;
 
 	if (x < 0 || x >= g_iRootSubPanelWide)
 	{
@@ -1094,7 +1114,6 @@ void CNeoPanel_Base::OnCursorMoved(int x, int y)
 		}
 		else
 		{
-			m_bTopArea = true;
 			OnCursorMovedTopArea(x, y);
 		}
 		return;
@@ -2402,20 +2421,49 @@ void CNeoPanel_ServerBrowser::OnEnterServer(const gameserveritem_t gameserver)
 	}
 }
 
+void CNeoPanel_ServerBrowser::OnKeyCodeTyped(vgui::KeyCode code)
+{
+	BaseClass::OnKeyCodeTyped(code);
+	if (m_eSectionActive == SECTION_TOP && m_iNdsCurrent != TAB_FILTERS)
+	{
+		if (code == KEY_LEFT || code == KEY_RIGHT)
+		{
+			int iIncr = (code == KEY_LEFT) ? -1 : +1;
+			if (m_iNdvHover < TabsListSize() ||
+					m_iNdvHover >= (TabsListSize() + GSIW__TOTAL))
+			{
+				// Reset to server-browser headers
+				m_iNdvHover = TabsListSize();
+				iIncr = 0;
+			}
+
+			m_iNdvHover += iIncr;
+			m_iNdvHover = LoopAroundMinMax(m_iNdvHover,  TabsListSize(), TabsListSize() + GSIW__TOTAL - 1);
+		}
+		else if (code == KEY_ENTER)
+		{
+			OnSetSortCol();
+		}
+	}
+}
+
 const WLabelWSize *CNeoPanel_ServerBrowser::BottomSectionList() const
 {
 	static constexpr WLabelWSize BBTN_NAMES[BBTN__TOTAL] = {
-		LWS(L"Back (ESC)"), LWS(L"Legacy"), LWSNULL, LWS(L"Refresh"), LWS(L"Start"),
+		LWS(L"Back (ESC)"), LWS(L"Legacy"), LWSNULL, LWS(L"Refresh (Ctrl+R)"), LWS(L"Start"),
 	};
 	return BBTN_NAMES;
 }
 
 int CNeoPanel_ServerBrowser::KeyCodeToBottomAction(vgui::KeyCode code) const
 {
-	switch (code)
+	if (code == KEY_ESCAPE)
 	{
-	case KEY_ESCAPE: return BBTN_BACK;
-	default: break;
+		return BBTN_BACK;
+	}
+	else if (code == KEY_R && (input()->IsKeyDown(KEY_LCONTROL) || input()->IsKeyDown(KEY_RCONTROL)))
+	{
+		return BBTN_REFRESH;
 	}
 	return -1;
 }
@@ -2433,10 +2481,19 @@ void CNeoPanel_ServerBrowser::TopAreaPaint()
 	static constexpr WLabelWSize SBLABEL_NAMES[GSIW__TOTAL] = {
 		LWS(L"Lock"), LWS(L"VAC"), LWS(L"Name"), LWS(L"Map"), LWS(L"Players"), LWS(L"Ping"),
 	};
+	GameServerInfoW eColHover = GSIW__TOTAL;
+	if (m_eSectionActive == SECTION_TOP && m_iNdvHover >= TabsListSize())
+	{
+		const int iColHover = m_iNdvHover - TabsListSize();
+		if (iColHover >= 0 && iColHover < GSIW__TOTAL)
+		{
+			eColHover = static_cast<GameServerInfoW>(iColHover);
+		}
+	}
 
 	for (int i = 0, xPos = 0; i < GSIW__TOTAL; ++i)
 	{
-		if (m_sortCtx.col == i)
+		if (m_sortCtx.col == i || eColHover == i)
 		{
 			const int xPosEnd = xPos + g_iGSIX[i];
 			const int yPosEnd = g_iRowTall + g_iRowTall;
@@ -2444,13 +2501,16 @@ void CNeoPanel_ServerBrowser::TopAreaPaint()
 			if (iHintTall <= 0) iHintTall = 1;
 
 			// Background color
-			surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
+			surface()->DrawSetColor((eColHover == i) ? COLOR_NEOPANELSELECTBG : COLOR_NEOPANELACCENTBG);
 			surface()->DrawFilledRect(xPos, g_iRowTall, xPosEnd, yPosEnd);
 
-			// Ascending/descending hint
-			surface()->DrawSetColor(COLOR_NEOPANELTEXTNORMAL);
-			if (!m_sortCtx.bDescending)	surface()->DrawFilledRect(xPos, g_iRowTall, xPosEnd, g_iRowTall + iHintTall);
-			else						surface()->DrawFilledRect(xPos, yPosEnd - iHintTall, xPosEnd, yPosEnd);
+			if (m_sortCtx.col == i)
+			{
+				// Ascending/descending hint
+				surface()->DrawSetColor(COLOR_NEOPANELTEXTNORMAL);
+				if (!m_sortCtx.bDescending)	surface()->DrawFilledRect(xPos, g_iRowTall, xPosEnd, g_iRowTall + iHintTall);
+				else						surface()->DrawFilledRect(xPos, yPosEnd - iHintTall, xPosEnd, yPosEnd);
+			}
 		}
 		surface()->DrawSetTextPos(xPos + g_iMarginX, g_iRowTall + iFontStartYPos);
 		surface()->DrawPrintText(SBLABEL_NAMES[i].text, SBLABEL_NAMES[i].size);
@@ -2459,23 +2519,32 @@ void CNeoPanel_ServerBrowser::TopAreaPaint()
 	surface()->DrawSetColor(COLOR_NEOPANELNORMALBG);
 }
 
-void CNeoPanel_ServerBrowser::OnMousePressed(vgui::MouseCode code)
+void CNeoPanel_ServerBrowser::OnSetSortCol()
 {
-	if (m_iNdsCurrent != TAB_FILTERS && m_bTopArea)
+	const int iSortCol = (m_iNdvHover - TabsListSize());
+	if (iSortCol >= 0 && iSortCol < GSIW__TOTAL)
 	{
-		if (m_sortCtx.col == m_hoverGSCol)
+		if (m_sortCtx.col == iSortCol)
 		{
 			m_sortCtx.bDescending = !m_sortCtx.bDescending;
 		}
-		m_sortCtx.col = m_hoverGSCol;
+		m_sortCtx.col = static_cast<GameServerInfoW>(iSortCol);
 		m_bModified = true;
+	}
+}
+
+void CNeoPanel_ServerBrowser::OnMousePressed(vgui::MouseCode code)
+{
+	if (m_iNdsCurrent != TAB_FILTERS && m_eSectionActive == SECTION_TOP)
+	{
+		OnSetSortCol();
 	}
 	BaseClass::OnMousePressed(code);
 }
 
 void CNeoPanel_ServerBrowser::OnCursorMovedTopArea(int x, int y)
 {
-	if (m_iNdsCurrent == TAB_FILTERS)
+	if (m_iNdsCurrent == TAB_FILTERS || m_eSectionActive != SECTION_TOP)
 	{
 		return;
 	}
@@ -2484,7 +2553,7 @@ void CNeoPanel_ServerBrowser::OnCursorMovedTopArea(int x, int y)
 	{
 		if (x >= xPos && x < (xPos + g_iGSIX[i]))
 		{
-			m_hoverGSCol = static_cast<GameServerInfoW>(i);
+			m_iNdvHover = i + TabsListSize();
 			return;
 		}
 		xPos += g_iGSIX[i];
@@ -2746,12 +2815,30 @@ void CNeoRoot::Paint()
 		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
 
 		const int iPanelTall = g_iRowTall + (tall * 0.8f) + g_iRowTall;
+		const int xPanelPos = (wide / 2) - (g_iRootSubPanelWide / 2);
 		const int yTopPos = (tall - iPanelTall) / 2;
 		int iTitleWidth, iTitleHeight;
 		surface()->GetTextSize(m_hTextFonts[FONT_NTNORMAL], m_wszDispBtnTexts[iBtnIdx], iTitleWidth, iTitleHeight);
-		surface()->DrawSetTextPos((wide / 2) - (g_iRootSubPanelWide / 2),
-								  (yTopPos / 2) - (iTitleHeight / 2));
+		surface()->DrawSetTextPos(xPanelPos, (yTopPos / 2) - (iTitleHeight / 2));
 		surface()->DrawPrintText(m_wszDispBtnTexts[iBtnIdx], m_iWszDispBtnTextsSizes[iBtnIdx]);
+
+		// Print F1 - F3 tab keybinds
+		if (g_pNeoRoot->m_panelSettings->IsVisible() ||
+				g_pNeoRoot->m_panelServerBrowser->IsVisible())
+		{
+			surface()->DrawSetTextFont(m_hTextFonts[FONT_NTSMALL]);
+			surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
+
+			// NEO NOTE (nullsystem): F# as 1 is thinner than 3/not monospaced font
+			int iFontWidth, iFontHeight;
+			surface()->GetTextSize(m_hTextFonts[FONT_NTSMALL], L"F##", iFontWidth, iFontHeight);
+			const int iHintYPos = yTopPos + (iFontHeight / 2);
+
+			surface()->DrawSetTextPos(xPanelPos - g_iMarginX - iFontWidth, iHintYPos);
+			surface()->DrawPrintText(L"F 1", 3);
+			surface()->DrawSetTextPos(xPanelPos + g_iRootSubPanelWide + g_iMarginX, iHintYPos);
+			surface()->DrawPrintText(L"F 3", 3);
+		}
 	}
 	else
 	{
@@ -2886,9 +2973,9 @@ void CNeoRoot::Paint()
 			.y = yTopPos,
 		};
 		const int flagToMatch = engine->IsInGame() ? FLAG_SHOWINGAME : FLAG_SHOWINMAIN;
+		const int iNTSmallFontTall = surface()->GetFontTall(m_hTextFonts[FONT_NTSMALL]);
 		surface()->DrawSetTextFont(m_hTextFonts[FONT_NTSMALL]);
-		const int fontTall = surface()->GetFontTall(m_hTextFonts[FONT_NTSMALL]);
-		const int fontStartYPos = (g_iRowTall / 2) - (fontTall / 2);
+		const int fontStartYPos = (g_iRowTall / 2) - (iNTSmallFontTall / 2);
 		for (int i = 0; i < BTN__TOTAL; ++i)
 		{
 			if (BTNS_INFO[i].flags & flagToMatch)
@@ -3013,8 +3100,10 @@ void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 bool NeoRootCaptureESC()
 {
 	return (g_pNeoRoot && (
-			(g_pNeoRoot->m_panelSettings->IsVisible() || g_pNeoRoot->m_panelSettings->m_opConfirm->IsVisible()) ||
-			(g_pNeoRoot->m_panelNewGame->IsVisible() || g_pNeoRoot->m_panelServerBrowser->IsVisible()) ||
-			(g_pNeoRoot->m_panelNewGame->m_mapList->IsVisible())
+				   g_pNeoRoot->m_panelSettings->IsVisible()
+				|| g_pNeoRoot->m_panelSettings->m_opConfirm->IsVisible()
+				|| g_pNeoRoot->m_panelNewGame->IsVisible()
+				|| g_pNeoRoot->m_panelServerBrowser->IsVisible()
+				|| g_pNeoRoot->m_panelNewGame->m_mapList->IsVisible()
 				));
 }
