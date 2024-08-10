@@ -141,6 +141,13 @@ struct CNeoDataGameServer
 	gameserveritem_t info;
 };
 
+struct CNeoDataButton
+{
+	static constexpr int LABEL_MAX = 128;
+	wchar_t wszBtnLabel[LABEL_MAX + 1] = {};
+	int iWszBtnLabelSize;
+};
+
 struct CNeoDataVariant
 {
 	enum Type
@@ -151,6 +158,7 @@ struct CNeoDataVariant
 		BINDENTRY,
 		TEXTLABEL,
 		GAMESERVER,
+		BUTTON,
 
 		// S_ = Special type for specific use
 		S_DISPLAYNAME,
@@ -169,6 +177,7 @@ struct CNeoDataVariant
 		CNeoDataTextLabel textLabel;
 		CNeoDataMicTester micTester;
 		CNeoDataGameServer gameServer;
+		CNeoDataButton button;
 	};
 };
 
@@ -187,6 +196,8 @@ struct CNeoDataVariant
 	.type = CNeoDataVariant::S_DISPLAYNAME, NDV_LABEL(wlabel) }
 #define NDV_INIT_S_MICTESTER(wlabel) { \
 	.type = CNeoDataVariant::S_MICTESTER, NDV_LABEL(wlabel) }
+#define NDV_INIT_BUTTON(wlabel) { \
+	.type = CNeoDataVariant::BUTTON, NDV_LABEL(wlabel) }
 
 struct CNeoDataSettings_Base
 {
@@ -399,7 +410,7 @@ public:
 
 	void OnCursorMoved(int x, int y) final;
 
-	virtual void OnEnterBindEntry(CNeoDataVariant *ndv) = 0;
+	virtual void OnEnterButton(CNeoDataVariant *ndv) {}
 	virtual void OnBottomAction(const int btn) = 0;
 	void OnExitTextEditMode(const int iOverrideNdsActive = -1);
 
@@ -491,7 +502,7 @@ public:
 	void OnBottomAction(const int btn) final;
 	int TopAreaRows() const final { return 1; }
 
-	void OnEnterBindEntry(CNeoDataVariant *ndv) override;
+	void OnEnterButton(CNeoDataVariant *ndv) override;
 
 	// Only for keybindings
 	CNeoOverlay_KeyCapture *m_opKeyCapture = nullptr;
@@ -523,27 +534,66 @@ struct CNeoDataNewGame_General : CNeoDataSettings_Base
 	WLabelWSize Title() override { return LWS(L"New Game"); }
 };
 
+struct CNeoTab_MapList : CNeoDataSettings_Base
+{
+	CUtlVector<CNeoDataVariant> m_ndvVec;
+
+	CNeoTab_MapList();
+	CNeoDataVariant *NdvList() final { return m_ndvVec.Base(); }
+	int NdvListSize() final { return m_ndvVec.Size(); }
+	void UserSettingsRestore() final {}
+	void UserSettingsSave() final {}
+	WLabelWSize Title() final { return LWS(L"Maplist"); }
+};
+
+class CNeoOverlay_MapList : public CNeoPanel_Base
+{
+	DECLARE_CLASS_SIMPLE(CNeoOverlay_MapList, CNeoPanel_Base);
+public:
+	CNeoOverlay_MapList(vgui::Panel *parent);
+
+	void OnEnterButton(CNeoDataVariant *ndv) override;
+	void OnBottomAction(const int btn) override;
+
+	CNeoTab_MapList m_ndsMapList;
+	CNeoDataSettings_Base *m_pNdsBases[1] = {
+		&m_ndsMapList,
+	};
+	CNeoDataSettings_Base **TabsList() final { return m_pNdsBases; };
+	int TabsListSize() const final { return 1; }
+
+	enum BottomBtns
+	{
+		BBTN_BACK = 0,
+		BBTN_UNUSEDIDX1,
+		BBTN_UNUSEDIDX2,
+		BBTN_UNUSEDIDX3,
+		BBTN_SELECT,
+
+		BBTN__TOTAL,
+	};
+	const WLabelWSize *BottomSectionList() const override;
+	int BottomSectionListSize() const override { return BBTN__TOTAL; }
+	int KeyCodeToBottomAction(vgui::KeyCode code) const override;
+	int TopAreaRows() const final { return 0; }
+};
+
 class CNeoPanel_NewGame : public CNeoPanel_Base
 {
 	DECLARE_CLASS_SIMPLE(CNeoPanel_NewGame, CNeoPanel_Base);
 public:
 	CNeoPanel_NewGame(vgui::Panel *parent);
-	~CNeoPanel_NewGame() override {}
+	~CNeoPanel_NewGame() override;
 
-	void OnEnterBindEntry(CNeoDataVariant *ndv) override {}
+	void OnEnterButton(CNeoDataVariant *ndv) override;
 	void OnBottomAction(const int btn) override;
 
-	enum Tabs
-	{
-		TAB_GENERAL = 0,
-		TAB__TOTAL,
-	};
 	CNeoDataNewGame_General m_ndsGeneral;
-	CNeoDataSettings_Base *m_pNdsBases[TAB__TOTAL] = {
+	CNeoDataSettings_Base *m_pNdsBases[1] = {
 		&m_ndsGeneral,
 	};
 	CNeoDataSettings_Base **TabsList() final { return m_pNdsBases; };
-	int TabsListSize() const final { return TAB__TOTAL; }
+	int TabsListSize() const final { return 1; }
 
 	enum BottomBtns
 	{
@@ -559,6 +609,9 @@ public:
 	int BottomSectionListSize() const override { return BBTN__TOTAL; }
 	int KeyCodeToBottomAction(vgui::KeyCode code) const override;
 	int TopAreaRows() const final { return 0; }
+
+	CNeoOverlay_MapList *m_mapList = nullptr;
+	MESSAGE_FUNC_PARAMS(OnMapListPicked, "MapListPicked", data);
 };
 
 class CNeoDataServerBrowser_Filters;
@@ -617,7 +670,6 @@ public:
 	CNeoPanel_ServerBrowser(vgui::Panel *parent);
 	~CNeoPanel_ServerBrowser() override {}
 
-	void OnEnterBindEntry(CNeoDataVariant *ndv) override {}
 	void OnBottomAction(const int btn) override;
 	void OnEnterServer(const gameserveritem_t gameserver) override;
 

@@ -468,33 +468,38 @@ void CNeoPanel_Base::Paint()
 		}
 		break;
 		case CNeoDataVariant::BINDENTRY:
+		case CNeoDataVariant::BUTTON:
 		case CNeoDataVariant::S_MICTESTER:
 		{
-			if (ndv->type == CNeoDataVariant::BINDENTRY && !bThisActive)
+			if (ndv->type != CNeoDataVariant::S_MICTESTER && !bThisActive)
 			{
 				surface()->DrawSetColor((i % 2 == 0) ? COLOR_NEOPANELNORMALBG : COLOR_NEOPANELACCENTBG);
 			}
-			surface()->DrawFilledRect(wgXPos, yPos, wgXPos + widgetWide, yPos + widgetTall);
+			if (ndv->labelSize > 0)	surface()->DrawFilledRect(wgXPos, yPos, wgXPos + widgetWide, yPos + widgetTall);
+			else					surface()->DrawFilledRect(0, yPos, g_iRootSubPanelWide, yPos + widgetTall);
 		}
 		break;
 		default: break;
 		}
 
 		// Draw the left-side label
-		const wchar_t *wszLeftLabel = ndv->label;
-		if (ndv->type == CNeoDataVariant::TEXTLABEL)
+		if (ndv->labelSize > 0)
 		{
-			wszLeftLabel = ndv->textLabel.wszLabel;
+			const wchar_t *wszLeftLabel = ndv->label;
+			if (ndv->type == CNeoDataVariant::TEXTLABEL)
+			{
+				wszLeftLabel = ndv->textLabel.wszLabel;
 
-			int fontWide, fontTall;
-			surface()->GetTextSize(g_neoFont, ndv->textLabel.wszLabel, fontWide, fontTall);
-			surface()->DrawSetTextPos((g_iRootSubPanelWide / 2) - (fontWide / 2), yPos + fontStartYPos);
+				int fontWide, fontTall;
+				surface()->GetTextSize(g_neoFont, ndv->textLabel.wszLabel, fontWide, fontTall);
+				surface()->DrawSetTextPos((g_iRootSubPanelWide / 2) - (fontWide / 2), yPos + fontStartYPos);
+			}
+			else
+			{
+				surface()->DrawSetTextPos(g_iMarginX, yPos + fontStartYPos);
+			}
+			surface()->DrawPrintText(wszLeftLabel, ndv->labelSize);
 		}
-		else
-		{
-			surface()->DrawSetTextPos(g_iMarginX, yPos + fontStartYPos);
-		}
-		surface()->DrawPrintText(wszLeftLabel, ndv->labelSize);
 
 		// Draw the right-side widget - widget specific
 		switch (ndv->type)
@@ -535,6 +540,19 @@ void CNeoPanel_Base::Paint()
 											  yPos + fontStartYPos);
 					surface()->DrawPrintText(L"_", 1);
 				}
+			}
+		}
+		break;
+		case CNeoDataVariant::BUTTON:
+		{
+			CNeoDataButton *btn = &ndv->button;
+			if (btn->iWszBtnLabelSize > 0)
+			{
+				int fontWide, fontTall;
+				surface()->GetTextSize(g_neoFont, btn->wszBtnLabel, fontWide, fontTall);
+				if (ndv->labelSize > 0)	surface()->DrawSetTextPos(wgXPos + (widgetWide / 2) - (fontWide / 2), yPos + fontStartYPos);
+				else					surface()->DrawSetTextPos((g_iRootSubPanelWide / 2) - (fontWide / 2), yPos + fontStartYPos);
+				surface()->DrawPrintText(btn->wszBtnLabel, btn->iWszBtnLabelSize);
 			}
 		}
 		break;
@@ -721,8 +739,11 @@ void CNeoPanel_Base::OnMousePressed(vgui::MouseCode code)
 		m_bModified = true;
 	}
 	break;
+	case CNeoDataVariant::BUTTON:
+		if (ndv->labelSize == 0 || (ndv->labelSize > 0 && m_curMouse == WDG_CENTER)) OnEnterButton(ndv);
+		break;
 	case CNeoDataVariant::BINDENTRY:
-		if (m_curMouse == WDG_CENTER) OnEnterBindEntry(ndv);
+		if (m_curMouse == WDG_CENTER) OnEnterButton(ndv);
 		break;
 	case CNeoDataVariant::S_MICTESTER:
 	{
@@ -870,8 +891,9 @@ void CNeoPanel_Base::OnKeyCodeTyped(vgui::KeyCode code)
 			m_bTextEditMode = !m_bTextEditMode;
 			break;
 		}
+		case CNeoDataVariant::BUTTON:
 		case CNeoDataVariant::BINDENTRY:
-			OnEnterBindEntry(ndv);
+			OnEnterButton(ndv);
 			break;
 		case CNeoDataVariant::S_MICTESTER:
 		{
@@ -1060,6 +1082,7 @@ void CNeoPanel_Base::OnCursorMoved(int x, int y)
 		}
 		break;
 	case CNeoDataVariant::TEXTENTRY:
+	case CNeoDataVariant::BUTTON:
 	case CNeoDataVariant::BINDENTRY:
 	case CNeoDataVariant::S_MICTESTER:
 		if (wgXPos <= x && x < g_iRootSubPanelWide)
@@ -1220,9 +1243,9 @@ void CNeoPanel_Settings::OnBottomAction(const int btn)
 	}
 }
 
-void CNeoPanel_Settings::OnEnterBindEntry(CNeoDataVariant *ndv)
+void CNeoPanel_Settings::OnEnterButton(CNeoDataVariant *ndv)
 {
-	if (m_opKeyCapture)
+	if (ndv->type == CNeoDataVariant::BINDENTRY && m_opKeyCapture)
 	{
 		CNeoDataBindEntry *be = &ndv->bindEntry;
 		engine->StartKeyTrapMode();
@@ -1843,19 +1866,82 @@ void CNeoDataSettings_Video::UserSettingsSave()
 	m_cvrMatMonitorGamma.SetValue(m_ndvList[OPT_VIDEO_GAMMA].slider.GetValue());
 }
 
+// Map list
+CNeoTab_MapList::CNeoTab_MapList()
+{
+	FileFindHandle_t findHdl;
+	for (const char *pszFilename = filesystem->FindFirst("maps/*.bsp", &findHdl);
+		 pszFilename;
+		 pszFilename = filesystem->FindNext(findHdl))
+	{
+		// Sanity check: In-case somehow someone named a directory as *.bsp in here
+		if (!filesystem->FindIsDirectory(findHdl))
+		{
+			CNeoDataVariant ndv = { .type = CNeoDataVariant::BUTTON, .labelSize = 0, };
+			ndv.button.iWszBtnLabelSize = g_pVGuiLocalize->ConvertANSIToUnicode(
+						pszFilename, ndv.button.wszBtnLabel, sizeof(ndv.button.wszBtnLabel));
+			ndv.button.iWszBtnLabelSize -= sizeof(".bsp");
+			ndv.button.wszBtnLabel[ndv.button.iWszBtnLabelSize] = '\0';
+			m_ndvVec.AddToTail(ndv);
+		}
+	}
+	filesystem->FindClose(findHdl);
+}
+
+CNeoOverlay_MapList::CNeoOverlay_MapList(vgui::Panel *parent)
+	: CNeoPanel_Base(parent)
+{
+}
+
+void CNeoOverlay_MapList::OnEnterButton(CNeoDataVariant *ndv)
+{
+	if (ndv->type != CNeoDataVariant::BUTTON) return;
+	PostActionSignal(new KeyValues("MapListPicked", "Map", ndv->button.wszBtnLabel));
+	SetVisible(false);
+	SetEnabled(false);
+}
+
+void CNeoOverlay_MapList::OnBottomAction(const int btn)
+{
+	switch (btn)
+	{
+	case BBTN_BACK:
+		SetVisible(false);
+		SetEnabled(false);
+		break;
+	case BBTN_SELECT:
+		// TODO: hover/active split
+		break;
+	}
+}
+
+const WLabelWSize *CNeoOverlay_MapList::BottomSectionList() const
+{
+	static constexpr WLabelWSize BBTN_NAMES[BBTN__TOTAL] = {
+		LWS(L"Back (ESC)"), LWSNULL, LWSNULL, LWSNULL, LWS(L"Select"),
+	};
+	return BBTN_NAMES;
+}
+
+int CNeoOverlay_MapList::KeyCodeToBottomAction(vgui::KeyCode code) const
+{
+	return (code == KEY_ESCAPE) ? BBTN_BACK : -1;
+}
+
 ///////////////
 // PANEL: NEW GAME
 ///////////////
 CNeoDataNewGame_General::CNeoDataNewGame_General()
 	: m_ndvList{
-		NDV_INIT_TEXTENTRY(L"Map"),
+		NDV_INIT_BUTTON(L"Map"),
 		NDV_INIT_TEXTENTRY(L"Hostname"),
 		NDV_INIT_SLIDER(L"Max players", 1, (MAX_PLAYERS - 1), 1, 1.0f, 2),
 		NDV_INIT_TEXTENTRY(L"Password"),
 		NDV_INIT_RINGBOX_ONOFF(L"Friendly fire"),
 	}
 {
-	V_swprintf_safe(m_ndvList[OPT_NEW_MAPLIST].textEntry.wszEntry, L"nt_oilstain_ctg");
+	m_ndvList[OPT_NEW_MAPLIST].button.iWszBtnLabelSize = V_swprintf_safe(
+				m_ndvList[OPT_NEW_MAPLIST].button.wszBtnLabel, L"nt_oilstain_ctg");
 	V_swprintf_safe(m_ndvList[OPT_NEW_HOSTNAME].textEntry.wszEntry, L"NeoTokyo Rebuild");
 	m_ndvList[OPT_NEW_MAXPLAYERS].slider.iValCur = 24;
 	m_ndvList[OPT_NEW_MAXPLAYERS].slider.ClampAndUpdate();
@@ -1865,7 +1951,47 @@ CNeoDataNewGame_General::CNeoDataNewGame_General()
 
 CNeoPanel_NewGame::CNeoPanel_NewGame(vgui::Panel *parent)
 	: CNeoPanel_Base(parent)
+	, m_mapList(new CNeoOverlay_MapList(this))
 {
+	m_mapList->AddActionSignalTarget(this);
+	m_mapList->SetVisible(false);
+	m_mapList->SetEnabled(false);
+}
+
+CNeoPanel_NewGame::~CNeoPanel_NewGame()
+{
+	m_mapList->DeletePanel();
+}
+
+void CNeoPanel_NewGame::OnEnterButton(CNeoDataVariant *ndv)
+{
+	if (ndv->type == CNeoDataVariant::BUTTON)
+	{
+		int wide, tall;
+		surface()->GetScreenSize(wide, tall);
+		m_mapList->m_iNdvActive = -1;
+		m_mapList->m_curMouse = CNeoPanel_Base::WDG_NONE;
+		m_mapList->PerformLayout();
+		m_mapList->SetPos((wide / 2) - (g_iRootSubPanelWide / 2),
+								(tall / 2) - (m_mapList->GetTall() / 2));
+		m_mapList->SetVisible(true);
+		m_mapList->SetEnabled(true);
+		m_mapList->MoveToFront();
+		m_mapList->RequestFocus();
+	}
+}
+
+void CNeoPanel_NewGame::OnMapListPicked(KeyValues *data)
+{
+	if (const wchar_t *pWszMapFilename = data->GetWString("Map"))
+	{
+		CNeoDataButton *btn = &m_ndsGeneral.m_ndvList[CNeoDataNewGame_General::OPT_NEW_MAPLIST].button;
+		V_wcscpy_safe(btn->wszBtnLabel, pWszMapFilename);
+		btn->iWszBtnLabelSize = V_wcslen(btn->wszBtnLabel);
+	}
+
+	MoveToFront();
+	RequestFocus();
 }
 
 void CNeoPanel_NewGame::OnBottomAction(const int btn)
@@ -1885,7 +2011,7 @@ void CNeoPanel_NewGame::OnBottomAction(const int btn)
 		char szMap[ENTRY_MAX + 1] = {};
 		char szHostname[ENTRY_MAX + 1] = {};
 		char szPassword[ENTRY_MAX + 1] = {};
-		g_pVGuiLocalize->ConvertUnicodeToANSI(m_ndsGeneral.m_ndvList[General::OPT_NEW_MAPLIST].textEntry.wszEntry, szMap, sizeof(szMap));
+		g_pVGuiLocalize->ConvertUnicodeToANSI(m_ndsGeneral.m_ndvList[General::OPT_NEW_MAPLIST].button.wszBtnLabel, szMap, sizeof(szMap));
 		g_pVGuiLocalize->ConvertUnicodeToANSI(m_ndsGeneral.m_ndvList[General::OPT_NEW_HOSTNAME].textEntry.wszEntry, szHostname, sizeof(szHostname));
 		g_pVGuiLocalize->ConvertUnicodeToANSI(m_ndsGeneral.m_ndvList[General::OPT_NEW_SVPASSWORD].textEntry.wszEntry, szPassword, sizeof(szPassword));
 		const int iPlayers = m_ndsGeneral.m_ndvList[General::OPT_NEW_MAXPLAYERS].slider.iValCur;
