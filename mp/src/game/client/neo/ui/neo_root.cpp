@@ -68,7 +68,7 @@ HFont g_neoFont;
 #define COLOR_NEOPANELMICTEST Color(30, 90, 30, 255)
 static constexpr wchar_t WSZ_GAME_TITLE[] = L"neatbkyoc ue";
 
-int LoopAroundInArray(const int iValue, const int iSize)
+[[nodiscard]] int LoopAroundInArray(const int iValue, const int iSize)
 {
 	if (iValue < 0)
 	{
@@ -726,9 +726,9 @@ void CNeoPanel_Base::OnMousePressed(vgui::MouseCode code)
 	}
 	break; case SECTION_MAIN:
 	{
-		CNeoDataSettings_Base *tab = TabsList()[m_iNdsCurrent];
-		if (code != MOUSE_LEFT || m_iNdvHover < 0 || m_iNdvHover >= tab->NdvListSize()) return;
-		CNeoDataVariant *ndv = &tab->NdvList()[m_iNdvHover];
+		CNeoDataVariant *ndv = NdvFromIdx((code == MOUSE_LEFT) ? m_iNdvHover : -1);
+		if (!ndv) return;
+
 		switch (ndv->type)
 		{
 		case CNeoDataVariant::RINGBOX:
@@ -744,7 +744,12 @@ void CNeoPanel_Base::OnMousePressed(vgui::MouseCode code)
 		break;
 		case CNeoDataVariant::SLIDER:
 		{
-			if (m_curMouse == WDG_NONE || m_curMouse == WDG_CENTER) return;
+			if (m_curMouse == WDG_NONE) return;
+			if (m_curMouse == WDG_CENTER)
+			{
+				m_iNdvFocus = m_iNdvHover;
+				return;
+			}
 
 			CNeoDataSlider *sl = &ndv->slider;
 			sl->iValCur += (m_curMouse == WDG_LEFT) ? -sl->iValStep : +sl->iValStep;
@@ -781,10 +786,10 @@ void CNeoPanel_Base::OnMouseDoublePressed(vgui::MouseCode code)
 	{
 		return;
 	}
-	CNeoDataSettings_Base *tab = TabsList()[m_iNdsCurrent];
-	if (m_iNdvHover < 0 || m_iNdvHover >= tab->NdvListSize()) return;
 
-	CNeoDataVariant *ndv = &tab->NdvList()[m_iNdvHover];
+	CNeoDataVariant *ndv = NdvFromIdx(m_iNdvHover);
+	if (!ndv) return;
+
 	switch (ndv->type)
 	{
 	case CNeoDataVariant::SLIDER:
@@ -820,13 +825,11 @@ void CNeoPanel_Base::OnMouseWheeled(int delta)
 
 void CNeoPanel_Base::OnKeyCodeTyped(vgui::KeyCode code)
 {
-	CNeoDataSettings_Base *tab = TabsList()[m_iNdsCurrent];
-	const int iNdvListSize = tab->NdvListSize();
-
 	// "Universal" binds
 	if (const int iBottomBtns = KeyCodeToBottomAction(code);
 			iBottomBtns >= 0 && iBottomBtns < BottomSectionListSize())
 	{
+		OnExitTextEditMode();
 		OnBottomAction(iBottomBtns);
 		return;
 	}
@@ -868,18 +871,20 @@ void CNeoPanel_Base::OnKeyCodeTyped(vgui::KeyCode code)
 	{
 		if (code == KEY_DOWN || code == KEY_UP)
 		{
+			CNeoDataSettings_Base *tab = TabsList()[m_iNdsCurrent];
+			const int iNdvListSize = tab->NdvListSize();
+
 			if (iNdvListSize == 0) return;
 
 			OnExitTextEditMode();
-			const int iIncr = (code == KEY_DOWN) ? +1 : -1;
+			const int iIncr = (code == KEY_UP) ? -1 : +1;
 
 			// Increment or decrement to the next valid NDV
 			CNeoDataVariant::Type type;
 			do
 			{
 				m_iNdvHover += iIncr;
-				if (m_iNdvHover < 0) m_iNdvHover = (iNdvListSize - 1);
-				else if (m_iNdvHover >= iNdvListSize) m_iNdvHover = 0;
+				m_iNdvHover = LoopAroundInArray(m_iNdvHover, iNdvListSize);
 				type = tab->NdvList()[m_iNdvHover].type;
 			}
 			while (type == CNeoDataVariant::TEXTLABEL || type == CNeoDataVariant::S_DISPLAYNAME);
@@ -900,8 +905,8 @@ void CNeoPanel_Base::OnKeyCodeTyped(vgui::KeyCode code)
 			return;
 		}
 
-		if (m_iNdvHover < 0 || m_iNdvHover >= iNdvListSize) return;
-		CNeoDataVariant *ndv = &tab->NdvList()[m_iNdvHover];
+		CNeoDataVariant *ndv = NdvFromIdx(m_iNdvHover);
+		if (!ndv) return;
 
 		if (code == KEY_LEFT || code == KEY_RIGHT)
 		{
@@ -913,6 +918,7 @@ void CNeoPanel_Base::OnKeyCodeTyped(vgui::KeyCode code)
 				rb->iCurIdx += (code == KEY_LEFT) ? -1 : +1;
 				rb->iCurIdx = LoopAroundInArray(rb->iCurIdx, rb->iItemsSize);
 				m_bModified = true;
+				OnExitTextEditMode();
 			}
 			break;
 			case CNeoDataVariant::SLIDER:
@@ -921,12 +927,11 @@ void CNeoPanel_Base::OnKeyCodeTyped(vgui::KeyCode code)
 				sl->iValCur += (code == KEY_LEFT) ? -sl->iValStep : +sl->iValStep;
 				sl->ClampAndUpdate();
 				m_bModified = true;
+				OnExitTextEditMode();
 			}
 			break;
 			default: break;
 			}
-
-			OnExitTextEditMode();
 			return;
 		}
 		else if (code == KEY_ENTER)
@@ -964,8 +969,9 @@ void CNeoPanel_Base::OnKeyCodeTyped(vgui::KeyCode code)
 		}
 		else
 		{
-			if (m_iNdvFocus < 0 || m_iNdvFocus >= iNdvListSize) return;
-			CNeoDataVariant *focusNdv = &tab->NdvList()[m_iNdvFocus];
+			CNeoDataVariant *focusNdv = NdvFromIdx(m_iNdvFocus);
+			if (!focusNdv) return;
+
 			switch (focusNdv->type)
 			{
 			case CNeoDataVariant::SLIDER:
@@ -1014,9 +1020,9 @@ void CNeoPanel_Base::OnKeyCodeTyped(vgui::KeyCode code)
 
 void CNeoPanel_Base::OnKeyTyped(wchar_t unichar)
 {
-	CNeoDataSettings_Base *tab = TabsList()[m_iNdsCurrent];
-	if (m_eSectionActive != SECTION_MAIN || m_iNdvFocus < 0 || m_iNdvFocus >= tab->NdvListSize()) return;
-	CNeoDataVariant *ndv = &tab->NdvList()[m_iNdvFocus];
+	CNeoDataVariant *ndv = NdvFromIdx((m_eSectionActive == SECTION_MAIN) ? m_iNdvFocus : -1);
+	if (!ndv) return;
+
 	switch (ndv->type)
 	{
 	case CNeoDataVariant::SLIDER:
@@ -1067,7 +1073,6 @@ void CNeoPanel_Base::OnKeyTyped(wchar_t unichar)
 // use the x position to get the buttons
 void CNeoPanel_Base::OnCursorMoved(int x, int y)
 {
-	const int iPrevNdsActive = m_iNdvHover;
 	m_iPosX = clamp(x, 0, GetWide());
 	m_eSectionActive = SECTION_MAIN;
 	m_iNdvHover = -1;
@@ -1079,7 +1084,6 @@ void CNeoPanel_Base::OnCursorMoved(int x, int y)
 		return;
 	}
 
-	CNeoDataSettings_Base *tab = TabsList()[m_iNdsCurrent];
 	if (y < TopAreaTall())
 	{
 		m_eSectionActive = SECTION_TOP;
@@ -1087,7 +1091,6 @@ void CNeoPanel_Base::OnCursorMoved(int x, int y)
 		{
 			const int iTabWide = g_iRootSubPanelWide / TabsListSize();
 			m_iNdvHover = x / iTabWide;
-			OnExitTextEditMode(iPrevNdsActive);
 		}
 		else
 		{
@@ -1101,26 +1104,19 @@ void CNeoPanel_Base::OnCursorMoved(int x, int y)
 		m_eSectionActive = SECTION_BOTTOM;
 		const int iTabWide = g_iRootSubPanelWide / BottomSectionListSize();
 		m_iNdvHover = x / iTabWide;
-		OnExitTextEditMode(iPrevNdsActive);
 		return;
 	}
 
 	y -= TopAreaTall() - m_iScrollOffset;
 	m_iNdvHover = y / g_iRowTall;
-	if (m_iNdvHover != iPrevNdsActive)
-	{
-		OnExitTextEditMode(iPrevNdsActive);
-	}
-	if (m_iNdvHover < 0 || m_iNdvHover >= tab->NdvListSize())
-	{
-		return;
-	}
 
 	const int wgXPos = static_cast<int>(g_iRootSubPanelWide * 0.4f);
 	const int widgetWide = g_iRootSubPanelWide - wgXPos;
 	const int widgetTall = g_iRowTall;
 
-	CNeoDataVariant *ndv = &tab->NdvList()[m_iNdvHover];
+	CNeoDataVariant *ndv = NdvFromIdx(m_iNdvHover);
+	if (!ndv) return;
+
 	switch (ndv->type)
 	{
 	case CNeoDataVariant::RINGBOX:
@@ -1142,7 +1138,8 @@ void CNeoPanel_Base::OnCursorMoved(int x, int y)
 			m_curMouse = WDG_CENTER;
 		}
 
-		if (ndv->type == CNeoDataVariant::SLIDER && m_curMouse == WDG_CENTER && input()->IsMouseDown(MOUSE_LEFT))
+		if (ndv->type == CNeoDataVariant::SLIDER && m_curMouse == WDG_CENTER &&
+				input()->IsMouseDown(MOUSE_LEFT) && m_iNdvFocus == m_iNdvHover)
 		{
 			const int wdgX = x - wgXPos;
 			CNeoDataSlider *sl = &ndv->slider;
@@ -1168,20 +1165,18 @@ void CNeoPanel_Base::OnCursorMoved(int x, int y)
 	}
 }
 
-void CNeoPanel_Base::OnExitTextEditMode(const int iOverrideNdsActive)
+CNeoDataVariant *CNeoPanel_Base::NdvFromIdx(const int idx) const
 {
-	if (m_iNdvFocus != -1)
+	CNeoDataSettings_Base *tab = const_cast<CNeoPanel_Base *>(this)->TabsList()[m_iNdsCurrent];
+	return (tab && idx >= 0 && idx < tab->NdvListSize()) ? &tab->NdvList()[idx] : nullptr;
+}
+
+void CNeoPanel_Base::OnExitTextEditMode()
+{
+	if (CNeoDataVariant *ndv = NdvFromIdx((m_eSectionActive == SECTION_MAIN) ? m_iNdvFocus : -1);
+			ndv && ndv->type == CNeoDataVariant::SLIDER)
 	{
-		const int iUneditNdv = (iOverrideNdsActive == -1) ? m_iNdvHover : iOverrideNdsActive;
-		CNeoDataSettings_Base *tab = TabsList()[m_iNdsCurrent];
-		if (iUneditNdv >= 0 && iUneditNdv < tab->NdvListSize())
-		{
-			CNeoDataVariant *ndv = &tab->NdvList()[iUneditNdv];
-			if (ndv->type == CNeoDataVariant::SLIDER)
-			{
-				ndv->slider.ClampAndUpdate();
-			}
-		}
+		ndv->slider.ClampAndUpdate();
 	}
 	m_iNdvFocus = -1;
 }
@@ -2114,7 +2109,7 @@ void CNeoPanel_NewGame::OnBottomAction(const int btn)
 const WLabelWSize *CNeoPanel_NewGame::BottomSectionList() const
 {
 	static constexpr WLabelWSize BBTN_NAMES[BBTN__TOTAL] = {
-		LWS(L"Back (ESC)"), LWSNULL, LWSNULL, LWSNULL, LWS(L"Start (F1)"),
+		LWS(L"Back (ESC)"), LWSNULL, LWSNULL, LWSNULL, LWS(L"Start"),
 	};
 	return BBTN_NAMES;
 }
@@ -2410,7 +2405,7 @@ void CNeoPanel_ServerBrowser::OnEnterServer(const gameserveritem_t gameserver)
 const WLabelWSize *CNeoPanel_ServerBrowser::BottomSectionList() const
 {
 	static constexpr WLabelWSize BBTN_NAMES[BBTN__TOTAL] = {
-		LWS(L"Back (ESC)"), LWS(L"Legacy"), LWSNULL, LWS(L"Refresh"), LWS(L"Start (F1)"),
+		LWS(L"Back (ESC)"), LWS(L"Legacy"), LWSNULL, LWS(L"Refresh"), LWS(L"Start"),
 	};
 	return BBTN_NAMES;
 }
@@ -2997,14 +2992,13 @@ void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 	if (code == KEY_DOWN || code == KEY_UP)
 	{
 		const int iFlagToMatch = engine->IsInGame() ? FLAG_SHOWINGAME : FLAG_SHOWINMAIN;
-		const int iIncr = (code == KEY_DOWN) ? +1 : -1;
+		const int iIncr = (code == KEY_UP) ? -1 : +1;
 
 		bool bGoNext = true;
 		while (bGoNext)
 		{
 			m_iHoverBtn += iIncr;
-			if (m_iHoverBtn < 0) m_iHoverBtn = (BTN__TOTAL - 1);
-			else if (m_iHoverBtn >= BTN__TOTAL) m_iHoverBtn = 0;
+			m_iHoverBtn = LoopAroundInArray(m_iHoverBtn, BTN__TOTAL);
 			bGoNext = (!(BTNS_INFO[m_iHoverBtn].flags & iFlagToMatch));
 		}
 

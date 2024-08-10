@@ -410,9 +410,11 @@ public:
 
 	void OnCursorMoved(int x, int y) final;
 
+	CNeoDataVariant *NdvFromIdx(const int idx) const;
+
 	virtual void OnEnterButton(CNeoDataVariant *ndv) {}
 	virtual void OnBottomAction(const int btn) = 0;
-	void OnExitTextEditMode(const int iOverrideNdsActive = -1);
+	void OnExitTextEditMode();
 
 	virtual CNeoDataSettings_Base **TabsList() = 0;
 	virtual int TabsListSize() const = 0;
