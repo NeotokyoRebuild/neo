@@ -68,6 +68,19 @@ HFont g_neoFont;
 #define COLOR_NEOPANELMICTEST Color(30, 90, 30, 255)
 static constexpr wchar_t WSZ_GAME_TITLE[] = L"neatbkyoc ue";
 
+int LoopAroundInArray(const int iValue, const int iSize)
+{
+	if (iValue < 0)
+	{
+		return iSize - 1;
+	}
+	else if (iValue >= iSize)
+	{
+		return 0;
+	}
+	return iValue;
+}
+
 const wchar_t *QUALITY_LABELS[] = {
 	L"Low",
 	L"Medium",
@@ -381,15 +394,16 @@ void CNeoPanel_Base::Paint()
 		 ++i, yPos += widgetTall)
 	{
 		CNeoDataVariant *ndv = &tab->NdvList()[i];
-		const bool bThisActive = (i == m_iNdvActive);
-		const bool bThisHover = (i == m_iNdsHover);
+		const bool bThisHover = (m_eSectionActive == SECTION_MAIN && i == m_iNdvHover);
+		const bool bThisFocus = (m_eSectionActive == SECTION_MAIN && i == m_iNdvFocus);
+		const bool bThisHoverFocus = bThisHover || bThisFocus;
 
-		surface()->DrawSetColor(bThisActive ? COLOR_NEOPANELSELECTBG : COLOR_NEOPANELACCENTBG);
-		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
+		surface()->DrawSetColor(bThisHoverFocus ? COLOR_NEOPANELSELECTBG : COLOR_NEOPANELACCENTBG);
+		surface()->DrawSetTextColor(bThisFocus ? COLOR_NEOPANELTEXTBRIGHT : COLOR_NEOPANELTEXTNORMAL);
 
 		if (ndv->type == CNeoDataVariant::GAMESERVER)
 		{
-			if (!bThisActive) surface()->DrawSetColor((i % 2 == 0) ? COLOR_NEOPANELNORMALBG : COLOR_NEOPANELACCENTBG);
+			if (!bThisHoverFocus) surface()->DrawSetColor((i % 2 == 0) ? COLOR_NEOPANELNORMALBG : COLOR_NEOPANELACCENTBG);
 			surface()->DrawFilledRect(0, yPos, g_iRootSubPanelWide, yPos + widgetTall);
 
 			// TODO/TEMP (nullsystem): Probably should be more "custom" struct verse gameserveritem_t?
@@ -419,7 +433,7 @@ void CNeoPanel_Base::Paint()
 			xPos += g_iGSIX[GSIW_NAME];
 
 			{
-				// In lower resolution, it may overlap from name, so paint a block here
+				// In lower resolution, it may overlap from name, so paint a background here
 				surface()->DrawFilledRect(xPos, yPos, g_iRootSubPanelWide, yPos + widgetTall);
 
 				wchar_t wszMapName[k_cbMaxGameServerMapName];
@@ -430,6 +444,9 @@ void CNeoPanel_Base::Paint()
 			xPos += g_iGSIX[GSIW_MAP];
 
 			{
+				// In lower resolution, it may overlap from name, so paint a background here
+				surface()->DrawFilledRect(xPos, yPos, g_iRootSubPanelWide, yPos + widgetTall);
+
 				wchar_t wszPlayers[10];
 				const int iSize = V_swprintf_safe(wszPlayers, L"%d/%d", gameserver->m_nPlayers, gameserver->m_nMaxPlayers);
 				surface()->DrawSetTextPos(xPos + g_iMarginX, yPos + fontStartYPos);
@@ -443,7 +460,6 @@ void CNeoPanel_Base::Paint()
 				surface()->DrawSetTextPos(xPos + g_iMarginX, yPos + fontStartYPos);
 				surface()->DrawPrintText(wszPing, iSize);
 			}
-			xPos += g_iGSIX[GSIW_PING];
 
 			continue;
 		}
@@ -471,7 +487,7 @@ void CNeoPanel_Base::Paint()
 		case CNeoDataVariant::BUTTON:
 		case CNeoDataVariant::S_MICTESTER:
 		{
-			if (ndv->type != CNeoDataVariant::S_MICTESTER && !bThisActive)
+			if (ndv->type != CNeoDataVariant::S_MICTESTER && !bThisHoverFocus)
 			{
 				surface()->DrawSetColor((i % 2 == 0) ? COLOR_NEOPANELNORMALBG : COLOR_NEOPANELACCENTBG);
 			}
@@ -534,7 +550,7 @@ void CNeoPanel_Base::Paint()
 				surface()->GetTextSize(g_neoFont, sl->wszCacheLabel, fontWide, fontTall);
 				surface()->DrawSetTextPos(wgXPos + (widgetWide / 2) - (fontWide / 2), yPos + fontStartYPos);
 				surface()->DrawPrintText(sl->wszCacheLabel, sl->iWszCacheLabelSize);
-				if (m_bTextEditMode && bThisActive && bEditBlinkShow)
+				if (bThisFocus && bEditBlinkShow)
 				{
 					surface()->DrawSetTextPos(wgXPos + (widgetWide / 2) - (fontWide / 2) + fontWide,
 											  yPos + fontStartYPos);
@@ -574,7 +590,7 @@ void CNeoPanel_Base::Paint()
 			CNeoDataTextEntry *te = &ndv->textEntry;
 			surface()->DrawSetTextPos(wgXPos + g_iMarginX, yPos + fontStartYPos);
 			surface()->DrawPrintText(te->wszEntry, V_wcslen(te->wszEntry));
-			if (m_bTextEditMode && bThisActive && bEditBlinkShow)
+			if (bThisFocus && bEditBlinkShow)
 			{
 				int textWide, textTall;
 				surface()->GetTextSize(g_neoFont, te->wszEntry, textWide, textTall);
@@ -658,9 +674,10 @@ void CNeoPanel_Base::Paint()
 		// Draw the tabs buttons on top
 		for (int i = 0, xPosTab = 0; i < TabsListSize(); ++i, xPosTab += iTabWide)
 		{
-			if (i == m_iNdsCurrent || i == m_iNdsHover)
+			const bool bTabHover = (m_eSectionActive == SECTION_TOP && i == m_iNdvHover);
+			if (i == m_iNdsCurrent || bTabHover)
 			{
-				surface()->DrawSetColor((i == m_iNdsHover) ? COLOR_NEOPANELSELECTBG : COLOR_NEOPANELACCENTBG);
+				surface()->DrawSetColor(bTabHover ? COLOR_NEOPANELSELECTBG : COLOR_NEOPANELACCENTBG);
 				surface()->DrawFilledRect(xPosTab, 0, xPosTab + iTabWide, g_iRowTall);
 			}
 			surface()->DrawSetTextPos(xPosTab + g_iMarginX, fontStartYPos);
@@ -682,9 +699,10 @@ void CNeoPanel_Base::Paint()
 		for (int i = 0, xPosTab = 0; i < BottomSectionListSize(); ++i, xPosTab += iBtnWide)
 		{
 			const auto bottomInfo = BottomSectionList()[i];
+			const bool bBottomHover = (m_eSectionActive == SECTION_BOTTOM && i == m_iNdvHover);
 			if (bottomInfo.text)
 			{
-				surface()->DrawSetColor((m_iBottomHover == i) ? COLOR_NEOPANELSELECTBG : COLOR_NEOPANELNORMALBG);
+				surface()->DrawSetColor(bBottomHover ? COLOR_NEOPANELSELECTBG : COLOR_NEOPANELNORMALBG);
 				surface()->DrawFilledRect(xPosTab, bottomYStart, xPosTab + iBtnWide, panelTall);
 				surface()->DrawSetTextPos(xPosTab + g_iMarginX, bottomYStart + fontStartYPos);
 				surface()->DrawPrintText(bottomInfo.text, bottomInfo.size);
@@ -696,71 +714,77 @@ void CNeoPanel_Base::Paint()
 void CNeoPanel_Base::OnMousePressed(vgui::MouseCode code)
 {
 	OnExitTextEditMode();
-	CNeoDataSettings_Base *tab = TabsList()[m_iNdsCurrent];
-	if (m_iNdsHover >= 0 && m_iNdsHover < TabsListSize())
+	switch (m_eSectionActive)
 	{
-		m_iNdsCurrent = m_iNdsHover;
+	break; case SECTION_TOP:
+	{
+		m_iNdsCurrent = m_iNdvHover;
 		m_iScrollOffset = 0;
 		InvalidateLayout();
 		PerformLayout();
 		RequestFocus();
-		return;
 	}
-	if (m_iBottomHover >= 0 && m_iBottomHover < BottomSectionListSize())
+	break; case SECTION_MAIN:
 	{
-		OnBottomAction(m_iBottomHover);
-		return;
-	}
+		CNeoDataSettings_Base *tab = TabsList()[m_iNdsCurrent];
+		if (code != MOUSE_LEFT || m_iNdvHover < 0 || m_iNdvHover >= tab->NdvListSize()) return;
+		CNeoDataVariant *ndv = &tab->NdvList()[m_iNdvHover];
+		switch (ndv->type)
+		{
+		case CNeoDataVariant::RINGBOX:
+		{
+			if (m_curMouse == WDG_NONE || m_curMouse == WDG_CENTER) return;
 
-	if (m_iNdvActive < 0 || m_iNdvActive >= tab->NdvListSize() || code != MOUSE_LEFT) return;
-	CNeoDataVariant *ndv = &tab->NdvList()[m_iNdvActive];
-	switch (ndv->type)
-	{
-	case CNeoDataVariant::RINGBOX:
-	{
-		if (m_curMouse == WDG_NONE || m_curMouse == WDG_CENTER) return;
+			CNeoDataRingBox *rb = &ndv->ringBox;
+			rb->iCurIdx += (m_curMouse == WDG_LEFT) ? -1 : +1;
+			rb->iCurIdx = LoopAroundInArray(rb->iCurIdx, rb->iItemsSize);
 
-		CNeoDataRingBox *rb = &ndv->ringBox;
-		rb->iCurIdx += (m_curMouse == WDG_LEFT) ? -1 : +1;
-		if (rb->iCurIdx < 0) rb->iCurIdx = (rb->iItemsSize - 1);
-		else if (rb->iCurIdx >= rb->iItemsSize) rb->iCurIdx = 0;
-
-		m_bModified = true;
-	}
-	break;
-	case CNeoDataVariant::SLIDER:
-	{
-		if (m_curMouse == WDG_NONE || m_curMouse == WDG_CENTER) return;
-
-		CNeoDataSlider *sl = &ndv->slider;
-		sl->iValCur += (m_curMouse == WDG_LEFT) ? -sl->iValStep : +sl->iValStep;
-		sl->ClampAndUpdate();
-
-		m_bModified = true;
-	}
-	break;
-	case CNeoDataVariant::BUTTON:
-		if (ndv->labelSize == 0 || (ndv->labelSize > 0 && m_curMouse == WDG_CENTER)) OnEnterButton(ndv);
+			m_bModified = true;
+		}
 		break;
-	case CNeoDataVariant::BINDENTRY:
-		if (m_curMouse == WDG_CENTER) OnEnterButton(ndv);
+		case CNeoDataVariant::SLIDER:
+		{
+			if (m_curMouse == WDG_NONE || m_curMouse == WDG_CENTER) return;
+
+			CNeoDataSlider *sl = &ndv->slider;
+			sl->iValCur += (m_curMouse == WDG_LEFT) ? -sl->iValStep : +sl->iValStep;
+			sl->ClampAndUpdate();
+
+			m_bModified = true;
+		}
 		break;
-	case CNeoDataVariant::S_MICTESTER:
-	{
-		IVoiceTweak_s *voiceTweak = engine->GetVoiceTweakAPI();
-		voiceTweak->IsStillTweaking() ? (void)voiceTweak->EndVoiceTweakMode() : (void)voiceTweak->StartVoiceTweakMode();
+		case CNeoDataVariant::BUTTON:
+			if (ndv->labelSize == 0 || (ndv->labelSize > 0 && m_curMouse == WDG_CENTER)) OnEnterButton(ndv);
+			break;
+		case CNeoDataVariant::BINDENTRY:
+			if (m_curMouse == WDG_CENTER) OnEnterButton(ndv);
+			break;
+		case CNeoDataVariant::S_MICTESTER:
+		{
+			IVoiceTweak_s *voiceTweak = engine->GetVoiceTweakAPI();
+			voiceTweak->IsStillTweaking() ? (void)voiceTweak->EndVoiceTweakMode() : (void)voiceTweak->StartVoiceTweakMode();
+		}
+		break;
+		}
 	}
-	break;
+	break; case SECTION_BOTTOM:
+	{
+		OnBottomAction(m_iNdvHover);
+	}
 	}
 }
 
 void CNeoPanel_Base::OnMouseDoublePressed(vgui::MouseCode code)
 {
 	OnExitTextEditMode();
-
+	if (m_eSectionActive != SECTION_MAIN)
+	{
+		return;
+	}
 	CNeoDataSettings_Base *tab = TabsList()[m_iNdsCurrent];
-	if (m_iNdvActive < 0 || m_iNdvActive >= tab->NdvListSize()) return;
-	CNeoDataVariant *ndv = &tab->NdvList()[m_iNdvActive];
+	if (m_iNdvHover < 0 || m_iNdvHover >= tab->NdvListSize()) return;
+
+	CNeoDataVariant *ndv = &tab->NdvList()[m_iNdvHover];
 	switch (ndv->type)
 	{
 	case CNeoDataVariant::SLIDER:
@@ -768,7 +792,7 @@ void CNeoPanel_Base::OnMouseDoublePressed(vgui::MouseCode code)
 	{
 		if (m_curMouse == WDG_CENTER && code == MOUSE_LEFT)
 		{
-			m_bTextEditMode = true;
+			m_iNdvFocus = m_iNdvHover;
 			RequestFocus();
 		}
 		break;
@@ -796,156 +820,203 @@ void CNeoPanel_Base::OnMouseWheeled(int delta)
 
 void CNeoPanel_Base::OnKeyCodeTyped(vgui::KeyCode code)
 {
-	const int bbBottomBtns = KeyCodeToBottomAction(code);
-	if (bbBottomBtns >= 0 && bbBottomBtns < BottomSectionListSize())
-	{
-		OnBottomAction(bbBottomBtns);
-		return;
-	}
-
 	CNeoDataSettings_Base *tab = TabsList()[m_iNdsCurrent];
 	const int iNdvListSize = tab->NdvListSize();
-	if (code == KEY_DOWN || code == KEY_UP)
+
+	// "Universal" binds
+	if (const int iBottomBtns = KeyCodeToBottomAction(code);
+			iBottomBtns >= 0 && iBottomBtns < BottomSectionListSize())
 	{
-		if (iNdvListSize == 0) return;
-
+		OnBottomAction(iBottomBtns);
+		return;
+	}
+	else if (code == KEY_F1 || code == KEY_F3)
+	{
+		// Change tab
 		OnExitTextEditMode();
-		const int iIncr = (code == KEY_DOWN) ? +1 : -1;
+		const bool bBackward = (code == KEY_F1);
+		const int iIncr = bBackward ? -1 : +1;
+		m_iNdsCurrent += iIncr;
+		m_iNdsCurrent = LoopAroundInArray(m_iNdsCurrent, TabsListSize());
 
-		// Increment or decrement to the next valid NDV
-		bool bGoNext = true;
-		while (bGoNext)
-		{
-			m_iNdvActive += iIncr;
-			if (m_iNdvActive < 0) m_iNdvActive = (iNdvListSize - 1);
-			else if (m_iNdvActive >= iNdvListSize) m_iNdvActive = 0;
-			const auto type = tab->NdvList()[m_iNdvActive].type;
-			bGoNext = (type == CNeoDataVariant::TEXTLABEL || type == CNeoDataVariant::S_DISPLAYNAME);
-		}
-
-		// Re-adjust scroll offset
-		const int iWdgArea = GetTall() - g_iRowTall - TopAreaTall();
-		const int iWdgYPos = g_iRowTall * m_iNdvActive;
-		if (iWdgYPos < m_iScrollOffset)
-		{
-			m_iScrollOffset = iWdgYPos;
-		}
-		else if ((iWdgYPos + g_iRowTall) >= (m_iScrollOffset + iWdgArea))
-		{
-			m_iScrollOffset = (iWdgYPos - iWdgArea + g_iRowTall);
-		}
+		m_eSectionActive = SECTION_MAIN;
+		m_iNdvHover = 0;
 		return;
 	}
 	else if (code == KEY_TAB)
 	{
+		// Change section, top may active by key if it has more than just tabs
 		OnExitTextEditMode();
-		const bool bShift = (input()->IsKeyDown(KEY_LSHIFT) || input()->IsKeyDown(KEY_RSHIFT));
-		const int iIncr = (bShift) ? -1 : +1;
-		m_iNdsCurrent += iIncr;
-		if (m_iNdsCurrent >= TabsListSize()) m_iNdsCurrent = 0;
-		else if (m_iNdsCurrent < 0) m_iNdsCurrent = (TabsListSize() - 1);
-		m_iNdvActive = 0;
+		const bool bBackward = (input()->IsKeyDown(KEY_LSHIFT) || input()->IsKeyDown(KEY_RSHIFT));
+		int iSectionActive = static_cast<int>(m_eSectionActive);
+		iSectionActive += (bBackward) ? -1 : +1;
+		iSectionActive = LoopAroundInArray(iSectionActive, SECTION__TOTAL);
+		if (iSectionActive == SECTION_TOP && TopAreaRows() <= 1) iSectionActive = SECTION_MAIN;
+		m_eSectionActive = static_cast<eSectionActive>(iSectionActive);
+		m_iNdvHover = 0;
 		return;
 	}
 
-	if (m_iNdvActive < 0 || m_iNdvActive >= iNdvListSize) return;
-	CNeoDataVariant *ndv = &tab->NdvList()[m_iNdvActive];
-
-	if (code == KEY_LEFT || code == KEY_RIGHT)
+	// Section limited binds
+	switch (m_eSectionActive)
 	{
-		switch (ndv->type)
-		{
-		case CNeoDataVariant::RINGBOX:
-		{
-			CNeoDataRingBox *rb = &ndv->ringBox;
-			rb->iCurIdx += (code == KEY_LEFT) ? -1 : +1;
-			if (rb->iCurIdx < 0) rb->iCurIdx = (rb->iItemsSize - 1);
-			else if (rb->iCurIdx >= rb->iItemsSize) rb->iCurIdx = 0;
-			m_bModified = true;
-		}
-		break;
-		case CNeoDataVariant::SLIDER:
-		{
-			CNeoDataSlider *sl = &ndv->slider;
-			sl->iValCur += (code == KEY_LEFT) ? -sl->iValStep : +sl->iValStep;
-			sl->ClampAndUpdate();
-			m_bModified = true;
-		}
-		break;
-		default: break;
-		}
-
-		OnExitTextEditMode();
-		return;
+	break; case SECTION_TOP:
+	{
+		// TODO: Deal with it via function?
 	}
-	else if (code == KEY_ENTER)
+	break; case SECTION_MAIN:
 	{
-		// Change editing mode
-		switch (ndv->type)
+		if (code == KEY_DOWN || code == KEY_UP)
 		{
-		case CNeoDataVariant::SLIDER:
-		case CNeoDataVariant::TEXTENTRY:
-		{
-			if (m_bTextEditMode && ndv->type == CNeoDataVariant::SLIDER)
+			if (iNdvListSize == 0) return;
+
+			OnExitTextEditMode();
+			const int iIncr = (code == KEY_DOWN) ? +1 : -1;
+
+			// Increment or decrement to the next valid NDV
+			CNeoDataVariant::Type type;
+			do
 			{
-				ndv->slider.ClampAndUpdate();
+				m_iNdvHover += iIncr;
+				if (m_iNdvHover < 0) m_iNdvHover = (iNdvListSize - 1);
+				else if (m_iNdvHover >= iNdvListSize) m_iNdvHover = 0;
+				type = tab->NdvList()[m_iNdvHover].type;
 			}
-			m_bTextEditMode = !m_bTextEditMode;
-			break;
-		}
-		case CNeoDataVariant::BUTTON:
-		case CNeoDataVariant::BINDENTRY:
-			OnEnterButton(ndv);
-			break;
-		case CNeoDataVariant::S_MICTESTER:
-		{
-			IVoiceTweak_s *voiceTweak = engine->GetVoiceTweakAPI();
-			voiceTweak->IsStillTweaking() ? (void)voiceTweak->EndVoiceTweakMode() : (void)voiceTweak->StartVoiceTweakMode();
-			break;
-		}
-		case CNeoDataVariant::GAMESERVER:
-			OnEnterServer(ndv->gameServer.info);
-			break;
-		default:
-			break;
-		}
-		return;
-	}
-	else
-	{
-		switch (ndv->type)
-		{
-		case CNeoDataVariant::SLIDER:
-		{
-			CNeoDataSlider *sl = &ndv->slider;
-			if (m_bTextEditMode && code == KEY_BACKSPACE && sl->iWszCacheLabelSize > 0)
+			while (type == CNeoDataVariant::TEXTLABEL || type == CNeoDataVariant::S_DISPLAYNAME);
+
+			// Re-adjust scroll offset
+			const int iWdgArea = GetTall() - g_iRowTall - TopAreaTall();
+			const int iWdgYPos = g_iRowTall * m_iNdvHover;
+			if (iWdgYPos < m_iScrollOffset)
 			{
-				sl->wszCacheLabel[--sl->iWszCacheLabelSize] = '\0';
+				m_iScrollOffset = iWdgYPos;
+			}
+			else if ((iWdgYPos + g_iRowTall) >= (m_iScrollOffset + iWdgArea))
+			{
+				m_iScrollOffset = (iWdgYPos - iWdgArea + g_iRowTall);
+			}
+
+			m_iNdvFocus = -1;
+			return;
+		}
+
+		if (m_iNdvHover < 0 || m_iNdvHover >= iNdvListSize) return;
+		CNeoDataVariant *ndv = &tab->NdvList()[m_iNdvHover];
+
+		if (code == KEY_LEFT || code == KEY_RIGHT)
+		{
+			switch (ndv->type)
+			{
+			case CNeoDataVariant::RINGBOX:
+			{
+				CNeoDataRingBox *rb = &ndv->ringBox;
+				rb->iCurIdx += (code == KEY_LEFT) ? -1 : +1;
+				rb->iCurIdx = LoopAroundInArray(rb->iCurIdx, rb->iItemsSize);
 				m_bModified = true;
 			}
-		}
-		break;
-		case CNeoDataVariant::TEXTENTRY:
-		{
-			CNeoDataTextEntry *te = &ndv->textEntry;
-			int iWszSize = V_wcslen(te->wszEntry);
-			if (m_bTextEditMode && code == KEY_BACKSPACE && iWszSize > 0)
+			break;
+			case CNeoDataVariant::SLIDER:
 			{
-				te->wszEntry[--iWszSize] = '\0';
+				CNeoDataSlider *sl = &ndv->slider;
+				sl->iValCur += (code == KEY_LEFT) ? -sl->iValStep : +sl->iValStep;
+				sl->ClampAndUpdate();
 				m_bModified = true;
 			}
+			break;
+			default: break;
+			}
+
+			OnExitTextEditMode();
+			return;
 		}
-		break;
-		default: break;
+		else if (code == KEY_ENTER)
+		{
+			// Change editing mode
+			switch (ndv->type)
+			{
+			case CNeoDataVariant::SLIDER:
+			case CNeoDataVariant::TEXTENTRY:
+			{
+				if (m_iNdvFocus != -1 && ndv->type == CNeoDataVariant::SLIDER)
+				{
+					ndv->slider.ClampAndUpdate();
+				}
+				m_iNdvFocus = (m_iNdvFocus == -1) ? m_iNdvHover : -1;
+				break;
+			}
+			case CNeoDataVariant::BUTTON:
+			case CNeoDataVariant::BINDENTRY:
+				OnEnterButton(ndv);
+				break;
+			case CNeoDataVariant::S_MICTESTER:
+			{
+				IVoiceTweak_s *voiceTweak = engine->GetVoiceTweakAPI();
+				voiceTweak->IsStillTweaking() ? (void)voiceTweak->EndVoiceTweakMode() : (void)voiceTweak->StartVoiceTweakMode();
+				break;
+			}
+			case CNeoDataVariant::GAMESERVER:
+				OnEnterServer(ndv->gameServer.info);
+				break;
+			default:
+				break;
+			}
+			return;
 		}
+		else
+		{
+			if (m_iNdvFocus < 0 || m_iNdvFocus >= iNdvListSize) return;
+			CNeoDataVariant *focusNdv = &tab->NdvList()[m_iNdvFocus];
+			switch (focusNdv->type)
+			{
+			case CNeoDataVariant::SLIDER:
+			{
+				CNeoDataSlider *sl = &focusNdv->slider;
+				if (code == KEY_BACKSPACE && sl->iWszCacheLabelSize > 0)
+				{
+					sl->wszCacheLabel[--sl->iWszCacheLabelSize] = '\0';
+					m_bModified = true;
+				}
+			}
+			break;
+			case CNeoDataVariant::TEXTENTRY:
+			{
+				CNeoDataTextEntry *te = &focusNdv->textEntry;
+				int iWszSize = V_wcslen(te->wszEntry);
+				if (code == KEY_BACKSPACE && iWszSize > 0)
+				{
+					te->wszEntry[--iWszSize] = '\0';
+					m_bModified = true;
+				}
+			}
+			break;
+			default: break;
+			}
+		}
+	}
+	break; case SECTION_BOTTOM:
+	{
+		if (code == KEY_LEFT || code == KEY_RIGHT)
+		{
+			do
+			{
+				m_iNdvHover += (code == KEY_LEFT) ? -1 : +1;
+				m_iNdvHover = LoopAroundInArray(m_iNdvHover, BottomSectionListSize());
+			}
+			while (BottomSectionList()[m_iNdvHover].text == nullptr);
+		}
+		else if (code == KEY_ENTER)
+		{
+			OnBottomAction(m_iNdvHover);
+		}
+	}
 	}
 }
 
 void CNeoPanel_Base::OnKeyTyped(wchar_t unichar)
 {
 	CNeoDataSettings_Base *tab = TabsList()[m_iNdsCurrent];
-	if (m_iNdvActive < 0 || m_iNdvActive >= tab->NdvListSize() || !m_bTextEditMode) return;
-	CNeoDataVariant *ndv = &tab->NdvList()[m_iNdvActive];
+	if (m_eSectionActive != SECTION_MAIN || m_iNdvFocus < 0 || m_iNdvFocus >= tab->NdvListSize()) return;
+	CNeoDataVariant *ndv = &tab->NdvList()[m_iNdvFocus];
 	switch (ndv->type)
 	{
 	case CNeoDataVariant::SLIDER:
@@ -996,11 +1067,10 @@ void CNeoPanel_Base::OnKeyTyped(wchar_t unichar)
 // use the x position to get the buttons
 void CNeoPanel_Base::OnCursorMoved(int x, int y)
 {
-	const int iPrevNdsActive = m_iNdvActive;
+	const int iPrevNdsActive = m_iNdvHover;
 	m_iPosX = clamp(x, 0, GetWide());
-	m_iNdvActive = -1;
-	m_iNdsHover = -1;
-	m_iBottomHover = -1;
+	m_eSectionActive = SECTION_MAIN;
+	m_iNdvHover = -1;
 	m_curMouse = WDG_NONE;
 	m_bTopArea = false;
 
@@ -1012,10 +1082,11 @@ void CNeoPanel_Base::OnCursorMoved(int x, int y)
 	CNeoDataSettings_Base *tab = TabsList()[m_iNdsCurrent];
 	if (y < TopAreaTall())
 	{
+		m_eSectionActive = SECTION_TOP;
 		if (y < g_iRowTall)
 		{
 			const int iTabWide = g_iRootSubPanelWide / TabsListSize();
-			m_iNdsHover = x / iTabWide;
+			m_iNdvHover = x / iTabWide;
 			OnExitTextEditMode(iPrevNdsActive);
 		}
 		else
@@ -1027,19 +1098,20 @@ void CNeoPanel_Base::OnCursorMoved(int x, int y)
 	}
 	else if (y > (GetTall() - g_iRowTall))
 	{
+		m_eSectionActive = SECTION_BOTTOM;
 		const int iTabWide = g_iRootSubPanelWide / BottomSectionListSize();
-		m_iBottomHover = x / iTabWide;
+		m_iNdvHover = x / iTabWide;
 		OnExitTextEditMode(iPrevNdsActive);
 		return;
 	}
 
 	y -= TopAreaTall() - m_iScrollOffset;
-	m_iNdvActive = y / g_iRowTall;
-	if (m_iNdvActive != iPrevNdsActive)
+	m_iNdvHover = y / g_iRowTall;
+	if (m_iNdvHover != iPrevNdsActive)
 	{
 		OnExitTextEditMode(iPrevNdsActive);
 	}
-	if (m_iNdvActive < 0 || m_iNdvActive >= tab->NdvListSize())
+	if (m_iNdvHover < 0 || m_iNdvHover >= tab->NdvListSize())
 	{
 		return;
 	}
@@ -1048,7 +1120,7 @@ void CNeoPanel_Base::OnCursorMoved(int x, int y)
 	const int widgetWide = g_iRootSubPanelWide - wgXPos;
 	const int widgetTall = g_iRowTall;
 
-	CNeoDataVariant *ndv = &tab->NdvList()[m_iNdvActive];
+	CNeoDataVariant *ndv = &tab->NdvList()[m_iNdvHover];
 	switch (ndv->type)
 	{
 	case CNeoDataVariant::RINGBOX:
@@ -1098,9 +1170,9 @@ void CNeoPanel_Base::OnCursorMoved(int x, int y)
 
 void CNeoPanel_Base::OnExitTextEditMode(const int iOverrideNdsActive)
 {
-	if (m_bTextEditMode)
+	if (m_iNdvFocus != -1)
 	{
-		const int iUneditNdv = (iOverrideNdsActive == -1) ? m_iNdvActive : iOverrideNdsActive;
+		const int iUneditNdv = (iOverrideNdsActive == -1) ? m_iNdvHover : iOverrideNdsActive;
 		CNeoDataSettings_Base *tab = TabsList()[m_iNdsCurrent];
 		if (iUneditNdv >= 0 && iUneditNdv < tab->NdvListSize())
 		{
@@ -1111,7 +1183,7 @@ void CNeoPanel_Base::OnExitTextEditMode(const int iOverrideNdsActive)
 			}
 		}
 	}
-	m_bTextEditMode = false;
+	m_iNdvFocus = -1;
 }
 
 int CNeoPanel_Base::TopAreaTall() const
@@ -1252,7 +1324,7 @@ void CNeoPanel_Settings::OnEnterButton(CNeoDataVariant *ndv)
 		CNeoDataBindEntry *be = &ndv->bindEntry;
 		engine->StartKeyTrapMode();
 		m_opKeyCapture->m_iButtonCode = be->bcNext;
-		m_opKeyCapture->m_iIndex = m_iNdvActive;
+		m_opKeyCapture->m_iIndex = m_iNdvHover;
 		V_swprintf_safe(m_opKeyCapture->m_wszBindingText, L"Change binding for: %ls", be->wszDisplayText);
 		m_opKeyCapture->SetVisible(true);
 		m_opKeyCapture->SetEnabled(true);
@@ -1971,7 +2043,7 @@ void CNeoPanel_NewGame::OnEnterButton(CNeoDataVariant *ndv)
 	{
 		int wide, tall;
 		surface()->GetScreenSize(wide, tall);
-		m_mapList->m_iNdvActive = -1;
+		m_mapList->m_iNdvHover = -1;
 		m_mapList->m_curMouse = CNeoPanel_Base::WDG_NONE;
 		m_mapList->PerformLayout();
 		m_mapList->SetPos((wide / 2) - (g_iRootSubPanelWide / 2),
@@ -2052,7 +2124,6 @@ int CNeoPanel_NewGame::KeyCodeToBottomAction(vgui::KeyCode code) const
 	switch (code)
 	{
 	case KEY_ESCAPE: return BBTN_BACK;
-	case KEY_F1: return BBTN_GO;
 	default: break;
 	}
 	return -1;
@@ -2349,7 +2420,6 @@ int CNeoPanel_ServerBrowser::KeyCodeToBottomAction(vgui::KeyCode code) const
 	switch (code)
 	{
 	case KEY_ESCAPE: return BBTN_BACK;
-	case KEY_F1: return BBTN_GO;
 	default: break;
 	}
 	return -1;
@@ -2585,7 +2655,7 @@ void CNeoRoot::UpdateControls()
 
 	if (pPanel)
 	{
-		pPanel->m_iNdvActive = -1;
+		pPanel->m_iNdvHover = -1;
 		pPanel->m_curMouse = CNeoPanel_Base::WDG_NONE;
 		pPanel->PerformLayout();
 		pPanel->SetPos((wide / 2) - (g_iRootSubPanelWide / 2),

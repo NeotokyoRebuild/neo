@@ -429,22 +429,17 @@ public:
 	int m_iPosX = 0;
 	int m_iScrollOffset = 0;
 
-	int m_iNdsHover = -1; // TODO: Replaced by new system
-	int m_iBottomHover = -1; // TODO: Replaced by new system
-	bool m_bTextEditMode = false; // TODO: Replaced by new system
-
 	enum eSectionActive
 	{
 		SECTION_MAIN = 0,
 		SECTION_BOTTOM,
-		SECTION_TOP, // Only used if TopAreaRows() set to 2
+		SECTION_TOP,
 
 		SECTION__TOTAL,
 	};
-	int m_iSectionActive = 0;
+	eSectionActive m_eSectionActive = SECTION_MAIN;
 	int m_iNdvHover = -1;
-	int m_iNdvActive = -1;
-
+	int m_iNdvFocus = -1;
 
 	// NEO NOTE (nullsystem): Just to make it simple, any actions that changes
 	// settings (key or mouse) just trigger this regardless if the value has been changed or not
