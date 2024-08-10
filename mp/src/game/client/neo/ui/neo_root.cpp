@@ -400,7 +400,7 @@ void CNeoPanel_Base::Paint()
 	{
 		CNeoDataVariant *ndv = &tab->NdvList()[i];
 		const bool bThisHover = (m_eSectionActive == SECTION_MAIN && i == m_iNdvHover);
-		const bool bThisFocus = (m_eSectionActive == SECTION_MAIN && i == m_iNdvFocus);
+		const bool bThisFocus = (i == m_iNdvMainFocus);
 		const bool bThisHoverFocus = bThisHover || bThisFocus;
 
 		surface()->DrawSetColor(bThisHoverFocus ? COLOR_NEOPANELSELECTBG : COLOR_NEOPANELACCENTBG);
@@ -718,7 +718,7 @@ void CNeoPanel_Base::Paint()
 
 void CNeoPanel_Base::OnMousePressed(vgui::MouseCode code)
 {
-	OnExitTextEditMode();
+	OnExitTextEditMode(true);
 	switch (m_eSectionActive)
 	{
 	break; case SECTION_TOP:
@@ -726,6 +726,7 @@ void CNeoPanel_Base::OnMousePressed(vgui::MouseCode code)
 		if (m_iNdvHover >= 0 && m_iNdvHover < TabsListSize())
 		{
 			m_iNdsCurrent = m_iNdvHover;
+			m_iNdvMainFocus = -1;
 			m_iScrollOffset = 0;
 			InvalidateLayout();
 			PerformLayout();
@@ -755,7 +756,7 @@ void CNeoPanel_Base::OnMousePressed(vgui::MouseCode code)
 			if (m_curMouse == WDG_NONE) return;
 			if (m_curMouse == WDG_CENTER)
 			{
-				m_iNdvFocus = m_iNdvHover;
+				m_iNdvMainFocus = m_iNdvHover;
 				return;
 			}
 
@@ -771,6 +772,9 @@ void CNeoPanel_Base::OnMousePressed(vgui::MouseCode code)
 			break;
 		case CNeoDataVariant::BINDENTRY:
 			if (m_curMouse == WDG_CENTER) OnEnterButton(ndv);
+			break;
+		case CNeoDataVariant::GAMESERVER:
+			m_iNdvMainFocus = m_iNdvHover;
 			break;
 		case CNeoDataVariant::S_MICTESTER:
 		{
@@ -805,7 +809,7 @@ void CNeoPanel_Base::OnMouseDoublePressed(vgui::MouseCode code)
 	{
 		if (m_curMouse == WDG_CENTER && code == MOUSE_LEFT)
 		{
-			m_iNdvFocus = m_iNdvHover;
+			m_iNdvMainFocus = m_iNdvHover;
 			RequestFocus();
 		}
 		break;
@@ -857,7 +861,6 @@ void CNeoPanel_Base::OnKeyCodeTyped(vgui::KeyCode code)
 	else if (code == KEY_TAB)
 	{
 		// Change section, top may active by key if it has more than just tabs
-		OnExitTextEditMode();
 		const bool bBackward = (input()->IsKeyDown(KEY_LSHIFT) || input()->IsKeyDown(KEY_RSHIFT));
 		int iSectionActive = static_cast<int>(m_eSectionActive);
 		iSectionActive += (bBackward) ? -1 : +1;
@@ -922,7 +925,7 @@ void CNeoPanel_Base::OnKeyCodeTyped(vgui::KeyCode code)
 				}
 			}
 
-			m_iNdvFocus = -1;
+			m_iNdvMainFocus = (type == CNeoDataVariant::GAMESERVER) ? m_iNdvHover : -1;
 			return;
 		}
 
@@ -963,11 +966,11 @@ void CNeoPanel_Base::OnKeyCodeTyped(vgui::KeyCode code)
 			case CNeoDataVariant::SLIDER:
 			case CNeoDataVariant::TEXTENTRY:
 			{
-				if (m_iNdvFocus != -1 && ndv->type == CNeoDataVariant::SLIDER)
+				if (m_iNdvMainFocus != -1 && ndv->type == CNeoDataVariant::SLIDER)
 				{
 					ndv->slider.ClampAndUpdate();
 				}
-				m_iNdvFocus = (m_iNdvFocus == -1) ? m_iNdvHover : -1;
+				m_iNdvMainFocus = (m_iNdvMainFocus == -1) ? m_iNdvHover : -1;
 				break;
 			}
 			case CNeoDataVariant::BUTTON:
@@ -990,7 +993,7 @@ void CNeoPanel_Base::OnKeyCodeTyped(vgui::KeyCode code)
 		}
 		else
 		{
-			CNeoDataVariant *focusNdv = NdvFromIdx(m_iNdvFocus);
+			CNeoDataVariant *focusNdv = NdvFromIdx(m_iNdvMainFocus);
 			if (!focusNdv) return;
 
 			switch (focusNdv->type)
@@ -1041,7 +1044,7 @@ void CNeoPanel_Base::OnKeyCodeTyped(vgui::KeyCode code)
 
 void CNeoPanel_Base::OnKeyTyped(wchar_t unichar)
 {
-	CNeoDataVariant *ndv = NdvFromIdx((m_eSectionActive == SECTION_MAIN) ? m_iNdvFocus : -1);
+	CNeoDataVariant *ndv = NdvFromIdx((m_eSectionActive == SECTION_MAIN) ? m_iNdvMainFocus : -1);
 	if (!ndv) return;
 
 	switch (ndv->type)
@@ -1158,7 +1161,7 @@ void CNeoPanel_Base::OnCursorMoved(int x, int y)
 		}
 
 		if (ndv->type == CNeoDataVariant::SLIDER && m_curMouse == WDG_CENTER &&
-				input()->IsMouseDown(MOUSE_LEFT) && m_iNdvFocus == m_iNdvHover)
+				input()->IsMouseDown(MOUSE_LEFT) && m_iNdvMainFocus == m_iNdvHover)
 		{
 			const int wdgX = x - wgXPos;
 			CNeoDataSlider *sl = &ndv->slider;
@@ -1190,14 +1193,20 @@ CNeoDataVariant *CNeoPanel_Base::NdvFromIdx(const int idx) const
 	return (tab && idx >= 0 && idx < tab->NdvListSize()) ? &tab->NdvList()[idx] : nullptr;
 }
 
-void CNeoPanel_Base::OnExitTextEditMode()
+void CNeoPanel_Base::OnExitTextEditMode(const bool bKeepGameServerFocus)
 {
-	if (CNeoDataVariant *ndv = NdvFromIdx((m_eSectionActive == SECTION_MAIN) ? m_iNdvFocus : -1);
-			ndv && ndv->type == CNeoDataVariant::SLIDER)
+	CNeoDataVariant *ndv = NdvFromIdx(m_iNdvMainFocus);
+	if (ndv && ndv->type == CNeoDataVariant::SLIDER)
 	{
 		ndv->slider.ClampAndUpdate();
 	}
-	m_iNdvFocus = -1;
+
+	if (bKeepGameServerFocus && ndv && ndv->type == CNeoDataVariant::GAMESERVER)
+	{
+		return;
+	}
+
+	m_iNdvMainFocus = -1;
 }
 
 int CNeoPanel_Base::TopAreaTall() const
@@ -1685,7 +1694,6 @@ void CNeoDataSettings_Audio::UserSettingsRestore()
 																  QUALITY_MEDIUM;
 	m_ndvList[OPT_AUDIO_INP_QUALITY].ringBox.iCurIdx = iSoundQuality;
 
-	// TODO: Voice receive, voice_loopback quick test toggle
 	// Input
 	m_ndvList[OPT_AUDIO_OUT_VOICEENABLED].ringBox.iCurIdx = static_cast<int>(m_cvrVoiceEnabled.GetBool());
 	m_ndvList[OPT_AUDIO_OUT_VOICERECV].slider.SetValue(m_cvrVoiceScale.GetFloat());
@@ -1983,7 +1991,7 @@ CNeoOverlay_MapList::CNeoOverlay_MapList(vgui::Panel *parent)
 
 void CNeoOverlay_MapList::OnEnterButton(CNeoDataVariant *ndv)
 {
-	if (ndv->type != CNeoDataVariant::BUTTON) return;
+	if (!ndv || ndv->type != CNeoDataVariant::BUTTON) return;
 	PostActionSignal(new KeyValues("MapListPicked", "Map", ndv->button.wszBtnLabel));
 	SetVisible(false);
 	SetEnabled(false);
@@ -1991,22 +1999,17 @@ void CNeoOverlay_MapList::OnEnterButton(CNeoDataVariant *ndv)
 
 void CNeoOverlay_MapList::OnBottomAction(const int btn)
 {
-	switch (btn)
+	if (btn == BBTN_BACK)
 	{
-	case BBTN_BACK:
 		SetVisible(false);
 		SetEnabled(false);
-		break;
-	case BBTN_SELECT:
-		// TODO: hover/active split
-		break;
 	}
 }
 
 const WLabelWSize *CNeoOverlay_MapList::BottomSectionList() const
 {
 	static constexpr WLabelWSize BBTN_NAMES[BBTN__TOTAL] = {
-		LWS(L"Back (ESC)"), LWSNULL, LWSNULL, LWSNULL, LWS(L"Select"),
+		LWS(L"Back (ESC)"), LWSNULL, LWSNULL, LWSNULL, LWSNULL,
 	};
 	return BBTN_NAMES;
 }
@@ -2387,7 +2390,10 @@ void CNeoPanel_ServerBrowser::OnBottomAction(const int btn)
 	}
 	case BBTN_GO:
 	{
-		//OnEnterServer(ndv->gameserver);
+		if (CNeoDataVariant *ndv = NdvFromIdx(m_iNdvMainFocus))
+		{
+			OnEnterServer(ndv->gameServer.info);
+		}
 	}
 		[[fallthrough]]; // Also reset the main menu back to root state
 	case BBTN_BACK:
@@ -2449,8 +2455,16 @@ void CNeoPanel_ServerBrowser::OnKeyCodeTyped(vgui::KeyCode code)
 
 const WLabelWSize *CNeoPanel_ServerBrowser::BottomSectionList() const
 {
+	CNeoDataSettings_Base *tab = const_cast<CNeoPanel_ServerBrowser *>(this)->TabsList()[m_iNdsCurrent];
+	if (m_iNdvMainFocus >= 0 && m_iNdvMainFocus < tab->NdvListSize())
+	{
+		static constexpr WLabelWSize BBTN_WITHFOCUS[BBTN__TOTAL] = {
+			LWS(L"Back (ESC)"), LWS(L"Legacy"), LWS(L"Details"), LWS(L"Refresh (Ctrl+R)"), LWS(L"Enter"),
+		};
+		return BBTN_WITHFOCUS;
+	}
 	static constexpr WLabelWSize BBTN_NAMES[BBTN__TOTAL] = {
-		LWS(L"Back (ESC)"), LWS(L"Legacy"), LWSNULL, LWS(L"Refresh (Ctrl+R)"), LWS(L"Start"),
+		LWS(L"Back (ESC)"), LWS(L"Legacy"), LWSNULL, LWS(L"Refresh (Ctrl+R)"), LWSNULL,
 	};
 	return BBTN_NAMES;
 }
@@ -3099,7 +3113,7 @@ void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 
 bool NeoRootCaptureESC()
 {
-	return (g_pNeoRoot && (
+	return (g_pNeoRoot && g_pNeoRoot->IsVisible() && (
 				   g_pNeoRoot->m_panelSettings->IsVisible()
 				|| g_pNeoRoot->m_panelSettings->m_opConfirm->IsVisible()
 				|| g_pNeoRoot->m_panelNewGame->IsVisible()

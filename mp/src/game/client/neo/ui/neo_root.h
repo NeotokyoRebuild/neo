@@ -388,8 +388,6 @@ struct CNeoDataSettings_Video : CNeoDataSettings_Base
 
 // NEO NOTE (nullsystem): If there's a client convar not saved, it's likely the way it been defined is wrong
 // AKA they've been defined in both client + server when it should only be for client
-//
-// TODO: Partition to deal with > 1 row length widgets?
 class CNeoPanel_Base : public vgui::EditablePanel
 {
 	DECLARE_CLASS_SIMPLE(CNeoPanel_Base, vgui::EditablePanel);
@@ -414,7 +412,7 @@ public:
 
 	virtual void OnEnterButton(CNeoDataVariant *ndv) {}
 	virtual void OnBottomAction(const int btn) = 0;
-	void OnExitTextEditMode();
+	void OnExitTextEditMode(const bool bKeepGameServerFocus = false);
 
 	virtual CNeoDataSettings_Base **TabsList() = 0;
 	virtual int TabsListSize() const = 0;
@@ -441,7 +439,7 @@ public:
 	};
 	eSectionActive m_eSectionActive = SECTION_MAIN;
 	int m_iNdvHover = -1;
-	int m_iNdvFocus = -1;
+	int m_iNdvMainFocus = -1; // Only SECTION_MAIN
 
 	// NEO NOTE (nullsystem): Just to make it simple, any actions that changes
 	// settings (key or mouse) just trigger this regardless if the value has been changed or not
@@ -575,7 +573,7 @@ public:
 		BBTN_UNUSEDIDX1,
 		BBTN_UNUSEDIDX2,
 		BBTN_UNUSEDIDX3,
-		BBTN_SELECT,
+		BBTN_UNUSEDIDX4,
 
 		BBTN__TOTAL,
 	};
@@ -703,7 +701,7 @@ public:
 	{
 		BBTN_BACK = 0,
 		BBTN_LEGACY,
-		BBTN_UNUSEDIDX2,
+		BBTN_DETAILS,
 		BBTN_REFRESH,
 		BBTN_GO,
 
