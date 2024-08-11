@@ -16,6 +16,75 @@ struct WLabelWSize
 #define LWSNULL WLabelWSize{ nullptr, 0 }
 #define LWS(wlabel) WLabelWSize{ wlabel, SZWSZ_LEN(wlabel)}
 
+namespace NeoUI
+{
+enum Mode
+{
+	MODE_PAINT = 0,
+	MODE_MOUSEPRESSED,
+	MODE_MOUSEDOUBLEPRESSED,
+	MODE_KEYPRESSED,
+	MODE_MOUSEMOVED,
+};
+enum MousePos
+{
+	MOUSEPOS_NONE = 0,
+	MOUSEPOS_LEFT,
+	MOUSEPOS_CENTER,
+	MOUSEPOS_RIGHT,
+};
+static constexpr int FOCUSOFF_NUM = -1000;
+
+struct Context
+{
+	Mode eMode;
+	ButtonCode_t eCode;
+
+	// Mouse handling
+	int iMouseAbsX;
+	int iMouseAbsY;
+	int iMouseRelX;
+	int iMouseRelY;
+	bool bMouseInPanel;
+
+	// Sizing
+	int iPanelPosX;
+	int iPanelPosY;
+	int iPanelWide;
+	int iPanelTall;
+
+	// Layout management
+	int iPartitionY; // Only increments when Y-pos goes down
+	int iLayoutY; // Redudent to iPartitionY, but keep so it doesn't need to keep on doing partY * rowSize over again
+	int iFontTall;
+	int iFontYOffset;
+	int iWgXPos;
+
+	// Input management
+	int iWidget; // Always increments per widget use
+	int iFocus;
+	int iFocusDirection;
+
+	MousePos eMousePos; // label | prev | center | next split
+};
+void BeginContext(const NeoUI::Mode eMode);
+void EndContext();
+
+struct RetButton
+{
+	bool bPressed;
+	bool bKeyPressed;
+	bool bMousePressed;
+	bool bMouseHover;
+};
+void Label(const wchar_t *wszText, const bool bCenter = false);
+RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText);
+void RingBoxBool(const wchar_t *wszLeftLabel, bool *bChecked);
+void RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
+void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, const float flMax,
+			const int iDp = 2, const float flStep = 1.0f);
+}
+
 enum GameServerType
 {
 	GS_INTERNET = 0,
@@ -719,6 +788,42 @@ public:
 	GameServerSortContext m_sortCtx;
 };
 
+struct NeoSettings;
+
+void NeoSettings_General(NeoSettings *ns);
+struct NeoSettings
+{
+	struct General
+	{
+		wchar_t wszNeoName[33];
+		bool bOnlySteamNick;
+		float flFov;
+		float flViewmodelFov;
+		bool bAimHold;
+		bool bReloadEmpty;
+		bool bViewmodelRighthand;
+		bool bShowPlayerSprays;
+		bool bShowPos;
+		int iShowFps;
+		int iDlFilter;
+	};
+	General general;
+
+	enum Tabs
+	{
+		TAB_GENERAL = 0,
+
+		TAB__TOTAL,
+	};
+	void (*pFn[TAB__TOTAL])(NeoSettings *) = {
+		NeoSettings_General,
+	};
+	int iCurTab = 0;
+};
+NeoSettings NeoSettingsRestore();
+void NeoSettingsSave(const NeoSettings &ns);
+void NeoSettingsMainLoop(NeoSettings *ns, const NeoUI::Mode eMode);
+
 class CNeoRoot;
 // NEO JANK (nullsystem): This is really more of a workaround that
 // keyboard inputs are not sent to panels (even if they're marked
@@ -740,6 +845,42 @@ public:
 	CNeoRoot *m_pNeoRoot = nullptr;
 };
 
+enum RootState
+{
+	STATE_ROOT,
+	STATE_SETTINGS,
+	STATE_NEWGAME,
+	STATE_SERVERBROWSER,
+
+	STATE__TOTAL,
+};
+
+struct WidgetInfo
+{
+	const char *label;
+	const char *gamemenucommand; // TODO: Replace
+	RootState nextState;
+	int flags;
+};
+
+
+enum WidgetInfoFlags
+{
+	FLAG_NONE = 0,
+	FLAG_SHOWINGAME = 1 << 0,
+	FLAG_SHOWINMAIN = 1 << 1,
+};
+static constexpr int BTNS_TOTAL = 7;
+constexpr WidgetInfo BTNS_INFO[BTNS_TOTAL] = {
+	{ "#GameUI_GameMenu_ResumeGame", "ResumeGame", STATE__TOTAL, FLAG_SHOWINGAME },
+	{ "#GameUI_GameMenu_FindServers", nullptr, STATE_SERVERBROWSER, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
+	{ "#GameUI_GameMenu_CreateServer", nullptr, STATE_NEWGAME, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
+	{ "#GameUI_GameMenu_Disconnect", "Disconnect", STATE__TOTAL, FLAG_SHOWINGAME },
+	{ "#GameUI_GameMenu_PlayerList", "OpenPlayerListDialog", STATE__TOTAL, FLAG_SHOWINGAME },
+	{ "#GameUI_GameMenu_Options", nullptr, STATE_SETTINGS, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
+	{ "#GameUI_GameMenu_Quit", "Quit", STATE__TOTAL, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
+};
+
 // This class is what is actually used instead of the main menu.
 class CNeoRoot : public vgui::EditablePanel
 {
@@ -748,19 +889,6 @@ public:
 	CNeoRoot(vgui::VPANEL parent);
 	virtual ~CNeoRoot();
 	IGameUI *GetGameUI();
-
-	enum Buttons
-	{
-		BTN_RESUME = 0,
-		BTN_SERVERBROWSER,
-		BTN_SERVERCREATE,
-		BTN_DISCONNECT,
-		BTN_PLAYERLIST,
-		BTN_SETTINGS,
-		BTN_QUIT,
-
-		BTN__TOTAL,
-	};
 
 	enum Fonts
 	{
@@ -771,44 +899,31 @@ public:
 		FONT__TOTAL,
 	};
 
-	enum State
-	{
-		STATE_ROOT,
-		STATE_SETTINGS,
-		STATE_NEWGAME,
-		STATE_SERVERBROWSER,
-
-		STATE__TOTAL,
-	};
-
 	bool LoadGameUI();
 	void UpdateControls();
 
 	IGameUI *m_gameui = nullptr;
 	int m_iHoverBtn = -1;
-	State m_state = STATE_ROOT;
+	RootState m_state = STATE_ROOT;
 	CAvatarImage *m_avImage = nullptr;
 
 	vgui::HFont m_hTextFonts[FONT__TOTAL] = {};
 
-	CNeoPanel_Settings *m_panelSettings = nullptr;
-	CNeoPanel_NewGame *m_panelNewGame = nullptr;
-	CNeoPanel_ServerBrowser *m_panelServerBrowser = nullptr;
-
-	CNeoOverlay_KeyCapture *m_opKeyCapture = nullptr;
-	CNeoRootInput *m_panelCaptureInput = nullptr;
-
-	wchar_t m_wszDispBtnTexts[BTN__TOTAL][64] = {};
-	int m_iWszDispBtnTextsSizes[BTN__TOTAL] = {};
+	wchar_t m_wszDispBtnTexts[BTNS_TOTAL][64] = {};
+	int m_iWszDispBtnTextsSizes[BTNS_TOTAL] = {};
 	int m_iBtnWide = 0;
 
+	CNeoRootInput *m_panelCaptureInput = nullptr;
 	void OnRelayedKeyCodeTyped(vgui::KeyCode code);
+	void PaintRootMainSection();
 protected:
 	void ApplySchemeSettings(vgui::IScheme *pScheme) final;
 	void Paint() final;
 	void OnMousePressed(vgui::MouseCode code) final;
-	void OnCursorExited() final;
 	void OnCursorMoved(int x, int y) final;
+
+	void OnMainLoop(const NeoUI::Mode eMode);
+	NeoSettings m_ns = {};
 };
 
 extern CNeoRoot *g_pNeoRoot;
