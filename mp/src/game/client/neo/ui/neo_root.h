@@ -15,6 +15,7 @@ struct WLabelWSize
 #define SZWSZ_LEN(wlabel) ((sizeof(wlabel) / sizeof(wlabel[0])) - 1)
 #define LWSNULL WLabelWSize{ nullptr, 0 }
 #define LWS(wlabel) WLabelWSize{ wlabel, SZWSZ_LEN(wlabel)}
+#define IN_BETWEEN(min, cmp, max) min <= cmp && cmp < max
 
 namespace NeoUI
 {
@@ -23,8 +24,9 @@ enum Mode
 	MODE_PAINT = 0,
 	MODE_MOUSEPRESSED,
 	MODE_MOUSEDOUBLEPRESSED,
-	MODE_KEYPRESSED,
 	MODE_MOUSEMOVED,
+	MODE_MOUSEWHEELED,
+	MODE_KEYPRESSED,
 };
 enum MousePos
 {
@@ -39,6 +41,7 @@ struct Context
 {
 	Mode eMode;
 	ButtonCode_t eCode;
+	Color bgColor;
 
 	// Mouse handling
 	int iMouseAbsX;
@@ -55,10 +58,11 @@ struct Context
 
 	// Layout management
 	int iPartitionY; // Only increments when Y-pos goes down
-	int iLayoutY; // Redudent to iPartitionY, but keep so it doesn't need to keep on doing partY * rowSize over again
+	int iLayoutY;
 	int iFontTall;
 	int iFontYOffset;
 	int iWgXPos;
+	int iYOffset;
 
 	// Input management
 	int iWidget; // Always increments per widget use
@@ -81,6 +85,7 @@ void Label(const wchar_t *wszText, const bool bCenter = false);
 RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText);
 void RingBoxBool(const wchar_t *wszLeftLabel, bool *bChecked);
 void RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
+void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
 void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, const float flMax,
 			const int iDp = 2, const float flStep = 1.0f);
 }
@@ -190,7 +195,7 @@ struct CNeoDataBindEntry
 	char szBindingCmd[64];
 	wchar_t wszDisplayText[64];
 	ButtonCode_t bcNext;
-	ButtonCode_t bcCurrent;
+	ButtonCode_t bcCurrent; // TODO: Maybe not needed? just refetch on Save? before unbinds?
 };
 
 struct CNeoDataTextLabel
@@ -791,6 +796,7 @@ public:
 struct NeoSettings;
 
 void NeoSettings_General(NeoSettings *ns);
+void NeoSettings_Keys(NeoSettings *ns);
 struct NeoSettings
 {
 	struct General
@@ -807,21 +813,41 @@ struct NeoSettings
 		int iShowFps;
 		int iDlFilter;
 	};
+
+	struct Keys
+	{
+		bool bWeaponFastSwitch;
+		bool bDeveloperConsole;
+
+		struct Bind
+		{
+			char szBindingCmd[64];
+			wchar_t wszDisplayText[64];
+			ButtonCode_t bcNext;
+			ButtonCode_t bcCurrent; // Only used for unbinding
+		};
+		Bind vBinds[64];
+		int iBindsSize = 0;
+	};
+
 	General general;
+	Keys keys;
 
 	enum Tabs
 	{
 		TAB_GENERAL = 0,
+		TAB_KEYS,
 
 		TAB__TOTAL,
 	};
 	void (*pFn[TAB__TOTAL])(NeoSettings *) = {
 		NeoSettings_General,
+		NeoSettings_Keys,
 	};
 	int iCurTab = 0;
 };
-NeoSettings NeoSettingsRestore();
-void NeoSettingsSave(const NeoSettings &ns);
+void NeoSettingsRestore(NeoSettings *ns);
+void NeoSettingsSave(const NeoSettings *ns);
 void NeoSettingsMainLoop(NeoSettings *ns, const NeoUI::Mode eMode);
 
 class CNeoRoot;
@@ -920,6 +946,7 @@ protected:
 	void ApplySchemeSettings(vgui::IScheme *pScheme) final;
 	void Paint() final;
 	void OnMousePressed(vgui::MouseCode code) final;
+	void OnMouseWheeled(int delta) final;
 	void OnCursorMoved(int x, int y) final;
 
 	void OnMainLoop(const NeoUI::Mode eMode);
