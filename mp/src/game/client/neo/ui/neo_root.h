@@ -797,6 +797,7 @@ struct NeoSettings;
 
 void NeoSettings_General(NeoSettings *ns);
 void NeoSettings_Keys(NeoSettings *ns);
+void NeoSettings_Mouse(NeoSettings *ns);
 struct NeoSettings
 {
 	struct General
@@ -830,21 +831,51 @@ struct NeoSettings
 		int iBindsSize = 0;
 	};
 
+	struct Mouse
+	{
+		float flSensitivity;
+		bool bRawInput;
+		bool bFilter;
+		bool bReverse;
+		bool bCustomAccel;
+		float flExponent;
+	};
+
 	General general;
 	Keys keys;
+	Mouse mouse;
 
 	enum Tabs
 	{
 		TAB_GENERAL = 0,
 		TAB_KEYS,
+		TAB_MOUSE,
 
 		TAB__TOTAL,
 	};
 	void (*pFn[TAB__TOTAL])(NeoSettings *) = {
 		NeoSettings_General,
 		NeoSettings_Keys,
+		NeoSettings_Mouse,
 	};
 	int iCurTab = 0;
+
+#define CONVARREF_DEF(_name) ConVarRef _name{#_name}
+	struct CVR
+	{
+		// Multiplayer
+		CONVARREF_DEF(cl_player_spray_disable);
+		CONVARREF_DEF(cl_download_filter);
+
+		// Mouse
+		CONVARREF_DEF(m_filter);
+		CONVARREF_DEF(pitch);
+		CONVARREF_DEF(m_customaccel);
+		CONVARREF_DEF(m_customaccel_exponent);
+		CONVARREF_DEF(m_raw_input);
+	};
+	CVR cvr;
+#undef CONVARREF_DEF
 };
 void NeoSettingsRestore(NeoSettings *ns);
 void NeoSettingsSave(const NeoSettings *ns);

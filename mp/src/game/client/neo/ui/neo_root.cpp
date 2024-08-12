@@ -452,7 +452,7 @@ void NeoUI::Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iInd
 	{
 		if (g_ctx.eCode == KEY_F1 || g_ctx.eCode == KEY_F3) // Global keybind
 		{
-			*iIndex += (g_ctx.eCode == KEY_LEFT) ? -1 : +1;
+			*iIndex += (g_ctx.eCode == KEY_F1) ? -1 : +1;
 			*iIndex = LoopAroundInArray(*iIndex, iLabelsSize);
 			g_ctx.iYOffset = 0;
 		}
@@ -3036,6 +3036,7 @@ void CNeoPanel_ServerBrowser::OnTick()
 
 void NeoSettingsRestore(NeoSettings *ns)
 {
+	NeoSettings::CVR *cvr = &ns->cvr;
 	{
 		NeoSettings::General *pGeneral = &ns->general;
 		g_pVGuiLocalize->ConvertANSIToUnicode(neo_name.GetString(), pGeneral->wszNeoName, sizeof(pGeneral->wszNeoName));
@@ -3045,11 +3046,11 @@ void NeoSettingsRestore(NeoSettings *ns)
 		pGeneral->bAimHold = neo_aim_hold.GetBool();
 		pGeneral->bReloadEmpty = cl_autoreload_when_empty.GetBool();
 		pGeneral->bViewmodelRighthand = cl_righthand.GetBool();
-		pGeneral->bShowPlayerSprays = !(ConVarRef("cl_player_spray_disable").GetBool()); // Inverse
+		pGeneral->bShowPlayerSprays = !(cvr->cl_player_spray_disable.GetBool()); // Inverse
 		pGeneral->bShowPos = cl_showpos.GetBool();
 		pGeneral->iShowFps = cl_showfps.GetInt();
 		{
-			const char *szDlFilter = ConVarRef("cl_download_filter").GetString();
+			const char *szDlFilter = cvr->cl_download_filter.GetString();
 			pGeneral->iDlFilter = 0;
 			for (int i = 0; i < DLFILTER_SIZE; ++i)
 			{
@@ -3071,10 +3072,20 @@ void NeoSettingsRestore(NeoSettings *ns)
 			bind->bcNext = bind->bcCurrent = gameuifuncs->GetButtonCodeForBind(bind->szBindingCmd);
 		}
 	}
+	{
+		NeoSettings::Mouse *pMouse = &ns->mouse;
+		pMouse->flSensitivity = sensitivity.GetFloat();
+		pMouse->bRawInput = cvr->m_raw_input.GetBool();
+		pMouse->bFilter = cvr->m_filter.GetBool();
+		pMouse->bReverse = (cvr->pitch.GetFloat() < 0.0f);
+		pMouse->bCustomAccel = (cvr->m_customaccel.GetInt() == 3);
+		pMouse->flExponent = cvr->m_customaccel_exponent.GetFloat();
+	}
 }
 
 void NeoSettingsSave(const NeoSettings *ns)
 {
+	auto *cvr = const_cast<NeoSettings::CVR *>(&ns->cvr);
 	{
 		const NeoSettings::General *pGeneral = &ns->general;
 		char neoNameText[sizeof(pGeneral->wszNeoName) / sizeof(wchar_t)];
@@ -3086,10 +3097,10 @@ void NeoSettingsSave(const NeoSettings *ns)
 		neo_aim_hold.SetValue(pGeneral->bAimHold);
 		cl_autoreload_when_empty.SetValue(pGeneral->bReloadEmpty);
 		cl_righthand.SetValue(pGeneral->bViewmodelRighthand);
-		ConVarRef("cl_player_spray_disable").SetValue(!pGeneral->bShowPlayerSprays); // Inverse
+		cvr->cl_player_spray_disable.SetValue(!pGeneral->bShowPlayerSprays); // Inverse
 		cl_showpos.SetValue(pGeneral->bShowPos);
 		cl_showfps.SetValue(pGeneral->iShowFps);
-		ConVarRef("cl_download_filter").SetValue(DLFILTER_STRMAP[pGeneral->iDlFilter]);
+		cvr->cl_download_filter.SetValue(DLFILTER_STRMAP[pGeneral->iDlFilter]);
 	}
 	{
 		const NeoSettings::Keys *pKeys = &ns->keys;
@@ -3128,14 +3139,24 @@ void NeoSettingsSave(const NeoSettings *ns)
 			}
 		}
 	}
+	{
+		const NeoSettings::Mouse *pMouse = &ns->mouse;
+		sensitivity.SetValue(pMouse->flSensitivity);
+		cvr->m_raw_input.SetValue(pMouse->bRawInput);
+		cvr->m_filter.SetValue(pMouse->bFilter);
+		const float absPitch = abs(cvr->pitch.GetFloat());
+		cvr->pitch.SetValue(pMouse->bReverse ? -absPitch : absPitch);
+		cvr->m_customaccel.SetValue(pMouse->bCustomAccel ? 3 : 0);
+		cvr->m_customaccel_exponent.SetValue(pMouse->flExponent);
+	}
 }
 
 void NeoSettingsMainLoop(NeoSettings *ns, const NeoUI::Mode eMode)
 {
 	// TODO: Separate context/section for tabs?
 	NeoUI::BeginContext(eMode);
-	static const wchar_t *WSZ_TABS_LABELS[] = {
-		L"Multiplayer", L"Keybinds"
+	static const wchar_t *WSZ_TABS_LABELS[NeoSettings::TAB__TOTAL] = {
+		L"Multiplayer", L"Keybinds", L"Mouse"
 	};
 	NeoUI::Tabs(WSZ_TABS_LABELS, ARRAYSIZE(WSZ_TABS_LABELS), &ns->iCurTab);
 	ns->pFn[ns->iCurTab](ns);
@@ -3180,9 +3201,23 @@ void NeoSettings_Keys(NeoSettings *ns)
 			wchar_t wszBindBtnName[64];
 			const char *bindBtnName = g_pInputSystem->ButtonCodeToString(bind.bcNext);
 			g_pVGuiLocalize->ConvertANSIToUnicode(bindBtnName, wszBindBtnName, sizeof(wszBindBtnName));
-			NeoUI::Button(bind.wszDisplayText, wszBindBtnName);
+			if (NeoUI::Button(bind.wszDisplayText, wszBindBtnName).bPressed)
+			{
+				// TODO
+			}
 		}
 	}
+}
+
+void NeoSettings_Mouse(NeoSettings *ns)
+{
+	NeoSettings::Mouse *nsMouse = &ns->mouse;
+	NeoUI::Slider(L"Sensitivity", &nsMouse->flSensitivity, 0.1f, 10.0f, 2, 0.25f);
+	NeoUI::RingBoxBool(L"Raw input", &nsMouse->bRawInput);
+	NeoUI::RingBoxBool(L"Mouse Filter", &nsMouse->bFilter);
+	NeoUI::RingBoxBool(L"Mouse Reverse", &nsMouse->bReverse);
+	NeoUI::RingBoxBool(L"Custom Acceleration", &nsMouse->bCustomAccel);
+	NeoUI::Slider(L"Exponent", &nsMouse->flExponent, 1.0f, 1.4f, 2, 0.1f);
 }
 
 ///////
