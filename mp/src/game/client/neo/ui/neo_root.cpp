@@ -3036,7 +3036,9 @@ void CNeoPanel_ServerBrowser::OnTick()
 
 void NeoSettingsInit(NeoSettings *ns)
 {
-	static constexpr int DISP_SIZE = 32;
+	int iNativeWidth, iNativeHeight;
+	gameuifuncs->GetDesktopResolution(iNativeWidth, iNativeHeight);
+	static constexpr int DISP_SIZE = sizeof("(#######x#######) (Native)");
 	NeoSettings::Video *pVideo = &ns->video;
 	gameuifuncs->GetVideoModes(&pVideo->vmList, &pVideo->iVMListSize);
 	pVideo->p2WszVmDispList = (wchar_t **)calloc(sizeof(wchar_t *), pVideo->iVMListSize);
@@ -3044,7 +3046,9 @@ void NeoSettingsInit(NeoSettings *ns)
 	for (int i = 0, offset = 0; i < pVideo->iVMListSize; ++i, offset += DISP_SIZE)
 	{
 		vmode_t *vm = &pVideo->vmList[i];
-		swprintf(pVideo->p2WszVmDispList[0] + offset, DISP_SIZE - 1, L"%d x %d", vm->width, vm->height);
+		swprintf(pVideo->p2WszVmDispList[0] + offset, DISP_SIZE - 1, L"%d x %d%ls",
+				 vm->width, vm->height,
+				 (iNativeWidth == vm->width && iNativeHeight == vm->height) ? L" (Native)" : L"");
 		pVideo->p2WszVmDispList[i] = pVideo->p2WszVmDispList[0] + offset;
 	}
 
@@ -3177,15 +3181,82 @@ void NeoSettingsRestore(NeoSettings *ns)
 		// High                   1                0
 		// Medium                 0                0
 		// Low                    0                1
-		pAudio->iSoundQuality = (cvr->snd_pitchquality.GetBool()) ?
-					QUALITY_HIGH :
-					(cvr->dsp_slow_cpu.GetBool()) ? QUALITY_LOW :
-													QUALITY_MEDIUM;
+		pAudio->iSoundQuality =	(cvr->snd_pitchquality.GetBool()) 	? QUALITY_HIGH :
+								(cvr->dsp_slow_cpu.GetBool()) 		? QUALITY_LOW :
+																	  QUALITY_MEDIUM;
 
 		// Input
 		pAudio->bVoiceEnabled = cvr->voice_enable.GetBool();
 		pAudio->flVolVoiceRecv = cvr->voice_scale.GetFloat();
 		pAudio->bMicBoost = (engine->GetVoiceTweakAPI()->GetControlFloat(MicBoost) != 0.0f);
+	}
+	{
+		NeoSettings::Video *pVideo = &ns->video;
+
+		int iScreenWidth, iScreenHeight;
+		engine->GetScreenSize(iScreenWidth, iScreenHeight); // Or: g_pMaterialSystem->GetDisplayMode?
+		pVideo->iResolution = pVideo->iVMListSize - 1;
+		for (int i = 0; i < pVideo->iVMListSize; ++i)
+		{
+			vmode_t *vm = &pVideo->vmList[i];
+			if (vm->width == iScreenWidth && vm->height == iScreenHeight)
+			{
+				pVideo->iResolution = i;
+				break;
+			}
+		}
+
+		pVideo->iWindow = static_cast<int>(g_pMaterialSystem->GetCurrentConfigForVideoCard().Windowed());
+		const int queueMode = cvr->mat_queue_mode.GetInt();
+		pVideo->iCoreRendering = (queueMode == -1 || queueMode == 2) ? THREAD_MULTI : THREAD_SINGLE;
+		pVideo->iModelDetail = 2 - cvr->r_rootlod.GetInt(); // Inverse, highest = 0, lowest = 2
+		pVideo->iTextureDetail = 3 - (cvr->mat_picmip.GetInt() + 1); // Inverse+1, highest = -1, lowest = 2
+		pVideo->iShaderDetail = 1 - cvr->mat_reducefillrate.GetInt(); // Inverse, 1 = low, 0 = high
+		// Water detail
+		//                r_waterforceexpensive        r_waterforcereflectentities
+		// Simple:                  0                              0
+		// Reflect World:           1                              0
+		// Reflect all:             1                              1
+		pVideo->iWaterDetail = 	(cvr->r_waterforcereflectentities.GetBool()) 	? QUALITY_HIGH :
+								(cvr->r_waterforceexpensive.GetBool()) 			? QUALITY_MEDIUM :
+																				  QUALITY_LOW;
+
+		// Shadow detail
+		//         r_flashlightdepthtexture     r_shadowrendertotexture
+		// Low:              0                            0
+		// Medium:           0                            1
+		// High:             1                            1
+		pVideo->iShadowDetail =	(cvr->r_flashlightdepthtexture.GetBool()) 		? QUALITY_HIGH :
+								(cvr->r_shadowrendertotexture.GetBool()) 		? QUALITY_MEDIUM :
+																				  QUALITY_LOW;
+
+		pVideo->bColorCorrection = cvr->mat_colorcorrection.GetBool();
+		pVideo->iAntiAliasing = (cvr->mat_antialias.GetInt() / 2); // MSAA: Times by 2
+
+		// Filtering mode
+		// mat_trilinear: 0 = bilinear, 1 = trilinear (both: mat_forceaniso 1)
+		// mat_forceaniso: Antisotropic 2x/4x/8x/16x (all aniso: mat_trilinear 0)
+		int filterIdx = 0;
+		if (cvr->mat_forceaniso.GetInt() < 2)
+		{
+			filterIdx = cvr->mat_trilinear.GetBool() ? FILTERING_TRILINEAR : FILTERING_BILINEAR;
+		}
+		else
+		{
+			switch (cvr->mat_forceaniso.GetInt())
+			{
+			break; case 2: filterIdx = FILTERING_ANISO2X;
+			break; case 4: filterIdx = FILTERING_ANISO4X;
+			break; case 8: filterIdx = FILTERING_ANISO8X;
+			break; case 16: filterIdx = FILTERING_ANISO16X;
+			break; default: filterIdx = FILTERING_ANISO4X; // Some invalid number, just set to 4X (idx 3)
+			}
+		}
+		pVideo->iFilteringMode = filterIdx;
+		pVideo->bVSync = cvr->mat_vsync.GetBool();
+		pVideo->bMotionBlur = cvr->mat_motion_blur_enabled.GetBool();
+		pVideo->iHDR = cvr->mat_hdr_level.GetInt();
+		pVideo->flGamma = cvr->mat_monitorgamma.GetFloat();
 	}
 }
 
@@ -3278,6 +3349,38 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->voice_enable.SetValue(pAudio->bVoiceEnabled);
 		cvr->voice_scale.SetValue(pAudio->flVolVoiceRecv);
 		engine->GetVoiceTweakAPI()->SetControlFloat(MicBoost, static_cast<float>(pAudio->bMicBoost));
+	}
+	{
+		const NeoSettings::Video *pVideo = &ns->video;
+
+		const int resIdx = pVideo->iResolution;
+		if (resIdx >= 0 && resIdx < pVideo->iVMListSize)
+		{
+			// mat_setvideomode [width] [height] [mode] | mode: 0 = fullscreen, 1 = windowed
+			vmode_t *vm = &pVideo->vmList[resIdx];
+			char cmdStr[128];
+			V_sprintf_safe(cmdStr, "mat_setvideomode %d %d %d", vm->width, vm->height, pVideo->iWindow);
+			engine->ClientCmd_Unrestricted(cmdStr);
+		}
+		cvr->mat_queue_mode.SetValue((pVideo->iCoreRendering == THREAD_MULTI) ? 2 : 0);
+		cvr->r_rootlod.SetValue(2 - pVideo->iModelDetail);
+		cvr->mat_picmip.SetValue(2 - pVideo->iTextureDetail);
+		cvr->mat_reducefillrate.SetValue(1 - pVideo->iShaderDetail);
+		cvr->r_waterforceexpensive.SetValue(pVideo->iWaterDetail >= QUALITY_MEDIUM);
+		cvr->r_waterforcereflectentities.SetValue(pVideo->iWaterDetail == QUALITY_HIGH);
+		cvr->r_shadowrendertotexture.SetValue(pVideo->iShadowDetail >= QUALITY_MEDIUM);
+		cvr->r_flashlightdepthtexture.SetValue(pVideo->iShadowDetail == QUALITY_HIGH);
+		cvr->mat_colorcorrection.SetValue(pVideo->bColorCorrection);
+		cvr->mat_antialias.SetValue(pVideo->iAntiAliasing * 2);
+		cvr->mat_trilinear.SetValue(pVideo->iFilteringMode == FILTERING_TRILINEAR);
+		static constexpr int ANISO_MAP[FILTERING__TOTAL] = {
+			1, 1, 2, 4, 8, 16
+		};
+		cvr->mat_forceaniso.SetValue(ANISO_MAP[pVideo->iFilteringMode]);
+		cvr->mat_vsync.SetValue(pVideo->bVSync);
+		cvr->mat_motion_blur_enabled.SetValue(pVideo->bMotionBlur);
+		cvr->mat_hdr_level.SetValue(pVideo->iHDR);
+		cvr->mat_monitorgamma.SetValue(pVideo->flGamma);
 	}
 }
 
@@ -3391,6 +3494,20 @@ void NeoSettings_Video(NeoSettings *ns)
 {
 	NeoSettings::Video *pVideo = &ns->video;
 	NeoUI::RingBox(L"Resolution", const_cast<const wchar_t **>(pVideo->p2WszVmDispList), pVideo->iVMListSize, &pVideo->iResolution);
+	NeoUI::RingBox(L"Window", WINDOW_MODE, ARRAYSIZE(WINDOW_MODE), &pVideo->iWindow);
+	NeoUI::RingBox(L"Core Rendering", QUEUE_MODE, ARRAYSIZE(QUEUE_MODE), &pVideo->iCoreRendering);
+	NeoUI::RingBox(L"Model detail", QUALITY_LABELS, 3, &pVideo->iModelDetail);
+	NeoUI::RingBox(L"Texture detail", QUALITY_LABELS, 4, &pVideo->iTextureDetail);
+	NeoUI::RingBox(L"Shader detail", QUALITY2_LABELS, 2, &pVideo->iShaderDetail);
+	NeoUI::RingBox(L"Water detail", WATER_LABELS, ARRAYSIZE(WATER_LABELS), &pVideo->iWaterDetail);
+	NeoUI::RingBox(L"Shadow detail", QUALITY_LABELS, 3, &pVideo->iShadowDetail);
+	NeoUI::RingBoxBool(L"Color correction", &pVideo->bColorCorrection);
+	NeoUI::RingBox(L"Anti-aliasing", MSAA_LABELS, ARRAYSIZE(MSAA_LABELS), &pVideo->iAntiAliasing);
+	NeoUI::RingBox(L"Filtering mode", FILTERING_LABELS, FILTERING__TOTAL, &pVideo->iFilteringMode);
+	NeoUI::RingBoxBool(L"V-Sync", &pVideo->bVSync);
+	NeoUI::RingBoxBool(L"Motion blur", &pVideo->bMotionBlur);
+	NeoUI::RingBox(L"HDR", HDR_LABELS, ARRAYSIZE(HDR_LABELS), &pVideo->iHDR);
+	NeoUI::Slider(L"Gamma", &pVideo->flGamma, 1.6, 2.6, 2, 0.1f);
 }
 
 ///////
