@@ -798,6 +798,8 @@ struct NeoSettings;
 void NeoSettings_General(NeoSettings *ns);
 void NeoSettings_Keys(NeoSettings *ns);
 void NeoSettings_Mouse(NeoSettings *ns);
+void NeoSettings_Audio(NeoSettings *ns);
+void NeoSettings_Video(NeoSettings *ns);
 struct NeoSettings
 {
 	struct General
@@ -841,23 +843,49 @@ struct NeoSettings
 		float flExponent;
 	};
 
+	struct Audio
+	{
+		float flVolMain;
+		float flVolMusic;
+		float flVolVictory;
+		int iSoundSetup;
+		int iSoundQuality;
+		bool bMuteAudioUnFocus;
+		bool bVoiceEnabled;
+		float flVolVoiceRecv;
+		bool bMicBoost;
+	};
+
+	struct Video
+	{
+		int iResolution;
+		int iWindow;
+		int iCoreRendering;
+		int iModelDetail;
+		int iTextureDetail;
+		int iShaderDetail;
+		int iWaterDetail;
+		int iShadowDetail;
+		bool bColorCorrection;
+		int iAntiAliasing;
+		int iFilteringMode;
+		bool bVSync;
+		bool bMotionBlur;
+		int iHDR;
+		float flGamma;
+
+		// Video modes
+		int iVMListSize;
+		vmode_t *vmList;
+		wchar_t **p2WszVmDispList;
+	};
+
 	General general;
 	Keys keys;
 	Mouse mouse;
+	Audio audio;
+	Video video;
 
-	enum Tabs
-	{
-		TAB_GENERAL = 0,
-		TAB_KEYS,
-		TAB_MOUSE,
-
-		TAB__TOTAL,
-	};
-	void (*pFn[TAB__TOTAL])(NeoSettings *) = {
-		NeoSettings_General,
-		NeoSettings_Keys,
-		NeoSettings_Mouse,
-	};
 	int iCurTab = 0;
 
 #define CONVARREF_DEF(_name) ConVarRef _name{#_name}
@@ -873,10 +901,40 @@ struct NeoSettings
 		CONVARREF_DEF(m_customaccel);
 		CONVARREF_DEF(m_customaccel_exponent);
 		CONVARREF_DEF(m_raw_input);
+
+		// Audio
+		CONVARREF_DEF(volume);
+		CONVARREF_DEF(snd_musicvolume);
+		CONVARREF_DEF(snd_surround_speakers);
+		CONVARREF_DEF(voice_enable);
+		CONVARREF_DEF(voice_scale);
+		CONVARREF_DEF(snd_mute_losefocus);
+		CONVARREF_DEF(snd_pitchquality);
+		CONVARREF_DEF(dsp_slow_cpu);
+
+		// Video
+		CONVARREF_DEF(mat_queue_mode);
+		CONVARREF_DEF(r_rootlod);
+		CONVARREF_DEF(mat_picmip);
+		CONVARREF_DEF(mat_reducefillrate);
+		CONVARREF_DEF(r_waterforceexpensive);
+		CONVARREF_DEF(r_waterforcereflectentities);
+		CONVARREF_DEF(r_flashlightdepthtexture);
+		CONVARREF_DEF(r_shadowrendertotexture);
+		CONVARREF_DEF(mat_colorcorrection);
+		CONVARREF_DEF(mat_antialias);
+		CONVARREF_DEF(mat_trilinear);
+		CONVARREF_DEF(mat_forceaniso);
+		CONVARREF_DEF(mat_vsync);
+		CONVARREF_DEF(mat_motion_blur_enabled);
+		CONVARREF_DEF(mat_hdr_level);
+		CONVARREF_DEF(mat_monitorgamma);
 	};
 	CVR cvr;
 #undef CONVARREF_DEF
 };
+void NeoSettingsInit(NeoSettings *ns);
+void NeoSettingsDeinit(NeoSettings *ns);
 void NeoSettingsRestore(NeoSettings *ns);
 void NeoSettingsSave(const NeoSettings *ns);
 void NeoSettingsMainLoop(NeoSettings *ns, const NeoUI::Mode eMode);
