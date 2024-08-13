@@ -192,7 +192,7 @@ void NeoUI::BeginSection(const bool bDefaultFocus)
 						   0 <= g_ctx.iMouseRelY && g_ctx.iMouseRelY < g_ctx.dPanel.tall);
 
 	g_ctx.iHasMouseInPanel += g_ctx.bMouseInPanel;
-	if (g_ctx.bMouseInPanel)
+	if (g_ctx.bMouseInPanel && g_ctx.eMode == MODE_MOUSEMOVED)
 	{
 		// g_iRowTall used to shape the square buttons
 		if (g_ctx.iMouseRelX < g_ctx.iWgXPos)
@@ -239,7 +239,10 @@ void NeoUI::BeginSection(const bool bDefaultFocus)
 
 void NeoUI::EndSection()
 {
-	if (g_ctx.iFocus != FOCUSOFF_NUM && g_ctx.iFocusSection == g_ctx.iSection) g_ctx.iFocus = LoopAroundInArray(g_ctx.iFocus, g_ctx.iWidget);
+	if (g_ctx.iFocus != FOCUSOFF_NUM && g_ctx.iFocusSection == g_ctx.iSection)
+	{
+		g_ctx.iFocus = LoopAroundInArray(g_ctx.iFocus, g_ctx.iWidget);
+	}
 
 	if (g_ctx.eMode == MODE_MOUSEWHEELED)
 	{
@@ -348,6 +351,11 @@ void NeoUI::Label(const wchar_t *wszText, const bool bCenter)
 	InternalUpdatePartitionState(true, true);
 }
 
+NeoUI::RetButton NeoUI::Button(const wchar_t *wszText)
+{
+	return Button(nullptr, wszText);
+}
+
 NeoUI::RetButton NeoUI::Button(const wchar_t *wszLeftLabel, const wchar_t *wszText)
 {
 	RetButton ret = {};
@@ -388,6 +396,16 @@ NeoUI::RetButton NeoUI::Button(const wchar_t *wszLeftLabel, const wchar_t *wszTe
 		case MODE_KEYPRESSED:
 		{
 			ret.bKeyPressed = ret.bPressed = (bFocused && g_ctx.eCode == KEY_ENTER);
+		}
+		break;
+		case MODE_MOUSEMOVED:
+		{
+			if (bMouseIn)
+			{
+				g_ctx.iFocus = g_ctx.iWidget;
+				g_ctx.iFocusSection = g_ctx.iSection;
+				g_ctx.iFocusDirection = 0;
+			}
 		}
 		break;
 		default:
@@ -2652,11 +2670,11 @@ void NeoSettingsMainLoop(NeoSettings *ns, const NeoUI::Mode eMode)
 
 	g_ctx.dPanel.wide = g_iRootSubPanelWide;
 	g_ctx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
-	g_ctx.dPanel.y = (tall / 2) - (iTallTotal / 2);
-	g_ctx.dPanel.tall = g_iRowTall;
 	g_ctx.bgColor = COLOR_NEOPANELFRAMEBG;
 	NeoUI::BeginContext(eMode);
 	{
+		g_ctx.dPanel.y = (tall / 2) - (iTallTotal / 2);
+		g_ctx.dPanel.tall = g_iRowTall;
 		NeoUI::BeginSection();
 		{
 			NeoUI::Tabs(WSZ_TABS_LABELS, ARRAYSIZE(WSZ_TABS_LABELS), &ns->iCurTab);
@@ -2675,22 +2693,22 @@ void NeoSettingsMainLoop(NeoSettings *ns, const NeoUI::Mode eMode)
 		{
 			NeoUI::BeginHorizontal(g_ctx.dPanel.wide / 5);
 			{
-				if (NeoUI::Button(nullptr, L"Back (ESC)").bPressed)
+				if (NeoUI::Button(L"Back (ESC)").bPressed)
 				{
 					ns->bBack = true;
 				}
-				if (NeoUI::Button(nullptr, L"Legacy").bPressed)
+				if (NeoUI::Button(L"Legacy").bPressed)
 				{
 					g_pNeoRoot->GetGameUI()->SendMainMenuCommand("OpenOptionsDialog");
 				}
 				NeoUI::Pad();
 				if (ns->bModified)
 				{
-					if (NeoUI::Button(nullptr, L"Restore").bPressed)
+					if (NeoUI::Button(L"Restore").bPressed)
 					{
 						NeoSettingsRestore(ns);
 					}
-					if (NeoUI::Button(nullptr, L"Accept").bPressed)
+					if (NeoUI::Button(L"Accept").bPressed)
 					{
 						NeoSettingsSave(ns);
 					}
@@ -3227,7 +3245,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 			const auto btnInfo = BTNS_INFO[i];
 			if (btnInfo.flags & iFlagToMatch)
 			{
-				const auto retBtn = NeoUI::Button(nullptr, m_wszDispBtnTexts[i]);
+				const auto retBtn = NeoUI::Button(m_wszDispBtnTexts[i]);
 				if (retBtn.bPressed)
 				{
 					surface()->PlaySound("ui/buttonclickrelease.wav");

@@ -107,6 +107,7 @@ struct RetButton
 void Pad();
 void Label(const wchar_t *wszText, const bool bCenter = false);
 void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
+RetButton Button(const wchar_t *wszText);
 RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText);
 void RingBoxBool(const wchar_t *wszLeftLabel, bool *bChecked);
 void RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
