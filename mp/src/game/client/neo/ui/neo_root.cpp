@@ -124,50 +124,39 @@ void OverrideGameUI()
 
 static NeoUI::Context g_ctx;
 
-// This is only because it'll be an eye-sore and repetitve with those g_ctx.iPanelPos...
-static void GCtxDrawFilledRect(const int x1, const int y1, const int x2, const int y2)
+// This is only because it'll be an eye-sore and repetitve with those g_ctx.dPanel, iLayout, g_iRowTall...
+static void GCtxDrawFilledRectXtoX(const int x1, const int x2)
 {
-	surface()->DrawFilledRect(g_ctx.iPanelPosX + x1, g_ctx.iPanelPosY + y1,
-							  g_ctx.iPanelPosX + x2, g_ctx.iPanelPosY + y2);
+	surface()->DrawFilledRect(g_ctx.dPanel.x + g_ctx.iLayoutX + x1,
+							  g_ctx.dPanel.y + g_ctx.iLayoutY,
+							  g_ctx.dPanel.x + g_ctx.iLayoutX + x2,
+							  g_ctx.dPanel.y + g_ctx.iLayoutY + g_iRowTall);
 }
 static void GCtxDrawSetTextPos(const int x, const int y)
 {
-	surface()->DrawSetTextPos(g_ctx.iPanelPosX + x, g_ctx.iPanelPosY + y);
+	surface()->DrawSetTextPos(g_ctx.dPanel.x + x, g_ctx.dPanel.y + y);
 }
 
 void NeoUI::BeginContext(const NeoUI::Mode eMode)
 {
 	g_ctx.eMode = eMode;
-	g_ctx.iPartitionY = 0;
-	g_ctx.iLayoutY = -(g_ctx.iYOffset * g_iRowTall);
+	g_ctx.iLayoutY = -(g_ctx.iYOffset[0] * g_iRowTall);
 	g_ctx.iWidget = 0;
 	g_ctx.iFontTall = surface()->GetFontTall(g_neoFont);
 	g_ctx.iFontYOffset = (g_iRowTall / 2) - (g_ctx.iFontTall / 2);
-	g_ctx.iWgXPos = static_cast<int>(g_ctx.iPanelWide * 0.4f);
-
-	if (eMode == NeoUI::MODE_PAINT)
-	{
-		surface()->DrawSetColor(g_ctx.bgColor);
-		GCtxDrawFilledRect(0, 0, g_ctx.iPanelWide, g_ctx.iPanelTall);
-
-		surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
-		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
-	}
+	g_ctx.iWgXPos = static_cast<int>(g_ctx.dPanel.wide * 0.4f);
+	g_ctx.iSection = 0;
+	g_ctx.iHasMouseInPanel = 0;
+	g_ctx.iHorizontalWidth = 0;
+	g_ctx.bValueEdited = false;
 
 	switch (g_ctx.eMode)
 	{
-	case MODE_MOUSEPRESSED:
-		if (!g_ctx.bMouseInPanel)
-		{
-			g_ctx.iFocusDirection = 0;
-			g_ctx.iFocus = FOCUSOFF_NUM;
-		}
-		break;
 	case MODE_KEYPRESSED:
 		if (g_ctx.eCode == KEY_DOWN || g_ctx.eCode == KEY_UP)
 		{
 			g_ctx.iFocusDirection = (g_ctx.eCode == KEY_UP) ? -1 : +1;
-			g_ctx.iFocus += g_ctx.iFocusDirection;
+			g_ctx.iFocus = (g_ctx.iFocus == FOCUSOFF_NUM) ? 0 : (g_ctx.iFocus + g_ctx.iFocusDirection);
 		}
 		break;
 	default:
@@ -177,20 +166,109 @@ void NeoUI::BeginContext(const NeoUI::Mode eMode)
 
 void NeoUI::EndContext()
 {
-	if (g_ctx.iFocus != FOCUSOFF_NUM) g_ctx.iFocus = LoopAroundInArray(g_ctx.iFocus, g_ctx.iWidget);
+	if (g_ctx.eMode == MODE_MOUSEMOVED && !g_ctx.iHasMouseInPanel)
+	{
+		g_ctx.eMousePos = MOUSEPOS_NONE;
+		g_ctx.iFocusDirection = 0;
+		g_ctx.iFocus = FOCUSOFF_NUM;
+		g_ctx.iFocusSection = -1;
+	}
+
+	if (g_ctx.eMode == MODE_KEYPRESSED && g_ctx.iFocusSection == -1 && (g_ctx.eCode == KEY_DOWN || g_ctx.eCode == KEY_UP))
+	{
+		g_ctx.iFocusSection = 0;
+	}
+}
+
+void NeoUI::BeginSection(const bool bDefaultFocus)
+{
+	g_ctx.iPartitionY = 0;
+	g_ctx.iLayoutY = -(g_ctx.iYOffset[g_ctx.iSection] * g_iRowTall);
+	g_ctx.iWidget = 0;
+
+	g_ctx.iMouseRelX = g_ctx.iMouseAbsX - g_ctx.dPanel.x;
+	g_ctx.iMouseRelY = g_ctx.iMouseAbsY - g_ctx.dPanel.y;
+	g_ctx.bMouseInPanel = (0 <= g_ctx.iMouseRelX && g_ctx.iMouseRelX < g_ctx.dPanel.wide &&
+						   0 <= g_ctx.iMouseRelY && g_ctx.iMouseRelY < g_ctx.dPanel.tall);
+
+	g_ctx.iHasMouseInPanel += g_ctx.bMouseInPanel;
+	if (g_ctx.bMouseInPanel)
+	{
+		// g_iRowTall used to shape the square buttons
+		if (g_ctx.iMouseRelX < g_ctx.iWgXPos)
+		{
+			g_ctx.eMousePos = NeoUI::MOUSEPOS_NONE;
+		}
+		else if (g_ctx.iMouseRelX < (g_ctx.iWgXPos + g_iRowTall))
+		{
+			g_ctx.eMousePos = NeoUI::MOUSEPOS_LEFT;
+		}
+		else if (g_ctx.iMouseRelX > (g_ctx.dPanel.wide - g_iRowTall))
+		{
+			g_ctx.eMousePos = NeoUI::MOUSEPOS_RIGHT;
+		}
+		else
+		{
+			g_ctx.eMousePos = NeoUI::MOUSEPOS_CENTER;
+		}
+		g_ctx.iFocusDirection = 0;
+		g_ctx.iFocus = g_ctx.iMouseRelY / g_iRowTall;
+		g_ctx.iFocusSection = g_ctx.iSection;
+	}
+
+	switch (g_ctx.eMode)
+	{
+	case MODE_PAINT:
+		surface()->DrawSetColor(g_ctx.bgColor);
+		surface()->DrawFilledRect(g_ctx.dPanel.x,
+								  g_ctx.dPanel.y,
+								  g_ctx.dPanel.x + g_ctx.dPanel.wide,
+								  g_ctx.dPanel.y + g_ctx.dPanel.tall);
+
+		surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
+		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
+		break;
+	case MODE_KEYPRESSED:
+		if (bDefaultFocus && g_ctx.iFocusSection == -1 && (g_ctx.eCode == KEY_DOWN || g_ctx.eCode == KEY_UP))
+		{
+			g_ctx.iFocusSection = g_ctx.iSection;
+		}
+		break;
+	}
+}
+
+void NeoUI::EndSection()
+{
+	if (g_ctx.iFocus != FOCUSOFF_NUM && g_ctx.iFocusSection == g_ctx.iSection) g_ctx.iFocus = LoopAroundInArray(g_ctx.iFocus, g_ctx.iWidget);
 
 	if (g_ctx.eMode == MODE_MOUSEWHEELED)
 	{
 		if (g_ctx.iWidget <= g_iRowsInScreen)
 		{
-			g_ctx.iYOffset = 0;
+			g_ctx.iYOffset[g_ctx.iSection] = 0;
 		}
 		else
 		{
-			g_ctx.iYOffset += (g_ctx.eCode == MOUSE_WHEEL_UP) ? -1 : +1;
-			g_ctx.iYOffset = clamp(g_ctx.iYOffset, 0, g_ctx.iWidget - g_iRowsInScreen);
+			g_ctx.iYOffset[g_ctx.iSection] += (g_ctx.eCode == MOUSE_WHEEL_UP) ? -1 : +1;
+			g_ctx.iYOffset[g_ctx.iSection] = clamp(g_ctx.iYOffset[g_ctx.iSection], 0, g_ctx.iWidget - g_iRowsInScreen);
 		}
 	}
+
+	++g_ctx.iSection;
+}
+
+void NeoUI::BeginHorizontal(const int iHorizontalWidth)
+{
+	g_ctx.iHorizontalWidth = iHorizontalWidth;
+	g_ctx.iLayoutX = 0;
+}
+
+void NeoUI::EndHorizontal()
+{
+	g_ctx.iHorizontalWidth = 0;
+	g_ctx.iLayoutX = 0;
+	++g_ctx.iPartitionY;
+	g_ctx.iLayoutY += g_iRowTall;
 }
 
 static void InternalLabel(const wchar_t *wszText, const bool bCenter)
@@ -200,7 +278,7 @@ static void InternalLabel(const wchar_t *wszText, const bool bCenter)
 	{
 		surface()->GetTextSize(g_neoFont, wszText, iFontTextWidth, iFontTextHeight);
 	}
-	GCtxDrawSetTextPos(((bCenter) ? ((g_ctx.iPanelWide / 2) - (iFontTextWidth / 2)) : g_iMarginX),
+	GCtxDrawSetTextPos(((bCenter) ? ((g_ctx.dPanel.wide / 2) - (iFontTextWidth / 2)) : g_iMarginX),
 					   g_ctx.iLayoutY + g_ctx.iFontYOffset);
 	surface()->DrawPrintText(wszText, V_wcslen(wszText));
 }
@@ -213,8 +291,12 @@ struct GetMouseinFocusedRet
 
 static GetMouseinFocusedRet InternalGetMouseinFocused()
 {
-	const bool bMouseIn = (g_ctx.bMouseInPanel && ((g_ctx.iMouseRelY / g_iRowTall) == g_ctx.iPartitionY));
-	const bool bFocused = g_ctx.iWidget == g_ctx.iFocus;
+	bool bMouseIn = (g_ctx.bMouseInPanel && ((g_ctx.iMouseRelY / g_iRowTall) == g_ctx.iPartitionY));
+	if (bMouseIn && g_ctx.iHorizontalWidth)
+	{
+		bMouseIn = IN_BETWEEN(g_ctx.iLayoutX, g_ctx.iMouseRelX, g_ctx.iLayoutX + g_ctx.iHorizontalWidth);
+	}
+	const bool bFocused = g_ctx.iWidget == g_ctx.iFocus && g_ctx.iSection == g_ctx.iFocusSection;
 	if (bFocused)
 	{
 		surface()->DrawSetColor(COLOR_NEOPANELSELECTBG);
@@ -228,8 +310,7 @@ static GetMouseinFocusedRet InternalGetMouseinFocused()
 
 static void InternalUpdatePartitionState(const bool bMouseIn, const bool bFocused)
 {
-	++g_ctx.iPartitionY;
-	g_ctx.iLayoutY += g_iRowTall;
+	NeoUI::Pad();
 	++g_ctx.iWidget;
 	if (bMouseIn || bFocused)
 	{
@@ -242,45 +323,25 @@ static void GCtxOnCursorMoved(int iAbsX, int iAbsY)
 {
 	g_ctx.iMouseAbsX = iAbsX;
 	g_ctx.iMouseAbsY = iAbsY;
-	g_ctx.iMouseRelX = g_ctx.iMouseAbsX - g_ctx.iPanelPosX;
-	g_ctx.iMouseRelY = g_ctx.iMouseAbsY - g_ctx.iPanelPosY;
-	g_ctx.bMouseInPanel = (0 <= g_ctx.iMouseRelX && g_ctx.iMouseRelX < g_ctx.iPanelWide &&
-						   0 <= g_ctx.iMouseRelY && g_ctx.iMouseRelY < g_ctx.iPanelTall);
+}
 
-	if (g_ctx.bMouseInPanel)
+void NeoUI::Pad()
+{
+	if (g_ctx.iHorizontalWidth)
 	{
-		// g_iRowTall used to shape the square buttons
-		if (g_ctx.iMouseRelX < g_ctx.iWgXPos)
-		{
-			g_ctx.eMousePos = NeoUI::MOUSEPOS_NONE;
-		}
-		else if (g_ctx.iMouseRelX < (g_ctx.iWgXPos + g_iRowTall))
-		{
-			g_ctx.eMousePos = NeoUI::MOUSEPOS_LEFT;
-		}
-		else if (g_ctx.iMouseRelX > (g_ctx.iPanelWide - g_iRowTall))
-		{
-			g_ctx.eMousePos = NeoUI::MOUSEPOS_RIGHT;
-		}
-		else
-		{
-			g_ctx.eMousePos = NeoUI::MOUSEPOS_CENTER;
-		}
-		g_ctx.iFocusDirection = 0;
-		g_ctx.iFocus = g_ctx.iMouseRelY / g_iRowTall;
+		g_ctx.iLayoutX += g_ctx.iHorizontalWidth;
 	}
 	else
 	{
-		g_ctx.eMousePos = NeoUI::MOUSEPOS_NONE;
-		g_ctx.iFocusDirection = 0;
-		g_ctx.iFocus = NeoUI::FOCUSOFF_NUM;
+		++g_ctx.iPartitionY;
+		g_ctx.iLayoutY += g_iRowTall;
 	}
 }
 
 void NeoUI::Label(const wchar_t *wszText, const bool bCenter)
 {
-	if (g_ctx.iWidget == g_ctx.iFocus) g_ctx.iFocus += g_ctx.iFocusDirection;
-	if (IN_BETWEEN(0, g_ctx.iLayoutY, g_ctx.iPanelTall))
+	if (g_ctx.iWidget == g_ctx.iFocus && g_ctx.iSection == g_ctx.iFocusSection) g_ctx.iFocus += g_ctx.iFocusDirection;
+	if (IN_BETWEEN(0, g_ctx.iLayoutY, g_ctx.dPanel.tall))
 	{
 		InternalLabel(wszText, bCenter);
 	}
@@ -293,8 +354,9 @@ NeoUI::RetButton NeoUI::Button(const wchar_t *wszLeftLabel, const wchar_t *wszTe
 	auto [bMouseIn, bFocused] = InternalGetMouseinFocused();
 	ret.bMouseHover = bMouseIn && (!wszLeftLabel || (wszLeftLabel && g_ctx.eMousePos != MOUSEPOS_NONE));
 
-	if (IN_BETWEEN(0, g_ctx.iLayoutY, g_ctx.iPanelTall))
+	if (IN_BETWEEN(0, g_ctx.iLayoutY, g_ctx.dPanel.tall))
 	{
+		const int iBtnWidth = g_ctx.iHorizontalWidth ? g_ctx.iHorizontalWidth : g_ctx.dPanel.wide;
 		switch (g_ctx.eMode)
 		{
 		case MODE_PAINT:
@@ -305,15 +367,15 @@ NeoUI::RetButton NeoUI::Button(const wchar_t *wszLeftLabel, const wchar_t *wszTe
 			if (wszLeftLabel)
 			{
 				InternalLabel(wszLeftLabel, false);
-				GCtxDrawFilledRect(g_ctx.iWgXPos, g_ctx.iLayoutY, g_ctx.iPanelWide, g_ctx.iLayoutY + g_iRowTall);
-				GCtxDrawSetTextPos(g_ctx.iWgXPos + (((g_ctx.iPanelWide - g_ctx.iWgXPos) / 2) - (iFontWide / 2)),
+				GCtxDrawFilledRectXtoX(g_ctx.iWgXPos, g_ctx.dPanel.wide);
+				GCtxDrawSetTextPos(g_ctx.iWgXPos + (((g_ctx.dPanel.wide - g_ctx.iWgXPos) / 2) - (iFontWide / 2)),
 								   g_ctx.iLayoutY + g_ctx.iFontYOffset);
 			}
 			else
 			{
 				// No label, fill the whole partition
-				GCtxDrawFilledRect(0, g_ctx.iLayoutY, g_ctx.iPanelWide, g_ctx.iLayoutY + g_iRowTall);
-				GCtxDrawSetTextPos(((g_ctx.iPanelWide / 2) - (iFontWide / 2)), g_ctx.iLayoutY + g_ctx.iFontYOffset);
+				GCtxDrawFilledRectXtoX(0, iBtnWidth);
+				GCtxDrawSetTextPos(g_ctx.iLayoutX + ((iBtnWidth / 2) - (iFontWide / 2)), g_ctx.iLayoutY + g_ctx.iFontYOffset);
 			}
 			surface()->DrawPrintText(wszText, V_wcslen(wszText));
 		}
@@ -348,7 +410,7 @@ void NeoUI::RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, 
 {
 	auto [bMouseIn, bFocused] = InternalGetMouseinFocused();
 
-	if (IN_BETWEEN(0, g_ctx.iLayoutY, g_ctx.iPanelTall))
+	if (IN_BETWEEN(0, g_ctx.iLayoutY, g_ctx.dPanel.tall))
 	{
 		switch (g_ctx.eMode)
 		{
@@ -360,7 +422,7 @@ void NeoUI::RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, 
 			const wchar_t *wszText = wszLabelsList[*iIndex];
 			int iFontWide, iFontTall;
 			surface()->GetTextSize(g_neoFont, wszText, iFontWide, iFontTall);
-			GCtxDrawSetTextPos(g_ctx.iWgXPos + (((g_ctx.iPanelWide - g_ctx.iWgXPos) / 2) - (iFontWide / 2)),
+			GCtxDrawSetTextPos(g_ctx.iWgXPos + (((g_ctx.dPanel.wide - g_ctx.iWgXPos) / 2) - (iFontWide / 2)),
 							   g_ctx.iLayoutY + g_ctx.iFontYOffset);
 			surface()->DrawPrintText(wszText, V_wcslen(wszText));
 
@@ -374,13 +436,13 @@ void NeoUI::RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, 
 			}
 
 			// Left-side "<" prev button
-			GCtxDrawFilledRect(g_ctx.iWgXPos, g_ctx.iLayoutY, g_ctx.iWgXPos + g_iRowTall, g_ctx.iLayoutY + g_iRowTall);
+			GCtxDrawFilledRectXtoX(g_ctx.iWgXPos, g_ctx.iWgXPos + g_iRowTall);
 			GCtxDrawSetTextPos(g_ctx.iWgXPos + iStartBtnXPos, g_ctx.iLayoutY + iStartBtnYPos);
 			surface()->DrawPrintText(L"<", 1);
 
 			// Right-side ">" next button
-			GCtxDrawFilledRect(g_ctx.iPanelWide - g_iRowTall, g_ctx.iLayoutY, g_ctx.iPanelWide, g_ctx.iLayoutY + g_iRowTall);
-			GCtxDrawSetTextPos(g_ctx.iPanelWide - g_iRowTall + iStartBtnXPos, g_ctx.iLayoutY + iStartBtnYPos);
+			GCtxDrawFilledRectXtoX(g_ctx.dPanel.wide - g_iRowTall, g_ctx.dPanel.wide);
+			GCtxDrawSetTextPos(g_ctx.dPanel.wide - g_iRowTall + iStartBtnXPos, g_ctx.iLayoutY + iStartBtnYPos);
 			surface()->DrawPrintText(L">", 1);
 		}
 		break;
@@ -390,6 +452,7 @@ void NeoUI::RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, 
 			{
 				*iIndex += (g_ctx.eMousePos == MOUSEPOS_LEFT) ? -1 : +1;
 				*iIndex = LoopAroundInArray(*iIndex, iLabelsSize);
+				g_ctx.bValueEdited = true;
 			}
 		}
 		break;
@@ -399,6 +462,7 @@ void NeoUI::RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, 
 			{
 				*iIndex += (g_ctx.eCode == KEY_LEFT) ? -1 : +1;
 				*iIndex = LoopAroundInArray(*iIndex, iLabelsSize);
+				g_ctx.bValueEdited = true;
 			}
 		}
 		break;
@@ -413,9 +477,9 @@ void NeoUI::RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, 
 void NeoUI::Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 {
 	// This is basically a ringbox but different UI
-	if (g_ctx.iWidget == g_ctx.iFocus) g_ctx.iFocus += g_ctx.iFocusDirection;
+	if (g_ctx.iWidget == g_ctx.iFocus && g_ctx.iSection == g_ctx.iFocusSection) g_ctx.iFocus += g_ctx.iFocusDirection;
 	auto [bMouseIn, bFocused] = InternalGetMouseinFocused();
-	const int iTabWide = (g_ctx.iPanelWide / iLabelsSize);
+	const int iTabWide = (g_ctx.dPanel.wide / iLabelsSize);
 
 	switch (g_ctx.eMode)
 	{
@@ -423,11 +487,11 @@ void NeoUI::Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iInd
 	{
 		for (int i = 0, iXPosTab = 0; i < iLabelsSize; ++i, iXPosTab += iTabWide)
 		{
-			const bool bHoverTab = (bMouseIn && iXPosTab <= g_ctx.iMouseRelX && g_ctx.iMouseRelX < (iXPosTab + iTabWide));
+			const bool bHoverTab = (bMouseIn && IN_BETWEEN(iXPosTab, g_ctx.iMouseRelX, iXPosTab + iTabWide));
 			if (bHoverTab || i == *iIndex)
 			{
 				surface()->DrawSetColor(bHoverTab ? COLOR_NEOPANELSELECTBG : COLOR_NEOPANELACCENTBG);
-				GCtxDrawFilledRect(iXPosTab, g_ctx.iLayoutY, iXPosTab + iTabWide, g_ctx.iLayoutY + g_iRowTall);
+				GCtxDrawFilledRectXtoX(iXPosTab, iXPosTab + iTabWide);
 			}
 			const wchar_t *wszText = wszLabelsList[i];
 			GCtxDrawSetTextPos(iXPosTab + g_iMarginX, g_ctx.iLayoutY + g_ctx.iFontYOffset);
@@ -443,7 +507,7 @@ void NeoUI::Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iInd
 			if (iNextIndex != *iIndex)
 			{
 				*iIndex = clamp(iNextIndex, 0, iLabelsSize);
-				g_ctx.iYOffset = 0;
+				g_ctx.iYOffset[g_ctx.iSection] = 0;
 			}
 		}
 	}
@@ -454,7 +518,7 @@ void NeoUI::Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iInd
 		{
 			*iIndex += (g_ctx.eCode == KEY_F1) ? -1 : +1;
 			*iIndex = LoopAroundInArray(*iIndex, iLabelsSize);
-			g_ctx.iYOffset = 0;
+			g_ctx.iYOffset[g_ctx.iSection] = 0;
 		}
 	}
 	break;
@@ -470,7 +534,7 @@ void NeoUI::Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMi
 {
 	auto [bMouseIn, bFocused] = InternalGetMouseinFocused();
 
-	if (IN_BETWEEN(0, g_ctx.iLayoutY, g_ctx.iPanelTall))
+	if (IN_BETWEEN(0, g_ctx.iLayoutY, g_ctx.dPanel.tall))
 	{
 		switch (g_ctx.eMode)
 		{
@@ -483,17 +547,16 @@ void NeoUI::Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMi
 
 			// Background bar
 			const float flPerc = (((iDp == 0) ? (int)(*flValue) : *flValue) - flMin) / (flMax - flMin);
-			const float flBarMaxWide = static_cast<float>(g_ctx.iPanelWide - g_ctx.iWgXPos);
-			GCtxDrawFilledRect(g_ctx.iWgXPos, g_ctx.iLayoutY,
-							   g_ctx.iWgXPos + static_cast<int>(flPerc * flBarMaxWide), g_ctx.iLayoutY + g_iRowTall);
+			const float flBarMaxWide = static_cast<float>(g_ctx.dPanel.wide - g_ctx.iWgXPos);
+			GCtxDrawFilledRectXtoX(g_ctx.iWgXPos, g_ctx.iWgXPos + static_cast<int>(flPerc * flBarMaxWide));
 
 			// Center-text label
 			wchar_t wszText[32];
 			const int iTextSize = V_swprintf_safe(wszText, wszFormat, *flValue);
 			int iFontWide, iFontTall;
 			surface()->GetTextSize(g_neoFont, wszText, iFontWide, iFontTall);
-			surface()->DrawSetTextPos(g_ctx.iPanelPosX + g_ctx.iWgXPos + (((g_ctx.iPanelWide - g_ctx.iWgXPos) / 2) - (iFontWide / 2)),
-									  g_ctx.iPanelPosY + g_ctx.iLayoutY + g_ctx.iFontYOffset);
+			surface()->DrawSetTextPos(g_ctx.dPanel.x + g_ctx.iWgXPos + (((g_ctx.dPanel.wide - g_ctx.iWgXPos) / 2) - (iFontWide / 2)),
+									  g_ctx.dPanel.y + g_ctx.iLayoutY + g_ctx.iFontYOffset);
 			surface()->DrawPrintText(wszText, iTextSize);
 
 			// TODO: Generate once?
@@ -506,13 +569,13 @@ void NeoUI::Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMi
 			}
 
 			// Left-side "<" prev button
-			GCtxDrawFilledRect(g_ctx.iWgXPos, g_ctx.iLayoutY, g_ctx.iWgXPos + g_iRowTall, g_ctx.iLayoutY + g_iRowTall);
+			GCtxDrawFilledRectXtoX(g_ctx.iWgXPos, g_ctx.iWgXPos + g_iRowTall);
 			GCtxDrawSetTextPos(g_ctx.iWgXPos + iStartBtnXPos, g_ctx.iLayoutY + iStartBtnYPos);
 			surface()->DrawPrintText(L"<", 1);
 
 			// Right-side ">" next button
-			GCtxDrawFilledRect(g_ctx.iPanelWide - g_iRowTall, g_ctx.iLayoutY, g_ctx.iPanelWide, g_ctx.iLayoutY + g_iRowTall);
-			GCtxDrawSetTextPos(g_ctx.iPanelWide - g_iRowTall + iStartBtnXPos, g_ctx.iLayoutY + iStartBtnYPos);
+			GCtxDrawFilledRectXtoX(g_ctx.dPanel.wide - g_iRowTall, g_ctx.dPanel.wide);
+			GCtxDrawSetTextPos(g_ctx.dPanel.wide - g_iRowTall + iStartBtnXPos, g_ctx.iLayoutY + iStartBtnYPos);
 			surface()->DrawPrintText(L">", 1);
 		}
 		break;
@@ -524,11 +587,13 @@ void NeoUI::Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMi
 				{
 					*flValue += (g_ctx.eMousePos == MOUSEPOS_LEFT) ? -flStep : +flStep;
 					*flValue = clamp(*flValue, flMin, flMax);
+					g_ctx.bValueEdited = true;
 				}
 				else if (g_ctx.eMousePos == MOUSEPOS_CENTER)
 				{
 					g_ctx.iFocusDirection = 0;
 					g_ctx.iFocus = g_ctx.iWidget;
+					g_ctx.iFocusSection = g_ctx.iSection;
 				}
 			}
 		}
@@ -539,6 +604,7 @@ void NeoUI::Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMi
 			{
 				*flValue += (g_ctx.eCode == KEY_LEFT) ? -flStep : +flStep;
 				*flValue = clamp(*flValue, flMin, flMax);
+				g_ctx.bValueEdited = true;
 			}
 		}
 		break;
@@ -547,9 +613,10 @@ void NeoUI::Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMi
 			if (bMouseIn && bFocused && g_ctx.eMousePos == MOUSEPOS_CENTER && input()->IsMouseDown(MOUSE_LEFT))
 			{
 				const int iBase = g_iRowTall + g_ctx.iWgXPos;
-				const float flPerc = static_cast<float>(g_ctx.iMouseRelX - iBase) / static_cast<float>(g_ctx.iPanelWide - g_iRowTall - iBase);
+				const float flPerc = static_cast<float>(g_ctx.iMouseRelX - iBase) / static_cast<float>(g_ctx.dPanel.wide - g_iRowTall - iBase);
 				*flValue = flMin + (flPerc * (flMax - flMin));
 				*flValue = clamp(*flValue, flMin, flMax);
+				g_ctx.bValueEdited = true;
 			}
 		}
 		break;
@@ -911,33 +978,9 @@ void CNeoPanel_Base::Paint()
 
 		switch (ndv->type)
 		{
-		case CNeoDataVariant::RINGBOX:
-		case CNeoDataVariant::SLIDER:
-		{
-			// Draw right-side widget's left-right "<" ">" buttons
-			surface()->DrawFilledRect(wgXPos, yPos, wgXPos + widgetTall, yPos + widgetTall);
-			surface()->DrawFilledRect(wgXPos + widgetWide - widgetTall, yPos, wgXPos + widgetWide, yPos + widgetTall);
-			surface()->DrawSetTextPos(wgXPos + fontStartXPos, yPos + fontStartYPos);
-			surface()->DrawPrintText(L"<", 1);
-			surface()->DrawSetTextPos(wgXPos + widgetWide - widgetTall + fontStartXPos, yPos + fontStartYPos);
-			surface()->DrawPrintText(L">", 1);
-		}
-		break;
 		case CNeoDataVariant::TEXTENTRY:
 		{
 			surface()->DrawFilledRect(wgXPos, yPos, wgXPos + widgetWide, yPos + widgetTall);
-		}
-		break;
-		case CNeoDataVariant::BINDENTRY:
-		case CNeoDataVariant::BUTTON:
-		case CNeoDataVariant::S_MICTESTER:
-		{
-			if (ndv->type != CNeoDataVariant::S_MICTESTER && !bThisHoverFocus)
-			{
-				surface()->DrawSetColor((i % 2 == 0) ? COLOR_NEOPANELNORMALBG : COLOR_NEOPANELACCENTBG);
-			}
-			if (ndv->labelSize > 0)	surface()->DrawFilledRect(wgXPos, yPos, wgXPos + widgetWide, yPos + widgetTall);
-			else					surface()->DrawFilledRect(0, yPos, g_iRootSubPanelWide, yPos + widgetTall);
 		}
 		break;
 		default: break;
@@ -965,71 +1008,6 @@ void CNeoPanel_Base::Paint()
 		// Draw the right-side widget - widget specific
 		switch (ndv->type)
 		{
-		case CNeoDataVariant::RINGBOX:
-		{
-			CNeoDataRingBox *rb = &ndv->ringBox;
-			// Draw center text
-			const wchar_t *wszLabel = rb->wszItems[rb->iCurIdx];
-			int fontWide, fontTall;
-			surface()->GetTextSize(g_neoFont, wszLabel, fontWide, fontTall);
-			surface()->DrawSetTextPos(wgXPos + (widgetWide / 2) - (fontWide / 2), yPos + fontStartYPos);
-			surface()->DrawPrintText(wszLabel, V_wcslen(wszLabel));
-		}
-		break;
-		case CNeoDataVariant::SLIDER:
-		{
-			CNeoDataSlider *sl = &ndv->slider;
-
-			// Draw the background percentage bar
-			surface()->DrawSetColor(COLOR_NEOPANELBAR);
-			const float perc = static_cast<float>(sl->iValCur - sl->iValMin) / static_cast<float>(sl->iValMax - sl->iValMin);
-			surface()->DrawFilledRect(wgXPos + widgetTall,
-									  yPos,
-									  wgXPos + widgetTall + static_cast<int>(perc * static_cast<float>(widgetWide - (2 * widgetTall))),
-									  yPos + widgetTall);
-
-			// Draw center text - Generally size 0 never happens but sanity check
-			if (sl->iWszCacheLabelSize > 0)
-			{
-				int fontWide, fontTall;
-				surface()->GetTextSize(g_neoFont, sl->wszCacheLabel, fontWide, fontTall);
-				surface()->DrawSetTextPos(wgXPos + (widgetWide / 2) - (fontWide / 2), yPos + fontStartYPos);
-				surface()->DrawPrintText(sl->wszCacheLabel, sl->iWszCacheLabelSize);
-				if (bThisFocus && bEditBlinkShow)
-				{
-					surface()->DrawSetTextPos(wgXPos + (widgetWide / 2) - (fontWide / 2) + fontWide,
-											  yPos + fontStartYPos);
-					surface()->DrawPrintText(L"_", 1);
-				}
-			}
-		}
-		break;
-		case CNeoDataVariant::BUTTON:
-		{
-			CNeoDataButton *btn = &ndv->button;
-			if (btn->iWszBtnLabelSize > 0)
-			{
-				int fontWide, fontTall;
-				surface()->GetTextSize(g_neoFont, btn->wszBtnLabel, fontWide, fontTall);
-				if (ndv->labelSize > 0)	surface()->DrawSetTextPos(wgXPos + (widgetWide / 2) - (fontWide / 2), yPos + fontStartYPos);
-				else					surface()->DrawSetTextPos((g_iRootSubPanelWide / 2) - (fontWide / 2), yPos + fontStartYPos);
-				surface()->DrawPrintText(btn->wszBtnLabel, btn->iWszBtnLabelSize);
-			}
-		}
-		break;
-		case CNeoDataVariant::BINDENTRY:
-		{
-			CNeoDataBindEntry *be = &ndv->bindEntry;
-			wchar_t wszBindBtnName[64];
-			const char *bindBtnName = g_pInputSystem->ButtonCodeToString(be->bcNext);
-			g_pVGuiLocalize->ConvertANSIToUnicode(bindBtnName, wszBindBtnName, sizeof(wszBindBtnName));
-
-			int fontWide, fontTall;
-			surface()->GetTextSize(g_neoFont, wszBindBtnName, fontWide, fontTall);
-			surface()->DrawSetTextPos(wgXPos + (widgetWide / 2) - (fontWide / 2), yPos + fontStartYPos);
-			surface()->DrawPrintText(wszBindBtnName, V_wcslen(wszBindBtnName));
-		}
-		break;
 		case CNeoDataVariant::TEXTENTRY:
 		{
 			CNeoDataTextEntry *te = &ndv->textEntry;
@@ -1044,92 +1022,7 @@ void CNeoPanel_Base::Paint()
 			}
 		}
 		break;
-		case CNeoDataVariant::S_DISPLAYNAME:
-		{
-			surface()->DrawSetTextPos(wgXPos + g_iMarginX, yPos + fontStartYPos);
-
-			const auto *ndvMultiList = TabsList()[CNeoPanel_Settings::TAB_MULTI]->NdvList();
-			const wchar_t *wszNeoName = ndvMultiList[CNeoDataSettings_Multiplayer::OPT_MULTI_NEONAME].textEntry.wszEntry;
-			const bool bOnlySteamNick = static_cast<bool>(ndvMultiList[CNeoDataSettings_Multiplayer::OPT_MULTI_ONLYSTEAMNICK].ringBox.iCurIdx);
-			if (bOnlySteamNick || !wszNeoName || wszNeoName[0] == '\0')
-			{
-				wchar_t wszSteamName[33];
-				wszSteamName[0] = '\0';
-				if (ISteamFriends *steamFriends = steamapicontext->SteamFriends())
-				{
-					g_pVGuiLocalize->ConvertANSIToUnicode(steamFriends->GetPersonaName(), wszSteamName, sizeof(wszSteamName));
-				}
-				surface()->DrawPrintText(wszSteamName, V_wcslen(wszSteamName));
-			}
-			else
-			{
-				surface()->DrawPrintText(wszNeoName, V_wcslen(wszNeoName));
-			}
 		}
-		break;
-		case CNeoDataVariant::S_MICTESTER:
-		{
-			CNeoDataMicTester *mt = &ndv->micTester;
-			IVoiceTweak_s *voiceTweak = engine->GetVoiceTweakAPI();
-
-			static constexpr wchar_t WSZ_MICTESTENTER[] = L"Start testing";
-			static constexpr wchar_t WSZ_MICTESTEXIT[] = L"Stop testing";
-
-			const bool bIsTweaking = voiceTweak->IsStillTweaking();
-			if (bIsTweaking)
-			{
-				// Only fetch the value at interval as immediate is too quick/flickers, and give a longer delay when
-				// it goes from sound to no sound.
-				static constexpr float FL_FETCH_INTERVAL = 0.1f;
-				static constexpr float FL_SILENCE_INTERVAL = 0.4f;
-				const float flSpeaking = voiceTweak->GetControlFloat(SpeakingVolume);
-				if ((flSpeaking > 0.0f && mt->flLastFetchInterval + FL_FETCH_INTERVAL < gpGlobals->curtime) ||
-						(flSpeaking == 0.0f && mt->flSpeakingVol > 0.0f && mt->flLastFetchInterval + FL_SILENCE_INTERVAL < gpGlobals->curtime))
-				{
-					mt->flSpeakingVol = flSpeaking;
-					mt->flLastFetchInterval = gpGlobals->curtime;
-				}
-				surface()->DrawSetColor(COLOR_NEOPANELMICTEST);
-				surface()->DrawFilledRect(wgXPos,
-										  yPos,
-										  wgXPos + static_cast<int>(mt->flSpeakingVol * static_cast<float>(widgetWide)),
-										  yPos + widgetTall);
-			}
-
-			int fontWide, fontTall;
-			surface()->GetTextSize(g_neoFont, bIsTweaking ? WSZ_MICTESTEXIT : WSZ_MICTESTENTER, fontWide, fontTall);
-			surface()->DrawSetTextPos(wgXPos + (widgetWide / 2) - (fontWide / 2), yPos + fontStartYPos);
-			surface()->DrawPrintText(bIsTweaking ? WSZ_MICTESTEXIT : WSZ_MICTESTENTER,
-									 bIsTweaking ? SZWSZ_LEN(WSZ_MICTESTEXIT) : SZWSZ_LEN(WSZ_MICTESTENTER));
-		}
-		break;
-		}
-	}
-
-	if (TopAreaRows() > 0)
-	{
-		const int iTabWide = g_iRootSubPanelWide / TabsListSize();
-		// Draw the top part
-		surface()->DrawSetColor(COLOR_NEOPANELNORMALBG);
-		surface()->DrawFilledRect(0, 0, g_iRootSubPanelWide, TopAreaTall());
-
-		surface()->DrawSetColor(COLOR_NEOPANELSELECTBG);
-		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
-
-		// Draw the tabs buttons on top
-		for (int i = 0, xPosTab = 0; i < TabsListSize(); ++i, xPosTab += iTabWide)
-		{
-			const bool bTabHover = (m_eSectionActive == SECTION_TOP && i == m_iNdvHover);
-			if (i == m_iNdsCurrent || bTabHover)
-			{
-				surface()->DrawSetColor(bTabHover ? COLOR_NEOPANELSELECTBG : COLOR_NEOPANELACCENTBG);
-				surface()->DrawFilledRect(xPosTab, 0, xPosTab + iTabWide, g_iRowTall);
-			}
-			surface()->DrawSetTextPos(xPosTab + g_iMarginX, fontStartYPos);
-			const auto titleInfo = TabsList()[i]->Title();
-			surface()->DrawPrintText(titleInfo.text, titleInfo.size);
-		}
-		TopAreaPaint();
 	}
 
 	const int bottomYStart = (panelTall - g_iRowTall);
@@ -1654,149 +1547,6 @@ int CNeoPanel_Base::TopAreaTall() const
 	return g_iRowTall * TopAreaRows();
 }
 
-CNeoPanel_Settings::CNeoPanel_Settings(Panel *parent)
-	: CNeoPanel_Base(parent)
-	, m_opConfirm(new CNeoOverlay_Confirm(this))
-{
-	m_opConfirm->AddActionSignalTarget(this);
-}
-
-CNeoPanel_Settings::~CNeoPanel_Settings()
-{
-	m_opConfirm->DeletePanel();
-}
-
-void CNeoPanel_Settings::ExitSettings()
-{
-	IVoiceTweak_s *voiceTweak = engine->GetVoiceTweakAPI();
-	if (voiceTweak->IsStillTweaking())
-	{
-		voiceTweak->EndVoiceTweakMode();
-	}
-
-	if (m_bModified)
-	{
-		// Ask user if they want to discard or save changes
-		m_opConfirm->m_bChoice = false;
-		m_opConfirm->m_buttonHover = CNeoOverlay_Confirm::BUTTON_NONE;
-		m_opConfirm->SetVisible(true);
-		m_opConfirm->SetEnabled(true);
-		m_opConfirm->MoveToFront();
-		m_opConfirm->RequestFocus();
-	}
-	else
-	{
-		g_pNeoRoot->m_state = STATE_ROOT;
-		g_pNeoRoot->UpdateControls();
-	}
-}
-
-void CNeoPanel_Settings::OnKeybindUpdate(KeyValues *data)
-{
-	if (data->GetBool("UpdateKey"))
-	{
-		const ButtonCode_t button = m_opKeyCapture->m_iButtonCode;
-		const int idx = m_opKeyCapture->m_iIndex;
-
-		if (button >= KEY_NONE && idx >= 0 && idx < m_ndsKeys.m_ndvVec.Size())
-		{
-			m_ndsKeys.m_ndvVec[idx].bindEntry.bcNext = button;
-		}
-
-		m_bModified = true;
-	}
-
-	m_opKeyCapture->m_iButtonCode = BUTTON_CODE_INVALID;
-	m_opKeyCapture->m_iIndex = -1;
-	MoveToFront();
-	RequestFocus();
-}
-
-void CNeoPanel_Settings::OnConfirmDialogUpdate(KeyValues *data)
-{
-	(m_opConfirm->m_bChoice) ? UserSettingsSave() : UserSettingsRestore();
-	g_pNeoRoot->m_state = STATE_ROOT;
-	g_pNeoRoot->UpdateControls();
-}
-
-const WLabelWSize *CNeoPanel_Settings::BottomSectionList() const
-{
-	if (m_bModified)
-	{
-		static constexpr WLabelWSize BBTN_NAMES[BBTN__TOTAL] = {
-			LWS(L"Back (ESC)"), LWS(L"Legacy (Shift+F3)"), LWS(L"Reset (Ctrl+Z)"), LWSNULL, LWS(L"Apply (Ctrl+S)")
-		};
-		return BBTN_NAMES;
-	}
-
-	static constexpr WLabelWSize BBTN_NAMES[BBTN__TOTAL] = {
-		LWS(L"Back (ESC)"), LWS(L"Legacy (Shift+F3)"), LWSNULL, LWSNULL, LWSNULL
-	};
-	return BBTN_NAMES;
-}
-
-
-int CNeoPanel_Settings::KeyCodeToBottomAction(vgui::KeyCode code) const
-{
-	const bool bCtrlMod = (input()->IsKeyDown(KEY_LCONTROL) || input()->IsKeyDown(KEY_RCONTROL));
-	if (code == KEY_ESCAPE)
-	{
-		return BBTN_BACK;
-	}
-	else if (code == KEY_F3 && (input()->IsKeyDown(KEY_LSHIFT) || input()->IsKeyDown(KEY_RSHIFT)))
-	{
-		return BBTN_LEGACY;
-	}
-	else if (code == KEY_S && bCtrlMod)
-	{
-		return BBTN_APPLY;
-	}
-	else if (code == KEY_Z && bCtrlMod)
-	{
-		return BBTN_RESET;
-	}
-	return -1;
-}
-
-void CNeoPanel_Settings::OnBottomAction(const int btn)
-{
-	OnExitTextEditMode();
-	switch (btn)
-	{
-	case BBTN_BACK:
-		ExitSettings();
-		break;
-	case BBTN_LEGACY:
-		g_pNeoRoot->GetGameUI()->SendMainMenuCommand("OpenOptionsDialog");
-		break;
-	case BBTN_RESET:
-		if (m_bModified) UserSettingsRestore();
-		break;
-	case BBTN_APPLY:
-		if (m_bModified) UserSettingsSave();
-		break;
-	default:
-		break;
-	}
-}
-
-void CNeoPanel_Settings::OnEnterButton(CNeoDataVariant *ndv)
-{
-	if (ndv->type == CNeoDataVariant::BINDENTRY && m_opKeyCapture)
-	{
-		CNeoDataBindEntry *be = &ndv->bindEntry;
-		engine->StartKeyTrapMode();
-		m_opKeyCapture->m_iButtonCode = be->bcNext;
-		m_opKeyCapture->m_iIndex = m_iNdvHover;
-		V_swprintf_safe(m_opKeyCapture->m_wszBindingText, L"Change binding for: %ls", be->wszDisplayText);
-		m_opKeyCapture->SetVisible(true);
-		m_opKeyCapture->SetEnabled(true);
-		m_opKeyCapture->PerformLayout();
-		m_opKeyCapture->MoveToFront();
-		m_opKeyCapture->RequestFocus();
-	}
-}
-
 extern ConVar neo_fov;
 extern ConVar neo_viewmodel_fov_offset;
 extern ConVar neo_aim_hold;
@@ -1804,6 +1554,7 @@ extern ConVar cl_autoreload_when_empty;
 extern ConVar cl_righthand;
 extern ConVar cl_showpos;
 extern ConVar cl_showfps;
+extern ConVar hud_fastswitch;
 
 static const wchar_t *DLFILTER_LABELS[] = {
 	L"Allow all custom files from server",
@@ -1824,247 +1575,6 @@ static const wchar_t *SHOWFPS_LABELS[] = {
 	L"Enabled (Smooth FPS)",
 };
 
-CNeoDataSettings_Multiplayer::CNeoDataSettings_Multiplayer()
-	: m_ndvList{
-			NDV_INIT_TEXTENTRY(L"Name"),
-			NDV_INIT_RINGBOX_ONOFF(L"Show only steam name"),
-			NDV_INIT_S_DISPLAYNAME(L"Display name"),
-			NDV_INIT_SLIDER(L"FOV", 75, 110, 1, 1.0f, 3),
-			NDV_INIT_SLIDER(L"Viewmodel FOV Offset", -20, 40, 1, 1.0f, 3),
-			NDV_INIT_RINGBOX_ONOFF(L"Aim hold"),
-			NDV_INIT_RINGBOX_ONOFF(L"Reload empty"),
-			NDV_INIT_RINGBOX_ONOFF(L"Right hand viewmodel"),
-			NDV_INIT_RINGBOX_ONOFF(L"Show player spray"),
-			NDV_INIT_RINGBOX_ONOFF(L"Show position"),
-			NDV_INIT_RINGBOX(L"Show FPS", SHOWFPS_LABELS, ARRAYSIZE(SHOWFPS_LABELS)),
-			NDV_INIT_RINGBOX(L"Download filter", DLFILTER_LABELS, DLFILTER_SIZE),
-		}
-	, m_cvrClPlayerSprayDisable("cl_playerspraydisable")
-	, m_cvrClDownloadFilter("cl_downloadfilter")
-{
-}
-
-void CNeoDataSettings_Multiplayer::UserSettingsRestore()
-{
-	g_pVGuiLocalize->ConvertANSIToUnicode(neo_name.GetString(), m_ndvList[OPT_MULTI_NEONAME].textEntry.wszEntry,
-										  CNeoDataTextEntry::ENTRY_MAX * sizeof(wchar_t));
-	m_ndvList[OPT_MULTI_ONLYSTEAMNICK].ringBox.iCurIdx = static_cast<int>(cl_onlysteamnick.GetBool());
-	m_ndvList[OPT_MULTI_FOV].slider.iValCur = neo_fov.GetInt();
-	m_ndvList[OPT_MULTI_VMFOV].slider.iValCur = neo_viewmodel_fov_offset.GetInt();
-	m_ndvList[OPT_MULTI_AIMHOLD].ringBox.iCurIdx = neo_aim_hold.GetBool();
-	m_ndvList[OPT_MULTI_RELOADEMPTY].ringBox.iCurIdx = cl_autoreload_when_empty.GetBool();
-	m_ndvList[OPT_MULTI_VMRIGHTHAND].ringBox.iCurIdx = cl_righthand.GetBool();
-	m_ndvList[OPT_MULTI_PLAYERSPRAYS].ringBox.iCurIdx = !(m_cvrClPlayerSprayDisable.GetBool()); // Inverse
-	m_ndvList[OPT_MULTI_SHOWPOS].ringBox.iCurIdx = cl_showpos.GetBool();
-	m_ndvList[OPT_MULTI_SHOWFPS].ringBox.iCurIdx = cl_showfps.GetInt();
-	{
-		const char *szDlFilter = m_cvrClDownloadFilter.GetString();
-		int iDlFilter = 0;
-		for (int i = 0; i < DLFILTER_SIZE; ++i)
-		{
-			if (V_strcmp(szDlFilter, DLFILTER_STRMAP[i]) == 0)
-			{
-				iDlFilter = i;
-				break;
-			}
-		}
-		m_ndvList[OPT_MULTI_DLFILTER].ringBox.iCurIdx = iDlFilter;
-	}
-
-	m_ndvList[OPT_MULTI_FOV].slider.ClampAndUpdate();
-	m_ndvList[OPT_MULTI_VMFOV].slider.ClampAndUpdate();
-}
-
-void CNeoDataSettings_Multiplayer::UserSettingsSave()
-{
-	char neoNameText[64];
-	g_pVGuiLocalize->ConvertUnicodeToANSI(m_ndvList[OPT_MULTI_NEONAME].textEntry.wszEntry, neoNameText, sizeof(neoNameText));
-	neo_name.SetValue(neoNameText);
-	cl_onlysteamnick.SetValue(static_cast<bool>(m_ndvList[OPT_MULTI_ONLYSTEAMNICK].ringBox.iCurIdx));
-	neo_fov.SetValue(m_ndvList[OPT_MULTI_FOV].slider.iValCur);
-	neo_viewmodel_fov_offset.SetValue(m_ndvList[OPT_MULTI_VMFOV].slider.iValCur);
-	neo_aim_hold.SetValue(static_cast<bool>(m_ndvList[OPT_MULTI_AIMHOLD].ringBox.iCurIdx));
-	cl_autoreload_when_empty.SetValue(static_cast<bool>(m_ndvList[OPT_MULTI_RELOADEMPTY].ringBox.iCurIdx));
-	cl_righthand.SetValue(static_cast<bool>(m_ndvList[OPT_MULTI_VMRIGHTHAND].ringBox.iCurIdx));
-	m_cvrClPlayerSprayDisable.SetValue(!(static_cast<bool>(m_ndvList[OPT_MULTI_PLAYERSPRAYS].ringBox.iCurIdx))); // Inverse
-	cl_showpos.SetValue(static_cast<bool>(m_ndvList[OPT_MULTI_SHOWPOS].ringBox.iCurIdx));
-	cl_showfps.SetValue(m_ndvList[OPT_MULTI_SHOWFPS].ringBox.iCurIdx);
-	m_cvrClDownloadFilter.SetValue(DLFILTER_STRMAP[m_ndvList[OPT_MULTI_DLFILTER].ringBox.iCurIdx]);
-}
-
-extern ConVar hud_fastswitch;
-
-CNeoDataSettings_Keys::CNeoDataSettings_Keys()
-{
-	characterset_t breakSet = {};
-	breakSet.set[0] = '"';
-
-	CNeoDataVariant ndvFs = NDV_INIT_RINGBOX_ONOFF(L"Weapon fastswitch");
-	CNeoDataVariant ndvConsole = NDV_INIT_RINGBOX_ONOFF(L"Developer console");
-	m_ndvVec.AddToTail(ndvFs);
-	m_ndvVec.AddToTail(ndvConsole);
-
-	// TODO: Alt/secondary keybind, different way on finding keybind
-	CUtlBuffer buf(0, 0, CUtlBuffer::TEXT_BUFFER | CUtlBuffer::READ_ONLY);
-	if (filesystem->ReadFile("scripts/kb_act.lst", nullptr, buf))
-	{
-		while (buf.IsValid())
-		{
-			char szFirstCol[64];
-			char szRawDispText[64];
-
-			bool bIsOk = false;
-			bIsOk = buf.ParseToken(&breakSet, szFirstCol, sizeof(szFirstCol));
-			if (!bIsOk) break;
-			bIsOk = buf.ParseToken(&breakSet, szRawDispText, sizeof(szRawDispText));
-			if (!bIsOk) break;
-
-			if (szFirstCol[0] == '\0') continue;
-
-			wchar_t wszDispText[64];
-			if (wchar_t *localizedWszStr = g_pVGuiLocalize->Find(szRawDispText))
-			{
-				V_wcscpy_safe(wszDispText, localizedWszStr);
-			}
-			else
-			{
-				g_pVGuiLocalize->ConvertANSIToUnicode(szRawDispText, wszDispText, sizeof(wszDispText));
-			}
-
-			const bool bIsBlank = V_strcmp(szFirstCol, "blank") == 0;
-			if (bIsBlank && szRawDispText[0] != '=')
-			{
-				// This is category label
-				CNeoDataVariant ndv = { .type = CNeoDataVariant::TEXTLABEL, };
-				V_wcscpy_safe(ndv.textLabel.wszLabel, wszDispText);
-				m_ndvVec.AddToTail(ndv);
-			}
-			else if (!bIsBlank && V_strcmp(szFirstCol, "blank") != 0)
-			{
-				// This is a keybind
-				CNeoDataVariant ndv = { .type = CNeoDataVariant::BINDENTRY, };
-				CNeoDataBindEntry *be = &ndv.bindEntry;
-				V_strcpy_safe(be->szBindingCmd, szFirstCol);
-				V_wcscpy_safe(be->wszDisplayText, wszDispText);
-				m_ndvVec.AddToTail(ndv);
-			}
-		}
-	}
-
-	// After all CNeoDataVariant items are created, then this is when it's suitable
-	// to assign label pointer to point to their respective display text as the memory
-	// shouldn't change from here on
-	for (int i = OPT_KEYS_FIRST_NONFIXED; i < m_ndvVec.Size(); ++i)
-	{
-		CNeoDataVariant &ndv = m_ndvVec[i];
-		if (ndv.type == CNeoDataVariant::BINDENTRY)
-		{
-			ndv.label = ndv.bindEntry.wszDisplayText;
-			ndv.labelSize = V_wcslen(ndv.bindEntry.wszDisplayText);
-		}
-		else if (ndv.type == CNeoDataVariant::TEXTLABEL)
-		{
-			ndv.label = ndv.textLabel.wszLabel;
-			ndv.labelSize = V_wcslen(ndv.label);
-		}
-	}
-}
-
-void CNeoDataSettings_Keys::UserSettingsRestore()
-{
-	m_ndvVec[OPT_KEYS_FIXED_WEPFASTSWITCH].ringBox.iCurIdx = hud_fastswitch.GetBool();
-	m_ndvVec[OPT_KEYS_FIXED_DEVCONSOLE].ringBox.iCurIdx = (gameuifuncs->GetButtonCodeForBind("toggleconsole") > KEY_NONE);
-	for (int i = OPT_KEYS_FIRST_NONFIXED; i < m_ndvVec.Size(); ++i)
-	{
-		CNeoDataVariant &ndv = m_ndvVec[i];
-		if (ndv.type == CNeoDataVariant::BINDENTRY)
-		{
-			CNeoDataBindEntry *be = &ndv.bindEntry;
-			be->bcCurrent = gameuifuncs->GetButtonCodeForBind(be->szBindingCmd);
-			be->bcNext = be->bcCurrent;
-		}
-	}
-}
-
-void CNeoDataSettings_Keys::UserSettingsSave()
-{
-	hud_fastswitch.SetValue(m_ndvVec[OPT_KEYS_FIXED_WEPFASTSWITCH].ringBox.iCurIdx);
-	{
-		char cmdStr[128];
-		V_sprintf_safe(cmdStr, "unbind \"`\"\n");
-		engine->ClientCmd_Unrestricted(cmdStr);
-
-		const bool bEnableConsole = m_ndvVec[OPT_KEYS_FIXED_DEVCONSOLE].ringBox.iCurIdx;
-		if (bEnableConsole)
-		{
-			V_sprintf_safe(cmdStr, "bind \"`\" \"toggleconsole\"\n");
-			engine->ClientCmd_Unrestricted(cmdStr);
-		}
-	}
-	for (int i = OPT_KEYS_FIRST_NONFIXED; i < m_ndvVec.Size(); ++i)
-	{
-		CNeoDataVariant &ndv = m_ndvVec[i];
-		if (ndv.type == CNeoDataVariant::BINDENTRY && ndv.bindEntry.bcCurrent > KEY_NONE)
-		{
-			char cmdStr[128];
-			const char *bindBtnName = g_pInputSystem->ButtonCodeToString(ndv.bindEntry.bcCurrent);
-			V_sprintf_safe(cmdStr, "unbind \"%s\"\n", bindBtnName);
-			engine->ClientCmd_Unrestricted(cmdStr);
-		}
-	}
-	for (int i = OPT_KEYS_FIRST_NONFIXED; i < m_ndvVec.Size(); ++i)
-	{
-		CNeoDataVariant &ndv = m_ndvVec[i];
-		if (ndv.type == CNeoDataVariant::BINDENTRY && ndv.bindEntry.bcNext > KEY_NONE)
-		{
-			char cmdStr[128];
-			const char *bindBtnName = g_pInputSystem->ButtonCodeToString(ndv.bindEntry.bcNext);
-			V_sprintf_safe(cmdStr, "bind \"%s\" \"%s\"\n", bindBtnName, ndv.bindEntry.szBindingCmd);
-			engine->ClientCmd_Unrestricted(cmdStr);
-		}
-	}
-}
-
-CNeoDataSettings_Mouse::CNeoDataSettings_Mouse()
-	: m_ndvList{
-			NDV_INIT_SLIDER(L"Sensitivity", 10, 1000, 10, 100.0f, 4),
-			NDV_INIT_RINGBOX_ONOFF(L"Raw input"),
-			NDV_INIT_RINGBOX_ONOFF(L"Mouse Filter"),
-			NDV_INIT_RINGBOX_ONOFF(L"Mouse Reverse"),
-			NDV_INIT_RINGBOX_ONOFF(L"Custom Acceleration"),
-			NDV_INIT_SLIDER(L"Exponent", 100, 140, 1, 100.0f, 4),
-		}
-	, m_cvrMFilter("m_filter")
-	, m_cvrPitch("m_pitch")
-	, m_cvrCustomAccel("m_customaccel")
-	, m_cvrCustomAccelExponent("m_customaccel_exponent")
-	, m_cvrMRawInput("m_rawinput")
-{
-}
-
-void CNeoDataSettings_Mouse::UserSettingsRestore()
-{
-	m_ndvList[OPT_MOUSE_SENSITIVITY].slider.SetValue(sensitivity.GetFloat());
-	m_ndvList[OPT_MOUSE_RAWINPUT].ringBox.iCurIdx = static_cast<int>(m_cvrMRawInput.GetBool());
-	m_ndvList[OPT_MOUSE_FILTER].ringBox.iCurIdx = static_cast<int>(m_cvrMFilter.GetBool());
-	m_ndvList[OPT_MOUSE_REVERSE].ringBox.iCurIdx = static_cast<int>(m_cvrPitch.GetFloat() < 0.0f);
-	m_ndvList[OPT_MOUSE_CUSTOMACCEL].ringBox.iCurIdx = static_cast<int>(m_cvrCustomAccel.GetInt() == 3);
-	m_ndvList[OPT_MOUSE_EXPONENT].slider.SetValue(m_cvrCustomAccelExponent.GetFloat());
-}
-
-void CNeoDataSettings_Mouse::UserSettingsSave()
-{
-	sensitivity.SetValue(m_ndvList[OPT_MOUSE_SENSITIVITY].slider.GetValue());
-	m_cvrMRawInput.SetValue(static_cast<bool>(m_ndvList[OPT_MOUSE_RAWINPUT].ringBox.iCurIdx));
-	m_cvrMFilter.SetValue(static_cast<bool>(m_ndvList[OPT_MOUSE_FILTER].ringBox.iCurIdx));
-	{
-		const float absPitch = abs(m_cvrPitch.GetFloat());
-		m_cvrPitch.SetValue(m_ndvList[OPT_MOUSE_REVERSE].ringBox.iCurIdx ? -absPitch : absPitch);
-	}
-	m_cvrCustomAccel.SetValue(m_ndvList[OPT_MOUSE_CUSTOMACCEL].ringBox.iCurIdx ? 3 : 0);
-	m_cvrCustomAccelExponent.SetValue(m_ndvList[OPT_MOUSE_EXPONENT].slider.GetValue());
-}
-
 static constexpr float SLT_VOL = 100.0f;
 static const wchar_t *SPEAKER_CFG_LABELS[] = {
 	L"Auto",
@@ -2076,99 +1586,6 @@ static const wchar_t *SPEAKER_CFG_LABELS[] = {
 	L"7.1 Surround",
 #endif
 };
-
-CNeoDataSettings_Audio::CNeoDataSettings_Audio()
-	: m_ndvList{
-			NDV_INIT_SLIDER(L"Main Volume", 0, 100, 5, SLT_VOL, 4),
-			NDV_INIT_SLIDER(L"Music Volume", 0, 100, 5, SLT_VOL, 4),
-			NDV_INIT_SLIDER(L"Victory Volume", 0, 100, 5, SLT_VOL, 4),
-			NDV_INIT_RINGBOX(L"Sound Setup", SPEAKER_CFG_LABELS, ARRAYSIZE(SPEAKER_CFG_LABELS)),
-			NDV_INIT_RINGBOX(L"Sound Quality", QUALITY_LABELS, 3),
-			NDV_INIT_RINGBOX_ONOFF(L"Mute Audio on un-focus"),
-			NDV_INIT_RINGBOX_ONOFF(L"Voice Enabled"),
-			NDV_INIT_SLIDER(L"Voice Receive", 0, 100, 5, SLT_VOL, 4),
-			//NDV_INIT_SLIDER(L"Voice Send", 0, 100, 1, SLT_VOL, 4),
-			NDV_INIT_RINGBOX_ONOFF(L"Microphone Boost"),
-			NDV_INIT_S_MICTESTER(L"Microphone Tester"),
-		}
-	, m_cvrVolume("volume")
-	, m_cvrSndMusicVolume("snd_musicvolume")
-	, m_cvrSndSurroundSpeakers("snd_surround_speakers")
-	, m_cvrVoiceEnabled("voice_enable")
-	, m_cvrVoiceScale("voice_scale")
-	, m_cvrSndMuteLoseFocus("snd_mute_losefocus")
-	, m_cvrSndPitchquality("snd_pitchquality")
-	, m_cvrDspSlowCpu("dsp_slow_cpu")
-{
-}
-
-void CNeoDataSettings_Audio::UserSettingsRestore()
-{
-	IVoiceTweak_s *voiceTweak = engine->GetVoiceTweakAPI();
-
-	// Output
-	m_ndvList[OPT_AUDIO_INP_VOLMAIN].slider.SetValue(m_cvrVolume.GetFloat());
-	m_ndvList[OPT_AUDIO_INP_VOLMUSIC].slider.SetValue(m_cvrSndMusicVolume.GetFloat());
-	m_ndvList[OPT_AUDIO_INP_VOLVICTORY].slider.SetValue(snd_victory_volume.GetFloat());
-	int surroundRBIdx = 0;
-	switch (m_cvrSndSurroundSpeakers.GetInt())
-	{
-	break; case 0: surroundRBIdx = 1;
-	break; case 2: surroundRBIdx = 2;
-#ifndef LINUX
-	break; case 4: surroundRBIdx = 3;
-	break; case 5: surroundRBIdx = 4;
-	break; case 7: surroundRBIdx = 5;
-#endif
-	break; default: break;
-	}
-	m_ndvList[OPT_AUDIO_INP_SURROUND].ringBox.iCurIdx = surroundRBIdx;
-	m_ndvList[OPT_AUDIO_INP_MUTELOSEFOCUS].ringBox.iCurIdx = static_cast<int>(m_cvrSndMuteLoseFocus.GetBool());
-
-	// Sound quality:
-	// High: snd_pitchquality 1 | dsp_slow_cpu 0
-	// Med: snd_pitchquality 0 | dsp_slow_cpu 0
-	// Low: snd_pitchquality 0 | dsp_slow_cpu 1
-	const int iSoundQuality = (m_cvrSndPitchquality.GetBool()) ? QUALITY_HIGH :
-									(m_cvrDspSlowCpu.GetBool()) ? QUALITY_LOW :
-																  QUALITY_MEDIUM;
-	m_ndvList[OPT_AUDIO_INP_QUALITY].ringBox.iCurIdx = iSoundQuality;
-
-	// Input
-	m_ndvList[OPT_AUDIO_OUT_VOICEENABLED].ringBox.iCurIdx = static_cast<int>(m_cvrVoiceEnabled.GetBool());
-	m_ndvList[OPT_AUDIO_OUT_VOICERECV].slider.SetValue(m_cvrVoiceScale.GetFloat());
-	const bool bMicBoost = (voiceTweak->GetControlFloat(MicBoost) != 0.0f);
-	m_ndvList[OPT_AUDIO_OUT_MICBOOST].ringBox.iCurIdx = static_cast<int>(bMicBoost);
-	//m_ndvList[OPT_AUDIO_OUT_VOICESEND].slider.SetValue(voiceTweak->GetControlFloat(MicrophoneVolume));
-}
-
-void CNeoDataSettings_Audio::UserSettingsSave()
-{
-	static constexpr int SURROUND_RE_MAP[] = {
-		-1, 0, 2,
-#ifndef LINUX
-		4, 5, 7
-#endif
-	};
-
-	IVoiceTweak_s *voiceTweak = engine->GetVoiceTweakAPI();
-
-	// Output
-	m_cvrVolume.SetValue(m_ndvList[OPT_AUDIO_INP_VOLMAIN].slider.GetValue());
-	m_cvrSndMusicVolume.SetValue(m_ndvList[OPT_AUDIO_INP_VOLMUSIC].slider.GetValue());
-	snd_victory_volume.SetValue(m_ndvList[OPT_AUDIO_INP_VOLVICTORY].slider.GetValue());
-	m_cvrSndSurroundSpeakers.SetValue(SURROUND_RE_MAP[m_ndvList[OPT_AUDIO_INP_SURROUND].ringBox.iCurIdx]);
-	m_cvrSndMuteLoseFocus.SetValue(static_cast<bool>(m_ndvList[OPT_AUDIO_INP_MUTELOSEFOCUS].ringBox.iCurIdx));
-	const int iQuality = m_ndvList[OPT_AUDIO_INP_QUALITY].ringBox.iCurIdx;
-	m_cvrSndPitchquality.SetValue(iQuality == QUALITY_HIGH);
-	m_cvrDspSlowCpu.SetValue(iQuality == QUALITY_LOW);
-
-	// Input
-	m_cvrVoiceEnabled.SetValue(static_cast<bool>(m_ndvList[OPT_AUDIO_OUT_VOICEENABLED].ringBox.iCurIdx));
-	m_cvrVoiceScale.SetValue(m_ndvList[OPT_AUDIO_OUT_VOICERECV].slider.GetValue());
-	voiceTweak->SetControlFloat(MicBoost, static_cast<float>(m_ndvList[OPT_AUDIO_OUT_MICBOOST].ringBox.iCurIdx));
-	//voiceTweak->SetControlFloat(MicrophoneVolume, m_ndvList[OPT_AUDIO_OUT_VOICESEND].slider.GetValue());
-}
 
 enum MultiThreadIdx
 {
@@ -2231,176 +1648,6 @@ static const wchar_t *HDR_LABELS[] = {
 	L"Bloom",
 	L"Full",
 };
-
-CNeoDataSettings_Video::CNeoDataSettings_Video()
-	: m_ndvList{
-			NDV_INIT_RINGBOX(L"Resolution", nullptr, 0),
-			NDV_INIT_RINGBOX(L"Window", WINDOW_MODE, ARRAYSIZE(WINDOW_MODE)),
-			NDV_INIT_RINGBOX(L"Core Rendering", QUEUE_MODE, ARRAYSIZE(QUEUE_MODE)),
-			NDV_INIT_RINGBOX(L"Model detail", QUALITY_LABELS, 3),
-			NDV_INIT_RINGBOX(L"Texture detail", QUALITY_LABELS, 4),
-			NDV_INIT_RINGBOX(L"Shader detail", QUALITY2_LABELS, 2),
-			NDV_INIT_RINGBOX(L"Water detail", WATER_LABELS, ARRAYSIZE(WATER_LABELS)),
-			NDV_INIT_RINGBOX(L"Shadow detail", QUALITY_LABELS, 3),
-			NDV_INIT_RINGBOX(L"Color correction", ENABLED_LABELS, 2),
-			NDV_INIT_RINGBOX(L"Anti-aliasing", MSAA_LABELS, ARRAYSIZE(MSAA_LABELS)),
-			NDV_INIT_RINGBOX(L"Filtering mode", FILTERING_LABELS, FILTERING__TOTAL),
-			NDV_INIT_RINGBOX(L"V-Sync", ENABLED_LABELS, 2),
-			NDV_INIT_RINGBOX(L"Motion blur", ENABLED_LABELS, 2),
-			NDV_INIT_RINGBOX(L"HDR", HDR_LABELS, ARRAYSIZE(HDR_LABELS)),
-			NDV_INIT_SLIDER(L"Gamma", 160, 260, 5, 100.0f, 4),
-		}
-	, m_cvrMatQueueMode("mat_queue_mode")
-	, m_cvrRRootLod("r_rootlod")
-	, m_cvrMatPicmip("mat_picmip")
-	, m_cvrMatReducefillrate("mat_reducefillrate")
-	, m_cvrRWaterForceExpensive("r_waterforceexpensive")
-	, m_cvrRWaterForceReflectEntities("r_waterforcereflectentities")
-	, m_cvrRFlashlightdepthtexture("r_flashlightdepthtexture")
-	, m_cvrRShadowrendertotexture("r_shadowrendertotexture")
-	, m_cvrMatColorcorrection("mat_colorcorrection")
-	, m_cvrMatAntialias("mat_antialias")
-	, m_cvrMatTrilinear("mat_trilinear")
-	, m_cvrMatForceaniso("mat_forceaniso")
-	, m_cvrMatVsync("mat_vsync")
-	, m_cvrMatMotionBlurEnabled("mat_motion_blur_enabled")
-	, m_cvrMatHdrLevel("mat_hdr_level")
-	, m_cvrMatMonitorGamma("mat_monitorgamma")
-{
-	gameuifuncs->GetVideoModes(&m_vmList, &m_vmListSize);
-	// NEO JANK (nullsystem): This is utter crap but it works out, one long array for storing the data, the other
-	// just to point to those.
-	//
-	// Update m_reResolution display list
-	static constexpr int DISP_SIZE = 64;
-	m_wszVmDispMem = new wchar_t[m_vmListSize * DISP_SIZE];
-	V_memset(m_wszVmDispMem, 0, m_vmListSize * DISP_SIZE);
-	m_ndvList[OPT_VIDEO_RESOLUTION].ringBox.iCurIdx = m_vmListSize - 1;
-	for (int i = 0, offset = 0; i < m_vmListSize; ++i, offset += DISP_SIZE)
-	{
-		vmode_t *vm = &m_vmList[i];
-		swprintf(m_wszVmDispMem + offset, DISP_SIZE - 1, L"%d x %d", vm->width, vm->height);
-	}
-	m_wszVmDispList = new wchar_t *[m_vmListSize];
-	for (int i = 0, offset = 0; i < m_vmListSize; ++i, offset += DISP_SIZE)
-	{
-		m_wszVmDispList[i] = m_wszVmDispMem + offset;
-	}
-	m_ndvList[OPT_VIDEO_RESOLUTION].ringBox.wszItems = const_cast<const wchar_t **>(m_wszVmDispList);
-	m_ndvList[OPT_VIDEO_RESOLUTION].ringBox.iItemsSize = m_vmListSize;
-}
-
-CNeoDataSettings_Video::~CNeoDataSettings_Video()
-{
-	delete m_wszVmDispMem;
-	delete m_wszVmDispList;
-}
-
-void CNeoDataSettings_Video::UserSettingsRestore()
-{
-	const int preVmListSize = m_vmListSize;
-	gameuifuncs->GetDesktopResolution(m_iNativeWidth, m_iNativeHeight);
-	int iScreenWidth, iScreenHeight;
-	engine->GetScreenSize(iScreenWidth, iScreenHeight); // Or: g_pMaterialSystem->GetDisplayMode?
-	m_ndvList[OPT_VIDEO_RESOLUTION].ringBox.iCurIdx = m_vmListSize - 1;
-	for (int i = 0; i < m_vmListSize; ++i)
-	{
-		vmode_t *vm = &m_vmList[i];
-		if (vm->width == iScreenWidth && vm->height == iScreenHeight)
-		{
-			m_ndvList[OPT_VIDEO_RESOLUTION].ringBox.iCurIdx = i;
-			break;
-		}
-	}
-
-	m_ndvList[OPT_VIDEO_WINDOWED].ringBox.iCurIdx = static_cast<int>(g_pMaterialSystem->GetCurrentConfigForVideoCard().Windowed());
-	const int queueMode = m_cvrMatQueueMode.GetInt();
-	m_ndvList[OPT_VIDEO_QUEUEMODE].ringBox.iCurIdx = (queueMode == -1 || queueMode == 2) ? THREAD_MULTI : THREAD_SINGLE;
-	m_ndvList[OPT_VIDEO_ROOTLOD].ringBox.iCurIdx = 2 - m_cvrRRootLod.GetInt(); // Inverse, highest = 0, lowest = 2
-	m_ndvList[OPT_VIDEO_MATPICMAP].ringBox.iCurIdx = 3 - (m_cvrMatPicmip.GetInt() + 1); // Inverse+1, highest = -1, lowest = 2
-	m_ndvList[OPT_VIDEO_MATREDUCEFILLRATE].ringBox.iCurIdx = 1 - m_cvrMatReducefillrate.GetInt(); // Inverse, 1 = low, 0 = high
-	// Water detail
-	//                r_waterforceexpensive        r_waterforcereflectentities
-	// Simple:                  0                              0
-	// Reflect World:           1                              0
-	// Reflect all:             1                              1
-	const int waterDetail = (m_cvrRWaterForceReflectEntities.GetBool()) ? QUALITY_HIGH :
-									(m_cvrRWaterForceExpensive.GetBool()) ? QUALITY_MEDIUM :
-																			QUALITY_LOW;
-	m_ndvList[OPT_VIDEO_WATERDETAIL].ringBox.iCurIdx = waterDetail;
-
-	// Shadow detail
-	//         r_flashlightdepthtexture     r_shadowrendertotexture
-	// Low:              0                            0
-	// Medium:           0                            1
-	// High:             1                            1
-	const int shadowDetail = (m_cvrRFlashlightdepthtexture.GetBool()) ? QUALITY_HIGH :
-									(m_cvrRShadowrendertotexture.GetBool()) ? QUALITY_MEDIUM :
-																			  QUALITY_LOW;
-	m_ndvList[OPT_VIDEO_SHADOW].ringBox.iCurIdx = shadowDetail;
-
-	m_ndvList[OPT_VIDEO_COLORCORRECTION].ringBox.iCurIdx = static_cast<int>(m_cvrMatColorcorrection.GetBool());
-	m_ndvList[OPT_VIDEO_ANTIALIAS].ringBox.iCurIdx = (m_cvrMatAntialias.GetInt() / 2); // MSAA: Times by 2
-
-	// Filtering mode
-	// mat_trilinear: 0 = bilinear, 1 = trilinear (both: mat_forceaniso 1)
-	// mat_forceaniso: Antisotropic 2x/4x/8x/16x (all aniso: mat_trilinear 0)
-	int filterIdx = 0;
-	if (m_cvrMatForceaniso.GetInt() < 2)
-	{
-		filterIdx = m_cvrMatTrilinear.GetBool() ? FILTERING_TRILINEAR : FILTERING_BILINEAR;
-	}
-	else
-	{
-		switch (m_cvrMatForceaniso.GetInt())
-		{
-		break; case 2: filterIdx = FILTERING_ANISO2X;
-		break; case 4: filterIdx = FILTERING_ANISO4X;
-		break; case 8: filterIdx = FILTERING_ANISO8X;
-		break; case 16: filterIdx = FILTERING_ANISO16X;
-		break; default: filterIdx = FILTERING_ANISO4X; // Some invalid number, just set to 4X (idx 3)
-		}
-	}
-	m_ndvList[OPT_VIDEO_FILTERING].ringBox.iCurIdx = filterIdx;
-	m_ndvList[OPT_VIDEO_VSYNC].ringBox.iCurIdx = static_cast<int>(m_cvrMatVsync.GetBool());
-	m_ndvList[OPT_VIDEO_MOTIONBLUR].ringBox.iCurIdx = static_cast<int>(m_cvrMatMotionBlurEnabled.GetBool());
-	m_ndvList[OPT_VIDEO_HDR].ringBox.iCurIdx = m_cvrMatHdrLevel.GetInt();
-	m_ndvList[OPT_VIDEO_GAMMA].slider.SetValue(m_cvrMatMonitorGamma.GetFloat());
-}
-
-void CNeoDataSettings_Video::UserSettingsSave()
-{
-	const int resIdx = m_ndvList[OPT_VIDEO_RESOLUTION].ringBox.iCurIdx;
-	if (resIdx >= 0 && resIdx < m_vmListSize)
-	{
-		// mat_setvideomode [width] [height] [mode] | mode: 0 = fullscreen, 1 = windowed
-		vmode_t *vm = &m_vmList[resIdx];
-		char cmdStr[128];
-		V_sprintf_safe(cmdStr, "mat_setvideomode %d %d %d",
-					   vm->width, vm->height, m_ndvList[OPT_VIDEO_WINDOWED].ringBox.iCurIdx);
-		engine->ClientCmd_Unrestricted(cmdStr);
-	}
-	m_cvrMatQueueMode.SetValue((m_ndvList[OPT_VIDEO_QUEUEMODE].ringBox.iCurIdx == THREAD_MULTI) ? 2 : 0);
-	m_cvrRRootLod.SetValue(2 - m_ndvList[OPT_VIDEO_ROOTLOD].ringBox.iCurIdx);
-	m_cvrMatPicmip.SetValue(2 - m_ndvList[OPT_VIDEO_MATPICMAP].ringBox.iCurIdx);
-	m_cvrMatReducefillrate.SetValue(1 - m_ndvList[OPT_VIDEO_MATREDUCEFILLRATE].ringBox.iCurIdx);
-	m_cvrRWaterForceExpensive.SetValue(m_ndvList[OPT_VIDEO_WATERDETAIL].ringBox.iCurIdx >= QUALITY_MEDIUM);
-	m_cvrRWaterForceReflectEntities.SetValue(m_ndvList[OPT_VIDEO_WATERDETAIL].ringBox.iCurIdx == QUALITY_HIGH);
-	m_cvrRShadowrendertotexture.SetValue(m_ndvList[OPT_VIDEO_SHADOW].ringBox.iCurIdx >= QUALITY_MEDIUM);
-	m_cvrRFlashlightdepthtexture.SetValue(m_ndvList[OPT_VIDEO_SHADOW].ringBox.iCurIdx == QUALITY_HIGH);
-	m_cvrMatColorcorrection.SetValue(static_cast<bool>(m_ndvList[OPT_VIDEO_COLORCORRECTION].ringBox.iCurIdx));
-	m_cvrMatAntialias.SetValue(m_ndvList[OPT_VIDEO_ANTIALIAS].ringBox.iCurIdx * 2);
-	const int filterIdx = m_ndvList[OPT_VIDEO_FILTERING].ringBox.iCurIdx;
-	m_cvrMatTrilinear.SetValue(filterIdx == FILTERING_TRILINEAR);
-	static constexpr int ANISO_MAP[FILTERING__TOTAL] = {
-		1, 1, 2, 4, 8, 16
-	};
-	m_cvrMatForceaniso.SetValue(ANISO_MAP[filterIdx]);
-	m_cvrMatVsync.SetValue(static_cast<bool>(m_ndvList[OPT_VIDEO_VSYNC].ringBox.iCurIdx));
-	m_cvrMatMotionBlurEnabled.SetValue(static_cast<bool>(m_ndvList[OPT_VIDEO_MOTIONBLUR].ringBox.iCurIdx));
-	m_cvrMatHdrLevel.SetValue(m_ndvList[OPT_VIDEO_HDR].ringBox.iCurIdx);
-	m_cvrMatMonitorGamma.SetValue(m_ndvList[OPT_VIDEO_GAMMA].slider.GetValue());
-}
 
 // Map list
 CNeoTab_MapList::CNeoTab_MapList()
@@ -3111,6 +2358,7 @@ void NeoSettingsDeinit(NeoSettings *ns)
 
 void NeoSettingsRestore(NeoSettings *ns)
 {
+	ns->bModified = false;
 	NeoSettings::CVR *cvr = &ns->cvr;
 	{
 		NeoSettings::General *pGeneral = &ns->general;
@@ -3262,6 +2510,7 @@ void NeoSettingsRestore(NeoSettings *ns)
 
 void NeoSettingsSave(const NeoSettings *ns)
 {
+	const_cast<NeoSettings *>(ns)->bModified = false;
 	auto *cvr = const_cast<NeoSettings::CVR *>(&ns->cvr);
 	{
 		const NeoSettings::General *pGeneral = &ns->general;
@@ -3397,11 +2646,65 @@ void NeoSettingsMainLoop(NeoSettings *ns, const NeoUI::Mode eMode)
 		L"Multiplayer", L"Keybinds", L"Mouse", L"Audio", L"Video"
 	};
 
-	// TODO: Separate context/section for tabs?
+	int wide, tall;
+	surface()->GetScreenSize(wide, tall);
+	const int iTallTotal = g_iRowTall * (g_iRowsInScreen + 2);
+
+	g_ctx.dPanel.wide = g_iRootSubPanelWide;
+	g_ctx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
+	g_ctx.dPanel.y = (tall / 2) - (iTallTotal / 2);
+	g_ctx.dPanel.tall = g_iRowTall;
+	g_ctx.bgColor = COLOR_NEOPANELFRAMEBG;
 	NeoUI::BeginContext(eMode);
-	NeoUI::Tabs(WSZ_TABS_LABELS, ARRAYSIZE(WSZ_TABS_LABELS), &ns->iCurTab);
-	P_FN[ns->iCurTab](ns);
+	{
+		NeoUI::BeginSection();
+		{
+			NeoUI::Tabs(WSZ_TABS_LABELS, ARRAYSIZE(WSZ_TABS_LABELS), &ns->iCurTab);
+		}
+		NeoUI::EndSection();
+		g_ctx.dPanel.y += g_ctx.dPanel.tall;
+		g_ctx.dPanel.tall = g_iRowTall * g_iRowsInScreen;
+		NeoUI::BeginSection(true);
+		{
+			P_FN[ns->iCurTab](ns);
+		}
+		NeoUI::EndSection();
+		g_ctx.dPanel.y += g_ctx.dPanel.tall;
+		g_ctx.dPanel.tall = g_iRowTall;
+		NeoUI::BeginSection();
+		{
+			NeoUI::BeginHorizontal(g_ctx.dPanel.wide / 5);
+			{
+				if (NeoUI::Button(nullptr, L"Back (ESC)").bPressed)
+				{
+					ns->bBack = true;
+				}
+				if (NeoUI::Button(nullptr, L"Legacy").bPressed)
+				{
+					g_pNeoRoot->GetGameUI()->SendMainMenuCommand("OpenOptionsDialog");
+				}
+				NeoUI::Pad();
+				if (ns->bModified)
+				{
+					if (NeoUI::Button(nullptr, L"Restore").bPressed)
+					{
+						NeoSettingsRestore(ns);
+					}
+					if (NeoUI::Button(nullptr, L"Accept").bPressed)
+					{
+						NeoSettingsSave(ns);
+					}
+				}
+			}
+			NeoUI::EndHorizontal();
+		}
+		NeoUI::EndSection();
+	}
 	NeoUI::EndContext();
+	if (!ns->bModified && g_ctx.bValueEdited)
+	{
+		ns->bModified = true;
+	}
 }
 
 void NeoSettings_General(NeoSettings *ns)
@@ -3484,7 +2787,7 @@ void NeoSettings_Audio(NeoSettings *ns)
 	{
 		const float flSpeakingVol = pVoiceTweak->GetControlFloat(SpeakingVolume);
 		surface()->DrawSetColor(COLOR_NEOPANELMICTEST);
-		GCtxDrawFilledRect(0, g_ctx.iLayoutY, flSpeakingVol * g_ctx.iPanelWide, g_ctx.iLayoutY + g_iRowTall);
+		GCtxDrawFilledRectXtoX(0, flSpeakingVol * g_ctx.dPanel.wide);
 		g_ctx.iLayoutY += g_iRowTall;
 		surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
 	}
@@ -3605,23 +2908,16 @@ void CNeoRoot::UpdateControls()
 		surface()->DrawSetTextFont(m_hTextFonts[FONT_LOGO]);
 		surface()->GetTextSize(m_hTextFonts[FONT_LOGO], WSZ_GAME_TITLE, iTitleWidth, iTitleHeight);
 
-		g_ctx.iPanelWide = iTitleWidth + (2 * g_iMarginX);
-		g_ctx.iPanelTall = tall;
-		g_ctx.iPanelPosX = (wide / 4) - (g_ctx.iPanelWide / 2);
-		g_ctx.iPanelPosY = yTopPos;
+		g_ctx.dPanel.wide = iTitleWidth + (2 * g_iMarginX);
+		g_ctx.dPanel.tall = tall;
+		g_ctx.dPanel.x = (wide / 4) - (g_ctx.dPanel.wide / 2);
+		g_ctx.dPanel.y = yTopPos;
 		g_ctx.bgColor = COLOR_TRANSPARENT;
 	}
-	else
-	{
-		g_ctx.iPanelWide = g_iRootSubPanelWide;
-		g_ctx.iPanelTall = g_iRowTall * g_iRowsInScreen;
-		g_ctx.iPanelPosX = (wide / 2) - (g_iRootSubPanelWide / 2);
-		g_ctx.iPanelPosY = (tall / 2) - (g_ctx.iPanelTall / 2);
-		g_ctx.bgColor = COLOR_NEOPANELFRAMEBG;
-	}
-	g_ctx.iYOffset = 0;
 	g_ctx.iFocusDirection = 0;
 	g_ctx.iFocus = NeoUI::FOCUSOFF_NUM;
+	g_ctx.iFocusSection = -1;
+	m_ns.bBack = false;
 	RequestFocus();
 	m_panelCaptureInput->RequestFocus();
 	InvalidateLayout();
@@ -3924,6 +3220,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 	case STATE_ROOT:
 	{
 		NeoUI::BeginContext(eMode);
+		NeoUI::BeginSection(true);
 		const int iFlagToMatch = engine->IsInGame() ? FLAG_SHOWINGAME : FLAG_SHOWINMAIN;
 		for (int i = 0; i < BTNS_TOTAL; ++i)
 		{
@@ -3958,6 +3255,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 				}
 			}
 		}
+		NeoUI::EndSection();
 		NeoUI::EndContext();
 
 		if (eMode == NeoUI::MODE_PAINT) PaintRootMainSection();
@@ -3966,6 +3264,12 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 	case STATE_SETTINGS:
 	{
 		NeoSettingsMainLoop(&m_ns, eMode);
+		if (m_ns.bBack)
+		{
+			m_ns.bBack = false;
+			m_state = STATE_ROOT;
+			UpdateControls();
+		}
 	}
 	break;
 	case STATE_NEWGAME:

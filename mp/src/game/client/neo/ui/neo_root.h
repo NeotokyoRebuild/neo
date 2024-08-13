@@ -15,7 +15,7 @@ struct WLabelWSize
 #define SZWSZ_LEN(wlabel) ((sizeof(wlabel) / sizeof(wlabel[0])) - 1)
 #define LWSNULL WLabelWSize{ nullptr, 0 }
 #define LWS(wlabel) WLabelWSize{ wlabel, SZWSZ_LEN(wlabel)}
-#define IN_BETWEEN(min, cmp, max) min <= cmp && cmp < max
+#define IN_BETWEEN(min, cmp, max) (((min) <= (cmp)) && ((cmp) < (max)))
 
 namespace NeoUI
 {
@@ -35,7 +35,22 @@ enum MousePos
 	MOUSEPOS_CENTER,
 	MOUSEPOS_RIGHT,
 };
+enum LayoutMode
+{
+	LAYOUT_VERTICAL = 0,
+	LAYOUT_HORIZONTAL,
+};
+
 static constexpr int FOCUSOFF_NUM = -1000;
+static constexpr int MAX_SECTIONS = 5;
+
+struct Dim
+{
+	int x;
+	int y;
+	int wide;
+	int tall;
+};
 
 struct Context
 {
@@ -49,30 +64,38 @@ struct Context
 	int iMouseRelX;
 	int iMouseRelY;
 	bool bMouseInPanel;
-
-	// Sizing
-	int iPanelPosX;
-	int iPanelPosY;
-	int iPanelWide;
-	int iPanelTall;
+	int iHasMouseInPanel;
 
 	// Layout management
+	Dim dPanel;
 	int iPartitionY; // Only increments when Y-pos goes down
+	int iLayoutX;
 	int iLayoutY;
+	int iWgXPos;
+	int iYOffset[MAX_SECTIONS];
+
+	int iHorizontalWidth;
+
 	int iFontTall;
 	int iFontYOffset;
-	int iWgXPos;
-	int iYOffset;
 
 	// Input management
 	int iWidget; // Always increments per widget use
+	int iSection;
+
 	int iFocus;
 	int iFocusDirection;
+	int iFocusSection;
+	bool bValueEdited;
 
 	MousePos eMousePos; // label | prev | center | next split
 };
 void BeginContext(const NeoUI::Mode eMode);
 void EndContext();
+void BeginSection(const bool bDefaultFocus = false);
+void EndSection();
+void BeginHorizontal(const int iHorizontalWidth);
+void EndHorizontal();
 
 struct RetButton
 {
@@ -81,11 +104,12 @@ struct RetButton
 	bool bMousePressed;
 	bool bMouseHover;
 };
+void Pad();
 void Label(const wchar_t *wszText, const bool bCenter = false);
+void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
 RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText);
 void RingBoxBool(const wchar_t *wszLeftLabel, bool *bChecked);
 void RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
-void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
 void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, const float flMax,
 			const int iDp = 2, const float flStep = 1.0f);
 }
@@ -283,183 +307,6 @@ struct CNeoDataSettings_Base
 	virtual WLabelWSize Title() = 0;
 };
 
-struct CNeoDataSettings_Multiplayer : CNeoDataSettings_Base
-{
-	enum Options
-	{
-		OPT_MULTI_NEONAME = 0,
-		OPT_MULTI_ONLYSTEAMNICK,
-		OPT_MULTI_DISPNAME,
-		OPT_MULTI_FOV,
-		OPT_MULTI_VMFOV,
-		OPT_MULTI_AIMHOLD,
-		OPT_MULTI_RELOADEMPTY,
-		OPT_MULTI_VMRIGHTHAND,
-		OPT_MULTI_PLAYERSPRAYS,
-		OPT_MULTI_SHOWPOS,
-		OPT_MULTI_SHOWFPS,
-		OPT_MULTI_DLFILTER,
-
-		OPT_MULTI__TOTAL,
-	};
-	CNeoDataVariant m_ndvList[OPT_MULTI__TOTAL];
-
-	CNeoDataSettings_Multiplayer();
-	CNeoDataVariant *NdvList() final { return m_ndvList; }
-	int NdvListSize() final { return OPT_MULTI__TOTAL; }
-	void UserSettingsRestore() final;
-	void UserSettingsSave() final;
-	WLabelWSize Title() final { return LWS(L"Multiplayer"); }
-
-	ConVarRef m_cvrClPlayerSprayDisable;
-	ConVarRef m_cvrClDownloadFilter;
-};
-
-struct CNeoDataSettings_Keys : CNeoDataSettings_Base
-{
-	enum OptionsFixed
-	{
-		OPT_KEYS_FIXED_WEPFASTSWITCH = 0,
-		OPT_KEYS_FIXED_DEVCONSOLE,
-
-		OPT_KEYS_FIRST_NONFIXED,
-	};
-
-	CUtlVector<CNeoDataVariant> m_ndvVec;
-
-	CNeoDataSettings_Keys();
-	CNeoDataVariant *NdvList() final { return m_ndvVec.Base(); }
-	int NdvListSize() final { return m_ndvVec.Size(); }
-	void UserSettingsRestore() final;
-	void UserSettingsSave() final;
-	WLabelWSize Title() final { return LWS(L"Keybinds"); }
-};
-
-struct CNeoDataSettings_Mouse : CNeoDataSettings_Base
-{
-	enum Options
-	{
-		OPT_MOUSE_SENSITIVITY = 0,
-		OPT_MOUSE_RAWINPUT,
-		OPT_MOUSE_FILTER,
-		OPT_MOUSE_REVERSE,
-		OPT_MOUSE_CUSTOMACCEL,
-		OPT_MOUSE_EXPONENT,
-
-		OPT_MOUSE__TOTAL,
-	};
-	CNeoDataVariant m_ndvList[OPT_MOUSE__TOTAL] = {};
-
-	CNeoDataSettings_Mouse();
-	CNeoDataVariant *NdvList() final { return m_ndvList; }
-	int NdvListSize() final { return OPT_MOUSE__TOTAL; }
-	void UserSettingsRestore() final;
-	void UserSettingsSave() final;
-	WLabelWSize Title() final { return LWS(L"Mouse"); }
-
-	ConVarRef m_cvrMFilter;
-	ConVarRef m_cvrPitch;
-	ConVarRef m_cvrCustomAccel;
-	ConVarRef m_cvrCustomAccelExponent;
-	ConVarRef m_cvrMRawInput;
-};
-
-struct CNeoDataSettings_Audio : CNeoDataSettings_Base
-{
-	enum Options
-	{
-		OPT_AUDIO_INP_VOLMAIN,
-		OPT_AUDIO_INP_VOLMUSIC,
-		OPT_AUDIO_INP_VOLVICTORY,
-		OPT_AUDIO_INP_SURROUND,
-		OPT_AUDIO_INP_QUALITY,
-		OPT_AUDIO_INP_MUTELOSEFOCUS,
-
-		OPT_AUDIO_OUT_VOICEENABLED,
-		OPT_AUDIO_OUT_VOICERECV,
-		//OPT_AUDIO_OUT_VOICESEND,	// This doesn't actually work, original dialog also fails on this
-		OPT_AUDIO_OUT_MICBOOST,
-		OPT_AUDIO_OUT_MICTESTER,
-
-		OPT_AUDIO__TOTAL,
-	};
-	CNeoDataVariant m_ndvList[OPT_AUDIO__TOTAL] = {};
-
-	CNeoDataSettings_Audio();
-	CNeoDataVariant *NdvList() final { return m_ndvList; }
-	int NdvListSize() final { return OPT_AUDIO__TOTAL; }
-	void UserSettingsRestore() final;
-	void UserSettingsSave() final;
-	WLabelWSize Title() final { return LWS(L"Sound"); }
-
-	ConVarRef m_cvrVolume;
-	ConVarRef m_cvrSndMusicVolume;
-	ConVarRef m_cvrSndSurroundSpeakers;
-	ConVarRef m_cvrVoiceEnabled;
-	ConVarRef m_cvrVoiceScale;
-	ConVarRef m_cvrSndMuteLoseFocus;
-	ConVarRef m_cvrSndPitchquality;
-	ConVarRef m_cvrDspSlowCpu;
-};
-
-struct CNeoDataSettings_Video : CNeoDataSettings_Base
-{
-	enum LabelRingBoxEnum
-	{
-		OPT_VIDEO_RESOLUTION,
-		OPT_VIDEO_WINDOWED,
-		OPT_VIDEO_QUEUEMODE,
-		OPT_VIDEO_ROOTLOD,
-		OPT_VIDEO_MATPICMAP,
-		OPT_VIDEO_MATREDUCEFILLRATE,
-		OPT_VIDEO_WATERDETAIL,
-		OPT_VIDEO_SHADOW,
-		OPT_VIDEO_COLORCORRECTION,
-		OPT_VIDEO_ANTIALIAS,
-		OPT_VIDEO_FILTERING,
-		OPT_VIDEO_VSYNC,
-		OPT_VIDEO_MOTIONBLUR,
-		OPT_VIDEO_HDR,
-		OPT_VIDEO_GAMMA,
-
-		OPT_VIDEO__TOTAL,
-	};
-	CNeoDataVariant m_ndvList[OPT_VIDEO__TOTAL] = {};
-
-	CNeoDataSettings_Video();
-	~CNeoDataSettings_Video();
-	CNeoDataVariant *NdvList() final { return m_ndvList; }
-	int NdvListSize() final { return OPT_VIDEO__TOTAL; }
-	void UserSettingsRestore() final;
-	void UserSettingsSave() final;
-	WLabelWSize Title() final { return LWS(L"Video"); }
-
-	ConVarRef m_cvrMatQueueMode;
-	ConVarRef m_cvrRRootLod;
-	ConVarRef m_cvrMatPicmip;
-	ConVarRef m_cvrMatReducefillrate;
-	ConVarRef m_cvrRWaterForceExpensive;
-	ConVarRef m_cvrRWaterForceReflectEntities;
-	ConVarRef m_cvrRFlashlightdepthtexture;
-	ConVarRef m_cvrRShadowrendertotexture;
-	ConVarRef m_cvrMatColorcorrection;
-	ConVarRef m_cvrMatAntialias;
-	ConVarRef m_cvrMatTrilinear;
-	ConVarRef m_cvrMatForceaniso;
-	ConVarRef m_cvrMatVsync;
-	ConVarRef m_cvrMatMotionBlurEnabled;
-	ConVarRef m_cvrMatHdrLevel;
-	ConVarRef m_cvrMatMonitorGamma;
-
-	int m_vmListSize = 0;
-	vmode_t *m_vmList = nullptr;
-	int m_iNativeWidth;
-	int m_iNativeHeight;
-
-	wchar_t *m_wszVmDispMem = nullptr;
-	wchar_t **m_wszVmDispList = nullptr;
-};
-
 // NEO NOTE (nullsystem): If there's a client convar not saved, it's likely the way it been defined is wrong
 // AKA they've been defined in both client + server when it should only be for client
 class CNeoPanel_Base : public vgui::EditablePanel
@@ -527,68 +374,6 @@ public:
 		WDG_RIGHT,
 	};
 	WidgetPos m_curMouse = WDG_NONE;
-};
-
-class CNeoPanel_Settings : public CNeoPanel_Base
-{
-	DECLARE_CLASS_SIMPLE(CNeoPanel_Settings, CNeoPanel_Base);
-public:
-	CNeoPanel_Settings(vgui::Panel *parent);
-	~CNeoPanel_Settings() override;
-	void ExitSettings();
-
-	enum Tabs
-	{
-		TAB_MULTI = 0,
-		TAB_KEYS,
-		TAB_MOUSE,
-		TAB_SOUND,
-		TAB_VIDEO,
-
-		TAB__TOTAL,
-	};
-
-	enum BottomBtns
-	{
-		BBTN_BACK = 0,
-		BBTN_LEGACY,
-		BBTN_RESET,
-		BBTN_UNUSEDIDX3,
-		BBTN_APPLY,
-
-		BBTN__TOTAL,
-	};
-
-	CNeoDataSettings_Multiplayer m_ndsMulti;
-	CNeoDataSettings_Keys m_ndsKeys;
-	CNeoDataSettings_Mouse m_ndsMouse;
-	CNeoDataSettings_Audio m_ndsSound;
-	CNeoDataSettings_Video m_ndsVideo;
-
-	CNeoDataSettings_Base *m_pNdsBases[TAB__TOTAL] = {
-		&m_ndsMulti,
-		&m_ndsKeys,
-		&m_ndsMouse,
-		&m_ndsSound,
-		&m_ndsVideo,
-	};
-	CNeoDataSettings_Base **TabsList() final { return m_pNdsBases; };
-	int TabsListSize() const final { return TAB__TOTAL; };
-
-	const WLabelWSize *BottomSectionList() const override;
-	int BottomSectionListSize() const override { return BBTN__TOTAL; }
-	int KeyCodeToBottomAction(vgui::KeyCode code) const override;
-	void OnBottomAction(const int btn) final;
-	int TopAreaRows() const final { return 1; }
-
-	void OnEnterButton(CNeoDataVariant *ndv) override;
-
-	// Only for keybindings
-	CNeoOverlay_KeyCapture *m_opKeyCapture = nullptr;
-	MESSAGE_FUNC_PARAMS(OnKeybindUpdate, "KeybindUpdate", data);
-
-	CNeoOverlay_Confirm *m_opConfirm = nullptr;
-	MESSAGE_FUNC_PARAMS(OnConfirmDialogUpdate, "ConfirmDialogUpdate", data);
 };
 
 struct CNeoDataNewGame_General : CNeoDataSettings_Base
@@ -887,6 +672,8 @@ struct NeoSettings
 	Video video;
 
 	int iCurTab = 0;
+	bool bBack = false;
+	bool bModified = false;
 
 #define CONVARREF_DEF(_name) ConVarRef _name{#_name}
 	struct CVR
