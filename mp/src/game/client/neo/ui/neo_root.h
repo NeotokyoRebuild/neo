@@ -115,6 +115,7 @@ void RingBoxBool(const wchar_t *wszLeftLabel, bool *bChecked);
 void RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
 void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, const float flMax,
 			const int iDp = 2, const float flStep = 1.0f);
+void SliderInt(const wchar_t *wszLeftLabel, int *iValue, const int iMin, const int iMax, const int iStep = 1);
 void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize);
 }
 
@@ -142,12 +143,6 @@ enum GameServerInfoW
 	GSIW__TOTAL,
 };
 
-struct GameServerSortContext
-{
-	GameServerInfoW col = GSIW_NAME;
-	bool bDescending = false;
-};
-
 class CNeoOverlay_KeyCapture : public vgui::EditablePanel
 {
 	DECLARE_CLASS_SIMPLE(CNeoOverlay_KeyCapture, vgui::EditablePanel);
@@ -164,423 +159,34 @@ public:
 	vgui::HFont m_fontSub;
 };
 
-class CNeoOverlay_Confirm : public vgui::EditablePanel
+struct GameServerSortContext
 {
-	DECLARE_CLASS_SIMPLE(CNeoOverlay_Confirm, vgui::EditablePanel);
-public:
-	CNeoOverlay_Confirm(Panel *parent);
-	void PerformLayout() final;
-	void Paint() final;
-	void OnKeyCodePressed(vgui::KeyCode code) final;
-	void OnMousePressed(vgui::MouseCode code) final;
-	void OnCursorMoved(int x, int y) final;
-	vgui::HFont m_fontMain;
-	bool m_bChoice = false;
-
-	enum ButtonHover
-	{
-		BUTTON_NONE = 0,
-		BUTTON_APPLY,
-		BUTTON_DISCARD,
-	};
-	ButtonHover m_buttonHover = BUTTON_NONE;
+	GameServerInfoW col = GSIW_NAME;
+	bool bDescending = false;
 };
 
-struct CNeoDataRingBox
-{
-	const wchar_t **wszItems;
-	int iItemsSize;
-	int iCurIdx;
-};
-
-struct CNeoDataSlider
-{
-	static constexpr int LABEL_MAX = 32;
-
-	int iValMin = 0;
-	int iValMax = 0;
-	int iValStep = 0;
-	float flMulti = 0.0f;
-	int iChMax = LABEL_MAX;
-
-	wchar_t wszCacheLabel[LABEL_MAX + 1] = {};
-	int iWszCacheLabelSize = 0;
-
-	void SetValue(const float value);
-	float GetValue() const;
-	void ClampAndUpdate();
-	int iValCur = 0;
-};
-
-struct CNeoDataTextEntry
-{
-	static constexpr int ENTRY_MAX = 64;
-	wchar_t wszEntry[ENTRY_MAX + 1] = {};
-};
-
-struct CNeoDataBindEntry
-{
-	char szBindingCmd[64];
-	wchar_t wszDisplayText[64];
-	ButtonCode_t bcNext;
-	ButtonCode_t bcCurrent; // TODO: Maybe not needed? just refetch on Save? before unbinds?
-};
-
-struct CNeoDataTextLabel
-{
-	static constexpr int LABEL_MAX = 64;
-	wchar_t wszLabel[LABEL_MAX + 1] = {};
-};
-
-struct CNeoDataMicTester
-{
-	float flSpeakingVol;
-	float flLastFetchInterval;
-};
-
-struct CNeoDataGameServer
-{
-	gameserveritem_t info;
-};
-
-struct CNeoDataButton
-{
-	static constexpr int LABEL_MAX = 128;
-	wchar_t wszBtnLabel[LABEL_MAX + 1] = {};
-	int iWszBtnLabelSize;
-};
-
-struct CNeoDataVariant
-{
-	enum Type
-	{
-		RINGBOX = 0,
-		SLIDER,
-		TEXTENTRY,
-		BINDENTRY,
-		TEXTLABEL,
-		GAMESERVER,
-		BUTTON,
-
-		// S_ = Special type for specific use
-		S_DISPLAYNAME,
-		S_MICTESTER,
-	};
-	Type type;
-	const wchar_t *label;
-	int labelSize;
-	bool disabled = false;
-	union
-	{
-		CNeoDataRingBox ringBox;
-		CNeoDataSlider slider;
-		CNeoDataTextEntry textEntry;
-		CNeoDataBindEntry bindEntry;
-		CNeoDataTextLabel textLabel;
-		CNeoDataMicTester micTester;
-		CNeoDataGameServer gameServer;
-		CNeoDataButton button;
-	};
-};
-
-#define NDV_LABEL(wlabel) .label = wlabel, .labelSize = ((sizeof(wlabel) / sizeof(wchar_t)) - 1)
-#define NDV_INIT_SLIDER(wlabel, min, max, step, multi, chmax) { \
-	.type = CNeoDataVariant::SLIDER, NDV_LABEL(wlabel), \
-	.slider = {(min), (max), (step), (multi), (chmax)} }
-#define NDV_INIT_RINGBOX(wlabel, wszitems, wszitemssize) { \
-	.type = CNeoDataVariant::RINGBOX, NDV_LABEL(wlabel), \
-	.ringBox = { .wszItems = (wszitems), .iItemsSize = (wszitemssize)} }
-#define NDV_INIT_RINGBOX_ONOFF(wlabel) NDV_INIT_RINGBOX(wlabel, ENABLED_LABELS, 2)
-#define NDV_INIT_TEXTENTRY(wlabel) { \
-	.type = CNeoDataVariant::TEXTENTRY, NDV_LABEL(wlabel), \
-	.textEntry = {} }
-#define NDV_INIT_S_DISPLAYNAME(wlabel) { \
-	.type = CNeoDataVariant::S_DISPLAYNAME, NDV_LABEL(wlabel) }
-#define NDV_INIT_S_MICTESTER(wlabel) { \
-	.type = CNeoDataVariant::S_MICTESTER, NDV_LABEL(wlabel) }
-#define NDV_INIT_BUTTON(wlabel) { \
-	.type = CNeoDataVariant::BUTTON, NDV_LABEL(wlabel) }
-
-struct CNeoDataSettings_Base
-{
-	virtual ~CNeoDataSettings_Base() {}
-	virtual CNeoDataVariant *NdvList() = 0;
-	virtual int NdvListSize() = 0;
-	virtual void UserSettingsRestore() = 0;
-	virtual void UserSettingsSave() = 0;
-	virtual WLabelWSize Title() = 0;
-};
-
-// NEO NOTE (nullsystem): If there's a client convar not saved, it's likely the way it been defined is wrong
-// AKA they've been defined in both client + server when it should only be for client
-class CNeoPanel_Base : public vgui::EditablePanel
-{
-	DECLARE_CLASS_SIMPLE(CNeoPanel_Base, vgui::EditablePanel);
-public:
-	CNeoPanel_Base(vgui::Panel *parent);
-	virtual ~CNeoPanel_Base() {}
-	void UserSettingsRestore();
-	void UserSettingsSave();
-
-	void PerformLayout() final;
-	void Paint() final;
-	void OnMousePressed(vgui::MouseCode code) override;
-	void OnMouseDoublePressed(vgui::MouseCode code) override;
-	void OnMouseWheeled(int delta) override;
-
-	void OnKeyCodeTyped(vgui::KeyCode code) override;
-	void OnKeyTyped(wchar_t unichar) final;
-
-	void OnCursorMoved(int x, int y) final;
-
-	CNeoDataVariant *NdvFromIdx(const int idx) const;
-
-	virtual void OnEnterButton(CNeoDataVariant *ndv) {}
-	virtual void OnBottomAction(const int btn) = 0;
-	void OnExitTextEditMode(const bool bKeepGameServerFocus = false);
-
-	virtual CNeoDataSettings_Base **TabsList() = 0;
-	virtual int TabsListSize() const = 0;
-	virtual const WLabelWSize *BottomSectionList() const = 0;
-	virtual int BottomSectionListSize() const = 0;
-	virtual int KeyCodeToBottomAction(vgui::KeyCode code) const = 0;
-	virtual void OnEnterServer([[maybe_unused]] const gameserveritem_t gameserver) { Assert(false); }
-	virtual int TopAreaRows() const = 0;
-	int TopAreaTall() const;
-	virtual void TopAreaPaint() {}
-	virtual void OnCursorMovedTopArea([[maybe_unused]] int x, [[maybe_unused]] int y) {}
-
-	int m_iNdsCurrent = 0;
-	int m_iPosX = 0;
-	int m_iScrollOffset = 0;
-
-	enum eSectionActive
-	{
-		SECTION_MAIN = 0,
-		SECTION_BOTTOM,
-		SECTION_TOP,
-
-		SECTION__TOTAL,
-	};
-	eSectionActive m_eSectionActive = SECTION_MAIN;
-	int m_iNdvHover = -1;
-	int m_iNdvMainFocus = -1; // Only SECTION_MAIN
-
-	// NEO NOTE (nullsystem): Just to make it simple, any actions that changes
-	// settings (key or mouse) just trigger this regardless if the value has been changed or not
-	bool m_bModified = false;
-
-	enum WidgetPos
-	{
-		WDG_NONE = 0,
-		WDG_LEFT,
-		WDG_CENTER,
-		WDG_RIGHT,
-	};
-	WidgetPos m_curMouse = WDG_NONE;
-};
-
-struct CNeoDataNewGame_General : CNeoDataSettings_Base
-{
-	enum Options
-	{
-		OPT_NEW_MAPLIST = 0,
-		OPT_NEW_HOSTNAME,
-		OPT_NEW_MAXPLAYERS,
-		OPT_NEW_SVPASSWORD,
-		OPT_NEW_FRIENDLYFIRE,
-
-		OPT_NEW__TOTAL,
-	};
-	CNeoDataVariant m_ndvList[OPT_NEW__TOTAL];
-
-	CNeoDataNewGame_General();
-	CNeoDataVariant *NdvList() override { return m_ndvList; }
-	int NdvListSize() override { return OPT_NEW__TOTAL; }
-	void UserSettingsRestore() override {}
-	void UserSettingsSave() override {}
-	WLabelWSize Title() override { return LWS(L"New Game"); }
-};
-
-struct CNeoTab_MapList : CNeoDataSettings_Base
-{
-	CUtlVector<CNeoDataVariant> m_ndvVec;
-
-	CNeoTab_MapList();
-	CNeoDataVariant *NdvList() final { return m_ndvVec.Base(); }
-	int NdvListSize() final { return m_ndvVec.Size(); }
-	void UserSettingsRestore() final {}
-	void UserSettingsSave() final {}
-	WLabelWSize Title() final { return LWS(L"Maplist"); }
-};
-
-class CNeoOverlay_MapList : public CNeoPanel_Base
-{
-	DECLARE_CLASS_SIMPLE(CNeoOverlay_MapList, CNeoPanel_Base);
-public:
-	CNeoOverlay_MapList(vgui::Panel *parent);
-
-	void OnEnterButton(CNeoDataVariant *ndv) override;
-	void OnBottomAction(const int btn) override;
-
-	CNeoTab_MapList m_ndsMapList;
-	CNeoDataSettings_Base *m_pNdsBases[1] = {
-		&m_ndsMapList,
-	};
-	CNeoDataSettings_Base **TabsList() final { return m_pNdsBases; };
-	int TabsListSize() const final { return 1; }
-
-	enum BottomBtns
-	{
-		BBTN_BACK = 0,
-		BBTN_UNUSEDIDX1,
-		BBTN_UNUSEDIDX2,
-		BBTN_UNUSEDIDX3,
-		BBTN_UNUSEDIDX4,
-
-		BBTN__TOTAL,
-	};
-	const WLabelWSize *BottomSectionList() const override;
-	int BottomSectionListSize() const override { return BBTN__TOTAL; }
-	int KeyCodeToBottomAction(vgui::KeyCode code) const override;
-	int TopAreaRows() const final { return 0; }
-};
-
-class CNeoPanel_NewGame : public CNeoPanel_Base
-{
-	DECLARE_CLASS_SIMPLE(CNeoPanel_NewGame, CNeoPanel_Base);
-public:
-	CNeoPanel_NewGame(vgui::Panel *parent);
-	~CNeoPanel_NewGame() override;
-
-	void OnEnterButton(CNeoDataVariant *ndv) override;
-	void OnBottomAction(const int btn) override;
-
-	CNeoDataNewGame_General m_ndsGeneral;
-	CNeoDataSettings_Base *m_pNdsBases[1] = {
-		&m_ndsGeneral,
-	};
-	CNeoDataSettings_Base **TabsList() final { return m_pNdsBases; };
-	int TabsListSize() const final { return 1; }
-
-	enum BottomBtns
-	{
-		BBTN_BACK = 0,
-		BBTN_UNUSEDIDX1,
-		BBTN_UNUSEDIDX2,
-		BBTN_UNUSEDIDX3,
-		BBTN_GO,
-
-		BBTN__TOTAL,
-	};
-	const WLabelWSize *BottomSectionList() const override;
-	int BottomSectionListSize() const override { return BBTN__TOTAL; }
-	int KeyCodeToBottomAction(vgui::KeyCode code) const override;
-	int TopAreaRows() const final { return 0; }
-
-	CNeoOverlay_MapList *m_mapList = nullptr;
-	MESSAGE_FUNC_PARAMS(OnMapListPicked, "MapListPicked", data);
-};
-
-class CNeoDataServerBrowser_Filters;
-
-class CNeoDataServerBrowser_General : public CNeoDataSettings_Base, public ISteamMatchmakingServerListResponse
+class CNeoDataServerBrowser_General : public ISteamMatchmakingServerListResponse
 {
 public:
 	GameServerType m_iType;
-	CUtlVector<CNeoDataVariant> m_ndvVec;
-	CUtlVector<CNeoDataVariant> m_ndvFilteredVec;
+	CUtlVector<gameserveritem_t> m_servers;
+	CUtlVector<gameserveritem_t> m_filteredServers;
 
-	CNeoDataServerBrowser_General();
-	CNeoDataVariant *NdvList() override;
-	int NdvListSize() override { NdvList(); return m_ndvFilteredVec.Size(); }
-	void UserSettingsRestore() override {}
-	void UserSettingsSave() override {}
-	WLabelWSize Title() override;
+	CNeoDataServerBrowser_General() = default;
+
 	void UpdateFilteredList();
 
 	void RequestList(MatchMakingKeyValuePair_t **filters, const uint32 iFiltersSize);
 	void ServerResponded(HServerListRequest hRequest, int iServer) final;
 	void ServerFailedToRespond(HServerListRequest hRequest, int iServer) final;
 	void RefreshComplete(HServerListRequest hRequest, EMatchMakingServerResponse response) final;
-	HServerListRequest m_hdlRequest;
-	CNeoDataServerBrowser_Filters *m_filters = nullptr;
+	HServerListRequest m_hdlRequest = nullptr;
 	bool m_bModified = false;
-	GameServerSortContext *m_pSortCtx = nullptr;
+	bool m_bSearching = false;
+	GameServerSortContext m_pSortCtx = {};
 };
 
-struct CNeoDataServerBrowser_Filters : CNeoDataSettings_Base
-{
-	enum Options
-	{
-		OPT_FILTER_NOTFULL = 0,
-		OPT_FILTER_HASPLAYERS,
-		OPT_FILTER_NOTLOCKED,
-		OPT_FILTER_VACMODE,
-
-		OPT_FILTER__TOTAL,
-	};
-	CNeoDataVariant m_ndvList[OPT_FILTER__TOTAL];
-
-	CNeoDataServerBrowser_Filters();
-	CNeoDataVariant *NdvList() override { return m_ndvList; }
-	int NdvListSize() override { return OPT_FILTER__TOTAL; }
-	void UserSettingsRestore() override {}
-	void UserSettingsSave() override {}
-	WLabelWSize Title() override { return LWS(L"Filters"); }
-};
-
-class CNeoPanel_ServerBrowser : public CNeoPanel_Base
-{
-	DECLARE_CLASS_SIMPLE(CNeoPanel_ServerBrowser, CNeoPanel_Base);
-public:
-	CNeoPanel_ServerBrowser(vgui::Panel *parent);
-	~CNeoPanel_ServerBrowser() override {}
-
-	void OnBottomAction(const int btn) override;
-	void OnEnterServer(const gameserveritem_t gameserver) override;
-	void OnKeyCodeTyped(vgui::KeyCode code) override;
-
-	enum Tabs
-	{
-		TAB_FILTERS = GS__TOTAL,
-		TAB__TOTAL,
-	};
-	CNeoDataServerBrowser_General m_ndsGeneral[GS__TOTAL];
-	CNeoDataServerBrowser_Filters m_ndsFilters;
-	CNeoDataSettings_Base *m_pNdsBases[TAB__TOTAL] = {
-		&m_ndsGeneral[GS_INTERNET],
-		&m_ndsGeneral[GS_LAN],
-		&m_ndsGeneral[GS_FRIENDS],
-		&m_ndsGeneral[GS_FAVORITES],
-		&m_ndsGeneral[GS_HISTORY],
-		&m_ndsGeneral[GS_SPEC],
-		&m_ndsFilters,
-	};
-	CNeoDataSettings_Base **TabsList() final { return m_pNdsBases; };
-	int TabsListSize() const final { return TAB__TOTAL; }
-
-	enum BottomBtns
-	{
-		BBTN_BACK = 0,
-		BBTN_LEGACY,
-		BBTN_DETAILS,
-		BBTN_REFRESH,
-		BBTN_GO,
-
-		BBTN__TOTAL,
-	};
-	const WLabelWSize *BottomSectionList() const override;
-	int BottomSectionListSize() const override { return BBTN__TOTAL; }
-	int KeyCodeToBottomAction(vgui::KeyCode code) const override;
-	int TopAreaRows() const final { return m_iNdsCurrent == TAB_FILTERS ? 1 : 2; }
-	void TopAreaPaint() final;
-	void OnCursorMovedTopArea(int x, int y) final;
-	void OnTick() final;
-	void OnMousePressed(vgui::MouseCode code) override;
-	void OnSetSortCol();
-	GameServerSortContext m_sortCtx;
-};
+#define CONVARREF_DEF(_name) ConVarRef _name{#_name}
 
 struct NeoSettings;
 
@@ -595,8 +201,8 @@ struct NeoSettings
 	{
 		wchar_t wszNeoName[33];
 		bool bOnlySteamNick;
-		float flFov;
-		float flViewmodelFov;
+		int iFov;
+		int iViewmodelFov;
 		bool bAimHold;
 		bool bReloadEmpty;
 		bool bViewmodelRighthand;
@@ -679,7 +285,6 @@ struct NeoSettings
 	bool bBack = false;
 	bool bModified = false;
 
-#define CONVARREF_DEF(_name) ConVarRef _name{#_name}
 	struct CVR
 	{
 		// Multiplayer
@@ -722,13 +327,21 @@ struct NeoSettings
 		CONVARREF_DEF(mat_monitorgamma);
 	};
 	CVR cvr;
-#undef CONVARREF_DEF
 };
 void NeoSettingsInit(NeoSettings *ns);
 void NeoSettingsDeinit(NeoSettings *ns);
 void NeoSettingsRestore(NeoSettings *ns);
 void NeoSettingsSave(const NeoSettings *ns);
 void NeoSettingsMainLoop(NeoSettings *ns, const NeoUI::Mode eMode);
+
+struct NeoNewGame
+{
+	wchar_t wszMap[64] = L"nt_oilstain_ctg";
+	wchar_t wszHostname[64] = L"NeoTokyo Rebuild";
+	int iMaxPlayers = 24;
+	wchar_t wszPassword[64] = L"neo";
+	bool bFriendlyFire = true;
+};
 
 class CNeoRoot;
 // NEO JANK (nullsystem): This is really more of a workaround that
@@ -758,6 +371,11 @@ enum RootState
 	STATE_SETTINGS,
 	STATE_NEWGAME,
 	STATE_SERVERBROWSER,
+
+	STATE_MAPLIST,
+	STATE_KEYCAPTURE,
+	STATE_CONFIRMSETTINGS,
+	STATE_QUIT,
 
 	STATE__TOTAL,
 };
@@ -833,6 +451,18 @@ protected:
 
 	void OnMainLoop(const NeoUI::Mode eMode);
 	NeoSettings m_ns = {};
+
+	NeoNewGame m_newGame = {};
+	struct MapInfo
+	{
+		wchar_t wszName[64];
+	};
+	CUtlVector<MapInfo> m_vWszMaps;
+
+	int m_iServerBrowserTab = 0;
+	gameserveritem_t m_gameserver = {};
+	bool m_bGameserverValid = false;
+	CNeoDataServerBrowser_General m_serverBrowser[GS__TOTAL]; // TODO: Rename class
 };
 
 extern CNeoRoot *g_pNeoRoot;

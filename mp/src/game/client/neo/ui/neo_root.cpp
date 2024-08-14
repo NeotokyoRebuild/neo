@@ -670,6 +670,13 @@ void NeoUI::Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMi
 	InternalUpdatePartitionState(bMouseIn, bFocused);
 }
 
+void NeoUI::SliderInt(const wchar_t *wszLeftLabel, int *iValue, const int iMin, const int iMax, const int iStep)
+{
+	float flValue = *iValue;
+	Slider(wszLeftLabel, &flValue, static_cast<float>(iMin), static_cast<float>(iMax), 0, static_cast<float>(iStep));
+	*iValue = static_cast<int>(flValue);
+}
+
 void NeoUI::TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
 {
 	auto [bMouseIn, bFocused] = InternalGetMouseinFocused();
@@ -825,219 +832,7 @@ void CNeoOverlay_KeyCapture::OnThink()
 	}
 }
 
-CNeoOverlay_Confirm::CNeoOverlay_Confirm(Panel *parent)
-	: EditablePanel(parent, "cneooverlay_confirm")
-{
-	MakePopup(true);
-	SetKeyBoardInputEnabled(true);
-	SetMouseInputEnabled(true);
-	SetBgColor(COLOR_NEOPANELNORMALBG);
-	SetFgColor(COLOR_NEOPANELNORMALBG);
-	SetVisible(false);
-	SetEnabled(false);
-}
-
-void CNeoOverlay_Confirm::PerformLayout()
-{
-	int wide, tall;
-	vgui::surface()->GetScreenSize(wide, tall);
-
-	SetPos(0, 0);
-	SetSize(wide, tall);
-	SetFgColor(COLOR_NEOPANELPOPUPBG);
-	SetBgColor(COLOR_NEOPANELPOPUPBG);
-}
-
-void CNeoOverlay_Confirm::Paint()
-{
-	BaseClass::Paint();
-
-	int wide, tall;
-	GetSize(wide, tall);
-
-	const int tallSplit = tall / 3;
-	const int btnWide = wide / 6;
-	surface()->DrawSetColor(COLOR_NEOPANELNORMALBG);
-	surface()->DrawFilledRect(0, tallSplit, wide, tall - tallSplit);
-
-	surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
-	surface()->DrawSetTextFont(m_fontMain);
-	{
-		static constexpr wchar_t CONFIRM_TEXT[] = L"Settings changed: Do you want to apply the settings?";
-
-		int textWidth, textHeight;
-		surface()->GetTextSize(m_fontMain, CONFIRM_TEXT, textWidth, textHeight);
-		const int textYPos = tallSplit + (tallSplit / 3) - (textHeight / 2);
-		surface()->DrawSetTextPos((wide - textWidth) / 2, textYPos);
-		surface()->DrawPrintText(CONFIRM_TEXT, SZWSZ_LEN(CONFIRM_TEXT));
-	}
-	{
-		const int buttonYPos = tallSplit + (tallSplit * 0.67f) - (g_iRowTall / 2);
-		surface()->DrawSetTextFont(g_neoFont);
-
-		{
-			static constexpr wchar_t APPLY_TEXT[] = L"Apply (Enter)";
-			int textWidth, textHeight;
-			surface()->GetTextSize(g_neoFont, APPLY_TEXT, textWidth, textHeight);
-
-			const int buttonXPos = (wide / 2) - btnWide;
-			surface()->DrawSetColor((m_buttonHover == BUTTON_APPLY) ? COLOR_NEOPANELSELECTBG : COLOR_NEOPANELACCENTBG);
-			surface()->DrawFilledRect(buttonXPos, buttonYPos, buttonXPos + btnWide, buttonYPos + g_iRowTall);
-			surface()->DrawSetTextPos(buttonXPos + ((btnWide / 2) - (textWidth / 2)), buttonYPos + ((g_iRowTall / 2) - (textHeight / 2)));
-			surface()->DrawPrintText(APPLY_TEXT, SZWSZ_LEN(APPLY_TEXT));
-		}
-		{
-			static constexpr wchar_t DISCARD_TEXT[] = L"Discard (ESC)";
-			int textWidth, textHeight;
-			surface()->GetTextSize(g_neoFont, DISCARD_TEXT, textWidth, textHeight);
-
-			const int buttonXPos = (wide / 2);
-			surface()->DrawSetColor((m_buttonHover == BUTTON_DISCARD) ? COLOR_NEOPANELSELECTBG : COLOR_NEOPANELACCENTBG);
-			surface()->DrawFilledRect(buttonXPos, buttonYPos, buttonXPos + btnWide, buttonYPos + g_iRowTall);
-			surface()->DrawSetTextPos(buttonXPos + ((btnWide / 2) - (textWidth / 2)), buttonYPos + ((g_iRowTall / 2) - (textHeight / 2)));
-			surface()->DrawPrintText(DISCARD_TEXT, SZWSZ_LEN(DISCARD_TEXT));
-		}
-	}
-}
-
-void CNeoOverlay_Confirm::OnKeyCodePressed(vgui::KeyCode code)
-{
-	if (code == KEY_ESCAPE || code == KEY_ENTER)
-	{
-		m_bChoice = (code == KEY_ENTER);
-
-		SetVisible(false);
-		SetEnabled(false);
-		PostActionSignal(new KeyValues("ConfirmDialogUpdate", "Accepted", m_bChoice));
-	}
-}
-
-void CNeoOverlay_Confirm::OnMousePressed(vgui::MouseCode code)
-{
-	if (code == MOUSE_LEFT && m_buttonHover != BUTTON_NONE)
-	{
-		m_bChoice = (m_buttonHover == BUTTON_APPLY);
-
-		SetVisible(false);
-		SetEnabled(false);
-		PostActionSignal(new KeyValues("ConfirmDialogUpdate", "Accepted", m_bChoice));
-	}
-}
-
-void CNeoOverlay_Confirm::OnCursorMoved(int x, int y)
-{
-	int wide, tall;
-	GetSize(wide, tall);
-
-	const int tallSplit = tall / 3;
-	const int btnWide = wide / 6;
-	const int buttonYPos = tallSplit + (tallSplit * 0.67f) - (g_iRowTall / 2);
-
-	m_buttonHover = BUTTON_NONE;
-	if (y >= buttonYPos && y < (buttonYPos + g_iRowTall))
-	{
-		if (x >= ((wide / 2) - btnWide) && x < (wide / 2))
-		{
-			m_buttonHover = BUTTON_APPLY;
-		}
-		else if (x >= (wide / 2) && x < ((wide / 2) + btnWide))
-		{
-			m_buttonHover = BUTTON_DISCARD;
-		}
-	}
-}
-
-void CNeoDataSlider::SetValue(const float value)
-{
-	iValCur = static_cast<int>(value * flMulti);
-	ClampAndUpdate();
-}
-
-float CNeoDataSlider::GetValue() const
-{
-	return static_cast<float>(iValCur) * (1.0f / flMulti);
-}
-
-void CNeoDataSlider::ClampAndUpdate()
-{
-	iValCur = clamp(iValCur, iValMin, iValMax);
-	if (flMulti == 1.0f)
-	{
-		iWszCacheLabelSize = V_swprintf_safe(wszCacheLabel, L"%d", iValCur);
-	}
-	else
-	{
-		iWszCacheLabelSize = V_swprintf_safe(wszCacheLabel, L"%.02f", GetValue());
-	}
-	if (iWszCacheLabelSize < 0) iWszCacheLabelSize = 0;
-}
-
-CNeoPanel_Base::CNeoPanel_Base(Panel *parent)
-	: EditablePanel(parent, "CNeoPanel_Base")
-{
-	MakePopup(true);
-	SetKeyBoardInputEnabled(true);
-	SetMouseInputEnabled(true);
-}
-
-void CNeoPanel_Base::UserSettingsRestore()
-{
-	for (int i = 0; i < TabsListSize(); ++i)
-	{
-		TabsList()[i]->UserSettingsRestore();
-	}
-	m_bModified = false;
-}
-
-void CNeoPanel_Base::UserSettingsSave()
-{
-	for (int i = 0; i < TabsListSize(); ++i)
-	{
-		TabsList()[i]->UserSettingsSave();
-	}
-	m_bModified = false;
-}
-
-void CNeoPanel_Base::PerformLayout()
-{
-	int wide, tall;
-	vgui::surface()->GetScreenSize(wide, tall);
-
-	BaseClass::PerformLayout();
-	SetSize(g_iRootSubPanelWide, g_iRowTall + (tall * 0.8f) + g_iRowTall);
-	SetBgColor(COLOR_NEOPANELFRAMEBG);
-	SetFgColor(COLOR_NEOPANELFRAMEBG);
-}
-
-void CNeoPanel_Base::Paint()
-{
-	BaseClass::Paint();
-
-	CNeoDataSettings_Base *tab = TabsList()[m_iNdsCurrent];
-	surface()->DrawSetTextFont(g_neoFont);
-	const int wgXPos = static_cast<int>(g_iRootSubPanelWide * 0.4f);
-	const int widgetWide = g_iRootSubPanelWide - wgXPos;
-	const int widgetTall = g_iRowTall;
-	int fontWide, fontTall;
-	surface()->GetTextSize(g_neoFont, L"<", fontWide, fontTall);
-	const int fontStartXPos = (widgetTall / 2) - (fontWide / 2);
-	const int fontStartYPos = (widgetTall / 2) - (fontTall / 2);
-	const int panelTall = GetTall();
-	const bool bEditBlinkShow = (static_cast<int>(gpGlobals->curtime * 1.5f) % 2 == 0);
-
-	const int yOvershoot = m_iScrollOffset % g_iRowTall;
-	for (int i = (m_iScrollOffset / g_iRowTall), yPos = TopAreaTall() - yOvershoot;
-		 yPos < (panelTall - g_iRowTall) && i < tab->NdvListSize();
-		 ++i, yPos += widgetTall)
-	{
-		CNeoDataVariant *ndv = &tab->NdvList()[i];
-		const bool bThisHover = (m_eSectionActive == SECTION_MAIN && i == m_iNdvHover);
-		const bool bThisFocus = (i == m_iNdvMainFocus);
-		const bool bThisHoverFocus = bThisHover || bThisFocus;
-
-		surface()->DrawSetColor(bThisHoverFocus ? COLOR_NEOPANELSELECTBG : COLOR_NEOPANELACCENTBG);
-		surface()->DrawSetTextColor(bThisFocus ? COLOR_NEOPANELTEXTBRIGHT : COLOR_NEOPANELTEXTNORMAL);
-
+#if 0
 		if (ndv->type == CNeoDataVariant::GAMESERVER)
 		{
 			if (!bThisHoverFocus) surface()->DrawSetColor((i % 2 == 0) ? COLOR_NEOPANELNORMALBG : COLOR_NEOPANELACCENTBG);
@@ -1101,412 +896,6 @@ void CNeoPanel_Base::Paint()
 			continue;
 		}
 
-		switch (ndv->type)
-		{
-		case CNeoDataVariant::TEXTENTRY:
-		{
-			surface()->DrawFilledRect(wgXPos, yPos, wgXPos + widgetWide, yPos + widgetTall);
-		}
-		break;
-		default: break;
-		}
-
-		// Draw the left-side label
-		if (ndv->labelSize > 0)
-		{
-			const wchar_t *wszLeftLabel = ndv->label;
-			if (ndv->type == CNeoDataVariant::TEXTLABEL)
-			{
-				wszLeftLabel = ndv->textLabel.wszLabel;
-
-				int fontWide, fontTall;
-				surface()->GetTextSize(g_neoFont, ndv->textLabel.wszLabel, fontWide, fontTall);
-				surface()->DrawSetTextPos((g_iRootSubPanelWide / 2) - (fontWide / 2), yPos + fontStartYPos);
-			}
-			else
-			{
-				surface()->DrawSetTextPos(g_iMarginX, yPos + fontStartYPos);
-			}
-			surface()->DrawPrintText(wszLeftLabel, ndv->labelSize);
-		}
-
-		// Draw the right-side widget - widget specific
-		switch (ndv->type)
-		{
-		case CNeoDataVariant::TEXTENTRY:
-		{
-			CNeoDataTextEntry *te = &ndv->textEntry;
-			surface()->DrawSetTextPos(wgXPos + g_iMarginX, yPos + fontStartYPos);
-			surface()->DrawPrintText(te->wszEntry, V_wcslen(te->wszEntry));
-			if (bThisFocus && bEditBlinkShow)
-			{
-				int textWide, textTall;
-				surface()->GetTextSize(g_neoFont, te->wszEntry, textWide, textTall);
-				surface()->DrawSetTextPos(wgXPos + g_iMarginX + textWide, yPos + fontStartYPos);
-				surface()->DrawPrintText(L"_", 1);
-			}
-		}
-		break;
-		}
-	}
-
-	const int bottomYStart = (panelTall - g_iRowTall);
-	{
-		const int iBtnWide = g_iRootSubPanelWide / BottomSectionListSize();
-
-		// Draw the bottom part
-		surface()->DrawSetColor(COLOR_NEOPANELNORMALBG);
-		surface()->DrawFilledRect(0, bottomYStart, g_iRootSubPanelWide, panelTall);
-
-		// Draw the buttons on bottom
-		for (int i = 0, xPosTab = 0; i < BottomSectionListSize(); ++i, xPosTab += iBtnWide)
-		{
-			const auto bottomInfo = BottomSectionList()[i];
-			const bool bBottomHover = (m_eSectionActive == SECTION_BOTTOM && i == m_iNdvHover);
-			if (bottomInfo.text)
-			{
-				surface()->DrawSetColor(bBottomHover ? COLOR_NEOPANELSELECTBG : COLOR_NEOPANELNORMALBG);
-				surface()->DrawFilledRect(xPosTab, bottomYStart, xPosTab + iBtnWide, panelTall);
-				surface()->DrawSetTextPos(xPosTab + g_iMarginX, bottomYStart + fontStartYPos);
-				surface()->DrawPrintText(bottomInfo.text, bottomInfo.size);
-			}
-		}
-	}
-}
-
-void CNeoPanel_Base::OnMousePressed(vgui::MouseCode code)
-{
-	OnExitTextEditMode(true);
-	switch (m_eSectionActive)
-	{
-	break; case SECTION_TOP:
-	{
-		if (m_iNdvHover >= 0 && m_iNdvHover < TabsListSize())
-		{
-			m_iNdsCurrent = m_iNdvHover;
-			m_iNdvMainFocus = -1;
-			m_iScrollOffset = 0;
-			InvalidateLayout();
-			PerformLayout();
-			RequestFocus();
-		}
-	}
-	break; case SECTION_MAIN:
-	{
-		CNeoDataVariant *ndv = NdvFromIdx((code == MOUSE_LEFT) ? m_iNdvHover : -1);
-		if (!ndv) return;
-
-		switch (ndv->type)
-		{
-		case CNeoDataVariant::RINGBOX:
-		{
-			if (m_curMouse == WDG_NONE || m_curMouse == WDG_CENTER) return;
-
-			CNeoDataRingBox *rb = &ndv->ringBox;
-			rb->iCurIdx += (m_curMouse == WDG_LEFT) ? -1 : +1;
-			rb->iCurIdx = LoopAroundInArray(rb->iCurIdx, rb->iItemsSize);
-
-			m_bModified = true;
-		}
-		break;
-		case CNeoDataVariant::SLIDER:
-		{
-			if (m_curMouse == WDG_NONE) return;
-			if (m_curMouse == WDG_CENTER)
-			{
-				m_iNdvMainFocus = m_iNdvHover;
-				return;
-			}
-
-			CNeoDataSlider *sl = &ndv->slider;
-			sl->iValCur += (m_curMouse == WDG_LEFT) ? -sl->iValStep : +sl->iValStep;
-			sl->ClampAndUpdate();
-
-			m_bModified = true;
-		}
-		break;
-		case CNeoDataVariant::BUTTON:
-			if (ndv->labelSize == 0 || (ndv->labelSize > 0 && m_curMouse == WDG_CENTER)) OnEnterButton(ndv);
-			break;
-		case CNeoDataVariant::BINDENTRY:
-			if (m_curMouse == WDG_CENTER) OnEnterButton(ndv);
-			break;
-		case CNeoDataVariant::GAMESERVER:
-			m_iNdvMainFocus = m_iNdvHover;
-			break;
-		case CNeoDataVariant::S_MICTESTER:
-		{
-			IVoiceTweak_s *voiceTweak = engine->GetVoiceTweakAPI();
-			voiceTweak->IsStillTweaking() ? (void)voiceTweak->EndVoiceTweakMode() : (void)voiceTweak->StartVoiceTweakMode();
-		}
-		break;
-		}
-	}
-	break; case SECTION_BOTTOM:
-	{
-		OnBottomAction(m_iNdvHover);
-	}
-	}
-}
-
-void CNeoPanel_Base::OnMouseDoublePressed(vgui::MouseCode code)
-{
-	OnExitTextEditMode();
-	if (m_eSectionActive != SECTION_MAIN)
-	{
-		return;
-	}
-
-	CNeoDataVariant *ndv = NdvFromIdx(m_iNdvHover);
-	if (!ndv) return;
-
-	switch (ndv->type)
-	{
-	case CNeoDataVariant::SLIDER:
-	case CNeoDataVariant::TEXTENTRY:
-	{
-		if (m_curMouse == WDG_CENTER && code == MOUSE_LEFT)
-		{
-			m_iNdvMainFocus = m_iNdvHover;
-			RequestFocus();
-		}
-		break;
-	}
-	case CNeoDataVariant::GAMESERVER:
-		OnEnterServer(ndv->gameServer.info);
-		break;
-	}
-}
-
-void CNeoPanel_Base::OnMouseWheeled(int delta)
-{
-	int iScreenWidth, iScreenHeight;
-	engine->GetScreenSize(iScreenWidth, iScreenHeight);
-
-	const float flScrollSpeed = static_cast<float>(iScreenHeight) * 0.05f;
-
-	CNeoDataSettings_Base *tab = TabsList()[m_iNdsCurrent];
-	const int iWidgetSectionTall = GetTall() - g_iRowTall - TopAreaTall();
-	int iMaxScrollOffset = (tab->NdvListSize() * g_iRowTall) - iWidgetSectionTall;
-	if (iMaxScrollOffset < 0) iMaxScrollOffset = 0;
-	m_iScrollOffset += (int)((float)(-delta) * flScrollSpeed);
-	m_iScrollOffset = clamp(m_iScrollOffset, 0, iMaxScrollOffset);
-}
-
-void CNeoPanel_Base::OnKeyCodeTyped(vgui::KeyCode code)
-{
-	// "Universal" binds
-	if (const int iBottomBtns = KeyCodeToBottomAction(code);
-			iBottomBtns >= 0 && iBottomBtns < BottomSectionListSize())
-	{
-		OnExitTextEditMode();
-		OnBottomAction(iBottomBtns);
-		return;
-	}
-	else if (code == KEY_F1 || code == KEY_F3)
-	{
-		// Change tab
-		OnExitTextEditMode();
-		const bool bBackward = (code == KEY_F1);
-		const int iIncr = bBackward ? -1 : +1;
-		m_iNdsCurrent += iIncr;
-		m_iNdsCurrent = LoopAroundInArray(m_iNdsCurrent, TabsListSize());
-
-		m_eSectionActive = SECTION_MAIN;
-		m_iNdvHover = 0;
-		return;
-	}
-	else if (code == KEY_TAB)
-	{
-		// Change section, top may active by key if it has more than just tabs
-		const bool bBackward = (input()->IsKeyDown(KEY_LSHIFT) || input()->IsKeyDown(KEY_RSHIFT));
-		int iSectionActive = static_cast<int>(m_eSectionActive);
-		iSectionActive += (bBackward) ? -1 : +1;
-		iSectionActive = LoopAroundInArray(iSectionActive, SECTION__TOTAL);
-		if (iSectionActive == SECTION_TOP && TopAreaRows() <= 1) iSectionActive = SECTION_MAIN;
-		m_eSectionActive = static_cast<eSectionActive>(iSectionActive);
-		// Set to TabsListSize if top-section with extra widgets as that'll be used for first
-		// non-tabbed widget there
-		m_iNdvHover = (iSectionActive == SECTION_TOP && TopAreaRows() >= 2) ? TabsListSize() : 0;
-		return;
-	}
-
-	// Section limited binds
-	switch (m_eSectionActive)
-	{
-	break; case SECTION_TOP:
-	{
-		// no-op, override this function method when needed
-	}
-	break; case SECTION_MAIN:
-	{
-		if (code == KEY_DOWN || code == KEY_UP)
-		{
-			CNeoDataSettings_Base *tab = TabsList()[m_iNdsCurrent];
-			const int iNdvListSize = tab->NdvListSize();
-
-			if (iNdvListSize == 0) return;
-
-			OnExitTextEditMode();
-			const int iIncr = (code == KEY_UP) ? -1 : +1;
-
-			// Increment or decrement to the next valid NDV
-			CNeoDataVariant::Type type;
-			int iSeenZero = 0;
-			do
-			{
-				m_iNdvHover += iIncr;
-				m_iNdvHover = LoopAroundInArray(m_iNdvHover, iNdvListSize);
-				type = tab->NdvList()[m_iNdvHover].type;
-				iSeenZero += (m_iNdvHover == 0);
-				// If iSeenZero is >= 2, then there isn't really an item we can key to hover at
-			}
-			while (iSeenZero < 2 && (type == CNeoDataVariant::TEXTLABEL || type == CNeoDataVariant::S_DISPLAYNAME));
-
-			if (iSeenZero >= 2)
-			{
-				m_iNdvHover = -1;
-			}
-
-			if (m_iNdvHover >= 0)
-			{
-				// Re-adjust scroll offset
-				const int iWdgArea = GetTall() - g_iRowTall - TopAreaTall();
-				const int iWdgYPos = g_iRowTall * m_iNdvHover;
-				if (iWdgYPos < m_iScrollOffset)
-				{
-					m_iScrollOffset = iWdgYPos;
-				}
-				else if ((iWdgYPos + g_iRowTall) >= (m_iScrollOffset + iWdgArea))
-				{
-					m_iScrollOffset = (iWdgYPos - iWdgArea + g_iRowTall);
-				}
-			}
-
-			m_iNdvMainFocus = (type == CNeoDataVariant::GAMESERVER) ? m_iNdvHover : -1;
-			return;
-		}
-
-		CNeoDataVariant *ndv = NdvFromIdx(m_iNdvHover);
-		if (!ndv) return;
-
-		if (code == KEY_LEFT || code == KEY_RIGHT)
-		{
-			switch (ndv->type)
-			{
-			case CNeoDataVariant::RINGBOX:
-			{
-				CNeoDataRingBox *rb = &ndv->ringBox;
-				rb->iCurIdx += (code == KEY_LEFT) ? -1 : +1;
-				rb->iCurIdx = LoopAroundInArray(rb->iCurIdx, rb->iItemsSize);
-				m_bModified = true;
-				OnExitTextEditMode();
-			}
-			break;
-			case CNeoDataVariant::SLIDER:
-			{
-				CNeoDataSlider *sl = &ndv->slider;
-				sl->iValCur += (code == KEY_LEFT) ? -sl->iValStep : +sl->iValStep;
-				sl->ClampAndUpdate();
-				m_bModified = true;
-				OnExitTextEditMode();
-			}
-			break;
-			default: break;
-			}
-			return;
-		}
-		else if (code == KEY_ENTER)
-		{
-			// Change editing mode
-			switch (ndv->type)
-			{
-			case CNeoDataVariant::SLIDER:
-			case CNeoDataVariant::TEXTENTRY:
-			{
-				if (m_iNdvMainFocus != -1 && ndv->type == CNeoDataVariant::SLIDER)
-				{
-					ndv->slider.ClampAndUpdate();
-				}
-				m_iNdvMainFocus = (m_iNdvMainFocus == -1) ? m_iNdvHover : -1;
-				break;
-			}
-			case CNeoDataVariant::BUTTON:
-			case CNeoDataVariant::BINDENTRY:
-				OnEnterButton(ndv);
-				break;
-			case CNeoDataVariant::S_MICTESTER:
-			{
-				IVoiceTweak_s *voiceTweak = engine->GetVoiceTweakAPI();
-				voiceTweak->IsStillTweaking() ? (void)voiceTweak->EndVoiceTweakMode() : (void)voiceTweak->StartVoiceTweakMode();
-				break;
-			}
-			case CNeoDataVariant::GAMESERVER:
-				OnEnterServer(ndv->gameServer.info);
-				break;
-			default:
-				break;
-			}
-			return;
-		}
-		else
-		{
-			CNeoDataVariant *focusNdv = NdvFromIdx(m_iNdvMainFocus);
-			if (!focusNdv) return;
-
-			switch (focusNdv->type)
-			{
-			case CNeoDataVariant::SLIDER:
-			{
-				CNeoDataSlider *sl = &focusNdv->slider;
-				if (code == KEY_BACKSPACE && sl->iWszCacheLabelSize > 0)
-				{
-					sl->wszCacheLabel[--sl->iWszCacheLabelSize] = '\0';
-					m_bModified = true;
-				}
-			}
-			break;
-			case CNeoDataVariant::TEXTENTRY:
-			{
-				CNeoDataTextEntry *te = &focusNdv->textEntry;
-				int iWszSize = V_wcslen(te->wszEntry);
-				if (code == KEY_BACKSPACE && iWszSize > 0)
-				{
-					te->wszEntry[--iWszSize] = '\0';
-					m_bModified = true;
-				}
-			}
-			break;
-			default: break;
-			}
-		}
-	}
-	break; case SECTION_BOTTOM:
-	{
-		if (code == KEY_LEFT || code == KEY_RIGHT)
-		{
-			do
-			{
-				m_iNdvHover += (code == KEY_LEFT) ? -1 : +1;
-				m_iNdvHover = LoopAroundInArray(m_iNdvHover, BottomSectionListSize());
-			}
-			while (BottomSectionList()[m_iNdvHover].text == nullptr);
-		}
-		else if (code == KEY_ENTER)
-		{
-			OnBottomAction(m_iNdvHover);
-		}
-	}
-	}
-}
-
-void CNeoPanel_Base::OnKeyTyped(wchar_t unichar)
-{
-	CNeoDataVariant *ndv = NdvFromIdx((m_eSectionActive == SECTION_MAIN) ? m_iNdvMainFocus : -1);
-	if (!ndv) return;
-
-	switch (ndv->type)
-	{
 	case CNeoDataVariant::SLIDER:
 	{
 		CNeoDataSlider *sl = &ndv->slider;
@@ -1535,142 +924,7 @@ void CNeoPanel_Base::OnKeyTyped(wchar_t unichar)
 		}
 	}
 	break;
-	case CNeoDataVariant::TEXTENTRY:
-	{
-		CNeoDataTextEntry *te = &ndv->textEntry;
-		int iWszSize = V_wcslen(te->wszEntry);
-		if (iWszSize < CNeoDataTextEntry::ENTRY_MAX && iswprint(unichar))
-		{
-			te->wszEntry[iWszSize++] = unichar;
-			te->wszEntry[iWszSize] = '\0';
-			m_bModified = true;
-		}
-	}
-	break;
-	default: break;
-	}
-}
-
-// Use the y position to get the y-axis partition, then
-// use the x position to get the buttons
-void CNeoPanel_Base::OnCursorMoved(int x, int y)
-{
-	m_iPosX = clamp(x, 0, GetWide());
-	m_eSectionActive = SECTION_MAIN;
-	m_iNdvHover = -1;
-	m_curMouse = WDG_NONE;
-
-	if (x < 0 || x >= g_iRootSubPanelWide)
-	{
-		return;
-	}
-
-	if (y < TopAreaTall())
-	{
-		m_eSectionActive = SECTION_TOP;
-		if (y < g_iRowTall)
-		{
-			const int iTabWide = g_iRootSubPanelWide / TabsListSize();
-			m_iNdvHover = x / iTabWide;
-		}
-		else
-		{
-			OnCursorMovedTopArea(x, y);
-		}
-		return;
-	}
-	else if (y > (GetTall() - g_iRowTall))
-	{
-		m_eSectionActive = SECTION_BOTTOM;
-		const int iTabWide = g_iRootSubPanelWide / BottomSectionListSize();
-		m_iNdvHover = x / iTabWide;
-		return;
-	}
-
-	y -= TopAreaTall() - m_iScrollOffset;
-	m_iNdvHover = y / g_iRowTall;
-
-	const int wgXPos = static_cast<int>(g_iRootSubPanelWide * 0.4f);
-	const int widgetWide = g_iRootSubPanelWide - wgXPos;
-	const int widgetTall = g_iRowTall;
-
-	CNeoDataVariant *ndv = NdvFromIdx(m_iNdvHover);
-	if (!ndv) return;
-
-	switch (ndv->type)
-	{
-	case CNeoDataVariant::RINGBOX:
-	case CNeoDataVariant::SLIDER:
-		if (x < wgXPos)
-		{
-			m_curMouse = WDG_NONE;
-		}
-		else if (x < (wgXPos + widgetTall))
-		{
-			m_curMouse = WDG_LEFT;
-		}
-		else if (x > (g_iRootSubPanelWide - widgetTall))
-		{
-			m_curMouse = WDG_RIGHT;
-		}
-		else
-		{
-			m_curMouse = WDG_CENTER;
-		}
-
-		if (ndv->type == CNeoDataVariant::SLIDER && m_curMouse == WDG_CENTER &&
-				input()->IsMouseDown(MOUSE_LEFT) && m_iNdvMainFocus == m_iNdvHover)
-		{
-			const int wdgX = x - wgXPos;
-			CNeoDataSlider *sl = &ndv->slider;
-
-			const int iRange = sl->iValMax - sl->iValMin;
-			const float flSliderWidth = static_cast<float>(widgetWide - (2 * widgetTall));
-			const float perc = static_cast<float>(wdgX - widgetTall) / flSliderWidth;
-			sl->iValCur = static_cast<int>(perc * static_cast<float>(iRange)) + sl->iValMin;
-			sl->ClampAndUpdate();
-			m_bModified = true;
-		}
-		break;
-	case CNeoDataVariant::TEXTENTRY:
-	case CNeoDataVariant::BUTTON:
-	case CNeoDataVariant::BINDENTRY:
-	case CNeoDataVariant::S_MICTESTER:
-		if (wgXPos <= x && x < g_iRootSubPanelWide)
-		{
-			m_curMouse = WDG_CENTER;
-		}
-	default:
-		break;
-	}
-}
-
-CNeoDataVariant *CNeoPanel_Base::NdvFromIdx(const int idx) const
-{
-	CNeoDataSettings_Base *tab = const_cast<CNeoPanel_Base *>(this)->TabsList()[m_iNdsCurrent];
-	return (tab && idx >= 0 && idx < tab->NdvListSize()) ? &tab->NdvList()[idx] : nullptr;
-}
-
-void CNeoPanel_Base::OnExitTextEditMode(const bool bKeepGameServerFocus)
-{
-	CNeoDataVariant *ndv = NdvFromIdx(m_iNdvMainFocus);
-	if (ndv && ndv->type == CNeoDataVariant::SLIDER)
-	{
-		ndv->slider.ClampAndUpdate();
-	}
-
-	if (bKeepGameServerFocus && ndv && ndv->type == CNeoDataVariant::GAMESERVER)
-	{
-		return;
-	}
-
-	m_iNdvMainFocus = -1;
-}
-
-int CNeoPanel_Base::TopAreaTall() const
-{
-	return g_iRowTall * TopAreaRows();
-}
+#endif
 
 extern ConVar neo_fov;
 extern ConVar neo_viewmodel_fov_offset;
@@ -1774,190 +1028,6 @@ static const wchar_t *HDR_LABELS[] = {
 	L"Full",
 };
 
-// Map list
-CNeoTab_MapList::CNeoTab_MapList()
-{
-	FileFindHandle_t findHdl;
-	for (const char *pszFilename = filesystem->FindFirst("maps/*.bsp", &findHdl);
-		 pszFilename;
-		 pszFilename = filesystem->FindNext(findHdl))
-	{
-		// Sanity check: In-case somehow someone named a directory as *.bsp in here
-		if (!filesystem->FindIsDirectory(findHdl))
-		{
-			CNeoDataVariant ndv = { .type = CNeoDataVariant::BUTTON, .labelSize = 0, };
-			ndv.button.iWszBtnLabelSize = g_pVGuiLocalize->ConvertANSIToUnicode(
-						pszFilename, ndv.button.wszBtnLabel, sizeof(ndv.button.wszBtnLabel));
-			ndv.button.iWszBtnLabelSize -= sizeof(".bsp");
-			ndv.button.wszBtnLabel[ndv.button.iWszBtnLabelSize] = '\0';
-			m_ndvVec.AddToTail(ndv);
-		}
-	}
-	filesystem->FindClose(findHdl);
-}
-
-CNeoOverlay_MapList::CNeoOverlay_MapList(vgui::Panel *parent)
-	: CNeoPanel_Base(parent)
-{
-}
-
-void CNeoOverlay_MapList::OnEnterButton(CNeoDataVariant *ndv)
-{
-	if (!ndv || ndv->type != CNeoDataVariant::BUTTON) return;
-	PostActionSignal(new KeyValues("MapListPicked", "Map", ndv->button.wszBtnLabel));
-	SetVisible(false);
-	SetEnabled(false);
-}
-
-void CNeoOverlay_MapList::OnBottomAction(const int btn)
-{
-	if (btn == BBTN_BACK)
-	{
-		SetVisible(false);
-		SetEnabled(false);
-	}
-}
-
-const WLabelWSize *CNeoOverlay_MapList::BottomSectionList() const
-{
-	static constexpr WLabelWSize BBTN_NAMES[BBTN__TOTAL] = {
-		LWS(L"Back (ESC)"), LWSNULL, LWSNULL, LWSNULL, LWSNULL,
-	};
-	return BBTN_NAMES;
-}
-
-int CNeoOverlay_MapList::KeyCodeToBottomAction(vgui::KeyCode code) const
-{
-	return (code == KEY_ESCAPE) ? BBTN_BACK : -1;
-}
-
-///////////////
-// PANEL: NEW GAME
-///////////////
-CNeoDataNewGame_General::CNeoDataNewGame_General()
-	: m_ndvList{
-		NDV_INIT_BUTTON(L"Map"),
-		NDV_INIT_TEXTENTRY(L"Hostname"),
-		NDV_INIT_SLIDER(L"Max players", 1, (MAX_PLAYERS - 1), 1, 1.0f, 2),
-		NDV_INIT_TEXTENTRY(L"Password"),
-		NDV_INIT_RINGBOX_ONOFF(L"Friendly fire"),
-	}
-{
-	m_ndvList[OPT_NEW_MAPLIST].button.iWszBtnLabelSize = V_swprintf_safe(
-				m_ndvList[OPT_NEW_MAPLIST].button.wszBtnLabel, L"nt_oilstain_ctg");
-	V_swprintf_safe(m_ndvList[OPT_NEW_HOSTNAME].textEntry.wszEntry, L"NeoTokyo Rebuild");
-	m_ndvList[OPT_NEW_MAXPLAYERS].slider.iValCur = 24;
-	m_ndvList[OPT_NEW_MAXPLAYERS].slider.ClampAndUpdate();
-	V_swprintf_safe(m_ndvList[OPT_NEW_SVPASSWORD].textEntry.wszEntry, L"neo");
-	m_ndvList[OPT_NEW_FRIENDLYFIRE].ringBox.iCurIdx = 1;
-}
-
-CNeoPanel_NewGame::CNeoPanel_NewGame(vgui::Panel *parent)
-	: CNeoPanel_Base(parent)
-	, m_mapList(new CNeoOverlay_MapList(this))
-{
-	m_mapList->AddActionSignalTarget(this);
-	m_mapList->SetVisible(false);
-	m_mapList->SetEnabled(false);
-}
-
-CNeoPanel_NewGame::~CNeoPanel_NewGame()
-{
-	m_mapList->DeletePanel();
-}
-
-void CNeoPanel_NewGame::OnEnterButton(CNeoDataVariant *ndv)
-{
-	if (ndv->type == CNeoDataVariant::BUTTON)
-	{
-		int wide, tall;
-		surface()->GetScreenSize(wide, tall);
-		m_mapList->m_iNdvHover = -1;
-		m_mapList->m_curMouse = CNeoPanel_Base::WDG_NONE;
-		m_mapList->PerformLayout();
-		m_mapList->SetPos((wide / 2) - (g_iRootSubPanelWide / 2),
-								(tall / 2) - (m_mapList->GetTall() / 2));
-		m_mapList->SetVisible(true);
-		m_mapList->SetEnabled(true);
-		m_mapList->MoveToFront();
-		m_mapList->RequestFocus();
-	}
-}
-
-void CNeoPanel_NewGame::OnMapListPicked(KeyValues *data)
-{
-	if (const wchar_t *pWszMapFilename = data->GetWString("Map"))
-	{
-		CNeoDataButton *btn = &m_ndsGeneral.m_ndvList[CNeoDataNewGame_General::OPT_NEW_MAPLIST].button;
-		V_wcscpy_safe(btn->wszBtnLabel, pWszMapFilename);
-		btn->iWszBtnLabelSize = V_wcslen(btn->wszBtnLabel);
-	}
-
-	MoveToFront();
-	RequestFocus();
-}
-
-void CNeoPanel_NewGame::OnBottomAction(const int btn)
-{
-	switch (btn)
-	{
-	case BBTN_GO:
-	{
-		if (engine->IsInGame())
-		{
-			engine->ClientCmd_Unrestricted("disconnect");
-		}
-
-		using General = CNeoDataNewGame_General;
-		static constexpr int ENTRY_MAX = CNeoDataTextEntry::ENTRY_MAX;
-
-		char szMap[ENTRY_MAX + 1] = {};
-		char szHostname[ENTRY_MAX + 1] = {};
-		char szPassword[ENTRY_MAX + 1] = {};
-		g_pVGuiLocalize->ConvertUnicodeToANSI(m_ndsGeneral.m_ndvList[General::OPT_NEW_MAPLIST].button.wszBtnLabel, szMap, sizeof(szMap));
-		g_pVGuiLocalize->ConvertUnicodeToANSI(m_ndsGeneral.m_ndvList[General::OPT_NEW_HOSTNAME].textEntry.wszEntry, szHostname, sizeof(szHostname));
-		g_pVGuiLocalize->ConvertUnicodeToANSI(m_ndsGeneral.m_ndvList[General::OPT_NEW_SVPASSWORD].textEntry.wszEntry, szPassword, sizeof(szPassword));
-		const int iPlayers = m_ndsGeneral.m_ndvList[General::OPT_NEW_MAXPLAYERS].slider.iValCur;
-		const bool bFriendlyFire = static_cast<bool>(m_ndsGeneral.m_ndvList[General::OPT_NEW_FRIENDLYFIRE].ringBox.iCurIdx);
-
-		ConVarRef cvrHostname("hostname");
-		ConVarRef cvrSvPassowrd("sv_password");
-		ConVarRef cvrMpFriendlyFire("mp_friendlyfire");
-
-		cvrHostname.SetValue(szHostname);
-		cvrSvPassowrd.SetValue(szPassword);
-		cvrMpFriendlyFire.SetValue(bFriendlyFire);
-
-		char cmdStr[256];
-		V_sprintf_safe(cmdStr, "maxplayers %d; progress_enable; map \"%s\"", iPlayers, szMap);
-		engine->ClientCmd_Unrestricted(cmdStr);
-	}
-		[[fallthrough]]; // Also reset the main menu back to root state
-	case BBTN_BACK:
-		g_pNeoRoot->m_state = STATE_ROOT;
-		g_pNeoRoot->UpdateControls();
-		break;
-	}
-}
-
-const WLabelWSize *CNeoPanel_NewGame::BottomSectionList() const
-{
-	static constexpr WLabelWSize BBTN_NAMES[BBTN__TOTAL] = {
-		LWS(L"Back (ESC)"), LWSNULL, LWSNULL, LWSNULL, LWS(L"Start"),
-	};
-	return BBTN_NAMES;
-}
-
-int CNeoPanel_NewGame::KeyCodeToBottomAction(vgui::KeyCode code) const
-{
-	switch (code)
-	{
-	case KEY_ESCAPE: return BBTN_BACK;
-	default: break;
-	}
-	return -1;
-}
-
 /////////////////
 // SERVER BROWSER
 /////////////////
@@ -1975,16 +1045,7 @@ static const wchar_t *ANTICHEAT_LABELS[ANTICHEAT__TOTAL] = {
 	L"<Any>", L"On", L"Off"
 };
 
-static constexpr WLabelWSize GS_NAMES[GS__TOTAL] = {
-	LWS(L"Internet"), LWS(L"LAN"), LWS(L"Friends"), LWS(L"Fav"), LWS(L"History"), LWS(L"Spec")
-};
-
-CNeoDataServerBrowser_General::CNeoDataServerBrowser_General()
-{
-}
-
-void CNeoDataServerBrowser_General::UpdateFilteredList()
-{
+#if 0
 	m_ndvFilteredVec.RemoveAll();
 
 	const auto ndvFilters = m_filters->m_ndvList;
@@ -2080,16 +1141,7 @@ void CNeoDataServerBrowser_General::UpdateFilteredList()
 		}, m_pSortCtx);
 	}
 }
-
-CNeoDataVariant *CNeoDataServerBrowser_General::NdvList()
-{
-	return m_ndvFilteredVec.Base();
-}
-
-WLabelWSize CNeoDataServerBrowser_General::Title()
-{
-	return GS_NAMES[m_iType];
-}
+#endif
 
 void CNeoDataServerBrowser_General::RequestList(MatchMakingKeyValuePair_t **filters, const uint32 iFiltersSize)
 {
@@ -2107,6 +1159,7 @@ void CNeoDataServerBrowser_General::RequestList(MatchMakingKeyValuePair_t **filt
 	m_hdlRequest = (m_iType == GS_LAN) ?
 				steamMM->RequestLANServerList(engine->GetAppID(), this) :
 				(steamMM->*pFnReq[m_iType])(engine->GetAppID(), filters, iFiltersSize, this);
+	m_bSearching = true;
 }
 
 // Server has responded ok with updated data
@@ -2118,9 +1171,7 @@ void CNeoDataServerBrowser_General::ServerResponded(HServerListRequest hRequest,
 	gameserveritem_t *pServerDetails = steamMM->GetServerDetails(hRequest, iServer);
 	if (pServerDetails)
 	{
-		CNeoDataVariant ndv = { .type = CNeoDataVariant::GAMESERVER, };
-		ndv.gameServer.info = *pServerDetails;
-		m_ndvVec.AddToTail(ndv);
+		m_servers.AddToTail(*pServerDetails);
 		m_bModified = true;
 	}
 }
@@ -2136,12 +1187,14 @@ void CNeoDataServerBrowser_General::RefreshComplete(HServerListRequest hRequest,
 {
 	if (hRequest != m_hdlRequest) return;
 
-	if (response == eNoServersListedOnMasterServer && m_ndvVec.IsEmpty())
+	m_bSearching = false;
+	if (response == eNoServersListedOnMasterServer && m_servers.IsEmpty())
 	{
 		m_bModified = true;
 	}
 }
 
+#if 0
 CNeoDataServerBrowser_Filters::CNeoDataServerBrowser_Filters()
 	: m_ndvList{
 		NDV_INIT_RINGBOX_ONOFF(L"Server not full"),
@@ -2151,158 +1204,7 @@ CNeoDataServerBrowser_Filters::CNeoDataServerBrowser_Filters()
 	}
 {
 }
-
-CNeoPanel_ServerBrowser::CNeoPanel_ServerBrowser(vgui::Panel *parent)
-	: CNeoPanel_Base(parent)
-{
-	for (int i = 0; i < GS__TOTAL; ++i)
-	{
-		m_ndsGeneral[i].m_iType = static_cast<GameServerType>(i);
-		m_ndsGeneral[i].m_filters = &m_ndsFilters;
-		m_ndsGeneral[i].m_pSortCtx = &m_sortCtx;
-	}
 	ivgui()->AddTickSignal(GetVPanel(), 200);
-}
-
-void CNeoPanel_ServerBrowser::OnBottomAction(const int btn)
-{
-	switch (btn)
-	{
-	case BBTN_LEGACY:
-		g_pNeoRoot->GetGameUI()->SendMainMenuCommand("OpenServerBrowser");
-		break;
-	case BBTN_REFRESH:
-	{
-		if (m_iNdsCurrent < 0 || m_iNdsCurrent >= GS__TOTAL)
-		{
-			return;
-		}
-
-		ISteamMatchmakingServers *steamMM = steamapicontext->SteamMatchmakingServers();
-		m_ndsGeneral[m_iNdsCurrent].m_ndvVec.RemoveAll();
-		m_ndsGeneral[m_iNdsCurrent].m_ndvFilteredVec.RemoveAll();
-		{
-			CNeoDataVariant ndv = { .type = CNeoDataVariant::TEXTLABEL, };
-			ndv.labelSize = V_swprintf_safe(ndv.textLabel.wszLabel, L"Searching %ls queries...", GS_NAMES[m_iNdsCurrent].text);
-			m_ndsGeneral[m_iNdsCurrent].m_ndvFilteredVec.AddToTail(ndv);
-		}
-
-		if (m_ndsGeneral[m_iNdsCurrent].m_hdlRequest)
-		{
-			steamMM->CancelQuery(m_ndsGeneral[m_iNdsCurrent].m_hdlRequest);
-			steamMM->ReleaseRequest(m_ndsGeneral[m_iNdsCurrent].m_hdlRequest);
-			m_ndsGeneral[m_iNdsCurrent].m_hdlRequest = nullptr;
-		}
-		static MatchMakingKeyValuePair_t mmFilters[] = {
-			{"gamedir", "neo"},
-		};
-		MatchMakingKeyValuePair_t *pMMFilters = mmFilters;
-		m_ndsGeneral[m_iNdsCurrent].RequestList(&pMMFilters, 1);
-		break;
-	}
-	case BBTN_GO:
-	{
-		if (CNeoDataVariant *ndv = NdvFromIdx(m_iNdvMainFocus))
-		{
-			OnEnterServer(ndv->gameServer.info);
-		}
-	}
-		[[fallthrough]]; // Also reset the main menu back to root state
-	case BBTN_BACK:
-		g_pNeoRoot->m_state = STATE_ROOT;
-		g_pNeoRoot->UpdateControls();
-		break;
-	}
-}
-
-void CNeoPanel_ServerBrowser::OnEnterServer(const gameserveritem_t gameserver)
-{
-	if (engine->IsInGame())
-	{
-		engine->ClientCmd_Unrestricted("disconnect");
-	}
-
-	// NEO NOTE (nullsystem): Deal with password protected server
-	if (gameserver.m_bPassword)
-	{
-		// TODO
-	}
-	else
-	{
-		char connectCmd[256];
-		const char *szAddress = gameserver.m_NetAdr.GetConnectionAddressString();
-		V_sprintf_safe(connectCmd, "progress_enable; wait; connect %s", szAddress);
-		engine->ClientCmd_Unrestricted(connectCmd);
-
-		g_pNeoRoot->m_state = STATE_ROOT;
-		g_pNeoRoot->UpdateControls();
-	}
-}
-
-void CNeoPanel_ServerBrowser::OnKeyCodeTyped(vgui::KeyCode code)
-{
-	BaseClass::OnKeyCodeTyped(code);
-	if (m_eSectionActive == SECTION_TOP && m_iNdsCurrent != TAB_FILTERS)
-	{
-		if (code == KEY_LEFT || code == KEY_RIGHT)
-		{
-			int iIncr = (code == KEY_LEFT) ? -1 : +1;
-			if (m_iNdvHover < TabsListSize() ||
-					m_iNdvHover >= (TabsListSize() + GSIW__TOTAL))
-			{
-				// Reset to server-browser headers
-				m_iNdvHover = TabsListSize();
-				iIncr = 0;
-			}
-
-			m_iNdvHover += iIncr;
-			m_iNdvHover = LoopAroundMinMax(m_iNdvHover,  TabsListSize(), TabsListSize() + GSIW__TOTAL - 1);
-		}
-		else if (code == KEY_ENTER)
-		{
-			OnSetSortCol();
-		}
-	}
-}
-
-const WLabelWSize *CNeoPanel_ServerBrowser::BottomSectionList() const
-{
-	CNeoDataSettings_Base *tab = const_cast<CNeoPanel_ServerBrowser *>(this)->TabsList()[m_iNdsCurrent];
-	if (m_iNdvMainFocus >= 0 && m_iNdvMainFocus < tab->NdvListSize())
-	{
-		static constexpr WLabelWSize BBTN_WITHFOCUS[BBTN__TOTAL] = {
-			LWS(L"Back (ESC)"), LWS(L"Legacy"), LWS(L"Details"), LWS(L"Refresh (Ctrl+R)"), LWS(L"Enter"),
-		};
-		return BBTN_WITHFOCUS;
-	}
-	static constexpr WLabelWSize BBTN_NAMES[BBTN__TOTAL] = {
-		LWS(L"Back (ESC)"), LWS(L"Legacy"), LWSNULL, LWS(L"Refresh (Ctrl+R)"), LWSNULL,
-	};
-	return BBTN_NAMES;
-}
-
-int CNeoPanel_ServerBrowser::KeyCodeToBottomAction(vgui::KeyCode code) const
-{
-	if (code == KEY_ESCAPE)
-	{
-		return BBTN_BACK;
-	}
-	else if (code == KEY_R && (input()->IsKeyDown(KEY_LCONTROL) || input()->IsKeyDown(KEY_RCONTROL)))
-	{
-		return BBTN_REFRESH;
-	}
-	return -1;
-}
-
-void CNeoPanel_ServerBrowser::TopAreaPaint()
-{
-	if (m_iNdsCurrent == TAB_FILTERS)
-	{
-		return;
-	}
-
-	const int iFontTall = surface()->GetFontTall(g_neoFont);
-	const int iFontStartYPos = (g_iRowTall / 2) - (iFontTall / 2);
 
 	static constexpr WLabelWSize SBLABEL_NAMES[GSIW__TOTAL] = {
 		LWS(L"Lock"), LWS(L"VAC"), LWS(L"Name"), LWS(L"Map"), LWS(L"Players"), LWS(L"Ping"),
@@ -2368,23 +1270,6 @@ void CNeoPanel_ServerBrowser::OnMousePressed(vgui::MouseCode code)
 	BaseClass::OnMousePressed(code);
 }
 
-void CNeoPanel_ServerBrowser::OnCursorMovedTopArea(int x, int y)
-{
-	if (m_iNdsCurrent == TAB_FILTERS || m_eSectionActive != SECTION_TOP)
-	{
-		return;
-	}
-
-	for (int i = 0, xPos = 0; i < GSIW__TOTAL; ++i)
-	{
-		if (x >= xPos && x < (xPos + g_iGSIX[i]))
-		{
-			m_iNdvHover = i + TabsListSize();
-			return;
-		}
-		xPos += g_iGSIX[i];
-	}
-}
 
 void CNeoPanel_ServerBrowser::OnTick()
 {
@@ -2405,6 +1290,7 @@ void CNeoPanel_ServerBrowser::OnTick()
 		m_ndsGeneral[m_iNdsCurrent].m_bModified = false;
 	}
 }
+#endif
 
 void NeoSettingsInit(NeoSettings *ns)
 {
@@ -2489,8 +1375,8 @@ void NeoSettingsRestore(NeoSettings *ns)
 		NeoSettings::General *pGeneral = &ns->general;
 		g_pVGuiLocalize->ConvertANSIToUnicode(neo_name.GetString(), pGeneral->wszNeoName, sizeof(pGeneral->wszNeoName));
 		pGeneral->bOnlySteamNick = cl_onlysteamnick.GetBool();
-		pGeneral->flFov = neo_fov.GetInt();
-		pGeneral->flViewmodelFov = neo_viewmodel_fov_offset.GetInt();
+		pGeneral->iFov = neo_fov.GetInt();
+		pGeneral->iViewmodelFov = neo_viewmodel_fov_offset.GetInt();
 		pGeneral->bAimHold = neo_aim_hold.GetBool();
 		pGeneral->bReloadEmpty = cl_autoreload_when_empty.GetBool();
 		pGeneral->bViewmodelRighthand = cl_righthand.GetBool();
@@ -2643,8 +1529,8 @@ void NeoSettingsSave(const NeoSettings *ns)
 		g_pVGuiLocalize->ConvertUnicodeToANSI(pGeneral->wszNeoName, neoNameText, sizeof(neoNameText));
 		neo_name.SetValue(neoNameText);
 		cl_onlysteamnick.SetValue(pGeneral->bOnlySteamNick);
-		neo_fov.SetValue(static_cast<int>(pGeneral->flFov));
-		neo_viewmodel_fov_offset.SetValue(static_cast<int>(pGeneral->flViewmodelFov));
+		neo_fov.SetValue(pGeneral->iFov);
+		neo_viewmodel_fov_offset.SetValue(pGeneral->iViewmodelFov);
 		neo_aim_hold.SetValue(pGeneral->bAimHold);
 		cl_autoreload_when_empty.SetValue(pGeneral->bReloadEmpty);
 		cl_righthand.SetValue(pGeneral->bViewmodelRighthand);
@@ -2842,8 +1728,8 @@ void NeoSettings_General(NeoSettings *ns)
 	(bShowSteamNick) ? V_swprintf_safe(wszDisplayName, L"Display name: %s", steamapicontext->SteamFriends()->GetPersonaName())
 					 : V_swprintf_safe(wszDisplayName, L"Display name: %ls", pGeneral->wszNeoName);
 	NeoUI::Label(wszDisplayName);
-	NeoUI::Slider(L"FOV", &pGeneral->flFov, 75.0f, 110.0f, 0);
-	NeoUI::Slider(L"Viewmodel FOV Offset", &pGeneral->flViewmodelFov, -20.0f, 40.0f, 0);
+	NeoUI::SliderInt(L"FOV", &pGeneral->iFov, 75, 110);
+	NeoUI::SliderInt(L"Viewmodel FOV Offset", &pGeneral->iViewmodelFov, -20, 40);
 	NeoUI::RingBoxBool(L"Aim hold", &pGeneral->bAimHold);
 	NeoUI::RingBoxBool(L"Reload empty", &pGeneral->bReloadEmpty);
 	NeoUI::RingBoxBool(L"Right hand viewmodel", &pGeneral->bViewmodelRighthand);
@@ -3001,6 +1887,29 @@ CNeoRoot::CNeoRoot(VPANEL parent)
 	}
 
 	NeoSettingsInit(&m_ns);
+	{
+		// Initialize map list
+		FileFindHandle_t findHdl;
+		for (const char *pszFilename = filesystem->FindFirst("maps/*.bsp", &findHdl);
+			 pszFilename;
+			 pszFilename = filesystem->FindNext(findHdl))
+		{
+			// Sanity check: In-case somehow someone named a directory as *.bsp in here
+			if (!filesystem->FindIsDirectory(findHdl))
+			{
+				MapInfo mapInfo;
+				int iSize = g_pVGuiLocalize->ConvertANSIToUnicode(pszFilename, mapInfo.wszName, sizeof(mapInfo.wszName));
+				iSize -= sizeof(".bsp");
+				mapInfo.wszName[iSize] = '\0';
+				m_vWszMaps.AddToTail(mapInfo);
+			}
+		}
+		filesystem->FindClose(findHdl);
+	}
+	for (int i = 0; i < GS__TOTAL; ++i)
+	{
+		m_serverBrowser[i].m_iType = static_cast<GameServerType>(i);
+	}
 
 	SetKeyBoardInputEnabled(true);
 	SetMouseInputEnabled(true);
@@ -3308,10 +2217,28 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		surface()->DrawPrintText(wszDebugInfo, iDebugInfoSize);
 #endif
 	}
-	else if (eMode == NeoUI::MODE_KEYPRESSED && m_state != STATE_ROOT && g_ctx.eCode == KEY_ESCAPE)
+	else if (eMode == NeoUI::MODE_KEYPRESSED && g_ctx.eCode == KEY_ESCAPE)
 	{
-		m_state = STATE_ROOT;
-		UpdateControls();
+		switch (m_state)
+		{
+		case STATE_ROOT:
+			// no-op
+			break;
+		case STATE_SETTINGS:
+			// TODO: Should be defined in its own sections?
+			m_state = (m_ns.bModified) ? STATE_CONFIRMSETTINGS : STATE_ROOT;
+			UpdateControls();
+			break;
+		case STATE_NEWGAME:
+		case STATE_SERVERBROWSER:
+			m_state = STATE_ROOT;
+			UpdateControls();
+			break;
+		case STATE_MAPLIST:
+			m_state = STATE_NEWGAME;
+			UpdateControls();
+			break;
+		}
 	}
 
 	if (m_state != STATE_ROOT)
@@ -3333,12 +2260,12 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		surface()->DrawSetTextPos(xPanelPos, (yTopPos / 2) - (iTitleHeight / 2));
 		surface()->DrawPrintText(m_wszDispBtnTexts[iBtnIdx], m_iWszDispBtnTextsSizes[iBtnIdx]);
 
-		// Print F1 - F3 tab keybinds
-		if (m_state != STATE_NEWGAME)
-		{
-			surface()->DrawSetTextFont(m_hTextFonts[FONT_NTSMALL]);
-			surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
+		surface()->DrawSetTextFont(m_hTextFonts[FONT_NTSMALL]);
+		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
 
+		// Print F1 - F3 tab keybinds
+		if (m_state == STATE_SERVERBROWSER || m_state == STATE_SETTINGS)
+		{
 			// NEO NOTE (nullsystem): F# as 1 is thinner than 3/not monospaced font
 			int iFontWidth, iFontHeight;
 			surface()->GetTextSize(m_hTextFonts[FONT_NTSMALL], L"F##", iFontWidth, iFontHeight);
@@ -3403,23 +2330,294 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		if (m_ns.bBack)
 		{
 			m_ns.bBack = false;
-			m_state = STATE_ROOT;
+			m_state = (m_ns.bModified) ? STATE_CONFIRMSETTINGS : STATE_ROOT;
 			UpdateControls();
 		}
 	}
 	break;
 	case STATE_NEWGAME:
 	{
+		const int iTallTotal = g_iRowTall * (g_iRowsInScreen + 2);
+		g_ctx.dPanel.wide = g_iRootSubPanelWide;
+		g_ctx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
+		g_ctx.bgColor = COLOR_NEOPANELFRAMEBG;
+		NeoUI::BeginContext(eMode);
+		{
+			g_ctx.dPanel.y = (tall / 2) - (iTallTotal / 2);
+			g_ctx.dPanel.tall = g_iRowTall * (g_iRowsInScreen + 1);
+			NeoUI::BeginSection(true);
+			{
+				if (NeoUI::Button(L"Map", m_newGame.wszMap).bPressed)
+				{
+					m_state = STATE_MAPLIST;
+					UpdateControls();
+				}
+				NeoUI::TextEdit(L"Hostname", m_newGame.wszHostname, SZWSZ_LEN(m_newGame.wszHostname));
+				NeoUI::SliderInt(L"Max players", &m_newGame.iMaxPlayers, 1, 32);
+				NeoUI::TextEdit(L"Password", m_newGame.wszPassword, SZWSZ_LEN(m_newGame.wszPassword));
+				NeoUI::RingBoxBool(L"Friendly fire", &m_newGame.bFriendlyFire);
+			}
+			NeoUI::EndSection();
+			g_ctx.dPanel.y += g_ctx.dPanel.tall;
+			g_ctx.dPanel.tall = g_iRowTall;
+			NeoUI::BeginSection();
+			{
+				NeoUI::BeginHorizontal(g_ctx.dPanel.wide / 5);
+				{
+					if (NeoUI::Button(L"Back (ESC)").bPressed)
+					{
+						m_state = STATE_ROOT;
+						UpdateControls();
+					}
+					NeoUI::Pad();
+					NeoUI::Pad();
+					NeoUI::Pad();
+					if (NeoUI::Button(L"Start").bPressed)
+					{
+						if (engine->IsInGame())
+						{
+							engine->ClientCmd_Unrestricted("disconnect");
+						}
+
+						static constexpr int ENTRY_MAX = 64;
+						char szMap[ENTRY_MAX + 1] = {};
+						char szHostname[ENTRY_MAX + 1] = {};
+						char szPassword[ENTRY_MAX + 1] = {};
+						g_pVGuiLocalize->ConvertUnicodeToANSI(m_newGame.wszMap, szMap, sizeof(szMap));
+						g_pVGuiLocalize->ConvertUnicodeToANSI(m_newGame.wszHostname, szHostname, sizeof(szHostname));
+						g_pVGuiLocalize->ConvertUnicodeToANSI(m_newGame.wszPassword, szPassword, sizeof(szPassword));
+
+						ConVarRef("hostname").SetValue(szHostname);
+						ConVarRef("sv_password").SetValue(szPassword);
+						ConVarRef("mp_friendlyfire").SetValue(m_newGame.bFriendlyFire);
+
+						char cmdStr[256];
+						V_sprintf_safe(cmdStr, "maxplayers %d; progress_enable; map \"%s\"", m_newGame.iMaxPlayers, szMap);
+						engine->ClientCmd_Unrestricted(cmdStr);
+
+						m_state = STATE_ROOT;
+						UpdateControls();
+					}
+				}
+				NeoUI::EndHorizontal();
+			}
+			NeoUI::EndSection();
+		}
+		NeoUI::EndContext();
 	}
 	break;
 	case STATE_SERVERBROWSER:
 	{
+		static const wchar_t *GS_NAMES[GS__TOTAL] = {
+			L"Internet", L"LAN", L"Friends", L"Fav", L"History", L"Spec"
+		};
+
+		const int iTallTotal = g_iRowTall * (g_iRowsInScreen + 2);
+		g_ctx.dPanel.wide = g_iRootSubPanelWide;
+		g_ctx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
+		g_ctx.bgColor = COLOR_NEOPANELFRAMEBG;
+		NeoUI::BeginContext(eMode);
+		{
+			g_ctx.dPanel.y = (tall / 2) - (iTallTotal / 2);
+			g_ctx.dPanel.tall = g_iRowTall;
+			NeoUI::BeginSection();
+			{
+				NeoUI::Tabs(GS_NAMES, ARRAYSIZE(GS_NAMES), &m_iServerBrowserTab);
+			}
+			NeoUI::EndSection();
+			g_ctx.dPanel.y += g_ctx.dPanel.tall;
+			g_ctx.dPanel.tall = g_iRowTall * g_iRowsInScreen;
+			NeoUI::BeginSection(true);
+			{
+				if (m_serverBrowser[m_iServerBrowserTab].m_filteredServers.IsEmpty() &&
+						m_serverBrowser[m_iServerBrowserTab].m_bSearching)
+				{
+					wchar_t wszInfo[128];
+					V_swprintf_safe(wszInfo, L"Searching %ls queries...", GS_NAMES[m_iServerBrowserTab]);
+					NeoUI::Label(wszInfo, true);
+				}
+				else
+				{
+					for (const auto &server : m_serverBrowser[m_iServerBrowserTab].m_filteredServers)
+					{
+						wchar_t wszInfo[128];
+						V_swprintf_safe(wszInfo, L"%s %s %d", server.GetName(), server.m_szMap, server.m_nPing);
+						if (NeoUI::Button(wszInfo).bPressed)
+						{
+							// TODO
+						}
+					}
+				}
+			}
+			NeoUI::EndSection();
+			g_ctx.dPanel.y += g_ctx.dPanel.tall;
+			g_ctx.dPanel.tall = g_iRowTall;
+			NeoUI::BeginSection();
+			{
+				NeoUI::BeginHorizontal(g_ctx.dPanel.wide / 5);
+				{
+					if (NeoUI::Button(L"Back (ESC)").bPressed)
+					{
+						m_state = STATE_ROOT;
+						UpdateControls();
+					}
+					if (NeoUI::Button(L"Legacy").bPressed)
+					{
+						GetGameUI()->SendMainMenuCommand("OpenServerBrowser");
+					}
+					NeoUI::Pad();
+					if (NeoUI::Button(L"Refresh").bPressed)
+					{
+						ISteamMatchmakingServers *steamMM = steamapicontext->SteamMatchmakingServers();
+						CNeoDataServerBrowser_General *pServerBrowser = &m_serverBrowser[m_iServerBrowserTab];
+						pServerBrowser->m_servers.RemoveAll();
+						pServerBrowser->m_filteredServers.RemoveAll();
+						if (pServerBrowser->m_hdlRequest)
+						{
+							steamMM->CancelQuery(pServerBrowser->m_hdlRequest);
+							steamMM->ReleaseRequest(pServerBrowser->m_hdlRequest);
+							pServerBrowser->m_hdlRequest = nullptr;
+						}
+						static MatchMakingKeyValuePair_t mmFilters[] = {
+							{"gamedir", "neo"},
+						};
+						MatchMakingKeyValuePair_t *pMMFilters = mmFilters;
+						pServerBrowser->RequestList(&pMMFilters, 1);
+					}
+					if (m_bGameserverValid)
+					{
+						if (NeoUI::Button(L"Enter").bPressed)
+						{
+							if (engine->IsInGame())
+							{
+								engine->ClientCmd_Unrestricted("disconnect");
+							}
+
+							// NEO NOTE (nullsystem): Deal with password protected server
+							if (m_gameserver.m_bPassword)
+							{
+								// TODO
+								m_state = STATE_ROOT;
+								UpdateControls();
+							}
+							else
+							{
+								char connectCmd[256];
+								const char *szAddress = m_gameserver.m_NetAdr.GetConnectionAddressString();
+								V_sprintf_safe(connectCmd, "progress_enable; wait; connect %s", szAddress);
+								engine->ClientCmd_Unrestricted(connectCmd);
+
+								m_state = STATE_ROOT;
+								UpdateControls();
+							}
+						}
+					}
+				}
+				NeoUI::EndHorizontal();
+			}
+			NeoUI::EndSection();
+		}
+		NeoUI::EndContext();
+
 	}
 	break;
+	case STATE_MAPLIST:
+	{
+		const int iTallTotal = g_iRowTall * (g_iRowsInScreen + 2);
+		g_ctx.dPanel.wide = g_iRootSubPanelWide;
+		g_ctx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
+		g_ctx.bgColor = COLOR_NEOPANELFRAMEBG;
+		NeoUI::BeginContext(eMode);
+		{
+			g_ctx.dPanel.y = (tall / 2) - (iTallTotal / 2);
+			g_ctx.dPanel.tall = g_iRowTall * (g_iRowsInScreen + 1);
+			NeoUI::BeginSection(true);
+			{
+				for (auto &wszMap : m_vWszMaps)
+				{
+					if (NeoUI::Button(wszMap.wszName).bPressed)
+					{
+						V_wcscpy_safe(m_newGame.wszMap, wszMap.wszName);
+						m_state = STATE_NEWGAME;
+						UpdateControls();
+					}
+				}
+			}
+			NeoUI::EndSection();
+			g_ctx.dPanel.y += g_ctx.dPanel.tall;
+			g_ctx.dPanel.tall = g_iRowTall;
+			NeoUI::BeginSection();
+			{
+				if (NeoUI::Button(L"Back (ESC)").bPressed)
+				{
+					m_state = STATE_NEWGAME;
+					UpdateControls();
+				}
+			}
+			NeoUI::EndSection();
+		}
+		NeoUI::EndContext();
+	}
+	break;
+	case STATE_KEYCAPTURE:
+	case STATE_CONFIRMSETTINGS:
+	case STATE_QUIT:
+	{
+		surface()->DrawSetColor(COLOR_NEOPANELPOPUPBG);
+		surface()->DrawFilledRect(0, 0, wide, tall);
+		const int tallSplit = tall / 3;
+		surface()->DrawSetColor(COLOR_NEOPANELNORMALBG);
+		surface()->DrawFilledRect(0, tallSplit, wide, tall - tallSplit);
+
+		switch (m_state)
+		{
+		case STATE_KEYCAPTURE:
+			break;
+		case STATE_CONFIRMSETTINGS:
+			g_ctx.dPanel.wide = g_iRootSubPanelWide * 0.75f;
+			g_ctx.dPanel.tall = tallSplit;
+			g_ctx.dPanel.x = (wide / 2) - (g_ctx.dPanel.wide / 2);
+			g_ctx.dPanel.y = tallSplit + (tallSplit / 2) - g_iRowTall;
+			g_ctx.bgColor = COLOR_TRANSPARENT;
+			NeoUI::BeginContext(eMode);
+			{
+				NeoUI::BeginSection(true);
+				{
+					NeoUI::Label(L"Settings changed: Do you want to apply the settings?", true);
+					NeoUI::BeginHorizontal(g_ctx.dPanel.wide / 3);
+					{
+						if (NeoUI::Button(L"Save (Enter)").bPressed)
+						{
+							NeoSettingsSave(&m_ns);
+							m_state = STATE_ROOT;
+							UpdateControls();
+						}
+						NeoUI::Pad();
+						if (NeoUI::Button(L"Discard (ESC)").bPressed)
+						{
+							m_state = STATE_ROOT;
+							UpdateControls();
+						}
+					}
+					NeoUI::EndHorizontal();
+				}
+				NeoUI::EndSection();
+			}
+			NeoUI::EndContext();
+			break;
+		case STATE_QUIT:
+			break;
+		default:
+			break;
+		}
+	}
+	break;
+	default:
+		break;
 	}
 }
 
 bool NeoRootCaptureESC()
 {
-	return (g_pNeoRoot && g_pNeoRoot->IsVisible());
+	return (g_pNeoRoot && g_pNeoRoot->IsEnabled() && g_pNeoRoot->m_state != STATE_ROOT);
 }
