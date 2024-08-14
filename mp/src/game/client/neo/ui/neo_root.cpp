@@ -171,19 +171,12 @@ void NeoUI::BeginContext(const NeoUI::Mode eMode)
 
 void NeoUI::EndContext()
 {
-	if (g_ctx.eMode == MODE_MOUSEMOVED)
+	if (g_ctx.eMode == MODE_MOUSEMOVED && !g_ctx.iHasMouseInPanel)
 	{
-		bool bShouldClearFocus = false;
-		if (!g_ctx.iHasMouseInPanel) bShouldClearFocus = true;
-		else if (g_ctx.iLayoutY < g_ctx.iMouseRelY) bShouldClearFocus = true;
-
-		if (bShouldClearFocus)
-		{
-			g_ctx.eMousePos = MOUSEPOS_NONE;
-			g_ctx.iFocusDirection = 0;
-			g_ctx.iFocus = FOCUSOFF_NUM;
-			g_ctx.iFocusSection = -1;
-		}
+		g_ctx.eMousePos = MOUSEPOS_NONE;
+		g_ctx.iFocusDirection = 0;
+		g_ctx.iFocus = FOCUSOFF_NUM;
+		g_ctx.iFocusSection = -1;
 	}
 
 	if (g_ctx.eMode == MODE_KEYPRESSED && g_ctx.iFocusSection == -1 && (g_ctx.eCode == KEY_DOWN || g_ctx.eCode == KEY_UP))
@@ -303,7 +296,7 @@ void NeoUI::BeginHorizontal(const int iHorizontalWidth)
 {
 	g_ctx.iHorizontalWidth = iHorizontalWidth;
 	g_ctx.iLayoutX = 0;
-	if (g_ctx.eMode == MODE_MOUSEMOVED)
+	if (g_ctx.eMode == MODE_MOUSEMOVED && g_ctx.bMouseInPanel)
 	{
 		g_ctx.iFocusDirection = 0;
 		g_ctx.iFocus = FOCUSOFF_NUM;
@@ -778,79 +771,6 @@ void NeoUI::TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iM
 	}
 
 	InternalUpdatePartitionState(bMouseIn, bFocused);
-
-}
-
-CNeoOverlay_KeyCapture::CNeoOverlay_KeyCapture(Panel *parent)
-	: EditablePanel(parent, "neo_overlay_keycapture")
-{
-	// Required to make sure text entries are recognized
-	MakePopup(true);
-	SetKeyBoardInputEnabled(true);
-	SetMouseInputEnabled(true);
-	SetBgColor(COLOR_NEOPANELNORMALBG);
-	SetFgColor(COLOR_NEOPANELNORMALBG);
-	SetVisible(false);
-	SetEnabled(false);
-}
-
-void CNeoOverlay_KeyCapture::PerformLayout()
-{
-	// Like the root panel, we'll want the whole screen
-	int wide, tall;
-	vgui::surface()->GetScreenSize(wide, tall);
-
-	SetPos(0, 0);
-	SetSize(wide, tall);
-	SetFgColor(COLOR_NEOPANELPOPUPBG);
-	SetBgColor(COLOR_NEOPANELPOPUPBG);
-}
-
-void CNeoOverlay_KeyCapture::Paint()
-{
-	BaseClass::Paint();
-
-	int wide, tall;
-	GetSize(wide, tall);
-
-	const int tallSplit = tall / 3;
-	surface()->DrawSetColor(COLOR_NEOPANELNORMALBG);
-	surface()->DrawFilledRect(0, tallSplit, wide, tall - tallSplit);
-
-	int yPos = 0;
-	surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
-	{
-		int textWidth, textHeight;
-		surface()->DrawSetTextFont(m_fontMain);
-		surface()->GetTextSize(m_fontMain, m_wszBindingText, textWidth, textHeight);
-		const int textYPos = tallSplit + (tallSplit / 2) - (textHeight / 2);
-		surface()->DrawSetTextPos((wide - textWidth) / 2, textYPos);
-		surface()->DrawPrintText(m_wszBindingText, V_wcslen(m_wszBindingText));
-		yPos = textYPos + textHeight;
-	}
-	{
-		static constexpr wchar_t SUB_INFO[] = L"Press ESC to cancel or DEL to remove keybind";
-		int textWidth, textHeight;
-		surface()->DrawSetTextFont(m_fontSub);
-		surface()->GetTextSize(m_fontSub, SUB_INFO, textWidth, textHeight);
-		surface()->DrawSetTextPos((wide - textWidth) / 2, yPos + (textHeight / 2));
-		surface()->DrawPrintText(SUB_INFO, SZWSZ_LEN(SUB_INFO));
-	}
-}
-
-void CNeoOverlay_KeyCapture::OnThink()
-{
-	if (ButtonCode_t code; engine->CheckDoneKeyTrapping(code))
-	{
-		const bool bUpdate = (code != KEY_ESCAPE);
-		if (bUpdate)
-		{
-			m_iButtonCode = (code == KEY_DELETE) ? BUTTON_CODE_NONE : code;
-		}
-		SetVisible(false);
-		SetEnabled(false);
-		PostActionSignal(new KeyValues("KeybindUpdate", "UpdateKey", bUpdate));
-	}
 }
 
 #if 0
@@ -1678,6 +1598,8 @@ void NeoSettingsMainLoop(NeoSettings *ns, const NeoUI::Mode eMode)
 		L"Multiplayer", L"Keybinds", L"Mouse", L"Audio", L"Video"
 	};
 
+	ns->iNextBinding = -1;
+
 	int wide, tall;
 	surface()->GetScreenSize(wide, tall);
 	const int iTallTotal = g_iRowTall * (g_iRowsInScreen + 2);
@@ -1775,11 +1697,11 @@ void NeoSettings_Keys(NeoSettings *ns)
 		else
 		{
 			wchar_t wszBindBtnName[64];
-			const char *bindBtnName = g_pInputSystem->ButtonCodeToString(bind.bcNext);
-			g_pVGuiLocalize->ConvertANSIToUnicode(bindBtnName, wszBindBtnName, sizeof(wszBindBtnName));
+			const char *szBindBtnName = g_pInputSystem->ButtonCodeToString(bind.bcNext);
+			g_pVGuiLocalize->ConvertANSIToUnicode(szBindBtnName, wszBindBtnName, sizeof(wszBindBtnName));
 			if (NeoUI::Button(bind.wszDisplayText, wszBindBtnName).bPressed)
 			{
-				// TODO
+				ns->iNextBinding = i;
 			}
 		}
 	}
@@ -1877,6 +1799,23 @@ void CNeoRootInput::OnKeyCodeTyped(vgui::KeyCode code)
 void CNeoRootInput::OnKeyTyped(wchar_t unichar)
 {
 	m_pNeoRoot->OnRelayedKeyTyped(unichar);
+}
+
+void CNeoRootInput::OnThink()
+{
+	ButtonCode_t code;
+	if (engine->CheckDoneKeyTrapping(code))
+	{
+		if (code != KEY_ESCAPE)
+		{
+			m_pNeoRoot->m_ns.keys.vBinds[m_pNeoRoot->m_iBindingIdx].bcNext =
+					(code == KEY_DELETE) ? BUTTON_CODE_NONE : code;
+			m_pNeoRoot->m_ns.bModified = true;
+		}
+		m_pNeoRoot->m_wszBindingText[0] = '\0';
+		m_pNeoRoot->m_iBindingIdx = -1;
+		m_pNeoRoot->m_state = STATE_SETTINGS;
+	}
 }
 
 CNeoRoot::CNeoRoot(VPANEL parent)
@@ -2215,6 +2154,8 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 	int wide, tall;
 	GetSize(wide, tall);
 
+	const RootState ePrevState = m_state;
+
 	if (eMode == NeoUI::MODE_PAINT)
 	{
 		// Draw version info (bottom left corner) - Always
@@ -2249,16 +2190,13 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		case STATE_SETTINGS:
 			// TODO: Should be defined in its own sections?
 			m_state = (m_ns.bModified) ? STATE_CONFIRMSETTINGS : STATE_ROOT;
-			UpdateControls();
 			break;
 		case STATE_NEWGAME:
 		case STATE_SERVERBROWSER:
 			m_state = STATE_ROOT;
-			UpdateControls();
 			break;
 		case STATE_MAPLIST:
 			m_state = STATE_NEWGAME;
-			UpdateControls();
 			break;
 		}
 	}
@@ -2319,7 +2257,6 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 					if (btnInfo.gamemenucommand)
 					{
 						m_state = STATE_ROOT;
-						UpdateControls();
 						GetGameUI()->SendMainMenuCommand(btnInfo.gamemenucommand);
 					}
 					else if (btnInfo.nextState < STATE__TOTAL)
@@ -2329,7 +2266,6 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 						{
 							NeoSettingsRestore(&m_ns);
 						}
-						UpdateControls();
 					}
 				}
 				if (retBtn.bMouseHover && i != m_iHoverBtn)
@@ -2353,7 +2289,15 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		{
 			m_ns.bBack = false;
 			m_state = (m_ns.bModified) ? STATE_CONFIRMSETTINGS : STATE_ROOT;
-			UpdateControls();
+		}
+		else if (m_ns.iNextBinding >= 0)
+		{
+			m_iBindingIdx = m_ns.iNextBinding;
+			m_ns.iNextBinding = -1;
+			V_swprintf_safe(m_wszBindingText, L"Change binding for: %ls",
+							m_ns.keys.vBinds[m_iBindingIdx].wszDisplayText);
+			m_state = STATE_KEYCAPTURE;
+			engine->StartKeyTrapMode();
 		}
 	}
 	break;
@@ -2372,7 +2316,6 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 				if (NeoUI::Button(L"Map", m_newGame.wszMap).bPressed)
 				{
 					m_state = STATE_MAPLIST;
-					UpdateControls();
 				}
 				NeoUI::TextEdit(L"Hostname", m_newGame.wszHostname, SZWSZ_LEN(m_newGame.wszHostname));
 				NeoUI::SliderInt(L"Max players", &m_newGame.iMaxPlayers, 1, 32);
@@ -2389,7 +2332,6 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 					if (NeoUI::Button(L"Back (ESC)").bPressed)
 					{
 						m_state = STATE_ROOT;
-						UpdateControls();
 					}
 					NeoUI::Pad();
 					NeoUI::Pad();
@@ -2418,7 +2360,6 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 						engine->ClientCmd_Unrestricted(cmdStr);
 
 						m_state = STATE_ROOT;
-						UpdateControls();
 					}
 				}
 				NeoUI::EndHorizontal();
@@ -2481,7 +2422,6 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 					if (NeoUI::Button(L"Back (ESC)").bPressed)
 					{
 						m_state = STATE_ROOT;
-						UpdateControls();
 					}
 					if (NeoUI::Button(L"Legacy").bPressed)
 					{
@@ -2520,7 +2460,6 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 							{
 								// TODO
 								m_state = STATE_ROOT;
-								UpdateControls();
 							}
 							else
 							{
@@ -2530,7 +2469,6 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 								engine->ClientCmd_Unrestricted(connectCmd);
 
 								m_state = STATE_ROOT;
-								UpdateControls();
 							}
 						}
 					}
@@ -2561,7 +2499,6 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 					{
 						V_wcscpy_safe(m_newGame.wszMap, wszMap.wszName);
 						m_state = STATE_NEWGAME;
-						UpdateControls();
 					}
 				}
 			}
@@ -2573,7 +2510,6 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 				if (NeoUI::Button(L"Back (ESC)").bPressed)
 				{
 					m_state = STATE_NEWGAME;
-					UpdateControls();
 				}
 			}
 			NeoUI::EndSection();
@@ -2591,68 +2527,68 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		surface()->DrawSetColor(COLOR_NEOPANELNORMALBG);
 		surface()->DrawFilledRect(0, tallSplit, wide, tall - tallSplit);
 
-		if (m_state == STATE_KEYCAPTURE)
+		g_ctx.dPanel.wide = g_iRootSubPanelWide * 0.75f;
+		g_ctx.dPanel.tall = tallSplit;
+		g_ctx.dPanel.x = (wide / 2) - (g_ctx.dPanel.wide / 2);
+		g_ctx.dPanel.y = tallSplit + (tallSplit / 2) - g_iRowTall;
+		g_ctx.bgColor = COLOR_TRANSPARENT;
+		NeoUI::BeginContext(eMode);
 		{
-
-		}
-		else
-		{
-			g_ctx.dPanel.wide = g_iRootSubPanelWide * 0.75f;
-			g_ctx.dPanel.tall = tallSplit;
-			g_ctx.dPanel.x = (wide / 2) - (g_ctx.dPanel.wide / 2);
-			g_ctx.dPanel.y = tallSplit + (tallSplit / 2) - g_iRowTall;
-			g_ctx.bgColor = COLOR_TRANSPARENT;
-			NeoUI::BeginContext(eMode);
+			NeoUI::BeginSection(true);
 			{
-				NeoUI::BeginSection(true);
+				if (m_state == STATE_KEYCAPTURE)
 				{
-					if (m_state == STATE_CONFIRMSETTINGS)
-					{
-						NeoUI::Label(L"Settings changed: Do you want to apply the settings?", true);
-						NeoUI::BeginHorizontal(g_ctx.dPanel.wide / 3);
-						{
-							if (NeoUI::Button(L"Save (Enter)").bPressed)
-							{
-								NeoSettingsSave(&m_ns);
-								m_state = STATE_ROOT;
-								UpdateControls();
-							}
-							NeoUI::Pad();
-							if (NeoUI::Button(L"Discard (ESC)").bPressed)
-							{
-								m_state = STATE_ROOT;
-								UpdateControls();
-							}
-						}
-						NeoUI::EndHorizontal();
-					}
-					else if (m_state == STATE_QUIT)
-					{
-						NeoUI::Label(L"Do you want to quit the game?", true);
-						NeoUI::BeginHorizontal(g_ctx.dPanel.wide / 3);
-						{
-							if (NeoUI::Button(L"Quit (Enter)").bPressed)
-							{
-								engine->ClientCmd_Unrestricted("quit");
-							}
-							NeoUI::Pad();
-							if (NeoUI::Button(L"Cancel (ESC)").bPressed)
-							{
-								m_state = STATE_ROOT;
-								UpdateControls();
-							}
-						}
-						NeoUI::EndHorizontal();
-					}
+					NeoUI::Label(m_wszBindingText, true);
+					NeoUI::Label(L"Press ESC to cancel or DEL to remove keybind", true);
 				}
-				NeoUI::EndSection();
+				else if (m_state == STATE_CONFIRMSETTINGS)
+				{
+					NeoUI::Label(L"Settings changed: Do you want to apply the settings?", true);
+					NeoUI::BeginHorizontal(g_ctx.dPanel.wide / 3);
+					{
+						if (NeoUI::Button(L"Save (Enter)").bPressed)
+						{
+							NeoSettingsSave(&m_ns);
+							m_state = STATE_ROOT;
+						}
+						NeoUI::Pad();
+						if (NeoUI::Button(L"Discard (ESC)").bPressed)
+						{
+							m_state = STATE_ROOT;
+						}
+					}
+					NeoUI::EndHorizontal();
+				}
+				else if (m_state == STATE_QUIT)
+				{
+					NeoUI::Label(L"Do you want to quit the game?", true);
+					NeoUI::BeginHorizontal(g_ctx.dPanel.wide / 3);
+					{
+						if (NeoUI::Button(L"Quit (Enter)").bPressed)
+						{
+							engine->ClientCmd_Unrestricted("quit");
+						}
+						NeoUI::Pad();
+						if (NeoUI::Button(L"Cancel (ESC)").bPressed)
+						{
+							m_state = STATE_ROOT;
+						}
+					}
+					NeoUI::EndHorizontal();
+				}
 			}
-			NeoUI::EndContext();
+			NeoUI::EndSection();
 		}
+		NeoUI::EndContext();
 	}
 	break;
 	default:
 		break;
+	}
+
+	if (m_state != ePrevState)
+	{
+		UpdateControls();
 	}
 }
 

@@ -143,22 +143,6 @@ enum GameServerInfoW
 	GSIW__TOTAL,
 };
 
-class CNeoOverlay_KeyCapture : public vgui::EditablePanel
-{
-	DECLARE_CLASS_SIMPLE(CNeoOverlay_KeyCapture, vgui::EditablePanel);
-public:
-	CNeoOverlay_KeyCapture(Panel *parent);
-	void PerformLayout() final;
-	void Paint() final;
-	void OnThink() final;
-	ButtonCode_t m_iButtonCode = BUTTON_CODE_INVALID;
-	int m_iIndex = -1;
-	wchar_t m_wszBindingText[128];
-
-	vgui::HFont m_fontMain;
-	vgui::HFont m_fontSub;
-};
-
 struct GameServerSortContext
 {
 	GameServerInfoW col = GSIW_NAME;
@@ -284,6 +268,7 @@ struct NeoSettings
 	int iCurTab = 0;
 	bool bBack = false;
 	bool bModified = false;
+	int iNextBinding = -1;
 
 	struct CVR
 	{
@@ -362,6 +347,7 @@ public:
 	void PerformLayout() final;
 	void OnKeyCodeTyped(vgui::KeyCode code) final;
 	void OnKeyTyped(wchar_t unichar) final;
+	void OnThink();
 	CNeoRoot *m_pNeoRoot = nullptr;
 };
 
@@ -442,7 +428,6 @@ public:
 	void OnRelayedKeyCodeTyped(vgui::KeyCode code);
 	void OnRelayedKeyTyped(wchar_t unichar);
 	void PaintRootMainSection();
-protected:
 	void ApplySchemeSettings(vgui::IScheme *pScheme) final;
 	void Paint() final;
 	void OnMousePressed(vgui::MouseCode code) final;
@@ -463,6 +448,9 @@ protected:
 	gameserveritem_t m_gameserver = {};
 	bool m_bGameserverValid = false;
 	CNeoDataServerBrowser_General m_serverBrowser[GS__TOTAL]; // TODO: Rename class
+
+	wchar_t m_wszBindingText[128];
+	int m_iBindingIdx = -1;
 };
 
 extern CNeoRoot *g_pNeoRoot;
