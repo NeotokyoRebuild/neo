@@ -244,6 +244,7 @@ void NeoUI::EndSection()
 		g_ctx.iFocus = LoopAroundInArray(g_ctx.iFocus, g_ctx.iWidget);
 	}
 
+	// Scroll handling
 	if (g_ctx.eMode == MODE_MOUSEWHEELED)
 	{
 		if (g_ctx.iWidget <= g_iRowsInScreen)
@@ -254,6 +255,24 @@ void NeoUI::EndSection()
 		{
 			g_ctx.iYOffset[g_ctx.iSection] += (g_ctx.eCode == MOUSE_WHEEL_UP) ? -1 : +1;
 			g_ctx.iYOffset[g_ctx.iSection] = clamp(g_ctx.iYOffset[g_ctx.iSection], 0, g_ctx.iWidget - g_iRowsInScreen);
+		}
+	}
+	else if (g_ctx.eMode == MODE_KEYPRESSED && (g_ctx.eCode == KEY_DOWN || g_ctx.eCode == KEY_UP))
+	{
+		if (g_ctx.iWidget <= g_iRowsInScreen)
+		{
+			// Disable scroll if it doesn't need to
+			g_ctx.iYOffset[g_ctx.iSection] = 0;
+		}
+		else if (g_ctx.iFocus < (g_ctx.iYOffset[g_ctx.iSection]))
+		{
+			// Scrolling up past visible, re-adjust
+			g_ctx.iYOffset[g_ctx.iSection] = clamp(g_ctx.iFocus, 0, g_ctx.iWidget - g_iRowsInScreen);
+		}
+		else if (g_ctx.iFocus >= (g_ctx.iYOffset[g_ctx.iSection] + g_iRowsInScreen))
+		{
+			// Scrolling down post visible, re-adjust
+			g_ctx.iYOffset[g_ctx.iSection] = clamp(g_ctx.iFocus - g_iRowsInScreen + 1, 0, g_ctx.iWidget - g_iRowsInScreen);
 		}
 	}
 
@@ -294,7 +313,7 @@ struct GetMouseinFocusedRet
 
 static GetMouseinFocusedRet InternalGetMouseinFocused()
 {
-	bool bMouseIn = (g_ctx.bMouseInPanel && ((g_ctx.iMouseRelY / g_iRowTall) == g_ctx.iPartitionY));
+	bool bMouseIn = (g_ctx.bMouseInPanel && ((g_ctx.iYOffset[g_ctx.iSection] + (g_ctx.iMouseRelY / g_iRowTall)) == g_ctx.iPartitionY));
 	if (bMouseIn && g_ctx.iHorizontalWidth)
 	{
 		bMouseIn = IN_BETWEEN(g_ctx.iLayoutX, g_ctx.iMouseRelX, g_ctx.iLayoutX + g_ctx.iHorizontalWidth);
