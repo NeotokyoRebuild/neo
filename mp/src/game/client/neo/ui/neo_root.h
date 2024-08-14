@@ -27,6 +27,7 @@ enum Mode
 	MODE_MOUSEMOVED,
 	MODE_MOUSEWHEELED,
 	MODE_KEYPRESSED,
+	MODE_KEYTYPED,
 };
 enum MousePos
 {
@@ -56,6 +57,7 @@ struct Context
 {
 	Mode eMode;
 	ButtonCode_t eCode;
+	wchar_t unichar;
 	Color bgColor;
 
 	// Mouse handling
@@ -113,6 +115,7 @@ void RingBoxBool(const wchar_t *wszLeftLabel, bool *bChecked);
 void RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
 void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, const float flMax,
 			const int iDp = 2, const float flStep = 1.0f);
+void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize);
 }
 
 enum GameServerType
@@ -745,6 +748,7 @@ public:
 	CNeoRootInput(CNeoRoot *rootPanel);
 	void PerformLayout() final;
 	void OnKeyCodeTyped(vgui::KeyCode code) final;
+	void OnKeyTyped(wchar_t unichar) final;
 	CNeoRoot *m_pNeoRoot = nullptr;
 };
 
@@ -818,6 +822,7 @@ public:
 
 	CNeoRootInput *m_panelCaptureInput = nullptr;
 	void OnRelayedKeyCodeTyped(vgui::KeyCode code);
+	void OnRelayedKeyTyped(wchar_t unichar);
 	void PaintRootMainSection();
 protected:
 	void ApplySchemeSettings(vgui::IScheme *pScheme) final;

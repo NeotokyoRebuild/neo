@@ -124,13 +124,18 @@ void OverrideGameUI()
 
 static NeoUI::Context g_ctx;
 
+static void GCtxDrawFilledRectXtoX(const int x1, const int y1, const int x2, const int y2)
+{
+	surface()->DrawFilledRect(g_ctx.dPanel.x + g_ctx.iLayoutX + x1,
+							  g_ctx.dPanel.y + g_ctx.iLayoutY + y1,
+							  g_ctx.dPanel.x + g_ctx.iLayoutX + x2,
+							  g_ctx.dPanel.y + g_ctx.iLayoutY + y2);
+}
+
 // This is only because it'll be an eye-sore and repetitve with those g_ctx.dPanel, iLayout, g_iRowTall...
 static void GCtxDrawFilledRectXtoX(const int x1, const int x2)
 {
-	surface()->DrawFilledRect(g_ctx.dPanel.x + g_ctx.iLayoutX + x1,
-							  g_ctx.dPanel.y + g_ctx.iLayoutY,
-							  g_ctx.dPanel.x + g_ctx.iLayoutX + x2,
-							  g_ctx.dPanel.y + g_ctx.iLayoutY + g_iRowTall);
+	GCtxDrawFilledRectXtoX(x1, 0, x2, g_iRowTall);
 }
 static void GCtxDrawSetTextPos(const int x, const int y)
 {
@@ -663,6 +668,89 @@ void NeoUI::Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMi
 	}
 
 	InternalUpdatePartitionState(bMouseIn, bFocused);
+}
+
+void NeoUI::TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
+{
+	auto [bMouseIn, bFocused] = InternalGetMouseinFocused();
+
+	if (IN_BETWEEN(0, g_ctx.iLayoutY, g_ctx.dPanel.tall))
+	{
+		const int iBtnWidth = g_ctx.iHorizontalWidth ? g_ctx.iHorizontalWidth : g_ctx.dPanel.wide;
+		switch (g_ctx.eMode)
+		{
+		case MODE_PAINT:
+		{
+			InternalLabel(wszLeftLabel, false);
+			GCtxDrawFilledRectXtoX(g_ctx.iWgXPos, g_ctx.dPanel.wide);
+			GCtxDrawSetTextPos(g_ctx.iWgXPos + g_iMarginX, g_ctx.iLayoutY + g_ctx.iFontYOffset);
+			surface()->DrawPrintText(wszText, V_wcslen(wszText));
+			if (bFocused)
+			{
+				const bool bEditBlinkShow = (static_cast<int>(gpGlobals->curtime * 1.5f) % 2 == 0);
+				if (bEditBlinkShow)
+				{
+					int iFontWide, iFontTall;
+					surface()->GetTextSize(g_neoFont, wszText, iFontWide, iFontTall);
+					const int iMarkX = g_ctx.iWgXPos + g_iMarginX + iFontWide;
+					surface()->DrawSetColor(COLOR_NEOPANELTEXTBRIGHT);
+					GCtxDrawFilledRectXtoX(iMarkX, g_ctx.iFontYOffset,
+										   iMarkX + g_iMarginX, g_ctx.iFontYOffset + iFontTall);
+				}
+			}
+		}
+		break;
+		case MODE_MOUSEDOUBLEPRESSED:
+		{
+			g_ctx.iFocus = g_ctx.iWidget;
+			g_ctx.iFocusSection = g_ctx.iSection;
+			g_ctx.iFocusDirection = 0;
+		}
+		break;
+		case MODE_KEYPRESSED:
+		{
+			if (bFocused && g_ctx.eCode == KEY_BACKSPACE)
+			{
+				int iTextSize = V_wcslen(wszText);
+				if (iTextSize > 0)
+				{
+					wszText[--iTextSize] = '\0';
+					g_ctx.bValueEdited = true;
+				}
+			}
+		}
+		break;
+		case MODE_KEYTYPED:
+		{
+			if (bFocused)
+			{
+				int iTextSize = V_wcslen(wszText);
+				if (iTextSize < iMaxSize)
+				{
+					wszText[iTextSize++] = g_ctx.unichar;
+					wszText[iTextSize] = '\0';
+					g_ctx.bValueEdited = true;
+				}
+			}
+		}
+		break;
+		case MODE_MOUSEMOVED:
+		{
+			if (bMouseIn)
+			{
+				g_ctx.iFocus = g_ctx.iWidget;
+				g_ctx.iFocusSection = g_ctx.iSection;
+				g_ctx.iFocusDirection = 0;
+			}
+		}
+		break;
+		default:
+			break;
+		}
+	}
+
+	InternalUpdatePartitionState(bMouseIn, bFocused);
+
 }
 
 CNeoOverlay_KeyCapture::CNeoOverlay_KeyCapture(Panel *parent)
@@ -2747,7 +2835,7 @@ void NeoSettingsMainLoop(NeoSettings *ns, const NeoUI::Mode eMode)
 void NeoSettings_General(NeoSettings *ns)
 {
 	NeoSettings::General *pGeneral = &ns->general;
-	NeoUI::Label(L"TODO: neo_name");
+	NeoUI::TextEdit(L"Name", pGeneral->wszNeoName, SZWSZ_LEN(pGeneral->wszNeoName));
 	NeoUI::RingBoxBool(L"Show only steam name", &pGeneral->bOnlySteamNick);
 	wchar_t wszDisplayName[128];
 	const bool bShowSteamNick = pGeneral->bOnlySteamNick || pGeneral->wszNeoName[0] == '\0';
@@ -2877,6 +2965,11 @@ void CNeoRootInput::PerformLayout()
 void CNeoRootInput::OnKeyCodeTyped(vgui::KeyCode code)
 {
 	m_pNeoRoot->OnRelayedKeyCodeTyped(code);
+}
+
+void CNeoRootInput::OnKeyTyped(wchar_t unichar)
+{
+	m_pNeoRoot->OnRelayedKeyTyped(unichar);
 }
 
 CNeoRoot::CNeoRoot(VPANEL parent)
@@ -3178,6 +3271,12 @@ void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 {
 	g_ctx.eCode = code;
 	OnMainLoop(NeoUI::MODE_KEYPRESSED);
+}
+
+void CNeoRoot::OnRelayedKeyTyped(wchar_t unichar)
+{
+	g_ctx.unichar = unichar;
+	OnMainLoop(NeoUI::MODE_KEYTYPED);
 }
 
 void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
