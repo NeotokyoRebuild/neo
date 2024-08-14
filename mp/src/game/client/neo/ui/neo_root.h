@@ -403,7 +403,7 @@ constexpr WidgetInfo BTNS_INFO[BTNS_TOTAL] = {
 	{ "#GameUI_GameMenu_Disconnect", "Disconnect", STATE__TOTAL, FLAG_SHOWINGAME },
 	{ "#GameUI_GameMenu_PlayerList", "OpenPlayerListDialog", STATE__TOTAL, FLAG_SHOWINGAME },
 	{ "#GameUI_GameMenu_Options", nullptr, STATE_SETTINGS, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
-	{ "#GameUI_GameMenu_Quit", "Quit", STATE__TOTAL, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
+	{ "#GameUI_GameMenu_Quit", nullptr, STATE_QUIT, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
 };
 
 // This class is what is actually used instead of the main menu.

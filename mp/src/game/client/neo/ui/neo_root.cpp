@@ -171,12 +171,19 @@ void NeoUI::BeginContext(const NeoUI::Mode eMode)
 
 void NeoUI::EndContext()
 {
-	if (g_ctx.eMode == MODE_MOUSEMOVED && !g_ctx.iHasMouseInPanel)
+	if (g_ctx.eMode == MODE_MOUSEMOVED)
 	{
-		g_ctx.eMousePos = MOUSEPOS_NONE;
-		g_ctx.iFocusDirection = 0;
-		g_ctx.iFocus = FOCUSOFF_NUM;
-		g_ctx.iFocusSection = -1;
+		bool bShouldClearFocus = false;
+		if (!g_ctx.iHasMouseInPanel) bShouldClearFocus = true;
+		else if (g_ctx.iLayoutY < g_ctx.iMouseRelY) bShouldClearFocus = true;
+
+		if (bShouldClearFocus)
+		{
+			g_ctx.eMousePos = MOUSEPOS_NONE;
+			g_ctx.iFocusDirection = 0;
+			g_ctx.iFocus = FOCUSOFF_NUM;
+			g_ctx.iFocusSection = -1;
+		}
 	}
 
 	if (g_ctx.eMode == MODE_KEYPRESSED && g_ctx.iFocusSection == -1 && (g_ctx.eCode == KEY_DOWN || g_ctx.eCode == KEY_UP))
@@ -244,6 +251,14 @@ void NeoUI::BeginSection(const bool bDefaultFocus)
 
 void NeoUI::EndSection()
 {
+	if (g_ctx.eMode == MODE_MOUSEMOVED && g_ctx.bMouseInPanel &&
+			g_ctx.iLayoutY < g_ctx.iMouseRelY)
+	{
+		g_ctx.eMousePos = MOUSEPOS_NONE;
+		g_ctx.iFocusDirection = 0;
+		g_ctx.iFocus = FOCUSOFF_NUM;
+		g_ctx.iFocusSection = -1;
+	}
 	if (g_ctx.iFocus != FOCUSOFF_NUM && g_ctx.iFocusSection == g_ctx.iSection)
 	{
 		g_ctx.iFocus = LoopAroundInArray(g_ctx.iFocus, g_ctx.iWidget);
@@ -288,6 +303,12 @@ void NeoUI::BeginHorizontal(const int iHorizontalWidth)
 {
 	g_ctx.iHorizontalWidth = iHorizontalWidth;
 	g_ctx.iLayoutX = 0;
+	if (g_ctx.eMode == MODE_MOUSEMOVED)
+	{
+		g_ctx.iFocusDirection = 0;
+		g_ctx.iFocus = FOCUSOFF_NUM;
+		g_ctx.iFocusSection = -1;
+	}
 }
 
 void NeoUI::EndHorizontal()
@@ -1956,6 +1977,7 @@ void CNeoRoot::UpdateControls()
 	g_ctx.iFocusDirection = 0;
 	g_ctx.iFocus = NeoUI::FOCUSOFF_NUM;
 	g_ctx.iFocusSection = -1;
+	V_memset(g_ctx.iYOffset, 0, sizeof(g_ctx.iYOffset));
 	m_ns.bBack = false;
 	RequestFocus();
 	m_panelCaptureInput->RequestFocus();
@@ -2569,11 +2591,12 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		surface()->DrawSetColor(COLOR_NEOPANELNORMALBG);
 		surface()->DrawFilledRect(0, tallSplit, wide, tall - tallSplit);
 
-		switch (m_state)
+		if (m_state == STATE_KEYCAPTURE)
 		{
-		case STATE_KEYCAPTURE:
-			break;
-		case STATE_CONFIRMSETTINGS:
+
+		}
+		else
+		{
 			g_ctx.dPanel.wide = g_iRootSubPanelWide * 0.75f;
 			g_ctx.dPanel.tall = tallSplit;
 			g_ctx.dPanel.x = (wide / 2) - (g_ctx.dPanel.wide / 2);
@@ -2583,32 +2606,48 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 			{
 				NeoUI::BeginSection(true);
 				{
-					NeoUI::Label(L"Settings changed: Do you want to apply the settings?", true);
-					NeoUI::BeginHorizontal(g_ctx.dPanel.wide / 3);
+					if (m_state == STATE_CONFIRMSETTINGS)
 					{
-						if (NeoUI::Button(L"Save (Enter)").bPressed)
+						NeoUI::Label(L"Settings changed: Do you want to apply the settings?", true);
+						NeoUI::BeginHorizontal(g_ctx.dPanel.wide / 3);
 						{
-							NeoSettingsSave(&m_ns);
-							m_state = STATE_ROOT;
-							UpdateControls();
+							if (NeoUI::Button(L"Save (Enter)").bPressed)
+							{
+								NeoSettingsSave(&m_ns);
+								m_state = STATE_ROOT;
+								UpdateControls();
+							}
+							NeoUI::Pad();
+							if (NeoUI::Button(L"Discard (ESC)").bPressed)
+							{
+								m_state = STATE_ROOT;
+								UpdateControls();
+							}
 						}
-						NeoUI::Pad();
-						if (NeoUI::Button(L"Discard (ESC)").bPressed)
-						{
-							m_state = STATE_ROOT;
-							UpdateControls();
-						}
+						NeoUI::EndHorizontal();
 					}
-					NeoUI::EndHorizontal();
+					else if (m_state == STATE_QUIT)
+					{
+						NeoUI::Label(L"Do you want to quit the game?", true);
+						NeoUI::BeginHorizontal(g_ctx.dPanel.wide / 3);
+						{
+							if (NeoUI::Button(L"Quit (Enter)").bPressed)
+							{
+								engine->ClientCmd_Unrestricted("quit");
+							}
+							NeoUI::Pad();
+							if (NeoUI::Button(L"Cancel (ESC)").bPressed)
+							{
+								m_state = STATE_ROOT;
+								UpdateControls();
+							}
+						}
+						NeoUI::EndHorizontal();
+					}
 				}
 				NeoUI::EndSection();
 			}
 			NeoUI::EndContext();
-			break;
-		case STATE_QUIT:
-			break;
-		default:
-			break;
 		}
 	}
 	break;
