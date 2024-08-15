@@ -79,6 +79,11 @@ enum LayoutMode
 	LAYOUT_VERTICAL = 0,
 	LAYOUT_HORIZONTAL,
 };
+enum TextStyle
+{
+	TEXTSTYLE_CENTER = 0,
+	TEXTSTYLE_LEFT,
+};
 
 static constexpr int FOCUSOFF_NUM = -1000;
 static constexpr int MAX_SECTIONS = 5;
@@ -118,6 +123,8 @@ struct Context
 
 	int iFontTall;
 	int iFontYOffset;
+	TextStyle eButtonTextStyle;
+	TextStyle eLabelTextStyle;
 
 	// Input management
 	int iWidget; // Always increments per widget use
@@ -143,9 +150,10 @@ struct RetButton
 	bool bKeyPressed;
 	bool bMousePressed;
 	bool bMouseHover;
+	bool bMouseDoublePressed;
 };
 void Pad();
-void Label(const wchar_t *wszText, const bool bCenter = false);
+void Label(const wchar_t *wszText);
 void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
 RetButton Button(const wchar_t *wszText);
 RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText);
@@ -488,9 +496,8 @@ public:
 	};
 	CUtlVector<MapInfo> m_vWszMaps;
 
+	int m_iSelectedServer = -1; // TODO: Select kept with sorting
 	int m_iServerBrowserTab = 0;
-	gameserveritem_t m_gameserver = {};
-	bool m_bGameserverValid = false;
 	CNeoDataServerBrowser_General m_serverBrowser[GS__TOTAL]; // TODO: Rename class
 	ServerBrowserFilters m_sbFilters;
 	bool m_bSBFiltModified = false;

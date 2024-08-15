@@ -154,6 +154,8 @@ void NeoUI::BeginContext(const NeoUI::Mode eMode)
 	g_ctx.iHasMouseInPanel = 0;
 	g_ctx.iHorizontalWidth = 0;
 	g_ctx.bValueEdited = false;
+	g_ctx.eButtonTextStyle = TEXTSTYLE_CENTER;
+	g_ctx.eLabelTextStyle = TEXTSTYLE_LEFT;
 
 	switch (g_ctx.eMode)
 	{
@@ -382,12 +384,12 @@ void NeoUI::Pad()
 	}
 }
 
-void NeoUI::Label(const wchar_t *wszText, const bool bCenter)
+void NeoUI::Label(const wchar_t *wszText)
 {
 	if (g_ctx.iWidget == g_ctx.iFocus && g_ctx.iSection == g_ctx.iFocusSection) g_ctx.iFocus += g_ctx.iFocusDirection;
 	if (IN_BETWEEN(0, g_ctx.iLayoutY, g_ctx.dPanel.tall))
 	{
-		InternalLabel(wszText, bCenter);
+		InternalLabel(wszText, g_ctx.eLabelTextStyle == TEXTSTYLE_CENTER);
 	}
 	InternalUpdatePartitionState(true, true);
 }
@@ -417,14 +419,18 @@ NeoUI::RetButton NeoUI::Button(const wchar_t *wszLeftLabel, const wchar_t *wszTe
 			{
 				InternalLabel(wszLeftLabel, false);
 				GCtxDrawFilledRectXtoX(g_ctx.iWgXPos, g_ctx.dPanel.wide);
-				GCtxDrawSetTextPos(g_ctx.iWgXPos + (((g_ctx.dPanel.wide - g_ctx.iWgXPos) / 2) - (iFontWide / 2)),
+				const int xMargin = g_ctx.eButtonTextStyle == TEXTSTYLE_CENTER ?
+							(((g_ctx.dPanel.wide - g_ctx.iWgXPos) / 2) - (iFontWide / 2)) : g_iMarginX;
+				GCtxDrawSetTextPos(g_ctx.iWgXPos + xMargin,
 								   g_ctx.iLayoutY + g_ctx.iFontYOffset);
 			}
 			else
 			{
 				// No label, fill the whole partition
 				GCtxDrawFilledRectXtoX(0, iBtnWidth);
-				GCtxDrawSetTextPos(g_ctx.iLayoutX + ((iBtnWidth / 2) - (iFontWide / 2)), g_ctx.iLayoutY + g_ctx.iFontYOffset);
+				const int xMargin = g_ctx.eButtonTextStyle == TEXTSTYLE_CENTER ?
+							((iBtnWidth / 2) - (iFontWide / 2)) : g_iMarginX;
+				GCtxDrawSetTextPos(g_ctx.iLayoutX + xMargin, g_ctx.iLayoutY + g_ctx.iFontYOffset);
 			}
 			surface()->DrawPrintText(wszText, V_wcslen(wszText));
 		}
@@ -432,6 +438,11 @@ NeoUI::RetButton NeoUI::Button(const wchar_t *wszLeftLabel, const wchar_t *wszTe
 		case MODE_MOUSEPRESSED:
 		{
 			ret.bMousePressed = ret.bPressed = (ret.bMouseHover && g_ctx.eCode == MOUSE_LEFT);
+		}
+		break;
+		case MODE_MOUSEDOUBLEPRESSED:
+		{
+			ret.bMouseDoublePressed = ret.bPressed = (ret.bMouseHover && g_ctx.eCode == MOUSE_LEFT);
 		}
 		break;
 		case MODE_KEYPRESSED:
@@ -595,6 +606,31 @@ void NeoUI::Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iInd
 
 	InternalUpdatePartitionState(bMouseIn, bFocused);
 }
+
+#if 0	// NEO TODO (nullsystem): Implement back the slider text edit code
+	if (sl->iWszCacheLabelSize < sl->iChMax)
+	{
+		// Prevent minus usage if minimum is a positive
+		// Prevent dot usage if flMulti = 1.0f, aka integer direct
+		const bool bHasMinus = (sl->iValMin >= 0) || sl->wszCacheLabel[0] == L'-';
+		const bool bHasDot = (sl->flMulti == 1.0f) || wmemchr(sl->wszCacheLabel, L'.', sl->iWszCacheLabelSize) != nullptr;
+		if (iswdigit(unichar) || (!bHasDot && unichar == L'.') || (!bHasMinus && unichar == L'-'))
+		{
+			sl->wszCacheLabel[sl->iWszCacheLabelSize++] = unichar;
+			sl->wszCacheLabel[sl->iWszCacheLabelSize] = '\0';
+			char szCacheLabel[CNeoDataSlider::LABEL_MAX + 1] = {};
+			g_pVGuiLocalize->ConvertUnicodeToANSI(sl->wszCacheLabel, szCacheLabel, sizeof(szCacheLabel));
+			if (const float flVal = atof(szCacheLabel))
+			{
+				const int iVal = static_cast<int>(flVal * sl->flMulti);
+				if (iVal >= sl->iValMin && iVal <= sl->iValMax)
+				{
+					sl->iValCur = iVal;
+					m_bModified = true;
+				}
+			}
+		}
+#endif
 
 void NeoUI::Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, const float flMax,
 				   const int iDp, const float flStep)
@@ -788,100 +824,6 @@ void NeoUI::TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iM
 	InternalUpdatePartitionState(bMouseIn, bFocused);
 }
 
-#if 0
-		if (ndv->type == CNeoDataVariant::GAMESERVER)
-		{
-			if (!bThisHoverFocus) surface()->DrawSetColor((i % 2 == 0) ? COLOR_NEOPANELNORMALBG : COLOR_NEOPANELACCENTBG);
-			surface()->DrawFilledRect(0, yPos, g_iRootSubPanelWide, yPos + widgetTall);
-
-			// TODO/TEMP (nullsystem): Probably should be more "custom" struct verse gameserveritem_t?
-			const gameserveritem_t *gameserver = &ndv->gameServer.info;
-			int xPos = 0;
-
-			if (gameserver->m_bPassword)
-			{
-				surface()->DrawSetTextPos(xPos + g_iMarginX, yPos + fontStartYPos);
-				surface()->DrawPrintText(L"P", 1);
-			}
-			xPos += g_iGSIX[GSIW_LOCKED];
-
-			if (gameserver->m_bSecure)
-			{
-				surface()->DrawSetTextPos(xPos + g_iMarginX, yPos + fontStartYPos);
-				surface()->DrawPrintText(L"S", 1);
-			}
-			xPos += g_iGSIX[GSIW_VAC];
-
-			{
-				wchar_t wszServerName[k_cbMaxGameServerName];
-				const int iSize = g_pVGuiLocalize->ConvertANSIToUnicode(gameserver->GetName(), wszServerName, sizeof(wszServerName));
-				surface()->DrawSetTextPos(xPos + g_iMarginX, yPos + fontStartYPos);
-				surface()->DrawPrintText(wszServerName, iSize);
-			}
-			xPos += g_iGSIX[GSIW_NAME];
-
-			{
-				// In lower resolution, it may overlap from name, so paint a background here
-				surface()->DrawFilledRect(xPos, yPos, g_iRootSubPanelWide, yPos + widgetTall);
-
-				wchar_t wszMapName[k_cbMaxGameServerMapName];
-				const int iSize = g_pVGuiLocalize->ConvertANSIToUnicode(gameserver->m_szMap, wszMapName, sizeof(wszMapName));
-				surface()->DrawSetTextPos(xPos + g_iMarginX, yPos + fontStartYPos);
-				surface()->DrawPrintText(wszMapName, iSize);
-			}
-			xPos += g_iGSIX[GSIW_MAP];
-
-			{
-				// In lower resolution, it may overlap from name, so paint a background here
-				surface()->DrawFilledRect(xPos, yPos, g_iRootSubPanelWide, yPos + widgetTall);
-
-				wchar_t wszPlayers[10];
-				const int iSize = V_swprintf_safe(wszPlayers, L"%d/%d", gameserver->m_nPlayers, gameserver->m_nMaxPlayers);
-				surface()->DrawSetTextPos(xPos + g_iMarginX, yPos + fontStartYPos);
-				surface()->DrawPrintText(wszPlayers, iSize);
-			}
-			xPos += g_iGSIX[GSIW_PLAYERS];
-
-			{
-				wchar_t wszPing[10];
-				const int iSize = V_swprintf_safe(wszPing, L"%d", gameserver->m_nPing);
-				surface()->DrawSetTextPos(xPos + g_iMarginX, yPos + fontStartYPos);
-				surface()->DrawPrintText(wszPing, iSize);
-			}
-
-			continue;
-		}
-
-	case CNeoDataVariant::SLIDER:
-	{
-		CNeoDataSlider *sl = &ndv->slider;
-		if (sl->iWszCacheLabelSize < sl->iChMax)
-		{
-			// Prevent minus usage if minimum is a positive
-			// Prevent dot usage if flMulti = 1.0f, aka integer direct
-			const bool bHasMinus = (sl->iValMin >= 0) || sl->wszCacheLabel[0] == L'-';
-			const bool bHasDot = (sl->flMulti == 1.0f) || wmemchr(sl->wszCacheLabel, L'.', sl->iWszCacheLabelSize) != nullptr;
-			if (iswdigit(unichar) || (!bHasDot && unichar == L'.') || (!bHasMinus && unichar == L'-'))
-			{
-				sl->wszCacheLabel[sl->iWszCacheLabelSize++] = unichar;
-				sl->wszCacheLabel[sl->iWszCacheLabelSize] = '\0';
-				char szCacheLabel[CNeoDataSlider::LABEL_MAX + 1] = {};
-				g_pVGuiLocalize->ConvertUnicodeToANSI(sl->wszCacheLabel, szCacheLabel, sizeof(szCacheLabel));
-				if (const float flVal = atof(szCacheLabel))
-				{
-					const int iVal = static_cast<int>(flVal * sl->flMulti);
-					if (iVal >= sl->iValMin && iVal <= sl->iValMax)
-					{
-						sl->iValCur = iVal;
-						m_bModified = true;
-					}
-				}
-			}
-		}
-	}
-	break;
-#endif
-
 extern ConVar neo_fov;
 extern ConVar neo_viewmodel_fov_offset;
 extern ConVar neo_aim_hold;
@@ -929,6 +871,7 @@ static const wchar_t *ANTICHEAT_LABELS[ANTICHEAT__TOTAL] = {
 
 void CNeoDataServerBrowser_General::UpdateFilteredList()
 {
+	// TODO: g_pNeoRoot->m_iSelectedServer Select kept with sorting
 	m_filteredServers = m_servers;
 	if (m_filteredServers.IsEmpty())
 	{
@@ -1516,12 +1459,13 @@ void NeoSettings_Keys(NeoSettings *ns)
 	NeoSettings::Keys *pKeys = &ns->keys;
 	NeoUI::RingBoxBool(L"Weapon fastswitch", &pKeys->bWeaponFastSwitch);
 	NeoUI::RingBoxBool(L"Developer console", &pKeys->bDeveloperConsole);
+	g_ctx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
 	for (int i = 0; i < pKeys->iBindsSize; ++i)
 	{
 		const auto &bind = pKeys->vBinds[i];
 		if (bind.szBindingCmd[0] == '\0')
 		{
-			NeoUI::Label(bind.wszDisplayText, true);
+			NeoUI::Label(bind.wszDisplayText);
 		}
 		else
 		{
@@ -2247,6 +2191,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 			L"Internet", L"LAN", L"Friends", L"Fav", L"History", L"Spec"
 		};
 
+		bool bEnterServer = false;
 		const int iTallTotal = g_iRowTall * (g_iRowsInScreen + 2);
 		g_ctx.dPanel.wide = g_iRootSubPanelWide;
 		g_ctx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
@@ -2257,7 +2202,13 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 			g_ctx.dPanel.tall = g_iRowTall * 2;
 			NeoUI::BeginSection();
 			{
+				const int iPrevTab = m_iServerBrowserTab;
 				NeoUI::Tabs(GS_NAMES, ARRAYSIZE(GS_NAMES), &m_iServerBrowserTab);
+				if (iPrevTab != m_iServerBrowserTab)
+				{
+					m_iSelectedServer = -1;
+				}
+				g_ctx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
 				NeoUI::BeginHorizontal(1);
 				{
 					static constexpr wchar_t *SBLABEL_NAMES[GSIW__TOTAL] = {
@@ -2302,6 +2253,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 				surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
 				surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
 				NeoUI::EndHorizontal();
+				g_ctx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
 			}
 			NeoUI::EndSection();
 			static constexpr int FILTER_ROWS = 4;
@@ -2321,12 +2273,16 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 					{
 						V_swprintf_safe(wszInfo, L"No %ls queries found. Press Refresh to re-check", GS_NAMES[m_iServerBrowserTab]);
 					}
-					NeoUI::Label(wszInfo, true);
+					g_ctx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
+					NeoUI::Label(wszInfo);
+					g_ctx.eLabelTextStyle = NeoUI::TEXTSTYLE_LEFT;
 				}
 				else
 				{
-					for (const auto &server : m_serverBrowser[m_iServerBrowserTab].m_filteredServers)
+					const auto *sbTab = &m_serverBrowser[m_iServerBrowserTab];
+					for (int i = 0; i < sbTab->m_filteredServers.Size(); ++i)
 					{
+						const auto &server = sbTab->m_filteredServers[i];
 						bool bSkipServer = false;
 						if (m_sbFilters.bServerNotFull && server.m_nPlayers == server.m_nMaxPlayers) bSkipServer = true;
 						else if (m_sbFilters.bHasUsersPlaying && server.m_nPlayers == 0) bSkipServer = true;
@@ -2340,13 +2296,85 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 
 						wchar_t wszInfo[128];
 						V_swprintf_safe(wszInfo, L"%s %s %d", server.GetName(), server.m_szMap, server.m_nPing);
-						if (NeoUI::Button(wszInfo).bPressed)
+						Color drawColor = COLOR_NEOPANELNORMALBG;
+						if (m_iSelectedServer == i) drawColor = COLOR_NEOPANELACCENTBG;
+						surface()->DrawSetColor(drawColor);
+						const auto btn = NeoUI::Button(L""); // Dummy button, the draw is afterward
+						if (btn.bPressed)
 						{
-							// TODO
+							m_iSelectedServer = i;
+							if (btn.bKeyPressed || btn.bMouseDoublePressed)
+							{
+								bEnterServer = true;
+							}
+						}
+						if (g_ctx.iFocusSection == g_ctx.iSection && g_ctx.iFocus == (g_ctx.iWidget - 1))
+						{
+							drawColor = COLOR_NEOPANELSELECTBG;
+						}
+						if (eMode == NeoUI::MODE_PAINT)
+						{
+							surface()->DrawSetColor(drawColor);
+							// TODO/TEMP (nullsystem): Probably should be more "custom" struct verse gameserveritem_t?
+							int xPos = 0;
+							const int yPos = g_ctx.iYOffset[g_ctx.iSection] - g_iRowTall;
+							const int fontStartYPos = g_ctx.iFontYOffset;
+
+							if (server.m_bPassword)
+							{
+								GCtxDrawSetTextPos(xPos + g_iMarginX, g_ctx.iLayoutY - g_iRowTall + fontStartYPos);
+								surface()->DrawPrintText(L"P", 1);
+							}
+							xPos += g_iGSIX[GSIW_LOCKED];
+
+							if (server.m_bSecure)
+							{
+								GCtxDrawSetTextPos(xPos + g_iMarginX, g_ctx.iLayoutY - g_iRowTall + fontStartYPos);
+								surface()->DrawPrintText(L"S", 1);
+							}
+							xPos += g_iGSIX[GSIW_VAC];
+
+							{
+								wchar_t wszServerName[k_cbMaxGameServerName];
+								const int iSize = g_pVGuiLocalize->ConvertANSIToUnicode(server.GetName(), wszServerName, sizeof(wszServerName));
+								GCtxDrawSetTextPos(xPos + g_iMarginX, g_ctx.iLayoutY - g_iRowTall + fontStartYPos);
+								surface()->DrawPrintText(wszServerName, iSize);
+							}
+							xPos += g_iGSIX[GSIW_NAME];
+
+							{
+								// In lower resolution, it may overlap from name, so paint a background here
+								GCtxDrawFilledRectXtoX(xPos, -g_iRowTall, g_ctx.dPanel.wide, 0);
+
+								wchar_t wszMapName[k_cbMaxGameServerMapName];
+								const int iSize = g_pVGuiLocalize->ConvertANSIToUnicode(server.m_szMap, wszMapName, sizeof(wszMapName));
+								GCtxDrawSetTextPos(xPos + g_iMarginX, g_ctx.iLayoutY - g_iRowTall + fontStartYPos);
+								surface()->DrawPrintText(wszMapName, iSize);
+							}
+							xPos += g_iGSIX[GSIW_MAP];
+
+							{
+								// In lower resolution, it may overlap from name, so paint a background here
+								GCtxDrawFilledRectXtoX(xPos, -g_iRowTall, g_ctx.dPanel.wide, 0);
+
+								wchar_t wszPlayers[10];
+								const int iSize = V_swprintf_safe(wszPlayers, L"%d/%d", server.m_nPlayers, server.m_nMaxPlayers);
+								GCtxDrawSetTextPos(xPos + g_iMarginX, g_ctx.iLayoutY - g_iRowTall + fontStartYPos);
+								surface()->DrawPrintText(wszPlayers, iSize);
+							}
+							xPos += g_iGSIX[GSIW_PLAYERS];
+
+							{
+								wchar_t wszPing[10];
+								const int iSize = V_swprintf_safe(wszPing, L"%d", server.m_nPing);
+								GCtxDrawSetTextPos(xPos + g_iMarginX, g_ctx.iLayoutY - g_iRowTall + fontStartYPos);
+								surface()->DrawPrintText(wszPing, iSize);
+							}
 						}
 					}
 				}
 			}
+			surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
 			NeoUI::EndSection();
 			g_ctx.dPanel.y += g_ctx.dPanel.tall;
 			g_ctx.dPanel.tall = g_iRowTall;
@@ -2373,6 +2401,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 					}
 					if (NeoUI::Button(L"Refresh").bPressed)
 					{
+						m_iSelectedServer = -1;
 						ISteamMatchmakingServers *steamMM = steamapicontext->SteamMatchmakingServers();
 						CNeoDataServerBrowser_General *pServerBrowser = &m_serverBrowser[m_iServerBrowserTab];
 						pServerBrowser->m_servers.RemoveAll();
@@ -2389,9 +2418,9 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 						MatchMakingKeyValuePair_t *pMMFilters = mmFilters;
 						pServerBrowser->RequestList(&pMMFilters, 1);
 					}
-					if (m_bGameserverValid)
+					if (m_iSelectedServer >= 0)
 					{
-						if (NeoUI::Button(L"Enter").bPressed)
+						if (bEnterServer || NeoUI::Button(L"Enter").bPressed)
 						{
 							if (engine->IsInGame())
 							{
@@ -2399,7 +2428,8 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 							}
 
 							// NEO NOTE (nullsystem): Deal with password protected server
-							if (m_gameserver.m_bPassword)
+							const auto gameServer = m_serverBrowser[m_iServerBrowserTab].m_filteredServers[m_iSelectedServer];
+							if (gameServer.m_bPassword)
 							{
 								// TODO
 								m_state = STATE_ROOT;
@@ -2407,7 +2437,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 							else
 							{
 								char connectCmd[256];
-								const char *szAddress = m_gameserver.m_NetAdr.GetConnectionAddressString();
+								const char *szAddress = gameServer.m_NetAdr.GetConnectionAddressString();
 								V_sprintf_safe(connectCmd, "progress_enable; wait; connect %s", szAddress);
 								engine->ClientCmd_Unrestricted(connectCmd);
 
@@ -2490,14 +2520,15 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		{
 			NeoUI::BeginSection(true);
 			{
+				g_ctx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
 				if (m_state == STATE_KEYCAPTURE)
 				{
-					NeoUI::Label(m_wszBindingText, true);
-					NeoUI::Label(L"Press ESC to cancel or DEL to remove keybind", true);
+					NeoUI::Label(m_wszBindingText);
+					NeoUI::Label(L"Press ESC to cancel or DEL to remove keybind");
 				}
 				else if (m_state == STATE_CONFIRMSETTINGS)
 				{
-					NeoUI::Label(L"Settings changed: Do you want to apply the settings?", true);
+					NeoUI::Label(L"Settings changed: Do you want to apply the settings?");
 					NeoUI::BeginHorizontal(g_ctx.dPanel.wide / 3);
 					{
 						if (NeoUI::Button(L"Save (Enter)").bPressed)
@@ -2515,7 +2546,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 				}
 				else if (m_state == STATE_QUIT)
 				{
-					NeoUI::Label(L"Do you want to quit the game?", true);
+					NeoUI::Label(L"Do you want to quit the game?");
 					NeoUI::BeginHorizontal(g_ctx.dPanel.wide / 3);
 					{
 						if (NeoUI::Button(L"Quit (Enter)").bPressed)
