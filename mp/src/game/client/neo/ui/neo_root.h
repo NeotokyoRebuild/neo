@@ -328,6 +328,14 @@ struct NeoNewGame
 	bool bFriendlyFire = true;
 };
 
+struct ServerBrowserFilters
+{
+	bool bServerNotFull = false;
+	bool bHasUsersPlaying = false;
+	bool bIsNotPasswordProtected = false;
+	int iAntiCheat = 0;
+};
+
 class CNeoRoot;
 // NEO JANK (nullsystem): This is really more of a workaround that
 // keyboard inputs are not sent to panels (even if they're marked
@@ -358,6 +366,7 @@ enum RootState
 	STATE_NEWGAME,
 	STATE_SERVERBROWSER,
 
+	STATE_FILTER,
 	STATE_MAPLIST,
 	STATE_KEYCAPTURE,
 	STATE_CONFIRMSETTINGS,
@@ -448,6 +457,7 @@ public:
 	gameserveritem_t m_gameserver = {};
 	bool m_bGameserverValid = false;
 	CNeoDataServerBrowser_General m_serverBrowser[GS__TOTAL]; // TODO: Rename class
+	ServerBrowserFilters m_sbFilters;
 
 	wchar_t m_wszBindingText[128];
 	int m_iBindingIdx = -1;

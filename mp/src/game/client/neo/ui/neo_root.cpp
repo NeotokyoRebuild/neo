@@ -257,6 +257,8 @@ void NeoUI::EndSection()
 		g_ctx.iFocus = LoopAroundInArray(g_ctx.iFocus, g_ctx.iWidget);
 	}
 
+	// TODO: g_iRowsInScreen should be handled by g_ctx, not g_iRowsInScreen alone, otherwise buggy-ish behavior with
+	// more or less than g_iRowsInScreen expected on draw
 	// Scroll handling
 	if (g_ctx.eMode == MODE_MOUSEWHEELED)
 	{
@@ -876,37 +878,6 @@ extern ConVar cl_showpos;
 extern ConVar cl_showfps;
 extern ConVar hud_fastswitch;
 
-static const wchar_t *DLFILTER_LABELS[] = {
-	L"Allow all custom files from server",
-	L"Do not download custom sounds",
-	L"Only allow map files",
-	L"Do not download any custom files",
-};
-
-static const char *DLFILTER_STRMAP[] = {
-	"all", "nosounds", "mapsonly", "none"
-};
-
-static constexpr int DLFILTER_SIZE = ARRAYSIZE(DLFILTER_LABELS);
-
-static const wchar_t *SHOWFPS_LABELS[] = {
-	L"Disabled",
-	L"Enabled (FPS)",
-	L"Enabled (Smooth FPS)",
-};
-
-static constexpr float SLT_VOL = 100.0f;
-static const wchar_t *SPEAKER_CFG_LABELS[] = {
-	L"Auto",
-	L"Headphones",
-	L"2 Speakers (Stereo)",
-#ifndef LINUX
-	L"4 Speakers (Quadraphonic)",
-	L"5.1 Surround",
-	L"7.1 Surround",
-#endif
-};
-
 enum MultiThreadIdx
 {
 	THREAD_SINGLE = 0,
@@ -925,49 +896,6 @@ enum FilteringEnum
 	FILTERING__TOTAL,
 };
 
-static const wchar_t *WINDOW_MODE[] = {
-	L"Fullscreen",
-	L"Windowed",
-};
-
-static const wchar_t *QUEUE_MODE[] = {
-	L"Single",
-	L"Multi",
-};
-
-static const wchar_t *QUALITY2_LABELS[] = {
-	L"Low",
-	L"High",
-};
-
-static const wchar_t *WATER_LABELS[] = {
-	L"Simple Reflect",
-	L"Reflect World",
-	L"Reflect All",
-};
-
-static const wchar_t *MSAA_LABELS[] = {
-	L"None",
-	L"2x MSAA",
-	L"4x MSAA",
-	L"6x MSAA",
-	L"8x MSAA",
-};
-
-static const wchar_t *FILTERING_LABELS[FILTERING__TOTAL] = {
-	L"Bilinear",
-	L"Trilinear",
-	L"Anisotropic 2X",
-	L"Anisotropic 4X",
-	L"Anisotropic 8X",
-	L"Anisotropic 16X",
-};
-
-static const wchar_t *HDR_LABELS[] = {
-	L"None",
-	L"Bloom",
-	L"Full",
-};
 
 /////////////////
 // SERVER BROWSER
@@ -1136,15 +1064,6 @@ void CNeoDataServerBrowser_General::RefreshComplete(HServerListRequest hRequest,
 }
 
 #if 0
-CNeoDataServerBrowser_Filters::CNeoDataServerBrowser_Filters()
-	: m_ndvList{
-		NDV_INIT_RINGBOX_ONOFF(L"Server not full"),
-		NDV_INIT_RINGBOX_ONOFF(L"Has users playing"),
-		NDV_INIT_RINGBOX_ONOFF(L"Is not password protected"),
-		NDV_INIT_RINGBOX(L"Anti-cheat", ANTICHEAT_LABELS, ARRAYSIZE(ANTICHEAT_LABELS)),
-	}
-{
-}
 	ivgui()->AddTickSignal(GetVPanel(), 200);
 
 	static constexpr WLabelWSize SBLABEL_NAMES[GSIW__TOTAL] = {
@@ -1232,6 +1151,10 @@ void CNeoPanel_ServerBrowser::OnTick()
 	}
 }
 #endif
+
+static const char *DLFILTER_STRMAP[] = {
+	"all", "nosounds", "mapsonly", "none"
+};
 
 void NeoSettingsInit(NeoSettings *ns)
 {
@@ -1327,7 +1250,7 @@ void NeoSettingsRestore(NeoSettings *ns)
 		{
 			const char *szDlFilter = cvr->cl_download_filter.GetString();
 			pGeneral->iDlFilter = 0;
-			for (int i = 0; i < DLFILTER_SIZE; ++i)
+			for (int i = 0; i < ARRAYSIZE(DLFILTER_STRMAP); ++i)
 			{
 				if (V_strcmp(szDlFilter, DLFILTER_STRMAP[i]) == 0)
 				{
@@ -1661,6 +1584,15 @@ void NeoSettingsMainLoop(NeoSettings *ns, const NeoUI::Mode eMode)
 	}
 }
 
+static const wchar_t *DLFILTER_LABELS[] = {
+	L"Allow all custom files from server",
+	L"Do not download custom sounds",
+	L"Only allow map files",
+	L"Do not download any custom files",
+};
+static const wchar_t *SHOWFPS_LABELS[] = { L"Disabled", L"Enabled (FPS)", L"Enabled (Smooth FPS)", };
+static_assert(ARRAYSIZE(DLFILTER_STRMAP) == ARRAYSIZE(DLFILTER_LABELS));
+
 void NeoSettings_General(NeoSettings *ns)
 {
 	NeoSettings::General *pGeneral = &ns->general;
@@ -1679,7 +1611,7 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBoxBool(L"Show player spray", &pGeneral->bShowPlayerSprays);
 	NeoUI::RingBoxBool(L"Show position", &pGeneral->bShowPos);
 	NeoUI::RingBox(L"Show FPS", SHOWFPS_LABELS, ARRAYSIZE(SHOWFPS_LABELS), &pGeneral->iShowFps);
-	NeoUI::RingBox(L"Download filter", DLFILTER_LABELS, DLFILTER_SIZE, &pGeneral->iDlFilter);
+	NeoUI::RingBox(L"Download filter", DLFILTER_LABELS, ARRAYSIZE(DLFILTER_LABELS), &pGeneral->iDlFilter);
 }
 
 void NeoSettings_Keys(NeoSettings *ns)
@@ -1718,6 +1650,13 @@ void NeoSettings_Mouse(NeoSettings *ns)
 	NeoUI::Slider(L"Exponent", &pMouse->flExponent, 1.0f, 1.4f, 2, 0.1f);
 }
 
+static const wchar_t *SPEAKER_CFG_LABELS[] = {
+	L"Auto", L"Headphones", L"2 Speakers (Stereo)",
+#ifndef LINUX
+	L"4 Speakers (Quadraphonic)", L"5.1 Surround", L"7.1 Surround",
+#endif
+};
+
 void NeoSettings_Audio(NeoSettings *ns)
 {
 	NeoSettings::Audio *pAudio = &ns->audio;
@@ -1746,6 +1685,16 @@ void NeoSettings_Audio(NeoSettings *ns)
 		surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
 	}
 }
+
+static const wchar_t *WINDOW_MODE[] = { L"Fullscreen", L"Windowed", };
+static const wchar_t *QUEUE_MODE[] = { L"Single", L"Multi", };
+static const wchar_t *QUALITY2_LABELS[] = { L"Low", L"High", };
+static const wchar_t *FILTERING_LABELS[FILTERING__TOTAL] = {
+	L"Bilinear", L"Trilinear", L"Anisotropic 2X", L"Anisotropic 4X", L"Anisotropic 8X", L"Anisotropic 16X",
+};
+static const wchar_t *HDR_LABELS[] = { L"None", L"Bloom", L"Full", };
+static const wchar_t *WATER_LABELS[] = { L"Simple Reflect", L"Reflect World", L"Reflect All", };
+static const wchar_t *MSAA_LABELS[] = { L"None", L"2x MSAA", L"4x MSAA", L"6x MSAA", L"8x MSAA", };
 
 void NeoSettings_Video(NeoSettings *ns)
 {
@@ -2198,6 +2147,9 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		case STATE_MAPLIST:
 			m_state = STATE_NEWGAME;
 			break;
+		case STATE_FILTER:
+			m_state = STATE_SERVERBROWSER;
+			break;
 		}
 	}
 
@@ -2417,7 +2369,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 			g_ctx.dPanel.tall = g_iRowTall;
 			NeoUI::BeginSection();
 			{
-				NeoUI::BeginHorizontal(g_ctx.dPanel.wide / 5);
+				NeoUI::BeginHorizontal(g_ctx.dPanel.wide / 6);
 				{
 					if (NeoUI::Button(L"Back (ESC)").bPressed)
 					{
@@ -2427,7 +2379,14 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 					{
 						GetGameUI()->SendMainMenuCommand("OpenServerBrowser");
 					}
-					NeoUI::Pad();
+					if (NeoUI::Button(L"Filters").bPressed)
+					{
+						m_state = STATE_FILTER;
+					}
+					if (NeoUI::Button(L"Details").bPressed)
+					{
+						// TODO
+					}
 					if (NeoUI::Button(L"Refresh").bPressed)
 					{
 						ISteamMatchmakingServers *steamMM = steamapicontext->SteamMatchmakingServers();
@@ -2481,6 +2440,42 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 
 	}
 	break;
+	case STATE_FILTER:
+	{
+		const int iTallTotal = g_iRowTall * (g_iRowsInScreen + 2);
+		g_ctx.dPanel.wide = g_iRootSubPanelWide;
+		g_ctx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
+		g_ctx.bgColor = COLOR_NEOPANELFRAMEBG;
+		NeoUI::BeginContext(eMode);
+		{
+			g_ctx.dPanel.y = (tall / 2) - (iTallTotal / 2);
+			g_ctx.dPanel.tall = g_iRowTall * (g_iRowsInScreen + 1);
+			NeoUI::BeginSection(true);
+			{
+				NeoUI::RingBoxBool(L"Server not full", &m_sbFilters.bServerNotFull);
+				NeoUI::RingBoxBool(L"Has users playing", &m_sbFilters.bHasUsersPlaying);
+				NeoUI::RingBoxBool(L"Is not password protected", &m_sbFilters.bIsNotPasswordProtected);
+				NeoUI::RingBox(L"Anti-cheat", ANTICHEAT_LABELS, ARRAYSIZE(ANTICHEAT_LABELS), &m_sbFilters.iAntiCheat);
+			}
+			NeoUI::EndSection();
+			g_ctx.dPanel.y += g_ctx.dPanel.tall;
+			g_ctx.dPanel.tall = g_iRowTall;
+			NeoUI::BeginSection();
+			{
+				NeoUI::BeginHorizontal(g_ctx.dPanel.wide / 5);
+				{
+					if (NeoUI::Button(L"Back (ESC)").bPressed)
+					{
+						m_state = STATE_SERVERBROWSER;
+					}
+				}
+				NeoUI::EndHorizontal();
+			}
+			NeoUI::EndSection();
+		}
+		NeoUI::EndContext();
+	}
+	break;
 	case STATE_MAPLIST:
 	{
 		const int iTallTotal = g_iRowTall * (g_iRowsInScreen + 2);
@@ -2507,10 +2502,14 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 			g_ctx.dPanel.tall = g_iRowTall;
 			NeoUI::BeginSection();
 			{
-				if (NeoUI::Button(L"Back (ESC)").bPressed)
+				NeoUI::BeginHorizontal(g_ctx.dPanel.wide / 5);
 				{
-					m_state = STATE_NEWGAME;
+					if (NeoUI::Button(L"Back (ESC)").bPressed)
+					{
+						m_state = STATE_NEWGAME;
+					}
 				}
+				NeoUI::EndHorizontal();
 			}
 			NeoUI::EndSection();
 		}
