@@ -217,7 +217,7 @@ void NeoUI::BeginSection(const bool bDefaultFocus)
 			g_ctx.eMousePos = NeoUI::MOUSEPOS_CENTER;
 		}
 		g_ctx.iFocusDirection = 0;
-		g_ctx.iFocus = g_ctx.iMouseRelY / g_iRowTall;
+		g_ctx.iFocus = g_ctx.iMouseRelY / g_iRowTall; // TODO: Maybe this should just be per widget?
 		g_ctx.iFocusSection = g_ctx.iSection;
 	}
 
@@ -298,7 +298,8 @@ void NeoUI::BeginHorizontal(const int iHorizontalWidth)
 {
 	g_ctx.iHorizontalWidth = iHorizontalWidth;
 	g_ctx.iLayoutX = 0;
-	if (g_ctx.eMode == MODE_MOUSEMOVED && g_ctx.bMouseInPanel)
+	if (g_ctx.eMode == MODE_MOUSEMOVED && g_ctx.bMouseInPanel &&
+			IN_BETWEEN(g_ctx.iLayoutY, g_ctx.iMouseRelY, g_ctx.iLayoutY + g_iRowTall))
 	{
 		g_ctx.iFocusDirection = 0;
 		g_ctx.iFocus = FOCUSOFF_NUM;
@@ -524,6 +525,14 @@ void NeoUI::RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, 
 			}
 		}
 		break;
+		case MODE_MOUSEMOVED:
+		{
+			if (bMouseIn)
+			{
+				g_ctx.iFocus = g_ctx.iWidget;
+			}
+		}
+		break;
 		default:
 			break;
 		}
@@ -668,6 +677,10 @@ void NeoUI::Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMi
 		break;
 		case MODE_MOUSEMOVED:
 		{
+			if (bMouseIn)
+			{
+				g_ctx.iFocus = g_ctx.iWidget;
+			}
 			if (bMouseIn && bFocused && g_ctx.eMousePos == MOUSEPOS_CENTER && input()->IsMouseDown(MOUSE_LEFT))
 			{
 				const int iBase = g_iRowTall + g_ctx.iWgXPos;
@@ -914,103 +927,76 @@ static const wchar_t *ANTICHEAT_LABELS[ANTICHEAT__TOTAL] = {
 	L"<Any>", L"On", L"Off"
 };
 
-#if 0
-	m_ndvFilteredVec.RemoveAll();
-
-	const auto ndvFilters = m_filters->m_ndvList;
-	for (const CNeoDataVariant &ndv : m_ndvVec)
+void CNeoDataServerBrowser_General::UpdateFilteredList()
+{
+	m_filteredServers = m_servers;
+	if (m_filteredServers.IsEmpty())
 	{
-		using SBFilter = CNeoDataServerBrowser_Filters;
-		if (    (ndvFilters[SBFilter::OPT_FILTER_NOTFULL].ringBox.iCurIdx &&
-					(ndv.gameServer.info.m_nPlayers == ndv.gameServer.info.m_nMaxPlayers))
-				|| (ndvFilters[SBFilter::OPT_FILTER_HASPLAYERS].ringBox.iCurIdx &&
-					(ndv.gameServer.info.m_nPlayers == 0))
-				|| (ndvFilters[SBFilter::OPT_FILTER_NOTLOCKED].ringBox.iCurIdx &&
-					(ndv.gameServer.info.m_bPassword))
-				|| (ndvFilters[SBFilter::OPT_FILTER_VACMODE].ringBox.iCurIdx == ANTICHEAT_OFF &&
-					(ndv.gameServer.info.m_bSecure))
-				|| (ndvFilters[SBFilter::OPT_FILTER_VACMODE].ringBox.iCurIdx == ANTICHEAT_ON &&
-					(!ndv.gameServer.info.m_bSecure))
-				)
+		return;
+	}
+
+	// Can't use lamda capture for this, so pass through context
+	V_qsort_s(m_filteredServers.Base(), m_filteredServers.Size(), sizeof(gameserveritem_t),
+			  [](void *vpCtx, const void *vpLeft, const void *vpRight) -> int {
+		const GameServerSortContext gsCtx = *(static_cast<GameServerSortContext *>(vpCtx));
+		auto *pGsiLeft = static_cast<const gameserveritem_t *>(vpLeft);
+		auto *pGsiRight = static_cast<const gameserveritem_t *>(vpRight);
+
+		// Always set szLeft/szRight to name as fallback
+		const char *szLeft = pGsiLeft->GetName();
+		const char *szRight = pGsiRight->GetName();
+		int iLeft, iRight;
+		bool bLeft, bRight;
+		switch (gsCtx.col)
 		{
-			continue;
+		break; case GSIW_LOCKED:
+			bLeft = pGsiLeft->m_bPassword;
+			bRight = pGsiRight->m_bPassword;
+		break; case GSIW_VAC:
+			bLeft = pGsiLeft->m_bSecure;
+			bRight = pGsiRight->m_bSecure;
+		break; case GSIW_MAP:
+		{
+			const char *szMapLeft = pGsiLeft->m_szMap;
+			const char *szMapRight = pGsiRight->m_szMap;
+			if (V_strcmp(szMapLeft, szMapRight) != 0)
+			{
+				szLeft = szMapLeft;
+				szRight = szMapRight;
+			}
+		}
+		break; case GSIW_PLAYERS:
+			iLeft = pGsiLeft->m_nPlayers;
+			iRight = pGsiRight->m_nPlayers;
+			if (iLeft == iRight)
+			{
+				iLeft = pGsiLeft->m_nMaxPlayers;
+				iRight = pGsiRight->m_nMaxPlayers;
+			}
+		break; case GSIW_PING:
+			iLeft = pGsiLeft->m_nPing;
+			iRight = pGsiRight->m_nPing;
+		break; case GSIW_NAME: default: break;
+			// no-op, already assigned (default)
 		}
 
-		m_ndvFilteredVec.AddToTail(ndv);
-	}
+		switch (gsCtx.col)
+		{
+		case GSIW_LOCKED:
+		case GSIW_VAC:
+			if (bLeft != bRight) return (gsCtx.bDescending) ? bLeft < bRight : bLeft > bRight;
+			break;
+		case GSIW_PLAYERS:
+		case GSIW_PING:
+			if (iLeft != iRight) return (gsCtx.bDescending) ? iLeft < iRight : iLeft > iRight;
+			break;
+		default:
+			break;
+		}
 
-	if (m_ndvFilteredVec.IsEmpty())
-	{
-		CNeoDataVariant ndv = { .type = CNeoDataVariant::TEXTLABEL, };
-		ndv.labelSize = V_swprintf_safe(ndv.textLabel.wszLabel, L"No %ls queries found.", GS_NAMES[m_iType].text);
-		m_ndvFilteredVec.AddToTail(ndv);
-	}
-	else
-	{
-		// Can't use lamda capture for this, so pass through context
-		V_qsort_s(m_ndvFilteredVec.Base(), m_ndvFilteredVec.Size(), sizeof(CNeoDataVariant),
-				  [](void *vpCtx, const void *vpLeft, const void *vpRight) -> int {
-			const GameServerSortContext gsCtx = *(static_cast<GameServerSortContext *>(vpCtx));
-			auto *ndvLeft = static_cast<const CNeoDataVariant *>(vpLeft);
-			auto *ndvRight = static_cast<const CNeoDataVariant *>(vpRight);
-
-			// Always set szLeft/szRight to name as fallback
-			const char *szLeft = ndvLeft->gameServer.info.GetName();
-			const char *szRight = ndvRight->gameServer.info.GetName();
-			int iLeft, iRight;
-			bool bLeft, bRight;
-			switch (gsCtx.col)
-			{
-			break; case GSIW_LOCKED:
-				bLeft = ndvLeft->gameServer.info.m_bPassword;
-				bRight = ndvRight->gameServer.info.m_bPassword;
-			break; case GSIW_VAC:
-				bLeft = ndvLeft->gameServer.info.m_bSecure;
-				bRight = ndvRight->gameServer.info.m_bSecure;
-			break; case GSIW_MAP:
-			{
-				const char *szMapLeft = ndvLeft->gameServer.info.m_szMap;
-				const char *szMapRight = ndvRight->gameServer.info.m_szMap;
-				if (V_strcmp(szMapLeft, szMapRight) != 0)
-				{
-					szLeft = szMapLeft;
-					szRight = szMapRight;
-				}
-			}
-			break; case GSIW_PLAYERS:
-				iLeft = ndvLeft->gameServer.info.m_nPlayers;
-				iRight = ndvRight->gameServer.info.m_nPlayers;
-				if (iLeft == iRight)
-				{
-					iLeft = ndvLeft->gameServer.info.m_nMaxPlayers;
-					iRight = ndvRight->gameServer.info.m_nMaxPlayers;
-				}
-			break; case GSIW_PING:
-				iLeft = ndvLeft->gameServer.info.m_nPing;
-				iRight = ndvRight->gameServer.info.m_nPing;
-			break; case GSIW_NAME: default: break;
-				// no-op, already assigned (default)
-			}
-
-			switch (gsCtx.col)
-			{
-			case GSIW_LOCKED:
-			case GSIW_VAC:
-				if (bLeft != bRight) return (gsCtx.bDescending) ? bLeft < bRight : bLeft > bRight;
-				break;
-			case GSIW_PLAYERS:
-			case GSIW_PING:
-				if (iLeft != iRight) return (gsCtx.bDescending) ? iLeft < iRight : iLeft > iRight;
-				break;
-			default:
-				break;
-			}
-
-			return (gsCtx.bDescending) ? V_strcmp(szRight, szLeft) : V_strcmp(szLeft, szRight);
-		}, m_pSortCtx);
-	}
+		return (gsCtx.bDescending) ? V_strcmp(szRight, szLeft) : V_strcmp(szLeft, szRight);
+	}, m_pSortCtx);
 }
-#endif
 
 void CNeoDataServerBrowser_General::RequestList(MatchMakingKeyValuePair_t **filters, const uint32 iFiltersSize)
 {
@@ -1062,95 +1048,6 @@ void CNeoDataServerBrowser_General::RefreshComplete(HServerListRequest hRequest,
 		m_bModified = true;
 	}
 }
-
-#if 0
-	ivgui()->AddTickSignal(GetVPanel(), 200);
-
-	static constexpr WLabelWSize SBLABEL_NAMES[GSIW__TOTAL] = {
-		LWS(L"Lock"), LWS(L"VAC"), LWS(L"Name"), LWS(L"Map"), LWS(L"Players"), LWS(L"Ping"),
-	};
-	GameServerInfoW eColHover = GSIW__TOTAL;
-	if (m_eSectionActive == SECTION_TOP && m_iNdvHover >= TabsListSize())
-	{
-		const int iColHover = m_iNdvHover - TabsListSize();
-		if (iColHover >= 0 && iColHover < GSIW__TOTAL)
-		{
-			eColHover = static_cast<GameServerInfoW>(iColHover);
-		}
-	}
-
-	for (int i = 0, xPos = 0; i < GSIW__TOTAL; ++i)
-	{
-		if (m_sortCtx.col == i || eColHover == i)
-		{
-			const int xPosEnd = xPos + g_iGSIX[i];
-			const int yPosEnd = g_iRowTall + g_iRowTall;
-			int iHintTall = g_iMarginY / 3;
-			if (iHintTall <= 0) iHintTall = 1;
-
-			// Background color
-			surface()->DrawSetColor((eColHover == i) ? COLOR_NEOPANELSELECTBG : COLOR_NEOPANELACCENTBG);
-			surface()->DrawFilledRect(xPos, g_iRowTall, xPosEnd, yPosEnd);
-
-			if (m_sortCtx.col == i)
-			{
-				// Ascending/descending hint
-				surface()->DrawSetColor(COLOR_NEOPANELTEXTNORMAL);
-				if (!m_sortCtx.bDescending)	surface()->DrawFilledRect(xPos, g_iRowTall, xPosEnd, g_iRowTall + iHintTall);
-				else						surface()->DrawFilledRect(xPos, yPosEnd - iHintTall, xPosEnd, yPosEnd);
-			}
-		}
-		surface()->DrawSetTextPos(xPos + g_iMarginX, g_iRowTall + iFontStartYPos);
-		surface()->DrawPrintText(SBLABEL_NAMES[i].text, SBLABEL_NAMES[i].size);
-		xPos += g_iGSIX[i];
-	}
-	surface()->DrawSetColor(COLOR_NEOPANELNORMALBG);
-}
-
-void CNeoPanel_ServerBrowser::OnSetSortCol()
-{
-	const int iSortCol = (m_iNdvHover - TabsListSize());
-	if (iSortCol >= 0 && iSortCol < GSIW__TOTAL)
-	{
-		if (m_sortCtx.col == iSortCol)
-		{
-			m_sortCtx.bDescending = !m_sortCtx.bDescending;
-		}
-		m_sortCtx.col = static_cast<GameServerInfoW>(iSortCol);
-		m_bModified = true;
-	}
-}
-
-void CNeoPanel_ServerBrowser::OnMousePressed(vgui::MouseCode code)
-{
-	if (m_iNdsCurrent != TAB_FILTERS && m_eSectionActive == SECTION_TOP)
-	{
-		OnSetSortCol();
-	}
-	BaseClass::OnMousePressed(code);
-}
-
-
-void CNeoPanel_ServerBrowser::OnTick()
-{
-	if (m_bModified)
-	{
-		// Pass modified over to the tabs so it doesn't trigger
-		// the filter refresh immeditely
-		for (int i = 0; i < GS__TOTAL; ++i)
-		{
-			m_ndsGeneral[i].m_bModified = true;
-		}
-		m_bModified = false;
-	}
-
-	if (m_ndsGeneral[m_iNdsCurrent].m_bModified)
-	{
-		m_ndsGeneral[m_iNdsCurrent].UpdateFilteredList();
-		m_ndsGeneral[m_iNdsCurrent].m_bModified = false;
-	}
-}
-#endif
 
 static const char *DLFILTER_STRMAP[] = {
 	"all", "nosounds", "mapsonly", "none"
@@ -1818,11 +1715,13 @@ CNeoRoot::CNeoRoot(VPANEL parent)
 	for (int i = 0; i < GS__TOTAL; ++i)
 	{
 		m_serverBrowser[i].m_iType = static_cast<GameServerType>(i);
+		m_serverBrowser[i].m_pSortCtx = &m_sortCtx;
 	}
 
 	SetKeyBoardInputEnabled(true);
 	SetMouseInputEnabled(true);
 	UpdateControls();
+	ivgui()->AddTickSignal(GetVPanel(), 200);
 
 	vgui::IScheme *pScheme = vgui::scheme()->GetIScheme(neoscheme);
 	ApplySchemeSettings(pScheme);
@@ -2086,6 +1985,30 @@ void CNeoRoot::OnCursorMoved(int x, int y)
 	OnMainLoop(NeoUI::MODE_MOUSEMOVED);
 }
 
+void CNeoRoot::OnTick()
+{
+	if (m_state == STATE_SERVERBROWSER)
+	{
+		if (m_bSBFiltModified)
+		{
+			// Pass modified over to the tabs so it doesn't trigger
+			// the filter refresh immeditely
+			for (int i = 0; i < GS__TOTAL; ++i)
+			{
+				m_serverBrowser[i].m_bModified = true;
+			}
+			m_bSBFiltModified = false;
+		}
+
+		auto *pSbTab = &m_serverBrowser[m_iServerBrowserTab];
+		if (pSbTab->m_bModified)
+		{
+			pSbTab->UpdateFilteredList();
+			pSbTab->m_bModified = false;
+		}
+	}
+}
+
 void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 {
 	g_ctx.eCode = code;
@@ -2146,9 +2069,6 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 			break;
 		case STATE_MAPLIST:
 			m_state = STATE_NEWGAME;
-			break;
-		case STATE_FILTER:
-			m_state = STATE_SERVERBROWSER;
 			break;
 		}
 	}
@@ -2334,27 +2254,90 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		NeoUI::BeginContext(eMode);
 		{
 			g_ctx.dPanel.y = (tall / 2) - (iTallTotal / 2);
-			g_ctx.dPanel.tall = g_iRowTall;
+			g_ctx.dPanel.tall = g_iRowTall * 2;
 			NeoUI::BeginSection();
 			{
 				NeoUI::Tabs(GS_NAMES, ARRAYSIZE(GS_NAMES), &m_iServerBrowserTab);
+				NeoUI::BeginHorizontal(1);
+				{
+					static constexpr wchar_t *SBLABEL_NAMES[GSIW__TOTAL] = {
+						L"Lock", L"VAC", L"Name", L"Map", L"Players", L"Ping",
+					};
+
+					for (int i = 0; i < GS__TOTAL; ++i)
+					{
+						surface()->DrawSetColor((m_sortCtx.col == i) ? COLOR_NEOPANELACCENTBG : COLOR_NEOPANELNORMALBG);
+						g_ctx.iHorizontalWidth = g_iGSIX[i];
+						if (NeoUI::Button(SBLABEL_NAMES[i]).bPressed)
+						{
+							if (m_sortCtx.col == i)
+							{
+								m_sortCtx.bDescending = !m_sortCtx.bDescending;
+							}
+							else
+							{
+								m_sortCtx.col = static_cast<GameServerInfoW>(i);
+							}
+							m_bSBFiltModified = true;
+						}
+
+						if (eMode == NeoUI::MODE_PAINT && m_sortCtx.col == i)
+						{
+							int iHintTall = g_iMarginY / 3;
+							surface()->DrawSetColor(COLOR_NEOPANELTEXTNORMAL);
+							if (!m_sortCtx.bDescending)
+							{
+								GCtxDrawFilledRectXtoX(-g_ctx.iHorizontalWidth, 0, 0, iHintTall);
+							}
+							else
+							{
+								GCtxDrawFilledRectXtoX(-g_ctx.iHorizontalWidth, g_iRowTall - iHintTall, 0, g_iRowTall);
+							}
+							surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
+						}
+					}
+				}
+
+				// TODO: Should give proper controls over colors through NeoUI
+				surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
+				surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
+				NeoUI::EndHorizontal();
 			}
 			NeoUI::EndSection();
+			static constexpr int FILTER_ROWS = 4;
 			g_ctx.dPanel.y += g_ctx.dPanel.tall;
-			g_ctx.dPanel.tall = g_iRowTall * g_iRowsInScreen;
+			g_ctx.dPanel.tall = g_iRowTall * (g_iRowsInScreen - 1);
+			if (m_bShowFilterPanel) g_ctx.dPanel.tall -= g_iRowTall * FILTER_ROWS;
 			NeoUI::BeginSection(true);
 			{
-				if (m_serverBrowser[m_iServerBrowserTab].m_filteredServers.IsEmpty() &&
-						m_serverBrowser[m_iServerBrowserTab].m_bSearching)
+				if (m_serverBrowser[m_iServerBrowserTab].m_filteredServers.IsEmpty())
 				{
 					wchar_t wszInfo[128];
-					V_swprintf_safe(wszInfo, L"Searching %ls queries...", GS_NAMES[m_iServerBrowserTab]);
+					if (m_serverBrowser[m_iServerBrowserTab].m_bSearching)
+					{
+						V_swprintf_safe(wszInfo, L"Searching %ls queries...", GS_NAMES[m_iServerBrowserTab]);
+					}
+					else
+					{
+						V_swprintf_safe(wszInfo, L"No %ls queries found. Press Refresh to re-check", GS_NAMES[m_iServerBrowserTab]);
+					}
 					NeoUI::Label(wszInfo, true);
 				}
 				else
 				{
 					for (const auto &server : m_serverBrowser[m_iServerBrowserTab].m_filteredServers)
 					{
+						bool bSkipServer = false;
+						if (m_sbFilters.bServerNotFull && server.m_nPlayers == server.m_nMaxPlayers) bSkipServer = true;
+						else if (m_sbFilters.bHasUsersPlaying && server.m_nPlayers == 0) bSkipServer = true;
+						else if (m_sbFilters.bIsNotPasswordProtected && server.m_bPassword) bSkipServer = true;
+						else if (m_sbFilters.iAntiCheat == ANTICHEAT_OFF && server.m_bSecure) bSkipServer = true;
+						else if (m_sbFilters.iAntiCheat == ANTICHEAT_ON && !server.m_bSecure) bSkipServer = true;
+						if (bSkipServer)
+						{
+							continue;
+						}
+
 						wchar_t wszInfo[128];
 						V_swprintf_safe(wszInfo, L"%s %s %d", server.GetName(), server.m_szMap, server.m_nPing);
 						if (NeoUI::Button(wszInfo).bPressed)
@@ -2367,6 +2350,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 			NeoUI::EndSection();
 			g_ctx.dPanel.y += g_ctx.dPanel.tall;
 			g_ctx.dPanel.tall = g_iRowTall;
+			if (m_bShowFilterPanel) g_ctx.dPanel.tall += g_iRowTall * FILTER_ROWS;
 			NeoUI::BeginSection();
 			{
 				NeoUI::BeginHorizontal(g_ctx.dPanel.wide / 6);
@@ -2379,9 +2363,9 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 					{
 						GetGameUI()->SendMainMenuCommand("OpenServerBrowser");
 					}
-					if (NeoUI::Button(L"Filters").bPressed)
+					if (NeoUI::Button(m_bShowFilterPanel ? L"Hide Filters" : L"Show Filters").bPressed)
 					{
-						m_state = STATE_FILTER;
+						m_bShowFilterPanel = !m_bShowFilterPanel;
 					}
 					if (NeoUI::Button(L"Details").bPressed)
 					{
@@ -2433,47 +2417,18 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 					}
 				}
 				NeoUI::EndHorizontal();
+				if (m_bShowFilterPanel)
+				{
+					NeoUI::RingBoxBool(L"Server not full", &m_sbFilters.bServerNotFull);
+					NeoUI::RingBoxBool(L"Has users playing", &m_sbFilters.bHasUsersPlaying);
+					NeoUI::RingBoxBool(L"Is not password protected", &m_sbFilters.bIsNotPasswordProtected);
+					NeoUI::RingBox(L"Anti-cheat", ANTICHEAT_LABELS, ARRAYSIZE(ANTICHEAT_LABELS), &m_sbFilters.iAntiCheat);
+				}
 			}
 			NeoUI::EndSection();
 		}
 		NeoUI::EndContext();
 
-	}
-	break;
-	case STATE_FILTER:
-	{
-		const int iTallTotal = g_iRowTall * (g_iRowsInScreen + 2);
-		g_ctx.dPanel.wide = g_iRootSubPanelWide;
-		g_ctx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
-		g_ctx.bgColor = COLOR_NEOPANELFRAMEBG;
-		NeoUI::BeginContext(eMode);
-		{
-			g_ctx.dPanel.y = (tall / 2) - (iTallTotal / 2);
-			g_ctx.dPanel.tall = g_iRowTall * (g_iRowsInScreen + 1);
-			NeoUI::BeginSection(true);
-			{
-				NeoUI::RingBoxBool(L"Server not full", &m_sbFilters.bServerNotFull);
-				NeoUI::RingBoxBool(L"Has users playing", &m_sbFilters.bHasUsersPlaying);
-				NeoUI::RingBoxBool(L"Is not password protected", &m_sbFilters.bIsNotPasswordProtected);
-				NeoUI::RingBox(L"Anti-cheat", ANTICHEAT_LABELS, ARRAYSIZE(ANTICHEAT_LABELS), &m_sbFilters.iAntiCheat);
-			}
-			NeoUI::EndSection();
-			g_ctx.dPanel.y += g_ctx.dPanel.tall;
-			g_ctx.dPanel.tall = g_iRowTall;
-			NeoUI::BeginSection();
-			{
-				NeoUI::BeginHorizontal(g_ctx.dPanel.wide / 5);
-				{
-					if (NeoUI::Button(L"Back (ESC)").bPressed)
-					{
-						m_state = STATE_SERVERBROWSER;
-					}
-				}
-				NeoUI::EndHorizontal();
-			}
-			NeoUI::EndSection();
-		}
-		NeoUI::EndContext();
 	}
 	break;
 	case STATE_MAPLIST:

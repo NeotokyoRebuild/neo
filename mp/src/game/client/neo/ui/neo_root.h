@@ -17,6 +17,44 @@ struct WLabelWSize
 #define LWS(wlabel) WLabelWSize{ wlabel, SZWSZ_LEN(wlabel)}
 #define IN_BETWEEN(min, cmp, max) (((min) <= (cmp)) && ((cmp) < (max)))
 
+/*
+ * NEO NOTE (nullsystem):
+ * NeoUI - Immediate-mode GUI on top of VGUI2 for NT;RE
+ *
+ * Custom GUI API based on the IMGUI-style of GUI API design. This routes VGUI2
+ * panel events over to NeoUI::Context and allows for UI to be written in a
+ * non-OOP, procedual, and more direct way. The current GUI design and layouts
+ * is fairly specific to how NT;RE main menu is designed.
+ *
+ * To use this, Panel calls must be re-routed to NeoUI::Context with a NeoUI::Mode
+ * enum assigned. In general all those Panel::OnMousePressed, OnMouseWheeled,
+ * OnCursorMoved, etc... code should first update the context, then re-route
+ * into a single common function that takes a NeoUI::Mode enum.
+ *
+ * The general layout looks like this:
+ *
+ * static bool bTest = false;
+ * static int iTest = 0;
+ * NeoUI::BeginContext(eMode);
+ * {
+ *     g_ctx.dPanel.x = ...; // goes for: x, y, wide, tall...
+ *     g_ctx.bgColor = Color(40, 40, 40, 255);
+ *     NeoUI::BeginSection();
+ *     {
+ *         NeoUI::Label(L"Example label");
+ *         if (NeoUI::Button(L"Example button").bPressed)
+ *         {
+ *             // Do things here...
+ *         }
+ *         NeoUI::RingBoxBool(L"Example boolean ringbox", &bTest);
+ *         NeoUI::SliderInt(L"Example int slider", &iTest, 0, 150);
+ *     }
+ *     NeoUI::EndSection();
+ * }
+ * NeoUI::EndContext();
+ *
+ * For a better example, just take a look at the CNeoRoot source code.
+ */
 namespace NeoUI
 {
 enum Mode
@@ -159,7 +197,6 @@ public:
 	CNeoDataServerBrowser_General() = default;
 
 	void UpdateFilteredList();
-
 	void RequestList(MatchMakingKeyValuePair_t **filters, const uint32 iFiltersSize);
 	void ServerResponded(HServerListRequest hRequest, int iServer) final;
 	void ServerFailedToRespond(HServerListRequest hRequest, int iServer) final;
@@ -167,18 +204,11 @@ public:
 	HServerListRequest m_hdlRequest = nullptr;
 	bool m_bModified = false;
 	bool m_bSearching = false;
-	GameServerSortContext m_pSortCtx = {};
+	GameServerSortContext *m_pSortCtx = nullptr;
 };
 
 #define CONVARREF_DEF(_name) ConVarRef _name{#_name}
 
-struct NeoSettings;
-
-void NeoSettings_General(NeoSettings *ns);
-void NeoSettings_Keys(NeoSettings *ns);
-void NeoSettings_Mouse(NeoSettings *ns);
-void NeoSettings_Audio(NeoSettings *ns);
-void NeoSettings_Video(NeoSettings *ns);
 struct NeoSettings
 {
 	struct General
@@ -319,6 +349,12 @@ void NeoSettingsRestore(NeoSettings *ns);
 void NeoSettingsSave(const NeoSettings *ns);
 void NeoSettingsMainLoop(NeoSettings *ns, const NeoUI::Mode eMode);
 
+void NeoSettings_General(NeoSettings *ns);
+void NeoSettings_Keys(NeoSettings *ns);
+void NeoSettings_Mouse(NeoSettings *ns);
+void NeoSettings_Audio(NeoSettings *ns);
+void NeoSettings_Video(NeoSettings *ns);
+
 struct NeoNewGame
 {
 	wchar_t wszMap[64] = L"nt_oilstain_ctg";
@@ -366,7 +402,6 @@ enum RootState
 	STATE_NEWGAME,
 	STATE_SERVERBROWSER,
 
-	STATE_FILTER,
 	STATE_MAPLIST,
 	STATE_KEYCAPTURE,
 	STATE_CONFIRMSETTINGS,
@@ -382,7 +417,6 @@ struct WidgetInfo
 	RootState nextState;
 	int flags;
 };
-
 
 enum WidgetInfoFlags
 {
@@ -442,6 +476,7 @@ public:
 	void OnMousePressed(vgui::MouseCode code) final;
 	void OnMouseWheeled(int delta) final;
 	void OnCursorMoved(int x, int y) final;
+	void OnTick() final;
 
 	void OnMainLoop(const NeoUI::Mode eMode);
 	NeoSettings m_ns = {};
@@ -458,6 +493,9 @@ public:
 	bool m_bGameserverValid = false;
 	CNeoDataServerBrowser_General m_serverBrowser[GS__TOTAL]; // TODO: Rename class
 	ServerBrowserFilters m_sbFilters;
+	bool m_bSBFiltModified = false;
+	bool m_bShowFilterPanel = false;
+	GameServerSortContext m_sortCtx = {};
 
 	wchar_t m_wszBindingText[128];
 	int m_iBindingIdx = -1;
