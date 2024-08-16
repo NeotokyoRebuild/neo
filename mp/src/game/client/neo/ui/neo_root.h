@@ -1,9 +1,10 @@
 #pragma once
 
 #include <vgui_controls/EditablePanel.h>
-#include <vgui_controls/Frame.h>
 #include "GameUI/IGameUI.h"
 #include <steam/isteammatchmaking.h>
+
+#include "neo_ui.h"
 
 class CAvatarImage;
 
@@ -15,155 +16,6 @@ struct WLabelWSize
 #define SZWSZ_LEN(wlabel) ((sizeof(wlabel) / sizeof(wlabel[0])) - 1)
 #define LWSNULL WLabelWSize{ nullptr, 0 }
 #define LWS(wlabel) WLabelWSize{ wlabel, SZWSZ_LEN(wlabel)}
-#define IN_BETWEEN(min, cmp, max) (((min) <= (cmp)) && ((cmp) < (max)))
-
-/*
- * NEO NOTE (nullsystem):
- * NeoUI - Immediate-mode GUI on top of VGUI2 for NT;RE
- *
- * Custom GUI API based on the IMGUI-style of GUI API design. This routes VGUI2
- * panel events over to NeoUI::Context and allows for UI to be written in a
- * non-OOP, procedual, and more direct way. The current GUI design and layouts
- * is fairly specific to how NT;RE main menu is designed.
- *
- * To use this, Panel calls must be re-routed to NeoUI::Context with a NeoUI::Mode
- * enum assigned. In general all those Panel::OnMousePressed, OnMouseWheeled,
- * OnCursorMoved, etc... code should first update the context, then re-route
- * into a single common function that takes a NeoUI::Mode enum.
- *
- * The general layout looks like this:
- *
- * static bool bTest = false;
- * static int iTest = 0;
- * NeoUI::BeginContext(eMode);
- * {
- *     g_ctx.dPanel.x = ...; // goes for: x, y, wide, tall...
- *     g_ctx.bgColor = Color(40, 40, 40, 255);
- *     NeoUI::BeginSection();
- *     {
- *         NeoUI::Label(L"Example label");
- *         if (NeoUI::Button(L"Example button").bPressed)
- *         {
- *             // Do things here...
- *         }
- *         NeoUI::RingBoxBool(L"Example boolean ringbox", &bTest);
- *         NeoUI::SliderInt(L"Example int slider", &iTest, 0, 150);
- *     }
- *     NeoUI::EndSection();
- * }
- * NeoUI::EndContext();
- *
- * For a better example, just take a look at the CNeoRoot source code.
- */
-namespace NeoUI
-{
-enum Mode
-{
-	MODE_PAINT = 0,
-	MODE_MOUSEPRESSED,
-	MODE_MOUSEDOUBLEPRESSED,
-	MODE_MOUSEMOVED,
-	MODE_MOUSEWHEELED,
-	MODE_KEYPRESSED,
-	MODE_KEYTYPED,
-};
-enum MousePos
-{
-	MOUSEPOS_NONE = 0,
-	MOUSEPOS_LEFT,
-	MOUSEPOS_CENTER,
-	MOUSEPOS_RIGHT,
-};
-enum LayoutMode
-{
-	LAYOUT_VERTICAL = 0,
-	LAYOUT_HORIZONTAL,
-};
-enum TextStyle
-{
-	TEXTSTYLE_CENTER = 0,
-	TEXTSTYLE_LEFT,
-};
-
-static constexpr int FOCUSOFF_NUM = -1000;
-static constexpr int MAX_SECTIONS = 5;
-
-struct Dim
-{
-	int x;
-	int y;
-	int wide;
-	int tall;
-};
-
-struct Context
-{
-	Mode eMode;
-	ButtonCode_t eCode;
-	wchar_t unichar;
-	Color bgColor;
-
-	// Mouse handling
-	int iMouseAbsX;
-	int iMouseAbsY;
-	int iMouseRelX;
-	int iMouseRelY;
-	bool bMouseInPanel;
-	int iHasMouseInPanel;
-
-	// Layout management
-	Dim dPanel;
-	int iPartitionY; // Only increments when Y-pos goes down
-	int iLayoutX;
-	int iLayoutY;
-	int iWgXPos;
-	int iYOffset[MAX_SECTIONS];
-
-	int iHorizontalWidth;
-
-	int iFontTall;
-	int iFontYOffset;
-	TextStyle eButtonTextStyle;
-	TextStyle eLabelTextStyle;
-
-	// Input management
-	int iWidget; // Always increments per widget use
-	int iSection;
-
-	int iFocus;
-	int iFocusDirection;
-	int iFocusSection;
-	bool bValueEdited;
-
-	MousePos eMousePos; // label | prev | center | next split
-};
-void BeginContext(const NeoUI::Mode eMode);
-void EndContext();
-void BeginSection(const bool bDefaultFocus = false);
-void EndSection();
-void BeginHorizontal(const int iHorizontalWidth);
-void EndHorizontal();
-
-struct RetButton
-{
-	bool bPressed;
-	bool bKeyPressed;
-	bool bMousePressed;
-	bool bMouseHover;
-	bool bMouseDoublePressed;
-};
-void Pad();
-void Label(const wchar_t *wszText);
-void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
-RetButton Button(const wchar_t *wszText);
-RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText);
-void RingBoxBool(const wchar_t *wszLeftLabel, bool *bChecked);
-void RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
-void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, const float flMax,
-			const int iDp = 2, const float flStep = 1.0f);
-void SliderInt(const wchar_t *wszLeftLabel, int *iValue, const int iMin, const int iMax, const int iStep = 1);
-void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize);
-}
 
 enum GameServerType
 {

@@ -49,43 +49,12 @@ CNeoRoot *g_pNeoRoot = nullptr;
 
 namespace {
 
-int g_iRowsInScreen = 15;
-int g_iRowTall = 40;
-int g_iMarginX = 10;
-int g_iMarginY = 10;
+static inline NeoUI::Context g_uiCtx;
+static inline int g_iRowsInScreen;
 int g_iAvatar = 64;
 int g_iRootSubPanelWide = 600;
 int g_iGSIX[GSIW__TOTAL] = {};
-HFont g_neoFont;
-#define COLOR_NEOPANELNORMALBG Color(40, 40, 40, 255)
-#define COLOR_NEOPANELSELECTBG Color(40, 10, 10, 255)
-#define COLOR_NEOPANELACCENTBG Color(0, 0, 0, 255)
-#define COLOR_NEOPANELTEXTNORMAL Color(200, 200, 200, 255)
-#define COLOR_NEOPANELTEXTBRIGHT Color(255, 255, 255, 255)
-#define COLOR_NEOPANELPOPUPBG Color(0, 0, 0, 170)
-#define COLOR_NEOPANELFRAMEBG Color(40, 40, 40, 150)
-#define COLOR_NEOTITLE Color(128, 128, 128, 255)
-#define COLOR_NEOPANELBAR Color(20, 20, 20, 255)
-#define COLOR_NEOPANELMICTEST Color(30, 90, 30, 255)
 static constexpr wchar_t WSZ_GAME_TITLE[] = L"neatbkyoc ue";
-
-[[nodiscard]] int LoopAroundMinMax(const int iValue, const int iMin, const int iMax)
-{
-	if (iValue < iMin)
-	{
-		return iMax;
-	}
-	else if (iValue > iMax)
-	{
-		return iMin;
-	}
-	return iValue;
-}
-
-[[nodiscard]] int LoopAroundInArray(const int iValue, const int iSize)
-{
-	return LoopAroundMinMax(iValue, 0, iSize - 1);
-}
 
 const wchar_t *QUALITY_LABELS[] = {
 	L"Low",
@@ -102,11 +71,6 @@ enum QualityEnum
 	QUALITY_VERYHIGH,
 };
 
-const wchar_t *ENABLED_LABELS[] = {
-	L"Disabled",
-	L"Enabled",
-};
-
 }
 
 void OverrideGameUI()
@@ -120,708 +84,6 @@ void OverrideGameUI()
 	{
 		g_pNeoRoot->GetGameUI()->SetMainMenuOverride(g_pNeoRoot->GetVPanel());
 	}
-}
-
-static NeoUI::Context g_ctx;
-
-static void GCtxDrawFilledRectXtoX(const int x1, const int y1, const int x2, const int y2)
-{
-	surface()->DrawFilledRect(g_ctx.dPanel.x + g_ctx.iLayoutX + x1,
-							  g_ctx.dPanel.y + g_ctx.iLayoutY + y1,
-							  g_ctx.dPanel.x + g_ctx.iLayoutX + x2,
-							  g_ctx.dPanel.y + g_ctx.iLayoutY + y2);
-}
-
-// This is only because it'll be an eye-sore and repetitve with those g_ctx.dPanel, iLayout, g_iRowTall...
-static void GCtxDrawFilledRectXtoX(const int x1, const int x2)
-{
-	GCtxDrawFilledRectXtoX(x1, 0, x2, g_iRowTall);
-}
-static void GCtxDrawSetTextPos(const int x, const int y)
-{
-	surface()->DrawSetTextPos(g_ctx.dPanel.x + x, g_ctx.dPanel.y + y);
-}
-
-void NeoUI::BeginContext(const NeoUI::Mode eMode)
-{
-	g_ctx.eMode = eMode;
-	g_ctx.iLayoutY = -(g_ctx.iYOffset[0] * g_iRowTall);
-	g_ctx.iWidget = 0;
-	g_ctx.iFontTall = surface()->GetFontTall(g_neoFont);
-	g_ctx.iFontYOffset = (g_iRowTall / 2) - (g_ctx.iFontTall / 2);
-	g_ctx.iWgXPos = static_cast<int>(g_ctx.dPanel.wide * 0.4f);
-	g_ctx.iSection = 0;
-	g_ctx.iHasMouseInPanel = 0;
-	g_ctx.iHorizontalWidth = 0;
-	g_ctx.bValueEdited = false;
-	g_ctx.eButtonTextStyle = TEXTSTYLE_CENTER;
-	g_ctx.eLabelTextStyle = TEXTSTYLE_LEFT;
-
-	switch (g_ctx.eMode)
-	{
-	case MODE_KEYPRESSED:
-		if (g_ctx.eCode == KEY_DOWN || g_ctx.eCode == KEY_UP)
-		{
-			g_ctx.iFocusDirection = (g_ctx.eCode == KEY_UP) ? -1 : +1;
-			g_ctx.iFocus = (g_ctx.iFocus == FOCUSOFF_NUM) ? 0 : (g_ctx.iFocus + g_ctx.iFocusDirection);
-		}
-		break;
-	default:
-		break;
-	}
-}
-
-void NeoUI::EndContext()
-{
-	if (g_ctx.eMode == MODE_MOUSEMOVED && !g_ctx.iHasMouseInPanel)
-	{
-		g_ctx.eMousePos = MOUSEPOS_NONE;
-		g_ctx.iFocusDirection = 0;
-		g_ctx.iFocus = FOCUSOFF_NUM;
-		g_ctx.iFocusSection = -1;
-	}
-
-	if (g_ctx.eMode == MODE_KEYPRESSED && g_ctx.iFocusSection == -1 && (g_ctx.eCode == KEY_DOWN || g_ctx.eCode == KEY_UP))
-	{
-		g_ctx.iFocusSection = 0;
-	}
-}
-
-void NeoUI::BeginSection(const bool bDefaultFocus)
-{
-	g_ctx.iPartitionY = 0;
-	g_ctx.iLayoutY = -(g_ctx.iYOffset[g_ctx.iSection] * g_iRowTall);
-	g_ctx.iWidget = 0;
-
-	g_ctx.iMouseRelX = g_ctx.iMouseAbsX - g_ctx.dPanel.x;
-	g_ctx.iMouseRelY = g_ctx.iMouseAbsY - g_ctx.dPanel.y;
-	g_ctx.bMouseInPanel = (0 <= g_ctx.iMouseRelX && g_ctx.iMouseRelX < g_ctx.dPanel.wide &&
-						   0 <= g_ctx.iMouseRelY && g_ctx.iMouseRelY < g_ctx.dPanel.tall);
-
-	g_ctx.iHasMouseInPanel += g_ctx.bMouseInPanel;
-	if (g_ctx.bMouseInPanel && g_ctx.eMode == MODE_MOUSEMOVED)
-	{
-		// g_iRowTall used to shape the square buttons
-		if (g_ctx.iMouseRelX < g_ctx.iWgXPos)
-		{
-			g_ctx.eMousePos = NeoUI::MOUSEPOS_NONE;
-		}
-		else if (g_ctx.iMouseRelX < (g_ctx.iWgXPos + g_iRowTall))
-		{
-			g_ctx.eMousePos = NeoUI::MOUSEPOS_LEFT;
-		}
-		else if (g_ctx.iMouseRelX > (g_ctx.dPanel.wide - g_iRowTall))
-		{
-			g_ctx.eMousePos = NeoUI::MOUSEPOS_RIGHT;
-		}
-		else
-		{
-			g_ctx.eMousePos = NeoUI::MOUSEPOS_CENTER;
-		}
-		g_ctx.iFocusDirection = 0;
-		g_ctx.iFocus = g_ctx.iMouseRelY / g_iRowTall; // TODO: Maybe this should just be per widget?
-		g_ctx.iFocusSection = g_ctx.iSection;
-	}
-
-	switch (g_ctx.eMode)
-	{
-	case MODE_PAINT:
-		surface()->DrawSetColor(g_ctx.bgColor);
-		surface()->DrawFilledRect(g_ctx.dPanel.x,
-								  g_ctx.dPanel.y,
-								  g_ctx.dPanel.x + g_ctx.dPanel.wide,
-								  g_ctx.dPanel.y + g_ctx.dPanel.tall);
-
-		surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
-		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
-		break;
-	case MODE_KEYPRESSED:
-		if (bDefaultFocus && g_ctx.iFocusSection == -1 && (g_ctx.eCode == KEY_DOWN || g_ctx.eCode == KEY_UP))
-		{
-			g_ctx.iFocusSection = g_ctx.iSection;
-		}
-		break;
-	}
-}
-
-void NeoUI::EndSection()
-{
-	if (g_ctx.eMode == MODE_MOUSEMOVED && g_ctx.bMouseInPanel &&
-			g_ctx.iLayoutY < g_ctx.iMouseRelY)
-	{
-		g_ctx.eMousePos = MOUSEPOS_NONE;
-		g_ctx.iFocusDirection = 0;
-		g_ctx.iFocus = FOCUSOFF_NUM;
-		g_ctx.iFocusSection = -1;
-	}
-	if (g_ctx.iFocus != FOCUSOFF_NUM && g_ctx.iFocusSection == g_ctx.iSection)
-	{
-		g_ctx.iFocus = LoopAroundInArray(g_ctx.iFocus, g_ctx.iWidget);
-	}
-
-	// TODO: g_iRowsInScreen should be handled by g_ctx, not g_iRowsInScreen alone, otherwise buggy-ish behavior with
-	// more or less than g_iRowsInScreen expected on draw
-	// Scroll handling
-	if (g_ctx.eMode == MODE_MOUSEWHEELED)
-	{
-		if (g_ctx.iWidget <= g_iRowsInScreen)
-		{
-			g_ctx.iYOffset[g_ctx.iSection] = 0;
-		}
-		else
-		{
-			g_ctx.iYOffset[g_ctx.iSection] += (g_ctx.eCode == MOUSE_WHEEL_UP) ? -1 : +1;
-			g_ctx.iYOffset[g_ctx.iSection] = clamp(g_ctx.iYOffset[g_ctx.iSection], 0, g_ctx.iWidget - g_iRowsInScreen);
-		}
-	}
-	else if (g_ctx.eMode == MODE_KEYPRESSED && (g_ctx.eCode == KEY_DOWN || g_ctx.eCode == KEY_UP))
-	{
-		if (g_ctx.iWidget <= g_iRowsInScreen)
-		{
-			// Disable scroll if it doesn't need to
-			g_ctx.iYOffset[g_ctx.iSection] = 0;
-		}
-		else if (g_ctx.iFocus < (g_ctx.iYOffset[g_ctx.iSection]))
-		{
-			// Scrolling up past visible, re-adjust
-			g_ctx.iYOffset[g_ctx.iSection] = clamp(g_ctx.iFocus, 0, g_ctx.iWidget - g_iRowsInScreen);
-		}
-		else if (g_ctx.iFocus >= (g_ctx.iYOffset[g_ctx.iSection] + g_iRowsInScreen))
-		{
-			// Scrolling down post visible, re-adjust
-			g_ctx.iYOffset[g_ctx.iSection] = clamp(g_ctx.iFocus - g_iRowsInScreen + 1, 0, g_ctx.iWidget - g_iRowsInScreen);
-		}
-	}
-
-	++g_ctx.iSection;
-}
-
-void NeoUI::BeginHorizontal(const int iHorizontalWidth)
-{
-	g_ctx.iHorizontalWidth = iHorizontalWidth;
-	g_ctx.iLayoutX = 0;
-	if (g_ctx.eMode == MODE_MOUSEMOVED && g_ctx.bMouseInPanel &&
-			IN_BETWEEN(g_ctx.iLayoutY, g_ctx.iMouseRelY, g_ctx.iLayoutY + g_iRowTall))
-	{
-		g_ctx.iFocusDirection = 0;
-		g_ctx.iFocus = FOCUSOFF_NUM;
-		g_ctx.iFocusSection = -1;
-	}
-}
-
-void NeoUI::EndHorizontal()
-{
-	g_ctx.iHorizontalWidth = 0;
-	g_ctx.iLayoutX = 0;
-	++g_ctx.iPartitionY;
-	g_ctx.iLayoutY += g_iRowTall;
-}
-
-static void InternalLabel(const wchar_t *wszText, const bool bCenter)
-{
-	int iFontTextWidth = 0, iFontTextHeight = 0;
-	if (bCenter)
-	{
-		surface()->GetTextSize(g_neoFont, wszText, iFontTextWidth, iFontTextHeight);
-	}
-	GCtxDrawSetTextPos(((bCenter) ? ((g_ctx.dPanel.wide / 2) - (iFontTextWidth / 2)) : g_iMarginX),
-					   g_ctx.iLayoutY + g_ctx.iFontYOffset);
-	surface()->DrawPrintText(wszText, V_wcslen(wszText));
-}
-
-struct GetMouseinFocusedRet
-{
-	bool bMouseIn;
-	bool bFocused;
-};
-
-static GetMouseinFocusedRet InternalGetMouseinFocused()
-{
-	bool bMouseIn = (g_ctx.bMouseInPanel && ((g_ctx.iYOffset[g_ctx.iSection] + (g_ctx.iMouseRelY / g_iRowTall)) == g_ctx.iPartitionY));
-	if (bMouseIn && g_ctx.iHorizontalWidth)
-	{
-		bMouseIn = IN_BETWEEN(g_ctx.iLayoutX, g_ctx.iMouseRelX, g_ctx.iLayoutX + g_ctx.iHorizontalWidth);
-	}
-	const bool bFocused = g_ctx.iWidget == g_ctx.iFocus && g_ctx.iSection == g_ctx.iFocusSection;
-	if (bFocused)
-	{
-		surface()->DrawSetColor(COLOR_NEOPANELSELECTBG);
-		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
-	}
-	return GetMouseinFocusedRet{
-		.bMouseIn = bMouseIn,
-		.bFocused = bFocused,
-	};
-}
-
-static void InternalUpdatePartitionState(const bool bMouseIn, const bool bFocused)
-{
-	NeoUI::Pad();
-	++g_ctx.iWidget;
-	if (bMouseIn || bFocused)
-	{
-		surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
-		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
-	}
-}
-
-static void GCtxOnCursorMoved(int iAbsX, int iAbsY)
-{
-	g_ctx.iMouseAbsX = iAbsX;
-	g_ctx.iMouseAbsY = iAbsY;
-}
-
-void NeoUI::Pad()
-{
-	if (g_ctx.iHorizontalWidth)
-	{
-		g_ctx.iLayoutX += g_ctx.iHorizontalWidth;
-	}
-	else
-	{
-		++g_ctx.iPartitionY;
-		g_ctx.iLayoutY += g_iRowTall;
-	}
-}
-
-void NeoUI::Label(const wchar_t *wszText)
-{
-	if (g_ctx.iWidget == g_ctx.iFocus && g_ctx.iSection == g_ctx.iFocusSection) g_ctx.iFocus += g_ctx.iFocusDirection;
-	if (IN_BETWEEN(0, g_ctx.iLayoutY, g_ctx.dPanel.tall))
-	{
-		InternalLabel(wszText, g_ctx.eLabelTextStyle == TEXTSTYLE_CENTER);
-	}
-	InternalUpdatePartitionState(true, true);
-}
-
-NeoUI::RetButton NeoUI::Button(const wchar_t *wszText)
-{
-	return Button(nullptr, wszText);
-}
-
-NeoUI::RetButton NeoUI::Button(const wchar_t *wszLeftLabel, const wchar_t *wszText)
-{
-	RetButton ret = {};
-	auto [bMouseIn, bFocused] = InternalGetMouseinFocused();
-	ret.bMouseHover = bMouseIn && (!wszLeftLabel || (wszLeftLabel && g_ctx.eMousePos != MOUSEPOS_NONE));
-
-	if (IN_BETWEEN(0, g_ctx.iLayoutY, g_ctx.dPanel.tall))
-	{
-		const int iBtnWidth = g_ctx.iHorizontalWidth ? g_ctx.iHorizontalWidth : g_ctx.dPanel.wide;
-		switch (g_ctx.eMode)
-		{
-		case MODE_PAINT:
-		{
-			int iFontWide, iFontTall;
-			surface()->GetTextSize(g_neoFont, wszText, iFontWide, iFontTall);
-
-			if (wszLeftLabel)
-			{
-				InternalLabel(wszLeftLabel, false);
-				GCtxDrawFilledRectXtoX(g_ctx.iWgXPos, g_ctx.dPanel.wide);
-				const int xMargin = g_ctx.eButtonTextStyle == TEXTSTYLE_CENTER ?
-							(((g_ctx.dPanel.wide - g_ctx.iWgXPos) / 2) - (iFontWide / 2)) : g_iMarginX;
-				GCtxDrawSetTextPos(g_ctx.iWgXPos + xMargin,
-								   g_ctx.iLayoutY + g_ctx.iFontYOffset);
-			}
-			else
-			{
-				// No label, fill the whole partition
-				GCtxDrawFilledRectXtoX(0, iBtnWidth);
-				const int xMargin = g_ctx.eButtonTextStyle == TEXTSTYLE_CENTER ?
-							((iBtnWidth / 2) - (iFontWide / 2)) : g_iMarginX;
-				GCtxDrawSetTextPos(g_ctx.iLayoutX + xMargin, g_ctx.iLayoutY + g_ctx.iFontYOffset);
-			}
-			surface()->DrawPrintText(wszText, V_wcslen(wszText));
-		}
-		break;
-		case MODE_MOUSEPRESSED:
-		{
-			ret.bMousePressed = ret.bPressed = (ret.bMouseHover && g_ctx.eCode == MOUSE_LEFT);
-		}
-		break;
-		case MODE_MOUSEDOUBLEPRESSED:
-		{
-			ret.bMouseDoublePressed = ret.bPressed = (ret.bMouseHover && g_ctx.eCode == MOUSE_LEFT);
-		}
-		break;
-		case MODE_KEYPRESSED:
-		{
-			ret.bKeyPressed = ret.bPressed = (bFocused && g_ctx.eCode == KEY_ENTER);
-		}
-		break;
-		case MODE_MOUSEMOVED:
-		{
-			if (bMouseIn)
-			{
-				g_ctx.iFocus = g_ctx.iWidget;
-				g_ctx.iFocusSection = g_ctx.iSection;
-				g_ctx.iFocusDirection = 0;
-			}
-		}
-		break;
-		default:
-			break;
-		}
-	}
-
-	InternalUpdatePartitionState(bMouseIn, bFocused);
-	return ret;
-}
-
-void NeoUI::RingBoxBool(const wchar_t *wszLeftLabel, bool *bChecked)
-{
-	int iIndex = static_cast<int>(*bChecked);
-	RingBox(wszLeftLabel, ENABLED_LABELS, 2, &iIndex);
-	*bChecked = static_cast<bool>(iIndex);
-}
-
-void NeoUI::RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
-{
-	auto [bMouseIn, bFocused] = InternalGetMouseinFocused();
-
-	if (IN_BETWEEN(0, g_ctx.iLayoutY, g_ctx.dPanel.tall))
-	{
-		switch (g_ctx.eMode)
-		{
-		case MODE_PAINT:
-		{
-			InternalLabel(wszLeftLabel, false);
-
-			// Center-text label
-			const wchar_t *wszText = wszLabelsList[*iIndex];
-			int iFontWide, iFontTall;
-			surface()->GetTextSize(g_neoFont, wszText, iFontWide, iFontTall);
-			GCtxDrawSetTextPos(g_ctx.iWgXPos + (((g_ctx.dPanel.wide - g_ctx.iWgXPos) / 2) - (iFontWide / 2)),
-							   g_ctx.iLayoutY + g_ctx.iFontYOffset);
-			surface()->DrawPrintText(wszText, V_wcslen(wszText));
-
-			// TODO: Generate once?
-			int iStartBtnXPos, iStartBtnYPos;
-			{
-				int iPrevNextWide, iPrevNextTall;
-				surface()->GetTextSize(g_neoFont, L"<", iPrevNextWide, iPrevNextTall);
-				iStartBtnXPos = (g_iRowTall / 2) - (iPrevNextWide / 2);
-				iStartBtnYPos = (g_iRowTall / 2) - (iPrevNextTall / 2);
-			}
-
-			// Left-side "<" prev button
-			GCtxDrawFilledRectXtoX(g_ctx.iWgXPos, g_ctx.iWgXPos + g_iRowTall);
-			GCtxDrawSetTextPos(g_ctx.iWgXPos + iStartBtnXPos, g_ctx.iLayoutY + iStartBtnYPos);
-			surface()->DrawPrintText(L"<", 1);
-
-			// Right-side ">" next button
-			GCtxDrawFilledRectXtoX(g_ctx.dPanel.wide - g_iRowTall, g_ctx.dPanel.wide);
-			GCtxDrawSetTextPos(g_ctx.dPanel.wide - g_iRowTall + iStartBtnXPos, g_ctx.iLayoutY + iStartBtnYPos);
-			surface()->DrawPrintText(L">", 1);
-		}
-		break;
-		case MODE_MOUSEPRESSED:
-		{
-			if (bMouseIn && g_ctx.eCode == MOUSE_LEFT && (g_ctx.eMousePos == MOUSEPOS_LEFT || g_ctx.eMousePos == MOUSEPOS_RIGHT))
-			{
-				*iIndex += (g_ctx.eMousePos == MOUSEPOS_LEFT) ? -1 : +1;
-				*iIndex = LoopAroundInArray(*iIndex, iLabelsSize);
-				g_ctx.bValueEdited = true;
-			}
-		}
-		break;
-		case MODE_KEYPRESSED:
-		{
-			if (bFocused && (g_ctx.eCode == KEY_LEFT || g_ctx.eCode == KEY_RIGHT))
-			{
-				*iIndex += (g_ctx.eCode == KEY_LEFT) ? -1 : +1;
-				*iIndex = LoopAroundInArray(*iIndex, iLabelsSize);
-				g_ctx.bValueEdited = true;
-			}
-		}
-		break;
-		case MODE_MOUSEMOVED:
-		{
-			if (bMouseIn)
-			{
-				g_ctx.iFocus = g_ctx.iWidget;
-			}
-		}
-		break;
-		default:
-			break;
-		}
-	}
-
-	InternalUpdatePartitionState(bMouseIn, bFocused);
-}
-
-void NeoUI::Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
-{
-	// This is basically a ringbox but different UI
-	if (g_ctx.iWidget == g_ctx.iFocus && g_ctx.iSection == g_ctx.iFocusSection) g_ctx.iFocus += g_ctx.iFocusDirection;
-	auto [bMouseIn, bFocused] = InternalGetMouseinFocused();
-	const int iTabWide = (g_ctx.dPanel.wide / iLabelsSize);
-
-	switch (g_ctx.eMode)
-	{
-	case MODE_PAINT:
-	{
-		for (int i = 0, iXPosTab = 0; i < iLabelsSize; ++i, iXPosTab += iTabWide)
-		{
-			const bool bHoverTab = (bMouseIn && IN_BETWEEN(iXPosTab, g_ctx.iMouseRelX, iXPosTab + iTabWide));
-			if (bHoverTab || i == *iIndex)
-			{
-				surface()->DrawSetColor(bHoverTab ? COLOR_NEOPANELSELECTBG : COLOR_NEOPANELACCENTBG);
-				GCtxDrawFilledRectXtoX(iXPosTab, iXPosTab + iTabWide);
-			}
-			const wchar_t *wszText = wszLabelsList[i];
-			GCtxDrawSetTextPos(iXPosTab + g_iMarginX, g_ctx.iLayoutY + g_ctx.iFontYOffset);
-			surface()->DrawPrintText(wszText, V_wcslen(wszText));
-		}
-	}
-	break;
-	case MODE_MOUSEPRESSED:
-	{
-		if (bMouseIn && g_ctx.eCode == MOUSE_LEFT)
-		{
-			const int iNextIndex = (g_ctx.iMouseRelX / iTabWide);
-			if (iNextIndex != *iIndex)
-			{
-				*iIndex = clamp(iNextIndex, 0, iLabelsSize);
-				g_ctx.iYOffset[g_ctx.iSection] = 0;
-			}
-		}
-	}
-	break;
-	case MODE_KEYPRESSED:
-	{
-		if (g_ctx.eCode == KEY_F1 || g_ctx.eCode == KEY_F3) // Global keybind
-		{
-			*iIndex += (g_ctx.eCode == KEY_F1) ? -1 : +1;
-			*iIndex = LoopAroundInArray(*iIndex, iLabelsSize);
-			g_ctx.iYOffset[g_ctx.iSection] = 0;
-		}
-	}
-	break;
-	default:
-		break;
-	}
-
-	InternalUpdatePartitionState(bMouseIn, bFocused);
-}
-
-#if 0	// NEO TODO (nullsystem): Implement back the slider text edit code
-	if (sl->iWszCacheLabelSize < sl->iChMax)
-	{
-		// Prevent minus usage if minimum is a positive
-		// Prevent dot usage if flMulti = 1.0f, aka integer direct
-		const bool bHasMinus = (sl->iValMin >= 0) || sl->wszCacheLabel[0] == L'-';
-		const bool bHasDot = (sl->flMulti == 1.0f) || wmemchr(sl->wszCacheLabel, L'.', sl->iWszCacheLabelSize) != nullptr;
-		if (iswdigit(unichar) || (!bHasDot && unichar == L'.') || (!bHasMinus && unichar == L'-'))
-		{
-			sl->wszCacheLabel[sl->iWszCacheLabelSize++] = unichar;
-			sl->wszCacheLabel[sl->iWszCacheLabelSize] = '\0';
-			char szCacheLabel[CNeoDataSlider::LABEL_MAX + 1] = {};
-			g_pVGuiLocalize->ConvertUnicodeToANSI(sl->wszCacheLabel, szCacheLabel, sizeof(szCacheLabel));
-			if (const float flVal = atof(szCacheLabel))
-			{
-				const int iVal = static_cast<int>(flVal * sl->flMulti);
-				if (iVal >= sl->iValMin && iVal <= sl->iValMax)
-				{
-					sl->iValCur = iVal;
-					m_bModified = true;
-				}
-			}
-		}
-#endif
-
-void NeoUI::Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, const float flMax,
-				   const int iDp, const float flStep)
-{
-	auto [bMouseIn, bFocused] = InternalGetMouseinFocused();
-
-	if (IN_BETWEEN(0, g_ctx.iLayoutY, g_ctx.dPanel.tall))
-	{
-		switch (g_ctx.eMode)
-		{
-		case MODE_PAINT:
-		{
-			InternalLabel(wszLeftLabel, false);
-
-			wchar_t wszFormat[32];
-			V_swprintf_safe(wszFormat, L"%%0.%df", iDp);
-
-			// Background bar
-			const float flPerc = (((iDp == 0) ? (int)(*flValue) : *flValue) - flMin) / (flMax - flMin);
-			const float flBarMaxWide = static_cast<float>(g_ctx.dPanel.wide - g_ctx.iWgXPos);
-			GCtxDrawFilledRectXtoX(g_ctx.iWgXPos, g_ctx.iWgXPos + static_cast<int>(flPerc * flBarMaxWide));
-
-			// Center-text label
-			wchar_t wszText[32];
-			const int iTextSize = V_swprintf_safe(wszText, wszFormat, *flValue);
-			int iFontWide, iFontTall;
-			surface()->GetTextSize(g_neoFont, wszText, iFontWide, iFontTall);
-			surface()->DrawSetTextPos(g_ctx.dPanel.x + g_ctx.iWgXPos + (((g_ctx.dPanel.wide - g_ctx.iWgXPos) / 2) - (iFontWide / 2)),
-									  g_ctx.dPanel.y + g_ctx.iLayoutY + g_ctx.iFontYOffset);
-			surface()->DrawPrintText(wszText, iTextSize);
-
-			// TODO: Generate once?
-			int iStartBtnXPos, iStartBtnYPos;
-			{
-				int iPrevNextWide, iPrevNextTall;
-				surface()->GetTextSize(g_neoFont, L"<", iPrevNextWide, iPrevNextTall);
-				iStartBtnXPos = (g_iRowTall / 2) - (iPrevNextWide / 2);
-				iStartBtnYPos = (g_iRowTall / 2) - (iPrevNextTall / 2);
-			}
-
-			// Left-side "<" prev button
-			GCtxDrawFilledRectXtoX(g_ctx.iWgXPos, g_ctx.iWgXPos + g_iRowTall);
-			GCtxDrawSetTextPos(g_ctx.iWgXPos + iStartBtnXPos, g_ctx.iLayoutY + iStartBtnYPos);
-			surface()->DrawPrintText(L"<", 1);
-
-			// Right-side ">" next button
-			GCtxDrawFilledRectXtoX(g_ctx.dPanel.wide - g_iRowTall, g_ctx.dPanel.wide);
-			GCtxDrawSetTextPos(g_ctx.dPanel.wide - g_iRowTall + iStartBtnXPos, g_ctx.iLayoutY + iStartBtnYPos);
-			surface()->DrawPrintText(L">", 1);
-		}
-		break;
-		case MODE_MOUSEPRESSED:
-		{
-			if (bMouseIn && g_ctx.eCode == MOUSE_LEFT)
-			{
-				if (g_ctx.eMousePos == MOUSEPOS_LEFT || g_ctx.eMousePos == MOUSEPOS_RIGHT)
-				{
-					*flValue += (g_ctx.eMousePos == MOUSEPOS_LEFT) ? -flStep : +flStep;
-					*flValue = clamp(*flValue, flMin, flMax);
-					g_ctx.bValueEdited = true;
-				}
-				else if (g_ctx.eMousePos == MOUSEPOS_CENTER)
-				{
-					g_ctx.iFocusDirection = 0;
-					g_ctx.iFocus = g_ctx.iWidget;
-					g_ctx.iFocusSection = g_ctx.iSection;
-				}
-			}
-		}
-		break;
-		case MODE_KEYPRESSED:
-		{
-			if (bFocused && (g_ctx.eCode == KEY_LEFT || g_ctx.eCode == KEY_RIGHT))
-			{
-				*flValue += (g_ctx.eCode == KEY_LEFT) ? -flStep : +flStep;
-				*flValue = clamp(*flValue, flMin, flMax);
-				g_ctx.bValueEdited = true;
-			}
-		}
-		break;
-		case MODE_MOUSEMOVED:
-		{
-			if (bMouseIn)
-			{
-				g_ctx.iFocus = g_ctx.iWidget;
-			}
-			if (bMouseIn && bFocused && g_ctx.eMousePos == MOUSEPOS_CENTER && input()->IsMouseDown(MOUSE_LEFT))
-			{
-				const int iBase = g_iRowTall + g_ctx.iWgXPos;
-				const float flPerc = static_cast<float>(g_ctx.iMouseRelX - iBase) / static_cast<float>(g_ctx.dPanel.wide - g_iRowTall - iBase);
-				*flValue = flMin + (flPerc * (flMax - flMin));
-				*flValue = clamp(*flValue, flMin, flMax);
-				g_ctx.bValueEdited = true;
-			}
-		}
-		break;
-		default:
-			break;
-		}
-	}
-
-	InternalUpdatePartitionState(bMouseIn, bFocused);
-}
-
-void NeoUI::SliderInt(const wchar_t *wszLeftLabel, int *iValue, const int iMin, const int iMax, const int iStep)
-{
-	float flValue = *iValue;
-	Slider(wszLeftLabel, &flValue, static_cast<float>(iMin), static_cast<float>(iMax), 0, static_cast<float>(iStep));
-	*iValue = static_cast<int>(flValue);
-}
-
-void NeoUI::TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
-{
-	auto [bMouseIn, bFocused] = InternalGetMouseinFocused();
-
-	if (IN_BETWEEN(0, g_ctx.iLayoutY, g_ctx.dPanel.tall))
-	{
-		const int iBtnWidth = g_ctx.iHorizontalWidth ? g_ctx.iHorizontalWidth : g_ctx.dPanel.wide;
-		switch (g_ctx.eMode)
-		{
-		case MODE_PAINT:
-		{
-			InternalLabel(wszLeftLabel, false);
-			GCtxDrawFilledRectXtoX(g_ctx.iWgXPos, g_ctx.dPanel.wide);
-			GCtxDrawSetTextPos(g_ctx.iWgXPos + g_iMarginX, g_ctx.iLayoutY + g_ctx.iFontYOffset);
-			surface()->DrawPrintText(wszText, V_wcslen(wszText));
-			if (bFocused)
-			{
-				const bool bEditBlinkShow = (static_cast<int>(gpGlobals->curtime * 1.5f) % 2 == 0);
-				if (bEditBlinkShow)
-				{
-					int iFontWide, iFontTall;
-					surface()->GetTextSize(g_neoFont, wszText, iFontWide, iFontTall);
-					const int iMarkX = g_ctx.iWgXPos + g_iMarginX + iFontWide;
-					surface()->DrawSetColor(COLOR_NEOPANELTEXTBRIGHT);
-					GCtxDrawFilledRectXtoX(iMarkX, g_ctx.iFontYOffset,
-										   iMarkX + g_iMarginX, g_ctx.iFontYOffset + iFontTall);
-				}
-			}
-		}
-		break;
-		case MODE_MOUSEDOUBLEPRESSED:
-		{
-			g_ctx.iFocus = g_ctx.iWidget;
-			g_ctx.iFocusSection = g_ctx.iSection;
-			g_ctx.iFocusDirection = 0;
-		}
-		break;
-		case MODE_KEYPRESSED:
-		{
-			if (bFocused && g_ctx.eCode == KEY_BACKSPACE)
-			{
-				int iTextSize = V_wcslen(wszText);
-				if (iTextSize > 0)
-				{
-					wszText[--iTextSize] = '\0';
-					g_ctx.bValueEdited = true;
-				}
-			}
-		}
-		break;
-		case MODE_KEYTYPED:
-		{
-			if (bFocused)
-			{
-				int iTextSize = V_wcslen(wszText);
-				if (iTextSize < iMaxSize)
-				{
-					wszText[iTextSize++] = g_ctx.unichar;
-					wszText[iTextSize] = '\0';
-					g_ctx.bValueEdited = true;
-				}
-			}
-		}
-		break;
-		case MODE_MOUSEMOVED:
-		{
-			if (bMouseIn)
-			{
-				g_ctx.iFocus = g_ctx.iWidget;
-				g_ctx.iFocusSection = g_ctx.iSection;
-				g_ctx.iFocusDirection = 0;
-			}
-		}
-		break;
-		default:
-			break;
-		}
-	}
-
-	InternalUpdatePartitionState(bMouseIn, bFocused);
 }
 
 extern ConVar neo_fov;
@@ -1365,32 +627,32 @@ void NeoSettingsMainLoop(NeoSettings *ns, const NeoUI::Mode eMode)
 
 	int wide, tall;
 	surface()->GetScreenSize(wide, tall);
-	const int iTallTotal = g_iRowTall * (g_iRowsInScreen + 2);
+	const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
 
-	g_ctx.dPanel.wide = g_iRootSubPanelWide;
-	g_ctx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
-	g_ctx.bgColor = COLOR_NEOPANELFRAMEBG;
-	NeoUI::BeginContext(eMode);
+	g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
+	g_uiCtx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
+	g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
+	NeoUI::BeginContext(&g_uiCtx, eMode);
 	{
-		g_ctx.dPanel.y = (tall / 2) - (iTallTotal / 2);
-		g_ctx.dPanel.tall = g_iRowTall;
+		g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
+		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
 		NeoUI::BeginSection();
 		{
 			NeoUI::Tabs(WSZ_TABS_LABELS, ARRAYSIZE(WSZ_TABS_LABELS), &ns->iCurTab);
 		}
 		NeoUI::EndSection();
-		g_ctx.dPanel.y += g_ctx.dPanel.tall;
-		g_ctx.dPanel.tall = g_iRowTall * g_iRowsInScreen;
+		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * g_iRowsInScreen;
 		NeoUI::BeginSection(true);
 		{
 			P_FN[ns->iCurTab](ns);
 		}
 		NeoUI::EndSection();
-		g_ctx.dPanel.y += g_ctx.dPanel.tall;
-		g_ctx.dPanel.tall = g_iRowTall;
+		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
 		NeoUI::BeginSection();
 		{
-			NeoUI::BeginHorizontal(g_ctx.dPanel.wide / 5);
+			NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 5);
 			{
 				if (NeoUI::Button(L"Back (ESC)").bPressed)
 				{
@@ -1418,7 +680,7 @@ void NeoSettingsMainLoop(NeoSettings *ns, const NeoUI::Mode eMode)
 		NeoUI::EndSection();
 	}
 	NeoUI::EndContext();
-	if (!ns->bModified && g_ctx.bValueEdited)
+	if (!ns->bModified && g_uiCtx.bValueEdited)
 	{
 		ns->bModified = true;
 	}
@@ -1459,7 +721,7 @@ void NeoSettings_Keys(NeoSettings *ns)
 	NeoSettings::Keys *pKeys = &ns->keys;
 	NeoUI::RingBoxBool(L"Weapon fastswitch", &pKeys->bWeaponFastSwitch);
 	NeoUI::RingBoxBool(L"Developer console", &pKeys->bDeveloperConsole);
-	g_ctx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
+	g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
 	for (int i = 0; i < pKeys->iBindsSize; ++i)
 	{
 		const auto &bind = pKeys->vBinds[i];
@@ -1517,12 +779,12 @@ void NeoSettings_Audio(NeoSettings *ns)
 	{
 		bTweaking ? pVoiceTweak->EndVoiceTweakMode() : (void)pVoiceTweak->StartVoiceTweakMode();
 	}
-	if (bTweaking && g_ctx.eMode == NeoUI::MODE_PAINT)
+	if (bTweaking && g_uiCtx.eMode == NeoUI::MODE_PAINT)
 	{
 		const float flSpeakingVol = pVoiceTweak->GetControlFloat(SpeakingVolume);
 		surface()->DrawSetColor(COLOR_NEOPANELMICTEST);
-		GCtxDrawFilledRectXtoX(0, flSpeakingVol * g_ctx.dPanel.wide);
-		g_ctx.iLayoutY += g_iRowTall;
+		NeoUI::GCtxDrawFilledRectXtoX(0, flSpeakingVol * g_uiCtx.dPanel.wide);
+		g_uiCtx.iLayoutY += g_uiCtx.iRowTall;
 		surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
 	}
 }
@@ -1693,22 +955,22 @@ void CNeoRoot::UpdateControls()
 	GetSize(wide, tall);
 	if (m_state == STATE_ROOT)
 	{
-		const int yTopPos = tall / 2 - ((g_iRowTall * BTNS_TOTAL) / 2);
+		const int yTopPos = tall / 2 - ((g_uiCtx.iRowTall * BTNS_TOTAL) / 2);
 
 		int iTitleWidth, iTitleHeight;
 		surface()->DrawSetTextFont(m_hTextFonts[FONT_LOGO]);
 		surface()->GetTextSize(m_hTextFonts[FONT_LOGO], WSZ_GAME_TITLE, iTitleWidth, iTitleHeight);
 
-		g_ctx.dPanel.wide = iTitleWidth + (2 * g_iMarginX);
-		g_ctx.dPanel.tall = tall;
-		g_ctx.dPanel.x = (wide / 4) - (g_ctx.dPanel.wide / 2);
-		g_ctx.dPanel.y = yTopPos;
-		g_ctx.bgColor = COLOR_TRANSPARENT;
+		g_uiCtx.dPanel.wide = iTitleWidth + (2 * g_uiCtx.iMarginX);
+		g_uiCtx.dPanel.tall = tall;
+		g_uiCtx.dPanel.x = (wide / 4) - (g_uiCtx.dPanel.wide / 2);
+		g_uiCtx.dPanel.y = yTopPos;
+		g_uiCtx.bgColor = COLOR_TRANSPARENT;
 	}
-	g_ctx.iFocusDirection = 0;
-	g_ctx.iFocus = NeoUI::FOCUSOFF_NUM;
-	g_ctx.iFocusSection = -1;
-	V_memset(g_ctx.iYOffset, 0, sizeof(g_ctx.iYOffset));
+	g_uiCtx.iFocusDirection = 0;
+	g_uiCtx.iFocus = NeoUI::FOCUSOFF_NUM;
+	g_uiCtx.iFocusSection = -1;
+	V_memset(g_uiCtx.iYOffset, 0, sizeof(g_uiCtx.iYOffset));
 	m_ns.bBack = false;
 	RequestFocus();
 	m_panelCaptureInput->RequestFocus();
@@ -1749,19 +1011,18 @@ void CNeoRoot::ApplySchemeSettings(IScheme *pScheme)
 		m_hTextFonts[i] = pScheme->GetFont(FONT_NAMES[i], true);
 	}
 
-	// In 1080p, g_iRowTall == 40, g_iMarginX = 10, g_iAvatar = 64,
+	// In 1080p, g_uiCtx.iRowTall == 40, g_uiCtx.iMarginX = 10, g_iAvatar = 64,
 	// other resolution scales up/down from it
-	g_iRowTall = tall / 27;
-	g_iRowsInScreen = (tall * 0.85f) / g_iRowTall;
-	g_iMarginX = wide / 192;
-	g_iMarginY = tall / 108;
+	g_uiCtx.iRowTall = tall / 27;
+	g_iRowsInScreen = (tall * 0.85f) / g_uiCtx.iRowTall;
+	g_uiCtx.iMarginX = wide / 192;
+	g_uiCtx.iMarginY = tall / 108;
 	g_iAvatar = wide / 30;
 	const float flWide = static_cast<float>(wide);
 	float flWideAs43 = static_cast<float>(tall) * (4.0f / 3.0f);
 	if (flWideAs43 > flWide) flWideAs43 = flWide;
 	g_iRootSubPanelWide = static_cast<int>(flWideAs43 * 0.9f);
-
-	g_neoFont = m_hTextFonts[FONT_NTSMALL];
+	g_uiCtx.font = m_hTextFonts[FONT_NTSMALL];
 
 	constexpr int PARTITION = GSIW__TOTAL * 4;
 	const int iSubDiv = g_iRootSubPanelWide / PARTITION;
@@ -1787,15 +1048,15 @@ void CNeoRoot::PaintRootMainSection()
 
 	const int iBtnPlaceXMid = (wide / 4);
 
-	const int yTopPos = tall / 2 - ((g_iRowTall * BTNS_TOTAL) / 2);
-	const int iRightXPos = iBtnPlaceXMid + (m_iBtnWide / 2) + g_iMarginX;
+	const int yTopPos = tall / 2 - ((g_uiCtx.iRowTall * BTNS_TOTAL) / 2);
+	const int iRightXPos = iBtnPlaceXMid + (m_iBtnWide / 2) + g_uiCtx.iMarginX;
 	int iRightSideYStart = yTopPos;
 
 	// Draw title
 	int iTitleWidth, iTitleHeight;
 	surface()->DrawSetTextFont(m_hTextFonts[FONT_LOGO]);
 	surface()->GetTextSize(m_hTextFonts[FONT_LOGO], WSZ_GAME_TITLE, iTitleWidth, iTitleHeight);
-	m_iBtnWide = iTitleWidth + (2 * g_iMarginX);
+	m_iBtnWide = iTitleWidth + (2 * g_uiCtx.iMarginX);
 
 	surface()->DrawSetTextColor(COLOR_NEOTITLE);
 	surface()->DrawSetTextPos(iBtnPlaceXMid - (iTitleWidth / 2), yTopPos - iTitleHeight);
@@ -1815,7 +1076,7 @@ void CNeoRoot::PaintRootMainSection()
 			m_avImage = new CAvatarImage;
 			m_avImage->SetAvatarSteamID(steamID, k_EAvatarSize64x64);
 		}
-		m_avImage->SetPos(iSteamPlaceXStart + g_iMarginX, iRightSideYStart + g_iMarginY);
+		m_avImage->SetPos(iSteamPlaceXStart + g_uiCtx.iMarginX, iRightSideYStart + g_uiCtx.iMarginY);
 		m_avImage->SetSize(g_iAvatar, g_iAvatar);
 		m_avImage->Paint();
 
@@ -1832,8 +1093,8 @@ void CNeoRoot::PaintRootMainSection()
 		surface()->DrawSetTextFont(m_hTextFonts[FONT_NTNORMAL]);
 		surface()->GetTextSize(m_hTextFonts[FONT_NTNORMAL], wszTextBuf, iMainTextWidth, iMainTextHeight);
 
-		const int iMainTextStartPosX = g_iMarginX + g_iAvatar + g_iMarginX;
-		surface()->DrawSetTextPos(iSteamPlaceXStart + iMainTextStartPosX, iRightSideYStart + g_iMarginY);
+		const int iMainTextStartPosX = g_uiCtx.iMarginX + g_iAvatar + g_uiCtx.iMarginX;
+		surface()->DrawSetTextPos(iSteamPlaceXStart + iMainTextStartPosX, iRightSideYStart + g_uiCtx.iMarginY);
 		surface()->DrawPrintText(wszTextBuf, V_strlen(szTextBuf));
 
 		if (bUseNeoName)
@@ -1845,11 +1106,11 @@ void CNeoRoot::PaintRootMainSection()
 			surface()->DrawSetTextFont(m_hTextFonts[FONT_NTSMALL]);
 			surface()->GetTextSize(m_hTextFonts[FONT_NTSMALL], wszTextBuf, iSteamSubTextWidth, iSteamSubTextHeight);
 
-			const int iRightOfNicknameXPos = iSteamPlaceXStart + iMainTextStartPosX + iMainTextWidth + g_iMarginX;
+			const int iRightOfNicknameXPos = iSteamPlaceXStart + iMainTextStartPosX + iMainTextWidth + g_uiCtx.iMarginX;
 			// If we have space on the right, set it, otherwise on top of nickname
 			if ((iRightOfNicknameXPos + iSteamSubTextWidth) < wide)
 			{
-				surface()->DrawSetTextPos(iRightOfNicknameXPos, iRightSideYStart + g_iMarginY);
+				surface()->DrawSetTextPos(iRightOfNicknameXPos, iRightSideYStart + g_uiCtx.iMarginY);
 			}
 			else
 			{
@@ -1867,7 +1128,7 @@ void CNeoRoot::PaintRootMainSection()
 		if (eCurStatus != k_EPersonaStateMax)
 		{
 			const wchar_t *wszState = WSZ_PERSONA_STATES[static_cast<int>(eCurStatus)];
-			const int iStatusTextStartPosY = g_iMarginY + iMainTextHeight + g_iMarginY;
+			const int iStatusTextStartPosY = g_uiCtx.iMarginY + iMainTextHeight + g_uiCtx.iMarginY;
 
 			[[maybe_unused]] int iStatusWide;
 			surface()->DrawSetTextFont(m_hTextFonts[FONT_NTSMALL]);
@@ -1879,7 +1140,7 @@ void CNeoRoot::PaintRootMainSection()
 
 		// Put the news title in either from avatar or text end Y position
 		const int iTextTotalTall = iMainTextHeight + iStatusTall;
-		iRightSideYStart += (g_iMarginX * 2) + ((iTextTotalTall > g_iAvatar) ? iTextTotalTall : g_iAvatar);
+		iRightSideYStart += (g_uiCtx.iMarginX * 2) + ((iTextTotalTall > g_iAvatar) ? iTextTotalTall : g_iAvatar);
 	}
 
 	{
@@ -1889,7 +1150,7 @@ void CNeoRoot::PaintRootMainSection()
 		int iMainTextWidth, iMainTextHeight;
 		surface()->DrawSetTextFont(m_hTextFonts[FONT_NTNORMAL]);
 		surface()->GetTextSize(m_hTextFonts[FONT_NTNORMAL], WSZ_NEWS_TITLE, iMainTextWidth, iMainTextHeight);
-		surface()->DrawSetTextPos(iRightXPos, iRightSideYStart + g_iMarginY);
+		surface()->DrawSetTextPos(iRightXPos, iRightSideYStart + g_uiCtx.iMarginY);
 		surface()->DrawPrintText(WSZ_NEWS_TITLE, SZWSZ_LEN(WSZ_NEWS_TITLE));
 
 		// Write some headlines
@@ -1897,7 +1158,7 @@ void CNeoRoot::PaintRootMainSection()
 			L"2024-08-03: NT;RE v7.1 Released",
 		};
 
-		int iHlYPos = iRightSideYStart + (2 * g_iMarginY) + iMainTextHeight;
+		int iHlYPos = iRightSideYStart + (2 * g_uiCtx.iMarginY) + iMainTextHeight;
 		for (const wchar_t *wszHeadline : WSZ_NEWS_HEADLINES)
 		{
 			int iHlTextWidth, iHlTextHeight;
@@ -1906,26 +1167,27 @@ void CNeoRoot::PaintRootMainSection()
 			surface()->DrawSetTextPos(iRightXPos, iHlYPos);
 			surface()->DrawPrintText(wszHeadline, V_wcslen(wszHeadline));
 
-			iHlYPos += g_iMarginY + iHlTextHeight;
+			iHlYPos += g_uiCtx.iMarginY + iHlTextHeight;
 		}
 	}
 }
 
 void CNeoRoot::OnMousePressed(vgui::MouseCode code)
 {
-	g_ctx.eCode = code;
+	g_uiCtx.eCode = code;
 	OnMainLoop(NeoUI::MODE_MOUSEPRESSED);
 }
 
 void CNeoRoot::OnMouseWheeled(int delta)
 {
-	g_ctx.eCode = (delta > 0) ? MOUSE_WHEEL_UP : MOUSE_WHEEL_DOWN;
+	g_uiCtx.eCode = (delta > 0) ? MOUSE_WHEEL_UP : MOUSE_WHEEL_DOWN;
 	OnMainLoop(NeoUI::MODE_MOUSEWHEELED);
 }
 
 void CNeoRoot::OnCursorMoved(int x, int y)
 {
-	GCtxOnCursorMoved(x, y);
+	g_uiCtx.iMouseAbsX = x;
+	g_uiCtx.iMouseAbsY = y;
 	OnMainLoop(NeoUI::MODE_MOUSEMOVED);
 }
 
@@ -1955,13 +1217,13 @@ void CNeoRoot::OnTick()
 
 void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 {
-	g_ctx.eCode = code;
+	g_uiCtx.eCode = code;
 	OnMainLoop(NeoUI::MODE_KEYPRESSED);
 }
 
 void CNeoRoot::OnRelayedKeyTyped(wchar_t unichar)
 {
-	g_ctx.unichar = unichar;
+	g_uiCtx.unichar = unichar;
 	OnMainLoop(NeoUI::MODE_KEYTYPED);
 }
 
@@ -1980,23 +1242,23 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		surface()->DrawSetTextFont(m_hTextFonts[FONT_NTSMALL]);
 		surface()->GetTextSize(m_hTextFonts[FONT_NTSMALL], BUILD_DISPLAY, textWidth, textHeight);
 
-		surface()->DrawSetTextPos(g_iMarginX, tall - textHeight - g_iMarginY);
+		surface()->DrawSetTextPos(g_uiCtx.iMarginX, tall - textHeight - g_uiCtx.iMarginY);
 		surface()->DrawPrintText(BUILD_DISPLAY, *BUILD_DISPLAY_SIZE);
 
 #ifdef DEBUG
 		surface()->DrawSetTextColor(Color(180, 180, 180, 120));
 		wchar_t wszDebugInfo[512];
 		const int iDebugInfoSize = V_swprintf_safe(wszDebugInfo, L"ABS: %d,%d | REL: %d,%d | IN PANEL: %s | PANELY: %d",
-												   g_ctx.iMouseAbsX, g_ctx.iMouseAbsY,
-												   g_ctx.iMouseRelX, g_ctx.iMouseRelY,
-												   g_ctx.bMouseInPanel ? "TRUE" : "FALSE",
-												   (g_ctx.iMouseRelY / g_iRowTall));
+												   g_uiCtx.iMouseAbsX, g_uiCtx.iMouseAbsY,
+												   g_uiCtx.iMouseRelX, g_uiCtx.iMouseRelY,
+												   g_uiCtx.bMouseInPanel ? "TRUE" : "FALSE",
+												   (g_uiCtx.iMouseRelY / g_uiCtx.iRowTall));
 
-		surface()->DrawSetTextPos(g_iMarginX, g_iMarginY);
+		surface()->DrawSetTextPos(g_uiCtx.iMarginX, g_uiCtx.iMarginY);
 		surface()->DrawPrintText(wszDebugInfo, iDebugInfoSize);
 #endif
 	}
-	else if (eMode == NeoUI::MODE_KEYPRESSED && g_ctx.eCode == KEY_ESCAPE)
+	else if (eMode == NeoUI::MODE_KEYPRESSED && g_uiCtx.eCode == KEY_ESCAPE)
 	{
 		switch (m_state)
 		{
@@ -2028,7 +1290,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		surface()->DrawSetTextFont(m_hTextFonts[FONT_NTNORMAL]);
 		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
 
-		const int iPanelTall = g_iRowTall + (tall * 0.8f) + g_iRowTall;
+		const int iPanelTall = g_uiCtx.iRowTall + (tall * 0.8f) + g_uiCtx.iRowTall;
 		const int xPanelPos = (wide / 2) - (g_iRootSubPanelWide / 2);
 		const int yTopPos = (tall - iPanelTall) / 2;
 		int iTitleWidth, iTitleHeight;
@@ -2047,9 +1309,9 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 			surface()->GetTextSize(m_hTextFonts[FONT_NTSMALL], L"F##", iFontWidth, iFontHeight);
 			const int iHintYPos = yTopPos + (iFontHeight / 2);
 
-			surface()->DrawSetTextPos(xPanelPos - g_iMarginX - iFontWidth, iHintYPos);
+			surface()->DrawSetTextPos(xPanelPos - g_uiCtx.iMarginX - iFontWidth, iHintYPos);
 			surface()->DrawPrintText(L"F 1", 3);
-			surface()->DrawSetTextPos(xPanelPos + g_iRootSubPanelWide + g_iMarginX, iHintYPos);
+			surface()->DrawSetTextPos(xPanelPos + g_iRootSubPanelWide + g_uiCtx.iMarginX, iHintYPos);
 			surface()->DrawPrintText(L"F 3", 3);
 		}
 	}
@@ -2058,7 +1320,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 	{
 	case STATE_ROOT:
 	{
-		NeoUI::BeginContext(eMode);
+		NeoUI::BeginContext(&g_uiCtx, eMode);
 		NeoUI::BeginSection(true);
 		const int iFlagToMatch = engine->IsInGame() ? FLAG_SHOWINGAME : FLAG_SHOWINMAIN;
 		for (int i = 0; i < BTNS_TOTAL; ++i)
@@ -2119,14 +1381,14 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 	break;
 	case STATE_NEWGAME:
 	{
-		const int iTallTotal = g_iRowTall * (g_iRowsInScreen + 2);
-		g_ctx.dPanel.wide = g_iRootSubPanelWide;
-		g_ctx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
-		g_ctx.bgColor = COLOR_NEOPANELFRAMEBG;
-		NeoUI::BeginContext(eMode);
+		const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
+		g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
+		g_uiCtx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
+		g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
+		NeoUI::BeginContext(&g_uiCtx, eMode);
 		{
-			g_ctx.dPanel.y = (tall / 2) - (iTallTotal / 2);
-			g_ctx.dPanel.tall = g_iRowTall * (g_iRowsInScreen + 1);
+			g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
+			g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * (g_iRowsInScreen + 1);
 			NeoUI::BeginSection(true);
 			{
 				if (NeoUI::Button(L"Map", m_newGame.wszMap).bPressed)
@@ -2139,11 +1401,11 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 				NeoUI::RingBoxBool(L"Friendly fire", &m_newGame.bFriendlyFire);
 			}
 			NeoUI::EndSection();
-			g_ctx.dPanel.y += g_ctx.dPanel.tall;
-			g_ctx.dPanel.tall = g_iRowTall;
+			g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+			g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
 			NeoUI::BeginSection();
 			{
-				NeoUI::BeginHorizontal(g_ctx.dPanel.wide / 5);
+				NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 5);
 				{
 					if (NeoUI::Button(L"Back (ESC)").bPressed)
 					{
@@ -2192,14 +1454,14 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		};
 
 		bool bEnterServer = false;
-		const int iTallTotal = g_iRowTall * (g_iRowsInScreen + 2);
-		g_ctx.dPanel.wide = g_iRootSubPanelWide;
-		g_ctx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
-		g_ctx.bgColor = COLOR_NEOPANELFRAMEBG;
-		NeoUI::BeginContext(eMode);
+		const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
+		g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
+		g_uiCtx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
+		g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
+		NeoUI::BeginContext(&g_uiCtx, eMode);
 		{
-			g_ctx.dPanel.y = (tall / 2) - (iTallTotal / 2);
-			g_ctx.dPanel.tall = g_iRowTall * 2;
+			g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
+			g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * 2;
 			NeoUI::BeginSection();
 			{
 				const int iPrevTab = m_iServerBrowserTab;
@@ -2208,7 +1470,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 				{
 					m_iSelectedServer = -1;
 				}
-				g_ctx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
+				g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
 				NeoUI::BeginHorizontal(1);
 				{
 					static constexpr wchar_t *SBLABEL_NAMES[GSIW__TOTAL] = {
@@ -2218,7 +1480,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 					for (int i = 0; i < GS__TOTAL; ++i)
 					{
 						surface()->DrawSetColor((m_sortCtx.col == i) ? COLOR_NEOPANELACCENTBG : COLOR_NEOPANELNORMALBG);
-						g_ctx.iHorizontalWidth = g_iGSIX[i];
+						g_uiCtx.iHorizontalWidth = g_iGSIX[i];
 						if (NeoUI::Button(SBLABEL_NAMES[i]).bPressed)
 						{
 							if (m_sortCtx.col == i)
@@ -2234,15 +1496,15 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 
 						if (eMode == NeoUI::MODE_PAINT && m_sortCtx.col == i)
 						{
-							int iHintTall = g_iMarginY / 3;
+							int iHintTall = g_uiCtx.iMarginY / 3;
 							surface()->DrawSetColor(COLOR_NEOPANELTEXTNORMAL);
 							if (!m_sortCtx.bDescending)
 							{
-								GCtxDrawFilledRectXtoX(-g_ctx.iHorizontalWidth, 0, 0, iHintTall);
+								NeoUI::GCtxDrawFilledRectXtoX(-g_uiCtx.iHorizontalWidth, 0, 0, iHintTall);
 							}
 							else
 							{
-								GCtxDrawFilledRectXtoX(-g_ctx.iHorizontalWidth, g_iRowTall - iHintTall, 0, g_iRowTall);
+								NeoUI::GCtxDrawFilledRectXtoX(-g_uiCtx.iHorizontalWidth, g_uiCtx.iRowTall - iHintTall, 0, g_uiCtx.iRowTall);
 							}
 							surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
 						}
@@ -2253,13 +1515,13 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 				surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
 				surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
 				NeoUI::EndHorizontal();
-				g_ctx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
+				g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
 			}
 			NeoUI::EndSection();
 			static constexpr int FILTER_ROWS = 4;
-			g_ctx.dPanel.y += g_ctx.dPanel.tall;
-			g_ctx.dPanel.tall = g_iRowTall * (g_iRowsInScreen - 1);
-			if (m_bShowFilterPanel) g_ctx.dPanel.tall -= g_iRowTall * FILTER_ROWS;
+			g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+			g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * (g_iRowsInScreen - 1);
+			if (m_bShowFilterPanel) g_uiCtx.dPanel.tall -= g_uiCtx.iRowTall * FILTER_ROWS;
 			NeoUI::BeginSection(true);
 			{
 				if (m_serverBrowser[m_iServerBrowserTab].m_filteredServers.IsEmpty())
@@ -2273,9 +1535,9 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 					{
 						V_swprintf_safe(wszInfo, L"No %ls queries found. Press Refresh to re-check", GS_NAMES[m_iServerBrowserTab]);
 					}
-					g_ctx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
+					g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
 					NeoUI::Label(wszInfo);
-					g_ctx.eLabelTextStyle = NeoUI::TEXTSTYLE_LEFT;
+					g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_LEFT;
 				}
 				else
 				{
@@ -2308,7 +1570,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 								bEnterServer = true;
 							}
 						}
-						if (g_ctx.iFocusSection == g_ctx.iSection && g_ctx.iFocus == (g_ctx.iWidget - 1))
+						if (g_uiCtx.iFocusSection == g_uiCtx.iSection && g_uiCtx.iFocus == (g_uiCtx.iWidget - 1))
 						{
 							drawColor = COLOR_NEOPANELSELECTBG;
 						}
@@ -2317,19 +1579,19 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 							surface()->DrawSetColor(drawColor);
 							// TODO/TEMP (nullsystem): Probably should be more "custom" struct verse gameserveritem_t?
 							int xPos = 0;
-							const int yPos = g_ctx.iYOffset[g_ctx.iSection] - g_iRowTall;
-							const int fontStartYPos = g_ctx.iFontYOffset;
+							const int yPos = g_uiCtx.iYOffset[g_uiCtx.iSection] - g_uiCtx.iRowTall;
+							const int fontStartYPos = g_uiCtx.iFontYOffset;
 
 							if (server.m_bPassword)
 							{
-								GCtxDrawSetTextPos(xPos + g_iMarginX, g_ctx.iLayoutY - g_iRowTall + fontStartYPos);
+								NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
 								surface()->DrawPrintText(L"P", 1);
 							}
 							xPos += g_iGSIX[GSIW_LOCKED];
 
 							if (server.m_bSecure)
 							{
-								GCtxDrawSetTextPos(xPos + g_iMarginX, g_ctx.iLayoutY - g_iRowTall + fontStartYPos);
+								NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
 								surface()->DrawPrintText(L"S", 1);
 							}
 							xPos += g_iGSIX[GSIW_VAC];
@@ -2337,29 +1599,29 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 							{
 								wchar_t wszServerName[k_cbMaxGameServerName];
 								const int iSize = g_pVGuiLocalize->ConvertANSIToUnicode(server.GetName(), wszServerName, sizeof(wszServerName));
-								GCtxDrawSetTextPos(xPos + g_iMarginX, g_ctx.iLayoutY - g_iRowTall + fontStartYPos);
+								NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
 								surface()->DrawPrintText(wszServerName, iSize);
 							}
 							xPos += g_iGSIX[GSIW_NAME];
 
 							{
 								// In lower resolution, it may overlap from name, so paint a background here
-								GCtxDrawFilledRectXtoX(xPos, -g_iRowTall, g_ctx.dPanel.wide, 0);
+								NeoUI::GCtxDrawFilledRectXtoX(xPos, -g_uiCtx.iRowTall, g_uiCtx.dPanel.wide, 0);
 
 								wchar_t wszMapName[k_cbMaxGameServerMapName];
 								const int iSize = g_pVGuiLocalize->ConvertANSIToUnicode(server.m_szMap, wszMapName, sizeof(wszMapName));
-								GCtxDrawSetTextPos(xPos + g_iMarginX, g_ctx.iLayoutY - g_iRowTall + fontStartYPos);
+								NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
 								surface()->DrawPrintText(wszMapName, iSize);
 							}
 							xPos += g_iGSIX[GSIW_MAP];
 
 							{
 								// In lower resolution, it may overlap from name, so paint a background here
-								GCtxDrawFilledRectXtoX(xPos, -g_iRowTall, g_ctx.dPanel.wide, 0);
+								NeoUI::GCtxDrawFilledRectXtoX(xPos, -g_uiCtx.iRowTall, g_uiCtx.dPanel.wide, 0);
 
 								wchar_t wszPlayers[10];
 								const int iSize = V_swprintf_safe(wszPlayers, L"%d/%d", server.m_nPlayers, server.m_nMaxPlayers);
-								GCtxDrawSetTextPos(xPos + g_iMarginX, g_ctx.iLayoutY - g_iRowTall + fontStartYPos);
+								NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
 								surface()->DrawPrintText(wszPlayers, iSize);
 							}
 							xPos += g_iGSIX[GSIW_PLAYERS];
@@ -2367,7 +1629,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 							{
 								wchar_t wszPing[10];
 								const int iSize = V_swprintf_safe(wszPing, L"%d", server.m_nPing);
-								GCtxDrawSetTextPos(xPos + g_iMarginX, g_ctx.iLayoutY - g_iRowTall + fontStartYPos);
+								NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
 								surface()->DrawPrintText(wszPing, iSize);
 							}
 						}
@@ -2376,12 +1638,12 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 			}
 			surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
 			NeoUI::EndSection();
-			g_ctx.dPanel.y += g_ctx.dPanel.tall;
-			g_ctx.dPanel.tall = g_iRowTall;
-			if (m_bShowFilterPanel) g_ctx.dPanel.tall += g_iRowTall * FILTER_ROWS;
+			g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+			g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
+			if (m_bShowFilterPanel) g_uiCtx.dPanel.tall += g_uiCtx.iRowTall * FILTER_ROWS;
 			NeoUI::BeginSection();
 			{
-				NeoUI::BeginHorizontal(g_ctx.dPanel.wide / 6);
+				NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 6);
 				{
 					if (NeoUI::Button(L"Back (ESC)").bPressed)
 					{
@@ -2463,14 +1725,14 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 	break;
 	case STATE_MAPLIST:
 	{
-		const int iTallTotal = g_iRowTall * (g_iRowsInScreen + 2);
-		g_ctx.dPanel.wide = g_iRootSubPanelWide;
-		g_ctx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
-		g_ctx.bgColor = COLOR_NEOPANELFRAMEBG;
-		NeoUI::BeginContext(eMode);
+		const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
+		g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
+		g_uiCtx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
+		g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
+		NeoUI::BeginContext(&g_uiCtx, eMode);
 		{
-			g_ctx.dPanel.y = (tall / 2) - (iTallTotal / 2);
-			g_ctx.dPanel.tall = g_iRowTall * (g_iRowsInScreen + 1);
+			g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
+			g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * (g_iRowsInScreen + 1);
 			NeoUI::BeginSection(true);
 			{
 				for (auto &wszMap : m_vWszMaps)
@@ -2483,11 +1745,11 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 				}
 			}
 			NeoUI::EndSection();
-			g_ctx.dPanel.y += g_ctx.dPanel.tall;
-			g_ctx.dPanel.tall = g_iRowTall;
+			g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+			g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
 			NeoUI::BeginSection();
 			{
-				NeoUI::BeginHorizontal(g_ctx.dPanel.wide / 5);
+				NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 5);
 				{
 					if (NeoUI::Button(L"Back (ESC)").bPressed)
 					{
@@ -2511,16 +1773,16 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		surface()->DrawSetColor(COLOR_NEOPANELNORMALBG);
 		surface()->DrawFilledRect(0, tallSplit, wide, tall - tallSplit);
 
-		g_ctx.dPanel.wide = g_iRootSubPanelWide * 0.75f;
-		g_ctx.dPanel.tall = tallSplit;
-		g_ctx.dPanel.x = (wide / 2) - (g_ctx.dPanel.wide / 2);
-		g_ctx.dPanel.y = tallSplit + (tallSplit / 2) - g_iRowTall;
-		g_ctx.bgColor = COLOR_TRANSPARENT;
-		NeoUI::BeginContext(eMode);
+		g_uiCtx.dPanel.wide = g_iRootSubPanelWide * 0.75f;
+		g_uiCtx.dPanel.tall = tallSplit;
+		g_uiCtx.dPanel.x = (wide / 2) - (g_uiCtx.dPanel.wide / 2);
+		g_uiCtx.dPanel.y = tallSplit + (tallSplit / 2) - g_uiCtx.iRowTall;
+		g_uiCtx.bgColor = COLOR_TRANSPARENT;
+		NeoUI::BeginContext(&g_uiCtx, eMode);
 		{
 			NeoUI::BeginSection(true);
 			{
-				g_ctx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
+				g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
 				if (m_state == STATE_KEYCAPTURE)
 				{
 					NeoUI::Label(m_wszBindingText);
@@ -2529,7 +1791,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 				else if (m_state == STATE_CONFIRMSETTINGS)
 				{
 					NeoUI::Label(L"Settings changed: Do you want to apply the settings?");
-					NeoUI::BeginHorizontal(g_ctx.dPanel.wide / 3);
+					NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 3);
 					{
 						if (NeoUI::Button(L"Save (Enter)").bPressed)
 						{
@@ -2547,7 +1809,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 				else if (m_state == STATE_QUIT)
 				{
 					NeoUI::Label(L"Do you want to quit the game?");
-					NeoUI::BeginHorizontal(g_ctx.dPanel.wide / 3);
+					NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 3);
 					{
 						if (NeoUI::Button(L"Quit (Enter)").bPressed)
 						{
