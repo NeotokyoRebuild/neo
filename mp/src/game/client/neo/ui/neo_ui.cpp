@@ -95,7 +95,7 @@ void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode)
 
 void EndContext()
 {
-	if (g_pCtx->eMode == MODE_MOUSEMOVED && !g_pCtx->iHasMouseInPanel)
+	if (g_pCtx->eMode == MODE_MOUSEPRESSED && !g_pCtx->iHasMouseInPanel)
 	{
 		g_pCtx->eMousePos = MOUSEPOS_NONE;
 		g_pCtx->iFocusDirection = 0;
@@ -170,9 +170,6 @@ void BeginSection(const bool bDefaultFocus)
 		{
 			g_pCtx->eMousePos = NeoUI::MOUSEPOS_CENTER;
 		}
-		g_pCtx->iFocusDirection = 0;
-		g_pCtx->iFocus = g_pCtx->iMouseRelY / g_pCtx->iRowTall; // TODO: Maybe this should just be per widget?
-		g_pCtx->iFocusSection = g_pCtx->iSection;
 	}
 
 	switch (g_pCtx->eMode)
@@ -198,7 +195,7 @@ void BeginSection(const bool bDefaultFocus)
 
 void EndSection()
 {
-	if (g_pCtx->eMode == MODE_MOUSEMOVED && g_pCtx->bMouseInPanel &&
+	if (g_pCtx->eMode == MODE_MOUSEPRESSED && g_pCtx->bMouseInPanel &&
 			g_pCtx->iLayoutY < g_pCtx->iMouseRelY)
 	{
 		g_pCtx->eMousePos = MOUSEPOS_NONE;
@@ -255,13 +252,6 @@ void BeginHorizontal(const int iHorizontalWidth)
 {
 	g_pCtx->iHorizontalWidth = iHorizontalWidth;
 	g_pCtx->iLayoutX = 0;
-	if (g_pCtx->eMode == MODE_MOUSEMOVED && g_pCtx->bMouseInPanel &&
-			IN_BETWEEN(g_pCtx->iLayoutY, g_pCtx->iMouseRelY, g_pCtx->iLayoutY + g_pCtx->iRowTall))
-	{
-		g_pCtx->iFocusDirection = 0;
-		g_pCtx->iFocus = FOCUSOFF_NUM;
-		g_pCtx->iFocusSection = -1;
-	}
 }
 
 void EndHorizontal()
@@ -298,10 +288,10 @@ static GetMouseinFocusedRet InternalGetMouseinFocused()
 		bMouseIn = IN_BETWEEN(g_pCtx->iLayoutX, g_pCtx->iMouseRelX, g_pCtx->iLayoutX + g_pCtx->iHorizontalWidth);
 	}
 	const bool bFocused = g_pCtx->iWidget == g_pCtx->iFocus && g_pCtx->iSection == g_pCtx->iFocusSection;
-	if (bFocused)
+	if (bFocused || bMouseIn)
 	{
 		surface()->DrawSetColor(COLOR_NEOPANELSELECTBG);
-		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
+		if (bFocused) surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
 	}
 	return GetMouseinFocusedRet{
 		.bMouseIn = bMouseIn,
@@ -402,18 +392,15 @@ NeoUI::RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText)
 			ret.bKeyPressed = ret.bPressed = (bFocused && g_pCtx->eCode == KEY_ENTER);
 		}
 		break;
-		case MODE_MOUSEMOVED:
-		{
-			if (bMouseIn)
-			{
-				g_pCtx->iFocus = g_pCtx->iWidget;
-				g_pCtx->iFocusSection = g_pCtx->iSection;
-				g_pCtx->iFocusDirection = 0;
-			}
-		}
-		break;
 		default:
 			break;
+		}
+
+		if (ret.bPressed)
+		{
+			g_pCtx->iFocus = g_pCtx->iWidget;
+			g_pCtx->iFocusSection = g_pCtx->iSection;
+			g_pCtx->iFocusDirection = 0;
 		}
 	}
 
@@ -470,6 +457,12 @@ void RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, const i
 		break;
 		case MODE_MOUSEPRESSED:
 		{
+			if (bMouseIn)
+			{
+				g_pCtx->iFocus = g_pCtx->iWidget;
+				g_pCtx->iFocusSection = g_pCtx->iSection;
+				g_pCtx->iFocusDirection = 0;
+			}
 			if (bMouseIn && g_pCtx->eCode == MOUSE_LEFT && (g_pCtx->eMousePos == MOUSEPOS_LEFT || g_pCtx->eMousePos == MOUSEPOS_RIGHT))
 			{
 				*iIndex += (g_pCtx->eMousePos == MOUSEPOS_LEFT) ? -1 : +1;
@@ -485,14 +478,6 @@ void RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, const i
 				*iIndex += (g_pCtx->eCode == KEY_LEFT) ? -1 : +1;
 				*iIndex = LoopAroundInArray(*iIndex, iLabelsSize);
 				g_pCtx->bValueEdited = true;
-			}
-		}
-		break;
-		case MODE_MOUSEMOVED:
-		{
-			if (bMouseIn)
-			{
-				g_pCtx->iFocus = g_pCtx->iWidget;
 			}
 		}
 		break;
@@ -636,6 +621,12 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 		break;
 		case MODE_MOUSEPRESSED:
 		{
+			if (bMouseIn)
+			{
+				g_pCtx->iFocus = g_pCtx->iWidget;
+				g_pCtx->iFocusSection = g_pCtx->iSection;
+				g_pCtx->iFocusDirection = 0;
+			}
 			if (bMouseIn && g_pCtx->eCode == MOUSE_LEFT)
 			{
 				if (g_pCtx->eMousePos == MOUSEPOS_LEFT || g_pCtx->eMousePos == MOUSEPOS_RIGHT)
@@ -665,10 +656,6 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 		break;
 		case MODE_MOUSEMOVED:
 		{
-			if (bMouseIn)
-			{
-				g_pCtx->iFocus = g_pCtx->iWidget;
-			}
 			if (bMouseIn && bFocused && g_pCtx->eMousePos == MOUSEPOS_CENTER && input()->IsMouseDown(MOUSE_LEFT))
 			{
 				const int iBase = g_pCtx->iRowTall + g_pCtx->iWgXPos;
@@ -726,9 +713,12 @@ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
 		break;
 		case MODE_MOUSEDOUBLEPRESSED:
 		{
-			g_pCtx->iFocus = g_pCtx->iWidget;
-			g_pCtx->iFocusSection = g_pCtx->iSection;
-			g_pCtx->iFocusDirection = 0;
+			if (bMouseIn && g_pCtx->iWgXPos <= g_pCtx->iMouseRelX)
+			{
+				g_pCtx->iFocus = g_pCtx->iWidget;
+				g_pCtx->iFocusSection = g_pCtx->iSection;
+				g_pCtx->iFocusDirection = 0;
+			}
 		}
 		break;
 		case MODE_KEYPRESSED:
@@ -755,16 +745,6 @@ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
 					wszText[iTextSize] = '\0';
 					g_pCtx->bValueEdited = true;
 				}
-			}
-		}
-		break;
-		case MODE_MOUSEMOVED:
-		{
-			if (bMouseIn)
-			{
-				g_pCtx->iFocus = g_pCtx->iWidget;
-				g_pCtx->iFocusSection = g_pCtx->iSection;
-				g_pCtx->iFocusDirection = 0;
 			}
 		}
 		break;

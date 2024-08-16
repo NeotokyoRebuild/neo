@@ -332,6 +332,7 @@ public:
 	void ApplySchemeSettings(vgui::IScheme *pScheme) final;
 	void Paint() final;
 	void OnMousePressed(vgui::MouseCode code) final;
+	void OnMouseDoublePressed(vgui::MouseCode code) final;
 	void OnMouseWheeled(int delta) final;
 	void OnCursorMoved(int x, int y) final;
 	void OnTick() final;

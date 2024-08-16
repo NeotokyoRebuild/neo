@@ -1177,6 +1177,12 @@ void CNeoRoot::OnMousePressed(vgui::MouseCode code)
 	OnMainLoop(NeoUI::MODE_MOUSEPRESSED);
 }
 
+void CNeoRoot::OnMouseDoublePressed(vgui::MouseCode code)
+{
+	g_uiCtx.eCode = code;
+	OnMainLoop(NeoUI::MODE_MOUSEDOUBLEPRESSED);
+}
+
 void CNeoRoot::OnMouseWheeled(int delta)
 {
 	g_uiCtx.eCode = (delta > 0) ? MOUSE_WHEEL_UP : MOUSE_WHEEL_DOWN;
