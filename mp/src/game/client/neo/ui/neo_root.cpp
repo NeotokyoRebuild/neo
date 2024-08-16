@@ -1249,19 +1249,6 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 
 		surface()->DrawSetTextPos(g_uiCtx.iMarginX, tall - textHeight - g_uiCtx.iMarginY);
 		surface()->DrawPrintText(BUILD_DISPLAY, *BUILD_DISPLAY_SIZE);
-
-#ifdef DEBUG
-		surface()->DrawSetTextColor(Color(180, 180, 180, 120));
-		wchar_t wszDebugInfo[512];
-		const int iDebugInfoSize = V_swprintf_safe(wszDebugInfo, L"ABS: %d,%d | REL: %d,%d | IN PANEL: %s | PANELY: %d",
-												   g_uiCtx.iMouseAbsX, g_uiCtx.iMouseAbsY,
-												   g_uiCtx.iMouseRelX, g_uiCtx.iMouseRelY,
-												   g_uiCtx.bMouseInPanel ? "TRUE" : "FALSE",
-												   (g_uiCtx.iMouseRelY / g_uiCtx.iRowTall));
-
-		surface()->DrawSetTextPos(g_uiCtx.iMarginX, g_uiCtx.iMarginY);
-		surface()->DrawPrintText(wszDebugInfo, iDebugInfoSize);
-#endif
 	}
 	else if (eMode == NeoUI::MODE_KEYPRESSED && g_uiCtx.eCode == KEY_ESCAPE)
 	{
