@@ -55,14 +55,21 @@ void GCtxDrawSetTextPos(const int x, const int y)
 	surface()->DrawSetTextPos(g_pCtx->dPanel.x + x, g_pCtx->dPanel.y + y);
 }
 
+void SwapFont(vgui::HFont font)
+{
+	if (g_pCtx->eMode != MODE_PAINT) return;
+	g_pCtx->font = font;
+	g_pCtx->iFontTall = surface()->GetFontTall(g_pCtx->font);
+	g_pCtx->iFontYOffset = (g_pCtx->iRowTall / 2) - (g_pCtx->iFontTall / 2);
+	surface()->DrawSetTextFont(g_pCtx->font);
+}
+
 void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode)
 {
 	g_pCtx = ctx;
 	g_pCtx->eMode = eMode;
 	g_pCtx->iLayoutY = -(g_pCtx->iYOffset[0] * g_pCtx->iRowTall);
 	g_pCtx->iWidget = 0;
-	g_pCtx->iFontTall = surface()->GetFontTall(g_pCtx->font);
-	g_pCtx->iFontYOffset = (g_pCtx->iRowTall / 2) - (g_pCtx->iFontTall / 2);
 	g_pCtx->iWgXPos = static_cast<int>(g_pCtx->dPanel.wide * 0.4f);
 	g_pCtx->iSection = 0;
 	g_pCtx->iHasMouseInPanel = 0;
@@ -70,6 +77,7 @@ void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode)
 	g_pCtx->bValueEdited = false;
 	g_pCtx->eButtonTextStyle = TEXTSTYLE_CENTER;
 	g_pCtx->eLabelTextStyle = TEXTSTYLE_LEFT;
+	SwapFont(g_pCtx->font);
 
 	switch (g_pCtx->eMode)
 	{

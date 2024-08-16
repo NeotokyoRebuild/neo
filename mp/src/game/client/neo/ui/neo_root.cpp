@@ -113,7 +113,6 @@ enum FilteringEnum
 	FILTERING__TOTAL,
 };
 
-
 /////////////////
 // SERVER BROWSER
 /////////////////
@@ -131,7 +130,7 @@ static const wchar_t *ANTICHEAT_LABELS[ANTICHEAT__TOTAL] = {
 	L"<Any>", L"On", L"Off"
 };
 
-void CNeoDataServerBrowser_General::UpdateFilteredList()
+void CNeoServerList::UpdateFilteredList()
 {
 	// TODO: g_pNeoRoot->m_iSelectedServer Select kept with sorting
 	m_filteredServers = m_servers;
@@ -203,7 +202,7 @@ void CNeoDataServerBrowser_General::UpdateFilteredList()
 	}, m_pSortCtx);
 }
 
-void CNeoDataServerBrowser_General::RequestList(MatchMakingKeyValuePair_t **filters, const uint32 iFiltersSize)
+void CNeoServerList::RequestList(MatchMakingKeyValuePair_t **filters, const uint32 iFiltersSize)
 {
 	static constexpr HServerListRequest (ISteamMatchmakingServers::*pFnReq[GS__TOTAL])(
 				AppId_t, MatchMakingKeyValuePair_t **, uint32, ISteamMatchmakingServerListResponse *) = {
@@ -223,7 +222,7 @@ void CNeoDataServerBrowser_General::RequestList(MatchMakingKeyValuePair_t **filt
 }
 
 // Server has responded ok with updated data
-void CNeoDataServerBrowser_General::ServerResponded(HServerListRequest hRequest, int iServer)
+void CNeoServerList::ServerResponded(HServerListRequest hRequest, int iServer)
 {
 	if (hRequest != m_hdlRequest) return;
 
@@ -237,13 +236,13 @@ void CNeoDataServerBrowser_General::ServerResponded(HServerListRequest hRequest,
 }
 
 // Server has failed to respond
-void CNeoDataServerBrowser_General::ServerFailedToRespond(HServerListRequest hRequest, [[maybe_unused]] int iServer)
+void CNeoServerList::ServerFailedToRespond(HServerListRequest hRequest, [[maybe_unused]] int iServer)
 {
 	if (hRequest != m_hdlRequest) return;
 }
 
 // A list refresh you had initiated is now 100% completed
-void CNeoDataServerBrowser_General::RefreshComplete(HServerListRequest hRequest, EMatchMakingServerResponse response)
+void CNeoServerList::RefreshComplete(HServerListRequest hRequest, EMatchMakingServerResponse response)
 {
 	if (hRequest != m_hdlRequest) return;
 
@@ -1561,8 +1560,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 						Color drawColor = COLOR_NEOPANELNORMALBG;
 						if (m_iSelectedServer == i) drawColor = COLOR_NEOPANELACCENTBG;
 						surface()->DrawSetColor(drawColor);
-						const auto btn = NeoUI::Button(L""); // Dummy button, the draw is afterward
-						if (btn.bPressed)
+						if (const auto btn = NeoUI::Button(L""); btn.bPressed) // Dummy button, draw over it in paint
 						{
 							m_iSelectedServer = i;
 							if (btn.bKeyPressed || btn.bMouseDoublePressed)
@@ -1665,7 +1663,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 					{
 						m_iSelectedServer = -1;
 						ISteamMatchmakingServers *steamMM = steamapicontext->SteamMatchmakingServers();
-						CNeoDataServerBrowser_General *pServerBrowser = &m_serverBrowser[m_iServerBrowserTab];
+						CNeoServerList *pServerBrowser = &m_serverBrowser[m_iServerBrowserTab];
 						pServerBrowser->m_servers.RemoveAll();
 						pServerBrowser->m_filteredServers.RemoveAll();
 						if (pServerBrowser->m_hdlRequest)
@@ -1785,12 +1783,16 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 				g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
 				if (m_state == STATE_KEYCAPTURE)
 				{
+					NeoUI::SwapFont(m_hTextFonts[FONT_NTNORMAL]);
 					NeoUI::Label(m_wszBindingText);
+					NeoUI::SwapFont(m_hTextFonts[FONT_NTSMALL]);
 					NeoUI::Label(L"Press ESC to cancel or DEL to remove keybind");
 				}
 				else if (m_state == STATE_CONFIRMSETTINGS)
 				{
+					NeoUI::SwapFont(m_hTextFonts[FONT_NTNORMAL]);
 					NeoUI::Label(L"Settings changed: Do you want to apply the settings?");
+					NeoUI::SwapFont(m_hTextFonts[FONT_NTSMALL]);
 					NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 3);
 					{
 						if (NeoUI::Button(L"Save (Enter)").bPressed)
@@ -1808,7 +1810,9 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 				}
 				else if (m_state == STATE_QUIT)
 				{
+					NeoUI::SwapFont(m_hTextFonts[FONT_NTNORMAL]);
 					NeoUI::Label(L"Do you want to quit the game?");
+					NeoUI::SwapFont(m_hTextFonts[FONT_NTSMALL]);
 					NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 3);
 					{
 						if (NeoUI::Button(L"Quit (Enter)").bPressed)

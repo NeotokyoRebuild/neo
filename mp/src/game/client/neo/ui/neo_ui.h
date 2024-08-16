@@ -150,6 +150,7 @@ void BeginSection(const bool bDefaultFocus = false);
 void EndSection();
 void BeginHorizontal(const int iHorizontalWidth);
 void EndHorizontal();
+void SwapFont(vgui::HFont font);
 
 struct RetButton
 {

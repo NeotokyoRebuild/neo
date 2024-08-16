@@ -47,14 +47,12 @@ struct GameServerSortContext
 	bool bDescending = false;
 };
 
-class CNeoDataServerBrowser_General : public ISteamMatchmakingServerListResponse
+class CNeoServerList : public ISteamMatchmakingServerListResponse
 {
 public:
 	GameServerType m_iType;
 	CUtlVector<gameserveritem_t> m_servers;
 	CUtlVector<gameserveritem_t> m_filteredServers;
-
-	CNeoDataServerBrowser_General() = default;
 
 	void UpdateFilteredList();
 	void RequestList(MatchMakingKeyValuePair_t **filters, const uint32 iFiltersSize);
@@ -350,7 +348,7 @@ public:
 
 	int m_iSelectedServer = -1; // TODO: Select kept with sorting
 	int m_iServerBrowserTab = 0;
-	CNeoDataServerBrowser_General m_serverBrowser[GS__TOTAL]; // TODO: Rename class
+	CNeoServerList m_serverBrowser[GS__TOTAL]; // TODO: Rename class
 	ServerBrowserFilters m_sbFilters;
 	bool m_bSBFiltModified = false;
 	bool m_bShowFilterPanel = false;
