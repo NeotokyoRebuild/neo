@@ -253,6 +253,45 @@ void CNeoServerList::RefreshComplete(HServerListRequest hRequest, EMatchMakingSe
 	}
 }
 
+CNeoServerPlayers::~CNeoServerPlayers()
+{
+	if (m_hdlQuery != HSERVERQUERY_INVALID)
+	{
+		steamapicontext->SteamMatchmakingServers()->CancelServerQuery(m_hdlQuery);
+	}
+}
+
+void CNeoServerPlayers::RequestList(uint32 unIP, uint16 usPort)
+{
+	auto *steamMM = steamapicontext->SteamMatchmakingServers();
+	if (m_hdlQuery != HSERVERQUERY_INVALID)
+	{
+		steamMM->CancelServerQuery(m_hdlQuery);
+	}
+	m_hdlQuery = steamMM->PlayerDetails(unIP, usPort, this);
+	m_players.RemoveAll();
+}
+
+void CNeoServerPlayers::AddPlayerToList(const char *pchName, int nScore, float flTimePlayed)
+{
+	PlayerInfo playerInfo{
+		.iScore = nScore,
+		.flTimePlayed = flTimePlayed,
+	};
+	g_pVGuiLocalize->ConvertANSIToUnicode(pchName, playerInfo.wszName, sizeof(playerInfo.wszName));
+	m_players.AddToTail(playerInfo);
+}
+
+void CNeoServerPlayers::PlayersFailedToRespond()
+{
+	// no-op
+}
+
+void CNeoServerPlayers::PlayersRefreshComplete()
+{
+	m_hdlQuery = HSERVERQUERY_INVALID;
+}
+
 static const char *DLFILTER_STRMAP[] = {
 	"all", "nosounds", "mapsonly", "none"
 };
@@ -1648,9 +1687,18 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 					{
 						m_bShowFilterPanel = !m_bShowFilterPanel;
 					}
-					if (NeoUI::Button(L"Details").bPressed)
+					if (m_iSelectedServer >= 0)
 					{
-						// TODO
+						if (NeoUI::Button(L"Details").bPressed)
+						{
+							m_state = STATE_SERVERDETAILS;
+							const auto *gameServer = &m_serverBrowser[m_iServerBrowserTab].m_filteredServers[m_iSelectedServer];
+							m_serverPlayers.RequestList(gameServer->m_NetAdr.GetIP(), gameServer->m_NetAdr.GetQueryPort());
+						}
+					}
+					else
+					{
+						NeoUI::Pad();
 					}
 					if (NeoUI::Button(L"Refresh").bPressed)
 					{
@@ -1712,6 +1760,76 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		}
 		NeoUI::EndContext();
 
+	}
+	break;
+	case STATE_SERVERDETAILS:
+	{
+		const auto *gameServer = &m_serverBrowser[m_iServerBrowserTab].m_filteredServers[m_iSelectedServer];
+		const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
+		g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
+		g_uiCtx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
+		g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
+		NeoUI::BeginContext(&g_uiCtx, eMode);
+		{
+			const int iTotalTall = g_uiCtx.iRowTall * (g_iRowsInScreen + 1);
+			g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
+			g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * 6;
+			NeoUI::BeginSection(true);
+			{
+				const bool bP = eMode == NeoUI::MODE_PAINT;
+				wchar_t wszText[128];
+				if (bP) g_pVGuiLocalize->ConvertANSIToUnicode(gameServer->GetName(), wszText, sizeof(wszText));
+				NeoUI::Label(L"Name:", wszText);
+				if (bP) g_pVGuiLocalize->ConvertANSIToUnicode(gameServer->m_NetAdr.GetConnectionAddressString(), wszText, sizeof(wszText));
+				NeoUI::Label(L"Address:", wszText);
+				if (bP) g_pVGuiLocalize->ConvertANSIToUnicode(gameServer->m_szMap, wszText, sizeof(wszText));
+				NeoUI::Label(L"Map:", wszText);
+				if (bP) V_swprintf_safe(wszText, L"%d/%d", gameServer->m_nPlayers, gameServer->m_nMaxPlayers);
+				NeoUI::Label(L"Ping:", wszText);
+				if (bP) V_swprintf_safe(wszText, L"%ls", gameServer->m_bSecure ? L"Enabled" : L"Disabled");
+				NeoUI::Label(L"VAC:", wszText);
+				if (bP) V_swprintf_safe(wszText, L"%d", gameServer->m_nPing);
+				NeoUI::Label(L"Ping:", wszText);
+
+				// TODO: Header same-style as serverlist's header
+			}
+			NeoUI::EndSection();
+			g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+			g_uiCtx.dPanel.tall = iTotalTall - g_uiCtx.dPanel.tall;
+			NeoUI::BeginSection();
+			{
+				if (m_serverPlayers.m_players.IsEmpty())
+				{
+					g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
+					NeoUI::Label(L"There are no players in the server.");
+					g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_LEFT;
+				}
+				else
+				{
+					for (const auto &player : m_serverPlayers.m_players)
+					{
+						NeoUI::Label(player.wszName);
+						// TODO
+					}
+				}
+			}
+			NeoUI::EndSection();
+			g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+			g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
+			NeoUI::BeginSection();
+			{
+				NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 5);
+				{
+					if (NeoUI::Button(L"Back (ESC)").bPressed)
+					{
+						m_state = STATE_SERVERBROWSER;
+					}
+				}
+				NeoUI::EndHorizontal();
+			}
+			NeoUI::EndSection();
+		}
+		NeoUI::EndContext();
 	}
 	break;
 	case STATE_MAPLIST:

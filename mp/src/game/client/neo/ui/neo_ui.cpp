@@ -264,6 +264,8 @@ void EndHorizontal()
 
 static void InternalLabel(const wchar_t *wszText, const bool bCenter)
 {
+	if (g_pCtx->eMode != MODE_PAINT) return;
+
 	int iFontTextWidth = 0, iFontTextHeight = 0;
 	if (bCenter)
 	{
@@ -329,9 +331,26 @@ void Label(const wchar_t *wszText)
 	{
 		g_pCtx->iFocus += g_pCtx->iFocusDirection;
 	}
-	if (IN_BETWEEN(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall))
+	if (IN_BETWEEN(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall) && g_pCtx->eMode == MODE_PAINT)
 	{
 		InternalLabel(wszText, g_pCtx->eLabelTextStyle == TEXTSTYLE_CENTER);
+	}
+	InternalUpdatePartitionState(true, true);
+}
+
+void Label(const wchar_t *wszLabel, const wchar_t *wszText)
+{
+	if (g_pCtx->iWidget == g_pCtx->iFocus && g_pCtx->iSection == g_pCtx->iFocusSection)
+	{
+		g_pCtx->iFocus += g_pCtx->iFocusDirection;
+	}
+	if (IN_BETWEEN(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall) && g_pCtx->eMode == MODE_PAINT)
+	{
+		const int iTmpMarginX = g_pCtx->iMarginX;
+		InternalLabel(wszLabel, g_pCtx->eLabelTextStyle == TEXTSTYLE_CENTER);
+		g_pCtx->iMarginX = g_pCtx->iWgXPos + g_pCtx->iMarginX;
+		InternalLabel(wszText, g_pCtx->eLabelTextStyle == TEXTSTYLE_CENTER);
+		g_pCtx->iMarginX = iTmpMarginX;
 	}
 	InternalUpdatePartitionState(true, true);
 }
@@ -756,4 +775,4 @@ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
 	InternalUpdatePartitionState(bMouseIn, bFocused);
 }
 
-}
+}  // namespace NeoUI

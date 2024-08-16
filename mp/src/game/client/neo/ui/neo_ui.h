@@ -163,6 +163,7 @@ struct RetButton
 };
 void Pad();
 void Label(const wchar_t *wszText);
+void Label(const wchar_t *wszLabel, const wchar_t *wszText);
 void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
 RetButton Button(const wchar_t *wszText);
 RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText);

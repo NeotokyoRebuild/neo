@@ -65,6 +65,26 @@ public:
 	GameServerSortContext *m_pSortCtx = nullptr;
 };
 
+class CNeoServerPlayers : public ISteamMatchmakingPlayersResponse
+{
+public:
+	~CNeoServerPlayers();
+	void RequestList(uint32 unIP, uint16 usPort);
+	void AddPlayerToList(const char *pchName, int nScore, float flTimePlayed) final;
+	void PlayersFailedToRespond() final;
+	void PlayersRefreshComplete() final;
+
+	struct PlayerInfo
+	{
+		wchar_t wszName[33];
+		int iScore;
+		float flTimePlayed;
+	};
+	CUtlVector<PlayerInfo> m_players;
+	HServerQuery m_hdlQuery;
+	bool m_bFetching = false;
+};
+
 #define CONVARREF_DEF(_name) ConVarRef _name{#_name}
 
 struct NeoSettings
@@ -264,6 +284,7 @@ enum RootState
 	STATE_KEYCAPTURE,
 	STATE_CONFIRMSETTINGS,
 	STATE_QUIT,
+	STATE_SERVERDETAILS,
 
 	STATE__TOTAL,
 };
@@ -350,6 +371,7 @@ public:
 	int m_iSelectedServer = -1; // TODO: Select kept with sorting
 	int m_iServerBrowserTab = 0;
 	CNeoServerList m_serverBrowser[GS__TOTAL]; // TODO: Rename class
+	CNeoServerPlayers m_serverPlayers;
 	ServerBrowserFilters m_sbFilters;
 	bool m_bSBFiltModified = false;
 	bool m_bShowFilterPanel = false;
