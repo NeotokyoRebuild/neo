@@ -120,6 +120,7 @@ struct Context
 	// Input management
 	int iWidget; // Always increments per widget use
 	int iSection;
+	int iSectionWidgets[MAX_SECTIONS];
 
 	int iFocus;
 	int iFocusDirection;

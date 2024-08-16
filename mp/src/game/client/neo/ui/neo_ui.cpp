@@ -103,9 +103,39 @@ void EndContext()
 		g_pCtx->iFocusSection = -1;
 	}
 
-	if (g_pCtx->eMode == MODE_KEYPRESSED && g_pCtx->iFocusSection == -1 && (g_pCtx->eCode == KEY_DOWN || g_pCtx->eCode == KEY_UP))
+	if (g_pCtx->eMode == MODE_KEYPRESSED)
 	{
-		g_pCtx->iFocusSection = 0;
+		if ((g_pCtx->eCode == KEY_DOWN || g_pCtx->eCode == KEY_UP) && g_pCtx->iFocusSection == -1)
+		{
+			g_pCtx->iFocusSection = 0;
+		}
+		else if (g_pCtx->eCode == KEY_TAB)
+		{
+			if (g_pCtx->iFocusSection == -1)
+			{
+				g_pCtx->iFocusSection = 0;
+			}
+			const int iTotalSection = g_pCtx->iSection;
+			int iTally = 0;
+			for (int i = 0; i < iTotalSection; ++i)
+			{
+				iTally += g_pCtx->iSectionWidgets[i];
+			}
+			if (iTally == 0)
+			{
+				// There is no valid sections, don't do anything
+				g_pCtx->iFocusSection = -1;
+			}
+			else
+			{
+				const int iIncr = ((input()->IsKeyDown(KEY_LSHIFT) || input()->IsKeyDown(KEY_RSHIFT)) ? -1 : +1);
+				do
+				{
+					g_pCtx->iFocusSection += iIncr;
+					g_pCtx->iFocusSection = LoopAroundInArray(g_pCtx->iFocusSection, iTotalSection);
+				} while (g_pCtx->iSectionWidgets[g_pCtx->iFocusSection] == 0);
+			}
+		}
 	}
 }
 
@@ -182,38 +212,42 @@ void EndSection()
 	}
 
 	// Scroll handling
-	const int iRowsInScreen = g_pCtx->dPanel.tall / g_pCtx->iRowTall;
-	if (g_pCtx->eMode == MODE_MOUSEWHEELED)
+	if (g_pCtx->iFocusSection == g_pCtx->iSection)
 	{
-		if (g_pCtx->iWidget <= iRowsInScreen)
+		const int iRowsInScreen = g_pCtx->dPanel.tall / g_pCtx->iRowTall;
+		if (g_pCtx->eMode == MODE_MOUSEWHEELED)
 		{
-			g_pCtx->iYOffset[g_pCtx->iSection] = 0;
+			if (g_pCtx->iPartitionY <= iRowsInScreen)
+			{
+				g_pCtx->iYOffset[g_pCtx->iSection] = 0;
+			}
+			else
+			{
+				g_pCtx->iYOffset[g_pCtx->iSection] += (g_pCtx->eCode == MOUSE_WHEEL_UP) ? -1 : +1;
+				g_pCtx->iYOffset[g_pCtx->iSection] = clamp(g_pCtx->iYOffset[g_pCtx->iSection], 0, g_pCtx->iPartitionY - iRowsInScreen);
+			}
 		}
-		else
+		else if (g_pCtx->eMode == MODE_KEYPRESSED && (g_pCtx->eCode == KEY_DOWN || g_pCtx->eCode == KEY_UP))
 		{
-			g_pCtx->iYOffset[g_pCtx->iSection] += (g_pCtx->eCode == MOUSE_WHEEL_UP) ? -1 : +1;
-			g_pCtx->iYOffset[g_pCtx->iSection] = clamp(g_pCtx->iYOffset[g_pCtx->iSection], 0, g_pCtx->iWidget - iRowsInScreen);
-		}
-	}
-	else if (g_pCtx->eMode == MODE_KEYPRESSED && (g_pCtx->eCode == KEY_DOWN || g_pCtx->eCode == KEY_UP))
-	{
-		if (g_pCtx->iWidget <= iRowsInScreen)
-		{
-			// Disable scroll if it doesn't need to
-			g_pCtx->iYOffset[g_pCtx->iSection] = 0;
-		}
-		else if (g_pCtx->iFocus < (g_pCtx->iYOffset[g_pCtx->iSection]))
-		{
-			// Scrolling up past visible, re-adjust
-			g_pCtx->iYOffset[g_pCtx->iSection] = clamp(g_pCtx->iFocus, 0, g_pCtx->iWidget - iRowsInScreen);
-		}
-		else if (g_pCtx->iFocus >= (g_pCtx->iYOffset[g_pCtx->iSection] + iRowsInScreen))
-		{
-			// Scrolling down post visible, re-adjust
-			g_pCtx->iYOffset[g_pCtx->iSection] = clamp(g_pCtx->iFocus - iRowsInScreen + 1, 0, g_pCtx->iWidget - iRowsInScreen);
+			if (g_pCtx->iPartitionY <= iRowsInScreen)
+			{
+				// Disable scroll if it doesn't need to
+				g_pCtx->iYOffset[g_pCtx->iSection] = 0;
+			}
+			else if (g_pCtx->iFocus < (g_pCtx->iYOffset[g_pCtx->iSection]))
+			{
+				// Scrolling up past visible, re-adjust
+				g_pCtx->iYOffset[g_pCtx->iSection] = clamp(g_pCtx->iFocus, 0, g_pCtx->iWidget - iRowsInScreen);
+			}
+			else if (g_pCtx->iFocus >= (g_pCtx->iYOffset[g_pCtx->iSection] + iRowsInScreen))
+			{
+				// Scrolling down post visible, re-adjust
+				g_pCtx->iYOffset[g_pCtx->iSection] = clamp(g_pCtx->iFocus - iRowsInScreen + 1, 0, g_pCtx->iWidget - iRowsInScreen);
+			}
 		}
 	}
 
+	g_pCtx->iSectionWidgets[g_pCtx->iSection] = g_pCtx->iWidget;
 	++g_pCtx->iSection;
 }
 
@@ -301,7 +335,10 @@ void Pad()
 
 void Label(const wchar_t *wszText)
 {
-	if (g_pCtx->iWidget == g_pCtx->iFocus && g_pCtx->iSection == g_pCtx->iFocusSection) g_pCtx->iFocus += g_pCtx->iFocusDirection;
+	if (g_pCtx->iWidget == g_pCtx->iFocus && g_pCtx->iSection == g_pCtx->iFocusSection)
+	{
+		g_pCtx->iFocus += g_pCtx->iFocusDirection;
+	}
 	if (IN_BETWEEN(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall))
 	{
 		InternalLabel(wszText, g_pCtx->eLabelTextStyle == TEXTSTYLE_CENTER);
