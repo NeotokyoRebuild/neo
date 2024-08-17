@@ -83,8 +83,9 @@ void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode, const wchar_t *w
 	case MODE_KEYPRESSED:
 		if (g_pCtx->eCode == KEY_DOWN || g_pCtx->eCode == KEY_UP)
 		{
-			g_pCtx->iFocusDirection = (g_pCtx->eCode == KEY_UP) ? -1 : +1;
-			g_pCtx->iFocus = (g_pCtx->iFocus == FOCUSOFF_NUM) ? 0 : (g_pCtx->iFocus + g_pCtx->iFocusDirection);
+			g_pCtx->iActiveDirection = (g_pCtx->eCode == KEY_UP) ? -1 : +1;
+			g_pCtx->iActive = (g_pCtx->iActive == FOCUSOFF_NUM) ? 0 : (g_pCtx->iActive + g_pCtx->iActiveDirection);
+			g_pCtx->iHot = g_pCtx->iActive;
 		}
 		break;
 	case MODE_PAINT:
@@ -103,6 +104,10 @@ void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode, const wchar_t *w
 			surface()->DrawPrintText(wszTitle, V_wcslen(wszTitle));
 		}
 		break;
+	case MODE_MOUSEMOVED:
+		g_pCtx->iHot = FOCUSOFF_NUM;
+		g_pCtx->iHotSection = -1;
+		break;
 	default:
 		break;
 	}
@@ -116,44 +121,50 @@ void EndContext()
 	if (g_pCtx->eMode == MODE_MOUSEPRESSED && !g_pCtx->iHasMouseInPanel)
 	{
 		g_pCtx->eMousePos = MOUSEPOS_NONE;
-		g_pCtx->iFocusDirection = 0;
-		g_pCtx->iFocus = FOCUSOFF_NUM;
-		g_pCtx->iFocusSection = -1;
+		g_pCtx->iActiveDirection = 0;
+		g_pCtx->iActive = FOCUSOFF_NUM;
+		g_pCtx->iActiveSection = -1;
 	}
 
 	if (g_pCtx->eMode == MODE_KEYPRESSED)
 	{
-		if ((g_pCtx->eCode == KEY_DOWN || g_pCtx->eCode == KEY_UP) && g_pCtx->iFocusSection == -1)
+		if (g_pCtx->eCode == KEY_DOWN || g_pCtx->eCode == KEY_UP || g_pCtx->eCode == KEY_TAB)
 		{
-			g_pCtx->iFocusSection = 0;
-		}
-		else if (g_pCtx->eCode == KEY_TAB)
-		{
-			if (g_pCtx->iFocusSection == -1)
+			if (g_pCtx->iActiveSection == -1)
 			{
-				g_pCtx->iFocusSection = 0;
+				g_pCtx->iActiveSection = 0;
 			}
-			const int iTotalSection = g_pCtx->iSection;
-			int iTally = 0;
-			for (int i = 0; i < iTotalSection; ++i)
+
+			if (g_pCtx->eCode == KEY_TAB)
 			{
-				iTally += g_pCtx->iSectionWidgets[i];
-			}
-			if (iTally == 0)
-			{
-				// There is no valid sections, don't do anything
-				g_pCtx->iFocusSection = -1;
-			}
-			else
-			{
-				const int iIncr = ((input()->IsKeyDown(KEY_LSHIFT) || input()->IsKeyDown(KEY_RSHIFT)) ? -1 : +1);
-				do
+				const int iTotalSection = g_pCtx->iSection;
+				int iTally = 0;
+				for (int i = 0; i < iTotalSection; ++i)
 				{
-					g_pCtx->iFocusSection += iIncr;
-					g_pCtx->iFocusSection = LoopAroundInArray(g_pCtx->iFocusSection, iTotalSection);
-				} while (g_pCtx->iSectionWidgets[g_pCtx->iFocusSection] == 0);
+					iTally += g_pCtx->iSectionWidgets[i];
+				}
+				if (iTally == 0)
+				{
+					// There is no valid sections, don't do anything
+					g_pCtx->iActiveSection = -1;
+				}
+				else
+				{
+					const int iIncr = ((input()->IsKeyDown(KEY_LSHIFT) || input()->IsKeyDown(KEY_RSHIFT)) ? -1 : +1);
+					do
+					{
+						g_pCtx->iActiveSection += iIncr;
+						g_pCtx->iActiveSection = LoopAroundInArray(g_pCtx->iActiveSection, iTotalSection);
+					} while (g_pCtx->iSectionWidgets[g_pCtx->iActiveSection] == 0);
+				}
 			}
+			g_pCtx->iHotSection = g_pCtx->iActiveSection;
 		}
+	}
+	else if (g_pCtx->eMode == MODE_MOUSEPRESSED || g_pCtx->eMode == MODE_MOUSEDOUBLEPRESSED)
+	{
+		g_pCtx->iHot = g_pCtx->iActive;
+		g_pCtx->iHotSection = g_pCtx->iActiveSection;
 	}
 }
 
@@ -203,9 +214,9 @@ void BeginSection(const bool bDefaultFocus)
 		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
 		break;
 	case MODE_KEYPRESSED:
-		if (bDefaultFocus && g_pCtx->iFocusSection == -1 && (g_pCtx->eCode == KEY_DOWN || g_pCtx->eCode == KEY_UP))
+		if (bDefaultFocus && g_pCtx->iActiveSection == -1 && (g_pCtx->eCode == KEY_DOWN || g_pCtx->eCode == KEY_UP))
 		{
-			g_pCtx->iFocusSection = g_pCtx->iSection;
+			g_pCtx->iActiveSection = g_pCtx->iSection;
 		}
 		break;
 	}
@@ -217,17 +228,17 @@ void EndSection()
 			g_pCtx->iLayoutY < g_pCtx->iMouseRelY)
 	{
 		g_pCtx->eMousePos = MOUSEPOS_NONE;
-		g_pCtx->iFocusDirection = 0;
-		g_pCtx->iFocus = FOCUSOFF_NUM;
-		g_pCtx->iFocusSection = -1;
+		g_pCtx->iActiveDirection = 0;
+		g_pCtx->iActive = FOCUSOFF_NUM;
+		g_pCtx->iActiveSection = -1;
 	}
-	if (g_pCtx->iFocus != FOCUSOFF_NUM && g_pCtx->iFocusSection == g_pCtx->iSection)
+	if (g_pCtx->iActive != FOCUSOFF_NUM && g_pCtx->iActiveSection == g_pCtx->iSection)
 	{
-		g_pCtx->iFocus = LoopAroundInArray(g_pCtx->iFocus, g_pCtx->iWidget);
+		g_pCtx->iActive = LoopAroundInArray(g_pCtx->iActive, g_pCtx->iWidget);
 	}
 
 	// Scroll handling
-	if (g_pCtx->iFocusSection == g_pCtx->iSection)
+	if (g_pCtx->iActiveSection == g_pCtx->iSection)
 	{
 		const int iRowsInScreen = g_pCtx->dPanel.tall / g_pCtx->iRowTall;
 		if (g_pCtx->eMode == MODE_MOUSEWHEELED)
@@ -249,15 +260,15 @@ void EndSection()
 				// Disable scroll if it doesn't need to
 				g_pCtx->iYOffset[g_pCtx->iSection] = 0;
 			}
-			else if (g_pCtx->iFocus < (g_pCtx->iYOffset[g_pCtx->iSection]))
+			else if (g_pCtx->iActive < (g_pCtx->iYOffset[g_pCtx->iSection]))
 			{
 				// Scrolling up past visible, re-adjust
-				g_pCtx->iYOffset[g_pCtx->iSection] = clamp(g_pCtx->iFocus, 0, g_pCtx->iWidget - iRowsInScreen);
+				g_pCtx->iYOffset[g_pCtx->iSection] = clamp(g_pCtx->iActive, 0, g_pCtx->iWidget - iRowsInScreen);
 			}
-			else if (g_pCtx->iFocus >= (g_pCtx->iYOffset[g_pCtx->iSection] + iRowsInScreen))
+			else if (g_pCtx->iActive >= (g_pCtx->iYOffset[g_pCtx->iSection] + iRowsInScreen))
 			{
 				// Scrolling down post visible, re-adjust
-				g_pCtx->iYOffset[g_pCtx->iSection] = clamp(g_pCtx->iFocus - iRowsInScreen + 1, 0, g_pCtx->iWidget - iRowsInScreen);
+				g_pCtx->iYOffset[g_pCtx->iSection] = clamp(g_pCtx->iActive - iRowsInScreen + 1, 0, g_pCtx->iWidget - iRowsInScreen);
 			}
 		}
 	}
@@ -297,8 +308,8 @@ static void InternalLabel(const wchar_t *wszText, const bool bCenter)
 
 struct GetMouseinFocusedRet
 {
-	bool bMouseIn;
-	bool bFocused;
+	bool bActive;
+	bool bHot;
 };
 
 static GetMouseinFocusedRet InternalGetMouseinFocused()
@@ -308,23 +319,29 @@ static GetMouseinFocusedRet InternalGetMouseinFocused()
 	{
 		bMouseIn = IN_BETWEEN(g_pCtx->iLayoutX, g_pCtx->iMouseRelX, g_pCtx->iLayoutX + g_pCtx->iHorizontalWidth);
 	}
-	const bool bFocused = g_pCtx->iWidget == g_pCtx->iFocus && g_pCtx->iSection == g_pCtx->iFocusSection;
-	if (bFocused || bMouseIn)
+	if (bMouseIn && g_pCtx->eMode == MODE_MOUSEMOVED)
+	{
+		g_pCtx->iHot = g_pCtx->iWidget;
+		g_pCtx->iHotSection = g_pCtx->iSection;
+	}
+	const bool bHot = g_pCtx->iHot == g_pCtx->iWidget && g_pCtx->iHotSection == g_pCtx->iSection;
+	const bool bActive = g_pCtx->iWidget == g_pCtx->iActive && g_pCtx->iSection == g_pCtx->iActiveSection;
+	if (bActive || bHot)
 	{
 		surface()->DrawSetColor(COLOR_NEOPANELSELECTBG);
-		if (bFocused) surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
+		if (bActive) surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
 	}
 	return GetMouseinFocusedRet{
-		.bMouseIn = bMouseIn,
-		.bFocused = bFocused,
+		.bActive = bActive,
+		.bHot = bHot,
 	};
 }
 
-static void InternalUpdatePartitionState(const bool bMouseIn, const bool bFocused)
+static void InternalUpdatePartitionState(const GetMouseinFocusedRet wdgState)
 {
 	NeoUI::Pad();
 	++g_pCtx->iWidget;
-	if (bMouseIn || bFocused)
+	if (wdgState.bActive || wdgState.bHot)
 	{
 		surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
 		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
@@ -346,22 +363,22 @@ void Pad()
 
 void Label(const wchar_t *wszText)
 {
-	if (g_pCtx->iWidget == g_pCtx->iFocus && g_pCtx->iSection == g_pCtx->iFocusSection)
+	if (g_pCtx->iWidget == g_pCtx->iActive && g_pCtx->iSection == g_pCtx->iActiveSection)
 	{
-		g_pCtx->iFocus += g_pCtx->iFocusDirection;
+		g_pCtx->iActive += g_pCtx->iActiveDirection;
 	}
 	if (IN_BETWEEN(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall) && g_pCtx->eMode == MODE_PAINT)
 	{
 		InternalLabel(wszText, g_pCtx->eLabelTextStyle == TEXTSTYLE_CENTER);
 	}
-	InternalUpdatePartitionState(true, true);
+	InternalUpdatePartitionState(GetMouseinFocusedRet{true, true});
 }
 
 void Label(const wchar_t *wszLabel, const wchar_t *wszText)
 {
-	if (g_pCtx->iWidget == g_pCtx->iFocus && g_pCtx->iSection == g_pCtx->iFocusSection)
+	if (g_pCtx->iWidget == g_pCtx->iActive && g_pCtx->iSection == g_pCtx->iActiveSection)
 	{
-		g_pCtx->iFocus += g_pCtx->iFocusDirection;
+		g_pCtx->iActive += g_pCtx->iActiveDirection;
 	}
 	if (IN_BETWEEN(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall) && g_pCtx->eMode == MODE_PAINT)
 	{
@@ -371,7 +388,7 @@ void Label(const wchar_t *wszLabel, const wchar_t *wszText)
 		InternalLabel(wszText, g_pCtx->eLabelTextStyle == TEXTSTYLE_CENTER);
 		g_pCtx->iMarginX = iTmpMarginX;
 	}
-	InternalUpdatePartitionState(true, true);
+	InternalUpdatePartitionState(GetMouseinFocusedRet{true, true});
 }
 
 NeoUI::RetButton Button(const wchar_t *wszText)
@@ -382,8 +399,8 @@ NeoUI::RetButton Button(const wchar_t *wszText)
 NeoUI::RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText)
 {
 	RetButton ret = {};
-	auto [bMouseIn, bFocused] = InternalGetMouseinFocused();
-	ret.bMouseHover = bMouseIn && (!wszLeftLabel || (wszLeftLabel && g_pCtx->eMousePos != MOUSEPOS_NONE));
+	const auto wdgState = InternalGetMouseinFocused();
+	ret.bMouseHover = wdgState.bHot && (!wszLeftLabel || (wszLeftLabel && g_pCtx->eMousePos != MOUSEPOS_NONE));
 
 	if (IN_BETWEEN(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall))
 	{
@@ -428,7 +445,7 @@ NeoUI::RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText)
 		break;
 		case MODE_KEYPRESSED:
 		{
-			ret.bKeyPressed = ret.bPressed = (bFocused && g_pCtx->eCode == KEY_ENTER);
+			ret.bKeyPressed = ret.bPressed = (wdgState.bActive && g_pCtx->eCode == KEY_ENTER);
 		}
 		break;
 		default:
@@ -437,13 +454,13 @@ NeoUI::RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText)
 
 		if (ret.bPressed)
 		{
-			g_pCtx->iFocus = g_pCtx->iWidget;
-			g_pCtx->iFocusSection = g_pCtx->iSection;
-			g_pCtx->iFocusDirection = 0;
+			g_pCtx->iActive = g_pCtx->iWidget;
+			g_pCtx->iActiveSection = g_pCtx->iSection;
+			g_pCtx->iActiveDirection = 0;
 		}
 	}
 
-	InternalUpdatePartitionState(bMouseIn, bFocused);
+	InternalUpdatePartitionState(wdgState);
 	return ret;
 }
 
@@ -456,7 +473,7 @@ void RingBoxBool(const wchar_t *wszLeftLabel, bool *bChecked)
 
 void RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 {
-	auto [bMouseIn, bFocused] = InternalGetMouseinFocused();
+	const auto wdgState = InternalGetMouseinFocused();
 
 	if (IN_BETWEEN(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall))
 	{
@@ -497,13 +514,13 @@ void RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, const i
 		break;
 		case MODE_MOUSEPRESSED:
 		{
-			if (bMouseIn)
+			if (wdgState.bHot)
 			{
-				g_pCtx->iFocus = g_pCtx->iWidget;
-				g_pCtx->iFocusSection = g_pCtx->iSection;
-				g_pCtx->iFocusDirection = 0;
+				g_pCtx->iActive = g_pCtx->iWidget;
+				g_pCtx->iActiveSection = g_pCtx->iSection;
+				g_pCtx->iActiveDirection = 0;
 			}
-			if (bMouseIn && g_pCtx->eCode == MOUSE_LEFT && (g_pCtx->eMousePos == MOUSEPOS_LEFT || g_pCtx->eMousePos == MOUSEPOS_RIGHT))
+			if (wdgState.bHot && g_pCtx->eCode == MOUSE_LEFT && (g_pCtx->eMousePos == MOUSEPOS_LEFT || g_pCtx->eMousePos == MOUSEPOS_RIGHT))
 			{
 				*iIndex += (g_pCtx->eMousePos == MOUSEPOS_LEFT) ? -1 : +1;
 				*iIndex = LoopAroundInArray(*iIndex, iLabelsSize);
@@ -513,7 +530,7 @@ void RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, const i
 		break;
 		case MODE_KEYPRESSED:
 		{
-			if (bFocused && (g_pCtx->eCode == KEY_LEFT || g_pCtx->eCode == KEY_RIGHT))
+			if (wdgState.bActive && (g_pCtx->eCode == KEY_LEFT || g_pCtx->eCode == KEY_RIGHT))
 			{
 				*iIndex += (g_pCtx->eCode == KEY_LEFT) ? -1 : +1;
 				*iIndex = LoopAroundInArray(*iIndex, iLabelsSize);
@@ -526,14 +543,14 @@ void RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, const i
 		}
 	}
 
-	InternalUpdatePartitionState(bMouseIn, bFocused);
+	InternalUpdatePartitionState(wdgState);
 }
 
 void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 {
 	// This is basically a ringbox but different UI
-	if (g_pCtx->iWidget == g_pCtx->iFocus && g_pCtx->iSection == g_pCtx->iFocusSection) g_pCtx->iFocus += g_pCtx->iFocusDirection;
-	auto [bMouseIn, bFocused] = InternalGetMouseinFocused();
+	if (g_pCtx->iWidget == g_pCtx->iActive && g_pCtx->iSection == g_pCtx->iActiveSection) g_pCtx->iActive += g_pCtx->iActiveDirection;
+	const auto wdgState = InternalGetMouseinFocused();
 	const int iTabWide = (g_pCtx->dPanel.wide / iLabelsSize);
 
 	switch (g_pCtx->eMode)
@@ -543,7 +560,7 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 		const auto *pFontI = &g_pCtx->fonts[g_pCtx->eFont];
 		for (int i = 0, iXPosTab = 0; i < iLabelsSize; ++i, iXPosTab += iTabWide)
 		{
-			const bool bHoverTab = (bMouseIn && IN_BETWEEN(iXPosTab, g_pCtx->iMouseRelX, iXPosTab + iTabWide));
+			const bool bHoverTab = (wdgState.bHot && IN_BETWEEN(iXPosTab, g_pCtx->iMouseRelX, iXPosTab + iTabWide));
 			if (bHoverTab || i == *iIndex)
 			{
 				surface()->DrawSetColor(bHoverTab ? COLOR_NEOPANELSELECTBG : COLOR_NEOPANELACCENTBG);
@@ -568,7 +585,7 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 	break;
 	case MODE_MOUSEPRESSED:
 	{
-		if (bMouseIn && g_pCtx->eCode == MOUSE_LEFT)
+		if (wdgState.bHot && g_pCtx->eCode == MOUSE_LEFT)
 		{
 			const int iNextIndex = (g_pCtx->iMouseRelX / iTabWide);
 			if (iNextIndex != *iIndex)
@@ -593,7 +610,7 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 		break;
 	}
 
-	InternalUpdatePartitionState(bMouseIn, bFocused);
+	InternalUpdatePartitionState(wdgState);
 }
 
 #if 0	// NEO TODO (nullsystem): Implement back the slider text edit code
@@ -624,7 +641,7 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, const float flMax,
 				   const int iDp, const float flStep)
 {
-	auto [bMouseIn, bFocused] = InternalGetMouseinFocused();
+	const auto wdgState = InternalGetMouseinFocused();
 
 	if (IN_BETWEEN(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall))
 	{
@@ -674,32 +691,32 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 		break;
 		case MODE_MOUSEPRESSED:
 		{
-			if (bMouseIn)
+			if (wdgState.bHot)
 			{
-				g_pCtx->iFocus = g_pCtx->iWidget;
-				g_pCtx->iFocusSection = g_pCtx->iSection;
-				g_pCtx->iFocusDirection = 0;
-			}
-			if (bMouseIn && g_pCtx->eCode == MOUSE_LEFT)
-			{
-				if (g_pCtx->eMousePos == MOUSEPOS_LEFT || g_pCtx->eMousePos == MOUSEPOS_RIGHT)
+				g_pCtx->iActive = g_pCtx->iWidget;
+				g_pCtx->iActiveSection = g_pCtx->iSection;
+				g_pCtx->iActiveDirection = 0;
+				if (g_pCtx->eCode == MOUSE_LEFT)
 				{
-					*flValue += (g_pCtx->eMousePos == MOUSEPOS_LEFT) ? -flStep : +flStep;
-					*flValue = clamp(*flValue, flMin, flMax);
-					g_pCtx->bValueEdited = true;
-				}
-				else if (g_pCtx->eMousePos == MOUSEPOS_CENTER)
-				{
-					g_pCtx->iFocusDirection = 0;
-					g_pCtx->iFocus = g_pCtx->iWidget;
-					g_pCtx->iFocusSection = g_pCtx->iSection;
+					if (g_pCtx->eMousePos == MOUSEPOS_LEFT || g_pCtx->eMousePos == MOUSEPOS_RIGHT)
+					{
+						*flValue += (g_pCtx->eMousePos == MOUSEPOS_LEFT) ? -flStep : +flStep;
+						*flValue = clamp(*flValue, flMin, flMax);
+						g_pCtx->bValueEdited = true;
+					}
+					else if (g_pCtx->eMousePos == MOUSEPOS_CENTER)
+					{
+						g_pCtx->iActiveDirection = 0;
+						g_pCtx->iActive = g_pCtx->iWidget;
+						g_pCtx->iActiveSection = g_pCtx->iSection;
+					}
 				}
 			}
 		}
 		break;
 		case MODE_KEYPRESSED:
 		{
-			if (bFocused && (g_pCtx->eCode == KEY_LEFT || g_pCtx->eCode == KEY_RIGHT))
+			if (wdgState.bActive && (g_pCtx->eCode == KEY_LEFT || g_pCtx->eCode == KEY_RIGHT))
 			{
 				*flValue += (g_pCtx->eCode == KEY_LEFT) ? -flStep : +flStep;
 				*flValue = clamp(*flValue, flMin, flMax);
@@ -709,7 +726,7 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 		break;
 		case MODE_MOUSEMOVED:
 		{
-			if (bMouseIn && bFocused && g_pCtx->eMousePos == MOUSEPOS_CENTER && input()->IsMouseDown(MOUSE_LEFT))
+			if (wdgState.bHot && wdgState.bActive && g_pCtx->eMousePos == MOUSEPOS_CENTER && input()->IsMouseDown(MOUSE_LEFT))
 			{
 				const int iBase = g_pCtx->iRowTall + g_pCtx->iWgXPos;
 				const float flPerc = static_cast<float>(g_pCtx->iMouseRelX - iBase) / static_cast<float>(g_pCtx->dPanel.wide - g_pCtx->iRowTall - iBase);
@@ -724,7 +741,7 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 		}
 	}
 
-	InternalUpdatePartitionState(bMouseIn, bFocused);
+	InternalUpdatePartitionState(wdgState);
 }
 
 void SliderInt(const wchar_t *wszLeftLabel, int *iValue, const int iMin, const int iMax, const int iStep)
@@ -745,7 +762,7 @@ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
 		}
 	}
 
-	auto [bMouseIn, bFocused] = InternalGetMouseinFocused();
+	const auto wdgState = InternalGetMouseinFocused();
 
 	if (IN_BETWEEN(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall))
 	{
@@ -767,7 +784,7 @@ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
 			{
 				surface()->DrawPrintText(wszText, iWszTextSize);
 			}
-			if (bFocused)
+			if (wdgState.bActive)
 			{
 				const bool bEditBlinkShow = (static_cast<int>(gpGlobals->curtime * 1.5f) % 2 == 0);
 				if (bEditBlinkShow)
@@ -793,17 +810,17 @@ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
 		break;
 		case MODE_MOUSEDOUBLEPRESSED:
 		{
-			if (bMouseIn && g_pCtx->iWgXPos <= g_pCtx->iMouseRelX)
+			if (wdgState.bHot && g_pCtx->iWgXPos <= g_pCtx->iMouseRelX)
 			{
-				g_pCtx->iFocus = g_pCtx->iWidget;
-				g_pCtx->iFocusSection = g_pCtx->iSection;
-				g_pCtx->iFocusDirection = 0;
+				g_pCtx->iActive = g_pCtx->iWidget;
+				g_pCtx->iActiveSection = g_pCtx->iSection;
+				g_pCtx->iActiveDirection = 0;
 			}
 		}
 		break;
 		case MODE_KEYPRESSED:
 		{
-			if (bFocused && g_pCtx->eCode == KEY_BACKSPACE)
+			if (wdgState.bActive && g_pCtx->eCode == KEY_BACKSPACE)
 			{
 				int iTextSize = V_wcslen(wszText);
 				if (iTextSize > 0)
@@ -816,7 +833,7 @@ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
 		break;
 		case MODE_KEYTYPED:
 		{
-			if (bFocused)
+			if (wdgState.bActive)
 			{
 				int iTextSize = V_wcslen(wszText);
 				if (iTextSize < iMaxSize)
@@ -833,7 +850,7 @@ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
 		}
 	}
 
-	InternalUpdatePartitionState(bMouseIn, bFocused);
+	InternalUpdatePartitionState(wdgState);
 }
 
 bool Bind(const ButtonCode_t eCode)

@@ -1016,9 +1016,9 @@ void CNeoRoot::UpdateControls()
 		surface()->DrawSetTextFont(hdlFont);
 		surface()->GetTextSize(hdlFont, WSZ_GAME_TITLE, m_iTitleWidth, m_iTitleHeight);
 	}
-	g_uiCtx.iFocusDirection = 0;
-	g_uiCtx.iFocus = NeoUI::FOCUSOFF_NUM;
-	g_uiCtx.iFocusSection = -1;
+	g_uiCtx.iActiveDirection = 0;
+	g_uiCtx.iActive = NeoUI::FOCUSOFF_NUM;
+	g_uiCtx.iActiveSection = -1;
 	V_memset(g_uiCtx.iYOffset, 0, sizeof(g_uiCtx.iYOffset));
 	m_ns.bBack = false;
 	RequestFocus();
@@ -1583,7 +1583,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 								bEnterServer = true;
 							}
 						}
-						if (g_uiCtx.iFocusSection == g_uiCtx.iSection && g_uiCtx.iFocus == (g_uiCtx.iWidget - 1))
+						if (g_uiCtx.iActiveSection == g_uiCtx.iSection && g_uiCtx.iActive == (g_uiCtx.iWidget - 1))
 						{
 							drawColor = COLOR_NEOPANELSELECTBG;
 						}
@@ -1740,7 +1740,6 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 			NeoUI::EndSection();
 		}
 		NeoUI::EndContext();
-
 	}
 	break;
 	case STATE_SERVERDETAILS:

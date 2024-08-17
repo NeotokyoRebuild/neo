@@ -138,9 +138,12 @@ struct Context
 	int iSection;
 	int iSectionWidgets[MAX_SECTIONS];
 
-	int iFocus;
-	int iFocusDirection;
-	int iFocusSection;
+	int iHot;
+	int iHotSection;
+
+	int iActive;
+	int iActiveDirection;
+	int iActiveSection;
 	bool bValueEdited;
 
 	MousePos eMousePos; // label | prev | center | next split
