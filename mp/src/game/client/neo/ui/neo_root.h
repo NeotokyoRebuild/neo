@@ -55,13 +55,14 @@ public:
 	CUtlVector<gameserveritem_t> m_filteredServers;
 
 	void UpdateFilteredList();
-	void RequestList(MatchMakingKeyValuePair_t **filters, const uint32 iFiltersSize);
+	void RequestList();
 	void ServerResponded(HServerListRequest hRequest, int iServer) final;
 	void ServerFailedToRespond(HServerListRequest hRequest, int iServer) final;
 	void RefreshComplete(HServerListRequest hRequest, EMatchMakingServerResponse response) final;
 	HServerListRequest m_hdlRequest = nullptr;
 	bool m_bModified = false;
 	bool m_bSearching = false;
+	bool m_bReloadedAtLeastOnce = false;
 	GameServerSortContext *m_pSortCtx = nullptr;
 };
 

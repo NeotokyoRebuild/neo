@@ -202,8 +202,13 @@ void CNeoServerList::UpdateFilteredList()
 	}, m_pSortCtx);
 }
 
-void CNeoServerList::RequestList(MatchMakingKeyValuePair_t **filters, const uint32 iFiltersSize)
+void CNeoServerList::RequestList()
 {
+	static MatchMakingKeyValuePair_t mmFilters[] = {
+		{"gamedir", "neo"},
+	};
+	MatchMakingKeyValuePair_t *pMMFilters = mmFilters;
+
 	static constexpr HServerListRequest (ISteamMatchmakingServers::*pFnReq[GS__TOTAL])(
 				AppId_t, MatchMakingKeyValuePair_t **, uint32, ISteamMatchmakingServerListResponse *) = {
 		&ISteamMatchmakingServers::RequestInternetServerList,
@@ -217,7 +222,7 @@ void CNeoServerList::RequestList(MatchMakingKeyValuePair_t **filters, const uint
 	ISteamMatchmakingServers *steamMM = steamapicontext->SteamMatchmakingServers();
 	m_hdlRequest = (m_iType == GS_LAN) ?
 				steamMM->RequestLANServerList(engine->GetAppID(), this) :
-				(steamMM->*pFnReq[m_iType])(engine->GetAppID(), filters, iFiltersSize, this);
+				(steamMM->*pFnReq[m_iType])(engine->GetAppID(), &pMMFilters, ARRAYSIZE(mmFilters), this);
 	m_bSearching = true;
 }
 
@@ -1452,6 +1457,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
 		NeoUI::BeginContext(&g_uiCtx, eMode, m_wszDispBtnTexts[MMBTN_FINDSERVER]);
 		{
+			bool bForceRefresh = false;
 			NeoUI::BeginSection();
 			{
 				const int iPrevTab = m_iServerBrowserTab;
@@ -1459,6 +1465,11 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 				if (iPrevTab != m_iServerBrowserTab)
 				{
 					m_iSelectedServer = -1;
+				}
+				if (!m_serverBrowser[m_iServerBrowserTab].m_bReloadedAtLeastOnce)
+				{
+					bForceRefresh = true;
+					m_serverBrowser[m_iServerBrowserTab].m_bReloadedAtLeastOnce = true;
 				}
 				g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
 				NeoUI::BeginHorizontal(1);
@@ -1659,7 +1670,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 					{
 						NeoUI::Pad();
 					}
-					if (NeoUI::Button(L"Refresh").bPressed)
+					if (NeoUI::Button(L"Refresh").bPressed || bForceRefresh)
 					{
 						m_iSelectedServer = -1;
 						ISteamMatchmakingServers *steamMM = steamapicontext->SteamMatchmakingServers();
@@ -1672,11 +1683,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 							steamMM->ReleaseRequest(pServerBrowser->m_hdlRequest);
 							pServerBrowser->m_hdlRequest = nullptr;
 						}
-						static MatchMakingKeyValuePair_t mmFilters[] = {
-							{"gamedir", "neo"},
-						};
-						MatchMakingKeyValuePair_t *pMMFilters = mmFilters;
-						pServerBrowser->RequestList(&pMMFilters, 1);
+						pServerBrowser->RequestList();
 					}
 					if (m_iSelectedServer >= 0)
 					{
