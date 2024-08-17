@@ -346,16 +346,21 @@ public:
 
 	void OnMainLoop(const NeoUI::Mode eMode);
 
-	void MainLoopRoot(const NeoUI::Mode eMode);
-	void MainLoopSettings(const NeoUI::Mode eMode);
-	void MainLoopNewGame(const NeoUI::Mode eMode);
-	void MainLoopServerBrowser(const NeoUI::Mode eMode);
+	struct MainLoopParam
+	{
+		NeoUI::Mode eMode;
+		int wide;
+		int tall;
+	};
 
-	void MainLoopMapList(const NeoUI::Mode eMode);
-	void MainLoopServerDetails(const NeoUI::Mode eMode);
-	void MainLoopPlayerList(const NeoUI::Mode eMode);
-
-	void MainLoopPopup(const NeoUI::Mode eMode);
+	void MainLoopRoot(const MainLoopParam param);
+	void MainLoopSettings(const MainLoopParam param);
+	void MainLoopNewGame(const MainLoopParam param);
+	void MainLoopServerBrowser(const MainLoopParam param);
+	void MainLoopMapList(const MainLoopParam param);
+	void MainLoopServerDetails(const MainLoopParam param);
+	void MainLoopPlayerList(const MainLoopParam param);
+	void MainLoopPopup(const MainLoopParam param);
 
 	NeoSettings m_ns = {};
 

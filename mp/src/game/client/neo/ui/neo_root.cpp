@@ -1103,7 +1103,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		surface()->DrawPrintText(BUILD_DISPLAY, *BUILD_DISPLAY_SIZE);
 	}
 
-	static constexpr void (CNeoRoot::*P_FN_MAIN_LOOP[STATE__TOTAL])(const NeoUI::Mode eMode) = {
+	static constexpr void (CNeoRoot::*P_FN_MAIN_LOOP[STATE__TOTAL])(const MainLoopParam param) = {
 		&CNeoRoot::MainLoopRoot,			// STATE_ROOT
 		&CNeoRoot::MainLoopSettings,		// STATE_SETTINGS
 		&CNeoRoot::MainLoopNewGame,			// STATE_NEWGAME
@@ -1118,7 +1118,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		&CNeoRoot::MainLoopPopup,			// STATE_QUIT
 		&CNeoRoot::MainLoopPopup,			// STATE_SERVERPASSWORD
 	};
-	(this->*P_FN_MAIN_LOOP[m_state])(eMode);
+	(this->*P_FN_MAIN_LOOP[m_state])(MainLoopParam{.eMode = eMode, .wide = wide, .tall = tall});
 
 	if (m_state != ePrevState)
 	{
@@ -1126,18 +1126,16 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 	}
 }
 
-void CNeoRoot::MainLoopRoot(const NeoUI::Mode eMode)
+void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 {
-	int wide, tall;
-	GetSize(wide, tall);
-	const int yTopPos = tall / 2 - ((g_uiCtx.iRowTall * BTNS_TOTAL) / 2);
+	const int yTopPos = param.tall / 2 - ((g_uiCtx.iRowTall * BTNS_TOTAL) / 2);
 	g_uiCtx.dPanel.wide = m_iTitleWidth + (2 * g_uiCtx.iMarginX);
-	g_uiCtx.dPanel.tall = tall - yTopPos;
-	g_uiCtx.dPanel.x = (wide / 4) - (g_uiCtx.dPanel.wide / 2);
+	g_uiCtx.dPanel.tall = param.tall - yTopPos;
+	g_uiCtx.dPanel.x = (param.wide / 4) - (g_uiCtx.dPanel.wide / 2);
 	g_uiCtx.dPanel.y = yTopPos;
 	g_uiCtx.bgColor = COLOR_TRANSPARENT;
 
-	NeoUI::BeginContext(&g_uiCtx, eMode, nullptr, "CtxRoot");
+	NeoUI::BeginContext(&g_uiCtx, param.eMode, nullptr, "CtxRoot");
 	NeoUI::BeginSection(true);
 	{
 		const int iFlagToMatch = engine->IsInGame() ? FLAG_SHOWINGAME : FLAG_SHOWINMAIN;
@@ -1175,11 +1173,11 @@ void CNeoRoot::MainLoopRoot(const NeoUI::Mode eMode)
 	}
 	NeoUI::EndSection();
 
-	const int iBtnPlaceXMid = (wide / 4);
+	const int iBtnPlaceXMid = (param.wide / 4);
 	const int iRightXPos = iBtnPlaceXMid + (m_iBtnWide / 2) + g_uiCtx.iMarginX;
 	int iRightSideYStart = yTopPos;
 
-	if (eMode == NeoUI::MODE_PAINT)
+	if (param.eMode == NeoUI::MODE_PAINT)
 	{
 		// Draw title
 		m_iBtnWide = m_iTitleWidth + (2 * g_uiCtx.iMarginX);
@@ -1236,7 +1234,7 @@ void CNeoRoot::MainLoopRoot(const NeoUI::Mode eMode)
 
 				const int iRightOfNicknameXPos = iSteamPlaceXStart + iMainTextStartPosX + iMainTextWidth + g_uiCtx.iMarginX;
 				// If we have space on the right, set it, otherwise on top of nickname
-				if ((iRightOfNicknameXPos + iSteamSubTextWidth) < wide)
+				if ((iRightOfNicknameXPos + iSteamSubTextWidth) < param.wide)
 				{
 					surface()->DrawSetTextPos(iRightOfNicknameXPos, iRightSideYStart + g_uiCtx.iMarginY);
 				}
@@ -1305,7 +1303,7 @@ void CNeoRoot::MainLoopRoot(const NeoUI::Mode eMode)
 	NeoUI::EndContext();
 }
 
-void CNeoRoot::MainLoopSettings(const NeoUI::Mode eMode)
+void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 {
 	static constexpr void (*P_FN[])(NeoSettings *) = {
 		NeoSettings_General,
@@ -1320,16 +1318,14 @@ void CNeoRoot::MainLoopSettings(const NeoUI::Mode eMode)
 
 	m_ns.iNextBinding = -1;
 
-	int wide, tall;
-	surface()->GetScreenSize(wide, tall);
 	const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
 
 	g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
-	g_uiCtx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
-	g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
+	g_uiCtx.dPanel.x = (param.wide / 2) - (g_iRootSubPanelWide / 2);
+	g_uiCtx.dPanel.y = (param.tall / 2) - (iTallTotal / 2);
 	g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
 	g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
-	NeoUI::BeginContext(&g_uiCtx, eMode, g_pNeoRoot->m_wszDispBtnTexts[MMBTN_OPTIONS], "CtxOptions");
+	NeoUI::BeginContext(&g_uiCtx, param.eMode, g_pNeoRoot->m_wszDispBtnTexts[MMBTN_OPTIONS], "CtxOptions");
 	{
 		NeoUI::BeginSection();
 		{
@@ -1396,18 +1392,15 @@ void CNeoRoot::MainLoopSettings(const NeoUI::Mode eMode)
 	}
 }
 
-void CNeoRoot::MainLoopNewGame(const NeoUI::Mode eMode)
+void CNeoRoot::MainLoopNewGame(const MainLoopParam param)
 {
-	int wide, tall;
-	GetSize(wide, tall);
-
 	const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
 	g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
-	g_uiCtx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
-	g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
+	g_uiCtx.dPanel.x = (param.wide / 2) - (g_iRootSubPanelWide / 2);
+	g_uiCtx.dPanel.y = (param.tall / 2) - (iTallTotal / 2);
 	g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * (g_iRowsInScreen + 1);
 	g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
-	NeoUI::BeginContext(&g_uiCtx, eMode, m_wszDispBtnTexts[MMBTN_CREATESERVER], "CtxNewGame");
+	NeoUI::BeginContext(&g_uiCtx, param.eMode, m_wszDispBtnTexts[MMBTN_CREATESERVER], "CtxNewGame");
 	{
 		NeoUI::BeginSection(true);
 		{
@@ -1467,11 +1460,8 @@ void CNeoRoot::MainLoopNewGame(const NeoUI::Mode eMode)
 	NeoUI::EndContext();
 }
 
-void CNeoRoot::MainLoopServerBrowser(const NeoUI::Mode eMode)
+void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 {
-	int wide, tall;
-	GetSize(wide, tall);
-
 	static const wchar_t *GS_NAMES[GS__TOTAL] = {
 		L"Internet", L"LAN", L"Friends", L"Fav", L"History", L"Spec"
 	};
@@ -1479,11 +1469,11 @@ void CNeoRoot::MainLoopServerBrowser(const NeoUI::Mode eMode)
 	bool bEnterServer = false;
 	const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
 	g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
-	g_uiCtx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
-	g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
+	g_uiCtx.dPanel.x = (param.wide / 2) - (g_iRootSubPanelWide / 2);
+	g_uiCtx.dPanel.y = (param.tall / 2) - (iTallTotal / 2);
 	g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * 2;
 	g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
-	NeoUI::BeginContext(&g_uiCtx, eMode, m_wszDispBtnTexts[MMBTN_FINDSERVER], "CtxServerBrowser");
+	NeoUI::BeginContext(&g_uiCtx, param.eMode, m_wszDispBtnTexts[MMBTN_FINDSERVER], "CtxServerBrowser");
 	{
 		bool bForceRefresh = false;
 		NeoUI::BeginSection();
@@ -1523,7 +1513,7 @@ void CNeoRoot::MainLoopServerBrowser(const NeoUI::Mode eMode)
 						m_bSBFiltModified = true;
 					}
 
-					if (eMode == NeoUI::MODE_PAINT && m_sortCtx.col == i)
+					if (param.eMode == NeoUI::MODE_PAINT && m_sortCtx.col == i)
 					{
 						int iHintTall = g_uiCtx.iMarginY / 3;
 						surface()->DrawSetColor(COLOR_NEOPANELTEXTNORMAL);
@@ -1599,7 +1589,7 @@ void CNeoRoot::MainLoopServerBrowser(const NeoUI::Mode eMode)
 						}
 					}
 
-					if (eMode == NeoUI::MODE_PAINT)
+					if (param.eMode == NeoUI::MODE_PAINT)
 					{
 						Color drawColor = COLOR_NEOPANELNORMALBG;
 						if (m_iSelectedServer == i) drawColor = COLOR_NEOPANELACCENTBG;
@@ -1760,18 +1750,15 @@ void CNeoRoot::MainLoopServerBrowser(const NeoUI::Mode eMode)
 
 }
 
-void CNeoRoot::MainLoopMapList(const NeoUI::Mode eMode)
+void CNeoRoot::MainLoopMapList(const MainLoopParam param)
 {
-	int wide, tall;
-	GetSize(wide, tall);
-
 	const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
 	g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
-	g_uiCtx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
-	g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
+	g_uiCtx.dPanel.x = (param.wide / 2) - (g_iRootSubPanelWide / 2);
+	g_uiCtx.dPanel.y = (param.tall / 2) - (iTallTotal / 2);
 	g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * (g_iRowsInScreen + 1);
 	g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
-	NeoUI::BeginContext(&g_uiCtx, eMode, L"Pick map", "CtxMapPicker");
+	NeoUI::BeginContext(&g_uiCtx, param.eMode, L"Pick map", "CtxMapPicker");
 	{
 		NeoUI::BeginSection(true);
 		{
@@ -1803,23 +1790,20 @@ void CNeoRoot::MainLoopMapList(const NeoUI::Mode eMode)
 	NeoUI::EndContext();
 }
 
-void CNeoRoot::MainLoopServerDetails(const NeoUI::Mode eMode)
+void CNeoRoot::MainLoopServerDetails(const MainLoopParam param)
 {
-	int wide, tall;
-	GetSize(wide, tall);
-
 	const auto *gameServer = &m_serverBrowser[m_iServerBrowserTab].m_filteredServers[m_iSelectedServer];
 	const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
 	g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
-	g_uiCtx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
-	g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
+	g_uiCtx.dPanel.x = (param.wide / 2) - (g_iRootSubPanelWide / 2);
+	g_uiCtx.dPanel.y = (param.tall / 2) - (iTallTotal / 2);
 	g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * 6;
 	g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
-	NeoUI::BeginContext(&g_uiCtx, eMode, L"Server details", "CtxServerDetail");
+	NeoUI::BeginContext(&g_uiCtx, param.eMode, L"Server details", "CtxServerDetail");
 	{
 		NeoUI::BeginSection(true);
 		{
-			const bool bP = eMode == NeoUI::MODE_PAINT;
+			const bool bP = param.eMode == NeoUI::MODE_PAINT;
 			wchar_t wszText[128];
 			if (bP) g_pVGuiLocalize->ConvertANSIToUnicode(gameServer->GetName(), wszText, sizeof(wszText));
 			NeoUI::Label(L"Name:", wszText);
@@ -1875,20 +1859,17 @@ void CNeoRoot::MainLoopServerDetails(const NeoUI::Mode eMode)
 	NeoUI::EndContext();
 }
 
-void CNeoRoot::MainLoopPlayerList(const NeoUI::Mode eMode)
+void CNeoRoot::MainLoopPlayerList(const MainLoopParam param)
 {
-	int wide, tall;
-	GetSize(wide, tall);
-
 	if (engine->IsInGame())
 	{
 		const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
 		g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
-		g_uiCtx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
-		g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
+		g_uiCtx.dPanel.x = (param.wide / 2) - (g_iRootSubPanelWide / 2);
+		g_uiCtx.dPanel.y = (param.tall / 2) - (iTallTotal / 2);
 		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * (g_iRowsInScreen + 1);
 		g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
-		NeoUI::BeginContext(&g_uiCtx, eMode, L"Player list", "CtxPlayerList");
+		NeoUI::BeginContext(&g_uiCtx, param.eMode, L"Player list", "CtxPlayerList");
 		{
 			NeoUI::BeginSection(true);
 			{
@@ -1937,20 +1918,17 @@ void CNeoRoot::MainLoopPlayerList(const NeoUI::Mode eMode)
 	}
 }
 
-void CNeoRoot::MainLoopPopup(const NeoUI::Mode eMode)
+void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 {
-	int wide, tall;
-	GetSize(wide, tall);
-
 	surface()->DrawSetColor(COLOR_NEOPANELPOPUPBG);
-	surface()->DrawFilledRect(0, 0, wide, tall);
-	const int tallSplit = tall / 3;
+	surface()->DrawFilledRect(0, 0, param.wide, param.tall);
+	const int tallSplit = param.tall / 3;
 	surface()->DrawSetColor(COLOR_NEOPANELNORMALBG);
-	surface()->DrawFilledRect(0, tallSplit, wide, tall - tallSplit);
+	surface()->DrawFilledRect(0, tallSplit, param.wide, param.tall - tallSplit);
 
 	g_uiCtx.dPanel.wide = g_iRootSubPanelWide * 0.75f;
 	g_uiCtx.dPanel.tall = tallSplit;
-	g_uiCtx.dPanel.x = (wide / 2) - (g_uiCtx.dPanel.wide / 2);
+	g_uiCtx.dPanel.x = (param.wide / 2) - (g_uiCtx.dPanel.wide / 2);
 	g_uiCtx.dPanel.y = tallSplit + (tallSplit / 2) - g_uiCtx.iRowTall;
 	g_uiCtx.bgColor = COLOR_TRANSPARENT;
 	if (m_state == STATE_SERVERPASSWORD)
@@ -1959,7 +1937,7 @@ void CNeoRoot::MainLoopPopup(const NeoUI::Mode eMode)
 	}
 	// Technically can get away with have a common context name, since these dialogs
 	// don't do anything special with it
-	NeoUI::BeginContext(&g_uiCtx, eMode, nullptr, "CtxCommonPopupDlg");
+	NeoUI::BeginContext(&g_uiCtx, param.eMode, nullptr, "CtxCommonPopupDlg");
 	{
 		NeoUI::BeginSection(true);
 		{
