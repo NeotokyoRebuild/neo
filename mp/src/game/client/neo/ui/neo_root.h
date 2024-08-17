@@ -283,6 +283,7 @@ enum RootState
 
 	STATE_MAPLIST,
 	STATE_SERVERDETAILS,
+	STATE_PLAYERLIST,
 
 	STATE_KEYCAPTURE,
 	STATE_CONFIRMSETTINGS,
@@ -318,16 +319,6 @@ enum MainMenuButtons
 	MMBTN_QUIT,
 
 	BTNS_TOTAL,
-};
-
-constexpr WidgetInfo BTNS_INFO[BTNS_TOTAL] = {
-	{ "#GameUI_GameMenu_ResumeGame", "ResumeGame", STATE__TOTAL, FLAG_SHOWINGAME },
-	{ "#GameUI_GameMenu_FindServers", nullptr, STATE_SERVERBROWSER, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
-	{ "#GameUI_GameMenu_CreateServer", nullptr, STATE_NEWGAME, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
-	{ "#GameUI_GameMenu_Disconnect", "Disconnect", STATE__TOTAL, FLAG_SHOWINGAME },
-	{ "#GameUI_GameMenu_PlayerList", "OpenPlayerListDialog", STATE__TOTAL, FLAG_SHOWINGAME },
-	{ "#GameUI_GameMenu_Options", nullptr, STATE_SETTINGS, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
-	{ "#GameUI_GameMenu_Quit", nullptr, STATE_QUIT, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
 };
 
 // This class is what is actually used instead of the main menu.

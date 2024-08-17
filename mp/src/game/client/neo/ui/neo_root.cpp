@@ -18,8 +18,11 @@
 #include "inputsystem/iinputsystem.h"
 #include "characterset.h"
 #include "materialsystem/materialsystem_config.h"
+#include <voice_status.h>
 #include "neo_player_shared.h"
 #include <ivoicetweak.h>
+#include "c_neo_player.h"
+#include <c_playerresource.h>
 
 #include <vgui/IInput.h>
 #include <vgui_controls/Controls.h>
@@ -913,6 +916,16 @@ void CNeoRootInput::OnThink()
 	}
 }
 
+constexpr WidgetInfo BTNS_INFO[BTNS_TOTAL] = {
+	{ "#GameUI_GameMenu_ResumeGame", "ResumeGame", STATE__TOTAL, FLAG_SHOWINGAME },
+	{ "#GameUI_GameMenu_FindServers", nullptr, STATE_SERVERBROWSER, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
+	{ "#GameUI_GameMenu_CreateServer", nullptr, STATE_NEWGAME, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
+	{ "#GameUI_GameMenu_Disconnect", "Disconnect", STATE__TOTAL, FLAG_SHOWINGAME },
+	{ "#GameUI_GameMenu_PlayerList", nullptr, STATE_PLAYERLIST, FLAG_SHOWINGAME },
+	{ "#GameUI_GameMenu_Options", nullptr, STATE_SETTINGS, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
+	{ "#GameUI_GameMenu_Quit", nullptr, STATE_QUIT, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
+};
+
 CNeoRoot::CNeoRoot(VPANEL parent)
 	: EditablePanel(nullptr, "NeoRootPanel")
 	, m_panelCaptureInput(new CNeoRootInput(this))
@@ -1797,6 +1810,65 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 			NeoUI::EndSection();
 		}
 		NeoUI::EndContext();
+	}
+	break;
+	case STATE_PLAYERLIST:
+	{
+		if (engine->IsInGame())
+		{
+			const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
+			g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
+			g_uiCtx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
+			g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
+			g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * (g_iRowsInScreen + 1);
+			g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
+			NeoUI::BeginContext(&g_uiCtx, eMode, L"Player list");
+			{
+				NeoUI::BeginSection(true);
+				{
+					g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
+					for (int i = 1; i <= gpGlobals->maxClients; i++)
+					{
+						if (!g_PR->IsConnected(i) || g_PR->IsHLTV(i) || g_PR->IsFakePlayer(i))
+						{
+							continue;
+						}
+
+						const bool bOwnLocalPlayer = g_PR->IsLocalPlayer(i);
+						const bool bPlayerMuted = GetClientVoiceMgr()->IsPlayerBlocked(i);
+						const char *szPlayerName = g_PR->GetPlayerName(i);
+
+						wchar_t wszInfo[256];
+						V_swprintf_safe(wszInfo, L"%ls%s", bOwnLocalPlayer ? L"[LOCAL] " : bPlayerMuted ? L"[MUTED] " : L"[VOICE] ", szPlayerName);
+						if (NeoUI::Button(wszInfo).bPressed)
+						{
+							if (!bOwnLocalPlayer) GetClientVoiceMgr()->SetPlayerBlockedState(i, !bPlayerMuted);
+						}
+					}
+					g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
+				}
+				NeoUI::EndSection();
+				g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+				g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
+				NeoUI::BeginSection();
+				{
+					NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 5);
+					{
+						if (NeoUI::Button(L"Back (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
+						{
+							m_state = STATE_ROOT;
+						}
+					}
+					NeoUI::EndHorizontal();
+				}
+				NeoUI::EndSection();
+			}
+			NeoUI::EndContext();
+		}
+		else
+		{
+			m_state = STATE_ROOT;
+		}
 	}
 	break;
 	case STATE_MAPLIST:
