@@ -188,4 +188,5 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 			const int iDp = 2, const float flStep = 1.0f);
 void SliderInt(const wchar_t *wszLeftLabel, int *iValue, const int iMin, const int iMax, const int iStep = 1);
 void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize);
+bool Bind(const ButtonCode_t eCode);
 }

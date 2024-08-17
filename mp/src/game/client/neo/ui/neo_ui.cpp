@@ -809,4 +809,9 @@ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
 	InternalUpdatePartitionState(bMouseIn, bFocused);
 }
 
+bool Bind(const ButtonCode_t eCode)
+{
+	return g_pCtx->eMode == MODE_KEYPRESSED && g_pCtx->eCode == eCode;
+}
+
 }  // namespace NeoUI

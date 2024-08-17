@@ -692,7 +692,7 @@ void NeoSettingsMainLoop(NeoSettings *ns, const NeoUI::Mode eMode)
 		{
 			NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 5);
 			{
-				if (NeoUI::Button(L"Back (ESC)").bPressed)
+				if (NeoUI::Button(L"Back (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
 				{
 					ns->bBack = true;
 				}
@@ -1092,7 +1092,7 @@ void CNeoRoot::RootMainMenuNeoUI(const NeoUI::Mode eMode)
 			if (btnInfo.flags & iFlagToMatch)
 			{
 				const auto retBtn = NeoUI::Button(m_wszDispBtnTexts[i]);
-				if (retBtn.bPressed)
+				if (retBtn.bPressed || (i == MMBTN_QUIT && !engine->IsInGame() && NeoUI::Bind(KEY_ESCAPE)))
 				{
 					surface()->PlaySound("ui/buttonclickrelease.wav");
 					if (btnInfo.gamemenucommand)
@@ -1342,26 +1342,6 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		surface()->DrawSetTextPos(g_uiCtx.iMarginX, tall - textHeight - g_uiCtx.iMarginY);
 		surface()->DrawPrintText(BUILD_DISPLAY, *BUILD_DISPLAY_SIZE);
 	}
-	else if (eMode == NeoUI::MODE_KEYPRESSED && g_uiCtx.eCode == KEY_ESCAPE)
-	{
-		switch (m_state)
-		{
-		case STATE_ROOT:
-			// no-op
-			break;
-		case STATE_SETTINGS:
-			// TODO: Should be defined in its own sections?
-			m_state = (m_ns.bModified) ? STATE_CONFIRMSETTINGS : STATE_ROOT;
-			break;
-		case STATE_NEWGAME:
-		case STATE_SERVERBROWSER:
-			m_state = STATE_ROOT;
-			break;
-		case STATE_MAPLIST:
-			m_state = STATE_NEWGAME;
-			break;
-		}
-	}
 
 	switch (m_state)
 	{
@@ -1417,7 +1397,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 			{
 				NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 5);
 				{
-					if (NeoUI::Button(L"Back (ESC)").bPressed)
+					if (NeoUI::Button(L"Back (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
 					{
 						m_state = STATE_ROOT;
 					}
@@ -1654,7 +1634,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 			{
 				NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 6);
 				{
-					if (NeoUI::Button(L"Back (ESC)").bPressed)
+					if (NeoUI::Button(L"Back (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
 					{
 						m_state = STATE_ROOT;
 					}
@@ -1798,7 +1778,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 			{
 				NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 5);
 				{
-					if (NeoUI::Button(L"Back (ESC)").bPressed)
+					if (NeoUI::Button(L"Back (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
 					{
 						m_state = STATE_SERVERBROWSER;
 					}
@@ -1838,7 +1818,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 			{
 				NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 5);
 				{
-					if (NeoUI::Button(L"Back (ESC)").bPressed)
+					if (NeoUI::Button(L"Back (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
 					{
 						m_state = STATE_NEWGAME;
 					}
@@ -1884,13 +1864,13 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 					NeoUI::SwapFont(NeoUI::FONT_NTSMALL);
 					NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 3);
 					{
-						if (NeoUI::Button(L"Save (Enter)").bPressed)
+						if (NeoUI::Button(L"Save (Enter)").bPressed || NeoUI::Bind(KEY_ENTER))
 						{
 							NeoSettingsSave(&m_ns);
 							m_state = STATE_ROOT;
 						}
 						NeoUI::Pad();
-						if (NeoUI::Button(L"Discard (ESC)").bPressed)
+						if (NeoUI::Button(L"Discard (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
 						{
 							m_state = STATE_ROOT;
 						}
@@ -1904,12 +1884,12 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 					NeoUI::SwapFont(NeoUI::FONT_NTSMALL);
 					NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 3);
 					{
-						if (NeoUI::Button(L"Quit (Enter)").bPressed)
+						if (NeoUI::Button(L"Quit (Enter)").bPressed || NeoUI::Bind(KEY_ENTER))
 						{
 							engine->ClientCmd_Unrestricted("quit");
 						}
 						NeoUI::Pad();
-						if (NeoUI::Button(L"Cancel (ESC)").bPressed)
+						if (NeoUI::Button(L"Cancel (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
 						{
 							m_state = STATE_ROOT;
 						}
