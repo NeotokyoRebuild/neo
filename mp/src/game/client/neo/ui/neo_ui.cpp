@@ -1,5 +1,6 @@
 #include "neo_ui.h"
 
+#include <vgui/ILocalize.h>
 #include <vgui/ISurface.h>
 #include <vgui/IInput.h>
 #include <vgui_controls/Controls.h>
@@ -11,7 +12,8 @@ static const wchar_t *ENABLED_LABELS[] = {
 	L"Enabled",
 };
 
-#define IN_BETWEEN(min, cmp, max) (((min) <= (cmp)) && ((cmp) < (max)))
+#define IN_BETWEEN_AR(min, cmp, max) (((min) <= (cmp)) && ((cmp) < (max)))
+#define IN_BETWEEN_EQ(min, cmp, max) (((min) <= (cmp)) && ((cmp) <= (max)))
 
 [[nodiscard]] static int LoopAroundMinMax(const int iValue, const int iMin, const int iMax)
 {
@@ -63,7 +65,7 @@ void SwapFont(const EFont eFont)
 	surface()->DrawSetTextFont(g_pCtx->fonts[g_pCtx->eFont].hdl);
 }
 
-void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode, const wchar_t *wszTitle)
+void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode, const wchar_t *wszTitle, const char *pSzCtxName)
 {
 	g_pCtx = ctx;
 	g_pCtx->eMode = eMode;
@@ -77,6 +79,12 @@ void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode, const wchar_t *w
 	g_pCtx->eButtonTextStyle = TEXTSTYLE_CENTER;
 	g_pCtx->eLabelTextStyle = TEXTSTYLE_LEFT;
 	g_pCtx->bTextEditIsPassword = false;
+	// Different pointer, change context
+	if (g_pCtx->pSzCurCtxName != pSzCtxName)
+	{
+		g_pCtx->htSliders.RemoveAll();
+		g_pCtx->pSzCurCtxName = pSzCtxName;
+	}
 
 	switch (g_pCtx->eMode)
 	{
@@ -323,7 +331,7 @@ static GetMouseinFocusedRet InternalGetMouseinFocused()
 	bool bMouseIn = (g_pCtx->bMouseInPanel && ((g_pCtx->iYOffset[g_pCtx->iSection] + (g_pCtx->iMouseRelY / g_pCtx->iRowTall)) == g_pCtx->iPartitionY));
 	if (bMouseIn && g_pCtx->iHorizontalWidth)
 	{
-		bMouseIn = IN_BETWEEN(g_pCtx->iLayoutX, g_pCtx->iMouseRelX, g_pCtx->iLayoutX + g_pCtx->iHorizontalWidth);
+		bMouseIn = IN_BETWEEN_AR(g_pCtx->iLayoutX, g_pCtx->iMouseRelX, g_pCtx->iLayoutX + g_pCtx->iHorizontalWidth);
 	}
 	if (bMouseIn && g_pCtx->eMode == MODE_MOUSEMOVED)
 	{
@@ -373,7 +381,7 @@ void Label(const wchar_t *wszText)
 	{
 		g_pCtx->iActive += g_pCtx->iActiveDirection;
 	}
-	if (IN_BETWEEN(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall) && g_pCtx->eMode == MODE_PAINT)
+	if (IN_BETWEEN_AR(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall) && g_pCtx->eMode == MODE_PAINT)
 	{
 		InternalLabel(wszText, g_pCtx->eLabelTextStyle == TEXTSTYLE_CENTER);
 	}
@@ -386,7 +394,7 @@ void Label(const wchar_t *wszLabel, const wchar_t *wszText)
 	{
 		g_pCtx->iActive += g_pCtx->iActiveDirection;
 	}
-	if (IN_BETWEEN(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall) && g_pCtx->eMode == MODE_PAINT)
+	if (IN_BETWEEN_AR(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall) && g_pCtx->eMode == MODE_PAINT)
 	{
 		const int iTmpMarginX = g_pCtx->iMarginX;
 		InternalLabel(wszLabel, g_pCtx->eLabelTextStyle == TEXTSTYLE_CENTER);
@@ -408,7 +416,7 @@ NeoUI::RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText)
 	const auto wdgState = InternalGetMouseinFocused();
 	ret.bMouseHover = wdgState.bHot && (!wszLeftLabel || (wszLeftLabel && g_pCtx->eMousePos != MOUSEPOS_NONE));
 
-	if (IN_BETWEEN(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall))
+	if (IN_BETWEEN_AR(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall))
 	{
 		const int iBtnWidth = g_pCtx->iHorizontalWidth ? g_pCtx->iHorizontalWidth : g_pCtx->dPanel.wide;
 		switch (g_pCtx->eMode)
@@ -481,7 +489,7 @@ void RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, const i
 {
 	const auto wdgState = InternalGetMouseinFocused();
 
-	if (IN_BETWEEN(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall))
+	if (IN_BETWEEN_AR(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall))
 	{
 		switch (g_pCtx->eMode)
 		{
@@ -557,7 +565,7 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 		const auto *pFontI = &g_pCtx->fonts[g_pCtx->eFont];
 		for (int i = 0, iXPosTab = 0; i < iLabelsSize; ++i, iXPosTab += iTabWide)
 		{
-			const bool bHoverTab = (wdgState.bHot && IN_BETWEEN(iXPosTab, g_pCtx->iMouseRelX, iXPosTab + iTabWide));
+			const bool bHoverTab = (wdgState.bHot && IN_BETWEEN_AR(iXPosTab, g_pCtx->iMouseRelX, iXPosTab + iTabWide));
 			if (bHoverTab || i == *iIndex)
 			{
 				surface()->DrawSetColor(bHoverTab ? COLOR_NEOPANELSELECTBG : COLOR_NEOPANELACCENTBG);
@@ -610,38 +618,38 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 	InternalUpdatePartitionState(wdgState);
 }
 
-#if 0	// NEO TODO (nullsystem): Implement back the slider text edit code
-	if (sl->iWszCacheLabelSize < sl->iChMax)
-	{
-		// Prevent minus usage if minimum is a positive
-		// Prevent dot usage if flMulti = 1.0f, aka integer direct
-		const bool bHasMinus = (sl->iValMin >= 0) || sl->wszCacheLabel[0] == L'-';
-		const bool bHasDot = (sl->flMulti == 1.0f) || wmemchr(sl->wszCacheLabel, L'.', sl->iWszCacheLabelSize) != nullptr;
-		if (iswdigit(unichar) || (!bHasDot && unichar == L'.') || (!bHasMinus && unichar == L'-'))
-		{
-			sl->wszCacheLabel[sl->iWszCacheLabelSize++] = unichar;
-			sl->wszCacheLabel[sl->iWszCacheLabelSize] = '\0';
-			char szCacheLabel[CNeoDataSlider::LABEL_MAX + 1] = {};
-			g_pVGuiLocalize->ConvertUnicodeToANSI(sl->wszCacheLabel, szCacheLabel, sizeof(szCacheLabel));
-			if (const float flVal = atof(szCacheLabel))
-			{
-				const int iVal = static_cast<int>(flVal * sl->flMulti);
-				if (iVal >= sl->iValMin && iVal <= sl->iValMax)
-				{
-					sl->iValCur = iVal;
-					m_bModified = true;
-				}
-			}
-		}
-#endif
-
 void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, const float flMax,
 				   const int iDp, const float flStep)
 {
 	const auto wdgState = InternalGetMouseinFocused();
 
-	if (IN_BETWEEN(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall))
+	if (IN_BETWEEN_AR(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall))
 	{
+		auto hdl = g_pCtx->htSliders.Find(wszLeftLabel);
+		if (hdl == -1 || g_pCtx->htSliders.Element(hdl).flCachedValue != *flValue ||
+				g_pCtx->htSliders.Element(hdl).bActive != wdgState.bActive)
+		{
+			// Update string/cached value
+			wchar_t wszFormat[32];
+			V_swprintf_safe(wszFormat, L"%%0.%df", iDp);
+
+			if (hdl == -1)
+			{
+				SliderInfo sInfoNew = {};
+				hdl = g_pCtx->htSliders.Insert(wszLeftLabel, sInfoNew);
+			}
+			SliderInfo *pSInfo = &g_pCtx->htSliders.Element(hdl);
+
+			V_swprintf_safe(pSInfo->wszText, wszFormat, *flValue);
+			pSInfo->flCachedValue = *flValue;
+			wchar_t wszTmpTest[ARRAYSIZE(pSInfo->wszText)];
+			const int iStrMinLen = V_swprintf_safe(wszTmpTest, wszFormat, flMin);
+			const int iStrMaxLen = V_swprintf_safe(wszTmpTest, wszFormat, flMax);
+			pSInfo->iMaxStrSize = max(iStrMinLen, iStrMaxLen);
+			pSInfo->bActive = wdgState.bActive;
+		}
+		SliderInfo *pSInfo = &g_pCtx->htSliders.Element(hdl);
+
 		switch (g_pCtx->eMode)
 		{
 		case MODE_PAINT:
@@ -649,22 +657,18 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 			const auto *pFontI = &g_pCtx->fonts[g_pCtx->eFont];
 			InternalLabel(wszLeftLabel, false);
 
-			wchar_t wszFormat[32];
-			V_swprintf_safe(wszFormat, L"%%0.%df", iDp);
-
 			// Background bar
 			const float flPerc = (((iDp == 0) ? (int)(*flValue) : *flValue) - flMin) / (flMax - flMin);
 			const float flBarMaxWide = static_cast<float>(g_pCtx->dPanel.wide - g_pCtx->iWgXPos);
 			GCtxDrawFilledRectXtoX(g_pCtx->iWgXPos, g_pCtx->iWgXPos + static_cast<int>(flPerc * flBarMaxWide));
 
 			// Center-text label
-			wchar_t wszText[32];
-			const int iTextSize = V_swprintf_safe(wszText, wszFormat, *flValue);
 			int iFontWide, iFontTall;
-			surface()->GetTextSize(pFontI->hdl, wszText, iFontWide, iFontTall);
-			surface()->DrawSetTextPos(g_pCtx->dPanel.x + g_pCtx->iWgXPos + (((g_pCtx->dPanel.wide - g_pCtx->iWgXPos) / 2) - (iFontWide / 2)),
-									  g_pCtx->dPanel.y + g_pCtx->iLayoutY + pFontI->iYOffset);
-			surface()->DrawPrintText(wszText, iTextSize);
+			surface()->GetTextSize(pFontI->hdl, pSInfo->wszText, iFontWide, iFontTall);
+			const int iFontStartX = g_pCtx->iWgXPos + (((g_pCtx->dPanel.wide - g_pCtx->iWgXPos) / 2) - (iFontWide / 2));
+			GCtxDrawSetTextPos(iFontStartX,
+							   g_pCtx->iLayoutY + pFontI->iYOffset);
+			surface()->DrawPrintText(pSInfo->wszText, V_wcslen(pSInfo->wszText));
 
 			// Left-side "<" prev button
 			GCtxDrawFilledRectXtoX(g_pCtx->iWgXPos, g_pCtx->iWgXPos + g_pCtx->iRowTall);
@@ -675,6 +679,18 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 			GCtxDrawFilledRectXtoX(g_pCtx->dPanel.wide - g_pCtx->iRowTall, g_pCtx->dPanel.wide);
 			GCtxDrawSetTextPos(g_pCtx->dPanel.wide - g_pCtx->iRowTall + pFontI->iStartBtnXPos, g_pCtx->iLayoutY + pFontI->iStartBtnYPos);
 			surface()->DrawPrintText(L">", 1);
+
+			if (wdgState.bActive)
+			{
+				const bool bEditBlinkShow = (static_cast<int>(gpGlobals->curtime * 1.5f) % 2 == 0);
+				if (bEditBlinkShow)
+				{
+					const int iMarkX = iFontStartX + iFontWide;
+					surface()->DrawSetColor(COLOR_NEOPANELTEXTBRIGHT);
+					GCtxDrawFilledRectXtoX(iMarkX, pFontI->iYOffset,
+										   iMarkX + g_pCtx->iMarginX, pFontI->iYOffset + iFontTall);
+				}
+			}
 		}
 		break;
 		case MODE_MOUSEPRESSED:
@@ -704,11 +720,49 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 		break;
 		case MODE_KEYPRESSED:
 		{
-			if (wdgState.bActive && (g_pCtx->eCode == KEY_LEFT || g_pCtx->eCode == KEY_RIGHT))
+			if (wdgState.bActive)
 			{
-				*flValue += (g_pCtx->eCode == KEY_LEFT) ? -flStep : +flStep;
-				*flValue = clamp(*flValue, flMin, flMax);
-				g_pCtx->bValueEdited = true;
+				if (g_pCtx->eCode == KEY_LEFT || g_pCtx->eCode == KEY_RIGHT)
+				{
+					*flValue += (g_pCtx->eCode == KEY_LEFT) ? -flStep : +flStep;
+					*flValue = clamp(*flValue, flMin, flMax);
+					g_pCtx->bValueEdited = true;
+				}
+				else if (g_pCtx->eCode == KEY_ENTER)
+				{
+					g_pCtx->iActiveDirection = 0;
+					g_pCtx->iActive = FOCUSOFF_NUM;
+					g_pCtx->iActiveSection = -1;
+				}
+				else if (g_pCtx->eCode == KEY_BACKSPACE)
+				{
+					const int iTextSize = V_wcslen(pSInfo->wszText);
+					if (iTextSize > 0)
+					{
+						pSInfo->wszText[iTextSize - 1] = L'\0';
+						if (iTextSize > 1)
+						{
+							char szText[ARRAYSIZE(pSInfo->wszText)];
+							g_pVGuiLocalize->ConvertUnicodeToANSI(pSInfo->wszText, szText, sizeof(szText));
+							const float flFromTextValue = atof(szText);
+							if (IN_BETWEEN_EQ(flMin, flFromTextValue, flMax))
+							{
+								*flValue = flFromTextValue;
+								pSInfo->flCachedValue = *flValue;
+								g_pCtx->bValueEdited = true;
+							}
+						}
+					}
+				}
+			}
+			else if (wdgState.bHot)
+			{
+				if (g_pCtx->eCode == KEY_ENTER)
+				{
+					g_pCtx->iActiveDirection = 0;
+					g_pCtx->iActive = g_pCtx->iWidget;
+					g_pCtx->iActiveSection = g_pCtx->iSection;
+				}
 			}
 		}
 		break;
@@ -721,6 +775,32 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 				*flValue = flMin + (flPerc * (flMax - flMin));
 				*flValue = clamp(*flValue, flMin, flMax);
 				g_pCtx->bValueEdited = true;
+			}
+		}
+		break;
+		case MODE_KEYTYPED:
+		{
+			if (wdgState.bActive)
+			{
+				const int iTextSize = V_wcslen(pSInfo->wszText);
+				const wchar_t uc = g_pCtx->unichar;
+				if (iTextSize < pSInfo->iMaxStrSize &&
+						(iswdigit(uc)
+						 || (uc == L'.' && iDp > 0 && !wcsrchr(pSInfo->wszText, L'.'))
+						 || (uc == L'-' && iTextSize == 0 && flMin < 0.0f)))
+				{
+					pSInfo->wszText[iTextSize] = uc;
+					pSInfo->wszText[iTextSize + 1] = L'\0';
+					char szText[ARRAYSIZE(pSInfo->wszText)];
+					g_pVGuiLocalize->ConvertUnicodeToANSI(pSInfo->wszText, szText, sizeof(szText));
+					const float flFromTextValue = atof(szText);
+					if (IN_BETWEEN_EQ(flMin, flFromTextValue, flMax))
+					{
+						*flValue = flFromTextValue;
+						pSInfo->flCachedValue = *flValue;
+						g_pCtx->bValueEdited = true;
+					}
+				}
 			}
 		}
 		break;
@@ -752,7 +832,7 @@ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
 
 	const auto wdgState = InternalGetMouseinFocused();
 
-	if (IN_BETWEEN(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall))
+	if (IN_BETWEEN_AR(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall))
 	{
 		const int iBtnWidth = g_pCtx->iHorizontalWidth ? g_pCtx->iHorizontalWidth : g_pCtx->dPanel.wide;
 		switch (g_pCtx->eMode)

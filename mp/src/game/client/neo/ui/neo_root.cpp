@@ -680,7 +680,7 @@ void NeoSettingsMainLoop(NeoSettings *ns, const NeoUI::Mode eMode)
 	g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
 	g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
 	g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
-	NeoUI::BeginContext(&g_uiCtx, eMode, g_pNeoRoot->m_wszDispBtnTexts[MMBTN_OPTIONS]);
+	NeoUI::BeginContext(&g_uiCtx, eMode, g_pNeoRoot->m_wszDispBtnTexts[MMBTN_OPTIONS], "CtxOptions");
 	{
 		NeoUI::BeginSection();
 		{
@@ -1100,7 +1100,7 @@ void CNeoRoot::RootMainMenuNeoUI(const NeoUI::Mode eMode)
 	g_uiCtx.dPanel.y = yTopPos;
 	g_uiCtx.bgColor = COLOR_TRANSPARENT;
 
-	NeoUI::BeginContext(&g_uiCtx, eMode, nullptr);
+	NeoUI::BeginContext(&g_uiCtx, eMode, nullptr, "CtxRoot");
 	NeoUI::BeginSection(true);
 	{
 		const int iFlagToMatch = engine->IsInGame() ? FLAG_SHOWINGAME : FLAG_SHOWINMAIN;
@@ -1395,7 +1395,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
 		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * (g_iRowsInScreen + 1);
 		g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
-		NeoUI::BeginContext(&g_uiCtx, eMode, m_wszDispBtnTexts[MMBTN_CREATESERVER]);
+		NeoUI::BeginContext(&g_uiCtx, eMode, m_wszDispBtnTexts[MMBTN_CREATESERVER], "CtxNewGame");
 		{
 			NeoUI::BeginSection(true);
 			{
@@ -1468,7 +1468,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
 		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * 2;
 		g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
-		NeoUI::BeginContext(&g_uiCtx, eMode, m_wszDispBtnTexts[MMBTN_FINDSERVER]);
+		NeoUI::BeginContext(&g_uiCtx, eMode, m_wszDispBtnTexts[MMBTN_FINDSERVER], "CtxServerBrowser");
 		{
 			bool bForceRefresh = false;
 			NeoUI::BeginSection();
@@ -1751,7 +1751,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
 		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * 6;
 		g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
-		NeoUI::BeginContext(&g_uiCtx, eMode, L"Server details");
+		NeoUI::BeginContext(&g_uiCtx, eMode, L"Server details", "CtxServerDetail");
 		{
 			NeoUI::BeginSection(true);
 			{
@@ -1821,7 +1821,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 			g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
 			g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * (g_iRowsInScreen + 1);
 			g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
-			NeoUI::BeginContext(&g_uiCtx, eMode, L"Player list");
+			NeoUI::BeginContext(&g_uiCtx, eMode, L"Player list", "CtxPlayerList");
 			{
 				NeoUI::BeginSection(true);
 				{
@@ -1878,7 +1878,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
 		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * (g_iRowsInScreen + 1);
 		g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
-		NeoUI::BeginContext(&g_uiCtx, eMode, L"Pick map");
+		NeoUI::BeginContext(&g_uiCtx, eMode, L"Pick map", "CtxMapPicker");
 		{
 			NeoUI::BeginSection(true);
 			{
@@ -1930,7 +1930,9 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		{
 			g_uiCtx.dPanel.y -= g_uiCtx.iRowTall;
 		}
-		NeoUI::BeginContext(&g_uiCtx, eMode, nullptr);
+		// Technically can get away with have a common context name, they don't do anything
+		// special with it
+		NeoUI::BeginContext(&g_uiCtx, eMode, nullptr, "CtxCommonPopupDlg");
 		{
 			NeoUI::BeginSection(true);
 			{

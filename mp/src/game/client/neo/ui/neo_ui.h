@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utlhashtable.h>
+
 /*
  * NEO NOTE (nullsystem):
  * NeoUI - Immediate-mode GUI on top of VGUI2 for NT;RE
@@ -39,6 +41,9 @@
  *
  * For a better example, just take a look at the CNeoRoot source code.
  */
+
+#define SZWSZ_LEN(wlabel) ((sizeof(wlabel) / sizeof(wlabel[0])) - 1)
+
 namespace NeoUI
 {
 enum Mode
@@ -97,6 +102,14 @@ enum EFont
 	FONT__TOTAL,
 };
 
+struct SliderInfo
+{
+	wchar_t wszText[33];
+	float flCachedValue;
+	int iMaxStrSize;
+	bool bActive;
+};
+
 struct Context
 {
 	Mode eMode;
@@ -149,6 +162,9 @@ struct Context
 	bool bValueEdited;
 
 	MousePos eMousePos; // label | prev | center | next split
+
+	const char *pSzCurCtxName;
+	CUtlHashtable<const wchar_t *, SliderInfo> htSliders;
 };
 
 #define COLOR_NEOPANELNORMALBG Color(40, 40, 40, 255)
@@ -166,7 +182,7 @@ void GCtxDrawFilledRectXtoX(const int x1, const int y1, const int x2, const int 
 void GCtxDrawFilledRectXtoX(const int x1, const int x2);
 void GCtxDrawSetTextPos(const int x, const int y);
 
-void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode, const wchar_t *wszTitle);
+void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode, const wchar_t *wszTitle, const char *pSzCtxName);
 void EndContext();
 void BeginSection(const bool bDefaultFocus = false);
 void EndSection();

@@ -8,15 +8,6 @@
 
 class CAvatarImage;
 
-struct WLabelWSize
-{
-	const wchar_t *text;
-	int size;
-};
-#define SZWSZ_LEN(wlabel) ((sizeof(wlabel) / sizeof(wlabel[0])) - 1)
-#define LWSNULL WLabelWSize{ nullptr, 0 }
-#define LWS(wlabel) WLabelWSize{ wlabel, SZWSZ_LEN(wlabel)}
-
 enum GameServerType
 {
 	GS_INTERNET = 0,
