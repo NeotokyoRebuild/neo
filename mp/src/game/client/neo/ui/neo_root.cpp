@@ -5,7 +5,6 @@
 #include "vgui/ILocalize.h"
 #include "vgui/IPanel.h"
 #include "vgui/ISurface.h"
-#include "vgui/ISystem.h"
 #include "vgui/IVGui.h"
 #include "ienginevgui.h"
 #include <engine/IEngineSound.h>
@@ -19,9 +18,7 @@
 #include "characterset.h"
 #include "materialsystem/materialsystem_config.h"
 #include <voice_status.h>
-#include "neo_player_shared.h"
 #include <ivoicetweak.h>
-#include "c_neo_player.h"
 #include <c_playerresource.h>
 
 #include <vgui/IInput.h>
@@ -212,7 +209,7 @@ void CNeoServerList::RequestList()
 	};
 	MatchMakingKeyValuePair_t *pMMFilters = mmFilters;
 
-	static constexpr HServerListRequest (ISteamMatchmakingServers::*pFnReq[GS__TOTAL])(
+	static constexpr HServerListRequest (ISteamMatchmakingServers::*P_FN_REQ[GS__TOTAL])(
 				AppId_t, MatchMakingKeyValuePair_t **, uint32, ISteamMatchmakingServerListResponse *) = {
 		&ISteamMatchmakingServers::RequestInternetServerList,
 		nullptr,
@@ -225,7 +222,7 @@ void CNeoServerList::RequestList()
 	ISteamMatchmakingServers *steamMM = steamapicontext->SteamMatchmakingServers();
 	m_hdlRequest = (m_iType == GS_LAN) ?
 				steamMM->RequestLANServerList(engine->GetAppID(), this) :
-				(steamMM->*pFnReq[m_iType])(engine->GetAppID(), &pMMFilters, ARRAYSIZE(mmFilters), this);
+				(steamMM->*P_FN_REQ[m_iType])(engine->GetAppID(), &pMMFilters, ARRAYSIZE(mmFilters), this);
 	m_bSearching = true;
 }
 
@@ -656,82 +653,6 @@ void NeoSettingsSave(const NeoSettings *ns)
 	}
 }
 
-void NeoSettingsMainLoop(NeoSettings *ns, const NeoUI::Mode eMode)
-{
-	static constexpr void (*P_FN[])(NeoSettings *) = {
-		NeoSettings_General,
-		NeoSettings_Keys,
-		NeoSettings_Mouse,
-		NeoSettings_Audio,
-		NeoSettings_Video,
-	};
-	static const wchar_t *WSZ_TABS_LABELS[ARRAYSIZE(P_FN)] = {
-		L"Multiplayer", L"Keybinds", L"Mouse", L"Audio", L"Video"
-	};
-
-	ns->iNextBinding = -1;
-
-	int wide, tall;
-	surface()->GetScreenSize(wide, tall);
-	const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
-
-	g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
-	g_uiCtx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
-	g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
-	g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
-	g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
-	NeoUI::BeginContext(&g_uiCtx, eMode, g_pNeoRoot->m_wszDispBtnTexts[MMBTN_OPTIONS], "CtxOptions");
-	{
-		NeoUI::BeginSection();
-		{
-			NeoUI::Tabs(WSZ_TABS_LABELS, ARRAYSIZE(WSZ_TABS_LABELS), &ns->iCurTab);
-		}
-		NeoUI::EndSection();
-		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
-		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * g_iRowsInScreen;
-		NeoUI::BeginSection(true);
-		{
-			P_FN[ns->iCurTab](ns);
-		}
-		NeoUI::EndSection();
-		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
-		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
-		NeoUI::BeginSection();
-		{
-			NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 5);
-			{
-				if (NeoUI::Button(L"Back (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
-				{
-					ns->bBack = true;
-				}
-				if (NeoUI::Button(L"Legacy").bPressed)
-				{
-					g_pNeoRoot->GetGameUI()->SendMainMenuCommand("OpenOptionsDialog");
-				}
-				NeoUI::Pad();
-				if (ns->bModified)
-				{
-					if (NeoUI::Button(L"Restore").bPressed)
-					{
-						NeoSettingsRestore(ns);
-					}
-					if (NeoUI::Button(L"Accept").bPressed)
-					{
-						NeoSettingsSave(ns);
-					}
-				}
-			}
-			NeoUI::EndHorizontal();
-		}
-		NeoUI::EndSection();
-	}
-	NeoUI::EndContext();
-	if (!ns->bModified && g_uiCtx.bValueEdited)
-	{
-		ns->bModified = true;
-	}
-}
-
 static const wchar_t *DLFILTER_LABELS[] = {
 	L"Allow all custom files from server",
 	L"Do not download custom sounds",
@@ -1089,7 +1010,123 @@ void CNeoRoot::Paint()
 	OnMainLoop(NeoUI::MODE_PAINT);
 }
 
-void CNeoRoot::RootMainMenuNeoUI(const NeoUI::Mode eMode)
+void CNeoRoot::OnMousePressed(vgui::MouseCode code)
+{
+	g_uiCtx.eCode = code;
+	OnMainLoop(NeoUI::MODE_MOUSEPRESSED);
+}
+
+void CNeoRoot::OnMouseDoublePressed(vgui::MouseCode code)
+{
+	g_uiCtx.eCode = code;
+	OnMainLoop(NeoUI::MODE_MOUSEDOUBLEPRESSED);
+}
+
+void CNeoRoot::OnMouseWheeled(int delta)
+{
+	g_uiCtx.eCode = (delta > 0) ? MOUSE_WHEEL_UP : MOUSE_WHEEL_DOWN;
+	OnMainLoop(NeoUI::MODE_MOUSEWHEELED);
+}
+
+void CNeoRoot::OnCursorMoved(int x, int y)
+{
+	g_uiCtx.iMouseAbsX = x;
+	g_uiCtx.iMouseAbsY = y;
+	OnMainLoop(NeoUI::MODE_MOUSEMOVED);
+}
+
+void CNeoRoot::OnTick()
+{
+	if (m_state == STATE_SERVERBROWSER)
+	{
+		if (m_bSBFiltModified)
+		{
+			// Pass modified over to the tabs so it doesn't trigger
+			// the filter refresh immeditely
+			for (int i = 0; i < GS__TOTAL; ++i)
+			{
+				m_serverBrowser[i].m_bModified = true;
+			}
+			m_bSBFiltModified = false;
+		}
+
+		auto *pSbTab = &m_serverBrowser[m_iServerBrowserTab];
+		if (pSbTab->m_bModified)
+		{
+			pSbTab->UpdateFilteredList();
+			pSbTab->m_bModified = false;
+		}
+	}
+}
+
+void CNeoRoot::FireGameEvent(IGameEvent *event)
+{
+	const char *type = event->GetName();
+	if (Q_strcmp(type, "server_spawn") == 0)
+	{
+		g_pVGuiLocalize->ConvertANSIToUnicode(event->GetString("hostname"), m_wszHostname, sizeof(m_wszHostname));
+	}
+	else if (Q_strcmp(type, "game_newmap") == 0)
+	{
+		g_pVGuiLocalize->ConvertANSIToUnicode(event->GetString("mapname"), m_wszMap, sizeof(m_wszMap));
+	}
+}
+
+void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
+{
+	g_uiCtx.eCode = code;
+	OnMainLoop(NeoUI::MODE_KEYPRESSED);
+}
+
+void CNeoRoot::OnRelayedKeyTyped(wchar_t unichar)
+{
+	g_uiCtx.unichar = unichar;
+	OnMainLoop(NeoUI::MODE_KEYTYPED);
+}
+
+void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
+{
+	int wide, tall;
+	GetSize(wide, tall);
+
+	const RootState ePrevState = m_state;
+
+	if (eMode == NeoUI::MODE_PAINT)
+	{
+		// Draw version info (bottom left corner) - Always
+		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
+		int textWidth, textHeight;
+		surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_NTSMALL].hdl);
+		surface()->GetTextSize(g_uiCtx.fonts[NeoUI::FONT_NTSMALL].hdl, BUILD_DISPLAY, textWidth, textHeight);
+
+		surface()->DrawSetTextPos(g_uiCtx.iMarginX, tall - textHeight - g_uiCtx.iMarginY);
+		surface()->DrawPrintText(BUILD_DISPLAY, *BUILD_DISPLAY_SIZE);
+	}
+
+	static constexpr void (CNeoRoot::*P_FN_MAIN_LOOP[STATE__TOTAL])(const NeoUI::Mode eMode) = {
+		&CNeoRoot::MainLoopRoot,			// STATE_ROOT
+		&CNeoRoot::MainLoopSettings,		// STATE_SETTINGS
+		&CNeoRoot::MainLoopNewGame,			// STATE_NEWGAME
+		&CNeoRoot::MainLoopServerBrowser,	// STATE_SERVERBROWSER
+
+		&CNeoRoot::MainLoopMapList,			// STATE_MAPLIST
+		&CNeoRoot::MainLoopServerDetails,	// STATE_SERVERDETAILS
+		&CNeoRoot::MainLoopPlayerList,		// STATE_PLAYERLIST
+
+		&CNeoRoot::MainLoopPopup,			// STATE_KEYCAPTURE
+		&CNeoRoot::MainLoopPopup,			// STATE_CONFIRMSETTINGS
+		&CNeoRoot::MainLoopPopup,			// STATE_QUIT
+		&CNeoRoot::MainLoopPopup,			// STATE_SERVERPASSWORD
+	};
+	(this->*P_FN_MAIN_LOOP[m_state])(eMode);
+
+	if (m_state != ePrevState)
+	{
+		UpdateControls();
+	}
+}
+
+void CNeoRoot::MainLoopRoot(const NeoUI::Mode eMode)
 {
 	int wide, tall;
 	GetSize(wide, tall);
@@ -1268,743 +1305,436 @@ void CNeoRoot::RootMainMenuNeoUI(const NeoUI::Mode eMode)
 	NeoUI::EndContext();
 }
 
-void CNeoRoot::OnMousePressed(vgui::MouseCode code)
+void CNeoRoot::MainLoopSettings(const NeoUI::Mode eMode)
 {
-	g_uiCtx.eCode = code;
-	OnMainLoop(NeoUI::MODE_MOUSEPRESSED);
-}
+	static constexpr void (*P_FN[])(NeoSettings *) = {
+		NeoSettings_General,
+		NeoSettings_Keys,
+		NeoSettings_Mouse,
+		NeoSettings_Audio,
+		NeoSettings_Video,
+	};
+	static const wchar_t *WSZ_TABS_LABELS[ARRAYSIZE(P_FN)] = {
+		L"Multiplayer", L"Keybinds", L"Mouse", L"Audio", L"Video"
+	};
 
-void CNeoRoot::OnMouseDoublePressed(vgui::MouseCode code)
-{
-	g_uiCtx.eCode = code;
-	OnMainLoop(NeoUI::MODE_MOUSEDOUBLEPRESSED);
-}
+	m_ns.iNextBinding = -1;
 
-void CNeoRoot::OnMouseWheeled(int delta)
-{
-	g_uiCtx.eCode = (delta > 0) ? MOUSE_WHEEL_UP : MOUSE_WHEEL_DOWN;
-	OnMainLoop(NeoUI::MODE_MOUSEWHEELED);
-}
+	int wide, tall;
+	surface()->GetScreenSize(wide, tall);
+	const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
 
-void CNeoRoot::OnCursorMoved(int x, int y)
-{
-	g_uiCtx.iMouseAbsX = x;
-	g_uiCtx.iMouseAbsY = y;
-	OnMainLoop(NeoUI::MODE_MOUSEMOVED);
-}
-
-void CNeoRoot::OnTick()
-{
-	if (m_state == STATE_SERVERBROWSER)
+	g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
+	g_uiCtx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
+	g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
+	g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
+	g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
+	NeoUI::BeginContext(&g_uiCtx, eMode, g_pNeoRoot->m_wszDispBtnTexts[MMBTN_OPTIONS], "CtxOptions");
 	{
-		if (m_bSBFiltModified)
+		NeoUI::BeginSection();
 		{
-			// Pass modified over to the tabs so it doesn't trigger
-			// the filter refresh immeditely
-			for (int i = 0; i < GS__TOTAL; ++i)
+			NeoUI::Tabs(WSZ_TABS_LABELS, ARRAYSIZE(WSZ_TABS_LABELS), &m_ns.iCurTab);
+		}
+		NeoUI::EndSection();
+		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * g_iRowsInScreen;
+		NeoUI::BeginSection(true);
+		{
+			P_FN[m_ns.iCurTab](&m_ns);
+		}
+		NeoUI::EndSection();
+		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
+		NeoUI::BeginSection();
+		{
+			NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 5);
 			{
-				m_serverBrowser[i].m_bModified = true;
+				if (NeoUI::Button(L"Back (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
+				{
+					m_ns.bBack = true;
+				}
+				if (NeoUI::Button(L"Legacy").bPressed)
+				{
+					g_pNeoRoot->GetGameUI()->SendMainMenuCommand("OpenOptionsDialog");
+				}
+				NeoUI::Pad();
+				if (m_ns.bModified)
+				{
+					if (NeoUI::Button(L"Restore").bPressed)
+					{
+						NeoSettingsRestore(&m_ns);
+					}
+					if (NeoUI::Button(L"Accept").bPressed)
+					{
+						NeoSettingsSave(&m_ns);
+					}
+				}
 			}
-			m_bSBFiltModified = false;
+			NeoUI::EndHorizontal();
 		}
-
-		auto *pSbTab = &m_serverBrowser[m_iServerBrowserTab];
-		if (pSbTab->m_bModified)
-		{
-			pSbTab->UpdateFilteredList();
-			pSbTab->m_bModified = false;
-		}
+		NeoUI::EndSection();
 	}
-}
-
-void CNeoRoot::FireGameEvent(IGameEvent *event)
-{
-	const char *type = event->GetName();
-	if (Q_strcmp(type, "server_spawn") == 0)
+	NeoUI::EndContext();
+	if (!m_ns.bModified && g_uiCtx.bValueEdited)
 	{
-		g_pVGuiLocalize->ConvertANSIToUnicode(event->GetString("hostname"), m_wszHostname, sizeof(m_wszHostname));
+		m_ns.bModified = true;
 	}
-	else if (Q_strcmp(type, "game_newmap") == 0)
+
+	if (m_ns.bBack)
 	{
-		g_pVGuiLocalize->ConvertANSIToUnicode(event->GetString("mapname"), m_wszMap, sizeof(m_wszMap));
+		m_ns.bBack = false;
+		m_state = (m_ns.bModified) ? STATE_CONFIRMSETTINGS : STATE_ROOT;
+	}
+	else if (m_ns.iNextBinding >= 0)
+	{
+		m_iBindingIdx = m_ns.iNextBinding;
+		m_ns.iNextBinding = -1;
+		V_swprintf_safe(m_wszBindingText, L"Change binding for: %ls",
+						m_ns.keys.vBinds[m_iBindingIdx].wszDisplayText);
+		m_state = STATE_KEYCAPTURE;
+		engine->StartKeyTrapMode();
 	}
 }
 
-void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
-{
-	g_uiCtx.eCode = code;
-	OnMainLoop(NeoUI::MODE_KEYPRESSED);
-}
-
-void CNeoRoot::OnRelayedKeyTyped(wchar_t unichar)
-{
-	g_uiCtx.unichar = unichar;
-	OnMainLoop(NeoUI::MODE_KEYTYPED);
-}
-
-void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
+void CNeoRoot::MainLoopNewGame(const NeoUI::Mode eMode)
 {
 	int wide, tall;
 	GetSize(wide, tall);
 
-	const RootState ePrevState = m_state;
-
-	if (eMode == NeoUI::MODE_PAINT)
+	const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
+	g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
+	g_uiCtx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
+	g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
+	g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * (g_iRowsInScreen + 1);
+	g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
+	NeoUI::BeginContext(&g_uiCtx, eMode, m_wszDispBtnTexts[MMBTN_CREATESERVER], "CtxNewGame");
 	{
-		// Draw version info (bottom left corner) - Always
-		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
-		int textWidth, textHeight;
-		surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_NTSMALL].hdl);
-		surface()->GetTextSize(g_uiCtx.fonts[NeoUI::FONT_NTSMALL].hdl, BUILD_DISPLAY, textWidth, textHeight);
-
-		surface()->DrawSetTextPos(g_uiCtx.iMarginX, tall - textHeight - g_uiCtx.iMarginY);
-		surface()->DrawPrintText(BUILD_DISPLAY, *BUILD_DISPLAY_SIZE);
-	}
-
-	switch (m_state)
-	{
-	case STATE_ROOT:
-	{
-		RootMainMenuNeoUI(eMode);
-	}
-	break;
-	case STATE_SETTINGS:
-	{
-		NeoSettingsMainLoop(&m_ns, eMode);
-		if (m_ns.bBack)
+		NeoUI::BeginSection(true);
 		{
-			m_ns.bBack = false;
-			m_state = (m_ns.bModified) ? STATE_CONFIRMSETTINGS : STATE_ROOT;
-		}
-		else if (m_ns.iNextBinding >= 0)
-		{
-			m_iBindingIdx = m_ns.iNextBinding;
-			m_ns.iNextBinding = -1;
-			V_swprintf_safe(m_wszBindingText, L"Change binding for: %ls",
-							m_ns.keys.vBinds[m_iBindingIdx].wszDisplayText);
-			m_state = STATE_KEYCAPTURE;
-			engine->StartKeyTrapMode();
-		}
-	}
-	break;
-	case STATE_NEWGAME:
-	{
-		const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
-		g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
-		g_uiCtx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
-		g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
-		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * (g_iRowsInScreen + 1);
-		g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
-		NeoUI::BeginContext(&g_uiCtx, eMode, m_wszDispBtnTexts[MMBTN_CREATESERVER], "CtxNewGame");
-		{
-			NeoUI::BeginSection(true);
+			if (NeoUI::Button(L"Map", m_newGame.wszMap).bPressed)
 			{
-				if (NeoUI::Button(L"Map", m_newGame.wszMap).bPressed)
-				{
-					m_state = STATE_MAPLIST;
-				}
-				NeoUI::TextEdit(L"Hostname", m_newGame.wszHostname, SZWSZ_LEN(m_newGame.wszHostname));
-				NeoUI::SliderInt(L"Max players", &m_newGame.iMaxPlayers, 1, 32);
-				NeoUI::TextEdit(L"Password", m_newGame.wszPassword, SZWSZ_LEN(m_newGame.wszPassword));
-				NeoUI::RingBoxBool(L"Friendly fire", &m_newGame.bFriendlyFire);
+				m_state = STATE_MAPLIST;
 			}
-			NeoUI::EndSection();
-			g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
-			g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
-			NeoUI::BeginSection();
+			NeoUI::TextEdit(L"Hostname", m_newGame.wszHostname, SZWSZ_LEN(m_newGame.wszHostname));
+			NeoUI::SliderInt(L"Max players", &m_newGame.iMaxPlayers, 1, 32);
+			NeoUI::TextEdit(L"Password", m_newGame.wszPassword, SZWSZ_LEN(m_newGame.wszPassword));
+			NeoUI::RingBoxBool(L"Friendly fire", &m_newGame.bFriendlyFire);
+		}
+		NeoUI::EndSection();
+		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
+		NeoUI::BeginSection();
+		{
+			NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 5);
 			{
-				NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 5);
+				if (NeoUI::Button(L"Back (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
 				{
-					if (NeoUI::Button(L"Back (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
+					m_state = STATE_ROOT;
+				}
+				NeoUI::Pad();
+				NeoUI::Pad();
+				NeoUI::Pad();
+				if (NeoUI::Button(L"Start").bPressed)
+				{
+					if (engine->IsInGame())
 					{
-						m_state = STATE_ROOT;
+						engine->ClientCmd_Unrestricted("disconnect");
 					}
+
+					static constexpr int ENTRY_MAX = 64;
+					char szMap[ENTRY_MAX + 1] = {};
+					char szHostname[ENTRY_MAX + 1] = {};
+					char szPassword[ENTRY_MAX + 1] = {};
+					g_pVGuiLocalize->ConvertUnicodeToANSI(m_newGame.wszMap, szMap, sizeof(szMap));
+					g_pVGuiLocalize->ConvertUnicodeToANSI(m_newGame.wszHostname, szHostname, sizeof(szHostname));
+					g_pVGuiLocalize->ConvertUnicodeToANSI(m_newGame.wszPassword, szPassword, sizeof(szPassword));
+
+					ConVarRef("hostname").SetValue(szHostname);
+					ConVarRef("sv_password").SetValue(szPassword);
+					ConVarRef("mp_friendlyfire").SetValue(m_newGame.bFriendlyFire);
+
+					char cmdStr[256];
+					V_sprintf_safe(cmdStr, "maxplayers %d; progress_enable; map \"%s\"", m_newGame.iMaxPlayers, szMap);
+					engine->ClientCmd_Unrestricted(cmdStr);
+
+					m_state = STATE_ROOT;
+				}
+			}
+			NeoUI::EndHorizontal();
+		}
+		NeoUI::EndSection();
+	}
+	NeoUI::EndContext();
+}
+
+void CNeoRoot::MainLoopServerBrowser(const NeoUI::Mode eMode)
+{
+	int wide, tall;
+	GetSize(wide, tall);
+
+	static const wchar_t *GS_NAMES[GS__TOTAL] = {
+		L"Internet", L"LAN", L"Friends", L"Fav", L"History", L"Spec"
+	};
+
+	bool bEnterServer = false;
+	const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
+	g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
+	g_uiCtx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
+	g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
+	g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * 2;
+	g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
+	NeoUI::BeginContext(&g_uiCtx, eMode, m_wszDispBtnTexts[MMBTN_FINDSERVER], "CtxServerBrowser");
+	{
+		bool bForceRefresh = false;
+		NeoUI::BeginSection();
+		{
+			const int iPrevTab = m_iServerBrowserTab;
+			NeoUI::Tabs(GS_NAMES, ARRAYSIZE(GS_NAMES), &m_iServerBrowserTab);
+			if (iPrevTab != m_iServerBrowserTab)
+			{
+				m_iSelectedServer = -1;
+			}
+			if (!m_serverBrowser[m_iServerBrowserTab].m_bReloadedAtLeastOnce)
+			{
+				bForceRefresh = true;
+				m_serverBrowser[m_iServerBrowserTab].m_bReloadedAtLeastOnce = true;
+			}
+			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
+			NeoUI::BeginHorizontal(1);
+			{
+				static constexpr wchar_t *SBLABEL_NAMES[GSIW__TOTAL] = {
+					L"Lock", L"VAC", L"Name", L"Map", L"Players", L"Ping",
+				};
+
+				for (int i = 0; i < GS__TOTAL; ++i)
+				{
+					surface()->DrawSetColor((m_sortCtx.col == i) ? COLOR_NEOPANELACCENTBG : COLOR_NEOPANELNORMALBG);
+					g_uiCtx.iHorizontalWidth = g_iGSIX[i];
+					if (NeoUI::Button(SBLABEL_NAMES[i]).bPressed)
+					{
+						if (m_sortCtx.col == i)
+						{
+							m_sortCtx.bDescending = !m_sortCtx.bDescending;
+						}
+						else
+						{
+							m_sortCtx.col = static_cast<GameServerInfoW>(i);
+						}
+						m_bSBFiltModified = true;
+					}
+
+					if (eMode == NeoUI::MODE_PAINT && m_sortCtx.col == i)
+					{
+						int iHintTall = g_uiCtx.iMarginY / 3;
+						surface()->DrawSetColor(COLOR_NEOPANELTEXTNORMAL);
+						if (!m_sortCtx.bDescending)
+						{
+							NeoUI::GCtxDrawFilledRectXtoX(-g_uiCtx.iHorizontalWidth, 0, 0, iHintTall);
+						}
+						else
+						{
+							NeoUI::GCtxDrawFilledRectXtoX(-g_uiCtx.iHorizontalWidth, g_uiCtx.iRowTall - iHintTall, 0, g_uiCtx.iRowTall);
+						}
+						surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
+					}
+				}
+			}
+
+			// TODO: Should give proper controls over colors through NeoUI
+			surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
+			surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
+			NeoUI::EndHorizontal();
+			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
+		}
+		NeoUI::EndSection();
+		static constexpr int FILTER_ROWS = 4;
+		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * (g_iRowsInScreen - 1);
+		if (m_bShowFilterPanel) g_uiCtx.dPanel.tall -= g_uiCtx.iRowTall * FILTER_ROWS;
+		NeoUI::BeginSection(true);
+		{
+			if (m_serverBrowser[m_iServerBrowserTab].m_filteredServers.IsEmpty())
+			{
+				wchar_t wszInfo[128];
+				if (m_serverBrowser[m_iServerBrowserTab].m_bSearching)
+				{
+					V_swprintf_safe(wszInfo, L"Searching %ls queries...", GS_NAMES[m_iServerBrowserTab]);
+				}
+				else
+				{
+					V_swprintf_safe(wszInfo, L"No %ls queries found. Press Refresh to re-check", GS_NAMES[m_iServerBrowserTab]);
+				}
+				g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
+				NeoUI::Label(wszInfo);
+				g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_LEFT;
+			}
+			else
+			{
+				// NEO TODO (nullsystem): This is fine since there isn't going to be much servers, it'll
+				// handle even couple of 100s ok. However if the amount is a concern, NeoUI can be
+				// expanded to give Y-offset in the form of filtered array range so it only loops
+				// through what's needed instead.
+				const auto *sbTab = &m_serverBrowser[m_iServerBrowserTab];
+				for (int i = 0; i < sbTab->m_filteredServers.Size(); ++i)
+				{
+					const auto &server = sbTab->m_filteredServers[i];
+					bool bSkipServer = false;
+					if (m_sbFilters.bServerNotFull && server.m_nPlayers == server.m_nMaxPlayers) bSkipServer = true;
+					else if (m_sbFilters.bHasUsersPlaying && server.m_nPlayers == 0) bSkipServer = true;
+					else if (m_sbFilters.bIsNotPasswordProtected && server.m_bPassword) bSkipServer = true;
+					else if (m_sbFilters.iAntiCheat == ANTICHEAT_OFF && server.m_bSecure) bSkipServer = true;
+					else if (m_sbFilters.iAntiCheat == ANTICHEAT_ON && !server.m_bSecure) bSkipServer = true;
+					if (bSkipServer)
+					{
+						continue;
+					}
+
+					const auto btn = NeoUI::Button(L"");
+					if (btn.bPressed) // Dummy button, draw over it in paint
+					{
+						m_iSelectedServer = i;
+						if (btn.bKeyPressed || btn.bMouseDoublePressed)
+						{
+							bEnterServer = true;
+						}
+					}
+
+					if (eMode == NeoUI::MODE_PAINT)
+					{
+						Color drawColor = COLOR_NEOPANELNORMALBG;
+						if (m_iSelectedServer == i) drawColor = COLOR_NEOPANELACCENTBG;
+						if (btn.bMouseHover) drawColor = COLOR_NEOPANELSELECTBG;
+
+						surface()->DrawSetColor(drawColor);
+						NeoUI::GCtxDrawFilledRectXtoX(0, -g_uiCtx.iRowTall, g_uiCtx.dPanel.wide, 0);
+
+						int xPos = 0;
+						const int yPos = g_uiCtx.iYOffset[g_uiCtx.iSection] - g_uiCtx.iRowTall;
+						const int fontStartYPos = g_uiCtx.fonts[g_uiCtx.eFont].iYOffset;
+
+						if (server.m_bPassword)
+						{
+							NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
+							surface()->DrawPrintText(L"P", 1);
+						}
+						xPos += g_iGSIX[GSIW_LOCKED];
+
+						if (server.m_bSecure)
+						{
+							NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
+							surface()->DrawPrintText(L"S", 1);
+						}
+						xPos += g_iGSIX[GSIW_VAC];
+
+						{
+							wchar_t wszServerName[k_cbMaxGameServerName];
+							const int iSize = g_pVGuiLocalize->ConvertANSIToUnicode(server.GetName(), wszServerName, sizeof(wszServerName));
+							NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
+							surface()->DrawPrintText(wszServerName, iSize);
+						}
+						xPos += g_iGSIX[GSIW_NAME];
+
+						{
+							// In lower resolution, it may overlap from name, so paint a background here
+							NeoUI::GCtxDrawFilledRectXtoX(xPos, -g_uiCtx.iRowTall, g_uiCtx.dPanel.wide, 0);
+
+							wchar_t wszMapName[k_cbMaxGameServerMapName];
+							const int iSize = g_pVGuiLocalize->ConvertANSIToUnicode(server.m_szMap, wszMapName, sizeof(wszMapName));
+							NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
+							surface()->DrawPrintText(wszMapName, iSize);
+						}
+						xPos += g_iGSIX[GSIW_MAP];
+
+						{
+							// In lower resolution, it may overlap from name, so paint a background here
+							NeoUI::GCtxDrawFilledRectXtoX(xPos, -g_uiCtx.iRowTall, g_uiCtx.dPanel.wide, 0);
+
+							wchar_t wszPlayers[10];
+							const int iSize = V_swprintf_safe(wszPlayers, L"%d/%d", server.m_nPlayers, server.m_nMaxPlayers);
+							NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
+							surface()->DrawPrintText(wszPlayers, iSize);
+						}
+						xPos += g_iGSIX[GSIW_PLAYERS];
+
+						{
+							wchar_t wszPing[10];
+							const int iSize = V_swprintf_safe(wszPing, L"%d", server.m_nPing);
+							NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
+							surface()->DrawPrintText(wszPing, iSize);
+						}
+					}
+				}
+			}
+		}
+		surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
+		NeoUI::EndSection();
+		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
+		if (m_bShowFilterPanel) g_uiCtx.dPanel.tall += g_uiCtx.iRowTall * FILTER_ROWS;
+		NeoUI::BeginSection();
+		{
+			NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 6);
+			{
+				if (NeoUI::Button(L"Back (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
+				{
+					m_state = STATE_ROOT;
+				}
+				if (NeoUI::Button(L"Legacy").bPressed)
+				{
+					GetGameUI()->SendMainMenuCommand("OpenServerBrowser");
+				}
+				if (NeoUI::Button(m_bShowFilterPanel ? L"Hide Filters" : L"Show Filters").bPressed)
+				{
+					m_bShowFilterPanel = !m_bShowFilterPanel;
+				}
+				if (m_iSelectedServer >= 0)
+				{
+					if (NeoUI::Button(L"Details").bPressed)
+					{
+						m_state = STATE_SERVERDETAILS;
+						const auto *gameServer = &m_serverBrowser[m_iServerBrowserTab].m_filteredServers[m_iSelectedServer];
+						m_serverPlayers.RequestList(gameServer->m_NetAdr.GetIP(), gameServer->m_NetAdr.GetQueryPort());
+					}
+				}
+				else
+				{
 					NeoUI::Pad();
-					NeoUI::Pad();
-					NeoUI::Pad();
-					if (NeoUI::Button(L"Start").bPressed)
+				}
+				if (NeoUI::Button(L"Refresh").bPressed || bForceRefresh)
+				{
+					m_iSelectedServer = -1;
+					ISteamMatchmakingServers *steamMM = steamapicontext->SteamMatchmakingServers();
+					CNeoServerList *pServerBrowser = &m_serverBrowser[m_iServerBrowserTab];
+					pServerBrowser->m_servers.RemoveAll();
+					pServerBrowser->m_filteredServers.RemoveAll();
+					if (pServerBrowser->m_hdlRequest)
+					{
+						steamMM->CancelQuery(pServerBrowser->m_hdlRequest);
+						steamMM->ReleaseRequest(pServerBrowser->m_hdlRequest);
+						pServerBrowser->m_hdlRequest = nullptr;
+					}
+					pServerBrowser->RequestList();
+				}
+				if (m_iSelectedServer >= 0)
+				{
+					if (bEnterServer || NeoUI::Button(L"Enter").bPressed)
 					{
 						if (engine->IsInGame())
 						{
 							engine->ClientCmd_Unrestricted("disconnect");
 						}
 
-						static constexpr int ENTRY_MAX = 64;
-						char szMap[ENTRY_MAX + 1] = {};
-						char szHostname[ENTRY_MAX + 1] = {};
-						char szPassword[ENTRY_MAX + 1] = {};
-						g_pVGuiLocalize->ConvertUnicodeToANSI(m_newGame.wszMap, szMap, sizeof(szMap));
-						g_pVGuiLocalize->ConvertUnicodeToANSI(m_newGame.wszHostname, szHostname, sizeof(szHostname));
-						g_pVGuiLocalize->ConvertUnicodeToANSI(m_newGame.wszPassword, szPassword, sizeof(szPassword));
+						ConVarRef("password").SetValue("");
+						V_memset(m_wszServerPassword, 0, sizeof(m_wszServerPassword));
 
-						ConVarRef("hostname").SetValue(szHostname);
-						ConVarRef("sv_password").SetValue(szPassword);
-						ConVarRef("mp_friendlyfire").SetValue(m_newGame.bFriendlyFire);
-
-						char cmdStr[256];
-						V_sprintf_safe(cmdStr, "maxplayers %d; progress_enable; map \"%s\"", m_newGame.iMaxPlayers, szMap);
-						engine->ClientCmd_Unrestricted(cmdStr);
-
-						m_state = STATE_ROOT;
-					}
-				}
-				NeoUI::EndHorizontal();
-			}
-			NeoUI::EndSection();
-		}
-		NeoUI::EndContext();
-	}
-	break;
-	case STATE_SERVERBROWSER:
-	{
-		static const wchar_t *GS_NAMES[GS__TOTAL] = {
-			L"Internet", L"LAN", L"Friends", L"Fav", L"History", L"Spec"
-		};
-
-		bool bEnterServer = false;
-		const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
-		g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
-		g_uiCtx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
-		g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
-		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * 2;
-		g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
-		NeoUI::BeginContext(&g_uiCtx, eMode, m_wszDispBtnTexts[MMBTN_FINDSERVER], "CtxServerBrowser");
-		{
-			bool bForceRefresh = false;
-			NeoUI::BeginSection();
-			{
-				const int iPrevTab = m_iServerBrowserTab;
-				NeoUI::Tabs(GS_NAMES, ARRAYSIZE(GS_NAMES), &m_iServerBrowserTab);
-				if (iPrevTab != m_iServerBrowserTab)
-				{
-					m_iSelectedServer = -1;
-				}
-				if (!m_serverBrowser[m_iServerBrowserTab].m_bReloadedAtLeastOnce)
-				{
-					bForceRefresh = true;
-					m_serverBrowser[m_iServerBrowserTab].m_bReloadedAtLeastOnce = true;
-				}
-				g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
-				NeoUI::BeginHorizontal(1);
-				{
-					static constexpr wchar_t *SBLABEL_NAMES[GSIW__TOTAL] = {
-						L"Lock", L"VAC", L"Name", L"Map", L"Players", L"Ping",
-					};
-
-					for (int i = 0; i < GS__TOTAL; ++i)
-					{
-						surface()->DrawSetColor((m_sortCtx.col == i) ? COLOR_NEOPANELACCENTBG : COLOR_NEOPANELNORMALBG);
-						g_uiCtx.iHorizontalWidth = g_iGSIX[i];
-						if (NeoUI::Button(SBLABEL_NAMES[i]).bPressed)
+						// NEO NOTE (nullsystem): Deal with password protected server
+						const auto gameServer = m_serverBrowser[m_iServerBrowserTab].m_filteredServers[m_iSelectedServer];
+						if (gameServer.m_bPassword)
 						{
-							if (m_sortCtx.col == i)
-							{
-								m_sortCtx.bDescending = !m_sortCtx.bDescending;
-							}
-							else
-							{
-								m_sortCtx.col = static_cast<GameServerInfoW>(i);
-							}
-							m_bSBFiltModified = true;
+							m_state = STATE_SERVERPASSWORD;
 						}
-
-						if (eMode == NeoUI::MODE_PAINT && m_sortCtx.col == i)
+						else
 						{
-							int iHintTall = g_uiCtx.iMarginY / 3;
-							surface()->DrawSetColor(COLOR_NEOPANELTEXTNORMAL);
-							if (!m_sortCtx.bDescending)
-							{
-								NeoUI::GCtxDrawFilledRectXtoX(-g_uiCtx.iHorizontalWidth, 0, 0, iHintTall);
-							}
-							else
-							{
-								NeoUI::GCtxDrawFilledRectXtoX(-g_uiCtx.iHorizontalWidth, g_uiCtx.iRowTall - iHintTall, 0, g_uiCtx.iRowTall);
-							}
-							surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
-						}
-					}
-				}
-
-				// TODO: Should give proper controls over colors through NeoUI
-				surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
-				surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
-				NeoUI::EndHorizontal();
-				g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
-			}
-			NeoUI::EndSection();
-			static constexpr int FILTER_ROWS = 4;
-			g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
-			g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * (g_iRowsInScreen - 1);
-			if (m_bShowFilterPanel) g_uiCtx.dPanel.tall -= g_uiCtx.iRowTall * FILTER_ROWS;
-			NeoUI::BeginSection(true);
-			{
-				if (m_serverBrowser[m_iServerBrowserTab].m_filteredServers.IsEmpty())
-				{
-					wchar_t wszInfo[128];
-					if (m_serverBrowser[m_iServerBrowserTab].m_bSearching)
-					{
-						V_swprintf_safe(wszInfo, L"Searching %ls queries...", GS_NAMES[m_iServerBrowserTab]);
-					}
-					else
-					{
-						V_swprintf_safe(wszInfo, L"No %ls queries found. Press Refresh to re-check", GS_NAMES[m_iServerBrowserTab]);
-					}
-					g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
-					NeoUI::Label(wszInfo);
-					g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_LEFT;
-				}
-				else
-				{
-					const auto *sbTab = &m_serverBrowser[m_iServerBrowserTab];
-					for (int i = 0; i < sbTab->m_filteredServers.Size(); ++i)
-					{
-						const auto &server = sbTab->m_filteredServers[i];
-						bool bSkipServer = false;
-						if (m_sbFilters.bServerNotFull && server.m_nPlayers == server.m_nMaxPlayers) bSkipServer = true;
-						else if (m_sbFilters.bHasUsersPlaying && server.m_nPlayers == 0) bSkipServer = true;
-						else if (m_sbFilters.bIsNotPasswordProtected && server.m_bPassword) bSkipServer = true;
-						else if (m_sbFilters.iAntiCheat == ANTICHEAT_OFF && server.m_bSecure) bSkipServer = true;
-						else if (m_sbFilters.iAntiCheat == ANTICHEAT_ON && !server.m_bSecure) bSkipServer = true;
-						if (bSkipServer)
-						{
-							continue;
-						}
-
-						const auto btn = NeoUI::Button(L"");
-						if (btn.bPressed) // Dummy button, draw over it in paint
-						{
-							m_iSelectedServer = i;
-							if (btn.bKeyPressed || btn.bMouseDoublePressed)
-							{
-								bEnterServer = true;
-							}
-						}
-
-						if (eMode == NeoUI::MODE_PAINT)
-						{
-							Color drawColor = COLOR_NEOPANELNORMALBG;
-							if (m_iSelectedServer == i) drawColor = COLOR_NEOPANELACCENTBG;
-							if (btn.bMouseHover) drawColor = COLOR_NEOPANELSELECTBG;
-
-							surface()->DrawSetColor(drawColor);
-							NeoUI::GCtxDrawFilledRectXtoX(0, -g_uiCtx.iRowTall, g_uiCtx.dPanel.wide, 0);
-
-							// TODO/TEMP (nullsystem): Probably should be more "custom" struct verse gameserveritem_t?
-							int xPos = 0;
-							const int yPos = g_uiCtx.iYOffset[g_uiCtx.iSection] - g_uiCtx.iRowTall;
-							const int fontStartYPos = g_uiCtx.fonts[g_uiCtx.eFont].iYOffset;
-
-							if (server.m_bPassword)
-							{
-								NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
-								surface()->DrawPrintText(L"P", 1);
-							}
-							xPos += g_iGSIX[GSIW_LOCKED];
-
-							if (server.m_bSecure)
-							{
-								NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
-								surface()->DrawPrintText(L"S", 1);
-							}
-							xPos += g_iGSIX[GSIW_VAC];
-
-							{
-								wchar_t wszServerName[k_cbMaxGameServerName];
-								const int iSize = g_pVGuiLocalize->ConvertANSIToUnicode(server.GetName(), wszServerName, sizeof(wszServerName));
-								NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
-								surface()->DrawPrintText(wszServerName, iSize);
-							}
-							xPos += g_iGSIX[GSIW_NAME];
-
-							{
-								// In lower resolution, it may overlap from name, so paint a background here
-								NeoUI::GCtxDrawFilledRectXtoX(xPos, -g_uiCtx.iRowTall, g_uiCtx.dPanel.wide, 0);
-
-								wchar_t wszMapName[k_cbMaxGameServerMapName];
-								const int iSize = g_pVGuiLocalize->ConvertANSIToUnicode(server.m_szMap, wszMapName, sizeof(wszMapName));
-								NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
-								surface()->DrawPrintText(wszMapName, iSize);
-							}
-							xPos += g_iGSIX[GSIW_MAP];
-
-							{
-								// In lower resolution, it may overlap from name, so paint a background here
-								NeoUI::GCtxDrawFilledRectXtoX(xPos, -g_uiCtx.iRowTall, g_uiCtx.dPanel.wide, 0);
-
-								wchar_t wszPlayers[10];
-								const int iSize = V_swprintf_safe(wszPlayers, L"%d/%d", server.m_nPlayers, server.m_nMaxPlayers);
-								NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
-								surface()->DrawPrintText(wszPlayers, iSize);
-							}
-							xPos += g_iGSIX[GSIW_PLAYERS];
-
-							{
-								wchar_t wszPing[10];
-								const int iSize = V_swprintf_safe(wszPing, L"%d", server.m_nPing);
-								NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
-								surface()->DrawPrintText(wszPing, iSize);
-							}
-						}
-					}
-				}
-			}
-			surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
-			NeoUI::EndSection();
-			g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
-			g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
-			if (m_bShowFilterPanel) g_uiCtx.dPanel.tall += g_uiCtx.iRowTall * FILTER_ROWS;
-			NeoUI::BeginSection();
-			{
-				NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 6);
-				{
-					if (NeoUI::Button(L"Back (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
-					{
-						m_state = STATE_ROOT;
-					}
-					if (NeoUI::Button(L"Legacy").bPressed)
-					{
-						GetGameUI()->SendMainMenuCommand("OpenServerBrowser");
-					}
-					if (NeoUI::Button(m_bShowFilterPanel ? L"Hide Filters" : L"Show Filters").bPressed)
-					{
-						m_bShowFilterPanel = !m_bShowFilterPanel;
-					}
-					if (m_iSelectedServer >= 0)
-					{
-						if (NeoUI::Button(L"Details").bPressed)
-						{
-							m_state = STATE_SERVERDETAILS;
-							const auto *gameServer = &m_serverBrowser[m_iServerBrowserTab].m_filteredServers[m_iSelectedServer];
-							m_serverPlayers.RequestList(gameServer->m_NetAdr.GetIP(), gameServer->m_NetAdr.GetQueryPort());
-						}
-					}
-					else
-					{
-						NeoUI::Pad();
-					}
-					if (NeoUI::Button(L"Refresh").bPressed || bForceRefresh)
-					{
-						m_iSelectedServer = -1;
-						ISteamMatchmakingServers *steamMM = steamapicontext->SteamMatchmakingServers();
-						CNeoServerList *pServerBrowser = &m_serverBrowser[m_iServerBrowserTab];
-						pServerBrowser->m_servers.RemoveAll();
-						pServerBrowser->m_filteredServers.RemoveAll();
-						if (pServerBrowser->m_hdlRequest)
-						{
-							steamMM->CancelQuery(pServerBrowser->m_hdlRequest);
-							steamMM->ReleaseRequest(pServerBrowser->m_hdlRequest);
-							pServerBrowser->m_hdlRequest = nullptr;
-						}
-						pServerBrowser->RequestList();
-					}
-					if (m_iSelectedServer >= 0)
-					{
-						if (bEnterServer || NeoUI::Button(L"Enter").bPressed)
-						{
-							if (engine->IsInGame())
-							{
-								engine->ClientCmd_Unrestricted("disconnect");
-							}
-
-							ConVarRef("password").SetValue("");
-							V_memset(m_wszServerPassword, 0, sizeof(m_wszServerPassword));
-
-							// NEO NOTE (nullsystem): Deal with password protected server
-							const auto gameServer = m_serverBrowser[m_iServerBrowserTab].m_filteredServers[m_iSelectedServer];
-							if (gameServer.m_bPassword)
-							{
-								m_state = STATE_SERVERPASSWORD;
-							}
-							else
-							{
-								char connectCmd[256];
-								const char *szAddress = gameServer.m_NetAdr.GetConnectionAddressString();
-								V_sprintf_safe(connectCmd, "progress_enable; wait; connect %s", szAddress);
-								engine->ClientCmd_Unrestricted(connectCmd);
-
-								m_state = STATE_ROOT;
-							}
-						}
-					}
-				}
-				NeoUI::EndHorizontal();
-				if (m_bShowFilterPanel)
-				{
-					NeoUI::RingBoxBool(L"Server not full", &m_sbFilters.bServerNotFull);
-					NeoUI::RingBoxBool(L"Has users playing", &m_sbFilters.bHasUsersPlaying);
-					NeoUI::RingBoxBool(L"Is not password protected", &m_sbFilters.bIsNotPasswordProtected);
-					NeoUI::RingBox(L"Anti-cheat", ANTICHEAT_LABELS, ARRAYSIZE(ANTICHEAT_LABELS), &m_sbFilters.iAntiCheat);
-				}
-			}
-			NeoUI::EndSection();
-		}
-		NeoUI::EndContext();
-	}
-	break;
-	case STATE_SERVERDETAILS:
-	{
-		const auto *gameServer = &m_serverBrowser[m_iServerBrowserTab].m_filteredServers[m_iSelectedServer];
-		const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
-		g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
-		g_uiCtx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
-		g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
-		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * 6;
-		g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
-		NeoUI::BeginContext(&g_uiCtx, eMode, L"Server details", "CtxServerDetail");
-		{
-			NeoUI::BeginSection(true);
-			{
-				const bool bP = eMode == NeoUI::MODE_PAINT;
-				wchar_t wszText[128];
-				if (bP) g_pVGuiLocalize->ConvertANSIToUnicode(gameServer->GetName(), wszText, sizeof(wszText));
-				NeoUI::Label(L"Name:", wszText);
-				if (bP) g_pVGuiLocalize->ConvertANSIToUnicode(gameServer->m_NetAdr.GetConnectionAddressString(), wszText, sizeof(wszText));
-				NeoUI::Label(L"Address:", wszText);
-				if (bP) g_pVGuiLocalize->ConvertANSIToUnicode(gameServer->m_szMap, wszText, sizeof(wszText));
-				NeoUI::Label(L"Map:", wszText);
-				if (bP) V_swprintf_safe(wszText, L"%d/%d", gameServer->m_nPlayers, gameServer->m_nMaxPlayers);
-				NeoUI::Label(L"Ping:", wszText);
-				if (bP) V_swprintf_safe(wszText, L"%ls", gameServer->m_bSecure ? L"Enabled" : L"Disabled");
-				NeoUI::Label(L"VAC:", wszText);
-				if (bP) V_swprintf_safe(wszText, L"%d", gameServer->m_nPing);
-				NeoUI::Label(L"Ping:", wszText);
-
-				// TODO: Header same-style as serverlist's header
-			}
-			NeoUI::EndSection();
-			g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
-			g_uiCtx.dPanel.tall = (iTallTotal - g_uiCtx.iRowTall) - g_uiCtx.dPanel.tall;
-			NeoUI::BeginSection();
-			{
-				if (m_serverPlayers.m_players.IsEmpty())
-				{
-					g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
-					NeoUI::Label(L"There are no players in the server.");
-					g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_LEFT;
-				}
-				else
-				{
-					for (const auto &player : m_serverPlayers.m_players)
-					{
-						NeoUI::Label(player.wszName);
-						// TODO
-					}
-				}
-			}
-			NeoUI::EndSection();
-			g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
-			g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
-			NeoUI::BeginSection();
-			{
-				NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 5);
-				{
-					if (NeoUI::Button(L"Back (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
-					{
-						m_state = STATE_SERVERBROWSER;
-					}
-				}
-				NeoUI::EndHorizontal();
-			}
-			NeoUI::EndSection();
-		}
-		NeoUI::EndContext();
-	}
-	break;
-	case STATE_PLAYERLIST:
-	{
-		if (engine->IsInGame())
-		{
-			const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
-			g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
-			g_uiCtx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
-			g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
-			g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * (g_iRowsInScreen + 1);
-			g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
-			NeoUI::BeginContext(&g_uiCtx, eMode, L"Player list", "CtxPlayerList");
-			{
-				NeoUI::BeginSection(true);
-				{
-					g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
-					for (int i = 1; i <= gpGlobals->maxClients; i++)
-					{
-						if (!g_PR->IsConnected(i) || g_PR->IsHLTV(i) || g_PR->IsFakePlayer(i))
-						{
-							continue;
-						}
-
-						const bool bOwnLocalPlayer = g_PR->IsLocalPlayer(i);
-						const bool bPlayerMuted = GetClientVoiceMgr()->IsPlayerBlocked(i);
-						const char *szPlayerName = g_PR->GetPlayerName(i);
-
-						wchar_t wszInfo[256];
-						V_swprintf_safe(wszInfo, L"%ls%s", bOwnLocalPlayer ? L"[LOCAL] " : bPlayerMuted ? L"[MUTED] " : L"[VOICE] ", szPlayerName);
-						if (NeoUI::Button(wszInfo).bPressed)
-						{
-							if (!bOwnLocalPlayer) GetClientVoiceMgr()->SetPlayerBlockedState(i, !bPlayerMuted);
-						}
-					}
-					g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
-				}
-				NeoUI::EndSection();
-				g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
-				g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
-				NeoUI::BeginSection();
-				{
-					NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 5);
-					{
-						if (NeoUI::Button(L"Back (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
-						{
-							m_state = STATE_ROOT;
-						}
-					}
-					NeoUI::EndHorizontal();
-				}
-				NeoUI::EndSection();
-			}
-			NeoUI::EndContext();
-		}
-		else
-		{
-			m_state = STATE_ROOT;
-		}
-	}
-	break;
-	case STATE_MAPLIST:
-	{
-		const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
-		g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
-		g_uiCtx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
-		g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
-		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * (g_iRowsInScreen + 1);
-		g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
-		NeoUI::BeginContext(&g_uiCtx, eMode, L"Pick map", "CtxMapPicker");
-		{
-			NeoUI::BeginSection(true);
-			{
-				for (auto &wszMap : m_vWszMaps)
-				{
-					if (NeoUI::Button(wszMap.wszName).bPressed)
-					{
-						V_wcscpy_safe(m_newGame.wszMap, wszMap.wszName);
-						m_state = STATE_NEWGAME;
-					}
-				}
-			}
-			NeoUI::EndSection();
-			g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
-			g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
-			NeoUI::BeginSection();
-			{
-				NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 5);
-				{
-					if (NeoUI::Button(L"Back (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
-					{
-						m_state = STATE_NEWGAME;
-					}
-				}
-				NeoUI::EndHorizontal();
-			}
-			NeoUI::EndSection();
-		}
-		NeoUI::EndContext();
-	}
-	break;
-	case STATE_KEYCAPTURE:
-	case STATE_CONFIRMSETTINGS:
-	case STATE_QUIT:
-	case STATE_SERVERPASSWORD:
-	{
-		surface()->DrawSetColor(COLOR_NEOPANELPOPUPBG);
-		surface()->DrawFilledRect(0, 0, wide, tall);
-		const int tallSplit = tall / 3;
-		surface()->DrawSetColor(COLOR_NEOPANELNORMALBG);
-		surface()->DrawFilledRect(0, tallSplit, wide, tall - tallSplit);
-
-		g_uiCtx.dPanel.wide = g_iRootSubPanelWide * 0.75f;
-		g_uiCtx.dPanel.tall = tallSplit;
-		g_uiCtx.dPanel.x = (wide / 2) - (g_uiCtx.dPanel.wide / 2);
-		g_uiCtx.dPanel.y = tallSplit + (tallSplit / 2) - g_uiCtx.iRowTall;
-		g_uiCtx.bgColor = COLOR_TRANSPARENT;
-		if (m_state == STATE_SERVERPASSWORD)
-		{
-			g_uiCtx.dPanel.y -= g_uiCtx.iRowTall;
-		}
-		// Technically can get away with have a common context name, they don't do anything
-		// special with it
-		NeoUI::BeginContext(&g_uiCtx, eMode, nullptr, "CtxCommonPopupDlg");
-		{
-			NeoUI::BeginSection(true);
-			{
-				g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
-				switch (m_state)
-				{
-				case STATE_KEYCAPTURE:
-				{
-					NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
-					NeoUI::Label(m_wszBindingText);
-					NeoUI::SwapFont(NeoUI::FONT_NTSMALL);
-					NeoUI::Label(L"Press ESC to cancel or DEL to remove keybind");
-				}
-				break;
-				case STATE_CONFIRMSETTINGS:
-				{
-					NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
-					NeoUI::Label(L"Settings changed: Do you want to apply the settings?");
-					NeoUI::SwapFont(NeoUI::FONT_NTSMALL);
-					NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 3);
-					{
-						if (NeoUI::Button(L"Save (Enter)").bPressed || NeoUI::Bind(KEY_ENTER))
-						{
-							NeoSettingsSave(&m_ns);
-							m_state = STATE_ROOT;
-						}
-						NeoUI::Pad();
-						if (NeoUI::Button(L"Discard (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
-						{
-							m_state = STATE_ROOT;
-						}
-					}
-					NeoUI::EndHorizontal();
-				}
-				break;
-				case STATE_QUIT:
-				{
-					NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
-					NeoUI::Label(L"Do you want to quit the game?");
-					NeoUI::SwapFont(NeoUI::FONT_NTSMALL);
-					NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 3);
-					{
-						if (NeoUI::Button(L"Quit (Enter)").bPressed || NeoUI::Bind(KEY_ENTER))
-						{
-							engine->ClientCmd_Unrestricted("quit");
-						}
-						NeoUI::Pad();
-						if (NeoUI::Button(L"Cancel (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
-						{
-							m_state = STATE_ROOT;
-						}
-					}
-					NeoUI::EndHorizontal();
-				}
-				break;
-				case STATE_SERVERPASSWORD:
-				{
-					NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
-					NeoUI::Label(L"Enter the server password");
-					NeoUI::SwapFont(NeoUI::FONT_NTSMALL);
-					g_uiCtx.bTextEditIsPassword = true;
-					NeoUI::TextEdit(L"Password:", m_wszServerPassword, SZWSZ_LEN(m_wszServerPassword));
-					g_uiCtx.bTextEditIsPassword = false;
-					NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 3);
-					{
-						if (NeoUI::Button(L"Enter (Enter)").bPressed || NeoUI::Bind(KEY_ENTER))
-						{
-							char szServerPassword[ARRAYSIZE(m_wszServerPassword)];
-							g_pVGuiLocalize->ConvertUnicodeToANSI(m_wszServerPassword, szServerPassword, sizeof(szServerPassword));
-							ConVarRef("password").SetValue(szServerPassword);
-							V_memset(m_wszServerPassword, 0, sizeof(m_wszServerPassword));
-
-							const auto gameServer = m_serverBrowser[m_iServerBrowserTab].m_filteredServers[m_iSelectedServer];
 							char connectCmd[256];
 							const char *szAddress = gameServer.m_NetAdr.GetConnectionAddressString();
 							V_sprintf_safe(connectCmd, "progress_enable; wait; connect %s", szAddress);
@@ -2012,34 +1742,323 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 
 							m_state = STATE_ROOT;
 						}
-						NeoUI::Pad();
-						if (NeoUI::Button(L"Cancel (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
-						{
-							V_memset(m_wszServerPassword, 0, sizeof(m_wszServerPassword));
-							m_state = STATE_SERVERBROWSER;
-						}
 					}
-					NeoUI::EndHorizontal();
 				}
-				break;
-				default:
-					break;
+			}
+			NeoUI::EndHorizontal();
+			if (m_bShowFilterPanel)
+			{
+				NeoUI::RingBoxBool(L"Server not full", &m_sbFilters.bServerNotFull);
+				NeoUI::RingBoxBool(L"Has users playing", &m_sbFilters.bHasUsersPlaying);
+				NeoUI::RingBoxBool(L"Is not password protected", &m_sbFilters.bIsNotPasswordProtected);
+				NeoUI::RingBox(L"Anti-cheat", ANTICHEAT_LABELS, ARRAYSIZE(ANTICHEAT_LABELS), &m_sbFilters.iAntiCheat);
+			}
+		}
+		NeoUI::EndSection();
+	}
+	NeoUI::EndContext();
+
+}
+
+void CNeoRoot::MainLoopMapList(const NeoUI::Mode eMode)
+{
+	int wide, tall;
+	GetSize(wide, tall);
+
+	const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
+	g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
+	g_uiCtx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
+	g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
+	g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * (g_iRowsInScreen + 1);
+	g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
+	NeoUI::BeginContext(&g_uiCtx, eMode, L"Pick map", "CtxMapPicker");
+	{
+		NeoUI::BeginSection(true);
+		{
+			for (auto &wszMap : m_vWszMaps)
+			{
+				if (NeoUI::Button(wszMap.wszName).bPressed)
+				{
+					V_wcscpy_safe(m_newGame.wszMap, wszMap.wszName);
+					m_state = STATE_NEWGAME;
 				}
+			}
+		}
+		NeoUI::EndSection();
+		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
+		NeoUI::BeginSection();
+		{
+			NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 5);
+			{
+				if (NeoUI::Button(L"Back (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
+				{
+					m_state = STATE_NEWGAME;
+				}
+			}
+			NeoUI::EndHorizontal();
+		}
+		NeoUI::EndSection();
+	}
+	NeoUI::EndContext();
+}
+
+void CNeoRoot::MainLoopServerDetails(const NeoUI::Mode eMode)
+{
+	int wide, tall;
+	GetSize(wide, tall);
+
+	const auto *gameServer = &m_serverBrowser[m_iServerBrowserTab].m_filteredServers[m_iSelectedServer];
+	const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
+	g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
+	g_uiCtx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
+	g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
+	g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * 6;
+	g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
+	NeoUI::BeginContext(&g_uiCtx, eMode, L"Server details", "CtxServerDetail");
+	{
+		NeoUI::BeginSection(true);
+		{
+			const bool bP = eMode == NeoUI::MODE_PAINT;
+			wchar_t wszText[128];
+			if (bP) g_pVGuiLocalize->ConvertANSIToUnicode(gameServer->GetName(), wszText, sizeof(wszText));
+			NeoUI::Label(L"Name:", wszText);
+			if (bP) g_pVGuiLocalize->ConvertANSIToUnicode(gameServer->m_NetAdr.GetConnectionAddressString(), wszText, sizeof(wszText));
+			NeoUI::Label(L"Address:", wszText);
+			if (bP) g_pVGuiLocalize->ConvertANSIToUnicode(gameServer->m_szMap, wszText, sizeof(wszText));
+			NeoUI::Label(L"Map:", wszText);
+			if (bP) V_swprintf_safe(wszText, L"%d/%d", gameServer->m_nPlayers, gameServer->m_nMaxPlayers);
+			NeoUI::Label(L"Ping:", wszText);
+			if (bP) V_swprintf_safe(wszText, L"%ls", gameServer->m_bSecure ? L"Enabled" : L"Disabled");
+			NeoUI::Label(L"VAC:", wszText);
+			if (bP) V_swprintf_safe(wszText, L"%d", gameServer->m_nPing);
+			NeoUI::Label(L"Ping:", wszText);
+
+			// TODO: Header same-style as serverlist's header
+		}
+		NeoUI::EndSection();
+		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+		g_uiCtx.dPanel.tall = (iTallTotal - g_uiCtx.iRowTall) - g_uiCtx.dPanel.tall;
+		NeoUI::BeginSection();
+		{
+			if (m_serverPlayers.m_players.IsEmpty())
+			{
+				g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
+				NeoUI::Label(L"There are no players in the server.");
+				g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_LEFT;
+			}
+			else
+			{
+				for (const auto &player : m_serverPlayers.m_players)
+				{
+					NeoUI::Label(player.wszName);
+					// TODO
+				}
+			}
+		}
+		NeoUI::EndSection();
+		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
+		NeoUI::BeginSection();
+		{
+			NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 5);
+			{
+				if (NeoUI::Button(L"Back (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
+				{
+					m_state = STATE_SERVERBROWSER;
+				}
+			}
+			NeoUI::EndHorizontal();
+		}
+		NeoUI::EndSection();
+	}
+	NeoUI::EndContext();
+}
+
+void CNeoRoot::MainLoopPlayerList(const NeoUI::Mode eMode)
+{
+	int wide, tall;
+	GetSize(wide, tall);
+
+	if (engine->IsInGame())
+	{
+		const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
+		g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
+		g_uiCtx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
+		g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
+		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * (g_iRowsInScreen + 1);
+		g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
+		NeoUI::BeginContext(&g_uiCtx, eMode, L"Player list", "CtxPlayerList");
+		{
+			NeoUI::BeginSection(true);
+			{
+				g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
+				for (int i = 1; i <= gpGlobals->maxClients; i++)
+				{
+					if (!g_PR->IsConnected(i) || g_PR->IsHLTV(i) || g_PR->IsFakePlayer(i))
+					{
+						continue;
+					}
+
+					const bool bOwnLocalPlayer = g_PR->IsLocalPlayer(i);
+					const bool bPlayerMuted = GetClientVoiceMgr()->IsPlayerBlocked(i);
+					const char *szPlayerName = g_PR->GetPlayerName(i);
+
+					wchar_t wszInfo[256];
+					V_swprintf_safe(wszInfo, L"%ls%s", bOwnLocalPlayer ? L"[LOCAL] " : bPlayerMuted ? L"[MUTED] " : L"[VOICE] ", szPlayerName);
+					if (NeoUI::Button(wszInfo).bPressed)
+					{
+						if (!bOwnLocalPlayer) GetClientVoiceMgr()->SetPlayerBlockedState(i, !bPlayerMuted);
+					}
+				}
+				g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
+			}
+			NeoUI::EndSection();
+			g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+			g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
+			NeoUI::BeginSection();
+			{
+				NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 5);
+				{
+					if (NeoUI::Button(L"Back (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
+					{
+						m_state = STATE_ROOT;
+					}
+				}
+				NeoUI::EndHorizontal();
 			}
 			NeoUI::EndSection();
 		}
 		NeoUI::EndContext();
 	}
-	break;
-	default:
-		break;
-	}
-
-	if (m_state != ePrevState)
+	else
 	{
-		UpdateControls();
+		m_state = STATE_ROOT;
 	}
 }
+
+void CNeoRoot::MainLoopPopup(const NeoUI::Mode eMode)
+{
+	int wide, tall;
+	GetSize(wide, tall);
+
+	surface()->DrawSetColor(COLOR_NEOPANELPOPUPBG);
+	surface()->DrawFilledRect(0, 0, wide, tall);
+	const int tallSplit = tall / 3;
+	surface()->DrawSetColor(COLOR_NEOPANELNORMALBG);
+	surface()->DrawFilledRect(0, tallSplit, wide, tall - tallSplit);
+
+	g_uiCtx.dPanel.wide = g_iRootSubPanelWide * 0.75f;
+	g_uiCtx.dPanel.tall = tallSplit;
+	g_uiCtx.dPanel.x = (wide / 2) - (g_uiCtx.dPanel.wide / 2);
+	g_uiCtx.dPanel.y = tallSplit + (tallSplit / 2) - g_uiCtx.iRowTall;
+	g_uiCtx.bgColor = COLOR_TRANSPARENT;
+	if (m_state == STATE_SERVERPASSWORD)
+	{
+		g_uiCtx.dPanel.y -= g_uiCtx.iRowTall;
+	}
+	// Technically can get away with have a common context name, since these dialogs
+	// don't do anything special with it
+	NeoUI::BeginContext(&g_uiCtx, eMode, nullptr, "CtxCommonPopupDlg");
+	{
+		NeoUI::BeginSection(true);
+		{
+			g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
+			switch (m_state)
+			{
+			case STATE_KEYCAPTURE:
+			{
+				NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
+				NeoUI::Label(m_wszBindingText);
+				NeoUI::SwapFont(NeoUI::FONT_NTSMALL);
+				NeoUI::Label(L"Press ESC to cancel or DEL to remove keybind");
+			}
+			break;
+			case STATE_CONFIRMSETTINGS:
+			{
+				NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
+				NeoUI::Label(L"Settings changed: Do you want to apply the settings?");
+				NeoUI::SwapFont(NeoUI::FONT_NTSMALL);
+				NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 3);
+				{
+					if (NeoUI::Button(L"Save (Enter)").bPressed || NeoUI::Bind(KEY_ENTER))
+					{
+						NeoSettingsSave(&m_ns);
+						m_state = STATE_ROOT;
+					}
+					NeoUI::Pad();
+					if (NeoUI::Button(L"Discard (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
+					{
+						m_state = STATE_ROOT;
+					}
+				}
+				NeoUI::EndHorizontal();
+			}
+			break;
+			case STATE_QUIT:
+			{
+				NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
+				NeoUI::Label(L"Do you want to quit the game?");
+				NeoUI::SwapFont(NeoUI::FONT_NTSMALL);
+				NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 3);
+				{
+					if (NeoUI::Button(L"Quit (Enter)").bPressed || NeoUI::Bind(KEY_ENTER))
+					{
+						engine->ClientCmd_Unrestricted("quit");
+					}
+					NeoUI::Pad();
+					if (NeoUI::Button(L"Cancel (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
+					{
+						m_state = STATE_ROOT;
+					}
+				}
+				NeoUI::EndHorizontal();
+			}
+			break;
+			case STATE_SERVERPASSWORD:
+			{
+				NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
+				NeoUI::Label(L"Enter the server password");
+				NeoUI::SwapFont(NeoUI::FONT_NTSMALL);
+				g_uiCtx.bTextEditIsPassword = true;
+				NeoUI::TextEdit(L"Password:", m_wszServerPassword, SZWSZ_LEN(m_wszServerPassword));
+				g_uiCtx.bTextEditIsPassword = false;
+				NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 3);
+				{
+					if (NeoUI::Button(L"Enter (Enter)").bPressed || NeoUI::Bind(KEY_ENTER))
+					{
+						char szServerPassword[ARRAYSIZE(m_wszServerPassword)];
+						g_pVGuiLocalize->ConvertUnicodeToANSI(m_wszServerPassword, szServerPassword, sizeof(szServerPassword));
+						ConVarRef("password").SetValue(szServerPassword);
+						V_memset(m_wszServerPassword, 0, sizeof(m_wszServerPassword));
+
+						const auto gameServer = m_serverBrowser[m_iServerBrowserTab].m_filteredServers[m_iSelectedServer];
+						char connectCmd[256];
+						const char *szAddress = gameServer.m_NetAdr.GetConnectionAddressString();
+						V_sprintf_safe(connectCmd, "progress_enable; wait; connect %s", szAddress);
+						engine->ClientCmd_Unrestricted(connectCmd);
+
+						m_state = STATE_ROOT;
+					}
+					NeoUI::Pad();
+					if (NeoUI::Button(L"Cancel (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
+					{
+						V_memset(m_wszServerPassword, 0, sizeof(m_wszServerPassword));
+						m_state = STATE_SERVERBROWSER;
+					}
+				}
+				NeoUI::EndHorizontal();
+			}
+			break;
+			default:
+				break;
+			}
+		}
+		NeoUI::EndSection();
+	}
+	NeoUI::EndContext();
+}
+
 
 bool NeoRootCaptureESC()
 {

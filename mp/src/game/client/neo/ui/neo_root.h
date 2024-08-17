@@ -217,7 +217,6 @@ void NeoSettingsInit(NeoSettings *ns);
 void NeoSettingsDeinit(NeoSettings *ns);
 void NeoSettingsRestore(NeoSettings *ns);
 void NeoSettingsSave(const NeoSettings *ns);
-void NeoSettingsMainLoop(NeoSettings *ns, const NeoUI::Mode eMode);
 
 void NeoSettings_General(NeoSettings *ns);
 void NeoSettings_Keys(NeoSettings *ns);
@@ -336,7 +335,6 @@ public:
 	CNeoRootInput *m_panelCaptureInput = nullptr;
 	void OnRelayedKeyCodeTyped(vgui::KeyCode code);
 	void OnRelayedKeyTyped(wchar_t unichar);
-	void RootMainMenuNeoUI(const NeoUI::Mode eMode);
 	void ApplySchemeSettings(vgui::IScheme *pScheme) final;
 	void Paint() final;
 	void OnMousePressed(vgui::MouseCode code) final;
@@ -347,6 +345,18 @@ public:
 	void FireGameEvent(IGameEvent *event) final;
 
 	void OnMainLoop(const NeoUI::Mode eMode);
+
+	void MainLoopRoot(const NeoUI::Mode eMode);
+	void MainLoopSettings(const NeoUI::Mode eMode);
+	void MainLoopNewGame(const NeoUI::Mode eMode);
+	void MainLoopServerBrowser(const NeoUI::Mode eMode);
+
+	void MainLoopMapList(const NeoUI::Mode eMode);
+	void MainLoopServerDetails(const NeoUI::Mode eMode);
+	void MainLoopPlayerList(const NeoUI::Mode eMode);
+
+	void MainLoopPopup(const NeoUI::Mode eMode);
+
 	NeoSettings m_ns = {};
 
 	NeoNewGame m_newGame = {};
