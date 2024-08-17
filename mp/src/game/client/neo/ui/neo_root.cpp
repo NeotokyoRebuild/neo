@@ -1494,7 +1494,7 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
 			NeoUI::BeginHorizontal(1);
 			{
-				static constexpr wchar_t *SBLABEL_NAMES[GSIW__TOTAL] = {
+				static constexpr const wchar_t *SBLABEL_NAMES[GSIW__TOTAL] = {
 					L"Lock", L"VAC", L"Name", L"Map", L"Players", L"Ping",
 				};
 
