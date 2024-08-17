@@ -94,6 +94,12 @@ void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode, const wchar_t *w
 			FontInfo *pFontI = &g_pCtx->fonts[i];
 			const int iTall = surface()->GetFontTall(pFontI->hdl);
 			pFontI->iYOffset = (g_pCtx->iRowTall / 2) - (iTall / 2);
+			{
+				int iPrevNextWide, iPrevNextTall;
+				surface()->GetTextSize(pFontI->hdl, L"<", iPrevNextWide, iPrevNextTall);
+				pFontI->iStartBtnXPos = (g_pCtx->iRowTall / 2) - (iPrevNextWide / 2);
+				pFontI->iStartBtnYPos = (g_pCtx->iRowTall / 2) - (iPrevNextTall / 2);
+			}
 		}
 
 		if (wszTitle)
@@ -492,23 +498,14 @@ void RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, const i
 							   g_pCtx->iLayoutY + pFontI->iYOffset);
 			surface()->DrawPrintText(wszText, V_wcslen(wszText));
 
-			// TODO: Generate once?
-			int iStartBtnXPos, iStartBtnYPos;
-			{
-				int iPrevNextWide, iPrevNextTall;
-				surface()->GetTextSize(pFontI->hdl, L"<", iPrevNextWide, iPrevNextTall);
-				iStartBtnXPos = (g_pCtx->iRowTall / 2) - (iPrevNextWide / 2);
-				iStartBtnYPos = (g_pCtx->iRowTall / 2) - (iPrevNextTall / 2);
-			}
-
 			// Left-side "<" prev button
 			GCtxDrawFilledRectXtoX(g_pCtx->iWgXPos, g_pCtx->iWgXPos + g_pCtx->iRowTall);
-			GCtxDrawSetTextPos(g_pCtx->iWgXPos + iStartBtnXPos, g_pCtx->iLayoutY + iStartBtnYPos);
+			GCtxDrawSetTextPos(g_pCtx->iWgXPos + pFontI->iStartBtnXPos, g_pCtx->iLayoutY + pFontI->iStartBtnYPos);
 			surface()->DrawPrintText(L"<", 1);
 
 			// Right-side ">" next button
 			GCtxDrawFilledRectXtoX(g_pCtx->dPanel.wide - g_pCtx->iRowTall, g_pCtx->dPanel.wide);
-			GCtxDrawSetTextPos(g_pCtx->dPanel.wide - g_pCtx->iRowTall + iStartBtnXPos, g_pCtx->iLayoutY + iStartBtnYPos);
+			GCtxDrawSetTextPos(g_pCtx->dPanel.wide - g_pCtx->iRowTall + pFontI->iStartBtnXPos, g_pCtx->iLayoutY + pFontI->iStartBtnYPos);
 			surface()->DrawPrintText(L">", 1);
 		}
 		break;
@@ -669,23 +666,14 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 									  g_pCtx->dPanel.y + g_pCtx->iLayoutY + pFontI->iYOffset);
 			surface()->DrawPrintText(wszText, iTextSize);
 
-			// TODO: Generate once?
-			int iStartBtnXPos, iStartBtnYPos;
-			{
-				int iPrevNextWide, iPrevNextTall;
-				surface()->GetTextSize(pFontI->hdl, L"<", iPrevNextWide, iPrevNextTall);
-				iStartBtnXPos = (g_pCtx->iRowTall / 2) - (iPrevNextWide / 2);
-				iStartBtnYPos = (g_pCtx->iRowTall / 2) - (iPrevNextTall / 2);
-			}
-
 			// Left-side "<" prev button
 			GCtxDrawFilledRectXtoX(g_pCtx->iWgXPos, g_pCtx->iWgXPos + g_pCtx->iRowTall);
-			GCtxDrawSetTextPos(g_pCtx->iWgXPos + iStartBtnXPos, g_pCtx->iLayoutY + iStartBtnYPos);
+			GCtxDrawSetTextPos(g_pCtx->iWgXPos + pFontI->iStartBtnXPos, g_pCtx->iLayoutY + pFontI->iStartBtnYPos);
 			surface()->DrawPrintText(L"<", 1);
 
 			// Right-side ">" next button
 			GCtxDrawFilledRectXtoX(g_pCtx->dPanel.wide - g_pCtx->iRowTall, g_pCtx->dPanel.wide);
-			GCtxDrawSetTextPos(g_pCtx->dPanel.wide - g_pCtx->iRowTall + iStartBtnXPos, g_pCtx->iLayoutY + iStartBtnYPos);
+			GCtxDrawSetTextPos(g_pCtx->dPanel.wide - g_pCtx->iRowTall + pFontI->iStartBtnXPos, g_pCtx->iLayoutY + pFontI->iStartBtnYPos);
 			surface()->DrawPrintText(L">", 1);
 		}
 		break;

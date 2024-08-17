@@ -84,6 +84,8 @@ struct FontInfo
 {
 	vgui::HFont hdl;
 	int iYOffset;
+	int iStartBtnXPos;
+	int iStartBtnYPos;
 };
 
 enum EFont
