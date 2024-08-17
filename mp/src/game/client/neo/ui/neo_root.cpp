@@ -46,15 +46,16 @@ using namespace vgui;
 static CDllDemandLoader g_GameUIDLL( "GameUI" );
 
 CNeoRoot *g_pNeoRoot = nullptr;
+void NeoToggleconsole();
 
 namespace {
 
-static inline NeoUI::Context g_uiCtx;
-static inline int g_iRowsInScreen;
+inline NeoUI::Context g_uiCtx;
+int g_iRowsInScreen;
 int g_iAvatar = 64;
 int g_iRootSubPanelWide = 600;
 int g_iGSIX[GSIW__TOTAL] = {};
-static constexpr wchar_t WSZ_GAME_TITLE[] = L"neatbkyoc ue";
+constexpr wchar_t WSZ_GAME_TITLE[] = L"neatbkyoc ue";
 
 const wchar_t *QUALITY_LABELS[] = {
 	L"Low",
@@ -71,6 +72,7 @@ enum QualityEnum
 	QUALITY_VERYHIGH,
 };
 
+ConCommand neo_toggleconsole("neo_toggleconsole", NeoToggleconsole);
 }
 
 void OverrideGameUI()
@@ -408,7 +410,7 @@ void NeoSettingsRestore(NeoSettings *ns)
 	{
 		NeoSettings::Keys *pKeys = &ns->keys;
 		pKeys->bWeaponFastSwitch = hud_fastswitch.GetBool();
-		pKeys->bDeveloperConsole = (gameuifuncs->GetButtonCodeForBind("toggleconsole") > KEY_NONE);
+		pKeys->bDeveloperConsole = (gameuifuncs->GetButtonCodeForBind("neo_toggleconsole") > KEY_NONE);
 		for (int i = 0; i < pKeys->iBindsSize; ++i)
 		{
 			auto *bind = &pKeys->vBinds[i];
@@ -558,7 +560,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 
 			if (pKeys->bDeveloperConsole)
 			{
-				V_sprintf_safe(cmdStr, "bind \"`\" \"toggleconsole\"\n");
+				V_sprintf_safe(cmdStr, "bind \"`\" \"neo_toggleconsole\"\n");
 				engine->ClientCmd_Unrestricted(cmdStr);
 			}
 		}
@@ -2037,8 +2039,22 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 	NeoUI::EndContext();
 }
 
+// NEO NOTE (nullsystem): NeoRootCaptureESC is so that ESC keybinds can be recognized by non-root states, but root
+// state still want to have ESC handled by the game as IsVisible/HasFocus isn't reliable indicator to depend on.
+// This goes along with NeoToggleconsole which if the toggleconsole is activated on non-root state that can end up
+// blocking ESC key from being usable in-game, so have to force it back to root state first to help with
+// NeoRootCaptureESC condition. So this will do.
 
 bool NeoRootCaptureESC()
 {
 	return (g_pNeoRoot && g_pNeoRoot->IsEnabled() && g_pNeoRoot->m_state != STATE_ROOT);
+}
+
+void NeoToggleconsole()
+{
+	if (engine->IsInGame() && g_pNeoRoot)
+	{
+		g_pNeoRoot->m_state = STATE_ROOT;
+	}
+	engine->ClientCmd_Unrestricted("toggleconsole");
 }

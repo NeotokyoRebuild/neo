@@ -1256,6 +1256,15 @@ void CHLClient::PostInit()
 	{
 		Assert(false);
 	}
+
+	// Rebind ` from toggleconsole to neo_toggleconsole
+	const auto toggleConsoleBind = gameuifuncs->GetButtonCodeForBind("toggleconsole");
+	if (toggleConsoleBind == KEY_BACKQUOTE)
+	{
+		char cmdStr[128];
+		V_sprintf_safe(cmdStr, "bind \"`\" \"neo_toggleconsole\"\n");
+		engine->ClientCmd_Unrestricted(cmdStr);
+	}
 #endif
 }
 
