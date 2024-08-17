@@ -1687,12 +1687,14 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 								engine->ClientCmd_Unrestricted("disconnect");
 							}
 
+							ConVarRef("password").SetValue("");
+							V_memset(m_wszServerPassword, 0, sizeof(m_wszServerPassword));
+
 							// NEO NOTE (nullsystem): Deal with password protected server
 							const auto gameServer = m_serverBrowser[m_iServerBrowserTab].m_filteredServers[m_iSelectedServer];
 							if (gameServer.m_bPassword)
 							{
-								// TODO
-								m_state = STATE_ROOT;
+								m_state = STATE_SERVERPASSWORD;
 							}
 							else
 							{
@@ -1833,6 +1835,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 	case STATE_KEYCAPTURE:
 	case STATE_CONFIRMSETTINGS:
 	case STATE_QUIT:
+	case STATE_SERVERPASSWORD:
 	{
 		surface()->DrawSetColor(COLOR_NEOPANELPOPUPBG);
 		surface()->DrawFilledRect(0, 0, wide, tall);
@@ -1845,19 +1848,26 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		g_uiCtx.dPanel.x = (wide / 2) - (g_uiCtx.dPanel.wide / 2);
 		g_uiCtx.dPanel.y = tallSplit + (tallSplit / 2) - g_uiCtx.iRowTall;
 		g_uiCtx.bgColor = COLOR_TRANSPARENT;
+		if (m_state == STATE_SERVERPASSWORD)
+		{
+			g_uiCtx.dPanel.y -= g_uiCtx.iRowTall;
+		}
 		NeoUI::BeginContext(&g_uiCtx, eMode, nullptr);
 		{
 			NeoUI::BeginSection(true);
 			{
 				g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
-				if (m_state == STATE_KEYCAPTURE)
+				switch (m_state)
+				{
+				case STATE_KEYCAPTURE:
 				{
 					NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 					NeoUI::Label(m_wszBindingText);
 					NeoUI::SwapFont(NeoUI::FONT_NTSMALL);
 					NeoUI::Label(L"Press ESC to cancel or DEL to remove keybind");
 				}
-				else if (m_state == STATE_CONFIRMSETTINGS)
+				break;
+				case STATE_CONFIRMSETTINGS:
 				{
 					NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 					NeoUI::Label(L"Settings changed: Do you want to apply the settings?");
@@ -1877,7 +1887,8 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 					}
 					NeoUI::EndHorizontal();
 				}
-				else if (m_state == STATE_QUIT)
+				break;
+				case STATE_QUIT:
 				{
 					NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 					NeoUI::Label(L"Do you want to quit the game?");
@@ -1895,6 +1906,45 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 						}
 					}
 					NeoUI::EndHorizontal();
+				}
+				break;
+				case STATE_SERVERPASSWORD:
+				{
+					NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
+					NeoUI::Label(L"Enter the server password");
+					NeoUI::SwapFont(NeoUI::FONT_NTSMALL);
+					g_uiCtx.bTextEditIsPassword = true;
+					NeoUI::TextEdit(L"Password:", m_wszServerPassword, SZWSZ_LEN(m_wszServerPassword));
+					g_uiCtx.bTextEditIsPassword = false;
+					NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 3);
+					{
+						if (NeoUI::Button(L"Enter (Enter)").bPressed || NeoUI::Bind(KEY_ENTER))
+						{
+							char szServerPassword[ARRAYSIZE(m_wszServerPassword)];
+							g_pVGuiLocalize->ConvertUnicodeToANSI(m_wszServerPassword, szServerPassword, sizeof(szServerPassword));
+							ConVarRef("password").SetValue(szServerPassword);
+							V_memset(m_wszServerPassword, 0, sizeof(m_wszServerPassword));
+
+							const auto gameServer = m_serverBrowser[m_iServerBrowserTab].m_filteredServers[m_iSelectedServer];
+							char connectCmd[256];
+							const char *szAddress = gameServer.m_NetAdr.GetConnectionAddressString();
+							V_sprintf_safe(connectCmd, "progress_enable; wait; connect %s", szAddress);
+							engine->ClientCmd_Unrestricted(connectCmd);
+
+							m_state = STATE_ROOT;
+						}
+						NeoUI::Pad();
+						if (NeoUI::Button(L"Cancel (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
+						{
+							V_memset(m_wszServerPassword, 0, sizeof(m_wszServerPassword));
+							m_state = STATE_SERVERBROWSER;
+						}
+					}
+					NeoUI::EndHorizontal();
+				}
+				break;
+				default:
+					break;
 				}
 			}
 			NeoUI::EndSection();

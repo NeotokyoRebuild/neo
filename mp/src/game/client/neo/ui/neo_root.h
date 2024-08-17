@@ -281,10 +281,12 @@ enum RootState
 	STATE_SERVERBROWSER,
 
 	STATE_MAPLIST,
+	STATE_SERVERDETAILS,
+
 	STATE_KEYCAPTURE,
 	STATE_CONFIRMSETTINGS,
 	STATE_QUIT,
-	STATE_SERVERDETAILS,
+	STATE_SERVERPASSWORD,
 
 	STATE__TOTAL,
 };
@@ -387,6 +389,8 @@ public:
 	int m_iTitleHeight;
 	wchar_t m_wszHostname[128];
 	wchar_t m_wszMap[128];
+
+	wchar_t m_wszServerPassword[128] = {};
 };
 
 extern CNeoRoot *g_pNeoRoot;

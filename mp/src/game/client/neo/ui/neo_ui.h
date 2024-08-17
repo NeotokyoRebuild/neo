@@ -128,6 +128,7 @@ struct Context
 
 	TextStyle eButtonTextStyle;
 	TextStyle eLabelTextStyle;
+	bool bTextEditIsPassword;
 
 	FontInfo fonts[FONT__TOTAL];
 	EFont eFont = FONT_NTSMALL;

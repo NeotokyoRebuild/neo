@@ -76,6 +76,7 @@ void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode, const wchar_t *w
 	g_pCtx->bValueEdited = false;
 	g_pCtx->eButtonTextStyle = TEXTSTYLE_CENTER;
 	g_pCtx->eLabelTextStyle = TEXTSTYLE_LEFT;
+	g_pCtx->bTextEditIsPassword = false;
 
 	switch (g_pCtx->eMode)
 	{
@@ -735,6 +736,15 @@ void SliderInt(const wchar_t *wszLeftLabel, int *iValue, const int iMin, const i
 
 void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
 {
+	static wchar_t staticWszPasswordChars[256] = {};
+	if (staticWszPasswordChars[0] == L'\0')
+	{
+		for (int i = 0; i < (ARRAYSIZE(staticWszPasswordChars) - 1); ++i)
+		{
+			staticWszPasswordChars[i] = L'*';
+		}
+	}
+
 	auto [bMouseIn, bFocused] = InternalGetMouseinFocused();
 
 	if (IN_BETWEEN(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall))
@@ -748,14 +758,31 @@ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
 			InternalLabel(wszLeftLabel, false);
 			GCtxDrawFilledRectXtoX(g_pCtx->iWgXPos, g_pCtx->dPanel.wide);
 			GCtxDrawSetTextPos(g_pCtx->iWgXPos + g_pCtx->iMarginX, g_pCtx->iLayoutY + pFontI->iYOffset);
-			surface()->DrawPrintText(wszText, V_wcslen(wszText));
+			const int iWszTextSize = V_wcslen(wszText);
+			if (g_pCtx->bTextEditIsPassword)
+			{
+				surface()->DrawPrintText(staticWszPasswordChars, iWszTextSize);
+			}
+			else
+			{
+				surface()->DrawPrintText(wszText, iWszTextSize);
+			}
 			if (bFocused)
 			{
 				const bool bEditBlinkShow = (static_cast<int>(gpGlobals->curtime * 1.5f) % 2 == 0);
 				if (bEditBlinkShow)
 				{
 					int iFontWide, iFontTall;
-					surface()->GetTextSize(pFontI->hdl, wszText, iFontWide, iFontTall);
+					if (g_pCtx->bTextEditIsPassword)
+					{
+						staticWszPasswordChars[iWszTextSize] = L'\0';
+						surface()->GetTextSize(pFontI->hdl, staticWszPasswordChars, iFontWide, iFontTall);
+						staticWszPasswordChars[iWszTextSize] = L'*';
+					}
+					else
+					{
+						surface()->GetTextSize(pFontI->hdl, wszText, iFontWide, iFontTall);
+					}
 					const int iMarkX = g_pCtx->iWgXPos + g_pCtx->iMarginX + iFontWide;
 					surface()->DrawSetColor(COLOR_NEOPANELTEXTBRIGHT);
 					GCtxDrawFilledRectXtoX(iMarkX, pFontI->iYOffset,
