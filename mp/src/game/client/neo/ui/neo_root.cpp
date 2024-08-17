@@ -1570,12 +1570,8 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 							continue;
 						}
 
-						wchar_t wszInfo[128];
-						V_swprintf_safe(wszInfo, L"%s %s %d", server.GetName(), server.m_szMap, server.m_nPing);
-						Color drawColor = COLOR_NEOPANELNORMALBG;
-						if (m_iSelectedServer == i) drawColor = COLOR_NEOPANELACCENTBG;
-						surface()->DrawSetColor(drawColor);
-						if (const auto btn = NeoUI::Button(L""); btn.bPressed) // Dummy button, draw over it in paint
+						const auto btn = NeoUI::Button(L"");
+						if (btn.bPressed) // Dummy button, draw over it in paint
 						{
 							m_iSelectedServer = i;
 							if (btn.bKeyPressed || btn.bMouseDoublePressed)
@@ -1583,13 +1579,16 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 								bEnterServer = true;
 							}
 						}
-						if (g_uiCtx.iActiveSection == g_uiCtx.iSection && g_uiCtx.iActive == (g_uiCtx.iWidget - 1))
-						{
-							drawColor = COLOR_NEOPANELSELECTBG;
-						}
+
 						if (eMode == NeoUI::MODE_PAINT)
 						{
+							Color drawColor = COLOR_NEOPANELNORMALBG;
+							if (m_iSelectedServer == i) drawColor = COLOR_NEOPANELACCENTBG;
+							if (btn.bMouseHover) drawColor = COLOR_NEOPANELSELECTBG;
+
 							surface()->DrawSetColor(drawColor);
+							NeoUI::GCtxDrawFilledRectXtoX(0, -g_uiCtx.iRowTall, g_uiCtx.dPanel.wide, 0);
+
 							// TODO/TEMP (nullsystem): Probably should be more "custom" struct verse gameserveritem_t?
 							int xPos = 0;
 							const int yPos = g_uiCtx.iYOffset[g_uiCtx.iSection] - g_uiCtx.iRowTall;

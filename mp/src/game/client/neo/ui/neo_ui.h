@@ -151,7 +151,8 @@ struct Context
 	// Input management
 	int iWidget; // Always increments per widget use
 	int iSection;
-	int iSectionWidgets[MAX_SECTIONS];
+	int iCanActives; // Only increment if widget can be activated
+	int iSectionCanActive[MAX_SECTIONS];
 
 	int iHot;
 	int iHotSection;

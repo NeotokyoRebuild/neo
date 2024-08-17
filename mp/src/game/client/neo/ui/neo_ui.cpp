@@ -155,7 +155,7 @@ void EndContext()
 				int iTally = 0;
 				for (int i = 0; i < iTotalSection; ++i)
 				{
-					iTally += g_pCtx->iSectionWidgets[i];
+					iTally += g_pCtx->iSectionCanActive[i];
 				}
 				if (iTally == 0)
 				{
@@ -169,7 +169,7 @@ void EndContext()
 					{
 						g_pCtx->iActiveSection += iIncr;
 						g_pCtx->iActiveSection = LoopAroundInArray(g_pCtx->iActiveSection, iTotalSection);
-					} while (g_pCtx->iSectionWidgets[g_pCtx->iActiveSection] == 0);
+					} while (g_pCtx->iSectionCanActive[g_pCtx->iActiveSection] == 0);
 				}
 			}
 			g_pCtx->iHotSection = g_pCtx->iActiveSection;
@@ -187,6 +187,7 @@ void BeginSection(const bool bDefaultFocus)
 	g_pCtx->iPartitionY = 0;
 	g_pCtx->iLayoutY = -(g_pCtx->iYOffset[g_pCtx->iSection] * g_pCtx->iRowTall);
 	g_pCtx->iWidget = 0;
+	g_pCtx->iCanActives = 0;
 
 	g_pCtx->iMouseRelX = g_pCtx->iMouseAbsX - g_pCtx->dPanel.x;
 	g_pCtx->iMouseRelY = g_pCtx->iMouseAbsY - g_pCtx->dPanel.y;
@@ -287,7 +288,7 @@ void EndSection()
 		}
 	}
 
-	g_pCtx->iSectionWidgets[g_pCtx->iSection] = g_pCtx->iWidget;
+	g_pCtx->iSectionCanActive[g_pCtx->iSection] = g_pCtx->iCanActives;
 	++g_pCtx->iSection;
 }
 
@@ -474,6 +475,7 @@ NeoUI::RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText)
 		}
 	}
 
+	++g_pCtx->iCanActives;
 	InternalUpdatePartitionState(wdgState);
 	return ret;
 }
@@ -548,6 +550,7 @@ void RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, const i
 		}
 	}
 
+	++g_pCtx->iCanActives;
 	InternalUpdatePartitionState(wdgState);
 }
 
@@ -809,6 +812,7 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 		}
 	}
 
+	++g_pCtx->iCanActives;
 	InternalUpdatePartitionState(wdgState);
 }
 
@@ -918,6 +922,7 @@ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
 		}
 	}
 
+	++g_pCtx->iCanActives;
 	InternalUpdatePartitionState(wdgState);
 }
 
