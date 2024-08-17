@@ -632,7 +632,7 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 }
 
 void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, const float flMax,
-				   const int iDp, const float flStep)
+				   const int iDp, const float flStep, const wchar_t *wszSpecialText)
 {
 	const auto wdgState = InternalGetMouseinFocused();
 
@@ -676,12 +676,13 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 			GCtxDrawFilledRectXtoX(g_pCtx->iWgXPos, g_pCtx->iWgXPos + static_cast<int>(flPerc * flBarMaxWide));
 
 			// Center-text label
+			const bool bSpecial = (wszSpecialText && !wdgState.bActive && *flValue == 0.0f);
 			int iFontWide, iFontTall;
-			surface()->GetTextSize(pFontI->hdl, pSInfo->wszText, iFontWide, iFontTall);
+			surface()->GetTextSize(pFontI->hdl, bSpecial ? wszSpecialText : pSInfo->wszText, iFontWide, iFontTall);
 			const int iFontStartX = g_pCtx->iWgXPos + (((g_pCtx->dPanel.wide - g_pCtx->iWgXPos) / 2) - (iFontWide / 2));
-			GCtxDrawSetTextPos(iFontStartX,
-							   g_pCtx->iLayoutY + pFontI->iYOffset);
-			surface()->DrawPrintText(pSInfo->wszText, V_wcslen(pSInfo->wszText));
+			GCtxDrawSetTextPos(iFontStartX, g_pCtx->iLayoutY + pFontI->iYOffset);
+			surface()->DrawPrintText(bSpecial ? wszSpecialText : pSInfo->wszText,
+									 bSpecial ? V_wcslen(wszSpecialText) : V_wcslen(pSInfo->wszText));
 
 			// Left-side "<" prev button
 			GCtxDrawFilledRectXtoX(g_pCtx->iWgXPos, g_pCtx->iWgXPos + g_pCtx->iRowTall);
@@ -826,10 +827,10 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 	InternalUpdatePartitionState(wdgState);
 }
 
-void SliderInt(const wchar_t *wszLeftLabel, int *iValue, const int iMin, const int iMax, const int iStep)
+void SliderInt(const wchar_t *wszLeftLabel, int *iValue, const int iMin, const int iMax, const int iStep, const wchar_t *wszSpecialText)
 {
 	float flValue = *iValue;
-	Slider(wszLeftLabel, &flValue, static_cast<float>(iMin), static_cast<float>(iMax), 0, static_cast<float>(iStep));
+	Slider(wszLeftLabel, &flValue, static_cast<float>(iMin), static_cast<float>(iMax), 0, static_cast<float>(iStep), wszSpecialText);
 	*iValue = static_cast<int>(flValue);
 }
 

@@ -1539,7 +1539,7 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
 		}
 		NeoUI::EndSection();
-		static constexpr int FILTER_ROWS = 4;
+		static constexpr int FILTER_ROWS = 5;
 		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
 		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * (g_iRowsInScreen - 1);
 		if (m_bShowFilterPanel) g_uiCtx.dPanel.tall -= g_uiCtx.iRowTall * FILTER_ROWS;
@@ -1576,6 +1576,7 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 					else if (m_sbFilters.bIsNotPasswordProtected && server.m_bPassword) bSkipServer = true;
 					else if (m_sbFilters.iAntiCheat == ANTICHEAT_OFF && server.m_bSecure) bSkipServer = true;
 					else if (m_sbFilters.iAntiCheat == ANTICHEAT_ON && !server.m_bSecure) bSkipServer = true;
+					else if (m_sbFilters.iMaxPing != 0 && server.m_nPing > m_sbFilters.iMaxPing) bSkipServer = true;
 					if (bSkipServer)
 					{
 						continue;
@@ -1744,6 +1745,7 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 				NeoUI::RingBoxBool(L"Has users playing", &m_sbFilters.bHasUsersPlaying);
 				NeoUI::RingBoxBool(L"Is not password protected", &m_sbFilters.bIsNotPasswordProtected);
 				NeoUI::RingBox(L"Anti-cheat", ANTICHEAT_LABELS, ARRAYSIZE(ANTICHEAT_LABELS), &m_sbFilters.iAntiCheat);
+				NeoUI::SliderInt(L"Maximum ping", &m_sbFilters.iMaxPing, 0, 500, 10, L"No limit");
 			}
 		}
 		NeoUI::EndSection();

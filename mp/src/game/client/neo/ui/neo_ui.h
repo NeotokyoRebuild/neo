@@ -208,8 +208,9 @@ RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText);
 void RingBoxBool(const wchar_t *wszLeftLabel, bool *bChecked);
 void RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
 void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, const float flMax,
-			const int iDp = 2, const float flStep = 1.0f);
-void SliderInt(const wchar_t *wszLeftLabel, int *iValue, const int iMin, const int iMax, const int iStep = 1);
+			const int iDp = 2, const float flStep = 1.0f, const wchar_t *wszSpecialText = nullptr);
+void SliderInt(const wchar_t *wszLeftLabel, int *iValue, const int iMin, const int iMax, const int iStep = 1,
+			   const wchar_t *wszSpecialText = nullptr);
 void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize);
 bool Bind(const ButtonCode_t eCode);
 }

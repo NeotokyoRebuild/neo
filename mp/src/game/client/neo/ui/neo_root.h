@@ -239,6 +239,7 @@ struct ServerBrowserFilters
 	bool bHasUsersPlaying = false;
 	bool bIsNotPasswordProtected = false;
 	int iAntiCheat = 0;
+	int iMaxPing = 0;
 };
 
 class CNeoRoot;
