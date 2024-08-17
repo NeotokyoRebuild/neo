@@ -966,6 +966,8 @@ CNeoRoot::CNeoRoot(VPANEL parent)
 	SetMouseInputEnabled(true);
 	UpdateControls();
 	ivgui()->AddTickSignal(GetVPanel(), 200);
+	ListenForGameEvent("server_spawn");
+	ListenForGameEvent("game_newmap");
 
 	vgui::IScheme *pScheme = vgui::scheme()->GetIScheme(neoscheme);
 	ApplySchemeSettings(pScheme);
@@ -989,21 +991,12 @@ IGameUI *CNeoRoot::GetGameUI()
 
 void CNeoRoot::UpdateControls()
 {
-	int wide, tall;
-	GetSize(wide, tall);
+
 	if (m_state == STATE_ROOT)
 	{
-		const int yTopPos = tall / 2 - ((g_uiCtx.iRowTall * BTNS_TOTAL) / 2);
-
-		int iTitleWidth, iTitleHeight;
+		[[maybe_unused]] int iTitleHeight;
 		surface()->DrawSetTextFont(m_hTextFonts[FONT_LOGO]);
-		surface()->GetTextSize(m_hTextFonts[FONT_LOGO], WSZ_GAME_TITLE, iTitleWidth, iTitleHeight);
-
-		g_uiCtx.dPanel.wide = iTitleWidth + (2 * g_uiCtx.iMarginX);
-		g_uiCtx.dPanel.tall = tall;
-		g_uiCtx.dPanel.x = (wide / 4) - (g_uiCtx.dPanel.wide / 2);
-		g_uiCtx.dPanel.y = yTopPos;
-		g_uiCtx.bgColor = COLOR_TRANSPARENT;
+		surface()->GetTextSize(m_hTextFonts[FONT_LOGO], WSZ_GAME_TITLE, m_iTitleWidth, iTitleHeight);
 	}
 	g_uiCtx.iFocusDirection = 0;
 	g_uiCtx.iFocus = NeoUI::FOCUSOFF_NUM;
@@ -1079,135 +1072,184 @@ void CNeoRoot::Paint()
 	OnMainLoop(NeoUI::MODE_PAINT);
 }
 
-void CNeoRoot::PaintRootMainSection()
+void CNeoRoot::RootMainMenuNeoUI(const NeoUI::Mode eMode)
 {
 	int wide, tall;
 	GetSize(wide, tall);
+	const int yTopPos = tall / 2 - ((g_uiCtx.iRowTall * BTNS_TOTAL) / 2);
+	g_uiCtx.dPanel.wide = m_iTitleWidth + (2 * g_uiCtx.iMarginX);
+	g_uiCtx.dPanel.tall = tall - yTopPos;
+	g_uiCtx.dPanel.x = (wide / 4) - (g_uiCtx.dPanel.wide / 2);
+	g_uiCtx.dPanel.y = yTopPos;
+	g_uiCtx.bgColor = COLOR_TRANSPARENT;
+
+	NeoUI::BeginContext(&g_uiCtx, eMode);
+	NeoUI::BeginSection(true);
+	{
+		const int iFlagToMatch = engine->IsInGame() ? FLAG_SHOWINGAME : FLAG_SHOWINMAIN;
+		for (int i = 0; i < BTNS_TOTAL; ++i)
+		{
+			const auto btnInfo = BTNS_INFO[i];
+			if (btnInfo.flags & iFlagToMatch)
+			{
+				const auto retBtn = NeoUI::Button(m_wszDispBtnTexts[i]);
+				if (retBtn.bPressed)
+				{
+					surface()->PlaySound("ui/buttonclickrelease.wav");
+					if (btnInfo.gamemenucommand)
+					{
+						m_state = STATE_ROOT;
+						GetGameUI()->SendMainMenuCommand(btnInfo.gamemenucommand);
+					}
+					else if (btnInfo.nextState < STATE__TOTAL)
+					{
+						m_state = btnInfo.nextState;
+						if (m_state == STATE_SETTINGS)
+						{
+							NeoSettingsRestore(&m_ns);
+						}
+					}
+				}
+				if (retBtn.bMouseHover && i != m_iHoverBtn)
+				{
+					// Sound rollover feedback
+					surface()->PlaySound("ui/buttonrollover.wav");
+					m_iHoverBtn = i;
+				}
+			}
+		}
+	}
+	NeoUI::EndSection();
 
 	const int iBtnPlaceXMid = (wide / 4);
-
-	const int yTopPos = tall / 2 - ((g_uiCtx.iRowTall * BTNS_TOTAL) / 2);
 	const int iRightXPos = iBtnPlaceXMid + (m_iBtnWide / 2) + g_uiCtx.iMarginX;
 	int iRightSideYStart = yTopPos;
 
-	// Draw title
-	int iTitleWidth, iTitleHeight;
-	surface()->DrawSetTextFont(m_hTextFonts[FONT_LOGO]);
-	surface()->GetTextSize(m_hTextFonts[FONT_LOGO], WSZ_GAME_TITLE, iTitleWidth, iTitleHeight);
-	m_iBtnWide = iTitleWidth + (2 * g_uiCtx.iMarginX);
-
-	surface()->DrawSetTextColor(COLOR_NEOTITLE);
-	surface()->DrawSetTextPos(iBtnPlaceXMid - (iTitleWidth / 2), yTopPos - iTitleHeight);
-	surface()->DrawPrintText(WSZ_GAME_TITLE, SZWSZ_LEN(WSZ_GAME_TITLE));
-
-	surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
-	ISteamUser *steamUser = steamapicontext->SteamUser();
-	ISteamFriends *steamFriends = steamapicontext->SteamFriends();
-	if (steamUser && steamFriends)
+	if (eMode == NeoUI::MODE_PAINT)
 	{
-		const int iSteamPlaceXStart = iRightXPos;
+		// Draw title
+		int iTitleWidth, iTitleHeight;
+		surface()->DrawSetTextFont(m_hTextFonts[FONT_LOGO]);
+		surface()->GetTextSize(m_hTextFonts[FONT_LOGO], WSZ_GAME_TITLE, iTitleWidth, iTitleHeight);
+		m_iBtnWide = iTitleWidth + (2 * g_uiCtx.iMarginX);
 
-		// Draw player info (top left corner)
-		const CSteamID steamID = steamUser->GetSteamID();
-		if (!m_avImage)
+		surface()->DrawSetTextColor(COLOR_NEOTITLE);
+		surface()->DrawSetTextPos(iBtnPlaceXMid - (iTitleWidth / 2), yTopPos - iTitleHeight);
+		surface()->DrawPrintText(WSZ_GAME_TITLE, SZWSZ_LEN(WSZ_GAME_TITLE));
+
+		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
+		ISteamUser *steamUser = steamapicontext->SteamUser();
+		ISteamFriends *steamFriends = steamapicontext->SteamFriends();
+		if (steamUser && steamFriends)
 		{
-			m_avImage = new CAvatarImage;
-			m_avImage->SetAvatarSteamID(steamID, k_EAvatarSize64x64);
-		}
-		m_avImage->SetPos(iSteamPlaceXStart + g_uiCtx.iMarginX, iRightSideYStart + g_uiCtx.iMarginY);
-		m_avImage->SetSize(g_iAvatar, g_iAvatar);
-		m_avImage->Paint();
+			const int iSteamPlaceXStart = iRightXPos;
 
-		char szTextBuf[512] = {};
-		const char *szSteamName = steamFriends->GetPersonaName();
-		const char *szNeoName = neo_name.GetString();
-		const bool bUseNeoName = (szNeoName && szNeoName[0] != '\0' && !cl_onlysteamnick.GetBool());
-		V_sprintf_safe(szTextBuf, "%s", (bUseNeoName) ? szNeoName : szSteamName);
+			// Draw player info (top left corner)
+			const CSteamID steamID = steamUser->GetSteamID();
+			if (!m_avImage)
+			{
+				m_avImage = new CAvatarImage;
+				m_avImage->SetAvatarSteamID(steamID, k_EAvatarSize64x64);
+			}
+			m_avImage->SetPos(iSteamPlaceXStart + g_uiCtx.iMarginX, iRightSideYStart + g_uiCtx.iMarginY);
+			m_avImage->SetSize(g_iAvatar, g_iAvatar);
+			m_avImage->Paint();
 
-		wchar_t wszTextBuf[512] = {};
-		g_pVGuiLocalize->ConvertANSIToUnicode(szTextBuf, wszTextBuf, sizeof(wszTextBuf));
+			char szTextBuf[512] = {};
+			const char *szSteamName = steamFriends->GetPersonaName();
+			const char *szNeoName = neo_name.GetString();
+			const bool bUseNeoName = (szNeoName && szNeoName[0] != '\0' && !cl_onlysteamnick.GetBool());
+			V_sprintf_safe(szTextBuf, "%s", (bUseNeoName) ? szNeoName : szSteamName);
 
-		int iMainTextWidth, iMainTextHeight;
-		surface()->DrawSetTextFont(m_hTextFonts[FONT_NTNORMAL]);
-		surface()->GetTextSize(m_hTextFonts[FONT_NTNORMAL], wszTextBuf, iMainTextWidth, iMainTextHeight);
-
-		const int iMainTextStartPosX = g_uiCtx.iMarginX + g_iAvatar + g_uiCtx.iMarginX;
-		surface()->DrawSetTextPos(iSteamPlaceXStart + iMainTextStartPosX, iRightSideYStart + g_uiCtx.iMarginY);
-		surface()->DrawPrintText(wszTextBuf, V_strlen(szTextBuf));
-
-		if (bUseNeoName)
-		{
-			V_sprintf_safe(szTextBuf, "(Steam name: %s)", szSteamName);
+			wchar_t wszTextBuf[512] = {};
 			g_pVGuiLocalize->ConvertANSIToUnicode(szTextBuf, wszTextBuf, sizeof(wszTextBuf));
 
-			int iSteamSubTextWidth, iSteamSubTextHeight;
-			surface()->DrawSetTextFont(m_hTextFonts[FONT_NTSMALL]);
-			surface()->GetTextSize(m_hTextFonts[FONT_NTSMALL], wszTextBuf, iSteamSubTextWidth, iSteamSubTextHeight);
+			int iMainTextWidth, iMainTextHeight;
+			surface()->DrawSetTextFont(m_hTextFonts[FONT_NTNORMAL]);
+			surface()->GetTextSize(m_hTextFonts[FONT_NTNORMAL], wszTextBuf, iMainTextWidth, iMainTextHeight);
 
-			const int iRightOfNicknameXPos = iSteamPlaceXStart + iMainTextStartPosX + iMainTextWidth + g_uiCtx.iMarginX;
-			// If we have space on the right, set it, otherwise on top of nickname
-			if ((iRightOfNicknameXPos + iSteamSubTextWidth) < wide)
-			{
-				surface()->DrawSetTextPos(iRightOfNicknameXPos, iRightSideYStart + g_uiCtx.iMarginY);
-			}
-			else
-			{
-				surface()->DrawSetTextPos(iSteamPlaceXStart + iMainTextStartPosX,
-										  iRightSideYStart - iSteamSubTextHeight);
-			}
+			const int iMainTextStartPosX = g_uiCtx.iMarginX + g_iAvatar + g_uiCtx.iMarginX;
+			surface()->DrawSetTextPos(iSteamPlaceXStart + iMainTextStartPosX, iRightSideYStart + g_uiCtx.iMarginY);
 			surface()->DrawPrintText(wszTextBuf, V_strlen(szTextBuf));
+
+			if (bUseNeoName)
+			{
+				V_sprintf_safe(szTextBuf, "(Steam name: %s)", szSteamName);
+				g_pVGuiLocalize->ConvertANSIToUnicode(szTextBuf, wszTextBuf, sizeof(wszTextBuf));
+
+				int iSteamSubTextWidth, iSteamSubTextHeight;
+				surface()->DrawSetTextFont(m_hTextFonts[FONT_NTSMALL]);
+				surface()->GetTextSize(m_hTextFonts[FONT_NTSMALL], wszTextBuf, iSteamSubTextWidth, iSteamSubTextHeight);
+
+				const int iRightOfNicknameXPos = iSteamPlaceXStart + iMainTextStartPosX + iMainTextWidth + g_uiCtx.iMarginX;
+				// If we have space on the right, set it, otherwise on top of nickname
+				if ((iRightOfNicknameXPos + iSteamSubTextWidth) < wide)
+				{
+					surface()->DrawSetTextPos(iRightOfNicknameXPos, iRightSideYStart + g_uiCtx.iMarginY);
+				}
+				else
+				{
+					surface()->DrawSetTextPos(iSteamPlaceXStart + iMainTextStartPosX,
+											  iRightSideYStart - iSteamSubTextHeight);
+				}
+				surface()->DrawPrintText(wszTextBuf, V_strlen(szTextBuf));
+			}
+
+			static constexpr const wchar_t *WSZ_PERSONA_STATES[k_EPersonaStateMax] = {
+				L"Offline", L"Online", L"Busy", L"Away", L"Snooze", L"Trading", L"Looking to play"
+			};
+			const auto eCurStatus = steamFriends->GetPersonaState();
+			int iStatusTall = 0;
+			if (eCurStatus != k_EPersonaStateMax)
+			{
+				const wchar_t *wszState = WSZ_PERSONA_STATES[static_cast<int>(eCurStatus)];
+				const int iStatusTextStartPosY = g_uiCtx.iMarginY + iMainTextHeight + g_uiCtx.iMarginY;
+
+				[[maybe_unused]] int iStatusWide;
+				surface()->DrawSetTextFont(m_hTextFonts[FONT_NTSMALL]);
+				surface()->GetTextSize(m_hTextFonts[FONT_NTSMALL], wszState, iStatusWide, iStatusTall);
+				surface()->DrawSetTextPos(iSteamPlaceXStart + iMainTextStartPosX,
+										  iRightSideYStart + iStatusTextStartPosY);
+				surface()->DrawPrintText(wszState, V_wcslen(wszState));
+			}
+
+			// Put the news title in either from avatar or text end Y position
+			const int iTextTotalTall = iMainTextHeight + iStatusTall;
+			iRightSideYStart += (g_uiCtx.iMarginX * 2) + ((iTextTotalTall > g_iAvatar) ? iTextTotalTall : g_iAvatar);
 		}
-
-		static constexpr const wchar_t *WSZ_PERSONA_STATES[k_EPersonaStateMax] = {
-			L"Offline", L"Online", L"Busy", L"Away", L"Snooze", L"Trading", L"Looking to play"
-		};
-		const auto eCurStatus = steamFriends->GetPersonaState();
-		int iStatusTall = 0;
-		if (eCurStatus != k_EPersonaStateMax)
-		{
-			const wchar_t *wszState = WSZ_PERSONA_STATES[static_cast<int>(eCurStatus)];
-			const int iStatusTextStartPosY = g_uiCtx.iMarginY + iMainTextHeight + g_uiCtx.iMarginY;
-
-			[[maybe_unused]] int iStatusWide;
-			surface()->DrawSetTextFont(m_hTextFonts[FONT_NTSMALL]);
-			surface()->GetTextSize(m_hTextFonts[FONT_NTSMALL], wszState, iStatusWide, iStatusTall);
-			surface()->DrawSetTextPos(iSteamPlaceXStart + iMainTextStartPosX,
-									  iRightSideYStart + iStatusTextStartPosY);
-			surface()->DrawPrintText(wszState, V_wcslen(wszState));
-		}
-
-		// Put the news title in either from avatar or text end Y position
-		const int iTextTotalTall = iMainTextHeight + iStatusTall;
-		iRightSideYStart += (g_uiCtx.iMarginX * 2) + ((iTextTotalTall > g_iAvatar) ? iTextTotalTall : g_iAvatar);
 	}
 
+	g_uiCtx.dPanel.x = iRightXPos;
+	g_uiCtx.dPanel.y = iRightSideYStart;
+	g_uiCtx.dPanel.wide = g_iRootSubPanelWide - iRightXPos + (g_uiCtx.iMarginX * 2);
+	NeoUI::BeginSection();
 	{
-		// Show the news
-		static constexpr wchar_t WSZ_NEWS_TITLE[] = L"News";
-
-		int iMainTextWidth, iMainTextHeight;
-		surface()->DrawSetTextFont(m_hTextFonts[FONT_NTNORMAL]);
-		surface()->GetTextSize(m_hTextFonts[FONT_NTNORMAL], WSZ_NEWS_TITLE, iMainTextWidth, iMainTextHeight);
-		surface()->DrawSetTextPos(iRightXPos, iRightSideYStart + g_uiCtx.iMarginY);
-		surface()->DrawPrintText(WSZ_NEWS_TITLE, SZWSZ_LEN(WSZ_NEWS_TITLE));
-
-		// Write some headlines
-		static constexpr const wchar_t *WSZ_NEWS_HEADLINES[] = {
-			L"2024-08-03: NT;RE v7.1 Released",
-		};
-
-		int iHlYPos = iRightSideYStart + (2 * g_uiCtx.iMarginY) + iMainTextHeight;
-		for (const wchar_t *wszHeadline : WSZ_NEWS_HEADLINES)
+		if (engine->IsInGame())
 		{
-			int iHlTextWidth, iHlTextHeight;
-			surface()->DrawSetTextFont(m_hTextFonts[FONT_NTSMALL]);
-			surface()->GetTextSize(m_hTextFonts[FONT_NTSMALL], wszHeadline, iHlTextWidth, iHlTextHeight);
-			surface()->DrawSetTextPos(iRightXPos, iHlYPos);
-			surface()->DrawPrintText(wszHeadline, V_wcslen(wszHeadline));
+			// Show the current server's information
+			NeoUI::Label(L"Hostname:", m_wszHostname);
+			NeoUI::Label(L"Map:", m_wszMap);
+			// TODO: more info, g_PR, scoreboard stuff, etc...
+		}
+		else
+		{
+			// Show the news
+			NeoUI::SwapFont(m_hTextFonts[FONT_NTNORMAL]);
+			NeoUI::Label(L"News");
+			NeoUI::SwapFont(m_hTextFonts[FONT_NTSMALL]);
 
-			iHlYPos += g_uiCtx.iMarginY + iHlTextHeight;
+			// Write some headlines
+			static constexpr const wchar_t *WSZ_NEWS_HEADLINES[] = {
+				L"2024-08-03: NT;RE v7.1 Released",
+			};
+			for (const wchar_t *wszHeadline : WSZ_NEWS_HEADLINES)
+			{
+				NeoUI::Label(wszHeadline);
+			}
 		}
 	}
+	NeoUI::EndSection();
+	NeoUI::EndContext();
 }
 
 void CNeoRoot::OnMousePressed(vgui::MouseCode code)
@@ -1256,6 +1298,19 @@ void CNeoRoot::OnTick()
 			pSbTab->UpdateFilteredList();
 			pSbTab->m_bModified = false;
 		}
+	}
+}
+
+void CNeoRoot::FireGameEvent(IGameEvent *event)
+{
+	const char *type = event->GetName();
+	if (Q_strcmp(type, "server_spawn") == 0)
+	{
+		g_pVGuiLocalize->ConvertANSIToUnicode(event->GetString("hostname"), m_wszHostname, sizeof(m_wszHostname));
+	}
+	else if (Q_strcmp(type, "game_newmap") == 0)
+	{
+		g_pVGuiLocalize->ConvertANSIToUnicode(event->GetString("mapname"), m_wszMap, sizeof(m_wszMap));
 	}
 }
 
@@ -1351,44 +1406,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 	{
 	case STATE_ROOT:
 	{
-		NeoUI::BeginContext(&g_uiCtx, eMode);
-		NeoUI::BeginSection(true);
-		const int iFlagToMatch = engine->IsInGame() ? FLAG_SHOWINGAME : FLAG_SHOWINMAIN;
-		for (int i = 0; i < BTNS_TOTAL; ++i)
-		{
-			const auto btnInfo = BTNS_INFO[i];
-			if (btnInfo.flags & iFlagToMatch)
-			{
-				const auto retBtn = NeoUI::Button(m_wszDispBtnTexts[i]);
-				if (retBtn.bPressed)
-				{
-					surface()->PlaySound("ui/buttonclickrelease.wav");
-					if (btnInfo.gamemenucommand)
-					{
-						m_state = STATE_ROOT;
-						GetGameUI()->SendMainMenuCommand(btnInfo.gamemenucommand);
-					}
-					else if (btnInfo.nextState < STATE__TOTAL)
-					{
-						m_state = btnInfo.nextState;
-						if (m_state == STATE_SETTINGS)
-						{
-							NeoSettingsRestore(&m_ns);
-						}
-					}
-				}
-				if (retBtn.bMouseHover && i != m_iHoverBtn)
-				{
-					// Sound rollover feedback
-					surface()->PlaySound("ui/buttonrollover.wav");
-					m_iHoverBtn = i;
-				}
-			}
-		}
-		NeoUI::EndSection();
-		NeoUI::EndContext();
-
-		if (eMode == NeoUI::MODE_PAINT) PaintRootMainSection();
+		RootMainMenuNeoUI(eMode);
 	}
 	break;
 	case STATE_SETTINGS:

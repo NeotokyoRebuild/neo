@@ -81,7 +81,7 @@ public:
 		float flTimePlayed;
 	};
 	CUtlVector<PlayerInfo> m_players;
-	HServerQuery m_hdlQuery;
+	HServerQuery m_hdlQuery = HSERVERQUERY_INVALID;
 	bool m_bFetching = false;
 };
 
@@ -315,7 +315,7 @@ constexpr WidgetInfo BTNS_INFO[BTNS_TOTAL] = {
 };
 
 // This class is what is actually used instead of the main menu.
-class CNeoRoot : public vgui::EditablePanel
+class CNeoRoot : public vgui::EditablePanel, public CGameEventListener
 {
 	DECLARE_CLASS_SIMPLE(CNeoRoot, vgui::EditablePanel);
 public:
@@ -349,7 +349,7 @@ public:
 	CNeoRootInput *m_panelCaptureInput = nullptr;
 	void OnRelayedKeyCodeTyped(vgui::KeyCode code);
 	void OnRelayedKeyTyped(wchar_t unichar);
-	void PaintRootMainSection();
+	void RootMainMenuNeoUI(const NeoUI::Mode eMode);
 	void ApplySchemeSettings(vgui::IScheme *pScheme) final;
 	void Paint() final;
 	void OnMousePressed(vgui::MouseCode code) final;
@@ -357,6 +357,7 @@ public:
 	void OnMouseWheeled(int delta) final;
 	void OnCursorMoved(int x, int y) final;
 	void OnTick() final;
+	void FireGameEvent(IGameEvent *event) final;
 
 	void OnMainLoop(const NeoUI::Mode eMode);
 	NeoSettings m_ns = {};
@@ -379,6 +380,10 @@ public:
 
 	wchar_t m_wszBindingText[128];
 	int m_iBindingIdx = -1;
+
+	int m_iTitleWidth;
+	wchar_t m_wszHostname[128];
+	wchar_t m_wszMap[128];
 };
 
 extern CNeoRoot *g_pNeoRoot;
