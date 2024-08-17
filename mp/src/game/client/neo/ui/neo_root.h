@@ -303,7 +303,20 @@ enum WidgetInfoFlags
 	FLAG_SHOWINGAME = 1 << 0,
 	FLAG_SHOWINMAIN = 1 << 1,
 };
-static constexpr int BTNS_TOTAL = 7;
+
+enum MainMenuButtons
+{
+	MMBTN_RESUME = 0,
+	MMBTN_FINDSERVER,
+	MMBTN_CREATESERVER,
+	MMBTN_DISCONNECT,
+	MMBTN_PLAYERLIST,
+	MMBTN_OPTIONS,
+	MMBTN_QUIT,
+
+	BTNS_TOTAL,
+};
+
 constexpr WidgetInfo BTNS_INFO[BTNS_TOTAL] = {
 	{ "#GameUI_GameMenu_ResumeGame", "ResumeGame", STATE__TOTAL, FLAG_SHOWINGAME },
 	{ "#GameUI_GameMenu_FindServers", nullptr, STATE_SERVERBROWSER, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
@@ -323,15 +336,6 @@ public:
 	virtual ~CNeoRoot();
 	IGameUI *GetGameUI();
 
-	enum Fonts
-	{
-		FONT_NTNORMAL,
-		FONT_NTSMALL,
-		FONT_LOGO,
-
-		FONT__TOTAL,
-	};
-
 	bool LoadGameUI();
 	void UpdateControls();
 
@@ -339,8 +343,6 @@ public:
 	int m_iHoverBtn = -1;
 	RootState m_state = STATE_ROOT;
 	CAvatarImage *m_avImage = nullptr;
-
-	vgui::HFont m_hTextFonts[FONT__TOTAL] = {};
 
 	wchar_t m_wszDispBtnTexts[BTNS_TOTAL][64] = {};
 	int m_iWszDispBtnTextsSizes[BTNS_TOTAL] = {};
@@ -382,6 +384,7 @@ public:
 	int m_iBindingIdx = -1;
 
 	int m_iTitleWidth;
+	int m_iTitleHeight;
 	wchar_t m_wszHostname[128];
 	wchar_t m_wszMap[128];
 };

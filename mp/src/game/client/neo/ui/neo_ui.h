@@ -80,6 +80,21 @@ struct Dim
 	int tall;
 };
 
+struct FontInfo
+{
+	vgui::HFont hdl;
+	int iYOffset;
+};
+
+enum EFont
+{
+	FONT_NTSMALL,
+	FONT_NTNORMAL,
+	FONT_LOGO,
+
+	FONT__TOTAL,
+};
+
 struct Context
 {
 	Mode eMode;
@@ -111,11 +126,11 @@ struct Context
 
 	int iHorizontalWidth;
 
-	int iFontTall;
-	int iFontYOffset;
 	TextStyle eButtonTextStyle;
 	TextStyle eLabelTextStyle;
-	vgui::HFont font;
+
+	FontInfo fonts[FONT__TOTAL];
+	EFont eFont = FONT_NTSMALL;
 
 	// Input management
 	int iWidget; // Always increments per widget use
@@ -145,13 +160,13 @@ void GCtxDrawFilledRectXtoX(const int x1, const int y1, const int x2, const int 
 void GCtxDrawFilledRectXtoX(const int x1, const int x2);
 void GCtxDrawSetTextPos(const int x, const int y);
 
-void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode);
+void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode, const wchar_t *wszTitle);
 void EndContext();
 void BeginSection(const bool bDefaultFocus = false);
 void EndSection();
 void BeginHorizontal(const int iHorizontalWidth);
 void EndHorizontal();
-void SwapFont(vgui::HFont font);
+void SwapFont(const EFont eFont);
 
 struct RetButton
 {

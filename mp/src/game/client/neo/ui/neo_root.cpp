@@ -669,11 +669,11 @@ void NeoSettingsMainLoop(NeoSettings *ns, const NeoUI::Mode eMode)
 
 	g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
 	g_uiCtx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
+	g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
+	g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
 	g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
-	NeoUI::BeginContext(&g_uiCtx, eMode);
+	NeoUI::BeginContext(&g_uiCtx, eMode, g_pNeoRoot->m_wszDispBtnTexts[MMBTN_OPTIONS]);
 	{
-		g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
-		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
 		NeoUI::BeginSection();
 		{
 			NeoUI::Tabs(WSZ_TABS_LABELS, ARRAYSIZE(WSZ_TABS_LABELS), &ns->iCurTab);
@@ -994,9 +994,9 @@ void CNeoRoot::UpdateControls()
 
 	if (m_state == STATE_ROOT)
 	{
-		[[maybe_unused]] int iTitleHeight;
-		surface()->DrawSetTextFont(m_hTextFonts[FONT_LOGO]);
-		surface()->GetTextSize(m_hTextFonts[FONT_LOGO], WSZ_GAME_TITLE, m_iTitleWidth, iTitleHeight);
+		auto hdlFont = g_uiCtx.fonts[NeoUI::FONT_LOGO].hdl;
+		surface()->DrawSetTextFont(hdlFont);
+		surface()->GetTextSize(hdlFont, WSZ_GAME_TITLE, m_iTitleWidth, m_iTitleHeight);
 	}
 	g_uiCtx.iFocusDirection = 0;
 	g_uiCtx.iFocus = NeoUI::FOCUSOFF_NUM;
@@ -1034,12 +1034,12 @@ void CNeoRoot::ApplySchemeSettings(IScheme *pScheme)
 	SetFgColor(COLOR_TRANSPARENT);
 	SetBgColor(COLOR_TRANSPARENT);
 
-	static constexpr const char *FONT_NAMES[FONT__TOTAL] = {
-		"NHudOCR", "NHudOCRSmallNoAdditive", "ClientTitleFont"
+	static constexpr const char *FONT_NAMES[NeoUI::FONT__TOTAL] = {
+		"NHudOCRSmallNoAdditive", "NHudOCR", "ClientTitleFont"
 	};
-	for (int i = 0; i < FONT__TOTAL; ++i)
+	for (int i = 0; i < NeoUI::FONT__TOTAL; ++i)
 	{
-		m_hTextFonts[i] = pScheme->GetFont(FONT_NAMES[i], true);
+		g_uiCtx.fonts[i].hdl = pScheme->GetFont(FONT_NAMES[i], true);
 	}
 
 	// In 1080p, g_uiCtx.iRowTall == 40, g_uiCtx.iMarginX = 10, g_iAvatar = 64,
@@ -1053,7 +1053,6 @@ void CNeoRoot::ApplySchemeSettings(IScheme *pScheme)
 	float flWideAs43 = static_cast<float>(tall) * (4.0f / 3.0f);
 	if (flWideAs43 > flWide) flWideAs43 = flWide;
 	g_iRootSubPanelWide = static_cast<int>(flWideAs43 * 0.9f);
-	g_uiCtx.font = m_hTextFonts[FONT_NTSMALL];
 
 	constexpr int PARTITION = GSIW__TOTAL * 4;
 	const int iSubDiv = g_iRootSubPanelWide / PARTITION;
@@ -1083,7 +1082,7 @@ void CNeoRoot::RootMainMenuNeoUI(const NeoUI::Mode eMode)
 	g_uiCtx.dPanel.y = yTopPos;
 	g_uiCtx.bgColor = COLOR_TRANSPARENT;
 
-	NeoUI::BeginContext(&g_uiCtx, eMode);
+	NeoUI::BeginContext(&g_uiCtx, eMode, nullptr);
 	NeoUI::BeginSection(true);
 	{
 		const int iFlagToMatch = engine->IsInGame() ? FLAG_SHOWINGAME : FLAG_SHOWINMAIN;
@@ -1128,14 +1127,13 @@ void CNeoRoot::RootMainMenuNeoUI(const NeoUI::Mode eMode)
 	if (eMode == NeoUI::MODE_PAINT)
 	{
 		// Draw title
-		int iTitleWidth, iTitleHeight;
-		surface()->DrawSetTextFont(m_hTextFonts[FONT_LOGO]);
-		surface()->GetTextSize(m_hTextFonts[FONT_LOGO], WSZ_GAME_TITLE, iTitleWidth, iTitleHeight);
-		m_iBtnWide = iTitleWidth + (2 * g_uiCtx.iMarginX);
+		m_iBtnWide = m_iTitleWidth + (2 * g_uiCtx.iMarginX);
 
+		surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_LOGO].hdl);
 		surface()->DrawSetTextColor(COLOR_NEOTITLE);
-		surface()->DrawSetTextPos(iBtnPlaceXMid - (iTitleWidth / 2), yTopPos - iTitleHeight);
+		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth / 2), yTopPos - m_iTitleHeight);
 		surface()->DrawPrintText(WSZ_GAME_TITLE, SZWSZ_LEN(WSZ_GAME_TITLE));
+		surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_NTSMALL].hdl);
 
 		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
 		ISteamUser *steamUser = steamapicontext->SteamUser();
@@ -1165,8 +1163,8 @@ void CNeoRoot::RootMainMenuNeoUI(const NeoUI::Mode eMode)
 			g_pVGuiLocalize->ConvertANSIToUnicode(szTextBuf, wszTextBuf, sizeof(wszTextBuf));
 
 			int iMainTextWidth, iMainTextHeight;
-			surface()->DrawSetTextFont(m_hTextFonts[FONT_NTNORMAL]);
-			surface()->GetTextSize(m_hTextFonts[FONT_NTNORMAL], wszTextBuf, iMainTextWidth, iMainTextHeight);
+			surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_NTNORMAL].hdl);
+			surface()->GetTextSize(g_uiCtx.fonts[NeoUI::FONT_NTNORMAL].hdl, wszTextBuf, iMainTextWidth, iMainTextHeight);
 
 			const int iMainTextStartPosX = g_uiCtx.iMarginX + g_iAvatar + g_uiCtx.iMarginX;
 			surface()->DrawSetTextPos(iSteamPlaceXStart + iMainTextStartPosX, iRightSideYStart + g_uiCtx.iMarginY);
@@ -1178,8 +1176,8 @@ void CNeoRoot::RootMainMenuNeoUI(const NeoUI::Mode eMode)
 				g_pVGuiLocalize->ConvertANSIToUnicode(szTextBuf, wszTextBuf, sizeof(wszTextBuf));
 
 				int iSteamSubTextWidth, iSteamSubTextHeight;
-				surface()->DrawSetTextFont(m_hTextFonts[FONT_NTSMALL]);
-				surface()->GetTextSize(m_hTextFonts[FONT_NTSMALL], wszTextBuf, iSteamSubTextWidth, iSteamSubTextHeight);
+				surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_NTSMALL].hdl);
+				surface()->GetTextSize(g_uiCtx.fonts[NeoUI::FONT_NTSMALL].hdl, wszTextBuf, iSteamSubTextWidth, iSteamSubTextHeight);
 
 				const int iRightOfNicknameXPos = iSteamPlaceXStart + iMainTextStartPosX + iMainTextWidth + g_uiCtx.iMarginX;
 				// If we have space on the right, set it, otherwise on top of nickname
@@ -1206,8 +1204,8 @@ void CNeoRoot::RootMainMenuNeoUI(const NeoUI::Mode eMode)
 				const int iStatusTextStartPosY = g_uiCtx.iMarginY + iMainTextHeight + g_uiCtx.iMarginY;
 
 				[[maybe_unused]] int iStatusWide;
-				surface()->DrawSetTextFont(m_hTextFonts[FONT_NTSMALL]);
-				surface()->GetTextSize(m_hTextFonts[FONT_NTSMALL], wszState, iStatusWide, iStatusTall);
+				surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_NTSMALL].hdl);
+				surface()->GetTextSize(g_uiCtx.fonts[NeoUI::FONT_NTSMALL].hdl, wszState, iStatusWide, iStatusTall);
 				surface()->DrawSetTextPos(iSteamPlaceXStart + iMainTextStartPosX,
 										  iRightSideYStart + iStatusTextStartPosY);
 				surface()->DrawPrintText(wszState, V_wcslen(wszState));
@@ -1234,9 +1232,9 @@ void CNeoRoot::RootMainMenuNeoUI(const NeoUI::Mode eMode)
 		else
 		{
 			// Show the news
-			NeoUI::SwapFont(m_hTextFonts[FONT_NTNORMAL]);
+			NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 			NeoUI::Label(L"News");
-			NeoUI::SwapFont(m_hTextFonts[FONT_NTSMALL]);
+			NeoUI::SwapFont(NeoUI::FONT_NTSMALL);
 
 			// Write some headlines
 			static constexpr const wchar_t *WSZ_NEWS_HEADLINES[] = {
@@ -1338,8 +1336,8 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		// Draw version info (bottom left corner) - Always
 		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
 		int textWidth, textHeight;
-		surface()->DrawSetTextFont(m_hTextFonts[FONT_NTSMALL]);
-		surface()->GetTextSize(m_hTextFonts[FONT_NTSMALL], BUILD_DISPLAY, textWidth, textHeight);
+		surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_NTSMALL].hdl);
+		surface()->GetTextSize(g_uiCtx.fonts[NeoUI::FONT_NTSMALL].hdl, BUILD_DISPLAY, textWidth, textHeight);
 
 		surface()->DrawSetTextPos(g_uiCtx.iMarginX, tall - textHeight - g_uiCtx.iMarginY);
 		surface()->DrawPrintText(BUILD_DISPLAY, *BUILD_DISPLAY_SIZE);
@@ -1362,43 +1360,6 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		case STATE_MAPLIST:
 			m_state = STATE_NEWGAME;
 			break;
-		}
-	}
-
-	if (m_state != STATE_ROOT)
-	{
-		// Print the title
-		static constexpr int STATE_TO_BTN_MAP[STATE__TOTAL] = {
-			0, 5, 2, 1, // TODO: REPLACE WITH SOMETHING ELSE?
-		};
-		const int iBtnIdx = STATE_TO_BTN_MAP[m_state];
-
-		surface()->DrawSetTextFont(m_hTextFonts[FONT_NTNORMAL]);
-		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
-
-		const int iPanelTall = g_uiCtx.iRowTall + (tall * 0.8f) + g_uiCtx.iRowTall;
-		const int xPanelPos = (wide / 2) - (g_iRootSubPanelWide / 2);
-		const int yTopPos = (tall - iPanelTall) / 2;
-		int iTitleWidth, iTitleHeight;
-		surface()->GetTextSize(m_hTextFonts[FONT_NTNORMAL], m_wszDispBtnTexts[iBtnIdx], iTitleWidth, iTitleHeight);
-		surface()->DrawSetTextPos(xPanelPos, (yTopPos / 2) - (iTitleHeight / 2));
-		surface()->DrawPrintText(m_wszDispBtnTexts[iBtnIdx], m_iWszDispBtnTextsSizes[iBtnIdx]);
-
-		surface()->DrawSetTextFont(m_hTextFonts[FONT_NTSMALL]);
-		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
-
-		// Print F1 - F3 tab keybinds
-		if (m_state == STATE_SERVERBROWSER || m_state == STATE_SETTINGS)
-		{
-			// NEO NOTE (nullsystem): F# as 1 is thinner than 3/not monospaced font
-			int iFontWidth, iFontHeight;
-			surface()->GetTextSize(m_hTextFonts[FONT_NTSMALL], L"F##", iFontWidth, iFontHeight);
-			const int iHintYPos = yTopPos + (iFontHeight / 2);
-
-			surface()->DrawSetTextPos(xPanelPos - g_uiCtx.iMarginX - iFontWidth, iHintYPos);
-			surface()->DrawPrintText(L"F 1", 3);
-			surface()->DrawSetTextPos(xPanelPos + g_iRootSubPanelWide + g_uiCtx.iMarginX, iHintYPos);
-			surface()->DrawPrintText(L"F 3", 3);
 		}
 	}
 
@@ -1433,11 +1394,11 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
 		g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
 		g_uiCtx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
+		g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
+		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * (g_iRowsInScreen + 1);
 		g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
-		NeoUI::BeginContext(&g_uiCtx, eMode);
+		NeoUI::BeginContext(&g_uiCtx, eMode, m_wszDispBtnTexts[MMBTN_CREATESERVER]);
 		{
-			g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
-			g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * (g_iRowsInScreen + 1);
 			NeoUI::BeginSection(true);
 			{
 				if (NeoUI::Button(L"Map", m_newGame.wszMap).bPressed)
@@ -1506,11 +1467,11 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
 		g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
 		g_uiCtx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
+		g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
+		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * 2;
 		g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
-		NeoUI::BeginContext(&g_uiCtx, eMode);
+		NeoUI::BeginContext(&g_uiCtx, eMode, m_wszDispBtnTexts[MMBTN_FINDSERVER]);
 		{
-			g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
-			g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * 2;
 			NeoUI::BeginSection();
 			{
 				const int iPrevTab = m_iServerBrowserTab;
@@ -1628,7 +1589,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 							// TODO/TEMP (nullsystem): Probably should be more "custom" struct verse gameserveritem_t?
 							int xPos = 0;
 							const int yPos = g_uiCtx.iYOffset[g_uiCtx.iSection] - g_uiCtx.iRowTall;
-							const int fontStartYPos = g_uiCtx.iFontYOffset;
+							const int fontStartYPos = g_uiCtx.fonts[g_uiCtx.eFont].iYOffset;
 
 							if (server.m_bPassword)
 							{
@@ -1786,12 +1747,11 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
 		g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
 		g_uiCtx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
+		g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
+		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * 6;
 		g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
-		NeoUI::BeginContext(&g_uiCtx, eMode);
+		NeoUI::BeginContext(&g_uiCtx, eMode, L"Server details");
 		{
-			const int iTotalTall = g_uiCtx.iRowTall * (g_iRowsInScreen + 1);
-			g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
-			g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * 6;
 			NeoUI::BeginSection(true);
 			{
 				const bool bP = eMode == NeoUI::MODE_PAINT;
@@ -1813,7 +1773,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 			}
 			NeoUI::EndSection();
 			g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
-			g_uiCtx.dPanel.tall = iTotalTall - g_uiCtx.dPanel.tall;
+			g_uiCtx.dPanel.tall = (iTallTotal - g_uiCtx.iRowTall) - g_uiCtx.dPanel.tall;
 			NeoUI::BeginSection();
 			{
 				if (m_serverPlayers.m_players.IsEmpty())
@@ -1855,11 +1815,11 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
 		g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
 		g_uiCtx.dPanel.x = (wide / 2) - (g_iRootSubPanelWide / 2);
+		g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
+		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * (g_iRowsInScreen + 1);
 		g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
-		NeoUI::BeginContext(&g_uiCtx, eMode);
+		NeoUI::BeginContext(&g_uiCtx, eMode, L"Pick map");
 		{
-			g_uiCtx.dPanel.y = (tall / 2) - (iTallTotal / 2);
-			g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * (g_iRowsInScreen + 1);
 			NeoUI::BeginSection(true);
 			{
 				for (auto &wszMap : m_vWszMaps)
@@ -1905,23 +1865,23 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		g_uiCtx.dPanel.x = (wide / 2) - (g_uiCtx.dPanel.wide / 2);
 		g_uiCtx.dPanel.y = tallSplit + (tallSplit / 2) - g_uiCtx.iRowTall;
 		g_uiCtx.bgColor = COLOR_TRANSPARENT;
-		NeoUI::BeginContext(&g_uiCtx, eMode);
+		NeoUI::BeginContext(&g_uiCtx, eMode, nullptr);
 		{
 			NeoUI::BeginSection(true);
 			{
 				g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
 				if (m_state == STATE_KEYCAPTURE)
 				{
-					NeoUI::SwapFont(m_hTextFonts[FONT_NTNORMAL]);
+					NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 					NeoUI::Label(m_wszBindingText);
-					NeoUI::SwapFont(m_hTextFonts[FONT_NTSMALL]);
+					NeoUI::SwapFont(NeoUI::FONT_NTSMALL);
 					NeoUI::Label(L"Press ESC to cancel or DEL to remove keybind");
 				}
 				else if (m_state == STATE_CONFIRMSETTINGS)
 				{
-					NeoUI::SwapFont(m_hTextFonts[FONT_NTNORMAL]);
+					NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 					NeoUI::Label(L"Settings changed: Do you want to apply the settings?");
-					NeoUI::SwapFont(m_hTextFonts[FONT_NTSMALL]);
+					NeoUI::SwapFont(NeoUI::FONT_NTSMALL);
 					NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 3);
 					{
 						if (NeoUI::Button(L"Save (Enter)").bPressed)
@@ -1939,9 +1899,9 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 				}
 				else if (m_state == STATE_QUIT)
 				{
-					NeoUI::SwapFont(m_hTextFonts[FONT_NTNORMAL]);
+					NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 					NeoUI::Label(L"Do you want to quit the game?");
-					NeoUI::SwapFont(m_hTextFonts[FONT_NTSMALL]);
+					NeoUI::SwapFont(NeoUI::FONT_NTSMALL);
 					NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 3);
 					{
 						if (NeoUI::Button(L"Quit (Enter)").bPressed)

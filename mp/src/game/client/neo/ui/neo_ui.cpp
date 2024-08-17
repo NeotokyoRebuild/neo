@@ -36,6 +36,7 @@ namespace NeoUI
 
 static inline Context g_emptyCtx;
 static Context *g_pCtx = &g_emptyCtx;
+static void InternalLabel(const wchar_t *wszText, const bool bCenter);
 
 void GCtxDrawFilledRectXtoX(const int x1, const int y1, const int x2, const int y2)
 {
@@ -55,16 +56,14 @@ void GCtxDrawSetTextPos(const int x, const int y)
 	surface()->DrawSetTextPos(g_pCtx->dPanel.x + x, g_pCtx->dPanel.y + y);
 }
 
-void SwapFont(vgui::HFont font)
+void SwapFont(const EFont eFont)
 {
 	if (g_pCtx->eMode != MODE_PAINT) return;
-	g_pCtx->font = font;
-	g_pCtx->iFontTall = surface()->GetFontTall(g_pCtx->font);
-	g_pCtx->iFontYOffset = (g_pCtx->iRowTall / 2) - (g_pCtx->iFontTall / 2);
-	surface()->DrawSetTextFont(g_pCtx->font);
+	g_pCtx->eFont = eFont;
+	surface()->DrawSetTextFont(g_pCtx->fonts[g_pCtx->eFont].hdl);
 }
 
-void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode)
+void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode, const wchar_t *wszTitle)
 {
 	g_pCtx = ctx;
 	g_pCtx->eMode = eMode;
@@ -77,7 +76,6 @@ void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode)
 	g_pCtx->bValueEdited = false;
 	g_pCtx->eButtonTextStyle = TEXTSTYLE_CENTER;
 	g_pCtx->eLabelTextStyle = TEXTSTYLE_LEFT;
-	SwapFont(g_pCtx->font);
 
 	switch (g_pCtx->eMode)
 	{
@@ -88,9 +86,28 @@ void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode)
 			g_pCtx->iFocus = (g_pCtx->iFocus == FOCUSOFF_NUM) ? 0 : (g_pCtx->iFocus + g_pCtx->iFocusDirection);
 		}
 		break;
+	case MODE_PAINT:
+		for (int i = 0; i < FONT__TOTAL; ++i)
+		{
+			FontInfo *pFontI = &g_pCtx->fonts[i];
+			const int iTall = surface()->GetFontTall(pFontI->hdl);
+			pFontI->iYOffset = (g_pCtx->iRowTall / 2) - (iTall / 2);
+		}
+
+		if (wszTitle)
+		{
+			SwapFont(FONT_NTNORMAL);
+			surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
+			GCtxDrawSetTextPos(g_pCtx->iMarginX, -g_pCtx->iRowTall + g_pCtx->fonts[FONT_NTNORMAL].iYOffset);
+			surface()->DrawPrintText(wszTitle, V_wcslen(wszTitle));
+		}
+		break;
 	default:
 		break;
 	}
+
+	SwapFont(FONT_NTSMALL);
+	surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
 }
 
 void EndContext()
@@ -265,14 +282,15 @@ void EndHorizontal()
 static void InternalLabel(const wchar_t *wszText, const bool bCenter)
 {
 	if (g_pCtx->eMode != MODE_PAINT) return;
+	const auto *pFontI = &g_pCtx->fonts[g_pCtx->eFont];
 
 	int iFontTextWidth = 0, iFontTextHeight = 0;
 	if (bCenter)
 	{
-		surface()->GetTextSize(g_pCtx->font, wszText, iFontTextWidth, iFontTextHeight);
+		surface()->GetTextSize(pFontI->hdl, wszText, iFontTextWidth, iFontTextHeight);
 	}
 	GCtxDrawSetTextPos(((bCenter) ? ((g_pCtx->dPanel.wide / 2) - (iFontTextWidth / 2)) : g_pCtx->iMarginX),
-					   g_pCtx->iLayoutY + g_pCtx->iFontYOffset);
+					   g_pCtx->iLayoutY + pFontI->iYOffset);
 	surface()->DrawPrintText(wszText, V_wcslen(wszText));
 }
 
@@ -373,8 +391,9 @@ NeoUI::RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText)
 		{
 		case MODE_PAINT:
 		{
+			const auto *pFontI = &g_pCtx->fonts[g_pCtx->eFont];
 			int iFontWide, iFontTall;
-			surface()->GetTextSize(g_pCtx->font, wszText, iFontWide, iFontTall);
+			surface()->GetTextSize(pFontI->hdl, wszText, iFontWide, iFontTall);
 
 			if (wszLeftLabel)
 			{
@@ -383,7 +402,7 @@ NeoUI::RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText)
 				const int xMargin = g_pCtx->eButtonTextStyle == TEXTSTYLE_CENTER ?
 							(((g_pCtx->dPanel.wide - g_pCtx->iWgXPos) / 2) - (iFontWide / 2)) : g_pCtx->iMarginX;
 				GCtxDrawSetTextPos(g_pCtx->iWgXPos + xMargin,
-								   g_pCtx->iLayoutY + g_pCtx->iFontYOffset);
+								   g_pCtx->iLayoutY + pFontI->iYOffset);
 			}
 			else
 			{
@@ -391,7 +410,7 @@ NeoUI::RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText)
 				GCtxDrawFilledRectXtoX(0, iBtnWidth);
 				const int xMargin = g_pCtx->eButtonTextStyle == TEXTSTYLE_CENTER ?
 							((iBtnWidth / 2) - (iFontWide / 2)) : g_pCtx->iMarginX;
-				GCtxDrawSetTextPos(g_pCtx->iLayoutX + xMargin, g_pCtx->iLayoutY + g_pCtx->iFontYOffset);
+				GCtxDrawSetTextPos(g_pCtx->iLayoutX + xMargin, g_pCtx->iLayoutY + pFontI->iYOffset);
 			}
 			surface()->DrawPrintText(wszText, V_wcslen(wszText));
 		}
@@ -444,21 +463,22 @@ void RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, const i
 		{
 		case MODE_PAINT:
 		{
+			const auto *pFontI = &g_pCtx->fonts[g_pCtx->eFont];
 			InternalLabel(wszLeftLabel, false);
 
 			// Center-text label
 			const wchar_t *wszText = wszLabelsList[*iIndex];
 			int iFontWide, iFontTall;
-			surface()->GetTextSize(g_pCtx->font, wszText, iFontWide, iFontTall);
+			surface()->GetTextSize(pFontI->hdl, wszText, iFontWide, iFontTall);
 			GCtxDrawSetTextPos(g_pCtx->iWgXPos + (((g_pCtx->dPanel.wide - g_pCtx->iWgXPos) / 2) - (iFontWide / 2)),
-							   g_pCtx->iLayoutY + g_pCtx->iFontYOffset);
+							   g_pCtx->iLayoutY + pFontI->iYOffset);
 			surface()->DrawPrintText(wszText, V_wcslen(wszText));
 
 			// TODO: Generate once?
 			int iStartBtnXPos, iStartBtnYPos;
 			{
 				int iPrevNextWide, iPrevNextTall;
-				surface()->GetTextSize(g_pCtx->font, L"<", iPrevNextWide, iPrevNextTall);
+				surface()->GetTextSize(pFontI->hdl, L"<", iPrevNextWide, iPrevNextTall);
 				iStartBtnXPos = (g_pCtx->iRowTall / 2) - (iPrevNextWide / 2);
 				iStartBtnYPos = (g_pCtx->iRowTall / 2) - (iPrevNextTall / 2);
 			}
@@ -519,6 +539,7 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 	{
 	case MODE_PAINT:
 	{
+		const auto *pFontI = &g_pCtx->fonts[g_pCtx->eFont];
 		for (int i = 0, iXPosTab = 0; i < iLabelsSize; ++i, iXPosTab += iTabWide)
 		{
 			const bool bHoverTab = (bMouseIn && IN_BETWEEN(iXPosTab, g_pCtx->iMouseRelX, iXPosTab + iTabWide));
@@ -528,9 +549,20 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 				GCtxDrawFilledRectXtoX(iXPosTab, iXPosTab + iTabWide);
 			}
 			const wchar_t *wszText = wszLabelsList[i];
-			GCtxDrawSetTextPos(iXPosTab + g_pCtx->iMarginX, g_pCtx->iLayoutY + g_pCtx->iFontYOffset);
+			GCtxDrawSetTextPos(iXPosTab + g_pCtx->iMarginX, g_pCtx->iLayoutY + pFontI->iYOffset);
 			surface()->DrawPrintText(wszText, V_wcslen(wszText));
 		}
+
+		// Draw the side-hints text
+		// NEO NOTE (nullsystem): F# as 1 is thinner than 3/not monospaced font
+		int iFontWidth, iFontHeight;
+		surface()->GetTextSize(g_pCtx->fonts[g_pCtx->eFont].hdl, L"F##", iFontWidth, iFontHeight);
+		const int iHintYPos = g_pCtx->dPanel.y + (iFontHeight / 2);
+
+		surface()->DrawSetTextPos(g_pCtx->dPanel.x - g_pCtx->iMarginX - iFontWidth, iHintYPos);
+		surface()->DrawPrintText(L"F 1", 3);
+		surface()->DrawSetTextPos(g_pCtx->dPanel.x + g_pCtx->dPanel.wide + g_pCtx->iMarginX, iHintYPos);
+		surface()->DrawPrintText(L"F 3", 3);
 	}
 	break;
 	case MODE_MOUSEPRESSED:
@@ -599,6 +631,7 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 		{
 		case MODE_PAINT:
 		{
+			const auto *pFontI = &g_pCtx->fonts[g_pCtx->eFont];
 			InternalLabel(wszLeftLabel, false);
 
 			wchar_t wszFormat[32];
@@ -613,16 +646,16 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 			wchar_t wszText[32];
 			const int iTextSize = V_swprintf_safe(wszText, wszFormat, *flValue);
 			int iFontWide, iFontTall;
-			surface()->GetTextSize(g_pCtx->font, wszText, iFontWide, iFontTall);
+			surface()->GetTextSize(pFontI->hdl, wszText, iFontWide, iFontTall);
 			surface()->DrawSetTextPos(g_pCtx->dPanel.x + g_pCtx->iWgXPos + (((g_pCtx->dPanel.wide - g_pCtx->iWgXPos) / 2) - (iFontWide / 2)),
-									  g_pCtx->dPanel.y + g_pCtx->iLayoutY + g_pCtx->iFontYOffset);
+									  g_pCtx->dPanel.y + g_pCtx->iLayoutY + pFontI->iYOffset);
 			surface()->DrawPrintText(wszText, iTextSize);
 
 			// TODO: Generate once?
 			int iStartBtnXPos, iStartBtnYPos;
 			{
 				int iPrevNextWide, iPrevNextTall;
-				surface()->GetTextSize(g_pCtx->font, L"<", iPrevNextWide, iPrevNextTall);
+				surface()->GetTextSize(pFontI->hdl, L"<", iPrevNextWide, iPrevNextTall);
 				iStartBtnXPos = (g_pCtx->iRowTall / 2) - (iPrevNextWide / 2);
 				iStartBtnYPos = (g_pCtx->iRowTall / 2) - (iPrevNextTall / 2);
 			}
@@ -711,9 +744,10 @@ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
 		{
 		case MODE_PAINT:
 		{
+			const auto *pFontI = &g_pCtx->fonts[g_pCtx->eFont];
 			InternalLabel(wszLeftLabel, false);
 			GCtxDrawFilledRectXtoX(g_pCtx->iWgXPos, g_pCtx->dPanel.wide);
-			GCtxDrawSetTextPos(g_pCtx->iWgXPos + g_pCtx->iMarginX, g_pCtx->iLayoutY + g_pCtx->iFontYOffset);
+			GCtxDrawSetTextPos(g_pCtx->iWgXPos + g_pCtx->iMarginX, g_pCtx->iLayoutY + pFontI->iYOffset);
 			surface()->DrawPrintText(wszText, V_wcslen(wszText));
 			if (bFocused)
 			{
@@ -721,11 +755,11 @@ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
 				if (bEditBlinkShow)
 				{
 					int iFontWide, iFontTall;
-					surface()->GetTextSize(g_pCtx->font, wszText, iFontWide, iFontTall);
+					surface()->GetTextSize(pFontI->hdl, wszText, iFontWide, iFontTall);
 					const int iMarkX = g_pCtx->iWgXPos + g_pCtx->iMarginX + iFontWide;
 					surface()->DrawSetColor(COLOR_NEOPANELTEXTBRIGHT);
-					GCtxDrawFilledRectXtoX(iMarkX, g_pCtx->iFontYOffset,
-										   iMarkX + g_pCtx->iMarginX, g_pCtx->iFontYOffset + iFontTall);
+					GCtxDrawFilledRectXtoX(iMarkX, pFontI->iYOffset,
+										   iMarkX + g_pCtx->iMarginX, pFontI->iYOffset + iFontTall);
 				}
 			}
 		}
