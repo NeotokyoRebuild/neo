@@ -92,7 +92,19 @@ void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode, const wchar_t *w
 		if (g_pCtx->eCode == KEY_DOWN || g_pCtx->eCode == KEY_UP)
 		{
 			g_pCtx->iActiveDirection = (g_pCtx->eCode == KEY_UP) ? -1 : +1;
-			g_pCtx->iActive = (g_pCtx->iActive == FOCUSOFF_NUM) ? 0 : (g_pCtx->iActive + g_pCtx->iActiveDirection);
+			if (g_pCtx->iActive != FOCUSOFF_NUM)
+			{
+				g_pCtx->iActive += g_pCtx->iActiveDirection;
+			}
+			else
+			{
+				g_pCtx->iActive = 0;
+				if (g_pCtx->iHot != FOCUSOFF_NUM)
+				{
+					g_pCtx->iActive = g_pCtx->iHot;
+					g_pCtx->iActive += g_pCtx->iActiveDirection;
+				}
+			}
 			g_pCtx->iHot = g_pCtx->iActive;
 		}
 		break;
@@ -253,38 +265,36 @@ void EndSection()
 	}
 
 	// Scroll handling
-	if (g_pCtx->iActiveSection == g_pCtx->iSection)
+	const int iRowsInScreen = g_pCtx->dPanel.tall / g_pCtx->iRowTall;
+	if (g_pCtx->eMode == MODE_MOUSEWHEELED && g_pCtx->bMouseInPanel)
 	{
-		const int iRowsInScreen = g_pCtx->dPanel.tall / g_pCtx->iRowTall;
-		if (g_pCtx->eMode == MODE_MOUSEWHEELED)
+		if (g_pCtx->iPartitionY <= iRowsInScreen)
 		{
-			if (g_pCtx->iPartitionY <= iRowsInScreen)
-			{
-				g_pCtx->iYOffset[g_pCtx->iSection] = 0;
-			}
-			else
-			{
-				g_pCtx->iYOffset[g_pCtx->iSection] += (g_pCtx->eCode == MOUSE_WHEEL_UP) ? -1 : +1;
-				g_pCtx->iYOffset[g_pCtx->iSection] = clamp(g_pCtx->iYOffset[g_pCtx->iSection], 0, g_pCtx->iPartitionY - iRowsInScreen);
-			}
+			g_pCtx->iYOffset[g_pCtx->iSection] = 0;
 		}
-		else if (g_pCtx->eMode == MODE_KEYPRESSED && (g_pCtx->eCode == KEY_DOWN || g_pCtx->eCode == KEY_UP))
+		else
 		{
-			if (g_pCtx->iPartitionY <= iRowsInScreen)
-			{
-				// Disable scroll if it doesn't need to
-				g_pCtx->iYOffset[g_pCtx->iSection] = 0;
-			}
-			else if (g_pCtx->iActive < (g_pCtx->iYOffset[g_pCtx->iSection]))
-			{
-				// Scrolling up past visible, re-adjust
-				g_pCtx->iYOffset[g_pCtx->iSection] = clamp(g_pCtx->iActive, 0, g_pCtx->iWidget - iRowsInScreen);
-			}
-			else if (g_pCtx->iActive >= (g_pCtx->iYOffset[g_pCtx->iSection] + iRowsInScreen))
-			{
-				// Scrolling down post visible, re-adjust
-				g_pCtx->iYOffset[g_pCtx->iSection] = clamp(g_pCtx->iActive - iRowsInScreen + 1, 0, g_pCtx->iWidget - iRowsInScreen);
-			}
+			g_pCtx->iYOffset[g_pCtx->iSection] += (g_pCtx->eCode == MOUSE_WHEEL_UP) ? -1 : +1;
+			g_pCtx->iYOffset[g_pCtx->iSection] = clamp(g_pCtx->iYOffset[g_pCtx->iSection], 0, g_pCtx->iPartitionY - iRowsInScreen);
+		}
+	}
+	else if (g_pCtx->eMode == MODE_KEYPRESSED && (g_pCtx->eCode == KEY_DOWN || g_pCtx->eCode == KEY_UP) &&
+			 (g_pCtx->iActiveSection == g_pCtx->iSection || g_pCtx->iHotSection == g_pCtx->iSection))
+	{
+		if (g_pCtx->iPartitionY <= iRowsInScreen)
+		{
+			// Disable scroll if it doesn't need to
+			g_pCtx->iYOffset[g_pCtx->iSection] = 0;
+		}
+		else if (g_pCtx->iActive < (g_pCtx->iYOffset[g_pCtx->iSection]))
+		{
+			// Scrolling up past visible, re-adjust
+			g_pCtx->iYOffset[g_pCtx->iSection] = clamp(g_pCtx->iActive, 0, g_pCtx->iWidget - iRowsInScreen);
+		}
+		else if (g_pCtx->iActive >= (g_pCtx->iYOffset[g_pCtx->iSection] + iRowsInScreen))
+		{
+			// Scrolling down post visible, re-adjust
+			g_pCtx->iYOffset[g_pCtx->iSection] = clamp(g_pCtx->iActive - iRowsInScreen + 1, 0, g_pCtx->iWidget - iRowsInScreen);
 		}
 	}
 
@@ -599,7 +609,7 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 			if (iNextIndex != *iIndex)
 			{
 				*iIndex = clamp(iNextIndex, 0, iLabelsSize);
-				g_pCtx->iYOffset[g_pCtx->iSection] = 0;
+				V_memset(g_pCtx->iYOffset, 0, sizeof(g_pCtx->iYOffset));
 			}
 		}
 	}
@@ -610,7 +620,7 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 		{
 			*iIndex += (g_pCtx->eCode == KEY_F1) ? -1 : +1;
 			*iIndex = LoopAroundInArray(*iIndex, iLabelsSize);
-			g_pCtx->iYOffset[g_pCtx->iSection] = 0;
+			V_memset(g_pCtx->iYOffset, 0, sizeof(g_pCtx->iYOffset));
 		}
 	}
 	break;
