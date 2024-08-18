@@ -82,6 +82,11 @@ public:
 #ifdef GAME_DLL
 class CNEOGhostCapturePoint;
 class CNEO_Player;
+
+extern ConVar neo_sv_mirror_teamdamage_multiplier;
+extern ConVar neo_sv_mirror_teamdamage_duration;
+extern ConVar neo_sv_mirror_teamdamage_immunity;
+extern ConVar neo_sv_teamdamage_kick;
 #else
 class C_NEO_Player;
 #endif
@@ -176,7 +181,11 @@ public:
 
 	virtual bool CheckGameOver(void) OVERRIDE;
 
-	float GetRoundRemainingTime();
+	float GetRoundRemainingTime() const;
+	float GetRoundAccumulatedTime() const;
+#ifdef GAME_DLL
+	float MirrorDamageMultiplier() const;
+#endif
 
 	virtual void PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info) OVERRIDE;
 
@@ -262,6 +271,8 @@ private:
 
 #ifdef GAME_DLL
 	CUtlVector<int> m_pGhostCaps;
+	float m_flPrevThinkKick = 0.0f;
+	float m_flPrevThinkMirrorDmg = 0.0f;
 #endif
 	CNetworkVar(int, m_nRoundStatus); // NEO TODO (Rain): probably don't need to network this
 	CNetworkVar(int, m_iRoundNumber);

@@ -233,6 +233,10 @@ public:
 	CNetworkVar(bool, m_bClientWantNeoName);
 
 	bool m_bIsPendingSpawnForThisRound;
+	bool m_bKilledInflicted = false; // Server-side var only
+	int m_iTeamDamageInflicted = 0;
+	int m_iTeamKillsInflicted = 0;
+	bool m_bIsPendingTKKick = false; // To not spam the kickid ConCommand
 
 private:
 	bool m_bFirstDeathTick;
