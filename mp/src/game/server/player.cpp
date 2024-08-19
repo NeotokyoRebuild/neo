@@ -1942,6 +1942,19 @@ void CBasePlayer::SetAnimation( PLAYER_ANIM playerAnim )
 WaterMove
 ============
 */
+#ifdef NEO
+#define AIRTIME						12		// lung full of air lasts this many seconds
+#define DROWNING_DAMAGE_MAX			7
+
+static constexpr int NEOCLASS_DROWNING_DMG_INIT[NEO_CLASS_ENUM_COUNT] = {
+	2, 1, 0, 2
+};
+
+static constexpr int NEOCLASS_DROWNING_DMG_MAX[NEO_CLASS_ENUM_COUNT] = {
+	8, 7, 4, 8,
+};
+
+#else
 #ifdef HL2_DLL
 
 // test for HL2 drowning damage increase (aux power used instead)
@@ -1955,6 +1968,7 @@ WaterMove
 #define DROWNING_DAMAGE_INITIAL		2
 #define DROWNING_DAMAGE_MAX			5
 
+#endif
 #endif
 
 void CBasePlayer::WaterMove()
@@ -1988,7 +2002,11 @@ void CBasePlayer::WaterMove()
 		}
 
 		m_AirFinished = gpGlobals->curtime + AIRTIME;
+#ifdef NEO
+		m_nDrownDmgRate = NEOCLASS_DROWNING_DMG_INIT[static_cast<CNEO_Player *>(this)->GetClass()];
+#else
 		m_nDrownDmgRate = DROWNING_DAMAGE_INITIAL;
+#endif
 
 		// if we took drowning damage, give it back slowly
 		if (m_idrowndmg > m_idrownrestored)
@@ -2018,10 +2036,18 @@ void CBasePlayer::WaterMove()
 			{
 				// take drowning damage
 				m_nDrownDmgRate += 1;
+#ifdef NEO
+				const int iDrownMaxDmg = NEOCLASS_DROWNING_DMG_MAX[static_cast<CNEO_Player *>(this)->GetClass()];
+				if (m_nDrownDmgRate > iDrownMaxDmg)
+				{
+					m_nDrownDmgRate = iDrownMaxDmg;
+				}
+#else
 				if (m_nDrownDmgRate > DROWNING_DAMAGE_MAX)
 				{
 					m_nDrownDmgRate = DROWNING_DAMAGE_MAX;
 				}
+#endif
 
 				OnTakeDamage( CTakeDamageInfo( GetContainingEntity(INDEXENT(0)), GetContainingEntity(INDEXENT(0)), m_nDrownDmgRate, DMG_DROWN ) );
 				m_PainFinished = gpGlobals->curtime + 1;
@@ -5037,7 +5063,11 @@ void CBasePlayer::Spawn( void )
 	AddFlag( FL_AIMTARGET );
 
 	m_AirFinished	= gpGlobals->curtime + AIRTIME;
+#ifdef NEO
+	m_nDrownDmgRate = NEOCLASS_DROWNING_DMG_INIT[static_cast<CNEO_Player *>(this)->GetClass()];
+#else
 	m_nDrownDmgRate	= DROWNING_DAMAGE_INITIAL;
+#endif
 	
  // only preserve the shadow flag
 	int effects = GetEffects() & EF_NOSHADOW;
