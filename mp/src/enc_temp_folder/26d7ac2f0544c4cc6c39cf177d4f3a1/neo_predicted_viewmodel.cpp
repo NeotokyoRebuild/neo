@@ -65,8 +65,8 @@ CNEOPredictedViewModel::CNEOPredictedViewModel()
 		m_pFirstPersonMuzzleFlash->SetParent(this);
 		m_pFirstPersonMuzzleFlash->m_bActive = true;
 #ifdef GAME_DLL
-		DispatchSpawn(m_pFirstPersonMuzzleFlash);
 #else
+		m_pFirstPersonMuzzleFlash->SpawnClientEntity();
 		m_pFirstPersonMuzzleFlash->SetModelScale(1);
 		m_pFirstPersonMuzzleFlash->flash[0] = materials->FindMaterial("effects/fpmf/fpmf01.vmt", TEXTURE_GROUP_VIEW_MODEL);
 		m_pFirstPersonMuzzleFlash->flash[1] = materials->FindMaterial("effects/fpmf/fpmf02.vmt", TEXTURE_GROUP_VIEW_MODEL);

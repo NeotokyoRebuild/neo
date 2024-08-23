@@ -53,6 +53,7 @@
 
 #ifdef NEO
 #include "neo_gamerules.h"
+#include "weapon_neobasecombatweapon.h"
 #ifdef GAME_DLL
 #include "neo_player.h"
 #else
@@ -890,6 +891,40 @@ bool CBasePlayer::Weapon_Switch( CBaseCombatWeapon *pWeapon, int viewmodelindex 
 		if ( pViewModel )
 			pViewModel->RemoveEffects( EF_NODRAW );
 		ResetAutoaim( );
+
+#ifdef NEO
+		auto neoWep = static_cast<CNEOBaseCombatWeapon*>(pWeapon);
+		CNEOPredictedViewModel* neoViewModel = static_cast<CNEOPredictedViewModel*>(m_hViewModel[0].Get());
+		if (neoViewModel->m_pFirstPersonMuzzleFlash)
+		{
+			if (neoWep->GetNeoWepBits() & NEO_WEP_SUPPRESSED)
+			{
+				neoViewModel->m_pFirstPersonMuzzleFlash->m_bActive = false;
+			}
+			else if (neoWep->GetNeoWepBits() & (NEO_WEP_PZ | NEO_WEP_TACHI))
+			{
+				neoViewModel->m_pFirstPersonMuzzleFlash->m_bActive = true;
+				neoViewModel->m_pFirstPersonMuzzleFlash->selectedFlash = 1;
+				neoViewModel->m_pFirstPersonMuzzleFlash->m_nSkin = 1;
+				//neoViewModel->m_pFirstPersonMuzzleFlash->SetModelScale(1);
+			}
+			else if (neoWep->GetNeoWepBits() & NEO_WEP_SUPA7)
+			{
+				neoViewModel->m_pFirstPersonMuzzleFlash->m_bActive = true;
+				neoViewModel->m_pFirstPersonMuzzleFlash->selectedFlash = 0;
+				neoViewModel->m_pFirstPersonMuzzleFlash->m_nSkin = 0;
+				//neoViewModel->m_pFirstPersonMuzzleFlash->SetModelScale(1.5);
+			}
+			else
+			{
+				neoViewModel->m_pFirstPersonMuzzleFlash->m_bActive = true;
+				neoViewModel->m_pFirstPersonMuzzleFlash->selectedFlash = 0;
+				neoViewModel->m_pFirstPersonMuzzleFlash->m_nSkin = 0;
+				//neoViewModel->m_pFirstPersonMuzzleFlash->SetModelScale(1);
+			}
+		}
+#endif // NEO
+
 		return true;
 	}
 	return false;

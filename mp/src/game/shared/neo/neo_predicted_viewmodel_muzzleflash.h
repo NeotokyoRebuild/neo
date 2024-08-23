@@ -38,12 +38,11 @@ public:
 	void Spawn(void);
 	void Precache(void);
 
-	IMaterial* selectedFlash;
-	IMaterial* starFlash;
-	IMaterial* circleFlash;
+	int selectedFlash;
+	IMaterial* flash[2];
 
-private:
 	bool	m_bActive;
+private:
 	float	m_flNextChangeTime;
 };
 
