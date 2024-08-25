@@ -4,46 +4,36 @@
 #pragma once
 #endif
 
-#ifdef GAME_DLL
-#include "baseanimating.h"
-#include "baseviewmodel_shared.h"
-#else
-#include "c_baseviewmodel.h"
+#include "predicted_viewmodel.h"
+
+#ifdef CLIENT_DLL
+#define CNEOPredictedViewModelMuzzleFlash C_NEOPredictedViewModelMuzzleFlash
+#define CNEO_Player C_NEO_Player
 #endif
 
 class CNEO_Player;
-class CNEOPredictedViewModelMuzzleFlash : public CBaseAnimating
+class CNEOPredictedViewModelMuzzleFlash : public CPredictedViewModel
 {
+	DECLARE_CLASS(CNEOPredictedViewModelMuzzleFlash, CPredictedViewModel);
 public:
-	DECLARE_CLASS(CNEOPredictedViewModelMuzzleFlash, CBaseAnimating);
-	DECLARE_DATADESC();
+	DECLARE_NETWORKCLASS();
+	DECLARE_PREDICTABLE();
 	CNEOPredictedViewModelMuzzleFlash()
 	{
-		m_bActive = false;
-		m_flNextChangeTime = 0.f;
-#ifdef CLIENT_DLL
-		m_hRender = INVALID_CLIENT_RENDER_HANDLE;
-		AddToLeafSystem();
-#endif
+		m_bActive = true;
 	}
 
 #ifdef CLIENT_DLL
 	ShadowType_t	ShadowCastType() override { return SHADOWS_NONE; };
-	bool			IsViewModel() const override { return true; };
-	RenderGroup_t	GetRenderGroup() override { return RENDER_GROUP_VIEW_MODEL_OPAQUE; };
-	bool			ShouldDraw() override { return true; };
+	RenderGroup_t	GetRenderGroup() override { return RENDER_GROUP_VIEW_MODEL_TRANSLUCENT; };
 	int				DrawModel(int flags) override;
+	void			ProcessMuzzleFlashEvent() override	{ RemoveEffects(EF_NODRAW);	}
 #endif
 
 	void Spawn(void);
 	void Precache(void);
 
-	int selectedFlash;
-	IMaterial* flash[2];
-
 	bool	m_bActive;
-private:
-	float	m_flNextChangeTime;
 };
 
 #endif // NEO_PREDICTED_VIEWMODEL_MUZZLEFLASH_H

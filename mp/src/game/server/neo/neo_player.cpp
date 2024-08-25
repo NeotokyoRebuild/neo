@@ -1543,8 +1543,15 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 void CNEO_Player::CreateViewModel( int index )
 {
 	Assert( index >= 0 && index < MAX_VIEWMODELS );
+	static int constexpr VIEWMODELMUZZLEFLASH_INDEX = 1;
+	Assert(VIEWMODELMUZZLEFLASH_INDEX != index && VIEWMODELMUZZLEFLASH_INDEX < MAX_VIEWMODELS);
 
 	if ( GetViewModel( index ) )
+	{
+		return;
+	}
+
+	if (GetViewModel(VIEWMODELMUZZLEFLASH_INDEX))
 	{
 		return;
 	}
@@ -1563,6 +1570,20 @@ void CNEO_Player::CreateViewModel( int index )
 	{
 		Warning("CNEO_Player::CreateViewModel: Failed to create neo_predicted_viewmodel\n");
 		return;
+	}
+
+	CNEOPredictedViewModelMuzzleFlash* vmm = (CNEOPredictedViewModelMuzzleFlash*)CreateEntityByName( "neo_predicted_viewmodel_muzzleflash" );
+	if (vmm)
+	{
+		vmm->SetAbsOrigin(vm->GetAbsOrigin());
+		vmm->SetOwner(this);
+		vmm->SetParent(vm);
+		DispatchSpawn(vmm);
+		m_hViewModel.Set(VIEWMODELMUZZLEFLASH_INDEX, vmm);
+	}
+	else
+	{
+		Warning("CNEO_Player::CreateViewModel: Failed to create neo_predicted_viewmodel_muzzleflash\n");
 	}
 }
 

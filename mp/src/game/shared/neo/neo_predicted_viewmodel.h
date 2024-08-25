@@ -46,14 +46,6 @@ public:
 	virtual RenderGroup_t GetRenderGroup();
 
 #endif
-	virtual void DoMuzzleFlash()
-	{
-		if (m_pFirstPersonMuzzleFlash)
-		{
-			m_pFirstPersonMuzzleFlash->DoMuzzleFlash();
-		}
-		BaseClass::DoMuzzleFlash();
-	}
 
 #ifdef CLIENT_DLL
 	float GetLeanInterp()
@@ -74,7 +66,6 @@ public:
 	float m_flYPrevious;
 	CInterpolatedVar<float> m_iv_flYPrevious;
 #endif
-	CNEOPredictedViewModelMuzzleFlash *m_pFirstPersonMuzzleFlash;
 
 private:
 	float m_flStartAimingChange;

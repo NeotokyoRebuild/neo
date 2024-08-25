@@ -58,23 +58,6 @@ CNEOPredictedViewModel::CNEOPredictedViewModel()
 	m_flYPrevious = 0;
 	m_flStartAimingChange = 0;
 	m_bViewAim = false;
-	m_pFirstPersonMuzzleFlash = (CNEOPredictedViewModelMuzzleFlash*)CreateEntityByName("neo_predicted_viewmodel_muzzleflash");
-	if (m_pFirstPersonMuzzleFlash)
-	{
-		m_pFirstPersonMuzzleFlash->SetOwnerEntity(this);
-		m_pFirstPersonMuzzleFlash->SetParent(this);
-		m_pFirstPersonMuzzleFlash->m_bActive = true;
-#ifdef GAME_DLL
-		DispatchSpawn(m_pFirstPersonMuzzleFlash);
-#else
-		m_pFirstPersonMuzzleFlash->SetModelScale(1);
-		m_pFirstPersonMuzzleFlash->flash[0] = materials->FindMaterial("effects/fpmf/fpmf01.vmt", TEXTURE_GROUP_VIEW_MODEL);
-		m_pFirstPersonMuzzleFlash->flash[1] = materials->FindMaterial("effects/fpmf/fpmf02.vmt", TEXTURE_GROUP_VIEW_MODEL);
-		m_pFirstPersonMuzzleFlash->flash[0]->SetMaterialVarFlag(MATERIAL_VAR_IGNOREZ, true);
-		m_pFirstPersonMuzzleFlash->flash[1]->SetMaterialVarFlag(MATERIAL_VAR_IGNOREZ, true);
-		clienttools->SetRenderGroup(m_pFirstPersonMuzzleFlash, RENDER_GROUP_VIEW_MODEL_OPAQUE);
-#endif
-	}
 }
 
 CNEOPredictedViewModel::~CNEOPredictedViewModel()
@@ -385,16 +368,6 @@ void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 	{
 		return;
 	}
-
-#ifdef GAME_DLL
-	if (LookupAttachment("Muzzle") > 0)
-	{
-		if (m_pFirstPersonMuzzleFlash) {
-			m_pFirstPersonMuzzleFlash->SetParent(this);
-			m_pFirstPersonMuzzleFlash->SetParentAttachment("SetParentAttachment", "Muzzle", false);
-		}
-	}
-#endif
 
 	CHL2MPSWeaponInfo data = weapon->GetHL2MPWpnData();
 

@@ -894,33 +894,30 @@ bool CBasePlayer::Weapon_Switch( CBaseCombatWeapon *pWeapon, int viewmodelindex 
 
 #ifdef NEO
 		auto neoWep = static_cast<CNEOBaseCombatWeapon*>(pWeapon);
-		CNEOPredictedViewModel* neoViewModel = static_cast<CNEOPredictedViewModel*>(m_hViewModel[0].Get());
-		if (neoViewModel->m_pFirstPersonMuzzleFlash)
+		CNEOPredictedViewModelMuzzleFlash* neoViewModelMuzzleflash = static_cast<CNEOPredictedViewModelMuzzleFlash*>(m_hViewModel[1].Get());
+		if (neoViewModelMuzzleflash)
 		{
 			if (neoWep->GetNeoWepBits() & NEO_WEP_SUPPRESSED)
 			{
-				neoViewModel->m_pFirstPersonMuzzleFlash->m_bActive = false;
+				neoViewModelMuzzleflash->m_bActive = false;
 			}
 			else if (neoWep->GetNeoWepBits() & (NEO_WEP_PZ | NEO_WEP_TACHI))
 			{
-				neoViewModel->m_pFirstPersonMuzzleFlash->m_bActive = true;
-				neoViewModel->m_pFirstPersonMuzzleFlash->selectedFlash = 1;
-				neoViewModel->m_pFirstPersonMuzzleFlash->m_nSkin = 1;
-				//neoViewModel->m_pFirstPersonMuzzleFlash->SetModelScale(1);
+				neoViewModelMuzzleflash->m_bActive = true;
+				neoViewModelMuzzleflash->m_nSkin = 1;
+				neoViewModelMuzzleflash->SetModelScale(1);
 			}
 			else if (neoWep->GetNeoWepBits() & NEO_WEP_SUPA7)
 			{
-				neoViewModel->m_pFirstPersonMuzzleFlash->m_bActive = true;
-				neoViewModel->m_pFirstPersonMuzzleFlash->selectedFlash = 0;
-				neoViewModel->m_pFirstPersonMuzzleFlash->m_nSkin = 0;
-				//neoViewModel->m_pFirstPersonMuzzleFlash->SetModelScale(1.5);
+				neoViewModelMuzzleflash->m_bActive = true;
+				neoViewModelMuzzleflash->m_nSkin = 0;
+				neoViewModelMuzzleflash->SetModelScale(1.5);
 			}
 			else
 			{
-				neoViewModel->m_pFirstPersonMuzzleFlash->m_bActive = true;
-				neoViewModel->m_pFirstPersonMuzzleFlash->selectedFlash = 0;
-				neoViewModel->m_pFirstPersonMuzzleFlash->m_nSkin = 0;
-				//neoViewModel->m_pFirstPersonMuzzleFlash->SetModelScale(1);
+				neoViewModelMuzzleflash->m_bActive = true;
+				neoViewModelMuzzleflash->m_nSkin = 0;
+				neoViewModelMuzzleflash->SetModelScale(1);
 			}
 		}
 #endif // NEO
