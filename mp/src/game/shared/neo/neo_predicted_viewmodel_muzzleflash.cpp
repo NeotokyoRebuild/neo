@@ -56,7 +56,7 @@ void CNEOPredictedViewModelMuzzleFlash::Spawn(void)
 #ifdef CLIENT_DLL
 int CNEOPredictedViewModelMuzzleFlash::DrawModel(int flags)
 {
-	if (!IsEffectActive(EF_NODRAW) && m_bActive)
+	if (m_flTimeSwitchOffMuzzleFlash > gpGlobals->curtime && m_bActive)
 	{
 		CBasePlayer* pOwner = ToBasePlayer(GetOwner());
 		if (pOwner == NULL)
@@ -73,7 +73,6 @@ int CNEOPredictedViewModelMuzzleFlash::DrawModel(int flags)
 		SetAbsOrigin(localOrigin);
 		SetAbsAngles(localAngle);
 		int ret = BaseClass::DrawModel(flags);
-		AddEffects(EF_NODRAW);
 		return ret;
 	}
 	return -1;

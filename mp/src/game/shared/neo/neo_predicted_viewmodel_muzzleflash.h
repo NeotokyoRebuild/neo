@@ -27,13 +27,14 @@ public:
 	ShadowType_t	ShadowCastType() override { return SHADOWS_NONE; };
 	RenderGroup_t	GetRenderGroup() override { return RENDER_GROUP_VIEW_MODEL_TRANSLUCENT; };
 	int				DrawModel(int flags) override;
-	void			ProcessMuzzleFlashEvent() override	{ RemoveEffects(EF_NODRAW);	}
+	void			ProcessMuzzleFlashEvent() override { m_flTimeSwitchOffMuzzleFlash = gpGlobals->curtime + 0.02f; }
 #endif
 
 	void Spawn(void);
 	void Precache(void);
 
 	bool	m_bActive;
+	float	m_flTimeSwitchOffMuzzleFlash;
 };
 
 #endif // NEO_PREDICTED_VIEWMODEL_MUZZLEFLASH_H

@@ -1546,44 +1546,35 @@ void CNEO_Player::CreateViewModel( int index )
 	static int constexpr VIEWMODELMUZZLEFLASH_INDEX = 1;
 	Assert(VIEWMODELMUZZLEFLASH_INDEX != index && VIEWMODELMUZZLEFLASH_INDEX < MAX_VIEWMODELS);
 
-	if ( GetViewModel( index ) )
+	if ( !GetViewModel( index ) )
 	{
-		return;
+		CNEOPredictedViewModel* vm = (CNEOPredictedViewModel*)CreateEntityByName("neo_predicted_viewmodel");
+		if (vm)
+		{
+			vm->SetAbsOrigin(GetAbsOrigin());
+			vm->SetOwner(this);
+			vm->SetIndex(index);
+			DispatchSpawn(vm);
+			vm->FollowEntity(this, false);
+			m_hViewModel.Set(index, vm);
+		}
 	}
 
-	if (GetViewModel(VIEWMODELMUZZLEFLASH_INDEX))
+	if ( !GetViewModel(VIEWMODELMUZZLEFLASH_INDEX))
 	{
-		return;
-	}
+		CNEOPredictedViewModelMuzzleFlash* vmm = (CNEOPredictedViewModelMuzzleFlash*)CreateEntityByName("neo_predicted_viewmodel_muzzleflash");
+		if (!vmm)
+			return;
+		
+		CBaseViewModel* vm = GetViewModel();
+		if (!vm)
+			return;
 
-	CNEOPredictedViewModel *vm = ( CNEOPredictedViewModel * )CreateEntityByName( "neo_predicted_viewmodel" );
-	if ( vm )
-	{
-		vm->SetAbsOrigin( GetAbsOrigin() );
-		vm->SetOwner( this );
-		vm->SetIndex( index );
-		DispatchSpawn( vm );
-		vm->FollowEntity( this, false );
-		m_hViewModel.Set( index, vm );
-	}
-	else
-	{
-		Warning("CNEO_Player::CreateViewModel: Failed to create neo_predicted_viewmodel\n");
-		return;
-	}
-
-	CNEOPredictedViewModelMuzzleFlash* vmm = (CNEOPredictedViewModelMuzzleFlash*)CreateEntityByName( "neo_predicted_viewmodel_muzzleflash" );
-	if (vmm)
-	{
 		vmm->SetAbsOrigin(vm->GetAbsOrigin());
 		vmm->SetOwner(this);
 		vmm->SetParent(vm);
 		DispatchSpawn(vmm);
 		m_hViewModel.Set(VIEWMODELMUZZLEFLASH_INDEX, vmm);
-	}
-	else
-	{
-		Warning("CNEO_Player::CreateViewModel: Failed to create neo_predicted_viewmodel_muzzleflash\n");
 	}
 }
 
