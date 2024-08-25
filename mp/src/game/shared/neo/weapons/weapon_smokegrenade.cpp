@@ -58,7 +58,7 @@ void CWeaponSmokeGrenade::Precache(void)
 bool CWeaponSmokeGrenade::Deploy(void)
 {
 	m_bRedraw = false;
-	m_fDrawbackFinished = false;
+	m_bDrawbackFinished = false;
 
 	return BaseClass::Deploy();
 }
@@ -67,7 +67,7 @@ bool CWeaponSmokeGrenade::Deploy(void)
 bool CWeaponSmokeGrenade::Holster(CBaseCombatWeapon* pSwitchingTo)
 {
 	m_bRedraw = false;
-	m_fDrawbackFinished = false;
+	m_bDrawbackFinished = false;
 	m_AttackPaused = GRENADE_PAUSED_NO;
 
 	return BaseClass::Holster(pSwitchingTo);
@@ -87,9 +87,7 @@ bool CWeaponSmokeGrenade::Reload(void)
 		SendWeaponAnim(ACT_VM_DRAW);
 
 		//Update our times
-		m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
-		m_flNextSecondaryAttack = gpGlobals->curtime + SequenceDuration();
-		m_flTimeWeaponIdle = gpGlobals->curtime + SequenceDuration();
+		m_flNextPrimaryAttack = m_flNextSecondaryAttack = m_flTimeWeaponIdle = gpGlobals->curtime + SequenceDuration();
 
 		//Mark this as done
 		m_bRedraw = false;
@@ -116,6 +114,11 @@ void CWeaponSmokeGrenade::SecondaryAttack(void)
 		return;
 	}
 
+	if (m_flNextSecondaryAttack > gpGlobals->curtime)
+	{
+		return;
+	}
+
 	if (m_AttackPaused != GRENADE_PAUSED_SECONDARY)
 	{
 		// Note that this is a secondary attack and prepare the grenade attack to pause.
@@ -125,11 +128,7 @@ void CWeaponSmokeGrenade::SecondaryAttack(void)
 		// Don't let weapon idle interfere in the middle of a throw!
 		m_flTimeWeaponIdle = FLT_MAX;
 		m_flNextSecondaryAttack = gpGlobals->curtime + RETHROW_DELAY;
-	}
-	// If I'm now out of ammo, switch away
-	if (!HasPrimaryAmmo())
-	{
-		pPlayer->SwitchToNextBestWeapon(this);
+		m_bDrawbackFinished = false;
 	}
 }
 
@@ -151,6 +150,11 @@ void CWeaponSmokeGrenade::PrimaryAttack(void)
 		return;
 	}
 
+	if (m_flNextPrimaryAttack > gpGlobals->curtime)
+	{
+		return;
+	}
+
 	if (m_AttackPaused != GRENADE_PAUSED_PRIMARY)
 	{
 		// Note that this is a primary attack and prepare the grenade attack to pause.
@@ -160,11 +164,7 @@ void CWeaponSmokeGrenade::PrimaryAttack(void)
 		// Don't let weapon idle interfere in the middle of a throw!
 		m_flTimeWeaponIdle = FLT_MAX;
 		m_flNextPrimaryAttack = gpGlobals->curtime + RETHROW_DELAY;
-	}
-	// If I'm now out of ammo, switch away
-	if (!HasPrimaryAmmo())
-	{
-		pPlayer->SwitchToNextBestWeapon(this);
+		m_bDrawbackFinished = false;
 	}
 }
 
@@ -175,15 +175,29 @@ void CWeaponSmokeGrenade::DecrementAmmo(CBaseCombatCharacter* pOwner)
 
 void CWeaponSmokeGrenade::ItemPostFrame(void)
 {
-	if (!m_fDrawbackFinished)
+	if (!HasPrimaryAmmo() && GetIdealActivity() == ACT_VM_IDLE) {
+		// Finished Throwing Animation, switch to next weapon and destroy this one
+		CBasePlayer* pOwner = ToBasePlayer(GetOwner());
+		if (pOwner) {
+			pOwner->SwitchToNextBestWeapon(this);
+			return;
+		}
+#ifdef GAME_DLL
+		// Grenade with no owner and no ammo, just destroy it
+		UTIL_Remove(this);
+#endif
+		return;
+	}
+
+	if (!m_bDrawbackFinished)
 	{
 		if ((m_flNextPrimaryAttack <= gpGlobals->curtime) && (m_flNextSecondaryAttack <= gpGlobals->curtime))
 		{
-			m_fDrawbackFinished = true;
+			m_bDrawbackFinished = true;
 		}
 	}
 
-	if (m_fDrawbackFinished)
+	if (m_bDrawbackFinished)
 	{
 		CBasePlayer* pOwner = ToBasePlayer(GetOwner());
 
@@ -197,7 +211,8 @@ void CWeaponSmokeGrenade::ItemPostFrame(void)
 					ThrowGrenade(pOwner);
 
 					SendWeaponAnim(ACT_VM_THROW);
-					m_fDrawbackFinished = false;
+					m_flNextPrimaryAttack = m_flNextSecondaryAttack = m_flTimeWeaponIdle = gpGlobals->curtime + SequenceDuration();
+					m_bDrawbackFinished = false;
 					m_AttackPaused = GRENADE_PAUSED_NO;
 				}
 				break;
@@ -219,7 +234,8 @@ void CWeaponSmokeGrenade::ItemPostFrame(void)
 						SendWeaponAnim(ACT_VM_THROW);
 					}
 
-					m_fDrawbackFinished = false;
+					m_flNextPrimaryAttack = m_flNextSecondaryAttack = m_flTimeWeaponIdle = gpGlobals->curtime + SequenceDuration();
+					m_bDrawbackFinished = false;
 					m_AttackPaused = GRENADE_PAUSED_NO;
 				}
 				break;
@@ -306,16 +322,10 @@ void CWeaponSmokeGrenade::ThrowGrenade(CBasePlayer* pPlayer)
 	}
 #endif
 
-	m_bRedraw = true;
-
 	// player "shoot" animation
 	pPlayer->SetAnimation(PLAYER_ATTACK1);
 
-	// If I'm now out of ammo, switch away
-	if (!HasPrimaryAmmo())
-	{
-		pPlayer->SwitchToNextBestWeapon(this);
-	}
+	m_bRedraw = true;
 }
 
 void CWeaponSmokeGrenade::LobGrenade(CBasePlayer* pPlayer)
@@ -355,14 +365,8 @@ void CWeaponSmokeGrenade::LobGrenade(CBasePlayer* pPlayer)
 
 	// player "shoot" animation
 	pPlayer->SetAnimation(PLAYER_ATTACK1);
-
+	
 	m_bRedraw = true;
-
-	// If I'm now out of ammo, switch away
-	if (!HasPrimaryAmmo())
-	{
-		pPlayer->SwitchToNextBestWeapon(this);
-	}
 }
 
 void CWeaponSmokeGrenade::RollGrenade(CBasePlayer* pPlayer)
@@ -423,12 +427,6 @@ void CWeaponSmokeGrenade::RollGrenade(CBasePlayer* pPlayer)
 	pPlayer->SetAnimation(PLAYER_ATTACK1);
 
 	m_bRedraw = true;
-
-	// If I'm now out of ammo, switch away
-	if (!HasPrimaryAmmo())
-	{
-		pPlayer->SwitchToNextBestWeapon(this);
-	}
 }
 
 bool CWeaponSmokeGrenade::CanDrop()
@@ -457,7 +455,7 @@ void CWeaponSmokeGrenade::Operator_HandleAnimEvent(animevent_t* pEvent, CBaseCom
 	switch (pEvent->event)
 	{
 	case EVENT_WEAPON_SEQUENCE_FINISHED:
-		m_fDrawbackFinished = true;
+		m_bDrawbackFinished = true;
 		break;
 
 	case EVENT_WEAPON_THROW:
