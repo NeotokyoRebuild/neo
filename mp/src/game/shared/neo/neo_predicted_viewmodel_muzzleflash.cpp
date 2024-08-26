@@ -15,8 +15,16 @@ IMPLEMENT_NETWORKCLASS_ALIASED(NEOPredictedViewModelMuzzleFlash, DT_NEOPredicted
 BEGIN_NETWORK_TABLE(CNEOPredictedViewModelMuzzleFlash, DT_NEOPredictedViewModelMuzzleFlash)
 #ifndef CLIENT_DLL
 SendPropEHandle(SENDINFO_NAME(m_hMoveParent, moveparent)),
+SendPropBool(SENDINFO(m_bActive)),
+SendPropInt(SENDINFO(m_iAngleZ)),
+SendPropInt(SENDINFO(m_iAngleZIncrement)),
+SendPropFloat(SENDINFO(m_iModelScale)),
 #else
 RecvPropInt(RECVINFO_NAME(m_hNetworkMoveParent, moveparent), 0, RecvProxy_IntToMoveParent),
+RecvPropBool(RECVINFO(m_bActive)),
+RecvPropInt(RECVINFO(m_iAngleZ)),
+RecvPropInt(RECVINFO(m_iAngleZIncrement)),
+RecvPropFloat(RECVINFO(m_iModelScale)),
 #endif
 END_NETWORK_TABLE()
 
@@ -64,14 +72,23 @@ int CNEOPredictedViewModelMuzzleFlash::DrawModel(int flags)
 		CBaseViewModel* vm = pOwner->GetViewModel(0, false);
 		if (vm == NULL)
 			return -1;
+
+		if (m_iModelScale != GetModelScale())
+			SetModelScale(m_iModelScale); // NEOTODO (Adam) model scale is a networked property in cbaseanimating, but for some reason its not being networked when set on the server side when initially spawning/respawning the player, so sometimes muzzle flash size can be incorrect if using SetModelScale in Weapon_Equip()
+
 		int iAttachment = vm->LookupAttachment("muzzle");
+		if (iAttachment < 0)
+			return -1;
+
 		Vector localOrigin;
 		QAngle localAngle;
 		vm->GetAttachment(iAttachment, localOrigin, localAngle);
-		UncorrectViewModelAttachment(localOrigin);
-		localAngle.z += RandomFloat(-5.f, 5.f);
+		UncorrectViewModelAttachment(localOrigin); // Need position of muzzle without fov modifications & viewmodel offset
+		m_iAngleZ = (m_iAngleZ + m_iAngleZIncrement) % 360; // NEOTODO (Adam) ? Speed of rotation depends on how often DrawModel() is called. Should this be tied to global time?
+		localAngle.z = m_iAngleZ;
 		SetAbsOrigin(localOrigin);
 		SetAbsAngles(localAngle);
+
 		int ret = BaseClass::DrawModel(flags);
 		return ret;
 	}

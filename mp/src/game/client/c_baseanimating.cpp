@@ -3391,12 +3391,27 @@ void C_BaseAnimating::ProcessMuzzleFlashEvent()
 		{
 			Vector vAttachment;
 			QAngle dummyAngles;
+			
+#ifdef NEO
+			GetAttachment( 2, vAttachment, dummyAngles );
+
+			// Make a dlight
+			dlight_t* dl = effects->CL_AllocDlight(LIGHT_INDEX_MUZZLEFLASH + index);
+			dl->origin = vAttachment;
+			dl->radius = random->RandomInt(64, 96);
+			dl->decay = dl->radius / 0.1f;
+			dl->die = gpGlobals->curtime + 0.1f;
+			dl->color.r = 255;
+			dl->color.g = 192;
+			dl->color.b = 64;
+			dl->color.exponent = 5;
+#endif
 			GetAttachment( 1, vAttachment, dummyAngles );
 
 			// Make an elight
 			dlight_t *el = effects->CL_AllocElight( LIGHT_INDEX_MUZZLEFLASH + index );
 			el->origin = vAttachment;
-			el->radius = random->RandomInt( 32, 64 ); 
+			el->radius = random->RandomInt( 32, 64 );
 			el->decay = el->radius / 0.05f;
 			el->die = gpGlobals->curtime + 0.05f;
 			el->color.r = 255;

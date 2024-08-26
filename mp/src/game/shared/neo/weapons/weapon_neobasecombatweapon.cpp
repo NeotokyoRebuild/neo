@@ -672,7 +672,8 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 		return;
 	}
 
-	pPlayer->DoMuzzleFlash();
+	if (!(GetNeoWepBits() & NEO_WEP_SUPPRESSED))
+		pPlayer->DoMuzzleFlash();
 
 	SendWeaponAnim(GetPrimaryAttackActivity());
 
@@ -713,7 +714,7 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 
 	info.m_flDistance = MAX_TRACE_LENGTH;
 	info.m_iAmmoType = m_iPrimaryAmmoType;
-	info.m_iTracerFreq = 2;
+	info.m_iTracerFreq = 0;
 
 #if !defined( CLIENT_DLL )
 	// Fire the bullets
