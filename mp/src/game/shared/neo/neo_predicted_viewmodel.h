@@ -5,7 +5,6 @@
 #endif
 
 #include "predicted_viewmodel.h"
-#include "neo_predicted_viewmodel_muzzleflash.h"
 
 #ifdef CLIENT_DLL
 //#include "clienteffectprecachesystem.h"
@@ -44,7 +43,6 @@ public:
 	virtual int DrawModel(int flags);
 
 	virtual RenderGroup_t GetRenderGroup();
-
 #endif
 
 #ifdef CLIENT_DLL

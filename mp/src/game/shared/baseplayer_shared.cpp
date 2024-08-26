@@ -54,6 +54,7 @@
 #ifdef NEO
 #include "neo_gamerules.h"
 #include "weapon_neobasecombatweapon.h"
+#include "neo_predicted_viewmodel_muzzleflash.h"
 #ifdef GAME_DLL
 #include "neo_player.h"
 #else
@@ -877,53 +878,53 @@ void CBasePlayer::UpdateMuzzleFlashProperties(CBaseCombatWeapon* pWeapon)
 	if (!neoWep)
 		return;
 
-	CNEOPredictedViewModelMuzzleFlash* neoViewModelMuzzleflash = static_cast<CNEOPredictedViewModelMuzzleFlash*>(m_hViewModel[1].Get());
-	if (neoViewModelMuzzleflash)
+	CNEOPredictedViewModelMuzzleFlash* neoViewModelMuzzleflash = static_cast<CNEOPredictedViewModelMuzzleFlash*>(m_hViewModel[MUZZLE_FLASH_VIEW_MODEL_INDEX].Get());
+	if (!neoViewModelMuzzleflash)
+		return;
+	
+	if (neoWep->GetNeoWepBits() & (NEO_WEP_DETPACK | NEO_WEP_GHOST | NEO_WEP_FRAG_GRENADE | NEO_WEP_KNIFE | NEO_WEP_SMOKE_GRENADE | NEO_WEP_SUPPRESSED | NEO_WEP_EXPLOSIVE))
 	{
-		if (neoWep->GetNeoWepBits() & (NEO_WEP_DETPACK | NEO_WEP_GHOST | NEO_WEP_FRAG_GRENADE | NEO_WEP_KNIFE | NEO_WEP_SMOKE_GRENADE | NEO_WEP_SUPPRESSED | NEO_WEP_EXPLOSIVE))
-		{
-			neoViewModelMuzzleflash->m_bActive = false;
-		}
-		else if (neoWep->GetNeoWepBits() & (NEO_WEP_PZ | NEO_WEP_TACHI | NEO_WEP_KYLA))
-		{
-			neoViewModelMuzzleflash->m_bActive = true;
-			neoViewModelMuzzleflash->m_nSkin = 1;
-			neoViewModelMuzzleflash->m_iAngleZ = 0;
-			neoViewModelMuzzleflash->m_iAngleZIncrement = -90;
-			neoViewModelMuzzleflash->m_iModelScale = 0.75;
-		}
-		else if (neoWep->GetNeoWepBits() & NEO_WEP_SUPA7)
-		{
-			neoViewModelMuzzleflash->m_bActive = true;
-			neoViewModelMuzzleflash->m_nSkin = 1;
-			neoViewModelMuzzleflash->m_iAngleZ = 0;
-			neoViewModelMuzzleflash->m_iAngleZIncrement = -90;
-			neoViewModelMuzzleflash->m_iModelScale = 1;
-		}
-		else if (neoWep->GetNeoWepBits() & (NEO_WEP_SRM | NEO_WEP_JITTE))
-		{
-			neoViewModelMuzzleflash->m_bActive = true;
-			neoViewModelMuzzleflash->m_nSkin = 0;
-			neoViewModelMuzzleflash->m_iAngleZ = 0;
-			neoViewModelMuzzleflash->m_iAngleZIncrement = -90;
-			neoViewModelMuzzleflash->m_iModelScale = 0.75;
-		}
-		else if (neoWep->GetNeoWepBits() & (NEO_WEP_MX))
-		{
-			neoViewModelMuzzleflash->m_bActive = true;
-			neoViewModelMuzzleflash->m_nSkin = 0;
-			neoViewModelMuzzleflash->m_iAngleZ = 0;
-			neoViewModelMuzzleflash->m_iAngleZIncrement = -95;
-			neoViewModelMuzzleflash->m_iModelScale = 0.6;
-		}
-		else
-		{
-			neoViewModelMuzzleflash->m_bActive = true;
-			neoViewModelMuzzleflash->m_nSkin = 0;
-			neoViewModelMuzzleflash->m_iAngleZ = 0;
-			neoViewModelMuzzleflash->m_iAngleZIncrement = -90;
-			neoViewModelMuzzleflash->m_iModelScale = 0.75;
-		}
+		neoViewModelMuzzleflash->m_bActive = false;
+	}
+	else if (neoWep->GetNeoWepBits() & (NEO_WEP_PZ | NEO_WEP_TACHI | NEO_WEP_KYLA))
+	{
+		neoViewModelMuzzleflash->m_bActive = true;
+		neoViewModelMuzzleflash->m_nSkin = 1;
+		neoViewModelMuzzleflash->m_iAngleZ = 0;
+		neoViewModelMuzzleflash->m_iAngleZIncrement = -90;
+		neoViewModelMuzzleflash->m_iModelScale = 0.75;
+	}
+	else if (neoWep->GetNeoWepBits() & NEO_WEP_SUPA7)
+	{
+		neoViewModelMuzzleflash->m_bActive = true;
+		neoViewModelMuzzleflash->m_nSkin = 1;
+		neoViewModelMuzzleflash->m_iAngleZ = 0;
+		neoViewModelMuzzleflash->m_iAngleZIncrement = -90;
+		neoViewModelMuzzleflash->m_iModelScale = 1;
+	}
+	else if (neoWep->GetNeoWepBits() & (NEO_WEP_SRM | NEO_WEP_JITTE))
+	{
+		neoViewModelMuzzleflash->m_bActive = true;
+		neoViewModelMuzzleflash->m_nSkin = 0;
+		neoViewModelMuzzleflash->m_iAngleZ = 0;
+		neoViewModelMuzzleflash->m_iAngleZIncrement = -90;
+		neoViewModelMuzzleflash->m_iModelScale = 0.75;
+	}
+	else if (neoWep->GetNeoWepBits() & (NEO_WEP_MX))
+	{
+		neoViewModelMuzzleflash->m_bActive = true;
+		neoViewModelMuzzleflash->m_nSkin = 0;
+		neoViewModelMuzzleflash->m_iAngleZ = 0;
+		neoViewModelMuzzleflash->m_iAngleZIncrement = -95;
+		neoViewModelMuzzleflash->m_iModelScale = 0.6;
+	}
+	else
+	{
+		neoViewModelMuzzleflash->m_bActive = true;
+		neoViewModelMuzzleflash->m_nSkin = 0;
+		neoViewModelMuzzleflash->m_iAngleZ = 0;
+		neoViewModelMuzzleflash->m_iAngleZIncrement = -90;
+		neoViewModelMuzzleflash->m_iModelScale = 0.75;
 	}
 }
 #endif // NEO

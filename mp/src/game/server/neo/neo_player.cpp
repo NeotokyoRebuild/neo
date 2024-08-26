@@ -3,6 +3,7 @@
 
 #include "neo_playeranimstate.h"
 #include "neo_predicted_viewmodel.h"
+#include "neo_predicted_viewmodel_muzzleflash.h"
 #include "in_buttons.h"
 #include "neo_gamerules.h"
 #include "team.h"
@@ -1543,8 +1544,7 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 void CNEO_Player::CreateViewModel( int index )
 {
 	Assert( index >= 0 && index < MAX_VIEWMODELS );
-	static int constexpr VIEWMODELMUZZLEFLASH_INDEX = 1;
-	Assert(VIEWMODELMUZZLEFLASH_INDEX != index && VIEWMODELMUZZLEFLASH_INDEX < MAX_VIEWMODELS);
+	Assert(MUZZLE_FLASH_VIEW_MODEL_INDEX != index && MUZZLE_FLASH_VIEW_MODEL_INDEX < MAX_VIEWMODELS);
 
 	if ( !GetViewModel( index ) )
 	{
@@ -1560,7 +1560,7 @@ void CNEO_Player::CreateViewModel( int index )
 		}
 	}
 
-	if ( !GetViewModel(VIEWMODELMUZZLEFLASH_INDEX))
+	if ( !GetViewModel(MUZZLE_FLASH_VIEW_MODEL_INDEX))
 	{
 		CNEOPredictedViewModelMuzzleFlash* vmm = (CNEOPredictedViewModelMuzzleFlash*)CreateEntityByName("neo_predicted_viewmodel_muzzleflash");
 		if (!vmm)
@@ -1574,7 +1574,7 @@ void CNEO_Player::CreateViewModel( int index )
 		vmm->SetOwner(this);
 		vmm->SetParent(vm);
 		DispatchSpawn(vmm);
-		m_hViewModel.Set(VIEWMODELMUZZLEFLASH_INDEX, vmm);
+		m_hViewModel.Set(MUZZLE_FLASH_VIEW_MODEL_INDEX, vmm);
 	}
 }
 
