@@ -325,6 +325,7 @@ void CWeaponSupa7::PrimaryAttack(void)
 
 	FireBulletsInfo_t info(numBullets, vecSrc, vecAiming, bulletSpread, MAX_TRACE_LENGTH, ammoType);
 	info.m_pAttacker = pPlayer;
+	info.m_iTracerFreq = 0;
 
 	pPlayer->DoMuzzleFlash();
 
