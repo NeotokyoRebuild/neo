@@ -891,7 +891,7 @@ void CBasePlayer::UpdateMuzzleFlashProperties(CBaseCombatWeapon* pWeapon)
 		neoViewModelMuzzleflash->m_bActive = true;
 		neoViewModelMuzzleflash->m_nSkin = 1;
 		neoViewModelMuzzleflash->m_iAngleZ = 0;
-		neoViewModelMuzzleflash->m_iAngleZIncrement = -90;
+		neoViewModelMuzzleflash->m_iAngleZIncrement = -100;
 		neoViewModelMuzzleflash->m_iModelScale = 0.75;
 	}
 	else if (neoWep->GetNeoWepBits() & NEO_WEP_SUPA7)
@@ -900,7 +900,7 @@ void CBasePlayer::UpdateMuzzleFlashProperties(CBaseCombatWeapon* pWeapon)
 		neoViewModelMuzzleflash->m_nSkin = 1;
 		neoViewModelMuzzleflash->m_iAngleZ = 0;
 		neoViewModelMuzzleflash->m_iAngleZIncrement = -90;
-		neoViewModelMuzzleflash->m_iModelScale = 1;
+		neoViewModelMuzzleflash->m_iModelScale = 2;
 	}
 	else if (neoWep->GetNeoWepBits() & (NEO_WEP_SRM | NEO_WEP_JITTE))
 	{
@@ -910,12 +910,12 @@ void CBasePlayer::UpdateMuzzleFlashProperties(CBaseCombatWeapon* pWeapon)
 		neoViewModelMuzzleflash->m_iAngleZIncrement = -90;
 		neoViewModelMuzzleflash->m_iModelScale = 0.75;
 	}
-	else if (neoWep->GetNeoWepBits() & (NEO_WEP_MX))
+	else if (neoWep->GetNeoWepBits() & (NEO_WEP_MX | NEO_WEP_AA13))
 	{
 		neoViewModelMuzzleflash->m_bActive = true;
 		neoViewModelMuzzleflash->m_nSkin = 0;
 		neoViewModelMuzzleflash->m_iAngleZ = 0;
-		neoViewModelMuzzleflash->m_iAngleZIncrement = -95;
+		neoViewModelMuzzleflash->m_iAngleZIncrement = -100;
 		neoViewModelMuzzleflash->m_iModelScale = 0.6;
 	}
 	else
