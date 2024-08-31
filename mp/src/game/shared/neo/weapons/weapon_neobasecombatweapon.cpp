@@ -67,6 +67,8 @@ BEGIN_DATADESC( CNEOBaseCombatWeapon )
 END_DATADESC()
 #endif
 
+ConVar sv_neo_accuracy_penalty_scale("sv_neo_accuracy_penalty_scale", "1.0", FCVAR_REPLICATED, "Scales the accuracy penalty per shot.", true, 0.0f, true, 2.0f);
+
 const char *GetWeaponByLoadoutId(int id)
 {
 	if (id < 0 || id >= NEO_WEP_LOADOUT_ID_COUNT)
@@ -345,7 +347,7 @@ void CNEOBaseCombatWeapon::UpdateInaccuracy()
 		m_flAccuracyPenalty += gpGlobals->frametime * 2.0;
 	}
 
-	m_flAccuracyPenalty -= gpGlobals->frametime * 1.2;
+	m_flAccuracyPenalty -= gpGlobals->frametime * GetAccuracyPenaltyDecay();
 	m_flAccuracyPenalty = clamp(m_flAccuracyPenalty, 0.0f, GetMaxAccuracyPenalty());
 }
 
@@ -750,7 +752,10 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 	//Add our view kick in
 	AddViewKick();
 
-	m_flAccuracyPenalty = min(GetMaxAccuracyPenalty(), m_flAccuracyPenalty + GetAccuracyPenalty());
+	m_flAccuracyPenalty = min(
+		GetMaxAccuracyPenalty(),
+		m_flAccuracyPenalty + GetAccuracyPenalty() * sv_neo_accuracy_penalty_scale.GetFloat()
+	);
 }
 
 void CNEOBaseCombatWeapon::SecondaryAttack()
