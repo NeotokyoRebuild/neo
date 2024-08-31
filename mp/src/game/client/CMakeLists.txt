@@ -1460,7 +1460,6 @@ target_sources_grouped(
     hl2/hud_battery.cpp
     hl2/hud_blood.cpp
     hl2/hud_credits.cpp
-    hl2/hud_damageindicator.cpp
     hl2/hud_flashlight.cpp
     hl2/hud_health.cpp
     hl2/hud_poisondamageindicator.cpp
@@ -1514,6 +1513,7 @@ target_sources_grouped(
     neo/ui/neo_hud_childelement.h
     neo/ui/neo_hud_compass.cpp
     neo/ui/neo_hud_compass.h
+    neo/ui/neo_hud_damage_indicator.cpp
     neo/ui/neo_hud_friendly_marker.cpp
     neo/ui/neo_hud_friendly_marker.h
     neo/ui/neo_hud_game_event.cpp
@@ -1524,6 +1524,8 @@ target_sources_grouped(
     neo/ui/neo_hud_ghost_cap_point.h
     neo/ui/neo_hud_ghost_marker.cpp
     neo/ui/neo_hud_ghost_marker.h
+    neo/ui/neo_hud_ghost_uplink_state.cpp
+    neo/ui/neo_hud_ghost_uplink_state.h
     neo/ui/neo_hud_health_thermoptic_aux.cpp
     neo/ui/neo_hud_health_thermoptic_aux.h
     neo/ui/neo_hud_round_state.cpp

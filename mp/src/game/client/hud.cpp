@@ -495,13 +495,7 @@ void CHud::InitFonts()
 	g_hFontTrebuchet24 = pScheme->GetFont("CenterPrintText", true);
 
 #ifdef NEO
-	auto pNeoKillfeedOverrideScheme = vgui::scheme()->GetIScheme(vgui::scheme()->
-		LoadSchemeFromFile("resource/ClientScheme_KillFeed.res", "KillFeed"));
-	Assert(pNeoKillfeedOverrideScheme);
-	if (pNeoKillfeedOverrideScheme)
-	{
-		g_hFontKillfeed = pNeoKillfeedOverrideScheme->GetFont("killfeed");
-	}
+	g_hFontKillfeed = pScheme->GetFont("NHudOCRSmall", true);
 
 	if (g_hFontKillfeed == vgui::INVALID_FONT)
 	{

@@ -85,17 +85,25 @@ public:
 #define VEC_DEAD_VIEWHEIGHT	g_pGameRules->GetViewVectors()->m_vDeadViewHeight
 
 #ifdef NEO
-#define NEO_RECON_VIEW_OFFSET Vector(0.0f, 0.0f, -6.0f)
-#define NEO_ASSAULT_VIEW_OFFSET Vector(0.0f, 0.0f, -3.75f)
-#define NEO_SUPPORT_VIEW_OFFSET Vector(0.0f, 0.0f, 3.0f)
-#define VEC_VIEW_NEOSCALE(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vView + ((NeoPlayer->GetClass() == NEO_CLASS_RECON) ? NEO_RECON_VIEW_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_SUPPORT) ? NEO_SUPPORT_VIEW_OFFSET : NEO_ASSAULT_VIEW_OFFSET))
-#define VEC_DUCK_VIEW_NEOSCALE(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vDuckView + ((NeoPlayer->GetClass() == NEO_CLASS_RECON) ? NEO_RECON_VIEW_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_SUPPORT) ? NEO_SUPPORT_VIEW_OFFSET : NEO_ASSAULT_VIEW_OFFSET))
+#define NEO_RECON_VIEW_OFFSET Vector(0.0f, 0.0f, -1.f)
+#define NEO_ASSAULT_VIEW_OFFSET Vector(0.0f, 0.0f, -0.5f)
+#define NEO_SUPPORT_VIEW_OFFSET Vector(0.0f, 0.0f, 2.0f)
+#define NEO_RECON_DUCKED_VIEW_OFFSET Vector(0.0f, 0.0f, -4.f)
+#define NEO_ASSAULT_DUCKED_VIEW_OFFSET Vector(0.0f, 0.0f, -4.f)
+#define NEO_SUPPORT_DUCKED_VIEW_OFFSET Vector(0.0f, 0.0f, 5.f)
 
-#define NEO_RECON_DUCK_MAXHULL_OFFSET Vector(0.0f, 0.0f, -2.0f)
-#define NEO_ASSAULT_DUCK_MAXHULL_OFFSET Vector(0.0f, 0.0f, -1.0f)
-#define NEO_SUPPORT_DUCK_MAXHULL_OFFSET Vector(0.0f, 0.0f, 6.0f)
+#define VEC_VIEW_NEOSCALE(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vView + ((NeoPlayer->GetClass() == NEO_CLASS_RECON) ? NEO_RECON_VIEW_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_SUPPORT) ? NEO_SUPPORT_VIEW_OFFSET : NEO_ASSAULT_VIEW_OFFSET))
+#define VEC_DUCK_VIEW_NEOSCALE(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vDuckView + ((NeoPlayer->GetClass() == NEO_CLASS_RECON) ? NEO_RECON_DUCKED_VIEW_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_SUPPORT) ? NEO_SUPPORT_DUCKED_VIEW_OFFSET : NEO_ASSAULT_DUCKED_VIEW_OFFSET))
+
+#define NEO_RECON_MAXHULL_OFFSET Vector(0.0f, 0.0f, -3.f)
+#define NEO_ASSAULT_MAXHULL_OFFSET Vector(0.0f, 0.0f, -2.f)
+#define NEO_SUPPORT_MAXHULL_OFFSET Vector(0.0f, 0.0f, 3.f)
+#define NEO_RECON_DUCK_MAXHULL_OFFSET Vector(0.0f, 0.0f, -4.f)
+#define NEO_ASSAULT_DUCK_MAXHULL_OFFSET Vector(0.0f, 0.0f, -2.f)
+#define NEO_SUPPORT_DUCK_MAXHULL_OFFSET Vector(0.0f, 0.0f, 9.f)
+
 #define VEC_HULL_MIN_NEOSCALED(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vHullMin)
-#define VEC_HULL_MAX_NEOSCALED(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vHullMax)
+#define VEC_HULL_MAX_NEOSCALED(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vHullMax + ((NeoPlayer->GetClass() == NEO_CLASS_RECON) ? NEO_RECON_MAXHULL_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_SUPPORT) ? NEO_SUPPORT_MAXHULL_OFFSET : NEO_ASSAULT_MAXHULL_OFFSET))
 #define VEC_DUCK_HULL_MIN_NEOSCALED(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vDuckHullMin)
 #define VEC_DUCK_HULL_MAX_NEOSCALED(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vDuckHullMax + ((NeoPlayer->GetClass() == NEO_CLASS_RECON) ? NEO_RECON_DUCK_MAXHULL_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_SUPPORT) ? NEO_SUPPORT_DUCK_MAXHULL_OFFSET : NEO_ASSAULT_DUCK_MAXHULL_OFFSET))
 #endif
@@ -566,6 +574,8 @@ typedef enum
 #define COLOR_GREY		Color(204, 204, 204, 255)
 #define COLOR_TINTGREY	Color(164, 164, 164, 255)
 #define COLOR_WHITE		Color(255, 255, 255, 255)
+#define COLOR_FADED_WHITE		Color(255, 255, 255, 100)
+#define COLOR_DARK_FADED_WHITE		Color(255, 255, 255, 50)
 #define COLOR_BLACK		Color(0, 0, 0, 255)
 
 #ifdef NEO
@@ -727,6 +737,9 @@ struct FireBulletsInfo_t
 		m_nFlags = 0;
 		m_pAdditionalIgnoreEnt = NULL;
 		m_flDamageForceScale = 1.0f;
+#ifdef NEO
+		m_flPenetration = 0.0f;
+#endif
 
 #ifdef _DEBUG
 		m_iAmmoType = -1;
@@ -752,9 +765,34 @@ struct FireBulletsInfo_t
 		m_nFlags = 0;
 		m_pAdditionalIgnoreEnt = NULL;
 		m_flDamageForceScale = 1.0f;
+#ifdef NEO
+		m_flPenetration = 0.0f;
+#endif
 		m_bPrimaryAttack = bPrimaryAttack;
 		m_bUseServerRandomSeed = false;
 	}
+
+#ifdef NEO
+	FireBulletsInfo_t(int nShots, const Vector& vecSrc, const Vector& vecDir, const Vector& vecSpread, float flDistance, int nAmmoType, float flPenetration, bool bPrimaryAttack = true)
+	{
+		m_iShots = nShots;
+		m_vecSrc = vecSrc;
+		m_vecDirShooting = vecDir;
+		m_vecSpread = vecSpread;
+		m_flDistance = flDistance;
+		m_iAmmoType = nAmmoType;
+		m_iTracerFreq = 4;
+		m_flDamage = 0;
+		m_iPlayerDamage = 0;
+		m_pAttacker = NULL;
+		m_nFlags = 0;
+		m_pAdditionalIgnoreEnt = NULL;
+		m_flDamageForceScale = 1.0f;
+		m_flPenetration = flPenetration;
+		m_bPrimaryAttack = bPrimaryAttack;
+		m_bUseServerRandomSeed = false;
+	}
+#endif
 
 	int m_iShots;
 	Vector m_vecSrc;
@@ -767,6 +805,9 @@ struct FireBulletsInfo_t
 	int m_iPlayerDamage;	// Damage to be used instead of m_flDamage if we hit a player
 	int m_nFlags;			// See FireBulletsFlags_t
 	float m_flDamageForceScale;
+#ifdef NEO
+	float m_flPenetration;
+#endif
 	CBaseEntity *m_pAttacker;
 	CBaseEntity *m_pAdditionalIgnoreEnt;
 	bool m_bPrimaryAttack;

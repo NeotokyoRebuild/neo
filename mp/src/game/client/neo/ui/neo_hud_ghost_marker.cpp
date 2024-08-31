@@ -49,10 +49,6 @@ CNEOHud_GhostMarker::CNEOHud_GhostMarker(const char* pElemName, vgui::Panel* par
 
 	SetAutoDelete(true);
 
-	vgui::HScheme neoscheme = vgui::scheme()->LoadSchemeFromFileEx(
-		enginevgui->GetPanel(PANEL_CLIENTDLL), "resource/ClientScheme_Neo.res", "ClientScheme_Neo");
-	SetScheme(neoscheme);
-
 	if (parent)
 	{
 		SetParent(parent);
@@ -66,12 +62,6 @@ CNEOHud_GhostMarker::CNEOHud_GhostMarker(const char* pElemName, vgui::Panel* par
 	surface()->GetScreenSize(wide, tall);
 	SetBounds(0, 0, wide, tall);
 
-	// NEO HACK (Rain): this is kind of awkward, we should get the handle on ApplySchemeSettings
-	vgui::IScheme *scheme = vgui::scheme()->GetIScheme(neoscheme);
-	Assert(scheme);
-
-	m_hFont = scheme->GetFont("NHudOCRSmall", true);
-
 	m_hTex = surface()->CreateNewTextureID();
 	Assert(m_hTex > 0);
 	surface()->DrawSetTextureFile(m_hTex, "vgui/hud/ctg/g_beacon_circle", 1, false);
@@ -80,8 +70,22 @@ CNEOHud_GhostMarker::CNEOHud_GhostMarker(const char* pElemName, vgui::Panel* par
 
 	SetVisible(false);
 
-	SetFgColor(Color(0, 0, 0, 0));
-	SetBgColor(Color(0, 0, 0, 0));
+	SetFgColor(COLOR_TRANSPARENT);
+	SetBgColor(COLOR_TRANSPARENT);
+}
+
+void CNEOHud_GhostMarker::ApplySchemeSettings(vgui::IScheme *pScheme)
+{
+	BaseClass::ApplySchemeSettings(pScheme);
+
+	m_hFont = pScheme->GetFont("NHudOCRSmall", true);
+
+	int wide, tall;
+	surface()->GetScreenSize(wide, tall);
+	SetBounds(0, 0, wide, tall);
+
+	SetFgColor(COLOR_TRANSPARENT);
+	SetBgColor(COLOR_TRANSPARENT);
 }
 
 void CNEOHud_GhostMarker::UpdateStateForNeoHudElementDraw()
@@ -92,7 +96,7 @@ void CNEOHud_GhostMarker::UpdateStateForNeoHudElementDraw()
 
 void CNEOHud_GhostMarker::DrawNeoHudElement()
 {
-	if (!ShouldDraw())
+	if (!ShouldDraw() || NEORules()->IsRoundOver())
 	{
 		return;
 	}

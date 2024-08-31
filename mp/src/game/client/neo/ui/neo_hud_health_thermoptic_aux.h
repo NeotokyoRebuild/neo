@@ -42,7 +42,7 @@ private:
 	CPanelAnimationVarAliasType(float, tall, "tall", "32", "proportional_float");
 	CPanelAnimationVarAliasType(float, visible, "visible", "1", "proportional_float");
 	CPanelAnimationVarAliasType(float, enabled, "enabled", "1", "proportional_float");
-	CPanelAnimationVar(Color, m_boxColor, "box_color", "100 100 100 178");
+	CPanelAnimationVar(Color, m_boxColor, "box_color", "200 200 200 40");
 
 	CPanelAnimationVarAliasType(bool, top_left_corner, "top_left_corner", "1", "bool");
 	CPanelAnimationVarAliasType(bool, top_right_corner, "top_right_corner", "1", "bool");
@@ -57,7 +57,8 @@ private:
 	CPanelAnimationVarAliasType(float, healthbar_h, "healthbar_h", "6", "proportional_float");
 	CPanelAnimationVarAliasType(int, healthnum_xpos, "healthnum_xpos", "198", "proportional_xpos");
 	CPanelAnimationVarAliasType(int, healthnum_ypos, "healthnum_ypos", "2", "proportional_ypos");
-	CPanelAnimationVar(Color, m_healthColor, "health_color", "255 255 255 178");
+	CPanelAnimationVar(Color, m_healthTextColor, "health_text_color", "255 255 255 100");
+	CPanelAnimationVar(Color, m_healthColor, "health_color", "255 255 255 150");
 
 	CPanelAnimationVarAliasType(int, camotext_xpos, "camotext_xpos", "6", "proportional_xpos");
 	CPanelAnimationVarAliasType(int, camotext_ypos, "camotext_ypos", "12", "proportional_ypos");
@@ -67,7 +68,8 @@ private:
 	CPanelAnimationVarAliasType(float, camobar_h, "camobar_h", "6", "proportional_float");
 	CPanelAnimationVarAliasType(int, camonum_xpos, "camonum_xpos", "198", "proportional_xpos");
 	CPanelAnimationVarAliasType(int, camonum_ypos, "camonum_ypos", "12", "proportional_ypos");
-	CPanelAnimationVar(Color, m_camoColor, "camo_color", "255 255 255 178");
+	CPanelAnimationVar(Color, m_camoTextColor, "camo_text_color", "255 255 255 100");
+	CPanelAnimationVar(Color, m_camoColor, "camo_color", "255 255 255 150");
 
 	CPanelAnimationVarAliasType(int, sprinttext_xpos, "sprinttext_xpos", "6", "proportional_xpos");
 	CPanelAnimationVarAliasType(int, sprinttext_ypos, "sprinttext_ypos", "22", "proportional_ypos");
@@ -77,7 +79,8 @@ private:
 	CPanelAnimationVarAliasType(float, sprintbar_h, "sprintbar_h", "6", "proportional_float");
 	CPanelAnimationVarAliasType(int, sprintnum_xpos, "sprintnum_xpos", "198", "proportional_xpos");
 	CPanelAnimationVarAliasType(int, sprintnum_ypos, "sprintnum_ypos", "22", "proportional_ypos");
-	CPanelAnimationVar(Color, m_sprintColor, "sprint_color", "255 255 255 178");
+	CPanelAnimationVar(Color, m_sprintTextColor, "sprint_text_color", "255 255 255 100");
+	CPanelAnimationVar(Color, m_sprintColor, "sprint_color", "255 255 255 150");
 
 private:
 	CNEOHud_HTA(const CNEOHud_HTA& other);

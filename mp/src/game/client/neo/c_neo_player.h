@@ -92,20 +92,6 @@ public:
 	virtual void CalcChaseCamView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov) override;
 	virtual void CalcInEyeCamView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov) override;
 
-	// Implementing in header in hopes of compiler picking up the inlined base method
-	virtual float GetModelScale() const
-	{
-		switch (GetClass())
-		{
-		case NEO_CLASS_RECON:
-			return C_BaseAnimating::GetModelScale() * NEO_RECON_MODEL_SCALE;
-		case NEO_CLASS_SUPPORT:
-			return C_BaseAnimating::GetModelScale() * NEO_SUPPORT_MODEL_SCALE;
-		default:
-			return C_BaseAnimating::GetModelScale() * NEO_ASSAULT_MODEL_SCALE;
-		}
-	}
-
 	float CloakPower_CurrentVisualPercentage(void) const;
 
 	float GetNormSpeed_WithActiveWepEncumberment(void) const;
@@ -151,7 +137,7 @@ public:
 
 	void DrawCompass(void);
 
-	void Weapon_AimToggle(C_BaseCombatWeapon *pWep, const NeoWeponAimToggleE toggleType);
+	void Weapon_AimToggle(C_NEOBaseCombatWeapon *pNeoWep, const NeoWeponAimToggleE toggleType);
 	void Weapon_SetZoom(const bool bZoomIn);
 
 	void Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon);
@@ -188,7 +174,6 @@ public:
 	//wchar_t m_pszTestMessage;
 
 	CNetworkVar(int, m_iXP);
-	CNetworkVar(int, m_iCapTeam);
 	CNetworkVar(int, m_iLoadoutWepChoice);
 	CNetworkVar(int, m_iNextSpawnClassChoice);
 
@@ -226,9 +211,7 @@ public:
 private:
 	bool m_bFirstDeathTick;
 	bool m_bPreviouslyReloading;
-	bool m_bPreviouslyPreparingToHideMsg;
 	bool m_bIsAllowedToToggleVision;
-	int m_iSavedObserverMode = 0;
 
 	INEOPlayerAnimState* m_pPlayerAnimState;
 

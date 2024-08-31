@@ -538,7 +538,7 @@
 		"needle_visible"	"0"
 		"needle_colored"	"0"
 		"objective_visible"	"1"
-		"box_color"		"100 100 100 178"
+		"box_color"		"200 200 200 40"
 	}
 	NHudWeapon
 	{
@@ -549,7 +549,7 @@
 		"ypos"			"446"
 		"wide"			"203"
 		"tall"			"32"
-		"box_color"		"100 100 100 178"
+		"box_color"		"200 200 200 40"
 		"top_left_corner"	"1"
 		"top_right_corner"	"1"
 		"bottom_left_corner"	"1"
@@ -564,8 +564,9 @@
 		"digit2_ypos"		"16"
 		"icon_xpos"		"3"
 		"icon_ypos"		"5"
-		"ammo_color"		"255 255 255 178"
-		"emptied_ammo_color"	"255 255 255 89"
+		"ammo_text_color"	"255 255 255 100"
+		"ammo_color"		"255 255 255 150"
+		"emptied_ammo_color"	"255 255 255 50"
 	}
 	NHudHealth
 	{
@@ -576,7 +577,7 @@
 		"ypos"			"446"
 		"wide"			"203"
 		"tall"			"32"
-		"box_color"		"100 100 100 178"
+		"box_color"		"200 200 200 40"
 		"top_left_corner"	"1"
 		"top_right_corner"	"1"
 		"bottom_left_corner"	"1"
@@ -589,7 +590,8 @@
 		"healthbar_h"		"6"
 		"healthnum_xpos"	"198"
 		"healthnum_ypos"	"2"
-		"health_color"		"255 255 255 178"
+		"health_text_color"		"255 255 255 100"
+		"health_color"		"255 255 255 150"
 		"camotext_xpos"		"6"
 		"camotext_ypos"		"12"
 		"camobar_xpos"		"86"
@@ -598,7 +600,8 @@
 		"camobar_h"		"6"
 		"camonum_xpos"		"198"
 		"camonum_ypos"		"12"
-		"camo_color"		"255 255 255 178"
+		"camo_text_color"		"255 255 255 100"
+		"camo_color"		"255 255 255 150"
 		"sprinttext_xpos"	"6"
 		"sprinttext_ypos"	"22"
 		"sprintbar_xpos"	"86"
@@ -607,7 +610,8 @@
 		"sprintbar_h"		"6"
 		"sprintnum_xpos"	"198"
 		"sprintnum_ypos"	"22"
-		"sprint_color"		"255 255 255 178"
+		"sprint_text_color"		"255 255 255 100"
+		"sprint_color"		"255 255 255 150"
 	}
 	RoundResult
 	{
@@ -618,7 +622,7 @@
 	NRoundState
 	{
 		"fieldName"		"NRoundState"
-		"box_color"		"100 100 100 178"
+		"box_color"		"200 200 200 40"
 		"health_monochrome"	"1"
 	}
 }

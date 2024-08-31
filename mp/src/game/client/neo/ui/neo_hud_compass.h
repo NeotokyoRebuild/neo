@@ -44,7 +44,7 @@ private:
 	CPanelAnimationVarAliasType(bool, m_needleVisible, "needle_visible", "0", "bool");
 	CPanelAnimationVarAliasType(bool, m_needleColored, "needle_colored", "0", "bool");
 	CPanelAnimationVarAliasType(bool, m_objectiveVisible, "objective_visible", "1", "bool");
-	CPanelAnimationVar(Color, m_boxColor, "box_color", "100 100 100 178");
+	CPanelAnimationVar(Color, m_boxColor, "box_color", "200 200 200 40");
 
 private:
 	CNEOHud_Compass(const CNEOHud_Compass &other);

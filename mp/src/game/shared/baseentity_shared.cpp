@@ -2033,6 +2033,9 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 				}
 			}
 #endif
+			// Bullet penetration
+			if (!bHitGlass)
+				HandleShotPenetration(info, tr, vecDir, &traceFilter);
 		}
 
 		if ( ( info.m_iTracerFreq != 0 ) && ( tracerCount++ % info.m_iTracerFreq ) == 0 && ( bHitGlass == false ) )
@@ -2120,6 +2123,100 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 #endif
 }
 
+#ifdef NEO
+#define MAX_PENETRATION_DEPTH 12.f
+
+#define MATERIALS_NUM 26
+static const float penetrationResistance[MATERIALS_NUM] =
+{
+	1.0,						// CHAR_TEX_ANTLION
+	1.0,						// CHAR_TEX_BLOODYFLESH	
+	0.3,						// CHAR_TEX_CONCRETE		
+	0.2,						// CHAR_TEX_DIRT			
+	1.0,						// CHAR_TEX_EGGSHELL		
+	0.6,						// CHAR_TEX_FLESH			
+	0.75,						// CHAR_TEX_GRATE			
+	0.6,						// CHAR_TEX_ALIENFLESH		
+	1.0,						// CHAR_TEX_CLIP			
+	1.0,						// CHAR_TEX_UNUSED		
+	1.0,						// CHAR_TEX_UNUSED		
+	0.8,						// CHAR_TEX_PLASTIC		
+	0.5,						// CHAR_TEX_METAL			
+	0.2,						// CHAR_TEX_SAND			
+	0.8,						// CHAR_TEX_FOLIAGE		
+	0.5,						// CHAR_TEX_COMPUTER		
+	1.0,						// CHAR_TEX_UNUSED		
+	1.0,						// CHAR_TEX_UNUSED		
+	1.0,						// CHAR_TEX_SLOSH			
+	0.5,						// CHAR_TEX_TILE			
+	1.0,						// CHAR_TEX_UNUSED		
+	0.75,						// CHAR_TEX_VENT			
+	0.75,						// CHAR_TEX_WOOD			
+	1.0,						// CHAR_TEX_UNUSED		
+	0.9,						// CHAR_TEX_GLASS			
+	1.0,						// CHAR_TEX_WARPSHIELD
+};
+
+//-----------------------------------------------------------------------------
+// Handle shot penetration
+//-----------------------------------------------------------------------------
+void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
+	const trace_t& tr, const Vector& vecDir, ITraceFilter* pTraceFilter)
+{
+	float penResistance = 0;
+	int material = physprops->GetSurfaceData(tr.surface.surfaceProps)->game.material;
+	material -= 'A';
+	if (material > 0 && material < MATERIALS_NUM)
+		penResistance = penetrationResistance[material];
+
+	// Move through the material until we're at the other side or bullet has run out of penetrative power
+	Vector	testPos = tr.endpos + (vecDir.Normalized() * MAX_PENETRATION_DEPTH);
+
+	CEffectData	data;
+
+	data.m_vNormal = tr.plane.normal;
+	data.m_vOrigin = tr.endpos;
+
+	trace_t	penetrationTrace;
+
+	// Re-trace as if the bullet had passed right through
+	UTIL_TraceLine(testPos, tr.endpos, MASK_SHOT, pTraceFilter, &penetrationTrace);
+
+	// See if we found the surface again
+	if (penetrationTrace.startsolid || tr.fraction == 0.0f || penetrationTrace.fraction == 1.0f)
+		return;
+
+	// See if we have enough pen to penetrate
+	float penUsed = ((1.0f - penetrationTrace.fraction) * MAX_PENETRATION_DEPTH) / penResistance;
+	if (penUsed > info.m_flPenetration)
+		return;
+
+	//FIXME: This is technically frustrating MultiDamage, but multiple shots hitting multiple targets in one call
+	//		 would do exactly the same anyway...
+
+	// Impact the other side (will look like an exit effect)
+	DoImpactEffect(penetrationTrace, GetAmmoDef()->DamageType(info.m_iAmmoType));
+
+	data.m_vNormal = penetrationTrace.plane.normal;
+	data.m_vOrigin = penetrationTrace.endpos;
+
+	// Refire the round, as if starting from behind the material
+	FireBulletsInfo_t behindMaterialInfo;
+	behindMaterialInfo.m_iShots = 1;
+	behindMaterialInfo.m_vecSrc = penetrationTrace.endpos;
+	behindMaterialInfo.m_vecDirShooting = vecDir;
+	behindMaterialInfo.m_vecSpread = vec3_origin;
+	behindMaterialInfo.m_flDistance = info.m_flDistance * (1.0f - tr.fraction);
+	behindMaterialInfo.m_iAmmoType = info.m_iAmmoType;
+	behindMaterialInfo.m_iTracerFreq = info.m_iTracerFreq;
+	behindMaterialInfo.m_flDamage = info.m_flDamage * (1.f - (penUsed / info.m_flPenetration));
+	behindMaterialInfo.m_pAttacker = info.m_pAttacker ? info.m_pAttacker : this;
+	behindMaterialInfo.m_nFlags = info.m_nFlags;
+	behindMaterialInfo.m_flPenetration = info.m_flPenetration - penUsed;
+
+	CBaseEntity::FireBullets(behindMaterialInfo);
+}
+#endif
 
 //-----------------------------------------------------------------------------
 // Should we draw bubbles underwater?

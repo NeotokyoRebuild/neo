@@ -46,7 +46,6 @@ SendPropInt(SENDINFO(m_iNeoClass)),
 SendPropInt(SENDINFO(m_iNeoSkin)),
 SendPropInt(SENDINFO(m_iNeoStar)),
 SendPropInt(SENDINFO(m_iXP)),
-SendPropInt(SENDINFO(m_iCapTeam), 3),
 SendPropInt(SENDINFO(m_iLoadoutWepChoice)),
 SendPropInt(SENDINFO(m_iNextSpawnClassChoice)),
 SendPropInt(SENDINFO(m_bInLean)),
@@ -85,7 +84,6 @@ DEFINE_FIELD(m_iNeoClass, FIELD_INTEGER),
 DEFINE_FIELD(m_iNeoSkin, FIELD_INTEGER),
 DEFINE_FIELD(m_iNeoStar, FIELD_INTEGER),
 DEFINE_FIELD(m_iXP, FIELD_INTEGER),
-DEFINE_FIELD(m_iCapTeam, FIELD_INTEGER),
 DEFINE_FIELD(m_iLoadoutWepChoice, FIELD_INTEGER),
 DEFINE_FIELD(m_bDroppedAnything, FIELD_BOOLEAN),
 DEFINE_FIELD(m_iNextSpawnClassChoice, FIELD_INTEGER),
@@ -118,9 +116,6 @@ DEFINE_FIELD(m_szNameDupePos, FIELD_INTEGER),
 DEFINE_FIELD(m_bClientWantNeoName, FIELD_BOOLEAN),
 END_DATADESC()
 
-#define DISMEMBER_LIMB_THRESHOLD 10
-#define DISMEMBER_HEAD_THRESHOLD (DISMEMBER_LIMB_THRESHOLD * 3)
-#define ANNHILATE_LIMB_THRESHOLD (DISMEMBER_HEAD_THRESHOLD * 3)
 #define SHOWMENU_STRLIMIT (512)
 
 CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
@@ -394,7 +389,6 @@ CNEO_Player::CNEO_Player()
 	m_bInAim = false;
 	m_bInLean = NEO_LEAN_NONE;
 
-	m_iCapTeam = TEAM_UNASSIGNED;
 	m_iLoadoutWepChoice = 0;
 	m_iNextSpawnClassChoice = -1;
 
@@ -666,8 +660,7 @@ void CNEO_Player::PreThink(void)
 	{
 		speed /= 1.666;
 	}
-	auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
-	if (pNeoWep)
+	if (auto pNeoWep = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon()))
 	{
 		speed *= pNeoWep->GetSpeedScale();
 	}
@@ -1068,10 +1061,10 @@ void CNEO_Player::PostThink(void)
 
 	CheckLeanButtons();
 
-	if (CBaseCombatWeapon *pWep = GetActiveWeapon())
+	if (auto *pNeoWep = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon()))
 	{
 		const bool clientAimHold = ClientWantsAimHold(this);
-		if (pWep->m_bInReload && !m_bPreviouslyReloading)
+		if (pNeoWep->m_bInReload && !m_bPreviouslyReloading)
 		{
 			Weapon_SetZoom(false);
 		}
@@ -1082,21 +1075,20 @@ void CNEO_Player::PostThink(void)
 		else if (m_afButtonPressed & IN_AIM)
 		{
 			// Binds hack: we want grenade secondary attack to trigger on aim (mouse button 2)
-			if (auto *pNeoWep = dynamic_cast<CNEOBaseCombatWeapon *>(pWep);
-					pNeoWep && pNeoWep->GetNeoWepBits() & NEO_WEP_THROWABLE)
+			if (pNeoWep->GetNeoWepBits() & NEO_WEP_THROWABLE)
 			{
 				pNeoWep->SecondaryAttack();
 			}
 			else if (!CanSprint() || !(m_nButtons & IN_SPEED))
 			{
-				Weapon_AimToggle(pWep, clientAimHold ? NEO_TOGGLE_FORCE_AIM : NEO_TOGGLE_DEFAULT);
+				Weapon_AimToggle(pNeoWep, clientAimHold ? NEO_TOGGLE_FORCE_AIM : NEO_TOGGLE_DEFAULT);
 			}
 		}
 		else if (clientAimHold && (m_afButtonReleased & IN_AIM))
 		{
-			Weapon_AimToggle(pWep, NEO_TOGGLE_FORCE_UN_AIM);
+			Weapon_AimToggle(pNeoWep, NEO_TOGGLE_FORCE_UN_AIM);
 		}
-		m_bPreviouslyReloading = pWep->m_bInReload;
+		m_bPreviouslyReloading = pNeoWep->m_bInReload;
 
 		if (m_afButtonPressed & IN_DROP)
 		{
@@ -1104,7 +1096,7 @@ void CNEO_Player::PostThink(void)
 			EyeVectors(&eyeForward);
 			const float forwardOffset = 250.0f;
 			eyeForward *= forwardOffset;
-			Weapon_Drop(pWep, NULL, &eyeForward);
+			Weapon_Drop(pNeoWep, NULL, &eyeForward);
 		}
 	}
 
@@ -1142,16 +1134,11 @@ void CNEO_Player::PlayerDeathThink()
 	BaseClass::PlayerDeathThink();
 }
 
-void CNEO_Player::Weapon_AimToggle(CNEOBaseCombatWeapon* pNeoWep, const NeoWeponAimToggleE toggleType)
+void CNEO_Player::Weapon_AimToggle(CNEOBaseCombatWeapon *pNeoWep, const NeoWeponAimToggleE toggleType)
 {
-	if (!pNeoWep)
-	{
-		return;
-	}
-
 	if (IsAllowedToZoom(pNeoWep))
 	{
-		if (toggleType != NEO_TOGGLE_FORCE_UN_AIM && pNeoWep->IsReadyToAimIn())
+		if (toggleType != NEO_TOGGLE_FORCE_UN_AIM)
 		{
 			const bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR) == HIDEHUD_CROSSHAIR;
 			Weapon_SetZoom(showCrosshair);
@@ -1161,13 +1148,6 @@ void CNEO_Player::Weapon_AimToggle(CNEOBaseCombatWeapon* pNeoWep, const NeoWepon
 			Weapon_SetZoom(false);
 		}
 	}
-}
-
-void CNEO_Player::Weapon_AimToggle(CBaseCombatWeapon *pWep, const NeoWeponAimToggleE toggleType)
-{
-	// NEO TODO/HACK: Not all neo weapons currently inherit
-	// through a base neo class, so we can't static_cast!!
-	Weapon_AimToggle(dynamic_cast<CNEOBaseCombatWeapon*>(pWep), toggleType);
 }
 
 void CNEO_Player::SetNameDupePos(const int dupePos)
@@ -1224,7 +1204,7 @@ void CNEO_Player::SetNeoPlayerName(const char *newNeoName)
 	// NEO NOTE (nullsystem): Generally it's never NULL but just incase
 	if (newNeoName)
 	{
-		V_memcpy(m_szNeoName.GetForModify(), newNeoName, sizeof(m_szNeoName));
+		V_memcpy(m_szNeoName.GetForModify(), newNeoName, sizeof(m_szNeoName)-1);
 		m_szNeoNameHasSet = true;
 	}
 }
@@ -1843,39 +1823,24 @@ void CNEO_Player::SpawnDeadModel(const CTakeDamageInfo& info)
 		SetPlayerCorpseModel(deadModelType);
 		break;
 	case 1: // head
-		if (info.GetDamage() >= DISMEMBER_HEAD_THRESHOLD) {
-			SetPlayerCorpseModel(deadModelType);
-			if (info.GetDamage() <= ANNHILATE_LIMB_THRESHOLD)
-				CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_HEAD));
-		}
+		SetPlayerCorpseModel(deadModelType);
+		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_HEAD));
 		break;
 	case 2: // left arm
-		if (info.GetDamage() >= DISMEMBER_LIMB_THRESHOLD) {
-			SetPlayerCorpseModel(deadModelType);
-			if (info.GetDamage() <= ANNHILATE_LIMB_THRESHOLD)
-				CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_LARM));
-		}
+		SetPlayerCorpseModel(deadModelType);
+		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_LARM));
 		break;
 	case 3: // left leg
-		if (info.GetDamage() >= DISMEMBER_LIMB_THRESHOLD) {
-			SetPlayerCorpseModel(deadModelType);
-			if (info.GetDamage() <= ANNHILATE_LIMB_THRESHOLD)
-				CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_LLEG));
-		}
+		SetPlayerCorpseModel(deadModelType);
+		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_LLEG));
 		break;
 	case 4: // right arm
-		if (info.GetDamage() >= DISMEMBER_LIMB_THRESHOLD) {
-			SetPlayerCorpseModel(deadModelType);
-			if (info.GetDamage() <= ANNHILATE_LIMB_THRESHOLD)
-				CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_RARM));
-		}
+		SetPlayerCorpseModel(deadModelType);
+		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_RARM));
 		break;
 	case 5: // right leg
-		if (info.GetDamage() >= DISMEMBER_LIMB_THRESHOLD) {
-			SetPlayerCorpseModel(deadModelType);
-			if (info.GetDamage() <= ANNHILATE_LIMB_THRESHOLD)
-				CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_RLEG));
-		}
+		SetPlayerCorpseModel(deadModelType);
+		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_RLEG));
 		break;
 	default:
 		break;
@@ -2942,8 +2907,7 @@ int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 
 float CNEO_Player::GetActiveWeaponSpeedScale() const
 {
-	// NEO TODO (Rain): change to static cast once all weapons are guaranteed to derive from the class
-	auto pWep = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
+	auto pWep = static_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
 	return (pWep ? pWep->GetSpeedScale() : 1.0f);
 }
 

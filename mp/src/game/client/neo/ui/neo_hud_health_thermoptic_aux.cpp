@@ -32,10 +32,6 @@ CNEOHud_HTA::CNEOHud_HTA(const char* pElementName, vgui::Panel* parent)
 {
 	SetAutoDelete(true);
 
-	vgui::HScheme neoscheme = vgui::scheme()->LoadSchemeFromFileEx(
-		enginevgui->GetPanel(PANEL_CLIENTDLL), "resource/ClientScheme_Neo.res", "ClientScheme_Neo");
-	SetScheme(neoscheme);
-
 	if (parent)
 	{
 		SetParent(parent);
@@ -148,31 +144,31 @@ void CNEOHud_HTA::DrawHTA() const
 	DrawNeoHudRoundedBox(xpos, ypos, xpos + wide, ypos + tall, m_boxColor, top_left_corner, top_right_corner, bottom_left_corner, bottom_right_corner);
 
 	surface()->DrawSetTextFont(m_hFont);
-	surface()->DrawSetTextColor(m_healthColor);
+	surface()->DrawSetTextColor(m_healthTextColor);
 	surface()->DrawSetTextPos(healthtext_xpos + xpos, healthtext_ypos + ypos);
 	surface()->DrawPrintText(L"INTEGRITY", 9);
 	if (playerIsNotSupport)
 	{
-		surface()->DrawSetTextColor(m_camoColor);
+		surface()->DrawSetTextColor(m_camoTextColor);
 		surface()->DrawSetTextPos(camotext_xpos + xpos, camotext_ypos + ypos);
 		surface()->DrawPrintText(L"THERM-OPTIC", 11);
-		surface()->DrawSetTextColor(m_sprintColor);
+		surface()->DrawSetTextColor(m_sprintTextColor);
 		surface()->DrawSetTextPos(sprinttext_xpos + xpos, sprinttext_ypos + ypos);
 		surface()->DrawPrintText(L"AUX", 3);
 	}
 
 	int fontWidth, fontHeight;
-	surface()->DrawSetTextColor(m_healthColor);
+	surface()->DrawSetTextColor(m_healthTextColor);
 	surface()->GetTextSize(m_hFont, unicodeValue_Integrity, fontWidth, fontHeight);
 	surface()->DrawSetTextPos(healthnum_xpos + xpos - fontWidth, healthnum_ypos + ypos);
 	surface()->DrawPrintText(unicodeValue_Integrity, valLen_Integrity);
 	if (playerIsNotSupport)
 	{
-		surface()->DrawSetTextColor(m_camoColor);
+		surface()->DrawSetTextColor(m_camoTextColor);
 		surface()->GetTextSize(m_hFont, unicodeValue_ThermOptic, fontWidth, fontHeight);
 		surface()->DrawSetTextPos(camonum_xpos + xpos - fontWidth, camonum_ypos + ypos);
 		surface()->DrawPrintText(unicodeValue_ThermOptic, valLen_ThermOptic);
-		surface()->DrawSetTextColor(m_sprintColor);
+		surface()->DrawSetTextColor(m_sprintTextColor);
 		surface()->GetTextSize(m_hFont, unicodeValue_Aux, fontWidth, fontHeight);
 		surface()->DrawSetTextPos(sprintnum_xpos + xpos - fontWidth, sprintnum_ypos + ypos);
 		surface()->DrawPrintText(unicodeValue_Aux, valLen_Aux);
@@ -204,13 +200,14 @@ void CNEOHud_HTA::DrawHTA() const
 			sprintbar_xpos + xpos + (sprintbar_w * (aux / 100.0)),
 			sprintbar_ypos + ypos + sprintbar_h);
 
-		surface()->DrawSetColor(textColorTransparent);
+		surface()->DrawSetColor(m_camoTextColor);
 		surface()->DrawOutlinedRect(
 			camobar_xpos + xpos,
 			camobar_ypos + ypos,
 			camobar_xpos + xpos + camobar_w,
 			camobar_ypos + ypos + camobar_h);
 
+		surface()->DrawSetColor(m_sprintTextColor);
 		surface()->DrawOutlinedRect(
 			sprintbar_xpos + xpos,
 			sprintbar_ypos + ypos,
@@ -218,7 +215,7 @@ void CNEOHud_HTA::DrawHTA() const
 			sprintbar_ypos + ypos + sprintbar_h);
 	}
 
-	surface()->DrawSetColor(textColorTransparent);
+	surface()->DrawSetColor(m_healthTextColor);
 	surface()->DrawOutlinedRect(
 		healthbar_xpos + xpos,
 		healthbar_ypos + ypos,
@@ -230,7 +227,8 @@ void CNEOHud_HTA::DrawNeoHudElement()
 {
 	DrawBuildInfo(); // Always draw build info
 
-	if (!ShouldDraw())
+	auto *localPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if (!ShouldDraw() || (!localPlayer || localPlayer->IsObserver()))
 	{
 		return;
 	}

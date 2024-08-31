@@ -66,7 +66,6 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropString(RECVINFO(m_pszTestMessage)),
 
 	RecvPropInt(RECVINFO(m_iXP)),
-	RecvPropInt(RECVINFO(m_iCapTeam)),
 	RecvPropInt(RECVINFO(m_iLoadoutWepChoice)),
 	RecvPropInt(RECVINFO(m_iNextSpawnClassChoice)),
 	RecvPropInt(RECVINFO(m_bInLean)),
@@ -194,7 +193,7 @@ USER_MESSAGE_REGISTER(DamageInfo);
 
 static void __MsgFunc_IdleRespawnShowMenu(bf_read &)
 {
-	if (auto *localPlayer = C_NEO_Player::GetLocalNEOPlayer())
+	if (C_NEO_Player::GetLocalNEOPlayer())
 	{
 		engine->ClientCmd("classmenu");
 	}
@@ -422,7 +421,6 @@ C_NEO_Player::C_NEO_Player()
 	m_iNeoSkin = NEO_SKIN_FIRST;
 	m_iNeoStar = NEO_DEFAULT_STAR;
 
-	m_iCapTeam = TEAM_UNASSIGNED;
 	m_iLoadoutWepChoice = 0;
 	m_iNextSpawnClassChoice = -1;
 	m_iXP.GetForModify() = 0;
@@ -442,7 +440,6 @@ C_NEO_Player::C_NEO_Player()
 
 	m_bFirstDeathTick = true;
 	m_bPreviouslyReloading = false;
-	m_bPreviouslyPreparingToHideMsg = false;
 	m_bLastTickInThermOpticCamo = false;
 	m_bIsAllowedToToggleVision = false;
 
@@ -704,8 +701,7 @@ void C_NEO_Player::ItemPreFrame( void )
 
 	if (m_afButtonPressed & IN_DROP)
 	{
-		auto neoWep = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
-		if (neoWep)
+		if (auto neoWep = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon()))
 		{
 			Weapon_Drop(neoWep);
 		}
@@ -782,8 +778,7 @@ void C_NEO_Player::PreThink( void )
 	{
 		speed /= 1.666;
 	}
-	auto pNeoWep = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
-	if (pNeoWep)
+	if (auto pNeoWep = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon()))
 	{
 		speed *= pNeoWep->GetSpeedScale();
 	}
@@ -968,6 +963,7 @@ void C_NEO_Player::ClientThink(void)
 }
 
 static ConVar neo_this_client_speed("neo_this_client_speed", "0", FCVAR_SPONLY);
+extern ConVar cl_spec_mode;
 
 void C_NEO_Player::PostThink(void)
 {
@@ -975,31 +971,9 @@ void C_NEO_Player::PostThink(void)
 
 	SetNextClientThink(CLIENT_THINK_ALWAYS);
 
-	if (GetLocalNEOPlayer() == this)
+	if (IsLocalPlayer())
 	{
 		neo_this_client_speed.SetValue(MIN(GetAbsVelocity().Length2D() / GetNormSpeed(), 1.0f));
-	}
-
-	//DevMsg("Roll: %f\n", m_angEyeAngles[2]);
-
-	bool preparingToHideMsg = (m_iCapTeam != TEAM_UNASSIGNED);
-
-	if (!preparingToHideMsg && m_bPreviouslyPreparingToHideMsg)
-	{
-		auto indicator = GET_HUDELEMENT(CNEOHud_GameEvent);
-		if (indicator)
-		{
-			indicator->SetVisible(false);
-			m_bPreviouslyPreparingToHideMsg = false;
-		}
-		else
-		{
-			Assert(false);
-		}
-	}
-	else
-	{
-		m_bPreviouslyPreparingToHideMsg = preparingToHideMsg;
 	}
 
 	if (!IsAlive())
@@ -1015,7 +989,6 @@ void C_NEO_Player::PostThink(void)
 
 			if (IsLocalPlayer() && (GetTeamNumber() == TEAM_JINRAI || GetTeamNumber() == TEAM_NSF))
 			{
-				m_iSavedObserverMode = GetObserverMode();
 				SetObserverMode(OBS_MODE_DEATHCAM);
 				// Fade out 8s to blackout + 2s full blackout
 				ScreenFade_t sfade{
@@ -1028,6 +1001,43 @@ void C_NEO_Player::PostThink(void)
 					.a = 255,
 				};
 				vieweffects->Fade(sfade);
+
+				m_Local.m_iHideHUD = HIDEHUD_HEALTH;
+				cl_spec_mode.SetValue(OBS_MODE_IN_EYE);
+				if (auto *viewport = gViewPortInterface->FindPanelByName("specgui"))
+				{
+					viewport->ShowPanel(true);
+				}
+				engine->ClientCmd("spec_mode");
+			}
+		}
+
+		if (IsLocalPlayer() && GetObserverMode() == OBS_MODE_DEATHCAM && gpGlobals->curtime >= (GetDeathTime() + 10.0f))
+		{
+			// Deathcam -> None so you view your own body for a bit before proper spec
+			m_iObserverMode = OBS_MODE_NONE;
+			g_ClientVirtualReality.AlignTorsoAndViewToWeapon();
+
+			// Fade in 2s from blackout
+			ScreenFade_t sfade{
+				.duration = static_cast<unsigned short>(static_cast<float>(1<<SCREENFADE_FRACBITS) * 2.0f),
+				.holdTime = static_cast<unsigned short>(0),
+				.fadeFlags = FFADE_IN|FFADE_PURGE,
+				.r = 0,
+				.g = 0,
+				.b = 0,
+				.a = 255,
+			};
+			vieweffects->Fade(sfade);
+
+			auto target = GetObserverTarget();
+			if (!IsValidObserverTarget(target))
+			{
+				auto nextTarget = FindNextObserverTarget(false);
+				if (nextTarget && nextTarget != target)
+				{
+					SetObserverTarget(nextTarget);
+				}
 			}
 		}
 		return;
@@ -1046,10 +1056,10 @@ void C_NEO_Player::PostThink(void)
 
 	CheckLeanButtons();
 
-	if (C_BaseCombatWeapon *pWep = GetActiveWeapon())
+	if (auto *pNeoWep = static_cast<C_NEOBaseCombatWeapon *>(GetActiveWeapon()))
 	{
 		const bool clientAimHold = ClientWantsAimHold(this);
-		if (pWep->m_bInReload && !m_bPreviouslyReloading)
+		if (pNeoWep->m_bInReload && !m_bPreviouslyReloading)
 		{
 			Weapon_SetZoom(false);
 		}
@@ -1060,19 +1070,18 @@ void C_NEO_Player::PostThink(void)
 		else if (m_afButtonPressed & IN_AIM)
 		{
 			// Binds hack: we want grenade secondary attack to trigger on aim (mouse button 2)
-			if (auto *pNeoWep = dynamic_cast<C_NEOBaseCombatWeapon *>(pWep);
-					pNeoWep && pNeoWep->GetNeoWepBits() & NEO_WEP_THROWABLE)
+			if (pNeoWep->GetNeoWepBits() & NEO_WEP_THROWABLE)
 			{
 				pNeoWep->SecondaryAttack();
 			}
 			else if (!CanSprint() || !(m_nButtons & IN_SPEED))
 			{
-				Weapon_AimToggle(pWep, clientAimHold ? NEO_TOGGLE_FORCE_AIM : NEO_TOGGLE_DEFAULT);
+				Weapon_AimToggle(pNeoWep, clientAimHold ? NEO_TOGGLE_FORCE_AIM : NEO_TOGGLE_DEFAULT);
 			}
 		}
 		else if (clientAimHold && (m_afButtonReleased & IN_AIM))
 		{
-			Weapon_AimToggle(pWep, NEO_TOGGLE_FORCE_UN_AIM);
+			Weapon_AimToggle(pNeoWep, NEO_TOGGLE_FORCE_UN_AIM);
 		}
 
 #if !defined( NO_ENTITY_PREDICTION )
@@ -1083,7 +1092,7 @@ void C_NEO_Player::PostThink(void)
 #else
 		if (true) {
 #endif
-			m_bPreviouslyReloading = pWep->m_bInReload;
+			m_bPreviouslyReloading = pNeoWep->m_bInReload;
 		}
 	}
 
@@ -1105,24 +1114,6 @@ void C_NEO_Player::CalcDeathCamView(Vector &eyeOrigin, QAngle &eyeAngles, float 
 		Vector vForward;
 		AngleVectors(eyeAngles, &vForward);
 		fov = GetFOV();
-
-		if (IsLocalPlayer() && gpGlobals->curtime >= (GetDeathTime() + 10.0f))
-		{
-			m_iObserverMode = m_iSavedObserverMode;
-			g_ClientVirtualReality.AlignTorsoAndViewToWeapon();
-
-			// Fade in 2s from blackout
-			ScreenFade_t sfade{
-				.duration = static_cast<unsigned short>(static_cast<float>(1<<SCREENFADE_FRACBITS) * 2.0f),
-				.holdTime = static_cast<unsigned short>(0),
-				.fadeFlags = FFADE_IN|FFADE_PURGE,
-				.r = 0,
-				.g = 0,
-				.b = 0,
-				.a = 255,
-			};
-			vieweffects->Fade(sfade);
-		}
 	}
 	else
 	{
@@ -1133,7 +1124,10 @@ void C_NEO_Player::CalcDeathCamView(Vector &eyeOrigin, QAngle &eyeAngles, float 
 
 void C_NEO_Player::TeamChange(int iNewTeam)
 {
-	engine->ClientCmd(classmenu.GetName());
+	if (IsLocalPlayer())
+	{
+		engine->ClientCmd(classmenu.GetName());
+	}
 	BaseClass::TeamChange(iNewTeam);
 }
 
@@ -1231,31 +1225,35 @@ void C_NEO_Player::Spawn( void )
 
 	SetViewOffset(VEC_VIEW_NEOSCALE(this));
 
-	// NEO NOTE (nullsystem): Reset Vis/Enabled/MouseInput/Cursor state here, otherwise it can get stuck at situations
-	for (const auto pname : {PANEL_CLASS, PANEL_TEAM, PANEL_NEO_LOADOUT})
+	auto *localPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if (localPlayer == nullptr || localPlayer == this)
 	{
-		if (auto *panel = static_cast<vgui::EditablePanel*>
-				(GetClientModeNormal()->GetViewport()->FindChildByName(pname)))
+		// NEO NOTE (nullsystem): Reset Vis/Enabled/MouseInput/Cursor state here, otherwise it can get stuck at situations
+		for (const auto pname : {PANEL_CLASS, PANEL_TEAM, PANEL_NEO_LOADOUT})
 		{
-			panel->SetVisible(false);
-			panel->SetEnabled(false);
-			panel->SetMouseInputEnabled(false);
-			panel->SetCursorAlwaysVisible(false);
-			//panel->SetKeyBoardInputEnabled(false);
+			if (auto *panel = static_cast<vgui::EditablePanel*>
+					(GetClientModeNormal()->GetViewport()->FindChildByName(pname)))
+			{
+				panel->SetVisible(false);
+				panel->SetEnabled(false);
+				panel->SetMouseInputEnabled(false);
+				panel->SetCursorAlwaysVisible(false);
+				//panel->SetKeyBoardInputEnabled(false);
+			}
 		}
-	}
 
-	for (auto *hud : gHUD.m_HudList)
-	{
-		if (auto *neoHud = dynamic_cast<CNEOHud_ChildElement *>(hud))
+		for (auto *hud : gHUD.m_HudList)
 		{
-			neoHud->resetLastUpdateTime();
+			if (auto *neoHud = dynamic_cast<CNEOHud_ChildElement *>(hud))
+			{
+				neoHud->resetLastUpdateTime();
+			}
 		}
-	}
 
-	if (GetTeamNumber() == TEAM_UNASSIGNED)
-	{
-		engine->ClientCmd(teammenu.GetName());
+		if (GetTeamNumber() == TEAM_UNASSIGNED)
+		{
+			engine->ClientCmd(teammenu.GetName());
+		}
 	}
 
 #if(0)
@@ -1496,25 +1494,16 @@ bool C_NEO_Player::HandleDeathSpecCamSwitch(Vector& eyeOrigin, QAngle& eyeAngles
 
 float C_NEO_Player::GetActiveWeaponSpeedScale() const
 {
-	// NEO TODO (Rain): change to static cast once all weapons are guaranteed to derive from the class
-	auto pWep = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
+	auto pWep = static_cast<C_NEOBaseCombatWeapon *>(GetActiveWeapon());
 	return (pWep ? pWep->GetSpeedScale() : 1.0f);
 }
 
-void C_NEO_Player::Weapon_AimToggle(C_BaseCombatWeapon *pWep, const NeoWeponAimToggleE toggleType)
+void C_NEO_Player::Weapon_AimToggle(C_NEOBaseCombatWeapon *pNeoWep, const NeoWeponAimToggleE toggleType)
 {
-	// NEO TODO/HACK: Not all neo weapons currently inherit
-	// through a base neo class, so we can't static_cast!!
-	auto neoCombatWep = dynamic_cast<C_NEOBaseCombatWeapon*>(pWep);
-	if (!neoCombatWep)
-	{
-		return;
-	}
-
 	// This implies the wep ptr is valid, so we don't bother checking
-	if (IsAllowedToZoom(neoCombatWep))
+	if (IsAllowedToZoom(pNeoWep))
 	{
-		if (toggleType != NEO_TOGGLE_FORCE_UN_AIM && neoCombatWep->IsReadyToAimIn())
+		if (toggleType != NEO_TOGGLE_FORCE_UN_AIM)
 		{
 			const bool showCrosshair = (m_Local.m_iHideHUD & HIDEHUD_CROSSHAIR) == HIDEHUD_CROSSHAIR;
 			Weapon_SetZoom(showCrosshair);

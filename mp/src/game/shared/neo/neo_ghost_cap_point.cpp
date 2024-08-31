@@ -188,7 +188,7 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 	}
 
 	// This round has already ended, we can't be capped into
-	if (NEORules()->GetRoundRemainingTime() < 0)
+	if (NEORules()->IsRoundOver())
 	{
 		return;
 	}
@@ -224,7 +224,7 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 		}
 
 		const Vector dir = player->GetAbsOrigin() - GetAbsOrigin();
-		const float distance = dir.Length();
+		const int distance = static_cast<int>(dir.Length());
 
 		Assert(distance >= 0);
 
@@ -240,34 +240,6 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 		m_iSuccessfulCaptorClientIndex = i;
 
 		DevMsg("Player got ghost inside my radius\n");
-
-		player->m_iCapTeam = player->GetTeamNumber();
-
-		// Center print the cap message.
-		// NEO TODO (Rain): better looking message with the team logo.
-		CRecipientFilter filter;
-		filter.AddAllPlayers();
-
-#if(0) // NEO FIXME (Rain): wide name handling
-		wchar wmsg[64 + MAX_PLAYER_NAME_LENGTH];
-
-		wchar wPlayerName[MAX_PLAYER_NAME_LENGTH];
-		g_pVGuiLocalize->ConvertANSIToUnicode(player->GetPlayerName(), wPlayerName, sizeof(wPlayerName));
-
-		V_swprintf_safe(wmsg, L"%s wins\n%s captured the ghost",
-			player->GetTeamNumber() == TEAM_JINRAI ? L"Jinrai" : L"NSF",
-			wPlayerName);
-#endif
-		char msg[64 + MAX_PLACE_NAME_LENGTH];
-		COMPILE_TIME_ASSERT(sizeof(msg) <= 512); // max supported
-
-		V_sprintf_safe(msg, "%s captured the ghost", player->GetPlayerName());
-
-		UserMessageBegin(filter, "RoundResult");
-		WRITE_STRING(player->GetTeamNumber() == TEAM_JINRAI ? "jinrai": "nsf");	// which team won
-		WRITE_FLOAT(gpGlobals->curtime);										// when did they win
-		WRITE_STRING(msg);														// extra message (who capped or last kill or who got the most points or whatever)
-		MessageEnd();
 
 		// Return early; we pass next think responsibility to gamerules,
 		// whenever it sees fit to start capzone thinking again.

@@ -161,9 +161,6 @@ public:
 #endif
 	bool IsGhost(void) const { return (GetNeoWepBits() & NEO_WEP_GHOST) ? true : false; }
 
-	// We do this check to avoid a player unintentionally aiming in due to holding down their aim key while an automatic wep switch occurs.
-	bool IsReadyToAimIn(void) const { return m_bReadyToAimIn; }
-
 	bool IsExplosive(void) const { return (GetNeoWepBits() & NEO_WEP_EXPLOSIVE) ? true : false; }
 
 	bool ShootingIsPrevented(void) const
@@ -213,6 +210,7 @@ public:
 	virtual bool Holster(CBaseCombatWeapon* pSwitchingTo);
 	virtual void ItemHolsterFrame() override;
 	virtual bool ShouldDraw(void) override;
+	virtual int DrawModel(int flags) override;
 #endif
 
 	virtual bool Deploy(void);
@@ -220,6 +218,7 @@ public:
 	virtual float GetFireRate() override final;
 	virtual bool GetRoundChambered() const { return 0; }
 	virtual bool GetRoundBeingChambered() const { return 0; }
+	float GetPenetration() const;
 
 protected:
 	virtual void UpdateInaccuracy(void);
@@ -235,9 +234,6 @@ protected:
 	CNetworkVar(int, m_nNumShotsFired);
 	CNetworkVar(bool, m_bRoundChambered);
 	CNetworkVar(bool, m_bRoundBeingChambered);
-
-private:
-	bool m_bReadyToAimIn;
 
 private:
 	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &other);
