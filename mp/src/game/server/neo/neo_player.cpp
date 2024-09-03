@@ -15,6 +15,7 @@
 
 #include "neo_model_manager.h"
 #include "gib.h"
+#include "world.h"
 
 #include "weapon_ghost.h"
 #include "weapon_supa7.h"
@@ -2468,11 +2469,45 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 				++iDamage;
 				flDmgAccumlator -= 1.0f;
 			}
+
+			// Mirror team-damage
+			const bool bIsTeamDmg = (attackerIdx != entindex() && attacker->GetTeamNumber() == GetTeamNumber());
+			if (bIsTeamDmg)
+			{
+				const float flMirrorMult = NEORules()->MirrorDamageMultiplier();
+				if (flMirrorMult > 0.0f)
+				{
+					// Attacker own-team-inflicting - Mirror the damage
+					// NEO NOTE (nullsystem): DO NOT call OnTakeDamage directly as that'll crash the game, instead
+					// let the gamerule handle this situation by causing the attacker to suicide when health gets
+					// depliciated
+					const float flInflict = iDamage * flMirrorMult;
+					attacker->OnTakeDamage_Alive(CTakeDamageInfo(GetWorldEntity(), GetWorldEntity(),
+																 flInflict, DMG_SLASH));
+					if (attacker->m_iHealth <= 0)
+					{
+						attacker->m_bKilledInflicted = true;
+					}
+
+					if (neo_sv_mirror_teamdamage_immunity.GetBool())
+					{
+						// Give immunity to the victim and don't go through the OnTakeDamage_Alive
+						return 0;
+					}
+				}
+			}
+
+			// Apply damages/hits numbers
 			if (iDamage > 0)
 			{
 				m_rfAttackersScores.GetForModify(attackerIdx) += iDamage;
 				m_rfAttackersAccumlator.Set(attackerIdx, flDmgAccumlator);
 				m_rfAttackersHits.GetForModify(attackerIdx) += 1;
+
+				if (bIsTeamDmg && neo_sv_teamdamage_kick.GetBool() && NEORules()->GetRoundStatus() == NeoRoundStatus::RoundLive)
+				{
+					attacker->m_iTeamDamageInflicted += iDamage;
+				}
 			}
 		}
 	}
