@@ -1,23 +1,76 @@
 "Resource/HudLayout.res"
 {
-	HudHealth
+	HudCrosshair
 	{
-		"fieldName"		"HudHealth"
-		"xpos"	"16"
-		"ypos"	"432"
-		"wide"	"102"
-		"tall"  "36"
+		"fieldName" "HudCrosshair"
 		"visible" "1"
 		"enabled" "1"
-
-		"PaintBackgroundType"	"2"
-		
-		"text_xpos" "8"
-		"text_ypos" "20"
-		"digit_xpos" "50"
-		"digit_ypos" "2"
+		"wide"	 "1920"  // I resized these values from 640x480 because for some reason?
+		"tall"	 "1080"  // The crosshair wasn't being drawn on larger resolutions. -- Xunie, July 12th, 2014
+	}	
+	HudScope
+	{
+		"fieldName"		"HudScope"
+		"wide"	"640"
+		"tall"  "480"			
 	}
-
+	NHudHealth
+	{
+		"fieldName"		"NHudHealth"
+		"xpos"	"0"
+		"ypos"	"446"
+		"wide"	"203"
+		"tall"  "32"
+		"visible" "1"
+		"enabled" "1"
+		
+		"healthtext_xpos" "6"
+		"healthtext_ypos" "2"
+		"healthbar_xpos" "86"
+		"healthbar_ypos" "4"
+		"healthbar_w" "93"
+		"healthbar_h" "6"
+		"healthnum_xpos" "198"
+		"healthnum_ypos" "2"				
+		
+		"camotext_xpos" "6"
+		"camotext_ypos" "12"
+		"camobar_xpos" "86"
+		"camobar_ypos" "14"
+		"camobar_w" "93"
+		"camobar_h" "6"
+		"camonum_xpos" "198"
+		"camonum_ypos" "12"				
+		
+		"sprinttext_xpos" "6"
+		"sprinttext_ypos" "22"
+		"sprintbar_xpos" "86"
+		"sprintbar_ypos" "24"
+		"sprintbar_w" "93"
+		"sprintbar_h" "6"
+		"sprintnum_xpos" "198"
+		"sprintnum_ypos" "22"				
+	}	
+	NHudWeapon
+	{
+		"fieldName"		"NHudWeapon"
+		"xpos"	"r203"
+		"ypos"	"446"
+		"wide"	"203"
+		"tall"  "32"
+		"visible" "1"
+		"enabled" "1"
+		
+		"text_xpos" "194"
+		"text_ypos" "2"
+		"digit_xpos" "176"
+		"digit_ypos" "6"
+		"digit2_xpos" "194"
+		"digit2_ypos" "16"
+		
+		"icon_xpos" "3"
+		"icon_ypos" "5"
+	}	
 	TargetID
 	{
 		"fieldName" "TargetID"
@@ -26,29 +79,89 @@
 		"wide"	 "640"
 		"tall"	 "480"
 	}
-
-	TeamDisplay
+	NHudRangeFinder
 	{
-		"fieldName" "TeamDisplay"
-	    "visible" "0"
-	    "enabled" "1"
-		"xpos"	"16"
-		"ypos"	"415"
-	    "wide" "200"
-	    "tall" "60"
-	    "text_xpos" "8"
-	    "text_ypos" "4"
+		"fieldName"		"NHudRangeFinder"
+		"xpos"	"C40"
+		"ypos"	"C30"
+		"wide"	"120"
+		"tall"  "12"
+		"visible" "1"
+		"enabled" "1"
+		
+		"text_xpos" "2"
+		"text_ypos" "1"
+		"digit_xpos" "65"
+		"digit_ypos" "1"		
 	}
 	
+	NHudRoundTimer
+	{
+		"fieldName"		"NHudRoundTimer"
+		"xpos"	"R70"
+		"ypos"	"2"
+		"wide"	"90"
+		"tall"  "40"
+		"visible" "1"
+		"enabled" "1"
+		"timer_xpos" "0"
+		"timer_ypos" "0"
+	}	
+	
+	neo_ghost_uplink_state
+	{
+		"fieldName"		"neo_ghost_uplink_state"
+		"xpos"	"0"
+		"ypos"	"0"
+		"wide"	"640"
+		"tall"	"480"
+	}
+	
+	neo_ghost_marker
+	{
+		"fieldName"		"neo_ghost_marker"
+		"xpos"	"0"
+		"ypos"	"0"
+		"wide"	"640"
+		"tall"	"480"
+	}
+	
+	neo_ghost_beacons
+	{
+		"fieldName"		"neo_ghost_beacons"
+		"xpos"	"0"
+		"ypos"	"0"
+		"wide"	"640"
+		"tall"	"480"
+	}
+	
+	CNEOHud_GameEvent
+	{
+		"fieldName"		"CNEOHud_GameEvent"
+		"xpos"	"0"
+		"ypos"	"0"
+		"wide"	"640"
+		"tall"	"480"
+	}
+	
+	neo_iff
+	{
+		"fieldName"		"neo_iff"
+		"xpos"	"0"
+		"ypos"	"0"
+		"wide"	"640"
+		"tall"	"480"
+	}
+		
 	HudVoiceSelfStatus
 	{
 		"fieldName" "HudVoiceSelfStatus"
 		"visible" "1"
 		"enabled" "1"
-		"xpos" "r43"
-		"ypos" "355"
-		"wide" "24"
-		"tall" "24"
+		"xpos" "0"
+		"ypos" "412"
+		"wide" "38"
+		"tall" "32"
 	}
 
 	HudVoiceStatus
@@ -56,28 +169,22 @@
 		"fieldName" "HudVoiceStatus"
 		"visible" "1"
 		"enabled" "1"
-		"xpos" "r145"
+		"xpos" "r100"
 		"ypos" "0"
-		"wide" "145"
-		"tall" "400"
+		"wide" "100"
+		"tall" "444"
 
-		"item_wide"	"135"
-		
-		"show_avatar"		"0"
-		
-		"show_dead_icon"	"1"
-		"dead_xpos"			"1"
-		"dead_ypos"			"0"
-		"dead_wide"			"16"
-		"dead_tall"			"16"
-		
-		"show_voice_icon"	"1"
-		"icon_ypos"			"0"
-		"icon_xpos"			"15"
-		"icon_tall"			"16"
-		"icon_wide"			"16"
-		
-		"text_xpos"			"33"
+		"item_tall"	"24"
+		"item_wide"	"100"
+
+		"item_spacing" "2"
+
+		"icon_ypos"	"0"
+		"icon_xpos"	"0"
+		"icon_tall"	"24"
+		"icon_wide"	"24"
+
+		"text_xpos"	"26"
 	}
 	
 	HudSuit
@@ -87,8 +194,8 @@
 		"ypos"	"432"
 		"wide"	"108"
 		"tall"  "36"
-		"visible" "1"
-		"enabled" "1"
+		"visible" "0"
+		"enabled" "0"
 
 		"PaintBackgroundType"	"2"
 
@@ -106,8 +213,8 @@
 		"ypos"	"432"
 		"wide"	"136"
 		"tall"  "36"
-		"visible" "1"
-		"enabled" "1"
+		"visible" "0"
+		"enabled" "0"
 
 		"PaintBackgroundType"	"2"
 
@@ -126,8 +233,8 @@
 		"ypos"	"432"
 		"wide"	"60"
 		"tall"  "36"
-		"visible" "1"
-		"enabled" "1"
+		"visible" "0"
+		"enabled" "0"
 
 		"PaintBackgroundType"	"2"
 
@@ -138,8 +245,8 @@
 	HudSuitPower
 	{
 		"fieldName" "HudSuitPower"
-		"visible" "1"
-		"enabled" "1"
+		"visible" "0"
+		"enabled" "0"
 		"xpos"	"16"
 		"ypos"	"396"
 		"wide"	"102"
@@ -169,7 +276,7 @@
 	{
 		"fieldName" "HudFlashlight"
 		"visible" "0"
-		"enabled" "1"
+		"enabled" "0"
 		"xpos"	"16"
 		"ypos"	"370"
 		"wide"	"102"
@@ -200,8 +307,8 @@
 	HudZoom
 	{
 		"fieldName" "HudZoom"
-		"visible" "1"
-		"enabled" "1"
+		"visible" "0"
+		"enabled" "0"
 		"Circle1Radius" "66"
 		"Circle2Radius"	"74"
 		"DashGap"	"16"
@@ -217,21 +324,12 @@
 		"enabled" "1"
 		"SmallBoxSize" "32"
 		"LargeBoxWide" "112"
-		"LargeBoxTall" "80"
+		"LargeBoxTall" "38"
 		"BoxGap" "8"
 		"SelectionNumberXPos" "4"
 		"SelectionNumberYPos" "4"
 		"SelectionGrowTime"	"0.4"
-		"TextYPos" "64"
-	}
-
-	HudCrosshair
-	{
-		"fieldName" "HudCrosshair"
-		"visible" "1"
-		"enabled" "1"
-		"wide"	 "640"
-		"tall"	 "480"
+		"TextYPos" "18"
 	}
 
 	HudDeathNotice
@@ -292,7 +390,16 @@
 		"fieldName" "HudMessage"
 		"visible" "1"
 		"enabled" "1"
-		"wide"	 "f0"
+		"wide"	 "640"
+		"tall"	 "480"
+	}
+
+	HudGameMessage
+	{
+		"fieldName" "HudMessage"
+		"visible" "1"
+		"enabled" "1"
+		"wide"	 "640"
 		"tall"	 "480"
 	}
 
@@ -303,6 +410,24 @@
 		"enabled" "1"
 		"wide"	 "640"
 		"tall"	 "480"
+		"zpos"	"1"
+		"TextFont"	"Default"
+		"ItemFont"	"Default"
+		"ItemFontPulsing"	"Default"
+	}
+	
+	HudRadio
+	{
+		"fieldName"	"HudRadio"
+		"TextFont"	"Default"
+		"visible"	"1"
+		"xpos"	"10"
+		"ypos"	"c"
+		"wide"	"Default"
+		"tall"	"Default"
+		"text_ygap"	"2"
+		"TextColor"	"255 255 255 192"
+		"PaintBackgroundType"	"0"
 	}
 
 	HudCloseCaption
@@ -324,11 +449,22 @@
 
 	}
 
+	HudChat
+	{
+		"fieldName" "HudChat"
+		"visible" "1"
+		"enabled" "1"
+		"xpos"	"10"
+		"ypos"	"300"
+		"wide"	 "400"
+		"tall"	 "100"
+	}
+
 	HudHistoryResource
 	{
 		"fieldName" "HudHistoryResource"
-		"visible" "1"
-		"enabled" "1"
+		"visible" "0"
+		"enabled" "0"
 		"xpos"	"r252"
 		"ypos"	"40"
 		"wide"	 "248"
@@ -343,8 +479,8 @@
 	HudGeiger
 	{
 		"fieldName" "HudGeiger"
-		"visible" "1"
-		"enabled" "1"
+		"visible" "0"
+		"enabled" "0"
 		"wide"	 "640"
 		"tall"	 "480"
 	}
@@ -352,8 +488,8 @@
 	HUDQuickInfo
 	{
 		"fieldName" "HUDQuickInfo"
-		"visible" "1"
-		"enabled" "1"
+		"visible" "0"
+		"enabled" "0"
 		"wide"	 "640"
 		"tall"	 "480"
 	}
@@ -361,8 +497,8 @@
 	HudWeapon
 	{
 		"fieldName" "HudWeapon"
-		"visible" "1"
-		"enabled" "1"
+		"visible" "0"
+		"enabled" "0"
 		"wide"	 "640"
 		"tall"	 "480"
 	}
@@ -436,6 +572,7 @@
 		"TextColor"	"255 170 0 220"
 		"PaintBackgroundType"	"2"
 	}
+	
 	HudCredits
 	{
 		"fieldName"	"HudCredits"
@@ -446,230 +583,5 @@
 		"wide"	"640"
 		"tall"	"480"
 		"TextColor"	"255 255 255 192"
-
-	}
-
-	HudMenu
-	{
-		"fieldName" "HudMenu"
-		"visible" "1"
-		"enabled" "1"
-		"wide"	 "640"
-		"tall"	 "480"
-		"zpos"	"1"
-		"TextFont"	"Default"
-		"ItemFont"	"Default"
-		"ItemFontPulsing"	"Default"
-	}
-
-	HudRadio
-	{
-		"fieldName"	"HudRadio"
-		"TextFont"	"Default"
-		"visible"	"1"
-		"xpos"	"10"
-		"ypos"	"c"
-		"wide"	"Default"
-		"tall"	"Default"
-		"text_ygap"	"2"
-		"TextColor"	"255 255 255 192"
-		"PaintBackgroundType"	"0"
-	}
-
-	"HudChat"
-	{
-		"ControlName"		"EditablePanel"
-		"fieldName" 		"HudChat"
-		"visible" 		"0"
-		"enabled" 		"1"
-		"xpos"			"10"
-		"ypos"			"275"
-		"wide"	 		"320"
-		"tall"	 		"120"
-		"PaintBackgroundType"	"2"
-	}
-	
-	AchievementNotificationPanel	
-	{
-		"fieldName"	"AchievementNotificationPanel"
-		"visible"	"0"
-		"enabled"	"0"
-		"wide"	"0"
-		"tall"	"0"
-	}
-	
-	HudHintKeyDisplay
-	{
-		"fieldName"	"HudHintKeyDisplay"
-		"visible"	"0"
-		"enabled" 	"0"
-	}
-	
-	HUDAutoAim
-	{
-		"fieldName"	"HUDAutoAim"
-		"visible"	"0"
-		"enabled"	"0"
-	}	
-	
-	HudHDRDemo
-	{
-		"fieldName"	"HudHDRDemo"
-		"visible"	"0"
-		"enabled"	"0"
-	}
-	
-	HudCommentary
-	{
-		"fieldName"	"HudCommentary"
-		"visible"	"0"
-		"enabled"	"0"
-	}
-	
-	"CHudVote"
-	{
-		"fieldName"		"CHudVote"
-		"visible"		"0"
-		"enabled"		"0"
-	}
-	NHudCompass
-	{
-		"fieldName"		"NHudCompass"
-		"visible"		"1"
-		"y_bottom_pos"		"3"
-		"needle_visible"	"0"
-		"needle_colored"	"0"
-		"objective_visible"	"1"
-		"box_color"		"200 200 200 40"
-	}
-	NHudWeapon
-	{
-		"fieldName"		"NHudWeapon"
-		"visible"		"1"
-		"enabled"		"1"
-		"xpos"			"r203"
-		"ypos"			"446"
-		"wide"			"203"
-		"tall"			"32"
-		"box_color"		"200 200 200 40"
-		"top_left_corner"	"1"
-		"top_right_corner"	"1"
-		"bottom_left_corner"	"1"
-		"bottom_right_corner"	"1"
-		"text_xpos"		"194"
-		"text_ypos"		"2"
-		"digit_as_number"	"0"
-		"digit_xpos"		"24"
-		"digit_ypos"		"6"
-		"digit_max_width"	"150"
-		"digit2_xpos"		"194"
-		"digit2_ypos"		"16"
-		"icon_xpos"		"3"
-		"icon_ypos"		"5"
-		"ammo_text_color"	"255 255 255 100"
-		"ammo_color"		"255 255 255 150"
-		"emptied_ammo_color"	"255 255 255 50"
-	}
-	NHudHealth
-	{
-		"fieldName"		"NHudHealth"
-		"visible"		"1"
-		"enabled"		"1"
-		"xpos"			"0"
-		"ypos"			"446"
-		"wide"			"203"
-		"tall"			"32"
-		"box_color"		"200 200 200 40"
-		"top_left_corner"	"1"
-		"top_right_corner"	"1"
-		"bottom_left_corner"	"1"
-		"bottom_right_corner"	"1"
-		"healthtext_xpos"	"6"
-		"healthtext_ypos"	"2"
-		"healthbar_xpos"	"86"
-		"healthbar_ypos"	"4"
-		"healthbar_w"		"93"
-		"healthbar_h"		"6"
-		"healthnum_xpos"	"198"
-		"healthnum_ypos"	"2"
-		"health_text_color"		"255 255 255 100"
-		"health_color"		"255 255 255 150"
-		"camotext_xpos"		"6"
-		"camotext_ypos"		"12"
-		"camobar_xpos"		"86"
-		"camobar_ypos"		"14"
-		"camobar_w"		"93"
-		"camobar_h"		"6"
-		"camonum_xpos"		"198"
-		"camonum_ypos"		"12"
-		"camo_text_color"		"255 255 255 100"
-		"camo_color"		"255 255 255 150"
-		"sprinttext_xpos"	"6"
-		"sprinttext_ypos"	"22"
-		"sprintbar_xpos"	"86"
-		"sprintbar_ypos"	"24"
-		"sprintbar_w"		"93"
-		"sprintbar_h"		"6"
-		"sprintnum_xpos"	"198"
-		"sprintnum_ypos"	"22"
-		"sprint_text_color"		"255 255 255 100"
-		"sprint_color"		"255 255 255 150"
-	}
-	RoundResult
-	{
-		"fieldName"		"RoundResult"
-		"image_y_offset"	"60"
-		"text_y_offset"		"420"
-	}
-	NRoundState
-	{
-		"fieldName"		"NRoundState"
-		"box_color"		"200 200 200 40"
-		"health_monochrome"	"1"
-	}
-	
-	neo_ghost_uplink_state
-	{
-		"fieldName"		"neo_ghost_uplink_state"
-		"xpos"	"0"
-		"ypos"	"0"
-		"wide"	"640"
-		"tall"	"480"
-	}
-	
-	neo_ghost_marker
-	{
-		"fieldName"		"neo_ghost_marker"
-		"xpos"	"0"
-		"ypos"	"0"
-		"wide"	"640"
-		"tall"	"480"
-	}
-	
-	neo_ghost_beacons
-	{
-		"fieldName"		"neo_ghost_beacons"
-		"xpos"	"0"
-		"ypos"	"0"
-		"wide"	"640"
-		"tall"	"480"
-	}
-	
-	CNEOHud_GameEvent
-	{
-		"fieldName"		"CNEOHud_GameEvent"
-		"xpos"	"0"
-		"ypos"	"0"
-		"wide"	"640"
-		"tall"	"480"
-	}
-	
-	neo_iff
-	{
-		"fieldName"		"neo_iff"
-		"xpos"	"0"
-		"ypos"	"0"
-		"wide"	"640"
-		"tall"	"480"
 	}
 }
