@@ -777,7 +777,7 @@ void C_NEO_Player::PreThink( void )
 		static constexpr float OTHER_CLASSES_SPRINT_SPEED_MODIFIER = 0.6;
 		speed /= m_iNeoClass == NEO_CLASS_RECON ? RECON_SPRINT_SPEED_MODIFIER : OTHER_CLASSES_SPRINT_SPEED_MODIFIER;
 	}
-	if (m_bInAim.Get())
+	if (IsInAim())
 	{
 		static constexpr float AIM_SPEED_MODIFIER = 0.6;
 		speed *= AIM_SPEED_MODIFIER;
