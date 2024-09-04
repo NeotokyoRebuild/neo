@@ -692,13 +692,19 @@ void CHL2_Player::PreThink(void)
 
 	if( sv_stickysprint.GetBool() && m_bIsAutoSprinting )
 	{
+#ifndef NEO
 		// If we're ducked and not in the air
 		if( IsDucked() && GetGroundEntity() != NULL )
 		{
 			StopSprinting();
 		}
+#endif // NEO
 		// Stop sprinting if the player lets off the stick for a moment.
+#ifdef NEO
+		if (GetStickDist() == 0.0f)
+#else
 		else if( GetStickDist() == 0.0f )
+#endif // NEO
 		{
 			if( gpGlobals->curtime > m_fAutoSprintMinTime )
 			{
@@ -711,6 +717,7 @@ void CHL2_Player::PreThink(void)
 			m_fAutoSprintMinTime = gpGlobals->curtime + 0.5f;
 		}
 	}
+#ifndef NEO
 	else if ( IsSprinting() )
 	{
 		// Disable sprint while ducked unless we're in the air (jumping)
@@ -719,6 +726,7 @@ void CHL2_Player::PreThink(void)
 			StopSprinting();
 		}
 	}
+#endif // NEO
 
 	VPROF_SCOPE_END();
 
@@ -1211,8 +1219,8 @@ bool CHL2_Player::CanSprint()
 			!IsWalking() &&												// Not if we're walking
 #ifndef NEO
 			!( m_Local.m_bDucked && !m_Local.m_bDucking ) &&			// Nor if we're ducking
-#endif
 			(GetWaterLevel() != 3) &&									// Certainly not underwater
+#endif
 			(GlobalEntity_GetState("suit_no_sprint") != GLOBAL_ON) );	// Out of the question without the sprint module
 }
 
