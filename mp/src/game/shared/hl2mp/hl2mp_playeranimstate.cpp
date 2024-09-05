@@ -407,12 +407,12 @@ bool CHL2MPPlayerAnimState::SetupPoseParameters( CStudioHdr *pStudioHdr )
 		return false;
 
 	// Look for the aim pitch blender.
-	m_PoseParameterData.m_iAimPitch = GetBasePlayer()->LookupPoseParameter( pStudioHdr, "aim_pitch" );
+	m_PoseParameterData.m_iAimPitch = GetBasePlayer()->LookupPoseParameter( pStudioHdr, "body_pitch" );
 	if ( m_PoseParameterData.m_iAimPitch < 0 )
 		return false;
 
 	// Look for aim yaw blender.
-	m_PoseParameterData.m_iAimYaw = GetBasePlayer()->LookupPoseParameter( pStudioHdr, "aim_yaw" );
+	m_PoseParameterData.m_iAimYaw = GetBasePlayer()->LookupPoseParameter( pStudioHdr, "body_yaw" );
 	if ( m_PoseParameterData.m_iAimYaw < 0 )
 		return false;
 
@@ -506,7 +506,7 @@ void CHL2MPPlayerAnimState::ComputePoseParam_MoveYaw( CStudioHdr *pStudioHdr )
 	// Get the estimated movement yaw.
 	EstimateYaw();
 
-#if 0 // 9way
+#if 1 // 9way
 	ConVarRef mp_slammoveyaw("mp_slammoveyaw");
 
 	// Get the view yaw.
