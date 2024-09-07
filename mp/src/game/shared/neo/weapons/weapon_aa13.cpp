@@ -118,6 +118,8 @@ void CWeaponAA13::PrimaryAttack(void)
 	FireBulletsInfo_t info(5, vecSrc, vecAiming, vecSpread, MAX_TRACE_LENGTH, m_iPrimaryAmmoType);
 	info.m_pAttacker = pPlayer;
 
+	m_flNextPrimaryAttack = m_flNextPrimaryAttack + GetFireRate();
+
 	// Fire the bullets, and force the first shot to be perfectly accurate
 	pPlayer->FireBullets(info);
 
