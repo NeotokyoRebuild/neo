@@ -569,14 +569,3 @@ void CWeaponGrenade::Operator_HandleAnimEvent(animevent_t *pEvent, CBaseCombatCh
 	}
 }
 #endif
-
-bool CWeaponGrenade::CanDrop()
-{
-	auto owner = GetOwner(); 
-	return owner && !owner->IsAlive();
-}
-
-void CWeaponGrenade::Drop(const Vector& vecVelocity)
-{
-	BaseClass::Drop(vecVelocity);
-}
