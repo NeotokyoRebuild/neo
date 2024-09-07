@@ -92,7 +92,7 @@ private:
 
 	int m_iNextAvatarUpdate = 0;
 
-	CPanelAnimationVar(Color, box_color, "box_color", "100 100 100 178");
+	CPanelAnimationVar(Color, box_color, "box_color", "200 200 200 40");
 	CPanelAnimationVarAliasType(bool, health_monochrome, "health_monochrome", "1", "bool");
 
 private:

@@ -132,6 +132,7 @@ extern ConVar tf_mm_servermode;
 
 #ifdef NEO
 #include "neo_mount_original.h"
+#include "neo_version.h"
 #endif
 
 extern IToolFrameworkServer *g_pToolFrameworkServer;
@@ -643,6 +644,7 @@ bool CServerGameDLL::DLLInit( CreateInterfaceFn appSystemFactory,
 	{
 		return false;
 	}
+	NeoVersionPrint();
 #endif
 
 	// Yes, both the client and game .dlls will try to Connect, the soundemittersystem.dll will handle this gracefully

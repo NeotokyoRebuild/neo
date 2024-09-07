@@ -109,18 +109,12 @@ Ochii's impressive [reverse engineering project](https://github.com/Ochii/neotok
 
 ## Good to know
 
-### Current: CMake
+### CMake
 
-This project currently use the [CMake](https://cmake.org/) build system to generate ninja/makefiles and is integrated with IDEs such as VS2022 and Qt Creator. When modifying the project file structure, look into `CMakeLists.txt` and `cmake/*.cmake`.
-
-### Legacy: Solutions/makefiles
-
-This project used to use Valve's [VPC system](https://developer.valvesoftware.com/wiki/VPC) to generate its makefiles and VS solutions. When modifying the project file structure, instead of pushing your solution/makefile, edit the relevant VPC files instead (most commonly "[client_neo.vpc](mp/src/game/client/client_neo.vpc)" and "[server_neo.vpc](mp/src/game/server/server_neo.vpc)").
-
-Running the VPC scripts in mp/src/... after a change will regenerate the solutions and makefiles on all platforms. You may sometimes have to purge your object file cache if you get linker errors after restructuring existing translation units.
+This project uses the [CMake](https://cmake.org/) build system to generate ninja/makefiles and is integrated with IDEs such as VS2022 and Qt Creator. When modifying the project file structure, look into `CMakeLists.txt` and `cmake/*.cmake`.
 
 ### Preprocessor definitions
-In shared code, clientside code can be differentiated with CLIENT_DLL, vs. serverside's GAME_DLL. In more general engine files, Neotokyo specific code can be marked with a NEO ifdef. These are also defined with the VPC system described above, in the $PreprocessorDefinitions section.
+In shared code, clientside code can be differentiated with CLIENT_DLL, vs. serverside's GAME_DLL. In more general engine files, Neotokyo specific code can be marked with a NEO ifdef.
 
 ### Code style
 

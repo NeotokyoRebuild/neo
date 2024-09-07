@@ -26,6 +26,10 @@
 
 #include "ilagcompensationmanager.h"
 
+#ifdef NEO
+#include "neo_player.h"
+#endif
+
 int g_iLastCitizenModel = 0;
 int g_iLastCombineModel = 0;
 
@@ -567,7 +571,8 @@ void CHL2MP_Player::PostThink( void )
 	if ( GetFlags() & FL_DUCKING )
 	{
 #ifdef NEO
-		SetCollisionBounds( VEC_DUCK_HULL_MIN, VEC_DUCK_HULL_MAX );
+		CNEO_Player* neoPlayer = static_cast<CNEO_Player*>(this);
+		SetCollisionBounds( VEC_DUCK_HULL_MIN_NEOSCALED(neoPlayer), VEC_DUCK_HULL_MAX_NEOSCALED(neoPlayer));
 #else
 		SetCollisionBounds( VEC_CROUCH_TRACE_MIN, VEC_CROUCH_TRACE_MAX );
 #endif
