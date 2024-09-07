@@ -174,7 +174,11 @@ int	CMultiplayRules::Damage_GetShouldGibCorpse( void )
 //-----------------------------------------------------------------------------
 int CMultiplayRules::Damage_GetShowOnHud( void )
 {
+#ifdef NEO
+	int iDamage = (DMG_BULLET | DMG_POISON | DMG_ACID | DMG_DROWN | DMG_BURN | DMG_SLOWBURN | DMG_NERVEGAS | DMG_RADIATION | DMG_SHOCK);
+#else
 	int iDamage = ( DMG_POISON | DMG_ACID | DMG_DROWN | DMG_BURN | DMG_SLOWBURN | DMG_NERVEGAS | DMG_RADIATION | DMG_SHOCK );
+#endif
 	return iDamage;
 }
 

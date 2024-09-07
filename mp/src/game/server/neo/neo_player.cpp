@@ -15,6 +15,7 @@
 
 #include "neo_model_manager.h"
 #include "gib.h"
+#include "world.h"
 
 #include "weapon_ghost.h"
 #include "weapon_supa7.h"
@@ -116,9 +117,6 @@ DEFINE_FIELD(m_szNameDupePos, FIELD_INTEGER),
 DEFINE_FIELD(m_bClientWantNeoName, FIELD_BOOLEAN),
 END_DATADESC()
 
-#define DISMEMBER_LIMB_THRESHOLD 10
-#define DISMEMBER_HEAD_THRESHOLD (DISMEMBER_LIMB_THRESHOLD * 3)
-#define ANNHILATE_LIMB_THRESHOLD (DISMEMBER_HEAD_THRESHOLD * 3)
 #define SHOWMENU_STRLIMIT (512)
 
 CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
@@ -1207,7 +1205,7 @@ void CNEO_Player::SetNeoPlayerName(const char *newNeoName)
 	// NEO NOTE (nullsystem): Generally it's never NULL but just incase
 	if (newNeoName)
 	{
-		V_memcpy(m_szNeoName.GetForModify(), newNeoName, sizeof(m_szNeoName));
+		V_memcpy(m_szNeoName.GetForModify(), newNeoName, sizeof(m_szNeoName)-1);
 		m_szNeoNameHasSet = true;
 	}
 }
@@ -1870,39 +1868,24 @@ void CNEO_Player::SpawnDeadModel(const CTakeDamageInfo& info)
 		SetPlayerCorpseModel(deadModelType);
 		break;
 	case 1: // head
-		if (info.GetDamage() >= DISMEMBER_HEAD_THRESHOLD) {
-			SetPlayerCorpseModel(deadModelType);
-			if (info.GetDamage() <= ANNHILATE_LIMB_THRESHOLD)
-				CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_HEAD));
-		}
+		SetPlayerCorpseModel(deadModelType);
+		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_HEAD));
 		break;
 	case 2: // left arm
-		if (info.GetDamage() >= DISMEMBER_LIMB_THRESHOLD) {
-			SetPlayerCorpseModel(deadModelType);
-			if (info.GetDamage() <= ANNHILATE_LIMB_THRESHOLD)
-				CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_LARM));
-		}
+		SetPlayerCorpseModel(deadModelType);
+		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_LARM));
 		break;
 	case 3: // left leg
-		if (info.GetDamage() >= DISMEMBER_LIMB_THRESHOLD) {
-			SetPlayerCorpseModel(deadModelType);
-			if (info.GetDamage() <= ANNHILATE_LIMB_THRESHOLD)
-				CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_LLEG));
-		}
+		SetPlayerCorpseModel(deadModelType);
+		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_LLEG));
 		break;
 	case 4: // right arm
-		if (info.GetDamage() >= DISMEMBER_LIMB_THRESHOLD) {
-			SetPlayerCorpseModel(deadModelType);
-			if (info.GetDamage() <= ANNHILATE_LIMB_THRESHOLD)
-				CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_RARM));
-		}
+		SetPlayerCorpseModel(deadModelType);
+		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_RARM));
 		break;
 	case 5: // right leg
-		if (info.GetDamage() >= DISMEMBER_LIMB_THRESHOLD) {
-			SetPlayerCorpseModel(deadModelType);
-			if (info.GetDamage() <= ANNHILATE_LIMB_THRESHOLD)
-				CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_RLEG));
-		}
+		SetPlayerCorpseModel(deadModelType);
+		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_RLEG));
 		break;
 	default:
 		break;
@@ -2552,11 +2535,45 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 				++iDamage;
 				flDmgAccumlator -= 1.0f;
 			}
+
+			// Mirror team-damage
+			const bool bIsTeamDmg = (attackerIdx != entindex() && attacker->GetTeamNumber() == GetTeamNumber());
+			if (bIsTeamDmg)
+			{
+				const float flMirrorMult = NEORules()->MirrorDamageMultiplier();
+				if (flMirrorMult > 0.0f)
+				{
+					// Attacker own-team-inflicting - Mirror the damage
+					// NEO NOTE (nullsystem): DO NOT call OnTakeDamage directly as that'll crash the game, instead
+					// let the gamerule handle this situation by causing the attacker to suicide when health gets
+					// depliciated
+					const float flInflict = iDamage * flMirrorMult;
+					attacker->OnTakeDamage_Alive(CTakeDamageInfo(GetWorldEntity(), GetWorldEntity(),
+																 flInflict, DMG_SLASH));
+					if (attacker->m_iHealth <= 0)
+					{
+						attacker->m_bKilledInflicted = true;
+					}
+
+					if (neo_sv_mirror_teamdamage_immunity.GetBool())
+					{
+						// Give immunity to the victim and don't go through the OnTakeDamage_Alive
+						return 0;
+					}
+				}
+			}
+
+			// Apply damages/hits numbers
 			if (iDamage > 0)
 			{
 				m_rfAttackersScores.GetForModify(attackerIdx) += iDamage;
 				m_rfAttackersAccumlator.Set(attackerIdx, flDmgAccumlator);
 				m_rfAttackersHits.GetForModify(attackerIdx) += 1;
+
+				if (bIsTeamDmg && neo_sv_teamdamage_kick.GetBool() && NEORules()->GetRoundStatus() == NeoRoundStatus::RoundLive)
+				{
+					attacker->m_iTeamDamageInflicted += iDamage;
+				}
 			}
 		}
 	}

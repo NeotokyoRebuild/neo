@@ -123,33 +123,8 @@ COMPILE_TIME_ASSERT(NEO_ASSAULT_CROUCH_SPEED == NEO_SUPPORT_CROUCH_SPEED);
 #define NEO_IMPLEMENT_ACTTABLE(CNEOWepClass)
 #endif
 
-#define NEO_RECON_EYE_HEIGHT_STANDING 57.0
-#define NEO_RECON_EYE_HEIGHT_DUCKING 43.0
-#define NEO_ASSAULT_EYE_HEIGHT_STANDING 58.0
-#define NEO_ASSAULT_EYE_HEIGHT_DUCKING 44.0
-#define NEO_SUPPORT_EYE_HEIGHT_STANDING 60.0
-#define NEO_SUPPORT_EYE_HEIGHT_DUCKING 47.0
-
-#define HL2DM_DEFAULT_PLAYERMODEL_HEIGHT 74.0
-#define NEO_RECON_PLAYERMODEL_HEIGHT 66.0
 #define NEO_ASSAULT_PLAYERMODEL_HEIGHT 67.0
-#define NEO_SUPPORT_PLAYERMODEL_HEIGHT 72.0
-
-#define HL2DM_DEFAULT_PLAYERMODEL_DUCK_HEIGHT 36.0
-#define NEO_RECON_PLAYERMODEL_DUCK_HEIGHT 48.0
 #define NEO_ASSAULT_PLAYERMODEL_DUCK_HEIGHT 50.0
-#define NEO_SUPPORT_PLAYERMODEL_DUCK_HEIGHT 61.0
-
-// "Magic number" for scaling the hull ratios below to make them match original NT.
-// It makes the hull clearance slightly larger than the actual models (as is the
-// case with the original), but ensures that reachability of various places
-// inside NT levels remains the same. This specific value was found by binary
-// searching until the hulls matched within 1 unit in-game.
-#define NEO_HULL_TOLERANCE_SCALE 1.078125
-
-#define NEO_RECON_MODEL_SCALE ((NEO_RECON_PLAYERMODEL_HEIGHT / HL2DM_DEFAULT_PLAYERMODEL_HEIGHT) * NEO_HULL_TOLERANCE_SCALE)
-#define NEO_ASSAULT_MODEL_SCALE ((NEO_ASSAULT_PLAYERMODEL_HEIGHT / HL2DM_DEFAULT_PLAYERMODEL_HEIGHT) * NEO_HULL_TOLERANCE_SCALE)
-#define NEO_SUPPORT_MODEL_SCALE ((NEO_SUPPORT_PLAYERMODEL_HEIGHT / HL2DM_DEFAULT_PLAYERMODEL_HEIGHT) * NEO_HULL_TOLERANCE_SCALE)
 
 // These look like magic but are actually taken straight from the og binaries.
 #define NEO_RECON_DAMAGE_MODIFIER 1.485f
@@ -211,8 +186,8 @@ enum NeoStar {
 #define COLOR_NSF COLOR_NEO_BLUE
 #define COLOR_SPEC COLOR_NEO_ORANGE
 
-#define COLOR_NEO_BLUE Color(181, 216, 248, 255)
-#define COLOR_NEO_GREEN Color(192, 244, 196, 255)
+#define COLOR_NEO_BLUE Color(154, 205, 255, 255)
+#define COLOR_NEO_GREEN Color(154, 255, 154, 255)
 #define COLOR_NEO_ORANGE Color(243, 190, 52, 255)
 #define COLOR_NEO_WHITE Color(218, 217, 213, 255)
 
@@ -243,27 +218,27 @@ inline const char* GetNeoClassName(int neoClassIdx)
 	}
 }
 
-inline const char *GetRankName(int xp)
+inline const char *GetRankName(int xp, bool shortened = false)
 {
 	if (xp < 0)
 	{
-		return "Rankless Dog";
+		return shortened ? "Dog" : "Rankless Dog";
 	}
 	else if (xp < 4)
 	{
-		return "Private";
+		return shortened ? "Pvt" : "Private";
 	}
 	else if (xp < 10)
 	{
-		return "Corporal";
+		return shortened ? "Cpl" : "Corporal";
 	}
 	else if (xp < 20)
 	{
-		return "Sergeant";
+		return shortened ? "Sgt" : "Sergeant";
 	}
 	else
 	{
-		return "Lieutenant";
+		return shortened ? "Lt" : "Lieutenant";
 	}
 }
 

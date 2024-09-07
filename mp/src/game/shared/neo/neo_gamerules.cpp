@@ -1,5 +1,6 @@
 #include "cbase.h"
 #include "neo_gamerules.h"
+#include "neo_version_info.h"
 #include "in_buttons.h"
 #include "ammodef.h"
 
@@ -35,6 +36,36 @@ ConVar neo_sv_player_restore("neo_sv_player_restore", "1", FCVAR_REPLICATED, "If
 
 ConVar neo_name("neo_name", "", FCVAR_USERINFO | FCVAR_ARCHIVE, "The nickname to set instead of the steam profile name.");
 ConVar cl_onlysteamnick("cl_onlysteamnick", "0", FCVAR_USERINFO | FCVAR_ARCHIVE, "Only show players Steam names, otherwise show player set names.", true, 0.0f, true, 1.0f);
+
+#ifdef GAME_DLL
+#ifdef DEBUG
+// Debug build by default relax integrity check requirement among debug clients
+static constexpr char INTEGRITY_CHECK_DBG[] = "1";
+#else
+static constexpr char INTEGRITY_CHECK_DBG[] = "0";
+#endif
+ConVar neo_sv_build_integrity_check("neo_sv_build_integrity_check", "1", FCVAR_GAMEDLL | FCVAR_REPLICATED,
+									"If enabled, the server checks the build's Git hash between the client and"
+									" the server. If it doesn't match, the server rejects and disconnects the client.",
+									true, 0.0f, true, 1.0f);
+ConVar neo_sv_build_integrity_check_allow_debug("neo_sv_build_integrity_check_allow_debug", INTEGRITY_CHECK_DBG, FCVAR_GAMEDLL | FCVAR_REPLICATED,
+									"If enabled, when the server checks the client hashes, it'll also allow debug"
+									" builds which has a given special bit to bypass the check.",
+									true, 0.0f, true, 1.0f);
+
+#ifdef DEBUG
+static constexpr char TEAMDMG_MULTI[] = "0";
+#else
+static constexpr char TEAMDMG_MULTI[] = "2";
+#endif
+ConVar neo_sv_mirror_teamdamage_multiplier("neo_sv_mirror_teamdamage_multiplier", TEAMDMG_MULTI, FCVAR_REPLICATED, "The damage multiplier given to the friendly-firing individual. Set value to 0 to disable mirror team damage.", true, 0.0f, true, 100.0f);
+ConVar neo_sv_mirror_teamdamage_duration("neo_sv_mirror_teamdamage_duration", "7", FCVAR_REPLICATED, "How long in seconds the mirror damage is active for the start of each round. Set to 0 for the entire round.", true, 0.0f, true, 10000.0f);
+ConVar neo_sv_mirror_teamdamage_immunity("neo_sv_mirror_teamdamage_immunity", "1", FCVAR_REPLICATED, "If enabled, the victim will not take damage from a teammate during the mirror team damage duration.", true, 0.0f, true, 1.0f);
+
+ConVar neo_sv_teamdamage_kick("neo_sv_teamdamage_kick", "0", FCVAR_REPLICATED, "If enabled, the friendly-firing individual will be kicked if damage is received during the neo_sv_mirror_teamdamage_duration, exceeds the neo_sv_teamdamage_kick_hp value, or executes a teammate.", true, 0.0f, true, 1.0f);
+ConVar neo_sv_teamdamage_kick_hp("neo_sv_teamdamage_kick_hp", "900", FCVAR_REPLICATED, "The threshold for the amount of HP damage inflicted on teammates before the client is kicked.", true, 100.0f, false, 0.0f);
+ConVar neo_sv_teamdamage_kick_kills("neo_sv_teamdamage_kick_kills", "6", FCVAR_REPLICATED, "The threshold for the amount of team kills before the client is kicked.", true, 1.0f, false, 0.0f);
+#endif
 
 REGISTER_GAMERULES_CLASS( CNEORules );
 
@@ -426,6 +457,20 @@ void CNEORules::ResetMapSessionCommon()
 	m_flNeoNextRoundStartTime = 0.0f;
 #ifdef GAME_DLL
 	m_pRestoredInfos.Purge();
+
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		auto *pPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(i));
+		if (pPlayer)
+		{
+			pPlayer->m_iTeamDamageInflicted = 0;
+			pPlayer->m_iTeamKillsInflicted = 0;
+			pPlayer->m_bIsPendingTKKick = false;
+			pPlayer->m_bKilledInflicted = false;
+		}
+	}
+	m_flPrevThinkKick = 0.0f;
+	m_flPrevThinkMirrorDmg = 0.0f;
 #endif
 }
 
@@ -511,6 +556,51 @@ void CNEORules::Think(void)
 	BaseClass::Think();
 
 #ifdef GAME_DLL
+	if (MirrorDamageMultiplier() > 0.0f &&
+			gpGlobals->curtime > (m_flPrevThinkMirrorDmg + 0.25f))
+	{
+		for (int i = 1; i <= gpGlobals->maxClients; ++i)
+		{
+			auto player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
+			if (player && player->IsAlive() && player->m_bKilledInflicted && player->m_iHealth <= 0)
+			{
+				player->CommitSuicide(false, true);
+			}
+		}
+
+		m_flPrevThinkMirrorDmg = gpGlobals->curtime;
+	}
+
+	if (neo_sv_teamdamage_kick.GetBool() && m_nRoundStatus == NeoRoundStatus::RoundLive &&
+			gpGlobals->curtime > (m_flPrevThinkKick + 0.5f))
+	{
+		const int iThresKickHp = neo_sv_teamdamage_kick_hp.GetInt();
+		const int iThresKickKills = neo_sv_teamdamage_kick_kills.GetInt();
+
+		// Separate command from check so kick not affected by player index
+		int userIDsToKick[MAX_PLAYERS + 1] = {};
+		int userIDsToKickSize = 0;
+		for (int i = 1; i <= gpGlobals->maxClients; ++i)
+		{
+			auto player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
+			if (player && (player->m_iTeamDamageInflicted >= iThresKickHp ||
+						   player->m_iTeamKillsInflicted >= iThresKickKills) &&
+					!player->m_bIsPendingTKKick)
+			{
+				userIDsToKick[userIDsToKickSize++] = player->GetUserID();
+				player->m_bIsPendingTKKick = true;
+			}
+		}
+
+		for (int i = 0; i < userIDsToKickSize; ++i)
+		{
+			engine->ServerCommand(UTIL_VarArgs("kickid %d \"%s\"\n", userIDsToKick[i],
+											   "Too much friendly-fire damage inflicted."));
+		}
+
+		m_flPrevThinkKick = gpGlobals->curtime;
+	}
+
 	if (IsRoundOver())
 	{
 		// If the next round was not scheduled yet
@@ -677,7 +767,7 @@ void CNEORules::AwardRankUp(CNEO_Player *pClient)
 }
 
 // Return remaining time in seconds. Zero means there is no time limit.
-float CNEORules::GetRoundRemainingTime()
+float CNEORules::GetRoundRemainingTime() const
 {
 	if ((m_nRoundStatus != NeoRoundStatus::Warmup && neo_round_timelimit.GetFloat() == 0) ||
 			m_nRoundStatus == NeoRoundStatus::Idle)
@@ -688,6 +778,25 @@ float CNEORules::GetRoundRemainingTime()
 	const float roundTimeLimit = (m_nRoundStatus == NeoRoundStatus::Warmup) ? (mp_neo_warmup_round_time.GetFloat()) : (neo_round_timelimit.GetFloat() * 60.0f);
 	return (m_flNeoRoundStartTime + roundTimeLimit) - gpGlobals->curtime;
 }
+
+float CNEORules::GetRoundAccumulatedTime() const
+{
+	return gpGlobals->curtime - (m_flNeoRoundStartTime + mp_neo_preround_freeze_time.GetFloat());
+}
+
+#ifdef GAME_DLL
+float CNEORules::MirrorDamageMultiplier() const
+{
+	if (m_nRoundStatus != NeoRoundStatus::RoundLive)
+	{
+		return 0.0f;
+	}
+	const float flAccTime = GetRoundAccumulatedTime();
+	const float flMirrorMult = neo_sv_mirror_teamdamage_multiplier.GetFloat();
+	const float flMirrorDur = neo_sv_mirror_teamdamage_duration.GetFloat();
+	return (flMirrorDur == 0.0f || (0.0f <= flAccTime && flAccTime < flMirrorDur)) ? flMirrorMult : 0.0f;
+}
+#endif
 
 void CNEORules::FireGameEvent(IGameEvent* event)
 {
@@ -919,6 +1028,7 @@ void CNEORules::StartNextRound()
 			continue;
 		}
 
+		pPlayer->m_bKilledInflicted = false;
 		if (pPlayer->GetActiveWeapon())
 		{
 			pPlayer->GetActiveWeapon()->Holster();
@@ -940,11 +1050,16 @@ void CNEORules::StartNextRound()
 		{
 			pPlayer->Reset();
 			pPlayer->m_iXP.Set(0);
+			pPlayer->m_iTeamDamageInflicted = 0;
+			pPlayer->m_iTeamKillsInflicted = 0;
 		}
+		pPlayer->m_bIsPendingTKKick = false;
 
 		pPlayer->SetTestMessageVisible(false);
 	}
 
+	m_flPrevThinkKick = 0.0f;
+	m_flPrevThinkMirrorDmg = 0.0f;
 	m_flIntermissionEndTime = 0;
 	m_flRestartGameTime = 0;
 	m_bCompleteReset = false;
@@ -1294,6 +1409,28 @@ void CNEORules::RestartGame()
 #ifdef GAME_DLL
 bool CNEORules::ClientConnected(edict_t *pEntity, const char *pszName, const char *pszAddress, char *reject, int maxrejectlen)
 {
+	if (neo_sv_build_integrity_check.GetBool())
+	{
+		const char *clientGitHash = engine->GetClientConVarValue(engine->IndexOfEdict(pEntity), "__neo_cl_git_hash");
+		const bool dbgBuildSkip = (neo_sv_build_integrity_check_allow_debug.GetBool()) ? (clientGitHash[0] & 0b1000'0000) : false;
+		if (dbgBuildSkip)
+		{
+			DevWarning("Client debug build integrity check bypass! Client: %s | Server: %s\n", clientGitHash, GIT_LONGHASH);
+		}
+		// NEO NOTE (nullsystem): Due to debug builds, if we're to match exactly, we'll have to mask out final bit first
+		char cmpClientGitHash[GIT_LONGHASH_SIZE + 1];
+		V_strcpy_safe(cmpClientGitHash, clientGitHash);
+		cmpClientGitHash[0] &= 0b0111'1111;
+		if (!dbgBuildSkip && V_strcmp(cmpClientGitHash, GIT_LONGHASH))
+		{
+			// Truncate the git hash so it's short hash and doesn't make message too long
+			static constexpr int MAX_GITHASH_SHOW = 7;
+			V_snprintf(reject, maxrejectlen, "Build integrity failed! Client vs server mis-match: Check your neo_version. "
+											 "Client: %.*s | Server: %.*s",
+					   MAX_GITHASH_SHOW, cmpClientGitHash, MAX_GITHASH_SHOW, GIT_LONGHASH);
+			return false;
+		}
+	}
 	return BaseClass::ClientConnected(pEntity, pszName, pszAddress,
 		reject, maxrejectlen);
 #if(0)
@@ -1722,6 +1859,12 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 		if (attacker->GetTeamNumber() == victim->GetTeamNumber())
 		{
 			attacker->m_iXP.GetForModify() -= 1;
+#ifdef GAME_DLL
+			if (neo_sv_teamdamage_kick.GetBool() && m_nRoundStatus == NeoRoundStatus::RoundLive)
+			{
+				++attacker->m_iTeamKillsInflicted;
+			}
+#endif
 		}
 		// Enemy kill
 		else
@@ -1784,20 +1927,20 @@ const char* CNEORules::GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer)
 		{
 			switch (pPlayer->GetTeamNumber())
 			{
-			case TEAM_JINRAI: return FMT_TEAM_JINRAI " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
-			case TEAM_NSF: return FMT_TEAM_NSF " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
-			case TEAM_SPECTATOR: return FMT_TEAM_SPECTATOR " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
-			default: return FMT_TEAM_UNASSIGNED " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_JINRAI: return FMT_TEAM_JINRAI " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_NSF: return FMT_TEAM_NSF " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_SPECTATOR: return FMT_TEAM_SPECTATOR " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			default: return FMT_TEAM_UNASSIGNED " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
 			}
 		}
 		else
 		{
 			switch (pPlayer->GetTeamNumber())
 			{
-			case TEAM_JINRAI: return FMT_TEAM_JINRAI " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
-			case TEAM_NSF: return FMT_TEAM_NSF " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
-			case TEAM_SPECTATOR: return FMT_TEAM_SPECTATOR " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
-			default: return FMT_TEAM_UNASSIGNED " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_JINRAI: return FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_NSF: return FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_SPECTATOR: return FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			default: return FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
 			}
 		}
 	}
@@ -1807,20 +1950,20 @@ const char* CNEORules::GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer)
 		{
 			switch (pPlayer->GetTeamNumber())
 			{
-			case TEAM_JINRAI: return FMT_DEAD " " FMT_TEAM_JINRAI " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
-			case TEAM_NSF: return FMT_DEAD " " FMT_TEAM_NSF " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
-			case TEAM_SPECTATOR: return FMT_TEAM_SPECTATOR " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
-			default: return FMT_TEAM_UNASSIGNED " (team) " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_JINRAI: return FMT_DEAD FMT_TEAM_JINRAI " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_NSF: return FMT_DEAD FMT_TEAM_NSF " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_SPECTATOR: return FMT_TEAM_SPECTATOR " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			default: return FMT_TEAM_UNASSIGNED " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
 			}
 		}
 		else
 		{
 			switch (pPlayer->GetTeamNumber())
 			{
-			case TEAM_JINRAI: return FMT_DEAD " " FMT_TEAM_JINRAI " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
-			case TEAM_NSF: return FMT_DEAD " " FMT_TEAM_NSF " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
-			case TEAM_SPECTATOR: return FMT_TEAM_SPECTATOR " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
-			default: return FMT_TEAM_UNASSIGNED " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_JINRAI: return FMT_DEAD " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_NSF: return FMT_DEAD " " FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			case TEAM_SPECTATOR: return FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
+			default: return FMT_PLAYERNAME ": " FMT_CHATMESSAGE;
 			}
 		}
 	}
@@ -2058,6 +2201,12 @@ bool CNEORules::FPlayerCanRespawn(CBasePlayer* pPlayer)
 	else
 	{
 		Assert(false);
+	}
+
+	// Do not let anyone who tried to team-kill during mirror damage + live round to respawn
+	if (static_cast<CNEO_Player *>(pPlayer)->m_bKilledInflicted)
+	{
+		return false;
 	}
 
 	// Did we make it in time to spawn for this round?

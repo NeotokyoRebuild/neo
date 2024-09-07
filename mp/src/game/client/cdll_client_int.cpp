@@ -171,6 +171,7 @@ extern vgui::IInputInternal *g_InputInternal;
 #endif
 
 #ifdef NEO
+#include "neo_version.h"
 #include "neo_mount_original.h"
 #endif
 
@@ -952,6 +953,10 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 	if ( InitDataModel() != INIT_OK )
 		return false;
 	InitFbx();
+#endif
+
+#if defined(NEO) && defined(DEBUG)
+	InitializeDbgNeoClGitHashEdit();
 #endif
 
 	// it's ok if this is NULL. That just means the sourcevr.dll wasn't found

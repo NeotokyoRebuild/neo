@@ -2204,6 +2204,17 @@ void C_BasePlayer::PostThink( void )
 
 	if ( IsAlive())
 	{
+#ifdef NEO
+		CNEO_Player* neoPlayer = static_cast<CNEO_Player*>(this);
+		if (GetFlags() & FL_DUCKING)
+		{
+			SetCollisionBounds(VEC_DUCK_HULL_MIN_NEOSCALED(neoPlayer), VEC_DUCK_HULL_MAX_NEOSCALED(neoPlayer));
+		}
+		else
+		{
+			SetCollisionBounds(VEC_HULL_MIN_NEOSCALED(neoPlayer), VEC_HULL_MAX_NEOSCALED(neoPlayer));
+		}
+#else
 		// Need to do this on the client to avoid prediction errors
 		if ( GetFlags() & FL_DUCKING )
 		{
@@ -2213,6 +2224,7 @@ void C_BasePlayer::PostThink( void )
 		{
 			SetCollisionBounds( VEC_HULL_MIN, VEC_HULL_MAX );
 		}
+#endif
 		
 		if ( !CommentaryModeShouldSwallowInput( this ) )
 		{
