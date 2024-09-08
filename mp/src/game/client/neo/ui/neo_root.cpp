@@ -669,11 +669,15 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoSettings::General *pGeneral = &ns->general;
 	NeoUI::TextEdit(L"Name", pGeneral->wszNeoName, SZWSZ_LEN(pGeneral->wszNeoName));
 	NeoUI::RingBoxBool(L"Show only steam name", &pGeneral->bOnlySteamNick);
-	wchar_t wszDisplayName[128];
+
 	const bool bShowSteamNick = pGeneral->bOnlySteamNick || pGeneral->wszNeoName[0] == '\0';
-	(bShowSteamNick) ? V_swprintf_safe(wszDisplayName, L"Display name: %s", steamapicontext->SteamFriends()->GetPersonaName())
-					 : V_swprintf_safe(wszDisplayName, L"Display name: %ls", pGeneral->wszNeoName);
-	NeoUI::Label(wszDisplayName);
+	wchar_t wszDisplayName[MAX_PLAYER_NAME_LENGTH + 1];
+	(bShowSteamNick) ? (void)g_pVGuiLocalize->ConvertANSIToUnicode(steamapicontext->SteamFriends()->GetPersonaName(), wszDisplayName, sizeof(wszDisplayName))
+					 : (void)V_wcscpy_safe(wszDisplayName, pGeneral->wszNeoName);
+
+	wchar_t wszDisplayNameLabelText[128];
+	V_swprintf_safe(wszDisplayNameLabelText, L"Display name: %ls", wszDisplayName);
+	NeoUI::Label(wszDisplayNameLabelText);
 	NeoUI::SliderInt(L"FOV", &pGeneral->iFov, 75, 110);
 	NeoUI::SliderInt(L"Viewmodel FOV Offset", &pGeneral->iViewmodelFov, -20, 40);
 	NeoUI::RingBoxBool(L"Aim hold", &pGeneral->bAimHold);
@@ -1888,9 +1892,11 @@ void CNeoRoot::MainLoopPlayerList(const MainLoopParam param)
 					const bool bOwnLocalPlayer = g_PR->IsLocalPlayer(i);
 					const bool bPlayerMuted = GetClientVoiceMgr()->IsPlayerBlocked(i);
 					const char *szPlayerName = g_PR->GetPlayerName(i);
+					wchar_t wszPlayerName[MAX_PLAYER_NAME_LENGTH + 1];
+					g_pVGuiLocalize->ConvertANSIToUnicode(szPlayerName, wszPlayerName, sizeof(wszPlayerName));
 
 					wchar_t wszInfo[256];
-					V_swprintf_safe(wszInfo, L"%ls%s", bOwnLocalPlayer ? L"[LOCAL] " : bPlayerMuted ? L"[MUTED] " : L"[VOICE] ", szPlayerName);
+					V_swprintf_safe(wszInfo, L"%ls%ls", bOwnLocalPlayer ? L"[LOCAL] " : bPlayerMuted ? L"[MUTED] " : L"[VOICE] ", wszPlayerName);
 					if (NeoUI::Button(wszInfo).bPressed)
 					{
 						if (!bOwnLocalPlayer) GetClientVoiceMgr()->SetPlayerBlockedState(i, !bPlayerMuted);
