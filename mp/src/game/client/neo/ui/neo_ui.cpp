@@ -570,6 +570,7 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 	if (g_pCtx->iWidget == g_pCtx->iActive && g_pCtx->iSection == g_pCtx->iActiveSection) g_pCtx->iActive += g_pCtx->iActiveDirection;
 	const auto wdgState = InternalGetMouseinFocused();
 	const int iTabWide = (g_pCtx->dPanel.wide / iLabelsSize);
+	bool bResetActiveHot = false;
 
 	switch (g_pCtx->eMode)
 	{
@@ -610,6 +611,7 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 			{
 				*iIndex = clamp(iNextIndex, 0, iLabelsSize);
 				V_memset(g_pCtx->iYOffset, 0, sizeof(g_pCtx->iYOffset));
+				bResetActiveHot = true;
 			}
 		}
 	}
@@ -621,11 +623,22 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 			*iIndex += (g_pCtx->eCode == KEY_F1) ? -1 : +1;
 			*iIndex = LoopAroundInArray(*iIndex, iLabelsSize);
 			V_memset(g_pCtx->iYOffset, 0, sizeof(g_pCtx->iYOffset));
+			bResetActiveHot = true;
 		}
 	}
 	break;
 	default:
 		break;
+	}
+
+	if (bResetActiveHot)
+	{
+		g_pCtx->eMousePos = MOUSEPOS_NONE;
+		g_pCtx->iActiveDirection = 0;
+		g_pCtx->iActive = FOCUSOFF_NUM;
+		g_pCtx->iActiveSection = -1;
+		g_pCtx->iHot = FOCUSOFF_NUM;
+		g_pCtx->iHotSection = -1;
 	}
 
 	InternalUpdatePartitionState(wdgState);
