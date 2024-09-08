@@ -798,7 +798,7 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 		break;
 		case MODE_MOUSEMOVED:
 		{
-			if (wdgState.bHot && wdgState.bActive && g_pCtx->eMousePos == MOUSEPOS_CENTER && input()->IsMouseDown(MOUSE_LEFT))
+			if (wdgState.bActive && g_pCtx->eMousePos == MOUSEPOS_CENTER && input()->IsMouseDown(MOUSE_LEFT))
 			{
 				const int iBase = g_pCtx->iRowTall + g_pCtx->iWgXPos;
 				const float flPerc = static_cast<float>(g_pCtx->iMouseRelX - iBase) / static_cast<float>(g_pCtx->dPanel.wide - g_pCtx->iRowTall - iBase);
