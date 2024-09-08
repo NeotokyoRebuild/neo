@@ -34,6 +34,8 @@ option(NEO_BUILD_TIER1 "Build tier1 library" ON)
 option(NEO_BUILD_MATHLIB "Build mathlib library" ON)
 option(NEO_BUILD_VGUI_CONTROLS "Build vgui_controls library" ON)
 option(NEO_COPY_LIBRARIES "Copy libraries to bin directory by default" ON)
+option(NEO_EXTRA_ASSETS "Copy extra assets into game/neo" ON)
+set(NEO_EXTRA_ASSETS_DIRECTORY_NAME "neoAssets" CACHE STRING "Name of extra assets root folder")
 set(NEO_OUTPUT_LIBRARY_PATH "${CMAKE_SOURCE_DIR}/../game/neo/bin" CACHE PATH "Directory for output libraries")
 option(NEO_INSTALL_LIBRARIES "Install game libraries" OFF)
 option(NEO_INSTALL_RESOURCES "Install game resources" OFF)
@@ -56,6 +58,8 @@ message(STATUS "Build tier1 library: ${NEO_BUILD_TIER1}")
 message(STATUS "Build mathlib library: ${NEO_BUILD_MATHLIB}")
 message(STATUS "Build vgui_controls library: ${NEO_BUILD_VGUI_CONTROLS}")
 message(STATUS "Copy libraries to bin directory by default: ${NEO_COPY_LIBRARIES}")
+message(STATUS "Copy extra assets into game/neo: ${NEO_EXTRA_ASSETS}")
+message(STATUS "Extra assets root directory name: ${NEO_EXTRA_ASSETS_DIRECTORY_NAME}")
 message(STATUS "Directory for output libraries: ${NEO_OUTPUT_LIBRARY_PATH}")
 message(STATUS "Install game libraries: ${NEO_INSTALL_LIBRARIES}")
 message(STATUS "Install game resources: ${NEO_INSTALL_RESOURCES}")
@@ -481,4 +485,11 @@ if(NEO_INSTALL_RESOURCES)
         DIRECTORY ${CMAKE_SOURCE_DIR}/../game/
         DESTINATION "${INSTALL_PATH_PREFIX}-resources"
     )
+endif()
+
+if(NEO_EXTRA_ASSETS)
+    add_custom_target(copy-runtime-files ALL
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_SOURCE_DIR}/../../../${NEO_EXTRA_ASSETS_DIRECTORY_NAME}/neo"
+            "${CMAKE_SOURCE_DIR}/../game/neo")
 endif()
