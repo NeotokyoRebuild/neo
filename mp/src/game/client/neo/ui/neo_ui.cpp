@@ -688,8 +688,8 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 
 			// Background bar
 			const float flPerc = (((iDp == 0) ? (int)(*flValue) : *flValue) - flMin) / (flMax - flMin);
-			const float flBarMaxWide = static_cast<float>(g_pCtx->dPanel.wide - g_pCtx->iWgXPos);
-			GCtxDrawFilledRectXtoX(g_pCtx->iWgXPos, g_pCtx->iWgXPos + static_cast<int>(flPerc * flBarMaxWide));
+			const float flBarMaxWide = static_cast<float>(g_pCtx->dPanel.wide - g_pCtx->iWgXPos - (2 * g_pCtx->iRowTall));
+			GCtxDrawFilledRectXtoX(g_pCtx->iWgXPos + g_pCtx->iRowTall, g_pCtx->iWgXPos + g_pCtx->iRowTall + static_cast<int>(flPerc * flBarMaxWide));
 
 			// Center-text label
 			const bool bSpecial = (wszSpecialText && !wdgState.bActive && *flValue == 0.0f);
