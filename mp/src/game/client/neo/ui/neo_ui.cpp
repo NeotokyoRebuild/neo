@@ -647,6 +647,15 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 	InternalUpdatePartitionState(wdgState);
 }
 
+static float ClampAndLimitDp(const float curValue, const float flMin, const float flMax, const int iDp)
+{
+	const float flDpMult = pow(10, iDp);
+	float nextValue = curValue;
+	nextValue = clamp(nextValue, flMin, flMax);
+	nextValue = roundf(nextValue * flDpMult) / flDpMult;
+	return nextValue;
+}
+
 void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, const float flMax,
 				   const int iDp, const float flStep, const wchar_t *wszSpecialText)
 {
@@ -735,7 +744,7 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 					if (g_pCtx->eMousePos == MOUSEPOS_LEFT || g_pCtx->eMousePos == MOUSEPOS_RIGHT)
 					{
 						*flValue += (g_pCtx->eMousePos == MOUSEPOS_LEFT) ? -flStep : +flStep;
-						*flValue = clamp(*flValue, flMin, flMax);
+						*flValue = ClampAndLimitDp(*flValue, flMin, flMax, iDp);
 						g_pCtx->bValueEdited = true;
 					}
 					else if (g_pCtx->eMousePos == MOUSEPOS_CENTER)
@@ -755,7 +764,7 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 				if (g_pCtx->eCode == KEY_LEFT || g_pCtx->eCode == KEY_RIGHT)
 				{
 					*flValue += (g_pCtx->eCode == KEY_LEFT) ? -flStep : +flStep;
-					*flValue = clamp(*flValue, flMin, flMax);
+					*flValue = ClampAndLimitDp(*flValue, flMin, flMax, iDp);
 					g_pCtx->bValueEdited = true;
 				}
 				else if (g_pCtx->eCode == KEY_ENTER)
@@ -798,12 +807,12 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 		break;
 		case MODE_MOUSEMOVED:
 		{
-			if (wdgState.bActive && g_pCtx->eMousePos == MOUSEPOS_CENTER && input()->IsMouseDown(MOUSE_LEFT))
+			if (wdgState.bActive && input()->IsMouseDown(MOUSE_LEFT))
 			{
 				const int iBase = g_pCtx->iRowTall + g_pCtx->iWgXPos;
 				const float flPerc = static_cast<float>(g_pCtx->iMouseRelX - iBase) / static_cast<float>(g_pCtx->dPanel.wide - g_pCtx->iRowTall - iBase);
 				*flValue = flMin + (flPerc * (flMax - flMin));
-				*flValue = clamp(*flValue, flMin, flMax);
+				*flValue = ClampAndLimitDp(*flValue, flMin, flMax, iDp);
 				g_pCtx->bValueEdited = true;
 			}
 		}
