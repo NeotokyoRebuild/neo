@@ -277,14 +277,6 @@ void CWeaponSupa7::FillClipSlug(void)
 	}
 }
 
-void CWeaponSupa7::DryFire(void)
-{
-	WeaponSound(EMPTY);
-	SendWeaponAnim(ACT_VM_DRYFIRE);
-
-	ProposeNextAttack(gpGlobals->curtime + SequenceDuration());
-}
-
 void CWeaponSupa7::PrimaryAttack(void)
 {
 	if (ShootingIsPrevented())

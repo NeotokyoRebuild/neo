@@ -43,87 +43,6 @@ CWeaponAA13::CWeaponAA13(void)
 	// m_nNumShotsFired = 0;
 }
 
-Activity CWeaponAA13::GetPrimaryAttackActivity()
-{
-	if (m_nNumShotsFired < 1)
-		return ACT_VM_PRIMARYATTACK;
-
-	if (m_nNumShotsFired < 2)
-		return ACT_VM_RECOIL1;
-
-	if (m_nNumShotsFired < 3)
-		return ACT_VM_RECOIL2;
-
-	return ACT_VM_RECOIL3;
-}
-
-void CWeaponAA13::UpdatePenaltyTime()
-{
-	auto owner = ToBasePlayer(GetOwner());
-
-	if (!owner)
-	{
-		return;
-	}
-
-	if (((owner->m_nButtons & IN_ATTACK) == false) &&
-		(m_flSoonestAttack < gpGlobals->curtime))
-	{
-		// Update the penalty time decay
-		m_flAccuracyPenalty -= gpGlobals->frametime;
-		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty, 0.0f, GetMaxAccuracyPenalty());
-	}
-}
-
-void CWeaponAA13::ItemPreFrame()
-{
-	UpdatePenaltyTime();
-
-	BaseClass::ItemPreFrame();
-}
-
-void CWeaponAA13::ItemBusyFrame()
-{
-	UpdatePenaltyTime();
-
-	BaseClass::ItemBusyFrame();
-}
-
-void CWeaponAA13::ItemPostFrame()
-{
-	ProcessAnimationEvents();
-
-	BaseClass::ItemPostFrame();
-
-	if (m_bInReload)
-	{
-		return;
-	}
-
-	CNEO_Player *pOwner = ToNEOPlayer((GetOwner()));
-
-	if (!pOwner)
-	{
-		return;
-	}
-
-	if (pOwner->m_nButtons & IN_ATTACK)
-	{
-		if (m_flSoonestAttack < gpGlobals->curtime)
-		{
-			if (m_iClip1 <= 0)
-			{
-				DryFire();
-				m_flSoonestAttack = gpGlobals->curtime + GetFastestDryRefireTime();
-			}
-			else
-			{
-				m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
-			}
-		}
-	}
-}
-
 void CWeaponAA13::AddViewKick()
 {
 	CNEO_Player *pOwner = ToNEOPlayer((GetOwner()));
@@ -142,18 +61,13 @@ void CWeaponAA13::AddViewKick()
 	pOwner->ViewPunch(viewPunch);
 }
 
-void CWeaponAA13::DryFire()
-{
-	WeaponSound(EMPTY);
-	SendWeaponAnim(ACT_VM_DRYFIRE);
-	m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
-}
-
 void CWeaponAA13::PrimaryAttack(void)
 {
 	// Combo of the neobasecombatweapon and the Supa7 attack
-	Assert(!ShootingIsPrevented());
-
+	if (ShootingIsPrevented())
+	{
+		return;
+	}
 	if (gpGlobals->curtime < m_flSoonestAttack)
 	{
 		return;
@@ -203,6 +117,8 @@ void CWeaponAA13::PrimaryAttack(void)
 	Vector vecSpread = GetBulletSpread();
 	FireBulletsInfo_t info(5, vecSrc, vecAiming, vecSpread, MAX_TRACE_LENGTH, m_iPrimaryAmmoType);
 	info.m_pAttacker = pPlayer;
+
+	m_flNextPrimaryAttack = m_flNextPrimaryAttack + GetFireRate();
 
 	// Fire the bullets, and force the first shot to be perfectly accurate
 	pPlayer->FireBullets(info);

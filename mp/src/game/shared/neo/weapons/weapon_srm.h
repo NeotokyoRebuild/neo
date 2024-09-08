@@ -33,30 +33,15 @@ public:
 
 	CWeaponSRM();
 
-	void	ItemPostFrame(void);
-	void	ItemPreFrame(void);
-	void	ItemBusyFrame(void);
-	virtual void	PrimaryAttack(void) OVERRIDE { if (!ShootingIsPrevented()) { BaseClass::PrimaryAttack(); } }
-	virtual void	SecondaryAttack(void) OVERRIDE { if (!ShootingIsPrevented()) { BaseClass::SecondaryAttack(); } }
-	void	AddViewKick(void);
-	void	DryFire(void);
+	void	AddViewKick(void) override;
 
-	virtual void Spawn(void);
-	virtual bool Deploy(void);
+	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const override { return NEO_WEP_SRM; }
+	virtual int GetNeoWepXPCost(const int neoClass) const override { return 0; }
 
-	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { return NEO_WEP_SRM; }
-	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
-
-	virtual float GetSpeedScale(void) const { return 1.0; }
-
-	void	UpdatePenaltyTime(void);
-
-	Activity	GetPrimaryAttackActivity(void);
+	virtual float GetSpeedScale(void) const override { return 1.0; }
 
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
-	virtual float GetAccuracyPenalty() const OVERRIDE { return 0.2f; }
-	virtual float GetMaxAccuracyPenalty() const OVERRIDE { return 1.5f; }
 
 private:
 	CWeaponSRM(const CWeaponSRM &other);
