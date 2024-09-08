@@ -471,7 +471,13 @@ void CNEOBaseCombatWeapon::ItemPostFrame(void)
 			((UsesClipsForAmmo1() && m_iClip1 <= 0) || (!UsesClipsForAmmo1() && m_iPrimaryAmmoCount <= 0)))
 		{
 			if (m_bRoundChambered) // bolt action rifles can have this value set to false, prevents empty clicking when holding the attack button when looking through scope to prevent bolting/reloading
+			{
 				HandleFireOnEmpty();
+			}
+			else
+			{
+				DryFire();
+			}
 		}
 		else if (pOwner->GetWaterLevel() == 3 && m_bFiresUnderwater == false)
 		{
