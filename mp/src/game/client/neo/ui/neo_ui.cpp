@@ -845,9 +845,13 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 
 void SliderInt(const wchar_t *wszLeftLabel, int *iValue, const int iMin, const int iMax, const int iStep, const wchar_t *wszSpecialText)
 {
-	float flValue = *iValue;
+	const float flOrigValue = *iValue;
+	float flValue = flOrigValue;
 	Slider(wszLeftLabel, &flValue, static_cast<float>(iMin), static_cast<float>(iMax), 0, static_cast<float>(iStep), wszSpecialText);
-	*iValue = static_cast<int>(flValue);
+	if (flValue != flOrigValue)
+	{
+		*iValue = RoundFloatToInt(flValue);
+	}
 }
 
 void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
