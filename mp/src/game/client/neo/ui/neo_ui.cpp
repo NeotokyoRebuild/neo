@@ -907,7 +907,7 @@ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
 			}
 		}
 		break;
-		case MODE_MOUSEDOUBLEPRESSED:
+		case MODE_MOUSEPRESSED:
 		{
 			if (wdgState.bHot && g_pCtx->iWgXPos <= g_pCtx->iMouseRelX)
 			{
