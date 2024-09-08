@@ -905,10 +905,10 @@ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
 		{
 			if (wdgState.bActive && g_pCtx->eCode == KEY_BACKSPACE)
 			{
-				int iTextSize = V_wcslen(wszText);
+				const int iTextSize = V_wcslen(wszText);
 				if (iTextSize > 0)
 				{
-					wszText[--iTextSize] = '\0';
+					wszText[iTextSize - 1] = L'\0';
 					g_pCtx->bValueEdited = true;
 				}
 			}
@@ -916,13 +916,13 @@ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
 		break;
 		case MODE_KEYTYPED:
 		{
-			if (wdgState.bActive)
+			if (wdgState.bActive && iswprint(g_pCtx->unichar))
 			{
 				int iTextSize = V_wcslen(wszText);
 				if (iTextSize < iMaxSize)
 				{
 					wszText[iTextSize++] = g_pCtx->unichar;
-					wszText[iTextSize] = '\0';
+					wszText[iTextSize] = L'\0';
 					g_pCtx->bValueEdited = true;
 				}
 			}
