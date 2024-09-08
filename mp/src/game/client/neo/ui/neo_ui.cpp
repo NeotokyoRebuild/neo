@@ -197,6 +197,7 @@ void EndContext()
 void BeginSection(const bool bDefaultFocus)
 {
 	g_pCtx->iPartitionY = 0;
+	g_pCtx->iLayoutX = 0;
 	g_pCtx->iLayoutY = -(g_pCtx->iYOffset[g_pCtx->iSection] * g_pCtx->iRowTall);
 	g_pCtx->iWidget = 0;
 	g_pCtx->iCanActives = 0;
@@ -582,8 +583,10 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 			const bool bHoverTab = (wdgState.bHot && IN_BETWEEN_AR(iXPosTab, g_pCtx->iMouseRelX, iXPosTab + iTabWide));
 			if (bHoverTab || i == *iIndex)
 			{
+				// NEO NOTE (nullsystem): On the final tab, just expand it to the end width as iTabWide isn't always going
+				// to give a properly aligned width
 				surface()->DrawSetColor(bHoverTab ? COLOR_NEOPANELSELECTBG : COLOR_NEOPANELACCENTBG);
-				GCtxDrawFilledRectXtoX(iXPosTab, iXPosTab + iTabWide);
+				GCtxDrawFilledRectXtoX(iXPosTab, (i == (iLabelsSize - 1)) ? (g_pCtx->dPanel.wide) : (iXPosTab + iTabWide));
 			}
 			const wchar_t *wszText = wszLabelsList[i];
 			GCtxDrawSetTextPos(iXPosTab + g_pCtx->iMarginX, g_pCtx->iLayoutY + pFontI->iYOffset);
