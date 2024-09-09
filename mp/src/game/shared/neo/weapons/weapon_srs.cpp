@@ -28,6 +28,7 @@ CWeaponSRS::CWeaponSRS()
 	m_flAccuracyPenalty = 0;
 
 	m_nNumShotsFired = 0;
+	m_bRoundChambered - true;
 }
 
 void CWeaponSRS::PrimaryAttack(void)
