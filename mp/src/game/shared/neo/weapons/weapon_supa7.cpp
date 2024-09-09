@@ -398,7 +398,7 @@ void CWeaponSupa7::ItemPostFrame(void)
 		else if (m_flNextPrimaryAttack <= gpGlobals->curtime)
 		{
 			// If out of ammo end reload
-			if (m_iPrimaryAmmoCount <= 0 || m_bSlugLoaded || m_iClip1 >= GetMaxClip1())
+			if (!m_bSlugDelayed && ( m_iPrimaryAmmoCount <= 0 || m_bSlugLoaded || m_iClip1 >= GetMaxClip1()))
 			{
 				FinishReload();
 			}
