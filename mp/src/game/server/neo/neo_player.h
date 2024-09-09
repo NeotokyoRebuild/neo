@@ -149,6 +149,8 @@ public:
 	void CloakPower_Charge(float flPower);
 	float CloakPower_Cap() const;
 
+	bool CanBreatheUnderwater() const override { return false; }
+
 	float GetNormSpeed_WithActiveWepEncumberment(void) const;
 	float GetCrouchSpeed_WithActiveWepEncumberment(void) const;
 	float GetWalkSpeed_WithActiveWepEncumberment(void) const;
