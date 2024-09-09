@@ -488,8 +488,18 @@ if(NEO_INSTALL_RESOURCES)
 endif()
 
 if(NEO_EXTRA_ASSETS)
-    add_custom_target(copy-runtime-files ALL
+    include(FetchContent) # once in the project to include the module
+
+    FetchContent_Declare(
+        neo_assets
+        GIT_REPOSITORY https://github.com/NeotokyoRebuild/neoAssets.git
+        GIT_TAG        7db1ce3a7fced4916bc52f14525b19b9a2241fdb
+    )
+
+    FetchContent_MakeAvailable(neo_assets)
+
+    execute_process(
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${CMAKE_SOURCE_DIR}/../../../${NEO_EXTRA_ASSETS_DIRECTORY_NAME}/neo"
+            "${neo_assets_SOURCE_DIR}/neo"
             "${CMAKE_SOURCE_DIR}/../game/neo")
 endif()
