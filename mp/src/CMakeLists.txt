@@ -491,7 +491,8 @@ if(NEO_EXTRA_ASSETS)
     FetchContent_Declare(
         neo_assets
         GIT_REPOSITORY https://github.com/NeotokyoRebuild/neoAssets.git
-        GIT_TAG        7db1ce3a7fced4916bc52f14525b19b9a2241fdb
+        GIT_TAG master # Replace with a commit hash or other tag to select a specific version of the assets, remove GIT_SHALLOW if using commit hash
+        GIT_SHALLOW 1
     )
 
     FetchContent_MakeAvailable(neo_assets)
