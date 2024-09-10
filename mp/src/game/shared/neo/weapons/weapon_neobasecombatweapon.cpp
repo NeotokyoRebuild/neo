@@ -98,6 +98,98 @@ const char *GetWeaponByLoadoutId(int id)
 	return weps[id];
 }
 
+// TODO: This lookup could be more efficient with sequential IDs a la SDK,
+// but we'll probably move this stuff to the weapon scripts anyway.
+static const WeaponHandlingInfo_t handlingTable[] = {
+	{NEO_WEP_AA13,
+		{{VECTOR_CONE_5DEGREES, VECTOR_CONE_5DEGREES, VECTOR_CONE_5DEGREES, VECTOR_CONE_5DEGREES}},
+		{0.25, 0.5, -0.6, 0.6},
+	},
+	{NEO_WEP_JITTE,
+		{{VECTOR_CONE_3DEGREES, VECTOR_CONE_10DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_3DEGREES}},
+		{-0.25, -0.5, -0.6, 0.6},
+	},
+	{NEO_WEP_JITTE_S,
+		{{VECTOR_CONE_3DEGREES, VECTOR_CONE_10DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_3DEGREES}},
+		{-0.25, -0.5, -0.6, 0.6},
+	},
+	{NEO_WEP_KYLA,
+		{{VECTOR_CONE_5DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_2DEGREES, VECTOR_CONE_4DEGREES}},
+		{0.0, 0.0, 0.0, 0.0},
+		{10.5, 6.0, 0.0, -0.75, -0.5, 0.5},
+	},
+	{NEO_WEP_M41,
+		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}}
+	},
+	{NEO_WEP_M41_S,
+		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}}
+	},
+	{NEO_WEP_MILSO,
+		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_2DEGREES, VECTOR_CONE_4DEGREES}},
+		{0.25, 0.5, -0.6, 0.6},
+	},
+	{NEO_WEP_MPN,
+		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_4DEGREES}},
+		{0.0, 0.0, 0.0, 0.0},
+		{1.0, 1.0, -0.25, -0.5, -0.6, 0.6},
+	},
+	{NEO_WEP_MPN_S,
+		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_4DEGREES}},
+		{0.0, 0.0, 0.0, 0.0},
+		{1.0, 1.0, -0.25, -0.5, -0.6, 0.6},
+	},
+	{NEO_WEP_MX,
+		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}},
+		{0.25, 0.5, -0.6, 0.6},
+	},
+	{NEO_WEP_MX_S,
+		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}},
+		{0.25, 0.5, -0.6, 0.6},
+	},
+	{NEO_WEP_PZ,
+		{{VECTOR_CONE_2DEGREES, VECTOR_CONE_5DEGREES, VECTOR_CONE_1DEGREES / 2, VECTOR_CONE_2DEGREES}},
+		{0.25, 0.5, -0.6, 0.6},
+		{1.0, 0.0, -0.25, -0.75, -0.6, 0.6},
+	},
+	{NEO_WEP_SRM,
+		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_4DEGREES}},
+		{0.25, 0.5, -0.6, 0.6},
+	},
+	{NEO_WEP_SRM_S,
+		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_4DEGREES}},
+		{0.25, 0.5, -0.6, 0.6},
+	},
+	{NEO_WEP_SRS,
+		{{VECTOR_CONE_7DEGREES, VECTOR_CONE_20DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_7DEGREES}},
+		{0.0, 0.0, 0.0, 0.0},
+		{1.0, 1.5, 0.0, -0.5, -0.5, 0.5},
+	},
+	{NEO_WEP_SUPA7,
+		{
+			{VECTOR_CONE_5DEGREES, VECTOR_CONE_5DEGREES, VECTOR_CONE_5DEGREES, VECTOR_CONE_5DEGREES},
+			{VECTOR_CONE_4DEGREES, VECTOR_CONE_10DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_3DEGREES}
+		},
+		{0.25, 0.5, -0.6, 0.6},
+	},
+	{NEO_WEP_TACHI,
+		{{VECTOR_CONE_5DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_4DEGREES}},
+		{0.25, 0.5, -0.6, 0.6},
+	},
+	{NEO_WEP_ZR68_C,
+		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}},
+		{0.25, 0.5, -0.6, 0.6},
+	},
+	{NEO_WEP_ZR68_L,
+		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_2DEGREES}},
+		{0.0, 0.0, 0.0, 0.0},
+		{1.0, 2.5, 0.0, -0.5, -0.5, 0.5},
+	},
+	{NEO_WEP_ZR68_S,
+		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}},
+		{0.15, 0.25, -0.4, 0.4},
+	},
+};
+
 CNEOBaseCombatWeapon::CNEOBaseCombatWeapon( void )
 {
 }
@@ -124,6 +216,16 @@ void CNEOBaseCombatWeapon::Spawn()
 
 	m_iClip2 = GetWpnData().iMaxClip2;
 	m_iSecondaryAmmoCount = GetWpnData().iDefaultClip2;
+
+	m_weaponHandling = handlingTable[0];
+	for (const auto& handling: handlingTable)
+	{
+		if (handling.weaponID & GetNeoWepBits())
+		{
+			m_weaponHandling = handling;
+			break;
+		}
+	}
 
 #ifdef GAME_DLL
 	AddSpawnFlags(SF_NORESPAWN);
@@ -536,77 +638,74 @@ void CNEOBaseCombatWeapon::ItemPostFrame(void)
 	}
 }
 
-struct WeaponHandlingInfo_t
+const WeaponSpreadInfo_t &CNEOBaseCombatWeapon::GetSpreadInfo()
 {
-	NeoWepBits weaponID;
-	Vector minSpreadHip;
-	Vector maxSpreadHip;
-	Vector minSpreadAim;
-	Vector maxSpreadAim;
-	// TODO: recoil
-};
+	Assert(m_weaponHandling.weaponID & GetNeoWepBits());
+	return m_weaponHandling.spreadInfo[0];
+}
 
 const Vector &CNEOBaseCombatWeapon::GetBulletSpread(void)
 {
-	// TODO: This lookup could be more efficient with sequential IDs a la SDK,
-	// but we'll probably move this stuff to the weapon scripts anyway.
-	static const WeaponHandlingInfo_t handlingTable[] = {
-		{NEO_WEP_AA13, VECTOR_CONE_5DEGREES, VECTOR_CONE_5DEGREES, VECTOR_CONE_5DEGREES, VECTOR_CONE_5DEGREES},
-		{NEO_WEP_JITTE, VECTOR_CONE_3DEGREES, VECTOR_CONE_10DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_3DEGREES},
-		{NEO_WEP_JITTE_S, VECTOR_CONE_3DEGREES, VECTOR_CONE_10DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_3DEGREES},
-		{NEO_WEP_KYLA, VECTOR_CONE_5DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_2DEGREES, VECTOR_CONE_4DEGREES},
-		{NEO_WEP_M41, VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES},
-		{NEO_WEP_M41_S, VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES},
-		{NEO_WEP_MILSO, VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_2DEGREES, VECTOR_CONE_4DEGREES},
-		{NEO_WEP_MPN, VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_4DEGREES},
-		{NEO_WEP_MPN_S, VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_4DEGREES},
-		{NEO_WEP_MX, VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES},
-		{NEO_WEP_MX_S, VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES},
-		{NEO_WEP_PZ, VECTOR_CONE_2DEGREES, VECTOR_CONE_5DEGREES, VECTOR_CONE_1DEGREES / 2, VECTOR_CONE_2DEGREES},
-		{NEO_WEP_SRM, VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_4DEGREES},
-		{NEO_WEP_SRM_S, VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_4DEGREES},
-		{NEO_WEP_SRS, VECTOR_CONE_7DEGREES, VECTOR_CONE_20DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_7DEGREES},
-		{NEO_WEP_SUPA7, VECTOR_CONE_5DEGREES, VECTOR_CONE_5DEGREES, VECTOR_CONE_5DEGREES, VECTOR_CONE_5DEGREES},
-		{NEO_WEP_TACHI, VECTOR_CONE_5DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_4DEGREES},
-		{NEO_WEP_ZR68_C, VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES},
-		{NEO_WEP_ZR68_L, VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_2DEGREES},
-		{NEO_WEP_ZR68_S, VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES},
-	};
-
-	auto weaponHandling = handlingTable[0];
-	for (WeaponHandlingInfo_t handling : handlingTable)
-	{
-		if (handling.weaponID & GetNeoWepBits())
-		{
-			weaponHandling = handling;
-			break;
-		}
-	}
-	Assert(weaponHandling.weaponID & GetNeoWepBits());
-
-	CNEO_Player *pOwner = static_cast<CNEO_Player *>(ToBasePlayer(GetOwner()));
-	Assert(pOwner);
+	auto pOwner = ToNEOPlayer(GetOwner());
 
 	// We lerp from very accurate to inaccurate over time
 	static Vector cone;
+	auto weaponSpread = GetSpreadInfo();
 	if (pOwner && pOwner->IsInAim())
 	{
 		VectorLerp(
-			weaponHandling.minSpreadAim,
-			weaponHandling.maxSpreadAim,
+			weaponSpread.minSpreadAim,
+			weaponSpread.maxSpreadAim,
 			m_flAccuracyPenalty,
 			cone);
 	}
 	else
 	{
 		VectorLerp(
-			weaponHandling.minSpreadHip,
-			weaponHandling.maxSpreadHip,
+			weaponSpread.minSpreadHip,
+			weaponSpread.maxSpreadHip,
 			m_flAccuracyPenalty,
 			cone);
 	}
 
 	return cone;
+}
+
+void CNEOBaseCombatWeapon::AddViewKick()
+{
+	auto owner = ToNEOPlayer(GetOwner());
+
+	if (!owner)
+	{
+		return;
+	}
+
+	auto kickInfo = m_weaponHandling.kickInfo;
+
+	QAngle viewPunch;
+	viewPunch.x = SharedRandomFloat(m_weaponSeeds.punchX, kickInfo.minX, kickInfo.maxX);
+	viewPunch.y = SharedRandomFloat(m_weaponSeeds.punchY, kickInfo.minY, kickInfo.maxY);
+	viewPunch.z = 0;
+
+	owner->ViewPunch(viewPunch);
+
+	#ifdef CLIENT_DLL
+
+	auto recoilInfo = m_weaponHandling.recoilInfo;
+	float scale = owner->IsInAim() ? recoilInfo.adsFactor : recoilInfo.hipFactor;
+	if (!scale) {
+		return;
+	}
+
+	QAngle viewAngles;
+	engine->GetViewAngles(viewAngles);
+
+	viewAngles.x += SharedRandomFloat(m_weaponSeeds.recoilX, recoilInfo.minX * scale, recoilInfo.maxX * scale);
+	viewAngles.y += SharedRandomFloat(m_weaponSeeds.recoilY, recoilInfo.minY * scale, recoilInfo.maxY * scale);
+
+	engine->SetViewAngles(viewAngles);
+
+	#endif
 }
 
 void CNEOBaseCombatWeapon::DryFire()

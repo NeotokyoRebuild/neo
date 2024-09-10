@@ -93,6 +93,45 @@ enum {
 
 const char *GetWeaponByLoadoutId(int id);
 
+struct WeaponSpreadInfo_t {
+	Vector minSpreadHip;
+	Vector maxSpreadHip;
+	Vector minSpreadAim;
+	Vector maxSpreadAim;
+};
+
+struct WeaponKickInfo_t {
+	float minX;
+	float maxX;
+	float minY;
+	float maxY;
+};
+
+struct WeaponRecoilInfo_t {
+	float hipFactor;
+	float adsFactor;
+	float minX;
+	float maxX;
+	float minY;
+	float maxY;
+};
+
+struct WeaponHandlingInfo_t
+{
+	NeoWepBits weaponID;
+	WeaponSpreadInfo_t spreadInfo[2];
+	WeaponKickInfo_t kickInfo;
+	WeaponRecoilInfo_t recoilInfo;
+};
+
+struct WeaponSeeds_t
+{
+	const char *punchX;
+	const char *punchY;
+	const char *recoilX;
+	const char *recoilY;
+};
+
 #if(1)
 		// This does nothing; dummy value for network test. Remove when not needed anymore.
 #define DEFINE_NEO_BASE_WEP_PREDICTION
@@ -200,6 +239,8 @@ public:
 	bool IsSemiAuto(void) const { return !IsAutomatic(); }
 
 	virtual const Vector& GetBulletSpread(void) override;
+	virtual const WeaponSpreadInfo_t& GetSpreadInfo(void);
+	virtual void AddViewKick(void) override;
 
 	virtual bool CanBePickedUpByClass(int classId);
 	virtual bool CanDrop(void);
@@ -221,6 +262,9 @@ public:
 	float GetPenetration() const;
 
 protected:
+	WeaponHandlingInfo_t m_weaponHandling;
+	WeaponSeeds_t m_weaponSeeds;
+
 	virtual void UpdateInaccuracy(void);
 	virtual float GetAccuracyPenalty() const { return 0.8; }
 	virtual float GetMaxAccuracyPenalty() const { return 1.0; }

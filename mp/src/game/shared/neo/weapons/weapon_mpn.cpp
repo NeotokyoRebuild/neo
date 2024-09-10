@@ -28,22 +28,11 @@ CWeaponMPN::CWeaponMPN()
 	m_flAccuracyPenalty = 0;
 
 	m_nNumShotsFired = 0;
-}
 
-void CWeaponMPN::AddViewKick()
-{
-	auto pOwner = ToBasePlayer(GetOwner());
-
-	if (!pOwner)
-	{
-		return;
-	}
-
-	const QAngle viewPunch {
-		SharedRandomFloat("mpnpx", 0.25f, 0.5f),
-		SharedRandomFloat("mpnpy", -0.6f, 0.6f),
-		0.0f
+	m_weaponSeeds = {
+		"mpnpx",
+		"mpnpy",
+		"mpnrx",
+		"mpnry",
 	};
-
-	pOwner->ViewPunch(viewPunch);
 }

@@ -33,8 +33,6 @@ public:
 
 	CWeaponZR68L();
 
-	void	AddViewKick(void) override;
-
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const override { return NEO_WEP_ZR68_L | NEO_WEP_SCOPEDWEAPON; }
 	virtual int GetNeoWepXPCost(const int neoClass) const override { return 0; }
 

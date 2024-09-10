@@ -41,24 +41,13 @@ CWeaponAA13::CWeaponAA13(void)
 	// m_flAccuracyPenalty = 0.0f;
 
 	// m_nNumShotsFired = 0;
-}
 
-void CWeaponAA13::AddViewKick()
-{
-	CNEO_Player *pOwner = ToNEOPlayer((GetOwner()));
-
-	if (!pOwner)
-	{
-		return;
-	}
-
-	QAngle viewPunch;
-
-	viewPunch.x = SharedRandomFloat("aa13px", 0.33f, 0.5f);
-	viewPunch.y = SharedRandomFloat("aa13py", -1.5f, 1.5f);
-	viewPunch.z = 0.0f;
-
-	pOwner->ViewPunch(viewPunch);
+	m_weaponSeeds = {
+		"aa13px",
+		"aa13py",
+		"aa13rx",
+		"aa13ry",
+	};
 }
 
 void CWeaponAA13::PrimaryAttack(void)
