@@ -453,6 +453,9 @@ C_NEO_Player::C_NEO_Player()
 C_NEO_Player::~C_NEO_Player()
 {
 	m_pPlayerAnimState->Release();
+#ifdef GLOWS_ENABLE
+	DestroyGlowEffect();
+#endif // GLOWS_ENABLE
 }
 
 void C_NEO_Player::CheckThermOpticButtons()
@@ -1127,6 +1130,28 @@ void C_NEO_Player::TeamChange(int iNewTeam)
 	if (IsLocalPlayer())
 	{
 		engine->ClientCmd(classmenu.GetName());
+		if (iNewTeam == TEAM_SPECTATOR)
+		{
+			for (int i = 0; i < MAX_PLAYERS; i++)
+			{
+				auto player = UTIL_PlayerByIndex(i);
+				if (player)
+				{
+					player->SetClientSideGlowEnabled(true);
+				}
+			}
+		}
+		else
+		{
+			for (int i = 0; i < MAX_PLAYERS; i++)
+			{
+				auto player = UTIL_PlayerByIndex(i);
+				if (player)
+				{
+					player->SetClientSideGlowEnabled(false);
+				}
+			}
+		}
 	}
 	BaseClass::TeamChange(iNewTeam);
 }
