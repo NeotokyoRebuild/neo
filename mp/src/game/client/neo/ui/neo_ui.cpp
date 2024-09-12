@@ -79,6 +79,7 @@ void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode, const wchar_t *w
 	g_pCtx->eButtonTextStyle = TEXTSTYLE_CENTER;
 	g_pCtx->eLabelTextStyle = TEXTSTYLE_LEFT;
 	g_pCtx->bTextEditIsPassword = false;
+	g_pCtx->selectBgColor = COLOR_NEOPANELSELECTBG;
 	// Different pointer, change context
 	if (g_pCtx->pSzCurCtxName != pSzCtxName)
 	{
@@ -354,7 +355,7 @@ static GetMouseinFocusedRet InternalGetMouseinFocused()
 	const bool bActive = g_pCtx->iWidget == g_pCtx->iActive && g_pCtx->iSection == g_pCtx->iActiveSection;
 	if (bActive || bHot)
 	{
-		surface()->DrawSetColor(COLOR_NEOPANELSELECTBG);
+		surface()->DrawSetColor(g_pCtx->selectBgColor);
 		if (bActive) surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
 	}
 	return GetMouseinFocusedRet{

@@ -707,9 +707,7 @@ void NeoSettings_General(NeoSettings *ns)
 	(bShowSteamNick) ? (void)g_pVGuiLocalize->ConvertANSIToUnicode(steamapicontext->SteamFriends()->GetPersonaName(), wszDisplayName, sizeof(wszDisplayName))
 					 : (void)V_wcscpy_safe(wszDisplayName, pGeneral->wszNeoName);
 
-	wchar_t wszDisplayNameLabelText[128];
-	V_swprintf_safe(wszDisplayNameLabelText, L"Display name: %ls", wszDisplayName);
-	NeoUI::Label(wszDisplayNameLabelText);
+	NeoUI::Label(L"Display name", wszDisplayName);
 	NeoUI::SliderInt(L"FOV", &pGeneral->iFov, 75, 110);
 	NeoUI::SliderInt(L"Viewmodel FOV Offset", &pGeneral->iViewmodelFov, -20, 40);
 	NeoUI::RingBoxBool(L"Aim hold", &pGeneral->bAimHold);
@@ -772,18 +770,37 @@ void NeoSettings_Audio(NeoSettings *ns)
 	NeoUI::RingBoxBool(L"Microphone Boost", &pAudio->bMicBoost);
 	IVoiceTweak_s *pVoiceTweak = engine->GetVoiceTweakAPI();
 	const bool bTweaking = pVoiceTweak->IsStillTweaking();
+	if (bTweaking && g_uiCtx.eMode == NeoUI::MODE_PAINT)
+	{
+		// Only fetch the value at interval as immediate is too quick/flickers, and give a longer delay when
+		// it goes from sound to no sound.
+		static constexpr float FL_FETCH_INTERVAL = 0.1f;
+		static constexpr float FL_SILENCE_INTERVAL = 0.4f;
+		const float flNowSpeakingVol = pVoiceTweak->GetControlFloat(SpeakingVolume);
+		if ((flNowSpeakingVol > 0.0f && pAudio->flLastFetchInterval + FL_FETCH_INTERVAL < gpGlobals->curtime) ||
+								(flNowSpeakingVol == 0.0f && pAudio->flSpeakingVol > 0.0f &&
+								 pAudio->flLastFetchInterval + FL_SILENCE_INTERVAL < gpGlobals->curtime))
+		{
+			pAudio->flSpeakingVol = flNowSpeakingVol;
+			pAudio->flLastFetchInterval = gpGlobals->curtime;
+		}
+		surface()->DrawSetColor(COLOR_NEOPANELMICTEST);
+		NeoUI::GCtxDrawFilledRectXtoX(g_uiCtx.iWgXPos, 0,
+									  g_uiCtx.iWgXPos + (pAudio->flSpeakingVol * (g_uiCtx.dPanel.wide - g_uiCtx.iWgXPos)), g_uiCtx.iRowTall);
+		surface()->DrawSetColor(COLOR_TRANSPARENT);
+		g_uiCtx.selectBgColor = COLOR_TRANSPARENT;
+	}
 	if (NeoUI::Button(L"Microphone Tester",
 					  bTweaking ? L"Stop testing" : L"Start testing").bPressed)
 	{
 		bTweaking ? pVoiceTweak->EndVoiceTweakMode() : (void)pVoiceTweak->StartVoiceTweakMode();
+		pAudio->flSpeakingVol = 0.0f;
+		pAudio->flLastFetchInterval = 0.0f;
 	}
 	if (bTweaking && g_uiCtx.eMode == NeoUI::MODE_PAINT)
 	{
-		const float flSpeakingVol = pVoiceTweak->GetControlFloat(SpeakingVolume);
-		surface()->DrawSetColor(COLOR_NEOPANELMICTEST);
-		NeoUI::GCtxDrawFilledRectXtoX(0, flSpeakingVol * g_uiCtx.dPanel.wide);
-		g_uiCtx.iLayoutY += g_uiCtx.iRowTall;
 		surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
+		g_uiCtx.selectBgColor = COLOR_NEOPANELSELECTBG;
 	}
 }
 
@@ -1411,6 +1428,7 @@ void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 	{
 		m_ns.bBack = false;
 		m_state = (m_ns.bModified) ? STATE_CONFIRMSETTINGS : STATE_ROOT;
+		engine->GetVoiceTweakAPI()->EndVoiceTweakMode();
 	}
 	else if (m_ns.iNextBinding >= 0)
 	{

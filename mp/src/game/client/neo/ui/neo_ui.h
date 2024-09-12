@@ -116,6 +116,7 @@ struct Context
 	ButtonCode_t eCode;
 	wchar_t unichar;
 	Color bgColor;
+	Color selectBgColor;
 
 	// Mouse handling
 	int iMouseAbsX;

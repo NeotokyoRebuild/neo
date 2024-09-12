@@ -133,6 +133,10 @@ struct NeoSettings
 		bool bVoiceEnabled;
 		float flVolVoiceRecv;
 		bool bMicBoost;
+
+		// Microphone tweaking
+		float flSpeakingVol;
+		float flLastFetchInterval;
 	};
 
 	struct Video
