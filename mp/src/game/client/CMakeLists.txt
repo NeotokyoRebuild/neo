@@ -1510,6 +1510,10 @@ target_sources_grouped(
     FILES
     neo/ui/neo_root.cpp
     neo/ui/neo_root.h
+    neo/ui/neo_root_serverbrowser.cpp
+    neo/ui/neo_root_serverbrowser.h
+    neo/ui/neo_root_settings.cpp
+    neo/ui/neo_root_settings.h
     neo/ui/neo_ui.cpp
     neo/ui/neo_ui.h
     neo/ui/IOverrideInterface.h
