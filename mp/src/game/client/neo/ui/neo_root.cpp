@@ -293,6 +293,12 @@ void CNeoRoot::OnMousePressed(vgui::MouseCode code)
 	OnMainLoop(NeoUI::MODE_MOUSEPRESSED);
 }
 
+void CNeoRoot::OnMouseReleased(vgui::MouseCode code)
+{
+	g_uiCtx.eCode = code;
+	OnMainLoop(NeoUI::MODE_MOUSERELEASED);
+}
+
 void CNeoRoot::OnMouseDoublePressed(vgui::MouseCode code)
 {
 	g_uiCtx.eCode = code;

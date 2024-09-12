@@ -50,6 +50,7 @@ enum Mode
 {
 	MODE_PAINT = 0,
 	MODE_MOUSEPRESSED,
+	MODE_MOUSERELEASED,
 	MODE_MOUSEDOUBLEPRESSED,
 	MODE_MOUSEMOVED,
 	MODE_MOUSEWHEELED,
@@ -164,6 +165,7 @@ struct Context
 	bool bValueEdited;
 
 	MousePos eMousePos; // label | prev | center | next split
+	MousePos eMousePressedStart;
 
 	const char *pSzCurCtxName;
 	CUtlHashtable<const wchar_t *, SliderInfo> htSliders;

@@ -109,6 +109,9 @@ void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode, const wchar_t *w
 			g_pCtx->iHot = g_pCtx->iActive;
 		}
 		break;
+	case MODE_MOUSERELEASED:
+		g_pCtx->eMousePressedStart = MOUSEPOS_NONE;
+		break;
 	case MODE_PAINT:
 		for (int i = 0; i < FONT__TOTAL; ++i)
 		{
@@ -754,6 +757,7 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 						g_pCtx->iActive = g_pCtx->iWidget;
 						g_pCtx->iActiveSection = g_pCtx->iSection;
 					}
+					g_pCtx->eMousePressedStart = g_pCtx->eMousePos;
 				}
 			}
 		}
@@ -808,7 +812,7 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 		break;
 		case MODE_MOUSEMOVED:
 		{
-			if (wdgState.bActive && input()->IsMouseDown(MOUSE_LEFT))
+			if (wdgState.bActive && input()->IsMouseDown(MOUSE_LEFT) && g_pCtx->eMousePressedStart == MOUSEPOS_CENTER)
 			{
 				const int iBase = g_pCtx->iRowTall + g_pCtx->iWgXPos;
 				const float flPerc = static_cast<float>(g_pCtx->iMouseRelX - iBase) / static_cast<float>(g_pCtx->dPanel.wide - g_pCtx->iRowTall - iBase);
