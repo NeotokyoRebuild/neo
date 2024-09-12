@@ -72,6 +72,27 @@ enum QualityEnum
 	QUALITY_VERYHIGH,
 };
 
+enum ESpeaker
+{
+	SPEAKER_AUTO = -1,
+	SPEAKER_HEADPHONES = 0,
+	SPEAKER_STEREO = 2,
+	SPEAKER_QUAD = 4,
+	SPEAKER_SURROUND_5_1 = 5,
+	SPEAKER_SURROUND_7_1 = 7,
+};
+
+static const wchar_t *SPEAKER_CFG_LABELS[] = {
+	L"Auto",
+	L"Headphones",
+	L"2 Speakers (Stereo)",
+#ifndef LINUX
+	L"4 Speakers (Quadraphonic)",
+	L"5.1 Surround",
+	L"7.1 Surround",
+#endif
+};
+
 ConCommand neo_toggleconsole("neo_toggleconsole", NeoToggleconsole);
 }
 
@@ -155,13 +176,15 @@ void CNeoServerList::UpdateFilteredList()
 		bool bLeft, bRight;
 		switch (gsCtx.col)
 		{
-		break; case GSIW_LOCKED:
+		case GSIW_LOCKED:
 			bLeft = pGsiLeft->m_bPassword;
 			bRight = pGsiRight->m_bPassword;
-		break; case GSIW_VAC:
+			break;
+		case GSIW_VAC:
 			bLeft = pGsiLeft->m_bSecure;
 			bRight = pGsiRight->m_bSecure;
-		break; case GSIW_MAP:
+			break;
+		case GSIW_MAP:
 		{
 			const char *szMapLeft = pGsiLeft->m_szMap;
 			const char *szMapRight = pGsiRight->m_szMap;
@@ -170,8 +193,9 @@ void CNeoServerList::UpdateFilteredList()
 				szLeft = szMapLeft;
 				szRight = szMapRight;
 			}
+			break;
 		}
-		break; case GSIW_PLAYERS:
+		case GSIW_PLAYERS:
 			iLeft = pGsiLeft->m_nPlayers;
 			iRight = pGsiRight->m_nPlayers;
 			if (iLeft == iRight)
@@ -179,11 +203,15 @@ void CNeoServerList::UpdateFilteredList()
 				iLeft = pGsiLeft->m_nMaxPlayers;
 				iRight = pGsiRight->m_nMaxPlayers;
 			}
-		break; case GSIW_PING:
+			break;
+		case GSIW_PING:
 			iLeft = pGsiLeft->m_nPing;
 			iRight = pGsiRight->m_nPing;
-		break; case GSIW_NAME: default: break;
+			break;
+		case GSIW_NAME:
+		default:
 			// no-op, already assigned (default)
+			break;
 		}
 
 		switch (gsCtx.col)
@@ -436,13 +464,13 @@ void NeoSettingsRestore(NeoSettings *ns)
 		pAudio->iSoundSetup = 0;
 		switch (cvr->snd_surround_speakers.GetInt())
 		{
-		break; case 0: pAudio->iSoundSetup = 1;
-		break; case 2: pAudio->iSoundSetup = 2;
-	#ifndef LINUX
-		break; case 4: pAudio->iSoundSetup = 3;
-		break; case 5: pAudio->iSoundSetup = 4;
-		break; case 7: pAudio->iSoundSetup = 5;
-	#endif
+		break; case SPEAKER_HEADPHONES:		pAudio->iSoundSetup = 1;
+		break; case SPEAKER_STEREO:			pAudio->iSoundSetup = 2;
+#ifndef LINUX
+		break; case SPEAKER_QUAD:			pAudio->iSoundSetup = 3;
+		break; case SPEAKER_SURROUND_5_1:	pAudio->iSoundSetup = 4;
+		break; case SPEAKER_SURROUND_7_1:	pAudio->iSoundSetup = 5;
+#endif
 		break; default: break;
 		}
 		pAudio->bMuteAudioUnFocus = cvr->snd_mute_losefocus.GetBool();
@@ -458,7 +486,7 @@ void NeoSettingsRestore(NeoSettings *ns)
 		// Input
 		pAudio->bVoiceEnabled = cvr->voice_enable.GetBool();
 		pAudio->flVolVoiceRecv = cvr->voice_scale.GetFloat();
-		pAudio->bMicBoost = (engine->GetVoiceTweakAPI()->GetControlFloat(MicBoost) != 0.0f);
+		pAudio->bMicBoost = (engine->GetVoiceTweakAPI()->GetControlFloat(MicBoost) > 0.0f);
 	}
 	{
 		NeoSettings::Video *pVideo = &ns->video;
@@ -601,9 +629,13 @@ void NeoSettingsSave(const NeoSettings *ns)
 		const NeoSettings::Audio *pAudio = &ns->audio;
 
 		static constexpr int SURROUND_RE_MAP[] = {
-			-1, 0, 2,
+			SPEAKER_AUTO,
+			SPEAKER_HEADPHONES,
+			SPEAKER_STEREO,
 #ifndef LINUX
-			4, 5, 7
+			SPEAKER_QUAD,
+			SPEAKER_SURROUND_5_1,
+			SPEAKER_SURROUND_7_1,
 #endif
 		};
 
@@ -725,13 +757,6 @@ void NeoSettings_Mouse(NeoSettings *ns)
 	NeoUI::RingBoxBool(L"Custom Acceleration", &pMouse->bCustomAccel);
 	NeoUI::Slider(L"Exponent", &pMouse->flExponent, 1.0f, 1.4f, 2, 0.1f);
 }
-
-static const wchar_t *SPEAKER_CFG_LABELS[] = {
-	L"Auto", L"Headphones", L"2 Speakers (Stereo)",
-#ifndef LINUX
-	L"4 Speakers (Quadraphonic)", L"5.1 Surround", L"7.1 Surround",
-#endif
-};
 
 void NeoSettings_Audio(NeoSettings *ns)
 {
@@ -1606,7 +1631,6 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 						NeoUI::GCtxDrawFilledRectXtoX(0, -g_uiCtx.iRowTall, g_uiCtx.dPanel.wide, 0);
 
 						int xPos = 0;
-						const int yPos = g_uiCtx.iYOffset[g_uiCtx.iSection] - g_uiCtx.iRowTall;
 						const int fontStartYPos = g_uiCtx.fonts[g_uiCtx.eFont].iYOffset;
 
 						if (server.m_bPassword)

@@ -6,32 +6,30 @@
 class COverrideInterface : public IOverrideInterface
 {
 private:
-	CNeoRoot *MainMenu;
+	CNeoRoot *MainMenu = nullptr;
  
 public:
-	void Create( vgui::VPANEL parent )
+	void Create(vgui::VPANEL parent) override
 	{
 		// Create immediately
 		MainMenu = new CNeoRoot(parent);
 	}
 
-	vgui::VPANEL GetPanel( void )
+	vgui::VPANEL GetPanel() override
 	{
-		if ( !MainMenu )
-			return 0U;
+		if (!MainMenu) return 0U;
 		return MainMenu->GetVPanel();
 	}
  
-	void Destroy( void )
+	void Destroy() override
 	{
-		if ( MainMenu )
+		if (MainMenu)
 		{
-			MainMenu->SetParent( (vgui::Panel *)NULL );
+			MainMenu->SetParent(nullptr);
 			delete MainMenu;
 		}
 	}
- 
 };
  
 static COverrideInterface g_SMenu;
-IOverrideInterface *OverrideUI = ( IOverrideInterface * )&g_SMenu;
+IOverrideInterface *OverrideUI = (IOverrideInterface *)&g_SMenu;

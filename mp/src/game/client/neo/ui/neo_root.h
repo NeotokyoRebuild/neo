@@ -374,7 +374,7 @@ public:
 
 	int m_iSelectedServer = -1; // TODO: Select kept with sorting
 	int m_iServerBrowserTab = 0;
-	CNeoServerList m_serverBrowser[GS__TOTAL]; // TODO: Rename class
+	CNeoServerList m_serverBrowser[GS__TOTAL];
 	CNeoServerPlayers m_serverPlayers;
 	ServerBrowserFilters m_sbFilters;
 	bool m_bSBFiltModified = false;
