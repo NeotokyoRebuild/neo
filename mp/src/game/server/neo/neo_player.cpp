@@ -2491,21 +2491,22 @@ void CNEO_Player::GiveDefaultItems(void)
 		GiveNamedItem("weapon_knife");
 		GiveNamedItem("weapon_milso");
 		if (this->m_iXP >= 4) { GiveDet(this); }
-		Weapon_Switch(Weapon_OwnsThisType("weapon_milso"));
+		engine->ClientCommand(edict(), "slot2");
 		break;
 	case NEO_CLASS_ASSAULT:
 		GiveNamedItem("weapon_knife");
 		GiveNamedItem("weapon_tachi");
 		GiveNamedItem("weapon_grenade");
-		Weapon_Switch(Weapon_OwnsThisType("weapon_tachi"));
+		engine->ClientCommand(edict(), "slot2");
 		break;
 	case NEO_CLASS_SUPPORT:
 		GiveNamedItem("weapon_kyla");
 		GiveNamedItem("weapon_smokegrenade");
-		Weapon_Switch(Weapon_OwnsThisType("weapon_kyla"));
+		engine->ClientCommand(edict(), "slot2");
 		break;
 	default:
 		GiveNamedItem("weapon_knife");
+		engine->ClientCommand(edict(), "slot3");
 		break;
 	}
 }
@@ -2558,7 +2559,7 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 				RemoveAllItems(false);
 				GiveDefaultItems();
 				pEnt->Touch(this);
-				Weapon_Switch(Weapon_OwnsThisType(szWep));
+				engine->ClientCommand(edict(), "slot1");
 			}
 		}
 		else
@@ -2589,7 +2590,7 @@ void CNEO_Player::GiveAllItems(void)
 
 	GiveNamedItem("weapon_tachi");
 	GiveNamedItem("weapon_zr68s");
-	Weapon_Switch(Weapon_OwnsThisType("weapon_zr68s"));
+	engine->ClientCommand(edict(), "slot1");
 }
 
 // Purpose: For Neotokyo, we could use this engine method
