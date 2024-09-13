@@ -35,6 +35,7 @@ public:
 	virtual void Drop(const Vector &vecVelocity) override;
 	virtual void ItemHolsterFrame(void);
 	virtual void OnPickedUp(CBaseCombatCharacter *pNewOwner);
+	virtual int	ObjectCaps(void) { return BaseClass::ObjectCaps() | FCAP_IMPULSE_USE;};
 	void HandleGhostUnequip(void);
 
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { return NEO_WEP_GHOST; }
@@ -45,6 +46,11 @@ public:
 	bool IsPosWithinViewDistance(const Vector &otherPlayerPos);
 	bool IsPosWithinViewDistance(const Vector &otherPlayerPos, float &dist);
 	float DistanceToPos(const Vector& otherPlayerPos);
+
+#ifdef GAME_DLL
+	int UpdateTransmitState() override;
+	int ShouldTransmit(const CCheckTransmitInfo *pInfo) override;
+#endif
 
 #if _DEBUG
 	virtual void SUB_Remove(void) override

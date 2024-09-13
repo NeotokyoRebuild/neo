@@ -82,6 +82,12 @@ public:
 #ifdef GAME_DLL
 class CNEOGhostCapturePoint;
 class CNEO_Player;
+class CWeaponGhost;
+
+extern ConVar neo_sv_mirror_teamdamage_multiplier;
+extern ConVar neo_sv_mirror_teamdamage_duration;
+extern ConVar neo_sv_mirror_teamdamage_immunity;
+extern ConVar neo_sv_teamdamage_kick;
 #else
 class C_NEO_Player;
 #endif
@@ -176,7 +182,11 @@ public:
 
 	virtual bool CheckGameOver(void) OVERRIDE;
 
-	float GetRoundRemainingTime();
+	float GetRoundRemainingTime() const;
+	float GetRoundAccumulatedTime() const;
+#ifdef GAME_DLL
+	float MirrorDamageMultiplier() const;
+#endif
 
 	virtual void PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info) OVERRIDE;
 
@@ -219,8 +229,10 @@ public:
 		NEO_VICTORY_STALEMATE // Not actually a victory
 	};
 
-	int ghosterTeam() const { return m_iGhosterTeam; }
+	int GetGhosterTeam() const { return m_iGhosterTeam; }
 	int GetGhosterPlayer() const { return m_iGhosterPlayer; }
+	bool GhostExists() const { return m_bGhostExists; }
+	Vector GetGhostPos() const { return m_vecGhostMarkerPos; }
 
 	int GetOpposingTeam(const int team) const
 	{
@@ -261,12 +273,21 @@ private:
 	void ResetMapSessionCommon();
 
 #ifdef GAME_DLL
+	void SpawnTheGhost();
+
 	CUtlVector<int> m_pGhostCaps;
+	CWeaponGhost *m_pGhost = nullptr;
+	float m_flPrevThinkKick = 0.0f;
+	float m_flPrevThinkMirrorDmg = 0.0f;
 #endif
 	CNetworkVar(int, m_nRoundStatus); // NEO TODO (Rain): probably don't need to network this
 	CNetworkVar(int, m_iRoundNumber);
+
+	// Ghost networked variables
 	CNetworkVar(int, m_iGhosterTeam);
 	CNetworkVar(int, m_iGhosterPlayer);
+	CNetworkVector(m_vecGhostMarkerPos);
+	CNetworkVar(bool, m_bGhostExists);
 
 	CNetworkVar(float, m_flNeoRoundStartTime);
 	CNetworkVar(float, m_flNeoNextRoundStartTime);

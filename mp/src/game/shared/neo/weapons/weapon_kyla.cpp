@@ -50,8 +50,7 @@ void CWeaponKyla::PrimaryAttack(void)
 		}
 		else
 		{
-			WeaponSound(EMPTY);
-			m_flNextPrimaryAttack = gpGlobals->curtime + GetFastestDryRefireTime();
+			DryFire();
 		}
 
 		return;
@@ -112,11 +111,6 @@ void CWeaponKyla::PrimaryAttack(void)
 		// HEV suit - indicate out of ammo condition
 		pPlayer->SetSuitUpdate("!HEV_AMO0", FALSE, 0);
 	}
-}
 
-void CWeaponKyla::ItemPostFrame()
-{
-	ProcessAnimationEvents();
-
-	BaseClass::ItemPostFrame();
+	m_flAccuracyPenalty = min(GetMaxAccuracyPenalty(), m_flAccuracyPenalty + GetAccuracyPenalty());
 }

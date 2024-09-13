@@ -52,6 +52,19 @@ ConVar neo_sv_build_integrity_check_allow_debug("neo_sv_build_integrity_check_al
 									"If enabled, when the server checks the client hashes, it'll also allow debug"
 									" builds which has a given special bit to bypass the check.",
 									true, 0.0f, true, 1.0f);
+
+#ifdef DEBUG
+static constexpr char TEAMDMG_MULTI[] = "0";
+#else
+static constexpr char TEAMDMG_MULTI[] = "2";
+#endif
+ConVar neo_sv_mirror_teamdamage_multiplier("neo_sv_mirror_teamdamage_multiplier", TEAMDMG_MULTI, FCVAR_REPLICATED, "The damage multiplier given to the friendly-firing individual. Set value to 0 to disable mirror team damage.", true, 0.0f, true, 100.0f);
+ConVar neo_sv_mirror_teamdamage_duration("neo_sv_mirror_teamdamage_duration", "7", FCVAR_REPLICATED, "How long in seconds the mirror damage is active for the start of each round. Set to 0 for the entire round.", true, 0.0f, true, 10000.0f);
+ConVar neo_sv_mirror_teamdamage_immunity("neo_sv_mirror_teamdamage_immunity", "1", FCVAR_REPLICATED, "If enabled, the victim will not take damage from a teammate during the mirror team damage duration.", true, 0.0f, true, 1.0f);
+
+ConVar neo_sv_teamdamage_kick("neo_sv_teamdamage_kick", "0", FCVAR_REPLICATED, "If enabled, the friendly-firing individual will be kicked if damage is received during the neo_sv_mirror_teamdamage_duration, exceeds the neo_sv_teamdamage_kick_hp value, or executes a teammate.", true, 0.0f, true, 1.0f);
+ConVar neo_sv_teamdamage_kick_hp("neo_sv_teamdamage_kick_hp", "900", FCVAR_REPLICATED, "The threshold for the amount of HP damage inflicted on teammates before the client is kicked.", true, 100.0f, false, 0.0f);
+ConVar neo_sv_teamdamage_kick_kills("neo_sv_teamdamage_kick_kills", "6", FCVAR_REPLICATED, "The threshold for the amount of team kills before the client is kicked.", true, 1.0f, false, 0.0f);
 #endif
 
 REGISTER_GAMERULES_CLASS( CNEORules );
@@ -65,6 +78,8 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropInt(RECVINFO(m_iRoundNumber)),
 	RecvPropInt(RECVINFO(m_iGhosterTeam)),
 	RecvPropInt(RECVINFO(m_iGhosterPlayer)),
+	RecvPropBool(RECVINFO(m_bGhostExists)),
+	RecvPropVector(RECVINFO(m_vecGhostMarkerPos)),
 #else
 	SendPropFloat(SENDINFO(m_flNeoNextRoundStartTime)),
 	SendPropFloat(SENDINFO(m_flNeoRoundStartTime)),
@@ -72,6 +87,8 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropInt(SENDINFO(m_iRoundNumber)),
 	SendPropInt(SENDINFO(m_iGhosterTeam)),
 	SendPropInt(SENDINFO(m_iGhosterPlayer)),
+	SendPropBool(SENDINFO(m_bGhostExists)),
+	SendPropVector(SENDINFO(m_vecGhostMarkerPos), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT),
 #endif
 END_NETWORK_TABLE()
 
@@ -440,10 +457,26 @@ void CNEORules::ResetMapSessionCommon()
 	m_iRoundNumber = 0;
 	m_iGhosterTeam = TEAM_UNASSIGNED;
 	m_iGhosterPlayer = 0;
+	m_bGhostExists = false;
+	m_vecGhostMarkerPos = vec3_origin;
 	m_flNeoRoundStartTime = 0.0f;
 	m_flNeoNextRoundStartTime = 0.0f;
 #ifdef GAME_DLL
 	m_pRestoredInfos.Purge();
+
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		auto *pPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(i));
+		if (pPlayer)
+		{
+			pPlayer->m_iTeamDamageInflicted = 0;
+			pPlayer->m_iTeamKillsInflicted = 0;
+			pPlayer->m_bIsPendingTKKick = false;
+			pPlayer->m_bKilledInflicted = false;
+		}
+	}
+	m_flPrevThinkKick = 0.0f;
+	m_flPrevThinkMirrorDmg = 0.0f;
 #endif
 }
 
@@ -529,6 +562,51 @@ void CNEORules::Think(void)
 	BaseClass::Think();
 
 #ifdef GAME_DLL
+	if (MirrorDamageMultiplier() > 0.0f &&
+			gpGlobals->curtime > (m_flPrevThinkMirrorDmg + 0.25f))
+	{
+		for (int i = 1; i <= gpGlobals->maxClients; ++i)
+		{
+			auto player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
+			if (player && player->IsAlive() && player->m_bKilledInflicted && player->m_iHealth <= 0)
+			{
+				player->CommitSuicide(false, true);
+			}
+		}
+
+		m_flPrevThinkMirrorDmg = gpGlobals->curtime;
+	}
+
+	if (neo_sv_teamdamage_kick.GetBool() && m_nRoundStatus == NeoRoundStatus::RoundLive &&
+			gpGlobals->curtime > (m_flPrevThinkKick + 0.5f))
+	{
+		const int iThresKickHp = neo_sv_teamdamage_kick_hp.GetInt();
+		const int iThresKickKills = neo_sv_teamdamage_kick_kills.GetInt();
+
+		// Separate command from check so kick not affected by player index
+		int userIDsToKick[MAX_PLAYERS + 1] = {};
+		int userIDsToKickSize = 0;
+		for (int i = 1; i <= gpGlobals->maxClients; ++i)
+		{
+			auto player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
+			if (player && (player->m_iTeamDamageInflicted >= iThresKickHp ||
+						   player->m_iTeamKillsInflicted >= iThresKickKills) &&
+					!player->m_bIsPendingTKKick)
+			{
+				userIDsToKick[userIDsToKickSize++] = player->GetUserID();
+				player->m_bIsPendingTKKick = true;
+			}
+		}
+
+		for (int i = 0; i < userIDsToKickSize; ++i)
+		{
+			engine->ServerCommand(UTIL_VarArgs("kickid %d \"%s\"\n", userIDsToKick[i],
+											   "Too much friendly-fire damage inflicted."));
+		}
+
+		m_flPrevThinkKick = gpGlobals->curtime;
+	}
+
 	if (IsRoundOver())
 	{
 		// If the next round was not scheduled yet
@@ -536,6 +614,10 @@ void CNEORules::Think(void)
 		{
 			m_flNeoNextRoundStartTime = gpGlobals->curtime + mp_chattime.GetFloat();
 			DevMsg("Round is over\n");
+
+			m_pGhost = nullptr;
+			m_iGhosterTeam = TEAM_UNASSIGNED;
+			m_iGhosterPlayer = 0;
 		}
 		// Else if it's time to start the next round
 		else if (gpGlobals->curtime >= m_flNeoNextRoundStartTime)
@@ -551,71 +633,83 @@ void CNEORules::Think(void)
 		SetWinningTeam(TEAM_SPECTATOR, NEO_VICTORY_STALEMATE, false, false, true, false);
 	}
 
-	// Update ghosting team info
-	int nextGhosterTeam = TEAM_UNASSIGNED;
-	int nextGhosterPlayer = 0;
-	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	if (m_pGhost)
 	{
-		auto player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
-		if (player && player->IsCarryingGhost())
+		// Update ghosting team info
+		int nextGhosterTeam = TEAM_UNASSIGNED;
+		int nextGhosterPlayerIdx = 0;
+		CNEO_Player *pGhosterPlayer = static_cast<CNEO_Player *>(m_pGhost->GetOwner());
+		if (pGhosterPlayer)
 		{
-			nextGhosterTeam = player->GetTeamNumber();
-			nextGhosterPlayer = i;
+			nextGhosterTeam = pGhosterPlayer->GetTeamNumber();
+			nextGhosterPlayerIdx = pGhosterPlayer->entindex();
 			Assert(nextGhosterTeam == TEAM_JINRAI || nextGhosterTeam == TEAM_NSF);
-			break;
 		}
-	}
-	m_iGhosterTeam = nextGhosterTeam;
-	m_iGhosterPlayer = nextGhosterPlayer;
+		m_iGhosterTeam = nextGhosterTeam;
+		m_iGhosterPlayer = nextGhosterPlayerIdx;
 
-	// Check if the ghost was capped during this Think
-	int captorTeam, captorClient;
-	for (int i = 0; i < m_pGhostCaps.Count(); i++)
-	{
-		auto pGhostCap = dynamic_cast<CNEOGhostCapturePoint*>(UTIL_EntityByIndex(m_pGhostCaps[i]));
-		if (!pGhostCap)
+		Assert(UTIL_IsValidEntity(m_pGhost));
+
+		if (m_pGhost->GetAbsOrigin().IsValid())
+		{
+			// Someone's carrying it, center at their body
+			m_vecGhostMarkerPos = (pGhosterPlayer && (nextGhosterTeam == TEAM_JINRAI || nextGhosterTeam == TEAM_NSF)) ?
+						pGhosterPlayer->EyePosition() : m_pGhost->GetAbsOrigin();
+		}
+		else
 		{
 			Assert(false);
-			continue;
 		}
 
-		// If a ghost was captured
-		if (pGhostCap->IsGhostCaptured(captorTeam, captorClient))
+		// Check if the ghost was capped during this Think
+		int captorTeam, captorClient;
+		for (int i = 0; i < m_pGhostCaps.Count(); i++)
 		{
-			// Turn off all capzones
-			for (int i = 0; i < m_pGhostCaps.Count(); i++)
+			auto pGhostCap = dynamic_cast<CNEOGhostCapturePoint*>(UTIL_EntityByIndex(m_pGhostCaps[i]));
+			if (!pGhostCap)
 			{
-				auto pGhostCap = dynamic_cast<CNEOGhostCapturePoint*>(UTIL_EntityByIndex(m_pGhostCaps[i]));
-				pGhostCap->SetActive(false);
+				Assert(false);
+				continue;
 			}
 
-			// And then announce team victory
-			SetWinningTeam(captorTeam, NEO_VICTORY_GHOST_CAPTURE, false, true, false, false);
-
-			for (int i = 1; i <= gpGlobals->maxClients; i++)
+			// If a ghost was captured
+			if (pGhostCap->IsGhostCaptured(captorTeam, captorClient))
 			{
-				if (i == captorClient)
+				// Turn off all capzones
+				for (int i = 0; i < m_pGhostCaps.Count(); i++)
 				{
-					AwardRankUp(i);
-					continue;
+					auto pGhostCap = dynamic_cast<CNEOGhostCapturePoint*>(UTIL_EntityByIndex(m_pGhostCaps[i]));
+					pGhostCap->SetActive(false);
 				}
 
-				auto player = UTIL_PlayerByIndex(i);
-				if (player && player->GetTeamNumber() == captorTeam)
+				// And then announce team victory
+				SetWinningTeam(captorTeam, NEO_VICTORY_GHOST_CAPTURE, false, true, false, false);
+
+				for (int i = 1; i <= gpGlobals->maxClients; i++)
 				{
-					if (player->IsAlive())
+					if (i == captorClient)
 					{
 						AwardRankUp(i);
+						continue;
 					}
-					else
+
+					auto player = UTIL_PlayerByIndex(i);
+					if (player && player->GetTeamNumber() == captorTeam)
 					{
-						auto* neoPlayer = static_cast<CNEO_Player*>(player);
-						neoPlayer->m_iXP.GetForModify()++;
+						if (player->IsAlive())
+						{
+							AwardRankUp(i);
+						}
+						else
+						{
+							auto* neoPlayer = static_cast<CNEO_Player*>(player);
+							neoPlayer->m_iXP.GetForModify()++;
+						}
 					}
 				}
-			}
 
-			break;
+				break;
+			}
 		}
 	}
 
@@ -695,7 +789,7 @@ void CNEORules::AwardRankUp(CNEO_Player *pClient)
 }
 
 // Return remaining time in seconds. Zero means there is no time limit.
-float CNEORules::GetRoundRemainingTime()
+float CNEORules::GetRoundRemainingTime() const
 {
 	if ((m_nRoundStatus != NeoRoundStatus::Warmup && neo_round_timelimit.GetFloat() == 0) ||
 			m_nRoundStatus == NeoRoundStatus::Idle)
@@ -706,6 +800,25 @@ float CNEORules::GetRoundRemainingTime()
 	const float roundTimeLimit = (m_nRoundStatus == NeoRoundStatus::Warmup) ? (mp_neo_warmup_round_time.GetFloat()) : (neo_round_timelimit.GetFloat() * 60.0f);
 	return (m_flNeoRoundStartTime + roundTimeLimit) - gpGlobals->curtime;
 }
+
+float CNEORules::GetRoundAccumulatedTime() const
+{
+	return gpGlobals->curtime - (m_flNeoRoundStartTime + mp_neo_preround_freeze_time.GetFloat());
+}
+
+#ifdef GAME_DLL
+float CNEORules::MirrorDamageMultiplier() const
+{
+	if (m_nRoundStatus != NeoRoundStatus::RoundLive)
+	{
+		return 0.0f;
+	}
+	const float flAccTime = GetRoundAccumulatedTime();
+	const float flMirrorMult = neo_sv_mirror_teamdamage_multiplier.GetFloat();
+	const float flMirrorDur = neo_sv_mirror_teamdamage_duration.GetFloat();
+	return (flMirrorDur == 0.0f || (0.0f <= flAccTime && flAccTime < flMirrorDur)) ? flMirrorMult : 0.0f;
+}
+#endif
 
 void CNEORules::FireGameEvent(IGameEvent* event)
 {
@@ -724,19 +837,27 @@ void CNEORules::FireGameEvent(IGameEvent* event)
 
 #ifdef GAME_DLL
 // Purpose: Spawns one ghost at a randomly chosen Neo ghost spawn point.
-static inline void SpawnTheGhost()
+void CNEORules::SpawnTheGhost()
 {
 	CBaseEntity* pEnt;
 
 	// Get the amount of ghost spawns available to us
 	int numGhostSpawns = 0;
+	m_pGhost = nullptr;
+	m_bGhostExists = false;
+	m_iGhosterTeam = TEAM_UNASSIGNED;
+	m_iGhosterPlayer = 0;
 
 	pEnt = gEntList.FirstEnt();
 	while (pEnt)
 	{
-		if (dynamic_cast<CNEOGhostSpawnPoint*>(pEnt))
+		if (dynamic_cast<CNEOGhostSpawnPoint *>(pEnt))
 		{
 			numGhostSpawns++;
+		}
+		else if (auto *ghost = dynamic_cast<CWeaponGhost *>(pEnt))
+		{
+			m_pGhost = ghost;
 		}
 
 		pEnt = gEntList.NextEnt(pEnt);
@@ -745,69 +866,40 @@ static inline void SpawnTheGhost()
 	// No ghost spawns and this map isn't named "_ctg". Probably not a CTG map.
 	if (numGhostSpawns == 0 && (V_stristr(GameRules()->MapName(), "_ctg") == 0))
 	{
+		m_pGhost = nullptr;
 		return;
 	}
 
-	static int ghostEdict = -1;
-
-	CWeaponGhost *ghost = dynamic_cast<CWeaponGhost*>(UTIL_EntityByIndex(ghostEdict));
-
 	bool spawnedGhostNow = false;
-
-	// If we couldn't cast to ghost from existing edict
-	if (!ghost)
+	if (!m_pGhost)
 	{
-		pEnt = gEntList.FirstEnt();
-		while (pEnt)
+		m_pGhost = dynamic_cast<CWeaponGhost *>(CreateEntityByName("weapon_ghost", -1));
+		if (!m_pGhost)
 		{
-			auto ghostTest = dynamic_cast<CWeaponGhost*>(pEnt);
-
-			if (ghostTest)
-			{
-				ghost = ghostTest;
-				break;
-			}
-
-			pEnt = gEntList.NextEnt(pEnt);
+			Assert(false);
+			Warning("Failed to spawn a new ghost\n");
+			return;
 		}
 
-		// If none of the entities were castable to a ghost
-		if (!ghost)
-		{
-			ghost = dynamic_cast<CWeaponGhost*>(CreateEntityByName("weapon_ghost", -1));
-
-			if (!ghost)
-			{
-				Assert(false);
-				Warning("Failed to spawn a new ghost\n");
-				return;
-			}
-
-			spawnedGhostNow = true;
-		}
-	}
-
-	if (spawnedGhostNow)
-	{
-		int dispatchRes = DispatchSpawn(ghost);
+		const int dispatchRes = DispatchSpawn(m_pGhost);
 		if (dispatchRes != 0)
 		{
 			Assert(false);
 			return;
 		}
 
-		ghostEdict = ghost->edict()->m_EdictIndex;
-		ghost->NetworkStateChanged();
+		m_pGhost->NetworkStateChanged();
+		spawnedGhostNow = true;
 	}
+	m_bGhostExists = true;
 
-	Assert(UTIL_IsValidEntity(ghost));
-	Assert(ghostEdict == ghost->edict()->m_EdictIndex);
+	Assert(UTIL_IsValidEntity(m_pGhost));
 
 	// We didn't have any spawns, spawn ghost at origin
 	if (numGhostSpawns == 0)
 	{
 		Warning("No ghost spawns found! Spawning ghost at map origin, instead.\n");
-		ghost->SetAbsOrigin(vec3_origin);
+		m_pGhost->SetAbsOrigin(vec3_origin);
 	}
 	else
 	{
@@ -825,22 +917,22 @@ static inline void SpawnTheGhost()
 			{
 				if (ghostSpawnIteration++ == desiredSpawn)
 				{
-					if (ghost->GetOwner())
+					if (m_pGhost->GetOwner())
 					{
 						Assert(false);
-						ghost->GetOwner()->Weapon_Detach(ghost);
+						m_pGhost->GetOwner()->Weapon_Detach(m_pGhost);
 					}
 
 					if (!ghostSpawn->GetAbsOrigin().IsValid())
 					{
-						ghost->SetAbsOrigin(vec3_origin);
+						m_pGhost->SetAbsOrigin(vec3_origin);
 						Warning("Failed to get ghost spawn coords; spawning ghost at map origin instead!\n");
 						Assert(false);
 					}
 					else
 					{
-						ghost->SetAbsOrigin(ghostSpawn->GetAbsOrigin());
-						ghost->Drop(Vector{0.0f, 0.0f, 0.0f});
+						m_pGhost->SetAbsOrigin(ghostSpawn->GetAbsOrigin());
+						m_pGhost->Drop(Vector{0.0f, 0.0f, 0.0f});
 					}
 
 					break;
@@ -851,20 +943,11 @@ static inline void SpawnTheGhost()
 		}
 	}
 
-	if (spawnedGhostNow)
-	{
-		DevMsg("Spawned ghost at coords:\n\t%.1f %.1f %.1f\n",
-			ghost->GetAbsOrigin().x,
-			ghost->GetAbsOrigin().y,
-			ghost->GetAbsOrigin().z);
-	}
-	else
-	{
-		DevMsg("Moved ghost to coords:\n\t%.1f %.1f %.1f\n",
-			ghost->GetAbsOrigin().x,
-			ghost->GetAbsOrigin().y,
-			ghost->GetAbsOrigin().z);
-	}
+	DevMsg("%s ghost at coords:\n\t%.1f %.1f %.1f\n",
+		   spawnedGhostNow ? "Spawned" : "Moved",
+		   m_pGhost->GetAbsOrigin().x,
+		   m_pGhost->GetAbsOrigin().y,
+		   m_pGhost->GetAbsOrigin().z);
 }
 
 void CNEORules::StartNextRound()
@@ -937,6 +1020,7 @@ void CNEORules::StartNextRound()
 			continue;
 		}
 
+		pPlayer->m_bKilledInflicted = false;
 		if (pPlayer->GetActiveWeapon())
 		{
 			pPlayer->GetActiveWeapon()->Holster();
@@ -958,11 +1042,16 @@ void CNEORules::StartNextRound()
 		{
 			pPlayer->Reset();
 			pPlayer->m_iXP.Set(0);
+			pPlayer->m_iTeamDamageInflicted = 0;
+			pPlayer->m_iTeamKillsInflicted = 0;
 		}
+		pPlayer->m_bIsPendingTKKick = false;
 
 		pPlayer->SetTestMessageVisible(false);
 	}
 
+	m_flPrevThinkKick = 0.0f;
+	m_flPrevThinkMirrorDmg = 0.0f;
 	m_flIntermissionEndTime = 0;
 	m_flRestartGameTime = 0;
 	m_bCompleteReset = false;
@@ -1762,6 +1851,12 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 		if (attacker->GetTeamNumber() == victim->GetTeamNumber())
 		{
 			attacker->m_iXP.GetForModify() -= 1;
+#ifdef GAME_DLL
+			if (neo_sv_teamdamage_kick.GetBool() && m_nRoundStatus == NeoRoundStatus::RoundLive)
+			{
+				++attacker->m_iTeamKillsInflicted;
+			}
+#endif
 		}
 		// Enemy kill
 		else
@@ -2098,6 +2193,12 @@ bool CNEORules::FPlayerCanRespawn(CBasePlayer* pPlayer)
 	else
 	{
 		Assert(false);
+	}
+
+	// Do not let anyone who tried to team-kill during mirror damage + live round to respawn
+	if (static_cast<CNEO_Player *>(pPlayer)->m_bKilledInflicted)
+	{
+		return false;
 	}
 
 	// Did we make it in time to spawn for this round?

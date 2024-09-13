@@ -38,11 +38,7 @@ public:
 
 	virtual float GetSpeedScale(void) const OVERRIDE { return 1.0; }
 
-	virtual float GetFireRate(void) OVERRIDE { return 0.08f; }
-
 protected:
-	virtual float GetAccuracyPenalty() const { return 0.2f; }
-	virtual float GetMaxAccuracyPenalty() const { return 0.2f; }
 	virtual float GetFastestDryRefireTime() const { return 1.5f; }
 
 private:
