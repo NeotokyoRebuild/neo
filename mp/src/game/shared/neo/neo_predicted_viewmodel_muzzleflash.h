@@ -44,18 +44,10 @@ public:
 
 	void Spawn(void);
 	void Precache(void);
-
-#ifdef GAME_DLL
-	CNetworkVar(bool, m_bActive);
-	CNetworkVar(int, m_iAngleZ);
-	CNetworkVar(int, m_iAngleZIncrement);
-	CNetworkVar(float, m_iModelScale);
-#else
 	bool	m_bActive;
 	int		m_iAngleZ;
 	int		m_iAngleZIncrement;
 	float	m_iModelScale;
-#endif // GAME_DLL
 	float	m_flTimeSwitchOffMuzzleFlash; // If the server can fire a user's weapon (maybe some kind of server triggered weapon cook off or something), this will need to be networked too.
 };
 

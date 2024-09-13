@@ -15,16 +15,8 @@ IMPLEMENT_NETWORKCLASS_ALIASED(NEOPredictedViewModelMuzzleFlash, DT_NEOPredicted
 BEGIN_NETWORK_TABLE(CNEOPredictedViewModelMuzzleFlash, DT_NEOPredictedViewModelMuzzleFlash)
 #ifndef CLIENT_DLL
 SendPropEHandle(SENDINFO_NAME(m_hMoveParent, moveparent)),
-SendPropBool(SENDINFO(m_bActive)),
-SendPropInt(SENDINFO(m_iAngleZ)),
-SendPropInt(SENDINFO(m_iAngleZIncrement)),
-SendPropFloat(SENDINFO(m_iModelScale)),
 #else
 RecvPropInt(RECVINFO_NAME(m_hNetworkMoveParent, moveparent), 0, RecvProxy_IntToMoveParent),
-RecvPropBool(RECVINFO(m_bActive)),
-RecvPropInt(RECVINFO(m_iAngleZ)),
-RecvPropInt(RECVINFO(m_iAngleZIncrement)),
-RecvPropFloat(RECVINFO(m_iModelScale)),
 #endif
 END_NETWORK_TABLE()
 
