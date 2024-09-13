@@ -1775,6 +1775,7 @@ void CNEO_Player::Weapon_DropOnDeath(CBaseCombatWeapon* pWeapon, Vector velocity
 		return;
 	if (!pNeoWeapon->GetWpnData().m_bDropOnDeath)
 		return;
+#if(0) // Remove this #if to enable dropping of live grenades if killed while primed
 
 	// If attack button was held down when player died, drop a live grenade. NEOTODO (Adam) Add delay between pressing an attack button and the pin being fully pulled out. If pin not out when dead do not drop a live grenade
 	if (GetActiveWeapon() == pNeoWeapon && pNeoWeapon->GetNeoWepBits() & NEO_WEP_FRAG_GRENADE) {
@@ -1795,6 +1796,7 @@ void CNEO_Player::Weapon_DropOnDeath(CBaseCombatWeapon* pWeapon, Vector velocity
 			return;
 		}
 	}
+#endif
 	
 	if (pWeapon->IsEffectActive( EF_BONEMERGE ))
 	{
