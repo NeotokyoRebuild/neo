@@ -62,7 +62,7 @@ public:
 	void Operator_HandleAnimEvent(animevent_t *pEvent, CBaseCombatCharacter *pOperator);
 #endif
 
-	void	ThrowGrenade(CBasePlayer *pPlayer, bool isAlive = true);
+	void	ThrowGrenade(CBasePlayer *pPlayer, bool isAlive = true, CBaseEntity *pAttacker = NULL);
 	void	LobGrenade(CBasePlayer *pPlayer);
 	bool	IsPrimed() const { return (m_AttackPaused != 0); }
 

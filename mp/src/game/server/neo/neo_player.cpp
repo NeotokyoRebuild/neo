@@ -1750,7 +1750,7 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 			}
 
 			// Nowhere in particular; just drop it.
-			Weapon_DropOnDeath(pWep, forceVector);
+			Weapon_DropOnDeath(pWep, forceVector, info.GetAttacker());
 		}
 	}
 
@@ -1768,7 +1768,7 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 	BaseClass::Event_Killed(info);
 }
 
-void CNEO_Player::Weapon_DropOnDeath(CBaseCombatWeapon* pWeapon, Vector velocity)
+void CNEO_Player::Weapon_DropOnDeath(CBaseCombatWeapon* pWeapon, Vector velocity, CBaseEntity *pAttacker)
 {
 	CNEOBaseCombatWeapon* pNeoWeapon = static_cast<CNEOBaseCombatWeapon*>(pWeapon);
 	if (!pNeoWeapon)
@@ -1782,12 +1782,8 @@ void CNEO_Player::Weapon_DropOnDeath(CBaseCombatWeapon* pWeapon, Vector velocity
 			((m_nButtons & IN_ATTACK2) && (!(m_afButtonPressed & IN_ATTACK2))))
 		{
 			auto pWeaponFrag = static_cast<CWeaponGrenade*>(pNeoWeapon);
-			pWeaponFrag->ThrowGrenade(this, false);
+			pWeaponFrag->ThrowGrenade(this, false, pAttacker);
 			return;
-		}
-		else
-		{
-			Msg("%i",pNeoWeapon->m_iPrimaryAmmoCount);
 		}
 	}
 	if (GetActiveWeapon() == pNeoWeapon && pNeoWeapon->GetNeoWepBits() & NEO_WEP_SMOKE_GRENADE) {
@@ -1795,12 +1791,8 @@ void CNEO_Player::Weapon_DropOnDeath(CBaseCombatWeapon* pWeapon, Vector velocity
 			((m_nButtons & IN_ATTACK2) && (!(m_afButtonPressed & IN_ATTACK2))))
 		{
 			auto pWeaponSmoke = static_cast<CWeaponSmokeGrenade*>(pNeoWeapon);
-			pWeaponSmoke->ThrowGrenade(this, false);
+			pWeaponSmoke->ThrowGrenade(this, false, pAttacker);
 			return;
-		}
-		else
-		{
-
 		}
 	}
 	

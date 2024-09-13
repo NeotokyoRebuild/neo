@@ -267,7 +267,7 @@ void CWeaponSmokeGrenade::CheckThrowPosition(CBasePlayer* pPlayer, const Vector&
 	}
 }
 
-void CWeaponSmokeGrenade::ThrowGrenade(CBasePlayer* pPlayer, bool isAlive)
+void CWeaponSmokeGrenade::ThrowGrenade(CBasePlayer* pPlayer, bool isAlive, CBaseEntity *pAttacker)
 {
 	if (!sv_neo_infinite_smoke_grenades.GetBool())
 	{
@@ -303,7 +303,7 @@ void CWeaponSmokeGrenade::ThrowGrenade(CBasePlayer* pPlayer, bool isAlive)
 	// z: 600 (constant)
 	// This SDK original impulse line: AngularImpulse(600, random->RandomInt(-1200, 1200), 0)
 
-	CBaseGrenade* pGrenade = NEOSmokegrenade_Create(vecSrc, aThrowDir, vecThrow, AngularImpulse(random->RandomInt(-1200, 1200), 0, 600), pPlayer);
+	CBaseGrenade* pGrenade = NEOSmokegrenade_Create(vecSrc, aThrowDir, vecThrow, AngularImpulse(random->RandomInt(-1200, 1200), 0, 600), ((!(pPlayer->IsAlive()) || !isAlive) && pAttacker) ? pAttacker : pPlayer);
 
 	if (pGrenade)
 	{
