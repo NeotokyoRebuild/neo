@@ -1613,7 +1613,7 @@ void CBaseCombatCharacter::Event_Killed( const CTakeDamageInfo &info )
 	{
 		Weapon_Drop( m_hActiveWeapon );
 	}
-
+	
 	// if flagged to drop a health kit
 	if (HasSpawnFlags(SF_NPC_DROP_HEALTHKIT))
 	{
