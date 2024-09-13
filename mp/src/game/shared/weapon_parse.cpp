@@ -432,7 +432,7 @@ void FileWeaponInfo_t::Parse( KeyValues *pKeyValuesData, const char *szWeaponNam
 	Q_strncpy( szBulletCharacter, pKeyValuesData->GetString("BulletCharacter", "a"), MAX_BULLET_CHARACTER);
 	iAimFOV = pKeyValuesData->GetInt("AimFov", 45);
 	m_flPenetration = pKeyValuesData->GetFloat("Penetration", 0);
-	m_bDropOnDeath = pKeyValuesData->GetFloat("DropOnDeath", 1);
+	m_bDropOnDeath = pKeyValuesData->GetBool("DropOnDeath", true);
 #endif
 
 	bShowUsageHint = ( pKeyValuesData->GetInt( "showusagehint", 0 ) != 0 ) ? true : false;

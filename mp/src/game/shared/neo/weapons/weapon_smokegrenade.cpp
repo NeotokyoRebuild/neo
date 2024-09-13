@@ -267,65 +267,7 @@ void CWeaponSmokeGrenade::CheckThrowPosition(CBasePlayer* pPlayer, const Vector&
 	}
 }
 
-void CWeaponSmokeGrenade::DropLiveGrenade(CBasePlayer* pPlayer, Vector velocity)
-{
-	if (!sv_neo_infinite_smoke_grenades.GetBool())
-	{
-		Assert(HasPrimaryAmmo());
-	}
-
-#ifndef CLIENT_DLL
-	Vector	vecEye = pPlayer->EyePosition();
-	Vector	vForward, vRight;
-
-	pPlayer->EyeVectors(&vForward, &vRight, NULL);
-	Vector vecSrc = vecEye + vForward * 18.0f + vRight * 8.0f;
-	CheckThrowPosition(pPlayer, vecEye, vecSrc);
-	vForward.z += 0.1f;
-
-	// Upwards at 1 + 0.1226 direction sampled from original NT frag spawn event to next tick pos delta.
-	VectorMA(vForward, 0.1226, Vector(0, 0, 1), vForward);
-	Assert(vForward.IsValid());
-
-	Vector vecThrow;
-	pPlayer->GetVelocity(&vecThrow, NULL);
-	vecThrow += vForward;
-	if (VPhysicsGetObject())
-	{
-		vecThrow += velocity * VPhysicsGetObject()->GetInvMass();
-	}
-	else {
-		vecThrow += velocity;
-	}
-	Assert(vecThrow.IsValid());
-
-	// Sampled angular impulses from original NT frags:
-	// x: -584, 630, -1028, 967, -466, -535 (random, seems roughly in the same (-1200, 1200) range)
-	// y: 0 (constant)
-	// z: 600 (constant)
-	// This SDK original impulse line: AngularImpulse(600, random->RandomInt(-1200, 1200), 0)
-
-	CBaseGrenade* pGrenade = NEOSmokegrenade_Create(vecSrc, vec3_angle, vecThrow, AngularImpulse(random->RandomInt(-1200, 1200), 0, 600), pPlayer);
-
-	if (pGrenade)
-	{
-		Assert(pPlayer);
-
-		IPhysicsObject* pPhysicsObject = pGrenade->VPhysicsGetObject();
-		if (pPhysicsObject)
-		{
-			pPhysicsObject->SetVelocity(&vecThrow, NULL);
-		}
-
-		pGrenade->SetDamage(0);
-		pGrenade->SetDamageRadius(0);
-	}
-#endif
-
-	m_bRedraw = true;
-}
-
-void CWeaponSmokeGrenade::ThrowGrenade(CBasePlayer* pPlayer)
+void CWeaponSmokeGrenade::ThrowGrenade(CBasePlayer* pPlayer, bool isAlive)
 {
 	if (!sv_neo_infinite_smoke_grenades.GetBool())
 	{
@@ -351,7 +293,7 @@ void CWeaponSmokeGrenade::ThrowGrenade(CBasePlayer* pPlayer)
 
 	Vector vecThrow;
 	pPlayer->GetVelocity(&vecThrow, NULL);
-	vecThrow += vForward * (pPlayer->IsAlive() ? sv_neo_grenade_throw_intensity.GetFloat() : 1.0f);
+	vecThrow += vForward * ((pPlayer->IsAlive() && isAlive) ? sv_neo_grenade_throw_intensity.GetFloat() : 1.0f);
 	Assert(vecThrow.IsValid());
 
 	// Sampled angular impulses from original NT frags:

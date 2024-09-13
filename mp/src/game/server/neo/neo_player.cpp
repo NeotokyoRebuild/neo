@@ -1777,20 +1777,30 @@ void CNEO_Player::Weapon_DropOnDeath(CBaseCombatWeapon* pWeapon, Vector velocity
 		return;
 
 	// If attack button was held down when player died, drop a live grenade. NEOTODO (Adam) Add delay between pressing an attack button and the pin being fully pulled out. If pin not out when dead do not drop a live grenade
-	if (pNeoWeapon->GetNeoWepBits() & NEO_WEP_FRAG_GRENADE) {
+	if (GetActiveWeapon() == pNeoWeapon && pNeoWeapon->GetNeoWepBits() & NEO_WEP_FRAG_GRENADE) {
 		if (((m_nButtons & IN_ATTACK) && (!(m_afButtonPressed & IN_ATTACK))) ||
-			((m_nButtons & IN_ATTACK2) && (!(m_afButtonPressed & IN_ATTACK2)))) {
+			((m_nButtons & IN_ATTACK2) && (!(m_afButtonPressed & IN_ATTACK2))))
+		{
 			auto pWeaponFrag = static_cast<CWeaponGrenade*>(pNeoWeapon);
-			pWeaponFrag->DropLiveGrenade(this, velocity);
+			pWeaponFrag->ThrowGrenade(this, false);
 			return;
 		}
+		else
+		{
+			Msg("%i",pNeoWeapon->m_iPrimaryAmmoCount);
+		}
 	}
-	if (pNeoWeapon->GetNeoWepBits() & NEO_WEP_SMOKE_GRENADE) {
+	if (GetActiveWeapon() == pNeoWeapon && pNeoWeapon->GetNeoWepBits() & NEO_WEP_SMOKE_GRENADE) {
 		if (((m_nButtons & IN_ATTACK) && (!(m_afButtonPressed & IN_ATTACK))) ||
-			((m_nButtons & IN_ATTACK2) && (!(m_afButtonPressed & IN_ATTACK2)))) {
+			((m_nButtons & IN_ATTACK2) && (!(m_afButtonPressed & IN_ATTACK2))))
+		{
 			auto pWeaponSmoke = static_cast<CWeaponSmokeGrenade*>(pNeoWeapon);
-			pWeaponSmoke->DropLiveGrenade(this, velocity);
+			pWeaponSmoke->ThrowGrenade(this, false);
 			return;
+		}
+		else
+		{
+
 		}
 	}
 	
