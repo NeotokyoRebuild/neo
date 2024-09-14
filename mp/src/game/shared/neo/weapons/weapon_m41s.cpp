@@ -28,22 +28,11 @@ CWeaponM41S::CWeaponM41S()
 	m_flAccuracyPenalty = 0;
 
 	m_nNumShotsFired = 0;
-}
 
-void CWeaponM41S::AddViewKick()
-{
-	auto pOwner = ToBasePlayer(GetOwner());
-
-	if (!pOwner)
-	{
-		return;
-	}
-
-	const QAngle viewPunch {
-		SharedRandomFloat("m41spx", 0.25f, 0.5f),
-		SharedRandomFloat("m41spy", -0.6f, 0.6f),
-		0.0f
+	m_weaponSeeds = {
+		"m41spx",
+		"m41spy",
+		"m41srx",
+		"m41sry",
 	};
-
-	pOwner->ViewPunch(viewPunch);
 }

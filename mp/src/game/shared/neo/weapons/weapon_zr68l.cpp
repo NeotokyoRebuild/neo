@@ -28,22 +28,11 @@ CWeaponZR68L::CWeaponZR68L()
 	m_flAccuracyPenalty = 0;
 
 	m_nNumShotsFired = 0;
-}
 
-void CWeaponZR68L::AddViewKick()
-{
-	auto owner = ToBasePlayer(GetOwner());
-
-	if (!owner)
-	{
-		return;
-	}
-
-	QAngle viewPunch;
-
-	viewPunch.x = SharedRandomFloat("zr68lpx", 0.25f, 0.5f);
-	viewPunch.y = SharedRandomFloat("zr68lpy", -0.6f, 0.6f);
-	viewPunch.z = 0;
-
-	owner->ViewPunch(viewPunch);
+	m_weaponSeeds = {
+		"zr68lpx",
+		"zr68lpy",
+		"zr68lrx",
+		"zr68lry",
+	};
 }
