@@ -425,6 +425,8 @@ static inline float GetAuxChargeRate(CBaseCombatCharacter *player)
 		return 5.0f;	// 100 units in 20 seconds
 	case NEO_CLASS_ASSAULT:
 		return 2.5f;	// 100 units in 40 seconds
+	case NEO_CLASS_VIP:
+		return 2.5f;	// 100 units in 40 seconds
 	default:
 		break;
 	}

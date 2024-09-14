@@ -532,7 +532,8 @@ void CNEO_Player::Spawn(void)
 
 	SetPlayerTeamModel();
 	SetViewOffset(VEC_VIEW_NEOSCALE(this));
-
+	if (m_iNeoClass.Get() == 3)
+		return;
 	GiveLoadoutWeapon();
 }
 
@@ -554,6 +555,9 @@ void CNEO_Player::Lean(void)
 
 void CNEO_Player::CheckVisionButtons()
 {
+	if (m_iNeoClass == NEO_CLASS_VIP)
+		return;
+
 	if (gpGlobals->tickcount - m_nVisionLastTick < TIME_TO_TICKS(0.1f))
 	{
 		return;
@@ -2502,6 +2506,11 @@ void CNEO_Player::GiveDefaultItems(void)
 	case NEO_CLASS_SUPPORT:
 		GiveNamedItem("weapon_kyla");
 		GiveNamedItem("weapon_smokegrenade");
+		engine->ClientCommand(edict(), "slot2");
+		break;
+	case NEO_CLASS_VIP:
+		GiveNamedItem("weapon_kyla");
+		GiveNamedItem("weapon_smac");
 		engine->ClientCommand(edict(), "slot2");
 		break;
 	default:

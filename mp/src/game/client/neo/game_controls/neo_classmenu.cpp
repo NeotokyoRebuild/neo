@@ -269,6 +269,14 @@ void CNeoClassMenu::UpdateSkinImages(int classNumber = -1)
 		classNumber = player->m_iNeoClass.Get();
 	}
 
+	if (classNumber == NEO_CLASS_VIP)
+	{
+		m_pSkinPanel1->SetImage("cm/none");
+		m_pSkinPanel2->SetImage("cm/none");
+		m_pSkinPanel3->SetImage("cm/none");
+		return;
+	}
+
 	m_pSkinPanel1->SetImage(playerModels[teamNumber * 9 + (classNumber * 3) + 0]);
 	m_pSkinPanel2->SetImage(playerModels[teamNumber * 9 + (classNumber * 3) + 1]);
 	m_pSkinPanel3->SetImage(playerModels[teamNumber * 9 + (classNumber * 3) + 2]);
