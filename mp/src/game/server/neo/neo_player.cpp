@@ -290,8 +290,16 @@ void SetClass(const CCommand &command)
 		// Class number from the .res button click action.
 		// Our NeoClass enum is zero indexed, so we subtract one.
 		int nextClass = atoi(command.ArgV()[1]) - 1;
-		
-		clamp(nextClass, NEO_CLASS_RECON, NEO_CLASS_SUPPORT);
+
+		if (NEORules()->GetGameType() == NEO_GAME_TYPE_VIP)
+		{
+			// NEOTODO (Adam) Work out if player on team currently escorting vip, can players choose to be vip themselves?
+			nextClass = clamp(nextClass, NEO_CLASS_RECON, NEO_CLASS_VIP);
+		}
+		else
+		{
+			nextClass = clamp(nextClass, NEO_CLASS_RECON, NEO_CLASS_SUPPORT);
+		}
 
 		player->RequestSetClass(nextClass);
 	}
@@ -1812,6 +1820,8 @@ float CNEO_Player::GetReceivedDamageScale(CBaseEntity* pAttacker)
 		return NEO_ASSAULT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
+	case NEO_CLASS_VIP:
+		return NEO_ASSAULT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
 	default:
 		Assert(false);
 		return BaseClass::GetReceivedDamageScale(pAttacker);
@@ -2495,26 +2505,30 @@ void CNEO_Player::GiveDefaultItems(void)
 		GiveNamedItem("weapon_knife");
 		GiveNamedItem("weapon_milso");
 		if (this->m_iXP >= 4) { GiveDet(this); }
+		Weapon_Switch(Weapon_OwnsThisType("weapon_milso"));
 		engine->ClientCommand(edict(), "slot2");
 		break;
 	case NEO_CLASS_ASSAULT:
 		GiveNamedItem("weapon_knife");
 		GiveNamedItem("weapon_tachi");
 		GiveNamedItem("weapon_grenade");
+		Weapon_Switch(Weapon_OwnsThisType("weapon_tachi"));
 		engine->ClientCommand(edict(), "slot2");
 		break;
 	case NEO_CLASS_SUPPORT:
 		GiveNamedItem("weapon_kyla");
 		GiveNamedItem("weapon_smokegrenade");
+		Weapon_Switch(Weapon_OwnsThisType("weapon_kyla"));
 		engine->ClientCommand(edict(), "slot2");
 		break;
 	case NEO_CLASS_VIP:
-		GiveNamedItem("weapon_kyla");
-		GiveNamedItem("weapon_smac");
+		GiveNamedItem("weapon_milso");
+		Weapon_Switch(Weapon_OwnsThisType("weapon_milso"));
 		engine->ClientCommand(edict(), "slot2");
 		break;
 	default:
 		GiveNamedItem("weapon_knife");
+		Weapon_Switch(Weapon_OwnsThisType("weapon_knife"));
 		engine->ClientCommand(edict(), "slot3");
 		break;
 	}
@@ -2801,6 +2815,8 @@ float CNEO_Player::GetCrouchSpeed(void) const
 		return NEO_ASSAULT_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_VIP:
+		return NEO_VIP_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
 	default:
 		return NEO_BASE_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
 	}
@@ -2816,6 +2832,8 @@ float CNEO_Player::GetNormSpeed(void) const
 		return NEO_ASSAULT_NORM_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_NORM_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_VIP:
+		return NEO_VIP_NORM_SPEED * GetBackwardsMovementPenaltyScale();
 	default:
 		return NEO_BASE_NORM_SPEED * GetBackwardsMovementPenaltyScale();
 	}
@@ -2831,6 +2849,8 @@ float CNEO_Player::GetWalkSpeed(void) const
 		return NEO_ASSAULT_WALK_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_WALK_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_VIP:
+		return NEO_VIP_WALK_SPEED * GetBackwardsMovementPenaltyScale();
 	default:
 		return NEO_BASE_WALK_SPEED * GetBackwardsMovementPenaltyScale();
 	}
@@ -2846,6 +2866,8 @@ float CNEO_Player::GetSprintSpeed(void) const
 		return NEO_ASSAULT_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_VIP:
+		return NEO_VIP_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
 	default:
 		return NEO_BASE_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
 	}

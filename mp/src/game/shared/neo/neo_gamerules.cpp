@@ -37,6 +37,10 @@ ConVar neo_sv_player_restore("neo_sv_player_restore", "1", FCVAR_REPLICATED, "If
 ConVar neo_name("neo_name", "", FCVAR_USERINFO | FCVAR_ARCHIVE, "The nickname to set instead of the steam profile name.");
 ConVar cl_onlysteamnick("cl_onlysteamnick", "0", FCVAR_USERINFO | FCVAR_ARCHIVE, "Only show players Steam names, otherwise show player set names.", true, 0.0f, true, 1.0f);
 
+ConVar neo_vote_game_mode("neo_vote_game_mode", "1", FCVAR_ARCHIVE | FCVAR_USERINFO, "Vote on game mode to play. TDM=0, CTG=1, VIP=2", true, 0, true, 2);
+
+ConVar neo_cl_vip_eligible("neo_cl_vip_eligible", "1", FCVAR_ARCHIVE, "Eligible for VIP", true, 0, true, 1);
+
 #ifdef GAME_DLL
 #ifdef DEBUG
 // Debug build by default relax integrity check requirement among debug clients
@@ -304,7 +308,10 @@ CNEORules::CNEORules()
 		}
 	}
 
-	ResetGhostCapPoints();
+	if (GetGameType() == NEO_GAME_TYPE_CTG || GetGameType() == NEO_GAME_TYPE_VIP)
+	{
+		ResetGhostCapPoints();
+	}
 #endif
 
 	ResetMapSessionCommon();
@@ -713,6 +720,71 @@ void CNEORules::Think(void)
 		}
 	}
 
+	if (GetGameType() == NEO_GAME_TYPE_VIP && m_nRoundStatus == NeoRoundStatus::RoundLive)
+	{
+		if (!m_pVIP)
+		{
+			// Assume vip player disconnected, forfeit
+			SetWinningTeam(GetOpposingTeam(m_iEscortingTeam), NEO_VICTORY_FORFEIT, false, true, false, false);
+		}
+
+		if (!m_pVIP->IsAlive())
+		{
+			// VIP was killed, end round
+			SetWinningTeam(GetOpposingTeam(m_iEscortingTeam), NEO_VICTORY_VIP_ELIMINATION, false, true, false, false);
+		}
+		// Check if the ghost was capped during this Think
+			int captorTeam, captorClient;
+			for (int i = 0; i < m_pGhostCaps.Count(); i++)
+			{
+				auto pGhostCap = dynamic_cast<CNEOGhostCapturePoint*>(UTIL_EntityByIndex(m_pGhostCaps[i]));
+				if (!pGhostCap)
+				{
+					Assert(false);
+					continue;
+				}
+
+				// If a ghost was captured
+				if (pGhostCap->IsGhostCaptured(captorTeam, captorClient))
+				{
+					// Turn off all capzones
+					for (int i = 0; i < m_pGhostCaps.Count(); i++)
+					{
+						auto pGhostCap = dynamic_cast<CNEOGhostCapturePoint*>(UTIL_EntityByIndex(m_pGhostCaps[i]));
+						pGhostCap->SetActive(false);
+					}
+
+					// And then announce team victory
+					SetWinningTeam(captorTeam, NEO_VICTORY_VIP_ESCORT, false, true, false, false);
+
+					for (int i = 1; i <= gpGlobals->maxClients; i++)
+					{
+						if (i == captorClient)
+						{
+							AwardRankUp(i);
+							continue;
+						}
+
+						auto player = UTIL_PlayerByIndex(i);
+						if (player && player->GetTeamNumber() == captorTeam)
+						{
+							if (player->IsAlive())
+							{
+								AwardRankUp(i);
+							}
+							else
+							{
+								auto* neoPlayer = static_cast<CNEO_Player*>(player);
+								neoPlayer->m_iXP.GetForModify()++;
+							}
+						}
+					}
+
+					break;
+				}
+			}
+	}
+
 	if (m_nRoundStatus == NeoRoundStatus::PreRoundFreeze)
 	{
 		if (IsRoundOver())
@@ -742,11 +814,14 @@ void CNEORules::Think(void)
 		if (m_nRoundStatus == NeoRoundStatus::RoundLive)
 		{
 			COMPILE_TIME_ASSERT(TEAM_JINRAI == 2 && TEAM_NSF == 3);
-			for (int team = TEAM_JINRAI; team <= TEAM_NSF; ++team)
+			if (GetGameType() != NEO_GAME_TYPE_TDM)
 			{
-				if (GetGlobalTeam(team)->GetAliveMembers() == 0)
+				for (int team = TEAM_JINRAI; team <= TEAM_NSF; ++team)
 				{
-					SetWinningTeam(GetOpposingTeam(team), NEO_VICTORY_TEAM_ELIMINATION, false, true, false, false);
+					if (GetGlobalTeam(team)->GetAliveMembers() == 0)
+					{
+						SetWinningTeam(GetOpposingTeam(team), NEO_VICTORY_TEAM_ELIMINATION, false, true, false, false);
+					}
 				}
 			}
 		}
@@ -950,6 +1025,90 @@ void CNEORules::SpawnTheGhost()
 		   m_pGhost->GetAbsOrigin().z);
 }
 
+void CNEORules::SelectTheVIP()
+{
+	int eligibleForVIP[MAX_PLAYERS];
+	int eligibleForVIPTop = -1;
+	int sameTeamAsVIP[MAX_PLAYERS];
+	int sameTeamAsVIPTop = -1;
+
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		if (CBasePlayer* pPlayer = static_cast<CBasePlayer*>(UTIL_EntityByIndex(i)))
+		{
+			if (pPlayer->GetTeamNumber() != m_iEscortingTeam)
+				continue;
+			sameTeamAsVIPTop++;
+			sameTeamAsVIP[sameTeamAsVIPTop] = pPlayer->entindex();
+			
+			const bool clientWantsToBeVIP = engine->GetClientConVarValue(sameTeamAsVIP[sameTeamAsVIPTop], "neo_cl_vip_eligible");
+			if (!clientWantsToBeVIP)
+				continue;
+			eligibleForVIPTop++;
+			eligibleForVIP[eligibleForVIPTop] = pPlayer->entindex();
+		}
+	}
+
+	if (eligibleForVIPTop >= 0)
+	{
+		m_pVIP = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(eligibleForVIP[RandomInt(0, eligibleForVIPTop)]));
+		if (m_pVIP)
+		{
+			engine->ClientCommand(m_pVIP->edict(), "setclass 4");
+			if (m_pVIP->IsFakeClient())
+				m_pVIP->Respawn();
+		}
+		return;
+	}
+	if (sameTeamAsVIPTop >= 0)
+	{
+		m_pVIP = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(sameTeamAsVIP[RandomInt(0, sameTeamAsVIPTop)]));
+		if (m_pVIP)
+		{
+			engine->ClientCommand(m_pVIP->edict(), "setclass 4");
+			if (m_pVIP->IsFakeClient())
+				m_pVIP->Respawn();
+		}
+		return;
+	}
+
+	Assert(false);
+}
+
+void CNEORules::GatherGameTypeVotes()
+{
+	int gameTypes[NEO_GAME_TYPE_NUM] = { 0, 0, 0 };
+
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		if (CBasePlayer* pPlayer = static_cast<CBasePlayer*>(UTIL_PlayerByIndex(i)))
+		{
+			if (pPlayer->IsBot())
+				continue;
+			const char *clientGameTypeVote = engine->GetClientConVarValue(i, "neo_vote_game_mode");
+			if (!clientGameTypeVote)
+				continue;
+			if (!clientGameTypeVote[0])
+				continue;
+			int gameType = atoi(clientGameTypeVote);
+			gameTypes[gameType]++;
+		}
+	}
+
+	int mostVotes = gameTypes[0];
+	int mostPopularGameType = 0;
+	for (int i = 1; i < NEO_GAME_TYPE_NUM; i++)
+	{
+		if (gameTypes[i] > mostVotes) // NEOTODO (Adam) Handle draws
+		{
+			mostVotes = gameTypes[i];
+			mostPopularGameType = i;
+		}
+	}
+	
+	m_nGameTypeSelected = mostPopularGameType;
+}
+
 void CNEORules::StartNextRound()
 {
 	if (GetGlobalTeam(TEAM_JINRAI)->GetNumPlayers() == 0 || GetGlobalTeam(TEAM_NSF)->GetNumPlayers() == 0)
@@ -1071,10 +1230,37 @@ void CNEORules::StartNextRound()
 		gameeventmanager->FireEvent(event);
 	}
 
+	// Gather game mode votes
+	GatherGameTypeVotes();
+
 	FireLegacyEvent_NeoRoundEnd();
 	FireLegacyEvent_NeoRoundStart();
 
-	SpawnTheGhost();
+	if (GetGameType() == NEO_GAME_TYPE_CTG)
+	{
+		SpawnTheGhost();
+	}
+
+	if (GetGameType() == NEO_GAME_TYPE_VIP)
+	{
+		if (!m_iEscortingTeam)
+		{
+			m_iEscortingTeam = RandomInt(TEAM_JINRAI, TEAM_NSF);
+		}
+		else
+		{
+			m_iEscortingTeam = m_iEscortingTeam == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI;
+		}
+		
+		if (m_pVIP)
+		{
+			// NEOTODO (Adam) use previous class
+			m_pVIP->m_iNeoClass = NEO_CLASS_ASSAULT;
+			engine->ClientCommand(m_pVIP->edict(), "setclass 1");
+		}
+
+		SelectTheVIP();
+	}
 
 	DevMsg("New round start here!\n");
 }
@@ -1122,12 +1308,16 @@ const char *CNEORules::GetGameDescription(void)
 	//DevMsg("Querying CNEORules game description\n");
 
 	// NEO TODO (Rain): get a neo_game_config so we can specify better
-	if (IsTeamplay())
-	{
-		return "Capture the Ghost";
+	switch(GetGameType()) {
+		case NEO_GAME_TYPE_TDM:
+			return "Team Deathmatch";
+		case NEO_GAME_TYPE_CTG:
+			return "Capture the Ghost";
+		case NEO_GAME_TYPE_VIP:
+			return "Escort the VIP";
+		default:
+			return BaseClass::GetGameDescription();
 	}
-
-	return BaseClass::GetGameDescription();
 }
 
 const CViewVectors *CNEORules::GetViewVectors() const
@@ -1274,13 +1464,17 @@ void CNEORules::CleanUpMap()
 
 	MapEntity_ParseAllEntities(engine->GetMapEntitiesString(), &filter, true);
 
-	//RemoveGhosts();
 	ResetGhostCapPoints();
 }
 
 void CNEORules::CheckRestartGame()
 {
 	BaseClass::CheckRestartGame();
+}
+
+void CNEORules::PurgeGhostCapPoints()
+{
+	m_pGhostCaps.Purge();
 }
 
 void CNEORules::ResetGhostCapPoints()
@@ -1394,7 +1588,31 @@ void CNEORules::RestartGame()
 
 	FireLegacyEvent_NeoRoundStart();
 
-	SpawnTheGhost();
+	if (GetGameType() == NEO_GAME_TYPE_CTG)
+	{
+		SpawnTheGhost();
+	}
+
+	if (GetGameType() == NEO_GAME_TYPE_VIP)
+	{
+		if (!m_iEscortingTeam)
+		{
+			m_iEscortingTeam = RandomInt(TEAM_JINRAI, TEAM_NSF);
+		}
+		else
+		{
+			m_iEscortingTeam = m_iEscortingTeam == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI;
+		}
+
+		if (m_pVIP)
+		{
+			// NEOTODO (Adam) use previous class
+			m_pVIP->m_iNeoClass = NEO_CLASS_ASSAULT;
+			engine->ClientCommand(m_pVIP->edict(), "setclass 1");
+		}
+
+		SelectTheVIP();
+	}
 }
 #endif
 
@@ -1704,31 +1922,36 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 
 	if (!gotMatchWinner && !isSuddenDeath)
 	{
-		if (iWinReason == NEO_VICTORY_GHOST_CAPTURE)
-		{
+		switch (iWinReason) {
+		case NEO_VICTORY_GHOST_CAPTURE:
 			V_sprintf_safe(victoryMsg, "Team %s wins by capturing the ghost!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
-		}
-		else if (iWinReason == NEO_VICTORY_TEAM_ELIMINATION)
-		{
+			break;
+		case NEO_VICTORY_VIP_ESCORT:
+			V_sprintf_safe(victoryMsg, "Team %s wins by escorting the vip!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
+			break;
+		case NEO_VICTORY_VIP_ELIMINATION:
+			V_sprintf_safe(victoryMsg, "Team %s wins by eliminating the vip!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
+			break;
+		case NEO_VICTORY_TEAM_ELIMINATION:
 			V_sprintf_safe(victoryMsg, "Team %s wins by eliminating the other team!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
-		}
-		else if (iWinReason == NEO_VICTORY_TIMEOUT_WIN_BY_NUMBERS)
-		{
+			break;
+		case NEO_VICTORY_TIMEOUT_WIN_BY_NUMBERS:
 			V_sprintf_safe(victoryMsg, "Team %s wins by numbers!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
-		}
-		else if (iWinReason == NEO_VICTORY_FORFEIT)
-		{
+			break;
+		case NEO_VICTORY_POINTS:
+			V_sprintf_safe(victoryMsg, "Team %s wins by highest score!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
+			break;
+		case NEO_VICTORY_FORFEIT:
 			V_sprintf_safe(victoryMsg, "Team %s wins by forfeit!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
-		}
-		else if (iWinReason == NEO_VICTORY_STALEMATE)
-		{
+			break;
+		case NEO_VICTORY_STALEMATE:
 			V_sprintf_safe(victoryMsg, "TIE\n");
-		}
-		else
-		{
+			break;
+		default:
 			V_sprintf_safe(victoryMsg, "Unknown Neotokyo victory reason %i\n", iWinReason);
 			Warning("%s", victoryMsg);
 			Assert(false);
+			break;
 		}
 	}
 
@@ -1772,8 +1995,8 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 				player->EmitSound(soundFilter, i, soundParams);
 			}
 
-			// Ghost-caps are handled separately
-			if (iWinReason != NEO_VICTORY_GHOST_CAPTURE && player->GetTeamNumber() == winningTeamNum)
+			// Ghost-caps and VIP-escorts are handled separately
+			if (iWinReason != NEO_VICTORY_GHOST_CAPTURE && iWinReason != NEO_VICTORY_VIP_ESCORT && player->GetTeamNumber() == winningTeamNum)
 			{
 				int xpAward = 1;	// Base reward for being on winning team
 				if (player->IsAlive())
@@ -2173,7 +2396,7 @@ bool CNEORules::FPlayerCanRespawn(CBasePlayer* pPlayer)
 		return true;
 	}
 	// Some unknown game mode
-	else if (gameType != NEO_GAME_TYPE_CTG)
+	else if (gameType != NEO_GAME_TYPE_CTG && gameType != NEO_GAME_TYPE_VIP)
 	{
 		Assert(false);
 		return true;
@@ -2240,6 +2463,11 @@ NeoRoundStatus CNEORules::GetRoundStatus() const
 	return static_cast<NeoRoundStatus>(m_nRoundStatus.Get());
 }
 
+int CNEORules::GetGameType(void)
+{
+	return m_nGameTypeSelected;
+}
+
 const char* CNEORules::GetGameTypeName(void)
 {
 	switch (GetGameType())
@@ -2248,6 +2476,8 @@ const char* CNEORules::GetGameTypeName(void)
 		return "Team Deathmatch";
 	case NEO_GAME_TYPE_CTG:
 		return "Capture the Ghost";
+	case NEO_GAME_TYPE_VIP:
+		return "Escort the VIP";
 	default:
 		Assert(false);
 		return "Unknown";

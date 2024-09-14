@@ -9,8 +9,8 @@ WeaponData
 	"anim_prefix"		"smac"
 	"bucket"		"0"
 	"bucket_position"	"0"
-	"Damage"		"0"
-	"Penetration"		"0.0"
+	"Damage"		"12"
+	"Penetration"		"12.0"
 	"CycleTime"		"0.085"		// time between shots
 	
 	"TPMuzzleFlashScale"	"0.5"

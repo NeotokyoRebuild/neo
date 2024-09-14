@@ -5,7 +5,6 @@
 
 #ifdef GAME_DLL
 #include "weapon_neobasecombatweapon.h"
-
 #if(0) // wide name localize helpers
 #include "tier3/tier3.h"
 #include "vgui/ILocalize.h"
@@ -81,6 +80,8 @@ CNEOGhostCapturePoint::CNEOGhostCapturePoint()
 
 #ifdef CLIENT_DLL
 	m_pHUDCapPoint = NULL;
+#else
+	m_iGameType = NEORules()->GetGameType();
 #endif
 }
 
@@ -197,16 +198,22 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 
 	//DevMsg("CNEOGhostCapturePoint::Think_CheckMyRadius\n");
 
+	m_iGameType = NEORules()->GetGameType();
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
-		CNEO_Player *player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
+		CNEO_Player *player = static_cast<CNEO_Player*>(UTIL_EntityByIndex(i));
 
 		if (!player)
 		{
 			continue;
 		}
 
-		if (!player->IsCarryingGhost())
+		if (m_iGameType == NEO_GAME_TYPE_CTG && !player->IsCarryingGhost())
+		{
+			continue;
+		}
+
+		if (m_iGameType == NEO_GAME_TYPE_VIP && player->GetClass() != NEO_CLASS_VIP)
 		{
 			continue;
 		}

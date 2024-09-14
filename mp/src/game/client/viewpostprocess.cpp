@@ -2964,6 +2964,7 @@ void DoEnginePostProcessing( int x, int y, int w, int h, bool bFlashlightIsOn, b
 				break;
 			}
 			case NEO_CLASS_VIP:
+				// Cry a little
 				break;
 			default:
 				Assert(false);

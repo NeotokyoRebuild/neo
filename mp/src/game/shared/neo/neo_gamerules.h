@@ -34,6 +34,7 @@ enum
 #define NEO_GAME_TYPE_TDM 0
 #define NEO_GAME_TYPE_CTG 1
 #define NEO_GAME_TYPE_VIP 2
+#define NEO_GAME_TYPE_NUM 3 // NEOTODO (Adam) Should this be an enum or something?
 
 #ifdef CLIENT_DLL
 	#define CNEORules C_NEORules
@@ -138,7 +139,7 @@ public:
 	virtual bool FPlayerCanRespawn(CBasePlayer* pPlayer) OVERRIDE;
 #endif
 
-	virtual int GetGameType(void) OVERRIDE { return NEO_GAME_TYPE_CTG; /*NEO TODO (Rain): modes*/ }
+	virtual int GetGameType(void) OVERRIDE;
 	virtual const char* GetGameTypeName(void) OVERRIDE;
 
 	virtual void Think( void ) OVERRIDE;
@@ -168,6 +169,8 @@ public:
 	float GetRemainingPreRoundFreezeTime(const bool clampToZero) const;
 
 	float GetMapRemainingTime();
+
+	void PurgeGhostCapPoints();
 
 	void ResetGhostCapPoints();
 
@@ -205,6 +208,7 @@ public:
 
 	bool IsRoundOver() const;
 #ifdef GAME_DLL
+	void GatherGameTypeVotes();
 	void StartNextRound();
 
 	virtual const char* GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer) OVERRIDE;
@@ -223,8 +227,11 @@ public:
 	enum
 	{
 		NEO_VICTORY_GHOST_CAPTURE = 0,
+		NEO_VICTORY_VIP_ESCORT,
+		NEO_VICTORY_VIP_ELIMINATION,
 		NEO_VICTORY_TEAM_ELIMINATION,
 		NEO_VICTORY_TIMEOUT_WIN_BY_NUMBERS,
+		NEO_VICTORY_POINTS,
 		NEO_VICTORY_FORFEIT,
 		NEO_VICTORY_STALEMATE // Not actually a victory
 	};
@@ -274,13 +281,16 @@ private:
 
 #ifdef GAME_DLL
 	void SpawnTheGhost();
+	void SelectTheVIP();
 
 	CUtlVector<int> m_pGhostCaps;
 	CWeaponGhost *m_pGhost = nullptr;
+	CNEO_Player *m_pVIP = nullptr;
 	float m_flPrevThinkKick = 0.0f;
 	float m_flPrevThinkMirrorDmg = 0.0f;
 #endif
 	CNetworkVar(int, m_nRoundStatus); // NEO TODO (Rain): probably don't need to network this
+	CNetworkVar(int, m_nGameTypeSelected);
 	CNetworkVar(int, m_iRoundNumber);
 
 	// Ghost networked variables
@@ -291,6 +301,10 @@ private:
 
 	CNetworkVar(float, m_flNeoRoundStartTime);
 	CNetworkVar(float, m_flNeoNextRoundStartTime);
+
+public:
+	// VIP networked variables
+	CNetworkVar(int, m_iEscortingTeam);
 };
 
 inline CNEORules *NEORules()

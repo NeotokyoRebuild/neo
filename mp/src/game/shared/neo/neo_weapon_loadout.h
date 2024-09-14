@@ -92,12 +92,16 @@ public:
 		switch (classType) {
 		case NEO_CLASS_RECON:
 			if (weaponPositionInLoadout < RECON_WEAPON_LOADOUTS) { return s_ReconLoadoutWeapons[weaponPositionInLoadout].m_szVguiImage; }
+			return "";
 		case NEO_CLASS_ASSAULT:
 			if (weaponPositionInLoadout < ASSAULT_WEAPON_LOADOUTS) { return s_AssaultLoadoutWeapons[weaponPositionInLoadout].m_szVguiImage; }
+			return "";
 		case NEO_CLASS_SUPPORT:
 			if (weaponPositionInLoadout < SUPPORT_WEAPON_LOADOUTS) { return s_SupportLoadoutWeapons[weaponPositionInLoadout].m_szVguiImage; }
+			return "";
 		case NEO_CLASS_VIP:
 			if (weaponPositionInLoadout < VIP_WEAPON_LOADOUTS) { return s_VIPLoadoutWeapons[weaponPositionInLoadout].m_szVguiImage; }
+			return "";
 		default:
 			Assert(false);
 			return "";
@@ -113,12 +117,16 @@ public:
 		switch (classType) {
 		case NEO_CLASS_RECON:
 			if (weaponPositionInLoadout < RECON_WEAPON_LOADOUTS) { return s_ReconLoadoutWeapons[weaponPositionInLoadout].m_szVguiImageNo; }
+			return "";
 		case NEO_CLASS_ASSAULT:
 			if (weaponPositionInLoadout < ASSAULT_WEAPON_LOADOUTS) { return s_AssaultLoadoutWeapons[weaponPositionInLoadout].m_szVguiImageNo; }
+			return "";
 		case NEO_CLASS_SUPPORT:
 			if (weaponPositionInLoadout < SUPPORT_WEAPON_LOADOUTS) { return s_SupportLoadoutWeapons[weaponPositionInLoadout].m_szVguiImageNo; }
+			return "";
 		case NEO_CLASS_VIP:
 			if (weaponPositionInLoadout < VIP_WEAPON_LOADOUTS) { return s_VIPLoadoutWeapons[weaponPositionInLoadout].m_szVguiImageNo; }
+			return "";
 		default:
 			Assert(false);
 			return "";
@@ -135,12 +143,16 @@ public:
 		switch (classType) {
 		case NEO_CLASS_RECON:
 			if (weaponPositionInLoadout < RECON_WEAPON_LOADOUTS) { return s_ReconLoadoutWeapons[weaponPositionInLoadout].m_szWeaponEntityName; }
+			return "";
 		case NEO_CLASS_ASSAULT:
 			if (weaponPositionInLoadout < ASSAULT_WEAPON_LOADOUTS) { return s_AssaultLoadoutWeapons[weaponPositionInLoadout].m_szWeaponEntityName; }
+			return "";
 		case NEO_CLASS_SUPPORT:
 			if (weaponPositionInLoadout < SUPPORT_WEAPON_LOADOUTS) { return s_SupportLoadoutWeapons[weaponPositionInLoadout].m_szWeaponEntityName; }
+			return "";
 		case NEO_CLASS_VIP:
 			if (weaponPositionInLoadout < VIP_WEAPON_LOADOUTS) { return s_VIPLoadoutWeapons[weaponPositionInLoadout].m_szWeaponEntityName; }
+			return "";
 		default:
 			Assert(false);
 			return "";
