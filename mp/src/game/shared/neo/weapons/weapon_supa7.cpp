@@ -299,8 +299,6 @@ void CWeaponSupa7::PrimaryAttack(void)
 		return;
 	}
 
-	pPlayer->ViewPunchReset();
-
 	int numBullets = 7;
 	Vector bulletSpread = GetBulletSpread();
 	int ammoType = m_iPrimaryAmmoType;
@@ -344,6 +342,8 @@ void CWeaponSupa7::PrimaryAttack(void)
 		// HEV suit - indicate out of ammo condition
 		pPlayer->SetSuitUpdate("!HEV_AMO0", FALSE, 0);
 	}
+
+	pPlayer->ViewPunchReset();
 	AddViewKick();
 }
 

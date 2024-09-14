@@ -772,8 +772,6 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 		}
 	}
 
-	pOwner->ViewPunchReset();
-
 	if ((gpGlobals->curtime - m_flLastAttackTime) > 0.5f)
 	{
 		m_nNumShotsFired = 0;
@@ -862,6 +860,7 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 	}
 
 	//Add our view kick in
+	pOwner->ViewPunchReset();
 	AddViewKick();
 
 	m_flAccuracyPenalty = min(

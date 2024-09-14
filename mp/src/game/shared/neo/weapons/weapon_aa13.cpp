@@ -86,8 +86,6 @@ void CWeaponAA13::PrimaryAttack(void)
 		return;
 	}
 
-	pPlayer->ViewPunchReset();
-
 	// MUST call sound before removing a round from the clip of a CMachineGun
 	WeaponSound(SINGLE);
 
@@ -117,5 +115,7 @@ void CWeaponAA13::PrimaryAttack(void)
 		// HEV suit - indicate out of ammo condition
 		pPlayer->SetSuitUpdate("!HEV_AMO0", FALSE, 0);
 	}
+
+	pPlayer->ViewPunchReset();
 	AddViewKick();
 }
