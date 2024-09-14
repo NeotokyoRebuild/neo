@@ -41,3 +41,8 @@ CWeaponKyla::CWeaponKyla(void)
 		"kylary",
 	};
 }
+
+Activity CWeaponKyla::GetPrimaryAttackActivity()
+{
+	return ACT_VM_PRIMARYATTACK;
+}

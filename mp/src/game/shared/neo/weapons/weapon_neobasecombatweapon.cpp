@@ -14,6 +14,7 @@ extern ConVar weaponstay;
 #include "dlight.h"
 #include "iefx.h"
 #include "c_te_effect_dispatch.h"
+#include "prediction.h"
 #endif
 
 #include "basecombatweapon_shared.h"
@@ -107,16 +108,16 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 	},
 	{NEO_WEP_JITTE,
 		{{VECTOR_CONE_3DEGREES, VECTOR_CONE_10DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_3DEGREES}},
-		{-0.25, -0.5, -0.6, 0.6},
+		{-0.5, -0.25, -0.6, 0.6},
 	},
 	{NEO_WEP_JITTE_S,
 		{{VECTOR_CONE_3DEGREES, VECTOR_CONE_10DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_3DEGREES}},
-		{-0.25, -0.5, -0.6, 0.6},
+		{-0.5, -0.25, -0.6, 0.6},
 	},
 	{NEO_WEP_KYLA,
 		{{VECTOR_CONE_5DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_2DEGREES, VECTOR_CONE_4DEGREES}},
 		{0.0, 0.0, 0.0, 0.0},
-		{10.5, 6.0, 0.0, -0.75, -0.5, 0.5},
+		{10.5, 6.0, -0.75, 0.0, -0.5, 0.5},
 	},
 	{NEO_WEP_M41,
 		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}}
@@ -131,12 +132,12 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 	{NEO_WEP_MPN,
 		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_4DEGREES}},
 		{0.0, 0.0, 0.0, 0.0},
-		{1.0, 1.0, -0.25, -0.5, -0.6, 0.6},
+		{1.0, 1.0, -0.5, -0.25, -0.6, 0.6},
 	},
 	{NEO_WEP_MPN_S,
 		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_4DEGREES}},
 		{0.0, 0.0, 0.0, 0.0},
-		{1.0, 1.0, -0.25, -0.5, -0.6, 0.6},
+		{1.0, 1.0, -0.5, -0.25, -0.6, 0.6},
 	},
 	{NEO_WEP_MX,
 		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}},
@@ -162,7 +163,7 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 	{NEO_WEP_SRS,
 		{{VECTOR_CONE_7DEGREES, VECTOR_CONE_20DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_7DEGREES}},
 		{0.0, 0.0, 0.0, 0.0},
-		{1.0, 1.5, 0.0, -0.5, -0.5, 0.5},
+		{1.0, 1.5, -0.5, 0.0, -0.5, 0.5},
 	},
 	{NEO_WEP_SUPA7,
 		{
@@ -182,7 +183,7 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 	{NEO_WEP_ZR68_L,
 		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_2DEGREES}},
 		{0.0, 0.0, 0.0, 0.0},
-		{1.0, 2.5, 0.0, -0.5, -0.5, 0.5},
+		{1.0, 2.5, -0.5, 0.0, -0.5, 0.5},
 	},
 	{NEO_WEP_ZR68_S,
 		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}},
@@ -691,9 +692,15 @@ void CNEOBaseCombatWeapon::AddViewKick()
 
 	#ifdef CLIENT_DLL
 
+	if (!prediction->IsFirstTimePredicted())
+	{
+		return;
+	}
+
 	auto recoilInfo = m_weaponHandling.recoilInfo;
 	float scale = owner->IsInAim() ? recoilInfo.adsFactor : recoilInfo.hipFactor;
-	if (!scale) {
+	if (!scale)
+	{
 		return;
 	}
 

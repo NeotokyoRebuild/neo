@@ -28,6 +28,8 @@ public:
 
 	virtual float GetSpeedScale(void) const override { return 1.0; }
 
+	virtual Activity GetPrimaryAttackActivity(void) override;
+
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
 
