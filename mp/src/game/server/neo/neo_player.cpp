@@ -1708,6 +1708,12 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 	BaseClass::Event_Killed(info);
 
 	RemoveAllWeapons();
+	
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_TDM)
+	{
+		GetGlobalTeam(NEORules()->GetOpposingTeam(this))->AddScore(1);
+		m_bDroppedAnything = false;
+	}
 }
 
 void CNEO_Player::SpawnDeadModel(const CTakeDamageInfo& info)
@@ -1811,6 +1817,11 @@ void CNEO_Player::SetPlayerCorpseModel(int type)
 
 float CNEO_Player::GetReceivedDamageScale(CBaseEntity* pAttacker)
 {
+	if (m_aliveTimer.IsLessThen(5.f))
+	{
+		return 0.f;
+	}
+
 	switch (GetClass())
 	{
 	case NEO_CLASS_RECON:
@@ -2537,7 +2548,7 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 {
 	const NeoRoundStatus status = NEORules()->GetRoundStatus();
 	if (!(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup) && 
-		(IsObserver() || IsDead() || m_bDroppedAnything || ((NEORules()->GetRemainingPreRoundFreezeTime(false)) < 0)))
+		(IsObserver() || IsDead() || m_bDroppedAnything || m_aliveTimer.IsGreaterThen(25.f)))
 	{
 		return;
 	}

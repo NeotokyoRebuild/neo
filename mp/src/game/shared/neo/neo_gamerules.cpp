@@ -38,7 +38,6 @@ ConVar neo_name("neo_name", "", FCVAR_USERINFO | FCVAR_ARCHIVE, "The nickname to
 ConVar cl_onlysteamnick("cl_onlysteamnick", "0", FCVAR_USERINFO | FCVAR_ARCHIVE, "Only show players Steam names, otherwise show player set names.", true, 0.0f, true, 1.0f);
 
 ConVar neo_vote_game_mode("neo_vote_game_mode", "1", FCVAR_ARCHIVE | FCVAR_USERINFO, "Vote on game mode to play. TDM=0, CTG=1, VIP=2", true, 0, true, 2);
-
 ConVar neo_cl_vip_eligible("neo_cl_vip_eligible", "1", FCVAR_ARCHIVE, "Eligible for VIP", true, 0, true, 1);
 
 #ifdef GAME_DLL
@@ -171,7 +170,13 @@ ConVar neo_round_limit("neo_round_limit", "0", FCVAR_REPLICATED, "Max amount of 
 ConVar neo_round_sudden_death("neo_round_sudden_death", "1", FCVAR_REPLICATED, "If neo_round_limit is not 0 and round is past "
 	"neo_round_limit, go into sudden death where match won't end until a team won.", true, 0.0f, true, 1.0f);
 
-ConVar neo_round_timelimit("neo_round_timelimit", "2.75", FCVAR_REPLICATED, "Neo round timelimit, in minutes.",
+ConVar neo_tdm_round_timelimit("neo_tdm_round_timelimit", "10.0", FCVAR_REPLICATED, "TDM round timelimit, in minutes.",
+	true, 0.0f, false, 600.0f);
+
+ConVar neo_ctg_round_timelimit("neo_ctg_round_timelimit", "2.75", FCVAR_REPLICATED, "CTG round timelimit, in minutes.",
+	true, 0.0f, false, 600.0f);
+
+ConVar neo_vip_round_timelimit("neo_vip_round_timelimit", "2.75", FCVAR_REPLICATED, "VIP round timelimit, in minutes.",
 	true, 0.0f, false, 600.0f);
 
 ConVar neo_sv_ignore_wep_xp_limit("neo_sv_ignore_wep_xp_limit", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "If true, allow equipping any loadout regardless of player XP.",
@@ -871,13 +876,33 @@ void CNEORules::AwardRankUp(CNEO_Player *pClient)
 // Return remaining time in seconds. Zero means there is no time limit.
 float CNEORules::GetRoundRemainingTime() const
 {
-	if ((m_nRoundStatus != NeoRoundStatus::Warmup && neo_round_timelimit.GetFloat() == 0) ||
-			m_nRoundStatus == NeoRoundStatus::Idle)
+	if (m_nRoundStatus == NeoRoundStatus::Idle)
 	{
 		return 0;
 	}
 
-	const float roundTimeLimit = (m_nRoundStatus == NeoRoundStatus::Warmup) ? (mp_neo_warmup_round_time.GetFloat()) : (neo_round_timelimit.GetFloat() * 60.0f);
+	float roundTimeLimit = 0.f;
+	if (m_nRoundStatus == NeoRoundStatus::Warmup)
+	{
+		roundTimeLimit = mp_neo_warmup_round_time.GetFloat();
+	}
+	else
+	{
+		switch (m_nGameTypeSelected) {
+			case NEO_GAME_TYPE_TDM:
+				roundTimeLimit = neo_tdm_round_timelimit.GetFloat() * 60.f;
+				break;
+			case NEO_GAME_TYPE_CTG:
+				roundTimeLimit = neo_ctg_round_timelimit.GetFloat() * 60.f;
+				break;
+			case NEO_GAME_TYPE_VIP:
+				roundTimeLimit = neo_vip_round_timelimit.GetFloat() * 60.f;
+				break;
+			default:
+				break;
+		}
+	}
+
 	return (m_flNeoRoundStartTime + roundTimeLimit) - gpGlobals->curtime;
 }
 
@@ -1267,6 +1292,14 @@ void CNEORules::StartNextRound()
 		SelectTheVIP();
 	}
 
+	if (GetGameType() == NEO_GAME_TYPE_TDM)
+	{
+		for (int i = 0; i < GetNumberOfTeams(); i++)
+		{
+			GetGlobalTeam(i)->SetScore(0);
+		}
+	}
+
 	IGameEvent *event = gameeventmanager->CreateEvent("round_start");
 	if (event)
 	{
@@ -1619,6 +1652,14 @@ void CNEORules::RestartGame()
 		SelectTheVIP();
 	}
 
+	if (GetGameType() == NEO_GAME_TYPE_TDM)
+	{
+		for (int i = 0; i < GetNumberOfTeams(); i++)
+		{
+			GetGlobalTeam(i)->SetScore(0);
+		}
+	}
+
 	IGameEvent * event = gameeventmanager->CreateEvent("round_start");
 	if (event)
 	{
@@ -1872,6 +1913,11 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 	char victoryMsg[128];
 	bool gotMatchWinner = false;
 	bool isSuddenDeath = false;
+
+	if (GetGameType() == NEO_GAME_TYPE_TDM)
+	{
+		gotMatchWinner = true;
+	}
 
 	if (!bForceMapReset)
 	{

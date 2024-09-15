@@ -1281,7 +1281,9 @@ void CHL2MP_Player::Event_Killed( const CTakeDamageInfo &info )
 			iScoreToAdd = -1;
 		}
 
+#ifndef NEO
 		GetGlobalTeam( pAttacker->GetTeamNumber() )->AddScore( iScoreToAdd );
+#endif
 	}
 
 	FlashlightTurnOff();

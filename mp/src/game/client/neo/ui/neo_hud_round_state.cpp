@@ -266,13 +266,30 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	V_snwprintf(m_wszTime, 6, L"%02d:%02d", minutes, secsRemainder);
 
 	const int localPlayerTeam = GetLocalPlayerTeam();
+	const int neoGameType = NEORules()->GetGameType();
 	if (localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF) {
-		V_snwprintf(m_wszLeftTeamScore, 3, L"%i", GetGlobalTeam(localPlayerTeam)->GetRoundsWon());
-		V_snwprintf(m_wszRightTeamScore, 3, L"%i", GetGlobalTeam(NEORules()->GetOpposingTeam(localPlayerTeam))->GetRoundsWon());
+		if (neoGameType == NEO_GAME_TYPE_CTG)
+		{
+			V_snwprintf(m_wszLeftTeamScore, 3, L"%i", GetGlobalTeam(localPlayerTeam)->GetRoundsWon());
+			V_snwprintf(m_wszRightTeamScore, 3, L"%i", GetGlobalTeam(NEORules()->GetOpposingTeam(localPlayerTeam))->GetRoundsWon());
+		}
+		else if (neoGameType == NEO_GAME_TYPE_TDM)
+		{
+			V_snwprintf(m_wszLeftTeamScore, 3, L"%i", GetGlobalTeam(localPlayerTeam)->Get_Score());
+			V_snwprintf(m_wszRightTeamScore, 3, L"%i", GetGlobalTeam(NEORules()->GetOpposingTeam(localPlayerTeam))->Get_Score());
+		}
 	}
 	else {
-		V_snwprintf(m_wszLeftTeamScore, 3, L"%i", GetGlobalTeam(TEAM_JINRAI)->GetRoundsWon());
-		V_snwprintf(m_wszRightTeamScore, 3, L"%i", GetGlobalTeam(TEAM_NSF)->GetRoundsWon());
+		if (neoGameType == NEO_GAME_TYPE_CTG)
+		{
+			V_snwprintf(m_wszLeftTeamScore, 3, L"%i", GetGlobalTeam(TEAM_JINRAI)->GetRoundsWon());
+			V_snwprintf(m_wszRightTeamScore, 3, L"%i", GetGlobalTeam(TEAM_NSF)->GetRoundsWon());
+		}
+		else if (neoGameType == NEO_GAME_TYPE_TDM)
+		{
+			V_snwprintf(m_wszLeftTeamScore, 3, L"%i", GetGlobalTeam(TEAM_JINRAI)->Get_Score());
+			V_snwprintf(m_wszRightTeamScore, 3, L"%i", GetGlobalTeam(TEAM_NSF)->Get_Score());
+		}
 	}
 
 	char szPlayersAliveANSI[9] = {};
