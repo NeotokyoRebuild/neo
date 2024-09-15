@@ -637,6 +637,10 @@ void CNEORules::Think(void)
 	// Note that exactly zero here means infinite round time.
 	else if (GetRoundRemainingTime() < 0)
 	{
+		if (GetGameType() == NEO_GAME_TYPE_TDM)
+		{
+			// NEOTODO (Adam) Count Kills here, determine victor
+		}
 		SetWinningTeam(TEAM_SPECTATOR, NEO_VICTORY_STALEMATE, false, false, true, false);
 	}
 
@@ -724,7 +728,7 @@ void CNEORules::Think(void)
 	{
 		if (!m_pVIP)
 		{
-			// Assume vip player disconnected, forfeit
+			// Assume vip player disconnected, forfeit round
 			SetWinningTeam(GetOpposingTeam(m_iEscortingTeam), NEO_VICTORY_FORFEIT, false, true, false, false);
 		}
 
@@ -733,56 +737,57 @@ void CNEORules::Think(void)
 			// VIP was killed, end round
 			SetWinningTeam(GetOpposingTeam(m_iEscortingTeam), NEO_VICTORY_VIP_ELIMINATION, false, true, false, false);
 		}
-		// Check if the ghost was capped during this Think
-			int captorTeam, captorClient;
-			for (int i = 0; i < m_pGhostCaps.Count(); i++)
+
+		// Check if the vip was escorted during this Think
+		int captorTeam, captorClient;
+		for (int i = 0; i < m_pGhostCaps.Count(); i++)
+		{
+			auto pGhostCap = dynamic_cast<CNEOGhostCapturePoint*>(UTIL_EntityByIndex(m_pGhostCaps[i]));
+			if (!pGhostCap)
 			{
-				auto pGhostCap = dynamic_cast<CNEOGhostCapturePoint*>(UTIL_EntityByIndex(m_pGhostCaps[i]));
-				if (!pGhostCap)
+				Assert(false);
+				continue;
+			}
+
+			// If vip was escorted
+			if (pGhostCap->IsGhostCaptured(captorTeam, captorClient))
+			{
+				// Turn off all capzones
+				for (int i = 0; i < m_pGhostCaps.Count(); i++)
 				{
-					Assert(false);
-					continue;
+					auto pGhostCap = dynamic_cast<CNEOGhostCapturePoint*>(UTIL_EntityByIndex(m_pGhostCaps[i]));
+					pGhostCap->SetActive(false);
 				}
 
-				// If a ghost was captured
-				if (pGhostCap->IsGhostCaptured(captorTeam, captorClient))
+				// And then announce team victory
+				SetWinningTeam(captorTeam, NEO_VICTORY_VIP_ESCORT, false, true, false, false);
+
+				for (int i = 1; i <= gpGlobals->maxClients; i++)
 				{
-					// Turn off all capzones
-					for (int i = 0; i < m_pGhostCaps.Count(); i++)
+					if (i == captorClient)
 					{
-						auto pGhostCap = dynamic_cast<CNEOGhostCapturePoint*>(UTIL_EntityByIndex(m_pGhostCaps[i]));
-						pGhostCap->SetActive(false);
+						AwardRankUp(i);
+						continue;
 					}
 
-					// And then announce team victory
-					SetWinningTeam(captorTeam, NEO_VICTORY_VIP_ESCORT, false, true, false, false);
-
-					for (int i = 1; i <= gpGlobals->maxClients; i++)
+					auto player = UTIL_PlayerByIndex(i);
+					if (player && player->GetTeamNumber() == captorTeam)
 					{
-						if (i == captorClient)
+						if (player->IsAlive())
 						{
 							AwardRankUp(i);
-							continue;
 						}
-
-						auto player = UTIL_PlayerByIndex(i);
-						if (player && player->GetTeamNumber() == captorTeam)
+						else
 						{
-							if (player->IsAlive())
-							{
-								AwardRankUp(i);
-							}
-							else
-							{
-								auto* neoPlayer = static_cast<CNEO_Player*>(player);
-								neoPlayer->m_iXP.GetForModify()++;
-							}
+							auto* neoPlayer = static_cast<CNEO_Player*>(player);
+							neoPlayer->m_iXP.GetForModify()++;
 						}
 					}
-
-					break;
 				}
+
+				break;
 			}
+		}
 	}
 
 	if (m_nRoundStatus == NeoRoundStatus::PreRoundFreeze)
@@ -1107,6 +1112,20 @@ void CNEORules::GatherGameTypeVotes()
 	}
 	
 	m_nGameTypeSelected = mostPopularGameType;
+	switch (m_nGameTypeSelected) { // NEOTODO (Adam) Selected Game Type HUD Element? Text appears over the class selection screen so can be easily missed
+	case NEO_GAME_TYPE_TDM:
+		UTIL_CenterPrintAll("Team Deathmatch");
+		break;
+	case NEO_GAME_TYPE_CTG:
+		UTIL_CenterPrintAll("Capture The Ghost");
+		break;
+	case NEO_GAME_TYPE_VIP:
+		UTIL_CenterPrintAll("Extract The VIP");
+		break;
+	default:
+		UTIL_CenterPrintAll("Custom Game Type");
+		break;
+	}
 }
 
 void CNEORules::StartNextRound()
@@ -1217,6 +1236,8 @@ void CNEORules::StartNextRound()
 	if (clearXP)
 	{
 		m_pRestoredInfos.Purge();
+		// If game was in warmup then also decide on game mode here
+		GatherGameTypeVotes();
 	}
 
 	IGameEvent *event = gameeventmanager->CreateEvent("round_start");
@@ -1229,9 +1250,6 @@ void CNEORules::StartNextRound()
 
 		gameeventmanager->FireEvent(event);
 	}
-
-	// Gather game mode votes
-	GatherGameTypeVotes();
 
 	FireLegacyEvent_NeoRoundEnd();
 	FireLegacyEvent_NeoRoundStart();
