@@ -1576,6 +1576,8 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_misc.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_misc.h
 )
 
 target_sources_grouped(
