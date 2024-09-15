@@ -1226,6 +1226,10 @@ void MusicVol_ChangeCallback(IConVar *cvar, const char *pOldVal, float flOldVal)
 	UpdateBgm((ConVar*)cvar);
 }
 
+#ifdef NEO
+extern void NeoToggleConsoleEnforce();
+#endif
+
 //-----------------------------------------------------------------------------
 // Purpose: Called after client & server DLL are loaded and all systems initialized
 //-----------------------------------------------------------------------------
@@ -1266,14 +1270,7 @@ void CHLClient::PostInit()
 		Assert(false);
 	}
 
-	// Rebind ` from toggleconsole to neo_toggleconsole
-	const auto toggleConsoleBind = gameuifuncs->GetButtonCodeForBind("toggleconsole");
-	if (toggleConsoleBind == KEY_BACKQUOTE)
-	{
-		char cmdStr[128];
-		V_sprintf_safe(cmdStr, "bind \"`\" \"neo_toggleconsole\"\n");
-		engine->ClientCmd_Unrestricted(cmdStr);
-	}
+	NeoToggleConsoleEnforce();
 #endif
 }
 

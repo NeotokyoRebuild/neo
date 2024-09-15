@@ -43,6 +43,8 @@ extern ConVar cl_onlysteamnick;
 CNeoRoot *g_pNeoRoot = nullptr;
 void NeoToggleconsole();
 inline NeoUI::Context g_uiCtx;
+inline ConVar neo_cl_toggleconsole("neo_cl_toggleconsole", "0", FCVAR_ARCHIVE,
+								   "If the console can be toggled with the ` keybind or not.", true, 0.0f, true, 1.0f);
 
 namespace {
 
@@ -104,6 +106,18 @@ void CNeoRootInput::OnThink()
 	{
 		if (code != KEY_ESCAPE)
 		{
+			if (code != KEY_DELETE)
+			{
+				// The keybind system used requires 1:1 so unbind a duplicate
+				for (auto &bind : m_pNeoRoot->m_ns.keys.vBinds)
+				{
+					if (bind.bcNext == code)
+					{
+						bind.bcNext = BUTTON_CODE_NONE;
+						break;
+					}
+				}
+			}
 			m_pNeoRoot->m_ns.keys.vBinds[m_pNeoRoot->m_iBindingIdx].bcNext =
 					(code == KEY_DELETE) ? BUTTON_CODE_NONE : code;
 			m_pNeoRoot->m_ns.bModified = true;
@@ -1299,9 +1313,16 @@ bool NeoRootCaptureESC()
 
 void NeoToggleconsole()
 {
-	if (engine->IsInGame() && g_pNeoRoot)
+	if (neo_cl_toggleconsole.GetBool())
 	{
-		g_pNeoRoot->m_state = STATE_ROOT;
+		if (engine->IsInGame() && g_pNeoRoot)
+		{
+			g_pNeoRoot->m_state = STATE_ROOT;
+		}
+		// NEO JANK (nullsystem): con_enable 1 is required to allow toggleconsole to
+		// work and using the legacy settings will alter that value.
+		// It's in here rather than startup so it doesn't trigger the console on startup
+		ConVarRef("con_enable").SetValue(true);
+		engine->ClientCmd_Unrestricted("toggleconsole");
 	}
-	engine->ClientCmd_Unrestricted("toggleconsole");
 }
