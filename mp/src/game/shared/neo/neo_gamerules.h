@@ -286,6 +286,7 @@ private:
 	CUtlVector<int> m_pGhostCaps;
 	CWeaponGhost *m_pGhost = nullptr;
 	CNEO_Player *m_pVIP = nullptr;
+	int m_iVIPPreviousClass = 0;
 	float m_flPrevThinkKick = 0.0f;
 	float m_flPrevThinkMirrorDmg = 0.0f;
 #endif

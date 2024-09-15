@@ -1057,27 +1057,25 @@ void CNEORules::SelectTheVIP()
 	if (eligibleForVIPTop >= 0)
 	{
 		m_pVIP = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(eligibleForVIP[RandomInt(0, eligibleForVIPTop)]));
-		if (m_pVIP)
-		{
-			engine->ClientCommand(m_pVIP->edict(), "setclass 4");
-			if (m_pVIP->IsFakeClient())
-				m_pVIP->Respawn();
-		}
-		return;
 	}
-	if (sameTeamAsVIPTop >= 0)
+	else if (sameTeamAsVIPTop >= 0)
 	{
 		m_pVIP = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(sameTeamAsVIP[RandomInt(0, sameTeamAsVIPTop)]));
-		if (m_pVIP)
-		{
-			engine->ClientCommand(m_pVIP->edict(), "setclass 4");
-			if (m_pVIP->IsFakeClient())
-				m_pVIP->Respawn();
-		}
-		return;
 	}
 
-	Assert(false);
+	if (m_pVIP)
+	{
+		m_iVIPPreviousClass = m_pVIP->m_iNextSpawnClassChoice.Get() >= 0 ? m_pVIP->m_iNextSpawnClassChoice.Get() : m_pVIP->m_iNeoClass.Get();
+		m_pVIP->m_iNeoClass.Set(NEO_CLASS_VIP);
+		m_pVIP->m_iNextSpawnClassChoice.Set(NEO_CLASS_VIP);
+		m_pVIP->RequestSetClass(NEO_CLASS_VIP);
+		engine->ClientCommand(m_pVIP->edict(), "loadoutmenu");
+		if (m_pVIP->IsFakeClient())
+			m_pVIP->Respawn();
+		return;
+	}
+	else
+		Assert(false);
 }
 
 void CNEORules::GatherGameTypeVotes()
@@ -1237,7 +1235,36 @@ void CNEORules::StartNextRound()
 	{
 		m_pRestoredInfos.Purge();
 		// If game was in warmup then also decide on game mode here
-		GatherGameTypeVotes();
+	}
+	GatherGameTypeVotes();
+
+	FireLegacyEvent_NeoRoundEnd();
+
+	if (GetGameType() == NEO_GAME_TYPE_CTG)
+	{
+		SpawnTheGhost();
+	}
+
+	if (GetGameType() == NEO_GAME_TYPE_VIP)
+	{
+		if (!m_iEscortingTeam)
+		{
+			m_iEscortingTeam.Set(RandomInt(TEAM_JINRAI, TEAM_NSF));
+		}
+		else
+		{
+			m_iEscortingTeam.Set(m_iEscortingTeam.Get() == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI);
+		}
+		
+		if (m_pVIP)
+		{
+			m_pVIP->m_iNeoClass.Set(m_iVIPPreviousClass);
+			m_pVIP->m_iNextSpawnClassChoice.Set(m_iVIPPreviousClass);
+			m_pVIP->RequestSetClass(m_iVIPPreviousClass);
+			engine->ClientCommand(m_pVIP->edict(), "classmenu");
+		}
+
+		SelectTheVIP();
 	}
 
 	IGameEvent *event = gameeventmanager->CreateEvent("round_start");
@@ -1250,35 +1277,7 @@ void CNEORules::StartNextRound()
 
 		gameeventmanager->FireEvent(event);
 	}
-
-	FireLegacyEvent_NeoRoundEnd();
 	FireLegacyEvent_NeoRoundStart();
-
-	if (GetGameType() == NEO_GAME_TYPE_CTG)
-	{
-		SpawnTheGhost();
-	}
-
-	if (GetGameType() == NEO_GAME_TYPE_VIP)
-	{
-		if (!m_iEscortingTeam)
-		{
-			m_iEscortingTeam = RandomInt(TEAM_JINRAI, TEAM_NSF);
-		}
-		else
-		{
-			m_iEscortingTeam = m_iEscortingTeam == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI;
-		}
-		
-		if (m_pVIP)
-		{
-			// NEOTODO (Adam) use previous class
-			m_pVIP->m_iNeoClass = NEO_CLASS_ASSAULT;
-			engine->ClientCommand(m_pVIP->edict(), "setclass 1");
-		}
-
-		SelectTheVIP();
-	}
 
 	DevMsg("New round start here!\n");
 }
@@ -1593,19 +1592,6 @@ void CNEORules::RestartGame()
 
 	ResetMapSessionCommon();
 
-	IGameEvent * event = gameeventmanager->CreateEvent("round_start");
-	if (event)
-	{
-		event->SetInt("fraglimit", 0);
-		event->SetInt("priority", 6); // HLTV event priority, not transmitted
-
-		event->SetString("objective", "DEATHMATCH");
-
-		gameeventmanager->FireEvent(event);
-	}
-
-	FireLegacyEvent_NeoRoundStart();
-
 	if (GetGameType() == NEO_GAME_TYPE_CTG)
 	{
 		SpawnTheGhost();
@@ -1624,13 +1610,26 @@ void CNEORules::RestartGame()
 
 		if (m_pVIP)
 		{
-			// NEOTODO (Adam) use previous class
-			m_pVIP->m_iNeoClass = NEO_CLASS_ASSAULT;
-			engine->ClientCommand(m_pVIP->edict(), "setclass 1");
+			m_pVIP->m_iNeoClass.Set(m_iVIPPreviousClass);
+			m_pVIP->m_iNextSpawnClassChoice.Set(m_iVIPPreviousClass);
+			m_pVIP->RequestSetClass(m_iVIPPreviousClass);
+			engine->ClientCommand(m_pVIP->edict(), "classmenu");
 		}
 
 		SelectTheVIP();
 	}
+
+	IGameEvent * event = gameeventmanager->CreateEvent("round_start");
+	if (event)
+	{
+		event->SetInt("fraglimit", 0);
+		event->SetInt("priority", 6); // HLTV event priority, not transmitted
+
+		event->SetString("objective", "DEATHMATCH");
+
+		gameeventmanager->FireEvent(event);
+	}
+	FireLegacyEvent_NeoRoundStart();
 }
 #endif
 

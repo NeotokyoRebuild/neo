@@ -285,8 +285,13 @@ public:
 	virtual void CommandCallback(const CCommand& command)
 	{
 		auto team = GetLocalPlayerTeam();
-
 		if(team < FIRST_GAME_TEAM)
+		{
+			return;
+		}
+
+		auto playerNeoClass = static_cast<C_NEO_Player *>(UTIL_PlayerByIndex(GetLocalPlayerIndex()))->m_iNeoClass;
+		if (playerNeoClass == NEO_CLASS_VIP)
 		{
 			return;
 		}

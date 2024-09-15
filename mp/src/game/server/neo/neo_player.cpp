@@ -291,10 +291,9 @@ void SetClass(const CCommand &command)
 		// Our NeoClass enum is zero indexed, so we subtract one.
 		int nextClass = atoi(command.ArgV()[1]) - 1;
 
-		if (NEORules()->GetGameType() == NEO_GAME_TYPE_VIP)
+		if (NEORules()->GetGameType() == NEO_GAME_TYPE_VIP && player->m_iNeoClass == NEO_CLASS_VIP)
 		{
-			// NEOTODO (Adam) Work out if player on team currently escorting vip, can players choose to be vip themselves?
-			nextClass = clamp(nextClass, NEO_CLASS_RECON, NEO_CLASS_VIP);
+			return;
 		}
 		else
 		{

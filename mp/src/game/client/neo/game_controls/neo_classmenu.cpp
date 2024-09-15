@@ -269,7 +269,7 @@ void CNeoClassMenu::UpdateSkinImages(int classNumber = -1)
 		classNumber = player->m_iNeoClass.Get();
 	}
 
-	if (classNumber == NEO_CLASS_VIP)
+	if (classNumber > NEO_CLASS_SUPPORT || classNumber < NEO_CLASS_RECON)
 	{
 		m_pSkinPanel1->SetImage("cm/none");
 		m_pSkinPanel2->SetImage("cm/none");
