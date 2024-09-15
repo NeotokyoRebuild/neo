@@ -17,7 +17,7 @@
 // For details, see: https://github.com/NeotokyoRebuild/neo/pull/587
 void FixupGlShaders(IFileSystem* filesystem)
 {
-	constexpr auto filename = "glshaders.cfg";
+	constexpr char filename[] = "glshaders.cfg";
 	constexpr auto pathID = "MOD";
 	if (filesystem->FileExists(filename, pathID))
 	{
