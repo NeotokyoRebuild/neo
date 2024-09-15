@@ -25,19 +25,20 @@ void FixupGlShaders(IFileSystem* filesystem)
 	}
 
 	char path[MAX_PATH]{0};
-	filesystem->RelativePathToFullPath("", pathID, path, sizeof(path));
-	constexpr int maxPathLen = sizeof(path)-(1+sizeof(filename));
-	if (V_strlen(path) >= maxPathLen)
+	filesystem->RelativePathToFullPath("", pathID, path, ARRAYSIZE(path));
+	const int pathLenBeforeFile = V_strlen(path);
+	constexpr int maxPathLenBeforeFile = ARRAYSIZE(path) - ARRAYSIZE(filename);
+	if (pathLenBeforeFile >= maxPathLenBeforeFile)
 	{
 		Warning("%s: Relative path too long to fixup %s: \"%s\"\nExpected max path length of %d, but got %d\n",
-				__func__, filename, path, maxPathLen, V_strlen(path));
+				__func__, filename, path, maxPathLenBeforeFile, pathLenBeforeFile);
 		return;
 	}
 	V_strcat_safe(path, filename);
 
 	constexpr const char contents[] = "glshadercachev002\n{\n}";
 	auto fh = filesystem->Open(filename, "wt", pathID);
-	filesystem->Write(contents, sizeof(contents)-1, fh); // don't write the null terminator to file
+	filesystem->Write(contents, ARRAYSIZE(contents)-1, fh); // -1 to exclude the null terminator from output
 	filesystem->Flush(fh);
 	filesystem->Close(fh);
 
