@@ -895,7 +895,9 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 		return false;
 	}
 #ifdef NEO
+#ifdef LINUX
 	FixupGlShaders(filesystem);
+#endif
 #endif
 	if ( (engine = (IVEngineClient *)appSystemFactory( VENGINE_CLIENT_INTERFACE_VERSION, NULL )) == NULL )
 		return false;
