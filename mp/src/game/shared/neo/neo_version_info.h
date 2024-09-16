@@ -8,3 +8,5 @@ static constexpr int GIT_LONGHASH_SIZE = 41;
 extern const char* OS_BUILD;
 extern const char* COMPILER_ID;
 extern const char* COMPILER_VERSION;
+extern const wchar_t* BUILD_DISPLAY;
+extern const int* BUILD_DISPLAY_SIZE;
