@@ -20,12 +20,14 @@ void FixupGlShaders(IFileSystem* filesystem, ICvar* cvar)
 	// it's too late for that to take an effect, at least via this route.
 	// The client can still override this by including a command in their autoexec,
 	// if they really want to.
-	auto autosaveGlShaders = cvar->FindVar("mat_autosave_glshaders");
-	if (autosaveGlShaders != nullptr)
+	constexpr auto cvarname = "mat_autosave_glshaders";
+	ConVar* autosaveGlShaders;
+	if (!(autosaveGlShaders = cvar->FindVar(cvarname)))
 	{
-		autosaveGlShaders->SetValue(false);
-		Assert(!autosaveGlShaders->GetBool());
+		Warning("%s: cvar %s not found\n", __func__, cvarname);
+		return;
 	}
+	autosaveGlShaders->SetValue(false);
 
 	// If the problematic file doesn't exist, we're done.
 	if (!filesystem->FileExists(filename, pathID))
@@ -40,6 +42,8 @@ void FixupGlShaders(IFileSystem* filesystem, ICvar* cvar)
 	// This should never happen, but just in case the relative mod path lookup somehow fails.
 	if (filesystem->IsDirectory(filename, pathID))
 	{
+		Warning("%s: Expected to find a file at %s path %s, but it was a dir\n",
+			__func__, pathID, filename);
 		return;
 	}
 
