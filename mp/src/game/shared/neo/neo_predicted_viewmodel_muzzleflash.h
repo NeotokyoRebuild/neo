@@ -8,12 +8,10 @@
 
 #ifdef CLIENT_DLL
 #define CNEOPredictedViewModelMuzzleFlash C_NEOPredictedViewModelMuzzleFlash
-#define CNEO_Player C_NEO_Player
 #endif
 
 #define MUZZLE_FLASH_VIEW_MODEL_INDEX 1
 
-class CNEO_Player;
 class CNEOPredictedViewModelMuzzleFlash : public CPredictedViewModel
 {
 	DECLARE_CLASS(CNEOPredictedViewModelMuzzleFlash, CPredictedViewModel);

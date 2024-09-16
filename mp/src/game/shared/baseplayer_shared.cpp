@@ -882,11 +882,12 @@ void CBasePlayer::UpdateMuzzleFlashProperties(CBaseCombatWeapon* pWeapon)
 	if (!neoViewModelMuzzleflash)
 		return;
 	
-	if (neoWep->GetNeoWepBits() & (NEO_WEP_THROWABLE | NEO_WEP_GHOST | NEO_WEP_KNIFE | NEO_WEP_SUPPRESSED))
+	const auto neoWepBits = neoWep->GetNeoWepBits();
+	if (neoWepBits & (NEO_WEP_THROWABLE | NEO_WEP_GHOST | NEO_WEP_KNIFE | NEO_WEP_SUPPRESSED))
 	{
 		neoViewModelMuzzleflash->m_bActive = false;
 	}
-	else if (neoWep->GetNeoWepBits() & (NEO_WEP_PZ | NEO_WEP_TACHI | NEO_WEP_KYLA))
+	else if (neoWepBits & (NEO_WEP_PZ | NEO_WEP_TACHI | NEO_WEP_KYLA))
 	{
 		neoViewModelMuzzleflash->m_bActive = true;
 		neoViewModelMuzzleflash->m_nSkin = 1;
@@ -894,7 +895,7 @@ void CBasePlayer::UpdateMuzzleFlashProperties(CBaseCombatWeapon* pWeapon)
 		neoViewModelMuzzleflash->m_iAngleZIncrement = -100;
 		neoViewModelMuzzleflash->SetModelScale(0.75);
 	}
-	else if (neoWep->GetNeoWepBits() & NEO_WEP_SUPA7)
+	else if (neoWepBits & NEO_WEP_SUPA7)
 	{
 		neoViewModelMuzzleflash->m_bActive = true;
 		neoViewModelMuzzleflash->m_nSkin = 1;
@@ -902,7 +903,7 @@ void CBasePlayer::UpdateMuzzleFlashProperties(CBaseCombatWeapon* pWeapon)
 		neoViewModelMuzzleflash->m_iAngleZIncrement = -90;
 		neoViewModelMuzzleflash->SetModelScale(2);
 	}
-	else if (neoWep->GetNeoWepBits() & (NEO_WEP_SRM | NEO_WEP_JITTE))
+	else if (neoWepBits & (NEO_WEP_SRM | NEO_WEP_JITTE))
 	{
 		neoViewModelMuzzleflash->m_bActive = true;
 		neoViewModelMuzzleflash->m_nSkin = 0;
@@ -910,7 +911,7 @@ void CBasePlayer::UpdateMuzzleFlashProperties(CBaseCombatWeapon* pWeapon)
 		neoViewModelMuzzleflash->m_iAngleZIncrement = -90;
 		neoViewModelMuzzleflash->SetModelScale(0.75);
 	}
-	else if (neoWep->GetNeoWepBits() & (NEO_WEP_MX | NEO_WEP_AA13))
+	else if (neoWepBits & (NEO_WEP_MX | NEO_WEP_AA13))
 	{
 		neoViewModelMuzzleflash->m_bActive = true;
 		neoViewModelMuzzleflash->m_nSkin = 0;
