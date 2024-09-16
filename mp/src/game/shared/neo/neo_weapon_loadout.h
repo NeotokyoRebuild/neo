@@ -241,7 +241,7 @@ CLoadoutWeaponClass CNEOWeaponLoadout::s_VIPLoadoutWeapons[VIP_WEAPON_LOADOUTS] 
 	{ "SRM", 4, "/loadout/loadout_srm", "loadout/loadout_srm_no", "weapon_srm", "AMMO_PRI" },
 	{ "Jitte", 10, "/loadout/loadout_jitte", "loadout/loadout_jitte_no", "weapon_jitte", "AMMO_PRI" },
 	{ "SRM (silenced)", 10, "/loadout/loadout_srms", "loadout/loadout_srms_no", "weapon_srm_s", "AMMO_PRI" },
-	{ "Jitte (with scope)", 20, "/loadout/loadout_jittes", "/loadout/loadout_jittes/no", "weapon_jittescoped", "AMMO_PRI" },
+	{ "Jitte (with scope)", 20, "/loadout/loadout_jittes", "/loadout/loadout_jittes_no", "weapon_jittescoped", "AMMO_PRI" },
 	{ "ZR68C", 20, "/loadout/loadout_zr68c", "loadout/loadout_zr68c_no", "weapon_zr68c", "AMMO_PRI" },
 	{ "ZR68-L (accurized)", 20, "/loadout/loadout_zr68l", "loadout/loadout_zr68l_no", "weapon_zr68l", "AMMO_PRI" },
 	{ "Murata Supa-7", 20, "/loadout/loadout_supa7", "loadout/loadout_supa7_no", "weapon_supa7", "AMMO_10G_SHELL" },
