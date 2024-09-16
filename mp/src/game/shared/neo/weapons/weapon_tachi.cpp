@@ -53,6 +53,13 @@ CWeaponTachi::CWeaponTachi()
 
 	m_bFiresUnderwater = true;
 	m_bIsPrimaryFireMode = true;
+
+	m_weaponSeeds = {
+		"tachipx",
+		"tachipy",
+		"tachirx",
+		"tachiry",
+	};
 }
 
 void CWeaponTachi::SwitchFireMode( void )
@@ -112,24 +119,4 @@ void CWeaponTachi::ItemPostFrame( void )
 			return;
 		}
 	}
-}
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-void CWeaponTachi::AddViewKick( void )
-{
-	CBasePlayer *pPlayer  = ToBasePlayer( GetOwner() );
-
-	if ( pPlayer == NULL )
-		return;
-
-	QAngle	viewPunch;
-
-	viewPunch.x = SharedRandomFloat( "tachipax", 0.25f, 0.5f );
-	viewPunch.y = SharedRandomFloat( "tachipay", -0.6f, 0.6f );
-	viewPunch.z = 0.0f;
-
-	//Add it to the view punch
-	pPlayer->ViewPunch( viewPunch );
 }

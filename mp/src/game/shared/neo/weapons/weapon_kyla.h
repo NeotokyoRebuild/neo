@@ -23,12 +23,12 @@ public:
 
 	CWeaponKyla(void);
 
-	virtual void	PrimaryAttack(void) OVERRIDE;
-
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const override { return NEO_WEP_KYLA; }
 	virtual int GetNeoWepXPCost(const int neoClass) const override { return 0; }
 
 	virtual float GetSpeedScale(void) const override { return 1.0; }
+
+	virtual Activity GetPrimaryAttackActivity(void) override;
 
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }

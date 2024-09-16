@@ -33,84 +33,16 @@ CWeaponKyla::CWeaponKyla(void)
 {
 	m_bReloadsSingly = false;
 	m_bFiresUnderwater = false;
+
+	m_weaponSeeds = {
+		"kylapx",
+		"kylapy",
+		"kylarx",
+		"kylary",
+	};
 }
 
-void CWeaponKyla::PrimaryAttack(void)
+Activity CWeaponKyla::GetPrimaryAttackActivity()
 {
-	if (ShootingIsPrevented())
-	{
-		return;
-	}
-
-	if (m_iClip1 == 0)
-	{
-		if (!m_bFireOnEmpty)
-		{
-			CheckReload();
-		}
-		else
-		{
-			DryFire();
-		}
-
-		return;
-	}
-
-	// Only the player fires this way so we can cast
-	CBasePlayer* pPlayer = ToBasePlayer(GetOwner());
-
-	if (!pPlayer)
-	{
-		return;
-	}
-	WeaponSound(SINGLE);
-	pPlayer->DoMuzzleFlash();
-
-	SendWeaponAnim(ACT_VM_PRIMARYATTACK);
-	pPlayer->SetAnimation(PLAYER_ATTACK1);
-
-	m_flNextPrimaryAttack = gpGlobals->curtime + GetFireRate();
-
-	m_iClip1--;
-
-	Vector vecSrc = pPlayer->Weapon_ShootPosition();
-	Vector vecAiming = pPlayer->GetAutoaimVector(AUTOAIM_5DEGREES);
-
-	FireBulletsInfo_t info(1, vecSrc, vecAiming, vec3_origin, MAX_TRACE_LENGTH, m_iPrimaryAmmoType);
-	info.m_pAttacker = pPlayer;
-	info.m_iTracerFreq = 0;
-
-	// Fire the bullets, and force the first shot to be perfectly accuracy
-	pPlayer->FireBullets(info);
-
-	// HL2 revolver does this view jerk, but it doesn't play nice with prediction.
-	// We could enable it with shared random vals and taking .z lean into account,
-	// but disabling entirely for now since the view punch seems sufficient.
-#if(0)
-#ifndef CLIENT_DLL
-	//Disorient the player
-	QAngle angles = pPlayer->GetLocalAngles();
-
-	angles.x += random->RandomInt(-1, 1);
-	angles.y += random->RandomInt(-1, 1);
-	angles.z = 0;
-
-	//pPlayer->SnapEyeAngles(angles);
-#endif
-#endif
-
-	const float punchIntensity = 1.0f;
-
-	pPlayer->ViewPunch(QAngle(
-		-punchIntensity,
-		SharedRandomFloat("kylaPunch", -punchIntensity, punchIntensity),
-		0));
-
-	if (!m_iClip1 && pPlayer->GetAmmoCount(m_iPrimaryAmmoType) <= 0)
-	{
-		// HEV suit - indicate out of ammo condition
-		pPlayer->SetSuitUpdate("!HEV_AMO0", FALSE, 0);
-	}
-
-	m_flAccuracyPenalty = min(GetMaxAccuracyPenalty(), m_flAccuracyPenalty + GetAccuracyPenalty());
+	return ACT_VM_PRIMARYATTACK;
 }

@@ -24,8 +24,8 @@
 #include "tier0/memdbgon.h"
 
 #ifdef NEO
-static ConVar cl_showfps("cl_showfps", "0", FCVAR_ARCHIVE, "Draw fps meter at top of screen (1 = fps, 2 = smooth fps)");
-static ConVar cl_showpos("cl_showpos", "0", FCVAR_ARCHIVE, "Draw current position at top of screen");
+ConVar cl_showfps("cl_showfps", "0", FCVAR_ARCHIVE, "Draw fps meter at top of screen (1 = fps, 2 = smooth fps)");
+ConVar cl_showpos("cl_showpos", "0", FCVAR_ARCHIVE, "Draw current position at top of screen");
 #else
 static ConVar cl_showfps( "cl_showfps", "0", 0, "Draw fps meter at top of screen (1 = fps, 2 = smooth fps)" );
 static ConVar cl_showpos( "cl_showpos", "0", 0, "Draw current position at top of screen" );
