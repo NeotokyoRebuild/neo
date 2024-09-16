@@ -266,7 +266,6 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	V_snwprintf(m_wszTime, 6, L"%02d:%02d", minutes, secsRemainder);
 
 	const int localPlayerTeam = GetLocalPlayerTeam();
-	const int neoGameType = NEORules()->GetGameType();
 	if (localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF) {
 		V_snwprintf(m_wszLeftTeamScore, 3, L"%i", GetGlobalTeam(localPlayerTeam)->GetRoundsWon());
 		V_snwprintf(m_wszRightTeamScore, 3, L"%i", GetGlobalTeam(NEORules()->GetOpposingTeam(localPlayerTeam))->GetRoundsWon());

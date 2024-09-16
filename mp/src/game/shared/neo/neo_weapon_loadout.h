@@ -8,7 +8,7 @@
 #define RECON_WEAPON_LOADOUTS 9
 #define ASSAULT_WEAPON_LOADOUTS 12
 #define SUPPORT_WEAPON_LOADOUTS 9
-#define VIP_WEAPON_LOADOUTS 7
+#define VIP_WEAPON_LOADOUTS 9
 
 class CLoadoutWeaponClass
 {
@@ -176,7 +176,7 @@ private:
 	}
 };
 
-CLoadoutWeaponClass CNEOWeaponLoadout::s_DevLoadoutWeapons[12] =
+CLoadoutWeaponClass CNEOWeaponLoadout::s_DevLoadoutWeapons[DEV_WEAPON_LOADOUTS] =
 {
 	{ "MPN45", -255, "loadout/loadout_mpn", "loadout/loadout_mpn_no", "weapon_mpn", "AMMO_PRI" },
 	{ "SRM", -255, "/loadout/loadout_srm", "loadout/loadout_srm_no", "weapon_srm", "AMMO_PRI" },
@@ -192,7 +192,7 @@ CLoadoutWeaponClass CNEOWeaponLoadout::s_DevLoadoutWeapons[12] =
 	{ "Mosok", -255, "loadout/loadout_mosok", "loadout/loadout_mosok_no", "weapon_m41", "AMMO_PRI" }
 };
 
-CLoadoutWeaponClass CNEOWeaponLoadout::s_ReconLoadoutWeapons[9] =
+CLoadoutWeaponClass CNEOWeaponLoadout::s_ReconLoadoutWeapons[RECON_WEAPON_LOADOUTS] =
 {
 	{ "MPN45", -255, "loadout/loadout_mpn", "loadout/loadout_mpn_no", "weapon_mpn", "AMMO_PRI" },
 	{ "SRM", 0, "/loadout/loadout_srm", "loadout/loadout_srm_no", "weapon_srm", "AMMO_PRI" },
@@ -205,7 +205,7 @@ CLoadoutWeaponClass CNEOWeaponLoadout::s_ReconLoadoutWeapons[9] =
 	{ "Mosok Silenced", 20, "/loadout/loadout_mosokl", "loadout/loadout_mosokl_no", "weapon_m41s", "AMMO_PRI" }
 };
 
-CLoadoutWeaponClass CNEOWeaponLoadout::s_AssaultLoadoutWeapons[12] =
+CLoadoutWeaponClass CNEOWeaponLoadout::s_AssaultLoadoutWeapons[ASSAULT_WEAPON_LOADOUTS] =
 {
 	{ "MPN45", -255, "loadout/loadout_mpn", "loadout/loadout_mpn_no", "weapon_mpn", "AMMO_PRI" },
 	{ "SRM", 0, "/loadout/loadout_srm", "loadout/loadout_srm_no", "weapon_srm", "AMMO_PRI" },
@@ -221,7 +221,7 @@ CLoadoutWeaponClass CNEOWeaponLoadout::s_AssaultLoadoutWeapons[12] =
 	{ "SRS", 20, "/loadout/loadout_srs", "/loadout/loadout_srs_no", "weapon_srs", "AMMO_PRI" }
 };
 
-CLoadoutWeaponClass CNEOWeaponLoadout::s_SupportLoadoutWeapons[9] =
+CLoadoutWeaponClass CNEOWeaponLoadout::s_SupportLoadoutWeapons[SUPPORT_WEAPON_LOADOUTS] =
 {
 	{ "MPN45", -255, "loadout/loadout_mpn", "loadout/loadout_mpn_no", "weapon_mpn", "AMMO_PRI" },
 	{ "SRM", 0, "/loadout/loadout_srm", "loadout/loadout_srm_no", "weapon_srm", "AMMO_PRI" },
@@ -234,14 +234,16 @@ CLoadoutWeaponClass CNEOWeaponLoadout::s_SupportLoadoutWeapons[9] =
 	{ "PZ252", 20, "loadout/loadout_pz", "loadout/loadout_pz_no", "weapon_pz", "AMMO_PRI" }
 };
 
-CLoadoutWeaponClass CNEOWeaponLoadout::s_VIPLoadoutWeapons[7] =
+CLoadoutWeaponClass CNEOWeaponLoadout::s_VIPLoadoutWeapons[VIP_WEAPON_LOADOUTS] =
 {
 	{ "SMAC", -255, "loadout/loadout_smac", "loadout/loadout_smac_no", "weapon_smac", "AMMO_PRI" },
 	{ "MPN", 4, "/loadout/loadout_mpn", "loadout/loadout_mpn_no", "weapon_mpn", "AMMO_PRI" },
 	{ "SRM", 4, "/loadout/loadout_srm", "loadout/loadout_srm_no", "weapon_srm", "AMMO_PRI" },
 	{ "Jitte", 10, "/loadout/loadout_jitte", "loadout/loadout_jitte_no", "weapon_jitte", "AMMO_PRI" },
 	{ "SRM (silenced)", 10, "/loadout/loadout_srms", "loadout/loadout_srms_no", "weapon_srm_s", "AMMO_PRI" },
+	{ "Jitte (with scope)", 20, "/loadout/loadout_jittes", "/loadout/loadout_jittes/no", "weapon_jittescoped", "AMMO_PRI" },
 	{ "ZR68C", 20, "/loadout/loadout_zr68c", "loadout/loadout_zr68c_no", "weapon_zr68c", "AMMO_PRI" },
 	{ "ZR68-L (accurized)", 20, "/loadout/loadout_zr68l", "loadout/loadout_zr68l_no", "weapon_zr68l", "AMMO_PRI" },
+	{ "Murata Supa-7", 20, "/loadout/loadout_supa7", "loadout/loadout_supa7_no", "weapon_supa7", "AMMO_10G_SHELL" },
 };
 #endif // NEO_WEAPON_LOADOUT_H

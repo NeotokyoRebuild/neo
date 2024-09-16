@@ -539,8 +539,6 @@ void CNEO_Player::Spawn(void)
 
 	SetPlayerTeamModel();
 	SetViewOffset(VEC_VIEW_NEOSCALE(this));
-	if (m_iNeoClass.Get() == 3)
-		return;
 	GiveLoadoutWeapon();
 }
 

@@ -80,8 +80,6 @@ CNEOGhostCapturePoint::CNEOGhostCapturePoint()
 
 #ifdef CLIENT_DLL
 	m_pHUDCapPoint = NULL;
-#else
-	m_iGameType = NEORules()->GetGameType();
 #endif
 }
 
@@ -198,7 +196,6 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 
 	//DevMsg("CNEOGhostCapturePoint::Think_CheckMyRadius\n");
 
-	m_iGameType = NEORules()->GetGameType();
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
 		CNEO_Player *player = static_cast<CNEO_Player*>(UTIL_EntityByIndex(i));
@@ -208,49 +205,42 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 			continue;
 		}
 
-		if (m_iGameType == NeoGameType::CTG && !player->IsCarryingGhost())
+		if (player->IsCarryingGhost() || player->GetClass() == NEO_CLASS_VIP)
 		{
-			continue;
+			const int team = player->GetTeamNumber();
+
+			Assert(team == TEAM_JINRAI || team == TEAM_NSF);
+			bool isNotTeamCap = team != owningTeamAlternate();
+
+			// Is this our team's capzone?
+			// NEO TODO (Rain): newbie UI helpers for attempting wrong team cap
+			if (isNotTeamCap)
+			{
+				continue;
+			}
+
+			const Vector dir = player->GetAbsOrigin() - GetAbsOrigin();
+			const int distance = static_cast<int>(dir.Length());
+
+			Assert(distance >= 0);
+
+			// Has the ghost carrier reached inside our radius?
+			// NEO TODO (Rain): newbie UI helpers for approaching wrong team cap
+			if (distance > m_flCapzoneRadius)
+			{
+				continue;
+			}
+
+			// We did it!
+			m_bGhostHasBeenCaptured = true;
+			m_iSuccessfulCaptorClientIndex = i;
+
+			DevMsg("Player got ghost inside my radius\n");
+
+			// Return early; we pass next think responsibility to gamerules,
+			// whenever it sees fit to start capzone thinking again.
+			return;
 		}
-
-		if (m_iGameType == NeoGameType::VIP && player->GetClass() != NEO_CLASS_VIP)
-		{
-			continue;
-		}
-
-		const int team = player->GetTeamNumber();
-
-		Assert(team == TEAM_JINRAI || team == TEAM_NSF);
-		bool isNotTeamCap = team != owningTeamAlternate();
-
-		// Is this our team's capzone?
-		// NEO TODO (Rain): newbie UI helpers for attempting wrong team cap
-		if (isNotTeamCap)
-		{
-			continue;
-		}
-
-		const Vector dir = player->GetAbsOrigin() - GetAbsOrigin();
-		const int distance = static_cast<int>(dir.Length());
-
-		Assert(distance >= 0);
-
-		// Has the ghost carrier reached inside our radius?
-		// NEO TODO (Rain): newbie UI helpers for approaching wrong team cap
-		if (distance > m_flCapzoneRadius)
-		{
-			continue;
-		}
-
-		// We did it!
-		m_bGhostHasBeenCaptured = true;
-		m_iSuccessfulCaptorClientIndex = i;
-
-		DevMsg("Player got ghost inside my radius\n");
-
-		// Return early; we pass next think responsibility to gamerules,
-		// whenever it sees fit to start capzone thinking again.
-		return;
 	}
 
 	SetContextThink(&CNEOGhostCapturePoint::Think_CheckMyRadius,
