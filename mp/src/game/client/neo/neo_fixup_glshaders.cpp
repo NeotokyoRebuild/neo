@@ -12,8 +12,8 @@
 // For details, see: https://github.com/NeotokyoRebuild/neo/pull/587
 void FixupGlShaders(IFileSystem* filesystem, ICvar* cvar)
 {
-	constexpr char filename[] = "glshaders.cfg";
-	constexpr auto pathID = "MOD";
+	constexpr auto filename = "glshaders.cfg",
+		pathID = "MOD";
 
 	// This prevents the game from generating the problematic file on exit.
 	// There's also a "mat_autoload_glshaders", but it seems by the time we load,
