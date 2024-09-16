@@ -208,12 +208,12 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 			continue;
 		}
 
-		if (m_iGameType == NEO_GAME_TYPE_CTG && !player->IsCarryingGhost())
+		if (m_iGameType == NeoGameType::CTG && !player->IsCarryingGhost())
 		{
 			continue;
 		}
 
-		if (m_iGameType == NEO_GAME_TYPE_VIP && player->GetClass() != NEO_CLASS_VIP)
+		if (m_iGameType == NeoGameType::VIP && player->GetClass() != NEO_CLASS_VIP)
 		{
 			continue;
 		}

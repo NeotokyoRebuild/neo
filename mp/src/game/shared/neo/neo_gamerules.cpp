@@ -78,6 +78,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropFloat(RECVINFO(m_flNeoNextRoundStartTime)),
 	RecvPropFloat(RECVINFO(m_flNeoRoundStartTime)),
 	RecvPropInt(RECVINFO(m_nRoundStatus)),
+	RecvPropInt(RECVINFO(m_nGameTypeSelected)),
 	RecvPropInt(RECVINFO(m_iRoundNumber)),
 	RecvPropInt(RECVINFO(m_iGhosterTeam)),
 	RecvPropInt(RECVINFO(m_iGhosterPlayer)),
@@ -87,6 +88,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropFloat(SENDINFO(m_flNeoNextRoundStartTime)),
 	SendPropFloat(SENDINFO(m_flNeoRoundStartTime)),
 	SendPropInt(SENDINFO(m_nRoundStatus)),
+	SendPropInt(SENDINFO(m_nGameTypeSelected)),
 	SendPropInt(SENDINFO(m_iRoundNumber)),
 	SendPropInt(SENDINFO(m_iGhosterTeam)),
 	SendPropInt(SENDINFO(m_iGhosterPlayer)),
@@ -313,7 +315,7 @@ CNEORules::CNEORules()
 		}
 	}
 
-	if (GetGameType() == NEO_GAME_TYPE_CTG || GetGameType() == NEO_GAME_TYPE_VIP)
+	if (GetGameType() == NeoGameType::CTG || GetGameType() == NeoGameType::VIP)
 	{
 		ResetGhostCapPoints();
 	}
@@ -642,9 +644,19 @@ void CNEORules::Think(void)
 	// Note that exactly zero here means infinite round time.
 	else if (GetRoundRemainingTime() < 0)
 	{
-		if (GetGameType() == NEO_GAME_TYPE_TDM)
+		if (GetGameType() == NeoGameType::TDM)
 		{
-			// NEOTODO (Adam) Count Kills here, determine victor
+			if (GetGlobalTeam(TEAM_JINRAI)->GetScore() > GetGlobalTeam(TEAM_NSF)->GetScore())
+			{
+				SetWinningTeam(TEAM_JINRAI, NEO_VICTORY_POINTS, false, true, false, false);
+				return;
+			}
+
+			if (GetGlobalTeam(TEAM_NSF)->GetScore() > GetGlobalTeam(TEAM_JINRAI)->GetScore())
+			{
+				SetWinningTeam(TEAM_NSF, NEO_VICTORY_POINTS, false, true, false, false);
+				return;
+			}
 		}
 		SetWinningTeam(TEAM_SPECTATOR, NEO_VICTORY_STALEMATE, false, false, true, false);
 	}
@@ -729,7 +741,7 @@ void CNEORules::Think(void)
 		}
 	}
 
-	if (GetGameType() == NEO_GAME_TYPE_VIP && m_nRoundStatus == NeoRoundStatus::RoundLive)
+	if (GetGameType() == NeoGameType::VIP && m_nRoundStatus == NeoRoundStatus::RoundLive)
 	{
 		if (!m_pVIP)
 		{
@@ -824,7 +836,7 @@ void CNEORules::Think(void)
 		if (m_nRoundStatus == NeoRoundStatus::RoundLive)
 		{
 			COMPILE_TIME_ASSERT(TEAM_JINRAI == 2 && TEAM_NSF == 3);
-			if (GetGameType() != NEO_GAME_TYPE_TDM)
+			if (GetGameType() != NeoGameType::TDM)
 			{
 				for (int team = TEAM_JINRAI; team <= TEAM_NSF; ++team)
 				{
@@ -874,7 +886,7 @@ void CNEORules::AwardRankUp(CNEO_Player *pClient)
 }
 
 // Return remaining time in seconds. Zero means there is no time limit.
-float CNEORules::GetRoundRemainingTime() const
+float CNEORules::GetRoundRemainingTime()
 {
 	if (m_nRoundStatus == NeoRoundStatus::Idle)
 	{
@@ -888,14 +900,14 @@ float CNEORules::GetRoundRemainingTime() const
 	}
 	else
 	{
-		switch (m_nGameTypeSelected) {
-			case NEO_GAME_TYPE_TDM:
+		switch (GetGameType()) {
+			case NeoGameType::TDM:
 				roundTimeLimit = neo_tdm_round_timelimit.GetFloat() * 60.f;
 				break;
-			case NEO_GAME_TYPE_CTG:
+			case NeoGameType::CTG:
 				roundTimeLimit = neo_ctg_round_timelimit.GetFloat() * 60.f;
 				break;
-			case NEO_GAME_TYPE_VIP:
+			case NeoGameType::VIP:
 				roundTimeLimit = neo_vip_round_timelimit.GetFloat() * 60.f;
 				break;
 			default:
@@ -948,10 +960,6 @@ void CNEORules::SpawnTheGhost()
 
 	// Get the amount of ghost spawns available to us
 	int numGhostSpawns = 0;
-	m_pGhost = nullptr;
-	m_bGhostExists = false;
-	m_iGhosterTeam = TEAM_UNASSIGNED;
-	m_iGhosterPlayer = 0;
 
 	pEnt = gEntList.FirstEnt();
 	while (pEnt)
@@ -1105,7 +1113,7 @@ void CNEORules::SelectTheVIP()
 
 void CNEORules::GatherGameTypeVotes()
 {
-	int gameTypes[NEO_GAME_TYPE_NUM] = { 0, 0, 0 };
+	int gameTypes[NeoGameType::Total] = { 0, 0, 0 };
 
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
@@ -1125,7 +1133,7 @@ void CNEORules::GatherGameTypeVotes()
 
 	int mostVotes = gameTypes[0];
 	int mostPopularGameType = 0;
-	for (int i = 1; i < NEO_GAME_TYPE_NUM; i++)
+	for (int i = 1; i < NeoGameType::Total; i++)
 	{
 		if (gameTypes[i] > mostVotes) // NEOTODO (Adam) Handle draws
 		{
@@ -1136,13 +1144,13 @@ void CNEORules::GatherGameTypeVotes()
 	
 	m_nGameTypeSelected = mostPopularGameType;
 	switch (m_nGameTypeSelected) { // NEOTODO (Adam) Selected Game Type HUD Element? Text appears over the class selection screen so can be easily missed
-	case NEO_GAME_TYPE_TDM:
+	case NeoGameType::TDM:
 		UTIL_CenterPrintAll("Team Deathmatch");
 		break;
-	case NEO_GAME_TYPE_CTG:
+	case NeoGameType::CTG:
 		UTIL_CenterPrintAll("Capture The Ghost");
 		break;
-	case NEO_GAME_TYPE_VIP:
+	case NeoGameType::VIP:
 		UTIL_CenterPrintAll("Extract The VIP");
 		break;
 	default:
@@ -1265,40 +1273,7 @@ void CNEORules::StartNextRound()
 
 	FireLegacyEvent_NeoRoundEnd();
 
-	if (GetGameType() == NEO_GAME_TYPE_CTG)
-	{
-		SpawnTheGhost();
-	}
-
-	if (GetGameType() == NEO_GAME_TYPE_VIP)
-	{
-		if (!m_iEscortingTeam)
-		{
-			m_iEscortingTeam.Set(RandomInt(TEAM_JINRAI, TEAM_NSF));
-		}
-		else
-		{
-			m_iEscortingTeam.Set(m_iEscortingTeam.Get() == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI);
-		}
-		
-		if (m_pVIP)
-		{
-			m_pVIP->m_iNeoClass.Set(m_iVIPPreviousClass);
-			m_pVIP->m_iNextSpawnClassChoice.Set(m_iVIPPreviousClass);
-			m_pVIP->RequestSetClass(m_iVIPPreviousClass);
-			engine->ClientCommand(m_pVIP->edict(), "classmenu");
-		}
-
-		SelectTheVIP();
-	}
-
-	if (GetGameType() == NEO_GAME_TYPE_TDM)
-	{
-		for (int i = 0; i < GetNumberOfTeams(); i++)
-		{
-			GetGlobalTeam(i)->SetScore(0);
-		}
-	}
+	SetGameRelatedVars();
 
 	IGameEvent *event = gameeventmanager->CreateEvent("round_start");
 	if (event)
@@ -1359,11 +1334,11 @@ const char *CNEORules::GetGameDescription(void)
 
 	// NEO TODO (Rain): get a neo_game_config so we can specify better
 	switch(GetGameType()) {
-		case NEO_GAME_TYPE_TDM:
+		case NeoGameType::TDM:
 			return "Team Deathmatch";
-		case NEO_GAME_TYPE_CTG:
+		case NeoGameType::CTG:
 			return "Capture the Ghost";
-		case NEO_GAME_TYPE_VIP:
+		case NeoGameType::VIP:
 			return "Escort the VIP";
 		default:
 			return BaseClass::GetGameDescription();
@@ -1571,6 +1546,69 @@ void CNEORules::ResetGhostCapPoints()
 	}
 }
 
+void CNEORules::SetGameRelatedVars()
+{
+	ResetTDM();
+
+	ResetGhost();
+	if (GetGameType() == NeoGameType::CTG)
+	{
+		SpawnTheGhost();
+	}
+
+	ResetVIP();
+	if (GetGameType() == NeoGameType::VIP)
+	{
+		if (!m_iEscortingTeam)
+		{
+			m_iEscortingTeam.Set(RandomInt(TEAM_JINRAI, TEAM_NSF));
+		}
+		else
+		{
+			m_iEscortingTeam.Set(m_iEscortingTeam.Get() == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI);
+		}
+
+		SelectTheVIP();
+	}
+
+	if (GetGameType() == NeoGameType::TDM)
+	{
+		for (int i = 0; i < GetNumberOfTeams(); i++)
+		{
+			GetGlobalTeam(i)->SetScore(0);
+		}
+	}
+}
+
+void CNEORules::ResetTDM()
+{
+	for (int i = 0; i < GetNumberOfTeams(); i++)
+	{
+		GetGlobalTeam(i)->SetScore(0);
+	}
+}
+
+void CNEORules::ResetGhost()
+{
+	m_pGhost = nullptr;
+	m_bGhostExists = false;
+	m_iGhosterTeam = TEAM_UNASSIGNED;
+	m_iGhosterPlayer = 0;
+}
+
+void CNEORules::ResetVIP()
+{
+	if (!m_pVIP)
+		return;
+	
+	const int nextClass = m_iVIPPreviousClass ? m_iVIPPreviousClass : NEO_CLASS_ASSAULT;
+	m_pVIP->m_iNeoClass.Set(nextClass);
+	m_pVIP->m_iNextSpawnClassChoice.Set(nextClass);
+	m_pVIP->RequestSetClass(nextClass);
+
+	engine->ClientCommand(m_pVIP->edict(), "classmenu");
+}
+
 void CNEORules::RestartGame()
 {
 	// bounds check
@@ -1625,40 +1663,7 @@ void CNEORules::RestartGame()
 
 	ResetMapSessionCommon();
 
-	if (GetGameType() == NEO_GAME_TYPE_CTG)
-	{
-		SpawnTheGhost();
-	}
-
-	if (GetGameType() == NEO_GAME_TYPE_VIP)
-	{
-		if (!m_iEscortingTeam)
-		{
-			m_iEscortingTeam = RandomInt(TEAM_JINRAI, TEAM_NSF);
-		}
-		else
-		{
-			m_iEscortingTeam = m_iEscortingTeam == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI;
-		}
-
-		if (m_pVIP)
-		{
-			m_pVIP->m_iNeoClass.Set(m_iVIPPreviousClass);
-			m_pVIP->m_iNextSpawnClassChoice.Set(m_iVIPPreviousClass);
-			m_pVIP->RequestSetClass(m_iVIPPreviousClass);
-			engine->ClientCommand(m_pVIP->edict(), "classmenu");
-		}
-
-		SelectTheVIP();
-	}
-
-	if (GetGameType() == NEO_GAME_TYPE_TDM)
-	{
-		for (int i = 0; i < GetNumberOfTeams(); i++)
-		{
-			GetGlobalTeam(i)->SetScore(0);
-		}
-	}
+	SetGameRelatedVars();
 
 	IGameEvent * event = gameeventmanager->CreateEvent("round_start");
 	if (event)
@@ -1913,11 +1918,6 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 	char victoryMsg[128];
 	bool gotMatchWinner = false;
 	bool isSuddenDeath = false;
-
-	if (GetGameType() == NEO_GAME_TYPE_TDM)
-	{
-		gotMatchWinner = true;
-	}
 
 	if (!bForceMapReset)
 	{
@@ -2454,12 +2454,12 @@ bool CNEORules::FPlayerCanRespawn(CBasePlayer* pPlayer)
 {
 	auto gameType = GetGameType();
 
-	if (gameType == NEO_GAME_TYPE_TDM)
+	if (gameType == NeoGameType::TDM)
 	{
 		return true;
 	}
 	// Some unknown game mode
-	else if (gameType != NEO_GAME_TYPE_CTG && gameType != NEO_GAME_TYPE_VIP)
+	else if (gameType != NeoGameType::CTG && gameType != NeoGameType::VIP)
 	{
 		Assert(false);
 		return true;
@@ -2535,11 +2535,11 @@ const char* CNEORules::GetGameTypeName(void)
 {
 	switch (GetGameType())
 	{
-	case NEO_GAME_TYPE_TDM:
+	case NeoGameType::TDM:
 		return "Team Deathmatch";
-	case NEO_GAME_TYPE_CTG:
+	case NeoGameType::CTG:
 		return "Capture the Ghost";
-	case NEO_GAME_TYPE_VIP:
+	case NeoGameType::VIP:
 		return "Escort the VIP";
 	default:
 		Assert(false);

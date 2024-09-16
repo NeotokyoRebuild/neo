@@ -268,32 +268,23 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	const int localPlayerTeam = GetLocalPlayerTeam();
 	const int neoGameType = NEORules()->GetGameType();
 	if (localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF) {
-		if (neoGameType == NEO_GAME_TYPE_CTG)
-		{
-			V_snwprintf(m_wszLeftTeamScore, 3, L"%i", GetGlobalTeam(localPlayerTeam)->GetRoundsWon());
-			V_snwprintf(m_wszRightTeamScore, 3, L"%i", GetGlobalTeam(NEORules()->GetOpposingTeam(localPlayerTeam))->GetRoundsWon());
-		}
-		else if (neoGameType == NEO_GAME_TYPE_TDM)
-		{
-			V_snwprintf(m_wszLeftTeamScore, 3, L"%i", GetGlobalTeam(localPlayerTeam)->Get_Score());
-			V_snwprintf(m_wszRightTeamScore, 3, L"%i", GetGlobalTeam(NEORules()->GetOpposingTeam(localPlayerTeam))->Get_Score());
-		}
+		V_snwprintf(m_wszLeftTeamScore, 3, L"%i", GetGlobalTeam(localPlayerTeam)->GetRoundsWon());
+		V_snwprintf(m_wszRightTeamScore, 3, L"%i", GetGlobalTeam(NEORules()->GetOpposingTeam(localPlayerTeam))->GetRoundsWon());
 	}
 	else {
-		if (neoGameType == NEO_GAME_TYPE_CTG)
-		{
-			V_snwprintf(m_wszLeftTeamScore, 3, L"%i", GetGlobalTeam(TEAM_JINRAI)->GetRoundsWon());
-			V_snwprintf(m_wszRightTeamScore, 3, L"%i", GetGlobalTeam(TEAM_NSF)->GetRoundsWon());
-		}
-		else if (neoGameType == NEO_GAME_TYPE_TDM)
-		{
-			V_snwprintf(m_wszLeftTeamScore, 3, L"%i", GetGlobalTeam(TEAM_JINRAI)->Get_Score());
-			V_snwprintf(m_wszRightTeamScore, 3, L"%i", GetGlobalTeam(TEAM_NSF)->Get_Score());
-		}
+		V_snwprintf(m_wszLeftTeamScore, 3, L"%i", GetGlobalTeam(TEAM_JINRAI)->GetRoundsWon());
+		V_snwprintf(m_wszRightTeamScore, 3, L"%i", GetGlobalTeam(TEAM_NSF)->GetRoundsWon());
 	}
 
 	char szPlayersAliveANSI[9] = {};
-	V_sprintf_safe(szPlayersAliveANSI, "%i vs %i", m_iLeftPlayersAlive, m_iRightPlayersAlive);
+	if (NEORules()->GetGameType() == NeoGameType::TDM)
+	{
+		V_sprintf_safe(szPlayersAliveANSI, "%i:%i", GetGlobalTeam(localPlayerTeam)->Get_Score(), GetGlobalTeam(NEORules()->GetOpposingTeam(localPlayerTeam))->Get_Score());
+	}
+	else
+	{
+		V_sprintf_safe(szPlayersAliveANSI, "%i vs %i", m_iLeftPlayersAlive, m_iRightPlayersAlive);
+	}
 	g_pVGuiLocalize->ConvertANSIToUnicode(szPlayersAliveANSI, m_wszPlayersAliveUnicode, sizeof(m_wszPlayersAliveUnicode));
 }
 

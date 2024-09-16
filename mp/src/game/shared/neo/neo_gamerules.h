@@ -31,11 +31,6 @@ enum
 
 #define NEO_GAME_NAME "Neotokyo: Revamp"
 
-#define NEO_GAME_TYPE_TDM 0
-#define NEO_GAME_TYPE_CTG 1
-#define NEO_GAME_TYPE_VIP 2
-#define NEO_GAME_TYPE_NUM 3 // NEOTODO (Adam) Should this be an enum or something?
-
 #ifdef CLIENT_DLL
 	#define CNEORules C_NEORules
 	#define CNEOGameRulesProxy C_NEOGameRulesProxy
@@ -94,6 +89,14 @@ class C_NEO_Player;
 #endif
 
 extern ConVar neo_sv_player_restore;
+
+enum NeoGameType {
+	TDM = 0,
+	CTG,
+	VIP,
+
+	Total // Number of game types
+};
 
 enum NeoRoundStatus {
 	Idle = 0,
@@ -174,6 +177,11 @@ public:
 
 	void ResetGhostCapPoints();
 
+	void SetGameRelatedVars();
+	void ResetTDM();
+	void ResetGhost();
+	void ResetVIP();
+
 	void CheckRestartGame();
 
 	void AwardRankUp(int client);
@@ -185,7 +193,7 @@ public:
 
 	virtual bool CheckGameOver(void) OVERRIDE;
 
-	float GetRoundRemainingTime() const;
+	float GetRoundRemainingTime();
 	float GetRoundAccumulatedTime() const;
 #ifdef GAME_DLL
 	float MirrorDamageMultiplier() const;
@@ -287,6 +295,7 @@ private:
 	CWeaponGhost *m_pGhost = nullptr;
 	CNEO_Player *m_pVIP = nullptr;
 	int m_iVIPPreviousClass = 0;
+
 	float m_flPrevThinkKick = 0.0f;
 	float m_flPrevThinkMirrorDmg = 0.0f;
 #endif
