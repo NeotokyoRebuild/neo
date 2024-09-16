@@ -1487,13 +1487,19 @@ void CNEO_Player::CreateViewModel( int index )
 
 	if ( !GetViewModel(MUZZLE_FLASH_VIEW_MODEL_INDEX))
 	{
-		CNEOPredictedViewModelMuzzleFlash* vmm = (CNEOPredictedViewModelMuzzleFlash*)CreateEntityByName("neo_predicted_viewmodel_muzzleflash");
+		auto* vmm = (CNEOPredictedViewModelMuzzleFlash*)CreateEntityByName("neo_predicted_viewmodel_muzzleflash");
 		if (!vmm)
+		{
+			Assert(false);
 			return;
+		}
 		
 		CBaseViewModel* vm = GetViewModel();
 		if (!vm)
+		{
+			Assert(false);
 			return;
+		}
 
 		vmm->SetAbsOrigin(vm->GetAbsOrigin());
 		vmm->SetOwner(this);

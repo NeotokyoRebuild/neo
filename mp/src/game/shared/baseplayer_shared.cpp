@@ -878,11 +878,11 @@ void CBasePlayer::UpdateMuzzleFlashProperties(CBaseCombatWeapon* pWeapon)
 	if (!neoWep)
 		return;
 
-	CNEOPredictedViewModelMuzzleFlash* neoViewModelMuzzleflash = static_cast<CNEOPredictedViewModelMuzzleFlash*>(m_hViewModel[MUZZLE_FLASH_VIEW_MODEL_INDEX].Get());
+	auto* neoViewModelMuzzleflash = static_cast<CNEOPredictedViewModelMuzzleFlash*>(m_hViewModel[MUZZLE_FLASH_VIEW_MODEL_INDEX].Get());
 	if (!neoViewModelMuzzleflash)
 		return;
 	
-	if (neoWep->GetNeoWepBits() & (NEO_WEP_DETPACK | NEO_WEP_GHOST | NEO_WEP_FRAG_GRENADE | NEO_WEP_KNIFE | NEO_WEP_SMOKE_GRENADE | NEO_WEP_SUPPRESSED | NEO_WEP_EXPLOSIVE))
+	if (neoWep->GetNeoWepBits() & (NEO_WEP_THROWABLE | NEO_WEP_GHOST | NEO_WEP_KNIFE | NEO_WEP_SUPPRESSED))
 	{
 		neoViewModelMuzzleflash->m_bActive = false;
 	}
@@ -892,7 +892,7 @@ void CBasePlayer::UpdateMuzzleFlashProperties(CBaseCombatWeapon* pWeapon)
 		neoViewModelMuzzleflash->m_nSkin = 1;
 		neoViewModelMuzzleflash->m_iAngleZ = 0;
 		neoViewModelMuzzleflash->m_iAngleZIncrement = -100;
-		neoViewModelMuzzleflash->m_iModelScale = 0.75;
+		neoViewModelMuzzleflash->SetModelScale(0.75);
 	}
 	else if (neoWep->GetNeoWepBits() & NEO_WEP_SUPA7)
 	{
@@ -900,7 +900,7 @@ void CBasePlayer::UpdateMuzzleFlashProperties(CBaseCombatWeapon* pWeapon)
 		neoViewModelMuzzleflash->m_nSkin = 1;
 		neoViewModelMuzzleflash->m_iAngleZ = 0;
 		neoViewModelMuzzleflash->m_iAngleZIncrement = -90;
-		neoViewModelMuzzleflash->m_iModelScale = 2;
+		neoViewModelMuzzleflash->SetModelScale(2);
 	}
 	else if (neoWep->GetNeoWepBits() & (NEO_WEP_SRM | NEO_WEP_JITTE))
 	{
@@ -908,7 +908,7 @@ void CBasePlayer::UpdateMuzzleFlashProperties(CBaseCombatWeapon* pWeapon)
 		neoViewModelMuzzleflash->m_nSkin = 0;
 		neoViewModelMuzzleflash->m_iAngleZ = 0;
 		neoViewModelMuzzleflash->m_iAngleZIncrement = -90;
-		neoViewModelMuzzleflash->m_iModelScale = 0.75;
+		neoViewModelMuzzleflash->SetModelScale(0.75);
 	}
 	else if (neoWep->GetNeoWepBits() & (NEO_WEP_MX | NEO_WEP_AA13))
 	{
@@ -916,7 +916,7 @@ void CBasePlayer::UpdateMuzzleFlashProperties(CBaseCombatWeapon* pWeapon)
 		neoViewModelMuzzleflash->m_nSkin = 0;
 		neoViewModelMuzzleflash->m_iAngleZ = 0;
 		neoViewModelMuzzleflash->m_iAngleZIncrement = -100;
-		neoViewModelMuzzleflash->m_iModelScale = 0.6;
+		neoViewModelMuzzleflash->SetModelScale(0.6);
 	}
 	else
 	{
@@ -924,7 +924,7 @@ void CBasePlayer::UpdateMuzzleFlashProperties(CBaseCombatWeapon* pWeapon)
 		neoViewModelMuzzleflash->m_nSkin = 0;
 		neoViewModelMuzzleflash->m_iAngleZ = 0;
 		neoViewModelMuzzleflash->m_iAngleZIncrement = -90;
-		neoViewModelMuzzleflash->m_iModelScale = 0.75;
+		neoViewModelMuzzleflash->SetModelScale(0.75);
 	}
 }
 #endif // NEO

@@ -27,7 +27,7 @@ END_PREDICTION_DATA()
 
 LINK_ENTITY_TO_CLASS(neo_predicted_viewmodel_muzzleflash, CNEOPredictedViewModelMuzzleFlash);
 
-#define MUZZLE_FLASH_ENTITY_MODEL "models/effect/fpmf/fpmf01.mdl"
+constexpr const char* MUZZLE_FLASH_ENTITY_MODEL = "models/effect/fpmf/fpmf01.mdl";
 
 //-----------------------------------------------------------------------------
 // Purpose: Precache assets used by the entity
@@ -47,10 +47,8 @@ void CNEOPredictedViewModelMuzzleFlash::Spawn(void)
 	Precache();
 	SetModel(MUZZLE_FLASH_ENTITY_MODEL);
 	SetSolid(SOLID_NONE);
-	AddEffects(EF_NOSHADOW);
-	AddEffects(EF_NORECEIVESHADOW);
-	RemoveEffects(EF_NODRAW);
-	RemoveEffects(EF_BONEMERGE);
+	AddEffects(EF_NOSHADOW | EF_NORECEIVESHADOW);
+	RemoveEffects(EF_NODRAW | EF_BONEMERGE);
 }
 
 #ifdef CLIENT_DLL
@@ -65,9 +63,6 @@ int CNEOPredictedViewModelMuzzleFlash::DrawModel(int flags)
 		if (vm == NULL)
 			return -1;
 
-		if (m_iModelScale != GetModelScale())
-			SetModelScale(m_iModelScale); // NEOTODO (Adam) model scale is a networked property in cbaseanimating, but for some reason its not being networked when set on the server side when initially spawning/respawning the player, so sometimes muzzle flash size can be incorrect if using SetModelScale in Weapon_Equip()
-
 		int iAttachment = vm->LookupAttachment("muzzle");
 		if (iAttachment < 0)
 			return -1;
@@ -81,8 +76,7 @@ int CNEOPredictedViewModelMuzzleFlash::DrawModel(int flags)
 		SetAbsOrigin(localOrigin);
 		SetAbsAngles(localAngle);
 
-		int ret = BaseClass::DrawModel(flags);
-		return ret;
+		return BaseClass::DrawModel(flags);
 	}
 	return -1;
 }

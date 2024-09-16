@@ -26,14 +26,13 @@ public:
 		m_iAngleZ = 0;
 		m_iAngleZIncrement = -5;
 		m_flTimeSwitchOffMuzzleFlash = gpGlobals->curtime;
-		m_iModelScale = 1;
 	}
 
 #ifdef CLIENT_DLL
-	ShadowType_t	ShadowCastType() override { return SHADOWS_NONE; };
-	RenderGroup_t	GetRenderGroup() override { return RENDER_GROUP_VIEW_MODEL_TRANSLUCENT; };
-	int				DrawModel(int flags) override;
-	void			ProcessMuzzleFlashEvent() override
+	virtual ShadowType_t	ShadowCastType() final override { return SHADOWS_NONE; };
+	virtual RenderGroup_t	GetRenderGroup() final override { return RENDER_GROUP_VIEW_MODEL_TRANSLUCENT; };
+	virtual int				DrawModel(int flags) final override;
+	virtual void			ProcessMuzzleFlashEvent() final override
 	{
 		if (!m_bActive)
 			return;
@@ -42,12 +41,11 @@ public:
 	}
 #endif
 
-	void Spawn(void);
-	void Precache(void);
+	virtual void Spawn(void) override;
+	virtual void Precache(void) override;
 	bool	m_bActive;
 	int		m_iAngleZ;
 	int		m_iAngleZIncrement;
-	float	m_iModelScale;
 	float	m_flTimeSwitchOffMuzzleFlash; // If the server can fire a user's weapon (maybe some kind of server triggered weapon cook off or something), this will need to be networked too.
 };
 
