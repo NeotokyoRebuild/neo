@@ -40,7 +40,11 @@ ConVar cl_onlysteamnick("cl_onlysteamnick", "0", FCVAR_USERINFO | FCVAR_ARCHIVE,
 #endif
 
 ConVar neo_vote_game_mode("neo_vote_game_mode", "1", FCVAR_ARCHIVE | FCVAR_USERINFO, "Vote on game mode to play. TDM=0, CTG=1, VIP=2", true, 0, true, 2);
-ConVar neo_cl_vip_eligible("neo_cl_vip_eligible", "1", FCVAR_ARCHIVE, "Eligible for VIP", true, 0, true, 1);
+ConVar neo_vip_eligible("neo_cl_vip_eligible", "1", FCVAR_ARCHIVE, "Eligible for VIP", true, 0, true, 1);
+
+#ifdef GAME_DLL
+ConVar sv_neo_change_game_type_mid_round("sv_neo_change_game_type_mid_round", "1", FCVAR_REPLICATED, "Allow game type change mid-match");
+#endif
 
 #ifdef GAME_DLL
 #ifdef DEBUG
@@ -1271,9 +1275,13 @@ void CNEORules::StartNextRound()
 		m_pRestoredInfos.Purge();
 		// If game was in warmup then also decide on game mode here
 	}
-	GatherGameTypeVotes();
 
 	FireLegacyEvent_NeoRoundEnd();
+
+	if (!GetGameType() || sv_neo_change_game_type_mid_round.GetBool())
+	{
+		GatherGameTypeVotes();
+	}
 
 	SetGameRelatedVars();
 
@@ -1664,6 +1672,8 @@ void CNEORules::RestartGame()
 	m_bCompleteReset = false;
 
 	ResetMapSessionCommon();
+
+	GatherGameTypeVotes();
 
 	SetGameRelatedVars();
 
