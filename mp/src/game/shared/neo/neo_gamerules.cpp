@@ -1148,7 +1148,9 @@ void CNEORules::GatherGameTypeVotes()
 			mostVotes = gameTypes[i];
 			mostPopularGameType = i;
 		}
-	}	
+	}
+
+	m_nGameTypeSelected = mostPopularGameType;
 }
 
 void CNEORules::StartNextRound()
