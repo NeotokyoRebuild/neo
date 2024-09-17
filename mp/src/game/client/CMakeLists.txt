@@ -1482,6 +1482,8 @@ target_sources_grouped(
     neo/c_neo_player.h
     neo/c_neo_te_tocflash.cpp
     neo/c_neo_te_tocflash.h
+    neo/neo_fixup_glshaders.cpp
+    neo/neo_fixup_glshaders.h
 )
 
 target_sources_grouped(
