@@ -39,7 +39,7 @@ public:
 
 	virtual void OnMousePressed(vgui::MouseCode code);
 
-	virtual const char *GetResFile(void)
+	const char *GetResFile(void) const
 	{
 		return "resource/neo_ui/Neo_LoadoutMenu_Dev.res";
 	}

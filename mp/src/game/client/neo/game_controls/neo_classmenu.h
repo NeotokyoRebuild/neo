@@ -57,7 +57,7 @@ public:
 
     virtual Color GetBlackBarColor( void ) { return Color(0, 0, 0, 196); }
 
-    virtual const char *GetResFile(void)
+    const char *GetResFile(void) const
     {
         return "resource/neo_ui/Neo_ClassMenu.res";
     }
