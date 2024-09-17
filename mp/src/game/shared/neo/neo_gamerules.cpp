@@ -88,6 +88,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropInt(RECVINFO(m_iRoundNumber)),
 	RecvPropInt(RECVINFO(m_iGhosterTeam)),
 	RecvPropInt(RECVINFO(m_iGhosterPlayer)),
+	RecvPropInt(RECVINFO(m_iEscortingTeam)),
 	RecvPropBool(RECVINFO(m_bGhostExists)),
 	RecvPropVector(RECVINFO(m_vecGhostMarkerPos)),
 #else
@@ -98,6 +99,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropInt(SENDINFO(m_iRoundNumber)),
 	SendPropInt(SENDINFO(m_iGhosterTeam)),
 	SendPropInt(SENDINFO(m_iGhosterPlayer)),
+	SendPropInt(SENDINFO(m_iEscortingTeam)),
 	SendPropBool(SENDINFO(m_bGhostExists)),
 	SendPropVector(SENDINFO(m_vecGhostMarkerPos), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT),
 #endif
@@ -1146,23 +1148,7 @@ void CNEORules::GatherGameTypeVotes()
 			mostVotes = gameTypes[i];
 			mostPopularGameType = i;
 		}
-	}
-	
-	m_nGameTypeSelected = mostPopularGameType;
-	switch (m_nGameTypeSelected) { // NEOTODO (Adam) Selected Game Type HUD Element? Text appears over the class selection screen so can be easily missed
-	case NeoGameType::TDM:
-		UTIL_CenterPrintAll("Team Deathmatch");
-		break;
-	case NeoGameType::CTG:
-		UTIL_CenterPrintAll("Capture The Ghost");
-		break;
-	case NeoGameType::VIP:
-		UTIL_CenterPrintAll("Extract The VIP");
-		break;
-	default:
-		UTIL_CenterPrintAll("Custom Game Type");
-		break;
-	}
+	}	
 }
 
 void CNEORules::StartNextRound()
@@ -1322,6 +1308,11 @@ bool CNEORules::IsRoundOver() const
 	return false;
 }
 
+bool CNEORules::IsRoundLive() const
+{
+	return m_nRoundStatus == NeoRoundStatus::RoundLive;
+}
+
 void CNEORules::CreateStandardEntities(void)
 {
 	BaseClass::CreateStandardEntities();
@@ -1349,7 +1340,7 @@ const char *CNEORules::GetGameDescription(void)
 		case NeoGameType::CTG:
 			return "Capture the Ghost";
 		case NeoGameType::VIP:
-			return "Escort the VIP";
+			return "Extract or Kill the VIP";
 		default:
 			return BaseClass::GetGameDescription();
 	}
@@ -2525,7 +2516,7 @@ void CNEORules::SetRoundStatus(NeoRoundStatus status)
 #ifdef GAME_DLL
 		if (status == NeoRoundStatus::RoundLive)
 		{
-			UTIL_CenterPrintAll("GO GO GO\n"); // NEO TODO (Rain): correct phrase
+			UTIL_CenterPrintAll("GO! GO! GO!\n");
 		}
 #endif
 	}
@@ -2548,11 +2539,11 @@ const char* CNEORules::GetGameTypeName(void)
 	switch (GetGameType())
 	{
 	case NeoGameType::TDM:
-		return "Team Deathmatch";
+		return "TDM";
 	case NeoGameType::CTG:
-		return "Capture the Ghost";
+		return "CTG";
 	case NeoGameType::VIP:
-		return "Escort the VIP";
+		return "VIP";
 	default:
 		Assert(false);
 		return "Unknown";

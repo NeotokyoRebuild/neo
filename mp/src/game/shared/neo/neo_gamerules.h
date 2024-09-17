@@ -215,6 +215,7 @@ public:
 #endif
 
 	bool IsRoundOver() const;
+	bool IsRoundLive() const;
 #ifdef GAME_DLL
 	void GatherGameTypeVotes();
 	void StartNextRound();
