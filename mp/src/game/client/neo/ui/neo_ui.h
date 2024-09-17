@@ -96,9 +96,11 @@ struct FontInfo
 
 enum EFont
 {
-	FONT_NTSMALL,
 	FONT_NTNORMAL,
+	FONT_NTHEADING,
+	FONT_NTHORIZSIDES,
 	FONT_LOGO,
+	FONT_NTLARGE,
 
 	FONT__TOTAL,
 };
@@ -148,7 +150,7 @@ struct Context
 	bool bTextEditIsPassword;
 
 	FontInfo fonts[FONT__TOTAL];
-	EFont eFont = FONT_NTSMALL;
+	EFont eFont = FONT_NTNORMAL;
 
 	// Input management
 	int iWidget; // Always increments per widget use

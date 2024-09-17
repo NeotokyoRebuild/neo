@@ -128,9 +128,9 @@ void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode, const wchar_t *w
 
 		if (wszTitle)
 		{
-			SwapFont(FONT_NTNORMAL);
+			SwapFont(FONT_NTHEADING);
 			surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
-			GCtxDrawSetTextPos(g_pCtx->iMarginX, -g_pCtx->iRowTall + g_pCtx->fonts[FONT_NTNORMAL].iYOffset);
+			GCtxDrawSetTextPos(g_pCtx->iMarginX, -g_pCtx->iRowTall + g_pCtx->fonts[FONT_NTHEADING].iYOffset);
 			surface()->DrawPrintText(wszTitle, V_wcslen(wszTitle));
 		}
 		break;
@@ -142,7 +142,7 @@ void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode, const wchar_t *w
 		break;
 	}
 
-	SwapFont(FONT_NTSMALL);
+	SwapFont(FONT_NTNORMAL);
 	surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
 }
 
@@ -571,6 +571,7 @@ void RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, const i
 
 void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 {
+	SwapFont(FONT_NTHORIZSIDES);
 	// This is basically a ringbox but different UI
 	if (g_pCtx->iWidget == g_pCtx->iActive && g_pCtx->iSection == g_pCtx->iActiveSection) g_pCtx->iActive += g_pCtx->iActiveDirection;
 	const auto wdgState = InternalGetMouseinFocused();
@@ -649,6 +650,7 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 	}
 
 	InternalUpdatePartitionState(wdgState);
+	SwapFont(FONT_NTNORMAL);
 }
 
 static float ClampAndLimitDp(const float curValue, const float flMin, const float flMax, const int iDp)
