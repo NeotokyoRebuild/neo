@@ -285,6 +285,43 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 		V_sprintf_safe(szPlayersAliveANSI, "%i vs %i", m_iLeftPlayersAlive, m_iRightPlayersAlive);
 	}
 	g_pVGuiLocalize->ConvertANSIToUnicode(szPlayersAliveANSI, m_wszPlayersAliveUnicode, sizeof(m_wszPlayersAliveUnicode));
+
+	// Update Objective
+	switch (NEORules()->GetGameType()) {
+	case NeoGameType::TDM:
+		V_sprintf_safe(szGameTypeDescription, "Score the most Points\n");
+		break;
+	case NeoGameType::CTG:
+		V_sprintf_safe(szGameTypeDescription, "Capture the Ghost\n");
+		break;
+	case NeoGameType::VIP:
+		if (localPlayerTeam == NEORules()->m_iEscortingTeam.Get())
+		{
+			V_sprintf_safe(szGameTypeDescription, "Escort the VIP\n");
+		}
+		else
+		{
+			V_sprintf_safe(szGameTypeDescription, "Eliminate the VIP\n");
+		}
+		break;
+	default:
+		V_sprintf_safe(szGameTypeDescription, "Await further orders\n");
+		break;
+	}
+
+	if (auto localPlayer = UTIL_PlayerByIndex(GetLocalPlayerIndex()))
+	{
+		if (NEORules()->IsRoundPreRoundFreeze() || localPlayer->m_nButtons & IN_SCORE)
+		{
+			m_iGameTypeDescriptionState = MIN(m_iGameTypeDescriptionState + 1, Q_UnicodeLength(szGameTypeDescription));
+		}
+		else
+		{
+			m_iGameTypeDescriptionState = MAX(m_iGameTypeDescriptionState - 1, 0);
+		}
+
+		g_pVGuiLocalize->ConvertANSIToUnicode(szGameTypeDescription, m_wszGameTypeDescription, m_iGameTypeDescriptionState * sizeof(wchar_t));
+	}
 }
 
 void CNEOHud_RoundState::DrawNeoHudElement()
@@ -468,6 +505,16 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 									COLOR_RED : COLOR_WHITE);
 	surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), neo_cl_squad_hud_original.GetBool() ? Y_POS : m_iSmallFontHeight);
 	surface()->DrawPrintText(m_wszTime, 6);
+
+	// Draw Game Type Description
+	if (m_iGameTypeDescriptionState)
+	{
+		surface()->DrawSetTextFont(m_hOCRFont);
+		surface()->GetTextSize(m_hOCRFont, m_wszGameTypeDescription, fontWidth, fontHeight);
+		surface()->DrawSetTextColor(COLOR_WHITE);
+		surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), m_iBoxYEnd);
+		surface()->DrawPrintText(m_wszGameTypeDescription, Q_UnicodeLength(m_wszGameTypeDescription));
+	}
 
 	CheckActiveStar();
 }

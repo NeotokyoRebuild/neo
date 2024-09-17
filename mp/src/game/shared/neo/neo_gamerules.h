@@ -213,9 +213,9 @@ public:
 
 	virtual float FlPlayerFallDamage(CBasePlayer* pPlayer) OVERRIDE;
 #endif
-
-	bool IsRoundOver() const;
+	bool IsRoundPreRoundFreeze() const;
 	bool IsRoundLive() const;
+	bool IsRoundOver() const;
 #ifdef GAME_DLL
 	void GatherGameTypeVotes();
 	void StartNextRound();
@@ -300,7 +300,7 @@ private:
 	float m_flPrevThinkKick = 0.0f;
 	float m_flPrevThinkMirrorDmg = 0.0f;
 #endif
-	CNetworkVar(int, m_nRoundStatus); // NEO TODO (Rain): probably don't need to network this
+	CNetworkVar(int, m_nRoundStatus);
 	CNetworkVar(int, m_nGameTypeSelected);
 	CNetworkVar(int, m_iRoundNumber);
 

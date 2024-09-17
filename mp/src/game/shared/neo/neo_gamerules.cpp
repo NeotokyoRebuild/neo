@@ -1289,6 +1289,11 @@ void CNEORules::StartNextRound()
 }
 #endif
 
+bool CNEORules::IsRoundPreRoundFreeze() const
+{
+	return m_nRoundStatus == NeoRoundStatus::PreRoundFreeze;
+}
+
 bool CNEORules::IsRoundOver() const
 {
 #ifdef GAME_DLL
