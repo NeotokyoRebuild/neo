@@ -724,6 +724,11 @@ void CNEORules::Think(void)
 				// And then announce team victory
 				SetWinningTeam(captorTeam, NEO_VICTORY_GHOST_CAPTURE, false, true, false, false);
 
+				if (m_iEscortingTeam && m_iEscortingTeam == captorTeam)
+				{
+					break;
+				}
+
 				for (int i = 1; i <= gpGlobals->maxClients; i++)
 				{
 					if (i == captorClient)
@@ -758,6 +763,7 @@ void CNEORules::Think(void)
 		{
 			if (sv_neo_vip_ctg_on_death.GetBool())
 			{
+				UTIL_CenterPrintAll("HVT down, recover the Ghost");
 				SpawnTheGhost();
 			}
 			else
@@ -771,6 +777,7 @@ void CNEORules::Think(void)
 		{
 			if (sv_neo_vip_ctg_on_death.GetBool())
 			{
+				UTIL_CenterPrintAll("HVT down, recover the Ghost");
 				SpawnTheGhost(&m_pVIP->GetAbsOrigin());
 			}
 			else
@@ -1605,6 +1612,10 @@ void CNEORules::SetGameRelatedVars()
 		}
 
 		SelectTheVIP();
+	}
+	else
+	{
+		m_iEscortingTeam.Set(0);
 	}
 
 	if (GetGameType() == NeoGameType::TDM)

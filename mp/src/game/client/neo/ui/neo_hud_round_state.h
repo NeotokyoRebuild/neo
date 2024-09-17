@@ -17,7 +17,7 @@ class ImagePanel;
 class ImageList;
 }
 
-constexpr int maxGameTypeObjectiveLength = 32;
+constexpr int maxGameTypeObjectiveLength = 33;
 
 class CNEOHud_RoundState : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
 {

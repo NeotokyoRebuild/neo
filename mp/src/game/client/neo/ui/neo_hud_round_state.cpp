@@ -297,11 +297,25 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	case NeoGameType::VIP:
 		if (localPlayerTeam == NEORules()->m_iEscortingTeam.Get())
 		{
-			V_sprintf_safe(szGameTypeDescription, "Escort the VIP\n");
+			if (NEORules()->GhostExists())
+			{
+				V_sprintf_safe(szGameTypeDescription, "VIP down, prevent Ghost capture\n");
+			}
+			else
+			{
+				V_sprintf_safe(szGameTypeDescription, "Escort the VIP\n");
+			}
 		}
 		else
 		{
-			V_sprintf_safe(szGameTypeDescription, "Eliminate the VIP\n");
+			if (NEORules()->GhostExists())
+			{
+				V_sprintf_safe(szGameTypeDescription, "HVT down, secure the Ghost\n");
+			}
+			else
+			{
+				V_sprintf_safe(szGameTypeDescription, "Eliminate the HVT\n");
+			}
 		}
 		break;
 	default:
