@@ -289,7 +289,7 @@ private:
 	void ResetMapSessionCommon();
 
 #ifdef GAME_DLL
-	void SpawnTheGhost();
+	void SpawnTheGhost(const Vector *origin = NULL);
 	void SelectTheVIP();
 
 	CUtlVector<int> m_pGhostCaps;

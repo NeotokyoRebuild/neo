@@ -41,6 +41,9 @@ ConVar cl_onlysteamnick("cl_onlysteamnick", "0", FCVAR_USERINFO | FCVAR_ARCHIVE,
 
 ConVar neo_vote_game_mode("neo_vote_game_mode", "1", FCVAR_ARCHIVE | FCVAR_USERINFO, "Vote on game mode to play. TDM=0, CTG=1, VIP=2", true, 0, true, 2);
 ConVar neo_vip_eligible("neo_cl_vip_eligible", "1", FCVAR_ARCHIVE, "Eligible for VIP", true, 0, true, 1);
+#ifdef GAME_DLL
+ConVar sv_neo_vip_ctg_on_death("sv_neo_vip_ctg_on_death", "0", FCVAR_ARCHIVE, "Spawn Ghost when VIP dies, continue the game", true, 0, true, 1);
+#endif
 
 #ifdef GAME_DLL
 ConVar sv_neo_change_game_type_mid_round("sv_neo_change_game_type_mid_round", "1", FCVAR_REPLICATED, "Allow game type change mid-match");
@@ -749,18 +752,32 @@ void CNEORules::Think(void)
 		}
 	}
 
-	if (GetGameType() == NeoGameType::VIP && m_nRoundStatus == NeoRoundStatus::RoundLive)
+	if (GetGameType() == NeoGameType::VIP && m_nRoundStatus == NeoRoundStatus::RoundLive && !m_pGhost)
 	{
 		if (!m_pVIP)
 		{
-			// Assume vip player disconnected, forfeit round
-			SetWinningTeam(GetOpposingTeam(m_iEscortingTeam), NEO_VICTORY_FORFEIT, false, true, false, false);
+			if (sv_neo_vip_ctg_on_death.GetBool())
+			{
+				SpawnTheGhost();
+			}
+			else
+			{
+				// Assume vip player disconnected, forfeit round
+				SetWinningTeam(GetOpposingTeam(m_iEscortingTeam), NEO_VICTORY_FORFEIT, false, true, false, false);
+			}
 		}
 
 		if (!m_pVIP->IsAlive())
 		{
-			// VIP was killed, end round
-			SetWinningTeam(GetOpposingTeam(m_iEscortingTeam), NEO_VICTORY_VIP_ELIMINATION, false, true, false, false);
+			if (sv_neo_vip_ctg_on_death.GetBool())
+			{
+				SpawnTheGhost(&m_pVIP->GetAbsOrigin());
+			}
+			else
+			{
+				// VIP was killed, end round
+				SetWinningTeam(GetOpposingTeam(m_iEscortingTeam), NEO_VICTORY_VIP_ELIMINATION, false, true, false, false);
+			}
 		}
 
 		// Check if the vip was escorted during this Think
@@ -962,7 +979,7 @@ void CNEORules::FireGameEvent(IGameEvent* event)
 
 #ifdef GAME_DLL
 // Purpose: Spawns one ghost at a randomly chosen Neo ghost spawn point.
-void CNEORules::SpawnTheGhost()
+void CNEORules::SpawnTheGhost(const Vector *origin)
 {
 	CBaseEntity* pEnt;
 
@@ -1016,8 +1033,19 @@ void CNEORules::SpawnTheGhost()
 
 	Assert(UTIL_IsValidEntity(m_pGhost));
 
+	if (origin)
+	{
+		if (m_pGhost->GetOwner())
+		{
+			Assert(false);
+			m_pGhost->GetOwner()->Weapon_Detach(m_pGhost);
+		}
+
+		m_pGhost->SetAbsOrigin(*origin);
+		m_pGhost->Drop(Vector{ 0.0f, 0.0f, 0.0f });
+	}
 	// We didn't have any spawns, spawn ghost at origin
-	if (numGhostSpawns == 0)
+	else if (numGhostSpawns == 0)
 	{
 		Warning("No ghost spawns found! Spawning ghost at map origin, instead.\n");
 		m_pGhost->SetAbsOrigin(vec3_origin);
