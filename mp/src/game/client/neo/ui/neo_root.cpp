@@ -641,7 +641,7 @@ void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 				NeoUI::Pad();
 				if (m_ns.bModified)
 				{
-					if (NeoUI::Button(L"Restore").bPressed)
+					if (NeoUI::Button(L"Revert").bPressed)
 					{
 						NeoSettingsRestore(&m_ns);
 					}
@@ -1208,17 +1208,21 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 			{
 				NeoUI::Label(L"Settings changed: Do you want to apply the settings?");
 				NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
-				NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 3);
+				NeoUI::BeginHorizontal((g_uiCtx.dPanel.wide / 3) - g_uiCtx.iMarginX, g_uiCtx.iMarginX);
 				{
+					g_uiCtx.iLayoutX = (g_uiCtx.iMarginX / 2);
 					if (NeoUI::Button(L"Save (Enter)").bPressed || NeoUI::Bind(KEY_ENTER))
 					{
 						NeoSettingsSave(&m_ns);
 						m_state = STATE_ROOT;
 					}
-					NeoUI::Pad();
-					if (NeoUI::Button(L"Discard (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
+					if (NeoUI::Button(L"Discard").bPressed)
 					{
 						m_state = STATE_ROOT;
+					}
+					if (NeoUI::Button(L"Cancel (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
+					{
+						m_state = STATE_SETTINGS;
 					}
 				}
 				NeoUI::EndHorizontal();
