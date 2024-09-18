@@ -1868,6 +1868,11 @@ bool CNEO_Player::Weapon_Switch( CBaseCombatWeapon *pWeapon,
 {
 	ShowCrosshair(false);
 	Weapon_SetZoom(false);
+	const auto activeWeapon = GetActiveWeapon();
+	if (activeWeapon)
+	{
+		activeWeapon->StopWeaponSound(RELOAD_NPC);
+	}
 
 	return BaseClass::Weapon_Switch(pWeapon, viewmodelindex);
 }
@@ -1899,6 +1904,7 @@ bool CNEO_Player::Weapon_CanSwitchTo(CBaseCombatWeapon *pWeapon)
     {
         if (!GetActiveWeapon()->CanHolster())
             return false;
+		GetActiveWeapon()->StopWeaponSound(RELOAD_NPC);
     }
 
     return true;
@@ -2025,6 +2031,12 @@ void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
 			return; // Return early to not drop weapon
 		}
 	}
+
+	if (!pWeapon)
+		return;
+
+	pWeapon->m_bInReload = false;
+	pWeapon->StopWeaponSound(RELOAD_NPC);
 	BaseClass::Weapon_Drop(pWeapon, pvecTarget, pVelocity);
 }
 
