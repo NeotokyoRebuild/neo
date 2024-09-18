@@ -1340,6 +1340,9 @@ void CHudWeaponSelection::FastWeaponSwitch( int iWeaponSlot )
 	{
 		// select the new weapon
 		::input->MakeWeaponSelection( pNextWeapon );
+#ifdef NEO
+		pPlayer->EmitSound("Player.WeaponSelected");
+#endif
 	}
 	else if ( pNextWeapon != pActiveWeapon )
 	{
