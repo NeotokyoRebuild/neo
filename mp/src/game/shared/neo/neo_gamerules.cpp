@@ -1827,7 +1827,7 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 	{
 		UTIL_ClientPrintAll(HUD_PRINTTALK, "Last player of %s1 suicided vs. ghost carrier; awarding capture to team %s2.",
 							(team == TEAM_JINRAI ? "NSF" : "Jinrai"), (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
-		char szHudChatPrint[128];
+		char szHudChatPrint[42];
 		V_sprintf_safe(szHudChatPrint, "Awarding capture rank-up to %d player%s.",
 					   iRankupCapPrev, iRankupCapPrev == 1 ? "" : "s");
 		UTIL_ClientPrintAll(HUD_PRINTTALK, szHudChatPrint);
@@ -1874,49 +1874,54 @@ void CNEORules::CheckIfCapPrevent(CNEO_Player *capPreventerPlayer)
 {
 	// If this is the only player alive left before the suicide/disconnect and the other team was holding
 	// the ghost, reward the other team an XP to the next rank as a ghost cap was prevented.
-	if (neo_sv_suicide_prevent_cap_punish.GetBool() && m_nRoundStatus == NeoRoundStatus::RoundLive &&
-			!m_bTeamBeenAwardedDueToCapPrevent)
+	const bool bShouldCheck = (neo_sv_suicide_prevent_cap_punish.GetBool()
+							   && m_nRoundStatus == NeoRoundStatus::RoundLive
+							   && !m_bTeamBeenAwardedDueToCapPrevent);
+	if (!bShouldCheck)
 	{
-		bool bOtherTeamPlayingGhost = false;
-		int iTallyAlive[TEAM__TOTAL] = {};
-		const int iPreventerTeam = capPreventerPlayer->GetTeamNumber();
-		// Sanity check: Make sure it's only Jinrai/NSF players
-		const bool bValidTeam = iPreventerTeam == TEAM_JINRAI || iPreventerTeam == TEAM_NSF;
-		Assert(bValidTeam);
-		if (bValidTeam)
+		return;
+	}
+
+	bool bOtherTeamPlayingGhost = false;
+	int iTallyAlive[TEAM__TOTAL] = {};
+	const int iPreventerTeam = capPreventerPlayer->GetTeamNumber();
+	// Sanity check: Make sure it's only Jinrai/NSF players
+	const bool bValidTeam = iPreventerTeam == TEAM_JINRAI || iPreventerTeam == TEAM_NSF;
+	Assert(bValidTeam);
+	if (!bValidTeam)
+	{
+		return;
+	}
+
+	const int iCapPreventerEntIdx = capPreventerPlayer->entindex();
+
+	// Sanity check: Prevent duplication just in-case
+	bool bContainsEntIdx = false;
+	for (int i = 0; !bContainsEntIdx && i < m_iEntPrevCapSize; ++i)
+	{
+		bContainsEntIdx = (m_arrayiEntPrevCap[i] == iCapPreventerEntIdx);
+	}
+	if (!bContainsEntIdx) m_arrayiEntPrevCap[m_iEntPrevCapSize++] = iCapPreventerEntIdx;
+
+	for (int i = 1; i <= gpGlobals->maxClients; ++i)
+	{
+		auto *player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
+		if (!player || player->entindex() == iCapPreventerEntIdx)
 		{
-			const int iCapPreventerEntIdx = capPreventerPlayer->entindex();
+			continue;
+		}
 
-			// Sanity check: Prevent duplication just in-case
-			bool bContainsEntIdx = false;
-			for (int i = 0; i < m_iEntPrevCapSize; ++i)
-			{
-				bContainsEntIdx = (m_arrayiEntPrevCap[i] == iCapPreventerEntIdx);
-				if (bContainsEntIdx) break;
-			}
-			if (!bContainsEntIdx) m_arrayiEntPrevCap[m_iEntPrevCapSize++] = iCapPreventerEntIdx;
-
-			for (int i = 1; i <= gpGlobals->maxClients; ++i)
-			{
-				auto *player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
-				if (!player || player->entindex() == iCapPreventerEntIdx)
-				{
-					continue;
-				}
-
-				const int iPlayerTeam = player->GetTeamNumber();
-				iTallyAlive[iPlayerTeam] += player->IsAlive();
-				if (iPlayerTeam != iPreventerTeam && player->IsCarryingGhost())
-				{
-					bOtherTeamPlayingGhost = true;
-				}
-			}
-
-			const int iOppositeTeam = (iPreventerTeam == TEAM_JINRAI) ? TEAM_NSF : TEAM_JINRAI;
-			m_bTeamBeenAwardedDueToCapPrevent = (bOtherTeamPlayingGhost &&
-												 iTallyAlive[iPreventerTeam] == 0 && iTallyAlive[iOppositeTeam] > 0);
+		const int iPlayerTeam = player->GetTeamNumber();
+		iTallyAlive[iPlayerTeam] += player->IsAlive();
+		if (iPlayerTeam != iPreventerTeam && player->IsCarryingGhost())
+		{
+			bOtherTeamPlayingGhost = true;
 		}
 	}
+
+	const int iOppositeTeam = (iPreventerTeam == TEAM_JINRAI) ? TEAM_NSF : TEAM_JINRAI;
+	m_bTeamBeenAwardedDueToCapPrevent = (bOtherTeamPlayingGhost &&
+										 iTallyAlive[iPreventerTeam] == 0 && iTallyAlive[iOppositeTeam] > 0);
 }
 #endif
 
