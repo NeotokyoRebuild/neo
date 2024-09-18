@@ -28,22 +28,11 @@ CWeaponJitte::CWeaponJitte()
 	m_flAccuracyPenalty = 0;
 
 	m_nNumShotsFired = 0;
-}
 
-void CWeaponJitte::AddViewKick()
-{
-	auto owner = ToBasePlayer(GetOwner());
-
-	if (!owner)
-	{
-		return;
-	}
-
-	QAngle viewPunch;
-
-	viewPunch.x = SharedRandomFloat("jittepx", 0.25f, 0.5f);
-	viewPunch.y = SharedRandomFloat("jittepy", -0.6f, 0.6f);
-	viewPunch.z = 0;
-
-	owner->ViewPunch(viewPunch);
+	m_weaponSeeds = {
+		"jittepx",
+		"jittepy",
+		"jitterx",
+		"jittery",
+	};
 }

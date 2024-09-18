@@ -28,27 +28,16 @@ CWeaponPZ::CWeaponPZ()
 	m_flAccuracyPenalty = 0;
 
 	m_nNumShotsFired = 0;
+
+	m_weaponSeeds = {
+		"pzpx",
+		"pzpy",
+		"pzrx",
+		"pzry",
+	};
 }
 
 bool CWeaponPZ::CanBePickedUpByClass(int classId)
 {
 	return classId != NEO_CLASS_RECON;
-}
-
-void CWeaponPZ::AddViewKick()
-{
-	auto owner = ToBasePlayer(GetOwner());
-
-	if (!owner)
-	{
-		return;
-	}
-
-	QAngle viewPunch;
-
-	viewPunch.x = SharedRandomFloat("pzpx", 0.25f, 0.5f);
-	viewPunch.y = SharedRandomFloat("pzpy", -0.6f, 0.6f);
-	viewPunch.z = 0;
-
-	owner->ViewPunch(viewPunch);
 }

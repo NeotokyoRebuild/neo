@@ -173,6 +173,12 @@ extern vgui::IInputInternal *g_InputInternal;
 #ifdef NEO
 #include "neo_version.h"
 #include "neo_mount_original.h"
+extern bool NeoRootCaptureESC();
+
+#ifdef LINUX
+#include "neo_fixup_glshaders.h"
+#endif
+
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -1044,6 +1050,10 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 	{
 		return false;
 	}
+
+#ifdef LINUX
+    FixupGlShaders(filesystem, g_pCVar);
+#endif
 #endif
 
 	modemanager->Init( );
@@ -1254,6 +1264,15 @@ void CHLClient::PostInit()
 	else
 	{
 		Assert(false);
+	}
+
+	// Rebind ` from toggleconsole to neo_toggleconsole
+	const auto toggleConsoleBind = gameuifuncs->GetButtonCodeForBind("toggleconsole");
+	if (toggleConsoleBind == KEY_BACKQUOTE)
+	{
+		char cmdStr[128];
+		V_sprintf_safe(cmdStr, "bind \"`\" \"neo_toggleconsole\"\n");
+		engine->ClientCmd_Unrestricted(cmdStr);
 	}
 #endif
 }
@@ -2635,7 +2654,12 @@ bool CHLClient::HandleUiToggle()
 	return true;
 
 #else
+#ifdef NEO
+	// NEO NOTE (nullsystem): Required for the sub-panels of override UI to utilize ESCAPE key properly
+	return NeoRootCaptureESC();
+#else
 	return false;
+#endif
 #endif
 }
 

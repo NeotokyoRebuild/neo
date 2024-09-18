@@ -28,22 +28,11 @@ CWeaponM41L::CWeaponM41L()
 	m_flAccuracyPenalty = 0;
 
 	m_nNumShotsFired = 0;
-}
 
-void CWeaponM41L::AddViewKick()
-{
-	auto owner = ToBasePlayer(GetOwner());
-
-	if (!owner)
-	{
-		return;
-	}
-
-	QAngle viewPunch;
-
-	viewPunch.x = SharedRandomFloat("m41lpx", 0.25f, 0.5f);
-	viewPunch.y = SharedRandomFloat("m41lpy", -0.6f, 0.6f);
-	viewPunch.z = 0;
-
-	owner->ViewPunch(viewPunch);
+	m_weaponSeeds = {
+		"m41lpx",
+		"m41lpy",
+		"m41lrx",
+		"m41lry",
+	};
 }

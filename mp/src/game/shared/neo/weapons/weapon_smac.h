@@ -33,8 +33,6 @@ public:
 
 	CWeaponSMAC();
 
-	void	AddViewKick(void) override;
-
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const override { return NEO_WEP_SMAC; }
 	virtual int GetNeoWepXPCost(const int neoClass) const override { return 0; }
 

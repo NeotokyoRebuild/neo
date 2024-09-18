@@ -42,6 +42,8 @@ public:
 	virtual int GetMinBurst() OVERRIDE { return 1; }
 	virtual int GetMaxBurst() OVERRIDE { return 3; }
 
+	virtual const WeaponSpreadInfo_t& GetSpreadInfo(void) override;
+
 	bool StartReload(void);
 	bool StartReloadSlug(void);
 	bool Reload(void);
@@ -51,7 +53,6 @@ public:
 	void FillClip(void);
 	void FillClipSlug(void);
 	void FinishReload(void);
-	void AddViewKick(void);
 	void ItemPostFrame(void);
 	void PrimaryAttack(void);
 	void SecondaryAttack(void);

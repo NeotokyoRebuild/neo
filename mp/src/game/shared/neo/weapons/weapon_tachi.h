@@ -35,7 +35,6 @@ public:
 	CWeaponTachi();
 
 	void	ItemPostFrame( void ) override;
-	void	AddViewKick( void ) override;
 
     virtual void SwitchFireMode( void );
     virtual void ForceSetFireMode( bool bPrimaryMode,

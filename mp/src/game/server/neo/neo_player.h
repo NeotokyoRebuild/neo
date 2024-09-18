@@ -149,6 +149,8 @@ public:
 	void CloakPower_Charge(float flPower);
 	float CloakPower_Cap() const;
 
+	bool CanBreatheUnderwater() const override { return false; }
+
 	float GetNormSpeed_WithActiveWepEncumberment(void) const;
 	float GetCrouchSpeed_WithActiveWepEncumberment(void) const;
 	float GetWalkSpeed_WithActiveWepEncumberment(void) const;
@@ -206,8 +208,6 @@ public:
 	CNetworkVar(bool, m_bShowTestMessage);
 	CNetworkString(m_pszTestMessage, 32 * 2 + 1);
 
-	CNetworkVector(m_vecGhostMarkerPos);
-	CNetworkVar(bool, m_bGhostExists);
 	CNetworkVar(bool, m_bInThermOpticCamo);
 	CNetworkVar(bool, m_bLastTickInThermOpticCamo);
 	CNetworkVar(bool, m_bInVision);

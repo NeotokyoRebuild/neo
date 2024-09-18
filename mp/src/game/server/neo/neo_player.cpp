@@ -3,6 +3,7 @@
 
 #include "neo_playeranimstate.h"
 #include "neo_predicted_viewmodel.h"
+#include "neo_predicted_viewmodel_muzzleflash.h"
 #include "in_buttons.h"
 #include "neo_gamerules.h"
 #include "team.h"
@@ -51,7 +52,6 @@ SendPropInt(SENDINFO(m_iLoadoutWepChoice)),
 SendPropInt(SENDINFO(m_iNextSpawnClassChoice)),
 SendPropInt(SENDINFO(m_bInLean)),
 
-SendPropBool(SENDINFO(m_bGhostExists)),
 SendPropBool(SENDINFO(m_bInThermOpticCamo)),
 SendPropBool(SENDINFO(m_bLastTickInThermOpticCamo)),
 SendPropBool(SENDINFO(m_bInVision)),
@@ -64,8 +64,6 @@ SendPropTime(SENDINFO(m_flCamoAuxLastTime)),
 SendPropInt(SENDINFO(m_nVisionLastTick)),
 
 SendPropString(SENDINFO(m_pszTestMessage)),
-
-SendPropVector(SENDINFO(m_vecGhostMarkerPos), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT),
 
 SendPropArray(SendPropVector(SENDINFO_ARRAY(m_rvFriendlyPlayerPositions), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rvFriendlyPlayerPositions),
 SendPropArray(SendPropInt(SENDINFO_ARRAY(m_rfAttackersScores)), m_rfAttackersScores),
@@ -90,7 +88,6 @@ DEFINE_FIELD(m_bDroppedAnything, FIELD_BOOLEAN),
 DEFINE_FIELD(m_iNextSpawnClassChoice, FIELD_INTEGER),
 DEFINE_FIELD(m_bInLean, FIELD_INTEGER),
 
-DEFINE_FIELD(m_bGhostExists, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bInThermOpticCamo, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bLastTickInThermOpticCamo, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bInVision, FIELD_BOOLEAN),
@@ -102,8 +99,6 @@ DEFINE_FIELD(m_flCamoAuxLastTime, FIELD_TIME),
 DEFINE_FIELD(m_nVisionLastTick, FIELD_TICK),
 
 DEFINE_FIELD(m_pszTestMessage, FIELD_STRING),
-
-DEFINE_FIELD(m_vecGhostMarkerPos, FIELD_VECTOR),
 
 DEFINE_FIELD(m_rvFriendlyPlayerPositions, FIELD_CUSTOM),
 DEFINE_FIELD(m_rfAttackersScores, FIELD_CUSTOM),
@@ -384,7 +379,6 @@ CNEO_Player::CNEO_Player()
 	V_memset(m_szNeoName.GetForModify(), 0, sizeof(m_szNeoName));
 	m_szNeoNameHasSet = false;
 
-	m_bGhostExists = false;
 	m_bInThermOpticCamo = m_bInVision = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
 	m_bInAim = false;
@@ -395,8 +389,6 @@ CNEO_Player::CNEO_Player()
 
 	m_bShowTestMessage = false;
 	V_memset(m_pszTestMessage.GetForModify(), 0, sizeof(m_pszTestMessage));
-
-	m_vecGhostMarkerPos = vec3_origin;
 
 	ZeroFriendlyPlayerLocArray();
 
@@ -777,70 +769,6 @@ void CNEO_Player::PreThink(void)
 			}
 		}
 	}
-
-	static int ghostEdict = -1;
-	CWeaponGhost* ghost = dynamic_cast<CWeaponGhost*>(UTIL_EntityByIndex(ghostEdict));
-	if (!ghost)
-	{
-		auto entIter = gEntList.FirstEnt();
-		while (entIter)
-		{
-			ghost = dynamic_cast<CWeaponGhost*>(entIter);
-
-			if (ghost)
-			{
-				ghostEdict = ghost->edict()->m_EdictIndex;
-				break;
-			}
-
-			entIter = gEntList.NextEnt(entIter);
-		}
-	}
-
-	m_bGhostExists = (ghost != NULL);
-
-	if (m_bGhostExists)
-	{
-		Assert(UTIL_IsValidEntity(ghost));
-		Assert(ghostEdict == ghost->edict()->m_EdictIndex);
-
-		if (ghost->GetAbsOrigin().IsValid())
-		{
-			Vector vecNextGhostMarkerPos = ghost->GetAbsOrigin();
-			const int ghosterTeam = NEORules()->ghosterTeam();
-			if (ghosterTeam == TEAM_JINRAI || ghosterTeam == TEAM_NSF)
-			{
-				// Someone's carrying it, center at their body
-				const int playerIdx = NEORules()->GetGhosterPlayer();
-				if (auto player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(playerIdx)))
-				{
-					vecNextGhostMarkerPos = player->EyePosition();
-				}
-			}
-			m_vecGhostMarkerPos = vecNextGhostMarkerPos;
-		}
-		else
-		{
-			Assert(false);
-		}
-	}
-
-#if(0)
-	auto entIter = gEntList.FirstEnt();
-	int ghosts = 0;
-	while (entIter)
-	{
-		ghost = dynamic_cast<CWeaponGhost*>(entIter);
-
-		if (ghost)
-		{
-			ghosts++;
-		}
-
-		entIter = gEntList.NextEnt(entIter);
-	}
-	DevMsg("Num ghosts: %i\n", ghosts);
-#endif
 
 	if (IsAlive() && GetTeamNumber() != TEAM_SPECTATOR)
 	{
@@ -1541,26 +1469,43 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 void CNEO_Player::CreateViewModel( int index )
 {
 	Assert( index >= 0 && index < MAX_VIEWMODELS );
+	Assert(MUZZLE_FLASH_VIEW_MODEL_INDEX != index && MUZZLE_FLASH_VIEW_MODEL_INDEX < MAX_VIEWMODELS);
 
-	if ( GetViewModel( index ) )
+	if ( !GetViewModel( index ) )
 	{
-		return;
+		CNEOPredictedViewModel* vm = (CNEOPredictedViewModel*)CreateEntityByName("neo_predicted_viewmodel");
+		if (vm)
+		{
+			vm->SetAbsOrigin(GetAbsOrigin());
+			vm->SetOwner(this);
+			vm->SetIndex(index);
+			DispatchSpawn(vm);
+			vm->FollowEntity(this, false);
+			m_hViewModel.Set(index, vm);
+		}
 	}
 
-	CNEOPredictedViewModel *vm = ( CNEOPredictedViewModel * )CreateEntityByName( "neo_predicted_viewmodel" );
-	if ( vm )
+	if ( !GetViewModel(MUZZLE_FLASH_VIEW_MODEL_INDEX))
 	{
-		vm->SetAbsOrigin( GetAbsOrigin() );
-		vm->SetOwner( this );
-		vm->SetIndex( index );
-		DispatchSpawn( vm );
-		vm->FollowEntity( this, false );
-		m_hViewModel.Set( index, vm );
-	}
-	else
-	{
-		Warning("CNEO_Player::CreateViewModel: Failed to create neo_predicted_viewmodel\n");
-		return;
+		auto* vmm = (CNEOPredictedViewModelMuzzleFlash*)CreateEntityByName("neo_predicted_viewmodel_muzzleflash");
+		if (!vmm)
+		{
+			Assert(false);
+			return;
+		}
+		
+		CBaseViewModel* vm = GetViewModel();
+		if (!vm)
+		{
+			Assert(false);
+			return;
+		}
+
+		vmm->SetAbsOrigin(vm->GetAbsOrigin());
+		vmm->SetOwner(this);
+		vmm->SetParent(vm);
+		DispatchSpawn(vmm);
+		m_hViewModel.Set(MUZZLE_FLASH_VIEW_MODEL_INDEX, vmm);
 	}
 }
 
@@ -2564,21 +2509,22 @@ void CNEO_Player::GiveDefaultItems(void)
 		GiveNamedItem("weapon_knife");
 		GiveNamedItem("weapon_milso");
 		if (this->m_iXP >= 4) { GiveDet(this); }
-		Weapon_Switch(Weapon_OwnsThisType("weapon_milso"));
+		engine->ClientCommand(edict(), "slot2");
 		break;
 	case NEO_CLASS_ASSAULT:
 		GiveNamedItem("weapon_knife");
 		GiveNamedItem("weapon_tachi");
 		GiveNamedItem("weapon_grenade");
-		Weapon_Switch(Weapon_OwnsThisType("weapon_tachi"));
+		engine->ClientCommand(edict(), "slot2");
 		break;
 	case NEO_CLASS_SUPPORT:
 		GiveNamedItem("weapon_kyla");
 		GiveNamedItem("weapon_smokegrenade");
-		Weapon_Switch(Weapon_OwnsThisType("weapon_kyla"));
+		engine->ClientCommand(edict(), "slot2");
 		break;
 	default:
 		GiveNamedItem("weapon_knife");
+		engine->ClientCommand(edict(), "slot3");
 		break;
 	}
 }
@@ -2631,7 +2577,7 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 				RemoveAllItems(false);
 				GiveDefaultItems();
 				pEnt->Touch(this);
-				Weapon_Switch(Weapon_OwnsThisType(szWep));
+				engine->ClientCommand(edict(), "slot1");
 			}
 		}
 		else
@@ -2662,7 +2608,7 @@ void CNEO_Player::GiveAllItems(void)
 
 	GiveNamedItem("weapon_tachi");
 	GiveNamedItem("weapon_zr68s");
-	Weapon_Switch(Weapon_OwnsThisType("weapon_zr68s"));
+	engine->ClientCommand(edict(), "slot1");
 }
 
 // Purpose: For Neotokyo, we could use this engine method
@@ -2916,24 +2862,30 @@ float CNEO_Player::GetSprintSpeed(void) const
 
 int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 {
-	auto player = Instance(pInfo->m_pClientEnt);
-	
-	if(player)
+	if (auto ent = Instance(pInfo->m_pClientEnt))
 	{
-		auto neoPlayer = dynamic_cast<CNEO_Player*>(player);
-		if(neoPlayer)
+		if (auto *otherNeoPlayer = dynamic_cast<CNEO_Player *>(ent))
 		{
-			if(player->GetTeamNumber() == TEAM_SPECTATOR
-			|| this->GetTeamNumber() == player->GetTeamNumber())
+			// If other is spectator or same team
+			if (otherNeoPlayer->GetTeamNumber() == TEAM_SPECTATOR ||
+					GetTeamNumber() == otherNeoPlayer->GetTeamNumber())
 			{
 				return FL_EDICT_ALWAYS;
 			}
 
-			auto ghost = dynamic_cast<CWeaponGhost*>(neoPlayer->GetActiveWeapon());
-			if(ghost && ghost->IsPosWithinViewDistance(this->GetAbsOrigin()))	//Check if ghost equip delay has passed here before distance
+			// If the other player is actively using the ghost and therefore fetching beacons
+			auto otherWep = static_cast<CNEOBaseCombatWeapon *>(otherNeoPlayer->GetActiveWeapon());
+			if (otherWep && otherWep->GetNeoWepBits() & NEO_WEP_GHOST &&
+					static_cast<CWeaponGhost *>(otherWep)->IsPosWithinViewDistance(GetAbsOrigin()))
 			{
 				return FL_EDICT_ALWAYS;
-			}	
+			}
+
+			// If this player is carrying the ghost (wether active or not)
+			if (IsCarryingGhost())
+			{
+				return FL_EDICT_ALWAYS;
+			}
 		}	
 	}
 	

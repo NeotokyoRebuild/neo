@@ -2257,6 +2257,7 @@ void CHL2_Player::CheckFlashlight( void )
 //-----------------------------------------------------------------------------
 void CHL2_Player::SetPlayerUnderwater( bool state )
 {
+#ifndef NEO
 	if ( state )
 	{
 		SuitPower_AddDevice( SuitDeviceBreather );
@@ -2265,6 +2266,7 @@ void CHL2_Player::SetPlayerUnderwater( bool state )
 	{
 		SuitPower_RemoveDevice( SuitDeviceBreather );
 	}
+#endif
 
 	BaseClass::SetPlayerUnderwater( state );
 }

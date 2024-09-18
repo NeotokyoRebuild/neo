@@ -28,23 +28,11 @@ CWeaponMilso::CWeaponMilso()
 	m_flAccuracyPenalty = 0.0f;
 
 	m_bFiresUnderwater = true;
-}
 
-void CWeaponMilso::AddViewKick(void)
-{
-	CBasePlayer *pPlayer = ToBasePlayer(GetOwner());
-
-	if (!pPlayer)
-	{
-		return;
-	}
-
-	const QAngle viewPunch{
-		SharedRandomFloat("milsopax", 0.25f, 0.5f),
-		SharedRandomFloat("milsopay", -0.6f, 0.6f),
-		0.0f
+	m_weaponSeeds = {
+		"milsopx",
+		"milsopy",
+		"milsorx",
+		"milsory",
 	};
-
-	// Add it to the view punch
-	pPlayer->ViewPunch(viewPunch);
 }

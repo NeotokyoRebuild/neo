@@ -1,7 +1,7 @@
 "GameInfo"
 {
 	Game        "Neotokyo: Rebuild"
-	Title       "neatbkyoc ue"
+	Title       ""
 	Title2      ""
 	Type        Multiplayer_Only
 	Icon        "resource/icon"
