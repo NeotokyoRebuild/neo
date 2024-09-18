@@ -1568,8 +1568,13 @@ int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int pl
 		auto* neoAttacker = dynamic_cast<CNEO_Player*>(info->GetAttacker());
 		if (neoAttacker && neoAttacker->entindex() != entindex())
 		{
+			auto* killedWithInflictor = info->GetInflictor();
+			bool inflictorIsPlayer = killedWithInflictor ? !Q_strcmp(killedWithInflictor->GetDebugName(), "player") : false;
+			auto killedWithName = killedWithInflictor ? (inflictorIsPlayer ? neoAttacker->m_hActiveWeapon->GetPrintName() : killedWithInflictor->GetDebugName()) : "";
+			if (!Q_strcmp(killedWithName, "neo_grenade_frag")) { killedWithName = "Frag Grenade"; }
+			if (!Q_strcmp(killedWithName, "neo_deployed_detpack")) { killedWithName = "Remote Detpack"; }
 			char killByLine[SHOWMENU_STRLIMIT];
-			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, this);
+			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, this, killedWithName);
 			Q_strncat(infoStr, killByLine, infoStrMax, COPY_ALL_CHARACTERS);
 		}
 	}
