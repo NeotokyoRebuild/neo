@@ -104,6 +104,7 @@ void CWeaponAA13::PrimaryAttack(void)
 	Vector vecSpread = GetBulletSpread();
 	FireBulletsInfo_t info(5, vecSrc, vecAiming, vecSpread, MAX_TRACE_LENGTH, m_iPrimaryAmmoType);
 	info.m_pAttacker = pPlayer;
+	info.m_iTracerFreq = 0;
 
 	m_flNextPrimaryAttack = m_flNextPrimaryAttack + GetFireRate();
 

@@ -3,6 +3,7 @@
 
 #include "neo_playeranimstate.h"
 #include "neo_predicted_viewmodel.h"
+#include "neo_predicted_viewmodel_muzzleflash.h"
 #include "in_buttons.h"
 #include "neo_gamerules.h"
 #include "team.h"
@@ -1468,26 +1469,43 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 void CNEO_Player::CreateViewModel( int index )
 {
 	Assert( index >= 0 && index < MAX_VIEWMODELS );
+	Assert(MUZZLE_FLASH_VIEW_MODEL_INDEX != index && MUZZLE_FLASH_VIEW_MODEL_INDEX < MAX_VIEWMODELS);
 
-	if ( GetViewModel( index ) )
+	if ( !GetViewModel( index ) )
 	{
-		return;
+		CNEOPredictedViewModel* vm = (CNEOPredictedViewModel*)CreateEntityByName("neo_predicted_viewmodel");
+		if (vm)
+		{
+			vm->SetAbsOrigin(GetAbsOrigin());
+			vm->SetOwner(this);
+			vm->SetIndex(index);
+			DispatchSpawn(vm);
+			vm->FollowEntity(this, false);
+			m_hViewModel.Set(index, vm);
+		}
 	}
 
-	CNEOPredictedViewModel *vm = ( CNEOPredictedViewModel * )CreateEntityByName( "neo_predicted_viewmodel" );
-	if ( vm )
+	if ( !GetViewModel(MUZZLE_FLASH_VIEW_MODEL_INDEX))
 	{
-		vm->SetAbsOrigin( GetAbsOrigin() );
-		vm->SetOwner( this );
-		vm->SetIndex( index );
-		DispatchSpawn( vm );
-		vm->FollowEntity( this, false );
-		m_hViewModel.Set( index, vm );
-	}
-	else
-	{
-		Warning("CNEO_Player::CreateViewModel: Failed to create neo_predicted_viewmodel\n");
-		return;
+		auto* vmm = (CNEOPredictedViewModelMuzzleFlash*)CreateEntityByName("neo_predicted_viewmodel_muzzleflash");
+		if (!vmm)
+		{
+			Assert(false);
+			return;
+		}
+		
+		CBaseViewModel* vm = GetViewModel();
+		if (!vm)
+		{
+			Assert(false);
+			return;
+		}
+
+		vmm->SetAbsOrigin(vm->GetAbsOrigin());
+		vmm->SetOwner(this);
+		vmm->SetParent(vm);
+		DispatchSpawn(vmm);
+		m_hViewModel.Set(MUZZLE_FLASH_VIEW_MODEL_INDEX, vmm);
 	}
 }
 
