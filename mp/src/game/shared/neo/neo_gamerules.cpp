@@ -97,7 +97,6 @@ END_NETWORK_TABLE()
 LINK_ENTITY_TO_CLASS( neo_gamerules, CNEOGameRulesProxy );
 IMPLEMENT_NETWORKCLASS_ALIASED( NEOGameRulesProxy, DT_NEOGameRulesProxy );
 
-extern void respawn(CBaseEntity *pEdict, bool fCopyCorpse);
 extern bool RespawnWithRet(CBaseEntity *pEdict, bool fCopyCorpse);
 
 // NEO TODO (Rain): check against a test map
@@ -1028,7 +1027,7 @@ void CNEORules::StartNextRound()
 			pPlayer->GetActiveWeapon()->Holster();
 		}
 		pPlayer->RemoveAllItems(true);
-		respawn(pPlayer, false);
+		pPlayer->Spawn();
 		if (gpGlobals->curtime < m_flNeoRoundStartTime + mp_neo_preround_freeze_time.GetFloat())
 		{
 			pPlayer->AddFlag(FL_GODMODE);
@@ -1358,7 +1357,7 @@ void CNEORules::RestartGame()
 			pPlayer->GetActiveWeapon()->Holster();
 		}
 		pPlayer->RemoveAllItems(true);
-		respawn(pPlayer, false);
+		pPlayer->Spawn();
 		pPlayer->Reset();
 
 		pPlayer->m_iXP.GetForModify() = 0;
