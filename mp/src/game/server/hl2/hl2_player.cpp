@@ -520,8 +520,17 @@ void CHL2_Player::HandleSpeedChanges( void )
 
 	bool bCanSprint = CanSprint();
 	bool bIsSprinting = IsSprinting();
+#ifdef NEO
+	constexpr float MOVING_SPEED_MINIMUM = 0.5f; // NEOTODO (Adam) This is the same value as defined in cbaseanimating, should we be using the same value? Should we import it here?
+	bool bWantSprint = (bCanSprint && IsSuitEquipped() && (m_nButtons & IN_SPEED) && GetLocalVelocity().IsLengthGreaterThan(MOVING_SPEED_MINIMUM));
+#else
 	bool bWantSprint = ( bCanSprint && IsSuitEquipped() && (m_nButtons & IN_SPEED) && (m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)));
+#endif
+#ifdef NEO
+	if ( bIsSprinting != bWantSprint && ((m_nButtons & IN_SPEED) || buttonsChanged & IN_SPEED))
+#else
 	if ( bIsSprinting != bWantSprint && (buttonsChanged & IN_SPEED)  )
+#endif
 	{
 		// If someone wants to sprint, make sure they've pressed the button to do so. We want to prevent the
 		// case where a player can hold down the sprint key and burn tiny bursts of sprint as the suit recharges
@@ -549,7 +558,6 @@ void CHL2_Player::HandleSpeedChanges( void )
 	}
 
 #ifdef NEO
-	constexpr float MOVING_SPEED_MINIMUM = 0.5f; // NEOTODO (Adam) This is the same value as defined in cbaseanimating, should we be using the same value? Should we import it here?
 	if (bIsSprinting && GetLocalVelocity().IsLengthLessThan(MOVING_SPEED_MINIMUM))
 #else
 	if (bIsSprinting && !(m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)))
