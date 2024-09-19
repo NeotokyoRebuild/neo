@@ -637,21 +637,25 @@ void CNEO_Player::PreThink(void)
 	}
 
 	float speed = GetNormSpeed();
-	if (m_nButtons & IN_DUCK && m_nButtons & IN_WALK)
-	{ // 1.77x slower
-		speed /= 1.777;
-	}
-	else if (m_nButtons & IN_DUCK || m_nButtons & IN_WALK)
-	{ // 1.33x slower
-		speed /= 1.333;
-	}
-	if (IsSprinting())
+	static constexpr float DUCK_WALK_SPEED_MODIFIER = 0.75;
+	if (m_nButtons & IN_DUCK)
 	{
-		speed *= m_iNeoClass == NEO_CLASS_RECON ? 1.333 : 1.6;
+		speed *= DUCK_WALK_SPEED_MODIFIER;
+	}
+	if (m_nButtons & IN_WALK)
+	{
+		speed *= DUCK_WALK_SPEED_MODIFIER;
+	}
+	if (IsSprinting() && !IsAirborne())
+	{
+		static constexpr float RECON_SPRINT_SPEED_MODIFIER = 0.75;
+		static constexpr float OTHER_CLASSES_SPRINT_SPEED_MODIFIER = 0.6;
+		speed /= m_iNeoClass == NEO_CLASS_RECON ? RECON_SPRINT_SPEED_MODIFIER : OTHER_CLASSES_SPRINT_SPEED_MODIFIER;
 	}
 	if (m_bInAim.Get())
 	{
-		speed /= 1.666;
+		static constexpr float AIM_SPEED_MODIFIER = 0.6;
+		speed *= AIM_SPEED_MODIFIER;
 	}
 	if (auto pNeoWep = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon()))
 	{
@@ -936,6 +940,9 @@ bool CNEO_Player::IsAllowedToSuperJump(void)
 		return false;
 
 	if (GetMoveParent())
+		return false;
+
+	if (IsPlayerUnderwater())
 		return false;
 
 	// Can't superjump whilst airborne (although it is kind of cool)
@@ -2644,21 +2651,12 @@ void CNEO_Player::StartAutoSprint(void)
 
 void CNEO_Player::StartSprinting(void)
 {
-	if (GetClass() != NEO_CLASS_RECON && m_HL2Local.m_flSuitPower < SPRINT_START_MIN)
-	{
-		return;
-	}
-
 	if (IsCarryingGhost())
 	{
 		return;
 	}
 
-	if (m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT))
-	{ //  ensure any direction button is pressed before sprinting
-		BaseClass::StartSprinting();
-		SetMaxSpeed(GetSprintSpeed());
-	}
+	BaseClass::StartSprinting();
 }
 
 void CNEO_Player::StopSprinting(void)

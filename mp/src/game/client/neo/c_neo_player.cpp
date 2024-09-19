@@ -757,23 +757,27 @@ void C_NEO_Player::PreThink( void )
 	BaseClass::PreThink();
 
 	float speed = GetNormSpeed();
-	if (m_nButtons & IN_DUCK && m_nButtons & IN_WALK)
-	{ // 1.77x slower
-		speed /= 1.777;
-	}
-	else if (m_nButtons & IN_DUCK || m_nButtons & IN_WALK)
-	{ // 1.33x slower
-		speed /= 1.333;
-	}
-	if (IsSprinting())
+	static constexpr float DUCK_WALK_SPEED_MODIFIER = 0.75;
+	if (m_nButtons & IN_DUCK)
 	{
-		speed *= m_iNeoClass == NEO_CLASS_RECON ? 1.333 : 1.6;
+		speed *= DUCK_WALK_SPEED_MODIFIER;
+	}
+	if (m_nButtons & IN_WALK)
+	{
+		speed *= DUCK_WALK_SPEED_MODIFIER;
+	}
+	if (IsSprinting() && !IsAirborne())
+	{
+		static constexpr float RECON_SPRINT_SPEED_MODIFIER = 0.75;
+		static constexpr float OTHER_CLASSES_SPRINT_SPEED_MODIFIER = 0.6;
+		speed /= m_iNeoClass == NEO_CLASS_RECON ? RECON_SPRINT_SPEED_MODIFIER : OTHER_CLASSES_SPRINT_SPEED_MODIFIER;
 	}
 	if (IsInAim())
 	{
-		speed /= 1.666;
+		static constexpr float AIM_SPEED_MODIFIER = 0.6;
+		speed *= AIM_SPEED_MODIFIER;
 	}
-	if (auto pNeoWep = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon()))
+	if (auto pNeoWep = static_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon()))
 	{
 		speed *= pNeoWep->GetSpeedScale();
 	}
@@ -1094,6 +1098,9 @@ bool C_NEO_Player::IsAllowedToSuperJump(void)
 	if (GetMoveParent())
 		return false;
 
+	if (IsPlayerUnderwater())
+		return false;
+
 	// Can't superjump whilst airborne (although it is kind of cool)
 	if (m_bHasBeenAirborneForTooLongToSuperJump)
 		return false;
@@ -1266,21 +1273,12 @@ void C_NEO_Player::Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon)
 
 void C_NEO_Player::StartSprinting(void)
 {
-	if (m_HL2Local.m_flSuitPower < SPRINT_START_MIN)
-	{
-		return;
-	}
-
 	if (IsCarryingGhost())
 	{
 		return;
 	}
 
-	if (m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT))
-	{ //  ensure any direction button is pressed before sprinting
-		SetMaxSpeed(GetSprintSpeed());
-	  m_fIsSprinting = true;
-	}
+	BaseClass::StartSprinting();
 }
 
 void C_NEO_Player::StopSprinting(void)
@@ -1295,7 +1293,7 @@ bool C_NEO_Player::CanSprint(void)
 		return false;
 	}
 
-	return BaseClass::CanSprint();
+	return true;
 }
 
 void C_NEO_Player::StartWalking(void)

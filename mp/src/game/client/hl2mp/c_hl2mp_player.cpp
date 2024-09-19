@@ -574,10 +574,8 @@ Vector C_HL2MP_Player::GetAutoaimVector( float flDelta )
 //-----------------------------------------------------------------------------
 bool C_HL2MP_Player::CanSprint( void )
 {
-	return ( 
-#ifndef NEO
+	return (
 		(!m_Local.m_bDucked && !m_Local.m_bDucking) &&
-#endif
 		(GetWaterLevel() != 3) );
 }
 
@@ -586,7 +584,11 @@ bool C_HL2MP_Player::CanSprint( void )
 //-----------------------------------------------------------------------------
 void C_HL2MP_Player::StartSprinting( void )
 {
+#ifdef NEO
+	if (m_HL2Local.m_flSuitPower < SPRINT_START_MIN)
+#else
 	if( m_HL2Local.m_flSuitPower < 10 )
+#endif
 	{
 #ifdef NEO
 #if(0)
@@ -631,16 +633,25 @@ void C_HL2MP_Player::HandleSpeedChanges( void )
 {
 	int buttonsChanged = m_afButtonPressed | m_afButtonReleased;
 
-	if( buttonsChanged & (IN_SPEED | IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT) )
+	if( buttonsChanged & (IN_SPEED | IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)  || m_nButtons & IN_SPEED)
 	{
 		// The state of the sprint/run button has changed.
 		if ( IsSuitEquipped() )
 		{
+#ifdef NEO
+			constexpr float MOVING_SPEED_MINIMUM = 0.5f; // NEOTODO (Adam) This is the same value as defined in cbaseanimating, should we be using the same value? Should we import it here?
+			if (!(m_nButtons & IN_SPEED) && IsSprinting())
+#else
 			if ( !(m_nButtons & (IN_SPEED | IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)) && IsSprinting())
+#endif
 			{
 				StopSprinting();
 			}
+#ifdef NEO
+			else if ((m_nButtons & IN_SPEED) && !IsSprinting() && GetLocalVelocity().IsLengthGreaterThan(MOVING_SPEED_MINIMUM))
+#else
 			else if ( (m_afButtonPressed & IN_SPEED) && (m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)) && !IsSprinting() )
+#endif
 			{
 				if ( CanSprint() )
 				{
