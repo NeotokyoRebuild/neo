@@ -75,6 +75,7 @@ void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode, const wchar_t *w
 	g_pCtx->iSection = 0;
 	g_pCtx->iHasMouseInPanel = 0;
 	g_pCtx->iHorizontalWidth = 0;
+	g_pCtx->iHorizontalMargin = 0;
 	g_pCtx->bValueEdited = false;
 	g_pCtx->eButtonTextStyle = TEXTSTYLE_CENTER;
 	g_pCtx->eLabelTextStyle = TEXTSTYLE_LEFT;
@@ -307,15 +308,17 @@ void EndSection()
 	++g_pCtx->iSection;
 }
 
-void BeginHorizontal(const int iHorizontalWidth)
+void BeginHorizontal(const int iHorizontalWidth, const int iHorizontalMargin)
 {
 	g_pCtx->iHorizontalWidth = iHorizontalWidth;
+	g_pCtx->iHorizontalMargin = iHorizontalMargin;
 	g_pCtx->iLayoutX = 0;
 }
 
 void EndHorizontal()
 {
 	g_pCtx->iHorizontalWidth = 0;
+	g_pCtx->iHorizontalMargin = 0;
 	g_pCtx->iLayoutX = 0;
 	++g_pCtx->iPartitionY;
 	g_pCtx->iLayoutY += g_pCtx->iRowTall;
@@ -382,7 +385,7 @@ void Pad()
 {
 	if (g_pCtx->iHorizontalWidth)
 	{
-		g_pCtx->iLayoutX += g_pCtx->iHorizontalWidth;
+		g_pCtx->iLayoutX += g_pCtx->iHorizontalWidth + g_pCtx->iHorizontalMargin;
 	}
 	else
 	{

@@ -144,6 +144,7 @@ struct Context
 	int iYOffset[MAX_SECTIONS];
 
 	int iHorizontalWidth;
+	int iHorizontalMargin;
 
 	TextStyle eButtonTextStyle;
 	TextStyle eLabelTextStyle;
@@ -192,7 +193,7 @@ void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode, const wchar_t *w
 void EndContext();
 void BeginSection(const bool bDefaultFocus = false);
 void EndSection();
-void BeginHorizontal(const int iHorizontalWidth);
+void BeginHorizontal(const int iHorizontalWidth, const int iHorizontalMargin = 0);
 void EndHorizontal();
 void SwapFont(const EFont eFont);
 
