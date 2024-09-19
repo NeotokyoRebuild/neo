@@ -404,20 +404,20 @@ void CWeaponSupa7::ItemPostFrame(void)
 		}
 		else if (m_flNextPrimaryAttack <= gpGlobals->curtime)
 		{
-			// If out of ammo end reload
-			if (m_iPrimaryAmmoCount <= 0 || m_bSlugLoaded || m_iClip1 >= GetMaxClip1())
+			// If we're supposed to have a slug loaded, load it
+			if (m_bSlugDelayed)
 			{
-				FinishReload();
+				if (!ReloadSlug())
+				{
+					m_bSlugDelayed.GetForModify() = false;
+				}
 			}
 			else
 			{
-				// If we're supposed to have a slug loaded, load it
-				if (m_bSlugDelayed)
+				// If out of ammo end reload
+				if ((m_iPrimaryAmmoCount <= 0 || m_bSlugLoaded || m_iClip1 >= GetMaxClip1()))
 				{
-					if (!ReloadSlug())
-					{
-						m_bSlugDelayed.GetForModify() = false;
-					}
+					FinishReload();
 				}
 				else
 				{
