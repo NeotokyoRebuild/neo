@@ -1568,12 +1568,12 @@ int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int pl
 		auto* neoAttacker = dynamic_cast<CNEO_Player*>(info->GetAttacker());
 		if (neoAttacker && neoAttacker->entindex() != entindex())
 		{
+			char killByLine[SHOWMENU_STRLIMIT];
 			auto* killedWithInflictor = info->GetInflictor();
-			bool inflictorIsPlayer = killedWithInflictor ? !Q_strcmp(killedWithInflictor->GetDebugName(), "player") : false;
+			const bool inflictorIsPlayer = killedWithInflictor ? !Q_strcmp(killedWithInflictor->GetDebugName(), "player") : false;
 			auto killedWithName = killedWithInflictor ? (inflictorIsPlayer ? neoAttacker->m_hActiveWeapon->GetPrintName() : killedWithInflictor->GetDebugName()) : "";
 			if (!Q_strcmp(killedWithName, "neo_grenade_frag")) { killedWithName = "Frag Grenade"; }
 			if (!Q_strcmp(killedWithName, "neo_deployed_detpack")) { killedWithName = "Remote Detpack"; }
-			char killByLine[SHOWMENU_STRLIMIT];
 			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, this, killedWithName);
 			Q_strncat(infoStr, killByLine, infoStrMax, COPY_ALL_CHARACTERS);
 		}
@@ -1665,11 +1665,18 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo* info)
 	{
 		short attackerIdx = 0;
 		auto* neoAttacker = info ? dynamic_cast<CNEO_Player*>(info->GetAttacker()) : NULL;
+		const char* killedWithName = "";
 		if (neoAttacker && neoAttacker->entindex() != entindex())
 		{
 			attackerIdx = static_cast<short>(neoAttacker->entindex());
+			auto* killedWithInflictor = info->GetInflictor();
+			const bool inflictorIsPlayer = killedWithInflictor ? !Q_strcmp(killedWithInflictor->GetDebugName(), "player") : false;
+			killedWithName = killedWithInflictor ? (inflictorIsPlayer ? neoAttacker->m_hActiveWeapon->GetPrintName() : killedWithInflictor->GetDebugName()) : "";
+			if (!Q_strcmp(killedWithName, "neo_grenade_frag")) { killedWithName = "Frag Grenade"; }
+			if (!Q_strcmp(killedWithName, "neo_deployed_detpack")) { killedWithName = "Remote Detpack"; }
 		}
 		WRITE_SHORT(attackerIdx);
+		WRITE_STRING(killedWithName);
 	}
 	MessageEnd();
 }
