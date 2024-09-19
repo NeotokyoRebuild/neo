@@ -1678,6 +1678,9 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo* info)
 
 void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 {
+	// Calculate force for weapon drop
+	Vector forceVector = CalcDamageForceVector(info);
+
 	// Drop all weapons
 	Vector vecForward, pVecThrowDir;
 	EyeVectors(&vecForward);
@@ -1699,12 +1702,7 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 			}
 
 			// Nowhere in particular; just drop it.
-			MatrixBuildRotateZ(zRot, random->RandomFloat(-60.0f, 60.0f));
-			Vector3DMultiply(zRot, vecForward, pVecThrowDir);
-			pVecThrowDir.z = random->RandomFloat(-0.5f, 0.5f);
-			VectorNormalize(pVecThrowDir);
-			Assert(pVecThrowDir.IsValid());
-			Weapon_Drop(pWep, NULL, &pVecThrowDir);
+			Weapon_DropOnDeath(pWep, forceVector, info.GetAttacker());
 		}
 	}
 
@@ -1720,8 +1718,58 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 	}
 
 	BaseClass::Event_Killed(info);
+}
 
-	RemoveAllWeapons();
+void CNEO_Player::Weapon_DropOnDeath(CBaseCombatWeapon* pWeapon, Vector velocity, CBaseEntity *pAttacker)
+{
+	CNEOBaseCombatWeapon* pNeoWeapon = static_cast<CNEOBaseCombatWeapon*>(pWeapon);
+	if (!pNeoWeapon)
+		return;
+	if (!pNeoWeapon->GetWpnData().m_bDropOnDeath)
+		return;
+#if(0) // Remove this #if to enable dropping of live grenades if killed while primed
+
+	// If attack button was held down when player died, drop a live grenade. NEOTODO (Adam) Add delay between pressing an attack button and the pin being fully pulled out. If pin not out when dead do not drop a live grenade
+	if (GetActiveWeapon() == pNeoWeapon && pNeoWeapon->GetNeoWepBits() & NEO_WEP_FRAG_GRENADE) {
+		if (((m_nButtons & IN_ATTACK) && (!(m_afButtonPressed & IN_ATTACK))) ||
+			((m_nButtons & IN_ATTACK2) && (!(m_afButtonPressed & IN_ATTACK2))))
+		{
+			auto pWeaponFrag = static_cast<CWeaponGrenade*>(pNeoWeapon);
+			pWeaponFrag->ThrowGrenade(this, false, pAttacker);
+			return;
+		}
+	}
+	if (GetActiveWeapon() == pNeoWeapon && pNeoWeapon->GetNeoWepBits() & NEO_WEP_SMOKE_GRENADE) {
+		if (((m_nButtons & IN_ATTACK) && (!(m_afButtonPressed & IN_ATTACK))) ||
+			((m_nButtons & IN_ATTACK2) && (!(m_afButtonPressed & IN_ATTACK2))))
+		{
+			auto pWeaponSmoke = static_cast<CWeaponSmokeGrenade*>(pNeoWeapon);
+			pWeaponSmoke->ThrowGrenade(this, false, pAttacker);
+			return;
+		}
+	}
+#endif
+	
+	if (pWeapon->IsEffectActive( EF_BONEMERGE ))
+	{
+		//int iBIndex = LookupBone("valveBiped.Bip01_R_Hand"); NEOTODO (Adam) Should mimic the behaviour in basecombatcharacter that places the weapon such that the bones used in the bonemerge overlap
+		Vector vFacingDir = BodyDirection2D();
+		pWeapon->SetAbsOrigin(Weapon_ShootPosition() + vFacingDir);
+	}
+
+	pWeapon->AddEffects(EF_BONEMERGE);
+	Vector playerVelocity = vec3_origin;
+	GetVelocity(&playerVelocity, NULL);
+	
+	if (VPhysicsGetObject())
+	{
+		playerVelocity += velocity * VPhysicsGetObject()->GetInvMass();
+	}
+	else {
+		playerVelocity += velocity;
+	}
+	pWeapon->Drop(playerVelocity);
+	Weapon_Detach(pWeapon);
 }
 
 void CNEO_Player::SpawnDeadModel(const CTakeDamageInfo& info)
@@ -1913,8 +1961,14 @@ bool CNEO_Player::Weapon_CanSwitchTo(CBaseCombatWeapon *pWeapon)
 
 bool CNEO_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 {
-	// We already have a weapon in this slot
 	auto weaponSlot = pWeapon->GetSlot();
+	// Only pick up grenades if we don't have grenades of that type NEOTODO (Adam) What if we have less than the maximum of that type (i.e one smoke grenade)? Can I carry more of a grenade than I spawn with?
+	if (weaponSlot == 3 && Weapon_GetPosition(weaponSlot, pWeapon->GetPosition()))
+	{
+		return false;
+	}
+
+	// We already have a weapon in this slot
 	if (weaponSlot != 3 && Weapon_GetSlot(weaponSlot))
 	{
 		return false;
@@ -1930,6 +1984,22 @@ bool CNEO_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 	}
 
 	return BaseClass::BumpWeapon(pWeapon);
+}
+
+bool CNEO_Player::Weapon_GetPosition(int slot, int position)
+{
+	// Check for that slot being occupied already
+	for (int i = 0; i < MAX_WEAPONS; i++)
+	{
+		if (m_hMyWeapons[i].Get() != NULL)
+		{
+			// If the slots match, it's already occupied
+			if (m_hMyWeapons[i]->GetSlot() == slot && m_hMyWeapons[i]->GetPosition() == position)
+				return m_hMyWeapons[i];
+		}
+	}
+
+	return NULL;
 }
 
 void CNEO_Player::ChangeTeam( int iTeam )
