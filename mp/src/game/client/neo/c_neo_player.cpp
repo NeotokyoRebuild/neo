@@ -1146,6 +1146,9 @@ bool C_NEO_Player::IsAllowedToSuperJump(void)
 	if (GetMoveParent())
 		return false;
 
+	if (IsPlayerUnderwater())
+		return false;
+
 	// Can't superjump whilst airborne (although it is kind of cool)
 	if (m_bHasBeenAirborneForTooLongToSuperJump)
 		return false;
