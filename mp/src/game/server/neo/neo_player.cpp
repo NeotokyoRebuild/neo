@@ -161,7 +161,7 @@ void CNEO_Player::RequestSetClass(int newClass)
 
 void CNEO_Player::RequestSetSkin(int newSkin)
 {
-	bool canChangeImmediately = true; // TODO
+	bool canChangeImmediately = NEORules()->GetRoundStatus() != NeoRoundStatus::RoundLive;
 
 	if (canChangeImmediately)
 	{
