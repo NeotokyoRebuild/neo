@@ -188,6 +188,9 @@ public:
 	float MirrorDamageMultiplier() const;
 #endif
 
+#ifdef GAME_DLL
+	void CheckIfCapPrevent(CNEO_Player *capPreventerPlayer);
+#endif
 	virtual void PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info) OVERRIDE;
 
 	// IGameEventListener interface:
@@ -279,6 +282,9 @@ private:
 	CWeaponGhost *m_pGhost = nullptr;
 	float m_flPrevThinkKick = 0.0f;
 	float m_flPrevThinkMirrorDmg = 0.0f;
+	bool m_bTeamBeenAwardedDueToCapPrevent = false;
+	int m_arrayiEntPrevCap[MAX_PLAYERS + 1]; // This is to check for cap-prevention workaround attempts
+	int m_iEntPrevCapSize = 0;
 #endif
 	CNetworkVar(int, m_nRoundStatus); // NEO TODO (Rain): probably don't need to network this
 	CNetworkVar(int, m_iRoundNumber);

@@ -5,6 +5,7 @@
 #include "ammodef.h"
 
 #include "takedamageinfo.h"
+#include "basegrenade_shared.h"
 
 #ifdef CLIENT_DLL
 	#include "c_neo_player.h"
@@ -67,6 +68,11 @@ ConVar neo_sv_mirror_teamdamage_immunity("neo_sv_mirror_teamdamage_immunity", "1
 ConVar neo_sv_teamdamage_kick("neo_sv_teamdamage_kick", "0", FCVAR_REPLICATED, "If enabled, the friendly-firing individual will be kicked if damage is received during the neo_sv_mirror_teamdamage_duration, exceeds the neo_sv_teamdamage_kick_hp value, or executes a teammate.", true, 0.0f, true, 1.0f);
 ConVar neo_sv_teamdamage_kick_hp("neo_sv_teamdamage_kick_hp", "900", FCVAR_REPLICATED, "The threshold for the amount of HP damage inflicted on teammates before the client is kicked.", true, 100.0f, false, 0.0f);
 ConVar neo_sv_teamdamage_kick_kills("neo_sv_teamdamage_kick_kills", "6", FCVAR_REPLICATED, "The threshold for the amount of team kills before the client is kicked.", true, 1.0f, false, 0.0f);
+ConVar neo_sv_suicide_prevent_cap_punish("neo_sv_suicide_prevent_cap_punish", "1", FCVAR_REPLICATED,
+										 "If enabled, if a player suicides and is the only one alive in their team, "
+										 "while the other team is holding the ghost, reward the ghost holder team "
+										 "a rank up.",
+										 true, 0.0f, true, 1.0f);
 #endif
 
 REGISTER_GAMERULES_CLASS( CNEORules );
@@ -478,6 +484,9 @@ void CNEORules::ResetMapSessionCommon()
 	}
 	m_flPrevThinkKick = 0.0f;
 	m_flPrevThinkMirrorDmg = 0.0f;
+	m_bTeamBeenAwardedDueToCapPrevent = false;
+	V_memset(m_arrayiEntPrevCap, 0, sizeof(m_arrayiEntPrevCap));
+	m_iEntPrevCapSize = 0;
 #endif
 }
 
@@ -1056,6 +1065,9 @@ void CNEORules::StartNextRound()
 	m_flIntermissionEndTime = 0;
 	m_flRestartGameTime = 0;
 	m_bCompleteReset = false;
+	m_bTeamBeenAwardedDueToCapPrevent = false;
+	V_memset(m_arrayiEntPrevCap, 0, sizeof(m_arrayiEntPrevCap));
+	m_iEntPrevCapSize = 0;
 	if (clearXP)
 	{
 		m_pRestoredInfos.Purge();
@@ -1711,7 +1723,14 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 		}
 		else if (iWinReason == NEO_VICTORY_TEAM_ELIMINATION)
 		{
-			V_sprintf_safe(victoryMsg, "Team %s wins by eliminating the other team!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
+			if (m_bTeamBeenAwardedDueToCapPrevent)
+			{
+				V_sprintf_safe(victoryMsg, "Team %s wins and is awarded rank ups by ghost cap prevention!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
+			}
+			else
+			{
+				V_sprintf_safe(victoryMsg, "Team %s wins by eliminating the other team!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
+			}
 		}
 		else if (iWinReason == NEO_VICTORY_TIMEOUT_WIN_BY_NUMBERS)
 		{
@@ -1751,6 +1770,7 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 	soundParams.m_bEmitCloseCaption = false;
 
 	const int winningTeamNum = winningTeam->GetTeamNumber();
+	int iRankupCapPrev = 0;
 
 	for (int i = 1; i <= gpGlobals->maxClients; ++i)
 	{
@@ -1779,8 +1799,17 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 				int xpAward = 1;	// Base reward for being on winning team
 				if (player->IsAlive())
 				{
-					++xpAward;
-					xpAward += static_cast<int>(player->IsCarryingGhost());
+					if (m_bTeamBeenAwardedDueToCapPrevent)
+					{
+						AwardRankUp(player);
+						xpAward = 0; // Already been rewarded rank-up XPs
+						++iRankupCapPrev;
+					}
+					else
+					{
+						++xpAward;
+						xpAward += static_cast<int>(player->IsCarryingGhost());
+					}
 				}
 				player->m_iXP.GetForModify() += xpAward;
 			}
@@ -1791,6 +1820,16 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 				player->StartShowDmgStats(NULL);
 			}
 		}
+	}
+
+	if (m_bTeamBeenAwardedDueToCapPrevent && iWinReason != NEO_VICTORY_GHOST_CAPTURE)
+	{
+		UTIL_ClientPrintAll(HUD_PRINTTALK, "Last player of %s1 suicided vs. ghost carrier; awarding capture to team %s2.",
+							(team == TEAM_JINRAI ? "NSF" : "Jinrai"), (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
+		char szHudChatPrint[42];
+		V_sprintf_safe(szHudChatPrint, "Awarding capture rank-up to %d player%s.",
+					   iRankupCapPrev, iRankupCapPrev == 1 ? "" : "s");
+		UTIL_ClientPrintAll(HUD_PRINTTALK, szHudChatPrint);
 	}
 
 	if (gotMatchWinner)
@@ -1829,24 +1868,91 @@ static CNEO_Player* FetchAssists(CNEO_Player* attacker, CNEO_Player* victim)
 	return NULL;
 }
 
+#ifdef GAME_DLL
+void CNEORules::CheckIfCapPrevent(CNEO_Player *capPreventerPlayer)
+{
+	// If this is the only player alive left before the suicide/disconnect and the other team was holding
+	// the ghost, reward the other team an XP to the next rank as a ghost cap was prevented.
+	const bool bShouldCheck = (neo_sv_suicide_prevent_cap_punish.GetBool()
+							   && m_nRoundStatus == NeoRoundStatus::RoundLive
+							   && !m_bTeamBeenAwardedDueToCapPrevent);
+	if (!bShouldCheck)
+	{
+		return;
+	}
+
+	bool bOtherTeamPlayingGhost = false;
+	int iTallyAlive[TEAM__TOTAL] = {};
+	const int iPreventerTeam = capPreventerPlayer->GetTeamNumber();
+	// Sanity check: Make sure it's only Jinrai/NSF players
+	const bool bValidTeam = iPreventerTeam == TEAM_JINRAI || iPreventerTeam == TEAM_NSF;
+	Assert(bValidTeam);
+	if (!bValidTeam)
+	{
+		return;
+	}
+
+	const int iCapPreventerEntIdx = capPreventerPlayer->entindex();
+
+	// Sanity check: Prevent duplication just in-case
+	bool bContainsEntIdx = false;
+	for (int i = 0; !bContainsEntIdx && i < m_iEntPrevCapSize; ++i)
+	{
+		bContainsEntIdx = (m_arrayiEntPrevCap[i] == iCapPreventerEntIdx);
+	}
+	if (!bContainsEntIdx) m_arrayiEntPrevCap[m_iEntPrevCapSize++] = iCapPreventerEntIdx;
+
+	for (int i = 1; i <= gpGlobals->maxClients; ++i)
+	{
+		auto *player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
+		if (!player || player->entindex() == iCapPreventerEntIdx)
+		{
+			continue;
+		}
+
+		const int iPlayerTeam = player->GetTeamNumber();
+		iTallyAlive[iPlayerTeam] += player->IsAlive();
+		if (iPlayerTeam != iPreventerTeam && player->IsCarryingGhost())
+		{
+			bOtherTeamPlayingGhost = true;
+		}
+	}
+
+	const int iOppositeTeam = (iPreventerTeam == TEAM_JINRAI) ? TEAM_NSF : TEAM_JINRAI;
+	m_bTeamBeenAwardedDueToCapPrevent = (bOtherTeamPlayingGhost &&
+										 iTallyAlive[iPreventerTeam] == 0 && iTallyAlive[iOppositeTeam] > 0);
+}
+#endif
+
 void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 {
 	BaseClass::PlayerKilled(pVictim, info);
 
 	auto attacker = dynamic_cast<CNEO_Player*>(info.GetAttacker());
 	auto victim = dynamic_cast<CNEO_Player*>(pVictim);
+	auto grenade = dynamic_cast<CBaseGrenade *>(info.GetInflictor());
 
-	if (!attacker || !pVictim)
+	if (!victim)
 	{
 		return;
 	}
 
-	// Suicide
-	if (attacker == victim)
+	// Suicide or suicide by environment (non-grenade as grenade is likely from a player)
+	if (attacker == victim || (!attacker && !grenade))
 	{
-		attacker->m_iXP.GetForModify() -= 1;
+		victim->m_iXP.GetForModify() -= 1;
+#ifdef GAME_DLL
+		CheckIfCapPrevent(victim);
+#endif
 	}
-	else
+#ifdef GAME_DLL
+	else if (!attacker && grenade && grenade->GetTeamNumber() == victim->GetTeamNumber())
+	{
+		// Death by own team's grenade, but the player is already disconnected. Check for cap prevent.
+		CheckIfCapPrevent(victim);
+	}
+#endif
+	else if (attacker)
 	{
 		// Team kill
 		if (attacker->GetTeamNumber() == victim->GetTeamNumber())
@@ -1856,6 +1962,20 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 			if (neo_sv_teamdamage_kick.GetBool() && m_nRoundStatus == NeoRoundStatus::RoundLive)
 			{
 				++attacker->m_iTeamKillsInflicted;
+			}
+
+			for (int i = 0; i < m_iEntPrevCapSize; ++i)
+			{
+				if (m_arrayiEntPrevCap[i] == attacker->entindex())
+				{
+					// Posthumous teamkill to prevent ghost cap scenario:
+					// Player-A throws nade at Player-B, Player-A suicides right after,
+					// Player-B gets killed from the nade - This dodges the general case
+					// as Player-A is not the final player, but it was Player-A's intention
+					// to prevent the ghost cap.
+					CheckIfCapPrevent(victim);
+					break;
+				}
 			}
 #endif
 		}
@@ -2158,6 +2278,9 @@ void CNEORules::ClientDisconnected(edict_t* pClient)
 				}
 			}
 		}
+
+		// Check if this is done to prevent ghost cap
+		CheckIfCapPrevent(pNeoPlayer);
 	}
 
 	BaseClass::ClientDisconnected(pClient);
