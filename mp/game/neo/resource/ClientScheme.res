@@ -282,7 +282,6 @@ Scheme
 				"weight"	"900"
 				"antialias" "1"
 				"yres"	"1200 10000"
-				"additive"	"1"
 			}
 			"6"
 			{
