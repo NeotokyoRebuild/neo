@@ -1900,11 +1900,14 @@ bool CNEO_Player::Weapon_CanSwitchTo(CBaseCombatWeapon *pWeapon)
     if (!pWeapon->CanDeploy())
         return false;
 
-    if (GetActiveWeapon())
+	const auto activeWeapon = GetActiveWeapon();
+    if (activeWeapon)
     {
-        if (!GetActiveWeapon()->CanHolster())
-            return false;
-		GetActiveWeapon()->StopWeaponSound(RELOAD_NPC);
+		if (!activeWeapon->CanHolster())
+		{
+			return false;
+		}
+		activeWeapon->StopWeaponSound(RELOAD_NPC);
     }
 
     return true;
