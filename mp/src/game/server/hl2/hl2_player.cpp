@@ -422,6 +422,10 @@ static inline float GetAuxChargeRate(CBaseCombatCharacter *player)
 	switch (neoPlayer->GetClass())
 	{
 	case NEO_CLASS_RECON:
+		if (neoPlayer->IsSprinting())
+		{
+			return 2.5f;	// 100 units in 40 seconds
+		}
 		return 5.0f;	// 100 units in 20 seconds
 	case NEO_CLASS_ASSAULT:
 		return 2.5f;	// 100 units in 40 seconds
