@@ -2533,7 +2533,7 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 {
 	const NeoRoundStatus status = NEORules()->GetRoundStatus();
 	if (!(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup) && 
-		(IsObserver() || IsDead() || m_bDroppedAnything || ((NEORules()->GetRemainingPreRoundFreezeTime(false)) < 0)))
+		(IsObserver() || IsDead() || m_bDroppedAnything || m_aliveTimer.IsGreaterThen(25.f)))
 	{
 		return;
 	}
