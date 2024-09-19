@@ -771,7 +771,7 @@ void C_NEO_Player::PreThink( void )
 	{
 		speed *= DUCK_WALK_SPEED_MODIFIER;
 	}
-	if (IsSprinting())
+	if (IsSprinting() && !IsAirborne())
 	{
 		static constexpr float RECON_SPRINT_SPEED_MODIFIER = 0.75;
 		static constexpr float OTHER_CLASSES_SPRINT_SPEED_MODIFIER = 0.6;
@@ -1316,21 +1316,12 @@ void C_NEO_Player::Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon)
 
 void C_NEO_Player::StartSprinting(void)
 {
-	if (m_HL2Local.m_flSuitPower < SPRINT_START_MIN)
-	{
-		return;
-	}
-
 	if (IsCarryingGhost())
 	{
 		return;
 	}
 
-	if (m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT))
-	{ //  ensure any direction button is pressed before sprinting
-		SetMaxSpeed(GetSprintSpeed());
-	  m_fIsSprinting = true;
-	}
+	BaseClass::StartSprinting();
 }
 
 void C_NEO_Player::StopSprinting(void)
@@ -1344,6 +1335,7 @@ bool C_NEO_Player::CanSprint(void)
 	{
 		return false;
 	}
+
 	return true;
 }
 

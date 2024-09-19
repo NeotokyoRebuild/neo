@@ -656,10 +656,11 @@ void CNEO_Player::PreThink(void)
 	{
 		speed *= DUCK_WALK_SPEED_MODIFIER;
 	}
-	if (IsSprinting())
+	if (IsSprinting() && !IsAirborne())
 	{
 		static constexpr float RECON_SPRINT_SPEED_MODIFIER = 0.75;
-		speed /= m_iNeoClass == NEO_CLASS_RECON ? RECON_SPRINT_SPEED_MODIFIER : 0.6;
+		static constexpr float OTHER_CLASSES_SPRINT_SPEED_MODIFIER = 0.6;
+		speed /= m_iNeoClass == NEO_CLASS_RECON ? RECON_SPRINT_SPEED_MODIFIER : OTHER_CLASSES_SPRINT_SPEED_MODIFIER;
 	}
 	if (m_bInAim.Get())
 	{
@@ -2684,21 +2685,12 @@ void CNEO_Player::StartAutoSprint(void)
 
 void CNEO_Player::StartSprinting(void)
 {
-	if (GetClass() != NEO_CLASS_RECON && m_HL2Local.m_flSuitPower < SPRINT_START_MIN)
-	{
-		return;
-	}
-
 	if (IsCarryingGhost())
 	{
 		return;
 	}
 
-	if (m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT))
-	{ //  ensure any direction button is pressed before sprinting
-		BaseClass::StartSprinting();
-		SetMaxSpeed(GetSprintSpeed());
-	}
+	BaseClass::StartSprinting();
 }
 
 void CNEO_Player::StopSprinting(void)

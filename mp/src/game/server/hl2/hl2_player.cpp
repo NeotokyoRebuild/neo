@@ -548,7 +548,12 @@ void CHL2_Player::HandleSpeedChanges( void )
 		}
 	}
 
+#ifdef NEO
+	constexpr float MOVING_SPEED_MINIMUM = 0.5f; // NEOTODO (Adam) This is the same value as defined in cbaseanimating, should we be using the same value? Should we import it here?
+	if (bIsSprinting && GetLocalVelocity().IsLengthLessThan(MOVING_SPEED_MINIMUM))
+#else
 	if (bIsSprinting && !(m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)))
+#endif
 	{
 		StopSprinting();
 	}
