@@ -3933,7 +3933,7 @@ void C_BaseAnimating::FireEvent( const Vector& origin, const QAngle& angles, int
 	case AE_MUZZLEFLASH:
 		{
 			// Send out the effect for a player
-#ifndef NEO
+#ifndef NEO // NEOTODO (Adam) Use this to dispatch muzzle flash effect for weapon models
 			DispatchMuzzleEffect( options, true );
 #endif
 			break;
