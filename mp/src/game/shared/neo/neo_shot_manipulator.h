@@ -32,7 +32,7 @@ public:
 
 	const Vector& ApplySpread(const Vector& vecSpread, float bias = 1.0);
 	const Vector& ApplyRecoil(const Vector& vecSpread, float bias = 1.0);
-	
+
 	const Vector& GetRecoilDirection() const { return m_vecRecoilDirection; }
 
 	void GetSpreadAndRecoilDirections(Vector& outSpreadDir, Vector& outRecoilDir) const
@@ -62,8 +62,8 @@ inline const Vector &CNEOShotManipulator::ApplySpread(const Vector& vecSpread, f
 {
 	if (m_pWeapon && (m_pWeapon->GetNeoWepBits() & (NEO_WEP_AA13 | NEO_WEP_SUPA7)))
 		return CShotManipulator::ApplySpread(vecSpread, bias);
-	VectorAdd(ApplyRecoil(vecSpread, bias), CShotManipulator::ApplySpread(vecSpread, bias), m_vecShotDirection);
-	return GetShotDirection();
+	m_vecShotDirection = ApplyRecoil(vecSpread, bias);
+	return CShotManipulator::ApplySpread(vecSpread, bias);
 }
 
 inline const Vector& CNEOShotManipulator::ApplyRecoil(const Vector& vecSpread, float bias)

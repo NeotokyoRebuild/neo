@@ -28,6 +28,10 @@ DECLARE_NAMED_HUDELEMENT(CNEOHud_RoundState, NRoundState);
 
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(RoundState, 0.1)
 
+ConVar neo_cl_squad_hud_original("neo_cl_squad_hud_original", "0", FCVAR_ARCHIVE, "Use the old squad HUD", true, 0.0, true, 1.0);
+
+ConVar neo_cl_squad_hud_star_scale("neo_cl_squad_hud_star_scale", "0", FCVAR_ARCHIVE, "Scaling to apply from 1080p, 0 disables scaling");
+
 namespace {
 constexpr int Y_POS = 2;
 constexpr bool STARS_HW_FILTERED = false;
@@ -130,11 +134,21 @@ void CNEOHud_RoundState::ApplySchemeSettings(vgui::IScheme* pScheme)
 	surface()->GetScreenSize(res.w, res.h);
 	m_iXpos = (res.w / 2);
 
-	for (auto *star : m_ipStars)
+	if (neo_cl_squad_hud_star_scale.GetFloat())
 	{
-		// The icons are downscaled to 192*48 on a 1080p res.
-		star->SetWide(192 * res.w / 1920.0);
-		star->SetTall(48 * res.h / 1080.0);
+		const float scale = neo_cl_squad_hud_star_scale.GetFloat() * (res.h / 1080.0);
+		for (auto* star : m_ipStars)
+		{
+			star->SetWide(192 * scale);
+			star->SetTall(48 * scale);
+		}
+	}
+	else {
+		for (auto* star : m_ipStars)
+		{
+			star->SetWide(192);
+			star->SetTall(48);
+		}
 	}
 
 	// Box dimensions
@@ -179,7 +193,7 @@ void CNEOHud_RoundState::ApplySchemeSettings(vgui::IScheme* pScheme)
 		.y = static_cast<int>(Y_POS + iBoxHeightHalf - ((iFontHeight / 0.85) / 2)),
 	};
 
-	SetBounds(0, Y_POS, res.w, m_iBoxYEnd + m_iSmallFontHeight);
+	SetBounds(0, Y_POS, res.w, res.h);
 }
 
 void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
@@ -209,10 +223,14 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	// Update steam images
 	if (gpGlobals->curtime > m_iNextAvatarUpdate) {
 		m_iNextAvatarUpdate = gpGlobals->curtime + 1;
-		for (int i = 1; i <= gpGlobals->maxClients; ++i)
+		IGameResources* gr = GameResources();
+		if (gr)
 		{
-			if (g_PR && g_PR->IsConnected(i)) {
-				UpdatePlayerAvatar(i);
+			for (int i = 1; i <= gpGlobals->maxClients; ++i)
+			{
+				if (gr->IsConnected(i)) {
+					UpdatePlayerAvatar(i);
+				}
 			}
 		}
 	}
@@ -270,113 +288,179 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 	}
 
 	surface()->DrawSetTextFont(m_hOCRFont);
-
-	// Draw Box
-	DrawNeoHudRoundedBox(m_iLeftOffset, Y_POS, m_iRightOffset, m_iBoxYEnd, box_color, true, true, true, true);
-
-	// Draw time
 	int fontWidth, fontHeight;
 	surface()->GetTextSize(m_hOCRFont, m_wszTime, fontWidth, fontHeight);
-	surface()->DrawSetTextColor((NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze) ?
-									COLOR_RED : COLOR_WHITE);
-	surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), m_iSmallFontHeight);
-	surface()->DrawPrintText(m_wszTime, 6);
 
-	// Draw round
-	surface()->DrawSetTextFont(m_hOCRSmallFont);
-	surface()->GetTextSize(m_hOCRSmallFont, m_wszRoundUnicode, fontWidth, fontHeight);
-	surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), 0);
-	surface()->DrawSetTextColor(COLOR_WHITE);
-	surface()->DrawPrintText(m_wszRoundUnicode, 9);
-
-	// Draw round status
-	surface()->GetTextSize(m_hOCRSmallFont, m_wszStatusUnicode, fontWidth, fontHeight);
-	surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), m_iBoxYEnd);
-	surface()->DrawPrintText(m_wszStatusUnicode, 24);
-
-	const int localPlayerTeam = GetLocalPlayerTeam();
-	const int localPlayerIndex = GetLocalPlayerIndex();
-	const bool localPlayerSpec = !(localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF);
-
-	const int leftTeam = localPlayerSpec ? TEAM_JINRAI : localPlayerTeam;
-	const int rightTeam = (leftTeam == TEAM_JINRAI) ? TEAM_NSF : TEAM_JINRAI;
-	const auto leftTeamInfo = m_teamLogoColors[leftTeam];
-	const auto rightTeamInfo = m_teamLogoColors[rightTeam];
-
-	// Draw players
-	if (!g_PR)
-		return;
-
-	m_iLeftPlayersAlive = 0;
-	m_iLeftPlayersTotal = 0;
-	m_iRightPlayersAlive = 0;
-	m_iRightPlayersTotal = 0;
-	int leftCount = 0;
-	int rightCount = 0;
-	for (int i = 0; i < (MAX_PLAYERS + 1); i++)
+	if (!neo_cl_squad_hud_original.GetBool())
 	{
-		if (g_PR->IsConnected(i))
+		// Draw Box
+		DrawNeoHudRoundedBox(m_iLeftOffset, Y_POS, m_iRightOffset, m_iBoxYEnd, box_color, false, false, true, true);
+
+		// Draw round
+		surface()->DrawSetTextFont(m_hOCRSmallFont);
+		surface()->GetTextSize(m_hOCRSmallFont, m_wszRoundUnicode, fontWidth, fontHeight);
+		surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), 0);
+		surface()->DrawSetTextColor(COLOR_WHITE);
+		surface()->DrawPrintText(m_wszRoundUnicode, 9);
+
+		// Draw round status
+		surface()->GetTextSize(m_hOCRSmallFont, m_wszStatusUnicode, fontWidth, fontHeight);
+		surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), m_iBoxYEnd);
+		surface()->DrawPrintText(m_wszStatusUnicode, 24);
+
+		const int localPlayerTeam = GetLocalPlayerTeam();
+		const int localPlayerIndex = GetLocalPlayerIndex();
+		const bool localPlayerSpec = !(localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF);
+
+		const int leftTeam = localPlayerSpec ? TEAM_JINRAI : localPlayerTeam;
+		const int rightTeam = (leftTeam == TEAM_JINRAI) ? TEAM_NSF : TEAM_JINRAI;
+		const auto leftTeamInfo = m_teamLogoColors[leftTeam];
+		const auto rightTeamInfo = m_teamLogoColors[rightTeam];
+
+		// Draw players
+		if (!g_PR)
+			return;
+
+		m_iLeftPlayersAlive = 0;
+		m_iLeftPlayersTotal = 0;
+		m_iRightPlayersAlive = 0;
+		m_iRightPlayersTotal = 0;
+		int leftCount = 0;
+		int rightCount = 0;
+		for (int i = 0; i < (MAX_PLAYERS + 1); i++)
 		{
-			const int playerTeam = g_PR->GetTeam(i);
-			if (playerTeam == leftTeam)
+			if (g_PR->IsConnected(i))
 			{
-				const bool isSameSquad = g_PR->GetStar(i) == g_PR->GetStar(localPlayerIndex);
-				if (localPlayerSpec || isSameSquad)
+				const int playerTeam = g_PR->GetTeam(i);
+				if (playerTeam == leftTeam)
 				{
-					const int xOffset = (m_iLeftOffset - 4) - ((leftCount + 1) * m_ilogoSize) - (leftCount * 2);
-					DrawPlayer(i, leftCount, leftTeamInfo, xOffset, true);
+					const bool isSameSquad = g_PR->GetStar(i) == g_PR->GetStar(localPlayerIndex);
+					if (localPlayerSpec || isSameSquad)
+					{
+						const int xOffset = (m_iLeftOffset - 4) - ((leftCount + 1) * m_ilogoSize) - (leftCount * 2);
+						DrawPlayer(i, leftCount, leftTeamInfo, xOffset, true);
+						leftCount++;
+					}
+
+					if (g_PR->IsAlive(i))
+						m_iLeftPlayersAlive++;
+					m_iLeftPlayersTotal++;
+				}
+				else if (playerTeam == rightTeam)
+				{
+					const int xOffset = (m_iRightOffset + 4) + (rightCount * m_ilogoSize) + (rightCount * 2);
+					DrawPlayer(i, rightCount, rightTeamInfo, xOffset, localPlayerSpec);
+					rightCount++;
+
+					if (g_PR->IsAlive(i))
+						m_iRightPlayersAlive++;
+					m_iRightPlayersTotal++;
+				}
+			}
+		}
+
+		// Draw score logo
+		surface()->DrawSetTexture(leftTeamInfo.totalLogo);
+		surface()->DrawSetColor(COLOR_FADED_DARK);
+		surface()->DrawTexturedRect(m_rectLeftTeamTotalLogo.x0,
+									m_rectLeftTeamTotalLogo.y0,
+									m_rectLeftTeamTotalLogo.x1,
+									m_rectLeftTeamTotalLogo.y1);
+
+		surface()->DrawSetTexture(rightTeamInfo.totalLogo);
+		surface()->DrawTexturedRect(m_rectRightTeamTotalLogo.x0,
+									m_rectRightTeamTotalLogo.y0,
+									m_rectRightTeamTotalLogo.x1,
+									m_rectRightTeamTotalLogo.y1);
+
+		// Draw score
+		surface()->GetTextSize(m_hOCRFont, m_wszLeftTeamScore, fontWidth, fontHeight);
+		surface()->DrawSetTextFont(m_hOCRFont);
+		surface()->DrawSetTextPos(m_posLeftTeamScore.x - (fontWidth / 2), m_posLeftTeamScore.y);
+		surface()->DrawSetTextColor(leftTeamInfo.color);
+		surface()->DrawPrintText(m_wszLeftTeamScore, 2);
+
+		surface()->GetTextSize(m_hOCRFont, m_wszRightTeamScore, fontWidth, fontHeight);
+		surface()->DrawSetTextPos(m_posRightTeamScore.x - (fontWidth / 2), m_posRightTeamScore.y);
+		surface()->DrawSetTextColor(rightTeamInfo.color);
+		surface()->DrawPrintText(m_wszRightTeamScore, 2);
+	
+		// Draw total players alive
+		surface()->DrawSetTextFont(m_hOCRSmallFont);
+		surface()->GetTextSize(m_hOCRSmallFont, m_wszPlayersAliveUnicode, fontWidth, fontHeight);
+		surface()->DrawSetTextColor(COLOR_WHITE);
+		surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), m_ilogoSize);
+		surface()->DrawPrintText(m_wszPlayersAliveUnicode, 9);
+
+	}
+	else
+	{
+		if (g_PR)
+		{
+			// Draw members of players squad in an old style list
+			const int localPlayerTeam = GetLocalPlayerTeam();
+			const int localPlayerIndex = GetLocalPlayerIndex();
+			const bool localPlayerSpec = !(localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF);
+
+			if (!localPlayerSpec && g_PR->GetStar(localPlayerIndex) != 0)
+			{
+				const int leftTeam = localPlayerSpec ? TEAM_JINRAI : localPlayerTeam;
+				const auto leftTeamInfo = m_teamLogoColors[leftTeam];
+				int leftCount = 0;
+
+				for (int i = 0; i < (MAX_PLAYERS + 1); i++)
+				{
+					if (i == localPlayerIndex)
+					{
+						continue;
+					}
+
+					if (!g_PR->IsConnected(i))
+					{
+						continue;
+					}
+
+					const int playerTeam = g_PR->GetTeam(i);
+					if (playerTeam != leftTeam)
+					{
+						continue;
+					}
+
+					const bool isSameSquad = g_PR->GetStar(i) == g_PR->GetStar(localPlayerIndex);
+					if (!isSameSquad)
+					{
+						continue;
+					}
+
+					// Draw player
+					static constexpr int SQUAD_MATE_TEXT_LENGTH = 62; // 31 characters in name without end character max plus 3 in short rank name plus 7 max in class name plus 3 max in health plus other characters
+					char squadMateText[SQUAD_MATE_TEXT_LENGTH];
+					wchar_t wSquadMateText[SQUAD_MATE_TEXT_LENGTH];
+					const char* squadMateRankName = GetRankName(g_PR->GetXP(i), true);
+					const char* squadMateClass = GetNeoClassName(g_PR->GetClass(i));
+					const int squadMateHealth = g_PR->IsAlive( i ) ? g_PR->GetHealth( i ) : 0;
+					V_snprintf(squadMateText, SQUAD_MATE_TEXT_LENGTH, "%s %s  [%s]  Integrity %i\0", g_PR->GetPlayerName( i ), squadMateRankName, squadMateClass, squadMateHealth);
+					g_pVGuiLocalize->ConvertANSIToUnicode(squadMateText, wSquadMateText, sizeof(wSquadMateText));
+
+					surface()->DrawSetTextFont(m_hOCRSmallFont);
+					surface()->GetTextSize(m_hOCRSmallFont, m_wszPlayersAliveUnicode, fontWidth, fontHeight);
+					surface()->DrawSetTextColor(g_PR->IsAlive( i ) ? COLOR_FADED_WHITE : COLOR_DARK_FADED_WHITE);
+					surface()->DrawSetTextPos(8, 48 + fontHeight * leftCount);
+					surface()->DrawPrintText(wSquadMateText, Q_strlen(squadMateText));
+
 					leftCount++;
 				}
-
-				if (g_PR->IsAlive(i))
-					m_iLeftPlayersAlive++;
-				m_iLeftPlayersTotal++;
-			}
-			else if (playerTeam == rightTeam)
-			{
-				const int xOffset = (m_iRightOffset + 4) + (rightCount * m_ilogoSize) + (rightCount * 2);
-				DrawPlayer(i, rightCount, rightTeamInfo, xOffset, localPlayerSpec);
-				rightCount++;
-
-				if (g_PR->IsAlive(i))
-					m_iRightPlayersAlive++;
-				m_iRightPlayersTotal++;
 			}
 		}
 	}
 
-	// Draw score logo
-	surface()->DrawSetTexture(leftTeamInfo.totalLogo);
-	surface()->DrawSetColor(COLOR_FADED_DARK);
-	surface()->DrawTexturedRect(m_rectLeftTeamTotalLogo.x0,
-								m_rectLeftTeamTotalLogo.y0,
-								m_rectLeftTeamTotalLogo.x1,
-								m_rectLeftTeamTotalLogo.y1);
-
-	surface()->DrawSetTexture(rightTeamInfo.totalLogo);
-	surface()->DrawTexturedRect(m_rectRightTeamTotalLogo.x0,
-								m_rectRightTeamTotalLogo.y0,
-								m_rectRightTeamTotalLogo.x1,
-								m_rectRightTeamTotalLogo.y1);
-
-	// Draw score
-	surface()->GetTextSize(m_hOCRFont, m_wszLeftTeamScore, fontWidth, fontHeight);
+	// Draw time
 	surface()->DrawSetTextFont(m_hOCRFont);
-	surface()->DrawSetTextPos(m_posLeftTeamScore.x - (fontWidth / 2), m_posLeftTeamScore.y);
-	surface()->DrawSetTextColor(leftTeamInfo.color);
-	surface()->DrawPrintText(m_wszLeftTeamScore, 2);
-
-	surface()->GetTextSize(m_hOCRFont, m_wszRightTeamScore, fontWidth, fontHeight);
-	surface()->DrawSetTextPos(m_posRightTeamScore.x - (fontWidth / 2), m_posRightTeamScore.y);
-	surface()->DrawSetTextColor(rightTeamInfo.color);
-	surface()->DrawPrintText(m_wszRightTeamScore, 2);
-	
-	// Draw total players alive
-	surface()->DrawSetTextFont(m_hOCRSmallFont);
-	surface()->GetTextSize(m_hOCRSmallFont, m_wszPlayersAliveUnicode, fontWidth, fontHeight);
-	surface()->DrawSetTextColor(COLOR_WHITE);
-	surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), m_ilogoSize);
-	surface()->DrawPrintText(m_wszPlayersAliveUnicode, 9);
+	surface()->GetTextSize(m_hOCRFont, m_wszTime, fontWidth, fontHeight);
+	surface()->DrawSetTextColor(neo_cl_squad_hud_original.GetBool() ? COLOR_FADED_WHITE : (NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze) ?
+									COLOR_RED : COLOR_WHITE);
+	surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), neo_cl_squad_hud_original.GetBool() ? Y_POS : m_iSmallFontHeight);
+	surface()->DrawPrintText(m_wszTime, 6);
 
 	CheckActiveStar();
 }
@@ -386,25 +470,25 @@ void CNEOHud_RoundState::DrawPlayer(int playerIndex, int teamIndex, const TeamLo
 {
 	// Draw Outline
 	surface()->DrawSetColor(box_color);
-	surface()->DrawFilledRect(xOffset - 1, Y_POS - 1, xOffset + m_ilogoSize + 1,
-							  Y_POS + m_ilogoSize + 1 + (drawHealthClass ? 5 : 0));
+	surface()->DrawFilledRect(xOffset - 1, Y_POS, xOffset + m_ilogoSize + 1,
+							  Y_POS + m_ilogoSize + 2 + (drawHealthClass ? 5 : 0));
 
 	// Drawing Avatar
 	surface()->DrawSetTexture(teamLogoColor.logo);
 
 	if (g_PR->IsAlive(playerIndex)) {
 		surface()->DrawSetColor(teamLogoColor.color);
-		surface()->DrawFilledRect(xOffset, Y_POS, xOffset + m_ilogoSize, Y_POS + m_ilogoSize);
+		surface()->DrawFilledRect(xOffset, Y_POS + 1, xOffset + m_ilogoSize, Y_POS + m_ilogoSize + 1);
 	}
 	else {
 		surface()->DrawSetColor(COLOR_DARK);
-		surface()->DrawFilledRect(xOffset, Y_POS, xOffset + m_ilogoSize, Y_POS + m_ilogoSize);
+		surface()->DrawFilledRect(xOffset, Y_POS + 1, xOffset + m_ilogoSize, Y_POS + m_ilogoSize + 1);
 	}
 
 	SetTextureToAvatar(playerIndex);
 	if (!g_PR->IsAlive(playerIndex))
 		surface()->DrawSetColor(COLOR_DARK);
-	surface()->DrawTexturedRect(xOffset, Y_POS, xOffset + m_ilogoSize, Y_POS + m_ilogoSize);
+	surface()->DrawTexturedRect(xOffset, Y_POS + 1, xOffset + m_ilogoSize, Y_POS + m_ilogoSize + 1);
 
 	// Return early to not draw healthbar and class icon
 	if (!drawHealthClass)
@@ -415,7 +499,7 @@ void CNEOHud_RoundState::DrawPlayer(int playerIndex, int teamIndex, const TeamLo
 	// Drawing Class Icon
 	surface()->DrawSetTexture(m_iGraphicID[g_PR->GetClass(playerIndex)]);
 	surface()->DrawSetColor(teamLogoColor.color);
-	surface()->DrawTexturedRect(xOffset, Y_POS + m_ilogoSize + 6, xOffset + m_ilogoSize, Y_POS + m_ilogoSize + 70);
+	surface()->DrawTexturedRect(xOffset, Y_POS + m_ilogoSize + 7, xOffset + m_ilogoSize, Y_POS + m_ilogoSize + 71);
 
 	// Drawing Healthbar
 	if (!g_PR->IsAlive(playerIndex))
@@ -433,7 +517,7 @@ void CNEOHud_RoundState::DrawPlayer(int playerIndex, int teamIndex, const TeamLo
 		else
 			surface()->DrawSetColor(COLOR_WHITE);
 	}	
-	surface()->DrawFilledRect(xOffset, Y_POS + m_ilogoSize + 1, xOffset + (g_PR->GetHealth(playerIndex) / 100.0f * m_ilogoSize), Y_POS + m_ilogoSize + 5);
+	surface()->DrawFilledRect(xOffset, Y_POS + m_ilogoSize + 2, xOffset + (g_PR->GetHealth(playerIndex) / 100.0f * m_ilogoSize), Y_POS + m_ilogoSize + 6);
 }
 
 void CNEOHud_RoundState::CheckActiveStar()
@@ -477,7 +561,7 @@ void CNEOHud_RoundState::CheckActiveStar()
 void CNEOHud_RoundState::UpdatePlayerAvatar(int playerIndex)
 {
 	// Update their avatar
-	if (!steamapicontext->SteamUtils())
+	if (!steamapicontext->SteamFriends() || !steamapicontext->SteamUtils())
 		return;
 
 	player_info_t pi;
