@@ -3933,7 +3933,9 @@ void C_BaseAnimating::FireEvent( const Vector& origin, const QAngle& angles, int
 	case AE_MUZZLEFLASH:
 		{
 			// Send out the effect for a player
+#ifndef NEO
 			DispatchMuzzleEffect( options, true );
+#endif
 			break;
 		}
 
