@@ -100,15 +100,15 @@ struct NeoSettings
 	struct CVR
 	{
 		// Multiplayer
-		CONVARREF_DEF(cl_player_spray_disable);
-		CONVARREF_DEF(cl_download_filter);
+		CONVARREF_DEF(cl_playerspraydisable);
+		CONVARREF_DEF(cl_downloadfilter);
 
 		// Mouse
 		CONVARREF_DEF(m_filter);
-		CONVARREF_DEF(pitch);
+		CONVARREF_DEF(m_pitch);
 		CONVARREF_DEF(m_customaccel);
 		CONVARREF_DEF(m_customaccel_exponent);
-		CONVARREF_DEF(m_raw_input);
+		CONVARREF_DEF(m_rawinput);
 
 		// Audio
 		CONVARREF_DEF(volume);
