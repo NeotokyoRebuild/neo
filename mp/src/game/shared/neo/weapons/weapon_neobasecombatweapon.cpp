@@ -460,7 +460,7 @@ void CNEOBaseCombatWeapon::ItemPreFrame(void)
 }
 
 // Handles lowering the weapon view model when character is sprinting
-void CNEOBaseCombatWeapon::HandleWeaponLowered(void)
+void CNEOBaseCombatWeapon::ProcessAnimationEvents(void)
 {
 	CNEO_Player* pOwner = static_cast<CNEO_Player*>(ToBasePlayer(GetOwner()));
 	if (!pOwner)
@@ -505,7 +505,7 @@ void CNEOBaseCombatWeapon::ItemPostFrame(void)
 	if (!pOwner)
 		return;
 
-	HandleWeaponLowered();
+	ProcessAnimationEvents();
 
 	UpdateAutoFire();
 
