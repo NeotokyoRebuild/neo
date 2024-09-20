@@ -122,6 +122,13 @@ void CCenterStringLabel::OnScreenSizeChanged(int iOldWide, int iOldTall)
 {
 	BaseClass::OnScreenSizeChanged(iOldWide, iOldTall);
 	ComputeSize();
+#ifdef NEO
+	vgui::HScheme neoscheme = vgui::scheme()->LoadSchemeFromFileEx(
+	enginevgui->GetPanel(PANEL_CLIENTDLL),
+		"resource/ClientScheme.res", "ClientScheme");
+	vgui::IScheme* pScheme = vgui::scheme()->GetIScheme(neoscheme);
+	ApplySchemeSettings(pScheme);
+#endif
 }
 
 //-----------------------------------------------------------------------------

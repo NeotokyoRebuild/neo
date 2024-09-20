@@ -1733,7 +1733,7 @@ Scheme
 			"6"
 			{
 				"name"		"xscale"
-				"tall"		"52"
+				"tall"		"70"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"		"1440 6000"
