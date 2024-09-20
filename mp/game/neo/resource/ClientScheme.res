@@ -1710,7 +1710,7 @@ Scheme
 				"antialias"	"1"
 				"additive"	"1"
 			}
-			"4"
+			"5"
 			{
 				"name"		"xscale"
 				"tall"		"40"
@@ -1720,7 +1720,7 @@ Scheme
 				"antialias"	"1"
 				"additive"	"1"
 			}
-			"5"
+			"6"
 			{
 				"name"		"xscale"
 				"tall"		"42"
@@ -1730,7 +1730,7 @@ Scheme
 				"antialias"	"1"
 				"additive"	"1"
 			}
-			"6"
+			"7"
 			{
 				"name"		"xscale"
 				"tall"		"70"
