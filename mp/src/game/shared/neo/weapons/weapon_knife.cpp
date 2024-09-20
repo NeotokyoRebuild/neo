@@ -81,7 +81,7 @@ void CWeaponKnife::Spawn()
 
 void CWeaponKnife::ItemPostFrame()
 {
-	ProcessAnimationEvents();
+	HandleWeaponLowered();
 	BaseClass::ItemPostFrame();
 }
 

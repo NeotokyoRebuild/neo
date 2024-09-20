@@ -386,7 +386,7 @@ void CWeaponSupa7::ItemPostFrame(void)
 	{
 		return;
 	}
-	ProcessAnimationEvents();
+	HandleWeaponLowered();
 
 	if (m_bInReload)
 	{
