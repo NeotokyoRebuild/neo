@@ -2620,8 +2620,13 @@ void CNEO_Player::GiveDefaultItems(void)
 		GiveNamedItem("weapon_smokegrenade");
 		Weapon_Switch(Weapon_OwnsThisType("weapon_kyla"));
 		break;
+	case NEO_CLASS_VIP:
+		GiveNamedItem("weapon_milso");
+		Weapon_Switch(Weapon_OwnsThisType("weapon_milso"));
+		break;
 	default:
 		GiveNamedItem("weapon_knife");
+		Weapon_Switch(Weapon_OwnsThisType("weapon_knife"));
 		break;
 	}
 }
