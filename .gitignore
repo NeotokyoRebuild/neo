@@ -14,6 +14,13 @@ mp/game/mod_hl2mp
 
 mp/game/neo/screenshots
 
+# Binary Assets
+mp/game/neo/maps
+mp/game/neo/mapsrc
+mp/game/neo/materials
+mp/game/neo/particles
+mp/game/neo/shaders
+
 # Any debug or user specific configs that shouldn't be pushed
 mp/game/neo/cfg/config.cfg
 mp/game/neo/cfg/rain.cfg

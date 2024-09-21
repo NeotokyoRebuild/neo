@@ -133,6 +133,8 @@ void CNEOHud_GhostMarker::DrawNeoHudElement()
 	// be able to be given on each round start. This itself is an expensive operation but only done once per round
 	// start. The usage of PVS is preferred since it'll give a smoother visual to the player verses relying on server
 	// side positioning.
+	//
+	// (Rain): Could we instead use OnPVSStatusChanged to track this client side?
 	if (!m_ghostInPVS)
 	{
 		C_AllBaseEntityIterator itr;
@@ -172,9 +174,26 @@ void CNEOHud_GhostMarker::DrawNeoHudElement()
 	}
 
 	// Use PVS over networked-given position if possible as it'll give a smoother visual
-	int iPosX, iPosY;
-	Vector ghostPos = (m_ghostInPVS && m_ghostInPVS->IsVisible()) ?
-				m_ghostInPVS->GetAbsOrigin() : NEORules()->GetGhostPos();
+	// NEO NOTE (Rain): this assignment was segfaulting on Linux, so I've split the logic
+	// and added extra guards, so we can catch it better if it still happens.
+	Vector ghostPos;
+	if (m_ghostInPVS && m_ghostInPVS->IsVisible())
+	{
+		ghostPos = m_ghostInPVS->GetAbsOrigin();
+	}
+	else
+	{
+		if (NEORules())
+		{
+			ghostPos = NEORules()->GetGhostPos();
+		}
+		else
+		{
+			Assert(false);
+			return;
+		}
+	}
+
 	if (const int ghosterPlayerIdx = NEORules()->GetGhosterPlayer();
 			ghosterPlayerIdx > 0)
 	{
@@ -186,6 +205,7 @@ void CNEOHud_GhostMarker::DrawNeoHudElement()
 			}
 		}
 	}
+	int iPosX, iPosY;
 	GetVectorInScreenSpace(ghostPos, iPosX, iPosY);
 
 	const float fadeMultiplier = GetFadeValueTowardsScreenCentre(iPosX, iPosY);

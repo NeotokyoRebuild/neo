@@ -54,10 +54,12 @@ public:
 	virtual bool Weapon_Switch(CBaseCombatWeapon *pWeapon, int viewmodelindex = 0) OVERRIDE;
 	virtual bool Weapon_CanSwitchTo(CBaseCombatWeapon *pWeapon) OVERRIDE;
 	virtual bool BumpWeapon(CBaseCombatWeapon *pWeapon) OVERRIDE;
+	bool Weapon_GetPosition(int slot, int position);
 	virtual void ChangeTeam(int iTeam) OVERRIDE;
 	virtual void PickupObject(CBaseEntity *pObject, bool bLimitMassAndSize) OVERRIDE;
 	virtual void PlayStepSound(Vector &vecOrigin, surfacedata_t *psurface, float fvol, bool force) OVERRIDE;
 	virtual void Weapon_Drop(CBaseCombatWeapon *pWeapon, const Vector *pvecTarget = NULL, const Vector *pVelocity = NULL) OVERRIDE;
+	virtual void Weapon_DropOnDeath(CBaseCombatWeapon *pWeapon, Vector pVelocity, CBaseEntity *pAttacker = NULL);
 	virtual void UpdateOnRemove(void) OVERRIDE;
 	virtual void DeathSound(const CTakeDamageInfo &info) OVERRIDE;
 	virtual CBaseEntity* EntSelectSpawnPoint(void) OVERRIDE;

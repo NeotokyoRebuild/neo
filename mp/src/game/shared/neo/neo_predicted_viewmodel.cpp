@@ -14,6 +14,8 @@
 #include "model_types.h"
 #include "prediction.h"
 #include "viewrender.h"
+#include "r_efx.h"
+#include "dlight.h"
 #else
 #include "neo_player.h"
 #endif
@@ -429,6 +431,24 @@ void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 }
 
 #ifdef CLIENT_DLL
+void CNEOPredictedViewModel::ProcessMuzzleFlashEvent()
+{
+	Vector vAttachment;
+	QAngle dummyAngles;
+	GetAttachment(2, vAttachment, dummyAngles);
+
+	// Make a dlight
+	dlight_t* dl = effects->CL_AllocDlight(LIGHT_INDEX_MUZZLEFLASH + index);
+	dl->origin = vAttachment;
+	dl->radius = random->RandomInt(64, 96);
+	dl->decay = dl->radius / 0.1f;
+	dl->die = gpGlobals->curtime + 0.1f;
+	dl->color.r = 255;
+	dl->color.g = 192;
+	dl->color.b = 64;
+	dl->color.exponent = 5;
+}
+
 RenderGroup_t CNEOPredictedViewModel::GetRenderGroup()
 {
 	auto pPlayer = static_cast<C_NEO_Player*>(GetOwner());

@@ -75,6 +75,7 @@ void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode, const wchar_t *w
 	g_pCtx->iSection = 0;
 	g_pCtx->iHasMouseInPanel = 0;
 	g_pCtx->iHorizontalWidth = 0;
+	g_pCtx->iHorizontalMargin = 0;
 	g_pCtx->bValueEdited = false;
 	g_pCtx->eButtonTextStyle = TEXTSTYLE_CENTER;
 	g_pCtx->eLabelTextStyle = TEXTSTYLE_LEFT;
@@ -128,9 +129,9 @@ void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode, const wchar_t *w
 
 		if (wszTitle)
 		{
-			SwapFont(FONT_NTNORMAL);
+			SwapFont(FONT_NTHEADING);
 			surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
-			GCtxDrawSetTextPos(g_pCtx->iMarginX, -g_pCtx->iRowTall + g_pCtx->fonts[FONT_NTNORMAL].iYOffset);
+			GCtxDrawSetTextPos(g_pCtx->iMarginX, -g_pCtx->iRowTall + g_pCtx->fonts[FONT_NTHEADING].iYOffset);
 			surface()->DrawPrintText(wszTitle, V_wcslen(wszTitle));
 		}
 		break;
@@ -142,7 +143,7 @@ void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode, const wchar_t *w
 		break;
 	}
 
-	SwapFont(FONT_NTSMALL);
+	SwapFont(FONT_NTNORMAL);
 	surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
 }
 
@@ -307,15 +308,17 @@ void EndSection()
 	++g_pCtx->iSection;
 }
 
-void BeginHorizontal(const int iHorizontalWidth)
+void BeginHorizontal(const int iHorizontalWidth, const int iHorizontalMargin)
 {
 	g_pCtx->iHorizontalWidth = iHorizontalWidth;
+	g_pCtx->iHorizontalMargin = iHorizontalMargin;
 	g_pCtx->iLayoutX = 0;
 }
 
 void EndHorizontal()
 {
 	g_pCtx->iHorizontalWidth = 0;
+	g_pCtx->iHorizontalMargin = 0;
 	g_pCtx->iLayoutX = 0;
 	++g_pCtx->iPartitionY;
 	g_pCtx->iLayoutY += g_pCtx->iRowTall;
@@ -382,7 +385,7 @@ void Pad()
 {
 	if (g_pCtx->iHorizontalWidth)
 	{
-		g_pCtx->iLayoutX += g_pCtx->iHorizontalWidth;
+		g_pCtx->iLayoutX += g_pCtx->iHorizontalWidth + g_pCtx->iHorizontalMargin;
 	}
 	else
 	{
@@ -571,6 +574,7 @@ void RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, const i
 
 void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 {
+	SwapFont(FONT_NTHORIZSIDES);
 	// This is basically a ringbox but different UI
 	if (g_pCtx->iWidget == g_pCtx->iActive && g_pCtx->iSection == g_pCtx->iActiveSection) g_pCtx->iActive += g_pCtx->iActiveDirection;
 	const auto wdgState = InternalGetMouseinFocused();
@@ -649,6 +653,7 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 	}
 
 	InternalUpdatePartitionState(wdgState);
+	SwapFont(FONT_NTNORMAL);
 }
 
 static float ClampAndLimitDp(const float curValue, const float flMin, const float flMax, const int iDp)

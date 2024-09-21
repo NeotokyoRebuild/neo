@@ -423,7 +423,9 @@ static inline float GetAuxChargeRate(CBaseCombatCharacter *player)
 	{
 	case NEO_CLASS_RECON:
 		if (neoPlayer->IsSprinting())
+		{
 			return 2.5f;	// 100 units in 40 seconds
+		}
 		return 5.0f;	// 100 units in 20 seconds
 	case NEO_CLASS_ASSAULT:
 		return 2.5f;	// 100 units in 40 seconds
@@ -524,8 +526,17 @@ void CHL2_Player::HandleSpeedChanges( void )
 
 	bool bCanSprint = CanSprint();
 	bool bIsSprinting = IsSprinting();
+#ifdef NEO
+	constexpr float MOVING_SPEED_MINIMUM = 0.5f; // NEOTODO (Adam) This is the same value as defined in cbaseanimating, should we be using the same value? Should we import it here?
+	bool bWantSprint = (bCanSprint && IsSuitEquipped() && (m_nButtons & IN_SPEED) && GetLocalVelocity().IsLengthGreaterThan(MOVING_SPEED_MINIMUM));
+#else
 	bool bWantSprint = ( bCanSprint && IsSuitEquipped() && (m_nButtons & IN_SPEED) && (m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)));
+#endif
+#ifdef NEO
+	if ( bIsSprinting != bWantSprint && ((m_nButtons & IN_SPEED) || buttonsChanged & IN_SPEED))
+#else
 	if ( bIsSprinting != bWantSprint && (buttonsChanged & IN_SPEED)  )
+#endif
 	{
 		// If someone wants to sprint, make sure they've pressed the button to do so. We want to prevent the
 		// case where a player can hold down the sprint key and burn tiny bursts of sprint as the suit recharges
@@ -552,7 +563,11 @@ void CHL2_Player::HandleSpeedChanges( void )
 		}
 	}
 
+#ifdef NEO
+	if (bIsSprinting && GetLocalVelocity().IsLengthLessThan(MOVING_SPEED_MINIMUM))
+#else
 	if (bIsSprinting && !(m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)))
+#endif
 	{
 		StopSprinting();
 	}
@@ -696,13 +711,19 @@ void CHL2_Player::PreThink(void)
 
 	if( sv_stickysprint.GetBool() && m_bIsAutoSprinting )
 	{
+#ifndef NEO
 		// If we're ducked and not in the air
 		if( IsDucked() && GetGroundEntity() != NULL )
 		{
 			StopSprinting();
 		}
+#endif // NEO
 		// Stop sprinting if the player lets off the stick for a moment.
+#ifdef NEO
+		if (GetStickDist() == 0.0f)
+#else
 		else if( GetStickDist() == 0.0f )
+#endif // NEO
 		{
 			if( gpGlobals->curtime > m_fAutoSprintMinTime )
 			{
@@ -715,6 +736,7 @@ void CHL2_Player::PreThink(void)
 			m_fAutoSprintMinTime = gpGlobals->curtime + 0.5f;
 		}
 	}
+#ifndef NEO
 	else if ( IsSprinting() )
 	{
 		// Disable sprint while ducked unless we're in the air (jumping)
@@ -723,6 +745,7 @@ void CHL2_Player::PreThink(void)
 			StopSprinting();
 		}
 	}
+#endif // NEO
 
 	VPROF_SCOPE_END();
 
@@ -1215,8 +1238,8 @@ bool CHL2_Player::CanSprint()
 			!IsWalking() &&												// Not if we're walking
 #ifndef NEO
 			!( m_Local.m_bDucked && !m_Local.m_bDucking ) &&			// Nor if we're ducking
-#endif
 			(GetWaterLevel() != 3) &&									// Certainly not underwater
+#endif
 			(GlobalEntity_GetState("suit_no_sprint") != GLOBAL_ON) );	// Out of the question without the sprint module
 }
 

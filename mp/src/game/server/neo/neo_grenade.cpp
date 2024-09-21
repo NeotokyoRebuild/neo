@@ -250,6 +250,7 @@ CBaseGrenade *NEOFraggrenade_Create(const Vector &position, const QAngle &angles
 	pGrenade->SetTimer(timer, timer - NEO_FRAG_GRENADE_WARN_TIME);
 	pGrenade->SetVelocity(velocity, angVelocity);
 	pGrenade->SetThrower(ToBaseCombatCharacter(pOwner));
+	if (pOwner) pGrenade->ChangeTeam(pOwner->GetTeamNumber());
 	pGrenade->m_takedamage = DAMAGE_EVENTS_ONLY;
 
 	return pGrenade;

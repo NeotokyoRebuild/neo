@@ -3,6 +3,7 @@
 
 #include "neo_playeranimstate.h"
 #include "neo_predicted_viewmodel.h"
+#include "neo_predicted_viewmodel_muzzleflash.h"
 #include "in_buttons.h"
 #include "neo_gamerules.h"
 #include "team.h"
@@ -645,21 +646,25 @@ void CNEO_Player::PreThink(void)
 	}
 
 	float speed = GetNormSpeed();
-	if (m_nButtons & IN_DUCK && m_nButtons & IN_WALK)
-	{ // 1.77x slower
-		speed /= 1.777;
-	}
-	else if (m_nButtons & IN_DUCK || m_nButtons & IN_WALK)
-	{ // 1.33x slower
-		speed /= 1.333;
-	}
-	if (IsSprinting())
+	static constexpr float DUCK_WALK_SPEED_MODIFIER = 0.75;
+	if (m_nButtons & IN_DUCK)
 	{
-		speed *= m_iNeoClass == NEO_CLASS_RECON ? 1.333 : 1.6;
+		speed *= DUCK_WALK_SPEED_MODIFIER;
+	}
+	if (m_nButtons & IN_WALK)
+	{
+		speed *= DUCK_WALK_SPEED_MODIFIER;
+	}
+	if (IsSprinting() && !IsAirborne())
+	{
+		static constexpr float RECON_SPRINT_SPEED_MODIFIER = 0.75;
+		static constexpr float OTHER_CLASSES_SPRINT_SPEED_MODIFIER = 0.6;
+		speed /= m_iNeoClass == NEO_CLASS_RECON ? RECON_SPRINT_SPEED_MODIFIER : OTHER_CLASSES_SPRINT_SPEED_MODIFIER;
 	}
 	if (m_bInAim.Get())
 	{
-		speed /= 1.666;
+		static constexpr float AIM_SPEED_MODIFIER = 0.6;
+		speed *= AIM_SPEED_MODIFIER;
 	}
 	if (auto pNeoWep = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon()))
 	{
@@ -944,6 +949,9 @@ bool CNEO_Player::IsAllowedToSuperJump(void)
 		return false;
 
 	if (GetMoveParent())
+		return false;
+
+	if (IsPlayerUnderwater())
 		return false;
 
 	// Can't superjump whilst airborne (although it is kind of cool)
@@ -1477,26 +1485,43 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 void CNEO_Player::CreateViewModel( int index )
 {
 	Assert( index >= 0 && index < MAX_VIEWMODELS );
+	Assert(MUZZLE_FLASH_VIEW_MODEL_INDEX != index && MUZZLE_FLASH_VIEW_MODEL_INDEX < MAX_VIEWMODELS);
 
-	if ( GetViewModel( index ) )
+	if ( !GetViewModel( index ) )
 	{
-		return;
+		CNEOPredictedViewModel* vm = (CNEOPredictedViewModel*)CreateEntityByName("neo_predicted_viewmodel");
+		if (vm)
+		{
+			vm->SetAbsOrigin(GetAbsOrigin());
+			vm->SetOwner(this);
+			vm->SetIndex(index);
+			DispatchSpawn(vm);
+			vm->FollowEntity(this, false);
+			m_hViewModel.Set(index, vm);
+		}
 	}
 
-	CNEOPredictedViewModel *vm = ( CNEOPredictedViewModel * )CreateEntityByName( "neo_predicted_viewmodel" );
-	if ( vm )
+	if ( !GetViewModel(MUZZLE_FLASH_VIEW_MODEL_INDEX))
 	{
-		vm->SetAbsOrigin( GetAbsOrigin() );
-		vm->SetOwner( this );
-		vm->SetIndex( index );
-		DispatchSpawn( vm );
-		vm->FollowEntity( this, false );
-		m_hViewModel.Set( index, vm );
-	}
-	else
-	{
-		Warning("CNEO_Player::CreateViewModel: Failed to create neo_predicted_viewmodel\n");
-		return;
+		auto* vmm = (CNEOPredictedViewModelMuzzleFlash*)CreateEntityByName("neo_predicted_viewmodel_muzzleflash");
+		if (!vmm)
+		{
+			Assert(false);
+			return;
+		}
+		
+		CBaseViewModel* vm = GetViewModel();
+		if (!vm)
+		{
+			Assert(false);
+			return;
+		}
+
+		vmm->SetAbsOrigin(vm->GetAbsOrigin());
+		vmm->SetOwner(this);
+		vmm->SetParent(vm);
+		DispatchSpawn(vmm);
+		m_hViewModel.Set(MUZZLE_FLASH_VIEW_MODEL_INDEX, vmm);
 	}
 }
 
@@ -1662,6 +1687,9 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo* info)
 
 void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 {
+	// Calculate force for weapon drop
+	Vector forceVector = CalcDamageForceVector(info);
+
 	// Drop all weapons
 	Vector vecForward, pVecThrowDir;
 	EyeVectors(&vecForward);
@@ -1683,12 +1711,7 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 			}
 
 			// Nowhere in particular; just drop it.
-			MatrixBuildRotateZ(zRot, random->RandomFloat(-60.0f, 60.0f));
-			Vector3DMultiply(zRot, vecForward, pVecThrowDir);
-			pVecThrowDir.z = random->RandomFloat(-0.5f, 0.5f);
-			VectorNormalize(pVecThrowDir);
-			Assert(pVecThrowDir.IsValid());
-			Weapon_Drop(pWep, NULL, &pVecThrowDir);
+			Weapon_DropOnDeath(pWep, forceVector, info.GetAttacker());
 		}
 	}
 
@@ -1703,15 +1726,64 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 		StartShowDmgStats(&info);
 	}
 
-	BaseClass::Event_Killed(info);
-
-	RemoveAllWeapons();
-	m_bDroppedAnything = false;
-	
 	if (NEORules()->GetGameType() == NeoGameType::TDM)
 	{
 		GetGlobalTeam(NEORules()->GetOpposingTeam(this))->AddScore(1);
 	}
+
+	BaseClass::Event_Killed(info);
+}
+
+void CNEO_Player::Weapon_DropOnDeath(CBaseCombatWeapon* pWeapon, Vector velocity, CBaseEntity *pAttacker)
+{
+	CNEOBaseCombatWeapon* pNeoWeapon = static_cast<CNEOBaseCombatWeapon*>(pWeapon);
+	if (!pNeoWeapon)
+		return;
+	if (!pNeoWeapon->GetWpnData().m_bDropOnDeath)
+		return;
+#if(0) // Remove this #if to enable dropping of live grenades if killed while primed
+
+	// If attack button was held down when player died, drop a live grenade. NEOTODO (Adam) Add delay between pressing an attack button and the pin being fully pulled out. If pin not out when dead do not drop a live grenade
+	if (GetActiveWeapon() == pNeoWeapon && pNeoWeapon->GetNeoWepBits() & NEO_WEP_FRAG_GRENADE) {
+		if (((m_nButtons & IN_ATTACK) && (!(m_afButtonPressed & IN_ATTACK))) ||
+			((m_nButtons & IN_ATTACK2) && (!(m_afButtonPressed & IN_ATTACK2))))
+		{
+			auto pWeaponFrag = static_cast<CWeaponGrenade*>(pNeoWeapon);
+			pWeaponFrag->ThrowGrenade(this, false, pAttacker);
+			return;
+		}
+	}
+	if (GetActiveWeapon() == pNeoWeapon && pNeoWeapon->GetNeoWepBits() & NEO_WEP_SMOKE_GRENADE) {
+		if (((m_nButtons & IN_ATTACK) && (!(m_afButtonPressed & IN_ATTACK))) ||
+			((m_nButtons & IN_ATTACK2) && (!(m_afButtonPressed & IN_ATTACK2))))
+		{
+			auto pWeaponSmoke = static_cast<CWeaponSmokeGrenade*>(pNeoWeapon);
+			pWeaponSmoke->ThrowGrenade(this, false, pAttacker);
+			return;
+		}
+	}
+#endif
+	
+	if (pWeapon->IsEffectActive( EF_BONEMERGE ))
+	{
+		//int iBIndex = LookupBone("valveBiped.Bip01_R_Hand"); NEOTODO (Adam) Should mimic the behaviour in basecombatcharacter that places the weapon such that the bones used in the bonemerge overlap
+		Vector vFacingDir = BodyDirection2D();
+		pWeapon->SetAbsOrigin(Weapon_ShootPosition() + vFacingDir);
+	}
+
+	pWeapon->AddEffects(EF_BONEMERGE);
+	Vector playerVelocity = vec3_origin;
+	GetVelocity(&playerVelocity, NULL);
+	
+	if (VPhysicsGetObject())
+	{
+		playerVelocity += velocity * VPhysicsGetObject()->GetInvMass();
+	}
+	else {
+		playerVelocity += velocity;
+	}
+	pWeapon->Drop(playerVelocity);
+	Weapon_Detach(pWeapon);
 }
 
 void CNEO_Player::SpawnDeadModel(const CTakeDamageInfo& info)
@@ -1910,8 +1982,14 @@ bool CNEO_Player::Weapon_CanSwitchTo(CBaseCombatWeapon *pWeapon)
 
 bool CNEO_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 {
-	// We already have a weapon in this slot
 	auto weaponSlot = pWeapon->GetSlot();
+	// Only pick up grenades if we don't have grenades of that type NEOTODO (Adam) What if we have less than the maximum of that type (i.e one smoke grenade)? Can I carry more of a grenade than I spawn with?
+	if (weaponSlot == 3 && Weapon_GetPosition(weaponSlot, pWeapon->GetPosition()))
+	{
+		return false;
+	}
+
+	// We already have a weapon in this slot
 	if (weaponSlot != 3 && Weapon_GetSlot(weaponSlot))
 	{
 		return false;
@@ -1927,6 +2005,22 @@ bool CNEO_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 	}
 
 	return BaseClass::BumpWeapon(pWeapon);
+}
+
+bool CNEO_Player::Weapon_GetPosition(int slot, int position)
+{
+	// Check for that slot being occupied already
+	for (int i = 0; i < MAX_WEAPONS; i++)
+	{
+		if (m_hMyWeapons[i].Get() != NULL)
+		{
+			// If the slots match, it's already occupied
+			if (m_hMyWeapons[i]->GetSlot() == slot && m_hMyWeapons[i]->GetPosition() == position)
+				return m_hMyWeapons[i];
+		}
+	}
+
+	return NULL;
 }
 
 void CNEO_Player::ChangeTeam( int iTeam )
@@ -2514,30 +2608,20 @@ void CNEO_Player::GiveDefaultItems(void)
 		GiveNamedItem("weapon_milso");
 		if (this->m_iXP >= 4) { GiveDet(this); }
 		Weapon_Switch(Weapon_OwnsThisType("weapon_milso"));
-		engine->ClientCommand(edict(), "slot2");
 		break;
 	case NEO_CLASS_ASSAULT:
 		GiveNamedItem("weapon_knife");
 		GiveNamedItem("weapon_tachi");
 		GiveNamedItem("weapon_grenade");
 		Weapon_Switch(Weapon_OwnsThisType("weapon_tachi"));
-		engine->ClientCommand(edict(), "slot2");
 		break;
 	case NEO_CLASS_SUPPORT:
 		GiveNamedItem("weapon_kyla");
 		GiveNamedItem("weapon_smokegrenade");
 		Weapon_Switch(Weapon_OwnsThisType("weapon_kyla"));
-		engine->ClientCommand(edict(), "slot2");
-		break;
-	case NEO_CLASS_VIP:
-		GiveNamedItem("weapon_milso");
-		Weapon_Switch(Weapon_OwnsThisType("weapon_milso"));
-		engine->ClientCommand(edict(), "slot2");
 		break;
 	default:
 		GiveNamedItem("weapon_knife");
-		Weapon_Switch(Weapon_OwnsThisType("weapon_knife"));
-		engine->ClientCommand(edict(), "slot3");
 		break;
 	}
 }
@@ -2590,7 +2674,7 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 				RemoveAllItems(false);
 				GiveDefaultItems();
 				pEnt->Touch(this);
-				engine->ClientCommand(edict(), "slot1");
+				Weapon_Switch(Weapon_OwnsThisType(szWep));
 			}
 		}
 		else
@@ -2621,7 +2705,7 @@ void CNEO_Player::GiveAllItems(void)
 
 	GiveNamedItem("weapon_tachi");
 	GiveNamedItem("weapon_zr68s");
-	engine->ClientCommand(edict(), "slot1");
+	Weapon_Switch(Weapon_OwnsThisType("weapon_zr68s"));
 }
 
 // Purpose: For Neotokyo, we could use this engine method
@@ -2657,21 +2741,12 @@ void CNEO_Player::StartAutoSprint(void)
 
 void CNEO_Player::StartSprinting(void)
 {
-	if (GetClass() != NEO_CLASS_RECON && m_HL2Local.m_flSuitPower < SPRINT_START_MIN)
-	{
-		return;
-	}
-
 	if (IsCarryingGhost())
 	{
 		return;
 	}
 
-	if (m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT))
-	{ //  ensure any direction button is pressed before sprinting
-		BaseClass::StartSprinting();
-		SetMaxSpeed(GetSprintSpeed());
-	}
+	BaseClass::StartSprinting();
 }
 
 void CNEO_Player::StopSprinting(void)

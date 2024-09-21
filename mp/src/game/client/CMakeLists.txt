@@ -1482,6 +1482,8 @@ target_sources_grouped(
     neo/c_neo_player.h
     neo/c_neo_te_tocflash.cpp
     neo/c_neo_te_tocflash.h
+    neo/neo_fixup_glshaders.cpp
+    neo/neo_fixup_glshaders.h
 )
 
 target_sources_grouped(
@@ -1564,6 +1566,8 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_playeranimstate.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel_muzzleflash.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel_muzzleflash.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_shot_manipulator.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_shot_manipulator.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version.cpp

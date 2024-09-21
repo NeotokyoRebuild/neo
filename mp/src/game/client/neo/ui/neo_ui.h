@@ -96,9 +96,11 @@ struct FontInfo
 
 enum EFont
 {
-	FONT_NTSMALL,
 	FONT_NTNORMAL,
+	FONT_NTHEADING,
+	FONT_NTHORIZSIDES,
 	FONT_LOGO,
+	FONT_NTLARGE,
 
 	FONT__TOTAL,
 };
@@ -142,13 +144,14 @@ struct Context
 	int iYOffset[MAX_SECTIONS];
 
 	int iHorizontalWidth;
+	int iHorizontalMargin;
 
 	TextStyle eButtonTextStyle;
 	TextStyle eLabelTextStyle;
 	bool bTextEditIsPassword;
 
 	FontInfo fonts[FONT__TOTAL];
-	EFont eFont = FONT_NTSMALL;
+	EFont eFont = FONT_NTNORMAL;
 
 	// Input management
 	int iWidget; // Always increments per widget use
@@ -190,7 +193,7 @@ void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode, const wchar_t *w
 void EndContext();
 void BeginSection(const bool bDefaultFocus = false);
 void EndSection();
-void BeginHorizontal(const int iHorizontalWidth);
+void BeginHorizontal(const int iHorizontalWidth, const int iHorizontalMargin = 0);
 void EndHorizontal();
 void SwapFont(const EFont eFont);
 

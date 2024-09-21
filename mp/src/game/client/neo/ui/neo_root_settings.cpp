@@ -30,6 +30,7 @@ extern ConVar cl_righthand;
 extern ConVar cl_showpos;
 extern ConVar cl_showfps;
 extern ConVar hud_fastswitch;
+extern ConVar neo_cl_toggleconsole;
 
 extern NeoUI::Context g_uiCtx;
 
@@ -198,7 +199,7 @@ void NeoSettingsRestore(NeoSettings *ns)
 	{
 		NeoSettings::Keys *pKeys = &ns->keys;
 		pKeys->bWeaponFastSwitch = hud_fastswitch.GetBool();
-		pKeys->bDeveloperConsole = (gameuifuncs->GetButtonCodeForBind("neo_toggleconsole") > KEY_NONE);
+		pKeys->bDeveloperConsole = neo_cl_toggleconsole.GetBool();
 		for (int i = 0; i < pKeys->iBindsSize; ++i)
 		{
 			auto *bind = &pKeys->vBinds[i];
@@ -318,6 +319,14 @@ void NeoSettingsRestore(NeoSettings *ns)
 	}
 }
 
+void NeoToggleConsoleEnforce()
+{
+	// NEO JANK (nullsystem): Force neo_toggleconsole bind always
+	// neo_cl_toggleconsole instead will be the determining ConVar for toggle
+	engine->ClientCmd_Unrestricted("unbind \"`\"");
+	engine->ClientCmd_Unrestricted("bind \"`\" neo_toggleconsole");
+}
+
 void NeoSettingsSave(const NeoSettings *ns)
 {
 	const_cast<NeoSettings *>(ns)->bModified = false;
@@ -341,21 +350,12 @@ void NeoSettingsSave(const NeoSettings *ns)
 	{
 		const NeoSettings::Keys *pKeys = &ns->keys;
 		hud_fastswitch.SetValue(pKeys->bWeaponFastSwitch);
-		{
-			char cmdStr[128];
-			V_sprintf_safe(cmdStr, "unbind \"`\"\n");
-			engine->ClientCmd_Unrestricted(cmdStr);
-
-			if (pKeys->bDeveloperConsole)
-			{
-				V_sprintf_safe(cmdStr, "bind \"`\" \"neo_toggleconsole\"\n");
-				engine->ClientCmd_Unrestricted(cmdStr);
-			}
-		}
+		NeoToggleConsoleEnforce();
+		neo_cl_toggleconsole.SetValue(pKeys->bDeveloperConsole);
 		for (int i = 0; i < pKeys->iBindsSize; ++i)
 		{
 			const auto *bind = &pKeys->vBinds[i];
-			if (bind->szBindingCmd[0] != '\0')
+			if (bind->szBindingCmd[0] != '\0' && bind->bcCurrent > KEY_NONE)
 			{
 				char cmdStr[128];
 				const char *bindBtnName = g_pInputSystem->ButtonCodeToString(bind->bcCurrent);
@@ -366,7 +366,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		for (int i = 0; i < pKeys->iBindsSize; ++i)
 		{
 			const auto *bind = &pKeys->vBinds[i];
-			if (bind->szBindingCmd[0] != '\0')
+			if (bind->szBindingCmd[0] != '\0' && bind->bcNext > KEY_NONE)
 			{
 				char cmdStr[128];
 				const char *bindBtnName = g_pInputSystem->ButtonCodeToString(bind->bcNext);
@@ -445,6 +445,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->mat_hdr_level.SetValue(pVideo->iHDR);
 		cvr->mat_monitorgamma.SetValue(pVideo->flGamma);
 	}
+	engine->ClientCmd_Unrestricted("host_writeconfig");
 }
 
 static const wchar_t *DLFILTER_LABELS[] = {
