@@ -241,6 +241,7 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	memset(m_wszTime, 0, sizeof(m_wszTime));
 	memset(m_wszLeftTeamScore, 0, sizeof(m_wszLeftTeamScore));
 	memset(m_wszRightTeamScore, 0, sizeof(m_wszRightTeamScore));
+	memset(m_wszGameTypeDescription, 0, sizeof(m_wszGameTypeDescription));
 
 	// Exactly zero means there's no time limit, so we don't need to draw anything.
 	if (roundTimeLeft == 0)
