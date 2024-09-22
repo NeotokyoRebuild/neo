@@ -119,6 +119,11 @@ void NeoSettingsInit(NeoSettings *ns)
 		NeoSettings::Keys *keys = &ns->keys;
 		keys->iBindsSize = 0;
 
+		// It's quite specific to the root overridden menu so do it here instead of file
+		auto *conbind = &keys->vBinds[keys->iBindsSize++];
+		V_strcpy_safe(conbind->szBindingCmd, "neo_toggleconsole");
+		V_wcscpy_safe(conbind->wszDisplayText, L"Developer console bind");
+
 		while (buf.IsValid() && keys->iBindsSize < ARRAYSIZE(keys->vBinds))
 		{
 			char szFirstCol[64];
@@ -321,10 +326,36 @@ void NeoSettingsRestore(NeoSettings *ns)
 
 void NeoToggleConsoleEnforce()
 {
-	// NEO JANK (nullsystem): Force neo_toggleconsole bind always
-	// neo_cl_toggleconsole instead will be the determining ConVar for toggle
-	engine->ClientCmd_Unrestricted("unbind \"`\"");
-	engine->ClientCmd_Unrestricted("bind \"`\" neo_toggleconsole");
+	// NEO JANK (nullsystem): Try to unbind toggleconsole when possible
+	const auto toggleConsoleBind = gameuifuncs->GetButtonCodeForBind("toggleconsole");
+	const auto neotoggleConsoleBind = gameuifuncs->GetButtonCodeForBind("neo_toggleconsole");
+	const char *bindBtnName = g_pInputSystem->ButtonCodeToString(toggleConsoleBind);
+	if (bindBtnName && bindBtnName[0])
+	{
+		char szCmdStr[128];
+		V_sprintf_safe(szCmdStr, "unbind \"%s\"\n", bindBtnName);
+		engine->ClientCmd_Unrestricted(szCmdStr);
+	}
+
+	// NEO JANK (nullsystem): Try to bind to ` if this is none. This should always be bind
+	// wether the console is enabled or not. If they're on a keyboard layout that can't utilise this
+	// key, they can just rebind it to another key themselves.
+	if (neotoggleConsoleBind <= BUTTON_CODE_NONE)
+	{
+		engine->ClientCmd_Unrestricted("bind ` neo_toggleconsole");
+	}
+	else if (toggleConsoleBind == neotoggleConsoleBind)
+	{
+		// Could be unbinded by the unbind at this point if toggleconsole overlaps, so bring it back to
+		// neo_toggleconsole
+		const char *bindBtnName = g_pInputSystem->ButtonCodeToString(neotoggleConsoleBind);
+		if (bindBtnName && bindBtnName[0])
+		{
+			char szCmdStr[128];
+			V_sprintf_safe(szCmdStr, "bind \"%s\" neo_toggleconsole\n", bindBtnName);
+			engine->ClientCmd_Unrestricted(szCmdStr);
+		}
+	}
 }
 
 void NeoSettingsSave(const NeoSettings *ns)
@@ -374,6 +405,8 @@ void NeoSettingsSave(const NeoSettings *ns)
 				engine->ClientCmd_Unrestricted(cmdStr);
 			}
 		}
+		// Reset the cache to none so it'll refresh on next KeyCodeTyped
+		const_cast<NeoSettings::Keys *>(pKeys)->bcConsole = KEY_NONE;
 	}
 	{
 		const NeoSettings::Mouse *pMouse = &ns->mouse;
