@@ -926,7 +926,7 @@ void CNEORules::AwardRankUp(CNEO_Player *pClient)
 }
 
 // Return remaining time in seconds. Zero means there is no time limit.
-float CNEORules::GetRoundRemainingTime()
+float CNEORules::GetRoundRemainingTime() const
 {
 	if (m_nRoundStatus == NeoRoundStatus::Idle)
 	{
@@ -940,7 +940,7 @@ float CNEORules::GetRoundRemainingTime()
 	}
 	else
 	{
-		switch (GetGameType()) {
+		switch (m_nGameTypeSelected) {
 			case NEO_GAME_TYPE_TDM:
 				roundTimeLimit = neo_tdm_round_timelimit.GetFloat() * 60.f;
 				break;

@@ -328,7 +328,8 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 		break;
 	}
 
-	if (auto localPlayer = UTIL_PlayerByIndex(GetLocalPlayerIndex()))
+	C_NEO_Player* localPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if (localPlayer);
 	{
 		if (NEORules()->IsRoundPreRoundFreeze() || localPlayer->m_nButtons & IN_SCORE)
 		{

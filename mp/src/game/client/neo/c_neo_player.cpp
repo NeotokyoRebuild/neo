@@ -290,7 +290,7 @@ public:
 			return;
 		}
 
-		auto playerNeoClass = static_cast<C_NEO_Player *>(UTIL_PlayerByIndex(GetLocalPlayerIndex()))->m_iNeoClass;
+		auto playerNeoClass = C_NEO_Player::GetLocalNEOPlayer()->m_iNeoClass;
 		if (playerNeoClass == NEO_CLASS_VIP)
 		{
 			return;
