@@ -89,6 +89,7 @@ COMPILE_TIME_ASSERT(NEO_RECON_CROUCH_SPEED > NEO_ASSAULT_CROUCH_SPEED);
 COMPILE_TIME_ASSERT(NEO_ASSAULT_CROUCH_SPEED == NEO_SUPPORT_CROUCH_SPEED);
 
 #define SUPER_JMP_COST 45.0f
+#define HIDDEN_JMP_COST 20.0f
 #define CLOAK_AUX_COST 1.0f
 #define SPRINT_START_MIN (2.0f)
 
@@ -161,6 +162,7 @@ enum NeoClass {
 	// NOTENOTE: VIP *must* be last, because we are
 	// using array offsets for recon/assault/support
 	NEO_CLASS_VIP,
+	NEO_CLASS_PSYCHO,
 
 	NEO_CLASS__ENUM_COUNT
 };

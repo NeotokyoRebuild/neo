@@ -525,6 +525,11 @@ const char *CNEOModelManager::GetPlayerModel(NeoSkin nSkin,
 		return vipModel;
 	}
 
+	if (nClass == NEO_CLASS_PSYCHO)
+	{
+		return playerModels[0];
+	}
+
 	// Unspecified skin number, give a skin randomly.
 	if ((int)nSkin == -1)
 	{

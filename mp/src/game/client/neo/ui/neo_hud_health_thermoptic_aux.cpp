@@ -126,7 +126,14 @@ void CNEOHud_HTA::DrawHTA() const
 	V_sprintf_safe(value_Integrity, "%d", health);
 	if (playerIsNotSupport)
 	{
-		V_sprintf_safe(value_ThermOptic, "%d", thermopticValue);
+		if (player->GetClass() == NEO_CLASS_PSYCHO)
+		{
+			V_sprintf_safe(value_ThermOptic, "§");
+		}
+		else
+		{
+			V_sprintf_safe(value_ThermOptic, "%d", thermopticValue);
+		}
 		V_sprintf_safe(value_Aux, "%d", aux);
 	}
 

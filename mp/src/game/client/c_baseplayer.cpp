@@ -385,6 +385,9 @@ BEGIN_PREDICTION_DATA( C_BasePlayer )
 	DEFINE_FIELD( m_flStepSoundTime, FIELD_FLOAT ),
 	DEFINE_FIELD( m_flSwimSoundTime, FIELD_FLOAT ),
 	DEFINE_FIELD( m_vecLadderNormal, FIELD_VECTOR ),
+#ifdef NEO
+	DEFINE_FIELD( m_bClingingToWall, FIELD_BOOLEAN ),
+#endif
 	DEFINE_FIELD( m_flPhysics, FIELD_INTEGER ),
 	DEFINE_AUTO_ARRAY( m_szAnimExtension, FIELD_CHARACTER ),
 	DEFINE_FIELD( m_afButtonLast, FIELD_INTEGER ),
@@ -2574,7 +2577,27 @@ void C_BasePlayer::SetSwimSoundTime( float flSwimSoundTime )
 {
 	m_flSwimSoundTime = flSwimSoundTime;
 }
+#ifdef NEO
+bool C_BasePlayer::GetTouchingWall(void) const
+{
+	return m_bTouchingWall;
+}
 
+void C_BasePlayer::SetTouchingWall(bool bTouchingWall)
+{
+	m_bTouchingWall = bTouchingWall;
+}
+
+bool C_BasePlayer::GetClingingToWall(void) const
+{
+	return m_bClingingToWall;
+}
+
+void C_BasePlayer::SetClingingToWall(bool bClingingToWall)
+{
+	m_bClingingToWall = bClingingToWall;
+}
+#endif
 
 //-----------------------------------------------------------------------------
 // Purpose: Return true if this object can be +used by the player

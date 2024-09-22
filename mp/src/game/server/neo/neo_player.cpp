@@ -147,6 +147,10 @@ void CNEO_Player::RequestSetClass(int newClass)
 		RemoveAllItems(false);
 		GiveDefaultItems();
 		m_HL2Local.m_cloakPower = CloakPower_Cap();
+		if (newClass == NEO_CLASS_PSYCHO)
+		{
+			m_bInThermOpticCamo = true;
+		}
 	}
 	else
 	{
@@ -292,13 +296,14 @@ void SetClass(const CCommand &command)
 		// Our NeoClass enum is zero indexed, so we subtract one.
 		int nextClass = atoi(command.ArgV()[1]) - 1;
 
-		if (NEORules()->GetGameType() == NeoGameType::VIP && player->m_iNeoClass == NEO_CLASS_VIP)
+		if ((NEORules()->GetGameType() == NeoGameType::VIP && player->m_iNeoClass == NEO_CLASS_VIP) ||
+			NEORules()->GetGameType() == NeoGameType::PSY && player->m_iNeoClass == NEO_CLASS_PSYCHO)
 		{
 			return;
 		}
 		else
 		{
-			nextClass = clamp(nextClass, NEO_CLASS_RECON, NEO_CLASS_SUPPORT);
+			nextClass = clamp(nextClass, NEO_CLASS_RECON, NEO_CLASS_PSYCHO);
 		}
 
 		player->RequestSetClass(nextClass);
@@ -510,6 +515,10 @@ void CNEO_Player::Spawn(void)
 	ResetAnimation();
 
 	m_HL2Local.m_cloakPower = CloakPower_Cap();
+	if (m_iNeoClass == NEO_CLASS_PSYCHO)
+	{
+		m_bInThermOpticCamo = true;
+	}
 
 	m_bIsPendingSpawnForThisRound = false;
 
@@ -540,7 +549,10 @@ void CNEO_Player::Spawn(void)
 
 	SetPlayerTeamModel();
 	SetViewOffset(VEC_VIEW_NEOSCALE(this));
-	GiveLoadoutWeapon();
+	if (m_iNeoClass != NEO_CLASS_PSYCHO)
+	{
+		GiveLoadoutWeapon();
+	}
 }
 
 extern ConVar neo_lean_angle;
@@ -659,7 +671,7 @@ void CNEO_Player::PreThink(void)
 	{
 		static constexpr float RECON_SPRINT_SPEED_MODIFIER = 0.75;
 		static constexpr float OTHER_CLASSES_SPRINT_SPEED_MODIFIER = 0.6;
-		speed /= m_iNeoClass == NEO_CLASS_RECON ? RECON_SPRINT_SPEED_MODIFIER : OTHER_CLASSES_SPRINT_SPEED_MODIFIER;
+		speed /= (m_iNeoClass == NEO_CLASS_RECON || m_iNeoClass == NEO_CLASS_PSYCHO) ? RECON_SPRINT_SPEED_MODIFIER : OTHER_CLASSES_SPRINT_SPEED_MODIFIER;
 	}
 	if (m_bInAim.Get())
 	{
@@ -671,7 +683,7 @@ void CNEO_Player::PreThink(void)
 		speed *= pNeoWep->GetSpeedScale();
 	}
 
-	if (!IsAirborne() && m_iNeoClass != NEO_CLASS_RECON)
+	if (!IsAirborne() && m_iNeoClass != NEO_CLASS_RECON && m_iNeoClass != NEO_CLASS_PSYCHO)
 	{
 		const float deltaTime = gpGlobals->curtime - m_flLastAirborneJumpOkTime;
 		const float leeway = 1.0f;
@@ -680,7 +692,23 @@ void CNEO_Player::PreThink(void)
 			speed = (speed / 2) + (deltaTime / 2 * (speed));
 		}
 	}
-	SetMaxSpeed(MAX(speed, 56));
+	if (m_iNeoClass == NEO_CLASS_PSYCHO && m_nButtons & IN_WALK && GetGroundEntity() == NULL && (GetTouchingWall() || GetClingingToWall()))
+	{
+		SetLocalVelocity(Vector(0, 0, 0));
+		SetClingingToWall(true);
+	}
+	else
+	{
+		SetClingingToWall(false);
+	}
+	if (m_iNeoClass == NEO_CLASS_PSYCHO && GetClingingToWall())
+	{
+		SetMaxSpeed(0);
+	}
+	else
+	{
+		SetMaxSpeed(MAX(speed, 56));
+	}
 
 	CheckThermOpticButtons();
 	CheckVisionButtons();
@@ -696,22 +724,25 @@ void CNEO_Player::PreThink(void)
 		}
 		else
 		{
-			const float deltaTime = gpGlobals->curtime - m_flCamoAuxLastTime;
-			if (deltaTime >= 1)
+			if (m_iNeoClass != NEO_CLASS_PSYCHO)
 			{
-				// Need to have at least this much spare camo to enable.
-				// This prevents camo spam abuse where player has a sliver of camo
-				// each frame to never really run out.
-				CloakPower_Drain(deltaTime * CLOAK_AUX_COST);
+				const float deltaTime = gpGlobals->curtime - m_flCamoAuxLastTime;
+				if (deltaTime >= 1)
+				{
+					// Need to have at least this much spare camo to enable.
+					// This prevents camo spam abuse where player has a sliver of camo
+					// each frame to never really run out.
+					CloakPower_Drain(deltaTime * CLOAK_AUX_COST);
 
-				if (m_HL2Local.m_cloakPower <= 0.1f)
-				{
-					m_bInThermOpticCamo = false;
-					m_flCamoAuxLastTime = 0;
-				}
-				else
-				{
-					m_flCamoAuxLastTime = gpGlobals->curtime;
+					if (m_HL2Local.m_cloakPower <= 0.1f)
+					{
+						m_bInThermOpticCamo = false;
+						m_flCamoAuxLastTime = 0;
+					}
+					else
+					{
+						m_flCamoAuxLastTime = gpGlobals->curtime;
+					}
 				}
 			}
 		}
@@ -757,13 +788,20 @@ void CNEO_Player::PreThink(void)
 		NetworkStateChanged();
 	}
 
-	if (m_iNeoClass == NEO_CLASS_RECON)
+	if (m_iNeoClass == NEO_CLASS_RECON || m_iNeoClass == NEO_CLASS_PSYCHO)
 	{
 		if ((m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED))
 		{
 			if (IsAllowedToSuperJump())
 			{
-				SuitPower_Drain(SUPER_JMP_COST);
+				if (m_iNeoClass == NEO_CLASS_PSYCHO)
+				{
+					SuitPower_Drain(HIDDEN_JMP_COST);
+				}
+				else
+				{
+					SuitPower_Drain(SUPER_JMP_COST);
+				}
 
 				// If player holds both forward + back, only use up AUX power.
 				// This movement trick replaces the original NT's trick of
@@ -864,7 +902,7 @@ void CNEO_Player::CheckThermOpticButtons()
 
 	if ((m_afButtonPressed & IN_THERMOPTIC) && IsAlive())
 	{
-		if (GetClass() == NEO_CLASS_SUPPORT || GetClass() == NEO_CLASS_VIP)
+		if (GetClass() == NEO_CLASS_SUPPORT || GetClass() == NEO_CLASS_VIP || GetClass() == NEO_CLASS_PSYCHO)
 		{
 			return;
 		}
@@ -890,9 +928,17 @@ void CNEO_Player::SuperJump(void)
 {
 	Vector forward;
 	AngleVectors(EyeAngles(), &forward);
+	if (GetClingingToWall() || GetGroundEntity() == NULL)
+	{
+		forward *= 2;
+		SetClingingToWall(false);
+	}
 
 	// We don't give an upwards boost aside from regular jump
-	forward.z = 0;
+	if (m_iNeoClass == NEO_CLASS_RECON)
+	{
+		forward.z = 0;
+	}
 	
 	// Flip direction if jumping backwards
 	if (m_nButtons & IN_BACK)
@@ -942,7 +988,7 @@ void CNEO_Player::SuperJump(void)
 
 bool CNEO_Player::IsAllowedToSuperJump(void)
 {
-	if (!IsSprinting())
+	if (!IsSprinting() && m_iNeoClass != NEO_CLASS_PSYCHO)
 		return false;
 
 	if (IsCarryingGhost())
@@ -955,17 +1001,18 @@ bool CNEO_Player::IsAllowedToSuperJump(void)
 		return false;
 
 	// Can't superjump whilst airborne (although it is kind of cool)
-	if (m_bHasBeenAirborneForTooLongToSuperJump)
+	if (m_bHasBeenAirborneForTooLongToSuperJump && !GetClingingToWall())
 		return false;
 
 	// Only superjump if we have a reasonable jump direction in mind
 	// NEO TODO (Rain): should we support sideways superjumping?
-	if ((m_nButtons & (IN_FORWARD | IN_BACK)) == 0)
+	if (m_iNeoClass != NEO_CLASS_PSYCHO && (m_nButtons & (IN_FORWARD | IN_BACK)) == 0)
 	{
 		return false;
 	}
 
-	if (SuitPower_GetCurrentPercentage() < SUPER_JMP_COST)
+	if ((m_iNeoClass == NEO_CLASS_RECON && SuitPower_GetCurrentPercentage() < SUPER_JMP_COST) ||
+		(m_iNeoClass == NEO_CLASS_PSYCHO && SuitPower_GetCurrentPercentage() < HIDDEN_JMP_COST))
 		return false;
 
 	if (SUPER_JMP_DELAY_BETWEEN_JUMPS > 0)
@@ -1902,6 +1949,8 @@ float CNEO_Player::GetReceivedDamageScale(CBaseEntity* pAttacker)
 		return NEO_SUPPORT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
 	case NEO_CLASS_VIP:
 		return NEO_ASSAULT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
+	case NEO_CLASS_PSYCHO:
+		return NEO_SUPPORT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
 	default:
 		Assert(false);
 		return BaseClass::GetReceivedDamageScale(pAttacker);
@@ -2624,6 +2673,10 @@ void CNEO_Player::GiveDefaultItems(void)
 		GiveNamedItem("weapon_milso");
 		Weapon_Switch(Weapon_OwnsThisType("weapon_milso"));
 		break;
+	case NEO_CLASS_PSYCHO:
+		GiveNamedItem("weapon_knife");
+		Weapon_Switch(Weapon_OwnsThisType("weapon_knife"));
+		break;
 	default:
 		GiveNamedItem("weapon_knife");
 		Weapon_Switch(Weapon_OwnsThisType("weapon_knife"));
@@ -2802,6 +2855,9 @@ void CNEO_Player::CloakPower_Update(void)
 		case NEO_CLASS_ASSAULT:
 			chargeRate = 0.25f;
 			break;
+		case NEO_CLASS_PSYCHO:
+			chargeRate = 1.55f;
+			break;
 		default:
 			break;
 		}
@@ -2843,6 +2899,8 @@ float CNEO_Player::CloakPower_Cap() const
 		return 13.0f;
 	case NEO_CLASS_ASSAULT:
 		return 8.0f;
+	case NEO_CLASS_PSYCHO:
+		return 100.0f;
 	default:
 		break;
 	}
@@ -2905,6 +2963,8 @@ float CNEO_Player::GetCrouchSpeed(void) const
 		return NEO_SUPPORT_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_VIP:
 		return NEO_VIP_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_PSYCHO:
+		return NEO_RECON_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
 	default:
 		return NEO_BASE_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
 	}
@@ -2922,6 +2982,8 @@ float CNEO_Player::GetNormSpeed(void) const
 		return NEO_SUPPORT_NORM_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_VIP:
 		return NEO_VIP_NORM_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_PSYCHO:
+		return NEO_RECON_NORM_SPEED * GetBackwardsMovementPenaltyScale();
 	default:
 		return NEO_BASE_NORM_SPEED * GetBackwardsMovementPenaltyScale();
 	}
@@ -2939,6 +3001,8 @@ float CNEO_Player::GetWalkSpeed(void) const
 		return NEO_SUPPORT_WALK_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_VIP:
 		return NEO_VIP_WALK_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_PSYCHO:
+		return NEO_RECON_WALK_SPEED * GetBackwardsMovementPenaltyScale();
 	default:
 		return NEO_BASE_WALK_SPEED * GetBackwardsMovementPenaltyScale();
 	}
@@ -2956,6 +3020,8 @@ float CNEO_Player::GetSprintSpeed(void) const
 		return NEO_SUPPORT_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_VIP:
 		return NEO_VIP_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_PSYCHO:
+		return NEO_RECON_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
 	default:
 		return NEO_BASE_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
 	}

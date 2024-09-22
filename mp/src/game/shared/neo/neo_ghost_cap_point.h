@@ -52,6 +52,7 @@ public:
 	virtual void Spawn(void);
 
 	int owningTeamAlternate() const;
+	int originalOwningTeam() const;
 
 #ifdef CLIENT_DLL
 	virtual void ClientThink(void);

@@ -94,6 +94,8 @@ enum NeoGameType {
 	TDM = 0,
 	CTG,
 	VIP,
+	ATK,
+	PSY,
 
 	Total // Number of game types
 };
@@ -181,6 +183,7 @@ public:
 	void ResetTDM();
 	void ResetGhost();
 	void ResetVIP();
+	void ResetPsycho();
 
 	void CheckRestartGame();
 
@@ -239,6 +242,7 @@ public:
 	enum
 	{
 		NEO_VICTORY_GHOST_CAPTURE = 0,
+		NEO_VICTORY_GHOST_CAPTURE_PREVENTION,
 		NEO_VICTORY_VIP_ESCORT,
 		NEO_VICTORY_VIP_ELIMINATION,
 		NEO_VICTORY_TEAM_ELIMINATION,
