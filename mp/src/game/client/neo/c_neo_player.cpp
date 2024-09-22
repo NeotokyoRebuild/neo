@@ -461,7 +461,7 @@ void C_NEO_Player::CheckThermOpticButtons()
 
 	if ((m_afButtonPressed & IN_THERMOPTIC) && IsAlive())
 	{
-		if (GetClass() != NEO_CLASS_RECON && GetClass() != NEO_CLASS_ASSAULT && GetClass() != NEO_CLASS_VIP)
+		if (GetClass() == NEO_CLASS_SUPPORT)
 		{
 			return;
 		}

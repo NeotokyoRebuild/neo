@@ -91,11 +91,11 @@ class C_NEO_Player;
 extern ConVar neo_sv_player_restore;
 
 enum NeoGameType {
-	TDM = 0,
-	CTG,
-	VIP,
+	NEO_GAME_TYPE_TDM = 0,
+	NEO_GAME_TYPE_CTG,
+	NEO_GAME_TYPE_VIP,
 
-	Total // Number of game types
+	NEO_GAME_TYPE_TOTAL // Number of game types
 };
 
 enum NeoRoundStatus {
@@ -292,7 +292,7 @@ private:
 	void ResetMapSessionCommon();
 
 #ifdef GAME_DLL
-	void SpawnTheGhost(const Vector *origin = NULL);
+	void SpawnTheGhost(const Vector *origin = nullptr);
 	void SelectTheVIP();
 
 	CUtlVector<int> m_pGhostCaps;

@@ -292,7 +292,7 @@ void SetClass(const CCommand &command)
 		// Our NeoClass enum is zero indexed, so we subtract one.
 		int nextClass = atoi(command.ArgV()[1]) - 1;
 
-		if (NEORules()->GetGameType() == NeoGameType::VIP && player->m_iNeoClass == NEO_CLASS_VIP)
+		if (NEORules()->GetGameType() == NEO_GAME_TYPE_VIP && player->m_iNeoClass == NEO_CLASS_VIP)
 		{
 			return;
 		}
@@ -1726,7 +1726,7 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 		StartShowDmgStats(&info);
 	}
 
-	if (NEORules()->GetGameType() == NeoGameType::TDM)
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_TDM)
 	{
 		GetGlobalTeam(NEORules()->GetOpposingTeam(this))->AddScore(1);
 	}
@@ -1887,7 +1887,7 @@ void CNEO_Player::SetPlayerCorpseModel(int type)
 
 float CNEO_Player::GetReceivedDamageScale(CBaseEntity* pAttacker)
 {
-	if (NEORules()->GetGameType() == NeoGameType::TDM && m_aliveTimer.IsLessThen(5.f))
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_TDM && m_aliveTimer.IsLessThen(5.f))
 	{ // 5 seconds of invincibility in TDM
 		return 0.f;
 	}

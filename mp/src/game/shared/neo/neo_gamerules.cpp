@@ -40,7 +40,7 @@ ConVar neo_name("neo_name", "", FCVAR_USERINFO | FCVAR_ARCHIVE, "The nickname to
 ConVar cl_onlysteamnick("cl_onlysteamnick", "0", FCVAR_USERINFO | FCVAR_ARCHIVE, "Only show players Steam names, otherwise show player set names.", true, 0.0f, true, 1.0f);
 #endif
 
-ConVar neo_vote_game_mode("neo_vote_game_mode", "1", FCVAR_ARCHIVE | FCVAR_USERINFO, "Vote on game mode to play. TDM=0, CTG=1, VIP=2", true, 0, true, 2);
+ConVar neo_vote_game_mode("neo_vote_game_mode", "1", FCVAR_USERINFO, "Vote on game mode to play. TDM=0, CTG=1, VIP=2", true, 0, true, 2);
 ConVar neo_vip_eligible("neo_cl_vip_eligible", "1", FCVAR_ARCHIVE, "Eligible for VIP", true, 0, true, 1);
 #ifdef GAME_DLL
 ConVar sv_neo_vip_ctg_on_death("sv_neo_vip_ctg_on_death", "0", FCVAR_ARCHIVE, "Spawn Ghost when VIP dies, continue the game", true, 0, true, 1);
@@ -331,7 +331,7 @@ CNEORules::CNEORules()
 		}
 	}
 
-	if (GetGameType() == NeoGameType::CTG || GetGameType() == NeoGameType::VIP)
+	if (GetGameType() == NEO_GAME_TYPE_CTG || GetGameType() == NEO_GAME_TYPE_VIP)
 	{
 		ResetGhostCapPoints();
 	}
@@ -663,7 +663,7 @@ void CNEORules::Think(void)
 	// Note that exactly zero here means infinite round time.
 	else if (GetRoundRemainingTime() < 0)
 	{
-		if (GetGameType() == NeoGameType::TDM)
+		if (GetGameType() == NEO_GAME_TYPE_TDM)
 		{
 			if (GetGlobalTeam(TEAM_JINRAI)->GetScore() > GetGlobalTeam(TEAM_NSF)->GetScore())
 			{
@@ -765,7 +765,7 @@ void CNEORules::Think(void)
 		}
 	}
 
-	if (GetGameType() == NeoGameType::VIP && m_nRoundStatus == NeoRoundStatus::RoundLive && !m_pGhost)
+	if (GetGameType() == NEO_GAME_TYPE_VIP && m_nRoundStatus == NeoRoundStatus::RoundLive && !m_pGhost)
 	{
 		if (!m_pVIP)
 		{
@@ -876,7 +876,7 @@ void CNEORules::Think(void)
 		if (m_nRoundStatus == NeoRoundStatus::RoundLive)
 		{
 			COMPILE_TIME_ASSERT(TEAM_JINRAI == 2 && TEAM_NSF == 3);
-			if (GetGameType() != NeoGameType::TDM)
+			if (GetGameType() != NEO_GAME_TYPE_TDM)
 			{
 				for (int team = TEAM_JINRAI; team <= TEAM_NSF; ++team)
 				{
@@ -941,13 +941,13 @@ float CNEORules::GetRoundRemainingTime()
 	else
 	{
 		switch (GetGameType()) {
-			case NeoGameType::TDM:
+			case NEO_GAME_TYPE_TDM:
 				roundTimeLimit = neo_tdm_round_timelimit.GetFloat() * 60.f;
 				break;
-			case NeoGameType::CTG:
+			case NEO_GAME_TYPE_CTG:
 				roundTimeLimit = neo_ctg_round_timelimit.GetFloat() * 60.f;
 				break;
-			case NeoGameType::VIP:
+			case NEO_GAME_TYPE_VIP:
 				roundTimeLimit = neo_vip_round_timelimit.GetFloat() * 60.f;
 				break;
 			default:
@@ -1164,7 +1164,7 @@ void CNEORules::SelectTheVIP()
 
 void CNEORules::GatherGameTypeVotes()
 {
-	int gameTypes[NeoGameType::Total] = { 0, 0, 0 };
+	int gameTypes[NEO_GAME_TYPE_TOTAL] = {};
 
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
@@ -1184,7 +1184,7 @@ void CNEORules::GatherGameTypeVotes()
 
 	int mostVotes = gameTypes[0];
 	int mostPopularGameType = 0;
-	for (int i = 1; i < NeoGameType::Total; i++)
+	for (int i = 1; i < NEO_GAME_TYPE_TOTAL; i++)
 	{
 		if (gameTypes[i] > mostVotes) // NEOTODO (Adam) Handle draws
 		{
@@ -1388,11 +1388,11 @@ const char *CNEORules::GetGameDescription(void)
 
 	// NEO TODO (Rain): get a neo_game_config so we can specify better
 	switch(GetGameType()) {
-		case NeoGameType::TDM:
+		case NEO_GAME_TYPE_TDM:
 			return "Team Deathmatch";
-		case NeoGameType::CTG:
+		case NEO_GAME_TYPE_CTG:
 			return "Capture the Ghost";
-		case NeoGameType::VIP:
+		case NEO_GAME_TYPE_VIP:
 			return "Extract or Kill the VIP";
 		default:
 			return BaseClass::GetGameDescription();
@@ -1605,13 +1605,13 @@ void CNEORules::SetGameRelatedVars()
 	ResetTDM();
 
 	ResetGhost();
-	if (GetGameType() == NeoGameType::CTG)
+	if (GetGameType() == NEO_GAME_TYPE_CTG)
 	{
 		SpawnTheGhost();
 	}
 
 	ResetVIP();
-	if (GetGameType() == NeoGameType::VIP)
+	if (GetGameType() == NEO_GAME_TYPE_VIP)
 	{
 		if (!m_iEscortingTeam)
 		{
@@ -1629,7 +1629,7 @@ void CNEORules::SetGameRelatedVars()
 		m_iEscortingTeam.Set(0);
 	}
 
-	if (GetGameType() == NeoGameType::TDM)
+	if (GetGameType() == NEO_GAME_TYPE_TDM)
 	{
 		for (int i = 0; i < GetNumberOfTeams(); i++)
 		{
@@ -2618,12 +2618,12 @@ bool CNEORules::FPlayerCanRespawn(CBasePlayer* pPlayer)
 {
 	auto gameType = GetGameType();
 
-	if (gameType == NeoGameType::TDM)
+	if (gameType == NEO_GAME_TYPE_TDM)
 	{
 		return true;
 	}
 	// Some unknown game mode
-	else if (gameType != NeoGameType::CTG && gameType != NeoGameType::VIP)
+	else if (gameType != NEO_GAME_TYPE_CTG && gameType != NEO_GAME_TYPE_VIP)
 	{
 		Assert(false);
 		return true;
@@ -2699,11 +2699,11 @@ const char* CNEORules::GetGameTypeName(void)
 {
 	switch (GetGameType())
 	{
-	case NeoGameType::TDM:
+	case NEO_GAME_TYPE_TDM:
 		return "TDM";
-	case NeoGameType::CTG:
+	case NEO_GAME_TYPE_CTG:
 		return "CTG";
-	case NeoGameType::VIP:
+	case NEO_GAME_TYPE_VIP:
 		return "VIP";
 	default:
 		Assert(false);

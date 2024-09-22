@@ -276,9 +276,14 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	}
 
 	char szPlayersAliveANSI[9] = {};
-	if (NEORules()->GetGameType() == NeoGameType::TDM)
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_TDM)
 	{
-		V_sprintf_safe(szPlayersAliveANSI, "%i:%i", GetGlobalTeam(localPlayerTeam)->Get_Score(), GetGlobalTeam(NEORules()->GetOpposingTeam(localPlayerTeam))->Get_Score());
+		if (localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF) {
+			V_sprintf_safe(szPlayersAliveANSI, "%i:%i", GetGlobalTeam(localPlayerTeam)->Get_Score(), GetGlobalTeam(NEORules()->GetOpposingTeam(localPlayerTeam))->Get_Score());
+		}
+		else {
+			V_sprintf_safe(szPlayersAliveANSI, "%i:%i", GetGlobalTeam(TEAM_JINRAI)->Get_Score(), GetGlobalTeam(TEAM_NSF)->Get_Score());
+		}
 	}
 	else
 	{
@@ -288,13 +293,13 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 
 	// Update Objective
 	switch (NEORules()->GetGameType()) {
-	case NeoGameType::TDM:
+	case NEO_GAME_TYPE_TDM:
 		V_sprintf_safe(szGameTypeDescription, "Score the most Points\n");
 		break;
-	case NeoGameType::CTG:
+	case NEO_GAME_TYPE_CTG:
 		V_sprintf_safe(szGameTypeDescription, "Capture the Ghost\n");
 		break;
-	case NeoGameType::VIP:
+	case NEO_GAME_TYPE_VIP:
 		if (localPlayerTeam == NEORules()->m_iEscortingTeam.Get())
 		{
 			if (NEORules()->GhostExists())

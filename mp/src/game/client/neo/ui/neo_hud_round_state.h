@@ -17,7 +17,7 @@ class ImagePanel;
 class ImageList;
 }
 
-constexpr int maxGameTypeObjectiveLength = 33;
+constexpr int MAX_GAME_TYPE_OBJECTIVE_LENGTH = 33;
 
 class CNEOHud_RoundState : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
 {
@@ -66,8 +66,8 @@ private:
 	wchar_t m_wszRightTeamScore[3] = {};
 	wchar_t m_wszPlayersAliveUnicode[9] = {};
 	wchar_t m_wszStatusUnicode[24] = {};
-	wchar_t m_wszGameTypeDescription[maxGameTypeObjectiveLength * sizeof(wchar_t)] = {};
-	char szGameTypeDescription[maxGameTypeObjectiveLength * sizeof(char)] = {};
+	wchar_t m_wszGameTypeDescription[MAX_GAME_TYPE_OBJECTIVE_LENGTH] = {};
+	char szGameTypeDescription[MAX_GAME_TYPE_OBJECTIVE_LENGTH] = {};
 
 	// Game Description
 	short m_iGameTypeDescriptionState = 0;
