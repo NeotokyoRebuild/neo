@@ -40,7 +40,6 @@ constexpr bool STARS_HW_FILTERED = false;
 CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *parent)
 	: CHudElement(pElementName)
 	, Panel(parent, pElementName)
-	, m_pImageList(new vgui::ImageList(true))
 {
 	SetAutoDelete(true);
 
@@ -192,6 +191,14 @@ void CNEOHud_RoundState::ApplySchemeSettings(vgui::IScheme* pScheme)
 		.x = m_rectRightTeamTotalLogo.x0 + iBoxHeightHalf,
 		.y = static_cast<int>(Y_POS + iBoxHeightHalf - ((iFontHeight / 0.85) / 2)),
 	};
+
+	// Clear player avatars
+
+	if (m_pImageList)
+		delete m_pImageList;
+	m_pImageList = new vgui::ImageList( false );
+
+	m_mapAvatarsToImageList.RemoveAll();
 
 	SetBounds(0, Y_POS, res.w, res.h);
 }
