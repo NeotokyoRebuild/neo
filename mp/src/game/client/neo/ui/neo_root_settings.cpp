@@ -92,6 +92,17 @@ static const char *DLFILTER_STRMAP[] = {
 	"all", "nosounds", "mapsonly", "none"
 };
 
+static inline CUtlVector<ConVarRefEx *> g_vecConVarRefPtrs;
+
+ConVarRefEx::ConVarRefEx(const char *pName, const bool bExcludeGlobalPtrs)
+	: ConVarRef(pName)
+{
+	if (!bExcludeGlobalPtrs)
+	{
+		g_vecConVarRefPtrs.AddToTail(this);
+	}
+}
+
 void NeoSettingsInit(NeoSettings *ns)
 {
 	int iNativeWidth, iNativeHeight;
@@ -111,12 +122,12 @@ void NeoSettingsInit(NeoSettings *ns)
 	}
 
 	// TODO: Alt/secondary keybind, different way on finding keybind
-	CUtlBuffer buf(0, 0, CUtlBuffer::TEXT_BUFFER | CUtlBuffer::READ_ONLY);
-	if (filesystem->ReadFile("scripts/kb_act.lst", nullptr, buf))
+	characterset_t breakSet = {};
+	breakSet.set[0] = '"';
+	NeoSettings::Keys *keys = &ns->keys;
+	CUtlBuffer bufAct(0, 0, CUtlBuffer::TEXT_BUFFER | CUtlBuffer::READ_ONLY);
+	if (filesystem->ReadFile("scripts/kb_act.lst", nullptr, bufAct))
 	{
-		characterset_t breakSet = {};
-		breakSet.set[0] = '"';
-		NeoSettings::Keys *keys = &ns->keys;
 		keys->iBindsSize = 0;
 
 		// It's quite specific to the root overridden menu so do it here instead of file
@@ -124,18 +135,18 @@ void NeoSettingsInit(NeoSettings *ns)
 		V_strcpy_safe(conbind->szBindingCmd, "neo_toggleconsole");
 		V_wcscpy_safe(conbind->wszDisplayText, L"Developer console bind");
 
-		while (buf.IsValid() && keys->iBindsSize < ARRAYSIZE(keys->vBinds))
+		while (bufAct.IsValid() && keys->iBindsSize < ARRAYSIZE(keys->vBinds))
 		{
-			char szFirstCol[64];
+			char szBindingCmd[64];
 			char szRawDispText[64];
 
 			bool bIsOk = false;
-			bIsOk = buf.ParseToken(&breakSet, szFirstCol, sizeof(szFirstCol));
+			bIsOk = bufAct.ParseToken(&breakSet, szBindingCmd, sizeof(szBindingCmd));
 			if (!bIsOk) break;
-			bIsOk = buf.ParseToken(&breakSet, szRawDispText, sizeof(szRawDispText));
+			bIsOk = bufAct.ParseToken(&breakSet, szRawDispText, sizeof(szRawDispText));
 			if (!bIsOk) break;
 
-			if (szFirstCol[0] == '\0') continue;
+			if (szBindingCmd[0] == '\0') continue;
 
 			wchar_t wszDispText[64];
 			if (wchar_t *localizedWszStr = g_pVGuiLocalize->Find(szRawDispText))
@@ -147,7 +158,7 @@ void NeoSettingsInit(NeoSettings *ns)
 				g_pVGuiLocalize->ConvertANSIToUnicode(szRawDispText, wszDispText, sizeof(wszDispText));
 			}
 
-			const bool bIsBlank = V_strcmp(szFirstCol, "blank") == 0;
+			const bool bIsBlank = V_strcmp(szBindingCmd, "blank") == 0;
 			if (bIsBlank && szRawDispText[0] != '=')
 			{
 				// This is category label
@@ -159,8 +170,34 @@ void NeoSettingsInit(NeoSettings *ns)
 			{
 				// This is a keybind
 				auto *bind = &keys->vBinds[keys->iBindsSize++];
-				V_strcpy_safe(bind->szBindingCmd, szFirstCol);
+				V_strcpy_safe(bind->szBindingCmd, szBindingCmd);
 				V_wcscpy_safe(bind->wszDisplayText, wszDispText);
+				bind->bcDefault = BUTTON_CODE_NONE;
+			}
+		}
+	}
+
+	CUtlBuffer bufDef(0, 0, CUtlBuffer::TEXT_BUFFER | CUtlBuffer::READ_ONLY);
+	if (keys->iBindsSize > 0 && filesystem->ReadFile("scripts/kb_def.lst", nullptr, bufDef))
+	{
+		while (bufDef.IsValid())
+		{
+			char szDefBind[64];
+			char szBindingCmd[64];
+
+			bool bIsOk = false;
+			bIsOk = bufDef.ParseToken(&breakSet, szDefBind, sizeof(szDefBind));
+			if (!bIsOk) break;
+			bIsOk = bufDef.ParseToken(&breakSet, szBindingCmd, sizeof(szBindingCmd));
+			if (!bIsOk) break;
+
+			for (int i = 0; i < keys->iBindsSize; ++i)
+			{
+				if (V_strcmp(keys->vBinds[i].szBindingCmd, szBindingCmd) == 0)
+				{
+					keys->vBinds[i].bcDefault = g_pInputSystem->StringToButtonCode(szDefBind);
+					break;
+				}
 			}
 		}
 	}
@@ -172,7 +209,7 @@ void NeoSettingsDeinit(NeoSettings *ns)
 	free(ns->video.p2WszVmDispList);
 }
 
-void NeoSettingsRestore(NeoSettings *ns)
+void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKeys)
 {
 	ns->bModified = false;
 	NeoSettings::CVR *cvr = &ns->cvr;
@@ -205,10 +242,13 @@ void NeoSettingsRestore(NeoSettings *ns)
 		NeoSettings::Keys *pKeys = &ns->keys;
 		pKeys->bWeaponFastSwitch = hud_fastswitch.GetBool();
 		pKeys->bDeveloperConsole = neo_cl_toggleconsole.GetBool();
-		for (int i = 0; i < pKeys->iBindsSize; ++i)
+		if (!(flagsKeys & NeoSettings::Keys::SKIP_KEYS))
 		{
-			auto *bind = &pKeys->vBinds[i];
-			bind->bcNext = bind->bcCurrent = gameuifuncs->GetButtonCodeForBind(bind->szBindingCmd);
+			for (int i = 0; i < pKeys->iBindsSize; ++i)
+			{
+				auto *bind = &pKeys->vBinds[i];
+				bind->bcNext = bind->bcCurrent = gameuifuncs->GetButtonCodeForBind(bind->szBindingCmd);
+			}
 		}
 	}
 	{
@@ -396,7 +436,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		}
 		for (int i = 0; i < pKeys->iBindsSize; ++i)
 		{
-			const auto *bind = &pKeys->vBinds[i];
+			auto *bind = const_cast<NeoSettings::Keys::Bind *>(&pKeys->vBinds[i]);
 			if (bind->szBindingCmd[0] != '\0' && bind->bcNext > KEY_NONE)
 			{
 				char cmdStr[128];
@@ -404,6 +444,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 				V_sprintf_safe(cmdStr, "bind \"%s\" \"%s\"\n", bindBtnName, bind->szBindingCmd);
 				engine->ClientCmd_Unrestricted(cmdStr);
 			}
+			bind->bcCurrent = bind->bcNext;
 		}
 		// Reset the cache to none so it'll refresh on next KeyCodeTyped
 		const_cast<NeoSettings::Keys *>(pKeys)->bcConsole = KEY_NONE;
@@ -479,6 +520,54 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->mat_monitorgamma.SetValue(pVideo->flGamma);
 	}
 	engine->ClientCmd_Unrestricted("host_writeconfig");
+}
+
+void NeoSettingsResetToDefault(NeoSettings *ns)
+{
+	// NEO NOTE (nullsystem): The only thing left out is video mode and volume, but that's fine
+	// as we shouldn't need to be altering those
+	for (ConVarRefEx *convar : g_vecConVarRefPtrs)
+	{
+		convar->SetValue(convar->GetDefault());
+	}
+	for (ConVar *convar : {
+		 &neo_name, &cl_onlysteamnick, &sensitivity, &snd_victory_volume, &neo_fov,
+		 &neo_viewmodel_fov_offset, &neo_aim_hold, &cl_autoreload_when_empty,
+		 &cl_righthand, &cl_showpos, &cl_showfps, &hud_fastswitch, &neo_cl_toggleconsole})
+	{
+		convar->SetValue(convar->GetDefault());
+	}
+
+	NeoSettings::Keys *pKeys = &ns->keys;
+	for (int i = 0; i < pKeys->iBindsSize; ++i)
+	{
+		const auto *bind = &pKeys->vBinds[i];
+		if (bind->szBindingCmd[0] != '\0' && bind->bcCurrent > KEY_NONE)
+		{
+			char cmdStr[128];
+			const char *bindBtnName = g_pInputSystem->ButtonCodeToString(bind->bcCurrent);
+			V_sprintf_safe(cmdStr, "unbind \"%s\"\n", bindBtnName);
+			engine->ClientCmd_Unrestricted(cmdStr);
+		}
+	}
+	for (int i = 0; i < pKeys->iBindsSize; ++i)
+	{
+		auto *bind = &pKeys->vBinds[i];
+		if (bind->szBindingCmd[0] != '\0' && bind->bcDefault > KEY_NONE)
+		{
+			char cmdStr[128];
+			const char *bindBtnName = g_pInputSystem->ButtonCodeToString(bind->bcDefault);
+			V_sprintf_safe(cmdStr, "bind \"%s\" \"%s\"\n", bindBtnName, bind->szBindingCmd);
+			engine->ClientCmd_Unrestricted(cmdStr);
+		}
+		bind->bcCurrent = bind->bcNext = bind->bcDefault;
+	}
+
+	engine->ClientCmd_Unrestricted("host_writeconfig");
+
+	// NEO JANK (nullsystem): For some reason, bind -> gameuifuncs->GetButtonCodeForBind is too quick for
+	// the game engine at this point. So just omit setting binds in restore since we already have anyway.
+	NeoSettingsRestore(ns, NeoSettings::Keys::SKIP_KEYS);
 }
 
 static const wchar_t *DLFILTER_LABELS[] = {
