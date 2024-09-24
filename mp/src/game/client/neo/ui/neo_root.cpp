@@ -17,6 +17,8 @@
 #include <voice_status.h>
 #include <c_playerresource.h>
 #include <ivoicetweak.h>
+#include "tier1/interface.h"
+#include <ctime>
 
 #include <vgui/IInput.h>
 #include <vgui_controls/Controls.h>
@@ -52,8 +54,33 @@ int g_iRowsInScreen;
 int g_iAvatar = 64;
 int g_iRootSubPanelWide = 600;
 constexpr wchar_t WSZ_GAME_TITLE[] = L"neatbkyoc ue";
+#define SZ_WEBSITE "https://neotokyorebuild.github.io"
 
 ConCommand neo_toggleconsole("neo_toggleconsole", NeoToggleconsole);
+
+struct YMD
+{
+	YMD(const struct tm tm)
+		: year(tm.tm_year + 1900)
+		, month(tm.tm_mon + 1)
+		, day(tm.tm_mday)
+	{
+	}
+
+	bool operator==(const YMD &other) const
+	{
+		return year == other.year && month == other.month && day == other.day;
+	}
+	bool operator!=(const YMD &other) const
+	{
+		return !(*this == other);
+	}
+
+	int year;
+	int month;
+	int day;
+};
+
 }
 
 void OverrideGameUI()
@@ -192,6 +219,41 @@ CNeoRoot::CNeoRoot(VPANEL parent)
 		m_serverBrowser[i].m_pSortCtx = &m_sortCtx;
 	}
 
+	// NEO TODO (nullsystem): What will happen in 2038? 64-bit Source 1 SDK when? Source 2 SDK when?
+	// We could use GCC 64-bit compiled time_t or Win32 API direct to side-step IFileSystem "long" 32-bit
+	// limitation for now. Although that could mess with the internal IFileSystem related API usages of time_t.
+	// If _FILE_OFFSET_BITS=64 and _TIME_BITS=64 is set on Linux, time_t will be 64-bit even on 32-bit executable
+	//
+	// If news.txt doesn't exists, it'll just give 1970-01-01 which will always be different to ymdNow anyway
+	const long lFileTime = filesystem->GetFileTime("news.txt");
+	const time_t ttFileTime = lFileTime;
+	struct tm tmFileStruct;
+	const struct tm tmFile = *(Plat_localtime(&ttFileTime, &tmFileStruct));
+	const YMD ymdFile{tmFile};
+
+	struct tm tmNowStruct;
+	const time_t tNow = time(nullptr);
+	const struct tm tmNow = *(Plat_localtime(&tNow, &tmNowStruct));
+	const YMD ymdNow{tmNow};
+
+	// Read the cached file regardless of needing update or not
+	if (filesystem->FileExists("news.txt"))
+	{
+		CUtlBuffer buf(0, 0, CUtlBuffer::TEXT_BUFFER | CUtlBuffer::READ_ONLY);
+		if (filesystem->ReadFile("news.txt", nullptr, buf))
+		{
+			ReadNewsFile(buf);
+		}
+	}
+	if (ymdFile != ymdNow)
+	{
+		ISteamHTTP *http = steamapicontext->SteamHTTP();
+		HTTPRequestHandle httpReqHdl = http->CreateHTTPRequest(k_EHTTPMethodGET, SZ_WEBSITE "/news.txt");
+		SteamAPICall_t httpReqCallback;
+		http->SendHTTPRequest(httpReqHdl, &httpReqCallback);
+		m_ccallbackHttp.Set(httpReqCallback, this, &CNeoRoot::HTTPCallbackRequest);
+	}
+
 	SetKeyBoardInputEnabled(true);
 	SetMouseInputEnabled(true);
 	UpdateControls();
@@ -233,6 +295,7 @@ void CNeoRoot::UpdateControls()
 	g_uiCtx.iActiveSection = -1;
 	V_memset(g_uiCtx.iYOffset, 0, sizeof(g_uiCtx.iYOffset));
 	m_ns.bBack = false;
+	m_bShowBrowserLabel = false;
 	RequestFocus();
 	m_panelCaptureInput->RequestFocus();
 	InvalidateLayout();
@@ -475,7 +538,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	const int iRightXPos = iBtnPlaceXMid + (m_iBtnWide / 2) + g_uiCtx.iMarginX;
 	int iRightSideYStart = yTopPos;
 
-	if (param.eMode == NeoUI::MODE_PAINT)
+	// Draw top steam section portion
 	{
 		// Draw title
 		m_iBtnWide = m_iTitleWidth + (2 * g_uiCtx.iMarginX);
@@ -587,14 +650,26 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 			NeoUI::Label(L"News");
 			NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 
-			// Write some headlines
-			static constexpr const wchar_t *WSZ_NEWS_HEADLINES[] = {
-				L"2024-08-03: NT;RE v7.1 Released",
-			};
-			for (const wchar_t *wszHeadline : WSZ_NEWS_HEADLINES)
+			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
+			NeoUI::SwapColorNormal(COLOR_TRANSPARENT);
+			for (int i = 0; i < m_iNewsSize; ++i)
 			{
-				NeoUI::Label(wszHeadline);
+				if (NeoUI::Button(m_news[i].wszTitle).bPressed)
+				{
+					NeoUI::OpenURL(SZ_WEBSITE, m_news[i].szSitePath);
+					m_bShowBrowserLabel = true;
+				}
 			}
+
+			if (m_bShowBrowserLabel)
+			{
+				surface()->DrawSetTextColor(Color(178, 178, 178, 178));
+				NeoUI::Label(L"Link opened in your web browser");
+				surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
+			}
+
+			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
+			NeoUI::SwapColorNormal(COLOR_NEOPANELACCENTBG);
 		}
 	}
 	NeoUI::EndSection();
@@ -1302,6 +1377,75 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 		NeoUI::EndSection();
 	}
 	NeoUI::EndContext();
+}
+
+void CNeoRoot::HTTPCallbackRequest(HTTPRequestCompleted_t *request, bool bIOFailure)
+{
+	ISteamHTTP *http = steamapicontext->SteamHTTP();
+	if (request->m_bRequestSuccessful && !bIOFailure)
+	{
+		uint32 unBodySize = 0;
+		http->GetHTTPResponseBodySize(request->m_hRequest, &unBodySize);
+
+		if (unBodySize > 0)
+		{
+			uint8 *pData = new uint8[unBodySize + 1];
+			http->GetHTTPResponseBodyData(request->m_hRequest, pData, unBodySize);
+
+			CUtlBuffer buf(0, 0, CUtlBuffer::TEXT_BUFFER);
+			buf.CopyBuffer(pData, unBodySize);
+			filesystem->WriteFile("news.txt", nullptr, buf);
+			ReadNewsFile(buf);
+
+			delete[] pData;
+		}
+	}
+	http->ReleaseHTTPRequest(request->m_hRequest);
+}
+
+void CNeoRoot::ReadNewsFile(CUtlBuffer &buf)
+{
+	buf.SeekGet(CUtlBuffer::SEEK_HEAD, 0);
+	m_iNewsSize = 0;
+	while (buf.IsValid() && m_iNewsSize < MAX_NEWS)
+	{
+		// TSV row: Path\tDate\tTitle
+		char szLine[512] = {};
+		buf.GetLine(szLine, ARRAYSIZE(szLine) - 1);
+		char *pszDate = strchr(szLine, '\t');
+		if (!pszDate)
+		{
+			continue;
+		}
+
+		*pszDate = '\0';
+		++pszDate;
+		if (!*pszDate)
+		{
+			continue;
+		}
+
+		char *pszTitle = strchr(pszDate, '\t');
+		if (!pszTitle)
+		{
+			continue;
+		}
+
+		*pszTitle = '\0';
+		++pszTitle;
+		if (!*pszTitle)
+		{
+			continue;
+		}
+
+		V_strcpy_safe(m_news[m_iNewsSize].szSitePath, szLine);
+		wchar_t wszDate[12];
+		wchar_t wszTitle[235];
+		g_pVGuiLocalize->ConvertANSIToUnicode(pszDate, wszDate, sizeof(wszDate));
+		g_pVGuiLocalize->ConvertANSIToUnicode(pszTitle, wszTitle, sizeof(wszTitle));
+		V_swprintf_safe(m_news[m_iNewsSize].wszTitle, L"%ls: %ls", wszDate, wszTitle);
+		++m_iNewsSize;
+	}
 }
 
 // NEO NOTE (nullsystem): NeoRootCaptureESC is so that ESC keybinds can be recognized by non-root states, but root
