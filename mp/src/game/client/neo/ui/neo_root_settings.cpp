@@ -18,20 +18,6 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-extern ConVar neo_name;
-extern ConVar cl_onlysteamnick;
-extern ConVar sensitivity;
-extern ConVar snd_victory_volume;
-extern ConVar neo_fov;
-extern ConVar neo_viewmodel_fov_offset;
-extern ConVar neo_aim_hold;
-extern ConVar cl_autoreload_when_empty;
-extern ConVar cl_righthand;
-extern ConVar cl_showpos;
-extern ConVar cl_showfps;
-extern ConVar hud_fastswitch;
-extern ConVar neo_cl_toggleconsole;
-
 extern NeoUI::Context g_uiCtx;
 
 const wchar_t *QUALITY_LABELS[] = {
@@ -215,16 +201,16 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 	NeoSettings::CVR *cvr = &ns->cvr;
 	{
 		NeoSettings::General *pGeneral = &ns->general;
-		g_pVGuiLocalize->ConvertANSIToUnicode(neo_name.GetString(), pGeneral->wszNeoName, sizeof(pGeneral->wszNeoName));
-		pGeneral->bOnlySteamNick = cl_onlysteamnick.GetBool();
-		pGeneral->iFov = neo_fov.GetInt();
-		pGeneral->iViewmodelFov = neo_viewmodel_fov_offset.GetInt();
-		pGeneral->bAimHold = neo_aim_hold.GetBool();
-		pGeneral->bReloadEmpty = cl_autoreload_when_empty.GetBool();
-		pGeneral->bViewmodelRighthand = cl_righthand.GetBool();
+		g_pVGuiLocalize->ConvertANSIToUnicode(cvr->neo_name.GetString(), pGeneral->wszNeoName, sizeof(pGeneral->wszNeoName));
+		pGeneral->bOnlySteamNick = cvr->cl_onlysteamnick.GetBool();
+		pGeneral->iFov = cvr->neo_fov.GetInt();
+		pGeneral->iViewmodelFov = cvr->neo_viewmodel_fov_offset.GetInt();
+		pGeneral->bAimHold = cvr->neo_aim_hold.GetBool();
+		pGeneral->bReloadEmpty = cvr->cl_autoreload_when_empty.GetBool();
+		pGeneral->bViewmodelRighthand = cvr->cl_righthand.GetBool();
 		pGeneral->bShowPlayerSprays = !(cvr->cl_player_spray_disable.GetBool()); // Inverse
-		pGeneral->bShowPos = cl_showpos.GetBool();
-		pGeneral->iShowFps = cl_showfps.GetInt();
+		pGeneral->bShowPos = cvr->cl_showpos.GetBool();
+		pGeneral->iShowFps = cvr->cl_showfps.GetInt();
 		{
 			const char *szDlFilter = cvr->cl_download_filter.GetString();
 			pGeneral->iDlFilter = 0;
@@ -240,8 +226,8 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 	}
 	{
 		NeoSettings::Keys *pKeys = &ns->keys;
-		pKeys->bWeaponFastSwitch = hud_fastswitch.GetBool();
-		pKeys->bDeveloperConsole = neo_cl_toggleconsole.GetBool();
+		pKeys->bWeaponFastSwitch = cvr->hud_fastswitch.GetBool();
+		pKeys->bDeveloperConsole = cvr->neo_cl_toggleconsole.GetBool();
 		if (!(flagsKeys & NeoSettings::Keys::SKIP_KEYS))
 		{
 			for (int i = 0; i < pKeys->iBindsSize; ++i)
@@ -253,7 +239,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 	}
 	{
 		NeoSettings::Mouse *pMouse = &ns->mouse;
-		pMouse->flSensitivity = sensitivity.GetFloat();
+		pMouse->flSensitivity = cvr->sensitivity.GetFloat();
 		pMouse->bRawInput = cvr->m_raw_input.GetBool();
 		pMouse->bFilter = cvr->m_filter.GetBool();
 		pMouse->bReverse = (cvr->pitch.GetFloat() < 0.0f);
@@ -266,7 +252,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		// Output
 		pAudio->flVolMain = cvr->volume.GetFloat();
 		pAudio->flVolMusic = cvr->snd_musicvolume.GetFloat();
-		pAudio->flVolVictory = snd_victory_volume.GetFloat();
+		pAudio->flVolVictory = cvr->snd_victory_volume.GetFloat();
 		pAudio->iSoundSetup = 0;
 		switch (cvr->snd_surround_speakers.GetInt())
 		{
@@ -406,23 +392,23 @@ void NeoSettingsSave(const NeoSettings *ns)
 		const NeoSettings::General *pGeneral = &ns->general;
 		char neoNameText[sizeof(pGeneral->wszNeoName) / sizeof(wchar_t)];
 		g_pVGuiLocalize->ConvertUnicodeToANSI(pGeneral->wszNeoName, neoNameText, sizeof(neoNameText));
-		neo_name.SetValue(neoNameText);
-		cl_onlysteamnick.SetValue(pGeneral->bOnlySteamNick);
-		neo_fov.SetValue(pGeneral->iFov);
-		neo_viewmodel_fov_offset.SetValue(pGeneral->iViewmodelFov);
-		neo_aim_hold.SetValue(pGeneral->bAimHold);
-		cl_autoreload_when_empty.SetValue(pGeneral->bReloadEmpty);
-		cl_righthand.SetValue(pGeneral->bViewmodelRighthand);
+		cvr->neo_name.SetValue(neoNameText);
+		cvr->cl_onlysteamnick.SetValue(pGeneral->bOnlySteamNick);
+		cvr->neo_fov.SetValue(pGeneral->iFov);
+		cvr->neo_viewmodel_fov_offset.SetValue(pGeneral->iViewmodelFov);
+		cvr->neo_aim_hold.SetValue(pGeneral->bAimHold);
+		cvr->cl_autoreload_when_empty.SetValue(pGeneral->bReloadEmpty);
+		cvr->cl_righthand.SetValue(pGeneral->bViewmodelRighthand);
 		cvr->cl_player_spray_disable.SetValue(!pGeneral->bShowPlayerSprays); // Inverse
-		cl_showpos.SetValue(pGeneral->bShowPos);
-		cl_showfps.SetValue(pGeneral->iShowFps);
+		cvr->cl_showpos.SetValue(pGeneral->bShowPos);
+		cvr->cl_showfps.SetValue(pGeneral->iShowFps);
 		cvr->cl_download_filter.SetValue(DLFILTER_STRMAP[pGeneral->iDlFilter]);
 	}
 	{
 		const NeoSettings::Keys *pKeys = &ns->keys;
-		hud_fastswitch.SetValue(pKeys->bWeaponFastSwitch);
+		cvr->hud_fastswitch.SetValue(pKeys->bWeaponFastSwitch);
 		NeoToggleConsoleEnforce();
-		neo_cl_toggleconsole.SetValue(pKeys->bDeveloperConsole);
+		cvr->neo_cl_toggleconsole.SetValue(pKeys->bDeveloperConsole);
 		for (int i = 0; i < pKeys->iBindsSize; ++i)
 		{
 			const auto *bind = &pKeys->vBinds[i];
@@ -451,7 +437,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 	}
 	{
 		const NeoSettings::Mouse *pMouse = &ns->mouse;
-		sensitivity.SetValue(pMouse->flSensitivity);
+		cvr->sensitivity.SetValue(pMouse->flSensitivity);
 		cvr->m_raw_input.SetValue(pMouse->bRawInput);
 		cvr->m_filter.SetValue(pMouse->bFilter);
 		const float absPitch = abs(cvr->pitch.GetFloat());
@@ -476,7 +462,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		// Output
 		cvr->volume.SetValue(pAudio->flVolMain);
 		cvr->snd_musicvolume.SetValue(pAudio->flVolMusic);
-		snd_victory_volume.SetValue(pAudio->flVolVictory);
+		cvr->snd_victory_volume.SetValue(pAudio->flVolVictory);
 		cvr->snd_surround_speakers.SetValue(SURROUND_RE_MAP[pAudio->iSoundSetup]);
 		cvr->snd_mute_losefocus.SetValue(pAudio->bMuteAudioUnFocus);
 		cvr->snd_pitchquality.SetValue(pAudio->iSoundQuality == QUALITY_HIGH);
@@ -527,13 +513,6 @@ void NeoSettingsResetToDefault(NeoSettings *ns)
 	// NEO NOTE (nullsystem): The only thing left out is video mode and volume, but that's fine
 	// as we shouldn't need to be altering those
 	for (ConVarRefEx *convar : g_vecConVarRefPtrs)
-	{
-		convar->SetValue(convar->GetDefault());
-	}
-	for (ConVar *convar : {
-		 &neo_name, &cl_onlysteamnick, &sensitivity, &snd_victory_volume, &neo_fov,
-		 &neo_viewmodel_fov_offset, &neo_aim_hold, &cl_autoreload_when_empty,
-		 &cl_righthand, &cl_showpos, &cl_showfps, &hud_fastswitch, &neo_cl_toggleconsole})
 	{
 		convar->SetValue(convar->GetDefault());
 	}

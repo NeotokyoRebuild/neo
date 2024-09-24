@@ -125,11 +125,25 @@ struct NeoSettings
 
 	struct CVR
 	{
+		// General
+		CONVARREF_DEF(neo_name);
+		CONVARREF_DEF(cl_onlysteamnick);
+		CONVARREF_DEF(neo_fov);
+		CONVARREF_DEF(neo_viewmodel_fov_offset);
+		CONVARREF_DEF(neo_aim_hold);
+		CONVARREF_DEF(cl_autoreload_when_empty);
+		CONVARREF_DEF(cl_righthand);
+		CONVARREF_DEF(cl_showpos);
+		CONVARREF_DEF(cl_showfps);
+		CONVARREF_DEF(hud_fastswitch);
+		CONVARREF_DEF(neo_cl_toggleconsole);
+
 		// Multiplayer
 		CONVARREF_DEF(cl_player_spray_disable);
 		CONVARREF_DEF(cl_download_filter);
 
 		// Mouse
+		CONVARREF_DEF(sensitivity);
 		CONVARREF_DEF(m_filter);
 		CONVARREF_DEF(pitch);
 		CONVARREF_DEF(m_customaccel);
@@ -139,6 +153,7 @@ struct NeoSettings
 		// Audio
 		CONVARREF_DEFNOGLOBALPTR(volume);
 		CONVARREF_DEFNOGLOBALPTR(snd_musicvolume);
+		CONVARREF_DEFNOGLOBALPTR(snd_victory_volume);
 		CONVARREF_DEF(snd_surround_speakers);
 		CONVARREF_DEF(voice_enable);
 		CONVARREF_DEF(voice_scale);
