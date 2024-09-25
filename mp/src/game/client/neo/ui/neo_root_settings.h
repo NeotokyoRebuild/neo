@@ -33,6 +33,9 @@ struct NeoSettings
 		};
 		Bind vBinds[64];
 		int iBindsSize = 0;
+
+		// Will be checked often so cached
+		ButtonCode_t bcConsole;
 	};
 
 	struct Mouse

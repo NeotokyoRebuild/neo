@@ -435,6 +435,21 @@ void CNeoRoot::FireGameEvent(IGameEvent *event)
 
 void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 {
+	if (m_ns.keys.bcConsole <= KEY_NONE)
+	{
+		m_ns.keys.bcConsole = gameuifuncs->GetButtonCodeForBind("neo_toggleconsole");
+	}
+
+	if (code == m_ns.keys.bcConsole && code != KEY_BACKQUOTE)
+	{
+		// NEO JANK (nullsystem): Prevent toggle being handled twice causing it to not really open.
+		// This can happen if using the default ` due to the engine enacting this all the time, however calling
+		// NeoToggleconsole here is required for non-` keys that is toggled while the root panel is opened. The
+		// engine will call non-` keys by itself it it's in game and the root panel is not opened, or the console is
+		// opened which generally doesn't endup calling OnRelayedKeyCodeTyped anyway.
+		NeoToggleconsole();
+		return;
+	}
 	g_uiCtx.eCode = code;
 	OnMainLoop(NeoUI::MODE_KEYPRESSED);
 }
