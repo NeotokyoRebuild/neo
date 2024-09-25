@@ -48,6 +48,7 @@ PRECACHE_WEAPON_REGISTER(weapon_smokegrenade);
 CWeaponSmokeGrenade::CWeaponSmokeGrenade()
 {
 	m_bRedraw = false;
+	SetViewOffset(Vector(0, 0, 1.0));
 }
 
 void CWeaponSmokeGrenade::Precache(void)
