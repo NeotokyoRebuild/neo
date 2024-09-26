@@ -844,8 +844,11 @@ bool CMultiPlayerAnimState::HandleSwimming( Activity &idealActivity )
 			RestartMainSequence();	
 			m_bFirstSwimFrame = false;
 		}
-
+#ifdef NEO
+		idealActivity = ACT_SWIM;
+#else
 		idealActivity = ACT_MP_SWIM;		
+#endif
 		m_bInSwim = true;
 		return true;
 	}
@@ -918,8 +921,11 @@ bool CMultiPlayerAnimState::HandleMoving( Activity &idealActivity )
 //-----------------------------------------------------------------------------
 Activity CMultiPlayerAnimState::CalcMainActivity()
 {
+#ifdef NEO
+	Activity idealActivity = ACT_IDLE;
+#else
 	Activity idealActivity = ACT_MP_STAND_IDLE;
-
+#endif
 	if ( HandleJumping( idealActivity ) || 
 		HandleDucking( idealActivity ) || 
 		HandleSwimming( idealActivity ) || 

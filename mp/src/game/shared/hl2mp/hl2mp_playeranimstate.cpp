@@ -13,8 +13,14 @@
 
 #ifdef CLIENT_DLL
 #include "c_hl2mp_player.h"
+#ifdef NEO
+#include "c_neo_player.h"
+#endif
 #else
 #include "hl2mp_player.h"
+#ifdef NEO
+#include "neo_player.h"
+#endif
 #endif
 
 #ifdef NEO
@@ -126,13 +132,21 @@ Activity CHL2MPPlayerAnimState::TranslateActivity( Activity actDesired )
 {
 	// Hook into baseclass when / if hl2mp player models get swim animations.
 	Activity translateActivity = actDesired; //BaseClass::TranslateActivity( actDesired );
-
+#ifdef NEO
+	auto neoPlayer = static_cast<CNEO_Player*>(GetHL2MPPlayer());
+	auto activeWeapon = neoPlayer->GetActiveWeapon();
+	if (activeWeapon)
+	{
+		bool required = false;
+		translateActivity = activeWeapon->ActivityOverride(translateActivity, &required);
+	}
+#else
 	if ( GetHL2MPPlayer()->GetActiveWeapon() )
 	{
 		bool required = false;
 		translateActivity = GetHL2MPPlayer()->GetActiveWeapon()->ActivityOverride( translateActivity, &required);
 	}
-
+#endif
 	return translateActivity;
 }
 //-----------------------------------------------------------------------------
@@ -350,7 +364,24 @@ bool CHL2MPPlayerAnimState::HandleSwimming( Activity &idealActivity )
 //-----------------------------------------------------------------------------
 bool CHL2MPPlayerAnimState::HandleMoving( Activity &idealActivity )
 {
+#ifdef NEO
+	// In TF we run all the time now.
+	float flSpeed = GetOuterXYSpeed();
+
+	if (flSpeed > RUNNING_MINIMUM_SPEED)
+	{
+		idealActivity = ACT_RUN;
+	}
+	else if (flSpeed > MOVING_MINIMUM_SPEED)
+	{
+		// Always assume a run.
+		idealActivity = ACT_WALK;
+	}
+
+	return true;
+#else
 	return BaseClass::HandleMoving( idealActivity );
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -364,11 +395,19 @@ bool CHL2MPPlayerAnimState::HandleDucking( Activity &idealActivity )
 	{
 		if ( GetOuterXYSpeed() < MOVING_MINIMUM_SPEED )
 		{
-			idealActivity = ACT_MP_CROUCH_IDLE;		
+#ifdef NEO
+			idealActivity = ACT_CROUCHIDLE;
+#else
+			idealActivity = ACT_MP_CROUCH_IDLE;
+#endif
 		}
 		else
 		{
-			idealActivity = ACT_MP_CROUCHWALK;		
+#ifdef NEO
+			idealActivity = ACT_RUN_CROUCH;
+#else
+			idealActivity = ACT_MP_CROUCHWALK;
+#endif
 		}
 
 		return true;
@@ -411,7 +450,11 @@ bool CHL2MPPlayerAnimState::HandleJumping( Activity &idealActivity )
 
 				if ( bNewJump )
 				{
+#ifdef NEO
+					RestartGesture(GESTURE_SLOT_JUMP, ACT_HOP);
+#else
 					RestartGesture( GESTURE_SLOT_JUMP, ACT_MP_JUMP_LAND );					
+#endif
 				}
 			}
 		}
@@ -419,6 +462,9 @@ bool CHL2MPPlayerAnimState::HandleJumping( Activity &idealActivity )
 		// if we're still jumping
 		if ( m_bJumping )
 		{
+#ifdef NEO
+			idealActivity = ACT_HOP;
+#else
 			if ( bNewJump )
 			{
 				if ( gpGlobals->curtime - m_flJumpStartTime > 0.5 )
@@ -434,6 +480,7 @@ bool CHL2MPPlayerAnimState::HandleJumping( Activity &idealActivity )
 			{
 				idealActivity = ACT_MP_JUMP;
 			}
+#endif
 		}
 	}	
 
@@ -724,6 +771,9 @@ void CHL2MPPlayerAnimState::ComputePoseParam_AimYaw( CStudioHdr *pStudioHdr )
 //-----------------------------------------------------------------------------
 float CHL2MPPlayerAnimState::GetCurrentMaxGroundSpeed()
 {
+#ifdef NEO
+	return BaseClass::GetCurrentMaxGroundSpeed();
+#endif
 	CStudioHdr *pStudioHdr = GetBasePlayer()->GetModelPtr();
 
 	if ( pStudioHdr == NULL )
