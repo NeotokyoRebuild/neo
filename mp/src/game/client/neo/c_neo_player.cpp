@@ -967,7 +967,7 @@ extern ConVar cl_spec_mode;
 
 void C_NEO_Player::PostThink(void)
 {
-	//BaseClass::PostThink();
+	BaseClass::PostThink();
 
 	SetNextClientThink(CLIENT_THINK_ALWAYS);
 
@@ -1593,19 +1593,6 @@ void C_NEO_Player::PreDataUpdate(DataUpdateType_t updateType)
 	}
 
 	BaseClass::PreDataUpdate(updateType);
-}
-
-void C_NEO_Player::SetAnimation(PLAYER_ANIM playerAnim)
-{
-	PlayerAnimEvent_t animEvent;
-	if (!PlayerAnimToPlayerAnimEvent(playerAnim, animEvent))
-	{
-		DevWarning("CLI Tried to get unknown PLAYER_ANIM %d\n", playerAnim);
-	}
-	else
-	{
-		//m_pPlayerAnimState->DoAnimationEvent(animEvent);
-	}
 }
 
 extern ConVar sv_neo_wep_dmg_modifier;

@@ -44,7 +44,11 @@ public:
 	bool	HandleSwimming( Activity &idealActivity );
 
 	virtual float GetCurrentMaxGroundSpeed();
-	
+
+	void DebugShowAnimStateFull(int iStartLine);
+	virtual void DebugShowAnimState(int iStartLine);
+	void AnimStatePrintf(int iLine, PRINTF_FORMAT_STRING const char* pMsg, ...);
+	void AnimStateLog(PRINTF_FORMAT_STRING const char* pMsg, ...);
 
 private:
 

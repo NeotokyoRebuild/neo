@@ -17,9 +17,31 @@
 #include "hl2mp_player.h"
 #endif
 
+#ifdef NEO
+#include "shareddefs.h"
+
+#define DEFAULT_IDLE_NAME "Idle_Upper_"
+#define DEFAULT_CROUCH_IDLE_NAME "Crouch_Idle_Upper_"
+#define DEFAULT_CROUCH_WALK_NAME "Crouch_Walk_Upper_"
+#define DEFAULT_WALK_NAME "Walk_Upper_"
+#define DEFAULT_RUN_NAME "Run_Upper_"
+
+#define DEFAULT_FIRE_IDLE_NAME "Idle_Shoot_"
+#define DEFAULT_FIRE_CROUCH_NAME "Crouch_Idle_Shoot_"
+#define DEFAULT_FIRE_CROUCH_WALK_NAME "Crouch_Walk_Shoot_"
+#define DEFAULT_FIRE_WALK_NAME "Walk_Shoot_"
+#define DEFAULT_FIRE_RUN_NAME "Run_Shoot_"
+#endif
+
+#include "filesystem.h"
+#include "engine/ivdebugoverlay.h"
+
 #define HL2MP_RUN_SPEED				320.0f
 #define HL2MP_WALK_SPEED			75.0f
 #define HL2MP_CROUCHWALK_SPEED		110.0f
+
+extern ConVar sv_showanimstate;
+extern ConVar showanimstate_log;
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -161,6 +183,37 @@ void CHL2MPPlayerAnimState::Update( float eyeYaw, float eyePitch )
 	if ( C_BasePlayer::ShouldDrawLocalPlayer() )
 	{
 		m_pHL2MPPlayer->SetPlaybackRate( 1.0f );
+	}
+#endif
+
+#ifdef CLIENT_DLL
+	if (cl_showanimstate.GetInt() == m_pHL2MPPlayer->entindex())
+	{
+		DebugShowAnimStateFull(5);
+	}
+	else if (cl_showanimstate.GetInt() == -2)
+	{
+		C_BasePlayer* targetPlayer = C_BasePlayer::GetLocalPlayer();
+
+		if (targetPlayer && (targetPlayer->GetObserverMode() == OBS_MODE_IN_EYE || targetPlayer->GetObserverMode() == OBS_MODE_CHASE))
+		{
+			C_BaseEntity* target = targetPlayer->GetObserverTarget();
+
+			if (target && target->IsPlayer())
+			{
+				targetPlayer = ToBasePlayer(target);
+			}
+		}
+
+		if (m_pHL2MPPlayer == targetPlayer)
+		{
+			DebugShowAnimStateFull(6);
+		}
+	}
+#else
+	if (sv_showanimstate.GetInt() == m_pHL2MPPlayer->entindex())
+	{
+		DebugShowAnimState(20);
 	}
 #endif
 }
@@ -701,4 +754,126 @@ float CHL2MPPlayerAnimState::GetCurrentMaxGroundSpeed()
 	GetBasePlayer()->SetPoseParameter( pStudioHdr, m_PoseParameterData.m_iMoveY, prevY );
 
 	return speed;
+}
+
+// -----------------------------------------------------------------------------
+void CHL2MPPlayerAnimState::AnimStateLog(const char* pMsg, ...)
+{
+	// Format the string.
+	char str[4096];
+	va_list marker;
+	va_start(marker, pMsg);
+	Q_vsnprintf(str, sizeof(str), pMsg, marker);
+	va_end(marker);
+
+	// Log it?	
+	if (showanimstate_log.GetInt() == 1 || showanimstate_log.GetInt() == 3)
+	{
+		Msg("%s", str);
+	}
+
+	if (showanimstate_log.GetInt() > 1)
+	{
+#ifdef CLIENT_DLL
+		const char* fname = "AnimStateClient.log";
+#else
+		const char* fname = "AnimStateServer.log";
+#endif
+		static FileHandle_t hFile = filesystem->Open(fname, "wt");
+		filesystem->FPrintf(hFile, "%s", str);
+		filesystem->Flush(hFile);
+	}
+}
+
+// -----------------------------------------------------------------------------
+void CHL2MPPlayerAnimState::AnimStatePrintf(int iLine, const char* pMsg, ...)
+{
+	// Format the string.
+	char str[4096];
+	va_list marker;
+	va_start(marker, pMsg);
+	Q_vsnprintf(str, sizeof(str), pMsg, marker);
+	va_end(marker);
+
+	// Show it with Con_NPrintf.
+	engine->Con_NPrintf(iLine, "%s", str);
+
+	// Log it.
+	AnimStateLog("%s\n", str);
+}
+
+
+// -----------------------------------------------------------------------------
+void CHL2MPPlayerAnimState::DebugShowAnimState(int iStartLine)
+{
+	Vector vOuterVel;
+	GetOuterAbsVelocity(vOuterVel);
+
+	int iLine = iStartLine;
+	AnimStatePrintf(iLine++, "main: %s(%d), cycle: %.2f cyclerate: %.2f playbackrate: %.2f\n",
+		GetSequenceName(m_pHL2MPPlayer->GetModelPtr(), m_pHL2MPPlayer->GetSequence()),
+		m_pHL2MPPlayer->GetSequence(),
+		m_pHL2MPPlayer->GetCycle(),
+		m_pHL2MPPlayer->GetSequenceCycleRate(m_pHL2MPPlayer->GetModelPtr(), m_pHL2MPPlayer->GetSequence()),
+		m_pHL2MPPlayer->GetPlaybackRate()
+	);
+
+	for (int i = 0; i < m_pHL2MPPlayer->GetNumAnimOverlays() - 1; i++)
+	{
+		CAnimationLayer* pLayer = m_pHL2MPPlayer->GetAnimOverlay(AIMSEQUENCE_LAYER + i);
+#ifdef CLIENT_DLL
+		AnimStatePrintf(iLine++, "%s(%d), weight: %.2f, cycle: %.2f, order (%d), aim (%d)",
+			!pLayer->IsActive() ? "-- " : (pLayer->m_nSequence == 0 ? "-- " : GetSequenceName(m_pHL2MPPlayer->GetModelPtr(), pLayer->m_nSequence)),
+			!pLayer->IsActive() ? 0 : (int)pLayer->m_nSequence,
+			!pLayer->IsActive() ? 0 : (float)pLayer->m_flWeight,
+			!pLayer->IsActive() ? 0 : (float)pLayer->m_flCycle,
+			!pLayer->IsActive() ? 0 : (int)pLayer->m_nOrder,
+			i
+		);
+#else
+		AnimStatePrintf(iLine++, "%s(%d), flags (%d), weight: %.2f, cycle: %.2f, order (%d), aim (%d)",
+			!pLayer->IsActive() ? "-- " : (pLayer->m_nSequence == 0 ? "-- " : GetSequenceName(m_pHL2MPPlayer->GetModelPtr(), pLayer->m_nSequence)),
+			!pLayer->IsActive() ? 0 : (int)pLayer->m_nSequence,
+			!pLayer->IsActive() ? 0 : (int)pLayer->m_fFlags,// Doesn't exist on client
+			!pLayer->IsActive() ? 0 : (float)pLayer->m_flWeight,
+			!pLayer->IsActive() ? 0 : (float)pLayer->m_flCycle,
+			!pLayer->IsActive() ? 0 : (int)pLayer->m_nOrder,
+			i
+		);
+#endif
+	}
+
+	AnimStatePrintf(iLine++, "vel: %.2f, time: %.2f, max: %.2f, animspeed: %.2f",
+		vOuterVel.Length2D(), gpGlobals->curtime, GetInterpolatedGroundSpeed(), m_pHL2MPPlayer->GetSequenceGroundSpeed(m_pHL2MPPlayer->GetSequence()));
+
+	{
+		AnimStatePrintf(iLine++, "ent yaw: %.2f, body_yaw: %.2f, body_pitch: %.2f, move_x: %.2f, move_y: %.2f",
+			m_angRender[YAW], g_flLastBodyYaw, g_flLastBodyPitch, m_DebugAnimData.m_vecMoveYaw.x, m_DebugAnimData.m_vecMoveYaw.y);
+	}
+
+	// Draw a red triangle on the ground for the eye yaw.
+	float flBaseSize = 10;
+	float flHeight = 80;
+	Vector vBasePos = m_pHL2MPPlayer->GetAbsOrigin() + Vector(0, 0, 3);
+	QAngle angles(0, 0, 0);
+	angles[YAW] = m_flEyeYaw;
+	Vector vForward, vRight, vUp;
+	AngleVectors(angles, &vForward, &vRight, &vUp);
+	debugoverlay->AddTriangleOverlay(vBasePos + vRight * flBaseSize / 2, vBasePos - vRight * flBaseSize / 2, vBasePos + vForward * flHeight, 255, 0, 0, 255, false, 0.01);
+
+	// Draw a blue triangle on the ground for the body yaw.
+	angles[YAW] = m_angRender[YAW];
+	AngleVectors(angles, &vForward, &vRight, &vUp);
+	debugoverlay->AddTriangleOverlay(vBasePos + vRight * flBaseSize / 2, vBasePos - vRight * flBaseSize / 2, vBasePos + vForward * flHeight, 0, 0, 255, 255, false, 0.01);
+
+}
+
+// -----------------------------------------------------------------------------
+void CHL2MPPlayerAnimState::DebugShowAnimStateFull(int iStartLine)
+{
+	AnimStateLog("----------------- frame %d -----------------\n", gpGlobals->framecount);
+
+	DebugShowAnimState(iStartLine);
+
+	AnimStateLog("--------------------------------------------\n\n");
 }
