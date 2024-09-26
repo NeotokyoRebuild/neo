@@ -1223,13 +1223,6 @@ void C_NEO_Player::Spawn( void )
 			engine->ClientCmd(teammenu.GetName());
 		}
 	}
-
-#if(0)
-	// We could support crosshair customization/colors etc this way.
-	auto cross = GET_HUDELEMENT(CHudCrosshair);
-	Color color = Color(255, 255, 255, 255);
-	cross->SetCrosshair(NULL, color);
-#endif
 }
 
 void C_NEO_Player::DoImpactEffect( trace_t &tr, int nDamageType )

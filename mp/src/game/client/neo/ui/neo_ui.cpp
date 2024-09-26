@@ -880,6 +880,17 @@ void SliderInt(const wchar_t *wszLeftLabel, int *iValue, const int iMin, const i
 	}
 }
 
+void SliderU8(const wchar_t *wszLeftLabel, uint8 *ucValue, const uint8 iMin, const uint8 iMax, const uint8 iStep, const wchar_t *wszSpecialText)
+{
+	const float flOrigValue = *ucValue;
+	float flValue = flOrigValue;
+	Slider(wszLeftLabel, &flValue, static_cast<float>(iMin), static_cast<float>(iMax), 0, static_cast<float>(iStep), wszSpecialText);
+	if (flValue != flOrigValue)
+	{
+		*ucValue = static_cast<uint8>(RoundFloatToInt(flValue));
+	}
+}
+
 void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
 {
 	static wchar_t staticWszPasswordChars[256] = {};
