@@ -70,6 +70,7 @@ PRECACHE_WEAPON_REGISTER(weapon_grenade);
 CWeaponGrenade::CWeaponGrenade()
 {
 	m_bRedraw = false;
+	SetViewOffset(Vector(0, 0, 1.0));
 }
 
 void CWeaponGrenade::Precache(void)
