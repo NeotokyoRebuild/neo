@@ -33,6 +33,7 @@ public:
 	CHL2MP_Player *GetHL2MPPlayer( void )							{ return m_pHL2MPPlayer; }
 
 	virtual void ClearAnimationState();
+	int CalcSequenceIndex(const char* pBaseName, ...);
 	virtual Activity TranslateActivity( Activity actDesired );
 	virtual void Update( float eyeYaw, float eyePitch );
 
@@ -44,6 +45,9 @@ public:
 	bool	HandleSwimming( Activity &idealActivity );
 
 	virtual float GetCurrentMaxGroundSpeed();
+#ifdef NEO
+	virtual void ComputeSequences(CStudioHdr* pStudioHdr);
+#endif
 
 	void DebugShowAnimStateFull(int iStartLine);
 	virtual void DebugShowAnimState(int iStartLine);

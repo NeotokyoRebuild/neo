@@ -76,6 +76,9 @@ enum PlayerAnimEvent_t
 // Gesture Slots.
 enum
 {
+#ifdef NEO
+	GESTURE_SLOT_AIM,
+#endif
 	GESTURE_SLOT_ATTACK_AND_RELOAD,
 	GESTURE_SLOT_GRENADE,
 	GESTURE_SLOT_JUMP,
@@ -237,6 +240,11 @@ protected:
 	void	ShutdownGestureSlots( void );
 	bool	IsGestureSlotPlaying( int iGestureSlot, Activity iGestureActivity );
 	void	AddToGestureSlot( int iGestureSlot, Activity iGestureActivity, bool bAutoKill );
+#ifdef NEO
+	int		CalcSequenceIndex(const char* pBaseName, ...);
+	int		CalcAimLayerSequence(Activity activity, bool bForceIdle);
+	void	AddToGestureSlot(int iGestureSlot, int iGestureSequence, bool bAutoKill);
+#endif // NEO
 	virtual void RestartGesture( int iGestureSlot, Activity iGestureActivity, bool bAutoKill = true );
 	void	ComputeGestureSequence( CStudioHdr *pStudioHdr );
 	void	UpdateGestureLayer( CStudioHdr *pStudioHdr, GestureSlot_t *pGesture );

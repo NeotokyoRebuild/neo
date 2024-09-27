@@ -1,6 +1,5 @@
 //========= Copyright Valve Corporation, All rights reserved. ============//
 #include "cbase.h"
-#include "base_playeranimstate.h"
 #include "tier0/vprof.h"
 #include "animation.h"
 #include "studio.h"
@@ -123,6 +122,34 @@ void CHL2MPPlayerAnimState::ClearAnimationState( void )
 	BaseClass::ClearAnimationState();
 }
 
+int CHL2MPPlayerAnimState::CalcSequenceIndex(const char* pBaseName, ...)
+{
+	char szFullName[512];
+	va_list marker;
+	va_start(marker, pBaseName);
+	Q_vsnprintf(szFullName, sizeof(szFullName), pBaseName, marker);
+	va_end(marker);
+	CBaseAnimatingOverlay* pPlayer = GetBasePlayer();
+	int iSequence = pPlayer->LookupSequence(szFullName);
+
+	// Show warnings if we can't find anything here.
+	if (iSequence == -1)
+	{
+		static CUtlDict<int, int> dict;
+		if (dict.Find(szFullName) == -1)
+		{
+			dict.Insert(szFullName, 0);
+			Warning("CalcSequenceIndex: can't find '%s'.\n", szFullName);
+		}
+
+		iSequence = 0;
+	}
+
+	//DevMsg("CalcSeqIdx: \"%s\": %d\n", szFullName, iSequence);
+
+	return iSequence;
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: 
 // Input  : actDesired - 
@@ -132,23 +159,32 @@ Activity CHL2MPPlayerAnimState::TranslateActivity( Activity actDesired )
 {
 	// Hook into baseclass when / if hl2mp player models get swim animations.
 	Activity translateActivity = actDesired; //BaseClass::TranslateActivity( actDesired );
-#ifdef NEO
-	auto neoPlayer = static_cast<CNEO_Player*>(GetHL2MPPlayer());
-	auto activeWeapon = neoPlayer->GetActiveWeapon();
-	if (activeWeapon)
-	{
-		bool required = false;
-		translateActivity = activeWeapon->ActivityOverride(translateActivity, &required);
-	}
-#else
 	if ( GetHL2MPPlayer()->GetActiveWeapon() )
 	{
 		bool required = false;
 		translateActivity = GetHL2MPPlayer()->GetActiveWeapon()->ActivityOverride( translateActivity, &required);
 	}
-#endif
 	return translateActivity;
 }
+
+#ifdef NEO
+//-----------------------------------------------------------------------------
+// Purpose: 
+// Input  : *pStudioHdr - 
+//-----------------------------------------------------------------------------
+void CHL2MPPlayerAnimState::ComputeSequences(CStudioHdr* pStudioHdr)
+{
+	VPROF("CBasePlayerAnimState::ComputeSequences");
+
+	// Lower body (walk/run/idle).
+	ComputeMainSequence();
+
+	// The groundspeed interpolator uses the main sequence info.
+	UpdateInterpolators();
+	ComputeGestureSequence(pStudioHdr);
+}
+
+#endif //NEO
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
@@ -719,10 +755,19 @@ void CHL2MPPlayerAnimState::ComputePoseParam_AimYaw( CStudioHdr *pStudioHdr )
 		{
 			float flYawDelta = AngleNormalize(  m_flGoalFeetYaw - m_flEyeYaw );
 
+#ifdef NEO
+			if (fabs(flYawDelta) > 90.f /*NEO_ANIMSTATE_MAX_BODY_YAW_DEGREES*/)
+#else
 			if ( fabs( flYawDelta ) > 45.0f )
+#endif
 			{
 				float flSide = ( flYawDelta > 0.0f ) ? -1.0f : 1.0f;
+
+#ifdef NEO
+				m_flGoalFeetYaw += (90.f/*NEO_ANIMSTATE_MAX_BODY_YAW_DEGREES*/ * flSide);
+#else
 				m_flGoalFeetYaw += ( 45.0f * flSide );
+#endif
 			}
 		}
 	}
