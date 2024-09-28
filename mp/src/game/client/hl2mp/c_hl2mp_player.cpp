@@ -316,7 +316,7 @@ int C_HL2MP_Player::DrawModel( int flags )
 	if ( !m_bReadyToDraw )
 		return 0;
 
-	return BaseClass::DrawModel(flags);
+    return BaseClass::DrawModel(flags);
 }
 
 //-----------------------------------------------------------------------------
@@ -849,7 +849,7 @@ void C_HL2MPRagdoll::Interp_Copy( C_BaseAnimatingOverlay *pSourceEntity )
 	
 	VarMapping_t *pSrc = pSourceEntity->GetVarMapping();
 	VarMapping_t *pDest = GetVarMapping();
-		
+    
 	// Find all the VarMapEntry_t's that represent the same variable.
 	for ( int i = 0; i < pDest->m_Entries.Count(); i++ )
 	{

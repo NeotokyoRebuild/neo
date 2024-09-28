@@ -438,16 +438,12 @@ C_NEO_Player::C_NEO_Player()
 	m_bLastTickInThermOpticCamo = false;
 	m_bIsAllowedToToggleVision = false;
 
-	/*m_pPlayerAnimState = CreatePlayerAnimState(this, CreateAnimStateHelpers(this),
-		NEO_ANIMSTATE_LEGANIM_TYPE, NEO_ANIMSTATE_USES_AIMSEQUENCES);*/
-
 	memset(m_szNeoNameWDupeIdx, 0, sizeof(m_szNeoNameWDupeIdx));
 	m_szNameDupePos = 0;
 }
 
 C_NEO_Player::~C_NEO_Player()
 {
-	//m_pPlayerAnimState->Release();
 }
 
 void C_NEO_Player::CheckThermOpticButtons()
@@ -1051,14 +1047,6 @@ void C_NEO_Player::PostThink(void)
 			m_bPreviouslyReloading = pNeoWep->m_bInReload;
 		}
 	}
-
-	Vector eyeForward;
-	this->EyeVectors(&eyeForward, NULL, NULL);
-	Assert(eyeForward.IsValid());
-
-	float flPitch = asin(-eyeForward[2]);
-	float flYaw = atan2(eyeForward[1], eyeForward[0]);
-	//m_pPlayerAnimState->Update(RAD2DEG(flYaw), RAD2DEG(flPitch));
 }
 
 void C_NEO_Player::CalcDeathCamView(Vector &eyeOrigin, QAngle &eyeAngles, float &fov)

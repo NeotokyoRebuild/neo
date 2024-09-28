@@ -416,7 +416,6 @@ CNEO_Player::CNEO_Player()
 
 CNEO_Player::~CNEO_Player( void )
 {
-	/*m_pPlayerAnimState->Release();*/
 }
 
 void CNEO_Player::ZeroFriendlyPlayerLocArray(void)
@@ -1612,7 +1611,6 @@ void CNEO_Player::SetPlayerCorpseModel(int type)
 
 	SetModel(model);
 	SetPlaybackRate(1.0f);
-	//ResetAnimation();
 }
 
 float CNEO_Player::GetReceivedDamageScale(CBaseEntity* pAttacker)

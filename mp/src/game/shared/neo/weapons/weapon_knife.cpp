@@ -131,7 +131,7 @@ bool CWeaponKnife::IsViewable()
 
 void CWeaponKnife::Swing(int bIsSecondary)
 {
-	auto* pOwner = static_cast<CNEO_Player*>(GetOwner());
+	auto pOwner = static_cast<CNEO_Player*>(GetOwner());
 	if (!pOwner)
 		return;
 

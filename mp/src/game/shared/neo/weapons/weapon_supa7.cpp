@@ -294,7 +294,7 @@ void CWeaponSupa7::PrimaryAttack(void)
 	}
 
 	// Only the player fires this way so we can cast
-	auto* pPlayer = static_cast<CNEO_Player*>(GetOwner());
+	auto pPlayer = static_cast<CNEO_Player*>(GetOwner());
 
 	if (!pPlayer)
 	{

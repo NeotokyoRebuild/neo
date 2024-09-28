@@ -78,7 +78,7 @@ BEGIN_SEND_TABLE_NOBASE( CHL2MP_Player, DT_HL2MPNonLocalPlayerExclusive )
 	SendPropFloat( SENDINFO_VECTORELEM(m_angEyeAngles, 0), 8, SPROP_CHANGES_OFTEN, -90.0f, 90.0f ),
 	SendPropAngle( SENDINFO_VECTORELEM(m_angEyeAngles, 1), 10, SPROP_CHANGES_OFTEN ),
 #ifdef NEO
-	SendPropAngle(SENDINFO_VECTORELEM(m_angEyeAngles, 2), 11, SPROP_CHANGES_OFTEN),
+	SendPropAngle( SENDINFO_VECTORELEM(m_angEyeAngles, 2), 11, SPROP_CHANGES_OFTEN ),
 #endif
 END_SEND_TABLE()
 

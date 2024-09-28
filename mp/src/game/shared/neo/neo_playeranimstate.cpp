@@ -47,7 +47,6 @@ public:
 	CNEOPlayerAnimState();
 	~CNEOPlayerAnimState();
 
-	//virtual void DoAnimationEvent(PlayerAnimEvent_t event, int nData);
 	virtual bool IsThrowingGrenade();
 	virtual int CalcAimLayerSequence(float *flCycle, float *flAimSequenceWeight, bool bForceIdle);
 	virtual void ClearAnimationState();
@@ -381,37 +380,6 @@ void CNEOPlayerAnimState::UpdateBaseWeaponAnimationFlags(CBaseCombatWeapon* curr
 	m_bFiring = !((gpGlobals->curtime - currentWeapon->m_flNextPrimaryAttack.Get()) > 0.5f);
 	m_bReloading = currentWeapon->m_bInReload.Get();
 }
-
-//void CNEOPlayerAnimState::DoAnimationEvent(PlayerAnimEvent_t event, int nData)
-//{
-//	Assert(event != PLAYERANIMEVENT_THROW_GRENADE);
-//
-//	if (event == PLAYERANIMEVENT_FIRE_GUN_PRIMARY ||
-//		event == PLAYERANIMEVENT_FIRE_GUN_SECONDARY)
-//	{
-//		// Regardless of what we're doing in the fire layer, restart it.
-//		m_flFireCycle = 0;
-//		m_iFireSequence = CalcFireLayerSequence(event);
-//		m_bFiring = (m_iFireSequence > 0);
-//	}
-//	else if (event == PLAYERANIMEVENT_JUMP)
-//	{
-//		m_bFreshJump = true;
-//	}
-//	else if (event == PLAYERANIMEVENT_RELOAD)
-//	{
-//		m_iReloadSequence = CalcReloadLayerSequence();
-//		if (m_iReloadSequence > 0)
-//		{
-//			m_bReloading = true;
-//			m_flReloadCycle = 0;
-//		}
-//	}
-//	else
-//	{
-//		Assert(!"CNEOPlayerAnimState::DoAnimationEvent");
-//	}
-//}
 
 float g_flThrowGrenadeFraction = 0.25;
 bool CNEOPlayerAnimState::IsThrowingGrenade()

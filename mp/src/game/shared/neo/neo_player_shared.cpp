@@ -87,17 +87,6 @@ CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, const NEO_WEP_BI
 	return NULL;
 }
 
-bool PlayerAnimToPlayerAnimEvent(const PLAYER_ANIM playerAnim, PlayerAnimEvent_t& outAnimEvent)
-{
-	/*bool success = true;
-	if (playerAnim == PLAYER_ANIM::PLAYER_JUMP) { outAnimEvent = PlayerAnimEvent_t::PLAYERANIMEVENT_JUMP; }
-	else if (playerAnim == PLAYER_ANIM::PLAYER_RELOAD) { outAnimEvent = PlayerAnimEvent_t::PLAYERANIMEVENT_RELOAD; }
-	else if (playerAnim == PLAYER_ANIM::PLAYER_ATTACK1) { outAnimEvent = PlayerAnimEvent_t::PLAYERANIMEVENT_FIRE_GUN_PRIMARY; }
-	else { success = false; }
-	return success;*/
-	return true;
-}
-
 bool ClientWantsAimHold(const CNEO_Player* player)
 {
 #ifdef CLIENT_DLL

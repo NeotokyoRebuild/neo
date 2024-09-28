@@ -221,7 +221,7 @@ void CWeaponGrenade::ItemPostFrame(void)
 
 	if (m_bDrawbackFinished)
 	{
-		auto* pOwner = static_cast<CNEO_Player*>(GetOwner());
+		auto pOwner = static_cast<CNEO_Player*>(GetOwner());
 
 		if (pOwner)
 		{
@@ -465,7 +465,7 @@ void CWeaponGrenade::Drop(const Vector& vecVelocity)
 #ifndef CLIENT_DLL
 void CWeaponGrenade::Operator_HandleAnimEvent(animevent_t *pEvent, CBaseCombatCharacter *pOperator)
 {
-	auto* pOwner = static_cast<CNEO_Player*>(GetOwner());
+	auto pOwner = static_cast<CNEO_Player*>(GetOwner());
 	Assert(pOwner);
 
 	bool fThrewGrenade = false;
