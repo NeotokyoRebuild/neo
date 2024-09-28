@@ -887,7 +887,11 @@ void C_BaseAnimating::UpdateRelevantInterpolatedVars()
 
 void C_BaseAnimating::AddBaseAnimatingInterpolatedVars()
 {
+#ifdef NEO
+	AddVar( m_flEncodedController, &m_iv_flEncodedController, LATCH_SIMULATION_VAR, true );
+#else
 	AddVar( m_flEncodedController, &m_iv_flEncodedController, LATCH_ANIMATION_VAR, true );
+#endif
 	AddVar( m_flPoseParameter, &m_iv_flPoseParameter, LATCH_ANIMATION_VAR, true );
 	
 	int flags = LATCH_ANIMATION_VAR;
