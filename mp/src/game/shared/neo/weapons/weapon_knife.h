@@ -46,8 +46,6 @@ public:
 #endif
 
 	virtual	void Spawn() final;
-	virtual void ItemPreFrame() final;
-	virtual void ItemBusyFrame() final;
 	virtual void ItemPostFrame() final;
 
 	virtual Activity GetPrimaryAttackActivity() final { return ACT_VM_HITCENTER; }

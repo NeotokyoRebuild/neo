@@ -14,6 +14,7 @@ extern ConVar weaponstay;
 #include "dlight.h"
 #include "iefx.h"
 #include "c_te_effect_dispatch.h"
+#include "prediction.h"
 #endif
 
 #include "basecombatweapon_shared.h"
@@ -67,6 +68,8 @@ BEGIN_DATADESC( CNEOBaseCombatWeapon )
 END_DATADESC()
 #endif
 
+ConVar sv_neo_accuracy_penalty_scale("sv_neo_accuracy_penalty_scale", "1.0", FCVAR_REPLICATED, "Scales the accuracy penalty per shot.", true, 0.0f, true, 2.0f);
+
 const char *GetWeaponByLoadoutId(int id)
 {
 	if (id < 0 || id >= NEO_WEP_LOADOUT_ID_COUNT)
@@ -96,6 +99,98 @@ const char *GetWeaponByLoadoutId(int id)
 	return weps[id];
 }
 
+// TODO: This lookup could be more efficient with sequential IDs a la SDK,
+// but we'll probably move this stuff to the weapon scripts anyway.
+static const WeaponHandlingInfo_t handlingTable[] = {
+	{NEO_WEP_AA13,
+		{{VECTOR_CONE_5DEGREES, VECTOR_CONE_5DEGREES, VECTOR_CONE_5DEGREES, VECTOR_CONE_5DEGREES}},
+		{0.25, 0.5, -0.6, 0.6},
+	},
+	{NEO_WEP_JITTE,
+		{{VECTOR_CONE_3DEGREES, VECTOR_CONE_10DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_3DEGREES}},
+		{-0.5, -0.25, -0.6, 0.6},
+	},
+	{NEO_WEP_JITTE_S,
+		{{VECTOR_CONE_3DEGREES, VECTOR_CONE_10DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_3DEGREES}},
+		{-0.5, -0.25, -0.6, 0.6},
+	},
+	{NEO_WEP_KYLA,
+		{{VECTOR_CONE_5DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_2DEGREES, VECTOR_CONE_4DEGREES}},
+		{0.0, 0.0, 0.0, 0.0},
+		{10.5, 6.0, -0.75, 0.0, -0.5, 0.5},
+	},
+	{NEO_WEP_M41,
+		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}}
+	},
+	{NEO_WEP_M41_S,
+		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}}
+	},
+	{NEO_WEP_MILSO,
+		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_2DEGREES, VECTOR_CONE_4DEGREES}},
+		{0.25, 0.5, -0.6, 0.6},
+	},
+	{NEO_WEP_MPN,
+		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_4DEGREES}},
+		{0.0, 0.0, 0.0, 0.0},
+		{1.0, 1.0, -0.5, -0.25, -0.6, 0.6},
+	},
+	{NEO_WEP_MPN_S,
+		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_4DEGREES}},
+		{0.0, 0.0, 0.0, 0.0},
+		{1.0, 1.0, -0.5, -0.25, -0.6, 0.6},
+	},
+	{NEO_WEP_MX,
+		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}},
+		{0.25, 0.5, -0.6, 0.6},
+	},
+	{NEO_WEP_MX_S,
+		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}},
+		{0.25, 0.5, -0.6, 0.6},
+	},
+	{NEO_WEP_PZ,
+		{{VECTOR_CONE_2DEGREES, VECTOR_CONE_5DEGREES, VECTOR_CONE_1DEGREES / 2, VECTOR_CONE_2DEGREES}},
+		{0.25, 0.5, -0.6, 0.6},
+		{1.0, 0.0, -0.25, -0.75, -0.6, 0.6},
+	},
+	{NEO_WEP_SRM,
+		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_4DEGREES}},
+		{0.25, 0.5, -0.6, 0.6},
+	},
+	{NEO_WEP_SRM_S,
+		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_4DEGREES}},
+		{0.25, 0.5, -0.6, 0.6},
+	},
+	{NEO_WEP_SRS,
+		{{VECTOR_CONE_7DEGREES, VECTOR_CONE_20DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_7DEGREES}},
+		{0.0, 0.0, 0.0, 0.0},
+		{1.0, 1.5, -0.5, 0.0, -0.5, 0.5},
+	},
+	{NEO_WEP_SUPA7,
+		{
+			{VECTOR_CONE_5DEGREES, VECTOR_CONE_5DEGREES, VECTOR_CONE_5DEGREES, VECTOR_CONE_5DEGREES},
+			{VECTOR_CONE_4DEGREES, VECTOR_CONE_10DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_3DEGREES}
+		},
+		{0.25, 0.5, -0.6, 0.6},
+	},
+	{NEO_WEP_TACHI,
+		{{VECTOR_CONE_5DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_4DEGREES}},
+		{0.25, 0.5, -0.6, 0.6},
+	},
+	{NEO_WEP_ZR68_C,
+		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}},
+		{0.25, 0.5, -0.6, 0.6},
+	},
+	{NEO_WEP_ZR68_L,
+		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_2DEGREES}},
+		{0.0, 0.0, 0.0, 0.0},
+		{1.0, 2.5, -0.5, 0.0, -0.5, 0.5},
+	},
+	{NEO_WEP_ZR68_S,
+		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}},
+		{0.15, 0.25, -0.4, 0.4},
+	},
+};
+
 CNEOBaseCombatWeapon::CNEOBaseCombatWeapon( void )
 {
 }
@@ -113,7 +208,7 @@ void CNEOBaseCombatWeapon::Spawn()
 	// If this fires, either the enum bit mask has overflowed,
 	// this derived gun has no valid NeoBitFlags set,
 	// or we are spawning an instance of this base class for some reason.
-	Assert(GetNeoWepBits() != NEO_WEP_INVALID); 
+	Assert(GetNeoWepBits() != NEO_WEP_INVALID);
 
 	BaseClass::Spawn();
 
@@ -122,6 +217,16 @@ void CNEOBaseCombatWeapon::Spawn()
 
 	m_iClip2 = GetWpnData().iMaxClip2;
 	m_iSecondaryAmmoCount = GetWpnData().iDefaultClip2;
+
+	m_weaponHandling = handlingTable[0];
+	for (const auto& handling: handlingTable)
+	{
+		if (handling.weaponID & GetNeoWepBits())
+		{
+			m_weaponHandling = handling;
+			break;
+		}
+	}
 
 #ifdef GAME_DLL
 	AddSpawnFlags(SF_NORESPAWN);
@@ -329,6 +434,31 @@ void CNEOBaseCombatWeapon::CheckReload(void)
 	BaseClass::CheckReload();
 }
 
+void CNEOBaseCombatWeapon::UpdateInaccuracy()
+{
+	CNEO_Player *pOwner = static_cast<CNEO_Player *>(ToBasePlayer(GetOwner()));
+	if (!pOwner)
+		return;
+
+	if (pOwner->IsAirborne())
+	{
+		m_flAccuracyPenalty += gpGlobals->frametime * 3.0;
+	}
+
+	if (!pOwner->IsInAim() && pOwner->GetAbsVelocity().Length2D() > 5.0)
+	{
+		m_flAccuracyPenalty += gpGlobals->frametime * 2.0;
+	}
+
+	m_flAccuracyPenalty -= gpGlobals->frametime * GetAccuracyPenaltyDecay();
+	m_flAccuracyPenalty = clamp(m_flAccuracyPenalty, 0.0f, GetMaxAccuracyPenalty());
+}
+
+void CNEOBaseCombatWeapon::ItemPreFrame(void)
+{
+	UpdateInaccuracy();
+}
+
 // Handles lowering the weapon view model when character is sprinting
 void CNEOBaseCombatWeapon::ProcessAnimationEvents(void)
 {
@@ -375,6 +505,8 @@ void CNEOBaseCombatWeapon::ItemPostFrame(void)
 	if (!pOwner)
 		return;
 
+	ProcessAnimationEvents();
+
 	UpdateAutoFire();
 
 	//Track the duration of the fire
@@ -410,7 +542,7 @@ void CNEOBaseCombatWeapon::ItemPostFrame(void)
 		else
 		{
 			// FIXME: This isn't necessarily true if the weapon doesn't have a secondary fire!
-			// For instance, the crossbow doesn't have a 'real' secondary fire, but it still 
+			// For instance, the crossbow doesn't have a 'real' secondary fire, but it still
 			// stops the crossbow from firing on the 360 if the player chooses to hold down their
 			// zoom button. (sjb) Orange Box 7/25/2007
 #if !defined(CLIENT_DLL)
@@ -442,7 +574,13 @@ void CNEOBaseCombatWeapon::ItemPostFrame(void)
 			((UsesClipsForAmmo1() && m_iClip1 <= 0) || (!UsesClipsForAmmo1() && m_iPrimaryAmmoCount <= 0)))
 		{
 			if (m_bRoundChambered) // bolt action rifles can have this value set to false, prevents empty clicking when holding the attack button when looking through scope to prevent bolting/reloading
+			{
 				HandleFireOnEmpty();
+			}
+			else
+			{
+				DryFire();
+			}
 		}
 		else if (pOwner->GetWaterLevel() == 3 && m_bFiresUnderwater == false)
 		{
@@ -501,103 +639,95 @@ void CNEOBaseCombatWeapon::ItemPostFrame(void)
 	}
 }
 
-ConVar sv_neo_wep_acc_penalty_scale("sv_neo_wep_acc_penalty_scale", "7.5", FCVAR_REPLICATED,
-	"Temporary global neo wep accuracy penalty scaler.", true, 0.01, true, 9999.0);
-
-ConVar sv_neo_wep_cone_min_scale("sv_neo_wep_cone_min_scale", "0.01", FCVAR_REPLICATED,
-	"Temporary global neo wep bloom min cone scaler.", true, 0.01, true, 10.0);
-
-ConVar sv_neo_wep_cone_max_scale("sv_neo_wep_cone_max_scale", "0.7", FCVAR_REPLICATED,
-	"Temporary global neo wep bloom max cone scaler.", true, 0.01, true, 10.0);
-
-// NEO HACK/FIXME (Rain): Doing some temporary bloom accuracy scaling here for easier testing.
-// Need to clean this up later once we have good values!!
-#define TEMP_WEP_STR(name) #name
-#define MAKE_TEMP_WEP_BLOOM_SCALER(weapon, defval) ConVar sv_neo_##weapon##_bloom_scale(TEMP_WEP_STR(sv_neo_##weapon##_bloom_scale), #defval, FCVAR_REPLICATED, TEMP_WEP_STR(Temporary weapon bloom scaler for #weapon), true, 0.01, true, 9999.0)
-
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_jitte,			2);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_jittescoped,		2.5);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_kyla,				2.5);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_m41,				2.5);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_m41l,				2.5);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_m41s,				2.5);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_milso,			2.5);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_mpn,				20.0);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_mpn_unsilenced,	4.0);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_mx,				2.5);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_mx_silenced,		2.5);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_pz,				2.5);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_smac,				2.5);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_srm,				2.5);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_srm_s,			2.5);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_tachi,			2.5);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_zr68c,			2.5);
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_zr68s,			2.5);
-#ifdef INCLUDE_WEP_PBK
-MAKE_TEMP_WEP_BLOOM_SCALER(weapon_pbk56s,			2.5);
-#endif
-
-const Vector& CNEOBaseCombatWeapon::GetBulletSpread(void)
+const WeaponSpreadInfo_t &CNEOBaseCombatWeapon::GetSpreadInfo()
 {
-	static Vector cone;
+	Assert(m_weaponHandling.weaponID & GetNeoWepBits());
+	return m_weaponHandling.spreadInfo[0];
+}
 
-	// NEO HACK/FIXME (Rain): Doing some temporary bloom accuracy scaling here for easier testing.
-	// Need to clean this up later once we have good values!!
-	const std::initializer_list<ConVar*> bloomScalers = {
-		&sv_neo_weapon_jitte_bloom_scale,
-		&sv_neo_weapon_jittescoped_bloom_scale,
-		&sv_neo_weapon_kyla_bloom_scale,
-		&sv_neo_weapon_m41_bloom_scale,
-		&sv_neo_weapon_m41l_bloom_scale,
-		&sv_neo_weapon_m41s_bloom_scale,
-		&sv_neo_weapon_milso_bloom_scale,
-		&sv_neo_weapon_mpn_bloom_scale,
-		&sv_neo_weapon_mpn_unsilenced_bloom_scale,
-		&sv_neo_weapon_mx_bloom_scale,
-		&sv_neo_weapon_mx_silenced_bloom_scale,
-		&sv_neo_weapon_pz_bloom_scale,
-		&sv_neo_weapon_smac_bloom_scale,
-		&sv_neo_weapon_srm_bloom_scale,
-		&sv_neo_weapon_srm_s_bloom_scale,
-		&sv_neo_weapon_tachi_bloom_scale,
-		&sv_neo_weapon_zr68c_bloom_scale,
-		&sv_neo_weapon_zr68s_bloom_scale,
-#ifdef INCLUDE_WEP_PBK
-		& sv_neo_weapon_pbk56s_bloom_scale,
-#endif
-	};
-	float wepSpecificBloomScale = 1.0f;
-	for (ConVar* scaler : bloomScalers)
-	{
-		if (V_strstr(scaler->GetName(), GetName()))
-		{
-			wepSpecificBloomScale = scaler->GetFloat();
-			break;
-		}
-	}
-
-	Assert(GetInnateInaccuracy() <= GetMaxAccuracyPenalty());
-
-	const float ramp = RemapValClamped(m_flAccuracyPenalty,
-		GetInnateInaccuracy(),
-		GetMaxAccuracyPenalty() * sv_neo_wep_acc_penalty_scale.GetFloat(),
-		0.0f,
-		1.0f);
+const Vector &CNEOBaseCombatWeapon::GetBulletSpread(void)
+{
+	auto pOwner = ToNEOPlayer(GetOwner());
 
 	// We lerp from very accurate to inaccurate over time
-	VectorLerp(
-		GetMinCone() * sv_neo_wep_cone_min_scale.GetFloat(),
-		GetMaxCone() * sv_neo_wep_cone_max_scale.GetFloat() * wepSpecificBloomScale,
-		ramp,
-		cone);
+	static Vector cone;
+	auto weaponSpread = GetSpreadInfo();
+	if (pOwner && pOwner->IsInAim())
+	{
+		VectorLerp(
+			weaponSpread.minSpreadAim,
+			weaponSpread.maxSpreadAim,
+			m_flAccuracyPenalty,
+			cone);
+	}
+	else
+	{
+		VectorLerp(
+			weaponSpread.minSpreadHip,
+			weaponSpread.maxSpreadHip,
+			m_flAccuracyPenalty,
+			cone);
+	}
 
 	return cone;
 }
 
+void CNEOBaseCombatWeapon::AddViewKick()
+{
+	auto owner = ToNEOPlayer(GetOwner());
+
+	if (!owner)
+	{
+		return;
+	}
+
+	auto kickInfo = m_weaponHandling.kickInfo;
+
+	QAngle viewPunch;
+	viewPunch.x = SharedRandomFloat(m_weaponSeeds.punchX, kickInfo.minX, kickInfo.maxX);
+	viewPunch.y = SharedRandomFloat(m_weaponSeeds.punchY, kickInfo.minY, kickInfo.maxY);
+	viewPunch.z = 0;
+
+	owner->ViewPunch(viewPunch);
+
+	#ifdef CLIENT_DLL
+
+	if (!prediction->IsFirstTimePredicted())
+	{
+		return;
+	}
+
+	auto recoilInfo = m_weaponHandling.recoilInfo;
+	float scale = owner->IsInAim() ? recoilInfo.adsFactor : recoilInfo.hipFactor;
+	if (!scale)
+	{
+		return;
+	}
+
+	QAngle viewAngles;
+	engine->GetViewAngles(viewAngles);
+
+	viewAngles.x += SharedRandomFloat(m_weaponSeeds.recoilX, recoilInfo.minX * scale, recoilInfo.maxX * scale);
+	viewAngles.y += SharedRandomFloat(m_weaponSeeds.recoilY, recoilInfo.minY * scale, recoilInfo.maxY * scale);
+
+	engine->SetViewAngles(viewAngles);
+
+	#endif
+}
+
+void CNEOBaseCombatWeapon::DryFire()
+{
+	WeaponSound(EMPTY);
+	SendWeaponAnim(ACT_VM_DRYFIRE);
+	m_flNextPrimaryAttack = gpGlobals->curtime + GetFastestDryRefireTime(); // SequenceDuration();
+}
+
 void CNEOBaseCombatWeapon::PrimaryAttack(void)
 {
-	Assert(!ShootingIsPrevented());
-
+	if (ShootingIsPrevented())
+	{
+		return;
+	}
 	if (gpGlobals->curtime < m_flSoonestAttack)
 	{
 		return;
@@ -615,9 +745,7 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 		}
 		else
 		{
-			WeaponSound(EMPTY);
-			SendWeaponAnim(ACT_VM_DRYFIRE);
-			m_flNextPrimaryAttack = 0.2;
+			DryFire();
 		}
 		return;
 	}
@@ -643,8 +771,6 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 			return;
 		}
 	}
-
-	pOwner->ViewPunchReset();
 
 	if ((gpGlobals->curtime - m_flLastAttackTime) > 0.5f)
 	{
@@ -672,7 +798,8 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 		return;
 	}
 
-	pPlayer->DoMuzzleFlash();
+	if (!(GetNeoWepBits() & NEO_WEP_SUPPRESSED))
+		pPlayer->DoMuzzleFlash();
 
 	SendWeaponAnim(GetPrimaryAttackActivity());
 
@@ -684,7 +811,7 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 
 	info.m_vecDirShooting = pPlayer->GetAutoaimVector(AUTOAIM_SCALE_DEFAULT);
 
-	// To make the firing framerate independent, we may have to fire more than one bullet here on low-framerate systems, 
+	// To make the firing framerate independent, we may have to fire more than one bullet here on low-framerate systems,
 	// especially if the weapon we're firing has a really fast rate of fire.
 	info.m_iShots = 0;
 	float fireRate = GetFireRate();
@@ -713,13 +840,13 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 
 	info.m_flDistance = MAX_TRACE_LENGTH;
 	info.m_iAmmoType = m_iPrimaryAmmoType;
-	info.m_iTracerFreq = 2;
+	info.m_iTracerFreq = 0;
 
 #if !defined( CLIENT_DLL )
 	// Fire the bullets
 	info.m_vecSpread = pPlayer->GetAttackSpread(this);
 #else
-	//!!!HACKHACK - what does the client want this function for? 
+	//!!!HACKHACK - what does the client want this function for?
 	info.m_vecSpread = GetActiveWeapon()->GetBulletSpread();
 #endif // CLIENT_DLL
 
@@ -734,9 +861,35 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 	}
 
 	//Add our view kick in
+	pOwner->ViewPunchReset();
 	AddViewKick();
 
-	m_flAccuracyPenalty += GetAccuracyPenalty();
+	m_flAccuracyPenalty = min(
+		GetMaxAccuracyPenalty(),
+		m_flAccuracyPenalty + GetAccuracyPenalty() * sv_neo_accuracy_penalty_scale.GetFloat()
+	);
+}
+
+void CNEOBaseCombatWeapon::SecondaryAttack()
+{
+	if (!ShootingIsPrevented())
+	{
+		BaseClass::SecondaryAttack();
+	}
+}
+
+Activity CNEOBaseCombatWeapon::GetPrimaryAttackActivity()
+{
+	if (m_nNumShotsFired < 1)
+		return ACT_VM_PRIMARYATTACK;
+
+	if (m_nNumShotsFired < 2)
+		return ACT_VM_RECOIL1;
+
+	if (m_nNumShotsFired < 3)
+		return ACT_VM_RECOIL2;
+
+	return ACT_VM_RECOIL3;
 }
 
 bool CNEOBaseCombatWeapon::CanBePickedUpByClass(int classId)
@@ -756,7 +909,7 @@ void CNEOBaseCombatWeapon::ProcessMuzzleFlashEvent()
 	int iAttachment = -1;
 	if (!GetBaseAnimating())
 		return;
-	
+
 	// Find the attachment point index
 	iAttachment = GetBaseAnimating()->LookupAttachment("muzzle_flash");
 	if (iAttachment <= 0)
@@ -812,7 +965,7 @@ static inline bool ShouldDrawLocalPlayerViewModel(void)
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 // Output : Returns true on success, false on failure.
 //-----------------------------------------------------------------------------
 bool CNEOBaseCombatWeapon::ShouldDraw(void)
@@ -862,7 +1015,7 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 	C_BaseCombatCharacter* localPlayer = C_BasePlayer::GetLocalPlayer();
 	if (GetOwner() == localPlayer && ShouldDrawLocalPlayerViewModel())
 		return 0;
-	
+
 	return BaseClass::DrawModel(flags);
 }
 #endif

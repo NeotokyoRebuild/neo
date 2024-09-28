@@ -78,6 +78,13 @@ CWeaponSupa7::CWeaponSupa7(void)
 	m_fMaxRange1 = 500;
 	m_fMinRange2 = 0.0;
 	m_fMaxRange2 = 200;
+
+	m_weaponSeeds = {
+		"supapx",
+		"supapy",
+		"suparx",
+		"supary",
+	};
 }
 
 // Purpose: Override so only reload one shell at a time
@@ -279,14 +286,6 @@ void CWeaponSupa7::FillClipSlug(void)
 	}
 }
 
-void CWeaponSupa7::DryFire(void)
-{
-	WeaponSound(EMPTY);
-	SendWeaponAnim(ACT_VM_DRYFIRE);
-
-	ProposeNextAttack(gpGlobals->curtime + SequenceDuration());
-}
-
 void CWeaponSupa7::PrimaryAttack(void)
 {
 	if (ShootingIsPrevented())
@@ -302,8 +301,6 @@ void CWeaponSupa7::PrimaryAttack(void)
 		return;
 	}
 
-	pPlayer->ViewPunchReset();
-
 	int numBullets = 7;
 	Vector bulletSpread = GetBulletSpread();
 	int ammoType = m_iPrimaryAmmoType;
@@ -314,7 +311,6 @@ void CWeaponSupa7::PrimaryAttack(void)
 	if (m_bSlugLoaded)
 	{
 		numBullets = 1;
-		bulletSpread *= 0.5;
 		ammoType = m_iSecondaryAmmoType;
 		WeaponSound(WPN_DOUBLE);
 		WeaponSound(SPECIAL2);
@@ -327,6 +323,7 @@ void CWeaponSupa7::PrimaryAttack(void)
 
 	FireBulletsInfo_t info(numBullets, vecSrc, vecAiming, bulletSpread, MAX_TRACE_LENGTH, ammoType);
 	info.m_pAttacker = pPlayer;
+	info.m_iTracerFreq = 0;
 
 	pPlayer->DoMuzzleFlash();
 
@@ -348,6 +345,8 @@ void CWeaponSupa7::PrimaryAttack(void)
 		// HEV suit - indicate out of ammo condition
 		pPlayer->SetSuitUpdate("!HEV_AMO0", FALSE, 0);
 	}
+
+	pPlayer->ViewPunchReset();
 	AddViewKick();
 }
 
@@ -407,20 +406,20 @@ void CWeaponSupa7::ItemPostFrame(void)
 		}
 		else if (m_flNextPrimaryAttack <= gpGlobals->curtime)
 		{
-			// If out of ammo end reload
-			if (m_iPrimaryAmmoCount <= 0 || m_bSlugLoaded || m_iClip1 >= GetMaxClip1())
+			// If we're supposed to have a slug loaded, load it
+			if (m_bSlugDelayed)
 			{
-				FinishReload();
+				if (!ReloadSlug())
+				{
+					m_bSlugDelayed.GetForModify() = false;
+				}
 			}
 			else
 			{
-				// If we're supposed to have a slug loaded, load it
-				if (m_bSlugDelayed)
+				// If out of ammo end reload
+				if ((m_iPrimaryAmmoCount <= 0 || m_bSlugLoaded || m_iClip1 >= GetMaxClip1()))
 				{
-					if (!ReloadSlug())
-					{
-						m_bSlugDelayed.GetForModify() = false;
-					}
+					FinishReload();
 				}
 				else
 				{
@@ -522,16 +521,10 @@ void CWeaponSupa7::ItemPostFrame(void)
 	}
 }
 
-void CWeaponSupa7::AddViewKick(void)
+const WeaponSpreadInfo_t &CWeaponSupa7::GetSpreadInfo()
 {
-	CBasePlayer* pPlayer = ToBasePlayer(GetOwner());
-
-	if (pPlayer == NULL)
-		return;
-
-	QAngle punch;
-	punch.Init(SharedRandomFloat("supapax", -2, -1), SharedRandomFloat("supapay", -1, 1), 0);
-	pPlayer->ViewPunch(punch);
+	Assert(m_weaponHandling.weaponID & GetNeoWepBits());
+	return m_weaponHandling.spreadInfo[m_bSlugLoaded];
 }
 
 bool CWeaponSupa7::SlugLoaded() const

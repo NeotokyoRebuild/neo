@@ -218,27 +218,27 @@ inline const char* GetNeoClassName(int neoClassIdx)
 	}
 }
 
-inline const char *GetRankName(int xp)
+inline const char *GetRankName(int xp, bool shortened = false)
 {
 	if (xp < 0)
 	{
-		return "Rankless Dog";
+		return shortened ? "Dog" : "Rankless Dog";
 	}
 	else if (xp < 4)
 	{
-		return "Private";
+		return shortened ? "Pvt" : "Private";
 	}
 	else if (xp < 10)
 	{
-		return "Corporal";
+		return shortened ? "Cpl" : "Corporal";
 	}
 	else if (xp < 20)
 	{
-		return "Sergeant";
+		return shortened ? "Sgt" : "Sergeant";
 	}
 	else
 	{
-		return "Lieutenant";
+		return shortened ? "Lt" : "Lieutenant";
 	}
 }
 

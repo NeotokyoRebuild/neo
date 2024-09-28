@@ -42,6 +42,8 @@ public:
 	virtual int GetMinBurst() OVERRIDE { return 1; }
 	virtual int GetMaxBurst() OVERRIDE { return 3; }
 
+	virtual const WeaponSpreadInfo_t& GetSpreadInfo(void) override;
+
 	bool StartReload(void);
 	bool StartReloadSlug(void);
 	bool Reload(void);
@@ -51,20 +53,16 @@ public:
 	void FillClip(void);
 	void FillClipSlug(void);
 	void FinishReload(void);
-	void AddViewKick(void);
 	void ItemPostFrame(void);
 	void PrimaryAttack(void);
 	void SecondaryAttack(void);
-	void DryFire(void);
-	
+
 	void Drop(const Vector& vecVelocity) OVERRIDE;
 
 	void ClearDelayedInputs(void);
 
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
-	virtual float GetAccuracyPenalty() const OVERRIDE { return 0; }
-	virtual float GetMaxAccuracyPenalty() const OVERRIDE { return 0; }
 
 private:
 	// Purpose: Only update next attack time if it's further away in the future.

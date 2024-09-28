@@ -36,7 +36,7 @@ END_DATADESC()
 PRECACHE_WEAPON_REGISTER(weapon_knife);
 
 #ifdef GAME_DLL // NEO FIXME (Rain): fix these values
-acttable_t	CWeaponKnife::m_acttable[] = 
+acttable_t	CWeaponKnife::m_acttable[] =
 {
 	{ ACT_MP_STAND_IDLE, ACT_IDLE_MELEE, false },
 	{ ACT_MP_RUN, ACT_MP_RUN_MELEE, false },
@@ -77,16 +77,6 @@ void CWeaponKnife::Spawn()
 	m_fMaxRange1 = 64;
 	m_fMaxRange2 = 64;
 	BaseClass::Spawn();
-}
-
-void CWeaponKnife::ItemPreFrame()
-{
-	BaseClass::ItemPreFrame();
-}
-
-void CWeaponKnife::ItemBusyFrame()
-{
-	BaseClass::ItemBusyFrame();
 }
 
 void CWeaponKnife::ItemPostFrame()
@@ -296,7 +286,7 @@ void CWeaponKnife::Hit(trace_t& traceHit, [[maybe_unused]] Activity nHitActivity
 
 		Vector2D forward2D = Vector2D(forward.x, forward.y);
 		forward2D.NormalizeInPlace();
-		
+
 		Vector attackerToTarget = pHitEntity->GetAbsOrigin() - pPlayer->GetAbsOrigin();
 		Vector2D attackerToTarget2D = Vector2D(attackerToTarget.x, attackerToTarget.y);
 		attackerToTarget2D.NormalizeInPlace();

@@ -62,6 +62,9 @@ jobs:
       run: |
         echo "PATH: $PATH"
 
+    - name: Git fetch tags
+      run: git fetch origin --tags
+
     # Libraries
 
     - name: CMake configure libraries build

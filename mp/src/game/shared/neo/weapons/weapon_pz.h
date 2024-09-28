@@ -33,31 +33,14 @@ public:
 
 	CWeaponPZ();
 
-	void	ItemPostFrame(void);
-	void	ItemPreFrame(void);
-	void	ItemBusyFrame(void);
-	virtual void	PrimaryAttack(void) OVERRIDE { if (!ShootingIsPrevented()) { BaseClass::PrimaryAttack(); } }
-	virtual void	SecondaryAttack(void) OVERRIDE { if (!ShootingIsPrevented()) { BaseClass::SecondaryAttack(); } }
-	void	AddViewKick(void);
-	void	DryFire(void);
+	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const override { return NEO_WEP_PZ; }
+	virtual int GetNeoWepXPCost(const int neoClass) const override { return 20; }
 
-	virtual void Spawn(void);
-	virtual bool Deploy(void);
-
-	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { return NEO_WEP_PZ; }
-	virtual int GetNeoWepXPCost(const int neoClass) const { return 20; }
-
-	virtual float GetSpeedScale(void) const { return 108.0 / 136.0; }
-
-	void	UpdatePenaltyTime(void);
-
-	Activity	GetPrimaryAttackActivity(void);
+	virtual float GetSpeedScale(void) const override { return 108.0 / 136.0; }
 
 	bool CanBePickedUpByClass(int classId) OVERRIDE;
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
-	virtual float GetAccuracyPenalty() const OVERRIDE { return 0.2f; }
-	virtual float GetMaxAccuracyPenalty() const OVERRIDE { return 0.5f; }
 
 private:
 	CWeaponPZ(const CWeaponPZ &other);
