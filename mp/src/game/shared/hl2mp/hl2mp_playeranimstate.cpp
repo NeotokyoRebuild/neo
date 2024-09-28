@@ -413,17 +413,13 @@ bool CHL2MPPlayerAnimState::HandleSwimming( Activity &idealActivity )
 bool CHL2MPPlayerAnimState::HandleMoving( Activity &idealActivity )
 {
 #ifdef NEO
-	// In TF we run all the time now.
-	float flSpeed = GetOuterXYSpeed();
-
-	if (flSpeed > RUNNING_MINIMUM_SPEED)
+	if (m_pHL2MPPlayer->IsWalking())
+	{
+		idealActivity = ACT_WALK;
+	}
+	else
 	{
 		idealActivity = ACT_RUN;
-	}
-	else if (flSpeed > MOVING_MINIMUM_SPEED)
-	{
-		// Always assume a run.
-		idealActivity = ACT_WALK;
 	}
 
 	return true;
