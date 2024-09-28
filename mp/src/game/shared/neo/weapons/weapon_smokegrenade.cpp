@@ -212,7 +212,6 @@ void CWeaponSmokeGrenade::ItemPostFrame(void)
 					ThrowGrenade(pOwner);
 
 					SendWeaponAnim(ACT_VM_THROW);
-					pOwner->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
 					m_flNextPrimaryAttack = m_flNextSecondaryAttack = m_flTimeWeaponIdle = gpGlobals->curtime + SequenceDuration();
 					m_bDrawbackFinished = false;
 					m_AttackPaused = GRENADE_PAUSED_NO;
@@ -236,7 +235,6 @@ void CWeaponSmokeGrenade::ItemPostFrame(void)
 						SendWeaponAnim(ACT_VM_THROW);
 					}
 
-					pOwner->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
 					m_flNextPrimaryAttack = m_flNextSecondaryAttack = m_flTimeWeaponIdle = gpGlobals->curtime + SequenceDuration();
 					m_bDrawbackFinished = false;
 					m_AttackPaused = GRENADE_PAUSED_NO;
@@ -270,7 +268,7 @@ void CWeaponSmokeGrenade::CheckThrowPosition(CBasePlayer* pPlayer, const Vector&
 	}
 }
 
-void CWeaponSmokeGrenade::ThrowGrenade(CBasePlayer* pPlayer, bool isAlive, CBaseEntity *pAttacker)
+void CWeaponSmokeGrenade::ThrowGrenade(CNEO_Player* pPlayer, bool isAlive, CBaseEntity *pAttacker)
 {
 	if (!sv_neo_infinite_smoke_grenades.GetBool())
 	{
@@ -326,12 +324,12 @@ void CWeaponSmokeGrenade::ThrowGrenade(CBasePlayer* pPlayer, bool isAlive, CBase
 #endif
 
 	// player "shoot" animation
-	pPlayer->SetAnimation(PLAYER_ATTACK1);
+	pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
 
 	m_bRedraw = true;
 }
 
-void CWeaponSmokeGrenade::LobGrenade(CBasePlayer* pPlayer)
+void CWeaponSmokeGrenade::LobGrenade(CNEO_Player* pPlayer)
 {
 	// Binds hack: we want grenade secondary attack to trigger on aim, not the attack2 bind.
 	if (pPlayer->m_afButtonPressed & IN_AIM)
@@ -367,12 +365,12 @@ void CWeaponSmokeGrenade::LobGrenade(CBasePlayer* pPlayer)
 	WeaponSound(WPN_DOUBLE);
 
 	// player "shoot" animation
-	pPlayer->SetAnimation(PLAYER_ATTACK1);
+	pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
 	
 	m_bRedraw = true;
 }
 
-void CWeaponSmokeGrenade::RollGrenade(CBasePlayer* pPlayer)
+void CWeaponSmokeGrenade::RollGrenade(CNEO_Player* pPlayer)
 {
 	// Binds hack: we want grenade secondary attack to trigger on aim, not the attack2 bind.
 	if (pPlayer->m_afButtonPressed & IN_AIM)
@@ -427,7 +425,7 @@ void CWeaponSmokeGrenade::RollGrenade(CBasePlayer* pPlayer)
 	WeaponSound(SPECIAL1);
 
 	// player "shoot" animation
-	pPlayer->SetAnimation(PLAYER_ATTACK1);
+	pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
 
 	m_bRedraw = true;
 }
@@ -446,7 +444,7 @@ void CWeaponSmokeGrenade::Drop(const Vector& vecVelocity)
 #ifndef CLIENT_DLL
 void CWeaponSmokeGrenade::Operator_HandleAnimEvent(animevent_t* pEvent, CBaseCombatCharacter* pOperator)
 {
-	CBasePlayer* pOwner = ToBasePlayer(GetOwner());
+	auto* pOwner = static_cast<CNEO_Player*>(GetOwner());
 	Assert(pOwner);
 
 	bool fThrewGrenade = false;

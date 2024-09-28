@@ -90,6 +90,7 @@ CWeaponDetpack::CWeaponDetpack()
 void CWeaponDetpack::Precache(void)
 {
 	BaseClass::Precache();
+	PrecacheModel("models/weapons/w_detremote.mdl");
 }
 
 bool CWeaponDetpack::Deploy(void)
@@ -165,7 +166,6 @@ void CWeaponDetpack::PrimaryAttack(void)
 			DevMsg("Preparing primary attack\n");
 #endif
 			SendWeaponAnim(ACT_VM_PRIMARYATTACK);
-			pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
 			m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
 			m_flTimeWeaponIdle = FLT_MAX;
 		}
@@ -189,7 +189,7 @@ void CWeaponDetpack::ItemPostFrame(void)
 
 	if (m_fDrawbackFinished)
 	{
-		auto pOwner = GetOwner();
+		auto* pOwner = static_cast<CNEO_Player*>(GetOwner());
 
 		if ((m_bRemoteHasBeenTriggered) && (gpGlobals->curtime > m_flNextPrimaryAttack))
 		{
@@ -227,6 +227,8 @@ void CWeaponDetpack::ItemPostFrame(void)
 				{
 					TossDetpack(ToBasePlayer(pOwner));
 					m_bThisDetpackHasBeenThrown = true;
+					SetModel("models/weapons/w_detremote.mdl");
+					pOwner->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
 					// SendWeaponAnim(ACT_VM_DRAW_DEPLOYED);
 					// SendWeaponAnim(ACT_VM_THROW);
 					m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();

@@ -1248,8 +1248,9 @@ int CMultiPlayerAnimState::CalcAimLayerSequence(Activity activity, bool bForceId
 		return 0;
 	}
 
-	if (!Q_strcmp(pSuffix, "detpack"))
+	if (!Q_strcmp(pWeapon->GetClassname(), "weapon_remotedet"))
 	{
+		pSuffix = "detpack";
 		auto detpack = static_cast<CWeaponDetpack*>(pWeapon);
 		if (detpack && (detpack->m_bRemoteHasBeenTriggered ||
 			(detpack->m_bThisDetpackHasBeenThrown && (gpGlobals->curtime > detpack->m_flNextPrimaryAttack))))
@@ -1315,20 +1316,22 @@ int CMultiPlayerAnimState::CalcFireSequence()
 		return 0;
 	}
 
-	if (!Q_strcmp(pSuffix, "detpack"))
+	if (!Q_strcmp(pSuffix, "Grenade"))
 	{
+		pSuffix = "Gren1";
+	}
+
+	if (!Q_strcmp(pWeapon->GetClassname(), "weapon_remotedet"))
+	{
+		pSuffix = "detpack";
 		auto detpack = static_cast<CWeaponDetpack*>(pWeapon);
 		if (detpack && (detpack->m_bRemoteHasBeenTriggered || 
-			(detpack->m_bThisDetpackHasBeenThrown && (gpGlobals->curtime > detpack->m_flNextPrimaryAttack))))
+			(detpack->m_bThisDetpackHasBeenThrown && (gpGlobals->curtime > detpack->m_flNextPrimaryAttack + 0.005))))
 		{
 			pSuffix = "detremote";
 		}
 	}
 
-	if (!Q_strcmp(pSuffix, "grenade"))
-	{
-		pSuffix = "Gren1";
-	}
 
 	{
 		switch (m_eCurrentMainSequenceActivity)
