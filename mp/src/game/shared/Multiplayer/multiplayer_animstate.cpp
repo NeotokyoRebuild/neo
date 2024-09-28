@@ -1395,9 +1395,17 @@ void CMultiPlayerAnimState::ComputeMainSequence()
 
 	// Have our class or the mod-specific class determine what the current activity is.
 	Activity idealActivity = CalcMainActivity();
+#ifdef NEO
 	int idealUpperSequence = CalcAimLayerSequence(idealActivity, false);
 	AddToGestureSlot(GESTURE_SLOT_AIM, idealUpperSequence, false);
 
+	auto activeWeapon = GetBasePlayer()->GetActiveWeapon();
+	if (m_hActiveWeapon != activeWeapon)
+	{	// If we switched weapons, clear out the firing / reload animations
+		ResetGestureSlot(GESTURE_SLOT_ATTACK_AND_RELOAD);
+	}
+	m_hActiveWeapon = activeWeapon;
+#endif // NEO
 #ifdef CLIENT_DLL
 	Activity oldActivity = m_eCurrentMainSequenceActivity;
 #endif

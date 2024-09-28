@@ -1654,8 +1654,8 @@ target_sources_grouped(
     TARGET client
     NAME "Source Files\\Shared\\Multiplayer"
     FILES
-    ${CMAKE_SOURCE_DIR}/game/shared/multiplayer/multiplayer_animstate.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/multiplayer/multiplayer_animstate.h
+    ${CMAKE_SOURCE_DIR}/game/shared/Multiplayer/multiplayer_animstate.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/Multiplayer/multiplayer_animstate.h
 )
 
 target_sources_grouped(
