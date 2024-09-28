@@ -185,7 +185,7 @@ void CWeaponSmokeGrenade::ItemPostFrame(void)
 
 	if (m_fDrawbackFinished)
 	{
-		CBasePlayer* pOwner = ToBasePlayer(GetOwner());
+		auto* pOwner = static_cast<CNEO_Player*>(GetOwner());
 
 		if (pOwner)
 		{
@@ -197,6 +197,7 @@ void CWeaponSmokeGrenade::ItemPostFrame(void)
 					ThrowGrenade(pOwner);
 
 					SendWeaponAnim(ACT_VM_THROW);
+					pOwner->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
 					m_fDrawbackFinished = false;
 					m_AttackPaused = GRENADE_PAUSED_NO;
 				}
@@ -219,6 +220,7 @@ void CWeaponSmokeGrenade::ItemPostFrame(void)
 						SendWeaponAnim(ACT_VM_THROW);
 					}
 
+					pOwner->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
 					m_fDrawbackFinished = false;
 					m_AttackPaused = GRENADE_PAUSED_NO;
 				}

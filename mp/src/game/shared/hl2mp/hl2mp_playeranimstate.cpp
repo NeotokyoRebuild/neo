@@ -280,6 +280,9 @@ void CHL2MPPlayerAnimState::DoAnimationEvent( PlayerAnimEvent_t event, int nData
 	{
 	case PLAYERANIMEVENT_ATTACK_PRIMARY:
 		{
+#ifdef NEO
+		AddToGestureSlot(GESTURE_SLOT_ATTACK_AND_RELOAD, CalcFireSequence(), true);
+#else
 			// Weapon primary fire.
 			if ( m_pHL2MPPlayer->GetFlags() & FL_DUCKING )
 				RestartGesture( GESTURE_SLOT_ATTACK_AND_RELOAD, ACT_MP_ATTACK_CROUCH_PRIMARYFIRE );
@@ -287,6 +290,7 @@ void CHL2MPPlayerAnimState::DoAnimationEvent( PlayerAnimEvent_t event, int nData
 				RestartGesture( GESTURE_SLOT_ATTACK_AND_RELOAD, ACT_MP_ATTACK_STAND_PRIMARYFIRE );
 
 			iGestureActivity = ACT_VM_PRIMARYATTACK;
+#endif
 			break;
 		}
 
@@ -299,6 +303,9 @@ void CHL2MPPlayerAnimState::DoAnimationEvent( PlayerAnimEvent_t event, int nData
 		}
 	case PLAYERANIMEVENT_ATTACK_SECONDARY:
 		{
+#ifdef NEO
+		AddToGestureSlot(GESTURE_SLOT_ATTACK_AND_RELOAD, CalcFireSequence(), true);
+#else
 			// Weapon secondary fire.
 			if ( m_pHL2MPPlayer->GetFlags() & FL_DUCKING )
 				RestartGesture( GESTURE_SLOT_ATTACK_AND_RELOAD, ACT_MP_ATTACK_CROUCH_SECONDARYFIRE );
@@ -306,6 +313,7 @@ void CHL2MPPlayerAnimState::DoAnimationEvent( PlayerAnimEvent_t event, int nData
 				RestartGesture( GESTURE_SLOT_ATTACK_AND_RELOAD, ACT_MP_ATTACK_STAND_SECONDARYFIRE );
 
 			iGestureActivity = ACT_VM_PRIMARYATTACK;
+#endif
 			break;
 		}
 	case PLAYERANIMEVENT_ATTACK_PRE:
@@ -333,11 +341,15 @@ void CHL2MPPlayerAnimState::DoAnimationEvent( PlayerAnimEvent_t event, int nData
 
 	case PLAYERANIMEVENT_RELOAD:
 		{
+#ifdef NEO
+		AddToGestureSlot(GESTURE_SLOT_ATTACK_AND_RELOAD, CalcReloadSequence(), true);
+#else
 			// Weapon reload.
 			if ( GetBasePlayer()->GetFlags() & FL_DUCKING )
 				RestartGesture( GESTURE_SLOT_ATTACK_AND_RELOAD, ACT_MP_RELOAD_CROUCH );
 			else
 				RestartGesture( GESTURE_SLOT_ATTACK_AND_RELOAD, ACT_MP_RELOAD_STAND );
+#endif
 			break;
 		}
 	case PLAYERANIMEVENT_RELOAD_LOOP:
@@ -528,6 +540,9 @@ bool CHL2MPPlayerAnimState::HandleJumping( Activity &idealActivity )
 
 bool CHL2MPPlayerAnimState::SetupPoseParameters( CStudioHdr *pStudioHdr )
 {
+#ifdef NEO
+	BaseClass::SetupPoseParameters(pStudioHdr);
+#endif
 	// Check to see if this has already been done.
 	if ( m_bPoseParameterInit )
 		return true;
@@ -639,6 +654,9 @@ void CHL2MPPlayerAnimState::EstimateYaw( void )
 float SnapYawTo( float flValue );
 void CHL2MPPlayerAnimState::ComputePoseParam_MoveYaw( CStudioHdr *pStudioHdr )
 {
+#ifdef NEO
+	BaseClass::ComputePoseParam_MoveYaw(pStudioHdr);
+#endif
 	// Get the estimated movement yaw.
 	EstimateYaw();
 

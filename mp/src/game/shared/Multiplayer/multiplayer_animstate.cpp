@@ -26,6 +26,10 @@ ConVar anim_showmainactivity( "anim_showmainactivity", "0", FCVAR_CHEAT, "Show t
 #include "tf_gamerules.h"
 #endif
 
+#ifdef NEO
+#include "weapon_detpack.h"
+#endif
+
 #ifndef CALL_ATTRIB_HOOK_FLOAT_ON_OTHER
 #define CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( o, r, n )
 #endif
@@ -1244,6 +1248,16 @@ int CMultiPlayerAnimState::CalcAimLayerSequence(Activity activity, bool bForceId
 		return 0;
 	}
 
+	if (!Q_strcmp(pSuffix, "detpack"))
+	{
+		auto detpack = static_cast<CWeaponDetpack*>(pWeapon);
+		if (detpack && (detpack->m_bRemoteHasBeenTriggered ||
+			(detpack->m_bThisDetpackHasBeenThrown && (gpGlobals->curtime > detpack->m_flNextPrimaryAttack))))
+		{
+			pSuffix = "detremote";
+		}
+	}
+
 	if (bForceIdle)
 	{
 		switch (activity)
@@ -1281,7 +1295,90 @@ int CMultiPlayerAnimState::CalcAimLayerSequence(Activity activity, bool bForceId
 		}
 	}
 }
-#endif
+
+int CMultiPlayerAnimState::CalcFireSequence()
+{
+	if (!m_pPlayer)
+	{
+		return 0;
+	}
+
+	auto pWeapon = m_pPlayer->GetActiveWeapon();
+	if (!pWeapon)
+	{
+		return 0;
+	}
+
+	const char* pSuffix = pWeapon->GetWpnData().szAnimationPrefix;
+	if (!pSuffix)
+	{
+		return 0;
+	}
+
+	if (!Q_strcmp(pSuffix, "detpack"))
+	{
+		auto detpack = static_cast<CWeaponDetpack*>(pWeapon);
+		if (detpack && (detpack->m_bRemoteHasBeenTriggered || 
+			(detpack->m_bThisDetpackHasBeenThrown && (gpGlobals->curtime > detpack->m_flNextPrimaryAttack))))
+		{
+			pSuffix = "detremote";
+		}
+	}
+
+	if (!Q_strcmp(pSuffix, "grenade"))
+	{
+		pSuffix = "Gren1";
+	}
+
+	{
+		switch (m_eCurrentMainSequenceActivity)
+		{
+		case ACT_NEO_MOVE_RUN:
+			return CalcSequenceIndex("%s%s", DEFAULT_FIRE_RUN_NAME, pSuffix);
+
+		case ACT_RUNTOIDLE:
+			Assert(false);
+		case ACT_IDLETORUN:
+			Assert(false);
+		case ACT_NEO_MOVE_WALK:
+			return CalcSequenceIndex("%s%s", DEFAULT_FIRE_WALK_NAME, pSuffix);
+
+		case ACT_NEO_IDLE_CROUCH:
+			return CalcSequenceIndex("%s%s", DEFAULT_FIRE_CROUCH_NAME, pSuffix);
+
+		case ACT_NEO_MOVE_CROUCH:
+			return CalcSequenceIndex("%s%s", DEFAULT_FIRE_CROUCH_WALK_NAME, pSuffix);
+
+		case ACT_NEO_IDLE_STAND:
+		default:
+			return CalcSequenceIndex("%s%s", DEFAULT_FIRE_IDLE_NAME, pSuffix);
+		}
+	}
+}
+
+int CMultiPlayerAnimState::CalcReloadSequence()
+{
+	if (!m_pPlayer)
+	{
+		return 0;
+	}
+
+	auto pWeapon = m_pPlayer->GetActiveWeapon();
+	if (!pWeapon)
+	{
+		return 0;
+	}
+
+	const char* pSuffix = pWeapon->GetWpnData().szAnimationPrefix;
+	if (!pSuffix)
+	{
+		return 0;
+	}
+
+	return CalcSequenceIndex("Reload_%s", pSuffix);
+}
+
+#endif // NEO
 
 //-----------------------------------------------------------------------------
 // Purpose: 

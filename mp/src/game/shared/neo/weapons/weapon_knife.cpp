@@ -141,7 +141,7 @@ bool CWeaponKnife::IsViewable()
 
 void CWeaponKnife::Swing(int bIsSecondary)
 {
-	CBasePlayer* pOwner = ToBasePlayer(GetOwner());
+	auto* pOwner = static_cast<CNEO_Player*>(GetOwner());
 	if (!pOwner)
 		return;
 
@@ -212,7 +212,7 @@ void CWeaponKnife::Swing(int bIsSecondary)
 	// Send the anim
 	SendWeaponAnim(nHitActivity);
 
-	pOwner->SetAnimation(PLAYER_ATTACK1);
+	pOwner->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
 
 	//Setup our next attack times
 	m_flNextPrimaryAttack = gpGlobals->curtime + GetFireRate();

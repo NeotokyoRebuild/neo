@@ -132,7 +132,8 @@ void CWeaponDetpack::PrimaryAttack(void)
 		return;
 	}
 
-	if (!GetOwner())
+	auto* pPlayer = static_cast<CNEO_Player*>(GetOwner());
+	if (!pPlayer)
 	{
 		Assert(false);
 		return;
@@ -149,6 +150,7 @@ void CWeaponDetpack::PrimaryAttack(void)
 		DevMsg("Pulling remote trigger\n");
 #endif
 		SendWeaponAnim(ACT_VM_PRIMARYATTACK_DEPLOYED);
+		pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
 		m_flNextPrimaryAttack = gpGlobals->curtime + (SequenceDuration() / 3);
 		m_flTimeWeaponIdle = FLT_MAX;
 	}
@@ -162,6 +164,7 @@ void CWeaponDetpack::PrimaryAttack(void)
 			DevMsg("Preparing primary attack\n");
 #endif
 			SendWeaponAnim(ACT_VM_PRIMARYATTACK);
+			pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
 			m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
 			m_flTimeWeaponIdle = FLT_MAX;
 		}

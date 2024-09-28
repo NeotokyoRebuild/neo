@@ -243,6 +243,8 @@ protected:
 #ifdef NEO
 	int		CalcSequenceIndex(const char* pBaseName, ...);
 	int		CalcAimLayerSequence(Activity activity, bool bForceIdle);
+	int		CalcFireSequence();
+	int		CalcReloadSequence();
 	void	AddToGestureSlot(int iGestureSlot, int iGestureSequence, bool bAutoKill);
 #endif // NEO
 	virtual void RestartGesture( int iGestureSlot, Activity iGestureActivity, bool bAutoKill = true );
