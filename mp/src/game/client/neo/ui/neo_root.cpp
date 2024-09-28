@@ -135,13 +135,12 @@ void CNeoRootInput::OnThink()
 		{
 			if (code != KEY_DELETE)
 			{
-				// The keybind system used requires 1:1 so unbind a duplicate
+				// The keybind system used requires 1:1 so unbind any duplicates
 				for (auto &bind : m_pNeoRoot->m_ns.keys.vBinds)
 				{
 					if (bind.bcNext == code)
 					{
 						bind.bcNext = BUTTON_CODE_NONE;
-						break;
 					}
 				}
 			}
@@ -493,6 +492,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		&CNeoRoot::MainLoopPopup,			// STATE_CONFIRMSETTINGS
 		&CNeoRoot::MainLoopPopup,			// STATE_QUIT
 		&CNeoRoot::MainLoopPopup,			// STATE_SERVERPASSWORD
+		&CNeoRoot::MainLoopPopup,			// STATE_SETTINGSRESETDEFAULT
 	};
 	(this->*P_FN_MAIN_LOOP[m_state])(MainLoopParam{.eMode = eMode, .wide = wide, .tall = tall});
 
@@ -742,7 +742,11 @@ void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 				{
 					g_pNeoRoot->GetGameUI()->SendMainMenuCommand("OpenOptionsDialog");
 				}
-				NeoUI::Pad();
+				if (NeoUI::Button(L"Default").bPressed)
+				{
+					m_state = STATE_SETTINGSRESETDEFAULT;
+					engine->GetVoiceTweakAPI()->EndVoiceTweakMode();
+				}
 				if (m_ns.bModified)
 				{
 					if (NeoUI::Button(L"Revert").bPressed)
@@ -1380,6 +1384,26 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 					{
 						V_memset(m_wszServerPassword, 0, sizeof(m_wszServerPassword));
 						m_state = STATE_SERVERBROWSER;
+					}
+				}
+				NeoUI::EndHorizontal();
+			}
+			break;
+			case STATE_SETTINGSRESETDEFAULT:
+			{
+				NeoUI::Label(L"Do you want to reset your settings back to default?");
+				NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
+				NeoUI::BeginHorizontal((g_uiCtx.dPanel.wide / 3) - g_uiCtx.iMarginX, g_uiCtx.iMarginX);
+				{
+					if (NeoUI::Button(L"Yes (Enter)").bPressed || NeoUI::Bind(KEY_ENTER))
+					{
+						NeoSettingsResetToDefault(&m_ns);
+						m_state = STATE_SETTINGS;
+					}
+					NeoUI::Pad();
+					if (NeoUI::Button(L"No (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
+					{
+						m_state = STATE_SETTINGS;
 					}
 				}
 				NeoUI::EndHorizontal();
