@@ -246,6 +246,17 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->bStreamerMode = cvr->neo_cl_streamermode.GetBool();
 		pGeneral->bAutoDetectOBS = cvr->neo_cl_streamermode_autodetect_obs.GetBool();
 		pGeneral->bEnableRangeFinder = cvr->neo_cl_hud_rangefinder_enabled.GetBool();
+
+		if (pGeneral->iTexIdSpray > 0)
+		{
+			vgui::surface()->DeleteTextureByID(pGeneral->iTexIdSpray);
+		}
+		const char *szLogo = ConVarRef("cl_logofile").GetString();
+		if (szLogo)
+		{
+			pGeneral->iTexIdSpray = vgui::surface()->CreateNewTextureID();
+			vgui::surface()->DrawSetTextureFile(pGeneral->iTexIdSpray, szLogo, false, false);
+		}
 	}
 	{
 		NeoSettings::Keys *pKeys = &ns->keys;
@@ -653,6 +664,40 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBoxBool(L"Auto streamer mode (requires restart)", &pGeneral->bAutoDetectOBS);
 	NeoUI::Label(L"OBS detection", g_bOBSDetected ? L"OBS detected on startup" : L"Not detected on startup");
 	NeoUI::RingBoxBool(L"Show rangefinder", &pGeneral->bEnableRangeFinder);
+
+	NeoUI::Pad();
+	if (NeoUI::Button(L"", L"Import spray").bPressed)
+	{
+		if (g_pNeoRoot->m_pFileIODialog)
+		{
+			g_pNeoRoot->m_pFileIODialog->MarkForDeletion();
+		}
+		g_pNeoRoot->m_pFileIODialog = new vgui::FileOpenDialog(g_pNeoRoot, "Import spray", vgui::FOD_OPEN);
+		g_pNeoRoot->m_eFileIOMode = CNeoRoot::FILEIODLGMODE_SPRAY;
+		g_pNeoRoot->m_pFileIODialog->AddFilter("*.jpg;*.jpeg;*.png;*.vtf", "Images (JPEG, PNG, VTF)", true);
+		g_pNeoRoot->m_pFileIODialog->AddFilter("*.jpg;*.jpeg", "JPEG Image", false);
+		g_pNeoRoot->m_pFileIODialog->AddFilter("*.png", "PNG Image", false);
+		g_pNeoRoot->m_pFileIODialog->AddFilter("*.vtf", "VTF Image", false);
+		g_pNeoRoot->m_pFileIODialog->DoModal();
+	}
+
+	NeoUI::Pad();
+
+	if (pGeneral->iTexIdSpray > 0)
+	{
+		vgui::surface()->DrawSetTexture(pGeneral->iTexIdSpray);
+		vgui::surface()->DrawSetColor(COLOR_WHITE);
+		vgui::surface()->DrawTexturedRect(
+					g_uiCtx.dPanel.x + g_uiCtx.iLayoutX,
+					g_uiCtx.dPanel.y + g_uiCtx.iLayoutY,
+					g_uiCtx.dPanel.x + g_uiCtx.iLayoutX + 256,
+					g_uiCtx.dPanel.y + g_uiCtx.iLayoutY + 256);
+	}
+
+	for (int i = 0; i < 5; ++i)
+	{
+		NeoUI::Pad();
+	}
 }
 
 void NeoSettings_Keys(NeoSettings *ns)
@@ -811,6 +856,7 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 					g_pNeoRoot->m_pFileIODialog->MarkForDeletion();
 				}
 				pCrosshair->eFileIOMode = bPresImport ? vgui::FOD_OPEN : vgui::FOD_SAVE;
+				g_pNeoRoot->m_eFileIOMode = CNeoRoot::FILEIODLGMODE_CROSSHAIR;
 				g_pNeoRoot->m_pFileIODialog = new vgui::FileOpenDialog(g_pNeoRoot,
 																	   bPresImport ? "Import crosshair" : "Export crosshair",
 																	   pCrosshair->eFileIOMode);

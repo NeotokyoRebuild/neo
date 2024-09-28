@@ -1540,8 +1540,96 @@ void CNeoRoot::ReadNewsFile(CUtlBuffer &buf)
 
 void CNeoRoot::OnFileSelected(const char *szFullpath)
 {
-	((m_ns.crosshair.eFileIOMode == vgui::FOD_OPEN) ?
-				&ImportCrosshair : &ExportCrosshair)(&m_ns.crosshair.info, szFullpath);
+	switch (m_eFileIOMode)
+	{
+	case FILEIODLGMODE_CROSSHAIR:
+		((m_ns.crosshair.eFileIOMode == vgui::FOD_OPEN) ?
+					&ImportCrosshair : &ExportCrosshair)(&m_ns.crosshair.info, szFullpath);
+		break;
+	case FILEIODLGMODE_SPRAY:
+	{
+#if 1
+		if (V_striEndsWith(szFullpath, ".vtf"))
+		{
+			CUtlBuffer buf(0, 0, CUtlBuffer::READ_ONLY);
+			if (filesystem->ReadFile(szFullpath, nullptr, buf))
+			{
+				IVTFTexture *pVTFTexture = CreateVTFTexture();
+				if (pVTFTexture->Unserialize(buf))
+				{
+					const auto width = pVTFTexture->Width();
+					const auto height = pVTFTexture->Height();
+					const auto depth = pVTFTexture->Depth();
+					const auto format = pVTFTexture->Format();
+					const auto flags = pVTFTexture->Flags();
+					const auto mip = pVTFTexture->MipCount();
+					const auto face = pVTFTexture->FaceCount();
+					const auto frame = pVTFTexture->FrameCount();
+
+					int foo = 0;
+				}
+				//DestroyVTFTexture(pVTFTexture);
+				//stbi_image_free(data);
+			}
+
+
+#if 0
+			engine->CopyLocalFile(szFullpath, "vgui/logos/testing.vtf");
+			ConVarRef("cl_logofile").SetValue("vgui/logos/testing.vtf");
+			if (m_ns.general.iTexIdSpray > 0)
+			{
+				vgui::surface()->DeleteTextureByID(m_ns.general.iTexIdSpray);
+			}
+			m_ns.general.iTexIdSpray = vgui::surface()->CreateNewTextureID(true);
+			vgui::surface()->DrawSetTextureFile(m_ns.general.iTexIdSpray, szFullpath, false, false);
+#endif
+			return;
+		}
+#endif
+
+		char szRetTexPath[VTF_PATH_MAX] = {};
+		uint8 *data = NeoUI::ConvertToVTF(&szRetTexPath, szFullpath);
+
+		char szRetVtfPath[PATH_MAX];
+		V_sprintf_safe(szRetVtfPath, "%s.vtf", szRetTexPath);
+
+		ConVarRef("cl_logofile").SetValue(szRetVtfPath);
+		engine->ClientCmd_Unrestricted("cl_logofile materials/vgui/logos/spray.vtf");
+		if (m_ns.general.iTexIdSpray > 0)
+		{
+			vgui::surface()->DeleteTextureByID(m_ns.general.iTexIdSpray);
+		}
+#if 1
+		m_ns.general.iTexIdSpray = vgui::surface()->CreateNewTextureID(true);
+		//vgui::surface()->DrawSetTextureFile(m_ns.general.iTexIdSpray, szRetTexPath, false, false);
+		vgui::surface()->DrawSetTextureRGBA(m_ns.general.iTexIdSpray, data, 256, 256, false, false);
+		free(data);
+#else
+		CUtlBuffer buf(0, 0, CUtlBuffer::READ_ONLY);
+		if (filesystem->ReadFile(szRetFullPath, nullptr, buf))
+		{
+			IVTFTexture *pVTFTexture = CreateVTFTexture();
+			if (pVTFTexture->Unserialize(buf))
+			{
+				const auto width = pVTFTexture->Width();
+				const auto height = pVTFTexture->Height();
+				const auto depth = pVTFTexture->Depth();
+				const auto format = pVTFTexture->Format();
+				const auto flags = pVTFTexture->Flags();
+				const auto mip = pVTFTexture->MipCount();
+				const auto face = pVTFTexture->FaceCount();
+				const auto frame = pVTFTexture->FrameCount();
+
+			}
+			//DestroyVTFTexture(pVTFTexture);
+			//stbi_image_free(data);
+		}
+#endif
+		break;
+	}
+	default:
+		break;
+	}
 }
 
 // NEO NOTE (nullsystem): NeoRootCaptureESC is so that ESC keybinds can be recognized by non-root states, but root

@@ -188,6 +188,14 @@ public:
 	void ReadNewsFile(CUtlBuffer &buf);
 	bool m_bShowBrowserLabel = false;
 
+	enum FileIODialogMode
+	{
+		FILEIODLGMODE_CROSSHAIR = 0,
+		FILEIODLGMODE_SPRAY,
+
+		FILEIODLGMODE__TOTAL,
+	};
+	FileIODialogMode m_eFileIOMode;
 	vgui::FileOpenDialog *m_pFileIODialog = nullptr;
 	MESSAGE_FUNC_CHARPTR(OnFileSelected, "FileSelected", fullpath);
 

@@ -20,6 +20,7 @@ target_include_directories(client
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons
     ${CMAKE_SOURCE_DIR}/public
     ${CMAKE_SOURCE_DIR}/thirdparty/sixensesdk/include
+    ${CMAKE_SOURCE_DIR}/vendor
     game_controls
     hl2
     hl2/elements
@@ -1486,6 +1487,16 @@ target_sources_grouped(
     neo/c_neo_te_tocflash.h
     neo/neo_fixup_glshaders.cpp
     neo/neo_fixup_glshaders.h
+)
+
+target_sources_grouped(
+    TARGET client
+    NAME "Source Files\\NEO_Vendor"
+    FILES
+    neo/vendor_impl.cpp
+    ${CMAKE_SOURCE_DIR}/vendor/stb_image.h
+    ${CMAKE_SOURCE_DIR}/vendor/stb_image_resize2.h
+    ${CMAKE_SOURCE_DIR}/vendor/stb_dxt.h
 )
 
 target_sources_grouped(

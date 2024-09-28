@@ -233,4 +233,7 @@ void SliderU8(const wchar_t *wszLeftLabel, uint8 *ucValue, const uint8 iMin, con
 void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxBytes);
 bool Bind(const ButtonCode_t eCode);
 void OpenURL(const char *szBaseUrl, const char *szPath);
+
+#define VTF_PATH_MAX (512)
+uint8 *ConvertToVTF(char (*szRetTexPath)[VTF_PATH_MAX], const char *szFullpath);
 }
