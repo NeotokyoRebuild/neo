@@ -2529,11 +2529,14 @@ void CNEO_Player::GiveDefaultItems(void)
 	}
 }
 
+ConVar sv_neo_time_alive_until_cant_change_loadout("sv_neo_time_alive_until_cant_change_loadout", "25.f", FCVAR_CHEAT | FCVAR_REPLICATED, "How long after spawning changing loadouts is disabled ",
+	true, 0.0f, false, 1.0f);
+
 void CNEO_Player::GiveLoadoutWeapon(void)
 {
 	const NeoRoundStatus status = NEORules()->GetRoundStatus();
-	if (!(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup) && 
-		(IsObserver() || IsDead() || m_bIneligibleForLoadoutPick || m_aliveTimer.IsGreaterThen(25.f)))
+	if (!(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup) &&
+		(IsObserver() || IsDead() || m_bIneligibleForLoadoutPick || m_aliveTimer.IsGreaterThen(sv_neo_time_alive_until_cant_change_loadout.GetFloat())))
 	{
 		return;
 	}
