@@ -1229,6 +1229,85 @@ int CMultiPlayerAnimState::CalcSequenceIndex(const char* pBaseName, ...)
 	return iSequence;
 }
 
+void CMultiPlayerAnimState::UpdateAimSequenceLayers(
+	float flCycle,
+	int iFirstLayer,
+	bool bForceIdle,
+	CSequenceTransitioner* pTransitioner,
+	float flWeightScale
+)
+{
+	float flAimSequenceWeight = 1;
+	int iAimSequence = CalcAimLayerSequence(m_eCurrentMainSequenceActivity, false);
+	if (iAimSequence == -1)
+		iAimSequence = 0;
+
+	CBaseAnimatingOverlay* pPlayer = GetBasePlayer();
+
+	// Feed the current state of the animation parameters to the sequence transitioner.
+	// It will hand back either 1 or 2 animations in the queue to set, depending on whether
+	// it's transitioning or not. We just dump those into the animation layers.
+	pTransitioner->CheckForSequenceChange(
+		pPlayer->GetModelPtr(),
+		iAimSequence,
+		false,	// don't force transitions on the same anim
+		true	// yes, interpolate when transitioning
+	);
+
+	pTransitioner->UpdateCurrent(
+		pPlayer->GetModelPtr(),
+		iAimSequence,
+		flCycle/2,
+		pPlayer->GetPlaybackRate(),
+		gpGlobals->curtime
+	);
+
+	CAnimationLayer* pDest0 = m_aGestureSlots[iFirstLayer].m_pAnimLayer;
+	CAnimationLayer* pDest1 = m_aGestureSlots[iFirstLayer + 1].m_pAnimLayer;
+
+	if (pTransitioner->m_animationQueue.Count() == 1)
+	{
+		// If only 1 animation, then blend it in fully.
+		CAnimationLayer* pSource0 = &pTransitioner->m_animationQueue[0];
+		*pDest0 = *pSource0;
+
+		pDest0->m_flWeight = 1;
+		pDest1->m_flWeight = 0;
+		pDest0->m_nOrder = iFirstLayer;
+
+#ifndef CLIENT_DLL
+		pDest0->m_fFlags |= ANIM_LAYER_ACTIVE;
+#endif
+	}
+	else if (pTransitioner->m_animationQueue.Count() >= 2)
+	{
+		// The first one should be fading out. Fade in the new one inversely.
+		CAnimationLayer* pSource0 = &pTransitioner->m_animationQueue[0];
+		CAnimationLayer* pSource1 = &pTransitioner->m_animationQueue[1];
+
+		*pDest0 = *pSource0;
+		*pDest1 = *pSource1;
+		Assert(pDest0->m_flWeight >= 0.0f && pDest0->m_flWeight <= 1.0f);
+		pDest1->m_flWeight = 1 - pDest0->m_flWeight;	// This layer just mirrors the other layer's weight (one fades in while the other fades out).
+
+		pDest0->m_nOrder = iFirstLayer;
+		pDest1->m_nOrder = iFirstLayer + 1;
+
+#ifndef CLIENT_DLL
+		pDest0->m_fFlags |= ANIM_LAYER_ACTIVE;
+		pDest1->m_fFlags |= ANIM_LAYER_ACTIVE;
+#endif
+	}
+
+	pDest0->m_flWeight *= flWeightScale * flAimSequenceWeight;
+	pDest0->m_flWeight = clamp((float)pDest0->m_flWeight, 0.0f, 1.0f);
+
+	pDest1->m_flWeight *= flWeightScale * flAimSequenceWeight;
+	pDest1->m_flWeight = clamp((float)pDest1->m_flWeight, 0.0f, 1.0f);
+
+	pDest0->m_flCycle = pDest1->m_flCycle = flCycle;
+}
+
 int CMultiPlayerAnimState::CalcAimLayerSequence(Activity activity, bool bForceIdle)
 {
 	if (!m_pPlayer)
@@ -1395,9 +1474,15 @@ void CMultiPlayerAnimState::ComputeMainSequence()
 
 	// Have our class or the mod-specific class determine what the current activity is.
 	Activity idealActivity = CalcMainActivity();
+#ifdef CLIENT_DLL
+	Activity oldActivity = m_eCurrentMainSequenceActivity;
+#endif
+	// Store our current activity so the aim and fire layers know what to do.
+	m_eCurrentMainSequenceActivity = idealActivity;
+
 #ifdef NEO
-	int idealUpperSequence = CalcAimLayerSequence(idealActivity, false);
-	AddToGestureSlot(GESTURE_SLOT_AIM, idealUpperSequence, false);
+	float flCycle = pPlayer->GetCycle();
+	UpdateAimSequenceLayers(flCycle, GESTURE_SLOT_AIM, true, &m_IdleSequenceTransitioner, 1);
 
 	auto activeWeapon = GetBasePlayer()->GetActiveWeapon();
 	if (m_hActiveWeapon != activeWeapon)
@@ -1406,12 +1491,6 @@ void CMultiPlayerAnimState::ComputeMainSequence()
 	}
 	m_hActiveWeapon = activeWeapon;
 #endif // NEO
-#ifdef CLIENT_DLL
-	Activity oldActivity = m_eCurrentMainSequenceActivity;
-#endif
-	
-	// Store our current activity so the aim and fire layers know what to do.
-	m_eCurrentMainSequenceActivity = idealActivity;
 
 	// Hook to force playback of a specific requested full-body sequence
 	if ( m_nSpecificMainSequence >= 0 )

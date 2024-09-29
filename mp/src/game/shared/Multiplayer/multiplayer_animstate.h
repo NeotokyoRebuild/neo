@@ -12,6 +12,9 @@
 #include "convar.h"
 #include "basecombatweapon_shared.h"
 #include "iplayeranimstate.h"
+#ifdef NEO
+#include "sequence_Transitioner.h"
+#endif
 
 #if defined( CLIENT_DLL )
 class C_BasePlayer;
@@ -78,6 +81,7 @@ enum
 {
 #ifdef NEO
 	GESTURE_SLOT_AIM,
+	GESTURE_SLOT_AIM2, // For blending aim sequences
 #endif
 	GESTURE_SLOT_ATTACK_AND_RELOAD,
 	GESTURE_SLOT_GRENADE,
@@ -242,6 +246,7 @@ protected:
 	void	AddToGestureSlot( int iGestureSlot, Activity iGestureActivity, bool bAutoKill );
 #ifdef NEO
 	int		CalcSequenceIndex(const char* pBaseName, ...);
+	void	UpdateAimSequenceLayers(float flCycle, int iFirstLayer, bool bForceIdle, CSequenceTransitioner* pTransitioner, float flWeightScale);
 	int		CalcAimLayerSequence(Activity activity, bool bForceIdle);
 	int		CalcFireSequence();
 	int		CalcReloadSequence();
@@ -352,6 +357,10 @@ protected:
 	// movement playback options
 	int m_nMovementSequence;
 	LegAnimType_t m_LegAnimType;
+#ifdef NEO
+	// This gives us smooth transitions between aim anim sequences on the client.
+	CSequenceTransitioner	m_IdleSequenceTransitioner;
+#endif
 };
 
 // If this is set, then the game code needs to make sure to send player animation events
