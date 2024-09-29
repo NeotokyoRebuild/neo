@@ -18,7 +18,6 @@
 #include "neo_player.h"
 #endif
 
-#include "neo_playeranimstate.h"
 #include "convar.h"
 
 #include "weapon_neobasecombatweapon.h"

@@ -46,8 +46,6 @@
 
 #include "model_types.h"
 
-#include "neo_playeranimstate.h"
-
 #include "c_user_message_register.h"
 
 // Don't alias here
