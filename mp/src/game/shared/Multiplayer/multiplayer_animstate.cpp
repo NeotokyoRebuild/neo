@@ -1257,7 +1257,7 @@ void CMultiPlayerAnimState::UpdateAimSequenceLayers(
 	pTransitioner->UpdateCurrent(
 		pPlayer->GetModelPtr(),
 		iAimSequence,
-		flCycle/2,
+		flCycle,
 		pPlayer->GetPlaybackRate(),
 		gpGlobals->curtime
 	);
