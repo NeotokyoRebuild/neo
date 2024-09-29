@@ -114,6 +114,8 @@ END_PREDICTION_DATA()
 static void __MsgFunc_DamageInfo(bf_read& msg)
 {
 	const int killerIdx = msg.ReadShort();
+	char killedBy[32];
+	const bool foundKilledBy = msg.ReadString(killedBy, sizeof(killedBy), false);
 
 	auto *localPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if (!localPlayer)
@@ -137,7 +139,7 @@ static void __MsgFunc_DamageInfo(bf_read& msg)
 		auto *neoAttacker = dynamic_cast<C_NEO_Player*>(UTIL_PlayerByIndex(killerIdx));
 		if (neoAttacker && neoAttacker->entindex() != thisIdx)
 		{
-			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, localPlayer);
+			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, localPlayer, foundKilledBy ? killedBy : NULL);
 			setKillByLine = true;
 		}
 	}
