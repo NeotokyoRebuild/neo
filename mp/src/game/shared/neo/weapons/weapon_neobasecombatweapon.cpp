@@ -41,6 +41,7 @@ BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 	SendPropInt(SENDINFO(m_nNumShotsFired)),
 	SendPropBool(SENDINFO(m_bRoundChambered)),
 	SendPropBool(SENDINFO(m_bRoundBeingChambered)),
+	SendPropExclude("DT_BaseAnimating", "m_nSequence"),
 #endif
 END_NETWORK_TABLE()
 
