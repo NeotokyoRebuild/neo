@@ -75,7 +75,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropBool(RECVINFO(m_bInVision)),
 	RecvPropBool(RECVINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 	RecvPropBool(RECVINFO(m_bInAim)),
-	RecvPropBool(RECVINFO(m_bDroppedAnything)),
+	RecvPropBool(RECVINFO(m_bIneligibleForLoadoutPick)),
 
 	RecvPropTime(RECVINFO(m_flCamoAuxLastTime)),
 	RecvPropInt(RECVINFO(m_nVisionLastTick)),
@@ -427,7 +427,7 @@ C_NEO_Player::C_NEO_Player()
 	m_bInThermOpticCamo = m_bInVision = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
 	m_bInAim = false;
-	m_bDroppedAnything = false;
+	m_bIneligibleForLoadoutPick = false;
 	m_bInLean = NEO_LEAN_NONE;
 
 	m_flCamoAuxLastTime = 0;
@@ -1257,7 +1257,7 @@ bool C_NEO_Player::ShouldDrawHL2StyleQuickHud(void)
 
 void C_NEO_Player::Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon)
 {
-	m_bDroppedAnything = true;
+	m_bIneligibleForLoadoutPick = true;
 	Weapon_SetZoom(false);
 
 	if (pWeapon->IsGhost())

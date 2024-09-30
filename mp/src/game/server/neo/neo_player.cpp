@@ -58,7 +58,7 @@ SendPropBool(SENDINFO(m_bInVision)),
 SendPropBool(SENDINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 SendPropBool(SENDINFO(m_bShowTestMessage)),
 SendPropBool(SENDINFO(m_bInAim)),
-SendPropBool(SENDINFO(m_bDroppedAnything)),
+SendPropBool(SENDINFO(m_bIneligibleForLoadoutPick)),
 
 SendPropTime(SENDINFO(m_flCamoAuxLastTime)),
 SendPropInt(SENDINFO(m_nVisionLastTick)),
@@ -84,7 +84,7 @@ DEFINE_FIELD(m_iNeoSkin, FIELD_INTEGER),
 DEFINE_FIELD(m_iNeoStar, FIELD_INTEGER),
 DEFINE_FIELD(m_iXP, FIELD_INTEGER),
 DEFINE_FIELD(m_iLoadoutWepChoice, FIELD_INTEGER),
-DEFINE_FIELD(m_bDroppedAnything, FIELD_BOOLEAN),
+DEFINE_FIELD(m_bIneligibleForLoadoutPick, FIELD_BOOLEAN),
 DEFINE_FIELD(m_iNextSpawnClassChoice, FIELD_INTEGER),
 DEFINE_FIELD(m_bInLean, FIELD_INTEGER),
 
@@ -135,7 +135,7 @@ void CNEO_Player::RequestSetClass(int newClass)
 
 	const NeoRoundStatus status = NEORules()->GetRoundStatus();
 	if (IsDead() || sv_neo_can_change_classes_anytime.GetBool() ||
-		(!m_bDroppedAnything && NEORules()->GetRemainingPreRoundFreezeTime(false) > 0) ||
+		(!m_bIneligibleForLoadoutPick && NEORules()->GetRemainingPreRoundFreezeTime(false) > 0) ||
 		(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup))
 	{
 		m_iNeoClass = newClass;
@@ -2087,7 +2087,7 @@ bool CNEO_Player::IsCarryingGhost(void) const
 void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
 	const Vector *pvecTarget, const Vector *pVelocity )
 {
-	m_bDroppedAnything = true;
+	m_bIneligibleForLoadoutPick = true;
 	if(auto neoWeapon = dynamic_cast<CNEOBaseCombatWeapon *>(pWeapon))
 	{
 		if (neoWeapon->CanDrop() && IsDead() && pWeapon)
@@ -2629,11 +2629,14 @@ void CNEO_Player::GiveDefaultItems(void)
 	}
 }
 
+ConVar sv_neo_time_alive_until_cant_change_loadout("sv_neo_time_alive_until_cant_change_loadout", "25.f", FCVAR_CHEAT | FCVAR_REPLICATED, "How long after spawning changing loadouts is disabled ",
+	true, 0.0f, false, 1.0f);
+
 void CNEO_Player::GiveLoadoutWeapon(void)
 {
 	const NeoRoundStatus status = NEORules()->GetRoundStatus();
-	if (!(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup) && 
-		(IsObserver() || IsDead() || m_bDroppedAnything || ((NEORules()->GetRemainingPreRoundFreezeTime(false)) < 0)))
+	if (!(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup) &&
+		(IsObserver() || IsDead() || m_bIneligibleForLoadoutPick || m_aliveTimer.IsGreaterThen(sv_neo_time_alive_until_cant_change_loadout.GetFloat())))
 	{
 		return;
 	}

@@ -540,7 +540,7 @@ void CNEORules::Think(void)
 					player->m_bInAim = false;
 					player->m_bInThermOpticCamo = false;
 					player->m_bInVision = false;
-					player->m_bDroppedAnything = false;
+					player->m_bIneligibleForLoadoutPick = false;
 					player->SetTestMessageVisible(false);
 				}
 			}
@@ -1046,7 +1046,7 @@ void CNEORules::StartNextRound()
 		pPlayer->m_bInAim = false;
 		pPlayer->m_bInThermOpticCamo = false;
 		pPlayer->m_bInVision = false;
-		pPlayer->m_bDroppedAnything = false;
+		pPlayer->m_bIneligibleForLoadoutPick = false;
 
 		if (clearXP)
 		{
