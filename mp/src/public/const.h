@@ -424,7 +424,7 @@ enum Collision_Group_t
 
 #include "basetypes.h"
 
-#define SOUND_NORMAL_CLIP_DIST	1000.0f
+#define SOUND_NORMAL_CLIP_DIST	10000.0f
 
 // How many networked area portals do we allow?
 #define MAX_AREA_STATE_BYTES		32
