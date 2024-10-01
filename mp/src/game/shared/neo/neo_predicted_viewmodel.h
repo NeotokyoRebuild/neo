@@ -68,6 +68,7 @@ public:
 
 private:
 	float m_flStartAimingChange;
+	float m_flLeanAngle;
 	bool m_bViewAim;
 	Vector m_vOffset;
 	QAngle m_angOffset;
