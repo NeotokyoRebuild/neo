@@ -161,7 +161,8 @@ void CNEO_Player::RequestSetClass(int newClass)
 
 void CNEO_Player::RequestSetSkin(int newSkin)
 {
-	bool canChangeImmediately = true; // TODO
+	const NeoRoundStatus roundStatus = NEORules()->GetRoundStatus();
+	bool canChangeImmediately = ((roundStatus != NeoRoundStatus::RoundLive) && (roundStatus != NeoRoundStatus::PostRound)) || !IsAlive();
 
 	if (canChangeImmediately)
 	{
@@ -169,10 +170,7 @@ void CNEO_Player::RequestSetSkin(int newSkin)
 
 		SetPlayerTeamModel();
 	}
-	else
-	{
-		// TODO set for next spawn
-	}
+	//else NEOTODO Set for next spawn
 }
 
 static bool IsNeoPrimary(CNEOBaseCombatWeapon *pNeoWep)
