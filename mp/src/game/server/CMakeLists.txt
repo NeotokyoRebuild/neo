@@ -1345,6 +1345,61 @@ target_sources_grouped(
     neo/neo_te_tocflash.cpp
     neo/neo_te_tocflash.h
     neo/neo_tracefilter_collisiongroupdelta.h
+    neo/bots/bot_ai.cpp
+    neo/bots/bot_debug.cpp
+    neo/bots/bot_defs.h
+    neo/bots/bot_maker.cpp
+    neo/bots/bot_maker.h
+    neo/bots/bot_manager.cpp
+    neo/bots/bot_manager.h
+    neo/bots/bot_memory.cpp
+    neo/bots/bot_senses.cpp
+    neo/bots/bot_skill.cpp
+    neo/bots/bot_squad.cpp
+    neo/bots/bot_squad.h
+    neo/bots/bot_state.cpp
+    neo/bots/bot_utils.cpp
+    neo/bots/bot_utils.h
+    neo/bots/bot.cpp
+    neo/bots/bot.h
+    neo/bots/in_utils.cpp
+    neo/bots/in_utils.h
+    neo/bots/nav_path.cpp
+    neo/bots/nav_path.h
+    neo/bots/squad_manager.cpp
+    neo/bots/squad_manager.h
+    neo/bots/squad.cpp
+    neo/bots/squad.h
+    neo/bots/components/bot_component_attack.cpp
+    neo/bots/components/bot_component_decision.cpp
+    neo/bots/components/bot_component_follow.cpp
+    neo/bots/components/bot_component_locomotion.cpp
+    neo/bots/components/bot_component_memory.cpp
+    neo/bots/components/bot_component_vision.cpp
+    neo/bots/components/bot_components.h
+    neo/bots/interfaces/ibot.h
+    neo/bots/interfaces/ibotattack.h
+    neo/bots/interfaces/ibotcomponent.h
+    neo/bots/interfaces/ibotdecision.h
+    neo/bots/interfaces/ibotfollow.h
+    neo/bots/interfaces/ibotlocomotion.h
+    neo/bots/interfaces/ibotmemory.h
+    neo/bots/interfaces/ibotschedule.h
+    neo/bots/interfaces/ibotvision.h
+    neo/bots/interfaces/improv.h
+    neo/bots/schedules/bot_schedule_call_backup.cpp
+    neo/bots/schedules/bot_schedule_change_weapon.cpp
+    neo/bots/schedules/bot_schedule_cover.cpp
+    neo/bots/schedules/bot_schedule_defend_spawn.cpp
+    neo/bots/schedules/bot_schedule_help_dejected_friend.cpp
+    neo/bots/schedules/bot_schedule_hide_and_heal.cpp
+    neo/bots/schedules/bot_schedule_hide_and_reload.cpp
+    neo/bots/schedules/bot_schedule_hunt_enemy.cpp
+    neo/bots/schedules/bot_schedule_investigate_location.cpp
+    neo/bots/schedules/bot_schedule_move_aside.cpp
+    neo/bots/schedules/bot_schedule_reload.cpp
+    neo/bots/schedules/bot_schedule.cpp
+    neo/bots/schedules/bot_schedules.h
 )
 
 target_sources_grouped(
