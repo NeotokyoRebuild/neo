@@ -15,6 +15,11 @@ static const wchar_t *ENABLED_LABELS[] = {
 #define IN_BETWEEN_AR(min, cmp, max) (((min) <= (cmp)) && ((cmp) < (max)))
 #define IN_BETWEEN_EQ(min, cmp, max) (((min) <= (cmp)) && ((cmp) <= (max)))
 
+[[nodiscard]] static bool InRect(const vgui::IntRect &rect, const int x, const int y)
+{
+	return IN_BETWEEN_EQ(rect.x0, x, rect.x1) && IN_BETWEEN_EQ(rect.y0, y, rect.y1);
+}
+
 [[nodiscard]] static int LoopAroundMinMax(const int iValue, const int iMin, const int iMax)
 {
 	if (iValue < iMin)
@@ -279,9 +284,20 @@ void EndSection()
 
 	// Scroll handling
 	const int iRowsInScreen = g_pCtx->dPanel.tall / g_pCtx->iRowTall;
-	if (g_pCtx->eMode == MODE_MOUSEWHEELED && g_pCtx->bMouseInPanel)
+	const bool bHasScroll = (g_pCtx->iPartitionY > iRowsInScreen);
+	vgui::IntRect rectScrollArea = (bHasScroll) ?
+			vgui::IntRect{
+				.x0 = g_pCtx->dPanel.x + g_pCtx->dPanel.wide,
+				.y0 = g_pCtx->dPanel.y,
+				.x1 = g_pCtx->dPanel.x + g_pCtx->dPanel.wide + g_pCtx->iRowTall,
+				.y1 = g_pCtx->dPanel.y + g_pCtx->dPanel.tall,
+			} : vgui::IntRect{};
+	const bool bMouseInScrollbar = bHasScroll && InRect(rectScrollArea, g_pCtx->iMouseAbsX, g_pCtx->iMouseAbsY);
+	const bool bMouseInWheelable = g_pCtx->bMouseInPanel || bMouseInScrollbar;
+
+	if (g_pCtx->eMode == MODE_MOUSEWHEELED && bMouseInWheelable)
 	{
-		if (g_pCtx->iPartitionY <= iRowsInScreen)
+		if (!bHasScroll)
 		{
 			g_pCtx->iYOffset[g_pCtx->iSection] = 0;
 		}
@@ -294,7 +310,7 @@ void EndSection()
 	else if (g_pCtx->eMode == MODE_KEYPRESSED && (g_pCtx->eCode == KEY_DOWN || g_pCtx->eCode == KEY_UP) &&
 			 (g_pCtx->iActiveSection == g_pCtx->iSection || g_pCtx->iHotSection == g_pCtx->iSection))
 	{
-		if (g_pCtx->iPartitionY <= iRowsInScreen)
+		if (!bHasScroll)
 		{
 			// Disable scroll if it doesn't need to
 			g_pCtx->iYOffset[g_pCtx->iSection] = 0;
@@ -308,6 +324,57 @@ void EndSection()
 		{
 			// Scrolling down post visible, re-adjust
 			g_pCtx->iYOffset[g_pCtx->iSection] = clamp(g_pCtx->iActive - iRowsInScreen + 1, 0, g_pCtx->iWidget - iRowsInScreen);
+		}
+	}
+
+	// Scroll bar area painting and mouse interaction (no keyboard as that's handled by active widgets)
+	if (bHasScroll)
+	{
+		const int iYStart = g_pCtx->iYOffset[g_pCtx->iSection];
+		const int iYEnd = iYStart + iRowsInScreen;
+		const float flYPercStart = iYStart / static_cast<float>(g_pCtx->iWidget);
+		const float flYPercEnd = iYEnd / static_cast<float>(g_pCtx->iWidget);
+		vgui::IntRect rectHandle{
+			g_pCtx->dPanel.x + g_pCtx->dPanel.wide,
+			g_pCtx->dPanel.y + static_cast<int>(g_pCtx->dPanel.tall * flYPercStart),
+			g_pCtx->dPanel.x + g_pCtx->dPanel.wide + g_pCtx->iRowTall,
+			g_pCtx->dPanel.y + static_cast<int>(g_pCtx->dPanel.tall * flYPercEnd)
+		};
+
+		bool bAlterOffset = false;
+		switch (g_pCtx->eMode)
+		{
+		case MODE_PAINT:
+			surface()->DrawSetColor(g_pCtx->bgColor);
+			surface()->DrawFilledRectArray(&rectScrollArea, 1);
+			surface()->DrawSetColor(g_pCtx->abYMouseDragOffset[g_pCtx->iSection] ? g_pCtx->selectBgColor : g_pCtx->normalBgColor);
+			surface()->DrawFilledRectArray(&rectHandle, 1);
+			break;
+		case MODE_MOUSEPRESSED:
+			g_pCtx->abYMouseDragOffset[g_pCtx->iSection] = bMouseInScrollbar;
+			if (bMouseInScrollbar)
+			{
+				// If not pressed on handle, set the drag at the middle
+				const bool bInHandle = InRect(rectHandle, g_pCtx->iMouseAbsX, g_pCtx->iMouseAbsY);
+				g_pCtx->iStartMouseDragOffset[g_pCtx->iSection] = (bInHandle) ?
+							(g_pCtx->iMouseAbsY - rectHandle.y0) :((rectHandle.y1 - rectHandle.y0) / 2.0f);
+				bAlterOffset = true;
+			}
+			break;
+		case MODE_MOUSERELEASED:
+			g_pCtx->abYMouseDragOffset[g_pCtx->iSection] = false;
+			break;
+		case MODE_MOUSEMOVED:
+			bAlterOffset = g_pCtx->abYMouseDragOffset[g_pCtx->iSection];
+			break;
+		default:
+			break;
+		}
+
+		if (bAlterOffset)
+		{
+			const float flXPercMouse = static_cast<float>(g_pCtx->iMouseRelY - g_pCtx->iStartMouseDragOffset[g_pCtx->iSection]) / static_cast<float>(g_pCtx->dPanel.tall);
+			g_pCtx->iYOffset[g_pCtx->iSection] = clamp(flXPercMouse * g_pCtx->iWidget, 0, (g_pCtx->iWidget - iRowsInScreen));
 		}
 	}
 
