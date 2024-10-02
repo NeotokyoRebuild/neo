@@ -23,6 +23,7 @@ extern ConVar weaponstay;
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
+#include <model_types.h>
 
 IMPLEMENT_NETWORKCLASS_ALIASED( NEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 
@@ -1016,8 +1017,47 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 	C_BaseCombatCharacter* localPlayer = C_BasePlayer::GetLocalPlayer();
 	if (GetOwner() == localPlayer && ShouldDrawLocalPlayerViewModel())
 		return 0;
+	
+	auto ret = BaseClass::DrawModel(flags);
 
-	return BaseClass::DrawModel(flags);
+	auto owner = dynamic_cast<C_NEO_Player*>(GetOwner());
+	
+	if(owner != NULL && owner->IsCloaked())
+	{
+		IMaterial* pass = materials->FindMaterial("dev/toc_cloakpass", TEXTURE_GROUP_CLIENT_EFFECTS);
+		Assert(pass && !pass->IsErrorMaterial());
+
+		if (pass && !pass->IsErrorMaterial())
+		{
+			modelrender->ForcedMaterialOverride(pass);
+			ret = BaseClass::DrawModel(flags);
+			modelrender->ForcedMaterialOverride(NULL);
+		}
+	}
+
+	return ret;
+}
+
+int CNEOBaseCombatWeapon::InternalDrawModel(int flags)
+{
+	auto ret = BaseClass::InternalDrawModel(flags);
+
+	auto owner = dynamic_cast<C_NEO_Player*>(GetOwner());
+	
+	if(owner != NULL && owner->IsCloaked())
+	{
+		IMaterial* pass = materials->FindMaterial("dev/toc_cloakpass", TEXTURE_GROUP_CLIENT_EFFECTS);
+		Assert(pass && !pass->IsErrorMaterial());
+
+		if (pass && !pass->IsErrorMaterial())
+		{
+			modelrender->ForcedMaterialOverride(pass);
+			ret = BaseClass::InternalDrawModel(flags);
+			modelrender->ForcedMaterialOverride(NULL);
+		}
+	}
+
+	return ret;
 }
 #endif
 
