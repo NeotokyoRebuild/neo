@@ -1675,7 +1675,7 @@ Scheme
 			"1"
 			{
 				"name"		"xscale"
-				"tall"		"40"
+				"tall"		"18"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"		"480 599"
@@ -1684,7 +1684,7 @@ Scheme
 			"2"
 			{
 				"name"		"xscale"
-				"tall"		"45"
+				"tall"		"22"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"		"600 767"
@@ -1693,7 +1693,7 @@ Scheme
 			"3"
 			{
 				"name"		"xscale"
-				"tall"		"50"
+				"tall"		"28"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"		"768 1023"
@@ -1703,20 +1703,40 @@ Scheme
 			"4"
 			{
 				"name"		"xscale"
-				"tall"		"52"
+				"tall"		"32"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"yres"		"1024 1199"
+				"yres"		"1024 1079"
 				"antialias"	"1"
 				"additive"	"1"
 			}
 			"5"
 			{
 				"name"		"xscale"
-				"tall"		"58"
+				"tall"		"40"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"yres"		"1200 6000"
+				"yres"		"1080 1199"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"6"
+			{
+				"name"		"xscale"
+				"tall"		"42"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"		"1200 1439"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"7"
+			{
+				"name"		"xscale"
+				"tall"		"70"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"		"1440 6000"
 				"antialias"	"1"
 				"additive"	"1"
 			}
