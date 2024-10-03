@@ -29,7 +29,7 @@ extern ConVar weaponstay;
 
 ConVar mp_neo_loopback_warmup_round("mp_neo_loopback_warmup_round", "0", FCVAR_REPLICATED, "Allow loopback server to do warmup rounds.", true, 0.0f, true, 1.0f);
 ConVar mp_neo_warmup_round_time("mp_neo_warmup_round_time", "45", FCVAR_REPLICATED, "The warmup round time, in seconds.", true, 0.0f, false, 0.0f);
-ConVar mp_neo_preround_freeze_time("mp_neo_preround_freeze_time", "10", FCVAR_REPLICATED, "The pre-round freeze time, in seconds.", true, 0.0, false, 0);
+ConVar mp_neo_preround_freeze_time("mp_neo_preround_freeze_time", "15", FCVAR_REPLICATED, "The pre-round freeze time, in seconds.", true, 0.0, false, 0);
 ConVar mp_neo_latespawn_max_time("mp_neo_latespawn_max_time", "15", FCVAR_REPLICATED, "How many seconds late are players still allowed to spawn.", true, 0.0, false, 0);
 
 ConVar sv_neo_wep_dmg_modifier("sv_neo_wep_dmg_modifier", "1", FCVAR_REPLICATED, "Temp global weapon damage modifier.", true, 0.0, true, 100.0);
@@ -174,7 +174,7 @@ ConVar neo_round_limit("neo_round_limit", "0", FCVAR_REPLICATED, "Max amount of 
 ConVar neo_round_sudden_death("neo_round_sudden_death", "1", FCVAR_REPLICATED, "If neo_round_limit is not 0 and round is past "
 	"neo_round_limit, go into sudden death where match won't end until a team won.", true, 0.0f, true, 1.0f);
 
-ConVar neo_round_timelimit("neo_round_timelimit", "2.75", FCVAR_REPLICATED, "Neo round timelimit, in minutes.",
+ConVar neo_round_timelimit("neo_round_timelimit", "3.25", FCVAR_REPLICATED, "Neo round timelimit, in minutes.",
 	true, 0.0f, false, 600.0f);
 
 ConVar neo_sv_ignore_wep_xp_limit("neo_sv_ignore_wep_xp_limit", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "If true, allow equipping any loadout regardless of player XP.",
