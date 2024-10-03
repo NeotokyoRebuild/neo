@@ -5889,7 +5889,7 @@ CBaseEntity	*CBasePlayer::GiveNamedItem( const char *pszName, int iSubType )
 		return NULL;
 	}
 #ifdef NEO
-	pent->SetLocalOrigin(GetLocalOrigin() + GetViewOffset());
+	pent->SetAbsOrigin(EyePosition());
 #else
 	pent->SetLocalOrigin( GetLocalOrigin() );
 #endif
