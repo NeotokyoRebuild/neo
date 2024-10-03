@@ -8,6 +8,7 @@
 #ifndef AI_COMPONENT_H
 #define AI_COMPONENT_H
 
+#include "basecombatcharacter.h"
 #if defined( _WIN32 )
 #pragma once
 #endif
@@ -28,18 +29,22 @@ class CAI_Component
 {
 	DECLARE_CLASS_NOBASE( CAI_Component );
 protected:
-	CAI_Component( CAI_BaseNPC *pOuter = NULL )
-	 : m_pOuter(pOuter)
-	{
-	}
+	CAI_Component( CAI_BaseNPC *pOuter = NULL );
 
 	virtual ~CAI_Component() {}
 
 public:
-	virtual void SetOuter( CAI_BaseNPC *pOuter )	{ m_pOuter = pOuter; }
+	virtual void SetOuter( CBaseCombatCharacter *pOuter )	{ m_pOuter = pOuter; }
 
-	CAI_BaseNPC *		GetOuter() 			{ return m_pOuter; }
-	const CAI_BaseNPC *	GetOuter() const 	{ return m_pOuter; }
+	CAI_BaseNPC *		GetOuter();
+	const CAI_BaseNPC *	GetOuter() const;
+
+	CBaseCombatCharacter *GetCharacter() {
+        return m_pOuter;
+    }
+	const CBaseCombatCharacter *GetCharacter() const {
+        return m_pOuter;
+    }
 
 	Hull_t				GetHullType() const;
 	float 				GetHullWidth() const;
@@ -138,7 +143,7 @@ public:
 	}
 
 private:
-	CAI_BaseNPC *m_pOuter;
+	CBaseCombatCharacter *m_pOuter;
 };
 
 //-----------------------------------------------------------------------------

@@ -10,6 +10,7 @@
 
 #include <limits.h>
 #include "weapon_proficiency.h"
+#include "soundent.h"
 
 #ifdef _WIN32
 #pragma once
@@ -598,5 +599,39 @@ public:
 	float				m_flForceScale;
 	bool				m_bDamageAnyNPC;
 };
+
+//-----------------------------------------------------
+//
+// Senses
+//
+//-----------------------------------------------------
+
+virtual void SetDistLook(float flDistLook) {}
+
+virtual bool QueryHearSound(CSound *pSound) { return true; }
+
+virtual bool QuerySeeEntity(CBaseEntity *pEntity,
+                            bool bOnlyHateOrFearIfNPC = false) {
+  return true;
+}
+
+virtual void OnLooked(int iDistance) {}
+virtual void OnListened() {}
+
+virtual void OnSeeEntity(CBaseEntity *pEntity) {}
+
+// If true, AI will try to see this entity regardless of distance.
+virtual bool ShouldNotDistanceCull() { return false; }
+
+virtual int GetSoundInterests(void) { return ALL_SOUNDS; }
+virtual int GetSoundPriority(CSound *pSound) { return 1; }
+
+CSound *GetLoudestSoundOfType(int iType) { return NULL; }
+virtual CSound *GetBestSound(int validTypes = ALL_SOUNDS) { return NULL; }
+virtual CSound *GetBestScent(void) { return NULL; }
+virtual float HearingSensitivity(void) { return 1.0; }
+virtual bool ShouldIgnoreSound(CSound *) { return false; }
+virtual bool SoundIsVisible(CSound *pSound) { return false; }
+virtual bool OnlySeeAliveEntities(void) { return true; }
 
 #endif // BASECOMBATCHARACTER_H
