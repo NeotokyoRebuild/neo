@@ -144,18 +144,16 @@ int DmgLineStr(char* infoLine, const int infoLineMax,
 }
 
 void KillerLineStr(char* killByLine, const int killByLineMax,
-	CNEO_Player* neoAttacker, const CNEO_Player* neoVictim)
+	CNEO_Player* neoAttacker, const CNEO_Player* neoVictim, const char* killedWith)
 {
 	const char* dmgerName = neoAttacker->GetNeoPlayerName();
 	const char* dmgerClass = GetNeoClassName(neoAttacker->GetClass());
 	const int dmgerHP = neoAttacker->GetHealth();
-	auto* dmgerWep = neoAttacker->GetActiveWeapon();
-	const char* dmgerWepName = dmgerWep ? dmgerWep->GetPrintName() : "";
 	const float distance = METERS_PER_INCH * neoAttacker->GetAbsOrigin().DistTo(neoVictim->GetAbsOrigin());
 
 	memset(killByLine, 0, killByLineMax);
 	Q_snprintf(killByLine, killByLineMax, "Killed by: %s [%s | %d hp] with %s at %.0f m\n",
-		dmgerName, dmgerClass, dmgerHP, dmgerWepName, distance);
+		dmgerName, dmgerClass, dmgerHP, killedWith, distance);
 }
 
 [[nodiscard]] auto StrToInt(std::string_view strView) -> std::optional<int>

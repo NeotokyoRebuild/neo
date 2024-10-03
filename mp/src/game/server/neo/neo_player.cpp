@@ -58,7 +58,7 @@ SendPropBool(SENDINFO(m_bInVision)),
 SendPropBool(SENDINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 SendPropBool(SENDINFO(m_bShowTestMessage)),
 SendPropBool(SENDINFO(m_bInAim)),
-SendPropBool(SENDINFO(m_bDroppedAnything)),
+SendPropBool(SENDINFO(m_bIneligibleForLoadoutPick)),
 
 SendPropTime(SENDINFO(m_flCamoAuxLastTime)),
 SendPropInt(SENDINFO(m_nVisionLastTick)),
@@ -84,7 +84,7 @@ DEFINE_FIELD(m_iNeoSkin, FIELD_INTEGER),
 DEFINE_FIELD(m_iNeoStar, FIELD_INTEGER),
 DEFINE_FIELD(m_iXP, FIELD_INTEGER),
 DEFINE_FIELD(m_iLoadoutWepChoice, FIELD_INTEGER),
-DEFINE_FIELD(m_bDroppedAnything, FIELD_BOOLEAN),
+DEFINE_FIELD(m_bIneligibleForLoadoutPick, FIELD_BOOLEAN),
 DEFINE_FIELD(m_iNextSpawnClassChoice, FIELD_INTEGER),
 DEFINE_FIELD(m_bInLean, FIELD_INTEGER),
 
@@ -135,7 +135,7 @@ void CNEO_Player::RequestSetClass(int newClass)
 
 	const NeoRoundStatus status = NEORules()->GetRoundStatus();
 	if (IsDead() || sv_neo_can_change_classes_anytime.GetBool() ||
-		(!m_bDroppedAnything && NEORules()->GetRemainingPreRoundFreezeTime(false) > 0) ||
+		(!m_bIneligibleForLoadoutPick && NEORules()->GetRemainingPreRoundFreezeTime(false) > 0) ||
 		(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup))
 	{
 		m_iNeoClass = newClass;
@@ -161,7 +161,8 @@ void CNEO_Player::RequestSetClass(int newClass)
 
 void CNEO_Player::RequestSetSkin(int newSkin)
 {
-	bool canChangeImmediately = true; // TODO
+	const NeoRoundStatus roundStatus = NEORules()->GetRoundStatus();
+	bool canChangeImmediately = ((roundStatus != NeoRoundStatus::RoundLive) && (roundStatus != NeoRoundStatus::PostRound)) || !IsAlive();
 
 	if (canChangeImmediately)
 	{
@@ -169,10 +170,7 @@ void CNEO_Player::RequestSetSkin(int newSkin)
 
 		SetPlayerTeamModel();
 	}
-	else
-	{
-		// TODO set for next spawn
-	}
+	//else NEOTODO Set for next spawn
 }
 
 static bool IsNeoPrimary(CNEOBaseCombatWeapon *pNeoWep)
@@ -1576,7 +1574,12 @@ int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int pl
 		if (neoAttacker && neoAttacker->entindex() != entindex())
 		{
 			char killByLine[SHOWMENU_STRLIMIT];
-			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, this);
+			auto* killedWithInflictor = info->GetInflictor();
+			const bool inflictorIsPlayer = killedWithInflictor ? !Q_strcmp(killedWithInflictor->GetDebugName(), "player") : false;
+			auto killedWithName = killedWithInflictor ? (inflictorIsPlayer ? neoAttacker->m_hActiveWeapon->GetPrintName() : killedWithInflictor->GetDebugName()) : "";
+			if (!Q_strcmp(killedWithName, "neo_grenade_frag")) { killedWithName = "Frag Grenade"; }
+			if (!Q_strcmp(killedWithName, "neo_deployed_detpack")) { killedWithName = "Remote Detpack"; }
+			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, this, killedWithName);
 			Q_strncat(infoStr, killByLine, infoStrMax, COPY_ALL_CHARACTERS);
 		}
 	}
@@ -1667,11 +1670,18 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo* info)
 	{
 		short attackerIdx = 0;
 		auto* neoAttacker = info ? dynamic_cast<CNEO_Player*>(info->GetAttacker()) : NULL;
+		const char* killedWithName = "";
 		if (neoAttacker && neoAttacker->entindex() != entindex())
 		{
 			attackerIdx = static_cast<short>(neoAttacker->entindex());
+			auto* killedWithInflictor = info->GetInflictor();
+			const bool inflictorIsPlayer = killedWithInflictor ? !Q_strcmp(killedWithInflictor->GetDebugName(), "player") : false;
+			killedWithName = killedWithInflictor ? (inflictorIsPlayer ? neoAttacker->m_hActiveWeapon->GetPrintName() : killedWithInflictor->GetDebugName()) : "";
+			if (!Q_strcmp(killedWithName, "neo_grenade_frag")) { killedWithName = "Frag Grenade"; }
+			if (!Q_strcmp(killedWithName, "neo_deployed_detpack")) { killedWithName = "Remote Detpack"; }
 		}
 		WRITE_SHORT(attackerIdx);
+		WRITE_STRING(killedWithName);
 	}
 	MessageEnd();
 }
@@ -1923,6 +1933,11 @@ bool CNEO_Player::Weapon_Switch( CBaseCombatWeapon *pWeapon,
 {
 	ShowCrosshair(false);
 	Weapon_SetZoom(false);
+	const auto activeWeapon = GetActiveWeapon();
+	if (activeWeapon)
+	{
+		activeWeapon->StopWeaponSound(RELOAD_NPC);
+	}
 
 	return BaseClass::Weapon_Switch(pWeapon, viewmodelindex);
 }
@@ -1950,10 +1965,11 @@ bool CNEO_Player::Weapon_CanSwitchTo(CBaseCombatWeapon *pWeapon)
     if (!pWeapon->CanDeploy())
         return false;
 
-    if (GetActiveWeapon())
+	const auto activeWeapon = GetActiveWeapon();
+	if (activeWeapon)
     {
-        if (!GetActiveWeapon()->CanHolster())
-            return false;
+		if (!activeWeapon->CanHolster())
+			return false;
     }
 
     return true;
@@ -2069,7 +2085,7 @@ bool CNEO_Player::IsCarryingGhost(void) const
 void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
 	const Vector *pvecTarget, const Vector *pVelocity )
 {
-	m_bDroppedAnything = true;
+	m_bIneligibleForLoadoutPick = true;
 	if(auto neoWeapon = dynamic_cast<CNEOBaseCombatWeapon *>(pWeapon))
 	{
 		if (neoWeapon->CanDrop() && IsDead() && pWeapon)
@@ -2102,6 +2118,12 @@ void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
 			return; // Return early to not drop weapon
 		}
 	}
+
+	if (!pWeapon)
+		return;
+
+	pWeapon->m_bInReload = false;
+	pWeapon->StopWeaponSound(RELOAD_NPC);
 	BaseClass::Weapon_Drop(pWeapon, pvecTarget, pVelocity);
 }
 
@@ -2605,11 +2627,14 @@ void CNEO_Player::GiveDefaultItems(void)
 	}
 }
 
+ConVar sv_neo_time_alive_until_cant_change_loadout("sv_neo_time_alive_until_cant_change_loadout", "25.f", FCVAR_CHEAT | FCVAR_REPLICATED, "How long after spawning changing loadouts is disabled ",
+	true, 0.0f, false, 1.0f);
+
 void CNEO_Player::GiveLoadoutWeapon(void)
 {
 	const NeoRoundStatus status = NEORules()->GetRoundStatus();
-	if (!(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup) && 
-		(IsObserver() || IsDead() || m_bDroppedAnything || ((NEORules()->GetRemainingPreRoundFreezeTime(false)) < 0)))
+	if (!(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup) &&
+		(IsObserver() || IsDead() || m_bIneligibleForLoadoutPick || m_aliveTimer.IsGreaterThen(sv_neo_time_alive_until_cant_change_loadout.GetFloat())))
 	{
 		return;
 	}

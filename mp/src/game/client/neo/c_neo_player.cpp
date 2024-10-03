@@ -75,7 +75,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropBool(RECVINFO(m_bInVision)),
 	RecvPropBool(RECVINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 	RecvPropBool(RECVINFO(m_bInAim)),
-	RecvPropBool(RECVINFO(m_bDroppedAnything)),
+	RecvPropBool(RECVINFO(m_bIneligibleForLoadoutPick)),
 
 	RecvPropTime(RECVINFO(m_flCamoAuxLastTime)),
 	RecvPropInt(RECVINFO(m_nVisionLastTick)),
@@ -114,6 +114,8 @@ END_PREDICTION_DATA()
 static void __MsgFunc_DamageInfo(bf_read& msg)
 {
 	const int killerIdx = msg.ReadShort();
+	char killedBy[32];
+	const bool foundKilledBy = msg.ReadString(killedBy, sizeof(killedBy), false);
 
 	auto *localPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if (!localPlayer)
@@ -137,7 +139,7 @@ static void __MsgFunc_DamageInfo(bf_read& msg)
 		auto *neoAttacker = dynamic_cast<C_NEO_Player*>(UTIL_PlayerByIndex(killerIdx));
 		if (neoAttacker && neoAttacker->entindex() != thisIdx)
 		{
-			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, localPlayer);
+			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, localPlayer, foundKilledBy ? killedBy : NULL);
 			setKillByLine = true;
 		}
 	}
@@ -425,7 +427,7 @@ C_NEO_Player::C_NEO_Player()
 	m_bInThermOpticCamo = m_bInVision = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
 	m_bInAim = false;
-	m_bDroppedAnything = false;
+	m_bIneligibleForLoadoutPick = false;
 	m_bInLean = NEO_LEAN_NONE;
 
 	m_flCamoAuxLastTime = 0;
@@ -1255,7 +1257,7 @@ bool C_NEO_Player::ShouldDrawHL2StyleQuickHud(void)
 
 void C_NEO_Player::Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon)
 {
-	m_bDroppedAnything = true;
+	m_bIneligibleForLoadoutPick = true;
 	Weapon_SetZoom(false);
 
 	if (pWeapon->IsGhost())

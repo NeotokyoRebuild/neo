@@ -2653,6 +2653,7 @@ bool CHLClient::HandleUiToggle()
 #else
 #ifdef NEO
 	// NEO NOTE (nullsystem): Required for the sub-panels of override UI to utilize ESCAPE key properly
+	engine->ClientCmd_Unrestricted("hideconsole");
 	return NeoRootCaptureESC();
 #else
 	return false;
