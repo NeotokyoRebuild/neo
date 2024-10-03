@@ -125,7 +125,13 @@ private:
 	int _drawWidth;		// this is the width of the window we are drawing into. 
 						// if there is not enough room truncate the txt	and add an elipsis
 
+#ifdef NEO
+public:
+	StringIndex_t _unlocalizedTextSymbol;
+private:
+#else
 	StringIndex_t _unlocalizedTextSymbol;	// store off the unlocalized text index for build mode
+#endif
 	wchar_t *m_pwszEllipsesPosition;
 
 	bool m_bRecalculateTruncation : 1;

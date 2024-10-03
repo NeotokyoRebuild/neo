@@ -206,7 +206,13 @@ private:
 	Color		_titleBarDisabledFgColor;
 	Color		m_InFocusBgColor;
 	Color		m_OutOfFocusBgColor;
+#ifdef NEO
+public:
 	TextImage	*_title;
+private:
+#else
+	TextImage	*_title;
+#endif
 
 #if !defined( _X360 )
 	Panel		*_topGrip;

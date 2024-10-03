@@ -401,12 +401,17 @@ void Pad()
 	}
 }
 
-void Label(const wchar_t *wszText)
+void GCtxSkipActive()
 {
 	if (g_pCtx->iWidget == g_pCtx->iActive && g_pCtx->iSection == g_pCtx->iActiveSection)
 	{
 		g_pCtx->iActive += g_pCtx->iActiveDirection;
 	}
+}
+
+void Label(const wchar_t *wszText)
+{
+	GCtxSkipActive();
 	if (IN_BETWEEN_AR(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall) && g_pCtx->eMode == MODE_PAINT)
 	{
 		InternalLabel(wszText, g_pCtx->eLabelTextStyle == TEXTSTYLE_CENTER);
@@ -416,10 +421,7 @@ void Label(const wchar_t *wszText)
 
 void Label(const wchar_t *wszLabel, const wchar_t *wszText)
 {
-	if (g_pCtx->iWidget == g_pCtx->iActive && g_pCtx->iSection == g_pCtx->iActiveSection)
-	{
-		g_pCtx->iActive += g_pCtx->iActiveDirection;
-	}
+	GCtxSkipActive();
 	if (IN_BETWEEN_AR(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall) && g_pCtx->eMode == MODE_PAINT)
 	{
 		const int iTmpMarginX = g_pCtx->iMarginX;
@@ -670,6 +672,17 @@ static float ClampAndLimitDp(const float curValue, const float flMin, const floa
 	nextValue = clamp(nextValue, flMin, flMax);
 	nextValue = roundf(nextValue * flDpMult) / flDpMult;
 	return nextValue;
+}
+
+void Progress(const float flValue, const float flMin, const float flMax)
+{
+	GCtxSkipActive();
+	if (IN_BETWEEN_AR(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall) && g_pCtx->eMode == MODE_PAINT)
+	{
+		const float flPerc = (flValue - flMin) / (flMax - flMin);
+		GCtxDrawFilledRectXtoX(0, flPerc * g_pCtx->dPanel.wide);
+	}
+	InternalUpdatePartitionState(GetMouseinFocusedRet{true, true});
 }
 
 void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, const float flMax,
