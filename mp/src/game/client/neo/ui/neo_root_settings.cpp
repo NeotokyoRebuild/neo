@@ -18,20 +18,6 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-extern ConVar neo_name;
-extern ConVar cl_onlysteamnick;
-extern ConVar sensitivity;
-extern ConVar snd_victory_volume;
-extern ConVar neo_fov;
-extern ConVar neo_viewmodel_fov_offset;
-extern ConVar neo_aim_hold;
-extern ConVar cl_autoreload_when_empty;
-extern ConVar cl_righthand;
-extern ConVar cl_showpos;
-extern ConVar cl_showfps;
-extern ConVar hud_fastswitch;
-extern ConVar neo_cl_toggleconsole;
-
 extern NeoUI::Context g_uiCtx;
 
 const wchar_t *QUALITY_LABELS[] = {
@@ -92,6 +78,17 @@ static const char *DLFILTER_STRMAP[] = {
 	"all", "nosounds", "mapsonly", "none"
 };
 
+static inline CUtlVector<ConVarRefEx *> g_vecConVarRefPtrs;
+
+ConVarRefEx::ConVarRefEx(const char *pName, const bool bExcludeGlobalPtrs)
+	: ConVarRef(pName)
+{
+	if (!bExcludeGlobalPtrs)
+	{
+		g_vecConVarRefPtrs.AddToTail(this);
+	}
+}
+
 void NeoSettingsInit(NeoSettings *ns)
 {
 	int iNativeWidth, iNativeHeight;
@@ -111,26 +108,31 @@ void NeoSettingsInit(NeoSettings *ns)
 	}
 
 	// TODO: Alt/secondary keybind, different way on finding keybind
-	CUtlBuffer buf(0, 0, CUtlBuffer::TEXT_BUFFER | CUtlBuffer::READ_ONLY);
-	if (filesystem->ReadFile("scripts/kb_act.lst", nullptr, buf))
+	characterset_t breakSet = {};
+	breakSet.set[0] = '"';
+	NeoSettings::Keys *keys = &ns->keys;
+	CUtlBuffer bufAct(0, 0, CUtlBuffer::TEXT_BUFFER | CUtlBuffer::READ_ONLY);
+	if (filesystem->ReadFile("scripts/kb_act.lst", nullptr, bufAct))
 	{
-		characterset_t breakSet = {};
-		breakSet.set[0] = '"';
-		NeoSettings::Keys *keys = &ns->keys;
 		keys->iBindsSize = 0;
 
-		while (buf.IsValid() && keys->iBindsSize < ARRAYSIZE(keys->vBinds))
+		// It's quite specific to the root overridden menu so do it here instead of file
+		auto *conbind = &keys->vBinds[keys->iBindsSize++];
+		V_strcpy_safe(conbind->szBindingCmd, "neo_toggleconsole");
+		V_wcscpy_safe(conbind->wszDisplayText, L"Developer console bind");
+
+		while (bufAct.IsValid() && keys->iBindsSize < ARRAYSIZE(keys->vBinds))
 		{
-			char szFirstCol[64];
+			char szBindingCmd[64];
 			char szRawDispText[64];
 
 			bool bIsOk = false;
-			bIsOk = buf.ParseToken(&breakSet, szFirstCol, sizeof(szFirstCol));
+			bIsOk = bufAct.ParseToken(&breakSet, szBindingCmd, sizeof(szBindingCmd));
 			if (!bIsOk) break;
-			bIsOk = buf.ParseToken(&breakSet, szRawDispText, sizeof(szRawDispText));
+			bIsOk = bufAct.ParseToken(&breakSet, szRawDispText, sizeof(szRawDispText));
 			if (!bIsOk) break;
 
-			if (szFirstCol[0] == '\0') continue;
+			if (szBindingCmd[0] == '\0') continue;
 
 			wchar_t wszDispText[64];
 			if (wchar_t *localizedWszStr = g_pVGuiLocalize->Find(szRawDispText))
@@ -142,7 +144,7 @@ void NeoSettingsInit(NeoSettings *ns)
 				g_pVGuiLocalize->ConvertANSIToUnicode(szRawDispText, wszDispText, sizeof(wszDispText));
 			}
 
-			const bool bIsBlank = V_strcmp(szFirstCol, "blank") == 0;
+			const bool bIsBlank = V_strcmp(szBindingCmd, "blank") == 0;
 			if (bIsBlank && szRawDispText[0] != '=')
 			{
 				// This is category label
@@ -154,8 +156,34 @@ void NeoSettingsInit(NeoSettings *ns)
 			{
 				// This is a keybind
 				auto *bind = &keys->vBinds[keys->iBindsSize++];
-				V_strcpy_safe(bind->szBindingCmd, szFirstCol);
+				V_strcpy_safe(bind->szBindingCmd, szBindingCmd);
 				V_wcscpy_safe(bind->wszDisplayText, wszDispText);
+				bind->bcDefault = BUTTON_CODE_NONE;
+			}
+		}
+	}
+
+	CUtlBuffer bufDef(0, 0, CUtlBuffer::TEXT_BUFFER | CUtlBuffer::READ_ONLY);
+	if (keys->iBindsSize > 0 && filesystem->ReadFile("scripts/kb_def.lst", nullptr, bufDef))
+	{
+		while (bufDef.IsValid())
+		{
+			char szDefBind[64];
+			char szBindingCmd[64];
+
+			bool bIsOk = false;
+			bIsOk = bufDef.ParseToken(&breakSet, szDefBind, sizeof(szDefBind));
+			if (!bIsOk) break;
+			bIsOk = bufDef.ParseToken(&breakSet, szBindingCmd, sizeof(szBindingCmd));
+			if (!bIsOk) break;
+
+			for (int i = 0; i < keys->iBindsSize; ++i)
+			{
+				if (V_strcmp(keys->vBinds[i].szBindingCmd, szBindingCmd) == 0)
+				{
+					keys->vBinds[i].bcDefault = g_pInputSystem->StringToButtonCode(szDefBind);
+					break;
+				}
 			}
 		}
 	}
@@ -167,22 +195,22 @@ void NeoSettingsDeinit(NeoSettings *ns)
 	free(ns->video.p2WszVmDispList);
 }
 
-void NeoSettingsRestore(NeoSettings *ns)
+void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKeys)
 {
 	ns->bModified = false;
 	NeoSettings::CVR *cvr = &ns->cvr;
 	{
 		NeoSettings::General *pGeneral = &ns->general;
-		g_pVGuiLocalize->ConvertANSIToUnicode(neo_name.GetString(), pGeneral->wszNeoName, sizeof(pGeneral->wszNeoName));
-		pGeneral->bOnlySteamNick = cl_onlysteamnick.GetBool();
-		pGeneral->iFov = neo_fov.GetInt();
-		pGeneral->iViewmodelFov = neo_viewmodel_fov_offset.GetInt();
-		pGeneral->bAimHold = neo_aim_hold.GetBool();
-		pGeneral->bReloadEmpty = cl_autoreload_when_empty.GetBool();
-		pGeneral->bViewmodelRighthand = cl_righthand.GetBool();
+		g_pVGuiLocalize->ConvertANSIToUnicode(cvr->neo_name.GetString(), pGeneral->wszNeoName, sizeof(pGeneral->wszNeoName));
+		pGeneral->bOnlySteamNick = cvr->cl_onlysteamnick.GetBool();
+		pGeneral->iFov = cvr->neo_fov.GetInt();
+		pGeneral->iViewmodelFov = cvr->neo_viewmodel_fov_offset.GetInt();
+		pGeneral->bAimHold = cvr->neo_aim_hold.GetBool();
+		pGeneral->bReloadEmpty = cvr->cl_autoreload_when_empty.GetBool();
+		pGeneral->bViewmodelRighthand = cvr->cl_righthand.GetBool();
 		pGeneral->bShowPlayerSprays = !(cvr->cl_player_spray_disable.GetBool()); // Inverse
-		pGeneral->bShowPos = cl_showpos.GetBool();
-		pGeneral->iShowFps = cl_showfps.GetInt();
+		pGeneral->bShowPos = cvr->cl_showpos.GetBool();
+		pGeneral->iShowFps = cvr->cl_showfps.GetInt();
 		{
 			const char *szDlFilter = cvr->cl_download_filter.GetString();
 			pGeneral->iDlFilter = 0;
@@ -198,17 +226,20 @@ void NeoSettingsRestore(NeoSettings *ns)
 	}
 	{
 		NeoSettings::Keys *pKeys = &ns->keys;
-		pKeys->bWeaponFastSwitch = hud_fastswitch.GetBool();
-		pKeys->bDeveloperConsole = neo_cl_toggleconsole.GetBool();
-		for (int i = 0; i < pKeys->iBindsSize; ++i)
+		pKeys->bWeaponFastSwitch = cvr->hud_fastswitch.GetBool();
+		pKeys->bDeveloperConsole = cvr->neo_cl_toggleconsole.GetBool();
+		if (!(flagsKeys & NeoSettings::Keys::SKIP_KEYS))
 		{
-			auto *bind = &pKeys->vBinds[i];
-			bind->bcNext = bind->bcCurrent = gameuifuncs->GetButtonCodeForBind(bind->szBindingCmd);
+			for (int i = 0; i < pKeys->iBindsSize; ++i)
+			{
+				auto *bind = &pKeys->vBinds[i];
+				bind->bcNext = bind->bcCurrent = gameuifuncs->GetButtonCodeForBind(bind->szBindingCmd);
+			}
 		}
 	}
 	{
 		NeoSettings::Mouse *pMouse = &ns->mouse;
-		pMouse->flSensitivity = sensitivity.GetFloat();
+		pMouse->flSensitivity = cvr->sensitivity.GetFloat();
 		pMouse->bRawInput = cvr->m_raw_input.GetBool();
 		pMouse->bFilter = cvr->m_filter.GetBool();
 		pMouse->bReverse = (cvr->pitch.GetFloat() < 0.0f);
@@ -221,7 +252,7 @@ void NeoSettingsRestore(NeoSettings *ns)
 		// Output
 		pAudio->flVolMain = cvr->volume.GetFloat();
 		pAudio->flVolMusic = cvr->snd_musicvolume.GetFloat();
-		pAudio->flVolVictory = snd_victory_volume.GetFloat();
+		pAudio->flVolVictory = cvr->snd_victory_volume.GetFloat();
 		pAudio->iSoundSetup = 0;
 		switch (cvr->snd_surround_speakers.GetInt())
 		{
@@ -321,10 +352,36 @@ void NeoSettingsRestore(NeoSettings *ns)
 
 void NeoToggleConsoleEnforce()
 {
-	// NEO JANK (nullsystem): Force neo_toggleconsole bind always
-	// neo_cl_toggleconsole instead will be the determining ConVar for toggle
-	engine->ClientCmd_Unrestricted("unbind \"`\"");
-	engine->ClientCmd_Unrestricted("bind \"`\" neo_toggleconsole");
+	// NEO JANK (nullsystem): Try to unbind toggleconsole when possible
+	const auto toggleConsoleBind = gameuifuncs->GetButtonCodeForBind("toggleconsole");
+	const auto neotoggleConsoleBind = gameuifuncs->GetButtonCodeForBind("neo_toggleconsole");
+	const char *bindBtnName = g_pInputSystem->ButtonCodeToString(toggleConsoleBind);
+	if (bindBtnName && bindBtnName[0])
+	{
+		char szCmdStr[128];
+		V_sprintf_safe(szCmdStr, "unbind \"%s\"\n", bindBtnName);
+		engine->ClientCmd_Unrestricted(szCmdStr);
+	}
+
+	// NEO JANK (nullsystem): Try to bind to ` if this is none. This should always be bind
+	// wether the console is enabled or not. If they're on a keyboard layout that can't utilise this
+	// key, they can just rebind it to another key themselves.
+	if (neotoggleConsoleBind <= BUTTON_CODE_NONE)
+	{
+		engine->ClientCmd_Unrestricted("bind ` neo_toggleconsole");
+	}
+	else if (toggleConsoleBind == neotoggleConsoleBind)
+	{
+		// Could be unbinded by the unbind at this point if toggleconsole overlaps, so bring it back to
+		// neo_toggleconsole
+		const char *bindBtnName = g_pInputSystem->ButtonCodeToString(neotoggleConsoleBind);
+		if (bindBtnName && bindBtnName[0])
+		{
+			char szCmdStr[128];
+			V_sprintf_safe(szCmdStr, "bind \"%s\" neo_toggleconsole\n", bindBtnName);
+			engine->ClientCmd_Unrestricted(szCmdStr);
+		}
+	}
 }
 
 void NeoSettingsSave(const NeoSettings *ns)
@@ -335,23 +392,23 @@ void NeoSettingsSave(const NeoSettings *ns)
 		const NeoSettings::General *pGeneral = &ns->general;
 		char neoNameText[sizeof(pGeneral->wszNeoName) / sizeof(wchar_t)];
 		g_pVGuiLocalize->ConvertUnicodeToANSI(pGeneral->wszNeoName, neoNameText, sizeof(neoNameText));
-		neo_name.SetValue(neoNameText);
-		cl_onlysteamnick.SetValue(pGeneral->bOnlySteamNick);
-		neo_fov.SetValue(pGeneral->iFov);
-		neo_viewmodel_fov_offset.SetValue(pGeneral->iViewmodelFov);
-		neo_aim_hold.SetValue(pGeneral->bAimHold);
-		cl_autoreload_when_empty.SetValue(pGeneral->bReloadEmpty);
-		cl_righthand.SetValue(pGeneral->bViewmodelRighthand);
+		cvr->neo_name.SetValue(neoNameText);
+		cvr->cl_onlysteamnick.SetValue(pGeneral->bOnlySteamNick);
+		cvr->neo_fov.SetValue(pGeneral->iFov);
+		cvr->neo_viewmodel_fov_offset.SetValue(pGeneral->iViewmodelFov);
+		cvr->neo_aim_hold.SetValue(pGeneral->bAimHold);
+		cvr->cl_autoreload_when_empty.SetValue(pGeneral->bReloadEmpty);
+		cvr->cl_righthand.SetValue(pGeneral->bViewmodelRighthand);
 		cvr->cl_player_spray_disable.SetValue(!pGeneral->bShowPlayerSprays); // Inverse
-		cl_showpos.SetValue(pGeneral->bShowPos);
-		cl_showfps.SetValue(pGeneral->iShowFps);
+		cvr->cl_showpos.SetValue(pGeneral->bShowPos);
+		cvr->cl_showfps.SetValue(pGeneral->iShowFps);
 		cvr->cl_download_filter.SetValue(DLFILTER_STRMAP[pGeneral->iDlFilter]);
 	}
 	{
 		const NeoSettings::Keys *pKeys = &ns->keys;
-		hud_fastswitch.SetValue(pKeys->bWeaponFastSwitch);
+		cvr->hud_fastswitch.SetValue(pKeys->bWeaponFastSwitch);
 		NeoToggleConsoleEnforce();
-		neo_cl_toggleconsole.SetValue(pKeys->bDeveloperConsole);
+		cvr->neo_cl_toggleconsole.SetValue(pKeys->bDeveloperConsole);
 		for (int i = 0; i < pKeys->iBindsSize; ++i)
 		{
 			const auto *bind = &pKeys->vBinds[i];
@@ -365,7 +422,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		}
 		for (int i = 0; i < pKeys->iBindsSize; ++i)
 		{
-			const auto *bind = &pKeys->vBinds[i];
+			auto *bind = const_cast<NeoSettings::Keys::Bind *>(&pKeys->vBinds[i]);
 			if (bind->szBindingCmd[0] != '\0' && bind->bcNext > KEY_NONE)
 			{
 				char cmdStr[128];
@@ -373,11 +430,14 @@ void NeoSettingsSave(const NeoSettings *ns)
 				V_sprintf_safe(cmdStr, "bind \"%s\" \"%s\"\n", bindBtnName, bind->szBindingCmd);
 				engine->ClientCmd_Unrestricted(cmdStr);
 			}
+			bind->bcCurrent = bind->bcNext;
 		}
+		// Reset the cache to none so it'll refresh on next KeyCodeTyped
+		const_cast<NeoSettings::Keys *>(pKeys)->bcConsole = KEY_NONE;
 	}
 	{
 		const NeoSettings::Mouse *pMouse = &ns->mouse;
-		sensitivity.SetValue(pMouse->flSensitivity);
+		cvr->sensitivity.SetValue(pMouse->flSensitivity);
 		cvr->m_raw_input.SetValue(pMouse->bRawInput);
 		cvr->m_filter.SetValue(pMouse->bFilter);
 		const float absPitch = abs(cvr->pitch.GetFloat());
@@ -402,7 +462,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		// Output
 		cvr->volume.SetValue(pAudio->flVolMain);
 		cvr->snd_musicvolume.SetValue(pAudio->flVolMusic);
-		snd_victory_volume.SetValue(pAudio->flVolVictory);
+		cvr->snd_victory_volume.SetValue(pAudio->flVolVictory);
 		cvr->snd_surround_speakers.SetValue(SURROUND_RE_MAP[pAudio->iSoundSetup]);
 		cvr->snd_mute_losefocus.SetValue(pAudio->bMuteAudioUnFocus);
 		cvr->snd_pitchquality.SetValue(pAudio->iSoundQuality == QUALITY_HIGH);
@@ -446,6 +506,47 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->mat_monitorgamma.SetValue(pVideo->flGamma);
 	}
 	engine->ClientCmd_Unrestricted("host_writeconfig");
+}
+
+void NeoSettingsResetToDefault(NeoSettings *ns)
+{
+	// NEO NOTE (nullsystem): The only thing left out is video mode and volume, but that's fine
+	// as we shouldn't need to be altering those
+	for (ConVarRefEx *convar : g_vecConVarRefPtrs)
+	{
+		convar->SetValue(convar->GetDefault());
+	}
+
+	NeoSettings::Keys *pKeys = &ns->keys;
+	for (int i = 0; i < pKeys->iBindsSize; ++i)
+	{
+		const auto *bind = &pKeys->vBinds[i];
+		if (bind->szBindingCmd[0] != '\0' && bind->bcCurrent > KEY_NONE)
+		{
+			char cmdStr[128];
+			const char *bindBtnName = g_pInputSystem->ButtonCodeToString(bind->bcCurrent);
+			V_sprintf_safe(cmdStr, "unbind \"%s\"\n", bindBtnName);
+			engine->ClientCmd_Unrestricted(cmdStr);
+		}
+	}
+	for (int i = 0; i < pKeys->iBindsSize; ++i)
+	{
+		auto *bind = &pKeys->vBinds[i];
+		if (bind->szBindingCmd[0] != '\0' && bind->bcDefault > KEY_NONE)
+		{
+			char cmdStr[128];
+			const char *bindBtnName = g_pInputSystem->ButtonCodeToString(bind->bcDefault);
+			V_sprintf_safe(cmdStr, "bind \"%s\" \"%s\"\n", bindBtnName, bind->szBindingCmd);
+			engine->ClientCmd_Unrestricted(cmdStr);
+		}
+		bind->bcCurrent = bind->bcNext = bind->bcDefault;
+	}
+
+	engine->ClientCmd_Unrestricted("host_writeconfig");
+
+	// NEO JANK (nullsystem): For some reason, bind -> gameuifuncs->GetButtonCodeForBind is too quick for
+	// the game engine at this point. So just omit setting binds in restore since we already have anyway.
+	NeoSettingsRestore(ns, NeoSettings::Keys::SKIP_KEYS);
 }
 
 static const wchar_t *DLFILTER_LABELS[] = {

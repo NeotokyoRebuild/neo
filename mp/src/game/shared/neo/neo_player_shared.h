@@ -289,7 +289,7 @@ int DmgLineStr(char* infoLine, const int infoLineMax,
 	const AttackersTotals &totals);
 
 void KillerLineStr(char* killByLine, const int killByLineMax,
-	CNEO_Player* neoAttacker, const CNEO_Player* neoVictim);
+	CNEO_Player* neoAttacker, const CNEO_Player* neoVictim, const char* killedWith = "");
 
 [[nodiscard]] auto StrToInt(std::string_view strView) -> std::optional<int>;
 [[nodiscard]] int NeoAimFOV(const int fovDef, CBaseCombatWeapon *wep);

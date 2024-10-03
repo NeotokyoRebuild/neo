@@ -84,6 +84,7 @@ CWeaponDetpack::CWeaponDetpack()
 #ifdef GAME_DLL
 	m_pDetpack = NULL;
 #endif
+	SetViewOffset(Vector(0, 0, 1.0));
 }
 
 void CWeaponDetpack::Precache(void)
