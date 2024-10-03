@@ -297,14 +297,9 @@ void CWeaponKnife::Hit(trace_t& traceHit, [[maybe_unused]] Activity nHitActivity
 
 		static constexpr int damageToOneShotSupport = (100 * (1 / NEO_SUPPORT_DAMAGE_MODIFIER)) + 1;
 
-		CTakeDamageInfo info(GetOwner(), GetOwner(), KNIFE_DAMAGE, DMG_SLASH);
+		CTakeDamageInfo info(GetOwner(), GetOwner(), (currentAngle > maxBackStabAngle ? KNIFE_DAMAGE : damageToOneShotSupport), DMG_SLASH);
 
-		CalculateMeleeDamageForce(&info, hitDirection, traceHit.endpos, 0.05f);
-
-		if (currentAngle <= maxBackStabAngle)
-		{	// increase damage if backstabbing only after melee damage force has been calculated, so objects cannot be "backstabbed" to launch them further
-			info.SetDamage(damageToOneShotSupport);
-		}
+		CalculateMeleeDamageForce(&info, hitDirection, traceHit.endpos, 0.f);
 
 		pHitEntity->DispatchTraceAttack(info, hitDirection, &traceHit);
 		ApplyMultiDamage();
