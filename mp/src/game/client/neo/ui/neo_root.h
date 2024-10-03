@@ -188,6 +188,8 @@ public:
 
 	vgui::FileOpenDialog *m_pFileIODialog = nullptr;
 	MESSAGE_FUNC_CHARPTR(OnFileSelected, "FileSelected", fullpath);
+
+	bool m_bOnLoadingScreen = false;
 };
 
 extern CNeoRoot *g_pNeoRoot;
