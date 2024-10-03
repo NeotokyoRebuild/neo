@@ -630,7 +630,7 @@ int C_NEO_Player::DrawModel(int flags)
 		}
 	}
 	
-	if (IsCloaked())
+	if (IsCloaked() && !(pLocalPlayer && pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT && pLocalPlayer->IsInVision()))
 	{
 		IMaterial* pass = materials->FindMaterial("dev/toc_cloakpass", TEXTURE_GROUP_CLIENT_EFFECTS);
 		Assert(pass && !pass->IsErrorMaterial());
