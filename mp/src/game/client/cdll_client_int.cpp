@@ -173,6 +173,12 @@ extern vgui::IInputInternal *g_InputInternal;
 #ifdef NEO
 #include "neo_version.h"
 #include "neo_mount_original.h"
+extern bool NeoRootCaptureESC();
+
+#ifdef LINUX
+#include "neo_fixup_glshaders.h"
+#endif
+
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -1044,6 +1050,10 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 	{
 		return false;
 	}
+
+#ifdef LINUX
+    FixupGlShaders(filesystem, g_pCVar);
+#endif
 #endif
 
 	modemanager->Init( );
@@ -1216,6 +1226,10 @@ void MusicVol_ChangeCallback(IConVar *cvar, const char *pOldVal, float flOldVal)
 	UpdateBgm((ConVar*)cvar);
 }
 
+#ifdef NEO
+extern void NeoToggleConsoleEnforce();
+#endif
+
 //-----------------------------------------------------------------------------
 // Purpose: Called after client & server DLL are loaded and all systems initialized
 //-----------------------------------------------------------------------------
@@ -1255,6 +1269,8 @@ void CHLClient::PostInit()
 	{
 		Assert(false);
 	}
+
+	NeoToggleConsoleEnforce();
 #endif
 }
 
@@ -2631,7 +2647,13 @@ bool CHLClient::HandleUiToggle()
 	return true;
 
 #else
+#ifdef NEO
+	// NEO NOTE (nullsystem): Required for the sub-panels of override UI to utilize ESCAPE key properly
+	engine->ClientCmd_Unrestricted("hideconsole");
+	return NeoRootCaptureESC();
+#else
 	return false;
+#endif
 #endif
 }
 

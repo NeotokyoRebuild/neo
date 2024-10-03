@@ -28,131 +28,16 @@ CWeaponPZ::CWeaponPZ()
 	m_flAccuracyPenalty = 0;
 
 	m_nNumShotsFired = 0;
-}
 
-void CWeaponPZ::DryFire()
-{
-	WeaponSound(EMPTY);
-	SendWeaponAnim(ACT_VM_DRYFIRE);
-
-	m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
-}
-
-void CWeaponPZ::Spawn()
-{
-	BaseClass::Spawn();
-}
-
-bool CWeaponPZ::Deploy(void)
-{
-	return BaseClass::Deploy();
-}
-
-void CWeaponPZ::UpdatePenaltyTime()
-{
-	auto owner = ToBasePlayer(GetOwner());
-
-	if (!owner)
-	{
-		return;
-	}
-
-	if (((owner->m_nButtons & IN_ATTACK) == false) &&
-		(m_flSoonestAttack < gpGlobals->curtime))
-	{
-		m_flAccuracyPenalty -= gpGlobals->frametime;
-		m_flAccuracyPenalty = clamp(m_flAccuracyPenalty, 0.0f, GetMaxAccuracyPenalty());
-	}
-}
-
-void CWeaponPZ::ItemPreFrame()
-{
-	UpdatePenaltyTime();
-
-	BaseClass::ItemPreFrame();
-}
-
-void CWeaponPZ::ItemBusyFrame()
-{
-	UpdatePenaltyTime();
-
-	BaseClass::ItemBusyFrame();
-}
-
-void CWeaponPZ::ItemPostFrame()
-{
-	ProcessAnimationEvents();
-
-	BaseClass::ItemPostFrame();
-
-	if (m_bInReload)
-	{
-		return;
-	}
-
-	auto owner = ToBasePlayer(GetOwner());
-
-	if (!owner)
-	{
-		return;
-	}
-
-	if (owner->m_nButtons & IN_ATTACK)
-	{
-		if (m_flSoonestAttack < gpGlobals->curtime)
-		{
-			if (m_iClip1 <= 0)
-			{
-				DryFire();
-				m_flSoonestAttack = gpGlobals->curtime + GetFastestDryRefireTime();
-			}
-			else
-			{
-				m_flSoonestAttack = gpGlobals->curtime + GetFireRate();
-			}
-		}
-	}
-}
-
-Activity CWeaponPZ::GetPrimaryAttackActivity()
-{
-	if (m_nNumShotsFired < 1)
-	{
-		return ACT_VM_PRIMARYATTACK;
-	}
-
-	if (m_nNumShotsFired < 2)
-	{
-		return ACT_VM_RECOIL1;
-	}
-
-	if (m_nNumShotsFired < 3)
-	{
-		return ACT_VM_RECOIL2;
-	}
-
-	return ACT_VM_RECOIL3;
+	m_weaponSeeds = {
+		"pzpx",
+		"pzpy",
+		"pzrx",
+		"pzry",
+	};
 }
 
 bool CWeaponPZ::CanBePickedUpByClass(int classId)
 {
 	return classId != NEO_CLASS_RECON;
-}
-
-void CWeaponPZ::AddViewKick()
-{
-	auto owner = ToBasePlayer(GetOwner());
-
-	if (!owner)
-	{
-		return;
-	}
-
-	QAngle viewPunch;
-
-	viewPunch.x = SharedRandomFloat("pzpx", 0.25f, 0.5f);
-	viewPunch.y = SharedRandomFloat("pzpy", -0.6f, 0.6f);
-	viewPunch.z = 0;
-
-	owner->ViewPunch(viewPunch);
 }

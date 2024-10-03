@@ -70,14 +70,12 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_iNextSpawnClassChoice)),
 	RecvPropInt(RECVINFO(m_bInLean)),
 
-	RecvPropVector(RECVINFO(m_vecGhostMarkerPos)),
-	RecvPropBool(RECVINFO(m_bGhostExists)),
 	RecvPropBool(RECVINFO(m_bInThermOpticCamo)),
 	RecvPropBool(RECVINFO(m_bLastTickInThermOpticCamo)),
 	RecvPropBool(RECVINFO(m_bInVision)),
 	RecvPropBool(RECVINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 	RecvPropBool(RECVINFO(m_bInAim)),
-	RecvPropBool(RECVINFO(m_bDroppedAnything)),
+	RecvPropBool(RECVINFO(m_bIneligibleForLoadoutPick)),
 
 	RecvPropTime(RECVINFO(m_flCamoAuxLastTime)),
 	RecvPropInt(RECVINFO(m_nVisionLastTick)),
@@ -100,7 +98,6 @@ BEGIN_PREDICTION_DATA(C_NEO_Player)
 	DEFINE_PRED_ARRAY(m_rfAttackersScores, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_ARRAY(m_rfAttackersAccumlator, FIELD_FLOAT, MAX_PLAYERS + 1, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_ARRAY(m_rfAttackersHits, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_INSENDTABLE),
-	DEFINE_PRED_FIELD(m_vecGhostMarkerPos, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
 
 	DEFINE_PRED_FIELD_TOL(m_flCamoAuxLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
 	
@@ -117,6 +114,8 @@ END_PREDICTION_DATA()
 static void __MsgFunc_DamageInfo(bf_read& msg)
 {
 	const int killerIdx = msg.ReadShort();
+	char killedBy[32];
+	const bool foundKilledBy = msg.ReadString(killedBy, sizeof(killedBy), false);
 
 	auto *localPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if (!localPlayer)
@@ -140,7 +139,7 @@ static void __MsgFunc_DamageInfo(bf_read& msg)
 		auto *neoAttacker = dynamic_cast<C_NEO_Player*>(UTIL_PlayerByIndex(killerIdx));
 		if (neoAttacker && neoAttacker->entindex() != thisIdx)
 		{
-			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, localPlayer);
+			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, localPlayer, foundKilledBy ? killedBy : NULL);
 			setKillByLine = true;
 		}
 	}
@@ -425,12 +424,10 @@ C_NEO_Player::C_NEO_Player()
 	m_iNextSpawnClassChoice = -1;
 	m_iXP.GetForModify() = 0;
 
-	m_vecGhostMarkerPos = vec3_origin;
-	m_bGhostExists = false;
 	m_bInThermOpticCamo = m_bInVision = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
 	m_bInAim = false;
-	m_bDroppedAnything = false;
+	m_bIneligibleForLoadoutPick = false;
 	m_bInLean = NEO_LEAN_NONE;
 
 	m_flCamoAuxLastTime = 0;
@@ -762,23 +759,27 @@ void C_NEO_Player::PreThink( void )
 	BaseClass::PreThink();
 
 	float speed = GetNormSpeed();
-	if (m_nButtons & IN_DUCK && m_nButtons & IN_WALK)
-	{ // 1.77x slower
-		speed /= 1.777;
-	}
-	else if (m_nButtons & IN_DUCK || m_nButtons & IN_WALK)
-	{ // 1.33x slower
-		speed /= 1.333;
-	}
-	if (IsSprinting())
+	static constexpr float DUCK_WALK_SPEED_MODIFIER = 0.75;
+	if (m_nButtons & IN_DUCK)
 	{
-		speed *= m_iNeoClass == NEO_CLASS_RECON ? 1.333 : 1.6;
+		speed *= DUCK_WALK_SPEED_MODIFIER;
+	}
+	if (m_nButtons & IN_WALK)
+	{
+		speed *= DUCK_WALK_SPEED_MODIFIER;
+	}
+	if (IsSprinting() && !IsAirborne())
+	{
+		static constexpr float RECON_SPRINT_SPEED_MODIFIER = 0.75;
+		static constexpr float OTHER_CLASSES_SPRINT_SPEED_MODIFIER = 0.6;
+		speed /= m_iNeoClass == NEO_CLASS_RECON ? RECON_SPRINT_SPEED_MODIFIER : OTHER_CLASSES_SPRINT_SPEED_MODIFIER;
 	}
 	if (IsInAim())
 	{
-		speed /= 1.666;
+		static constexpr float AIM_SPEED_MODIFIER = 0.6;
+		speed *= AIM_SPEED_MODIFIER;
 	}
-	if (auto pNeoWep = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon()))
+	if (auto pNeoWep = static_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon()))
 	{
 		speed *= pNeoWep->GetSpeedScale();
 	}
@@ -882,49 +883,6 @@ void C_NEO_Player::PreThink( void )
 				}
 			}
 		}
-	}
-
-	if (auto *ghostMarker = GET_NAMED_HUDELEMENT(CNEOHud_GhostMarker, neo_ghost_marker))
-	{
-		if (!m_bGhostExists)
-		{
-			ghostMarker->SetVisible(false);
-		}
-		else
-		{
-			const float distance = METERS_PER_INCH *
-				GetAbsOrigin().DistTo(m_vecGhostMarkerPos);
-
-			bool hideGhostMarker = false;
-			if (GetObserverMode() == OBS_MODE_IN_EYE)
-			{
-				// NEO NOTE (nullsystem): Skip this if we're observing a player in first person
-				auto *pTargetPlayer = dynamic_cast<C_NEO_Player *>(GetObserverTarget());
-				hideGhostMarker = (pTargetPlayer && !pTargetPlayer->IsObserver() && pTargetPlayer->IsCarryingGhost());
-			}
-			hideGhostMarker = (hideGhostMarker || IsCarryingGhost());
-
-			if (!hideGhostMarker)
-			{
-				ghostMarker->SetVisible(true);
-
-				int ghostMarkerX, ghostMarkerY;
-				GetVectorInScreenSpace(m_vecGhostMarkerPos, ghostMarkerX, ghostMarkerY);
-
-				ghostMarker->SetScreenPosition(ghostMarkerX, ghostMarkerY);
-				ghostMarker->SetGhostingTeam(NEORules()->ghosterTeam());
-				ghostMarker->SetClientCurrentTeam(GetTeamNumber());
-				ghostMarker->SetGhostDistance(distance);
-			}
-			else
-			{
-				ghostMarker->SetVisible(false);
-			}
-		}
-	}
-	else
-	{
-		Warning("Couldn't find ghostMarker\n");
 	}
 
 	if (auto *indicator = GET_HUDELEMENT(CNEOHud_GameEvent))
@@ -1142,6 +1100,9 @@ bool C_NEO_Player::IsAllowedToSuperJump(void)
 	if (GetMoveParent())
 		return false;
 
+	if (IsPlayerUnderwater())
+		return false;
+
 	// Can't superjump whilst airborne (although it is kind of cool)
 	if (m_bHasBeenAirborneForTooLongToSuperJump)
 		return false;
@@ -1226,6 +1187,7 @@ void C_NEO_Player::Spawn( void )
 	SetViewOffset(VEC_VIEW_NEOSCALE(this));
 
 	auto *localPlayer = C_NEO_Player::GetLocalNEOPlayer();
+
 	if (localPlayer == nullptr || localPlayer == this)
 	{
 		// NEO NOTE (nullsystem): Reset Vis/Enabled/MouseInput/Cursor state here, otherwise it can get stuck at situations
@@ -1247,6 +1209,7 @@ void C_NEO_Player::Spawn( void )
 			if (auto *neoHud = dynamic_cast<CNEOHud_ChildElement *>(hud))
 			{
 				neoHud->resetLastUpdateTime();
+				neoHud->resetHUDState();
 			}
 		}
 
@@ -1294,7 +1257,7 @@ bool C_NEO_Player::ShouldDrawHL2StyleQuickHud(void)
 
 void C_NEO_Player::Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon)
 {
-	m_bDroppedAnything = true;
+	m_bIneligibleForLoadoutPick = true;
 	Weapon_SetZoom(false);
 
 	if (pWeapon->IsGhost())
@@ -1312,21 +1275,12 @@ void C_NEO_Player::Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon)
 
 void C_NEO_Player::StartSprinting(void)
 {
-	if (m_HL2Local.m_flSuitPower < SPRINT_START_MIN)
-	{
-		return;
-	}
-
 	if (IsCarryingGhost())
 	{
 		return;
 	}
 
-	if (m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT))
-	{ //  ensure any direction button is pressed before sprinting
-		SetMaxSpeed(GetSprintSpeed());
-	  m_fIsSprinting = true;
-	}
+	BaseClass::StartSprinting();
 }
 
 void C_NEO_Player::StopSprinting(void)
@@ -1341,7 +1295,7 @@ bool C_NEO_Player::CanSprint(void)
 		return false;
 	}
 
-	return BaseClass::CanSprint();
+	return true;
 }
 
 void C_NEO_Player::StartWalking(void)

@@ -53,13 +53,13 @@ enum NeoWepBits : NEO_WEP_BITS_UNDERLYING_TYPE {
 	NEO_WEP_SCOPEDWEAPON =		(static_cast<NEO_WEP_BITS_UNDERLYING_TYPE>(1) << 28), // Scoped weapons should OR this in their flags.
 	NEO_WEP_THROWABLE =			(static_cast<NEO_WEP_BITS_UNDERLYING_TYPE>(1) << 29), // Generic for grenades
 	NEO_WEP_SUPPRESSED =		(static_cast<NEO_WEP_BITS_UNDERLYING_TYPE>(1) << 30), // Suppressed weapons
-	
+
 	// NOTE!!! remember to update NEP_WEP_BITS_LAST_VALUE below, if editing this/these last values!
 	NEO_WEP_EXPLOSIVE =			(static_cast<NEO_WEP_BITS_UNDERLYING_TYPE>(1) << 31), // Generic for weapons that count as explosive kills on killfeed.
 #ifdef INCLUDE_WEP_PBK
 	NEO_WEP_PBK56S =			(static_cast <NEO_WEP_BITS_UNDERLYING_TYPE>(1) << 32),
 #endif
-	
+
 #ifndef INCLUDE_WEP_PBK
 	NEP_WEP_BITS_LAST_VALUE = NEO_WEP_EXPLOSIVE
 #else
@@ -92,6 +92,45 @@ enum {
 };
 
 const char *GetWeaponByLoadoutId(int id);
+
+struct WeaponSpreadInfo_t {
+	Vector minSpreadHip;
+	Vector maxSpreadHip;
+	Vector minSpreadAim;
+	Vector maxSpreadAim;
+};
+
+struct WeaponKickInfo_t {
+	float minX;
+	float maxX;
+	float minY;
+	float maxY;
+};
+
+struct WeaponRecoilInfo_t {
+	float hipFactor;
+	float adsFactor;
+	float minX;
+	float maxX;
+	float minY;
+	float maxY;
+};
+
+struct WeaponHandlingInfo_t
+{
+	NeoWepBits weaponID;
+	WeaponSpreadInfo_t spreadInfo[2];
+	WeaponKickInfo_t kickInfo;
+	WeaponRecoilInfo_t recoilInfo;
+};
+
+struct WeaponSeeds_t
+{
+	const char *punchX;
+	const char *punchY;
+	const char *recoilX;
+	const char *recoilY;
+};
 
 #if(1)
 		// This does nothing; dummy value for network test. Remove when not needed anymore.
@@ -130,32 +169,35 @@ public:
 #endif
 
 	CNEOBaseCombatWeapon();
-	virtual void Precache() OVERRIDE;
+	virtual void Precache() override;
 
-	virtual void Spawn();
-	virtual void Equip(CBaseCombatCharacter* pOwner) OVERRIDE;
-	virtual	void CheckReload(void);
+	virtual void Spawn() override;
+	virtual void Equip(CBaseCombatCharacter* pOwner) override;
+	virtual	void CheckReload(void) override;
 
-	virtual bool Reload( void );
-	virtual void FinishReload(void) OVERRIDE;
+	virtual bool Reload( void ) override;
+	virtual void FinishReload(void) override;
 
-	virtual bool CanBeSelected(void);
+	virtual bool CanBeSelected(void) override;
 
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { Assert(false); return NEO_WEP_INVALID; } // Should never call this base class; implement in children.
 	virtual int GetNeoWepXPCost(const int neoClass) const { Assert(false); return 0; } // Should never call this base class; implement in children.
 
 	virtual float GetSpeedScale(void) const { Assert(false); return 1.0; } // Should never call this base class; implement in children.
 
-	virtual void ItemPostFrame(void);
+	virtual void ItemPreFrame(void) override;
+	virtual void ItemPostFrame(void) override;
 
-	virtual void PrimaryAttack(void);
+	virtual void PrimaryAttack(void) override;
+	virtual void SecondaryAttack(void) override;
+
+	virtual void DryFire(void);
+
+	virtual Activity GetPrimaryAttackActivity(void) override;
 #ifdef CLIENT_DLL
 	void DispatchMuzzleParticleEffect(int iAttachment);
-	virtual void ProcessMuzzleFlashEvent(void) OVERRIDE;
+	virtual void ProcessMuzzleFlashEvent(void) override;
 #endif
-
-	virtual float GetInnateInaccuracy(void) const { return 0.0f; } // NEO TODO (Rain): make this abstract & implement some amount of inaccuracy (spread) for weapons?
-
 	bool IsGhost(void) const { return (GetNeoWepBits() & NEO_WEP_GHOST) ? true : false; }
 
 	bool IsExplosive(void) const { return (GetNeoWepBits() & NEO_WEP_EXPLOSIVE) ? true : false; }
@@ -196,10 +238,9 @@ public:
 	// Whether this weapon should fire only once per each attack command, even if held down.
 	bool IsSemiAuto(void) const { return !IsAutomatic(); }
 
-	virtual Vector GetMinCone() const { static Vector cone = VECTOR_CONE_1DEGREES; return cone; }
-	virtual Vector GetMaxCone() const { static Vector cone = VECTOR_CONE_10DEGREES; return cone; }
-
-	virtual const Vector& GetBulletSpread(void) OVERRIDE;
+	virtual const Vector& GetBulletSpread(void) override;
+	virtual const WeaponSpreadInfo_t& GetSpreadInfo(void);
+	virtual void AddViewKick(void) override;
 
 	virtual bool CanBePickedUpByClass(int classId);
 	virtual bool CanDrop(void);
@@ -208,9 +249,9 @@ public:
 
 #ifdef CLIENT_DLL
 	virtual bool Holster(CBaseCombatWeapon* pSwitchingTo);
-	virtual void ItemHolsterFrame() OVERRIDE;
-	virtual bool ShouldDraw(void) OVERRIDE;
-	virtual int DrawModel(int flags) OVERRIDE;
+	virtual void ItemHolsterFrame() override;
+	virtual bool ShouldDraw(void) override;
+	virtual int DrawModel(int flags) override;
 #endif
 
 	virtual bool Deploy(void);
@@ -221,8 +262,13 @@ public:
 	float GetPenetration() const;
 
 protected:
-	virtual float GetAccuracyPenalty() const { Assert(false); return 0; } // Should never call this base class; implement in children.
-	virtual float GetMaxAccuracyPenalty() const { Assert(false); return 0; } // Should never call this base class; implement in children.
+	WeaponHandlingInfo_t m_weaponHandling;
+	WeaponSeeds_t m_weaponSeeds;
+
+	virtual void UpdateInaccuracy(void);
+	virtual float GetAccuracyPenalty() const { return 0.8; }
+	virtual float GetMaxAccuracyPenalty() const { return 1.0; }
+	virtual float GetAccuracyPenaltyDecay() const { return 1.2; }
 	virtual float GetFastestDryRefireTime() const { Assert(false); return 0; } // Should never call this base class; implement in children.
 
 protected:

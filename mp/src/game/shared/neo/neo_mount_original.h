@@ -242,7 +242,7 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
 	// NEO TODO (Rain): this linux path get code is repeated; should turn into a function for brevity.
 
 	// The NeotokyoSource root asset folder should exist (or be symlinked) to one of these paths,
-	// or be specified with the NEO_PATH_PARM_CMD parm (which is currently broken on Linux, see below).
+	// or be specified with the NEO_PATH_PARM_CMD parm.
     // We look in the order described below, and stop looking at the first matching path.
     char neoLinuxPath_LocalSteam[MAX_PATH] { 0 };
     char neoLinuxPath_LocalShare[MAX_PATH] { 0 };
@@ -261,10 +261,8 @@ inline bool FindOriginalNeotokyoAssets(IFileSystem *filesystem, const bool calle
     // Third lookup path: machine's share directory.
     const char *neoLinuxPath_UsrShare = "/usr/share/neotokyo/NeotokyoSource/";
 
-	// NEO FIXME (Rain): getting this ParmValue from Steam Linux client seems to be broken(?),
-	// we always fall back to hardcoded pDefaultVal.
 	V_strcpy_safe(neoPath,
-        CommandLine()->ParmValue(NEO_PATH_PARM_CMD, neoLinuxPath_LocalSteam));
+        CommandLine()->ParmValue(&NEO_PATH_PARM_CMD[0], neoLinuxPath_LocalSteam));
 
     const bool isUsingCustomParm = (Q_stricmp(neoPath, neoLinuxPath_LocalSteam) != 0);
 

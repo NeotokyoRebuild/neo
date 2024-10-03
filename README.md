@@ -120,7 +120,6 @@ Another way is just add the `-game` option to "Source SDK Base 2013 Multiplayer"
 ```
 
 ### `-neopath` - Pointing to a non-default original NEOTOKYO directory
-NOTE: This doesn't work on linux when running the mod from Steam.
 
 This is generally isn't necessary if NEOTOKYO is installed at a default location. However,
 if you have it installed at a different location, adding `-neopath` to the launch option

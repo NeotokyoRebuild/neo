@@ -10,3 +10,9 @@ const char* GIT_LONGHASH = "@GIT_LONGHASH@";
 const char* OS_BUILD = "@OS_BUILD@";
 const char* COMPILER_ID = "@COMPILER_ID@";
 const char* COMPILER_VERSION = "@COMPILER_VERSION@";
+const char* GIT_LATESTTAG = "@GIT_LATESTTAG@";
+
+inline const wchar_t INTERN_BUILD_DISPLAY[] = L"Build: @GIT_LATESTTAG@ (@BUILD_DATE_SHORT@_@GIT_HASH@, @OS_BUILD@)";
+const wchar_t* BUILD_DISPLAY = INTERN_BUILD_DISPLAY;
+static const int INTERN_BUILD_DISPLAY_SIZE = sizeof(INTERN_BUILD_DISPLAY) / sizeof(wchar_t);
+const int* BUILD_DISPLAY_SIZE = &INTERN_BUILD_DISPLAY_SIZE;

@@ -300,6 +300,7 @@ CBaseGrenade* NEODeployedDetpack_Create(const Vector& position, const QAngle& an
 	pDet->SetTimer(FLT_MAX, FLT_MAX);
 	pDet->SetVelocity(velocity, angVelocity);
 	pDet->SetThrower(ToBaseCombatCharacter(pOwner));
+	if (pOwner) pDet->ChangeTeam(pOwner->GetTeamNumber());
 	pDet->m_takedamage = DAMAGE_EVENTS_ONLY;
 
 	return pDet;

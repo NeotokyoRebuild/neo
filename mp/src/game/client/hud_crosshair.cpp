@@ -357,7 +357,7 @@ void CHudCrosshair::Paint( void )
 		// Stretching the scope wouldn't be a great workaround, because it ties the scope
 		// FOV to screen resolution, which can give an unfair advantage on widescreen
 		// or multi-monitor setups.
-		const Color blockColor = Color(10, 10, 10, 255);
+		const Color blockColor = Color(16, 17, 16, 255);
 
 		// Draw black box on left side of the scope.
 		DrawBox(0, 0, iX - (iWidth / 2), screenHeight, blockColor, 1.0f);

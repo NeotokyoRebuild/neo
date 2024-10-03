@@ -184,19 +184,15 @@ public:
 	
 	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
 
-	CNetworkVar(bool, m_bGhostExists);
-
 	CNetworkVar(float, m_flCamoAuxLastTime);
 	CNetworkVar(int, m_nVisionLastTick);
-
-	CNetworkVector(m_vecGhostMarkerPos);
 
 	CNetworkVar(bool, m_bInThermOpticCamo);
 	CNetworkVar(bool, m_bLastTickInThermOpticCamo);
 	CNetworkVar(bool, m_bInVision);
 	CNetworkVar(bool, m_bInAim);
 	CNetworkVar(int, m_bInLean);
-	CNetworkVar(bool, m_bDroppedAnything);
+	CNetworkVar(bool, m_bIneligibleForLoadoutPick);
 
 	CNetworkVar(int, m_iNeoClass);
 	CNetworkVar(int, m_iNeoSkin);

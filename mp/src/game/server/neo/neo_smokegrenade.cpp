@@ -298,6 +298,7 @@ CBaseGrenade* NEOSmokegrenade_Create(const Vector& position, const QAngle& angle
 	pGrenade->SetTimer(FLT_MAX, FLT_MAX);
 	pGrenade->SetVelocity(velocity, angVelocity);
 	pGrenade->SetThrower(ToBaseCombatCharacter(pOwner));
+	if (pOwner) pGrenade->ChangeTeam(pOwner->GetTeamNumber());
 	pGrenade->m_takedamage = DAMAGE_EVENTS_ONLY;
 
 	return pGrenade;

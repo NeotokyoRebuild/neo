@@ -108,6 +108,7 @@ public:
 	char					szBulletCharacter[MAX_BULLET_CHARACTER];// character used to display ammunition in current clip
 	int						iAimFOV;
 	float					m_flPenetration;
+	bool					m_bDropOnDeath;
 #endif
 
 	// Sound blocks
