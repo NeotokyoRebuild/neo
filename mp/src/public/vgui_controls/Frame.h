@@ -133,6 +133,10 @@ public:
 	// Temporarily enables or disables the fade effect rather than zeroing the fade times as done in DisableFadeEffect
 	void SetFadeEffectDisableOverride( bool disabled );
 
+#ifdef NEO
+	TextImage *TITitlePtr() { return _title; }
+#endif
+
 protected:
 	// Respond to mouse presses
 	virtual void OnMousePressed(MouseCode code);
@@ -206,13 +210,7 @@ private:
 	Color		_titleBarDisabledFgColor;
 	Color		m_InFocusBgColor;
 	Color		m_OutOfFocusBgColor;
-#ifdef NEO
-public:
 	TextImage	*_title;
-private:
-#else
-	TextImage	*_title;
-#endif
 
 #if !defined( _X360 )
 	Panel		*_topGrip;

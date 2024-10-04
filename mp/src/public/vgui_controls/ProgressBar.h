@@ -74,9 +74,6 @@ protected:
 
 protected:
 	int m_iProgressDirection;
-#ifdef NEO
-public: // Get out of my way
-#endif
 	float _progress;
 
 private:

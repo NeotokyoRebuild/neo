@@ -210,6 +210,7 @@ struct RetButton
 	bool bMouseDoublePressed;
 };
 void Pad();
+void LabelWrap(const wchar_t *wszText);
 void Label(const wchar_t *wszText);
 void Label(const wchar_t *wszLabel, const wchar_t *wszText);
 void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);

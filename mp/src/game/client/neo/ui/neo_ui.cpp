@@ -409,6 +409,67 @@ void GCtxSkipActive()
 	}
 }
 
+void LabelWrap(const wchar_t *wszText)
+{
+	if (!wszText || wszText[0] == '\0')
+	{
+		NeoUI::Pad();
+		return;
+	}
+
+	GCtxSkipActive();
+	int iLines = 0;
+	if (IN_BETWEEN_AR(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall))
+	{
+		const auto *pFontI = &g_pCtx->fonts[g_pCtx->eFont];
+		const int iWszSize = V_wcslen(wszText);
+		int iSumWidth = 0;
+		int iStart = 0;
+		int iYOffset = 0;
+		int iLastSpace = 0;
+		for (int i = 0; i < iWszSize; ++i)
+		{
+			const wchar_t ch = wszText[i];
+			if (ch == L' ')
+			{
+				iLastSpace = i;
+			}
+			const int chWidth = surface()->GetCharacterWidth(pFontI->hdl, ch);
+			iSumWidth += chWidth;
+			if (iSumWidth >= g_pCtx->dPanel.wide)
+			{
+				if (g_pCtx->eMode == MODE_PAINT)
+				{
+					GCtxDrawSetTextPos(g_pCtx->iMarginX, g_pCtx->iLayoutY + pFontI->iYOffset + iYOffset);
+					surface()->DrawPrintText(wszText + iStart, iLastSpace - iStart);
+				}
+				++iLines;
+
+				iYOffset += g_pCtx->iRowTall;
+				iSumWidth = 0;
+				iStart = iLastSpace + 1;
+				i = iLastSpace;
+			}
+		}
+		if (iSumWidth > 0)
+		{
+			if (g_pCtx->eMode == MODE_PAINT)
+			{
+				GCtxDrawSetTextPos(g_pCtx->iMarginX, g_pCtx->iLayoutY + pFontI->iYOffset + iYOffset);
+				surface()->DrawPrintText(wszText + iStart, iWszSize - iStart);
+			}
+			++iLines;
+		}
+	}
+
+	g_pCtx->iPartitionY += iLines;
+	g_pCtx->iLayoutY += (g_pCtx->iRowTall * iLines);
+
+	++g_pCtx->iWidget;
+	surface()->DrawSetColor(g_pCtx->normalBgColor);
+	surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
+}
+
 void Label(const wchar_t *wszText)
 {
 	GCtxSkipActive();

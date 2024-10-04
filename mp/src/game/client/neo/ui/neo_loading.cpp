@@ -137,27 +137,20 @@ void CNeoLoading::FetchGameUIPanels()
 		{
 			continue;
 		}
-#define NAME_EQ(STRCHECK) (V_strcmp(curLoadChPanelName, STRCHECK) == 0)
-#define CLASS_EQ(CNAME_CHECK) (V_strcmp(curLoadChPanelClass, CNAME_CHECK) == 0)
-		if (NAME_EQ("Progress"))
+		if (V_strcmp(curLoadChPanelName, "Progress") == 0)
 		{
-			Assert(CLASS_EQ("ProgressBar"));
+			Assert(V_strcmp(curLoadChPanelClass, "ProgressBar") == 0);
 			m_pProgressBarMain = static_cast<vgui::ProgressBar *>(pPanel);
 		}
-		else if (NAME_EQ("InfoLabel"))
+		else if (V_strcmp(curLoadChPanelName, "InfoLabel") == 0)
 		{
-			Assert(CLASS_EQ("Label"));
+			Assert(V_strcmp(curLoadChPanelClass, "Label") == 0);
 			m_pLabelInfo = static_cast<vgui::Label *>(pPanel);
 		}
-#if 0
-		else if (NAME_EQ("TimeRemainingLabel"))
-		{
-			Assert(CLASS_EQ("Label"));
-			m_pLabelTimeRemaining = static_cast<vgui::Label *>(pPanel);
-		}
-#endif
-#undef CLASS_EQ
-#undef NAME_EQ
+		// NEO NOTE (nullsystem): Unused panels:
+		//    "Progress2" - Don't seem utilized
+		//    "TimeRemainingLabel" - Don't seem utilized
+		//    "CancelButton" - Can't do mouse input proper/workaround doesn't work well
 	}
 }
 
@@ -181,12 +174,9 @@ void CNeoLoading::OnMainLoop(const NeoUI::Mode eMode)
 	// NEO JANK (nullsystem): Since we don't have proper access to loading internals,
 	// determining by localization text index should be good enough to differ between
 	// loading and disconnect state.
-	const StringIndex_t iStrIdx = m_pLoadingPanel->_title->_unlocalizedTextSymbol;
-	NeoUI::BeginContext(&m_uiCtx, eMode,
-						(m_pLoadingPanel && m_pLoadingPanel->_title) ?
-							m_pLoadingPanel->_title->GetUText() :
-							L"Loading...",
-						"NeoLoadingMainCtx");
+	vgui::TextImage *pTITitle = m_pLoadingPanel ? m_pLoadingPanel->TITitlePtr() : nullptr;
+	const StringIndex_t iStrIdx = pTITitle ? pTITitle->GetUnlocalizedTextSymbol() : INVALID_LOCALIZE_STRING_INDEX;
+	NeoUI::BeginContext(&m_uiCtx, eMode, pTITitle ? pTITitle->GetUText() : L"Loading...", "NeoLoadingMainCtx");
 	if (iStrIdx == m_aStrIdxMap[LOADINGSTATE_LOADING])
 	{
 		NeoUI::BeginSection();
@@ -214,8 +204,7 @@ void CNeoLoading::OnMainLoop(const NeoUI::Mode eMode)
 		m_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
 		NeoUI::BeginSection(true);
 		{
-			// TODO: Text-Wrappable label
-			if (m_pLabelInfo) NeoUI::Label(m_pLabelInfo->GetTextImage()->GetUText());
+			if (m_pLabelInfo) NeoUI::LabelWrap(m_pLabelInfo->GetTextImage()->GetUText());
 			NeoUI::Pad();
 			NeoUI::Label(L"Press ESC to go back");
 		}

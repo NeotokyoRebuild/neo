@@ -926,6 +926,10 @@ void ClientModeShared::LevelShutdown( void )
 	// Reset any player explosion/shock effects
 	CLocalPlayerFilter filter;
 	enginesound->SetPlayerDSP( filter, 0, true );
+
+#ifdef NEO
+	g_pNeoLoading->m_wszLoadingMap[0] = L'\0';
+#endif
 }
 
 
