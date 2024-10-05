@@ -51,7 +51,10 @@ void CNEOHud_GhostUplinkState::ApplySchemeSettings(vgui::IScheme* pScheme)
 	surface()->GetScreenSize(screenWidth, screenHeight);
 	int centerX = screenWidth / 2;
 	int textureXPos = centerX - (m_iUplinkTextureWidth / 2);
-	static constexpr int COMPASS_HEIGHT_PLUS_MARGINS = 30;
+	//NEOJANK <1440p resolutions have the uplink element clip into compass (Bryson)
+	static int COMPASS_HEIGHT_PLUS_MARGINS = 30;
+	if (screenHeight > 1440)
+		COMPASS_HEIGHT_PLUS_MARGINS = 45;
 	int textureYPos = screenHeight - m_iUplinkTextureHeight - COMPASS_HEIGHT_PLUS_MARGINS;
 	SetBounds(textureXPos, textureYPos, m_iUplinkTextureWidth, m_iUplinkTextureHeight);
 	SetFgColor(COLOR_TRANSPARENT);
