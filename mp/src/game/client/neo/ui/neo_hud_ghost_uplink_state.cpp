@@ -51,7 +51,7 @@ void CNEOHud_GhostUplinkState::ApplySchemeSettings(vgui::IScheme* pScheme)
 	surface()->GetScreenSize(screenWidth, screenHeight);
 	int centerX = screenWidth / 2;
 	int textureXPos = centerX - (m_iUplinkTextureWidth / 2);
-	//NEOJANK <1440p resolutions have the uplink element clip into compass (Bryson)
+	//NEOJANK >=1440p resolutions have the uplink element clip into compass (Bryson)
 	static int COMPASS_HEIGHT_PLUS_MARGINS = 30;
 	if (screenHeight > 1440)
 		COMPASS_HEIGHT_PLUS_MARGINS = 45;
