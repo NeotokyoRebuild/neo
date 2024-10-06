@@ -47,6 +47,7 @@
 
 #ifdef NEO
 #include "neo_player.h"
+#include "neo_gamerules.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -276,6 +277,10 @@ void Host_Say( edict_t *pEdict, const CCommand &args, bool teamonly )
 
 	Q_strncat( text, p, sizeof( text ), COPY_ALL_CHARACTERS );
 	Q_strncat( text, "\n", sizeof( text ), COPY_ALL_CHARACTERS );
+
+#ifdef NEO
+	static_cast<CNEORules *>(g_pGameRules)->CheckChatCommand(static_cast<CNEO_Player *>(pPlayer), p);
+#endif
  
 	// loop through all players
 	// Start with the first player.
