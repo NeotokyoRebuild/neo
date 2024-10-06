@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tier1/convar.h"
+#include "neo_player_shared.h"
 #include "neo_hud_crosshair.h"
 
 // NEO TODO (nullsystem): Implement our own file IO dialog
@@ -26,8 +27,10 @@ struct NeoSettings
 {
 	struct General
 	{
-		wchar_t wszNeoName[33];
+		wchar_t wszNeoName[MAX_PLAYER_NAME_LENGTH + 1];
+		wchar_t wszNeoClantag[NEO_MAX_CLANTAG_LENGTH + 1];
 		bool bOnlySteamNick;
+		bool bMarkerSpecOnlyClantag;
 		int iFov;
 		int iViewmodelFov;
 		bool bAimHold;
@@ -151,7 +154,9 @@ struct NeoSettings
 	{
 		// General
 		CONVARREF_DEF(neo_name);
+		CONVARREF_DEF(neo_clantag);
 		CONVARREF_DEF(cl_onlysteamnick);
+		CONVARREF_DEF(neo_cl_clantag_friendly_marker_spec_only);
 		CONVARREF_DEF(neo_fov);
 		CONVARREF_DEF(neo_viewmodel_fov_offset);
 		CONVARREF_DEF(neo_aim_hold);

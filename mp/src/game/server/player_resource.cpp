@@ -29,6 +29,7 @@ IMPLEMENT_SERVERCLASS_ST_NOBASE(CPlayerResource, DT_PlayerResource)
 	SendPropArray3(SENDINFO_ARRAY3(m_szNeoName), SendPropString(SENDINFO_ARRAY(m_szNeoName), 0, SendProxy_String_tToString)),
 	SendPropArray3(SENDINFO_ARRAY3(m_iNeoNameDupeIdx), SendPropInt(SENDINFO_ARRAY(m_iNeoNameDupeIdx), 12)),
 	SendPropArray3(SENDINFO_ARRAY3(m_iStar), SendPropInt(SENDINFO_ARRAY(m_iStar), 12)),
+	SendPropArray3(SENDINFO_ARRAY3(m_szNeoClantag), SendPropString(SENDINFO_ARRAY(m_szNeoClantag), 0, SendProxy_String_tToString)),
 #endif
 	SendPropArray3( SENDINFO_ARRAY3(m_iScore), SendPropInt( SENDINFO_ARRAY(m_iScore), 12 ) ),
 	SendPropArray3( SENDINFO_ARRAY3(m_iDeaths), SendPropInt( SENDINFO_ARRAY(m_iDeaths), 12 ) ),
@@ -77,6 +78,7 @@ void CPlayerResource::Spawn( void )
 		m_szNeoName.Set(i, m_szNeoNameNone);
 		m_iNeoNameDupeIdx.Set(i, 0);
 		m_iStar.Set(i, 0);
+		m_szNeoClantag.Set(i, m_szNeoNameNone);
 #endif
 		m_iPing.Set( i, 0 );
 		m_iScore.Set( i, 0 );
@@ -128,19 +130,34 @@ void CPlayerResource::UpdatePlayerData( void )
 			m_iXP.Set(i, neoPlayer->m_iXP.Get());
 			m_iClass.Set(i, neoPlayer->m_iNeoClass.Get());
 			m_iStar.Set(i, neoPlayer->m_iNeoStar.Get());
-			const char *neoPlayerName = neoPlayer->GetNeoPlayerName();
-			// NEO JANK (nullsystem): Possible memory hog from this? Although "The memory is freed on behalf of clients
-			// at level transition." could indicate it get freed on level transition anyway.
-			string_t strt;
-			if (neoPlayerName[0] != '\0')
 			{
-				strt = AllocPooledString(neoPlayerName);
+				const char *neoPlayerName = neoPlayer->GetNeoPlayerName();
+				// NEO JANK (nullsystem): Possible memory hog from this? Although "The memory is freed on behalf of clients
+				// at level transition." could indicate it get freed on level transition anyway.
+				string_t strt;
+				if (neoPlayerName[0] != '\0')
+				{
+					strt = AllocPooledString(neoPlayerName);
+				}
+				else
+				{
+					strt = m_szNeoNameNone;
+				}
+				m_szNeoName.Set(i, strt);
 			}
-			else
 			{
-				strt = m_szNeoNameNone;
+				const char *neoClantag = neoPlayer->GetNeoClantag();
+				string_t strt;
+				if (neoClantag && neoClantag[0] != '\0')
+				{
+					strt = AllocPooledString(neoClantag);
+				}
+				else
+				{
+					strt = m_szNeoNameNone;
+				}
+				m_szNeoClantag.Set(i, strt);
 			}
-			m_szNeoName.Set(i, strt);
 			m_iNeoNameDupeIdx.Set(i, neoPlayer->NameDupePos());
 #endif
 			m_iScore.Set( i, pPlayer->FragCount() );

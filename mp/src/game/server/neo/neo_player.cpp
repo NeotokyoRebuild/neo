@@ -71,6 +71,7 @@ SendPropArray(SendPropInt(SENDINFO_ARRAY(m_rfAttackersHits)), m_rfAttackersHits)
 
 SendPropInt(SENDINFO(m_NeoFlags), 4, SPROP_UNSIGNED),
 SendPropString(SENDINFO(m_szNeoName)),
+SendPropString(SENDINFO(m_szNeoClantag)),
 SendPropInt(SENDINFO(m_szNameDupePos)),
 SendPropBool(SENDINFO(m_bClientWantNeoName)),
 
@@ -107,6 +108,7 @@ DEFINE_FIELD(m_rfAttackersHits, FIELD_CUSTOM),
 DEFINE_FIELD(m_NeoFlags, FIELD_CHARACTER),
 
 DEFINE_FIELD(m_szNeoName, FIELD_STRING),
+DEFINE_FIELD(m_szNeoClantag, FIELD_STRING),
 DEFINE_FIELD(m_szNameDupePos, FIELD_INTEGER),
 DEFINE_FIELD(m_bClientWantNeoName, FIELD_BOOLEAN),
 END_DATADESC()
@@ -118,6 +120,8 @@ CNEOGameRulesProxy* neoGameRules;
 extern CBaseEntity *g_pLastSpawn;
 
 extern ConVar neo_sv_ignore_wep_xp_limit;
+extern ConVar neo_sv_clantag_allow;
+extern ConVar neo_sv_dev_test_clantag;
 
 ConVar sv_neo_can_change_classes_anytime("sv_neo_can_change_classes_anytime", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "Can players change classes at any moment, even mid-round?",
 	true, 0.0f, true, 1.0f);
@@ -386,6 +390,7 @@ CNEO_Player::CNEO_Player()
 	m_iXP.GetForModify() = 0;
 	V_memset(m_szNeoName.GetForModify(), 0, sizeof(m_szNeoName));
 	m_szNeoNameHasSet = false;
+	V_memset(m_szNeoClantag.GetForModify(), 0, sizeof(m_szNeoClantag));
 
 	m_bInThermOpticCamo = m_bInVision = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
@@ -1076,6 +1081,22 @@ void CNEO_Player::SetNameDupePos(const int dupePos)
 int CNEO_Player::NameDupePos() const
 {
 	return m_szNameDupePos;
+}
+
+const char *CNEO_Player::GetNeoClantag() const
+{
+	if (!neo_sv_clantag_allow.GetBool())
+	{
+		return "";
+	}
+#ifdef DEBUG
+	const char *overrideClantag = neo_sv_dev_test_clantag.GetString();
+	if (overrideClantag && overrideClantag[0])
+	{
+		return overrideClantag;
+	}
+#endif
+	return m_szNeoClantag.Get();
 }
 
 const char *CNEO_Player::InternalGetNeoPlayerName(const CNEO_Player *viewFrom) const
@@ -2315,6 +2336,7 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	// We're skipping over HL2MP player because we don't care about
 	// deathmatch rules or Combine/Rebels model stuff.
 	CHL2_Player::ChangeTeam(iTeam, false, justJoined);
+	NEORules()->m_bThinkCheckClantags = true;
 
 	return true;
 }

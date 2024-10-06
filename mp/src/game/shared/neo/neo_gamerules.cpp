@@ -41,6 +41,12 @@ ConVar neo_sv_player_restore("neo_sv_player_restore", "1", FCVAR_REPLICATED, "If
 #ifdef CLIENT_DLL
 ConVar neo_name("neo_name", "", FCVAR_USERINFO | FCVAR_ARCHIVE, "The nickname to set instead of the steam profile name.");
 ConVar cl_onlysteamnick("cl_onlysteamnick", "0", FCVAR_USERINFO | FCVAR_ARCHIVE, "Only show players Steam names, otherwise show player set names.", true, 0.0f, true, 1.0f);
+
+ConVar neo_clantag("neo_clantag", "", FCVAR_USERINFO | FCVAR_ARCHIVE, "The clantag to set.");
+#endif
+ConVar neo_sv_clantag_allow("neo_sv_clantag_allow", "1", FCVAR_REPLICATED, "", true, 0.0f, true, 1.0f);
+#ifdef DEBUG
+ConVar neo_sv_dev_test_clantag("neo_sv_dev_test_clantag", "", FCVAR_REPLICATED | FCVAR_CHEAT | FCVAR_DEVELOPMENTONLY, "Debug-mode only - Override all clantags with this value.");
 #endif
 
 ConVar neo_vote_game_mode("neo_vote_game_mode", "1", FCVAR_USERINFO, "Vote on game mode to play. TDM=0, CTG=1, VIP=2, DM=3", true, 0, true, NEO_GAME_TYPE__TOTAL - 1);
@@ -112,6 +118,8 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropInt(RECVINFO(m_nRoundStatus)),
 	RecvPropInt(RECVINFO(m_nGameTypeSelected)),
 	RecvPropInt(RECVINFO(m_iRoundNumber)),
+	RecvPropString(RECVINFO(m_szNeoJinraiClantag)),
+	RecvPropString(RECVINFO(m_szNeoNSFClantag)),
 	RecvPropInt(RECVINFO(m_iGhosterTeam)),
 	RecvPropInt(RECVINFO(m_iGhosterPlayer)),
 	RecvPropInt(RECVINFO(m_iEscortingTeam)),
@@ -124,6 +132,8 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropInt(SENDINFO(m_nRoundStatus)),
 	SendPropInt(SENDINFO(m_nGameTypeSelected)),
 	SendPropInt(SENDINFO(m_iRoundNumber)),
+	SendPropString(SENDINFO(m_szNeoJinraiClantag)),
+	SendPropString(SENDINFO(m_szNeoNSFClantag)),
 	SendPropInt(SENDINFO(m_iGhosterTeam)),
 	SendPropInt(SENDINFO(m_iGhosterPlayer)),
 	SendPropInt(SENDINFO(m_iEscortingTeam)),
@@ -510,6 +520,8 @@ void CNEORules::ResetMapSessionCommon()
 {
 	SetRoundStatus(NeoRoundStatus::Idle);
 	m_iRoundNumber = 0;
+	V_memset(m_szNeoJinraiClantag.GetForModify(), 0, NEO_MAX_CLANTAG_LENGTH);
+	V_memset(m_szNeoNSFClantag.GetForModify(), 0, NEO_MAX_CLANTAG_LENGTH);
 	m_iGhosterTeam = TEAM_UNASSIGNED;
 	m_iGhosterPlayer = 0;
 	m_bGhostExists = false;
@@ -714,6 +726,41 @@ void CNEORules::Think(void)
 		{
 			UserMessageBegin(filter, "IdleRespawnShowMenu");
 			MessageEnd();
+		}
+	}
+
+	if (m_bThinkCheckClantags)
+	{
+		m_bThinkCheckClantags = false;
+		int iHasClantags[TEAM__TOTAL] = {};
+		bool bClantagSet[TEAM__TOTAL] = {};
+		char szTeamClantags[TEAM__TOTAL][NEO_MAX_CLANTAG_LENGTH + 1] = {};
+		for (int i = 1; i <= gpGlobals->maxClients; ++i)
+		{
+			auto pNeoPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
+			if (pNeoPlayer)
+			{
+				const int iTeam = pNeoPlayer->GetTeamNumber();
+				if (!bClantagSet[iTeam])
+				{
+					bClantagSet[iTeam] = true;
+					V_strcpy_safe(szTeamClantags[iTeam], pNeoPlayer->GetNeoClantag()),
+					++iHasClantags[iTeam];
+				}
+				else
+				{
+					iHasClantags[iTeam] += (V_strcmp(szTeamClantags[iTeam], pNeoPlayer->GetNeoClantag()) == 0);
+				}
+			}
+		}
+
+		char *pszClantagMod[TEAM__TOTAL] = {};
+		pszClantagMod[TEAM_JINRAI] = m_szNeoJinraiClantag.GetForModify();
+		pszClantagMod[TEAM_NSF] = m_szNeoNSFClantag.GetForModify();
+		for (const int i : {TEAM_JINRAI, TEAM_NSF})
+		{
+			V_strncpy(pszClantagMod[i], (iHasClantags[i] == GetGlobalTeam(i)->GetNumPlayers()) ?
+						  szTeamClantags[i] : "", NEO_MAX_CLANTAG_LENGTH);
 		}
 	}
 
@@ -2473,6 +2520,14 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 	const auto optClStreamerMode = StrToInt(engine->GetClientConVarValue(engine->IndexOfEdict(pNEOPlayer->edict()), "neo_cl_streamermode"));
 	pNEOPlayer->m_bClientStreamermode = (optClStreamerMode && *optClStreamerMode);
 
+	const char *pszNeoClantag = engine->GetClientConVarValue(pNEOPlayer->entindex(), "neo_clantag");
+	const char *pszOldNeoClantag = pNEOPlayer->GetNeoClantag();
+	if (V_strcmp(pszOldNeoClantag, pszNeoClantag) != 0)
+	{
+		V_strncpy(pNEOPlayer->m_szNeoClantag.GetForModify(), pszNeoClantag, NEO_MAX_CLANTAG_LENGTH);
+		m_bThinkCheckClantags = true;
+	}
+
 	const char *pszName = pszSteamName;
 	const char *pszOldName = pPlayer->GetPlayerName();
 
@@ -3400,5 +3455,15 @@ float CNEORules::GetRemainingPreRoundFreezeTime(const bool clampToZero) const
 	else
 	{
 		return m_flNeoRoundStartTime + mp_neo_preround_freeze_time.GetFloat() - gpGlobals->curtime;
+	}
+}
+
+const char *CNEORules::GetTeamClantag(const int iTeamNum) const
+{
+	switch (iTeamNum)
+	{
+	case TEAM_JINRAI: return m_szNeoJinraiClantag.Get();
+	case TEAM_NSF: return m_szNeoNSFClantag.Get();
+	default: return "";
 	}
 }
