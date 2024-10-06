@@ -72,6 +72,7 @@ SendPropArray(SendPropInt(SENDINFO_ARRAY(m_rfAttackersHits)), m_rfAttackersHits)
 
 SendPropInt(SENDINFO(m_NeoFlags), 4, SPROP_UNSIGNED),
 SendPropString(SENDINFO(m_szNeoName)),
+SendPropString(SENDINFO(m_szNeoClantag)),
 SendPropInt(SENDINFO(m_szNameDupePos)),
 SendPropBool(SENDINFO(m_bClientWantNeoName)),
 
@@ -108,6 +109,7 @@ DEFINE_FIELD(m_rfAttackersHits, FIELD_CUSTOM),
 DEFINE_FIELD(m_NeoFlags, FIELD_CHARACTER),
 
 DEFINE_FIELD(m_szNeoName, FIELD_STRING),
+DEFINE_FIELD(m_szNeoClantag, FIELD_STRING),
 DEFINE_FIELD(m_szNameDupePos, FIELD_INTEGER),
 DEFINE_FIELD(m_bClientWantNeoName, FIELD_BOOLEAN),
 END_DATADESC()
@@ -376,6 +378,7 @@ CNEO_Player::CNEO_Player()
 	m_iXP.GetForModify() = 0;
 	V_memset(m_szNeoName.GetForModify(), 0, sizeof(m_szNeoName));
 	m_szNeoNameHasSet = false;
+	V_memset(m_szNeoClantag.GetForModify(), 0, sizeof(m_szNeoClantag));
 
 	m_bInThermOpticCamo = m_bInVision = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
@@ -2453,6 +2456,7 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	// We're skipping over HL2MP player because we don't care about
 	// deathmatch rules or Combine/Rebels model stuff.
 	CHL2_Player::ChangeTeam(iTeam, false, justJoined);
+	NEORules()->m_bThinkCheckClantags = true;
 
 	return true;
 }

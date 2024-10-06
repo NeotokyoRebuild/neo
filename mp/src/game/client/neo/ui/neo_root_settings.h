@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tier1/convar.h"
+#include "neo_player_shared.h"
 
 // ConVarRef, but adds itself to a global vector
 class ConVarRefEx : public ConVarRef
@@ -22,7 +23,8 @@ struct NeoSettings
 {
 	struct General
 	{
-		wchar_t wszNeoName[33];
+		wchar_t wszNeoName[MAX_PLAYER_NAME_LENGTH + 1];
+		wchar_t wszNeoClantag[NEO_MAX_CLANTAG_LENGTH + 1];
 		bool bOnlySteamNick;
 		int iFov;
 		int iViewmodelFov;
@@ -127,6 +129,7 @@ struct NeoSettings
 	{
 		// General
 		CONVARREF_DEF(neo_name);
+		CONVARREF_DEF(neo_clantag);
 		CONVARREF_DEF(cl_onlysteamnick);
 		CONVARREF_DEF(neo_fov);
 		CONVARREF_DEF(neo_viewmodel_fov_offset);

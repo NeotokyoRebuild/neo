@@ -417,7 +417,9 @@ void CNEOScoreBoard::UpdateTeamInfo()
 
 				if (!teamName && team)
 				{
-					g_pVGuiLocalize->ConvertANSIToUnicode(team->Get_Name(), name, sizeof(name));
+					const char *pSzClantag = NEORules()->GetTeamClantag(i);
+					g_pVGuiLocalize->ConvertANSIToUnicode((pSzClantag && pSzClantag[0]) ? pSzClantag : team->Get_Name(),
+														  name, sizeof(name));
 					teamName = name;
 				}
 

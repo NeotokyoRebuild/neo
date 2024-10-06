@@ -11,6 +11,7 @@
 #include "shareddefs.h"
 
 #include "GameEventListener.h"
+#include "neo_player_shared.h"
 
 #ifndef CLIENT_DLL
 	#include "neo_player.h"
@@ -259,6 +260,8 @@ public:
         int roundNumber() const { return m_iRoundNumber; }
         bool roundAlternate() const { return static_cast<bool>(m_iRoundNumber % 2 == 0); }
 
+	const char *GetTeamClantag(const int iTeamNum) const;
+
 public:
 #ifdef GAME_DLL
 	// Workaround for bot spawning. See Bot_f() for details.
@@ -270,6 +273,7 @@ public:
 	};
 	// AccountID_t <- CSteamID::GetAccountID
 	CUtlHashtable<AccountID_t, RestoreInfo> m_pRestoredInfos;
+	bool m_bThinkCheckClantags = false;
 #endif
 
 private:
@@ -288,6 +292,8 @@ private:
 #endif
 	CNetworkVar(int, m_nRoundStatus); // NEO TODO (Rain): probably don't need to network this
 	CNetworkVar(int, m_iRoundNumber);
+	CNetworkString(m_szNeoJinraiClantag, NEO_MAX_CLANTAG_LENGTH);
+	CNetworkString(m_szNeoNSFClantag, NEO_MAX_CLANTAG_LENGTH);
 
 	// Ghost networked variables
 	CNetworkVar(int, m_iGhosterTeam);

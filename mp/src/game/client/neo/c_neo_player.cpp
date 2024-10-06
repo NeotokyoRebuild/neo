@@ -87,6 +87,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 
 	RecvPropInt(RECVINFO(m_NeoFlags)),
 	RecvPropString(RECVINFO(m_szNeoName)),
+	RecvPropString(RECVINFO(m_szNeoClantag)),
 	RecvPropInt(RECVINFO(m_szNameDupePos)),
 	RecvPropBool(RECVINFO(m_bClientWantNeoName)),
 
@@ -419,6 +420,8 @@ C_NEO_Player::C_NEO_Player()
 	m_iNeoClass = NEO_CLASS_ASSAULT;
 	m_iNeoSkin = NEO_SKIN_FIRST;
 	m_iNeoStar = NEO_DEFAULT_STAR;
+	V_memset(m_szNeoName.GetForModify(), 0, sizeof(m_szNeoName));
+	V_memset(m_szNeoClantag.GetForModify(), 0, sizeof(m_szNeoClantag));
 
 	m_iLoadoutWepChoice = 0;
 	m_iNextSpawnClassChoice = -1;
