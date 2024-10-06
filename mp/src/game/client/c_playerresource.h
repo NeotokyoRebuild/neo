@@ -16,6 +16,10 @@
 #include "c_baseentity.h"
 #include <igameresources.h>
 
+#ifdef NEO
+#include "neo_player_shared.h"
+#endif
+
 #define PLAYER_UNCONNECTED_NAME	"unconnected"
 #define PLAYER_ERROR_NAME		"ERRORNAME"
 
@@ -54,6 +58,7 @@ public : // IGameResources intreface
 	virtual int		GetXP(int index);
 	virtual int     GetClass(int index);
 	virtual int		GetStar(int index);
+	const char *GetClanTag(int index);
 #endif
 	virtual int		GetFrags( int index );
 	virtual int		GetHealth( int index );
@@ -75,6 +80,7 @@ protected:
 	int     m_iNeoNameDupeIdx[MAX_PLAYERS + 1];
 	char    m_szDispNameWDupeIdx[MAX_PLAYERS + 1][MAX_PLAYER_NAME_LENGTH + 10];  // Non-networked, includes dupe index
 	int     m_iStar[MAX_PLAYERS + 1];
+	char    m_szNeoClantag[MAX_PLAYERS + 1][NEO_MAX_CLANTAG_LENGTH];
 #endif
 	int		m_iScore[MAX_PLAYERS+1];
 	int		m_iDeaths[MAX_PLAYERS+1];
