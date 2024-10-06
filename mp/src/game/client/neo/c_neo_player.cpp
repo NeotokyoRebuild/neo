@@ -586,6 +586,43 @@ int C_NEO_Player::GetAttackerHits(const int attackerIdx) const
 	return m_rfAttackersHits.Get(attackerIdx);
 }
 
+ConVar cl_neo_vision_light_height("cl_neo_vision_light_height", "48", 0,
+	"Vision Light Height",
+	true, 0.f, true, 1024.f);
+ConVar cl_neo_vision_light_distance("cl_neo_vision_light_distance", "32", 0,
+	"Vision Light Height",
+	true, 0.f, true, 1024.f);
+ConVar cl_neo_vision_light_radius("cl_neo_vision_light_radius", "92", 0,
+	"Vision Light Radius",
+	true, 0.f, true, 1024.f);
+ConVar cl_neo_vision_light_inner_angle("cl_neo_vision_light_inner_angle", "90", 0,
+	"Vision Light Inner Angle",
+	true, 0.f, true, 1024.f);
+ConVar cl_neo_vision_light_outer_angle("cl_neo_vision_light_outer_angle", "90", 0,
+	"Vision Light Outer Angle",
+	true, 0.f, true, 1024.f);
+
+void C_NEO_Player::HandleVisionELight(C_NEO_Player *pLocalPlayer, bool visionType) const
+{
+	if (!m_hVisionLight)
+	{
+		m_hVisionLight = effects->CL_AllocElight(LIGHT_INDEX_PLAYER_BRIGHT + index);
+		m_hVisionLight->color.r = 255;
+		m_hVisionLight->color.g = 192;
+		m_hVisionLight->color.b = 64;
+		m_hVisionLight->color.exponent = 5;
+	}
+	Vector newOrigin = GetAbsOrigin() + Vector(0, 0, cl_neo_vision_light_height.GetFloat());
+	Vector difference = (newOrigin - pLocalPlayer->EyePosition()).Normalized();
+	newOrigin -= difference * cl_neo_vision_light_distance.GetFloat();
+	m_hVisionLight->origin = newOrigin;
+	m_hVisionLight->radius = visionType == 0 ? min(cl_neo_vision_light_radius.GetFloat() * 0.01 * (GetLocalVelocity().Length()), cl_neo_vision_light_radius.GetFloat()) : cl_neo_vision_light_radius.GetFloat();
+	m_hVisionLight->m_Direction = difference;
+	m_hVisionLight->m_InnerAngle = cl_neo_vision_light_inner_angle.GetFloat();
+	m_hVisionLight->m_OuterAngle = cl_neo_vision_light_outer_angle.GetFloat();
+	m_hVisionLight->die = gpGlobals->curtime + 0.05f;
+}
+
 int C_NEO_Player::DrawModel(int flags)
 {
 	int ret = BaseClass::DrawModel(flags);
@@ -605,6 +642,7 @@ int C_NEO_Player::DrawModel(int flags)
 
 			if (pass && !pass->IsErrorMaterial())
 			{
+				HandleVisionELight(pLocalPlayer, 0);
 				// Render
 				modelrender->ForcedMaterialOverride(pass);
 				ret = BaseClass::DrawModel(flags | STUDIO_RENDER | STUDIO_TRANSPARENCY);
@@ -620,6 +658,7 @@ int C_NEO_Player::DrawModel(int flags)
 
 			if (pass && !pass->IsErrorMaterial())
 			{
+				HandleVisionELight(pLocalPlayer, 1);
 				// Render
 				modelrender->ForcedMaterialOverride(pass);
 				ret = BaseClass::DrawModel(flags | STUDIO_RENDER | STUDIO_TRANSPARENCY);
