@@ -130,7 +130,7 @@ public:
 
 	virtual void ClientDisconnected(edict_t* pClient) OVERRIDE;
 #endif
-	virtual bool ShouldCollide( int collisionGroup0, int collisionGroup1 ) OVERRIDE;
+	bool ShouldCollide(const CBaseEntity *ent0, const CBaseEntity *ent1) const;
 
 	virtual const char* GetGameName() { return NEO_GAME_NAME; }
 
