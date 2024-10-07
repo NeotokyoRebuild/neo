@@ -220,14 +220,8 @@ private:
 	// Non-network version of m_szNeoName with dupe checker index
 	mutable char m_szNeoNameWDupeIdx[MAX_PLAYER_NAME_LENGTH + 10];
 	mutable int m_szNeoNameLocalDupeIdx;
-#ifdef CLIENT_DLL
-	mutable dlight_t* m_hVisionLight;
-#endif
 private:
 	C_NEO_Player(const C_NEO_Player &);
-#ifdef CLIENT_DLL
-	void HandleVisionELight(C_NEO_Player *pLocalPlayer, bool visionType) const;
-#endif
 };
 
 inline C_NEO_Player *ToNEOPlayer(C_BaseEntity *pEntity)

@@ -113,6 +113,9 @@ target_sources_grouped(
     Neo_SSAO_Shader.cpp
     Neo_TestShader.cpp
     Neo_ThermalVision.cpp
+    neo_thermal_model_dx9.cpp
+    neo_thermal_model_dx9_helper.cpp
+    neo_thermal_model_dx9_helper.h
     Neo_colorblind.cpp
     Neo_refract.cpp
     Neo_refract_dx9_helper.cpp
