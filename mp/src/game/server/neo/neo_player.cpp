@@ -289,8 +289,15 @@ void SetClass(const CCommand &command)
 		// Class number from the .res button click action.
 		// Our NeoClass enum is zero indexed, so we subtract one.
 		int nextClass = atoi(command.ArgV()[1]) - 1;
-		
-		clamp(nextClass, NEO_CLASS_RECON, NEO_CLASS_SUPPORT);
+
+		if (NEORules()->GetGameType() == NEO_GAME_TYPE_VIP && player->m_iNeoClass == NEO_CLASS_VIP)
+		{
+			return;
+		}
+		else
+		{
+			nextClass = clamp(nextClass, NEO_CLASS_RECON, NEO_CLASS_SUPPORT);
+		}
 
 		player->RequestSetClass(nextClass);
 	}
@@ -531,7 +538,6 @@ void CNEO_Player::Spawn(void)
 
 	SetPlayerTeamModel();
 	SetViewOffset(VEC_VIEW_NEOSCALE(this));
-
 	GiveLoadoutWeapon();
 }
 
@@ -553,6 +559,9 @@ void CNEO_Player::Lean(void)
 
 void CNEO_Player::CheckVisionButtons()
 {
+	if (m_iNeoClass == NEO_CLASS_VIP)
+		return;
+
 	if (gpGlobals->tickcount - m_nVisionLastTick < TIME_TO_TICKS(0.1f))
 	{
 		return;
@@ -1727,6 +1736,11 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 		StartShowDmgStats(&info);
 	}
 
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_TDM)
+	{
+		GetGlobalTeam(NEORules()->GetOpposingTeam(this))->AddScore(1);
+	}
+
 	BaseClass::Event_Killed(info);
 }
 
@@ -1883,6 +1897,11 @@ void CNEO_Player::SetPlayerCorpseModel(int type)
 
 float CNEO_Player::GetReceivedDamageScale(CBaseEntity* pAttacker)
 {
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_TDM && m_aliveTimer.IsLessThen(5.f))
+	{ // 5 seconds of invincibility in TDM
+		return 0.f;
+	}
+
 	switch (GetClass())
 	{
 	case NEO_CLASS_RECON:
@@ -1891,6 +1910,8 @@ float CNEO_Player::GetReceivedDamageScale(CBaseEntity* pAttacker)
 		return NEO_ASSAULT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
+	case NEO_CLASS_VIP:
+		return NEO_ASSAULT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
 	default:
 		Assert(false);
 		return BaseClass::GetReceivedDamageScale(pAttacker);
@@ -2621,8 +2642,13 @@ void CNEO_Player::GiveDefaultItems(void)
 		GiveNamedItem("weapon_smokegrenade");
 		Weapon_Switch(Weapon_OwnsThisType("weapon_kyla"));
 		break;
+	case NEO_CLASS_VIP:
+		GiveNamedItem("weapon_milso");
+		Weapon_Switch(Weapon_OwnsThisType("weapon_milso"));
+		break;
 	default:
 		GiveNamedItem("weapon_knife");
+		Weapon_Switch(Weapon_OwnsThisType("weapon_knife"));
 		break;
 	}
 }
@@ -2902,6 +2928,8 @@ float CNEO_Player::GetCrouchSpeed(void) const
 		return NEO_ASSAULT_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_VIP:
+		return NEO_VIP_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
 	default:
 		return NEO_BASE_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
 	}
@@ -2917,6 +2945,8 @@ float CNEO_Player::GetNormSpeed(void) const
 		return NEO_ASSAULT_NORM_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_NORM_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_VIP:
+		return NEO_VIP_NORM_SPEED * GetBackwardsMovementPenaltyScale();
 	default:
 		return NEO_BASE_NORM_SPEED * GetBackwardsMovementPenaltyScale();
 	}
@@ -2932,6 +2962,8 @@ float CNEO_Player::GetWalkSpeed(void) const
 		return NEO_ASSAULT_WALK_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_WALK_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_VIP:
+		return NEO_VIP_WALK_SPEED * GetBackwardsMovementPenaltyScale();
 	default:
 		return NEO_BASE_WALK_SPEED * GetBackwardsMovementPenaltyScale();
 	}
@@ -2947,6 +2979,8 @@ float CNEO_Player::GetSprintSpeed(void) const
 		return NEO_ASSAULT_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_VIP:
+		return NEO_VIP_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
 	default:
 		return NEO_BASE_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
 	}

@@ -287,8 +287,13 @@ public:
 	virtual void CommandCallback(const CCommand& command)
 	{
 		auto team = GetLocalPlayerTeam();
-
 		if(team < FIRST_GAME_TEAM)
+		{
+			return;
+		}
+
+		auto playerNeoClass = C_NEO_Player::GetLocalNEOPlayer()->m_iNeoClass;
+		if (playerNeoClass == NEO_CLASS_VIP)
 		{
 			return;
 		}
@@ -458,7 +463,7 @@ void C_NEO_Player::CheckThermOpticButtons()
 
 	if ((m_afButtonPressed & IN_THERMOPTIC) && IsAlive())
 	{
-		if (GetClass() != NEO_CLASS_RECON && GetClass() != NEO_CLASS_ASSAULT)
+		if (GetClass() == NEO_CLASS_SUPPORT)
 		{
 			return;
 		}
@@ -1362,6 +1367,8 @@ float C_NEO_Player::GetCrouchSpeed(void) const
 		return NEO_ASSAULT_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_VIP:
+		return NEO_VIP_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
 	default:
 		return NEO_BASE_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
 	}
@@ -1377,6 +1384,8 @@ float C_NEO_Player::GetNormSpeed(void) const
 		return NEO_ASSAULT_NORM_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_NORM_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_VIP:
+		return NEO_VIP_NORM_SPEED * GetBackwardsMovementPenaltyScale();
 	default:
 		return NEO_BASE_NORM_SPEED * GetBackwardsMovementPenaltyScale();
 	}
@@ -1392,6 +1401,8 @@ float C_NEO_Player::GetWalkSpeed(void) const
 		return NEO_ASSAULT_WALK_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_WALK_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_VIP:
+		return NEO_VIP_WALK_SPEED * GetBackwardsMovementPenaltyScale();
 	default:
 		return NEO_BASE_WALK_SPEED * GetBackwardsMovementPenaltyScale();
 	}
@@ -1407,6 +1418,8 @@ float C_NEO_Player::GetSprintSpeed(void) const
 		return NEO_ASSAULT_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_VIP:
+		return NEO_VIP_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
 	default:
 		return NEO_BASE_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
 	}
