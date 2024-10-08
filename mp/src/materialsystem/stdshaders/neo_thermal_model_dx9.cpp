@@ -8,9 +8,6 @@
 #include "convar.h"
 #include "neo_thermal_model_dx9_helper.h"
 
-ConVar mat_neo_tmv_angle("mat_neo_tmv_angle", "0.4", FCVAR_CHEAT);
-ConVar mat_neo_tmv_multiplier("mat_neo_tmv_multiplier", "1.5", FCVAR_CHEAT);
-
 DEFINE_FALLBACK_SHADER( Neo_Thermal_Model, Neo_Thermal_Model_DX9 )
 BEGIN_VS_SHADER( Neo_Thermal_Model_DX9, "Help for thermal model shader" )
 

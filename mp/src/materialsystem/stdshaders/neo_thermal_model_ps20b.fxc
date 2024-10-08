@@ -42,9 +42,8 @@ sampler ShadowDepthSampler		: register( s4 );	// Flashlight shadow depth map sam
 sampler NormalizeRandRotSampler	: register( s5 );	// Normalization / RandomRotation samplers
 sampler FlashlightSampler		: register( s6 );	// Flashlight cookie
 
-//const float g_Angle : register(c2);
-//const float g_Multiplier : register(c3);
 const float3 g_ViewDirection : register(c2);
+const float g_Multiplier : register(c3);
 
 struct PS_INPUT
 {
@@ -59,9 +58,8 @@ float4 main( PS_INPUT i ) : COLOR
 {
 	float4 baseColor = tex2D( BaseTextureSampler, i.baseTexCoord );
 
-	//float3 direction = normalize(g_EyePos.xyz - i.worldPos.xyz);
-	float dotProduct =  0.75 * (dot(g_ViewDirection, i.worldNormal));
-	float3 result = baseColor.rgb * dotProduct;
+	float dotProduct = (0.41666 * dot(g_ViewDirection, i.worldNormal)) + 0.41666; //5/12
+	float3 result = ( 0, 0, 0 ) + dotProduct;
 
 	float fogFactor = CalcPixelFogFactor( PIXELFOGTYPE, g_FogParams, g_EyePos.z, i.worldPos.z, i.projPos.z );
 
