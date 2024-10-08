@@ -30,7 +30,6 @@ set ARG_EXTRA=
 
 %BUILD_SHADER% stdshader_dx9_20b		-game %GAMEDIR% -source %SOURCEDIR%
 %BUILD_SHADER% stdshader_dx9_30			-game %GAMEDIR% -source %SOURCEDIR% -dx9_30	-force30
-%BUILD_SHADER% neoshaders				-game %GAMEDIR% -source %SOURCEDIR%
 
 rem echo.
 if not "%dynamic_shaders%" == "1" (
