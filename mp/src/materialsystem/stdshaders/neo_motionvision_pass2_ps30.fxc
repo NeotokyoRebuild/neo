@@ -25,6 +25,8 @@ float4 main( const PS_INPUT i ) : COLOR
 		min(bwTint + g_TintColor_B, 1),
 		imTex.a);
 	
+
+	// NEO TODO (Adam) Awesome sincity shader taken from https://pastebin.com/zVxsZBVG , useful for potential motion vision rework discussion
 	//const float4 imTex = tex2D(Original, i.vTexCoord);
 	//float3 colorin = pow(imTex.rgb, .45f);
 	

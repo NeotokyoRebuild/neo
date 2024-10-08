@@ -5,9 +5,6 @@
 #endif
 
 #include "in_buttons.h"
-#ifdef CLIENT_DLL
-#include "dlight.h"
-#endif
 
 class C_NEO_Player;
 #include "c_hl2mp_player.h"
@@ -220,6 +217,7 @@ private:
 	// Non-network version of m_szNeoName with dupe checker index
 	mutable char m_szNeoNameWDupeIdx[MAX_PLAYER_NAME_LENGTH + 10];
 	mutable int m_szNeoNameLocalDupeIdx;
+
 private:
 	C_NEO_Player(const C_NEO_Player &);
 };

@@ -18,5 +18,6 @@ struct PS_INPUT
 
 float4 main( const PS_INPUT i ) : COLOR
 {
+	//NEO TODO (Adam) Remove this pass entirely
 	return float4(0, 0, 0, 1);
 }
