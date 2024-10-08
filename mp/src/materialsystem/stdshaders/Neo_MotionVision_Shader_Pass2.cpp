@@ -115,6 +115,7 @@ SHADER_DRAW
 		pShaderAPI->SetPixelShaderConstant(1, &g);
 		pShaderAPI->SetPixelShaderConstant(2, &b);
 
+
 		DECLARE_DYNAMIC_VERTEX_SHADER(neo_passthrough_vs30);
 		SET_DYNAMIC_VERTEX_SHADER(neo_passthrough_vs30);
 

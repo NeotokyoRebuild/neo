@@ -604,6 +604,7 @@ int C_NEO_Player::DrawModel(int flags)
 
 			if (pass && !pass->IsErrorMaterial())
 			{
+				// Compute Speed
 				// Render
 				modelrender->ForcedMaterialOverride(pass);
 				ret = BaseClass::DrawModel(flags | STUDIO_RENDER | STUDIO_TRANSPARENCY);
