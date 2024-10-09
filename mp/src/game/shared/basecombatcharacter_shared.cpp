@@ -89,8 +89,11 @@ bool CBaseCombatCharacter::Weapon_CanSwitchTo( CBaseCombatWeapon *pWeapon )
 		if (pVehicle && !pPlayer->UsingStandardWeaponsInVehicle())
 			return false;
 	}
-
+#ifdef NEO
+	if ( !(pWeapon->GetWpnData().iFlags & ITEM_FLAG_SELECTONEMPTY) && !pWeapon->HasAnyAmmo() && !GetAmmoCount(pWeapon->m_iPrimaryAmmoType) )
+#else
 	if ( !pWeapon->HasAnyAmmo() && !GetAmmoCount( pWeapon->m_iPrimaryAmmoType ) )
+#endif
 		return false;
 
 	if ( !pWeapon->CanDeploy() ) {
