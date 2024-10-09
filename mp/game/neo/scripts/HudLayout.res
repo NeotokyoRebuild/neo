@@ -494,6 +494,8 @@
 		"fieldName"	"AchievementNotificationPanel"
 		"visible"	"0"
 		"enabled"	"0"
+		"wide"	"0"
+		"tall"	"0"
 	}
 	
 	HudHintKeyDisplay
@@ -624,5 +626,50 @@
 		"fieldName"		"NRoundState"
 		"box_color"		"200 200 200 40"
 		"health_monochrome"	"1"
+	}
+	
+	neo_ghost_uplink_state
+	{
+		"fieldName"		"neo_ghost_uplink_state"
+		"xpos"	"0"
+		"ypos"	"0"
+		"wide"	"640"
+		"tall"	"480"
+	}
+	
+	neo_ghost_marker
+	{
+		"fieldName"		"neo_ghost_marker"
+		"xpos"	"0"
+		"ypos"	"0"
+		"wide"	"640"
+		"tall"	"480"
+	}
+	
+	neo_ghost_beacons
+	{
+		"fieldName"		"neo_ghost_beacons"
+		"xpos"	"0"
+		"ypos"	"0"
+		"wide"	"640"
+		"tall"	"480"
+	}
+	
+	CNEOHud_GameEvent
+	{
+		"fieldName"		"CNEOHud_GameEvent"
+		"xpos"	"0"
+		"ypos"	"0"
+		"wide"	"640"
+		"tall"	"480"
+	}
+	
+	neo_iff
+	{
+		"fieldName"		"neo_iff"
+		"xpos"	"0"
+		"ypos"	"0"
+		"wide"	"640"
+		"tall"	"480"
 	}
 }
