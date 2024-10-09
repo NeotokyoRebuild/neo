@@ -1279,10 +1279,6 @@ void CHLClient::PostInit()
 //-----------------------------------------------------------------------------
 void CHLClient::Shutdown( void )
 {
-#ifdef NEO
-	FixIncompatibleNeoAssets(g_pFullFileSystem, true);
-#endif
-
     if (g_pAchievementsAndStatsInterface)
     {
         g_pAchievementsAndStatsInterface->ReleasePanel();
