@@ -69,9 +69,19 @@ extern ConVar replay_rendersetting_renderglow;
 #include "c_neo_player.h"
 #endif
 
+#ifdef GLOWS_ENABLE
+#include "clienteffectprecachesystem.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+#ifdef GLOWS_ENABLE
+CLIENTEFFECT_REGISTER_BEGIN(PrecachePostProcessingEffectsGlow)
+CLIENTEFFECT_MATERIAL("dev/glow_color")
+CLIENTEFFECT_MATERIAL("dev/halo_add_to_screen")
+CLIENTEFFECT_REGISTER_END_CONDITIONAL(engine->GetDXSupportLevel() >= 90)
+#endif
 #define ACHIEVEMENT_ANNOUNCEMENT_MIN_TIME 10
 
 class CHudWeaponSelection;
@@ -769,6 +779,30 @@ int ClientModeShared::HandleSpectatorKeyInput( int down, ButtonCode_t keynum, co
 #endif
 		return 0;
 	}
+#ifdef GLOWS_ENABLE
+	else if (down && pszCurrentBinding && Q_strcmp(pszCurrentBinding, "+attack2") == 0)
+	{
+		ConVar* glow_outline_effect_enable = cvar->FindVar("glow_outline_effect_enable");
+		if (!glow_outline_effect_enable)
+			return 0;
+
+		if (glow_outline_effect_enable->GetBool())
+			engine->ExecuteClientCmd("glow_outline_effect_enable 0");
+		else
+			engine->ExecuteClientCmd("glow_outline_effect_enable 1");
+
+		for (int i = 0; i < MAX_PLAYERS; i++)
+		{
+			auto player = UTIL_PlayerByIndex(i);
+			if (player)
+			{
+				auto enable = glow_outline_effect_enable->GetBool();
+				player->SetClientSideGlowEnabled(enable);
+			}
+		}
+		return 0;
+	}
+#endif // GLOWS_ENABLE
 
 	return 1;
 }
@@ -805,6 +839,9 @@ int ClientModeShared::HudElementKeyInput( int down, ButtonCode_t keynum, const c
 //-----------------------------------------------------------------------------
 bool ClientModeShared::DoPostScreenSpaceEffects( const CViewSetup *pSetup )
 {
+#ifdef GLOWS_ENABLE
+	g_GlowObjectManager.RenderGlowEffects(pSetup, 0);
+#endif
 #if defined( REPLAY_ENABLED )
 	if ( engine->IsPlayingDemo() )
 	{

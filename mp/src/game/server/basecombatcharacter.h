@@ -459,6 +459,9 @@ public:
 #ifdef GLOWS_ENABLE
 protected:
 	CNetworkVar( bool, m_bGlowEnabled );
+	CNetworkVar( float, m_flGlowR );
+	CNetworkVar( float, m_flGlowG );
+	CNetworkVar( float, m_flGlowB );
 #endif // GLOWS_ENABLE
 
 private:
