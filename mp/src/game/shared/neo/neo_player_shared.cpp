@@ -5,6 +5,9 @@
 #include "neo_gamerules.h"
 
 #include "tier0/valve_minmax_off.h"
+#include <tier3/tier3.h>
+#include <vgui/ILocalize.h>
+#include <steam/steam_api.h>
 #include <system_error>
 #include <charconv>
 #include "tier0/valve_minmax_on.h"
@@ -169,4 +172,31 @@ void KillerLineStr(char* killByLine, const int killByLineMax,
 	static constexpr float FOV_AIM_OFFSET_FALLBACK = 30.0f;
 	auto *neoWep = dynamic_cast<CNEOBaseCombatWeapon *>(wep);
 	return (neoWep) ? neoWep->GetWpnData().iAimFOV : fovDef - FOV_AIM_OFFSET_FALLBACK;
+}
+
+void GetClNeoDisplayName(wchar_t (*pWszDisplayName)[NEO_MAX_DISPLAYNAME],
+						 const wchar_t wszNeoName[MAX_PLAYER_NAME_LENGTH + 1],
+						 const wchar_t wszNeoClantag[NEO_MAX_CLANTAG_LENGTH + 1],
+						 const bool bOnlySteamNick)
+{
+	const bool bShowSteamNick = bOnlySteamNick || wszNeoName[0] == '\0';
+	wchar_t wszDisplayName[MAX_PLAYER_NAME_LENGTH + 1] = {};
+	(bShowSteamNick) ? (void)g_pVGuiLocalize->ConvertANSIToUnicode(steamapicontext->SteamFriends()->GetPersonaName(),
+																   wszDisplayName, sizeof(wszDisplayName))
+					 : (void)V_wcscpy_safe(wszDisplayName, wszNeoName);
+
+	(wszNeoClantag[0] != L'\0') ? (void)V_swprintf_safe(*pWszDisplayName, L"[%ls] %ls", wszNeoClantag, wszDisplayName)
+								: (void)V_wcscpy_safe(*pWszDisplayName, wszDisplayName);
+}
+
+void GetClNeoDisplayName(wchar_t (*pWszDisplayName)[NEO_MAX_DISPLAYNAME],
+						 const char *pSzNeoName,
+						 const char *pSzNeoClantag,
+						 const bool bOnlySteamNick)
+{
+	wchar_t wszNeoName[MAX_PLAYER_NAME_LENGTH + 1];
+	wchar_t wszNeoClantag[NEO_MAX_CLANTAG_LENGTH + 1];
+	g_pVGuiLocalize->ConvertANSIToUnicode(pSzNeoName, wszNeoName, sizeof(wszNeoName));
+	g_pVGuiLocalize->ConvertANSIToUnicode(pSzNeoClantag, wszNeoClantag, sizeof(wszNeoClantag));
+	GetClNeoDisplayName(pWszDisplayName, wszNeoName, wszNeoClantag, bOnlySteamNick);
 }
