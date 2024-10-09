@@ -423,9 +423,11 @@ enum Collision_Group_t
 };
 
 #include "basetypes.h"
-
+#ifdef NEO
+#define SOUND_NORMAL_CLIP_DIST	10000.0f
+#else
 #define SOUND_NORMAL_CLIP_DIST	1000.0f
-
+#endif
 // How many networked area portals do we allow?
 #define MAX_AREA_STATE_BYTES		32
 #define MAX_AREA_PORTAL_STATE_BYTES 24
