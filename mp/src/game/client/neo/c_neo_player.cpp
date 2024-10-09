@@ -593,8 +593,7 @@ int C_NEO_Player::GetAttackerHits(const int attackerIdx) const
 
 int C_NEO_Player::DrawModel(int flags)
 {
-	int ret = BaseClass::DrawModel(flags);
-
+	int ret = BaseClass::DrawModel(flags); // NEO TODO (Adam) Do we need to draw each player model twice when in vision?
 	if (!ret) {
 		return ret;
 	}
