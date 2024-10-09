@@ -13,10 +13,6 @@
 #include "utldict.h"
 #include "filesystem.h"
 
-#ifdef NEO
-#include "neo_playeranimstate.h"
-#endif
-
 #ifdef CLIENT_DLL
 	#include "c_baseplayer.h"
 	#include "engine/ivdebugoverlay.h"

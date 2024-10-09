@@ -41,7 +41,6 @@ public:
 	virtual void PostThink(void) OVERRIDE;
 	virtual void PreThink(void) OVERRIDE;
 	virtual void PlayerDeathThink(void) OVERRIDE;
-	virtual void SetAnimation(PLAYER_ANIM playerAnim) OVERRIDE;
 	virtual bool HandleCommand_JoinTeam(int team) OVERRIDE;
 	virtual bool ClientCommand(const CCommand &args) OVERRIDE;
 	virtual void CreateViewModel(int viewmodelindex = 0) OVERRIDE;
@@ -255,8 +254,6 @@ private:
 
 	int m_iDmgMenuCurPage;
 	int m_iDmgMenuNextPage;
-
-	INEOPlayerAnimState* m_pPlayerAnimState;
 
 private:
 	CNEO_Player(const CNEO_Player&);

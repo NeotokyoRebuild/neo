@@ -79,7 +79,7 @@ void CWeaponAA13::PrimaryAttack(void)
 	}
 
 	// Only the player fires this way so we can cast
-	CBasePlayer *pPlayer = ToBasePlayer(GetOwner());
+	auto* pPlayer = static_cast<CNEO_Player*>(GetOwner());
 
 	if (!pPlayer)
 	{
@@ -96,7 +96,7 @@ void CWeaponAA13::PrimaryAttack(void)
 	m_iClip1 -= 1;
 
 	// player "shoot" animation
-	pPlayer->SetAnimation(PLAYER_ATTACK1);
+	pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
 
 	Vector vecSrc = pPlayer->Weapon_ShootPosition();
 	Vector vecAiming = pPlayer->GetAutoaimVector(AUTOAIM_10DEGREES);

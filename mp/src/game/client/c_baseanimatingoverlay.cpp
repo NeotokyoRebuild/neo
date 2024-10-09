@@ -15,10 +15,6 @@
 
 #include "dt_utlvector_recv.h"
 
-#ifndef NEO
-#include "neo_playeranimstate.h"
-#endif
-
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 

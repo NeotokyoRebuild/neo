@@ -133,7 +133,8 @@ void CWeaponDetpack::PrimaryAttack(void)
 		return;
 	}
 
-	if (!GetOwner())
+	auto* pPlayer = static_cast<CNEO_Player*>(GetOwner());
+	if (!pPlayer)
 	{
 		Assert(false);
 		return;
@@ -150,6 +151,7 @@ void CWeaponDetpack::PrimaryAttack(void)
 		DevMsg("Pulling remote trigger\n");
 #endif
 		SendWeaponAnim(ACT_VM_PRIMARYATTACK_DEPLOYED);
+		pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
 		m_flNextPrimaryAttack = gpGlobals->curtime + (SequenceDuration() / 3);
 		m_flTimeWeaponIdle = FLT_MAX;
 	}
@@ -186,7 +188,7 @@ void CWeaponDetpack::ItemPostFrame(void)
 
 	if (m_fDrawbackFinished)
 	{
-		auto pOwner = GetOwner();
+		auto pOwner = static_cast<CNEO_Player*>(GetOwner());
 
 		if ((m_bRemoteHasBeenTriggered) && (gpGlobals->curtime > m_flNextPrimaryAttack))
 		{
@@ -224,6 +226,7 @@ void CWeaponDetpack::ItemPostFrame(void)
 				{
 					TossDetpack(ToBasePlayer(pOwner));
 					m_bThisDetpackHasBeenThrown = true;
+					pOwner->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
 					// SendWeaponAnim(ACT_VM_DRAW_DEPLOYED);
 					// SendWeaponAnim(ACT_VM_THROW);
 					m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();

@@ -2432,14 +2432,14 @@ bool CBaseCombatWeapon::SetIdealActivity( Activity ideal )
 	{
 		//Set our activity to the next transitional animation
 		SetActivity( ACT_TRANSITION );
-		SetSequence( nextSequence );	
+		SetSequence( nextSequence );
 		SendViewModelAnim( nextSequence );
 	}
 	else
 	{
 		//Set our activity to the ideal
 		SetActivity( m_IdealActivity );
-		SetSequence( m_nIdealSequence );	
+		SetSequence( m_nIdealSequence );
 		SendViewModelAnim( m_nIdealSequence );
 	}
 

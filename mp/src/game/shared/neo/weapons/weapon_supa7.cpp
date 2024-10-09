@@ -172,7 +172,7 @@ bool CWeaponSupa7::Reload(void)
 		Warning("ERROR: Supa7 Reload called incorrectly!\n");
 	}
 
-	CBaseCombatCharacter* pOwner = GetOwner();
+	auto pOwner = static_cast<CNEO_Player*>(GetOwner());
 
 	if (pOwner == NULL)
 		return false;
@@ -187,6 +187,7 @@ bool CWeaponSupa7::Reload(void)
 	// Play reload on different channel as otherwise steals channel away from fire sound
 	WeaponSound(SPECIAL1);
 	SendWeaponAnim(ACT_VM_RELOAD);
+	pOwner->DoAnimationEvent(PLAYERANIMEVENT_RELOAD);
 
 	pOwner->m_flNextAttack = gpGlobals->curtime;
 	ProposeNextAttack(gpGlobals->curtime + SequenceDuration());
@@ -207,7 +208,7 @@ bool CWeaponSupa7::ReloadSlug(void)
 		Warning("ERROR: Supa7 ReloadSlug called incorrectly!\n");
 	}
 
-	CBaseCombatCharacter* pOwner = GetOwner();
+	auto pOwner = static_cast<CNEO_Player*>(GetOwner());
 
 	if (pOwner == NULL)
 		return false;
@@ -222,6 +223,7 @@ bool CWeaponSupa7::ReloadSlug(void)
 	// Play reload on different channel as otherwise steals channel away from fire sound
 	WeaponSound(SPECIAL1);
 	SendWeaponAnim(ACT_VM_RELOAD);
+	pOwner->DoAnimationEvent(PLAYERANIMEVENT_RELOAD);
 
 	pOwner->m_flNextAttack = gpGlobals->curtime;
 	ProposeNextAttack(gpGlobals->curtime + SequenceDuration());
@@ -292,7 +294,7 @@ void CWeaponSupa7::PrimaryAttack(void)
 	}
 
 	// Only the player fires this way so we can cast
-	CBasePlayer* pPlayer = ToBasePlayer(GetOwner());
+	auto pPlayer = static_cast<CNEO_Player*>(GetOwner());
 
 	if (!pPlayer)
 	{
@@ -333,7 +335,7 @@ void CWeaponSupa7::PrimaryAttack(void)
 	m_iClip1 -= 1;
 
 	// player "shoot" animation
-	pPlayer->SetAnimation(PLAYER_ATTACK1);
+	pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
 
 	// Fire the bullets, and force the first shot to be perfectly accurate
 	pPlayer->FireBullets(info);
