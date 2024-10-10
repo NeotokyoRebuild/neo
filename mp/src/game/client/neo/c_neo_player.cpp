@@ -623,6 +623,14 @@ int C_NEO_Player::DrawModel(int flags)
 	if (IsCloaked() && !inThermalVision)
 	{
 		int distance = (GetAbsOrigin() - pLocalPlayer->GetAbsOrigin()).Length();
+		if (vel > 0.5)
+		{
+			mat_neo_toc_test.SetValue(0.345f); // NEOTOO (Adam) Verify these values should not be 0.35 and 0.25 respectively
+		}
+		else
+		{
+			mat_neo_toc_test.SetValue(0.255f);
+		}
 		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::DrawModel(flags);
