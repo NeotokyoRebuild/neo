@@ -518,6 +518,7 @@ void CNEO_Player::Spawn(void)
 	m_nVisionLastTick = 0;
 	m_bInLean = NEO_LEAN_NONE;
 	m_bCorpseSpawned = false;
+	m_bIneligibleForLoadoutPick = false;
 
 	for (int i = 0; i < m_rfAttackersScores.Count(); ++i)
 	{
