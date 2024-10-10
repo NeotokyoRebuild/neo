@@ -47,10 +47,10 @@ void NeoToggleconsole();
 inline NeoUI::Context g_uiCtx;
 inline ConVar neo_cl_toggleconsole("neo_cl_toggleconsole", "0", FCVAR_ARCHIVE,
 								   "If the console can be toggled with the ` keybind or not.", true, 0.0f, true, 1.0f);
+inline int g_iRowsInScreen;
 
 namespace {
 
-int g_iRowsInScreen;
 int g_iAvatar = 64;
 int g_iRootSubPanelWide = 600;
 constexpr wchar_t WSZ_GAME_TITLE[] = L"neatbkyoc ue";
@@ -266,6 +266,7 @@ CNeoRoot::CNeoRoot(VPANEL parent)
 
 CNeoRoot::~CNeoRoot()
 {
+	if (g_pNeoRoot->m_pFileIODialog) g_pNeoRoot->m_pFileIODialog->DeletePanel();
 	m_panelCaptureInput->DeletePanel();
 	if (m_avImage) delete m_avImage;
 	NeoSettingsDeinit(&m_ns);
@@ -693,15 +694,21 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 
 void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 {
-	static constexpr void (*P_FN[])(NeoSettings *) = {
-		NeoSettings_General,
-		NeoSettings_Keys,
-		NeoSettings_Mouse,
-		NeoSettings_Audio,
-		NeoSettings_Video,
+	struct NeoSettingsFunc
+	{
+		void (*func)(NeoSettings *);
+		bool bUISectionManaged;
+	};
+	static constexpr NeoSettingsFunc P_FN[] = {
+		{NeoSettings_General, false},
+		{NeoSettings_Keys, false},
+		{NeoSettings_Mouse, false},
+		{NeoSettings_Audio, false},
+		{NeoSettings_Video, false},
+		{NeoSettings_Crosshair, true},
 	};
 	static const wchar_t *WSZ_TABS_LABELS[ARRAYSIZE(P_FN)] = {
-		L"Multiplayer", L"Keybinds", L"Mouse", L"Audio", L"Video"
+		L"Multiplayer", L"Keybinds", L"Mouse", L"Audio", L"Video", L"Crosshair"
 	};
 
 	m_ns.iNextBinding = -1;
@@ -720,13 +727,19 @@ void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 			NeoUI::Tabs(WSZ_TABS_LABELS, ARRAYSIZE(WSZ_TABS_LABELS), &m_ns.iCurTab);
 		}
 		NeoUI::EndSection();
-		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
-		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * g_iRowsInScreen;
-		NeoUI::BeginSection(true);
+		if (!P_FN[m_ns.iCurTab].bUISectionManaged)
 		{
-			P_FN[m_ns.iCurTab](&m_ns);
+			g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+			g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * g_iRowsInScreen;
+			NeoUI::BeginSection(true);
 		}
-		NeoUI::EndSection();
+		{
+			P_FN[m_ns.iCurTab].func(&m_ns);
+		}
+		if (!P_FN[m_ns.iCurTab].bUISectionManaged)
+		{
+			NeoUI::EndSection();
+		}
 		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
 		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
 		NeoUI::BeginSection();
@@ -1485,6 +1498,12 @@ void CNeoRoot::ReadNewsFile(CUtlBuffer &buf)
 		V_swprintf_safe(m_news[m_iNewsSize].wszTitle, L"%ls: %ls", wszDate, wszTitle);
 		++m_iNewsSize;
 	}
+}
+
+void CNeoRoot::OnFileSelected(const char *szFullpath)
+{
+	((m_ns.crosshair.eFileIOMode == vgui::FOD_OPEN) ?
+				&ImportCrosshair : &ExportCrosshair)(&m_ns.crosshair.info, szFullpath);
 }
 
 // NEO NOTE (nullsystem): NeoRootCaptureESC is so that ESC keybinds can be recognized by non-root states, but root

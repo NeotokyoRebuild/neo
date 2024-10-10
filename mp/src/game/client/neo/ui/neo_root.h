@@ -185,6 +185,9 @@ public:
 	int m_iNewsSize = 0;
 	void ReadNewsFile(CUtlBuffer &buf);
 	bool m_bShowBrowserLabel = false;
+
+	vgui::FileOpenDialog *m_pFileIODialog = nullptr;
+	MESSAGE_FUNC_CHARPTR(OnFileSelected, "FileSelected", fullpath);
 };
 
 extern CNeoRoot *g_pNeoRoot;

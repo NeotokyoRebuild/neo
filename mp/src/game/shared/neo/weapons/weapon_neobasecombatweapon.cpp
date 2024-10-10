@@ -15,6 +15,8 @@ extern ConVar weaponstay;
 #include "iefx.h"
 #include "c_te_effect_dispatch.h"
 #include "prediction.h"
+#include "hud_crosshair.h"
+#include "ui/neo_hud_crosshair.h"
 #endif
 
 #include "basecombatweapon_shared.h"
@@ -941,6 +943,36 @@ void CNEOBaseCombatWeapon::ProcessMuzzleFlashEvent()
 
 	// Muzzle flash particle
 	DispatchMuzzleParticleEffect(iAttachment);
+}
+
+void CNEOBaseCombatWeapon::DrawCrosshair()
+{
+	auto *player = C_NEO_Player::GetLocalNEOPlayer();
+	if (!player)
+	{
+		return;
+	}
+
+	// NEO TODO (nullsystem): Put some X on crosshair if aiming at teammate, see comment
+	// in C_BaseCombatWeapon::DrawCrosshair
+	// EX: bool bOnTarget = (m_iState == WEAPON_IS_ONTARGET);
+
+	auto *crosshair = GET_HUDELEMENT(CHudCrosshair);
+	if (!crosshair)
+	{
+		return;
+	}
+
+	if (GetWpnData().iconCrosshair)
+	{
+		const Color color(neo_cl_crosshair_color_r.GetInt(), neo_cl_crosshair_color_g.GetInt(),
+						  neo_cl_crosshair_color_b.GetInt(), neo_cl_crosshair_color_a.GetInt());
+		crosshair->SetCrosshair(GetWpnData().iconCrosshair, color);
+	}
+	else
+	{
+		crosshair->ResetCrosshair();
+	}
 }
 
 void CNEOBaseCombatWeapon::DispatchMuzzleParticleEffect(int iAttachment) {
