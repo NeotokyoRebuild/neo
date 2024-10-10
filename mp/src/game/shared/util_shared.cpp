@@ -278,6 +278,9 @@ bool StandardFilterRules( IHandleEntity *pHandleEntity, int fContentsMask )
 CTraceFilterSimple::CTraceFilterSimple( const IHandleEntity *passedict, int collisionGroup,
 									   ShouldHitFunc_t pExtraShouldHitFunc )
 {
+#ifdef NEO
+	m_bIgnoreNeoCollide = true;
+#endif
 	m_pPassEnt = passedict;
 	m_collisionGroup = collisionGroup;
 	m_pExtraShouldHitCheckFunction = pExtraShouldHitFunc;
@@ -306,7 +309,7 @@ bool CTraceFilterSimple::ShouldHitEntity( IHandleEntity *pHandleEntity, int cont
 	if ( !pEntity->ShouldCollide( m_collisionGroup, contentsMask ) )
 		return false;
 #ifdef NEO
-	if (m_pPassEnt)
+	if (!m_bIgnoreNeoCollide && m_pPassEnt)
 	{
 		const CBaseEntity *pThisEntity = EntityFromEntityHandle(m_pPassEnt);
 		if (pEntity && pThisEntity && !static_cast<CNEORules *>(g_pGameRules)->ShouldCollide(pThisEntity, pEntity))

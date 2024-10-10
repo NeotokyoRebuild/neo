@@ -801,6 +801,20 @@ Vector CGameMovement::GetPlayerViewOffset( bool ducked ) const
 #endif
 }
 
+inline void UTIL_TraceRayMovement( const Ray_t &ray, unsigned int mask,
+						  const IHandleEntity *ignore, int collisionGroup, trace_t *ptr, ShouldHitFunc_t pExtraShouldHitCheckFn = NULL )
+{
+	CTraceFilterSimple traceFilter( ignore, collisionGroup, pExtraShouldHitCheckFn );
+	traceFilter.m_bIgnoreNeoCollide = false;
+
+	enginetrace->TraceRay( ray, mask, &traceFilter, ptr );
+
+	if( r_visualizetraces.GetBool() )
+	{
+		DebugDrawLine( ptr->startpos, ptr->endpos, 255, 0, 0, true, -1.0f );
+	}
+}
+
 #if 0
 //-----------------------------------------------------------------------------
 // Traces player movement + position
@@ -819,7 +833,7 @@ CBaseHandle CGameMovement::TestPlayerPosition( const Vector& pos, int collisionG
 {
 	Ray_t ray;
 	ray.Init( pos, pos, GetPlayerMins(), GetPlayerMaxs() );
-	UTIL_TraceRay( ray, PlayerSolidMask(), mv->m_nPlayerHandle.Get(), collisionGroup, &pm );
+	UTIL_TraceRayMovement( ray, PlayerSolidMask(), mv->m_nPlayerHandle.Get(), collisionGroup, &pm );
 	if ( (pm.contents & PlayerSolidMask()) && pm.m_pEnt )
 	{
 		return pm.m_pEnt->GetRefEHandle();
@@ -3738,7 +3752,7 @@ void TracePlayerBBoxForGround( const Vector& start, const Vector& end, const Vec
 	mins = minsSrc;
 	maxs.Init( MIN( 0, maxsSrc.x ), MIN( 0, maxsSrc.y ), maxsSrc.z );
 	ray.Init( start, end, mins, maxs );
-	UTIL_TraceRay( ray, fMask, player, collisionGroup, &pm );
+	UTIL_TraceRayMovement( ray, fMask, player, collisionGroup, &pm );
 	if ( pm.m_pEnt && pm.plane.normal[2] >= 0.7)
 	{
 		pm.fraction = fraction;
@@ -3750,7 +3764,7 @@ void TracePlayerBBoxForGround( const Vector& start, const Vector& end, const Vec
 	mins.Init( MAX( 0, minsSrc.x ), MAX( 0, minsSrc.y ), minsSrc.z );
 	maxs = maxsSrc;
 	ray.Init( start, end, mins, maxs );
-	UTIL_TraceRay( ray, fMask, player, collisionGroup, &pm );
+	UTIL_TraceRayMovement( ray, fMask, player, collisionGroup, &pm );
 	if ( pm.m_pEnt && pm.plane.normal[2] >= 0.7)
 	{
 		pm.fraction = fraction;
@@ -3762,7 +3776,7 @@ void TracePlayerBBoxForGround( const Vector& start, const Vector& end, const Vec
 	mins.Init( minsSrc.x, MAX( 0, minsSrc.y ), minsSrc.z );
 	maxs.Init( MIN( 0, maxsSrc.x ), maxsSrc.y, maxsSrc.z );
 	ray.Init( start, end, mins, maxs );
-	UTIL_TraceRay( ray, fMask, player, collisionGroup, &pm );
+	UTIL_TraceRayMovement( ray, fMask, player, collisionGroup, &pm );
 	if ( pm.m_pEnt && pm.plane.normal[2] >= 0.7)
 	{
 		pm.fraction = fraction;
@@ -3774,7 +3788,7 @@ void TracePlayerBBoxForGround( const Vector& start, const Vector& end, const Vec
 	mins.Init( MAX( 0, minsSrc.x ), minsSrc.y, minsSrc.z );
 	maxs.Init( maxsSrc.x, MIN( 0, maxsSrc.y ), maxsSrc.z );
 	ray.Init( start, end, mins, maxs );
-	UTIL_TraceRay( ray, fMask, player, collisionGroup, &pm );
+	UTIL_TraceRayMovement( ray, fMask, player, collisionGroup, &pm );
 	if ( pm.m_pEnt && pm.plane.normal[2] >= 0.7)
 	{
 		pm.fraction = fraction;
@@ -5109,7 +5123,7 @@ void CGameMovement::TracePlayerBBox( const Vector& start, const Vector& end, uns
 
 	Ray_t ray;
 	ray.Init( start, end, GetPlayerMins(), GetPlayerMaxs() );
-	UTIL_TraceRay( ray, fMask, mv->m_nPlayerHandle.Get(), collisionGroup, &pm );
+	UTIL_TraceRayMovement( ray, fMask, mv->m_nPlayerHandle.Get(), collisionGroup, &pm );
 
 }
 
@@ -5124,6 +5138,6 @@ void  CGameMovement::TryTouchGround( const Vector& start, const Vector& end, con
 
 	Ray_t ray;
 	ray.Init( start, end, mins, maxs );
-	UTIL_TraceRay( ray, fMask, mv->m_nPlayerHandle.Get(), collisionGroup, &pm );
+	UTIL_TraceRayMovement( ray, fMask, mv->m_nPlayerHandle.Get(), collisionGroup, &pm );
 }
 
