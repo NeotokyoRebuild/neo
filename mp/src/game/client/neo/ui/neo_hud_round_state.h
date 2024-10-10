@@ -65,7 +65,8 @@ private:
 	wchar_t m_wszLeftTeamScore[3] = {};
 	wchar_t m_wszRightTeamScore[3] = {};
 	wchar_t m_wszPlayersAliveUnicode[9] = {};
-	wchar_t m_wszStatusUnicode[24] = {};
+	const wchar_t *m_pWszStatusUnicode = nullptr;
+	int m_iStatusUnicodeSize = 0;
 	wchar_t m_wszGameTypeDescription[MAX_GAME_TYPE_OBJECTIVE_LENGTH] = {};
 	char szGameTypeDescription[MAX_GAME_TYPE_OBJECTIVE_LENGTH] = {};
 

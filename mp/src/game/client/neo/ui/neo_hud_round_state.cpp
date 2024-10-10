@@ -41,6 +41,7 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 	: CHudElement(pElementName)
 	, Panel(parent, pElementName)
 {
+	m_pWszStatusUnicode = L"";
 	SetAutoDelete(true);
 
 	if (parent)
@@ -203,6 +204,8 @@ void CNEOHud_RoundState::ApplySchemeSettings(vgui::IScheme* pScheme)
 	SetBounds(0, Y_POS, res.w, res.h);
 }
 
+extern ConVar neo_sv_readyup_lobby;
+
 void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 {
 	float roundTimeLeft = NEORules()->GetRoundRemainingTime();
@@ -210,22 +213,19 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	const bool inSuddenDeath = NEORules()->RoundIsInSuddenDeath();
 	const bool inMatchPoint = NEORules()->RoundIsMatchPoint();
 
-	const char *prefixStr = (roundStatus == NeoRoundStatus::Warmup) ? "Warmup" : "";
+	m_pWszStatusUnicode = (roundStatus == NeoRoundStatus::Warmup) ? L"Warmup" : L"";
 	if (roundStatus == NeoRoundStatus::Idle) {
-		prefixStr = "Waiting for players";
+		m_pWszStatusUnicode = neo_sv_readyup_lobby.GetBool() ? L"Waiting for players to ready up" : L"Waiting for players";
 	}
 	else if (inSuddenDeath)
 	{
-		prefixStr = "Sudden death";
+		m_pWszStatusUnicode = L"Sudden death";
 	}
 	else if (inMatchPoint)
 	{
-		prefixStr = "Match point";
+		m_pWszStatusUnicode = L"Match point";
 	}
-	char szStatusANSI[24] = {};
-	V_sprintf_safe(szStatusANSI, "%s", prefixStr);
-	memset(m_wszStatusUnicode, 0, sizeof(m_wszStatusUnicode)); // NOTE (nullsystem): Clear it or get junk after warmup ends
-	g_pVGuiLocalize->ConvertANSIToUnicode(szStatusANSI, m_wszStatusUnicode, sizeof(m_wszStatusUnicode));
+	m_iStatusUnicodeSize = V_wcslen(m_pWszStatusUnicode);
 
 	// Update steam images
 	if (gpGlobals->curtime > m_iNextAvatarUpdate) {
@@ -376,9 +376,9 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 		surface()->DrawPrintText(m_wszRoundUnicode, 9);
 
 		// Draw round status
-		surface()->GetTextSize(m_hOCRSmallFont, m_wszStatusUnicode, fontWidth, fontHeight);
+		surface()->GetTextSize(m_hOCRSmallFont, m_pWszStatusUnicode, fontWidth, fontHeight);
 		surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), m_iBoxYEnd);
-		surface()->DrawPrintText(m_wszStatusUnicode, 24);
+		surface()->DrawPrintText(m_pWszStatusUnicode, m_iStatusUnicodeSize);
 
 		const int localPlayerTeam = GetLocalPlayerTeam();
 		const int localPlayerIndex = GetLocalPlayerIndex();
