@@ -1035,7 +1035,7 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 	bool inMotionVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT;
 	bool inThermalVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT;
 
-	if (/*!*/pOwner->IsCloaked() || inThermalVision)
+	if (!pOwner->IsCloaked() || inThermalVision)
 	{
 		ret |= BaseClass::DrawModel(flags);
 	}
@@ -1055,11 +1055,10 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 		ret |= BaseClass::DrawModel(flags);
 	}
 
-	if (/*!!*/!pOwner->IsCloaked() && !inThermalVision)
+	if (pOwner->IsCloaked() && !inThermalVision)
 	{
 		int distance = (GetAbsOrigin() - pLocalPlayer->GetAbsOrigin()).Length();
 		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
-		mat_neo_toc_test.SetValue((float)((vel > 0.5 ? 0.07 : 0.06) + (distance * 0.000004) + (vel > 0.5 ? distance * 0.00005 : 0) - (pLocalPlayer->IsInAim() ? 0.01 : 0)));
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::DrawModel(flags);
 	}
@@ -1087,7 +1086,7 @@ int CNEOBaseCombatWeapon::InternalDrawModel(int flags)
 	bool inMotionVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT;
 	bool inThermalVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT;
 
-	if (/*!*/pOwner->IsCloaked() || inThermalVision)
+	if (!pOwner->IsCloaked() || inThermalVision)
 	{
 		ret |= BaseClass::InternalDrawModel(flags);
 	}
@@ -1107,11 +1106,10 @@ int CNEOBaseCombatWeapon::InternalDrawModel(int flags)
 		ret |= BaseClass::InternalDrawModel(flags);
 	}
 
-	if (/*!!*/!pOwner->IsCloaked() && !inThermalVision)
+	if (pOwner->IsCloaked() && !inThermalVision)
 	{
 		int distance = (GetAbsOrigin() - pLocalPlayer->GetAbsOrigin()).Length();
 		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
-		mat_neo_toc_test.SetValue((float)((vel > 0.5 ? 0.07 : 0.06) + (distance * 0.000004) + (vel > 0.5 ? distance * 0.00005 : 0) - (pLocalPlayer->IsInAim() ? 0.01 : 0)));
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::InternalDrawModel(flags);
 	}

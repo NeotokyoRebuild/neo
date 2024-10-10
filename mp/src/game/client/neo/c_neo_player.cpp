@@ -600,7 +600,7 @@ int C_NEO_Player::DrawModel(int flags)
 	bool inMotionVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT;
 	bool inThermalVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT;
 
-	if (/*!*/IsCloaked() || inThermalVision)
+	if (!IsCloaked() || inThermalVision)
 	{
 		ret |= BaseClass::DrawModel(flags);
 	}
@@ -620,11 +620,10 @@ int C_NEO_Player::DrawModel(int flags)
 		ret |= BaseClass::DrawModel(flags | STUDIO_RENDER | STUDIO_TRANSPARENCY);
 	}
 
-	if (/*!!*/!IsCloaked() && !inThermalVision)
+	if (IsCloaked() && !inThermalVision)
 	{
 		int distance = (GetAbsOrigin() - pLocalPlayer->GetAbsOrigin()).Length();
 		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
-		mat_neo_toc_test.SetValue((float)((vel > 0.5 ? 0.07 : 0.06) + (distance*0.000004) + (vel > 0.5 ? distance * 0.00005 : 0) - (pLocalPlayer->IsInAim() ? 0.01 : 0)));
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::DrawModel(flags);
 	}
@@ -640,7 +639,7 @@ void C_NEO_Player::AddEntity( void )
 
 ShadowType_t C_NEO_Player::ShadowCastType( void ) 
 {
-	if (/*!*/!IsCloaked())
+	if (IsCloaked())
 	{
 		return SHADOWS_NONE;
 	}
@@ -655,6 +654,21 @@ C_BaseAnimating *C_NEO_Player::BecomeRagdollOnClient()
 const QAngle& C_NEO_Player::GetRenderAngles()
 {
 	return BaseClass::GetRenderAngles();
+}
+
+RenderGroup_t C_NEO_Player::GetRenderGroup()
+{
+	return IsCloaked() ? RENDER_GROUP_TRANSLUCENT_ENTITY : RENDER_GROUP_OPAQUE_ENTITY;
+}
+
+bool C_NEO_Player::IsTransparent()
+{
+	return IsCloaked() ? true : false;
+}
+
+bool C_NEO_Player::UsesPowerOfTwoFrameBufferTexture()
+{
+	return IsCloaked() ? true : false;
 }
 
 bool C_NEO_Player::ShouldDraw( void )
