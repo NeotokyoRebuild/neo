@@ -10,13 +10,12 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-ConVar mat_neo_nv_brightness("mat_neo_nv_brightness", "0.2", FCVAR_CHEAT);
-ConVar mat_neo_nv_green_scale("mat_neo_nv_green_scale", "0.15", FCVAR_CHEAT, "Amount of green hue in nightvision.", true, 0.0, false, 0.0);
-ConVar mat_neo_nv_contrast("mat_neo_nv_contrast", "1.75", FCVAR_CHEAT);
-ConVar mat_neo_nv_luminance("mat_neo_nv_luminance", "0.2", FCVAR_CHEAT);
-// These are not the actual screen gamma values, but rather a range from which to emulate the nv gamma adjust.
-ConVar mat_neo_nv_startgamma("mat_neo_nv_startgamma", "2.2", FCVAR_CHEAT);
-ConVar mat_neo_nv_targetgamma("mat_neo_nv_targetgamma", "2.4", FCVAR_CHEAT);
+ConVar mat_neo_nv_screentint_red("mat_neo_nv_screentint_red", "0.08", FCVAR_CHEAT);
+ConVar mat_neo_nv_screentint_green("mat_neo_nv_screentint_green", "0.09", FCVAR_CHEAT);
+ConVar mat_neo_nv_screentint_blue("mat_neo_nv_screentint_blue", "0.08", FCVAR_CHEAT);
+ConVar mat_neo_nv_luminosity_mp("mat_neo_nv_luminosity_mp", "0.01", FCVAR_CHEAT);
+ConVar mat_neo_nv_luminosity_intensity("mat_neo_nv_luminosity_intensity", "0.25", FCVAR_CHEAT);
+ConVar mat_neo_nv_nightvision_intensity("mat_neo_nv_nightvision_intensity", "120", FCVAR_CHEAT);
 
 BEGIN_SHADER_FLAGS(Neo_NightVision, "Help for my shader.", SHADER_NOT_EDITABLE)
 
@@ -81,19 +80,19 @@ SHADER_DRAW
 		BindTexture(SHADER_SAMPLER0, FBTEXTURE, -1);
 		//BindTexture(SHADER_SAMPLER1, BLURTEXTURE, -1);
 
-		const float flBrightnessScale = mat_neo_nv_brightness.GetFloat();
-		const float flGreenScale = mat_neo_nv_green_scale.GetFloat();
-		const float flContrast = mat_neo_nv_contrast.GetFloat();
-		const float flLuminance = mat_neo_nv_luminance.GetFloat();
-		const float flStartGamma = mat_neo_nv_startgamma.GetFloat();
-		const float flTargetGamma = mat_neo_nv_targetgamma.GetFloat();
+		const float flScreenTintRed = mat_neo_nv_screentint_red.GetFloat();
+		const float flScreenTintGreen = mat_neo_nv_screentint_green.GetFloat();
+		const float flScreenTintBlue = mat_neo_nv_screentint_blue.GetFloat();
+		const float flLuminosityMP = mat_neo_nv_luminosity_mp.GetFloat();
+		const float flLuminosityIntensity = mat_neo_nv_luminosity_intensity.GetFloat();
+		const float flNightvisionIntensity = mat_neo_nv_nightvision_intensity.GetFloat();
 
-		pShaderAPI->SetPixelShaderConstant(0, &flBrightnessScale);
-		pShaderAPI->SetPixelShaderConstant(1, &flGreenScale);
-		pShaderAPI->SetPixelShaderConstant(2, &flContrast);
-		pShaderAPI->SetPixelShaderConstant(3, &flLuminance);
-		pShaderAPI->SetPixelShaderConstant(4, &flStartGamma);
-		pShaderAPI->SetPixelShaderConstant(5, &flTargetGamma);
+		pShaderAPI->SetPixelShaderConstant(1, &flScreenTintRed);
+		pShaderAPI->SetPixelShaderConstant(2, &flScreenTintGreen);
+		pShaderAPI->SetPixelShaderConstant(3, &flScreenTintBlue);
+		pShaderAPI->SetPixelShaderConstant(4, &flLuminosityMP);
+		pShaderAPI->SetPixelShaderConstant(5, &flLuminosityIntensity);
+		pShaderAPI->SetPixelShaderConstant(6, &flNightvisionIntensity);
 
 		DECLARE_DYNAMIC_VERTEX_SHADER(neo_passthrough_vs30);
 		SET_DYNAMIC_VERTEX_SHADER(neo_passthrough_vs30);

@@ -34,6 +34,10 @@
 bool NPC_CheckBrushExclude( CBaseEntity *pEntity, CBaseEntity *pBrush );
 #endif
 
+#ifdef NEO
+#include "neo_gamerules.h"
+#endif
+
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -301,8 +305,24 @@ bool CTraceFilterSimple::ShouldHitEntity( IHandleEntity *pHandleEntity, int cont
 		return false;
 	if ( !pEntity->ShouldCollide( m_collisionGroup, contentsMask ) )
 		return false;
+#ifdef NEO
+	if (m_pPassEnt)
+	{
+		const CBaseEntity *pThisEntity = EntityFromEntityHandle(m_pPassEnt);
+		if (pEntity && pThisEntity && !static_cast<CNEORules *>(g_pGameRules)->ShouldCollide(pThisEntity, pEntity))
+		{
+			return false;
+		}
+	}
+	else
+	{
+		if ( pEntity && !g_pGameRules->ShouldCollide( m_collisionGroup, pEntity->GetCollisionGroup() ) )
+			return false;
+	}
+#else
 	if ( pEntity && !g_pGameRules->ShouldCollide( m_collisionGroup, pEntity->GetCollisionGroup() ) )
 		return false;
+#endif
 	if ( m_pExtraShouldHitCheckFunction &&
 		(! ( m_pExtraShouldHitCheckFunction( pHandleEntity, contentsMask ) ) ) )
 		return false;

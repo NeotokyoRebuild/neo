@@ -2963,6 +2963,9 @@ void DoEnginePostProcessing( int x, int y, int w, int h, bool bFlashlightIsOn, b
 				DoThermalVision(x, y, w, h);
 				break;
 			}
+			case NEO_CLASS_VIP:
+				// Cry a little
+				break;
 			default:
 				Assert(false);
 			}
