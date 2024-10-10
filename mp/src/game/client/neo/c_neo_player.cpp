@@ -615,14 +615,14 @@ int C_NEO_Player::DrawModel(int flags)
 	{
 		IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
 		modelrender->ForcedMaterialOverride(pass);
-		ret |= BaseClass::DrawModel(flags | STUDIO_RENDER | STUDIO_TRANSPARENCY);
+		ret |= BaseClass::DrawModel(flags);
 	}
 
 	else if (inThermalVision && !IsCloaked())
 	{
 		IMaterial* pass = materials->FindMaterial("dev/thermal_third", TEXTURE_GROUP_MODEL);
 		modelrender->ForcedMaterialOverride(pass);
-		ret |= BaseClass::DrawModel(flags | STUDIO_RENDER | STUDIO_TRANSPARENCY);
+		ret |= BaseClass::DrawModel(flags);
 	}
 
 	if (IsCloaked() && !inThermalVision)
@@ -630,7 +630,7 @@ int C_NEO_Player::DrawModel(int flags)
 		int distance = (GetAbsOrigin() - pLocalPlayer->GetAbsOrigin()).Length();
 		if (vel > 0.5)
 		{
-			mat_neo_toc_test.SetValue(0.345f); // NEOTOO (Adam) Verify these values should not be 0.35 and 0.25 respectively
+			mat_neo_toc_test.SetValue(0.345f);
 		}
 		else
 		{
@@ -672,11 +672,6 @@ const QAngle& C_NEO_Player::GetRenderAngles()
 RenderGroup_t C_NEO_Player::GetRenderGroup()
 {
 	return IsCloaked() ? RENDER_GROUP_TRANSLUCENT_ENTITY : RENDER_GROUP_OPAQUE_ENTITY;
-}
-
-bool C_NEO_Player::IsTransparent()
-{
-	return IsCloaked() ? true : false;
 }
 
 bool C_NEO_Player::UsesPowerOfTwoFrameBufferTexture()

@@ -39,7 +39,6 @@ public:
 	virtual C_BaseAnimating *BecomeRagdollOnClient();
 	virtual const QAngle& GetRenderAngles();
 	virtual RenderGroup_t GetRenderGroup() override;
-	virtual bool IsTransparent() override;
 	virtual bool UsesPowerOfTwoFrameBufferTexture() override;
 	virtual bool ShouldDraw( void );
 	//virtual bool ShouldInterpolate() { return true; }

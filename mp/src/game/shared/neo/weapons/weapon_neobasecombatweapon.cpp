@@ -1062,6 +1062,14 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 	if (pOwner->IsCloaked() && !inThermalVision)
 	{
 		int distance = (GetAbsOrigin() - pLocalPlayer->GetAbsOrigin()).Length();
+		if (vel > 0.5)
+		{
+			mat_neo_toc_test.SetValue(0.345f);
+		}
+		else
+		{
+			mat_neo_toc_test.SetValue(0.255f);
+		}
 		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::DrawModel(flags);
@@ -1113,6 +1121,14 @@ int CNEOBaseCombatWeapon::InternalDrawModel(int flags)
 	if (pOwner->IsCloaked() && !inThermalVision)
 	{
 		int distance = (GetAbsOrigin() - pLocalPlayer->GetAbsOrigin()).Length();
+		if (vel > 0.5)
+		{
+			mat_neo_toc_test.SetValue(0.345f);
+		}
+		else
+		{
+			mat_neo_toc_test.SetValue(0.255f);
+		}
 		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::InternalDrawModel(flags);
@@ -1130,6 +1146,28 @@ ShadowType_t CNEOBaseCombatWeapon::ShadowCastType(void)
 		return SHADOWS_NONE;
 	}
 	return BaseClass::ShadowCastType();
+}
+
+RenderGroup_t CNEOBaseCombatWeapon::GetRenderGroup()
+{
+	auto pPlayer = static_cast<C_NEO_Player*>(GetOwner());
+	if (pPlayer)
+	{
+		return pPlayer->IsCloaked() ? RENDER_GROUP_TRANSLUCENT_ENTITY : RENDER_GROUP_OPAQUE_ENTITY;
+	}
+
+	return BaseClass::GetRenderGroup();
+}
+
+bool CNEOBaseCombatWeapon::UsesPowerOfTwoFrameBufferTexture()
+{
+	auto pPlayer = static_cast<C_NEO_Player*>(GetOwner());
+	if (pPlayer)
+	{
+		return pPlayer->IsCloaked() ? true : false;
+	}
+
+	return BaseClass::UsesPowerOfTwoFrameBufferTexture();
 }
 #endif
 

@@ -222,6 +222,7 @@ void CNEOPredictedViewModel::ClientThink()
 	BaseClass::ClientThink();
 }
 
+extern ConVar mat_neo_toc_test;
 int CNEOPredictedViewModel::DrawModel(int flags)
 {
 	auto pPlayer = static_cast<C_NEO_Player*>(GetOwner());
@@ -240,6 +241,17 @@ int CNEOPredictedViewModel::DrawModel(int flags)
 					PrecacheMaterial(pass->GetName());
 					Assert(pass->IsPrecached());
 				}
+
+				auto vel = GetAbsVelocity().Length();
+				if (vel > 0.5)
+				{
+					mat_neo_toc_test.SetValue(0.345f);
+				}
+				else
+				{
+					mat_neo_toc_test.SetValue(0.255f);
+				}
+
 				modelrender->ForcedMaterialOverride(pass);
 				int ret = BaseClass::DrawModel(flags);
 				modelrender->ForcedMaterialOverride(NULL);
