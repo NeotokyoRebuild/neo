@@ -477,9 +477,7 @@ bool CNEORules::ShouldCollide(const CBaseEntity *ent0, const CBaseEntity *ent1) 
 	const int ent0Group = ent0->GetCollisionGroup();
 	const int ent1Group = ent1->GetCollisionGroup();
 	const int iNeoCol = neo_sv_collision.GetInt();
-	if (iNeoCol != NEOCOLLISION_ALL &&
-			(ent0Group == COLLISION_GROUP_PLAYER || ent0Group == COLLISION_GROUP_PLAYER_MOVEMENT) &&
-			(ent1Group == COLLISION_GROUP_PLAYER || ent1Group == COLLISION_GROUP_PLAYER_MOVEMENT))
+	if (iNeoCol != NEOCOLLISION_ALL && ent0Group == COLLISION_GROUP_PLAYER && ent1Group == COLLISION_GROUP_PLAYER)
 	{
 		return (iNeoCol == NEOCOLLISION_TEAM) ?
 					(static_cast<const CNEO_Player *>(ent0)->GetTeamNumber() != static_cast<const CNEO_Player *>(ent1)->GetTeamNumber()) :
