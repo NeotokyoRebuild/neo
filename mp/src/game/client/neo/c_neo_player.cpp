@@ -586,63 +586,50 @@ int C_NEO_Player::GetAttackerHits(const int attackerIdx) const
 	return m_rfAttackersHits.Get(attackerIdx);
 }
 
+extern ConVar mat_neo_toc_test;
 int C_NEO_Player::DrawModel(int flags)
 {
-	int ret = BaseClass::DrawModel(flags);
-
-	if (!ret) {
-		return ret;
-	}
-
+	int ret = 0;
 	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if (pLocalPlayer && pLocalPlayer->IsInVision())
+	if (!pLocalPlayer)
 	{
-		auto vel = GetAbsVelocity().Length();
-		if ((pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT) && vel > 1)
-		{
-			IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
-			Assert(pass && !pass->IsErrorMaterial());
-
-			if (pass && !pass->IsErrorMaterial())
-			{
-				// Render
-				modelrender->ForcedMaterialOverride(pass);
-				ret = BaseClass::DrawModel(flags | STUDIO_RENDER | STUDIO_TRANSPARENCY);
-				modelrender->ForcedMaterialOverride(NULL);
-
-				return ret;
-			}
-		}
-		else if (pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT && !IsCloaked())
-		{
-			IMaterial* pass = materials->FindMaterial("dev/thermal_third", TEXTURE_GROUP_MODEL);
-			Assert(pass && !pass->IsErrorMaterial());
-
-			if (pass && !pass->IsErrorMaterial())
-			{
-				// Render
-				modelrender->ForcedMaterialOverride(pass);
-				ret = BaseClass::DrawModel(flags | STUDIO_RENDER | STUDIO_TRANSPARENCY);
-				modelrender->ForcedMaterialOverride(NULL);
-
-				return ret;
-			}
-		}
+		Assert(false);
+		return BaseClass::DrawModel(flags);
 	}
 	
-	if (IsCloaked())
-	{
-		IMaterial* pass = materials->FindMaterial("dev/toc_cloakpass", TEXTURE_GROUP_CLIENT_EFFECTS);
-		Assert(pass && !pass->IsErrorMaterial());
+	bool inMotionVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT;
+	bool inThermalVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT;
 
-		if (pass && !pass->IsErrorMaterial())
-		{
-			modelrender->ForcedMaterialOverride(pass);
-			ret = BaseClass::DrawModel(flags);
-			modelrender->ForcedMaterialOverride(NULL);
-		}
+	if (/*!*/IsCloaked() || inThermalVision)
+	{
+		ret |= BaseClass::DrawModel(flags);
 	}
 
+	auto vel = GetAbsVelocity().Length();
+	if (inMotionVision && vel > 0.5) // MOVING_SPEED_MINIMUM
+	{
+		IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
+		modelrender->ForcedMaterialOverride(pass);
+		ret |= BaseClass::DrawModel(flags | STUDIO_RENDER | STUDIO_TRANSPARENCY);
+	}
+
+	else if (inThermalVision && !IsCloaked())
+	{
+		IMaterial* pass = materials->FindMaterial("dev/thermal_third", TEXTURE_GROUP_MODEL);
+		modelrender->ForcedMaterialOverride(pass);
+		ret |= BaseClass::DrawModel(flags | STUDIO_RENDER | STUDIO_TRANSPARENCY);
+	}
+
+	if (/*!!*/!IsCloaked() && !inThermalVision)
+	{
+		int distance = (GetAbsOrigin() - pLocalPlayer->GetAbsOrigin()).Length();
+		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
+		mat_neo_toc_test.SetValue((float)((vel > 0.5 ? 0.07 : 0.06) + (distance*0.000004) + (vel > 0.5 ? distance * 0.00005 : 0) - (pLocalPlayer->IsInAim() ? 0.01 : 0)));
+		modelrender->ForcedMaterialOverride(pass);
+		ret |= BaseClass::DrawModel(flags);
+	}
+
+	modelrender->ForcedMaterialOverride(null);
 	return ret;
 }
 
@@ -653,6 +640,10 @@ void C_NEO_Player::AddEntity( void )
 
 ShadowType_t C_NEO_Player::ShadowCastType( void ) 
 {
+	if (/*!*/!IsCloaked())
+	{
+		return SHADOWS_NONE;
+	}
 	return BaseClass::ShadowCastType();
 }
 

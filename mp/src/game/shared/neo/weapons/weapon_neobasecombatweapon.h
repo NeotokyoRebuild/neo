@@ -252,6 +252,8 @@ public:
 	virtual void ItemHolsterFrame() override;
 	virtual bool ShouldDraw(void) override;
 	virtual int DrawModel(int flags) override;
+	virtual int InternalDrawModel(int flags) override;
+	virtual ShadowType_t ShadowCastType(void) override;
 #endif
 
 	virtual bool Deploy(void);
