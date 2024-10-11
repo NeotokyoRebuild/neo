@@ -928,7 +928,6 @@ void C_NEO_Player::ClientThink(void)
 
 	if (IsCloaked())
 	{ // PreThink and PostThink are only ran for local player, update every in pvs player's cloak strength here
-		// Update cloak strength
 		auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
 		if (pLocalPlayer)
 		{
