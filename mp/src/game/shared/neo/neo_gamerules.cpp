@@ -780,7 +780,7 @@ void CNEORules::Think(void)
 		{
 			if (sv_neo_vip_ctg_on_death.GetBool())
 			{
-				UTIL_CenterPrintAll("HVT down, recover the Ghost");
+				UTIL_CenterPrintAll("- HVT DOWN - RECOVER THE GHOST -\n");
 				SpawnTheGhost();
 			}
 			else
@@ -794,7 +794,7 @@ void CNEORules::Think(void)
 		{
 			if (sv_neo_vip_ctg_on_death.GetBool())
 			{
-				UTIL_CenterPrintAll("HVT down, recover the Ghost");
+				UTIL_CenterPrintAll("- HVT DOWN - RECOVER THE GHOST -\n");
 				SpawnTheGhost(&m_pVIP->GetAbsOrigin());
 			}
 			else
@@ -1242,7 +1242,7 @@ void CNEORules::StartNextRound()
 		if (!loopbackSkipWarmup)
 		{
 			// Moving from 0 players from either team to playable at team state
-			UTIL_CenterPrintAll("Warmup countdown started.\n");
+			UTIL_CenterPrintAll("- WARMUP COUNTDOWN STARTED -\n");
 			SetRoundStatus(NeoRoundStatus::Warmup);
 			m_flNeoRoundStartTime = gpGlobals->curtime;
 			m_flNeoNextRoundStartTime = gpGlobals->curtime + mp_neo_warmup_round_time.GetFloat();
