@@ -120,6 +120,7 @@ struct Context
 	wchar_t unichar;
 	Color bgColor;
 	Color selectBgColor;
+	Color normalBgColor;
 
 	// Mouse handling
 	int iMouseAbsX;
@@ -195,7 +196,9 @@ void BeginSection(const bool bDefaultFocus = false);
 void EndSection();
 void BeginHorizontal(const int iHorizontalWidth, const int iHorizontalMargin = 0);
 void EndHorizontal();
+
 void SwapFont(const EFont eFont);
+void SwapColorNormal(const Color &color);
 
 struct RetButton
 {
@@ -217,6 +220,9 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 			const int iDp = 2, const float flStep = 1.0f, const wchar_t *wszSpecialText = nullptr);
 void SliderInt(const wchar_t *wszLeftLabel, int *iValue, const int iMin, const int iMax, const int iStep = 1,
 			   const wchar_t *wszSpecialText = nullptr);
+void SliderU8(const wchar_t *wszLeftLabel, uint8 *ucValue, const uint8 iMin, const uint8 iMax, const uint8 iStep = 1,
+			   const wchar_t *wszSpecialText = nullptr);
 void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize);
 bool Bind(const ButtonCode_t eCode);
+void OpenURL(const char *szBaseUrl, const char *szPath);
 }

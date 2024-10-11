@@ -17,6 +17,8 @@
 #include <voice_status.h>
 #include <c_playerresource.h>
 #include <ivoicetweak.h>
+#include "tier1/interface.h"
+#include <ctime>
 
 #include <vgui/IInput.h>
 #include <vgui_controls/Controls.h>
@@ -45,15 +47,40 @@ void NeoToggleconsole();
 inline NeoUI::Context g_uiCtx;
 inline ConVar neo_cl_toggleconsole("neo_cl_toggleconsole", "0", FCVAR_ARCHIVE,
 								   "If the console can be toggled with the ` keybind or not.", true, 0.0f, true, 1.0f);
+inline int g_iRowsInScreen;
 
 namespace {
 
-int g_iRowsInScreen;
 int g_iAvatar = 64;
 int g_iRootSubPanelWide = 600;
 constexpr wchar_t WSZ_GAME_TITLE[] = L"neatbkyoc ue";
+#define SZ_WEBSITE "https://neotokyorebuild.github.io"
 
 ConCommand neo_toggleconsole("neo_toggleconsole", NeoToggleconsole);
+
+struct YMD
+{
+	YMD(const struct tm tm)
+		: year(tm.tm_year + 1900)
+		, month(tm.tm_mon + 1)
+		, day(tm.tm_mday)
+	{
+	}
+
+	bool operator==(const YMD &other) const
+	{
+		return year == other.year && month == other.month && day == other.day;
+	}
+	bool operator!=(const YMD &other) const
+	{
+		return !(*this == other);
+	}
+
+	int year;
+	int month;
+	int day;
+};
+
 }
 
 void OverrideGameUI()
@@ -108,13 +135,12 @@ void CNeoRootInput::OnThink()
 		{
 			if (code != KEY_DELETE)
 			{
-				// The keybind system used requires 1:1 so unbind a duplicate
+				// The keybind system used requires 1:1 so unbind any duplicates
 				for (auto &bind : m_pNeoRoot->m_ns.keys.vBinds)
 				{
 					if (bind.bcNext == code)
 					{
 						bind.bcNext = BUTTON_CODE_NONE;
-						break;
 					}
 				}
 			}
@@ -192,6 +218,41 @@ CNeoRoot::CNeoRoot(VPANEL parent)
 		m_serverBrowser[i].m_pSortCtx = &m_sortCtx;
 	}
 
+	// NEO TODO (nullsystem): What will happen in 2038? 64-bit Source 1 SDK when? Source 2 SDK when?
+	// We could use GCC 64-bit compiled time_t or Win32 API direct to side-step IFileSystem "long" 32-bit
+	// limitation for now. Although that could mess with the internal IFileSystem related API usages of time_t.
+	// If _FILE_OFFSET_BITS=64 and _TIME_BITS=64 is set on Linux, time_t will be 64-bit even on 32-bit executable
+	//
+	// If news.txt doesn't exists, it'll just give 1970-01-01 which will always be different to ymdNow anyway
+	const long lFileTime = filesystem->GetFileTime("news.txt");
+	const time_t ttFileTime = lFileTime;
+	struct tm tmFileStruct;
+	const struct tm tmFile = *(Plat_localtime(&ttFileTime, &tmFileStruct));
+	const YMD ymdFile{tmFile};
+
+	struct tm tmNowStruct;
+	const time_t tNow = time(nullptr);
+	const struct tm tmNow = *(Plat_localtime(&tNow, &tmNowStruct));
+	const YMD ymdNow{tmNow};
+
+	// Read the cached file regardless of needing update or not
+	if (filesystem->FileExists("news.txt"))
+	{
+		CUtlBuffer buf(0, 0, CUtlBuffer::TEXT_BUFFER | CUtlBuffer::READ_ONLY);
+		if (filesystem->ReadFile("news.txt", nullptr, buf))
+		{
+			ReadNewsFile(buf);
+		}
+	}
+	if (ymdFile != ymdNow)
+	{
+		ISteamHTTP *http = steamapicontext->SteamHTTP();
+		HTTPRequestHandle httpReqHdl = http->CreateHTTPRequest(k_EHTTPMethodGET, SZ_WEBSITE "/news.txt");
+		SteamAPICall_t httpReqCallback;
+		http->SendHTTPRequest(httpReqHdl, &httpReqCallback);
+		m_ccallbackHttp.Set(httpReqCallback, this, &CNeoRoot::HTTPCallbackRequest);
+	}
+
 	SetKeyBoardInputEnabled(true);
 	SetMouseInputEnabled(true);
 	UpdateControls();
@@ -205,6 +266,7 @@ CNeoRoot::CNeoRoot(VPANEL parent)
 
 CNeoRoot::~CNeoRoot()
 {
+	if (g_pNeoRoot->m_pFileIODialog) g_pNeoRoot->m_pFileIODialog->DeletePanel();
 	m_panelCaptureInput->DeletePanel();
 	if (m_avImage) delete m_avImage;
 	NeoSettingsDeinit(&m_ns);
@@ -233,6 +295,7 @@ void CNeoRoot::UpdateControls()
 	g_uiCtx.iActiveSection = -1;
 	V_memset(g_uiCtx.iYOffset, 0, sizeof(g_uiCtx.iYOffset));
 	m_ns.bBack = false;
+	m_bShowBrowserLabel = false;
 	RequestFocus();
 	m_panelCaptureInput->RequestFocus();
 	InvalidateLayout();
@@ -372,6 +435,21 @@ void CNeoRoot::FireGameEvent(IGameEvent *event)
 
 void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 {
+	if (m_ns.keys.bcConsole <= KEY_NONE)
+	{
+		m_ns.keys.bcConsole = gameuifuncs->GetButtonCodeForBind("neo_toggleconsole");
+	}
+
+	if (code == m_ns.keys.bcConsole && code != KEY_BACKQUOTE)
+	{
+		// NEO JANK (nullsystem): Prevent toggle being handled twice causing it to not really open.
+		// This can happen if using the default ` due to the engine enacting this all the time, however calling
+		// NeoToggleconsole here is required for non-` keys that is toggled while the root panel is opened. The
+		// engine will call non-` keys by itself it it's in game and the root panel is not opened, or the console is
+		// opened which generally doesn't endup calling OnRelayedKeyCodeTyped anyway.
+		NeoToggleconsole();
+		return;
+	}
 	g_uiCtx.eCode = code;
 	OnMainLoop(NeoUI::MODE_KEYPRESSED);
 }
@@ -415,6 +493,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		&CNeoRoot::MainLoopPopup,			// STATE_CONFIRMSETTINGS
 		&CNeoRoot::MainLoopPopup,			// STATE_QUIT
 		&CNeoRoot::MainLoopPopup,			// STATE_SERVERPASSWORD
+		&CNeoRoot::MainLoopPopup,			// STATE_SETTINGSRESETDEFAULT
 	};
 	(this->*P_FN_MAIN_LOOP[m_state])(MainLoopParam{.eMode = eMode, .wide = wide, .tall = tall});
 
@@ -475,7 +554,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	const int iRightXPos = iBtnPlaceXMid + (m_iBtnWide / 2) + g_uiCtx.iMarginX;
 	int iRightSideYStart = yTopPos;
 
-	if (param.eMode == NeoUI::MODE_PAINT)
+	// Draw top steam section portion
 	{
 		// Draw title
 		m_iBtnWide = m_iTitleWidth + (2 * g_uiCtx.iMarginX);
@@ -587,14 +666,26 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 			NeoUI::Label(L"News");
 			NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 
-			// Write some headlines
-			static constexpr const wchar_t *WSZ_NEWS_HEADLINES[] = {
-				L"2024-08-03: NT;RE v7.1 Released",
-			};
-			for (const wchar_t *wszHeadline : WSZ_NEWS_HEADLINES)
+			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
+			NeoUI::SwapColorNormal(COLOR_TRANSPARENT);
+			for (int i = 0; i < m_iNewsSize; ++i)
 			{
-				NeoUI::Label(wszHeadline);
+				if (NeoUI::Button(m_news[i].wszTitle).bPressed)
+				{
+					NeoUI::OpenURL(SZ_WEBSITE, m_news[i].szSitePath);
+					m_bShowBrowserLabel = true;
+				}
 			}
+
+			if (m_bShowBrowserLabel)
+			{
+				surface()->DrawSetTextColor(Color(178, 178, 178, 178));
+				NeoUI::Label(L"Link opened in your web browser");
+				surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
+			}
+
+			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
+			NeoUI::SwapColorNormal(COLOR_NEOPANELACCENTBG);
 		}
 	}
 	NeoUI::EndSection();
@@ -603,15 +694,21 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 
 void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 {
-	static constexpr void (*P_FN[])(NeoSettings *) = {
-		NeoSettings_General,
-		NeoSettings_Keys,
-		NeoSettings_Mouse,
-		NeoSettings_Audio,
-		NeoSettings_Video,
+	struct NeoSettingsFunc
+	{
+		void (*func)(NeoSettings *);
+		bool bUISectionManaged;
+	};
+	static constexpr NeoSettingsFunc P_FN[] = {
+		{NeoSettings_General, false},
+		{NeoSettings_Keys, false},
+		{NeoSettings_Mouse, false},
+		{NeoSettings_Audio, false},
+		{NeoSettings_Video, false},
+		{NeoSettings_Crosshair, true},
 	};
 	static const wchar_t *WSZ_TABS_LABELS[ARRAYSIZE(P_FN)] = {
-		L"Multiplayer", L"Keybinds", L"Mouse", L"Audio", L"Video"
+		L"Multiplayer", L"Keybinds", L"Mouse", L"Audio", L"Video", L"Crosshair"
 	};
 
 	m_ns.iNextBinding = -1;
@@ -630,13 +727,19 @@ void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 			NeoUI::Tabs(WSZ_TABS_LABELS, ARRAYSIZE(WSZ_TABS_LABELS), &m_ns.iCurTab);
 		}
 		NeoUI::EndSection();
-		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
-		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * g_iRowsInScreen;
-		NeoUI::BeginSection(true);
+		if (!P_FN[m_ns.iCurTab].bUISectionManaged)
 		{
-			P_FN[m_ns.iCurTab](&m_ns);
+			g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+			g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * g_iRowsInScreen;
+			NeoUI::BeginSection(true);
 		}
-		NeoUI::EndSection();
+		{
+			P_FN[m_ns.iCurTab].func(&m_ns);
+		}
+		if (!P_FN[m_ns.iCurTab].bUISectionManaged)
+		{
+			NeoUI::EndSection();
+		}
 		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
 		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
 		NeoUI::BeginSection();
@@ -652,7 +755,11 @@ void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 				{
 					g_pNeoRoot->GetGameUI()->SendMainMenuCommand("OpenOptionsDialog");
 				}
-				NeoUI::Pad();
+				if (NeoUI::Button(L"Default").bPressed)
+				{
+					m_state = STATE_SETTINGSRESETDEFAULT;
+					engine->GetVoiceTweakAPI()->EndVoiceTweakMode();
+				}
 				if (m_ns.bModified)
 				{
 					if (NeoUI::Button(L"Revert").bPressed)
@@ -1295,6 +1402,26 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 				NeoUI::EndHorizontal();
 			}
 			break;
+			case STATE_SETTINGSRESETDEFAULT:
+			{
+				NeoUI::Label(L"Do you want to reset your settings back to default?");
+				NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
+				NeoUI::BeginHorizontal((g_uiCtx.dPanel.wide / 3) - g_uiCtx.iMarginX, g_uiCtx.iMarginX);
+				{
+					if (NeoUI::Button(L"Yes (Enter)").bPressed || NeoUI::Bind(KEY_ENTER))
+					{
+						NeoSettingsResetToDefault(&m_ns);
+						m_state = STATE_SETTINGS;
+					}
+					NeoUI::Pad();
+					if (NeoUI::Button(L"No (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
+					{
+						m_state = STATE_SETTINGS;
+					}
+				}
+				NeoUI::EndHorizontal();
+			}
+			break;
 			default:
 				break;
 			}
@@ -1302,6 +1429,81 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 		NeoUI::EndSection();
 	}
 	NeoUI::EndContext();
+}
+
+void CNeoRoot::HTTPCallbackRequest(HTTPRequestCompleted_t *request, bool bIOFailure)
+{
+	ISteamHTTP *http = steamapicontext->SteamHTTP();
+	if (request->m_bRequestSuccessful && !bIOFailure)
+	{
+		uint32 unBodySize = 0;
+		http->GetHTTPResponseBodySize(request->m_hRequest, &unBodySize);
+
+		if (unBodySize > 0)
+		{
+			uint8 *pData = new uint8[unBodySize + 1];
+			http->GetHTTPResponseBodyData(request->m_hRequest, pData, unBodySize);
+
+			CUtlBuffer buf(0, 0, CUtlBuffer::TEXT_BUFFER);
+			buf.CopyBuffer(pData, unBodySize);
+			filesystem->WriteFile("news.txt", nullptr, buf);
+			ReadNewsFile(buf);
+
+			delete[] pData;
+		}
+	}
+	http->ReleaseHTTPRequest(request->m_hRequest);
+}
+
+void CNeoRoot::ReadNewsFile(CUtlBuffer &buf)
+{
+	buf.SeekGet(CUtlBuffer::SEEK_HEAD, 0);
+	m_iNewsSize = 0;
+	while (buf.IsValid() && m_iNewsSize < MAX_NEWS)
+	{
+		// TSV row: Path\tDate\tTitle
+		char szLine[512] = {};
+		buf.GetLine(szLine, ARRAYSIZE(szLine) - 1);
+		char *pszDate = strchr(szLine, '\t');
+		if (!pszDate)
+		{
+			continue;
+		}
+
+		*pszDate = '\0';
+		++pszDate;
+		if (!*pszDate)
+		{
+			continue;
+		}
+
+		char *pszTitle = strchr(pszDate, '\t');
+		if (!pszTitle)
+		{
+			continue;
+		}
+
+		*pszTitle = '\0';
+		++pszTitle;
+		if (!*pszTitle)
+		{
+			continue;
+		}
+
+		V_strcpy_safe(m_news[m_iNewsSize].szSitePath, szLine);
+		wchar_t wszDate[12];
+		wchar_t wszTitle[235];
+		g_pVGuiLocalize->ConvertANSIToUnicode(pszDate, wszDate, sizeof(wszDate));
+		g_pVGuiLocalize->ConvertANSIToUnicode(pszTitle, wszTitle, sizeof(wszTitle));
+		V_swprintf_safe(m_news[m_iNewsSize].wszTitle, L"%ls: %ls", wszDate, wszTitle);
+		++m_iNewsSize;
+	}
+}
+
+void CNeoRoot::OnFileSelected(const char *szFullpath)
+{
+	((m_ns.crosshair.eFileIOMode == vgui::FOD_OPEN) ?
+				&ImportCrosshair : &ExportCrosshair)(&m_ns.crosshair.info, szFullpath);
 }
 
 // NEO NOTE (nullsystem): NeoRootCaptureESC is so that ESC keybinds can be recognized by non-root states, but root

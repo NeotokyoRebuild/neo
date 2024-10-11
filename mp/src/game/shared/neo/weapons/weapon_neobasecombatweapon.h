@@ -197,6 +197,7 @@ public:
 #ifdef CLIENT_DLL
 	void DispatchMuzzleParticleEffect(int iAttachment);
 	virtual void ProcessMuzzleFlashEvent(void) override;
+	void DrawCrosshair() override;
 #endif
 	bool IsGhost(void) const { return (GetNeoWepBits() & NEO_WEP_GHOST) ? true : false; }
 

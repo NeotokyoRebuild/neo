@@ -65,6 +65,12 @@ void SwapFont(const EFont eFont)
 	surface()->DrawSetTextFont(g_pCtx->fonts[g_pCtx->eFont].hdl);
 }
 
+void SwapColorNormal(const Color &color)
+{
+	g_pCtx->normalBgColor = color;
+	surface()->DrawSetColor(g_pCtx->normalBgColor);
+}
+
 void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode, const wchar_t *wszTitle, const char *pSzCtxName)
 {
 	g_pCtx = ctx;
@@ -81,6 +87,7 @@ void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode, const wchar_t *w
 	g_pCtx->eLabelTextStyle = TEXTSTYLE_LEFT;
 	g_pCtx->bTextEditIsPassword = false;
 	g_pCtx->selectBgColor = COLOR_NEOPANELSELECTBG;
+	g_pCtx->normalBgColor = COLOR_NEOPANELACCENTBG;
 	// Different pointer, change context
 	if (g_pCtx->pSzCurCtxName != pSzCtxName)
 	{
@@ -243,7 +250,7 @@ void BeginSection(const bool bDefaultFocus)
 								  g_pCtx->dPanel.x + g_pCtx->dPanel.wide,
 								  g_pCtx->dPanel.y + g_pCtx->dPanel.tall);
 
-		surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
+		surface()->DrawSetColor(g_pCtx->normalBgColor);
 		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
 		break;
 	case MODE_KEYPRESSED:
@@ -376,7 +383,7 @@ static void InternalUpdatePartitionState(const GetMouseinFocusedRet wdgState)
 	++g_pCtx->iWidget;
 	if (wdgState.bActive || wdgState.bHot)
 	{
-		surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
+		surface()->DrawSetColor(g_pCtx->normalBgColor);
 		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
 	}
 }
@@ -593,7 +600,7 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 			{
 				// NEO NOTE (nullsystem): On the final tab, just expand it to the end width as iTabWide isn't always going
 				// to give a properly aligned width
-				surface()->DrawSetColor(bHoverTab ? COLOR_NEOPANELSELECTBG : COLOR_NEOPANELACCENTBG);
+				surface()->DrawSetColor(bHoverTab ? COLOR_NEOPANELSELECTBG : g_pCtx->normalBgColor);
 				GCtxDrawFilledRectXtoX(iXPosTab, (i == (iLabelsSize - 1)) ? (g_pCtx->dPanel.wide) : (iXPosTab + iTabWide));
 			}
 			const wchar_t *wszText = wszLabelsList[i];
@@ -873,6 +880,17 @@ void SliderInt(const wchar_t *wszLeftLabel, int *iValue, const int iMin, const i
 	}
 }
 
+void SliderU8(const wchar_t *wszLeftLabel, uint8 *ucValue, const uint8 iMin, const uint8 iMax, const uint8 iStep, const wchar_t *wszSpecialText)
+{
+	const float flOrigValue = *ucValue;
+	float flValue = flOrigValue;
+	Slider(wszLeftLabel, &flValue, static_cast<float>(iMin), static_cast<float>(iMax), 0, static_cast<float>(iStep), wszSpecialText);
+	if (flValue != flOrigValue)
+	{
+		*ucValue = static_cast<uint8>(RoundFloatToInt(flValue));
+	}
+}
+
 void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
 {
 	static wchar_t staticWszPasswordChars[256] = {};
@@ -979,6 +997,27 @@ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
 bool Bind(const ButtonCode_t eCode)
 {
 	return g_pCtx->eMode == MODE_KEYPRESSED && g_pCtx->eCode == eCode;
+}
+
+void OpenURL(const char *szBaseUrl, const char *szPath)
+{
+	Assert(szPath && szPath[0] == '/');
+	if (!szPath || szPath[0] != '/')
+	{
+		// Must start with / otherwise don't open URL
+		return;
+	}
+
+	static constexpr char CMD[] =
+#ifdef _WIN32
+		"start"
+#else
+		"xdg-open"
+#endif
+		;
+	char syscmd[512] = {};
+	V_sprintf_safe(syscmd, "%s %s%s", CMD, szBaseUrl, szPath);
+	system(syscmd);
 }
 
 }  // namespace NeoUI

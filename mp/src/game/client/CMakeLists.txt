@@ -1526,6 +1526,8 @@ target_sources_grouped(
     neo/ui/neo_hud_childelement.h
     neo/ui/neo_hud_compass.cpp
     neo/ui/neo_hud_compass.h
+    neo/ui/neo_hud_crosshair.cpp
+    neo/ui/neo_hud_crosshair.h
     neo/ui/neo_hud_damage_indicator.cpp
     neo/ui/neo_hud_friendly_marker.cpp
     neo/ui/neo_hud_friendly_marker.h
