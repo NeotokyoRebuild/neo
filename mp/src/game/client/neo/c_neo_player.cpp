@@ -612,6 +612,14 @@ int C_NEO_Player::DrawModel(int flags)
 		ret |= BaseClass::DrawModel(flags);
 	}
 
+	if (IsCloaked() && !inThermalVision)
+	{
+		mat_neo_toc_test.SetValue(m_flTocFactor);
+		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
+		modelrender->ForcedMaterialOverride(pass);
+		ret |= BaseClass::DrawModel(flags);
+	}
+
 	auto vel = GetAbsVelocity().Length();
 	if (inMotionVision && vel > 0.5) // MOVING_SPEED_MINIMUM
 	{
@@ -623,14 +631,6 @@ int C_NEO_Player::DrawModel(int flags)
 	else if (inThermalVision && !IsCloaked())
 	{
 		IMaterial* pass = materials->FindMaterial("dev/thermal_third", TEXTURE_GROUP_MODEL);
-		modelrender->ForcedMaterialOverride(pass);
-		ret |= BaseClass::DrawModel(flags);
-	}
-
-	if (IsCloaked() && !inThermalVision)
-	{
-		mat_neo_toc_test.SetValue(m_flTocFactor);
-		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::DrawModel(flags);
 	}
