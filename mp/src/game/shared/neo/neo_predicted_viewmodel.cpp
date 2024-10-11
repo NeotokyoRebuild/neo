@@ -242,15 +242,7 @@ int CNEOPredictedViewModel::DrawModel(int flags)
 					Assert(pass->IsPrecached());
 				}
 
-				auto vel = GetAbsVelocity().Length();
-				if (vel > 0.5)
-				{
-					mat_neo_toc_test.SetValue(0.345f);
-				}
-				else
-				{
-					mat_neo_toc_test.SetValue(0.255f);
-				}
+				mat_neo_toc_test.SetValue(pPlayer->GetCloakFactor());
 
 				modelrender->ForcedMaterialOverride(pass);
 				int ret = BaseClass::DrawModel(flags);

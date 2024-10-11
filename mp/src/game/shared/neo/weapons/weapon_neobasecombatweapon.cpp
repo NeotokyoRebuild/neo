@@ -1061,15 +1061,7 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 
 	if (pOwner->IsCloaked() && !inThermalVision)
 	{
-		int distance = (GetAbsOrigin() - pLocalPlayer->GetAbsOrigin()).Length();
-		if (vel > 0.5)
-		{
-			mat_neo_toc_test.SetValue(0.345f);
-		}
-		else
-		{
-			mat_neo_toc_test.SetValue(0.255f);
-		}
+		mat_neo_toc_test.SetValue(pOwner->GetCloakFactor());
 		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::DrawModel(flags);
@@ -1120,15 +1112,7 @@ int CNEOBaseCombatWeapon::InternalDrawModel(int flags)
 
 	if (pOwner->IsCloaked() && !inThermalVision)
 	{
-		int distance = (GetAbsOrigin() - pLocalPlayer->GetAbsOrigin()).Length();
-		if (vel > 0.5)
-		{
-			mat_neo_toc_test.SetValue(0.345f);
-		}
-		else
-		{
-			mat_neo_toc_test.SetValue(0.255f);
-		}
+		mat_neo_toc_test.SetValue(pOwner->GetCloakFactor());
 		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::InternalDrawModel(flags);

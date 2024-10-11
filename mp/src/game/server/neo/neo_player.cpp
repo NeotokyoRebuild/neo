@@ -700,7 +700,7 @@ void CNEO_Player::PreThink(void)
 				// Need to have at least this much spare camo to enable.
 				// This prevents camo spam abuse where player has a sliver of camo
 				// each frame to never really run out.
-				CloakPower_Drain(deltaTime * CLOAK_AUX_COST);
+				//CloakPower_Drain(deltaTime * CLOAK_AUX_COST);
 
 				if (m_HL2Local.m_cloakPower <= 0.1f)
 				{

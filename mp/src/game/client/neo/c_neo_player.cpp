@@ -447,6 +447,8 @@ C_NEO_Player::C_NEO_Player()
 
 	m_pPlayerAnimState = CreatePlayerAnimState(this, CreateAnimStateHelpers(this),
 		NEO_ANIMSTATE_LEGANIM_TYPE, NEO_ANIMSTATE_USES_AIMSEQUENCES);
+	
+	m_flTocFactor = 0.15f;
 
 	memset(m_szNeoNameWDupeIdx, 0, sizeof(m_szNeoNameWDupeIdx));
 	m_szNameDupePos = 0;
@@ -627,15 +629,7 @@ int C_NEO_Player::DrawModel(int flags)
 
 	if (IsCloaked() && !inThermalVision)
 	{
-		int distance = (GetAbsOrigin() - pLocalPlayer->GetAbsOrigin()).Length();
-		if (vel > 0.5)
-		{
-			mat_neo_toc_test.SetValue(0.345f);
-		}
-		else
-		{
-			mat_neo_toc_test.SetValue(0.255f);
-		}
+		mat_neo_toc_test.SetValue(m_flTocFactor);
 		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::DrawModel(flags);
@@ -931,6 +925,34 @@ void C_NEO_Player::Lean(void)
 void C_NEO_Player::ClientThink(void)
 {
 	BaseClass::ClientThink();
+
+	if (IsCloaked())
+	{ // PreThink and PostThink are only ran for local player, update every in pvs player's cloak strength here
+		// Update cloak strength
+		auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
+		if (pLocalPlayer)
+		{
+			auto vel = GetAbsVelocity().Length();
+			if (this == pLocalPlayer)
+			{
+				if (vel > 0.5) { m_flTocFactor = min(0.3f, m_flTocFactor + 0.01); } // NEO TODO (Adam) base on time rather than think rate
+				else { m_flTocFactor = max(0.1f, m_flTocFactor - 0.01); }
+			}
+			else
+			{
+				if (vel > 0.5) { m_flTocFactor = 0.3f; } // 0.345f
+				else { m_flTocFactor = 0.2f; } // 0.255f
+
+				int distance = (GetAbsOrigin() - pLocalPlayer->GetAbsOrigin()).Length();
+				constexpr float CLOAK_FALL_OFF_WITH_DISTANCE_RATE = 0.001;
+				constexpr int CLOAK_FALL_OFF_WITH_DISTANCE_STARTING_DISTANCE = 250;
+				if (distance > CLOAK_FALL_OFF_WITH_DISTANCE_STARTING_DISTANCE)
+				{
+					m_flTocFactor = max(0.1f, m_flTocFactor - ((distance - CLOAK_FALL_OFF_WITH_DISTANCE_STARTING_DISTANCE) * CLOAK_FALL_OFF_WITH_DISTANCE_RATE));
+				}
+			}
+		}
+	}
 }
 
 static ConVar neo_this_client_speed("neo_this_client_speed", "0", FCVAR_SPONLY);
