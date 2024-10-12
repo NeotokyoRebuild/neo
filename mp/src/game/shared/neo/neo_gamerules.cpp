@@ -56,7 +56,7 @@ ConVar sv_neo_change_game_type_mid_round("sv_neo_change_game_type_mid_round", "1
 static constexpr char INTEGRITY_CHECK_DBG[] = "1";
 #else
 static constexpr char INTEGRITY_CHECK_DBG[] = "0";
-#endif
+#endif // DEBUG
 ConVar neo_sv_build_integrity_check("neo_sv_build_integrity_check", "1", FCVAR_GAMEDLL | FCVAR_REPLICATED,
 									"If enabled, the server checks the build's Git hash between the client and"
 									" the server. If it doesn't match, the server rejects and disconnects the client.",
@@ -70,7 +70,7 @@ ConVar neo_sv_build_integrity_check_allow_debug("neo_sv_build_integrity_check_al
 static constexpr char TEAMDMG_MULTI[] = "0";
 #else
 static constexpr char TEAMDMG_MULTI[] = "2";
-#endif
+#endif // DEBUG
 ConVar neo_sv_mirror_teamdamage_multiplier("neo_sv_mirror_teamdamage_multiplier", TEAMDMG_MULTI, FCVAR_REPLICATED, "The damage multiplier given to the friendly-firing individual. Set value to 0 to disable mirror team damage.", true, 0.0f, true, 100.0f);
 ConVar neo_sv_mirror_teamdamage_duration("neo_sv_mirror_teamdamage_duration", "7", FCVAR_REPLICATED, "How long in seconds the mirror damage is active for the start of each round. Set to 0 for the entire round.", true, 0.0f, true, 10000.0f);
 ConVar neo_sv_mirror_teamdamage_immunity("neo_sv_mirror_teamdamage_immunity", "1", FCVAR_REPLICATED, "If enabled, the victim will not take damage from a teammate during the mirror team damage duration.", true, 0.0f, true, 1.0f);
@@ -83,7 +83,16 @@ ConVar neo_sv_suicide_prevent_cap_punish("neo_sv_suicide_prevent_cap_punish", "1
 										 "while the other team is holding the ghost, reward the ghost holder team "
 										 "a rank up.",
 										 true, 0.0f, true, 1.0f);
-#endif
+
+#define DEF_TEAMPLAYERTHRES 5
+static_assert(DEF_TEAMPLAYERTHRES <= ((MAX_PLAYERS - 1) / 2));
+ConVar neo_sv_readyup_teamplayersthres("neo_sv_readyup_teamplayersthres", V_STRINGIFY(DEF_TEAMPLAYERTHRES), FCVAR_REPLICATED, "The exact total players per team to be in and ready up to start a game.", true, 0.0f, true, (MAX_PLAYERS - 1) / 2);
+ConVar neo_sv_readyup_skipwarmup("neo_sv_readyup_skipwarmup", "1", FCVAR_REPLICATED, "Skip the warmup round when already using ready up.", true, 0.0f, true, 1.0f);
+ConVar neo_sv_readyup_autointermission("neo_sv_readyup_autointermission", "0", FCVAR_REPLICATED, "If disabled, skips the automatic intermission at the end of the match.", true, 0.0f, true, 1.0f);
+#endif // GAME_DLL
+
+// Both CLIENT_DLL + GAME_DLL, but server-side setting so it's replicated onto client to read the values
+ConVar neo_sv_readyup_lobby("neo_sv_readyup_lobby", "0", FCVAR_REPLICATED, "If enabled, players would need to ready up and match the players total requirements to start a game.", true, 0.0f, true, 1.0f);
 
 enum ENeoCollision
 {
@@ -500,6 +509,8 @@ void CNEORules::ResetMapSessionCommon()
 	m_flNeoNextRoundStartTime = 0.0f;
 #ifdef GAME_DLL
 	m_pRestoredInfos.Purge();
+	m_readyAccIDs.Purge();
+	m_bIgnoreOverThreshold = false;
 
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
@@ -524,7 +535,14 @@ void CNEORules::ResetMapSessionCommon()
 void CNEORules::ChangeLevel(void)
 {
 	ResetMapSessionCommon();
-	BaseClass::ChangeLevel();
+	if (neo_sv_readyup_lobby.GetBool() && !neo_sv_readyup_autointermission.GetBool())
+	{
+		m_bChangelevelDone = false;
+	}
+	else
+	{
+		BaseClass::ChangeLevel();
+	}
 }
 
 #endif
@@ -590,8 +608,8 @@ void CNEORules::Think(void)
 		{
 			if (!m_bChangelevelDone)
 			{
-				ChangeLevel(); // intermission is over
 				m_bChangelevelDone = true;
+				ChangeLevel(); // intermission is over
 			}
 		}
 
@@ -1203,11 +1221,196 @@ void CNEORules::GatherGameTypeVotes()
 	m_nGameTypeSelected = mostPopularGameType;
 }
 
+bool CNEORules::ReadyUpPlayerIsReady(CNEO_Player *pNeoPlayer) const
+{
+	if (!pNeoPlayer) return false;
+
+	const CSteamID steamID = GetSteamIDForPlayerIndex(pNeoPlayer->entindex());
+	return pNeoPlayer->IsBot() || (steamID.IsValid() && m_readyAccIDs.HasElement(steamID.GetAccountID()));
+}
+
+void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat)
+{
+	const bool bHasCmds = neo_sv_readyup_lobby.GetBool();
+	if (!bHasCmds || !pNeoCmdPlayer || !pSzChat || pSzChat[0] != '!') return;
+	++pSzChat;
+
+	if (V_strcmp(pSzChat, "help") == 0)
+	{
+		char szHelpText[512];
+		V_sprintf_safe(szHelpText, "Available commands:\n%s",
+					   neo_sv_readyup_lobby.GetBool() ?
+						   "Ready up commands (only available while waiting for players):\n"
+						   "!ready - Ready up yourself\n"
+						   "!unready - Unready yourself\n"
+						   "!overridelimit - Override players amount restriction\n"
+						   "!playersnotready - List players that are not ready\n"
+						 : "");
+		ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, szHelpText);
+	}
+
+	if (neo_sv_readyup_lobby.GetBool() && m_nRoundStatus != NeoRoundStatus::Idle)
+	{
+		for (const auto pSzCheck : {"ready", "unready", "overridelimit", "playersnotready"})
+		{
+			if (V_strcmp(pSzChat, pSzCheck) == 0)
+			{
+				ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, "You cannot use this command during a match.");
+				break;
+			}
+		}
+	}
+	else if (neo_sv_readyup_lobby.GetBool() && m_nRoundStatus == NeoRoundStatus::Idle)
+	{
+		const CSteamID steamID = GetSteamIDForPlayerIndex(pNeoCmdPlayer->entindex());
+		if (steamID.IsValid())
+		{
+			const int iThres = neo_sv_readyup_teamplayersthres.GetInt();
+			if (V_strcmp(pSzChat, "ready") == 0)
+			{
+				m_readyAccIDs.Insert(steamID.GetAccountID());
+				ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, "You are now marked as ready.");
+				const auto readyPlayers = FetchReadyPlayers();
+				if (readyPlayers.array[TEAM_JINRAI] == iThres && readyPlayers.array[TEAM_NSF] == iThres)
+				{
+					UTIL_ClientPrintAll(HUD_PRINTTALK, "All players are ready! Starting soon...");
+				}
+			}
+			else if (V_strcmp(pSzChat, "unready") == 0)
+			{
+				m_readyAccIDs.Remove(steamID.GetAccountID());
+				ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, "You are now marked as unready.");
+			}
+			else if (V_strcmp(pSzChat, "overridelimit") == 0)
+			{
+				const auto readyPlayers = FetchReadyPlayers();
+				if (readyPlayers.array[TEAM_JINRAI] > iThres && readyPlayers.array[TEAM_NSF] > iThres)
+				{
+					m_bIgnoreOverThreshold = true;
+					ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, "Overriding threshold, allowing more players.");
+				}
+				else
+				{
+					ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, "You must go past the threshold in order to set override.");
+				}
+			}
+			else if (V_strcmp(pSzChat, "playersnotready") == 0)
+			{
+				bool bHasUnreadyPlayers = false;
+				char szPrintText[((MAX_PLAYER_NAME_LENGTH + 1) * MAX_PLAYERS) + 32];
+				szPrintText[0] = '\0';
+				ReadyPlayers readyPlayers = {};
+				for (int i = 1; i <= gpGlobals->maxClients; i++)
+				{
+					if (auto *pNeoOtherPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(i)))
+					{
+						const bool bPlayerReady = ReadyUpPlayerIsReady(pNeoOtherPlayer);
+						readyPlayers.array[pNeoOtherPlayer->GetTeamNumber()] += bPlayerReady;
+						if (!bPlayerReady)
+						{
+							if (!bHasUnreadyPlayers)
+							{
+								V_strcat_safe(szPrintText, "Players not ready:\n");
+								bHasUnreadyPlayers = true;
+							}
+							V_strcat_safe(szPrintText, pNeoOtherPlayer->GetNeoPlayerName(pNeoCmdPlayer));
+							V_strcat_safe(szPrintText, "\n");
+						}
+					}
+				}
+				if (bHasUnreadyPlayers)
+				{
+					ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, szPrintText);
+				}
+				else
+				{
+					ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, "All players are ready.");
+					if (readyPlayers.array[TEAM_JINRAI] < iThres || readyPlayers.array[TEAM_NSF] < iThres)
+					{
+						const int iNeedJin = max(0, iThres - readyPlayers.array[TEAM_JINRAI]);
+						const int iNeedNSF = max(0, iThres - readyPlayers.array[TEAM_NSF]);
+						char szPrintNeed[100];
+						V_sprintf_safe(szPrintNeed, "Jinrai need %d players and NSF need %d players "
+													"to ready up to start.", iNeedJin, iNeedNSF);
+						ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, szPrintNeed);
+					}
+					else if (readyPlayers.array[TEAM_JINRAI] > iThres || readyPlayers.array[TEAM_NSF] > iThres)
+					{
+						const int iExtraJin = max(0, readyPlayers.array[TEAM_JINRAI] - iThres);
+						const int iExtraNSF = max(0, readyPlayers.array[TEAM_NSF] - iThres);
+						char szPrintNeed[100];
+						V_sprintf_safe(szPrintNeed, "Jinrai have %d extra players and NSF have %d extra players "
+													"over the %d per team threshold.", iExtraJin, iExtraNSF, iThres);
+						ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, szPrintNeed);
+					}
+				}
+			}
+		}
+	}
+}
+
+CNEORules::ReadyPlayers CNEORules::FetchReadyPlayers() const
+{
+	ReadyPlayers readyPlayers = {};
+	if (!neo_sv_readyup_lobby.GetBool())
+	{
+		return readyPlayers;
+	}
+
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		if (auto *pNeoPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(i)))
+		{
+			readyPlayers.array[pNeoPlayer->GetTeamNumber()] += ReadyUpPlayerIsReady(pNeoPlayer);
+		}
+	}
+
+	return readyPlayers;
+}
+
 void CNEORules::StartNextRound()
 {
-	if (GetGlobalTeam(TEAM_JINRAI)->GetNumPlayers() == 0 || GetGlobalTeam(TEAM_NSF)->GetNumPlayers() == 0)
+	// Only check ready-up on idle state
+	const bool bLobby = neo_sv_readyup_lobby.GetBool() && m_nRoundStatus == NeoRoundStatus::Idle;
+	const int iThres = neo_sv_readyup_teamplayersthres.GetInt();
+	const bool bEqualThres = (iThres == GetGlobalTeam(TEAM_JINRAI)->GetNumPlayers()) && (iThres == GetGlobalTeam(TEAM_NSF)->GetNumPlayers());
+	const auto readyPlayers = FetchReadyPlayers();
+	// Do not start if: Non-ready-up mode, no players in either teams
+	if ((!bLobby && (GetGlobalTeam(TEAM_JINRAI)->GetNumPlayers() == 0 || GetGlobalTeam(TEAM_NSF)->GetNumPlayers() == 0))
+			// If ready-up mode and doesn't exactly match the threshold on ready-up or players
+			|| (bLobby && !m_bIgnoreOverThreshold && (!bEqualThres || (readyPlayers.array[TEAM_JINRAI] != iThres || readyPlayers.array[TEAM_NSF] != iThres)))
+			// If ready-up mode, allows over threshold and is lower than threshold or not equal teams
+			|| (bLobby && m_bIgnoreOverThreshold &&
+				((readyPlayers.array[TEAM_JINRAI] < iThres || readyPlayers.array[TEAM_NSF] < iThres)
+				 || GetGlobalTeam(TEAM_JINRAI)->GetNumPlayers() != GetGlobalTeam(TEAM_NSF)->GetNumPlayers()))
+			)
 	{
-		UTIL_CenterPrintAll("- NEW ROUND START DELAYED - ONE OR BOTH TEAMS HAS NO PLAYERS -\n");
+		if (neo_sv_readyup_lobby.GetBool())
+		{
+			if (!m_bIgnoreOverThreshold && (readyPlayers.array[TEAM_JINRAI] > iThres || readyPlayers.array[TEAM_NSF] > iThres))
+			{
+				char szPrint[128];
+				V_sprintf_safe(szPrint, "More players than %dv%d! Type !overridelimit to allow more players to start!",
+							   iThres, iThres);
+				UTIL_ClientPrintAll(HUD_PRINTTALK, szPrint);
+			}
+
+			// Untoggle the overrider if there's suddenly less players than threshold
+			if (m_bIgnoreOverThreshold && (readyPlayers.array[TEAM_JINRAI] < iThres || readyPlayers.array[TEAM_NSF] < iThres))
+			{
+				m_bIgnoreOverThreshold = false;
+			}
+
+			char szPrint[512];
+			V_sprintf_safe(szPrint, "- WAITING FOR %dv%d: %d JINRAI, %d NSF PLAYERS READY -\n",
+						   iThres, iThres,
+						   readyPlayers.array[TEAM_JINRAI], readyPlayers.array[TEAM_NSF]);
+			UTIL_CenterPrintAll(szPrint);
+		}
+		else
+		{
+			UTIL_CenterPrintAll("- NEW ROUND START DELAYED - ONE OR BOTH TEAMS HAS NO PLAYERS -\n");
+		}
 		SetRoundStatus(NeoRoundStatus::Idle);
 		m_flNeoNextRoundStartTime = gpGlobals->curtime + 10.0f;
 		return;
@@ -1237,11 +1440,12 @@ void CNEORules::StartNextRound()
 			}
 		}
 
-		if (!loopbackSkipWarmup)
+		SetRoundStatus(NeoRoundStatus::Warmup);
+		m_iRoundNumber = 0;
+		if (!loopbackSkipWarmup && !(bLobby && neo_sv_readyup_skipwarmup.GetBool()))
 		{
 			// Moving from 0 players from either team to playable at team state
 			UTIL_CenterPrintAll("- WARMUP COUNTDOWN STARTED -\n");
-			SetRoundStatus(NeoRoundStatus::Warmup);
 			m_flNeoRoundStartTime = gpGlobals->curtime;
 			m_flNeoNextRoundStartTime = gpGlobals->curtime + mp_neo_warmup_round_time.GetFloat();
 			return;
@@ -1315,6 +1519,14 @@ void CNEORules::StartNextRound()
 	{
 		m_pRestoredInfos.Purge();
 		// If game was in warmup then also decide on game mode here
+
+		CTeam *pJinrai = GetGlobalTeam(TEAM_JINRAI);
+		CTeam *pNSF = GetGlobalTeam(TEAM_NSF);
+		Assert(pJinrai && pNSF);
+		pJinrai->SetScore(0);
+		pJinrai->SetRoundsWon(0);
+		pNSF->SetScore(0);
+		pNSF->SetRoundsWon(0);
 	}
 
 	FireLegacyEvent_NeoRoundEnd();
@@ -2166,7 +2378,14 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 
 	if (gotMatchWinner)
 	{
-		GoToIntermission();
+		if (neo_sv_readyup_lobby.GetBool() && !neo_sv_readyup_autointermission.GetBool())
+		{
+			ResetMapSessionCommon();
+		}
+		else
+		{
+			GoToIntermission();
+		}
 	}
 }
 #endif

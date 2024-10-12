@@ -225,6 +225,17 @@ public:
 	bool IsRoundOver() const;
 #ifdef GAME_DLL
 	void GatherGameTypeVotes();
+
+	struct ReadyPlayers
+	{
+		int array[TEAM__TOTAL];
+	};
+	void CheckChatCommand(CNEO_Player *pNeoPlayer, const char *pSzChat);
+	ReadyPlayers FetchReadyPlayers() const;
+	CUtlHashtable<AccountID_t> m_readyAccIDs;
+	bool m_bIgnoreOverThreshold = false;
+	bool ReadyUpPlayerIsReady(CNEO_Player *pNeoPlayer) const;
+
 	void StartNextRound();
 
 	virtual const char* GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer) OVERRIDE;
