@@ -192,6 +192,9 @@ END_SEND_TABLE();
 IMPLEMENT_SERVERCLASS_ST(CBaseCombatCharacter, DT_BaseCombatCharacter)
 #ifdef GLOWS_ENABLE
 	SendPropBool( SENDINFO( m_bGlowEnabled ) ),
+	SendPropFloat( SENDINFO( m_flGlowR ) ),
+	SendPropFloat( SENDINFO( m_flGlowG ) ),
+	SendPropFloat( SENDINFO( m_flGlowB ) ),
 #endif // GLOWS_ENABLE
 	// Data that only gets sent to the local player.
 	SendPropDataTable( "bcc_localdata", 0, &REFERENCE_SEND_TABLE(DT_BCCLocalPlayerExclusive), SendProxy_SendBaseCombatCharacterLocalDataTable ),
