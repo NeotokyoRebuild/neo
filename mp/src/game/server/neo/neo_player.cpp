@@ -489,7 +489,13 @@ void CNEO_Player::Precache( void )
 
 void CNEO_Player::Spawn(void)
 {
-	ShowViewPortPanel(PANEL_SPECGUI, (GetTeamNumber() == TEAM_SPECTATOR ? true : false));
+	int teamNumber = GetTeamNumber();
+	ShowViewPortPanel(PANEL_SPECGUI, teamNumber == TEAM_SPECTATOR);
+
+	if (teamNumber == TEAM_JINRAI || teamNumber == TEAM_NSF)
+	{
+		State_Transition(STATE_ACTIVE);
+	}
 	
 	// Should do this class update first, because most of the stuff below depends on which player class we are.
 	if ((m_iNextSpawnClassChoice != -1) && (m_iNeoClass != m_iNextSpawnClassChoice))
@@ -2189,8 +2195,6 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 		}
 
 		StopObserverMode();
-
-		State_Transition(STATE_ACTIVE);
 	}
 	else
 	{

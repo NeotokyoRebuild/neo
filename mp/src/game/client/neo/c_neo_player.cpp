@@ -443,6 +443,8 @@ C_NEO_Player::C_NEO_Player()
 	m_bLastTickInThermOpticCamo = false;
 	m_bIsAllowedToToggleVision = false;
 
+	m_flTocFactor = 0.15f;
+
 	memset(m_szNeoNameWDupeIdx, 0, sizeof(m_szNeoNameWDupeIdx));
 	m_szNameDupePos = 0;
 }
@@ -588,62 +590,49 @@ int C_NEO_Player::GetAttackerHits(const int attackerIdx) const
 	return m_rfAttackersHits.Get(attackerIdx);
 }
 
+extern ConVar mat_neo_toc_test;
 int C_NEO_Player::DrawModel(int flags)
 {
-	int ret = BaseClass::DrawModel(flags); // NEO TODO (Adam) Do we need to draw each player model twice when in vision?
-	if (!ret) {
-		return ret;
-	}
-
+	int ret = 0;
 	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if (pLocalPlayer && pLocalPlayer->IsInVision())
+	if (!pLocalPlayer)
 	{
-		auto vel = GetAbsVelocity().Length();
-		if ((pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT) && vel > 1)
-		{
-			IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
-			Assert(pass && !pass->IsErrorMaterial());
-
-			if (pass && !pass->IsErrorMaterial())
-			{
-				// Render
-				modelrender->ForcedMaterialOverride(pass);
-				ret = BaseClass::DrawModel(flags | STUDIO_RENDER | STUDIO_TRANSPARENCY);
-				modelrender->ForcedMaterialOverride(NULL);
-
-				return ret;
-			}
-		}
-		else if (pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT && !IsCloaked())
-		{
-			IMaterial* pass = materials->FindMaterial("dev/thermal_third", TEXTURE_GROUP_MODEL);
-			Assert(pass && !pass->IsErrorMaterial());
-
-			if (pass && !pass->IsErrorMaterial())
-			{
-				// Render
-				modelrender->ForcedMaterialOverride(pass);
-				ret = BaseClass::DrawModel(flags | STUDIO_RENDER | STUDIO_TRANSPARENCY);
-				modelrender->ForcedMaterialOverride(NULL);
-
-				return ret;
-			}
-		}
+		Assert(false);
+		return BaseClass::DrawModel(flags);
 	}
 	
-	if (IsCloaked())
-	{
-		IMaterial* pass = materials->FindMaterial("dev/toc_cloakpass", TEXTURE_GROUP_CLIENT_EFFECTS);
-		Assert(pass && !pass->IsErrorMaterial());
+	bool inMotionVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT;
+	bool inThermalVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT;
 
-		if (pass && !pass->IsErrorMaterial())
-		{
-			modelrender->ForcedMaterialOverride(pass);
-			ret = BaseClass::DrawModel(flags);
-			modelrender->ForcedMaterialOverride(NULL);
-		}
+	if (!IsCloaked() || inThermalVision)
+	{
+		ret |= BaseClass::DrawModel(flags);
 	}
 
+	if (IsCloaked() && !inThermalVision)
+	{
+		mat_neo_toc_test.SetValue(m_flTocFactor);
+		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
+		modelrender->ForcedMaterialOverride(pass);
+		ret |= BaseClass::DrawModel(flags);
+	}
+
+	auto vel = GetAbsVelocity().Length();
+	if (inMotionVision && vel > 0.5) // MOVING_SPEED_MINIMUM
+	{
+		IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
+		modelrender->ForcedMaterialOverride(pass);
+		ret |= BaseClass::DrawModel(flags);
+	}
+
+	else if (inThermalVision && !IsCloaked())
+	{
+		IMaterial* pass = materials->FindMaterial("dev/thermal_third", TEXTURE_GROUP_MODEL);
+		modelrender->ForcedMaterialOverride(pass);
+		ret |= BaseClass::DrawModel(flags);
+	}
+
+	modelrender->ForcedMaterialOverride(null);
 	return ret;
 }
 
@@ -654,6 +643,10 @@ void C_NEO_Player::AddEntity( void )
 
 ShadowType_t C_NEO_Player::ShadowCastType( void ) 
 {
+	if (IsCloaked())
+	{
+		return SHADOWS_NONE;
+	}
 	return BaseClass::ShadowCastType();
 }
 
@@ -665,6 +658,16 @@ C_BaseAnimating *C_NEO_Player::BecomeRagdollOnClient()
 const QAngle& C_NEO_Player::GetRenderAngles()
 {
 	return BaseClass::GetRenderAngles();
+}
+
+RenderGroup_t C_NEO_Player::GetRenderGroup()
+{
+	return IsCloaked() ? RENDER_GROUP_TRANSLUCENT_ENTITY : RENDER_GROUP_OPAQUE_ENTITY;
+}
+
+bool C_NEO_Player::UsesPowerOfTwoFrameBufferTexture()
+{
+	return IsCloaked();
 }
 
 bool C_NEO_Player::ShouldDraw( void )
@@ -919,6 +922,33 @@ void C_NEO_Player::Lean(void)
 void C_NEO_Player::ClientThink(void)
 {
 	BaseClass::ClientThink();
+
+	if (IsCloaked())
+	{ // PreThink and PostThink are only ran for local player, update every in pvs player's cloak strength here
+		auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
+		if (pLocalPlayer)
+		{
+			auto vel = GetAbsVelocity().Length();
+			if (this == pLocalPlayer)
+			{
+				if (vel > 0.5) { m_flTocFactor = min(0.3f, m_flTocFactor + 0.01); } // NEO TODO (Adam) base on time rather than think rate
+				else { m_flTocFactor = max(0.1f, m_flTocFactor - 0.01); }
+			}
+			else
+			{
+				if (vel > 0.5) { m_flTocFactor = 0.3f; } // 0.345f
+				else { m_flTocFactor = 0.2f; } // 0.255f
+
+				int distance = GetAbsOrigin().DistTo(pLocalPlayer->GetAbsOrigin());
+				constexpr float CLOAK_FALL_OFF_WITH_DISTANCE_RATE = 0.001;
+				constexpr int CLOAK_FALL_OFF_WITH_DISTANCE_STARTING_DISTANCE = 250;
+				if (distance > CLOAK_FALL_OFF_WITH_DISTANCE_STARTING_DISTANCE)
+				{
+					m_flTocFactor = max(0.1f, m_flTocFactor - ((distance - CLOAK_FALL_OFF_WITH_DISTANCE_STARTING_DISTANCE) * CLOAK_FALL_OFF_WITH_DISTANCE_RATE));
+				}
+			}
+		}
+	}
 }
 
 static ConVar neo_this_client_speed("neo_this_client_speed", "0", FCVAR_SPONLY);

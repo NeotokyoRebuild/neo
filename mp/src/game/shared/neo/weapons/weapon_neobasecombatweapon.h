@@ -253,6 +253,10 @@ public:
 	virtual void ItemHolsterFrame() override;
 	virtual bool ShouldDraw(void) override;
 	virtual int DrawModel(int flags) override;
+	virtual int InternalDrawModel(int flags) override;
+	virtual ShadowType_t ShadowCastType(void) override;
+	virtual RenderGroup_t GetRenderGroup() override;
+	virtual bool UsesPowerOfTwoFrameBufferTexture() override;
 #endif
 
 	virtual bool Deploy(void);
