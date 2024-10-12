@@ -25,7 +25,7 @@ extern ConVar sv_neo_grenade_throw_intensity;
 extern ConVar sv_neo_grenade_lob_intensity;
 extern ConVar sv_neo_grenade_roll_intensity;
 
-ConVar sv_neo_infinite_smoke_grenades("sv_neo_infinite_smoke_grenades", "0", FCVAR_CHEAT, "Should smoke grenades use up ammo.", true, 0.0, true, 1.0);
+ConVar sv_neo_infinite_smoke_grenades("sv_neo_infinite_smoke_grenades", "0", FCVAR_REPLICATED | FCVAR_CHEAT, "Should smoke grenades use up ammo.", true, 0.0, true, 1.0);
 
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponSmokeGrenade, DT_WeaponSmokeGrenade)
 

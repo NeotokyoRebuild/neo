@@ -1946,10 +1946,9 @@ bool CNEORules::RoundIsMatchPoint() const
 	}
 	return false;
 }
-
+#ifdef CLIENT_DLL
 ConVar snd_victory_volume("snd_victory_volume", "0.33", FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_USERINFO, "Loudness of the victory jingle (0-1).", true, 0.0, true, 1.0);
-
-#ifdef GAME_DLL
+#else
 extern ConVar snd_musicvolume;
 void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bool bSwitchTeams, bool bDontAddScore, bool bFinal)
 {
@@ -2116,7 +2115,7 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 				/*engine->ClientPrintf(player->edict(), victoryMsg);
 				UTIL_ClientPrintAll((gotMatchWinner ? HUD_PRINTTALK : HUD_PRINTCENTER), victoryMsg);*/
 
-				const char* volStr = engine->GetClientConVarValue(i, snd_victory_volume.GetName());
+				const char* volStr = engine->GetClientConVarValue(i, "snd_victory_volume");
 				const float jingleVolume = volStr ? atof(volStr) : 0.33f;
 				soundParams.m_flVolume = jingleVolume;
 

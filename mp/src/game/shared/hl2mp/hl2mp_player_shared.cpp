@@ -350,8 +350,8 @@ void CPlayerAnimState::ComputePoseParam_BodyYaw( void )
 }
 
 #ifdef NEO
-ConVar sv_neo_animrate_scale("sv_neo_animrate_scale", "1.0", FCVAR_ARCHIVE | FCVAR_CHEAT, "", true, 0.0, true, 10.0);
-ConVar sv_neo_animrate_max("sv_neo_animrate_max", "1.25", FCVAR_ARCHIVE | FCVAR_CHEAT, "", true, 0.0, true, 10.0);
+ConVar sv_neo_animrate_scale("sv_neo_animrate_scale", "1.0", FCVAR_REPLICATED | FCVAR_ARCHIVE | FCVAR_CHEAT, "", true, 0.0, true, 10.0);
+ConVar sv_neo_animrate_max("sv_neo_animrate_max", "1.25", FCVAR_REPLICATED | FCVAR_ARCHIVE | FCVAR_CHEAT, "", true, 0.0, true, 10.0);
 #endif
 
 //-----------------------------------------------------------------------------
