@@ -210,8 +210,6 @@ private:
 	bool m_bPreviouslyReloading;
 	bool m_bIsAllowedToToggleVision;
 
-	INEOPlayerAnimState* m_pPlayerAnimState;
-
 	float m_flLastAirborneJumpOkTime;
 	float m_flLastSuperJumpTime;
 
