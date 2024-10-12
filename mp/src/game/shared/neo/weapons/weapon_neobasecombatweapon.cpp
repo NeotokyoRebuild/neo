@@ -1180,7 +1180,7 @@ bool CNEOBaseCombatWeapon::UsesPowerOfTwoFrameBufferTexture()
 	auto pPlayer = static_cast<C_NEO_Player*>(GetOwner());
 	if (pPlayer)
 	{
-		return pPlayer->IsCloaked() ? true : false;
+		return pPlayer->IsCloaked();
 	}
 
 	return BaseClass::UsesPowerOfTwoFrameBufferTexture();

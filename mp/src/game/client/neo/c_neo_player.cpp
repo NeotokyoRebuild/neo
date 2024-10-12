@@ -667,7 +667,7 @@ RenderGroup_t C_NEO_Player::GetRenderGroup()
 
 bool C_NEO_Player::UsesPowerOfTwoFrameBufferTexture()
 {
-	return IsCloaked() ? true : false;
+	return IsCloaked();
 }
 
 bool C_NEO_Player::ShouldDraw( void )
@@ -939,7 +939,7 @@ void C_NEO_Player::ClientThink(void)
 				if (vel > 0.5) { m_flTocFactor = 0.3f; } // 0.345f
 				else { m_flTocFactor = 0.2f; } // 0.255f
 
-				int distance = (GetAbsOrigin() - pLocalPlayer->GetAbsOrigin()).Length();
+				int distance = GetAbsOrigin().DistTo(pLocalPlayer->GetAbsOrigin());
 				constexpr float CLOAK_FALL_OFF_WITH_DISTANCE_RATE = 0.001;
 				constexpr int CLOAK_FALL_OFF_WITH_DISTANCE_STARTING_DISTANCE = 250;
 				if (distance > CLOAK_FALL_OFF_WITH_DISTANCE_STARTING_DISTANCE)
