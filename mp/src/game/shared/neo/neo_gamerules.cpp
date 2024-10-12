@@ -477,9 +477,7 @@ bool CNEORules::ShouldCollide(const CBaseEntity *ent0, const CBaseEntity *ent1) 
 	const int ent0Group = ent0->GetCollisionGroup();
 	const int ent1Group = ent1->GetCollisionGroup();
 	const int iNeoCol = neo_sv_collision.GetInt();
-	if (iNeoCol != NEOCOLLISION_ALL &&
-			(ent0Group == COLLISION_GROUP_PLAYER || ent0Group == COLLISION_GROUP_PLAYER_MOVEMENT) &&
-			(ent1Group == COLLISION_GROUP_PLAYER || ent1Group == COLLISION_GROUP_PLAYER_MOVEMENT))
+	if (iNeoCol != NEOCOLLISION_ALL && ent0Group == COLLISION_GROUP_PLAYER && ent1Group == COLLISION_GROUP_PLAYER)
 	{
 		return (iNeoCol == NEOCOLLISION_TEAM) ?
 					(static_cast<const CNEO_Player *>(ent0)->GetTeamNumber() != static_cast<const CNEO_Player *>(ent1)->GetTeamNumber()) :
@@ -780,7 +778,7 @@ void CNEORules::Think(void)
 		{
 			if (sv_neo_vip_ctg_on_death.GetBool())
 			{
-				UTIL_CenterPrintAll("HVT down, recover the Ghost");
+				UTIL_CenterPrintAll("- HVT DOWN - RECOVER THE GHOST -\n");
 				SpawnTheGhost();
 			}
 			else
@@ -794,7 +792,7 @@ void CNEORules::Think(void)
 		{
 			if (sv_neo_vip_ctg_on_death.GetBool())
 			{
-				UTIL_CenterPrintAll("HVT down, recover the Ghost");
+				UTIL_CenterPrintAll("- HVT DOWN - RECOVER THE GHOST -\n");
 				SpawnTheGhost(&m_pVIP->GetAbsOrigin());
 			}
 			else
@@ -1209,7 +1207,7 @@ void CNEORules::StartNextRound()
 {
 	if (GetGlobalTeam(TEAM_JINRAI)->GetNumPlayers() == 0 || GetGlobalTeam(TEAM_NSF)->GetNumPlayers() == 0)
 	{
-		UTIL_CenterPrintAll("Waiting for players on both teams.\n"); // NEO TODO (Rain): actual message
+		UTIL_CenterPrintAll("- NEW ROUND START DELAYED - ONE OR BOTH TEAMS HAS NO PLAYERS -\n");
 		SetRoundStatus(NeoRoundStatus::Idle);
 		m_flNeoNextRoundStartTime = gpGlobals->curtime + 10.0f;
 		return;
@@ -1242,7 +1240,7 @@ void CNEORules::StartNextRound()
 		if (!loopbackSkipWarmup)
 		{
 			// Moving from 0 players from either team to playable at team state
-			UTIL_CenterPrintAll("Warmup countdown started.\n");
+			UTIL_CenterPrintAll("- WARMUP COUNTDOWN STARTED -\n");
 			SetRoundStatus(NeoRoundStatus::Warmup);
 			m_flNeoRoundStartTime = gpGlobals->curtime;
 			m_flNeoNextRoundStartTime = gpGlobals->curtime + mp_neo_warmup_round_time.GetFloat();
@@ -1261,9 +1259,9 @@ void CNEORules::StartNextRound()
 	const bool clearXP = (m_nRoundStatus == NeoRoundStatus::Warmup);
 	SetRoundStatus(NeoRoundStatus::PreRoundFreeze);
 
-	char RoundMsg[11];
-	static_assert(sizeof(RoundMsg) == sizeof("Round 99\n\0"), "RoundMsg requires to fit round numbers up to 2 digits");
-	V_sprintf_safe(RoundMsg, "Round %d\n", Min(99, ++m_iRoundNumber));
+	char RoundMsg[27];
+	static_assert(sizeof(RoundMsg) == sizeof("- CTG ROUND 99 STARTED -\n\0"), "RoundMsg requires to fit round numbers up to 2 digits");
+	V_sprintf_safe(RoundMsg, "- %s ROUND %d STARTED -\n", GetGameTypeName(), Min(99, ++m_iRoundNumber));
 	UTIL_CenterPrintAll(RoundMsg);
 
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
@@ -1948,10 +1946,9 @@ bool CNEORules::RoundIsMatchPoint() const
 	}
 	return false;
 }
-
+#ifdef CLIENT_DLL
 ConVar snd_victory_volume("snd_victory_volume", "0.33", FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_USERINFO, "Loudness of the victory jingle (0-1).", true, 0.0, true, 1.0);
-
-#ifdef GAME_DLL
+#else
 extern ConVar snd_musicvolume;
 void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bool bSwitchTeams, bool bDontAddScore, bool bFinal)
 {
@@ -2118,7 +2115,7 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 				/*engine->ClientPrintf(player->edict(), victoryMsg);
 				UTIL_ClientPrintAll((gotMatchWinner ? HUD_PRINTTALK : HUD_PRINTCENTER), victoryMsg);*/
 
-				const char* volStr = engine->GetClientConVarValue(i, snd_victory_volume.GetName());
+				const char* volStr = engine->GetClientConVarValue(i, "snd_victory_volume");
 				const float jingleVolume = volStr ? atof(volStr) : 0.33f;
 				soundParams.m_flVolume = jingleVolume;
 
@@ -2686,7 +2683,7 @@ void CNEORules::SetRoundStatus(NeoRoundStatus status)
 #ifdef GAME_DLL
 		if (status == NeoRoundStatus::RoundLive)
 		{
-			UTIL_CenterPrintAll("GO! GO! GO!\n");
+			UTIL_CenterPrintAll("- GO! GO! GO! -\n");
 		}
 #endif
 	}
@@ -2716,7 +2713,7 @@ const char* CNEORules::GetGameTypeName(void)
 		return "VIP";
 	default:
 		Assert(false);
-		return "Unknown";
+		return "NAN";
 	}
 }
 
