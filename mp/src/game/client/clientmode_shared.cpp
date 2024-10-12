@@ -327,7 +327,7 @@ ClientModeShared::~ClientModeShared()
 #ifdef NEO
 	if (g_pNeoLoading)
 	{
-		delete g_pNeoLoading;
+		g_pNeoLoading->MarkForDeletion();
 		g_pNeoLoading = nullptr;
 	}
 #endif
