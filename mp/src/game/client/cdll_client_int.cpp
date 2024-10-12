@@ -173,7 +173,9 @@ extern vgui::IInputInternal *g_InputInternal;
 #ifdef NEO
 #include "neo_version.h"
 #include "neo_mount_original.h"
+#include "ui/neo_loading.h"
 extern bool NeoRootCaptureESC();
+extern CNeoLoading *g_pNeoLoading;
 
 #ifdef LINUX
 #include "neo_fixup_glshaders.h"
@@ -1769,6 +1771,10 @@ void CHLClient::LevelInitPostEntity( )
 	IGameSystem::LevelInitPostEntityAllSystems();
 	C_PhysPropClientside::RecreateAll();
 	internalCenterPrint->Clear();
+
+#ifdef NEO
+	g_pNeoLoading->m_wszLoadingMap[0] = L'\0';
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -2653,6 +2659,7 @@ bool CHLClient::HandleUiToggle()
 #else
 #ifdef NEO
 	// NEO NOTE (nullsystem): Required for the sub-panels of override UI to utilize ESCAPE key properly
+	engine->ClientCmd_Unrestricted("hideconsole");
 	return NeoRootCaptureESC();
 #else
 	return false;

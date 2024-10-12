@@ -57,7 +57,7 @@ SendPropBool(SENDINFO(m_bInVision)),
 SendPropBool(SENDINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 SendPropBool(SENDINFO(m_bShowTestMessage)),
 SendPropBool(SENDINFO(m_bInAim)),
-SendPropBool(SENDINFO(m_bDroppedAnything)),
+SendPropBool(SENDINFO(m_bIneligibleForLoadoutPick)),
 
 SendPropTime(SENDINFO(m_flCamoAuxLastTime)),
 SendPropInt(SENDINFO(m_nVisionLastTick)),
@@ -83,7 +83,7 @@ DEFINE_FIELD(m_iNeoSkin, FIELD_INTEGER),
 DEFINE_FIELD(m_iNeoStar, FIELD_INTEGER),
 DEFINE_FIELD(m_iXP, FIELD_INTEGER),
 DEFINE_FIELD(m_iLoadoutWepChoice, FIELD_INTEGER),
-DEFINE_FIELD(m_bDroppedAnything, FIELD_BOOLEAN),
+DEFINE_FIELD(m_bIneligibleForLoadoutPick, FIELD_BOOLEAN),
 DEFINE_FIELD(m_iNextSpawnClassChoice, FIELD_INTEGER),
 DEFINE_FIELD(m_bInLean, FIELD_INTEGER),
 
@@ -134,7 +134,7 @@ void CNEO_Player::RequestSetClass(int newClass)
 
 	const NeoRoundStatus status = NEORules()->GetRoundStatus();
 	if (IsDead() || sv_neo_can_change_classes_anytime.GetBool() ||
-		(!m_bDroppedAnything && NEORules()->GetRemainingPreRoundFreezeTime(false) > 0) ||
+		(!m_bIneligibleForLoadoutPick && NEORules()->GetRemainingPreRoundFreezeTime(false) > 0) ||
 		(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup))
 	{
 		m_iNeoClass = newClass;
@@ -160,7 +160,8 @@ void CNEO_Player::RequestSetClass(int newClass)
 
 void CNEO_Player::RequestSetSkin(int newSkin)
 {
-	bool canChangeImmediately = true; // TODO
+	const NeoRoundStatus roundStatus = NEORules()->GetRoundStatus();
+	bool canChangeImmediately = ((roundStatus != NeoRoundStatus::RoundLive) && (roundStatus != NeoRoundStatus::PostRound)) || !IsAlive();
 
 	if (canChangeImmediately)
 	{
@@ -168,10 +169,7 @@ void CNEO_Player::RequestSetSkin(int newSkin)
 
 		SetPlayerTeamModel();
 	}
-	else
-	{
-		// TODO set for next spawn
-	}
+	//else NEOTODO Set for next spawn
 }
 
 static bool IsNeoPrimary(CNEOBaseCombatWeapon *pNeoWep)
@@ -290,8 +288,15 @@ void SetClass(const CCommand &command)
 		// Class number from the .res button click action.
 		// Our NeoClass enum is zero indexed, so we subtract one.
 		int nextClass = atoi(command.ArgV()[1]) - 1;
-		
-		clamp(nextClass, NEO_CLASS_RECON, NEO_CLASS_SUPPORT);
+
+		if (NEORules()->GetGameType() == NEO_GAME_TYPE_VIP && player->m_iNeoClass == NEO_CLASS_VIP)
+		{
+			return;
+		}
+		else
+		{
+			nextClass = clamp(nextClass, NEO_CLASS_RECON, NEO_CLASS_SUPPORT);
+		}
 
 		player->RequestSetClass(nextClass);
 	}
@@ -505,6 +510,7 @@ void CNEO_Player::Spawn(void)
 	m_nVisionLastTick = 0;
 	m_bInLean = NEO_LEAN_NONE;
 	m_bCorpseSpawned = false;
+	m_bIneligibleForLoadoutPick = false;
 
 	for (int i = 0; i < m_rfAttackersScores.Count(); ++i)
 	{
@@ -525,7 +531,6 @@ void CNEO_Player::Spawn(void)
 
 	SetPlayerTeamModel();
 	SetViewOffset(VEC_VIEW_NEOSCALE(this));
-
 	GiveLoadoutWeapon();
 }
 
@@ -547,6 +552,9 @@ void CNEO_Player::Lean(void)
 
 void CNEO_Player::CheckVisionButtons()
 {
+	if (m_iNeoClass == NEO_CLASS_VIP)
+		return;
+
 	if (gpGlobals->tickcount - m_nVisionLastTick < TIME_TO_TICKS(0.1f))
 	{
 		return;
@@ -1319,7 +1327,12 @@ int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int pl
 		if (neoAttacker && neoAttacker->entindex() != entindex())
 		{
 			char killByLine[SHOWMENU_STRLIMIT];
-			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, this);
+			auto* killedWithInflictor = info->GetInflictor();
+			const bool inflictorIsPlayer = killedWithInflictor ? !Q_strcmp(killedWithInflictor->GetDebugName(), "player") : false;
+			auto killedWithName = killedWithInflictor ? (inflictorIsPlayer ? neoAttacker->m_hActiveWeapon->GetPrintName() : killedWithInflictor->GetDebugName()) : "";
+			if (!Q_strcmp(killedWithName, "neo_grenade_frag")) { killedWithName = "Frag Grenade"; }
+			if (!Q_strcmp(killedWithName, "neo_deployed_detpack")) { killedWithName = "Remote Detpack"; }
+			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, this, killedWithName);
 			Q_strncat(infoStr, killByLine, infoStrMax, COPY_ALL_CHARACTERS);
 		}
 	}
@@ -1410,11 +1423,18 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo* info)
 	{
 		short attackerIdx = 0;
 		auto* neoAttacker = info ? dynamic_cast<CNEO_Player*>(info->GetAttacker()) : NULL;
+		const char* killedWithName = "";
 		if (neoAttacker && neoAttacker->entindex() != entindex())
 		{
 			attackerIdx = static_cast<short>(neoAttacker->entindex());
+			auto* killedWithInflictor = info->GetInflictor();
+			const bool inflictorIsPlayer = killedWithInflictor ? !Q_strcmp(killedWithInflictor->GetDebugName(), "player") : false;
+			killedWithName = killedWithInflictor ? (inflictorIsPlayer ? neoAttacker->m_hActiveWeapon->GetPrintName() : killedWithInflictor->GetDebugName()) : "";
+			if (!Q_strcmp(killedWithName, "neo_grenade_frag")) { killedWithName = "Frag Grenade"; }
+			if (!Q_strcmp(killedWithName, "neo_deployed_detpack")) { killedWithName = "Remote Detpack"; }
 		}
 		WRITE_SHORT(attackerIdx);
+		WRITE_STRING(killedWithName);
 	}
 	MessageEnd();
 }
@@ -1458,6 +1478,11 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 	if (!IsBot() && !IsHLTV())
 	{
 		StartShowDmgStats(&info);
+	}
+
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_TDM)
+	{
+		GetGlobalTeam(NEORules()->GetOpposingTeam(this))->AddScore(1);
 	}
 
 	BaseClass::Event_Killed(info);
@@ -1615,6 +1640,11 @@ void CNEO_Player::SetPlayerCorpseModel(int type)
 
 float CNEO_Player::GetReceivedDamageScale(CBaseEntity* pAttacker)
 {
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_TDM && m_aliveTimer.IsLessThen(5.f))
+	{ // 5 seconds of invincibility in TDM
+		return 0.f;
+	}
+
 	switch (GetClass())
 	{
 	case NEO_CLASS_RECON:
@@ -1623,6 +1653,8 @@ float CNEO_Player::GetReceivedDamageScale(CBaseEntity* pAttacker)
 		return NEO_ASSAULT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
+	case NEO_CLASS_VIP:
+		return NEO_ASSAULT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
 	default:
 		Assert(false);
 		return BaseClass::GetReceivedDamageScale(pAttacker);
@@ -1665,6 +1697,11 @@ bool CNEO_Player::Weapon_Switch( CBaseCombatWeapon *pWeapon,
 {
 	ShowCrosshair(false);
 	Weapon_SetZoom(false);
+	const auto activeWeapon = GetActiveWeapon();
+	if (activeWeapon)
+	{
+		activeWeapon->StopWeaponSound(RELOAD_NPC);
+	}
 
 	return BaseClass::Weapon_Switch(pWeapon, viewmodelindex);
 }
@@ -1692,10 +1729,11 @@ bool CNEO_Player::Weapon_CanSwitchTo(CBaseCombatWeapon *pWeapon)
     if (!pWeapon->CanDeploy())
         return false;
 
-    if (GetActiveWeapon())
+	const auto activeWeapon = GetActiveWeapon();
+	if (activeWeapon)
     {
-        if (!GetActiveWeapon()->CanHolster())
-            return false;
+		if (!activeWeapon->CanHolster())
+			return false;
     }
 
     return true;
@@ -1811,7 +1849,7 @@ bool CNEO_Player::IsCarryingGhost(void) const
 void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
 	const Vector *pvecTarget, const Vector *pVelocity )
 {
-	m_bDroppedAnything = true;
+	m_bIneligibleForLoadoutPick = true;
 	if(auto neoWeapon = dynamic_cast<CNEOBaseCombatWeapon *>(pWeapon))
 	{
 		if (neoWeapon->CanDrop() && IsDead() && pWeapon)
@@ -1844,6 +1882,12 @@ void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
 			return; // Return early to not drop weapon
 		}
 	}
+
+	if (!pWeapon)
+		return;
+
+	pWeapon->m_bInReload = false;
+	pWeapon->StopWeaponSound(RELOAD_NPC);
 	BaseClass::Weapon_Drop(pWeapon, pvecTarget, pVelocity);
 }
 
@@ -2341,17 +2385,25 @@ void CNEO_Player::GiveDefaultItems(void)
 		GiveNamedItem("weapon_smokegrenade");
 		Weapon_Switch(Weapon_OwnsThisType("weapon_kyla"));
 		break;
+	case NEO_CLASS_VIP:
+		GiveNamedItem("weapon_milso");
+		Weapon_Switch(Weapon_OwnsThisType("weapon_milso"));
+		break;
 	default:
 		GiveNamedItem("weapon_knife");
+		Weapon_Switch(Weapon_OwnsThisType("weapon_knife"));
 		break;
 	}
 }
 
+ConVar sv_neo_time_alive_until_cant_change_loadout("sv_neo_time_alive_until_cant_change_loadout", "25.f", FCVAR_CHEAT | FCVAR_REPLICATED, "How long after spawning changing loadouts is disabled ",
+	true, 0.0f, false, 1.0f);
+
 void CNEO_Player::GiveLoadoutWeapon(void)
 {
 	const NeoRoundStatus status = NEORules()->GetRoundStatus();
-	if (!(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup) && 
-		(IsObserver() || IsDead() || m_bDroppedAnything || ((NEORules()->GetRemainingPreRoundFreezeTime(false)) < 0)))
+	if (!(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup) &&
+		(IsObserver() || IsDead() || m_bIneligibleForLoadoutPick || m_aliveTimer.IsGreaterThen(sv_neo_time_alive_until_cant_change_loadout.GetFloat())))
 	{
 		return;
 	}
@@ -2619,6 +2671,8 @@ float CNEO_Player::GetCrouchSpeed(void) const
 		return NEO_ASSAULT_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_VIP:
+		return NEO_VIP_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
 	default:
 		return NEO_BASE_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
 	}
@@ -2634,6 +2688,8 @@ float CNEO_Player::GetNormSpeed(void) const
 		return NEO_ASSAULT_NORM_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_NORM_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_VIP:
+		return NEO_VIP_NORM_SPEED * GetBackwardsMovementPenaltyScale();
 	default:
 		return NEO_BASE_NORM_SPEED * GetBackwardsMovementPenaltyScale();
 	}
@@ -2649,6 +2705,8 @@ float CNEO_Player::GetWalkSpeed(void) const
 		return NEO_ASSAULT_WALK_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_WALK_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_VIP:
+		return NEO_VIP_WALK_SPEED * GetBackwardsMovementPenaltyScale();
 	default:
 		return NEO_BASE_WALK_SPEED * GetBackwardsMovementPenaltyScale();
 	}
@@ -2664,6 +2722,8 @@ float CNEO_Player::GetSprintSpeed(void) const
 		return NEO_ASSAULT_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_VIP:
+		return NEO_VIP_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
 	default:
 		return NEO_BASE_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
 	}

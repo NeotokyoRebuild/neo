@@ -25,7 +25,7 @@ extern ConVar sv_neo_grenade_throw_intensity;
 extern ConVar sv_neo_grenade_lob_intensity;
 extern ConVar sv_neo_grenade_roll_intensity;
 
-ConVar sv_neo_infinite_smoke_grenades("sv_neo_infinite_smoke_grenades", "0", FCVAR_CHEAT, "Should smoke grenades use up ammo.", true, 0.0, true, 1.0);
+ConVar sv_neo_infinite_smoke_grenades("sv_neo_infinite_smoke_grenades", "0", FCVAR_REPLICATED | FCVAR_CHEAT, "Should smoke grenades use up ammo.", true, 0.0, true, 1.0);
 
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponSmokeGrenade, DT_WeaponSmokeGrenade)
 
@@ -281,7 +281,7 @@ void CWeaponSmokeGrenade::ThrowGrenade(CNEO_Player* pPlayer, bool isAlive, CBase
 	Vector	vForward, vRight;
 
 	pPlayer->EyeVectors(&vForward, &vRight, NULL);
-	Vector vecSrc = vecEye + vForward * 18.0f + vRight * 8.0f;
+	Vector vecSrc = vecEye + vForward * 2.0f;
 	CheckThrowPosition(pPlayer, vecEye, vecSrc);
 	vForward.z += 0.1f;
 
@@ -347,7 +347,7 @@ void CWeaponSmokeGrenade::LobGrenade(CNEO_Player* pPlayer)
 	Vector	vForward, vRight;
 
 	pPlayer->EyeVectors(&vForward, &vRight, NULL);
-	Vector vecSrc = vecEye + vForward * 18.0f + vRight * 8.0f + Vector(0, 0, -8);
+	Vector vecSrc = vecEye + vForward * 2.0f + Vector(0, 0, -8);
 	CheckThrowPosition(pPlayer, vecEye, vecSrc);
 
 	Vector vecThrow;
@@ -402,7 +402,7 @@ void CWeaponSmokeGrenade::RollGrenade(CNEO_Player* pPlayer)
 		CrossProduct(vecFacing, tr.plane.normal, tangent);
 		CrossProduct(tr.plane.normal, tangent, vecFacing);
 	}
-	vecSrc += (vecFacing * 18.0);
+	vecSrc += (vecFacing * 2.0);
 	CheckThrowPosition(pPlayer, pPlayer->WorldSpaceCenter(), vecSrc);
 
 	Vector vecThrow;

@@ -21,13 +21,13 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-ConVar sv_neo_infinite_frag_grenades("sv_neo_infinite_frag_grenades", "0", FCVAR_CHEAT, "Should frag grenades use up ammo.", true, 0.0, true, 1.0);
-ConVar sv_neo_grenade_throw_intensity("sv_neo_grenade_throw_intensity", "900.0", FCVAR_CHEAT, "How strong should regular grenade throws be.", true, 0.0, true, 9999.9); // 750 is the original NT impulse. Seems incorrect though, weight or phys difference?
-ConVar sv_neo_grenade_lob_intensity("sv_neo_grenade_lob_intensity", "375.0", FCVAR_CHEAT, "How strong should underhand grenade lobs be.", true, 0.0, true, 9999.9); // No such thing in original, but chose half of 750
-ConVar sv_neo_grenade_roll_intensity("sv_neo_grenade_roll_intensity", "375.0", FCVAR_CHEAT, "How strong should underhand grenade rolls be.", true, 0.0, true, 9999.9);
-ConVar sv_neo_grenade_blast_damage("sv_neo_grenade_blast_damage", "200.0", FCVAR_CHEAT, "How much damage should a grenade blast deal.", true, 0.0, true, 999.9);
-ConVar sv_neo_grenade_blast_radius("sv_neo_grenade_blast_radius", "250.0", FCVAR_CHEAT, "How large should the grenade blast radius be.", true, 0.0, true, 9999.9);
-ConVar sv_neo_grenade_fuse_timer("sv_neo_grenade_fuse_timer", "2.16", FCVAR_CHEAT, "How long in seconds until a frag grenade explodes.", true, 0.1, true, 60.0); // Measured as 2.15999... in NT, ie. < 2.16
+ConVar sv_neo_infinite_frag_grenades("sv_neo_infinite_frag_grenades", "0", FCVAR_REPLICATED | FCVAR_CHEAT, "Should frag grenades use up ammo.", true, 0.0, true, 1.0);
+ConVar sv_neo_grenade_throw_intensity("sv_neo_grenade_throw_intensity", "900.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How strong should regular grenade throws be.", true, 0.0, true, 9999.9); // 750 is the original NT impulse. Seems incorrect though, weight or phys difference?
+ConVar sv_neo_grenade_lob_intensity("sv_neo_grenade_lob_intensity", "375.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How strong should underhand grenade lobs be.", true, 0.0, true, 9999.9); // No such thing in original, but chose half of 750
+ConVar sv_neo_grenade_roll_intensity("sv_neo_grenade_roll_intensity", "375.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How strong should underhand grenade rolls be.", true, 0.0, true, 9999.9);
+ConVar sv_neo_grenade_blast_damage("sv_neo_grenade_blast_damage", "200.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How much damage should a grenade blast deal.", true, 0.0, true, 999.9);
+ConVar sv_neo_grenade_blast_radius("sv_neo_grenade_blast_radius", "250.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How large should the grenade blast radius be.", true, 0.0, true, 9999.9);
+ConVar sv_neo_grenade_fuse_timer("sv_neo_grenade_fuse_timer", "2.16", FCVAR_REPLICATED | FCVAR_CHEAT, "How long in seconds until a frag grenade explodes.", true, 0.1, true, 60.0); // Measured as 2.15999... in NT, ie. < 2.16
 
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponGrenade, DT_WeaponGrenade)
 
@@ -304,7 +304,7 @@ void CWeaponGrenade::ThrowGrenade(CNEO_Player *pPlayer, bool isAlive, CBaseEntit
 	Vector	vForward, vRight;
 
 	pPlayer->EyeVectors(&vForward, &vRight, NULL);
-	Vector vecSrc = vecEye + vForward * 18.0f + vRight * 8.0f;
+	Vector vecSrc = vecEye + vForward * 2.0f;
 	CheckThrowPosition(pPlayer, vecEye, vecSrc);
 	vForward.z += 0.1f;
 
@@ -368,7 +368,7 @@ void CWeaponGrenade::LobGrenade(CNEO_Player *pPlayer)
 	Vector	vForward, vRight;
 
 	pPlayer->EyeVectors(&vForward, &vRight, NULL);
-	Vector vecSrc = vecEye + vForward * 18.0f + vRight * 8.0f + Vector(0, 0, -8);
+	Vector vecSrc = vecEye + vForward * 2.0f + Vector(0, 0, -8);
 	CheckThrowPosition(pPlayer, vecEye, vecSrc);
 
 	Vector vecThrow;
@@ -423,7 +423,7 @@ void CWeaponGrenade::RollGrenade(CNEO_Player *pPlayer)
 		CrossProduct(vecFacing, tr.plane.normal, tangent);
 		CrossProduct(tr.plane.normal, tangent, vecFacing);
 	}
-	vecSrc += (vecFacing * 18.0);
+	vecSrc += (vecFacing * 2.0);
 	CheckThrowPosition(pPlayer, pPlayer->WorldSpaceCenter(), vecSrc);
 
 	Vector vecThrow;

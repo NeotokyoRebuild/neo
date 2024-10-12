@@ -1,6 +1,26 @@
 #pragma once
 
-#define CONVARREF_DEF(_name) ConVarRef _name{#_name}
+#include "tier1/convar.h"
+#include "neo_hud_crosshair.h"
+
+// NEO TODO (nullsystem): Implement our own file IO dialog
+#include "vgui_controls/FileOpenDialog.h"
+
+// ConVarRef, but adds itself to a global vector
+class ConVarRefEx : public ConVarRef
+{
+public:
+	// NEO NOTE (nullsystem):
+	// bExcludeGlobalPtrs prevent it to put into a global variable list of
+	// ConVarRefEx. This is mostly to prevent the setting from included
+	// for using to reset to default.
+	// Currently only used for volume as we don't want to reset it to 100%
+	// on setting default.
+	ConVarRefEx(const char *pName, const bool bExcludeGlobalPtrs);
+};
+
+#define CONVARREF_DEF(_name) ConVarRefEx _name{#_name, false}
+#define CONVARREF_DEFNOGLOBALPTR(_name) ConVarRefEx _name{#_name, true}
 
 struct NeoSettings
 {
@@ -30,12 +50,19 @@ struct NeoSettings
 			wchar_t wszDisplayText[64];
 			ButtonCode_t bcNext;
 			ButtonCode_t bcCurrent; // Only used for unbinding
+			ButtonCode_t bcDefault;
 		};
 		Bind vBinds[64];
 		int iBindsSize = 0;
 
 		// Will be checked often so cached
 		ButtonCode_t bcConsole;
+
+		enum Flags
+		{
+			NONE = 0,
+			SKIP_KEYS = 1,
+		};
 	};
 
 	struct Mouse
@@ -89,11 +116,28 @@ struct NeoSettings
 		wchar_t **p2WszVmDispList;
 	};
 
+	struct Crosshair
+	{
+		int iStyle;
+		CrosshairInfo info;
+		vgui::FileOpenDialogType_t eFileIOMode;
+
+		// Textures
+		struct Texture
+		{
+			int iTexId;
+			int iWide;
+			int iTall;
+		};
+		Texture arTextures[CROSSHAIR_STYLE__TOTAL];
+	};
+
 	General general;
 	Keys keys;
 	Mouse mouse;
 	Audio audio;
 	Video video;
+	Crosshair crosshair;
 
 	int iCurTab = 0;
 	bool bBack = false;
@@ -102,20 +146,35 @@ struct NeoSettings
 
 	struct CVR
 	{
+		// General
+		CONVARREF_DEF(neo_name);
+		CONVARREF_DEF(cl_onlysteamnick);
+		CONVARREF_DEF(neo_fov);
+		CONVARREF_DEF(neo_viewmodel_fov_offset);
+		CONVARREF_DEF(neo_aim_hold);
+		CONVARREF_DEF(cl_autoreload_when_empty);
+		CONVARREF_DEF(cl_righthand);
+		CONVARREF_DEF(cl_showpos);
+		CONVARREF_DEF(cl_showfps);
+		CONVARREF_DEF(hud_fastswitch);
+		CONVARREF_DEF(neo_cl_toggleconsole);
+
 		// Multiplayer
-		CONVARREF_DEF(cl_player_spray_disable);
-		CONVARREF_DEF(cl_download_filter);
+		CONVARREF_DEF(cl_playerspraydisable);
+		CONVARREF_DEF(cl_downloadfilter);
 
 		// Mouse
+		CONVARREF_DEF(sensitivity);
 		CONVARREF_DEF(m_filter);
-		CONVARREF_DEF(pitch);
+		CONVARREF_DEF(m_pitch);
 		CONVARREF_DEF(m_customaccel);
 		CONVARREF_DEF(m_customaccel_exponent);
-		CONVARREF_DEF(m_raw_input);
+		CONVARREF_DEF(m_rawinput);
 
 		// Audio
-		CONVARREF_DEF(volume);
-		CONVARREF_DEF(snd_musicvolume);
+		CONVARREF_DEFNOGLOBALPTR(volume);
+		CONVARREF_DEFNOGLOBALPTR(snd_musicvolume);
+		CONVARREF_DEFNOGLOBALPTR(snd_victory_volume);
 		CONVARREF_DEF(snd_surround_speakers);
 		CONVARREF_DEF(voice_enable);
 		CONVARREF_DEF(voice_scale);
@@ -140,16 +199,35 @@ struct NeoSettings
 		CONVARREF_DEF(mat_motion_blur_enabled);
 		CONVARREF_DEF(mat_hdr_level);
 		CONVARREF_DEF(mat_monitorgamma);
+
+		// Crosshair
+		CONVARREF_DEF(neo_cl_crosshair_style);
+		CONVARREF_DEF(neo_cl_crosshair_color_r);
+		CONVARREF_DEF(neo_cl_crosshair_color_g);
+		CONVARREF_DEF(neo_cl_crosshair_color_b);
+		CONVARREF_DEF(neo_cl_crosshair_color_a);
+		CONVARREF_DEF(neo_cl_crosshair_size_type);
+		CONVARREF_DEF(neo_cl_crosshair_size);
+		CONVARREF_DEF(neo_cl_crosshair_size_screen);
+		CONVARREF_DEF(neo_cl_crosshair_thickness);
+		CONVARREF_DEF(neo_cl_crosshair_gap);
+		CONVARREF_DEF(neo_cl_crosshair_outline);
+		CONVARREF_DEF(neo_cl_crosshair_center_dot);
+		CONVARREF_DEF(neo_cl_crosshair_top_line);
+		CONVARREF_DEF(neo_cl_crosshair_circle_radius);
+		CONVARREF_DEF(neo_cl_crosshair_circle_segments);
 	};
 	CVR cvr;
 };
 void NeoSettingsInit(NeoSettings *ns);
 void NeoSettingsDeinit(NeoSettings *ns);
-void NeoSettingsRestore(NeoSettings *ns);
+void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKeys = NeoSettings::Keys::NONE);
 void NeoSettingsSave(const NeoSettings *ns);
+void NeoSettingsResetToDefault(NeoSettings *ns);
 
 void NeoSettings_General(NeoSettings *ns);
 void NeoSettings_Keys(NeoSettings *ns);
 void NeoSettings_Mouse(NeoSettings *ns);
 void NeoSettings_Audio(NeoSettings *ns);
 void NeoSettings_Video(NeoSettings *ns);
+void NeoSettings_Crosshair(NeoSettings *ns);

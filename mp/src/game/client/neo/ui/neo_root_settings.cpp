@@ -14,25 +14,14 @@
 #include <steam/steam_api.h>
 
 #include "neo_ui.h"
+#include "neo_root.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-extern ConVar neo_name;
-extern ConVar cl_onlysteamnick;
-extern ConVar sensitivity;
-extern ConVar snd_victory_volume;
-extern ConVar neo_fov;
-extern ConVar neo_viewmodel_fov_offset;
-extern ConVar neo_aim_hold;
-extern ConVar cl_autoreload_when_empty;
-extern ConVar cl_righthand;
-extern ConVar cl_showpos;
-extern ConVar cl_showfps;
-extern ConVar hud_fastswitch;
-extern ConVar neo_cl_toggleconsole;
-
+extern CNeoRoot *g_pNeoRoot;
 extern NeoUI::Context g_uiCtx;
+extern int g_iRowsInScreen;
 
 const wchar_t *QUALITY_LABELS[] = {
 	L"Low",
@@ -92,6 +81,17 @@ static const char *DLFILTER_STRMAP[] = {
 	"all", "nosounds", "mapsonly", "none"
 };
 
+static inline CUtlVector<ConVarRefEx *> g_vecConVarRefPtrs;
+
+ConVarRefEx::ConVarRefEx(const char *pName, const bool bExcludeGlobalPtrs)
+	: ConVarRef(pName)
+{
+	if (!bExcludeGlobalPtrs)
+	{
+		g_vecConVarRefPtrs.AddToTail(this);
+	}
+}
+
 void NeoSettingsInit(NeoSettings *ns)
 {
 	int iNativeWidth, iNativeHeight;
@@ -111,12 +111,12 @@ void NeoSettingsInit(NeoSettings *ns)
 	}
 
 	// TODO: Alt/secondary keybind, different way on finding keybind
-	CUtlBuffer buf(0, 0, CUtlBuffer::TEXT_BUFFER | CUtlBuffer::READ_ONLY);
-	if (filesystem->ReadFile("scripts/kb_act.lst", nullptr, buf))
+	characterset_t breakSet = {};
+	breakSet.set[0] = '"';
+	NeoSettings::Keys *keys = &ns->keys;
+	CUtlBuffer bufAct(0, 0, CUtlBuffer::TEXT_BUFFER | CUtlBuffer::READ_ONLY);
+	if (filesystem->ReadFile("scripts/kb_act.lst", nullptr, bufAct))
 	{
-		characterset_t breakSet = {};
-		breakSet.set[0] = '"';
-		NeoSettings::Keys *keys = &ns->keys;
 		keys->iBindsSize = 0;
 
 		// It's quite specific to the root overridden menu so do it here instead of file
@@ -124,18 +124,18 @@ void NeoSettingsInit(NeoSettings *ns)
 		V_strcpy_safe(conbind->szBindingCmd, "neo_toggleconsole");
 		V_wcscpy_safe(conbind->wszDisplayText, L"Developer console bind");
 
-		while (buf.IsValid() && keys->iBindsSize < ARRAYSIZE(keys->vBinds))
+		while (bufAct.IsValid() && keys->iBindsSize < ARRAYSIZE(keys->vBinds))
 		{
-			char szFirstCol[64];
+			char szBindingCmd[64];
 			char szRawDispText[64];
 
 			bool bIsOk = false;
-			bIsOk = buf.ParseToken(&breakSet, szFirstCol, sizeof(szFirstCol));
+			bIsOk = bufAct.ParseToken(&breakSet, szBindingCmd, sizeof(szBindingCmd));
 			if (!bIsOk) break;
-			bIsOk = buf.ParseToken(&breakSet, szRawDispText, sizeof(szRawDispText));
+			bIsOk = bufAct.ParseToken(&breakSet, szRawDispText, sizeof(szRawDispText));
 			if (!bIsOk) break;
 
-			if (szFirstCol[0] == '\0') continue;
+			if (szBindingCmd[0] == '\0') continue;
 
 			wchar_t wszDispText[64];
 			if (wchar_t *localizedWszStr = g_pVGuiLocalize->Find(szRawDispText))
@@ -147,7 +147,7 @@ void NeoSettingsInit(NeoSettings *ns)
 				g_pVGuiLocalize->ConvertANSIToUnicode(szRawDispText, wszDispText, sizeof(wszDispText));
 			}
 
-			const bool bIsBlank = V_strcmp(szFirstCol, "blank") == 0;
+			const bool bIsBlank = V_strcmp(szBindingCmd, "blank") == 0;
 			if (bIsBlank && szRawDispText[0] != '=')
 			{
 				// This is category label
@@ -159,9 +159,47 @@ void NeoSettingsInit(NeoSettings *ns)
 			{
 				// This is a keybind
 				auto *bind = &keys->vBinds[keys->iBindsSize++];
-				V_strcpy_safe(bind->szBindingCmd, szFirstCol);
+				V_strcpy_safe(bind->szBindingCmd, szBindingCmd);
 				V_wcscpy_safe(bind->wszDisplayText, wszDispText);
+				bind->bcDefault = BUTTON_CODE_NONE;
 			}
+		}
+	}
+
+	CUtlBuffer bufDef(0, 0, CUtlBuffer::TEXT_BUFFER | CUtlBuffer::READ_ONLY);
+	if (keys->iBindsSize > 0 && filesystem->ReadFile("scripts/kb_def.lst", nullptr, bufDef))
+	{
+		while (bufDef.IsValid())
+		{
+			char szDefBind[64];
+			char szBindingCmd[64];
+
+			bool bIsOk = false;
+			bIsOk = bufDef.ParseToken(&breakSet, szDefBind, sizeof(szDefBind));
+			if (!bIsOk) break;
+			bIsOk = bufDef.ParseToken(&breakSet, szBindingCmd, sizeof(szBindingCmd));
+			if (!bIsOk) break;
+
+			for (int i = 0; i < keys->iBindsSize; ++i)
+			{
+				if (V_strcmp(keys->vBinds[i].szBindingCmd, szBindingCmd) == 0)
+				{
+					keys->vBinds[i].bcDefault = g_pInputSystem->StringToButtonCode(szDefBind);
+					break;
+				}
+			}
+		}
+	}
+
+	// Setup crosshairs
+	for (int i = 0; i < CROSSHAIR_STYLE__TOTAL; ++i)
+	{
+		if (CROSSHAIR_FILES[i][0])
+		{
+			NeoSettings::Crosshair::Texture *pTex = &ns->crosshair.arTextures[i];
+			pTex->iTexId = vgui::surface()->CreateNewTextureID();
+			vgui::surface()->DrawSetTextureFile(pTex->iTexId, CROSSHAIR_FILES[i], false, false);
+			vgui::surface()->DrawGetTextureSize(pTex->iTexId, pTex->iWide, pTex->iTall);
 		}
 	}
 }
@@ -172,24 +210,24 @@ void NeoSettingsDeinit(NeoSettings *ns)
 	free(ns->video.p2WszVmDispList);
 }
 
-void NeoSettingsRestore(NeoSettings *ns)
+void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKeys)
 {
 	ns->bModified = false;
 	NeoSettings::CVR *cvr = &ns->cvr;
 	{
 		NeoSettings::General *pGeneral = &ns->general;
-		g_pVGuiLocalize->ConvertANSIToUnicode(neo_name.GetString(), pGeneral->wszNeoName, sizeof(pGeneral->wszNeoName));
-		pGeneral->bOnlySteamNick = cl_onlysteamnick.GetBool();
-		pGeneral->iFov = neo_fov.GetInt();
-		pGeneral->iViewmodelFov = neo_viewmodel_fov_offset.GetInt();
-		pGeneral->bAimHold = neo_aim_hold.GetBool();
-		pGeneral->bReloadEmpty = cl_autoreload_when_empty.GetBool();
-		pGeneral->bViewmodelRighthand = cl_righthand.GetBool();
-		pGeneral->bShowPlayerSprays = !(cvr->cl_player_spray_disable.GetBool()); // Inverse
-		pGeneral->bShowPos = cl_showpos.GetBool();
-		pGeneral->iShowFps = cl_showfps.GetInt();
+		g_pVGuiLocalize->ConvertANSIToUnicode(cvr->neo_name.GetString(), pGeneral->wszNeoName, sizeof(pGeneral->wszNeoName));
+		pGeneral->bOnlySteamNick = cvr->cl_onlysteamnick.GetBool();
+		pGeneral->iFov = cvr->neo_fov.GetInt();
+		pGeneral->iViewmodelFov = cvr->neo_viewmodel_fov_offset.GetInt();
+		pGeneral->bAimHold = cvr->neo_aim_hold.GetBool();
+		pGeneral->bReloadEmpty = cvr->cl_autoreload_when_empty.GetBool();
+		pGeneral->bViewmodelRighthand = cvr->cl_righthand.GetBool();
+		pGeneral->bShowPlayerSprays = !(cvr->cl_playerspraydisable.GetBool()); // Inverse
+		pGeneral->bShowPos = cvr->cl_showpos.GetBool();
+		pGeneral->iShowFps = cvr->cl_showfps.GetInt();
 		{
-			const char *szDlFilter = cvr->cl_download_filter.GetString();
+			const char *szDlFilter = cvr->cl_downloadfilter.GetString();
 			pGeneral->iDlFilter = 0;
 			for (int i = 0; i < ARRAYSIZE(DLFILTER_STRMAP); ++i)
 			{
@@ -203,20 +241,23 @@ void NeoSettingsRestore(NeoSettings *ns)
 	}
 	{
 		NeoSettings::Keys *pKeys = &ns->keys;
-		pKeys->bWeaponFastSwitch = hud_fastswitch.GetBool();
-		pKeys->bDeveloperConsole = neo_cl_toggleconsole.GetBool();
-		for (int i = 0; i < pKeys->iBindsSize; ++i)
+		pKeys->bWeaponFastSwitch = cvr->hud_fastswitch.GetBool();
+		pKeys->bDeveloperConsole = cvr->neo_cl_toggleconsole.GetBool();
+		if (!(flagsKeys & NeoSettings::Keys::SKIP_KEYS))
 		{
-			auto *bind = &pKeys->vBinds[i];
-			bind->bcNext = bind->bcCurrent = gameuifuncs->GetButtonCodeForBind(bind->szBindingCmd);
+			for (int i = 0; i < pKeys->iBindsSize; ++i)
+			{
+				auto *bind = &pKeys->vBinds[i];
+				bind->bcNext = bind->bcCurrent = gameuifuncs->GetButtonCodeForBind(bind->szBindingCmd);
+			}
 		}
 	}
 	{
 		NeoSettings::Mouse *pMouse = &ns->mouse;
-		pMouse->flSensitivity = sensitivity.GetFloat();
-		pMouse->bRawInput = cvr->m_raw_input.GetBool();
+		pMouse->flSensitivity = cvr->sensitivity.GetFloat();
+		pMouse->bRawInput = cvr->m_rawinput.GetBool();
 		pMouse->bFilter = cvr->m_filter.GetBool();
-		pMouse->bReverse = (cvr->pitch.GetFloat() < 0.0f);
+		pMouse->bReverse = (cvr->m_pitch.GetFloat() < 0.0f);
 		pMouse->bCustomAccel = (cvr->m_customaccel.GetInt() == 3);
 		pMouse->flExponent = cvr->m_customaccel_exponent.GetFloat();
 	}
@@ -226,7 +267,7 @@ void NeoSettingsRestore(NeoSettings *ns)
 		// Output
 		pAudio->flVolMain = cvr->volume.GetFloat();
 		pAudio->flVolMusic = cvr->snd_musicvolume.GetFloat();
-		pAudio->flVolVictory = snd_victory_volume.GetFloat();
+		pAudio->flVolVictory = cvr->snd_victory_volume.GetFloat();
 		pAudio->iSoundSetup = 0;
 		switch (cvr->snd_surround_speakers.GetInt())
 		{
@@ -322,6 +363,24 @@ void NeoSettingsRestore(NeoSettings *ns)
 		pVideo->iHDR = cvr->mat_hdr_level.GetInt();
 		pVideo->flGamma = cvr->mat_monitorgamma.GetFloat();
 	}
+	{
+		NeoSettings::Crosshair *pCrosshair = &ns->crosshair;
+		pCrosshair->iStyle = cvr->neo_cl_crosshair_style.GetInt();
+		pCrosshair->info.color[0] = (uint8)(cvr->neo_cl_crosshair_color_r.GetInt());
+		pCrosshair->info.color[1] = (uint8)(cvr->neo_cl_crosshair_color_g.GetInt());
+		pCrosshair->info.color[2] = (uint8)(cvr->neo_cl_crosshair_color_b.GetInt());
+		pCrosshair->info.color[3] = (uint8)(cvr->neo_cl_crosshair_color_a.GetInt());
+		pCrosshair->info.iESizeType = cvr->neo_cl_crosshair_size_type.GetInt();
+		pCrosshair->info.iSize = cvr->neo_cl_crosshair_size.GetInt();
+		pCrosshair->info.flScrSize = cvr->neo_cl_crosshair_size_screen.GetFloat();
+		pCrosshair->info.iThick = cvr->neo_cl_crosshair_thickness.GetInt();
+		pCrosshair->info.iGap = cvr->neo_cl_crosshair_gap.GetInt();
+		pCrosshair->info.iOutline = cvr->neo_cl_crosshair_outline.GetInt();
+		pCrosshair->info.iCenterDot = cvr->neo_cl_crosshair_center_dot.GetInt();
+		pCrosshair->info.bTopLine = cvr->neo_cl_crosshair_top_line.GetBool();
+		pCrosshair->info.iCircleRad = cvr->neo_cl_crosshair_circle_radius.GetInt();
+		pCrosshair->info.iCircleSegments = cvr->neo_cl_crosshair_circle_segments.GetInt();
+	}
 }
 
 void NeoToggleConsoleEnforce()
@@ -366,23 +425,23 @@ void NeoSettingsSave(const NeoSettings *ns)
 		const NeoSettings::General *pGeneral = &ns->general;
 		char neoNameText[sizeof(pGeneral->wszNeoName) / sizeof(wchar_t)];
 		g_pVGuiLocalize->ConvertUnicodeToANSI(pGeneral->wszNeoName, neoNameText, sizeof(neoNameText));
-		neo_name.SetValue(neoNameText);
-		cl_onlysteamnick.SetValue(pGeneral->bOnlySteamNick);
-		neo_fov.SetValue(pGeneral->iFov);
-		neo_viewmodel_fov_offset.SetValue(pGeneral->iViewmodelFov);
-		neo_aim_hold.SetValue(pGeneral->bAimHold);
-		cl_autoreload_when_empty.SetValue(pGeneral->bReloadEmpty);
-		cl_righthand.SetValue(pGeneral->bViewmodelRighthand);
-		cvr->cl_player_spray_disable.SetValue(!pGeneral->bShowPlayerSprays); // Inverse
-		cl_showpos.SetValue(pGeneral->bShowPos);
-		cl_showfps.SetValue(pGeneral->iShowFps);
-		cvr->cl_download_filter.SetValue(DLFILTER_STRMAP[pGeneral->iDlFilter]);
+		cvr->neo_name.SetValue(neoNameText);
+		cvr->cl_onlysteamnick.SetValue(pGeneral->bOnlySteamNick);
+		cvr->neo_fov.SetValue(pGeneral->iFov);
+		cvr->neo_viewmodel_fov_offset.SetValue(pGeneral->iViewmodelFov);
+		cvr->neo_aim_hold.SetValue(pGeneral->bAimHold);
+		cvr->cl_autoreload_when_empty.SetValue(pGeneral->bReloadEmpty);
+		cvr->cl_righthand.SetValue(pGeneral->bViewmodelRighthand);
+		cvr->cl_playerspraydisable.SetValue(!pGeneral->bShowPlayerSprays); // Inverse
+		cvr->cl_showpos.SetValue(pGeneral->bShowPos);
+		cvr->cl_showfps.SetValue(pGeneral->iShowFps);
+		cvr->cl_downloadfilter.SetValue(DLFILTER_STRMAP[pGeneral->iDlFilter]);
 	}
 	{
 		const NeoSettings::Keys *pKeys = &ns->keys;
-		hud_fastswitch.SetValue(pKeys->bWeaponFastSwitch);
+		cvr->hud_fastswitch.SetValue(pKeys->bWeaponFastSwitch);
 		NeoToggleConsoleEnforce();
-		neo_cl_toggleconsole.SetValue(pKeys->bDeveloperConsole);
+		cvr->neo_cl_toggleconsole.SetValue(pKeys->bDeveloperConsole);
 		for (int i = 0; i < pKeys->iBindsSize; ++i)
 		{
 			const auto *bind = &pKeys->vBinds[i];
@@ -396,7 +455,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		}
 		for (int i = 0; i < pKeys->iBindsSize; ++i)
 		{
-			const auto *bind = &pKeys->vBinds[i];
+			auto *bind = const_cast<NeoSettings::Keys::Bind *>(&pKeys->vBinds[i]);
 			if (bind->szBindingCmd[0] != '\0' && bind->bcNext > KEY_NONE)
 			{
 				char cmdStr[128];
@@ -404,17 +463,18 @@ void NeoSettingsSave(const NeoSettings *ns)
 				V_sprintf_safe(cmdStr, "bind \"%s\" \"%s\"\n", bindBtnName, bind->szBindingCmd);
 				engine->ClientCmd_Unrestricted(cmdStr);
 			}
+			bind->bcCurrent = bind->bcNext;
 		}
 		// Reset the cache to none so it'll refresh on next KeyCodeTyped
 		const_cast<NeoSettings::Keys *>(pKeys)->bcConsole = KEY_NONE;
 	}
 	{
 		const NeoSettings::Mouse *pMouse = &ns->mouse;
-		sensitivity.SetValue(pMouse->flSensitivity);
-		cvr->m_raw_input.SetValue(pMouse->bRawInput);
+		cvr->sensitivity.SetValue(pMouse->flSensitivity);
+		cvr->m_rawinput.SetValue(pMouse->bRawInput);
 		cvr->m_filter.SetValue(pMouse->bFilter);
-		const float absPitch = abs(cvr->pitch.GetFloat());
-		cvr->pitch.SetValue(pMouse->bReverse ? -absPitch : absPitch);
+		const float absPitch = abs(cvr->m_pitch.GetFloat());
+		cvr->m_pitch.SetValue(pMouse->bReverse ? -absPitch : absPitch);
 		cvr->m_customaccel.SetValue(pMouse->bCustomAccel ? 3 : 0);
 		cvr->m_customaccel_exponent.SetValue(pMouse->flExponent);
 	}
@@ -435,7 +495,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		// Output
 		cvr->volume.SetValue(pAudio->flVolMain);
 		cvr->snd_musicvolume.SetValue(pAudio->flVolMusic);
-		snd_victory_volume.SetValue(pAudio->flVolVictory);
+		cvr->snd_victory_volume.SetValue(pAudio->flVolVictory);
 		cvr->snd_surround_speakers.SetValue(SURROUND_RE_MAP[pAudio->iSoundSetup]);
 		cvr->snd_mute_losefocus.SetValue(pAudio->bMuteAudioUnFocus);
 		cvr->snd_pitchquality.SetValue(pAudio->iSoundQuality == QUALITY_HIGH);
@@ -478,7 +538,67 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->mat_hdr_level.SetValue(pVideo->iHDR);
 		cvr->mat_monitorgamma.SetValue(pVideo->flGamma);
 	}
+	{
+		const NeoSettings::Crosshair *pCrosshair = &ns->crosshair;
+		cvr->neo_cl_crosshair_style.SetValue(pCrosshair->iStyle);
+		cvr->neo_cl_crosshair_color_r.SetValue(pCrosshair->info.color.r());
+		cvr->neo_cl_crosshair_color_g.SetValue(pCrosshair->info.color.g());
+		cvr->neo_cl_crosshair_color_b.SetValue(pCrosshair->info.color.b());
+		cvr->neo_cl_crosshair_color_a.SetValue(pCrosshair->info.color.a());
+		cvr->neo_cl_crosshair_size_type.SetValue(pCrosshair->info.iESizeType);
+		cvr->neo_cl_crosshair_size.SetValue(pCrosshair->info.iSize);
+		cvr->neo_cl_crosshair_size_screen.SetValue(pCrosshair->info.flScrSize);
+		cvr->neo_cl_crosshair_thickness.SetValue(pCrosshair->info.iThick);
+		cvr->neo_cl_crosshair_gap.SetValue(pCrosshair->info.iGap);
+		cvr->neo_cl_crosshair_outline.SetValue(pCrosshair->info.iOutline);
+		cvr->neo_cl_crosshair_center_dot.SetValue(pCrosshair->info.iCenterDot);
+		cvr->neo_cl_crosshair_top_line.SetValue(pCrosshair->info.bTopLine);
+		cvr->neo_cl_crosshair_circle_radius.SetValue(pCrosshair->info.iCircleRad);
+		cvr->neo_cl_crosshair_circle_segments.SetValue(pCrosshair->info.iCircleSegments);
+	}
+
 	engine->ClientCmd_Unrestricted("host_writeconfig");
+}
+
+void NeoSettingsResetToDefault(NeoSettings *ns)
+{
+	// NEO NOTE (nullsystem): The only thing left out is video mode and volume, but that's fine
+	// as we shouldn't need to be altering those
+	for (ConVarRefEx *convar : g_vecConVarRefPtrs)
+	{
+		convar->SetValue(convar->GetDefault());
+	}
+
+	NeoSettings::Keys *pKeys = &ns->keys;
+	for (int i = 0; i < pKeys->iBindsSize; ++i)
+	{
+		const auto *bind = &pKeys->vBinds[i];
+		if (bind->szBindingCmd[0] != '\0' && bind->bcCurrent > KEY_NONE)
+		{
+			char cmdStr[128];
+			const char *bindBtnName = g_pInputSystem->ButtonCodeToString(bind->bcCurrent);
+			V_sprintf_safe(cmdStr, "unbind \"%s\"\n", bindBtnName);
+			engine->ClientCmd_Unrestricted(cmdStr);
+		}
+	}
+	for (int i = 0; i < pKeys->iBindsSize; ++i)
+	{
+		auto *bind = &pKeys->vBinds[i];
+		if (bind->szBindingCmd[0] != '\0' && bind->bcDefault > KEY_NONE)
+		{
+			char cmdStr[128];
+			const char *bindBtnName = g_pInputSystem->ButtonCodeToString(bind->bcDefault);
+			V_sprintf_safe(cmdStr, "bind \"%s\" \"%s\"\n", bindBtnName, bind->szBindingCmd);
+			engine->ClientCmd_Unrestricted(cmdStr);
+		}
+		bind->bcCurrent = bind->bcNext = bind->bcDefault;
+	}
+
+	engine->ClientCmd_Unrestricted("host_writeconfig");
+
+	// NEO JANK (nullsystem): For some reason, bind -> gameuifuncs->GetButtonCodeForBind is too quick for
+	// the game engine at this point. So just omit setting binds in restore since we already have anyway.
+	NeoSettingsRestore(ns, NeoSettings::Keys::SKIP_KEYS);
 }
 
 static const wchar_t *DLFILTER_LABELS[] = {
@@ -626,4 +746,83 @@ void NeoSettings_Video(NeoSettings *ns)
 	NeoUI::RingBoxBool(L"Motion blur", &pVideo->bMotionBlur);
 	NeoUI::RingBox(L"HDR", HDR_LABELS, ARRAYSIZE(HDR_LABELS), &pVideo->iHDR);
 	NeoUI::Slider(L"Gamma", &pVideo->flGamma, 1.6, 2.6, 2, 0.1f);
+}
+
+void NeoSettings_Crosshair(NeoSettings *ns)
+{
+	static constexpr int IVIEW_ROWS = 5;
+	NeoSettings::Crosshair *pCrosshair = &ns->crosshair;
+
+	g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+	g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * IVIEW_ROWS;
+	NeoUI::BeginSection();
+	const bool bTextured = CROSSHAIR_FILES[pCrosshair->iStyle][0];
+	if (bTextured)
+	{
+		NeoSettings::Crosshair::Texture *pTex = &ns->crosshair.arTextures[pCrosshair->iStyle];
+		vgui::surface()->DrawSetTexture(pTex->iTexId);
+		vgui::surface()->DrawSetColor(pCrosshair->info.color);
+		vgui::surface()->DrawTexturedRect(
+			g_uiCtx.dPanel.x + g_uiCtx.iLayoutX - (pTex->iWide / 2) + (g_uiCtx.dPanel.wide / 2),
+			g_uiCtx.dPanel.y + g_uiCtx.iLayoutY,
+			g_uiCtx.dPanel.x + g_uiCtx.iLayoutX + (pTex->iWide / 2) + (g_uiCtx.dPanel.wide / 2),
+			g_uiCtx.dPanel.y + g_uiCtx.iLayoutY + pTex->iTall);
+	}
+	else
+	{
+		PaintCrosshair(pCrosshair->info,
+					   g_uiCtx.dPanel.x + g_uiCtx.iLayoutX + (g_uiCtx.dPanel.wide / 2),
+					   g_uiCtx.dPanel.y + g_uiCtx.iLayoutY + (g_uiCtx.dPanel.tall / 2));
+	}
+	vgui::surface()->DrawSetColor(g_uiCtx.normalBgColor);
+
+	if (pCrosshair->iStyle == CROSSHAIR_STYLE_CUSTOM)
+	{
+		NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 5);
+		{
+			const bool bPresExport = NeoUI::Button(L"Export").bPressed;
+			const bool bPresImport = NeoUI::Button(L"Import").bPressed;
+			if (bPresExport || bPresImport)
+			{
+				if (g_pNeoRoot->m_pFileIODialog)
+				{
+					g_pNeoRoot->m_pFileIODialog->MarkForDeletion();
+				}
+				pCrosshair->eFileIOMode = bPresImport ? vgui::FOD_OPEN : vgui::FOD_SAVE;
+				g_pNeoRoot->m_pFileIODialog = new vgui::FileOpenDialog(g_pNeoRoot,
+																	   bPresImport ? "Import crosshair" : "Export crosshair",
+																	   pCrosshair->eFileIOMode);
+				g_pNeoRoot->m_pFileIODialog->AddFilter("*." NEO_XHAIR_EXT, "NT;RE Crosshair", true);
+				g_pNeoRoot->m_pFileIODialog->DoModal();
+			}
+		}
+		NeoUI::EndHorizontal();
+	}
+	NeoUI::EndSection();
+
+	g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+	g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * (g_iRowsInScreen - IVIEW_ROWS);
+	NeoUI::BeginSection(true);
+	NeoUI::RingBox(L"Crosshair style", CROSSHAIR_LABELS, CROSSHAIR_STYLE__TOTAL, &pCrosshair->iStyle);
+	NeoUI::SliderU8(L"Red", &pCrosshair->info.color[0], 0, UCHAR_MAX);
+	NeoUI::SliderU8(L"Green", &pCrosshair->info.color[1], 0, UCHAR_MAX);
+	NeoUI::SliderU8(L"Blue", &pCrosshair->info.color[2], 0, UCHAR_MAX);
+	NeoUI::SliderU8(L"Alpha", &pCrosshair->info.color[3], 0, UCHAR_MAX);
+	if (!bTextured)
+	{
+		NeoUI::RingBox(L"Size type", CROSSHAIR_SIZETYPE_LABELS, CROSSHAIR_SIZETYPE__TOTAL, &pCrosshair->info.iESizeType);
+		switch (pCrosshair->info.iESizeType)
+		{
+		case CROSSHAIR_SIZETYPE_ABSOLUTE: NeoUI::SliderInt(L"Size", &pCrosshair->info.iSize, 0, CROSSHAIR_MAX_SIZE); break;
+		case CROSSHAIR_SIZETYPE_SCREEN: NeoUI::Slider(L"Size", &pCrosshair->info.flScrSize, 0.0f, 1.0f, 5, 0.01f); break;
+		}
+		NeoUI::SliderInt(L"Thickness", &pCrosshair->info.iThick, 0, CROSSHAIR_MAX_THICKNESS);
+		NeoUI::SliderInt(L"Gap", &pCrosshair->info.iGap, 0, CROSSHAIR_MAX_GAP);
+		NeoUI::SliderInt(L"Outline", &pCrosshair->info.iOutline, 0, CROSSHAIR_MAX_OUTLINE);
+		NeoUI::SliderInt(L"Center dot", &pCrosshair->info.iCenterDot, 0, CROSSHAIR_MAX_CENTER_DOT);
+		NeoUI::RingBoxBool(L"Draw top line", &pCrosshair->info.bTopLine);
+		NeoUI::SliderInt(L"Circle radius", &pCrosshair->info.iCircleRad, 0, CROSSHAIR_MAX_CIRCLE_RAD);
+		NeoUI::SliderInt(L"Circle segments", &pCrosshair->info.iCircleSegments, 0, CROSSHAIR_MAX_CIRCLE_SEGMENTS);
+	}
+	NeoUI::EndSection();
 }

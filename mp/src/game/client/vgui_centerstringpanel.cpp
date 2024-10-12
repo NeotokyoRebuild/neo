@@ -122,6 +122,13 @@ void CCenterStringLabel::OnScreenSizeChanged(int iOldWide, int iOldTall)
 {
 	BaseClass::OnScreenSizeChanged(iOldWide, iOldTall);
 	ComputeSize();
+#ifdef NEO
+	vgui::HScheme neoscheme = vgui::scheme()->LoadSchemeFromFileEx(
+	enginevgui->GetPanel(PANEL_CLIENTDLL),
+		"resource/ClientScheme.res", "ClientScheme");
+	vgui::IScheme* pScheme = vgui::scheme()->GetIScheme(neoscheme);
+	ApplySchemeSettings(pScheme);
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -146,10 +153,6 @@ void CCenterStringLabel::ApplySchemeSettings(vgui::IScheme *pScheme)
 #ifdef NEO
 	m_hFont = pScheme->GetFont("MVP");
 	SetFgColor(Color(255, 255, 255, 255)); // Color reset by here, so set it back to white
-	using vgui::ISurface;
-	vgui::surface()->SetFontGlyphSet(m_hFont, "xscale", 40, 600, 0, 0,
-									 ISurface::FONTFLAG_ANTIALIAS,
-									 0, 0x017F);
 #else
 	// Use a large font
 	m_hFont = pScheme->GetFont( "Trebuchet24" );

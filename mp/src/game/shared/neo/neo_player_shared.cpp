@@ -25,11 +25,13 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+
+#ifdef CLIENT_DLL
 ConVar cl_autoreload_when_empty("cl_autoreload_when_empty", "1", FCVAR_USERINFO | FCVAR_ARCHIVE,
 	"Automatically start reloading when the active weapon becomes empty.",
 	true, 0.0f, true, 1.0f);
-
 ConVar neo_aim_hold("neo_aim_hold", "0", FCVAR_USERINFO | FCVAR_ARCHIVE, "Hold to aim as opposed to toggle aim.", true, 0.0f, true, 1.0f);
+#endif
 ConVar neo_recon_superjump_intensity("neo_recon_superjump_intensity", "250", FCVAR_REPLICATED | FCVAR_CHEAT,
 	"Recon superjump intensity multiplier.", true, 1.0, false, 0);
 
@@ -131,18 +133,16 @@ int DmgLineStr(char* infoLine, const int infoLineMax,
 }
 
 void KillerLineStr(char* killByLine, const int killByLineMax,
-	CNEO_Player* neoAttacker, const CNEO_Player* neoVictim)
+	CNEO_Player* neoAttacker, const CNEO_Player* neoVictim, const char* killedWith)
 {
 	const char* dmgerName = neoAttacker->GetNeoPlayerName();
 	const char* dmgerClass = GetNeoClassName(neoAttacker->GetClass());
 	const int dmgerHP = neoAttacker->GetHealth();
-	auto* dmgerWep = neoAttacker->GetActiveWeapon();
-	const char* dmgerWepName = dmgerWep ? dmgerWep->GetPrintName() : "";
 	const float distance = METERS_PER_INCH * neoAttacker->GetAbsOrigin().DistTo(neoVictim->GetAbsOrigin());
 
 	memset(killByLine, 0, killByLineMax);
 	Q_snprintf(killByLine, killByLineMax, "Killed by: %s [%s | %d hp] with %s at %.0f m\n",
-		dmgerName, dmgerClass, dmgerHP, dmgerWepName, distance);
+		dmgerName, dmgerClass, dmgerHP, killedWith, distance);
 }
 
 [[nodiscard]] auto StrToInt(std::string_view strView) -> std::optional<int>

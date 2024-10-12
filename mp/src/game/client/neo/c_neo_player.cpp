@@ -73,7 +73,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropBool(RECVINFO(m_bInVision)),
 	RecvPropBool(RECVINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 	RecvPropBool(RECVINFO(m_bInAim)),
-	RecvPropBool(RECVINFO(m_bDroppedAnything)),
+	RecvPropBool(RECVINFO(m_bIneligibleForLoadoutPick)),
 
 	RecvPropTime(RECVINFO(m_flCamoAuxLastTime)),
 	RecvPropInt(RECVINFO(m_nVisionLastTick)),
@@ -112,6 +112,8 @@ END_PREDICTION_DATA()
 static void __MsgFunc_DamageInfo(bf_read& msg)
 {
 	const int killerIdx = msg.ReadShort();
+	char killedBy[32];
+	const bool foundKilledBy = msg.ReadString(killedBy, sizeof(killedBy), false);
 
 	auto *localPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if (!localPlayer)
@@ -135,7 +137,7 @@ static void __MsgFunc_DamageInfo(bf_read& msg)
 		auto *neoAttacker = dynamic_cast<C_NEO_Player*>(UTIL_PlayerByIndex(killerIdx));
 		if (neoAttacker && neoAttacker->entindex() != thisIdx)
 		{
-			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, localPlayer);
+			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, localPlayer, foundKilledBy ? killedBy : NULL);
 			setKillByLine = true;
 		}
 	}
@@ -283,8 +285,13 @@ public:
 	virtual void CommandCallback(const CCommand& command)
 	{
 		auto team = GetLocalPlayerTeam();
-
 		if(team < FIRST_GAME_TEAM)
+		{
+			return;
+		}
+
+		auto playerNeoClass = C_NEO_Player::GetLocalNEOPlayer()->m_iNeoClass;
+		if (playerNeoClass == NEO_CLASS_VIP)
 		{
 			return;
 		}
@@ -423,7 +430,7 @@ C_NEO_Player::C_NEO_Player()
 	m_bInThermOpticCamo = m_bInVision = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
 	m_bInAim = false;
-	m_bDroppedAnything = false;
+	m_bIneligibleForLoadoutPick = false;
 	m_bInLean = NEO_LEAN_NONE;
 
 	m_flCamoAuxLastTime = 0;
@@ -442,6 +449,9 @@ C_NEO_Player::C_NEO_Player()
 
 C_NEO_Player::~C_NEO_Player()
 {
+#ifdef GLOWS_ENABLE
+	DestroyGlowEffect();
+#endif // GLOWS_ENABLE
 }
 
 void C_NEO_Player::CheckThermOpticButtons()
@@ -450,7 +460,7 @@ void C_NEO_Player::CheckThermOpticButtons()
 
 	if ((m_afButtonPressed & IN_THERMOPTIC) && IsAlive())
 	{
-		if (GetClass() != NEO_CLASS_RECON && GetClass() != NEO_CLASS_ASSAULT)
+		if (GetClass() == NEO_CLASS_SUPPORT)
 		{
 			return;
 		}
@@ -580,8 +590,7 @@ int C_NEO_Player::GetAttackerHits(const int attackerIdx) const
 
 int C_NEO_Player::DrawModel(int flags)
 {
-	int ret = BaseClass::DrawModel(flags);
-
+	int ret = BaseClass::DrawModel(flags); // NEO TODO (Adam) Do we need to draw each player model twice when in vision?
 	if (!ret) {
 		return ret;
 	}
@@ -1069,6 +1078,28 @@ void C_NEO_Player::TeamChange(int iNewTeam)
 	if (IsLocalPlayer())
 	{
 		engine->ClientCmd(classmenu.GetName());
+		if (iNewTeam == TEAM_SPECTATOR)
+		{
+			for (int i = 0; i < MAX_PLAYERS; i++)
+			{
+				auto player = UTIL_PlayerByIndex(i);
+				if (player)
+				{
+					player->SetClientSideGlowEnabled(true);
+				}
+			}
+		}
+		else
+		{
+			for (int i = 0; i < MAX_PLAYERS; i++)
+			{
+				auto player = UTIL_PlayerByIndex(i);
+				if (player)
+				{
+					player->SetClientSideGlowEnabled(false);
+				}
+			}
+		}
 	}
 	BaseClass::TeamChange(iNewTeam);
 }
@@ -1202,13 +1233,6 @@ void C_NEO_Player::Spawn( void )
 			engine->ClientCmd(teammenu.GetName());
 		}
 	}
-
-#if(0)
-	// We could support crosshair customization/colors etc this way.
-	auto cross = GET_HUDELEMENT(CHudCrosshair);
-	Color color = Color(255, 255, 255, 255);
-	cross->SetCrosshair(NULL, color);
-#endif
 }
 
 void C_NEO_Player::DoImpactEffect( trace_t &tr, int nDamageType )
@@ -1241,7 +1265,7 @@ bool C_NEO_Player::ShouldDrawHL2StyleQuickHud(void)
 
 void C_NEO_Player::Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon)
 {
-	m_bDroppedAnything = true;
+	m_bIneligibleForLoadoutPick = true;
 	Weapon_SetZoom(false);
 
 	if (pWeapon->IsGhost())
@@ -1346,6 +1370,8 @@ float C_NEO_Player::GetCrouchSpeed(void) const
 		return NEO_ASSAULT_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_VIP:
+		return NEO_VIP_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
 	default:
 		return NEO_BASE_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
 	}
@@ -1361,6 +1387,8 @@ float C_NEO_Player::GetNormSpeed(void) const
 		return NEO_ASSAULT_NORM_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_NORM_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_VIP:
+		return NEO_VIP_NORM_SPEED * GetBackwardsMovementPenaltyScale();
 	default:
 		return NEO_BASE_NORM_SPEED * GetBackwardsMovementPenaltyScale();
 	}
@@ -1376,6 +1404,8 @@ float C_NEO_Player::GetWalkSpeed(void) const
 		return NEO_ASSAULT_WALK_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_WALK_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_VIP:
+		return NEO_VIP_WALK_SPEED * GetBackwardsMovementPenaltyScale();
 	default:
 		return NEO_BASE_WALK_SPEED * GetBackwardsMovementPenaltyScale();
 	}
@@ -1391,6 +1421,8 @@ float C_NEO_Player::GetSprintSpeed(void) const
 		return NEO_ASSAULT_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_VIP:
+		return NEO_VIP_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
 	default:
 		return NEO_BASE_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
 	}
