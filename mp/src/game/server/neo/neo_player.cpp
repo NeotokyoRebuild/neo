@@ -490,7 +490,7 @@ void CNEO_Player::Precache( void )
 void CNEO_Player::Spawn(void)
 {
 	int teamNumber = GetTeamNumber();
-	ShowViewPortPanel(PANEL_SPECGUI, (teamNumber == TEAM_SPECTATOR ? true : false));
+	ShowViewPortPanel(PANEL_SPECGUI, teamNumber == TEAM_SPECTATOR);
 
 	if (teamNumber == TEAM_JINRAI || teamNumber == TEAM_NSF)
 	{
