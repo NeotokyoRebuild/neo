@@ -349,6 +349,30 @@ Scheme
 				"yres"	"1200 10000"
 				"dropshadow"	"1"
 			}
+			"5"
+			{
+				"name"		"Verdana"
+				"tall"		"18" //"22"
+				"weight"	"700"
+				"yres"	"1200 1440"
+				"dropshadow"	"1"
+			}
+			"6"
+			{
+				"name"		"Verdana"
+				"tall"		"20" //"24"
+				"weight"	"700"
+				"yres"	"1536 1600"
+				"dropshadow"	"1"
+			}
+			"7"
+			{
+				"name"		"Verdana"
+				"tall"		"22" //"26"
+				"weight"	"700"
+				"yres"	"1600 6000"
+				"dropshadow"	"1"
+			}
 		}
 
 
