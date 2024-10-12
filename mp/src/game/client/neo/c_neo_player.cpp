@@ -46,8 +46,6 @@
 
 #include "model_types.h"
 
-#include "neo_playeranimstate.h"
-
 #include "c_user_message_register.h"
 
 // Don't alias here
@@ -445,16 +443,12 @@ C_NEO_Player::C_NEO_Player()
 	m_bLastTickInThermOpticCamo = false;
 	m_bIsAllowedToToggleVision = false;
 
-	m_pPlayerAnimState = CreatePlayerAnimState(this, CreateAnimStateHelpers(this),
-		NEO_ANIMSTATE_LEGANIM_TYPE, NEO_ANIMSTATE_USES_AIMSEQUENCES);
-
 	memset(m_szNeoNameWDupeIdx, 0, sizeof(m_szNeoNameWDupeIdx));
 	m_szNameDupePos = 0;
 }
 
 C_NEO_Player::~C_NEO_Player()
 {
-	m_pPlayerAnimState->Release();
 #ifdef GLOWS_ENABLE
 	DestroyGlowEffect();
 #endif // GLOWS_ENABLE
@@ -1060,14 +1054,6 @@ void C_NEO_Player::PostThink(void)
 			m_bPreviouslyReloading = pNeoWep->m_bInReload;
 		}
 	}
-
-	Vector eyeForward;
-	this->EyeVectors(&eyeForward, NULL, NULL);
-	Assert(eyeForward.IsValid());
-
-	float flPitch = asin(-eyeForward[2]);
-	float flYaw = atan2(eyeForward[1], eyeForward[0]);
-	m_pPlayerAnimState->Update(RAD2DEG(flYaw), RAD2DEG(flPitch));
 }
 
 void C_NEO_Player::CalcDeathCamView(Vector &eyeOrigin, QAngle &eyeAngles, float &fov)
@@ -1577,19 +1563,6 @@ void C_NEO_Player::PreDataUpdate(DataUpdateType_t updateType)
 	}
 
 	BaseClass::PreDataUpdate(updateType);
-}
-
-void C_NEO_Player::SetAnimation(PLAYER_ANIM playerAnim)
-{
-	PlayerAnimEvent_t animEvent;
-	if (!PlayerAnimToPlayerAnimEvent(playerAnim, animEvent))
-	{
-		DevWarning("CLI Tried to get unknown PLAYER_ANIM %d\n", playerAnim);
-	}
-	else
-	{
-		m_pPlayerAnimState->DoAnimationEvent(animEvent);
-	}
 }
 
 extern ConVar sv_neo_wep_dmg_modifier;

@@ -200,7 +200,6 @@ enum NeoStar {
 class CNEO_Player;
 class CNEOBaseCombatWeapon;
 class C_BaseCombatWeapon;
-enum PlayerAnimEvent_t : uint;
 
 extern bool IsThereRoomForLeanSlide(CNEO_Player *player,
 	const Vector &targetViewOffset, bool &outStartInSolid);
@@ -249,10 +248,6 @@ inline const char *GetRankName(int xp, bool shortened = false)
 }
 
 CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, const NEO_WEP_BITS_UNDERLYING_TYPE& neoWepBits);
-
-// Temporary helper for converting between these. Should refactor this to use the same structure for both.
-// Returns true on success. If returns false, the out value will not be set.
-bool PlayerAnimToPlayerAnimEvent(const PLAYER_ANIM playerAnim, PlayerAnimEvent_t& outAnimEvent);
 
 enum NeoLeanDirectionE {
 	NEO_LEAN_NONE = 0,
