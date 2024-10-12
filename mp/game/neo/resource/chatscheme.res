@@ -362,7 +362,7 @@ Scheme
 				"name"		"Verdana"
 				"tall"		"20" //"24"
 				"weight"	"700"
-				"yres"	"1536 1600"
+				"yres"	"1441 1600"
 				"dropshadow"	"1"
 			}
 			"7"
