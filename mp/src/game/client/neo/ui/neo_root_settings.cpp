@@ -223,11 +223,11 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->bAimHold = cvr->neo_aim_hold.GetBool();
 		pGeneral->bReloadEmpty = cvr->cl_autoreload_when_empty.GetBool();
 		pGeneral->bViewmodelRighthand = cvr->cl_righthand.GetBool();
-		pGeneral->bShowPlayerSprays = !(cvr->cl_player_spray_disable.GetBool()); // Inverse
+		pGeneral->bShowPlayerSprays = !(cvr->cl_playerspraydisable.GetBool()); // Inverse
 		pGeneral->bShowPos = cvr->cl_showpos.GetBool();
 		pGeneral->iShowFps = cvr->cl_showfps.GetInt();
 		{
-			const char *szDlFilter = cvr->cl_download_filter.GetString();
+			const char *szDlFilter = cvr->cl_downloadfilter.GetString();
 			pGeneral->iDlFilter = 0;
 			for (int i = 0; i < ARRAYSIZE(DLFILTER_STRMAP); ++i)
 			{
@@ -255,9 +255,9 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 	{
 		NeoSettings::Mouse *pMouse = &ns->mouse;
 		pMouse->flSensitivity = cvr->sensitivity.GetFloat();
-		pMouse->bRawInput = cvr->m_raw_input.GetBool();
+		pMouse->bRawInput = cvr->m_rawinput.GetBool();
 		pMouse->bFilter = cvr->m_filter.GetBool();
-		pMouse->bReverse = (cvr->pitch.GetFloat() < 0.0f);
+		pMouse->bReverse = (cvr->m_pitch.GetFloat() < 0.0f);
 		pMouse->bCustomAccel = (cvr->m_customaccel.GetInt() == 3);
 		pMouse->flExponent = cvr->m_customaccel_exponent.GetFloat();
 	}
@@ -432,10 +432,10 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->neo_aim_hold.SetValue(pGeneral->bAimHold);
 		cvr->cl_autoreload_when_empty.SetValue(pGeneral->bReloadEmpty);
 		cvr->cl_righthand.SetValue(pGeneral->bViewmodelRighthand);
-		cvr->cl_player_spray_disable.SetValue(!pGeneral->bShowPlayerSprays); // Inverse
+		cvr->cl_playerspraydisable.SetValue(!pGeneral->bShowPlayerSprays); // Inverse
 		cvr->cl_showpos.SetValue(pGeneral->bShowPos);
 		cvr->cl_showfps.SetValue(pGeneral->iShowFps);
-		cvr->cl_download_filter.SetValue(DLFILTER_STRMAP[pGeneral->iDlFilter]);
+		cvr->cl_downloadfilter.SetValue(DLFILTER_STRMAP[pGeneral->iDlFilter]);
 	}
 	{
 		const NeoSettings::Keys *pKeys = &ns->keys;
@@ -471,10 +471,10 @@ void NeoSettingsSave(const NeoSettings *ns)
 	{
 		const NeoSettings::Mouse *pMouse = &ns->mouse;
 		cvr->sensitivity.SetValue(pMouse->flSensitivity);
-		cvr->m_raw_input.SetValue(pMouse->bRawInput);
+		cvr->m_rawinput.SetValue(pMouse->bRawInput);
 		cvr->m_filter.SetValue(pMouse->bFilter);
-		const float absPitch = abs(cvr->pitch.GetFloat());
-		cvr->pitch.SetValue(pMouse->bReverse ? -absPitch : absPitch);
+		const float absPitch = abs(cvr->m_pitch.GetFloat());
+		cvr->m_pitch.SetValue(pMouse->bReverse ? -absPitch : absPitch);
 		cvr->m_customaccel.SetValue(pMouse->bCustomAccel ? 3 : 0);
 		cvr->m_customaccel_exponent.SetValue(pMouse->flExponent);
 	}

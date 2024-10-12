@@ -17,6 +17,10 @@
 	#include "utlhashtable.h"
 #endif
 
+#ifdef GLOWS_ENABLE
+#include "neo_player_shared.h"
+#endif
+
 enum
 {
 	TEAM_JINRAI = LAST_SHARED_TEAM + 1,
@@ -221,6 +225,17 @@ public:
 	bool IsRoundOver() const;
 #ifdef GAME_DLL
 	void GatherGameTypeVotes();
+
+	struct ReadyPlayers
+	{
+		int array[TEAM__TOTAL];
+	};
+	void CheckChatCommand(CNEO_Player *pNeoPlayer, const char *pSzChat);
+	ReadyPlayers FetchReadyPlayers() const;
+	CUtlHashtable<AccountID_t> m_readyAccIDs;
+	bool m_bIgnoreOverThreshold = false;
+	bool ReadyUpPlayerIsReady(CNEO_Player *pNeoPlayer) const;
+
 	void StartNextRound();
 
 	virtual const char* GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer) OVERRIDE;
@@ -272,8 +287,32 @@ public:
 		return GetOpposingTeam(player->GetTeamNumber());
 	}
 
-        int roundNumber() const { return m_iRoundNumber; }
-        bool roundAlternate() const { return static_cast<bool>(m_iRoundNumber % 2 == 0); }
+    int roundNumber() const { return m_iRoundNumber; }
+    bool roundAlternate() const { return static_cast<bool>(m_iRoundNumber % 2 == 0); }
+
+#ifdef GLOWS_ENABLE
+	void GetTeamGlowColor(int teamNumber, float &r, float &g, float &b)
+	{
+		if (teamNumber == TEAM_JINRAI)
+		{
+			r = static_cast<float>(COLOR_JINRAI.r()/255.f);
+			g = static_cast<float>(COLOR_JINRAI.g()/255.f);
+			b = static_cast<float>(COLOR_JINRAI.b()/255.f);
+		}
+		else if (teamNumber == TEAM_NSF)
+		{
+			r = static_cast<float>(COLOR_NSF.r()/255.f);
+			g = static_cast<float>(COLOR_NSF.g()/255.f);
+			b = static_cast<float>(COLOR_NSF.b()/255.f);
+		}
+		else
+		{
+			r = 0.76f;
+			g = 0.76f;
+			b = 0.76f;
+		}
+	}
+#endif
 
 public:
 #ifdef GAME_DLL

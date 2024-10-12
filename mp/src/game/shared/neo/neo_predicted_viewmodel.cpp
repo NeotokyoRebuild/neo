@@ -251,6 +251,21 @@ int CNEOPredictedViewModel::DrawModel(int flags)
 			
 			return 0;
 		}
+		if (pPlayer->GetClass() == NEO_CLASS_SUPPORT && pPlayer->IsInVision())
+		{
+			IMaterial* pass = materials->FindMaterial("dev/thermal_third", TEXTURE_GROUP_MODEL);
+			Assert(pass && !pass->IsErrorMaterial());
+
+			if (pass && !pass->IsErrorMaterial())
+			{
+				// Render
+				modelrender->ForcedMaterialOverride(pass);
+				int ret = BaseClass::DrawModel(flags);
+				modelrender->ForcedMaterialOverride(NULL);
+
+				return ret;
+			}
+		}
 	}
 
 	return BaseClass::DrawModel(flags);

@@ -143,6 +143,8 @@ struct Context
 	int iLayoutY;
 	int iWgXPos;
 	int iYOffset[MAX_SECTIONS] = {};
+	bool abYMouseDragOffset[MAX_SECTIONS] = {};
+	int iStartMouseDragOffset[MAX_SECTIONS] = {};
 
 	int iHorizontalWidth;
 	int iHorizontalMargin;
