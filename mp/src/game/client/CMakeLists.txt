@@ -15,6 +15,7 @@ target_include_directories(client
     ${CMAKE_SOURCE_DIR}/game/shared
     ${CMAKE_SOURCE_DIR}/game/shared/hl2
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp
+    ${CMAKE_SOURCE_DIR}/game/shared/Multiplayer
     ${CMAKE_SOURCE_DIR}/game/shared/neo
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons
     ${CMAKE_SOURCE_DIR}/public
@@ -1516,6 +1517,8 @@ target_sources_grouped(
     neo/ui/neo_root_serverbrowser.h
     neo/ui/neo_root_settings.cpp
     neo/ui/neo_root_settings.h
+    neo/ui/neo_loading.cpp
+    neo/ui/neo_loading.h
     neo/ui/neo_ui.cpp
     neo/ui/neo_ui.h
     neo/ui/IOverrideInterface.h
@@ -1526,6 +1529,8 @@ target_sources_grouped(
     neo/ui/neo_hud_childelement.h
     neo/ui/neo_hud_compass.cpp
     neo/ui/neo_hud_compass.h
+    neo/ui/neo_hud_crosshair.cpp
+    neo/ui/neo_hud_crosshair.h
     neo/ui/neo_hud_damage_indicator.cpp
     neo/ui/neo_hud_friendly_marker.cpp
     neo/ui/neo_hud_friendly_marker.h
@@ -1562,8 +1567,6 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_shared.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_spawnpoint.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_spawnpoint.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_playeranimstate.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_playeranimstate.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel_muzzleflash.cpp
@@ -1651,12 +1654,22 @@ endif()
 
 target_sources_grouped(
     TARGET client
+    NAME "Source Files\\Shared\\Multiplayer"
+    FILES
+    ${CMAKE_SOURCE_DIR}/game/shared/Multiplayer/multiplayer_animstate.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/Multiplayer/multiplayer_animstate.h
+)
+
+target_sources_grouped(
+    TARGET client
     NAME "HL2MP"
     FILES
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_gamerules.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_gamerules.h
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_player_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_player_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_playeranimstate.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_playeranimstate.h
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_weapon_parse.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_weapon_parse.h
     hl2mp/c_hl2mp_player.cpp

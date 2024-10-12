@@ -36,6 +36,7 @@
 #define NEO_RECON_SPEED_MODIFIER 1.25
 #define NEO_ASSAULT_SPEED_MODIFIER 1.0
 #define NEO_SUPPORT_SPEED_MODIFIER 1.0
+#define NEO_VIP_SPEED_MODIFIER 1.0
 
 #define NEO_RECON_NORM_SPEED (NEO_BASE_NORM_SPEED * NEO_RECON_SPEED_MODIFIER)
 #define NEO_RECON_SPRINT_SPEED (NEO_BASE_SPRINT_SPEED * NEO_RECON_SPEED_MODIFIER)
@@ -51,6 +52,11 @@
 #define NEO_SUPPORT_SPRINT_SPEED (NEO_BASE_SPRINT_SPEED * NEO_SUPPORT_SPEED_MODIFIER)
 #define NEO_SUPPORT_WALK_SPEED (NEO_BASE_WALK_SPEED * NEO_SUPPORT_SPEED_MODIFIER)
 #define NEO_SUPPORT_CROUCH_SPEED (NEO_BASE_CROUCH_SPEED * NEO_SUPPORT_SPEED_MODIFIER)
+
+#define NEO_VIP_NORM_SPEED (NEO_BASE_NORM_SPEED * NEO_VIP_SPEED_MODIFIER)
+#define NEO_VIP_SPRINT_SPEED (NEO_BASE_SPRINT_SPEED * NEO_VIP_SPEED_MODIFIER)
+#define NEO_VIP_WALK_SPEED (NEO_BASE_WALK_SPEED * NEO_VIP_SPEED_MODIFIER)
+#define NEO_VIP_CROUCH_SPEED (NEO_BASE_CROUCH_SPEED * NEO_VIP_SPEED_MODIFIER)
 
 // Sanity checks for class speeds.
 // These values are divided with in some contexts, so should never equal zero.
@@ -194,7 +200,6 @@ enum NeoStar {
 class CNEO_Player;
 class CNEOBaseCombatWeapon;
 class C_BaseCombatWeapon;
-enum PlayerAnimEvent_t : uint;
 
 extern bool IsThereRoomForLeanSlide(CNEO_Player *player,
 	const Vector &targetViewOffset, bool &outStartInSolid);
@@ -243,10 +248,6 @@ inline const char *GetRankName(int xp, bool shortened = false)
 }
 
 CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, const NEO_WEP_BITS_UNDERLYING_TYPE& neoWepBits);
-
-// Temporary helper for converting between these. Should refactor this to use the same structure for both.
-// Returns true on success. If returns false, the out value will not be set.
-bool PlayerAnimToPlayerAnimEvent(const PLAYER_ANIM playerAnim, PlayerAnimEvent_t& outAnimEvent);
 
 enum NeoLeanDirectionE {
 	NEO_LEAN_NONE = 0,

@@ -887,7 +887,11 @@ void C_BaseAnimating::UpdateRelevantInterpolatedVars()
 
 void C_BaseAnimating::AddBaseAnimatingInterpolatedVars()
 {
+#ifdef NEO // NEO HACK (Adam) lean interpolation was messed up with change to multiplayer_animstate, NEOTODO workout if this is ok, or how to make the old version work
+	AddVar( m_flEncodedController, &m_iv_flEncodedController, LATCH_SIMULATION_VAR, true );
+#else
 	AddVar( m_flEncodedController, &m_iv_flEncodedController, LATCH_ANIMATION_VAR, true );
+#endif
 	AddVar( m_flPoseParameter, &m_iv_flPoseParameter, LATCH_ANIMATION_VAR, true );
 	
 	int flags = LATCH_ANIMATION_VAR;
@@ -3933,7 +3937,9 @@ void C_BaseAnimating::FireEvent( const Vector& origin, const QAngle& angles, int
 	case AE_MUZZLEFLASH:
 		{
 			// Send out the effect for a player
+#ifndef NEO // NEOTODO (Adam) Use this to dispatch muzzle flash effect for weapon models
 			DispatchMuzzleEffect( options, true );
+#endif
 			break;
 		}
 

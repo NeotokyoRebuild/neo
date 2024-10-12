@@ -15,6 +15,8 @@ extern ConVar weaponstay;
 #include "iefx.h"
 #include "c_te_effect_dispatch.h"
 #include "prediction.h"
+#include "hud_crosshair.h"
+#include "ui/neo_hud_crosshair.h"
 #endif
 
 #include "basecombatweapon_shared.h"
@@ -152,6 +154,10 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 		{{VECTOR_CONE_2DEGREES, VECTOR_CONE_5DEGREES, VECTOR_CONE_1DEGREES / 2, VECTOR_CONE_2DEGREES}},
 		{0.25, 0.5, -0.6, 0.6},
 		{1.0, 0.0, -0.25, -0.75, -0.6, 0.6},
+	},
+	{NEO_WEP_SMAC,
+		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_4DEGREES}},
+		{0.25, 0.5, -0.6, 0.6},
 	},
 	{NEO_WEP_SRM,
 		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_4DEGREES}},
@@ -467,14 +473,14 @@ void CNEOBaseCombatWeapon::ProcessAnimationEvents(void)
 	if (!pOwner)
 		return;
 
-	if (!m_bLowered && (pOwner->IsSprinting()) && !m_bInReload && !m_bRoundBeingChambered)
+	if (!m_bLowered && (pOwner->IsSprinting() || pOwner->GetMoveType() == MOVETYPE_LADDER) && !m_bInReload && !m_bRoundBeingChambered)
 	{
 		m_bLowered = true;
 		SendWeaponAnim(ACT_VM_IDLE_LOWERED);
 		m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
 		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
 	}
-	else if (m_bLowered && !(pOwner->IsSprinting()))
+	else if (m_bLowered && !(pOwner->IsSprinting() || pOwner->GetMoveType() == MOVETYPE_LADDER))
 	{
 		m_bLowered = false;
 		SendWeaponAnim(ACT_VM_IDLE);
@@ -792,7 +798,7 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 	}
 
 	// Only the player fires this way so we can cast
-	CBasePlayer* pPlayer = ToBasePlayer(GetOwner());
+	auto pPlayer = static_cast<CNEO_Player*>(GetOwner());
 
 	if (!pPlayer)
 	{
@@ -805,7 +811,7 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 	SendWeaponAnim(GetPrimaryAttackActivity());
 
 	// player "shoot" animation
-	pPlayer->SetAnimation(PLAYER_ATTACK1);
+	pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
 
 	FireBulletsInfo_t info;
 	info.m_vecSrc = pPlayer->Weapon_ShootPosition();
@@ -937,6 +943,36 @@ void CNEOBaseCombatWeapon::ProcessMuzzleFlashEvent()
 
 	// Muzzle flash particle
 	DispatchMuzzleParticleEffect(iAttachment);
+}
+
+void CNEOBaseCombatWeapon::DrawCrosshair()
+{
+	auto *player = C_NEO_Player::GetLocalNEOPlayer();
+	if (!player)
+	{
+		return;
+	}
+
+	// NEO TODO (nullsystem): Put some X on crosshair if aiming at teammate, see comment
+	// in C_BaseCombatWeapon::DrawCrosshair
+	// EX: bool bOnTarget = (m_iState == WEAPON_IS_ONTARGET);
+
+	auto *crosshair = GET_HUDELEMENT(CHudCrosshair);
+	if (!crosshair)
+	{
+		return;
+	}
+
+	if (GetWpnData().iconCrosshair)
+	{
+		const Color color(neo_cl_crosshair_color_r.GetInt(), neo_cl_crosshair_color_g.GetInt(),
+						  neo_cl_crosshair_color_b.GetInt(), neo_cl_crosshair_color_a.GetInt());
+		crosshair->SetCrosshair(GetWpnData().iconCrosshair, color);
+	}
+	else
+	{
+		crosshair->ResetCrosshair();
+	}
 }
 
 void CNEOBaseCombatWeapon::DispatchMuzzleParticleEffect(int iAttachment) {

@@ -13,6 +13,11 @@
 #include "cbase.h"
 #include "c_basecombatcharacter.h"
 
+#ifdef GLOWS_ENABLE
+#ifdef NEO
+#include "neo_gamerules.h"
+#endif // NEO
+#endif // GLOWS_ENABLE
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -35,6 +40,9 @@ C_BaseCombatCharacter::C_BaseCombatCharacter()
 	m_bGlowEnabled = false;
 	m_bOldGlowEnabled = false;
 	m_bClientSideGlowEnabled = false;
+	m_flGlowR = 0.76f;
+	m_flGlowG = 0.76f;
+	m_flGlowB = 0.76f;
 #endif // GLOWS_ENABLE
 }
 
@@ -109,9 +117,19 @@ void C_BaseCombatCharacter::DoMuzzleFlash()
 //-----------------------------------------------------------------------------
 void C_BaseCombatCharacter::GetGlowEffectColor( float *r, float *g, float *b )
 {
-	*r = 0.76f;
-	*g = 0.76f;
-	*b = 0.76f;
+	*r = m_flGlowR;
+	*g = m_flGlowG;
+	*b = m_flGlowB;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Change the colour of the glow outline of a combat character
+//-----------------------------------------------------------------------------
+void C_BaseCombatCharacter::SetGlowEffectColor(float r, float g, float b)
+{
+	m_flGlowR.Set(r);
+	m_flGlowG.Set(g);
+	m_flGlowB.Set(b);
 }
 
 //-----------------------------------------------------------------------------
@@ -145,8 +163,12 @@ void C_BaseCombatCharacter::UpdateGlowEffect( void )
 	if ( m_bGlowEnabled || m_bClientSideGlowEnabled )
 	{
 		float r, g, b;
+#ifdef NEO
+		NEORules()->GetTeamGlowColor(GetTeamNumber(), r, g, b);
+		SetGlowEffectColor(r, g, b);
+#else
 		GetGlowEffectColor( &r, &g, &b );
-
+#endif
 		m_pGlowEffect = new CGlowObject( this, Vector( r, g, b ), 1.0, true );
 	}
 }
@@ -177,7 +199,10 @@ BEGIN_RECV_TABLE(C_BaseCombatCharacter, DT_BaseCombatCharacter)
 	RecvPropEHandle( RECVINFO( m_hActiveWeapon ) ),
 	RecvPropArray3( RECVINFO_ARRAY(m_hMyWeapons), RecvPropEHandle( RECVINFO( m_hMyWeapons[0] ) ) ),
 #ifdef GLOWS_ENABLE
-	RecvPropBool( RECVINFO( m_bGlowEnabled ) ),
+	RecvPropBool( RECVINFO( m_bGlowEnabled ) ), // NEOTODO (Adam) Should the declaration of this variable in c_basecombatcharacter.h be a CNetworkVar?
+	RecvPropFloat( RECVINFO( m_flGlowR ) ),
+	RecvPropFloat( RECVINFO( m_flGlowG ) ),
+	RecvPropFloat( RECVINFO( m_flGlowB ) ),
 #endif // GLOWS_ENABLE
 
 #ifdef INVASION_CLIENT_DLL

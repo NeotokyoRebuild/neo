@@ -17,6 +17,10 @@
 	#include "utlhashtable.h"
 #endif
 
+#ifdef GLOWS_ENABLE
+#include "neo_player_shared.h"
+#endif
+
 enum
 {
 	TEAM_JINRAI = LAST_SHARED_TEAM + 1,
@@ -30,10 +34,6 @@ enum
 #define TEAM_STR_SPEC "Spectator"
 
 #define NEO_GAME_NAME "Neotokyo: Revamp"
-
-#define NEO_GAME_TYPE_TDM 0
-#define NEO_GAME_TYPE_CTG 1
-#define NEO_GAME_TYPE_VIP 2
 
 #ifdef CLIENT_DLL
 	#define CNEORules C_NEORules
@@ -94,6 +94,14 @@ class C_NEO_Player;
 
 extern ConVar neo_sv_player_restore;
 
+enum NeoGameType {
+	NEO_GAME_TYPE_TDM = 0,
+	NEO_GAME_TYPE_CTG,
+	NEO_GAME_TYPE_VIP,
+
+	NEO_GAME_TYPE_TOTAL // Number of game types
+};
+
 enum NeoRoundStatus {
 	Idle = 0,
 	Warmup,
@@ -130,7 +138,7 @@ public:
 
 	virtual void ClientDisconnected(edict_t* pClient) OVERRIDE;
 #endif
-	virtual bool ShouldCollide( int collisionGroup0, int collisionGroup1 ) OVERRIDE;
+	bool ShouldCollide(const CBaseEntity *ent0, const CBaseEntity *ent1) const;
 
 	virtual const char* GetGameName() { return NEO_GAME_NAME; }
 
@@ -138,7 +146,7 @@ public:
 	virtual bool FPlayerCanRespawn(CBasePlayer* pPlayer) OVERRIDE;
 #endif
 
-	virtual int GetGameType(void) OVERRIDE { return NEO_GAME_TYPE_CTG; /*NEO TODO (Rain): modes*/ }
+	virtual int GetGameType(void) OVERRIDE;
 	virtual const char* GetGameTypeName(void) OVERRIDE;
 
 	virtual void Think( void ) OVERRIDE;
@@ -169,7 +177,14 @@ public:
 
 	float GetMapRemainingTime();
 
+	void PurgeGhostCapPoints();
+
 	void ResetGhostCapPoints();
+
+	void SetGameRelatedVars();
+	void ResetTDM();
+	void ResetGhost();
+	void ResetVIP();
 
 	void CheckRestartGame();
 
@@ -205,9 +220,11 @@ public:
 
 	virtual float FlPlayerFallDamage(CBasePlayer* pPlayer) OVERRIDE;
 #endif
-
+	bool IsRoundPreRoundFreeze() const;
+	bool IsRoundLive() const;
 	bool IsRoundOver() const;
 #ifdef GAME_DLL
+	void GatherGameTypeVotes();
 	void StartNextRound();
 
 	virtual const char* GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer) OVERRIDE;
@@ -226,8 +243,11 @@ public:
 	enum
 	{
 		NEO_VICTORY_GHOST_CAPTURE = 0,
+		NEO_VICTORY_VIP_ESCORT,
+		NEO_VICTORY_VIP_ELIMINATION,
 		NEO_VICTORY_TEAM_ELIMINATION,
 		NEO_VICTORY_TIMEOUT_WIN_BY_NUMBERS,
+		NEO_VICTORY_POINTS,
 		NEO_VICTORY_FORFEIT,
 		NEO_VICTORY_STALEMATE // Not actually a victory
 	};
@@ -256,8 +276,32 @@ public:
 		return GetOpposingTeam(player->GetTeamNumber());
 	}
 
-        int roundNumber() const { return m_iRoundNumber; }
-        bool roundAlternate() const { return static_cast<bool>(m_iRoundNumber % 2 == 0); }
+    int roundNumber() const { return m_iRoundNumber; }
+    bool roundAlternate() const { return static_cast<bool>(m_iRoundNumber % 2 == 0); }
+
+#ifdef GLOWS_ENABLE
+	void GetTeamGlowColor(int teamNumber, float &r, float &g, float &b)
+	{
+		if (teamNumber == TEAM_JINRAI)
+		{
+			r = static_cast<float>(COLOR_JINRAI.r()/255.f);
+			g = static_cast<float>(COLOR_JINRAI.g()/255.f);
+			b = static_cast<float>(COLOR_JINRAI.b()/255.f);
+		}
+		else if (teamNumber == TEAM_NSF)
+		{
+			r = static_cast<float>(COLOR_NSF.r()/255.f);
+			g = static_cast<float>(COLOR_NSF.g()/255.f);
+			b = static_cast<float>(COLOR_NSF.b()/255.f);
+		}
+		else
+		{
+			r = 0.76f;
+			g = 0.76f;
+			b = 0.76f;
+		}
+	}
+#endif
 
 public:
 #ifdef GAME_DLL
@@ -276,17 +320,22 @@ private:
 	void ResetMapSessionCommon();
 
 #ifdef GAME_DLL
-	void SpawnTheGhost();
+	void SpawnTheGhost(const Vector *origin = nullptr);
+	void SelectTheVIP();
 
 	CUtlVector<int> m_pGhostCaps;
 	CWeaponGhost *m_pGhost = nullptr;
+	CNEO_Player *m_pVIP = nullptr;
+	int m_iVIPPreviousClass = 0;
+
 	float m_flPrevThinkKick = 0.0f;
 	float m_flPrevThinkMirrorDmg = 0.0f;
 	bool m_bTeamBeenAwardedDueToCapPrevent = false;
 	int m_arrayiEntPrevCap[MAX_PLAYERS + 1]; // This is to check for cap-prevention workaround attempts
 	int m_iEntPrevCapSize = 0;
 #endif
-	CNetworkVar(int, m_nRoundStatus); // NEO TODO (Rain): probably don't need to network this
+	CNetworkVar(int, m_nRoundStatus);
+	CNetworkVar(int, m_nGameTypeSelected);
 	CNetworkVar(int, m_iRoundNumber);
 
 	// Ghost networked variables
@@ -297,6 +346,10 @@ private:
 
 	CNetworkVar(float, m_flNeoRoundStartTime);
 	CNetworkVar(float, m_flNeoNextRoundStartTime);
+
+public:
+	// VIP networked variables
+	CNetworkVar(int, m_iEscortingTeam);
 };
 
 inline CNEORules *NEORules()

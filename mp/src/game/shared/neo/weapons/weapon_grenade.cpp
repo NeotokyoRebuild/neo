@@ -21,13 +21,13 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-ConVar sv_neo_infinite_frag_grenades("sv_neo_infinite_frag_grenades", "0", FCVAR_CHEAT, "Should frag grenades use up ammo.", true, 0.0, true, 1.0);
-ConVar sv_neo_grenade_throw_intensity("sv_neo_grenade_throw_intensity", "900.0", FCVAR_CHEAT, "How strong should regular grenade throws be.", true, 0.0, true, 9999.9); // 750 is the original NT impulse. Seems incorrect though, weight or phys difference?
-ConVar sv_neo_grenade_lob_intensity("sv_neo_grenade_lob_intensity", "375.0", FCVAR_CHEAT, "How strong should underhand grenade lobs be.", true, 0.0, true, 9999.9); // No such thing in original, but chose half of 750
-ConVar sv_neo_grenade_roll_intensity("sv_neo_grenade_roll_intensity", "375.0", FCVAR_CHEAT, "How strong should underhand grenade rolls be.", true, 0.0, true, 9999.9);
-ConVar sv_neo_grenade_blast_damage("sv_neo_grenade_blast_damage", "200.0", FCVAR_CHEAT, "How much damage should a grenade blast deal.", true, 0.0, true, 999.9);
-ConVar sv_neo_grenade_blast_radius("sv_neo_grenade_blast_radius", "250.0", FCVAR_CHEAT, "How large should the grenade blast radius be.", true, 0.0, true, 9999.9);
-ConVar sv_neo_grenade_fuse_timer("sv_neo_grenade_fuse_timer", "2.16", FCVAR_CHEAT, "How long in seconds until a frag grenade explodes.", true, 0.1, true, 60.0); // Measured as 2.15999... in NT, ie. < 2.16
+ConVar sv_neo_infinite_frag_grenades("sv_neo_infinite_frag_grenades", "0", FCVAR_REPLICATED | FCVAR_CHEAT, "Should frag grenades use up ammo.", true, 0.0, true, 1.0);
+ConVar sv_neo_grenade_throw_intensity("sv_neo_grenade_throw_intensity", "900.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How strong should regular grenade throws be.", true, 0.0, true, 9999.9); // 750 is the original NT impulse. Seems incorrect though, weight or phys difference?
+ConVar sv_neo_grenade_lob_intensity("sv_neo_grenade_lob_intensity", "375.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How strong should underhand grenade lobs be.", true, 0.0, true, 9999.9); // No such thing in original, but chose half of 750
+ConVar sv_neo_grenade_roll_intensity("sv_neo_grenade_roll_intensity", "375.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How strong should underhand grenade rolls be.", true, 0.0, true, 9999.9);
+ConVar sv_neo_grenade_blast_damage("sv_neo_grenade_blast_damage", "200.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How much damage should a grenade blast deal.", true, 0.0, true, 999.9);
+ConVar sv_neo_grenade_blast_radius("sv_neo_grenade_blast_radius", "250.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How large should the grenade blast radius be.", true, 0.0, true, 9999.9);
+ConVar sv_neo_grenade_fuse_timer("sv_neo_grenade_fuse_timer", "2.16", FCVAR_REPLICATED | FCVAR_CHEAT, "How long in seconds until a frag grenade explodes.", true, 0.1, true, 60.0); // Measured as 2.15999... in NT, ie. < 2.16
 
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponGrenade, DT_WeaponGrenade)
 
@@ -221,7 +221,7 @@ void CWeaponGrenade::ItemPostFrame(void)
 
 	if (m_bDrawbackFinished)
 	{
-		CBasePlayer *pOwner = ToBasePlayer(GetOwner());
+		auto pOwner = static_cast<CNEO_Player*>(GetOwner());
 
 		if (pOwner)
 		{
@@ -256,6 +256,7 @@ void CWeaponGrenade::ItemPostFrame(void)
 						SendWeaponAnim(ACT_VM_THROW);
 					}
 
+					pOwner->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
 					m_flNextPrimaryAttack = m_flNextSecondaryAttack = m_flTimeWeaponIdle = gpGlobals->curtime + SequenceDuration();
 					m_bDrawbackFinished = false;
 					m_AttackPaused = GRENADE_PAUSED_NO;
@@ -289,7 +290,7 @@ void CWeaponGrenade::CheckThrowPosition(CBasePlayer *pPlayer, const Vector &vecE
 	}
 }
 
-void CWeaponGrenade::ThrowGrenade(CBasePlayer *pPlayer, bool isAlive, CBaseEntity *pAttacker)
+void CWeaponGrenade::ThrowGrenade(CNEO_Player *pPlayer, bool isAlive, CBaseEntity *pAttacker)
 {
 	if (!sv_neo_infinite_frag_grenades.GetBool())
 	{
@@ -344,12 +345,12 @@ void CWeaponGrenade::ThrowGrenade(CBasePlayer *pPlayer, bool isAlive, CBaseEntit
 	WeaponSound(SINGLE);
 
 	// player "shoot" animation
-	pPlayer->SetAnimation(PLAYER_ATTACK1);
+	pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
 
 	m_bRedraw = true;
 }
 
-void CWeaponGrenade::LobGrenade(CBasePlayer *pPlayer)
+void CWeaponGrenade::LobGrenade(CNEO_Player *pPlayer)
 {
 	// Binds hack: we want grenade secondary attack to trigger on aim, not the attack2 bind.
 	if (pPlayer->m_afButtonPressed & IN_AIM)
@@ -385,12 +386,12 @@ void CWeaponGrenade::LobGrenade(CBasePlayer *pPlayer)
 	WeaponSound(WPN_DOUBLE);
 
 	// player "shoot" animation
-	pPlayer->SetAnimation(PLAYER_ATTACK1);
+	pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
 
 	m_bRedraw = true;
 }
 
-void CWeaponGrenade::RollGrenade(CBasePlayer *pPlayer)
+void CWeaponGrenade::RollGrenade(CNEO_Player *pPlayer)
 {
 	// Binds hack: we want grenade secondary attack to trigger on aim, not the attack2 bind.
 	if (pPlayer->m_afButtonPressed & IN_AIM)
@@ -445,7 +446,7 @@ void CWeaponGrenade::RollGrenade(CBasePlayer *pPlayer)
 	WeaponSound(SPECIAL1);
 
 	// player "shoot" animation
-	pPlayer->SetAnimation(PLAYER_ATTACK1);
+	pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
 
 	m_bRedraw = true;
 }
@@ -464,7 +465,7 @@ void CWeaponGrenade::Drop(const Vector& vecVelocity)
 #ifndef CLIENT_DLL
 void CWeaponGrenade::Operator_HandleAnimEvent(animevent_t *pEvent, CBaseCombatCharacter *pOperator)
 {
-	CBasePlayer *pOwner = ToBasePlayer(GetOwner());
+	auto pOwner = static_cast<CNEO_Player*>(GetOwner());
 	Assert(pOwner);
 
 	bool fThrewGrenade = false;
