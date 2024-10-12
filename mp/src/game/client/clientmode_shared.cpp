@@ -67,6 +67,8 @@ extern ConVar replay_rendersetting_renderglow;
 
 #ifdef NEO
 #include "c_neo_player.h"
+#include <GameUI/IGameUI.h>
+#include "ui/neo_loading.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -77,6 +79,10 @@ extern ConVar replay_rendersetting_renderglow;
 class CHudWeaponSelection;
 class CHudChat;
 class CHudVote;
+
+#ifdef NEO
+static CDllDemandLoader g_gameUI("GameUI");
+#endif
 
 static vgui::HContext s_hVGuiContext = DEFAULT_VGUI_CONTEXT;
 
@@ -95,6 +101,10 @@ CON_COMMAND( cl_reload_localization_files, "Reloads all localization files" )
 {
 	g_pVGuiLocalize->ReloadLocalizationFiles();
 }
+
+#ifdef NEO
+CNeoLoading *g_pNeoLoading;
+#endif
 
 #ifdef VOICE_VOX_ENABLE
 void VoxCallback( IConVar *var, const char *oldString, float oldFloat )
@@ -287,6 +297,10 @@ ClientModeShared::ClientModeShared()
 	m_pWeaponSelection = NULL;
 	m_nRootSize[ 0 ] = m_nRootSize[ 1 ] = -1;
 
+#ifdef NEO
+	g_pNeoLoading = nullptr;
+#endif
+
 #if defined( REPLAY_ENABLED )
 	m_pReplayReminderPanel = NULL;
 	m_flReplayStartRecordTime = 0.0f;
@@ -300,6 +314,13 @@ ClientModeShared::ClientModeShared()
 ClientModeShared::~ClientModeShared()
 {
 	delete m_pViewport; 
+#ifdef NEO
+	if (g_pNeoLoading)
+	{
+		delete g_pNeoLoading;
+		g_pNeoLoading = nullptr;
+	}
+#endif
 }
 
 void ClientModeShared::ReloadScheme( bool flushLowLevel )
@@ -385,6 +406,17 @@ void ClientModeShared::Init()
 
 	HOOK_MESSAGE( VGUIMenu );
 	HOOK_MESSAGE( Rumble );
+
+#ifdef NEO
+	if (CreateInterfaceFn gameUIFactory = g_gameUI.GetFactory())
+	{
+		if (IGameUI *pGameUI = reinterpret_cast<IGameUI *>(gameUIFactory(GAMEUI_INTERFACE_VERSION, nullptr)))
+		{
+			g_pNeoLoading = new CNeoLoading;
+			pGameUI->SetLoadingBackgroundDialog(g_pNeoLoading->GetVPanel());
+		}
+	}
+#endif
 }
 
 
@@ -874,6 +906,10 @@ void ClientModeShared::LevelInit( const char *newmap )
 	// Reset any player explosion/shock effects
 	CLocalPlayerFilter filter;
 	enginesound->SetPlayerDSP( filter, 0, true );
+
+#ifdef NEO
+	g_pVGuiLocalize->ConvertANSIToUnicode(newmap, g_pNeoLoading->m_wszLoadingMap, sizeof(g_pNeoLoading->m_wszLoadingMap));
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -897,6 +933,10 @@ void ClientModeShared::LevelShutdown( void )
 	// Reset any player explosion/shock effects
 	CLocalPlayerFilter filter;
 	enginesound->SetPlayerDSP( filter, 0, true );
+
+#ifdef NEO
+	g_pNeoLoading->m_wszLoadingMap[0] = L'\0';
+#endif
 }
 
 

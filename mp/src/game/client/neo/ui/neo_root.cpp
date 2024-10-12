@@ -19,6 +19,7 @@
 #include <ivoicetweak.h>
 #include "tier1/interface.h"
 #include <ctime>
+#include "ui/neo_loading.h"
 
 #include <vgui/IInput.h>
 #include <vgui_controls/Controls.h>
@@ -44,6 +45,7 @@ extern ConVar cl_onlysteamnick;
 
 CNeoRoot *g_pNeoRoot = nullptr;
 void NeoToggleconsole();
+extern CNeoLoading *g_pNeoLoading;
 inline NeoUI::Context g_uiCtx;
 inline ConVar neo_cl_toggleconsole("neo_cl_toggleconsole", "0", FCVAR_ARCHIVE,
 								   "If the console can be toggled with the ` keybind or not.", true, 0.0f, true, 1.0f);
@@ -479,6 +481,12 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		surface()->DrawPrintText(BUILD_DISPLAY, *BUILD_DISPLAY_SIZE);
 	}
 
+	// Laading screen just overlays over the root, so don't render anything else if so
+	if (m_bOnLoadingScreen)
+	{
+		return;
+	}
+
 	static constexpr void (CNeoRoot::*P_FN_MAIN_LOOP[STATE__TOTAL])(const MainLoopParam param) = {
 		&CNeoRoot::MainLoopRoot,			// STATE_ROOT
 		&CNeoRoot::MainLoopSettings,		// STATE_SETTINGS
@@ -859,6 +867,11 @@ void CNeoRoot::MainLoopNewGame(const MainLoopParam param)
 					V_sprintf_safe(cmdStr, "maxplayers %d; progress_enable; map \"%s\"", m_newGame.iMaxPlayers, szMap);
 					engine->ClientCmd_Unrestricted(cmdStr);
 
+					if (g_pNeoLoading)
+					{
+						V_wcscpy_safe(g_pNeoLoading->m_wszLoadingMap, m_newGame.wszMap);
+					}
+
 					m_state = STATE_ROOT;
 				}
 			}
@@ -1092,6 +1105,13 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 							const char *szAddress = gameServer.m_NetAdr.GetConnectionAddressString();
 							V_sprintf_safe(connectCmd, "progress_enable; wait; connect %s", szAddress);
 							engine->ClientCmd_Unrestricted(connectCmd);
+
+							if (g_pNeoLoading)
+							{
+								g_pVGuiLocalize->ConvertANSIToUnicode(gameServer.m_szMap,
+																	  g_pNeoLoading->m_wszLoadingMap,
+																	  sizeof(g_pNeoLoading->m_wszLoadingMap));
+							}
 
 							m_state = STATE_ROOT;
 						}
