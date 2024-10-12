@@ -778,7 +778,7 @@ void CNEORules::Think(void)
 		{
 			if (sv_neo_vip_ctg_on_death.GetBool())
 			{
-				UTIL_CenterPrintAll("HVT down, recover the Ghost");
+				UTIL_CenterPrintAll("- HVT DOWN - RECOVER THE GHOST -\n");
 				SpawnTheGhost();
 			}
 			else
@@ -792,7 +792,7 @@ void CNEORules::Think(void)
 		{
 			if (sv_neo_vip_ctg_on_death.GetBool())
 			{
-				UTIL_CenterPrintAll("HVT down, recover the Ghost");
+				UTIL_CenterPrintAll("- HVT DOWN - RECOVER THE GHOST -\n");
 				SpawnTheGhost(&m_pVIP->GetAbsOrigin());
 			}
 			else
@@ -1207,7 +1207,7 @@ void CNEORules::StartNextRound()
 {
 	if (GetGlobalTeam(TEAM_JINRAI)->GetNumPlayers() == 0 || GetGlobalTeam(TEAM_NSF)->GetNumPlayers() == 0)
 	{
-		UTIL_CenterPrintAll("Waiting for players on both teams.\n"); // NEO TODO (Rain): actual message
+		UTIL_CenterPrintAll("- NEW ROUND START DELAYED - ONE OR BOTH TEAMS HAS NO PLAYERS -\n");
 		SetRoundStatus(NeoRoundStatus::Idle);
 		m_flNeoNextRoundStartTime = gpGlobals->curtime + 10.0f;
 		return;
@@ -1240,7 +1240,7 @@ void CNEORules::StartNextRound()
 		if (!loopbackSkipWarmup)
 		{
 			// Moving from 0 players from either team to playable at team state
-			UTIL_CenterPrintAll("Warmup countdown started.\n");
+			UTIL_CenterPrintAll("- WARMUP COUNTDOWN STARTED -\n");
 			SetRoundStatus(NeoRoundStatus::Warmup);
 			m_flNeoRoundStartTime = gpGlobals->curtime;
 			m_flNeoNextRoundStartTime = gpGlobals->curtime + mp_neo_warmup_round_time.GetFloat();
@@ -1259,9 +1259,9 @@ void CNEORules::StartNextRound()
 	const bool clearXP = (m_nRoundStatus == NeoRoundStatus::Warmup);
 	SetRoundStatus(NeoRoundStatus::PreRoundFreeze);
 
-	char RoundMsg[11];
-	static_assert(sizeof(RoundMsg) == sizeof("Round 99\n\0"), "RoundMsg requires to fit round numbers up to 2 digits");
-	V_sprintf_safe(RoundMsg, "Round %d\n", Min(99, ++m_iRoundNumber));
+	char RoundMsg[27];
+	static_assert(sizeof(RoundMsg) == sizeof("- CTG ROUND 99 STARTED -\n\0"), "RoundMsg requires to fit round numbers up to 2 digits");
+	V_sprintf_safe(RoundMsg, "- %s ROUND %d STARTED -\n", GetGameTypeName(), Min(99, ++m_iRoundNumber));
 	UTIL_CenterPrintAll(RoundMsg);
 
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
@@ -2683,7 +2683,7 @@ void CNEORules::SetRoundStatus(NeoRoundStatus status)
 #ifdef GAME_DLL
 		if (status == NeoRoundStatus::RoundLive)
 		{
-			UTIL_CenterPrintAll("GO! GO! GO!\n");
+			UTIL_CenterPrintAll("- GO! GO! GO! -\n");
 		}
 #endif
 	}
@@ -2713,7 +2713,7 @@ const char* CNEORules::GetGameTypeName(void)
 		return "VIP";
 	default:
 		Assert(false);
-		return "Unknown";
+		return "NAN";
 	}
 }
 
