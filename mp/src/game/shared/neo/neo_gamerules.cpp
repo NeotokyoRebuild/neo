@@ -1456,10 +1456,6 @@ void CNEORules::StartNextRound()
 	const bool clearXP = (m_nRoundStatus == NeoRoundStatus::Warmup);
 	SetRoundStatus(NeoRoundStatus::PreRoundFreeze);
 
-	char RoundMsg[27];
-	static_assert(sizeof(RoundMsg) == sizeof("- CTG ROUND 99 STARTED -\n\0"), "RoundMsg requires to fit round numbers up to 2 digits");
-	V_sprintf_safe(RoundMsg, "- %s ROUND %d STARTED -\n", GetGameTypeName(), Min(99, ++m_iRoundNumber));
-	UTIL_CenterPrintAll(RoundMsg);
 
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
@@ -1528,6 +1524,11 @@ void CNEORules::StartNextRound()
 	{
 		GatherGameTypeVotes();
 	}
+
+	char RoundMsg[27];
+	static_assert(sizeof(RoundMsg) == sizeof("- CTG ROUND 99 STARTED -\n\0"), "RoundMsg requires to fit round numbers up to 2 digits");
+	V_sprintf_safe(RoundMsg, "- %s ROUND %d STARTED -\n", GetGameTypeName(), Min(99, ++m_iRoundNumber));
+	UTIL_CenterPrintAll(RoundMsg);
 
 	SetGameRelatedVars();
 
