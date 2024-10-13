@@ -632,7 +632,9 @@ CBaseHudChat::CBaseHudChat( const char *pElementName )
 
 	if ( m_pFiltersButton )
 	{
+#ifndef NEO
 		m_pFiltersButton->SetScheme( scheme );
+#endif
 		m_pFiltersButton->SetVisible( true );
 		m_pFiltersButton->SetEnabled( true );
 		m_pFiltersButton->SetMouseInputEnabled( true );
@@ -687,8 +689,10 @@ CHudChatFilterPanel *CBaseHudChat::GetChatFilterPanel( void )
 			m_pFilterPanel->SetScheme( scheme );
 			m_pFilterPanel->InvalidateLayout( true, true );
 			m_pFilterPanel->SetMouseInputEnabled( true );
+#ifndef NEO
 			m_pFilterPanel->SetPaintBackgroundType( 2 );
 			m_pFilterPanel->SetPaintBorderEnabled( true );
+#endif
 			m_pFilterPanel->SetVisible( false );
 		}
 	}
@@ -701,10 +705,15 @@ void CBaseHudChat::ApplySchemeSettings( vgui::IScheme *pScheme )
 	LoadControlSettings( "resource/UI/BaseChat.res" );
 
 	BaseClass::ApplySchemeSettings( pScheme );
-
+#ifdef NEO
+	SetPaintBackgroundType(0);
+	SetPaintBorderEnabled(false);
+	SetPaintBackgroundEnabled(false);
+#else
 	SetPaintBackgroundType( 2 );
 	SetPaintBorderEnabled( true );
 	SetPaintBackgroundEnabled( true );
+#endif
 
 	SetKeyBoardInputEnabled( false );
 	SetMouseInputEnabled( false );
@@ -1072,6 +1081,14 @@ void CBaseHudChat::OnTick( void )
 
 		m_pChatInput->SetBounds( iInputX, iChatH - (m_iFontHeight * 1.75), iInputW, m_iFontHeight );
 
+#ifdef NEO
+		//Resize filter button to match height of input area
+		int iFilterX, iFilterY, iFilterW, iFilterH;
+		m_pFiltersButton->GetBounds(iFilterX, iFilterY, iFilterW, iFilterH);
+		m_pFiltersButton->SetBounds(iFilterX, iChatH - (m_iFontHeight * 1.75), iFilterW, m_iFontHeight);
+		m_pFiltersButton->SetSize(iFilterW, m_iFontHeight);
+#endif
+
 		//Resize the History Panel so it fits more lines depending on the screen resolution.
 		int iChatHistoryX, iChatHistoryY, iChatHistoryW, iChatHistoryH;
 
@@ -1193,7 +1210,9 @@ void CBaseHudChat::StartMessageMode( int iMessageModeType )
 		GetChatHistory()->SetKeyBoardInputEnabled( false );
 		GetChatHistory()->SetVerticalScrollbar( true );
 		GetChatHistory()->ResetAllFades( true );
+#ifndef NEO
 		GetChatHistory()->SetPaintBorderEnabled( true );
+#endif
 		GetChatHistory()->SetVisible( true );
 	}
 
@@ -1203,7 +1222,9 @@ void CBaseHudChat::StartMessageMode( int iMessageModeType )
 	m_pChatInput->SetVisible( true );
 	vgui::surface()->CalculateMouseVisible();
 	m_pChatInput->RequestFocus();
+#ifndef NEO
 	m_pChatInput->SetPaintBorderEnabled( true );
+#endif
 	m_pChatInput->SetMouseInputEnabled( true );
 
 	//Place the mouse cursor near the text so people notice it.

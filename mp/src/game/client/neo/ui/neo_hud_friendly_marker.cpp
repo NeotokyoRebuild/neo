@@ -129,6 +129,11 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 	static const float heightOffset = 48.0f;
 	auto pos = player->EyePosition();
 
+	bool drawOutline = false;
+	ConVar* glow_outline_effect_enable = cvar->FindVar("glow_outline_effect_enable");
+	if (glow_outline_effect_enable)
+		drawOutline = glow_outline_effect_enable->GetBool();
+
 	if (GetVectorInScreenSpace(pos, x, y))
 	{
 		auto playerName = player->GetNeoPlayerName();
@@ -175,14 +180,17 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 			DisplayText(textASCII);
 		}
 
-		surface()->DrawSetTexture(m_hTex);
-		surface()->DrawSetColor(teamColor);
-		surface()->DrawTexturedRect(
-			x - m_iMarkerWidth,
-			y - m_iMarkerHeight,
-			x + m_iMarkerWidth,
-			y + m_iMarkerHeight
-		);
+		if (!drawOutline)
+		{
+			surface()->DrawSetTexture(m_hTex);
+			surface()->DrawSetColor(teamColor);
+			surface()->DrawTexturedRect(
+				x - m_iMarkerWidth,
+				y - m_iMarkerHeight,
+				x + m_iMarkerWidth,
+				y + m_iMarkerHeight
+			);
+		}
 	}
 }
 

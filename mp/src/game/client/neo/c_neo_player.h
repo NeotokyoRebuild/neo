@@ -38,6 +38,8 @@ public:
 
 	virtual C_BaseAnimating *BecomeRagdollOnClient();
 	virtual const QAngle& GetRenderAngles();
+	virtual RenderGroup_t GetRenderGroup() override;
+	virtual bool UsesPowerOfTwoFrameBufferTexture() override;
 	virtual bool ShouldDraw( void );
 	//virtual bool ShouldInterpolate() { return true; }
 	virtual void OnDataChanged( DataUpdateType_t type );
@@ -107,8 +109,6 @@ public:
 	float GetWalkSpeed(void) const;
 	float GetSprintSpeed(void) const;
 
-	virtual void SetAnimation(PLAYER_ANIM playerAnim) OVERRIDE;
-
 private:
 	float GetActiveWeaponSpeedScale() const;
 	float GetBackwardsMovementPenaltyScale() const { return ((m_nButtons & IN_BACK) ? NEO_SLOW_MODIFIER : 1.0); }
@@ -147,6 +147,7 @@ public:
 	inline void ZeroFriendlyPlayerLocArray(void);
 
 	bool IsCloaked() const { return m_bInThermOpticCamo; }
+	float GetCloakFactor() const { return m_flTocFactor; }
 	bool IsAirborne() const { return (!(GetFlags() & FL_ONGROUND)); }
 	bool IsInVision() const { return m_bInVision; }
 	bool IsInAim() const { return m_bInAim; }
@@ -209,10 +210,10 @@ private:
 	bool m_bPreviouslyReloading;
 	bool m_bIsAllowedToToggleVision;
 
-	INEOPlayerAnimState* m_pPlayerAnimState;
-
 	float m_flLastAirborneJumpOkTime;
 	float m_flLastSuperJumpTime;
+
+	float m_flTocFactor; // Cloak strength, controls tint, refraction amount. Lower values make player more difficult to spot
 
 	// Non-network version of m_szNeoName with dupe checker index
 	mutable char m_szNeoNameWDupeIdx[MAX_PLAYER_NAME_LENGTH + 10];

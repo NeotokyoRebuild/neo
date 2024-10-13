@@ -9,8 +9,8 @@ WeaponData
 	"anim_prefix"		"smac"
 	"bucket"		"0"
 	"bucket_position"	"0"
-	"Damage"		"0"
-	"Penetration"		"0.0"
+	"Damage"		"12"
+	"Penetration"		"12.0"
 	"CycleTime"		"0.085"		// time between shots
 	
 	"TPMuzzleFlashScale"	"0.5"
@@ -20,9 +20,14 @@ WeaponData
 	"primary_ammo"		"AMMO_SMAC"
 	"secondary_ammo"	"None"
 
-	"weight"		"3"
-	"item_flags"		"0"
+	"autoswitchfrom"        "0"
 	
+	"weight"		"3"
+	// ITEM_FLAG_SELECTONEMPTY = 1
+	// ITEM_FLAG_NOAUTOSWITCHEMPTY = (1 << 2)
+	// ITEM_FLAG_DOHITLOCATIONDMG = (1 << 5) 
+	// Combined as int = 37
+	"item_flags"		"37"
 	
 	"AimType"		"1"
 	

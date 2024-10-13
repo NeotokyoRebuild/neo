@@ -14,6 +14,10 @@
 #include "hudelement.h"
 #include <vgui_controls/Panel.h>
 
+#ifdef NEO
+#include "ui/neo_hud_crosshair.h"
+#endif
+
 namespace vgui
 {
 	class IScheme;
@@ -28,6 +32,11 @@ class CHudCrosshair : public CHudElement, public vgui::Panel
 public:
 	CHudCrosshair( const char *pElementName );
 	virtual ~CHudCrosshair();
+
+#ifdef NEO
+	bool m_bRefreshCrosshair = true;
+	CrosshairInfo m_crosshairInfo;
+#endif
 
 	virtual void	SetCrosshairAngle( const QAngle& angle );
 	virtual void	SetCrosshair( CHudTexture *texture, const Color& clr );
@@ -47,6 +56,10 @@ protected:
 	CHudTexture		*m_pDefaultCrosshair;
 	Color			m_clrCrosshair;
 	QAngle			m_vecCrossHairOffsetAngle;
+
+#ifdef NEO
+	int m_iTexXHId[CROSSHAIR_STYLE__TOTAL] = {};
+#endif
 
 	CPanelAnimationVar( bool, m_bHideCrosshair, "never_draw", "false" );
 };

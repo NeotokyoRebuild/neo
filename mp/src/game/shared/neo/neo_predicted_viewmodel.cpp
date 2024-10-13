@@ -222,6 +222,7 @@ void CNEOPredictedViewModel::ClientThink()
 	BaseClass::ClientThink();
 }
 
+extern ConVar mat_neo_toc_test;
 int CNEOPredictedViewModel::DrawModel(int flags)
 {
 	auto pPlayer = static_cast<C_NEO_Player*>(GetOwner());
@@ -230,7 +231,7 @@ int CNEOPredictedViewModel::DrawModel(int flags)
 	{
 		if (pPlayer->IsCloaked())
 		{
-			IMaterial *pass = materials->FindMaterial("dev/toc_vm", TEXTURE_GROUP_VIEW_MODEL);
+			IMaterial *pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_VIEW_MODEL);
 			Assert(pass && !pass->IsErrorMaterial());
 
 			if (pass && !pass->IsErrorMaterial())
@@ -241,15 +242,30 @@ int CNEOPredictedViewModel::DrawModel(int flags)
 					Assert(pass->IsPrecached());
 				}
 
-				//modelrender->SuppressEngineLighting(true);
+				mat_neo_toc_test.SetValue(pPlayer->GetCloakFactor());
+
 				modelrender->ForcedMaterialOverride(pass);
-				int ret = BaseClass::DrawModel(flags /*| STUDIO_RENDER | STUDIO_DRAWTRANSLUCENTSUBMODELS | STUDIO_TRANSPARENCY*/);
-				//modelrender->SuppressEngineLighting(false);
+				int ret = BaseClass::DrawModel(flags);
 				modelrender->ForcedMaterialOverride(NULL);
 				return ret;
 			}
 			
 			return 0;
+		}
+		if (pPlayer->GetClass() == NEO_CLASS_SUPPORT && pPlayer->IsInVision())
+		{
+			IMaterial* pass = materials->FindMaterial("dev/thermal_third", TEXTURE_GROUP_MODEL);
+			Assert(pass && !pass->IsErrorMaterial());
+
+			if (pass && !pass->IsErrorMaterial())
+			{
+				// Render
+				modelrender->ForcedMaterialOverride(pass);
+				int ret = BaseClass::DrawModel(flags);
+				modelrender->ForcedMaterialOverride(NULL);
+
+				return ret;
+			}
 		}
 	}
 
@@ -458,5 +474,16 @@ RenderGroup_t CNEOPredictedViewModel::GetRenderGroup()
 	}
 
 	return BaseClass::GetRenderGroup();
+}
+
+bool CNEOPredictedViewModel::UsesPowerOfTwoFrameBufferTexture()
+{
+	auto pPlayer = static_cast<C_NEO_Player*>(GetOwner());
+	if (pPlayer)
+	{
+		return pPlayer->IsCloaked() ? true : false;
+	}
+
+	return BaseClass::UsesPowerOfTwoFrameBufferTexture();
 }
 #endif

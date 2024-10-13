@@ -26,6 +26,10 @@ ConVar anim_showmainactivity( "anim_showmainactivity", "0", FCVAR_CHEAT, "Show t
 #include "tf_gamerules.h"
 #endif
 
+#ifdef NEO
+#include "weapon_detpack.h"
+#endif
+
 #ifndef CALL_ATTRIB_HOOK_FLOAT_ON_OTHER
 #define CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( o, r, n )
 #endif
@@ -655,6 +659,82 @@ void CMultiPlayerAnimState::AddToGestureSlot( int iGestureSlot, Activity iGestur
 #endif
 }
 
+#ifdef NEO
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CMultiPlayerAnimState::AddToGestureSlot(int iGestureSlot, int iGestureSequence, bool bAutoKill)
+{
+	// Sanity Check
+	Assert(iGestureSlot >= 0 && iGestureSlot < GESTURE_SLOT_COUNT);
+
+	CBasePlayer* pPlayer = GetBasePlayer();
+	if (!pPlayer)
+		return;
+
+	// Make sure we have a valid animation layer to fill out.
+	if (!m_aGestureSlots[iGestureSlot].m_pAnimLayer)
+		return;
+
+	if (!VerifyAnimLayerInSlot(iGestureSlot))
+		return;
+
+	if (iGestureSequence <= 0)
+		return;
+
+#ifdef CLIENT_DLL 
+
+	// Setup the gesture.
+	m_aGestureSlots[iGestureSlot].m_iGestureSlot = iGestureSlot;
+	m_aGestureSlots[iGestureSlot].m_iActivity = ACT_INVALID;
+	m_aGestureSlots[iGestureSlot].m_bAutoKill = bAutoKill;
+	m_aGestureSlots[iGestureSlot].m_bActive = true;
+	m_aGestureSlots[iGestureSlot].m_pAnimLayer->m_nSequence = iGestureSequence;
+	m_aGestureSlots[iGestureSlot].m_pAnimLayer->m_nOrder = iGestureSlot;
+	m_aGestureSlots[iGestureSlot].m_pAnimLayer->m_flWeight = 1.0f;
+	m_aGestureSlots[iGestureSlot].m_pAnimLayer->m_flPlaybackRate = 1.0f;
+	m_aGestureSlots[iGestureSlot].m_pAnimLayer->m_flCycle = 0.0f;
+	m_aGestureSlots[iGestureSlot].m_pAnimLayer->m_flPrevCycle = 0.0f;
+	m_aGestureSlots[iGestureSlot].m_pAnimLayer->m_flLayerAnimtime = 0.0f;
+	m_aGestureSlots[iGestureSlot].m_pAnimLayer->m_flLayerFadeOuttime = 0.0f;
+
+	pPlayer->m_flOverlayPrevEventCycle[iGestureSlot] = -1.0;
+
+#else
+
+	// Setup the gesture.
+	m_aGestureSlots[iGestureSlot].m_iGestureSlot = iGestureSlot;
+	m_aGestureSlots[iGestureSlot].m_iActivity = ACT_INVALID;
+	m_aGestureSlots[iGestureSlot].m_bAutoKill = bAutoKill;
+	m_aGestureSlots[iGestureSlot].m_bActive = true;
+	m_aGestureSlots[iGestureSlot].m_pAnimLayer->m_nActivity = ACT_INVALID;
+	m_aGestureSlots[iGestureSlot].m_pAnimLayer->m_nOrder = iGestureSlot;
+	m_aGestureSlots[iGestureSlot].m_pAnimLayer->m_nPriority = 0;
+	m_aGestureSlots[iGestureSlot].m_pAnimLayer->m_flCycle = 0.0f;
+	m_aGestureSlots[iGestureSlot].m_pAnimLayer->m_flPrevCycle = 0.0f;
+	m_aGestureSlots[iGestureSlot].m_pAnimLayer->m_flPlaybackRate = 1.0f;
+	m_aGestureSlots[iGestureSlot].m_pAnimLayer->m_nSequence = iGestureSequence;
+	m_aGestureSlots[iGestureSlot].m_pAnimLayer->m_flWeight = 1.0f;
+	m_aGestureSlots[iGestureSlot].m_pAnimLayer->m_flBlendIn = 0.0f;
+	m_aGestureSlots[iGestureSlot].m_pAnimLayer->m_flBlendOut = 0.0f;
+	m_aGestureSlots[iGestureSlot].m_pAnimLayer->m_bSequenceFinished = false;
+	m_aGestureSlots[iGestureSlot].m_pAnimLayer->m_flLastEventCheck = 0.0f;
+	m_aGestureSlots[iGestureSlot].m_pAnimLayer->m_flLastEventCheck = gpGlobals->curtime;
+	m_aGestureSlots[iGestureSlot].m_pAnimLayer->m_bLooping = false;//( ( GetSequenceFlags( GetModelPtr(), iGestureSequence ) & STUDIO_LOOPING ) != 0);
+	if (bAutoKill)
+	{
+		m_aGestureSlots[iGestureSlot].m_pAnimLayer->m_fFlags |= ANIM_LAYER_AUTOKILL;
+	}
+	else
+	{
+		m_aGestureSlots[iGestureSlot].m_pAnimLayer->m_fFlags &= ~ANIM_LAYER_AUTOKILL;
+	}
+	m_aGestureSlots[iGestureSlot].m_pAnimLayer->m_fFlags |= ANIM_LAYER_ACTIVE;
+
+#endif // CLIENT_DLL
+}
+#endif // NEO
+
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
@@ -844,8 +924,11 @@ bool CMultiPlayerAnimState::HandleSwimming( Activity &idealActivity )
 			RestartMainSequence();	
 			m_bFirstSwimFrame = false;
 		}
-
+#ifdef NEO
+		idealActivity = ACT_SWIM;
+#else
 		idealActivity = ACT_MP_SWIM;		
+#endif
 		m_bInSwim = true;
 		return true;
 	}
@@ -918,8 +1001,11 @@ bool CMultiPlayerAnimState::HandleMoving( Activity &idealActivity )
 //-----------------------------------------------------------------------------
 Activity CMultiPlayerAnimState::CalcMainActivity()
 {
+#ifdef NEO
+	Activity idealActivity = ACT_IDLE;
+#else
 	Activity idealActivity = ACT_MP_STAND_IDLE;
-
+#endif
 	if ( HandleJumping( idealActivity ) || 
 		HandleDucking( idealActivity ) || 
 		HandleSwimming( idealActivity ) || 
@@ -1084,6 +1170,298 @@ void CMultiPlayerAnimState::ComputeSequences( CStudioHdr *pStudioHdr )
 	ComputeGestureSequence( pStudioHdr );
 }
 
+#ifdef NEO
+
+// NEO Activities
+#define ACT_NEO_ATTACK ACT_RANGE_ATTACK1
+#define ACT_NEO_RELOAD ACT_RELOAD
+#define ACT_NEO_IDLE_STAND ACT_IDLE
+#define ACT_NEO_IDLE_CROUCH ACT_CROUCHIDLE
+#define ACT_NEO_MOVE_RUN ACT_RUN
+#define ACT_NEO_MOVE_WALK ACT_WALK
+#define ACT_NEO_MOVE_CROUCH ACT_RUN_CROUCH
+#define ACT_NEO_DIE ACT_DIESIMPLE
+#define ACT_NEO_HOVER ACT_HOVER
+#define ACT_NEO_JUMP ACT_HOP
+#define ACT_NEO_SWIM ACT_SWIM
+
+#define DEFAULT_IDLE_NAME "idle_upper_"
+#define DEFAULT_CROUCH_IDLE_NAME "crouch_idle_upper_"
+#define DEFAULT_CROUCH_WALK_NAME "crouch_walk_upper_"
+#define DEFAULT_WALK_NAME "walk_upper_"
+#define DEFAULT_RUN_NAME "run_upper_"
+
+#define DEFAULT_FIRE_IDLE_NAME "idle_shoot_"
+#define DEFAULT_FIRE_CROUCH_NAME "crouch_idle_shoot_"
+#define DEFAULT_FIRE_CROUCH_WALK_NAME "crouch_walk_shoot_"
+#define DEFAULT_FIRE_WALK_NAME "walk_shoot_"
+#define DEFAULT_FIRE_RUN_NAME "run_shoot_"
+
+int CMultiPlayerAnimState::CalcSequenceIndex(const char* pBaseName, ...)
+{
+	if (!m_pPlayer)
+	{
+		return 0;
+	}
+
+	char szFullName[512];
+	va_list marker;
+	va_start(marker, pBaseName);
+	Q_vsnprintf(szFullName, sizeof(szFullName), pBaseName, marker);
+	va_end(marker);
+	int iSequence = m_pPlayer->LookupSequence(szFullName);
+
+	// Show warnings if we can't find anything here.
+	if (iSequence == -1)
+	{
+		static CUtlDict<int, int> dict;
+		if (dict.Find(szFullName) == -1)
+		{
+			dict.Insert(szFullName, 0);
+			Warning("CalcSequenceIndex: can't find '%s'.\n", szFullName);
+		}
+
+		iSequence = 0;
+	}
+
+	//DevMsg("CalcSeqIdx: \"%s\": %d\n", szFullName, iSequence);
+
+	return iSequence;
+}
+
+void CMultiPlayerAnimState::UpdateAimSequenceLayers(
+	float flCycle,
+	int iFirstLayer,
+	bool bForceIdle,
+	CSequenceTransitioner* pTransitioner,
+	float flWeightScale
+)
+{
+	float flAimSequenceWeight = 1;
+	int iAimSequence = CalcAimLayerSequence(m_eCurrentMainSequenceActivity, false);
+	if (iAimSequence == -1)
+		iAimSequence = 0;
+
+	CBaseAnimatingOverlay* pPlayer = GetBasePlayer();
+
+	// Feed the current state of the animation parameters to the sequence transitioner.
+	// It will hand back either 1 or 2 animations in the queue to set, depending on whether
+	// it's transitioning or not. We just dump those into the animation layers.
+	pTransitioner->CheckForSequenceChange(
+		pPlayer->GetModelPtr(),
+		iAimSequence,
+		false,	// don't force transitions on the same anim
+		true	// yes, interpolate when transitioning
+	);
+
+	pTransitioner->UpdateCurrent(
+		pPlayer->GetModelPtr(),
+		iAimSequence,
+		flCycle,
+		pPlayer->GetPlaybackRate(),
+		gpGlobals->curtime
+	);
+
+	CAnimationLayer* pDest0 = m_aGestureSlots[iFirstLayer].m_pAnimLayer;
+	CAnimationLayer* pDest1 = m_aGestureSlots[iFirstLayer + 1].m_pAnimLayer;
+
+	if (pTransitioner->m_animationQueue.Count() == 1)
+	{
+		// If only 1 animation, then blend it in fully.
+		CAnimationLayer* pSource0 = &pTransitioner->m_animationQueue[0];
+		*pDest0 = *pSource0;
+
+		pDest0->m_flWeight = 1;
+		pDest1->m_flWeight = 0;
+		pDest0->m_nOrder = iFirstLayer;
+
+#ifndef CLIENT_DLL
+		pDest0->m_fFlags |= ANIM_LAYER_ACTIVE;
+#endif
+	}
+	else if (pTransitioner->m_animationQueue.Count() >= 2)
+	{
+		// The first one should be fading out. Fade in the new one inversely.
+		CAnimationLayer* pSource0 = &pTransitioner->m_animationQueue[0];
+		CAnimationLayer* pSource1 = &pTransitioner->m_animationQueue[1];
+
+		*pDest0 = *pSource0;
+		*pDest1 = *pSource1;
+		Assert(pDest0->m_flWeight >= 0.0f && pDest0->m_flWeight <= 1.0f);
+		pDest1->m_flWeight = 1 - pDest0->m_flWeight;	// This layer just mirrors the other layer's weight (one fades in while the other fades out).
+
+		pDest0->m_nOrder = iFirstLayer;
+		pDest1->m_nOrder = iFirstLayer + 1;
+
+#ifndef CLIENT_DLL
+		pDest0->m_fFlags |= ANIM_LAYER_ACTIVE;
+		pDest1->m_fFlags |= ANIM_LAYER_ACTIVE;
+#endif
+	}
+
+	pDest0->m_flWeight *= flWeightScale * flAimSequenceWeight;
+	pDest0->m_flWeight = clamp((float)pDest0->m_flWeight, 0.0f, 1.0f);
+
+	pDest1->m_flWeight *= flWeightScale * flAimSequenceWeight;
+	pDest1->m_flWeight = clamp((float)pDest1->m_flWeight, 0.0f, 1.0f);
+
+	pDest0->m_flCycle = pDest1->m_flCycle = flCycle;
+}
+
+int CMultiPlayerAnimState::CalcAimLayerSequence(Activity activity, bool bForceIdle)
+{
+	if (!m_pPlayer)
+	{
+		return 0;
+	}
+
+	auto pWeapon = m_pPlayer->GetActiveWeapon();
+	if (!pWeapon)
+	{
+		return 0;
+	}
+
+	const char* pSuffix = pWeapon->GetWpnData().szAnimationPrefix;
+	if (!pSuffix)
+	{
+		return 0;
+	}
+
+	if (!Q_strcmp(pWeapon->GetClassname(), "weapon_remotedet"))
+	{
+		pSuffix = "detpack";
+		auto detpack = static_cast<CWeaponDetpack*>(pWeapon);
+		if (detpack && (detpack->m_bRemoteHasBeenTriggered ||
+			(detpack->m_bThisDetpackHasBeenThrown && (gpGlobals->curtime > detpack->m_flNextPrimaryAttack))))
+		{
+			pSuffix = "detremote";
+		}
+	}
+
+	if (bForceIdle)
+	{
+		switch (activity)
+		{
+		case ACT_NEO_IDLE_CROUCH:
+			return CalcSequenceIndex("%s%s", DEFAULT_CROUCH_IDLE_NAME, pSuffix);
+
+		default:
+			return CalcSequenceIndex("%s%s", DEFAULT_IDLE_NAME, pSuffix);
+		}
+	}
+	else
+	{
+		switch (activity)
+		{
+		case ACT_NEO_MOVE_RUN:
+			return CalcSequenceIndex("%s%s", DEFAULT_RUN_NAME, pSuffix);
+
+		case ACT_RUNTOIDLE:
+			Assert(false);
+		case ACT_IDLETORUN:
+			Assert(false);
+		case ACT_NEO_MOVE_WALK:
+			return CalcSequenceIndex("%s%s", DEFAULT_WALK_NAME, pSuffix);
+
+		case ACT_NEO_IDLE_CROUCH:
+			return CalcSequenceIndex("%s%s", DEFAULT_CROUCH_IDLE_NAME, pSuffix);
+
+		case ACT_NEO_MOVE_CROUCH:
+			return CalcSequenceIndex("%s%s", DEFAULT_CROUCH_WALK_NAME, pSuffix);
+
+		case ACT_NEO_IDLE_STAND:
+		default:
+			return CalcSequenceIndex("%s%s", DEFAULT_IDLE_NAME, pSuffix);
+		}
+	}
+}
+
+int CMultiPlayerAnimState::CalcFireSequence()
+{
+	if (!m_pPlayer)
+	{
+		return 0;
+	}
+
+	auto pWeapon = m_pPlayer->GetActiveWeapon();
+	if (!pWeapon)
+	{
+		return 0;
+	}
+
+	const char* pSuffix = pWeapon->GetWpnData().szAnimationPrefix;
+	if (!pSuffix)
+	{
+		return 0;
+	}
+
+	if (!Q_strcmp(pSuffix, "Grenade"))
+	{
+		pSuffix = "Gren1";
+	}
+
+	if (!Q_strcmp(pWeapon->GetClassname(), "weapon_remotedet"))
+	{
+		pSuffix = "detpack";
+		auto detpack = static_cast<CWeaponDetpack*>(pWeapon);
+		if (detpack && (detpack->m_bRemoteHasBeenTriggered || 
+			(detpack->m_bThisDetpackHasBeenThrown && (gpGlobals->curtime > detpack->m_flNextPrimaryAttack + 0.005))))
+		{
+			pSuffix = "detremote";
+		}
+	}
+
+
+	{
+		switch (m_eCurrentMainSequenceActivity)
+		{
+		case ACT_NEO_MOVE_RUN:
+			return CalcSequenceIndex("%s%s", DEFAULT_FIRE_RUN_NAME, pSuffix);
+
+		case ACT_RUNTOIDLE:
+			Assert(false);
+		case ACT_IDLETORUN:
+			Assert(false);
+		case ACT_NEO_MOVE_WALK:
+			return CalcSequenceIndex("%s%s", DEFAULT_FIRE_WALK_NAME, pSuffix);
+
+		case ACT_NEO_IDLE_CROUCH:
+			return CalcSequenceIndex("%s%s", DEFAULT_FIRE_CROUCH_NAME, pSuffix);
+
+		case ACT_NEO_MOVE_CROUCH:
+			return CalcSequenceIndex("%s%s", DEFAULT_FIRE_CROUCH_WALK_NAME, pSuffix);
+
+		case ACT_NEO_IDLE_STAND:
+		default:
+			return CalcSequenceIndex("%s%s", DEFAULT_FIRE_IDLE_NAME, pSuffix);
+		}
+	}
+}
+
+int CMultiPlayerAnimState::CalcReloadSequence()
+{
+	if (!m_pPlayer)
+	{
+		return 0;
+	}
+
+	auto pWeapon = m_pPlayer->GetActiveWeapon();
+	if (!pWeapon)
+	{
+		return 0;
+	}
+
+	const char* pSuffix = pWeapon->GetWpnData().szAnimationPrefix;
+	if (!pSuffix)
+	{
+		return 0;
+	}
+
+	return CalcSequenceIndex("Reload_%s", pSuffix);
+}
+
+#endif // NEO
+
 //-----------------------------------------------------------------------------
 // Purpose: 
 // Input  :  - 
@@ -1096,13 +1474,23 @@ void CMultiPlayerAnimState::ComputeMainSequence()
 
 	// Have our class or the mod-specific class determine what the current activity is.
 	Activity idealActivity = CalcMainActivity();
-
 #ifdef CLIENT_DLL
 	Activity oldActivity = m_eCurrentMainSequenceActivity;
 #endif
-	
 	// Store our current activity so the aim and fire layers know what to do.
 	m_eCurrentMainSequenceActivity = idealActivity;
+
+#ifdef NEO
+	float flCycle = pPlayer->GetCycle();
+	UpdateAimSequenceLayers(flCycle, GESTURE_SLOT_AIM, true, &m_IdleSequenceTransitioner, 1);
+
+	auto activeWeapon = GetBasePlayer()->GetActiveWeapon();
+	if (m_hActiveWeapon != activeWeapon)
+	{	// If we switched weapons, clear out the firing / reload animations
+		ResetGestureSlot(GESTURE_SLOT_ATTACK_AND_RELOAD);
+	}
+	m_hActiveWeapon = activeWeapon;
+#endif // NEO
 
 	// Hook to force playback of a specific requested full-body sequence
 	if ( m_nSpecificMainSequence >= 0 )
@@ -1137,9 +1525,14 @@ void CMultiPlayerAnimState::ComputeMainSequence()
 #ifdef CLIENT_DLL
 	// If we went from idle to walk, reset the interpolation history.
 	// Kind of hacky putting this here.. it might belong outside the base class.
-	if ( (oldActivity == ACT_MP_CROUCH_IDLE || oldActivity == ACT_MP_STAND_IDLE || oldActivity == ACT_MP_DEPLOYED_IDLE || oldActivity == ACT_MP_CROUCH_DEPLOYED_IDLE ) && 
-		 (idealActivity == ACT_MP_WALK || idealActivity == ACT_MP_CROUCHWALK ) )
-	{
+#ifdef NEO
+	if ( (oldActivity == ACT_CROUCHIDLE || oldActivity == ACT_IDLE ) &&
+		 (idealActivity == ACT_WALK || idealActivity == ACT_RUN_CROUCH || idealActivity == ACT_RUN) )
+#else
+	if ((oldActivity == ACT_MP_CROUCH_IDLE || oldActivity == ACT_MP_STAND_IDLE || oldActivity == ACT_MP_DEPLOYED_IDLE || oldActivity == ACT_MP_CROUCH_DEPLOYED_IDLE) &&
+		(idealActivity == ACT_MP_WALK || idealActivity == ACT_MP_CROUCHWALK))
+#endif
+		{
 		ResetGroundSpeed();
 	}
 #endif
@@ -1957,22 +2350,38 @@ void CMultiPlayerAnimState::DebugShowActivity( Activity activity )
 
 	switch( activity )
 	{
+#ifdef NEO
+	case ACT_IDLE:
+#else
 	case ACT_MP_STAND_IDLE:
+#endif
 		{
 			pszActivity = "idle";
 			break;
 		}
+#ifdef NEO
+	case ACT_SPRINT:
+#else
 	case ACT_MP_SPRINT:
+#endif
 		{
 			pszActivity = "sprint";
 			break;
 		}
+#ifdef NEO
+	case ACT_WALK:
+#else
 	case ACT_MP_WALK:
+#endif
 		{
 			pszActivity = "walk";
 			break;
 		}
+#ifdef NEO
+	case ACT_RUN:
+#else
 	case ACT_MP_RUN:
+#endif
 		{
 			pszActivity = "run";
 			break;

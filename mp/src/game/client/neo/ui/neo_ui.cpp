@@ -15,6 +15,11 @@ static const wchar_t *ENABLED_LABELS[] = {
 #define IN_BETWEEN_AR(min, cmp, max) (((min) <= (cmp)) && ((cmp) < (max)))
 #define IN_BETWEEN_EQ(min, cmp, max) (((min) <= (cmp)) && ((cmp) <= (max)))
 
+[[nodiscard]] static bool InRect(const vgui::IntRect &rect, const int x, const int y)
+{
+	return IN_BETWEEN_EQ(rect.x0, x, rect.x1) && IN_BETWEEN_EQ(rect.y0, y, rect.y1);
+}
+
 [[nodiscard]] static int LoopAroundMinMax(const int iValue, const int iMin, const int iMax)
 {
 	if (iValue < iMin)
@@ -279,9 +284,20 @@ void EndSection()
 
 	// Scroll handling
 	const int iRowsInScreen = g_pCtx->dPanel.tall / g_pCtx->iRowTall;
-	if (g_pCtx->eMode == MODE_MOUSEWHEELED && g_pCtx->bMouseInPanel)
+	const bool bHasScroll = (g_pCtx->iPartitionY > iRowsInScreen);
+	vgui::IntRect rectScrollArea = (bHasScroll) ?
+			vgui::IntRect{
+				.x0 = g_pCtx->dPanel.x + g_pCtx->dPanel.wide,
+				.y0 = g_pCtx->dPanel.y,
+				.x1 = g_pCtx->dPanel.x + g_pCtx->dPanel.wide + g_pCtx->iRowTall,
+				.y1 = g_pCtx->dPanel.y + g_pCtx->dPanel.tall,
+			} : vgui::IntRect{};
+	const bool bMouseInScrollbar = bHasScroll && InRect(rectScrollArea, g_pCtx->iMouseAbsX, g_pCtx->iMouseAbsY);
+	const bool bMouseInWheelable = g_pCtx->bMouseInPanel || bMouseInScrollbar;
+
+	if (g_pCtx->eMode == MODE_MOUSEWHEELED && bMouseInWheelable)
 	{
-		if (g_pCtx->iPartitionY <= iRowsInScreen)
+		if (!bHasScroll)
 		{
 			g_pCtx->iYOffset[g_pCtx->iSection] = 0;
 		}
@@ -294,7 +310,7 @@ void EndSection()
 	else if (g_pCtx->eMode == MODE_KEYPRESSED && (g_pCtx->eCode == KEY_DOWN || g_pCtx->eCode == KEY_UP) &&
 			 (g_pCtx->iActiveSection == g_pCtx->iSection || g_pCtx->iHotSection == g_pCtx->iSection))
 	{
-		if (g_pCtx->iPartitionY <= iRowsInScreen)
+		if (!bHasScroll)
 		{
 			// Disable scroll if it doesn't need to
 			g_pCtx->iYOffset[g_pCtx->iSection] = 0;
@@ -308,6 +324,57 @@ void EndSection()
 		{
 			// Scrolling down post visible, re-adjust
 			g_pCtx->iYOffset[g_pCtx->iSection] = clamp(g_pCtx->iActive - iRowsInScreen + 1, 0, g_pCtx->iWidget - iRowsInScreen);
+		}
+	}
+
+	// Scroll bar area painting and mouse interaction (no keyboard as that's handled by active widgets)
+	if (bHasScroll)
+	{
+		const int iYStart = g_pCtx->iYOffset[g_pCtx->iSection];
+		const int iYEnd = iYStart + iRowsInScreen;
+		const float flYPercStart = iYStart / static_cast<float>(g_pCtx->iWidget);
+		const float flYPercEnd = iYEnd / static_cast<float>(g_pCtx->iWidget);
+		vgui::IntRect rectHandle{
+			g_pCtx->dPanel.x + g_pCtx->dPanel.wide,
+			g_pCtx->dPanel.y + static_cast<int>(g_pCtx->dPanel.tall * flYPercStart),
+			g_pCtx->dPanel.x + g_pCtx->dPanel.wide + g_pCtx->iRowTall,
+			g_pCtx->dPanel.y + static_cast<int>(g_pCtx->dPanel.tall * flYPercEnd)
+		};
+
+		bool bAlterOffset = false;
+		switch (g_pCtx->eMode)
+		{
+		case MODE_PAINT:
+			surface()->DrawSetColor(g_pCtx->bgColor);
+			surface()->DrawFilledRectArray(&rectScrollArea, 1);
+			surface()->DrawSetColor(g_pCtx->abYMouseDragOffset[g_pCtx->iSection] ? g_pCtx->selectBgColor : g_pCtx->normalBgColor);
+			surface()->DrawFilledRectArray(&rectHandle, 1);
+			break;
+		case MODE_MOUSEPRESSED:
+			g_pCtx->abYMouseDragOffset[g_pCtx->iSection] = bMouseInScrollbar;
+			if (bMouseInScrollbar)
+			{
+				// If not pressed on handle, set the drag at the middle
+				const bool bInHandle = InRect(rectHandle, g_pCtx->iMouseAbsX, g_pCtx->iMouseAbsY);
+				g_pCtx->iStartMouseDragOffset[g_pCtx->iSection] = (bInHandle) ?
+							(g_pCtx->iMouseAbsY - rectHandle.y0) :((rectHandle.y1 - rectHandle.y0) / 2.0f);
+				bAlterOffset = true;
+			}
+			break;
+		case MODE_MOUSERELEASED:
+			g_pCtx->abYMouseDragOffset[g_pCtx->iSection] = false;
+			break;
+		case MODE_MOUSEMOVED:
+			bAlterOffset = g_pCtx->abYMouseDragOffset[g_pCtx->iSection];
+			break;
+		default:
+			break;
+		}
+
+		if (bAlterOffset)
+		{
+			const float flXPercMouse = static_cast<float>(g_pCtx->iMouseRelY - g_pCtx->iStartMouseDragOffset[g_pCtx->iSection]) / static_cast<float>(g_pCtx->dPanel.tall);
+			g_pCtx->iYOffset[g_pCtx->iSection] = clamp(flXPercMouse * g_pCtx->iWidget, 0, (g_pCtx->iWidget - iRowsInScreen));
 		}
 	}
 
@@ -401,12 +468,78 @@ void Pad()
 	}
 }
 
-void Label(const wchar_t *wszText)
+void GCtxSkipActive()
 {
 	if (g_pCtx->iWidget == g_pCtx->iActive && g_pCtx->iSection == g_pCtx->iActiveSection)
 	{
 		g_pCtx->iActive += g_pCtx->iActiveDirection;
 	}
+}
+
+void LabelWrap(const wchar_t *wszText)
+{
+	if (!wszText || wszText[0] == '\0')
+	{
+		NeoUI::Pad();
+		return;
+	}
+
+	GCtxSkipActive();
+	int iLines = 0;
+	if (IN_BETWEEN_AR(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall))
+	{
+		const auto *pFontI = &g_pCtx->fonts[g_pCtx->eFont];
+		const int iWszSize = V_wcslen(wszText);
+		int iSumWidth = 0;
+		int iStart = 0;
+		int iYOffset = 0;
+		int iLastSpace = 0;
+		for (int i = 0; i < iWszSize; ++i)
+		{
+			const wchar_t ch = wszText[i];
+			if (ch == L' ')
+			{
+				iLastSpace = i;
+			}
+			const int chWidth = surface()->GetCharacterWidth(pFontI->hdl, ch);
+			iSumWidth += chWidth;
+			if (iSumWidth >= g_pCtx->dPanel.wide)
+			{
+				if (g_pCtx->eMode == MODE_PAINT)
+				{
+					GCtxDrawSetTextPos(g_pCtx->iMarginX, g_pCtx->iLayoutY + pFontI->iYOffset + iYOffset);
+					surface()->DrawPrintText(wszText + iStart, iLastSpace - iStart);
+				}
+				++iLines;
+
+				iYOffset += g_pCtx->iRowTall;
+				iSumWidth = 0;
+				iStart = iLastSpace + 1;
+				i = iLastSpace;
+			}
+		}
+		if (iSumWidth > 0)
+		{
+			if (g_pCtx->eMode == MODE_PAINT)
+			{
+				GCtxDrawSetTextPos(g_pCtx->iMarginX, g_pCtx->iLayoutY + pFontI->iYOffset + iYOffset);
+				surface()->DrawPrintText(wszText + iStart, iWszSize - iStart);
+			}
+			++iLines;
+		}
+	}
+
+	g_pCtx->iPartitionY += iLines;
+	g_pCtx->iLayoutY += (g_pCtx->iRowTall * iLines);
+
+	++g_pCtx->iWidget;
+	surface()->DrawSetColor(g_pCtx->normalBgColor);
+	surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
+}
+
+void Label(const wchar_t *wszText)
+{
+	GCtxSkipActive();
 	if (IN_BETWEEN_AR(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall) && g_pCtx->eMode == MODE_PAINT)
 	{
 		InternalLabel(wszText, g_pCtx->eLabelTextStyle == TEXTSTYLE_CENTER);
@@ -416,10 +549,7 @@ void Label(const wchar_t *wszText)
 
 void Label(const wchar_t *wszLabel, const wchar_t *wszText)
 {
-	if (g_pCtx->iWidget == g_pCtx->iActive && g_pCtx->iSection == g_pCtx->iActiveSection)
-	{
-		g_pCtx->iActive += g_pCtx->iActiveDirection;
-	}
+	GCtxSkipActive();
 	if (IN_BETWEEN_AR(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall) && g_pCtx->eMode == MODE_PAINT)
 	{
 		const int iTmpMarginX = g_pCtx->iMarginX;
@@ -672,6 +802,17 @@ static float ClampAndLimitDp(const float curValue, const float flMin, const floa
 	return nextValue;
 }
 
+void Progress(const float flValue, const float flMin, const float flMax)
+{
+	GCtxSkipActive();
+	if (IN_BETWEEN_AR(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall) && g_pCtx->eMode == MODE_PAINT)
+	{
+		const float flPerc = (flValue - flMin) / (flMax - flMin);
+		GCtxDrawFilledRectXtoX(0, flPerc * g_pCtx->dPanel.wide);
+	}
+	InternalUpdatePartitionState(GetMouseinFocusedRet{true, true});
+}
+
 void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, const float flMax,
 				   const int iDp, const float flStep, const wchar_t *wszSpecialText)
 {
@@ -877,6 +1018,17 @@ void SliderInt(const wchar_t *wszLeftLabel, int *iValue, const int iMin, const i
 	if (flValue != flOrigValue)
 	{
 		*iValue = RoundFloatToInt(flValue);
+	}
+}
+
+void SliderU8(const wchar_t *wszLeftLabel, uint8 *ucValue, const uint8 iMin, const uint8 iMax, const uint8 iStep, const wchar_t *wszSpecialText)
+{
+	const float flOrigValue = *ucValue;
+	float flValue = flOrigValue;
+	Slider(wszLeftLabel, &flValue, static_cast<float>(iMin), static_cast<float>(iMax), 0, static_cast<float>(iStep), wszSpecialText);
+	if (flValue != flOrigValue)
+	{
+		*ucValue = static_cast<uint8>(RoundFloatToInt(flValue));
 	}
 }
 

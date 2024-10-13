@@ -173,7 +173,9 @@ extern vgui::IInputInternal *g_InputInternal;
 #ifdef NEO
 #include "neo_version.h"
 #include "neo_mount_original.h"
+#include "ui/neo_loading.h"
 extern bool NeoRootCaptureESC();
+extern CNeoLoading *g_pNeoLoading;
 
 #ifdef LINUX
 #include "neo_fixup_glshaders.h"
@@ -1279,10 +1281,6 @@ void CHLClient::PostInit()
 //-----------------------------------------------------------------------------
 void CHLClient::Shutdown( void )
 {
-#ifdef NEO
-	FixIncompatibleNeoAssets(g_pFullFileSystem, true);
-#endif
-
     if (g_pAchievementsAndStatsInterface)
     {
         g_pAchievementsAndStatsInterface->ReleasePanel();
@@ -1769,6 +1767,10 @@ void CHLClient::LevelInitPostEntity( )
 	IGameSystem::LevelInitPostEntityAllSystems();
 	C_PhysPropClientside::RecreateAll();
 	internalCenterPrint->Clear();
+
+#ifdef NEO
+	g_pNeoLoading->m_wszLoadingMap[0] = L'\0';
+#endif
 }
 
 //-----------------------------------------------------------------------------

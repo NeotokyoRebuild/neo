@@ -283,10 +283,10 @@ int CNEODeployedDetpack::OnTakeDamage(const CTakeDamageInfo& inputInfo)
 void CNEODeployedDetpack::InputRemoteDetonate(inputdata_t& inputdata)
 {
 	ExplosionCreate(GetAbsOrigin() + Vector(0, 0, 16), GetAbsAngles(), GetThrower(), GetDamage(), GetDamageRadius(),
-					SF_ENVEXPLOSION_NOSPARKS | SF_ENVEXPLOSION_NODLIGHTS | SF_ENVEXPLOSION_NOSMOKE, 0.0f, this);
+					SF_ENVEXPLOSION_NOSPARKS | SF_ENVEXPLOSION_NODLIGHTS | SF_ENVEXPLOSION_NOSMOKE | SF_ENVEXPLOSION_NOSOUND, 0.0f, this);
 	m_hasBeenTriggeredToDetonate = true;
 	DevMsg("CNEODeployedDetpack::InputRemoteDetonate triggered\n");
-	EmitSound("BaseGrenade.Explode");
+	EmitSound("weapon_remotedet.npc_single");
 	UTIL_Remove(this);
 }
 
