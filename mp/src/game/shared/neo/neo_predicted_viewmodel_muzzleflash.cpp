@@ -57,9 +57,9 @@ int CNEOPredictedViewModelMuzzleFlash::DrawModel(int flags)
 	if (m_flTimeSwitchOffMuzzleFlash > gpGlobals->curtime && m_bActive)
 	{
 		CBasePlayer* pOwner = ToBasePlayer(GetOwner());
-		if (pOwner == nullptr) { return -1; }
+		if (pOwner == NULL) { return -1; }
 		CBaseViewModel* vm = pOwner->GetViewModel(0, false);
-		if (vm == nullptr) { return -1; }
+		if (vm == NULL) { return -1; }
 		if (!vm->IsVisible()) {	return -1; }
 
 		int iAttachment = vm->LookupAttachment("muzzle");
