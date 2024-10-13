@@ -556,14 +556,16 @@ bool CNEORules::CheckGameOver(void)
 void CNEORules::Think(void)
 {
 #ifdef GAME_DLL
-	if ((m_nRoundStatus == NeoRoundStatus::Idle || m_nRoundStatus == NeoRoundStatus::Warmup) && gpGlobals->curtime > m_flNeoNextRoundStartTime)
+	const bool bIsIdleState = m_nRoundStatus == NeoRoundStatus::Idle || m_nRoundStatus == NeoRoundStatus::Warmup;
+	if (bIsIdleState && gpGlobals->curtime > m_flNeoNextRoundStartTime)
 	{
 		StartNextRound();
 		return;
 	}
 
-	// Allow respawn if it's an idle or warmup round
-	if (m_nRoundStatus == NeoRoundStatus::Idle || m_nRoundStatus == NeoRoundStatus::Warmup)
+	// Allow respawn if it's an idle, warmup round, or deathmatch-type gamemode
+	const bool bIsDMType = (m_nGameTypeSelected == NEO_GAME_TYPE_TDM);
+	if (bIsDMType || bIsIdleState)
 	{
 		CRecipientFilter filter;
 		filter.MakeReliable();
@@ -583,11 +585,20 @@ void CNEORules::Think(void)
 					player->m_bInVision = false;
 					player->m_bIneligibleForLoadoutPick = false;
 					player->SetTestMessageVisible(false);
+
+					if (!bIsIdleState && bIsDMType)
+					{
+						engine->ClientCommand(player->edict(), "loadoutmenu");
+					}
+					else
+					{
+						filter.AddRecipient(player);
+					}
 				}
 			}
 		}
 
-		if (filter.GetRecipientCount() > 0)
+		if (filter.GetRecipientCount() > 0 && bIsIdleState)
 		{
 			UserMessageBegin(filter, "IdleRespawnShowMenu");
 			MessageEnd();
