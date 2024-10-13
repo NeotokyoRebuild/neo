@@ -976,6 +976,11 @@ void C_NEO_Player::PostThink(void)
 			m_bInVision = false;
 			m_bInLean = NEO_LEAN_NONE;
 
+			if (auto vm = GetViewModel(0, false))
+			{
+				vm->AddEffects(EF_NODRAW);
+			}
+
 			if (IsLocalPlayer() && (GetTeamNumber() == TEAM_JINRAI || GetTeamNumber() == TEAM_NSF))
 			{
 				SetObserverMode(OBS_MODE_DEATHCAM);
