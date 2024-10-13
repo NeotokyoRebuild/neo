@@ -191,12 +191,12 @@ jobs:
       with:
         name: ${{ env.resources }}
         path: ${{ env.install_dir }}/${{ env.resources }}
-  upload-release:
-    name: Automatic Release Upload
+  release-latest-build:
+    name: Release Latest Build
 
     needs: [build, pack-resources]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v')
+    if: github.ref == 'refs/heads/master'
     permissions:
       contents: write
     
@@ -208,21 +208,10 @@ jobs:
       run: 'parallel 7z a -tzip -mx=9 "{}.zip" "./{}/*" ::: neo-*'
         
     - name: Create latest release
-      if: github.ref == 'refs/heads/master'
-      uses: slord399/action-automatic-releases@v1.0.1
+      uses: softprops/action-gh-release@v2.0.8
       with:
-        repo_token: "${{ secrets.GITHUB_TOKEN }}"
         prerelease: true
-        automatic_release_tag: "latest"
-        title: "Latest Build"
-        files: neo-*.zip
-
-    - name: Create stable release
-      if: startsWith(github.ref, 'refs/tags/v')
-      uses: slord399/action-automatic-releases@v1.0.1
-      with:
-        repo_token: "${{ secrets.GITHUB_TOKEN }}"
-        prerelease: true
-        automatic_release_tag: "${{ github.ref_name }}"
-        title: "${{ github.ref_name }}"
+        generate_release_notes: true
+        tag_name: "latest"
+        name: "Latest Build"
         files: neo-*.zip
