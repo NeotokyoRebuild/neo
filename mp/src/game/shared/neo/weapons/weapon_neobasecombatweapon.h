@@ -219,7 +219,7 @@ public:
 
 	float GetLastAttackTime(void) const { return m_flLastAttackTime; }
 
-	virtual void ProcessAnimationEvents(void);
+	void ProcessAnimationEvents();
 	bool m_bWeaponIsLowered;
 
 	int GetNumShotsFired(void) const { return m_nNumShotsFired; }
