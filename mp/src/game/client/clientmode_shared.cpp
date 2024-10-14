@@ -324,13 +324,6 @@ ClientModeShared::ClientModeShared()
 ClientModeShared::~ClientModeShared()
 {
 	delete m_pViewport; 
-#ifdef NEO
-	if (g_pNeoLoading)
-	{
-		g_pNeoLoading->MarkForDeletion();
-		g_pNeoLoading = nullptr;
-	}
-#endif
 }
 
 void ClientModeShared::ReloadScheme( bool flushLowLevel )
