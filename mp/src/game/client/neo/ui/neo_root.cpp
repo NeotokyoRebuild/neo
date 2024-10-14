@@ -153,6 +153,7 @@ void CNeoRootInput::OnThink()
 		m_pNeoRoot->m_wszBindingText[0] = '\0';
 		m_pNeoRoot->m_iBindingIdx = -1;
 		m_pNeoRoot->m_state = STATE_SETTINGS;
+		V_memcpy(g_uiCtx.iYOffset, m_pNeoRoot->m_iSavedYOffsets, NeoUI::SIZEOF_SECTIONS);
 	}
 }
 
@@ -285,7 +286,6 @@ IGameUI *CNeoRoot::GetGameUI()
 
 void CNeoRoot::UpdateControls()
 {
-
 	if (m_state == STATE_ROOT)
 	{
 		auto hdlFont = g_uiCtx.fonts[NeoUI::FONT_LOGO].hdl;
@@ -507,7 +507,15 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 
 	if (m_state != ePrevState)
 	{
+		if (ePrevState == STATE_SETTINGS)
+		{
+			V_memcpy(m_iSavedYOffsets, g_uiCtx.iYOffset, NeoUI::SIZEOF_SECTIONS);
+		}
 		UpdateControls();
+		if (m_state == STATE_SETTINGS && ePrevState >= STATE__POPUPSTART && ePrevState < STATE__TOTAL)
+		{
+			V_memcpy(g_uiCtx.iYOffset, m_iSavedYOffsets, NeoUI::SIZEOF_SECTIONS);
+		}
 	}
 }
 
