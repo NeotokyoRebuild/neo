@@ -1933,7 +1933,7 @@ void CMultiPlayerAnimState::ComputePoseParam_MoveYaw( CStudioHdr *pStudioHdr )
 			flYaw = SnapYawTo( flYaw );
 		}
 #ifdef NEO
-		if (m_LegAnimType != LEGANIM_9WAY) // NEO JANK (Adam) Doing this fixes the client side jinrai recon west running animations. NEO TODO (Adam) workaout correct leg animation type, or why these are broken
+		if ( m_LegAnimType != LEGANIM_9WAY ) // NEO JANK (Adam) Doing this fixes the client side jinrai recon west running animations. NEO TODO (Adam) workout correct leg animation type, or why these are broken
 #else
 		if ( m_LegAnimType == LEGANIM_9WAY )
 #endif
