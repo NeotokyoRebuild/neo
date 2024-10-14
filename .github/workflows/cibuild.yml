@@ -215,7 +215,7 @@ jobs:
         # Delete old "latest"
         gh release delete latest --cleanup-tag --yes --repo "$REPO_INFO"
         # Create new "latest"
-        gh release create latest neo-*.zip --generate-notes --prerelease --title "Latest Build" --repo "$REPO_INFO"
+        gh release create latest neo-*.zip --prerelease --title "Latest Master Build" --repo "$REPO_INFO"
 
   release-tag:
     name: Release Tag
