@@ -214,7 +214,7 @@ jobs:
         # Delete old "latest"
         gh release delete latest --cleanup-tag --yes
         # Create new "latest"
-        gh release create latest neo-*.zip --generate-notes --prerelease --title "Latest Build"
+        gh release create latest neo-*.zip --generate-notes --prerelease --title "Latest Build" --repo xedmain/ntrebuild
 
   release-tag:
     name: Release Tag
@@ -238,4 +238,4 @@ jobs:
     - name: Upload assets to a tag release
       env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: 'gh release upload "$GITHUB_REF_NAME" neo-*.zip'
+      run: 'gh release upload "$GITHUB_REF_NAME" neo-*.zip --clobber --repo xedmain/ntrebuild'
