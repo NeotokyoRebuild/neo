@@ -56,7 +56,7 @@ void CWeaponSRS::ItemPreFrame()
 		m_bRoundChambered = true;
 	}
 
-	if (m_flNextPrimaryAttack <= gpGlobals->curtime && !m_bRoundChambered && !m_bRoundBeingChambered && m_iClip1 > 0)
+	if (m_flLastAttackTime + SequenceDuration(ACT_VM_PRIMARYATTACK) <= gpGlobals->curtime && !m_bRoundChambered && !m_bRoundBeingChambered && m_iClip1 > 0)
 	{ // Primary attack animation finished, begin chambering a round
 		if (CNEO_Player* pOwner = static_cast<CNEO_Player*>(ToBasePlayer(GetOwner()))) {
 			if (pOwner->m_nButtons & IN_ATTACK)
@@ -66,10 +66,10 @@ void CWeaponSRS::ItemPreFrame()
 			}
 			pOwner->Weapon_SetZoom(false);
 		}
-		m_bRoundBeingChambered = true;
-		m_flChamberFinishTime = gpGlobals->curtime + GetFireRate();
-		WeaponSound(SPECIAL1);
 		SendWeaponAnim(ACT_VM_PULLBACK);
+		WeaponSound(SPECIAL1);
+		m_bRoundBeingChambered = true;
+		m_flChamberFinishTime = gpGlobals->curtime + 1.2f;
 	}
 
 	BaseClass::ItemPreFrame();

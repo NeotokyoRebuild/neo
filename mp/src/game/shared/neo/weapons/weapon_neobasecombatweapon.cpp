@@ -477,7 +477,8 @@ void CNEOBaseCombatWeapon::ProcessAnimationEvents(void)
 	{
 		m_bLowered = true;
 		SendWeaponAnim(ACT_VM_IDLE_LOWERED);
-		m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
+		SetWeaponIdleTime(gpGlobals->curtime + SequenceDuration());
+		m_flNextPrimaryAttack = max(gpGlobals->curtime + SequenceDuration(), m_flNextPrimaryAttack);
 		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
 	}
 	else if (m_bLowered && !(pOwner->IsSprinting() || pOwner->GetMoveType() == MOVETYPE_LADDER))
@@ -491,15 +492,15 @@ void CNEOBaseCombatWeapon::ProcessAnimationEvents(void)
 	{ // For bolt action weapons
 		m_bLowered = false;
 		SendWeaponAnim(ACT_VM_PULLBACK);
-		m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
+		m_flNextPrimaryAttack = max(gpGlobals->curtime + 1.2f, m_flNextPrimaryAttack);
 		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
 	}
 
 	if (m_bLowered)
 	{
-		if (gpGlobals->curtime > m_flNextPrimaryAttack)
+		if (gpGlobals->curtime > GetWeaponIdleTime())
 		{
-			SendWeaponAnim(ACT_VM_IDLE_LOWERED);
+			SetWeaponIdleTime(gpGlobals->curtime + 0.2);
 			m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
 			m_flNextSecondaryAttack = m_flNextPrimaryAttack;
 		}
