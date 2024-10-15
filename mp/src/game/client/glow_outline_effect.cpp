@@ -102,7 +102,7 @@ void CGlowObjectManager::RenderGlowModels( const CViewSetup *pSetup, int nSplitS
 	SetRenderTargetAndViewPort( pRtFullFrame, pSetup->width, pSetup->height );
 
 	pRenderContext->ClearColor3ub( 0, 0, 0 );
-	pRenderContext->ClearBuffers( true, false, false );
+	pRenderContext->ClearBuffers( true, true, false );
 
 	// Set override material for glow color
 	IMaterial *pMatGlowColor = NULL;
