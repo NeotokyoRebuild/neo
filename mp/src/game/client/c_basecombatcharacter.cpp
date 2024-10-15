@@ -169,7 +169,7 @@ void C_BaseCombatCharacter::UpdateGlowEffect( void )
 #else
 		GetGlowEffectColor( &r, &g, &b );
 #endif
-		m_pGlowEffect = new CGlowObject( this, Vector( r, g, b ), 1.0, true );
+		m_pGlowEffect = new CGlowObject( this, Vector( r, g, b ), 1.0, true, true );
 	}
 }
 
