@@ -4,6 +4,8 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+  release:
+    types: [published]
 
 jobs:
   build:
@@ -191,8 +193,8 @@ jobs:
       with:
         name: ${{ env.resources }}
         path: ${{ env.install_dir }}/${{ env.resources }}
-  release-latest-build:
-    name: Release Latest Build
+  upload-latest-build:
+    name: Upload Latest Build
 
     needs: [build, pack-resources]
     runs-on: ubuntu-latest
@@ -207,7 +209,7 @@ jobs:
     - name: Packing artifacts
       run: 'parallel 7z a -tzip -mx=9 "{}.zip" "./{}/*" ::: neo-*'
         
-    - name: Create latest release
+    - name: Create & upload latest build
       env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO_INFO: ${{ github.repository }}
@@ -217,12 +219,12 @@ jobs:
         # Create new "latest"
         gh release create latest neo-*.zip --prerelease --title "Latest Master Build" --repo "$REPO_INFO"
 
-  release-tag:
-    name: Release Tag
+  upload-release:
+    name: Upload Release
 
     needs: [build, pack-resources]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'release' && github.event.action == 'published'
     permissions:
       contents: write
     
@@ -236,7 +238,7 @@ jobs:
     - name: Packing artifacts
       run: 'parallel 7z a -tzip -mx=9 "{= s/neo-(.*)/neo-$GITHUB_REF_NAME-\1.zip/ =}" "./{}/*" ::: neo-*'
         
-    - name: Upload assets to a tag release
+    - name: Upload assets to a release
       env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO_INFO: ${{ github.repository }}
