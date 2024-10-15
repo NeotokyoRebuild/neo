@@ -16,6 +16,13 @@ class INEOPlayerAnimState;
 
 #include "neo_player_shared.h"
 
+enum EDmgMenuSelect
+{
+	DAMAGE_MENU_SELECT_DISMISS = 1,
+	DAMAGE_MENU_SELECT_NEXTPAGE = 2,
+	DAMAGE_MENU_SELECT_DONOTSHOW = 9,
+};
+
 class CNEO_Player : public CHL2MP_Player
 {
 public:
@@ -238,6 +245,7 @@ public:
 	int m_iTeamDamageInflicted = 0;
 	int m_iTeamKillsInflicted = 0;
 	bool m_bIsPendingTKKick = false; // To not spam the kickid ConCommand
+	bool m_bDoNotShowDmgInfoMenu = false;
 
 private:
 	bool m_bFirstDeathTick;

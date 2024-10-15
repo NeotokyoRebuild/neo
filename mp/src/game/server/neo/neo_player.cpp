@@ -111,7 +111,7 @@ DEFINE_FIELD(m_szNameDupePos, FIELD_INTEGER),
 DEFINE_FIELD(m_bClientWantNeoName, FIELD_BOOLEAN),
 END_DATADESC()
 
-#define SHOWMENU_STRLIMIT (512)
+static constexpr int SHOWMENU_STRLIMIT = 512;
 
 CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
 CNEOGameRulesProxy* neoGameRules;
@@ -1201,13 +1201,18 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 			// menuselect being used by damage stats
 			switch (slot)
 			{
-			case 1: // Dismiss
+			case DAMAGE_MENU_SELECT_DISMISS:
+			case DAMAGE_MENU_SELECT_DONOTSHOW:
 			{
 				m_iDmgMenuCurPage = 0;
 				m_iDmgMenuNextPage = 0;
+				if (slot == DAMAGE_MENU_SELECT_DONOTSHOW)
+				{
+					m_bDoNotShowDmgInfoMenu = true;
+				}
 				break;
 			}
-			case 2: // Next-page
+			case DAMAGE_MENU_SELECT_NEXTPAGE:
 			{
 				char infoStr[SHOWMENU_STRLIMIT];
 				int infoStrSize = 0;
@@ -1278,6 +1283,11 @@ bool CNEO_Player::BecomeRagdollOnClient( const Vector &force )
 
 void CNEO_Player::ShowDmgInfo(char* infoStr, int infoStrSize)
 {
+	if (m_bDoNotShowDmgInfoMenu)
+	{
+		return;
+	}
+
 	CSingleUserRecipientFilter filter(this);
 	filter.MakeReliable();
 
@@ -1296,8 +1306,16 @@ void CNEO_Player::ShowDmgInfo(char* infoStr, int infoStrSize)
 		}
 		UserMessageBegin(filter, "ShowMenu");
 		{
-			WRITE_SHORT(static_cast<short>(m_iDmgMenuNextPage ? 3 : 1)); // Amount of options
-			WRITE_CHAR(static_cast<char>(60)); // 60s timeout
+			// The key options available in bitwise (EX: 1 -> 1 << 0, 9 -> 1 << 8)
+			short sBitwiseOpts =
+					  1 << (DAMAGE_MENU_SELECT_DISMISS - 1)
+					| 1 << (DAMAGE_MENU_SELECT_DONOTSHOW - 1);
+			if (m_iDmgMenuNextPage)
+			{
+				sBitwiseOpts |= 1 << (DAMAGE_MENU_SELECT_NEXTPAGE - 1);
+			}
+			WRITE_SHORT(sBitwiseOpts);
+			WRITE_CHAR(static_cast<char>(10)); // 10s timeout
 			WRITE_BYTE(static_cast<unsigned int>(infoStrSize > MAX_INFOSTR_PER_UMSG));
 			WRITE_STRING(infoStr + infoStrOffset);
 		}
@@ -1318,10 +1336,10 @@ int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int pl
 	Assert(infoStrSize != NULL);
 	Assert(showMenu != NULL);
 	*showMenu = false;
-	static const int TITLE_LEN = 30; // Rough-approximate
-	static const int POSTFIX_LEN = 15 + 12;
-	static const int TOTALLINE_LEN = 64; // Rough-approximate
-	static int FILLSTR_END = SHOWMENU_STRLIMIT - POSTFIX_LEN - TOTALLINE_LEN - 2;
+	static constexpr int TITLE_LEN = 30; // Rough-approximate
+	static constexpr int POSTFIX_LEN = 16 + 12 + 24;
+	static constexpr int TOTALLINE_LEN = 64; // Rough-approximate
+	static constexpr int FILLSTR_END = SHOWMENU_STRLIMIT - POSTFIX_LEN - TOTALLINE_LEN - 2;
 	memset(infoStr, 0, infoStrMax);
 	Q_snprintf(infoStr, infoStrMax, "Damage infos (Round %d):\n", NEORules()->roundNumber());
 	if (info)
@@ -1405,6 +1423,7 @@ int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int pl
 	{
 		Q_strncat(infoStr, "\n->2. Next", infoStrMax, COPY_ALL_CHARACTERS);
 	}
+	Q_strncat(infoStr, "\n->9. Do not show again", infoStrMax, COPY_ALL_CHARACTERS);
 	*infoStrSize = Q_strlen(infoStr);
 
 	return nextPage;
