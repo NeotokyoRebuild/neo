@@ -124,9 +124,6 @@ public:
 	virtual void SetCollisionGroup( int iCollisionGroup ) { m_collisionGroup = iCollisionGroup; }
 
 	const IHandleEntity *GetPassEntity( void ){ return m_pPassEnt;}
-#ifdef NEO
-	bool m_bIgnoreNeoCollide;
-#endif
 
 private:
 	const IHandleEntity *m_pPassEnt;

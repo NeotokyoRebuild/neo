@@ -467,26 +467,35 @@ void CNEOBaseCombatWeapon::ItemPreFrame(void)
 }
 
 // Handles lowering the weapon view model when character is sprinting
-void CNEOBaseCombatWeapon::ProcessAnimationEvents(void)
+void CNEOBaseCombatWeapon::ProcessAnimationEvents()
 {
 	CNEO_Player* pOwner = static_cast<CNEO_Player*>(ToBasePlayer(GetOwner()));
 	if (!pOwner)
+	{
 		return;
+	}
 
-	if (!m_bLowered && (pOwner->IsSprinting() || pOwner->GetMoveType() == MOVETYPE_LADDER) && !m_bInReload && !m_bRoundBeingChambered)
+	const auto next = [this](const int activity) {
+		SendWeaponAnim(activity);
+		if (GetNeoWepBits() & NEO_WEP_THROWABLE)
+		{
+			return;
+		}
+		constexpr auto nextAttackDelay = 0.2;
+		m_flNextPrimaryAttack = max(gpGlobals->curtime + nextAttackDelay, m_flNextPrimaryAttack);
+		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
+	};
+
+	if (!m_bLowered && !m_bInReload && !m_bRoundBeingChambered &&
+		(pOwner->IsSprinting() || pOwner->GetMoveType() == MOVETYPE_LADDER))
 	{
 		m_bLowered = true;
-		SendWeaponAnim(ACT_VM_IDLE_LOWERED);
-		SetWeaponIdleTime(gpGlobals->curtime + SequenceDuration());
-		m_flNextPrimaryAttack = max(gpGlobals->curtime + SequenceDuration(), m_flNextPrimaryAttack);
-		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
+		next(ACT_VM_IDLE_LOWERED);
 	}
 	else if (m_bLowered && !(pOwner->IsSprinting() || pOwner->GetMoveType() == MOVETYPE_LADDER))
 	{
 		m_bLowered = false;
-		SendWeaponAnim(ACT_VM_IDLE);
-		m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
-		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
+		next(ACT_VM_IDLE);
 	}
 	else if (m_bLowered && m_bRoundBeingChambered)
 	{ // For bolt action weapons
@@ -496,14 +505,11 @@ void CNEOBaseCombatWeapon::ProcessAnimationEvents(void)
 		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
 	}
 
-	if (m_bLowered)
+	if (m_bLowered && gpGlobals->curtime > m_flNextPrimaryAttack)
 	{
-		if (gpGlobals->curtime > GetWeaponIdleTime())
-		{
-			SetWeaponIdleTime(gpGlobals->curtime + 0.2);
-			m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
-			m_flNextSecondaryAttack = m_flNextPrimaryAttack;
-		}
+		SetWeaponIdleTime(gpGlobals->curtime + 0.2);
+		m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
+		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
 	}
 }
 

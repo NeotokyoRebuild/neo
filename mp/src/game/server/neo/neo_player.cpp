@@ -123,6 +123,7 @@ ConVar sv_neo_can_change_classes_anytime("sv_neo_can_change_classes_anytime", "0
 	true, 0.0f, true, 1.0f);
 ConVar sv_neo_change_suicide_player("sv_neo_change_suicide_player", "0", FCVAR_REPLICATED, "Kill the player if they change the team and they're alive.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_change_threshold_interval("sv_neo_change_threshold_interval", "0.25", FCVAR_REPLICATED, "The interval threshold limit in seconds before the player is allowed to change team.", true, 0.0f, true, 1000.0f);
+ConVar neo_sv_dm_max_class_dur("neo_sv_dm_max_class_dur", "10", FCVAR_REPLICATED, "The time in seconds when the player can change class on respawn during deathmatch.", true, 0.0f, true, 60.0f);
 
 void CNEO_Player::RequestSetClass(int newClass)
 {
@@ -135,6 +136,8 @@ void CNEO_Player::RequestSetClass(int newClass)
 	const NeoRoundStatus status = NEORules()->GetRoundStatus();
 	if (IsDead() || sv_neo_can_change_classes_anytime.GetBool() ||
 		(!m_bIneligibleForLoadoutPick && NEORules()->GetRemainingPreRoundFreezeTime(false) > 0) ||
+		(NEORules()->GetGameType() == NEO_GAME_TYPE_TDM && !m_bIneligibleForLoadoutPick &&
+				GetAliveDuration() < neo_sv_dm_max_class_dur.GetFloat()) ||
 		(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup))
 	{
 		m_iNeoClass = newClass;
@@ -1016,12 +1019,7 @@ void CNEO_Player::PostThink(void)
 		}
 		else if (m_afButtonPressed & IN_AIM)
 		{
-			// Binds hack: we want grenade secondary attack to trigger on aim (mouse button 2)
-			if (pNeoWep->GetNeoWepBits() & NEO_WEP_THROWABLE)
-			{
-				pNeoWep->SecondaryAttack();
-			}
-			else if (!CanSprint() || !(m_nButtons & IN_SPEED))
+			if (!CanSprint() || !(m_nButtons & IN_SPEED))
 			{
 				Weapon_AimToggle(pNeoWep, clientAimHold ? NEO_TOGGLE_FORCE_AIM : NEO_TOGGLE_DEFAULT);
 			}

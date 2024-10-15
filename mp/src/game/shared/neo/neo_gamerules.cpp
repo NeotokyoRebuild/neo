@@ -94,17 +94,6 @@ ConVar neo_sv_readyup_autointermission("neo_sv_readyup_autointermission", "0", F
 // Both CLIENT_DLL + GAME_DLL, but server-side setting so it's replicated onto client to read the values
 ConVar neo_sv_readyup_lobby("neo_sv_readyup_lobby", "0", FCVAR_REPLICATED, "If enabled, players would need to ready up and match the players total requirements to start a game.", true, 0.0f, true, 1.0f);
 
-enum ENeoCollision
-{
-	NEOCOLLISION_NONE = 0,
-	NEOCOLLISION_TEAM,
-	NEOCOLLISION_ALL,
-
-	NEOCOLLISION__TOTAL,
-};
-
-ConVar neo_sv_collision("neo_sv_collision", "0", FCVAR_REPLICATED, "0 = No collision (default), 1 = Team-based collision, 2 = All player collision", true, 0.0f, true, NEOCOLLISION__TOTAL - 1);
-
 REGISTER_GAMERULES_CLASS( CNEORules );
 
 BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
@@ -481,18 +470,22 @@ int CNEORules::DefaultFOV(void)
 #endif
 }
 
-bool CNEORules::ShouldCollide(const CBaseEntity *ent0, const CBaseEntity *ent1) const
+bool CNEORules::ShouldCollide(int collisionGroup0, int collisionGroup1)
 {
-	const int ent0Group = ent0->GetCollisionGroup();
-	const int ent1Group = ent1->GetCollisionGroup();
-	const int iNeoCol = neo_sv_collision.GetInt();
-	if (iNeoCol != NEOCOLLISION_ALL && ent0Group == COLLISION_GROUP_PLAYER && ent1Group == COLLISION_GROUP_PLAYER)
+	if (collisionGroup0 > collisionGroup1)
 	{
-		return (iNeoCol == NEOCOLLISION_TEAM) ?
-					(static_cast<const CNEO_Player *>(ent0)->GetTeamNumber() != static_cast<const CNEO_Player *>(ent1)->GetTeamNumber()) :
-					false;
+		// swap so that lowest is always first
+		V_swap(collisionGroup0, collisionGroup1);
 	}
-	return const_cast<CNEORules *>(this)->CTeamplayRules::ShouldCollide(ent0Group, ent1Group);
+
+	if ((collisionGroup0 == COLLISION_GROUP_PLAYER || collisionGroup0 == COLLISION_GROUP_PLAYER_MOVEMENT) &&
+		(collisionGroup1 == COLLISION_GROUP_PROJECTILE || collisionGroup1 == COLLISION_GROUP_WEAPON ||
+		 collisionGroup1 == COLLISION_GROUP_PLAYER || collisionGroup1 == COLLISION_GROUP_PLAYER_MOVEMENT))
+	{
+		return false;
+	}
+
+	return CTeamplayRules::ShouldCollide(collisionGroup0, collisionGroup1);
 }
 
 extern ConVar mp_chattime;
@@ -563,14 +556,16 @@ bool CNEORules::CheckGameOver(void)
 void CNEORules::Think(void)
 {
 #ifdef GAME_DLL
-	if ((m_nRoundStatus == NeoRoundStatus::Idle || m_nRoundStatus == NeoRoundStatus::Warmup) && gpGlobals->curtime > m_flNeoNextRoundStartTime)
+	const bool bIsIdleState = m_nRoundStatus == NeoRoundStatus::Idle || m_nRoundStatus == NeoRoundStatus::Warmup;
+	if (bIsIdleState && gpGlobals->curtime > m_flNeoNextRoundStartTime)
 	{
 		StartNextRound();
 		return;
 	}
 
-	// Allow respawn if it's an idle or warmup round
-	if (m_nRoundStatus == NeoRoundStatus::Idle || m_nRoundStatus == NeoRoundStatus::Warmup)
+	// Allow respawn if it's an idle, warmup round, or deathmatch-type gamemode
+	const bool bIsDMType = (m_nGameTypeSelected == NEO_GAME_TYPE_TDM);
+	if (bIsDMType || bIsIdleState)
 	{
 		CRecipientFilter filter;
 		filter.MakeReliable();
@@ -590,11 +585,20 @@ void CNEORules::Think(void)
 					player->m_bInVision = false;
 					player->m_bIneligibleForLoadoutPick = false;
 					player->SetTestMessageVisible(false);
+
+					if (!bIsIdleState && bIsDMType)
+					{
+						engine->ClientCommand(player->edict(), "loadoutmenu");
+					}
+					else
+					{
+						filter.AddRecipient(player);
+					}
 				}
 			}
 		}
 
-		if (filter.GetRecipientCount() > 0)
+		if (filter.GetRecipientCount() > 0 && bIsIdleState)
 		{
 			UserMessageBegin(filter, "IdleRespawnShowMenu");
 			MessageEnd();
@@ -1463,10 +1467,6 @@ void CNEORules::StartNextRound()
 	const bool clearXP = (m_nRoundStatus == NeoRoundStatus::Warmup);
 	SetRoundStatus(NeoRoundStatus::PreRoundFreeze);
 
-	char RoundMsg[27];
-	static_assert(sizeof(RoundMsg) == sizeof("- CTG ROUND 99 STARTED -\n\0"), "RoundMsg requires to fit round numbers up to 2 digits");
-	V_sprintf_safe(RoundMsg, "- %s ROUND %d STARTED -\n", GetGameTypeName(), Min(99, ++m_iRoundNumber));
-	UTIL_CenterPrintAll(RoundMsg);
 
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
@@ -1535,6 +1535,11 @@ void CNEORules::StartNextRound()
 	{
 		GatherGameTypeVotes();
 	}
+
+	char RoundMsg[27];
+	static_assert(sizeof(RoundMsg) == sizeof("- CTG ROUND 99 STARTED -\n\0"), "RoundMsg requires to fit round numbers up to 2 digits");
+	V_sprintf_safe(RoundMsg, "- %s ROUND %d STARTED -\n", GetGameTypeName(), Min(99, ++m_iRoundNumber));
+	UTIL_CenterPrintAll(RoundMsg);
 
 	SetGameRelatedVars();
 
