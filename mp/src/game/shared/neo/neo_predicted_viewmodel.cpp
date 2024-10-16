@@ -350,10 +350,11 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 	m_flLeanAngle = leanAngle;
 	viewAng.z = leanAngle;
 #ifdef CLIENT_DLL
-	if (!cl_neo_lean_viewmodel_only.GetBool())
+	if (cl_neo_lean_viewmodel_only.GetBool())
 	{
-		engine->SetViewAngles(viewAng);
+		viewAng.z = 0;
 	}
+	engine->SetViewAngles(viewAng);
 #endif
 
 #ifdef GAME_DLL
