@@ -1889,11 +1889,12 @@ void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
 		}
 	}
 
-	if (!pWeapon)
-		return;
+	if (pWeapon)
+	{
+		pWeapon->m_bInReload = false;
+		pWeapon->StopWeaponSound(RELOAD_NPC);
+	}
 
-	pWeapon->m_bInReload = false;
-	pWeapon->StopWeaponSound(RELOAD_NPC);
 	BaseClass::Weapon_Drop(pWeapon, pvecTarget, pVelocity);
 }
 

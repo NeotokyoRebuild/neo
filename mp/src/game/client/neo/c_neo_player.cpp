@@ -976,11 +976,6 @@ void C_NEO_Player::PostThink(void)
 			m_bInVision = false;
 			m_bInLean = NEO_LEAN_NONE;
 
-			if (auto vm = GetViewModel(0, false))
-			{ // NEOJANK (Adam) Own viewmodels remain visible in the spot where a person died. This wasn't an issue before, what changed? Workaround for now
-				vm->AddEffects(EF_NODRAW);
-			}
-
 			if (IsLocalPlayer() && (GetTeamNumber() == TEAM_JINRAI || GetTeamNumber() == TEAM_NSF))
 			{
 				SetObserverMode(OBS_MODE_DEATHCAM);
