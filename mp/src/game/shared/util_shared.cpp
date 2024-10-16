@@ -307,10 +307,10 @@ bool CTraceFilterSimple::ShouldHitEntity( IHandleEntity *pHandleEntity, int cont
 	CBaseEntity *pEntity = EntityFromEntityHandle( pHandleEntity );
 #endif
 #ifdef NEO
-	if (m_collisionGroup == COLLISION_GROUP_PLAYER_MOVEMENT && m_pPassEnt && pEntity->IsPlayer())
+	if (m_collisionGroup == COLLISION_GROUP_PLAYER_MOVEMENT && m_pPassEnt && pEntity && pEntity->IsPlayer())
 	{
 		const CBaseEntity *pEntity2 = EntityFromEntityHandle(m_pPassEnt);
-		if (pEntity2->IsPlayer())
+		if (pEntity2 && pEntity2->IsPlayer())
 		{
 			if (sv_neo_collision_enemy_collisions.GetBool())
 			{
@@ -328,7 +328,7 @@ bool CTraceFilterSimple::ShouldHitEntity( IHandleEntity *pHandleEntity, int cont
 
 				if (pEntity2->GetAbsVelocity().z <= pEntity->GetAbsVelocity().z)
 				{ // If the entity on top is moving upwards faster than the entity on the bottom, ignore collision. Makes it easier for recons to bunnyhop out of spawn
-					float heightDifference = (pEntity2->GetAbsOrigin().z - (pEntity->GetAbsOrigin().z + pEntity->CollisionProp()->OBBMaxs().z));
+					const float heightDifference = (pEntity2->GetAbsOrigin().z - (pEntity->GetAbsOrigin().z + pEntity->CollisionProp()->OBBMaxs().z));
 					if (heightDifference > sv_neo_collision_friendly_head_collisions_overlap.GetFloat())
 					{
 						return true;
