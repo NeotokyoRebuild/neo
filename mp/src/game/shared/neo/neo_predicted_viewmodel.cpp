@@ -268,7 +268,9 @@ float GetLeanRatio(const float leanAngle)
 	return fabs(leanAngle) / ((leanAngle < 0) ? neo_lean_yaw_peek_left_amount.GetFloat() : neo_lean_yaw_peek_right_amount.GetFloat());
 }
 
-ConVar cl_neo_lean_viewmodel_only("cl_neo_lean_viewmodel_only", "1", FCVAR_ARCHIVE, "Rotate view-model instead of camera when leaning", true, 0, true, 1);
+#ifdef CLIENT_DLL
+ConVar cl_neo_lean_viewmodel_only("cl_neo_lean_viewmodel_only", "0", FCVAR_ARCHIVE, "Rotate view-model instead of camera when leaning", true, 0, true, 1);
+#endif
 
 float CNEOPredictedViewModel::lean(CNEO_Player *player){
 	Assert(player);
@@ -433,10 +435,12 @@ void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 	newPos += vUp * vOffset.z;
 
 	newAng += angOffset;
+#ifdef CLIENT_DLL
 	if (cl_neo_lean_viewmodel_only.GetBool())
 	{
 		newAng.z += m_flLeanAngle;
 	}
+#endif
 
 	BaseClass::CalcViewModelView(pOwner, newPos, newAng);
 }

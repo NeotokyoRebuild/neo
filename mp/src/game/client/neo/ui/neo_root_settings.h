@@ -13,6 +13,7 @@ struct NeoSettings
 		bool bAimHold;
 		bool bReloadEmpty;
 		bool bViewmodelRighthand;
+		bool bLeanViewmodelOnly;
 		bool bShowPlayerSprays;
 		bool bShowPos;
 		int iShowFps;

@@ -27,6 +27,7 @@ extern ConVar neo_viewmodel_fov_offset;
 extern ConVar neo_aim_hold;
 extern ConVar cl_autoreload_when_empty;
 extern ConVar cl_righthand;
+extern ConVar cl_neo_lean_viewmodel_only;
 extern ConVar cl_showpos;
 extern ConVar cl_showfps;
 extern ConVar hud_fastswitch;
@@ -185,6 +186,7 @@ void NeoSettingsRestore(NeoSettings *ns)
 		pGeneral->bAimHold = neo_aim_hold.GetBool();
 		pGeneral->bReloadEmpty = cl_autoreload_when_empty.GetBool();
 		pGeneral->bViewmodelRighthand = cl_righthand.GetBool();
+		pGeneral->bLeanViewmodelOnly = cl_neo_lean_viewmodel_only.GetBool();
 		pGeneral->bShowPlayerSprays = !(cvr->cl_player_spray_disable.GetBool()); // Inverse
 		pGeneral->bShowPos = cl_showpos.GetBool();
 		pGeneral->iShowFps = cl_showfps.GetInt();
@@ -373,6 +375,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		neo_aim_hold.SetValue(pGeneral->bAimHold);
 		cl_autoreload_when_empty.SetValue(pGeneral->bReloadEmpty);
 		cl_righthand.SetValue(pGeneral->bViewmodelRighthand);
+		cl_neo_lean_viewmodel_only.SetValue(pGeneral->bLeanViewmodelOnly);
 		cvr->cl_player_spray_disable.SetValue(!pGeneral->bShowPlayerSprays); // Inverse
 		cl_showpos.SetValue(pGeneral->bShowPos);
 		cl_showfps.SetValue(pGeneral->iShowFps);
@@ -507,6 +510,7 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBoxBool(L"Aim hold", &pGeneral->bAimHold);
 	NeoUI::RingBoxBool(L"Reload empty", &pGeneral->bReloadEmpty);
 	NeoUI::RingBoxBool(L"Right hand viewmodel", &pGeneral->bViewmodelRighthand);
+	NeoUI::RingBoxBool(L"Lean viewmodel only", &pGeneral->bLeanViewmodelOnly);
 	NeoUI::RingBoxBool(L"Show player spray", &pGeneral->bShowPlayerSprays);
 	NeoUI::RingBoxBool(L"Show position", &pGeneral->bShowPos);
 	NeoUI::RingBox(L"Show FPS", SHOWFPS_LABELS, ARRAYSIZE(SHOWFPS_LABELS), &pGeneral->iShowFps);
