@@ -2064,7 +2064,7 @@ bool CBaseCombatWeapon::DefaultReload( int iClipSize1, int iClipSize2, int iActi
 	// On NEO, we want to always give out reload sound cues
 #if defined(CLIENT_DLL) || defined(NEO)
 	// Play reload
-	WeaponSound( RELOAD );
+	CBaseCombatWeapon::WeaponSound(RELOAD_NPC);
 #endif
 	SendWeaponAnim( iActivity );
 
@@ -2432,14 +2432,14 @@ bool CBaseCombatWeapon::SetIdealActivity( Activity ideal )
 	{
 		//Set our activity to the next transitional animation
 		SetActivity( ACT_TRANSITION );
-		SetSequence( nextSequence );	
+		SetSequence( nextSequence );
 		SendViewModelAnim( nextSequence );
 	}
 	else
 	{
 		//Set our activity to the ideal
 		SetActivity( m_IdealActivity );
-		SetSequence( m_nIdealSequence );	
+		SetSequence( m_nIdealSequence );
 		SendViewModelAnim( m_nIdealSequence );
 	}
 

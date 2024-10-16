@@ -39,7 +39,6 @@ public:
 
 	void	Precache(void);
 	void	PrimaryAttack(void);
-	void	SecondaryAttack(void) { }
 	void	DecrementAmmo(CBaseCombatCharacter* pOwner);
 	void	ItemPostFrame(void);
 
@@ -51,6 +50,7 @@ public:
 	virtual float GetSpeedScale(void) const { return 1.0; }
 
 	bool	CanDrop(void) OVERRIDE;
+	virtual bool CanPerformSecondaryAttack() const override final { return false; }
 
 #ifndef CLIENT_DLL
 	void Operator_HandleAnimEvent(animevent_t* pEvent, CBaseCombatCharacter* pOperator);

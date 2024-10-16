@@ -19,6 +19,7 @@
 #include <ivoicetweak.h>
 #include "tier1/interface.h"
 #include <ctime>
+#include "ui/neo_loading.h"
 
 #include <vgui/IInput.h>
 #include <vgui_controls/Controls.h>
@@ -44,13 +45,14 @@ extern ConVar cl_onlysteamnick;
 
 CNeoRoot *g_pNeoRoot = nullptr;
 void NeoToggleconsole();
+extern CNeoLoading *g_pNeoLoading;
 inline NeoUI::Context g_uiCtx;
 inline ConVar neo_cl_toggleconsole("neo_cl_toggleconsole", "0", FCVAR_ARCHIVE,
 								   "If the console can be toggled with the ` keybind or not.", true, 0.0f, true, 1.0f);
+inline int g_iRowsInScreen;
 
 namespace {
 
-int g_iRowsInScreen;
 int g_iAvatar = 64;
 int g_iRootSubPanelWide = 600;
 constexpr wchar_t WSZ_GAME_TITLE[] = L"neatbkyoc ue";
@@ -135,13 +137,12 @@ void CNeoRootInput::OnThink()
 		{
 			if (code != KEY_DELETE)
 			{
-				// The keybind system used requires 1:1 so unbind a duplicate
+				// The keybind system used requires 1:1 so unbind any duplicates
 				for (auto &bind : m_pNeoRoot->m_ns.keys.vBinds)
 				{
 					if (bind.bcNext == code)
 					{
 						bind.bcNext = BUTTON_CODE_NONE;
-						break;
 					}
 				}
 			}
@@ -267,6 +268,7 @@ CNeoRoot::CNeoRoot(VPANEL parent)
 
 CNeoRoot::~CNeoRoot()
 {
+	if (g_pNeoRoot->m_pFileIODialog) g_pNeoRoot->m_pFileIODialog->DeletePanel();
 	m_panelCaptureInput->DeletePanel();
 	if (m_avImage) delete m_avImage;
 	NeoSettingsDeinit(&m_ns);
@@ -479,6 +481,12 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		surface()->DrawPrintText(BUILD_DISPLAY, *BUILD_DISPLAY_SIZE);
 	}
 
+	// Laading screen just overlays over the root, so don't render anything else if so
+	if (m_bOnLoadingScreen)
+	{
+		return;
+	}
+
 	static constexpr void (CNeoRoot::*P_FN_MAIN_LOOP[STATE__TOTAL])(const MainLoopParam param) = {
 		&CNeoRoot::MainLoopRoot,			// STATE_ROOT
 		&CNeoRoot::MainLoopSettings,		// STATE_SETTINGS
@@ -493,6 +501,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		&CNeoRoot::MainLoopPopup,			// STATE_CONFIRMSETTINGS
 		&CNeoRoot::MainLoopPopup,			// STATE_QUIT
 		&CNeoRoot::MainLoopPopup,			// STATE_SERVERPASSWORD
+		&CNeoRoot::MainLoopPopup,			// STATE_SETTINGSRESETDEFAULT
 	};
 	(this->*P_FN_MAIN_LOOP[m_state])(MainLoopParam{.eMode = eMode, .wide = wide, .tall = tall});
 
@@ -693,15 +702,21 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 
 void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 {
-	static constexpr void (*P_FN[])(NeoSettings *) = {
-		NeoSettings_General,
-		NeoSettings_Keys,
-		NeoSettings_Mouse,
-		NeoSettings_Audio,
-		NeoSettings_Video,
+	struct NeoSettingsFunc
+	{
+		void (*func)(NeoSettings *);
+		bool bUISectionManaged;
+	};
+	static constexpr NeoSettingsFunc P_FN[] = {
+		{NeoSettings_General, false},
+		{NeoSettings_Keys, false},
+		{NeoSettings_Mouse, false},
+		{NeoSettings_Audio, false},
+		{NeoSettings_Video, false},
+		{NeoSettings_Crosshair, true},
 	};
 	static const wchar_t *WSZ_TABS_LABELS[ARRAYSIZE(P_FN)] = {
-		L"Multiplayer", L"Keybinds", L"Mouse", L"Audio", L"Video"
+		L"Multiplayer", L"Keybinds", L"Mouse", L"Audio", L"Video", L"Crosshair"
 	};
 
 	m_ns.iNextBinding = -1;
@@ -720,13 +735,19 @@ void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 			NeoUI::Tabs(WSZ_TABS_LABELS, ARRAYSIZE(WSZ_TABS_LABELS), &m_ns.iCurTab);
 		}
 		NeoUI::EndSection();
-		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
-		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * g_iRowsInScreen;
-		NeoUI::BeginSection(true);
+		if (!P_FN[m_ns.iCurTab].bUISectionManaged)
 		{
-			P_FN[m_ns.iCurTab](&m_ns);
+			g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+			g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * g_iRowsInScreen;
+			NeoUI::BeginSection(true);
 		}
-		NeoUI::EndSection();
+		{
+			P_FN[m_ns.iCurTab].func(&m_ns);
+		}
+		if (!P_FN[m_ns.iCurTab].bUISectionManaged)
+		{
+			NeoUI::EndSection();
+		}
 		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
 		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
 		NeoUI::BeginSection();
@@ -742,7 +763,11 @@ void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 				{
 					g_pNeoRoot->GetGameUI()->SendMainMenuCommand("OpenOptionsDialog");
 				}
-				NeoUI::Pad();
+				if (NeoUI::Button(L"Default").bPressed)
+				{
+					m_state = STATE_SETTINGSRESETDEFAULT;
+					engine->GetVoiceTweakAPI()->EndVoiceTweakMode();
+				}
 				if (m_ns.bModified)
 				{
 					if (NeoUI::Button(L"Revert").bPressed)
@@ -841,6 +866,11 @@ void CNeoRoot::MainLoopNewGame(const MainLoopParam param)
 					char cmdStr[256];
 					V_sprintf_safe(cmdStr, "maxplayers %d; progress_enable; map \"%s\"", m_newGame.iMaxPlayers, szMap);
 					engine->ClientCmd_Unrestricted(cmdStr);
+
+					if (g_pNeoLoading)
+					{
+						V_wcscpy_safe(g_pNeoLoading->m_wszLoadingMap, m_newGame.wszMap);
+					}
 
 					m_state = STATE_ROOT;
 				}
@@ -1075,6 +1105,13 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 							const char *szAddress = gameServer.m_NetAdr.GetConnectionAddressString();
 							V_sprintf_safe(connectCmd, "progress_enable; wait; connect %s", szAddress);
 							engine->ClientCmd_Unrestricted(connectCmd);
+
+							if (g_pNeoLoading)
+							{
+								g_pVGuiLocalize->ConvertANSIToUnicode(gameServer.m_szMap,
+																	  g_pNeoLoading->m_wszLoadingMap,
+																	  sizeof(g_pNeoLoading->m_wszLoadingMap));
+							}
 
 							m_state = STATE_ROOT;
 						}
@@ -1385,6 +1422,26 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 				NeoUI::EndHorizontal();
 			}
 			break;
+			case STATE_SETTINGSRESETDEFAULT:
+			{
+				NeoUI::Label(L"Do you want to reset your settings back to default?");
+				NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
+				NeoUI::BeginHorizontal((g_uiCtx.dPanel.wide / 3) - g_uiCtx.iMarginX, g_uiCtx.iMarginX);
+				{
+					if (NeoUI::Button(L"Yes (Enter)").bPressed || NeoUI::Bind(KEY_ENTER))
+					{
+						NeoSettingsResetToDefault(&m_ns);
+						m_state = STATE_SETTINGS;
+					}
+					NeoUI::Pad();
+					if (NeoUI::Button(L"No (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
+					{
+						m_state = STATE_SETTINGS;
+					}
+				}
+				NeoUI::EndHorizontal();
+			}
+			break;
 			default:
 				break;
 			}
@@ -1461,6 +1518,12 @@ void CNeoRoot::ReadNewsFile(CUtlBuffer &buf)
 		V_swprintf_safe(m_news[m_iNewsSize].wszTitle, L"%ls: %ls", wszDate, wszTitle);
 		++m_iNewsSize;
 	}
+}
+
+void CNeoRoot::OnFileSelected(const char *szFullpath)
+{
+	((m_ns.crosshair.eFileIOMode == vgui::FOD_OPEN) ?
+				&ImportCrosshair : &ExportCrosshair)(&m_ns.crosshair.info, szFullpath);
 }
 
 // NEO NOTE (nullsystem): NeoRootCaptureESC is so that ESC keybinds can be recognized by non-root states, but root

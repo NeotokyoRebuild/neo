@@ -1732,6 +1732,7 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 #ifdef NEO
 	auto pNeoAttacker = dynamic_cast<CNEO_Player*>(this);
 	Assert(pNeoAttacker);
+	pNeoAttacker->m_bIneligibleForLoadoutPick = true;
 
 	auto neoWeapon = dynamic_cast<CNEOBaseCombatWeapon*>(pNeoAttacker->GetActiveWeapon());
 	Assert(neoWeapon);

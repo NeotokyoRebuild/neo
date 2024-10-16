@@ -18,7 +18,6 @@
 #include "neo_player.h"
 #endif
 
-#include "neo_playeranimstate.h"
 #include "convar.h"
 
 #include "weapon_neobasecombatweapon.h"
@@ -26,11 +25,13 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+
+#ifdef CLIENT_DLL
 ConVar cl_autoreload_when_empty("cl_autoreload_when_empty", "1", FCVAR_USERINFO | FCVAR_ARCHIVE,
 	"Automatically start reloading when the active weapon becomes empty.",
 	true, 0.0f, true, 1.0f);
-
 ConVar neo_aim_hold("neo_aim_hold", "0", FCVAR_USERINFO | FCVAR_ARCHIVE, "Hold to aim as opposed to toggle aim.", true, 0.0f, true, 1.0f);
+#endif
 ConVar neo_recon_superjump_intensity("neo_recon_superjump_intensity", "250", FCVAR_REPLICATED | FCVAR_CHEAT,
 	"Recon superjump intensity multiplier.", true, 1.0, false, 0);
 
@@ -87,16 +88,6 @@ CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, const NEO_WEP_BI
 	return NULL;
 }
 
-bool PlayerAnimToPlayerAnimEvent(const PLAYER_ANIM playerAnim, PlayerAnimEvent_t& outAnimEvent)
-{
-	bool success = true;
-	if (playerAnim == PLAYER_ANIM::PLAYER_JUMP) { outAnimEvent = PlayerAnimEvent_t::PLAYERANIMEVENT_JUMP; }
-	else if (playerAnim == PLAYER_ANIM::PLAYER_RELOAD) { outAnimEvent = PlayerAnimEvent_t::PLAYERANIMEVENT_RELOAD; }
-	else if (playerAnim == PLAYER_ANIM::PLAYER_ATTACK1) { outAnimEvent = PlayerAnimEvent_t::PLAYERANIMEVENT_FIRE_GUN_PRIMARY; }
-	else { success = false; }
-	return success;
-}
-
 bool ClientWantsAimHold(const CNEO_Player* player)
 {
 #ifdef CLIENT_DLL
@@ -142,18 +133,16 @@ int DmgLineStr(char* infoLine, const int infoLineMax,
 }
 
 void KillerLineStr(char* killByLine, const int killByLineMax,
-	CNEO_Player* neoAttacker, const CNEO_Player* neoVictim)
+	CNEO_Player* neoAttacker, const CNEO_Player* neoVictim, const char* killedWith)
 {
 	const char* dmgerName = neoAttacker->GetNeoPlayerName();
 	const char* dmgerClass = GetNeoClassName(neoAttacker->GetClass());
 	const int dmgerHP = neoAttacker->GetHealth();
-	auto* dmgerWep = neoAttacker->GetActiveWeapon();
-	const char* dmgerWepName = dmgerWep ? dmgerWep->GetPrintName() : "";
 	const float distance = METERS_PER_INCH * neoAttacker->GetAbsOrigin().DistTo(neoVictim->GetAbsOrigin());
 
 	memset(killByLine, 0, killByLineMax);
 	Q_snprintf(killByLine, killByLineMax, "Killed by: %s [%s | %d hp] with %s at %.0f m\n",
-		dmgerName, dmgerClass, dmgerHP, dmgerWepName, distance);
+		dmgerName, dmgerClass, dmgerHP, killedWith, distance);
 }
 
 [[nodiscard]] auto StrToInt(std::string_view strView) -> std::optional<int>

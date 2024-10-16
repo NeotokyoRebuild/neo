@@ -590,6 +590,12 @@ void CSpectatorGUI::OnThink()
 			V_sprintf_safe(scoreBuff, "%d", Max(0, Min(99, pNsfTeam->GetRoundsWon())));
 			m_scoreValueLabelNSF->SetText(scoreBuff);
 		}
+
+		// Update player health
+		if (m_pPlayerLabel->IsVisible())
+		{
+			UpdatePlayerLabel();
+		}
 #endif
 	}
 }
@@ -709,7 +715,9 @@ void CSpectatorGUI::Update()
 	m_pPlayerLabel->SetVisible( ShouldShowPlayerLabel(specmode) );
 
 	// update player name filed, text & color
-
+#ifdef NEO
+	UpdatePlayerLabel();
+#else
 	if ( playernum > 0 && playernum <= gpGlobals->maxClients && gr )
 	{
 		Color c = gr->GetTeamColor( gr->GetTeam(playernum) ); // Player's team color
@@ -738,6 +746,7 @@ void CSpectatorGUI::Update()
 	{
 		m_pPlayerLabel->SetText( L"" );
 	}
+#endif
 
 	// update extra info field
 	wchar_t szEtxraInfo[1024];
@@ -783,6 +792,47 @@ void CSpectatorGUI::UpdateTimer()
 	SetLabelText("timerlabel", szText );
 }
 
+#ifdef NEO
+//-----------------------------------------------------------------------------
+// Purpose: Updates the spectated player's health
+//-----------------------------------------------------------------------------
+void CSpectatorGUI::UpdatePlayerLabel()
+{
+	IGameResources* gr = GameResources();
+	int specmode = GetSpectatorMode();
+	int playernum = GetSpectatorTarget();
+
+	// update player name filed, text & color
+	if (playernum > 0 && playernum <= gpGlobals->maxClients && gr)
+	{
+		Color c = gr->GetTeamColor(gr->GetTeam(playernum)); // Player's team color
+
+		m_pPlayerLabel->SetFgColor(c);
+
+		wchar_t playerText[80], playerName[64], health[10];
+		V_wcsncpy(playerText, L"Unable to find #Spec_PlayerItem*", sizeof(playerText));
+		memset(playerName, 0x0, sizeof(playerName));
+
+		g_pVGuiLocalize->ConvertANSIToUnicode(UTIL_SafeName(gr->GetPlayerName(playernum)), playerName, sizeof(playerName));
+		int iHealth = gr->GetHealth(playernum);
+		if (iHealth > 0 && gr->IsAlive(playernum))
+		{
+			_snwprintf(health, ARRAYSIZE(health), L"%i", iHealth);
+			g_pVGuiLocalize->ConstructString(playerText, sizeof(playerText), g_pVGuiLocalize->Find("#Spec_PlayerItem_Team"), 2, playerName, health);
+		}
+		else
+		{
+			g_pVGuiLocalize->ConstructString(playerText, sizeof(playerText), g_pVGuiLocalize->Find("#Spec_PlayerItem"), 1, playerName);
+		}
+
+		m_pPlayerLabel->SetText(playerText);
+	}
+	else
+	{
+		m_pPlayerLabel->SetText(L"");
+	}
+}
+#endif
 static void ForwardSpecCmdToServer( const CCommand &args )
 {
 	if ( engine->IsPlayingDemo() )

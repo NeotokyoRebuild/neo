@@ -142,7 +142,9 @@ struct Context
 	int iLayoutX;
 	int iLayoutY;
 	int iWgXPos;
-	int iYOffset[MAX_SECTIONS];
+	int iYOffset[MAX_SECTIONS] = {};
+	bool abYMouseDragOffset[MAX_SECTIONS] = {};
+	int iStartMouseDragOffset[MAX_SECTIONS] = {};
 
 	int iHorizontalWidth;
 	int iHorizontalMargin;
@@ -151,14 +153,14 @@ struct Context
 	TextStyle eLabelTextStyle;
 	bool bTextEditIsPassword;
 
-	FontInfo fonts[FONT__TOTAL];
+	FontInfo fonts[FONT__TOTAL] = {};
 	EFont eFont = FONT_NTNORMAL;
 
 	// Input management
 	int iWidget; // Always increments per widget use
 	int iSection;
 	int iCanActives; // Only increment if widget can be activated
-	int iSectionCanActive[MAX_SECTIONS];
+	int iSectionCanActive[MAX_SECTIONS] = {};
 
 	int iHot;
 	int iHotSection;
@@ -189,6 +191,7 @@ struct Context
 void GCtxDrawFilledRectXtoX(const int x1, const int y1, const int x2, const int y2);
 void GCtxDrawFilledRectXtoX(const int x1, const int x2);
 void GCtxDrawSetTextPos(const int x, const int y);
+void GCtxSkipActive();
 
 void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode, const wchar_t *wszTitle, const char *pSzCtxName);
 void EndContext();
@@ -209,6 +212,7 @@ struct RetButton
 	bool bMouseDoublePressed;
 };
 void Pad();
+void LabelWrap(const wchar_t *wszText);
 void Label(const wchar_t *wszText);
 void Label(const wchar_t *wszLabel, const wchar_t *wszText);
 void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
@@ -216,9 +220,12 @@ RetButton Button(const wchar_t *wszText);
 RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText);
 void RingBoxBool(const wchar_t *wszLeftLabel, bool *bChecked);
 void RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
+void Progress(const float flValue, const float flMin, const float flMax);
 void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, const float flMax,
 			const int iDp = 2, const float flStep = 1.0f, const wchar_t *wszSpecialText = nullptr);
 void SliderInt(const wchar_t *wszLeftLabel, int *iValue, const int iMin, const int iMax, const int iStep = 1,
+			   const wchar_t *wszSpecialText = nullptr);
+void SliderU8(const wchar_t *wszLeftLabel, uint8 *ucValue, const uint8 iMin, const uint8 iMax, const uint8 iStep = 1,
 			   const wchar_t *wszSpecialText = nullptr);
 void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize);
 bool Bind(const ButtonCode_t eCode);
