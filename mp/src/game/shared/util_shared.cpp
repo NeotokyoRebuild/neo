@@ -329,7 +329,6 @@ bool CTraceFilterSimple::ShouldHitEntity( IHandleEntity *pHandleEntity, int cont
 				if (pEntity2->GetAbsVelocity().z <= pEntity->GetAbsVelocity().z)
 				{ // If the entity on top is moving upwards faster than the entity on the bottom, ignore collision. Makes it easier for recons to bunnyhop out of spawn
 					float heightDifference = (pEntity2->GetAbsOrigin().z - (pEntity->GetAbsOrigin().z + pEntity->CollisionProp()->OBBMaxs().z));
-					engine->Con_NPrintf(0, "Max Z origin Z difference: %f", heightDifference);
 					if (heightDifference > sv_neo_collision_friendly_head_collisions_overlap.GetFloat())
 					{
 						return true;
