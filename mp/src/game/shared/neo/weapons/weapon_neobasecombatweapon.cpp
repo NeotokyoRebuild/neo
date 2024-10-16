@@ -17,6 +17,7 @@ extern ConVar weaponstay;
 #include "prediction.h"
 #include "hud_crosshair.h"
 #include "ui/neo_hud_crosshair.h"
+#include "model_types.h"
 #endif
 
 #include "basecombatweapon_shared.h"
@@ -1057,6 +1058,11 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 	if (GetOwner() == localPlayer && ShouldDrawLocalPlayerViewModel())
 		return 0;
 
+	if (flags & STUDIO_IGNORE_NEO_EFFECTS || !(flags & STUDIO_RENDER))
+	{
+		return BaseClass::DrawModel(flags);
+	}
+
 	int ret = 0;
 	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if (!pLocalPlayer)
@@ -1085,6 +1091,7 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::DrawModel(flags);
+		modelrender->ForcedMaterialOverride(null);
 	}
 
 	auto vel = pOwner->GetAbsVelocity().Length();
@@ -1093,6 +1100,7 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 		IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::DrawModel(flags);
+		modelrender->ForcedMaterialOverride(null);
 	}
 
 	else if (inThermalVision && !pOwner->IsCloaked())
@@ -1100,15 +1108,21 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 		IMaterial* pass = materials->FindMaterial("dev/thermal_third", TEXTURE_GROUP_MODEL);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::DrawModel(flags);
+		modelrender->ForcedMaterialOverride(null);
 	}
 
-	modelrender->ForcedMaterialOverride(null);
 	return ret;
 }
 
 int CNEOBaseCombatWeapon::InternalDrawModel(int flags)
 {
 	int ret = 0;
+
+	if (flags & STUDIO_IGNORE_NEO_EFFECTS || !(flags & STUDIO_RENDER))
+	{
+		return BaseClass::InternalDrawModel(flags);
+	}
+
 	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if (!pLocalPlayer)
 	{
@@ -1136,6 +1150,7 @@ int CNEOBaseCombatWeapon::InternalDrawModel(int flags)
 		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::InternalDrawModel(flags);
+		modelrender->ForcedMaterialOverride(null);
 	}
 
 	auto vel = pOwner->GetAbsVelocity().Length();
@@ -1144,6 +1159,7 @@ int CNEOBaseCombatWeapon::InternalDrawModel(int flags)
 		IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::InternalDrawModel(flags);
+		modelrender->ForcedMaterialOverride(null);
 	}
 
 	else if (inThermalVision && !pOwner->IsCloaked())
@@ -1151,9 +1167,9 @@ int CNEOBaseCombatWeapon::InternalDrawModel(int flags)
 		IMaterial* pass = materials->FindMaterial("dev/thermal_third", TEXTURE_GROUP_MODEL);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::InternalDrawModel(flags);
+		modelrender->ForcedMaterialOverride(null);
 	}
 
-	modelrender->ForcedMaterialOverride(null);
 	return ret;
 }
 
