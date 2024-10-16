@@ -308,7 +308,7 @@ bool CTraceFilterSimple::ShouldHitEntity( IHandleEntity *pHandleEntity, int cont
 			return true;
 		}
 		int heightDifference = abs((pEntity->GetAbsOrigin().z - pEntity2->GetAbsOrigin().z));
-		if (heightDifference > 60)
+		if (heightDifference > 30)
 		{
 			return true;
 		}
