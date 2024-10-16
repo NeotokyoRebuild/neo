@@ -302,7 +302,13 @@ bool CTraceFilterSimple::ShouldHitEntity( IHandleEntity *pHandleEntity, int cont
 	{
 		const CBaseEntity *pEntity2 = EntityFromEntityHandle(m_pPassEnt);
 		engine->Con_NPrintf(0, "collision group: %i", m_collisionGroup);
+		engine->Con_NPrintf(1, "origin difference: %f", abs((pEntity->GetAbsOrigin().z - pEntity2->GetAbsOrigin().z)));
 		if (pEntity2->IsPlayer() && pEntity->GetTeamNumber() != pEntity2->GetTeamNumber())
+		{
+			return true;
+		}
+		int heightDifference = abs((pEntity->GetAbsOrigin().z - pEntity2->GetAbsOrigin().z));
+		if (heightDifference > 60)
 		{
 			return true;
 		}
