@@ -1080,6 +1080,11 @@ int CNEO_Player::NameDupePos() const
 
 const char *CNEO_Player::GetNeoPlayerName(const CNEO_Player *viewFrom) const
 {
+	if (viewFrom && viewFrom->m_bClientStreamermode)
+	{
+		return STREAMERMODE_NAMES[entindex()];
+	}
+
 	const bool nameFetchWantNeoName = (viewFrom) ? viewFrom->m_bClientWantNeoName : m_bClientWantNeoName;
 
 	const int dupePos = m_szNameDupePos;
@@ -1170,8 +1175,23 @@ bool CNEO_Player::HandleCommand_JoinTeam( int team )
 	{
 		SetPlayerTeamModel();
 
-		UTIL_ClientPrintAll(HUD_PRINTTALK, "%s1 joined team %s2\n",
-			GetNeoPlayerName(), GetTeam()->GetName());
+		CRecipientFilter filterNonStreamers;
+		CRecipientFilter filterStreamers;
+		filterNonStreamers.MakeReliable();
+		filterStreamers.MakeReliable();
+		for (int i = 1; i <= gpGlobals->maxClients; ++i)
+		{
+			auto neoPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(i));
+			if (neoPlayer)
+			{
+				(neoPlayer->m_bClientStreamermode) ?
+							filterStreamers.AddRecipient(neoPlayer) :
+							filterNonStreamers.AddRecipient(neoPlayer);
+			}
+		}
+		UTIL_ClientPrintFilter(filterNonStreamers, HUD_PRINTTALK,
+							   "%s1 joined team %s2\n", GetNeoPlayerName(), GetTeam()->GetName());
+		UTIL_ClientPrintFilter(filterStreamers, HUD_PRINTTALK, "Player joined team %s1\n", GetTeam()->GetName());
 	}
 
 	return isAllowedToJoin;

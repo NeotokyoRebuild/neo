@@ -48,6 +48,7 @@ using namespace vgui;
 #define SHOW_ENEMY_STATUS true
 
 ConVar neo_show_scoreboard_avatars("neo_show_scoreboard_avatars", "1", FCVAR_ARCHIVE, "Show avatars on scoreboard.", true, 0.0, true, 1.0 );
+extern ConVar neo_cl_streamermode;
 
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
@@ -265,7 +266,7 @@ void CNEOScoreBoard::ShowPanel(bool bShow)
 
 bool CNEOScoreBoard::ShowAvatars()
 {
-	return neo_show_scoreboard_avatars.GetBool();
+	return neo_show_scoreboard_avatars.GetBool() && !neo_cl_streamermode.GetBool();
 }
 
 void CNEOScoreBoard::FireGameEvent( IGameEvent *event )

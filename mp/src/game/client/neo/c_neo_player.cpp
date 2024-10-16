@@ -200,6 +200,8 @@ USER_MESSAGE_REGISTER(IdleRespawnShowMenu);
 ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
 	"Whether to display HL2 style ammo/health info near crosshair.",
 	true, 0.0f, true, 1.0f);
+ConVar neo_cl_streamermode("neo_cl_streamermode", "0", FCVAR_ARCHIVE | FCVAR_USERINFO, "Streamer mode turns player names into generic names and hide avatars.", true, 0.0f, true, 1.0f);
+ConVar neo_cl_streamermode_autodetect_obs("neo_cl_streamermode_autodetect_obs", "0", FCVAR_ARCHIVE | FCVAR_USERINFO, "Automatically turn neo_cl_streamermode on if OBS was detected on startup.", true, 0.0f, true, 1.0f);
 
 class NeoLoadoutMenu_Cb : public ICommandCallback
 {
@@ -554,6 +556,11 @@ int C_NEO_Player::GetAttackersScores(const int attackerIdx) const
 
 const char *C_NEO_Player::GetNeoPlayerName() const
 {
+	if (neo_cl_streamermode.GetBool())
+	{
+		return STREAMERMODE_NAMES[entindex()];
+	}
+
 	const int dupePos = m_szNameDupePos;
 	const bool localWantNeoName = GetLocalNEOPlayer()->ClientWantNeoName();
 	if (localWantNeoName && m_szNeoName.Get()[0] != '\0')
