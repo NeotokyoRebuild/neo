@@ -279,6 +279,9 @@ CTraceFilterSimple::CTraceFilterSimple( const IHandleEntity *passedict, int coll
 	m_pExtraShouldHitCheckFunction = pExtraShouldHitFunc;
 }
 
+#ifdef NEO
+ConVar sv_neo_collision_magic_value("sv_neo_collision_magic_value", "-2", FCVAR_REPLICATED, "Difference above this value between collision box max z value of bottom player and origin z value of top player will enable collision");
+#endif
 //-----------------------------------------------------------------------------
 // The trace filter!
 //-----------------------------------------------------------------------------
@@ -296,19 +299,27 @@ bool CTraceFilterSimple::ShouldHitEntity( IHandleEntity *pHandleEntity, int cont
 	}
 
 	// Don't test if the game code tells us we should ignore this collision...
+#ifdef NEO
+	const CBaseEntity* pEntity = EntityFromEntityHandle(pHandleEntity);
+#else 
 	CBaseEntity *pEntity = EntityFromEntityHandle( pHandleEntity );
+#endif
 #ifdef NEO
 	if (m_collisionGroup == COLLISION_GROUP_PLAYER_MOVEMENT && m_pPassEnt && pEntity->IsPlayer())
 	{
 		const CBaseEntity *pEntity2 = EntityFromEntityHandle(m_pPassEnt);
-		engine->Con_NPrintf(0, "collision group: %i", m_collisionGroup);
-		engine->Con_NPrintf(1, "origin difference: %f", abs((pEntity->GetAbsOrigin().z - pEntity2->GetAbsOrigin().z)));
 		if (pEntity2->IsPlayer() && pEntity->GetTeamNumber() != pEntity2->GetTeamNumber())
 		{
 			return true;
 		}
-		int heightDifference = abs((pEntity->GetAbsOrigin().z - pEntity2->GetAbsOrigin().z));
-		if (heightDifference > 45)
+		
+		if (pEntity->GetAbsOrigin().z > pEntity2->GetAbsOrigin().z)
+		{
+			V_swap(pEntity, pEntity2);
+		}
+		float heightDifference = (pEntity2->GetAbsOrigin().z - (pEntity->GetAbsOrigin().z + pEntity->CollisionProp()->OBBMaxs().z));
+		engine->Con_NPrintf(0, "Max Z origin Z difference: %f", heightDifference);
+		if (heightDifference > sv_neo_collision_magic_value.GetFloat())
 		{
 			return true;
 		}
