@@ -29,14 +29,14 @@ extern ConVar weaponstay;
 IMPLEMENT_NETWORKCLASS_ALIASED( NEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 
 BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
-	#ifdef CLIENT_DLL
+#ifdef CLIENT_DLL
 	RecvPropTime(RECVINFO(m_flSoonestAttack)),
 	RecvPropTime(RECVINFO(m_flLastAttackTime)),
 	RecvPropFloat(RECVINFO(m_flAccuracyPenalty)),
 	RecvPropInt(RECVINFO(m_nNumShotsFired)),
 	RecvPropBool(RECVINFO(m_bRoundChambered)),
 	RecvPropBool(RECVINFO(m_bRoundBeingChambered)),
-	#else
+#else
 	SendPropTime(SENDINFO(m_flSoonestAttack)),
 	SendPropTime(SENDINFO(m_flLastAttackTime)),
 	SendPropFloat(SENDINFO(m_flAccuracyPenalty)),
