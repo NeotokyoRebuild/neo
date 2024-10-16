@@ -831,7 +831,7 @@ int ClientModeShared::HandleSpectatorKeyInput( int down, ButtonCode_t keynum, co
 		bool enabled = glow_outline_effect_enable->GetBool();
 		for (int i = 0; i < MAX_PLAYERS; i++)
 		{
-			if (auto player = dynamic_cast<C_BaseCombatCharacter *>(ClientEntityList().GetBaseEntity(i)))
+			if (auto player = UTIL_PlayerByIndex(i))
 			{
 				player->SetClientSideGlowEnabled(enabled);
 			}
@@ -1211,7 +1211,7 @@ void ClientModeShared::FireGameEvent( IGameEvent *event )
 			// Switch off Xray when switching teams
 			for (int i = 0; i < MAX_PLAYERS; i++)
 			{
-				if (auto player = dynamic_cast<C_BaseCombatCharacter*>(ClientEntityList().GetBaseEntity(i)))
+				if (auto player = UTIL_PlayerByIndex(i))
 				{
 					player->SetClientSideGlowEnabled(false);
 				}
