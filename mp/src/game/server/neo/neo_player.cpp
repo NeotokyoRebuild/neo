@@ -133,11 +133,11 @@ void CNEO_Player::RequestSetClass(int newClass)
 		return;
 	}
 
+	const bool bIsTypeDM = (NEORules()->GetGameType() == NEO_GAME_TYPE_TDM || NEORules()->GetGameType() == NEO_GAME_TYPE_DM);
 	const NeoRoundStatus status = NEORules()->GetRoundStatus();
 	if (IsDead() || sv_neo_can_change_classes_anytime.GetBool() ||
 		(!m_bIneligibleForLoadoutPick && NEORules()->GetRemainingPreRoundFreezeTime(false) > 0) ||
-		(NEORules()->GetGameType() == NEO_GAME_TYPE_TDM && !m_bIneligibleForLoadoutPick &&
-				GetAliveDuration() < neo_sv_dm_max_class_dur.GetFloat()) ||
+		(bIsTypeDM && !m_bIneligibleForLoadoutPick && GetAliveDuration() < neo_sv_dm_max_class_dur.GetFloat()) ||
 		(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup))
 	{
 		m_iNeoClass = newClass;
@@ -1198,7 +1198,6 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 
 		if (m_iDmgMenuCurPage > 0)
 		{
-			// menuselect being used by damage stats
 			switch (slot)
 			{
 			case DAMAGE_MENU_SELECT_DISMISS:
@@ -1663,7 +1662,8 @@ void CNEO_Player::SetPlayerCorpseModel(int type)
 
 float CNEO_Player::GetReceivedDamageScale(CBaseEntity* pAttacker)
 {
-	if (NEORules()->GetGameType() == NEO_GAME_TYPE_TDM && m_aliveTimer.IsLessThen(5.f))
+	if ((NEORules()->GetGameType() == NEO_GAME_TYPE_TDM || NEORules()->GetGameType() == NEO_GAME_TYPE_DM)
+			&& m_aliveTimer.IsLessThen(5.f) && !m_bIneligibleForLoadoutPick)
 	{ // 5 seconds of invincibility in TDM
 		return 0.f;
 	}
@@ -1940,7 +1940,15 @@ CBaseEntity* CNEO_Player::EntSelectSpawnPoint( void )
 	const char *pSpawnpointName = "info_player_start";
 	const auto alternate = NEORules()->roundAlternate();
 
-	if (NEORules()->IsTeamplay())
+	// NEO TODO (nullsystem): Teamplay vs non-teamplay
+	// info_player_deathmatch is from HL2MP, but maps can utilize HL2MP and this entity anyway
+	const bool bIsTeamplay = NEORules()->IsTeamplay();
+	if (!bIsTeamplay)
+	{
+		pSpawnpointName = "info_player_deathmatch";
+		pLastSpawnPoint = g_pLastSpawn;
+	}
+	else
 	{
 		if (GetTeamNumber() == TEAM_JINRAI)
 		{
@@ -2425,7 +2433,8 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 {
 	const NeoRoundStatus status = NEORules()->GetRoundStatus();
 	if (!(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup) &&
-		(IsObserver() || IsDead() || m_bIneligibleForLoadoutPick || m_aliveTimer.IsGreaterThen(sv_neo_time_alive_until_cant_change_loadout.GetFloat())))
+		(IsObserver() || IsDead() || m_bIneligibleForLoadoutPick
+		 || m_aliveTimer.IsGreaterThen(sv_neo_time_alive_until_cant_change_loadout.GetFloat())))
 	{
 		return;
 	}

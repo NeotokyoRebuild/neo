@@ -490,6 +490,15 @@ void CNEOScoreBoard::UpdatePlayerInfo()
 	if ( !gr )
 		return;
 
+	PlayerXPInfo playersOrder[MAX_PLAYERS + 1] = {};
+	int iTotalPlayers = 0;
+	const bool bNotTeamplay = !NEORules()->IsTeamplay();
+	if (bNotTeamplay)
+	{
+		DMClSortedPlayers(&playersOrder, &iTotalPlayers);
+	}
+	const int iLTRSwitch = Ceil2Int(iTotalPlayers / 2.0f);
+
 	// walk all the players and make sure they're in the scoreboard
 	for ( int i = 1; i <= gpGlobals->maxClients; ++i )
 	{
@@ -510,6 +519,26 @@ void CNEOScoreBoard::UpdatePlayerInfo()
   			int team = gr->GetTeam( i );
 			int sectionID = GetSectionFromTeamNumber( team );
 
+			// NEO JANK (nullsystem): Currently the place higher XPs in Jinrai/left, lower XPs in NSF/right
+			const bool bPlayerInDM = (bNotTeamplay && (team == TEAM_JINRAI || team == TEAM_NSF));
+			if (bPlayerInDM)
+			{
+				int playerBoardPos = -1;
+				for (int iPO = 0; iPO < iTotalPlayers; ++iPO)
+				{
+					if (playersOrder[iPO].idx == i)
+					{
+						playerBoardPos = iPO;
+						break;
+					}
+				}
+
+				if (playerBoardPos >= 0)
+				{
+					team = (playerBoardPos < iLTRSwitch) ? TEAM_JINRAI : TEAM_NSF;
+				}
+			}
+
 			auto pPlayerList = GetPanelForTeam(team);
 			int itemID = FindItemIDForPlayerIndex( pPlayerList, i );
 
@@ -520,7 +549,14 @@ void CNEOScoreBoard::UpdatePlayerInfo()
 				// add a new row
 				itemID = pPlayerList->AddItem( sectionID, playerData );
 				// set the row color based on the players team
-				pPlayerList->SetItemFgColor( itemID, gr->GetTeamColor( team ) );
+				if (bPlayerInDM)
+				{
+					pPlayerList->SetItemFgColor( itemID, gr->IsLocalPlayer(i) ? COLOR_NEO_ORANGE : COLOR_NEO_WHITE);
+				}
+				else
+				{
+					pPlayerList->SetItemFgColor( itemID, gr->GetTeamColor( team ) );
+				}
 			}
 			else
 			{
@@ -530,7 +566,7 @@ void CNEOScoreBoard::UpdatePlayerInfo()
 
 			if ( gr->IsLocalPlayer( i ) )
 			{
-				Color color = gr->GetTeamColor(team);
+				Color color = bPlayerInDM ? COLOR_NEO_WHITE : gr->GetTeamColor(team);
 				color.SetColor(color.r(), color.g(), color.b(), 16);
 				pPlayerList->SetItemBgColor(itemID, color);
 			}
@@ -601,7 +637,14 @@ void CNEOScoreBoard::AddSection(int teamType, int teamNumber)
 	}
 
 	// set the section to have the team color
-	pPlayerList->SetSectionFgColor(sectionID, (teamNumber == TEAM_SPECTATOR) ? COLOR_NEO_WHITE : GameResources()->GetTeamColor(teamNumber));
+	if (NEORules()->IsTeamplay())
+	{
+		pPlayerList->SetSectionFgColor(sectionID, (teamNumber == TEAM_SPECTATOR) ? COLOR_NEO_WHITE : GameResources()->GetTeamColor(teamNumber));
+	}
+	else
+	{
+		pPlayerList->SetSectionFgColor(sectionID, COLOR_NEO_WHITE);
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -654,7 +697,9 @@ void CNEOScoreBoard::GetPlayerScoreInfo(int playerIndex, KeyValues *kv)
 
 	CBasePlayer* player = C_BasePlayer::GetLocalPlayer();
 	const int playerNeoTeam = player->GetTeamNumber();
-	const bool oppositeTeam = (playerNeoTeam == TEAM_JINRAI || playerNeoTeam == TEAM_NSF) && (neoTeam != playerNeoTeam);
+	const bool oppositeTeam = (NEORules()->IsTeamplay()) ?
+				((playerNeoTeam == TEAM_JINRAI || playerNeoTeam == TEAM_NSF) && (neoTeam != playerNeoTeam)) :
+				(!g_PR->IsLocalPlayer(playerIndex));
 
 	int statusIcon = -1;
 	if (neoTeam == TEAM_JINRAI || neoTeam == TEAM_NSF)
