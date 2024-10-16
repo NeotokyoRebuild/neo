@@ -38,6 +38,7 @@ struct NeoSettings
 		bool bShowPos;
 		int iShowFps;
 		int iDlFilter;
+		bool bStreamerMode;
 	};
 
 	struct Keys
@@ -160,6 +161,7 @@ struct NeoSettings
 		CONVARREF_DEF(cl_showfps);
 		CONVARREF_DEF(hud_fastswitch);
 		CONVARREF_DEF(neo_cl_toggleconsole);
+		CONVARREF_DEF(neo_cl_streamermode);
 
 		// Multiplayer
 		CONVARREF_DEF(cl_playerspraydisable);

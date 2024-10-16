@@ -1079,6 +1079,11 @@ int CNEO_Player::NameDupePos() const
 
 const char *CNEO_Player::GetNeoPlayerName(const CNEO_Player *viewFrom) const
 {
+	if (viewFrom && viewFrom->m_bClientStreamermode)
+	{
+		return STREAMERMODE_NAMES[entindex()];
+	}
+
 	const bool nameFetchWantNeoName = (viewFrom) ? viewFrom->m_bClientWantNeoName : m_bClientWantNeoName;
 
 	const int dupePos = m_szNameDupePos;

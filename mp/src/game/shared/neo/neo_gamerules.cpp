@@ -2254,6 +2254,7 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 		updateDupeCheck = true;
 	}
 	pNEOPlayer->SetClientWantNeoName(clientAllowsNeoName);
+	pNEOPlayer->m_bClientStreamermode = (1 == StrToInt(engine->GetClientConVarValue(engine->IndexOfEdict(pNEOPlayer->edict()), "neo_cl_streamermode")));
 
 	const char *pszName = pszSteamName;
 	const char *pszOldName = pPlayer->GetPlayerName();

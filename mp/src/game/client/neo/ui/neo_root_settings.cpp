@@ -239,6 +239,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 				}
 			}
 		}
+		pGeneral->bStreamerMode = cvr->neo_cl_streamermode.GetBool();
 	}
 	{
 		NeoSettings::Keys *pKeys = &ns->keys;
@@ -438,6 +439,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_showpos.SetValue(pGeneral->bShowPos);
 		cvr->cl_showfps.SetValue(pGeneral->iShowFps);
 		cvr->cl_downloadfilter.SetValue(DLFILTER_STRMAP[pGeneral->iDlFilter]);
+		cvr->neo_cl_streamermode.SetValue(pGeneral->bStreamerMode);
 	}
 	{
 		const NeoSettings::Keys *pKeys = &ns->keys;
@@ -634,6 +636,7 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBoxBool(L"Show position", &pGeneral->bShowPos);
 	NeoUI::RingBox(L"Show FPS", SHOWFPS_LABELS, ARRAYSIZE(SHOWFPS_LABELS), &pGeneral->iShowFps);
 	NeoUI::RingBox(L"Download filter", DLFILTER_LABELS, ARRAYSIZE(DLFILTER_LABELS), &pGeneral->iDlFilter);
+	NeoUI::RingBoxBool(L"Streamer mode", &pGeneral->bStreamerMode);
 }
 
 void NeoSettings_Keys(NeoSettings *ns)

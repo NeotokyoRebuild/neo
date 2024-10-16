@@ -60,6 +60,10 @@ BEGIN_PREDICTION_DATA( C_PlayerResource )
 
 END_PREDICTION_DATA()	
 
+#ifdef NEO
+extern ConVar neo_cl_streamermode;
+#endif
+
 C_PlayerResource *g_PR;
 
 IGameResources * GameResources( void ) { return g_PR; }
@@ -187,6 +191,11 @@ const char *C_PlayerResource::GetPlayerName( int iIndex )
 	}
 
 #ifdef NEO
+	if (neo_cl_streamermode.GetBool())
+	{
+		return STREAMERMODE_NAMES[iIndex];
+	}
+
 	const bool clientWantNeoName = C_NEO_Player::GetLocalNEOPlayer()->ClientWantNeoName();
 	const int dupeIdx = m_iNeoNameDupeIdx[iIndex];
 

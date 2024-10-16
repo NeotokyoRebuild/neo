@@ -42,6 +42,7 @@ static CDllDemandLoader g_GameUIDLL("GameUI");
 
 extern ConVar neo_name;
 extern ConVar cl_onlysteamnick;
+extern ConVar neo_cl_streamermode;
 
 CNeoRoot *g_pNeoRoot = nullptr;
 void NeoToggleconsole();
@@ -576,7 +577,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
 		ISteamUser *steamUser = steamapicontext->SteamUser();
 		ISteamFriends *steamFriends = steamapicontext->SteamFriends();
-		if (steamUser && steamFriends)
+		if (steamUser && steamFriends && !neo_cl_streamermode.GetBool())
 		{
 			const int iSteamPlaceXStart = iRightXPos;
 
