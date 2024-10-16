@@ -1524,6 +1524,7 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 			{
 				bool bHasPlayersInList = false;
 				bool bHasUnreadyPlayers = false;
+				const bool bIsStreamer = pNeoCmdPlayer->m_bClientStreamermode;
 				char szPrintText[((MAX_PLAYER_NAME_LENGTH + 1) * MAX_PLAYERS) + 32];
 				szPrintText[0] = '\0';
 				ReadyPlayers readyPlayers = {};
@@ -1539,31 +1540,34 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 						readyPlayers.array[pNeoOtherPlayer->GetTeamNumber()] += bPlayerReady;
 						if (!bHasPlayersInList)
 						{
-							V_strcat_safe(szPrintText, "Ready list:\n");
+							if (!bIsStreamer) V_strcat_safe(szPrintText, "Ready list:\n");
 							bHasPlayersInList = true;
 						}
 
 						V_strcat_safe(szPrintText, pNeoOtherPlayer->GetNeoPlayerName(pNeoCmdPlayer));
 						if (bPlayerReady)
 						{
-							V_strcat_safe(szPrintText, " [READY]");
+							if (!bIsStreamer) V_strcat_safe(szPrintText, " [READY]");
 						}
 						else
 						{
-							V_strcat_safe(szPrintText, " [NOT READY]");
+							if (!bIsStreamer) V_strcat_safe(szPrintText, " [NOT READY]");
 							bHasUnreadyPlayers = true;
 						}
-						V_strcat_safe(szPrintText, "\n");
+						if (!bIsStreamer) V_strcat_safe(szPrintText, "\n");
 					}
 				}
-				if (bHasPlayersInList)
+				if (!bIsStreamer && bHasPlayersInList)
 				{
 					ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, szPrintText);
 				}
 
-				if (!bHasUnreadyPlayers)
+				if (bIsStreamer || !bHasUnreadyPlayers)
 				{
-					ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, "All players are ready.");
+					if (!bHasUnreadyPlayers)
+					{
+						ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, "All players are ready.");
+					}
 					if (readyPlayers.array[TEAM_JINRAI] < iThres || readyPlayers.array[TEAM_NSF] < iThres)
 					{
 						const int iNeedJin = max(0, iThres - readyPlayers.array[TEAM_JINRAI]);
@@ -2466,6 +2470,8 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 		updateDupeCheck = true;
 	}
 	pNEOPlayer->SetClientWantNeoName(clientAllowsNeoName);
+	const auto optClStreamerMode = StrToInt(engine->GetClientConVarValue(engine->IndexOfEdict(pNEOPlayer->edict()), "neo_cl_streamermode"));
+	pNEOPlayer->m_bClientStreamermode = (optClStreamerMode && *optClStreamerMode);
 
 	const char *pszName = pszSteamName;
 	const char *pszOldName = pPlayer->GetPlayerName();
@@ -2481,7 +2487,17 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 				char text[256];
 				Q_snprintf(text, sizeof(text), "%s changed name to %s\n", pszOldName, pszName);
 
-				UTIL_ClientPrintAll(HUD_PRINTTALK, text);
+				CRecipientFilter filterNonStreamers;
+				filterNonStreamers.MakeReliable();
+				for (int i = 1; i <= gpGlobals->maxClients; ++i)
+				{
+					auto neoPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(i));
+					if (neoPlayer && !neoPlayer->m_bClientStreamermode)
+					{
+						filterNonStreamers.AddRecipient(neoPlayer);
+					}
+				}
+				UTIL_ClientPrintFilter(filterNonStreamers, HUD_PRINTTALK, text);
 
 				IGameEvent *event = gameeventmanager->CreateEvent("player_changename");
 				if (event)

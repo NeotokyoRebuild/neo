@@ -126,6 +126,7 @@ public:
 
 	void Weapon_AimToggle(CNEOBaseCombatWeapon *pWep, const NeoWeponAimToggleE toggleType);
 
+	const char *InternalGetNeoPlayerName(const CNEO_Player *viewFrom = nullptr) const;
 	// "neo_name" if available otherwise "name"
 	// Set "viewFrom" if fetching the name in the view of another player
 	const char *GetNeoPlayerName(const CNEO_Player *viewFrom = nullptr) const;
@@ -261,6 +262,7 @@ public:
 	bool m_bIsPendingTKKick = false; // To not spam the kickid ConCommand
 	bool m_bDoNotShowDmgInfoMenu = false;
 	EMenuSelectType m_eMenuSelectType = MENU_SELECT_TYPE_NONE;
+	bool m_bClientStreamermode = false;
 
 private:
 	bool m_bFirstDeathTick;

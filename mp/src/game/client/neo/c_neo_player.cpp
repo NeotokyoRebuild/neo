@@ -200,6 +200,8 @@ USER_MESSAGE_REGISTER(IdleRespawnShowMenu);
 ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
 	"Whether to display HL2 style ammo/health info near crosshair.",
 	true, 0.0f, true, 1.0f);
+ConVar neo_cl_streamermode("neo_cl_streamermode", "0", FCVAR_ARCHIVE | FCVAR_USERINFO, "Streamer mode turns player names into generic names and hide avatars.", true, 0.0f, true, 1.0f);
+ConVar neo_cl_streamermode_autodetect_obs("neo_cl_streamermode_autodetect_obs", "0", FCVAR_ARCHIVE, "Automatically turn neo_cl_streamermode on if OBS was detected on startup.", true, 0.0f, true, 1.0f);
 
 class NeoLoadoutMenu_Cb : public ICommandCallback
 {
@@ -553,7 +555,7 @@ int C_NEO_Player::GetAttackersScores(const int attackerIdx) const
 	return min(m_rfAttackersScores.Get(attackerIdx), 100);
 }
 
-const char *C_NEO_Player::GetNeoPlayerName() const
+const char *C_NEO_Player::InternalGetNeoPlayerName() const
 {
 	const int dupePos = m_szNameDupePos;
 	const bool localWantNeoName = GetLocalNEOPlayer()->ClientWantNeoName();
@@ -583,6 +585,20 @@ const char *C_NEO_Player::GetNeoPlayerName() const
 		return m_szNeoNameWDupeIdx;
 	}
 	return stndName;
+}
+
+const char *C_NEO_Player::GetNeoPlayerName() const
+{
+	if (neo_cl_streamermode.GetBool() && !IsLocalPlayer())
+	{
+		[[maybe_unused]] uchar32 u32Out;
+		bool bError = false;
+		const char *pSzName = InternalGetNeoPlayerName();
+		const int iSize = Q_UTF8ToUChar32(pSzName, u32Out, bError);
+		if (!bError) V_memcpy(gStreamerModeNames[entindex()], pSzName, iSize);
+		return gStreamerModeNames[entindex()];
+	}
+	return InternalGetNeoPlayerName();
 }
 
 bool C_NEO_Player::ClientWantNeoName() const

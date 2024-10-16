@@ -32,6 +32,7 @@ ConVar neo_cl_squad_hud_original("neo_cl_squad_hud_original", "0", FCVAR_ARCHIVE
 
 ConVar neo_cl_squad_hud_star_scale("neo_cl_squad_hud_star_scale", "0", FCVAR_ARCHIVE, "Scaling to apply from 1080p, 0 disables scaling");
 extern ConVar neo_sv_dm_win_xp;
+extern ConVar neo_cl_streamermode;
 
 namespace {
 constexpr int Y_POS = 2;
@@ -775,13 +776,18 @@ void CNEOHud_RoundState::UpdatePlayerAvatar(int playerIndex)
 
 void CNEOHud_RoundState::SetTextureToAvatar(int playerIndex)
 {
+	if (neo_cl_streamermode.GetBool())
+	{
+		return;
+	}
+
 	player_info_t pi;
 	if (!engine->GetPlayerInfo(playerIndex, &pi))
 		return;
 	
 	if (!pi.friendsID)
 		return;
-	
+
 	CSteamID steamIDForPlayer(pi.friendsID, 1, steamapicontext->SteamUtils()->GetConnectedUniverse(), k_EAccountTypeIndividual);
 	const int mapIndex = m_mapAvatarsToImageList.Find(steamIDForPlayer);
 	if ((mapIndex == m_mapAvatarsToImageList.InvalidIndex()))

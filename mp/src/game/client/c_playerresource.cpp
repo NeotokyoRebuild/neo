@@ -60,6 +60,10 @@ BEGIN_PREDICTION_DATA( C_PlayerResource )
 
 END_PREDICTION_DATA()	
 
+#ifdef NEO
+extern ConVar neo_cl_streamermode;
+#endif
+
 C_PlayerResource *g_PR;
 
 IGameResources * GameResources( void ) { return g_PR; }
@@ -187,6 +191,15 @@ const char *C_PlayerResource::GetPlayerName( int iIndex )
 	}
 
 #ifdef NEO
+	if (neo_cl_streamermode.GetBool() && !IsLocalPlayer(iIndex))
+	{
+		[[maybe_unused]] uchar32 u32Out;
+		bool bError = false;
+		const int iSize = Q_UTF8ToUChar32(m_szName[iIndex], u32Out, bError);
+		if (!bError) V_memcpy(gStreamerModeNames[iIndex], m_szName[iIndex], iSize);
+		return gStreamerModeNames[iIndex];
+	}
+
 	const bool clientWantNeoName = C_NEO_Player::GetLocalNEOPlayer()->ClientWantNeoName();
 	const int dupeIdx = m_iNeoNameDupeIdx[iIndex];
 

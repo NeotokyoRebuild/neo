@@ -155,6 +155,7 @@ public:
 	int GetAttackersScores(const int attackerIdx) const;
 	int GetAttackerHits(const int attackerIdx) const;
 
+	const char *InternalGetNeoPlayerName() const;
 	const char *GetNeoPlayerName() const;
 	bool ClientWantNeoName() const;
 
