@@ -297,6 +297,17 @@ bool CTraceFilterSimple::ShouldHitEntity( IHandleEntity *pHandleEntity, int cont
 
 	// Don't test if the game code tells us we should ignore this collision...
 	CBaseEntity *pEntity = EntityFromEntityHandle( pHandleEntity );
+#ifdef NEO
+	if (m_collisionGroup == COLLISION_GROUP_PLAYER_MOVEMENT && m_pPassEnt && pEntity->IsPlayer())
+	{
+		const CBaseEntity *pEntity2 = EntityFromEntityHandle(m_pPassEnt);
+		engine->Con_NPrintf(0, "collision group: %i", m_collisionGroup);
+		if (pEntity2->IsPlayer() && pEntity->GetTeamNumber() != pEntity2->GetTeamNumber())
+		{
+			return true;
+		}
+	}
+#endif
 	if ( !pEntity )
 		return false;
 	if ( !pEntity->ShouldCollide( m_collisionGroup, contentsMask ) )
