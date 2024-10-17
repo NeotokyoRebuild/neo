@@ -34,7 +34,9 @@ public:
 	float				GetZoom( void );
 	bool				IsZoomed( void )	{ return m_HL2Local.m_bZooming; }
 
+#ifndef NEO
 	bool				IsSprinting( void ) { return m_HL2Local.m_bitsActiveDevices & bits_SUIT_DEVICE_SPRINT; }
+#endif
 	bool				IsFlashlightActive( void ) { return m_HL2Local.m_bitsActiveDevices & bits_SUIT_DEVICE_FLASHLIGHT; }
 	bool				IsBreatherActive( void ) { return m_HL2Local.m_bitsActiveDevices & bits_SUIT_DEVICE_BREATHER; }
 
