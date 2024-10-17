@@ -2253,6 +2253,10 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 
 int CNEO_Player::GetAttackersScores(const int attackerIdx) const
 {
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_DM || NEORules()->GetGameType() == NEO_GAME_TYPE_TDM)
+	{
+		return m_rfAttackersScores.Get(attackerIdx);
+	}
 	return min(m_rfAttackersScores.Get(attackerIdx), 100);
 }
 
