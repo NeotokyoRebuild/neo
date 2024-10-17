@@ -54,7 +54,9 @@ enum RootState
 	STATE_SERVERDETAILS,
 	STATE_PLAYERLIST,
 
-	STATE_KEYCAPTURE,
+	// Those that uses CNeoRoot::MainLoopPopup only starts here
+	STATE__POPUPSTART,
+	STATE_KEYCAPTURE = STATE__POPUPSTART,
 	STATE_CONFIRMSETTINGS,
 	STATE_QUIT,
 	STATE_SERVERPASSWORD,
@@ -190,6 +192,7 @@ public:
 	MESSAGE_FUNC_CHARPTR(OnFileSelected, "FileSelected", fullpath);
 
 	bool m_bOnLoadingScreen = false;
+	int m_iSavedYOffsets[NeoUI::MAX_SECTIONS] = {};
 };
 
 extern CNeoRoot *g_pNeoRoot;
