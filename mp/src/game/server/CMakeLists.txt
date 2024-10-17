@@ -1328,6 +1328,8 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_misc.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_misc.h
     neo/neo_client.cpp
     neo/neo_detpack.cpp
     neo/neo_detpack.h
@@ -1344,6 +1346,8 @@ target_sources_grouped(
     neo/neo_te_tocflash.cpp
     neo/neo_te_tocflash.h
     neo/neo_tracefilter_collisiongroupdelta.h
+    neo/neo_dm_spawn.cpp
+    neo/neo_dm_spawn.h
 )
 
 target_sources_grouped(

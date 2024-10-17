@@ -60,11 +60,12 @@ private:
 	int m_iSmallFontHeight = 0;
 
 	// Center Box info
-	wchar_t m_wszRoundUnicode[9] = {};
+	wchar_t m_wszRoundUnicode[12] = {};
+	int m_iWszRoundUCSize = 0;
 	wchar_t m_wszTime[6] = {};
 	wchar_t m_wszLeftTeamScore[3] = {};
 	wchar_t m_wszRightTeamScore[3] = {};
-	wchar_t m_wszPlayersAliveUnicode[9] = {};
+	wchar_t m_wszPlayersAliveUnicode[16] = {};
 	const wchar_t *m_pWszStatusUnicode = nullptr;
 	int m_iStatusUnicodeSize = 0;
 	wchar_t m_wszGameTypeDescription[MAX_GAME_TYPE_OBJECTIVE_LENGTH] = {};

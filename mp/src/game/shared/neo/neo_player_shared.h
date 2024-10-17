@@ -301,4 +301,14 @@ struct IntDim
 	int h;
 };
 
+#ifdef CLIENT_DLL
+struct PlayerXPInfo
+{
+	int idx;
+	int xp;
+	int deaths;
+};
+void DMClSortedPlayers(PlayerXPInfo (*pPlayersOrder)[MAX_PLAYERS + 1], int *piTotalPlayers);
+#endif
+
 #endif // NEO_PLAYER_SHARED_H

@@ -77,6 +77,7 @@ enum TextStyle
 
 static constexpr int FOCUSOFF_NUM = -1000;
 static constexpr int MAX_SECTIONS = 5;
+static constexpr int SIZEOF_SECTIONS = sizeof(int) * MAX_SECTIONS;
 
 struct Dim
 {
