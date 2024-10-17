@@ -814,11 +814,6 @@ int ClientModeShared::HandleSpectatorKeyInput( int down, ButtonCode_t keynum, co
 #ifdef GLOWS_ENABLE
 	else if (down && pszCurrentBinding && Q_strcmp(pszCurrentBinding, "+attack2") == 0)
 	{
-		if (GetLocalPlayerTeam() != TEAM_SPECTATOR)
-		{ // Can't use xray when dead spectating friends
-			return 0;
-		}
-
 		ConVar* glow_outline_effect_enable = cvar->FindVar("glow_outline_effect_enable");
 		if (!glow_outline_effect_enable)
 			return 0;
@@ -829,7 +824,7 @@ int ClientModeShared::HandleSpectatorKeyInput( int down, ButtonCode_t keynum, co
 			engine->ExecuteClientCmd("glow_outline_effect_enable 1");
 
 		bool enabled = glow_outline_effect_enable->GetBool();
-		for (int i = 0; i < MAX_PLAYERS; i++)
+		for (int i = 1; i <= MAX_PLAYERS; i++)
 		{
 			if (auto player = UTIL_PlayerByIndex(i))
 			{
@@ -1209,7 +1204,7 @@ void ClientModeShared::FireGameEvent( IGameEvent *event )
 			pPlayer->TeamChange( team );
 #ifdef NEO
 			// Switch off Xray when switching teams
-			for (int i = 0; i < MAX_PLAYERS; i++)
+			for (int i = 1; i <= MAX_PLAYERS; i++)
 			{
 				if (auto player = UTIL_PlayerByIndex(i))
 				{
