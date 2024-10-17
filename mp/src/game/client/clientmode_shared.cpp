@@ -1202,16 +1202,6 @@ void ClientModeShared::FireGameEvent( IGameEvent *event )
 		{
 			// that's me
 			pPlayer->TeamChange( team );
-#ifdef NEO
-			// Switch off Xray when switching teams
-			for (int i = 1; i <= MAX_PLAYERS; i++)
-			{
-				if (auto player = UTIL_PlayerByIndex(i))
-				{
-					player->SetClientSideGlowEnabled(false);
-				}
-			}
-#endif
 		}
 	}
 #ifdef NEO
