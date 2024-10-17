@@ -5,9 +5,9 @@ WeaponData
 	// Weapon data is loaded by both the Game and Client DLLs.
 	"printname"		"M41L"
 	"BulletCharacter"	"c"
-	"viewmodel"		"models/weapons/v_jinrai_mosok41s.mdl"
-	"team2viewmodel"	"models/weapons/v_nsf_mosok41s.mdl"
-	"playermodel"		"models/weapons/w_mosok41s.mdl"
+	"viewmodel"		"models/weapons/v_jinrai_mosok41l.mdl"
+	"team2viewmodel"	"models/weapons/v_nsf_mosok41l.mdl"
+	"playermodel"		"models/weapons/w_mosok41l.mdl"
 	"anim_prefix"		"m4"
 	"bucket"		"0"
 	"bucket_position"	"0"
@@ -107,11 +107,11 @@ WeaponData
 		}
 		"crosshair"
 		{
-				"file"		"vgui/hud/crosshair"
+				"file"		"vgui/hud/scopes/scope03"
 				"x"		"0"
 				"y"		"0"
-				"width"		"128"
-				"height"	"128"
+				"width"		"1024"
+				"height"	"1024"
 		}
 		"autoaim"
 		{
