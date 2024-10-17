@@ -3174,6 +3174,12 @@ int C_BaseAnimating::DrawModel( int flags )
 		{
 			extraFlags |= STUDIO_GENERATE_STATS;
 		}
+#ifdef NEO
+		if (flags & STUDIO_IGNORE_NEO_EFFECTS)
+		{
+			extraFlags |= STUDIO_IGNORE_NEO_EFFECTS;
+		}
+#endif
 
 		// Necessary for lighting blending
 		CreateModelInstance();
