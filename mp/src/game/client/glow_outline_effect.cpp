@@ -307,12 +307,32 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 		stencilState.SetStencilState( pRenderContext );
 
 		// Draw quad
+#ifdef NEO
 		pRenderContext->DrawScreenSpaceRectangle( pMatHaloAddToScreen, 0, 0, nViewportWidth, nViewportHeight,
+			-0.25f, -0.25f, nSrcWidth / 4 - 1, nSrcHeight / 4 - 1,
+			pRtQuarterSize1->GetActualWidth(),
+			pRtQuarterSize1->GetActualHeight() );
+
+		pRenderContext->DrawScreenSpaceRectangle(pMatHaloAddToScreen, 0, 0, nViewportWidth, nViewportHeight,
+			0.25f, 0.25f, nSrcWidth / 4 - 1, nSrcHeight / 4 - 1,
+			pRtQuarterSize1->GetActualWidth(),
+			pRtQuarterSize1->GetActualHeight());
+
+		stencilStateDisable.SetStencilState( pRenderContext );
+
+		pDimVar->SetFloatValue(0.15f);
+		pRenderContext->DrawScreenSpaceRectangle(pMatHaloAddToScreen, 0, 0, nViewportWidth, nViewportHeight,
+			0, 0, nSrcWidth / 4 - 1, nSrcHeight / 4 - 1,
+			pRtQuarterSize1->GetActualWidth(),
+			pRtQuarterSize1->GetActualHeight());
+#else
+		pRenderContext->DrawScreenSpaceRectangle(pMatHaloAddToScreen, 0, 0, nViewportWidth, nViewportHeight,
 			0.0f, -0.5f, nSrcWidth / 4 - 1, nSrcHeight / 4 - 1,
 			pRtQuarterSize1->GetActualWidth(),
 			pRtQuarterSize1->GetActualHeight() );
 
 		stencilStateDisable.SetStencilState( pRenderContext );
+#endif
 	}
 }
 
