@@ -166,10 +166,11 @@ void C_BaseCombatCharacter::UpdateGlowEffect( void )
 #ifdef NEO
 		NEORules()->GetTeamGlowColor(GetTeamNumber(), r, g, b);
 		SetGlowEffectColor(r, g, b);
+		m_pGlowEffect = new CGlowObject( this, Vector( r, g, b ), 1.0, true, true );
 #else
 		GetGlowEffectColor( &r, &g, &b );
-#endif
 		m_pGlowEffect = new CGlowObject( this, Vector( r, g, b ), 1.0, true );
+#endif
 	}
 }
 
