@@ -98,16 +98,11 @@ void CWeaponKnife::PrimaryAttack()
 	// Move other players back to history positions based on local player's lag
 	lagcompensation->StartLagCompensation(pPlayer, pPlayer->GetCurrentCommand());
 #endif
-	Swing(false);
+	Swing();
 #ifndef CLIENT_DLL
 	// Move other players back to history positions based on local player's lag
 	lagcompensation->FinishLagCompensation(pPlayer);
 #endif
-}
-
-void CWeaponKnife::SecondaryAttack()
-{
-	Swing(true);
 }
 
 bool CWeaponKnife::CanBePickedUpByClass(int classId)
@@ -129,7 +124,7 @@ bool CWeaponKnife::IsViewable()
 }
 #endif
 
-void CWeaponKnife::Swing(int bIsSecondary)
+void CWeaponKnife::Swing()
 {
 	auto pOwner = static_cast<CNEO_Player*>(GetOwner());
 	if (!pOwner)
