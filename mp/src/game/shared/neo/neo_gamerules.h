@@ -363,6 +363,7 @@ private:
 	bool m_bTeamBeenAwardedDueToCapPrevent = false;
 	int m_arrayiEntPrevCap[MAX_PLAYERS + 1]; // This is to check for cap-prevention workaround attempts
 	int m_iEntPrevCapSize = 0;
+	int m_iPrintHelpCounter = 0;
 #endif
 	CNetworkVar(int, m_nRoundStatus);
 	CNetworkVar(int, m_nGameTypeSelected);

@@ -25,6 +25,7 @@
 	#include "player_resource.h"
 	#include "inetchannelinfo.h"
 	#include "neo_dm_spawn.h"
+	#include "neo_misc.h"
 
 extern ConVar weaponstay;
 #endif
@@ -1393,7 +1394,7 @@ bool CNEORules::ReadyUpPlayerIsReady(CNEO_Player *pNeoPlayer) const
 void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat)
 {
 	const bool bHasCmds = neo_sv_readyup_lobby.GetBool();
-	if (!bHasCmds || !pNeoCmdPlayer || !pSzChat || pSzChat[0] != '!') return;
+	if (!bHasCmds || !pNeoCmdPlayer || !pSzChat || pSzChat[0] != '.') return;
 	++pSzChat;
 
 	if (V_strcmp(pSzChat, "help") == 0)
@@ -1402,17 +1403,17 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 		V_sprintf_safe(szHelpText, "Available commands:\n%s",
 					   neo_sv_readyup_lobby.GetBool() ?
 						   "Ready up commands (only available while waiting for players):\n"
-						   "!ready - Ready up yourself\n"
-						   "!unready - Unready yourself\n"
-						   "!overridelimit - Override players amount restriction\n"
-						   "!playersnotready - List players that are not ready\n"
+						   ".ready - Ready up yourself\n"
+						   ".unready - Unready yourself\n"
+						   ".start - Override players amount restriction\n"
+						   ".readylist - List players that are not ready\n"
 						 : "");
 		ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, szHelpText);
 	}
 
 	if (neo_sv_readyup_lobby.GetBool() && m_nRoundStatus != NeoRoundStatus::Idle)
 	{
-		for (const auto pSzCheck : {"ready", "unready", "overridelimit", "playersnotready"})
+		for (const auto pSzCheck : {"ready", "unready", "start", "readylist"})
 		{
 			if (V_strcmp(pSzChat, pSzCheck) == 0)
 			{
@@ -1442,7 +1443,7 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 				m_readyAccIDs.Remove(steamID.GetAccountID());
 				ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, "You are now marked as unready.");
 			}
-			else if (V_strcmp(pSzChat, "overridelimit") == 0)
+			else if (V_strcmp(pSzChat, "start") == 0)
 			{
 				const auto readyPlayers = FetchReadyPlayers();
 				if (readyPlayers.array[TEAM_JINRAI] > iThres && readyPlayers.array[TEAM_NSF] > iThres)
@@ -1455,35 +1456,48 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 					ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, "You must go past the threshold in order to set override.");
 				}
 			}
-			else if (V_strcmp(pSzChat, "playersnotready") == 0)
+			else if (V_strcmp(pSzChat, "readylist") == 0)
 			{
+				bool bHasPlayersInList = false;
 				bool bHasUnreadyPlayers = false;
 				char szPrintText[((MAX_PLAYER_NAME_LENGTH + 1) * MAX_PLAYERS) + 32];
 				szPrintText[0] = '\0';
 				ReadyPlayers readyPlayers = {};
 				for (int i = 1; i <= gpGlobals->maxClients; i++)
 				{
-					if (auto *pNeoOtherPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(i)))
+					auto *pNeoOtherPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(i));
+					if (pNeoOtherPlayer &&
+							(pNeoOtherPlayer->GetTeamNumber() == TEAM_JINRAI ||
+							 pNeoOtherPlayer->GetTeamNumber() == TEAM_NSF) &&
+							!pNeoOtherPlayer->IsHLTV())
 					{
 						const bool bPlayerReady = ReadyUpPlayerIsReady(pNeoOtherPlayer);
 						readyPlayers.array[pNeoOtherPlayer->GetTeamNumber()] += bPlayerReady;
-						if (!bPlayerReady)
+						if (!bHasPlayersInList)
 						{
-							if (!bHasUnreadyPlayers)
-							{
-								V_strcat_safe(szPrintText, "Players not ready:\n");
-								bHasUnreadyPlayers = true;
-							}
-							V_strcat_safe(szPrintText, pNeoOtherPlayer->GetNeoPlayerName(pNeoCmdPlayer));
-							V_strcat_safe(szPrintText, "\n");
+							V_strcat_safe(szPrintText, "Ready list:\n");
+							bHasPlayersInList = true;
 						}
+
+						V_strcat_safe(szPrintText, pNeoOtherPlayer->GetNeoPlayerName(pNeoCmdPlayer));
+						if (bPlayerReady)
+						{
+							V_strcat_safe(szPrintText, " [READY]");
+						}
+						else
+						{
+							V_strcat_safe(szPrintText, " [NOT READY]");
+							bHasUnreadyPlayers = true;
+						}
+						V_strcat_safe(szPrintText, "\n");
 					}
 				}
-				if (bHasUnreadyPlayers)
+				if (bHasPlayersInList)
 				{
 					ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, szPrintText);
 				}
-				else
+
+				if (!bHasUnreadyPlayers)
 				{
 					ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, "All players are ready.");
 					if (readyPlayers.array[TEAM_JINRAI] < iThres || readyPlayers.array[TEAM_NSF] < iThres)
@@ -1548,12 +1562,14 @@ void CNEORules::StartNextRound()
 	{
 		if (neo_sv_readyup_lobby.GetBool())
 		{
+			bool bPrintHelpInfo = (m_iPrintHelpCounter == 0);
 			if (!m_bIgnoreOverThreshold && (readyPlayers.array[TEAM_JINRAI] > iThres || readyPlayers.array[TEAM_NSF] > iThres))
 			{
 				char szPrint[128];
-				V_sprintf_safe(szPrint, "More players than %dv%d! Type !overridelimit to allow more players to start!",
+				V_sprintf_safe(szPrint, "More players than %dv%d! Type \".start\" to allow more players to start!",
 							   iThres, iThres);
 				UTIL_ClientPrintAll(HUD_PRINTTALK, szPrint);
+				bPrintHelpInfo = false;
 			}
 
 			// Untoggle the overrider if there's suddenly less players than threshold
@@ -1567,6 +1583,13 @@ void CNEORules::StartNextRound()
 						   iThres, iThres,
 						   readyPlayers.array[TEAM_JINRAI], readyPlayers.array[TEAM_NSF]);
 			UTIL_CenterPrintAll(szPrint);
+			if (bPrintHelpInfo)
+			{
+				V_sprintf_safe(szPrint, "Ready up lobby is on - Type \".help\" for list of commands.");
+				UTIL_ClientPrintAll(HUD_PRINTTALK, szPrint);
+			}
+			static constexpr int HELP_COUNT_NEXT_PRINT = 3;
+			m_iPrintHelpCounter = LoopAroundInArray(m_iPrintHelpCounter + 1, HELP_COUNT_NEXT_PRINT);
 		}
 		else
 		{
