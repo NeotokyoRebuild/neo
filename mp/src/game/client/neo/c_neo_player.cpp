@@ -438,6 +438,7 @@ C_NEO_Player::C_NEO_Player()
 	m_flLastAirborneJumpOkTime = 0;
 	m_flLastSuperJumpTime = 0;
 
+	m_bFirstAliveTick = true;
 	m_bFirstDeathTick = true;
 	m_bPreviouslyReloading = false;
 	m_bLastTickInThermOpticCamo = false;
@@ -593,7 +594,11 @@ int C_NEO_Player::GetAttackerHits(const int attackerIdx) const
 extern ConVar mat_neo_toc_test;
 int C_NEO_Player::DrawModel(int flags)
 {
-	int ret = 0;
+	if (flags & STUDIO_IGNORE_NEO_EFFECTS || !(flags & STUDIO_RENDER))
+	{
+		return BaseClass::DrawModel(flags);
+	}
+
 	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if (!pLocalPlayer)
 	{
@@ -604,6 +609,7 @@ int C_NEO_Player::DrawModel(int flags)
 	bool inMotionVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT;
 	bool inThermalVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT;
 
+	int ret = 0;
 	if (!IsCloaked() || inThermalVision)
 	{
 		ret |= BaseClass::DrawModel(flags);
@@ -615,6 +621,7 @@ int C_NEO_Player::DrawModel(int flags)
 		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::DrawModel(flags);
+		modelrender->ForcedMaterialOverride(nullptr);
 	}
 
 	auto vel = GetAbsVelocity().Length();
@@ -623,6 +630,7 @@ int C_NEO_Player::DrawModel(int flags)
 		IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::DrawModel(flags);
+		modelrender->ForcedMaterialOverride(nullptr);
 	}
 
 	else if (inThermalVision && !IsCloaked())
@@ -630,9 +638,9 @@ int C_NEO_Player::DrawModel(int flags)
 		IMaterial* pass = materials->FindMaterial("dev/thermal_third", TEXTURE_GROUP_MODEL);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::DrawModel(flags);
+		modelrender->ForcedMaterialOverride(nullptr);
 	}
 
-	modelrender->ForcedMaterialOverride(null);
 	return ret;
 }
 
@@ -847,7 +855,29 @@ void C_NEO_Player::PreThink( void )
 
 	if (IsAlive())
 	{
+		if (IsLocalPlayer() && m_bFirstAliveTick)
+		{
+			m_bFirstAliveTick = false;
+			// NEO TODO (Adam) since the stuff in C_NEO_PLAYER::Spawn() only runs the first time a person spawns in the map, would it be worth moving some of the stuff from there here instead?
+#ifdef GLOWS_ENABLE
+			// Disable client side glow effects of all players
+			for (int i = 1; i <= MAX_PLAYERS; i++)
+			{
+				if (auto player = UTIL_PlayerByIndex(i))
+				{
+					player->SetClientSideGlowEnabled(false);
+				}
+			}
+#endif // GLOWS_ENABLE
+		}
 		Lean();
+	}
+	else
+	{
+		if (IsLocalPlayer())
+		{
+			m_bFirstAliveTick = true;
+		}
 	}
 
 	// Eek. See rationale for this thing in CNEO_Player::PreThink
@@ -948,7 +978,7 @@ void C_NEO_Player::ClientThink(void)
 				}
 			}
 		}
-	}
+	}	
 }
 
 static ConVar neo_this_client_speed("neo_this_client_speed", "0", FCVAR_SPONLY);
@@ -1103,28 +1133,6 @@ void C_NEO_Player::TeamChange(int iNewTeam)
 	if (IsLocalPlayer())
 	{
 		engine->ClientCmd(classmenu.GetName());
-		if (iNewTeam == TEAM_SPECTATOR)
-		{
-			for (int i = 0; i < MAX_PLAYERS; i++)
-			{
-				auto player = UTIL_PlayerByIndex(i);
-				if (player)
-				{
-					player->SetClientSideGlowEnabled(true);
-				}
-			}
-		}
-		else
-		{
-			for (int i = 0; i < MAX_PLAYERS; i++)
-			{
-				auto player = UTIL_PlayerByIndex(i);
-				if (player)
-				{
-					player->SetClientSideGlowEnabled(false);
-				}
-			}
-		}
 	}
 	BaseClass::TeamChange(iNewTeam);
 }
