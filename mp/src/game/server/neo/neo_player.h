@@ -246,6 +246,7 @@ public:
 	int m_iTeamKillsInflicted = 0;
 	bool m_bIsPendingTKKick = false; // To not spam the kickid ConCommand
 	bool m_bDoNotShowDmgInfoMenu = false;
+	bool m_bClientStreamermode = false;
 
 private:
 	bool m_bFirstDeathTick;
