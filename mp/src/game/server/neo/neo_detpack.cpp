@@ -260,7 +260,7 @@ void CNEODeployedDetpack::Detonate(void)
 	}
 	BaseClass::Detonate();
 
-	SetThink(&CNEODeployedDetpack::SUB_Remove);
+	SetThink(&CBaseEntity::SUB_Remove);
 	SetNextThink(gpGlobals->curtime);
 }
 
