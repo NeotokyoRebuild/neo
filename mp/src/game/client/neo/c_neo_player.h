@@ -157,6 +157,7 @@ public:
 
 	const char *GetNeoPlayerName() const;
 	bool ClientWantNeoName() const;
+	const char *GetNeoClantag() const;
 
 	virtual void CalcDeathCamView( Vector& eyeOrigin, QAngle& eyeAngles, float& fov ) override;
 	virtual void TeamChange(int iNewTeam) override;
@@ -200,6 +201,7 @@ public:
 	CNetworkVar(int, m_iNeoStar);
 
 	CNetworkString(m_szNeoName, MAX_PLAYER_NAME_LENGTH);
+	CNetworkString(m_szNeoClantag, NEO_MAX_CLANTAG_LENGTH);
 	CNetworkVar(int, m_szNameDupePos);
 	CNetworkVar(bool, m_bClientWantNeoName);
 

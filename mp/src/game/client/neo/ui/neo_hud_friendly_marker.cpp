@@ -23,6 +23,8 @@ using vgui::surface;
 
 ConVar neo_friendly_marker_hud_scale_factor("neo_friendly_marker_hud_scale_factor", "0.5", FCVAR_USERINFO,
 	"Friendly player marker HUD element scaling factor", true, 0.01, false, 0);
+ConVar neo_cl_clantag_friendly_marker_spec_only("neo_cl_clantag_friendly_marker_spec_only", "1", FCVAR_USERINFO | FCVAR_ARCHIVE,
+												"Clantags only appear for specators.", true, 0.0f, true, 1.0f);
 
 DECLARE_NAMED_HUDELEMENT(CNEOHud_FriendlyMarker, neo_iff);
 
@@ -151,12 +153,10 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 
 	if (GetVectorInScreenSpace(pos, x, y))
 	{
-		auto playerName = player->GetNeoPlayerName();
-
 		const float fadeTextMultiplier = GetFadeValueTowardsScreenCentre(x, y);
 		if (fadeTextMultiplier > 0.001f)
 		{
-			static constexpr int MAX_MARKER_STRLEN = 48 + 1;
+			static constexpr int MAX_MARKER_STRLEN = 64 + 1;
 			const bool localPlayerAlive = const_cast<C_NEO_Player *>(localPlayer)->IsAlive();
 			const bool localPlayerSpec = (localPlayer->GetTeamNumber() < FIRST_GAME_TEAM);
 
@@ -176,7 +176,19 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 			};
 
 			// Draw player's name and health
-			V_snprintf(textASCII, MAX_MARKER_STRLEN, "%s", playerName);
+			auto playerName = player->GetNeoPlayerName();
+
+			// Only show clan tag if spectator/no playing and this player has a clantag
+			const char *playerClantag = player->GetNeoClantag();
+			if (playerClantag && playerClantag[0] &&
+					(!neo_cl_clantag_friendly_marker_spec_only.GetBool() || localPlayerSpec))
+			{
+				V_sprintf_safe(textASCII, "[%s] %s", playerClantag, playerName);
+			}
+			else
+			{
+				V_strcpy_safe(textASCII, playerName);
+			}
 			DisplayText(textASCII);
 
 			// Draw distance to player - Only if local player alive and same team
