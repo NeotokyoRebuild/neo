@@ -560,6 +560,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 	}
 
 	engine->ClientCmd_Unrestricted("host_writeconfig");
+	engine->ClientCmd_Unrestricted("mat_savechanges");
 }
 
 void NeoSettingsResetToDefault(NeoSettings *ns)
