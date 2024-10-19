@@ -124,6 +124,7 @@ ConVar sv_neo_can_change_classes_anytime("sv_neo_can_change_classes_anytime", "0
 ConVar sv_neo_change_suicide_player("sv_neo_change_suicide_player", "0", FCVAR_REPLICATED, "Kill the player if they change the team and they're alive.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_change_threshold_interval("sv_neo_change_threshold_interval", "0.25", FCVAR_REPLICATED, "The interval threshold limit in seconds before the player is allowed to change team.", true, 0.0f, true, 1000.0f);
 ConVar neo_sv_dm_max_class_dur("neo_sv_dm_max_class_dur", "10", FCVAR_REPLICATED, "The time in seconds when the player can change class on respawn during deathmatch.", true, 0.0f, true, 60.0f);
+ConVar neo_sv_warmup_godmode("neo_sv_warmup_godmode", "0", FCVAR_REPLICATED, "If enabled, everyone is invincible on idle and warmup.", true, 0.0f, true, 1.0f);
 
 void CNEO_Player::RequestSetClass(int newClass)
 {
@@ -2295,6 +2296,13 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 {
 	if (m_takedamage != DAMAGE_EVENTS_ONLY)
 	{
+		if (neo_sv_warmup_godmode.GetBool() &&
+				(NEORules()->GetRoundStatus() == NeoRoundStatus::Idle ||
+				 NEORules()->GetRoundStatus() == NeoRoundStatus::Warmup))
+		{
+			return 0;
+		}
+
 		// Dynamic cast, attacker might be prop/this player fallen
 		if (auto *attacker = dynamic_cast<CNEO_Player *>(info.GetAttacker()))
 		{
