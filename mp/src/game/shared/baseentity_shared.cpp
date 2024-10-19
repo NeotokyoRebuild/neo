@@ -2264,9 +2264,9 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 		Vector x0 = penetrationTrace.endpos + Vector(-0.5, 0, 0);
 		Vector x1 = penetrationTrace.endpos + Vector(0, -0.5, 0);
 		Vector x2 = penetrationTrace.endpos + Vector(0, 0, -0.5);
-		DebugDrawLine(x0, x0 + Vector(1, 0, 0), 0, 255, 0, 1, 30.f);
-		DebugDrawLine(x1, x1 + Vector(0, 1, 0), 0, 255, 0, 1, 30.f);
-		DebugDrawLine(x2, x2 + Vector(0, 0, 1), 0, 255, 0, 1, 30.f);
+		DebugDrawLine(x0, x0 + Vector(1, 0, 0), 255, 0, 0, 1, 30.f);
+		DebugDrawLine(x1, x1 + Vector(0, 1, 0), 255, 0, 0, 1, 30.f);
+		DebugDrawLine(x2, x2 + Vector(0, 0, 1), 255, 0, 0, 1, 30.f);
 	}
 
 	CBaseEntity::FireBullets(behindMaterialInfo);
