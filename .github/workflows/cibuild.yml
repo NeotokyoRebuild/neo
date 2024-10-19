@@ -214,7 +214,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO_INFO: ${{ github.repository }}
       run: |
-        # Delete old "latest"
+        # Delete old "latest" (delete step always returns true so that even if there's no release, it still uploads)
         gh release delete latest --cleanup-tag --yes --repo "$REPO_INFO" || true
         # Create new "latest"
         gh release create latest neo-*.zip --prerelease --title "Latest Master Build" --repo "$REPO_INFO"
