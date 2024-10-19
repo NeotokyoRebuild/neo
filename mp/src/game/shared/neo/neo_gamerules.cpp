@@ -1623,7 +1623,7 @@ void CNEORules::StartNextRound()
 	// extra stuff in there. But to keep it simple: just clear if it was a warmup.
 	const bool clearXP = (m_nRoundStatus == NeoRoundStatus::Warmup);
 	SetRoundStatus(NeoRoundStatus::PreRoundFreeze);
-
+	++m_iRoundNumber;
 
 	if (!GetGameType() || sv_neo_change_game_type_mid_round.GetBool())
 	{
@@ -1701,7 +1701,7 @@ void CNEORules::StartNextRound()
 
 	char RoundMsg[27];
 	static_assert(sizeof(RoundMsg) == sizeof("- CTG ROUND 99 STARTED -\n\0"), "RoundMsg requires to fit round numbers up to 2 digits");
-	V_sprintf_safe(RoundMsg, "- %s ROUND %d STARTED -\n", GetGameTypeName(), Min(99, ++m_iRoundNumber));
+	V_sprintf_safe(RoundMsg, "- %s ROUND %d STARTED -\n", GetGameTypeName(), Min(99, m_iRoundNumber.Get()));
 	UTIL_CenterPrintAll(RoundMsg);
 
 	SetGameRelatedVars();
