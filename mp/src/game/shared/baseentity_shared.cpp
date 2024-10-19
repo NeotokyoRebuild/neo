@@ -1635,8 +1635,10 @@ void NormalizeAngles(QAngle& angles)
 #endif
 
 #ifdef NEO
+#ifdef CLIENT_DLL
 ConVar cl_neo_bullet_trace("cl_neo_bullet_trace", "0", FCVAR_CHEAT, "Show bullet trace", true, 0, true, 1);
 ConVar cl_neo_bullet_trace_max_pen("cl_neo_bullet_trace_max_pen", "65", FCVAR_CHEAT, "How much pen does a bullet need to have to show up as a solid red line. Configure to the current weapon used, or leave on default to see differences in pen between weapons", true, 0.1, true, 999.f);
+#endif // CLIENT_DLL
 #endif // NEO
 void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 {
@@ -2035,10 +2037,12 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 			}
 		}
 #ifdef NEO
+#ifdef CLIENT_DLL
 		if (cl_neo_bullet_trace.GetBool())
 		{
 			DebugDrawLine(info.m_vecSrc, tr.endpos, 255, 255 * (1 - (info.m_flPenetration / cl_neo_bullet_trace_max_pen.GetFloat())), 0, 1, 30.f);
 		}
+#endif // CLIENT_DLL
 #endif // NEO
 
 #ifndef NEO
@@ -2200,7 +2204,8 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 	{ // If hit entity is player 1. We don't want them taking damage more than once 2. Tracelines get stuck inside of hitboxes at the start of the traceline unlike other objects where they pass straight through
 		static_cast<CBulletsTraceFilter*>(pTraceFilter)->AddEntityToIgnore(tr.m_pEnt);
 	}
-	
+
+#ifdef CLIENT_DLL
 	if (cl_neo_bullet_trace.GetBool())
 	{ // Entrance (GREEN STAR)
 		Vector x0 = tr.endpos + Vector(-0.5, 0, 0);
@@ -2210,6 +2215,7 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 		DebugDrawLine(x1, x1 + Vector(0, 1, 0), 0, 255, 0, 1, 30.f);
 		DebugDrawLine(x2, x2 + Vector(0, 0, 1), 0, 255, 0, 1, 30.f);
 	}
+#endif // CLIENT_DLL
 
 	// Find the furthest point along the bullets trajectory
 	Vector	testPos = tr.endpos + (vecDir.Normalized() * MAX_PENETRATION_DEPTH);
@@ -2259,6 +2265,7 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 	behindMaterialInfo.m_nFlags = info.m_nFlags;
 	behindMaterialInfo.m_flPenetration = info.m_flPenetration - penUsed;
 
+#ifdef CLIENT_DLL
 	if (cl_neo_bullet_trace.GetBool())
 	{ // Exit (RED STAR)
 		Vector x0 = penetrationTrace.endpos + Vector(-0.5, 0, 0);
@@ -2268,6 +2275,7 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 		DebugDrawLine(x1, x1 + Vector(0, 1, 0), 255, 0, 0, 1, 30.f);
 		DebugDrawLine(x2, x2 + Vector(0, 0, 1), 255, 0, 0, 1, 30.f);
 	}
+#endif //CLIENT_DLL
 
 	CBaseEntity::FireBullets(behindMaterialInfo);
 }
