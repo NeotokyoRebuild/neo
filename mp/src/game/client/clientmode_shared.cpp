@@ -816,13 +816,12 @@ int ClientModeShared::HandleSpectatorKeyInput( int down, ButtonCode_t keynum, co
 		else
 			engine->ExecuteClientCmd("glow_outline_effect_enable 1");
 
-		for (int i = 0; i < MAX_PLAYERS; i++)
+		bool enabled = glow_outline_effect_enable->GetBool();
+		for (int i = 1; i <= MAX_PLAYERS; i++)
 		{
-			auto player = UTIL_PlayerByIndex(i);
-			if (player)
+			if (auto player = UTIL_PlayerByIndex(i))
 			{
-				auto enable = glow_outline_effect_enable->GetBool();
-				player->SetClientSideGlowEnabled(enable);
+				player->SetClientSideGlowEnabled(enabled);
 			}
 		}
 		return 0;
