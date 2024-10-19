@@ -11,7 +11,7 @@ WeaponData
 	"anim_prefix"		"ZR68C" //zr68c
 	"bucket"		"0"
 	"bucket_position"	"0"
-	"Damage"		"22"
+	"Damage"		"17"
 	"Penetration"		"28.0"
 	"CycleTime"		"0.08"		// time between shots
 	
