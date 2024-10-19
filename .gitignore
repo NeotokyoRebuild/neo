@@ -20,6 +20,7 @@ mp/game/neo/mapsrc
 mp/game/neo/materials
 mp/game/neo/particles
 mp/game/neo/shaders
+mp/game/neo/models
 
 # Any debug or user specific configs that shouldn't be pushed
 mp/game/neo/cfg/config.cfg
