@@ -215,7 +215,7 @@ jobs:
           REPO_INFO: ${{ github.repository }}
       run: |
         # Delete old "latest"
-        gh release delete latest --cleanup-tag --yes --repo "$REPO_INFO"
+        gh release delete latest --cleanup-tag --yes --repo "$REPO_INFO" || true
         # Create new "latest"
         gh release create latest neo-*.zip --prerelease --title "Latest Master Build" --repo "$REPO_INFO"
 
