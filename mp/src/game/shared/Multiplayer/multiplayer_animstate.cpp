@@ -1338,6 +1338,30 @@ int CMultiPlayerAnimState::CalcAimLayerSequence(Activity activity, bool bForceId
 		}
 	}
 
+	// NEO TODO (Adam) give classes missing animations
+	auto neoClass = static_cast<CNEO_Player*>(m_pPlayer)->m_iNeoClass;
+	if (neoClass != NEO_CLASS_RECON)
+	{ // Only recon has the detpack animations
+		if (!Q_strcmp(pWeapon->GetClassname(), "weapon_remotedet"))
+		{
+			pSuffix = "Grenade";
+		}
+	}
+	if (neoClass != NEO_CLASS_VIP)
+	{ // Only VIP has smac animations
+		if (!Q_strcmp(pSuffix, "smac"))
+		{
+			pSuffix = "srm";
+		}
+	}
+	if (neoClass == NEO_CLASS_VIP)
+	{ // VIP does not have ZR68C animations
+		if (!Q_strcmp(pSuffix, "ZR68C"))
+		{
+			pSuffix = "m4";
+		}
+	}
+
 	if (bForceIdle)
 	{
 		switch (activity)
@@ -1408,6 +1432,37 @@ int CMultiPlayerAnimState::CalcFireSequence()
 			(detpack->m_bThisDetpackHasBeenThrown && (gpGlobals->curtime > detpack->m_flNextPrimaryAttack + 0.005))))
 		{
 			pSuffix = "detremote";
+		}
+	}
+
+	// NEO TODO (Adam) give classes missing animations
+	auto neoClass = static_cast<CNEO_Player*>(m_pPlayer)->m_iNeoClass;
+	if (neoClass != NEO_CLASS_RECON)
+	{ // Only recon has the detpack animations
+		if (!Q_strcmp(pWeapon->GetClassname(), "weapon_remotedet"))
+		{
+			if (!Q_strcmp(pSuffix, "detpack"))
+			{ // BOOM
+				pSuffix = "Gren1";
+			}
+			else
+			{ // Avoid swinging the detpack when activating it
+				pSuffix = "SRM";
+			}
+		}
+	}
+	if (neoClass != NEO_CLASS_VIP)
+	{ // Only VIP has smac animations
+		if (!Q_strcmp(pSuffix, "smac"))
+		{
+			pSuffix = "srm";
+		}
+	}
+	if (neoClass == NEO_CLASS_VIP)
+	{ // VIP does not have ZR68C animations
+		if (!Q_strcmp(pSuffix, "ZR68C"))
+		{
+			pSuffix = "m4";
 		}
 	}
 
