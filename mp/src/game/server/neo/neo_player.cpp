@@ -1159,7 +1159,10 @@ void CNEO_Player::SoftSuicide(void)
 	IncrementFragCount(1);
 
 	// Gamerules event will decrement, so we cancel it here
-	m_iXP.GetForModify() += 1;
+	if (NEORules()->GetRoundStatus() != NeoRoundStatus::Pause)
+	{
+		m_iXP.GetForModify() += 1;
+	}
 }
 
 bool CNEO_Player::HandleCommand_JoinTeam( int team )
@@ -1197,8 +1200,13 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 		}
 		const int slot = atoi(args[1]);
 
-		if (m_iDmgMenuCurPage > 0)
+		switch (m_eMenuSelectType)
 		{
+		case MENU_SELECT_TYPE_DMG:
+			if (m_iDmgMenuCurPage <= 0)
+			{
+				return true;
+			}
 			switch (slot)
 			{
 			case DAMAGE_MENU_SELECT_DISMISS:
@@ -1206,6 +1214,7 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 			{
 				m_iDmgMenuCurPage = 0;
 				m_iDmgMenuNextPage = 0;
+				m_eMenuSelectType = MENU_SELECT_TYPE_NONE;
 				if (slot == DAMAGE_MENU_SELECT_DONOTSHOW)
 				{
 					m_bDoNotShowDmgInfoMenu = true;
@@ -1225,6 +1234,29 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 			default:
 				break;
 			}
+			break;
+		case MENU_SELECT_TYPE_PAUSE:
+			m_eMenuSelectType = MENU_SELECT_TYPE_NONE;
+			if (slot == PAUSE_MENU_SELECT_SHORT || slot == PAUSE_MENU_SELECT_LONG)
+			{
+				// When a pause requested, this will activate either:
+				// - If during freezetime, immediate pausing
+				// - If during live-round, after round finishes pausing
+				NEORules()->m_iPausingTeam = GetTeamNumber();
+				NEORules()->m_iPausingRound = NEORules()->roundNumber() + 1;
+				NEORules()->m_flPauseDur = (slot == PAUSE_MENU_SELECT_SHORT) ? 30.0f : 180.0f;
+
+				char szPauseMsg[128];
+				V_sprintf_safe(szPauseMsg, "Pause requested by %s. Pausing the match %s for %s.",
+							   (GetTeamNumber() == TEAM_JINRAI) ? "Jinrai" : "NSF",
+							   (NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze) ?
+								   "immediately" : "when the round ends",
+							   (slot == PAUSE_MENU_SELECT_SHORT) ? "30 seconds" : "3 minutes");
+				UTIL_ClientPrintAll(HUD_PRINTTALK, szPauseMsg);
+			}
+			break;
+		default:
+			break;
 		}
 
 		return true;
@@ -1304,6 +1336,7 @@ void CNEO_Player::ShowDmgInfo(char* infoStr, int infoStrSize)
 			tmpCh = infoStr[infoStrOffsetMax];
 			infoStr[infoStrOffsetMax] = '\0';
 		}
+		m_eMenuSelectType = MENU_SELECT_TYPE_DMG;
 		UserMessageBegin(filter, "ShowMenu");
 		{
 			// The key options available in bitwise (EX: 1 -> 1 << 0, 9 -> 1 << 8)
