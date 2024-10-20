@@ -180,7 +180,7 @@ public:
 
 private:
 	float GetActiveWeaponSpeedScale() const;
-	float GetBackwardsMovementPenaltyScale() const { return ((m_nButtons & IN_BACK) ? NEO_SLOW_MODIFIER : 1.0); }
+	float GetBackwardsMovementPenaltyScale() const { return ((m_nButtons & IN_BACK) ? (m_nButtons & (IN_MOVELEFT | IN_MOVERIGHT) ? NEO_SLOW_SIDE_MODIFIER : NEO_SLOW_MODIFIER) : 1.0); }
 
 private:
 	void CheckThermOpticButtons();

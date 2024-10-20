@@ -27,6 +27,7 @@
 // All of these should be able to stack create even slower speeds (at least in original NT)
 #define NEO_SPRINT_MODIFIER 1.6
 #define NEO_SLOW_MODIFIER 0.75
+#define NEO_SLOW_SIDE_MODIFIER 99.f/112.f
 
 #define NEO_BASE_NORM_SPEED 136
 #define NEO_BASE_SPRINT_SPEED (NEO_BASE_NORM_SPEED * NEO_SPRINT_MODIFIER)
