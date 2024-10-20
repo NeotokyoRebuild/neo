@@ -311,4 +311,24 @@ struct PlayerXPInfo
 void DMClSortedPlayers(PlayerXPInfo (*pPlayersOrder)[MAX_PLAYERS + 1], int *piTotalPlayers);
 #endif
 
+// NEO TODO: Ubuntu release names
+static constexpr const char *STREAMERMODE_NAMES[MAX_PLAYERS + 1] = {
+	"Warty Warthog",
+	"Hoary Hedgehog",
+	"Breezy Badger",
+	"Dapper Drake",
+	"Edgy Eft",
+	"Feisty Fawn",
+	"Gutsy Gibbon",
+	"Hardy Heron",
+	"Intrepid Ibex",
+	"Jaunty Jackalope",
+	"Karmic Koala",
+	"Lucid Lynx",
+	"Maverick Meerkat",
+	"Natty Narwhal",
+	"Oneiric Ocelot",
+	"Precise Pangolin",
+};
+
 #endif // NEO_PLAYER_SHARED_H

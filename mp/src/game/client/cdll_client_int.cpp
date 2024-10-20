@@ -176,6 +176,8 @@ extern vgui::IInputInternal *g_InputInternal;
 #include "ui/neo_loading.h"
 extern bool NeoRootCaptureESC();
 extern CNeoLoading *g_pNeoLoading;
+extern ConVar neo_cl_streamermode_autodetect_obs;
+bool g_bOBSDetected = false;
 
 #ifdef LINUX
 #include "neo_fixup_glshaders.h"
@@ -1273,6 +1275,51 @@ void CHLClient::PostInit()
 	}
 
 	NeoToggleConsoleEnforce();
+
+	// Detect OBS - Only on startup
+	if (neo_cl_streamermode_autodetect_obs.GetBool())
+	{
+		g_bOBSDetected = false;
+#ifdef LINUX
+		FileFindHandle_t findHdl;
+		for (const char *pszFilename = filesystem->FindFirst("/proc/*", &findHdl);
+			 pszFilename && !g_bOBSDetected;
+			 pszFilename = filesystem->FindNext(findHdl))
+		{
+			if (!filesystem->FindIsDirectory(findHdl))
+			{
+				continue;
+			}
+
+			char szCmdlinePath[256];
+			V_sprintf_safe(szCmdlinePath, "/proc/%s/cmdline", pszFilename);
+			if (!filesystem->FileExists(szCmdlinePath))
+			{
+				continue;
+			}
+
+			// NEO NOTE (nullsystem): At this point, cannot just do filesystem->ReadFile
+			// as it won't output anything. Instead just cat the file and fetch the line.
+			char szCmdCat[256 + 16];
+			V_sprintf_safe(szCmdCat, "cat \"%s\"", szCmdlinePath);
+			FILE *fp = popen(szCmdCat, "r");
+			if (fp)
+			{
+				char szCmdline[512] = {};
+				if (fgets(szCmdline, sizeof(szCmdline), fp))
+				{
+					// NEO TODO (nullsystem): Check on OBS flatpak, snaps, nix, and appimage.
+					// Could they give out different cmdline?
+					g_bOBSDetected = (V_strcmp(szCmdline, "obs") == 0);
+				}
+				pclose(fp);
+			}
+		}
+#else
+		// NEO TODO (nullsystem): Windows https://learn.microsoft.com/en-us/windows/win32/psapi/enumerating-all-processes
+#endif
+		ConVarRef("neo_cl_streamermode").SetValue(g_bOBSDetected);
+	}
 #endif
 }
 
