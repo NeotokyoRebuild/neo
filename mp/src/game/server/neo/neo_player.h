@@ -23,6 +23,20 @@ enum EDmgMenuSelect
 	DAMAGE_MENU_SELECT_DONOTSHOW = 9,
 };
 
+enum EPauseMenuSelect
+{
+	PAUSE_MENU_SELECT_SHORT = 1,
+	PAUSE_MENU_SELECT_LONG = 2,
+	PAUSE_MENU_SELECT_DISMISS = 3,
+};
+
+enum EMenuSelectType
+{
+	MENU_SELECT_TYPE_NONE = 0,
+	MENU_SELECT_TYPE_DMG,
+	MENU_SELECT_TYPE_PAUSE,
+};
+
 class CNEO_Player : public CHL2MP_Player
 {
 public:
@@ -246,6 +260,7 @@ public:
 	int m_iTeamKillsInflicted = 0;
 	bool m_bIsPendingTKKick = false; // To not spam the kickid ConCommand
 	bool m_bDoNotShowDmgInfoMenu = false;
+	EMenuSelectType m_eMenuSelectType = MENU_SELECT_TYPE_NONE;
 
 private:
 	bool m_bFirstDeathTick;

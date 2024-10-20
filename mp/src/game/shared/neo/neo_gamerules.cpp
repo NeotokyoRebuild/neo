@@ -96,6 +96,8 @@ ConVar neo_sv_readyup_autointermission("neo_sv_readyup_autointermission", "0", F
 
 // Both CLIENT_DLL + GAME_DLL, but server-side setting so it's replicated onto client to read the values
 ConVar neo_sv_readyup_lobby("neo_sv_readyup_lobby", "0", FCVAR_REPLICATED, "If enabled, players would need to ready up and match the players total requirements to start a game.", true, 0.0f, true, 1.0f);
+ConVar neo_sv_pausematch_enabled("neo_sv_pausematch_enabled", "0", FCVAR_REPLICATED, "If enabled, players will be able to pause the match mid-game.", true, 0.0f, true, 1.0f);
+ConVar neo_sv_pausematch_unpauseimmediate("neo_sv_pausematch_unpauseimmediate", "0", FCVAR_REPLICATED | FCVAR_CHEAT, "Testing only - If enabled, unpause will be immediate.", true, 0.0f, true, 1.0f);
 
 ConVar snd_victory_volume("snd_victory_volume", "0.33", FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_USERINFO, "Loudness of the victory jingle (0-1).", true, 0.0, true, 1.0);
 
@@ -106,6 +108,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 #ifdef CLIENT_DLL
 	RecvPropFloat(RECVINFO(m_flNeoNextRoundStartTime)),
 	RecvPropFloat(RECVINFO(m_flNeoRoundStartTime)),
+	RecvPropFloat(RECVINFO(m_flPauseEnd)),
 	RecvPropInt(RECVINFO(m_nRoundStatus)),
 	RecvPropInt(RECVINFO(m_nGameTypeSelected)),
 	RecvPropInt(RECVINFO(m_iRoundNumber)),
@@ -117,6 +120,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 #else
 	SendPropFloat(SENDINFO(m_flNeoNextRoundStartTime)),
 	SendPropFloat(SENDINFO(m_flNeoRoundStartTime)),
+	SendPropFloat(SENDINFO(m_flPauseEnd)),
 	SendPropInt(SENDINFO(m_nRoundStatus)),
 	SendPropInt(SENDINFO(m_nGameTypeSelected)),
 	SendPropInt(SENDINFO(m_iRoundNumber)),
@@ -629,15 +633,53 @@ void CNEORules::Think(void)
 {
 #ifdef GAME_DLL
 	const bool bIsIdleState = m_nRoundStatus == NeoRoundStatus::Idle || m_nRoundStatus == NeoRoundStatus::Warmup;
+	bool bIsPause = m_nRoundStatus == NeoRoundStatus::Pause;
 	if (bIsIdleState && gpGlobals->curtime > m_flNeoNextRoundStartTime)
 	{
 		StartNextRound();
 		return;
 	}
 
-	// Allow respawn if it's an idle, warmup round, or deathmatch-type gamemode
+	// Make the pause instant if we're still in freeze time
+	if (m_nRoundStatus == NeoRoundStatus::PreRoundFreeze && m_flPauseDur > 0.0f &&
+			m_iRoundNumber == (m_iPausingRound - 1))
+	{
+		SetRoundStatus(NeoRoundStatus::Pause);
+		bIsPause = true;
+		m_bPausedByPreRoundFreeze = true;
+		m_flNeoNextRoundStartTime = 0.0f;
+		m_flPauseEnd = gpGlobals->curtime + m_flPauseDur;
+	}
+
+	if (bIsPause)
+	{
+		if (gpGlobals->curtime >= m_flPauseEnd)
+		{
+			// NEO NOTE (nullsystem): If paused during freezetime, start on the round the freezetime was on
+			// otherwise start on the next since going into pause state do not update round number since.
+			if (m_bPausedByPreRoundFreeze)
+			{
+				--m_iRoundNumber;
+			}
+			m_bPausedByPreRoundFreeze = false;
+			m_bPausingTeamRequestedUnpause = false;
+			m_iPausingTeam = 0;
+			m_iPausingRound = 0;
+			m_flPauseDur = 0.0f;
+			m_flPauseEnd = 0.0f;
+			StartNextRound();
+			return;
+		}
+		else if (gpGlobals->curtime > m_flNeoNextRoundStartTime)
+		{
+			m_flNeoNextRoundStartTime = gpGlobals->curtime + 5.0f;
+			UTIL_CenterPrintAll("- MATCH IS CURRENTLY PAUSED -\n");
+		}
+	}
+
+	// Allow respawn if it's an idle, warmup round, pausing, or deathmatch-type gamemode
 	const bool bIsDMType = (m_nGameTypeSelected == NEO_GAME_TYPE_DM || m_nGameTypeSelected == NEO_GAME_TYPE_TDM);
-	if (bIsDMType || bIsIdleState)
+	if (bIsDMType || bIsIdleState || bIsPause)
 	{
 		CRecipientFilter filter;
 		filter.MakeReliable();
@@ -645,7 +687,7 @@ void CNEORules::Think(void)
 		for (int i = 1; i <= gpGlobals->maxClients; i++)
 		{
 			auto player = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(i));
-			if (player && player->IsDead() && player->DeathCount() > 0)
+			if (player && player->IsDead() && (bIsPause || player->DeathCount() > 0))
 			{
 				const int playerTeam = player->GetTeamNumber();
 				if ((playerTeam == TEAM_JINRAI || playerTeam == TEAM_NSF) && RespawnWithRet(player, false))
@@ -656,7 +698,7 @@ void CNEORules::Think(void)
 					player->m_bIneligibleForLoadoutPick = false;
 					player->SetTestMessageVisible(false);
 
-					if (!bIsIdleState && bIsDMType)
+					if (!bIsIdleState && !bIsPause && bIsDMType)
 					{
 						engine->ClientCommand(player->edict(), "loadoutmenu");
 					}
@@ -673,6 +715,11 @@ void CNEORules::Think(void)
 			UserMessageBegin(filter, "IdleRespawnShowMenu");
 			MessageEnd();
 		}
+	}
+
+	if (bIsPause)
+	{
+		return;
 	}
 
 	if (g_fGameOver)   // someone else quit the game already
@@ -1090,6 +1137,12 @@ void CNEORules::AwardRankUp(C_NEO_Player *pClient)
 void CNEORules::AwardRankUp(CNEO_Player *pClient)
 #endif
 {
+	Assert(m_nRoundStatus != NeoRoundStatus::Pause);
+	if (m_nRoundStatus == NeoRoundStatus::Pause)
+	{
+		return;
+	}
+
 	if (!pClient)
 	{
 		return;
@@ -1393,31 +1446,42 @@ bool CNEORules::ReadyUpPlayerIsReady(CNEO_Player *pNeoPlayer) const
 
 void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat)
 {
-	const bool bHasCmds = neo_sv_readyup_lobby.GetBool();
+	const bool bHasCmds = neo_sv_readyup_lobby.GetBool() || neo_sv_pausematch_enabled.GetBool();
 	if (!bHasCmds || !pNeoCmdPlayer || !pSzChat || pSzChat[0] != '.') return;
 	++pSzChat;
 
 	if (V_strcmp(pSzChat, "help") == 0)
 	{
 		char szHelpText[512];
-		V_sprintf_safe(szHelpText, "Available commands:\n%s",
+		V_sprintf_safe(szHelpText, "Available commands:\n%s%s",
 					   neo_sv_readyup_lobby.GetBool() ?
 						   "Ready up commands (only available while waiting for players):\n"
 						   ".ready - Ready up yourself\n"
 						   ".unready - Unready yourself\n"
 						   ".start - Override players amount restriction\n"
 						   ".readylist - List players that are not ready\n"
+						 : "",
+					   neo_sv_pausematch_enabled.GetBool() ?
+						   "Pause commands (only available during a match):\n"
+						   ".pause - Pause the match\n"
+						   ".unpause - Unpause the match\n"
 						 : "");
 		ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, szHelpText);
+		return;
 	}
 
-	if (neo_sv_readyup_lobby.GetBool() && m_nRoundStatus != NeoRoundStatus::Idle)
+	const bool bNonCmdGameType = (NEORules()->GetGameType() == NEO_GAME_TYPE_DM || NEORules()->GetGameType() == NEO_GAME_TYPE_TDM);
+
+	if (neo_sv_readyup_lobby.GetBool() && (bNonCmdGameType || m_nRoundStatus != NeoRoundStatus::Idle))
 	{
 		for (const auto pSzCheck : {"ready", "unready", "start", "readylist"})
 		{
 			if (V_strcmp(pSzChat, pSzCheck) == 0)
 			{
-				ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, "You cannot use this command during a match.");
+				ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK,
+							(bNonCmdGameType) ?
+								"You cannot use this command in DM/TDM." :
+								"You cannot use this command during a match.");
 				break;
 			}
 		}
@@ -1518,6 +1582,121 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 													"over the %d per team threshold.", iExtraJin, iExtraNSF, iThres);
 						ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, szPrintNeed);
 					}
+				}
+			}
+		}
+	}
+
+	if (neo_sv_pausematch_enabled.GetBool())
+	{
+		if (bNonCmdGameType || m_nRoundStatus == Idle || m_nRoundStatus == Warmup)
+		{
+			for (const auto pSzCheck : {"pause", "unpause"})
+			{
+				if (V_strcmp(pSzChat, pSzCheck) == 0)
+				{
+					ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK,
+								(bNonCmdGameType) ?
+									"You cannot use this command in DM/TDM." :
+									"You cannot use this command outside a match.");
+					break;
+				}
+			}
+		}
+		else
+		{
+			const bool bIsPause = (m_nRoundStatus == Pause);
+			if (V_strcmp(pSzChat, "unpause") == 0)
+			{
+				if (bIsPause)
+				{
+					if (m_bPausingTeamRequestedUnpause)
+					{
+						// Check if this is from the non-pausing team, if so do the unpause
+						if (m_iPausingTeam != pNeoCmdPlayer->GetTeamNumber())
+						{
+							// Unpause the game
+							m_flPauseEnd = gpGlobals->curtime;
+							UTIL_ClientPrintAll(HUD_PRINTTALK, "The game is now unpaused.");
+						}
+						else
+						{
+							ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, "Already started unpause request, waiting for non-pausing team.");
+						}
+					}
+					else
+					{
+						// Check if this is from the pausing team, if so, then wait for the
+						// non-pausing team to .unpause to accept unpause
+						if (m_iPausingTeam == pNeoCmdPlayer->GetTeamNumber())
+						{
+							// neo_sv_pausematch_unpauseimmediate is locked behind cheat flag, so generally shouldn't happen
+							if (neo_sv_pausematch_unpauseimmediate.GetBool())
+							{
+								m_flPauseEnd = gpGlobals->curtime;
+								UTIL_ClientPrintAll(HUD_PRINTTALK, "The game is now unpaused.");
+							}
+							else
+							{
+								m_bPausingTeamRequestedUnpause = true;
+								UTIL_ClientPrintAll(HUD_PRINTTALK, "An unpause request has started, waiting for non-pausing team to respond.");
+							}
+						}
+						else
+						{
+							ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, "Non-pausing team cannot start unpause request.");
+						}
+					}
+				}
+				else
+				{
+					ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, "The match is already live.");
+				}
+			}
+			else if (V_strcmp(pSzChat, "pause") == 0)
+			{
+				if (bIsPause)
+				{
+					if (m_bPausingTeamRequestedUnpause)
+					{
+						if (m_iPausingTeam == pNeoCmdPlayer->GetTeamNumber())
+						{
+							m_bPausingTeamRequestedUnpause = false;
+							UTIL_ClientPrintAll(HUD_PRINTTALK, "Pausing team cancelled unpause request.");
+						}
+						else
+						{
+							ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, "Non-pausing team cannot cancel unpause request.");
+						}
+					}
+					else
+					{
+						ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, "The match is already paused.");
+					}
+				}
+				else
+				{
+					// Present a pause menu, giving short (30s) vs long (3m)
+					pNeoCmdPlayer->m_eMenuSelectType = MENU_SELECT_TYPE_PAUSE;
+					CSingleUserRecipientFilter filter(pNeoCmdPlayer);
+					filter.MakeReliable();
+					UserMessageBegin(filter, "ShowMenu");
+					{
+						// The key options available in bitwise (EX: 1 -> 1 << 0, 9 -> 1 << 8)
+						const short sBitwiseOpts =
+								  1 << (PAUSE_MENU_SELECT_SHORT - 1)
+								| 1 << (PAUSE_MENU_SELECT_LONG - 1)
+								| 1 << (PAUSE_MENU_SELECT_DISMISS - 1);
+						WRITE_SHORT(sBitwiseOpts);
+						WRITE_CHAR(static_cast<char>(15)); // 15s timeout
+						WRITE_BYTE(static_cast<unsigned int>(0));
+						WRITE_STRING("Pause match:\n"
+									 "\n"
+									 "->1. Short pause (30 seconds)\n"
+									 "->2. Long pause (3 minutes)\n"
+									 "->3. Dismiss\n");
+					}
+					MessageEnd();
 				}
 			}
 		}
@@ -1634,6 +1813,16 @@ void CNEORules::StartNextRound()
 			m_flNeoNextRoundStartTime = gpGlobals->curtime + mp_neo_warmup_round_time.GetFloat();
 			return;
 		}
+	}
+
+	if (m_flPauseDur > 0.0f && (m_iRoundNumber + 1) == NEORules()->m_iPausingRound)
+	{
+		SetRoundStatus(NeoRoundStatus::Pause);
+		m_flNeoNextRoundStartTime = gpGlobals->curtime + 5.0f;
+		m_bPausedByPreRoundFreeze = false;
+		UTIL_CenterPrintAll("- MATCH IS CURRENTLY PAUSED -\n");
+		m_flPauseEnd = gpGlobals->curtime + m_flPauseDur;
+		return;
 	}
 
 	m_flNeoRoundStartTime = gpGlobals->curtime;
@@ -2697,6 +2886,15 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 		return;
 	}
 
+	if (m_nRoundStatus == NeoRoundStatus::Pause)
+	{
+#ifdef GAME_DLL
+		// Counter-act the death count for pausing state
+		victim->IncrementDeathCount(-1);
+#endif
+		return;
+	}
+
 	// Suicide or suicide by environment (non-grenade as grenade is likely from a player)
 	if (attacker == victim || (!attacker && !grenade))
 	{
@@ -3074,7 +3272,8 @@ bool CNEORules::FPlayerCanRespawn(CBasePlayer* pPlayer)
 
 	if (jinrai && nsf)
 	{
-		if (m_nRoundStatus == NeoRoundStatus::Warmup || m_nRoundStatus == NeoRoundStatus::Idle)
+		if (m_nRoundStatus == NeoRoundStatus::Warmup || m_nRoundStatus == NeoRoundStatus::Idle ||
+				m_nRoundStatus == NeoRoundStatus::Pause)
 		{
 			return true;
 		}
@@ -3123,7 +3322,8 @@ CBaseEntity *CNEORules::GetPlayerSpawnSpot(CBasePlayer *pPlayer)
 
 void CNEORules::SetRoundStatus(NeoRoundStatus status)
 {
-	if (status == NeoRoundStatus::RoundLive || status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup)
+	if (status == NeoRoundStatus::RoundLive || status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup ||
+			status == NeoRoundStatus::Pause)
 	{
 		for (int i = 1; i <= gpGlobals->maxClients; ++i)
 		{
