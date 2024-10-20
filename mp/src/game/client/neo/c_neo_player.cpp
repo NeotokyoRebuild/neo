@@ -85,6 +85,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 
 	RecvPropInt(RECVINFO(m_NeoFlags)),
 	RecvPropString(RECVINFO(m_szNeoName)),
+	RecvPropString(RECVINFO(m_szNeoClantag)),
 	RecvPropInt(RECVINFO(m_szNameDupePos)),
 	RecvPropBool(RECVINFO(m_bClientWantNeoName)),
 
@@ -200,6 +201,8 @@ USER_MESSAGE_REGISTER(IdleRespawnShowMenu);
 ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
 	"Whether to display HL2 style ammo/health info near crosshair.",
 	true, 0.0f, true, 1.0f);
+extern ConVar neo_sv_clantag_allow;
+extern ConVar neo_sv_dev_test_clantag;
 
 class NeoLoadoutMenu_Cb : public ICommandCallback
 {
@@ -422,6 +425,8 @@ C_NEO_Player::C_NEO_Player()
 	m_iNeoClass = NEO_CLASS_ASSAULT;
 	m_iNeoSkin = NEO_SKIN_FIRST;
 	m_iNeoStar = NEO_DEFAULT_STAR;
+	V_memset(m_szNeoName.GetForModify(), 0, sizeof(m_szNeoName));
+	V_memset(m_szNeoClantag.GetForModify(), 0, sizeof(m_szNeoClantag));
 
 	m_iLoadoutWepChoice = 0;
 	m_iNextSpawnClassChoice = -1;
@@ -550,6 +555,22 @@ int C_NEO_Player::GetAttackersScores(const int attackerIdx) const
 		return m_rfAttackersScores.Get(attackerIdx);
 	}
 	return min(m_rfAttackersScores.Get(attackerIdx), 100);
+}
+
+const char *C_NEO_Player::GetNeoClantag() const
+{
+	if (!neo_sv_clantag_allow.GetBool())
+	{
+		return "";
+	}
+#ifdef DEBUG
+	const char *overrideClantag = neo_sv_dev_test_clantag.GetString();
+	if (overrideClantag && overrideClantag[0])
+	{
+		return overrideClantag;
+	}
+#endif
+	return m_szNeoClantag.Get();
 }
 
 const char *C_NEO_Player::GetNeoPlayerName() const

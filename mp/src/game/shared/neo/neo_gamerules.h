@@ -11,6 +11,7 @@
 #include "shareddefs.h"
 
 #include "GameEventListener.h"
+#include "neo_player_shared.h"
 
 #ifdef CLIENT_DLL
 	#include "c_neo_player.h"
@@ -333,6 +334,8 @@ public:
 	}
 #endif
 
+	const char *GetTeamClantag(const int iTeamNum) const;
+
 public:
 #ifdef GAME_DLL
 	// Workaround for bot spawning. See Bot_f() for details.
@@ -344,6 +347,7 @@ public:
 	};
 	// AccountID_t <- CSteamID::GetAccountID
 	CUtlHashtable<AccountID_t, RestoreInfo> m_pRestoredInfos;
+	bool m_bThinkCheckClantags = false;
 #endif
 
 private:
@@ -368,6 +372,8 @@ private:
 	CNetworkVar(int, m_nRoundStatus);
 	CNetworkVar(int, m_nGameTypeSelected);
 	CNetworkVar(int, m_iRoundNumber);
+	CNetworkString(m_szNeoJinraiClantag, NEO_MAX_CLANTAG_LENGTH);
+	CNetworkString(m_szNeoNSFClantag, NEO_MAX_CLANTAG_LENGTH);
 
 	// Ghost networked variables
 	CNetworkVar(int, m_iGhosterTeam);
