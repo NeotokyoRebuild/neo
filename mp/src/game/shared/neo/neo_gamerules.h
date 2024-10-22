@@ -112,6 +112,7 @@ enum NeoRoundStatus {
 	PreRoundFreeze,
 	RoundLive,
 	PostRound,
+	Pause,
 };
 
 class CNEORules : public CHL2MPRules, public CGameEventListener
@@ -344,7 +345,14 @@ public:
 	};
 	// AccountID_t <- CSteamID::GetAccountID
 	CUtlHashtable<AccountID_t, RestoreInfo> m_pRestoredInfos;
+
+	float m_flPauseDur = 0.0f;
+	int m_iPausingTeam = 0;
+	int m_iPausingRound = 0;
+	bool m_bPausedByPreRoundFreeze = false;
+	bool m_bPausingTeamRequestedUnpause = false;
 #endif
+	CNetworkVar(float, m_flPauseEnd);
 
 private:
 	void ResetMapSessionCommon();

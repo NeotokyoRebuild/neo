@@ -262,13 +262,21 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 		roundTimeLeft = 0;
 	}
 
-	if (NEORules()->GetGameType() == NEO_GAME_TYPE_DM)
+	if (NEORules()->GetRoundStatus() == NeoRoundStatus::Pause)
 	{
-		m_iWszRoundUCSize = V_swprintf_safe(m_wszRoundUnicode, L"DEATHMATCH");
+		m_iWszRoundUCSize = V_swprintf_safe(m_wszRoundUnicode, L"PAUSED");
+		roundTimeLeft = NEORules()->m_flPauseEnd.Get() - gpGlobals->curtime;
 	}
 	else
 	{
-		m_iWszRoundUCSize = V_swprintf_safe(m_wszRoundUnicode, L"ROUND %i", NEORules()->roundNumber());
+		if (NEORules()->GetGameType() == NEO_GAME_TYPE_DM)
+		{
+			m_iWszRoundUCSize = V_swprintf_safe(m_wszRoundUnicode, L"DEATHMATCH");
+		}
+		else
+		{
+			m_iWszRoundUCSize = V_swprintf_safe(m_wszRoundUnicode, L"ROUND %i", NEORules()->roundNumber());
+		}
 	}
 
 	if (roundStatus == NeoRoundStatus::PreRoundFreeze)
@@ -368,6 +376,11 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 		break;
 	}
 
+	if (NEORules()->GetRoundStatus() == NeoRoundStatus::Pause)
+	{
+		szGameTypeDescription[0] = '\0';
+	}
+
 	C_NEO_Player* localPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if (localPlayer);
 	{
@@ -401,13 +414,14 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 		DrawNeoHudRoundedBox(m_iLeftOffset, Y_POS, m_iRightOffset, m_iBoxYEnd, box_color, false, false, true, true);
 
 		// Draw round
+		surface()->DrawSetTextColor((NEORules()->GetRoundStatus() == NeoRoundStatus::Pause) ? COLOR_RED : COLOR_WHITE);
 		surface()->DrawSetTextFont(m_hOCRSmallFont);
 		surface()->GetTextSize(m_hOCRSmallFont, m_wszRoundUnicode, fontWidth, fontHeight);
 		surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), 0);
-		surface()->DrawSetTextColor(COLOR_WHITE);
 		surface()->DrawPrintText(m_wszRoundUnicode, m_iWszRoundUCSize);
 
 		// Draw round status
+		surface()->DrawSetTextColor(COLOR_WHITE);
 		surface()->GetTextSize(m_hOCRSmallFont, m_pWszStatusUnicode, fontWidth, fontHeight);
 		surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), m_iBoxYEnd);
 		surface()->DrawPrintText(m_pWszStatusUnicode, m_iStatusUnicodeSize);
