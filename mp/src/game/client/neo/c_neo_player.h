@@ -206,6 +206,7 @@ public:
 	unsigned char m_NeoFlags;
 
 private:
+	bool m_bFirstAliveTick;
 	bool m_bFirstDeathTick;
 	bool m_bPreviouslyReloading;
 	bool m_bIsAllowedToToggleVision;

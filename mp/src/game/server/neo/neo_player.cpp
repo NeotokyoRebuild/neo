@@ -2813,6 +2813,9 @@ int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 		{
 			// If other is spectator or same team
 			if (otherNeoPlayer->GetTeamNumber() == TEAM_SPECTATOR ||
+#ifdef GLOWS_ENABLE
+				otherNeoPlayer->IsDead() ||
+#endif
 					GetTeamNumber() == otherNeoPlayer->GetTeamNumber())
 			{
 				return FL_EDICT_ALWAYS;
