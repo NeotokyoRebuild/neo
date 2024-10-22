@@ -38,6 +38,15 @@ ConVar neo_cl_hud_debug_compass_color_b("neo_cl_hud_debug_compass_color_b", "205
 ConVar neo_cl_hud_debug_compass_color_a("neo_cl_hud_debug_compass_color_a", "255", FCVAR_USERINFO | FCVAR_CHEAT,
 	"Alpha color value of the Debug compass, in range 0 - 255.", true, 0.0f, true, 255.0f);
 
+ConVar neo_cl_hud_rangefinder_enabled("neo_cl_hud_rangefinder_enabled", "1", FCVAR_ARCHIVE,
+									  "Whether the rangefinder HUD is enabled or not.", true, 0.0f, true, 1.0f);
+ConVar neo_cl_hud_rangefinder_pos_frac_x("neo_cl_hud_rangefinder_pos_frac_x", "0.55", FCVAR_ARCHIVE,
+										 "In fractional to the total screen width, the x-axis position of the rangefinder.",
+										 true, 0.0f, true, 1.0f);
+ConVar neo_cl_hud_rangefinder_pos_frac_y("neo_cl_hud_rangefinder_pos_frac_y", "0.55", FCVAR_ARCHIVE,
+										 "In fractional to the total screen height, the y-axis position of the rangefinder.",
+										 true, 0.0f, true, 1.0f);
+
 DECLARE_NAMED_HUDELEMENT(CNEOHud_Compass, NHudCompass);
 
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(Compass, 0.00695)
@@ -116,9 +125,25 @@ void CNEOHud_Compass::GetCompassUnicodeString(const float angle, wchar_t* outUni
 	g_pVGuiLocalize->ConvertANSIToUnicode(compass, outUnicodeStr, UNICODE_NEO_COMPASS_SIZE_BYTES);
 }
 
+static C_NEO_Player *GetFirstPersonPlayer()
+{
+	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	C_NEO_Player *pFPPlayer = pLocalPlayer;
+	if (pLocalPlayer->GetObserverMode() == OBS_MODE_IN_EYE)
+	{
+		auto *pTargetPlayer = dynamic_cast<C_NEO_Player *>(pLocalPlayer->GetObserverTarget());
+		if (pTargetPlayer && !pTargetPlayer->IsObserver())
+		{
+			pFPPlayer = pTargetPlayer;
+		}
+	}
+	return pFPPlayer;
+}
+
 void CNEOHud_Compass::UpdateStateForNeoHudElementDraw()
 {
-	Assert(C_NEO_Player::GetLocalNEOPlayer());
+	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	Assert(pLocalPlayer);
 
 	static auto safeAngle = [](const float angle) -> float {
 		if (angle > 180.0f)
@@ -133,11 +158,34 @@ void CNEOHud_Compass::UpdateStateForNeoHudElementDraw()
 	};
 
 	// Direction in -180 to 180
-	float angle = C_NEO_Player::GetLocalNEOPlayer()->EyeAngles()[YAW] * -1;
+	float angle = pLocalPlayer->EyeAngles()[YAW] * -1;
 	angle = safeAngle(angle);
 	angle += 180.0f;	// NEO NOTE (nullsystem): Adjust it again to match OG:NT's compass angle
 	angle = safeAngle(angle);
 	GetCompassUnicodeString(angle, m_wszCompassUnicode);
+
+	if (neo_cl_hud_rangefinder_enabled.GetBool())
+	{
+		C_NEO_Player *pFPPlayer = GetFirstPersonPlayer();
+		if (pFPPlayer->IsInAim())
+		{
+			// Update Rangefinder
+			trace_t tr;
+			Vector vecForward;
+			AngleVectors(pFPPlayer->EyeAngles(), &vecForward);
+			UTIL_TraceLine(pFPPlayer->EyePosition(), pFPPlayer->EyePosition() + (vecForward * MAX_TRACE_LENGTH),
+						   MASK_SHOT, pFPPlayer, COLLISION_GROUP_NONE, &tr);
+			const float flDist = METERS_PER_INCH * tr.startpos.DistTo(tr.endpos);
+			if (flDist >= 999.0f || tr.surface.flags & (SURF_SKY | SURF_SKY2D))
+			{
+				V_swprintf_safe(m_wszRangeFinder, L"RANGE ---m");
+			}
+			else
+			{
+				V_swprintf_safe(m_wszRangeFinder, L"RANGE %3.0fm", flDist);
+			}
+		}
+	}
 }
 
 void CNEOHud_Compass::DrawNeoHudElement(void)
@@ -155,6 +203,15 @@ void CNEOHud_Compass::DrawNeoHudElement(void)
 	if (neo_cl_hud_debug_compass_enabled.GetBool())
 	{
 		DrawDebugCompass();
+	}
+
+	if (neo_cl_hud_rangefinder_enabled.GetBool() && GetFirstPersonPlayer()->IsInAim())
+	{
+		surface()->DrawSetTextColor(COLOR_NEO_WHITE);
+		surface()->DrawSetTextFont(m_hFont);
+		surface()->DrawSetTextPos((m_resX * neo_cl_hud_rangefinder_pos_frac_x.GetFloat()),
+								  (m_resY * neo_cl_hud_rangefinder_pos_frac_y.GetFloat()));
+		surface()->DrawPrintText(m_wszRangeFinder, ARRAYSIZE(m_wszRangeFinder) - 1);
 	}
 }
 
