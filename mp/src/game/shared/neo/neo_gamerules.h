@@ -12,7 +12,9 @@
 
 #include "GameEventListener.h"
 
-#ifndef CLIENT_DLL
+#ifdef CLIENT_DLL
+	#include "c_neo_player.h"
+#else
 	#include "neo_player.h"
 	#include "utlhashtable.h"
 #endif
@@ -88,6 +90,7 @@ extern ConVar neo_sv_mirror_teamdamage_multiplier;
 extern ConVar neo_sv_mirror_teamdamage_duration;
 extern ConVar neo_sv_mirror_teamdamage_immunity;
 extern ConVar neo_sv_teamdamage_kick;
+
 #else
 class C_NEO_Player;
 #endif
@@ -98,8 +101,9 @@ enum NeoGameType {
 	NEO_GAME_TYPE_TDM = 0,
 	NEO_GAME_TYPE_CTG,
 	NEO_GAME_TYPE_VIP,
+	NEO_GAME_TYPE_DM,
 
-	NEO_GAME_TYPE_TOTAL // Number of game types
+	NEO_GAME_TYPE__TOTAL // Number of game types
 };
 
 enum NeoRoundStatus {
@@ -108,6 +112,7 @@ enum NeoRoundStatus {
 	PreRoundFreeze,
 	RoundLive,
 	PostRound,
+	Pause,
 };
 
 class CNEORules : public CHL2MPRules, public CGameEventListener
@@ -133,14 +138,22 @@ public:
 	virtual bool ClientCommand(CBaseEntity* pEdict, const CCommand& args) OVERRIDE;
 
 	virtual void SetWinningTeam(int team, int iWinReason, bool bForceMapReset = true, bool bSwitchTeams = false, bool bDontAddScore = false, bool bFinal = false) OVERRIDE;
+	void SetWinningDMPlayer(CNEO_Player *pWinner);
 
 	virtual void ChangeLevel(void) OVERRIDE;
 
 	virtual void ClientDisconnected(edict_t* pClient) OVERRIDE;
+
+	CBaseEntity *GetPlayerSpawnSpot(CBasePlayer *pPlayer) override;
 #endif
 	virtual bool ShouldCollide( int collisionGroup0, int collisionGroup1 ) OVERRIDE;
 
 	virtual const char* GetGameName() { return NEO_GAME_NAME; }
+
+#ifdef NEO
+	bool GetTeamPlayEnabled() const override;
+#endif
+
 
 #ifdef GAME_DLL
 	virtual bool FPlayerCanRespawn(CBasePlayer* pPlayer) OVERRIDE;
@@ -148,6 +161,13 @@ public:
 
 	virtual int GetGameType(void) OVERRIDE;
 	virtual const char* GetGameTypeName(void) OVERRIDE;
+
+	void GetDMHighestScorers(
+#ifdef GAME_DLL
+			CNEO_Player *(*pHighestPlayers)[MAX_PLAYERS + 1],
+#endif
+			int *iHighestPlayersTotal,
+			int *iHighestXP) const;
 
 	virtual void Think( void ) OVERRIDE;
 	virtual void CreateStandardEntities( void ) OVERRIDE;
@@ -325,7 +345,14 @@ public:
 	};
 	// AccountID_t <- CSteamID::GetAccountID
 	CUtlHashtable<AccountID_t, RestoreInfo> m_pRestoredInfos;
+
+	float m_flPauseDur = 0.0f;
+	int m_iPausingTeam = 0;
+	int m_iPausingRound = 0;
+	bool m_bPausedByPreRoundFreeze = false;
+	bool m_bPausingTeamRequestedUnpause = false;
 #endif
+	CNetworkVar(float, m_flPauseEnd);
 
 private:
 	void ResetMapSessionCommon();
@@ -344,6 +371,7 @@ private:
 	bool m_bTeamBeenAwardedDueToCapPrevent = false;
 	int m_arrayiEntPrevCap[MAX_PLAYERS + 1]; // This is to check for cap-prevention workaround attempts
 	int m_iEntPrevCapSize = 0;
+	int m_iPrintHelpCounter = 0;
 #endif
 	CNetworkVar(int, m_nRoundStatus);
 	CNetworkVar(int, m_nGameTypeSelected);

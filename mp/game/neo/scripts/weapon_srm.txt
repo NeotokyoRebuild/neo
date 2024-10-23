@@ -9,7 +9,7 @@ WeaponData
 	"anim_prefix"		"srm"
 	"bucket"		"0"
 	"bucket_position"	"0"
-	"Damage"		"16"
+	"Damage"		"12"
 	"Penetration"		"20.0"
 	"CycleTime"		"0.06"		// time between shots
 	

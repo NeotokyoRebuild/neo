@@ -546,6 +546,10 @@ void C_NEO_Player::ZeroFriendlyPlayerLocArray()
 
 int C_NEO_Player::GetAttackersScores(const int attackerIdx) const
 {
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_DM || NEORules()->GetGameType() == NEO_GAME_TYPE_TDM)
+	{
+		return m_rfAttackersScores.Get(attackerIdx);
+	}
 	return min(m_rfAttackersScores.Get(attackerIdx), 100);
 }
 
@@ -861,7 +865,7 @@ void C_NEO_Player::PreThink( void )
 			// NEO TODO (Adam) since the stuff in C_NEO_PLAYER::Spawn() only runs the first time a person spawns in the map, would it be worth moving some of the stuff from there here instead?
 #ifdef GLOWS_ENABLE
 			// Disable client side glow effects of all players
-			for (int i = 1; i <= MAX_PLAYERS; i++)
+			for (int i = 1; i <= gpGlobals->maxClients; i++)
 			{
 				if (auto player = UTIL_PlayerByIndex(i))
 				{

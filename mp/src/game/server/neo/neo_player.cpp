@@ -111,7 +111,7 @@ DEFINE_FIELD(m_szNameDupePos, FIELD_INTEGER),
 DEFINE_FIELD(m_bClientWantNeoName, FIELD_BOOLEAN),
 END_DATADESC()
 
-#define SHOWMENU_STRLIMIT (512)
+static constexpr int SHOWMENU_STRLIMIT = 512;
 
 CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
 CNEOGameRulesProxy* neoGameRules;
@@ -124,6 +124,7 @@ ConVar sv_neo_can_change_classes_anytime("sv_neo_can_change_classes_anytime", "0
 ConVar sv_neo_change_suicide_player("sv_neo_change_suicide_player", "0", FCVAR_REPLICATED, "Kill the player if they change the team and they're alive.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_change_threshold_interval("sv_neo_change_threshold_interval", "0.25", FCVAR_REPLICATED, "The interval threshold limit in seconds before the player is allowed to change team.", true, 0.0f, true, 1000.0f);
 ConVar neo_sv_dm_max_class_dur("neo_sv_dm_max_class_dur", "10", FCVAR_REPLICATED, "The time in seconds when the player can change class on respawn during deathmatch.", true, 0.0f, true, 60.0f);
+ConVar neo_sv_warmup_godmode("neo_sv_warmup_godmode", "0", FCVAR_REPLICATED, "If enabled, everyone is invincible on idle and warmup.", true, 0.0f, true, 1.0f);
 
 void CNEO_Player::RequestSetClass(int newClass)
 {
@@ -133,11 +134,11 @@ void CNEO_Player::RequestSetClass(int newClass)
 		return;
 	}
 
+	const bool bIsTypeDM = (NEORules()->GetGameType() == NEO_GAME_TYPE_TDM || NEORules()->GetGameType() == NEO_GAME_TYPE_DM);
 	const NeoRoundStatus status = NEORules()->GetRoundStatus();
 	if (IsDead() || sv_neo_can_change_classes_anytime.GetBool() ||
 		(!m_bIneligibleForLoadoutPick && NEORules()->GetRemainingPreRoundFreezeTime(false) > 0) ||
-		(NEORules()->GetGameType() == NEO_GAME_TYPE_TDM && !m_bIneligibleForLoadoutPick &&
-				GetAliveDuration() < neo_sv_dm_max_class_dur.GetFloat()) ||
+		(bIsTypeDM && !m_bIneligibleForLoadoutPick && GetAliveDuration() < neo_sv_dm_max_class_dur.GetFloat()) ||
 		(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup))
 	{
 		m_iNeoClass = newClass;
@@ -1158,7 +1159,10 @@ void CNEO_Player::SoftSuicide(void)
 	IncrementFragCount(1);
 
 	// Gamerules event will decrement, so we cancel it here
-	m_iXP.GetForModify() += 1;
+	if (NEORules()->GetRoundStatus() != NeoRoundStatus::Pause)
+	{
+		m_iXP.GetForModify() += 1;
+	}
 }
 
 bool CNEO_Player::HandleCommand_JoinTeam( int team )
@@ -1196,18 +1200,28 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 		}
 		const int slot = atoi(args[1]);
 
-		if (m_iDmgMenuCurPage > 0)
+		switch (m_eMenuSelectType)
 		{
-			// menuselect being used by damage stats
+		case MENU_SELECT_TYPE_DMG:
+			if (m_iDmgMenuCurPage <= 0)
+			{
+				return true;
+			}
 			switch (slot)
 			{
-			case 1: // Dismiss
+			case DAMAGE_MENU_SELECT_DISMISS:
+			case DAMAGE_MENU_SELECT_DONOTSHOW:
 			{
 				m_iDmgMenuCurPage = 0;
 				m_iDmgMenuNextPage = 0;
+				m_eMenuSelectType = MENU_SELECT_TYPE_NONE;
+				if (slot == DAMAGE_MENU_SELECT_DONOTSHOW)
+				{
+					m_bDoNotShowDmgInfoMenu = true;
+				}
 				break;
 			}
-			case 2: // Next-page
+			case DAMAGE_MENU_SELECT_NEXTPAGE:
 			{
 				char infoStr[SHOWMENU_STRLIMIT];
 				int infoStrSize = 0;
@@ -1220,6 +1234,29 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 			default:
 				break;
 			}
+			break;
+		case MENU_SELECT_TYPE_PAUSE:
+			m_eMenuSelectType = MENU_SELECT_TYPE_NONE;
+			if (slot == PAUSE_MENU_SELECT_SHORT || slot == PAUSE_MENU_SELECT_LONG)
+			{
+				// When a pause requested, this will activate either:
+				// - If during freezetime, immediate pausing
+				// - If during live-round, after round finishes pausing
+				NEORules()->m_iPausingTeam = GetTeamNumber();
+				NEORules()->m_iPausingRound = NEORules()->roundNumber() + 1;
+				NEORules()->m_flPauseDur = (slot == PAUSE_MENU_SELECT_SHORT) ? 30.0f : 180.0f;
+
+				char szPauseMsg[128];
+				V_sprintf_safe(szPauseMsg, "Pause requested by %s. Pausing the match %s for %s.",
+							   (GetTeamNumber() == TEAM_JINRAI) ? "Jinrai" : "NSF",
+							   (NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze) ?
+								   "immediately" : "when the round ends",
+							   (slot == PAUSE_MENU_SELECT_SHORT) ? "30 seconds" : "3 minutes");
+				UTIL_ClientPrintAll(HUD_PRINTTALK, szPauseMsg);
+			}
+			break;
+		default:
+			break;
 		}
 
 		return true;
@@ -1278,6 +1315,11 @@ bool CNEO_Player::BecomeRagdollOnClient( const Vector &force )
 
 void CNEO_Player::ShowDmgInfo(char* infoStr, int infoStrSize)
 {
+	if (m_bDoNotShowDmgInfoMenu)
+	{
+		return;
+	}
+
 	CSingleUserRecipientFilter filter(this);
 	filter.MakeReliable();
 
@@ -1294,10 +1336,19 @@ void CNEO_Player::ShowDmgInfo(char* infoStr, int infoStrSize)
 			tmpCh = infoStr[infoStrOffsetMax];
 			infoStr[infoStrOffsetMax] = '\0';
 		}
+		m_eMenuSelectType = MENU_SELECT_TYPE_DMG;
 		UserMessageBegin(filter, "ShowMenu");
 		{
-			WRITE_SHORT(static_cast<short>(m_iDmgMenuNextPage ? 3 : 1)); // Amount of options
-			WRITE_CHAR(static_cast<char>(60)); // 60s timeout
+			// The key options available in bitwise (EX: 1 -> 1 << 0, 9 -> 1 << 8)
+			short sBitwiseOpts =
+					  1 << (DAMAGE_MENU_SELECT_DISMISS - 1)
+					| 1 << (DAMAGE_MENU_SELECT_DONOTSHOW - 1);
+			if (m_iDmgMenuNextPage)
+			{
+				sBitwiseOpts |= 1 << (DAMAGE_MENU_SELECT_NEXTPAGE - 1);
+			}
+			WRITE_SHORT(sBitwiseOpts);
+			WRITE_CHAR(static_cast<char>(10)); // 10s timeout
 			WRITE_BYTE(static_cast<unsigned int>(infoStrSize > MAX_INFOSTR_PER_UMSG));
 			WRITE_STRING(infoStr + infoStrOffset);
 		}
@@ -1318,10 +1369,10 @@ int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int pl
 	Assert(infoStrSize != NULL);
 	Assert(showMenu != NULL);
 	*showMenu = false;
-	static const int TITLE_LEN = 30; // Rough-approximate
-	static const int POSTFIX_LEN = 15 + 12;
-	static const int TOTALLINE_LEN = 64; // Rough-approximate
-	static int FILLSTR_END = SHOWMENU_STRLIMIT - POSTFIX_LEN - TOTALLINE_LEN - 2;
+	static constexpr int TITLE_LEN = 30; // Rough-approximate
+	static constexpr int POSTFIX_LEN = 16 + 12 + 24;
+	static constexpr int TOTALLINE_LEN = 64; // Rough-approximate
+	static constexpr int FILLSTR_END = SHOWMENU_STRLIMIT - POSTFIX_LEN - TOTALLINE_LEN - 2;
 	memset(infoStr, 0, infoStrMax);
 	Q_snprintf(infoStr, infoStrMax, "Damage infos (Round %d):\n", NEORules()->roundNumber());
 	if (info)
@@ -1405,6 +1456,7 @@ int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int pl
 	{
 		Q_strncat(infoStr, "\n->2. Next", infoStrMax, COPY_ALL_CHARACTERS);
 	}
+	Q_strncat(infoStr, "\n->9. Do not show again", infoStrMax, COPY_ALL_CHARACTERS);
 	*infoStrSize = Q_strlen(infoStr);
 
 	return nextPage;
@@ -1644,7 +1696,8 @@ void CNEO_Player::SetPlayerCorpseModel(int type)
 
 float CNEO_Player::GetReceivedDamageScale(CBaseEntity* pAttacker)
 {
-	if (NEORules()->GetGameType() == NEO_GAME_TYPE_TDM && m_aliveTimer.IsLessThen(5.f))
+	if ((NEORules()->GetGameType() == NEO_GAME_TYPE_TDM || NEORules()->GetGameType() == NEO_GAME_TYPE_DM)
+			&& m_aliveTimer.IsLessThen(5.f) && !m_bIneligibleForLoadoutPick)
 	{ // 5 seconds of invincibility in TDM
 		return 0.f;
 	}
@@ -1887,11 +1940,12 @@ void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
 		}
 	}
 
-	if (!pWeapon)
-		return;
+	if (pWeapon)
+	{
+		pWeapon->m_bInReload = false;
+		pWeapon->StopWeaponSound(RELOAD_NPC);
+	}
 
-	pWeapon->m_bInReload = false;
-	pWeapon->StopWeaponSound(RELOAD_NPC);
 	BaseClass::Weapon_Drop(pWeapon, pvecTarget, pVelocity);
 }
 
@@ -1920,7 +1974,15 @@ CBaseEntity* CNEO_Player::EntSelectSpawnPoint( void )
 	const char *pSpawnpointName = "info_player_start";
 	const auto alternate = NEORules()->roundAlternate();
 
-	if (NEORules()->IsTeamplay())
+	// NEO TODO (nullsystem): Teamplay vs non-teamplay
+	// info_player_deathmatch is from HL2MP, but maps can utilize HL2MP and this entity anyway
+	const bool bIsTeamplay = NEORules()->IsTeamplay();
+	if (!bIsTeamplay)
+	{
+		pSpawnpointName = "info_player_deathmatch";
+		pLastSpawnPoint = g_pLastSpawn;
+	}
+	else
 	{
 		if (GetTeamNumber() == TEAM_JINRAI)
 		{
@@ -2225,6 +2287,10 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 
 int CNEO_Player::GetAttackersScores(const int attackerIdx) const
 {
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_DM || NEORules()->GetGameType() == NEO_GAME_TYPE_TDM)
+	{
+		return m_rfAttackersScores.Get(attackerIdx);
+	}
 	return min(m_rfAttackersScores.Get(attackerIdx), 100);
 }
 
@@ -2263,6 +2329,13 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 {
 	if (m_takedamage != DAMAGE_EVENTS_ONLY)
 	{
+		if (neo_sv_warmup_godmode.GetBool() &&
+				(NEORules()->GetRoundStatus() == NeoRoundStatus::Idle ||
+				 NEORules()->GetRoundStatus() == NeoRoundStatus::Warmup))
+		{
+			return 0;
+		}
+
 		// Dynamic cast, attacker might be prop/this player fallen
 		if (auto *attacker = dynamic_cast<CNEO_Player *>(info.GetAttacker()))
 		{
@@ -2405,7 +2478,8 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 {
 	const NeoRoundStatus status = NEORules()->GetRoundStatus();
 	if (!(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup) &&
-		(IsObserver() || IsDead() || m_bIneligibleForLoadoutPick || m_aliveTimer.IsGreaterThen(sv_neo_time_alive_until_cant_change_loadout.GetFloat())))
+		(IsObserver() || IsDead() || m_bIneligibleForLoadoutPick
+		 || m_aliveTimer.IsGreaterThen(sv_neo_time_alive_until_cant_change_loadout.GetFloat())))
 	{
 		return;
 	}

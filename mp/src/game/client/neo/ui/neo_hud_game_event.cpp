@@ -140,30 +140,33 @@ void CNEOHud_GameEvent::DrawNeoHudElement()
 	surface()->DrawSetTextPos(textPosX, text_y_offset);
 	surface()->DrawPrintText(messageWord, messageLength); // the address of the null character minus the address of the first character
 
-	if (Q_stristr(teamWon, "jinrai"))
+	if (NEORules()->IsTeamplay())
 	{
-		surface()->DrawSetTexture(jinraiWin);
-	}
-	else if (Q_stristr(teamWon, "nsf"))
-	{
-		surface()->DrawSetTexture(nsfWin);
-	}
-	else
-	{
-		surface()->DrawSetTexture(tie);
-	}
+		if (Q_stristr(teamWon, "jinrai"))
+		{
+			surface()->DrawSetTexture(jinraiWin);
+		}
+		else if (Q_stristr(teamWon, "nsf"))
+		{
+			surface()->DrawSetTexture(nsfWin);
+		}
+		else
+		{
+			surface()->DrawSetTexture(tie);
+		}
 
-	const vgui::IntRect texRect{
-		.x0 = (m_iResX/2) - 256,
-		.y0 = image_y_offset,
-		.x1 = (m_iResX / 2) + 256,
-		.y1 = image_y_offset + 256,
-	};
-	surface()->DrawSetColor(Color(0, 0, 0, alpha));
-	surface()->DrawTexturedRect(texRect.x0 + 2, texRect.y0 + 2, texRect.x1 + 2, texRect.y1 + 2);
+		const vgui::IntRect texRect{
+			.x0 = (m_iResX/2) - 256,
+			.y0 = image_y_offset,
+			.x1 = (m_iResX / 2) + 256,
+			.y1 = image_y_offset + 256,
+		};
+		surface()->DrawSetColor(Color(0, 0, 0, alpha));
+		surface()->DrawTexturedRect(texRect.x0 + 2, texRect.y0 + 2, texRect.x1 + 2, texRect.y1 + 2);
 
-	surface()->DrawSetColor(Color(255, 255, 255, alpha));
-	surface()->DrawTexturedRect(texRect.x0, texRect.y0, texRect.x1, texRect.y1);
+		surface()->DrawSetColor(Color(255, 255, 255, alpha));
+		surface()->DrawTexturedRect(texRect.x0, texRect.y0, texRect.x1, texRect.y1);
+	}
 }
 
 void CNEOHud_GameEvent::Paint()

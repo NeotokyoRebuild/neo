@@ -89,17 +89,32 @@ void CNEOHud_FriendlyMarker::DrawNeoHudElement()
 	const auto *pTargetPlayer = (localPlayer->GetObserverMode() == OBS_MODE_IN_EYE) ?
 				dynamic_cast<C_NEO_Player *>(localPlayer->GetObserverTarget()) : nullptr;
 	
-	if (m_IsSpectator)
+	if (NEORules()->IsTeamplay())
 	{
-		auto nsf = GetGlobalTeam(TEAM_NSF);
-		DrawPlayerForTeam(nsf, localPlayer, pTargetPlayer);
-		
-		auto jinrai = GetGlobalTeam(TEAM_JINRAI);
-		DrawPlayerForTeam(jinrai, localPlayer, pTargetPlayer);
+		if (m_IsSpectator)
+		{
+			auto nsf = GetGlobalTeam(TEAM_NSF);
+			DrawPlayerForTeam(nsf, localPlayer, pTargetPlayer);
+
+			auto jinrai = GetGlobalTeam(TEAM_JINRAI);
+			DrawPlayerForTeam(jinrai, localPlayer, pTargetPlayer);
+		}
+		else
+		{
+			DrawPlayerForTeam(team, localPlayer, pTargetPlayer);
+		}
 	}
 	else
 	{
-		DrawPlayerForTeam(team, localPlayer, pTargetPlayer);
+		if (m_IsSpectator)
+		{
+			// TODO: They're not really Jinrai/NSF?
+			auto nsf = GetGlobalTeam(TEAM_NSF);
+			DrawPlayerForTeam(nsf, localPlayer, pTargetPlayer);
+
+			auto jinrai = GetGlobalTeam(TEAM_JINRAI);
+			DrawPlayerForTeam(jinrai, localPlayer, pTargetPlayer);
+		}
 	}
 }
 

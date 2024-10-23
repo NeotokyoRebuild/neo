@@ -11,6 +11,7 @@
 
 #ifdef CLIENT_DLL
 #include "c_neo_player.h"
+#include "c_playerresource.h"
 #ifndef CNEO_Player
 #define CNEO_Player C_NEO_Player
 #endif
@@ -161,3 +162,42 @@ void KillerLineStr(char* killByLine, const int killByLineMax,
 	auto *neoWep = dynamic_cast<CNEOBaseCombatWeapon *>(wep);
 	return (neoWep) ? neoWep->GetWpnData().iAimFOV : fovDef - FOV_AIM_OFFSET_FALLBACK;
 }
+
+#ifdef CLIENT_DLL
+void DMClSortedPlayers(PlayerXPInfo (*pPlayersOrder)[MAX_PLAYERS + 1], int *piTotalPlayers)
+{
+	int iTotalPlayers = 0;
+
+	// First pass: Find all scores of all players
+	for (int i = 0; i < (MAX_PLAYERS + 1); i++)
+	{
+		if (g_PR->IsConnected(i))
+		{
+			const int playerTeam = g_PR->GetTeam(i);
+			if (playerTeam == TEAM_JINRAI || playerTeam == TEAM_NSF)
+			{
+				(*pPlayersOrder)[iTotalPlayers++] = PlayerXPInfo{
+					.idx = i,
+					.xp = g_PR->GetXP(i),
+					.deaths = g_PR->GetDeaths(i),
+				};
+			}
+		}
+	}
+
+	V_qsort_s(*pPlayersOrder, iTotalPlayers, sizeof(PlayerXPInfo),
+			  []([[maybe_unused]] void *vpCtx, const void *vpLeft, const void *vpRight) -> int {
+		auto *pLeft = static_cast<const PlayerXPInfo *>(vpLeft);
+		auto *pRight = static_cast<const PlayerXPInfo *>(vpRight);
+		if (pRight->xp == pLeft->xp)
+		{
+			// More deaths = lower
+			return pLeft->deaths - pRight->deaths;
+		}
+		// More XP = higher
+		return pRight->xp - pLeft->xp;
+	}, nullptr);
+
+	*piTotalPlayers = iTotalPlayers;
+}
+#endif

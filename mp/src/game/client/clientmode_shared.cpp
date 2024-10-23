@@ -324,13 +324,6 @@ ClientModeShared::ClientModeShared()
 ClientModeShared::~ClientModeShared()
 {
 	delete m_pViewport; 
-#ifdef NEO
-	if (g_pNeoLoading)
-	{
-		g_pNeoLoading->MarkForDeletion();
-		g_pNeoLoading = nullptr;
-	}
-#endif
 }
 
 void ClientModeShared::ReloadScheme( bool flushLowLevel )
@@ -761,6 +754,9 @@ int	ClientModeShared::KeyInput( int down, ButtonCode_t keynum, const char *pszCu
 	return 1;
 }
 
+#ifdef NEO
+extern ConVar glow_outline_effect_enable;
+#endif // NEO
 //-----------------------------------------------------------------------------
 // Purpose: See if spectator input occurred. Return 0 if the key is swallowed.
 //-----------------------------------------------------------------------------
@@ -814,21 +810,14 @@ int ClientModeShared::HandleSpectatorKeyInput( int down, ButtonCode_t keynum, co
 #ifdef GLOWS_ENABLE
 	else if (down && pszCurrentBinding && Q_strcmp(pszCurrentBinding, "+attack2") == 0)
 	{
-		ConVar* glow_outline_effect_enable = cvar->FindVar("glow_outline_effect_enable");
-		if (!glow_outline_effect_enable)
-			return 0;
+		const bool outlinesEnabled = !glow_outline_effect_enable.GetBool();
+		glow_outline_effect_enable.SetValue(outlinesEnabled);
 
-		if (glow_outline_effect_enable->GetBool())
-			engine->ExecuteClientCmd("glow_outline_effect_enable 0");
-		else
-			engine->ExecuteClientCmd("glow_outline_effect_enable 1");
-
-		bool enabled = glow_outline_effect_enable->GetBool();
-		for (int i = 1; i <= MAX_PLAYERS; i++)
+		for (int i = 1; i <= gpGlobals->maxClients; i++)
 		{
 			if (auto player = UTIL_PlayerByIndex(i))
 			{
-				player->SetClientSideGlowEnabled(enabled);
+				player->SetClientSideGlowEnabled(outlinesEnabled);
 			}
 		}
 		return 0;

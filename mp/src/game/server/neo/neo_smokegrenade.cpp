@@ -281,7 +281,7 @@ void CNEOGrenadeSmoke::Detonate(void)
 	}
 	else if (gpGlobals->curtime - m_flSmokeBloomTime >= sv_neo_smoke_bloom_duration.GetFloat())
 	{
-		SetThink(&CNEOGrenadeSmoke::SUB_Remove);
+		SetThink(&CBaseEntity::SUB_Remove);
 		AddEffects(EF_NODRAW);
 	}
 	
