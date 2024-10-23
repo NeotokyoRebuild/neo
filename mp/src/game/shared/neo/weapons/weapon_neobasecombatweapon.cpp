@@ -506,12 +506,16 @@ void CNEOBaseCombatWeapon::ProcessAnimationEvents()
 	else if (m_bLowered && m_bRoundBeingChambered)
 	{ // For bolt action weapons
 		m_bLowered = false;
-		next(ACT_VM_PULLBACK);
+		SendWeaponAnim(ACT_VM_PULLBACK);
+		m_flNextPrimaryAttack = max(gpGlobals->curtime + 1.2f, m_flNextPrimaryAttack);
+		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
 	}
 
 	if (m_bLowered && gpGlobals->curtime > m_flNextPrimaryAttack)
 	{
-		next(ACT_VM_IDLE_LOWERED);
+		SetWeaponIdleTime(gpGlobals->curtime + 0.2);
+		m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
+		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
 	}
 }
 
