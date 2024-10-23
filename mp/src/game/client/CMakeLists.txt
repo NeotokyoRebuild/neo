@@ -113,7 +113,7 @@ if(OS_WINDOWS)
         AVI_VIDEO
         WMV_VIDEO
         fopen=dont_use_fopen
-
+        PSAPI_VERSION=1
     )
 
     target_link_libraries(client
@@ -121,6 +121,7 @@ if(OS_WINDOWS)
         legacy_stdio_definitions.lib
         #winmm.lib
         libz
+        Psapi.lib
     )
 endif()
 

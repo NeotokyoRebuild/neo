@@ -92,6 +92,7 @@ class CHudVote;
 
 #ifdef NEO
 static CDllDemandLoader g_gameUI("GameUI");
+extern ConVar neo_cl_streamermode;
 #endif
 
 static vgui::HContext s_hVGuiContext = DEFAULT_VGUI_CONTEXT;
@@ -1064,6 +1065,13 @@ void ClientModeShared::FireGameEvent( IGameEvent *event )
 
 		if ( !IsInCommentaryMode() )
 		{
+#ifdef NEO
+			if (neo_cl_streamermode.GetBool())
+			{
+				hudChat->Printf(CHAT_FILTER_JOINLEAVE, "Player connected");
+				return;
+			}
+#endif
 			wchar_t wszLocalized[100];
 			wchar_t wszPlayerName[MAX_PLAYER_NAME_LENGTH];
 			g_pVGuiLocalize->ConvertANSIToUnicode( event->GetString("name"), wszPlayerName, sizeof(wszPlayerName) );
@@ -1077,6 +1085,14 @@ void ClientModeShared::FireGameEvent( IGameEvent *event )
 	}
 	else if ( Q_strcmp( "player_disconnect", eventname ) == 0 )
 	{
+#ifdef NEO
+		if (neo_cl_streamermode.GetBool())
+		{
+			hudChat->Printf(CHAT_FILTER_JOINLEAVE, "Player disconnected");
+			return;
+		}
+#endif
+
 		C_BasePlayer *pPlayer = USERID2PLAYER( event->GetInt("userid") );
 
 		if ( !hudChat || !pPlayer )

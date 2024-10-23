@@ -42,6 +42,7 @@ static CDllDemandLoader g_GameUIDLL("GameUI");
 
 extern ConVar neo_name;
 extern ConVar cl_onlysteamnick;
+extern ConVar neo_cl_streamermode;
 
 CNeoRoot *g_pNeoRoot = nullptr;
 void NeoToggleconsole();
@@ -646,15 +647,18 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 			int iStatusTall = 0;
 			if (eCurStatus != k_EPersonaStateMax)
 			{
-				const wchar_t *wszState = WSZ_PERSONA_STATES[static_cast<int>(eCurStatus)];
+				wchar_t wszStatusTotal[48];
+				const int iStatusTotalSize = V_swprintf_safe(wszStatusTotal, L"%ls%ls",
+								WSZ_PERSONA_STATES[static_cast<int>(eCurStatus)],
+								neo_cl_streamermode.GetBool() ? L" [Streamer mode on]" : L"");
 				const int iStatusTextStartPosY = g_uiCtx.iMarginY + iMainTextHeight + g_uiCtx.iMarginY;
 
 				[[maybe_unused]] int iStatusWide;
 				surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_NTNORMAL].hdl);
-				surface()->GetTextSize(g_uiCtx.fonts[NeoUI::FONT_NTNORMAL].hdl, wszState, iStatusWide, iStatusTall);
+				surface()->GetTextSize(g_uiCtx.fonts[NeoUI::FONT_NTNORMAL].hdl, wszStatusTotal, iStatusWide, iStatusTall);
 				surface()->DrawSetTextPos(iSteamPlaceXStart + iMainTextStartPosX,
 										  iRightSideYStart + iStatusTextStartPosY);
-				surface()->DrawPrintText(wszState, V_wcslen(wszState));
+				surface()->DrawPrintText(wszStatusTotal, iStatusTotalSize);
 			}
 
 			// Put the news title in either from avatar or text end Y position
@@ -1202,12 +1206,15 @@ void CNeoRoot::MainLoopServerDetails(const MainLoopParam param)
 			wchar_t wszText[128];
 			if (bP) g_pVGuiLocalize->ConvertANSIToUnicode(gameServer->GetName(), wszText, sizeof(wszText));
 			NeoUI::Label(L"Name:", wszText);
-			if (bP) g_pVGuiLocalize->ConvertANSIToUnicode(gameServer->m_NetAdr.GetConnectionAddressString(), wszText, sizeof(wszText));
-			NeoUI::Label(L"Address:", wszText);
+			if (!neo_cl_streamermode.GetBool())
+			{
+				if (bP) g_pVGuiLocalize->ConvertANSIToUnicode(gameServer->m_NetAdr.GetConnectionAddressString(), wszText, sizeof(wszText));
+				NeoUI::Label(L"Address:", wszText);
+			}
 			if (bP) g_pVGuiLocalize->ConvertANSIToUnicode(gameServer->m_szMap, wszText, sizeof(wszText));
 			NeoUI::Label(L"Map:", wszText);
 			if (bP) V_swprintf_safe(wszText, L"%d/%d", gameServer->m_nPlayers, gameServer->m_nMaxPlayers);
-			NeoUI::Label(L"Ping:", wszText);
+			NeoUI::Label(L"Players:", wszText);
 			if (bP) V_swprintf_safe(wszText, L"%ls", gameServer->m_bSecure ? L"Enabled" : L"Disabled");
 			NeoUI::Label(L"VAC:", wszText);
 			if (bP) V_swprintf_safe(wszText, L"%d", gameServer->m_nPing);
@@ -1220,18 +1227,21 @@ void CNeoRoot::MainLoopServerDetails(const MainLoopParam param)
 		g_uiCtx.dPanel.tall = (iTallTotal - g_uiCtx.iRowTall) - g_uiCtx.dPanel.tall;
 		NeoUI::BeginSection();
 		{
-			if (m_serverPlayers.m_players.IsEmpty())
+			if (!neo_cl_streamermode.GetBool())
 			{
-				g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
-				NeoUI::Label(L"There are no players in the server.");
-				g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_LEFT;
-			}
-			else
-			{
-				for (const auto &player : m_serverPlayers.m_players)
+				if (m_serverPlayers.m_players.IsEmpty())
 				{
-					NeoUI::Label(player.wszName);
-					// TODO
+					g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
+					NeoUI::Label(L"There are no players in the server.");
+					g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_LEFT;
+				}
+				else
+				{
+					for (const auto &player : m_serverPlayers.m_players)
+					{
+						NeoUI::Label(player.wszName);
+						// TODO
+					}
 				}
 			}
 		}

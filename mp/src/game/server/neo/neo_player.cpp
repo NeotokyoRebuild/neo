@@ -1078,7 +1078,7 @@ int CNEO_Player::NameDupePos() const
 	return m_szNameDupePos;
 }
 
-const char *CNEO_Player::GetNeoPlayerName(const CNEO_Player *viewFrom) const
+const char *CNEO_Player::InternalGetNeoPlayerName(const CNEO_Player *viewFrom) const
 {
 	const bool nameFetchWantNeoName = (viewFrom) ? viewFrom->m_bClientWantNeoName : m_bClientWantNeoName;
 
@@ -1109,6 +1109,20 @@ const char *CNEO_Player::GetNeoPlayerName(const CNEO_Player *viewFrom) const
 		return m_szNeoNameWDupeIdx;
 	}
 	return stndName;
+}
+
+const char *CNEO_Player::GetNeoPlayerName(const CNEO_Player *viewFrom) const
+{
+	if (viewFrom && viewFrom->m_bClientStreamermode && viewFrom->entindex() != entindex())
+	{
+		[[maybe_unused]] uchar32 u32Out;
+		bool bError = false;
+		const char *pSzName = InternalGetNeoPlayerName(viewFrom);
+		const int iSize = Q_UTF8ToUChar32(pSzName, u32Out, bError);
+		if (!bError) V_memcpy(gStreamerModeNames[entindex()], pSzName, iSize);
+		return gStreamerModeNames[entindex()];
+	}
+	return InternalGetNeoPlayerName(viewFrom);
 }
 
 const char *CNEO_Player::GetNeoPlayerNameDirect() const
@@ -1173,8 +1187,28 @@ bool CNEO_Player::HandleCommand_JoinTeam( int team )
 	{
 		SetPlayerTeamModel();
 
-		UTIL_ClientPrintAll(HUD_PRINTTALK, "%s1 joined team %s2\n",
-			GetNeoPlayerName(), GetTeam()->GetName());
+		CRecipientFilter filterNonStreamers;
+		CRecipientFilter filterStreamers;
+		filterNonStreamers.MakeReliable();
+		filterStreamers.MakeReliable();
+		for (int i = 1; i <= gpGlobals->maxClients; ++i)
+		{
+			auto neoPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(i));
+			if (neoPlayer)
+			{
+				if (neoPlayer->m_bClientStreamermode)
+				{
+					filterStreamers.AddRecipient(neoPlayer);
+				}
+				else
+				{
+					filterNonStreamers.AddRecipient(neoPlayer);
+				}
+			}
+		}
+		UTIL_ClientPrintFilter(filterNonStreamers, HUD_PRINTTALK,
+							   "%s1 joined team %s2\n", GetNeoPlayerName(), GetTeam()->GetName());
+		UTIL_ClientPrintFilter(filterStreamers, HUD_PRINTTALK, "Player joined team %s1\n", GetTeam()->GetName());
 	}
 
 	return isAllowedToJoin;

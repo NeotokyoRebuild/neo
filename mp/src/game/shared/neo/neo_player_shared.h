@@ -311,4 +311,6 @@ struct PlayerXPInfo
 void DMClSortedPlayers(PlayerXPInfo (*pPlayersOrder)[MAX_PLAYERS + 1], int *piTotalPlayers);
 #endif
 
+inline char gStreamerModeNames[MAX_PLAYERS + 1][MAX_PLAYER_NAME_LENGTH + 1];
+
 #endif // NEO_PLAYER_SHARED_H
