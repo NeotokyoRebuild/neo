@@ -2196,7 +2196,8 @@ void CNEO_Player::PickDefaultSpawnTeam(void)
 
 bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 {
-	if (!GetGlobalTeam(iTeam) || iTeam == 0)
+	auto newTeam = GetGlobalTeam(iTeam);
+	if (!newTeam || iTeam == 0)
 	{
 		Warning("HandleCommand_JoinTeam( %d ) - invalid team index.\n", iTeam);
 		return false;
@@ -2300,7 +2301,7 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 		State_Transition(STATE_OBSERVER_MODE);
 	}
 	else if (iTeam == TEAM_JINRAI || iTeam == TEAM_NSF)
-	{
+	{		
 		if (!justJoined && GetTeamNumber() != TEAM_SPECTATOR && !IsDead())
 		{
 			if (suicidePlayerIfAlive)
@@ -2314,7 +2315,18 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 			}
 		}
 
-		StopObserverMode();
+		if(IsDead())
+		{
+			if (newTeam->GetNumPlayers() > 0) {
+				SetObserverMode(OBS_MODE_IN_EYE);
+			}
+			else {
+				SetObserverMode(OBS_MODE_ROAMING);
+			}
+		}
+		else {
+			StopObserverMode();
+		}		
 	}
 	else
 	{
