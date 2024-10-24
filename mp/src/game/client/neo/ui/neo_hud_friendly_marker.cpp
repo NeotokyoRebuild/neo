@@ -138,18 +138,16 @@ void CNEOHud_FriendlyMarker::DrawPlayerForTeam(C_Team *team, const C_NEO_Player 
 	}
 }
 
+extern ConVar glow_outline_effect_enable;
 void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, const C_NEO_Player *localPlayer) const
 {
 	int x, y;
 	static const float heightOffset = 48.0f;
 	auto pos = player->EyePosition();
 
-	bool drawOutline = false;
-	ConVar* glow_outline_effect_enable = cvar->FindVar("glow_outline_effect_enable");
-	if (glow_outline_effect_enable)
-		drawOutline = glow_outline_effect_enable->GetBool();
-
-	if (GetVectorInScreenSpace(pos, x, y))
+	bool drawOutline = glow_outline_effect_enable.GetBool();
+	Vector offset = drawOutline ? Vector(0, 0, 7) : vec3_origin;
+	if (GetVectorInScreenSpace(pos, x, y, &offset))
 	{
 		auto playerName = player->GetNeoPlayerName();
 
@@ -162,22 +160,22 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 
 			surface()->DrawSetTextFont(m_hFont);
 			surface()->DrawSetTextColor(FadeColour(teamColor, fadeTextMultiplier));
-			int textYOffset = 0;
+			int textYOffset = drawOutline ? vgui::surface()->GetFontTall(m_hFont) * -2 : 0;
 			char textASCII[MAX_MARKER_STRLEN];
 
-			auto DisplayText = [this, &textYOffset, x, y](const char *textASCII) {
+			auto DisplayText = [this, &textYOffset, x, y](const char *textASCII, bool drawOutline) {
 				wchar_t textUTF[MAX_MARKER_STRLEN];
 				g_pVGuiLocalize->ConvertANSIToUnicode(textASCII, textUTF, sizeof(textUTF));
 				int textWidth, textHeight;
 				surface()->GetTextSize(m_hFont, textUTF, textWidth, textHeight);
-				surface()->DrawSetTextPos(x - (textWidth / 2), y + m_iMarkerHeight + textYOffset);
+				surface()->DrawSetTextPos(x - (textWidth / 2), y + (drawOutline ? 0 : m_iMarkerHeight) + textYOffset);
 				surface()->DrawPrintText(textUTF, V_strlen(textASCII));
 				textYOffset += textHeight;
 			};
 
 			// Draw player's name and health
 			V_snprintf(textASCII, MAX_MARKER_STRLEN, "%s", playerName);
-			DisplayText(textASCII);
+			DisplayText(textASCII, drawOutline);
 
 			// Draw distance to player - Only if local player alive and same team
 			// OR local not alive or spectator and this player has ghost
@@ -188,11 +186,11 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 				V_snprintf(textASCII, MAX_MARKER_STRLEN, "%s: %.0fm",
 						 player->IsCarryingGhost() ? "GHOST DISTANCE" : "DISTANCE",
 						 flDistance);
-				DisplayText(textASCII);
+				DisplayText(textASCII, drawOutline);
 			}
 
 			V_snprintf(textASCII, MAX_MARKER_STRLEN, "%d%%", player->GetHealth());
-			DisplayText(textASCII);
+			DisplayText(textASCII, drawOutline);
 		}
 
 		if (!drawOutline)
