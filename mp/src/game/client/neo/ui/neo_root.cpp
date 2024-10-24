@@ -43,6 +43,7 @@ static CDllDemandLoader g_GameUIDLL("GameUI");
 extern ConVar neo_name;
 extern ConVar cl_onlysteamnick;
 extern ConVar neo_cl_streamermode;
+extern ConVar neo_clantag;
 
 CNeoRoot *g_pNeoRoot = nullptr;
 void NeoToggleconsole();
@@ -600,26 +601,25 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 			m_avImage->SetSize(g_iAvatar, g_iAvatar);
 			m_avImage->Paint();
 
-			char szTextBuf[512] = {};
-			const char *szSteamName = steamFriends->GetPersonaName();
+			wchar_t wszDisplayName[NEO_MAX_DISPLAYNAME];
+			GetClNeoDisplayName(wszDisplayName, neo_name.GetString(), neo_clantag.GetString(), cl_onlysteamnick.GetBool());
+
 			const char *szNeoName = neo_name.GetString();
 			const bool bUseNeoName = (szNeoName && szNeoName[0] != '\0' && !cl_onlysteamnick.GetBool());
-			V_sprintf_safe(szTextBuf, "%s", (bUseNeoName) ? szNeoName : szSteamName);
-
-			wchar_t wszTextBuf[512] = {};
-			g_pVGuiLocalize->ConvertANSIToUnicode(szTextBuf, wszTextBuf, sizeof(wszTextBuf));
 
 			int iMainTextWidth, iMainTextHeight;
 			surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_NTHEADING].hdl);
-			surface()->GetTextSize(g_uiCtx.fonts[NeoUI::FONT_NTHEADING].hdl, wszTextBuf, iMainTextWidth, iMainTextHeight);
+			surface()->GetTextSize(g_uiCtx.fonts[NeoUI::FONT_NTHEADING].hdl, wszDisplayName, iMainTextWidth, iMainTextHeight);
 
 			const int iMainTextStartPosX = g_uiCtx.iMarginX + g_iAvatar + g_uiCtx.iMarginX;
 			surface()->DrawSetTextPos(iSteamPlaceXStart + iMainTextStartPosX, iRightSideYStart + g_uiCtx.iMarginY);
-			surface()->DrawPrintText(wszTextBuf, V_strlen(szTextBuf));
+			surface()->DrawPrintText(wszDisplayName, V_wcslen(wszDisplayName));
 
 			if (bUseNeoName)
 			{
-				V_sprintf_safe(szTextBuf, "(Steam name: %s)", szSteamName);
+				char szTextBuf[64];
+				V_sprintf_safe(szTextBuf, "(Steam name: %s)", steamFriends->GetPersonaName());
+				wchar_t wszTextBuf[64] = {};
 				g_pVGuiLocalize->ConvertANSIToUnicode(szTextBuf, wszTextBuf, sizeof(wszTextBuf));
 
 				int iSteamSubTextWidth, iSteamSubTextHeight;

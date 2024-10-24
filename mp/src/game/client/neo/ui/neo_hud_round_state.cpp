@@ -602,7 +602,7 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 					const char* squadMateRankName = GetRankName(g_PR->GetXP(i), true);
 					const char* squadMateClass = GetNeoClassName(g_PR->GetClass(i));
 					const int squadMateHealth = g_PR->IsAlive( i ) ? g_PR->GetHealth( i ) : 0;
-					V_snprintf(squadMateText, SQUAD_MATE_TEXT_LENGTH, "%s %s  [%s]  Integrity %i\0", g_PR->GetPlayerName( i ), squadMateRankName, squadMateClass, squadMateHealth);
+					V_snprintf(squadMateText, SQUAD_MATE_TEXT_LENGTH, "%s %s  [%s]  Integrity %i", g_PR->GetPlayerName( i ), squadMateRankName, squadMateClass, squadMateHealth);
 					g_pVGuiLocalize->ConvertANSIToUnicode(squadMateText, wSquadMateText, sizeof(wSquadMateText));
 
 					surface()->DrawSetTextFont(m_hOCRSmallFont);

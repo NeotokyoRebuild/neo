@@ -313,4 +313,16 @@ void DMClSortedPlayers(PlayerXPInfo (*pPlayersOrder)[MAX_PLAYERS + 1], int *piTo
 
 inline char gStreamerModeNames[MAX_PLAYERS + 1][MAX_PLAYER_NAME_LENGTH + 1];
 
+static constexpr int NEO_MAX_CLANTAG_LENGTH = 12;
+static constexpr int NEO_MAX_DISPLAYNAME = MAX_PLAYER_NAME_LENGTH + 1 + NEO_MAX_CLANTAG_LENGTH + 1;
+void GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
+						 const wchar_t wszNeoName[MAX_PLAYER_NAME_LENGTH + 1],
+						 const wchar_t wszNeoClantag[NEO_MAX_CLANTAG_LENGTH + 1],
+						 const bool bOnlySteamNick);
+
+void GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
+						 const char *pSzNeoName,
+						 const char *pSzNeoClantag,
+						 const bool bOnlySteamNick);
+
 #endif // NEO_PLAYER_SHARED_H
