@@ -40,6 +40,7 @@ struct NeoSettings
 		int iDlFilter;
 		bool bStreamerMode;
 		bool bAutoDetectOBS;
+		bool bEnableRangeFinder;
 	};
 
 	struct Keys
@@ -164,6 +165,7 @@ struct NeoSettings
 		CONVARREF_DEF(neo_cl_toggleconsole);
 		CONVARREF_DEF(neo_cl_streamermode);
 		CONVARREF_DEF(neo_cl_streamermode_autodetect_obs);
+		CONVARREF_DEF(neo_cl_hud_rangefinder_enabled);
 
 		// Multiplayer
 		CONVARREF_DEF(cl_playerspraydisable);

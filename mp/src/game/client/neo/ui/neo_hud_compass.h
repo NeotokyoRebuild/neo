@@ -38,6 +38,7 @@ private:
 	mutable int m_savedXBoxWidth = 0;
 
 	wchar_t m_wszCompassUnicode[UNICODE_NEO_COMPASS_STR_LENGTH];
+	wchar_t m_wszRangeFinder[11];
 
 	CPanelAnimationVarAliasType(bool, m_showCompass, "visible", "1", "bool");
 	CPanelAnimationVarAliasType(int, m_yFromBottomPos, "y_bottom_pos", "3", "proportional_ypos");
