@@ -134,6 +134,7 @@ public:
 	const char *GetNeoPlayerNameDirect() const;
 	void SetNeoPlayerName(const char *newNeoName);
 	void SetClientWantNeoName(const bool b);
+	const char *GetNeoClantag() const;
 
 	void Lean(void);
 	void SoftSuicide(void);
@@ -249,6 +250,7 @@ public:
 
 	CNetworkVar(unsigned char, m_NeoFlags);
 	CNetworkString(m_szNeoName, MAX_PLAYER_NAME_LENGTH);
+	CNetworkString(m_szNeoClantag, NEO_MAX_CLANTAG_LENGTH);
 	CNetworkVar(int, m_szNameDupePos);
 
 	// NEO NOTE (nullsystem): As dumb as client sets -> server -> client it may sound,

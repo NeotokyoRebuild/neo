@@ -1008,7 +1008,7 @@ void SliderU8(const wchar_t *wszLeftLabel, uint8 *ucValue, const uint8 iMin, con
 	}
 }
 
-void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
+void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxBytes)
 {
 	static wchar_t staticWszPasswordChars[256] = {};
 	if (staticWszPasswordChars[0] == L'\0')
@@ -1092,9 +1092,11 @@ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
 		{
 			if (wdgState.bActive && iswprint(g_pCtx->unichar))
 			{
-				int iTextSize = V_wcslen(wszText);
-				if (iTextSize < iMaxSize)
+				static char szTmpANSICheck[MAX_TEXTINPUT_U8BYTES_LIMIT];
+				const int iTextInU8Bytes = g_pVGuiLocalize->ConvertUnicodeToANSI(wszText, szTmpANSICheck, sizeof(szTmpANSICheck));
+				if (iTextInU8Bytes < iMaxBytes)
 				{
+					int iTextSize = V_wcslen(wszText);
 					wszText[iTextSize++] = g_pCtx->unichar;
 					wszText[iTextSize] = L'\0';
 					g_pCtx->bValueEdited = true;

@@ -418,7 +418,9 @@ void CNEOScoreBoard::UpdateTeamInfo()
 
 				if (!teamName && team)
 				{
-					g_pVGuiLocalize->ConvertANSIToUnicode(team->Get_Name(), name, sizeof(name));
+					const char *pSzClantag = NEORules()->GetTeamClantag(i);
+					g_pVGuiLocalize->ConvertANSIToUnicode((pSzClantag && pSzClantag[0]) ? pSzClantag : team->Get_Name(),
+														  name, sizeof(name));
 					teamName = name;
 				}
 
@@ -511,9 +513,9 @@ void CNEOScoreBoard::UpdatePlayerInfo()
 			UpdatePlayerAvatar( i, playerData );
 
 			const char *oldName = playerData->GetString("name","");
-			char newName[MAX_PLAYER_NAME_LENGTH];
+			char newName[MAX_PLAYER_NAME_LENGTH + 1 + NEO_MAX_CLANTAG_LENGTH + 1];
 
-			UTIL_MakeSafeName( oldName, newName, MAX_PLAYER_NAME_LENGTH );
+			UTIL_MakeSafeName( oldName, newName, ARRAYSIZE(newName) );
 
 			playerData->SetString("name", newName);
 
@@ -688,7 +690,17 @@ void CNEOScoreBoard::GetPlayerScoreInfo(int playerIndex, KeyValues *kv)
 	kv->SetInt("playerIndex", playerIndex);
 	const int neoTeam = g_PR->GetTeam(playerIndex);
 	kv->SetInt("team", neoTeam);
-	kv->SetString("name", g_PR->GetPlayerName(playerIndex) );
+	const char *pClantag = g_PR->GetClanTag(playerIndex);
+	if (pClantag && pClantag[0] && (!neo_cl_streamermode.GetBool() || g_PR->IsLocalPlayer(playerIndex)))
+	{
+		char szClanTagWName[MAX_PLAYER_NAME_LENGTH + 1 + NEO_MAX_CLANTAG_LENGTH + 1];
+		V_sprintf_safe(szClanTagWName, "[%s] %s", pClantag, g_PR->GetPlayerName(playerIndex));
+		kv->SetString("name", szClanTagWName);
+	}
+	else
+	{
+		kv->SetString("name", g_PR->GetPlayerName(playerIndex));
+	}
 	kv->SetInt("deaths", g_PR->GetDeaths( playerIndex ));
 
 	const int xp = g_PR->GetXP(playerIndex);

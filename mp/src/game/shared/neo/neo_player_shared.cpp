@@ -5,6 +5,9 @@
 #include "neo_gamerules.h"
 
 #include "tier0/valve_minmax_off.h"
+#include <tier3/tier3.h>
+#include <vgui/ILocalize.h>
+#include <steam/steam_api.h>
 #include <system_error>
 #include <charconv>
 #include "tier0/valve_minmax_on.h"
@@ -201,3 +204,43 @@ void DMClSortedPlayers(PlayerXPInfo (*pPlayersOrder)[MAX_PLAYERS + 1], int *piTo
 	*piTotalPlayers = iTotalPlayers;
 }
 #endif
+
+void GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
+						 const wchar_t wszNeoName[MAX_PLAYER_NAME_LENGTH + 1],
+						 const wchar_t wszNeoClantag[NEO_MAX_CLANTAG_LENGTH + 1],
+						 const bool bOnlySteamNick)
+{
+	const bool bShowSteamNick = bOnlySteamNick || wszNeoName[0] == '\0';
+	wchar_t wszDisplayName[MAX_PLAYER_NAME_LENGTH + 1] = {};
+	if (bShowSteamNick)
+	{
+		g_pVGuiLocalize->ConvertANSIToUnicode(steamapicontext->SteamFriends()->GetPersonaName(),
+											  wszDisplayName, sizeof(wszDisplayName));
+	}
+	else
+	{
+		V_wcscpy_safe(wszDisplayName, wszNeoName);
+	}
+
+	if (wszNeoClantag[0] != L'\0')
+	{
+		V_swprintf_safe(pWszDisplayName, L"[%ls] %ls", wszNeoClantag, wszDisplayName);
+	}
+	else
+	{
+		V_wcscpy_safe(pWszDisplayName, wszDisplayName);
+	}
+}
+
+void GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
+						 const char *pSzNeoName,
+						 const char *pSzNeoClantag,
+						 const bool bOnlySteamNick)
+{
+	wchar_t wszNeoName[MAX_PLAYER_NAME_LENGTH + 1];
+	wchar_t wszNeoClantag[NEO_MAX_CLANTAG_LENGTH + 1];
+	g_pVGuiLocalize->ConvertANSIToUnicode(pSzNeoName, wszNeoName, sizeof(wszNeoName));
+	g_pVGuiLocalize->ConvertANSIToUnicode(pSzNeoClantag, wszNeoClantag, sizeof(wszNeoClantag));
+	GetClNeoDisplayName(pWszDisplayName, wszNeoName, wszNeoClantag, bOnlySteamNick);
+}
+
