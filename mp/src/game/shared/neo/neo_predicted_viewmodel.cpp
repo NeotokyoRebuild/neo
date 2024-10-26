@@ -286,6 +286,7 @@ float GetLeanRatio(const float leanAngle)
 
 #ifdef CLIENT_DLL
 ConVar cl_neo_lean_viewmodel_only("cl_neo_lean_viewmodel_only", "0", FCVAR_ARCHIVE, "Rotate view-model instead of camera when leaning", true, 0, true, 1);
+ConVar cl_neo_lean_automatic("cl_neo_lean_automatic", "0", FCVAR_ARCHIVE, "Automatic leaning around corners", true, 0, true, 1);
 #endif
 
 float CNEOPredictedViewModel::lean(CNEO_Player *player){
@@ -299,6 +300,65 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 
 	if (player->IsAlive())
 	{
+		int leaning = player->m_bInLean.Get();
+		Vector startPos = player->GetAbsOrigin();
+		startPos.z = player->EyePosition().z;
+		bool right = false;
+		bool left = false;
+		int distance = 80;
+		for (int i = 2; i <= 5; i++)
+		{
+			Vector endPos = startPos;
+			endPos.x += cos(DEG2RAD(viewAng.y) + (i/7.f)) * distance;
+			endPos.y += sin(DEG2RAD(viewAng.y) + (i/7.f)) * distance;
+			trace_t tr;
+			CTraceFilterWorldAndPropsOnly filter;
+			UTIL_TraceLine(startPos, endPos, MASK_SOLID_BRUSHONLY, &filter, &tr);
+			if (tr.fraction != 1.0)
+			{
+				right = true;
+				break;
+			}
+			distance -= 15;
+			DebugDrawLine(startPos, endPos, 255, 255, 0, 0, 0.1);
+		}
+		distance = 80;
+		for (int i = -2; i >= -5; i--)
+		{
+			Vector endPos = startPos;
+			endPos.x += cos(DEG2RAD(viewAng.y) + (i / 7.f)) * distance;
+			endPos.y += sin(DEG2RAD(viewAng.y) + (i / 7.f)) * distance;
+			trace_t tr;
+			CTraceFilterWorldAndPropsOnly filter;
+			UTIL_TraceLine(startPos, endPos, MASK_SOLID_BRUSHONLY, &filter, &tr);
+			if (tr.fraction != 1.0)
+			{
+				left = true;
+				break;
+			}
+			distance -= 15;
+			DebugDrawLine(startPos, endPos, 255, 255, 0, 0, 0.1);
+		}
+		if (right && left)
+		{
+			player->m_bInLean.Set(NEO_LEAN_NONE);
+		}
+		else if (left)
+		{
+			player->m_bInLean.Set(NEO_LEAN_LEFT);
+		}
+		else if (right)
+		{
+			player->m_bInLean.Set(NEO_LEAN_RIGHT);
+		}
+		else
+		{
+			player->m_bInLean.Set(NEO_LEAN_NONE);
+		}
+		engine->Con_NPrintf(1, "Client Lean: %i", player->m_bInLean.Get());
+#ifdef GAME_DLL
+		engine->Con_NPrintf(2, "Server Lean: %i", player->m_bInLean.Get());
+#endif // GAME_DLL
 		switch (player->m_bInLean.Get())
 		{
 		case NEO_LEAN_LEFT:
