@@ -475,13 +475,12 @@ void CNEOBaseCombatWeapon::ProcessAnimationEvents()
 		return;
 	}
 
-	const auto next = [this](const int activity) {
+	const auto next = [this](const int activity, const float nextAttackDelay = 0.2) {
 		SendWeaponAnim(activity);
 		if (GetNeoWepBits() & NEO_WEP_THROWABLE)
 		{
 			return;
 		}
-		constexpr auto nextAttackDelay = 0.2;
 		m_flNextPrimaryAttack = max(gpGlobals->curtime + nextAttackDelay, m_flNextPrimaryAttack);
 		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
 	};
@@ -501,11 +500,10 @@ void CNEOBaseCombatWeapon::ProcessAnimationEvents()
 	{ // For bolt action weapons
 		m_bLowered = false;
 		SendWeaponAnim(ACT_VM_PULLBACK);
-		m_flNextPrimaryAttack = max(gpGlobals->curtime + 1.2f, m_flNextPrimaryAttack);
-		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
+		next(ACT_VM_PULLBACK, 1.2f);
 	}
 
-	if (m_bLowered && gpGlobals->curtime > m_flNextPrimaryAttack)
+	else if (m_bLowered && gpGlobals->curtime > m_flNextPrimaryAttack)
 	{
 		SetWeaponIdleTime(gpGlobals->curtime + 0.2);
 		m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
