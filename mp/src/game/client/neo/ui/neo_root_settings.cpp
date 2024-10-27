@@ -666,6 +666,8 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBoxBool(L"Show rangefinder", &pGeneral->bEnableRangeFinder);
 
 	NeoUI::Pad();
+
+	
 	if (NeoUI::Button(L"", L"Import spray").bPressed)
 	{
 		if (g_pNeoRoot->m_pFileIODialog)
@@ -681,7 +683,14 @@ void NeoSettings_General(NeoSettings *ns)
 		g_pNeoRoot->m_pFileIODialog->DoModal();
 	}
 
-	NeoUI::Pad();
+	if (engine->IsInGame())
+	{
+		NeoUI::Label(L"", L"Disconnect to update in-game spray");
+	}
+	else
+	{
+		NeoUI::Pad();
+	}
 
 	if (pGeneral->iTexIdSpray > 0)
 	{

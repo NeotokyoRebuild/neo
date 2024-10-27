@@ -1590,7 +1590,11 @@ void CNeoRoot::OnFileSelected(const char *szFullpath)
 		char szRetTexPath[VTF_PATH_MAX] = {};
 		uint8 *data = NeoUI::ConvertToVTF(&szRetTexPath, szFullpath);
 
+#ifdef LINUX
 		char szRetVtfPath[PATH_MAX];
+#else
+		char szRetVtfPath[MAX_PATH];
+#endif
 		V_sprintf_safe(szRetVtfPath, "%s.vtf", szRetTexPath);
 
 		ConVarRef("cl_logofile").SetValue(szRetVtfPath);

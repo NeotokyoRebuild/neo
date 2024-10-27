@@ -1245,7 +1245,11 @@ uint8 *ConvertToVTF(char (*szRetTexPath)[VTF_PATH_MAX], const char *szFullpath)
 	V_sprintf_safe(*szRetTexPath, "materials/vgui/logos/%s", pszBaseName);
 	filesystem->CreateDirHierarchy("materials/vgui/logos");
 	filesystem->CreateDirHierarchy("materials/vgui/logos/ui");
+#ifdef LINUX
 	char szFullFilePath[PATH_MAX];
+#else
+	char szFullFilePath[MAX_PATH];
+#endif
 
 #if 0
 	From VPC: https://developer.valvesoftware.com/wiki/VTF_(Valve_Texture_Format)
@@ -1675,6 +1679,12 @@ LightmappedGeneric
 		{
 			// TODO ERROR
 		}
+	}
+
+	if (!engine->IsInGame())
+	{
+		materials->ReloadTextures();
+		materials->ReloadMaterials();
 	}
 
 	return data;

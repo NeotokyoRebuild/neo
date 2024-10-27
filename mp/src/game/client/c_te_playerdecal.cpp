@@ -174,11 +174,20 @@ IMaterial *CreateTempMaterialForPlayerLogo( int iPlayerIndex, player_info_t *inf
 
 	if ( !filesystem->FileExists( fulltexname ) )
 	{
+		// NEO TODO (nullsystem): Not just spray.vtf, only for local player not everyone!!!
+		engine->CopyLocalFile("materials/vgui/logos/spray.vtf", fulltexname);
+
 		char custname[ 512 ];
 		Q_snprintf( custname, sizeof( custname ), "download/user_custom/%c%c/%s.dat", logohex[0], logohex[1], logohex );
 		// it may have been downloaded but not copied under materials folder
-		if ( !filesystem->FileExists( custname ) )
-			return NULL; // not downloaded yet
+		if (!filesystem->FileExists(custname))
+		{
+			if (!engine->CopyLocalFile(fulltexname, custname))
+			{
+				return NULL;
+			}
+			//return NULL; // not downloaded yet
+		}
 
 		// copy from download folder to materials/temp folder
 		// this is done since material system can access only materials/*.vtf files
