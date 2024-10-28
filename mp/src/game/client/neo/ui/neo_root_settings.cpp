@@ -250,9 +250,14 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		if (pGeneral->iTexIdSpray > 0)
 		{
 			vgui::surface()->DeleteTextureByID(pGeneral->iTexIdSpray);
+			pGeneral->iTexIdSpray = 0;
 		}
+#if 0
 		const char *szLogo = ConVarRef("cl_logofile").GetString();
 		if (szLogo)
+#else
+		const char *szLogo = "vgui/logos/ui/spray";
+#endif
 		{
 			pGeneral->iTexIdSpray = vgui::surface()->CreateNewTextureID();
 			vgui::surface()->DrawSetTextureFile(pGeneral->iTexIdSpray, szLogo, false, false);
@@ -666,7 +671,6 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBoxBool(L"Show rangefinder", &pGeneral->bEnableRangeFinder);
 
 	NeoUI::Pad();
-
 	
 	if (NeoUI::Button(L"", L"Import spray").bPressed)
 	{

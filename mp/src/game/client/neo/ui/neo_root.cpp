@@ -20,9 +20,11 @@
 #include "tier1/interface.h"
 #include <ctime>
 #include "ui/neo_loading.h"
+#include "ui/neo_utils.h"
 
 #include <vgui/IInput.h>
 #include <vgui_controls/Controls.h>
+#include <stb_image.h>
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -1548,87 +1550,138 @@ void CNeoRoot::OnFileSelected(const char *szFullpath)
 		break;
 	case FILEIODLGMODE_SPRAY:
 	{
-#if 1
 		if (V_striEndsWith(szFullpath, ".vtf"))
 		{
+			// Check if we can just direct copy over (is DXT1 and 256x256) or will have
+			// to go through reprocessing like a PNG/JPEG format would
 			CUtlBuffer buf(0, 0, CUtlBuffer::READ_ONLY);
-			if (filesystem->ReadFile(szFullpath, nullptr, buf))
+			if (!filesystem->ReadFile(szFullpath, nullptr, buf))
 			{
-				IVTFTexture *pVTFTexture = CreateVTFTexture();
-				if (pVTFTexture->Unserialize(buf))
+				return;
+			}
+
+			IVTFTexture *pVTFTexture = CreateVTFTexture();
+			if (pVTFTexture->Unserialize(buf))
+			{
+				const bool bDirectCopy = (pVTFTexture->Width() == NeoUtils::SPRAY_WH &&
+										  pVTFTexture->Height() == NeoUtils::SPRAY_WH &&
+										  pVTFTexture->Format() == IMAGE_FORMAT_DXT1);
+				if (bDirectCopy)
 				{
-					const auto width = pVTFTexture->Width();
-					const auto height = pVTFTexture->Height();
-					const auto depth = pVTFTexture->Depth();
-					const auto format = pVTFTexture->Format();
-					const auto flags = pVTFTexture->Flags();
-					const auto mip = pVTFTexture->MipCount();
-					const auto face = pVTFTexture->FaceCount();
-					const auto frame = pVTFTexture->FrameCount();
-
-					int foo = 0;
+					engine->CopyLocalFile(szFullpath, "materials/vgui/logos/spray.vtf");
 				}
-				//DestroyVTFTexture(pVTFTexture);
-				//stbi_image_free(data);
+				else
+				{
+					pVTFTexture->ConvertImageFormat(IMAGE_FORMAT_RGBA8888, false);
+					uint8 *data = NeoUtils::CropScaleTo256(pVTFTexture->ImageData(0, 0, 0),
+														   pVTFTexture->Width(), pVTFTexture->Height());
+					NeoUtils::WriteVTFDXT1SprayFile(data);
+					free(data);
+				}
 			}
-
-
-#if 0
-			engine->CopyLocalFile(szFullpath, "vgui/logos/testing.vtf");
-			ConVarRef("cl_logofile").SetValue("vgui/logos/testing.vtf");
-			if (m_ns.general.iTexIdSpray > 0)
-			{
-				vgui::surface()->DeleteTextureByID(m_ns.general.iTexIdSpray);
-			}
-			m_ns.general.iTexIdSpray = vgui::surface()->CreateNewTextureID(true);
-			vgui::surface()->DrawSetTextureFile(m_ns.general.iTexIdSpray, szFullpath, false, false);
-#endif
-			return;
+			DestroyVTFTexture(pVTFTexture);
 		}
+		else
+		{
+			int width, height, stride;
+			uint8 *data = stbi_load(szFullpath, &width, &height, &stride, 0);
+			if (!data || width <= 0 || height <= 0)
+			{
+				return;
+			}
+
+			// Convert to RGBA
+			if (stride == 3)
+			{
+				uint8 *rgbaData = reinterpret_cast<uint8 *>(calloc(width * height, sizeof(uint8) * 4));
+
+				ImageLoader::ConvertImageFormat(data, IMAGE_FORMAT_RGB888,
+												rgbaData, IMAGE_FORMAT_RGBA8888,
+												width, height);
+
+				stbi_image_free(data);
+				data = rgbaData;
+				stride = 4;
+			}
+
+			{
+				uint8 *newData = NeoUtils::CropScaleTo256(data, width, height);
+				free(data);
+				data = newData;
+				width = NeoUtils::SPRAY_WH;
+				height = NeoUtils::SPRAY_WH;
+			}
+
+			// NEO TODO (nullsystem): It seems cl_logofile is always set to materials/vgui/logos/spray.vtf, so only
+			// use "spray" for now
+#if 0
+			const char *pLastSlash = V_strrchr(szFullpath, '/');
+			const char *pszBaseName = pLastSlash ? pLastSlash + 1 : szFullpath;
+			char *pszDot = strchr((char *)(pszBaseName), '.');
+			if (pszDot)
+			{
+				*pszDot = '\0';
+			}
 #endif
+			NeoUtils::WriteVTFDXT1SprayFile(data);
+			free(data);
+		}
 
-		char szRetTexPath[VTF_PATH_MAX] = {};
-		uint8 *data = NeoUI::ConvertToVTF(&szRetTexPath, szFullpath);
+		// Generate the vmt files, one for spraying, one under "ui" to display in GUI
+		static constexpr char PSZ_BASENAME[] = "spray";
+		char szStrBuffer[1024];
+		{
+			V_sprintf_safe(szStrBuffer, R"VMT(
+LightmappedGeneric
+{
+	"$basetexture"	"vgui/logos/%s"
+	"$translucent" "1"
+	"$decal" "1"
+	"$decalscale" "0.250"
+}
+)VMT", PSZ_BASENAME);
 
-#ifdef LINUX
-		char szRetVtfPath[PATH_MAX];
-#else
-		char szRetVtfPath[MAX_PATH];
-#endif
-		V_sprintf_safe(szRetVtfPath, "%s.vtf", szRetTexPath);
+			CUtlBuffer bufVmt(0, 0, CUtlBuffer::TEXT_BUFFER);
+			bufVmt.PutString(szStrBuffer);
 
-		ConVarRef("cl_logofile").SetValue(szRetVtfPath);
+			if (!filesystem->WriteFile("materials/vgui/logos/spray.vmt", nullptr, bufVmt))
+			{
+				// TODO ERROR
+			}
+		}
+
+		{
+			V_sprintf_safe(szStrBuffer, R"VMT(
+"UnlitGeneric"
+{
+	// Original shader: BaseTimesVertexColorAlphaBlendNoOverbright
+	"$translucent" 1
+	"$basetexture" "VGUI/logos/%s"
+	"$vertexcolor" 1
+	"$vertexalpha" 1
+	"$no_fullbright" 1
+	"$ignorez" 1
+}
+)VMT", PSZ_BASENAME);
+
+			CUtlBuffer bufVmt(0, 0, CUtlBuffer::TEXT_BUFFER);
+			bufVmt.PutString(szStrBuffer);
+
+			if (!filesystem->WriteFile("materials/vgui/logos/ui/spray.vmt", nullptr, bufVmt))
+			{
+				// TODO ERROR
+			}
+		}
+
+		// Reapply the cl_logofile ConVar, update the texture to the new spray
+		ConVarRef("cl_logofile").SetValue("materials/vgui/logos/spray.vtf");
 		engine->ClientCmd_Unrestricted("cl_logofile materials/vgui/logos/spray.vtf");
 		if (m_ns.general.iTexIdSpray > 0)
 		{
 			vgui::surface()->DeleteTextureByID(m_ns.general.iTexIdSpray);
 		}
-#if 1
-		m_ns.general.iTexIdSpray = vgui::surface()->CreateNewTextureID(true);
-		//vgui::surface()->DrawSetTextureFile(m_ns.general.iTexIdSpray, szRetTexPath, false, false);
-		vgui::surface()->DrawSetTextureRGBA(m_ns.general.iTexIdSpray, data, 256, 256, false, false);
-		free(data);
-#else
-		CUtlBuffer buf(0, 0, CUtlBuffer::READ_ONLY);
-		if (filesystem->ReadFile(szRetFullPath, nullptr, buf))
-		{
-			IVTFTexture *pVTFTexture = CreateVTFTexture();
-			if (pVTFTexture->Unserialize(buf))
-			{
-				const auto width = pVTFTexture->Width();
-				const auto height = pVTFTexture->Height();
-				const auto depth = pVTFTexture->Depth();
-				const auto format = pVTFTexture->Format();
-				const auto flags = pVTFTexture->Flags();
-				const auto mip = pVTFTexture->MipCount();
-				const auto face = pVTFTexture->FaceCount();
-				const auto frame = pVTFTexture->FrameCount();
-
-			}
-			//DestroyVTFTexture(pVTFTexture);
-			//stbi_image_free(data);
-		}
-#endif
+		m_ns.general.iTexIdSpray = vgui::surface()->CreateNewTextureID();
+		vgui::surface()->DrawSetTextureFile(m_ns.general.iTexIdSpray, "vgui/logos/ui/spray", false, false);
 		break;
 	}
 	default:
