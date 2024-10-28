@@ -72,7 +72,7 @@ void NeoUtils::WriteVTFDXT1SprayFile(const uint8 *data)
 	// Undef DXT_OUT will instead outputs RGBA8888. This is just to check if the headers and raw input/output are fine.
 	// VTF_VER_MINOR 1 or 4 to switch between older and newer formats
 #define DXT_OUT
-#define VTF_VER_MINOR 1
+#define VTF_VER_MINOR 4
 
 	// Create and initialize a 256x256 VTF texture
 	CUtlBuffer buffer(0, 0, 0);

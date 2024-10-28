@@ -252,16 +252,8 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 			vgui::surface()->DeleteTextureByID(pGeneral->iTexIdSpray);
 			pGeneral->iTexIdSpray = 0;
 		}
-#if 0
-		const char *szLogo = ConVarRef("cl_logofile").GetString();
-		if (szLogo)
-#else
-		const char *szLogo = "vgui/logos/ui/spray";
-#endif
-		{
-			pGeneral->iTexIdSpray = vgui::surface()->CreateNewTextureID();
-			vgui::surface()->DrawSetTextureFile(pGeneral->iTexIdSpray, szLogo, false, false);
-		}
+		pGeneral->iTexIdSpray = vgui::surface()->CreateNewTextureID();
+		vgui::surface()->DrawSetTextureFile(pGeneral->iTexIdSpray, "vgui/logos/ui/spray", false, false);
 	}
 	{
 		NeoSettings::Keys *pKeys = &ns->keys;
@@ -670,9 +662,11 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::Label(L"OBS detection", g_bOBSDetected ? L"OBS detected on startup" : L"Not detected on startup");
 	NeoUI::RingBoxBool(L"Show rangefinder", &pGeneral->bEnableRangeFinder);
 
-	NeoUI::Pad();
-	
-	if (NeoUI::Button(L"", L"Import spray").bPressed)
+	g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
+	NeoUI::Label(L"SPRAY");
+	g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_LEFT;
+
+	if (NeoUI::Button(L"Current spray:", L"Import spray").bPressed)
 	{
 		if (g_pNeoRoot->m_pFileIODialog)
 		{
@@ -687,28 +681,44 @@ void NeoSettings_General(NeoSettings *ns)
 		g_pNeoRoot->m_pFileIODialog->DoModal();
 	}
 
+	if (pGeneral->iTexIdSpray > 0)
+	{
+		// NEO TODO (nullsystem): This could serve as the basis for NeoUI "background" images (ones that doesn't
+		// actually advance Y-direction of widget, but is aware of its scroll/render state)
+		static constexpr int SPRAY_ROWS = 6;
+		const int iRowsInScreen = g_uiCtx.dPanel.tall / g_uiCtx.iRowTall;
+		const int iTexSprayWH = g_uiCtx.iRowTall * SPRAY_ROWS;
+		const int iCurEnd = g_uiCtx.iYOffset[g_uiCtx.iSection] + iRowsInScreen;
+		const float flPartialShow = (iCurEnd - g_uiCtx.iWidget) / static_cast<float>(SPRAY_ROWS);
+		vgui::surface()->DrawSetColor(COLOR_WHITE);
+		vgui::surface()->DrawSetTexture(pGeneral->iTexIdSpray);
+		vgui::surface()->DrawTexturedSubRect(
+					g_uiCtx.dPanel.x + g_uiCtx.iLayoutX,
+					g_uiCtx.dPanel.y + g_uiCtx.iLayoutY,
+					g_uiCtx.dPanel.x + g_uiCtx.iLayoutX + iTexSprayWH,
+					g_uiCtx.dPanel.y + g_uiCtx.iLayoutY + (iTexSprayWH * flPartialShow),
+					0.0f, 0.0f, 1.0f, flPartialShow);
+		vgui::surface()->DrawSetColor(g_uiCtx.normalBgColor);
+	}
+
+	if (NeoUI::Button(L"", L"Gallery").bPressed)
+	{
+		// TODO - Change state to a gallery overview of sprays
+	}
+
 	if (engine->IsInGame())
 	{
 		NeoUI::Label(L"", L"Disconnect to update in-game spray");
 	}
 	else
 	{
+		++g_uiCtx.iWidget;
 		NeoUI::Pad();
 	}
 
-	if (pGeneral->iTexIdSpray > 0)
+	for (int i = 0; i < 4; ++i)
 	{
-		vgui::surface()->DrawSetTexture(pGeneral->iTexIdSpray);
-		vgui::surface()->DrawSetColor(COLOR_WHITE);
-		vgui::surface()->DrawTexturedRect(
-					g_uiCtx.dPanel.x + g_uiCtx.iLayoutX,
-					g_uiCtx.dPanel.y + g_uiCtx.iLayoutY,
-					g_uiCtx.dPanel.x + g_uiCtx.iLayoutX + 256,
-					g_uiCtx.dPanel.y + g_uiCtx.iLayoutY + 256);
-	}
-
-	for (int i = 0; i < 5; ++i)
-	{
+		++g_uiCtx.iWidget;
 		NeoUI::Pad();
 	}
 }
