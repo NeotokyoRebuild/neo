@@ -3,9 +3,20 @@
 sampler MotionEffect			: register(s0);
 sampler Original				: register(s1);
 
-const float g_TintColor_R		: register(c0);
-const float g_TintColor_G		: register(c1);
-const float g_TintColor_B		: register(c2);
+const float g_Brightness		: register(c0);
+const float g_TintStart			: register(c1);
+const float g_TintColor_R		: register(c2);
+const float g_TintColor_G		: register(c3);
+const float g_TintColor_B		: register(c4);
+const float g_Threshold_R		: register(c5);
+const float g_Threshold_G		: register(c6);
+const float g_Threshold_B		: register(c7);
+const float g_Exponent_R		: register(c8);
+const float g_Exponent_G		: register(c9);
+const float g_Exponent_B		: register(c10);
+const float g_Multiplier_R		: register(c11);
+const float g_Multiplier_G		: register(c12);
+const float g_Multiplier_B		: register(c13);
 //const float g_Strength			: register(c0);
 
 struct PS_INPUT
@@ -17,14 +28,32 @@ float4 main( const PS_INPUT i ) : COLOR
 {
 	const float4 imTex = tex2D(Original, i.vTexCoord);
 	
-	const float bwTint = (imTex.r + imTex.g + imTex.b) / 3.0f;
-
-	return float4(
-		min(bwTint + g_TintColor_R, 1),
-		min(bwTint + g_TintColor_G, 1),
-		min(bwTint + g_TintColor_B, 1),
-		imTex.a);
+	const float bwTint = min( 1, 0.005 + (float((imTex.r * 0.3) + (imTex.g * 0.59) + (imTex.b * 0.11)) * g_Brightness));
 	
+	float4 output = float4(bwTint, bwTint, bwTint, imTex.a);
+	if (bwTint > g_TintStart)
+	{
+		output.x += (bwTint - g_TintStart) * g_TintColor_R;
+		output.y += (bwTint - g_TintStart) * g_TintColor_G;
+		output.z += (bwTint - g_TintStart) * g_TintColor_B;
+	}
+	
+	if (output.x > g_Threshold_R)
+	{
+		output.x = g_Threshold_R + ((pow((output.x - g_Threshold_R), g_Exponent_R) + (output.x - g_Threshold_R)) * g_Multiplier_R);
+		output.y = output.y + ((pow((output.x - g_Threshold_R), g_Exponent_R) + (output.x - g_Threshold_R)) * g_Multiplier_R * -0.015);
+		output.z = output.z + ((pow((output.x - g_Threshold_R), g_Exponent_R) + (output.x - g_Threshold_R)) * g_Multiplier_R * -0.0175);
+		if (bwTint > g_Threshold_G)
+		{
+			output.y = output.y + ((pow((bwTint - g_Threshold_G), g_Exponent_G) + (bwTint - g_Threshold_G)) * g_Multiplier_G);
+			if (bwTint > g_Threshold_B)
+			{
+				output.z = output.z + ((pow((bwTint - g_Threshold_B), g_Exponent_B) + (bwTint - g_Threshold_B)) * g_Multiplier_B);
+			}
+		}
+	}
+
+	return output;
 
 	// NEO TODO (Adam) Awesome sincity shader taken from https://pastebin.com/zVxsZBVG , useful for potential motion vision rework discussion
 	//const float4 imTex = tex2D(Original, i.vTexCoord);
