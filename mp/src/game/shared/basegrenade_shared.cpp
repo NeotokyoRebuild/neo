@@ -517,8 +517,6 @@ int CBaseGrenade::DrawModel(int flags)
 	}
 
 	bool inMotionVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT;
-	bool inThermalVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT;
-
 	int ret = BaseClass::DrawModel(flags);
 
 	Vector vel;
@@ -526,14 +524,6 @@ int CBaseGrenade::DrawModel(int flags)
 	if (inMotionVision && vel.Length() > 0.5) // MOVING_SPEED_MINIMUM
 	{
 		IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
-		modelrender->ForcedMaterialOverride(pass);
-		ret |= BaseClass::DrawModel(flags);
-		modelrender->ForcedMaterialOverride(nullptr);
-	}
-
-	else if (inThermalVision)
-	{
-		IMaterial* pass = materials->FindMaterial("dev/thermal_third", TEXTURE_GROUP_MODEL);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::DrawModel(flags);
 		modelrender->ForcedMaterialOverride(nullptr);
