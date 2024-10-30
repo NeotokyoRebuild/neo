@@ -615,6 +615,125 @@ NeoUI::RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText)
 	return ret;
 }
 
+void Texture(const char *szTexturePath, const int x, const int y, const int width, const int height)
+{
+	if (g_pCtx->eMode != MODE_PAINT)
+	{
+		return;
+	}
+
+	auto hdl = g_pCtx->htTexMap.Find(szTexturePath);
+	if (hdl == g_pCtx->htTexMap.InvalidHandle())
+	{
+		bool bApplied = false;
+		const int iTex = surface()->CreateNewTextureID(true);
+		if (V_striEndsWith(szTexturePath, ".png") || V_striEndsWith(szTexturePath, ".jpg") ||
+				V_striEndsWith(szTexturePath, ".jpeg"))
+		{
+			// General images decoded via stb_image
+			int width, height, channels;
+			uint8 *data = stbi_load(szTexturePath, &width, &height, &channels, 0);
+			if (data)
+			{
+				if (channels == 3)
+				{
+					uint8 *rgbaData = reinterpret_cast<uint8 *>(calloc(width * height, sizeof(uint8) * 4));
+					ImageLoader::ConvertImageFormat(data, IMAGE_FORMAT_RGB888,
+													rgbaData, IMAGE_FORMAT_RGBA8888,
+													width, height);
+					stbi_image_free(data);
+					data = rgbaData;
+					channels = 4;
+				}
+				else if (channels != 4)
+				{
+					Assert(false);
+				}
+				surface()->DrawSetTextureRGBAEx(iTex, data, width, height, IMAGE_FORMAT_RGBA8888);
+				stbi_image_free(data);
+				bApplied = true;
+			}
+		}
+		else if (V_striEndsWith(szTexturePath, ".vtf"))
+		{
+			// Direct vtf file
+			CUtlBuffer buf(0, 0, CUtlBuffer::READ_ONLY);
+			if (filesystem->ReadFile(szTexturePath, nullptr, buf))
+			{
+				IVTFTexture *pVTFTexture = CreateVTFTexture();
+				if (pVTFTexture)
+				{
+					if (pVTFTexture->Unserialize(buf))
+					{
+						pVTFTexture->ConvertImageFormat(IMAGE_FORMAT_RGBA8888, false);
+						surface()->DrawSetTextureRGBAEx(iTex, pVTFTexture->ImageData(0, 0, 0),
+														pVTFTexture->Width(), pVTFTexture->Height(),
+														IMAGE_FORMAT_RGBA8888);
+						bApplied = true;
+					}
+					DestroyVTFTexture(pVTFTexture);
+				}
+			}
+		}
+		else
+		{
+			// Direct texture determined by vmt (without extension)
+			surface()->DrawSetTextureFile(iTex, szTexturePath, false, true);
+			bApplied = true;
+		}
+		hdl = g_pCtx->htTexMap.Insert(szTexturePath, (bApplied) ? iTex : -1);
+	}
+
+	if (hdl != g_pCtx->htTexMap.InvalidHandle())
+	{
+		const int iTex = g_pCtx->htTexMap.Element(hdl);
+		if (surface()->IsTextureIDValid(iTex))
+		{
+			// Letterboxing
+			int iTexWide, iTexTall;
+			surface()->DrawGetTextureSize(iTex, iTexWide, iTexTall);
+
+			int iDispWide, iDispTall;
+			if (iTexWide > iTexTall)
+			{
+				iDispWide = width;
+				iDispTall = width * (iTexTall / iTexWide);
+			}
+			else if (iTexWide < iTexTall)
+			{
+				iDispWide = height * (iTexWide / iTexTall);
+				iDispTall = height;
+			}
+			else
+			{
+				iDispWide = min(width, height);
+				iDispTall = iDispWide;
+			}
+
+			// Only about bottom part since top always set to partition's Y position
+			const int iImgEnd = y + (height / 2) + (iDispTall / 2);
+			float flPartialShow = 1.0f;
+			if (iImgEnd > g_pCtx->dPanel.tall)
+			{
+				const int iExtra = iImgEnd - g_pCtx->dPanel.tall;
+				flPartialShow = (iDispTall - iExtra) / static_cast<float>(iDispTall);
+			}
+
+			const int iStartX = g_pCtx->dPanel.x + x + (width / 2) - (iDispWide / 2);
+			const int iStartY = g_pCtx->dPanel.y + y + (height / 2) - (iDispTall / 2);
+			surface()->DrawSetColor(COLOR_WHITE);
+			surface()->DrawSetTexture(iTex);
+			surface()->DrawTexturedSubRect(
+						iStartX,
+						iStartY,
+						iStartX + iDispWide,
+						iStartY + (iDispTall * flPartialShow),
+						0.0f, 0.0f, 1.0f, flPartialShow);
+			surface()->DrawSetColor(g_pCtx->normalBgColor);
+		}
+	}
+}
+
 NeoUI::RetButton ButtonTexture(const char *szTexturePath)
 {
 	RetButton ret = {};
@@ -623,94 +742,13 @@ NeoUI::RetButton ButtonTexture(const char *szTexturePath)
 
 	if (IN_BETWEEN_AR(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall))
 	{
-		const int iBtnWidth = g_pCtx->iHorizontalWidth ? g_pCtx->iHorizontalWidth : g_pCtx->dPanel.wide;
+		const int iImgWidth = g_pCtx->iHorizontalWidth ? g_pCtx->iHorizontalWidth : g_pCtx->dPanel.wide;
 		switch (g_pCtx->eMode)
 		{
 		case MODE_PAINT:
 		{
-			GCtxDrawFilledRectXtoX(0, iBtnWidth);
-
-			auto hdl = g_pCtx->htTexMap.Find(szTexturePath);
-			if (hdl == g_pCtx->htTexMap.InvalidHandle())
-			{
-				bool bApplied = false;
-				const int iTex = surface()->CreateNewTextureID(true);
-				if (V_striEndsWith(szTexturePath, ".png") || V_striEndsWith(szTexturePath, ".jpg") ||
-						V_striEndsWith(szTexturePath, ".jpeg"))
-				{
-					// General images decoded via stb_image
-					int width, height, channels;
-					uint8 *data = stbi_load(szTexturePath, &width, &height, &channels, 0);
-					if (data)
-					{
-						if (channels == 3)
-						{
-							uint8 *rgbaData = reinterpret_cast<uint8 *>(calloc(width * height, sizeof(uint8) * 4));
-							ImageLoader::ConvertImageFormat(data, IMAGE_FORMAT_RGB888,
-															rgbaData, IMAGE_FORMAT_RGBA8888,
-															width, height);
-							stbi_image_free(data);
-							data = rgbaData;
-							channels = 4;
-						}
-						else if (channels != 4)
-						{
-							Assert(false);
-						}
-						surface()->DrawSetTextureRGBAEx(iTex, data, width, height, IMAGE_FORMAT_RGBA8888);
-						stbi_image_free(data);
-						bApplied = true;
-					}
-				}
-				else if (V_striEndsWith(szTexturePath, ".vtf"))
-				{
-					// Direct vtf instead of as texture vmt
-					CUtlBuffer buf(0, 0, CUtlBuffer::READ_ONLY);
-					if (filesystem->ReadFile(szTexturePath, nullptr, buf))
-					{
-						IVTFTexture *pVTFTexture = CreateVTFTexture();
-						if (pVTFTexture)
-						{
-							if (pVTFTexture->Unserialize(buf))
-							{
-								pVTFTexture->ConvertImageFormat(IMAGE_FORMAT_RGBA8888, false);
-								surface()->DrawSetTextureRGBAEx(iTex, pVTFTexture->ImageData(0, 0, 0),
-																pVTFTexture->Width(), pVTFTexture->Height(),
-																IMAGE_FORMAT_RGBA8888);
-								bApplied = true;
-							}
-							DestroyVTFTexture(pVTFTexture);
-						}
-					}
-				}
-				else
-				{
-					// Direct texture determined by vmt (without extension)
-					surface()->DrawSetTextureFile(iTex, szTexturePath, false, true);
-					bApplied = true;
-				}
-				hdl = g_pCtx->htTexMap.Insert(szTexturePath, (bApplied) ? iTex : -1);
-			}
-			if (hdl != g_pCtx->htTexMap.InvalidHandle())
-			{
-				const int iTex = g_pCtx->htTexMap.Element(hdl);
-				if (surface()->IsTextureIDValid(iTex))
-				{
-					int iTexWide, iTexTall;
-					surface()->DrawGetTextureSize(iTex, iTexWide, iTexTall);
-					const float flTexRatio = iTexWide / iTexTall;
-					// NEO TODO Set letterbox if image does not fit
-					const int iImgWide = flTexRatio * g_pCtx->iRowTall;
-					surface()->DrawSetColor(COLOR_WHITE);
-					surface()->DrawSetTexture(iTex);
-					surface()->DrawTexturedRect(
-								g_pCtx->dPanel.x + g_pCtx->iLayoutX,
-								g_pCtx->dPanel.y + g_pCtx->iLayoutY,
-								g_pCtx->dPanel.x + g_pCtx->iLayoutX + iBtnWidth,
-								g_pCtx->dPanel.y + g_pCtx->iLayoutY + g_pCtx->iRowTall);
-					surface()->DrawSetColor(g_pCtx->normalBgColor);
-				}
-			}
+			GCtxDrawFilledRectXtoX(0, iImgWidth);
+			Texture(szTexturePath, g_pCtx->iLayoutX, g_pCtx->iLayoutY, iImgWidth, g_pCtx->iRowTall);
 		}
 		break;
 		case MODE_MOUSEPRESSED:

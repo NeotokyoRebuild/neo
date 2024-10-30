@@ -1238,12 +1238,12 @@ void CNeoRoot::MainLoopSprayPicker(const MainLoopParam param)
 		g_uiCtx.iRowTall = iCellTall;
 		NeoUI::BeginSection(true);
 		{
-			const int iColsInRow = 5;
-			for (int i = 0; i < vecStaticSprays.Count(); i += 4)
+			static constexpr int COLS_IN_ROW = 5;
+			for (int i = 0; i < vecStaticSprays.Count(); i += COLS_IN_ROW)
 			{
-				NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / iColsInRow);
+				NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / COLS_IN_ROW);
 				{
-					for (int j = 0; j < iColsInRow && (i + j) < vecStaticSprays.Count(); ++j)
+					for (int j = 0; j < COLS_IN_ROW && (i + j) < vecStaticSprays.Count(); ++j)
 					{
 						const auto &sprayInfo = vecStaticSprays.Element(i + j);
 						if (NeoUI::ButtonTexture(sprayInfo.szPath).bPressed)
