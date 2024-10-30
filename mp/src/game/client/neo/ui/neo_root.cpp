@@ -1217,7 +1217,7 @@ void CNeoRoot::MainLoopSprayPicker(const MainLoopParam param)
 			sprayInfo.szVtf[V_strlen(sprayInfo.szVtf) - sizeof("vmt")] = '\0';
 			V_strcat_safe(sprayInfo.szVtf, ".vtf");
 
-			vecStaticSprays.AddToHead(sprayInfo);
+			vecStaticSprays.AddToTail(sprayInfo);
 		}
 		filesystem->FindClose(findHdl);
 
@@ -1671,15 +1671,15 @@ void CNeoRoot::OnFileSelected(const char *szFullpath)
 		}
 		else
 		{
-			int width, height, stride;
-			uint8 *data = stbi_load(szFullpath, &width, &height, &stride, 0);
+			int width, height, channels;
+			uint8 *data = stbi_load(szFullpath, &width, &height, &channels, 0);
 			if (!data || width <= 0 || height <= 0)
 			{
 				return;
 			}
 
 			// Convert to RGBA
-			if (stride == 3)
+			if (channels == 3)
 			{
 				uint8 *rgbaData = reinterpret_cast<uint8 *>(calloc(width * height, sizeof(uint8) * 4));
 
@@ -1689,7 +1689,7 @@ void CNeoRoot::OnFileSelected(const char *szFullpath)
 
 				stbi_image_free(data);
 				data = rgbaData;
-				stride = 4;
+				channels = 4;
 			}
 
 			{
@@ -1763,6 +1763,8 @@ LightmappedGeneric
 
 		// Reapply the cl_logofile ConVar, update the texture to the new spray
 		NeoUI::ResetTextures();
+		materials->ReloadMaterials("vgui/logo");
+
 		ConVarRef("cl_logofile").SetValue("materials/vgui/logos/spray.vtf");
 		engine->ClientCmd_Unrestricted("cl_logofile materials/vgui/logos/spray.vtf");
 		if (m_ns.general.iTexIdSpray > 0)
