@@ -53,6 +53,7 @@ enum RootState
 	STATE_MAPLIST,
 	STATE_SERVERDETAILS,
 	STATE_PLAYERLIST,
+	STATE_SPRAYPICKER,
 
 	// Those that uses CNeoRoot::MainLoopPopup only starts here
 	STATE__POPUPSTART,
@@ -143,6 +144,7 @@ public:
 	void MainLoopMapList(const MainLoopParam param);
 	void MainLoopServerDetails(const MainLoopParam param);
 	void MainLoopPlayerList(const MainLoopParam param);
+	void MainLoopSprayPicker(const MainLoopParam param);
 	void MainLoopPopup(const MainLoopParam param);
 
 	NeoSettings m_ns = {};
@@ -201,6 +203,7 @@ public:
 
 	bool m_bOnLoadingScreen = false;
 	int m_iSavedYOffsets[NeoUI::MAX_SECTIONS] = {};
+	bool m_bSprayGalleryRefresh = false;
 };
 
 extern CNeoRoot *g_pNeoRoot;

@@ -611,6 +611,99 @@ NeoUI::RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText)
 	return ret;
 }
 
+NeoUI::RetButton ButtonTexture(const char *szTexturePath)
+{
+	RetButton ret = {};
+	const auto wdgState = InternalGetMouseinFocused();
+	ret.bMouseHover = wdgState.bHot;
+
+	if (IN_BETWEEN_AR(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall))
+	{
+		const int iBtnWidth = g_pCtx->iHorizontalWidth ? g_pCtx->iHorizontalWidth : g_pCtx->dPanel.wide;
+		switch (g_pCtx->eMode)
+		{
+		case MODE_PAINT:
+		{
+			GCtxDrawFilledRectXtoX(0, iBtnWidth);
+
+			auto hdl = g_pCtx->htTexMap.Find(szTexturePath);
+			if (hdl == g_pCtx->htTexMap.InvalidHandle())
+			{
+				const int iTex = surface()->CreateNewTextureID();
+				if (V_striEndsWith(szTexturePath, ".png"))
+				{
+					// TODO: General images decoded via stb_image
+				}
+				else if (V_striEndsWith(szTexturePath, ".vtf"))
+				{
+					// TODO: Direct vtf instead of as texture vmt
+				}
+				else
+				{
+					surface()->DrawSetTextureFile(iTex, szTexturePath, false, true);
+				}
+				hdl = g_pCtx->htTexMap.Insert(szTexturePath, iTex);
+			}
+			const int iTex = g_pCtx->htTexMap.Element(hdl);
+			int iTexWide, iTexTall;
+			surface()->DrawGetTextureSize(iTex, iTexWide, iTexTall);
+			const float flTexRatio = iTexWide / iTexTall;
+			// NEO TODO Set letterbox if image does not fit
+			const int iImgWide = flTexRatio * g_pCtx->iRowTall;
+			surface()->DrawSetColor(COLOR_WHITE);
+			surface()->DrawSetTexture(iTex);
+			surface()->DrawTexturedRect(
+						g_pCtx->dPanel.x + g_pCtx->iLayoutX,
+						g_pCtx->dPanel.y + g_pCtx->iLayoutY,
+						g_pCtx->dPanel.x + g_pCtx->iLayoutX + iBtnWidth,
+						g_pCtx->dPanel.y + g_pCtx->iLayoutY + g_pCtx->iRowTall);
+			surface()->DrawSetColor(g_pCtx->normalBgColor);
+		}
+		break;
+		case MODE_MOUSEPRESSED:
+		{
+			ret.bMousePressed = ret.bPressed = (ret.bMouseHover && g_pCtx->eCode == MOUSE_LEFT);
+		}
+		break;
+		case MODE_MOUSEDOUBLEPRESSED:
+		{
+			ret.bMouseDoublePressed = ret.bPressed = (ret.bMouseHover && g_pCtx->eCode == MOUSE_LEFT);
+		}
+		break;
+		case MODE_KEYPRESSED:
+		{
+			ret.bKeyPressed = ret.bPressed = (wdgState.bActive && g_pCtx->eCode == KEY_ENTER);
+		}
+		break;
+		default:
+			break;
+		}
+
+		if (ret.bPressed)
+		{
+			g_pCtx->iActive = g_pCtx->iWidget;
+			g_pCtx->iActiveSection = g_pCtx->iSection;
+			g_pCtx->iActiveDirection = 0;
+		}
+
+	}
+
+	++g_pCtx->iCanActives;
+	InternalUpdatePartitionState(wdgState);
+	return ret;
+}
+
+void ResetTextures()
+{
+	CUtlHashtable<CUtlConstString, int> *pHtTexMap = &(g_pCtx->htTexMap);
+	for (auto hdl = pHtTexMap->FirstHandle(); hdl != pHtTexMap->InvalidHandle(); hdl = pHtTexMap->NextHandle(hdl))
+	{
+		const int iTex = pHtTexMap->Element(hdl);
+		surface()->DeleteTextureByID(iTex);
+	}
+	pHtTexMap->Purge();
+}
+
 void RingBoxBool(const wchar_t *wszLeftLabel, bool *bChecked)
 {
 	int iIndex = static_cast<int>(*bChecked);

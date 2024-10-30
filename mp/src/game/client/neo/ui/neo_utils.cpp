@@ -74,6 +74,12 @@ void NeoUtils::WriteVTFDXT1SprayFile(const uint8 *data)
 #define DXT_OUT
 #define VTF_VER_MINOR 4
 
+#if (VTF_VER_MINOR == 1)
+	static constexpr int HEADER_SIZE = 64;
+#else
+	static constexpr int HEADER_SIZE = 88;
+#endif
+
 	// Create and initialize a 256x256 VTF texture
 	CUtlBuffer buffer(0, 0, 0);
 
@@ -87,11 +93,7 @@ void NeoUtils::WriteVTFDXT1SprayFile(const uint8 *data)
 		buffer.PutUnsignedInt(VTF_VER_MINOR);
 
 		// Header size
-#if (VTF_VER_MINOR == 1)
-		buffer.PutUnsignedInt(64);
-#else
-		buffer.PutUnsignedInt(88);
-#endif
+		buffer.PutUnsignedInt(HEADER_SIZE);
 
 		// Width + height
 		buffer.PutUnsignedShort(SPRAY_WH);
@@ -165,6 +167,7 @@ void NeoUtils::WriteVTFDXT1SprayFile(const uint8 *data)
 	{
 		// Resource infos
 		// tag - u8[3] - Three-byte tag that identifies what this resource is
+		// x30 0 0 = High res image data
 		buffer.PutUnsignedChar('\x30');
 		buffer.PutUnsignedChar('\0');
 		buffer.PutUnsignedChar('\0');
@@ -173,7 +176,7 @@ void NeoUtils::WriteVTFDXT1SprayFile(const uint8 *data)
 		buffer.PutUnsignedChar(0);
 
 		// offset
-		buffer.PutUnsignedInt(88);
+		buffer.PutUnsignedInt(HEADER_SIZE);
 	}
 #endif
 

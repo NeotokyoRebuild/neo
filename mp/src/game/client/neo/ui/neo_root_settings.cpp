@@ -703,7 +703,8 @@ void NeoSettings_General(NeoSettings *ns)
 
 	if (NeoUI::Button(L"", L"Gallery").bPressed)
 	{
-		// TODO - Change state to a gallery overview of sprays
+		g_pNeoRoot->m_state = STATE_SPRAYPICKER;
+		g_pNeoRoot->m_bSprayGalleryRefresh = true;
 	}
 
 	if (engine->IsInGame())

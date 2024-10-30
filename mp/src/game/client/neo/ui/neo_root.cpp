@@ -500,6 +500,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		&CNeoRoot::MainLoopMapList,			// STATE_MAPLIST
 		&CNeoRoot::MainLoopServerDetails,	// STATE_SERVERDETAILS
 		&CNeoRoot::MainLoopPlayerList,		// STATE_PLAYERLIST
+		&CNeoRoot::MainLoopSprayPicker,		// STATE_SPRAYPICKER
 
 		&CNeoRoot::MainLoopPopup,			// STATE_KEYCAPTURE
 		&CNeoRoot::MainLoopPopup,			// STATE_CONFIRMSETTINGS
@@ -1191,6 +1192,93 @@ void CNeoRoot::MainLoopMapList(const MainLoopParam param)
 	NeoUI::EndContext();
 }
 
+void CNeoRoot::MainLoopSprayPicker(const MainLoopParam param)
+{
+	struct SprayInfo
+	{
+		char szPath[MAX_PATH];
+		char szVtf[MAX_PATH];
+	};
+	static CUtlVector<SprayInfo> vecStaticSprays;
+	if (m_bSprayGalleryRefresh)
+	{
+		vecStaticSprays.Purge();
+		FileFindHandle_t findHdl;
+		for (const char *pszFilename = filesystem->FindFirst("materials/vgui/logos/ui/*.vmt", &findHdl);
+			 pszFilename;
+			 pszFilename = filesystem->FindNext(findHdl))
+		{
+			SprayInfo sprayInfo = {};
+
+			V_sprintf_safe(sprayInfo.szPath, "vgui/logos/ui/%s", pszFilename);
+			sprayInfo.szPath[V_strlen(sprayInfo.szPath) - sizeof("vmt")] = '\0';
+
+			V_sprintf_safe(sprayInfo.szVtf, "materials/vgui/logos/%s", pszFilename);
+			sprayInfo.szVtf[V_strlen(sprayInfo.szVtf) - sizeof("vmt")] = '\0';
+			V_strcat_safe(sprayInfo.szVtf, ".vtf");
+
+			vecStaticSprays.AddToHead(sprayInfo);
+		}
+		filesystem->FindClose(findHdl);
+
+		m_bSprayGalleryRefresh = false;
+	}
+	const int iGalleryRows = g_iRowsInScreen / 4;
+	const int iNormTall = g_uiCtx.iRowTall;
+	const int iCellTall = iNormTall * 4;
+
+	const int iTallTotal = iNormTall * (g_iRowsInScreen + 2);
+	g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
+	g_uiCtx.dPanel.x = (param.wide / 2) - (g_iRootSubPanelWide / 2);
+	g_uiCtx.dPanel.y = (param.tall / 2) - (iTallTotal / 2);
+	g_uiCtx.dPanel.tall = iNormTall * (g_iRowsInScreen + 1);
+	g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
+	NeoUI::BeginContext(&g_uiCtx, param.eMode, L"Pick spray", "CtxSprayPicker");
+	{
+		g_uiCtx.iRowTall = iCellTall;
+		NeoUI::BeginSection(true);
+		{
+			const int iColsInRow = 5;
+			for (int i = 0; i < vecStaticSprays.Count(); i += 4)
+			{
+				NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / iColsInRow);
+				{
+					for (int j = 0; j < iColsInRow && (i + j) < vecStaticSprays.Count(); ++j)
+					{
+						const auto &sprayInfo = vecStaticSprays.Element(i + j);
+						if (NeoUI::ButtonTexture(sprayInfo.szPath).bPressed)
+						{
+							m_eFileIOMode = FILEIODLGMODE_SPRAY;
+							OnFileSelected(sprayInfo.szVtf);
+							m_state = STATE_SETTINGS;
+						}
+					}
+				}
+				NeoUI::EndHorizontal();
+			}
+		}
+		NeoUI::EndSection();
+		g_uiCtx.iRowTall = iNormTall;
+		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
+		NeoUI::BeginSection();
+		{
+			NeoUI::SwapFont(NeoUI::FONT_NTHORIZSIDES);
+			NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 5);
+			{
+				if (NeoUI::Button(L"Back (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
+				{
+					m_state = STATE_SETTINGS;
+				}
+			}
+			NeoUI::EndHorizontal();
+			NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
+		}
+		NeoUI::EndSection();
+	}
+	NeoUI::EndContext();
+}
+
 void CNeoRoot::MainLoopServerDetails(const MainLoopParam param)
 {
 	const auto *gameServer = &m_serverBrowser[m_iServerBrowserTab].m_filteredServers[m_iSelectedServer];
@@ -1563,9 +1651,9 @@ void CNeoRoot::OnFileSelected(const char *szFullpath)
 			IVTFTexture *pVTFTexture = CreateVTFTexture();
 			if (pVTFTexture->Unserialize(buf))
 			{
-				const bool bDirectCopy = (pVTFTexture->Width() == NeoUtils::SPRAY_WH &&
-										  pVTFTexture->Height() == NeoUtils::SPRAY_WH &&
-										  pVTFTexture->Format() == IMAGE_FORMAT_DXT1);
+				const bool bDirectCopy = (pVTFTexture->Width() == pVTFTexture->Height() &&
+										  (pVTFTexture->Format() == IMAGE_FORMAT_DXT1) ||
+										  (pVTFTexture->Format() == IMAGE_FORMAT_DXT5));
 				if (bDirectCopy)
 				{
 					engine->CopyLocalFile(szFullpath, "materials/vgui/logos/spray.vtf");
@@ -1674,6 +1762,7 @@ LightmappedGeneric
 		}
 
 		// Reapply the cl_logofile ConVar, update the texture to the new spray
+		NeoUI::ResetTextures();
 		ConVarRef("cl_logofile").SetValue("materials/vgui/logos/spray.vtf");
 		engine->ClientCmd_Unrestricted("cl_logofile materials/vgui/logos/spray.vtf");
 		if (m_ns.general.iTexIdSpray > 0)
