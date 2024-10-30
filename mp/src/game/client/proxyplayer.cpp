@@ -12,6 +12,9 @@
 #include "materialsystem/imaterialsystem.h"
 #include "functionproxy.h"
 #include "toolframework_client.h"
+#ifdef NEO
+#include "c_hl2mp_player.h"
+#endif
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -271,7 +274,15 @@ void CEntitySpeedProxy::OnBind( void *pC_BaseEntity )
 	auto velocity = pEntity->GetRootMoveParent()->GetAbsVelocity();
 	if (velocity == vec3_origin)
 	{
-		pEntity->EstimateAbsVelocity(velocity);
+		C_BaseAnimating* baseAnimating = pEntity->GetBaseAnimating();
+		if (baseAnimating && baseAnimating->IsRagdoll())
+		{
+			velocity = Vector(pEntity->m_flOldVelocity, 0, 0);
+		}
+		else
+		{
+			pEntity->EstimateAbsVelocity(velocity);
+		}
 	}
 	m_pResult->SetFloatValue(velocity.Length());
 

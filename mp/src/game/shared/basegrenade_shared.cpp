@@ -504,36 +504,6 @@ void CBaseGrenade ::TumbleThink( void )
 	}
 }
 
-#ifdef NEO
-#ifdef CLIENT_DLL
-
-int CBaseGrenade::DrawModel(int flags)
-{
-	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if (!pLocalPlayer)
-	{
-		Assert(false);
-		return BaseClass::DrawModel(flags);
-	}
-
-	bool inMotionVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT;
-	int ret = BaseClass::DrawModel(flags);
-
-	Vector vel;
-	EstimateAbsVelocity(vel);
-	if (inMotionVision && vel.Length() > 0.5) // MOVING_SPEED_MINIMUM
-	{
-		IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
-		modelrender->ForcedMaterialOverride(pass);
-		ret |= BaseClass::DrawModel(flags);
-		modelrender->ForcedMaterialOverride(nullptr);
-	}
-
-	return ret;
-}
-#endif //CLIENT_DLL
-#endif //NEO
-
 void CBaseGrenade::Precache( void )
 {
 	BaseClass::Precache( );

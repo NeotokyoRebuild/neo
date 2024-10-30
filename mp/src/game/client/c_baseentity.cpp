@@ -1734,6 +1734,16 @@ void C_BaseEntity::SetNetworkOrigin( const Vector& org )
 
 //-----------------------------------------------------------------------------
 // Purpose: 
+// Input  : org - 
+//-----------------------------------------------------------------------------
+void C_BaseEntity::SetOldOrigin(const Vector& org)
+{
+	m_vecOldOrigin = org;
+	m_flLastOriginChangeTime = gpGlobals->curtime;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
 // Input  : ang - 
 //-----------------------------------------------------------------------------
 void C_BaseEntity::SetNetworkAngles( const QAngle& ang )
@@ -2175,7 +2185,6 @@ const Vector& C_BaseEntity::GetOldOrigin()
 {
 	return m_vecOldOrigin;
 }
-
 
 void C_BaseEntity::UnlinkChild( C_BaseEntity *pParent, C_BaseEntity *pChild )
 {

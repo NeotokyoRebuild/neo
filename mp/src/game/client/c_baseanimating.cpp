@@ -3179,8 +3179,32 @@ int C_BaseAnimating::DrawModel( int flags )
 		{
 			extraFlags |= STUDIO_IGNORE_NEO_EFFECTS;
 		}
-#endif
 
+		auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
+		if (!pLocalPlayer)
+		{
+			Assert(false);
+		}
+
+		bool inMotionVision = pLocalPlayer && pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT;
+
+		Vector vel;
+		EstimateAbsVelocity(vel);
+		if (IsRagdoll())
+		{
+			if (m_flLastOriginChangeTime)
+			{ // NEOHACK (Adam) players are networked entities, but once they are killed their body position is no longer networked. This breaks estimation of the ragdoll velocities (probably why ragdolls don't show up on motion vision in the original.) We calculate the velocity here ourselves
+				vel = (GetAbsOrigin() - GetOldOrigin()) / (gpGlobals->curtime - m_flLastOriginChangeTime);
+				m_flOldVelocity = vel.Length();
+			}
+			SetOldOrigin(GetAbsOrigin());
+		}
+		if (inMotionVision && vel.Length() > 0.5 && !IsViewModel()) // MOVING_SPEED_MINIMUM
+		{
+			IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
+			modelrender->ForcedMaterialOverride(pass);
+		}
+#endif // NEO
 		// Necessary for lighting blending
 		CreateModelInstance();
 
@@ -3206,6 +3230,12 @@ int C_BaseAnimating::DrawModel( int flags )
 				}
 			}
 		}
+#ifdef NEO
+		if (inMotionVision && vel.Length() > 0.5 && !IsViewModel()) // MOVING_SPEED_MINIMUM
+		{
+			modelrender->ForcedMaterialOverride(nullptr);
+		}
+#endif // NEO
 	}
 
 	// If we're visualizing our bboxes, draw them

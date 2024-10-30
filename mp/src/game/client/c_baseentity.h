@@ -467,6 +467,10 @@ public:
 	void SetNetworkOrigin( const Vector& org );
 	void SetNetworkAngles( const QAngle& ang );
 
+#ifdef NEO
+	void SetOldOrigin(const Vector& org);
+#endif //NEO
+
 	const Vector&					GetLocalOrigin( void ) const;
 	void							SetLocalOrigin( const Vector& origin );
 	vec_t							GetLocalOriginDim( int iDim ) const;		// You can use the X_INDEX, Y_INDEX, and Z_INDEX defines here.
@@ -1358,6 +1362,10 @@ public:
 	CPredictableId					m_PredictableID;
 	PredictionContext				*m_pPredictionContext;
 #endif
+#ifdef NEO
+	float							m_flLastOriginChangeTime;
+	float							m_flOldVelocity;
+#endif // NEO
 
 	// used so we know when things are no longer touching
 	int								touchStamp;	
