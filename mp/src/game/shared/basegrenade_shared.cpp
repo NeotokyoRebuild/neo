@@ -18,6 +18,12 @@
 
 #endif
 
+#ifdef NEO
+#ifdef CLIENT_DLL
+#include "c_neo_player.h"
+#endif //CLIENT_DLL
+#endif //NEO
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -497,6 +503,46 @@ void CBaseGrenade ::TumbleThink( void )
 		m_flPlaybackRate = 0.2;
 	}
 }
+
+#ifdef NEO
+#ifdef CLIENT_DLL
+
+int CBaseGrenade::DrawModel(int flags)
+{
+	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if (!pLocalPlayer)
+	{
+		Assert(false);
+		return BaseClass::DrawModel(flags);
+	}
+
+	bool inMotionVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT;
+	bool inThermalVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT;
+
+	int ret = BaseClass::DrawModel(flags);
+
+	Vector vel;
+	EstimateAbsVelocity(vel);
+	if (inMotionVision && vel.Length() > 0.5) // MOVING_SPEED_MINIMUM
+	{
+		IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
+		modelrender->ForcedMaterialOverride(pass);
+		ret |= BaseClass::DrawModel(flags);
+		modelrender->ForcedMaterialOverride(nullptr);
+	}
+
+	else if (inThermalVision)
+	{
+		IMaterial* pass = materials->FindMaterial("dev/thermal_third", TEXTURE_GROUP_MODEL);
+		modelrender->ForcedMaterialOverride(pass);
+		ret |= BaseClass::DrawModel(flags);
+		modelrender->ForcedMaterialOverride(nullptr);
+	}
+
+	return ret;
+}
+#endif //CLIENT_DLL
+#endif //NEO
 
 void CBaseGrenade::Precache( void )
 {

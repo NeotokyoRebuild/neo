@@ -112,6 +112,11 @@ public:
 
 	void				Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value );
 #endif
+#ifdef NEO
+#ifdef CLIENT_DLL
+	virtual int DrawModel(int flags) override;
+#endif
+#endif
 
 public:
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED( m_vecVelocity );

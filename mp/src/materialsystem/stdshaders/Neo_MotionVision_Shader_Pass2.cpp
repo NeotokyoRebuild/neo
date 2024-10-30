@@ -12,8 +12,8 @@ ConVar mat_neo_mv_bw_tint_color_r("mat_neo_mv_bw_tint_color_r", "-0.65", FCVAR_C
 ConVar mat_neo_mv_bw_tint_color_g("mat_neo_mv_bw_tint_color_g", "-0.8", FCVAR_CHEAT | FCVAR_ARCHIVE, "Additional normalized Green color tint for the grayscale MV effect.", true, -100.0f, true, 100.0f);
 ConVar mat_neo_mv_bw_tint_color_b("mat_neo_mv_bw_tint_color_b", "-0.775", FCVAR_CHEAT | FCVAR_ARCHIVE, "Additional normalized Blue color tint for the grayscale MV effect.", true, -100.0f, true, 100.0f);
 ConVar mat_neo_mv_bw_tint_threshold_r("mat_neo_mv_bw_tint_threshold_r", "0.125", FCVAR_CHEAT | FCVAR_ARCHIVE, "Threshold after which red channel value grows by multiplier.", true, -1.0f, true, 100.0f);
-ConVar mat_neo_mv_bw_tint_threshold_g("mat_neo_mv_bw_tint_threshold_g", "0.415", FCVAR_CHEAT | FCVAR_ARCHIVE, "Threshold after which green channel value grows by multiplier.", true, -1.0f, true, 100.0f);
-ConVar mat_neo_mv_bw_tint_threshold_b("mat_neo_mv_bw_tint_threshold_b", "0.44", FCVAR_CHEAT | FCVAR_ARCHIVE, "Threshold after which blue channel value grows by multiplier.", true, -1.0f, true, 100.0f);
+ConVar mat_neo_mv_bw_tint_threshold_g("mat_neo_mv_bw_tint_threshold_g", "0.425", FCVAR_CHEAT | FCVAR_ARCHIVE, "Threshold after which green channel value grows by multiplier.", true, -1.0f, true, 100.0f);
+ConVar mat_neo_mv_bw_tint_threshold_b("mat_neo_mv_bw_tint_threshold_b", "0.45", FCVAR_CHEAT | FCVAR_ARCHIVE, "Threshold after which blue channel value grows by multiplier.", true, -1.0f, true, 100.0f);
 ConVar mat_neo_mv_bw_tint_exponent_r("mat_neo_mv_bw_tint_exponent_r", "2", FCVAR_CHEAT | FCVAR_ARCHIVE, "Red exponent", true, -1.0f, true, 100.0f);
 ConVar mat_neo_mv_bw_tint_exponent_g("mat_neo_mv_bw_tint_exponent_g", "2", FCVAR_CHEAT | FCVAR_ARCHIVE, "Green exponent", true, -1.0f, true, 100.0f);
 ConVar mat_neo_mv_bw_tint_exponent_b("mat_neo_mv_bw_tint_exponent_b", "2", FCVAR_CHEAT | FCVAR_ARCHIVE, "Blue exponent", true, -1.0f, true, 100.0f);

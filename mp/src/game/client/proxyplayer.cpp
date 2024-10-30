@@ -268,7 +268,12 @@ void CEntitySpeedProxy::OnBind( void *pC_BaseEntity )
 	C_BaseEntity *pEntity = BindArgToEntity( pC_BaseEntity );
 
 	Assert( m_pResult );
-	m_pResult->SetFloatValue( pEntity->GetLocalVelocity().Length() );
+	auto velocity = pEntity->GetRootMoveParent()->GetAbsVelocity();
+	if (velocity == vec3_origin)
+	{
+		pEntity->EstimateAbsVelocity(velocity);
+	}
+	m_pResult->SetFloatValue(velocity.Length());
 
 	if ( ToolsEnabled() )
 	{

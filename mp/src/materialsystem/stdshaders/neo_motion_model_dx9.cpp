@@ -51,9 +51,11 @@ BEGIN_VS_SHADER( Neo_Motion_Model_DX9, "Help for motion model shader" )
 			VMatrix mat, transpose;
 			s_pShaderAPI->GetMatrix(MATERIAL_VIEW, mat.m[0]);
 			MatrixTranspose(mat, transpose);
-			float colourTint[3];
-			GetColorParameter(params, colourTint);
 			s_pShaderAPI->SetPixelShaderConstant(2, transpose.m[2], 3);
+
+			float colourTint[3];
+			GetColorParameter(params, colourTint); // NEOJANK (Adam) the material uses a material proxy to write the speed of the model to the colour parameter, better way of doing this?
+			colourTint[0] = min(1, colourTint[0] / 100);
 			s_pShaderAPI->SetPixelShaderConstant(3, &colourTint[0], 1);
 		}
 		
