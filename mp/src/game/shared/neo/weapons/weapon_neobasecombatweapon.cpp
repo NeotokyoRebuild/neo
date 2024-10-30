@@ -1153,7 +1153,7 @@ int CNEOBaseCombatWeapon::InternalDrawModel(int flags)
 		modelrender->ForcedMaterialOverride(nullptr);
 	}
 
-	auto vel = pOwner->GetAbsVelocity().Length();
+	auto vel = GetMoveParent()->GetAbsVelocity().Length();
 	if (inMotionVision && vel > 0.5) // MOVING_SPEED_MINIMUM
 	{
 		IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
