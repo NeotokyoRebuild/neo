@@ -3189,15 +3189,18 @@ int C_BaseAnimating::DrawModel( int flags )
 		bool inMotionVision = pLocalPlayer && pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT;
 
 		Vector vel;
-		EstimateAbsVelocity(vel);
 		if (IsRagdoll())
 		{
-			if (m_flLastOriginChangeTime)
-			{ // NEOHACK (Adam) players are networked entities, but once they are killed their body position is no longer networked. This breaks estimation of the ragdoll velocities (probably why ragdolls don't show up on motion vision in the original.) We calculate the velocity here ourselves
-				vel = (GetAbsOrigin() - GetOldOrigin()) / (gpGlobals->curtime - m_flLastOriginChangeTime);
-				m_flOldVelocity = vel.Length();
+			auto player = this;
+			vel = Vector(m_flOldVelocity, 0, 0);
+		}
+		else
+		{
+			vel = GetRootMoveParent()->GetAbsVelocity();
+			if (vel == vec3_origin)
+			{
+				EstimateAbsVelocity(vel);
 			}
-			SetOldOrigin(GetAbsOrigin());
 		}
 		if (inMotionVision && vel.Length() > 0.5 && !IsViewModel()) // MOVING_SPEED_MINIMUM
 		{
@@ -4484,6 +4487,22 @@ void C_BaseAnimating::RagdollMoved( void )
 	m_pRagdoll->GetRagdollBounds( mins, maxs );
 	SetCollisionBounds( mins, maxs );
 
+#ifdef NEO
+	if (GetOldOrigin() != vec3_origin)
+	{
+		if (m_flLastOriginChangeTime != gpGlobals->curtime)
+		{
+			m_flOldVelocity = ((GetAbsOrigin() - GetOldOrigin()) / (gpGlobals->curtime - m_flLastOriginChangeTime)).Length();
+			SetOldOrigin(GetAbsOrigin());
+		}
+	}
+	else
+	{ // First time
+		auto ragdoll = static_cast<C_HL2MPRagdoll*>(GetBaseAnimating());
+		m_flOldVelocity = ragdoll->GetRagdollVelocity().Length();
+		SetOldOrigin(GetAbsOrigin());
+	}
+#endif // NEO
 	// If the ragdoll moves, its render-to-texture shadow is dirty
 	InvalidatePhysicsRecursive( ANIMATION_CHANGED ); 
 }
