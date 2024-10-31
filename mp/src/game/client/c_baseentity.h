@@ -1309,6 +1309,9 @@ public:
 
 	float							m_flSimulationTime;
 	float							m_flOldSimulationTime;
+#ifdef NEO
+	float							m_flLastOriginChangeTime;
+#endif // NEO
 	
 	float							m_flCreateTime;
 
@@ -1362,10 +1365,6 @@ public:
 	CPredictableId					m_PredictableID;
 	PredictionContext				*m_pPredictionContext;
 #endif
-#ifdef NEO
-	float							m_flLastOriginChangeTime;
-	float							m_flOldVelocity;
-#endif // NEO
 
 	// used so we know when things are no longer touching
 	int								touchStamp;	
@@ -1385,6 +1384,10 @@ public:
 	void							SetWaterType( int nType );
 
 	float							GetElasticity( void ) const;
+#ifdef NEO
+	void							SetOldVelocity( Vector oldVelocity ) { m_vecOldVelocity = oldVelocity; }
+	Vector							GetOldVelocity() { return m_vecOldVelocity; };
+#endif // NEO
 
 	int								GetTextureFrameIndex( void );
 	void							SetTextureFrameIndex( int iIndex );
@@ -1618,6 +1621,9 @@ private:
 
 	Vector							m_vecOldOrigin;
 	QAngle							m_vecOldAngRotation;
+#ifdef NEO
+	Vector							m_vecOldVelocity;
+#endif // NEO
 
 	Vector							m_vecOrigin;
 	CInterpolatedVar< Vector >		m_iv_vecOrigin;

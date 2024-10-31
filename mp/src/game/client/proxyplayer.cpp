@@ -277,7 +277,7 @@ void CEntitySpeedProxy::OnBind( void *pC_BaseEntity )
 		C_BaseAnimating* baseAnimating = pEntity->GetBaseAnimating();
 		if (baseAnimating && baseAnimating->IsRagdoll())
 		{
-			velocity = Vector(pEntity->m_flOldVelocity, 0, 0);
+			velocity = pEntity->GetOldVelocity();
 		}
 		else
 		{

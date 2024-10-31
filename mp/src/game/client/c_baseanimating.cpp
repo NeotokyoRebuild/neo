@@ -3191,8 +3191,7 @@ int C_BaseAnimating::DrawModel( int flags )
 		Vector vel;
 		if (IsRagdoll())
 		{
-			auto player = this;
-			vel = Vector(m_flOldVelocity, 0, 0);
+			vel = GetOldVelocity();
 		}
 		else
 		{
@@ -4492,14 +4491,14 @@ void C_BaseAnimating::RagdollMoved( void )
 	{
 		if (m_flLastOriginChangeTime != gpGlobals->curtime)
 		{
-			m_flOldVelocity = ((GetAbsOrigin() - GetOldOrigin()) / (gpGlobals->curtime - m_flLastOriginChangeTime)).Length();
+			SetOldVelocity((GetAbsOrigin() - GetOldOrigin()) / (gpGlobals->curtime - m_flLastOriginChangeTime));
 			SetOldOrigin(GetAbsOrigin());
 		}
 	}
 	else
 	{ // First time
 		auto ragdoll = static_cast<C_HL2MPRagdoll*>(GetBaseAnimating());
-		m_flOldVelocity = ragdoll->GetRagdollVelocity().Length();
+		SetOldVelocity(ragdoll->GetRagdollVelocity());
 		SetOldOrigin(GetAbsOrigin());
 	}
 #endif // NEO
