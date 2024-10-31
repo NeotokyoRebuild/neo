@@ -68,6 +68,18 @@ void NeoUtils::SerializeVTFDXTSprayToBuffer(CUtlBuffer *buffer, const uint8 *dat
 	static constexpr int MIP_TOTAL = 4;
 	static constexpr int MIP_STARTWH = (SPRAY_WH / (1 << (MIP_TOTAL - 1)));
 
+	// If there's no alpha values, output DXT1 for size-reason, otherwise output DXT5 to save alpha
+	bool bHasAlpha = false;
+	// Alpha value starts at offset 3
+	for (int i = 3; i < (SPRAY_WH * SPRAY_WH * 4); i += 4)
+	{
+		if (data[i] < UINT8_MAX)
+		{
+			bHasAlpha = true;
+			break;
+		}
+	}
+
 	// VTF debugging compile definitions - kept so the VTF data can be checked when necessary:
 	// Undef DXT_OUT will instead outputs RGBA8888. This is just to check if the headers and raw input/output are fine.
 	// VTF_VER_MINOR 1 or 4 to switch between older and newer formats
@@ -126,7 +138,7 @@ void NeoUtils::SerializeVTFDXTSprayToBuffer(CUtlBuffer *buffer, const uint8 *dat
 
 		// highResImageFormat
 #ifdef DXT_OUT
-		buffer->PutInt(IMAGE_FORMAT_DXT1);
+		buffer->PutInt(bHasAlpha ? IMAGE_FORMAT_DXT5 : IMAGE_FORMAT_DXT1);
 #else
 		buffer->PutInt(IMAGE_FORMAT_RGBA8888);
 #endif
@@ -203,7 +215,6 @@ void NeoUtils::SerializeVTFDXTSprayToBuffer(CUtlBuffer *buffer, const uint8 *dat
 		}
 
 #ifdef DXT_OUT
-		// DXT1 blocks (4x4 pixels block -> 2 u16 colors + u32 of 16 x 2-bits switches based on nearest colors)
 		const int mipStride = mipWidth * 4;
 		for (int cy = 0; cy < mipHeight; cy += 4)
 		{
@@ -225,9 +236,10 @@ void NeoUtils::SerializeVTFDXTSprayToBuffer(CUtlBuffer *buffer, const uint8 *dat
 				}
 				Assert(inOffset == 64);
 
-				unsigned char ucBufOut[8];
-				stb_compress_dxt_block(ucBufOut, ucBufIn, 0, STB_DXT_HIGHQUAL);
-				buffer->Put(ucBufOut, 8);
+				// DXT1 blocks (8-sized) if no transparency needed, or DXT5 blocks (16-sized) if there is
+				unsigned char ucBufOut[16];
+				stb_compress_dxt_block(ucBufOut, ucBufIn, bHasAlpha, STB_DXT_HIGHQUAL);
+				buffer->Put(ucBufOut, bHasAlpha ? 16 : 8);
 			}
 		}
 #else

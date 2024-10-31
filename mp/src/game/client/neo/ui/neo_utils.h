@@ -11,7 +11,7 @@ static constexpr int SPRAY_WH = 256;
 // alter/free rgba8888Data pointer.
 [[nodiscard]] uint8 *CropScaleTo256(const uint8 *rgba8888Data, int width, int height);
 
-// Convert input data into a sprayable - VTF DXT1 4 MIPS
+// Convert input data into a sprayable - VTF DXT1/5 4 MIPS - DXT1 if no alpha, DXT5 if has alpha
 // Input "rgba8888Data" has to be 256 x 256 RGBA8888
 // NEO NOTE (nullsystem): This exists because the Source SDK API doesn't seem to generate a valid DXT1 VTF
 void SerializeVTFDXTSprayToBuffer(CUtlBuffer *buffer, const uint8 *rgba8888Data);
