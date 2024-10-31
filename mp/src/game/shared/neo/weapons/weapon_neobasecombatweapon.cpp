@@ -499,7 +499,6 @@ void CNEOBaseCombatWeapon::ProcessAnimationEvents()
 	else if (m_bLowered && m_bRoundBeingChambered)
 	{ // For bolt action weapons
 		m_bLowered = false;
-		SendWeaponAnim(ACT_VM_PULLBACK);
 		next(ACT_VM_PULLBACK, 1.2f);
 	}
 
@@ -814,6 +813,7 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 		pPlayer->DoMuzzleFlash();
 
 	SendWeaponAnim(GetPrimaryAttackActivity());
+	SetWeaponIdleTime(gpGlobals->curtime + 2.0);
 
 	// player "shoot" animation
 	pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
