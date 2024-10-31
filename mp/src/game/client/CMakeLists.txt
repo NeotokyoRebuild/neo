@@ -20,6 +20,7 @@ target_include_directories(client
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons
     ${CMAKE_SOURCE_DIR}/public
     ${CMAKE_SOURCE_DIR}/thirdparty/sixensesdk/include
+    ${CMAKE_SOURCE_DIR}/vendor
     game_controls
     hl2
     hl2/elements
@@ -1490,6 +1491,16 @@ target_sources_grouped(
 
 target_sources_grouped(
     TARGET client
+    NAME "Source Files\\NEO_Vendor"
+    FILES
+    neo/vendor_impl.cpp
+    ${CMAKE_SOURCE_DIR}/vendor/stb_image.h
+    ${CMAKE_SOURCE_DIR}/vendor/stb_image_resize2.h
+    ${CMAKE_SOURCE_DIR}/vendor/stb_dxt.h
+)
+
+target_sources_grouped(
+    TARGET client
     NAME "Source Files\\NEO\\Game_Controls"
     FILES
     neo/game_controls/neo_classmenu.cpp
@@ -1522,6 +1533,8 @@ target_sources_grouped(
     neo/ui/neo_loading.h
     neo/ui/neo_ui.cpp
     neo/ui/neo_ui.h
+    neo/ui/neo_utils.cpp
+    neo/ui/neo_utils.h
     neo/ui/IOverrideInterface.h
     neo/ui/OverrideInterface.cpp
     neo/ui/neo_hud_ammo.cpp
