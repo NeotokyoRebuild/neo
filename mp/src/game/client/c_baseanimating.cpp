@@ -3202,7 +3202,7 @@ int C_BaseAnimating::DrawModel( int flags )
 				EstimateAbsVelocity(vel);
 			}
 		}
-		if (inMotionVision && vel.Length() > 0.5 && !IsViewModel()) // MOVING_SPEED_MINIMUM
+		if (inMotionVision && vel.Length() > 0.5 && !IsViewModel() && !(extraFlags & STUDIO_IGNORE_NEO_EFFECTS)) // MOVING_SPEED_MINIMUM
 		{
 			IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
 			modelrender->ForcedMaterialOverride(pass);
@@ -3234,7 +3234,7 @@ int C_BaseAnimating::DrawModel( int flags )
 			}
 		}
 #ifdef NEO
-		if (inMotionVision && vel.Length() > 0.5 && !IsViewModel()) // MOVING_SPEED_MINIMUM
+		if (inMotionVision && vel.Length() > 0.5 && !IsViewModel() && !(extraFlags & STUDIO_IGNORE_NEO_EFFECTS)) // MOVING_SPEED_MINIMUM
 		{
 			modelrender->ForcedMaterialOverride(nullptr);
 		}
