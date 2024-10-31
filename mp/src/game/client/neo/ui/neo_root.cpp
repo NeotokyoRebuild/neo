@@ -1208,6 +1208,12 @@ void CNeoRoot::MainLoopSprayPicker(const MainLoopParam param)
 			 pszFilename;
 			 pszFilename = filesystem->FindNext(findHdl))
 		{
+			// spray.vmt is only used for currently applying spray
+			if (V_strcmp(pszFilename, "spray.vmt") == 0)
+			{
+				continue;
+			}
+
 			SprayInfo sprayInfo = {};
 
 			V_sprintf_safe(sprayInfo.szPath, "vgui/logos/ui/%s", pszFilename);
@@ -1638,6 +1644,12 @@ void CNeoRoot::OnFileSelected(const char *szFullpath)
 		break;
 	case FILEIODLGMODE_SPRAY:
 	{
+		// Ensure the directories are there to write to
+		filesystem->CreateDirHierarchy("materials/vgui/logos");
+		filesystem->CreateDirHierarchy("materials/vgui/logos/ui");
+
+		CUtlBuffer sprayBuffer(0, 0, 0);
+
 		if (V_striEndsWith(szFullpath, ".vtf"))
 		{
 			// Check if we can just direct copy over (is DXT1 and 256x256) or will have
@@ -1656,14 +1668,17 @@ void CNeoRoot::OnFileSelected(const char *szFullpath)
 										  (pVTFTexture->Format() == IMAGE_FORMAT_DXT5));
 				if (bDirectCopy)
 				{
-					engine->CopyLocalFile(szFullpath, "materials/vgui/logos/spray.vtf");
+					if (!engine->CopyLocalFile(szFullpath, "materials/vgui/logos/spray.vtf"))
+					{
+						Msg("ERROR: Cannot copy spray's vtf to: %s", "materials/vgui/logos/spray.vtf");
+					}
 				}
 				else
 				{
 					pVTFTexture->ConvertImageFormat(IMAGE_FORMAT_RGBA8888, false);
 					uint8 *data = NeoUtils::CropScaleTo256(pVTFTexture->ImageData(0, 0, 0),
 														   pVTFTexture->Width(), pVTFTexture->Height());
-					NeoUtils::WriteVTFDXT1SprayFile(data);
+					NeoUtils::SerializeVTFDXTSprayToBuffer(&sprayBuffer, data);
 					free(data);
 				}
 			}
@@ -1700,26 +1715,55 @@ void CNeoRoot::OnFileSelected(const char *szFullpath)
 				height = NeoUtils::SPRAY_WH;
 			}
 
-			// NEO TODO (nullsystem): It seems cl_logofile is always set to materials/vgui/logos/spray.vtf, so only
-			// use "spray" for now
-#if 0
-			const char *pLastSlash = V_strrchr(szFullpath, '/');
-			const char *pszBaseName = pLastSlash ? pLastSlash + 1 : szFullpath;
-			char *pszDot = strchr((char *)(pszBaseName), '.');
-			if (pszDot)
-			{
-				*pszDot = '\0';
-			}
-#endif
-			NeoUtils::WriteVTFDXT1SprayFile(data);
+			NeoUtils::SerializeVTFDXTSprayToBuffer(&sprayBuffer, data);
 			free(data);
 		}
 
-		// Generate the vmt files, one for spraying, one under "ui" to display in GUI
-		static constexpr char PSZ_BASENAME[] = "spray";
-		char szStrBuffer[1024];
+		char szBaseFName[MAX_PATH] = {};
 		{
-			V_sprintf_safe(szStrBuffer, R"VMT(
+			const char *pLastSlash = V_strrchr(szFullpath, '/');
+			const char *pszBaseName = pLastSlash ? pLastSlash + 1 : szFullpath;
+			int iSzLen = V_strlen(pszBaseName);
+			const char *pszDot = strchr(pszBaseName, '.');
+			if (pszDot)
+			{
+				iSzLen = pszDot - pszBaseName;
+			}
+			V_sprintf_safe(szBaseFName, "%.*s", iSzLen, pszBaseName);
+		}
+		char szByBaseName[MAX_PATH];
+		V_sprintf_safe(szByBaseName, "materials/vgui/logos/%s.vtf", szBaseFName);
+
+		if (sprayBuffer.Size() > 0)
+		{
+			if (!filesystem->WriteFile("materials/vgui/logos/spray.vtf", nullptr, sprayBuffer))
+			{
+				Msg("ERROR: Cannot save spray's vtf to: %s", "materials/vgui/logos/spray.vtf");
+			}
+			if (!filesystem->WriteFile(szByBaseName, nullptr, sprayBuffer))
+			{
+				Msg("ERROR: Cannot save spray's vtf to: %s", szByBaseName);
+			}
+		}
+		else if (V_strcmp(szFullpath, szByBaseName) != 0)
+		{
+			if (!engine->CopyLocalFile(szFullpath, szByBaseName))
+			{
+				Msg("ERROR: Cannot copy spray's vtf to: %s", szByBaseName);
+			}
+		}
+
+		// Generate the vmt files, one for spraying, one under "ui" to display in GUI
+		for (const char *pszBaseName : {"spray", static_cast<const char *>(szBaseFName)})
+		{
+			if (pszBaseName[0] == '\0')
+			{
+				continue;
+			}
+
+			char szStrBuffer[1024];
+			{
+				V_sprintf_safe(szStrBuffer, R"VMT(
 LightmappedGeneric
 {
 	"$basetexture"	"vgui/logos/%s"
@@ -1727,19 +1771,21 @@ LightmappedGeneric
 	"$decal" "1"
 	"$decalscale" "0.250"
 }
-)VMT", PSZ_BASENAME);
+)VMT", pszBaseName);
 
-			CUtlBuffer bufVmt(0, 0, CUtlBuffer::TEXT_BUFFER);
-			bufVmt.PutString(szStrBuffer);
+				CUtlBuffer bufVmt(0, 0, CUtlBuffer::TEXT_BUFFER);
+				bufVmt.PutString(szStrBuffer);
 
-			if (!filesystem->WriteFile("materials/vgui/logos/spray.vmt", nullptr, bufVmt))
-			{
-				// TODO ERROR
+				char szOutPath[MAX_PATH];
+				V_sprintf_safe(szOutPath, "materials/vgui/logos/%s.vmt", pszBaseName);
+				if (!filesystem->WriteFile(szOutPath, nullptr, bufVmt))
+				{
+					Msg("ERROR: Cannot save spray's vmt to: %s", szOutPath);
+				}
 			}
-		}
 
-		{
-			V_sprintf_safe(szStrBuffer, R"VMT(
+			{
+				V_sprintf_safe(szStrBuffer, R"VMT(
 "UnlitGeneric"
 {
 	// Original shader: BaseTimesVertexColorAlphaBlendNoOverbright
@@ -1750,29 +1796,26 @@ LightmappedGeneric
 	"$no_fullbright" 1
 	"$ignorez" 1
 }
-)VMT", PSZ_BASENAME);
+)VMT", pszBaseName);
 
-			CUtlBuffer bufVmt(0, 0, CUtlBuffer::TEXT_BUFFER);
-			bufVmt.PutString(szStrBuffer);
+				CUtlBuffer bufVmt(0, 0, CUtlBuffer::TEXT_BUFFER);
+				bufVmt.PutString(szStrBuffer);
 
-			if (!filesystem->WriteFile("materials/vgui/logos/ui/spray.vmt", nullptr, bufVmt))
-			{
-				// TODO ERROR
+				char szOutPath[MAX_PATH];
+				V_sprintf_safe(szOutPath, "materials/vgui/logos/ui/%s.vmt", pszBaseName);
+				if (!filesystem->WriteFile(szOutPath, nullptr, bufVmt))
+				{
+					Msg("ERROR: Cannot save spray's vmt to: %s", szOutPath);
+				}
 			}
 		}
 
 		// Reapply the cl_logofile ConVar, update the texture to the new spray
-		NeoUI::ResetTextures();
-		materials->ReloadMaterials("vgui/logo");
-
 		ConVarRef("cl_logofile").SetValue("materials/vgui/logos/spray.vtf");
 		engine->ClientCmd_Unrestricted("cl_logofile materials/vgui/logos/spray.vtf");
-		if (m_ns.general.iTexIdSpray > 0)
-		{
-			vgui::surface()->DeleteTextureByID(m_ns.general.iTexIdSpray);
-		}
-		m_ns.general.iTexIdSpray = vgui::surface()->CreateNewTextureID();
-		vgui::surface()->DrawSetTextureFile(m_ns.general.iTexIdSpray, "vgui/logos/ui/spray", false, false);
+
+		NeoUI::ResetTextures();
+		materials->ReloadMaterials("vgui/logo");
 		break;
 	}
 	default:

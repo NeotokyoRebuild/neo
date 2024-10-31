@@ -14,5 +14,5 @@ static constexpr int SPRAY_WH = 256;
 // Convert input data into a sprayable - VTF DXT1 4 MIPS
 // Input "rgba8888Data" has to be 256 x 256 RGBA8888
 // NEO NOTE (nullsystem): This exists because the Source SDK API doesn't seem to generate a valid DXT1 VTF
-void WriteVTFDXT1SprayFile(const uint8 *rgba8888Data);
+void SerializeVTFDXTSprayToBuffer(CUtlBuffer *buffer, const uint8 *rgba8888Data);
 }  // namespace NeoUtils

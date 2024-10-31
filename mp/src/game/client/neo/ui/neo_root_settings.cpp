@@ -246,14 +246,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->bStreamerMode = cvr->neo_cl_streamermode.GetBool();
 		pGeneral->bAutoDetectOBS = cvr->neo_cl_streamermode_autodetect_obs.GetBool();
 		pGeneral->bEnableRangeFinder = cvr->neo_cl_hud_rangefinder_enabled.GetBool();
-
-		if (pGeneral->iTexIdSpray > 0)
-		{
-			vgui::surface()->DeleteTextureByID(pGeneral->iTexIdSpray);
-			pGeneral->iTexIdSpray = 0;
-		}
-		pGeneral->iTexIdSpray = vgui::surface()->CreateNewTextureID();
-		vgui::surface()->DrawSetTextureFile(pGeneral->iTexIdSpray, "vgui/logos/ui/spray", false, false);
+		NeoUI::ResetTextures();
 	}
 	{
 		NeoSettings::Keys *pKeys = &ns->keys;
@@ -681,25 +674,9 @@ void NeoSettings_General(NeoSettings *ns)
 		g_pNeoRoot->m_pFileIODialog->DoModal();
 	}
 
-	if (pGeneral->iTexIdSpray > 0)
-	{
-		// NEO TODO (nullsystem): This could serve as the basis for NeoUI "background" images (ones that doesn't
-		// actually advance Y-direction of widget, but is aware of its scroll/render state)
-		static constexpr int SPRAY_ROWS = 6;
-		const int iRowsInScreen = g_uiCtx.dPanel.tall / g_uiCtx.iRowTall;
-		const int iTexSprayWH = g_uiCtx.iRowTall * SPRAY_ROWS;
-		const int iCurEnd = g_uiCtx.iYOffset[g_uiCtx.iSection] + iRowsInScreen;
-		const float flPartialShow = (iCurEnd - g_uiCtx.iWidget) / static_cast<float>(SPRAY_ROWS);
-		vgui::surface()->DrawSetColor(COLOR_WHITE);
-		vgui::surface()->DrawSetTexture(pGeneral->iTexIdSpray);
-		vgui::surface()->DrawTexturedSubRect(
-					g_uiCtx.dPanel.x + g_uiCtx.iLayoutX,
-					g_uiCtx.dPanel.y + g_uiCtx.iLayoutY,
-					g_uiCtx.dPanel.x + g_uiCtx.iLayoutX + iTexSprayWH,
-					g_uiCtx.dPanel.y + g_uiCtx.iLayoutY + (iTexSprayWH * flPartialShow),
-					0.0f, 0.0f, 1.0f, flPartialShow);
-		vgui::surface()->DrawSetColor(g_uiCtx.normalBgColor);
-	}
+	const int iTexSprayWH = g_uiCtx.iRowTall * 6;
+	NeoUI::Texture("vgui/logos/ui/spray", g_uiCtx.iLayoutX, g_uiCtx.iLayoutY,
+				   iTexSprayWH, iTexSprayWH);
 
 	if (NeoUI::Button(L"", L"Gallery").bPressed)
 	{

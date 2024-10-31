@@ -44,7 +44,6 @@ struct NeoSettings
 		bool bStreamerMode;
 		bool bAutoDetectOBS;
 		bool bEnableRangeFinder;
-		int iTexIdSpray;
 	};
 
 	struct Keys

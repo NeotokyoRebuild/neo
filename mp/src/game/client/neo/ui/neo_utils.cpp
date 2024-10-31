@@ -63,7 +63,7 @@ uint8 *NeoUtils::CropScaleTo256(const uint8 *rgba8888Data, int width, int height
 
 // Based on info from VPC: https://developer.valvesoftware.com/wiki/VTF_(Valve_Texture_Format)
 // VTF 7.1 seemed to have a byte assigned to 1 but no idea what it is
-void NeoUtils::WriteVTFDXT1SprayFile(const uint8 *data)
+void NeoUtils::SerializeVTFDXTSprayToBuffer(CUtlBuffer *buffer, const uint8 *data)
 {
 	static constexpr int MIP_TOTAL = 4;
 	static constexpr int MIP_STARTWH = (SPRAY_WH / (1 << (MIP_TOTAL - 1)));
@@ -80,86 +80,83 @@ void NeoUtils::WriteVTFDXT1SprayFile(const uint8 *data)
 	static constexpr int HEADER_SIZE = 88;
 #endif
 
-	// Create and initialize a 256x256 VTF texture
-	CUtlBuffer buffer(0, 0, 0);
-
 	// Write out the header first
 	{
 		// Signature
-		buffer.PutString("VTF");
+		buffer->PutString("VTF");
 
 		// Version
-		buffer.PutUnsignedInt(7);
-		buffer.PutUnsignedInt(VTF_VER_MINOR);
+		buffer->PutUnsignedInt(7);
+		buffer->PutUnsignedInt(VTF_VER_MINOR);
 
 		// Header size
-		buffer.PutUnsignedInt(HEADER_SIZE);
+		buffer->PutUnsignedInt(HEADER_SIZE);
 
 		// Width + height
-		buffer.PutUnsignedShort(SPRAY_WH);
-		buffer.PutUnsignedShort(SPRAY_WH);
+		buffer->PutUnsignedShort(SPRAY_WH);
+		buffer->PutUnsignedShort(SPRAY_WH);
 
 		// Flags
 		const int iFlags = TEXTUREFLAGS_CLAMPT | TEXTUREFLAGS_CLAMPS | TEXTUREFLAGS_NOLOD;
-		buffer.PutUnsignedInt(iFlags);
+		buffer->PutUnsignedInt(iFlags);
 
 		// Frames
-		buffer.PutUnsignedShort(1);
+		buffer->PutUnsignedShort(1);
 
 		// First frame
-		buffer.PutUnsignedShort(0);
+		buffer->PutUnsignedShort(0);
 
 		// padding0 u8[4];
-		for (int i = 0; i < 4; ++i) buffer.PutUnsignedChar(0);
+		for (int i = 0; i < 4; ++i) buffer->PutUnsignedChar(0);
 
 		// reflectivity float[3] (aka vector)
-		buffer.PutFloat(0.0f);
-		buffer.PutFloat(0.0f);
-		buffer.PutFloat(0.0f);
+		buffer->PutFloat(0.0f);
+		buffer->PutFloat(0.0f);
+		buffer->PutFloat(0.0f);
 
 		// padding1 u8[4];
-		for (int i = 0; i < 4; ++i) buffer.PutUnsignedChar(0);
+		for (int i = 0; i < 4; ++i) buffer->PutUnsignedChar(0);
 
 		// bumpmapScale
 #ifdef DXT_OUT
-		buffer.PutFloat(0.0f);
+		buffer->PutFloat(0.0f);
 #else
-		buffer.PutFloat(1.0f);
+		buffer->PutFloat(1.0f);
 #endif
 
 		// highResImageFormat
 #ifdef DXT_OUT
-		buffer.PutInt(IMAGE_FORMAT_DXT1);
+		buffer->PutInt(IMAGE_FORMAT_DXT1);
 #else
-		buffer.PutInt(IMAGE_FORMAT_RGBA8888);
+		buffer->PutInt(IMAGE_FORMAT_RGBA8888);
 #endif
 
 		// mipmapCount
-		buffer.PutUnsignedChar(MIP_TOTAL);
+		buffer->PutUnsignedChar(MIP_TOTAL);
 
 		// lowResImage Format + Width + Height (Always DXT1 and 0x0/empty)
-		buffer.PutInt(IMAGE_FORMAT_DXT1);
-		buffer.PutUnsignedChar(0);
-		buffer.PutUnsignedChar(0);
+		buffer->PutInt(IMAGE_FORMAT_DXT1);
+		buffer->PutUnsignedChar(0);
+		buffer->PutUnsignedChar(0);
 
 #if (VTF_VER_MINOR == 1)
 		// Unknown, but required for VTF 7.1
-		buffer.PutUnsignedChar(1);
+		buffer->PutUnsignedChar(1);
 #elif (VTF_VER_MINOR >= 2)
 		// 7.2
 		// depth
-		buffer.PutUnsignedShort(1);
+		buffer->PutUnsignedShort(1);
 
 #if (VTF_VER_MINOR >= 3)
 		// 7.3+
 		// padding
-		for (int i = 0; i < 3; ++i) buffer.PutUnsignedChar(0);
+		for (int i = 0; i < 3; ++i) buffer->PutUnsignedChar(0);
 
 		// Number of resources
-		buffer.PutUnsignedInt(1);
+		buffer->PutUnsignedInt(1);
 
 		// padding
-		for (int i = 0; i < 8; ++i) buffer.PutUnsignedChar(0);
+		for (int i = 0; i < 8; ++i) buffer->PutUnsignedChar(0);
 #endif
 #endif
 	}
@@ -168,15 +165,15 @@ void NeoUtils::WriteVTFDXT1SprayFile(const uint8 *data)
 		// Resource infos
 		// tag - u8[3] - Three-byte tag that identifies what this resource is
 		// x30 0 0 = High res image data
-		buffer.PutUnsignedChar('\x30');
-		buffer.PutUnsignedChar('\0');
-		buffer.PutUnsignedChar('\0');
+		buffer->PutUnsignedChar('\x30');
+		buffer->PutUnsignedChar('\0');
+		buffer->PutUnsignedChar('\0');
 
 		// flag
-		buffer.PutUnsignedChar(0);
+		buffer->PutUnsignedChar(0);
 
 		// offset
-		buffer.PutUnsignedInt(HEADER_SIZE);
+		buffer->PutUnsignedInt(HEADER_SIZE);
 	}
 #endif
 
@@ -230,18 +227,14 @@ void NeoUtils::WriteVTFDXT1SprayFile(const uint8 *data)
 
 				unsigned char ucBufOut[8];
 				stb_compress_dxt_block(ucBufOut, ucBufIn, 0, STB_DXT_HIGHQUAL);
-				buffer.Put(ucBufOut, 8);
+				buffer->Put(ucBufOut, 8);
 			}
 		}
 #else
 		// RGBA8888 data
-		buffer.Put(mipData, mipWidth * mipHeight * 4);
+		buffer->Put(mipData, mipWidth * mipHeight * 4);
 #endif
 	}
 	free(mipData);
-
-	filesystem->CreateDirHierarchy("materials/vgui/logos");
-	filesystem->CreateDirHierarchy("materials/vgui/logos/ui");
-	filesystem->WriteFile("materials/vgui/logos/spray.vtf", nullptr, buffer);
 }
 
