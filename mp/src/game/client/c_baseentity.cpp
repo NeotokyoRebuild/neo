@@ -1732,15 +1732,18 @@ void C_BaseEntity::SetNetworkOrigin( const Vector& org )
 	m_vecNetworkOrigin = org;
 }
 
+#ifdef NEO
 //-----------------------------------------------------------------------------
-// Purpose: 
-// Input  : org - 
+// Purpose: When players become ragdolls their positions are not networked. This 
+// allows calculating the client side velocity of ragdolls for motion vision
+// Input  : org - old origin
 //-----------------------------------------------------------------------------
 void C_BaseEntity::SetOldOrigin(const Vector& org)
 {
 	m_vecOldOrigin = org;
 	m_flLastOriginChangeTime = gpGlobals->curtime;
 }
+#endif // NEO
 
 //-----------------------------------------------------------------------------
 // Purpose: 

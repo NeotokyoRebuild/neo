@@ -18,12 +18,6 @@
 
 #endif
 
-#ifdef NEO
-#ifdef CLIENT_DLL
-#include "c_neo_player.h"
-#endif //CLIENT_DLL
-#endif //NEO
-
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 

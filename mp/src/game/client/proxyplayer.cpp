@@ -271,6 +271,7 @@ void CEntitySpeedProxy::OnBind( void *pC_BaseEntity )
 	C_BaseEntity *pEntity = BindArgToEntity( pC_BaseEntity );
 
 	Assert( m_pResult );
+#ifdef NEO
 	auto velocity = pEntity->GetRootMoveParent()->GetAbsVelocity();
 	if (velocity == vec3_origin)
 	{
@@ -285,6 +286,9 @@ void CEntitySpeedProxy::OnBind( void *pC_BaseEntity )
 		}
 	}
 	m_pResult->SetFloatValue(velocity.Length());
+#else
+	m_pResult->SetFloatValue( pEntity->GetLocalVelocity().Length() );
+#endif // NEO
 
 	if ( ToolsEnabled() )
 	{
