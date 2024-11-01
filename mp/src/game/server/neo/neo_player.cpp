@@ -397,7 +397,7 @@ CNEO_Player::CNEO_Player()
 	m_bInAim = false;
 	m_bInLean = NEO_LEAN_NONE;
 
-	m_iLoadoutWepChoice = 0;
+	m_iLoadoutWepChoice = -1;
 	m_iNextSpawnClassChoice = -1;
 
 	m_bShowTestMessage = false;
@@ -1056,7 +1056,8 @@ void CNEO_Player::PlayerDeathThink()
 	{
 		m_bEnterObserver = true;
 	}
-	BaseClass::PlayerDeathThink();
+
+	CHL2_Player::PlayerDeathThink();
 }
 
 void CNEO_Player::Weapon_AimToggle(CNEOBaseCombatWeapon *pNeoWep, const NeoWeponAimToggleE toggleType)
@@ -2318,6 +2319,7 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 		if(IsDead())
 		{
 			if (newTeam->GetNumPlayers() > 0) {
+				SetObserverTarget(newTeam->GetPlayer(0));
 				SetObserverMode(OBS_MODE_IN_EYE);
 			}
 			else {
@@ -2549,6 +2551,11 @@ ConVar sv_neo_time_alive_until_cant_change_loadout("sv_neo_time_alive_until_cant
 
 void CNEO_Player::GiveLoadoutWeapon(void)
 {
+	if(m_iLoadoutWepChoice < 0)
+	{
+		return;
+	}
+	
 	const NeoRoundStatus status = NEORules()->GetRoundStatus();
 	if (!(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup) &&
 		(IsObserver() || IsDead() || m_bIneligibleForLoadoutPick
@@ -2604,6 +2611,12 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 			if (pEnt != NULL && !(pEnt->IsMarkedForDeletion()))
 			{
 				UTIL_Remove(pEnt);
+			}
+
+			if(m_iLoadoutWepChoice != 0)
+			{
+				m_iLoadoutWepChoice = 0;
+				GiveLoadoutWeapon();
 			}
 		}
 	}
