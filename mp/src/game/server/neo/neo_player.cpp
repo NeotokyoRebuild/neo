@@ -2318,7 +2318,8 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 
 		if(IsDead())
 		{
-			if (newTeam->GetNumPlayers() > 0) {
+			if (newTeam->GetNumPlayers() > 0)
+			{
 				SetObserverTarget(newTeam->GetPlayer(0));
 				SetObserverMode(OBS_MODE_IN_EYE);
 			}
@@ -2326,7 +2327,8 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 				SetObserverMode(OBS_MODE_ROAMING);
 			}
 		}
-		else {
+		else
+		{
 			StopObserverMode();
 		}		
 	}
