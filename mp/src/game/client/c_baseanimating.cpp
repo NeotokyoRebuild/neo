@@ -3181,13 +3181,10 @@ int C_BaseAnimating::DrawModel( int flags )
 		}
 
 		auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
-		if (!pLocalPlayer)
-		{
-			Assert(false);
-		}
+		Assert(pLocalPlayer);
 
-		bool inMotionVision = pLocalPlayer && pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT;
-
+		const bool inMotionVision = pLocalPlayer && pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT;
+		
 		Vector vel;
 		if (IsRagdoll())
 		{
@@ -3201,9 +3198,12 @@ int C_BaseAnimating::DrawModel( int flags )
 				EstimateAbsVelocity(vel);
 			}
 		}
-		if (inMotionVision && vel.Length() > 0.5 && !IsViewModel() && !(extraFlags & STUDIO_IGNORE_NEO_EFFECTS)) // MOVING_SPEED_MINIMUM
+		bool isMoving = false;
+		if (inMotionVision && vel.LengthSqr() > 0.25 && !IsViewModel() && !(extraFlags & STUDIO_IGNORE_NEO_EFFECTS)) // MOVING_SPEED_MINIMUM ^2
 		{
+			isMoving = true;
 			IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
+			Assert(pass && !IsErrorMaterial(pass));
 			modelrender->ForcedMaterialOverride(pass);
 		}
 #endif // NEO
@@ -3233,7 +3233,7 @@ int C_BaseAnimating::DrawModel( int flags )
 			}
 		}
 #ifdef NEO
-		if (inMotionVision && vel.Length() > 0.5 && !IsViewModel() && !(extraFlags & STUDIO_IGNORE_NEO_EFFECTS)) // MOVING_SPEED_MINIMUM
+		if (isMoving)
 		{
 			modelrender->ForcedMaterialOverride(nullptr);
 		}
