@@ -1110,7 +1110,7 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 
 	else if (inThermalVision && !pOwner->IsCloaked())
 	{
-		IMaterial* pass = materials->FindMaterial("dev/thermal_third", TEXTURE_GROUP_MODEL);
+		IMaterial* pass = materials->FindMaterial("dev/thermal_model", TEXTURE_GROUP_MODEL);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::DrawModel(flags);
 		modelrender->ForcedMaterialOverride(nullptr);
@@ -1168,7 +1168,7 @@ int CNEOBaseCombatWeapon::InternalDrawModel(int flags)
 
 	else if (inThermalVision && !pOwner->IsCloaked())
 	{
-		IMaterial* pass = materials->FindMaterial("dev/thermal_third", TEXTURE_GROUP_MODEL);
+		IMaterial* pass = materials->FindMaterial("dev/thermal_model", TEXTURE_GROUP_MODEL);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::InternalDrawModel(flags);
 		modelrender->ForcedMaterialOverride(nullptr);

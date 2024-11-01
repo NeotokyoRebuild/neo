@@ -7,7 +7,8 @@
 #include "tier0/memdbgon.h"
 
 ConVar mat_neo_tv_brightness_scale("mat_neo_tv_brightness_scale", "1", FCVAR_CHEAT);
-ConVar mat_neo_tv_xoffset("mat_neo_tv_xoffset", "0.25", FCVAR_CHEAT);
+ConVar mat_neo_tv_xoffset("mat_neo_tv_xoffset", "0.125", FCVAR_CHEAT);
+ConVar mat_neo_tv_xmultiplier("mat_neo_tv_xmultiplier", "0.1", FCVAR_CHEAT);
 
 BEGIN_SHADER_FLAGS(Neo_ThermalVision, "Help for my shader.", SHADER_NOT_EDITABLE)
 
@@ -16,7 +17,8 @@ BEGIN_SHADER_PARAMS
 SHADER_PARAM(FBTEXTURE, SHADER_PARAM_TYPE_TEXTURE, "_rt_ThermalVision", "")
 //SHADER_PARAM(BLURTEXTURE, SHADER_PARAM_TYPE_TEXTURE, "_rt_SmallHDR0", "")
 SHADER_PARAM(TVTEXTURE, SHADER_PARAM_TYPE_TEXTURE, "dev/tvgrad2", "")
-//SHADER_PARAM(NOISETEXTURE, SHADER_PARAM_TYPE_TEXTURE, "dev/noise", "")
+SHADER_PARAM(NOISETEXTURE, SHADER_PARAM_TYPE_TEXTURE, "dev/noise", "")
+SHADER_PARAM(NOISETRANSFORM, SHADER_PARAM_TYPE_VEC3, "Vector(0, 0, 0)", "")
 #endif
 END_SHADER_PARAMS
 
@@ -50,14 +52,14 @@ SHADER_INIT
 		Assert(false);
 	}
 
-	//if (params[NOISETEXTURE]->IsDefined())
-	//{
-	//	LoadTexture(NOISETEXTURE);
-	//}
-	//else
-	//{
-	//	Assert(false);
-	//}
+	if (params[NOISETEXTURE]->IsDefined())
+	{
+		LoadTexture(NOISETEXTURE);
+	}
+	else
+	{
+		Assert(false);
+	}
 #endif
 }
 
@@ -81,7 +83,7 @@ SHADER_DRAW
 		pShaderShadow->EnableTexture(SHADER_SAMPLER0, true);
 		pShaderShadow->EnableTexture(SHADER_SAMPLER1, true);
 		//pShaderShadow->EnableTexture(SHADER_SAMPLER2, true);
-		//pShaderShadow->EnableTexture(SHADER_SAMPLER3, true);
+		pShaderShadow->EnableTexture(SHADER_SAMPLER3, true);
 #endif
 
 		const int fmt = VERTEX_POSITION;
@@ -101,7 +103,7 @@ SHADER_DRAW
 			pShaderShadow->EnableSRGBRead(SHADER_SAMPLER0, true);
 			pShaderShadow->EnableSRGBRead(SHADER_SAMPLER1, true);
 			//pShaderShadow->EnableSRGBRead(SHADER_SAMPLER2, true);
-			//pShaderShadow->EnableSRGBRead(SHADER_SAMPLER3, true);
+			pShaderShadow->EnableSRGBRead(SHADER_SAMPLER3, true);
 #endif
 			pShaderShadow->EnableSRGBWrite(true);
 		}
@@ -117,14 +119,18 @@ SHADER_DRAW
 		BindTexture(SHADER_SAMPLER0, FBTEXTURE);
 		//BindTexture(SHADER_SAMPLER1, BLURTEXTURE);
 		BindTexture(SHADER_SAMPLER1, TVTEXTURE);
-		//BindTexture(SHADER_SAMPLER3, NOISETEXTURE);
+		BindTexture(SHADER_SAMPLER3, NOISETEXTURE);
 #endif
-
 		const float flBrightnessScale = mat_neo_tv_brightness_scale.GetFloat();
 		const float flXOffset = mat_neo_tv_xoffset.GetFloat();
+		const float flXMultiplier = mat_neo_tv_xmultiplier.GetFloat();
+		const float* noiseTransformVector = params[NOISETRANSFORM]->GetVecValue();
 
 		pShaderAPI->SetPixelShaderConstant(0, &flBrightnessScale);
 		pShaderAPI->SetPixelShaderConstant(1, &flXOffset);
+		pShaderAPI->SetPixelShaderConstant(2, &flXMultiplier);
+		pShaderAPI->SetPixelShaderConstant(3, &noiseTransformVector[0]);
+		pShaderAPI->SetPixelShaderConstant(4, &noiseTransformVector[1]);
 
 		DECLARE_DYNAMIC_VERTEX_SHADER(neo_passthrough_vs30);
 		SET_DYNAMIC_VERTEX_SHADER(neo_passthrough_vs30);
