@@ -20,6 +20,8 @@
 #include "tier1/interface.h"
 #include <ctime>
 #include "ui/neo_loading.h"
+#include "neo_gamerules.h"
+#include "neo_misc.h"
 
 #include <vgui/IInput.h>
 #include <vgui_controls/Controls.h>
@@ -348,9 +350,9 @@ void CNeoRoot::ApplySchemeSettings(IScheme *pScheme)
 	g_uiCtx.iMarginY = tall / 108;
 	g_iAvatar = wide / 30;
 	const float flWide = static_cast<float>(wide);
-	float flWideAs43 = static_cast<float>(tall) * (4.0f / 3.0f);
-	if (flWideAs43 > flWide) flWideAs43 = flWide;
-	g_iRootSubPanelWide = static_cast<int>(flWideAs43 * 0.9f);
+	m_flWideAs43 = static_cast<float>(tall) * (4.0f / 3.0f);
+	if (m_flWideAs43 > flWide) m_flWideAs43 = flWide;
+	g_iRootSubPanelWide = static_cast<int>(m_flWideAs43 * 0.9f);
 
 	constexpr int PARTITION = GSIW__TOTAL * 4;
 	const int iSubDiv = g_iRootSubPanelWide / PARTITION;
@@ -669,7 +671,15 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 
 	g_uiCtx.dPanel.x = iRightXPos;
 	g_uiCtx.dPanel.y = iRightSideYStart;
-	g_uiCtx.dPanel.wide = g_iRootSubPanelWide - iRightXPos + (g_uiCtx.iMarginX * 2);
+	if (engine->IsInGame())
+	{
+		g_uiCtx.dPanel.wide = m_flWideAs43 * 0.7f;
+		g_uiCtx.flWgXPerc = 0.25f;
+	}
+	else
+	{
+		g_uiCtx.dPanel.wide = GetWide() - iRightXPos - (g_uiCtx.iMarginX * 2);
+	}
 	NeoUI::BeginSection();
 	{
 		if (engine->IsInGame())
@@ -677,6 +687,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 			// Show the current server's information
 			NeoUI::Label(L"Hostname:", m_wszHostname);
 			NeoUI::Label(L"Map:", m_wszMap);
+			NeoUI::Label(L"Game mode:", NEO_GAME_TYPE_DESC_STRS[NEORules()->GetGameType()].wszStr);
 			// TODO: more info, g_PR, scoreboard stuff, etc...
 		}
 		else

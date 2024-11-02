@@ -193,6 +193,7 @@ public:
 
 	bool m_bOnLoadingScreen = false;
 	int m_iSavedYOffsets[NeoUI::MAX_SECTIONS] = {};
+	float m_flWideAs43 = 0.0f;
 };
 
 extern CNeoRoot *g_pNeoRoot;

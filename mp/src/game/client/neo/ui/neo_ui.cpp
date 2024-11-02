@@ -58,11 +58,11 @@ void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode, const wchar_t *w
 	g_pCtx->eMode = eMode;
 	g_pCtx->iLayoutY = -(g_pCtx->iYOffset[0] * g_pCtx->iRowTall);
 	g_pCtx->iWidget = 0;
-	g_pCtx->iWgXPos = static_cast<int>(g_pCtx->dPanel.wide * 0.4f);
 	g_pCtx->iSection = 0;
 	g_pCtx->iHasMouseInPanel = 0;
 	g_pCtx->iHorizontalWidth = 0;
 	g_pCtx->iHorizontalMargin = 0;
+	g_pCtx->flWgXPerc = 0.4f;
 	g_pCtx->bValueEdited = false;
 	g_pCtx->eButtonTextStyle = TEXTSTYLE_CENTER;
 	g_pCtx->eLabelTextStyle = TEXTSTYLE_LEFT;
@@ -194,6 +194,7 @@ void BeginSection(const bool bDefaultFocus)
 	g_pCtx->iLayoutY = -(g_pCtx->iYOffset[g_pCtx->iSection] * g_pCtx->iRowTall);
 	g_pCtx->iWidget = 0;
 	g_pCtx->iCanActives = 0;
+	g_pCtx->iWgXPos = static_cast<int>(g_pCtx->dPanel.wide * g_pCtx->flWgXPerc);
 
 	g_pCtx->iMouseRelX = g_pCtx->iMouseAbsX - g_pCtx->dPanel.x;
 	g_pCtx->iMouseRelY = g_pCtx->iMouseAbsY - g_pCtx->dPanel.y;
