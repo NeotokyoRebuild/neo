@@ -209,7 +209,7 @@ private:
 	void CheckThermOpticButtons();
 	void CheckVisionButtons();
 	void CheckLeanButtons();
-	void PlayCloakSound(bool removeLocalPlayer = true);
+	void PlayCloakSound();
 	void CloakFlash();
 
 	bool IsAllowedToSuperJump(void);
