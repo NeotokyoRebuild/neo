@@ -2,22 +2,14 @@
 
 sampler MotionEffect			: register(s0);
 sampler Original				: register(s1);
+sampler MVGrad	         	   	: register(s2);
+sampler NoiseTexture            : register(s3);
 
 const float g_Brightness		: register(c0);
-const float g_TintStart			: register(c1);
-const float g_TintColor_R		: register(c2);
-const float g_TintColor_G		: register(c3);
-const float g_TintColor_B		: register(c4);
-const float g_Threshold_R		: register(c5);
-const float g_Threshold_G		: register(c6);
-const float g_Threshold_B		: register(c7);
-const float g_Exponent_R		: register(c8);
-const float g_Exponent_G		: register(c9);
-const float g_Exponent_B		: register(c10);
-const float g_Multiplier_R		: register(c11);
-const float g_Multiplier_G		: register(c12);
-const float g_Multiplier_B		: register(c13);
-//const float g_Strength			: register(c0);
+const float g_XNoiseOffset		: register(c1);
+const float g_YNoiseOffset		: register(c2);
+const float g_XOffset			: register(c3);
+const float g_XMultiplier		: register(c4);
 
 struct PS_INPUT
 {
@@ -27,35 +19,17 @@ struct PS_INPUT
 float4 main( const PS_INPUT i ) : COLOR
 {
 	const float4 imTex = tex2D(Original, i.vTexCoord);
-	
-	const float bwTint = min( 1, 0.008 + (float((imTex.r * 0.3) + (imTex.g * 0.59) + (imTex.b * 0.11)) * g_Brightness));
-	
-	float3 output = float3(bwTint, bwTint, bwTint);
-	if (bwTint > g_TintStart)
-	{
-		output += (bwTint - g_TintStart) * float3(g_TintColor_R, g_TintColor_G, g_TintColor_B);
-	}
-	
-	if (output.x > g_Threshold_R)
-	{
-		output.x = g_Threshold_R + ((pow((output.x - g_Threshold_R), g_Exponent_R) + (output.x - g_Threshold_R)) * g_Multiplier_R);
-		output.y = output.z = output.y + ((pow((output.x - g_Threshold_R), g_Exponent_R) + (output.x - g_Threshold_R)) * g_Multiplier_R * -0.015);
-		if (bwTint > g_Threshold_G)
-		{
-			output.y = output.y + ((pow((bwTint - g_Threshold_G), g_Exponent_G) + (bwTint - g_Threshold_G)) * g_Multiplier_G);
-			if (bwTint > g_Threshold_B)
-			{
-				output.z = output.z + ((pow((bwTint - g_Threshold_B), g_Exponent_B) + (bwTint - g_Threshold_B)) * g_Multiplier_B);
-			}
-		}
-	}
-
+	const float noise =  0.95 + (tex2D(NoiseTexture, i.vTexCoord + float2(g_XNoiseOffset, g_YNoiseOffset))/20);
+	const float bwTint = (imTex.r * 0.3 + imTex.g * 0.59 + imTex.b * 0.11) * noise;
+	float3 output = (bwTint + 0.0125);
+	const float4 gradient = tex2D( MVGrad, float2(min(1.0, (bwTint + g_XOffset) + ((bwTint - g_XOffset) * g_XMultiplier)), 0.5));
+	output += bwTint * gradient.rgb;
+	output *= g_Brightness;
 	return float4(output, imTex.a);
 
 	// NEO TODO (Adam) Awesome sincity shader taken from https://pastebin.com/zVxsZBVG , useful for potential motion vision rework discussion
 	//const float4 imTex = tex2D(Original, i.vTexCoord);
 	//float3 colorin = pow(imTex.rgb, .45f);
-	
     //float3 bwcolor = dot(colorin.rgb, 1.f.xxx) * 0.33333f;
 	//float weight = smoothstep(0.1f, 0.25f, colorin.r - bwcolor);
 	//bwcolor = pow(bwcolor * 1.1f, 2.f);

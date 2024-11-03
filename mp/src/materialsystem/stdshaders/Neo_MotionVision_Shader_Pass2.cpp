@@ -6,26 +6,18 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-ConVar mat_neo_mv_brightness_multiplier("mat_neo_mv_brightness_multiplier", "0.5", FCVAR_CHEAT | FCVAR_ARCHIVE, "Darken the whole image", true, -1.0f, true, 1.0f);
-ConVar mat_neo_mv_bw_tint_start("mat_neo_mv_bw_tint_start", "0.025", FCVAR_CHEAT | FCVAR_ARCHIVE, "When to start adding tint to the image.", true, -1.0f, true, 1.0f);
-ConVar mat_neo_mv_bw_tint_color_r("mat_neo_mv_bw_tint_color_r", "-0.65", FCVAR_CHEAT | FCVAR_ARCHIVE, "Additional normalized Red color tint for the grayscale MV effect.", true, -100.0f, true, 100.0f);
-ConVar mat_neo_mv_bw_tint_color_g("mat_neo_mv_bw_tint_color_g", "-0.8", FCVAR_CHEAT | FCVAR_ARCHIVE, "Additional normalized Green color tint for the grayscale MV effect.", true, -100.0f, true, 100.0f);
-ConVar mat_neo_mv_bw_tint_color_b("mat_neo_mv_bw_tint_color_b", "-0.775", FCVAR_CHEAT | FCVAR_ARCHIVE, "Additional normalized Blue color tint for the grayscale MV effect.", true, -100.0f, true, 100.0f);
-ConVar mat_neo_mv_bw_tint_threshold_r("mat_neo_mv_bw_tint_threshold_r", "0.125", FCVAR_CHEAT | FCVAR_ARCHIVE, "Threshold after which red channel value grows by multiplier.", true, -1.0f, true, 100.0f);
-ConVar mat_neo_mv_bw_tint_threshold_g("mat_neo_mv_bw_tint_threshold_g", "0.425", FCVAR_CHEAT | FCVAR_ARCHIVE, "Threshold after which green channel value grows by multiplier.", true, -1.0f, true, 100.0f);
-ConVar mat_neo_mv_bw_tint_threshold_b("mat_neo_mv_bw_tint_threshold_b", "0.45", FCVAR_CHEAT | FCVAR_ARCHIVE, "Threshold after which blue channel value grows by multiplier.", true, -1.0f, true, 100.0f);
-ConVar mat_neo_mv_bw_tint_exponent_r("mat_neo_mv_bw_tint_exponent_r", "2", FCVAR_CHEAT | FCVAR_ARCHIVE, "Red exponent", true, -1.0f, true, 100.0f);
-ConVar mat_neo_mv_bw_tint_exponent_g("mat_neo_mv_bw_tint_exponent_g", "2", FCVAR_CHEAT | FCVAR_ARCHIVE, "Green exponent", true, -1.0f, true, 100.0f);
-ConVar mat_neo_mv_bw_tint_exponent_b("mat_neo_mv_bw_tint_exponent_b", "2", FCVAR_CHEAT | FCVAR_ARCHIVE, "Blue exponent", true, -1.0f, true, 100.0f);
-ConVar mat_neo_mv_bw_tint_multiplier_r("mat_neo_mv_bw_tint_multiplier_r", "10", FCVAR_CHEAT | FCVAR_ARCHIVE, "Red multiplier 2", true, -1.0f, true, 100.0f);
-ConVar mat_neo_mv_bw_tint_multiplier_g("mat_neo_mv_bw_tint_multiplier_g", "10", FCVAR_CHEAT | FCVAR_ARCHIVE, "Green multiplier 2", true, -1.0f, true, 100.0f);
-ConVar mat_neo_mv_bw_tint_multiplier_b("mat_neo_mv_bw_tint_multiplier_b", "10", FCVAR_CHEAT | FCVAR_ARCHIVE, "Blue multiplier 2", true, -1.0f, true, 100.0f);
+ConVar mat_neo_mv_brightness_multiplier("mat_neo_mv_brightness_multiplier", "0.1", FCVAR_CHEAT | FCVAR_ARCHIVE, "Darken the whole image", true, -1.0f, true, 1.0f);
+ConVar mat_neo_mv_x_offset("mat_neo_mv_x_offset", "0", FCVAR_CHEAT | FCVAR_ARCHIVE, "Gradient offset");
+ConVar mat_neo_mv_x_multiplier("mat_neo_mv_x_multiplier", "1", FCVAR_CHEAT | FCVAR_ARCHIVE, "Gradient multiplier");
 
 BEGIN_SHADER_FLAGS(Neo_MotionVision_Pass2, "Help for my shader.", SHADER_NOT_EDITABLE)
 
 BEGIN_SHADER_PARAMS
 SHADER_PARAM(MOTIONEFFECT, SHADER_PARAM_TYPE_TEXTURE, "_rt_MotionVision", "")
 SHADER_PARAM(ORIGINAL, SHADER_PARAM_TYPE_TEXTURE, "_rt_MotionVision_Intermediate2", "")
+SHADER_PARAM(MVTEXTURE, SHADER_PARAM_TYPE_TEXTURE, "dev/mvgrad", "")
+SHADER_PARAM(NOISETEXTURE, SHADER_PARAM_TYPE_TEXTURE, "dev/noise", "")
+SHADER_PARAM(NOISETRANSFORM, SHADER_PARAM_TYPE_VEC3, "Vector(0, 0, 0)", "")
 END_SHADER_PARAMS
 
 SHADER_INIT
@@ -42,6 +34,24 @@ SHADER_INIT
 	if (params[ORIGINAL]->IsDefined())
 	{
 		LoadTexture(ORIGINAL);
+	}
+	else
+	{
+		Assert(false);
+	}
+
+	if (params[MVTEXTURE]->IsDefined())
+	{
+		LoadTexture(MVTEXTURE);
+	}
+	else
+	{
+		Assert(false);
+	}
+
+	if (params[NOISETEXTURE]->IsDefined())
+	{
+		LoadTexture(NOISETEXTURE);
 	}
 	else
 	{
@@ -75,6 +85,8 @@ SHADER_DRAW
 
 		pShaderShadow->EnableTexture(SHADER_SAMPLER0, true);
 		pShaderShadow->EnableTexture(SHADER_SAMPLER1, true);
+		pShaderShadow->EnableTexture(SHADER_SAMPLER2, true);
+		pShaderShadow->EnableTexture(SHADER_SAMPLER3, true);
 		//pShaderShadow->BlendFunc(SHADER_BLEND_ZERO, SHADER_BLEND_ONE);
 
 		const int fmt = VERTEX_POSITION;
@@ -101,6 +113,8 @@ SHADER_DRAW
 		{
 			pShaderShadow->EnableSRGBRead(SHADER_SAMPLER0, true);
 			pShaderShadow->EnableSRGBRead(SHADER_SAMPLER1, true);
+			pShaderShadow->EnableSRGBRead(SHADER_SAMPLER2, true);
+			pShaderShadow->EnableSRGBRead(SHADER_SAMPLER3, true);
 			pShaderShadow->EnableSRGBWrite(true);
 		}
 		else
@@ -115,38 +129,21 @@ SHADER_DRAW
 
 		BindTexture(SHADER_SAMPLER0, MOTIONEFFECT);
 		BindTexture(SHADER_SAMPLER1, ORIGINAL);
+		BindTexture(SHADER_SAMPLER2, MVTEXTURE);
+		BindTexture(SHADER_SAMPLER3, NOISETEXTURE);
 
 		//pShaderAPI->BindStandardTexture(SHADER_SAMPLER0, TEXTURE_FRAME_BUFFER_FULL_TEXTURE_0);
 
 		const float brightness = mat_neo_mv_brightness_multiplier.GetFloat();
-		const float start = mat_neo_mv_bw_tint_start.GetFloat();
-		const float r = mat_neo_mv_bw_tint_color_r.GetFloat();
-		const float g = mat_neo_mv_bw_tint_color_g.GetFloat();
-		const float b = mat_neo_mv_bw_tint_color_b.GetFloat();
-		const float rT = mat_neo_mv_bw_tint_threshold_r.GetFloat();
-		const float gT = mat_neo_mv_bw_tint_threshold_g.GetFloat();
-		const float bT = mat_neo_mv_bw_tint_threshold_b.GetFloat();
-		const float rE = mat_neo_mv_bw_tint_exponent_r.GetFloat();
-		const float gE = mat_neo_mv_bw_tint_exponent_g.GetFloat();
-		const float bE = mat_neo_mv_bw_tint_exponent_b.GetFloat();
-		const float rM = mat_neo_mv_bw_tint_multiplier_r.GetFloat();
-		const float gM = mat_neo_mv_bw_tint_multiplier_g.GetFloat();
-		const float bM = mat_neo_mv_bw_tint_multiplier_b.GetFloat();
+		const float* noiseTransformVector = params[NOISETRANSFORM]->GetVecValue();
+		const float xOffset = mat_neo_mv_x_offset.GetFloat();
+		const float xMultiplier = mat_neo_mv_x_multiplier.GetFloat();
 
 		pShaderAPI->SetPixelShaderConstant(0, &brightness);
-		pShaderAPI->SetPixelShaderConstant(1, &start);
-		pShaderAPI->SetPixelShaderConstant(2, &r);
-		pShaderAPI->SetPixelShaderConstant(3, &g);
-		pShaderAPI->SetPixelShaderConstant(4, &b);
-		pShaderAPI->SetPixelShaderConstant(5, &rT);
-		pShaderAPI->SetPixelShaderConstant(6, &gT);
-		pShaderAPI->SetPixelShaderConstant(7, &bT);
-		pShaderAPI->SetPixelShaderConstant(8, &rE);
-		pShaderAPI->SetPixelShaderConstant(9, &gE);
-		pShaderAPI->SetPixelShaderConstant(10, &bE);
-		pShaderAPI->SetPixelShaderConstant(11, &rM);
-		pShaderAPI->SetPixelShaderConstant(12, &gM);
-		pShaderAPI->SetPixelShaderConstant(13, &bM);
+		pShaderAPI->SetPixelShaderConstant(1, &noiseTransformVector[0]);
+		pShaderAPI->SetPixelShaderConstant(2, &noiseTransformVector[1]);
+		pShaderAPI->SetPixelShaderConstant(3, &xOffset);
+		pShaderAPI->SetPixelShaderConstant(4, &xMultiplier);
 
 		DECLARE_DYNAMIC_VERTEX_SHADER(neo_passthrough_vs30);
 		SET_DYNAMIC_VERTEX_SHADER(neo_passthrough_vs30);
