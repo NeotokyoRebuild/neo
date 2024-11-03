@@ -95,7 +95,6 @@ DEFINE_FIELD(m_bHasBeenAirborneForTooLongToSuperJump, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bShowTestMessage, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bInAim, FIELD_BOOLEAN),
 
-DEFINE_FIELD(m_flCamoAuxLastTime, FIELD_TIME),
 DEFINE_FIELD(m_nVisionLastTick, FIELD_TICK),
 
 DEFINE_FIELD(m_pszTestMessage, FIELD_STRING),
@@ -714,6 +713,7 @@ void CNEO_Player::PreThink(void)
 				{
 					m_bInThermOpticCamo = false;
 					m_flCamoAuxLastTime = 0;
+					PlayCloakSound(false);
 				}
 				else
 				{
@@ -803,7 +803,7 @@ ConVar sv_neo_cloak_time("sv_neo_cloak_time", "0.1", FCVAR_CHEAT, "How long shou
 ConVar sv_neo_cloak_decay("sv_neo_cloak_decay", "0", FCVAR_CHEAT, "After the cloak time, how quickly should the flash effect disappear.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_cloak_exponent("sv_neo_cloak_exponent", "8", FCVAR_CHEAT, "Cloak flash lighting exponent.", true, 0.0f, false, 0.0f);
 
-void CNEO_Player::PlayCloakSound()
+void CNEO_Player::PlayCloakSound(bool removeLocalPlayer)
 {
 	CRecipientFilter filter;
 	filter.AddRecipientsByPAS(GetAbsOrigin());
@@ -830,7 +830,10 @@ void CNEO_Player::PlayCloakSound()
 			filter.AddRecipient(player);
 		}
 	}
-	filter.RemoveRecipient(this); // We play clientside for ourselves
+	if (removeLocalPlayer)
+	{
+		filter.RemoveRecipient(this); // We play clientside for ourselves
+	}
 
 	if (filter.GetRecipientCount() > 0)
 	{

@@ -867,7 +867,7 @@ void C_NEO_Player::PreThink( void )
 		}
 		else
 		{
-			const float deltaTime = gpGlobals->curtime + gpGlobals->interpolation_amount - m_flCamoAuxLastTime;
+			const float deltaTime = gpGlobals->curtime - m_flCamoAuxLastTime;
 			if (deltaTime >= 1)
 			{
 				// NEO TODO (Rain): add interface for predicting this
@@ -880,8 +880,6 @@ void C_NEO_Player::PreThink( void )
 
 				if (m_HL2Local.m_cloakPower < CLOAK_AUX_COST)
 				{
-					m_bInThermOpticCamo = false;
-
 					m_HL2Local.m_cloakPower = 0.0f;
 					m_flCamoAuxLastTime = 0;
 				}
