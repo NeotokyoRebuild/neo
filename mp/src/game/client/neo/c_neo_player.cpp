@@ -809,7 +809,7 @@ void C_NEO_Player::PlayStepSound( Vector &vecOrigin,
 }
 
 extern ConVar sv_infinite_aux_power;
-
+extern ConVar glow_outline_effect_enable;
 void C_NEO_Player::PreThink( void )
 {
 	BaseClass::PreThink();
@@ -912,6 +912,7 @@ void C_NEO_Player::PreThink( void )
 					player->SetClientSideGlowEnabled(false);
 				}
 			}
+			glow_outline_effect_enable.SetValue(false);
 #endif // GLOWS_ENABLE
 		}
 		Lean();
