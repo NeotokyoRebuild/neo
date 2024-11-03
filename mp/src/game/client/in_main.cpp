@@ -552,6 +552,12 @@ void IN_LeanRightToggle(const CCommand& args)
 		KeyUp(&in_lean_left, args[1]);
 	}
 }
+
+void LeanReset()
+{
+	KeyUp(&in_lean_right, nullptr);
+	KeyUp(&in_lean_left, nullptr);
+}
 #endif
 
 void IN_DuckToggle( const CCommand &args ) 
