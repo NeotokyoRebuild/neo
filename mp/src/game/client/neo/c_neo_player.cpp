@@ -477,9 +477,13 @@ void C_NEO_Player::CheckThermOpticButtons()
 			return;
 		}
 
-		if (m_HL2Local.m_cloakPower >= MIN_CLOAK_AUX)
+		if (!m_bInThermOpticCamo && m_HL2Local.m_cloakPower >= MIN_CLOAK_AUX)
 		{
-			m_bInThermOpticCamo = !m_bInThermOpticCamo;
+			m_bInThermOpticCamo = true;
+		}
+		else
+		{
+			m_bInThermOpticCamo = false;
 		}
 	}
 }

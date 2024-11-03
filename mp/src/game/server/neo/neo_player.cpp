@@ -875,14 +875,14 @@ void CNEO_Player::CheckThermOpticButtons()
 			return;
 		}
 
-		if (m_HL2Local.m_cloakPower >= MIN_CLOAK_AUX)
+		if (!m_bInThermOpticCamo && m_HL2Local.m_cloakPower >= MIN_CLOAK_AUX)
 		{
-			m_bInThermOpticCamo = !m_bInThermOpticCamo;
-
-			if (m_bInThermOpticCamo)
-			{
-				CloakFlash();
-			}
+			m_bInThermOpticCamo = true;
+			CloakFlash();
+		}
+		else
+		{
+			m_bInThermOpticCamo = false;
 		}
 	}
 
