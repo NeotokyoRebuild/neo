@@ -81,7 +81,6 @@ void CNEOHud_GhostBeacons::ApplySchemeSettings(vgui::IScheme* pScheme)
 	SetBgColor(COLOR_TRANSPARENT);
 }
 
-extern ConVar cl_neo_ghost_view_distance;
 void CNEOHud_GhostBeacons::DrawNeoHudElement()
 {
 	if (!ShouldDraw())
