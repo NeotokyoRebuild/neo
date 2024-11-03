@@ -226,6 +226,7 @@ void CNEOHud_Compass::ApplySchemeSettings(vgui::IScheme *pScheme)
 
 	surface()->GetScreenSize(m_resX, m_resY);
 	SetBounds(0, 0, m_resX, m_resY);
+	SetZPos(90);
 }
 
 void CNEOHud_Compass::DrawCompass() const

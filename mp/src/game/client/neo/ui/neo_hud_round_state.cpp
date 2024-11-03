@@ -204,6 +204,7 @@ void CNEOHud_RoundState::ApplySchemeSettings(vgui::IScheme* pScheme)
 	m_mapAvatarsToImageList.RemoveAll();
 
 	SetBounds(0, Y_POS, res.w, res.h);
+	SetZPos(90);
 }
 
 extern ConVar neo_sv_readyup_lobby;
