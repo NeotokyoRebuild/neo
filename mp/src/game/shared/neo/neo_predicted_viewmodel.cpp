@@ -309,11 +309,11 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 			startPos.z = player->EyePosition().z;
 			int distance = 80;
 			int total = 0;
-			for (int i = 2; i <= 5; i++)
+			for (int i = 2; i <= 7; i++)
 			{
 				Vector endPos = startPos;
-				endPos.x += cos(DEG2RAD(viewAng.y) + (i/7.f)) * distance;
-				endPos.y += sin(DEG2RAD(viewAng.y) + (i/7.f)) * distance;
+				endPos.x += cos(DEG2RAD(viewAng.y) + (i/10.f)) * distance;
+				endPos.y += sin(DEG2RAD(viewAng.y) + (i/10.f)) * distance;
 				trace_t tr;
 				CTraceFilterWorldAndPropsOnly filter;
 				UTIL_TraceLine(startPos, endPos, MASK_SOLID_BRUSHONLY, &filter, &tr);
@@ -321,15 +321,15 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 				{
 					total -= 1;
 				}
-				distance -= 15;
-				DebugDrawLine(startPos, endPos, 255, 255, 0, 0, 0.1);
+				distance -= 10;
+				//DebugDrawLine(startPos, endPos, 255, 255, 0, 0, 0.1);
 			}
 			distance = 80;
-			for (int i = -2; i >= -5; i--)
+			for (int i = -2; i >= -7; i--)
 			{
 				Vector endPos = startPos;
-				endPos.x += cos(DEG2RAD(viewAng.y) + (i / 7.f)) * distance;
-				endPos.y += sin(DEG2RAD(viewAng.y) + (i / 7.f)) * distance;
+				endPos.x += cos(DEG2RAD(viewAng.y) + (i / 10.f)) * distance;
+				endPos.y += sin(DEG2RAD(viewAng.y) + (i / 10.f)) * distance;
 				trace_t tr;
 				CTraceFilterWorldAndPropsOnly filter;
 				UTIL_TraceLine(startPos, endPos, MASK_SOLID_BRUSHONLY, &filter, &tr);
@@ -337,8 +337,8 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 				{
 					total += 1;
 				}
-				distance -= 15;
-				DebugDrawLine(startPos, endPos, 255, 255, 0, 0, 0.1);
+				distance -= 10;
+				//DebugDrawLine(startPos, endPos, 255, 255, 0, 0, 0.1);
 			}
 			if (total == 0)
 			{
@@ -360,12 +360,6 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 			}
 		}
 #endif // CLIENT_DLL
-
-#ifdef CLIENT_DLL
-		engine->Con_NPrintf(0, "Client Lean: %i", player->m_bInLean);
-#else
-		engine->Con_NPrintf(1, "Server Lean: %i", player->m_bInLean);
-#endif
 
 		switch (player->m_bInLean.Get())
 		{
