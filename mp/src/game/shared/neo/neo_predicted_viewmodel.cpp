@@ -16,6 +16,7 @@
 #include "viewrender.h"
 #include "r_efx.h"
 #include "dlight.h"
+#include "in_main.h"
 #else
 #include "neo_player.h"
 #endif
@@ -300,65 +301,72 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 
 	if (player->IsAlive())
 	{
-		int leaning = player->m_bInLean.Get();
-		Vector startPos = player->GetAbsOrigin();
-		startPos.z = player->EyePosition().z;
-		bool right = false;
-		bool left = false;
-		int distance = 80;
-		for (int i = 2; i <= 5; i++)
+#ifdef CLIENT_DLL
+		if (cl_neo_lean_automatic.GetBool())
 		{
-			Vector endPos = startPos;
-			endPos.x += cos(DEG2RAD(viewAng.y) + (i/7.f)) * distance;
-			endPos.y += sin(DEG2RAD(viewAng.y) + (i/7.f)) * distance;
-			trace_t tr;
-			CTraceFilterWorldAndPropsOnly filter;
-			UTIL_TraceLine(startPos, endPos, MASK_SOLID_BRUSHONLY, &filter, &tr);
-			if (tr.fraction != 1.0)
+			int leaning = player->m_bInLean.Get();
+			Vector startPos = player->GetAbsOrigin();
+			startPos.z = player->EyePosition().z;
+			int distance = 80;
+			int total = 0;
+			for (int i = 2; i <= 5; i++)
 			{
-				right = true;
-				break;
+				Vector endPos = startPos;
+				endPos.x += cos(DEG2RAD(viewAng.y) + (i/7.f)) * distance;
+				endPos.y += sin(DEG2RAD(viewAng.y) + (i/7.f)) * distance;
+				trace_t tr;
+				CTraceFilterWorldAndPropsOnly filter;
+				UTIL_TraceLine(startPos, endPos, MASK_SOLID_BRUSHONLY, &filter, &tr);
+				if (tr.fraction != 1.0)
+				{
+					total -= 1;
+				}
+				distance -= 15;
+				DebugDrawLine(startPos, endPos, 255, 255, 0, 0, 0.1);
 			}
-			distance -= 15;
-			DebugDrawLine(startPos, endPos, 255, 255, 0, 0, 0.1);
-		}
-		distance = 80;
-		for (int i = -2; i >= -5; i--)
-		{
-			Vector endPos = startPos;
-			endPos.x += cos(DEG2RAD(viewAng.y) + (i / 7.f)) * distance;
-			endPos.y += sin(DEG2RAD(viewAng.y) + (i / 7.f)) * distance;
-			trace_t tr;
-			CTraceFilterWorldAndPropsOnly filter;
-			UTIL_TraceLine(startPos, endPos, MASK_SOLID_BRUSHONLY, &filter, &tr);
-			if (tr.fraction != 1.0)
+			distance = 80;
+			for (int i = -2; i >= -5; i--)
 			{
-				left = true;
-				break;
+				Vector endPos = startPos;
+				endPos.x += cos(DEG2RAD(viewAng.y) + (i / 7.f)) * distance;
+				endPos.y += sin(DEG2RAD(viewAng.y) + (i / 7.f)) * distance;
+				trace_t tr;
+				CTraceFilterWorldAndPropsOnly filter;
+				UTIL_TraceLine(startPos, endPos, MASK_SOLID_BRUSHONLY, &filter, &tr);
+				if (tr.fraction != 1.0)
+				{
+					total += 1;
+				}
+				distance -= 15;
+				DebugDrawLine(startPos, endPos, 255, 255, 0, 0, 0.1);
 			}
-			distance -= 15;
-			DebugDrawLine(startPos, endPos, 255, 255, 0, 0, 0.1);
+			if (total == 0)
+			{
+				IN_LeanReset();
+			}
+			else if (total < 0)
+			{
+				if (!(player->m_bInLean & NEO_LEAN_RIGHT))
+				{
+					IN_LeanRight();
+				}
+			}
+			else // total > 0
+			{
+				if (!(player->m_bInLean & NEO_LEAN_LEFT))
+				{
+					IN_LeanLeft();
+				}
+			}
 		}
-		if (right && left)
-		{
-			player->m_bInLean.Set(NEO_LEAN_NONE);
-		}
-		else if (left)
-		{
-			player->m_bInLean.Set(NEO_LEAN_LEFT);
-		}
-		else if (right)
-		{
-			player->m_bInLean.Set(NEO_LEAN_RIGHT);
-		}
-		else
-		{
-			player->m_bInLean.Set(NEO_LEAN_NONE);
-		}
-		engine->Con_NPrintf(1, "Client Lean: %i", player->m_bInLean.Get());
-#ifdef GAME_DLL
-		engine->Con_NPrintf(2, "Server Lean: %i", player->m_bInLean.Get());
-#endif // GAME_DLL
+#endif // CLIENT_DLL
+
+#ifdef CLIENT_DLL
+		engine->Con_NPrintf(0, "Client Lean: %i", player->m_bInLean);
+#else
+		engine->Con_NPrintf(1, "Server Lean: %i", player->m_bInLean);
+#endif
+
 		switch (player->m_bInLean.Get())
 		{
 		case NEO_LEAN_LEFT:
