@@ -546,7 +546,10 @@ void CNEO_Player::Spawn(void)
 
 	SetPlayerTeamModel();
 	SetViewOffset(VEC_VIEW_NEOSCALE(this));
-	GiveLoadoutWeapon();
+	if (teamNumber == TEAM_JINRAI || teamNumber == TEAM_NSF)
+	{
+		GiveLoadoutWeapon();
+	}
 }
 
 extern ConVar neo_lean_angle;

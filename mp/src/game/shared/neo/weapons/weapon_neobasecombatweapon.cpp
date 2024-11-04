@@ -1033,11 +1033,6 @@ bool CNEOBaseCombatWeapon::ShouldDraw(void)
 	if (!pOwner)
 		return true;
 
-	if (!pOwner->ShouldDraw())
-	{
-		return false;
-	}
-
 	C_BasePlayer* pLocalPlayer = C_BasePlayer::GetLocalPlayer();
 
 	// carried by local player?
