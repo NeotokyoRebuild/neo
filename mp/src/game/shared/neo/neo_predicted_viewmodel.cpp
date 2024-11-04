@@ -308,52 +308,55 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 		if (cl_neo_lean_automatic.GetBool())
 		{
 			Vector startPos = player->GetAbsOrigin();
-			startPos.z = player->EyePosition().z;
-			int distance = 80;
+			startPos.z = player->EyePosition().z; // Ideally shouldn't move due to lean but this is a nice spot
+			constexpr float tracelineAngleChange = 15.f;
+			constexpr int startingDistance = 80;
+			int distance = startingDistance;
 			int total = 0;
-			constexpr float tracelineAngleChange = 10.f;
 			trace_t tr;
-			CTraceFilterWorldAndPropsOnly filter;
-			for (int i = 2; i <= 7; i++)
+			CTraceFilterHitAll filter;
+			for (int i = 1; i <= 10; i++)
 			{
 				Vector endPos = startPos;
-				endPos.x += cos(DEG2RAD(viewAng.y) + (i / tracelineAngleChange)) * distance;
-				endPos.y += sin(DEG2RAD(viewAng.y) + (i / tracelineAngleChange)) * distance;
-				UTIL_TraceLine(startPos, endPos, MASK_SOLID_BRUSHONLY, &filter, &tr);
+				float offset = (i / (tracelineAngleChange - i));
+				endPos.x += cos(DEG2RAD(viewAng.y) + offset) * distance;
+				endPos.y += sin(DEG2RAD(viewAng.y) + offset) * distance;
+				UTIL_TraceLine(startPos, endPos, MASK_ALL, &filter, &tr);
 				if (tr.fraction != 1.0)
 				{
 					total -= 1;
 				}
-				distance -= 10;
+				distance = Max(20, distance - 5);
 #ifdef DEBUG
 				if (cl_neo_lean_automatic_debug.GetBool())
 				{
-					DebugDrawLine(startPos, endPos, 255, 255, 0, 0, 0.1);
+					DebugDrawLine(startPos, endPos, 0, tr.fraction == 1.0 ? 255 : 0, 255, 0, 0);
 				}
 #endif // DEBUG
 			}
-			distance = 80;
-			for (int i = -2; i >= -7; i--)
+			distance = startingDistance;
+			for (int i = -1; i >= -10; i--)
 			{
 				Vector endPos = startPos;
-				endPos.x += cos(DEG2RAD(viewAng.y) + (i / tracelineAngleChange)) * distance;
-				endPos.y += sin(DEG2RAD(viewAng.y) + (i / tracelineAngleChange)) * distance;
-				UTIL_TraceLine(startPos, endPos, MASK_SOLID_BRUSHONLY, &filter, &tr);
+				float offset = (i / (tracelineAngleChange + i));
+				endPos.x += cos(DEG2RAD(viewAng.y) + offset) * distance;
+				endPos.y += sin(DEG2RAD(viewAng.y) + offset) * distance;
+				UTIL_TraceLine(startPos, endPos, MASK_ALL, &filter, &tr);
 				if (tr.fraction != 1.0)
 				{
 					total += 1;
 				}
-				distance -= 10;
+				distance = Max(20, distance - 5);
 #ifdef DEBUG
 				if (cl_neo_lean_automatic_debug.GetBool())
 				{
-					DebugDrawLine(startPos, endPos, 255, 255, 0, 0, 0.1);
+					DebugDrawLine(startPos, endPos, 255, tr.fraction == 1.0 ? 255 : 0, 0, 0, 0);
 				}
 #endif // DEBUG
 			}
-			if (total == 0) { IN_LeanReset(); }
-			else if (total < 0)	{ IN_LeanRight(); }
-			else /* (total > 0) */ { IN_LeanLeft(); }
+			if (total < 0)	{ IN_LeanRight(); }
+			else if (total > 0) { IN_LeanLeft(); }
+			else { IN_LeanReset(); }
 		}
 #endif // CLIENT_DLL
 
