@@ -486,6 +486,11 @@ void C_NEO_Player::CheckThermOpticButtons()
 			m_bInThermOpticCamo = false;
 		}
 	}
+
+	if (m_bInThermOpticCamo != m_bLastTickInThermOpticCamo)
+	{
+		PlayCloakSound();
+	}
 }
 
 void C_NEO_Player::CheckVisionButtons()
@@ -1602,6 +1607,24 @@ const Vector C_NEO_Player::GetPlayerMins(void) const
 const Vector C_NEO_Player::GetPlayerMaxs(void) const
 {
 	return VEC_DUCK_HULL_MAX_SCALED(this);
+}
+
+void C_NEO_Player::PlayCloakSound(void)
+{
+	C_RecipientFilter filter;
+	filter.AddRecipient(this);
+	filter.MakeReliable();
+
+	static int tocOn = CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOn");
+	static int tocOff = CBaseEntity::PrecacheScriptSound("NeoPlayer.ThermOpticOff");
+
+	EmitSound_t params;
+	params.m_bEmitCloseCaption = false;
+	params.m_hSoundScriptHandle = (m_bInThermOpticCamo ? tocOn : tocOff);
+	params.m_pOrigin = &GetAbsOrigin();
+	params.m_nChannel = CHAN_VOICE;
+
+	EmitSound(filter, entindex(), params);
 }
 
 void C_NEO_Player::PreDataUpdate(DataUpdateType_t updateType)
