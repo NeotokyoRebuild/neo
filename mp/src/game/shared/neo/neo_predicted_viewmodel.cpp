@@ -288,7 +288,10 @@ float GetLeanRatio(const float leanAngle)
 #ifdef CLIENT_DLL
 ConVar cl_neo_lean_viewmodel_only("cl_neo_lean_viewmodel_only", "0", FCVAR_ARCHIVE, "Rotate view-model instead of camera when leaning", true, 0, true, 1);
 ConVar cl_neo_lean_automatic("cl_neo_lean_automatic", "0", FCVAR_ARCHIVE, "Automatic leaning around corners", true, 0, true, 1);
-#endif
+#ifdef DEBUG
+ConVar cl_neo_lean_automatic_debug("cl_neo_lean_automatic_debug", "0", FCVAR_ARCHIVE | FCVAR_DEVELOPMENTONLY, "Show automatic leaning tracelines", true, 0, true, 1);
+#endif // DEBUG
+#endif // CLIENT_DLL
 
 float CNEOPredictedViewModel::lean(CNEO_Player *player){
 	Assert(player);
@@ -304,60 +307,53 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 #ifdef CLIENT_DLL
 		if (cl_neo_lean_automatic.GetBool())
 		{
-			int leaning = player->m_bInLean.Get();
 			Vector startPos = player->GetAbsOrigin();
 			startPos.z = player->EyePosition().z;
 			int distance = 80;
 			int total = 0;
+			constexpr float tracelineAngleChange = 10.f;
+			trace_t tr;
+			CTraceFilterWorldAndPropsOnly filter;
 			for (int i = 2; i <= 7; i++)
 			{
 				Vector endPos = startPos;
-				endPos.x += cos(DEG2RAD(viewAng.y) + (i/10.f)) * distance;
-				endPos.y += sin(DEG2RAD(viewAng.y) + (i/10.f)) * distance;
-				trace_t tr;
-				CTraceFilterWorldAndPropsOnly filter;
+				endPos.x += cos(DEG2RAD(viewAng.y) + (i / tracelineAngleChange)) * distance;
+				endPos.y += sin(DEG2RAD(viewAng.y) + (i / tracelineAngleChange)) * distance;
 				UTIL_TraceLine(startPos, endPos, MASK_SOLID_BRUSHONLY, &filter, &tr);
 				if (tr.fraction != 1.0)
 				{
 					total -= 1;
 				}
 				distance -= 10;
-				//DebugDrawLine(startPos, endPos, 255, 255, 0, 0, 0.1);
+#ifdef DEBUG
+				if (cl_neo_lean_automatic_debug.GetBool())
+				{
+					DebugDrawLine(startPos, endPos, 255, 255, 0, 0, 0.1);
+				}
+#endif // DEBUG
 			}
 			distance = 80;
 			for (int i = -2; i >= -7; i--)
 			{
 				Vector endPos = startPos;
-				endPos.x += cos(DEG2RAD(viewAng.y) + (i / 10.f)) * distance;
-				endPos.y += sin(DEG2RAD(viewAng.y) + (i / 10.f)) * distance;
-				trace_t tr;
-				CTraceFilterWorldAndPropsOnly filter;
+				endPos.x += cos(DEG2RAD(viewAng.y) + (i / tracelineAngleChange)) * distance;
+				endPos.y += sin(DEG2RAD(viewAng.y) + (i / tracelineAngleChange)) * distance;
 				UTIL_TraceLine(startPos, endPos, MASK_SOLID_BRUSHONLY, &filter, &tr);
 				if (tr.fraction != 1.0)
 				{
 					total += 1;
 				}
 				distance -= 10;
-				//DebugDrawLine(startPos, endPos, 255, 255, 0, 0, 0.1);
-			}
-			if (total == 0)
-			{
-				IN_LeanReset();
-			}
-			else if (total < 0)
-			{
-				if (!(player->m_bInLean & NEO_LEAN_RIGHT))
+#ifdef DEBUG
+				if (cl_neo_lean_automatic_debug.GetBool())
 				{
-					IN_LeanRight();
+					DebugDrawLine(startPos, endPos, 255, 255, 0, 0, 0.1);
 				}
+#endif // DEBUG
 			}
-			else // total > 0
-			{
-				if (!(player->m_bInLean & NEO_LEAN_LEFT))
-				{
-					IN_LeanLeft();
-				}
-			}
+			if (total == 0) { IN_LeanReset(); }
+			else if (total < 0)	{ IN_LeanRight(); }
+			else /* (total > 0) */ { IN_LeanLeft(); }
 		}
 #endif // CLIENT_DLL
 

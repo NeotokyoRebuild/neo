@@ -526,7 +526,6 @@ void C_NEO_Player::CheckVisionButtons()
 	}
 }
 
-extern ConVar cl_neo_lean_automatic;
 void C_NEO_Player::CheckLeanButtons()
 {
 	if (!IsAlive())
