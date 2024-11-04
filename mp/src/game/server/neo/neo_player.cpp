@@ -2236,12 +2236,14 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 			}
 			[[fallthrough]];
 		case JoinMode::Random:
+			static_assert(TEAM_JINRAI < TEAM_NSF);
 			iTeam = RandomInt(TEAM_JINRAI, TEAM_NSF);
 			break;
 		default:
-			const auto lastGameTeam = GetNumberOfTeams() - LAST_SHARED_TEAM;
-			Assert(FIRST_GAME_TEAM <= lastGameTeam);
-			iTeam = Clamp(joinMode.GetInt(), FIRST_GAME_TEAM, lastGameTeam);
+			const auto lastGameTeam = GetNumberOfTeams() - LAST_SHARED_TEAM,
+				minAllowed = TEAM_UNASSIGNED;
+			Assert(minAllowed <= lastGameTeam);
+			iTeam = Clamp(joinMode.GetInt(), minAllowed, lastGameTeam);
 		}
 	}
 	// Limit team join spam, unless this is a newly joined player
