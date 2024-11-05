@@ -287,7 +287,7 @@ CTraceFilterSimple::CTraceFilterSimple( const IHandleEntity *passedict, int coll
 
 #ifdef NEO
 ConVar sv_neo_player_collisions("sv_neo_player_collisions", "0", FCVAR_REPLICATED, "Player collisions. None=0, Boosting=1, Enemy=2, Both=3", true, 0, true, 3);
-ConVar sv_neo_player_collisions_boosting_overlap("sv_neo_player_collisions_friendly_boosting_overlap", "-0.5", FCVAR_REPLICATED, "Difference above this value between collision box max z value of bottom player and origin z value of top player will enable collision");
+ConVar sv_neo_player_collisions_boosting_overlap("sv_neo_player_collisions_boosting_overlap", "-0.5", FCVAR_REPLICATED, "Difference above this value between collision box max z value of bottom player and origin z value of top player will enable collision");
 #endif
 //-----------------------------------------------------------------------------
 // The trace filter!
