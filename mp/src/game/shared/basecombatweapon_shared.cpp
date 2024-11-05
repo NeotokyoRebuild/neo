@@ -1528,7 +1528,7 @@ bool CBaseCombatWeapon::Holster( CBaseCombatWeapon *pSwitchingTo )
 		// Hide the weapon when the holster animation's finished
 #ifndef NEO
 		SetContextThink( &CBaseCombatWeapon::HideThink, gpGlobals->curtime + flSequenceDuration, HIDEWEAPON_THINK_CONTEXT );
-#endif
+#endif // NEO
 	}
 
 	// if we were displaying a hud hint, squelch it.
