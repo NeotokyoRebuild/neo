@@ -12,6 +12,11 @@
 #include "materialsystem/itexture.h"
 #include "view_shared.h"
 #include "viewpostprocess.h"
+#ifdef GLOWS_ENABLE
+#ifdef NEO
+#include "neo_gamerules.h"
+#endif // NEO
+#endif // GLOWS_ENABLE
 
 #define FULL_FRAME_TEXTURE "_rt_FullFrameFB"
 
@@ -24,6 +29,9 @@ static void glowOutlineEffectToggleCallBack(IConVar* var, const char* pOldValue,
 	{
 		if (auto player = UTIL_PlayerByIndex(i))
 		{
+			float r, g, b;
+			NEORules()->GetTeamGlowColor(player->GetTeamNumber(), r, g, b);
+			player->SetGlowEffectColor(r, g, b);
 			player->SetClientSideGlowEnabled(!flOldValue);
 		}
 	}

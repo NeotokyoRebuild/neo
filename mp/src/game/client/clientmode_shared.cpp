@@ -69,6 +69,7 @@ extern ConVar replay_rendersetting_renderglow;
 #include "c_neo_player.h"
 #include <GameUI/IGameUI.h>
 #include "ui/neo_loading.h"
+#include "neo_gamerules.h"
 #endif
 
 #ifdef GLOWS_ENABLE
@@ -1126,6 +1127,18 @@ void ClientModeShared::FireGameEvent( IGameEvent *event )
 	else if ( Q_strcmp( "player_team", eventname ) == 0 )
 	{
 		C_BasePlayer *pPlayer = USERID2PLAYER( event->GetInt("userid") );
+#ifdef NEO
+#ifdef GLOWS_ENABLE
+		if (pPlayer && glow_outline_effect_enable.GetBool())
+		{ // NEO JANK (Adam) bots join their final team before they are created client side, so pPlayer here will be null for them, and setting clientsideglow on them in c_neo_player::Spawn() results in an incorrect glow colour. This works for players though
+			float r, g, b;
+			NEORules()->GetTeamGlowColor(event->GetInt("team"), r, g, b);
+			pPlayer->SetGlowEffectColor(r, g, b);
+			pPlayer->SetClientSideGlowEnabled(true);
+		}
+#endif // GLOWS_ENABLE
+#endif // NEO
+
 		if ( !hudChat )
 			return;
 
