@@ -17,6 +17,7 @@
 
 #ifdef GLOWS_ENABLE
 
+#ifdef NEO
 static void glowOutlineEffectToggleCallBack(IConVar* var, const char* pOldValue, float flOldValue)
 {
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
@@ -27,8 +28,11 @@ static void glowOutlineEffectToggleCallBack(IConVar* var, const char* pOldValue,
 		}
 	}
 }
+#endif // NEO
 ConVar glow_outline_effect_enable( "glow_outline_effect_enable", "1", FCVAR_ARCHIVE, "Enable entity outline glow effects.", glowOutlineEffectToggleCallBack);
+#ifndef NEO
 ConVar glow_outline_effect_width( "glow_outline_width", "10.0f", FCVAR_CHEAT, "Width of glow outline effect in screen space." );
+#endif // NEO
 
 extern bool g_bDumpRenderTargets; // in viewpostprocess.cpp
 
@@ -79,7 +83,11 @@ void CGlowObjectManager::RenderGlowEffects( const CViewSetup *pSetup, int nSplit
 			pRenderContext->GetViewport( nX, nY, nWidth, nHeight );
 
 			PIXEvent _pixEvent( pRenderContext, "EntityGlowEffects" );
+#ifdef NEO
+			ApplyEntityGlowEffects(pSetup, nSplitScreenSlot, pRenderContext, 0.f, nX, nY, nWidth, nHeight);
+#else
 			ApplyEntityGlowEffects( pSetup, nSplitScreenSlot, pRenderContext, glow_outline_effect_width.GetFloat(), nX, nY, nWidth, nHeight );
+#endif
 		}
 	}
 }
