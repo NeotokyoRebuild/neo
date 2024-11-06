@@ -37,7 +37,7 @@ static void glowOutlineEffectToggleCallBack(IConVar* var, const char* pOldValue,
 	}
 }
 #endif // NEO
-ConVar glow_outline_effect_enable( "glow_outline_effect_enable", "1", FCVAR_ARCHIVE, "Enable entity outline glow effects.", glowOutlineEffectToggleCallBack);
+ConVar glow_outline_effect_enable( "glow_outline_effect_enable", "0", 0, "Enable entity outline glow effects.", glowOutlineEffectToggleCallBack);
 #ifndef NEO
 ConVar glow_outline_effect_width( "glow_outline_width", "10.0f", FCVAR_CHEAT, "Width of glow outline effect in screen space." );
 #endif // NEO
