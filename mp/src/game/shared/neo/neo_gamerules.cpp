@@ -2024,11 +2024,6 @@ void CNEORules::StartNextRound()
 		}
 		pPlayer->RemoveAllItems(true);
 		pPlayer->Spawn();
-		if (gpGlobals->curtime < m_flNeoRoundStartTime + mp_neo_preround_freeze_time.GetFloat())
-		{
-			pPlayer->AddFlag(FL_GODMODE);
-			pPlayer->AddNeoFlag(NEO_FL_FREEZETIME);
-		}
 
 		pPlayer->m_bInAim = false;
 		pPlayer->m_bInThermOpticCamo = false;
