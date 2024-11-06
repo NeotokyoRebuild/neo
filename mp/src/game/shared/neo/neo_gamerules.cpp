@@ -3393,7 +3393,7 @@ void CNEORules::ClientDisconnected(edict_t* pClient)
 					.xp = pNeoPlayer->m_iXP.Get(),
 					.deaths = pNeoPlayer->DeathCount(),
 					.spawnedThisRound = pNeoPlayer->m_bSpawnedThisRound,
-					.deathTime = gpGlobals->curtime, // NEOTODO (Adam) prevent players abusing retry command to save themselves in games with respawns. Should award xp to whoever did most damage to disconnecting player, for now simply ensure they can't respawn too quickly
+					.deathTime = pNeoPlayer->IsAlive() ? gpGlobals->curtime : pNeoPlayer->GetDeathTime(), // NEOTODO (Adam) prevent players abusing retry command to save themselves in games with respawns. Should award xp to whoever did most damage to disconnecting player, for now simply ensure they can't respawn too quickly
 				};
 
 				if (restoreInfo.xp == 0 && restoreInfo.deaths == 0 && restoreInfo.deathTime == 0.f && restoreInfo.spawnedThisRound == false)
