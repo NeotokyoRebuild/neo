@@ -17,7 +17,17 @@
 
 #ifdef GLOWS_ENABLE
 
-ConVar glow_outline_effect_enable( "glow_outline_effect_enable", "1", FCVAR_ARCHIVE, "Enable entity outline glow effects." );
+static void glowOutlineEffectToggleCallBack(IConVar* var, const char* pOldValue, float flOldValue)
+{
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		if (auto player = UTIL_PlayerByIndex(i))
+		{
+			player->SetClientSideGlowEnabled(!flOldValue);
+		}
+	}
+}
+ConVar glow_outline_effect_enable( "glow_outline_effect_enable", "1", FCVAR_ARCHIVE, "Enable entity outline glow effects.", glowOutlineEffectToggleCallBack);
 ConVar glow_outline_effect_width( "glow_outline_width", "10.0f", FCVAR_CHEAT, "Width of glow outline effect in screen space." );
 
 extern bool g_bDumpRenderTargets; // in viewpostprocess.cpp

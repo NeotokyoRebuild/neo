@@ -811,16 +811,7 @@ int ClientModeShared::HandleSpectatorKeyInput( int down, ButtonCode_t keynum, co
 #ifdef GLOWS_ENABLE
 	else if (down && pszCurrentBinding && Q_strcmp(pszCurrentBinding, "+attack2") == 0)
 	{
-		const bool outlinesEnabled = !glow_outline_effect_enable.GetBool();
-		glow_outline_effect_enable.SetValue(outlinesEnabled);
-
-		for (int i = 1; i <= gpGlobals->maxClients; i++)
-		{
-			if (auto player = UTIL_PlayerByIndex(i))
-			{
-				player->SetClientSideGlowEnabled(outlinesEnabled);
-			}
-		}
+		glow_outline_effect_enable.SetValue(!glow_outline_effect_enable.GetBool());
 		return 0;
 	}
 #endif // GLOWS_ENABLE
