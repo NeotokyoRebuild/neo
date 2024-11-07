@@ -38,6 +38,9 @@
 
 #include "neo_weapon_loadout.h"
 
+// source bots
+#include "bots\bot.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -533,6 +536,10 @@ void CNEO_Player::Spawn(void)
 	SetViewOffset(VEC_VIEW_NEOSCALE(this));
 
 	GiveLoadoutWeapon();
+
+	if (GetBotController()) {
+		GetBotController()->Spawn();
+	}
 }
 
 extern ConVar neo_lean_angle;
@@ -1727,6 +1734,10 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 		StartShowDmgStats(&info);
 	}
 
+	if (GetBotController()) {
+		GetBotController()->OnDeath(info);
+	}
+
 	BaseClass::Event_Killed(info);
 }
 
@@ -2555,6 +2566,11 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 			}
 		}
 	}
+
+	if (GetBotController()) {
+		GetBotController()->OnTakeDamage(info);
+	}
+
 	return BaseClass::OnTakeDamage_Alive(info);
 }
 
@@ -3022,4 +3038,185 @@ extern ConVar sv_neo_wep_dmg_modifier;
 void CNEO_Player::ModifyFireBulletsDamage(CTakeDamageInfo* dmgInfo)
 {
 	dmgInfo->SetDamage(dmgInfo->GetDamage() * sv_neo_wep_dmg_modifier.GetFloat());
+}
+
+//================================================================================
+//================================================================================
+void CNEO_Player::SetBotController(IBot* pBot)
+{
+	if (m_pBotController) {
+		delete m_pBotController;
+		m_pBotController = NULL;
+	}
+
+	m_pBotController = pBot;
+}
+
+//================================================================================
+//================================================================================
+void CNEO_Player::SetUpBot()
+{
+	CreateSenses();
+	SetBotController(new CBot(this));
+}
+
+//================================================================================
+//================================================================================
+void CNEO_Player::CreateSenses()
+{
+	m_pSenses = new CAI_Senses;
+	m_pSenses->SetOuter(this);
+}
+
+//================================================================================
+//================================================================================
+void CNEO_Player::SetDistLook(float flDistLook)
+{
+	if (GetSenses()) {
+		GetSenses()->SetDistLook(flDistLook);
+	}
+}
+
+//================================================================================
+//================================================================================
+int CNEO_Player::GetSoundInterests()
+{
+	return SOUND_DANGER | SOUND_COMBAT | SOUND_PLAYER | SOUND_CARCASS | SOUND_MEAT | SOUND_GARBAGE;
+}
+
+//================================================================================
+//================================================================================
+int CNEO_Player::GetSoundPriority(CSound* pSound)
+{
+	if (pSound->IsSoundType(SOUND_COMBAT)) {
+		return SOUND_PRIORITY_HIGH;
+	}
+
+	if (pSound->IsSoundType(SOUND_DANGER)) {
+		if (pSound->IsSoundType(SOUND_CONTEXT_FROM_SNIPER | SOUND_CONTEXT_EXPLOSION)) {
+			return SOUND_PRIORITY_HIGHEST;
+		}
+		else if (pSound->IsSoundType(SOUND_CONTEXT_GUNFIRE | SOUND_BULLET_IMPACT)) {
+			return SOUND_PRIORITY_VERY_HIGH;
+		}
+
+		return SOUND_PRIORITY_HIGH;
+	}
+
+	if (pSound->IsSoundType(SOUND_CARCASS | SOUND_MEAT | SOUND_GARBAGE)) {
+		return SOUND_PRIORITY_VERY_LOW;
+	}
+
+	return SOUND_PRIORITY_NORMAL;
+}
+
+//================================================================================
+//================================================================================
+bool CNEO_Player::QueryHearSound(CSound* pSound)
+{
+	CBaseEntity* pOwner = pSound->m_hOwner.Get();
+
+	if (pOwner == this)
+		return false;
+
+	if (pSound->IsSoundType(SOUND_PLAYER) && !pOwner) {
+		return false;
+	}
+
+	if (pSound->IsSoundType(SOUND_CONTEXT_ALLIES_ONLY)) {
+		if (Classify() != CLASS_PLAYER_ALLY && Classify() != CLASS_PLAYER_ALLY_VITAL) {
+			return false;
+		}
+	}
+
+	if (pOwner) {
+		// Solo escuchemos sonidos provocados por nuestros aliados si son de combate.
+		if (TheGameRules->PlayerRelationship(this, pOwner) == GR_ALLY) {
+			if (pSound->IsSoundType(SOUND_COMBAT) && !pSound->IsSoundType(SOUND_CONTEXT_GUNFIRE)) {
+				return true;
+			}
+
+			return false;
+		}
+	}
+
+	if (ShouldIgnoreSound(pSound)) {
+		return false;
+	}
+
+	return true;
+}
+
+//================================================================================
+//================================================================================
+bool CNEO_Player::QuerySeeEntity(CBaseEntity* pEntity, bool bOnlyHateOrFear)
+{
+	if (bOnlyHateOrFear) {
+		if (HL2MPRules()->PlayerRelationship(this, pEntity) == GR_NOTTEAMMATE)
+			return true;
+
+		Disposition_t disposition = IRelationType(pEntity);
+		return (disposition == D_HT || disposition == D_FR);
+	}
+
+	return true;
+}
+
+//================================================================================
+//================================================================================
+void CNEO_Player::OnLooked(int iDistance)
+{
+	if (GetBotController()) {
+		GetBotController()->OnLooked(iDistance);
+	}
+}
+
+//================================================================================
+//================================================================================
+void CNEO_Player::OnListened()
+{
+	if (GetBotController()) {
+		GetBotController()->OnListened();
+	}
+}
+
+//================================================================================
+//================================================================================
+CSound* CNEO_Player::GetLoudestSoundOfType(int iType)
+{
+	return CSoundEnt::GetLoudestSoundOfType(iType, EarPosition());
+}
+
+//================================================================================
+// Devuelve si podemos ver el origen del sonido
+//================================================================================
+bool CNEO_Player::SoundIsVisible(CSound* pSound)
+{
+	return (FVisible(pSound->GetSoundReactOrigin()) && IsInFieldOfView(pSound->GetSoundReactOrigin()));
+}
+
+//================================================================================
+//================================================================================
+CSound* CNEO_Player::GetBestSound(int validTypes)
+{
+	CSound* pResult = GetSenses()->GetClosestSound(false, validTypes);
+
+	if (pResult == NULL) {
+		DevMsg("NULL Return from GetBestSound\n");
+	}
+
+	return pResult;
+}
+
+//================================================================================
+//================================================================================
+CSound* CNEO_Player::GetBestScent()
+{
+	CSound* pResult = GetSenses()->GetClosestSound(true);
+
+	if (pResult == NULL) {
+		DevMsg("NULL Return from GetBestScent\n");
+	}
+
+	return pResult;
 }

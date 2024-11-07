@@ -162,11 +162,9 @@ public:
 
     virtual void AddComponent( IBotComponent *pComponent ) = 0;
 
-    template<typename COMPONENT>
-    COMPONENT GetComponent( int id ) const = 0;
+    template <typename COMPONENT> COMPONENT GetComponent( int id ) const;
 
-    template<typename COMPONENT>
-    COMPONENT GetComponent( int id ) = 0;
+    template <typename COMPONENT> COMPONENT GetComponent( int id );
 
     virtual void SetUpComponents() = 0;
     virtual void SetUpSchedules() = 0;
@@ -213,6 +211,9 @@ public:
     virtual void DebugDisplay() = 0;
     virtual void DebugScreenText( const char *pText, Color color = Color( 255, 255, 255, 150 ), float yPosition = -1, float duration = 0.15f ) = 0;
     virtual void DebugAddMessage( char *format, ... ) = 0;
+#ifdef NEO
+    virtual void DebugAddMessage( const char *format, ...) = 0;
+#endif // NEO
 
     virtual IBotVision *GetVision() const = 0;
     virtual IBotAttack *GetAttack() const = 0;

@@ -473,6 +473,27 @@ void CBot::DebugAddMessage( char *format, ... )
         m_debugMessages.RemoveMultipleFromTail(1);
 }
 
+#ifdef NEO
+void CBot::DebugAddMessage(const char *format, ...)
+{
+    va_list varg;
+    char buffer[1024];
+
+    va_start(varg, format);
+    vsprintf(buffer, format, varg);
+    va_end(varg);
+
+    DebugMessage message;
+    message.m_age.Start();
+    Q_strncpy(message.m_string, buffer, 1024);
+
+    m_debugMessages.AddToHead(message);
+
+    if (m_debugMessages.Count() >= bot_debug_max_msgs.GetInt())
+        m_debugMessages.RemoveMultipleFromTail(1);
+}
+#endif // NEO
+
 #ifdef DEBUG
 Vector g_DebugSpot1;
 Vector g_DebugSpot2;

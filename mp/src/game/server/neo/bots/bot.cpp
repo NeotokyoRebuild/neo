@@ -536,7 +536,11 @@ CON_COMMAND_F( bot_add, "Adds a specified number of generic bots", FCVAR_SERVER 
         Assert( pPlayer );
 
         if ( pPlayer ) {
+#ifdef NEO
+            if ( bot_team.GetInt() > 1) {
+#else
             if ( bot_team.GetInt() > 0 ) {
+#endif // NEO
                 pPlayer->ChangeTeam( bot_team.GetInt() );
             }
         }
