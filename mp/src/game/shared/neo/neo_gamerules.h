@@ -341,6 +341,8 @@ public:
 
 	const char *GetTeamClantag(const int iTeamNum) const;
 
+	virtual int	GetSkillLevel() { return 3; }
+
 public:
 #ifdef GAME_DLL
 	// Workaround for bot spawning. See Bot_f() for details.
