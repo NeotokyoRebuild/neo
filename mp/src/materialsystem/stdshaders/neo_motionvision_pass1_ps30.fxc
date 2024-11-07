@@ -18,16 +18,6 @@ struct PS_INPUT
 
 float4 main( const PS_INPUT i ) : COLOR
 {
-	const float4 mvColor = tex2D(Intermediate, i.texCoord);
-	const float4 fbColor = tex2D(FrameBuffer, i.texCoord);
-	
-	if ((abs(mvColor.r - fbColor.r) > g_MvSensitivity) ||
-		(abs(mvColor.g - fbColor.g) > g_MvSensitivity) ||
-		(abs(mvColor.b - fbColor.b) > g_MvSensitivity))
-	{
-		const float4 color = float4(g_MvColor_R, g_MvColor_G, g_MvColor_B, 1) * g_MvColor_A;
-		return color * (1 - min(g_MvSpeed, g_MaxSpeedMod));
-	}
-	
+	//NEO TODO (Adam) Remove this pass entirely
 	return float4(0, 0, 0, 1);
 }

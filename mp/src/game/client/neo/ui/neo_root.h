@@ -54,7 +54,9 @@ enum RootState
 	STATE_SERVERDETAILS,
 	STATE_PLAYERLIST,
 
-	STATE_KEYCAPTURE,
+	// Those that uses CNeoRoot::MainLoopPopup only starts here
+	STATE__POPUPSTART,
+	STATE_KEYCAPTURE = STATE__POPUPSTART,
 	STATE_CONFIRMSETTINGS,
 	STATE_QUIT,
 	STATE_SERVERPASSWORD,
@@ -185,6 +187,13 @@ public:
 	int m_iNewsSize = 0;
 	void ReadNewsFile(CUtlBuffer &buf);
 	bool m_bShowBrowserLabel = false;
+
+	vgui::FileOpenDialog *m_pFileIODialog = nullptr;
+	MESSAGE_FUNC_CHARPTR(OnFileSelected, "FileSelected", fullpath);
+
+	bool m_bOnLoadingScreen = false;
+	int m_iSavedYOffsets[NeoUI::MAX_SECTIONS] = {};
+	float m_flWideAs43 = 0.0f;
 };
 
 extern CNeoRoot *g_pNeoRoot;

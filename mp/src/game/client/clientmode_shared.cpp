@@ -67,16 +67,33 @@ extern ConVar replay_rendersetting_renderglow;
 
 #ifdef NEO
 #include "c_neo_player.h"
+#include <GameUI/IGameUI.h>
+#include "ui/neo_loading.h"
+#endif
+
+#ifdef GLOWS_ENABLE
+#include "clienteffectprecachesystem.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+#ifdef GLOWS_ENABLE
+CLIENTEFFECT_REGISTER_BEGIN(PrecachePostProcessingEffectsGlow)
+CLIENTEFFECT_MATERIAL("dev/glow_color")
+CLIENTEFFECT_MATERIAL("dev/halo_add_to_screen")
+CLIENTEFFECT_REGISTER_END_CONDITIONAL(engine->GetDXSupportLevel() >= 90)
+#endif
 #define ACHIEVEMENT_ANNOUNCEMENT_MIN_TIME 10
 
 class CHudWeaponSelection;
 class CHudChat;
 class CHudVote;
+
+#ifdef NEO
+static CDllDemandLoader g_gameUI("GameUI");
+extern ConVar neo_cl_streamermode;
+#endif
 
 static vgui::HContext s_hVGuiContext = DEFAULT_VGUI_CONTEXT;
 
@@ -95,6 +112,10 @@ CON_COMMAND( cl_reload_localization_files, "Reloads all localization files" )
 {
 	g_pVGuiLocalize->ReloadLocalizationFiles();
 }
+
+#ifdef NEO
+CNeoLoading *g_pNeoLoading;
+#endif
 
 #ifdef VOICE_VOX_ENABLE
 void VoxCallback( IConVar *var, const char *oldString, float oldFloat )
@@ -287,6 +308,10 @@ ClientModeShared::ClientModeShared()
 	m_pWeaponSelection = NULL;
 	m_nRootSize[ 0 ] = m_nRootSize[ 1 ] = -1;
 
+#ifdef NEO
+	g_pNeoLoading = nullptr;
+#endif
+
 #if defined( REPLAY_ENABLED )
 	m_pReplayReminderPanel = NULL;
 	m_flReplayStartRecordTime = 0.0f;
@@ -385,6 +410,17 @@ void ClientModeShared::Init()
 
 	HOOK_MESSAGE( VGUIMenu );
 	HOOK_MESSAGE( Rumble );
+
+#ifdef NEO
+	if (CreateInterfaceFn gameUIFactory = g_gameUI.GetFactory())
+	{
+		if (IGameUI *pGameUI = reinterpret_cast<IGameUI *>(gameUIFactory(GAMEUI_INTERFACE_VERSION, nullptr)))
+		{
+			g_pNeoLoading = new CNeoLoading;
+			pGameUI->SetLoadingBackgroundDialog(g_pNeoLoading->GetVPanel());
+		}
+	}
+#endif
 }
 
 
@@ -719,6 +755,9 @@ int	ClientModeShared::KeyInput( int down, ButtonCode_t keynum, const char *pszCu
 	return 1;
 }
 
+#ifdef NEO
+extern ConVar glow_outline_effect_enable;
+#endif // NEO
 //-----------------------------------------------------------------------------
 // Purpose: See if spectator input occurred. Return 0 if the key is swallowed.
 //-----------------------------------------------------------------------------
@@ -769,6 +808,22 @@ int ClientModeShared::HandleSpectatorKeyInput( int down, ButtonCode_t keynum, co
 #endif
 		return 0;
 	}
+#ifdef GLOWS_ENABLE
+	else if (down && pszCurrentBinding && Q_strcmp(pszCurrentBinding, "+attack2") == 0)
+	{
+		const bool outlinesEnabled = !glow_outline_effect_enable.GetBool();
+		glow_outline_effect_enable.SetValue(outlinesEnabled);
+
+		for (int i = 1; i <= gpGlobals->maxClients; i++)
+		{
+			if (auto player = UTIL_PlayerByIndex(i))
+			{
+				player->SetClientSideGlowEnabled(outlinesEnabled);
+			}
+		}
+		return 0;
+	}
+#endif // GLOWS_ENABLE
 
 	return 1;
 }
@@ -805,6 +860,9 @@ int ClientModeShared::HudElementKeyInput( int down, ButtonCode_t keynum, const c
 //-----------------------------------------------------------------------------
 bool ClientModeShared::DoPostScreenSpaceEffects( const CViewSetup *pSetup )
 {
+#ifdef GLOWS_ENABLE
+	g_GlowObjectManager.RenderGlowEffects(pSetup, 0);
+#endif
 #if defined( REPLAY_ENABLED )
 	if ( engine->IsPlayingDemo() )
 	{
@@ -874,6 +932,10 @@ void ClientModeShared::LevelInit( const char *newmap )
 	// Reset any player explosion/shock effects
 	CLocalPlayerFilter filter;
 	enginesound->SetPlayerDSP( filter, 0, true );
+
+#ifdef NEO
+	g_pVGuiLocalize->ConvertANSIToUnicode(newmap, g_pNeoLoading->m_wszLoadingMap, sizeof(g_pNeoLoading->m_wszLoadingMap));
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -897,6 +959,10 @@ void ClientModeShared::LevelShutdown( void )
 	// Reset any player explosion/shock effects
 	CLocalPlayerFilter filter;
 	enginesound->SetPlayerDSP( filter, 0, true );
+
+#ifdef NEO
+	g_pNeoLoading->m_wszLoadingMap[0] = L'\0';
+#endif
 }
 
 
@@ -999,6 +1065,13 @@ void ClientModeShared::FireGameEvent( IGameEvent *event )
 
 		if ( !IsInCommentaryMode() )
 		{
+#ifdef NEO
+			if (neo_cl_streamermode.GetBool())
+			{
+				hudChat->Printf(CHAT_FILTER_JOINLEAVE, "Player connected");
+				return;
+			}
+#endif
 			wchar_t wszLocalized[100];
 			wchar_t wszPlayerName[MAX_PLAYER_NAME_LENGTH];
 			g_pVGuiLocalize->ConvertANSIToUnicode( event->GetString("name"), wszPlayerName, sizeof(wszPlayerName) );
@@ -1012,6 +1085,14 @@ void ClientModeShared::FireGameEvent( IGameEvent *event )
 	}
 	else if ( Q_strcmp( "player_disconnect", eventname ) == 0 )
 	{
+#ifdef NEO
+		if (neo_cl_streamermode.GetBool())
+		{
+			hudChat->Printf(CHAT_FILTER_JOINLEAVE, "Player disconnected");
+			return;
+		}
+#endif
+
 		C_BasePlayer *pPlayer = USERID2PLAYER( event->GetInt("userid") );
 
 		if ( !hudChat || !pPlayer )

@@ -312,14 +312,16 @@ void CNeoLoadoutMenu::ChangeMenu(const char* menuName = NULL)
 void CNeoLoadoutMenu::OnKeyCodeReleased(vgui::KeyCode code)
 {
 	switch (code) {
-	case 94: // F3 - Close the menu
+	case KEY_F3: // F3 - Close the menu
 		ChangeMenu(NULL);
-	case 65: // Spacebar - Try to equip weapon in the second slot like in the base game
+		break;
+	case KEY_SPACE: // Spacebar - Try to equip weapon in the second slot like in the base game
 		OnCommand("loadout 1");
+		break;
+	default:
+		// Ignore other key presses
+		break;
 	}
-
-	// Ignore other Key presses
-	//BaseClass::OnKeyCodeReleased(code);
 }
 
 void CNeoLoadoutMenu::OnButtonPressed(KeyValues *data)

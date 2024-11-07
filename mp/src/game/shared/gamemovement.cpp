@@ -2517,7 +2517,8 @@ bool CGameMovement::CheckJumpButton( void )
 #ifdef DEBUG
 	Assert(dynamic_cast<CNEO_Player*>(player));
 #endif
-	switch (static_cast<CNEO_Player*>(player)->GetClass())
+	auto neoPlayer = static_cast<CNEO_Player*>(player);
+	switch (neoPlayer->GetClass())
 	{
 	case NEO_CLASS_RECON:
 		flMul *= RECON_JUMP_MULTIPLIER;
@@ -2529,6 +2530,7 @@ bool CGameMovement::CheckJumpButton( void )
 		flMul *= ASSAULT_JUMP_MULTIPLIER;
 		break;
 	}
+	neoPlayer->DoAnimationEvent(PLAYERANIMEVENT_JUMP);
 #endif
 
 	// Acclerate upward

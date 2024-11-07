@@ -1040,12 +1040,7 @@ public:
 	virtual void			StopLoopingSounds( void ) {}
 
 	// common member functions
-#ifdef NEO
-	// virtual because Neo weapons want to override this
-	virtual void			SUB_Remove(void);
-#else
 	void					SUB_Remove( void );
-#endif
 
 	void					SUB_DoNothing( void );
 	void					SUB_StartFadeOut( float delay = 10.0f, bool bNotSolid = true );

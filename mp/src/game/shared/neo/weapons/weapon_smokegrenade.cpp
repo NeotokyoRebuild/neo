@@ -25,7 +25,7 @@ extern ConVar sv_neo_grenade_throw_intensity;
 extern ConVar sv_neo_grenade_lob_intensity;
 extern ConVar sv_neo_grenade_roll_intensity;
 
-ConVar sv_neo_infinite_smoke_grenades("sv_neo_infinite_smoke_grenades", "0", FCVAR_CHEAT, "Should smoke grenades use up ammo.", true, 0.0, true, 1.0);
+ConVar sv_neo_infinite_smoke_grenades("sv_neo_infinite_smoke_grenades", "0", FCVAR_REPLICATED | FCVAR_CHEAT, "Should smoke grenades use up ammo.", true, 0.0, true, 1.0);
 
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponSmokeGrenade, DT_WeaponSmokeGrenade)
 
@@ -97,42 +97,6 @@ bool CWeaponSmokeGrenade::Reload(void)
 	return true;
 }
 
-void CWeaponSmokeGrenade::SecondaryAttack(void)
-{
-	if (ShootingIsPrevented())
-	{
-		return;
-	}
-
-	if (m_bRedraw || !HasPrimaryAmmo())
-	{
-		return;
-	}
-
-	auto pPlayer = ToBasePlayer(GetOwner());
-	if (!pPlayer)
-	{
-		return;
-	}
-
-	if (m_flNextSecondaryAttack > gpGlobals->curtime)
-	{
-		return;
-	}
-
-	if (m_AttackPaused != GRENADE_PAUSED_SECONDARY)
-	{
-		// Note that this is a secondary attack and prepare the grenade attack to pause.
-		m_AttackPaused = GRENADE_PAUSED_SECONDARY;
-		SendWeaponAnim(ACT_VM_PULLPIN);
-
-		// Don't let weapon idle interfere in the middle of a throw!
-		m_flTimeWeaponIdle = FLT_MAX;
-		m_flNextSecondaryAttack = gpGlobals->curtime + RETHROW_DELAY;
-		m_bDrawbackFinished = false;
-	}
-}
-
 void CWeaponSmokeGrenade::PrimaryAttack(void)
 {
 	if (ShootingIsPrevented())
@@ -200,7 +164,7 @@ void CWeaponSmokeGrenade::ItemPostFrame(void)
 
 	if (m_bDrawbackFinished)
 	{
-		CBasePlayer* pOwner = ToBasePlayer(GetOwner());
+		auto pOwner = static_cast<CNEO_Player*>(GetOwner());
 
 		if (pOwner)
 		{
@@ -212,29 +176,6 @@ void CWeaponSmokeGrenade::ItemPostFrame(void)
 					ThrowGrenade(pOwner);
 
 					SendWeaponAnim(ACT_VM_THROW);
-					m_flNextPrimaryAttack = m_flNextSecondaryAttack = m_flTimeWeaponIdle = gpGlobals->curtime + SequenceDuration();
-					m_bDrawbackFinished = false;
-					m_AttackPaused = GRENADE_PAUSED_NO;
-				}
-				break;
-
-			case GRENADE_PAUSED_SECONDARY:
-				if (!(pOwner->m_nButtons & IN_AIM))
-				{
-					//See if we're ducking
-					if (pOwner->m_nButtons & IN_DUCK)
-					{
-						RollGrenade(pOwner);
-						//Send the weapon animation
-						SendWeaponAnim(ACT_VM_THROW);
-					}
-					else
-					{
-						LobGrenade(pOwner);
-						//Send the weapon animation
-						SendWeaponAnim(ACT_VM_THROW);
-					}
-
 					m_flNextPrimaryAttack = m_flNextSecondaryAttack = m_flTimeWeaponIdle = gpGlobals->curtime + SequenceDuration();
 					m_bDrawbackFinished = false;
 					m_AttackPaused = GRENADE_PAUSED_NO;
@@ -268,7 +209,7 @@ void CWeaponSmokeGrenade::CheckThrowPosition(CBasePlayer* pPlayer, const Vector&
 	}
 }
 
-void CWeaponSmokeGrenade::ThrowGrenade(CBasePlayer* pPlayer, bool isAlive, CBaseEntity *pAttacker)
+void CWeaponSmokeGrenade::ThrowGrenade(CNEO_Player* pPlayer, bool isAlive, CBaseEntity *pAttacker)
 {
 	if (!sv_neo_infinite_smoke_grenades.GetBool())
 	{
@@ -324,108 +265,7 @@ void CWeaponSmokeGrenade::ThrowGrenade(CBasePlayer* pPlayer, bool isAlive, CBase
 #endif
 
 	// player "shoot" animation
-	pPlayer->SetAnimation(PLAYER_ATTACK1);
-
-	m_bRedraw = true;
-}
-
-void CWeaponSmokeGrenade::LobGrenade(CBasePlayer* pPlayer)
-{
-	// Binds hack: we want grenade secondary attack to trigger on aim, not the attack2 bind.
-	if (pPlayer->m_afButtonPressed & IN_AIM)
-	{
-		return;
-	}
-	else if (!sv_neo_infinite_smoke_grenades.GetBool())
-	{
-		Assert(HasPrimaryAmmo());
-		DecrementAmmo(pPlayer);
-	}
-
-#ifndef CLIENT_DLL
-	Vector	vecEye = pPlayer->EyePosition();
-	Vector	vForward, vRight;
-
-	pPlayer->EyeVectors(&vForward, &vRight, NULL);
-	Vector vecSrc = vecEye + vForward * 2.0f + Vector(0, 0, -8);
-	CheckThrowPosition(pPlayer, vecEye, vecSrc);
-
-	Vector vecThrow;
-	pPlayer->GetVelocity(&vecThrow, NULL);
-	vecThrow += vForward * sv_neo_grenade_lob_intensity.GetFloat() + Vector(0, 0, 50);
-	CBaseGrenade* pGrenade = NEOSmokegrenade_Create(vecSrc, vec3_angle, vecThrow, AngularImpulse(200, random->RandomInt(-600, 600), 0), pPlayer);
-
-	if (pGrenade)
-	{
-		pGrenade->SetDamage(0);
-		pGrenade->SetDamageRadius(0);
-	}
-#endif
-
-	WeaponSound(WPN_DOUBLE);
-
-	// player "shoot" animation
-	pPlayer->SetAnimation(PLAYER_ATTACK1);
-	
-	m_bRedraw = true;
-}
-
-void CWeaponSmokeGrenade::RollGrenade(CBasePlayer* pPlayer)
-{
-	// Binds hack: we want grenade secondary attack to trigger on aim, not the attack2 bind.
-	if (pPlayer->m_afButtonPressed & IN_AIM)
-	{
-		return;
-	}
-	else if (!sv_neo_infinite_smoke_grenades.GetBool())
-	{
-		Assert(HasPrimaryAmmo());
-		DecrementAmmo(pPlayer);
-	}
-
-#ifndef CLIENT_DLL
-	// BUGBUG: Hardcoded grenade width of 4 - better not change the model :)
-	Vector vecSrc;
-	pPlayer->CollisionProp()->NormalizedToWorldSpace(Vector(0.5f, 0.5f, 0.0f), &vecSrc);
-	vecSrc.z += GRENADE_RADIUS;
-
-	Vector vecFacing = pPlayer->BodyDirection2D();
-	// no up/down direction
-	vecFacing.z = 0;
-	VectorNormalize(vecFacing);
-	trace_t tr;
-	UTIL_TraceLine(vecSrc, vecSrc - Vector(0, 0, 16), MASK_PLAYERSOLID, pPlayer, COLLISION_GROUP_NONE, &tr);
-	if (tr.fraction != 1.0)
-	{
-		// compute forward vec parallel to floor plane and roll grenade along that
-		Vector tangent;
-		CrossProduct(vecFacing, tr.plane.normal, tangent);
-		CrossProduct(tr.plane.normal, tangent, vecFacing);
-	}
-	vecSrc += (vecFacing * 2.0);
-	CheckThrowPosition(pPlayer, pPlayer->WorldSpaceCenter(), vecSrc);
-
-	Vector vecThrow;
-	pPlayer->GetVelocity(&vecThrow, NULL);
-	vecThrow += vecFacing * sv_neo_grenade_roll_intensity.GetFloat();
-	// put it on its side
-	QAngle orientation(0, pPlayer->GetLocalAngles().y, -90);
-	// roll it
-	AngularImpulse rotSpeed(0, 0, 720);
-	CBaseGrenade* pGrenade = NEOSmokegrenade_Create(vecSrc, orientation, vecThrow, rotSpeed, pPlayer);
-
-	if (pGrenade)
-	{
-		pGrenade->SetDamage(0);
-		pGrenade->SetDamageRadius(0);
-	}
-
-#endif
-
-	WeaponSound(SPECIAL1);
-
-	// player "shoot" animation
-	pPlayer->SetAnimation(PLAYER_ATTACK1);
+	pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
 
 	m_bRedraw = true;
 }
@@ -444,7 +284,7 @@ void CWeaponSmokeGrenade::Drop(const Vector& vecVelocity)
 #ifndef CLIENT_DLL
 void CWeaponSmokeGrenade::Operator_HandleAnimEvent(animevent_t* pEvent, CBaseCombatCharacter* pOperator)
 {
-	CBasePlayer* pOwner = ToBasePlayer(GetOwner());
+	auto pOwner = static_cast<CNEO_Player*>(GetOwner());
 	Assert(pOwner);
 
 	bool fThrewGrenade = false;
@@ -457,18 +297,6 @@ void CWeaponSmokeGrenade::Operator_HandleAnimEvent(animevent_t* pEvent, CBaseCom
 
 	case EVENT_WEAPON_THROW:
 		ThrowGrenade(pOwner);
-		DecrementAmmo(pOwner);
-		fThrewGrenade = true;
-		break;
-
-	case EVENT_WEAPON_THROW2:
-		RollGrenade(pOwner);
-		DecrementAmmo(pOwner);
-		fThrewGrenade = true;
-		break;
-
-	case EVENT_WEAPON_THROW3:
-		LobGrenade(pOwner);
 		DecrementAmmo(pOwner);
 		fThrewGrenade = true;
 		break;

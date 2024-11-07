@@ -1,6 +1,11 @@
 #pragma once
 
 #include "tier1/convar.h"
+#include "neo_player_shared.h"
+#include "neo_hud_crosshair.h"
+
+// NEO TODO (nullsystem): Implement our own file IO dialog
+#include "vgui_controls/FileOpenDialog.h"
 
 // ConVarRef, but adds itself to a global vector
 class ConVarRefEx : public ConVarRef
@@ -22,17 +27,23 @@ struct NeoSettings
 {
 	struct General
 	{
-		wchar_t wszNeoName[33];
+		wchar_t wszNeoName[MAX_PLAYER_NAME_LENGTH + 1];
+		wchar_t wszNeoClantag[NEO_MAX_CLANTAG_LENGTH + 1];
 		bool bOnlySteamNick;
+		bool bMarkerSpecOnlyClantag;
 		int iFov;
 		int iViewmodelFov;
 		bool bAimHold;
 		bool bReloadEmpty;
 		bool bViewmodelRighthand;
+		bool bLeanViewmodelOnly;
 		bool bShowPlayerSprays;
 		bool bShowPos;
 		int iShowFps;
 		int iDlFilter;
+		bool bStreamerMode;
+		bool bAutoDetectOBS;
+		bool bEnableRangeFinder;
 	};
 
 	struct Keys
@@ -112,11 +123,28 @@ struct NeoSettings
 		wchar_t **p2WszVmDispList;
 	};
 
+	struct Crosshair
+	{
+		int iStyle;
+		CrosshairInfo info;
+		vgui::FileOpenDialogType_t eFileIOMode;
+
+		// Textures
+		struct Texture
+		{
+			int iTexId;
+			int iWide;
+			int iTall;
+		};
+		Texture arTextures[CROSSHAIR_STYLE__TOTAL];
+	};
+
 	General general;
 	Keys keys;
 	Mouse mouse;
 	Audio audio;
 	Video video;
+	Crosshair crosshair;
 
 	int iCurTab = 0;
 	bool bBack = false;
@@ -127,28 +155,34 @@ struct NeoSettings
 	{
 		// General
 		CONVARREF_DEF(neo_name);
+		CONVARREF_DEF(neo_clantag);
 		CONVARREF_DEF(cl_onlysteamnick);
+		CONVARREF_DEF(neo_cl_clantag_friendly_marker_spec_only);
 		CONVARREF_DEF(neo_fov);
 		CONVARREF_DEF(neo_viewmodel_fov_offset);
 		CONVARREF_DEF(neo_aim_hold);
 		CONVARREF_DEF(cl_autoreload_when_empty);
 		CONVARREF_DEF(cl_righthand);
+		CONVARREF_DEF(cl_neo_lean_viewmodel_only);
 		CONVARREF_DEF(cl_showpos);
 		CONVARREF_DEF(cl_showfps);
 		CONVARREF_DEF(hud_fastswitch);
 		CONVARREF_DEF(neo_cl_toggleconsole);
+		CONVARREF_DEF(neo_cl_streamermode);
+		CONVARREF_DEF(neo_cl_streamermode_autodetect_obs);
+		CONVARREF_DEF(neo_cl_hud_rangefinder_enabled);
 
 		// Multiplayer
-		CONVARREF_DEF(cl_player_spray_disable);
-		CONVARREF_DEF(cl_download_filter);
+		CONVARREF_DEF(cl_playerspraydisable);
+		CONVARREF_DEF(cl_downloadfilter);
 
 		// Mouse
 		CONVARREF_DEF(sensitivity);
 		CONVARREF_DEF(m_filter);
-		CONVARREF_DEF(pitch);
+		CONVARREF_DEF(m_pitch);
 		CONVARREF_DEF(m_customaccel);
 		CONVARREF_DEF(m_customaccel_exponent);
-		CONVARREF_DEF(m_raw_input);
+		CONVARREF_DEF(m_rawinput);
 
 		// Audio
 		CONVARREF_DEFNOGLOBALPTR(volume);
@@ -178,6 +212,23 @@ struct NeoSettings
 		CONVARREF_DEF(mat_motion_blur_enabled);
 		CONVARREF_DEF(mat_hdr_level);
 		CONVARREF_DEF(mat_monitorgamma);
+
+		// Crosshair
+		CONVARREF_DEF(neo_cl_crosshair_style);
+		CONVARREF_DEF(neo_cl_crosshair_color_r);
+		CONVARREF_DEF(neo_cl_crosshair_color_g);
+		CONVARREF_DEF(neo_cl_crosshair_color_b);
+		CONVARREF_DEF(neo_cl_crosshair_color_a);
+		CONVARREF_DEF(neo_cl_crosshair_size_type);
+		CONVARREF_DEF(neo_cl_crosshair_size);
+		CONVARREF_DEF(neo_cl_crosshair_size_screen);
+		CONVARREF_DEF(neo_cl_crosshair_thickness);
+		CONVARREF_DEF(neo_cl_crosshair_gap);
+		CONVARREF_DEF(neo_cl_crosshair_outline);
+		CONVARREF_DEF(neo_cl_crosshair_center_dot);
+		CONVARREF_DEF(neo_cl_crosshair_top_line);
+		CONVARREF_DEF(neo_cl_crosshair_circle_radius);
+		CONVARREF_DEF(neo_cl_crosshair_circle_segments);
 	};
 	CVR cvr;
 };
@@ -192,3 +243,4 @@ void NeoSettings_Keys(NeoSettings *ns);
 void NeoSettings_Mouse(NeoSettings *ns);
 void NeoSettings_Audio(NeoSettings *ns);
 void NeoSettings_Video(NeoSettings *ns);
+void NeoSettings_Crosshair(NeoSettings *ns);

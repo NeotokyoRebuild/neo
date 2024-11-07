@@ -6,8 +6,8 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-ConVar mat_neo_tv_brightness_scale("mat_neo_tv_brightness_scale", "2", FCVAR_CHEAT);
-ConVar mat_neo_tv_xoffset("mat_neo_tv_xoffset", "0.4", FCVAR_CHEAT);
+ConVar mat_neo_tv_brightness_scale("mat_neo_tv_brightness_scale", "1", FCVAR_CHEAT);
+ConVar mat_neo_tv_xoffset("mat_neo_tv_xoffset", "0.25", FCVAR_CHEAT);
 
 BEGIN_SHADER_FLAGS(Neo_ThermalVision, "Help for my shader.", SHADER_NOT_EDITABLE)
 

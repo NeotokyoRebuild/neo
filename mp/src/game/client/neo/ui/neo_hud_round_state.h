@@ -17,6 +17,8 @@ class ImagePanel;
 class ImageList;
 }
 
+constexpr int MAX_GAME_TYPE_OBJECTIVE_LENGTH = 33;
+
 class CNEOHud_RoundState : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
 {
 	DECLARE_CLASS_SIMPLE(CNEOHud_RoundState, Panel);
@@ -58,12 +60,19 @@ private:
 	int m_iSmallFontHeight = 0;
 
 	// Center Box info
-	wchar_t m_wszRoundUnicode[9] = {};
+	wchar_t m_wszRoundUnicode[12] = {};
+	int m_iWszRoundUCSize = 0;
 	wchar_t m_wszTime[6] = {};
 	wchar_t m_wszLeftTeamScore[3] = {};
 	wchar_t m_wszRightTeamScore[3] = {};
-	wchar_t m_wszPlayersAliveUnicode[9] = {};
-	wchar_t m_wszStatusUnicode[24] = {};
+	wchar_t m_wszPlayersAliveUnicode[16] = {};
+	const wchar_t *m_pWszStatusUnicode = nullptr;
+	int m_iStatusUnicodeSize = 0;
+	wchar_t m_wszGameTypeDescription[MAX_GAME_TYPE_OBJECTIVE_LENGTH] = {};
+	char szGameTypeDescription[MAX_GAME_TYPE_OBJECTIVE_LENGTH] = {};
+
+	// Game Description
+	short m_iGameTypeDescriptionState = 0;
 
 	// Totals info
 	int m_iLeftPlayersAlive = 0;

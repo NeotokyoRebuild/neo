@@ -197,6 +197,7 @@ public:
 #ifdef CLIENT_DLL
 	void DispatchMuzzleParticleEffect(int iAttachment);
 	virtual void ProcessMuzzleFlashEvent(void) override;
+	void DrawCrosshair() override;
 #endif
 	bool IsGhost(void) const { return (GetNeoWepBits() & NEO_WEP_GHOST) ? true : false; }
 
@@ -218,7 +219,7 @@ public:
 
 	float GetLastAttackTime(void) const { return m_flLastAttackTime; }
 
-	virtual void ProcessAnimationEvents(void);
+	void ProcessAnimationEvents();
 	bool m_bWeaponIsLowered;
 
 	int GetNumShotsFired(void) const { return m_nNumShotsFired; }
@@ -252,6 +253,10 @@ public:
 	virtual void ItemHolsterFrame() override;
 	virtual bool ShouldDraw(void) override;
 	virtual int DrawModel(int flags) override;
+	virtual int InternalDrawModel(int flags) override;
+	virtual ShadowType_t ShadowCastType(void) override;
+	virtual RenderGroup_t GetRenderGroup() override;
+	virtual bool UsesPowerOfTwoFrameBufferTexture() override;
 #endif
 
 	virtual bool Deploy(void);

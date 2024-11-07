@@ -19,6 +19,9 @@
 #include <ivoicetweak.h>
 #include "tier1/interface.h"
 #include <ctime>
+#include "ui/neo_loading.h"
+#include "neo_gamerules.h"
+#include "neo_misc.h"
 
 #include <vgui/IInput.h>
 #include <vgui_controls/Controls.h>
@@ -41,16 +44,19 @@ static CDllDemandLoader g_GameUIDLL("GameUI");
 
 extern ConVar neo_name;
 extern ConVar cl_onlysteamnick;
+extern ConVar neo_cl_streamermode;
+extern ConVar neo_clantag;
 
 CNeoRoot *g_pNeoRoot = nullptr;
 void NeoToggleconsole();
+extern CNeoLoading *g_pNeoLoading;
 inline NeoUI::Context g_uiCtx;
 inline ConVar neo_cl_toggleconsole("neo_cl_toggleconsole", "0", FCVAR_ARCHIVE,
 								   "If the console can be toggled with the ` keybind or not.", true, 0.0f, true, 1.0f);
+inline int g_iRowsInScreen;
 
 namespace {
 
-int g_iRowsInScreen;
 int g_iAvatar = 64;
 int g_iRootSubPanelWide = 600;
 constexpr wchar_t WSZ_GAME_TITLE[] = L"neatbkyoc ue";
@@ -151,6 +157,7 @@ void CNeoRootInput::OnThink()
 		m_pNeoRoot->m_wszBindingText[0] = '\0';
 		m_pNeoRoot->m_iBindingIdx = -1;
 		m_pNeoRoot->m_state = STATE_SETTINGS;
+		V_memcpy(g_uiCtx.iYOffset, m_pNeoRoot->m_iSavedYOffsets, NeoUI::SIZEOF_SECTIONS);
 	}
 }
 
@@ -266,6 +273,7 @@ CNeoRoot::CNeoRoot(VPANEL parent)
 
 CNeoRoot::~CNeoRoot()
 {
+	if (g_pNeoRoot->m_pFileIODialog) g_pNeoRoot->m_pFileIODialog->DeletePanel();
 	m_panelCaptureInput->DeletePanel();
 	if (m_avImage) delete m_avImage;
 	NeoSettingsDeinit(&m_ns);
@@ -282,7 +290,6 @@ IGameUI *CNeoRoot::GetGameUI()
 
 void CNeoRoot::UpdateControls()
 {
-
 	if (m_state == STATE_ROOT)
 	{
 		auto hdlFont = g_uiCtx.fonts[NeoUI::FONT_LOGO].hdl;
@@ -343,9 +350,9 @@ void CNeoRoot::ApplySchemeSettings(IScheme *pScheme)
 	g_uiCtx.iMarginY = tall / 108;
 	g_iAvatar = wide / 30;
 	const float flWide = static_cast<float>(wide);
-	float flWideAs43 = static_cast<float>(tall) * (4.0f / 3.0f);
-	if (flWideAs43 > flWide) flWideAs43 = flWide;
-	g_iRootSubPanelWide = static_cast<int>(flWideAs43 * 0.9f);
+	m_flWideAs43 = static_cast<float>(tall) * (4.0f / 3.0f);
+	if (m_flWideAs43 > flWide) m_flWideAs43 = flWide;
+	g_iRootSubPanelWide = static_cast<int>(m_flWideAs43 * 0.9f);
 
 	constexpr int PARTITION = GSIW__TOTAL * 4;
 	const int iSubDiv = g_iRootSubPanelWide / PARTITION;
@@ -478,6 +485,12 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		surface()->DrawPrintText(BUILD_DISPLAY, *BUILD_DISPLAY_SIZE);
 	}
 
+	// Laading screen just overlays over the root, so don't render anything else if so
+	if (m_bOnLoadingScreen)
+	{
+		return;
+	}
+
 	static constexpr void (CNeoRoot::*P_FN_MAIN_LOOP[STATE__TOTAL])(const MainLoopParam param) = {
 		&CNeoRoot::MainLoopRoot,			// STATE_ROOT
 		&CNeoRoot::MainLoopSettings,		// STATE_SETTINGS
@@ -498,7 +511,15 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 
 	if (m_state != ePrevState)
 	{
+		if (ePrevState == STATE_SETTINGS)
+		{
+			V_memcpy(m_iSavedYOffsets, g_uiCtx.iYOffset, NeoUI::SIZEOF_SECTIONS);
+		}
 		UpdateControls();
+		if (m_state == STATE_SETTINGS && ePrevState >= STATE__POPUPSTART && ePrevState < STATE__TOTAL)
+		{
+			V_memcpy(g_uiCtx.iYOffset, m_iSavedYOffsets, NeoUI::SIZEOF_SECTIONS);
+		}
 	}
 }
 
@@ -582,26 +603,25 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 			m_avImage->SetSize(g_iAvatar, g_iAvatar);
 			m_avImage->Paint();
 
-			char szTextBuf[512] = {};
-			const char *szSteamName = steamFriends->GetPersonaName();
+			wchar_t wszDisplayName[NEO_MAX_DISPLAYNAME];
+			GetClNeoDisplayName(wszDisplayName, neo_name.GetString(), neo_clantag.GetString(), cl_onlysteamnick.GetBool());
+
 			const char *szNeoName = neo_name.GetString();
 			const bool bUseNeoName = (szNeoName && szNeoName[0] != '\0' && !cl_onlysteamnick.GetBool());
-			V_sprintf_safe(szTextBuf, "%s", (bUseNeoName) ? szNeoName : szSteamName);
-
-			wchar_t wszTextBuf[512] = {};
-			g_pVGuiLocalize->ConvertANSIToUnicode(szTextBuf, wszTextBuf, sizeof(wszTextBuf));
 
 			int iMainTextWidth, iMainTextHeight;
 			surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_NTHEADING].hdl);
-			surface()->GetTextSize(g_uiCtx.fonts[NeoUI::FONT_NTHEADING].hdl, wszTextBuf, iMainTextWidth, iMainTextHeight);
+			surface()->GetTextSize(g_uiCtx.fonts[NeoUI::FONT_NTHEADING].hdl, wszDisplayName, iMainTextWidth, iMainTextHeight);
 
 			const int iMainTextStartPosX = g_uiCtx.iMarginX + g_iAvatar + g_uiCtx.iMarginX;
 			surface()->DrawSetTextPos(iSteamPlaceXStart + iMainTextStartPosX, iRightSideYStart + g_uiCtx.iMarginY);
-			surface()->DrawPrintText(wszTextBuf, V_strlen(szTextBuf));
+			surface()->DrawPrintText(wszDisplayName, V_wcslen(wszDisplayName));
 
 			if (bUseNeoName)
 			{
-				V_sprintf_safe(szTextBuf, "(Steam name: %s)", szSteamName);
+				char szTextBuf[64];
+				V_sprintf_safe(szTextBuf, "(Steam name: %s)", steamFriends->GetPersonaName());
+				wchar_t wszTextBuf[64] = {};
 				g_pVGuiLocalize->ConvertANSIToUnicode(szTextBuf, wszTextBuf, sizeof(wszTextBuf));
 
 				int iSteamSubTextWidth, iSteamSubTextHeight;
@@ -629,15 +649,18 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 			int iStatusTall = 0;
 			if (eCurStatus != k_EPersonaStateMax)
 			{
-				const wchar_t *wszState = WSZ_PERSONA_STATES[static_cast<int>(eCurStatus)];
+				wchar_t wszStatusTotal[48];
+				const int iStatusTotalSize = V_swprintf_safe(wszStatusTotal, L"%ls%ls",
+								WSZ_PERSONA_STATES[static_cast<int>(eCurStatus)],
+								neo_cl_streamermode.GetBool() ? L" [Streamer mode on]" : L"");
 				const int iStatusTextStartPosY = g_uiCtx.iMarginY + iMainTextHeight + g_uiCtx.iMarginY;
 
 				[[maybe_unused]] int iStatusWide;
 				surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_NTNORMAL].hdl);
-				surface()->GetTextSize(g_uiCtx.fonts[NeoUI::FONT_NTNORMAL].hdl, wszState, iStatusWide, iStatusTall);
+				surface()->GetTextSize(g_uiCtx.fonts[NeoUI::FONT_NTNORMAL].hdl, wszStatusTotal, iStatusWide, iStatusTall);
 				surface()->DrawSetTextPos(iSteamPlaceXStart + iMainTextStartPosX,
 										  iRightSideYStart + iStatusTextStartPosY);
-				surface()->DrawPrintText(wszState, V_wcslen(wszState));
+				surface()->DrawPrintText(wszStatusTotal, iStatusTotalSize);
 			}
 
 			// Put the news title in either from avatar or text end Y position
@@ -648,7 +671,15 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 
 	g_uiCtx.dPanel.x = iRightXPos;
 	g_uiCtx.dPanel.y = iRightSideYStart;
-	g_uiCtx.dPanel.wide = g_iRootSubPanelWide - iRightXPos + (g_uiCtx.iMarginX * 2);
+	if (engine->IsInGame())
+	{
+		g_uiCtx.dPanel.wide = m_flWideAs43 * 0.7f;
+		g_uiCtx.flWgXPerc = 0.25f;
+	}
+	else
+	{
+		g_uiCtx.dPanel.wide = GetWide() - iRightXPos - (g_uiCtx.iMarginX * 2);
+	}
 	NeoUI::BeginSection();
 	{
 		if (engine->IsInGame())
@@ -656,6 +687,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 			// Show the current server's information
 			NeoUI::Label(L"Hostname:", m_wszHostname);
 			NeoUI::Label(L"Map:", m_wszMap);
+			NeoUI::Label(L"Game mode:", NEO_GAME_TYPE_DESC_STRS[NEORules()->GetGameType()].wszStr);
 			// TODO: more info, g_PR, scoreboard stuff, etc...
 		}
 		else
@@ -693,15 +725,21 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 
 void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 {
-	static constexpr void (*P_FN[])(NeoSettings *) = {
-		NeoSettings_General,
-		NeoSettings_Keys,
-		NeoSettings_Mouse,
-		NeoSettings_Audio,
-		NeoSettings_Video,
+	struct NeoSettingsFunc
+	{
+		void (*func)(NeoSettings *);
+		bool bUISectionManaged;
+	};
+	static constexpr NeoSettingsFunc P_FN[] = {
+		{NeoSettings_General, false},
+		{NeoSettings_Keys, false},
+		{NeoSettings_Mouse, false},
+		{NeoSettings_Audio, false},
+		{NeoSettings_Video, false},
+		{NeoSettings_Crosshair, true},
 	};
 	static const wchar_t *WSZ_TABS_LABELS[ARRAYSIZE(P_FN)] = {
-		L"Multiplayer", L"Keybinds", L"Mouse", L"Audio", L"Video"
+		L"Multiplayer", L"Keybinds", L"Mouse", L"Audio", L"Video", L"Crosshair"
 	};
 
 	m_ns.iNextBinding = -1;
@@ -720,13 +758,19 @@ void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 			NeoUI::Tabs(WSZ_TABS_LABELS, ARRAYSIZE(WSZ_TABS_LABELS), &m_ns.iCurTab);
 		}
 		NeoUI::EndSection();
-		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
-		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * g_iRowsInScreen;
-		NeoUI::BeginSection(true);
+		if (!P_FN[m_ns.iCurTab].bUISectionManaged)
 		{
-			P_FN[m_ns.iCurTab](&m_ns);
+			g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+			g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * g_iRowsInScreen;
+			NeoUI::BeginSection(true);
 		}
-		NeoUI::EndSection();
+		{
+			P_FN[m_ns.iCurTab].func(&m_ns);
+		}
+		if (!P_FN[m_ns.iCurTab].bUISectionManaged)
+		{
+			NeoUI::EndSection();
+		}
 		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
 		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
 		NeoUI::BeginSection();
@@ -845,6 +889,11 @@ void CNeoRoot::MainLoopNewGame(const MainLoopParam param)
 					char cmdStr[256];
 					V_sprintf_safe(cmdStr, "maxplayers %d; progress_enable; map \"%s\"", m_newGame.iMaxPlayers, szMap);
 					engine->ClientCmd_Unrestricted(cmdStr);
+
+					if (g_pNeoLoading)
+					{
+						V_wcscpy_safe(g_pNeoLoading->m_wszLoadingMap, m_newGame.wszMap);
+					}
 
 					m_state = STATE_ROOT;
 				}
@@ -1080,6 +1129,13 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 							V_sprintf_safe(connectCmd, "progress_enable; wait; connect %s", szAddress);
 							engine->ClientCmd_Unrestricted(connectCmd);
 
+							if (g_pNeoLoading)
+							{
+								g_pVGuiLocalize->ConvertANSIToUnicode(gameServer.m_szMap,
+																	  g_pNeoLoading->m_wszLoadingMap,
+																	  sizeof(g_pNeoLoading->m_wszLoadingMap));
+							}
+
 							m_state = STATE_ROOT;
 						}
 					}
@@ -1161,12 +1217,15 @@ void CNeoRoot::MainLoopServerDetails(const MainLoopParam param)
 			wchar_t wszText[128];
 			if (bP) g_pVGuiLocalize->ConvertANSIToUnicode(gameServer->GetName(), wszText, sizeof(wszText));
 			NeoUI::Label(L"Name:", wszText);
-			if (bP) g_pVGuiLocalize->ConvertANSIToUnicode(gameServer->m_NetAdr.GetConnectionAddressString(), wszText, sizeof(wszText));
-			NeoUI::Label(L"Address:", wszText);
+			if (!neo_cl_streamermode.GetBool())
+			{
+				if (bP) g_pVGuiLocalize->ConvertANSIToUnicode(gameServer->m_NetAdr.GetConnectionAddressString(), wszText, sizeof(wszText));
+				NeoUI::Label(L"Address:", wszText);
+			}
 			if (bP) g_pVGuiLocalize->ConvertANSIToUnicode(gameServer->m_szMap, wszText, sizeof(wszText));
 			NeoUI::Label(L"Map:", wszText);
 			if (bP) V_swprintf_safe(wszText, L"%d/%d", gameServer->m_nPlayers, gameServer->m_nMaxPlayers);
-			NeoUI::Label(L"Ping:", wszText);
+			NeoUI::Label(L"Players:", wszText);
 			if (bP) V_swprintf_safe(wszText, L"%ls", gameServer->m_bSecure ? L"Enabled" : L"Disabled");
 			NeoUI::Label(L"VAC:", wszText);
 			if (bP) V_swprintf_safe(wszText, L"%d", gameServer->m_nPing);
@@ -1179,18 +1238,21 @@ void CNeoRoot::MainLoopServerDetails(const MainLoopParam param)
 		g_uiCtx.dPanel.tall = (iTallTotal - g_uiCtx.iRowTall) - g_uiCtx.dPanel.tall;
 		NeoUI::BeginSection();
 		{
-			if (m_serverPlayers.m_players.IsEmpty())
+			if (!neo_cl_streamermode.GetBool())
 			{
-				g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
-				NeoUI::Label(L"There are no players in the server.");
-				g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_LEFT;
-			}
-			else
-			{
-				for (const auto &player : m_serverPlayers.m_players)
+				if (m_serverPlayers.m_players.IsEmpty())
 				{
-					NeoUI::Label(player.wszName);
-					// TODO
+					g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
+					NeoUI::Label(L"There are no players in the server.");
+					g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_LEFT;
+				}
+				else
+				{
+					for (const auto &player : m_serverPlayers.m_players)
+					{
+						NeoUI::Label(player.wszName);
+						// TODO
+					}
 				}
 			}
 		}
@@ -1485,6 +1547,12 @@ void CNeoRoot::ReadNewsFile(CUtlBuffer &buf)
 		V_swprintf_safe(m_news[m_iNewsSize].wszTitle, L"%ls: %ls", wszDate, wszTitle);
 		++m_iNewsSize;
 	}
+}
+
+void CNeoRoot::OnFileSelected(const char *szFullpath)
+{
+	((m_ns.crosshair.eFileIOMode == vgui::FOD_OPEN) ?
+				&ImportCrosshair : &ExportCrosshair)(&m_ns.crosshair.info, szFullpath);
 }
 
 // NEO NOTE (nullsystem): NeoRootCaptureESC is so that ESC keybinds can be recognized by non-root states, but root
