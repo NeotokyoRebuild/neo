@@ -644,6 +644,43 @@ CON_COMMAND_F( bot_debug_drive_random, "Orders all bots to move at random sites"
     }
 }
 
+CON_COMMAND_F(bot_debug_drive_single_random, "Orders all bots to move to single random site", FCVAR_SERVER)
+{
+    if (TheNavAreas.Count() == 0)
+        return;
+
+    CNavArea* pArea = TheNavAreas[RandomInt(0, TheNavAreas.Count() - 1)];
+
+    for (int it = 0; it <= gpGlobals->maxClients; ++it) {
+        CPlayer* pPlayer = ToInPlayer(UTIL_PlayerByIndex(it));
+
+        if (!pPlayer || !pPlayer->IsAlive())
+            continue;
+
+        if (!pPlayer->IsBot())
+            continue;
+
+        IBot* pBot = pPlayer->GetBotController();
+
+        if (!pBot->GetLocomotion())
+            continue;
+
+        Vector vecFrom(pPlayer->GetAbsOrigin());
+        NavDirType navDirTypes[4] = { NavDirType::NORTH, NavDirType::EAST, NavDirType::SOUTH, NavDirType::WEST };
+        CNavArea* pAdjacentArea = pArea->GetRandomAdjacentArea(navDirTypes[RandomInt(0, 3)]);
+
+        if (pAdjacentArea == NULL)
+            continue;
+
+        Vector vecGoal(pAdjacentArea->GetCenter());
+
+        if (!pBot->GetLocomotion()->IsTraversable(vecFrom, vecGoal))
+            continue;
+
+        pBot->GetLocomotion()->DriveTo("bot_debug_drive_single_random", pAdjacentArea);
+    }
+}
+
 CON_COMMAND_F( bot_debug_drive_player, "Command all bots to move to host location", FCVAR_SERVER )
 {
     CPlayer *pOwner = ToInPlayer(CBasePlayer::Instance(UTIL_GetCommandClientIndex()));

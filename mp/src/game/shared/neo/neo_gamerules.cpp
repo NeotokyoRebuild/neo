@@ -395,6 +395,7 @@ CNEORules::CNEORules()
 
 #ifdef GAME_DLL
 	weaponstay.InstallChangeCallback(CvarChanged_WeaponStay);
+	SetSkillLevel(3);
 #endif
 }
 
