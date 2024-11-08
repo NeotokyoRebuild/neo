@@ -9,7 +9,7 @@
 
 #include "nav.h"
 #include "nav_area.h"
-#include "bots\bot_defs.h"
+#include "bots/bot_defs.h"
 
 #ifdef INSOURCE_DLL
 #include "in_shareddefs.h"
@@ -25,7 +25,7 @@ class CHintCriteria;
 typedef CUtlVector<Vector> SpotVector;
 
 //================================================================================
-// Información para la búsqueda de un punto interesante en el mapa
+// Informaciï¿½n para la bï¿½squeda de un punto interesante en el mapa
 //================================================================================
 class CSpotCriteria
 {

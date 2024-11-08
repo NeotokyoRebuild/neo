@@ -15,7 +15,7 @@
 #include "in_player.h"
 #endif
 
-#include "bots\bot_defs.h"
+#include "bots/bot_defs.h"
 #include "bots\interfaces\ibot.h"
 #include "bots\components\bot_components.h"
 #include "bots\schedules\bot_schedules.h"

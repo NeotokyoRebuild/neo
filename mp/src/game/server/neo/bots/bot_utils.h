@@ -1,6 +1,6 @@
-//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
+//========= Copyright ï¿½ 1996-2005, Valve Corporation, All rights reserved. ============//
 // Authors: 
-// Iván Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
+// Ivï¿½n Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
 
 #ifndef BOT_UTILS_H
 #define BOT_UTILS_H
@@ -13,7 +13,7 @@
 #include "in_shareddefs.h"
 #endif
 
-#include "bots\bot_defs.h"
+#include "bots/bot_defs.h"
 
 #ifdef time
 #undef time
@@ -363,7 +363,7 @@ protected:
 };
 
 //================================================================================
-// Información acerca de una tarea, se conforma de la tarea que se debe ejecutar
+// Informaciï¿½n acerca de una tarea, se conforma de la tarea que se debe ejecutar
 // y un valor que puede ser un Vector, un flotante, un string, etc.
 //================================================================================
 struct BotTaskInfo_t

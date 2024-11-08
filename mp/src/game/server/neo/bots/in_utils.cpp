@@ -15,7 +15,7 @@
 #include "doors.h"
 #include "func_breakablesurf.h"
 
-#include "bots\bot_defs.h"
+#include "bots/bot_defs.h"
 #include "nav_pathfind.h"
 #include "util_shared.h"
 
@@ -145,7 +145,7 @@ bool Utils::IsBreakableSurf( CBaseEntity *pEntity )
     if ( !pEntity )
         return false;
 
-    // No puede recibir daño
+    // No puede recibir daï¿½o
     if ( pEntity->m_takedamage != DAMAGE_YES )
         return false;
 
@@ -167,7 +167,7 @@ bool Utils::IsBreakable( CBaseEntity *pEntity )
     if ( !pEntity )
         return false;
 
-    // No puede recibir daño
+    // No puede recibir daï¿½o
     if ( pEntity->m_takedamage != DAMAGE_YES )
         return false;
 
@@ -229,7 +229,7 @@ CBaseEntity *Utils::FindNearestPhysicsObject( const Vector &vOrigin, float fMaxD
     // Buscamos los objetos que podemos lanzar
     do
     {
-        // Objetos con físicas
+        // Objetos con fï¿½sicas
         pThrowEntity = gEntList.FindEntityByClassnameWithin( pThrowEntity, "prop_physics", vOrigin, fMaxDist );
     
         // Ya no existe
@@ -242,7 +242,7 @@ CBaseEntity *Utils::FindNearestPhysicsObject( const Vector &vOrigin, float fMaxD
                 continue;
         }
 
-        // No se ha podido acceder a la información de su fisica
+        // No se ha podido acceder a la informaciï¿½n de su fisica
         if ( !pThrowEntity->VPhysicsGetObject() )
             continue;
 
@@ -253,7 +253,7 @@ CBaseEntity *Utils::FindNearestPhysicsObject( const Vector &vOrigin, float fMaxD
         Vector v_center    = pThrowEntity->WorldSpaceCenter();
         float flDist    = UTIL_DistApprox2D( vOrigin, v_center );
 
-        // Esta más lejos que el objeto anterior
+        // Esta mï¿½s lejos que el objeto anterior
         if ( flDist > flNearestDist && flNearestDist != 0 )
             continue;
 
@@ -281,7 +281,7 @@ CBaseEntity *Utils::FindNearestPhysicsObject( const Vector &vOrigin, float fMaxD
         if ( pEntityMass < fMinMass && fMinMass > 0 )
             continue;
             
-        // ¡Muy pesado!
+        // ï¿½Muy pesado!
         if ( pEntityMass > fMaxMass )
             continue;
 
@@ -302,13 +302,13 @@ CBaseEntity *Utils::FindNearestPhysicsObject( const Vector &vOrigin, float fMaxD
                 continue;
         }
 
-        // Este objeto es perfecto, guardamos su distancia por si encontramos otro más cerca
+        // Este objeto es perfecto, guardamos su distancia por si encontramos otro mï¿½s cerca
         flNearestDist    = flDist;
         pFinalEntity    = pThrowEntity;
 
     } while( pThrowEntity );
 
-    // No pudimos encontrar ningún objeto
+    // No pudimos encontrar ningï¿½n objeto
     if ( !pFinalEntity )
         return NULL;
 
@@ -412,7 +412,7 @@ bool Utils::AddAttributeModifier( const char *name, float radius, const Vector &
 		{
 			CPlayer *pItem = ToInPlayer( UTIL_PlayerByIndex( filter.GetRecipientIndex(s) ) );
 		
-			// Aquí esta
+			// Aquï¿½ esta
 			if ( pItem == pPlayer )
 			{
 				// Agregamos el modificador
@@ -687,8 +687,8 @@ CPlayer *Utils::GetClosestPlayer( const Vector &vecPosition, float *distance, CP
 }
 
 //================================================================================
-// Devuelve si algún jugador del equipo especificado esta en el rango indicado
-// cerca de la posición indicada
+// Devuelve si algï¿½n jugador del equipo especificado esta en el rango indicado
+// cerca de la posiciï¿½n indicada
 //================================================================================
 bool Utils::IsSpotOccupied( const Vector &vecPosition, CPlayer *pIgnore, float closeRange, int avoidTeam )
 {
@@ -749,7 +749,7 @@ bool Utils::IsSpotOccupiedByClass( const Vector &vecPosition, Class_T classify, 
 }
 
 //================================================================================
-// Devuelve si algún jugador esta en la línea de fuego (FOV) de un punto de salida
+// Devuelve si algï¿½n jugador esta en la lï¿½nea de fuego (FOV) de un punto de salida
 // a un punto de destino
 //================================================================================
 bool Utils::IsCrossingLineOfFire( const Vector &vecStart, const Vector &vecFinish, CPlayer *pIgnore, int ignoreTeam  )
@@ -805,7 +805,7 @@ bool Utils::IsCrossingLineOfFire( const Vector &vecStart, const Vector &vecFinis
 }
 
 //================================================================================
-// Devuelve si la posición es válida usando los filtros de [criteria]
+// Devuelve si la posiciï¿½n es vï¿½lida usando los filtros de [criteria]
 //================================================================================
 bool Utils::IsValidSpot( const Vector & vecSpot, const Vector & vecOrigin, const CSpotCriteria & criteria, CPlayer * pOwner )
 {
@@ -814,7 +814,7 @@ bool Utils::IsValidSpot( const Vector & vecSpot, const Vector & vecOrigin, const
         return false;
     }
 
-    // Este escondite esta en la línea de fuego
+    // Este escondite esta en la lï¿½nea de fuego
     if ( criteria.m_bOutOfLineOfFire && IsCrossingLineOfFire( vecOrigin, vecSpot, pOwner ) ) {
         return false;
     }
@@ -865,9 +865,9 @@ bool Utils::IsValidSpot( const Vector & vecSpot, const Vector & vecOrigin, const
 }
 
 //================================================================================
-// Devuelve una posición donde ocultarse en un rango máximo
+// Devuelve una posiciï¿½n donde ocultarse en un rango mï¿½ximo
 //================================================================================
-// Los Bots lo usan como primera opción para ocultarse de los enemigos.
+// Los Bots lo usan como primera opciï¿½n para ocultarse de los enemigos.
 //================================================================================
 bool Utils::FindNavCoverSpot( Vector *vecResult, const Vector &vecOrigin, const CSpotCriteria &criteria, CPlayer *pPlayer, SpotVector *list )
 {
@@ -902,7 +902,7 @@ bool Utils::FindNavCoverSpot( Vector *vecResult, const Vector &vecOrigin, const 
         if ( !vecResult )
             return false;
 
-        // No se ha encontrado ningún lugar 
+        // No se ha encontrado ningï¿½n lugar 
         if ( collector.m_count == 0 ) {
             // Intentemos con un lugar para Sniper
             if ( hidingType == HidingSpot::IN_COVER ) {
@@ -916,7 +916,7 @@ bool Utils::FindNavCoverSpot( Vector *vecResult, const Vector &vecOrigin, const 
             if ( hidingType == HidingSpot::IDEAL_SNIPER_SPOT )
                 hidingType = HidingSpot::GOOD_SNIPER_SPOT;
 
-            // No hay ningún lugar cerca
+            // No hay ningï¿½n lugar cerca
             if ( hidingType == HidingSpot::GOOD_SNIPER_SPOT ) {
                 hidingType = HidingSpot::IN_COVER;
 
@@ -952,9 +952,9 @@ bool Utils::FindNavCoverSpot( Vector *vecResult, const Vector &vecOrigin, const 
 }
 
 //================================================================================
-// Devuelve una posición donde ocultarse dentro del area indicado
+// Devuelve una posiciï¿½n donde ocultarse dentro del area indicado
 //================================================================================
-// Los Bots lo usan como última opción para ocultarse de los enemigos.
+// Los Bots lo usan como ï¿½ltima opciï¿½n para ocultarse de los enemigos.
 //================================================================================
 bool Utils::FindNavCoverSpotInArea( Vector *vecResult, const Vector &vecOrigin, CNavArea *pArea, const CSpotCriteria &criteria, CPlayer *pPlayer, SpotVector *list )
 {
@@ -1018,9 +1018,9 @@ bool Utils::FindNavCoverSpotInArea( Vector *vecResult, const Vector &vecOrigin, 
 }
 
 //================================================================================
-// Devuelve una posición donde ocultarse usando los ai_hint (CAI_Hint)
+// Devuelve una posiciï¿½n donde ocultarse usando los ai_hint (CAI_Hint)
 //================================================================================
-// Los Bots lo usan como segunda opción para ocultarse de los enemigos.
+// Los Bots lo usan como segunda opciï¿½n para ocultarse de los enemigos.
 //================================================================================
 CAI_Hint *Utils::FindHintSpot( const Vector &vecOrigin, const CHintCriteria &hintCriteria, const CSpotCriteria &criteria, CPlayer *pPlayer, SpotVector *list )
 {
@@ -1131,7 +1131,7 @@ bool Utils::FindIntestingPosition( Vector *vecResult, CPlayer *pPlayer, const CS
 }
 
 //================================================================================
-// Devuelve una posición donde el jugador puede ocultarse
+// Devuelve una posiciï¿½n donde el jugador puede ocultarse
 //================================================================================
 bool Utils::FindCoverPosition( Vector *vecResult, CPlayer *pPlayer, const CSpotCriteria &criteria )
 {

@@ -5,7 +5,7 @@
 #include "cbase.h"
 #include "bots\bot_utils.h"
 
-#include "bots\bot_defs.h"
+#include "bots/bot_defs.h"
 #include "bots/bot.h"
 
 #ifdef INSOURCE_DLL

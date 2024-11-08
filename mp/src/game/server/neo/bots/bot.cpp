@@ -15,7 +15,7 @@
 #include "bots\in_utils.h"
 #endif
 
-#include "bots\bot_defs.h"
+#include "bots/bot_defs.h"
 #include "bots\squad_manager.h"
 #include "bots\bot_manager.h"
 
