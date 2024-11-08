@@ -1,9 +1,9 @@
-//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
+//========= Copyright ï¿½ 1996-2005, Valve Corporation, All rights reserved. ============//
 // Authors: 
-// Iván Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
+// Ivï¿½n Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
 
 #include "cbase.h"
-#include "bots\bot.h"
+#include "bots/bot.h"
 
 #ifdef INSOURCE_DLL
 #include "in_gamerules.h"
@@ -319,7 +319,7 @@ bool CBotDecision::ShouldJump() const
         Vector vecForward;
         AngleVectors( angles, &vecForward );
 
-        // Trazamos dos líneas para verificar que podemos hacer el salto
+        // Trazamos dos lï¿½neas para verificar que podemos hacer el salto
         trace_t blocked;
         UTIL_TraceLine( vecFeetBlocked, vecFeetBlocked + 30.0f * vecForward, MASK_SOLID, GetHost(), COLLISION_GROUP_NONE, &blocked );
 

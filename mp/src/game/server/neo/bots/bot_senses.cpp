@@ -1,10 +1,10 @@
-//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
+//========= Copyright ï¿½ 1996-2005, Valve Corporation, All rights reserved. ============//
 // Authors: 
-// Iván Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
+// Ivï¿½n Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
 
 #include "cbase.h"
 
-#include "bots\bot.h"
+#include "bots/bot.h"
 
 #ifdef INSOURCE_DLL
 #include "in_utils.h"
@@ -217,8 +217,8 @@ void CBot::OnTakeDamage( const CTakeDamageInfo &info )
     }
 
 #ifdef INSOURCE_DLL
-    // El último daño recibido fue hace menos de 2s
-    // Al parecer estamos recibiendo daño continuo
+    // El ï¿½ltimo daï¿½o recibido fue hace menos de 2s
+    // Al parecer estamos recibiendo daï¿½o continuo
     if ( GetHost()->GetLastDamageTimer().IsLessThen( 2.0f ) ) {
         ++m_iRepeatedDamageTimes;
         m_flDamageAccumulated += info.GetDamage();

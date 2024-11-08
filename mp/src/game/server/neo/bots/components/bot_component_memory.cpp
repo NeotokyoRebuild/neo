@@ -1,6 +1,6 @@
-//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
+//========= Copyright ï¿½ 1996-2005, Valve Corporation, All rights reserved. ============//
 // Authors: 
-// Iván Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
+// Ivï¿½n Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
 //
 // Purpose: It is in charge of managing the memory of the entities 
 // and the memory of the information besides considering who will be the best enemy of the bot.
@@ -8,7 +8,7 @@
 // If you are an expert in C++ and pointers, please get this code out of misery.
 
 #include "cbase.h"
-#include "bots\bot.h"
+#include "bots/bot.h"
 #include "bots\bot_manager.h"
 
 #ifdef INSOURCE_DLL
@@ -309,7 +309,7 @@ void CBotMemory::ForgetEntity( int index )
     m_Memory.RemoveAt( index );
 
     // We check and set null all known pointers
-    // Iván: Noob question...
+    // Ivï¿½n: Noob question...
     // "delete memory" would not have to do exactly this? Blessed pointers...
 
     if ( memory == m_pPrimaryThreat ) {

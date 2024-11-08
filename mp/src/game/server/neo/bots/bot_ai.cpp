@@ -1,9 +1,9 @@
-//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
+//========= Copyright ï¿½ 1996-2005, Valve Corporation, All rights reserved. ============//
 // Authors: 
-// Iván Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
+// Ivï¿½n Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
 
 #include "cbase.h"
-#include "bots\bot.h"
+#include "bots/bot.h"
 
 #ifdef INSOURCE_DLL
 #include "in_gamerules.h"
@@ -533,7 +533,7 @@ IBot * CBot::GetSquadLeaderAI()
 }
 
 //================================================================================
-// Un miembro de nuestro escuadron ha recibido daño
+// Un miembro de nuestro escuadron ha recibido daï¿½o
 //================================================================================
 void CBot::OnMemberTakeDamage( CPlayer *pMember, const CTakeDamageInfo & info ) 
 {
@@ -561,7 +561,7 @@ void CBot::OnMemberDeath( CPlayer *pMember, const CTakeDamageInfo & info )
     if ( !memory )
         return;
 
-    // ¡Amigo! ¡Noo! :'(
+    // ï¿½Amigo! ï¿½Noo! :'(
     if ( !GetProfile()->IsHardest() && memory->IsVisible() ) {
         GetVision()->LookAt( "Squad Member Death", pMember->GetAbsOrigin(), PRIORITY_VERY_HIGH, RandomFloat( 0.3f, 1.5f ) );
     }
@@ -574,12 +574,12 @@ void CBot::OnMemberReportEnemy( CPlayer *pMember, CBaseEntity *pEnemy )
     if ( !GetMemory() )
         return;
 
-    // Posición estimada del enemigo
+    // Posiciï¿½n estimada del enemigo
     Vector vecEstimatedPosition = pEnemy->WorldSpaceCenter();
     const float errorDistance = 100.0f;
 
-    // Cuando un amigo nos reporta la posición de un enemigo siempre debe haber un margen de error,
-    // un humano no puede saber la posición exacta hasta verlo con sus propios ojos.
+    // Cuando un amigo nos reporta la posiciï¿½n de un enemigo siempre debe haber un margen de error,
+    // un humano no puede saber la posiciï¿½n exacta hasta verlo con sus propios ojos.
     vecEstimatedPosition.x += RandomFloat( -errorDistance, errorDistance );
     vecEstimatedPosition.y += RandomFloat( -errorDistance, errorDistance );
 

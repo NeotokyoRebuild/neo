@@ -1,10 +1,10 @@
-//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
+//========= Copyright ï¿½ 1996-2005, Valve Corporation, All rights reserved. ============//
 // Authors: 
-// Iván Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
+// Ivï¿½n Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
 
 #include "cbase.h"
 #include "bots\bot_squad.h"
-#include "bots\bot.h"
+#include "bots/bot.h"
 
 #ifdef INSOURCE_DLL
 #include "in_player.h"
@@ -21,7 +21,7 @@
 #include "tier0/memdbgon.h"
 
 //================================================================================
-// Información y Red
+// Informaciï¿½n y Red
 //================================================================================
 
 LINK_ENTITY_TO_CLASS( bot_squad, CBotSquad );
@@ -47,7 +47,7 @@ BEGIN_DATADESC( CBotSquad )
 END_DATADESC()
 
 //================================================================================
-// Creación en el mapa
+// Creaciï¿½n en el mapa
 //================================================================================
 void CBotSquad::Spawn()
 {

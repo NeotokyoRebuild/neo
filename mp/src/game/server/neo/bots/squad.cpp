@@ -1,13 +1,13 @@
-//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
+//========= Copyright ï¿½ 1996-2005, Valve Corporation, All rights reserved. ============//
 // Authors: 
-// Iván Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
+// Ivï¿½n Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
 
 #include "cbase.h"
 #include "bots\squad.h"
 
 #include "bots\squad_manager.h"
 
-#include "bots\bot.h"
+#include "bots/bot.h"
 #include "bots\bot_squad.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -69,7 +69,7 @@ void CSquad::Think()
 }
 
 //================================================================================
-// Devuelve si el escuadron se llama así
+// Devuelve si el escuadron se llama asï¿½
 //================================================================================
 bool CSquad::IsNamed( const char *name )
 {
@@ -90,7 +90,7 @@ void CSquad::SetName( const char *name )
 }
 
 //================================================================================
-// Devuelve el líder del escuadron
+// Devuelve el lï¿½der del escuadron
 //================================================================================
 CPlayer *CSquad::GetLeader() 
 {
@@ -98,7 +98,7 @@ CPlayer *CSquad::GetLeader()
 }
 
 //================================================================================
-// Establece el líder del escuadron
+// Establece el lï¿½der del escuadron
 //================================================================================
 void CSquad::SetLeader( CPlayer *member )
 {
@@ -224,7 +224,7 @@ void CSquad::AddMember( CPlayer *pMember )
 //================================================================================
 void CSquad::PrepareBot( IBot *pBot ) 
 {
-    // Modo táctico
+    // Modo tï¿½ctico
     if ( GetTacticalMode() != 99 )
         pBot->SetTacticalMode( GetTacticalMode() );
 
@@ -232,7 +232,7 @@ void CSquad::PrepareBot( IBot *pBot )
     if ( GetSkill() != 99 )
         pBot->SetSkill( GetSkill() );
     
-    // Debes seguir al líder
+    // Debes seguir al lï¿½der
     if ( GetLeader() && ShouldFollowLeader() ) {
         pBot->GetFollow()->Start( GetLeader() );
     }
@@ -249,7 +249,7 @@ void CSquad::RemoveMember( CPlayer *member )
     if ( index == -1 )
         return;
 
-    // Eras el líder!
+    // Eras el lï¿½der!
     if ( GetLeader() == member )
     {
         SetLeader( NULL );
@@ -257,8 +257,8 @@ void CSquad::RemoveMember( CPlayer *member )
         // Debemos reemplazarte
         if ( sv_squad_replace_leader.GetBool() )
         {
-            // Buscamos el primer miembro activo y lo convertimos en líder
-            // @TODO: Una forma más flexible
+            // Buscamos el primer miembro activo y lo convertimos en lï¿½der
+            // @TODO: Una forma mï¿½s flexible
             FOR_EACH_MEMBER( {
                 SetLeader( pMember );
                 break;
@@ -277,7 +277,7 @@ void CSquad::RemoveMember( int index )
 }
 
 //================================================================================
-// Devuelve si algún miembro del escuadron esta mirando al objetivo
+// Devuelve si algï¿½n miembro del escuadron esta mirando al objetivo
 //================================================================================
 bool CSquad::IsSomeoneLooking( CBaseEntity * pTarget, CPlayer *pIgnore )
 {
@@ -318,7 +318,7 @@ bool CSquad::IsSomeoneLooking( CBaseEntity * pTarget, CPlayer *pIgnore )
 }
 
 //================================================================================
-// Devuelve si algún miembro del escuadron esta mirando el lugar objetivo
+// Devuelve si algï¿½n miembro del escuadron esta mirando el lugar objetivo
 //================================================================================
 bool CSquad::IsSomeoneLooking( const Vector & vecTarget, CPlayer *pIgnore )
 {
@@ -364,7 +364,7 @@ bool CSquad::IsSomeoneLooking( const Vector & vecTarget, CPlayer *pIgnore )
 }
 
 //================================================================================
-// Devuelve si algún miembro del escuadron se dirige a la ubicación
+// Devuelve si algï¿½n miembro del escuadron se dirige a la ubicaciï¿½n
 //================================================================================
 bool CSquad::IsSomeoneGoing( const Vector & vecDestination, CPlayer *pIgnore )
 {
@@ -381,7 +381,7 @@ bool CSquad::IsSomeoneGoing( const Vector & vecDestination, CPlayer *pIgnore )
         if ( pMember == pIgnore )
             continue;
 
-        // @TODO: Implementación para humanos
+        // @TODO: Implementaciï¿½n para humanos
         if ( !pMember->IsBot() )
             continue;
 
@@ -396,8 +396,8 @@ bool CSquad::IsSomeoneGoing( const Vector & vecDestination, CPlayer *pIgnore )
 }
 
 //================================================================================
-// Devuelve si la entidad especificada es enemigo de algún miembro del escuadron
-// @TODO: Quizá se deba devolver el miembro que lo tiene como enemigo?
+// Devuelve si la entidad especificada es enemigo de algï¿½n miembro del escuadron
+// @TODO: Quizï¿½ se deba devolver el miembro que lo tiene como enemigo?
 //================================================================================
 bool CSquad::IsSquadEnemy( CBaseEntity *pEntity, CPlayer *pIgnore ) 
 {
@@ -406,7 +406,7 @@ bool CSquad::IsSquadEnemy( CBaseEntity *pEntity, CPlayer *pIgnore )
 		if ( pMember == pIgnore )
 			continue;
 
-        // Así es
+        // Asï¿½ es
         if ( pMember->GetEnemy() == pEntity )
             return true;
     });

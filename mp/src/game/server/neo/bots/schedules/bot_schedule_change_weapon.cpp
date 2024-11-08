@@ -1,9 +1,9 @@
-//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
+//========= Copyright ï¿½ 1996-2005, Valve Corporation, All rights reserved. ============//
 // Authors: 
-// Iván Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
+// Ivï¿½n Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
 
 #include "cbase.h"
-#include "bots\bot.h"
+#include "bots/bot.h"
 
 #ifdef INSOURCE_DLL
 #include "in_utils.h"
@@ -110,7 +110,7 @@ void CChangeWeaponSchedule::TaskRun()
         return;
     }
 
-    // Ya tiene un dueño
+    // Ya tiene un dueï¿½o
     if ( pWeapon->GetOwner() ) {
         if ( pWeapon->GetOwner() != GetHost() ) {
             Fail( "The weapon has been taken" );
