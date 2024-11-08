@@ -38,7 +38,7 @@
 #include "neo_weapon_loadout.h"
 
 // source bots
-#include "bots\bot.h"
+#include "bots/bot.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
