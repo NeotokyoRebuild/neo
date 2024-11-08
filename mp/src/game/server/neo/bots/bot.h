@@ -1,6 +1,6 @@
-//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
+//========= Copyright ï¿½ 1996-2005, Valve Corporation, All rights reserved. ============//
 // Authors: 
-// Iván Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
+// Ivï¿½n Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
 
 #ifndef BOT_H
 #define BOT_H
@@ -9,7 +9,7 @@
 #pragma once
 #endif
 
-#include "utlflags.h."
+#include "tier1/utlflags.h"
 
 #ifdef INSOURCE_DLL
 #include "in_player.h"
