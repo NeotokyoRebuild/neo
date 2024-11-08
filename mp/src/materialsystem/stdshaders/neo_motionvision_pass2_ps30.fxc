@@ -11,13 +11,8 @@ const float g_TintColor_B		: register(c4);
 const float g_Threshold_R		: register(c5);
 const float g_Threshold_G		: register(c6);
 const float g_Threshold_B		: register(c7);
-const float g_Exponent_R		: register(c8);
-const float g_Exponent_G		: register(c9);
-const float g_Exponent_B		: register(c10);
-const float g_Multiplier_R		: register(c11);
-const float g_Multiplier_G		: register(c12);
-const float g_Multiplier_B		: register(c13);
-//const float g_Strength			: register(c0);
+const float g_Exponent			: register(c8);
+const float g_Multiplier		: register(c9);
 
 struct PS_INPUT
 {
@@ -38,14 +33,14 @@ float4 main( const PS_INPUT i ) : COLOR
 	
 	if (output.x > g_Threshold_R)
 	{
-		output.x = g_Threshold_R + ((pow((output.x - g_Threshold_R), g_Exponent_R) + (output.x - g_Threshold_R)) * g_Multiplier_R);
-		output.y = output.z = output.y + ((pow((output.x - g_Threshold_R), g_Exponent_R) + (output.x - g_Threshold_R)) * g_Multiplier_R * -0.015);
+		output.x = g_Threshold_R + ((pow((output.x - g_Threshold_R), g_Exponent) + (output.x - g_Threshold_R)) * g_Multiplier);
+		output.y = output.z = output.y + ((pow((output.x - g_Threshold_R), g_Exponent) + (output.x - g_Threshold_R)) * g_Multiplier * -0.015);
 		if (bwTint > g_Threshold_G)
 		{
-			output.y = output.y + ((pow((bwTint - g_Threshold_G), g_Exponent_G) + (bwTint - g_Threshold_G)) * g_Multiplier_G);
+			output.y = output.y + ((pow((bwTint - g_Threshold_G), g_Exponent) + (bwTint - g_Threshold_G)) * g_Multiplier);
 			if (bwTint > g_Threshold_B)
 			{
-				output.z = output.z + ((pow((bwTint - g_Threshold_B), g_Exponent_B) + (bwTint - g_Threshold_B)) * g_Multiplier_B);
+				output.z = output.z + ((pow((bwTint - g_Threshold_B), g_Exponent) + (bwTint - g_Threshold_B)) * g_Multiplier);
 			}
 		}
 	}
