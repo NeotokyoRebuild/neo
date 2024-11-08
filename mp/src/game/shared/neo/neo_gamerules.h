@@ -109,6 +109,7 @@ enum NeoGameType {
 };
 
 extern const SZWSZTexts NEO_GAME_TYPE_DESC_STRS[NEO_GAME_TYPE__TOTAL];
+static ConVar sv_neo_bot_skill("sv_neo_bot_skill", "3", FCVAR_REPLICATED, "Bot Skill, 0=easy, 3=hard", true, 0, true, 3);
 
 enum NeoRoundStatus {
 	Idle = 0,
@@ -341,7 +342,7 @@ public:
 
 	const char *GetTeamClantag(const int iTeamNum) const;
 
-	virtual int	GetSkillLevel() { return 3; }
+	virtual int	GetSkillLevel() { return sv_neo_bot_skill.GetInt(); }
 
 public:
 #ifdef GAME_DLL
