@@ -7,7 +7,7 @@
 #ifndef _IMPROV_H_
 #define _IMPROV_H_
 
-#include "nav_path.h"
+#include "../nav_path.h"
 
 class CBaseEntity;
 
