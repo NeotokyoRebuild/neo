@@ -45,7 +45,7 @@ DECLARE_DEBUG_COMMAND( bot_mimic, "0", "" )
 DECLARE_DEBUG_COMMAND( bot_aim_player, "0", "" )
 DECLARE_DEBUG_COMMAND( bot_primary_attack, "0", "" )
 
-DECLARE_DEBUG_COMMAND( bot_sendcmd, "", 0, "Forces bots to send the specified command." );
+DECLARE_DEBUG_COMMAND( bot_sendcmd, "0", "Forces bots to send the specified command." );
 DECLARE_DEBUG_COMMAND( bot_team, "0", "Force all bots created with bot_add to change to the specified team" )
 
 DECLARE_DEBUG_COMMAND( bot_notarget, "0", "" )
