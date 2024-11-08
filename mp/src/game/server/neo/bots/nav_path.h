@@ -7,7 +7,7 @@
 #ifndef _NAV_PATH_H_
 #define _NAV_PATH_H_
 
-#include "nav_area.h"
+#include "../../nav_area.h"
 #ifdef NEO
 #include "nav_mesh.h"
 #endif

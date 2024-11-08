@@ -1,6 +1,6 @@
-//========= Copyright � 1996-2005, Valve Corporation, All rights reserved. ============//
+//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
 // Authors: 
-// Iv�n Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
+// Ivan Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
 
 #ifndef SQUAD_H
 #define SQUAD_H
@@ -9,7 +9,7 @@
 #pragma once
 #endif
 
-#include "bots/bot_defs.h"
+#include "bot_defs.h"
 
 #ifdef INSOURCE_DLL
 #include "in_player.h"

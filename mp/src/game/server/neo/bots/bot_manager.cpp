@@ -1,16 +1,16 @@
-//========= Copyright � 1996-2005, Valve Corporation, All rights reserved. ============//
+//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
 // Authors: 
-// Iv�n Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
+// Ivan Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
 
 #include "cbase.h"
-#include "bots\bot_manager.h"
+#include "bot_manager.h"
 
-#include "bots/bot.h"
+#include "bot.h"
 
 #ifdef INSOURCE_DLL
 #include "in_utils.h"
 #else
-#include "bots\in_utils.h"
+#include "in_utils.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!

@@ -1,14 +1,14 @@
-//========= Copyright � 1996-2005, Valve Corporation, All rights reserved. ============//
+//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
 // Authors: 
-// Iv�n Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
+// Ivan Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
 
 #include "cbase.h"
-#include "bots\squad.h"
+#include "squad.h"
 
-#include "bots\squad_manager.h"
+#include "squad_manager.h"
 
-#include "bots/bot.h"
-#include "bots\bot_squad.h"
+#include "bot.h"
+#include "bot_squad.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"

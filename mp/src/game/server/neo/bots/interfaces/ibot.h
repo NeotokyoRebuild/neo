@@ -1,6 +1,6 @@
-//========= Copyright � 1996-2005, Valve Corporation, All rights reserved. ============//
+//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
 // Authors: 
-// Iv�n Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
+// Ivan Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
 
 #ifndef IBOT_H
 #define IBOT_H
@@ -9,8 +9,8 @@
 #pragma once
 #endif
 
-#include "bots/bot_defs.h"
-#include "bots\bot_utils.h"
+#include "../bot_defs.h"
+#include "../bot_utils.h"
 
 class IBotSchedule;
 class IBotComponent;

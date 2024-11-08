@@ -1,6 +1,6 @@
-//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
+//========= Copyright Â© 1996-2005, Valve Corporation, All rights reserved. ============//
 // Authors: 
-// Iván Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
+// Ivan Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
 
 #ifndef IBOT_COMPONENT_H
 #define IBOT_COMPONENT_H
@@ -9,7 +9,7 @@
 #pragma once
 #endif
 
-#include "bots\interfaces\ibot.h"
+#include "ibot.h"
 
 class IBotVision;
 class IBotAttack;

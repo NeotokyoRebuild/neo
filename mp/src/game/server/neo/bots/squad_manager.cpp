@@ -1,9 +1,9 @@
-//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
+//========= Copyright Â© 1996-2005, Valve Corporation, All rights reserved. ============//
 // Authors: 
-// Iván Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
+// Ivan Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
 
 #include "cbase.h"
-#include "bots\squad_manager.h"
+#include "squad_manager.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -33,7 +33,7 @@ void CSquadManager::LevelShutdownPostEntity()
 //================================================================================
 void CSquadManager::FrameUpdatePostEntityThink() 
 {
-    // No hay escuadrones todavía
+    // No hay escuadrones todavï¿½a
     if ( m_nSquads.Count() == 0 )
         return;
 
@@ -49,7 +49,7 @@ void CSquadManager::FrameUpdatePostEntityThink()
 //================================================================================
 CSquad *CSquadManager::GetSquad( const char *name )
 {
-    // No hay escuadrones todavía
+    // No hay escuadrones todavï¿½a
     if ( m_nSquads.Count() == 0 )
         return NULL;
 

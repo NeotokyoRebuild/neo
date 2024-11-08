@@ -1,6 +1,6 @@
-//========= Copyright � 1996-2005, Valve Corporation, All rights reserved. ============//
+//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
 // Authors: 
-// Iv�n Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
+// Ivan Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
 //
 // Purpose: It is in charge of managing the memory of the entities 
 // and the memory of the information besides considering who will be the best enemy of the bot.
@@ -9,13 +9,13 @@
 
 #include "cbase.h"
 #include "bots/bot.h"
-#include "bots\bot_manager.h"
+#include "bots/bot_manager.h"
 
 #ifdef INSOURCE_DLL
 #include "in_utils.h"
 #include "in_player.h"
 #else
-#include "bots\in_utils.h"
+#include "bots/in_utils.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -309,7 +309,7 @@ void CBotMemory::ForgetEntity( int index )
     m_Memory.RemoveAt( index );
 
     // We check and set null all known pointers
-    // Iv�n: Noob question...
+    // Ivan: Noob question...
     // "delete memory" would not have to do exactly this? Blessed pointers...
 
     if ( memory == m_pPrimaryThreat ) {

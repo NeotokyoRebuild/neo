@@ -1,6 +1,6 @@
-//========= Copyright � 1996-2005, Valve Corporation, All rights reserved. ============//
+//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
 // Authors: 
-// Iv�n Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
+// Ivan Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
 
 #ifndef BOT_H
 #define BOT_H
@@ -15,10 +15,10 @@
 #include "in_player.h"
 #endif
 
-#include "bots/bot_defs.h"
-#include "bots\interfaces\ibot.h"
-#include "bots\components\bot_components.h"
-#include "bots\schedules\bot_schedules.h"
+#include "bot_defs.h"
+#include "interfaces/ibot.h"
+#include "components/bot_components.h"
+#include "schedules/bot_schedules.h"
 
 #include "squad.h"
 

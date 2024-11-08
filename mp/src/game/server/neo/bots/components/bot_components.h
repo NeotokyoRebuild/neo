@@ -1,7 +1,7 @@
-//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
+//========= Copyright Â© 1996-2005, Valve Corporation, All rights reserved. ============//
 // Authors: 
 // Michael S. Booth (linkedin.com/in/michaelbooth), 2003
-// Iván Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
+// Ivan Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
 
 #ifndef BOT_COMPONENTS_H
 #define BOT_COMPONENTS_H
@@ -10,13 +10,13 @@
 #pragma once
 #endif
 
-#include "bots\interfaces\ibotcomponent.h"
-#include "bots\interfaces\ibotvision.h"
-#include "bots\interfaces\ibotlocomotion.h"
-#include "bots\interfaces\ibotfollow.h"
-#include "bots\interfaces\ibotmemory.h"
-#include "bots\interfaces\ibotattack.h"
-#include "bots\interfaces\ibotdecision.h"
+#include "bots/interfaces/ibotcomponent.h"
+#include "bots/interfaces/ibotvision.h"
+#include "bots/interfaces/ibotlocomotion.h"
+#include "bots/interfaces/ibotfollow.h"
+#include "bots/interfaces/ibotmemory.h"
+#include "bots/interfaces/ibotattack.h"
+#include "bots/interfaces/ibotdecision.h"
 
 //================================================================================
 // Macros

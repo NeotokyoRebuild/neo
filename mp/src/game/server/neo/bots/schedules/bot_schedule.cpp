@@ -1,16 +1,16 @@
-//========= Copyright � 1996-2005, Valve Corporation, All rights reserved. ============//
+//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
 // Authors: 
-// Iv�n Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
+// Ivan Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
 
 #include "cbase.h"
 
-#include "bots/bot.h"
-#include "bots\interfaces\ibotschedule.h"
+#include "../bot.h"
+#include "../interfaces/ibotschedule.h"
 
 #ifdef INSOURCE_DLL
 #include "in_utils.h"
 #else
-#include "bots\in_utils.h"
+#include "../in_utils.h"
 #endif
 
 #include "in_buttons.h"

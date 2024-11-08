@@ -8,7 +8,8 @@
 
 #include "nav_mesh.h"
 #include "nav_path.h"
-#include "bots/interfaces/improv.h"
+#include "interfaces/improv.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 

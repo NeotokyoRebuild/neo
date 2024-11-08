@@ -15,7 +15,7 @@
 #include "doors.h"
 #include "func_breakablesurf.h"
 
-#include "bots/bot_defs.h"
+#include "bot_defs.h"
 #include "nav_pathfind.h"
 #include "util_shared.h"
 

@@ -1,14 +1,14 @@
-//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
+//========= Copyright Â© 1996-2005, Valve Corporation, All rights reserved. ============//
 // Authors: 
-// Iván Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
+// Ivan Bravo Bravo (linkedin.com/in/ivanbravobravo), 2017
 //
-// Conjunto de tareas, aquí es donde esta la I.A. de los Bots, cada conjunto
-// de tareas se activa según el nivel de deseo que devuelve la función
-// GetDesire(), el conjunto con más deseo se activará y empezará a realizar cada
+// Conjunto de tareas, aquï¿½ es donde esta la I.A. de los Bots, cada conjunto
+// de tareas se activa segï¿½n el nivel de deseo que devuelve la funciï¿½n
+// GetDesire(), el conjunto con mï¿½s deseo se activarï¿½ y empezarï¿½ a realizar cada
 // una de las tareas que se le fue asignada.
 //
-// Si la función ItsImportant() devuelve false entonces cualquier otro conjunto
-// que tenga más deseo terminara y reemplazara la activa.
+// Si la funciï¿½n ItsImportant() devuelve false entonces cualquier otro conjunto
+// que tenga mï¿½s deseo terminara y reemplazara la activa.
 //
 // El funcionamiento predeterminado de cada tarea se encuentra en 
 // el archivo bot_schedules.cpp. Se puede sobreescribir el funcionamiento
@@ -23,10 +23,10 @@
 #pragma once
 #endif
 
-#include "bots\interfaces\ibotschedule.h"
+#include "../interfaces/ibotschedule.h"
 
 //================================================================================
-// Investigar una ubicación y regresar a donde estabamos si no había nada
+// Investigar una ubicaciï¿½n y regresar a donde estabamos si no habï¿½a nada
 //================================================================================
 class CInvestigateLocationSchedule : public IBotSchedule
 {
@@ -96,7 +96,7 @@ public:
 };
 
 //================================================================================
-// Ocultarse, como cubrirse pero sin volver a nuestra ubicación original
+// Ocultarse, como cubrirse pero sin volver a nuestra ubicaciï¿½n original
 //================================================================================
 class CHideSchedule : public IBotSchedule
 {
@@ -139,7 +139,7 @@ public:
 };
 
 //================================================================================
-// Ocultarnos y después curarnos
+// Ocultarnos y despuï¿½s curarnos
 //================================================================================
 class CHideAndHealSchedule : public IBotSchedule
 {
@@ -245,7 +245,7 @@ public:
 };
 
 //================================================================================
-// Defender el punto de aparición
+// Defender el punto de apariciï¿½n
 //================================================================================
 class CDefendSpawnSchedule : public IBotSchedule
 {

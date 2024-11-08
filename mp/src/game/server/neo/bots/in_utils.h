@@ -9,7 +9,7 @@
 
 #include "nav.h"
 #include "nav_area.h"
-#include "bots/bot_defs.h"
+#include "bot_defs.h"
 
 #ifdef INSOURCE_DLL
 #include "in_shareddefs.h"
