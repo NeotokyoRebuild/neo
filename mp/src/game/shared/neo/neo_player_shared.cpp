@@ -5,12 +5,16 @@
 #include "neo_gamerules.h"
 
 #include "tier0/valve_minmax_off.h"
+#include <tier3/tier3.h>
+#include <vgui/ILocalize.h>
+#include <steam/steam_api.h>
 #include <system_error>
 #include <charconv>
 #include "tier0/valve_minmax_on.h"
 
 #ifdef CLIENT_DLL
 #include "c_neo_player.h"
+#include "c_playerresource.h"
 #ifndef CNEO_Player
 #define CNEO_Player C_NEO_Player
 #endif
@@ -161,3 +165,82 @@ void KillerLineStr(char* killByLine, const int killByLineMax,
 	auto *neoWep = dynamic_cast<CNEOBaseCombatWeapon *>(wep);
 	return (neoWep) ? neoWep->GetWpnData().iAimFOV : fovDef - FOV_AIM_OFFSET_FALLBACK;
 }
+
+#ifdef CLIENT_DLL
+void DMClSortedPlayers(PlayerXPInfo (*pPlayersOrder)[MAX_PLAYERS + 1], int *piTotalPlayers)
+{
+	int iTotalPlayers = 0;
+
+	// First pass: Find all scores of all players
+	for (int i = 0; i < (MAX_PLAYERS + 1); i++)
+	{
+		if (g_PR->IsConnected(i))
+		{
+			const int playerTeam = g_PR->GetTeam(i);
+			if (playerTeam == TEAM_JINRAI || playerTeam == TEAM_NSF)
+			{
+				(*pPlayersOrder)[iTotalPlayers++] = PlayerXPInfo{
+					.idx = i,
+					.xp = g_PR->GetXP(i),
+					.deaths = g_PR->GetDeaths(i),
+				};
+			}
+		}
+	}
+
+	V_qsort_s(*pPlayersOrder, iTotalPlayers, sizeof(PlayerXPInfo),
+			  []([[maybe_unused]] void *vpCtx, const void *vpLeft, const void *vpRight) -> int {
+		auto *pLeft = static_cast<const PlayerXPInfo *>(vpLeft);
+		auto *pRight = static_cast<const PlayerXPInfo *>(vpRight);
+		if (pRight->xp == pLeft->xp)
+		{
+			// More deaths = lower
+			return pLeft->deaths - pRight->deaths;
+		}
+		// More XP = higher
+		return pRight->xp - pLeft->xp;
+	}, nullptr);
+
+	*piTotalPlayers = iTotalPlayers;
+}
+#endif
+
+void GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
+						 const wchar_t wszNeoName[MAX_PLAYER_NAME_LENGTH + 1],
+						 const wchar_t wszNeoClantag[NEO_MAX_CLANTAG_LENGTH + 1],
+						 const bool bOnlySteamNick)
+{
+	const bool bShowSteamNick = bOnlySteamNick || wszNeoName[0] == '\0';
+	wchar_t wszDisplayName[MAX_PLAYER_NAME_LENGTH + 1] = {};
+	if (bShowSteamNick)
+	{
+		g_pVGuiLocalize->ConvertANSIToUnicode(steamapicontext->SteamFriends()->GetPersonaName(),
+											  wszDisplayName, sizeof(wszDisplayName));
+	}
+	else
+	{
+		V_wcscpy_safe(wszDisplayName, wszNeoName);
+	}
+
+	if (wszNeoClantag[0] != L'\0')
+	{
+		V_swprintf_safe(pWszDisplayName, L"[%ls] %ls", wszNeoClantag, wszDisplayName);
+	}
+	else
+	{
+		V_wcscpy_safe(pWszDisplayName, wszDisplayName);
+	}
+}
+
+void GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
+						 const char *pSzNeoName,
+						 const char *pSzNeoClantag,
+						 const bool bOnlySteamNick)
+{
+	wchar_t wszNeoName[MAX_PLAYER_NAME_LENGTH + 1];
+	wchar_t wszNeoClantag[NEO_MAX_CLANTAG_LENGTH + 1];
+	g_pVGuiLocalize->ConvertANSIToUnicode(pSzNeoName, wszNeoName, sizeof(wszNeoName));
+	g_pVGuiLocalize->ConvertANSIToUnicode(pSzNeoClantag, wszNeoClantag, sizeof(wszNeoClantag));
+	GetClNeoDisplayName(pWszDisplayName, wszNeoName, wszNeoClantag, bOnlySteamNick);
+}
+

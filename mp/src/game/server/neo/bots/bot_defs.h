@@ -50,7 +50,7 @@ typedef CNEO_Player CNEOPlayer;
 // Similar functions
 #define ToInPlayer ToBasePlayer
 #define ToBaseWeapon dynamic_cast<CBaseWeapon *>
-#define TheGameRules GameRules()
+#define TheGameRules NEORules()
 #define GetGameDifficulty() TheGameRules->GetSkillLevel()
 #define GetActiveBaseWeapon GetActiveWeapon
 

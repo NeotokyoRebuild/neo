@@ -1328,9 +1328,13 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_misc.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_misc.h
     neo/neo_client.cpp
     neo/neo_detpack.cpp
     neo/neo_detpack.h
+    neo/neo_game_config.cpp
+    neo/neo_game_config.h
     neo/neo_ghost_spawn_point.cpp
     neo/neo_ghost_spawn_point.h
     neo/neo_grenade.cpp
@@ -1344,6 +1348,8 @@ target_sources_grouped(
     neo/neo_te_tocflash.cpp
     neo/neo_te_tocflash.h
     neo/neo_tracefilter_collisiongroupdelta.h
+    neo/neo_dm_spawn.cpp
+    neo/neo_dm_spawn.h
     neo/bots/bot_ai.cpp
     neo/bots/bot_debug.cpp
     neo/bots/bot_defs.h
@@ -1495,8 +1501,6 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_playeranimstate.h
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_weapon_parse.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_weapon_parse.h
-    hl2mp/hl2mp_bot_temp.cpp
-    hl2mp/hl2mp_bot_temp.h
     hl2mp/hl2mp_client.cpp
     hl2mp/hl2mp_cvars.cpp
     hl2mp/hl2mp_gameinterface.cpp

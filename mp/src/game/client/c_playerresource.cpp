@@ -31,6 +31,7 @@ IMPLEMENT_CLIENTCLASS_DT_NOBASE(C_PlayerResource, DT_PlayerResource, CPlayerReso
 	RecvPropArray3(RECVINFO_ARRAY(m_szNeoName), RecvPropString(RECVINFO(m_szNeoName[0]))),
 	RecvPropArray3(RECVINFO_ARRAY(m_iNeoNameDupeIdx), RecvPropInt(RECVINFO(m_iNeoNameDupeIdx[0]))),
 	RecvPropArray3(RECVINFO_ARRAY(m_iStar), RecvPropInt(RECVINFO(m_iStar[0]))),
+	RecvPropArray3(RECVINFO_ARRAY(m_szNeoClantag), RecvPropString(RECVINFO(m_szNeoClantag[0]))),
 #endif
 	RecvPropArray3( RECVINFO_ARRAY(m_iScore), RecvPropInt( RECVINFO(m_iScore[0]))),
 	RecvPropArray3( RECVINFO_ARRAY(m_iDeaths), RecvPropInt( RECVINFO(m_iDeaths[0]))),
@@ -50,6 +51,7 @@ BEGIN_PREDICTION_DATA( C_PlayerResource )
 	DEFINE_PRED_ARRAY(m_szNeoName, FIELD_STRING, MAX_PLAYERS + 1, FTYPEDESC_PRIVATE),
 	DEFINE_PRED_ARRAY(m_iNeoNameDupeIdx, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_PRIVATE),
 	DEFINE_PRED_ARRAY(m_iStar, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_PRIVATE),
+	DEFINE_PRED_ARRAY(m_szNeoClantag, FIELD_STRING, MAX_PLAYERS + 1, FTYPEDESC_PRIVATE),
 #endif
 	DEFINE_PRED_ARRAY( m_iScore, FIELD_INTEGER, MAX_PLAYERS+1, FTYPEDESC_PRIVATE ),
 	DEFINE_PRED_ARRAY( m_iDeaths, FIELD_INTEGER, MAX_PLAYERS+1, FTYPEDESC_PRIVATE ),
@@ -59,6 +61,10 @@ BEGIN_PREDICTION_DATA( C_PlayerResource )
 	DEFINE_PRED_ARRAY( m_iHealth, FIELD_INTEGER, MAX_PLAYERS+1, FTYPEDESC_PRIVATE ),
 
 END_PREDICTION_DATA()	
+
+#ifdef NEO
+extern ConVar neo_cl_streamermode;
+#endif
 
 C_PlayerResource *g_PR;
 
@@ -78,6 +84,7 @@ C_PlayerResource::C_PlayerResource()
 	memset(m_iNeoNameDupeIdx, 0, sizeof(m_iNeoNameDupeIdx));
 	memset(m_szDispNameWDupeIdx, 0, sizeof(m_szDispNameWDupeIdx));
 	memset(m_iStar, 0, sizeof(m_iStar));
+	memset(m_szNeoClantag, 0, sizeof(m_szNeoClantag));
 #endif
 	memset( m_iScore, 0, sizeof( m_iScore ) );
 	memset( m_iDeaths, 0, sizeof( m_iDeaths ) );
@@ -187,6 +194,15 @@ const char *C_PlayerResource::GetPlayerName( int iIndex )
 	}
 
 #ifdef NEO
+	if (neo_cl_streamermode.GetBool() && !IsLocalPlayer(iIndex))
+	{
+		[[maybe_unused]] uchar32 u32Out;
+		bool bError = false;
+		const int iSize = Q_UTF8ToUChar32(m_szName[iIndex], u32Out, bError);
+		if (!bError) V_memcpy(gStreamerModeNames[iIndex], m_szName[iIndex], iSize);
+		return gStreamerModeNames[iIndex];
+	}
+
 	const bool clientWantNeoName = C_NEO_Player::GetLocalNEOPlayer()->ClientWantNeoName();
 	const int dupeIdx = m_iNeoNameDupeIdx[iIndex];
 
@@ -210,6 +226,13 @@ const char *C_PlayerResource::GetPlayerName( int iIndex )
 	// This gets updated in ClientThink, so it could be up to 1 second out of date, oh well.
 	return m_szName[iIndex];
 }
+
+#ifdef NEO
+const char *C_PlayerResource::GetClanTag(int iIndex)
+{
+	return m_szNeoClantag[iIndex];
+}
+#endif
 
 bool C_PlayerResource::IsAlive(int iIndex )
 {

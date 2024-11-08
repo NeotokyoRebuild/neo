@@ -5,38 +5,14 @@
 #include <vgui/IInput.h>
 #include <vgui_controls/Controls.h>
 
+#include "neo_misc.h"
+
 using namespace vgui;
 
 static const wchar_t *ENABLED_LABELS[] = {
 	L"Disabled",
 	L"Enabled",
 };
-
-#define IN_BETWEEN_AR(min, cmp, max) (((min) <= (cmp)) && ((cmp) < (max)))
-#define IN_BETWEEN_EQ(min, cmp, max) (((min) <= (cmp)) && ((cmp) <= (max)))
-
-[[nodiscard]] static bool InRect(const vgui::IntRect &rect, const int x, const int y)
-{
-	return IN_BETWEEN_EQ(rect.x0, x, rect.x1) && IN_BETWEEN_EQ(rect.y0, y, rect.y1);
-}
-
-[[nodiscard]] static int LoopAroundMinMax(const int iValue, const int iMin, const int iMax)
-{
-	if (iValue < iMin)
-	{
-		return iMax;
-	}
-	else if (iValue > iMax)
-	{
-		return iMin;
-	}
-	return iValue;
-}
-
-[[nodiscard]] static int LoopAroundInArray(const int iValue, const int iSize)
-{
-	return LoopAroundMinMax(iValue, 0, iSize - 1);
-}
 
 namespace NeoUI
 {
@@ -82,11 +58,11 @@ void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode, const wchar_t *w
 	g_pCtx->eMode = eMode;
 	g_pCtx->iLayoutY = -(g_pCtx->iYOffset[0] * g_pCtx->iRowTall);
 	g_pCtx->iWidget = 0;
-	g_pCtx->iWgXPos = static_cast<int>(g_pCtx->dPanel.wide * 0.4f);
 	g_pCtx->iSection = 0;
 	g_pCtx->iHasMouseInPanel = 0;
 	g_pCtx->iHorizontalWidth = 0;
 	g_pCtx->iHorizontalMargin = 0;
+	g_pCtx->flWgXPerc = 0.4f;
 	g_pCtx->bValueEdited = false;
 	g_pCtx->eButtonTextStyle = TEXTSTYLE_CENTER;
 	g_pCtx->eLabelTextStyle = TEXTSTYLE_LEFT;
@@ -218,6 +194,7 @@ void BeginSection(const bool bDefaultFocus)
 	g_pCtx->iLayoutY = -(g_pCtx->iYOffset[g_pCtx->iSection] * g_pCtx->iRowTall);
 	g_pCtx->iWidget = 0;
 	g_pCtx->iCanActives = 0;
+	g_pCtx->iWgXPos = static_cast<int>(g_pCtx->dPanel.wide * g_pCtx->flWgXPerc);
 
 	g_pCtx->iMouseRelX = g_pCtx->iMouseAbsX - g_pCtx->dPanel.x;
 	g_pCtx->iMouseRelY = g_pCtx->iMouseAbsY - g_pCtx->dPanel.y;
@@ -1032,7 +1009,7 @@ void SliderU8(const wchar_t *wszLeftLabel, uint8 *ucValue, const uint8 iMin, con
 	}
 }
 
-void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
+void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxBytes)
 {
 	static wchar_t staticWszPasswordChars[256] = {};
 	if (staticWszPasswordChars[0] == L'\0')
@@ -1116,9 +1093,11 @@ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
 		{
 			if (wdgState.bActive && iswprint(g_pCtx->unichar))
 			{
-				int iTextSize = V_wcslen(wszText);
-				if (iTextSize < iMaxSize)
+				static char szTmpANSICheck[MAX_TEXTINPUT_U8BYTES_LIMIT];
+				const int iTextInU8Bytes = g_pVGuiLocalize->ConvertUnicodeToANSI(wszText, szTmpANSICheck, sizeof(szTmpANSICheck));
+				if (iTextInU8Bytes < iMaxBytes)
 				{
+					int iTextSize = V_wcslen(wszText);
 					wszText[iTextSize++] = g_pCtx->unichar;
 					wszText[iTextSize] = L'\0';
 					g_pCtx->bValueEdited = true;

@@ -31,6 +31,8 @@ NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(RoundState, 0.1)
 ConVar neo_cl_squad_hud_original("neo_cl_squad_hud_original", "0", FCVAR_ARCHIVE, "Use the old squad HUD", true, 0.0, true, 1.0);
 
 ConVar neo_cl_squad_hud_star_scale("neo_cl_squad_hud_star_scale", "0", FCVAR_ARCHIVE, "Scaling to apply from 1080p, 0 disables scaling");
+extern ConVar neo_sv_dm_win_xp;
+extern ConVar neo_cl_streamermode;
 
 namespace {
 constexpr int Y_POS = 2;
@@ -261,9 +263,22 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 		roundTimeLeft = 0;
 	}
 
-	char szRoundANSI[9] = {};
-	V_sprintf_safe(szRoundANSI, "ROUND %i", NEORules()->roundNumber());
-	g_pVGuiLocalize->ConvertANSIToUnicode(szRoundANSI, m_wszRoundUnicode, sizeof(m_wszRoundUnicode));
+	if (NEORules()->GetRoundStatus() == NeoRoundStatus::Pause)
+	{
+		m_iWszRoundUCSize = V_swprintf_safe(m_wszRoundUnicode, L"PAUSED");
+		roundTimeLeft = NEORules()->m_flPauseEnd.Get() - gpGlobals->curtime;
+	}
+	else
+	{
+		if (NEORules()->GetGameType() == NEO_GAME_TYPE_DM)
+		{
+			m_iWszRoundUCSize = V_swprintf_safe(m_wszRoundUnicode, L"DEATHMATCH");
+		}
+		else
+		{
+			m_iWszRoundUCSize = V_swprintf_safe(m_wszRoundUnicode, L"ROUND %i", NEORules()->roundNumber());
+		}
+	}
 
 	if (roundStatus == NeoRoundStatus::PreRoundFreeze)
 		roundTimeLeft = NEORules()->GetRemainingPreRoundFreezeTime(true);
@@ -273,18 +288,40 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	const int minutes = (secsTotal - secsRemainder) / 60;
 	V_snwprintf(m_wszTime, 6, L"%02d:%02d", minutes, secsRemainder);
 
+	int iDMHighestXP = 0;
+
 	const int localPlayerTeam = GetLocalPlayerTeam();
-	if (localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF) {
-		V_snwprintf(m_wszLeftTeamScore, 3, L"%i", GetGlobalTeam(localPlayerTeam)->GetRoundsWon());
-		V_snwprintf(m_wszRightTeamScore, 3, L"%i", GetGlobalTeam(NEORules()->GetOpposingTeam(localPlayerTeam))->GetRoundsWon());
+	if (NEORules()->IsTeamplay())
+	{
+		if (localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF) {
+			V_snwprintf(m_wszLeftTeamScore, 3, L"%i", GetGlobalTeam(localPlayerTeam)->GetRoundsWon());
+			V_snwprintf(m_wszRightTeamScore, 3, L"%i", GetGlobalTeam(NEORules()->GetOpposingTeam(localPlayerTeam))->GetRoundsWon());
+		}
+		else {
+			V_snwprintf(m_wszLeftTeamScore, 3, L"%i", GetGlobalTeam(TEAM_JINRAI)->GetRoundsWon());
+			V_snwprintf(m_wszRightTeamScore, 3, L"%i", GetGlobalTeam(TEAM_NSF)->GetRoundsWon());
+		}
 	}
-	else {
-		V_snwprintf(m_wszLeftTeamScore, 3, L"%i", GetGlobalTeam(TEAM_JINRAI)->GetRoundsWon());
-		V_snwprintf(m_wszRightTeamScore, 3, L"%i", GetGlobalTeam(TEAM_NSF)->GetRoundsWon());
+	else
+	{
+		[[maybe_unused]] int iDMHighestTotal;
+		NEORules()->GetDMHighestScorers(&iDMHighestTotal, &iDMHighestXP);
 	}
 
-	char szPlayersAliveANSI[9] = {};
-	if (NEORules()->GetGameType() == NEO_GAME_TYPE_TDM)
+	char szPlayersAliveANSI[ARRAYSIZE(m_wszPlayersAliveUnicode)] = {};
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_DM)
+	{
+		// NEO NOTE (nullsystem): Show highest player score
+		if (neo_sv_dm_win_xp.GetInt() > 0)
+		{
+			V_sprintf_safe(szPlayersAliveANSI, "Lead: %d/%d", iDMHighestXP, neo_sv_dm_win_xp.GetInt());
+		}
+		else
+		{
+			V_sprintf_safe(szPlayersAliveANSI, "Lead: %d", iDMHighestXP);
+		}
+	}
+	else if (NEORules()->GetGameType() == NEO_GAME_TYPE_TDM)
 	{
 		if (localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF) {
 			V_sprintf_safe(szPlayersAliveANSI, "%i:%i", GetGlobalTeam(localPlayerTeam)->Get_Score(), GetGlobalTeam(NEORules()->GetOpposingTeam(localPlayerTeam))->Get_Score());
@@ -301,6 +338,10 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 
 	// Update Objective
 	switch (NEORules()->GetGameType()) {
+	case NEO_GAME_TYPE_DM:
+		// Don't print objective for deathmatch
+		szGameTypeDescription[0] = '\0';
+		break;
 	case NEO_GAME_TYPE_TDM:
 		V_sprintf_safe(szGameTypeDescription, "Score the most Points\n");
 		break;
@@ -336,6 +377,11 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 		break;
 	}
 
+	if (NEORules()->GetRoundStatus() == NeoRoundStatus::Pause)
+	{
+		szGameTypeDescription[0] = '\0';
+	}
+
 	C_NEO_Player* localPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if (localPlayer);
 	{
@@ -369,22 +415,23 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 		DrawNeoHudRoundedBox(m_iLeftOffset, Y_POS, m_iRightOffset, m_iBoxYEnd, box_color, false, false, true, true);
 
 		// Draw round
+		surface()->DrawSetTextColor((NEORules()->GetRoundStatus() == NeoRoundStatus::Pause) ? COLOR_RED : COLOR_WHITE);
 		surface()->DrawSetTextFont(m_hOCRSmallFont);
 		surface()->GetTextSize(m_hOCRSmallFont, m_wszRoundUnicode, fontWidth, fontHeight);
 		surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), 0);
-		surface()->DrawSetTextColor(COLOR_WHITE);
-		surface()->DrawPrintText(m_wszRoundUnicode, 9);
+		surface()->DrawPrintText(m_wszRoundUnicode, m_iWszRoundUCSize);
 
 		// Draw round status
+		surface()->DrawSetTextColor(COLOR_WHITE);
 		surface()->GetTextSize(m_hOCRSmallFont, m_pWszStatusUnicode, fontWidth, fontHeight);
 		surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), m_iBoxYEnd);
 		surface()->DrawPrintText(m_pWszStatusUnicode, m_iStatusUnicodeSize);
 
 		const int localPlayerTeam = GetLocalPlayerTeam();
 		const int localPlayerIndex = GetLocalPlayerIndex();
-		const bool localPlayerSpec = !(localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF);
+		const bool localPlayerSpecOrNoTeam = !NEORules()->IsTeamplay() || !(localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF);
 
-		const int leftTeam = localPlayerSpec ? TEAM_JINRAI : localPlayerTeam;
+		const int leftTeam = localPlayerSpecOrNoTeam ? TEAM_JINRAI : localPlayerTeam;
 		const int rightTeam = (leftTeam == TEAM_JINRAI) ? TEAM_NSF : TEAM_JINRAI;
 		const auto leftTeamInfo = m_teamLogoColors[leftTeam];
 		const auto rightTeamInfo = m_teamLogoColors[rightTeam];
@@ -399,71 +446,115 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 		m_iRightPlayersTotal = 0;
 		int leftCount = 0;
 		int rightCount = 0;
-		for (int i = 0; i < (MAX_PLAYERS + 1); i++)
+		bool bDMRightSide = false;
+		if (NEORules()->IsTeamplay())
 		{
-			if (g_PR->IsConnected(i))
+			for (int i = 0; i < (MAX_PLAYERS + 1); i++)
 			{
-				const int playerTeam = g_PR->GetTeam(i);
-				if (playerTeam == leftTeam)
+				if (g_PR->IsConnected(i))
 				{
-					const bool isSameSquad = g_PR->GetStar(i) == g_PR->GetStar(localPlayerIndex);
-					if (localPlayerSpec || isSameSquad)
+					const int playerTeam = g_PR->GetTeam(i);
+					if (playerTeam == leftTeam)
 					{
-						const int xOffset = (m_iLeftOffset - 4) - ((leftCount + 1) * m_ilogoSize) - (leftCount * 2);
-						DrawPlayer(i, leftCount, leftTeamInfo, xOffset, true);
-						leftCount++;
-					}
+						const bool isSameSquad = g_PR->GetStar(i) == g_PR->GetStar(localPlayerIndex);
+						if (localPlayerSpecOrNoTeam || isSameSquad)
+						{
+							const int xOffset = (m_iLeftOffset - 4) - ((leftCount + 1) * m_ilogoSize) - (leftCount * 2);
+							DrawPlayer(i, leftCount, leftTeamInfo, xOffset, true);
+							leftCount++;
+						}
 
-					if (g_PR->IsAlive(i))
-						m_iLeftPlayersAlive++;
-					m_iLeftPlayersTotal++;
+						if (g_PR->IsAlive(i))
+							m_iLeftPlayersAlive++;
+						m_iLeftPlayersTotal++;
+					}
+					else if (playerTeam == rightTeam)
+					{
+						const int xOffset = (m_iRightOffset + 4) + (rightCount * m_ilogoSize) + (rightCount * 2);
+						DrawPlayer(i, rightCount, rightTeamInfo, xOffset, localPlayerSpecOrNoTeam);
+						rightCount++;
+
+						if (g_PR->IsAlive(i))
+							m_iRightPlayersAlive++;
+						m_iRightPlayersTotal++;
+					}
 				}
-				else if (playerTeam == rightTeam)
+			}
+		}
+		else
+		{
+			PlayerXPInfo playersOrder[MAX_PLAYERS + 1] = {};
+			int iTotalPlayers = 0;
+			DMClSortedPlayers(&playersOrder, &iTotalPlayers);
+
+			// Second pass: Render the players in this order
+			const int iLTRSwitch = Ceil2Int(iTotalPlayers / 2.0f);
+			leftCount = (iLTRSwitch - 1); // Start from furthest leftCount index from the center
+			rightCount = 0;
+			bool bOnLeft = true;
+			for (int i = 0; i < iTotalPlayers; ++i)
+			{
+				if (i == iLTRSwitch)
+				{
+					bOnLeft = false;
+				}
+
+				const int iPlayerIdx = playersOrder[i].idx;
+				const bool bPlayerLocal = g_PR->IsLocalPlayer(iPlayerIdx);
+
+				// NEO NOTE (nullsystem): Even though they can be Jinrai/NSF, at most it's just a skin and different
+				// color in non-teamplay deathmatch mode.
+				const auto lrTeamInfo = (g_PR->GetTeam(iPlayerIdx) == leftTeam) ? leftTeamInfo : rightTeamInfo;
+				if (bOnLeft)
+				{
+					const int xOffset = (m_iLeftOffset - 4) - ((leftCount + 1) * m_ilogoSize) - (leftCount * 2);
+					DrawPlayer(iPlayerIdx, leftCount, lrTeamInfo, xOffset, bPlayerLocal);
+					--leftCount;
+				}
+				else
 				{
 					const int xOffset = (m_iRightOffset + 4) + (rightCount * m_ilogoSize) + (rightCount * 2);
-					DrawPlayer(i, rightCount, rightTeamInfo, xOffset, localPlayerSpec);
+					DrawPlayer(iPlayerIdx, rightCount, lrTeamInfo, xOffset, bPlayerLocal);
 					rightCount++;
-
-					if (g_PR->IsAlive(i))
-						m_iRightPlayersAlive++;
-					m_iRightPlayersTotal++;
 				}
 			}
 		}
 
-		// Draw score logo
-		surface()->DrawSetTexture(leftTeamInfo.totalLogo);
-		surface()->DrawSetColor(COLOR_FADED_DARK);
-		surface()->DrawTexturedRect(m_rectLeftTeamTotalLogo.x0,
-									m_rectLeftTeamTotalLogo.y0,
-									m_rectLeftTeamTotalLogo.x1,
-									m_rectLeftTeamTotalLogo.y1);
+		if (NEORules()->IsTeamplay())
+		{
+			// Draw score logo
+			surface()->DrawSetTexture(leftTeamInfo.totalLogo);
+			surface()->DrawSetColor(COLOR_FADED_DARK);
+			surface()->DrawTexturedRect(m_rectLeftTeamTotalLogo.x0,
+										m_rectLeftTeamTotalLogo.y0,
+										m_rectLeftTeamTotalLogo.x1,
+										m_rectLeftTeamTotalLogo.y1);
 
-		surface()->DrawSetTexture(rightTeamInfo.totalLogo);
-		surface()->DrawTexturedRect(m_rectRightTeamTotalLogo.x0,
-									m_rectRightTeamTotalLogo.y0,
-									m_rectRightTeamTotalLogo.x1,
-									m_rectRightTeamTotalLogo.y1);
+			surface()->DrawSetTexture(rightTeamInfo.totalLogo);
+			surface()->DrawTexturedRect(m_rectRightTeamTotalLogo.x0,
+										m_rectRightTeamTotalLogo.y0,
+										m_rectRightTeamTotalLogo.x1,
+										m_rectRightTeamTotalLogo.y1);
 
-		// Draw score
-		surface()->GetTextSize(m_hOCRFont, m_wszLeftTeamScore, fontWidth, fontHeight);
-		surface()->DrawSetTextFont(m_hOCRFont);
-		surface()->DrawSetTextPos(m_posLeftTeamScore.x - (fontWidth / 2), m_posLeftTeamScore.y);
-		surface()->DrawSetTextColor(leftTeamInfo.color);
-		surface()->DrawPrintText(m_wszLeftTeamScore, 2);
+			// Draw score
+			surface()->GetTextSize(m_hOCRFont, m_wszLeftTeamScore, fontWidth, fontHeight);
+			surface()->DrawSetTextFont(m_hOCRFont);
+			surface()->DrawSetTextPos(m_posLeftTeamScore.x - (fontWidth / 2), m_posLeftTeamScore.y);
+			surface()->DrawSetTextColor(leftTeamInfo.color);
+			surface()->DrawPrintText(m_wszLeftTeamScore, 2);
 
-		surface()->GetTextSize(m_hOCRFont, m_wszRightTeamScore, fontWidth, fontHeight);
-		surface()->DrawSetTextPos(m_posRightTeamScore.x - (fontWidth / 2), m_posRightTeamScore.y);
-		surface()->DrawSetTextColor(rightTeamInfo.color);
-		surface()->DrawPrintText(m_wszRightTeamScore, 2);
-	
-		// Draw total players alive
+			surface()->GetTextSize(m_hOCRFont, m_wszRightTeamScore, fontWidth, fontHeight);
+			surface()->DrawSetTextPos(m_posRightTeamScore.x - (fontWidth / 2), m_posRightTeamScore.y);
+			surface()->DrawSetTextColor(rightTeamInfo.color);
+			surface()->DrawPrintText(m_wszRightTeamScore, 2);
+		}
+
+		// Draw total players alive (or score)
 		surface()->DrawSetTextFont(m_hOCRSmallFont);
 		surface()->GetTextSize(m_hOCRSmallFont, m_wszPlayersAliveUnicode, fontWidth, fontHeight);
 		surface()->DrawSetTextColor(COLOR_WHITE);
 		surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), m_ilogoSize);
-		surface()->DrawPrintText(m_wszPlayersAliveUnicode, 9);
-
+		surface()->DrawPrintText(m_wszPlayersAliveUnicode, ARRAYSIZE(m_wszPlayersAliveUnicode) - 1);
 	}
 	else
 	{
@@ -511,7 +602,7 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 					const char* squadMateRankName = GetRankName(g_PR->GetXP(i), true);
 					const char* squadMateClass = GetNeoClassName(g_PR->GetClass(i));
 					const int squadMateHealth = g_PR->IsAlive( i ) ? g_PR->GetHealth( i ) : 0;
-					V_snprintf(squadMateText, SQUAD_MATE_TEXT_LENGTH, "%s %s  [%s]  Integrity %i\0", g_PR->GetPlayerName( i ), squadMateRankName, squadMateClass, squadMateHealth);
+					V_snprintf(squadMateText, SQUAD_MATE_TEXT_LENGTH, "%s %s  [%s]  Integrity %i", g_PR->GetPlayerName( i ), squadMateRankName, squadMateClass, squadMateHealth);
 					g_pVGuiLocalize->ConvertANSIToUnicode(squadMateText, wSquadMateText, sizeof(wSquadMateText));
 
 					surface()->DrawSetTextFont(m_hOCRSmallFont);
@@ -571,6 +662,21 @@ void CNEOHud_RoundState::DrawPlayer(int playerIndex, int teamIndex, const TeamLo
 	if (!g_PR->IsAlive(playerIndex))
 		surface()->DrawSetColor(COLOR_DARK);
 	surface()->DrawTexturedRect(xOffset, Y_POS + 1, xOffset + m_ilogoSize, Y_POS + m_ilogoSize + 1);
+
+	// Deathmatch only: Draw XP on everyone
+	if (!NEORules()->IsTeamplay())
+	{
+		wchar_t wszXP[9];
+		const int iWszLen = V_swprintf_safe(wszXP, L"%d", g_PR->GetXP(playerIndex));
+		int fontWidth, fontHeight;
+		surface()->DrawSetTextFont(m_hOCRSmallFont);
+		surface()->GetTextSize(m_hOCRSmallFont, wszXP, fontWidth, fontHeight);
+		const int iYExtra = drawHealthClass ? m_ilogoSize : fontHeight;
+		surface()->DrawSetTextPos(xOffset + ((m_ilogoSize / 2) - (fontWidth / 2)),
+								  Y_POS + m_ilogoSize + 2 - (fontHeight / 2) + iYExtra);
+		surface()->DrawSetTextColor(COLOR_WHITE);
+		surface()->DrawPrintText(wszXP, iWszLen);
+	}
 
 	// Return early to not draw healthbar and class icon
 	if (!drawHealthClass)
@@ -670,13 +776,18 @@ void CNEOHud_RoundState::UpdatePlayerAvatar(int playerIndex)
 
 void CNEOHud_RoundState::SetTextureToAvatar(int playerIndex)
 {
+	if (neo_cl_streamermode.GetBool())
+	{
+		return;
+	}
+
 	player_info_t pi;
 	if (!engine->GetPlayerInfo(playerIndex, &pi))
 		return;
 	
 	if (!pi.friendsID)
 		return;
-	
+
 	CSteamID steamIDForPlayer(pi.friendsID, 1, steamapicontext->SteamUtils()->GetConnectedUniverse(), k_EAccountTypeIndividual);
 	const int mapIndex = m_mapAvatarsToImageList.Find(steamIDForPlayer);
 	if ((mapIndex == m_mapAvatarsToImageList.InvalidIndex()))

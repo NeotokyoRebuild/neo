@@ -174,8 +174,19 @@ extern vgui::IInputInternal *g_InputInternal;
 #include "neo_version.h"
 #include "neo_mount_original.h"
 #include "ui/neo_loading.h"
+#include "neo_player_shared.h"
 extern bool NeoRootCaptureESC();
 extern CNeoLoading *g_pNeoLoading;
+extern ConVar neo_cl_streamermode_autodetect_obs;
+bool g_bOBSDetected = false;
+
+#ifdef WIN32
+#include <windows.h>
+#include <tchar.h>
+#include <psapi.h>
+#include <tlhelp32.h>
+#undef CreateEvent
+#endif
 
 #ifdef LINUX
 #include "neo_fixup_glshaders.h"
@@ -1230,6 +1241,46 @@ void MusicVol_ChangeCallback(IConVar *cvar, const char *pOldVal, float flOldVal)
 
 #ifdef NEO
 extern void NeoToggleConsoleEnforce();
+
+static void NeoName_ChangeCallback(IConVar *cvar, [[maybe_unused]] const char *pOldVal, [[maybe_unused]] float flOldVal)
+{
+	static bool bStaticCallbackChangedCVar = false;
+	if (bStaticCallbackChangedCVar)
+	{
+		return;
+	}
+
+	ConVarRef cvr_neo_name(cvar->GetName());
+	if (V_strlen(cvr_neo_name.GetString()) >= MAX_PLAYER_NAME_LENGTH)
+	{
+		bStaticCallbackChangedCVar = true;
+		char mutStr[MAX_PLAYER_NAME_LENGTH];
+		V_strcpy_safe(mutStr, cvr_neo_name.GetString());
+		Q_UnicodeRepair(mutStr);
+		cvr_neo_name.SetValue(mutStr);
+		bStaticCallbackChangedCVar = false;
+	}
+}
+
+static void NeoClantag_ChangeCallback(IConVar *cvar, [[maybe_unused]] const char *pOldVal, [[maybe_unused]] float flOldVal)
+{
+	static bool bStaticCallbackChangedCVar = false;
+	if (bStaticCallbackChangedCVar)
+	{
+		return;
+	}
+
+	ConVarRef cvr_neo_clantag(cvar->GetName());
+	if (V_strlen(cvr_neo_clantag.GetString()) >= NEO_MAX_CLANTAG_LENGTH)
+	{
+		bStaticCallbackChangedCVar = true;
+		char mutStr[NEO_MAX_CLANTAG_LENGTH];
+		V_strcpy_safe(mutStr, cvr_neo_clantag.GetString());
+		Q_UnicodeRepair(mutStr);
+		cvr_neo_clantag.SetValue(mutStr);
+		bStaticCallbackChangedCVar = false;
+	}
+}
 #endif
 
 //-----------------------------------------------------------------------------
@@ -1266,6 +1317,8 @@ void CHLClient::PostInit()
 	if (g_pCVar)
 	{
 		g_pCVar->FindVar("snd_musicvolume")->InstallChangeCallback(MusicVol_ChangeCallback);
+		g_pCVar->FindVar("neo_name")->InstallChangeCallback(NeoName_ChangeCallback);
+		g_pCVar->FindVar("neo_clantag")->InstallChangeCallback(NeoClantag_ChangeCallback);
 	}
 	else
 	{
@@ -1273,7 +1326,69 @@ void CHLClient::PostInit()
 	}
 
 	NeoToggleConsoleEnforce();
+
+	// Detect OBS - Only on startup
+	if (neo_cl_streamermode_autodetect_obs.GetBool())
+	{
+		g_bOBSDetected = false;
+#ifdef LINUX
+		FileFindHandle_t findHdl;
+		for (const char *pszFilename = filesystem->FindFirst("/proc/*", &findHdl);
+			 pszFilename && !g_bOBSDetected;
+			 pszFilename = filesystem->FindNext(findHdl))
+		{
+			if (!filesystem->FindIsDirectory(findHdl))
+			{
+				continue;
+			}
+
+			char szCmdlinePath[MAX_PATH];
+			V_sprintf_safe(szCmdlinePath, "/proc/%s/cmdline", pszFilename);
+			if (!filesystem->FileExists(szCmdlinePath))
+			{
+				continue;
+			}
+
+			// NEO NOTE (nullsystem): At this point, cannot just do filesystem->ReadFile
+			// as it won't output anything. Instead just cat the file and fetch the line.
+			char szCmdCat[sizeof(szCmdlinePath) + 16];
+			V_sprintf_safe(szCmdCat, "cat \"%s\"", szCmdlinePath);
+			FILE *fp = popen(szCmdCat, "r");
+			if (fp)
+			{
+				char szCmdline[512] = {};
+				if (fgets(szCmdline, sizeof(szCmdline), fp))
+				{
+					// NEO TODO (nullsystem): Check on OBS flatpak, snaps, nix, and appimage.
+					// Could they give out different cmdline?
+					g_bOBSDetected = (V_strcmp(szCmdline, "obs") == 0);
+				}
+				pclose(fp);
+			}
+		}
+		filesystem->FindClose(findHdl);
+#else // WIN32
+		HANDLE hSnapShot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+		if (hSnapShot != INVALID_HANDLE_VALUE)
+		{
+			PROCESSENTRY32 processInfo = {};
+			processInfo.dwSize = sizeof(PROCESSENTRY32);
+			while (!g_bOBSDetected && Process32Next(hSnapShot, &processInfo) != FALSE)
+			{
+				g_bOBSDetected = (V_strcmp(processInfo.szExeFile, "obs64.exe") == 0);
+			}
+			CloseHandle(hSnapShot);
+		}
 #endif
+		ConVarRef("neo_cl_streamermode").SetValue(g_bOBSDetected);
+	}
+
+	// Initialize streamer mode names
+	for (int i = 0; i < MAX_PLAYERS + 1; ++i)
+	{
+		V_memset(gStreamerModeNames[i], '.', 5);
+	}
+#endif // NEO
 }
 
 //-----------------------------------------------------------------------------

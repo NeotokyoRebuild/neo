@@ -231,9 +231,10 @@ public:
 	virtual void SetLastUserCommand( const CBotCmd &cmd );
 
 	virtual CBotCmd GetLastUserCommand();
-
+#ifndef NEO
 private:
-	CBasePlayer *m_pParent; 
+#endif // NEO
+	CBasePlayer *m_pParent;
 };
 
 class IBot;

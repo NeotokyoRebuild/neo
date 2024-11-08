@@ -113,7 +113,7 @@ if(OS_WINDOWS)
         AVI_VIDEO
         WMV_VIDEO
         fopen=dont_use_fopen
-
+        PSAPI_VERSION=1
     )
 
     target_link_libraries(client
@@ -121,6 +121,7 @@ if(OS_WINDOWS)
         legacy_stdio_definitions.lib
         #winmm.lib
         libz
+        Psapi.lib
     )
 endif()
 
@@ -1576,6 +1577,8 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_misc.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_misc.h
 )
 
 target_sources_grouped(

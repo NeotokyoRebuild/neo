@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tier1/convar.h"
+#include "neo_player_shared.h"
 #include "neo_hud_crosshair.h"
 
 // NEO TODO (nullsystem): Implement our own file IO dialog
@@ -26,17 +27,23 @@ struct NeoSettings
 {
 	struct General
 	{
-		wchar_t wszNeoName[33];
+		wchar_t wszNeoName[MAX_PLAYER_NAME_LENGTH + 1];
+		wchar_t wszNeoClantag[NEO_MAX_CLANTAG_LENGTH + 1];
 		bool bOnlySteamNick;
+		bool bMarkerSpecOnlyClantag;
 		int iFov;
 		int iViewmodelFov;
 		bool bAimHold;
 		bool bReloadEmpty;
 		bool bViewmodelRighthand;
+		bool bLeanViewmodelOnly;
 		bool bShowPlayerSprays;
 		bool bShowPos;
 		int iShowFps;
 		int iDlFilter;
+		bool bStreamerMode;
+		bool bAutoDetectOBS;
+		bool bEnableRangeFinder;
 	};
 
 	struct Keys
@@ -148,16 +155,22 @@ struct NeoSettings
 	{
 		// General
 		CONVARREF_DEF(neo_name);
+		CONVARREF_DEF(neo_clantag);
 		CONVARREF_DEF(cl_onlysteamnick);
+		CONVARREF_DEF(neo_cl_clantag_friendly_marker_spec_only);
 		CONVARREF_DEF(neo_fov);
 		CONVARREF_DEF(neo_viewmodel_fov_offset);
 		CONVARREF_DEF(neo_aim_hold);
 		CONVARREF_DEF(cl_autoreload_when_empty);
 		CONVARREF_DEF(cl_righthand);
+		CONVARREF_DEF(cl_neo_lean_viewmodel_only);
 		CONVARREF_DEF(cl_showpos);
 		CONVARREF_DEF(cl_showfps);
 		CONVARREF_DEF(hud_fastswitch);
 		CONVARREF_DEF(neo_cl_toggleconsole);
+		CONVARREF_DEF(neo_cl_streamermode);
+		CONVARREF_DEF(neo_cl_streamermode_autodetect_obs);
+		CONVARREF_DEF(neo_cl_hud_rangefinder_enabled);
 
 		// Multiplayer
 		CONVARREF_DEF(cl_playerspraydisable);

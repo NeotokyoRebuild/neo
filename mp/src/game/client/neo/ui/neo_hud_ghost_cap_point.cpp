@@ -70,7 +70,7 @@ void CNEOHud_GhostCapPoint::UpdateStateForNeoHudElementDraw()
 
 void CNEOHud_GhostCapPoint::DrawNeoHudElement()
 {
-	if (!ShouldDraw() || NEORules()->IsRoundOver())
+	if (!ShouldDraw() || NEORules()->IsRoundOver() || !NEORules()->IsTeamplay())
 	{
 		return;
 	}

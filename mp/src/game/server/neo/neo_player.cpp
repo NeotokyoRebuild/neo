@@ -37,6 +37,9 @@
 
 #include "neo_weapon_loadout.h"
 
+// source bots
+#include "bots\bot.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -71,6 +74,7 @@ SendPropArray(SendPropInt(SENDINFO_ARRAY(m_rfAttackersHits)), m_rfAttackersHits)
 
 SendPropInt(SENDINFO(m_NeoFlags), 4, SPROP_UNSIGNED),
 SendPropString(SENDINFO(m_szNeoName)),
+SendPropString(SENDINFO(m_szNeoClantag)),
 SendPropInt(SENDINFO(m_szNameDupePos)),
 SendPropBool(SENDINFO(m_bClientWantNeoName)),
 
@@ -107,22 +111,27 @@ DEFINE_FIELD(m_rfAttackersHits, FIELD_CUSTOM),
 DEFINE_FIELD(m_NeoFlags, FIELD_CHARACTER),
 
 DEFINE_FIELD(m_szNeoName, FIELD_STRING),
+DEFINE_FIELD(m_szNeoClantag, FIELD_STRING),
 DEFINE_FIELD(m_szNameDupePos, FIELD_INTEGER),
 DEFINE_FIELD(m_bClientWantNeoName, FIELD_BOOLEAN),
 END_DATADESC()
 
-#define SHOWMENU_STRLIMIT (512)
+static constexpr int SHOWMENU_STRLIMIT = 512;
 
 CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
 CNEOGameRulesProxy* neoGameRules;
 extern CBaseEntity *g_pLastSpawn;
 
 extern ConVar neo_sv_ignore_wep_xp_limit;
+extern ConVar neo_sv_clantag_allow;
+extern ConVar neo_sv_dev_test_clantag;
 
 ConVar sv_neo_can_change_classes_anytime("sv_neo_can_change_classes_anytime", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "Can players change classes at any moment, even mid-round?",
 	true, 0.0f, true, 1.0f);
 ConVar sv_neo_change_suicide_player("sv_neo_change_suicide_player", "0", FCVAR_REPLICATED, "Kill the player if they change the team and they're alive.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_change_threshold_interval("sv_neo_change_threshold_interval", "0.25", FCVAR_REPLICATED, "The interval threshold limit in seconds before the player is allowed to change team.", true, 0.0f, true, 1000.0f);
+ConVar neo_sv_dm_max_class_dur("neo_sv_dm_max_class_dur", "10", FCVAR_REPLICATED, "The time in seconds when the player can change class on respawn during deathmatch.", true, 0.0f, true, 60.0f);
+ConVar neo_sv_warmup_godmode("neo_sv_warmup_godmode", "0", FCVAR_REPLICATED, "If enabled, everyone is invincible on idle and warmup.", true, 0.0f, true, 1.0f);
 
 void CNEO_Player::RequestSetClass(int newClass)
 {
@@ -132,9 +141,11 @@ void CNEO_Player::RequestSetClass(int newClass)
 		return;
 	}
 
+	const bool bIsTypeDM = (NEORules()->GetGameType() == NEO_GAME_TYPE_TDM || NEORules()->GetGameType() == NEO_GAME_TYPE_DM);
 	const NeoRoundStatus status = NEORules()->GetRoundStatus();
 	if (IsDead() || sv_neo_can_change_classes_anytime.GetBool() ||
 		(!m_bIneligibleForLoadoutPick && NEORules()->GetRemainingPreRoundFreezeTime(false) > 0) ||
+		(bIsTypeDM && !m_bIneligibleForLoadoutPick && GetAliveDuration() < neo_sv_dm_max_class_dur.GetFloat()) ||
 		(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup))
 	{
 		m_iNeoClass = newClass;
@@ -382,6 +393,7 @@ CNEO_Player::CNEO_Player()
 	m_iXP.GetForModify() = 0;
 	V_memset(m_szNeoName.GetForModify(), 0, sizeof(m_szNeoName));
 	m_szNeoNameHasSet = false;
+	V_memset(m_szNeoClantag.GetForModify(), 0, sizeof(m_szNeoClantag));
 
 	m_bInThermOpticCamo = m_bInVision = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
@@ -538,6 +550,10 @@ void CNEO_Player::Spawn(void)
 	SetPlayerTeamModel();
 	SetViewOffset(VEC_VIEW_NEOSCALE(this));
 	GiveLoadoutWeapon();
+
+	if (GetBotController()) {
+		GetBotController()->Spawn();
+	}
 }
 
 extern ConVar neo_lean_angle;
@@ -1016,12 +1032,7 @@ void CNEO_Player::PostThink(void)
 		}
 		else if (m_afButtonPressed & IN_AIM)
 		{
-			// Binds hack: we want grenade secondary attack to trigger on aim (mouse button 2)
-			if (pNeoWep->GetNeoWepBits() & NEO_WEP_THROWABLE)
-			{
-				pNeoWep->SecondaryAttack();
-			}
-			else if (!CanSprint() || !(m_nButtons & IN_SPEED))
+			if (!CanSprint() || !(m_nButtons & IN_SPEED))
 			{
 				Weapon_AimToggle(pNeoWep, clientAimHold ? NEO_TOGGLE_FORCE_AIM : NEO_TOGGLE_DEFAULT);
 			}
@@ -1079,7 +1090,23 @@ int CNEO_Player::NameDupePos() const
 	return m_szNameDupePos;
 }
 
-const char *CNEO_Player::GetNeoPlayerName(const CNEO_Player *viewFrom) const
+const char *CNEO_Player::GetNeoClantag() const
+{
+	if (!neo_sv_clantag_allow.GetBool())
+	{
+		return "";
+	}
+#ifdef DEBUG
+	const char *overrideClantag = neo_sv_dev_test_clantag.GetString();
+	if (overrideClantag && overrideClantag[0])
+	{
+		return overrideClantag;
+	}
+#endif
+	return m_szNeoClantag.Get();
+}
+
+const char *CNEO_Player::InternalGetNeoPlayerName(const CNEO_Player *viewFrom) const
 {
 	const bool nameFetchWantNeoName = (viewFrom) ? viewFrom->m_bClientWantNeoName : m_bClientWantNeoName;
 
@@ -1110,6 +1137,20 @@ const char *CNEO_Player::GetNeoPlayerName(const CNEO_Player *viewFrom) const
 		return m_szNeoNameWDupeIdx;
 	}
 	return stndName;
+}
+
+const char *CNEO_Player::GetNeoPlayerName(const CNEO_Player *viewFrom) const
+{
+	if (viewFrom && viewFrom->m_bClientStreamermode && viewFrom->entindex() != entindex())
+	{
+		[[maybe_unused]] uchar32 u32Out;
+		bool bError = false;
+		const char *pSzName = InternalGetNeoPlayerName(viewFrom);
+		const int iSize = Q_UTF8ToUChar32(pSzName, u32Out, bError);
+		if (!bError) V_memcpy(gStreamerModeNames[entindex()], pSzName, iSize);
+		return gStreamerModeNames[entindex()];
+	}
+	return InternalGetNeoPlayerName(viewFrom);
 }
 
 const char *CNEO_Player::GetNeoPlayerNameDirect() const
@@ -1160,7 +1201,10 @@ void CNEO_Player::SoftSuicide(void)
 	IncrementFragCount(1);
 
 	// Gamerules event will decrement, so we cancel it here
-	m_iXP.GetForModify() += 1;
+	if (NEORules()->GetRoundStatus() != NeoRoundStatus::Pause)
+	{
+		m_iXP.GetForModify() += 1;
+	}
 }
 
 bool CNEO_Player::HandleCommand_JoinTeam( int team )
@@ -1171,8 +1215,28 @@ bool CNEO_Player::HandleCommand_JoinTeam( int team )
 	{
 		SetPlayerTeamModel();
 
-		UTIL_ClientPrintAll(HUD_PRINTTALK, "%s1 joined team %s2\n",
-			GetNeoPlayerName(), GetTeam()->GetName());
+		CRecipientFilter filterNonStreamers;
+		CRecipientFilter filterStreamers;
+		filterNonStreamers.MakeReliable();
+		filterStreamers.MakeReliable();
+		for (int i = 1; i <= gpGlobals->maxClients; ++i)
+		{
+			auto neoPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(i));
+			if (neoPlayer)
+			{
+				if (neoPlayer->m_bClientStreamermode)
+				{
+					filterStreamers.AddRecipient(neoPlayer);
+				}
+				else
+				{
+					filterNonStreamers.AddRecipient(neoPlayer);
+				}
+			}
+		}
+		UTIL_ClientPrintFilter(filterNonStreamers, HUD_PRINTTALK,
+							   "%s1 joined team %s2\n", GetNeoPlayerName(), GetTeam()->GetName());
+		UTIL_ClientPrintFilter(filterStreamers, HUD_PRINTTALK, "Player joined team %s1\n", GetTeam()->GetName());
 	}
 
 	return isAllowedToJoin;
@@ -1198,18 +1262,28 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 		}
 		const int slot = atoi(args[1]);
 
-		if (m_iDmgMenuCurPage > 0)
+		switch (m_eMenuSelectType)
 		{
-			// menuselect being used by damage stats
+		case MENU_SELECT_TYPE_DMG:
+			if (m_iDmgMenuCurPage <= 0)
+			{
+				return true;
+			}
 			switch (slot)
 			{
-			case 1: // Dismiss
+			case DAMAGE_MENU_SELECT_DISMISS:
+			case DAMAGE_MENU_SELECT_DONOTSHOW:
 			{
 				m_iDmgMenuCurPage = 0;
 				m_iDmgMenuNextPage = 0;
+				m_eMenuSelectType = MENU_SELECT_TYPE_NONE;
+				if (slot == DAMAGE_MENU_SELECT_DONOTSHOW)
+				{
+					m_bDoNotShowDmgInfoMenu = true;
+				}
 				break;
 			}
-			case 2: // Next-page
+			case DAMAGE_MENU_SELECT_NEXTPAGE:
 			{
 				char infoStr[SHOWMENU_STRLIMIT];
 				int infoStrSize = 0;
@@ -1222,6 +1296,29 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 			default:
 				break;
 			}
+			break;
+		case MENU_SELECT_TYPE_PAUSE:
+			m_eMenuSelectType = MENU_SELECT_TYPE_NONE;
+			if (slot == PAUSE_MENU_SELECT_SHORT || slot == PAUSE_MENU_SELECT_LONG)
+			{
+				// When a pause requested, this will activate either:
+				// - If during freezetime, immediate pausing
+				// - If during live-round, after round finishes pausing
+				NEORules()->m_iPausingTeam = GetTeamNumber();
+				NEORules()->m_iPausingRound = NEORules()->roundNumber() + 1;
+				NEORules()->m_flPauseDur = (slot == PAUSE_MENU_SELECT_SHORT) ? 30.0f : 180.0f;
+
+				char szPauseMsg[128];
+				V_sprintf_safe(szPauseMsg, "Pause requested by %s. Pausing the match %s for %s.",
+							   (GetTeamNumber() == TEAM_JINRAI) ? "Jinrai" : "NSF",
+							   (NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze) ?
+								   "immediately" : "when the round ends",
+							   (slot == PAUSE_MENU_SELECT_SHORT) ? "30 seconds" : "3 minutes");
+				UTIL_ClientPrintAll(HUD_PRINTTALK, szPauseMsg);
+			}
+			break;
+		default:
+			break;
 		}
 
 		return true;
@@ -1280,6 +1377,11 @@ bool CNEO_Player::BecomeRagdollOnClient( const Vector &force )
 
 void CNEO_Player::ShowDmgInfo(char* infoStr, int infoStrSize)
 {
+	if (m_bDoNotShowDmgInfoMenu)
+	{
+		return;
+	}
+
 	CSingleUserRecipientFilter filter(this);
 	filter.MakeReliable();
 
@@ -1296,10 +1398,19 @@ void CNEO_Player::ShowDmgInfo(char* infoStr, int infoStrSize)
 			tmpCh = infoStr[infoStrOffsetMax];
 			infoStr[infoStrOffsetMax] = '\0';
 		}
+		m_eMenuSelectType = MENU_SELECT_TYPE_DMG;
 		UserMessageBegin(filter, "ShowMenu");
 		{
-			WRITE_SHORT(static_cast<short>(m_iDmgMenuNextPage ? 3 : 1)); // Amount of options
-			WRITE_CHAR(static_cast<char>(60)); // 60s timeout
+			// The key options available in bitwise (EX: 1 -> 1 << 0, 9 -> 1 << 8)
+			short sBitwiseOpts =
+					  1 << (DAMAGE_MENU_SELECT_DISMISS - 1)
+					| 1 << (DAMAGE_MENU_SELECT_DONOTSHOW - 1);
+			if (m_iDmgMenuNextPage)
+			{
+				sBitwiseOpts |= 1 << (DAMAGE_MENU_SELECT_NEXTPAGE - 1);
+			}
+			WRITE_SHORT(sBitwiseOpts);
+			WRITE_CHAR(static_cast<char>(10)); // 10s timeout
 			WRITE_BYTE(static_cast<unsigned int>(infoStrSize > MAX_INFOSTR_PER_UMSG));
 			WRITE_STRING(infoStr + infoStrOffset);
 		}
@@ -1320,10 +1431,10 @@ int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int pl
 	Assert(infoStrSize != NULL);
 	Assert(showMenu != NULL);
 	*showMenu = false;
-	static const int TITLE_LEN = 30; // Rough-approximate
-	static const int POSTFIX_LEN = 15 + 12;
-	static const int TOTALLINE_LEN = 64; // Rough-approximate
-	static int FILLSTR_END = SHOWMENU_STRLIMIT - POSTFIX_LEN - TOTALLINE_LEN - 2;
+	static constexpr int TITLE_LEN = 30; // Rough-approximate
+	static constexpr int POSTFIX_LEN = 16 + 12 + 24;
+	static constexpr int TOTALLINE_LEN = 64; // Rough-approximate
+	static constexpr int FILLSTR_END = SHOWMENU_STRLIMIT - POSTFIX_LEN - TOTALLINE_LEN - 2;
 	memset(infoStr, 0, infoStrMax);
 	Q_snprintf(infoStr, infoStrMax, "Damage infos (Round %d):\n", NEORules()->roundNumber());
 	if (info)
@@ -1407,6 +1518,7 @@ int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int pl
 	{
 		Q_strncat(infoStr, "\n->2. Next", infoStrMax, COPY_ALL_CHARACTERS);
 	}
+	Q_strncat(infoStr, "\n->9. Do not show again", infoStrMax, COPY_ALL_CHARACTERS);
 	*infoStrSize = Q_strlen(infoStr);
 
 	return nextPage;
@@ -1489,6 +1601,10 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 	if (NEORules()->GetGameType() == NEO_GAME_TYPE_TDM)
 	{
 		GetGlobalTeam(NEORules()->GetOpposingTeam(this))->AddScore(1);
+	}
+
+	if (GetBotController()) {
+		GetBotController()->OnDeath(info);
 	}
 
 	BaseClass::Event_Killed(info);
@@ -1646,7 +1762,8 @@ void CNEO_Player::SetPlayerCorpseModel(int type)
 
 float CNEO_Player::GetReceivedDamageScale(CBaseEntity* pAttacker)
 {
-	if (NEORules()->GetGameType() == NEO_GAME_TYPE_TDM && m_aliveTimer.IsLessThen(5.f))
+	if ((NEORules()->GetGameType() == NEO_GAME_TYPE_TDM || NEORules()->GetGameType() == NEO_GAME_TYPE_DM)
+			&& m_aliveTimer.IsLessThen(5.f) && !m_bIneligibleForLoadoutPick)
 	{ // 5 seconds of invincibility in TDM
 		return 0.f;
 	}
@@ -1889,11 +2006,12 @@ void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
 		}
 	}
 
-	if (!pWeapon)
-		return;
+	if (pWeapon)
+	{
+		pWeapon->m_bInReload = false;
+		pWeapon->StopWeaponSound(RELOAD_NPC);
+	}
 
-	pWeapon->m_bInReload = false;
-	pWeapon->StopWeaponSound(RELOAD_NPC);
 	BaseClass::Weapon_Drop(pWeapon, pvecTarget, pVelocity);
 }
 
@@ -1922,7 +2040,15 @@ CBaseEntity* CNEO_Player::EntSelectSpawnPoint( void )
 	const char *pSpawnpointName = "info_player_start";
 	const auto alternate = NEORules()->roundAlternate();
 
-	if (NEORules()->IsTeamplay())
+	// NEO TODO (nullsystem): Teamplay vs non-teamplay
+	// info_player_deathmatch is from HL2MP, but maps can utilize HL2MP and this entity anyway
+	const bool bIsTeamplay = NEORules()->IsTeamplay();
+	if (!bIsTeamplay)
+	{
+		pSpawnpointName = "info_player_deathmatch";
+		pLastSpawnPoint = g_pLastSpawn;
+	}
+	else
 	{
 		if (GetTeamNumber() == TEAM_JINRAI)
 		{
@@ -2221,12 +2347,17 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	// We're skipping over HL2MP player because we don't care about
 	// deathmatch rules or Combine/Rebels model stuff.
 	CHL2_Player::ChangeTeam(iTeam, false, justJoined);
+	NEORules()->m_bThinkCheckClantags = true;
 
 	return true;
 }
 
 int CNEO_Player::GetAttackersScores(const int attackerIdx) const
 {
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_DM || NEORules()->GetGameType() == NEO_GAME_TYPE_TDM)
+	{
+		return m_rfAttackersScores.Get(attackerIdx);
+	}
 	return min(m_rfAttackersScores.Get(attackerIdx), 100);
 }
 
@@ -2265,6 +2396,13 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 {
 	if (m_takedamage != DAMAGE_EVENTS_ONLY)
 	{
+		if (neo_sv_warmup_godmode.GetBool() &&
+				(NEORules()->GetRoundStatus() == NeoRoundStatus::Idle ||
+				 NEORules()->GetRoundStatus() == NeoRoundStatus::Warmup))
+		{
+			return 0;
+		}
+
 		// Dynamic cast, attacker might be prop/this player fallen
 		if (auto *attacker = dynamic_cast<CNEO_Player *>(info.GetAttacker()))
 		{
@@ -2323,6 +2461,11 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 			}
 		}
 	}
+
+	if (GetBotController()) {
+		GetBotController()->OnTakeDamage(info);
+	}
+
 	return BaseClass::OnTakeDamage_Alive(info);
 }
 
@@ -2407,7 +2550,8 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 {
 	const NeoRoundStatus status = NEORules()->GetRoundStatus();
 	if (!(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup) &&
-		(IsObserver() || IsDead() || m_bIneligibleForLoadoutPick || m_aliveTimer.IsGreaterThen(sv_neo_time_alive_until_cant_change_loadout.GetFloat())))
+		(IsObserver() || IsDead() || m_bIneligibleForLoadoutPick
+		 || m_aliveTimer.IsGreaterThen(sv_neo_time_alive_until_cant_change_loadout.GetFloat())))
 	{
 		return;
 	}
@@ -2741,6 +2885,9 @@ int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 		{
 			// If other is spectator or same team
 			if (otherNeoPlayer->GetTeamNumber() == TEAM_SPECTATOR ||
+#ifdef GLOWS_ENABLE
+				otherNeoPlayer->IsDead() ||
+#endif
 					GetTeamNumber() == otherNeoPlayer->GetTeamNumber())
 			{
 				return FL_EDICT_ALWAYS;
@@ -2803,4 +2950,185 @@ extern ConVar sv_neo_wep_dmg_modifier;
 void CNEO_Player::ModifyFireBulletsDamage(CTakeDamageInfo* dmgInfo)
 {
 	dmgInfo->SetDamage(dmgInfo->GetDamage() * sv_neo_wep_dmg_modifier.GetFloat());
+}
+
+//================================================================================
+//================================================================================
+void CNEO_Player::SetBotController(IBot* pBot)
+{
+	if (m_pBotController) {
+		delete m_pBotController;
+		m_pBotController = NULL;
+	}
+
+	m_pBotController = pBot;
+}
+
+//================================================================================
+//================================================================================
+void CNEO_Player::SetUpBot()
+{
+	CreateSenses();
+	SetBotController(new CBot(this));
+}
+
+//================================================================================
+//================================================================================
+void CNEO_Player::CreateSenses()
+{
+	m_pSenses = new CAI_Senses;
+	m_pSenses->SetOuter(this);
+}
+
+//================================================================================
+//================================================================================
+void CNEO_Player::SetDistLook(float flDistLook)
+{
+	if (GetSenses()) {
+		GetSenses()->SetDistLook(flDistLook);
+	}
+}
+
+//================================================================================
+//================================================================================
+int CNEO_Player::GetSoundInterests()
+{
+	return SOUND_DANGER | SOUND_COMBAT | SOUND_PLAYER | SOUND_CARCASS | SOUND_MEAT | SOUND_GARBAGE;
+}
+
+//================================================================================
+//================================================================================
+int CNEO_Player::GetSoundPriority(CSound* pSound)
+{
+	if (pSound->IsSoundType(SOUND_COMBAT)) {
+		return SOUND_PRIORITY_HIGH;
+	}
+
+	if (pSound->IsSoundType(SOUND_DANGER)) {
+		if (pSound->IsSoundType(SOUND_CONTEXT_FROM_SNIPER | SOUND_CONTEXT_EXPLOSION)) {
+			return SOUND_PRIORITY_HIGHEST;
+		}
+		else if (pSound->IsSoundType(SOUND_CONTEXT_GUNFIRE | SOUND_BULLET_IMPACT)) {
+			return SOUND_PRIORITY_VERY_HIGH;
+		}
+
+		return SOUND_PRIORITY_HIGH;
+	}
+
+	if (pSound->IsSoundType(SOUND_CARCASS | SOUND_MEAT | SOUND_GARBAGE)) {
+		return SOUND_PRIORITY_VERY_LOW;
+	}
+
+	return SOUND_PRIORITY_NORMAL;
+}
+
+//================================================================================
+//================================================================================
+bool CNEO_Player::QueryHearSound(CSound* pSound)
+{
+	CBaseEntity* pOwner = pSound->m_hOwner.Get();
+
+	if (pOwner == this)
+		return false;
+
+	if (pSound->IsSoundType(SOUND_PLAYER) && !pOwner) {
+		return false;
+	}
+
+	if (pSound->IsSoundType(SOUND_CONTEXT_ALLIES_ONLY)) {
+		if (Classify() != CLASS_PLAYER_ALLY && Classify() != CLASS_PLAYER_ALLY_VITAL) {
+			return false;
+		}
+	}
+
+	if (pOwner) {
+		// Solo escuchemos sonidos provocados por nuestros aliados si son de combate.
+		if (TheGameRules->PlayerRelationship(this, pOwner) == GR_ALLY) {
+			if (pSound->IsSoundType(SOUND_COMBAT) && !pSound->IsSoundType(SOUND_CONTEXT_GUNFIRE)) {
+				return true;
+			}
+
+			return false;
+		}
+	}
+
+	if (ShouldIgnoreSound(pSound)) {
+		return false;
+	}
+
+	return true;
+}
+
+//================================================================================
+//================================================================================
+bool CNEO_Player::QuerySeeEntity(CBaseEntity* pEntity, bool bOnlyHateOrFear)
+{
+	if (bOnlyHateOrFear) {
+		if (HL2MPRules()->PlayerRelationship(this, pEntity) == GR_NOTTEAMMATE)
+			return true;
+
+		Disposition_t disposition = IRelationType(pEntity);
+		return (disposition == D_HT || disposition == D_FR);
+	}
+
+	return true;
+}
+
+//================================================================================
+//================================================================================
+void CNEO_Player::OnLooked(int iDistance)
+{
+	if (GetBotController()) {
+		GetBotController()->OnLooked(iDistance);
+	}
+}
+
+//================================================================================
+//================================================================================
+void CNEO_Player::OnListened()
+{
+	if (GetBotController()) {
+		GetBotController()->OnListened();
+	}
+}
+
+//================================================================================
+//================================================================================
+CSound* CNEO_Player::GetLoudestSoundOfType(int iType)
+{
+	return CSoundEnt::GetLoudestSoundOfType(iType, EarPosition());
+}
+
+//================================================================================
+// Devuelve si podemos ver el origen del sonido
+//================================================================================
+bool CNEO_Player::SoundIsVisible(CSound* pSound)
+{
+	return (FVisible(pSound->GetSoundReactOrigin()) && IsInFieldOfView(pSound->GetSoundReactOrigin()));
+}
+
+//================================================================================
+//================================================================================
+CSound* CNEO_Player::GetBestSound(int validTypes)
+{
+	CSound* pResult = GetSenses()->GetClosestSound(false, validTypes);
+
+	if (pResult == NULL) {
+		DevMsg("NULL Return from GetBestSound\n");
+	}
+
+	return pResult;
+}
+
+//================================================================================
+//================================================================================
+CSound* CNEO_Player::GetBestScent()
+{
+	CSound* pResult = GetSenses()->GetClosestSound(true);
+
+	if (pResult == NULL) {
+		DevMsg("NULL Return from GetBestScent\n");
+	}
+
+	return pResult;
 }

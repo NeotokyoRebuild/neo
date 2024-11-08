@@ -413,13 +413,18 @@ bool CHL2MPPlayerAnimState::HandleSwimming( Activity &idealActivity )
 bool CHL2MPPlayerAnimState::HandleMoving( Activity &idealActivity )
 {
 #ifdef NEO
-	if (m_pHL2MPPlayer->IsWalking())
+	if (m_pHL2MPPlayer->IsSprinting())
 	{
-		idealActivity = ACT_WALK;
+		idealActivity = ACT_RUN;
 	}
 	else
 	{
-		idealActivity = ACT_RUN;
+		Vector vecVelocity;
+		GetOuterAbsVelocity(vecVelocity);
+		if (vecVelocity.Length() > 0.5)
+		{
+			idealActivity = ACT_WALK;
+		}
 	}
 
 	return true;

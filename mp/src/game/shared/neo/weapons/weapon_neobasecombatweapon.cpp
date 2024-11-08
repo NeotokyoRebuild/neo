@@ -17,6 +17,7 @@ extern ConVar weaponstay;
 #include "prediction.h"
 #include "hud_crosshair.h"
 #include "ui/neo_hud_crosshair.h"
+#include "model_types.h"
 #endif
 
 #include "basecombatweapon_shared.h"
@@ -124,6 +125,11 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 	},
 	{NEO_WEP_M41,
 		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}}
+	},
+	{NEO_WEP_M41_L,
+		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}},
+		{0.0, 0.0, 0.0, 0.0},
+		{1.0, 2.5, -0.5, 0.0, -0.5, 0.5},
 	},
 	{NEO_WEP_M41_S,
 		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}}
@@ -467,42 +473,46 @@ void CNEOBaseCombatWeapon::ItemPreFrame(void)
 }
 
 // Handles lowering the weapon view model when character is sprinting
-void CNEOBaseCombatWeapon::ProcessAnimationEvents(void)
+void CNEOBaseCombatWeapon::ProcessAnimationEvents()
 {
 	CNEO_Player* pOwner = static_cast<CNEO_Player*>(ToBasePlayer(GetOwner()));
 	if (!pOwner)
+	{
 		return;
+	}
 
-	if (!m_bLowered && (pOwner->IsSprinting() || pOwner->GetMoveType() == MOVETYPE_LADDER) && !m_bInReload && !m_bRoundBeingChambered)
+	const auto next = [this](const int activity, const float nextAttackDelay = 0.2) {
+		SendWeaponAnim(activity);
+		if (GetNeoWepBits() & NEO_WEP_THROWABLE)
+		{
+			return;
+		}
+		m_flNextPrimaryAttack = max(gpGlobals->curtime + nextAttackDelay, m_flNextPrimaryAttack);
+		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
+	};
+
+	if (!m_bLowered && !m_bInReload && !m_bRoundBeingChambered &&
+		(pOwner->IsSprinting() || pOwner->GetMoveType() == MOVETYPE_LADDER))
 	{
 		m_bLowered = true;
-		SendWeaponAnim(ACT_VM_IDLE_LOWERED);
-		m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
-		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
+		next(ACT_VM_IDLE_LOWERED);
 	}
 	else if (m_bLowered && !(pOwner->IsSprinting() || pOwner->GetMoveType() == MOVETYPE_LADDER))
 	{
 		m_bLowered = false;
-		SendWeaponAnim(ACT_VM_IDLE);
-		m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
-		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
+		next(ACT_VM_IDLE);
 	}
 	else if (m_bLowered && m_bRoundBeingChambered)
 	{ // For bolt action weapons
 		m_bLowered = false;
-		SendWeaponAnim(ACT_VM_PULLBACK);
-		m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
-		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
+		next(ACT_VM_PULLBACK, 1.2f);
 	}
 
-	if (m_bLowered)
+	else if (m_bLowered && gpGlobals->curtime > m_flNextPrimaryAttack)
 	{
-		if (gpGlobals->curtime > m_flNextPrimaryAttack)
-		{
-			SendWeaponAnim(ACT_VM_IDLE_LOWERED);
-			m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
-			m_flNextSecondaryAttack = m_flNextPrimaryAttack;
-		}
+		SetWeaponIdleTime(gpGlobals->curtime + 0.2);
+		m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
+		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
 	}
 }
 
@@ -809,6 +819,7 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 		pPlayer->DoMuzzleFlash();
 
 	SendWeaponAnim(GetPrimaryAttackActivity());
+	SetWeaponIdleTime(gpGlobals->curtime + 2.0);
 
 	// player "shoot" animation
 	pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
@@ -1054,7 +1065,11 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 	if (GetOwner() == localPlayer && ShouldDrawLocalPlayerViewModel())
 		return 0;
 
-	int ret = 0;
+	if (flags & STUDIO_IGNORE_NEO_EFFECTS || !(flags & STUDIO_RENDER))
+	{
+		return BaseClass::DrawModel(flags);
+	}
+
 	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if (!pLocalPlayer)
 	{
@@ -1071,6 +1086,7 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 	bool inMotionVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT;
 	bool inThermalVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT;
 
+	int ret = 0;
 	if (!pOwner->IsCloaked() || inThermalVision)
 	{
 		ret |= BaseClass::DrawModel(flags);
@@ -1082,6 +1098,7 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::DrawModel(flags);
+		modelrender->ForcedMaterialOverride(nullptr);
 	}
 
 	auto vel = pOwner->GetAbsVelocity().Length();
@@ -1090,6 +1107,7 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 		IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::DrawModel(flags);
+		modelrender->ForcedMaterialOverride(nullptr);
 	}
 
 	else if (inThermalVision && !pOwner->IsCloaked())
@@ -1097,15 +1115,19 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 		IMaterial* pass = materials->FindMaterial("dev/thermal_third", TEXTURE_GROUP_MODEL);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::DrawModel(flags);
+		modelrender->ForcedMaterialOverride(nullptr);
 	}
 
-	modelrender->ForcedMaterialOverride(null);
 	return ret;
 }
 
 int CNEOBaseCombatWeapon::InternalDrawModel(int flags)
 {
-	int ret = 0;
+	if (flags & STUDIO_IGNORE_NEO_EFFECTS || !(flags & STUDIO_RENDER))
+	{
+		return BaseClass::InternalDrawModel(flags);
+	}
+
 	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if (!pLocalPlayer)
 	{
@@ -1122,6 +1144,7 @@ int CNEOBaseCombatWeapon::InternalDrawModel(int flags)
 	bool inMotionVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT;
 	bool inThermalVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT;
 
+	int ret = 0;
 	if (!pOwner->IsCloaked() || inThermalVision)
 	{
 		ret |= BaseClass::InternalDrawModel(flags);
@@ -1133,6 +1156,7 @@ int CNEOBaseCombatWeapon::InternalDrawModel(int flags)
 		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::InternalDrawModel(flags);
+		modelrender->ForcedMaterialOverride(nullptr);
 	}
 
 	auto vel = pOwner->GetAbsVelocity().Length();
@@ -1141,6 +1165,7 @@ int CNEOBaseCombatWeapon::InternalDrawModel(int flags)
 		IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::InternalDrawModel(flags);
+		modelrender->ForcedMaterialOverride(nullptr);
 	}
 
 	else if (inThermalVision && !pOwner->IsCloaked())
@@ -1148,9 +1173,9 @@ int CNEOBaseCombatWeapon::InternalDrawModel(int flags)
 		IMaterial* pass = materials->FindMaterial("dev/thermal_third", TEXTURE_GROUP_MODEL);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::InternalDrawModel(flags);
+		modelrender->ForcedMaterialOverride(nullptr);
 	}
 
-	modelrender->ForcedMaterialOverride(null);
 	return ret;
 }
 

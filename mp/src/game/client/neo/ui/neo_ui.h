@@ -77,6 +77,8 @@ enum TextStyle
 
 static constexpr int FOCUSOFF_NUM = -1000;
 static constexpr int MAX_SECTIONS = 5;
+static constexpr int SIZEOF_SECTIONS = sizeof(int) * MAX_SECTIONS;
+static constexpr int MAX_TEXTINPUT_U8BYTES_LIMIT = 256;
 
 struct Dim
 {
@@ -141,6 +143,7 @@ struct Context
 	int iPartitionY; // Only increments when Y-pos goes down
 	int iLayoutX;
 	int iLayoutY;
+	float flWgXPerc;
 	int iWgXPos;
 	int iYOffset[MAX_SECTIONS] = {};
 	bool abYMouseDragOffset[MAX_SECTIONS] = {};
@@ -227,7 +230,8 @@ void SliderInt(const wchar_t *wszLeftLabel, int *iValue, const int iMin, const i
 			   const wchar_t *wszSpecialText = nullptr);
 void SliderU8(const wchar_t *wszLeftLabel, uint8 *ucValue, const uint8 iMin, const uint8 iMax, const uint8 iStep = 1,
 			   const wchar_t *wszSpecialText = nullptr);
-void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize);
+// NEO NOTE (nullsystem): iMaxBytes as in when the wchar_t fits into back into a UTF-8 char
+void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxBytes);
 bool Bind(const ButtonCode_t eCode);
 void OpenURL(const char *szBaseUrl, const char *szPath);
 }
