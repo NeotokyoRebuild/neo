@@ -44,7 +44,10 @@ After that, it should be able to compile. For debugger/running configuration, re
 Make sure the "x86 Native Tools Command Prompt for VS2022" is used instead of the default.
 
 ##### Linux prerequisite - Steam Runtime 3 "Sniper" Container
-Just download and use the OCI image for Docker/Podman/Toolbx:
+Your system must include the following packages (debian and derivatives):
+`gcc-multilib g++-multilib cmake ninja-build docker-ce docker-ce-cli containerd.io apt-transport-https ca-certificates curl gnupg gnupg-utils cmake build-essential`
+
+Download and use the OCI image for Docker/Podman/Toolbx:
 
 ###### Fetching the container
 * [Docker](https://www.docker.com/): `sudo docker pull registry.gitlab.steamos.cloud/steamrt/sniper/sdk`
