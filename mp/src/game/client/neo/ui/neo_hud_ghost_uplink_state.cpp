@@ -21,8 +21,6 @@ CNEOHud_GhostUplinkState::CNEOHud_GhostUplinkState(const char *pElementName, vgu
 {
 	SetAutoDelete(true);
 
-	SetScheme("ClientScheme.res");
-
 	if (parent) {
 		SetParent(parent);
 	}
@@ -47,17 +45,21 @@ CNEOHud_GhostUplinkState::CNEOHud_GhostUplinkState(const char *pElementName, vgu
 
 void CNEOHud_GhostUplinkState::ApplySchemeSettings(vgui::IScheme* pScheme)
 {
+	BaseClass::ApplySchemeSettings(pScheme);
+
 	int screenWidth, screenHeight;
 	surface()->GetScreenSize(screenWidth, screenHeight);
 	int centerX = screenWidth / 2;
 	int textureXPos = centerX - (m_iUplinkTextureWidth / 2);
-	static constexpr int COMPASS_HEIGHT_PLUS_MARGINS = 30;
-	int textureYPos = screenHeight - m_iUplinkTextureHeight - COMPASS_HEIGHT_PLUS_MARGINS;
+	// Calculate margin between compass + material
+	// NEO FIXME: Find a way to get 'HudLayout.res' -> 'NHudCompass' -> 'y_bottom_pos' value dynamically
+	int iCompassMargin = (screenHeight / 480) * 3;
+	vgui::HFont m_hFont = pScheme->GetFont("NHudOCRSmall");
+	int iFontHeight = vgui::surface()->GetFontTall(m_hFont);
+	int textureYPos = screenHeight - m_iUplinkTextureHeight - iFontHeight - ( 2 * iCompassMargin);
 	SetBounds(textureXPos, textureYPos, m_iUplinkTextureWidth, m_iUplinkTextureHeight);
 	SetFgColor(COLOR_TRANSPARENT);
 	SetBgColor(COLOR_TRANSPARENT);
-
-	BaseClass::ApplySchemeSettings(pScheme);
 }
 
 void CNEOHud_GhostUplinkState::UpdateStateForNeoHudElementDraw()

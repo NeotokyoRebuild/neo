@@ -14,6 +14,14 @@
 #include "teamplayroundbased_gamerules.h"
 #endif
 
+#ifdef NEO
+#include "neo_gamerules.h"
+#else
+#ifdef GLOW_ENABLED
+#include "teamplayroundbased_gamerules.h" // if GLOW_ENABLED this needs to be included regardless of TF_CLIENT_DLL
+#endif
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -86,7 +94,11 @@ void C_TeamTrainWatcher::UpdateGlowEffect( void )
 	if ( m_hGlowEnt )
 	{
 		float r, g, b;
+#ifdef NEO
+		NEORules()->GetTeamGlowColor(GetTeamNumber(), r, g, b);
+#else
 		TeamplayRoundBasedRules()->GetTeamGlowColor( GetTeamNumber(), r, g, b );
+#endif
 		m_pGlowEffect = new CGlowObject( m_hGlowEnt, Vector( r, g, b ), 1.0, true );
 	}
 }

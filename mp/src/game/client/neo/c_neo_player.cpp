@@ -46,8 +46,6 @@
 
 #include "model_types.h"
 
-#include "neo_playeranimstate.h"
-
 #include "c_user_message_register.h"
 
 // Don't alias here
@@ -87,6 +85,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 
 	RecvPropInt(RECVINFO(m_NeoFlags)),
 	RecvPropString(RECVINFO(m_szNeoName)),
+	RecvPropString(RECVINFO(m_szNeoClantag)),
 	RecvPropInt(RECVINFO(m_szNameDupePos)),
 	RecvPropBool(RECVINFO(m_bClientWantNeoName)),
 
@@ -203,6 +202,12 @@ ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
 	"Whether to display HL2 style ammo/health info near crosshair.",
 	true, 0.0f, true, 1.0f);
 
+ConVar neo_cl_streamermode("neo_cl_streamermode", "0", FCVAR_ARCHIVE | FCVAR_USERINFO, "Streamer mode turns player names into generic names and hide avatars.", true, 0.0f, true, 1.0f);
+ConVar neo_cl_streamermode_autodetect_obs("neo_cl_streamermode_autodetect_obs", "0", FCVAR_ARCHIVE, "Automatically turn neo_cl_streamermode on if OBS was detected on startup.", true, 0.0f, true, 1.0f);
+
+extern ConVar neo_sv_clantag_allow;
+extern ConVar neo_sv_dev_test_clantag;
+
 class NeoLoadoutMenu_Cb : public ICommandCallback
 {
 public:
@@ -287,8 +292,13 @@ public:
 	virtual void CommandCallback(const CCommand& command)
 	{
 		auto team = GetLocalPlayerTeam();
-
 		if(team < FIRST_GAME_TEAM)
+		{
+			return;
+		}
+
+		auto playerNeoClass = C_NEO_Player::GetLocalNEOPlayer()->m_iNeoClass;
+		if (playerNeoClass == NEO_CLASS_VIP)
 		{
 			return;
 		}
@@ -419,6 +429,8 @@ C_NEO_Player::C_NEO_Player()
 	m_iNeoClass = NEO_CLASS_ASSAULT;
 	m_iNeoSkin = NEO_SKIN_FIRST;
 	m_iNeoStar = NEO_DEFAULT_STAR;
+	V_memset(m_szNeoName.GetForModify(), 0, sizeof(m_szNeoName));
+	V_memset(m_szNeoClantag.GetForModify(), 0, sizeof(m_szNeoClantag));
 
 	m_iLoadoutWepChoice = 0;
 	m_iNextSpawnClassChoice = -1;
@@ -435,13 +447,13 @@ C_NEO_Player::C_NEO_Player()
 	m_flLastAirborneJumpOkTime = 0;
 	m_flLastSuperJumpTime = 0;
 
+	m_bFirstAliveTick = true;
 	m_bFirstDeathTick = true;
 	m_bPreviouslyReloading = false;
 	m_bLastTickInThermOpticCamo = false;
 	m_bIsAllowedToToggleVision = false;
 
-	m_pPlayerAnimState = CreatePlayerAnimState(this, CreateAnimStateHelpers(this),
-		NEO_ANIMSTATE_LEGANIM_TYPE, NEO_ANIMSTATE_USES_AIMSEQUENCES);
+	m_flTocFactor = 0.15f;
 
 	memset(m_szNeoNameWDupeIdx, 0, sizeof(m_szNeoNameWDupeIdx));
 	m_szNameDupePos = 0;
@@ -449,7 +461,9 @@ C_NEO_Player::C_NEO_Player()
 
 C_NEO_Player::~C_NEO_Player()
 {
-	m_pPlayerAnimState->Release();
+#ifdef GLOWS_ENABLE
+	DestroyGlowEffect();
+#endif // GLOWS_ENABLE
 }
 
 void C_NEO_Player::CheckThermOpticButtons()
@@ -458,7 +472,7 @@ void C_NEO_Player::CheckThermOpticButtons()
 
 	if ((m_afButtonPressed & IN_THERMOPTIC) && IsAlive())
 	{
-		if (GetClass() != NEO_CLASS_RECON && GetClass() != NEO_CLASS_ASSAULT)
+		if (GetClass() == NEO_CLASS_SUPPORT)
 		{
 			return;
 		}
@@ -541,10 +555,31 @@ void C_NEO_Player::ZeroFriendlyPlayerLocArray()
 
 int C_NEO_Player::GetAttackersScores(const int attackerIdx) const
 {
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_DM || NEORules()->GetGameType() == NEO_GAME_TYPE_TDM)
+	{
+		return m_rfAttackersScores.Get(attackerIdx);
+	}
 	return min(m_rfAttackersScores.Get(attackerIdx), 100);
 }
 
-const char *C_NEO_Player::GetNeoPlayerName() const
+const char *C_NEO_Player::GetNeoClantag() const
+{
+	if (!neo_sv_clantag_allow.GetBool() ||
+			(neo_cl_streamermode.GetBool() && !IsLocalPlayer()))
+	{
+		return "";
+	}
+#ifdef DEBUG
+	const char *overrideClantag = neo_sv_dev_test_clantag.GetString();
+	if (overrideClantag && overrideClantag[0])
+	{
+		return overrideClantag;
+	}
+#endif
+	return m_szNeoClantag.Get();
+}
+
+const char *C_NEO_Player::InternalGetNeoPlayerName() const
 {
 	const int dupePos = m_szNameDupePos;
 	const bool localWantNeoName = GetLocalNEOPlayer()->ClientWantNeoName();
@@ -576,6 +611,20 @@ const char *C_NEO_Player::GetNeoPlayerName() const
 	return stndName;
 }
 
+const char *C_NEO_Player::GetNeoPlayerName() const
+{
+	if (neo_cl_streamermode.GetBool() && !IsLocalPlayer())
+	{
+		[[maybe_unused]] uchar32 u32Out;
+		bool bError = false;
+		const char *pSzName = InternalGetNeoPlayerName();
+		const int iSize = Q_UTF8ToUChar32(pSzName, u32Out, bError);
+		if (!bError) V_memcpy(gStreamerModeNames[entindex()], pSzName, iSize);
+		return gStreamerModeNames[entindex()];
+	}
+	return InternalGetNeoPlayerName();
+}
+
 bool C_NEO_Player::ClientWantNeoName() const
 {
 	return m_bClientWantNeoName;
@@ -586,61 +635,54 @@ int C_NEO_Player::GetAttackerHits(const int attackerIdx) const
 	return m_rfAttackersHits.Get(attackerIdx);
 }
 
+extern ConVar mat_neo_toc_test;
 int C_NEO_Player::DrawModel(int flags)
 {
-	int ret = BaseClass::DrawModel(flags);
-
-	if (!ret) {
-		return ret;
+	if (flags & STUDIO_IGNORE_NEO_EFFECTS || !(flags & STUDIO_RENDER))
+	{
+		return BaseClass::DrawModel(flags);
 	}
 
 	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if (pLocalPlayer && pLocalPlayer->IsInVision())
+	if (!pLocalPlayer)
 	{
-		auto vel = GetAbsVelocity().Length();
-		if ((pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT) && vel > 1)
-		{
-			IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
-			Assert(pass && !pass->IsErrorMaterial());
-
-			if (pass && !pass->IsErrorMaterial())
-			{
-				// Render
-				modelrender->ForcedMaterialOverride(pass);
-				ret = BaseClass::DrawModel(flags | STUDIO_RENDER | STUDIO_TRANSPARENCY);
-				modelrender->ForcedMaterialOverride(NULL);
-
-				return ret;
-			}
-		}
-		else if (pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT && !IsCloaked())
-		{
-			IMaterial* pass = materials->FindMaterial("dev/thermal_third", TEXTURE_GROUP_MODEL);
-			Assert(pass && !pass->IsErrorMaterial());
-
-			if (pass && !pass->IsErrorMaterial())
-			{
-				// Render
-				modelrender->ForcedMaterialOverride(pass);
-				ret = BaseClass::DrawModel(flags | STUDIO_RENDER | STUDIO_TRANSPARENCY);
-				modelrender->ForcedMaterialOverride(NULL);
-
-				return ret;
-			}
-		}
+		Assert(false);
+		return BaseClass::DrawModel(flags);
 	}
 	
-	if (IsCloaked())
-	{
-		IMaterial* pass = materials->FindMaterial("dev/toc_cloakpass", TEXTURE_GROUP_CLIENT_EFFECTS);
-		Assert(pass && !pass->IsErrorMaterial());
+	bool inMotionVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT;
+	bool inThermalVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT;
 
-		if (pass && !pass->IsErrorMaterial())
-		{
-			modelrender->ForcedMaterialOverride(pass);
-			ret = BaseClass::DrawModel(flags);
-			modelrender->ForcedMaterialOverride(NULL);
-		}
+	int ret = 0;
+	if (!IsCloaked() || inThermalVision)
+	{
+		ret |= BaseClass::DrawModel(flags);
+	}
+
+	if (IsCloaked() && !inThermalVision)
+	{
+		mat_neo_toc_test.SetValue(m_flTocFactor);
+		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
+		modelrender->ForcedMaterialOverride(pass);
+		ret |= BaseClass::DrawModel(flags);
+		modelrender->ForcedMaterialOverride(nullptr);
+	}
+
+	auto vel = GetAbsVelocity().Length();
+	if (inMotionVision && vel > 0.5) // MOVING_SPEED_MINIMUM
+	{
+		IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
+		modelrender->ForcedMaterialOverride(pass);
+		ret |= BaseClass::DrawModel(flags);
+		modelrender->ForcedMaterialOverride(nullptr);
+	}
+
+	else if (inThermalVision && !IsCloaked())
+	{
+		IMaterial* pass = materials->FindMaterial("dev/thermal_third", TEXTURE_GROUP_MODEL);
+		modelrender->ForcedMaterialOverride(pass);
+		ret |= BaseClass::DrawModel(flags);
+		modelrender->ForcedMaterialOverride(nullptr);
 	}
 
 	return ret;
@@ -653,6 +695,10 @@ void C_NEO_Player::AddEntity( void )
 
 ShadowType_t C_NEO_Player::ShadowCastType( void ) 
 {
+	if (IsCloaked())
+	{
+		return SHADOWS_NONE;
+	}
 	return BaseClass::ShadowCastType();
 }
 
@@ -664,6 +710,16 @@ C_BaseAnimating *C_NEO_Player::BecomeRagdollOnClient()
 const QAngle& C_NEO_Player::GetRenderAngles()
 {
 	return BaseClass::GetRenderAngles();
+}
+
+RenderGroup_t C_NEO_Player::GetRenderGroup()
+{
+	return IsCloaked() ? RENDER_GROUP_TRANSLUCENT_ENTITY : RENDER_GROUP_OPAQUE_ENTITY;
+}
+
+bool C_NEO_Player::UsesPowerOfTwoFrameBufferTexture()
+{
+	return IsCloaked();
 }
 
 bool C_NEO_Player::ShouldDraw( void )
@@ -753,7 +809,7 @@ void C_NEO_Player::PlayStepSound( Vector &vecOrigin,
 }
 
 extern ConVar sv_infinite_aux_power;
-
+extern ConVar glow_outline_effect_enable;
 void C_NEO_Player::PreThink( void )
 {
 	BaseClass::PreThink();
@@ -843,7 +899,30 @@ void C_NEO_Player::PreThink( void )
 
 	if (IsAlive())
 	{
+		if (IsLocalPlayer() && m_bFirstAliveTick)
+		{
+			m_bFirstAliveTick = false;
+			// NEO TODO (Adam) since the stuff in C_NEO_PLAYER::Spawn() only runs the first time a person spawns in the map, would it be worth moving some of the stuff from there here instead?
+#ifdef GLOWS_ENABLE
+			// Disable client side glow effects of all players
+			for (int i = 1; i <= gpGlobals->maxClients; i++)
+			{
+				if (auto player = UTIL_PlayerByIndex(i))
+				{
+					player->SetClientSideGlowEnabled(false);
+				}
+			}
+			glow_outline_effect_enable.SetValue(false);
+#endif // GLOWS_ENABLE
+		}
 		Lean();
+	}
+	else
+	{
+		if (IsLocalPlayer())
+		{
+			m_bFirstAliveTick = true;
+		}
 	}
 
 	// Eek. See rationale for this thing in CNEO_Player::PreThink
@@ -918,6 +997,33 @@ void C_NEO_Player::Lean(void)
 void C_NEO_Player::ClientThink(void)
 {
 	BaseClass::ClientThink();
+
+	if (IsCloaked())
+	{ // PreThink and PostThink are only ran for local player, update every in pvs player's cloak strength here
+		auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
+		if (pLocalPlayer)
+		{
+			auto vel = GetAbsVelocity().Length();
+			if (this == pLocalPlayer)
+			{
+				if (vel > 0.5) { m_flTocFactor = min(0.3f, m_flTocFactor + 0.01); } // NEO TODO (Adam) base on time rather than think rate
+				else { m_flTocFactor = max(0.1f, m_flTocFactor - 0.01); }
+			}
+			else
+			{
+				if (vel > 0.5) { m_flTocFactor = 0.3f; } // 0.345f
+				else { m_flTocFactor = 0.2f; } // 0.255f
+
+				int distance = GetAbsOrigin().DistTo(pLocalPlayer->GetAbsOrigin());
+				constexpr float CLOAK_FALL_OFF_WITH_DISTANCE_RATE = 0.001;
+				constexpr int CLOAK_FALL_OFF_WITH_DISTANCE_STARTING_DISTANCE = 250;
+				if (distance > CLOAK_FALL_OFF_WITH_DISTANCE_STARTING_DISTANCE)
+				{
+					m_flTocFactor = max(0.1f, m_flTocFactor - ((distance - CLOAK_FALL_OFF_WITH_DISTANCE_STARTING_DISTANCE) * CLOAK_FALL_OFF_WITH_DISTANCE_RATE));
+				}
+			}
+		}
+	}	
 }
 
 static ConVar neo_this_client_speed("neo_this_client_speed", "0", FCVAR_SPONLY);
@@ -1027,12 +1133,7 @@ void C_NEO_Player::PostThink(void)
 		}
 		else if (m_afButtonPressed & IN_AIM)
 		{
-			// Binds hack: we want grenade secondary attack to trigger on aim (mouse button 2)
-			if (pNeoWep->GetNeoWepBits() & NEO_WEP_THROWABLE)
-			{
-				pNeoWep->SecondaryAttack();
-			}
-			else if (!CanSprint() || !(m_nButtons & IN_SPEED))
+			if (!CanSprint() || !(m_nButtons & IN_SPEED))
 			{
 				Weapon_AimToggle(pNeoWep, clientAimHold ? NEO_TOGGLE_FORCE_AIM : NEO_TOGGLE_DEFAULT);
 			}
@@ -1053,14 +1154,6 @@ void C_NEO_Player::PostThink(void)
 			m_bPreviouslyReloading = pNeoWep->m_bInReload;
 		}
 	}
-
-	Vector eyeForward;
-	this->EyeVectors(&eyeForward, NULL, NULL);
-	Assert(eyeForward.IsValid());
-
-	float flPitch = asin(-eyeForward[2]);
-	float flYaw = atan2(eyeForward[1], eyeForward[0]);
-	m_pPlayerAnimState->Update(RAD2DEG(flYaw), RAD2DEG(flPitch));
 }
 
 void C_NEO_Player::CalcDeathCamView(Vector &eyeOrigin, QAngle &eyeAngles, float &fov)
@@ -1218,13 +1311,6 @@ void C_NEO_Player::Spawn( void )
 			engine->ClientCmd(teammenu.GetName());
 		}
 	}
-
-#if(0)
-	// We could support crosshair customization/colors etc this way.
-	auto cross = GET_HUDELEMENT(CHudCrosshair);
-	Color color = Color(255, 255, 255, 255);
-	cross->SetCrosshair(NULL, color);
-#endif
 }
 
 void C_NEO_Player::DoImpactEffect( trace_t &tr, int nDamageType )
@@ -1362,6 +1448,8 @@ float C_NEO_Player::GetCrouchSpeed(void) const
 		return NEO_ASSAULT_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_VIP:
+		return NEO_VIP_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
 	default:
 		return NEO_BASE_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
 	}
@@ -1377,6 +1465,8 @@ float C_NEO_Player::GetNormSpeed(void) const
 		return NEO_ASSAULT_NORM_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_NORM_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_VIP:
+		return NEO_VIP_NORM_SPEED * GetBackwardsMovementPenaltyScale();
 	default:
 		return NEO_BASE_NORM_SPEED * GetBackwardsMovementPenaltyScale();
 	}
@@ -1392,6 +1482,8 @@ float C_NEO_Player::GetWalkSpeed(void) const
 		return NEO_ASSAULT_WALK_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_WALK_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_VIP:
+		return NEO_VIP_WALK_SPEED * GetBackwardsMovementPenaltyScale();
 	default:
 		return NEO_BASE_WALK_SPEED * GetBackwardsMovementPenaltyScale();
 	}
@@ -1407,6 +1499,8 @@ float C_NEO_Player::GetSprintSpeed(void) const
 		return NEO_ASSAULT_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
 	case NEO_CLASS_SUPPORT:
 		return NEO_SUPPORT_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
+	case NEO_CLASS_VIP:
+		return NEO_VIP_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
 	default:
 		return NEO_BASE_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
 	}
@@ -1547,19 +1641,6 @@ void C_NEO_Player::PreDataUpdate(DataUpdateType_t updateType)
 	}
 
 	BaseClass::PreDataUpdate(updateType);
-}
-
-void C_NEO_Player::SetAnimation(PLAYER_ANIM playerAnim)
-{
-	PlayerAnimEvent_t animEvent;
-	if (!PlayerAnimToPlayerAnimEvent(playerAnim, animEvent))
-	{
-		DevWarning("CLI Tried to get unknown PLAYER_ANIM %d\n", playerAnim);
-	}
-	else
-	{
-		m_pPlayerAnimState->DoAnimationEvent(animEvent);
-	}
 }
 
 extern ConVar sv_neo_wep_dmg_modifier;

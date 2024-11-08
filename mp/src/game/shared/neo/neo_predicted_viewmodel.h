@@ -43,7 +43,8 @@ public:
 	virtual int DrawModel(int flags);
 	virtual void ProcessMuzzleFlashEvent() final override;
 
-	virtual RenderGroup_t GetRenderGroup();
+	virtual RenderGroup_t GetRenderGroup() override;
+	virtual bool UsesPowerOfTwoFrameBufferTexture() override;
 #endif
 
 #ifdef CLIENT_DLL
@@ -68,6 +69,7 @@ public:
 
 private:
 	float m_flStartAimingChange;
+	float m_flLeanAngle;
 	bool m_bViewAim;
 	Vector m_vOffset;
 	QAngle m_angOffset;

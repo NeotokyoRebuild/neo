@@ -1634,6 +1634,12 @@ void NormalizeAngles(QAngle& angles)
 #endif
 #endif
 
+#ifdef NEO
+#ifdef CLIENT_DLL
+ConVar cl_neo_bullet_trace("cl_neo_bullet_trace", "0", FCVAR_CHEAT, "Show bullet trace", true, 0, true, 1);
+ConVar cl_neo_bullet_trace_max_pen("cl_neo_bullet_trace_max_pen", "65", FCVAR_CHEAT, "How much pen does a bullet need to have to show up as a solid red line. Configure to the current weapon used, or leave on default to see differences in pen between weapons", true, 0.1, true, 999.f);
+#endif // CLIENT_DLL
+#endif // NEO
 void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 {
 	static int	tracerCount;
@@ -1695,10 +1701,12 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 	Vector vecDir;
 	Vector vecEnd;
 	
+#ifndef NEO // Each bullet get's its own filter instead, so each individual pellet can hit the same target
 	// Skip multiple entities when tracing
 	CBulletsTraceFilter traceFilter( COLLISION_GROUP_NONE );
 	traceFilter.SetPassEntity( this ); // Standard pass entity for THIS so that it can be easily removed from the list after passing through a portal
 	traceFilter.AddEntityToIgnore( info.m_pAdditionalIgnoreEnt );
+#endif // NEO
 
 #if defined( HL2_EPISODIC ) && defined( GAME_DLL )
 	// FIXME: We need to emulate this same behavior on the client as well -- jdw
@@ -1751,6 +1759,12 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 
 	for (int iShot = 0; iShot < info.m_iShots; iShot++)
 	{
+#ifdef NEO
+		// Skip multiple entities when tracing
+		CBulletsTraceFilter traceFilter(COLLISION_GROUP_NONE);
+		traceFilter.SetPassEntity(this); // Standard pass entity for THIS so that it can be easily removed from the list after passing through a portal
+		traceFilter.AddEntityToIgnore(info.m_pAdditionalIgnoreEnt);
+#endif // NEO
 		bool bHitWater = false;
 		bool bHitGlass = false;
 
@@ -1799,7 +1813,7 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 				pNeoAttacker->SetLocalAngles(Lerp(sv_neo_recoil_viewfollow_scale.GetFloat(), pNeoAttacker->LocalEyeAngles(), postRecoilViewAngle));
 #endif
 			}
-#endif
+#endif // NEO
 		}
 
 		vecEnd = info.m_vecSrc + vecDir * info.m_flDistance;
@@ -1809,7 +1823,9 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 		float fPortalFraction = 2.0f;
 #endif
 
-
+#ifdef NEO
+		AI_TraceLine(info.m_vecSrc, vecEnd, MASK_SHOT, &traceFilter, &tr);
+#else
 		if( IsPlayer() && info.m_iShots > 1 && iShot % 2 )
 		{
 			// Half of the shotgun pellets are hulls that make it easier to hit targets with the shotgun.
@@ -1850,6 +1866,7 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 			AI_TraceLine(info.m_vecSrc, vecEnd, MASK_SHOT, &traceFilter, &tr);
 #endif //#ifdef PORTAL
 		}
+#endif // NEO
 
 		// Tracker 70354/63250:  ywb 8/2/07
 		// Fixes bug where trace from turret with attachment point outside of Vcollide
@@ -2019,7 +2036,16 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 #endif
 			}
 		}
+#ifdef NEO
+#ifdef CLIENT_DLL
+		if (cl_neo_bullet_trace.GetBool())
+		{
+			DebugDrawLine(info.m_vecSrc, tr.endpos, 255, 255 * (1 - (info.m_flPenetration / cl_neo_bullet_trace_max_pen.GetFloat())), 0, 1, 30.f);
+		}
+#endif // CLIENT_DLL
+#endif // NEO
 
+#ifndef NEO
 		// See if we hit glass
 		if ( tr.m_pEnt != NULL )
 		{
@@ -2034,10 +2060,8 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 				}
 			}
 #endif
-			// Bullet penetration
-			if (!bHitGlass)
-				HandleShotPenetration(info, tr, vecDir, &traceFilter);
 		}
+#endif // NEO
 
 		if ( ( info.m_iTracerFreq != 0 ) && ( tracerCount++ % info.m_iTracerFreq ) == 0 && ( bHitGlass == false ) )
 		{
@@ -2091,12 +2115,18 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 		//NOTENOTE: We could expand this to a more general solution for various material penetration types (wood, thin metal, etc)
 
 		// See if we should pass through glass
+#ifndef NEO
 #ifdef GAME_DLL
 		if ( bHitGlass )
 		{
 			HandleShotImpactingGlass( info, tr, vecDir, &traceFilter );
 		}
-#endif
+#endif // GAME_DLL
+#endif // NEO
+#ifdef NEO
+		// Bullet penetration
+		HandleShotPenetration(info, tr, vecDir, &traceFilter);
+#endif // NEO
 
 		iSeed++;
 	}
@@ -2170,8 +2200,28 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 	if (material > 0 && material < MATERIALS_NUM)
 		penResistance = penetrationResistance[material];
 
-	// Move through the material until we're at the other side or bullet has run out of penetrative power
+	if (tr.m_pEnt && tr.m_pEnt->IsPlayer())
+	{ // If hit entity is player 1. We don't want them taking damage more than once 2. Tracelines get stuck inside of hitboxes at the start of the traceline unlike other objects where they pass straight through
+		static_cast<CBulletsTraceFilter*>(pTraceFilter)->AddEntityToIgnore(tr.m_pEnt);
+	}
+
+#ifdef CLIENT_DLL
+	if (cl_neo_bullet_trace.GetBool())
+	{ // Entrance (GREEN STAR)
+		Vector x0 = tr.endpos + Vector(-0.5, 0, 0);
+		Vector x1 = tr.endpos + Vector(0, -0.5, 0);
+		Vector x2 = tr.endpos + Vector(0, 0, -0.5);
+		DebugDrawLine(x0, x0 + Vector(1, 0, 0), 0, 255, 0, 1, 30.f);
+		DebugDrawLine(x1, x1 + Vector(0, 1, 0), 0, 255, 0, 1, 30.f);
+		DebugDrawLine(x2, x2 + Vector(0, 0, 1), 0, 255, 0, 1, 30.f);
+	}
+#endif // CLIENT_DLL
+
+	// Find the furthest point along the bullets trajectory
 	Vector	testPos = tr.endpos + (vecDir.Normalized() * MAX_PENETRATION_DEPTH);
+
+	trace_t	nextObjectTrace;
+	UTIL_TraceLine(tr.endpos + (vecDir.Normalized()* 0.1), testPos, MASK_SHOT, pTraceFilter, &nextObjectTrace);
 
 	CEffectData	data;
 
@@ -2180,8 +2230,8 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 
 	trace_t	penetrationTrace;
 
-	// Re-trace as if the bullet had passed right through
-	UTIL_TraceLine(testPos, tr.endpos, MASK_SHOT, pTraceFilter, &penetrationTrace);
+	// Re-trace backwards to find the bullet ext
+	UTIL_TraceLine(testPos, tr.endpos, MASK_SHOT, nullptr, &penetrationTrace);
 
 	// See if we found the surface again
 	if (penetrationTrace.startsolid || tr.fraction == 0.0f || penetrationTrace.fraction == 1.0f)
@@ -2214,6 +2264,18 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 	behindMaterialInfo.m_pAttacker = info.m_pAttacker ? info.m_pAttacker : this;
 	behindMaterialInfo.m_nFlags = info.m_nFlags;
 	behindMaterialInfo.m_flPenetration = info.m_flPenetration - penUsed;
+
+#ifdef CLIENT_DLL
+	if (cl_neo_bullet_trace.GetBool())
+	{ // Exit (RED STAR)
+		Vector x0 = penetrationTrace.endpos + Vector(-0.5, 0, 0);
+		Vector x1 = penetrationTrace.endpos + Vector(0, -0.5, 0);
+		Vector x2 = penetrationTrace.endpos + Vector(0, 0, -0.5);
+		DebugDrawLine(x0, x0 + Vector(1, 0, 0), 255, 0, 0, 1, 30.f);
+		DebugDrawLine(x1, x1 + Vector(0, 1, 0), 255, 0, 0, 1, 30.f);
+		DebugDrawLine(x2, x2 + Vector(0, 0, 1), 255, 0, 0, 1, 30.f);
+	}
+#endif //CLIENT_DLL
 
 	CBaseEntity::FireBullets(behindMaterialInfo);
 }

@@ -133,6 +133,7 @@ extern ConVar tf_mm_servermode;
 #ifdef NEO
 #include "neo_mount_original.h"
 #include "neo_version.h"
+#include "neo_player_shared.h"
 #endif
 
 extern IToolFrameworkServer *g_pToolFrameworkServer;
@@ -767,6 +768,14 @@ bool CServerGameDLL::DLLInit( CreateInterfaceFn appSystemFactory,
 void CServerGameDLL::PostInit()
 {
 	IGameSystem::PostInitAllSystems();
+
+#ifdef NEO
+	// Initialize streamer mode names
+	for (int i = 0; i < MAX_PLAYERS + 1; ++i)
+	{
+		V_memset(gStreamerModeNames[i], '.', 5);
+	}
+#endif
 }
 
 void CServerGameDLL::DLLShutdown( void )

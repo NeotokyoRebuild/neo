@@ -130,6 +130,7 @@ public:
     virtual void DebugDisplay();
     virtual void DebugScreenText( const char *pText, Color color = Color(255, 255, 255, 150), float yPosition = -1, float duration = 0.15f );
     virtual void DebugAddMessage( char *format, ... );
+    virtual void DebugAddMessage( const char *format, ...);
 
     virtual IBotVision *GetVision() const {
         return GetComponent<IBotVision *>( BOT_COMPONENT_VISION );

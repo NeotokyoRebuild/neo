@@ -686,6 +686,15 @@ Scheme
 				"additive" "0"
 				"antialias" "1"
 			}
+			"2"
+			{
+				"name"  "neotokyo_press_N" // CSlogo.ttf
+				"tall"  "46" [$WINDOWS]
+				"tall"  "76" [$LINUX]
+				"weight" "0"
+				"additive" "0"
+				"antialias" "1"
+			}
 		}
 
 		"BetaFont"
@@ -1155,7 +1164,27 @@ Scheme
 				"tall"		"24"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"yres"	"1200 6000"
+				"yres"	"1200 1440"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"6"
+			{
+				"name"		"Neuropol2"
+				"tall"		"26"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1441 1599"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"7"
+			{
+				"name"		"Neuropol2"
+				"tall"		"28"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1600 6000"
 				"antialias"	"1"
 				"additive"	"1"
 			}
@@ -1202,7 +1231,25 @@ Scheme
 				"tall"		"24"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"yres"	"1200 6000"
+				"yres"	"1200 1440"
+				"antialias"	"1"
+			}
+			"6"
+			{
+				"name"		"Neuropol2"
+				"tall"		"26"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1441 1599"
+				"antialias"	"1"
+			}
+			"7"
+			{
+				"name"		"Neuropol2"
+				"tall"		"28"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1600 6000"
 				"antialias"	"1"
 			}
 		}
@@ -1253,7 +1300,27 @@ Scheme
 				"tall"		"28"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"yres"	"1200 6000"
+				"yres"	"1200 1440"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"6"
+			{
+				"name"		"Neuropol2"
+				"tall"		"30"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1441 1599"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"7"
+			{
+				"name"		"Neuropol2"
+				"tall"		"32"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1600 6000"
 				"antialias"	"1"
 				"additive"	"1"
 			}
@@ -1300,7 +1367,25 @@ Scheme
 				"tall"		"28"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"yres"	"1200 6000"
+				"yres"	"1200 1440"
+				"antialias"	"1"
+			}
+			"6"
+			{
+				"name"		"Neuropol2"
+				"tall"		"30"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1441 1599"
+				"antialias"	"1"
+			}
+			"7"
+			{
+				"name"		"Neuropol2"
+				"tall"		"32"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1600 6000"
 				"antialias"	"1"
 			}
 		}
@@ -1353,7 +1438,27 @@ Scheme
 				"tall"		"52"
 				"weight"	"900"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"yres"	"1200 6000"
+				"yres"	"1200 1440"
+				"antialias"	"1"
+				//"additive"	"1"
+			}
+			"6"
+			{
+				"name"		"OCR"
+				"tall"		"56"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1441 1599"
+				"antialias"	"1"
+				//"additive"	"1"
+			}
+			"7"
+			{
+				"name"		"OCR"
+				"tall"		"60"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1600 6000"
 				"antialias"	"1"
 				//"additive"	"1"
 			}
@@ -1614,7 +1719,27 @@ Scheme
 				"tall"		"26"
 				"weight"	"900"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"yres"	"1200 6000"
+				"yres"	"1200 1440"
+				"antialias"	"1"
+				//"additive"	"1"
+			}
+			"6"
+			{
+				"name"		"Green Mountain 3"
+				"tall"		"30"
+				"weight"	"900"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1441 1599"
+				"antialias"	"1"
+				//"additive"	"1"
+			}
+			"7"
+			{
+				"name"		"Green Mountain 3"
+				"tall"		"32"
+				"weight"	"900"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1600 6000"
 				"antialias"	"1"
 				//"additive"	"1"
 			}
@@ -1628,6 +1753,7 @@ Scheme
 				"weight"	"900"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"	"480 599"
+				"antialias"	"1"
 				//"additive"	"1"
 			}
 			"2"
@@ -1637,6 +1763,7 @@ Scheme
 				"weight"	"900"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"	"600 767"
+				"antialias"	"1"
 				//"additive"	"1"
 			}
 			"3"
@@ -1665,7 +1792,27 @@ Scheme
 				"tall"		"38"
 				"weight"	"900"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"yres"	"1200 6000"
+				"yres"	"1200 1440"
+				"antialias"	"1"
+				//"additive"	"1"
+			}
+			"6"
+			{
+				"name"		"Green Mountain 3"
+				"tall"		"41"
+				"weight"	"900"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1441 1599"
+				"antialias"	"1"
+				//"additive"	"1"
+			}
+			"7"
+			{
+				"name"		"Green Mountain 3"
+				"tall"		"43"
+				"weight"	"900"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1600 6000"
 				"antialias"	"1"
 				//"additive"	"1"
 			}
@@ -1675,7 +1822,7 @@ Scheme
 			"1"
 			{
 				"name"		"xscale"
-				"tall"		"40"
+				"tall"		"18"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"		"480 599"
@@ -1684,7 +1831,7 @@ Scheme
 			"2"
 			{
 				"name"		"xscale"
-				"tall"		"45"
+				"tall"		"22"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"		"600 767"
@@ -1693,7 +1840,7 @@ Scheme
 			"3"
 			{
 				"name"		"xscale"
-				"tall"		"50"
+				"tall"		"28"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"		"768 1023"
@@ -1703,20 +1850,40 @@ Scheme
 			"4"
 			{
 				"name"		"xscale"
-				"tall"		"52"
+				"tall"		"32"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"yres"		"1024 1199"
+				"yres"		"1024 1079"
 				"antialias"	"1"
 				"additive"	"1"
 			}
 			"5"
 			{
 				"name"		"xscale"
-				"tall"		"58"
+				"tall"		"40"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"yres"		"1200 6000"
+				"yres"		"1080 1199"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"6"
+			{
+				"name"		"xscale"
+				"tall"		"42"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"		"1200 1439"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"7"
+			{
+				"name"		"xscale"
+				"tall"		"70"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"		"1440 6000"
 				"antialias"	"1"
 				"additive"	"1"
 			}

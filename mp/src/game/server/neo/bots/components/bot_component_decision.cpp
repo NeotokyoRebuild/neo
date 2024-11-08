@@ -15,6 +15,10 @@
 #include "bots\in_utils.h"
 #endif
 
+#ifdef NEO
+#include "neo_gamerules.h"
+#endif // NEO
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -883,6 +887,7 @@ void CBotDecision::SwitchToBestWeapon()
     if ( pCurrent == NULL )
         return;
 
+#ifndef NEO
     // Best Weapons
     CBaseWeapon *pPistol = NULL;
     CBaseWeapon *pSniper = NULL;
@@ -980,6 +985,7 @@ void CBotDecision::SwitchToBestWeapon()
             GetHost()->Weapon_Switch( pBest );
         }
     }
+#endif // NEO
 }
 
 //================================================================================
@@ -994,10 +1000,14 @@ bool CBotDecision::GetNearestCover( float radius, Vector *vecCoverSpot ) const
     criteria.AvoidTeam( GetBot()->GetEnemy() );
     criteria.SetTacticalMode( GetBot()->GetTacticalMode() );
 
+#ifdef NEO
+    auto activeWeapon = static_cast<CNEOBaseCombatWeapon*>(GetHost()->GetActiveWeapon());
+    if (activeWeapon && activeWeapon->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON) {
+#else
     if ( GetHost()->GetActiveBaseWeapon() && GetHost()->GetActiveBaseWeapon()->IsSniper() ) {
+#endif // NEO
         criteria.SniperSpots( true );
     }
-
     return Utils::FindCoverPosition( vecCoverSpot, GetHost(), criteria );
 }
 
@@ -1134,14 +1144,22 @@ BCOND CBotDecision::ShouldRangeAttack2()
     if ( HasCondition(BCOND_WITHOUT_ENEMY) )
         return BCOND_NONE;
 
+#ifdef NEO
+    auto pWeapon = static_cast<CNEOBaseCombatWeapon*>(GetHost()->GetActiveWeapon());
+#else
     CBaseWeapon *pWeapon = GetHost()->GetActiveBaseWeapon();
+#endif // NEO
 
     // TODO: A way to support attacks without a [CBaseWeapon]
     if ( !pWeapon || pWeapon->IsMeleeWeapon() )
         return BCOND_NONE;
 
     // Snipa!
+#ifdef NEO
+    if ( pWeapon->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON) {
+#else
     if ( pWeapon->IsSniper() ) {
+#endif // NEO
         if ( !GetProfile()->IsEasiest() ) {
             // Zoom!
             if ( IsCombating() && !pWeapon->IsWeaponZoomed() ) {
