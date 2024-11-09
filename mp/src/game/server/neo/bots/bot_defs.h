@@ -16,6 +16,7 @@
 #include "nav_area.h"
 #include "nav_mesh.h"
 #include "interfaces/improv.h"
+#include "../../../shared/shareddefs.h"
 
 //================================================================================
 // Source Engine
@@ -600,6 +601,7 @@ enum BotPerformance
 //================================================================================
 // Stores the assigned Hitbox number for each body part
 //================================================================================
+
 struct HitboxBones
 {
     int head;

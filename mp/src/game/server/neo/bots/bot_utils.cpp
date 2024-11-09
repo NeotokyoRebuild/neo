@@ -14,6 +14,7 @@
 #include "in_gamerules.h"
 #else
 #include "in_utils.h"
+#include "../neo_player.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!

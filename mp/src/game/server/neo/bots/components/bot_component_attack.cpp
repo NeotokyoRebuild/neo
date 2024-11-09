@@ -13,7 +13,7 @@
 #include "../in_utils.h"
 #endif
 
-#include "in_buttons.h"
+#include "../../../../shared/in_buttons.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"

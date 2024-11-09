@@ -10,11 +10,13 @@
 #include "in_gamerules.h"
 #else
 #include "in_utils.h"
+#include "vstdlib/random.h"
 #endif
 
 #ifdef NEO
 #include "neo_gamerules.h"
 #endif // NEO
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -81,7 +83,7 @@ void CBotProfile::SetSkill( int skill )
             SetAlertDuration( RandomFloat( 3.0f, 5.0f ) );
             SetAimSpeed( AIM_SPEED_VERYLOW, AIM_SPEED_LOW );
             SetAttackDelay( RandomFloat(0.5f, 0.8f) );
-            SetFavoriteHitbox( HITGROUP_STOMACH );
+            SetFavoriteHitbox( HITGROUP_HEAD );
             SetAggression( RandomInt(10.0f, 20.0f) );
             break;
 
@@ -92,7 +94,7 @@ void CBotProfile::SetSkill( int skill )
             SetAlertDuration( RandomFloat( 5.0f, 8.0f ) );
             SetAimSpeed( AIM_SPEED_VERYLOW, AIM_SPEED_NORMAL );
             SetAttackDelay( RandomFloat( 0.3f, 0.5f ) );
-            SetFavoriteHitbox( RandomInt( HITGROUP_CHEST, HITGROUP_STOMACH ) );
+            SetFavoriteHitbox( HITGROUP_HEAD );
             SetAggression( RandomInt( 30.0f, 40.0f ) );
             break;
 
@@ -102,7 +104,7 @@ void CBotProfile::SetSkill( int skill )
             SetAlertDuration( RandomFloat( 5.0f, 10.0f ) );
             SetAimSpeed( AIM_SPEED_LOW, AIM_SPEED_FAST );
             SetAttackDelay( RandomFloat( 0.1f, 0.3f ) );
-            SetFavoriteHitbox( RandomInt( HITGROUP_HEAD, HITGROUP_STOMACH ) );
+            SetFavoriteHitbox( HITGROUP_HEAD );
             SetAggression( RandomInt( 50.0f, 60.0f ) );
             break;
 #endif
