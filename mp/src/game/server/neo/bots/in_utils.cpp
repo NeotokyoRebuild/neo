@@ -437,17 +437,53 @@ bool Utils::GetEntityBones( CBaseEntity *pEntity, HitboxBones &bones )
     bones.leftLeg = -1;
     bones.rightLeg = -1;
 
-#ifdef NEO
-    /*
-        NEOTODO: Something is wack about hitgroups. Hitgroup head helps keep bots shooting center mass, for some reason...
-        Make sure to update CBotProfile::SetSkill when testing.
-    */
-    if ( pEntity->IsPlayer() ) {
-        bones.head = HITGROUP_CHEST;
-        bones.chest = HITGROUP_HEAD;
-        bones.leftLeg = HITGROUP_LEFTLEG;
-        bones.rightLeg = HITGROUP_RIGHTLEG;
+#ifdef APOCALYPSE
+    if (pEntity->ClassMatches("npc_infected")) {
+        bones.head = 16;
+        bones.chest = 10;
+        bones.leftLeg = 4;
+        bones.rightLeg = 7;
         return true;
+    }
+
+    if (pEntity->IsPlayer()) {
+        bones.head = 12;
+        bones.chest = 9;
+        bones.leftLeg = 1;
+        bones.rightLeg = 4;
+        return true;
+    }
+#elif NEO
+    if (pEntity->IsPlayer())
+    {
+        bones.head = 12;
+        bones.chest = 10;
+        bones.leftLeg = 1;
+        bones.rightLeg = 5;
+        return true;
+    }
+#elif HL2MP
+    enum
+    {
+        TEAM_COMBINE = 2,
+        TEAM_REBELS,
+    };
+
+    if (pEntity->IsPlayer()) {
+        if (pEntity->GetTeamNumber() == TEAM_REBELS) {
+            bones.head = 0;
+            bones.chest = 0;
+            bones.leftLeg = 7;
+            bones.rightLeg = 11;
+            return true;
+        }
+        else if (pEntity->GetTeamNumber() == TEAM_COMBINE) {
+            bones.head = 17;
+            bones.chest = 17;
+            bones.leftLeg = 8;
+            bones.rightLeg = 12;
+            return true;
+        }
     }
 #endif
 

@@ -627,7 +627,11 @@ bool CBaseCombatCharacter::IsLookingTowards( const Vector &target, float cosTole
 bool CBaseCombatCharacter::IsInFieldOfView( CBaseEntity *entity ) const
 {
 	CBasePlayer *pPlayer = ToBasePlayer( const_cast< CBaseCombatCharacter* >( this ) );
+#ifdef NEO // NEO NOTE (Adam) Even the default fov values defined in the original sdk provide values that are clearly in degrees, and this function isn't really used by anything else so I think its a safe assumption to assume GetFOV here returns degrees
+	float flTolerance = pPlayer ? cos(DEG2RAD((float)pPlayer->GetFOV() * 0.5f)) : BCC_DEFAULT_LOOK_TOWARDS_TOLERANCE;
+#else
 	float flTolerance = pPlayer ? cos( (float)pPlayer->GetFOV() * 0.5f ) : BCC_DEFAULT_LOOK_TOWARDS_TOLERANCE;
+#endif // NEO
 
 	Vector vecForward;
 	Vector vecEyePosition = EyePosition();
@@ -662,7 +666,11 @@ bool CBaseCombatCharacter::IsInFieldOfView( const Vector &pos ) const
 	CBasePlayer *pPlayer = ToBasePlayer( const_cast< CBaseCombatCharacter* >( this ) );
 
 	if ( pPlayer )
+#ifdef NEO // NEO NOTE (Adam) See above note
+		return IsLookingTowards(pos, cos(DEG2RAD((float)pPlayer->GetFOV() * 0.5f)));
+#else
 		return IsLookingTowards( pos, cos( (float)pPlayer->GetFOV() * 0.5f ) );
+#endif // NEO
 
 	return IsLookingTowards( pos );
 }
