@@ -395,11 +395,7 @@ void CBot::MimicThink( int playerIndex )
     m_cmd->impulse = playercmd->impulse;
     m_cmd->weaponselect = playercmd->weaponselect;
     m_cmd->weaponsubtype = playercmd->weaponsubtype;
-#ifdef NEO
-    m_cmd->random_seed = RandomInt(0, 255);
-#else
     m_cmd->random_seed = playercmd->random_seed;
-#endif // NEO
     m_cmd->mousedx = playercmd->mousedx;
     m_cmd->mousedy = playercmd->mousedy;
 
@@ -482,7 +478,9 @@ void CBot::InjectButton( int btn )
     if ( !GetUserCommand() )
         return;
 
+#ifdef NEO
     GetUserCommand()->random_seed = RandomInt(0, 255);
+#endif // NEO
     GetUserCommand()->buttons |= btn;
 }
 
