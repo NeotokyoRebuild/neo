@@ -218,6 +218,11 @@ bool CBotDecision::ShouldRun() const
     if ( GetLocomotion()->IsUsingLadder() )
         return false;
 
+#ifdef NEO
+    if (IsCombating())
+        return false;
+#endif // NEO
+
     if ( GetLocomotion()->IsRunning() )
         return true;
 
@@ -1120,6 +1125,8 @@ BCOND CBotDecision::ShouldRangeAttack1()
 
     if ( flDistance > pWeapon->GetWeaponInfo().m_flIdealDistance )
         return BCOND_TOO_FAR_TO_ATTACK;
+#elif NEO
+    // NEO TODO (Adam) ideal distances for different weapon types, code to get closer to enemy if enemy out of range
 #elif HL2MP
     if ( flDistance > 600.0f )
         return BCOND_TOO_FAR_TO_ATTACK;

@@ -478,6 +478,9 @@ void CBot::InjectButton( int btn )
     if ( !GetUserCommand() )
         return;
 
+#ifdef NEO
+    GetUserCommand()->random_seed = RandomInt(0, 255);
+#endif // NEO
     GetUserCommand()->buttons |= btn;
 }
 
