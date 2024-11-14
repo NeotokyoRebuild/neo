@@ -13,6 +13,7 @@
 #include "simtimer.h"
 #include "ai_component.h"
 #include "soundent.h"
+#include "ai_basenpc.h"
 
 #if defined( _WIN32 )
 #pragma once

@@ -528,6 +528,11 @@ public:
 		return (Now() - m_timestamp > duration) ? true : false;
 	}
 
+	float GetStartTime() const
+	{
+    	return m_timestamp;
+	}
+
 private:
 	float m_timestamp;
 	float Now( void ) const;		// work-around since client header doesn't like inlined gpGlobals->curtime
