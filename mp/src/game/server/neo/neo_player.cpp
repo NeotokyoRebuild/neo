@@ -36,7 +36,6 @@
 #include "viewport_panel_names.h"
 
 #include "neo_weapon_loadout.h"
-#include "bone_accessor.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
