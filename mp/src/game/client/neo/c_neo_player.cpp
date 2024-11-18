@@ -532,7 +532,7 @@ void C_NEO_Player::CheckLeanButtons()
 	{
 		return;
 	}
-	
+
 	m_bInLean = NEO_LEAN_NONE;
 	if ((m_nButtons & IN_LEAN_LEFT) && !(m_nButtons & IN_LEAN_RIGHT))
 	{

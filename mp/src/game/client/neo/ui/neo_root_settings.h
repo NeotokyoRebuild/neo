@@ -37,6 +37,7 @@ struct NeoSettings
 		bool bReloadEmpty;
 		bool bViewmodelRighthand;
 		bool bLeanViewmodelOnly;
+		bool bLeanAutomatic;
 		bool bShowPlayerSprays;
 		bool bShowPos;
 		int iShowFps;
@@ -164,6 +165,7 @@ struct NeoSettings
 		CONVARREF_DEF(cl_autoreload_when_empty);
 		CONVARREF_DEF(cl_righthand);
 		CONVARREF_DEF(cl_neo_lean_viewmodel_only);
+		CONVARREF_DEF(cl_neo_lean_automatic);
 		CONVARREF_DEF(cl_showpos);
 		CONVARREF_DEF(cl_showfps);
 		CONVARREF_DEF(hud_fastswitch);
