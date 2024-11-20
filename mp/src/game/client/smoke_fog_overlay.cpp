@@ -59,9 +59,21 @@ void TermSmokeFogOverlay()
 	}
 }
 
-
+#ifdef NEO
+#ifdef GLOWS_ENABLE
+extern ConVar glow_outline_effect_enable;
+#endif // GLOWS_ENABLE
+#endif // NEO
 void DrawSmokeFogOverlay()
 {
+#ifdef NEO
+#ifdef GLOWS_ENABLE
+	if (glow_outline_effect_enable.GetBool())
+	{
+		return;
+	}
+#endif // GLOWS_ENABLE
+#endif // NEO
 	if (g_SmokeFogOverlayAlpha == 0 || !g_pSmokeFogMaterial || !materials)
 	{
 		return;
