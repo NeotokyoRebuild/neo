@@ -18,6 +18,7 @@ extern ConVar weaponstay;
 #include "hud_crosshair.h"
 #include "ui/neo_hud_crosshair.h"
 #include "model_types.h"
+#include "c_neo_player.h"
 #endif
 
 #include "basecombatweapon_shared.h"
@@ -1059,21 +1060,27 @@ bool CNEOBaseCombatWeapon::ShouldDraw(void)
 }
 
 extern ConVar mat_neo_toc_test;
+#ifdef GLOWS_ENABLE
+extern ConVar glow_outline_effect_enable;
+#endif // GLOWS_ENABLE
 int CNEOBaseCombatWeapon::DrawModel(int flags)
 {
-	C_BaseCombatCharacter* localPlayer = C_BasePlayer::GetLocalPlayer();
-	if (GetOwner() == localPlayer && ShouldDrawLocalPlayerViewModel())
+#ifdef GLOWS_ENABLE
+	auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetTargetNEOPlayer();
+#else
+	auto pTargetPlayer = C_NEO_Player::GetTargetNEOPlayer();
+#endif // GLOWS_ENABLE
+	if (!pTargetPlayer)
+	{
+		Assert(false);
+		return BaseClass::DrawModel(flags);
+	}
+
+	if (GetOwner() == pTargetPlayer && ShouldDrawLocalPlayerViewModel())
 		return 0;
 
 	if (flags & STUDIO_IGNORE_NEO_EFFECTS || !(flags & STUDIO_RENDER))
 	{
-		return BaseClass::DrawModel(flags);
-	}
-
-	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if (!pLocalPlayer)
-	{
-		Assert(false);
 		return BaseClass::DrawModel(flags);
 	}
 
@@ -1083,8 +1090,8 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 		return BaseClass::DrawModel(flags);
 	}
 
-	bool inMotionVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT;
-	bool inThermalVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT;
+	bool inMotionVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_ASSAULT;
+	bool inThermalVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT;
 
 	int ret = 0;
 	if (!pOwner->IsCloaked() || inThermalVision)
@@ -1128,8 +1135,12 @@ int CNEOBaseCombatWeapon::InternalDrawModel(int flags)
 		return BaseClass::InternalDrawModel(flags);
 	}
 
-	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if (!pLocalPlayer)
+#ifdef GLOWS_ENABLE
+	auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetTargetNEOPlayer();
+#else
+	auto pTargetPlayer = C_NEO_Player::GetTargetNEOPlayer();
+#endif // GLOWS_ENABLE
+	if (!pTargetPlayer)
 	{
 		Assert(false);
 		return BaseClass::InternalDrawModel(flags);
@@ -1141,8 +1152,8 @@ int CNEOBaseCombatWeapon::InternalDrawModel(int flags)
 		return BaseClass::InternalDrawModel(flags);
 	}
 
-	bool inMotionVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT;
-	bool inThermalVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT;
+	bool inMotionVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_ASSAULT;
+	bool inThermalVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT;
 
 	int ret = 0;
 	if (!pOwner->IsCloaked() || inThermalVision)
