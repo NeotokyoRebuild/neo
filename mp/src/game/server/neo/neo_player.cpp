@@ -1550,6 +1550,27 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo* info)
 	MessageEnd();
 }
 
+void CNEO_Player::AddPoints(int score, bool bAllowNegativeScore)
+{
+	// Positive score always adds
+	if (score < 0)
+	{
+		if (!bAllowNegativeScore)
+		{
+			if (m_iXP < 0)		// Can't go more negative
+				return;
+
+			if (-score > m_iXP)	// Will this go negative?
+			{
+				score = -m_iXP;		// Sum will be 0
+			}
+		}
+	}
+
+	m_iXP += score;
+	//pl.frags = m_iFrags; NEOTODO (Adma) Is this actually used anywhere? should we include a xp field in CPlayerState ? 
+}
+
 void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 {
 	// Calculate force for weapon drop
