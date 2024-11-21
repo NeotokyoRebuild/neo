@@ -201,6 +201,8 @@ void CNEOScoreBoard::ApplySchemeSettings( IScheme *pScheme )
 	m_pImageList = new ImageList( false );
 
 	m_mapAvatarsToImageList.RemoveAll();
+	// Repopulate image list with player avatars
+	UpdatePlayerInfo();
 
 	auto deadIcon = vgui::scheme()->GetImage("hud/kill_kill", true);
 	deadIcon->SetSize(32, 32);
