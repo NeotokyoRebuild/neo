@@ -115,11 +115,6 @@ CNEOScoreBoard::~CNEOScoreBoard()
 		delete m_pImageList;
 		m_pImageList = NULL;
 	}
-	if (NULL != g_pNeoScoreBoard)
-	{
-		delete g_pNeoScoreBoard;
-		g_pNeoScoreBoard = NULL;
-	}
 }
 
 //-----------------------------------------------------------------------------
