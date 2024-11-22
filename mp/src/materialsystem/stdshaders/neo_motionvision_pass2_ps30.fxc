@@ -3,10 +3,16 @@
 sampler MotionEffect			: register(s0);
 sampler Original				: register(s1);
 
-const float g_TintColor_R		: register(c0);
-const float g_TintColor_G		: register(c1);
-const float g_TintColor_B		: register(c2);
-//const float g_Strength			: register(c0);
+const float g_Brightness		: register(c0);
+const float g_TintStart			: register(c1);
+const float g_TintColor_R		: register(c2);
+const float g_TintColor_G		: register(c3);
+const float g_TintColor_B		: register(c4);
+const float g_Threshold_R		: register(c5);
+const float g_Threshold_G		: register(c6);
+const float g_Threshold_B		: register(c7);
+const float g_Exponent			: register(c8);
+const float g_Multiplier		: register(c9);
 
 struct PS_INPUT
 {
@@ -17,14 +23,29 @@ float4 main( const PS_INPUT i ) : COLOR
 {
 	const float4 imTex = tex2D(Original, i.vTexCoord);
 	
-	const float bwTint = (imTex.r + imTex.g + imTex.b) / 3.0f;
-
-	return float4(
-		min(bwTint + g_TintColor_R, 1),
-		min(bwTint + g_TintColor_G, 1),
-		min(bwTint + g_TintColor_B, 1),
-		imTex.a);
+	const float bwTint = min( 1, 0.008 + (float((imTex.r * 0.3) + (imTex.g * 0.59) + (imTex.b * 0.11)) * g_Brightness));
 	
+	float3 output = float3(bwTint, bwTint, bwTint);
+	if (bwTint > g_TintStart)
+	{
+		output += (bwTint - g_TintStart) * float3(g_TintColor_R, g_TintColor_G, g_TintColor_B);
+	}
+	
+	if (output.x > g_Threshold_R)
+	{
+		output.x = g_Threshold_R + ((pow((output.x - g_Threshold_R), g_Exponent) + (output.x - g_Threshold_R)) * g_Multiplier);
+		output.y = output.z = output.y + ((pow((output.x - g_Threshold_R), g_Exponent) + (output.x - g_Threshold_R)) * g_Multiplier * -0.015);
+		if (bwTint > g_Threshold_G)
+		{
+			output.y = output.y + ((pow((bwTint - g_Threshold_G), g_Exponent) + (bwTint - g_Threshold_G)) * g_Multiplier);
+			if (bwTint > g_Threshold_B)
+			{
+				output.z = output.z + ((pow((bwTint - g_Threshold_B), g_Exponent) + (bwTint - g_Threshold_B)) * g_Multiplier);
+			}
+		}
+	}
+
+	return float4(output, imTex.a);
 
 	// NEO TODO (Adam) Awesome sincity shader taken from https://pastebin.com/zVxsZBVG , useful for potential motion vision rework discussion
 	//const float4 imTex = tex2D(Original, i.vTexCoord);
