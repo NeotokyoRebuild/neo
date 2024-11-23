@@ -6,16 +6,14 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-ConVar mat_neo_mv_brightness_multiplier("mat_neo_mv_brightness_multiplier", "0.1", FCVAR_CHEAT | FCVAR_ARCHIVE, "Darken the whole image", true, -1.0f, true, 1.0f);
-ConVar mat_neo_mv_x_offset("mat_neo_mv_x_offset", "0", FCVAR_CHEAT | FCVAR_ARCHIVE, "Gradient offset");
-ConVar mat_neo_mv_x_multiplier("mat_neo_mv_x_multiplier", "1", FCVAR_CHEAT | FCVAR_ARCHIVE, "Gradient multiplier");
+ConVar mat_neo_mv_gradient_blend_offset("mat_neo_mv_gradient_blend_offset", "0.75", FCVAR_CHEAT | FCVAR_ARCHIVE, "Gradient blend offset");
 
 BEGIN_SHADER_FLAGS(Neo_MotionVision_Pass2, "Help for my shader.", SHADER_NOT_EDITABLE)
 
 BEGIN_SHADER_PARAMS
 SHADER_PARAM(MOTIONEFFECT, SHADER_PARAM_TYPE_TEXTURE, "_rt_MotionVision", "")
 SHADER_PARAM(ORIGINAL, SHADER_PARAM_TYPE_TEXTURE, "_rt_MotionVision_Intermediate2", "")
-SHADER_PARAM(MVTEXTURE, SHADER_PARAM_TYPE_TEXTURE, "dev/mvgrad", "")
+SHADER_PARAM(MVTEXTURE, SHADER_PARAM_TYPE_TEXTURE, "dev/mvgrad2", "")
 SHADER_PARAM(NOISETEXTURE, SHADER_PARAM_TYPE_TEXTURE, "dev/noise", "")
 SHADER_PARAM(NOISETRANSFORM, SHADER_PARAM_TYPE_VEC3, "Vector(0, 0, 0)", "")
 END_SHADER_PARAMS
@@ -134,16 +132,12 @@ SHADER_DRAW
 
 		//pShaderAPI->BindStandardTexture(SHADER_SAMPLER0, TEXTURE_FRAME_BUFFER_FULL_TEXTURE_0);
 
-		const float brightness = mat_neo_mv_brightness_multiplier.GetFloat();
 		const float* noiseTransformVector = params[NOISETRANSFORM]->GetVecValue();
-		const float xOffset = mat_neo_mv_x_offset.GetFloat();
-		const float xMultiplier = mat_neo_mv_x_multiplier.GetFloat();
+		const float gradientBlendOffset = mat_neo_mv_gradient_blend_offset.GetFloat();
 
-		pShaderAPI->SetPixelShaderConstant(0, &brightness);
-		pShaderAPI->SetPixelShaderConstant(1, &noiseTransformVector[0]);
-		pShaderAPI->SetPixelShaderConstant(2, &noiseTransformVector[1]);
-		pShaderAPI->SetPixelShaderConstant(3, &xOffset);
-		pShaderAPI->SetPixelShaderConstant(4, &xMultiplier);
+		pShaderAPI->SetPixelShaderConstant(0, &noiseTransformVector[0]);
+		pShaderAPI->SetPixelShaderConstant(1, &noiseTransformVector[1]);
+		pShaderAPI->SetPixelShaderConstant(2, &gradientBlendOffset);
 
 		DECLARE_DYNAMIC_VERTEX_SHADER(neo_passthrough_vs30);
 		SET_DYNAMIC_VERTEX_SHADER(neo_passthrough_vs30);
