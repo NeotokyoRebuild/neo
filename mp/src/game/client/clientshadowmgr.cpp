@@ -2912,8 +2912,11 @@ void CClientShadowMgr::PreRender()
 	//
 	// -- Render to Texture Shadows -----------------------
 	//
-
+#ifdef NEO
+	bool bRenderToTextureActive = true;
+#else
 	bool bRenderToTextureActive = r_shadowrendertotexture.GetBool();
+#endif
 	if ( bRenderToTextureActive != m_RenderToTextureActive )
 	{
 		if ( m_RenderToTextureActive )
