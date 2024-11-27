@@ -2187,22 +2187,7 @@ void CBasePlayer::PlayerDeathThink(void)
 	{
 		fAnyButtonDown &= ~IN_DUCK;
 	}
-
-#ifndef NEO
-	// wait for all buttons released
-	if (m_lifeState == LIFE_DEAD)
-	{
-		if (fAnyButtonDown)
-			return;
-
-		if ( g_pGameRules->FPlayerCanRespawn( this ) )
-		{
-			m_lifeState = LIFE_RESPAWNABLE;
-		}
-
-		return;
-	}
-
+	
 // if the player has been dead for one second longer than allowed by forcerespawn, 
 // forcerespawn isn't on. Send the player off to an intermission camera until they 
 // choose to respawn.
@@ -2216,16 +2201,6 @@ void CBasePlayer::PlayerDeathThink(void)
 	if (!fAnyButtonDown 
 		&& !( g_pGameRules->IsMultiplayer() && forcerespawn.GetInt() > 0 && (gpGlobals->curtime > (m_flDeathTime + 5))) )
 		return;
-#else
-	if(g_pGameRules->FPlayerCanRespawn(this))
-	{
-		const auto neoPlayer = static_cast<CNEO_Player*>(this);
-		if(!neoPlayer || neoPlayer->m_iLoadoutWepChoice == -1)
-		{
-			return;
-		}
-	}	
-#endif
 
 	m_nButtons = 0;
 	m_iRespawnFrames = 0;
