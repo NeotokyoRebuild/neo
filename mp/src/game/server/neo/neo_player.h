@@ -211,6 +211,7 @@ private:
 	void CheckLeanButtons();
 	void PlayCloakSound();
 	void CloakFlash();
+	void PlayerDeathThinkInner();
 
 	bool IsAllowedToSuperJump(void);
 

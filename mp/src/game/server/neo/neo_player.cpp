@@ -123,6 +123,8 @@ extern ConVar neo_sv_ignore_wep_xp_limit;
 extern ConVar neo_sv_clantag_allow;
 extern ConVar neo_sv_dev_test_clantag;
 
+extern void respawn(CBaseEntity *pEdict, bool fCopyCorpse);
+
 ConVar sv_neo_can_change_classes_anytime("sv_neo_can_change_classes_anytime", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "Can players change classes at any moment, even mid-round?",
 	true, 0.0f, true, 1.0f);
 ConVar sv_neo_change_suicide_player("sv_neo_change_suicide_player", "0", FCVAR_REPLICATED, "Kill the player if they change the team and they're alive.", true, 0.0f, true, 1.0f);
@@ -504,6 +506,7 @@ void CNEO_Player::Spawn(void)
 	if (teamNumber == TEAM_JINRAI || teamNumber == TEAM_NSF)
 	{
 		State_Transition(STATE_ACTIVE);
+		StopObserverMode();
 	}
 	
 	// Should do this class update first, because most of the stuff below depends on which player class we are.
@@ -1057,7 +1060,74 @@ void CNEO_Player::PlayerDeathThink()
 		m_bEnterObserver = true;
 	}
 
-	CHL2_Player::PlayerDeathThink();
+	PlayerDeathThinkInner();
+
+	if(GetTeamNumber() > LAST_SHARED_TEAM)
+	{
+		/*if (IsObserver() && GetObserverMode() == OBS_MODE_IN_EYE && !IsValidObserverTarget(m_hObserverTarget)) {
+			SetObserverTarget(FindNextObserverTarget(false));
+		}*/
+		
+		auto canSpawn = g_pGameRules->FPlayerCanRespawn(this);
+		auto hasSelectedLoadout = m_iLoadoutWepChoice > -1;
+
+		if(canSpawn && hasSelectedLoadout)
+		{
+			respawn(this, !IsObserver());
+		}
+	}
+}
+
+void CNEO_Player::PlayerDeathThinkInner()
+{
+	float flForward;
+
+	SetNextThink( gpGlobals->curtime + 0.1f );
+
+	if (GetFlags() & FL_ONGROUND)
+	{
+		flForward = GetAbsVelocity().Length() - 20;
+		if (flForward <= 0)
+		{
+			SetAbsVelocity( vec3_origin );
+		}
+		else
+		{
+			Vector vecNewVelocity = GetAbsVelocity();
+			VectorNormalize( vecNewVelocity );
+			vecNewVelocity *= flForward;
+			SetAbsVelocity( vecNewVelocity );
+		}
+	}
+
+	if ( HasWeapons() )
+	{
+		// we drop the guns here because weapons that have an area effect and can kill their user
+		// will sometimes crash coming back from CBasePlayer::Killed() if they kill their owner because the
+		// player class sometimes is freed. It's safer to manipulate the weapons once we know
+		// we aren't calling into any of their code anymore through the player pointer.
+		PackDeadPlayerItems();
+	}
+
+	if (GetModelIndex() && (!IsSequenceFinished()) && (m_lifeState == LIFE_DYING))
+	{
+		StudioFrameAdvance( );
+
+		m_iRespawnFrames++;
+		if ( m_iRespawnFrames < 60 )  // animations should be no longer than this
+			return;
+	}
+
+	if (m_lifeState == LIFE_DYING)
+	{
+		m_lifeState = LIFE_DEAD;
+		m_flDeathAnimTime = gpGlobals->curtime;
+	}
+
+	StopAnimation();
+
+	IncrementInterpolationFrame();
+	m_flPlaybackRate = 0.0;
 }
 
 void CNEO_Player::Weapon_AimToggle(CNEOBaseCombatWeapon *pNeoWep, const NeoWeponAimToggleE toggleType)
@@ -2250,6 +2320,8 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 			Assert(minAllowed <= lastGameTeam);
 			iTeam = Clamp(joinMode.GetInt(), minAllowed, lastGameTeam);
 		}
+
+		m_iLoadoutWepChoice = 1;
 	}
 	// Limit team join spam, unless this is a newly joined player
 	else if (!justJoined && m_flNextTeamChangeTime > gpGlobals->curtime)
@@ -2297,6 +2369,9 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 		else
 		{
 			StartObserverMode(m_iObserverLastMode);
+			if (m_iObserverLastMode == OBS_MODE_IN_EYE || m_iObserverLastMode == OBS_MODE_CHASE) {
+				SetObserverTarget(FindNextObserverTarget(false));
+			}
 		}
 
 		State_Transition(STATE_OBSERVER_MODE);
@@ -2318,13 +2393,22 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 
 		if(IsDead())
 		{
+			auto obsMode = OBS_MODE_ROAMING;
+
 			if (newTeam->GetNumPlayers() > 0)
 			{
+				obsMode = OBS_MODE_IN_EYE;
 				SetObserverTarget(newTeam->GetPlayer(0));
-				SetObserverMode(OBS_MODE_IN_EYE);
 			}
-			else {
-				SetObserverMode(OBS_MODE_ROAMING);
+
+			if (!IsObserver())
+			{
+				StartObserverMode(obsMode);
+				State_Transition(STATE_OBSERVER_MODE);
+			}
+			else
+			{
+				SetObserverMode(obsMode);
 			}
 		}
 		else

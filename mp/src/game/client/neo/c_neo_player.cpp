@@ -432,7 +432,7 @@ C_NEO_Player::C_NEO_Player()
 	V_memset(m_szNeoName.GetForModify(), 0, sizeof(m_szNeoName));
 	V_memset(m_szNeoClantag.GetForModify(), 0, sizeof(m_szNeoClantag));
 
-	m_iLoadoutWepChoice = 0;
+	m_iLoadoutWepChoice = -1;
 	m_iNextSpawnClassChoice = -1;
 	m_iXP.GetForModify() = 0;
 
