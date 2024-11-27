@@ -2064,8 +2064,6 @@ void CViewRender::RenderView( const CViewSetup &view, int nClearFlags, int whatT
 			}
 		}
 
-		GetClientModeNormal()->DoPostScreenSpaceEffects( &view );
-
 		// Now actually draw the viewmodel
 		DrawViewModels( view, whatToDraw & RENDERVIEW_DRAWVIEWMODEL );
 
@@ -2123,6 +2121,8 @@ void CViewRender::RenderView( const CViewSetup &view, int nClearFlags, int whatT
 		}
 
 		PerformScreenSpaceEffects( 0, 0, view.width, view.height );
+
+		GetClientModeNormal()->DoPostScreenSpaceEffects(&view);
 
 		if ( g_pMaterialSystemHardwareConfig->GetHDRType() == HDR_TYPE_INTEGER )
 		{
