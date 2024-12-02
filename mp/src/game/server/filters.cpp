@@ -10,6 +10,8 @@
 #include "ai_squad.h"
 #include "ai_basenpc.h"
 
+#include "neo_player.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -320,6 +322,40 @@ BEGIN_DATADESC( FilterTeam )
 
 	// Keyfields
 	DEFINE_KEYFIELD( m_iFilterTeam,	FIELD_INTEGER,	"filterteam" ),
+
+END_DATADESC()
+
+
+// ###################################################################
+//	> FilterNeoClass
+// ###################################################################
+class FilterNeoClass : public CBaseFilter
+{
+	DECLARE_CLASS(FilterNeoClass, CBaseFilter);
+	DECLARE_DATADESC();
+
+public:
+	int m_iFilterNeoClass;
+
+	bool PassesFilterImpl(CBaseEntity* pCaller, CBaseEntity* pEntity)
+	{
+		if (!pEntity || !pEntity->IsPlayer())
+			return false;
+
+		CNEO_Player* pPlayer = dynamic_cast<CNEO_Player*>(pEntity);
+		if (!pPlayer)
+			return false;
+
+		return (pPlayer->GetClass() == m_iFilterNeoClass);
+	}
+};
+
+LINK_ENTITY_TO_CLASS(filter_activator_neoclass, FilterNeoClass);
+
+BEGIN_DATADESC(FilterNeoClass)
+
+	// Keyfields
+	DEFINE_KEYFIELD(m_iFilterNeoClass, FIELD_INTEGER, "filterneoclass"),
 
 END_DATADESC()
 
