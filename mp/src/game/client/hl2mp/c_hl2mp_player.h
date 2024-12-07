@@ -170,7 +170,7 @@ public:
 	void UpdateOnRemove( void );
 	virtual void SetupWeights( const matrix3x4_t *pBoneToWorld, int nFlexWeightCount, float *pFlexWeights, float *pFlexDelayedWeights );
 #ifdef NEO
-	inline const Vector& GetRagdollVelocity(void) { return m_vecRagdollVelocity.Get(); }
+	inline const Vector& GetRagdollVelocity(void) const { return m_vecRagdollVelocity.Get(); }
 #endif
 	
 private:

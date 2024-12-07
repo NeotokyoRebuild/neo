@@ -272,7 +272,8 @@ void CEntitySpeedProxy::OnBind( void *pC_BaseEntity )
 
 	Assert( m_pResult );
 #ifdef NEO
-	auto velocity = pEntity->GetRootMoveParent()->GetAbsVelocity();
+	auto rootMoveParent = pEntity->GetRootMoveParent();
+	auto velocity = rootMoveParent->GetAbsVelocity();
 	if (velocity == vec3_origin)
 	{
 		C_BaseAnimating* baseAnimating = pEntity->GetBaseAnimating();
@@ -282,7 +283,7 @@ void CEntitySpeedProxy::OnBind( void *pC_BaseEntity )
 		}
 		else
 		{
-			pEntity->EstimateAbsVelocity(velocity);
+			rootMoveParent->EstimateAbsVelocity(velocity);
 		}
 	}
 	m_pResult->SetFloatValue(velocity.Length());

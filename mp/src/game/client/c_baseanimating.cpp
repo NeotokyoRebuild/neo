@@ -3185,17 +3185,18 @@ int C_BaseAnimating::DrawModel( int flags )
 
 		const bool inMotionVision = pLocalPlayer && pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT;
 		
+		auto rootMoveParent = GetRootMoveParent();
 		Vector vel;
 		if (IsRagdoll())
 		{
-			vel = GetOldVelocity();
+			vel = rootMoveParent->GetOldVelocity();
 		}
 		else
 		{
-			vel = GetRootMoveParent()->GetAbsVelocity();
+			vel = rootMoveParent->GetAbsVelocity();
 			if (vel == vec3_origin)
 			{
-				EstimateAbsVelocity(vel);
+				rootMoveParent->EstimateAbsVelocity(vel);
 			}
 		}
 		bool isMoving = false;
@@ -3203,7 +3204,7 @@ int C_BaseAnimating::DrawModel( int flags )
 		{
 			isMoving = true;
 			IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
-			Assert(pass && !IsErrorMaterial(pass));
+			Assert(!IsErrorMaterial(pass));
 			modelrender->ForcedMaterialOverride(pass);
 		}
 #endif // NEO
@@ -3228,6 +3229,14 @@ int C_BaseAnimating::DrawModel( int flags )
 				// BUGBUG: Fixup bbox and do a separate cull for follow object
 				if ( baseDrawn )
 				{
+#ifdef NEO
+					if (isMoving)
+					{ // Drawing an active weapon first draws the entity holding the weapon. This call removes the material override before the draw call on the active weapon can complete, re-override here
+						IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
+						Assert(!IsErrorMaterial(pass));
+						modelrender->ForcedMaterialOverride(pass);
+					}
+#endif // NEO
 					drawn = InternalDrawModel( STUDIO_RENDER|extraFlags );
 				}
 			}

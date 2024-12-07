@@ -18,7 +18,7 @@ float4 main( const PS_INPUT i ) : COLOR
 {
 	const float4 imTex = tex2D(Original, i.vTexCoord);
 	const float noise =  0.95 + (tex2D(NoiseTexture, i.vTexCoord + float2(g_XNoiseOffset, g_YNoiseOffset))/20);
-	const float bwTint = imTex.r + imTex.g + imTex.b ) * 0.33333;
+	const float bwTint = ( imTex.r + imTex.g + imTex.b ) * 0.33333;
 	const float4 gradient = (tex1D( MVGrad, bwTint) * min(1,(bwTint + g_gradientBlendOffset))) + (bwTint * max(0, (1 - g_gradientBlendOffset - bwTint)));
 	return float4(gradient.rgb, imTex.a);
 }

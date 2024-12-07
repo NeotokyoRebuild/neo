@@ -1386,7 +1386,7 @@ public:
 	float							GetElasticity( void ) const;
 #ifdef NEO
 	inline void						SetOldVelocity( const Vector& oldVelocity ) { m_vecOldVelocity = oldVelocity; }
-	inline Vector&					GetOldVelocity() { return m_vecOldVelocity; };
+	inline const Vector&			GetOldVelocity() const { return m_vecOldVelocity; };
 #endif // NEO
 
 	int								GetTextureFrameIndex( void );
