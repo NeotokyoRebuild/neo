@@ -60,8 +60,6 @@ SHADER_DRAW
 
 		pShaderShadow->EnableTexture(SHADER_SAMPLER0, true);
 		pShaderShadow->EnableTexture(SHADER_SAMPLER1, true);
-		pShaderShadow->EnableTexture(SHADER_SAMPLER2, true);
-		pShaderShadow->EnableTexture(SHADER_SAMPLER3, true);
 		//pShaderShadow->BlendFunc(SHADER_BLEND_ZERO, SHADER_BLEND_ONE);
 
 		const int fmt = VERTEX_POSITION;
