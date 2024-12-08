@@ -6,29 +6,15 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-ConVar mat_neo_mv_gradient_blend_offset("mat_neo_mv_gradient_blend_offset", "0.75", FCVAR_CHEAT | FCVAR_ARCHIVE, "Gradient blend offset");
-
 BEGIN_SHADER_FLAGS(Neo_MotionVision_Pass2, "Help for my shader.", SHADER_NOT_EDITABLE)
 
 BEGIN_SHADER_PARAMS
-SHADER_PARAM(MOTIONEFFECT, SHADER_PARAM_TYPE_TEXTURE, "_rt_MotionVision", "")
 SHADER_PARAM(ORIGINAL, SHADER_PARAM_TYPE_TEXTURE, "_rt_MotionVision_Intermediate2", "")
 SHADER_PARAM(MVTEXTURE, SHADER_PARAM_TYPE_TEXTURE, "dev/mvgrad2", "")
-SHADER_PARAM(NOISETEXTURE, SHADER_PARAM_TYPE_TEXTURE, "dev/noise", "")
-SHADER_PARAM(NOISETRANSFORM, SHADER_PARAM_TYPE_VEC3, "[0, 0, 0]", "")
 END_SHADER_PARAMS
 
 SHADER_INIT
 {
-	if (params[MOTIONEFFECT]->IsDefined())
-	{
-		LoadTexture(MOTIONEFFECT);
-	}
-	else
-	{
-		Assert(false);
-	}
-
 	if (params[ORIGINAL]->IsDefined())
 	{
 		LoadTexture(ORIGINAL);
@@ -41,15 +27,6 @@ SHADER_INIT
 	if (params[MVTEXTURE]->IsDefined())
 	{
 		LoadTexture(MVTEXTURE);
-	}
-	else
-	{
-		Assert(false);
-	}
-
-	if (params[NOISETEXTURE]->IsDefined())
-	{
-		LoadTexture(NOISETEXTURE);
 	}
 	else
 	{
@@ -111,8 +88,6 @@ SHADER_DRAW
 		{
 			pShaderShadow->EnableSRGBRead(SHADER_SAMPLER0, true);
 			pShaderShadow->EnableSRGBRead(SHADER_SAMPLER1, true);
-			pShaderShadow->EnableSRGBRead(SHADER_SAMPLER2, true);
-			pShaderShadow->EnableSRGBRead(SHADER_SAMPLER3, true);
 			pShaderShadow->EnableSRGBWrite(true);
 		}
 		else
@@ -125,19 +100,10 @@ SHADER_DRAW
 	{
 		//pShaderAPI->SetDefaultState();
 
-		BindTexture(SHADER_SAMPLER0, MOTIONEFFECT);
-		BindTexture(SHADER_SAMPLER1, ORIGINAL);
-		BindTexture(SHADER_SAMPLER2, MVTEXTURE);
-		BindTexture(SHADER_SAMPLER3, NOISETEXTURE);
+		BindTexture(SHADER_SAMPLER0, ORIGINAL);
+		BindTexture(SHADER_SAMPLER1, MVTEXTURE);
 
 		//pShaderAPI->BindStandardTexture(SHADER_SAMPLER0, TEXTURE_FRAME_BUFFER_FULL_TEXTURE_0);
-
-		const float* noiseTransformVector = params[NOISETRANSFORM]->GetVecValue();
-		const float gradientBlendOffset = mat_neo_mv_gradient_blend_offset.GetFloat();
-
-		pShaderAPI->SetPixelShaderConstant(0, &noiseTransformVector[0]);
-		pShaderAPI->SetPixelShaderConstant(1, &noiseTransformVector[1]);
-		pShaderAPI->SetPixelShaderConstant(2, &gradientBlendOffset);
 
 		DECLARE_DYNAMIC_VERTEX_SHADER(neo_passthrough_vs30);
 		SET_DYNAMIC_VERTEX_SHADER(neo_passthrough_vs30);

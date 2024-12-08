@@ -1,13 +1,7 @@
 #include "common_ps_fxc.h"
 
-sampler MotionEffect			: register(s0);
-sampler Original				: register(s1);
-sampler MVGrad	         	   	: register(s2);
-sampler NoiseTexture            : register(s3);
-
-const float g_XNoiseOffset		: register(c0);
-const float g_YNoiseOffset		: register(c1);
-const float g_gradientBlendOffset	: register(c2);
+sampler Original				: register(s0);
+sampler MVGrad	         	   	: register(s1);
 
 struct PS_INPUT
 {
@@ -17,8 +11,6 @@ struct PS_INPUT
 float4 main( const PS_INPUT i ) : COLOR
 {
 	const float4 imTex = tex2D(Original, i.vTexCoord);
-	const float noise =  0.95 + (tex2D(NoiseTexture, i.vTexCoord + float2(g_XNoiseOffset, g_YNoiseOffset))/20);
-	const float bwTint = ( imTex.r + imTex.g + imTex.b ) * 0.33333;
-	const float4 gradient = (tex1D( MVGrad, bwTint) * min(1,(bwTint + g_gradientBlendOffset))) + (bwTint * max(0, (1 - g_gradientBlendOffset - bwTint)));
-	return float4(gradient.rgb, imTex.a);
+	const float bwTint = pow(imTex.r * 0.2126 + imTex.g * 0.7152 + imTex.b * 0.0722, 0.454545); // 0.454545 ~= 1/2.2
+	return tex1D( MVGrad, bwTint);
 }
