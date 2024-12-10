@@ -27,6 +27,16 @@ public:
 	virtual ~C_NEO_Player();
 
 	static C_NEO_Player *GetLocalNEOPlayer() { return static_cast<C_NEO_Player*>(C_BasePlayer::GetLocalPlayer()); }
+	static C_NEO_Player *GetTargetNEOPlayer()
+	{ // Returns the player we are spectating, or local player if not spectating anyone
+		auto localNeoPlayer = GetLocalNEOPlayer();
+		if (localNeoPlayer->IsObserver())
+		{ // NEOTOD (Adam) clear m_hObserverTarget instead when exiting observer mode?
+			auto targetNeoPlayer = static_cast<C_NEO_Player*>(localNeoPlayer->GetObserverTarget());
+			if (targetNeoPlayer) { return targetNeoPlayer; }
+		}
+		return localNeoPlayer;
+	}
 
 	virtual int DrawModel( int flags );
 	virtual void AddEntity( void );
