@@ -1103,59 +1103,6 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 	return ret;
 }
 
-int CNEOBaseCombatWeapon::InternalDrawModel(int flags)
-{
-	return BaseClass::InternalDrawModel(flags);
-	if (flags & STUDIO_IGNORE_NEO_EFFECTS || !(flags & STUDIO_RENDER))
-	{
-		return BaseClass::InternalDrawModel(flags);
-	}
-
-	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if (!pLocalPlayer)
-	{
-		Assert(false);
-		return BaseClass::InternalDrawModel(flags);
-	}
-
-	auto pOwner = static_cast<C_NEO_Player*>(GetOwner());
-	if (!pOwner)
-	{
-		return BaseClass::InternalDrawModel(flags);
-	}
-
-	if (pOwner->GetActiveWeapon() == this)
-	{
-		engine->Con_NPrintf(0, "Hello");
-	}
-
-	bool inThermalVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT;
-
-	int ret = 0;
-	if (!pOwner->IsCloaked() || inThermalVision)
-	{
-		ret |= BaseClass::InternalDrawModel(flags);
-	}
-
-	if (pOwner->IsCloaked() && !inThermalVision)
-	{
-		mat_neo_toc_test.SetValue(pOwner->GetCloakFactor());
-		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
-		modelrender->ForcedMaterialOverride(pass);
-		ret |= BaseClass::InternalDrawModel(flags);
-		modelrender->ForcedMaterialOverride(nullptr);
-	}
-	else if (inThermalVision && !pOwner->IsCloaked())
-	{
-		IMaterial* pass = materials->FindMaterial("dev/thermal_third", TEXTURE_GROUP_MODEL);
-		modelrender->ForcedMaterialOverride(pass);
-		ret |= BaseClass::InternalDrawModel(flags);
-		modelrender->ForcedMaterialOverride(nullptr);
-	}
-
-	return ret;
-}
-
 ShadowType_t CNEOBaseCombatWeapon::ShadowCastType(void)
 {
 	C_NEO_Player* owner = static_cast<C_NEO_Player*>(ToBasePlayer(GetOwner()));
