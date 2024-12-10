@@ -1105,6 +1105,7 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 
 int CNEOBaseCombatWeapon::InternalDrawModel(int flags)
 {
+	return BaseClass::InternalDrawModel(flags);
 	if (flags & STUDIO_IGNORE_NEO_EFFECTS || !(flags & STUDIO_RENDER))
 	{
 		return BaseClass::InternalDrawModel(flags);

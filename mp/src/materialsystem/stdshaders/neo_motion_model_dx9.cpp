@@ -12,7 +12,8 @@ DEFINE_FALLBACK_SHADER( Neo_Motion_Model, Neo_Motion_Model_DX9 )
 BEGIN_VS_SHADER( Neo_Motion_Model_DX9, "Help for motion model shader" )
 
 	BEGIN_SHADER_PARAMS
-		SHADER_PARAM( ALPHATESTREFERENCE, SHADER_PARAM_TYPE_FLOAT, "0.0", "" )	
+		SHADER_PARAM(ALPHATESTREFERENCE, SHADER_PARAM_TYPE_FLOAT, "0.0", "")
+		SHADER_PARAM( SPEED, SHADER_PARAM_TYPE_FLOAT, "0.0", "")
 	END_SHADER_PARAMS
 
 	void SetupVars( NeoMotionModel_DX9_Vars_t& info )
@@ -23,6 +24,7 @@ BEGIN_VS_SHADER( Neo_Motion_Model_DX9, "Help for motion model shader" )
 		info.m_nAlphaTestReference = ALPHATESTREFERENCE;
 		info.m_nFlashlightTexture = FLASHLIGHTTEXTURE;
 		info.m_nFlashlightTextureFrame = FLASHLIGHTTEXTUREFRAME;
+		info.m_nSpeed = SPEED;
 	}
 
 	SHADER_INIT_PARAMS()
@@ -46,17 +48,23 @@ BEGIN_VS_SHADER( Neo_Motion_Model_DX9, "Help for motion model shader" )
 
 		SHADER_DRAW
 	{
-		if (pShaderAPI)
+		SHADOW_STATE
 		{
-			VMatrix mat, transpose;
-			s_pShaderAPI->GetMatrix(MATERIAL_VIEW, mat.m[0]);
-			MatrixTranspose(mat, transpose);
-			s_pShaderAPI->SetPixelShaderConstant(2, transpose.m[2], 3);
+			//SetInitialShadowState();
+			EnableAlphaBlending(SHADER_BLEND_ONE, SHADER_BLEND_ONE);
+			pShaderShadow->EnableDepthWrites(true);
+			pShaderShadow->EnableDepthTest(true);
+			pShaderShadow->DepthFunc(SHADER_DEPTHFUNC_NEAREROREQUAL);
+		}
 
-			float colourTint[3];
-			GetColorParameter(params, colourTint); // NEOJANK (Adam) the material uses a material proxy to write the speed of the model to the colour parameter, better way of doing this?
-			colourTint[0] = min(1, colourTint[0] / 100);
-			s_pShaderAPI->SetPixelShaderConstant(3, &colourTint[0], 1);
+		DYNAMIC_STATE
+		{
+			VMatrix mat;
+			s_pShaderAPI->GetMatrix(MATERIAL_VIEW, mat.m[0]);
+			MatrixTranspose(mat, mat);
+			s_pShaderAPI->SetPixelShaderConstant(0, mat.m[2], 3);
+			const float speed = min(1.f, params[SPEED]->GetFloatValue() * 0.02);
+			s_pShaderAPI->SetPixelShaderConstant(3, &speed);
 		}
 		
 		NeoMotionModel_DX9_Vars_t info;

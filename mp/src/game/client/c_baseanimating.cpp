@@ -3203,9 +3203,13 @@ int C_BaseAnimating::DrawModel( int flags )
 		if (inMotionVision && vel.LengthSqr() > 0.25 && !IsViewModel() && !(extraFlags & STUDIO_IGNORE_NEO_EFFECTS)) // MOVING_SPEED_MINIMUM ^2
 		{
 			isMoving = true;
-			IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
-			Assert(!IsErrorMaterial(pass));
-			modelrender->ForcedMaterialOverride(pass);
+			if (!IsFollowingEntity())
+			{
+				InternalDrawModel(flags | extraFlags);
+				IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
+				Assert(!IsErrorMaterial(pass));
+				modelrender->ForcedMaterialOverride(pass);
+			}
 		}
 #endif // NEO
 		// Necessary for lighting blending
@@ -3232,6 +3236,7 @@ int C_BaseAnimating::DrawModel( int flags )
 #ifdef NEO
 					if (isMoving)
 					{ // Drawing an active weapon first draws the entity holding the weapon. This call removes the material override before the draw call on the active weapon can complete, re-override here
+						InternalDrawModel(STUDIO_RENDER | extraFlags);
 						IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
 						Assert(!IsErrorMaterial(pass));
 						modelrender->ForcedMaterialOverride(pass);
