@@ -2384,9 +2384,6 @@ void DoThermalVision(const int x, const int y, const int w, const int h)
 		nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
 }
 
-ConVar mat_neo_mv_1("mat_neo_mv_1", "1");
-ConVar mat_neo_mv_2("mat_neo_mv_2", "1");
-
 void DoMotionVision(const int x, const int y, const int w, const int h)
 {
 	CMatRenderContextPtr pRenderContext(materials);
@@ -2410,39 +2407,20 @@ void DoMotionVision(const int x, const int y, const int w, const int h)
 	pRenderContext->CopyRenderTargetToTextureEx(pVM_MV_IM, renderTargetId, &DestRect, NULL);
 	pRenderContext->CopyRenderTargetToTextureEx(pVM_Buffer, renderTargetId, &DestRect, NULL);
 	
-	if (mat_neo_mv_1.GetBool())
+	IMaterial *pMVMat_2 = materials->FindMaterial("dev/neo_motionvision_pass2", TEXTURE_GROUP_OTHER, true);
+	if (!pMVMat_2 || pMVMat_2->IsErrorMaterial())
 	{
-		IMaterial *pMVMat_1 = materials->FindMaterial("dev/neo_motionvision_pass1", TEXTURE_GROUP_OTHER, true);
-		if (!pMVMat_1 || pMVMat_1->IsErrorMaterial())
-		{
-			Assert(false);
-			return;
-		}
-
-		pRenderContext->DrawScreenSpaceRectangle(
-			pMVMat_1,
-			0, 0, w, h,
-			0, 0, nSrcWidth - 1, nSrcHeight - 1,
-			nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
+		Assert(false);
+		return;
 	}
-	
-	if (mat_neo_mv_2.GetBool())
-	{
-		IMaterial *pMVMat_2 = materials->FindMaterial("dev/neo_motionvision_pass2", TEXTURE_GROUP_OTHER, true);
-		if (!pMVMat_2 || pMVMat_2->IsErrorMaterial())
-		{
-			Assert(false);
-			return;
-		}
 
-		pRenderContext->CopyRenderTargetToTextureEx(pVM_MV, renderTargetId, &DestRect, NULL);
+	pRenderContext->CopyRenderTargetToTextureEx(pVM_MV, renderTargetId, &DestRect, NULL);
 
-		pRenderContext->DrawScreenSpaceRectangle(
-			pMVMat_2,
-			0, 0, w, h,
-			0, 0, nSrcWidth - 1, nSrcHeight - 1,
-			nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
-	}
+	pRenderContext->DrawScreenSpaceRectangle(
+		pMVMat_2,
+		0, 0, w, h,
+		0, 0, nSrcWidth - 1, nSrcHeight - 1,
+		nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
 
 	if (mat_neo_mv_noise_enable.GetBool())
 	{

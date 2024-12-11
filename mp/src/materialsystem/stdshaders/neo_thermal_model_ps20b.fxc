@@ -42,7 +42,7 @@ sampler ShadowDepthSampler		: register( s4 );	// Flashlight shadow depth map sam
 sampler NormalizeRandRotSampler	: register( s5 );	// Normalization / RandomRotation samplers
 sampler FlashlightSampler		: register( s6 );	// Flashlight cookie
 
-const float3 g_ViewDirection : register(c2);
+const float3 g_ViewDirection : register(c0);
 const float g_Multiplier : register(c3);
 
 struct PS_INPUT
