@@ -3181,8 +3181,6 @@ int C_BaseAnimating::DrawModel( int flags )
 		}
 
 		auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
-		Assert(pLocalPlayer);
-
 		const bool inMotionVision = pLocalPlayer && pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT;
 		
 		auto rootMoveParent = GetRootMoveParent();
