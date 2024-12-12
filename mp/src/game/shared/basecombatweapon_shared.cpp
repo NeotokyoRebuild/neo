@@ -1502,6 +1502,7 @@ bool CBaseCombatWeapon::Holster( CBaseCombatWeapon *pSwitchingTo )
 	// kill any think functions
 	SetThink(NULL);
 
+#ifndef NEO
 	// Send holster animation
 	SendWeaponAnim( ACT_VM_HOLSTER );
 
@@ -1526,10 +1527,9 @@ bool CBaseCombatWeapon::Holster( CBaseCombatWeapon *pSwitchingTo )
 	else
 	{
 		// Hide the weapon when the holster animation's finished
-#ifndef NEO
 		SetContextThink( &CBaseCombatWeapon::HideThink, gpGlobals->curtime + flSequenceDuration, HIDEWEAPON_THINK_CONTEXT );
-#endif // NEO
 	}
+#endif // NEO
 
 	// if we were displaying a hud hint, squelch it.
 	if (m_flHudHintMinDisplayTime && gpGlobals->curtime < m_flHudHintMinDisplayTime)
@@ -2428,7 +2428,7 @@ bool CBaseCombatWeapon::SetIdealActivity( Activity ideal )
 
 	//Find the next sequence in the potential chain of sequences leading to our ideal one
 	int nextSequence = FindTransitionSequence( GetSequence(), m_nIdealSequence, NULL );
-
+	
 	// Don't use transitions when we're deploying
 	if ( ideal != ACT_VM_DRAW && IsWeaponVisible() && nextSequence != m_nIdealSequence )
 	{
