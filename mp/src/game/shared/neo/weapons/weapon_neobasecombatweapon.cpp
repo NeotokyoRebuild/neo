@@ -1058,6 +1058,26 @@ bool CNEOBaseCombatWeapon::ShouldDraw(void)
 	return true;
 }
 
+void CNEOBaseCombatWeapon::ThirdPersonSwitch(bool bThirdPerson)
+{
+	UpdateVisibility();
+	if (!bThirdPerson)
+	{
+		SetModel(GetViewModel());
+	}
+}
+
+
+int CNEOBaseCombatWeapon::RestoreData(const char* context, int slot, int type)
+{
+	int val = BaseClass::RestoreData(context, slot, type);
+	if (ShouldDrawLocalPlayerViewModel() && GetModelIndex() != modelinfo->GetModelIndex(STRING(GetModelName())))
+	{ // NEOHACK (Adam) This restore data method converts the local players' weapon model back to a world model if the player was in third person with this weapon equipped, regardless of whether they are back in first person or not. Need to set it back to a viewmodel (Must an entity have the same model on server and client? If so we need to refactor how we handle view models)
+		SetModel(GetViewModel());
+	}
+	return val;
+}
+
 extern ConVar mat_neo_toc_test;
 int CNEOBaseCombatWeapon::DrawModel(int flags)
 {
