@@ -215,9 +215,17 @@ struct RetButton
 	bool bMouseHover;
 	bool bMouseDoublePressed;
 };
+
+struct LabelExOpt
+{
+	TextStyle eTextStyle;
+	EFont eFont;
+};
+
 void Pad();
 void LabelWrap(const wchar_t *wszText);
 void Label(const wchar_t *wszText);
+void Label(const wchar_t *wszText, const LabelExOpt &opt);
 void Label(const wchar_t *wszLabel, const wchar_t *wszText);
 void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
 RetButton Button(const wchar_t *wszText);

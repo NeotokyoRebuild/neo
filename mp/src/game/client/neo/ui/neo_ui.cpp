@@ -43,7 +43,7 @@ void GCtxDrawSetTextPos(const int x, const int y)
 
 void SwapFont(const EFont eFont)
 {
-	if (g_pCtx->eMode != MODE_PAINT) return;
+	if (g_pCtx->eMode != MODE_PAINT || g_pCtx->eFont == eFont) return;
 	g_pCtx->eFont = eFont;
 	surface()->DrawSetTextFont(g_pCtx->fonts[g_pCtx->eFont].hdl);
 }
@@ -526,6 +526,20 @@ void Label(const wchar_t *wszText)
 		InternalLabel(wszText, g_pCtx->eLabelTextStyle == TEXTSTYLE_CENTER);
 	}
 	InternalUpdatePartitionState(GetMouseinFocusedRet{true, true});
+}
+
+void Label(const wchar_t *wszText, const LabelExOpt &opt)
+{
+	const LabelExOpt bkup{
+		.eTextStyle = g_pCtx->eLabelTextStyle,
+		.eFont = g_pCtx->eFont,
+	};
+
+	SwapFont(opt.eFont);
+	g_pCtx->eLabelTextStyle = opt.eTextStyle;
+	Label(wszText);
+	g_pCtx->eLabelTextStyle = bkup.eTextStyle;
+	SwapFont(bkup.eFont);
 }
 
 void Label(const wchar_t *wszLabel, const wchar_t *wszText)
