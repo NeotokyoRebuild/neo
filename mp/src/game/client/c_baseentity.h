@@ -467,6 +467,10 @@ public:
 	void SetNetworkOrigin( const Vector& org );
 	void SetNetworkAngles( const QAngle& ang );
 
+#ifdef NEO
+	void SetOldOrigin(const Vector& org);
+#endif //NEO
+
 	const Vector&					GetLocalOrigin( void ) const;
 	void							SetLocalOrigin( const Vector& origin );
 	vec_t							GetLocalOriginDim( int iDim ) const;		// You can use the X_INDEX, Y_INDEX, and Z_INDEX defines here.
@@ -1305,6 +1309,9 @@ public:
 
 	float							m_flSimulationTime;
 	float							m_flOldSimulationTime;
+#ifdef NEO
+	float							m_flLastOriginChangeTime;
+#endif // NEO
 	
 	float							m_flCreateTime;
 
@@ -1377,6 +1384,10 @@ public:
 	void							SetWaterType( int nType );
 
 	float							GetElasticity( void ) const;
+#ifdef NEO
+	inline void						SetOldVelocity( const Vector& oldVelocity ) { m_vecOldVelocity = oldVelocity; }
+	inline const Vector&			GetOldVelocity() const { return m_vecOldVelocity; };
+#endif // NEO
 
 	int								GetTextureFrameIndex( void );
 	void							SetTextureFrameIndex( int iIndex );
@@ -1610,6 +1621,9 @@ private:
 
 	Vector							m_vecOldOrigin;
 	QAngle							m_vecOldAngRotation;
+#ifdef NEO
+	Vector							m_vecOldVelocity;
+#endif // NEO
 
 	Vector							m_vecOrigin;
 	CInterpolatedVar< Vector >		m_iv_vecOrigin;
