@@ -519,7 +519,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 			V_memcpy(m_iSavedYOffsets, g_uiCtx.iYOffset, NeoUI::SIZEOF_SECTIONS);
 		}
 		UpdateControls();
-		if (m_state == STATE_SETTINGS && ePrevState >= STATE__POPUPSTART && ePrevState < STATE__TOTAL)
+		if (m_state == STATE_SETTINGS && ePrevState >= STATE__SUBSTATES && ePrevState < STATE__TOTAL)
 		{
 			V_memcpy(g_uiCtx.iYOffset, m_iSavedYOffsets, NeoUI::SIZEOF_SECTIONS);
 		}
