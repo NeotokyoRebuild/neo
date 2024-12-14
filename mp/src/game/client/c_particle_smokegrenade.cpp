@@ -687,7 +687,11 @@ inline void C_ParticleSmokeGrenade::ApplyDynamicLight( const Vector &vParticlePo
 	}
 }
 
-
+#ifdef NEO
+#ifdef GLOWS_ENABLE
+extern ConVar glow_outline_effect_enable;
+#endif // GLOWS_ENABLE
+#endif // NEO
 void C_ParticleSmokeGrenade::RenderParticles( CParticleRenderIterator *pIterator )
 {
 	if (!CanSeeThroughSmokeGrenades())
@@ -742,6 +746,14 @@ void C_ParticleSmokeGrenade::RenderParticles( CParticleRenderIterator *pIterator
 				// Apply the precalculated fade alpha from world geometry.
 				alpha *= pParticle->m_FadeAlpha;
 
+#ifdef NEO
+#ifdef GLOWS_ENABLE
+				if (glow_outline_effect_enable.GetBool())
+				{
+					alpha *= 0.25;
+				}
+#endif // GLOWS_ENABLE
+#endif // NMEO
 				// TODO: optimize this whole routine!
 				Vector color = m_MinColor + (m_MaxColor - m_MinColor) * (pParticle->m_ColorInterp / 255.1f);
 				color.x *= pParticle->m_Color[0] / 255.0f;
