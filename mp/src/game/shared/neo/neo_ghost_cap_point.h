@@ -86,7 +86,6 @@ private:
 
 	CNetworkVar(bool, m_bGhostHasBeenCaptured);
 	CNetworkVar(bool, m_bIsActive);
-	int m_iGameType;
 #else
 	int m_iOwningTeam;
 	int m_iSuccessfulCaptorClientIndex;

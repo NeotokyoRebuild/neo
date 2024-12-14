@@ -12,6 +12,7 @@
 
 #include "GameEventListener.h"
 #include "neo_player_shared.h"
+#include "neo_misc.h"
 
 #ifdef CLIENT_DLL
 	#include "c_neo_player.h"
@@ -106,6 +107,8 @@ enum NeoGameType {
 
 	NEO_GAME_TYPE__TOTAL // Number of game types
 };
+
+extern const SZWSZTexts NEO_GAME_TYPE_DESC_STRS[NEO_GAME_TYPE__TOTAL];
 
 enum NeoRoundStatus {
 	Idle = 0,
@@ -257,6 +260,7 @@ public:
 	bool m_bIgnoreOverThreshold = false;
 	bool ReadyUpPlayerIsReady(CNEO_Player *pNeoPlayer) const;
 
+	void CheckGameType();
 	void StartNextRound();
 
 	virtual const char* GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer) OVERRIDE;
@@ -376,6 +380,7 @@ private:
 	int m_arrayiEntPrevCap[MAX_PLAYERS + 1]; // This is to check for cap-prevention workaround attempts
 	int m_iEntPrevCapSize = 0;
 	int m_iPrintHelpCounter = 0;
+	bool m_bGamemodeTypeBeenInitialized = false;
 #endif
 	CNetworkVar(int, m_nRoundStatus);
 	CNetworkVar(int, m_nGameTypeSelected);

@@ -143,6 +143,7 @@ struct Context
 	int iPartitionY; // Only increments when Y-pos goes down
 	int iLayoutX;
 	int iLayoutY;
+	float flWgXPerc;
 	int iWgXPos;
 	int iYOffset[MAX_SECTIONS] = {};
 	bool abYMouseDragOffset[MAX_SECTIONS] = {};

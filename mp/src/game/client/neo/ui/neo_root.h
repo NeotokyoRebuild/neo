@@ -204,6 +204,7 @@ public:
 	bool m_bOnLoadingScreen = false;
 	int m_iSavedYOffsets[NeoUI::MAX_SECTIONS] = {};
 	bool m_bSprayGalleryRefresh = false;
+	float m_flWideAs43 = 0.0f;
 };
 
 extern CNeoRoot *g_pNeoRoot;
