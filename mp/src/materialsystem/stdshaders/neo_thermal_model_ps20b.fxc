@@ -38,13 +38,13 @@ PixelShaderLightInfo cLightInfo[3]			: register( PSREG_LIGHT_INFO_ARRAY );				//
 #define g_FlashlightPos					g_FlashlightPos_RimBoost.xyz
 
 sampler BaseTextureSampler		: register( s0 );	// Base map, selfillum in alpha
+sampler ModelGradientSampler	: register( s1 );	// gradient correct for model / view normal dotproduct
 sampler ShadowDepthSampler		: register( s4 );	// Flashlight shadow depth map sampler
 sampler NormalizeRandRotSampler	: register( s5 );	// Normalization / RandomRotation samplers
 sampler FlashlightSampler		: register( s6 );	// Flashlight cookie
 
-const float3 g_ViewDirection : register(c0);
-const float g_Multiplier : register(c3);
-
+const float3 g_ViewDirection : register(c2);
+const float g_Offset : register(c3);
 struct PS_INPUT
 {
 	float2 baseTexCoord	: TEXCOORD0;
@@ -58,12 +58,11 @@ float4 main( PS_INPUT i ) : COLOR
 {
 	float4 baseColor = tex2D( BaseTextureSampler, i.baseTexCoord );
 
-	float dotProduct = (0.41666 * dot(g_ViewDirection, i.worldNormal)) + 0.41666; //5/12
-	float3 result = ( 0, 0, 0 ) + dotProduct;
+	float dotProduct = (0.5 * dot(g_ViewDirection, i.worldNormal)) + 0.5;
+	baseColor = tex2D( ModelGradientSampler, float2(dotProduct, 0.5)) + g_Offset;
 
 	float fogFactor = CalcPixelFogFactor( PIXELFOGTYPE, g_FogParams, g_EyePos.z, i.worldPos.z, i.projPos.z );
-
 	bool bWriteDepthToAlpha = ( WRITE_DEPTH_TO_DESTALPHA != 0 ) && ( WRITEWATERFOGTODESTALPHA == 0 );
 
-	return FinalOutput( float4( result, baseColor.a ), fogFactor, PIXELFOGTYPE, TONEMAP_SCALE_LINEAR, bWriteDepthToAlpha, i.projPos.z );
+	return FinalOutput( baseColor, fogFactor, PIXELFOGTYPE, TONEMAP_SCALE_LINEAR, bWriteDepthToAlpha, i.projPos.z );
 }

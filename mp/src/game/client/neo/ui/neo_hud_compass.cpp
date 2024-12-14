@@ -310,6 +310,18 @@ void CNEOHud_Compass::DrawCompass() const
 			}
 		}
 	}
+
+	static const Color FADE_END_COLOR(116, 116, 116, 255);
+	DrawNeoHudRoundedBoxFaded(
+		resXHalf - xBoxWidthHalf, m_resY - yBoxHeight - margin,
+		resXHalf, m_resY - margin,
+		FADE_END_COLOR, 255, 0, true,
+		true, false, true, false);
+	DrawNeoHudRoundedBoxFaded(
+		resXHalf, m_resY - yBoxHeight - margin,
+		resXHalf + xBoxWidthHalf, m_resY - margin,
+		FADE_END_COLOR, 0, 255, true,
+		false, true, false, true);
 }
 
 void CNEOHud_Compass::DrawDebugCompass() const

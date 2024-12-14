@@ -481,13 +481,12 @@ void CNEOBaseCombatWeapon::ProcessAnimationEvents()
 		return;
 	}
 
-	const auto next = [this](const int activity) {
+	const auto next = [this](const int activity, const float nextAttackDelay = 0.2) {
 		SendWeaponAnim(activity);
 		if (GetNeoWepBits() & NEO_WEP_THROWABLE)
 		{
 			return;
 		}
-		constexpr auto nextAttackDelay = 0.2;
 		m_flNextPrimaryAttack = max(gpGlobals->curtime + nextAttackDelay, m_flNextPrimaryAttack);
 		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
 	};
@@ -506,12 +505,14 @@ void CNEOBaseCombatWeapon::ProcessAnimationEvents()
 	else if (m_bLowered && m_bRoundBeingChambered)
 	{ // For bolt action weapons
 		m_bLowered = false;
-		next(ACT_VM_PULLBACK);
+		next(ACT_VM_PULLBACK, 1.2f);
 	}
 
-	if (m_bLowered && gpGlobals->curtime > m_flNextPrimaryAttack)
+	else if (m_bLowered && gpGlobals->curtime > m_flNextPrimaryAttack)
 	{
-		next(ACT_VM_IDLE_LOWERED);
+		SetWeaponIdleTime(gpGlobals->curtime + 0.2);
+		m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
+		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
 	}
 }
 
@@ -818,6 +819,7 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 		pPlayer->DoMuzzleFlash();
 
 	SendWeaponAnim(GetPrimaryAttackActivity());
+	SetWeaponIdleTime(gpGlobals->curtime + 2.0);
 
 	// player "shoot" animation
 	pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
@@ -1094,7 +1096,7 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 	}
 	else if (inThermalVision && (pOwner && !pOwner->IsCloaked()))
 	{
-		IMaterial* pass = materials->FindMaterial("dev/thermal_third", TEXTURE_GROUP_MODEL);
+		IMaterial* pass = materials->FindMaterial("dev/thermal_model", TEXTURE_GROUP_MODEL);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::DrawModel(flags);
 		modelrender->ForcedMaterialOverride(nullptr);

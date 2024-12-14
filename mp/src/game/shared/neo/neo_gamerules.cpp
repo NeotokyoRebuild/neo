@@ -26,6 +26,7 @@
 	#include "inetchannelinfo.h"
 	#include "neo_dm_spawn.h"
 	#include "neo_misc.h"
+	#include "neo_game_config.h"
 
 extern ConVar weaponstay;
 #endif
@@ -49,14 +50,33 @@ ConVar neo_sv_clantag_allow("neo_sv_clantag_allow", "1", FCVAR_REPLICATED, "", t
 ConVar neo_sv_dev_test_clantag("neo_sv_dev_test_clantag", "", FCVAR_REPLICATED | FCVAR_CHEAT | FCVAR_DEVELOPMENTONLY, "Debug-mode only - Override all clantags with this value.");
 #endif
 
-ConVar neo_vote_game_mode("neo_vote_game_mode", "1", FCVAR_USERINFO, "Vote on game mode to play. TDM=0, CTG=1, VIP=2, DM=3", true, 0, true, NEO_GAME_TYPE__TOTAL - 1);
+#define STR_GAMEOPTS "TDM=0, CTG=1, VIP=2, DM=3"
+#define STR_GAMEBWOPTS "TDM=1, CTG=2, VIP=4, DM=8"
+ConVar neo_vote_game_mode("neo_vote_game_mode", "1", FCVAR_USERINFO, "Vote on game mode to play. " STR_GAMEOPTS, true, 0, true, NEO_GAME_TYPE__TOTAL - 1);
 ConVar neo_vip_eligible("neo_cl_vip_eligible", "1", FCVAR_ARCHIVE, "Eligible for VIP", true, 0, true, 1);
 #ifdef GAME_DLL
 ConVar sv_neo_vip_ctg_on_death("sv_neo_vip_ctg_on_death", "0", FCVAR_ARCHIVE, "Spawn Ghost when VIP dies, continue the game", true, 0, true, 1);
 #endif
 
 #ifdef GAME_DLL
-ConVar sv_neo_change_game_type_mid_round("sv_neo_change_game_type_mid_round", "1", FCVAR_REPLICATED, "Allow game type change mid-match");
+// NEO TODO (nullsystem): Change how voting done from convar to menu selection
+enum eGamemodeEnforcement
+{
+	GAMEMODE_ENFORCEMENT_MAP = 0,	// Only use the gamemode enforced by the map
+	GAMEMODE_ENFORCEMENT_SINGLE,	// Only use the single gamemode enforced by the server
+	GAMEMODE_ENFORCEMENT_RAND,		// Randomly choose a gamemode on each map initialization based on a list
+	GAMEMODE_ENFORCEMENT_VOTE,		// Allow vote by players on pre-match
+
+	GAMEMODE_ENFORCEMENT__TOTAL,
+};
+ConVar neo_sv_gamemode_enforcement("neo_sv_gamemode_enforcement", "0", FCVAR_REPLICATED,
+								   "How the gamemode are determined. 0 = By map, 1 = By neo_sv_gamemode_single, 2 = Random, 3 = Pre-match voting",
+								   true, 0.0f, true, GAMEMODE_ENFORCEMENT__TOTAL - 1);
+ConVar neo_sv_gamemode_single("neo_sv_gamemode_single", "3", FCVAR_REPLICATED, "The gamemode that is enforced by the server. " STR_GAMEOPTS,
+							  true, 0.0f, true, NEO_GAME_TYPE__TOTAL - 1);
+ConVar neo_sv_gamemode_random_allow("neo_sv_gamemode_random_allow", "11", FCVAR_REPLICATED,
+									"In bitwise, the gamemodes that are allowed for random selection. Default = TDM+CTG+DM. " STR_GAMEBWOPTS,
+									true, 1.0f, true, (1 << NEO_GAME_TYPE__TOTAL)); // Can't be zero, minimum has to set to a bitwise value
 #endif
 
 #ifdef GAME_DLL
@@ -244,6 +264,7 @@ extern CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
 static const char *s_NeoPreserveEnts[] =
 {
 	"neo_gamerules",
+	"neo_game_config",
 	"info_player_attacker",
 	"info_player_defender",
 	"info_player_start",
@@ -366,10 +387,7 @@ CNEORules::CNEORules()
 		}
 	}
 
-	if (GetGameType() == NEO_GAME_TYPE_CTG || GetGameType() == NEO_GAME_TYPE_VIP)
-	{
-		ResetGhostCapPoints();
-	}
+	m_nGameTypeSelected = NEO_GAME_TYPE_CTG;
 #endif
 
 	ResetMapSessionCommon();
@@ -641,6 +659,97 @@ void CNEORules::GetDMHighestScorers(
 	}
 }
 
+#ifdef GAME_DLL
+void CNEORules::CheckGameType()
+{
+	// Static as CNEORules doesn't persists through map changes
+	static int iStaticInitOnCmd = -1;
+	static int iStaticInitOnRandAllow = -1;
+	static bool staticGamemodesCanPick[NEO_GAME_TYPE__TOTAL] = {};
+	static int iStaticLastPick = -1; // Mostly so it doesn't repeat on array refresh
+
+	const int iGamemodeEnforce = neo_sv_gamemode_enforcement.GetInt();
+	const int iGamemodeRandAllow = neo_sv_gamemode_random_allow.GetInt();
+	// Update on what to select on first map load or server operator changes neo_sv_gamemode_enforcement
+	const bool bCheckOnGameType = (!m_bGamemodeTypeBeenInitialized || iGamemodeEnforce != iStaticInitOnCmd ||
+			iGamemodeRandAllow != iStaticInitOnRandAllow);
+	if (!bCheckOnGameType)
+	{
+		return;
+	}
+
+	// NEO NOTE (nullsystem): CNEORules always recreated on map change, yet entities properly found
+	// happens later. So checking and init on game type will execute here once.
+	switch (iGamemodeEnforce)
+	{
+	case GAMEMODE_ENFORCEMENT_SINGLE:
+	{
+		m_nGameTypeSelected = neo_sv_gamemode_single.GetInt();
+	} break;
+	case GAMEMODE_ENFORCEMENT_RAND:
+	{
+		const int iBWAllow = neo_sv_gamemode_random_allow.GetInt(); // Min of 1, cannot be zero
+		Assert(iBWAllow > 0);
+
+		// Check if all are used up
+		{
+			int iAllowsPicks = 0;
+			for (int i = 0; i < NEO_GAME_TYPE__TOTAL; ++i)
+			{
+				iAllowsPicks += staticGamemodesCanPick[i];
+			}
+			if (iAllowsPicks == 0 || iGamemodeRandAllow != iStaticInitOnRandAllow)
+			{
+#ifdef DEBUG
+				DevMsg("Array reset!\n");
+#endif
+				// Preset true to those not-allowed, preset false to those allowed
+				int iTotalPicks = 0;
+				for (int i = 0; i < NEO_GAME_TYPE__TOTAL; ++i)
+				{
+					const bool bCanPick = (iBWAllow & (1 << i));
+					iTotalPicks += bCanPick;
+					staticGamemodesCanPick[i] = bCanPick;
+				}
+				if (iTotalPicks <= 1)
+				{
+					iStaticLastPick = -1;
+				}
+			}
+		}
+
+		m_nGameTypeSelected = RandomInt(0, NEO_GAME_TYPE__TOTAL - 1);
+		for (int iWalk = 0;
+			 (!staticGamemodesCanPick[m_nGameTypeSelected] || m_nGameTypeSelected == iStaticLastPick) &&
+			 iWalk < NEO_GAME_TYPE__TOTAL;
+			 ++iWalk)
+		{
+			m_nGameTypeSelected = LoopAroundInArray(m_nGameTypeSelected + 1, NEO_GAME_TYPE__TOTAL);
+		}
+
+#ifdef DEBUG
+		for (int i = 0; i < NEO_GAME_TYPE__TOTAL; ++i)
+		{
+			DevMsg("%d | %s: %s\n", i, NEO_GAME_TYPE_DESC_STRS[i].szStr, staticGamemodesCanPick[i] ? "Allowed" : "Not allowed");
+		}
+		DevMsg("Pick: %d | Prev: %d\n", m_nGameTypeSelected.Get(), iStaticLastPick);
+#endif
+
+		staticGamemodesCanPick[m_nGameTypeSelected] = false;
+		iStaticLastPick = m_nGameTypeSelected;
+	} break;
+	default:
+	{
+		const auto pEntGameCfg = static_cast<CNEOGameConfig *>(gEntList.FindEntityByClassname(nullptr, "neo_game_config"));
+		m_nGameTypeSelected = (pEntGameCfg) ? pEntGameCfg->m_GameType : NEO_GAME_TYPE_CTG;
+	} break;
+	}
+	m_bGamemodeTypeBeenInitialized = true;
+	iStaticInitOnCmd = iGamemodeEnforce;
+	iStaticInitOnRandAllow = iGamemodeRandAllow;
+}
+#endif
+
 void CNEORules::Think(void)
 {
 #ifdef GAME_DLL
@@ -648,6 +757,7 @@ void CNEORules::Think(void)
 	bool bIsPause = m_nRoundStatus == NeoRoundStatus::Pause;
 	if (bIsIdleState && gpGlobals->curtime > m_flNeoNextRoundStartTime)
 	{
+		CheckGameType();
 		StartNextRound();
 		return;
 	}
@@ -1881,17 +1991,17 @@ void CNEORules::StartNextRound()
 
 	CleanUpMap();
 
+	if (neo_sv_gamemode_enforcement.GetInt() == GAMEMODE_ENFORCEMENT_VOTE && m_nRoundStatus == NeoRoundStatus::Warmup)
+	{
+		GatherGameTypeVotes();
+	}
+
 	// NEO TODO (nullsystem): There should be a more sophisticated logic to be able to restore XP
 	// for when moving from idle to preroundfreeze, or in the future, competitive with whatever
 	// extra stuff in there. But to keep it simple: just clear if it was a warmup.
 	const bool clearXP = (m_nRoundStatus == NeoRoundStatus::Warmup);
 	SetRoundStatus(NeoRoundStatus::PreRoundFreeze);
 	++m_iRoundNumber;
-
-	if (!GetGameType() || sv_neo_change_game_type_mid_round.GetBool())
-	{
-		GatherGameTypeVotes();
-	}
 
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
@@ -1956,11 +2066,6 @@ void CNEORules::StartNextRound()
 	}
 
 	FireLegacyEvent_NeoRoundEnd();
-
-	if (!GetGameType() || sv_neo_change_game_type_mid_round.GetBool())
-	{
-		GatherGameTypeVotes();
-	}
 
 	char RoundMsg[27];
 	static_assert(sizeof(RoundMsg) == sizeof("- CTG ROUND 99 STARTED -\n\0"), "RoundMsg requires to fit round numbers up to 2 digits");
@@ -2032,23 +2137,16 @@ void CNEORules::CreateStandardEntities(void)
 #endif
 }
 
+const SZWSZTexts NEO_GAME_TYPE_DESC_STRS[NEO_GAME_TYPE__TOTAL] = {
+	SZWSZ_INIT("Team Deathmatch"),
+	SZWSZ_INIT("Capture the Ghost"),
+	SZWSZ_INIT("Extract or Kill the VIP"),
+	SZWSZ_INIT("Deathmatch"),
+};
+
 const char *CNEORules::GetGameDescription(void)
 {
-	//DevMsg("Querying CNEORules game description\n");
-
-	// NEO TODO (Rain): get a neo_game_config so we can specify better
-	switch(GetGameType()) {
-		case NEO_GAME_TYPE_TDM:
-			return "Team Deathmatch";
-		case NEO_GAME_TYPE_CTG:
-			return "Capture the Ghost";
-		case NEO_GAME_TYPE_VIP:
-			return "Extract or Kill the VIP";
-		case NEO_GAME_TYPE_DM:
-			return "Deathmatch";
-		default:
-			return BaseClass::GetGameDescription();
-	}
+	return NEO_GAME_TYPE_DESC_STRS[GetGameType()].szStr;
 }
 
 const CViewVectors *CNEORules::GetViewVectors() const
