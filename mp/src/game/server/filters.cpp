@@ -10,8 +10,6 @@
 #include "ai_squad.h"
 #include "ai_basenpc.h"
 
-#include "neo_player.h"
-
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -325,6 +323,8 @@ BEGIN_DATADESC( FilterTeam )
 
 END_DATADESC()
 
+#ifdef NEO
+#include "neo_player.h"
 
 // ###################################################################
 //	> FilterNeoClass
@@ -342,9 +342,7 @@ public:
 		if (!pEntity || !pEntity->IsPlayer())
 			return false;
 
-		CNEO_Player* pPlayer = dynamic_cast<CNEO_Player*>(pEntity);
-		if (!pPlayer)
-			return false;
+		CNEO_Player* pPlayer = static_cast<CNEO_Player*>(pEntity);
 
 		return (pPlayer->GetClass() == m_iFilterNeoClass);
 	}
@@ -359,6 +357,7 @@ BEGIN_DATADESC(FilterNeoClass)
 
 END_DATADESC()
 
+#endif // NEO
 
 // ###################################################################
 //	> FilterMassGreater
