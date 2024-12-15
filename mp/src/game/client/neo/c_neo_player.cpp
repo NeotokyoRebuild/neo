@@ -479,7 +479,7 @@ void C_NEO_Player::CheckThermOpticButtons()
 
 		if (m_HL2Local.m_cloakPower >= CLOAK_AUX_COST)
 		{
-			m_bInThermOpticCamo = !m_bInThermOpticCamo;
+			SetCloakState(!m_bInThermOpticCamo);
 		}
 	}
 
@@ -870,7 +870,7 @@ void C_NEO_Player::PreThink( void )
 
 				if (m_HL2Local.m_cloakPower < CLOAK_AUX_COST)
 				{
-					m_bInThermOpticCamo = false;
+					SetCloakState(false);
 
 					m_HL2Local.m_cloakPower = 0.0f;
 					m_flCamoAuxLastTime = 0;
@@ -1614,6 +1614,20 @@ void C_NEO_Player::PlayCloakSound(void)
 	params.m_nChannel = CHAN_VOICE;
 
 	EmitSound(filter, entindex(), params);
+}
+
+void C_NEO_Player::SetCloakState(bool state)
+{
+	m_bInThermOpticCamo = state;
+
+	const auto setShadowState = m_bInThermOpticCamo ? [](CBaseCombatWeapon* weapon) {weapon->AddEffects(EF_NOSHADOW);} : [](CBaseCombatWeapon* weapon) {weapon->RemoveEffects(EF_NOSHADOW);};
+	for (int i = 0; i < MAX_WEAPONS; i++)
+	{
+		if (CBaseCombatWeapon* weapon = GetWeapon(i))
+		{
+			setShadowState(weapon);
+		}
+	}
 }
 
 void C_NEO_Player::PreDataUpdate(DataUpdateType_t updateType)

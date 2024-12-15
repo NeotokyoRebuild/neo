@@ -249,6 +249,11 @@ void CNEOBaseCombatWeapon::Spawn()
 void CNEOBaseCombatWeapon::Equip(CBaseCombatCharacter* pOwner)
 {
 	BaseClass::Equip(pOwner);
+	auto neoOwner = static_cast<CNEO_Player*>(pOwner);
+	if (neoOwner->m_bInThermOpticCamo)
+	{
+		AddEffects(EF_NOSHADOW);
+	}
 #ifndef CLIENT_DLL
 	NEO_WEP_BITS_UNDERLYING_TYPE weapon = GetNeoWepBits();
 	if (weapon & (NEO_WEP_KYLA | NEO_WEP_MILSO | NEO_WEP_TACHI))
@@ -1103,16 +1108,6 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 	}
 
 	return ret;
-}
-
-ShadowType_t CNEOBaseCombatWeapon::ShadowCastType(void)
-{
-	C_NEO_Player* owner = static_cast<C_NEO_Player*>(ToBasePlayer(GetOwner()));
-	if (owner && owner->IsCloaked())
-	{
-		return SHADOWS_NONE;
-	}
-	return BaseClass::ShadowCastType();
 }
 
 RenderGroup_t CNEOBaseCombatWeapon::GetRenderGroup()

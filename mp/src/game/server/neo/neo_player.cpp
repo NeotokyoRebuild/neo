@@ -715,7 +715,7 @@ void CNEO_Player::PreThink(void)
 
 				if (m_HL2Local.m_cloakPower <= 0.1f)
 				{
-					m_bInThermOpticCamo = false;
+					SetCloakState(false);
 					m_flCamoAuxLastTime = 0;
 				}
 				else
@@ -850,6 +850,20 @@ void CNEO_Player::PlayCloakSound()
 	}
 }
 
+void CNEO_Player::SetCloakState(bool state)
+{
+	m_bInThermOpticCamo = state;
+
+	const auto setShadowState = m_bInThermOpticCamo ? [](CBaseCombatWeapon* weapon) {weapon->AddEffects(EF_NOSHADOW);} : [](CBaseCombatWeapon* weapon) {weapon->RemoveEffects(EF_NOSHADOW);};
+	for (int i = 0; i < MAX_WEAPONS; i++)
+	{
+		if (CBaseCombatWeapon* weapon = GetWeapon(i))
+		{
+			setShadowState(weapon);
+		}
+	}
+}
+
 void CNEO_Player::CloakFlash()
 {
 	CRecipientFilter filter;
@@ -880,7 +894,7 @@ void CNEO_Player::CheckThermOpticButtons()
 
 		if (m_HL2Local.m_cloakPower >= CLOAK_AUX_COST)
 		{
-			m_bInThermOpticCamo = !m_bInThermOpticCamo;
+			SetCloakState(!m_bInThermOpticCamo);
 
 			if (m_bInThermOpticCamo)
 			{

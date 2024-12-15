@@ -710,6 +710,9 @@ void CBaseCombatWeapon::Drop( const Vector &vecVelocity )
 	SetGravity(1.0);
 	m_iState = WEAPON_NOT_CARRIED;
 	RemoveEffects( EF_NODRAW );
+#ifdef NEO
+	RemoveEffects( EF_NOSHADOW );
+#endif // NEO
 	FallInit();
 	SetGroundEntity( NULL );
 	SetThink( &CBaseCombatWeapon::SetPickupTouch );

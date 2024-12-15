@@ -211,6 +211,10 @@ private:
 	void CheckLeanButtons();
 	void PlayCloakSound();
 	void CloakFlash();
+public:
+	void SetCloakState(bool state);
+
+private:
 
 	bool IsAllowedToSuperJump(void);
 
