@@ -854,12 +854,14 @@ void CNEO_Player::SetCloakState(bool state)
 {
 	m_bInThermOpticCamo = state;
 
-	const auto setShadowState = m_bInThermOpticCamo ? [](CBaseCombatWeapon* weapon) {weapon->AddEffects(EF_NOSHADOW);} : [](CBaseCombatWeapon* weapon) {weapon->RemoveEffects(EF_NOSHADOW);};
+	void (CBaseCombatWeapon:: * setShadowState)(int) = m_bInThermOpticCamo ? &CBaseCombatWeapon::AddEffects 
+																		   : &CBaseCombatWeapon::RemoveEffects;
+
 	for (int i = 0; i < MAX_WEAPONS; i++)
 	{
 		if (CBaseCombatWeapon* weapon = GetWeapon(i))
 		{
-			setShadowState(weapon);
+			(weapon->*setShadowState)(EF_NOSHADOW);
 		}
 	}
 }

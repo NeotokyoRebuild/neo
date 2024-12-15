@@ -709,10 +709,11 @@ void CBaseCombatWeapon::Drop( const Vector &vecVelocity )
 	// clear follow stuff, setup for collision
 	SetGravity(1.0);
 	m_iState = WEAPON_NOT_CARRIED;
-	RemoveEffects( EF_NODRAW );
 #ifdef NEO
-	RemoveEffects( EF_NOSHADOW );
-#endif // NEO
+	RemoveEffects(EF_NODRAW | EF_NOSHADOW);
+#else
+	RemoveEffects( EF_NODRAW );
+#endif
 	FallInit();
 	SetGroundEntity( NULL );
 	SetThink( &CBaseCombatWeapon::SetPickupTouch );
