@@ -10,6 +10,7 @@
 #include "dlight.h"
 
 #include "iinput.h"
+#include "in_main.h"
 
 #include "clientmode_hl2mpnormal.h"
 #include <vgui/IScheme.h>
@@ -905,7 +906,6 @@ void C_NEO_Player::PreThink( void )
 			glow_outline_effect_enable.SetValue(false);
 #endif // GLOWS_ENABLE
 		}
-		Lean();
 	}
 	else
 	{
@@ -913,6 +913,11 @@ void C_NEO_Player::PreThink( void )
 		{
 			m_bFirstAliveTick = true;
 		}
+	}
+
+	if (IsAlive() || m_vecLean != vec3_origin)
+	{
+		Lean();
 	}
 
 	// Eek. See rationale for this thing in CNEO_Player::PreThink
@@ -1039,7 +1044,7 @@ void C_NEO_Player::PostThink(void)
 
 			Weapon_SetZoom(false);
 			m_bInVision = false;
-			m_bInLean = NEO_LEAN_NONE;
+			LeanReset();
 
 			if (IsLocalPlayer() && (GetTeamNumber() == TEAM_JINRAI || GetTeamNumber() == TEAM_NSF))
 			{
