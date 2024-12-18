@@ -201,6 +201,9 @@ public:
 
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);
 
+	void InputSetPlayerModel( inputdata_t & inputData );
+	bool m_bAllowGibbing;
+
 private:
 	float GetActiveWeaponSpeedScale() const;
 	float GetBackwardsMovementPenaltyScale() const { return ((m_nButtons & IN_BACK) ? NEO_SLOW_MODIFIER : 1.0); }
