@@ -3179,8 +3179,39 @@ int C_BaseAnimating::DrawModel( int flags )
 		{
 			extraFlags |= STUDIO_IGNORE_NEO_EFFECTS;
 		}
-#endif
 
+		auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
+		Assert(pLocalPlayer);
+
+		const bool inMotionVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT;
+		
+		auto rootMoveParent = GetRootMoveParent();
+		Vector vel;
+		if (IsRagdoll())
+		{
+			vel = rootMoveParent->GetOldVelocity();
+		}
+		else
+		{
+			vel = rootMoveParent->GetAbsVelocity();
+			if (vel == vec3_origin)
+			{
+				rootMoveParent->EstimateAbsVelocity(vel);
+			}
+		}
+		bool isMoving = false;
+		if (inMotionVision && vel.LengthSqr() > 0.25 && !IsViewModel() && !(extraFlags & STUDIO_IGNORE_NEO_EFFECTS)) // MOVING_SPEED_MINIMUM ^2
+		{
+			isMoving = true;
+			if (!IsFollowingEntity())
+			{
+				InternalDrawModel(flags | extraFlags);
+				IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
+				Assert(!IsErrorMaterial(pass));
+				modelrender->ForcedMaterialOverride(pass);
+			}
+		}
+#endif // NEO
 		// Necessary for lighting blending
 		CreateModelInstance();
 
@@ -3202,10 +3233,25 @@ int C_BaseAnimating::DrawModel( int flags )
 				// BUGBUG: Fixup bbox and do a separate cull for follow object
 				if ( baseDrawn )
 				{
+#ifdef NEO
+					if (isMoving)
+					{ // Drawing an active weapon first draws the entity holding the weapon. This call removes the material override before the draw call on the active weapon can complete, re-override here
+						InternalDrawModel(STUDIO_RENDER | extraFlags);
+						IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
+						Assert(!IsErrorMaterial(pass));
+						modelrender->ForcedMaterialOverride(pass);
+					}
+#endif // NEO
 					drawn = InternalDrawModel( STUDIO_RENDER|extraFlags );
 				}
 			}
 		}
+#ifdef NEO
+		if (isMoving)
+		{
+			modelrender->ForcedMaterialOverride(nullptr);
+		}
+#endif // NEO
 	}
 
 	// If we're visualizing our bboxes, draw them
@@ -4454,6 +4500,22 @@ void C_BaseAnimating::RagdollMoved( void )
 	m_pRagdoll->GetRagdollBounds( mins, maxs );
 	SetCollisionBounds( mins, maxs );
 
+#ifdef NEO
+	if (GetOldOrigin() != vec3_origin)
+	{
+		if (m_flLastOriginChangeTime != gpGlobals->curtime)
+		{
+			SetOldVelocity((GetAbsOrigin() - GetOldOrigin()) / (gpGlobals->curtime - m_flLastOriginChangeTime));
+			SetOldOrigin(GetAbsOrigin());
+		}
+	}
+	else
+	{ // First time
+		auto ragdoll = static_cast<C_HL2MPRagdoll*>(GetBaseAnimating());
+		SetOldVelocity(ragdoll->GetRagdollVelocity());
+		SetOldOrigin(GetAbsOrigin());
+	}
+#endif // NEO
 	// If the ragdoll moves, its render-to-texture shadow is dirty
 	InvalidatePhysicsRecursive( ANIMATION_CHANGED ); 
 }
