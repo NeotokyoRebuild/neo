@@ -1055,19 +1055,13 @@ void CNEO_Player::PostThink(void)
 
 void CNEO_Player::PlayerDeathThink()
 {
-	if (m_nButtons & ~IN_SCORE)
-	{
-		m_bEnterObserver = true;
+	if (!IsObserver()) {
+		PlayerDeathThinkInner();
+		return;
 	}
 
-	PlayerDeathThinkInner();
-
 	if(GetTeamNumber() > LAST_SHARED_TEAM)
-	{
-		/*if (IsObserver() && GetObserverMode() == OBS_MODE_IN_EYE && !IsValidObserverTarget(m_hObserverTarget)) {
-			SetObserverTarget(FindNextObserverTarget(false));
-		}*/
-		
+	{		
 		auto canSpawn = g_pGameRules->FPlayerCanRespawn(this);
 		auto hasSelectedLoadout = m_iLoadoutWepChoice > -1;
 
@@ -1128,6 +1122,13 @@ void CNEO_Player::PlayerDeathThinkInner()
 
 	IncrementInterpolationFrame();
 	m_flPlaybackRate = 0.0;
+
+	if (g_pGameRules->IsMultiplayer() && (gpGlobals->curtime > (m_flDeathTime + DEATH_ANIMATION_TIME)))
+	{
+		// go to dead camera.
+		m_bEnterObserver = true;
+		StartObserverMode(m_iObserverLastMode);
+	}
 }
 
 void CNEO_Player::Weapon_AimToggle(CNEOBaseCombatWeapon *pNeoWep, const NeoWeponAimToggleE toggleType)
@@ -2369,7 +2370,9 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 		else
 		{
 			StartObserverMode(m_iObserverLastMode);
-			if (m_iObserverLastMode == OBS_MODE_IN_EYE || m_iObserverLastMode == OBS_MODE_CHASE) {
+
+			if (m_iObserverLastMode == OBS_MODE_IN_EYE || m_iObserverLastMode == OBS_MODE_CHASE)
+			{
 				SetObserverTarget(FindNextObserverTarget(false));
 			}
 		}
@@ -2398,13 +2401,12 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 			if (newTeam->GetNumPlayers() > 0)
 			{
 				obsMode = OBS_MODE_IN_EYE;
-				SetObserverTarget(newTeam->GetPlayer(0));
+				SetObserverTarget(FindNextObserverTarget(false));
 			}
 
 			if (!IsObserver())
 			{
 				StartObserverMode(obsMode);
-				State_Transition(STATE_OBSERVER_MODE);
 			}
 			else
 			{
