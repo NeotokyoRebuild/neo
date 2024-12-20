@@ -115,6 +115,8 @@ CNEOScoreBoard::~CNEOScoreBoard()
 		delete m_pImageList;
 		m_pImageList = NULL;
 	}
+
+	g_pNeoScoreBoard = nullptr;
 }
 
 //-----------------------------------------------------------------------------
@@ -323,7 +325,7 @@ void CNEOScoreBoard::FireGameEvent( IGameEvent *event )
 		CBasePlayer* pPlayer = UTIL_PlayerByUserId(userid);
 		if (pPlayer)
 		{
-			UpdatePlayerAvatar(pPlayer->index, nullptr, true);
+			UpdatePlayerAvatar(pPlayer->index, nullptr);
 		}
 	}
 
@@ -763,10 +765,10 @@ void CNEOScoreBoard::GetPlayerScoreInfo(int playerIndex, KeyValues *kv)
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-void CNEOScoreBoard::UpdatePlayerAvatar( int playerIndex, KeyValues *kv, bool skipKey )
+void CNEOScoreBoard::UpdatePlayerAvatar( int playerIndex, KeyValues *kv )
 {
 	// Update their avatar
-	if ( (kv || skipKey) && UpdateAvatars() && steamapicontext->SteamFriends() && steamapicontext->SteamUtils() )
+	if (UpdateAvatars() && steamapicontext->SteamFriends() && steamapicontext->SteamUtils() )
 	{
 		player_info_t pi;
 		if ( engine->GetPlayerInfo( playerIndex, &pi ) )
@@ -792,7 +794,7 @@ void CNEOScoreBoard::UpdatePlayerAvatar( int playerIndex, KeyValues *kv, bool sk
 					iImageIndex = m_mapAvatarsToImageList[ iMapIndex ];
 				}
 
-				if (!skipKey)
+				if (kv)
 				{
 					kv->SetInt( "avatar", iImageIndex );
 				}

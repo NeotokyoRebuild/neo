@@ -46,7 +46,7 @@ public:
 	// IGameEventListener interface:
 	virtual void FireGameEvent( IGameEvent *event);
 
-	virtual void UpdatePlayerAvatar(int playerIndex, KeyValues* kv, bool skipKey = false);
+	virtual void UpdatePlayerAvatar(int playerIndex, KeyValues* kv);
 
 	vgui::ImageList				*m_pImageList;
 	CUtlMap<CSteamID,int>		m_mapAvatarsToImageList;
