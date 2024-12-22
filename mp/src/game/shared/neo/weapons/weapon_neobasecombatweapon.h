@@ -255,8 +255,6 @@ public:
 	virtual void ThirdPersonSwitch(bool bThirdPerson) override;
 	virtual int RestoreData(const char* context, int slot, int type) override;
 	virtual int DrawModel(int flags) override;
-	virtual int InternalDrawModel(int flags) override;
-	virtual ShadowType_t ShadowCastType(void) override;
 	virtual RenderGroup_t GetRenderGroup() override;
 	virtual bool UsesPowerOfTwoFrameBufferTexture() override;
 #endif
