@@ -993,7 +993,7 @@ CAmmoDef *GetAmmoDef()
 		int count = 1;
 		count = clamp(count, 1, 16);
 
-		int iTeam = -1;
+		int iTeam = -1; // NEO NOTE (Rain): overridable at runtime with cvar: bot_next_team
 
 		// Look at -frozen.
 		bool bFrozen = false;

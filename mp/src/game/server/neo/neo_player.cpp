@@ -549,7 +549,10 @@ void CNEO_Player::Spawn(void)
 
 	SetPlayerTeamModel();
 	SetViewOffset(VEC_VIEW_NEOSCALE(this));
-	GiveLoadoutWeapon();
+	if (teamNumber == TEAM_JINRAI || teamNumber == TEAM_NSF)
+	{
+		GiveLoadoutWeapon();
+	}
 
 	if (GetBotController()) {
 		GetBotController()->Spawn();
@@ -719,7 +722,7 @@ void CNEO_Player::PreThink(void)
 
 				if (m_HL2Local.m_cloakPower <= 0.1f)
 				{
-					m_bInThermOpticCamo = false;
+					SetCloakState(false);
 					m_flCamoAuxLastTime = 0;
 				}
 				else
@@ -854,6 +857,22 @@ void CNEO_Player::PlayCloakSound()
 	}
 }
 
+void CNEO_Player::SetCloakState(bool state)
+{
+	m_bInThermOpticCamo = state;
+
+	void (CBaseCombatWeapon:: * setShadowState)(int) = m_bInThermOpticCamo ? &CBaseCombatWeapon::AddEffects 
+																		   : &CBaseCombatWeapon::RemoveEffects;
+
+	for (int i = 0; i < MAX_WEAPONS; i++)
+	{
+		if (CBaseCombatWeapon* weapon = GetWeapon(i))
+		{
+			(weapon->*setShadowState)(EF_NOSHADOW);
+		}
+	}
+}
+
 void CNEO_Player::CloakFlash()
 {
 	CRecipientFilter filter;
@@ -884,7 +903,7 @@ void CNEO_Player::CheckThermOpticButtons()
 
 		if (m_HL2Local.m_cloakPower >= CLOAK_AUX_COST)
 		{
-			m_bInThermOpticCamo = !m_bInThermOpticCamo;
+			SetCloakState(!m_bInThermOpticCamo);
 
 			if (m_bInThermOpticCamo)
 			{
@@ -2247,12 +2266,14 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 			}
 			[[fallthrough]];
 		case JoinMode::Random:
+			static_assert(TEAM_JINRAI < TEAM_NSF);
 			iTeam = RandomInt(TEAM_JINRAI, TEAM_NSF);
 			break;
 		default:
-			const auto lastGameTeam = GetNumberOfTeams() - LAST_SHARED_TEAM;
-			Assert(FIRST_GAME_TEAM <= lastGameTeam);
-			iTeam = Clamp(joinMode.GetInt(), FIRST_GAME_TEAM, lastGameTeam);
+			const auto lastGameTeam = GetNumberOfTeams() - LAST_SHARED_TEAM,
+				minAllowed = TEAM_UNASSIGNED;
+			Assert(minAllowed <= lastGameTeam);
+			iTeam = Clamp(joinMode.GetInt(), minAllowed, lastGameTeam);
 		}
 	}
 	// Limit team join spam, unless this is a newly joined player
