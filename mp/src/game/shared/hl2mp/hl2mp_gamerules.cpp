@@ -962,6 +962,7 @@ CAmmoDef *GetAmmoDef()
 
 #endif
 
+#ifndef NEO
 #ifdef GAME_DLL
 	void Bot_f(); // Handler for the "bot" command.
 	ConCommand cc_Bot("bot", Bot_f, "Add a bot.", FCVAR_CHEAT);
@@ -1005,7 +1006,9 @@ CAmmoDef *GetAmmoDef()
 			// to external engine code, so just kludging a status variable here for it.
 			NEORules()->m_bNextClientIsFakeClient = true;
 #endif
+#ifndef NEO
 			BotPutInServer(bFrozen, iTeam);
+#endif // NEO
 #ifdef NEO
 			// Toggle this off after creating the bot
 			NEORules()->m_bNextClientIsFakeClient = false;
@@ -1015,6 +1018,11 @@ CAmmoDef *GetAmmoDef()
 
 	ConCommand cc_Bot_Alias_BotAdd("bot_add", Bot_f, "Add a bot. Alias for \"bot\".", FCVAR_CHEAT);
 #endif
+#endif // NEO
+#endif // NEO
+
+#ifdef NEO
+#ifdef GAME_DLL
 
 	bool CHL2MPRules::FShouldSwitchWeapon( CBasePlayer *pPlayer, CBaseCombatWeapon *pWeapon )
 	{		
@@ -1030,8 +1038,8 @@ CAmmoDef *GetAmmoDef()
 
 		return BaseClass::FShouldSwitchWeapon( pPlayer, pWeapon );
 	}
-
-#endif
+#endif // GAME_DLL
+#endif // NEO
 
 #ifndef CLIENT_DLL
 
