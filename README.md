@@ -44,8 +44,10 @@ After that, it should be able to compile. For debugger/running configuration, re
 Make sure the "x86 Native Tools Command Prompt for VS2022" is used instead of the default.
 
 ##### Linux prerequisite - Steam Runtime 3 "Sniper" Container
-Your system must include the following packages (debian and derivatives):
+Your system must include the following packages:
 `gcc-multilib g++-multilib cmake ninja-build docker-ce docker-ce-cli containerd.io apt-transport-https ca-certificates curl gnupg gnupg-utils cmake build-essential`
+
+**Note:** Depending on your operating system, the package names may vary, please consult google or your package manager for correct package names. The listed are for debian `apt`. (Includes Ubuntu, Linux Mint, etc)
 
 Download and use the OCI image for Docker/Podman/Toolbx:
 
