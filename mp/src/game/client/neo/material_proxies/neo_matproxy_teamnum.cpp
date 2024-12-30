@@ -17,8 +17,6 @@ class CNEOEntityTeamProxy : public CResultProxy
 public:
     bool Init( IMaterial *pMaterial, KeyValues *pKeyValues );
     void OnBind( void *pC_BaseEntity );
-
-private:
 };
 
 bool CNEOEntityTeamProxy::Init( IMaterial *pMaterial, KeyValues *pKeyValues )
