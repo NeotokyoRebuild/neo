@@ -1506,6 +1506,7 @@ target_sources_grouped(
     FILES
     neo/material_proxies/neo_matproxy_thermoptic.cpp
     neo/material_proxies/neo_matproxy_thermoptic.h
+    neo/material_proxies/neo_matproxy_teamnum.cpp
 )
 
 target_sources_grouped(
