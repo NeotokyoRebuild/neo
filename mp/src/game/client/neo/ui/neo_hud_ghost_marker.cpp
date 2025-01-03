@@ -98,9 +98,16 @@ void CNEOHud_GhostMarker::UpdateStateForNeoHudElementDraw()
 	{
 		m_ghostInPVS = nullptr;
 	}
-	const float flDistMeters = METERS_PER_INCH * C_NEO_Player::GetLocalPlayer()->GetAbsOrigin().DistTo(NEORules()->GetGhostPos());
-	V_snprintf(m_szMarkerText, sizeof(m_szMarkerText), "GHOST DISTANCE: %.0fm", flDistMeters);
-	g_pVGuiLocalize->ConvertANSIToUnicode(m_szMarkerText, m_wszMarkerTextUnicode, sizeof(m_wszMarkerTextUnicode));
+	if (NEORules()->GetGhosterPlayer())
+	{
+		memset(m_wszMarkerTextUnicode, 0, sizeof(m_wszMarkerTextUnicode));
+	}
+	else
+	{
+		const float flDistMeters = METERS_PER_INCH * C_NEO_Player::GetLocalPlayer()->GetAbsOrigin().DistTo(NEORules()->GetGhostPos());
+		V_snprintf(m_szMarkerText, sizeof(m_szMarkerText), "GHOST DISTANCE: %.0fm", flDistMeters);
+		g_pVGuiLocalize->ConvertANSIToUnicode(m_szMarkerText, m_wszMarkerTextUnicode, sizeof(m_wszMarkerTextUnicode));
+	}
 }
 
 void CNEOHud_GhostMarker::resetHUDState()
