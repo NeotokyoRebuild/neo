@@ -30,8 +30,11 @@
 #define PLAY_PLAYER_JINGLE	1
 #define UPDATE_PLAYER_RADAR	2
 
+#ifdef NEO
+#define DEATH_ANIMATION_TIME	12.0f
+#else
 #define DEATH_ANIMATION_TIME	3.0f
-
+#endif
 typedef struct 
 {
 	Vector		m_vecAutoAimDir;		// The direction autoaim wishes to point.
