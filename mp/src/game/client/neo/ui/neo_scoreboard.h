@@ -36,6 +36,7 @@ public:
 	virtual void ShowPanel( bool bShow );
 
 	virtual bool ShowAvatars();
+	virtual bool UpdateAvatars();
 
 	// both vgui::Frame and IViewPortPanel define these, so explicitly define them here as passthroughs to vgui
 	vgui::VPANEL GetVPanel( void ) { return BaseClass::GetVPanel(); }
@@ -45,7 +46,10 @@ public:
 	// IGameEventListener interface:
 	virtual void FireGameEvent( IGameEvent *event);
 
-	virtual void UpdatePlayerAvatar( int playerIndex, KeyValues *kv );
+	virtual void UpdatePlayerAvatar(int playerIndex, KeyValues* kv);
+
+	vgui::ImageList				*m_pImageList;
+	CUtlMap<CSteamID,int>		m_mapAvatarsToImageList;
 
 protected:
 	MESSAGE_FUNC_INT( OnPollHideCode, "PollHideCode", code );
@@ -85,9 +89,6 @@ protected:
 	void MoveLabelToFront(const char *textEntryName);
 	void MoveToCenterOfScreen();
 
-	vgui::ImageList				*m_pImageList;
-	CUtlMap<CSteamID,int>		m_mapAvatarsToImageList;
-
 	CPanelAnimationVarAliasType( int, m_iPingWidth, "ping_width", "25", "proportional_int" );
 	CPanelAnimationVar( int, m_iAvatarWidth, "avatar_width", "40" );		// Avatar width doesn't scale with resolution
 	CPanelAnimationVarAliasType( int, m_iNameWidth, "name_width", "110", "proportional_int" );
@@ -111,5 +112,6 @@ private:
 	void RemoveItemForPlayerIndex(int index);
 };
 
+extern CNEOScoreBoard* g_pNeoScoreBoard;
 
 #endif // CLIENTSCOREBOARDDIALOG_H

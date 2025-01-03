@@ -211,6 +211,7 @@ private:
 	void CheckLeanButtons();
 	void PlayCloakSound(bool removeLocalPlayer = true);
 	void CloakFlash();
+	void SetCloakState(bool state);
 
 	bool IsAllowedToSuperJump(void);
 
