@@ -25,7 +25,6 @@ class CNEOHud_RoundState : public CNEOHud_ChildElement, public CHudElement, publ
 
 public:
 	CNEOHud_RoundState(const char *pElementName, vgui::Panel *parent = NULL);
-	~CNEOHud_RoundState();
 
 	virtual void ApplySchemeSettings(vgui::IScheme *pScheme);
 	virtual void Paint();
@@ -46,7 +45,6 @@ private:
 	void CheckActiveStar();
 	void DrawPlayer(int playerIndex, int teamIndex, const TeamLogoColor &teamLogoColor,
 					const int xOffset, const bool drawHealthClass);
-	void UpdatePlayerAvatar(int playerIndex);
 	void SetTextureToAvatar(int playerIndex);
 
 private:
@@ -96,10 +94,6 @@ private:
 	int m_iGraphicID[NEO_CLASS__ENUM_COUNT] = {};
 	TeamLogoColor m_teamLogoColors[TEAM__TOTAL] = {};
 
-	vgui::ImageList *m_pImageList = nullptr;
-	CUtlMap<CSteamID, int> m_mapAvatarsToImageList;
-
-	int m_iNextAvatarUpdate = 0;
 
 	CPanelAnimationVar(Color, box_color, "box_color", "200 200 200 40");
 	CPanelAnimationVarAliasType(bool, health_monochrome, "health_monochrome", "1", "bool");
