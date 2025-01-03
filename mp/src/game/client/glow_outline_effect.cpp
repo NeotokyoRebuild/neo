@@ -12,11 +12,9 @@
 #include "materialsystem/itexture.h"
 #include "view_shared.h"
 #include "viewpostprocess.h"
-#ifdef GLOWS_ENABLE
-#ifdef NEO
+#if defined GLOWS_ENABLE && defined NEO
 #include "neo_gamerules.h"
-#endif // NEO
-#endif // GLOWS_ENABLE
+#endif // GLOWS_ENABLE && NEO
 
 #define FULL_FRAME_TEXTURE "_rt_FullFrameFB"
 
