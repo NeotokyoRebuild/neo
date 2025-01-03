@@ -178,6 +178,7 @@ private:
 	void CheckVisionButtons();
 	void CheckLeanButtons();
 	void PlayCloakSound();
+	void SetCloakState(bool state);
 
 	bool IsAllowedToSuperJump(void);
 

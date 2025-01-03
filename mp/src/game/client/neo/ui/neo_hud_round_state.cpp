@@ -18,6 +18,7 @@
 #include "c_team.h"
 #include "c_playerresource.h"
 #include "vgui_avatarimage.h"
+#include "neo_scoreboard.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -111,14 +112,6 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 		surface()->DrawSetTextureFile(m_teamLogoColors[i].totalLogo, TEAM_TEX_INFO[texIdx].totalLogo, true, false);
 	}
 
-	m_mapAvatarsToImageList.SetLessFunc(DefLessFunc(CSteamID));
-	m_mapAvatarsToImageList.RemoveAll();
-	m_iNextAvatarUpdate = gpGlobals->curtime;
-}
-
-CNEOHud_RoundState::~CNEOHud_RoundState()
-{
-	delete m_pImageList;
 }
 
 void CNEOHud_RoundState::ApplySchemeSettings(vgui::IScheme* pScheme)
@@ -197,12 +190,6 @@ void CNEOHud_RoundState::ApplySchemeSettings(vgui::IScheme* pScheme)
 
 	// Clear player avatars
 
-	if (m_pImageList)
-		delete m_pImageList;
-	m_pImageList = new vgui::ImageList( false );
-
-	m_mapAvatarsToImageList.RemoveAll();
-
 	SetBounds(0, Y_POS, res.w, res.h);
 }
 
@@ -228,21 +215,6 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 		m_pWszStatusUnicode = L"Match point";
 	}
 	m_iStatusUnicodeSize = V_wcslen(m_pWszStatusUnicode);
-
-	// Update steam images
-	if (gpGlobals->curtime > m_iNextAvatarUpdate) {
-		m_iNextAvatarUpdate = gpGlobals->curtime + 1;
-		IGameResources* gr = GameResources();
-		if (gr)
-		{
-			for (int i = 1; i <= gpGlobals->maxClients; ++i)
-			{
-				if (gr->IsConnected(i)) {
-					UpdatePlayerAvatar(i);
-				}
-			}
-		}
-	}
 
 	// Clear the strings so zero roundTimeLeft also picks it up as to not draw
 	memset(m_wszRoundUnicode, 0, sizeof(m_wszRoundUnicode));
@@ -746,36 +718,13 @@ void CNEOHud_RoundState::CheckActiveStar()
 	m_iPreviouslyActiveTeam = currentTeam;
 }
 
-void CNEOHud_RoundState::UpdatePlayerAvatar(int playerIndex)
-{
-	// Update their avatar
-	if (!steamapicontext->SteamFriends() || !steamapicontext->SteamUtils())
-		return;
-
-	player_info_t pi;
-	if (!engine->GetPlayerInfo(playerIndex, &pi))
-		return;
-	
-	if (!pi.friendsID)
-		return;
-	
-	CSteamID steamIDForPlayer(pi.friendsID, 1, steamapicontext->SteamUtils()->GetConnectedUniverse(), k_EAccountTypeIndividual);
-
-	// See if we already have that avatar in our list
-	const int iMapIndex = m_mapAvatarsToImageList.Find(steamIDForPlayer);
-	if (iMapIndex != m_mapAvatarsToImageList.InvalidIndex())
-		return;
-	
-	CAvatarImage* pImage = new CAvatarImage();
-	pImage->SetAvatarSteamID(steamIDForPlayer, k_EAvatarSize64x64);
-	pImage->SetAvatarSize(64, 64);	// Deliberately non scaling
-	const int iImageIndex = m_pImageList->AddImage(pImage);
-
-	m_mapAvatarsToImageList.Insert(steamIDForPlayer, iImageIndex);
-}
-
 void CNEOHud_RoundState::SetTextureToAvatar(int playerIndex)
 {
+	if (!g_pNeoScoreBoard)
+	{
+		return;
+	}
+
 	if (neo_cl_streamermode.GetBool())
 	{
 		return;
@@ -789,11 +738,11 @@ void CNEOHud_RoundState::SetTextureToAvatar(int playerIndex)
 		return;
 
 	CSteamID steamIDForPlayer(pi.friendsID, 1, steamapicontext->SteamUtils()->GetConnectedUniverse(), k_EAccountTypeIndividual);
-	const int mapIndex = m_mapAvatarsToImageList.Find(steamIDForPlayer);
-	if ((mapIndex == m_mapAvatarsToImageList.InvalidIndex()))
+	const int mapIndex = g_pNeoScoreBoard->m_mapAvatarsToImageList.Find(steamIDForPlayer);
+	if ((mapIndex == g_pNeoScoreBoard->m_mapAvatarsToImageList.InvalidIndex()))
 		return; 
 
-	CAvatarImage* pAvIm = (CAvatarImage*)m_pImageList->GetImage(m_mapAvatarsToImageList[mapIndex]);
+	CAvatarImage* pAvIm = (CAvatarImage*)g_pNeoScoreBoard->m_pImageList->GetImage(g_pNeoScoreBoard->m_mapAvatarsToImageList[mapIndex]);
 	surface()->DrawSetTexture(pAvIm->getTextureID());
 	surface()->DrawSetColor(COLOR_WHITE);
 }
