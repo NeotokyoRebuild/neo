@@ -790,7 +790,7 @@ static float GetCurrentBloomScale( void )
 #ifdef NEO
 	if (!g_pMaterialSystemHardwareConfig->GetHDREnabled())
 	{
-		constexpr float BLOOM_MULTIPLIER = 4;
+		constexpr int BLOOM_MULTIPLIER = 4;
 		flCurrentBloomScale *= BLOOM_MULTIPLIER; // NEOTOD (Adam) the base values defined in neo_bloom_controller in old maps seem way too small, need to figure out what the right multiplier is for this. 4 seems to be in the right ballpark. The translation from non-hdr to hdr is 0.3 -> 1.0 according to valve developer community, a multiplier of 3.333 could be the right value
 	}
 #endif // NEO
