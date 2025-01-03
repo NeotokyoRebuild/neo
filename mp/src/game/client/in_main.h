@@ -18,4 +18,6 @@
 extern kbutton_t in_commandermousemove;
 extern kbutton_t in_ducktoggle;
 
+void LeanReset();
+
 #endif // IN_MAIN_H
