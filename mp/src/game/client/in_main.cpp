@@ -512,6 +512,10 @@ void IN_AimDown( const CCommand &args ) { KeyDown( &in_aim, args[1] ); }
 void IN_LeanLeftUp( const CCommand &args ) { KeyUp( &in_lean_left, args[1] ); }
 void IN_LeanLeftDown( const CCommand &args ) { KeyDown( &in_lean_left, args[1] ); }
 
+void IN_LeanLeft() { KeyUp(&in_lean_right, nullptr); KeyDown(&in_lean_left, nullptr); }
+void IN_LeanRight() { KeyUp(&in_lean_left, nullptr); KeyDown(&in_lean_right, nullptr); }
+void IN_LeanReset() { KeyUp(&in_lean_left, nullptr); KeyUp(&in_lean_right, nullptr); }
+
 void IN_LeanRightUp( const CCommand &args ) { KeyUp( &in_lean_right, args[1] ); }
 void IN_LeanRightDown( const CCommand &args ) { KeyDown( &in_lean_right, args[1] ); }
 
