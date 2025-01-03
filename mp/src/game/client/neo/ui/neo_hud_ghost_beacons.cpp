@@ -112,15 +112,11 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 
 	m_pGhost = ghost;
 	const bool showGhost = (gpGlobals->curtime > m_flNextAllowGhostShowTime);
-	if (!showGhost)
-	{
-		return;
-	}
 
 	auto enemyTeamId = localPlayer->GetTeamNumber() == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI;
 	auto enemyTeam = GetGlobalTeam(enemyTeamId);
 	auto enemyTeamCount = enemyTeam->GetNumPlayers();
-
+	float closestEnemy = FLT_MAX;
 	for(int i = 0; i < enemyTeamCount; ++i)
 	{
 		auto enemyToShow = enemyTeam->GetPlayer(i);
@@ -128,12 +124,14 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 		{
 			auto enemyPos = enemyToShow->GetAbsOrigin();
 			float distance;
-			if(enemyToShow->IsAlive() && ghost->IsPosWithinViewDistance(enemyPos, distance) && !enemyToShow->IsDormant())
+			if(enemyToShow->IsAlive() && ghost->IsPosWithinViewDistance(enemyPos, distance) && !enemyToShow->IsDormant() && showGhost)
 			{
 				DrawPlayer(enemyPos);
 			}
+			closestEnemy = Min(distance, closestEnemy);
 		}
 	}
+	ghost->TryGhostPing(closestEnemy * METERS_PER_INCH);
 }
 
 void CNEOHud_GhostBeacons::Paint()
