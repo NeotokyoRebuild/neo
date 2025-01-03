@@ -698,7 +698,7 @@ void CNEO_Player::PreThink(void)
 	{
 		if (m_flCamoAuxLastTime == 0)
 		{
-			if (m_HL2Local.m_cloakPower >= CLOAK_AUX_COST)
+			if (m_HL2Local.m_cloakPower >= MIN_CLOAK_AUX)
 			{
 				m_flCamoAuxLastTime = gpGlobals->curtime;
 			}
@@ -717,6 +717,7 @@ void CNEO_Player::PreThink(void)
 				{
 					SetCloakState(false);
 					m_flCamoAuxLastTime = 0;
+					PlayCloakSound(false);
 				}
 				else
 				{
@@ -806,7 +807,7 @@ ConVar sv_neo_cloak_time("sv_neo_cloak_time", "0.1", FCVAR_CHEAT, "How long shou
 ConVar sv_neo_cloak_decay("sv_neo_cloak_decay", "0", FCVAR_CHEAT, "After the cloak time, how quickly should the flash effect disappear.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_cloak_exponent("sv_neo_cloak_exponent", "8", FCVAR_CHEAT, "Cloak flash lighting exponent.", true, 0.0f, false, 0.0f);
 
-void CNEO_Player::PlayCloakSound()
+void CNEO_Player::PlayCloakSound(bool removeLocalPlayer)
 {
 	CRecipientFilter filter;
 	filter.AddRecipientsByPAS(GetAbsOrigin());
@@ -833,7 +834,10 @@ void CNEO_Player::PlayCloakSound()
 			filter.AddRecipient(player);
 		}
 	}
-	filter.RemoveRecipient(this); // We play clientside for ourselves
+	if (removeLocalPlayer)
+	{
+		filter.RemoveRecipient(this); // We play clientside for ourselves
+	}
 
 	if (filter.GetRecipientCount() > 0)
 	{
@@ -894,14 +898,14 @@ void CNEO_Player::CheckThermOpticButtons()
 			return;
 		}
 
-		if (m_HL2Local.m_cloakPower >= CLOAK_AUX_COST)
+		if (!m_bInThermOpticCamo && m_HL2Local.m_cloakPower >= MIN_CLOAK_AUX)
 		{
-			SetCloakState(!m_bInThermOpticCamo);
-
-			if (m_bInThermOpticCamo)
-			{
-				CloakFlash();
-			}
+			SetCloakState( true );
+			CloakFlash();
+		}
+		else
+		{
+			SetCloakState( false );
 		}
 	}
 
