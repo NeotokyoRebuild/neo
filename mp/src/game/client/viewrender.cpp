@@ -811,7 +811,6 @@ CLIENTEFFECT_REGISTER_BEGIN( PrecachePostProcessingEffects )
 
 #ifdef NEO
 	CLIENTEFFECT_MATERIAL("dev/neo_motionvision_noise")
-	CLIENTEFFECT_MATERIAL("dev/neo_motionvision_pass1")
 	CLIENTEFFECT_MATERIAL("dev/neo_motionvision_pass2")
 
 	CLIENTEFFECT_MATERIAL("dev/nightvision")
