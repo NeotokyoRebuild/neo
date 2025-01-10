@@ -274,7 +274,11 @@ bool CNEO_Player::RequestSetLoadout(int loadoutNumber)
 	if (result)
 	{
 		m_iLoadoutWepChoice = loadoutNumber;
-		GiveLoadoutWeapon();
+
+		if (IsAlive())
+		{
+			GiveLoadoutWeapon();
+		}		
 	}
 	
 	if (pEnt != NULL && !(pEnt->IsMarkedForDeletion()))
