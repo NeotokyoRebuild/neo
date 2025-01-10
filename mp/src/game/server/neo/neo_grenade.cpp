@@ -221,26 +221,6 @@ void CNEOGrenadeFrag::Explode(trace_t* pTrace, int bitsDamageType)
 #endif
 }
 
-void CNEOGrenadeFrag::Detonate(void) {
-	trace_t		tr;
-	Vector		vecSpot;// trace starts here!
-
-	SetThink(NULL);
-
-	vecSpot = GetAbsOrigin() + Vector(0, 0, 8);
-	UTIL_TraceLine(vecSpot, vecSpot + Vector(0, 0, -32), MASK_SHOT_HULL, this, COLLISION_GROUP_NONE, &tr);
-
-	if (tr.startsolid)
-	{
-		// Since we blindly moved the explosion origin vertically, we may have inadvertently moved the explosion into a solid,
-		// in which case nothing is going to be harmed by the grenade's explosion because all subsequent traces will startsolid.
-		// If this is the case, we do the downward trace again from the actual origin of the grenade. (sjb) 3/8/2007  (for ep2_outland_09)
-		UTIL_TraceLine(GetAbsOrigin(), GetAbsOrigin() + Vector(0, 0, -32), MASK_SHOT_HULL, this, COLLISION_GROUP_NONE, &tr);
-	}
-
-	Explode(&tr, DMG_BLAST);
-}
-
 void CNEOGrenadeFrag::SetVelocity(const Vector &velocity, const AngularImpulse &angVelocity)
 {
 	IPhysicsObject *pPhysicsObject = VPhysicsGetObject();
