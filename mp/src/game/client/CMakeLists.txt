@@ -8,6 +8,10 @@ endif()
 
 add_library_copy_target(TARGET client)
 
+if(NEO_USE_SEPARATE_BUILD_INFO AND NOT COMPILER_MSVC)
+    add_dependencies(client_copy_lib client_split_debug_information)
+endif()
+
 target_include_directories(client
     PRIVATE
     ${CMAKE_SOURCE_DIR}/common

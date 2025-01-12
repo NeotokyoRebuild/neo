@@ -11,6 +11,8 @@ message(STATUS "TIMESTAMP: ${BUILD_DATETIME}")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
+set(OUTPUT_SUBDIRECTORY out)
+
 include(cmake/utils.cmake)
 include(cmake/build_info.cmake)
 
@@ -40,6 +42,7 @@ option(NEO_INSTALL_LIBRARIES "Install game libraries" OFF)
 option(NEO_INSTALL_RESOURCES "Install game resources" OFF)
 option(NEO_USE_SEPARATE_BUILD_INFO "Use separate build info on Linux" OFF)
 option(NEO_ENABLE_CPACK "Enable CPack" OFF)
+option(NEO_GENERATE_GAMEDATA "Generate SourceMod gamedata" ${NEO_DEDICATED})
 
 message(STATUS "CI build mode: ${NEO_CI_BUILD}")
 message(STATUS "chroot build mode: ${NEO_CHROOT_BUILD}")
@@ -85,14 +88,12 @@ set(CMAKE_POSITION_INDEPENDENT_CODE FALSE)
 
 set(SOURCESDK TRUE)
 
-# TODO use base.xcconfig for OS_MACOS
-
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_compile_definitions(
         DEBUG
         _DEBUG
     )
-elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+elseif(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
     add_compile_definitions(
         NDEBUG
     )
@@ -213,7 +214,7 @@ if(OS_WINDOWS)
             /NODEFAULTLIB:libcpmt
             /NODEFAULTLIB:libcpmt1
         )
-    elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+    elseif(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
         # TODO "Use Link Time Code Generation" [$LTCG] ?
         # Also /GL https://learn.microsoft.com/en-us/cpp/build/reference/gl-whole-program-optimization
 
@@ -392,6 +393,20 @@ endif()
 
 add_subdirectory(lib)
 
+if(NEO_GENERATE_GAMEDATA)
+    include(FetchContent) # once in the project to include the module
+
+    FetchContent_Declare(
+        gamedata-gen
+        URL https://github.com/NeotokyoRebuild/gamedata-gen/releases/download/v1/gamedata-gen.zip
+        URL_HASH MD5=d661df1e3e36d702b1cd59ceb0888586
+    )
+
+    FetchContent_MakeAvailable(gamedata-gen)
+
+    set(GAMEDATA_GEN_PATH "${gamedata-gen_SOURCE_DIR}/gamedata-gen")
+endif()
+
 if(NOT NEO_DEDICATED)
     add_subdirectory(game/client)
     add_subdirectory(materialsystem/stdshaders)
@@ -405,11 +420,13 @@ else()
     unset(COPY_ALL_LIBS_FLAG)
 endif()
 
-add_custom_target(
-    copy_all_libs ${COPY_ALL_LIBS_FLAG}
-    DEPENDS client_copy_lib server_copy_lib game_shader_dx9_copy_lib
-    VERBATIM
-)
+if(NOT NEO_DEDICATED)
+    add_custom_target(
+        copy_all_libs ${COPY_ALL_LIBS_FLAG}
+        DEPENDS client_copy_lib server_copy_lib game_shader_dx9_copy_lib
+        VERBATIM
+    )
+endif()
 
 if(NEO_CI_BUILD AND "${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
     set(BUILD_TYPE_NAME "Release")
@@ -424,41 +441,53 @@ if(NEO_INSTALL_LIBRARIES)
     if(NEO_DEDICATED)
         set(LIBRARY_INSTALL_PATH "${INSTALL_PATH_PREFIX}-dedicated-${INSTALL_PATH_SUFFIX}")
 
-        install(
-            TARGETS server
-            LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}"
-            RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}"
-        )
-
         if(NEO_USE_SEPARATE_BUILD_INFO)
             set(SPLIT_DEBUG_INFO_INSTALL_PATH "${INSTALL_PATH_PREFIX}-dedicated-debuginfo-${INSTALL_PATH_SUFFIX}")
 
             if(OS_WINDOWS)
                 install(
+                    TARGETS server
+                    LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}"
+                    RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}"
+                )
+
+                install(
                     FILES "$<TARGET_PDB_FILE:server>"
                     DESTINATION "${SPLIT_DEBUG_INFO_INSTALL_PATH}"
                 )
             else()
+                get_target_property(SERVER_STRIPPED_FILE server STRIPPED_FILE)
+                install(
+                    FILES ${SERVER_STRIPPED_FILE}
+                    DESTINATION "${LIBRARY_INSTALL_PATH}"
+                )
+
                 get_target_property(SERVER_SPLIT_DEBUG_INFO_FILE server SPLIT_DEBUG_INFO_FILE)
                 install(
                     FILES ${SERVER_SPLIT_DEBUG_INFO_FILE}
                     DESTINATION "${SPLIT_DEBUG_INFO_INSTALL_PATH}"
                 )
             endif()
+        else()
+            install(
+                TARGETS server
+                LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}"
+                RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}"
+            )
         endif()
     else()
         set(LIBRARY_INSTALL_PATH "${INSTALL_PATH_PREFIX}-libraries-${INSTALL_PATH_SUFFIX}")
-
-        install(
-            TARGETS client game_shader_dx9 server
-            LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}"
-            RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}"
-        )
 
         if(NEO_USE_SEPARATE_BUILD_INFO)
             set(SPLIT_DEBUG_INFO_INSTALL_PATH "${INSTALL_PATH_PREFIX}-libraries-debuginfo-${INSTALL_PATH_SUFFIX}")
 
             if(OS_WINDOWS)
+                install(
+                    TARGETS client game_shader_dx9 server
+                    LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}"
+                    RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}"
+                )
+
                 install(
                     FILES
                         $<TARGET_PDB_FILE:client>
@@ -467,6 +496,17 @@ if(NEO_INSTALL_LIBRARIES)
                     DESTINATION "${SPLIT_DEBUG_INFO_INSTALL_PATH}"
                 )
             else()
+                get_target_property(CLIENT_STRIPPED_FILE client STRIPPED_FILE)
+                get_target_property(SHADER_STRIPPED_FILE game_shader_dx9 STRIPPED_FILE)
+                get_target_property(SERVER_STRIPPED_FILE server STRIPPED_FILE)
+                install(
+                    FILES
+                        ${CLIENT_STRIPPED_FILE}
+                        ${SHADER_STRIPPED_FILE}
+                        ${SERVER_STRIPPED_FILE}
+                    DESTINATION "${LIBRARY_INSTALL_PATH}"
+                )
+
                 get_target_property(CLIENT_SPLIT_DEBUG_INFO_FILE client SPLIT_DEBUG_INFO_FILE)
                 get_target_property(SHADER_SPLIT_DEBUG_INFO_FILE game_shader_dx9 SPLIT_DEBUG_INFO_FILE)
                 get_target_property(SERVER_SPLIT_DEBUG_INFO_FILE server SPLIT_DEBUG_INFO_FILE)
@@ -478,7 +518,27 @@ if(NEO_INSTALL_LIBRARIES)
                     DESTINATION "${SPLIT_DEBUG_INFO_INSTALL_PATH}"
                 )
             endif()
+        else()
+            install(
+                TARGETS client game_shader_dx9 server
+                LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}"
+                RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}"
+            )
         endif()
+    endif()
+
+    if(OS_LINUX AND NEO_GENERATE_GAMEDATA)
+        get_target_property(SERVER_GAMEDATA_SDKHOOKS_OUTPUT_FILE server GAMEDATA_SDKHOOKS_OUTPUT_FILE)
+        install(
+            FILES ${SERVER_GAMEDATA_SDKHOOKS_OUTPUT_FILE}
+            DESTINATION "${INSTALL_PATH_PREFIX}-gamedata/neo/addons/sourcemod/gamedata/sdkhooks.games"
+        )
+
+        get_target_property(SERVER_GAMEDATA_SDKTOOLS_OUTPUT_FILE server GAMEDATA_SDKTOOLS_OUTPUT_FILE)
+        install(
+            FILES ${SERVER_GAMEDATA_SDKTOOLS_OUTPUT_FILE}
+            DESTINATION "${INSTALL_PATH_PREFIX}-gamedata/neo/addons/sourcemod/gamedata/sdktools.games"
+        )
     endif()
 endif()
 

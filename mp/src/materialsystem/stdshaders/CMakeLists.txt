@@ -8,6 +8,10 @@ endif()
 
 add_library_copy_target(TARGET game_shader_dx9)
 
+if(NEO_USE_SEPARATE_BUILD_INFO AND NOT COMPILER_MSVC)
+    add_dependencies(game_shader_dx9_copy_lib game_shader_dx9_split_debug_information)
+endif()
+
 target_include_directories(game_shader_dx9
     PRIVATE
         ${CMAKE_SOURCE_DIR}/common
