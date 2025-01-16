@@ -111,6 +111,10 @@ DEFINE_FIELD(m_szNeoName, FIELD_STRING),
 DEFINE_FIELD(m_szNeoClantag, FIELD_STRING),
 DEFINE_FIELD(m_szNameDupePos, FIELD_INTEGER),
 DEFINE_FIELD(m_bClientWantNeoName, FIELD_BOOLEAN),
+
+// Inputs
+DEFINE_INPUTFUNC(FIELD_STRING, "SetPlayerModel", InputSetPlayerModel),
+
 END_DATADESC()
 
 static constexpr int SHOWMENU_STRLIMIT = 512;
@@ -415,6 +419,7 @@ CNEO_Player::CNEO_Player()
 	m_bPreviouslyReloading = false;
 	m_bLastTickInThermOpticCamo = false;
 	m_bIsPendingSpawnForThisRound = false;
+	m_bAllowGibbing = true;
 
 	m_flNextTeamChangeTime = gpGlobals->curtime + 0.5f;
 
@@ -525,6 +530,7 @@ void CNEO_Player::Spawn(void)
 	m_nVisionLastTick = 0;
 	m_bInLean = NEO_LEAN_NONE;
 	m_bCorpseSpawned = false;
+	m_bAllowGibbing = true;
 	m_bIneligibleForLoadoutPick = false;
 
 	for (int i = 0; i < m_rfAttackersScores.Count(); ++i)
@@ -1675,6 +1681,12 @@ void CNEO_Player::SpawnDeadModel(const CTakeDamageInfo& info)
 	m_bCorpseSpawned = true;
 
 	int deadModelType = -1;
+
+	if (!m_bAllowGibbing) // Prevent gibbing if a custom player model has been set via I/O
+	{
+		return;
+	}
+
 	if (info.GetDamageType() & (1 << 6)) //info.GetDamage() >= 100
 	{ // Died to blast damage, remove all limbs
 		deadModelType = 0;
@@ -1958,6 +1970,21 @@ void CNEO_Player::SetPlayerTeamModel( void )
 	const model_t *modelType = modelinfo->GetModel(modelIndex);
 	MDLHandle_t modelCache = modelinfo->GetCacheHandle(modelType);
 #endif
+}
+
+// Input to set the player's model (not skin)
+void CNEO_Player::InputSetPlayerModel( inputdata_t & inputdata )
+{
+	const char* modelpath = inputdata.value.String();
+
+	if (modelpath && *modelpath)
+	{
+		PrecacheModel(modelpath);
+
+		SetModel(modelpath);
+
+		m_bAllowGibbing = false; // Disallow gibs or else the corpse will turn into whatever the player picked as their skin
+	}
 }
 
 void CNEO_Player::PickupObject( CBaseEntity *pObject,
