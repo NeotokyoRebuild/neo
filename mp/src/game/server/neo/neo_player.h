@@ -201,6 +201,10 @@ public:
 
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);
 
+	void InputSetPlayerModel( inputdata_t & inputData );
+private:
+	bool m_bAllowGibbing;
+
 private:
 	float GetActiveWeaponSpeedScale() const;
 
