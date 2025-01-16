@@ -656,7 +656,7 @@ void CNEO_Player::PreThink(void)
 
 	float speed = GetNormSpeed();
 	static constexpr float DUCK_WALK_SPEED_MODIFIER = 0.75;
-	if (m_nButtons & IN_DUCK)
+	if (m_nButtons & IN_DUCK || IsDucked() || IsDucking())
 	{
 		speed *= DUCK_WALK_SPEED_MODIFIER;
 	}
