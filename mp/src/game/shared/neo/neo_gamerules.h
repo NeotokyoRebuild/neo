@@ -246,6 +246,7 @@ public:
 #endif
 	bool IsRoundPreRoundFreeze() const;
 	bool IsRoundLive() const;
+	bool IsRoundOn() const;
 	bool IsRoundOver() const;
 #ifdef GAME_DLL
 	void GatherGameTypeVotes();
@@ -349,6 +350,8 @@ public:
 	{
 		int xp;
 		int deaths;
+		bool spawnedThisRound;
+		float deathTime;
 	};
 	// AccountID_t <- CSteamID::GetAccountID
 	CUtlHashtable<AccountID_t, RestoreInfo> m_pRestoredInfos;

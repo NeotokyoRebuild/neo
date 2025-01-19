@@ -508,6 +508,17 @@ void CNEO_Player::Spawn(void)
 
 	if (teamNumber == TEAM_JINRAI || teamNumber == TEAM_NSF)
 	{
+		if (NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze)
+		{
+			AddFlag(FL_GODMODE);
+			AddNeoFlag(NEO_FL_FREEZETIME);
+		}
+
+		if (NEORules()->IsRoundOn())
+		{ // NEO TODO (Adam) should people who were spectating at the start of the match and potentially have unfair information about the enemy team be allowed to join the game?
+			m_bSpawnedThisRound = true;
+		}
+
 		State_Transition(STATE_ACTIVE);
 	}
 	

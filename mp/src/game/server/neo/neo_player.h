@@ -199,6 +199,8 @@ public:
 	AttackersTotals GetAttackersTotals() const;
 	void StartShowDmgStats(const CTakeDamageInfo *info);
 
+	inline void SetDeathTime(const float deathTime) { m_flDeathTime.Set(deathTime); }
+
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);
 
 	void InputSetPlayerModel( inputdata_t & inputData );
@@ -263,6 +265,7 @@ public:
 	CNetworkVar(bool, m_bClientWantNeoName);
 
 	bool m_bIsPendingSpawnForThisRound;
+	bool m_bSpawnedThisRound = false;
 	bool m_bKilledInflicted = false; // Server-side var only
 	int m_iTeamDamageInflicted = 0;
 	int m_iTeamKillsInflicted = 0;
