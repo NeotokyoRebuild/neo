@@ -123,7 +123,7 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 		if(enemyToShow)
 		{
 			auto enemyPos = enemyToShow->GetAbsOrigin();
-			float distance;
+			float distance = FLT_MAX;
 			if(enemyToShow->IsAlive() && ghost->IsPosWithinViewDistance(enemyPos, distance) && !enemyToShow->IsDormant() && showGhost)
 			{
 				DrawPlayer(enemyPos);
