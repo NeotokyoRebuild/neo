@@ -1433,15 +1433,15 @@ float C_NEO_Player::GetCrouchSpeed(void) const
 	switch (m_iNeoClass)
 	{
 	case NEO_CLASS_RECON:
-		return NEO_RECON_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_RECON_CROUCH_SPEED;
 	case NEO_CLASS_ASSAULT:
-		return NEO_ASSAULT_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_ASSAULT_CROUCH_SPEED;
 	case NEO_CLASS_SUPPORT:
-		return NEO_SUPPORT_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_SUPPORT_CROUCH_SPEED;
 	case NEO_CLASS_VIP:
-		return NEO_VIP_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_VIP_CROUCH_SPEED;
 	default:
-		return NEO_BASE_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_BASE_CROUCH_SPEED;
 	}
 }
 
@@ -1450,15 +1450,15 @@ float C_NEO_Player::GetNormSpeed(void) const
 	switch (m_iNeoClass)
 	{
 	case NEO_CLASS_RECON:
-		return NEO_RECON_NORM_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_RECON_NORM_SPEED;
 	case NEO_CLASS_ASSAULT:
-		return NEO_ASSAULT_NORM_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_ASSAULT_NORM_SPEED;
 	case NEO_CLASS_SUPPORT:
-		return NEO_SUPPORT_NORM_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_SUPPORT_NORM_SPEED;
 	case NEO_CLASS_VIP:
-		return NEO_VIP_NORM_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_VIP_NORM_SPEED;
 	default:
-		return NEO_BASE_NORM_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_BASE_NORM_SPEED;
 	}
 }
 
@@ -1467,15 +1467,15 @@ float C_NEO_Player::GetWalkSpeed(void) const
 	switch (m_iNeoClass)
 	{
 	case NEO_CLASS_RECON:
-		return NEO_RECON_WALK_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_RECON_WALK_SPEED;
 	case NEO_CLASS_ASSAULT:
-		return NEO_ASSAULT_WALK_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_ASSAULT_WALK_SPEED;
 	case NEO_CLASS_SUPPORT:
-		return NEO_SUPPORT_WALK_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_SUPPORT_WALK_SPEED;
 	case NEO_CLASS_VIP:
-		return NEO_VIP_WALK_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_VIP_WALK_SPEED;
 	default:
-		return NEO_BASE_WALK_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_BASE_WALK_SPEED;
 	}
 }
 
@@ -1484,15 +1484,15 @@ float C_NEO_Player::GetSprintSpeed(void) const
 	switch (m_iNeoClass)
 	{
 	case NEO_CLASS_RECON:
-		return NEO_RECON_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_RECON_SPRINT_SPEED;
 	case NEO_CLASS_ASSAULT:
-		return NEO_ASSAULT_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_ASSAULT_SPRINT_SPEED;
 	case NEO_CLASS_SUPPORT:
-		return NEO_SUPPORT_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_SUPPORT_SPRINT_SPEED;
 	case NEO_CLASS_VIP:
-		return NEO_VIP_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_VIP_SPRINT_SPEED;
 	default:
-		return NEO_BASE_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_BASE_SPRINT_SPEED;
 	}
 }
 
