@@ -709,7 +709,11 @@ void CBaseCombatWeapon::Drop( const Vector &vecVelocity )
 	// clear follow stuff, setup for collision
 	SetGravity(1.0);
 	m_iState = WEAPON_NOT_CARRIED;
+#ifdef NEO
+	RemoveEffects(EF_NODRAW | EF_NOSHADOW);
+#else
 	RemoveEffects( EF_NODRAW );
+#endif
 	FallInit();
 	SetGroundEntity( NULL );
 	SetThink( &CBaseCombatWeapon::SetPickupTouch );
@@ -1526,7 +1530,9 @@ bool CBaseCombatWeapon::Holster( CBaseCombatWeapon *pSwitchingTo )
 	else
 	{
 		// Hide the weapon when the holster animation's finished
+#ifndef NEO
 		SetContextThink( &CBaseCombatWeapon::HideThink, gpGlobals->curtime + flSequenceDuration, HIDEWEAPON_THINK_CONTEXT );
+#endif // NEO
 	}
 
 	// if we were displaying a hud hint, squelch it.

@@ -2012,6 +2012,11 @@ void CNEORules::StartNextRound()
 			continue;
 		}
 
+		if (pPlayer->GetTeamNumber() == TEAM_SPECTATOR)
+		{
+			continue;
+		}
+
 		pPlayer->m_bKilledInflicted = false;
 		if (pPlayer->GetActiveWeapon())
 		{
@@ -2019,11 +2024,6 @@ void CNEORules::StartNextRound()
 		}
 		pPlayer->RemoveAllItems(true);
 		pPlayer->Spawn();
-		if (gpGlobals->curtime < m_flNeoRoundStartTime + mp_neo_preround_freeze_time.GetFloat())
-		{
-			pPlayer->AddFlag(FL_GODMODE);
-			pPlayer->AddNeoFlag(NEO_FL_FREEZETIME);
-		}
 
 		pPlayer->m_bInAim = false;
 		pPlayer->m_bInThermOpticCamo = false;
@@ -2119,6 +2119,11 @@ bool CNEORules::IsRoundOver() const
 bool CNEORules::IsRoundLive() const
 {
 	return m_nRoundStatus == NeoRoundStatus::RoundLive;
+}
+
+bool CNEORules::IsRoundOn() const
+{
+	return (m_nRoundStatus == NeoRoundStatus::PreRoundFreeze) || (m_nRoundStatus == NeoRoundStatus::RoundLive) || (m_nRoundStatus == NeoRoundStatus::PostRound);
 }
 
 void CNEORules::CreateStandardEntities(void)
@@ -3387,9 +3392,11 @@ void CNEORules::ClientDisconnected(edict_t* pClient)
 				const RestoreInfo restoreInfo{
 					.xp = pNeoPlayer->m_iXP.Get(),
 					.deaths = pNeoPlayer->DeathCount(),
+					.spawnedThisRound = pNeoPlayer->m_bSpawnedThisRound,
+					.deathTime = pNeoPlayer->IsAlive() ? gpGlobals->curtime : pNeoPlayer->GetDeathTime(), // NEOTODO (Adam) prevent players abusing retry command to save themselves in games with respawns. Should award xp to whoever did most damage to disconnecting player, for now simply ensure they can't respawn too quickly
 				};
 
-				if (restoreInfo.xp == 0 && restoreInfo.deaths == 0)
+				if (restoreInfo.xp == 0 && restoreInfo.deaths == 0 && restoreInfo.deathTime == 0.f && restoreInfo.spawnedThisRound == false)
 				{
 					m_pRestoredInfos.Remove(accountID);
 				}
@@ -3441,10 +3448,15 @@ bool CNEORules::FPlayerCanRespawn(CBasePlayer* pPlayer)
 
 	if (jinrai && nsf)
 	{
-		if (m_nRoundStatus == NeoRoundStatus::Warmup || m_nRoundStatus == NeoRoundStatus::Idle ||
-				m_nRoundStatus == NeoRoundStatus::Pause)
+		if (!IsRoundOn())
 		{
 			return true;
+		}
+
+		CNEO_Player* pNeoPlayer = ToNEOPlayer(pPlayer);
+		if (pNeoPlayer->m_bSpawnedThisRound)
+		{
+			return false;
 		}
 	}
 	else
@@ -3510,6 +3522,28 @@ void CNEORules::SetRoundStatus(NeoRoundStatus status)
 		}
 #endif
 	}
+
+#ifdef GAME_DLL
+	if (status == NeoRoundStatus::PostRound)
+	{
+		for (int i = 1; i < gpGlobals->maxClients; i++)
+		{
+			if (auto player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i)))
+			{
+				player->m_bSpawnedThisRound = false;
+				player->SetDeathTime(0.f);
+			}
+		}
+
+		auto currentHandle = m_pRestoredInfos.FirstHandle();
+		while (m_pRestoredInfos.IsValidHandle(currentHandle))
+		{
+			m_pRestoredInfos[currentHandle].spawnedThisRound = false;
+			m_pRestoredInfos[currentHandle].deathTime = 0.f;
+			currentHandle = m_pRestoredInfos.NextHandle(currentHandle);
+		}
+	}
+#endif // GAME_DLL
 
 	m_nRoundStatus = status;
 }

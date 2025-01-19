@@ -111,6 +111,10 @@ DEFINE_FIELD(m_szNeoName, FIELD_STRING),
 DEFINE_FIELD(m_szNeoClantag, FIELD_STRING),
 DEFINE_FIELD(m_szNameDupePos, FIELD_INTEGER),
 DEFINE_FIELD(m_bClientWantNeoName, FIELD_BOOLEAN),
+
+// Inputs
+DEFINE_INPUTFUNC(FIELD_STRING, "SetPlayerModel", InputSetPlayerModel),
+
 END_DATADESC()
 
 static constexpr int SHOWMENU_STRLIMIT = 512;
@@ -415,6 +419,7 @@ CNEO_Player::CNEO_Player()
 	m_bPreviouslyReloading = false;
 	m_bLastTickInThermOpticCamo = false;
 	m_bIsPendingSpawnForThisRound = false;
+	m_bAllowGibbing = true;
 
 	m_flNextTeamChangeTime = gpGlobals->curtime + 0.5f;
 
@@ -503,6 +508,17 @@ void CNEO_Player::Spawn(void)
 
 	if (teamNumber == TEAM_JINRAI || teamNumber == TEAM_NSF)
 	{
+		if (NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze)
+		{
+			AddFlag(FL_GODMODE);
+			AddNeoFlag(NEO_FL_FREEZETIME);
+		}
+
+		if (NEORules()->IsRoundOn())
+		{ // NEO TODO (Adam) should people who were spectating at the start of the match and potentially have unfair information about the enemy team be allowed to join the game?
+			m_bSpawnedThisRound = true;
+		}
+
 		State_Transition(STATE_ACTIVE);
 	}
 	
@@ -525,6 +541,7 @@ void CNEO_Player::Spawn(void)
 	m_nVisionLastTick = 0;
 	m_bInLean = NEO_LEAN_NONE;
 	m_bCorpseSpawned = false;
+	m_bAllowGibbing = true;
 	m_bIneligibleForLoadoutPick = false;
 
 	for (int i = 0; i < m_rfAttackersScores.Count(); ++i)
@@ -546,7 +563,10 @@ void CNEO_Player::Spawn(void)
 
 	SetPlayerTeamModel();
 	SetViewOffset(VEC_VIEW_NEOSCALE(this));
-	GiveLoadoutWeapon();
+	if (teamNumber == TEAM_JINRAI || teamNumber == TEAM_NSF)
+	{
+		GiveLoadoutWeapon();
+	}
 }
 
 extern ConVar neo_lean_angle;
@@ -712,7 +732,7 @@ void CNEO_Player::PreThink(void)
 
 				if (m_HL2Local.m_cloakPower <= 0.1f)
 				{
-					m_bInThermOpticCamo = false;
+					SetCloakState(false);
 					m_flCamoAuxLastTime = 0;
 				}
 				else
@@ -847,6 +867,22 @@ void CNEO_Player::PlayCloakSound()
 	}
 }
 
+void CNEO_Player::SetCloakState(bool state)
+{
+	m_bInThermOpticCamo = state;
+
+	void (CBaseCombatWeapon:: * setShadowState)(int) = m_bInThermOpticCamo ? &CBaseCombatWeapon::AddEffects 
+																		   : &CBaseCombatWeapon::RemoveEffects;
+
+	for (int i = 0; i < MAX_WEAPONS; i++)
+	{
+		if (CBaseCombatWeapon* weapon = GetWeapon(i))
+		{
+			(weapon->*setShadowState)(EF_NOSHADOW);
+		}
+	}
+}
+
 void CNEO_Player::CloakFlash()
 {
 	CRecipientFilter filter;
@@ -877,7 +913,7 @@ void CNEO_Player::CheckThermOpticButtons()
 
 		if (m_HL2Local.m_cloakPower >= CLOAK_AUX_COST)
 		{
-			m_bInThermOpticCamo = !m_bInThermOpticCamo;
+			SetCloakState(!m_bInThermOpticCamo);
 
 			if (m_bInThermOpticCamo)
 			{
@@ -1656,6 +1692,12 @@ void CNEO_Player::SpawnDeadModel(const CTakeDamageInfo& info)
 	m_bCorpseSpawned = true;
 
 	int deadModelType = -1;
+
+	if (!m_bAllowGibbing) // Prevent gibbing if a custom player model has been set via I/O
+	{
+		return;
+	}
+
 	if (info.GetDamageType() & (1 << 6)) //info.GetDamage() >= 100
 	{ // Died to blast damage, remove all limbs
 		deadModelType = 0;
@@ -1939,6 +1981,21 @@ void CNEO_Player::SetPlayerTeamModel( void )
 	const model_t *modelType = modelinfo->GetModel(modelIndex);
 	MDLHandle_t modelCache = modelinfo->GetCacheHandle(modelType);
 #endif
+}
+
+// Input to set the player's model (not skin)
+void CNEO_Player::InputSetPlayerModel( inputdata_t & inputdata )
+{
+	const char* modelpath = inputdata.value.String();
+
+	if (modelpath && *modelpath)
+	{
+		PrecacheModel(modelpath);
+
+		SetModel(modelpath);
+
+		m_bAllowGibbing = false; // Disallow gibs or else the corpse will turn into whatever the player picked as their skin
+	}
 }
 
 void CNEO_Player::PickupObject( CBaseEntity *pObject,
@@ -2236,12 +2293,14 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 			}
 			[[fallthrough]];
 		case JoinMode::Random:
+			static_assert(TEAM_JINRAI < TEAM_NSF);
 			iTeam = RandomInt(TEAM_JINRAI, TEAM_NSF);
 			break;
 		default:
-			const auto lastGameTeam = GetNumberOfTeams() - LAST_SHARED_TEAM;
-			Assert(FIRST_GAME_TEAM <= lastGameTeam);
-			iTeam = Clamp(joinMode.GetInt(), FIRST_GAME_TEAM, lastGameTeam);
+			const auto lastGameTeam = GetNumberOfTeams() - LAST_SHARED_TEAM,
+				minAllowed = TEAM_UNASSIGNED;
+			Assert(minAllowed <= lastGameTeam);
+			iTeam = Clamp(joinMode.GetInt(), minAllowed, lastGameTeam);
 		}
 	}
 	// Limit team join spam, unless this is a newly joined player

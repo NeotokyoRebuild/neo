@@ -479,7 +479,7 @@ void C_NEO_Player::CheckThermOpticButtons()
 
 		if (m_HL2Local.m_cloakPower >= CLOAK_AUX_COST)
 		{
-			m_bInThermOpticCamo = !m_bInThermOpticCamo;
+			SetCloakState(!m_bInThermOpticCamo);
 		}
 	}
 
@@ -532,7 +532,7 @@ void C_NEO_Player::CheckLeanButtons()
 	{
 		return;
 	}
-	
+
 	m_bInLean = NEO_LEAN_NONE;
 	if ((m_nButtons & IN_LEAN_LEFT) && !(m_nButtons & IN_LEAN_RIGHT))
 	{
@@ -650,7 +650,6 @@ int C_NEO_Player::DrawModel(int flags)
 		return BaseClass::DrawModel(flags);
 	}
 	
-	bool inMotionVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT;
 	bool inThermalVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT;
 
 	int ret = 0;
@@ -668,18 +667,9 @@ int C_NEO_Player::DrawModel(int flags)
 		modelrender->ForcedMaterialOverride(nullptr);
 	}
 
-	auto vel = GetAbsVelocity().Length();
-	if (inMotionVision && vel > 0.5) // MOVING_SPEED_MINIMUM
-	{
-		IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
-		modelrender->ForcedMaterialOverride(pass);
-		ret |= BaseClass::DrawModel(flags);
-		modelrender->ForcedMaterialOverride(nullptr);
-	}
-
 	else if (inThermalVision && !IsCloaked())
 	{
-		IMaterial* pass = materials->FindMaterial("dev/thermal_third", TEXTURE_GROUP_MODEL);
+		IMaterial* pass = materials->FindMaterial("dev/thermal_model", TEXTURE_GROUP_MODEL);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::DrawModel(flags);
 		modelrender->ForcedMaterialOverride(nullptr);
@@ -809,7 +799,7 @@ void C_NEO_Player::PlayStepSound( Vector &vecOrigin,
 }
 
 extern ConVar sv_infinite_aux_power;
-
+extern ConVar glow_outline_effect_enable;
 void C_NEO_Player::PreThink( void )
 {
 	BaseClass::PreThink();
@@ -880,7 +870,7 @@ void C_NEO_Player::PreThink( void )
 
 				if (m_HL2Local.m_cloakPower < CLOAK_AUX_COST)
 				{
-					m_bInThermOpticCamo = false;
+					SetCloakState(false);
 
 					m_HL2Local.m_cloakPower = 0.0f;
 					m_flCamoAuxLastTime = 0;
@@ -905,13 +895,7 @@ void C_NEO_Player::PreThink( void )
 			// NEO TODO (Adam) since the stuff in C_NEO_PLAYER::Spawn() only runs the first time a person spawns in the map, would it be worth moving some of the stuff from there here instead?
 #ifdef GLOWS_ENABLE
 			// Disable client side glow effects of all players
-			for (int i = 1; i <= gpGlobals->maxClients; i++)
-			{
-				if (auto player = UTIL_PlayerByIndex(i))
-				{
-					player->SetClientSideGlowEnabled(false);
-				}
-			}
+			glow_outline_effect_enable.SetValue(false);
 #endif // GLOWS_ENABLE
 		}
 		Lean();
@@ -1623,6 +1607,22 @@ void C_NEO_Player::PlayCloakSound(void)
 	params.m_nChannel = CHAN_VOICE;
 
 	EmitSound(filter, entindex(), params);
+}
+
+void C_NEO_Player::SetCloakState(bool state)
+{
+	m_bInThermOpticCamo = state;
+
+	void (CBaseCombatWeapon:: * setShadowState)(int) = m_bInThermOpticCamo ? &CBaseCombatWeapon::AddEffects 
+																		   : &CBaseCombatWeapon::RemoveEffects;
+
+	for (int i = 0; i < MAX_WEAPONS; i++)
+	{
+		if (CBaseCombatWeapon* weapon = GetWeapon(i))
+		{
+			(weapon->*setShadowState)(EF_NOSHADOW);
+		}
+	}
 }
 
 void C_NEO_Player::PreDataUpdate(DataUpdateType_t updateType)
