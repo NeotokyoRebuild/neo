@@ -1412,6 +1412,8 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl_gamemovement.h
     ${CMAKE_SOURCE_DIR}/game/shared/script_intro_shared.cpp
     episodic/c_vort_charge_token.cpp
+    episodic/episodic_screenspaceeffects.cpp
+    episodic/episodic_screenspaceeffects.h
     hl2/c_antlion_dust.cpp
     hl2/c_ar2_explosion.cpp
     hl2/c_barnacle.cpp
