@@ -2517,6 +2517,10 @@ void DoEnginePostProcessing( int x, int y, int w, int h, bool bFlashlightIsOn, b
 		}
 		if (target && target->IsInVision()) // don't want HDR to interfere with vision effects
 		{
+			if (hdrType == HDR_TYPE_INTEGER || hdrType == HDR_TYPE_FLOAT)
+			{
+				SetToneMapScale(pRenderContext, 1.f, 0.5f, 2.f);
+			}
 			hdrType = HDR_TYPE_NONE;
 			flBloomScale = 0.f;
 		}
@@ -2602,6 +2606,9 @@ void DoEnginePostProcessing( int x, int y, int w, int h, bool bFlashlightIsOn, b
 										  ( g_pMaterialSystemHardwareConfig->GetDXSupportLevel() >= 90) &&
 										  ( g_pMaterialSystemHardwareConfig->GetHDRType() != HDR_TYPE_FLOAT ) &&
 										  g_pColorCorrectionMgr->HasNonZeroColorCorrectionWeights() &&
+#ifdef NEO
+										  (!target || (target && !target->IsInVision())) &&
+#endif // NEO
 										  mat_colorcorrection.GetInt();
 			bool  bSplitScreenHDR		= mat_show_ab_hdr.GetInt();
 			pRenderContext->EnableColorCorrection( bPerformColCorrect );
