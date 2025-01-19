@@ -69,7 +69,7 @@ T *_CreateEntityTemplate( T *newEnt, const char *className )
 
 #include "tier0/memdbgoff.h"
 
-CBaseEntity *CreateEntityByName( const char *className, int iForceEdictIndex );
+DLL_CLASS_EXPORT CBaseEntity *CreateEntityByName( const char *className, int iForceEdictIndex );
 
 // creates an entity by name, and ensure it's correctness
 // does not spawn the entity
