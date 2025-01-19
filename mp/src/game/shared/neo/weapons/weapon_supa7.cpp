@@ -322,6 +322,11 @@ void CWeaponSupa7::PrimaryAttack(void)
 	}
 
 	FireBulletsInfo_t info(numBullets, vecSrc, vecAiming, bulletSpread, MAX_TRACE_LENGTH, ammoType);
+	if (m_bSlugLoaded)
+	{
+		constexpr float NEO_SLUG_PENETRATION_VALUE = 32.f;
+		info.m_flPenetration = NEO_SLUG_PENETRATION_VALUE;
+	}
 	info.m_pAttacker = pPlayer;
 	info.m_iTracerFreq = 0;
 
