@@ -50,9 +50,12 @@ enum RootState
 	STATE_NEWGAME,
 	STATE_SERVERBROWSER,
 
-	STATE_MAPLIST,
+	// Those that are not the main states goes under here
+	STATE__SUBSTATES,
+	STATE_MAPLIST = STATE__SUBSTATES,
 	STATE_SERVERDETAILS,
 	STATE_PLAYERLIST,
+	STATE_SPRAYPICKER,
 
 	// Those that uses CNeoRoot::MainLoopPopup only starts here
 	STATE__POPUPSTART,
@@ -143,6 +146,7 @@ public:
 	void MainLoopMapList(const MainLoopParam param);
 	void MainLoopServerDetails(const MainLoopParam param);
 	void MainLoopPlayerList(const MainLoopParam param);
+	void MainLoopSprayPicker(const MainLoopParam param);
 	void MainLoopPopup(const MainLoopParam param);
 
 	NeoSettings m_ns = {};
@@ -188,11 +192,20 @@ public:
 	void ReadNewsFile(CUtlBuffer &buf);
 	bool m_bShowBrowserLabel = false;
 
+	enum FileIODialogMode
+	{
+		FILEIODLGMODE_CROSSHAIR = 0,
+		FILEIODLGMODE_SPRAY,
+
+		FILEIODLGMODE__TOTAL,
+	};
+	FileIODialogMode m_eFileIOMode;
 	vgui::FileOpenDialog *m_pFileIODialog = nullptr;
 	MESSAGE_FUNC_CHARPTR(OnFileSelected, "FileSelected", fullpath);
 
 	bool m_bOnLoadingScreen = false;
 	int m_iSavedYOffsets[NeoUI::MAX_SECTIONS] = {};
+	bool m_bSprayGalleryRefresh = false;
 	float m_flWideAs43 = 0.0f;
 };
 

@@ -20,11 +20,13 @@
 #include "tier1/interface.h"
 #include <ctime>
 #include "ui/neo_loading.h"
+#include "ui/neo_utils.h"
 #include "neo_gamerules.h"
 #include "neo_misc.h"
 
 #include <vgui/IInput.h>
 #include <vgui_controls/Controls.h>
+#include <stb_image.h>
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -500,6 +502,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		&CNeoRoot::MainLoopMapList,			// STATE_MAPLIST
 		&CNeoRoot::MainLoopServerDetails,	// STATE_SERVERDETAILS
 		&CNeoRoot::MainLoopPlayerList,		// STATE_PLAYERLIST
+		&CNeoRoot::MainLoopSprayPicker,		// STATE_SPRAYPICKER
 
 		&CNeoRoot::MainLoopPopup,			// STATE_KEYCAPTURE
 		&CNeoRoot::MainLoopPopup,			// STATE_CONFIRMSETTINGS
@@ -516,7 +519,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 			V_memcpy(m_iSavedYOffsets, g_uiCtx.iYOffset, NeoUI::SIZEOF_SECTIONS);
 		}
 		UpdateControls();
-		if (m_state == STATE_SETTINGS && ePrevState >= STATE__POPUPSTART && ePrevState < STATE__TOTAL)
+		if (m_state == STATE_SETTINGS && ePrevState >= STATE__SUBSTATES && ePrevState < STATE__TOTAL)
 		{
 			V_memcpy(g_uiCtx.iYOffset, m_iSavedYOffsets, NeoUI::SIZEOF_SECTIONS);
 		}
@@ -1200,6 +1203,99 @@ void CNeoRoot::MainLoopMapList(const MainLoopParam param)
 	NeoUI::EndContext();
 }
 
+void CNeoRoot::MainLoopSprayPicker(const MainLoopParam param)
+{
+	struct SprayInfo
+	{
+		char szPath[MAX_PATH];
+		char szVtf[MAX_PATH];
+	};
+	static CUtlVector<SprayInfo> vecStaticSprays;
+	if (m_bSprayGalleryRefresh)
+	{
+		vecStaticSprays.Purge();
+		FileFindHandle_t findHdl;
+		for (const char *pszFilename = filesystem->FindFirst("materials/vgui/logos/ui/*.vmt", &findHdl);
+			 pszFilename;
+			 pszFilename = filesystem->FindNext(findHdl))
+		{
+			// spray.vmt is only used for currently applying spray
+			if (V_strcmp(pszFilename, "spray.vmt") == 0)
+			{
+				continue;
+			}
+
+			SprayInfo sprayInfo = {};
+
+			V_sprintf_safe(sprayInfo.szPath, "vgui/logos/ui/%s", pszFilename);
+			sprayInfo.szPath[V_strlen(sprayInfo.szPath) - sizeof("vmt")] = '\0';
+
+			V_sprintf_safe(sprayInfo.szVtf, "materials/vgui/logos/%s", pszFilename);
+			sprayInfo.szVtf[V_strlen(sprayInfo.szVtf) - sizeof("vmt")] = '\0';
+			V_strcat_safe(sprayInfo.szVtf, ".vtf");
+
+			vecStaticSprays.AddToTail(sprayInfo);
+		}
+		filesystem->FindClose(findHdl);
+
+		m_bSprayGalleryRefresh = false;
+	}
+	const int iGalleryRows = g_iRowsInScreen / 4;
+	const int iNormTall = g_uiCtx.iRowTall;
+	const int iCellTall = iNormTall * 4;
+
+	const int iTallTotal = iNormTall * (g_iRowsInScreen + 2);
+	g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
+	g_uiCtx.dPanel.x = (param.wide / 2) - (g_iRootSubPanelWide / 2);
+	g_uiCtx.dPanel.y = (param.tall / 2) - (iTallTotal / 2);
+	g_uiCtx.dPanel.tall = iNormTall * (g_iRowsInScreen + 1);
+	g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
+	NeoUI::BeginContext(&g_uiCtx, param.eMode, L"Pick spray", "CtxSprayPicker");
+	{
+		g_uiCtx.iRowTall = iCellTall;
+		NeoUI::BeginSection(true);
+		{
+			static constexpr int COLS_IN_ROW = 5;
+			for (int i = 0; i < vecStaticSprays.Count(); i += COLS_IN_ROW)
+			{
+				NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / COLS_IN_ROW);
+				{
+					for (int j = 0; j < COLS_IN_ROW && (i + j) < vecStaticSprays.Count(); ++j)
+					{
+						const auto &sprayInfo = vecStaticSprays.Element(i + j);
+						if (NeoUI::ButtonTexture(sprayInfo.szPath).bPressed)
+						{
+							m_eFileIOMode = FILEIODLGMODE_SPRAY;
+							OnFileSelected(sprayInfo.szVtf);
+							m_state = STATE_SETTINGS;
+						}
+					}
+				}
+				NeoUI::EndHorizontal();
+			}
+		}
+		NeoUI::EndSection();
+		g_uiCtx.iRowTall = iNormTall;
+		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
+		NeoUI::BeginSection();
+		{
+			NeoUI::SwapFont(NeoUI::FONT_NTHORIZSIDES);
+			NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 5);
+			{
+				if (NeoUI::Button(L"Back (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
+				{
+					m_state = STATE_SETTINGS;
+				}
+			}
+			NeoUI::EndHorizontal();
+			NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
+		}
+		NeoUI::EndSection();
+	}
+	NeoUI::EndContext();
+}
+
 void CNeoRoot::MainLoopServerDetails(const MainLoopParam param)
 {
 	const auto *gameServer = &m_serverBrowser[m_iServerBrowserTab].m_filteredServers[m_iSelectedServer];
@@ -1551,8 +1647,191 @@ void CNeoRoot::ReadNewsFile(CUtlBuffer &buf)
 
 void CNeoRoot::OnFileSelected(const char *szFullpath)
 {
-	((m_ns.crosshair.eFileIOMode == vgui::FOD_OPEN) ?
-				&ImportCrosshair : &ExportCrosshair)(&m_ns.crosshair.info, szFullpath);
+	switch (m_eFileIOMode)
+	{
+	case FILEIODLGMODE_CROSSHAIR:
+		((m_ns.crosshair.eFileIOMode == vgui::FOD_OPEN) ?
+					&ImportCrosshair : &ExportCrosshair)(&m_ns.crosshair.info, szFullpath);
+		break;
+	case FILEIODLGMODE_SPRAY:
+	{
+		// Ensure the directories are there to write to
+		filesystem->CreateDirHierarchy("materials/vgui/logos");
+		filesystem->CreateDirHierarchy("materials/vgui/logos/ui");
+
+		CUtlBuffer sprayBuffer(0, 0, 0);
+
+		if (V_striEndsWith(szFullpath, ".vtf"))
+		{
+			// Check if we can just direct copy over (is DXT1 and 256x256) or will have
+			// to go through reprocessing like a PNG/JPEG format would
+			CUtlBuffer buf(0, 0, CUtlBuffer::READ_ONLY);
+			if (!filesystem->ReadFile(szFullpath, nullptr, buf))
+			{
+				return;
+			}
+
+			IVTFTexture *pVTFTexture = CreateVTFTexture();
+			if (pVTFTexture->Unserialize(buf))
+			{
+				const bool bDirectCopy = (pVTFTexture->Width() == pVTFTexture->Height() &&
+										  (pVTFTexture->Format() == IMAGE_FORMAT_DXT1) ||
+										  (pVTFTexture->Format() == IMAGE_FORMAT_DXT5));
+				if (bDirectCopy)
+				{
+					if (!engine->CopyLocalFile(szFullpath, "materials/vgui/logos/spray.vtf"))
+					{
+						Msg("ERROR: Cannot copy spray's vtf to: %s", "materials/vgui/logos/spray.vtf");
+					}
+				}
+				else
+				{
+					pVTFTexture->ConvertImageFormat(IMAGE_FORMAT_RGBA8888, false);
+					uint8 *data = NeoUtils::CropScaleTo256(pVTFTexture->ImageData(0, 0, 0),
+														   pVTFTexture->Width(), pVTFTexture->Height());
+					NeoUtils::SerializeVTFDXTSprayToBuffer(&sprayBuffer, data);
+					free(data);
+				}
+			}
+			DestroyVTFTexture(pVTFTexture);
+		}
+		else
+		{
+			int width, height, channels;
+			uint8 *data = stbi_load(szFullpath, &width, &height, &channels, 0);
+			if (!data || width <= 0 || height <= 0)
+			{
+				return;
+			}
+
+			// Convert to RGBA
+			if (channels == 3)
+			{
+				uint8 *rgbaData = reinterpret_cast<uint8 *>(calloc(width * height, sizeof(uint8) * 4));
+
+				ImageLoader::ConvertImageFormat(data, IMAGE_FORMAT_RGB888,
+												rgbaData, IMAGE_FORMAT_RGBA8888,
+												width, height);
+
+				stbi_image_free(data);
+				data = rgbaData;
+				channels = 4;
+			}
+
+			{
+				uint8 *newData = NeoUtils::CropScaleTo256(data, width, height);
+				free(data);
+				data = newData;
+				width = NeoUtils::SPRAY_WH;
+				height = NeoUtils::SPRAY_WH;
+			}
+
+			NeoUtils::SerializeVTFDXTSprayToBuffer(&sprayBuffer, data);
+			free(data);
+		}
+
+		char szBaseFName[MAX_PATH] = {};
+		{
+			const char *pLastSlash = V_strrchr(szFullpath, '/');
+			const char *pszBaseName = pLastSlash ? pLastSlash + 1 : szFullpath;
+			int iSzLen = V_strlen(pszBaseName);
+			const char *pszDot = strchr(pszBaseName, '.');
+			if (pszDot)
+			{
+				iSzLen = pszDot - pszBaseName;
+			}
+			V_sprintf_safe(szBaseFName, "%.*s", iSzLen, pszBaseName);
+		}
+		char szByBaseName[MAX_PATH];
+		V_sprintf_safe(szByBaseName, "materials/vgui/logos/%s.vtf", szBaseFName);
+
+		if (sprayBuffer.Size() > 0)
+		{
+			if (!filesystem->WriteFile("materials/vgui/logos/spray.vtf", nullptr, sprayBuffer))
+			{
+				Msg("ERROR: Cannot save spray's vtf to: %s", "materials/vgui/logos/spray.vtf");
+			}
+			if (!filesystem->WriteFile(szByBaseName, nullptr, sprayBuffer))
+			{
+				Msg("ERROR: Cannot save spray's vtf to: %s", szByBaseName);
+			}
+		}
+		else if (V_strcmp(szFullpath, szByBaseName) != 0)
+		{
+			if (!engine->CopyLocalFile(szFullpath, szByBaseName))
+			{
+				Msg("ERROR: Cannot copy spray's vtf to: %s", szByBaseName);
+			}
+		}
+
+		// Generate the vmt files, one for spraying, one under "ui" to display in GUI
+		for (const char *pszBaseName : {"spray", static_cast<const char *>(szBaseFName)})
+		{
+			if (pszBaseName[0] == '\0')
+			{
+				continue;
+			}
+
+			char szStrBuffer[1024];
+			{
+				V_sprintf_safe(szStrBuffer, R"VMT(
+LightmappedGeneric
+{
+	"$basetexture"	"vgui/logos/%s"
+	"$translucent" "1"
+	"$decal" "1"
+	"$decalscale" "0.250"
+}
+)VMT", pszBaseName);
+
+				CUtlBuffer bufVmt(0, 0, CUtlBuffer::TEXT_BUFFER);
+				bufVmt.PutString(szStrBuffer);
+
+				char szOutPath[MAX_PATH];
+				V_sprintf_safe(szOutPath, "materials/vgui/logos/%s.vmt", pszBaseName);
+				if (!filesystem->WriteFile(szOutPath, nullptr, bufVmt))
+				{
+					Msg("ERROR: Cannot save spray's vmt to: %s", szOutPath);
+				}
+			}
+
+			{
+				V_sprintf_safe(szStrBuffer, R"VMT(
+"UnlitGeneric"
+{
+	// Original shader: BaseTimesVertexColorAlphaBlendNoOverbright
+	"$translucent" 1
+	"$basetexture" "VGUI/logos/%s"
+	"$vertexcolor" 1
+	"$vertexalpha" 1
+	"$no_fullbright" 1
+	"$ignorez" 1
+}
+)VMT", pszBaseName);
+
+				CUtlBuffer bufVmt(0, 0, CUtlBuffer::TEXT_BUFFER);
+				bufVmt.PutString(szStrBuffer);
+
+				char szOutPath[MAX_PATH];
+				V_sprintf_safe(szOutPath, "materials/vgui/logos/ui/%s.vmt", pszBaseName);
+				if (!filesystem->WriteFile(szOutPath, nullptr, bufVmt))
+				{
+					Msg("ERROR: Cannot save spray's vmt to: %s", szOutPath);
+				}
+			}
+		}
+
+		// Reapply the cl_logofile ConVar, update the texture to the new spray
+		ConVarRef("cl_logofile").SetValue("materials/vgui/logos/spray.vtf");
+		engine->ClientCmd_Unrestricted("cl_logofile materials/vgui/logos/spray.vtf");
+
+		NeoUI::ResetTextures();
+		materials->ReloadMaterials("vgui/logo");
+		break;
+	}
+	default:
+		break;
+	}
 }
 
 // NEO NOTE (nullsystem): NeoRootCaptureESC is so that ESC keybinds can be recognized by non-root states, but root
