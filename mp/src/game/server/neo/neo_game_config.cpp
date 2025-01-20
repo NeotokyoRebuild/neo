@@ -10,6 +10,7 @@ BEGIN_DATADESC(CNEOGameConfig)
 
 	DEFINE_INPUTFUNC(FIELD_INTEGER, "FireTeamWin", InputFireTeamWin),
 	DEFINE_INPUTFUNC(FIELD_VOID, "FireDMPlayerWin", InputFireDMPlayerWin),
+	DEFINE_INPUTFUNC(FIELD_VOID, "FireRoundTie", InputFireRoundTie),
 
 	DEFINE_OUTPUT(m_OnRoundEnd, "OnRoundEnd"),
 	DEFINE_OUTPUT(m_OnRoundStart, "OnRoundStart")
@@ -43,6 +44,11 @@ void CNEOGameConfig::InputFireDMPlayerWin(inputdata_t& inputData)
     {
         static_cast<CNEORules*>(g_pGameRules)->SetWinningDMPlayer(static_cast<CNEO_Player*>(pPlayer));
     }
+}
+
+void CNEOGameConfig::InputFireRoundTie(inputdata_t& inputData)
+{
+	static_cast<CNEORules*>(g_pGameRules)->SetWinningTeam(1, 7, false, true, true, false);
 }
 
 // Outputs
