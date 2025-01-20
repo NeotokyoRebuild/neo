@@ -27,5 +27,3 @@ public:
 	COutputEvent m_OnRoundEnd;
 	COutputEvent m_OnRoundStart;
 };
-
-CNEOGameConfig* CNEOGameConfig::s_pGameRulesToConfig = nullptr;
