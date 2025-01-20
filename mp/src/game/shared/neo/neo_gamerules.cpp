@@ -6,7 +6,6 @@
 
 #include "takedamageinfo.h"
 #include "basegrenade_shared.h"
-#include "con_nprint.h"
 
 #ifdef CLIENT_DLL
 	#include "c_neo_player.h"
