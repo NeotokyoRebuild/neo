@@ -6,6 +6,7 @@
 
 #include "takedamageinfo.h"
 #include "basegrenade_shared.h"
+#include "con_nprint.h"
 
 #ifdef CLIENT_DLL
 	#include "c_neo_player.h"
@@ -124,6 +125,16 @@ ConVar neo_sv_readyup_autointermission("neo_sv_readyup_autointermission", "0", F
 ConVar neo_sv_readyup_lobby("neo_sv_readyup_lobby", "0", FCVAR_REPLICATED, "If enabled, players would need to ready up and match the players total requirements to start a game.", true, 0.0f, true, 1.0f);
 ConVar neo_sv_pausematch_enabled("neo_sv_pausematch_enabled", "0", FCVAR_REPLICATED, "If enabled, players will be able to pause the match mid-game.", true, 0.0f, true, 1.0f);
 ConVar neo_sv_pausematch_unpauseimmediate("neo_sv_pausematch_unpauseimmediate", "0", FCVAR_REPLICATED | FCVAR_CHEAT, "Testing only - If enabled, unpause will be immediate.", true, 0.0f, true, 1.0f);
+
+extern ConVar neo_round_limit;
+static void neoSvCompCallback(IConVar* var, const char* pOldValue, float flOldValue)
+{
+	const float flCurrentValue = !flOldValue;
+	neo_sv_readyup_lobby.SetValue(flCurrentValue);
+	mp_forcecamera.SetValue(flCurrentValue); // 0 = OBS_ALLOWS_ALL, 1 = OBS_ALLOW_TEAM. For strictly original neotokyo spectator experience, 2 = OBS_ALLOW_NONE
+}
+
+ConVar neo_sv_comp("neo_sv_comp", "0", FCVAR_REPLICATED, "Enables competitive gamerules", true, 0.f, true, 1.f, neoSvCompCallback);
 
 ConVar snd_victory_volume("snd_victory_volume", "0.33", FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_USERINFO, "Loudness of the victory jingle (0-1).", true, 0.0, true, 1.0);
 
@@ -2719,7 +2730,7 @@ bool CNEORules::RoundIsMatchPoint() const
 	if (teamJinrai && teamNSF && neo_round_limit.GetInt() != 0)
 	{
 		if (RoundIsInSuddenDeath()) return false;
-		const int roundDiff = neo_round_limit.GetInt() - (m_iRoundNumber - 1);
+		const int roundDiff = neo_round_limit.GetInt() - (m_iRoundNumber);
 		if ((teamJinrai->GetRoundsWon() + 1) > (teamNSF->GetRoundsWon() + roundDiff)) return true;
 		if ((teamNSF->GetRoundsWon() + 1) > (teamJinrai->GetRoundsWon() + roundDiff)) return true;
 		return false;
@@ -2793,7 +2804,7 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 			bool earlyWin = false;
 			if (!RoundIsInSuddenDeath())
 			{
-				const int roundDiff = neo_round_limit.GetInt() - (m_iRoundNumber - 1);
+				const int roundDiff = neo_round_limit.GetInt() - (m_iRoundNumber);
 				earlyWin = (earlyWin || (teamJinrai->GetRoundsWon() > (teamNSF->GetRoundsWon() + roundDiff)));
 				earlyWin = (earlyWin || (teamNSF->GetRoundsWon() > (teamJinrai->GetRoundsWon() + roundDiff)));
 			}
