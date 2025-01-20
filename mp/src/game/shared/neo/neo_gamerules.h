@@ -286,7 +286,8 @@ public:
 		NEO_VICTORY_TIMEOUT_WIN_BY_NUMBERS,
 		NEO_VICTORY_POINTS,
 		NEO_VICTORY_FORFEIT,
-		NEO_VICTORY_STALEMATE // Not actually a victory
+		NEO_VICTORY_STALEMATE, // Not actually a victory
+		NEO_VICTORY_MAPIO
 	};
 
 	int GetGhosterTeam() const { return m_iGhosterTeam; }
