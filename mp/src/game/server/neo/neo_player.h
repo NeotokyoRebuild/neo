@@ -200,8 +200,13 @@ public:
 	void StartShowDmgStats(const CTakeDamageInfo *info);
 
 	void AddPoints(int score, bool bAllowNegativeScore);
+	inline void SetDeathTime(const float deathTime) { m_flDeathTime.Set(deathTime); }
 
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);
+
+	void InputSetPlayerModel( inputdata_t & inputData );
+private:
+	bool m_bAllowGibbing;
 
 private:
 	float GetActiveWeaponSpeedScale() const;
@@ -261,6 +266,7 @@ public:
 	CNetworkVar(bool, m_bClientWantNeoName);
 
 	bool m_bIsPendingSpawnForThisRound;
+	bool m_bSpawnedThisRound = false;
 	bool m_bKilledInflicted = false; // Server-side var only
 	int m_iTeamDamageInflicted = 0;
 	int m_iTeamKillsInflicted = 0;

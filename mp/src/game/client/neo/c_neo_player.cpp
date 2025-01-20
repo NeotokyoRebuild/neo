@@ -532,7 +532,7 @@ void C_NEO_Player::CheckLeanButtons()
 	{
 		return;
 	}
-	
+
 	m_bInLean = NEO_LEAN_NONE;
 	if ((m_nButtons & IN_LEAN_LEFT) && !(m_nButtons & IN_LEAN_RIGHT))
 	{
@@ -895,13 +895,6 @@ void C_NEO_Player::PreThink( void )
 			// NEO TODO (Adam) since the stuff in C_NEO_PLAYER::Spawn() only runs the first time a person spawns in the map, would it be worth moving some of the stuff from there here instead?
 #ifdef GLOWS_ENABLE
 			// Disable client side glow effects of all players
-			for (int i = 1; i <= gpGlobals->maxClients; i++)
-			{
-				if (auto player = UTIL_PlayerByIndex(i))
-				{
-					player->SetClientSideGlowEnabled(false);
-				}
-			}
 			glow_outline_effect_enable.SetValue(false);
 #endif // GLOWS_ENABLE
 		}
