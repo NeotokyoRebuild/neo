@@ -18,6 +18,7 @@ public:
 	// Inputs
 	void InputFireTeamWin(inputdata_t& inputData);
 	void InputFireDMPlayerWin(inputdata_t& inputData);
+	void InputFireRoundTie(inputdata_t& inputData);
 
 	// Outputs
 	void OutputRoundEnd();
