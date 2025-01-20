@@ -10,5 +10,21 @@ class CNEOGameConfig : public CLogicalEntity
 	DECLARE_DATADESC();
 
 public:
+	void Spawn() override;
+	static CNEOGameConfig* s_pGameRulesToConfig;
+
 	int m_GameType = NEO_GAME_TYPE_TDM;
+
+	// Inputs
+	void InputFireTeamWin(inputdata_t& inputData);
+	void InputFireDMPlayerWin(inputdata_t& inputData);
+
+	// Outputs
+	void OutputRoundEnd();
+	void OutputRoundStart();
+
+	COutputEvent m_OnRoundEnd;
+	COutputEvent m_OnRoundStart;
 };
+
+CNEOGameConfig* CNEOGameConfig::s_pGameRulesToConfig = nullptr;
