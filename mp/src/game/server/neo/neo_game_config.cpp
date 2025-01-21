@@ -16,6 +16,8 @@ BEGIN_DATADESC(CNEOGameConfig)
 	DEFINE_OUTPUT(m_OnRoundStart, "OnRoundStart")
 END_DATADESC()
 
+CNEOGameConfig* CNEOGameConfig::s_pGameRulesToConfig = nullptr;
+
 void CNEOGameConfig::Spawn()
 {
 	BaseClass::Spawn();
