@@ -162,6 +162,7 @@ void ClientModeHL2MPNormal::Init()
 		{ "neo_knife",			"vgui/hud/weapons/knife.vmt" },
 		{ "neo_kyla",			"vgui/hud/weapons/kyla.vmt" },
 		{ "neo_m41",			"vgui/hud/weapons/m41.vmt" },
+		{ "neo_m41l",			"vgui/hud/weapons/m41l.vmt" },
 		{ "neo_m41s",			"vgui/hud/weapons/m41s.vmt" },
 		{ "neo_milso",			"vgui/hud/weapons/milso.vmt" },
 		{ "neo_mpn",			"vgui/hud/weapons/mpn.vmt" },
