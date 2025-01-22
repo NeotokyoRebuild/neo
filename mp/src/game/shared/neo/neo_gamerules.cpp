@@ -125,7 +125,6 @@ ConVar neo_sv_readyup_lobby("neo_sv_readyup_lobby", "0", FCVAR_REPLICATED, "If e
 ConVar neo_sv_pausematch_enabled("neo_sv_pausematch_enabled", "0", FCVAR_REPLICATED, "If enabled, players will be able to pause the match mid-game.", true, 0.0f, true, 1.0f);
 ConVar neo_sv_pausematch_unpauseimmediate("neo_sv_pausematch_unpauseimmediate", "0", FCVAR_REPLICATED | FCVAR_CHEAT, "Testing only - If enabled, unpause will be immediate.", true, 0.0f, true, 1.0f);
 
-extern ConVar neo_round_limit;
 static void neoSvCompCallback(IConVar* var, const char* pOldValue, float flOldValue)
 {
 	const float flCurrentValue = !flOldValue;
