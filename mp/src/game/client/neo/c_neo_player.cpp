@@ -841,6 +841,23 @@ void C_NEO_Player::PreThink( void )
 	}
 	SetMaxSpeed(MAX(speed, 56));
 	
+	Vector absoluteVelocity = GetAbsVelocity();
+	absoluteVelocity.z = 0.f;
+	float currentSpeed = absoluteVelocity.Length();
+
+	engine->Con_NPrintf(0, "Max Speed: %f", GetPlayerMaxSpeed());
+	engine->Con_NPrintf(1, "Current Speed minus upward velocity: %f", currentSpeed);
+
+	if (GetMoveType() != MOVETYPE_LADDER && NEORules()->GetGhosterPlayer() == entindex() && NEO_WEP_GHOST && currentSpeed > GetPlayerMaxSpeed())
+	{
+		float maxSpeed = GetPlayerMaxSpeed();
+		float overSpeed = currentSpeed - maxSpeed;
+
+		absoluteVelocity.NormalizeInPlace();
+		absoluteVelocity *= -overSpeed;
+		ApplyAbsVelocityImpulse(absoluteVelocity);
+	}
+
 	CheckThermOpticButtons();
 	CheckVisionButtons();
 

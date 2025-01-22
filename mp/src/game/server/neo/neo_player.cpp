@@ -708,6 +708,20 @@ void CNEO_Player::PreThink(void)
 	}
 	SetMaxSpeed(MAX(speed, 56));
 
+	Vector absoluteVelocity = GetAbsVelocity();
+	absoluteVelocity.z = 0.f;
+	float currentSpeed = absoluteVelocity.Length();
+
+	if (GetMoveType() != MOVETYPE_LADDER && NEORules()->GetGhosterPlayer() == entindex() && currentSpeed > GetPlayerMaxSpeed())
+	{
+		float maxSpeed = GetPlayerMaxSpeed();
+		float overSpeed = currentSpeed - maxSpeed;
+
+		absoluteVelocity.NormalizeInPlace();
+		absoluteVelocity *= -overSpeed;
+		ApplyAbsVelocityImpulse(absoluteVelocity);
+	}
+
 	CheckThermOpticButtons();
 	CheckVisionButtons();
 
