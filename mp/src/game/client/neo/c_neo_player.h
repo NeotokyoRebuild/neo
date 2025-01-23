@@ -64,6 +64,7 @@ public:
 
 	virtual void ClientThink( void );
 	virtual void PreThink( void );
+	virtual void CalculateSpeed( void );
 	virtual void PostThink( void );
 	virtual void Spawn( void );
 

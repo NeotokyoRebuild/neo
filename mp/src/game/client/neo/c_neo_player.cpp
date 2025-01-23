@@ -798,15 +798,12 @@ void C_NEO_Player::PlayStepSound( Vector &vecOrigin,
 	BaseClass::PlayStepSound(vecOrigin, psurface, fvol, force);
 }
 
-extern ConVar sv_infinite_aux_power;
-extern ConVar glow_outline_effect_enable;
-void C_NEO_Player::PreThink( void )
+extern ConVar neo_ghost_bhopping;
+void C_NEO_Player::CalculateSpeed(void)
 {
-	BaseClass::PreThink();
-
 	float speed = GetNormSpeed();
 	static constexpr float DUCK_WALK_SPEED_MODIFIER = 0.75;
-	if (m_nButtons & IN_DUCK)
+	if (m_nButtons & IN_DUCK || IsDucked() || IsDucking())
 	{
 		speed *= DUCK_WALK_SPEED_MODIFIER;
 	}
@@ -830,33 +827,43 @@ void C_NEO_Player::PreThink( void )
 		speed *= pNeoWep->GetSpeedScale();
 	}
 
-	if (!IsAirborne() && m_iNeoClass != NEO_CLASS_RECON)
-	{
-		const float deltaTime = gpGlobals->curtime - m_flLastAirborneJumpOkTime;
-		const float leeway = 1.0f;
-		if (deltaTime < leeway)
-		{
-			speed = (speed / 2) + (deltaTime / 2 * (speed));
-		}
-	}
-	SetMaxSpeed(MAX(speed, 56));
-	
 	Vector absoluteVelocity = GetAbsVelocity();
 	absoluteVelocity.z = 0.f;
 	float currentSpeed = absoluteVelocity.Length();
 
-	engine->Con_NPrintf(0, "Max Speed: %f", GetPlayerMaxSpeed());
-	engine->Con_NPrintf(1, "Current Speed minus upward velocity: %f", currentSpeed);
-
-	if (GetMoveType() != MOVETYPE_LADDER && NEORules()->GetGhosterPlayer() == entindex() && NEO_WEP_GHOST && currentSpeed > GetPlayerMaxSpeed())
+	if (!neo_ghost_bhopping.GetBool() && GetMoveType() != MOVETYPE_LADDER && currentSpeed > speed && Weapon_OwnsThisType("weapon_ghost"))
 	{
-		float maxSpeed = GetPlayerMaxSpeed();
-		float overSpeed = currentSpeed - maxSpeed;
-
+		float overSpeed = currentSpeed - speed;
 		absoluteVelocity.NormalizeInPlace();
 		absoluteVelocity *= -overSpeed;
 		ApplyAbsVelocityImpulse(absoluteVelocity);
 	}
+
+	// Slowdown after landing 
+	if (!IsAirborne() && m_iNeoClass != NEO_CLASS_RECON)
+	{
+		const float timeSinceLanding = gpGlobals->curtime - m_flLastAirborneJumpOkTime;
+		constexpr float INITIAL_SLOWDOWN_TIME = 0.25f;
+		constexpr float IMPAIRED_ACCELERATION_TIME = INITIAL_SLOWDOWN_TIME + (1 / 3.f);
+		if (timeSinceLanding < INITIAL_SLOWDOWN_TIME)
+		{
+			speed = MIN(speed, 75.f);
+		}
+		else if (timeSinceLanding < IMPAIRED_ACCELERATION_TIME)
+		{
+			speed *= timeSinceLanding / IMPAIRED_ACCELERATION_TIME;
+		}
+	}
+	SetMaxSpeed(MAX(speed, 56));
+}
+
+extern ConVar sv_infinite_aux_power;
+extern ConVar glow_outline_effect_enable;
+void C_NEO_Player::PreThink( void )
+{
+	BaseClass::PreThink();
+
+	CalculateSpeed();
 
 	CheckThermOpticButtons();
 	CheckVisionButtons();

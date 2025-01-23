@@ -60,6 +60,7 @@ public:
 	virtual void Precache(void) OVERRIDE;
 	virtual void Spawn(void) OVERRIDE;
 	virtual void PostThink(void) OVERRIDE;
+	virtual void CalculateSpeed(void);
 	virtual void PreThink(void) OVERRIDE;
 	virtual void PlayerDeathThink(void) OVERRIDE;
 	virtual bool HandleCommand_JoinTeam(int team) OVERRIDE;
