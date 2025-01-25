@@ -571,8 +571,8 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	NeoUI::EndSection();
 
 	const int iBtnPlaceXMid = (param.wide / 4);
-	m_iBtnWide = m_iTitleWidth + (2 * g_uiCtx.iMarginX);
-	const int iRightXPos = iBtnPlaceXMid + (m_iBtnWide / 2) + g_uiCtx.iMarginX;
+	const int iBtnWide = m_iTitleWidth + (2 * g_uiCtx.iMarginX);
+	const int iRightXPos = iBtnPlaceXMid + (iBtnWide / 2) + g_uiCtx.iMarginX;
 	int iRightSideYStart = yTopPos;
 
 	// Draw top steam section portion
