@@ -424,9 +424,6 @@ void NeoToggleConsoleEnforce()
 			engine->ClientCmd_Unrestricted(szCmdStr);
 		}
 	}
-
-	// NEO TODO (Adam) Work out what is enabling the console at launch and stop that then remove this.
-	engine->ClientCmd_Unrestricted("hideconsole");
 }
 
 void NeoSettingsSave(const NeoSettings *ns)
