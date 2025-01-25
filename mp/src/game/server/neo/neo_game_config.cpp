@@ -27,19 +27,6 @@ void CNEOGameConfig::Spawn()
 
 // Inputs
 
-enum
-{
-	NEO_VICTORY_GHOST_CAPTURE = 0,
-	NEO_VICTORY_VIP_ESCORT,
-	NEO_VICTORY_VIP_ELIMINATION,
-	NEO_VICTORY_TEAM_ELIMINATION,
-	NEO_VICTORY_TIMEOUT_WIN_BY_NUMBERS,
-	NEO_VICTORY_POINTS,
-	NEO_VICTORY_FORFEIT,
-	NEO_VICTORY_STALEMATE,
-	NEO_VICTORY_MAPIO
-};
-
 void CNEOGameConfig::InputFireTeamWin(inputdata_t& inputData)
 {
 	int team = inputData.value.Int();
