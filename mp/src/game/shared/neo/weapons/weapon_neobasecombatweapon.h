@@ -271,7 +271,7 @@ protected:
 	virtual void UpdateInaccuracy(void);
 	virtual float GetAccuracyPenalty() const { return 0.8; }
 	virtual float GetMaxAccuracyPenalty() const { return 1.0; }
-	virtual float GetAccuracyPenaltyDecay() const { return 1.2; }
+	virtual float GetAccuracyPenaltyDecay();
 	virtual float GetFastestDryRefireTime() const { Assert(false); return 0; } // Should never call this base class; implement in children.
 
 protected:
