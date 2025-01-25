@@ -2880,7 +2880,7 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 	UserMessageBegin(filter, "RoundResult");
 	WRITE_STRING(team == TEAM_JINRAI ? "jinrai" : team == TEAM_NSF ? "nsf" : "tie");	// which team won
 	WRITE_FLOAT(gpGlobals->curtime);													// when did they win
-	if(iWinReason != 8)
+	if(iWinReason != NEO_VICTORY_MAPIO)
 	{ 
 		WRITE_STRING(victoryMsg);															// extra message (who capped or last kill or who got the most points or whatever)
 	}
