@@ -119,6 +119,18 @@ enum NeoRoundStatus {
 	Pause,
 };
 
+enum NeoWinReason {
+	NEO_VICTORY_GHOST_CAPTURE = 0,
+	NEO_VICTORY_VIP_ESCORT,
+	NEO_VICTORY_VIP_ELIMINATION,
+	NEO_VICTORY_TEAM_ELIMINATION,
+	NEO_VICTORY_TIMEOUT_WIN_BY_NUMBERS,
+	NEO_VICTORY_POINTS,
+	NEO_VICTORY_FORFEIT,
+	NEO_VICTORY_STALEMATE, // Not actually a victory
+	NEO_VICTORY_MAPIO
+};
+
 class CNEORules : public CHL2MPRules, public CGameEventListener
 {
 public:
@@ -276,19 +288,6 @@ public:
 	// See https://steamcommunity.com/groups/ANPA/discussions/0/1482109512299590948/
 	// (and NT Discord) for discussions.
 	virtual const unsigned char* GetEncryptionKey(void) OVERRIDE { return (unsigned char*)"tBA%-ygc"; }
-
-	enum
-	{
-		NEO_VICTORY_GHOST_CAPTURE = 0,
-		NEO_VICTORY_VIP_ESCORT,
-		NEO_VICTORY_VIP_ELIMINATION,
-		NEO_VICTORY_TEAM_ELIMINATION,
-		NEO_VICTORY_TIMEOUT_WIN_BY_NUMBERS,
-		NEO_VICTORY_POINTS,
-		NEO_VICTORY_FORFEIT,
-		NEO_VICTORY_STALEMATE, // Not actually a victory
-		NEO_VICTORY_MAPIO
-	};
 
 	int GetGhosterTeam() const { return m_iGhosterTeam; }
 	int GetGhosterPlayer() const { return m_iGhosterPlayer; }
