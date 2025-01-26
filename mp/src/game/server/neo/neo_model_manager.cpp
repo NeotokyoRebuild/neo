@@ -266,6 +266,7 @@ const char *viewModels[NEO_VM_ENUM_COUNT * numTeams] {
 	"models/weapons/v_nsf_milso_silenced.mdl",
 	"models/weapons/v_nsf_mosok41.mdl",
 	"models/weapons/v_nsf_mosok41s.mdl",
+	"models/weapons/v_nsf_mosok41l.mdl",
 	"models/weapons/v_nsf_mpn.mdl",
 	"models/weapons/v_nsf_mpn_s.mdl",
 	"models/weapons/v_nsf_mx.mdl",
@@ -301,6 +302,7 @@ const char *viewModels[NEO_VM_ENUM_COUNT * numTeams] {
 	"models/weapons/v_jinrai_milso_silenced.mdl",
 	"models/weapons/v_jinrai_mosok41.mdl",
 	"models/weapons/v_jinrai_mosok41s.mdl",
+	"models/weapons/v_jinrai_mosok41l.mdl",
 	"models/weapons/v_jinrai_mpn.mdl",
 	"models/weapons/v_jinrai_mpn_s.mdl",
 	"models/weapons/v_jinrai_mx.mdl",
@@ -338,6 +340,7 @@ const char *weapons[NEO_WEP_MDL_ENUM_COUNT] {
 	"models/weapons/w_milso_silenced.mdl",
 	"models/weapons/w_mosok41.mdl",
 	"models/weapons/w_mosok41s.mdl",
+	"models/weapons/w_mosok41l.mdl",
 	"models/weapons/w_mpn.mdl",
 	"models/weapons/w_mpn_folded.mdl",
 	"models/weapons/w_mpn_silenced.mdl",
@@ -452,7 +455,8 @@ void CNEOModelManager::Precache( void ) const
 	//PrecacheMaterial("water/ntwater_ivy");
 
 	PrecacheMaterial("dev/motion_third.vmt");
-	PrecacheMaterial("dev/thermal_third.vmt");
+	PrecacheMaterial("dev/thermal_model.vmt");
+	PrecacheMaterial("dev/thermal_view_model.vmt");
 }
 
 static inline int GetTeamArrOffset(int iTeam)

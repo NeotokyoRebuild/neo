@@ -33,11 +33,11 @@ public:
 	CWeaponKnife();
 
 	virtual void PrimaryAttack() final;
-	virtual void SecondaryAttack() final;
 	virtual void Drop(const Vector &vecVelocity) final { /* knives shouldn't drop */ }
 
 	virtual bool CanBePickedUpByClass(int classId) final;
 	virtual bool CanDrop() final { return false; }
+	virtual bool CanPerformSecondaryAttack() const override final { return false; }
 
 #ifdef CLIENT_DLL
 	virtual bool ShouldDraw() final;
@@ -55,7 +55,7 @@ public:
 
 protected:
 	void		ImpactEffect(trace_t &traceHit);
-	void		Swing(int bIsSecondary);
+	void		Swing();
 	Activity	ChooseIntersectionPointAndActivity(trace_t& hitTrace, const Vector& mins, const Vector& maxs, CBasePlayer* pOwner);
 	bool		ImpactWater(const Vector &start, const Vector &end);
 	void		Hit(trace_t& traceHit, Activity nHitActivity);

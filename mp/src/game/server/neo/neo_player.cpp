@@ -1,7 +1,6 @@
 #include "cbase.h"
 #include "neo_player.h"
 
-#include "neo_playeranimstate.h"
 #include "neo_predicted_viewmodel.h"
 #include "neo_predicted_viewmodel_muzzleflash.h"
 #include "in_buttons.h"
@@ -58,7 +57,7 @@ SendPropBool(SENDINFO(m_bInVision)),
 SendPropBool(SENDINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 SendPropBool(SENDINFO(m_bShowTestMessage)),
 SendPropBool(SENDINFO(m_bInAim)),
-SendPropBool(SENDINFO(m_bDroppedAnything)),
+SendPropBool(SENDINFO(m_bIneligibleForLoadoutPick)),
 
 SendPropTime(SENDINFO(m_flCamoAuxLastTime)),
 SendPropInt(SENDINFO(m_nVisionLastTick)),
@@ -72,6 +71,7 @@ SendPropArray(SendPropInt(SENDINFO_ARRAY(m_rfAttackersHits)), m_rfAttackersHits)
 
 SendPropInt(SENDINFO(m_NeoFlags), 4, SPROP_UNSIGNED),
 SendPropString(SENDINFO(m_szNeoName)),
+SendPropString(SENDINFO(m_szNeoClantag)),
 SendPropInt(SENDINFO(m_szNameDupePos)),
 SendPropBool(SENDINFO(m_bClientWantNeoName)),
 
@@ -84,7 +84,7 @@ DEFINE_FIELD(m_iNeoSkin, FIELD_INTEGER),
 DEFINE_FIELD(m_iNeoStar, FIELD_INTEGER),
 DEFINE_FIELD(m_iXP, FIELD_INTEGER),
 DEFINE_FIELD(m_iLoadoutWepChoice, FIELD_INTEGER),
-DEFINE_FIELD(m_bDroppedAnything, FIELD_BOOLEAN),
+DEFINE_FIELD(m_bIneligibleForLoadoutPick, FIELD_BOOLEAN),
 DEFINE_FIELD(m_iNextSpawnClassChoice, FIELD_INTEGER),
 DEFINE_FIELD(m_bInLean, FIELD_INTEGER),
 
@@ -108,22 +108,31 @@ DEFINE_FIELD(m_rfAttackersHits, FIELD_CUSTOM),
 DEFINE_FIELD(m_NeoFlags, FIELD_CHARACTER),
 
 DEFINE_FIELD(m_szNeoName, FIELD_STRING),
+DEFINE_FIELD(m_szNeoClantag, FIELD_STRING),
 DEFINE_FIELD(m_szNameDupePos, FIELD_INTEGER),
 DEFINE_FIELD(m_bClientWantNeoName, FIELD_BOOLEAN),
+
+// Inputs
+DEFINE_INPUTFUNC(FIELD_STRING, "SetPlayerModel", InputSetPlayerModel),
+
 END_DATADESC()
 
-#define SHOWMENU_STRLIMIT (512)
+static constexpr int SHOWMENU_STRLIMIT = 512;
 
 CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
 CNEOGameRulesProxy* neoGameRules;
 extern CBaseEntity *g_pLastSpawn;
 
 extern ConVar neo_sv_ignore_wep_xp_limit;
+extern ConVar neo_sv_clantag_allow;
+extern ConVar neo_sv_dev_test_clantag;
 
 ConVar sv_neo_can_change_classes_anytime("sv_neo_can_change_classes_anytime", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "Can players change classes at any moment, even mid-round?",
 	true, 0.0f, true, 1.0f);
 ConVar sv_neo_change_suicide_player("sv_neo_change_suicide_player", "0", FCVAR_REPLICATED, "Kill the player if they change the team and they're alive.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_change_threshold_interval("sv_neo_change_threshold_interval", "0.25", FCVAR_REPLICATED, "The interval threshold limit in seconds before the player is allowed to change team.", true, 0.0f, true, 1000.0f);
+ConVar neo_sv_dm_max_class_dur("neo_sv_dm_max_class_dur", "10", FCVAR_REPLICATED, "The time in seconds when the player can change class on respawn during deathmatch.", true, 0.0f, true, 60.0f);
+ConVar neo_sv_warmup_godmode("neo_sv_warmup_godmode", "0", FCVAR_REPLICATED, "If enabled, everyone is invincible on idle and warmup.", true, 0.0f, true, 1.0f);
 
 void CNEO_Player::RequestSetClass(int newClass)
 {
@@ -133,9 +142,11 @@ void CNEO_Player::RequestSetClass(int newClass)
 		return;
 	}
 
+	const bool bIsTypeDM = (NEORules()->GetGameType() == NEO_GAME_TYPE_TDM || NEORules()->GetGameType() == NEO_GAME_TYPE_DM);
 	const NeoRoundStatus status = NEORules()->GetRoundStatus();
 	if (IsDead() || sv_neo_can_change_classes_anytime.GetBool() ||
-		(!m_bDroppedAnything && NEORules()->GetRemainingPreRoundFreezeTime(false) > 0) ||
+		(!m_bIneligibleForLoadoutPick && NEORules()->GetRemainingPreRoundFreezeTime(false) > 0) ||
+		(bIsTypeDM && !m_bIneligibleForLoadoutPick && GetAliveDuration() < neo_sv_dm_max_class_dur.GetFloat()) ||
 		(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup))
 	{
 		m_iNeoClass = newClass;
@@ -165,7 +176,8 @@ void CNEO_Player::RequestSetClass(int newClass)
 
 void CNEO_Player::RequestSetSkin(int newSkin)
 {
-	bool canChangeImmediately = true; // TODO
+	const NeoRoundStatus roundStatus = NEORules()->GetRoundStatus();
+	bool canChangeImmediately = ((roundStatus != NeoRoundStatus::RoundLive) && (roundStatus != NeoRoundStatus::PostRound)) || !IsAlive();
 
 	if (canChangeImmediately)
 	{
@@ -173,10 +185,7 @@ void CNEO_Player::RequestSetSkin(int newSkin)
 
 		SetPlayerTeamModel();
 	}
-	else
-	{
-		// TODO set for next spawn
-	}
+	//else NEOTODO Set for next spawn
 }
 
 static bool IsNeoPrimary(CNEOBaseCombatWeapon *pNeoWep)
@@ -303,7 +312,7 @@ void SetClass(const CCommand &command)
 		}
 		else
 		{
-			nextClass = clamp(nextClass, NEO_CLASS_RECON, NEO_CLASS_PSYCHO);
+			nextClass = clamp(nextClass, NEO_CLASS_RECON, NEO_CLASS_SUPPORT);
 		}
 
 		player->RequestSetClass(nextClass);
@@ -390,6 +399,7 @@ CNEO_Player::CNEO_Player()
 	m_iXP.GetForModify() = 0;
 	V_memset(m_szNeoName.GetForModify(), 0, sizeof(m_szNeoName));
 	m_szNeoNameHasSet = false;
+	V_memset(m_szNeoClantag.GetForModify(), 0, sizeof(m_szNeoClantag));
 
 	m_bInThermOpticCamo = m_bInVision = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
@@ -414,13 +424,11 @@ CNEO_Player::CNEO_Player()
 	m_bPreviouslyReloading = false;
 	m_bLastTickInThermOpticCamo = false;
 	m_bIsPendingSpawnForThisRound = false;
+	m_bAllowGibbing = true;
 
 	m_flNextTeamChangeTime = gpGlobals->curtime + 0.5f;
 
 	m_NeoFlags = 0;
-
-	m_pPlayerAnimState = CreatePlayerAnimState(this, CreateAnimStateHelpers(this),
-		NEO_ANIMSTATE_LEGANIM_TYPE, NEO_ANIMSTATE_USES_AIMSEQUENCES);
 
 	memset(m_szNeoNameWDupeIdx, 0, sizeof(m_szNeoNameWDupeIdx));
 	m_szNeoNameWDupeIdxNeedUpdate = true;
@@ -432,7 +440,6 @@ CNEO_Player::CNEO_Player()
 
 CNEO_Player::~CNEO_Player( void )
 {
-	m_pPlayerAnimState->Release();
 }
 
 void CNEO_Player::ZeroFriendlyPlayerLocArray(void)
@@ -501,7 +508,24 @@ void CNEO_Player::Precache( void )
 
 void CNEO_Player::Spawn(void)
 {
-	ShowViewPortPanel(PANEL_SPECGUI, (GetTeamNumber() == TEAM_SPECTATOR ? true : false));
+	int teamNumber = GetTeamNumber();
+	ShowViewPortPanel(PANEL_SPECGUI, teamNumber == TEAM_SPECTATOR);
+
+	if (teamNumber == TEAM_JINRAI || teamNumber == TEAM_NSF)
+	{
+		if (NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze)
+		{
+			AddFlag(FL_GODMODE);
+			AddNeoFlag(NEO_FL_FREEZETIME);
+		}
+
+		if (NEORules()->IsRoundOn())
+		{ // NEO TODO (Adam) should people who were spectating at the start of the match and potentially have unfair information about the enemy team be allowed to join the game?
+			m_bSpawnedThisRound = true;
+		}
+
+		State_Transition(STATE_ACTIVE);
+	}
 	
 	// Should do this class update first, because most of the stuff below depends on which player class we are.
 	if ((m_iNextSpawnClassChoice != -1) && (m_iNeoClass != m_iNextSpawnClassChoice))
@@ -510,9 +534,6 @@ void CNEO_Player::Spawn(void)
 	}
 
 	BaseClass::Spawn();
-
-	SetNumAnimOverlays(NUM_LAYERS_WANTED);
-	ResetAnimation();
 
 	m_HL2Local.m_cloakPower = CloakPower_Cap();
 	if (m_iNeoClass == NEO_CLASS_PSYCHO)
@@ -529,6 +550,8 @@ void CNEO_Player::Spawn(void)
 	m_nVisionLastTick = 0;
 	m_bInLean = NEO_LEAN_NONE;
 	m_bCorpseSpawned = false;
+	m_bAllowGibbing = true;
+	m_bIneligibleForLoadoutPick = false;
 
 	for (int i = 0; i < m_rfAttackersScores.Count(); ++i)
 	{
@@ -549,7 +572,7 @@ void CNEO_Player::Spawn(void)
 
 	SetPlayerTeamModel();
 	SetViewOffset(VEC_VIEW_NEOSCALE(this));
-	if (m_iNeoClass != NEO_CLASS_PSYCHO)
+	if ((teamNumber == TEAM_JINRAI || teamNumber == TEAM_NSF) && m_iNeoClass != NEO_CLASS_PSYCHO)
 	{
 		GiveLoadoutWeapon();
 	}
@@ -734,15 +757,14 @@ void CNEO_Player::PreThink(void)
 					// each frame to never really run out.
 					CloakPower_Drain(deltaTime * CLOAK_AUX_COST);
 
-					if (m_HL2Local.m_cloakPower <= 0.1f)
-					{
-						m_bInThermOpticCamo = false;
-						m_flCamoAuxLastTime = 0;
-					}
-					else
-					{
-						m_flCamoAuxLastTime = gpGlobals->curtime;
-					}
+				if (m_HL2Local.m_cloakPower <= 0.1f)
+				{
+					SetCloakState(false);
+					m_flCamoAuxLastTime = 0;
+				}
+				else
+				{
+					m_flCamoAuxLastTime = gpGlobals->curtime;
 				}
 			}
 		}
@@ -879,6 +901,22 @@ void CNEO_Player::PlayCloakSound()
 	}
 }
 
+void CNEO_Player::SetCloakState(bool state)
+{
+	m_bInThermOpticCamo = state;
+
+	void (CBaseCombatWeapon:: * setShadowState)(int) = m_bInThermOpticCamo ? &CBaseCombatWeapon::AddEffects 
+																		   : &CBaseCombatWeapon::RemoveEffects;
+
+	for (int i = 0; i < MAX_WEAPONS; i++)
+	{
+		if (CBaseCombatWeapon* weapon = GetWeapon(i))
+		{
+			(weapon->*setShadowState)(EF_NOSHADOW);
+		}
+	}
+}
+
 void CNEO_Player::CloakFlash()
 {
 	CRecipientFilter filter;
@@ -909,7 +947,7 @@ void CNEO_Player::CheckThermOpticButtons()
 
 		if (m_HL2Local.m_cloakPower >= CLOAK_AUX_COST)
 		{
-			m_bInThermOpticCamo = !m_bInThermOpticCamo;
+			SetCloakState(!m_bInThermOpticCamo);
 
 			if (m_bInThermOpticCamo)
 			{
@@ -1066,12 +1104,7 @@ void CNEO_Player::PostThink(void)
 		}
 		else if (m_afButtonPressed & IN_AIM)
 		{
-			// Binds hack: we want grenade secondary attack to trigger on aim (mouse button 2)
-			if (pNeoWep->GetNeoWepBits() & NEO_WEP_THROWABLE)
-			{
-				pNeoWep->SecondaryAttack();
-			}
-			else if (!CanSprint() || !(m_nButtons & IN_SPEED))
+			if (!CanSprint() || !(m_nButtons & IN_SPEED))
 			{
 				Weapon_AimToggle(pNeoWep, clientAimHold ? NEO_TOGGLE_FORCE_AIM : NEO_TOGGLE_DEFAULT);
 			}
@@ -1091,30 +1124,6 @@ void CNEO_Player::PostThink(void)
 			Weapon_Drop(pNeoWep, NULL, &eyeForward);
 		}
 	}
-
-#if(0)
-	int iMoveX = LookupPoseParameter("move_x");
-	int iMoveY = LookupPoseParameter("move_y");
-
-	if (iMoveX != -1 && iMoveY != -1)
-	{
-		float speedScaleX = clamp((GetAbsVelocity().x / NEO_ASSAULT_NORM_SPEED), 0, 1);
-		float speedScaleY = clamp((GetAbsVelocity().y / NEO_ASSAULT_NORM_SPEED), 0, 1);
-
-		SetPoseParameter(iMoveX, speedScaleX);
-		SetPoseParameter(iMoveY, speedScaleY);
-
-		//DevMsg("Setspeed %f , %f\n", speedScaleX, speedScaleY);
-	}
-#endif
-
-	Vector eyeForward;
-	this->EyeVectors(&eyeForward, NULL, NULL);
-	Assert(eyeForward.IsValid());
-
-	float flPitch = asin(-eyeForward[2]);
-	float flYaw = atan2(eyeForward[1], eyeForward[0]);
-	m_pPlayerAnimState->Update(RAD2DEG(flYaw), RAD2DEG(flPitch));
 }
 
 void CNEO_Player::PlayerDeathThink()
@@ -1153,7 +1162,23 @@ int CNEO_Player::NameDupePos() const
 	return m_szNameDupePos;
 }
 
-const char *CNEO_Player::GetNeoPlayerName(const CNEO_Player *viewFrom) const
+const char *CNEO_Player::GetNeoClantag() const
+{
+	if (!neo_sv_clantag_allow.GetBool())
+	{
+		return "";
+	}
+#ifdef DEBUG
+	const char *overrideClantag = neo_sv_dev_test_clantag.GetString();
+	if (overrideClantag && overrideClantag[0])
+	{
+		return overrideClantag;
+	}
+#endif
+	return m_szNeoClantag.Get();
+}
+
+const char *CNEO_Player::InternalGetNeoPlayerName(const CNEO_Player *viewFrom) const
 {
 	const bool nameFetchWantNeoName = (viewFrom) ? viewFrom->m_bClientWantNeoName : m_bClientWantNeoName;
 
@@ -1186,6 +1211,20 @@ const char *CNEO_Player::GetNeoPlayerName(const CNEO_Player *viewFrom) const
 	return stndName;
 }
 
+const char *CNEO_Player::GetNeoPlayerName(const CNEO_Player *viewFrom) const
+{
+	if (viewFrom && viewFrom->m_bClientStreamermode && viewFrom->entindex() != entindex())
+	{
+		[[maybe_unused]] uchar32 u32Out;
+		bool bError = false;
+		const char *pSzName = InternalGetNeoPlayerName(viewFrom);
+		const int iSize = Q_UTF8ToUChar32(pSzName, u32Out, bError);
+		if (!bError) V_memcpy(gStreamerModeNames[entindex()], pSzName, iSize);
+		return gStreamerModeNames[entindex()];
+	}
+	return InternalGetNeoPlayerName(viewFrom);
+}
+
 const char *CNEO_Player::GetNeoPlayerNameDirect() const
 {
 	return m_szNeoNameHasSet ? m_szNeoName.Get() : NULL;
@@ -1215,232 +1254,7 @@ void CNEO_Player::Weapon_SetZoom(const bool bZoomIn)
 	m_bInAim = bZoomIn;
 }
 
-void CNEO_Player::SetAnimation( PLAYER_ANIM playerAnim )
-{
-	PlayerAnimEvent_t animEvent;
-	if (!PlayerAnimToPlayerAnimEvent(playerAnim, animEvent))
-	{
-		DevWarning("SRV Tried to get unknown PLAYER_ANIM %d\n", playerAnim);
-	}
-	else
-	{
-		m_pPlayerAnimState->DoAnimationEvent(animEvent);
-	}
-	// Stopping; animations are handled by m_pPlayerAnimState->Update.
-	// Should clean up this unused code later.
-	return;
 
-	/*
-
-	auto activeWep = GetActiveWeapon();
-
-	const char *pszAnimPrefix = (activeWep) ? activeWep->GetAnimPrefix() : "";
-#define MAX_WEAPON_PREFIX_LEN 18	// "Crouch_Walk_Upper_" == 18
-#define MAX_WEAPON_SUFFIX_LEN 6	// "pistol" == 6
-#define NONE_STR ""
-	char pszUpperAnim[MAX_WEAPON_PREFIX_LEN + MAX_WEAPON_SUFFIX_LEN + 1] = NONE_STR;
-	char pszReloadAnim[MAX_WEAPON_PREFIX_LEN + MAX_WEAPON_SUFFIX_LEN + 1] = NONE_STR;
-
-	int iLowerSequence = -1;
-	int iUpperSequence = -1;
-
-	if (idealActivity == ACT_NEO_JUMP)
-	{
-		iLowerSequence = LookupSequence("Jump");
-	}
-	else if (idealActivity == ACT_NEO_MOVE_RUN)
-	{
-		iLowerSequence = LookupSequence("Run_lower");
-
-		const char *pszLayeredSequence = "Run_Upper_%s";
-		V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
-		iUpperSequence = LookupSequence(pszUpperAnim);
-	}
-	else if (idealActivity == ACT_NEO_MOVE_WALK)
-	{
-		iLowerSequence = LookupSequence("walk_lower");
-
-		const char *pszLayeredSequence = "Walk_Upper_%s";
-		V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
-		iUpperSequence = LookupSequence(pszUpperAnim);
-	}
-	else if (idealActivity == ACT_NEO_IDLE_STAND)
-	{
-		iLowerSequence = LookupSequence("Idle_lower");
-
-		const char *pszLayeredSequence = "Idle_Upper_%s";
-		V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
-		iUpperSequence = LookupSequence(pszUpperAnim);
-	}
-	else if (idealActivity == ACT_NEO_IDLE_CROUCH)
-	{
-		iLowerSequence = LookupSequence("Crouch_Idle_Lower");
-
-		const char *pszLayeredSequence = "Crouch_Idle_Upper_%s";
-		V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
-		iUpperSequence = LookupSequence(pszUpperAnim);
-	}
-	else if (idealActivity == ACT_NEO_MOVE_CROUCH)
-	{
-		iLowerSequence = LookupSequence("Crouch_walk_lower");
-
-		const char *pszLayeredSequence = "Crouch_Walk_Upper_%s";
-		V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
-		iUpperSequence = LookupSequence(pszUpperAnim);
-	}
-	else if (idealActivity == ACT_NEO_ATTACK)
-	{
-		if (GetFlags() & FL_DUCKING)
-		{
-			if (speed > 0)
-			{
-				iLowerSequence = LookupSequence("Crouch_walk_lower");
-
-				const char *pszLayeredSequence = "Crouch_Walk_Shoot_%s";
-				V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
-				iUpperSequence = LookupSequence(pszUpperAnim);
-			}
-			else
-			{
-				iLowerSequence = LookupSequence("Crouch_Idle_Lower");
-
-				const char *pszLayeredSequence = "Crouch_Idle_Shoot_%s";
-				V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
-				iUpperSequence = LookupSequence(pszUpperAnim);
-			}
-		}
-		else
-		{
-			if (speed > 0)
-			{
-				if (speed > GetWalkSpeed())
-				{
-					iLowerSequence = LookupSequence("Run_lower");
-
-					const char *pszLayeredSequence = "Run_Shoot_%s";
-					V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
-					iUpperSequence = LookupSequence(pszUpperAnim);
-				}
-				else
-				{
-					iLowerSequence = LookupSequence("walk_lower");
-
-					const char *pszLayeredSequence = "Walk_Shoot_%s";
-					V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
-					iUpperSequence = LookupSequence(pszUpperAnim);
-				}
-			}
-			else
-			{
-				iLowerSequence = LookupSequence("Idle_lower");
-
-				const char *pszLayeredSequence = "Idle_Shoot_%s";
-				V_sprintf_safe(pszUpperAnim, pszLayeredSequence, pszAnimPrefix);
-				iUpperSequence = LookupSequence(pszUpperAnim);
-			}
-		}
-	}
-
-	if (iLowerSequence == -1)
-	{
-		//Assert(false);
-		iLowerSequence = 0;
-	}
-
-	const bool bReloadAnimPlayingNow = ((bStartedReloading) || (activeWep && activeWep->m_bInReload));
-
-	// Handle lower body animation
-	if (GetSequence() != iLowerSequence || !SequenceLoops())
-	{
-		//DevMsg("Setting lower seq: %i\n", iLowerSequence);
-		SetSequence(iLowerSequence);
-		ResetSequence(iLowerSequence);
-	}
-
-	// Handle upper body animation
-	if (iUpperSequence != -1)
-	{
-		if (!IsValidSequence(iUpperSequence))
-		{
-			Assert(false);
-			Warning("CNEO_Player::SetAnimation: !IsValidSequence %i: (\"%s\")\n",
-				iUpperSequence, pszUpperAnim);
-		}
-		else
-		{
-			const int iAimLayer = AddGestureSequence(iUpperSequence, true);
-			SetLayerWeight(iAimLayer, 0.5f);
-#if(0)
-			if (!pAnimOverlay_Fire->IsActive() || pAnimOverlay_Fire->IsAbandoned())
-			{
-				pAnimOverlay_Fire->KillMe();
-			}
-			pAnimOverlay_Fire->Init(this);
-			pAnimOverlay_Fire->m_nSequence = iUpperAimSequence;
-			pAnimOverlay_Fire->StudioFrameAdvance(0.1, this);
-
-			int seq = AddGestureSequence(iUpperAimSequence, true);
-			if (IsValidSequence(seq))
-			{
-				SetLayerBlendIn(seq, 0.1f);
-				SetLayerBlendOut(seq, 0.1f);
-			}
-#endif
-		}
-	}
-
-	if (bReloadAnimPlayingNow)
-	{
-		const char *pszLayeredSequence = "Reload_%s";
-		V_sprintf_safe(pszReloadAnim, pszLayeredSequence, pszAnimPrefix);
-		Assert(!FStrEq(pszReloadAnim, NONE_STR));
-
-		const int iUpperReloadSequence = LookupSequence(pszReloadAnim);
-
-		const int iReloadLayer = AddGestureSequence(iUpperReloadSequence, true);
-		SetLayerWeight(iReloadLayer, 0.5f);
-
-#if(0)
-		int seq = AddGestureSequence(iUpperReloadSequence, true);
-		if (IsValidSequence(seq))
-		{
-			bool reloading = bReloadAnimPlayingNow;
-			float layerCycle = GetLayerCycle(RELOADSEQUENCE_LAYER);
-			int seq = iUpperReloadSequence;
-			UpdateLayerSequenceGeneric(this, GetModelPtr(), RELOADSEQUENCE_LAYER, reloading, layerCycle, seq, false);
-		}
-
-		if (!IsValidSequence(iUpperReloadSequence))
-		{
-			Assert(false);
-			Warning("CNEO_Player::SetAnimation: !IsValidSequence %i: (\"%s\")\n",
-				iUpperReloadSequence, pszReloadAnim);
-		}
-		else
-		{
-
-			pAnimOverlay_Reload->Init(this);
-			pAnimOverlay_Reload->m_nSequence = iUpperReloadSequence;
-			pAnimOverlay_Reload->StudioFrameAdvance(0.1, this);
-
-			int seq = AddGestureSequence(iUpperReloadSequence, true);
-			if (IsValidSequence(seq))
-			{
-				SetLayerBlendIn(seq, 0.1f);
-				SetLayerBlendOut(seq, 0.1f);
-			}
-		}
-#endif
-	}
-
-#if(0)
-	static CSequenceTransitioner transitioner;
-	transitioner->RemoveAll();
-	transitioner->CheckForSequenceChange(GetModelPtr(), GetSequence(), false, true);
-	transitioner->UpdateCurrent(GetModelPtr(), GetSequence(), GetCycle(), 1.0f, gpGlobals->curtime);
-#endif
-	*/
-}
 
 // Purpose: Suicide, but cancel the point loss.
 void CNEO_Player::SoftSuicide(void)
@@ -1459,7 +1273,10 @@ void CNEO_Player::SoftSuicide(void)
 	IncrementFragCount(1);
 
 	// Gamerules event will decrement, so we cancel it here
-	m_iXP.GetForModify() += 1;
+	if (NEORules()->GetRoundStatus() != NeoRoundStatus::Pause)
+	{
+		m_iXP.GetForModify() += 1;
+	}
 }
 
 bool CNEO_Player::HandleCommand_JoinTeam( int team )
@@ -1470,8 +1287,28 @@ bool CNEO_Player::HandleCommand_JoinTeam( int team )
 	{
 		SetPlayerTeamModel();
 
-		UTIL_ClientPrintAll(HUD_PRINTTALK, "%s1 joined team %s2\n",
-			GetNeoPlayerName(), GetTeam()->GetName());
+		CRecipientFilter filterNonStreamers;
+		CRecipientFilter filterStreamers;
+		filterNonStreamers.MakeReliable();
+		filterStreamers.MakeReliable();
+		for (int i = 1; i <= gpGlobals->maxClients; ++i)
+		{
+			auto neoPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(i));
+			if (neoPlayer)
+			{
+				if (neoPlayer->m_bClientStreamermode)
+				{
+					filterStreamers.AddRecipient(neoPlayer);
+				}
+				else
+				{
+					filterNonStreamers.AddRecipient(neoPlayer);
+				}
+			}
+		}
+		UTIL_ClientPrintFilter(filterNonStreamers, HUD_PRINTTALK,
+							   "%s1 joined team %s2\n", GetNeoPlayerName(), GetTeam()->GetName());
+		UTIL_ClientPrintFilter(filterStreamers, HUD_PRINTTALK, "Player joined team %s1\n", GetTeam()->GetName());
 	}
 
 	return isAllowedToJoin;
@@ -1497,18 +1334,28 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 		}
 		const int slot = atoi(args[1]);
 
-		if (m_iDmgMenuCurPage > 0)
+		switch (m_eMenuSelectType)
 		{
-			// menuselect being used by damage stats
+		case MENU_SELECT_TYPE_DMG:
+			if (m_iDmgMenuCurPage <= 0)
+			{
+				return true;
+			}
 			switch (slot)
 			{
-			case 1: // Dismiss
+			case DAMAGE_MENU_SELECT_DISMISS:
+			case DAMAGE_MENU_SELECT_DONOTSHOW:
 			{
 				m_iDmgMenuCurPage = 0;
 				m_iDmgMenuNextPage = 0;
+				m_eMenuSelectType = MENU_SELECT_TYPE_NONE;
+				if (slot == DAMAGE_MENU_SELECT_DONOTSHOW)
+				{
+					m_bDoNotShowDmgInfoMenu = true;
+				}
 				break;
 			}
-			case 2: // Next-page
+			case DAMAGE_MENU_SELECT_NEXTPAGE:
 			{
 				char infoStr[SHOWMENU_STRLIMIT];
 				int infoStrSize = 0;
@@ -1521,6 +1368,29 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 			default:
 				break;
 			}
+			break;
+		case MENU_SELECT_TYPE_PAUSE:
+			m_eMenuSelectType = MENU_SELECT_TYPE_NONE;
+			if (slot == PAUSE_MENU_SELECT_SHORT || slot == PAUSE_MENU_SELECT_LONG)
+			{
+				// When a pause requested, this will activate either:
+				// - If during freezetime, immediate pausing
+				// - If during live-round, after round finishes pausing
+				NEORules()->m_iPausingTeam = GetTeamNumber();
+				NEORules()->m_iPausingRound = NEORules()->roundNumber() + 1;
+				NEORules()->m_flPauseDur = (slot == PAUSE_MENU_SELECT_SHORT) ? 30.0f : 180.0f;
+
+				char szPauseMsg[128];
+				V_sprintf_safe(szPauseMsg, "Pause requested by %s. Pausing the match %s for %s.",
+							   (GetTeamNumber() == TEAM_JINRAI) ? "Jinrai" : "NSF",
+							   (NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze) ?
+								   "immediately" : "when the round ends",
+							   (slot == PAUSE_MENU_SELECT_SHORT) ? "30 seconds" : "3 minutes");
+				UTIL_ClientPrintAll(HUD_PRINTTALK, szPauseMsg);
+			}
+			break;
+		default:
+			break;
 		}
 
 		return true;
@@ -1579,6 +1449,11 @@ bool CNEO_Player::BecomeRagdollOnClient( const Vector &force )
 
 void CNEO_Player::ShowDmgInfo(char* infoStr, int infoStrSize)
 {
+	if (m_bDoNotShowDmgInfoMenu)
+	{
+		return;
+	}
+
 	CSingleUserRecipientFilter filter(this);
 	filter.MakeReliable();
 
@@ -1595,10 +1470,19 @@ void CNEO_Player::ShowDmgInfo(char* infoStr, int infoStrSize)
 			tmpCh = infoStr[infoStrOffsetMax];
 			infoStr[infoStrOffsetMax] = '\0';
 		}
+		m_eMenuSelectType = MENU_SELECT_TYPE_DMG;
 		UserMessageBegin(filter, "ShowMenu");
 		{
-			WRITE_SHORT(static_cast<short>(m_iDmgMenuNextPage ? 3 : 1)); // Amount of options
-			WRITE_CHAR(static_cast<char>(60)); // 60s timeout
+			// The key options available in bitwise (EX: 1 -> 1 << 0, 9 -> 1 << 8)
+			short sBitwiseOpts =
+					  1 << (DAMAGE_MENU_SELECT_DISMISS - 1)
+					| 1 << (DAMAGE_MENU_SELECT_DONOTSHOW - 1);
+			if (m_iDmgMenuNextPage)
+			{
+				sBitwiseOpts |= 1 << (DAMAGE_MENU_SELECT_NEXTPAGE - 1);
+			}
+			WRITE_SHORT(sBitwiseOpts);
+			WRITE_CHAR(static_cast<char>(10)); // 10s timeout
 			WRITE_BYTE(static_cast<unsigned int>(infoStrSize > MAX_INFOSTR_PER_UMSG));
 			WRITE_STRING(infoStr + infoStrOffset);
 		}
@@ -1619,10 +1503,10 @@ int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int pl
 	Assert(infoStrSize != NULL);
 	Assert(showMenu != NULL);
 	*showMenu = false;
-	static const int TITLE_LEN = 30; // Rough-approximate
-	static const int POSTFIX_LEN = 15 + 12;
-	static const int TOTALLINE_LEN = 64; // Rough-approximate
-	static int FILLSTR_END = SHOWMENU_STRLIMIT - POSTFIX_LEN - TOTALLINE_LEN - 2;
+	static constexpr int TITLE_LEN = 30; // Rough-approximate
+	static constexpr int POSTFIX_LEN = 16 + 12 + 24;
+	static constexpr int TOTALLINE_LEN = 64; // Rough-approximate
+	static constexpr int FILLSTR_END = SHOWMENU_STRLIMIT - POSTFIX_LEN - TOTALLINE_LEN - 2;
 	memset(infoStr, 0, infoStrMax);
 	Q_snprintf(infoStr, infoStrMax, "Damage infos (Round %d):\n", NEORules()->roundNumber());
 	if (info)
@@ -1632,7 +1516,12 @@ int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int pl
 		if (neoAttacker && neoAttacker->entindex() != entindex())
 		{
 			char killByLine[SHOWMENU_STRLIMIT];
-			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, this);
+			auto* killedWithInflictor = info->GetInflictor();
+			const bool inflictorIsPlayer = killedWithInflictor ? !Q_strcmp(killedWithInflictor->GetDebugName(), "player") : false;
+			auto killedWithName = killedWithInflictor ? (inflictorIsPlayer ? neoAttacker->m_hActiveWeapon->GetPrintName() : killedWithInflictor->GetDebugName()) : "";
+			if (!Q_strcmp(killedWithName, "neo_grenade_frag")) { killedWithName = "Frag Grenade"; }
+			if (!Q_strcmp(killedWithName, "neo_deployed_detpack")) { killedWithName = "Remote Detpack"; }
+			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, this, killedWithName);
 			Q_strncat(infoStr, killByLine, infoStrMax, COPY_ALL_CHARACTERS);
 		}
 	}
@@ -1701,6 +1590,7 @@ int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int pl
 	{
 		Q_strncat(infoStr, "\n->2. Next", infoStrMax, COPY_ALL_CHARACTERS);
 	}
+	Q_strncat(infoStr, "\n->9. Do not show again", infoStrMax, COPY_ALL_CHARACTERS);
 	*infoStrSize = Q_strlen(infoStr);
 
 	return nextPage;
@@ -1723,11 +1613,18 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo* info)
 	{
 		short attackerIdx = 0;
 		auto* neoAttacker = info ? dynamic_cast<CNEO_Player*>(info->GetAttacker()) : NULL;
+		const char* killedWithName = "";
 		if (neoAttacker && neoAttacker->entindex() != entindex())
 		{
 			attackerIdx = static_cast<short>(neoAttacker->entindex());
+			auto* killedWithInflictor = info->GetInflictor();
+			const bool inflictorIsPlayer = killedWithInflictor ? !Q_strcmp(killedWithInflictor->GetDebugName(), "player") : false;
+			killedWithName = killedWithInflictor ? (inflictorIsPlayer ? neoAttacker->m_hActiveWeapon->GetPrintName() : killedWithInflictor->GetDebugName()) : "";
+			if (!Q_strcmp(killedWithName, "neo_grenade_frag")) { killedWithName = "Frag Grenade"; }
+			if (!Q_strcmp(killedWithName, "neo_deployed_detpack")) { killedWithName = "Remote Detpack"; }
 		}
 		WRITE_SHORT(attackerIdx);
+		WRITE_STRING(killedWithName);
 	}
 	MessageEnd();
 }
@@ -1773,7 +1670,7 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 		StartShowDmgStats(&info);
 	}
 
-	if (NEORules()->GetGameType() == NeoGameType::TDM)
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_TDM)
 	{
 		GetGlobalTeam(NEORules()->GetOpposingTeam(this))->AddScore(1);
 	}
@@ -1838,6 +1735,12 @@ void CNEO_Player::SpawnDeadModel(const CTakeDamageInfo& info)
 	m_bCorpseSpawned = true;
 
 	int deadModelType = -1;
+
+	if (!m_bAllowGibbing) // Prevent gibbing if a custom player model has been set via I/O
+	{
+		return;
+	}
+
 	if (info.GetDamageType() & (1 << 6)) //info.GetDamage() >= 100
 	{ // Died to blast damage, remove all limbs
 		deadModelType = 0;
@@ -1929,12 +1832,12 @@ void CNEO_Player::SetPlayerCorpseModel(int type)
 
 	SetModel(model);
 	SetPlaybackRate(1.0f);
-	ResetAnimation();
 }
 
 float CNEO_Player::GetReceivedDamageScale(CBaseEntity* pAttacker)
 {
-	if (NEORules()->GetGameType() == NeoGameType::TDM && m_aliveTimer.IsLessThen(5.f))
+	if ((NEORules()->GetGameType() == NEO_GAME_TYPE_TDM || NEORules()->GetGameType() == NEO_GAME_TYPE_DM)
+			&& m_aliveTimer.IsLessThen(5.f) && !m_bIneligibleForLoadoutPick)
 	{ // 5 seconds of invincibility in TDM
 		return 0.f;
 	}
@@ -1993,6 +1896,11 @@ bool CNEO_Player::Weapon_Switch( CBaseCombatWeapon *pWeapon,
 {
 	ShowCrosshair(false);
 	Weapon_SetZoom(false);
+	const auto activeWeapon = GetActiveWeapon();
+	if (activeWeapon)
+	{
+		activeWeapon->StopWeaponSound(RELOAD_NPC);
+	}
 
 	return BaseClass::Weapon_Switch(pWeapon, viewmodelindex);
 }
@@ -2020,10 +1928,11 @@ bool CNEO_Player::Weapon_CanSwitchTo(CBaseCombatWeapon *pWeapon)
     if (!pWeapon->CanDeploy())
         return false;
 
-    if (GetActiveWeapon())
+	const auto activeWeapon = GetActiveWeapon();
+	if (activeWeapon)
     {
-        if (!GetActiveWeapon()->CanHolster())
-            return false;
+		if (!activeWeapon->CanHolster())
+			return false;
     }
 
     return true;
@@ -2106,7 +2015,7 @@ void CNEO_Player::SetPlayerTeamModel( void )
 
 	SetModel(model);
 	SetPlaybackRate(1.0f);
-	ResetAnimation();
+	//ResetAnimation();
 
 	DevMsg("Set model: %s\n", model);
 
@@ -2117,6 +2026,21 @@ void CNEO_Player::SetPlayerTeamModel( void )
 	const model_t *modelType = modelinfo->GetModel(modelIndex);
 	MDLHandle_t modelCache = modelinfo->GetCacheHandle(modelType);
 #endif
+}
+
+// Input to set the player's model (not skin)
+void CNEO_Player::InputSetPlayerModel( inputdata_t & inputdata )
+{
+	const char* modelpath = inputdata.value.String();
+
+	if (modelpath && *modelpath)
+	{
+		PrecacheModel(modelpath);
+
+		SetModel(modelpath);
+
+		m_bAllowGibbing = false; // Disallow gibs or else the corpse will turn into whatever the player picked as their skin
+	}
 }
 
 void CNEO_Player::PickupObject( CBaseEntity *pObject,
@@ -2139,7 +2063,7 @@ bool CNEO_Player::IsCarryingGhost(void) const
 void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
 	const Vector *pvecTarget, const Vector *pVelocity )
 {
-	m_bDroppedAnything = true;
+	m_bIneligibleForLoadoutPick = true;
 	if(auto neoWeapon = dynamic_cast<CNEOBaseCombatWeapon *>(pWeapon))
 	{
 		if (neoWeapon->CanDrop() && IsDead() && pWeapon)
@@ -2172,6 +2096,13 @@ void CNEO_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon,
 			return; // Return early to not drop weapon
 		}
 	}
+
+	if (pWeapon)
+	{
+		pWeapon->m_bInReload = false;
+		pWeapon->StopWeaponSound(RELOAD_NPC);
+	}
+
 	BaseClass::Weapon_Drop(pWeapon, pvecTarget, pVelocity);
 }
 
@@ -2200,7 +2131,15 @@ CBaseEntity* CNEO_Player::EntSelectSpawnPoint( void )
 	const char *pSpawnpointName = "info_player_start";
 	const auto alternate = NEORules()->roundAlternate();
 
-	if (NEORules()->IsTeamplay())
+	// NEO TODO (nullsystem): Teamplay vs non-teamplay
+	// info_player_deathmatch is from HL2MP, but maps can utilize HL2MP and this entity anyway
+	const bool bIsTeamplay = NEORules()->IsTeamplay();
+	if (!bIsTeamplay)
+	{
+		pSpawnpointName = "info_player_deathmatch";
+		pLastSpawnPoint = g_pLastSpawn;
+	}
+	else
 	{
 		if (GetTeamNumber() == TEAM_JINRAI)
 		{
@@ -2399,12 +2338,14 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 			}
 			[[fallthrough]];
 		case JoinMode::Random:
+			static_assert(TEAM_JINRAI < TEAM_NSF);
 			iTeam = RandomInt(TEAM_JINRAI, TEAM_NSF);
 			break;
 		default:
-			const auto lastGameTeam = GetNumberOfTeams() - LAST_SHARED_TEAM;
-			Assert(FIRST_GAME_TEAM <= lastGameTeam);
-			iTeam = Clamp(joinMode.GetInt(), FIRST_GAME_TEAM, lastGameTeam);
+			const auto lastGameTeam = GetNumberOfTeams() - LAST_SHARED_TEAM,
+				minAllowed = TEAM_UNASSIGNED;
+			Assert(minAllowed <= lastGameTeam);
+			iTeam = Clamp(joinMode.GetInt(), minAllowed, lastGameTeam);
 		}
 	}
 	// Limit team join spam, unless this is a newly joined player
@@ -2473,8 +2414,6 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 		}
 
 		StopObserverMode();
-
-		State_Transition(STATE_ACTIVE);
 	}
 	else
 	{
@@ -2501,12 +2440,17 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	// We're skipping over HL2MP player because we don't care about
 	// deathmatch rules or Combine/Rebels model stuff.
 	CHL2_Player::ChangeTeam(iTeam, false, justJoined);
+	NEORules()->m_bThinkCheckClantags = true;
 
 	return true;
 }
 
 int CNEO_Player::GetAttackersScores(const int attackerIdx) const
 {
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_DM || NEORules()->GetGameType() == NEO_GAME_TYPE_TDM)
+	{
+		return m_rfAttackersScores.Get(attackerIdx);
+	}
 	return min(m_rfAttackersScores.Get(attackerIdx), 100);
 }
 
@@ -2545,6 +2489,13 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 {
 	if (m_takedamage != DAMAGE_EVENTS_ONLY)
 	{
+		if (neo_sv_warmup_godmode.GetBool() &&
+				(NEORules()->GetRoundStatus() == NeoRoundStatus::Idle ||
+				 NEORules()->GetRoundStatus() == NeoRoundStatus::Warmup))
+		{
+			return 0;
+		}
+
 		// Dynamic cast, attacker might be prop/this player fallen
 		if (auto *attacker = dynamic_cast<CNEO_Player *>(info.GetAttacker()))
 		{
@@ -2619,7 +2570,7 @@ void GiveDet(CNEO_Player* pPlayer)
 		}
 		else
 		{
-			pent->SetLocalOrigin(pPlayer->GetLocalOrigin());
+			pent->SetAbsOrigin(pPlayer->EyePosition());
 			pent->AddSpawnFlags(SF_NORESPAWN);
 
 			auto pWeapon = dynamic_cast<CNEOBaseCombatWeapon*>((CBaseEntity*)pent);
@@ -2684,11 +2635,15 @@ void CNEO_Player::GiveDefaultItems(void)
 	}
 }
 
+ConVar sv_neo_time_alive_until_cant_change_loadout("sv_neo_time_alive_until_cant_change_loadout", "25.f", FCVAR_CHEAT | FCVAR_REPLICATED, "How long after spawning changing loadouts is disabled ",
+	true, 0.0f, false, 1.0f);
+
 void CNEO_Player::GiveLoadoutWeapon(void)
 {
 	const NeoRoundStatus status = NEORules()->GetRoundStatus();
-	if (!(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup) && 
-		(IsObserver() || IsDead() || m_bDroppedAnything || m_aliveTimer.IsGreaterThen(25.f)))
+	if (!(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup) &&
+		(IsObserver() || IsDead() || m_bIneligibleForLoadoutPick
+		 || m_aliveTimer.IsGreaterThen(sv_neo_time_alive_until_cant_change_loadout.GetFloat())))
 	{
 		return;
 	}
@@ -2715,7 +2670,7 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 		return;
 	}
 
-	pEnt->SetLocalOrigin(GetLocalOrigin());
+	pEnt->SetAbsOrigin(EyePosition());
 	pEnt->AddSpawnFlags(SF_NORESPAWN);
 
 	CNEOBaseCombatWeapon *pNeoWeapon = dynamic_cast<CNEOBaseCombatWeapon*>((CBaseEntity*)pEnt);
@@ -3035,6 +2990,9 @@ int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 		{
 			// If other is spectator or same team
 			if (otherNeoPlayer->GetTeamNumber() == TEAM_SPECTATOR ||
+#ifdef GLOWS_ENABLE
+				otherNeoPlayer->IsDead() ||
+#endif
 					GetTeamNumber() == otherNeoPlayer->GetTeamNumber())
 			{
 				return FL_EDICT_ALWAYS;

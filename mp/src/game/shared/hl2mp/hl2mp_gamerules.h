@@ -162,10 +162,14 @@ public:
 	void PlayerKilled( CBasePlayer *pVictim, const CTakeDamageInfo &info );
 #endif
 
+#ifdef NEO
+	virtual bool GetTeamPlayEnabled() const { return true; }
+#endif
+
 	bool	IsTeamplay( void )
 	{
 #ifdef NEO
-		return true;
+		return GetTeamPlayEnabled();
 #else
 		return m_bTeamPlayEnabled;
 #endif

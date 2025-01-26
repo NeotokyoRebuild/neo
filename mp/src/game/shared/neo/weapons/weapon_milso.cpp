@@ -27,7 +27,7 @@ CWeaponMilso::CWeaponMilso()
 	m_flSoonestAttack = gpGlobals->curtime;
 	m_flAccuracyPenalty = 0.0f;
 
-	m_bFiresUnderwater = true;
+	m_bFiresUnderwater = false;
 
 	m_weaponSeeds = {
 		"milsopx",

@@ -123,6 +123,7 @@ endif()
 add_compile_definitions(
     SDK2013CE
     NEO
+    GLOWS_ENABLE
     _DLL_EXT=${CMAKE_SHARED_LIBRARY_SUFFIX}
     _EXTERNAL_DLL_EXT=${CMAKE_SHARED_LIBRARY_SUFFIX}
     _GLIBCXX_USE_CXX11_ABI=0
@@ -340,6 +341,9 @@ if(OS_LINUX)
     add_compile_definitions(
         LINUX
         _LINUX
+        # TODO 64-bit time to sidestep 32-bit unix timestamp 2038 issue, although could affect Valve filesystem API
+        # _FILE_OFFSET_BITS=64
+        # _TIME_BITS=64
     )
 endif()
 

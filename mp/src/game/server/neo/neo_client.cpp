@@ -50,6 +50,8 @@ void FinishClientPutInServer( CNEO_Player *pPlayer )
 				const CNEORules::RestoreInfo &restoreInfo = restoredInfos.Element(hdl);
 				pPlayer->m_iXP.Set(restoreInfo.xp);
 				pPlayer->IncrementDeathCount(restoreInfo.deaths);
+				pPlayer->SetDeathTime(restoreInfo.deathTime);
+				pPlayer->m_bSpawnedThisRound = restoreInfo.spawnedThisRound;
 				ClientPrint(pPlayer, HUD_PRINTTALK, "Your XP and death count have been restored.\n");
 			}
 		}
@@ -349,7 +351,7 @@ bool RespawnWithRet( CBaseEntity *pEdict, bool fCopyCorpse )
 
 	if ( pPlayer )
 	{
-		if ( gpGlobals->curtime > pPlayer->GetDeathTime() + DEATH_ANIMATION_TIME )
+		if ( (gpGlobals->curtime > pPlayer->GetDeathTime() + DEATH_ANIMATION_TIME) || pPlayer->GetDeathTime() == 0.f)
 		{
 			if (NEORules()->FPlayerCanRespawn(pPlayer))
 			{

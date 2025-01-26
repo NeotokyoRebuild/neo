@@ -38,6 +38,8 @@ public:
 
 	virtual C_BaseAnimating *BecomeRagdollOnClient();
 	virtual const QAngle& GetRenderAngles();
+	virtual RenderGroup_t GetRenderGroup() override;
+	virtual bool UsesPowerOfTwoFrameBufferTexture() override;
 	virtual bool ShouldDraw( void );
 	//virtual bool ShouldInterpolate() { return true; }
 	virtual void OnDataChanged( DataUpdateType_t type );
@@ -107,8 +109,6 @@ public:
 	float GetWalkSpeed(void) const;
 	float GetSprintSpeed(void) const;
 
-	virtual void SetAnimation(PLAYER_ANIM playerAnim) OVERRIDE;
-
 private:
 	float GetActiveWeaponSpeedScale() const;
 	float GetBackwardsMovementPenaltyScale() const { return ((m_nButtons & IN_BACK) ? NEO_SLOW_MODIFIER : 1.0); }
@@ -147,6 +147,7 @@ public:
 	inline void ZeroFriendlyPlayerLocArray(void);
 
 	bool IsCloaked() const { return m_bInThermOpticCamo; }
+	float GetCloakFactor() const { return m_flTocFactor; }
 	bool IsAirborne() const { return (!(GetFlags() & FL_ONGROUND)); }
 	bool IsInVision() const { return m_bInVision; }
 	bool IsInAim() const { return m_bInAim; }
@@ -154,8 +155,10 @@ public:
 	int GetAttackersScores(const int attackerIdx) const;
 	int GetAttackerHits(const int attackerIdx) const;
 
+	const char *InternalGetNeoPlayerName() const;
 	const char *GetNeoPlayerName() const;
 	bool ClientWantNeoName() const;
+	const char *GetNeoClantag() const;
 
 	virtual void CalcDeathCamView( Vector& eyeOrigin, QAngle& eyeAngles, float& fov ) override;
 	virtual void TeamChange(int iNewTeam) override;
@@ -165,6 +168,7 @@ private:
 	void CheckVisionButtons();
 	void CheckLeanButtons();
 	void PlayCloakSound();
+	void SetCloakState(bool state);
 
 	bool IsAllowedToSuperJump(void);
 
@@ -192,27 +196,29 @@ public:
 	CNetworkVar(bool, m_bInVision);
 	CNetworkVar(bool, m_bInAim);
 	CNetworkVar(int, m_bInLean);
-	CNetworkVar(bool, m_bDroppedAnything);
+	CNetworkVar(bool, m_bIneligibleForLoadoutPick);
 
 	CNetworkVar(int, m_iNeoClass);
 	CNetworkVar(int, m_iNeoSkin);
 	CNetworkVar(int, m_iNeoStar);
 
 	CNetworkString(m_szNeoName, MAX_PLAYER_NAME_LENGTH);
+	CNetworkString(m_szNeoClantag, NEO_MAX_CLANTAG_LENGTH);
 	CNetworkVar(int, m_szNameDupePos);
 	CNetworkVar(bool, m_bClientWantNeoName);
 
 	unsigned char m_NeoFlags;
 
 private:
+	bool m_bFirstAliveTick;
 	bool m_bFirstDeathTick;
 	bool m_bPreviouslyReloading;
 	bool m_bIsAllowedToToggleVision;
 
-	INEOPlayerAnimState* m_pPlayerAnimState;
-
 	float m_flLastAirborneJumpOkTime;
 	float m_flLastSuperJumpTime;
+
+	float m_flTocFactor; // Cloak strength, controls tint, refraction amount. Lower values make player more difficult to spot
 
 	// Non-network version of m_szNeoName with dupe checker index
 	mutable char m_szNeoNameWDupeIdx[MAX_PLAYER_NAME_LENGTH + 10];

@@ -53,6 +53,9 @@ Color g_ColorDarkGreen( 64, 255, 64, 255 );
 Color g_ColorYellow( 255, 178, 0, 255 );
 Color g_ColorGrey( 204, 204, 204, 255 );
 
+#ifdef NEO
+extern ConVar neo_cl_streamermode;
+#endif
 
 // removes all color markup characters, so Msg can deal with the string properly
 // returns a pointer to str
@@ -632,7 +635,9 @@ CBaseHudChat::CBaseHudChat( const char *pElementName )
 
 	if ( m_pFiltersButton )
 	{
+#ifndef NEO
 		m_pFiltersButton->SetScheme( scheme );
+#endif
 		m_pFiltersButton->SetVisible( true );
 		m_pFiltersButton->SetEnabled( true );
 		m_pFiltersButton->SetMouseInputEnabled( true );
@@ -687,8 +692,10 @@ CHudChatFilterPanel *CBaseHudChat::GetChatFilterPanel( void )
 			m_pFilterPanel->SetScheme( scheme );
 			m_pFilterPanel->InvalidateLayout( true, true );
 			m_pFilterPanel->SetMouseInputEnabled( true );
+#ifndef NEO
 			m_pFilterPanel->SetPaintBackgroundType( 2 );
 			m_pFilterPanel->SetPaintBorderEnabled( true );
+#endif
 			m_pFilterPanel->SetVisible( false );
 		}
 	}
@@ -701,10 +708,15 @@ void CBaseHudChat::ApplySchemeSettings( vgui::IScheme *pScheme )
 	LoadControlSettings( "resource/UI/BaseChat.res" );
 
 	BaseClass::ApplySchemeSettings( pScheme );
-
+#ifdef NEO
+	SetPaintBackgroundType(0);
+	SetPaintBorderEnabled(false);
+	SetPaintBackgroundEnabled(false);
+#else
 	SetPaintBackgroundType( 2 );
 	SetPaintBorderEnabled( true );
 	SetPaintBackgroundEnabled( true );
+#endif
 
 	SetKeyBoardInputEnabled( false );
 	SetMouseInputEnabled( false );
@@ -823,6 +835,14 @@ void CBaseHudChat::MsgFunc_SayText2( bf_read &msg )
 	ReadChatTextString ( msg, szBuf[2], sizeof( szBuf[2] ) );		// chat text
 	ReadLocalizedString( msg, szBuf[3], sizeof( szBuf[3] ), true );
 	ReadLocalizedString( msg, szBuf[4], sizeof( szBuf[4] ), true );
+
+#ifdef NEO
+	if (neo_cl_streamermode.GetBool())
+	{
+		V_memset(szBuf[1], 0, sizeof(szBuf[1]));
+		g_pVGuiLocalize->ConvertANSIToUnicode(g_PR->GetPlayerName(client), szBuf[1], sizeof(szBuf[1]));
+	}
+#endif
 
 	g_pVGuiLocalize->ConstructString( szBuf[5], sizeof( szBuf[5] ), msg_text, 4, szBuf[1], szBuf[2], szBuf[3], szBuf[4] );
 
@@ -1072,6 +1092,14 @@ void CBaseHudChat::OnTick( void )
 
 		m_pChatInput->SetBounds( iInputX, iChatH - (m_iFontHeight * 1.75), iInputW, m_iFontHeight );
 
+#ifdef NEO
+		//Resize filter button to match height of input area
+		int iFilterX, iFilterY, iFilterW, iFilterH;
+		m_pFiltersButton->GetBounds(iFilterX, iFilterY, iFilterW, iFilterH);
+		m_pFiltersButton->SetBounds(iFilterX, iChatH - (m_iFontHeight * 1.75), iFilterW, m_iFontHeight);
+		m_pFiltersButton->SetSize(iFilterW, m_iFontHeight);
+#endif
+
 		//Resize the History Panel so it fits more lines depending on the screen resolution.
 		int iChatHistoryX, iChatHistoryY, iChatHistoryW, iChatHistoryH;
 
@@ -1193,7 +1221,9 @@ void CBaseHudChat::StartMessageMode( int iMessageModeType )
 		GetChatHistory()->SetKeyBoardInputEnabled( false );
 		GetChatHistory()->SetVerticalScrollbar( true );
 		GetChatHistory()->ResetAllFades( true );
+#ifndef NEO
 		GetChatHistory()->SetPaintBorderEnabled( true );
+#endif
 		GetChatHistory()->SetVisible( true );
 	}
 
@@ -1203,7 +1233,9 @@ void CBaseHudChat::StartMessageMode( int iMessageModeType )
 	m_pChatInput->SetVisible( true );
 	vgui::surface()->CalculateMouseVisible();
 	m_pChatInput->RequestFocus();
+#ifndef NEO
 	m_pChatInput->SetPaintBorderEnabled( true );
+#endif
 	m_pChatInput->SetMouseInputEnabled( true );
 
 	//Place the mouse cursor near the text so people notice it.
@@ -1819,6 +1851,18 @@ void CBaseHudChat::ChatPrintf( int iPlayerIndex, int iFilter, const char *fmt, .
 		if ( !(iFilter & GetFilterFlags() ) )
 			return;
 	}
+
+#ifdef NEO
+	if (neo_cl_streamermode.GetBool())
+	{
+		auto neoPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(iPlayerIndex));
+		if (neoPlayer && !neoPlayer->IsLocalPlayer())
+		{
+			// Only print local player's chat in streamer mode
+			return;
+		}
+	}
+#endif
 
 	// If a player is muted for voice, also mute them for text because jerks gonna jerk.
 	if ( cl_mute_all_comms.GetBool() && iPlayerIndex != 0 )

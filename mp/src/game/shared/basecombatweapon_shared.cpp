@@ -709,7 +709,11 @@ void CBaseCombatWeapon::Drop( const Vector &vecVelocity )
 	// clear follow stuff, setup for collision
 	SetGravity(1.0);
 	m_iState = WEAPON_NOT_CARRIED;
+#ifdef NEO
+	RemoveEffects(EF_NODRAW | EF_NOSHADOW);
+#else
 	RemoveEffects( EF_NODRAW );
+#endif
 	FallInit();
 	SetGroundEntity( NULL );
 	SetThink( &CBaseCombatWeapon::SetPickupTouch );
@@ -1526,7 +1530,9 @@ bool CBaseCombatWeapon::Holster( CBaseCombatWeapon *pSwitchingTo )
 	else
 	{
 		// Hide the weapon when the holster animation's finished
+#ifndef NEO
 		SetContextThink( &CBaseCombatWeapon::HideThink, gpGlobals->curtime + flSequenceDuration, HIDEWEAPON_THINK_CONTEXT );
+#endif // NEO
 	}
 
 	// if we were displaying a hud hint, squelch it.
@@ -2064,7 +2070,7 @@ bool CBaseCombatWeapon::DefaultReload( int iClipSize1, int iClipSize2, int iActi
 	// On NEO, we want to always give out reload sound cues
 #if defined(CLIENT_DLL) || defined(NEO)
 	// Play reload
-	WeaponSound( RELOAD );
+	CBaseCombatWeapon::WeaponSound(RELOAD_NPC);
 #endif
 	SendWeaponAnim( iActivity );
 
@@ -2432,14 +2438,14 @@ bool CBaseCombatWeapon::SetIdealActivity( Activity ideal )
 	{
 		//Set our activity to the next transitional animation
 		SetActivity( ACT_TRANSITION );
-		SetSequence( nextSequence );	
+		SetSequence( nextSequence );
 		SendViewModelAnim( nextSequence );
 	}
 	else
 	{
 		//Set our activity to the ideal
 		SetActivity( m_IdealActivity );
-		SetSequence( m_nIdealSequence );	
+		SetSequence( m_nIdealSequence );
 		SendViewModelAnim( m_nIdealSequence );
 	}
 

@@ -5,12 +5,16 @@
 #include "neo_gamerules.h"
 
 #include "tier0/valve_minmax_off.h"
+#include <tier3/tier3.h>
+#include <vgui/ILocalize.h>
+#include <steam/steam_api.h>
 #include <system_error>
 #include <charconv>
 #include "tier0/valve_minmax_on.h"
 
 #ifdef CLIENT_DLL
 #include "c_neo_player.h"
+#include "c_playerresource.h"
 #ifndef CNEO_Player
 #define CNEO_Player C_NEO_Player
 #endif
@@ -18,7 +22,6 @@
 #include "neo_player.h"
 #endif
 
-#include "neo_playeranimstate.h"
 #include "convar.h"
 
 #include "weapon_neobasecombatweapon.h"
@@ -26,11 +29,13 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+
+#ifdef CLIENT_DLL
 ConVar cl_autoreload_when_empty("cl_autoreload_when_empty", "1", FCVAR_USERINFO | FCVAR_ARCHIVE,
 	"Automatically start reloading when the active weapon becomes empty.",
 	true, 0.0f, true, 1.0f);
-
 ConVar neo_aim_hold("neo_aim_hold", "0", FCVAR_USERINFO | FCVAR_ARCHIVE, "Hold to aim as opposed to toggle aim.", true, 0.0f, true, 1.0f);
+#endif
 ConVar neo_recon_superjump_intensity("neo_recon_superjump_intensity", "250", FCVAR_REPLICATED | FCVAR_CHEAT,
 	"Recon superjump intensity multiplier.", true, 1.0, false, 0);
 
@@ -87,16 +92,6 @@ CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, const NEO_WEP_BI
 	return NULL;
 }
 
-bool PlayerAnimToPlayerAnimEvent(const PLAYER_ANIM playerAnim, PlayerAnimEvent_t& outAnimEvent)
-{
-	bool success = true;
-	if (playerAnim == PLAYER_ANIM::PLAYER_JUMP) { outAnimEvent = PlayerAnimEvent_t::PLAYERANIMEVENT_JUMP; }
-	else if (playerAnim == PLAYER_ANIM::PLAYER_RELOAD) { outAnimEvent = PlayerAnimEvent_t::PLAYERANIMEVENT_RELOAD; }
-	else if (playerAnim == PLAYER_ANIM::PLAYER_ATTACK1) { outAnimEvent = PlayerAnimEvent_t::PLAYERANIMEVENT_FIRE_GUN_PRIMARY; }
-	else { success = false; }
-	return success;
-}
-
 bool ClientWantsAimHold(const CNEO_Player* player)
 {
 #ifdef CLIENT_DLL
@@ -142,18 +137,16 @@ int DmgLineStr(char* infoLine, const int infoLineMax,
 }
 
 void KillerLineStr(char* killByLine, const int killByLineMax,
-	CNEO_Player* neoAttacker, const CNEO_Player* neoVictim)
+	CNEO_Player* neoAttacker, const CNEO_Player* neoVictim, const char* killedWith)
 {
 	const char* dmgerName = neoAttacker->GetNeoPlayerName();
 	const char* dmgerClass = GetNeoClassName(neoAttacker->GetClass());
 	const int dmgerHP = neoAttacker->GetHealth();
-	auto* dmgerWep = neoAttacker->GetActiveWeapon();
-	const char* dmgerWepName = dmgerWep ? dmgerWep->GetPrintName() : "";
 	const float distance = METERS_PER_INCH * neoAttacker->GetAbsOrigin().DistTo(neoVictim->GetAbsOrigin());
 
 	memset(killByLine, 0, killByLineMax);
 	Q_snprintf(killByLine, killByLineMax, "Killed by: %s [%s | %d hp] with %s at %.0f m\n",
-		dmgerName, dmgerClass, dmgerHP, dmgerWepName, distance);
+		dmgerName, dmgerClass, dmgerHP, killedWith, distance);
 }
 
 [[nodiscard]] auto StrToInt(std::string_view strView) -> std::optional<int>
@@ -172,3 +165,82 @@ void KillerLineStr(char* killByLine, const int killByLineMax,
 	auto *neoWep = dynamic_cast<CNEOBaseCombatWeapon *>(wep);
 	return (neoWep) ? neoWep->GetWpnData().iAimFOV : fovDef - FOV_AIM_OFFSET_FALLBACK;
 }
+
+#ifdef CLIENT_DLL
+void DMClSortedPlayers(PlayerXPInfo (*pPlayersOrder)[MAX_PLAYERS + 1], int *piTotalPlayers)
+{
+	int iTotalPlayers = 0;
+
+	// First pass: Find all scores of all players
+	for (int i = 0; i < (MAX_PLAYERS + 1); i++)
+	{
+		if (g_PR->IsConnected(i))
+		{
+			const int playerTeam = g_PR->GetTeam(i);
+			if (playerTeam == TEAM_JINRAI || playerTeam == TEAM_NSF)
+			{
+				(*pPlayersOrder)[iTotalPlayers++] = PlayerXPInfo{
+					.idx = i,
+					.xp = g_PR->GetXP(i),
+					.deaths = g_PR->GetDeaths(i),
+				};
+			}
+		}
+	}
+
+	V_qsort_s(*pPlayersOrder, iTotalPlayers, sizeof(PlayerXPInfo),
+			  []([[maybe_unused]] void *vpCtx, const void *vpLeft, const void *vpRight) -> int {
+		auto *pLeft = static_cast<const PlayerXPInfo *>(vpLeft);
+		auto *pRight = static_cast<const PlayerXPInfo *>(vpRight);
+		if (pRight->xp == pLeft->xp)
+		{
+			// More deaths = lower
+			return pLeft->deaths - pRight->deaths;
+		}
+		// More XP = higher
+		return pRight->xp - pLeft->xp;
+	}, nullptr);
+
+	*piTotalPlayers = iTotalPlayers;
+}
+#endif
+
+void GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
+						 const wchar_t wszNeoName[MAX_PLAYER_NAME_LENGTH + 1],
+						 const wchar_t wszNeoClantag[NEO_MAX_CLANTAG_LENGTH + 1],
+						 const bool bOnlySteamNick)
+{
+	const bool bShowSteamNick = bOnlySteamNick || wszNeoName[0] == '\0';
+	wchar_t wszDisplayName[MAX_PLAYER_NAME_LENGTH + 1] = {};
+	if (bShowSteamNick)
+	{
+		g_pVGuiLocalize->ConvertANSIToUnicode(steamapicontext->SteamFriends()->GetPersonaName(),
+											  wszDisplayName, sizeof(wszDisplayName));
+	}
+	else
+	{
+		V_wcscpy_safe(wszDisplayName, wszNeoName);
+	}
+
+	if (wszNeoClantag[0] != L'\0')
+	{
+		V_swprintf_safe(pWszDisplayName, L"[%ls] %ls", wszNeoClantag, wszDisplayName);
+	}
+	else
+	{
+		V_wcscpy_safe(pWszDisplayName, wszDisplayName);
+	}
+}
+
+void GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
+						 const char *pSzNeoName,
+						 const char *pSzNeoClantag,
+						 const bool bOnlySteamNick)
+{
+	wchar_t wszNeoName[MAX_PLAYER_NAME_LENGTH + 1];
+	wchar_t wszNeoClantag[NEO_MAX_CLANTAG_LENGTH + 1];
+	g_pVGuiLocalize->ConvertANSIToUnicode(pSzNeoName, wszNeoName, sizeof(wszNeoName));
+	g_pVGuiLocalize->ConvertANSIToUnicode(pSzNeoClantag, wszNeoClantag, sizeof(wszNeoClantag));
+	GetClNeoDisplayName(pWszDisplayName, wszNeoName, wszNeoClantag, bOnlySteamNick);
+}
+

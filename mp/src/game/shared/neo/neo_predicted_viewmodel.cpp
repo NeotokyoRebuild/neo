@@ -16,6 +16,7 @@
 #include "viewrender.h"
 #include "r_efx.h"
 #include "dlight.h"
+#include "in_main.h"
 #else
 #include "neo_player.h"
 #endif
@@ -57,6 +58,7 @@ CNEOPredictedViewModel::CNEOPredictedViewModel()
 #endif
 
 	m_flYPrevious = 0;
+	m_flLeanAngle = 0;
 	m_flStartAimingChange = 0;
 	m_bViewAim = false;
 }
@@ -222,6 +224,7 @@ void CNEOPredictedViewModel::ClientThink()
 	BaseClass::ClientThink();
 }
 
+extern ConVar mat_neo_toc_test;
 int CNEOPredictedViewModel::DrawModel(int flags)
 {
 	auto pPlayer = static_cast<C_NEO_Player*>(GetOwner());
@@ -230,7 +233,7 @@ int CNEOPredictedViewModel::DrawModel(int flags)
 	{
 		if (pPlayer->IsCloaked())
 		{
-			IMaterial *pass = materials->FindMaterial("dev/toc_vm", TEXTURE_GROUP_VIEW_MODEL);
+			IMaterial *pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_VIEW_MODEL);
 			Assert(pass && !pass->IsErrorMaterial());
 
 			if (pass && !pass->IsErrorMaterial())
@@ -241,15 +244,30 @@ int CNEOPredictedViewModel::DrawModel(int flags)
 					Assert(pass->IsPrecached());
 				}
 
-				//modelrender->SuppressEngineLighting(true);
+				mat_neo_toc_test.SetValue(pPlayer->GetCloakFactor());
+
 				modelrender->ForcedMaterialOverride(pass);
-				int ret = BaseClass::DrawModel(flags /*| STUDIO_RENDER | STUDIO_DRAWTRANSLUCENTSUBMODELS | STUDIO_TRANSPARENCY*/);
-				//modelrender->SuppressEngineLighting(false);
+				int ret = BaseClass::DrawModel(flags);
 				modelrender->ForcedMaterialOverride(NULL);
 				return ret;
 			}
 			
 			return 0;
+		}
+		if (pPlayer->GetClass() == NEO_CLASS_SUPPORT && pPlayer->IsInVision())
+		{
+			IMaterial* pass = materials->FindMaterial("dev/thermal_view_model", TEXTURE_GROUP_MODEL);
+			Assert(pass && !pass->IsErrorMaterial());
+
+			if (pass && !pass->IsErrorMaterial())
+			{
+				// Render
+				modelrender->ForcedMaterialOverride(pass);
+				int ret = BaseClass::DrawModel(flags);
+				modelrender->ForcedMaterialOverride(NULL);
+
+				return ret;
+			}
 		}
 	}
 
@@ -267,6 +285,14 @@ float GetLeanRatio(const float leanAngle)
 	return fabs(leanAngle) / ((leanAngle < 0) ? neo_lean_yaw_peek_left_amount.GetFloat() : neo_lean_yaw_peek_right_amount.GetFloat());
 }
 
+#ifdef CLIENT_DLL
+ConVar cl_neo_lean_viewmodel_only("cl_neo_lean_viewmodel_only", "0", FCVAR_ARCHIVE, "Rotate view-model instead of camera when leaning", true, 0, true, 1);
+ConVar cl_neo_lean_automatic("cl_neo_lean_automatic", "0", FCVAR_ARCHIVE, "Automatic leaning around corners", true, 0, true, 1);
+#ifdef DEBUG
+ConVar cl_neo_lean_automatic_debug("cl_neo_lean_automatic_debug", "0", FCVAR_ARCHIVE | FCVAR_DEVELOPMENTONLY, "Show automatic leaning tracelines", true, 0, true, 1);
+#endif // DEBUG
+#endif // CLIENT_DLL
+
 float CNEOPredictedViewModel::lean(CNEO_Player *player){
 	Assert(player);
 #ifdef CLIENT_DLL
@@ -278,6 +304,62 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 
 	if (player->IsAlive())
 	{
+#ifdef CLIENT_DLL
+		if (cl_neo_lean_automatic.GetBool())
+		{
+			Vector startPos = player->GetAbsOrigin();
+			startPos.z = player->EyePosition().z; // Ideally shouldn't move due to lean but this is a nice spot
+			constexpr float tracelineAngleChange = 15.f;
+			constexpr int startingDistance = 80;
+			int distance = startingDistance;
+			int total = 0;
+			trace_t tr;
+			CTraceFilterHitAll filter;
+			for (int i = 1; i <= 10; i++)
+			{
+				Vector endPos = startPos;
+				float offset = (i / (tracelineAngleChange - i));
+				endPos.x += cos(DEG2RAD(viewAng.y) + offset) * distance;
+				endPos.y += sin(DEG2RAD(viewAng.y) + offset) * distance;
+				UTIL_TraceLine(startPos, endPos, MASK_ALL, &filter, &tr);
+				if (tr.fraction != 1.0)
+				{
+					total -= 1;
+				}
+				distance = Max(20, distance - 5);
+#ifdef DEBUG
+				if (cl_neo_lean_automatic_debug.GetBool())
+				{
+					DebugDrawLine(startPos, endPos, 0, tr.fraction == 1.0 ? 255 : 0, 255, 0, 0);
+				}
+#endif // DEBUG
+			}
+			distance = startingDistance;
+			for (int i = -1; i >= -10; i--)
+			{
+				Vector endPos = startPos;
+				float offset = (i / (tracelineAngleChange + i));
+				endPos.x += cos(DEG2RAD(viewAng.y) + offset) * distance;
+				endPos.y += sin(DEG2RAD(viewAng.y) + offset) * distance;
+				UTIL_TraceLine(startPos, endPos, MASK_ALL, &filter, &tr);
+				if (tr.fraction != 1.0)
+				{
+					total += 1;
+				}
+				distance = Max(20, distance - 5);
+#ifdef DEBUG
+				if (cl_neo_lean_automatic_debug.GetBool())
+				{
+					DebugDrawLine(startPos, endPos, 255, tr.fraction == 1.0 ? 255 : 0, 0, 0, 0);
+				}
+#endif // DEBUG
+			}
+			if (total < 0)	{ IN_LeanRight(); }
+			else if (total > 0) { IN_LeanLeft(); }
+			else { IN_LeanReset(); }
+		}
+#endif // CLIENT_DLL
+
 		switch (player->m_bInLean.Get())
 		{
 		case NEO_LEAN_LEFT:
@@ -326,8 +408,9 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 	player->m_vecLean = Vector(0, viewOffset.y, -(neo_lean_fp_lower_eyes_scale.GetFloat() * leanRatio));
 	player->SetViewOffset(viewOffset);
 
-	viewAng.z = leanAngle;
+	m_flLeanAngle = leanAngle;
 #ifdef CLIENT_DLL
+	viewAng.z = cl_neo_lean_viewmodel_only.GetBool() ? 0 : leanAngle;
 	engine->SetViewAngles(viewAng);
 #endif
 
@@ -426,6 +509,12 @@ void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 	newPos += vUp * vOffset.z;
 
 	newAng += angOffset;
+#ifdef CLIENT_DLL
+	if (cl_neo_lean_viewmodel_only.GetBool())
+	{
+		newAng.z += m_flLeanAngle;
+	}
+#endif
 
 	BaseClass::CalcViewModelView(pOwner, newPos, newAng);
 }
@@ -458,5 +547,16 @@ RenderGroup_t CNEOPredictedViewModel::GetRenderGroup()
 	}
 
 	return BaseClass::GetRenderGroup();
+}
+
+bool CNEOPredictedViewModel::UsesPowerOfTwoFrameBufferTexture()
+{
+	auto pPlayer = static_cast<C_NEO_Player*>(GetOwner());
+	if (pPlayer)
+	{
+		return pPlayer->IsCloaked() ? true : false;
+	}
+
+	return BaseClass::UsesPowerOfTwoFrameBufferTexture();
 }
 #endif

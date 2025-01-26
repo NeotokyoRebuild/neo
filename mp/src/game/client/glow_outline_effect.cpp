@@ -12,13 +12,33 @@
 #include "materialsystem/itexture.h"
 #include "view_shared.h"
 #include "viewpostprocess.h"
+#if defined GLOWS_ENABLE && defined NEO
+#include "neo_gamerules.h"
+#endif // GLOWS_ENABLE && NEO
 
 #define FULL_FRAME_TEXTURE "_rt_FullFrameFB"
 
 #ifdef GLOWS_ENABLE
 
-ConVar glow_outline_effect_enable( "glow_outline_effect_enable", "1", FCVAR_ARCHIVE, "Enable entity outline glow effects." );
+#ifdef NEO
+static void glowOutlineEffectToggleCallBack(IConVar* var, const char* pOldValue, float flOldValue)
+{
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		if (auto player = UTIL_PlayerByIndex(i))
+		{
+			float r, g, b;
+			NEORules()->GetTeamGlowColor(player->GetTeamNumber(), r, g, b);
+			player->SetGlowEffectColor(r, g, b);
+			player->SetClientSideGlowEnabled(!flOldValue);
+		}
+	}
+}
+#endif // NEO
+ConVar glow_outline_effect_enable( "glow_outline_effect_enable", "0", 0, "Enable entity outline glow effects.", glowOutlineEffectToggleCallBack);
+#ifndef NEO
 ConVar glow_outline_effect_width( "glow_outline_width", "10.0f", FCVAR_CHEAT, "Width of glow outline effect in screen space." );
+#endif // NEO
 
 extern bool g_bDumpRenderTargets; // in viewpostprocess.cpp
 
@@ -69,7 +89,11 @@ void CGlowObjectManager::RenderGlowEffects( const CViewSetup *pSetup, int nSplit
 			pRenderContext->GetViewport( nX, nY, nWidth, nHeight );
 
 			PIXEvent _pixEvent( pRenderContext, "EntityGlowEffects" );
+#ifdef NEO
+			ApplyEntityGlowEffects(pSetup, nSplitScreenSlot, pRenderContext, 0.f, nX, nY, nWidth, nHeight);
+#else
 			ApplyEntityGlowEffects( pSetup, nSplitScreenSlot, pRenderContext, glow_outline_effect_width.GetFloat(), nX, nY, nWidth, nHeight );
+#endif
 		}
 	}
 }
@@ -108,7 +132,9 @@ void CGlowObjectManager::RenderGlowModels( const CViewSetup *pSetup, int nSplitS
 	IMaterial *pMatGlowColor = NULL;
 
 	pMatGlowColor = materials->FindMaterial( "dev/glow_color", TEXTURE_GROUP_OTHER, true );
+#ifndef NEO
 	g_pStudioRender->ForcedMaterialOverride( pMatGlowColor );
+#endif
 
 	ShaderStencilState_t stencilState;
 	stencilState.m_bEnable = false;
@@ -129,12 +155,16 @@ void CGlowObjectManager::RenderGlowModels( const CViewSetup *pSetup, int nSplitS
 		if ( m_GlowObjectDefinitions[i].IsUnused() || !m_GlowObjectDefinitions[i].ShouldDraw( nSplitScreenSlot ) )
 			continue;
 
+#ifdef NEO
+		// DrawModel can call ForcedMaterialOverride also
+		g_pStudioRender->ForcedMaterialOverride(pMatGlowColor);
+#endif
 		render->SetBlend( m_GlowObjectDefinitions[i].m_flGlowAlpha );
 		Vector vGlowColor = m_GlowObjectDefinitions[i].m_vGlowColor * m_GlowObjectDefinitions[i].m_flGlowAlpha;
 		render->SetColorModulation( &vGlowColor[0] ); // This only sets rgb, not alpha
 
 		m_GlowObjectDefinitions[i].DrawModel();
-	}	
+	}
 
 	if ( g_bDumpRenderTargets )
 	{
@@ -301,12 +331,32 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 		stencilState.SetStencilState( pRenderContext );
 
 		// Draw quad
+#ifdef NEO
 		pRenderContext->DrawScreenSpaceRectangle( pMatHaloAddToScreen, 0, 0, nViewportWidth, nViewportHeight,
+			-0.25f, -0.25f, nSrcWidth / 4 - 1, nSrcHeight / 4 - 1,
+			pRtQuarterSize1->GetActualWidth(),
+			pRtQuarterSize1->GetActualHeight() );
+
+		pRenderContext->DrawScreenSpaceRectangle(pMatHaloAddToScreen, 0, 0, nViewportWidth, nViewportHeight,
+			0.25f, 0.25f, nSrcWidth / 4 - 1, nSrcHeight / 4 - 1,
+			pRtQuarterSize1->GetActualWidth(),
+			pRtQuarterSize1->GetActualHeight());
+
+		stencilStateDisable.SetStencilState( pRenderContext );
+
+		pDimVar->SetFloatValue(0.15f);
+		pRenderContext->DrawScreenSpaceRectangle(pMatHaloAddToScreen, 0, 0, nViewportWidth, nViewportHeight,
+			0, 0, nSrcWidth / 4 - 1, nSrcHeight / 4 - 1,
+			pRtQuarterSize1->GetActualWidth(),
+			pRtQuarterSize1->GetActualHeight());
+#else
+		pRenderContext->DrawScreenSpaceRectangle(pMatHaloAddToScreen, 0, 0, nViewportWidth, nViewportHeight,
 			0.0f, -0.5f, nSrcWidth / 4 - 1, nSrcHeight / 4 - 1,
 			pRtQuarterSize1->GetActualWidth(),
 			pRtQuarterSize1->GetActualHeight() );
 
 		stencilStateDisable.SetStencilState( pRenderContext );
+#endif
 	}
 }
 
@@ -314,14 +364,22 @@ void CGlowObjectManager::GlowObjectDefinition_t::DrawModel()
 {
 	if ( m_hEntity.Get() )
 	{
+#ifdef NEO
+		m_hEntity->DrawModel( STUDIO_RENDER | STUDIO_IGNORE_NEO_EFFECTS );
+#else
 		m_hEntity->DrawModel( STUDIO_RENDER );
+#endif
 		C_BaseEntity *pAttachment = m_hEntity->FirstMoveChild();
 
 		while ( pAttachment != NULL )
 		{
 			if ( !g_GlowObjectManager.HasGlowEffect( pAttachment ) && pAttachment->ShouldDraw() )
 			{
+#ifdef NEO
+				pAttachment->DrawModel( STUDIO_RENDER | STUDIO_IGNORE_NEO_EFFECTS );
+#else
 				pAttachment->DrawModel( STUDIO_RENDER );
+#endif
 			}
 			pAttachment = pAttachment->NextMovePeer();
 		}

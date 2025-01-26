@@ -24,6 +24,7 @@ target_include_directories(server
     ${CMAKE_SOURCE_DIR}/game/shared/econ
     ${CMAKE_SOURCE_DIR}/game/shared/hl2
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp
+    ${CMAKE_SOURCE_DIR}/game/shared/Multiplayer
     ${CMAKE_SOURCE_DIR}/game/shared/neo
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons
     ${CMAKE_SOURCE_DIR}/utils/common
@@ -1318,8 +1319,6 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_shared.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_spawnpoint.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_spawnpoint.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_playeranimstate.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_playeranimstate.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel_muzzleflash.cpp
@@ -1329,9 +1328,13 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_misc.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_misc.h
     neo/neo_client.cpp
     neo/neo_detpack.cpp
     neo/neo_detpack.h
+    neo/neo_game_config.cpp
+    neo/neo_game_config.h
     neo/neo_ghost_spawn_point.cpp
     neo/neo_ghost_spawn_point.h
     neo/neo_grenade.cpp
@@ -1345,6 +1348,8 @@ target_sources_grouped(
     neo/neo_te_tocflash.cpp
     neo/neo_te_tocflash.h
     neo/neo_tracefilter_collisiongroupdelta.h
+    neo/neo_dm_spawn.cpp
+    neo/neo_dm_spawn.h
 )
 
 target_sources_grouped(
@@ -1423,12 +1428,22 @@ endif()
 
 target_sources_grouped(
     TARGET server
+    NAME "Source Files\\Shared\\Multiplayer"
+    FILES
+    ${CMAKE_SOURCE_DIR}/game/shared/Multiplayer/multiplayer_animstate.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/Multiplayer/multiplayer_animstate.h
+)
+
+target_sources_grouped(
+    TARGET server
     NAME "HL2MP"
     FILES
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_gamerules.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_gamerules.h
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_player_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_player_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_playeranimstate.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_playeranimstate.h
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_weapon_parse.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_weapon_parse.h
     hl2mp/hl2mp_bot_temp.cpp

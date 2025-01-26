@@ -17,7 +17,7 @@ class ImagePanel;
 class ImageList;
 }
 
-constexpr int maxGameTypeObjectiveLength = 33;
+constexpr int MAX_GAME_TYPE_OBJECTIVE_LENGTH = 33;
 
 class CNEOHud_RoundState : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
 {
@@ -25,7 +25,6 @@ class CNEOHud_RoundState : public CNEOHud_ChildElement, public CHudElement, publ
 
 public:
 	CNEOHud_RoundState(const char *pElementName, vgui::Panel *parent = NULL);
-	~CNEOHud_RoundState();
 
 	virtual void ApplySchemeSettings(vgui::IScheme *pScheme);
 	virtual void Paint();
@@ -46,7 +45,6 @@ private:
 	void CheckActiveStar();
 	void DrawPlayer(int playerIndex, int teamIndex, const TeamLogoColor &teamLogoColor,
 					const int xOffset, const bool drawHealthClass);
-	void UpdatePlayerAvatar(int playerIndex);
 	void SetTextureToAvatar(int playerIndex);
 
 private:
@@ -60,14 +58,16 @@ private:
 	int m_iSmallFontHeight = 0;
 
 	// Center Box info
-	wchar_t m_wszRoundUnicode[9] = {};
+	wchar_t m_wszRoundUnicode[12] = {};
+	int m_iWszRoundUCSize = 0;
 	wchar_t m_wszTime[6] = {};
 	wchar_t m_wszLeftTeamScore[3] = {};
 	wchar_t m_wszRightTeamScore[3] = {};
-	wchar_t m_wszPlayersAliveUnicode[9] = {};
-	wchar_t m_wszStatusUnicode[24] = {};
-	wchar_t m_wszGameTypeDescription[maxGameTypeObjectiveLength * sizeof(wchar_t)] = {};
-	char szGameTypeDescription[maxGameTypeObjectiveLength * sizeof(char)] = {};
+	wchar_t m_wszPlayersAliveUnicode[16] = {};
+	const wchar_t *m_pWszStatusUnicode = nullptr;
+	int m_iStatusUnicodeSize = 0;
+	wchar_t m_wszGameTypeDescription[MAX_GAME_TYPE_OBJECTIVE_LENGTH] = {};
+	char szGameTypeDescription[MAX_GAME_TYPE_OBJECTIVE_LENGTH] = {};
 
 	// Game Description
 	short m_iGameTypeDescriptionState = 0;
@@ -94,10 +94,6 @@ private:
 	int m_iGraphicID[NEO_CLASS__ENUM_COUNT] = {};
 	TeamLogoColor m_teamLogoColors[TEAM__TOTAL] = {};
 
-	vgui::ImageList *m_pImageList = nullptr;
-	CUtlMap<CSteamID, int> m_mapAvatarsToImageList;
-
-	int m_iNextAvatarUpdate = 0;
 
 	CPanelAnimationVar(Color, box_color, "box_color", "200 200 200 40");
 	CPanelAnimationVarAliasType(bool, health_monochrome, "health_monochrome", "1", "bool");

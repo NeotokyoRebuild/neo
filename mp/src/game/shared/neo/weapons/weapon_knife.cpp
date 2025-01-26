@@ -98,16 +98,11 @@ void CWeaponKnife::PrimaryAttack()
 	// Move other players back to history positions based on local player's lag
 	lagcompensation->StartLagCompensation(pPlayer, pPlayer->GetCurrentCommand());
 #endif
-	Swing(false);
+	Swing();
 #ifndef CLIENT_DLL
 	// Move other players back to history positions based on local player's lag
 	lagcompensation->FinishLagCompensation(pPlayer);
 #endif
-}
-
-void CWeaponKnife::SecondaryAttack()
-{
-	Swing(true);
 }
 
 bool CWeaponKnife::CanBePickedUpByClass(int classId)
@@ -129,9 +124,9 @@ bool CWeaponKnife::IsViewable()
 }
 #endif
 
-void CWeaponKnife::Swing(int bIsSecondary)
+void CWeaponKnife::Swing()
 {
-	CBasePlayer* pOwner = ToBasePlayer(GetOwner());
+	auto pOwner = static_cast<CNEO_Player*>(GetOwner());
 	if (!pOwner)
 		return;
 
@@ -202,7 +197,7 @@ void CWeaponKnife::Swing(int bIsSecondary)
 	// Send the anim
 	SendWeaponAnim(nHitActivity);
 
-	pOwner->SetAnimation(PLAYER_ATTACK1);
+	pOwner->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
 
 	//Setup our next attack times
 	m_flNextPrimaryAttack = gpGlobals->curtime + GetFireRate();
@@ -297,9 +292,14 @@ void CWeaponKnife::Hit(trace_t& traceHit, [[maybe_unused]] Activity nHitActivity
 
 		static constexpr int damageToOneShotSupport = (100 * (1 / NEO_SUPPORT_DAMAGE_MODIFIER)) + 1;
 
-		CTakeDamageInfo info(GetOwner(), GetOwner(), (currentAngle > maxBackStabAngle ? KNIFE_DAMAGE : damageToOneShotSupport), DMG_SLASH);
+		CTakeDamageInfo info(GetOwner(), GetOwner(), KNIFE_DAMAGE, DMG_SLASH);
 
-		CalculateMeleeDamageForce(&info, hitDirection, traceHit.endpos, 0.f);
+		CalculateMeleeDamageForce(&info, hitDirection, traceHit.endpos, 0.05f);
+
+		if (currentAngle <= maxBackStabAngle)
+		{	// increase damage if backstabbing only after melee damage force has been calculated, so objects cannot be "backstabbed" to launch them further
+			info.SetDamage(damageToOneShotSupport);
+		}
 
 		pHitEntity->DispatchTraceAttack(info, hitDirection, &traceHit);
 		ApplyMultiDamage();

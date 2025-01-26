@@ -77,6 +77,9 @@ protected:
 	void SetLabelText(const char *textEntryName, wchar_t *text);
 	void MoveLabelToFront(const char *textEntryName);
 	void UpdateTimer();
+#ifdef NEO
+	void UpdatePlayerLabel();
+#endif
 	void SetLogoImage(const char *image);
 
 protected:	

@@ -11,10 +11,18 @@
 #include "shareddefs.h"
 
 #include "GameEventListener.h"
+#include "neo_player_shared.h"
+#include "neo_misc.h"
 
-#ifndef CLIENT_DLL
+#ifdef CLIENT_DLL
+	#include "c_neo_player.h"
+#else
 	#include "neo_player.h"
 	#include "utlhashtable.h"
+#endif
+
+#ifdef GLOWS_ENABLE
+#include "neo_player_shared.h"
 #endif
 
 enum
@@ -84,6 +92,7 @@ extern ConVar neo_sv_mirror_teamdamage_multiplier;
 extern ConVar neo_sv_mirror_teamdamage_duration;
 extern ConVar neo_sv_mirror_teamdamage_immunity;
 extern ConVar neo_sv_teamdamage_kick;
+
 #else
 class C_NEO_Player;
 #endif
@@ -91,14 +100,17 @@ class C_NEO_Player;
 extern ConVar neo_sv_player_restore;
 
 enum NeoGameType {
-	TDM = 0,
-	CTG,
-	VIP,
-	ATK,
-	PSY,
+	NEO_GAME_TYPE_TDM = 0,
+	NEO_GAME_TYPE_CTG,
+	NEO_GAME_TYPE_VIP,
+	NEO_GAME_TYPE_DM,
+	NEO_GAME_TYPE_ATK,
+	NEO_GAME_TYPE_PSY,
 
-	Total // Number of game types
+	NEO_GAME_TYPE__TOTAL // Number of game types
 };
+
+extern const SZWSZTexts NEO_GAME_TYPE_DESC_STRS[NEO_GAME_TYPE__TOTAL];
 
 enum NeoRoundStatus {
 	Idle = 0,
@@ -106,6 +118,19 @@ enum NeoRoundStatus {
 	PreRoundFreeze,
 	RoundLive,
 	PostRound,
+	Pause,
+};
+
+enum NeoWinReason {
+	NEO_VICTORY_GHOST_CAPTURE = 0,
+	NEO_VICTORY_VIP_ESCORT,
+	NEO_VICTORY_VIP_ELIMINATION,
+	NEO_VICTORY_TEAM_ELIMINATION,
+	NEO_VICTORY_TIMEOUT_WIN_BY_NUMBERS,
+	NEO_VICTORY_POINTS,
+	NEO_VICTORY_FORFEIT,
+	NEO_VICTORY_STALEMATE, // Not actually a victory
+	NEO_VICTORY_MAPIO
 };
 
 class CNEORules : public CHL2MPRules, public CGameEventListener
@@ -131,14 +156,22 @@ public:
 	virtual bool ClientCommand(CBaseEntity* pEdict, const CCommand& args) OVERRIDE;
 
 	virtual void SetWinningTeam(int team, int iWinReason, bool bForceMapReset = true, bool bSwitchTeams = false, bool bDontAddScore = false, bool bFinal = false) OVERRIDE;
+	void SetWinningDMPlayer(CNEO_Player *pWinner);
 
 	virtual void ChangeLevel(void) OVERRIDE;
 
 	virtual void ClientDisconnected(edict_t* pClient) OVERRIDE;
+
+	CBaseEntity *GetPlayerSpawnSpot(CBasePlayer *pPlayer) override;
 #endif
 	virtual bool ShouldCollide( int collisionGroup0, int collisionGroup1 ) OVERRIDE;
 
 	virtual const char* GetGameName() { return NEO_GAME_NAME; }
+
+#ifdef NEO
+	bool GetTeamPlayEnabled() const override;
+#endif
+
 
 #ifdef GAME_DLL
 	virtual bool FPlayerCanRespawn(CBasePlayer* pPlayer) OVERRIDE;
@@ -146,6 +179,13 @@ public:
 
 	virtual int GetGameType(void) OVERRIDE;
 	virtual const char* GetGameTypeName(void) OVERRIDE;
+
+	void GetDMHighestScorers(
+#ifdef GAME_DLL
+			CNEO_Player *(*pHighestPlayers)[MAX_PLAYERS + 1],
+#endif
+			int *iHighestPlayersTotal,
+			int *iHighestXP) const;
 
 	virtual void Think( void ) OVERRIDE;
 	virtual void CreateStandardEntities( void ) OVERRIDE;
@@ -221,9 +261,22 @@ public:
 #endif
 	bool IsRoundPreRoundFreeze() const;
 	bool IsRoundLive() const;
+	bool IsRoundOn() const;
 	bool IsRoundOver() const;
 #ifdef GAME_DLL
 	void GatherGameTypeVotes();
+
+	struct ReadyPlayers
+	{
+		int array[TEAM__TOTAL];
+	};
+	void CheckChatCommand(CNEO_Player *pNeoPlayer, const char *pSzChat);
+	ReadyPlayers FetchReadyPlayers() const;
+	CUtlHashtable<AccountID_t> m_readyAccIDs;
+	bool m_bIgnoreOverThreshold = false;
+	bool ReadyUpPlayerIsReady(CNEO_Player *pNeoPlayer) const;
+
+	void CheckGameType();
 	void StartNextRound();
 
 	virtual const char* GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer) OVERRIDE;
@@ -238,19 +291,6 @@ public:
 	// See https://steamcommunity.com/groups/ANPA/discussions/0/1482109512299590948/
 	// (and NT Discord) for discussions.
 	virtual const unsigned char* GetEncryptionKey(void) OVERRIDE { return (unsigned char*)"tBA%-ygc"; }
-
-	enum
-	{
-		NEO_VICTORY_GHOST_CAPTURE = 0,
-		NEO_VICTORY_GHOST_CAPTURE_PREVENTION,
-		NEO_VICTORY_VIP_ESCORT,
-		NEO_VICTORY_VIP_ELIMINATION,
-		NEO_VICTORY_TEAM_ELIMINATION,
-		NEO_VICTORY_TIMEOUT_WIN_BY_NUMBERS,
-		NEO_VICTORY_POINTS,
-		NEO_VICTORY_FORFEIT,
-		NEO_VICTORY_STALEMATE // Not actually a victory
-	};
 
 	int GetGhosterTeam() const { return m_iGhosterTeam; }
 	int GetGhosterPlayer() const { return m_iGhosterPlayer; }
@@ -276,8 +316,34 @@ public:
 		return GetOpposingTeam(player->GetTeamNumber());
 	}
 
-        int roundNumber() const { return m_iRoundNumber; }
-        bool roundAlternate() const { return static_cast<bool>(m_iRoundNumber % 2 == 0); }
+    int roundNumber() const { return m_iRoundNumber; }
+    bool roundAlternate() const { return static_cast<bool>(m_iRoundNumber % 2 == 0); }
+
+#ifdef GLOWS_ENABLE
+	void GetTeamGlowColor(int teamNumber, float &r, float &g, float &b)
+	{
+		if (teamNumber == TEAM_JINRAI)
+		{
+			r = static_cast<float>(COLOR_JINRAI.r()/255.f);
+			g = static_cast<float>(COLOR_JINRAI.g()/255.f);
+			b = static_cast<float>(COLOR_JINRAI.b()/255.f);
+		}
+		else if (teamNumber == TEAM_NSF)
+		{
+			r = static_cast<float>(COLOR_NSF.r()/255.f);
+			g = static_cast<float>(COLOR_NSF.g()/255.f);
+			b = static_cast<float>(COLOR_NSF.b()/255.f);
+		}
+		else
+		{
+			r = 0.76f;
+			g = 0.76f;
+			b = 0.76f;
+		}
+	}
+#endif
+
+	const char *GetTeamClantag(const int iTeamNum) const;
 
 public:
 #ifdef GAME_DLL
@@ -287,16 +353,26 @@ public:
 	{
 		int xp;
 		int deaths;
+		bool spawnedThisRound;
+		float deathTime;
 	};
 	// AccountID_t <- CSteamID::GetAccountID
 	CUtlHashtable<AccountID_t, RestoreInfo> m_pRestoredInfos;
+
+	float m_flPauseDur = 0.0f;
+	int m_iPausingTeam = 0;
+	int m_iPausingRound = 0;
+	bool m_bPausedByPreRoundFreeze = false;
+	bool m_bPausingTeamRequestedUnpause = false;
+	bool m_bThinkCheckClantags = false;
 #endif
+	CNetworkVar(float, m_flPauseEnd);
 
 private:
 	void ResetMapSessionCommon();
 
 #ifdef GAME_DLL
-	void SpawnTheGhost(const Vector *origin = NULL);
+	void SpawnTheGhost(const Vector *origin = nullptr);
 	void SelectTheVIP();
 
 	CUtlVector<int> m_pGhostCaps;
@@ -309,10 +385,14 @@ private:
 	bool m_bTeamBeenAwardedDueToCapPrevent = false;
 	int m_arrayiEntPrevCap[MAX_PLAYERS + 1]; // This is to check for cap-prevention workaround attempts
 	int m_iEntPrevCapSize = 0;
+	int m_iPrintHelpCounter = 0;
+	bool m_bGamemodeTypeBeenInitialized = false;
 #endif
 	CNetworkVar(int, m_nRoundStatus);
 	CNetworkVar(int, m_nGameTypeSelected);
 	CNetworkVar(int, m_iRoundNumber);
+	CNetworkString(m_szNeoJinraiClantag, NEO_MAX_CLANTAG_LENGTH);
+	CNetworkString(m_szNeoNSFClantag, NEO_MAX_CLANTAG_LENGTH);
 
 	// Ghost networked variables
 	CNetworkVar(int, m_iGhosterTeam);

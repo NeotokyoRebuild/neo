@@ -2,6 +2,8 @@
 
 #include <vgui_controls/EditablePanel.h>
 #include "GameUI/IGameUI.h"
+#include <steam/isteamhttp.h>
+#include <steam/steam_api.h>
 
 #include "neo_ui.h"
 #include "neo_root_serverbrowser.h"
@@ -52,10 +54,13 @@ enum RootState
 	STATE_SERVERDETAILS,
 	STATE_PLAYERLIST,
 
-	STATE_KEYCAPTURE,
+	// Those that uses CNeoRoot::MainLoopPopup only starts here
+	STATE__POPUPSTART,
+	STATE_KEYCAPTURE = STATE__POPUPSTART,
 	STATE_CONFIRMSETTINGS,
 	STATE_QUIT,
 	STATE_SERVERPASSWORD,
+	STATE_SETTINGSRESETDEFAULT,
 
 	STATE__TOTAL,
 };
@@ -107,7 +112,6 @@ public:
 
 	wchar_t m_wszDispBtnTexts[BTNS_TOTAL][64] = {};
 	int m_iWszDispBtnTextsSizes[BTNS_TOTAL] = {};
-	int m_iBtnWide = 0;
 
 	CNeoRootInput *m_panelCaptureInput = nullptr;
 	void OnRelayedKeyCodeTyped(vgui::KeyCode code);
@@ -167,6 +171,28 @@ public:
 	wchar_t m_wszMap[128];
 
 	wchar_t m_wszServerPassword[128] = {};
+
+	CCallResult<CNeoRoot, HTTPRequestCompleted_t> m_ccallbackHttp;
+	void HTTPCallbackRequest(HTTPRequestCompleted_t *request, bool bIOFailure);
+
+	// Display maximum of 5 items on home screen
+	struct NewsEntry
+	{
+		char szSitePath[64];
+		wchar_t wszTitle[256];
+	};
+	static constexpr int MAX_NEWS = 5;
+	NewsEntry m_news[MAX_NEWS] = {};
+	int m_iNewsSize = 0;
+	void ReadNewsFile(CUtlBuffer &buf);
+	bool m_bShowBrowserLabel = false;
+
+	vgui::FileOpenDialog *m_pFileIODialog = nullptr;
+	MESSAGE_FUNC_CHARPTR(OnFileSelected, "FileSelected", fullpath);
+
+	bool m_bOnLoadingScreen = false;
+	int m_iSavedYOffsets[NeoUI::MAX_SECTIONS] = {};
+	float m_flWideAs43 = 0.0f;
 };
 
 extern CNeoRoot *g_pNeoRoot;

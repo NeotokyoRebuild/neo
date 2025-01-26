@@ -1,11 +1,7 @@
 #include "common_ps_fxc.h"
 
-sampler MotionEffect			: register(s0);
-sampler Original				: register(s1);
-
-const float g_TintColor_R		: register(c0);
-const float g_TintColor_G		: register(c1);
-const float g_TintColor_B		: register(c2);
+sampler Original				: register(s0);
+sampler MVGrad	         	   	: register(s1);
 
 struct PS_INPUT
 {
@@ -14,14 +10,7 @@ struct PS_INPUT
 
 float4 main( const PS_INPUT i ) : COLOR
 {
-	const float4 mvTex = tex2D(MotionEffect, i.vTexCoord);
 	const float4 imTex = tex2D(Original, i.vTexCoord);
-	
-	const float bwTint = (imTex.r + imTex.g + imTex.b) / 3.0f;
-
-	return float4(
-		min(bwTint + g_TintColor_R + mvTex.r, 1),
-		min(bwTint + g_TintColor_G + mvTex.g, 1),
-		min(bwTint + g_TintColor_B + mvTex.b, 1),
-		imTex.a);
+	const float bwTint = pow(imTex.r * 0.2126 + imTex.g * 0.7152 + imTex.b * 0.0722, 0.454545); // 0.454545 ~= 1/2.2
+	return tex1D( MVGrad, bwTint);
 }

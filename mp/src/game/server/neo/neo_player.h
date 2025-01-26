@@ -16,6 +16,27 @@ class INEOPlayerAnimState;
 
 #include "neo_player_shared.h"
 
+enum EDmgMenuSelect
+{
+	DAMAGE_MENU_SELECT_DISMISS = 1,
+	DAMAGE_MENU_SELECT_NEXTPAGE = 2,
+	DAMAGE_MENU_SELECT_DONOTSHOW = 9,
+};
+
+enum EPauseMenuSelect
+{
+	PAUSE_MENU_SELECT_SHORT = 1,
+	PAUSE_MENU_SELECT_LONG = 2,
+	PAUSE_MENU_SELECT_DISMISS = 3,
+};
+
+enum EMenuSelectType
+{
+	MENU_SELECT_TYPE_NONE = 0,
+	MENU_SELECT_TYPE_DMG,
+	MENU_SELECT_TYPE_PAUSE,
+};
+
 class CNEO_Player : public CHL2MP_Player
 {
 public:
@@ -41,7 +62,6 @@ public:
 	virtual void PostThink(void) OVERRIDE;
 	virtual void PreThink(void) OVERRIDE;
 	virtual void PlayerDeathThink(void) OVERRIDE;
-	virtual void SetAnimation(PLAYER_ANIM playerAnim) OVERRIDE;
 	virtual bool HandleCommand_JoinTeam(int team) OVERRIDE;
 	virtual bool ClientCommand(const CCommand &args) OVERRIDE;
 	virtual void CreateViewModel(int viewmodelindex = 0) OVERRIDE;
@@ -106,6 +126,7 @@ public:
 
 	void Weapon_AimToggle(CNEOBaseCombatWeapon *pWep, const NeoWeponAimToggleE toggleType);
 
+	const char *InternalGetNeoPlayerName(const CNEO_Player *viewFrom = nullptr) const;
 	// "neo_name" if available otherwise "name"
 	// Set "viewFrom" if fetching the name in the view of another player
 	const char *GetNeoPlayerName(const CNEO_Player *viewFrom = nullptr) const;
@@ -113,6 +134,7 @@ public:
 	const char *GetNeoPlayerNameDirect() const;
 	void SetNeoPlayerName(const char *newNeoName);
 	void SetClientWantNeoName(const bool b);
+	const char *GetNeoClantag() const;
 
 	void Lean(void);
 	void SoftSuicide(void);
@@ -177,7 +199,13 @@ public:
 	AttackersTotals GetAttackersTotals() const;
 	void StartShowDmgStats(const CTakeDamageInfo *info);
 
+	inline void SetDeathTime(const float deathTime) { m_flDeathTime.Set(deathTime); }
+
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);
+
+	void InputSetPlayerModel( inputdata_t & inputData );
+private:
+	bool m_bAllowGibbing;
 
 private:
 	float GetActiveWeaponSpeedScale() const;
@@ -189,6 +217,7 @@ private:
 	void CheckLeanButtons();
 	void PlayCloakSound();
 	void CloakFlash();
+	void SetCloakState(bool state);
 
 	bool IsAllowedToSuperJump(void);
 
@@ -216,7 +245,7 @@ public:
 	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
 	CNetworkVar(bool, m_bInAim);
 	CNetworkVar(int, m_bInLean);
-	CNetworkVar(bool, m_bDroppedAnything);
+	CNetworkVar(bool, m_bIneligibleForLoadoutPick);
 
 	CNetworkVar(float, m_flCamoAuxLastTime);
 	CNetworkVar(int, m_nVisionLastTick);
@@ -228,6 +257,7 @@ public:
 
 	CNetworkVar(unsigned char, m_NeoFlags);
 	CNetworkString(m_szNeoName, MAX_PLAYER_NAME_LENGTH);
+	CNetworkString(m_szNeoClantag, NEO_MAX_CLANTAG_LENGTH);
 	CNetworkVar(int, m_szNameDupePos);
 
 	// NEO NOTE (nullsystem): As dumb as client sets -> server -> client it may sound,
@@ -235,10 +265,14 @@ public:
 	CNetworkVar(bool, m_bClientWantNeoName);
 
 	bool m_bIsPendingSpawnForThisRound;
+	bool m_bSpawnedThisRound = false;
 	bool m_bKilledInflicted = false; // Server-side var only
 	int m_iTeamDamageInflicted = 0;
 	int m_iTeamKillsInflicted = 0;
 	bool m_bIsPendingTKKick = false; // To not spam the kickid ConCommand
+	bool m_bDoNotShowDmgInfoMenu = false;
+	EMenuSelectType m_eMenuSelectType = MENU_SELECT_TYPE_NONE;
+	bool m_bClientStreamermode = false;
 
 private:
 	bool m_bFirstDeathTick;
@@ -255,8 +289,6 @@ private:
 
 	int m_iDmgMenuCurPage;
 	int m_iDmgMenuNextPage;
-
-	INEOPlayerAnimState* m_pPlayerAnimState;
 
 private:
 	CNEO_Player(const CNEO_Player&);

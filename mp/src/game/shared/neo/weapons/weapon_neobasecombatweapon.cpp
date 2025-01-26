@@ -15,6 +15,9 @@ extern ConVar weaponstay;
 #include "iefx.h"
 #include "c_te_effect_dispatch.h"
 #include "prediction.h"
+#include "hud_crosshair.h"
+#include "ui/neo_hud_crosshair.h"
+#include "model_types.h"
 #endif
 
 #include "basecombatweapon_shared.h"
@@ -41,6 +44,7 @@ BEGIN_NETWORK_TABLE( CNEOBaseCombatWeapon, DT_NEOBaseCombatWeapon )
 	SendPropInt(SENDINFO(m_nNumShotsFired)),
 	SendPropBool(SENDINFO(m_bRoundChambered)),
 	SendPropBool(SENDINFO(m_bRoundBeingChambered)),
+	SendPropExclude("DT_BaseAnimating", "m_nSequence"),
 #endif
 END_NETWORK_TABLE()
 
@@ -121,6 +125,11 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 	},
 	{NEO_WEP_M41,
 		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}}
+	},
+	{NEO_WEP_M41_L,
+		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}},
+		{0.0, 0.0, 0.0, 0.0},
+		{1.0, 2.5, -0.5, 0.0, -0.5, 0.5},
 	},
 	{NEO_WEP_M41_S,
 		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}}
@@ -240,6 +249,11 @@ void CNEOBaseCombatWeapon::Spawn()
 void CNEOBaseCombatWeapon::Equip(CBaseCombatCharacter* pOwner)
 {
 	BaseClass::Equip(pOwner);
+	auto neoOwner = static_cast<CNEO_Player*>(pOwner);
+	if (neoOwner->m_bInThermOpticCamo)
+	{
+		AddEffects(EF_NOSHADOW);
+	}
 #ifndef CLIENT_DLL
 	NEO_WEP_BITS_UNDERLYING_TYPE weapon = GetNeoWepBits();
 	if (weapon & (NEO_WEP_KYLA | NEO_WEP_MILSO | NEO_WEP_TACHI))
@@ -464,42 +478,46 @@ void CNEOBaseCombatWeapon::ItemPreFrame(void)
 }
 
 // Handles lowering the weapon view model when character is sprinting
-void CNEOBaseCombatWeapon::ProcessAnimationEvents(void)
+void CNEOBaseCombatWeapon::ProcessAnimationEvents()
 {
 	CNEO_Player* pOwner = static_cast<CNEO_Player*>(ToBasePlayer(GetOwner()));
 	if (!pOwner)
+	{
 		return;
+	}
 
-	if (!m_bLowered && (pOwner->IsSprinting()) && !m_bInReload && !m_bRoundBeingChambered)
+	const auto next = [this](const int activity, const float nextAttackDelay = 0.2) {
+		SendWeaponAnim(activity);
+		if (GetNeoWepBits() & NEO_WEP_THROWABLE)
+		{
+			return;
+		}
+		m_flNextPrimaryAttack = max(gpGlobals->curtime + nextAttackDelay, m_flNextPrimaryAttack);
+		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
+	};
+
+	if (!m_bLowered && !m_bInReload && !m_bRoundBeingChambered &&
+		(pOwner->IsSprinting() || pOwner->GetMoveType() == MOVETYPE_LADDER))
 	{
 		m_bLowered = true;
-		SendWeaponAnim(ACT_VM_IDLE_LOWERED);
-		m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
-		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
+		next(ACT_VM_IDLE_LOWERED);
 	}
-	else if (m_bLowered && !(pOwner->IsSprinting()))
+	else if (m_bLowered && !(pOwner->IsSprinting() || pOwner->GetMoveType() == MOVETYPE_LADDER))
 	{
 		m_bLowered = false;
-		SendWeaponAnim(ACT_VM_IDLE);
-		m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
-		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
+		next(ACT_VM_IDLE);
 	}
 	else if (m_bLowered && m_bRoundBeingChambered)
 	{ // For bolt action weapons
 		m_bLowered = false;
-		SendWeaponAnim(ACT_VM_PULLBACK);
-		m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
-		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
+		next(ACT_VM_PULLBACK, 1.2f);
 	}
 
-	if (m_bLowered)
+	else if (m_bLowered && gpGlobals->curtime > m_flNextPrimaryAttack)
 	{
-		if (gpGlobals->curtime > m_flNextPrimaryAttack)
-		{
-			SendWeaponAnim(ACT_VM_IDLE_LOWERED);
-			m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
-			m_flNextSecondaryAttack = m_flNextPrimaryAttack;
-		}
+		SetWeaponIdleTime(gpGlobals->curtime + 0.2);
+		m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
+		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
 	}
 }
 
@@ -795,7 +813,7 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 	}
 
 	// Only the player fires this way so we can cast
-	CBasePlayer* pPlayer = ToBasePlayer(GetOwner());
+	auto pPlayer = static_cast<CNEO_Player*>(GetOwner());
 
 	if (!pPlayer)
 	{
@@ -806,9 +824,10 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 		pPlayer->DoMuzzleFlash();
 
 	SendWeaponAnim(GetPrimaryAttackActivity());
+	SetWeaponIdleTime(gpGlobals->curtime + 2.0);
 
 	// player "shoot" animation
-	pPlayer->SetAnimation(PLAYER_ATTACK1);
+	pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
 
 	FireBulletsInfo_t info;
 	info.m_vecSrc = pPlayer->Weapon_ShootPosition();
@@ -942,6 +961,36 @@ void CNEOBaseCombatWeapon::ProcessMuzzleFlashEvent()
 	DispatchMuzzleParticleEffect(iAttachment);
 }
 
+void CNEOBaseCombatWeapon::DrawCrosshair()
+{
+	auto *player = C_NEO_Player::GetLocalNEOPlayer();
+	if (!player)
+	{
+		return;
+	}
+
+	// NEO TODO (nullsystem): Put some X on crosshair if aiming at teammate, see comment
+	// in C_BaseCombatWeapon::DrawCrosshair
+	// EX: bool bOnTarget = (m_iState == WEAPON_IS_ONTARGET);
+
+	auto *crosshair = GET_HUDELEMENT(CHudCrosshair);
+	if (!crosshair)
+	{
+		return;
+	}
+
+	if (GetWpnData().iconCrosshair)
+	{
+		const Color color(neo_cl_crosshair_color_r.GetInt(), neo_cl_crosshair_color_g.GetInt(),
+						  neo_cl_crosshair_color_b.GetInt(), neo_cl_crosshair_color_a.GetInt());
+		crosshair->SetCrosshair(GetWpnData().iconCrosshair, color);
+	}
+	else
+	{
+		crosshair->ResetCrosshair();
+	}
+}
+
 void CNEOBaseCombatWeapon::DispatchMuzzleParticleEffect(int iAttachment) {
 	static constexpr char particleName[] = "ntr_muzzle_source";
 	constexpr bool resetAllParticlesOnEntity = false;
@@ -1014,13 +1063,73 @@ bool CNEOBaseCombatWeapon::ShouldDraw(void)
 	return true;
 }
 
+extern ConVar mat_neo_toc_test;
 int CNEOBaseCombatWeapon::DrawModel(int flags)
 {
 	C_BaseCombatCharacter* localPlayer = C_BasePlayer::GetLocalPlayer();
 	if (GetOwner() == localPlayer && ShouldDrawLocalPlayerViewModel())
 		return 0;
 
-	return BaseClass::DrawModel(flags);
+	if (flags & STUDIO_IGNORE_NEO_EFFECTS || !(flags & STUDIO_RENDER))
+	{
+		return BaseClass::DrawModel(flags);
+	}
+
+	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if (!pLocalPlayer)
+	{
+		Assert(false);
+		return BaseClass::DrawModel(flags);
+	}
+
+	auto pOwner = static_cast<C_NEO_Player *>(GetOwner());
+	bool inThermalVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT;
+
+	int ret = 0;
+	if (!pOwner || !pOwner->IsCloaked() || inThermalVision)
+	{
+		ret |= BaseClass::DrawModel(flags);
+	}
+
+	if ((pOwner && pOwner->IsCloaked()) && !inThermalVision)
+	{
+		mat_neo_toc_test.SetValue(pOwner->GetCloakFactor());
+		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
+		modelrender->ForcedMaterialOverride(pass);
+		ret |= BaseClass::DrawModel(flags);
+		modelrender->ForcedMaterialOverride(nullptr);
+	}
+	else if (inThermalVision && (pOwner && !pOwner->IsCloaked()))
+	{
+		IMaterial* pass = materials->FindMaterial("dev/thermal_model", TEXTURE_GROUP_MODEL);
+		modelrender->ForcedMaterialOverride(pass);
+		ret |= BaseClass::DrawModel(flags);
+		modelrender->ForcedMaterialOverride(nullptr);
+	}
+
+	return ret;
+}
+
+RenderGroup_t CNEOBaseCombatWeapon::GetRenderGroup()
+{
+	auto pPlayer = static_cast<C_NEO_Player*>(GetOwner());
+	if (pPlayer)
+	{
+		return pPlayer->IsCloaked() ? RENDER_GROUP_TRANSLUCENT_ENTITY : RENDER_GROUP_OPAQUE_ENTITY;
+	}
+
+	return BaseClass::GetRenderGroup();
+}
+
+bool CNEOBaseCombatWeapon::UsesPowerOfTwoFrameBufferTexture()
+{
+	auto pPlayer = static_cast<C_NEO_Player*>(GetOwner());
+	if (pPlayer)
+	{
+		return pPlayer->IsCloaked();
+	}
+
+	return BaseClass::UsesPowerOfTwoFrameBufferTexture();
 }
 #endif
 

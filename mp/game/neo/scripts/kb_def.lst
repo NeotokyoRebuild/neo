@@ -48,3 +48,4 @@
 "MOUSE1" "+attack"
 "MOUSE2" "+aim"
 "PAUSE" "pause"
+"`" "neo_toggleconsole"

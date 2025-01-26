@@ -5,33 +5,14 @@
 #include <vgui/IInput.h>
 #include <vgui_controls/Controls.h>
 
+#include "neo_misc.h"
+
 using namespace vgui;
 
 static const wchar_t *ENABLED_LABELS[] = {
 	L"Disabled",
 	L"Enabled",
 };
-
-#define IN_BETWEEN_AR(min, cmp, max) (((min) <= (cmp)) && ((cmp) < (max)))
-#define IN_BETWEEN_EQ(min, cmp, max) (((min) <= (cmp)) && ((cmp) <= (max)))
-
-[[nodiscard]] static int LoopAroundMinMax(const int iValue, const int iMin, const int iMax)
-{
-	if (iValue < iMin)
-	{
-		return iMax;
-	}
-	else if (iValue > iMax)
-	{
-		return iMin;
-	}
-	return iValue;
-}
-
-[[nodiscard]] static int LoopAroundInArray(const int iValue, const int iSize)
-{
-	return LoopAroundMinMax(iValue, 0, iSize - 1);
-}
 
 namespace NeoUI
 {
@@ -65,22 +46,29 @@ void SwapFont(const EFont eFont)
 	surface()->DrawSetTextFont(g_pCtx->fonts[g_pCtx->eFont].hdl);
 }
 
+void SwapColorNormal(const Color &color)
+{
+	g_pCtx->normalBgColor = color;
+	surface()->DrawSetColor(g_pCtx->normalBgColor);
+}
+
 void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode, const wchar_t *wszTitle, const char *pSzCtxName)
 {
 	g_pCtx = ctx;
 	g_pCtx->eMode = eMode;
 	g_pCtx->iLayoutY = -(g_pCtx->iYOffset[0] * g_pCtx->iRowTall);
 	g_pCtx->iWidget = 0;
-	g_pCtx->iWgXPos = static_cast<int>(g_pCtx->dPanel.wide * 0.4f);
 	g_pCtx->iSection = 0;
 	g_pCtx->iHasMouseInPanel = 0;
 	g_pCtx->iHorizontalWidth = 0;
 	g_pCtx->iHorizontalMargin = 0;
+	g_pCtx->flWgXPerc = 0.4f;
 	g_pCtx->bValueEdited = false;
 	g_pCtx->eButtonTextStyle = TEXTSTYLE_CENTER;
 	g_pCtx->eLabelTextStyle = TEXTSTYLE_LEFT;
 	g_pCtx->bTextEditIsPassword = false;
 	g_pCtx->selectBgColor = COLOR_NEOPANELSELECTBG;
+	g_pCtx->normalBgColor = COLOR_NEOPANELACCENTBG;
 	// Different pointer, change context
 	if (g_pCtx->pSzCurCtxName != pSzCtxName)
 	{
@@ -206,6 +194,7 @@ void BeginSection(const bool bDefaultFocus)
 	g_pCtx->iLayoutY = -(g_pCtx->iYOffset[g_pCtx->iSection] * g_pCtx->iRowTall);
 	g_pCtx->iWidget = 0;
 	g_pCtx->iCanActives = 0;
+	g_pCtx->iWgXPos = static_cast<int>(g_pCtx->dPanel.wide * g_pCtx->flWgXPerc);
 
 	g_pCtx->iMouseRelX = g_pCtx->iMouseAbsX - g_pCtx->dPanel.x;
 	g_pCtx->iMouseRelY = g_pCtx->iMouseAbsY - g_pCtx->dPanel.y;
@@ -243,7 +232,7 @@ void BeginSection(const bool bDefaultFocus)
 								  g_pCtx->dPanel.x + g_pCtx->dPanel.wide,
 								  g_pCtx->dPanel.y + g_pCtx->dPanel.tall);
 
-		surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
+		surface()->DrawSetColor(g_pCtx->normalBgColor);
 		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
 		break;
 	case MODE_KEYPRESSED:
@@ -272,9 +261,20 @@ void EndSection()
 
 	// Scroll handling
 	const int iRowsInScreen = g_pCtx->dPanel.tall / g_pCtx->iRowTall;
-	if (g_pCtx->eMode == MODE_MOUSEWHEELED && g_pCtx->bMouseInPanel)
+	const bool bHasScroll = (g_pCtx->iPartitionY > iRowsInScreen);
+	vgui::IntRect rectScrollArea = (bHasScroll) ?
+			vgui::IntRect{
+				.x0 = g_pCtx->dPanel.x + g_pCtx->dPanel.wide,
+				.y0 = g_pCtx->dPanel.y,
+				.x1 = g_pCtx->dPanel.x + g_pCtx->dPanel.wide + g_pCtx->iRowTall,
+				.y1 = g_pCtx->dPanel.y + g_pCtx->dPanel.tall,
+			} : vgui::IntRect{};
+	const bool bMouseInScrollbar = bHasScroll && InRect(rectScrollArea, g_pCtx->iMouseAbsX, g_pCtx->iMouseAbsY);
+	const bool bMouseInWheelable = g_pCtx->bMouseInPanel || bMouseInScrollbar;
+
+	if (g_pCtx->eMode == MODE_MOUSEWHEELED && bMouseInWheelable)
 	{
-		if (g_pCtx->iPartitionY <= iRowsInScreen)
+		if (!bHasScroll)
 		{
 			g_pCtx->iYOffset[g_pCtx->iSection] = 0;
 		}
@@ -287,7 +287,7 @@ void EndSection()
 	else if (g_pCtx->eMode == MODE_KEYPRESSED && (g_pCtx->eCode == KEY_DOWN || g_pCtx->eCode == KEY_UP) &&
 			 (g_pCtx->iActiveSection == g_pCtx->iSection || g_pCtx->iHotSection == g_pCtx->iSection))
 	{
-		if (g_pCtx->iPartitionY <= iRowsInScreen)
+		if (!bHasScroll)
 		{
 			// Disable scroll if it doesn't need to
 			g_pCtx->iYOffset[g_pCtx->iSection] = 0;
@@ -301,6 +301,57 @@ void EndSection()
 		{
 			// Scrolling down post visible, re-adjust
 			g_pCtx->iYOffset[g_pCtx->iSection] = clamp(g_pCtx->iActive - iRowsInScreen + 1, 0, g_pCtx->iWidget - iRowsInScreen);
+		}
+	}
+
+	// Scroll bar area painting and mouse interaction (no keyboard as that's handled by active widgets)
+	if (bHasScroll)
+	{
+		const int iYStart = g_pCtx->iYOffset[g_pCtx->iSection];
+		const int iYEnd = iYStart + iRowsInScreen;
+		const float flYPercStart = iYStart / static_cast<float>(g_pCtx->iWidget);
+		const float flYPercEnd = iYEnd / static_cast<float>(g_pCtx->iWidget);
+		vgui::IntRect rectHandle{
+			g_pCtx->dPanel.x + g_pCtx->dPanel.wide,
+			g_pCtx->dPanel.y + static_cast<int>(g_pCtx->dPanel.tall * flYPercStart),
+			g_pCtx->dPanel.x + g_pCtx->dPanel.wide + g_pCtx->iRowTall,
+			g_pCtx->dPanel.y + static_cast<int>(g_pCtx->dPanel.tall * flYPercEnd)
+		};
+
+		bool bAlterOffset = false;
+		switch (g_pCtx->eMode)
+		{
+		case MODE_PAINT:
+			surface()->DrawSetColor(g_pCtx->bgColor);
+			surface()->DrawFilledRectArray(&rectScrollArea, 1);
+			surface()->DrawSetColor(g_pCtx->abYMouseDragOffset[g_pCtx->iSection] ? g_pCtx->selectBgColor : g_pCtx->normalBgColor);
+			surface()->DrawFilledRectArray(&rectHandle, 1);
+			break;
+		case MODE_MOUSEPRESSED:
+			g_pCtx->abYMouseDragOffset[g_pCtx->iSection] = bMouseInScrollbar;
+			if (bMouseInScrollbar)
+			{
+				// If not pressed on handle, set the drag at the middle
+				const bool bInHandle = InRect(rectHandle, g_pCtx->iMouseAbsX, g_pCtx->iMouseAbsY);
+				g_pCtx->iStartMouseDragOffset[g_pCtx->iSection] = (bInHandle) ?
+							(g_pCtx->iMouseAbsY - rectHandle.y0) :((rectHandle.y1 - rectHandle.y0) / 2.0f);
+				bAlterOffset = true;
+			}
+			break;
+		case MODE_MOUSERELEASED:
+			g_pCtx->abYMouseDragOffset[g_pCtx->iSection] = false;
+			break;
+		case MODE_MOUSEMOVED:
+			bAlterOffset = g_pCtx->abYMouseDragOffset[g_pCtx->iSection];
+			break;
+		default:
+			break;
+		}
+
+		if (bAlterOffset)
+		{
+			const float flXPercMouse = static_cast<float>(g_pCtx->iMouseRelY - g_pCtx->iStartMouseDragOffset[g_pCtx->iSection]) / static_cast<float>(g_pCtx->dPanel.tall);
+			g_pCtx->iYOffset[g_pCtx->iSection] = clamp(flXPercMouse * g_pCtx->iWidget, 0, (g_pCtx->iWidget - iRowsInScreen));
 		}
 	}
 
@@ -376,7 +427,7 @@ static void InternalUpdatePartitionState(const GetMouseinFocusedRet wdgState)
 	++g_pCtx->iWidget;
 	if (wdgState.bActive || wdgState.bHot)
 	{
-		surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
+		surface()->DrawSetColor(g_pCtx->normalBgColor);
 		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
 	}
 }
@@ -394,12 +445,78 @@ void Pad()
 	}
 }
 
-void Label(const wchar_t *wszText)
+void GCtxSkipActive()
 {
 	if (g_pCtx->iWidget == g_pCtx->iActive && g_pCtx->iSection == g_pCtx->iActiveSection)
 	{
 		g_pCtx->iActive += g_pCtx->iActiveDirection;
 	}
+}
+
+void LabelWrap(const wchar_t *wszText)
+{
+	if (!wszText || wszText[0] == '\0')
+	{
+		NeoUI::Pad();
+		return;
+	}
+
+	GCtxSkipActive();
+	int iLines = 0;
+	if (IN_BETWEEN_AR(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall))
+	{
+		const auto *pFontI = &g_pCtx->fonts[g_pCtx->eFont];
+		const int iWszSize = V_wcslen(wszText);
+		int iSumWidth = 0;
+		int iStart = 0;
+		int iYOffset = 0;
+		int iLastSpace = 0;
+		for (int i = 0; i < iWszSize; ++i)
+		{
+			const wchar_t ch = wszText[i];
+			if (ch == L' ')
+			{
+				iLastSpace = i;
+			}
+			const int chWidth = surface()->GetCharacterWidth(pFontI->hdl, ch);
+			iSumWidth += chWidth;
+			if (iSumWidth >= g_pCtx->dPanel.wide)
+			{
+				if (g_pCtx->eMode == MODE_PAINT)
+				{
+					GCtxDrawSetTextPos(g_pCtx->iMarginX, g_pCtx->iLayoutY + pFontI->iYOffset + iYOffset);
+					surface()->DrawPrintText(wszText + iStart, iLastSpace - iStart);
+				}
+				++iLines;
+
+				iYOffset += g_pCtx->iRowTall;
+				iSumWidth = 0;
+				iStart = iLastSpace + 1;
+				i = iLastSpace;
+			}
+		}
+		if (iSumWidth > 0)
+		{
+			if (g_pCtx->eMode == MODE_PAINT)
+			{
+				GCtxDrawSetTextPos(g_pCtx->iMarginX, g_pCtx->iLayoutY + pFontI->iYOffset + iYOffset);
+				surface()->DrawPrintText(wszText + iStart, iWszSize - iStart);
+			}
+			++iLines;
+		}
+	}
+
+	g_pCtx->iPartitionY += iLines;
+	g_pCtx->iLayoutY += (g_pCtx->iRowTall * iLines);
+
+	++g_pCtx->iWidget;
+	surface()->DrawSetColor(g_pCtx->normalBgColor);
+	surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
+}
+
+void Label(const wchar_t *wszText)
+{
+	GCtxSkipActive();
 	if (IN_BETWEEN_AR(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall) && g_pCtx->eMode == MODE_PAINT)
 	{
 		InternalLabel(wszText, g_pCtx->eLabelTextStyle == TEXTSTYLE_CENTER);
@@ -409,10 +526,7 @@ void Label(const wchar_t *wszText)
 
 void Label(const wchar_t *wszLabel, const wchar_t *wszText)
 {
-	if (g_pCtx->iWidget == g_pCtx->iActive && g_pCtx->iSection == g_pCtx->iActiveSection)
-	{
-		g_pCtx->iActive += g_pCtx->iActiveDirection;
-	}
+	GCtxSkipActive();
 	if (IN_BETWEEN_AR(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall) && g_pCtx->eMode == MODE_PAINT)
 	{
 		const int iTmpMarginX = g_pCtx->iMarginX;
@@ -593,7 +707,7 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 			{
 				// NEO NOTE (nullsystem): On the final tab, just expand it to the end width as iTabWide isn't always going
 				// to give a properly aligned width
-				surface()->DrawSetColor(bHoverTab ? COLOR_NEOPANELSELECTBG : COLOR_NEOPANELACCENTBG);
+				surface()->DrawSetColor(bHoverTab ? COLOR_NEOPANELSELECTBG : g_pCtx->normalBgColor);
 				GCtxDrawFilledRectXtoX(iXPosTab, (i == (iLabelsSize - 1)) ? (g_pCtx->dPanel.wide) : (iXPosTab + iTabWide));
 			}
 			const wchar_t *wszText = wszLabelsList[i];
@@ -663,6 +777,17 @@ static float ClampAndLimitDp(const float curValue, const float flMin, const floa
 	nextValue = clamp(nextValue, flMin, flMax);
 	nextValue = roundf(nextValue * flDpMult) / flDpMult;
 	return nextValue;
+}
+
+void Progress(const float flValue, const float flMin, const float flMax)
+{
+	GCtxSkipActive();
+	if (IN_BETWEEN_AR(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall) && g_pCtx->eMode == MODE_PAINT)
+	{
+		const float flPerc = (flValue - flMin) / (flMax - flMin);
+		GCtxDrawFilledRectXtoX(0, flPerc * g_pCtx->dPanel.wide);
+	}
+	InternalUpdatePartitionState(GetMouseinFocusedRet{true, true});
 }
 
 void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, const float flMax,
@@ -873,7 +998,18 @@ void SliderInt(const wchar_t *wszLeftLabel, int *iValue, const int iMin, const i
 	}
 }
 
-void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
+void SliderU8(const wchar_t *wszLeftLabel, uint8 *ucValue, const uint8 iMin, const uint8 iMax, const uint8 iStep, const wchar_t *wszSpecialText)
+{
+	const float flOrigValue = *ucValue;
+	float flValue = flOrigValue;
+	Slider(wszLeftLabel, &flValue, static_cast<float>(iMin), static_cast<float>(iMax), 0, static_cast<float>(iStep), wszSpecialText);
+	if (flValue != flOrigValue)
+	{
+		*ucValue = static_cast<uint8>(RoundFloatToInt(flValue));
+	}
+}
+
+void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxBytes)
 {
 	static wchar_t staticWszPasswordChars[256] = {};
 	if (staticWszPasswordChars[0] == L'\0')
@@ -957,9 +1093,11 @@ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
 		{
 			if (wdgState.bActive && iswprint(g_pCtx->unichar))
 			{
-				int iTextSize = V_wcslen(wszText);
-				if (iTextSize < iMaxSize)
+				static char szTmpANSICheck[MAX_TEXTINPUT_U8BYTES_LIMIT];
+				const int iTextInU8Bytes = g_pVGuiLocalize->ConvertUnicodeToANSI(wszText, szTmpANSICheck, sizeof(szTmpANSICheck));
+				if (iTextInU8Bytes < iMaxBytes)
 				{
+					int iTextSize = V_wcslen(wszText);
 					wszText[iTextSize++] = g_pCtx->unichar;
 					wszText[iTextSize] = L'\0';
 					g_pCtx->bValueEdited = true;
@@ -979,6 +1117,27 @@ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxSize)
 bool Bind(const ButtonCode_t eCode)
 {
 	return g_pCtx->eMode == MODE_KEYPRESSED && g_pCtx->eCode == eCode;
+}
+
+void OpenURL(const char *szBaseUrl, const char *szPath)
+{
+	Assert(szPath && szPath[0] == '/');
+	if (!szPath || szPath[0] != '/')
+	{
+		// Must start with / otherwise don't open URL
+		return;
+	}
+
+	static constexpr char CMD[] =
+#ifdef _WIN32
+		"start"
+#else
+		"xdg-open"
+#endif
+		;
+	char syscmd[512] = {};
+	V_sprintf_safe(syscmd, "%s %s%s", CMD, szBaseUrl, szPath);
+	system(syscmd);
 }
 
 }  // namespace NeoUI

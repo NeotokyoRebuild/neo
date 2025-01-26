@@ -46,7 +46,6 @@ public:
 
 	void	Precache(void);
 	void	PrimaryAttack(void);
-	void	SecondaryAttack(void);
 	void	DecrementAmmo(CBaseCombatCharacter *pOwner);
 	void	ItemPostFrame(void);
 
@@ -57,17 +56,16 @@ public:
 
 	void	Drop(const Vector& vecVelocity) OVERRIDE;
 	bool	CanDrop(void) OVERRIDE;
+	virtual bool CanPerformSecondaryAttack() const override final { return false; }
 
 #ifndef CLIENT_DLL
 	void Operator_HandleAnimEvent(animevent_t *pEvent, CBaseCombatCharacter *pOperator);
 #endif
 
-	void	ThrowGrenade(CBasePlayer *pPlayer, bool isAlive = true, CBaseEntity *pAttacker = NULL);
-	void	LobGrenade(CBasePlayer *pPlayer);
+	void	ThrowGrenade(CNEO_Player *pPlayer, bool isAlive = true, CBaseEntity *pAttacker = NULL);
 	bool	IsPrimed() const { return (m_AttackPaused != 0); }
 
 private:
-	void	RollGrenade(CBasePlayer *pPlayer);
 	// Check a throw from vecSrc.  If not valid, move the position back along the line to vecEye
 	void	CheckThrowPosition(CBasePlayer *pPlayer, const Vector &vecEye, Vector &vecSrc);
 

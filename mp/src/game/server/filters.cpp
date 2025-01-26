@@ -323,6 +323,41 @@ BEGIN_DATADESC( FilterTeam )
 
 END_DATADESC()
 
+#ifdef NEO
+#include "neo_player.h"
+
+// ###################################################################
+//	> FilterNeoClass
+// ###################################################################
+class FilterNeoClass : public CBaseFilter
+{
+	DECLARE_CLASS(FilterNeoClass, CBaseFilter);
+	DECLARE_DATADESC();
+
+public:
+	int m_iFilterNeoClass;
+
+	bool PassesFilterImpl(CBaseEntity* pCaller, CBaseEntity* pEntity)
+	{
+		if (!pEntity || !pEntity->IsPlayer())
+			return false;
+
+		CNEO_Player* pPlayer = static_cast<CNEO_Player*>(pEntity);
+
+		return (pPlayer->GetClass() == m_iFilterNeoClass);
+	}
+};
+
+LINK_ENTITY_TO_CLASS(filter_activator_neoclass, FilterNeoClass);
+
+BEGIN_DATADESC(FilterNeoClass)
+
+	// Keyfields
+	DEFINE_KEYFIELD(m_iFilterNeoClass, FIELD_INTEGER, "filterneoclass"),
+
+END_DATADESC()
+
+#endif // NEO
 
 // ###################################################################
 //	> FilterMassGreater
