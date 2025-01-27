@@ -224,6 +224,12 @@ public:
 			return;
 		}
 
+		auto playerNeoClass = C_NEO_Player::GetLocalNEOPlayer()->m_iNeoClass;
+		if (playerNeoClass == NEO_CLASS_PSYCHO)
+		{
+			return;
+		}
+
 		auto panel = dynamic_cast<vgui::EditablePanel*>(GetClientModeNormal()->
 			GetViewport()->FindChildByName(PANEL_NEO_LOADOUT));
 
@@ -299,7 +305,7 @@ public:
 		}
 
 		auto playerNeoClass = C_NEO_Player::GetLocalNEOPlayer()->m_iNeoClass;
-		if (playerNeoClass == NEO_CLASS_VIP)
+		if (playerNeoClass == NEO_CLASS_VIP || playerNeoClass == NEO_CLASS_PSYCHO)
 		{
 			return;
 		}
@@ -821,9 +827,9 @@ void C_NEO_Player::PreThink( void )
 	}
 	if (IsSprinting() && !IsAirborne())
 	{
-		static constexpr float RECON_SPRINT_SPEED_MODIFIER = 0.75;
-		static constexpr float OTHER_CLASSES_SPRINT_SPEED_MODIFIER = 0.6;
-		speed /= m_iNeoClass == NEO_CLASS_RECON ? RECON_SPRINT_SPEED_MODIFIER : OTHER_CLASSES_SPRINT_SPEED_MODIFIER;
+		static constexpr float RECON_SPRINT_SPEED_MODIFIER = 1.35;
+		static constexpr float OTHER_CLASSES_SPRINT_SPEED_MODIFIER = 1.6;
+		speed *= m_iNeoClass == NEO_CLASS_RECON ? RECON_SPRINT_SPEED_MODIFIER : OTHER_CLASSES_SPRINT_SPEED_MODIFIER;
 	}
 	if (IsInAim())
 	{
@@ -1241,6 +1247,7 @@ void C_NEO_Player::SuperJump(void)
 	{
 		forward *= 2;
 		SetClingingToWall(false);
+		SetTouchingWall(false);
 	}
 
 	// We don't give an upwards boost aside from regular jump

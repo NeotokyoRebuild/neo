@@ -3200,7 +3200,14 @@ int C_BaseAnimating::DrawModel( int flags )
 			}
 		}
 		bool isMoving = false;
-		if (inMotionVision && vel.LengthSqr() > 0.25 && !IsViewModel() && !(extraFlags & STUDIO_IGNORE_NEO_EFFECTS)) // MOVING_SPEED_MINIMUM ^2
+		bool isPsycho = false;
+		auto player = IsPlayer() ? this : GetMoveParent() ? GetMoveParent()->IsPlayer() ? GetMoveParent() : nullptr : nullptr;
+		if (player)
+		{
+			auto neoPlayer = static_cast<C_NEO_Player *>(player);
+			isPsycho = neoPlayer->GetClass() == NEO_CLASS_PSYCHO;
+		}
+		if (inMotionVision && vel.LengthSqr() > 0.25 && !IsViewModel() && !isPsycho && !(extraFlags & STUDIO_IGNORE_NEO_EFFECTS) ) // MOVING_SPEED_MINIMUM ^2
 		{
 			isMoving = true;
 			if (!IsFollowingEntity())

@@ -472,6 +472,10 @@ const char* CNEOModelManager::GetCorpseModel(NeoSkin nSkin, NeoClass nClass,
 	{
 		return vipModelDead;
 	}
+	if (nClass == NEO_CLASS_PSYCHO)
+	{
+		nClass = NEO_CLASS_RECON;
+	}
 
 	const int index =
 		(NEO_GIB_ENUM_COUNT * NEO_SKIN_ENUM_COUNT * numClasses * GetTeamArrOffset(iTeam))

@@ -305,14 +305,14 @@ void SetClass(const CCommand &command)
 		// Our NeoClass enum is zero indexed, so we subtract one.
 		int nextClass = atoi(command.ArgV()[1]) - 1;
 
-		if ((NEORules()->GetGameType() == NeoGameType::VIP && player->m_iNeoClass == NEO_CLASS_VIP) ||
-			NEORules()->GetGameType() == NeoGameType::PSY && player->m_iNeoClass == NEO_CLASS_PSYCHO)
+		if ((NEORules()->GetGameType() == NEO_GAME_TYPE_VIP && player->m_iNeoClass == NEO_CLASS_VIP) ||
+			NEORules()->GetGameType() == NEO_GAME_TYPE_PSY && player->m_iNeoClass == NEO_CLASS_PSYCHO)
 		{
 			return;
 		}
 		else
 		{
-			nextClass = clamp(nextClass, NEO_CLASS_RECON, NEO_CLASS_SUPPORT);
+			nextClass = clamp(nextClass, NEO_CLASS_RECON, NEO_CLASS_PSYCHO);
 		}
 
 		player->RequestSetClass(nextClass);
@@ -692,9 +692,9 @@ void CNEO_Player::PreThink(void)
 	}
 	if (IsSprinting() && !IsAirborne())
 	{
-		static constexpr float RECON_SPRINT_SPEED_MODIFIER = 0.75;
-		static constexpr float OTHER_CLASSES_SPRINT_SPEED_MODIFIER = 0.6;
-		speed /= (m_iNeoClass == NEO_CLASS_RECON || m_iNeoClass == NEO_CLASS_PSYCHO) ? RECON_SPRINT_SPEED_MODIFIER : OTHER_CLASSES_SPRINT_SPEED_MODIFIER;
+		static constexpr float RECON_SPRINT_SPEED_MODIFIER = 1.35;
+		static constexpr float OTHER_CLASSES_SPRINT_SPEED_MODIFIER = 1.6;
+		speed *= (m_iNeoClass == NEO_CLASS_RECON || m_iNeoClass == NEO_CLASS_PSYCHO) ? RECON_SPRINT_SPEED_MODIFIER : OTHER_CLASSES_SPRINT_SPEED_MODIFIER;
 	}
 	if (m_bInAim.Get())
 	{
@@ -757,21 +757,18 @@ void CNEO_Player::PreThink(void)
 					// each frame to never really run out.
 					CloakPower_Drain(deltaTime * CLOAK_AUX_COST);
 
-				if (m_HL2Local.m_cloakPower <= 0.1f)
-				{
-					SetCloakState(false);
-					m_flCamoAuxLastTime = 0;
-				}
-				else
-				{
-					m_flCamoAuxLastTime = gpGlobals->curtime;
+					if (m_HL2Local.m_cloakPower <= 0.1f)
+					{
+						SetCloakState(false);
+						m_flCamoAuxLastTime = 0;
+					}
+					else
+					{
+						m_flCamoAuxLastTime = gpGlobals->curtime;
+					}
 				}
 			}
 		}
-	}
-	else
-	{
-		m_flCamoAuxLastTime = 0;
 	}
 
 	if (IsAlive())

@@ -9,6 +9,7 @@
 #define ASSAULT_WEAPON_LOADOUTS 12
 #define SUPPORT_WEAPON_LOADOUTS 9
 #define VIP_WEAPON_LOADOUTS 9
+#define PSYCHO_WEAPON_LOADOUTS 0
 
 class CLoadoutWeaponClass
 {
@@ -42,7 +43,7 @@ public:
 
 	static int GetNumberOfLoadoutWeapons(int rank, int classType, int isDev)
 	{
-		if (classType < NEO_CLASS_RECON || classType > NEO_CLASS_VIP)
+		if (classType < NEO_CLASS_RECON || classType > NEO_CLASS_PSYCHO)
 		{ // We don't have a loadout for this class
 			Assert(false);
 			return 0;
@@ -61,6 +62,8 @@ public:
 			return iterateThroughLoadout(rank, s_SupportLoadoutWeapons, SUPPORT_WEAPON_LOADOUTS);
 		case NEO_CLASS_VIP:
 			return iterateThroughLoadout(rank, s_VIPLoadoutWeapons, VIP_WEAPON_LOADOUTS);
+		case NEO_CLASS_PSYCHO:
+			return 0;
 		default:
 			Assert(false);
 			return 0;
@@ -78,6 +81,8 @@ public:
 			return SUPPORT_WEAPON_LOADOUTS;
 		case NEO_CLASS_VIP:
 			return VIP_WEAPON_LOADOUTS;
+		case NEO_CLASS_PSYCHO:
+			return PSYCHO_WEAPON_LOADOUTS;
 		default:
 			return 0;
 		}
@@ -101,6 +106,8 @@ public:
 			return "";
 		case NEO_CLASS_VIP:
 			if (weaponPositionInLoadout < VIP_WEAPON_LOADOUTS) { return s_VIPLoadoutWeapons[weaponPositionInLoadout].m_szVguiImage; }
+			return "";
+		case NEO_CLASS_PSYCHO:
 			return "";
 		default:
 			Assert(false);
@@ -127,6 +134,8 @@ public:
 		case NEO_CLASS_VIP:
 			if (weaponPositionInLoadout < VIP_WEAPON_LOADOUTS) { return s_VIPLoadoutWeapons[weaponPositionInLoadout].m_szVguiImageNo; }
 			return "";
+		case NEO_CLASS_PSYCHO:
+			return "";
 		default:
 			Assert(false);
 			return "";
@@ -152,6 +161,8 @@ public:
 			return "";
 		case NEO_CLASS_VIP:
 			if (weaponPositionInLoadout < VIP_WEAPON_LOADOUTS) { return s_VIPLoadoutWeapons[weaponPositionInLoadout].m_szWeaponEntityName; }
+			return "";
+		case NEO_CLASS_PSYCHO:
 			return "";
 		default:
 			Assert(false);

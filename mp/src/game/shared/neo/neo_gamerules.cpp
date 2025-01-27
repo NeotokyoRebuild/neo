@@ -1168,7 +1168,7 @@ void CNEORules::Think(void)
 		}
 	}
 
-	if (GetGameType() == NeoGameType::VIP && m_nRoundStatus == NeoRoundStatus::RoundLive && !m_pGhost)
+	if (GetGameType() == NEO_GAME_TYPE_VIP && m_nRoundStatus == NeoRoundStatus::RoundLive && !m_pGhost)
 	{
 		if (!m_pVIP)
 		{
@@ -2240,6 +2240,8 @@ const SZWSZTexts NEO_GAME_TYPE_DESC_STRS[NEO_GAME_TYPE__TOTAL] = {
 	SZWSZ_INIT("Capture the Ghost"),
 	SZWSZ_INIT("Extract or Kill the VIP"),
 	SZWSZ_INIT("Deathmatch"),
+	SZWSZ_INIT("Capture or Prevent Capture of the Ghost"),
+	SZWSZ_INIT("Capture or Prevent Capture of the Ghost"),
 };
 
 const char *CNEORules::GetGameDescription(void)
@@ -2439,7 +2441,7 @@ void CNEORules::ResetGhostCapPoints()
 			{
 				ghostCap->ResetCaptureState();
 				m_pGhostCaps.AddToTail(ghostCap->entindex());
-				if ((GetGameType() == NeoGameType::ATK || GetGameType() == NeoGameType::PSY) && ghostCap->originalOwningTeam() == TEAM_JINRAI)
+				if ((GetGameType() == NEO_GAME_TYPE_ATK || GetGameType() == NEO_GAME_TYPE_PSY) && ghostCap->originalOwningTeam() == TEAM_JINRAI)
 				{
 					ghostCap->SetActive(false);
 				}
@@ -2460,7 +2462,7 @@ void CNEORules::SetGameRelatedVars()
 	ResetTDM();
 
 	ResetGhost();
-	if (GetGameType() == NEO_GAME_TYPE_CTG || GetGameType() == NeoGameType::ATK || GetGameType() == NeoGameType::PSY)
+	if (GetGameType() == NEO_GAME_TYPE_CTG || GetGameType() == NEO_GAME_TYPE_ATK || GetGameType() == NEO_GAME_TYPE_PSY)
 	{
 		SpawnTheGhost();
 	}
@@ -2503,58 +2505,9 @@ void CNEORules::SetGameRelatedVars()
 			}
 		}
 	}
-}
-
-void CNEORules::ResetTDM()
-{
-	for (int i = 0; i < GetNumberOfTeams(); i++)
-	{
-		GetGlobalTeam(i)->SetScore(0);
-	}
-}
-
-void CNEORules::ResetGhost()
-{
-	m_pGhost = nullptr;
-	m_bGhostExists = false;
-	m_iGhosterTeam = TEAM_UNASSIGNED;
-	m_iGhosterPlayer = 0;
-}
-
-void CNEORules::ResetVIP()
-{
-	if (!m_pVIP)
-		return;
-	
-	const int nextClass = m_iVIPPreviousClass ? m_iVIPPreviousClass : NEO_CLASS_ASSAULT;
-	m_pVIP->m_iNeoClass.Set(nextClass);
-	m_pVIP->m_iNextSpawnClassChoice.Set(nextClass);
-	m_pVIP->RequestSetClass(nextClass);
-
-	engine->ClientCommand(m_pVIP->edict(), "classmenu");
-}
-
-	ResetVIP();
-	if (GetGameType() == NeoGameType::VIP)
-	{
-		if (!m_iEscortingTeam)
-		{
-			m_iEscortingTeam.Set(RandomInt(TEAM_JINRAI, TEAM_NSF));
-		}
-		else
-		{
-			m_iEscortingTeam.Set(m_iEscortingTeam.Get() == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI);
-		}
-
-		SelectTheVIP();
-	}
-	else
-	{
-		m_iEscortingTeam.Set(0);
-	}
 
 	ResetPsycho();
-	if (GetGameType() == NeoGameType::PSY)
+	if (GetGameType() == NEO_GAME_TYPE_PSY)
 	{
 		if (!m_iEscortingTeam)
 		{
@@ -2564,12 +2517,10 @@ void CNEORules::ResetVIP()
 		{
 			m_iEscortingTeam.Set(m_iEscortingTeam.Get() == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI);
 		}
-
 		int hiddenTeam = GetOpposingTeam(m_iEscortingTeam);
-
 		for (int i = 0; i < MAX_PLAYERS; i++)
 		{
-			auto neoPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(i));
+			auto neoPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
 			if (neoPlayer)
 			{
 				if (neoPlayer->GetTeamNumber() == hiddenTeam)
@@ -2584,21 +2535,11 @@ void CNEORules::ResetVIP()
 					neoPlayer->m_iNextSpawnClassChoice.Set(NEO_CLASS_ASSAULT);
 					neoPlayer->RequestSetClass(NEO_CLASS_ASSAULT);
 				}
-
 				if (neoPlayer->IsFakeClient())
 				{
 					neoPlayer->Respawn();
 				}
 			}
-		}
-	}
-
-
-	if (GetGameType() == NeoGameType::TDM)
-	{
-		for (int i = 0; i < GetNumberOfTeams(); i++)
-		{
-			GetGlobalTeam(i)->SetScore(0);
 		}
 	}
 }
