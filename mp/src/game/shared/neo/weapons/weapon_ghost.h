@@ -59,6 +59,18 @@ public:
 
 	void TryGhostPing(float closestEnemy);
 #endif
+	virtual void UpdateOnRemove() override
+	{
+		if (GetOwner())
+		{
+			auto neoPlayer = static_cast<CNEO_Player*>(GetPlayerOwner());
+			neoPlayer->m_bCarryingGhost = false;
+		}
+#ifdef CLIENT_DLL
+		StopGhostSound();
+#endif //CLIENT_DLL
+		BaseClass::UpdateOnRemove();
+	};
 
 private:
 
