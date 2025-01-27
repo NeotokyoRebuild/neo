@@ -359,15 +359,14 @@ void CFPSPanel::Paint()
 											  vel.Length() );
 #ifdef NEO
 		i++;
-		Vector2D horizontalVel = Vector2D(vel.x, vel.y);
 		g_pMatSystemSurface->DrawColoredText(m_hFont, x, 2 + i * (vgui::surface()->GetFontTall(m_hFont) + 2),
 			255, 255, 255, 255,
-			"hvel:  %.2f",
-			horizontalVel.Length());
+			"hvl:  %.2f",
+			(vec_t)FastSqrt(vel.x * vel.x + vel.y * vel.y));
 		i++;
 		g_pMatSystemSurface->DrawColoredText(m_hFont, x, 2 + i * (vgui::surface()->GetFontTall(m_hFont) + 2),
 			255, 255, 255, 255,
-			"vvel:  %.2f",
+			"vvl:  %.2f",
 			vel.z);
 #endif // NEO
 	}
