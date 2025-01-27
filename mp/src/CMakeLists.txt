@@ -399,7 +399,7 @@ if(NEO_GENERATE_GAMEDATA)
     FetchContent_Declare(
         gamedata-gen
         URL https://github.com/NeotokyoRebuild/gamedata-gen/releases/download/v1/gamedata-gen.zip
-        URL_HASH MD5=d661df1e3e36d702b1cd59ceb0888586
+        URL_HASH MD5=cdf528d1ebbf19b3b67e4129a0dcbe98
     )
 
     FetchContent_MakeAvailable(gamedata-gen)
