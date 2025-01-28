@@ -672,4 +672,13 @@
 		"wide"	"640"
 		"tall"	"480"
 	}
+
+	neo_hint
+	{
+		"fieldName"		"neo_hint"
+		"xpos"	"0"
+		"ypos"	"0"
+		"wide"	"640"
+		"tall"	"480"
+	}
 }
