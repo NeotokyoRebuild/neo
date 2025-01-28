@@ -32,7 +32,7 @@ CNEOHud_Hint::CNEOHud_Hint(const char* pElementName, vgui::Panel* parent)
 	for (int i = 0; i < 23; ++i)
 	{
 		m_pHintTexture[i] = surface()->CreateNewTextureID();
-		Assert(m_pHintTextures[i] > 0);
+		Assert(m_pHintTexture[i] > 0);
 		char textureFilePath[64];
 		V_sprintf_safe(textureFilePath, "vgui/hud/hints/hint%d", i);
 		surface()->DrawSetTextureFile(m_pHintTexture[i], textureFilePath, true, false);
