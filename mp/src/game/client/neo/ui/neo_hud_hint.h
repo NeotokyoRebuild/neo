@@ -22,8 +22,12 @@ protected:
 private:
 	vgui::HTexture m_pHintTexture[23];
 	int m_iTextureWidth, m_iTextureHeight;
-	int m_iScreenWidth, m_iScreenHeight;
 
 	int m_iSelectedTexture = -1;
 	bool m_bIsVisible = false;
+
+	CPanelAnimationVarAliasType(int, xpos, "xpos", "466", "proportional_xpos");
+	CPanelAnimationVarAliasType(int, ypos, "ypos", "59", "proportional_ypos");
+	CPanelAnimationVarAliasType(int, wide, "wide", "142", "proportional_xpos");
+	CPanelAnimationVarAliasType(int, tall, "tall", "284", "proportional_ypos");
 };
