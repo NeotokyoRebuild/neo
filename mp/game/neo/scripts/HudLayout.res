@@ -676,9 +676,9 @@
 	neo_hint
 	{
 		"fieldName"		"neo_hint"
-		"xpos"	"0"
-		"ypos"	"0"
-		"wide"	"640"
-		"tall"	"480"
+		"xpos"	"466"
+		"ypos"	"59"
+		"wide"	"142"
+		"tall"	"284"
 	}
 }
