@@ -105,7 +105,7 @@ enum NeoGameType {
 	NEO_GAME_TYPE_VIP,
 	NEO_GAME_TYPE_DM,
 	NEO_GAME_TYPE_ATK,
-	NEO_GAME_TYPE_PSY,
+	NEO_GAME_TYPE_VSS,
 
 	NEO_GAME_TYPE__TOTAL // Number of game types
 };
@@ -224,7 +224,7 @@ public:
 	void ResetTDM();
 	void ResetGhost();
 	void ResetVIP();
-	void ResetPsycho();
+	void ResetSuperSoldier();
 
 	void CheckRestartGame();
 

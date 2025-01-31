@@ -84,7 +84,7 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 	for (int i = 0; i < NEO_CLASS__ENUM_COUNT; ++i)
 	{
 		static constexpr const char *TEX_NAMES[NEO_CLASS__ENUM_COUNT] = {
-			"vgui/reconSmall", "vgui/assaultSmall", "vgui/supportSmall", "vgui/vipSmall", ""
+			"vgui/reconSmall", "vgui/assaultSmall", "vgui/supportSmall", "vgui/vipSmall", "vgui/reconSmall", "vgui/assaultSmall", "vgui/supportSmall"
 		};
 		m_iGraphicID[i] = surface()->CreateNewTextureID();
 		surface()->DrawSetTextureFile(m_iGraphicID[i], TEX_NAMES[i], true, false);

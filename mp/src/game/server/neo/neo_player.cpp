@@ -306,7 +306,7 @@ void SetClass(const CCommand &command)
 		int nextClass = atoi(command.ArgV()[1]) - 1;
 
 		if ((NEORules()->GetGameType() == NEO_GAME_TYPE_VIP && player->m_iNeoClass == NEO_CLASS_VIP) ||
-			NEORules()->GetGameType() == NEO_GAME_TYPE_PSY && player->m_iNeoClass == NEO_CLASS_PSYCHO)
+			NEORules()->GetGameType() == NEO_GAME_TYPE_VSS && player->m_iNeoClass == NEO_CLASS_PSYCHO)
 		{
 			return;
 		}

@@ -50,9 +50,8 @@ ConVar neo_sv_clantag_allow("neo_sv_clantag_allow", "1", FCVAR_REPLICATED, "", t
 ConVar neo_sv_dev_test_clantag("neo_sv_dev_test_clantag", "", FCVAR_REPLICATED | FCVAR_CHEAT | FCVAR_DEVELOPMENTONLY, "Debug-mode only - Override all clantags with this value.");
 #endif
 
-#define STR_GAMEOPTS "TDM=0, CTG=1, VIP=2, DM=3"
-#define STR_GAMEBWOPTS "TDM=1, CTG=2, VIP=4, DM=8"
-ConVar neo_vote_game_mode("neo_vote_game_mode", "1", FCVAR_USERINFO, "Vote on game mode to play. " STR_GAMEOPTS, true, 0, true, NEO_GAME_TYPE__TOTAL - 1);
+#define STR_GAMEOPTS "TDM=0, CTG=1, VIP=2, DM=3, ATK=4, PSY=5"
+#define STR_GAMEBWOPTS "TDM=1, CTG=2, VIP=4, DM=8, ATK=16, PSY=32"
 ConVar neo_vip_eligible("neo_cl_vip_eligible", "1", FCVAR_ARCHIVE, "Eligible for VIP", true, 0, true, 1);
 #ifdef GAME_DLL
 ConVar sv_neo_vip_ctg_on_death("sv_neo_vip_ctg_on_death", "0", FCVAR_ARCHIVE, "Spawn Ghost when VIP dies, continue the game", true, 0, true, 1);
@@ -246,6 +245,12 @@ ConVar neo_vip_round_timelimit("neo_vip_round_timelimit", "3.25", FCVAR_REPLICAT
 	true, 0.0f, false, 600.0f);
 
 ConVar neo_dm_round_timelimit("neo_dm_round_timelimit", "10.25", FCVAR_REPLICATED, "DM round timelimit, in minutes.",
+	true, 0.0f, false, 600.0f);
+
+ConVar neo_atk_round_timelimit("neo_atk_round_timelimit", "3.25", FCVAR_REPLICATED, "ATK round timelimit, in minutes.",
+	true, 0.0f, false, 600.0f);
+
+ConVar neo_vss_round_timelimit("neo_vss_round_timelimit", "3.25", FCVAR_REPLICATED, "VSS round timelimit, in minutes.",
 	true, 0.0f, false, 600.0f);
 
 ConVar neo_sv_ignore_wep_xp_limit("neo_sv_ignore_wep_xp_limit", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "If true, allow equipping any loadout regardless of player XP.",
@@ -1168,88 +1173,6 @@ void CNEORules::Think(void)
 		}
 	}
 
-	if (GetGameType() == NEO_GAME_TYPE_VIP && m_nRoundStatus == NeoRoundStatus::RoundLive && !m_pGhost)
-	{
-		if (!m_pVIP)
-		{
-			if (sv_neo_vip_ctg_on_death.GetBool())
-			{
-				UTIL_CenterPrintAll("HVT down, recover the Ghost");
-				SpawnTheGhost();
-			}
-			else
-			{
-				// Assume vip player disconnected, forfeit round
-				SetWinningTeam(GetOpposingTeam(m_iEscortingTeam), NEO_VICTORY_FORFEIT, false, true, false, false);
-			}
-		}
-
-		if (!m_pVIP->IsAlive())
-		{
-			if (sv_neo_vip_ctg_on_death.GetBool())
-			{
-				UTIL_CenterPrintAll("HVT down, recover the Ghost");
-				SpawnTheGhost(&m_pVIP->GetAbsOrigin());
-			}
-			else
-			{
-				// VIP was killed, end round
-				SetWinningTeam(GetOpposingTeam(m_iEscortingTeam), NEO_VICTORY_VIP_ELIMINATION, false, true, false, false);
-			}
-		}
-
-		// Check if the vip was escorted during this Think
-		int captorTeam, captorClient;
-		for (int i = 0; i < m_pGhostCaps.Count(); i++)
-		{
-			auto pGhostCap = dynamic_cast<CNEOGhostCapturePoint*>(UTIL_EntityByIndex(m_pGhostCaps[i]));
-			if (!pGhostCap)
-			{
-				Assert(false);
-				continue;
-			}
-
-			// If vip was escorted
-			if (pGhostCap->IsGhostCaptured(captorTeam, captorClient))
-			{
-				// Turn off all capzones
-				for (int i = 0; i < m_pGhostCaps.Count(); i++)
-				{
-					auto pGhostCap = dynamic_cast<CNEOGhostCapturePoint*>(UTIL_EntityByIndex(m_pGhostCaps[i]));
-					pGhostCap->SetActive(false);
-				}
-
-				// And then announce team victory
-				SetWinningTeam(captorTeam, NEO_VICTORY_VIP_ESCORT, false, true, false, false);
-
-				for (int i = 1; i <= gpGlobals->maxClients; i++)
-				{
-					if (i == captorClient)
-					{
-						AwardRankUp(i);
-						continue;
-					}
-
-					auto player = UTIL_PlayerByIndex(i);
-					if (player && player->GetTeamNumber() == captorTeam)
-					{
-						if (player->IsAlive())
-						{
-							AwardRankUp(i);
-						}
-						else
-						{
-							auto* neoPlayer = static_cast<CNEO_Player*>(player);
-							neoPlayer->m_iXP.GetForModify()++;
-						}
-					}
-				}
-
-				break;
-			}
-		}
-	}
-
 	if (m_nRoundStatus == NeoRoundStatus::PreRoundFreeze)
 	{
 		if (IsRoundOver())
@@ -1435,10 +1358,10 @@ float CNEORules::GetRoundRemainingTime()
 				roundTimeLimit = neo_dm_round_timelimit.GetFloat() * 60.f;
 				break;
 			case NEO_GAME_TYPE_ATK:
-				roundTimeLimit = neo_ctg_round_timelimit.GetFloat() * 60.f;
+				roundTimeLimit = neo_atk_round_timelimit.GetFloat() * 60.f;
 				break;
-			case NEO_GAME_TYPE_PSY:
-				roundTimeLimit = neo_ctg_round_timelimit.GetFloat() * 60.f;
+			case NEO_GAME_TYPE_VSS:
+				roundTimeLimit = neo_vss_round_timelimit.GetFloat() * 60.f;
 				break;
 			default:
 				break;
@@ -2241,7 +2164,7 @@ const SZWSZTexts NEO_GAME_TYPE_DESC_STRS[NEO_GAME_TYPE__TOTAL] = {
 	SZWSZ_INIT("Extract or Kill the VIP"),
 	SZWSZ_INIT("Deathmatch"),
 	SZWSZ_INIT("Capture or Prevent Capture of the Ghost"),
-	SZWSZ_INIT("Capture or Prevent Capture of the Ghost"),
+	SZWSZ_INIT("Eliminate the Super Soldier"),
 };
 
 const char *CNEORules::GetGameDescription(void)
@@ -2441,15 +2364,8 @@ void CNEORules::ResetGhostCapPoints()
 			{
 				ghostCap->ResetCaptureState();
 				m_pGhostCaps.AddToTail(ghostCap->entindex());
-				if ((GetGameType() == NEO_GAME_TYPE_ATK || GetGameType() == NEO_GAME_TYPE_PSY) && ghostCap->originalOwningTeam() == TEAM_JINRAI)
-				{
-					ghostCap->SetActive(false);
-				}
-				else
-				{
-					ghostCap->SetActive(true);
-					ghostCap->Think_CheckMyRadius();
-				}
+				ghostCap->SetActive(true);
+				ghostCap->Think_CheckMyRadius();
 			}
 
 			pEnt = gEntList.NextEnt(pEnt);
@@ -2462,7 +2378,7 @@ void CNEORules::SetGameRelatedVars()
 	ResetTDM();
 
 	ResetGhost();
-	if (GetGameType() == NEO_GAME_TYPE_CTG || GetGameType() == NEO_GAME_TYPE_ATK || GetGameType() == NEO_GAME_TYPE_PSY)
+	if (GetGameType() == NEO_GAME_TYPE_CTG || GetGameType() == NEO_GAME_TYPE_ATK)
 	{
 		SpawnTheGhost();
 	}
@@ -2506,8 +2422,8 @@ void CNEORules::SetGameRelatedVars()
 		}
 	}
 
-	ResetPsycho();
-	if (GetGameType() == NEO_GAME_TYPE_PSY)
+	ResetSuperSoldier();
+	if (GetGameType() == NEO_GAME_TYPE_VSS)
 	{
 		if (!m_iEscortingTeam)
 		{
@@ -2531,7 +2447,7 @@ void CNEORules::SetGameRelatedVars()
 				}
 				else if (neoPlayer->GetTeamNumber() == m_iEscortingTeam)
 				{
-					neoPlayer->m_iNeoClass.Set(NEO_CLASS_ASSAULT); // NEOTOD (Adam) Previously chosen class
+					neoPlayer->m_iNeoClass.Set(NEO_CLASS_ASSAULT); // NEOTODO (Adam) Previously chosen class
 					neoPlayer->m_iNextSpawnClassChoice.Set(NEO_CLASS_ASSAULT);
 					neoPlayer->RequestSetClass(NEO_CLASS_ASSAULT);
 				}
@@ -2573,12 +2489,12 @@ void CNEORules::ResetVIP()
 	engine->ClientCommand(m_pVIP->edict(), "classmenu");
 }
 
-void CNEORules::ResetPsycho()
+void CNEORules::ResetSuperSoldier()
 {
 	for (int i = 1; i < MAX_PLAYERS; i++)
 	{
 		auto* player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
-		if (player && player->m_iNeoClass == NEO_CLASS_PSYCHO)
+		if (player && player->m_iNeoClass >= NEO_CLASS_PSYCHO)
 		{
 			player->m_iNeoClass.Set(NEO_CLASS_ASSAULT);
 			player->m_iNextSpawnClassChoice.Set(NEO_CLASS_ASSAULT);
@@ -3608,7 +3524,7 @@ bool CNEORules::FPlayerCanRespawn(CBasePlayer* pPlayer)
 		return true;
 	}
 	// Some unknown game mode
-	else if (gameType != NEO_GAME_TYPE_CTG && gameType != NEO_GAME_TYPE_VIP && gameType != NEO_GAME_TYPE_ATK && gameType != NEO_GAME_TYPE_PSY)
+	else if (gameType != NEO_GAME_TYPE_CTG && gameType != NEO_GAME_TYPE_VIP && gameType != NEO_GAME_TYPE_ATK && gameType != NEO_GAME_TYPE_VSS)
 	{
 		Assert(false);
 		return true;
@@ -3749,7 +3665,7 @@ const char* CNEORules::GetGameTypeName(void)
 		return "DM";
 	case NEO_GAME_TYPE_ATK:
 		return "ATK";
-	case NEO_GAME_TYPE_PSY:
+	case NEO_GAME_TYPE_VSS:
 		return "PSY";
 	default:
 		Assert(false);

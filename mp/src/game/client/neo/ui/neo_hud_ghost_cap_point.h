@@ -21,7 +21,6 @@ public:
 	virtual ConVar *GetUpdateFrequencyConVar() const override;
 
 	void SetTeam(const int team) { m_iCapTeam = team; }
-	void SetOriginalTeam(const int team) { m_iOriginalCapTeam = team; }
 	void SetRadius(const float radius) { m_flMyRadius = radius; }
 	void SetPos(const Vector &pos) { m_vecMyPos = pos; }
 
@@ -32,7 +31,6 @@ private:
 	int m_iCapTexHeight = 0;
 	int m_flMyRadius = 0;
 	int m_iCapTeam = TEAM_INVALID;
-	int m_iOriginalCapTeam = TEAM_INVALID;
 	float m_flDistance = 0.0f;
 	float m_flCapTexScale = 1.0f;
 	float m_fMarkerScalesStart[4] = { 0.78f, 0.6f, 0.38f, 0.0f };

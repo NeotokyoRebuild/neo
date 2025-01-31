@@ -369,6 +369,7 @@ const char *weapons[NEO_WEP_MDL_ENUM_COUNT] {
 const char *vipModel = "models/player/vip.mdl";
 const char *vipModelDead = "models/player/vip_dead.mdl";
 const char *vipSmacViewModel = "models/weapons/v_vip_smac.mdl";
+const char *scoutModel = "models/player/utnt/scout.mdl";
 
 static inline void PrecachePlayerModels( void )
 {
@@ -379,6 +380,7 @@ static inline void PrecachePlayerModels( void )
 	}
 
 	CBaseEntity::PrecacheModel(vipModel);
+	CBaseEntity::PrecacheModel(scoutModel);
 }
 
 static inline void PrecacheGibs( void )
@@ -535,7 +537,7 @@ const char *CNEOModelManager::GetPlayerModel(NeoSkin nSkin,
 
 	if (nClass == NEO_CLASS_PSYCHO)
 	{
-		return playerModels[0];
+		return scoutModel;
 	}
 
 	// Unspecified skin number, give a skin randomly.
