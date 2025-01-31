@@ -22,6 +22,7 @@ protected:
 private:
 	vgui::HTexture m_pHintTexture[23];
 	int m_iTextureWidth, m_iTextureHeight;
+	int m_iScreenWidth, m_iScreenHeight;
 
 	int m_iSelectedTexture = -1;
 	bool m_bIsVisible = false;
