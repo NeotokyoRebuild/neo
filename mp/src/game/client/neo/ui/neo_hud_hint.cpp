@@ -50,14 +50,10 @@ void CNEOHud_Hint::ApplySchemeSettings(vgui::IScheme* pScheme)
 	BaseClass::ApplySchemeSettings(pScheme);
 
 	// Same position as OG, relative to the center of the screen
-	int screenWidth, screenHeight;
-	surface()->GetScreenSize(screenWidth, screenHeight);
+	surface()->GetScreenSize(m_iScreenWidth, m_iScreenHeight);
 
-	int offsetX = 438;
-	int offsetY = -466;
-
-	int textureXPos = (screenWidth / 2) + offsetX;
-	int textureYPos = (screenHeight / 2) + offsetY;
+	int textureXPos = (m_iScreenWidth / 2) + ((438 * m_iScreenWidth) / 1920);
+	int textureYPos = (m_iScreenHeight / 2) + ((-466 * m_iScreenHeight) / 1080);
 
 	SetBounds(textureXPos, textureYPos, m_iTextureWidth, m_iTextureHeight);
 }
@@ -85,7 +81,11 @@ void CNEOHud_Hint::DrawNeoHudElement()
 			m_iSelectedTexture = RandomInt(0, 22);
 		}
 
-		float scaleMod = 0.833f; // Same size as OG
+		float scaleFactor = (m_iScreenWidth / 1920.0f < m_iScreenHeight / 1080.0f)
+			? m_iScreenWidth / 1920.0f
+			: m_iScreenHeight / 1080.0f;
+
+		float scaleMod = 0.833f * scaleFactor; // 0.833 = Same size as OG at 1920 1080. Working off of that
 
 		int scaledWidth = static_cast<int>(m_iTextureWidth * scaleMod);
 		int scaledHeight = static_cast<int>(m_iTextureHeight * scaleMod);
