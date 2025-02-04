@@ -1289,7 +1289,7 @@ void C_NEO_Player::Spawn( void )
 			}
 		}
 
-		if (GetTeamNumber() == TEAM_UNASSIGNED)
+		if (GetTeamNumber() == TEAM_UNASSIGNED && !engine->IsLevelMainMenuBackground())
 		{
 			engine->ClientCmd(teammenu.GetName());
 		}

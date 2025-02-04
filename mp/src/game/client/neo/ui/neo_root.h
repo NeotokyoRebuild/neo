@@ -125,6 +125,7 @@ public:
 	void OnCursorMoved(int x, int y) final;
 	void OnTick() final;
 	void FireGameEvent(IGameEvent *event) final;
+	bool IsInGame() { return (engine->IsInGame() && !engine->IsLevelMainMenuBackground()); }
 
 	void OnMainLoop(const NeoUI::Mode eMode);
 
