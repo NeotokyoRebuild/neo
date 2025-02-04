@@ -112,7 +112,6 @@ public:
 
 	wchar_t m_wszDispBtnTexts[BTNS_TOTAL][64] = {};
 	int m_iWszDispBtnTextsSizes[BTNS_TOTAL] = {};
-	int m_iBtnWide = 0;
 
 	CNeoRootInput *m_panelCaptureInput = nullptr;
 	void OnRelayedKeyCodeTyped(vgui::KeyCode code);

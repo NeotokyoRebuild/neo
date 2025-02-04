@@ -571,14 +571,13 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	NeoUI::EndSection();
 
 	const int iBtnPlaceXMid = (param.wide / 4);
-	const int iRightXPos = iBtnPlaceXMid + (m_iBtnWide / 2) + g_uiCtx.iMarginX;
+	const int iBtnWide = m_iTitleWidth + (2 * g_uiCtx.iMarginX);
+	const int iRightXPos = iBtnPlaceXMid + (iBtnWide / 2) + g_uiCtx.iMarginX;
 	int iRightSideYStart = yTopPos;
 
 	// Draw top steam section portion
 	{
 		// Draw title
-		m_iBtnWide = m_iTitleWidth + (2 * g_uiCtx.iMarginX);
-
 		surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_LOGO].hdl);
 		surface()->DrawSetTextColor(COLOR_NEOTITLE);
 		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth / 2), yTopPos - m_iTitleHeight);
