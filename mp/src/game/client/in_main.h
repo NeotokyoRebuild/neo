@@ -18,4 +18,10 @@
 extern kbutton_t in_commandermousemove;
 extern kbutton_t in_ducktoggle;
 
+#ifdef NEO
+void IN_LeanLeft();
+void IN_LeanRight();
+void IN_LeanReset();
+#endif // NEO
+
 #endif // IN_MAIN_H

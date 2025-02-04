@@ -1412,6 +1412,8 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl_gamemovement.h
     ${CMAKE_SOURCE_DIR}/game/shared/script_intro_shared.cpp
     episodic/c_vort_charge_token.cpp
+    episodic/episodic_screenspaceeffects.cpp
+    episodic/episodic_screenspaceeffects.h
     hl2/c_antlion_dust.cpp
     hl2/c_ar2_explosion.cpp
     hl2/c_barnacle.cpp
@@ -1507,6 +1509,7 @@ target_sources_grouped(
     FILES
     neo/material_proxies/neo_matproxy_thermoptic.cpp
     neo/material_proxies/neo_matproxy_thermoptic.h
+    neo/material_proxies/neo_matproxy_teamnum.cpp
 )
 
 target_sources_grouped(
@@ -1548,6 +1551,8 @@ target_sources_grouped(
     neo/ui/neo_hud_ghost_uplink_state.h
     neo/ui/neo_hud_health_thermoptic_aux.cpp
     neo/ui/neo_hud_health_thermoptic_aux.h
+    neo/ui/neo_hud_hint.cpp
+    neo/ui/neo_hud_hint.h
     neo/ui/neo_hud_round_state.cpp
     neo/ui/neo_hud_round_state.h
     neo/ui/neo_hud_worldpos_marker.cpp
