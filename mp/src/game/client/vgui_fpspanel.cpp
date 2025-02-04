@@ -133,7 +133,11 @@ void CFPSPanel::ComputeSize( void )
 		y += XBOX_MINBORDERSAFE * tall;
 	}
 	SetPos( x, y );
+#ifdef NEO
+	SetSize(FPS_PANEL_WIDTH, 6 * vgui::surface()->GetFontTall(m_hFont) + 8);
+#else
 	SetSize( FPS_PANEL_WIDTH, 4 * vgui::surface()->GetFontTall( m_hFont ) + 8 );
+#endif // NEO
 }
 
 void CFPSPanel::ApplySchemeSettings(vgui::IScheme *pScheme)
@@ -353,6 +357,18 @@ void CFPSPanel::Paint()
 											  255, 255, 255, 255, 
 											  "vel:  %.2f", 
 											  vel.Length() );
+#ifdef NEO
+		i++;
+		g_pMatSystemSurface->DrawColoredText(m_hFont, x, 2 + i * (vgui::surface()->GetFontTall(m_hFont) + 2),
+			255, 255, 255, 255,
+			"hvl:  %.2f",
+			(vec_t)FastSqrt(vel.x * vel.x + vel.y * vel.y));
+		i++;
+		g_pMatSystemSurface->DrawColoredText(m_hFont, x, 2 + i * (vgui::surface()->GetFontTall(m_hFont) + 2),
+			255, 255, 255, 255,
+			"vvl:  %.2f",
+			vel.z);
+#endif // NEO
 	}
 	
 	if ( cl_showbattery.GetInt() > 0 )
@@ -366,6 +382,9 @@ void CFPSPanel::Paint()
 		
 		if ( m_BatteryPercent > 0 )
 		{
+#ifdef NEO
+			i++;
+#endif // NEO
 			if ( m_BatteryPercent == 255 )
 			{
 				g_pMatSystemSurface->DrawColoredText( m_hFont, x, 2+ i * ( vgui::surface()->GetFontTall( m_hFont ) + 2 ), 
