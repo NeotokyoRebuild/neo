@@ -27,6 +27,10 @@ extern ConVar in_forceuser;
 #include "iclientmode.h"
 #endif
 
+#ifdef NEO
+#include "neo_predicted_viewmodel_muzzleflash.h"
+#endif //NEO
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -546,6 +550,17 @@ static void RecvProxy_Weapon( const CRecvProxyData *pData, void *pStruct, void *
 		pViewModel->SetCycle( 0 );
 		pViewModel->m_flAnimTime = gpGlobals->curtime;
 	}
+#ifdef NEO
+	// NEO JANK (Adam) this should ideally only run when the server switches the weapon, but the above does not hold true when the weapons are given to the player at the start
+	// of the game as both the players current weapon is null (since the player has not yet spawned and so the current weapon does not exist client side) and the new weapon is 
+	// null since this weapon is created and given to the player on the same tick and since entities are updated in index order this proxy function which updates a player property 
+	// runs before the new weapon can be created clientside (this is also why we update the muzzle flash properties in a think func after a delay instead of straight away in here)
+	auto pOwner = ToBasePlayer(pViewModel->GetOwner());
+	if (!pOwner) { return; }
+	auto muzzleFlashViewModel = static_cast<CNEOPredictedViewModelMuzzleFlash*>(pOwner->GetViewModel(1));
+	if (!muzzleFlashViewModel) { return; }
+	muzzleFlashViewModel->SetNextClientThink(gpGlobals->curtime + gpGlobals->interval_per_tick);
+#endif // NEO
 }
 #endif
 

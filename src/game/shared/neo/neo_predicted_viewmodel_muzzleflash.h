@@ -37,6 +37,7 @@ public:
 		m_flTimeSwitchOffMuzzleFlash = gpGlobals->curtime + 0.01f;
 		BaseClass::ProcessMuzzleFlashEvent();
 	}
+	virtual void			ClientThink() override;
 #endif
 
 	virtual void Spawn(void) override;

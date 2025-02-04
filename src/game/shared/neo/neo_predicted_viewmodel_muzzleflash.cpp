@@ -59,8 +59,7 @@ int CNEOPredictedViewModelMuzzleFlash::DrawModel(int flags)
 		CBasePlayer* pOwner = ToBasePlayer(GetOwner());
 		if (pOwner == NULL) { return -1; }
 		CBaseViewModel* vm = pOwner->GetViewModel(0, false);
-		if (vm == NULL) { return -1; }
-		if (!vm->IsVisible()) {	return -1; }
+		if (vm == NULL || !vm->IsVisible()) { return -1; }
 
 		int iAttachment = vm->LookupAttachment("muzzle");
 		if (iAttachment < 0) { return -1; }
@@ -77,5 +76,16 @@ int CNEOPredictedViewModelMuzzleFlash::DrawModel(int flags)
 		return BaseClass::DrawModel(flags);
 	}
 	return -1;
+}
+
+void CNEOPredictedViewModelMuzzleFlash::ClientThink()
+{
+	// Client side entities can only have one think function. This think function will only run when the muzzle flash properties needs to be updated. If more functionality is
+	// inserted here consider adding a variable to CNEOPredictedviewModelMuzzleFlash that can be checked here so this is done only when necessary, and remove this comment
+	CBasePlayer* pOwner = ToBasePlayer(GetOwner());
+	if (pOwner)
+	{
+		pOwner->UpdateMuzzleFlashProperties(pOwner->GetActiveWeapon());
+	}
 }
 #endif
