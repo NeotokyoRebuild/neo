@@ -754,11 +754,6 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 	{
 		return;
 	}
-	// Can't shoot again yet
-	else if (gpGlobals->curtime - m_flLastAttackTime < GetFireRate())
-	{
-		return;
-	}
 	else if (m_iClip1 == 0)
 	{
 		if (!m_bFireOnEmpty)
