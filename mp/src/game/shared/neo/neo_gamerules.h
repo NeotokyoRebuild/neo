@@ -104,6 +104,8 @@ enum NeoGameType {
 	NEO_GAME_TYPE_CTG,
 	NEO_GAME_TYPE_VIP,
 	NEO_GAME_TYPE_DM,
+	NEO_GAME_TYPE_ATK,
+	NEO_GAME_TYPE_VSS,
 
 	NEO_GAME_TYPE__TOTAL // Number of game types
 };
@@ -121,6 +123,7 @@ enum NeoRoundStatus {
 
 enum NeoWinReason {
 	NEO_VICTORY_GHOST_CAPTURE = 0,
+	NEO_VICTORY_GHOST_CAPTURE_PREVENTION,
 	NEO_VICTORY_VIP_ESCORT,
 	NEO_VICTORY_VIP_ELIMINATION,
 	NEO_VICTORY_TEAM_ELIMINATION,
@@ -221,6 +224,7 @@ public:
 	void ResetTDM();
 	void ResetGhost();
 	void ResetVIP();
+	void ResetSuperSoldier();
 
 	void CheckRestartGame();
 
@@ -233,7 +237,7 @@ public:
 
 	virtual bool CheckGameOver(void) OVERRIDE;
 
-	float GetRoundRemainingTime() const;
+	float GetRoundRemainingTime();
 	float GetRoundAccumulatedTime() const;
 #ifdef GAME_DLL
 	float MirrorDamageMultiplier() const;

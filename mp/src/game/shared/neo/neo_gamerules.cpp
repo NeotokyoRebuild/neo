@@ -50,9 +50,8 @@ ConVar neo_sv_clantag_allow("neo_sv_clantag_allow", "1", FCVAR_REPLICATED, "", t
 ConVar neo_sv_dev_test_clantag("neo_sv_dev_test_clantag", "", FCVAR_REPLICATED | FCVAR_CHEAT | FCVAR_DEVELOPMENTONLY, "Debug-mode only - Override all clantags with this value.");
 #endif
 
-#define STR_GAMEOPTS "TDM=0, CTG=1, VIP=2, DM=3"
-#define STR_GAMEBWOPTS "TDM=1, CTG=2, VIP=4, DM=8"
-ConVar neo_vote_game_mode("neo_vote_game_mode", "1", FCVAR_USERINFO, "Vote on game mode to play. " STR_GAMEOPTS, true, 0, true, NEO_GAME_TYPE__TOTAL - 1);
+#define STR_GAMEOPTS "TDM=0, CTG=1, VIP=2, DM=3, ATK=4, PSY=5"
+#define STR_GAMEBWOPTS "TDM=1, CTG=2, VIP=4, DM=8, ATK=16, PSY=32"
 ConVar neo_vip_eligible("neo_cl_vip_eligible", "1", FCVAR_ARCHIVE, "Eligible for VIP", true, 0, true, 1);
 #ifdef GAME_DLL
 ConVar sv_neo_vip_ctg_on_death("sv_neo_vip_ctg_on_death", "0", FCVAR_ARCHIVE, "Spawn Ghost when VIP dies, continue the game", true, 0, true, 1);
@@ -246,6 +245,12 @@ ConVar neo_vip_round_timelimit("neo_vip_round_timelimit", "3.25", FCVAR_REPLICAT
 	true, 0.0f, false, 600.0f);
 
 ConVar neo_dm_round_timelimit("neo_dm_round_timelimit", "10.25", FCVAR_REPLICATED, "DM round timelimit, in minutes.",
+	true, 0.0f, false, 600.0f);
+
+ConVar neo_atk_round_timelimit("neo_atk_round_timelimit", "3.25", FCVAR_REPLICATED, "ATK round timelimit, in minutes.",
+	true, 0.0f, false, 600.0f);
+
+ConVar neo_vss_round_timelimit("neo_vss_round_timelimit", "3.25", FCVAR_REPLICATED, "VSS round timelimit, in minutes.",
 	true, 0.0f, false, 600.0f);
 
 ConVar neo_sv_ignore_wep_xp_limit("neo_sv_ignore_wep_xp_limit", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "If true, allow equipping any loadout regardless of player XP.",
@@ -1325,7 +1330,7 @@ void CNEORules::AwardRankUp(CNEO_Player *pClient)
 }
 
 // Return remaining time in seconds. Zero means there is no time limit.
-float CNEORules::GetRoundRemainingTime() const
+float CNEORules::GetRoundRemainingTime()
 {
 	if (m_nRoundStatus == NeoRoundStatus::Idle)
 	{
@@ -1351,6 +1356,12 @@ float CNEORules::GetRoundRemainingTime() const
 				break;
 			case NEO_GAME_TYPE_DM:
 				roundTimeLimit = neo_dm_round_timelimit.GetFloat() * 60.f;
+				break;
+			case NEO_GAME_TYPE_ATK:
+				roundTimeLimit = neo_atk_round_timelimit.GetFloat() * 60.f;
+				break;
+			case NEO_GAME_TYPE_VSS:
+				roundTimeLimit = neo_vss_round_timelimit.GetFloat() * 60.f;
 				break;
 			default:
 				break;
@@ -2152,6 +2163,8 @@ const SZWSZTexts NEO_GAME_TYPE_DESC_STRS[NEO_GAME_TYPE__TOTAL] = {
 	SZWSZ_INIT("Capture the Ghost"),
 	SZWSZ_INIT("Extract or Kill the VIP"),
 	SZWSZ_INIT("Deathmatch"),
+	SZWSZ_INIT("Capture or Prevent Capture of the Ghost"),
+	SZWSZ_INIT("Eliminate the Super Soldier"),
 };
 
 const char *CNEORules::GetGameDescription(void)
@@ -2365,7 +2378,7 @@ void CNEORules::SetGameRelatedVars()
 	ResetTDM();
 
 	ResetGhost();
-	if (GetGameType() == NEO_GAME_TYPE_CTG)
+	if (GetGameType() == NEO_GAME_TYPE_CTG || GetGameType() == NEO_GAME_TYPE_ATK)
 	{
 		SpawnTheGhost();
 	}
@@ -2408,6 +2421,43 @@ void CNEORules::SetGameRelatedVars()
 			}
 		}
 	}
+
+	ResetSuperSoldier();
+	if (GetGameType() == NEO_GAME_TYPE_VSS)
+	{
+		if (!m_iEscortingTeam)
+		{
+			m_iEscortingTeam.Set(RandomInt(TEAM_JINRAI, TEAM_NSF));
+		}
+		else
+		{
+			m_iEscortingTeam.Set(m_iEscortingTeam.Get() == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI);
+		}
+		int hiddenTeam = GetOpposingTeam(m_iEscortingTeam);
+		for (int i = 0; i < MAX_PLAYERS; i++)
+		{
+			auto neoPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
+			if (neoPlayer)
+			{
+				if (neoPlayer->GetTeamNumber() == hiddenTeam)
+				{
+					neoPlayer->m_iNeoClass.Set(NEO_CLASS_PSYCHO);
+					neoPlayer->m_iNextSpawnClassChoice.Set(NEO_CLASS_PSYCHO);
+					neoPlayer->RequestSetClass(NEO_CLASS_PSYCHO);
+				}
+				else if (neoPlayer->GetTeamNumber() == m_iEscortingTeam)
+				{
+					neoPlayer->m_iNeoClass.Set(NEO_CLASS_ASSAULT); // NEOTODO (Adam) Previously chosen class
+					neoPlayer->m_iNextSpawnClassChoice.Set(NEO_CLASS_ASSAULT);
+					neoPlayer->RequestSetClass(NEO_CLASS_ASSAULT);
+				}
+				if (neoPlayer->IsFakeClient())
+				{
+					neoPlayer->Respawn();
+				}
+			}
+		}
+	}
 }
 
 void CNEORules::ResetTDM()
@@ -2437,6 +2487,20 @@ void CNEORules::ResetVIP()
 	m_pVIP->RequestSetClass(nextClass);
 
 	engine->ClientCommand(m_pVIP->edict(), "classmenu");
+}
+
+void CNEORules::ResetSuperSoldier()
+{
+	for (int i = 1; i < MAX_PLAYERS; i++)
+	{
+		auto* player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
+		if (player && player->m_iNeoClass >= NEO_CLASS_PSYCHO)
+		{
+			player->m_iNeoClass.Set(NEO_CLASS_ASSAULT);
+			player->m_iNextSpawnClassChoice.Set(NEO_CLASS_ASSAULT);
+			engine->ClientCommand(player->edict(), "classmenu");
+		}
+	}
 }
 
 void CNEORules::RestartGame()
@@ -2844,6 +2908,9 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 		case NEO_VICTORY_GHOST_CAPTURE:
 			V_sprintf_safe(victoryMsg, "Team %s wins by capturing the ghost!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
 			break;
+		case NEO_VICTORY_GHOST_CAPTURE_PREVENTION:
+			V_sprintf_safe(victoryMsg, "Team %s wins by preventing ghost capture!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
+			break;
 		case NEO_VICTORY_VIP_ESCORT:
 			V_sprintf_safe(victoryMsg, "Team %s wins by escorting the vip!\n", (team == TEAM_JINRAI ? "Jinrai" : "NSF"));
 			break;
@@ -3159,6 +3226,12 @@ float CNEORules::FlPlayerFallDamage(CBasePlayer* pPlayer)
 		return 0;
 	}
 
+	auto* neoPlayer = static_cast<CNEO_Player*>(pPlayer);
+	if (neoPlayer && neoPlayer->GetClass() == NEO_CLASS_PSYCHO)
+	{
+		return 0;
+	}
+
 	// subtract off the speed at which a player is allowed to fall without being hurt,
 	// so damage will be based on speed beyond that, not the entire fall
 	pPlayer->m_Local.m_flFallVelocity -= PLAYER_MAX_SAFE_FALL_SPEED;
@@ -3451,7 +3524,7 @@ bool CNEORules::FPlayerCanRespawn(CBasePlayer* pPlayer)
 		return true;
 	}
 	// Some unknown game mode
-	else if (gameType != NEO_GAME_TYPE_CTG && gameType != NEO_GAME_TYPE_VIP)
+	else if (gameType != NEO_GAME_TYPE_CTG && gameType != NEO_GAME_TYPE_VIP && gameType != NEO_GAME_TYPE_ATK && gameType != NEO_GAME_TYPE_VSS)
 	{
 		Assert(false);
 		return true;
@@ -3590,6 +3663,10 @@ const char* CNEORules::GetGameTypeName(void)
 		return "VIP";
 	case NEO_GAME_TYPE_DM:
 		return "DM";
+	case NEO_GAME_TYPE_ATK:
+		return "ATK";
+	case NEO_GAME_TYPE_VSS:
+		return "PSY";
 	default:
 		Assert(false);
 		return "NAN";

@@ -89,6 +89,7 @@ COMPILE_TIME_ASSERT(NEO_RECON_CROUCH_SPEED > NEO_ASSAULT_CROUCH_SPEED);
 COMPILE_TIME_ASSERT(NEO_ASSAULT_CROUCH_SPEED == NEO_SUPPORT_CROUCH_SPEED);
 
 #define SUPER_JMP_COST 45.0f
+#define HIDDEN_JMP_COST 20.0f
 #define CLOAK_AUX_COST 1.0f
 #define SPRINT_START_MIN (2.0f)
 
@@ -157,10 +158,11 @@ enum NeoClass {
 	NEO_CLASS_RECON = 0,
 	NEO_CLASS_ASSAULT,
 	NEO_CLASS_SUPPORT,
-
-	// NOTENOTE: VIP *must* be last, because we are
-	// using array offsets for recon/assault/support
+	// NOTENOTE: we are using array offsets for recon, assault, support, these must be first
 	NEO_CLASS_VIP,
+	NEO_CLASS_PSYCHO,
+	NEO_CLASS_MARINE,
+	NEO_CLASS_TANK,
 
 	NEO_CLASS__ENUM_COUNT
 };
@@ -213,14 +215,9 @@ extern ConVar neo_recon_superjump_intensity;
 
 inline const char* GetNeoClassName(int neoClassIdx)
 {
-	switch (neoClassIdx)
-	{
-	case NEO_CLASS_RECON: return "Recon";
-	case NEO_CLASS_ASSAULT: return "Assault";
-	case NEO_CLASS_SUPPORT: return "Support";
-	case NEO_CLASS_VIP: return "VIP";
-	default: return "";
-	}
+	constexpr const char *CLASS_NAMES[NEO_CLASS__ENUM_COUNT] = {"Recon", "Assault", "Support", "VIP", "Psycho", "Marine", "Tank" };
+	if (neoClassIdx < 0 || neoClassIdx >= NEO_CLASS__ENUM_COUNT) { return ""; }
+	return CLASS_NAMES[neoClassIdx];
 }
 
 inline const char *GetRankName(int xp, bool shortened = false)

@@ -205,7 +205,7 @@ public:
 
 	virtual float				GetDefaultAnimSpeed( void ) { return 1.0; }
 
-	void						SetMaxSpeed( float flMaxSpeed ) { m_flMaxspeed = flMaxSpeed; }
+ 	void						SetMaxSpeed( float flMaxSpeed ) { m_flMaxspeed = flMaxSpeed; }
 	float						MaxSpeed() const		{ return m_flMaxspeed; }
 
 	// Should this object cast shadows?
@@ -338,6 +338,12 @@ public:
 	void					SetWaterJumpTime( float flWaterJumpTime );
 	float					GetSwimSoundTime( void ) const;
 	void					SetSwimSoundTime( float flSwimSoundTime );
+#ifdef NEO
+	bool					GetTouchingWall(void) const;
+	void					SetTouchingWall(bool bTouchingWall);
+	bool					GetClingingToWall(void) const;
+	void					SetClingingToWall(bool bClingingToWall);
+#endif
 
 	float					GetDeathTime( void ) { return m_flDeathTime; }
 
@@ -526,6 +532,10 @@ private:
 
 	float			m_flSwimSoundTime;
 	Vector			m_vecLadderNormal;
+#ifdef NEO
+	bool			m_bTouchingWall;
+	bool			m_bClingingToWall;
+#endif
 	
 	QAngle			m_vecOldViewAngles;
 

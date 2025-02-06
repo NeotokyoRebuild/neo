@@ -431,6 +431,12 @@ static inline float GetAuxChargeRate(CBaseCombatCharacter *player)
 		return 2.5f;	// 100 units in 40 seconds
 	case NEO_CLASS_VIP:
 		return 2.5f;	// 100 units in 40 seconds
+	case NEO_CLASS_PSYCHO:
+		if (neoPlayer->GetClingingToWall())
+		{
+			return 2.5f;	// 100 units in 40 seconds
+		}
+		return 7.5f;	// 100 units in 40/3 seconds
 	default:
 		break;
 	}
@@ -1901,7 +1907,8 @@ void CHL2_Player::SuitPower_Update( void )
 #ifdef NEO
 				else
 				{
-					if (static_cast<CNEO_Player*>(this)->GetClass() == NEO_CLASS_RECON)
+					auto* neoPlayer = static_cast<CNEO_Player*>(this);
+					if (neoPlayer && (neoPlayer->m_iNeoClass == NEO_CLASS_RECON || neoPlayer->m_iNeoClass == NEO_CLASS_PSYCHO))
 					{
 						flPowerLoad -= SuitDeviceSprint.GetDeviceDrainRate();
 					}
@@ -2041,7 +2048,8 @@ bool CHL2_Player::SuitPower_RemoveDevice( const CSuitPowerDevice &device )
 	m_flSuitPowerLoad -= device.GetDeviceDrainRate();
 
 #ifdef NEO
-	if (static_cast<CNEO_Player*>(this)->GetClass() == NEO_CLASS_RECON)
+	auto neoClass = static_cast<CNEO_Player*>(this)->GetClass();
+	if (neoClass == NEO_CLASS_RECON || neoClass == NEO_CLASS_PSYCHO)
 		return true;
 #endif
 	
@@ -2069,7 +2077,8 @@ bool CHL2_Player::SuitPower_ShouldRecharge( void )
 	if (m_HL2Local.m_bitsActiveDevices != 0x00000000)
 	{
 #ifdef NEO
-		if (static_cast<CNEO_Player*>(this)->GetClass() == NEO_CLASS_RECON)
+		auto neoClass = static_cast<CNEO_Player*>(this)->GetClass();
+		if (neoClass == NEO_CLASS_RECON || neoClass == NEO_CLASS_PSYCHO)
 		{
 			// Is the system fully charged?
 			if (m_HL2Local.m_flSuitPower >= 100.0f)
