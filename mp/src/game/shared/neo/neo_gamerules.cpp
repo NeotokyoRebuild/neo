@@ -1232,6 +1232,11 @@ void CNEORules::SetWinningDMPlayer(CNEO_Player *pWinner)
 		return;
 	}
 
+	if (CNEOGameConfig::s_pGameRulesToConfig)
+	{
+		CNEOGameConfig::s_pGameRulesToConfig->OutputRoundEnd();
+	}
+
 	SetRoundStatus(NeoRoundStatus::PostRound);
 	char victoryMsg[128];
 	// TODO: Per client since client has neo_name settings
@@ -2746,6 +2751,11 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 		return;
 	}
 
+	if (CNEOGameConfig::s_pGameRulesToConfig)
+	{
+		CNEOGameConfig::s_pGameRulesToConfig->OutputRoundEnd();
+	}
+
 	if (bForceMapReset)
 	{
 		RestartGame();
@@ -2855,6 +2865,8 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 		case NEO_VICTORY_STALEMATE:
 			V_sprintf_safe(victoryMsg, "TIE\n");
 			break;
+		case NEO_VICTORY_MAPIO:
+			break;
 		default:
 			V_sprintf_safe(victoryMsg, "Unknown Neotokyo victory reason %i\n", iWinReason);
 			Warning("%s", victoryMsg);
@@ -2868,7 +2880,10 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 	UserMessageBegin(filter, "RoundResult");
 	WRITE_STRING(team == TEAM_JINRAI ? "jinrai" : team == TEAM_NSF ? "nsf" : "tie");	// which team won
 	WRITE_FLOAT(gpGlobals->curtime);													// when did they win
-	WRITE_STRING(victoryMsg);															// extra message (who capped or last kill or who got the most points or whatever)
+	if(iWinReason != NEO_VICTORY_MAPIO)
+	{ 
+		WRITE_STRING(victoryMsg);															// extra message (who capped or last kill or who got the most points or whatever)
+	}
 	MessageEnd();
 
 	EmitSound_t soundParams;
@@ -3519,6 +3534,11 @@ void CNEORules::SetRoundStatus(NeoRoundStatus status)
 		if (status == NeoRoundStatus::RoundLive)
 		{
 			UTIL_CenterPrintAll("- GO! GO! GO! -\n");
+
+			if (CNEOGameConfig::s_pGameRulesToConfig)
+			{
+				CNEOGameConfig::s_pGameRulesToConfig->OutputRoundStart();
+			}
 		}
 #endif
 	}
