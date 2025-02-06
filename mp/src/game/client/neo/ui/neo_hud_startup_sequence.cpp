@@ -39,9 +39,10 @@ void CNEOHud_StartupSequence::ApplySchemeSettings(vgui::IScheme* pScheme)
 	BaseClass::ApplySchemeSettings(pScheme);
 
 	m_hFont = pScheme->GetFont("BOOT");
+	int fontTall = surface()->GetFontTall(m_hFont);
 	surface()->DrawSetTextFont(m_hFont);
 
-	SetBounds(xpos, ypos, wide, tall);
+	SetBounds(xpos, ypos - fontTall, wide, tall);
 	SetFgColor(COLOR_TRANSPARENT);
 	SetBgColor(COLOR_TRANSPARENT);
 }
