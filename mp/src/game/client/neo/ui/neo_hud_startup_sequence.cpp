@@ -42,7 +42,7 @@ void CNEOHud_StartupSequence::ApplySchemeSettings(vgui::IScheme* pScheme)
 	int fontTall = surface()->GetFontTall(m_hFont);
 	surface()->DrawSetTextFont(m_hFont);
 
-	SetBounds(xpos, ypos - fontTall, wide, tall);
+	SetBounds(xpos, ypos - fontTall, wide, fontTall);
 	SetFgColor(COLOR_TRANSPARENT);
 	SetBgColor(COLOR_TRANSPARENT);
 }

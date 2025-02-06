@@ -28,7 +28,6 @@ private:
 	CPanelAnimationVarAliasType(int, xpos, "xpos", "10", "proportional_xpos");
 	CPanelAnimationVarAliasType(int, ypos, "ypos", "426", "proportional_ypos");
 	CPanelAnimationVarAliasType(int, wide, "wide", "640", "proportional_int");
-	CPanelAnimationVarAliasType(int, tall, "tall", "20", "proportional_int");
 
 private:
 	CNEOHud_StartupSequence(const CNEOHud_StartupSequence&other);
