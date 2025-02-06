@@ -415,7 +415,7 @@ CNEO_Player::CNEO_Player()
 	m_flLastSuperJumpTime = 0;
 
 	m_bFirstDeathTick = true;
-	m_bCorpseSpawned = false;
+	m_bCorpseSet = false;
 	m_bPreviouslyReloading = false;
 	m_bLastTickInThermOpticCamo = false;
 	m_bIsPendingSpawnForThisRound = false;
@@ -540,7 +540,7 @@ void CNEO_Player::Spawn(void)
 	m_bInVision = false;
 	m_nVisionLastTick = 0;
 	m_bInLean = NEO_LEAN_NONE;
-	m_bCorpseSpawned = false;
+	m_bCorpseSet = false;
 	m_bAllowGibbing = true;
 	m_bIneligibleForLoadoutPick = false;
 
@@ -1637,12 +1637,6 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 		}
 	}
 
-	// Handle Corpse and Gibs
-	if (!m_bCorpseSpawned) // Event_Killed can be called multiple times, only spawn the dead model once
-	{
-		SpawnDeadModel(info);
-	}
-
 	if (!IsBot() && !IsHLTV())
 	{
 		StartShowDmgStats(&info);
@@ -1654,6 +1648,12 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 	}
 
 	BaseClass::Event_Killed(info);
+
+	// Handle Corpse and Gibs
+	if (!m_bCorpseSet) // Event_Killed can be called multiple times, only set the dead model and spawn gibs once
+	{
+		SetDeadModel(info);
+	}
 }
 
 void CNEO_Player::Weapon_DropOnDeath(CBaseCombatWeapon* pWeapon, Vector velocity, CBaseEntity *pAttacker)
@@ -1708,9 +1708,9 @@ void CNEO_Player::Weapon_DropOnDeath(CBaseCombatWeapon* pWeapon, Vector velocity
 	Weapon_Detach(pWeapon);
 }
 
-void CNEO_Player::SpawnDeadModel(const CTakeDamageInfo& info)
+void CNEO_Player::SetDeadModel(const CTakeDamageInfo& info)
 {
-	m_bCorpseSpawned = true;
+	m_bCorpseSet = true;
 
 	int deadModelType = -1;
 
@@ -1808,8 +1808,10 @@ void CNEO_Player::SetPlayerCorpseModel(int type)
 		return;
 	}
 
-	SetModel(model);
-	SetPlaybackRate(1.0f);
+	if (m_hRagdoll)
+	{
+		m_hRagdoll->SetModel(model);
+	}
 }
 
 float CNEO_Player::GetReceivedDamageScale(CBaseEntity* pAttacker)

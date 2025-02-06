@@ -109,7 +109,7 @@ public:
 
 	void GiveLoadoutWeapon(void);
 	void SetPlayerTeamModel(void);
-	void SpawnDeadModel(const CTakeDamageInfo& info);
+	void SetDeadModel(const CTakeDamageInfo& info);
 	void SetPlayerCorpseModel(int type);
 	virtual void PickDefaultSpawnTeam(void) OVERRIDE;
 
@@ -276,7 +276,7 @@ public:
 
 private:
 	bool m_bFirstDeathTick;
-	bool m_bCorpseSpawned;
+	bool m_bCorpseSet;
 	bool m_bPreviouslyReloading;
 	bool m_szNeoNameHasSet;
 
