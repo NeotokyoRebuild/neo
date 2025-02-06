@@ -34,8 +34,8 @@ private:
 LINK_ENTITY_TO_CLASS( neo_bloom_controller, CNeoBloomController );
 
 BEGIN_DATADESC( CNeoBloomController )
-	DEFINE_FIELD( m_flBloomAmountSetting, FIELD_FLOAT ),
-	DEFINE_INPUT( m_flBloomAmountSetting, FIELD_FLOAT, "bloomamount"),
+	DEFINE_KEYFIELD( m_flBloomAmountSetting, FIELD_FLOAT, "bloomamount" ),
+	DEFINE_INPUTFUNC( FIELD_FLOAT, "SetBloomScale", InputSetBloomScale ),
 END_DATADESC()
 
 
