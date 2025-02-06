@@ -16,6 +16,7 @@
 #include "viewrender.h"
 #include "r_efx.h"
 #include "dlight.h"
+#include "in_main.h"
 #else
 #include "neo_player.h"
 #endif
@@ -255,7 +256,7 @@ int CNEOPredictedViewModel::DrawModel(int flags)
 		}
 		if (pPlayer->GetClass() == NEO_CLASS_SUPPORT && pPlayer->IsInVision())
 		{
-			IMaterial* pass = materials->FindMaterial("dev/thermal_third", TEXTURE_GROUP_MODEL);
+			IMaterial* pass = materials->FindMaterial("dev/thermal_view_model", TEXTURE_GROUP_MODEL);
 			Assert(pass && !pass->IsErrorMaterial());
 
 			if (pass && !pass->IsErrorMaterial())
@@ -286,7 +287,11 @@ float GetLeanRatio(const float leanAngle)
 
 #ifdef CLIENT_DLL
 ConVar cl_neo_lean_viewmodel_only("cl_neo_lean_viewmodel_only", "0", FCVAR_ARCHIVE, "Rotate view-model instead of camera when leaning", true, 0, true, 1);
-#endif
+ConVar cl_neo_lean_automatic("cl_neo_lean_automatic", "0", FCVAR_ARCHIVE, "Automatic leaning around corners", true, 0, true, 1);
+#ifdef DEBUG
+ConVar cl_neo_lean_automatic_debug("cl_neo_lean_automatic_debug", "0", FCVAR_ARCHIVE | FCVAR_DEVELOPMENTONLY, "Show automatic leaning tracelines", true, 0, true, 1);
+#endif // DEBUG
+#endif // CLIENT_DLL
 
 float CNEOPredictedViewModel::lean(CNEO_Player *player){
 	Assert(player);
@@ -299,6 +304,62 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 
 	if (player->IsAlive())
 	{
+#ifdef CLIENT_DLL
+		if (cl_neo_lean_automatic.GetBool())
+		{
+			Vector startPos = player->GetAbsOrigin();
+			startPos.z = player->EyePosition().z; // Ideally shouldn't move due to lean but this is a nice spot
+			constexpr float tracelineAngleChange = 15.f;
+			constexpr int startingDistance = 80;
+			int distance = startingDistance;
+			int total = 0;
+			trace_t tr;
+			CTraceFilterHitAll filter;
+			for (int i = 1; i <= 10; i++)
+			{
+				Vector endPos = startPos;
+				float offset = (i / (tracelineAngleChange - i));
+				endPos.x += cos(DEG2RAD(viewAng.y) + offset) * distance;
+				endPos.y += sin(DEG2RAD(viewAng.y) + offset) * distance;
+				UTIL_TraceLine(startPos, endPos, MASK_ALL, &filter, &tr);
+				if (tr.fraction != 1.0)
+				{
+					total -= 1;
+				}
+				distance = Max(20, distance - 5);
+#ifdef DEBUG
+				if (cl_neo_lean_automatic_debug.GetBool())
+				{
+					DebugDrawLine(startPos, endPos, 0, tr.fraction == 1.0 ? 255 : 0, 255, 0, 0);
+				}
+#endif // DEBUG
+			}
+			distance = startingDistance;
+			for (int i = -1; i >= -10; i--)
+			{
+				Vector endPos = startPos;
+				float offset = (i / (tracelineAngleChange + i));
+				endPos.x += cos(DEG2RAD(viewAng.y) + offset) * distance;
+				endPos.y += sin(DEG2RAD(viewAng.y) + offset) * distance;
+				UTIL_TraceLine(startPos, endPos, MASK_ALL, &filter, &tr);
+				if (tr.fraction != 1.0)
+				{
+					total += 1;
+				}
+				distance = Max(20, distance - 5);
+#ifdef DEBUG
+				if (cl_neo_lean_automatic_debug.GetBool())
+				{
+					DebugDrawLine(startPos, endPos, 255, tr.fraction == 1.0 ? 255 : 0, 0, 0, 0);
+				}
+#endif // DEBUG
+			}
+			if (total < 0)	{ IN_LeanRight(); }
+			else if (total > 0) { IN_LeanLeft(); }
+			else { IN_LeanReset(); }
+		}
+#endif // CLIENT_DLL
+
 		switch (player->m_bInLean.Get())
 		{
 		case NEO_LEAN_LEFT:

@@ -535,14 +535,14 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	NeoUI::BeginContext(&g_uiCtx, param.eMode, nullptr, "CtxRoot");
 	NeoUI::BeginSection(true);
 	{
-		const int iFlagToMatch = engine->IsInGame() ? FLAG_SHOWINGAME : FLAG_SHOWINMAIN;
+		const int iFlagToMatch = IsInGame() ? FLAG_SHOWINGAME : FLAG_SHOWINMAIN;
 		for (int i = 0; i < BTNS_TOTAL; ++i)
 		{
 			const auto btnInfo = BTNS_INFO[i];
 			if (btnInfo.flags & iFlagToMatch)
 			{
 				const auto retBtn = NeoUI::Button(m_wszDispBtnTexts[i]);
-				if (retBtn.bPressed || (i == MMBTN_QUIT && !engine->IsInGame() && NeoUI::Bind(KEY_ESCAPE)))
+				if (retBtn.bPressed || (i == MMBTN_QUIT && !IsInGame() && NeoUI::Bind(KEY_ESCAPE)))
 				{
 					surface()->PlaySound("ui/buttonclickrelease.wav");
 					if (btnInfo.gamemenucommand)
@@ -571,14 +571,13 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	NeoUI::EndSection();
 
 	const int iBtnPlaceXMid = (param.wide / 4);
-	const int iRightXPos = iBtnPlaceXMid + (m_iBtnWide / 2) + g_uiCtx.iMarginX;
+	const int iBtnWide = m_iTitleWidth + (2 * g_uiCtx.iMarginX);
+	const int iRightXPos = iBtnPlaceXMid + (iBtnWide / 2) + g_uiCtx.iMarginX;
 	int iRightSideYStart = yTopPos;
 
 	// Draw top steam section portion
 	{
 		// Draw title
-		m_iBtnWide = m_iTitleWidth + (2 * g_uiCtx.iMarginX);
-
 		surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_LOGO].hdl);
 		surface()->DrawSetTextColor(COLOR_NEOTITLE);
 		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth / 2), yTopPos - m_iTitleHeight);
@@ -671,7 +670,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 
 	g_uiCtx.dPanel.x = iRightXPos;
 	g_uiCtx.dPanel.y = iRightSideYStart;
-	if (engine->IsInGame())
+	if (IsInGame())
 	{
 		g_uiCtx.dPanel.wide = m_flWideAs43 * 0.7f;
 		g_uiCtx.flWgXPerc = 0.25f;
@@ -682,7 +681,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	}
 	NeoUI::BeginSection();
 	{
-		if (engine->IsInGame())
+		if (IsInGame())
 		{
 			// Show the current server's information
 			NeoUI::Label(L"Hostname:", m_wszHostname);
@@ -869,7 +868,7 @@ void CNeoRoot::MainLoopNewGame(const MainLoopParam param)
 				NeoUI::Pad();
 				if (NeoUI::Button(L"Start").bPressed)
 				{
-					if (engine->IsInGame())
+					if (IsInGame())
 					{
 						engine->ClientCmd_Unrestricted("disconnect");
 					}
@@ -1108,7 +1107,7 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 				{
 					if (bEnterServer || NeoUI::Button(L"Enter").bPressed)
 					{
-						if (engine->IsInGame())
+						if (IsInGame())
 						{
 							engine->ClientCmd_Unrestricted("disconnect");
 						}
@@ -1279,7 +1278,7 @@ void CNeoRoot::MainLoopServerDetails(const MainLoopParam param)
 
 void CNeoRoot::MainLoopPlayerList(const MainLoopParam param)
 {
-	if (engine->IsInGame())
+	if (IsInGame())
 	{
 		const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
 		g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
