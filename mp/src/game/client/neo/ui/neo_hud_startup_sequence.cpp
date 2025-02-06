@@ -105,7 +105,7 @@ void CNEOHud_StartupSequence::DrawNeoHudElement()
 
 	if (gpGlobals->curtime >= m_flNextTimeChangeText)
 	{
-		m_flNextTimeChangeText = gpGlobals->curtime + 0.333 + max(0, startup_sequence_distribution(startup_sequence_gen));
+		m_flNextTimeChangeText = gpGlobals->curtime + 0.333 + MAX(0, startup_sequence_distribution(startup_sequence_gen));
 		m_iSelectedText = random->RandomInt(0, FLAVOUR_TEXT_SIZE - 2);
 	}
 
