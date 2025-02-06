@@ -10,15 +10,16 @@
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
-
 #ifdef CLIENT_DLL
 static void RecvProxy_ScaleChangeFlag(const CRecvProxyData* pData, void* pStruct, void* pOut)
 {
+	CNEOPredictedViewModelMuzzleFlash* pViewModel = ((CNEOPredictedViewModelMuzzleFlash*)pStruct);
+	if (pData->m_Value.m_Int != pViewModel->m_bScaleChangeFlag)
+	{ // Client side value for m_flModelScale will not be updated correctly, work out the correct scale clientside
+		pViewModel->UpdateMuzzleFlashProperties(GetActiveWeapon());
+	}
 	// Chain through to the default recieve proxy ...
 	RecvProxy_IntToEHandle(pData, pStruct, pOut);
-
-	CNEOPredictedViewModelMuzzleFlash* pViewModel = ((CNEOPredictedViewModelMuzzleFlash*)pStruct);
-	pViewModel->UpdateMuzzleFlashProperties(GetActiveWeapon());
 }
 #endif // CLIENT_DLL
 
