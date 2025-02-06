@@ -53,7 +53,7 @@ struct FlavourTextEntry
 	const wchar_t* text;
 	const int length;
 } FLAVOUR_TEXT[FLAVOUR_TEXT_SIZE] = {
-	{ WSZ(L".Entering 0critical section") },
+	{ WSZ(L".Entering critical section") },
 	{ WSZ(L".Sleeping") },
 	{ WSZ(L".Defraging memory") },
 	{ WSZ(L".Garbage collection") },
