@@ -5,7 +5,6 @@
 #include <vgui/ISurface.h>
 #include "c_neo_player.h"
 #include "neo_gamerules.h"
-#include <random>
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -85,10 +84,6 @@ struct FlavourTextEntry
 	{ WSZ(L".Init sequence started") },
 };
 
-std::random_device startup_sequence_rd{};
-std::mt19937 startup_sequence_gen{ startup_sequence_rd() };
-std::normal_distribution<float> startup_sequence_distribution(0.25, 0.25);
-
 void CNEOHud_StartupSequence::DrawNeoHudElement()
 {
 	if (!ShouldDraw())
@@ -105,7 +100,7 @@ void CNEOHud_StartupSequence::DrawNeoHudElement()
 
 	if (gpGlobals->curtime >= m_flNextTimeChangeText)
 	{
-		m_flNextTimeChangeText = gpGlobals->curtime + 0.333 + MAX(0, startup_sequence_distribution(startup_sequence_gen));
+		m_flNextTimeChangeText = gpGlobals->curtime + 0.333 + MAX(0, randomgaussian->RandomFloat(0.25, 0.25));
 		m_iSelectedText = random->RandomInt(0, FLAVOUR_TEXT_SIZE - 2);
 	}
 
