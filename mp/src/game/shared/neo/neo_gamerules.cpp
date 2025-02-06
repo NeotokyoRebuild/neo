@@ -753,6 +753,14 @@ void CNEORules::CheckGameType()
 void CNEORules::Think(void)
 {
 #ifdef GAME_DLL
+	if (gpGlobals->eLoadType == MapLoad_Background)
+#else // CLIENT_DLL
+	if (engine->IsLevelMainMenuBackground())
+#endif // GAME_DLL || CLIENT_DLL
+	{
+		return;
+	}
+#ifdef GAME_DLL
 	const bool bIsIdleState = m_nRoundStatus == NeoRoundStatus::Idle || m_nRoundStatus == NeoRoundStatus::Warmup;
 	bool bIsPause = m_nRoundStatus == NeoRoundStatus::Pause;
 	if (bIsIdleState && gpGlobals->curtime > m_flNeoNextRoundStartTime)
