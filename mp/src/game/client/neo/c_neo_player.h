@@ -111,7 +111,6 @@ public:
 
 private:
 	float GetActiveWeaponSpeedScale() const;
-	float GetBackwardsMovementPenaltyScale() const { return ((m_nButtons & IN_BACK) ? NEO_SLOW_MODIFIER : 1.0); }
 
 	bool HandleDeathSpecCamSwitch(Vector& eyeOrigin, QAngle& eyeAngles, float& fov);
 
