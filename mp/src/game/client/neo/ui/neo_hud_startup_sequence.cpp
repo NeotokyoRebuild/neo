@@ -47,45 +47,53 @@ void CNEOHud_StartupSequence::ApplySchemeSettings(vgui::IScheme* pScheme)
 	SetBgColor(COLOR_TRANSPARENT);
 }
 
+constexpr int FLAVOUR_TEXT_SIZE = 29;
+struct FlavourTextEntry
+{
+	const wchar_t* text;
+	const int length;
+} FLAVOUR_TEXT[FLAVOUR_TEXT_SIZE] = {
+	{ L".Entering critical section", 26},
+	{ L".Sleeping", 9 },
+	{ L".Defraging memory", 17 },
+	{ L".Garbage collection", 19 },
+	{ L".Reference count not zero", 25 },
+	{ L".Reconfiguring threads for optimal speed", 40 },
+	{ L".Code 0x0", 9 },
+	{ L".Warning, this has been code depreciated", 40 },
+	{ L".Loading runtime combat libraries", 33 },
+	{ L".Analyzing signal cross talk", 28 },
+	{ L".Linking to local systems", 25 },
+	{ L".HHOS", 5 },
+	{ L".Initializing MARTYR(TM) system intercepts", 42 },
+	{ L".Checking ROE subsystem", 23 },
+	{ L".Rebooting command module", 25 },
+	{ L".Staging interrupts", 19 },
+	{ L".Repairing netsplit", 19 },
+	{ L".Boosting comm signal", 21 },
+	{ L".Compensating for combat network latency", 40 },
+	{ L".Testing neural weapon link sequencing", 38 },
+	{ L".Configuring firewalls", 22 },
+	{ L".Booting combat readiness systems", 33 },
+	{ L".Updating firmware", 18 },
+	{ L".Zero divide warning", 20 },
+	{ L".ASSERT", 7 },
+	{ L".Downloading update", 19 },
+	{ L".Charging flux capacitor", 24 },
+	{ L".Muxing input signals", 21 },
+	{ L".Init sequence started", 22 },
+};
+
+std::random_device startup_sequence_rd{};
+std::mt19937 startup_sequence_gen{ startup_sequence_rd() };
+std::normal_distribution<float> startup_sequence_distribution(0.25, 0.25);
+
 void CNEOHud_StartupSequence::DrawNeoHudElement()
 {
 	if (!ShouldDraw())
 	{
 		return;
 	}
-
-	const int FLAVOUR_TEXT_SIZE = 29;
-	const wchar_t *FLAVOUR_TEXT[FLAVOUR_TEXT_SIZE] = {
-		L".Entering critical section",
-		L".Sleeping",
-		L".Defraging memory",
-		L".Garbage collection",
-		L".Reference count not zero",
-		L".Reconfiguring threads for optimal speed",
-		L".Code 0x0",
-		L".Warning, this has been code depreciated",
-		L".Loading runtime combat libraries",
-		L".Analyzing signal cross talk",
-		L".Linking to local systems",
-		L".HHOS",
-		L".Initializing MARTYR(TM) system intercepts",
-		L".Checking ROE subsystem",
-		L".Rebooting command module",
-		L".Staging interrupts",
-		L".Repairing netsplit",
-		L".Boosting comm signal",
-		L".Compensating for combat network latency",
-		L".Testing neural weapon link sequencing",
-		L".Configuring firewalls",
-		L".Booting combat readiness systems",
-		L".Updating firmware",
-		L".Zero divide warning",
-		L".ASSERT",
-		L".Downloading update",
-		L".Charging flux capacitor",
-		L".Muxing input signals",
-		L".Init sequence started"
-	};
 
 	if (NEORules()->GetRoundStatus() != NeoRoundStatus::PreRoundFreeze)
 	{
@@ -96,17 +104,14 @@ void CNEOHud_StartupSequence::DrawNeoHudElement()
 
 	if (gpGlobals->curtime >= m_flNextTimeChangeText)
 	{
-		std::random_device rd{};
-		std::mt19937 gen{ rd() };
-		std::normal_distribution<float> distribution(0.25, 0.25);
-		m_flNextTimeChangeText = gpGlobals->curtime + 0.333 + max(0, distribution(gen));
+		m_flNextTimeChangeText = gpGlobals->curtime + 0.333 + max(0, startup_sequence_distribution(startup_sequence_gen));
 		m_iSelectedText = random->RandomInt(0, FLAVOUR_TEXT_SIZE - 2);
 	}
 
 	surface()->DrawSetTextFont(m_hFont);
 	surface()->DrawSetTextColor(COLOR_FADED_WHITE);
 	surface()->DrawSetTextPos(0,0);
-	surface()->DrawPrintText(FLAVOUR_TEXT[m_iSelectedText], wcslen(FLAVOUR_TEXT[m_iSelectedText]));
+	surface()->DrawPrintText(FLAVOUR_TEXT[m_iSelectedText].text, FLAVOUR_TEXT[m_iSelectedText].length);
 }
 
 void CNEOHud_StartupSequence::Paint()
