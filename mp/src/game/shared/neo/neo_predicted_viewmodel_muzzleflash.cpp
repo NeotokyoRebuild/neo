@@ -1,22 +1,42 @@
 #include "cbase.h"
+#include "neo_predicted_viewmodel_muzzleflash.h"
 #include "model_types.h"
 
 #ifdef GAME_DLL
 #include "baseanimating.h"
 #endif
 
-#include "neo_predicted_viewmodel_muzzleflash.h"
+#include "weapon_neobasecombatweapon.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
+
+#ifdef CLIENT_DLL
+static void RecvProxy_ScaleChangeFlag(const CRecvProxyData* pData, void* pStruct, void* pOut)
+{
+	// Chain through to the default recieve proxy ...
+	RecvProxy_IntToEHandle(pData, pStruct, pOut);
+
+	CNEOPredictedViewModelMuzzleFlash* pViewModel = ((CNEOPredictedViewModelMuzzleFlash*)pStruct);
+	pViewModel->UpdateMuzzleFlashProperties(GetActiveWeapon());
+}
+#endif // CLIENT_DLL
 
 IMPLEMENT_NETWORKCLASS_ALIASED(NEOPredictedViewModelMuzzleFlash, DT_NEOPredictedViewModelMuzzleFlash)
 
 BEGIN_NETWORK_TABLE(CNEOPredictedViewModelMuzzleFlash, DT_NEOPredictedViewModelMuzzleFlash)
 #ifndef CLIENT_DLL
 SendPropEHandle(SENDINFO_NAME(m_hMoveParent, moveparent)),
+SendPropBool(SENDINFO(m_bActive)),
+SendPropInt(SENDINFO(m_iAngleZ)),
+SendPropInt(SENDINFO(m_iAngleZIncrement)),
+SendPropBool(SENDINFO(m_bScaleChangeFlag))
 #else
 RecvPropInt(RECVINFO_NAME(m_hNetworkMoveParent, moveparent), 0, RecvProxy_IntToMoveParent),
+RecvPropBool(RECVINFO(m_bActive)),
+RecvPropInt(RECVINFO(m_iAngleZ)),
+RecvPropInt(RECVINFO(m_iAngleZIncrement)),
+RecvPropEHandle(RECVINFO(m_bScaleChangeFlag), RecvProxy_ScaleChangeFlag)
 #endif
 END_NETWORK_TABLE()
 
@@ -85,7 +105,75 @@ void CNEOPredictedViewModelMuzzleFlash::ClientThink()
 	CBasePlayer* pOwner = ToBasePlayer(GetOwner());
 	if (pOwner)
 	{
-		pOwner->UpdateMuzzleFlashProperties(pOwner->GetActiveWeapon());
+		UpdateMuzzleFlashProperties(pOwner->GetActiveWeapon(), false);
 	}
 }
-#endif
+
+#endif //CLIENT_DLL
+
+void CNEOPredictedViewModelMuzzleFlash::UpdateMuzzleFlashProperties(CBaseCombatWeapon* pWeapon, bool repeat)
+{
+	auto neoWep = static_cast<CNEOBaseCombatWeapon*>(pWeapon);
+	if (!neoWep)
+	{
+#ifdef CLIENT_DLL
+		// Server likely switched us to a weapon that doesn't yet exist, try updating the muzzle flash properties again next tick, but not recursively
+		if (repeat)
+		{
+			SetNextClientThink(gpGlobals->curtime + gpGlobals->interval_per_tick);
+		}
+#endif //CLIENT_DLL
+		return;
+	}
+
+	const auto neoWepBits = neoWep->GetNeoWepBits();
+	if (neoWepBits & (NEO_WEP_THROWABLE | NEO_WEP_GHOST | NEO_WEP_KNIFE | NEO_WEP_SUPPRESSED))
+	{
+		m_bActive = false;
+	}
+	else if (neoWepBits & (NEO_WEP_PZ | NEO_WEP_TACHI | NEO_WEP_KYLA))
+	{
+		m_bActive = true;
+		m_nSkin = 1;
+		m_iAngleZ = 0;
+		m_iAngleZIncrement = -100;
+		SetModelScale(0.75);
+		m_bScaleChangeFlag = !m_bScaleChangeFlag;
+	}
+	else if (neoWepBits & NEO_WEP_SUPA7)
+	{
+		m_bActive = true;
+		m_nSkin = 1;
+		m_iAngleZ = 0;
+		m_iAngleZIncrement = -90;
+		SetModelScale(2);
+		m_bScaleChangeFlag = !m_bScaleChangeFlag;
+	}
+	else if (neoWepBits & (NEO_WEP_SRM | NEO_WEP_JITTE))
+	{
+		m_bActive = true;
+		m_nSkin = 0;
+		m_iAngleZ = 0;
+		m_iAngleZIncrement = -90;
+		SetModelScale(0.75);
+		m_bScaleChangeFlag = !m_bScaleChangeFlag;
+	}
+	else if (neoWepBits & (NEO_WEP_MX | NEO_WEP_AA13))
+	{
+		m_bActive = true;
+		m_nSkin = 0;
+		m_iAngleZ = 0;
+		m_iAngleZIncrement = -100;
+		SetModelScale(0.6);
+		m_bScaleChangeFlag = !m_bScaleChangeFlag;
+	}
+	else
+	{
+		m_bActive = true;
+		m_nSkin = 0;
+		m_iAngleZ = 0;
+		m_iAngleZIncrement = -90;
+		SetModelScale(0.75);
+		m_bScaleChangeFlag = !m_bScaleChangeFlag;
+	}
+}
