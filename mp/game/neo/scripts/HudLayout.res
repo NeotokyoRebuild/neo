@@ -672,7 +672,16 @@
 		"wide"	"640"
 		"tall"	"480"
 	}
-	
+
+	neo_hint
+	{
+		"fieldName"		"neo_hint"
+		"xpos"	"466"
+		"ypos"	"59"
+		"wide"	"142"
+		"tall"	"284"
+	}
+  
 	neo_ghost_startup_sequence
 	{
 		"fieldName"		"neo_ghost_startup_sequence"
@@ -680,5 +689,5 @@
 		"ypos"	"426"
 		"wide"	"640"
 		"tall"	"20"
-	}
+  }
 }
