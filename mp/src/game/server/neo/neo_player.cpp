@@ -679,7 +679,7 @@ void CNEO_Player::CalculateSpeed(void)
 		constexpr float SLOWDOWN_TIME = 1.15f;
 		if (timeSinceLanding < SLOWDOWN_TIME)
 		{
-			speed = MAX(75,speed * MAX(0.01, 1 - (((SLOWDOWN_TIME - timeSinceLanding) * 35) * 0.05)));
+			speed = MAX(75,speed * MAX(0.01, 1 - ((SLOWDOWN_TIME - timeSinceLanding) * 1.75)));
 		}
 	}
 
