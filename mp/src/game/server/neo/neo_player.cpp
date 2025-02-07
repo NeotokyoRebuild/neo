@@ -667,6 +667,22 @@ extern ConVar neo_ghost_bhopping;
 void CNEO_Player::CalculateSpeed(void)
 {
 	float speed = GetNormSpeed();
+
+	if (auto pNeoWep = static_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon()))
+	{
+		speed *= pNeoWep->GetSpeedScale();
+	}
+	// Slowdown after landing 
+	if (!IsAirborne() && m_iNeoClass != NEO_CLASS_RECON)
+	{
+		const float timeSinceLanding = gpGlobals->curtime - m_flLastAirborneJumpOkTime;
+		constexpr float SLOWDOWN_TIME = 1.15f;
+		if (timeSinceLanding < SLOWDOWN_TIME)
+		{
+			speed = MAX(75,speed * MAX(0.01, 1 - (((SLOWDOWN_TIME - timeSinceLanding) * 35) * 0.05)));
+		}
+	}
+
 	static constexpr float DUCK_WALK_SPEED_MODIFIER = 0.75;
 	if (m_nButtons & IN_DUCK || IsDucked() || IsDucking())
 	{
@@ -687,10 +703,6 @@ void CNEO_Player::CalculateSpeed(void)
 		static constexpr float AIM_SPEED_MODIFIER = 0.6;
 		speed *= AIM_SPEED_MODIFIER;
 	}
-	if (auto pNeoWep = static_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon()))
-	{
-		speed *= pNeoWep->GetSpeedScale();
-	}
 
 	Vector absoluteVelocity = GetAbsVelocity();
 	absoluteVelocity.z = 0.f;
@@ -703,23 +715,7 @@ void CNEO_Player::CalculateSpeed(void)
 		absoluteVelocity *= -overSpeed;
 		ApplyAbsVelocityImpulse(absoluteVelocity);
 	}
-
-	// Slowdown after landing 
-	if (!IsAirborne() && m_iNeoClass != NEO_CLASS_RECON)
-	{
-		const float timeSinceLanding = gpGlobals->curtime - m_flLastAirborneJumpOkTime;
-		constexpr float INITIAL_SLOWDOWN_TIME = 0.25f;
-		constexpr float IMPAIRED_ACCELERATION_TIME = INITIAL_SLOWDOWN_TIME + (1 / 3.f);
-		if (timeSinceLanding < INITIAL_SLOWDOWN_TIME)
-		{
-			speed = MIN(speed, 75.f);
-		}
-		else if (timeSinceLanding < IMPAIRED_ACCELERATION_TIME)
-		{
-			speed *= timeSinceLanding / IMPAIRED_ACCELERATION_TIME;
-		}
-	}
-	SetMaxSpeed(MAX(speed, 56));
+	SetMaxSpeed(MAX(speed, 55));
 }
 
 void CNEO_Player::PreThink(void)
