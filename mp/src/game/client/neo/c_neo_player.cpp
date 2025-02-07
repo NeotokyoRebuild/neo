@@ -822,7 +822,7 @@ void C_NEO_Player::CalculateSpeed(void)
 	}
 
 	static constexpr float DUCK_WALK_SPEED_MODIFIER = 0.75;
-	if (m_nButtons & IN_DUCK || IsDucked() || IsDucking())
+	if (GetFlags() & FL_DUCKING)
 	{
 		speed *= DUCK_WALK_SPEED_MODIFIER;
 	}
