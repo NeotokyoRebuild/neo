@@ -815,7 +815,7 @@ void C_NEO_Player::CalculateSpeed(void)
 		constexpr float SLOWDOWN_TIME = 1.15f;
 		if (timeSinceLanding < SLOWDOWN_TIME)
 		{
-			speed = MAX(75, speed * MAX(0.01, 1 - ((SLOWDOWN_TIME - timeSinceLanding) * 1.75)));
+			speed = MAX(75, speed * (1 - ((SLOWDOWN_TIME - timeSinceLanding) * 1.75)));
 		}
 	}
 
