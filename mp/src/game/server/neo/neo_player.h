@@ -251,6 +251,7 @@ public:
 
 	CNetworkVar(float, m_flCamoAuxLastTime);
 	CNetworkVar(int, m_nVisionLastTick);
+	CNetworkVar(float, m_flJumpLastTime);
 
 	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
 	CNetworkArray(int, m_rfAttackersScores, (MAX_PLAYERS + 1));

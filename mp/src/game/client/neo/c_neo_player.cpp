@@ -77,6 +77,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 
 	RecvPropTime(RECVINFO(m_flCamoAuxLastTime)),
 	RecvPropInt(RECVINFO(m_nVisionLastTick)),
+	RecvPropTime(RECVINFO(m_flJumpLastTime)),
 
 	RecvPropArray(RecvPropVector(RECVINFO(m_rvFriendlyPlayerPositions[0])), m_rvFriendlyPlayerPositions),
 	RecvPropArray(RecvPropInt(RECVINFO(m_rfAttackersScores[0])), m_rfAttackersScores),
@@ -108,6 +109,7 @@ BEGIN_PREDICTION_DATA(C_NEO_Player)
 	DEFINE_PRED_FIELD(m_bHasBeenAirborneForTooLongToSuperJump, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 
 	DEFINE_PRED_FIELD(m_nVisionLastTick, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_flJumpLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
 END_PREDICTION_DATA()
 
 static void __MsgFunc_DamageInfo(bf_read& msg)
@@ -808,14 +810,14 @@ void C_NEO_Player::CalculateSpeed(void)
 	{
 		speed *= pNeoWep->GetSpeedScale();
 	}
-	// Slowdown after landing 
+	// Slowdown after jumping
 	if (!IsAirborne() && m_iNeoClass != NEO_CLASS_RECON)
 	{
-		const float timeSinceLanding = gpGlobals->curtime - m_flLastAirborneJumpOkTime;
+		const float timeSinceJumping = gpGlobals->curtime - m_flJumpLastTime;
 		constexpr float SLOWDOWN_TIME = 1.15f;
-		if (timeSinceLanding < SLOWDOWN_TIME)
+		if (timeSinceJumping < SLOWDOWN_TIME)
 		{
-			speed = MAX(75, speed * (1 - ((SLOWDOWN_TIME - timeSinceLanding) * 1.75)));
+			speed = MAX(75, speed * (1 - ((SLOWDOWN_TIME - timeSinceJumping) * 1.75)));
 		}
 	}
 

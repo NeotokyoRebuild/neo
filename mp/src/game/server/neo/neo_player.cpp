@@ -61,6 +61,7 @@ SendPropBool(SENDINFO(m_bIneligibleForLoadoutPick)),
 
 SendPropTime(SENDINFO(m_flCamoAuxLastTime)),
 SendPropInt(SENDINFO(m_nVisionLastTick)),
+SendPropTime(SENDINFO(m_flJumpLastTime)),
 
 SendPropString(SENDINFO(m_pszTestMessage)),
 
@@ -97,6 +98,7 @@ DEFINE_FIELD(m_bInAim, FIELD_BOOLEAN),
 
 DEFINE_FIELD(m_flCamoAuxLastTime, FIELD_TIME),
 DEFINE_FIELD(m_nVisionLastTick, FIELD_TICK),
+DEFINE_FIELD(m_flJumpLastTime, FIELD_TIME),
 
 DEFINE_FIELD(m_pszTestMessage, FIELD_STRING),
 
@@ -672,14 +674,14 @@ void CNEO_Player::CalculateSpeed(void)
 	{
 		speed *= pNeoWep->GetSpeedScale();
 	}
-	// Slowdown after landing 
+	// Slowdown after jumping
 	if (!IsAirborne() && m_iNeoClass != NEO_CLASS_RECON)
 	{
-		const float timeSinceLanding = gpGlobals->curtime - m_flLastAirborneJumpOkTime;
+		const float timeSinceJumping = gpGlobals->curtime - m_flJumpLastTime;
 		constexpr float SLOWDOWN_TIME = 1.15f;
-		if (timeSinceLanding < SLOWDOWN_TIME)
+		if (timeSinceJumping < SLOWDOWN_TIME)
 		{
-			speed = MAX(75,speed * (1 - ((SLOWDOWN_TIME - timeSinceLanding) * 1.75)));
+			speed = MAX(75,speed * (1 - ((SLOWDOWN_TIME - timeSinceJumping) * 1.75)));
 		}
 	}
 
