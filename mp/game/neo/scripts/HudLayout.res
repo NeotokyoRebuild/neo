@@ -685,8 +685,8 @@
 	neo_ghost_startup_sequence
 	{
 		"fieldName"		"neo_ghost_startup_sequence"
-		"xpos"	"10"
-		"ypos"	"446"
+		"xpos"	"6"
+		"ypos"	"440"
 		"wide"	"640"
   }
 }
