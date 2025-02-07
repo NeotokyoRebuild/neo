@@ -681,4 +681,12 @@
 		"wide"	"142"
 		"tall"	"284"
 	}
+  
+	neo_ghost_startup_sequence
+	{
+		"fieldName"		"neo_ghost_startup_sequence"
+		"xpos"	"6"
+		"ypos"	"440"
+		"wide"	"640"
+  }
 }
