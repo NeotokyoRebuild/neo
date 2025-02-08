@@ -163,7 +163,7 @@ void CWeaponGrenade::DecrementAmmo(CBaseCombatCharacter *pOwner)
 
 void CWeaponGrenade::ItemPostFrame(void)
 {
-	if (!HasPrimaryAmmo() && GetIdealActivity() == ACT_VM_IDLE) {
+	if (!HasPrimaryAmmo() && (GetIdealActivity() == ACT_VM_IDLE || GetIdealActivity() == ACT_VM_DRAW)) {
 		// Finished Throwing Animation, switch to next weapon and destroy this one
 		CBasePlayer *pOwner = ToBasePlayer(GetOwner());
 		if (pOwner) {
@@ -330,7 +330,6 @@ void CWeaponGrenade::Operator_HandleAnimEvent(animevent_t *pEvent, CBaseCombatCh
 	{
 		m_flNextPrimaryAttack = gpGlobals->curtime + RETHROW_DELAY;
 		m_flNextSecondaryAttack = gpGlobals->curtime + RETHROW_DELAY;
-		m_flTimeWeaponIdle = FLT_MAX; //NOTE: This is set once the animation has finished up!
 	}
 }
 #endif
