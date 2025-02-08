@@ -1802,6 +1802,10 @@ void CBaseHudChat::LevelShutdown( void )
 //-----------------------------------------------------------------------------
 void CBaseHudChat::ChatPrintf( int iPlayerIndex, int iFilter, const char *fmt, ... )
 {
+	if (engine->IsLevelMainMenuBackground())
+	{
+		return;
+	}
 	va_list marker;
 	char msg[4096];
 

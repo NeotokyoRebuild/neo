@@ -627,7 +627,8 @@ void CHL2MP_Player::FireBullets ( const FireBulletsInfo_t &info )
 		if (modinfo.m_iAmmoType == 13)
 		{
 			// supa7 slug does about this much damage more than a single shot pellet
-			modinfo.m_iPlayerDamage *= 2.5f;
+			constexpr float NEO_SLUG_DAMAGE_MULTIPLIER = 2.5f;
+			modinfo.m_iPlayerDamage = modinfo.m_flDamage = modinfo.m_flDamage * NEO_SLUG_DAMAGE_MULTIPLIER;
 		}
 #endif
 	}

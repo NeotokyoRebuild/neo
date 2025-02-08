@@ -383,7 +383,7 @@ void CHudCrosshair::Paint( void )
 #ifdef TF_CLIENT_DLL
 			clr
 #else
-			m_clrCrosshair
+			COLOR_WHITE
 #endif
 		);
 	}
