@@ -218,25 +218,30 @@ void CWeaponSmokeGrenade::ThrowGrenade(CNEO_Player* pPlayer, bool isAlive, CBase
 	}
 
 #ifndef CLIENT_DLL
-	Vector	vecEye = pPlayer->EyePosition();
-	Vector	vForward, vRight;
+	QAngle angThrow = pPlayer->LocalEyeAngles();
 
-	pPlayer->EyeVectors(&vForward, &vRight, NULL);
-	Vector vecSrc = vecEye + vForward * 2.0f;
-	CheckThrowPosition(pPlayer, vecEye, vecSrc);
-	vForward.z += 0.1f;
+	Vector vForward, vRight, vUp;
 
-	// Direction vector sampled from original NT frag spawn --> next tick.
-	// Assuming smokes behave the same.
-	const Vector vThrowDir = Vector(1, 0, 0.1226);
-	QAngle aThrowDir;
-	VectorAngles(vThrowDir, aThrowDir);
-	Assert(aThrowDir.IsValid());
+	if (angThrow.x < 90)
+		angThrow.x = -10 + angThrow.x * ((90 + 10) / 90.0);
+	else
+	{
+		angThrow.x = 360.0f - angThrow.x;
+		angThrow.x = -10 + angThrow.x * -((90 - 10) / 90.0);
+	}
 
-	Vector vecThrow;
-	pPlayer->GetVelocity(&vecThrow, NULL);
-	vecThrow += vForward * ((pPlayer->IsAlive() && isAlive) ? sv_neo_grenade_throw_intensity.GetFloat() : 1.0f);
-	Assert(vecThrow.IsValid());
+	float flVel = (90 - angThrow.x) * 6;
+
+	if (flVel > sv_neo_grenade_throw_intensity.GetFloat())
+		flVel = sv_neo_grenade_throw_intensity.GetFloat();
+
+	AngleVectors(angThrow, &vForward, &vRight, &vUp);
+
+	Vector vecSrc = pPlayer->GetAbsOrigin() + pPlayer->GetViewOffset();
+
+	vecSrc += vForward * 16;
+
+	Vector vecThrow = vForward * flVel + pPlayer->GetAbsVelocity();
 
 	// Sampled angular impulses from original NT frags:
 	// (Assuming here that smokes behave the same as frags.)
@@ -245,7 +250,7 @@ void CWeaponSmokeGrenade::ThrowGrenade(CNEO_Player* pPlayer, bool isAlive, CBase
 	// z: 600 (constant)
 	// This SDK original impulse line: AngularImpulse(600, random->RandomInt(-1200, 1200), 0)
 
-	CBaseGrenade* pGrenade = NEOSmokegrenade_Create(vecSrc, aThrowDir, vecThrow, AngularImpulse(random->RandomInt(-1200, 1200), 0, 600), ((!(pPlayer->IsAlive()) || !isAlive) && pAttacker) ? pAttacker : pPlayer);
+	CBaseGrenadeProjectile* pGrenade = NEOSmokegrenade_Create(vecSrc, vec3_angle, vecThrow, AngularImpulse(random->RandomInt(-1200, 1200), 0, 600), ((!(pPlayer->IsAlive()) || !isAlive) && pAttacker) ? pAttacker : pPlayer);
 
 	if (pGrenade)
 	{

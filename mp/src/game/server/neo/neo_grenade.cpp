@@ -29,10 +29,11 @@ DEFINE_THINKFUNC(DelayThink),
 DEFINE_INPUTFUNC(FIELD_FLOAT, "SetTimer", InputSetTimer),
 END_DATADESC()
 
-ConVar sv_neo_frag_cor("sv_neo_frag_cor", "0.5", FCVAR_CHEAT | FCVAR_REPLICATED, "Neotokyo frag coefficient of restitution", true, 0.0, true, 1.0);
-ConVar sv_neo_frag_gravity("sv_neo_frag_gravity", "0.375", FCVAR_CHEAT | FCVAR_REPLICATED, "Grenade gravity", true, 0, true, 1);
 ConVar sv_neo_frag_showdebug("sv_neo_frag_showdebug", "0", FCVAR_CHEAT, "Show frag collision debug", true, 0.0, true, 1.0);
 ConVar sv_neo_frag_vphys_reawaken_vel("sv_neo_frag_vphys_reawaken_vel", "200", FCVAR_CHEAT);
+extern ConVar sv_neo_grenade_cor;
+extern ConVar sv_neo_grenade_gravity;
+extern ConVar sv_neo_grenade_friction;
 extern ConVar sv_neo_grenade_fuse_timer;
 void CNEOGrenadeFrag::Spawn(void)
 {
@@ -40,9 +41,10 @@ void CNEOGrenadeFrag::Spawn(void)
 	SetModel(NEO_FRAG_GRENADE_MODEL);
 	BaseClass::Spawn();
 
-	SetElasticity(sv_neo_frag_cor.GetFloat());
+	SetElasticity(sv_neo_grenade_cor.GetFloat());
+	SetGravity(sv_neo_grenade_gravity.GetFloat());
+	SetFriction(sv_neo_grenade_friction.GetFloat());
 	SetDetonateTimerLength(sv_neo_grenade_fuse_timer.GetFloat());
-	SetGravity(sv_neo_frag_gravity.GetFloat());
 
 	SetThink(&CNEOGrenadeFrag::DelayThink);
 	SetNextThink(gpGlobals->curtime);
@@ -58,6 +60,12 @@ void CNEOGrenadeFrag::OnPhysGunPickup(CBasePlayer *pPhysGunUser, PhysGunPickup_t
 	SetThrower(pPhysGunUser);
 	m_bHasWarnedAI = true;
 	BaseClass::OnPhysGunPickup(pPhysGunUser, reason);
+}
+
+int CNEOGrenadeFrag::OnTakeDamage(const CTakeDamageInfo &inputInfo)
+{
+	// NEO nades can't be detonated by damage.
+	return 0;
 }
 
 void CNEOGrenadeFrag::DelayThink()
@@ -93,12 +101,6 @@ void CNEOGrenadeFrag::Explode(trace_t* pTrace, int bitsDamageType)
 		gamestats->Event_WeaponHit(pPlayer, true, "weapon_grenade", info);
 	}
 #endif
-}
-
-int CNEOGrenadeFrag::OnTakeDamage(const CTakeDamageInfo &inputInfo)
-{
-	// NEO nades can't be detonated by damage.
-	return 0;
 }
 
 void CNEOGrenadeFrag::InputSetTimer(inputdata_t &inputdata)

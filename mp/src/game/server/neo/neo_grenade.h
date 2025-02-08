@@ -5,7 +5,6 @@
 #endif
 
 #include "cbase.h"
-#include "basegrenade_shared.h"
 #include "sdk/sdk_basegrenade_projectile.h"
 #include "grenade_frag.h"
 #include "Sprite.h"
@@ -31,7 +30,6 @@ public:
 
 	void	Spawn(void);
 	void	Precache(void);
-	void	SetVelocity(const Vector &velocity, const AngularImpulse &angVelocity);
 	int		OnTakeDamage(const CTakeDamageInfo &inputInfo);
 	void	DelayThink();
 	void	SetPunted(bool punt) { m_punted = punt; }

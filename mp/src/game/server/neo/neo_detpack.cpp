@@ -73,7 +73,7 @@ bool CNEODeployedDetpack::CreateVPhysics()
 	return true;
 }
 
-extern ConVar sv_neo_frag_cor;
+extern ConVar sv_neo_grenade_cor;
 extern ConVar sv_neo_frag_showdebug;
 extern ConVar sv_neo_frag_vphys_reawaken_vel;
 
@@ -109,7 +109,7 @@ void CNEODeployedDetpack::VPhysicsUpdate(IPhysicsObject* pPhysics)
 		{
 			BounceSound();
 
-			vel *= -sv_neo_frag_cor.GetFloat(); // bounce backwards
+			vel *= -sv_neo_grenade_cor.GetFloat(); // bounce backwards
 			pPhysics->SetVelocity(&vel, NULL);
 
 			if (sv_neo_frag_showdebug.GetBool())
@@ -142,7 +142,7 @@ void CNEODeployedDetpack::VPhysicsUpdate(IPhysicsObject* pPhysics)
 		vel = -2.0f * tr.plane.normal * DotProduct(vel, tr.plane.normal) + vel;
 
 		// Absorb some of the impact
-		vel *= sv_neo_frag_cor.GetFloat();
+		vel *= sv_neo_grenade_cor.GetFloat();
 		angVel *= -0.5f;
 		pPhysics->SetVelocity(&vel, &angVel);
 	}
