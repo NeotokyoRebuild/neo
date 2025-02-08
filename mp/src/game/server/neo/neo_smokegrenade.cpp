@@ -95,7 +95,7 @@ void CNEOGrenadeSmoke::DelayThink()
 
 bool CNEOGrenadeSmoke::TryDetonate(void)
 {
-	if (m_hasSettled || (gpGlobals->curtime > m_flDetonateTime))
+	if (m_hasSettled || (gpGlobals->curtime > GetDetonateTimerLength()))
 	{
 		Detonate();
 		return true;

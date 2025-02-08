@@ -70,7 +70,7 @@ int CNEOGrenadeFrag::OnTakeDamage(const CTakeDamageInfo &inputInfo)
 
 void CNEOGrenadeFrag::DelayThink()
 {
-	if (gpGlobals->curtime > m_flDetonateTime)
+	if (gpGlobals->curtime > GetDetonateTimerLength())
 	{
 		Detonate();
 		return;

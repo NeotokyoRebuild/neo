@@ -64,13 +64,16 @@ protected:
 
 	//Set the time to detonate ( now + timer )
 	void SetDetonateTimerLength( float timer );
+#ifdef NEO
+	inline float GetDetonateTimerLength() { return m_flDetonateTime; }
+#endif // NEO
 
-	float m_flDetonateTime;
 private:	
 	
 	//Custom collision to allow for constant elasticity on hit surfaces
 	virtual void ResolveFlyCollisionCustom( trace_t &trace, Vector &vecVelocity );
 	
+	float m_flDetonateTime;
 #endif
 };
 

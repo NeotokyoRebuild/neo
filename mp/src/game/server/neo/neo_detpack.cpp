@@ -65,7 +65,7 @@ void CNEODeployedDetpack::Precache(void)
 
 void CNEODeployedDetpack::SetTimer(float detonateDelay, float warnDelay)
 {
-	m_flDetonateTime = gpGlobals->curtime + detonateDelay;
+	SetDetonateTimerLength(detonateDelay);
 	m_flWarnAITime = gpGlobals->curtime + warnDelay;
 	SetThink(&CNEODeployedDetpack::DelayThink);
 	SetNextThink(gpGlobals->curtime);
@@ -131,7 +131,7 @@ void CNEODeployedDetpack::Explode(trace_t* pTrace, int bitsDamageType)
 
 bool CNEODeployedDetpack::TryDetonate(void)
 {
-	if (m_hasBeenTriggeredToDetonate || (gpGlobals->curtime > m_flDetonateTime))
+	if (m_hasBeenTriggeredToDetonate || (gpGlobals->curtime > GetDetonateTimerLength()))
 	{
 		Detonate();
 		return true;
