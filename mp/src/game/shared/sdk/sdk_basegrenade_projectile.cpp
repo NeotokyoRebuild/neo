@@ -12,8 +12,9 @@ float GetCurrentGravity( void );
 
 #ifdef CLIENT_DLL
 
+#ifndef NEO
 	#include "c_sdk_player.h"
-
+#endif // NEO
 #else
 
 	#include "soundent.h"
@@ -68,6 +69,7 @@ END_NETWORK_TABLE()
 
 	int CBaseGrenadeProjectile::DrawModel( int flags )
 	{
+#ifndef NEO
 		// During the first half-second of our life, don't draw ourselves if he's
 		// still playing his throw animation.
 		// (better yet, we could draw ourselves in his hand).
@@ -82,7 +84,7 @@ END_NETWORK_TABLE()
 				}
 			}
 		}
-
+#endif // NEO
 		return BaseClass::DrawModel( flags );
 	}
 

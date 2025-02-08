@@ -14,6 +14,7 @@
 #include "hl2mp_player.h"
 #include "te_effect_dispatch.h"
 #include "grenade_frag.h"
+#include "sdk/sdk_basegrenade_projectile.h"
 #endif
 
 #include "effect_dispatch_data.h"
@@ -22,7 +23,7 @@
 #include "tier0/memdbgon.h"
 
 ConVar sv_neo_infinite_frag_grenades("sv_neo_infinite_frag_grenades", "0", FCVAR_REPLICATED | FCVAR_CHEAT, "Should frag grenades use up ammo.", true, 0.0, true, 1.0);
-ConVar sv_neo_grenade_throw_intensity("sv_neo_grenade_throw_intensity", "900.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How strong should regular grenade throws be.", true, 0.0, true, 9999.9); // 750 is the original NT impulse. Seems incorrect though, weight or phys difference?
+ConVar sv_neo_grenade_throw_intensity("sv_neo_grenade_throw_intensity", "750.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How strong should regular grenade throws be.", true, 0.0, true, 9999.9);
 ConVar sv_neo_grenade_blast_damage("sv_neo_grenade_blast_damage", "200.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How much damage should a grenade blast deal.", true, 0.0, true, 999.9);
 ConVar sv_neo_grenade_blast_radius("sv_neo_grenade_blast_radius", "250.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How large should the grenade blast radius be.", true, 0.0, true, 9999.9);
 ConVar sv_neo_grenade_fuse_timer("sv_neo_grenade_fuse_timer", "2.16", FCVAR_REPLICATED | FCVAR_CHEAT, "How long in seconds until a frag grenade explodes.", true, 0.1, true, 60.0); // Measured as 2.15999... in NT, ie. < 2.16
@@ -238,22 +239,30 @@ void CWeaponGrenade::ThrowGrenade(CNEO_Player *pPlayer, bool isAlive, CBaseEntit
 	}
 
 #ifndef CLIENT_DLL
-	Vector	vecEye = pPlayer->EyePosition();
-	Vector	vForward, vRight;
+	QAngle angThrow = pPlayer->LocalEyeAngles();
 
-	pPlayer->EyeVectors(&vForward, &vRight, NULL);
-	Vector vecSrc = vecEye + vForward * 2.0f;
-	CheckThrowPosition(pPlayer, vecEye, vecSrc);
-	vForward.z += 0.1f;
+	Vector vForward, vRight, vUp;
 
-	// Upwards at 1 + 0.1226 direction sampled from original NT frag spawn event to next tick pos delta.
-	VectorMA(vForward, 0.1226, Vector(0, 0, 1), vForward);
-	Assert(vForward.IsValid());
+	if (angThrow.x < 90)
+		angThrow.x = -10 + angThrow.x * ((90 + 10) / 90.0);
+	else
+	{
+		angThrow.x = 360.0f - angThrow.x;
+		angThrow.x = -10 + angThrow.x * -((90 - 10) / 90.0);
+	}
 
-	Vector vecThrow;
-	pPlayer->GetVelocity(&vecThrow, NULL);
-	vecThrow += vForward * ((pPlayer->IsAlive() && isAlive) ? sv_neo_grenade_throw_intensity.GetFloat() : 1.0f);
-	Assert(vecThrow.IsValid());
+	float flVel = (90 - angThrow.x) * 6;
+
+	if (flVel > sv_neo_grenade_throw_intensity.GetFloat())
+		flVel = sv_neo_grenade_throw_intensity.GetFloat();
+
+	AngleVectors(angThrow, &vForward, &vRight, &vUp);
+
+	Vector vecSrc = pPlayer->GetAbsOrigin() + pPlayer->GetViewOffset();
+
+	vecSrc += vForward * 16;
+
+	Vector vecThrow = vForward * flVel + pPlayer->GetAbsVelocity();
 
 	// Sampled angular impulses from original NT frags:
 	// x: -584, 630, -1028, 967, -466, -535 (random, seems roughly in the same (-1200, 1200) range)
@@ -261,20 +270,10 @@ void CWeaponGrenade::ThrowGrenade(CNEO_Player *pPlayer, bool isAlive, CBaseEntit
 	// z: 600 (constant)
 	// This SDK original impulse line: AngularImpulse(600, random->RandomInt(-1200, 1200), 0)
 
-	CBaseGrenade *pGrenade = NEOFraggrenade_Create(vecSrc, vec3_angle, vecThrow, AngularImpulse(random->RandomInt(-1200, 1200), 0, 600), ((!(pPlayer->IsAlive()) || !isAlive) && pAttacker) ? pAttacker : pPlayer, sv_neo_grenade_fuse_timer.GetFloat(), false);
+	CBaseGrenadeProjectile *pGrenade = NEOFraggrenade_Create(vecSrc, vec3_angle, vecThrow, AngularImpulse(random->RandomInt(-1200, 1200), 0, 600), ((!(pPlayer->IsAlive()) || !isAlive) && pAttacker) ? pAttacker : pPlayer, false);
 
 	if (pGrenade)
 	{
-		Assert(pPlayer);
-		if (!pPlayer->IsAlive())
-		{
-			IPhysicsObject *pPhysicsObject = pGrenade->VPhysicsGetObject();
-			if (pPhysicsObject)
-			{
-				pPhysicsObject->SetVelocity(&vecThrow, NULL);
-			}
-		}
-
 		pGrenade->SetDamage(sv_neo_grenade_blast_damage.GetFloat());
 		pGrenade->SetDamageRadius(sv_neo_grenade_blast_radius.GetFloat());
 	}
