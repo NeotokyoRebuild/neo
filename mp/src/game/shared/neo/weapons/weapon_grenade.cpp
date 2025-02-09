@@ -29,7 +29,7 @@ ConVar sv_neo_grenade_blast_radius("sv_neo_grenade_blast_radius", "250.0", FCVAR
 ConVar sv_neo_grenade_fuse_timer("sv_neo_grenade_fuse_timer", "2.16", FCVAR_REPLICATED | FCVAR_CHEAT, "How long in seconds until a frag grenade explodes.", true, 0.1, true, 60.0); // Measured as 2.15999... in NT, ie. < 2.16
 ConVar sv_neo_grenade_cor("sv_neo_grenade_cor", "0.45", FCVAR_CHEAT | FCVAR_REPLICATED, "Neotokyo frag coefficient of restitution", true, 0.0, true, 1.0);
 ConVar sv_neo_grenade_gravity("sv_neo_grenade_gravity", "0.4", FCVAR_CHEAT | FCVAR_REPLICATED, "Grenade gravity", true, 0, true, 1);
-ConVar sv_neo_grenade_friction("sv_neo_grenade_gravity", "0.2", FCVAR_CHEAT | FCVAR_REPLICATED, "Grenade friction", true, 0, true, 1);
+ConVar sv_neo_grenade_friction("sv_neo_grenade_friction", "0.2", FCVAR_CHEAT | FCVAR_REPLICATED, "Grenade friction", true, 0, true, 1);
 
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponGrenade, DT_WeaponGrenade)
 
