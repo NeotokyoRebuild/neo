@@ -138,6 +138,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropInt(RECVINFO(m_nRoundStatus)),
 	RecvPropInt(RECVINFO(m_nGameTypeSelected)),
 	RecvPropInt(RECVINFO(m_iRoundNumber)),
+	RecvPropInt(RECVINFO(m_iHiddenHudElements)),
 	RecvPropString(RECVINFO(m_szNeoJinraiClantag)),
 	RecvPropString(RECVINFO(m_szNeoNSFClantag)),
 	RecvPropInt(RECVINFO(m_iGhosterTeam)),
@@ -152,6 +153,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropInt(SENDINFO(m_nRoundStatus)),
 	SendPropInt(SENDINFO(m_nGameTypeSelected)),
 	SendPropInt(SENDINFO(m_iRoundNumber)),
+	SendPropInt(SENDINFO(m_iHiddenHudElements)),
 	SendPropString(SENDINFO(m_szNeoJinraiClantag)),
 	SendPropString(SENDINFO(m_szNeoNSFClantag)),
 	SendPropInt(SENDINFO(m_iGhosterTeam)),
@@ -389,6 +391,7 @@ CNEORules::CNEORules()
 
 	m_nGameTypeSelected = NEO_GAME_TYPE_CTG;
 #endif
+	m_iHiddenHudElements = 0;
 
 	ResetMapSessionCommon();
 	ListenForGameEvent("round_start");
@@ -748,14 +751,21 @@ void CNEORules::CheckGameType()
 	iStaticInitOnCmd = iGamemodeEnforce;
 	iStaticInitOnRandAllow = iGamemodeRandAllow;
 }
+
+void CNEORules::CheckHiddenHudElements()
+{
+	const auto pEntGameCfg = static_cast<CNEOGameConfig*>(gEntList.FindEntityByClassname(nullptr, "neo_game_config"));
+	m_iHiddenHudElements = (pEntGameCfg) ? pEntGameCfg->m_HiddenHudElements : 0;
+}
 #endif
 
 void CNEORules::Think(void)
 {
 #ifdef GAME_DLL
-	if (gpGlobals->eLoadType == MapLoad_Background)
+	CheckHiddenHudElements();
+	if (gpGlobals->eLoadType == MapLoad_Background || m_nGameTypeSelected == NEO_GAME_TYPE_NUL)
 #else // CLIENT_DLL
-	if (engine->IsLevelMainMenuBackground())
+	if (engine->IsLevelMainMenuBackground() || m_nGameTypeSelected == NEO_GAME_TYPE_NUL)
 #endif // GAME_DLL || CLIENT_DLL
 	{
 		return;
@@ -2160,6 +2170,7 @@ const SZWSZTexts NEO_GAME_TYPE_DESC_STRS[NEO_GAME_TYPE__TOTAL] = {
 	SZWSZ_INIT("Capture the Ghost"),
 	SZWSZ_INIT("Extract or Kill the VIP"),
 	SZWSZ_INIT("Deathmatch"),
+	SZWSZ_INIT(""),
 };
 
 const char *CNEORules::GetGameDescription(void)
@@ -3454,7 +3465,7 @@ bool CNEORules::FPlayerCanRespawn(CBasePlayer* pPlayer)
 {
 	auto gameType = GetGameType();
 
-	if (gameType == NEO_GAME_TYPE_TDM || gameType == NEO_GAME_TYPE_DM)
+	if (gameType == NEO_GAME_TYPE_TDM || gameType == NEO_GAME_TYPE_DM || gameType == NEO_GAME_TYPE_NUL)
 	{
 		return true;
 	}
@@ -3584,6 +3595,11 @@ NeoRoundStatus CNEORules::GetRoundStatus() const
 int CNEORules::GetGameType(void)
 {
 	return m_nGameTypeSelected;
+}
+
+int CNEORules::GetHiddenHudElements(void)
+{
+	return m_iHiddenHudElements;
 }
 
 const char* CNEORules::GetGameTypeName(void)

@@ -14,11 +14,15 @@ public:
 	static CNEOGameConfig* s_pGameRulesToConfig;
 
 	int m_GameType = NEO_GAME_TYPE_TDM;
+	int m_HiddenHudElements = 0;
 
 	// Inputs
 	void InputFireTeamWin(inputdata_t& inputData);
 	void InputFireDMPlayerWin(inputdata_t& inputData);
 	void InputFireRoundTie(inputdata_t& inputData);
+	void InputFireHideHudElements(inputdata_t& inputData);
+	void InputFireShowHudElements(inputdata_t& inputData);
+	void InputFireSetHudElements(inputdata_t& inputData);
 
 	// Outputs
 	void OutputRoundEnd();

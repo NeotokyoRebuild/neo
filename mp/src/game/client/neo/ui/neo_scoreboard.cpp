@@ -242,6 +242,10 @@ void CNEOScoreBoard::PostApplySchemeSettings( vgui::IScheme *pScheme )
 //-----------------------------------------------------------------------------
 void CNEOScoreBoard::ShowPanel(bool bShow)
 {
+	if (NEORules() && NEORules()->GetHiddenHudElements() & NEO_HIDE_HUD_ELEMENT_SCOREBOARD)
+	{
+		return;
+	}
 	// Catch the case where we call ShowPanel before ApplySchemeSettings, eg when
 	// going from windowed <-> fullscreen
 	if ( m_pImageList == NULL )

@@ -1,4 +1,5 @@
 #include "neo_hud_crosshair.h"
+#include "neo_gamerules.h"
 
 #include "filesystem.h"
 #include "vgui/ISurface.h"
@@ -32,6 +33,10 @@ const wchar_t **CROSSHAIR_SIZETYPE_LABELS = INTERNAL_CROSSHAIR_SIZETYPE_LABELS;
 
 void PaintCrosshair(const CrosshairInfo &crh, const int x, const int y)
 {
+	if (NEORules() && NEORules()->GetHiddenHudElements() & NEO_HIDE_HUD_ELEMENT_CROSSHAIR)
+	{
+		return;
+	}
 	if (crh.iSize > 0)
 	{
 		int iSize = crh.iSize;

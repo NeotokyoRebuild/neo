@@ -19,6 +19,7 @@ CNEOHud_WorldPosMarker::CNEOHud_WorldPosMarker(const char* pElementName, Panel* 
       m_viewCentreX(0),
       m_viewCentreY(0)
 {
+    m_iHideHudElementNumber = NEO_HIDE_HUD_ELEMENT_WORLDPOS_MARKER;
 }
 
 void CNEOHud_WorldPosMarker::ApplySchemeSettings(vgui::IScheme* pScheme)
