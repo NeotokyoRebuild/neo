@@ -46,6 +46,7 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 {
 	m_pWszStatusUnicode = L"";
 	SetAutoDelete(true);
+	m_iHideHudElementNumber = NEO_HIDE_HUD_ELEMENT_ROUND_STATE;
 
 	if (parent)
 	{

@@ -31,6 +31,7 @@ CNEOHud_HTA::CNEOHud_HTA(const char* pElementName, vgui::Panel* parent)
 	: CHudElement(pElementName), EditablePanel(parent, pElementName)
 {
 	SetAutoDelete(true);
+	m_iHideHudElementNumber = NEO_HIDE_HUD_ELEMENT_HEALTH_THERMOPTIC_AUX;
 
 	if (parent)
 	{

@@ -4,6 +4,8 @@
 #pragma once
 #endif
 
+#include "neo_gamerules.h"
+
 class C_NEO_Player;
 
 #define NEO_HUD_ELEMENT_FREQ_CVAR_NAME(Name) cl_neo_hud_ ## Name ## _update_freq
@@ -53,7 +55,7 @@ protected:
 
 	void PaintNeoElement()
 	{
-		if (!engine->IsDrawingLoadingImage() && !engine->IsLevelMainMenuBackground())
+		if (!engine->IsDrawingLoadingImage() && !engine->IsLevelMainMenuBackground() && !(NEORules()->GetHiddenHudElements() & m_iHideHudElementNumber))
 		{
 			if (ShouldUpdateYet())
 			{
@@ -91,6 +93,7 @@ protected:
 	}
 
 	static int GetMargin();
+	int m_iHideHudElementNumber = NEO_HIDE_HUD_ELEMENT_INVALID;
 
 private:
 	float GetUpdateFrequency() const { return GetUpdateFrequencyConVar()->GetFloat(); }
