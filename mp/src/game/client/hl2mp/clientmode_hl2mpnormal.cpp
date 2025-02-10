@@ -150,10 +150,41 @@ void ClientModeHL2MPNormal::Init()
 
 #ifdef NEO
 	const char* neoKillfeedIcons[][2] = {
-		{ "neo_bus",	"vgui/hud/kill_shortbus.vmt" },
-		{ "neo_gun",	"vgui/hud/kill_gun.vmt" },
-		{ "neo_hs",		"vgui/hud/kill_headshot.vmt" },
-		{ "neo_boom",	"vgui/hud/kill_explode.vmt" },
+		{ "neo_bus",			"vgui/hud/kill_shortbus.vmt" },
+		{ "neo_gun",			"vgui/hud/kill_gun.vmt" },
+		{ "neo_hs",				"vgui/hud/kill_headshot.vmt" },
+		{ "neo_boom",			"vgui/hud/kill_explode.vmt" },
+		{ "neo_aa13",			"vgui/hud/weapons/aa13.vmt" },
+		{ "neo_ghost",			"vgui/hud/weapons/ghost.vmt" },
+		{ "neo_grenade",		"vgui/hud/weapons/grenade.vmt" },
+		{ "neo_jitte",			"vgui/hud/weapons/jitte.vmt" },
+		{ "neo_jittescoped",	"vgui/hud/weapons/jittescoped.vmt" },
+		{ "neo_knife",			"vgui/hud/weapons/knife.vmt" },
+		{ "neo_kyla",			"vgui/hud/weapons/kyla.vmt" },
+		{ "neo_m41",			"vgui/hud/weapons/m41.vmt" },
+		{ "neo_m41l",			"vgui/hud/weapons/m41l.vmt" },
+		{ "neo_m41s",			"vgui/hud/weapons/m41s.vmt" },
+		{ "neo_milso",			"vgui/hud/weapons/milso.vmt" },
+		{ "neo_mpn",			"vgui/hud/weapons/mpn.vmt" },
+		{ "neo_mpn_unsilenced",	"vgui/hud/weapons/mpn_unsilenced.vmt" },
+		{ "neo_mx",				"vgui/hud/weapons/mx.vmt" },
+		{ "neo_mx_silenced",	"vgui/hud/weapons/mx_silenced" },
+		{ "neo_pz",				"vgui/hud/weapons/pz.vmt" },
+		{ "neo_remotedet",		"vgui/hud/weapons/remotedet.vmt" },
+		{ "neo_smac",			"vgui/hud/weapons/smac.vmt" },
+		{ "neo_smokegrenade",	"vgui/hud/weapons/smokegrenade.vmt" },
+		{ "neo_spidermine",		"vgui/hud/weapons/spidermine.vmt" },
+		{ "neo_srm",			"vgui/hud/weapons/srm.vmt" },
+		{ "neo_srm_s",			"vgui/hud/weapons/srm_s.vmt" },
+		{ "neo_srs",			"vgui/hud/weapons/srs.vmt" },
+		{ "neo_supa7",			"vgui/hud/weapons/supa7.vmt" },
+		{ "neo_tachi",			"vgui/hud/weapons/tachi.vmt" },
+		{ "neo_zr68c",			"vgui/hud/weapons/zr68c.vmt" },
+		{ "neo_zr68l",			"vgui/hud/weapons/zr68l.vmt" },
+		{ "neo_zr68s",			"vgui/hud/weapons/zr68s.vmt" },
+#ifdef INCLUDE_WEP_PBK
+		{ "neo_pbk56s",			"vgui/hud/weapons/pbk56s.vmt" },
+#endif // INCLUDE_WEP_PBK
 	};
 
 	for (int i = 0; i < ARRAYSIZE(neoKillfeedIcons); ++i)
