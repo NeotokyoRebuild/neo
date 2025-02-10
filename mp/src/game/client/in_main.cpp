@@ -471,6 +471,7 @@ void IN_MoveleftUp( const CCommand &args ) {KeyUp(&in_moveleft, args[1] );}
 void IN_MoverightDown( const CCommand &args ) {KeyDown(&in_moveright, args[1] );}
 void IN_MoverightUp( const CCommand &args ) {KeyUp(&in_moveright, args[1] );}
 void IN_WalkDown( const CCommand &args ) {KeyDown(&in_walk, args[1] );}
+#ifdef NEO
 void IN_WalkUp( const CCommand &args )
 {
 	int k = atoi(args[1]);
@@ -481,6 +482,7 @@ void IN_WalkUp( const CCommand &args )
 	};
 	KeyUp(&in_walk, args[1] );
 }
+#endif // NEO
 void IN_SpeedDown( const CCommand &args ) {KeyDown(&in_speed, args[1] );}
 void IN_SpeedUp( const CCommand &args ) {KeyUp(&in_speed, args[1] );}
 void IN_StrafeDown( const CCommand &args ) {KeyDown(&in_strafe, args[1] );}
