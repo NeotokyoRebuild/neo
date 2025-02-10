@@ -199,6 +199,21 @@ static NEOViewVectors g_NEOViewVectors(
 	Vector(16, 16, 60)	  //VEC_CROUCH_TRACE_MAX (m_vCrouchTraceMax)
 );
 
+struct NeoGameTypeSettings {
+	bool respawns;
+	bool neoRulesThink;
+	bool changeTeamClassLoadoutWhenAlive;
+};
+
+NeoGameTypeSettings NEO_GAME_TYPE_SETTINGS[NEO_GAME_TYPE__TOTAL][NEO_GAME_TYPE_SETTINGS_VARIABLES__TOTAL] = {
+	{true, true, false},
+	{false, true, false},
+	{false, true, false},
+	{true, true, false},
+	{true, false, true},
+	{false, false, false},
+};
+
 #ifdef CLIENT_DLL
 	void RecvProxy_NEORules( const RecvProp *pProp, void **pOut,
 		void *pData, int objectID )
@@ -772,9 +787,9 @@ void CNEORules::CheckHiddenHudElements()
 bool CNEORules::CheckShouldRemoveRulesFromSystems()
 {
 #ifdef GAME_DLL
-	if (gpGlobals->eLoadType == MapLoad_Background || !neoGameTypeSettings[m_nGameTypeSelected]->neoRulesThink)
+	if (gpGlobals->eLoadType == MapLoad_Background || !NEO_GAME_TYPE_SETTINGS[m_nGameTypeSelected]->neoRulesThink)
 #else // CLIENT_DLL
-	if (engine->IsLevelMainMenuBackground() || !neoGameTypeSettings[m_nGameTypeSelected]->neoRulesThink)
+	if (engine->IsLevelMainMenuBackground() || !NEO_GAME_TYPE_SETTINGS[m_nGameTypeSelected]->neoRulesThink)
 #endif // GAME_DLL || CLIENT_DLL
 	{
 		return true;
@@ -2192,6 +2207,7 @@ const SZWSZTexts NEO_GAME_TYPE_DESC_STRS[NEO_GAME_TYPE__TOTAL] = {
 	SZWSZ_INIT("Capture the Ghost"),
 	SZWSZ_INIT("Extract or Kill the VIP"),
 	SZWSZ_INIT("Deathmatch"),
+	SZWSZ_INIT("Free Roam"),
 	SZWSZ_INIT(""),
 };
 

@@ -118,18 +118,7 @@ enum NeoGameTypeSettingsVariables {
 	NEO_GAME_TYPE_SETTINGS_VARIABLES__TOTAL
 };
 
-struct NeoGameTypeSettings {
-	bool respawns;
-	bool neoRulesThink;
-	bool changeTeamClassLoadoutWhenAlive;
-} neoGameTypeSettings[NEO_GAME_TYPE__TOTAL][NEO_GAME_TYPE_SETTINGS_VARIABLES__TOTAL] {
-	{true, true, false},
-	{false, true, false},
-	{false, true, false},
-	{true, true, false},
-	{true, false, true},
-	{false, false, false},
-} ;
+struct NeoGameTypeSettings;
 
 extern const SZWSZTexts NEO_GAME_TYPE_DESC_STRS[NEO_GAME_TYPE__TOTAL];
 
