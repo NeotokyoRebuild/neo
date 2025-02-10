@@ -3632,20 +3632,7 @@ int CNEORules::GetHiddenHudElements(void)
 
 const char* CNEORules::GetGameTypeName(void)
 {
-	switch (GetGameType())
-	{
-	case NEO_GAME_TYPE_TDM:
-		return "TDM";
-	case NEO_GAME_TYPE_CTG:
-		return "CTG";
-	case NEO_GAME_TYPE_VIP:
-		return "VIP";
-	case NEO_GAME_TYPE_DM:
-		return "DM";
-	default:
-		Assert(false);
-		return "NAN";
-	}
+	return NEO_GAME_TYPE_SETTINGS[GetGameType()].gameTypeName;
 }
 
 bool CNEORules::CanChangeTeamClassWeaponWhenAlive()
