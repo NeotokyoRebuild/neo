@@ -471,7 +471,20 @@ void IN_MoveleftUp( const CCommand &args ) {KeyUp(&in_moveleft, args[1] );}
 void IN_MoverightDown( const CCommand &args ) {KeyDown(&in_moveright, args[1] );}
 void IN_MoverightUp( const CCommand &args ) {KeyUp(&in_moveright, args[1] );}
 void IN_WalkDown( const CCommand &args ) {KeyDown(&in_walk, args[1] );}
+#ifdef NEO
+void IN_WalkUp( const CCommand &args )
+{
+	int k = atoi(args[1]);
+	if (in_walk.down[0] == -1 && in_walk.down[1] == k)
+	{ // Releasing walk button using hold to walk when walking is already toggled using toggle walk, have to release toggle walk // NEO TODO (Adam) Any way to figure out it was exactly toggle walk that is holding this button down? Does it matter?
+		in_walk.down[0] = k;
+		in_walk.down[1] = 0;
+	};
+	KeyUp(&in_walk, args[1] );
+}
+#else
 void IN_WalkUp( const CCommand &args ) {KeyUp(&in_walk, args[1] );}
+#endif // NEO
 void IN_SpeedDown( const CCommand &args ) {KeyDown(&in_speed, args[1] );}
 void IN_SpeedUp( const CCommand &args ) {KeyUp(&in_speed, args[1] );}
 void IN_StrafeDown( const CCommand &args ) {KeyDown(&in_strafe, args[1] );}
@@ -554,6 +567,18 @@ void IN_LeanRightToggle(const CCommand& args)
 	{
 		KeyDown(&in_lean_right, args[1]);
 		KeyUp(&in_lean_left, args[1]);
+	}
+}
+
+void IN_WalkToggle(const CCommand& args)
+{
+	if (::input->KeyState(&in_walk))
+	{
+		KeyUp(&in_walk, args[1]);
+	}
+	else
+	{
+		KeyDown(&in_walk, args[1]);
 	}
 }
 #endif
@@ -1542,8 +1567,12 @@ int CInput::GetButtonBits( int bResetState )
 	CalcButtonBits( bits, IN_AIM, s_ClearInputState, &in_aim, bResetState );
 	CalcButtonBits( bits, IN_LEAN_LEFT, s_ClearInputState, &in_lean_left, bResetState );
 	CalcButtonBits( bits, IN_LEAN_RIGHT, s_ClearInputState, &in_lean_right, bResetState );
-	CalcButtonBits(bits, IN_THERMOPTIC, s_ClearInputState, &in_thermoptic, bResetState);
-	CalcButtonBits(bits, IN_VISION, s_ClearInputState, &in_vision, bResetState);
+	CalcButtonBits( bits, IN_THERMOPTIC, s_ClearInputState, &in_thermoptic, bResetState);
+	CalcButtonBits( bits, IN_VISION, s_ClearInputState, &in_vision, bResetState);
+	if (KeyState(&in_speed))
+	{
+		bits &= ~(IN_WALK);
+	}
 #endif
 
 	if ( KeyState(&in_ducktoggle) )
@@ -1737,6 +1766,8 @@ static ConCommand endvision("-vision", IN_VisionUp);
 
 static ConCommand toggle_leanleft("toggle_leanl", IN_LeanLeftToggle);
 static ConCommand toggle_leanright("toggle_leanr", IN_LeanRightToggle);
+
+static ConCommand toggle_walk("toggle_walk", IN_WalkToggle);
 
 static ConCommand startspecnextplayer("+specnextplayer", IN_SpecNextDown);
 static ConCommand endspecnextplayer("-specnextplayer", IN_SpecNextUp);
