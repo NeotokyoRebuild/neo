@@ -33,7 +33,7 @@ const wchar_t **CROSSHAIR_SIZETYPE_LABELS = INTERNAL_CROSSHAIR_SIZETYPE_LABELS;
 
 void PaintCrosshair(const CrosshairInfo &crh, const int x, const int y)
 {
-	if (NEORules() && NEORules()->GetHiddenHudElements() & NEO_HIDE_HUD_ELEMENT_CROSSHAIR)
+	if (NEORules() && NEORules()->GetHiddenHudElements() & NEO_HUD_ELEMENT_CROSSHAIR)
 	{
 		return;
 	}

@@ -48,7 +48,7 @@ CNEOHud_GhostMarker::CNEOHud_GhostMarker(const char* pElemName, vgui::Panel* par
 	g_pVGuiLocalize->ConvertANSIToUnicode(m_szMarkerText, m_wszMarkerTextUnicode, sizeof(m_wszMarkerTextUnicode));
 
 	SetAutoDelete(true);
-	m_iHideHudElementNumber = NEO_HIDE_HUD_ELEMENT_GHOST_MARKER;
+	m_iHideHudElementNumber = NEO_HUD_ELEMENT_GHOST_MARKER;
 
 	if (parent)
 	{
