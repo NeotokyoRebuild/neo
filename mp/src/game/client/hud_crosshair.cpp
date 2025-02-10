@@ -29,6 +29,7 @@
 
 #ifdef NEO
 #include "weapon_neobasecombatweapon.h"
+#include "neo_gamerules.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -378,10 +379,13 @@ void CHudCrosshair::Paint( void )
 	const int iXHairStyle = neo_cl_crosshair_style.GetInt();
 
 	trace_t iffTrace;
-	CTraceFilterSimpleList iffTraceFilter(COLLISION_GROUP_NONE);
-	iffTraceFilter.AddEntityToIgnore(pPlayer);
-	constexpr int IFF_TRACELINE_LENGTH = 8192; // a little over 200m
-	UTIL_TraceLine(pPlayer->Weapon_ShootPosition(), pPlayer->Weapon_ShootPosition() + pPlayer->GetAutoaimVector(0) * IFF_TRACELINE_LENGTH, MASK_SHOT_HULL, &iffTraceFilter, &iffTrace);
+	if (NEORules()->GetGameType() != NEO_GAME_TYPE_DM)
+	{
+		CTraceFilterSimpleList iffTraceFilter(COLLISION_GROUP_NONE);
+		iffTraceFilter.AddEntityToIgnore(pPlayer);
+		constexpr int IFF_TRACELINE_LENGTH = 8192; // a little over 200m
+		UTIL_TraceLine(pPlayer->Weapon_ShootPosition(), pPlayer->Weapon_ShootPosition() + pPlayer->GetAutoaimVector(0) * IFF_TRACELINE_LENGTH, MASK_SHOT_HULL, &iffTraceFilter, &iffTrace);
+	}
 
 	if (bIsScoped)
 	{
@@ -397,7 +401,7 @@ void CHudCrosshair::Paint( void )
 #endif
 		);
 	}
-	else if (iffTrace.m_pEnt != nullptr && iffTrace.m_pEnt->GetTeamNumber() == pPlayer->GetTeamNumber())
+	else if (NEORules()->GetGameType() != NEO_GAME_TYPE_DM && iffTrace.m_pEnt != nullptr && iffTrace.m_pEnt->GetTeamNumber() == pPlayer->GetTeamNumber())
 	{
 		vgui::surface()->DrawSetTexture(m_iTexIFFId);
 		int iTexWide, iTexTall;
