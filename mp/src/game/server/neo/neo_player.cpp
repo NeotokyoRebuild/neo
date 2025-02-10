@@ -295,6 +295,11 @@ void SetClass(const CCommand &command)
 		return;
 	}
 
+	if (player->IsAlive() && !NEORules()->CanChangeTeamClassWeaponWhenAlive())
+	{
+		return;
+	}
+
 	if (command.ArgC() == 2)
 	{
 		// Class number from the .res button click action.
@@ -322,6 +327,11 @@ void SetSkin(const CCommand &command)
 		return;
 	}
 
+	if (player->IsAlive() && !NEORules()->CanChangeTeamClassWeaponWhenAlive())
+	{
+		return;
+	}
+
 	if (command.ArgC() == 2)
 	{
 		// Skin number from the .res button click action.
@@ -339,6 +349,11 @@ void SetLoadout(const CCommand &command)
 {
 	auto player = static_cast<CNEO_Player*>(UTIL_GetCommandClient());
 	if (!player)
+	{
+		return;
+	}
+
+	if (player->IsAlive() && !NEORules()->CanChangeTeamClassWeaponWhenAlive())
 	{
 		return;
 	}
@@ -2378,7 +2393,7 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	{
 		if (!justJoined && GetTeamNumber() != TEAM_SPECTATOR && !IsDead())
 		{
-			if (suicidePlayerIfAlive)
+			if (suicidePlayerIfAlive || NEORules()->CanChangeTeamClassWeaponWhenAlive())
 			{
 				SoftSuicide();
 			}

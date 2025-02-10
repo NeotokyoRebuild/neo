@@ -190,18 +190,22 @@ static NEOViewVectors g_NEOViewVectors(
 );
 
 struct NeoGameTypeSettings {
+	const char* gameTypeName;
 	bool respawns;
 	bool neoRulesThink;
 	bool changeTeamClassLoadoutWhenAlive;
+	bool comp;
+	bool capPrevent;
 };
 
-NeoGameTypeSettings NEO_GAME_TYPE_SETTINGS[NEO_GAME_TYPE__TOTAL][NEO_GAME_TYPE_SETTINGS_VARIABLES__TOTAL] = {
-	{true, true, false},
-	{false, true, false},
-	{false, true, false},
-	{true, true, false},
-	{true, false, true},
-	{false, false, false},
+const NeoGameTypeSettings NEO_GAME_TYPE_SETTINGS[NEO_GAME_TYPE__TOTAL] = {
+//						gametypeName	respawns	neoRulesThink	changeTeamClassLoadoutWhenAlive	comp	capPrevent
+/*NEO_GAME_TYPE_TDM*/	{"TDM",			true,		true,			false,							false,	false},
+/*NEO_GAME_TYPE_CTG*/	{"CTG",			false,		true,			false,							true,	true},
+/*NEO_GAME_TYPE_VIP*/	{"VIP",			false,		true,			false,							true,	true},
+/*NEO_GAME_TYPE_DM*/	{"DM",			true,		true,			false,							false,	false},
+/*NEO_GAME_TYPE_NUL*/	{"NUL",			true,		false,			true,							false,	false},
+/*NEO_GAME_TYPE_STR*/	{"STR",			false,		false,			false,							false,	false},
 };
 
 #ifdef CLIENT_DLL
@@ -777,9 +781,9 @@ void CNEORules::CheckHiddenHudElements()
 bool CNEORules::CheckShouldRemoveRulesFromSystems()
 {
 #ifdef GAME_DLL
-	if (gpGlobals->eLoadType == MapLoad_Background || !NEO_GAME_TYPE_SETTINGS[m_nGameTypeSelected]->neoRulesThink)
+	if (gpGlobals->eLoadType == MapLoad_Background || !NEO_GAME_TYPE_SETTINGS[m_nGameTypeSelected].neoRulesThink)
 #else // CLIENT_DLL
-	if (engine->IsLevelMainMenuBackground() || !NEO_GAME_TYPE_SETTINGS[m_nGameTypeSelected]->neoRulesThink)
+	if (engine->IsLevelMainMenuBackground() || !NEO_GAME_TYPE_SETTINGS[m_nGameTypeSelected].neoRulesThink)
 #endif // GAME_DLL || CLIENT_DLL
 	{
 		return true;
@@ -1675,7 +1679,7 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 		return;
 	}
 
-	const bool bNonCmdGameType = (NEORules()->GetGameType() == NEO_GAME_TYPE_DM || NEORules()->GetGameType() == NEO_GAME_TYPE_TDM);
+	const bool bNonCmdGameType = !NEO_GAME_TYPE_SETTINGS[GetGameType()].comp;
 
 	if (neo_sv_readyup_lobby.GetBool() && (bNonCmdGameType || m_nRoundStatus != NeoRoundStatus::Idle))
 	{
@@ -3049,7 +3053,7 @@ static CNEO_Player* FetchAssists(CNEO_Player* attacker, CNEO_Player* victim)
 #ifdef GAME_DLL
 void CNEORules::CheckIfCapPrevent(CNEO_Player *capPreventerPlayer)
 {
-	if (m_nGameTypeSelected != NEO_GAME_TYPE_CTG && m_nGameTypeSelected != NEO_GAME_TYPE_VIP)
+	if (!NEO_GAME_TYPE_SETTINGS[GetGameType()].capPrevent)
 	{
 		return;
 	}
@@ -3491,18 +3495,16 @@ bool CNEORules::FPlayerCanRespawn(CBasePlayer* pPlayer)
 {
 	auto gameType = GetGameType();
 
-	if (gameType == NEO_GAME_TYPE_TDM || gameType == NEO_GAME_TYPE_DM || gameType == NEO_GAME_TYPE_NUL)
+	if (NEO_GAME_TYPE_SETTINGS[gameType].respawns)
 	{
-		return true;
-	}
-	// Some unknown game mode
-	else if (gameType != NEO_GAME_TYPE_CTG && gameType != NEO_GAME_TYPE_VIP)
-	{
-		Assert(false);
 		return true;
 	}
 
-	// Mode is CTG
+	else if (gameType == NEO_GAME_TYPE_STR)
+	{
+		return false;
+	}
+
 	auto jinrai = GetGlobalTeam(TEAM_JINRAI);
 	auto nsf = GetGlobalTeam(TEAM_NSF);
 
@@ -3644,6 +3646,11 @@ const char* CNEORules::GetGameTypeName(void)
 		Assert(false);
 		return "NAN";
 	}
+}
+
+bool CNEORules::CanChangeTeamClassWeaponWhenAlive()
+{
+	return NEO_GAME_TYPE_SETTINGS[GetGameType()].changeTeamClassLoadoutWhenAlive;
 }
 
 float CNEORules::GetRemainingPreRoundFreezeTime(const bool clampToZero) const
