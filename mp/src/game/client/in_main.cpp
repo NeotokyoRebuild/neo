@@ -483,7 +483,7 @@ void IN_WalkUp( const CCommand &args )
 	KeyUp(&in_walk, args[1] );
 }
 #else
-void IN_WalkUp( const CCommand& args ) {KeyUp(&in_walk, args[1] );}
+void IN_WalkUp( const CCommand &args ) {KeyUp(&in_walk, args[1] );}
 #endif // NEO
 void IN_SpeedDown( const CCommand &args ) {KeyDown(&in_speed, args[1] );}
 void IN_SpeedUp( const CCommand &args ) {KeyUp(&in_speed, args[1] );}
