@@ -105,7 +105,7 @@ void CNEOHudDamageIndicator::Init(void)
 //-----------------------------------------------------------------------------
 bool CNEOHudDamageIndicator::ShouldDraw(void)
 {
-	if (NEORules() && NEORules()->GetHiddenHudElements() & NEO_HIDE_HUD_ELEMENT_DAMAGE_INDICATOR)
+	if (NEORules() && NEORules()->GetHiddenHudElements() & NEO_HUD_ELEMENT_DAMAGE_INDICATOR)
 	{
 		return false;
 	}

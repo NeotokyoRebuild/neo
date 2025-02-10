@@ -242,7 +242,7 @@ void CNEOScoreBoard::PostApplySchemeSettings( vgui::IScheme *pScheme )
 //-----------------------------------------------------------------------------
 void CNEOScoreBoard::ShowPanel(bool bShow)
 {
-	if (NEORules() && NEORules()->GetHiddenHudElements() & NEO_HIDE_HUD_ELEMENT_SCOREBOARD)
+	if (NEORules() && NEORules()->GetHiddenHudElements() & NEO_HUD_ELEMENT_SCOREBOARD)
 	{
 		return;
 	}

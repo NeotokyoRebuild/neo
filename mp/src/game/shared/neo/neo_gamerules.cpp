@@ -759,23 +759,33 @@ void CNEORules::CheckHiddenHudElements()
 }
 #endif
 
-void CNEORules::Think(void)
+bool CNEORules::CheckShouldRemoveRulesFromSystems()
 {
 #ifdef GAME_DLL
-	CheckHiddenHudElements();
-	if (gpGlobals->eLoadType == MapLoad_Background || m_nGameTypeSelected == NEO_GAME_TYPE_NUL)
+	if (gpGlobals->eLoadType == MapLoad_Background || !neoGameTypeSettings[m_nGameTypeSelected]->neoRulesThink)
 #else // CLIENT_DLL
-	if (engine->IsLevelMainMenuBackground() || m_nGameTypeSelected == NEO_GAME_TYPE_NUL)
+	if (engine->IsLevelMainMenuBackground() || !neoGameTypeSettings[m_nGameTypeSelected]->neoRulesThink)
 #endif // GAME_DLL || CLIENT_DLL
 	{
-		return;
+		return true;
 	}
+	return false;
+}
+
+void CNEORules::Think(void)
+{
 #ifdef GAME_DLL
 	const bool bIsIdleState = m_nRoundStatus == NeoRoundStatus::Idle || m_nRoundStatus == NeoRoundStatus::Warmup;
 	bool bIsPause = m_nRoundStatus == NeoRoundStatus::Pause;
 	if (bIsIdleState && gpGlobals->curtime > m_flNeoNextRoundStartTime)
 	{
+		CheckHiddenHudElements();
 		CheckGameType();
+		if (CheckShouldRemoveRulesFromSystems())
+		{
+			Remove(this);
+			return;
+		}
 		StartNextRound();
 		return;
 	}

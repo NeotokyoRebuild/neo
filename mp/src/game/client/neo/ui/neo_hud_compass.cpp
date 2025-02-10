@@ -55,7 +55,7 @@ CNEOHud_Compass::CNEOHud_Compass(const char *pElementName, vgui::Panel *parent)
 	: CHudElement(pElementName), EditablePanel(parent, pElementName)
 {
 	SetAutoDelete(true);
-	m_iHideHudElementNumber = NEO_HIDE_HUD_ELEMENT_COMPASS;
+	m_iHideHudElementNumber = NEO_HUD_ELEMENT_COMPASS;
 
 	if (parent)
 	{

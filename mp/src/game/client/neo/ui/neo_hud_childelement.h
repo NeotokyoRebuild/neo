@@ -93,7 +93,7 @@ protected:
 	}
 
 	static int GetMargin();
-	int m_iHideHudElementNumber = NEO_HIDE_HUD_ELEMENT_INVALID;
+	int m_iHideHudElementNumber = NEO_HUD_ELEMENT_INVALID;
 
 private:
 	float GetUpdateFrequency() const { return GetUpdateFrequencyConVar()->GetFloat(); }

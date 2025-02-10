@@ -19,7 +19,7 @@ CNEOHud_GhostCapPoint::CNEOHud_GhostCapPoint(const char *pElementName, vgui::Pan
 	: CNEOHud_WorldPosMarker(pElementName, parent)
 {
 	SetAutoDelete(true);
-	m_iHideHudElementNumber = NEO_HIDE_HUD_ELEMENT_GHOST_CAP_POINTS;
+	m_iHideHudElementNumber = NEO_HUD_ELEMENT_GHOST_CAP_POINTS;
 
 	if (parent)
 	{

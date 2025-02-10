@@ -20,7 +20,7 @@ CNEOHud_Hint::CNEOHud_Hint(const char* pElementName, vgui::Panel* parent)
 	: CHudElement(pElementName), Panel(parent, pElementName)
 {
 	SetAutoDelete(true);
-	m_iHideHudElementNumber = NEO_HIDE_HUD_ELEMENT_HINT;
+	m_iHideHudElementNumber = NEO_HUD_ELEMENT_HINT;
 
 	if (parent) {
 		SetParent(parent);
