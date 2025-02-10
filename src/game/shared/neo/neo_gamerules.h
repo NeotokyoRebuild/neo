@@ -105,17 +105,9 @@ enum NeoGameType {
 	NEO_GAME_TYPE_VIP,
 	NEO_GAME_TYPE_DM,
 	NEO_GAME_TYPE_NUL,
-	NAO_GAME_TYPE_STR,
+	NEO_GAME_TYPE_STR,
 
 	NEO_GAME_TYPE__TOTAL // Number of game types
-};
-
-enum NeoGameTypeSettingsVariables {
-	NEO_GAME_TYPE_SETTINGS_VARIABLES_ALLOWRESPAWNS = 0,
-	NEO_GAME_TYPE_SETTINGS_VARIABLES_NEORULESTHINK,
-	NEO_GAME_TYPE_SETTINGS_VARIABLES_CHANGETEAMCLASSLOADOUTWHENALIVE,
-
-	NEO_GAME_TYPE_SETTINGS_VARIABLES__TOTAL
 };
 
 struct NeoGameTypeSettings;
@@ -211,6 +203,7 @@ public:
 	virtual int GetGameType(void) OVERRIDE;
 	int GetHiddenHudElements();
 	virtual const char* GetGameTypeName(void) OVERRIDE;
+	bool CanChangeTeamClassWeaponWhenAlive();
 
 	void GetDMHighestScorers(
 #ifdef GAME_DLL
