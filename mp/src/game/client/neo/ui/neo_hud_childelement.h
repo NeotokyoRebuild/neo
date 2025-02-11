@@ -53,7 +53,7 @@ protected:
 
 	void PaintNeoElement()
 	{
-		if (!engine->IsDrawingLoadingImage())
+		if (!engine->IsDrawingLoadingImage() && !engine->IsLevelMainMenuBackground())
 		{
 			if (ShouldUpdateYet())
 			{

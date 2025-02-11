@@ -111,6 +111,10 @@ DEFINE_FIELD(m_szNeoName, FIELD_STRING),
 DEFINE_FIELD(m_szNeoClantag, FIELD_STRING),
 DEFINE_FIELD(m_szNameDupePos, FIELD_INTEGER),
 DEFINE_FIELD(m_bClientWantNeoName, FIELD_BOOLEAN),
+
+// Inputs
+DEFINE_INPUTFUNC(FIELD_STRING, "SetPlayerModel", InputSetPlayerModel),
+
 END_DATADESC()
 
 static constexpr int SHOWMENU_STRLIMIT = 512;
@@ -411,10 +415,11 @@ CNEO_Player::CNEO_Player()
 	m_flLastSuperJumpTime = 0;
 
 	m_bFirstDeathTick = true;
-	m_bCorpseSpawned = false;
+	m_bCorpseSet = false;
 	m_bPreviouslyReloading = false;
 	m_bLastTickInThermOpticCamo = false;
 	m_bIsPendingSpawnForThisRound = false;
+	m_bAllowGibbing = true;
 
 	m_flNextTeamChangeTime = gpGlobals->curtime + 0.5f;
 
@@ -503,6 +508,17 @@ void CNEO_Player::Spawn(void)
 
 	if (teamNumber == TEAM_JINRAI || teamNumber == TEAM_NSF)
 	{
+		if (NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze)
+		{
+			AddFlag(FL_GODMODE);
+			AddNeoFlag(NEO_FL_FREEZETIME);
+		}
+
+		if (NEORules()->IsRoundOn())
+		{ // NEO TODO (Adam) should people who were spectating at the start of the match and potentially have unfair information about the enemy team be allowed to join the game?
+			m_bSpawnedThisRound = true;
+		}
+
 		State_Transition(STATE_ACTIVE);
 	}
 	
@@ -524,7 +540,8 @@ void CNEO_Player::Spawn(void)
 	m_bInVision = false;
 	m_nVisionLastTick = 0;
 	m_bInLean = NEO_LEAN_NONE;
-	m_bCorpseSpawned = false;
+	m_bCorpseSet = false;
+	m_bAllowGibbing = true;
 	m_bIneligibleForLoadoutPick = false;
 
 	for (int i = 0; i < m_rfAttackersScores.Count(); ++i)
@@ -546,7 +563,10 @@ void CNEO_Player::Spawn(void)
 
 	SetPlayerTeamModel();
 	SetViewOffset(VEC_VIEW_NEOSCALE(this));
-	GiveLoadoutWeapon();
+	if (teamNumber == TEAM_JINRAI || teamNumber == TEAM_NSF)
+	{
+		GiveLoadoutWeapon();
+	}
 }
 
 extern ConVar neo_lean_angle;
@@ -712,7 +732,7 @@ void CNEO_Player::PreThink(void)
 
 				if (m_HL2Local.m_cloakPower <= 0.1f)
 				{
-					m_bInThermOpticCamo = false;
+					SetCloakState(false);
 					m_flCamoAuxLastTime = 0;
 				}
 				else
@@ -847,6 +867,22 @@ void CNEO_Player::PlayCloakSound()
 	}
 }
 
+void CNEO_Player::SetCloakState(bool state)
+{
+	m_bInThermOpticCamo = state;
+
+	void (CBaseCombatWeapon:: * setShadowState)(int) = m_bInThermOpticCamo ? &CBaseCombatWeapon::AddEffects 
+																		   : &CBaseCombatWeapon::RemoveEffects;
+
+	for (int i = 0; i < MAX_WEAPONS; i++)
+	{
+		if (CBaseCombatWeapon* weapon = GetWeapon(i))
+		{
+			(weapon->*setShadowState)(EF_NOSHADOW);
+		}
+	}
+}
+
 void CNEO_Player::CloakFlash()
 {
 	CRecipientFilter filter;
@@ -877,7 +913,7 @@ void CNEO_Player::CheckThermOpticButtons()
 
 		if (m_HL2Local.m_cloakPower >= CLOAK_AUX_COST)
 		{
-			m_bInThermOpticCamo = !m_bInThermOpticCamo;
+			SetCloakState(!m_bInThermOpticCamo);
 
 			if (m_bInThermOpticCamo)
 			{
@@ -1550,6 +1586,27 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo* info)
 	MessageEnd();
 }
 
+void CNEO_Player::AddPoints(int score, bool bAllowNegativeScore)
+{
+	// Positive score always adds
+	if (score < 0)
+	{
+		if (!bAllowNegativeScore)
+		{
+			if (m_iXP < 0)		// Can't go more negative
+				return;
+
+			if (-score > m_iXP)	// Will this go negative?
+			{
+				score = -m_iXP;		// Sum will be 0
+			}
+		}
+	}
+
+	m_iXP += score;
+	//pl.frags = m_iFrags; NEOTODO (Adma) Is this actually used anywhere? should we include a xp field in CPlayerState ? 
+}
+
 void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 {
 	// Calculate force for weapon drop
@@ -1580,12 +1637,6 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 		}
 	}
 
-	// Handle Corpse and Gibs
-	if (!m_bCorpseSpawned) // Event_Killed can be called multiple times, only spawn the dead model once
-	{
-		SpawnDeadModel(info);
-	}
-
 	if (!IsBot() && !IsHLTV())
 	{
 		StartShowDmgStats(&info);
@@ -1597,6 +1648,12 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 	}
 
 	BaseClass::Event_Killed(info);
+
+	// Handle Corpse and Gibs
+	if (!m_bCorpseSet) // Event_Killed can be called multiple times, only set the dead model and spawn gibs once
+	{
+		SetDeadModel(info);
+	}
 }
 
 void CNEO_Player::Weapon_DropOnDeath(CBaseCombatWeapon* pWeapon, Vector velocity, CBaseEntity *pAttacker)
@@ -1651,11 +1708,17 @@ void CNEO_Player::Weapon_DropOnDeath(CBaseCombatWeapon* pWeapon, Vector velocity
 	Weapon_Detach(pWeapon);
 }
 
-void CNEO_Player::SpawnDeadModel(const CTakeDamageInfo& info)
+void CNEO_Player::SetDeadModel(const CTakeDamageInfo& info)
 {
-	m_bCorpseSpawned = true;
+	m_bCorpseSet = true;
 
 	int deadModelType = -1;
+
+	if (!m_bAllowGibbing) // Prevent gibbing if a custom player model has been set via I/O
+	{
+		return;
+	}
+
 	if (info.GetDamageType() & (1 << 6)) //info.GetDamage() >= 100
 	{ // Died to blast damage, remove all limbs
 		deadModelType = 0;
@@ -1745,8 +1808,10 @@ void CNEO_Player::SetPlayerCorpseModel(int type)
 		return;
 	}
 
-	SetModel(model);
-	SetPlaybackRate(1.0f);
+	if (m_hRagdoll)
+	{
+		m_hRagdoll->SetModel(model);
+	}
 }
 
 float CNEO_Player::GetReceivedDamageScale(CBaseEntity* pAttacker)
@@ -1939,6 +2004,21 @@ void CNEO_Player::SetPlayerTeamModel( void )
 	const model_t *modelType = modelinfo->GetModel(modelIndex);
 	MDLHandle_t modelCache = modelinfo->GetCacheHandle(modelType);
 #endif
+}
+
+// Input to set the player's model (not skin)
+void CNEO_Player::InputSetPlayerModel( inputdata_t & inputdata )
+{
+	const char* modelpath = inputdata.value.String();
+
+	if (modelpath && *modelpath)
+	{
+		PrecacheModel(modelpath);
+
+		SetModel(modelpath);
+
+		m_bAllowGibbing = false; // Disallow gibs or else the corpse will turn into whatever the player picked as their skin
+	}
 }
 
 void CNEO_Player::PickupObject( CBaseEntity *pObject,
@@ -2236,12 +2316,14 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 			}
 			[[fallthrough]];
 		case JoinMode::Random:
+			static_assert(TEAM_JINRAI < TEAM_NSF);
 			iTeam = RandomInt(TEAM_JINRAI, TEAM_NSF);
 			break;
 		default:
-			const auto lastGameTeam = GetNumberOfTeams() - LAST_SHARED_TEAM;
-			Assert(FIRST_GAME_TEAM <= lastGameTeam);
-			iTeam = Clamp(joinMode.GetInt(), FIRST_GAME_TEAM, lastGameTeam);
+			const auto lastGameTeam = GetNumberOfTeams() - LAST_SHARED_TEAM,
+				minAllowed = TEAM_UNASSIGNED;
+			Assert(minAllowed <= lastGameTeam);
+			iTeam = Clamp(joinMode.GetInt(), minAllowed, lastGameTeam);
 		}
 	}
 	// Limit team join spam, unless this is a newly joined player
@@ -2798,15 +2880,15 @@ float CNEO_Player::GetCrouchSpeed(void) const
 	switch (m_iNeoClass)
 	{
 	case NEO_CLASS_RECON:
-		return NEO_RECON_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_RECON_CROUCH_SPEED;
 	case NEO_CLASS_ASSAULT:
-		return NEO_ASSAULT_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_ASSAULT_CROUCH_SPEED;
 	case NEO_CLASS_SUPPORT:
-		return NEO_SUPPORT_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_SUPPORT_CROUCH_SPEED;
 	case NEO_CLASS_VIP:
-		return NEO_VIP_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_VIP_CROUCH_SPEED;
 	default:
-		return NEO_BASE_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_BASE_CROUCH_SPEED;
 	}
 }
 
@@ -2815,15 +2897,15 @@ float CNEO_Player::GetNormSpeed(void) const
 	switch (m_iNeoClass)
 	{
 	case NEO_CLASS_RECON:
-		return NEO_RECON_NORM_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_RECON_NORM_SPEED;
 	case NEO_CLASS_ASSAULT:
-		return NEO_ASSAULT_NORM_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_ASSAULT_NORM_SPEED;
 	case NEO_CLASS_SUPPORT:
-		return NEO_SUPPORT_NORM_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_SUPPORT_NORM_SPEED;
 	case NEO_CLASS_VIP:
-		return NEO_VIP_NORM_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_VIP_NORM_SPEED;
 	default:
-		return NEO_BASE_NORM_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_BASE_NORM_SPEED;
 	}
 }
 
@@ -2832,15 +2914,15 @@ float CNEO_Player::GetWalkSpeed(void) const
 	switch (m_iNeoClass)
 	{
 	case NEO_CLASS_RECON:
-		return NEO_RECON_WALK_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_RECON_WALK_SPEED;
 	case NEO_CLASS_ASSAULT:
-		return NEO_ASSAULT_WALK_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_ASSAULT_WALK_SPEED;
 	case NEO_CLASS_SUPPORT:
-		return NEO_SUPPORT_WALK_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_SUPPORT_WALK_SPEED;
 	case NEO_CLASS_VIP:
-		return NEO_VIP_WALK_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_VIP_WALK_SPEED;
 	default:
-		return NEO_BASE_WALK_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_BASE_WALK_SPEED;
 	}
 }
 
@@ -2849,15 +2931,15 @@ float CNEO_Player::GetSprintSpeed(void) const
 	switch (m_iNeoClass)
 	{
 	case NEO_CLASS_RECON:
-		return NEO_RECON_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_RECON_SPRINT_SPEED;
 	case NEO_CLASS_ASSAULT:
-		return NEO_ASSAULT_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_ASSAULT_SPRINT_SPEED;
 	case NEO_CLASS_SUPPORT:
-		return NEO_SUPPORT_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_SUPPORT_SPRINT_SPEED;
 	case NEO_CLASS_VIP:
-		return NEO_VIP_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_VIP_SPRINT_SPEED;
 	default:
-		return NEO_BASE_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_BASE_SPRINT_SPEED;
 	}
 }
 

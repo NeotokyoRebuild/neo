@@ -26,6 +26,7 @@ class CNEOGrenadeFrag : public CBaseGrenade
 
 public:
 	virtual void	Explode(trace_t* pTrace, int bitsDamageType);
+	virtual	float	GetShakeAmplitude() { return 0; };
 
 	void	Spawn(void);
 	void	Precache(void);
