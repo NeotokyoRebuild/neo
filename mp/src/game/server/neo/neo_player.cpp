@@ -597,12 +597,13 @@ void CNEO_Player::Spawn(void)
 	if (teamNumber == TEAM_UNASSIGNED && gpGlobals->eLoadType != MapLoad_Background)
 	{
 		char commandBuffer[11];
-		if (NEORules()->GetForcedTeam() < 0)
+		int forcedTeam = NEORules()->GetForcedTeam();
+		if (NEORules()->GetForcedTeam() < 1) // don't let this loop infinitely if forcedTeam set to TEAM_UNASSIGNED
 		{
 			engine->ClientCommand(this->edict(), "teammenu");
 			return;
 		}
-		ChangeTeam(NEORules()->GetForcedTeam());
+		ChangeTeam(forcedTeam);
 
 		if (NEORules()->GetForcedClass() < 0)
 		{
@@ -2289,40 +2290,7 @@ void CNEO_Player::PickDefaultSpawnTeam(void)
 {
 	if (!GetTeamNumber())
 	{
-		if (!NEORules()->IsTeamplay())
-		{
-			ProcessTeamSwitchRequest(TEAM_SPECTATOR);
-		}
-		else
-		{
-			ProcessTeamSwitchRequest(TEAM_SPECTATOR);
-
-#if(0) // code for random team selection
-			CTeam *pJinrai = g_Teams[TEAM_JINRAI];
-			CTeam *pNSF = g_Teams[TEAM_NSF];
-
-			if (!pJinrai || !pNSF)
-			{
-				ProcessTeamSwitchRequest(random->RandomInt(TEAM_JINRAI, TEAM_NSF));
-			}
-			else
-			{
-				if (pJinrai->GetNumPlayers() > pNSF->GetNumPlayers())
-				{
-					ProcessTeamSwitchRequest(TEAM_NSF);
-				}
-				else if (pNSF->GetNumPlayers() > pJinrai->GetNumPlayers())
-				{
-					ProcessTeamSwitchRequest(TEAM_JINRAI);
-				}
-				else
-				{
-					ProcessTeamSwitchRequest(random->RandomInt(TEAM_JINRAI, TEAM_NSF));
-				}
-			}
-#endif
-		}
-
+		ProcessTeamSwitchRequest(TEAM_UNASSIGNED);
 		if (!GetModelPtr())
 		{
 			SetPlayerTeamModel();
@@ -2332,7 +2300,7 @@ void CNEO_Player::PickDefaultSpawnTeam(void)
 
 bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 {
-	if (!GetGlobalTeam(iTeam) || iTeam == 0)
+	if (!GetGlobalTeam(iTeam))
 	{
 		Warning("HandleCommand_JoinTeam( %d ) - invalid team index.\n", iTeam);
 		return false;
@@ -2399,7 +2367,7 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	}
 
 	const bool suicidePlayerIfAlive = sv_neo_change_suicide_player.GetBool();
-	if (iTeam == TEAM_SPECTATOR)
+	if (iTeam == TEAM_SPECTATOR || iTeam == TEAM_UNASSIGNED)
 	{
 		if (!mp_allowspectators.GetInt())
 		{
