@@ -401,7 +401,7 @@ void CHudCrosshair::Paint( void )
 #endif
 		);
 	}
-	else if (NEORules()->GetGameType() != NEO_GAME_TYPE_DM && iffTrace.m_pEnt != nullptr && iffTrace.m_pEnt->GetTeamNumber() == pPlayer->GetTeamNumber())
+	else if (NEORules()->GetGameType() != NEO_GAME_TYPE_DM && IsPlayerIndex(iffTrace.GetEntityIndex()) && iffTrace.m_pEnt->GetTeamNumber() == pPlayer->GetTeamNumber())
 	{
 		vgui::surface()->DrawSetTexture(m_iTexIFFId);
 		int iTexWide, iTexTall;
