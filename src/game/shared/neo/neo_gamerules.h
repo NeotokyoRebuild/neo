@@ -202,6 +202,10 @@ public:
 
 	virtual int GetGameType(void) OVERRIDE;
 	int GetHiddenHudElements();
+	int GetForcedTeam();
+	int GetForcedClass();
+	int GetForcedSkin();
+	int GetForcedWeapon();
 	virtual const char* GetGameTypeName(void) OVERRIDE;
 	bool CanChangeTeamClassWeaponWhenAlive();
 
@@ -302,6 +306,7 @@ public:
 
 	void CheckGameType();
 	void CheckHiddenHudElements();
+	void CheckPlayerForced();
 	void StartNextRound();
 
 	virtual const char* GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer) OVERRIDE;
@@ -416,6 +421,10 @@ private:
 #endif
 	CNetworkVar(int, m_nRoundStatus);
 	CNetworkVar(int, m_iHiddenHudElements);
+	CNetworkVar(int, m_iForcedTeam);
+	CNetworkVar(int, m_iForcedClass);
+	CNetworkVar(int, m_iForcedSkin);
+	CNetworkVar(int, m_iForcedWeapon);
 	CNetworkVar(int, m_nGameTypeSelected);
 	CNetworkVar(int, m_iRoundNumber);
 	CNetworkString(m_szNeoJinraiClantag, NEO_MAX_CLANTAG_LENGTH);

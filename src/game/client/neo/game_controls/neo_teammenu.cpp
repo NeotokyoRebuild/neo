@@ -179,20 +179,7 @@ void CNeoTeamMenu::OnCommand(const char *command)
 		V_sprintf_safe(commandBuffer, "jointeam %i", randomTeam);
 		CloseMenu();
 		engine->ClientCmd(commandBuffer);
-		return;
-	}
-
-	if (Q_strcmp(commandBuffer, "jointeam 1") == 0)
-	{ // joining spectators
-		CloseMenu();
-		engine->ClientCmd(commandBuffer);
-		return;
-	}
-
-	if (Q_strcmp(commandBuffer, "jointeam 0") == 0)
-	{ // joining unnasigned
-		CloseMenu();
-		engine->ClientCmd(commandBuffer);
+		NextMenu();
 		return;
 	}
 
@@ -200,6 +187,7 @@ void CNeoTeamMenu::OnCommand(const char *command)
 	{ // joining jinrai or nsf
 		CloseMenu();
 		engine->ClientCmd(commandBuffer);
+		NextMenu();
 		return;
 	}
 
@@ -210,6 +198,18 @@ void CNeoTeamMenu::OnCommand(const char *command)
 	
 	// new command, should we sanitize and return without executing? (Players can edit button commands with ctrl-alt-shift-b) NEO FIXME
 	engine->ClientCmd(command);
+}
+
+void CNeoTeamMenu::NextMenu()
+{
+	if (NEORules()->GetForcedClass() < 0)
+	{
+		engine->ClientCmd("classmenu");
+	}
+	else if (NEORules()->GetForcedWeapon() < 0)
+	{
+		engine->ClientCmd("loadoutmenu");
+	}
 }
 
 void CNeoTeamMenu::CloseMenu()

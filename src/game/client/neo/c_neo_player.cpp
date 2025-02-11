@@ -219,7 +219,7 @@ public:
 #if DEBUG
 		DevMsg("Loadout access cb\n");
 #endif
-		if (engine->IsPlayingDemo())
+		if (engine->IsPlayingDemo() || NEORules()->GetForcedWeapon() >= 0)
 		{
 			return;
 		}
@@ -298,7 +298,7 @@ class NeoClassMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback(const CCommand& command)
 	{
-		if (engine->IsPlayingDemo())
+		if (engine->IsPlayingDemo() || NEORules()->GetForcedClass() >= 0)
 		{
 			return;
 		}
@@ -363,7 +363,7 @@ class NeoTeamMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback( const CCommand &command )
 	{
-		if (engine->IsPlayingDemo())
+		if (engine->IsPlayingDemo() || NEORules()->GetForcedTeam() >= 0)
 		{
 			return;
 		}
@@ -443,13 +443,13 @@ C_NEO_Player::C_NEO_Player()
 {
 	SetPredictionEligible(true);
 
-	m_iNeoClass = NEO_CLASS_ASSAULT;
-	m_iNeoSkin = NEO_SKIN_FIRST;
+	m_iNeoClass = NEORules()->GetForcedClass() >= 0 ? NEORules()->GetForcedClass() : NEO_CLASS_ASSAULT;
+	m_iNeoSkin = NEORules()->GetForcedSkin() >= 0 ? NEORules()->GetForcedSkin() : NEO_SKIN_FIRST;
 	m_iNeoStar = NEO_DEFAULT_STAR;
 	V_memset(m_szNeoName.GetForModify(), 0, sizeof(m_szNeoName));
 	V_memset(m_szNeoClantag.GetForModify(), 0, sizeof(m_szNeoClantag));
 
-	m_iLoadoutWepChoice = 0;
+	m_iLoadoutWepChoice = NEORules()->GetForcedWeapon() >= 0 ? NEORules()->GetForcedWeapon() : 0;
 	m_iNextSpawnClassChoice = -1;
 	m_iXP.GetForModify() = 0;
 
@@ -1360,10 +1360,6 @@ void C_NEO_Player::CalcDeathCamView(Vector &eyeOrigin, QAngle &eyeAngles, float 
 
 void C_NEO_Player::TeamChange(int iNewTeam)
 {
-	if (IsLocalPlayer())
-	{
-		engine->ClientCmd(classmenu.GetName());
-	}
 	BaseClass::TeamChange(iNewTeam);
 }
 
@@ -1489,11 +1485,6 @@ void C_NEO_Player::Spawn( void )
 				neoHud->resetLastUpdateTime();
 				neoHud->resetHUDState();
 			}
-		}
-
-		if (GetTeamNumber() == TEAM_UNASSIGNED && !engine->IsLevelMainMenuBackground())
-		{
-			engine->ClientCmd(teammenu.GetName());
 		}
 	}
 }
