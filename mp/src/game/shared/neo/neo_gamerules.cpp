@@ -139,6 +139,10 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropInt(RECVINFO(m_nGameTypeSelected)),
 	RecvPropInt(RECVINFO(m_iRoundNumber)),
 	RecvPropInt(RECVINFO(m_iHiddenHudElements)),
+	RecvPropInt(RECVINFO(m_iForcedTeam)),
+	RecvPropInt(RECVINFO(m_iForcedClass)),
+	RecvPropInt(RECVINFO(m_iForcedSkin)),
+	RecvPropInt(RECVINFO(m_iForcedWeapon)),
 	RecvPropString(RECVINFO(m_szNeoJinraiClantag)),
 	RecvPropString(RECVINFO(m_szNeoNSFClantag)),
 	RecvPropInt(RECVINFO(m_iGhosterTeam)),
@@ -154,6 +158,10 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropInt(SENDINFO(m_nGameTypeSelected)),
 	SendPropInt(SENDINFO(m_iRoundNumber)),
 	SendPropInt(SENDINFO(m_iHiddenHudElements)),
+	SendPropInt(SENDINFO(m_iForcedTeam)),
+	SendPropInt(SENDINFO(m_iForcedClass)),
+	SendPropInt(SENDINFO(m_iForcedSkin)),
+	SendPropInt(SENDINFO(m_iForcedWeapon)),
 	SendPropString(SENDINFO(m_szNeoJinraiClantag)),
 	SendPropString(SENDINFO(m_szNeoNSFClantag)),
 	SendPropInt(SENDINFO(m_iGhosterTeam)),
@@ -411,6 +419,10 @@ CNEORules::CNEORules()
 	m_nGameTypeSelected = NEO_GAME_TYPE_CTG;
 #endif
 	m_iHiddenHudElements = 0;
+	m_iForcedTeam = -1;
+	m_iForcedClass = -1;
+	m_iForcedSkin = -1;
+	m_iForcedWeapon = -1;
 
 	ResetMapSessionCommon();
 	ListenForGameEvent("round_start");
@@ -776,6 +788,15 @@ void CNEORules::CheckHiddenHudElements()
 	const auto pEntGameCfg = static_cast<CNEOGameConfig*>(gEntList.FindEntityByClassname(nullptr, "neo_game_config"));
 	m_iHiddenHudElements = (pEntGameCfg) ? pEntGameCfg->m_HiddenHudElements : 0;
 }
+
+void CNEORules::CheckPlayerForced()
+{
+	const auto pEntGameCfg = static_cast<CNEOGameConfig*>(gEntList.FindEntityByClassname(nullptr, "neo_game_config"));
+	m_iForcedTeam = (pEntGameCfg) ? pEntGameCfg->m_ForcedTeam : -1;
+	m_iForcedClass = (pEntGameCfg) ? pEntGameCfg->m_ForcedClass : -1;
+	m_iForcedSkin = (pEntGameCfg) ? pEntGameCfg->m_ForcedSkin : -1;
+	m_iForcedWeapon = (pEntGameCfg) ? pEntGameCfg->m_ForcedWeapon : -1;
+}
 #endif
 
 bool CNEORules::CheckShouldRemoveRulesFromSystems()
@@ -800,6 +821,7 @@ void CNEORules::Think(void)
 	{
 		CheckHiddenHudElements();
 		CheckGameType();
+		CheckPlayerForced();
 		if (CheckShouldRemoveRulesFromSystems())
 		{
 			Remove(this);
@@ -3502,7 +3524,11 @@ bool CNEORules::FPlayerCanRespawn(CBasePlayer* pPlayer)
 
 	else if (gameType == NEO_GAME_TYPE_STR)
 	{
-		return false;
+		if (pPlayer->IsAlive())
+		{
+			return false;
+		}
+		return true;
 	}
 
 	auto jinrai = GetGlobalTeam(TEAM_JINRAI);
@@ -3628,6 +3654,26 @@ int CNEORules::GetGameType(void)
 int CNEORules::GetHiddenHudElements(void)
 {
 	return m_iHiddenHudElements;
+}
+
+int CNEORules::GetForcedTeam(void)
+{
+	return m_iForcedTeam.Get();
+}
+
+int CNEORules::GetForcedClass(void)
+{
+	return m_iForcedClass;
+}
+
+int CNEORules::GetForcedSkin(void)
+{
+	return m_iForcedSkin;
+}
+
+int CNEORules::GetForcedWeapon(void)
+{
+	return m_iForcedWeapon;
 }
 
 const char* CNEORules::GetGameTypeName(void)

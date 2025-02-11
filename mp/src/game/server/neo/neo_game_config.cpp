@@ -8,6 +8,10 @@ LINK_ENTITY_TO_CLASS(neo_game_config, CNEOGameConfig);
 BEGIN_DATADESC(CNEOGameConfig)
 	DEFINE_KEYFIELD(m_GameType, FIELD_INTEGER, "GameType"),
 	DEFINE_KEYFIELD(m_HiddenHudElements, FIELD_INTEGER, "HiddenHudElements"),
+	DEFINE_KEYFIELD(m_ForcedTeam, FIELD_INTEGER, "ForcedTeam"),
+	DEFINE_KEYFIELD(m_ForcedClass, FIELD_INTEGER, "ForcedClass"),
+	DEFINE_KEYFIELD(m_ForcedSkin, FIELD_INTEGER, "ForcedSkin"),
+	DEFINE_KEYFIELD(m_ForcedWeapon, FIELD_INTEGER, "ForcedWeapon"),
 
 	DEFINE_INPUTFUNC(FIELD_INTEGER, "FireTeamWin", InputFireTeamWin),
 	DEFINE_INPUTFUNC(FIELD_VOID, "FireDMPlayerWin", InputFireDMPlayerWin),
@@ -52,24 +56,6 @@ void CNEOGameConfig::InputFireDMPlayerWin(inputdata_t& inputData)
 void CNEOGameConfig::InputFireRoundTie(inputdata_t& inputData)
 {
 	static_cast<CNEORules*>(g_pGameRules)->SetWinningTeam(1, NEO_VICTORY_STALEMATE, false, true, true, false);
-}
-
-void CNEOGameConfig::InputFireHideHudElements(inputdata_t& inputData)
-{
-	int hiddenHudElements = inputData.value.Int();
-	m_HiddenHudElements = m_HiddenHudElements | hiddenHudElements;
-}
-
-void CNEOGameConfig::InputFireShowHudElements(inputdata_t& inputData)
-{
-	int hiddenHudElements = inputData.value.Int();
-	m_HiddenHudElements = m_HiddenHudElements & ~hiddenHudElements;
-}
-
-void CNEOGameConfig::InputFireSetHudElements(inputdata_t& inputData)
-{
-	int hiddenHudElements = inputData.value.Int();
-	m_HiddenHudElements = hiddenHudElements;
 }
 
 // Outputs

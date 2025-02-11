@@ -98,9 +98,6 @@ protected:
     // Our viewport interface accessor
     IViewPort *m_pViewPort;
 
-    // Which team to highlight for auto selection
-    int m_iDefaultTeam;
-
     bool m_bTeamMenu;
 
 protected:
@@ -109,6 +106,7 @@ protected:
 
 private:
     inline vgui::Button *GetPressedButton();
+    void NextMenu();
 };
 
 extern CNeoTeamMenu *g_pNeoTeamMenu;

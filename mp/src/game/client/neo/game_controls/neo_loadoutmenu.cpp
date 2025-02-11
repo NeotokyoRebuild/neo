@@ -13,6 +13,7 @@
 #include "c_neo_player.h"
 #include "weapon_neobasecombatweapon.h"
 #include "neo_weapon_loadout.h"
+#include "neo_gamerules.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -245,10 +246,8 @@ void CNeoLoadoutMenu::OnCommand(const char* command)
 	}
 
 	if (Q_stristr(command, "classmenu"))
-	{ // return to class selection 
-		CommandCompletion();
+	{ // return to class selection
 		ChangeMenu("classmenu");
-		engine->ClientCmd(command);
 		return;
 	}
 
@@ -290,22 +289,14 @@ void CNeoLoadoutMenu::ChangeMenu(const char* menuName = NULL)
 {
 	CommandCompletion();
 	ShowPanel(false);
-	C_NEO_Player* player = C_NEO_Player::GetLocalNEOPlayer();
-	if (player)
+	m_bLoadoutMenu = false;
+	if (menuName == NULL)
 	{
-		m_bLoadoutMenu = false;
-		if (menuName == NULL)
-		{
-			return;
-		}
-		if (Q_stricmp(menuName, "classmenu") == 0)
-		{
-			engine->ClientCmd(menuName);
-		}
+		return;
 	}
-	else
+	if (Q_stricmp(menuName, "classmenu") == 0 && NEORules()->GetForcedClass() < 0)
 	{
-		Assert(false);
+		engine->ClientCmd(menuName);
 	}
 }
 
