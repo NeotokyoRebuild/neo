@@ -73,6 +73,7 @@ END_DATADESC()
 #endif
 
 ConVar sv_neo_accuracy_penalty_scale("sv_neo_accuracy_penalty_scale", "1.0", FCVAR_REPLICATED, "Scales the accuracy penalty per shot.", true, 0.0f, true, 2.0f);
+ConVar sv_neo_dynamic_viewkick("sv_neo_dynamic_viewkick", "0", FCVAR_REPLICATED, "Enables view kick scaling based on current inaccuracy.", true, 0.0f, true, 1.0f);
 
 const char *GetWeaponByLoadoutId(int id)
 {
@@ -111,11 +112,11 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 		{0.25, 0.5, -0.6, 0.6},
 	},
 	{NEO_WEP_JITTE,
-		{{VECTOR_CONE_3DEGREES, VECTOR_CONE_10DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_3DEGREES}},
+		{{VECTOR_CONE_3DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_3DEGREES}},
 		{-0.5, -0.25, -0.6, 0.6},
 	},
 	{NEO_WEP_JITTE_S,
-		{{VECTOR_CONE_3DEGREES, VECTOR_CONE_10DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_3DEGREES}},
+		{{VECTOR_CONE_3DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_3DEGREES}},
 		{-0.5, -0.25, -0.6, 0.6},
 	},
 	{NEO_WEP_KYLA,
@@ -452,6 +453,17 @@ void CNEOBaseCombatWeapon::CheckReload(void)
 	BaseClass::CheckReload();
 }
 
+float CNEOBaseCombatWeapon::GetAccuracyPenaltyDecay()
+{
+	auto penaltyDecay = 1.2f;
+	auto *pOwner = GetOwner();
+	if (pOwner && pOwner->GetFlags() & FL_DUCKING)
+	{
+		penaltyDecay += 1.0f;
+	}
+	return penaltyDecay;
+}
+
 void CNEOBaseCombatWeapon::UpdateInaccuracy()
 {
 	CNEO_Player *pOwner = static_cast<CNEO_Player *>(ToBasePlayer(GetOwner()));
@@ -704,10 +716,11 @@ void CNEOBaseCombatWeapon::AddViewKick()
 	}
 
 	auto kickInfo = m_weaponHandling.kickInfo;
+	float punchScale = sv_neo_dynamic_viewkick.GetBool() ? m_flAccuracyPenalty : 1.0f;
 
 	QAngle viewPunch;
-	viewPunch.x = SharedRandomFloat(m_weaponSeeds.punchX, kickInfo.minX, kickInfo.maxX);
-	viewPunch.y = SharedRandomFloat(m_weaponSeeds.punchY, kickInfo.minY, kickInfo.maxY);
+	viewPunch.x = SharedRandomFloat(m_weaponSeeds.punchX, kickInfo.minX * punchScale, kickInfo.maxX * punchScale);
+	viewPunch.y = SharedRandomFloat(m_weaponSeeds.punchY, kickInfo.minY * punchScale, kickInfo.maxY * punchScale);
 	viewPunch.z = 0;
 
 	owner->ViewPunch(viewPunch);
@@ -720,8 +733,8 @@ void CNEOBaseCombatWeapon::AddViewKick()
 	}
 
 	auto recoilInfo = m_weaponHandling.recoilInfo;
-	float scale = owner->IsInAim() ? recoilInfo.adsFactor : recoilInfo.hipFactor;
-	if (!scale)
+	float recoilScale = owner->IsInAim() ? recoilInfo.adsFactor : recoilInfo.hipFactor;
+	if (!recoilScale)
 	{
 		return;
 	}
@@ -729,8 +742,8 @@ void CNEOBaseCombatWeapon::AddViewKick()
 	QAngle viewAngles;
 	engine->GetViewAngles(viewAngles);
 
-	viewAngles.x += SharedRandomFloat(m_weaponSeeds.recoilX, recoilInfo.minX * scale, recoilInfo.maxX * scale);
-	viewAngles.y += SharedRandomFloat(m_weaponSeeds.recoilY, recoilInfo.minY * scale, recoilInfo.maxY * scale);
+	viewAngles.x += SharedRandomFloat(m_weaponSeeds.recoilX, recoilInfo.minX * recoilScale, recoilInfo.maxX * recoilScale);
+	viewAngles.y += SharedRandomFloat(m_weaponSeeds.recoilY, recoilInfo.minY * recoilScale, recoilInfo.maxY * recoilScale);
 
 	engine->SetViewAngles(viewAngles);
 
@@ -878,14 +891,14 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 		pPlayer->SetSuitUpdate("!HEV_AMO0", FALSE, 0);
 	}
 
-	//Add our view kick in
-	pOwner->ViewPunchReset();
-	AddViewKick();
-
 	m_flAccuracyPenalty = min(
 		GetMaxAccuracyPenalty(),
 		m_flAccuracyPenalty + GetAccuracyPenalty() * sv_neo_accuracy_penalty_scale.GetFloat()
 	);
+
+	//Add our view kick in
+	pOwner->ViewPunchReset();
+	AddViewKick();
 }
 
 void CNEOBaseCombatWeapon::SecondaryAttack()
