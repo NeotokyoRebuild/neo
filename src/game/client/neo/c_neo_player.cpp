@@ -1236,7 +1236,7 @@ void C_NEO_Player::PostThink(void)
 			m_bInVision = false;
 			IN_LeanReset();
 
-			if (IsLocalPlayer() && (GetTeamNumber() == TEAM_JINRAI || GetTeamNumber() == TEAM_NSF))
+			if (IsLocalPlayer() && GetDeathTime() != 0 && (GetTeamNumber() == TEAM_JINRAI || GetTeamNumber() == TEAM_NSF))
 			{
 				SetObserverMode(OBS_MODE_DEATHCAM);
 				// Fade out 8s to blackout + 2s full blackout

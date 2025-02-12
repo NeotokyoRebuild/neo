@@ -1352,7 +1352,7 @@ void CNEO_Player::PostThink(void)
 void CNEO_Player::PlayerDeathThink()
 {
 	if (NEORules()->GetGameType() == NEO_GAME_TYPE_STR)
-	{
+	{	// no respawning in TUT gamemode if team class and weapon enforced, NEO TODO (Adam) look at this later
 		return;
 	}
 	if (m_nButtons & ~IN_SCORE)
