@@ -212,8 +212,8 @@ const NeoGameTypeSettings NEO_GAME_TYPE_SETTINGS[NEO_GAME_TYPE__TOTAL] = {
 /*NEO_GAME_TYPE_CTG*/	{"CTG",			false,		true,			false,							true,	true},
 /*NEO_GAME_TYPE_VIP*/	{"VIP",			false,		true,			false,							true,	true},
 /*NEO_GAME_TYPE_DM*/	{"DM",			true,		true,			false,							false,	false},
-/*NEO_GAME_TYPE_NUL*/	{"NUL",			true,		false,			true,							false,	false},
-/*NEO_GAME_TYPE_STR*/	{"STR",			false,		false,			false,							false,	false},
+/*NEO_GAME_TYPE_EMT*/	{"NUL",			true,		false,			true,							false,	false},
+/*NEO_GAME_TYPE_TUT*/	{"STR",			false,		false,			false,							false,	false},
 };
 
 #ifdef CLIENT_DLL
@@ -3522,7 +3522,7 @@ bool CNEORules::FPlayerCanRespawn(CBasePlayer* pPlayer)
 		return true;
 	}
 
-	else if (gameType == NEO_GAME_TYPE_STR)
+	else if (gameType == NEO_GAME_TYPE_TUT)
 	{
 		if (pPlayer->IsAlive())
 		{

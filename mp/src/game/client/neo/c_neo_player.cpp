@@ -20,6 +20,8 @@
 #include "neo_predicted_viewmodel.h"
 
 #include "game_controls/neo_teammenu.h"
+#include "game_controls/neo_classmenu.h"
+#include "game_controls/neo_loadoutmenu.h"
 
 #include "ui/neo_hud_compass.h"
 #include "ui/neo_hud_game_event.h"
@@ -228,6 +230,19 @@ public:
 			return;
 		}
 
+		auto classPanel = dynamic_cast<CNeoClassMenu*>(GetClientModeNormal()->
+			GetViewport()->FindChildByName(PANEL_CLASS));
+		if (classPanel)
+		{
+			classPanel->ShowPanel(false);
+		}
+		auto teamPanel = dynamic_cast<CNeoTeamMenu*>(GetClientModeNormal()->
+			GetViewport()->FindChildByName(PANEL_TEAM));
+		if (teamPanel)
+		{
+			teamPanel->ShowPanel(false);
+		}
+
 		if (panel->IsVisible() && panel->IsEnabled())
 		{
 			panel->MoveToFront();
@@ -307,6 +322,19 @@ public:
 			return;
 		}
 
+		auto loadoutPanel = dynamic_cast<CNeoLoadoutMenu*>(GetClientModeNormal()->
+			GetViewport()->FindChildByName(PANEL_NEO_LOADOUT));
+		if (loadoutPanel)
+		{
+			loadoutPanel->ShowPanel(false);
+		}
+		auto teamPanel = dynamic_cast<CNeoTeamMenu*>(GetClientModeNormal()->
+			GetViewport()->FindChildByName(PANEL_TEAM));
+		if (teamPanel)
+		{
+			teamPanel->ShowPanel(false);
+		}
+
 		if (panel->IsVisible() && panel->IsEnabled())
 		{
 			panel->MoveToFront();
@@ -364,6 +392,19 @@ public:
 			Assert(false);
 			Warning("Couldn't find team panel\n");
 			return;
+		}
+
+		auto loadoutPanel = dynamic_cast<CNeoLoadoutMenu*>(GetClientModeNormal()->
+			GetViewport()->FindChildByName(PANEL_NEO_LOADOUT));
+		if (loadoutPanel)
+		{
+			loadoutPanel->ShowPanel(false);
+		}
+		auto classPanel = dynamic_cast<CNeoClassMenu*>(GetClientModeNormal()->
+			GetViewport()->FindChildByName(PANEL_CLASS));
+		if (classPanel)
+		{
+			classPanel->ShowPanel(false);
 		}
 
 		if (panel->IsVisible() && panel->IsEnabled())

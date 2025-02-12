@@ -295,7 +295,7 @@ void SetClass(const CCommand &command)
 		return;
 	}
 
-	if (player->IsAlive() && NEORules()->GetGameType() == NEO_GAME_TYPE_STR)
+	if (player->IsAlive() && NEORules()->GetGameType() == NEO_GAME_TYPE_TUT)
 	{
 		return;
 	}
@@ -328,7 +328,7 @@ void SetSkin(const CCommand &command)
 		return;
 	}
 
-	if (player->IsAlive() && NEORules()->GetGameType() == NEO_GAME_TYPE_STR)
+	if (player->IsAlive() && NEORules()->GetGameType() == NEO_GAME_TYPE_TUT)
 	{
 		return;
 	}
@@ -345,7 +345,7 @@ void SetSkin(const CCommand &command)
 		player->RequestSetSkin(nextSkin);
 	}
 
-	if (NEORules()->GetGameType() == NEO_GAME_TYPE_STR && NEORules()->GetForcedWeapon() >= 0)
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_TUT && NEORules()->GetForcedWeapon() >= 0)
 	{
 		respawn(player, false);
 	}
@@ -359,7 +359,7 @@ void SetLoadout(const CCommand &command)
 		return;
 	}
 
-	if (player->IsAlive() && NEORules()->GetGameType() == NEO_GAME_TYPE_STR)
+	if (player->IsAlive() && NEORules()->GetGameType() == NEO_GAME_TYPE_TUT)
 	{
 		return;
 	}
@@ -370,7 +370,7 @@ void SetLoadout(const CCommand &command)
 		player->RequestSetLoadout(loadoutNumber);
 	}
 
-	if (NEORules()->GetGameType() == NEO_GAME_TYPE_STR)
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_TUT)
 	{
 		respawn(player, false);
 	}
@@ -1138,7 +1138,7 @@ void CNEO_Player::PostThink(void)
 
 void CNEO_Player::PlayerDeathThink()
 {
-	if (NEORules()->GetGameType() == NEO_GAME_TYPE_STR)
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_TUT)
 	{	// no respawning in TUT gamemode if team class and weapon enforced, NEO TODO (Adam) look at this later
 		return;
 	}
