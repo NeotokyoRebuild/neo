@@ -525,12 +525,12 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 
 void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 {
-	const int yTopPos = param.tall / 2 - ((g_uiCtx.iRowTall * BTNS_TOTAL) / 2);
+	const int yTopPos = 0;//param.tall / 2 - ((g_uiCtx.iRowTall * BTNS_TOTAL) / 2);
 	g_uiCtx.dPanel.wide = m_iTitleWidth + (2 * g_uiCtx.iMarginX);
 	g_uiCtx.dPanel.tall = param.tall - yTopPos;
 	g_uiCtx.dPanel.x = (param.wide / 4) - (g_uiCtx.dPanel.wide / 2);
 	g_uiCtx.dPanel.y = yTopPos;
-	g_uiCtx.bgColor = COLOR_TRANSPARENT;
+	g_uiCtx.bgColor = COLOR_NEOPANELSELECTBG;
 
 	NeoUI::BeginContext(&g_uiCtx, param.eMode, nullptr, "CtxRoot");
 	NeoUI::BeginSection(true);
@@ -569,8 +569,9 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 		}
 	}
 	NeoUI::EndSection();
+	g_uiCtx.bgColor = COLOR_TRANSPARENT;
 
-	const int iBtnPlaceXMid = (param.wide / 4);
+	const int iBtnPlaceXMid = (param.wide / 5);
 	const int iBtnWide = m_iTitleWidth + (2 * g_uiCtx.iMarginX);
 	const int iRightXPos = iBtnPlaceXMid + (iBtnWide / 2) + g_uiCtx.iMarginX;
 	int iRightSideYStart = yTopPos;
