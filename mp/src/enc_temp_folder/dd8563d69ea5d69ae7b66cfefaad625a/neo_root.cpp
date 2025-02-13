@@ -587,10 +587,10 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 		// Draw title
 		surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_LOGO].hdl);
 		surface()->DrawSetTextColor(COLOR_NEOTITLE);
-		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5), yTopPos + (param.tall * 0.2));
+		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5), yTopPos + m_iTitleHeight);
 		surface()->DrawPrintText(WSZ_GAME_TITLE1, SZWSZ_LEN(WSZ_GAME_TITLE1));
 
-		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5) + (iTitleNWidth * 1.16), yTopPos + (param.tall * 0.2) + m_iTitleHeight);
+		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5) + (iTitleNWidth * 1.16), yTopPos + m_iTitleHeight + (iTitleNHeight * 0.7));
 		surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_LOGOSMALL].hdl);
 		surface()->DrawPrintText(WSZ_GAME_TITLE2, SZWSZ_LEN(WSZ_GAME_TITLE2));
 		surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_NTNORMAL].hdl);
