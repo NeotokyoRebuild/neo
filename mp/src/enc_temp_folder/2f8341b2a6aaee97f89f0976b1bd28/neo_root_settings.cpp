@@ -658,7 +658,7 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBoxBool(L"Auto streamer mode (requires restart)", &pGeneral->bAutoDetectOBS);
 	NeoUI::Label(L"OBS detection", g_bOBSDetected ? L"OBS detected on startup" : L"Not detected on startup");
 	NeoUI::RingBoxBool(L"Show rangefinder", &pGeneral->bEnableRangeFinder);
-	NeoUI::SliderInt(L"Selected Background", &pGeneral->iBackground, 0, 2); // NEO TODO (Adam) switch to RingBox with values read from ChapterBackgrounds.txt
+	NeoUI::SliderInt(L"Selected Background", &pGeneral->iBackground, 0, 15); // NEO TODO (Adam) switch to RingBox with values read from ChapterBackgrounds.txt
 }
 
 void NeoSettings_Keys(NeoSettings *ns)
