@@ -674,16 +674,6 @@ void CNEO_Player::CalculateSpeed(void)
 	{
 		speed *= pNeoWep->GetSpeedScale();
 	}
-	// Slowdown after jumping
-	if (!IsAirborne() && m_iNeoClass != NEO_CLASS_RECON)
-	{
-		const float timeSinceJumping = gpGlobals->curtime - m_flJumpLastTime;
-		constexpr float SLOWDOWN_TIME = 1.15f;
-		if (timeSinceJumping < SLOWDOWN_TIME)
-		{
-			speed = MAX(75,speed * (1 - ((SLOWDOWN_TIME - timeSinceJumping) * 1.75)));
-		}
-	}
 
 	static constexpr float DUCK_WALK_SPEED_MODIFIER = 0.75;
 	if (GetFlags() & FL_DUCKING)
@@ -694,7 +684,7 @@ void CNEO_Player::CalculateSpeed(void)
 	{
 		speed *= DUCK_WALK_SPEED_MODIFIER;
 	}
-	if (IsSprinting() && !IsAirborne())
+	if (IsSprinting())
 	{
 		static constexpr float RECON_SPRINT_SPEED_MODIFIER = 1.35;
 		static constexpr float OTHER_CLASSES_SPRINT_SPEED_MODIFIER = 1.6;
@@ -717,7 +707,19 @@ void CNEO_Player::CalculateSpeed(void)
 		absoluteVelocity *= -overSpeed;
 		ApplyAbsVelocityImpulse(absoluteVelocity);
 	}
-	SetMaxSpeed(MAX(speed, 55));
+	speed = MAX(speed, 55);
+
+	// Slowdown after jumping
+	if (m_iNeoClass != NEO_CLASS_RECON)
+	{
+		const float timeSinceJumping = gpGlobals->curtime - m_flJumpLastTime;
+		constexpr float SLOWDOWN_TIME = 1.15f;
+		if (timeSinceJumping < SLOWDOWN_TIME)
+		{
+			speed = MAX(75, speed * (1 - ((SLOWDOWN_TIME - timeSinceJumping) * 1.75)));
+		}
+	}
+	SetMaxSpeed(speed);
 }
 
 void CNEO_Player::PreThink(void)
