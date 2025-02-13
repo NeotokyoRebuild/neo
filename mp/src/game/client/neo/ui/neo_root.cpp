@@ -59,7 +59,8 @@ namespace {
 
 int g_iAvatar = 64;
 int g_iRootSubPanelWide = 600;
-constexpr wchar_t WSZ_GAME_TITLE[] = L"neatbkyoc ue";
+constexpr wchar_t WSZ_GAME_TITLE1[] = L"neAtBkyoC";
+constexpr wchar_t WSZ_GAME_TITLE2[] = L";rebuild";
 #define SZ_WEBSITE "https://neotokyorebuild.github.io"
 
 ConCommand neo_toggleconsole("neo_toggleconsole", NeoToggleconsole);
@@ -294,7 +295,7 @@ void CNeoRoot::UpdateControls()
 	{
 		auto hdlFont = g_uiCtx.fonts[NeoUI::FONT_LOGO].hdl;
 		surface()->DrawSetTextFont(hdlFont);
-		surface()->GetTextSize(hdlFont, WSZ_GAME_TITLE, m_iTitleWidth, m_iTitleHeight);
+		surface()->GetTextSize(hdlFont, WSZ_GAME_TITLE1, m_iTitleWidth, m_iTitleHeight);
 	}
 	g_uiCtx.iActiveDirection = 0;
 	g_uiCtx.iActive = NeoUI::FOCUSOFF_NUM;
@@ -334,7 +335,7 @@ void CNeoRoot::ApplySchemeSettings(IScheme *pScheme)
 	SetBgColor(COLOR_TRANSPARENT);
 
 	static constexpr const char *FONT_NAMES[NeoUI::FONT__TOTAL] = {
-		"NeoUINormal", "NHudOCR", "NHudOCRSmallNoAdditive", "ClientTitleFont",
+		"NeoUINormal", "NHudOCR", "NHudOCRSmallNoAdditive", "ClientTitleFont", "ClientTitleFontSmall",
 		"NeoUILarge"
 	};
 	for (int i = 0; i < NeoUI::FONT__TOTAL; ++i)
@@ -525,11 +526,12 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 
 void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 {
-	const int yTopPos = 0;//param.tall / 2 - ((g_uiCtx.iRowTall * BTNS_TOTAL) / 2);
-	g_uiCtx.dPanel.wide = m_iTitleWidth + (2 * g_uiCtx.iMarginX);
+	const int yTopPos = 0;
+	g_uiCtx.dPanel.wide = (m_iTitleWidth * 0.8) + (2 * g_uiCtx.iMarginX);
 	g_uiCtx.dPanel.tall = param.tall - yTopPos;
 	g_uiCtx.dPanel.x = (param.wide / 4) - (g_uiCtx.dPanel.wide / 2);
 	g_uiCtx.dPanel.y = yTopPos;
+	g_uiCtx.iYOffset[0] = -8;
 	g_uiCtx.bgColor = COLOR_NEOPANELSELECTBG;
 
 	NeoUI::BeginContext(&g_uiCtx, param.eMode, nullptr, "CtxRoot");
@@ -571,7 +573,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	NeoUI::EndSection();
 	g_uiCtx.bgColor = COLOR_TRANSPARENT;
 
-	const int iBtnPlaceXMid = (param.wide / 5);
+	const int iBtnPlaceXMid = (param.wide / 4);
 	const int iBtnWide = m_iTitleWidth + (2 * g_uiCtx.iMarginX);
 	const int iRightXPos = iBtnPlaceXMid + (iBtnWide / 2) + g_uiCtx.iMarginX;
 	int iRightSideYStart = yTopPos;
@@ -581,10 +583,17 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 		// Draw title
 		surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_LOGO].hdl);
 		surface()->DrawSetTextColor(COLOR_NEOTITLE);
-		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth / 2), yTopPos - m_iTitleHeight);
-		surface()->DrawPrintText(WSZ_GAME_TITLE, SZWSZ_LEN(WSZ_GAME_TITLE));
+		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5), yTopPos + m_iTitleHeight);
+		surface()->DrawPrintText(WSZ_GAME_TITLE1, SZWSZ_LEN(WSZ_GAME_TITLE1));
+
+		int iTitleNWidth, iTitleNHeight;
+		surface()->GetTextSize(g_uiCtx.fonts[NeoUI::FONT_LOGO].hdl, L"n", iTitleNWidth, iTitleNHeight);
+		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5) + (iTitleNWidth * 1.16), yTopPos + m_iTitleHeight + (iTitleNHeight * 0.7));
+		surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_LOGOSMALL].hdl);
+		surface()->DrawPrintText(WSZ_GAME_TITLE2, SZWSZ_LEN(WSZ_GAME_TITLE2));
 		surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_NTNORMAL].hdl);
 
+#if (0)
 		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
 		ISteamUser *steamUser = steamapicontext->SteamUser();
 		ISteamFriends *steamFriends = steamapicontext->SteamFriends();
@@ -667,8 +676,10 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 			const int iTextTotalTall = iMainTextHeight + iStatusTall;
 			iRightSideYStart += (g_uiCtx.iMarginX * 2) + ((iTextTotalTall > g_iAvatar) ? iTextTotalTall : g_iAvatar);
 		}
+#endif (0)
 	}
 
+#if (0)
 	g_uiCtx.dPanel.x = iRightXPos;
 	g_uiCtx.dPanel.y = iRightSideYStart;
 	if (IsInGame())
@@ -720,6 +731,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 		}
 	}
 	NeoUI::EndSection();
+#endif (0)
 	NeoUI::EndContext();
 }
 
