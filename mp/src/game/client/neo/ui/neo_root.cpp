@@ -60,7 +60,9 @@ namespace {
 int g_iAvatar = 64;
 int g_iRootSubPanelWide = 600;
 constexpr wchar_t WSZ_GAME_TITLE1[] = L"neAtBkyoC";
-constexpr wchar_t WSZ_GAME_TITLE2[] = L";rebuild";
+constexpr wchar_t WSZ_GAME_TITLE1_a[] = L"neAtBkyo";
+constexpr wchar_t WSZ_GAME_TITLE1_b[] = L"C";
+constexpr wchar_t WSZ_GAME_TITLE2[] = L"Hrebuild";
 #define SZ_WEBSITE "https://neotokyorebuild.github.io"
 
 ConCommand neo_toggleconsole("neo_toggleconsole", NeoToggleconsole);
@@ -583,22 +585,34 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	// Draw top steam section portion
 	{
 		// Draw title
+		int iFirstWidth, iFirstHeight;
 		surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_LOGO].hdl);
+		surface()->GetTextSize(g_uiCtx.fonts[NeoUI::FONT_LOGO].hdl, WSZ_GAME_TITLE1_a, iFirstWidth, iFirstHeight);
 		surface()->DrawSetTextColor(COLOR_BLACK);
 		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5) - 8, iTitleMarginTop + 8);
 		surface()->DrawPrintText(WSZ_GAME_TITLE1, SZWSZ_LEN(WSZ_GAME_TITLE1));
 		surface()->DrawSetTextColor(COLOR_NEOTITLE);
 		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5), iTitleMarginTop);
-		surface()->DrawPrintText(WSZ_GAME_TITLE1, SZWSZ_LEN(WSZ_GAME_TITLE1));
+		surface()->DrawPrintText(WSZ_GAME_TITLE1_a, SZWSZ_LEN(WSZ_GAME_TITLE1_a));
+		surface()->DrawSetTextColor(COLOR_RED);
+		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5) + iFirstWidth, iTitleMarginTop);
+		surface()->DrawPrintText(WSZ_GAME_TITLE1_b, SZWSZ_LEN(WSZ_GAME_TITLE1_b));
 
 		surface()->DrawSetTextColor(COLOR_BLACK);
 		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5) + (iTitleNWidth * 1.16) - 8, iTitleMarginTop + m_iTitleHeight + 8);
 		surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_LOGOSMALL].hdl);
 		surface()->DrawPrintText(WSZ_GAME_TITLE2, SZWSZ_LEN(WSZ_GAME_TITLE2));
+		surface()->DrawSetTextColor(COLOR_BLACK);
+		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5) + (iTitleNWidth * 1.16) - 8, iTitleMarginTop + m_iTitleHeight + 8);
+		surface()->DrawPrintText(L"G", SZWSZ_LEN(L"G"));
+
 		surface()->DrawSetTextColor(COLOR_NEOTITLE);
 		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5) + (iTitleNWidth * 1.16), iTitleMarginTop + m_iTitleHeight);
 		surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_LOGOSMALL].hdl);
 		surface()->DrawPrintText(WSZ_GAME_TITLE2, SZWSZ_LEN(WSZ_GAME_TITLE2));
+		surface()->DrawSetTextColor(COLOR_RED);
+		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5) + (iTitleNWidth * 1.16), iTitleMarginTop + m_iTitleHeight);
+		surface()->DrawPrintText(L"G", SZWSZ_LEN(L"G"));
 		surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_NTNORMAL].hdl);
 
 #if (0)
