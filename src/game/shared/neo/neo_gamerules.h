@@ -313,7 +313,7 @@ public:
 	virtual const char* GetChatPrefix(bool bTeamOnly, CBasePlayer* pPlayer) OVERRIDE { return ""; } // handled by GetChatFormat
 	virtual const char* GetChatLocation(bool bTeamOnly, CBasePlayer* pPlayer) OVERRIDE { return NULL; } // unimplemented
 #endif
-	bool CheckShouldRemoveRulesFromSystems();
+	bool CheckShouldNotThink();
 
 	void SetRoundStatus(NeoRoundStatus status);
 	NeoRoundStatus GetRoundStatus() const;
