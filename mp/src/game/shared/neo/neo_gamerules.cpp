@@ -799,7 +799,7 @@ void CNEORules::CheckPlayerForced()
 }
 #endif
 
-bool CNEORules::CheckShouldRemoveRulesFromSystems()
+bool CNEORules::CheckShouldNotThink()
 {
 #ifdef GAME_DLL
 	if (gpGlobals->eLoadType == MapLoad_Background || !NEO_GAME_TYPE_SETTINGS[m_nGameTypeSelected].neoRulesThink)
@@ -815,18 +815,17 @@ bool CNEORules::CheckShouldRemoveRulesFromSystems()
 void CNEORules::Think(void)
 {
 #ifdef GAME_DLL
+	CheckHiddenHudElements();
+	CheckGameType();
+	CheckPlayerForced();
+	if (CheckShouldNotThink())
+	{
+		return;
+	}
 	const bool bIsIdleState = m_nRoundStatus == NeoRoundStatus::Idle || m_nRoundStatus == NeoRoundStatus::Warmup;
 	bool bIsPause = m_nRoundStatus == NeoRoundStatus::Pause;
 	if (bIsIdleState && gpGlobals->curtime > m_flNeoNextRoundStartTime)
 	{
-		CheckHiddenHudElements();
-		CheckGameType();
-		CheckPlayerForced();
-		if (CheckShouldRemoveRulesFromSystems())
-		{
-			Remove(this);
-			return;
-		}
 		StartNextRound();
 		return;
 	}
