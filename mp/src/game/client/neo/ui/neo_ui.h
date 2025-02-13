@@ -181,13 +181,13 @@ struct Context
 	CUtlHashtable<const wchar_t *, SliderInfo> htSliders;
 };
 
-#define COLOR_NEOPANELNORMALBG Color(0, 0, 0, 150)
-#define COLOR_NEOPANELSELECTBG Color(0, 0, 0, 150)
+#define COLOR_NEOPANELNORMALBG Color(0, 0, 0, 170)
+#define COLOR_NEOPANELSELECTBG Color(0, 0, 0, 170)
 #define COLOR_NEOPANELACCENTBG Color(0, 0, 0, 0)
 #define COLOR_NEOPANELTEXTNORMAL Color(255, 255, 255, 255)//Color(200, 200, 200, 255)
 #define COLOR_NEOPANELTEXTBRIGHT Color(255, 255, 255, 255)
 #define COLOR_NEOPANELPOPUPBG Color(0, 0, 0, 170)
-#define COLOR_NEOPANELFRAMEBG Color(0, 0, 0, 150)
+#define COLOR_NEOPANELFRAMEBG Color(0, 0, 0, 170)
 #define COLOR_NEOTITLE Color(255, 255, 255, 255)//Color(200, 200, 200, 255)
 #define COLOR_NEOPANELBAR Color(20, 20, 20, 255)
 #define COLOR_NEOPANELMICTEST Color(30, 90, 30, 255)
