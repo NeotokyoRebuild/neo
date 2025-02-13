@@ -474,25 +474,10 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 
 	const RootState ePrevState = m_state;
 
-	if (eMode == NeoUI::MODE_PAINT)
-	{
-		// Draw version info (bottom left corner) - Always
-		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
-		int textWidth, textHeight;
-		surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_NTNORMAL].hdl);
-		surface()->GetTextSize(g_uiCtx.fonts[NeoUI::FONT_NTNORMAL].hdl, BUILD_DISPLAY, textWidth, textHeight);
-
-		surface()->DrawSetTextPos(g_uiCtx.iMarginX, tall - textHeight - g_uiCtx.iMarginY);
-		surface()->DrawPrintText(BUILD_DISPLAY, *BUILD_DISPLAY_SIZE);
-	}
-
 	// Laading screen just overlays over the root, so don't render anything else if so
-	if (m_bOnLoadingScreen)
+	if (!m_bOnLoadingScreen)
 	{
-		return;
-	}
-
-	static constexpr void (CNeoRoot::*P_FN_MAIN_LOOP[STATE__TOTAL])(const MainLoopParam param) = {
+		static constexpr void (CNeoRoot:: * P_FN_MAIN_LOOP[STATE__TOTAL])(const MainLoopParam param) = {
 		&CNeoRoot::MainLoopRoot,			// STATE_ROOT
 		&CNeoRoot::MainLoopSettings,		// STATE_SETTINGS
 		&CNeoRoot::MainLoopNewGame,			// STATE_NEWGAME
@@ -507,36 +492,49 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		&CNeoRoot::MainLoopPopup,			// STATE_QUIT
 		&CNeoRoot::MainLoopPopup,			// STATE_SERVERPASSWORD
 		&CNeoRoot::MainLoopPopup,			// STATE_SETTINGSRESETDEFAULT
-	};
-	(this->*P_FN_MAIN_LOOP[m_state])(MainLoopParam{.eMode = eMode, .wide = wide, .tall = tall});
+		};
+		(this->*P_FN_MAIN_LOOP[m_state])(MainLoopParam{ .eMode = eMode, .wide = wide, .tall = tall });
 
-	if (m_state != ePrevState)
+		if (m_state != ePrevState)
+		{
+			if (ePrevState == STATE_SETTINGS)
+			{
+				V_memcpy(m_iSavedYOffsets, g_uiCtx.iYOffset, NeoUI::SIZEOF_SECTIONS);
+			}
+			UpdateControls();
+			if (m_state == STATE_SETTINGS && ePrevState >= STATE__POPUPSTART && ePrevState < STATE__TOTAL)
+			{
+				V_memcpy(g_uiCtx.iYOffset, m_iSavedYOffsets, NeoUI::SIZEOF_SECTIONS);
+			}
+		}
+	}
+
+	if (eMode == NeoUI::MODE_PAINT)
 	{
-		if (ePrevState == STATE_SETTINGS)
-		{
-			V_memcpy(m_iSavedYOffsets, g_uiCtx.iYOffset, NeoUI::SIZEOF_SECTIONS);
-		}
-		UpdateControls();
-		if (m_state == STATE_SETTINGS && ePrevState >= STATE__POPUPSTART && ePrevState < STATE__TOTAL)
-		{
-			V_memcpy(g_uiCtx.iYOffset, m_iSavedYOffsets, NeoUI::SIZEOF_SECTIONS);
-		}
+		// Draw version info (bottom left corner) - Always
+		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
+		int textWidth, textHeight;
+		surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_NTNORMAL].hdl);
+		surface()->GetTextSize(g_uiCtx.fonts[NeoUI::FONT_NTNORMAL].hdl, BUILD_DISPLAY, textWidth, textHeight);
+
+		surface()->DrawSetTextPos(g_uiCtx.iMarginX, tall - textHeight - g_uiCtx.iMarginY);
+		surface()->DrawPrintText(BUILD_DISPLAY, *BUILD_DISPLAY_SIZE);
 	}
 }
 
 void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 {
-	const int yTopPos = 0;
 	int iTitleNWidth, iTitleNHeight;
 	const int iBtnPlaceXMid = (param.wide / 6);
 	const int iMargin = (6 * g_uiCtx.iMarginX);
 	const int iMarginHalf = iMargin * 0.5;
+	const int iTitleMarginTop = (param.tall * 0.2);
 	surface()->GetTextSize(g_uiCtx.fonts[NeoUI::FONT_LOGO].hdl, L"n", iTitleNWidth, iTitleNHeight);
 	g_uiCtx.dPanel.wide = (m_iTitleWidth) +iMargin;
-	g_uiCtx.dPanel.tall = param.tall - yTopPos;
+	g_uiCtx.dPanel.tall = param.tall;
 	g_uiCtx.dPanel.x = iBtnPlaceXMid - (m_iTitleWidth * 0.5) + (iTitleNWidth * 1.16) - iMarginHalf;
-	g_uiCtx.dPanel.y = yTopPos;
-	g_uiCtx.iYOffset[0] = -8;
+	g_uiCtx.dPanel.y = 0;
+	g_uiCtx.iYOffset[0] = (iTitleMarginTop + (2 * iTitleNHeight)) / -g_uiCtx.iRowTall;
 	g_uiCtx.bgColor = COLOR_NEOPANELNORMALBG;
 
 	NeoUI::BeginContext(&g_uiCtx, param.eMode, nullptr, "CtxRoot");
@@ -580,17 +578,25 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 
 	const int iBtnWide = m_iTitleWidth + iMargin;
 	const int iRightXPos = iBtnPlaceXMid + (iBtnWide / 2) + iMarginHalf;
-	int iRightSideYStart = yTopPos;
+	int iRightSideYStart = (iTitleMarginTop + (2 * iTitleNHeight));
 
 	// Draw top steam section portion
 	{
 		// Draw title
 		surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_LOGO].hdl);
+		surface()->DrawSetTextColor(COLOR_BLACK);
+		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5) - 8, iTitleMarginTop + 8);
+		surface()->DrawPrintText(WSZ_GAME_TITLE1, SZWSZ_LEN(WSZ_GAME_TITLE1));
 		surface()->DrawSetTextColor(COLOR_NEOTITLE);
-		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5), yTopPos + (param.tall * 0.2));
+		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5), iTitleMarginTop);
 		surface()->DrawPrintText(WSZ_GAME_TITLE1, SZWSZ_LEN(WSZ_GAME_TITLE1));
 
-		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5) + (iTitleNWidth * 1.16), yTopPos + (param.tall * 0.2) + m_iTitleHeight);
+		surface()->DrawSetTextColor(COLOR_BLACK);
+		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5) + (iTitleNWidth * 1.16) - 8, iTitleMarginTop + m_iTitleHeight + 8);
+		surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_LOGOSMALL].hdl);
+		surface()->DrawPrintText(WSZ_GAME_TITLE2, SZWSZ_LEN(WSZ_GAME_TITLE2));
+		surface()->DrawSetTextColor(COLOR_NEOTITLE);
+		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5) + (iTitleNWidth * 1.16), iTitleMarginTop + m_iTitleHeight);
 		surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_LOGOSMALL].hdl);
 		surface()->DrawPrintText(WSZ_GAME_TITLE2, SZWSZ_LEN(WSZ_GAME_TITLE2));
 		surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_NTNORMAL].hdl);
