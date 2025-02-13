@@ -374,6 +374,8 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 
 void CNEOHud_RoundState::DrawNeoHudElement()
 {
+	CheckActiveStar();
+
 	if (!ShouldDraw())
 	{
 		return;
@@ -608,8 +610,6 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 		surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), m_iBoxYEnd);
 		surface()->DrawPrintText(m_wszGameTypeDescription, Q_UnicodeLength(m_wszGameTypeDescription));
 	}
-
-	CheckActiveStar();
 }
 
 void CNEOHud_RoundState::DrawPlayer(int playerIndex, int teamIndex, const TeamLogoColor &teamLogoColor,
@@ -687,7 +687,15 @@ void CNEOHud_RoundState::CheckActiveStar()
 	auto player = C_NEO_Player::GetLocalNEOPlayer();
 	Assert(player);
 
-	int currentStar = player->GetStar();
+	int currentStar;
+	if (!ShouldDraw())
+	{
+		currentStar = STAR_NONE;
+	}
+	else
+	{
+		currentStar = player->GetStar();
+	}
 	const int currentTeam = player->GetTeamNumber();
 
 	if (m_iPreviouslyActiveStar == currentStar && m_iPreviouslyActiveTeam == currentTeam)
