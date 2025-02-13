@@ -747,7 +747,7 @@ void CNEO_Player::PreThink(void)
 		m_flCamoAuxLastTime = 0;
 	}
 
-	if (IsAlive())
+	if (IsAlive() || m_vecLean != vec3_origin)
 	{
 		Lean();
 	}

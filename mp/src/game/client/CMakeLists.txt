@@ -349,6 +349,9 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/basecombatweapon_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/baseentity_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/basegrenade_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/basegrenade_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/sdk/sdk_basegrenade_projectile.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/sdk/sdk_basegrenade_projectile.h
     ${CMAKE_SOURCE_DIR}/game/shared/baseparticleentity.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/baseplayer_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/baseprojectile.cpp
