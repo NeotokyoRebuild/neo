@@ -293,9 +293,9 @@ void CNeoRoot::UpdateControls()
 {
 	if (m_state == STATE_ROOT)
 	{
-		auto hdlFont = g_uiCtx.fonts[NeoUI::FONT_LOGO].hdl;
+		auto hdlFont = g_uiCtx.fonts[NeoUI::FONT_LOGOSMALL].hdl;
 		surface()->DrawSetTextFont(hdlFont);
-		surface()->GetTextSize(hdlFont, WSZ_GAME_TITLE1, m_iTitleWidth, m_iTitleHeight);
+		surface()->GetTextSize(hdlFont, WSZ_GAME_TITLE2, m_iTitleWidth, m_iTitleHeight);
 	}
 	g_uiCtx.iActiveDirection = 0;
 	g_uiCtx.iActive = NeoUI::FOCUSOFF_NUM;
