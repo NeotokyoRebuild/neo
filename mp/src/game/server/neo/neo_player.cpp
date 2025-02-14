@@ -61,6 +61,7 @@ SendPropBool(SENDINFO(m_bIneligibleForLoadoutPick)),
 
 SendPropTime(SENDINFO(m_flCamoAuxLastTime)),
 SendPropInt(SENDINFO(m_nVisionLastTick)),
+SendPropTime(SENDINFO(m_flJumpLastTime)),
 
 SendPropString(SENDINFO(m_pszTestMessage)),
 
@@ -97,6 +98,7 @@ DEFINE_FIELD(m_bInAim, FIELD_BOOLEAN),
 
 DEFINE_FIELD(m_flCamoAuxLastTime, FIELD_TIME),
 DEFINE_FIELD(m_nVisionLastTick, FIELD_TICK),
+DEFINE_FIELD(m_flJumpLastTime, FIELD_TIME),
 
 DEFINE_FIELD(m_pszTestMessage, FIELD_STRING),
 
@@ -399,6 +401,7 @@ CNEO_Player::CNEO_Player()
 	m_bInThermOpticCamo = m_bInVision = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
 	m_bInAim = false;
+	m_bCarryingGhost = false;
 	m_bInLean = NEO_LEAN_NONE;
 
 	m_iLoadoutWepChoice = 0;
@@ -662,6 +665,63 @@ void CNEO_Player::CheckLeanButtons()
 	}
 }
 
+extern ConVar neo_ghost_bhopping;
+void CNEO_Player::CalculateSpeed(void)
+{
+	float speed = GetNormSpeed();
+
+	if (auto pNeoWep = static_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon()))
+	{
+		speed *= pNeoWep->GetSpeedScale();
+	}
+
+	static constexpr float DUCK_WALK_SPEED_MODIFIER = 0.75;
+	if (GetFlags() & FL_DUCKING)
+	{
+		speed *= DUCK_WALK_SPEED_MODIFIER;
+	}
+	if (m_nButtons & IN_WALK)
+	{
+		speed *= DUCK_WALK_SPEED_MODIFIER;
+	}
+	if (IsSprinting())
+	{
+		static constexpr float RECON_SPRINT_SPEED_MODIFIER = 1.35;
+		static constexpr float OTHER_CLASSES_SPRINT_SPEED_MODIFIER = 1.6;
+		speed *= m_iNeoClass == NEO_CLASS_RECON ? RECON_SPRINT_SPEED_MODIFIER : OTHER_CLASSES_SPRINT_SPEED_MODIFIER;
+	}
+	if (IsInAim())
+	{
+		static constexpr float AIM_SPEED_MODIFIER = 0.6;
+		speed *= AIM_SPEED_MODIFIER;
+	}
+
+	Vector absoluteVelocity = GetAbsVelocity();
+	absoluteVelocity.z = 0.f;
+	float currentSpeed = absoluteVelocity.Length();
+
+	if (!neo_ghost_bhopping.GetBool() && GetMoveType() != MOVETYPE_LADDER && currentSpeed > speed && m_bCarryingGhost)
+	{
+		float overSpeed = currentSpeed - speed;
+		absoluteVelocity.NormalizeInPlace();
+		absoluteVelocity *= -overSpeed;
+		ApplyAbsVelocityImpulse(absoluteVelocity);
+	}
+	speed = MAX(speed, 55);
+
+	// Slowdown after jumping
+	if (m_iNeoClass != NEO_CLASS_RECON)
+	{
+		const float timeSinceJumping = gpGlobals->curtime - m_flJumpLastTime;
+		constexpr float SLOWDOWN_TIME = 1.15f;
+		if (timeSinceJumping < SLOWDOWN_TIME)
+		{
+			speed = MAX(75, speed * (1 - ((SLOWDOWN_TIME - timeSinceJumping) * 1.75)));
+		}
+	}
+	SetMaxSpeed(speed);
+}
+
 void CNEO_Player::PreThink(void)
 {
 	BaseClass::PreThink();
@@ -671,42 +731,7 @@ void CNEO_Player::PreThink(void)
 		CloakPower_Update();
 	}
 
-	float speed = GetNormSpeed();
-	static constexpr float DUCK_WALK_SPEED_MODIFIER = 0.75;
-	if (m_nButtons & IN_DUCK)
-	{
-		speed *= DUCK_WALK_SPEED_MODIFIER;
-	}
-	if (m_nButtons & IN_WALK)
-	{
-		speed *= DUCK_WALK_SPEED_MODIFIER;
-	}
-	if (IsSprinting() && !IsAirborne())
-	{
-		static constexpr float RECON_SPRINT_SPEED_MODIFIER = 0.75;
-		static constexpr float OTHER_CLASSES_SPRINT_SPEED_MODIFIER = 0.6;
-		speed /= m_iNeoClass == NEO_CLASS_RECON ? RECON_SPRINT_SPEED_MODIFIER : OTHER_CLASSES_SPRINT_SPEED_MODIFIER;
-	}
-	if (m_bInAim.Get())
-	{
-		static constexpr float AIM_SPEED_MODIFIER = 0.6;
-		speed *= AIM_SPEED_MODIFIER;
-	}
-	if (auto pNeoWep = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon()))
-	{
-		speed *= pNeoWep->GetSpeedScale();
-	}
-
-	if (!IsAirborne() && m_iNeoClass != NEO_CLASS_RECON)
-	{
-		const float deltaTime = gpGlobals->curtime - m_flLastAirborneJumpOkTime;
-		const float leeway = 1.0f;
-		if (deltaTime < leeway)
-		{
-			speed = (speed / 2) + (deltaTime / 2 * (speed));
-		}
-	}
-	SetMaxSpeed(MAX(speed, 56));
+	CalculateSpeed();
 
 	CheckThermOpticButtons();
 	CheckVisionButtons();
