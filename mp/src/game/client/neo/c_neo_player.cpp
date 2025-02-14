@@ -1114,7 +1114,7 @@ void C_NEO_Player::PostThink(void)
 		{
 			Weapon_SetZoom(false);
 		}
-		else if (m_nButtons & IN_AIM && !IsInAim())
+		else if (clientAimHold ? (m_nButtons & IN_AIM && !IsInAim()) : m_afButtonPressed & IN_AIM)
 		{
 			if (!CanSprint() || !(m_nButtons & IN_SPEED))
 			{
