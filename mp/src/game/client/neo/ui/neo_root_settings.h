@@ -45,6 +45,7 @@ struct NeoSettings
 		bool bStreamerMode;
 		bool bAutoDetectOBS;
 		bool bEnableRangeFinder;
+		int iBackground;
 	};
 
 	struct Keys
@@ -173,6 +174,7 @@ struct NeoSettings
 		CONVARREF_DEF(neo_cl_streamermode);
 		CONVARREF_DEF(neo_cl_streamermode_autodetect_obs);
 		CONVARREF_DEF(neo_cl_hud_rangefinder_enabled);
+		CONVARREF_DEF(sv_unlockedchapters);
 
 		// Multiplayer
 		CONVARREF_DEF(cl_playerspraydisable);

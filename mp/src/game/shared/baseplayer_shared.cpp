@@ -2002,6 +2002,10 @@ int CBasePlayer::GetDefaultFOV( void ) const
 #ifdef CLIENT_DLL
 	int iFOV = neo_fov.GetInt();
 #else
+	if (gpGlobals->eLoadType == MapLoad_Background)
+	{
+		return 75;
+	}
 	int iFOV = ( m_iDefaultFOV == 0 ) ? g_pGameRules->DefaultFOV() : m_iDefaultFOV;
 	if (!(GetFlags() & FL_FAKECLIENT))
 	{
