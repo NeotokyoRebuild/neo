@@ -586,24 +586,23 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	{
 		// Draw title
 		int iFirstWidth, iFirstHeight;
+		int iDropShadowOffset = MIN(8, param.wide * 0.005);
 		surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_LOGO].hdl);
 		surface()->GetTextSize(g_uiCtx.fonts[NeoUI::FONT_LOGO].hdl, WSZ_GAME_TITLE1_a, iFirstWidth, iFirstHeight);
 		surface()->DrawSetTextColor(COLOR_BLACK);
-		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5) - 8, iTitleMarginTop + 8);
+		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5) - iDropShadowOffset, iTitleMarginTop + iDropShadowOffset);
 		surface()->DrawPrintText(WSZ_GAME_TITLE1, SZWSZ_LEN(WSZ_GAME_TITLE1));
 		surface()->DrawSetTextColor(COLOR_NEOTITLE);
 		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5), iTitleMarginTop);
 		surface()->DrawPrintText(WSZ_GAME_TITLE1_a, SZWSZ_LEN(WSZ_GAME_TITLE1_a));
 		surface()->DrawSetTextColor(COLOR_RED);
-		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5) + iFirstWidth, iTitleMarginTop);
 		surface()->DrawPrintText(WSZ_GAME_TITLE1_b, SZWSZ_LEN(WSZ_GAME_TITLE1_b));
 
 		surface()->DrawSetTextColor(COLOR_BLACK);
-		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5) + (iTitleNWidth * 1.16) - 8, iTitleMarginTop + m_iTitleHeight + 8);
+		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5) + (iTitleNWidth * 1.16) - iDropShadowOffset, iTitleMarginTop + m_iTitleHeight + iDropShadowOffset);
 		surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_LOGOSMALL].hdl);
 		surface()->DrawPrintText(WSZ_GAME_TITLE2, SZWSZ_LEN(WSZ_GAME_TITLE2));
-		surface()->DrawSetTextColor(COLOR_BLACK);
-		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5) + (iTitleNWidth * 1.16) - 8, iTitleMarginTop + m_iTitleHeight + 8);
+		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5) + (iTitleNWidth * 1.16) - iDropShadowOffset, iTitleMarginTop + m_iTitleHeight + iDropShadowOffset);
 		surface()->DrawPrintText(L"G", SZWSZ_LEN(L"G"));
 
 		surface()->DrawSetTextColor(COLOR_NEOTITLE);
@@ -615,7 +614,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 		surface()->DrawPrintText(L"G", SZWSZ_LEN(L"G"));
 		surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_NTNORMAL].hdl);
 
-#if (0)
+#if (0)	// NEO TODO (Adam) place the current player info in the top right corner maybe?
 		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
 		ISteamUser *steamUser = steamapicontext->SteamUser();
 		ISteamFriends *steamFriends = steamapicontext->SteamFriends();
@@ -701,7 +700,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 #endif (0)
 	}
 
-#if (0)
+#if (0) // NEO TODO (Adam) some kind of drop down for the news section, better position the current server info etc.
 	g_uiCtx.dPanel.x = iRightXPos;
 	g_uiCtx.dPanel.y = iRightSideYStart;
 	if (IsInGame())
