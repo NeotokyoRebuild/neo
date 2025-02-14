@@ -216,7 +216,7 @@ private:
 	void CheckThermOpticButtons();
 	void CheckVisionButtons();
 	void CheckLeanButtons();
-	void PlayCloakSound();
+	void PlayCloakSound(bool removeLocalPlayer = true);
 	void CloakFlash();
 	void SetCloakState(bool state);
 

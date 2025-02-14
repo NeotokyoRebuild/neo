@@ -481,9 +481,13 @@ void C_NEO_Player::CheckThermOpticButtons()
 			return;
 		}
 
-		if (m_HL2Local.m_cloakPower >= CLOAK_AUX_COST)
+		if (!m_bInThermOpticCamo && m_HL2Local.m_cloakPower >= MIN_CLOAK_AUX)
 		{
-			SetCloakState(!m_bInThermOpticCamo);
+			SetCloakState( true );
+		}
+		else
+		{
+			SetCloakState( false );
 		}
 	}
 
@@ -876,14 +880,14 @@ void C_NEO_Player::PreThink( void )
 		{
 			// NEO TODO (Rain): add server style interface for accessor,
 			// so we can share code
-			if (m_HL2Local.m_cloakPower >= CLOAK_AUX_COST)
+			if (m_HL2Local.m_cloakPower >= MIN_CLOAK_AUX)
 			{
 				m_flCamoAuxLastTime = gpGlobals->curtime;
 			}
 		}
 		else
 		{
-			const float deltaTime = gpGlobals->curtime + gpGlobals->interpolation_amount - m_flCamoAuxLastTime;
+			const float deltaTime = gpGlobals->curtime - m_flCamoAuxLastTime;
 			if (deltaTime >= 1)
 			{
 				// NEO TODO (Rain): add interface for predicting this
@@ -894,7 +898,7 @@ void C_NEO_Player::PreThink( void )
 					m_HL2Local.m_cloakPower = 0.0f;
 				}
 
-				if (m_HL2Local.m_cloakPower < CLOAK_AUX_COST)
+				if (m_HL2Local.m_cloakPower < MIN_CLOAK_AUX)
 				{
 					SetCloakState(false);
 
