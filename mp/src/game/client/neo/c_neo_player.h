@@ -74,6 +74,7 @@ public:
 
 	virtual void ClientThink( void );
 	virtual void PreThink( void );
+	virtual void CalculateSpeed( void );
 	virtual void PostThink( void );
 	virtual void Spawn( void );
 
@@ -121,7 +122,6 @@ public:
 
 private:
 	float GetActiveWeaponSpeedScale() const;
-	float GetBackwardsMovementPenaltyScale() const { return ((m_nButtons & IN_BACK) ? NEO_SLOW_MODIFIER : 1.0); }
 
 	bool HandleDeathSpecCamSwitch(Vector& eyeOrigin, QAngle& eyeAngles, float& fov);
 
@@ -200,12 +200,14 @@ public:
 
 	CNetworkVar(float, m_flCamoAuxLastTime);
 	CNetworkVar(int, m_nVisionLastTick);
+	CNetworkVar(float, m_flJumpLastTime);
 
 	CNetworkVar(bool, m_bInThermOpticCamo);
 	CNetworkVar(bool, m_bLastTickInThermOpticCamo);
 	CNetworkVar(bool, m_bInVision);
 	CNetworkVar(bool, m_bInAim);
 	CNetworkVar(int, m_bInLean);
+	CNetworkVar(bool, m_bCarryingGhost);
 	CNetworkVar(bool, m_bIneligibleForLoadoutPick);
 
 	CNetworkVar(int, m_iNeoClass);

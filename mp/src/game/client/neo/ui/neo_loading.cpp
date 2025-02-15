@@ -44,7 +44,7 @@ void CNeoLoading::ApplySchemeSettings(vgui::IScheme *pScheme)
 	SetBgColor(COLOR_TRANSPARENT);
 
 	static constexpr const char *FONT_NAMES[NeoUI::FONT__TOTAL] = {
-		"NeoUINormal", "NHudOCR", "NHudOCRSmallNoAdditive", "ClientTitleFont",
+		"NeoUINormal", "NHudOCR", "NHudOCRSmallNoAdditive", "ClientTitleFont", "ClientTitleFontSmall",
 		"NeoUILarge"
 	};
 	for (int i = 0; i < NeoUI::FONT__TOTAL; ++i)

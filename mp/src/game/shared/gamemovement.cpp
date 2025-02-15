@@ -1947,6 +1947,12 @@ void CGameMovement::WalkMove( void )
 	trace_t pm;
 	Vector forward, right, up;
 
+#ifdef NEO
+	if (mv->m_flForwardMove < 0.0) {
+		mv->m_flForwardMove *= 0.75;
+	}
+#endif // NEO
+
 	AngleVectors (mv->m_vecViewAngles, &forward, &right, &up);  // Determine movement angles
 
 	CHandle< CBaseEntity > oldground;
@@ -2531,6 +2537,7 @@ bool CGameMovement::CheckJumpButton( void )
 		break;
 	}
 	neoPlayer->DoAnimationEvent(PLAYERANIMEVENT_JUMP);
+	neoPlayer->m_flJumpLastTime = gpGlobals->curtime;
 #endif
 
 	// Acclerate upward

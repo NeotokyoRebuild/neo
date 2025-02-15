@@ -228,6 +228,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->bReloadEmpty = cvr->cl_autoreload_when_empty.GetBool();
 		pGeneral->bViewmodelRighthand = cvr->cl_righthand.GetBool();
 		pGeneral->bLeanViewmodelOnly = cvr->cl_neo_lean_viewmodel_only.GetBool();
+		pGeneral->bLeanAutomatic = cvr->cl_neo_lean_automatic.GetBool();
 		pGeneral->bShowPlayerSprays = !(cvr->cl_playerspraydisable.GetBool()); // Inverse
 		pGeneral->bShowPos = cvr->cl_showpos.GetBool();
 		pGeneral->iShowFps = cvr->cl_showfps.GetInt();
@@ -246,6 +247,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->bStreamerMode = cvr->neo_cl_streamermode.GetBool();
 		pGeneral->bAutoDetectOBS = cvr->neo_cl_streamermode_autodetect_obs.GetBool();
 		pGeneral->bEnableRangeFinder = cvr->neo_cl_hud_rangefinder_enabled.GetBool();
+		pGeneral->iBackground = cvr->sv_unlockedchapters.GetInt();
 	}
 	{
 		NeoSettings::Keys *pKeys = &ns->keys;
@@ -445,6 +447,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_autoreload_when_empty.SetValue(pGeneral->bReloadEmpty);
 		cvr->cl_righthand.SetValue(pGeneral->bViewmodelRighthand);
 		cvr->cl_neo_lean_viewmodel_only.SetValue(pGeneral->bLeanViewmodelOnly);
+		cvr->cl_neo_lean_automatic.SetValue(pGeneral->bLeanAutomatic);
 		cvr->cl_playerspraydisable.SetValue(!pGeneral->bShowPlayerSprays); // Inverse
 		cvr->cl_showpos.SetValue(pGeneral->bShowPos);
 		cvr->cl_showfps.SetValue(pGeneral->iShowFps);
@@ -452,6 +455,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->neo_cl_streamermode.SetValue(pGeneral->bStreamerMode);
 		cvr->neo_cl_streamermode_autodetect_obs.SetValue(pGeneral->bAutoDetectOBS);
 		cvr->neo_cl_hud_rangefinder_enabled.SetValue(pGeneral->bEnableRangeFinder);
+		cvr->sv_unlockedchapters.SetValue(pGeneral->iBackground);
 	}
 	{
 		const NeoSettings::Keys *pKeys = &ns->keys;
@@ -645,6 +649,7 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBoxBool(L"Reload empty", &pGeneral->bReloadEmpty);
 	NeoUI::RingBoxBool(L"Right hand viewmodel", &pGeneral->bViewmodelRighthand);
 	NeoUI::RingBoxBool(L"Lean viewmodel only", &pGeneral->bLeanViewmodelOnly);
+	NeoUI::RingBoxBool(L"Automatic leaning", &pGeneral->bLeanAutomatic);
 	NeoUI::RingBoxBool(L"Show player spray", &pGeneral->bShowPlayerSprays);
 	NeoUI::RingBoxBool(L"Show position", &pGeneral->bShowPos);
 	NeoUI::RingBox(L"Show FPS", SHOWFPS_LABELS, ARRAYSIZE(SHOWFPS_LABELS), &pGeneral->iShowFps);
@@ -653,6 +658,7 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBoxBool(L"Auto streamer mode (requires restart)", &pGeneral->bAutoDetectOBS);
 	NeoUI::Label(L"OBS detection", g_bOBSDetected ? L"OBS detected on startup" : L"Not detected on startup");
 	NeoUI::RingBoxBool(L"Show rangefinder", &pGeneral->bEnableRangeFinder);
+	NeoUI::SliderInt(L"Selected Background", &pGeneral->iBackground, 1, 4); // NEO TODO (Adam) switch to RingBox with values read from ChapterBackgrounds.txt
 }
 
 void NeoSettings_Keys(NeoSettings *ns)

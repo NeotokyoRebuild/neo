@@ -60,6 +60,7 @@ public:
 	virtual void Precache(void) OVERRIDE;
 	virtual void Spawn(void) OVERRIDE;
 	virtual void PostThink(void) OVERRIDE;
+	virtual void CalculateSpeed(void);
 	virtual void PreThink(void) OVERRIDE;
 	virtual void PlayerDeathThink(void) OVERRIDE;
 	virtual bool HandleCommand_JoinTeam(int team) OVERRIDE;
@@ -109,7 +110,7 @@ public:
 
 	void GiveLoadoutWeapon(void);
 	void SetPlayerTeamModel(void);
-	void SpawnDeadModel(const CTakeDamageInfo& info);
+	void SetDeadModel(const CTakeDamageInfo& info);
 	void SetPlayerCorpseModel(int type);
 	virtual void PickDefaultSpawnTeam(void) OVERRIDE;
 
@@ -199,6 +200,9 @@ public:
 	AttackersTotals GetAttackersTotals() const;
 	void StartShowDmgStats(const CTakeDamageInfo *info);
 
+	void AddPoints(int score, bool bAllowNegativeScore);
+	inline void SetDeathTime(const float deathTime) { m_flDeathTime.Set(deathTime); }
+
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);
 
 	void InputSetPlayerModel( inputdata_t & inputData );
@@ -207,13 +211,12 @@ private:
 
 private:
 	float GetActiveWeaponSpeedScale() const;
-	float GetBackwardsMovementPenaltyScale() const { return ((m_nButtons & IN_BACK) ? NEO_SLOW_MODIFIER : 1.0); }
 
 private:
 	void CheckThermOpticButtons();
 	void CheckVisionButtons();
 	void CheckLeanButtons();
-	void PlayCloakSound();
+	void PlayCloakSound(bool removeLocalPlayer = true);
 	void CloakFlash();
 	void SetCloakState(bool state);
 
@@ -243,10 +246,12 @@ public:
 	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
 	CNetworkVar(bool, m_bInAim);
 	CNetworkVar(int, m_bInLean);
+	CNetworkVar(bool, m_bCarryingGhost);
 	CNetworkVar(bool, m_bIneligibleForLoadoutPick);
 
 	CNetworkVar(float, m_flCamoAuxLastTime);
 	CNetworkVar(int, m_nVisionLastTick);
+	CNetworkVar(float, m_flJumpLastTime);
 
 	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
 	CNetworkArray(int, m_rfAttackersScores, (MAX_PLAYERS + 1));
@@ -263,6 +268,7 @@ public:
 	CNetworkVar(bool, m_bClientWantNeoName);
 
 	bool m_bIsPendingSpawnForThisRound;
+	bool m_bSpawnedThisRound = false;
 	bool m_bKilledInflicted = false; // Server-side var only
 	int m_iTeamDamageInflicted = 0;
 	int m_iTeamKillsInflicted = 0;
@@ -273,7 +279,7 @@ public:
 
 private:
 	bool m_bFirstDeathTick;
-	bool m_bCorpseSpawned;
+	bool m_bCorpseSet;
 	bool m_bPreviouslyReloading;
 	bool m_szNeoNameHasSet;
 

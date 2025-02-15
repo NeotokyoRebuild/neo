@@ -82,7 +82,11 @@ private:
 
 	// Texture for skull symbol
 	CHudTexture		*m_iconD_skull;  
-	CHudTexture		*m_iconD_headshot;  
+	CHudTexture		*m_iconD_headshot;
+#ifdef NEO
+	int m_iHeadshotIconHeight;
+	int m_iHeadshotIconWidth;
+#endif //NEO
 
 	CUtlVector<DeathNoticeItem> m_DeathNotices;
 };
@@ -100,8 +104,12 @@ CHudDeathNotice::CHudDeathNotice( const char *pElementName ) :
 	vgui::Panel *pParent = g_pClientMode->GetViewport();
 	SetParent( pParent );
 
+#ifdef NEO
+	m_iHeadshotIconHeight = m_iHeadshotIconWidth = 0;
+#else
 	m_iconD_headshot = NULL;
 	m_iconD_skull = NULL;
+#endif //NEO
 
 	SetHiddenBits( HIDEHUD_MISCSTATUS );
 }
@@ -113,6 +121,11 @@ void CHudDeathNotice::ApplySchemeSettings( IScheme *scheme )
 {
 	BaseClass::ApplySchemeSettings( scheme );
 	SetPaintBackgroundEnabled( false );
+
+#ifdef NEO
+	m_iHeadshotIconHeight = surface()->GetFontTall(m_hTextFont) * 2;
+	m_iHeadshotIconWidth = m_iHeadshotIconHeight;
+#endif // NEO
 }
 
 //-----------------------------------------------------------------------------
@@ -129,6 +142,9 @@ void CHudDeathNotice::Init( void )
 void CHudDeathNotice::VidInit( void )
 {
 	m_iconD_skull = gHUD.GetIcon( "d_skull" );
+#ifdef NEO
+	m_iconD_headshot = gHUD.GetIcon("neo_hs");
+#endif // NEO
 	m_DeathNotices.Purge();
 }
 
@@ -238,13 +254,23 @@ void CHudDeathNotice::Paint()
 			surface()->DrawGetTextureSize(icon->textureId, iconWide, iconTall);
 
 			const float scale = ((float)ScreenHeight() / 480.0f);	//scale based on 640x480
-			const float neoIconScale = 0.22;
+			float neoIconScale = (surface()->GetFontTall(m_hTextFont) / (float)iconTall);
+			if (neoIconScale == 0)
+			{
+				neoIconScale = 1;
+			}
 
-			iconWide = (int)(scale * iconWide * neoIconScale);
-			iconTall = (int)(scale * iconTall * neoIconScale);
+			// Original neotokyo icons look a bit small, double their size
+			if (m_DeathNotices[i].iSuicide || !V_strncmp("neo_boom", icon->szShortName, 8))
+			{
+				neoIconScale *= 2;
+			}
+
+			iconWide = (int)(iconWide * neoIconScale);
+			iconTall = (int)(iconTall * neoIconScale);
 
 			// Center the icon vertically in relation to the killfeed text.
-			yNeoIconOffset = (int)(surface()->GetFontTall(m_hTextFont) * -0.25);
+			yNeoIconOffset = (int)((surface()->GetFontTall(m_hTextFont) - iconTall) * 0.5);
 #else
 			float scale = ((float)ScreenHeight() / 480.0f);	//scale based on 640x480
 			iconWide = (int)(scale * (float)icon->Width());
@@ -256,12 +282,18 @@ void CHudDeathNotice::Paint()
 		if ( m_bRightJustify )
 		{
 			x =	GetWide() - len - iconWide;
+#ifdef NEO
+			if (m_DeathNotices[i].bHeadshot)
+			{
+				x -= m_iHeadshotIconWidth;
+			}
+#endif // NEO
 		}
 		else
 		{
 			x = 0;
 		}
-		
+
 #ifdef NEO
 		// Only draw killers name if it wasn't a suicide or has an assists in it
 		if (!m_DeathNotices[i].iSuicide || hasAssists)
@@ -319,6 +351,14 @@ void CHudDeathNotice::Paint()
 		icon->DrawSelf(x, y, iconWide, iconTall, iconColor);
 #endif
 		x += iconWide;
+#ifdef NEO
+		if (!m_DeathNotices[i].iSuicide && m_DeathNotices[i].bHeadshot && m_iconD_headshot)
+		{
+			m_iconD_headshot->DrawSelf(x, y - 0.25 * m_iHeadshotIconHeight, m_iHeadshotIconWidth, m_iHeadshotIconHeight,
+				(m_DeathNotices[i].iSuicide ? COLOR_NEO_ORANGE : COLOR_NEO_WHITE));
+			x += m_iHeadshotIconWidth;
+		}
+#endif // NEO
 
 		SetColorForNoticePlayer( iVictimTeam );
 
@@ -435,8 +475,10 @@ void CHudDeathNotice::FireGameEvent(IGameEvent* event)
 		// Guns
 		else
 		{
+			char sIconName[24];
+			Q_snprintf(sIconName, sizeof(sIconName), "neo_%s", killedwith);
 			deathMsg.bHeadshot = (event->GetInt("icon") == NEO_DEATH_EVENT_ICON_HEADSHOT);
-			deathMsg.iconDeath = gHUD.GetIcon(deathMsg.bHeadshot ? "neo_hs" : "neo_gun");
+			deathMsg.iconDeath = gHUD.GetIcon(sIconName);
 		}
 	}
 
