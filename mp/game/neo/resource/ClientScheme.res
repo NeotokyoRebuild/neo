@@ -270,27 +270,35 @@ Scheme
 			"4"
 			{
 				"name"		"Verdana"
-				"tall"		"16" // "20"
+				"tall"		"15"
 				"weight"	"900"
 				"antialias" "1"
-				"yres"	"1024 1199"
+				"yres"	"1024 1440"
 			}
 			"5"
 			{
 				"name"		"Verdana"
-				"tall"		"16" // "24"
+				"tall"		"16"
 				"weight"	"900"
 				"antialias" "1"
-				"yres"	"1200 10000"
+				"yres"	"1441 1599"
 			}
 			"6"
+			{
+				"name"		"Verdana"
+				"tall"		"17"
+				"weight"	"900"
+				"antialias" "1"
+				"yres"	"1600 6000"
+			}
+			"7"
 			{
 				"name"		"Verdana"
 				"tall"		"12"
 				"range"		"0x0000 0x00FF"
 				"weight"	"900"
 			}
-			"7"
+			"8"
 			{
 				"name"		"Arial"
 				"tall"		"12"
@@ -346,7 +354,7 @@ Scheme
 			"4"
 			{
 				"name"		"Verdana"
-				"tall"		"16" //"20"
+				"tall"		"16"
 				"weight"	"0"
 				"range"		"0x0000 0x017F"
 				"yres"	"1024 1199"
@@ -355,13 +363,31 @@ Scheme
 			"5"
 			{
 				"name"		"Verdana"
-				"tall"		""16" //24"
+				"tall"		"18"
 				"weight"	"0"
 				"range"		"0x0000 0x017F"
-				"yres"	"1200 6000"
+				"yres"	"1200 1440"
 				"antialias"	"1"
 			}
 			"6"
+			{
+				"name"		"Verdana"
+				"tall"		"19"
+				"weight"	"0"
+				"range"		"0x0000 0x017F"
+				"yres"	"1441 1599"
+				"antialias"	"1"
+			}
+			"7"
+			{
+				"name"		"Verdana"
+				"tall"		"20"
+				"weight"	"0"
+				"range"		"0x0000 0x017F"
+				"yres"	"1600 6000"
+				"antialias"	"1"
+			}
+			"8"
 			{
 				"name"		"Arial"
 				"tall"		"12"
@@ -408,20 +434,38 @@ Scheme
 			"5"
 			{
 				"name"		"Verdana"
-				"tall"		"16" //"24"
+				"tall"		"18"
 				"weight"	"0"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"yres"	"1200 6000"
+				"yres"	"1200 1440"
 				"antialias"	"1"
 			}
 			"6"
+			{
+				"name"		"Verdana"
+				"tall"		"19"
+				"weight"	"0"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1441 1599"
+				"antialias"	"1"
+			}
+			"7"
+			{
+				"name"		"Verdana"
+				"tall"		"20"
+				"weight"	"0"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1600 6000"
+				"antialias"	"1"
+			}
+			"8"
 			{
 				"name"		"Verdana"
 				"tall"		"12"
 				"range" 		"0x0000 0x00FF"
 				"weight"		"0"
 			}
-			"7"
+			"9"
 			{
 				"name"		"Arial"
 				"tall"		"11"
@@ -464,7 +508,21 @@ Scheme
 				"name"		"Verdana"
 				"tall"		"24"
 				"weight"	"700"
-				"yres"	"1200 10000"
+				"yres"	"1200 1440"
+			}
+			"6"
+			{
+				"name"		"Verdana"
+				"tall"		"28"
+				"weight"	"700"
+				"yres"	"1441 1599"
+			}
+			"7"
+			{
+				"name"		"Verdana"
+				"tall"		"32"
+				"weight"	"700"
+				"yres"	"1600 6000"
 			}
 		}
 		HudHintTextLarge
@@ -563,7 +621,25 @@ Scheme
 				"tall"		"17"
 				"weight"	"1000"
 				"antialias" "1"
-				"yres"	"1200 10000"
+				"yres"	"1200 1440"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+			}
+			"6"
+			{
+				"name"		"Verdana"
+				"tall"		"20"
+				"weight"	"1000"
+				"antialias" "1"
+				"yres"	"1441 1599"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+			}
+			"7"
+			{
+				"name"		"Verdana"
+				"tall"		"24"
+				"weight"	"1000"
+				"antialias" "1"
+				"yres"	"1600 6000"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 			}
 		}
@@ -1003,7 +1079,7 @@ Scheme
 			"1"
 			{
 				"name"		"Verdana"
-				"tall"		"12" [$WIN32]
+				"tall"		"12" [!$LINUX]
 				"tall"		"14" [$LINUX]
 				"weight"	"700"
 				"yres"	"480 599"
@@ -1012,7 +1088,7 @@ Scheme
 			"2"
 			{
 				"name"		"Verdana"
-				"tall"		"13" [$WIN32]
+				"tall"		"13" [!$LINUX]
 				"tall"		"15" [$LINUX]
 				"weight"	"700"
 				"yres"	"600 767"
@@ -1021,7 +1097,7 @@ Scheme
 			"3"
 			{
 				"name"		"Verdana"
-				"tall"		"14" [$WIN32]
+				"tall"		"14" [!$LINUX]
 				"tall"		"16" [$LINUX]
 				"weight"	"700"
 				"yres"	"768 1023"
@@ -1030,7 +1106,7 @@ Scheme
 			"4"
 			{
 				"name"		"Verdana"
-				"tall"		"16" [$WIN32]
+				"tall"		"16" [!$LINUX]
 				"tall"		"18" [$LINUX]
 				"weight"	"700"
 				"yres"	"1024 1199"
@@ -1039,8 +1115,8 @@ Scheme
 			"5"
 			{
 				"name"		"Verdana"
-				"tall"		"18" [$WIN32]
-				"tall"		"20" [$LINUX]
+				"tall"		"18" [!$LINUX]
+				"tall"		"24" [$LINUX]
 				"weight"	"700"
 				"yres"	"1200 10000"
 				"dropshadow"	"1"
@@ -1163,7 +1239,27 @@ Scheme
 				"tall"		"26"
 				"weight"	"900"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
-				"yres"	"1200 6000"
+				"yres"	"1200 1440"
+				"antialias"	"1"
+				//"additive"	"1"
+			}
+			"6"
+			{
+				"name"		"Alpha Flight"
+				"tall"		"28"
+				"weight"	"900"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1441 1599"
+				"antialias"	"1"
+				//"additive"	"1"
+			}
+			"7"
+			{
+				"name"		"Alpha Flight"
+				"tall"		"30"
+				"weight"	"900"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1600 1599"
 				"antialias"	"1"
 				//"additive"	"1"
 			}

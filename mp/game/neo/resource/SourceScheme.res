@@ -8,9 +8,9 @@ Scheme
 		{
 			"1"
 			{
-				"name"			"Lucida Console" [$WIN32]
+				"name"			"Lucida Console" [!$LINUX]
 				"name"			"Verdana" [$LINUX]
-				"tall"			"6" [$WIN32]
+				"tall"			"6" [!$LINUX]
 				"tall"			"9" [$LINUX]
 				"weight"		"500"
 				"antialias"		"1"
@@ -18,9 +18,9 @@ Scheme
 			}
 			"2"
 			{
-				"name"			"Lucida Console" [$WIN32]
+				"name"			"Lucida Console" [!$LINUX]
 				"name"			"Verdana" [$LINUX]
-				"tall"			"8" [$WIN32]
+				"tall"			"8" [!$LINUX]
 				"tall"			"12" [$LINUX]
 				"weight"		"500"
 				"antialias"		"1"
@@ -28,9 +28,9 @@ Scheme
 			}
 			"4"
 			{
-				"name"			"Lucida Console" [$WIN32]
+				"name"			"Lucida Console" [!$LINUX]
 				"name"			"Verdana" [$LINUX]
-				"tall"			"10" [$WIN32]
+				"tall"			"10" [!$LINUX]
 				"tall"			"16" [$LINUX]
 				"weight"		"500"
 				"antialias"		"1"
@@ -38,10 +38,10 @@ Scheme
 			}
 			"5"
 			{
-				"name"			"Lucida Console" [$WIN32]
+				"name"			"Lucida Console" [!$LINUX]
 				"name"			"Verdana" [$LINUX]
-				"tall"			"18" [$WIN32]
-				"tall"			"24" [$LINUX]
+				"tall"			"18" [!$LINUX]
+				"tall"			"28" [$LINUX]
 				"weight"		"500"
 				"antialias"		"1"
 				"yres"			"1200 10000"
