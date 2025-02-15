@@ -644,6 +644,9 @@ int C_NEO_Player::GetAttackerHits(const int attackerIdx) const
 }
 
 extern ConVar mat_neo_toc_test;
+#ifdef GLOWS_ENABLE
+extern ConVar glow_outline_effect_enable;
+#endif // GLOWS_ENABLE
 int C_NEO_Player::DrawModel(int flags)
 {
 	if (flags & STUDIO_IGNORE_NEO_EFFECTS || !(flags & STUDIO_RENDER))
@@ -651,14 +654,18 @@ int C_NEO_Player::DrawModel(int flags)
 		return BaseClass::DrawModel(flags);
 	}
 
-	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if (!pLocalPlayer)
+#ifdef GLOWS_ENABLE
+	auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetTargetNEOPlayer();
+#else
+	auto pTargetPlayer = C_NEO_Player::GetTargetNEOPlayer();
+#endif // GLOWS_ENABLE
+	if (!pTargetPlayer)
 	{
 		Assert(false);
 		return BaseClass::DrawModel(flags);
 	}
 	
-	bool inThermalVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT;
+	bool inThermalVision = pTargetPlayer ? (pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT) : false;
 
 	int ret = 0;
 	if (!IsCloaked() || inThermalVision)
