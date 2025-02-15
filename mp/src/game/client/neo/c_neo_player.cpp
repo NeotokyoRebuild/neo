@@ -10,6 +10,7 @@
 #include "dlight.h"
 
 #include "iinput.h"
+#include "in_main.h"
 
 #include "clientmode_hl2mpnormal.h"
 #include <vgui/IScheme.h>
@@ -79,6 +80,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 
 	RecvPropTime(RECVINFO(m_flCamoAuxLastTime)),
 	RecvPropInt(RECVINFO(m_nVisionLastTick)),
+	RecvPropTime(RECVINFO(m_flJumpLastTime)),
 
 	RecvPropArray(RecvPropVector(RECVINFO(m_rvFriendlyPlayerPositions[0])), m_rvFriendlyPlayerPositions),
 	RecvPropArray(RecvPropInt(RECVINFO(m_rfAttackersScores[0])), m_rfAttackersScores),
@@ -110,6 +112,7 @@ BEGIN_PREDICTION_DATA(C_NEO_Player)
 	DEFINE_PRED_FIELD(m_bHasBeenAirborneForTooLongToSuperJump, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 
 	DEFINE_PRED_FIELD(m_nVisionLastTick, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD_TOL(m_flJumpLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
 END_PREDICTION_DATA()
 
 static void __MsgFunc_DamageInfo(bf_read& msg)
@@ -479,6 +482,7 @@ C_NEO_Player::C_NEO_Player()
 	m_bInThermOpticCamo = m_bInVision = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
 	m_bInAim = false;
+	m_bCarryingGhost = false;
 	m_bIneligibleForLoadoutPick = false;
 	m_bInLean = NEO_LEAN_NONE;
 
@@ -517,9 +521,13 @@ void C_NEO_Player::CheckThermOpticButtons()
 			return;
 		}
 
-		if (m_HL2Local.m_cloakPower >= CLOAK_AUX_COST)
+		if (!m_bInThermOpticCamo && m_HL2Local.m_cloakPower >= MIN_CLOAK_AUX)
 		{
-			SetCloakState(!m_bInThermOpticCamo);
+			SetCloakState( true );
+		}
+		else
+		{
+			SetCloakState( false );
 		}
 	}
 
@@ -574,11 +582,11 @@ void C_NEO_Player::CheckLeanButtons()
 	}
 
 	m_bInLean = NEO_LEAN_NONE;
-	if ((m_nButtons & IN_LEAN_LEFT) && !(m_nButtons & IN_LEAN_RIGHT))
+	if ((m_nButtons & IN_LEAN_LEFT) && !(m_nButtons & IN_LEAN_RIGHT || IsSprinting()))
 	{
 		m_bInLean = NEO_LEAN_LEFT;
 	}
-	else if ((m_nButtons & IN_LEAN_RIGHT) && !(m_nButtons & IN_LEAN_LEFT))
+	else if ((m_nButtons & IN_LEAN_RIGHT) && !(m_nButtons & IN_LEAN_LEFT || IsSprinting()))
 	{
 		m_bInLean = NEO_LEAN_RIGHT;
 	}
@@ -676,6 +684,9 @@ int C_NEO_Player::GetAttackerHits(const int attackerIdx) const
 }
 
 extern ConVar mat_neo_toc_test;
+#ifdef GLOWS_ENABLE
+extern ConVar glow_outline_effect_enable;
+#endif // GLOWS_ENABLE
 int C_NEO_Player::DrawModel(int flags)
 {
 	if (flags & STUDIO_IGNORE_NEO_EFFECTS || !(flags & STUDIO_RENDER))
@@ -683,14 +694,18 @@ int C_NEO_Player::DrawModel(int flags)
 		return BaseClass::DrawModel(flags);
 	}
 
-	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if (!pLocalPlayer)
+#ifdef GLOWS_ENABLE
+	auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetTargetNEOPlayer();
+#else
+	auto pTargetPlayer = C_NEO_Player::GetTargetNEOPlayer();
+#endif // GLOWS_ENABLE
+	if (!pTargetPlayer)
 	{
 		Assert(false);
 		return BaseClass::DrawModel(flags);
 	}
 	
-	bool inThermalVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT;
+	bool inThermalVision = pTargetPlayer ? (pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT) : false;
 
 	int ret = 0;
 	if (!IsCloaked() || inThermalVision)
@@ -838,15 +853,18 @@ void C_NEO_Player::PlayStepSound( Vector &vecOrigin,
 	BaseClass::PlayStepSound(vecOrigin, psurface, fvol, force);
 }
 
-extern ConVar sv_infinite_aux_power;
-extern ConVar glow_outline_effect_enable;
-void C_NEO_Player::PreThink( void )
+extern ConVar neo_ghost_bhopping;
+void C_NEO_Player::CalculateSpeed(void)
 {
-	BaseClass::PreThink();
-
 	float speed = GetNormSpeed();
+
+	if (auto pNeoWep = static_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon()))
+	{
+		speed *= pNeoWep->GetSpeedScale();
+	}
+
 	static constexpr float DUCK_WALK_SPEED_MODIFIER = 0.75;
-	if (m_nButtons & IN_DUCK)
+	if (GetFlags() & FL_DUCKING)
 	{
 		speed *= DUCK_WALK_SPEED_MODIFIER;
 	}
@@ -854,33 +872,52 @@ void C_NEO_Player::PreThink( void )
 	{
 		speed *= DUCK_WALK_SPEED_MODIFIER;
 	}
-	if (IsSprinting() && !IsAirborne())
+	if (IsSprinting())
 	{
-		static constexpr float RECON_SPRINT_SPEED_MODIFIER = 0.75;
-		static constexpr float OTHER_CLASSES_SPRINT_SPEED_MODIFIER = 0.6;
-		speed /= m_iNeoClass == NEO_CLASS_RECON ? RECON_SPRINT_SPEED_MODIFIER : OTHER_CLASSES_SPRINT_SPEED_MODIFIER;
+		static constexpr float RECON_SPRINT_SPEED_MODIFIER = 1.35;
+		static constexpr float OTHER_CLASSES_SPRINT_SPEED_MODIFIER = 1.6;
+		speed *= m_iNeoClass == NEO_CLASS_RECON ? RECON_SPRINT_SPEED_MODIFIER : OTHER_CLASSES_SPRINT_SPEED_MODIFIER;
 	}
 	if (IsInAim())
 	{
 		static constexpr float AIM_SPEED_MODIFIER = 0.6;
 		speed *= AIM_SPEED_MODIFIER;
 	}
-	if (auto pNeoWep = static_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon()))
-	{
-		speed *= pNeoWep->GetSpeedScale();
-	}
 
-	if (!IsAirborne() && m_iNeoClass != NEO_CLASS_RECON)
+	Vector absoluteVelocity = GetAbsVelocity();
+	absoluteVelocity.z = 0.f;
+	float currentSpeed = absoluteVelocity.Length();
+
+	if (!neo_ghost_bhopping.GetBool() && GetMoveType() != MOVETYPE_LADDER && currentSpeed > speed && m_bCarryingGhost)
 	{
-		const float deltaTime = gpGlobals->curtime - m_flLastAirborneJumpOkTime;
-		const float leeway = 1.0f;
-		if (deltaTime < leeway)
+		float overSpeed = currentSpeed - speed;
+		absoluteVelocity.NormalizeInPlace();
+		absoluteVelocity *= -overSpeed;
+		ApplyAbsVelocityImpulse(absoluteVelocity);
+	}
+	speed = MAX(speed, 55);
+
+	// Slowdown after jumping
+	if (m_iNeoClass != NEO_CLASS_RECON)
+	{
+		const float timeSinceJumping = gpGlobals->curtime - m_flJumpLastTime;
+		constexpr float SLOWDOWN_TIME = 1.15f;
+		if (timeSinceJumping < SLOWDOWN_TIME)
 		{
-			speed = (speed / 2) + (deltaTime / 2 * (speed));
+			speed = MAX(75, speed * (1 - ((SLOWDOWN_TIME - timeSinceJumping) * 1.75)));
 		}
 	}
-	SetMaxSpeed(MAX(speed, 56));
-	
+	SetMaxSpeed(speed);
+}
+
+extern ConVar sv_infinite_aux_power;
+extern ConVar glow_outline_effect_enable;
+void C_NEO_Player::PreThink( void )
+{
+	BaseClass::PreThink();
+
+	CalculateSpeed();
+
 	CheckThermOpticButtons();
 	CheckVisionButtons();
 
@@ -890,14 +927,14 @@ void C_NEO_Player::PreThink( void )
 		{
 			// NEO TODO (Rain): add server style interface for accessor,
 			// so we can share code
-			if (m_HL2Local.m_cloakPower >= CLOAK_AUX_COST)
+			if (m_HL2Local.m_cloakPower >= MIN_CLOAK_AUX)
 			{
 				m_flCamoAuxLastTime = gpGlobals->curtime;
 			}
 		}
 		else
 		{
-			const float deltaTime = gpGlobals->curtime + gpGlobals->interpolation_amount - m_flCamoAuxLastTime;
+			const float deltaTime = gpGlobals->curtime - m_flCamoAuxLastTime;
 			if (deltaTime >= 1)
 			{
 				// NEO TODO (Rain): add interface for predicting this
@@ -908,7 +945,7 @@ void C_NEO_Player::PreThink( void )
 					m_HL2Local.m_cloakPower = 0.0f;
 				}
 
-				if (m_HL2Local.m_cloakPower < CLOAK_AUX_COST)
+				if (m_HL2Local.m_cloakPower < MIN_CLOAK_AUX)
 				{
 					SetCloakState(false);
 
@@ -938,7 +975,6 @@ void C_NEO_Player::PreThink( void )
 			glow_outline_effect_enable.SetValue(false);
 #endif // GLOWS_ENABLE
 		}
-		Lean();
 	}
 	else
 	{
@@ -946,6 +982,11 @@ void C_NEO_Player::PreThink( void )
 		{
 			m_bFirstAliveTick = true;
 		}
+	}
+
+	if (IsAlive() || m_vecLean != vec3_origin)
+	{
+		Lean();
 	}
 
 	// Eek. See rationale for this thing in CNEO_Player::PreThink
@@ -1072,7 +1113,7 @@ void C_NEO_Player::PostThink(void)
 
 			Weapon_SetZoom(false);
 			m_bInVision = false;
-			m_bInLean = NEO_LEAN_NONE;
+			IN_LeanReset();
 
 			if (IsLocalPlayer() && GetDeathTime() != 0 && (GetTeamNumber() == TEAM_JINRAI || GetTeamNumber() == TEAM_NSF))
 			{

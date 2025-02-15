@@ -2483,6 +2483,11 @@ void DoColorblindnessPostProcessing(const int x, const int y, const int w, const
 }
 #endif
 
+#ifdef NEO
+#ifdef GLOWS_ENABLE
+extern ConVar glow_outline_effect_enable;
+#endif // GLOWS_ENABLE
+#endif // NEO
 void DoEnginePostProcessing( int x, int y, int w, int h, bool bFlashlightIsOn, bool bPostVGui )
 {
 	tmZone( TELEMETRY_LEVEL0, TMZF_NONE, "%s", __FUNCTION__ );
@@ -2942,10 +2947,14 @@ void DoEnginePostProcessing( int x, int y, int w, int h, bool bFlashlightIsOn, b
 	}
 	else
 	{
-		auto pNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
-		if (pNeoPlayer && pNeoPlayer->IsInVision())
+#ifdef GLOWS_ENABLE
+		auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetTargetNEOPlayer();
+#else
+		auto pTargetPlayer = C_NEO_Player::GetTargetNEOPlayer();
+#endif // GLOWS_ENABLE
+		if (pTargetPlayer && pTargetPlayer->IsInVision())
 		{
-			switch (pNeoPlayer->GetClass())
+			switch (pTargetPlayer->GetClass())
 			{
 			case NEO_CLASS_RECON:
 			{

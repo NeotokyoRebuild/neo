@@ -883,6 +883,7 @@ void CNEORules::Think(void)
 				if ((playerTeam == TEAM_JINRAI || playerTeam == TEAM_NSF) && RespawnWithRet(player, false))
 				{
 					player->m_bInAim = false;
+					player->m_bCarryingGhost = false;
 					player->m_bInThermOpticCamo = false;
 					player->m_bInVision = false;
 					player->m_bIneligibleForLoadoutPick = false;
@@ -2099,6 +2100,7 @@ void CNEORules::StartNextRound()
 		pPlayer->Spawn();
 
 		pPlayer->m_bInAim = false;
+		pPlayer->m_bCarryingGhost = false;
 		pPlayer->m_bInThermOpticCamo = false;
 		pPlayer->m_bInVision = false;
 		pPlayer->m_bIneligibleForLoadoutPick = false;

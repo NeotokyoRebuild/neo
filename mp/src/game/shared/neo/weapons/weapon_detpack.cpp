@@ -279,33 +279,31 @@ void CWeaponDetpack::TossDetpack(CBasePlayer* pPlayer)
 #endif
 
 #ifndef CLIENT_DLL
-	Vector	vecEye = pPlayer->EyePosition();
-	Vector	vForward, vRight;
+	QAngle angThrow = pPlayer->LocalEyeAngles();
 
-	pPlayer->EyeVectors(&vForward, &vRight, NULL);
-	Vector vecSrc = vecEye + vForward * 18.0f + vRight * 8.0f;
-	CheckTossPosition(pPlayer, vecEye, vecSrc);
-	//	vForward[0] += 0.1f;
-	vForward[2] += 0.1f;
+	Vector vForward, vRight, vUp;
 
-	Vector vecToss;
-	pPlayer->GetVelocity(&vecToss, NULL);
-	vecToss += vForward /* * (pPlayer->IsAlive() ? 1.0f : 1.0f)*/;
-	Assert(vecToss.IsValid());
-	m_pDetpack = static_cast<CNEODeployedDetpack*>(NEODeployedDetpack_Create(vecSrc, vec3_angle, vecToss, AngularImpulse(600, random->RandomInt(-1200, 1200), 0), pPlayer));
+	if (angThrow.x < 90)
+		angThrow.x = -10 + angThrow.x * ((90 + 10) / 90.0);
+	else
+	{
+		angThrow.x = 360.0f - angThrow.x;
+		angThrow.x = -10 + angThrow.x * -((90 - 10) / 90.0);
+	}
+
+	float flVel = 0;
+
+	AngleVectors(angThrow, &vForward, &vRight, &vUp);
+
+	Vector vecSrc = pPlayer->GetAbsOrigin() + pPlayer->GetViewOffset();
+
+	vecSrc += vForward * 16;
+
+	Vector vecThrow = vForward * flVel + pPlayer->GetAbsVelocity();
+	m_pDetpack = static_cast<CNEODeployedDetpack*>(NEODeployedDetpack_Create(vecSrc, vec3_angle, vecThrow, AngularImpulse(600, random->RandomInt(-1200, 1200), 0), pPlayer));
 
 	if (m_pDetpack)
 	{
-		Assert(pPlayer);
-		if (!pPlayer->IsAlive())
-		{
-			auto pPhysicsObject = m_pDetpack->VPhysicsGetObject();
-			if (pPhysicsObject)
-			{
-				pPhysicsObject->SetVelocity(&vecToss, NULL);
-			}
-		}
-
 		m_pDetpack->SetDamage(NEO_DETPACK_DAMAGE);
 		m_pDetpack->SetDamageRadius(NEO_DETPACK_DAMAGE_RADIUS);
 	}

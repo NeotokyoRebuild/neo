@@ -2537,6 +2537,7 @@ bool CGameMovement::CheckJumpButton( void )
 		break;
 	}
 	neoPlayer->DoAnimationEvent(PLAYERANIMEVENT_JUMP);
+	neoPlayer->m_flJumpLastTime = gpGlobals->curtime;
 #endif
 
 	// Acclerate upward

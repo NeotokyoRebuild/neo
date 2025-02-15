@@ -348,6 +348,9 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/basecombatweapon_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/baseentity_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/basegrenade_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/basegrenade_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/sdk/sdk_basegrenade_projectile.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/sdk/sdk_basegrenade_projectile.h
     ${CMAKE_SOURCE_DIR}/game/shared/baseparticleentity.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/baseplayer_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/baseprojectile.cpp
@@ -1555,6 +1558,8 @@ target_sources_grouped(
     neo/ui/neo_hud_hint.h
     neo/ui/neo_hud_round_state.cpp
     neo/ui/neo_hud_round_state.h
+    neo/ui/neo_hud_startup_sequence.cpp
+    neo/ui/neo_hud_startup_sequence.h
     neo/ui/neo_hud_worldpos_marker.cpp
     neo/ui/neo_hud_worldpos_marker.h
     neo/ui/neo_scoreboard.cpp

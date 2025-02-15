@@ -679,23 +679,69 @@ Scheme
 		{
 			"1"
 			{
-				"name"  "neotokyo_press_N" // CSlogo.ttf
-				"tall"  "42" [$WINDOWS]
-				"tall"  "72" [$LINUX]
+				"name"  "neotokyo_press_N" // neotokyo_press_n
+				"tall"  "60"
 				"weight" "0"
 				"additive" "0"
 				"antialias" "1"
+				"custom"	"1"
+				"yres"		"1 633"
 			}
 			"2"
 			{
-				"name"  "neotokyo_press_N" // CSlogo.ttf
-				"tall"  "46" [$WINDOWS]
-				"tall"  "76" [$LINUX]
+				"name"  "neotokyo_press_N" // neotokyo_press_n
+				"tall"  "100"
 				"weight" "0"
 				"additive" "0"
 				"antialias" "1"
+				"custom"	"1"
+				"yres"		"634 1080"
+			}
+			"3"
+			{
+				"name"  "neotokyo_press_N" // neotokyo_press_n
+				"tall"  "127"
+				"weight" "0"
+				"additive" "0"
+				"antialias" "1"
+				"yres"		"1080 10000"
+			}
+			// It seems that 127 is the largest a font can be, so we can't make the title any bigger than this
+		}
+		
+		ClientTitleFontSmall
+		{
+			"1"
+			{
+				"name"  "neotokyo_press_N" // neotokyo_press_n
+				"tall"  "42"
+				"weight" "0"
+				"additive" "0"
+				"antialias" "1"
+				"custom"	"1"
+				"yres"		"1 633"
+			}
+			"2"
+			{
+				"name"  "neotokyo_press_N" // neotokyo_press_n
+				"tall"  "72"
+				"weight" "0"
+				"additive" "0"
+				"antialias" "1"
+				"custom"	"1"
+				"yres"		"634 1080"
+			}
+			"3"
+			{
+				"name"  "neotokyo_press_N" // neotokyo_press_n
+				"tall"  "92"
+				"weight" "0"
+				"additive" "0"
+				"antialias" "1"
+				"yres"		"1080 10000"
 			}
 		}
+
 
 		"BetaFont"
 		{

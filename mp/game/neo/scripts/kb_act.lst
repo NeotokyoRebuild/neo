@@ -11,6 +11,7 @@
 "toggle_leanr"	        "Lean right (toggle)"
 "+sprint"             	"#Valve_Sprint"
 "+walk"       	        "Walk"
+"toggle_walk"			"Walk (toggle)"
 "+jump"					"#Valve_Jump"
 "+duck"					"#Valve_Duck"
 "blank"			"=========================="

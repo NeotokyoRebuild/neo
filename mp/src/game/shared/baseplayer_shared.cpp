@@ -687,9 +687,15 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 	if ( GetFlags() & FL_DUCKING )
 	{
 		fvol *= 0.65;
+#ifdef NEO
+		if (speed <= 60)
+		{
+			return;
+		}
+#endif // NEO
 	}
 #ifdef NEO
-	if (speed < 90) { //In Neotokyo players don't make footstep noise when moving slower than this
+	else if ( speed <= 90) {
 		return;
 	}
 #endif
@@ -1996,6 +2002,10 @@ int CBasePlayer::GetDefaultFOV( void ) const
 #ifdef CLIENT_DLL
 	int iFOV = neo_fov.GetInt();
 #else
+	if (gpGlobals->eLoadType == MapLoad_Background)
+	{
+		return 75;
+	}
 	int iFOV = ( m_iDefaultFOV == 0 ) ? g_pGameRules->DefaultFOV() : m_iDefaultFOV;
 	if (!(GetFlags() & FL_FAKECLIENT))
 	{

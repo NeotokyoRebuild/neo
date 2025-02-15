@@ -178,6 +178,8 @@ void CWeaponGhost::OnPickedUp(CBaseCombatCharacter *pNewOwner)
 			neoOwner->StopSprinting();
 		}
 
+		neoOwner->m_bCarryingGhost = true;
+
 #ifdef GAME_DLL
 		CTeamRecipientFilter filter(NEORules()->GetOpposingTeam(neoOwner), true);
 		EmitSound_t params;
@@ -190,6 +192,11 @@ void CWeaponGhost::OnPickedUp(CBaseCombatCharacter *pNewOwner)
 
 void CWeaponGhost::Drop(const Vector &vecVelocity)
 {
+	if (GetOwner())
+	{
+		auto neoOwner = static_cast<CNEO_Player*>(GetOwner());
+		neoOwner->m_bCarryingGhost = false;
+	}
 	BaseClass::Drop(vecVelocity);
 #if !defined( CLIENT_DLL )
 	SetRemoveable(false);
