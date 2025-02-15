@@ -29,6 +29,7 @@
 
 #ifdef NEO
 #include "weapon_neobasecombatweapon.h"
+#include "neo_gamerules.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -80,6 +81,10 @@ CHudCrosshair::CHudCrosshair( const char *pElementName ) :
 			vgui::surface()->DrawSetTextureFile(m_iTexXHId[i], CROSSHAIR_FILES[i], false, false);
 		}
 	}
+
+	m_iTexIFFId = vgui::surface()->CreateNewTextureID();
+	constexpr const char *IFF_TEXTURE_NAME = "vgui/hud/x1";
+	vgui::surface()->DrawSetTextureFile(m_iTexIFFId, IFF_TEXTURE_NAME, false, false);
 
 #endif
 
@@ -373,6 +378,15 @@ void CHudCrosshair::Paint( void )
 	const bool bIsScoped = pNeoWep && pNeoWep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON;
 	const int iXHairStyle = neo_cl_crosshair_style.GetInt();
 
+	trace_t iffTrace;
+	if (NEORules()->GetGameType() != NEO_GAME_TYPE_DM)
+	{
+		CTraceFilterSimpleList iffTraceFilter(COLLISION_GROUP_NONE);
+		iffTraceFilter.AddEntityToIgnore(pPlayer);
+		constexpr int IFF_TRACELINE_LENGTH = 8192; // a little over 200m
+		UTIL_TraceLine(pPlayer->Weapon_ShootPosition(), pPlayer->Weapon_ShootPosition() + pPlayer->GetAutoaimVector(0) * IFF_TRACELINE_LENGTH, MASK_SHOT_HULL, &iffTraceFilter, &iffTrace);
+	}
+
 	if (bIsScoped)
 	{
 		m_pCrosshair->DrawSelfCropped (
@@ -386,6 +400,16 @@ void CHudCrosshair::Paint( void )
 			COLOR_WHITE
 #endif
 		);
+	}
+	else if (NEORules()->GetGameType() != NEO_GAME_TYPE_DM && IsPlayerIndex(iffTrace.GetEntityIndex()) && iffTrace.m_pEnt->GetTeamNumber() == pPlayer->GetTeamNumber())
+	{
+		vgui::surface()->DrawSetTexture(m_iTexIFFId);
+		int iTexWide, iTexTall;
+		vgui::surface()->DrawGetTextureSize(m_iTexIFFId, iTexWide, iTexTall);
+		iTexWide >>= 2;
+		iTexTall >>= 2;
+		vgui::surface()->DrawSetColor(COLOR_RED);
+		vgui::surface()->DrawTexturedRect(iX - iTexWide, iY - iTexTall, iX + iTexWide, iY + iTexTall);
 	}
 	else if (m_iTexXHId[iXHairStyle] > 0)
 	{
