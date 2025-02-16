@@ -113,14 +113,11 @@ bool CNEOGhostCapturePoint::IsGhostCaptured(int& outTeamNumber, int& outCaptorCl
 		outCaptorClientIndex = m_iSuccessfulCaptorClientIndex;
 		
 		CBaseEntity* pCaptor = UTIL_PlayerByIndex(m_iSuccessfulCaptorClientIndex);
-		if (pCaptor)
+		if (!pCaptor) // The capzone will be the activator if we can't find the guy who capped it
 		{
-			m_OnCap.FireOutput(pCaptor, this);
+			pCaptor = this;
 		}
-		else // The capzone will be the activator if we can't find the guy who capped it
-		{
-			m_OnCap.FireOutput(this, this);
-		}
+		m_OnCap.FireOutput(pCaptor, this);
 
 		return true;
 	}
