@@ -69,6 +69,11 @@ BEGIN_DATADESC(CNEOGhostCapturePoint)
 // These keyfields come from NT's FGD definition
 	DEFINE_KEYFIELD(m_flCapzoneRadius, FIELD_FLOAT, "Radius"),
 	DEFINE_KEYFIELD(m_iOwningTeam, FIELD_INTEGER, "team"),
+
+#ifdef GAME_DLL
+// Outputs
+	DEFINE_OUTPUT(m_OnCap, "OnCap"),
+#endif
 END_DATADESC()
 
 CNEOGhostCapturePoint::CNEOGhostCapturePoint()
@@ -106,6 +111,7 @@ bool CNEOGhostCapturePoint::IsGhostCaptured(int& outTeamNumber, int& outCaptorCl
 	{
 		outTeamNumber = owningTeamAlternate();
 		outCaptorClientIndex = m_iSuccessfulCaptorClientIndex;
+		m_OnCap.FireOutput(this, this);
 
 		return true;
 	}
