@@ -520,7 +520,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		surface()->GetTextSize(g_uiCtx.fonts[NeoUI::FONT_NTNORMAL].hdl, BUILD_DISPLAY, textWidth, textHeight);
 
 		surface()->DrawSetTextPos(g_uiCtx.iMarginX, tall - textHeight - g_uiCtx.iMarginY);
-		surface()->DrawPrintText(BUILD_DISPLAY, *BUILD_DISPLAY_SIZE);
+		surface()->DrawPrintText(BUILD_DISPLAY, wcslen(BUILD_DISPLAY));
 	}
 }
 

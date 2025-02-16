@@ -10,4 +10,3 @@ extern const char* COMPILER_ID;
 extern const char* COMPILER_VERSION;
 extern const char* GIT_LATESTTAG;
 extern const wchar_t* BUILD_DISPLAY;
-extern const int* BUILD_DISPLAY_SIZE;
