@@ -68,6 +68,8 @@ public:
 	int UpdateTransmitState() OVERRIDE;
 
 	bool IsGhostCaptured(int &outTeamNumber, int &outCaptorClientIndex);
+
+	COutputEvent m_OnCap;
 #endif
 
 #ifdef GAME_DLL
