@@ -2499,7 +2499,7 @@ bool CGameMovement::CheckJumpButton( void )
 		Assert( GetCurrentGravity() == 800.0f );
 		flMul = neoPlayer->GetClass() == NEO_CLASS_RECON ?
 			293.9387691339814f: // sqrt(2 * 800 * 54)
-			240.0f; // sqrt(2 * 800 * 36)
+			240.0f; 			// sqrt(2 * 800 * 36)
 	}
 	else
 	{
@@ -4365,15 +4365,20 @@ void CGameMovement::FinishDuck( void )
 #ifdef NEO
 		Vector hullSizeNormal = VEC_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player)) - VEC_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player));
 		Vector hullSizeCrouch = VEC_DUCK_HULL_MAX_SCALED(static_cast<CNEO_Player*>(player)) - VEC_DUCK_HULL_MIN_SCALED(static_cast<CNEO_Player*>(player));
+		// OGNT uses the Support hull everywhere except in GetPlayerMaxs/GetPLayerMins. Now we're using the correct hulls everywhere
+		// which is probably better, but to get the same crouch jump heights we need to subtract the offsets here.
+		auto playerClass = static_cast<CNEO_Player*>(player)->GetClass();
+		if (playerClass != NEO_CLASS_SUPPORT)
+		{
+			hullSizeNormal -= playerClass == NEO_CLASS_RECON ? NEO_RECON_MAXHULL_OFFSET : NEO_ASSAULT_MAXHULL_OFFSET;
+			hullSizeCrouch -= playerClass == NEO_CLASS_RECON ? NEO_RECON_DUCK_MAXHULL_OFFSET : NEO_ASSAULT_DUCK_MAXHULL_OFFSET;
+		}
 #else
 		Vector hullSizeNormal = VEC_HULL_MAX_SCALED(player) - VEC_HULL_MIN_SCALED(player);
 		Vector hullSizeCrouch = VEC_DUCK_HULL_MAX_SCALED(player) - VEC_DUCK_HULL_MIN_SCALED(player);
 #endif
 
 		Vector viewDelta = ( hullSizeNormal - hullSizeCrouch );
-		if (static_cast<CNEO_Player*>(player)->GetClass() == NEO_CLASS_RECON) { // Lower how far bottom of hull travels upwards during a duck jump
-			viewDelta = viewDelta * 0.6;
-		}
 		Vector out;
    		VectorAdd( mv->GetAbsOrigin(), viewDelta, out );
 		mv->SetAbsOrigin( out );
