@@ -61,6 +61,7 @@ SendPropBool(SENDINFO(m_bIneligibleForLoadoutPick)),
 
 SendPropTime(SENDINFO(m_flCamoAuxLastTime)),
 SendPropInt(SENDINFO(m_nVisionLastTick)),
+SendPropTime(SENDINFO(m_flJumpLastTime)),
 
 SendPropString(SENDINFO(m_pszTestMessage)),
 
@@ -97,6 +98,7 @@ DEFINE_FIELD(m_bInAim, FIELD_BOOLEAN),
 
 DEFINE_FIELD(m_flCamoAuxLastTime, FIELD_TIME),
 DEFINE_FIELD(m_nVisionLastTick, FIELD_TICK),
+DEFINE_FIELD(m_flJumpLastTime, FIELD_TIME),
 
 DEFINE_FIELD(m_pszTestMessage, FIELD_STRING),
 
@@ -399,6 +401,7 @@ CNEO_Player::CNEO_Player()
 	m_bInThermOpticCamo = m_bInVision = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
 	m_bInAim = false;
+	m_bCarryingGhost = false;
 	m_bInLean = NEO_LEAN_NONE;
 
 	m_iLoadoutWepChoice = 0;
@@ -501,6 +504,7 @@ void CNEO_Player::Precache( void )
 	BaseClass::Precache();
 }
 
+extern ConVar bot_changeclass;
 void CNEO_Player::Spawn(void)
 {
 	int teamNumber = GetTeamNumber();
@@ -526,6 +530,11 @@ void CNEO_Player::Spawn(void)
 	if ((m_iNextSpawnClassChoice != -1) && (m_iNeoClass != m_iNextSpawnClassChoice))
 	{
 		m_iNeoClass = m_iNextSpawnClassChoice;
+	}
+
+	if (IsFakeClient())
+	{
+		m_iNeoClass = bot_changeclass.GetInt();
 	}
 
 	BaseClass::Spawn();
@@ -652,14 +661,71 @@ void CNEO_Player::CheckLeanButtons()
 	}
 	
 	m_bInLean = NEO_LEAN_NONE;
-	if ((m_nButtons & IN_LEAN_LEFT) && !(m_nButtons & IN_LEAN_RIGHT))
+	if ((m_nButtons & IN_LEAN_LEFT) && !(m_nButtons & IN_LEAN_RIGHT || IsSprinting()))
 	{
 		m_bInLean = NEO_LEAN_LEFT;
 	}
-	else if ((m_nButtons & IN_LEAN_RIGHT) && !(m_nButtons & IN_LEAN_LEFT))
+	else if ((m_nButtons & IN_LEAN_RIGHT) && !(m_nButtons & IN_LEAN_LEFT || IsSprinting()))
 	{
 		m_bInLean = NEO_LEAN_RIGHT;
 	}
+}
+
+extern ConVar neo_ghost_bhopping;
+void CNEO_Player::CalculateSpeed(void)
+{
+	float speed = GetNormSpeed();
+
+	if (auto pNeoWep = static_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon()))
+	{
+		speed *= pNeoWep->GetSpeedScale();
+	}
+
+	static constexpr float DUCK_WALK_SPEED_MODIFIER = 0.75;
+	if (GetFlags() & FL_DUCKING)
+	{
+		speed *= DUCK_WALK_SPEED_MODIFIER;
+	}
+	if (m_nButtons & IN_WALK)
+	{
+		speed *= DUCK_WALK_SPEED_MODIFIER;
+	}
+	if (IsSprinting())
+	{
+		static constexpr float RECON_SPRINT_SPEED_MODIFIER = 1.35;
+		static constexpr float OTHER_CLASSES_SPRINT_SPEED_MODIFIER = 1.6;
+		speed *= m_iNeoClass == NEO_CLASS_RECON ? RECON_SPRINT_SPEED_MODIFIER : OTHER_CLASSES_SPRINT_SPEED_MODIFIER;
+	}
+	if (IsInAim())
+	{
+		static constexpr float AIM_SPEED_MODIFIER = 0.6;
+		speed *= AIM_SPEED_MODIFIER;
+	}
+
+	Vector absoluteVelocity = GetAbsVelocity();
+	absoluteVelocity.z = 0.f;
+	float currentSpeed = absoluteVelocity.Length();
+
+	if (!neo_ghost_bhopping.GetBool() && GetMoveType() != MOVETYPE_LADDER && currentSpeed > speed && m_bCarryingGhost)
+	{
+		float overSpeed = currentSpeed - speed;
+		absoluteVelocity.NormalizeInPlace();
+		absoluteVelocity *= -overSpeed;
+		ApplyAbsVelocityImpulse(absoluteVelocity);
+	}
+	speed = MAX(speed, 55);
+
+	// Slowdown after jumping
+	if (m_iNeoClass != NEO_CLASS_RECON)
+	{
+		const float timeSinceJumping = gpGlobals->curtime - m_flJumpLastTime;
+		constexpr float SLOWDOWN_TIME = 1.15f;
+		if (timeSinceJumping < SLOWDOWN_TIME)
+		{
+			speed = MAX(75, speed * (1 - ((SLOWDOWN_TIME - timeSinceJumping) * 1.75)));
+		}
+	}
+	SetMaxSpeed(speed);
 }
 
 void CNEO_Player::PreThink(void)
@@ -671,42 +737,7 @@ void CNEO_Player::PreThink(void)
 		CloakPower_Update();
 	}
 
-	float speed = GetNormSpeed();
-	static constexpr float DUCK_WALK_SPEED_MODIFIER = 0.75;
-	if (m_nButtons & IN_DUCK)
-	{
-		speed *= DUCK_WALK_SPEED_MODIFIER;
-	}
-	if (m_nButtons & IN_WALK)
-	{
-		speed *= DUCK_WALK_SPEED_MODIFIER;
-	}
-	if (IsSprinting() && !IsAirborne())
-	{
-		static constexpr float RECON_SPRINT_SPEED_MODIFIER = 0.75;
-		static constexpr float OTHER_CLASSES_SPRINT_SPEED_MODIFIER = 0.6;
-		speed /= m_iNeoClass == NEO_CLASS_RECON ? RECON_SPRINT_SPEED_MODIFIER : OTHER_CLASSES_SPRINT_SPEED_MODIFIER;
-	}
-	if (m_bInAim.Get())
-	{
-		static constexpr float AIM_SPEED_MODIFIER = 0.6;
-		speed *= AIM_SPEED_MODIFIER;
-	}
-	if (auto pNeoWep = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon()))
-	{
-		speed *= pNeoWep->GetSpeedScale();
-	}
-
-	if (!IsAirborne() && m_iNeoClass != NEO_CLASS_RECON)
-	{
-		const float deltaTime = gpGlobals->curtime - m_flLastAirborneJumpOkTime;
-		const float leeway = 1.0f;
-		if (deltaTime < leeway)
-		{
-			speed = (speed / 2) + (deltaTime / 2 * (speed));
-		}
-	}
-	SetMaxSpeed(MAX(speed, 56));
+	CalculateSpeed();
 
 	CheckThermOpticButtons();
 	CheckVisionButtons();
@@ -715,7 +746,7 @@ void CNEO_Player::PreThink(void)
 	{
 		if (m_flCamoAuxLastTime == 0)
 		{
-			if (m_HL2Local.m_cloakPower >= CLOAK_AUX_COST)
+			if (m_HL2Local.m_cloakPower >= MIN_CLOAK_AUX)
 			{
 				m_flCamoAuxLastTime = gpGlobals->curtime;
 			}
@@ -734,6 +765,7 @@ void CNEO_Player::PreThink(void)
 				{
 					SetCloakState(false);
 					m_flCamoAuxLastTime = 0;
+					PlayCloakSound(false);
 				}
 				else
 				{
@@ -823,7 +855,7 @@ ConVar sv_neo_cloak_time("sv_neo_cloak_time", "0.1", FCVAR_CHEAT, "How long shou
 ConVar sv_neo_cloak_decay("sv_neo_cloak_decay", "0", FCVAR_CHEAT, "After the cloak time, how quickly should the flash effect disappear.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_cloak_exponent("sv_neo_cloak_exponent", "8", FCVAR_CHEAT, "Cloak flash lighting exponent.", true, 0.0f, false, 0.0f);
 
-void CNEO_Player::PlayCloakSound()
+void CNEO_Player::PlayCloakSound(bool removeLocalPlayer)
 {
 	CRecipientFilter filter;
 	filter.AddRecipientsByPAS(GetAbsOrigin());
@@ -850,7 +882,10 @@ void CNEO_Player::PlayCloakSound()
 			filter.AddRecipient(player);
 		}
 	}
-	filter.RemoveRecipient(this); // We play clientside for ourselves
+	if (removeLocalPlayer)
+	{
+		filter.RemoveRecipient(this); // We play clientside for ourselves
+	}
 
 	if (filter.GetRecipientCount() > 0)
 	{
@@ -911,14 +946,14 @@ void CNEO_Player::CheckThermOpticButtons()
 			return;
 		}
 
-		if (m_HL2Local.m_cloakPower >= CLOAK_AUX_COST)
+		if (!m_bInThermOpticCamo && m_HL2Local.m_cloakPower >= MIN_CLOAK_AUX)
 		{
-			SetCloakState(!m_bInThermOpticCamo);
-
-			if (m_bInThermOpticCamo)
-			{
-				CloakFlash();
-			}
+			SetCloakState( true );
+			CloakFlash();
+		}
+		else
+		{
+			SetCloakState( false );
 		}
 	}
 
@@ -1059,7 +1094,7 @@ void CNEO_Player::PostThink(void)
 		{
 			Weapon_SetZoom(false);
 		}
-		else if (m_afButtonPressed & IN_AIM)
+		else if (clientAimHold ? (m_nButtons & IN_AIM && !IsInAim()) : m_afButtonPressed & IN_AIM)
 		{
 			if (!CanSprint() || !(m_nButtons & IN_SPEED))
 			{

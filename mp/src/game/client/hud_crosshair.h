@@ -59,6 +59,7 @@ protected:
 
 #ifdef NEO
 	int m_iTexXHId[CROSSHAIR_STYLE__TOTAL] = {};
+	int m_iTexIFFId = NULL;
 #endif
 
 	CPanelAnimationVar( bool, m_bHideCrosshair, "never_draw", "false" );

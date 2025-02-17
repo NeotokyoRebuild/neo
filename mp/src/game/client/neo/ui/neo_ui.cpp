@@ -580,8 +580,11 @@ NeoUI::RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText)
 
 			if (wszLeftLabel)
 			{
+				if (wdgState.bHot)
+				{
+					GCtxDrawFilledRectXtoX(0, g_pCtx->dPanel.wide);
+				}
 				InternalLabel(wszLeftLabel, false);
-				GCtxDrawFilledRectXtoX(g_pCtx->iWgXPos, g_pCtx->dPanel.wide);
 				const int xMargin = g_pCtx->eButtonTextStyle == TEXTSTYLE_CENTER ?
 							(((g_pCtx->dPanel.wide - g_pCtx->iWgXPos) / 2) - (iFontWide / 2)) : g_pCtx->iMarginX;
 				GCtxDrawSetTextPos(g_pCtx->iWgXPos + xMargin,
@@ -827,6 +830,10 @@ void RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, const i
 		{
 		case MODE_PAINT:
 		{
+			if (wdgState.bHot)
+			{
+				GCtxDrawFilledRectXtoX(0, g_pCtx->dPanel.wide);
+			}
 			const auto *pFontI = &g_pCtx->fonts[g_pCtx->eFont];
 			InternalLabel(wszLeftLabel, false);
 
@@ -1025,6 +1032,10 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 		case MODE_PAINT:
 		{
 			const auto *pFontI = &g_pCtx->fonts[g_pCtx->eFont];
+			if (wdgState.bHot)
+			{
+				GCtxDrawFilledRectXtoX(0, g_pCtx->dPanel.wide);
+			}
 			InternalLabel(wszLeftLabel, false);
 
 			// Background bar
@@ -1227,6 +1238,10 @@ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxBytes
 		{
 		case MODE_PAINT:
 		{
+			if (wdgState.bHot)
+			{
+				GCtxDrawFilledRectXtoX(0, g_pCtx->dPanel.wide);
+			}
 			const auto *pFontI = &g_pCtx->fonts[g_pCtx->eFont];
 			InternalLabel(wszLeftLabel, false);
 			GCtxDrawFilledRectXtoX(g_pCtx->iWgXPos, g_pCtx->dPanel.wide);

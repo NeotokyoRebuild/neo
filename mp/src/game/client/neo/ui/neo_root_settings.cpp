@@ -247,6 +247,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->bStreamerMode = cvr->neo_cl_streamermode.GetBool();
 		pGeneral->bAutoDetectOBS = cvr->neo_cl_streamermode_autodetect_obs.GetBool();
 		pGeneral->bEnableRangeFinder = cvr->neo_cl_hud_rangefinder_enabled.GetBool();
+		pGeneral->iBackground = cvr->sv_unlockedchapters.GetInt();
 		NeoUI::ResetTextures();
 	}
 	{
@@ -455,6 +456,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->neo_cl_streamermode.SetValue(pGeneral->bStreamerMode);
 		cvr->neo_cl_streamermode_autodetect_obs.SetValue(pGeneral->bAutoDetectOBS);
 		cvr->neo_cl_hud_rangefinder_enabled.SetValue(pGeneral->bEnableRangeFinder);
+		cvr->sv_unlockedchapters.SetValue(pGeneral->iBackground);
 	}
 	{
 		const NeoSettings::Keys *pKeys = &ns->keys;
@@ -652,6 +654,7 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBoxBool(L"Show position", &pGeneral->bShowPos);
 	NeoUI::RingBox(L"Show FPS", SHOWFPS_LABELS, ARRAYSIZE(SHOWFPS_LABELS), &pGeneral->iShowFps);
 	NeoUI::RingBoxBool(L"Show rangefinder", &pGeneral->bEnableRangeFinder);
+	NeoUI::SliderInt(L"Selected Background", &pGeneral->iBackground, 1, 4); // NEO TODO (Adam) switch to RingBox with values read from ChapterBackgrounds.txt
 
 	const NeoUI::LabelExOpt CENTER_OPT{NeoUI::TEXTSTYLE_CENTER, NeoUI::FONT_NTNORMAL};
 
