@@ -205,7 +205,7 @@ void EndSection();
 void BeginHorizontal(const int iHorizontalWidth, const int iHorizontalMargin = 0);
 void EndHorizontal();
 
-void SwapFont(const EFont eFont);
+void SwapFont(const EFont eFont, const bool bForce = false);
 void SwapColorNormal(const Color &color);
 
 struct RetButton

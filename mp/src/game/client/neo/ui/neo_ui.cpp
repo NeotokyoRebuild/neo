@@ -41,9 +41,9 @@ void GCtxDrawSetTextPos(const int x, const int y)
 	surface()->DrawSetTextPos(g_pCtx->dPanel.x + x, g_pCtx->dPanel.y + y);
 }
 
-void SwapFont(const EFont eFont)
+void SwapFont(const EFont eFont, const bool bForce)
 {
-	if (g_pCtx->eMode != MODE_PAINT || g_pCtx->eFont == eFont) return;
+	if (g_pCtx->eMode != MODE_PAINT || (!bForce && (g_pCtx->eFont == eFont))) return;
 	g_pCtx->eFont = eFont;
 	surface()->DrawSetTextFont(g_pCtx->fonts[g_pCtx->eFont].hdl);
 }
@@ -133,7 +133,8 @@ void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode, const wchar_t *w
 		break;
 	}
 
-	SwapFont(FONT_NTNORMAL);
+	// Force SwapFont on main to prevent crash on startup
+	SwapFont(FONT_NTNORMAL, true);
 	surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
 }
 

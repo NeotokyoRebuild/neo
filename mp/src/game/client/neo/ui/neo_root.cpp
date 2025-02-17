@@ -481,7 +481,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 	// Laading screen just overlays over the root, so don't render anything else if so
 	if (!m_bOnLoadingScreen)
 	{
-		static constexpr void (CNeoRoot:: * P_FN_MAIN_LOOP[STATE__TOTAL])(const MainLoopParam param) = {
+		static constexpr void (CNeoRoot::*P_FN_MAIN_LOOP[STATE__TOTAL])(const MainLoopParam param) = {
 			&CNeoRoot::MainLoopRoot,			// STATE_ROOT
 			&CNeoRoot::MainLoopSettings,		// STATE_SETTINGS
 			&CNeoRoot::MainLoopNewGame,			// STATE_NEWGAME
