@@ -503,12 +503,14 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		&CNeoRoot::MainLoopServerDetails,	// STATE_SERVERDETAILS
 		&CNeoRoot::MainLoopPlayerList,		// STATE_PLAYERLIST
 		&CNeoRoot::MainLoopSprayPicker,		// STATE_SPRAYPICKER
+		&CNeoRoot::MainLoopSprayPicker,		// STATE_SPRAYDELETER
 
 		&CNeoRoot::MainLoopPopup,			// STATE_KEYCAPTURE
 		&CNeoRoot::MainLoopPopup,			// STATE_CONFIRMSETTINGS
 		&CNeoRoot::MainLoopPopup,			// STATE_QUIT
 		&CNeoRoot::MainLoopPopup,			// STATE_SERVERPASSWORD
 		&CNeoRoot::MainLoopPopup,			// STATE_SETTINGSRESETDEFAULT
+		&CNeoRoot::MainLoopPopup,			// STATE_SPRAYDELETERCONFIRM
 	};
 	(this->*P_FN_MAIN_LOOP[m_state])(MainLoopParam{.eMode = eMode, .wide = wide, .tall = tall});
 
@@ -1204,11 +1206,6 @@ void CNeoRoot::MainLoopMapList(const MainLoopParam param)
 
 void CNeoRoot::MainLoopSprayPicker(const MainLoopParam param)
 {
-	struct SprayInfo
-	{
-		char szPath[MAX_PATH];
-		char szVtf[MAX_PATH];
-	};
 	static CUtlVector<SprayInfo> vecStaticSprays;
 	if (m_bSprayGalleryRefresh)
 	{
@@ -1224,14 +1221,41 @@ void CNeoRoot::MainLoopSprayPicker(const MainLoopParam param)
 				continue;
 			}
 
+			if (m_state == STATE_SPRAYDELETER)
+			{
+				static constexpr const char *DEFAULT_SPRAYS[] = {
+					"spray_canned.vmt",
+					"spray_combine.vmt",
+					"spray_cop.vmt",
+					"spray_dog.vmt",
+					"spray_freeman.vmt",
+					"spray_head.vmt",
+					"spray_lambda.vmt",
+					"spray_plumbed.vmt",
+					"spray_soldier.vmt",
+				};
+				bool bSkipThis = false;
+				for (int i = 0; i < ARRAYSIZE(DEFAULT_SPRAYS); ++i)
+				{
+					if (V_strcmp(pszFilename, DEFAULT_SPRAYS[i]) == 0)
+					{
+						bSkipThis = true;
+						break;
+					}
+				}
+				if (bSkipThis)
+				{
+					continue;
+				}
+			}
+
 			SprayInfo sprayInfo = {};
 
-			V_sprintf_safe(sprayInfo.szPath, "vgui/logos/ui/%s", pszFilename);
-			sprayInfo.szPath[V_strlen(sprayInfo.szPath) - sizeof("vmt")] = '\0';
+			V_strcpy_safe(sprayInfo.szBaseName, pszFilename);
+			sprayInfo.szBaseName[V_strlen(sprayInfo.szBaseName) - sizeof("vmt")] = '\0';
 
-			V_sprintf_safe(sprayInfo.szVtf, "materials/vgui/logos/%s", pszFilename);
-			sprayInfo.szVtf[V_strlen(sprayInfo.szVtf) - sizeof("vmt")] = '\0';
-			V_strcat_safe(sprayInfo.szVtf, ".vtf");
+			V_sprintf_safe(sprayInfo.szPath, "vgui/logos/ui/%s", sprayInfo.szBaseName);
+			V_sprintf_safe(sprayInfo.szVtf, "materials/vgui/logos/%s.vtf", sprayInfo.szBaseName);
 
 			vecStaticSprays.AddToTail(sprayInfo);
 		}
@@ -1249,7 +1273,9 @@ void CNeoRoot::MainLoopSprayPicker(const MainLoopParam param)
 	g_uiCtx.dPanel.y = (param.tall / 2) - (iTallTotal / 2);
 	g_uiCtx.dPanel.tall = iNormTall * (g_iRowsInScreen + 1);
 	g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
-	NeoUI::BeginContext(&g_uiCtx, param.eMode, L"Pick spray", "CtxSprayPicker");
+	NeoUI::BeginContext(&g_uiCtx, param.eMode,
+						(m_state == STATE_SPRAYPICKER) ? L"Pick spray" : L"Delete spray",
+						(m_state == STATE_SPRAYPICKER) ? "CtxSprayPicker" : "CtxSprayDeleter");
 	{
 		g_uiCtx.iRowTall = iCellTall;
 		NeoUI::BeginSection(true);
@@ -1264,9 +1290,17 @@ void CNeoRoot::MainLoopSprayPicker(const MainLoopParam param)
 						const auto &sprayInfo = vecStaticSprays.Element(i + j);
 						if (NeoUI::ButtonTexture(sprayInfo.szPath).bPressed)
 						{
-							m_eFileIOMode = FILEIODLGMODE_SPRAY;
-							OnFileSelected(sprayInfo.szVtf);
-							m_state = STATE_SETTINGS;
+							if (m_state == STATE_SPRAYPICKER)
+							{
+								m_eFileIOMode = FILEIODLGMODE_SPRAY;
+								OnFileSelected(sprayInfo.szVtf);
+								m_state = STATE_SETTINGS;
+							}
+							else
+							{
+								V_memcpy(&m_sprayToDelete, &sprayInfo, sizeof(SprayInfo));
+								m_state = STATE_SPRAYDELETERCONFIRM;
+							}
 						}
 					}
 				}
@@ -1566,6 +1600,48 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 				NeoUI::EndHorizontal();
 			}
 			break;
+			case STATE_SPRAYDELETERCONFIRM:
+			{
+				static constexpr int TEXWH = 6;
+				const int iTexSprayWH = g_uiCtx.iRowTall * TEXWH;
+				NeoUI::Texture(m_sprayToDelete.szPath,
+							   g_uiCtx.iLayoutX + (g_uiCtx.dPanel.wide / 2) - (iTexSprayWH / 2),
+							   g_uiCtx.iLayoutY - iTexSprayWH - g_uiCtx.iRowTall,
+							   iTexSprayWH,
+							   iTexSprayWH);
+
+				NeoUI::Label(L"Do you want to delete this spray?");
+				NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
+				NeoUI::BeginHorizontal((g_uiCtx.dPanel.wide / 3) - g_uiCtx.iMarginX, g_uiCtx.iMarginX);
+				{
+					if (NeoUI::Button(L"Yes (Enter)").bPressed || NeoUI::Bind(KEY_ENTER))
+					{
+						// NOTE (nullsystem): Spray related files to remove:
+						// * materials/vgui/logos/SPRAY.vmt
+						// * materials/vgui/logos/ui/SPRAY.vmt
+						// * materials/vgui/logos/ui/SPRAY.vtf
+						char szPathToDel[MAX_PATH];
+
+						V_sprintf_safe(szPathToDel, "materials/vgui/logos/%s.vmt", m_sprayToDelete.szBaseName);
+						filesystem->RemoveFile(szPathToDel);
+						V_sprintf_safe(szPathToDel, "materials/vgui/logos/ui/%s.vmt", m_sprayToDelete.szBaseName);
+						filesystem->RemoveFile(szPathToDel);
+						V_sprintf_safe(szPathToDel, "materials/vgui/logos/ui/%s.vtf", m_sprayToDelete.szBaseName);
+						filesystem->RemoveFile(szPathToDel);
+
+						V_memset(&m_sprayToDelete, 0, sizeof(SprayInfo));
+						m_state = STATE_SETTINGS;
+					}
+					NeoUI::Pad();
+					if (NeoUI::Button(L"No (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
+					{
+						V_memset(&m_sprayToDelete, 0, sizeof(SprayInfo));
+						m_state = STATE_SPRAYDELETER;
+					}
+				}
+				NeoUI::EndHorizontal();
+			}
+			break;
 			default:
 				break;
 			}
@@ -1671,9 +1747,9 @@ void CNeoRoot::OnFileSelectedMode_Spray(const char *szFullpath)
 		IVTFTexture *pVTFTexture = CreateVTFTexture();
 		if (pVTFTexture->Unserialize(buf))
 		{
-			const bool bDirectCopy = (pVTFTexture->Width() == pVTFTexture->Height() &&
-									  (pVTFTexture->Format() == IMAGE_FORMAT_DXT1) ||
-									  (pVTFTexture->Format() == IMAGE_FORMAT_DXT5));
+			const bool bDirectCopy = ((pVTFTexture->Width() == pVTFTexture->Height()) &&
+									  ((pVTFTexture->Format() == IMAGE_FORMAT_DXT1) ||
+									   (pVTFTexture->Format() == IMAGE_FORMAT_DXT5)));
 			if (bDirectCopy)
 			{
 				if (!engine->CopyLocalFile(szFullpath, "materials/vgui/logos/spray.vtf"))

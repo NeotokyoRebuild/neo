@@ -672,14 +672,9 @@ void NeoSettings_General(NeoSettings *ns)
 		g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_LEFT;
 	}
 
-	// TODO (nullsystem): NeoUI will need improvements to its layout handling, but this will do for now.
 	NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 3);
 	{
-		g_uiCtx.iHorizontalWidth = g_uiCtx.iWgXPos;
-		NeoUI::Label(L"Select spray");
-
-		g_uiCtx.iHorizontalWidth = (g_uiCtx.dPanel.wide - g_uiCtx.iWgXPos) / 2;
-		if (NeoUI::Button(L"Import spray").bPressed)
+		if (NeoUI::Button(L"Import").bPressed)
 		{
 			if (g_pNeoRoot->m_pFileIODialog)
 			{
@@ -693,9 +688,14 @@ void NeoSettings_General(NeoSettings *ns)
 			g_pNeoRoot->m_pFileIODialog->AddFilter("*.vtf", "VTF Image", false);
 			g_pNeoRoot->m_pFileIODialog->DoModal();
 		}
-		if (NeoUI::Button(L"Gallery").bPressed)
+		if (NeoUI::Button(L"Pick").bPressed)
 		{
 			g_pNeoRoot->m_state = STATE_SPRAYPICKER;
+			g_pNeoRoot->m_bSprayGalleryRefresh = true;
+		}
+		if (NeoUI::Button(L"Delete").bPressed)
+		{
+			g_pNeoRoot->m_state = STATE_SPRAYDELETER;
 			g_pNeoRoot->m_bSprayGalleryRefresh = true;
 		}
 	}
@@ -703,11 +703,11 @@ void NeoSettings_General(NeoSettings *ns)
 
 	static constexpr int TEXWH = 6;
 	const int iTexSprayWH = g_uiCtx.iRowTall * TEXWH;
-	NeoUI::Texture("vgui/logos/ui/spray", g_uiCtx.iLayoutX + g_uiCtx.iWgXPos, g_uiCtx.iLayoutY,
+	NeoUI::Texture("vgui/logos/ui/spray",
+				   g_uiCtx.iLayoutX + (g_uiCtx.dPanel.wide / 2) - (iTexSprayWH / 2), g_uiCtx.iLayoutY,
 				   iTexSprayWH, iTexSprayWH);
-	NeoUI::Label(L"Current spray");
 
-	for (int i = 0; i < (TEXWH - 1); ++i)
+	for (int i = 0; i < TEXWH; ++i)
 	{
 		++g_uiCtx.iWidget;
 		NeoUI::Pad();

@@ -56,6 +56,7 @@ enum RootState
 	STATE_SERVERDETAILS,
 	STATE_PLAYERLIST,
 	STATE_SPRAYPICKER,
+	STATE_SPRAYDELETER,
 
 	// Those that uses CNeoRoot::MainLoopPopup only starts here
 	STATE__POPUPSTART,
@@ -64,6 +65,7 @@ enum RootState
 	STATE_QUIT,
 	STATE_SERVERPASSWORD,
 	STATE_SETTINGSRESETDEFAULT,
+	STATE_SPRAYDELETERCONFIRM,
 
 	STATE__TOTAL,
 };
@@ -94,6 +96,13 @@ enum MainMenuButtons
 	MMBTN_QUIT,
 
 	BTNS_TOTAL,
+};
+
+struct SprayInfo
+{
+	char szBaseName[MAX_PATH];
+	char szPath[MAX_PATH];
+	char szVtf[MAX_PATH];
 };
 
 // This class is what is actually used instead of the main menu.
@@ -207,6 +216,7 @@ public:
 	int m_iSavedYOffsets[NeoUI::MAX_SECTIONS] = {};
 	bool m_bSprayGalleryRefresh = false;
 	float m_flWideAs43 = 0.0f;
+	SprayInfo m_sprayToDelete = {};
 
 private:
 	void OnFileSelectedMode_Crosshair(const char *szFullpath);
