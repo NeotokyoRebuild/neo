@@ -188,14 +188,8 @@ IMaterial *CreateTempMaterialForPlayerLogo( int iPlayerIndex, player_info_t *inf
 		if (!filesystem->FileExists(custname))
 		{
 #ifdef NEO
-			if (engine->GetLocalPlayer() == iPlayerIndex)
-			{
-				if (!engine->CopyLocalFile(fulltexname, custname))
-				{
-					return nullptr;
-				}
-			}
-			else
+			if (engine->GetLocalPlayer() != iPlayerIndex ||
+					!engine->CopyLocalFile(fulltexname, custname))
 			{
 				return nullptr;
 			}

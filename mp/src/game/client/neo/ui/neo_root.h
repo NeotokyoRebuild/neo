@@ -207,6 +207,10 @@ public:
 	int m_iSavedYOffsets[NeoUI::MAX_SECTIONS] = {};
 	bool m_bSprayGalleryRefresh = false;
 	float m_flWideAs43 = 0.0f;
+
+private:
+	void OnFileSelectedMode_Crosshair(const char *szFullpath);
+	void OnFileSelectedMode_Spray(const char *szFullpath);
 };
 
 extern CNeoRoot *g_pNeoRoot;
