@@ -69,6 +69,7 @@ public:
 
 	bool IsGhostCaptured(int &outTeamNumber, int &outCaptorClientIndex);
 
+private:
 	COutputEvent m_OnCap;
 #endif
 
