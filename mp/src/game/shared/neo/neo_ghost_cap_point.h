@@ -74,6 +74,7 @@ private:
 #endif
 
 #ifdef GAME_DLL
+public:
 	void Think_CheckMyRadius(void); // NEO FIXME (Rain): this should be private
 #endif
 
