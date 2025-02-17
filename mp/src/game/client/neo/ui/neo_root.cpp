@@ -65,7 +65,7 @@ constexpr wchar_t WSZ_GAME_TITLE1_b[] = L"C";
 constexpr wchar_t WSZ_GAME_TITLE2[] = L"Hrebuild";
 #define SZ_WEBSITE "https://neotokyorebuild.github.io"
 
-ConCommand neo_toggleconsole("neo_toggleconsole", NeoToggleconsole);
+ConCommand neo_toggleconsole("neo_toggleconsole", NeoToggleconsole, "toggle the console", FCVAR_DONTRECORD);
 
 struct YMD
 {

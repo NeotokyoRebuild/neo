@@ -219,6 +219,10 @@ public:
 #if DEBUG
 		DevMsg("Loadout access cb\n");
 #endif
+		if (engine->IsPlayingDemo())
+		{
+			return;
+		}
 
 		auto team = GetLocalPlayerTeam();
 		if(team < FIRST_GAME_TEAM)
@@ -294,6 +298,11 @@ class NeoClassMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback(const CCommand& command)
 	{
+		if (engine->IsPlayingDemo())
+		{
+			return;
+		}
+
 		auto team = GetLocalPlayerTeam();
 		if(team < FIRST_GAME_TEAM)
 		{
@@ -354,6 +363,11 @@ class NeoTeamMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback( const CCommand &command )
 	{
+		if (engine->IsPlayingDemo())
+		{
+			return;
+		}
+
 		if (!g_pNeoTeamMenu)
 		{
 			Assert(false);
@@ -420,10 +434,10 @@ public:
 };
 VguiCancel_Cb vguiCancel_Cb;
 
-ConCommand loadoutmenu("loadoutmenu", &neoLoadoutMenu_Cb, "Open weapon loadout selection menu.", FCVAR_USERINFO);
-ConCommand classmenu("classmenu", &neoClassMenu_Cb, "Open class selection menu.", FCVAR_USERINFO);
-ConCommand teammenu("teammenu", &neoTeamMenu_Cb, "Open team selection menu.", FCVAR_USERINFO);
-ConCommand vguicancel("vguicancel", &vguiCancel_Cb, "Cancel current vgui screen.", FCVAR_USERINFO);
+ConCommand loadoutmenu("loadoutmenu", &neoLoadoutMenu_Cb, "Open weapon loadout selection menu.", FCVAR_USERINFO | FCVAR_DONTRECORD);
+ConCommand classmenu("classmenu", &neoClassMenu_Cb, "Open class selection menu.", FCVAR_USERINFO | FCVAR_DONTRECORD);
+ConCommand teammenu("teammenu", &neoTeamMenu_Cb, "Open team selection menu.", FCVAR_USERINFO | FCVAR_DONTRECORD);
+ConCommand vguicancel("vguicancel", &vguiCancel_Cb, "Cancel current vgui screen.", FCVAR_USERINFO | FCVAR_DONTRECORD);
 
 C_NEO_Player::C_NEO_Player()
 {
