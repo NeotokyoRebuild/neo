@@ -774,6 +774,7 @@ float CLuminanceHistogramSystem::GetTargetTonemapScalar( bool bGetIdealTargetFor
 	}
 }
 
+extern EHANDLE g_hTonemapControllerInUse;
 static float GetCurrentBloomScale( void )
 {
 	// Use the appropriate bloom scale settings.  Mapmakers's overrides the convar settings.
@@ -786,6 +787,13 @@ static float GetCurrentBloomScale( void )
 	{
 		flCurrentBloomScale = mat_bloomscale.GetFloat();
 	}
+#ifdef NEO
+	if (!g_pMaterialSystemHardwareConfig->GetHDREnabled())
+	{
+		constexpr int BLOOM_MULTIPLIER = 4;
+		flCurrentBloomScale *= BLOOM_MULTIPLIER; // NEOTOD (Adam) the base values defined in neo_bloom_controller in old maps seem way too small, need to figure out what the right multiplier is for this. 4 seems to be in the right ballpark. The translation from non-hdr to hdr is 0.3 -> 1.0 according to valve developer community, a multiplier of 3.333 could be the right value
+	}
+#endif // NEO
 	return flCurrentBloomScale;
 }
 
@@ -1444,6 +1452,12 @@ static float GetBloomAmount( void )
 	
 	if ( !engine->MapHasHDRLighting() )
 		bBloomEnabled = false;
+#ifdef NEO
+	if ( g_bUseCustomBloomScale )
+	{
+		bBloomEnabled = true;
+	}
+#endif // NEO
 	if ( mat_force_bloom.GetInt() )
 		bBloomEnabled = true;
 	if ( mat_disable_bloom.GetInt() )
@@ -2384,9 +2398,6 @@ void DoThermalVision(const int x, const int y, const int w, const int h)
 		nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
 }
 
-ConVar mat_neo_mv_1("mat_neo_mv_1", "1");
-ConVar mat_neo_mv_2("mat_neo_mv_2", "1");
-
 void DoMotionVision(const int x, const int y, const int w, const int h)
 {
 	CMatRenderContextPtr pRenderContext(materials);
@@ -2410,39 +2421,20 @@ void DoMotionVision(const int x, const int y, const int w, const int h)
 	pRenderContext->CopyRenderTargetToTextureEx(pVM_MV_IM, renderTargetId, &DestRect, NULL);
 	pRenderContext->CopyRenderTargetToTextureEx(pVM_Buffer, renderTargetId, &DestRect, NULL);
 	
-	if (mat_neo_mv_1.GetBool())
+	IMaterial *pMVMat_2 = materials->FindMaterial("dev/neo_motionvision_pass2", TEXTURE_GROUP_OTHER, true);
+	if (!pMVMat_2 || pMVMat_2->IsErrorMaterial())
 	{
-		IMaterial *pMVMat_1 = materials->FindMaterial("dev/neo_motionvision_pass1", TEXTURE_GROUP_OTHER, true);
-		if (!pMVMat_1 || pMVMat_1->IsErrorMaterial())
-		{
-			Assert(false);
-			return;
-		}
-
-		pRenderContext->DrawScreenSpaceRectangle(
-			pMVMat_1,
-			0, 0, w, h,
-			0, 0, nSrcWidth - 1, nSrcHeight - 1,
-			nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
+		Assert(false);
+		return;
 	}
-	
-	if (mat_neo_mv_2.GetBool())
-	{
-		IMaterial *pMVMat_2 = materials->FindMaterial("dev/neo_motionvision_pass2", TEXTURE_GROUP_OTHER, true);
-		if (!pMVMat_2 || pMVMat_2->IsErrorMaterial())
-		{
-			Assert(false);
-			return;
-		}
 
-		pRenderContext->CopyRenderTargetToTextureEx(pVM_MV, renderTargetId, &DestRect, NULL);
+	pRenderContext->CopyRenderTargetToTextureEx(pVM_MV, renderTargetId, &DestRect, NULL);
 
-		pRenderContext->DrawScreenSpaceRectangle(
-			pMVMat_2,
-			0, 0, w, h,
-			0, 0, nSrcWidth - 1, nSrcHeight - 1,
-			nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
-	}
+	pRenderContext->DrawScreenSpaceRectangle(
+		pMVMat_2,
+		0, 0, w, h,
+		0, 0, nSrcWidth - 1, nSrcHeight - 1,
+		nSrcWidth, nSrcHeight, GetClientWorldEntity()->GetClientRenderable());
 
 	if (mat_neo_mv_noise_enable.GetBool())
 	{
@@ -2491,6 +2483,11 @@ void DoColorblindnessPostProcessing(const int x, const int y, const int w, const
 }
 #endif
 
+#ifdef NEO
+#ifdef GLOWS_ENABLE
+extern ConVar glow_outline_effect_enable;
+#endif // GLOWS_ENABLE
+#endif // NEO
 void DoEnginePostProcessing( int x, int y, int w, int h, bool bFlashlightIsOn, bool bPostVGui )
 {
 	tmZone( TELEMETRY_LEVEL0, TMZF_NONE, "%s", __FUNCTION__ );
@@ -2539,6 +2536,10 @@ void DoEnginePostProcessing( int x, int y, int w, int h, bool bFlashlightIsOn, b
 		}
 		if (target && target->IsInVision()) // don't want HDR to interfere with vision effects
 		{
+			if (hdrType == HDR_TYPE_INTEGER || hdrType == HDR_TYPE_FLOAT)
+			{
+				SetToneMapScale(pRenderContext, 1.f, 0.5f, 2.f);
+			}
 			hdrType = HDR_TYPE_NONE;
 			flBloomScale = 0.f;
 		}
@@ -2624,6 +2625,9 @@ void DoEnginePostProcessing( int x, int y, int w, int h, bool bFlashlightIsOn, b
 										  ( g_pMaterialSystemHardwareConfig->GetDXSupportLevel() >= 90) &&
 										  ( g_pMaterialSystemHardwareConfig->GetHDRType() != HDR_TYPE_FLOAT ) &&
 										  g_pColorCorrectionMgr->HasNonZeroColorCorrectionWeights() &&
+#ifdef NEO
+										  (!target || (target && !target->IsInVision())) &&
+#endif // NEO
 										  mat_colorcorrection.GetInt();
 			bool  bSplitScreenHDR		= mat_show_ab_hdr.GetInt();
 			pRenderContext->EnableColorCorrection( bPerformColCorrect );
@@ -2943,10 +2947,14 @@ void DoEnginePostProcessing( int x, int y, int w, int h, bool bFlashlightIsOn, b
 	}
 	else
 	{
-		auto pNeoPlayer = C_NEO_Player::GetLocalNEOPlayer();
-		if (pNeoPlayer && pNeoPlayer->IsInVision())
+#ifdef GLOWS_ENABLE
+		auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetTargetNEOPlayer();
+#else
+		auto pTargetPlayer = C_NEO_Player::GetTargetNEOPlayer();
+#endif // GLOWS_ENABLE
+		if (pTargetPlayer && pTargetPlayer->IsInVision())
 		{
-			switch (pNeoPlayer->GetClass())
+			switch (pTargetPlayer->GetClass())
 			{
 			case NEO_CLASS_RECON:
 			{

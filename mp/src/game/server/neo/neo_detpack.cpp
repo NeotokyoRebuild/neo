@@ -28,140 +28,30 @@ BEGIN_DATADESC(CNEODeployedDetpack)
 	DEFINE_INPUTFUNC(FIELD_VOID, "RemoteDetonate", InputRemoteDetonate),
 END_DATADESC()
 
+extern ConVar sv_neo_grenade_cor;
+extern ConVar sv_neo_grenade_gravity;
+extern ConVar sv_neo_grenade_friction;
 void CNEODeployedDetpack::Spawn(void)
 {
 	Precache();
-
 	SetModel(NEO_DEPLOYED_DETPACK_MODEL);
+	BaseClass::Spawn();
+
+	SetElasticity(sv_neo_grenade_cor.GetFloat());
+	SetGravity(sv_neo_grenade_gravity.GetFloat());
+	SetFriction(sv_neo_grenade_friction.GetFloat());
+	SetCollisionGroup(COLLISION_GROUP_WEAPON);
 
 	m_flDamage = NEO_DETPACK_DAMAGE;
 	m_DmgRadius = NEO_DETPACK_DAMAGE_RADIUS;
-
 	m_takedamage = DAMAGE_YES;
 	m_iHealth = 1;
-
-#define NEO_DET_COLLISION_RADIUS (NEO_DEPLOYED_DETPACK_RADIUS * 2.0)
-
-	SetSize(-Vector(NEO_DEPLOYED_DETPACK_RADIUS, NEO_DEPLOYED_DETPACK_RADIUS, NEO_DEPLOYED_DETPACK_RADIUS),
-		Vector(NEO_DEPLOYED_DETPACK_RADIUS, NEO_DEPLOYED_DETPACK_RADIUS, NEO_DEPLOYED_DETPACK_RADIUS));
-	SetCollisionBounds(-Vector(NEO_DET_COLLISION_RADIUS, NEO_DET_COLLISION_RADIUS, NEO_DET_COLLISION_RADIUS),
-		Vector(NEO_DET_COLLISION_RADIUS, NEO_DET_COLLISION_RADIUS, NEO_DET_COLLISION_RADIUS));
-	SetCollisionGroup(COLLISION_GROUP_PROJECTILE);
-	CreateVPhysics();
-
-	AddSolidFlags(FSOLID_NOT_STANDABLE);
-
-	// We turn off VPhysics for the nade because we want to control it with a bounding box ourselves
-	// for more consistent and controllable bouncing.
-	// This gets re-enabled on the prop if it settles before exploding (see the VPhysicsUpdate).
-	VPhysicsGetObject()->EnableCollisions(false);
-
 	m_punted = false;
 	m_hasSettled = false;
 	m_hasBeenMadeNonSolid = false;
 	m_hasBeenTriggeredToDetonate = false;
 
-	BaseClass::Spawn();
-
 	m_lastPos = GetAbsOrigin();
-}
-
-bool CNEODeployedDetpack::CreateVPhysics()
-{
-	// Create the object in the physics system
-	VPhysicsInitNormal(NADE_SOLID_TYPE, 0, false);
-	return true;
-}
-
-extern ConVar sv_neo_frag_cor;
-extern ConVar sv_neo_frag_showdebug;
-extern ConVar sv_neo_frag_vphys_reawaken_vel;
-
-void CNEODeployedDetpack::VPhysicsUpdate(IPhysicsObject* pPhysics)
-{
-	if (sv_neo_frag_showdebug.GetBool())
-	{
-		if (NADE_SOLID_TYPE == SolidType_t::SOLID_BBOX)
-		{
-			DrawBBoxOverlay(0.1f);
-		}
-		else
-		{
-			DrawAbsBoxOverlay();
-		}
-	}
-
-	BaseClass::VPhysicsUpdate(pPhysics);
-	Vector vel;
-	AngularImpulse angVel;
-	pPhysics->GetVelocity(&vel, &angVel);
-
-	Vector start = GetAbsOrigin();
-	const Vector end = start + vel * gpGlobals->frametime;
-	trace_t tr;
-
-	UTIL_TraceLine(start, end, MASK_SOLID, GetThrower(), COLLISION_GROUP_PROJECTILE, &tr);
-
-	// If we clipped in a solid, undo it so we don't go out of bounds
-	if (tr.startsolid)
-	{
-		if (!m_inSolid)
-		{
-			BounceSound();
-
-			vel *= -sv_neo_frag_cor.GetFloat(); // bounce backwards
-			pPhysics->SetVelocity(&vel, NULL);
-
-			if (sv_neo_frag_showdebug.GetBool())
-			{
-				DevMsg("Det re-bounced in solid\n");
-			}
-		}
-		m_inSolid = true;
-		return;
-	}
-
-	m_inSolid = false;
-
-	// Still bouncing around the world...
-	if (tr.DidHit() || tr.DidHitNonWorldEntity() || tr.DidHitWorld())
-	{
-		BounceSound();
-
-		Vector dir = vel;
-		VectorNormalize(dir);
-
-		if (tr.m_pEnt)
-		{
-			// send a tiny amount of damage so the character will react to getting bonked
-			CTakeDamageInfo info(this, GetThrower(), pPhysics->GetMass() * vel, GetAbsOrigin(), 0.1f, DMG_CRUSH);
-			tr.m_pEnt->TakeDamage(info);
-		}
-
-		// reflect velocity around normal
-		vel = -2.0f * tr.plane.normal * DotProduct(vel, tr.plane.normal) + vel;
-
-		// Absorb some of the impact
-		vel *= sv_neo_frag_cor.GetFloat();
-		angVel *= -0.5f;
-		pPhysics->SetVelocity(&vel, &angVel);
-	}
-	// Else, have we slowed down sufficiently for the VPhys to take over and settle the model.
-	// We do this because the BBox can't handle keeping the frag in bounds as robustly.
-	// NEO TODO (Rain): bind this compare velocity to nade release velocity, so
-	// it doesn't need manual adjustment.
-	else if (vel.Length() <= sv_neo_frag_vphys_reawaken_vel.GetFloat())
-	{
-		if (!VPhysicsGetObject()->IsCollisionEnabled())
-		{
-			VPhysicsGetObject()->EnableCollisions(true);
-			VPhysicsGetObject()->RecheckContactPoints();
-			if (sv_neo_frag_showdebug.GetBool())
-			{
-				DevMsg("Det has settled; awoke CNEODeployedDetpack VPhys for handling\n");
-			}
-		}
-	}
 }
 
 void CNEODeployedDetpack::Precache(void)
@@ -176,7 +66,7 @@ void CNEODeployedDetpack::Precache(void)
 
 void CNEODeployedDetpack::SetTimer(float detonateDelay, float warnDelay)
 {
-	m_flDetonateTime = gpGlobals->curtime + detonateDelay;
+	SetDetonateTimerLength(detonateDelay);
 	m_flWarnAITime = gpGlobals->curtime + warnDelay;
 	SetThink(&CNEODeployedDetpack::DelayThink);
 	SetNextThink(gpGlobals->curtime);
@@ -242,7 +132,7 @@ void CNEODeployedDetpack::Explode(trace_t* pTrace, int bitsDamageType)
 
 bool CNEODeployedDetpack::TryDetonate(void)
 {
-	if (m_hasBeenTriggeredToDetonate || (gpGlobals->curtime > m_flDetonateTime))
+	if (m_hasBeenTriggeredToDetonate || (gpGlobals->curtime > GetDetonateTimerLength()))
 	{
 		Detonate();
 		return true;
@@ -290,15 +180,18 @@ void CNEODeployedDetpack::InputRemoteDetonate(inputdata_t& inputdata)
 	UTIL_Remove(this);
 }
 
-CBaseGrenade* NEODeployedDetpack_Create(const Vector& position, const QAngle& angles, const Vector& velocity,
+CBaseGrenadeProjectile* NEODeployedDetpack_Create(const Vector& position, const QAngle& angles, const Vector& velocity,
 	const AngularImpulse& angVelocity, CBaseEntity* pOwner)
 {
 	// Don't set the owner here, or the player can't interact with grenades he's thrown
 	auto pDet = (CNEODeployedDetpack*)CBaseEntity::Create("neo_deployed_detpack", position, angles, pOwner);
 
+	pDet->SetAbsVelocity(velocity);
+	pDet->ApplyLocalAngularVelocityImpulse(angVelocity);
+	pDet->SetupInitialTransmittedGrenadeVelocity(velocity);
+
 	// Since we are inheriting from a grenade class, just make sure the fuse never blows due to timer.
 	pDet->SetTimer(FLT_MAX, FLT_MAX);
-	pDet->SetVelocity(velocity, angVelocity);
 	pDet->SetThrower(ToBaseCombatCharacter(pOwner));
 	if (pOwner) pDet->ChangeTeam(pOwner->GetTeamNumber());
 	pDet->m_takedamage = DAMAGE_EVENTS_ONLY;

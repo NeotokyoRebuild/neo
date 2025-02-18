@@ -67,6 +67,9 @@
 #include "tf_gamerules.h"
 #endif
 
+#ifdef NEO
+#include "neo_player.h"
+#endif // NEO
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -6263,10 +6266,18 @@ void CBaseEntity::SetPredictionEligible( bool canpredict )
 //-----------------------------------------------------------------------------
 void CBaseEntity::AddPoints( int score, bool bAllowNegativeScore )
 {
+#ifdef NEO
+	CNEO_Player* pPlayer = static_cast<CNEO_Player*>(this);
+#else
 	CBasePlayer *pPlayer = ToBasePlayer(this);
+#endif // NEO
 	if ( pPlayer )
 	{
+#ifdef NEO
+		pPlayer->AddPoints(score, bAllowNegativeScore);
+#else
 		pPlayer->CBasePlayer::AddPoints( score, bAllowNegativeScore );
+#endif // NEO
 	}
 }
 

@@ -30,6 +30,7 @@ struct NeoMotionModel_DX9_Vars_t
 	int m_nAlphaTestReference;
 	int m_nFlashlightTexture;
 	int m_nFlashlightTextureFrame;
+	int m_nSpeed;
 };
 
 void InitParamsNeoMotionModel_DX9( CBaseVSShader *pShader, IMaterialVar** params,

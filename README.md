@@ -44,7 +44,12 @@ After that, it should be able to compile. For debugger/running configuration, re
 Make sure the "x86 Native Tools Command Prompt for VS2022" is used instead of the default.
 
 ##### Linux prerequisite - Steam Runtime 3 "Sniper" Container
-Just download and use the OCI image for Docker/Podman/Toolbx:
+Your system must include the following packages:
+`gcc-multilib g++-multilib cmake ninja-build docker-ce docker-ce-cli containerd.io apt-transport-https ca-certificates curl gnupg gnupg-utils cmake build-essential`
+
+**Note:** Depending on your operating system, the package names may vary, please consult google or your package manager for correct package names. The listed are for debian `apt`. (Includes Ubuntu, Linux Mint, etc)
+
+Download and use the OCI image for Docker/Podman/Toolbx:
 
 ###### Fetching the container
 * [Docker](https://www.docker.com/): `sudo docker pull registry.gitlab.steamos.cloud/steamrt/sniper/sdk`
@@ -176,7 +181,7 @@ These instructions have been written with a Debian 12 machine in mind, but they 
 
     (NOTE: I'm NOT sure if this is how it is on other systems other than Debian 12, so please, check first if you have `~/.steam/sdk32` before running these! If you have Desktop Steam installed, then you should have this directory, but it doesn't seem to be the case with SteamCMD, which is why we need to do this.)
     ```
-    ln -s ~/.steam/sdk32 ~/.steam/steam/steamcmd/linux32
+    ln -s ~/.steam/steam/steamcmd/linux32 ~/.steam/sdk32
     ```
 9. For firewall, open the following ports:
     * 27015 TCP+UDP (you can keep the TCP port closed if you don't need RCON support)

@@ -188,8 +188,16 @@ CBaseEntity *CGameRules::GetPlayerSpawnSpot( CBasePlayer *pPlayer )
 {
 	CBaseEntity *pSpawnSpot = pPlayer->EntSelectSpawnPoint();
 	Assert( pSpawnSpot );
-
+#ifdef NEO
+	Vector spawnPosition = pSpawnSpot->GetAbsOrigin() + Vector(0, 0, 1);
+	if (!Q_strcmp( pSpawnSpot->m_iClassname.ToCStr(), "info_player_start" ) )
+	{
+		spawnPosition += Vector(0, 0, 64);
+	}
+	pPlayer->SetLocalOrigin( spawnPosition );
+#else
 	pPlayer->SetLocalOrigin( pSpawnSpot->GetAbsOrigin() + Vector(0,0,1) );
+#endif // NEO
 	pPlayer->SetAbsVelocity( vec3_origin );
 	pPlayer->SetLocalAngles( pSpawnSpot->GetLocalAngles() );
 	pPlayer->m_Local.m_vecPunchAngle = vec3_angle;

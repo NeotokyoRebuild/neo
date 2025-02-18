@@ -63,6 +63,9 @@ void CPDumpPanel::ApplySchemeSettings( vgui::IScheme *pScheme )
 	BaseClass::ApplySchemeSettings( pScheme );
 
 	SetProportional( false );
+#ifdef NEO
+	SetBounds(0, 0, ScreenWidth(), ScreenHeight());
+#endif // NEO
 	SetPaintBackgroundEnabled( false );
 }
 

@@ -64,6 +64,9 @@ protected:
 
 	//Set the time to detonate ( now + timer )
 	void SetDetonateTimerLength( float timer );
+#ifdef NEO
+	inline float GetDetonateTimerLength() { return m_flDetonateTime; }
+#endif // NEO
 
 private:	
 	

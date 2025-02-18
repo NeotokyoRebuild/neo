@@ -768,7 +768,7 @@ void CViewRender::SetUpViews()
 #ifndef NEO
 	view.fov = default_fov.GetFloat();
 #else
-	view.fov = neo_fov.GetFloat();
+	view.fov = engine->IsLevelMainMenuBackground() ? 75 : neo_fov.GetFloat();
 #endif
 
 	view.m_bOrtho			= false;

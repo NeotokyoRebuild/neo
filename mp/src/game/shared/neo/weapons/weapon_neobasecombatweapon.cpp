@@ -18,6 +18,7 @@ extern ConVar weaponstay;
 #include "hud_crosshair.h"
 #include "ui/neo_hud_crosshair.h"
 #include "model_types.h"
+#include "c_neo_player.h"
 #endif
 
 #include "basecombatweapon_shared.h"
@@ -73,6 +74,7 @@ END_DATADESC()
 #endif
 
 ConVar sv_neo_accuracy_penalty_scale("sv_neo_accuracy_penalty_scale", "1.0", FCVAR_REPLICATED, "Scales the accuracy penalty per shot.", true, 0.0f, true, 2.0f);
+ConVar sv_neo_dynamic_viewkick("sv_neo_dynamic_viewkick", "0", FCVAR_REPLICATED, "Enables view kick scaling based on current inaccuracy.", true, 0.0f, true, 1.0f);
 
 const char *GetWeaponByLoadoutId(int id)
 {
@@ -111,11 +113,11 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 		{0.25, 0.5, -0.6, 0.6},
 	},
 	{NEO_WEP_JITTE,
-		{{VECTOR_CONE_3DEGREES, VECTOR_CONE_10DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_3DEGREES}},
+		{{VECTOR_CONE_3DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_3DEGREES}},
 		{-0.5, -0.25, -0.6, 0.6},
 	},
 	{NEO_WEP_JITTE_S,
-		{{VECTOR_CONE_3DEGREES, VECTOR_CONE_10DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_3DEGREES}},
+		{{VECTOR_CONE_3DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_3DEGREES}},
 		{-0.5, -0.25, -0.6, 0.6},
 	},
 	{NEO_WEP_KYLA,
@@ -249,6 +251,11 @@ void CNEOBaseCombatWeapon::Spawn()
 void CNEOBaseCombatWeapon::Equip(CBaseCombatCharacter* pOwner)
 {
 	BaseClass::Equip(pOwner);
+	auto neoOwner = static_cast<CNEO_Player*>(pOwner);
+	if (neoOwner->m_bInThermOpticCamo)
+	{
+		AddEffects(EF_NOSHADOW);
+	}
 #ifndef CLIENT_DLL
 	NEO_WEP_BITS_UNDERLYING_TYPE weapon = GetNeoWepBits();
 	if (weapon & (NEO_WEP_KYLA | NEO_WEP_MILSO | NEO_WEP_TACHI))
@@ -447,6 +454,17 @@ void CNEOBaseCombatWeapon::CheckReload(void)
 	BaseClass::CheckReload();
 }
 
+float CNEOBaseCombatWeapon::GetAccuracyPenaltyDecay()
+{
+	auto penaltyDecay = 1.2f;
+	auto *pOwner = GetOwner();
+	if (pOwner && pOwner->GetFlags() & FL_DUCKING)
+	{
+		penaltyDecay += 1.0f;
+	}
+	return penaltyDecay;
+}
+
 void CNEOBaseCombatWeapon::UpdateInaccuracy()
 {
 	CNEO_Player *pOwner = static_cast<CNEO_Player *>(ToBasePlayer(GetOwner()));
@@ -491,7 +509,9 @@ void CNEOBaseCombatWeapon::ProcessAnimationEvents()
 		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
 	};
 
-	if (!m_bLowered && !m_bInReload && !m_bRoundBeingChambered &&
+	// NEO JANK (Adam) Why do we have to bombard the zr68l viewmodel with SendWeaponAnim(ACT_VM_IDLE_LOWERED) during sprint to make it act normally? Breakpoint in SendWeaponAnim isn't triggered by anything else after this animation is sent while sprinting
+	const bool loweredCheck = GetNeoWepBits() & NEO_WEP_ZR68_L ? true : !m_bLowered;
+	if (loweredCheck && !m_bInReload && !m_bRoundBeingChambered &&
 		(pOwner->IsSprinting() || pOwner->GetMoveType() == MOVETYPE_LADDER))
 	{
 		m_bLowered = true;
@@ -511,6 +531,14 @@ void CNEOBaseCombatWeapon::ProcessAnimationEvents()
 	else if (m_bLowered && gpGlobals->curtime > m_flNextPrimaryAttack)
 	{
 		SetWeaponIdleTime(gpGlobals->curtime + 0.2);
+		if (GetNeoWepBits() & NEO_WEP_THROWABLE)
+		{
+			if (!HasPrimaryAmmo())
+			{ // switch our vm activity to something else so throwables postframe picks up that we've finished the throw
+				SendWeaponAnim(ACT_VM_DRAW);
+			}
+			return;
+		}
 		m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
 		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
 	}
@@ -584,17 +612,31 @@ void CNEOBaseCombatWeapon::ItemPostFrame(void)
 		}
 	}
 
+	if (!bFired && (pOwner->m_afButtonPressed & IN_ATTACK))
+	{
+		if (!IsMeleeWeapon() &&
+			((UsesClipsForAmmo1() && m_iClip1 <= 0) || (!UsesClipsForAmmo1() && m_iPrimaryAmmoCount <= 0)))
+		{
+			DryFire();
+			m_flLastAttackTime = gpGlobals->curtime - 3.f;
+		}
+		else if (pOwner->GetWaterLevel() == 3 && m_bFiresUnderwater == false)
+		{
+			// This weapon doesn't fire underwater
+			WeaponSound(EMPTY);
+			m_flNextPrimaryAttack = gpGlobals->curtime + 0.2;
+			m_flLastAttackTime = gpGlobals->curtime - 3.f;
+			return;
+		}
+	}
+
 	if (!bFired && (pOwner->m_nButtons & IN_ATTACK) && (m_flNextPrimaryAttack <= gpGlobals->curtime))
 	{
 		// Clip empty? Or out of ammo on a no-clip weapon?
 		if (!IsMeleeWeapon() &&
 			((UsesClipsForAmmo1() && m_iClip1 <= 0) || (!UsesClipsForAmmo1() && m_iPrimaryAmmoCount <= 0)))
 		{
-			if (m_bRoundChambered) // bolt action rifles can have this value set to false, prevents empty clicking when holding the attack button when looking through scope to prevent bolting/reloading
-			{
-				HandleFireOnEmpty();
-			}
-			else
+			if (!(GetNeoWepBits() & NEO_WEP_SRS))
 			{
 				DryFire();
 			}
@@ -649,9 +691,13 @@ void CNEOBaseCombatWeapon::ItemPostFrame(void)
 	if (!(((pOwner->m_nButtons & IN_ATTACK) && !(pOwner->IsSprinting())) || (pOwner->m_nButtons & IN_ATTACK2) || (CanReload() && pOwner->m_nButtons & IN_RELOAD)))
 	{
 		// no fire buttons down or reloading
-		if (!ReloadOrSwitchWeapons() && (m_bInReload == false))
+		if (m_flTimeWeaponIdle <= gpGlobals->curtime)
 		{
 			WeaponIdle();
+		}
+		if (m_flLastAttackTime + 3.f < gpGlobals->curtime)
+		{
+			ReloadOrSwitchWeapons();
 		}
 	}
 }
@@ -699,10 +745,11 @@ void CNEOBaseCombatWeapon::AddViewKick()
 	}
 
 	auto kickInfo = m_weaponHandling.kickInfo;
+	float punchScale = sv_neo_dynamic_viewkick.GetBool() ? m_flAccuracyPenalty : 1.0f;
 
 	QAngle viewPunch;
-	viewPunch.x = SharedRandomFloat(m_weaponSeeds.punchX, kickInfo.minX, kickInfo.maxX);
-	viewPunch.y = SharedRandomFloat(m_weaponSeeds.punchY, kickInfo.minY, kickInfo.maxY);
+	viewPunch.x = SharedRandomFloat(m_weaponSeeds.punchX, kickInfo.minX * punchScale, kickInfo.maxX * punchScale);
+	viewPunch.y = SharedRandomFloat(m_weaponSeeds.punchY, kickInfo.minY * punchScale, kickInfo.maxY * punchScale);
 	viewPunch.z = 0;
 
 	owner->ViewPunch(viewPunch);
@@ -715,8 +762,8 @@ void CNEOBaseCombatWeapon::AddViewKick()
 	}
 
 	auto recoilInfo = m_weaponHandling.recoilInfo;
-	float scale = owner->IsInAim() ? recoilInfo.adsFactor : recoilInfo.hipFactor;
-	if (!scale)
+	float recoilScale = owner->IsInAim() ? recoilInfo.adsFactor : recoilInfo.hipFactor;
+	if (!recoilScale)
 	{
 		return;
 	}
@@ -724,8 +771,8 @@ void CNEOBaseCombatWeapon::AddViewKick()
 	QAngle viewAngles;
 	engine->GetViewAngles(viewAngles);
 
-	viewAngles.x += SharedRandomFloat(m_weaponSeeds.recoilX, recoilInfo.minX * scale, recoilInfo.maxX * scale);
-	viewAngles.y += SharedRandomFloat(m_weaponSeeds.recoilY, recoilInfo.minY * scale, recoilInfo.maxY * scale);
+	viewAngles.x += SharedRandomFloat(m_weaponSeeds.recoilX, recoilInfo.minX * recoilScale, recoilInfo.maxX * recoilScale);
+	viewAngles.y += SharedRandomFloat(m_weaponSeeds.recoilY, recoilInfo.minY * recoilScale, recoilInfo.maxY * recoilScale);
 
 	engine->SetViewAngles(viewAngles);
 
@@ -746,11 +793,6 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 		return;
 	}
 	if (gpGlobals->curtime < m_flSoonestAttack)
-	{
-		return;
-	}
-	// Can't shoot again yet
-	else if (gpGlobals->curtime - m_flLastAttackTime < GetFireRate())
 	{
 		return;
 	}
@@ -878,14 +920,14 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 		pPlayer->SetSuitUpdate("!HEV_AMO0", FALSE, 0);
 	}
 
-	//Add our view kick in
-	pOwner->ViewPunchReset();
-	AddViewKick();
-
 	m_flAccuracyPenalty = min(
 		GetMaxAccuracyPenalty(),
 		m_flAccuracyPenalty + GetAccuracyPenalty() * sv_neo_accuracy_penalty_scale.GetFloat()
 	);
+
+	//Add our view kick in
+	pOwner->ViewPunchReset();
+	AddViewKick();
 }
 
 void CNEOBaseCombatWeapon::SecondaryAttack()
@@ -1059,21 +1101,27 @@ bool CNEOBaseCombatWeapon::ShouldDraw(void)
 }
 
 extern ConVar mat_neo_toc_test;
+#ifdef GLOWS_ENABLE
+extern ConVar glow_outline_effect_enable;
+#endif // GLOWS_ENABLE
 int CNEOBaseCombatWeapon::DrawModel(int flags)
 {
-	C_BaseCombatCharacter* localPlayer = C_BasePlayer::GetLocalPlayer();
-	if (GetOwner() == localPlayer && ShouldDrawLocalPlayerViewModel())
+#ifdef GLOWS_ENABLE
+	auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetTargetNEOPlayer();
+#else
+	auto pTargetPlayer = C_NEO_Player::GetTargetNEOPlayer();
+#endif // GLOWS_ENABLE
+	if (!pTargetPlayer)
+	{
+		Assert(false);
+		return BaseClass::DrawModel(flags);
+	}
+
+	if (GetOwner() == pTargetPlayer && ShouldDrawLocalPlayerViewModel())
 		return 0;
 
 	if (flags & STUDIO_IGNORE_NEO_EFFECTS || !(flags & STUDIO_RENDER))
 	{
-		return BaseClass::DrawModel(flags);
-	}
-
-	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if (!pLocalPlayer)
-	{
-		Assert(false);
 		return BaseClass::DrawModel(flags);
 	}
 
@@ -1083,16 +1131,15 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 		return BaseClass::DrawModel(flags);
 	}
 
-	bool inMotionVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT;
-	bool inThermalVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT;
+	bool inThermalVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT;
 
 	int ret = 0;
-	if (!pOwner->IsCloaked() || inThermalVision)
+	if (!pOwner || !pOwner->IsCloaked() || inThermalVision)
 	{
 		ret |= BaseClass::DrawModel(flags);
 	}
 
-	if (pOwner->IsCloaked() && !inThermalVision)
+	if ((pOwner && pOwner->IsCloaked()) && !inThermalVision)
 	{
 		mat_neo_toc_test.SetValue(pOwner->GetCloakFactor());
 		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
@@ -1100,93 +1147,15 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 		ret |= BaseClass::DrawModel(flags);
 		modelrender->ForcedMaterialOverride(nullptr);
 	}
-
-	auto vel = pOwner->GetAbsVelocity().Length();
-	if (inMotionVision && vel > 0.5) // MOVING_SPEED_MINIMUM
+	else if (inThermalVision && (pOwner && !pOwner->IsCloaked()))
 	{
-		IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
-		modelrender->ForcedMaterialOverride(pass);
-		ret |= BaseClass::DrawModel(flags);
-		modelrender->ForcedMaterialOverride(nullptr);
-	}
-
-	else if (inThermalVision && !pOwner->IsCloaked())
-	{
-		IMaterial* pass = materials->FindMaterial("dev/thermal_third", TEXTURE_GROUP_MODEL);
+		IMaterial* pass = materials->FindMaterial("dev/thermal_model", TEXTURE_GROUP_MODEL);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::DrawModel(flags);
 		modelrender->ForcedMaterialOverride(nullptr);
 	}
 
 	return ret;
-}
-
-int CNEOBaseCombatWeapon::InternalDrawModel(int flags)
-{
-	if (flags & STUDIO_IGNORE_NEO_EFFECTS || !(flags & STUDIO_RENDER))
-	{
-		return BaseClass::InternalDrawModel(flags);
-	}
-
-	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if (!pLocalPlayer)
-	{
-		Assert(false);
-		return BaseClass::InternalDrawModel(flags);
-	}
-
-	auto pOwner = static_cast<C_NEO_Player*>(GetOwner());
-	if (!pOwner)
-	{
-		return BaseClass::InternalDrawModel(flags);
-	}
-
-	bool inMotionVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT;
-	bool inThermalVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT;
-
-	int ret = 0;
-	if (!pOwner->IsCloaked() || inThermalVision)
-	{
-		ret |= BaseClass::InternalDrawModel(flags);
-	}
-
-	if (pOwner->IsCloaked() && !inThermalVision)
-	{
-		mat_neo_toc_test.SetValue(pOwner->GetCloakFactor());
-		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
-		modelrender->ForcedMaterialOverride(pass);
-		ret |= BaseClass::InternalDrawModel(flags);
-		modelrender->ForcedMaterialOverride(nullptr);
-	}
-
-	auto vel = pOwner->GetAbsVelocity().Length();
-	if (inMotionVision && vel > 0.5) // MOVING_SPEED_MINIMUM
-	{
-		IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
-		modelrender->ForcedMaterialOverride(pass);
-		ret |= BaseClass::InternalDrawModel(flags);
-		modelrender->ForcedMaterialOverride(nullptr);
-	}
-
-	else if (inThermalVision && !pOwner->IsCloaked())
-	{
-		IMaterial* pass = materials->FindMaterial("dev/thermal_third", TEXTURE_GROUP_MODEL);
-		modelrender->ForcedMaterialOverride(pass);
-		ret |= BaseClass::InternalDrawModel(flags);
-		modelrender->ForcedMaterialOverride(nullptr);
-	}
-
-	return ret;
-}
-
-ShadowType_t CNEOBaseCombatWeapon::ShadowCastType(void)
-{
-	C_NEO_Player* owner = static_cast<C_NEO_Player*>(ToBasePlayer(GetOwner()));
-	if (owner && owner->IsCloaked())
-	{
-		return SHADOWS_NONE;
-	}
-	return BaseClass::ShadowCastType();
 }
 
 RenderGroup_t CNEOBaseCombatWeapon::GetRenderGroup()

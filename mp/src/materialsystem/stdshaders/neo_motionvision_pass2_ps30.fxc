@@ -1,12 +1,7 @@
 #include "common_ps_fxc.h"
 
-sampler MotionEffect			: register(s0);
-sampler Original				: register(s1);
-
-const float g_TintColor_R		: register(c0);
-const float g_TintColor_G		: register(c1);
-const float g_TintColor_B		: register(c2);
-//const float g_Strength			: register(c0);
+sampler Original				: register(s0);
+sampler MVGrad	         	   	: register(s1);
 
 struct PS_INPUT
 {
@@ -16,23 +11,6 @@ struct PS_INPUT
 float4 main( const PS_INPUT i ) : COLOR
 {
 	const float4 imTex = tex2D(Original, i.vTexCoord);
-	
-	const float bwTint = (imTex.r + imTex.g + imTex.b) / 3.0f;
-
-	return float4(
-		min(bwTint + g_TintColor_R, 1),
-		min(bwTint + g_TintColor_G, 1),
-		min(bwTint + g_TintColor_B, 1),
-		imTex.a);
-	
-
-	// NEO TODO (Adam) Awesome sincity shader taken from https://pastebin.com/zVxsZBVG , useful for potential motion vision rework discussion
-	//const float4 imTex = tex2D(Original, i.vTexCoord);
-	//float3 colorin = pow(imTex.rgb, .45f);
-	
-    //float3 bwcolor = dot(colorin.rgb, 1.f.xxx) * 0.33333f;
-	//float weight = smoothstep(0.1f, 0.25f, colorin.r - bwcolor);
-	//bwcolor = pow(bwcolor * 1.1f, 2.f);
-	//float3 colorout = lerp(bwcolor, colorin * float3(1.1f, 0.5f, 0.5f), weight);
-    //return pow(float4(colorout, 1.f), 2.2f);
+	const float bwTint = pow(imTex.r * 0.2126 + imTex.g * 0.7152 + imTex.b * 0.0722, 0.454545); // 0.454545 ~= 1/2.2
+	return tex1D( MVGrad, bwTint);
 }
