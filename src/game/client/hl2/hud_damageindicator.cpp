@@ -176,20 +176,10 @@ void CHudDamageIndicator::DrawDamageIndicator(int side)
 
 	int insetY = static_cast<int>((m_flDmgTall1 - m_flDmgTall2) / 2);
 
-	int x1 = static_cast<int>(m_flDmgX);
-	int x2 = static_cast<int>(m_flDmgX + m_flDmgWide);
-	int y[4] = {
-		static_cast<int>(m_flDmgY),
-		static_cast<int>((m_flDmgY + insetY)),
-		static_cast<int>((m_flDmgY + m_flDmgTall1 - insetY)),
-		static_cast<int>((m_flDmgY + m_flDmgTall1))
-	};
-	int alpha[4] = {
-		static_cast<int>(0.0f),
-		static_cast<int>(1.0f),
-		static_cast<int>(1.0f),
-		static_cast<int>(0.0f)
-	};
+	int x1 = m_flDmgX;
+	int x2 = m_flDmgX + m_flDmgWide;
+	int y[4] = { (int)m_flDmgY, (int)(m_flDmgY + insetY), (int)(m_flDmgY + m_flDmgTall1 - insetY), (int)(m_flDmgY + m_flDmgTall1) };
+	int alpha[4] = { 0, 1, 1, 0 };
 
 	// see if we're high damage
 	bool bHighDamage = false;

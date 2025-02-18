@@ -112,6 +112,8 @@ CHudDeathNotice::CHudDeathNotice( const char *pElementName ) :
 #endif //NEO
 
 	SetHiddenBits( HIDEHUD_MISCSTATUS );
+
+	SetSize( ScreenWidth(), ScreenHeight() );
 }
 
 //-----------------------------------------------------------------------------
@@ -126,6 +128,8 @@ void CHudDeathNotice::ApplySchemeSettings( IScheme *scheme )
 	m_iHeadshotIconHeight = surface()->GetFontTall(m_hTextFont) * 2;
 	m_iHeadshotIconWidth = m_iHeadshotIconHeight;
 #endif // NEO
+	
+        SetSize( ScreenWidth(), ScreenHeight() );
 }
 
 //-----------------------------------------------------------------------------
@@ -236,9 +240,11 @@ void CHudDeathNotice::Paint()
 		g_pVGuiLocalize->ConvertANSIToUnicode(m_DeathNotices[i].Assists.szName, assists, sizeof(assists));
 #endif
 
+		int nLinePadding = vgui::scheme()->GetProportionalScaledValue( 4 );
+
 		// Get the local position for this notice
 		int len = UTIL_ComputeStringWidth( m_hTextFont, victim );
-		int y = yStart + (m_flLineHeight * i);
+		int y = yStart + ( ( m_flLineHeight + nLinePadding ) * i);
 
 		int iconWide;
 		int iconTall;
@@ -278,10 +284,13 @@ void CHudDeathNotice::Paint()
 #endif
 		}
 
+		// misyl: Looks bad all crunched up in the corner.
+		int nPadding = vgui::scheme()->GetProportionalScaledValue( 16 );
+
 		int x;
 		if ( m_bRightJustify )
 		{
-			x =	GetWide() - len - iconWide;
+			x =	GetWide() - len - iconWide - nPadding;
 #ifdef NEO
 			if (m_DeathNotices[i].bHeadshot)
 			{
@@ -291,7 +300,7 @@ void CHudDeathNotice::Paint()
 		}
 		else
 		{
-			x = 0;
+			x = nPadding;
 		}
 
 #ifdef NEO

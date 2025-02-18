@@ -401,11 +401,7 @@ bool CAI_ScriptConditions::EvalPlayerInVehicle( const EvalArgs_t &args )
 		return false;
 
 	// Desired states must match
-#ifndef NEO
-	return ( !!args.pPlayer->IsInAVehicle() == m_fPlayerInVehicle );
-#else
-	return ( args.pPlayer->IsInAVehicle() == static_cast<bool>(m_fPlayerInVehicle) );
-#endif
+	return args.pPlayer->IsInAVehicle() == ( m_fPlayerInVehicle == TRS_TRUE );
 }
 
 //-----------------------------------------------------------------------------
@@ -425,11 +421,7 @@ bool CAI_ScriptConditions::EvalActorInVehicle( const EvalArgs_t &args )
 		return false;
 
 	// Desired states must match
-#ifndef NEO
-	return ( !!pBCC->IsInAVehicle() == m_fActorInVehicle );
-#else
-	return ( pBCC->IsInAVehicle() == static_cast<bool>(m_fActorInVehicle) );
-#endif
+	return pBCC->IsInAVehicle() == ( m_fActorInVehicle == TRS_TRUE );
 }
 
 //-----------------------------------------------------------------------------

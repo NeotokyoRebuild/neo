@@ -30,6 +30,15 @@ class CBaseEntity;
 class CTakeDamageInfo
 {
 public:
+
+	enum ECritType
+	{
+		CRIT_NONE = 0,
+		CRIT_MINI,
+		CRIT_FULL,
+	};
+
+
 	DECLARE_CLASS_NOBASE( CTakeDamageInfo );
 
 					CTakeDamageInfo();
@@ -111,6 +120,9 @@ public:
 	// For designer debug output.
 	static void		DebugGetDamageTypeString(unsigned int DamageType, char *outbuf, int outbuflength );
 
+	void			SetCritType( ECritType eType ); 
+
+	ECritType		GetCritType() const { return m_eCritType; }
 
 //private:
 	void			CopyDamageToBaseDamage();
@@ -138,6 +150,8 @@ protected:
 	bool			m_bForceFriendlyFire;	// Ideally this would be a dmg type, but we can't add more
 
 	float			m_flDamageForForce;
+
+	ECritType		m_eCritType;
 
 	DECLARE_SIMPLE_DATADESC();
 };

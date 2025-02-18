@@ -16,7 +16,7 @@
 
 FORWARD_DECLARE_HANDLE( memhandle_t );
 
-#define INVALID_MEMHANDLE ((memhandle_t)0xffffffff)
+#define INVALID_MEMHANDLE ((memhandle_t)(intp)-1)
 
 class CDataManagerBase
 {
@@ -180,10 +180,10 @@ public:
 	// Wrapper to match implementation of allocation with typed storage & alloc params.
 	memhandle_t CreateResource( const CREATE_PARAMS &createParams, bool bCreateLocked = false )
 	{
-		BaseClass::EnsureCapacity(STORAGE_TYPE::EstimatedSize(createParams));
+		BaseClass::EnsureCapacity((unsigned int)STORAGE_TYPE::EstimatedSize(createParams));
 		unsigned short memoryIndex = BaseClass::CreateHandle( bCreateLocked );
 		STORAGE_TYPE *pStore = STORAGE_TYPE::CreateResource( createParams );
-		return BaseClass::StoreResourceInHandle( memoryIndex, pStore, pStore->Size() );
+		return BaseClass::StoreResourceInHandle( memoryIndex, pStore, (unsigned int) pStore->Size() );
 	}
 
 	// Iteration. Must lock first
@@ -241,7 +241,7 @@ private:
 	
 	virtual unsigned int GetRealSize( void *pStore )
 	{
-		return StoragePointer(pStore)->Size();
+		return (unsigned int) StoragePointer(pStore)->Size();
 	}
 
 	MUTEX_TYPE m_mutex;
@@ -251,7 +251,7 @@ private:
 
 inline unsigned short CDataManagerBase::FromHandle( memhandle_t handle )
 {
-	unsigned int fullWord = (unsigned int)(size_t)handle;
+	unsigned int fullWord = (unsigned int)reinterpret_cast<uintp>( handle );
 	unsigned short serial = fullWord>>16;
 	unsigned short index = fullWord & 0xFFFF;
 	index--;

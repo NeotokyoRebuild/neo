@@ -151,11 +151,11 @@ void CCenterStringLabel::ApplySchemeSettings(vgui::IScheme *pScheme)
 	BaseClass::ApplySchemeSettings(pScheme);
 
 #ifdef NEO
-	m_hFont = pScheme->GetFont("MVP");
+	m_hFont = pScheme->GetFont("MVP", true);
 	SetFgColor(Color(255, 255, 255, 255)); // Color reset by here, so set it back to white
 #else
 	// Use a large font
-	m_hFont = pScheme->GetFont( "Trebuchet24" );
+	m_hFont = pScheme->GetFont( "Trebuchet24", true );
 #endif
 	assert( m_hFont );
 	SetFont( m_hFont );

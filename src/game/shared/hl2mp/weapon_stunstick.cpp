@@ -92,6 +92,8 @@ public:
 	
 	float		GetDamageForActivity( Activity hitActivity );
 
+	virtual bool	PlayFleshyHittySoundOnHit() const { return true; }
+
 	CWeaponStunStick( const CWeaponStunStick & );
 
 private:

@@ -55,6 +55,8 @@ static TypeMap_t TypeMap[] =
 	{ ivVecLine,			"vecline",				STRING },
 	{ ivPointEntityClass,	"pointentityclass",		STRING },
 	{ ivNodeDest,			"node_dest",			INTEGER },
+	{ ivScript,				"script",				STRING },
+	{ ivScriptList,			"scriptlist",			STRING },
 	{ ivInstanceFile,		"instance_file",		STRING },
 	{ ivAngleNegativePitch,	"angle_negative_pitch",	STRING },
 	{ ivInstanceVariable,	"instance_variable",	STRING },
@@ -279,6 +281,20 @@ BOOL GDinputvariable::InitFromTokens(TokenReader& tr)
 	}
 
 	//
+	// Check for the "report" specifier.
+	//
+	if ((ttype == IDENT) && IsToken(szToken, "report"))
+	{
+		tr.NextToken(szToken, sizeof(szToken));
+		m_bReportable = true;
+
+		//
+		// Look ahead at the next token.
+		//
+		ttype = tr.PeekTokenType(szToken,sizeof(szToken));
+	}
+
+	//
 	// Check for the ':' indicating a long name.
 	//
 	if (ttype == OPERATOR && IsToken(szToken, ":"))
@@ -412,6 +428,42 @@ BOOL GDinputvariable::InitFromTokens(TokenReader& tr)
 			GDError(tr, "no %s specified", m_eType == ivFlags ? "flags" : "choices");
 			return(FALSE);
 		}
+		
+		// For boolean values, we construct it as if it were a choices dialog
+		if ( m_eType == ivBoolean )
+		{
+			m_eType = ivChoices;
+
+			GDIVITEM ivi;
+			
+			// Yes
+			strncpy( ivi.szValue, "1", MAX_STRING );
+			strncpy( ivi.szCaption, "Yes", MAX_STRING );
+			m_Items.AddToTail(ivi);
+			
+			// No
+			strncpy( ivi.szValue, "0", MAX_STRING );
+			strncpy( ivi.szCaption, "No", MAX_STRING );
+			m_Items.AddToTail(ivi);
+
+			// Clean up string usages!
+			if ( stricmp( m_szDefault, "no" ) == 0 )
+			{
+				strncpy( m_szDefault, "0", MAX_STRING );
+			}
+			else if ( stricmp( m_szDefault, "yes" ) == 0 )
+			{
+				strncpy( m_szDefault, "1", MAX_STRING );
+			}
+			
+			// Sanity check it!
+			if ( strcmp( m_szDefault, "0" ) && strcmp( m_szDefault, "1" ) )
+			{
+				GDError(tr, "boolean type specified with nonsensical default value: %s", m_szDefault );
+				return(FALSE);
+			}
+		}
+
 		return(TRUE);
 	}
 
@@ -673,7 +725,7 @@ void GDinputvariable::ToKeyValue(MDkeyvalue *pkv)
 	}
 	else if (eStoreAs == INTEGER)
 	{
-		snprintf(pkv->szValue, KEYVALUE_MAX_VALUE_LENGTH, "%d", m_nValue);
+		Q_snprintf(pkv->szValue, sizeof(pkv->szValue), "%d", m_nValue);
 	}
 }
 

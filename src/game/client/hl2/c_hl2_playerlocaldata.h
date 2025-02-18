@@ -34,6 +34,9 @@ public:
 	// In NEO, m_flSuitPower will be treated instead as just running power
 	float	m_cloakPower;
 #endif
+	float	m_flSuitPowerLoad;
+	float	m_flTimeAllSuitDevicesOff;
+	bool	m_bNewSprinting;
 	bool	m_bZooming;
 	int		m_bitsActiveDevices;
 	int		m_iSquadMemberCount;
@@ -51,7 +54,7 @@ public:
 #endif
 
 	// Ladder related data
-	EHANDLE			m_hLadder;
+	CNetworkHandle( CBaseEntity, m_hLadder );
 	LadderMove_t	m_LadderMove;
 };
 

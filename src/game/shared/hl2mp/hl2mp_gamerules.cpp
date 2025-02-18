@@ -15,6 +15,7 @@
 	#include "c_hl2mp_player.h"
 #else
 
+	#include "nav_mesh.h"
 	#include "eventqueue.h"
 	#include "player.h"
 	#include "gamerules.h"
@@ -34,7 +35,7 @@
 	#include "hl2mp_cvars.h"
 
 #if defined(DEBUG) || defined(NEO)
-	#include "hl2mp_bot_temp.h"
+	#include "tf_bot_temp.h"
 #endif
 
 #ifdef NEO
@@ -881,6 +882,37 @@ void CHL2MPRules::Precache( void )
 	CBaseEntity::PrecacheScriptSound( "AlyxEmp.Charge" );
 }
 
+#ifdef GAME_DLL
+bool CHL2MPRules::IsOfficialMap( void )
+{ 
+	static const char *s_OfficialMaps[] =
+	{
+		"devtest",
+		"dm_lockdown",
+		"dm_overwatch",
+		"dm_powerhouse",
+		"dm_resistance",
+		"dm_runoff",
+		"dm_steamlab",
+		"dm_underpass",
+		"halls3",
+	};
+
+	char szCurrentMap[MAX_MAP_NAME];
+	Q_strncpy( szCurrentMap, STRING( gpGlobals->mapname ), sizeof( szCurrentMap ) );
+
+	for ( int i = 0; i < ARRAYSIZE( s_OfficialMaps ); ++i )
+	{
+		if ( !Q_stricmp( s_OfficialMaps[i], szCurrentMap ) )
+		{
+			return true;
+		}
+	}
+
+	return BaseClass::IsOfficialMap();
+}
+#endif
+
 bool CHL2MPRules::ShouldCollide( int collisionGroup0, int collisionGroup1 )
 {
 	if ( collisionGroup0 > collisionGroup1 )
@@ -960,8 +992,9 @@ CAmmoDef *GetAmmoDef()
 		FCVAR_ARCHIVE | FCVAR_USERINFO,
 		"Automatically switch to picked up weapons (if more powerful)" );
 
-#endif
+#else
 
+#if 0 // TODO (nullsystem): 2025-02-18 SOURCE SDK 2013 CHECK
 #ifdef GAME_DLL
 	void Bot_f(); // Handler for the "bot" command.
 	ConCommand cc_Bot("bot", Bot_f, "Add a bot.", FCVAR_CHEAT);
@@ -1012,6 +1045,8 @@ CAmmoDef *GetAmmoDef()
 #endif
 		}
 	}
+#endif
+#endif
 
 	ConCommand cc_Bot_Alias_BotAdd("bot_add", Bot_f, "Add a bot. Alias for \"bot\".", FCVAR_CHEAT);
 #endif
@@ -1098,6 +1133,13 @@ void CHL2MPRules::RestartGame()
 		gameeventmanager->FireEvent( event );
 	}
 }
+
+#ifdef GAME_DLL
+void CHL2MPRules::OnNavMeshLoad( void )
+{
+	TheNavMesh->SetPlayerSpawnName( "info_player_deathmatch" );
+}
+#endif
 
 void CHL2MPRules::CleanUpMap()
 {

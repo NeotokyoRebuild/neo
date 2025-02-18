@@ -57,11 +57,15 @@ public:
 
 	DECLARE_SERVERCLASS();
 	DECLARE_DATADESC();
+	// TODO (nullsystem): 2025-02-18 SOURCE SDK 2013 CHECK - BEGIN
 	DECLARE_PREDICTABLE();
 
 	// This passes the event to the client's and server's CHL2MPPlayerAnimState.
 	void			DoAnimationEvent( PlayerAnimEvent_t event, int nData = 0 );
 	void			SetupBones( matrix3x4_t *pBoneToWorld, int boneMask );
+	// TODO (nullsystem): 2025-02-18 SOURCE SDK 2013 CHECK - END
+
+	DECLARE_ENT_SCRIPTDESC();
 
 	virtual void Precache( void );
 	virtual void Spawn( void );
@@ -76,10 +80,10 @@ public:
 	virtual int OnTakeDamage( const CTakeDamageInfo &inputInfo );
 	virtual bool WantsLagCompensationOnEntity( const CBasePlayer *pPlayer, const CUserCmd *pCmd, const CBitVec<MAX_EDICTS> *pEntityTransmitBits ) const;
 	virtual void FireBullets ( const FireBulletsInfo_t &info );
-	virtual void Weapon_Equip(CBaseCombatWeapon* pWeapon) OVERRIDE;
+	virtual void OnMyWeaponFired( CBaseCombatWeapon* weapon );
 	virtual bool Weapon_Switch( CBaseCombatWeapon *pWeapon, int viewmodelindex = 0);
 	virtual bool BumpWeapon( CBaseCombatWeapon *pWeapon );
-	virtual void ChangeTeam( int iTeam );
+	virtual void ChangeTeam( int iTeam ) OVERRIDE;
 	virtual void PickupObject ( CBaseEntity *pObject, bool bLimitMassAndSize );
 	virtual void PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, float fvol, bool force );
 	virtual void Weapon_Drop( CBaseCombatWeapon *pWeapon, const Vector *pvecTarget = NULL, const Vector *pVelocity = NULL );
@@ -126,6 +130,8 @@ public:
 	void  SetupPlayerSoundsByModel( const char *pModelName );
 	const char *GetPlayerModelSoundPrefix( void );
 	int	  GetPlayerModelType( void ) { return m_iPlayerSoundType;	}
+
+	int	GetMaxAmmo( int iAmmoIndex ) const;
 	
 	void  DetonateTripmines( void );
 
@@ -159,7 +165,8 @@ public:
 
 	virtual bool	CanHearAndReadChatFrom( CBasePlayer *pPlayer );
 
-		
+	bool IsThreatAimingTowardMe( CBaseEntity* threat, float cosTolerance = 0.8f ) const;
+	bool IsThreatFiringAtMe( CBaseEntity* threat ) const;
 private:
 
 	CHL2MPPlayerAnimState *m_PlayerAnimState;

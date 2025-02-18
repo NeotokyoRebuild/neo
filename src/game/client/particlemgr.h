@@ -119,8 +119,8 @@ entities. Each one is useful under different conditions.
 #include "tier0/fasttimer.h"
 #include "utllinkedlist.h"
 #include "utldict.h"
-#ifdef WIN32
-#include <typeinfo>
+#if defined( WIN32 ) && _MSC_VER <= 1920
+#include <typeinfo.h>
 #else
 #include <typeinfo>
 #endif

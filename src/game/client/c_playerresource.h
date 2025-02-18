@@ -33,7 +33,7 @@ public:
 					C_PlayerResource();
 	virtual			~C_PlayerResource();
 
-public : // IGameResources intreface
+public : // IGameResources interface
 
 	// Team data access 
 	virtual int		GetTeamScore( int index );
@@ -66,31 +66,38 @@ public : // IGameResources intreface
 	virtual void ClientThink();
 	virtual	void	OnDataChanged(DataUpdateType_t updateType);
 
+	virtual int		GetUserID( int index );
+
+	uint32 GetAccountID( int iIndex );
+	bool IsValid( int iIndex );
+
 protected:
 	void	UpdatePlayerName( int slot );
 
 	// Data for each player that's propagated to all clients
 	// Stored in individual arrays so they can be sent down via datatables
-	string_t	m_szName[MAX_PLAYERS+1];
-	int		m_iPing[MAX_PLAYERS+1];
+	string_t	m_szName[MAX_PLAYERS_ARRAY_SAFE];
+	int		m_iPing[MAX_PLAYERS_ARRAY_SAFE];
 #ifdef NEO
-	int		m_iXP[MAX_PLAYERS + 1];
-	int     m_iClass[MAX_PLAYERS + 1];
-	char    m_szNeoName[MAX_PLAYERS + 1][MAX_PLAYER_NAME_LENGTH];
-	int     m_iNeoNameDupeIdx[MAX_PLAYERS + 1];
-	char    m_szDispNameWDupeIdx[MAX_PLAYERS + 1][MAX_PLAYER_NAME_LENGTH + 10];  // Non-networked, includes dupe index
-	int     m_iStar[MAX_PLAYERS + 1];
-	char    m_szNeoClantag[MAX_PLAYERS + 1][NEO_MAX_CLANTAG_LENGTH];
+	int		m_iXP[MAX_PLAYERS_ARRAY_SAFE];
+	int     m_iClass[MAX_PLAYERS_ARRAY_SAFE];
+	char    m_szNeoName[MAX_PLAYERS_ARRAY_SAFE][MAX_PLAYER_NAME_LENGTH];
+	int     m_iNeoNameDupeIdx[MAX_PLAYERS_ARRAY_SAFE];
+	char    m_szDispNameWDupeIdx[MAX_PLAYERS_ARRAY_SAFE][MAX_PLAYER_NAME_LENGTH + 10];  // Non-networked, includes dupe index
+	int     m_iStar[MAX_PLAYERS_ARRAY_SAFE];
+	char    m_szNeoClantag[MAX_PLAYERS_ARRAY_SAFE][NEO_MAX_CLANTAG_LENGTH];
 #endif
-	int		m_iScore[MAX_PLAYERS+1];
-	int		m_iDeaths[MAX_PLAYERS+1];
-	bool	m_bConnected[MAX_PLAYERS+1];
-	int		m_iTeam[MAX_PLAYERS+1];
-	bool	m_bAlive[MAX_PLAYERS+1];
-	int		m_iHealth[MAX_PLAYERS+1];
+	int		m_iScore[MAX_PLAYERS_ARRAY_SAFE];
+	int		m_iDeaths[MAX_PLAYERS_ARRAY_SAFE];
+	bool	m_bConnected[MAX_PLAYERS_ARRAY_SAFE];
+	int		m_iTeam[MAX_PLAYERS_ARRAY_SAFE];
+	bool	m_bAlive[MAX_PLAYERS_ARRAY_SAFE];
+	int		m_iHealth[MAX_PLAYERS_ARRAY_SAFE];
 	Color	m_Colors[MAX_TEAMS];
+	uint32	m_iAccountID[MAX_PLAYERS_ARRAY_SAFE];
+	bool	m_bValid[MAX_PLAYERS_ARRAY_SAFE];
+	int		m_iUserID[MAX_PLAYERS_ARRAY_SAFE];
 	string_t m_szUnconnectedName;
-
 };
 
 extern C_PlayerResource *g_PR;

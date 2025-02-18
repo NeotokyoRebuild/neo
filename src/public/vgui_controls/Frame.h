@@ -137,6 +137,8 @@ public:
 	TextImage *TITitlePtr() { return _title; }
 #endif
 
+	bool FrameHasFocus() const { return m_bHasFocus; }
+
 protected:
 	// Respond to mouse presses
 	virtual void OnMousePressed(MouseCode code);

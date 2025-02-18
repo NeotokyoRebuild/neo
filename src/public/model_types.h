@@ -22,8 +22,9 @@
 #define STUDIO_ITEM_BLINK				0x00000040
 #define STUDIO_NOSHADOWS				0x00000080
 #define STUDIO_WIREFRAME_VCOLLIDE		0x00000100
+#define STUDIO_NO_OVERRIDE_FOR_ATTACH	0x00000200
 #ifdef NEO
-#define STUDIO_IGNORE_NEO_EFFECTS		0x00000200
+#define STUDIO_IGNORE_NEO_EFFECTS		0x00000400
 #endif
 
 // Not a studio flag, but used to flag when we want studio stats

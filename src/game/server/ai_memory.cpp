@@ -176,7 +176,7 @@ CAI_Enemies::~CAI_Enemies()
 AI_EnemyInfo_t *CAI_Enemies::GetFirst( AIEnemiesIter_t *pIter )
 {
 	CMemMap::IndexType_t i = m_Map.FirstInorder();
-	*pIter = (AIEnemiesIter_t)(unsigned)i;
+	*pIter = (AIEnemiesIter_t)(uintp)i;
 
 	if ( i == m_Map.InvalidIndex() )
 		return NULL;
@@ -191,13 +191,13 @@ AI_EnemyInfo_t *CAI_Enemies::GetFirst( AIEnemiesIter_t *pIter )
 
 AI_EnemyInfo_t *CAI_Enemies::GetNext( AIEnemiesIter_t *pIter )
 {
-	CMemMap::IndexType_t i = (CMemMap::IndexType_t)((unsigned)(*pIter));
+	CMemMap::IndexType_t i = size_cast< CMemMap::IndexType_t >( (uintp)(*pIter) );
 
 	if ( i == m_Map.InvalidIndex() )
 		return NULL;
 
 	i = m_Map.NextInorder( i );
-	*pIter = (AIEnemiesIter_t)(unsigned)i;
+	*pIter = size_cast< AIEnemiesIter_t >( (uintp)i );
 	if ( i == m_Map.InvalidIndex() )
 		return NULL;
 
@@ -546,11 +546,10 @@ bool CAI_Enemies::HasFreeKnowledgeOf( CBaseEntity *pEnemy )
 
 	if ( pEnemy != AI_UNKNOWN_ENEMY )
 		DevWarning( 2,"Asking HasFreeKnowledgeOf for enemy that's not in my memory!!\n");
-#ifdef NEO	// NEO NOTE (nullsystem): Keep close to original behavior even if it seems odd. Just cast it for C++20
-	return static_cast<bool>(AI_INVALID_TIME);
-#else
-	return AI_INVALID_TIME;
-#endif
+
+	// misyl: Was the below, which evaluates to 'true' after casting, but this should likely be false...
+	//return AI_INVALID_TIME;
+	return false;
 }
 
 //-----------------------------------------------------------------------------
