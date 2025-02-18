@@ -127,9 +127,9 @@ ConVar neo_sv_pausematch_unpauseimmediate("neo_sv_pausematch_unpauseimmediate", 
 
 static void neoSvCompCallback(IConVar* var, const char* pOldValue, float flOldValue)
 {
-	const float flCurrentValue = !flOldValue;
-	neo_sv_readyup_lobby.SetValue(flCurrentValue);
-	mp_forcecamera.SetValue(flCurrentValue); // 0 = OBS_ALLOWS_ALL, 1 = OBS_ALLOW_TEAM. For strictly original neotokyo spectator experience, 2 = OBS_ALLOW_NONE
+	const bool bCurrentValue = !(bool)flOldValue;
+	neo_sv_readyup_lobby.SetValue(bCurrentValue);
+	mp_forcecamera.SetValue(bCurrentValue); // 0 = OBS_ALLOWS_ALL, 1 = OBS_ALLOW_TEAM. For strictly original neotokyo spectator experience, 2 = OBS_ALLOW_NONE
 }
 
 ConVar neo_sv_comp("neo_sv_comp", "0", FCVAR_REPLICATED, "Enables competitive gamerules", true, 0.f, true, 1.f, neoSvCompCallback);
@@ -2728,7 +2728,7 @@ bool CNEORules::RoundIsMatchPoint() const
 	if (teamJinrai && teamNSF && neo_round_limit.GetInt() != 0)
 	{
 		if (RoundIsInSuddenDeath()) return false;
-		const int roundDiff = neo_round_limit.GetInt() - (m_iRoundNumber);
+		const int roundDiff = neo_round_limit.GetInt() - m_iRoundNumber;
 		if ((teamJinrai->GetRoundsWon() + 1) > (teamNSF->GetRoundsWon() + roundDiff)) return true;
 		if ((teamNSF->GetRoundsWon() + 1) > (teamJinrai->GetRoundsWon() + roundDiff)) return true;
 		return false;
@@ -2802,7 +2802,7 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 			bool earlyWin = false;
 			if (!RoundIsInSuddenDeath())
 			{
-				const int roundDiff = neo_round_limit.GetInt() - (m_iRoundNumber);
+				const int roundDiff = neo_round_limit.GetInt() - m_iRoundNumber;
 				earlyWin = (earlyWin || (teamJinrai->GetRoundsWon() > (teamNSF->GetRoundsWon() + roundDiff)));
 				earlyWin = (earlyWin || (teamNSF->GetRoundsWon() > (teamJinrai->GetRoundsWon() + roundDiff)));
 			}
