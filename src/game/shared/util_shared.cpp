@@ -286,6 +286,12 @@ CTraceFilterSimple::CTraceFilterSimple( const IHandleEntity *passedict, int coll
 }
 
 #ifdef NEO
+enum NeoPlayerCollisionsType
+{
+	NEO_PLAYER_COLLISIONS_TYPE_NONE = 0,
+	NEO_PLAYER_COLLISIONS_TYPE_BOOSTING,
+	NEO_PLAYER_COLLISIONS_TYPE_ENEMY
+};
 ConVar sv_neo_player_collisions("sv_neo_player_collisions", "0", FCVAR_REPLICATED, "Player collisions. None=0, Boosting=1, Enemy=2, Both=3", true, 0, true, 3);
 ConVar sv_neo_player_collisions_boosting_overlap("sv_neo_player_collisions_boosting_overlap", "-0.5", FCVAR_REPLICATED, "Difference above this value between collision box max z value of bottom player and origin z value of top player will enable collision");
 #endif
@@ -317,14 +323,14 @@ bool CTraceFilterSimple::ShouldHitEntity( IHandleEntity *pHandleEntity, int cont
 		const CBaseEntity *pEntity2 = EntityFromEntityHandle(m_pPassEnt);
 		if (pEntity2 && pEntity2->IsPlayer())
 		{
-			if (sv_neo_player_collisions.GetInt() & 2)
+			if (sv_neo_player_collisions.GetInt() & NEO_PLAYER_COLLISIONS_TYPE_ENEMY)
 			{
 				if (pEntity->GetTeamNumber() != pEntity2->GetTeamNumber())
 				{
 					return true;
 				}
 			}
-			if (sv_neo_player_collisions.GetInt() & 1)
+			if (sv_neo_player_collisions.GetInt() & NEO_PLAYER_COLLISIONS_TYPE_BOOSTING)
 			{
 				if (pEntity->GetAbsOrigin().z > pEntity2->GetAbsOrigin().z)
 				{ // pEntity is always the entity with a lower z value to pEntity 2
