@@ -858,7 +858,15 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 	}
 
 	if (!(GetNeoWepBits() & NEO_WEP_SUPPRESSED))
+	{
 		pPlayer->DoMuzzleFlash();
+#ifdef GAME_DLL
+		if (pPlayer->m_bInThermOpticCamo)
+		{
+			pPlayer->CloakFlash(0.1);
+		}
+#endif // GAME_DLL
+	}
 
 	SendWeaponAnim(GetPrimaryAttackActivity());
 	SetWeaponIdleTime(gpGlobals->curtime + 2.0);
