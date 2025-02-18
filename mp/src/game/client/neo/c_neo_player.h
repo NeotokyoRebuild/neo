@@ -27,6 +27,16 @@ public:
 	virtual ~C_NEO_Player();
 
 	static C_NEO_Player *GetLocalNEOPlayer() { return static_cast<C_NEO_Player*>(C_BasePlayer::GetLocalPlayer()); }
+	static C_NEO_Player *GetTargetNEOPlayer()
+	{ // Returns the player we are spectating, or local player if not spectating anyone
+		auto localNeoPlayer = GetLocalNEOPlayer();
+		if (localNeoPlayer->IsObserver())
+		{ // NEOTOD (Adam) clear m_hObserverTarget instead when exiting observer mode?
+			auto targetNeoPlayer = static_cast<C_NEO_Player*>(localNeoPlayer->GetObserverTarget());
+			if (targetNeoPlayer) { return targetNeoPlayer; }
+		}
+		return localNeoPlayer;
+	}
 
 	virtual int DrawModel( int flags );
 	virtual void AddEntity( void );
@@ -64,6 +74,7 @@ public:
 
 	virtual void ClientThink( void );
 	virtual void PreThink( void );
+	virtual void CalculateSpeed( void );
 	virtual void PostThink( void );
 	virtual void Spawn( void );
 
@@ -111,7 +122,6 @@ public:
 
 private:
 	float GetActiveWeaponSpeedScale() const;
-	float GetBackwardsMovementPenaltyScale() const { return ((m_nButtons & IN_BACK) ? NEO_SLOW_MODIFIER : 1.0); }
 
 	bool HandleDeathSpecCamSwitch(Vector& eyeOrigin, QAngle& eyeAngles, float& fov);
 
@@ -168,6 +178,7 @@ private:
 	void CheckVisionButtons();
 	void CheckLeanButtons();
 	void PlayCloakSound();
+	void SetCloakState(bool state);
 
 	bool IsAllowedToSuperJump(void);
 
@@ -189,12 +200,14 @@ public:
 
 	CNetworkVar(float, m_flCamoAuxLastTime);
 	CNetworkVar(int, m_nVisionLastTick);
+	CNetworkVar(float, m_flJumpLastTime);
 
 	CNetworkVar(bool, m_bInThermOpticCamo);
 	CNetworkVar(bool, m_bLastTickInThermOpticCamo);
 	CNetworkVar(bool, m_bInVision);
 	CNetworkVar(bool, m_bInAim);
 	CNetworkVar(int, m_bInLean);
+	CNetworkVar(bool, m_bCarryingGhost);
 	CNetworkVar(bool, m_bIneligibleForLoadoutPick);
 
 	CNetworkVar(int, m_iNeoClass);

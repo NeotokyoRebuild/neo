@@ -68,9 +68,13 @@ public:
 	int UpdateTransmitState() OVERRIDE;
 
 	bool IsGhostCaptured(int &outTeamNumber, int &outCaptorClientIndex);
+
+private:
+	COutputEvent m_OnCap;
 #endif
 
 #ifdef GAME_DLL
+public:
 	void Think_CheckMyRadius(void); // NEO FIXME (Rain): this should be private
 #endif
 

@@ -253,8 +253,6 @@ public:
 	virtual void ItemHolsterFrame() override;
 	virtual bool ShouldDraw(void) override;
 	virtual int DrawModel(int flags) override;
-	virtual int InternalDrawModel(int flags) override;
-	virtual ShadowType_t ShadowCastType(void) override;
 	virtual RenderGroup_t GetRenderGroup() override;
 	virtual bool UsesPowerOfTwoFrameBufferTexture() override;
 #endif
@@ -273,7 +271,7 @@ protected:
 	virtual void UpdateInaccuracy(void);
 	virtual float GetAccuracyPenalty() const { return 0.8; }
 	virtual float GetMaxAccuracyPenalty() const { return 1.0; }
-	virtual float GetAccuracyPenaltyDecay() const { return 1.2; }
+	virtual float GetAccuracyPenaltyDecay();
 	virtual float GetFastestDryRefireTime() const { Assert(false); return 0; } // Should never call this base class; implement in children.
 
 protected:

@@ -709,7 +709,11 @@ void CBaseCombatWeapon::Drop( const Vector &vecVelocity )
 	// clear follow stuff, setup for collision
 	SetGravity(1.0);
 	m_iState = WEAPON_NOT_CARRIED;
+#ifdef NEO
+	RemoveEffects(EF_NODRAW | EF_NOSHADOW);
+#else
 	RemoveEffects( EF_NODRAW );
+#endif
 	FallInit();
 	SetGroundEntity( NULL );
 	SetThink( &CBaseCombatWeapon::SetPickupTouch );
@@ -1400,7 +1404,7 @@ bool CBaseCombatWeapon::ReloadOrSwitchWeapons( void )
 		if ( UsesClipsForAmmo1() && !AutoFiresFullClip() && 
 			 (m_iClip1 == 0) && 
 			 (GetWeaponFlags() & ITEM_FLAG_NOAUTORELOAD) == false && 
-			 m_flNextPrimaryAttack < gpGlobals->curtime && 
+			 m_flNextPrimaryAttack < gpGlobals->curtime &&
 			 m_flNextSecondaryAttack < gpGlobals->curtime )
 		{
 			// if we're successfully reloading, we're done
@@ -1526,7 +1530,9 @@ bool CBaseCombatWeapon::Holster( CBaseCombatWeapon *pSwitchingTo )
 	else
 	{
 		// Hide the weapon when the holster animation's finished
+#ifndef NEO
 		SetContextThink( &CBaseCombatWeapon::HideThink, gpGlobals->curtime + flSequenceDuration, HIDEWEAPON_THINK_CONTEXT );
+#endif // NEO
 	}
 
 	// if we were displaying a hud hint, squelch it.

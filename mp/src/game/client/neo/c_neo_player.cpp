@@ -10,6 +10,7 @@
 #include "dlight.h"
 
 #include "iinput.h"
+#include "in_main.h"
 
 #include "clientmode_hl2mpnormal.h"
 #include <vgui/IScheme.h>
@@ -77,6 +78,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 
 	RecvPropTime(RECVINFO(m_flCamoAuxLastTime)),
 	RecvPropInt(RECVINFO(m_nVisionLastTick)),
+	RecvPropTime(RECVINFO(m_flJumpLastTime)),
 
 	RecvPropArray(RecvPropVector(RECVINFO(m_rvFriendlyPlayerPositions[0])), m_rvFriendlyPlayerPositions),
 	RecvPropArray(RecvPropInt(RECVINFO(m_rfAttackersScores[0])), m_rfAttackersScores),
@@ -108,6 +110,7 @@ BEGIN_PREDICTION_DATA(C_NEO_Player)
 	DEFINE_PRED_FIELD(m_bHasBeenAirborneForTooLongToSuperJump, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 
 	DEFINE_PRED_FIELD(m_nVisionLastTick, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD_TOL(m_flJumpLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
 END_PREDICTION_DATA()
 
 static void __MsgFunc_DamageInfo(bf_read& msg)
@@ -216,6 +219,10 @@ public:
 #if DEBUG
 		DevMsg("Loadout access cb\n");
 #endif
+		if (engine->IsPlayingDemo())
+		{
+			return;
+		}
 
 		auto team = GetLocalPlayerTeam();
 		if(team < FIRST_GAME_TEAM)
@@ -291,6 +298,11 @@ class NeoClassMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback(const CCommand& command)
 	{
+		if (engine->IsPlayingDemo())
+		{
+			return;
+		}
+
 		auto team = GetLocalPlayerTeam();
 		if(team < FIRST_GAME_TEAM)
 		{
@@ -351,6 +363,11 @@ class NeoTeamMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback( const CCommand &command )
 	{
+		if (engine->IsPlayingDemo())
+		{
+			return;
+		}
+
 		if (!g_pNeoTeamMenu)
 		{
 			Assert(false);
@@ -417,10 +434,10 @@ public:
 };
 VguiCancel_Cb vguiCancel_Cb;
 
-ConCommand loadoutmenu("loadoutmenu", &neoLoadoutMenu_Cb, "Open weapon loadout selection menu.", FCVAR_USERINFO);
-ConCommand classmenu("classmenu", &neoClassMenu_Cb, "Open class selection menu.", FCVAR_USERINFO);
-ConCommand teammenu("teammenu", &neoTeamMenu_Cb, "Open team selection menu.", FCVAR_USERINFO);
-ConCommand vguicancel("vguicancel", &vguiCancel_Cb, "Cancel current vgui screen.", FCVAR_USERINFO);
+ConCommand loadoutmenu("loadoutmenu", &neoLoadoutMenu_Cb, "Open weapon loadout selection menu.", FCVAR_USERINFO | FCVAR_DONTRECORD);
+ConCommand classmenu("classmenu", &neoClassMenu_Cb, "Open class selection menu.", FCVAR_USERINFO | FCVAR_DONTRECORD);
+ConCommand teammenu("teammenu", &neoTeamMenu_Cb, "Open team selection menu.", FCVAR_USERINFO | FCVAR_DONTRECORD);
+ConCommand vguicancel("vguicancel", &vguiCancel_Cb, "Cancel current vgui screen.", FCVAR_USERINFO | FCVAR_DONTRECORD);
 
 C_NEO_Player::C_NEO_Player()
 {
@@ -439,6 +456,7 @@ C_NEO_Player::C_NEO_Player()
 	m_bInThermOpticCamo = m_bInVision = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
 	m_bInAim = false;
+	m_bCarryingGhost = false;
 	m_bIneligibleForLoadoutPick = false;
 	m_bInLean = NEO_LEAN_NONE;
 
@@ -477,9 +495,13 @@ void C_NEO_Player::CheckThermOpticButtons()
 			return;
 		}
 
-		if (m_HL2Local.m_cloakPower >= CLOAK_AUX_COST)
+		if (!m_bInThermOpticCamo && m_HL2Local.m_cloakPower >= MIN_CLOAK_AUX)
 		{
-			m_bInThermOpticCamo = !m_bInThermOpticCamo;
+			SetCloakState( true );
+		}
+		else
+		{
+			SetCloakState( false );
 		}
 	}
 
@@ -532,13 +554,13 @@ void C_NEO_Player::CheckLeanButtons()
 	{
 		return;
 	}
-	
+
 	m_bInLean = NEO_LEAN_NONE;
-	if ((m_nButtons & IN_LEAN_LEFT) && !(m_nButtons & IN_LEAN_RIGHT))
+	if ((m_nButtons & IN_LEAN_LEFT) && !(m_nButtons & IN_LEAN_RIGHT || IsSprinting()))
 	{
 		m_bInLean = NEO_LEAN_LEFT;
 	}
-	else if ((m_nButtons & IN_LEAN_RIGHT) && !(m_nButtons & IN_LEAN_LEFT))
+	else if ((m_nButtons & IN_LEAN_RIGHT) && !(m_nButtons & IN_LEAN_LEFT || IsSprinting()))
 	{
 		m_bInLean = NEO_LEAN_RIGHT;
 	}
@@ -636,6 +658,9 @@ int C_NEO_Player::GetAttackerHits(const int attackerIdx) const
 }
 
 extern ConVar mat_neo_toc_test;
+#ifdef GLOWS_ENABLE
+extern ConVar glow_outline_effect_enable;
+#endif // GLOWS_ENABLE
 int C_NEO_Player::DrawModel(int flags)
 {
 	if (flags & STUDIO_IGNORE_NEO_EFFECTS || !(flags & STUDIO_RENDER))
@@ -643,15 +668,18 @@ int C_NEO_Player::DrawModel(int flags)
 		return BaseClass::DrawModel(flags);
 	}
 
-	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if (!pLocalPlayer)
+#ifdef GLOWS_ENABLE
+	auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetTargetNEOPlayer();
+#else
+	auto pTargetPlayer = C_NEO_Player::GetTargetNEOPlayer();
+#endif // GLOWS_ENABLE
+	if (!pTargetPlayer)
 	{
 		Assert(false);
 		return BaseClass::DrawModel(flags);
 	}
 	
-	bool inMotionVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT;
-	bool inThermalVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT;
+	bool inThermalVision = pTargetPlayer ? (pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT) : false;
 
 	int ret = 0;
 	if (!IsCloaked() || inThermalVision)
@@ -668,18 +696,9 @@ int C_NEO_Player::DrawModel(int flags)
 		modelrender->ForcedMaterialOverride(nullptr);
 	}
 
-	auto vel = GetAbsVelocity().Length();
-	if (inMotionVision && vel > 0.5) // MOVING_SPEED_MINIMUM
-	{
-		IMaterial* pass = materials->FindMaterial("dev/motion_third", TEXTURE_GROUP_MODEL);
-		modelrender->ForcedMaterialOverride(pass);
-		ret |= BaseClass::DrawModel(flags);
-		modelrender->ForcedMaterialOverride(nullptr);
-	}
-
 	else if (inThermalVision && !IsCloaked())
 	{
-		IMaterial* pass = materials->FindMaterial("dev/thermal_third", TEXTURE_GROUP_MODEL);
+		IMaterial* pass = materials->FindMaterial("dev/thermal_model", TEXTURE_GROUP_MODEL);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::DrawModel(flags);
 		modelrender->ForcedMaterialOverride(nullptr);
@@ -808,15 +827,18 @@ void C_NEO_Player::PlayStepSound( Vector &vecOrigin,
 	BaseClass::PlayStepSound(vecOrigin, psurface, fvol, force);
 }
 
-extern ConVar sv_infinite_aux_power;
-
-void C_NEO_Player::PreThink( void )
+extern ConVar neo_ghost_bhopping;
+void C_NEO_Player::CalculateSpeed(void)
 {
-	BaseClass::PreThink();
-
 	float speed = GetNormSpeed();
+
+	if (auto pNeoWep = static_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon()))
+	{
+		speed *= pNeoWep->GetSpeedScale();
+	}
+
 	static constexpr float DUCK_WALK_SPEED_MODIFIER = 0.75;
-	if (m_nButtons & IN_DUCK)
+	if (GetFlags() & FL_DUCKING)
 	{
 		speed *= DUCK_WALK_SPEED_MODIFIER;
 	}
@@ -824,33 +846,52 @@ void C_NEO_Player::PreThink( void )
 	{
 		speed *= DUCK_WALK_SPEED_MODIFIER;
 	}
-	if (IsSprinting() && !IsAirborne())
+	if (IsSprinting())
 	{
-		static constexpr float RECON_SPRINT_SPEED_MODIFIER = 0.75;
-		static constexpr float OTHER_CLASSES_SPRINT_SPEED_MODIFIER = 0.6;
-		speed /= m_iNeoClass == NEO_CLASS_RECON ? RECON_SPRINT_SPEED_MODIFIER : OTHER_CLASSES_SPRINT_SPEED_MODIFIER;
+		static constexpr float RECON_SPRINT_SPEED_MODIFIER = 1.35;
+		static constexpr float OTHER_CLASSES_SPRINT_SPEED_MODIFIER = 1.6;
+		speed *= m_iNeoClass == NEO_CLASS_RECON ? RECON_SPRINT_SPEED_MODIFIER : OTHER_CLASSES_SPRINT_SPEED_MODIFIER;
 	}
 	if (IsInAim())
 	{
 		static constexpr float AIM_SPEED_MODIFIER = 0.6;
 		speed *= AIM_SPEED_MODIFIER;
 	}
-	if (auto pNeoWep = static_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon()))
-	{
-		speed *= pNeoWep->GetSpeedScale();
-	}
 
-	if (!IsAirborne() && m_iNeoClass != NEO_CLASS_RECON)
+	Vector absoluteVelocity = GetAbsVelocity();
+	absoluteVelocity.z = 0.f;
+	float currentSpeed = absoluteVelocity.Length();
+
+	if (!neo_ghost_bhopping.GetBool() && GetMoveType() != MOVETYPE_LADDER && currentSpeed > speed && m_bCarryingGhost)
 	{
-		const float deltaTime = gpGlobals->curtime - m_flLastAirborneJumpOkTime;
-		const float leeway = 1.0f;
-		if (deltaTime < leeway)
+		float overSpeed = currentSpeed - speed;
+		absoluteVelocity.NormalizeInPlace();
+		absoluteVelocity *= -overSpeed;
+		ApplyAbsVelocityImpulse(absoluteVelocity);
+	}
+	speed = MAX(speed, 55);
+
+	// Slowdown after jumping
+	if (m_iNeoClass != NEO_CLASS_RECON)
+	{
+		const float timeSinceJumping = gpGlobals->curtime - m_flJumpLastTime;
+		constexpr float SLOWDOWN_TIME = 1.15f;
+		if (timeSinceJumping < SLOWDOWN_TIME)
 		{
-			speed = (speed / 2) + (deltaTime / 2 * (speed));
+			speed = MAX(75, speed * (1 - ((SLOWDOWN_TIME - timeSinceJumping) * 1.75)));
 		}
 	}
-	SetMaxSpeed(MAX(speed, 56));
-	
+	SetMaxSpeed(speed);
+}
+
+extern ConVar sv_infinite_aux_power;
+extern ConVar glow_outline_effect_enable;
+void C_NEO_Player::PreThink( void )
+{
+	BaseClass::PreThink();
+
+	CalculateSpeed();
+
 	CheckThermOpticButtons();
 	CheckVisionButtons();
 
@@ -860,14 +901,14 @@ void C_NEO_Player::PreThink( void )
 		{
 			// NEO TODO (Rain): add server style interface for accessor,
 			// so we can share code
-			if (m_HL2Local.m_cloakPower >= CLOAK_AUX_COST)
+			if (m_HL2Local.m_cloakPower >= MIN_CLOAK_AUX)
 			{
 				m_flCamoAuxLastTime = gpGlobals->curtime;
 			}
 		}
 		else
 		{
-			const float deltaTime = gpGlobals->curtime + gpGlobals->interpolation_amount - m_flCamoAuxLastTime;
+			const float deltaTime = gpGlobals->curtime - m_flCamoAuxLastTime;
 			if (deltaTime >= 1)
 			{
 				// NEO TODO (Rain): add interface for predicting this
@@ -878,9 +919,9 @@ void C_NEO_Player::PreThink( void )
 					m_HL2Local.m_cloakPower = 0.0f;
 				}
 
-				if (m_HL2Local.m_cloakPower < CLOAK_AUX_COST)
+				if (m_HL2Local.m_cloakPower < MIN_CLOAK_AUX)
 				{
-					m_bInThermOpticCamo = false;
+					SetCloakState(false);
 
 					m_HL2Local.m_cloakPower = 0.0f;
 					m_flCamoAuxLastTime = 0;
@@ -905,16 +946,9 @@ void C_NEO_Player::PreThink( void )
 			// NEO TODO (Adam) since the stuff in C_NEO_PLAYER::Spawn() only runs the first time a person spawns in the map, would it be worth moving some of the stuff from there here instead?
 #ifdef GLOWS_ENABLE
 			// Disable client side glow effects of all players
-			for (int i = 1; i <= gpGlobals->maxClients; i++)
-			{
-				if (auto player = UTIL_PlayerByIndex(i))
-				{
-					player->SetClientSideGlowEnabled(false);
-				}
-			}
+			glow_outline_effect_enable.SetValue(false);
 #endif // GLOWS_ENABLE
 		}
-		Lean();
 	}
 	else
 	{
@@ -922,6 +956,11 @@ void C_NEO_Player::PreThink( void )
 		{
 			m_bFirstAliveTick = true;
 		}
+	}
+
+	if (IsAlive() || m_vecLean != vec3_origin)
+	{
+		Lean();
 	}
 
 	// Eek. See rationale for this thing in CNEO_Player::PreThink
@@ -1048,7 +1087,7 @@ void C_NEO_Player::PostThink(void)
 
 			Weapon_SetZoom(false);
 			m_bInVision = false;
-			m_bInLean = NEO_LEAN_NONE;
+			IN_LeanReset();
 
 			if (IsLocalPlayer() && (GetTeamNumber() == TEAM_JINRAI || GetTeamNumber() == TEAM_NSF))
 			{
@@ -1130,7 +1169,7 @@ void C_NEO_Player::PostThink(void)
 		{
 			Weapon_SetZoom(false);
 		}
-		else if (m_afButtonPressed & IN_AIM)
+		else if (clientAimHold ? (m_nButtons & IN_AIM && !IsInAim()) : m_afButtonPressed & IN_AIM)
 		{
 			if (!CanSprint() || !(m_nButtons & IN_SPEED))
 			{
@@ -1305,7 +1344,7 @@ void C_NEO_Player::Spawn( void )
 			}
 		}
 
-		if (GetTeamNumber() == TEAM_UNASSIGNED)
+		if (GetTeamNumber() == TEAM_UNASSIGNED && !engine->IsLevelMainMenuBackground())
 		{
 			engine->ClientCmd(teammenu.GetName());
 		}
@@ -1442,15 +1481,15 @@ float C_NEO_Player::GetCrouchSpeed(void) const
 	switch (m_iNeoClass)
 	{
 	case NEO_CLASS_RECON:
-		return NEO_RECON_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_RECON_CROUCH_SPEED;
 	case NEO_CLASS_ASSAULT:
-		return NEO_ASSAULT_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_ASSAULT_CROUCH_SPEED;
 	case NEO_CLASS_SUPPORT:
-		return NEO_SUPPORT_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_SUPPORT_CROUCH_SPEED;
 	case NEO_CLASS_VIP:
-		return NEO_VIP_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_VIP_CROUCH_SPEED;
 	default:
-		return NEO_BASE_CROUCH_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_BASE_CROUCH_SPEED;
 	}
 }
 
@@ -1459,15 +1498,15 @@ float C_NEO_Player::GetNormSpeed(void) const
 	switch (m_iNeoClass)
 	{
 	case NEO_CLASS_RECON:
-		return NEO_RECON_NORM_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_RECON_NORM_SPEED;
 	case NEO_CLASS_ASSAULT:
-		return NEO_ASSAULT_NORM_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_ASSAULT_NORM_SPEED;
 	case NEO_CLASS_SUPPORT:
-		return NEO_SUPPORT_NORM_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_SUPPORT_NORM_SPEED;
 	case NEO_CLASS_VIP:
-		return NEO_VIP_NORM_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_VIP_NORM_SPEED;
 	default:
-		return NEO_BASE_NORM_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_BASE_NORM_SPEED;
 	}
 }
 
@@ -1476,15 +1515,15 @@ float C_NEO_Player::GetWalkSpeed(void) const
 	switch (m_iNeoClass)
 	{
 	case NEO_CLASS_RECON:
-		return NEO_RECON_WALK_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_RECON_WALK_SPEED;
 	case NEO_CLASS_ASSAULT:
-		return NEO_ASSAULT_WALK_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_ASSAULT_WALK_SPEED;
 	case NEO_CLASS_SUPPORT:
-		return NEO_SUPPORT_WALK_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_SUPPORT_WALK_SPEED;
 	case NEO_CLASS_VIP:
-		return NEO_VIP_WALK_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_VIP_WALK_SPEED;
 	default:
-		return NEO_BASE_WALK_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_BASE_WALK_SPEED;
 	}
 }
 
@@ -1493,15 +1532,15 @@ float C_NEO_Player::GetSprintSpeed(void) const
 	switch (m_iNeoClass)
 	{
 	case NEO_CLASS_RECON:
-		return NEO_RECON_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_RECON_SPRINT_SPEED;
 	case NEO_CLASS_ASSAULT:
-		return NEO_ASSAULT_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_ASSAULT_SPRINT_SPEED;
 	case NEO_CLASS_SUPPORT:
-		return NEO_SUPPORT_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_SUPPORT_SPRINT_SPEED;
 	case NEO_CLASS_VIP:
-		return NEO_VIP_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_VIP_SPRINT_SPEED;
 	default:
-		return NEO_BASE_SPRINT_SPEED * GetBackwardsMovementPenaltyScale();
+		return NEO_BASE_SPRINT_SPEED;
 	}
 }
 
@@ -1623,6 +1662,22 @@ void C_NEO_Player::PlayCloakSound(void)
 	params.m_nChannel = CHAN_VOICE;
 
 	EmitSound(filter, entindex(), params);
+}
+
+void C_NEO_Player::SetCloakState(bool state)
+{
+	m_bInThermOpticCamo = state;
+
+	void (CBaseCombatWeapon:: * setShadowState)(int) = m_bInThermOpticCamo ? &CBaseCombatWeapon::AddEffects 
+																		   : &CBaseCombatWeapon::RemoveEffects;
+
+	for (int i = 0; i < MAX_WEAPONS; i++)
+	{
+		if (CBaseCombatWeapon* weapon = GetWeapon(i))
+		{
+			(weapon->*setShadowState)(EF_NOSHADOW);
+		}
+	}
 }
 
 void C_NEO_Player::PreDataUpdate(DataUpdateType_t updateType)

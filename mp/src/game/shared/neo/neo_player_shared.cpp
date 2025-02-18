@@ -39,6 +39,8 @@ ConVar neo_aim_hold("neo_aim_hold", "0", FCVAR_USERINFO | FCVAR_ARCHIVE, "Hold t
 ConVar neo_recon_superjump_intensity("neo_recon_superjump_intensity", "250", FCVAR_REPLICATED | FCVAR_CHEAT,
 	"Recon superjump intensity multiplier.", true, 1.0, false, 0);
 
+ConVar neo_ghost_bhopping("neo_ghost_bhopping", "0", FCVAR_REPLICATED, "Allow ghost bunnyhopping", true, 0, true, 1);
+
 bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep)
 {
 	if (!pWep || pWep->m_bInReload || pWep->GetRoundBeingChambered())

@@ -50,6 +50,8 @@ using namespace vgui;
 ConVar neo_show_scoreboard_avatars("neo_show_scoreboard_avatars", "1", FCVAR_ARCHIVE, "Show avatars on scoreboard.", true, 0.0, true, 1.0 );
 extern ConVar neo_cl_streamermode;
 
+CNEOScoreBoard* g_pNeoScoreBoard = NULL;
+
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
@@ -93,11 +95,14 @@ CNEOScoreBoard::CNEOScoreBoard(IViewPort *pViewPort) : EditablePanel( NULL, PANE
 	ListenForGameEvent( "hltv_status" );
 	ListenForGameEvent( "server_spawn" );
 	ListenForGameEvent( "game_newmap" );
+	ListenForGameEvent( "player_team" );
 
 	m_pImageList = NULL;
 
 	m_mapAvatarsToImageList.SetLessFunc( DefLessFunc( CSteamID ) );
 	m_mapAvatarsToImageList.RemoveAll();
+
+	g_pNeoScoreBoard = this;
 }
 
 //-----------------------------------------------------------------------------
@@ -110,6 +115,8 @@ CNEOScoreBoard::~CNEOScoreBoard()
 		delete m_pImageList;
 		m_pImageList = NULL;
 	}
+
+	g_pNeoScoreBoard = nullptr;
 }
 
 //-----------------------------------------------------------------------------
@@ -196,6 +203,8 @@ void CNEOScoreBoard::ApplySchemeSettings( IScheme *pScheme )
 	m_pImageList = new ImageList( false );
 
 	m_mapAvatarsToImageList.RemoveAll();
+	// Repopulate image list with player avatars
+	UpdatePlayerInfo();
 
 	auto deadIcon = vgui::scheme()->GetImage("hud/kill_kill", true);
 	deadIcon->SetSize(32, 32);
@@ -269,6 +278,12 @@ bool CNEOScoreBoard::ShowAvatars()
 	return neo_show_scoreboard_avatars.GetBool() && !neo_cl_streamermode.GetBool();
 }
 
+extern ConVar neo_cl_squad_hud_original;
+bool CNEOScoreBoard::UpdateAvatars()
+{
+	return !neo_cl_streamermode.GetBool() && (neo_show_scoreboard_avatars.GetBool() || !neo_cl_squad_hud_original.GetBool());
+}
+
 void CNEOScoreBoard::FireGameEvent( IGameEvent *event )
 {
 	const char * type = event->GetName();
@@ -290,6 +305,9 @@ void CNEOScoreBoard::FireGameEvent( IGameEvent *event )
 			PostMessage( control, new KeyValues( "SetText", "text", hostname ) );
 			control->MoveToFront();
 		}
+
+		// Get avatars of all players already connected when joining a server
+		UpdatePlayerInfo();
 	}
 	else if (Q_strcmp(type, "game_newmap") == 0)
 	{
@@ -299,6 +317,15 @@ void CNEOScoreBoard::FireGameEvent( IGameEvent *event )
 		{
 			PostMessage(control, new KeyValues("SetText", "text", mapname));
 			control->MoveToFront();
+		}
+	}
+	else if (Q_strcmp(type, "player_team") == 0)
+	{
+		const int userid = event->GetInt("userid");
+		CBasePlayer* pPlayer = UTIL_PlayerByUserId(userid);
+		if (pPlayer)
+		{
+			UpdatePlayerAvatar(pPlayer->index, nullptr);
 		}
 	}
 
@@ -741,7 +768,7 @@ void CNEOScoreBoard::GetPlayerScoreInfo(int playerIndex, KeyValues *kv)
 void CNEOScoreBoard::UpdatePlayerAvatar( int playerIndex, KeyValues *kv )
 {
 	// Update their avatar
-	if ( kv && ShowAvatars() && steamapicontext->SteamFriends() && steamapicontext->SteamUtils() )
+	if (UpdateAvatars() && steamapicontext->SteamFriends() && steamapicontext->SteamUtils() )
 	{
 		player_info_t pi;
 		if ( engine->GetPlayerInfo( playerIndex, &pi ) )
@@ -767,7 +794,10 @@ void CNEOScoreBoard::UpdatePlayerAvatar( int playerIndex, KeyValues *kv )
 					iImageIndex = m_mapAvatarsToImageList[ iMapIndex ];
 				}
 
-				kv->SetInt( "avatar", iImageIndex );
+				if (kv)
+				{
+					kv->SetInt( "avatar", iImageIndex );
+				}
 			}
 		}
 	}
