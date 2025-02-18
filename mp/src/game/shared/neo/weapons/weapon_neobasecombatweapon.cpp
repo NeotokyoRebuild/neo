@@ -18,6 +18,7 @@ extern ConVar weaponstay;
 #include "hud_crosshair.h"
 #include "ui/neo_hud_crosshair.h"
 #include "model_types.h"
+#include "c_neo_player.h"
 #endif
 
 #include "basecombatweapon_shared.h"
@@ -508,7 +509,9 @@ void CNEOBaseCombatWeapon::ProcessAnimationEvents()
 		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
 	};
 
-	if (!m_bLowered && !m_bInReload && !m_bRoundBeingChambered &&
+	// NEO JANK (Adam) Why do we have to bombard the zr68l viewmodel with SendWeaponAnim(ACT_VM_IDLE_LOWERED) during sprint to make it act normally? Breakpoint in SendWeaponAnim isn't triggered by anything else after this animation is sent while sprinting
+	const bool loweredCheck = GetNeoWepBits() & NEO_WEP_ZR68_L ? true : !m_bLowered;
+	if (loweredCheck && !m_bInReload && !m_bRoundBeingChambered &&
 		(pOwner->IsSprinting() || pOwner->GetMoveType() == MOVETYPE_LADDER))
 	{
 		m_bLowered = true;
@@ -609,17 +612,31 @@ void CNEOBaseCombatWeapon::ItemPostFrame(void)
 		}
 	}
 
+	if (!bFired && (pOwner->m_afButtonPressed & IN_ATTACK))
+	{
+		if (!IsMeleeWeapon() &&
+			((UsesClipsForAmmo1() && m_iClip1 <= 0) || (!UsesClipsForAmmo1() && m_iPrimaryAmmoCount <= 0)))
+		{
+			DryFire();
+			m_flLastAttackTime = gpGlobals->curtime - 3.f;
+		}
+		else if (pOwner->GetWaterLevel() == 3 && m_bFiresUnderwater == false)
+		{
+			// This weapon doesn't fire underwater
+			WeaponSound(EMPTY);
+			m_flNextPrimaryAttack = gpGlobals->curtime + 0.2;
+			m_flLastAttackTime = gpGlobals->curtime - 3.f;
+			return;
+		}
+	}
+
 	if (!bFired && (pOwner->m_nButtons & IN_ATTACK) && (m_flNextPrimaryAttack <= gpGlobals->curtime))
 	{
 		// Clip empty? Or out of ammo on a no-clip weapon?
 		if (!IsMeleeWeapon() &&
 			((UsesClipsForAmmo1() && m_iClip1 <= 0) || (!UsesClipsForAmmo1() && m_iPrimaryAmmoCount <= 0)))
 		{
-			if (m_bRoundChambered) // bolt action rifles can have this value set to false, prevents empty clicking when holding the attack button when looking through scope to prevent bolting/reloading
-			{
-				HandleFireOnEmpty();
-			}
-			else
+			if (!(GetNeoWepBits() & NEO_WEP_SRS))
 			{
 				DryFire();
 			}
@@ -674,9 +691,13 @@ void CNEOBaseCombatWeapon::ItemPostFrame(void)
 	if (!(((pOwner->m_nButtons & IN_ATTACK) && !(pOwner->IsSprinting())) || (pOwner->m_nButtons & IN_ATTACK2) || (CanReload() && pOwner->m_nButtons & IN_RELOAD)))
 	{
 		// no fire buttons down or reloading
-		if (!ReloadOrSwitchWeapons() && (m_bInReload == false))
+		if (m_flTimeWeaponIdle <= gpGlobals->curtime)
 		{
 			WeaponIdle();
+		}
+		if (m_flLastAttackTime + 3.f < gpGlobals->curtime)
+		{
+			ReloadOrSwitchWeapons();
 		}
 	}
 }
@@ -1088,10 +1109,23 @@ bool CNEOBaseCombatWeapon::ShouldDraw(void)
 }
 
 extern ConVar mat_neo_toc_test;
+#ifdef GLOWS_ENABLE
+extern ConVar glow_outline_effect_enable;
+#endif // GLOWS_ENABLE
 int CNEOBaseCombatWeapon::DrawModel(int flags)
 {
-	C_BaseCombatCharacter* localPlayer = C_BasePlayer::GetLocalPlayer();
-	if (GetOwner() == localPlayer && ShouldDrawLocalPlayerViewModel())
+#ifdef GLOWS_ENABLE
+	auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetTargetNEOPlayer();
+#else
+	auto pTargetPlayer = C_NEO_Player::GetTargetNEOPlayer();
+#endif // GLOWS_ENABLE
+	if (!pTargetPlayer)
+	{
+		Assert(false);
+		return BaseClass::DrawModel(flags);
+	}
+
+	if (GetOwner() == pTargetPlayer && ShouldDrawLocalPlayerViewModel())
 		return 0;
 
 	if (flags & STUDIO_IGNORE_NEO_EFFECTS || !(flags & STUDIO_RENDER))
@@ -1099,15 +1133,13 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 		return BaseClass::DrawModel(flags);
 	}
 
-	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if (!pLocalPlayer)
+	auto pOwner = static_cast<C_NEO_Player *>(GetOwner());
+	if (!pOwner)
 	{
-		Assert(false);
 		return BaseClass::DrawModel(flags);
 	}
 
-	auto pOwner = static_cast<C_NEO_Player *>(GetOwner());
-	bool inThermalVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT;
+	bool inThermalVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT;
 
 	int ret = 0;
 	if (!pOwner || !pOwner->IsCloaked() || inThermalVision)

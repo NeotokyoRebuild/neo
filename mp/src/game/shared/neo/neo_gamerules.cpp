@@ -167,16 +167,17 @@ IMPLEMENT_NETWORKCLASS_ALIASED( NEOGameRulesProxy, DT_NEOGameRulesProxy );
 
 extern bool RespawnWithRet(CBaseEntity *pEdict, bool fCopyCorpse);
 
-// NEO TODO (Rain): check against a test map
+// The defaults are the numbers for Support, check macros in shareddefs.h for
+// how the other classes are derived.
 static NEOViewVectors g_NEOViewVectors(
-	Vector( 0, 0, 58 ),	   //VEC_VIEW (m_vView) // 57 == vanilla recon, 58 == vanilla assault (default), 60 == vanilla support. Use the shareddefs.h macro VEC_VIEW_NEOSCALE to access per player.
+	Vector( 0, 0, 60 ),	   //VEC_VIEW (m_vView)
 
 	Vector(-16, -16, 0 ),	  //VEC_HULL_MIN (m_vHullMin)
-	Vector(16, 16, NEO_ASSAULT_PLAYERMODEL_HEIGHT),	  //VEC_HULL_MAX (m_vHullMax). 66 == vanilla recon, 67 == vanilla assault (default), 72 == vanilla support. Use relevant VEC_... macros in shareddefs for class height adjusted per player access.
+	Vector(16, 16, 70 ),	  //VEC_HULL_MAX (m_vHullMax)
 
 	Vector(-16, -16, 0 ),	  //VEC_DUCK_HULL_MIN (m_vDuckHullMin)
-	Vector( 16,  16, NEO_ASSAULT_PLAYERMODEL_DUCK_HEIGHT),	  //VEC_DUCK_HULL_MAX	(m_vDuckHullMax)
-	Vector( 0, 0, 45 ),		  //VEC_DUCK_VIEW		(m_vDuckView)
+	Vector( 16,  16, 59 ),	  //VEC_DUCK_HULL_MAX	(m_vDuckHullMax)
+	Vector( 0, 0, 50 ),		  //VEC_DUCK_VIEW		(m_vDuckView)
 
 	Vector(-10, -10, -10 ),	  //VEC_OBS_HULL_MIN	(m_vObsHullMin)
 	Vector( 10,  10,  10 ),	  //VEC_OBS_HULL_MAX	(m_vObsHullMax)
@@ -1540,7 +1541,7 @@ void CNEORules::SelectTheVIP()
 				continue;
 			sameTeamAsVIPTop++;
 			sameTeamAsVIP[sameTeamAsVIPTop] = pPlayer->entindex();
-			
+
 			const bool clientWantsToBeVIP = engine->GetClientConVarValue(sameTeamAsVIP[sameTeamAsVIPTop], "neo_cl_vip_eligible");
 			if (!clientWantsToBeVIP)
 				continue;
@@ -2440,7 +2441,7 @@ void CNEORules::ResetVIP()
 {
 	if (!m_pVIP)
 		return;
-	
+
 	const int nextClass = m_iVIPPreviousClass ? m_iVIPPreviousClass : NEO_CLASS_ASSAULT;
 	m_pVIP->m_iNeoClass.Set(nextClass);
 	m_pVIP->m_iNextSpawnClassChoice.Set(nextClass);
@@ -2891,7 +2892,7 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 	WRITE_STRING(team == TEAM_JINRAI ? "jinrai" : team == TEAM_NSF ? "nsf" : "tie");	// which team won
 	WRITE_FLOAT(gpGlobals->curtime);													// when did they win
 	if(iWinReason != NEO_VICTORY_MAPIO)
-	{ 
+	{
 		WRITE_STRING(victoryMsg);															// extra message (who capped or last kill or who got the most points or whatever)
 	}
 	MessageEnd();

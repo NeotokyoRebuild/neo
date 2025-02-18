@@ -21,7 +21,11 @@
 
 #define GAMEMOVEMENT_DUCK_TIME				1000.0f		// ms
 #define GAMEMOVEMENT_JUMP_TIME				510.0f		// ms approx - based on the 21 unit height jump
+#ifdef NEO
+#define GAMEMOVEMENT_JUMP_HEIGHT			36.0f		// units
+#else
 #define GAMEMOVEMENT_JUMP_HEIGHT			21.0f		// units
+#endif
 #define GAMEMOVEMENT_TIME_TO_UNDUCK			( TIME_TO_UNDUCK * 1000.0f )		// ms
 #define GAMEMOVEMENT_TIME_TO_UNDUCK_INV		( GAMEMOVEMENT_DUCK_TIME - GAMEMOVEMENT_TIME_TO_UNDUCK )
 

@@ -504,6 +504,7 @@ void CNEO_Player::Precache( void )
 	BaseClass::Precache();
 }
 
+extern ConVar bot_changeclass;
 void CNEO_Player::Spawn(void)
 {
 	int teamNumber = GetTeamNumber();
@@ -529,6 +530,11 @@ void CNEO_Player::Spawn(void)
 	if ((m_iNextSpawnClassChoice != -1) && (m_iNeoClass != m_iNextSpawnClassChoice))
 	{
 		m_iNeoClass = m_iNextSpawnClassChoice;
+	}
+
+	if (IsFakeClient())
+	{
+		m_iNeoClass = bot_changeclass.GetInt();
 	}
 
 	BaseClass::Spawn();
@@ -1088,7 +1094,7 @@ void CNEO_Player::PostThink(void)
 		{
 			Weapon_SetZoom(false);
 		}
-		else if (m_afButtonPressed & IN_AIM)
+		else if (clientAimHold ? (m_nButtons & IN_AIM && !IsInAim()) : m_afButtonPressed & IN_AIM)
 		{
 			if (!CanSprint() || !(m_nButtons & IN_SPEED))
 			{
