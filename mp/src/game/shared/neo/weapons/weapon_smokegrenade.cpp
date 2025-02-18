@@ -209,6 +209,7 @@ void CWeaponSmokeGrenade::CheckThrowPosition(CBasePlayer* pPlayer, const Vector&
 	}
 }
 
+extern ConVar sv_neo_grenade_fuse_timer;
 void CWeaponSmokeGrenade::ThrowGrenade(CNEO_Player* pPlayer, bool isAlive, CBaseEntity *pAttacker)
 {
 	if (!sv_neo_infinite_smoke_grenades.GetBool())
@@ -254,18 +255,9 @@ void CWeaponSmokeGrenade::ThrowGrenade(CNEO_Player* pPlayer, bool isAlive, CBase
 
 	if (pGrenade)
 	{
-		Assert(pPlayer);
-		if (!pPlayer->IsAlive())
-		{
-			IPhysicsObject* pPhysicsObject = pGrenade->VPhysicsGetObject();
-			if (pPhysicsObject)
-			{
-				pPhysicsObject->SetVelocity(&vecThrow, NULL);
-			}
-		}
-
 		pGrenade->SetDamage(0);
 		pGrenade->SetDamageRadius(0);
+		pGrenade->SetDetonateTimerLength(sv_neo_grenade_fuse_timer.GetFloat());
 	}
 #endif
 
