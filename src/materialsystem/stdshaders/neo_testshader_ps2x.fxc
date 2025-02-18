@@ -1,0 +1,36 @@
+// ------------------------------------------------------------
+// NEO_TESTSHADER_PS2X.FXC
+//
+// This file implements an extremely simple pixel shader for
+// the Source Engine.
+// ------------------------------------------------------------
+
+// ------------------------------------------------------------
+// Includes
+// ------------------------------------------------------------
+
+// This is the standard include file that all pixel shaders
+// should have.
+#include "common_ps_fxc.h"
+
+// ------------------------------------------------------------
+// This structure defines what inputs we expect to the shader.
+// These will come from the SDK_screenspace_general vertex
+// shader.
+//
+// For now, all we care about is what texture coordinate to
+// sample from.
+// ------------------------------------------------------------
+struct PS_INPUT
+{
+	float2 texCoord	: TEXCOORD0;
+};
+
+// ------------------------------------------------------------
+// This is the main entry point to our pixel shader. We'll
+// return the color red as an output.
+// ------------------------------------------------------------
+float4 main( PS_INPUT i ) : COLOR
+{
+	return float4(1.0f, 0.0f, 0.0f, 1.0f);
+}

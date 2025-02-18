@@ -1,0 +1,76 @@
+//===================== Copyright (c) Valve Corporation. All Rights Reserved. ======================
+//
+// Example shader modified for models in motions
+//
+//==================================================================================================
+
+// STATIC: "CONVERT_TO_SRGB"			"0..0"
+// STATIC: "FLASHLIGHT"					"0..1"
+// STATIC: "FLASHLIGHTDEPTHFILTERMODE"	"0..2"	[ps20b]
+
+// DYNAMIC: "WRITEWATERFOGTODESTALPHA"  "0..1"
+// DYNAMIC: "PIXELFOGTYPE"				"0..1"
+// DYNAMIC: "NUM_LIGHTS"				"0..4"
+// DYNAMIC: "WRITE_DEPTH_TO_DESTALPHA"	"0..1"	[ps20b]
+// DYNAMIC: "FLASHLIGHTSHADOWS"			"0..1"	[ps20b]
+
+// SKIP: ($PIXELFOGTYPE == 0) && ($WRITEWATERFOGTODESTALPHA != 0)
+
+// We don't care about flashlight depth unless the flashlight is on
+// SKIP: ( $FLASHLIGHT == 0 ) && ( $FLASHLIGHTSHADOWS == 1 )
+
+// Flashlight shadow filter mode is irrelevant if there is no flashlight
+// SKIP: ( $FLASHLIGHT == 0 ) && ( $FLASHLIGHTDEPTHFILTERMODE != 0 ) [ps20b]
+
+#include "common_flashlight_fxc.h"
+#include "shader_constant_register_map.h"
+
+const float4 g_DiffuseModulation			: register( PSREG_DIFFUSE_MODULATION );
+const float4 g_ShadowTweaks					: register( PSREG_ENVMAP_TINT__SHADOW_TWEAKS );
+const float3 cAmbientCube[6]				: register( PSREG_AMBIENT_CUBE );
+const float4 g_EyePos						: register( PSREG_EYEPOS_SPEC_EXPONENT );
+const float4 g_FogParams					: register( PSREG_FOG_PARAMS );
+const float4 g_FlashlightAttenuationFactors	: register( PSREG_FLASHLIGHT_ATTENUATION );			// On non-flashlight pass
+const float4 g_FlashlightPos_RimBoost		: register( PSREG_FLASHLIGHT_POSITION_RIM_BOOST );
+const float4x4 g_FlashlightWorldToTexture	: register( PSREG_FLASHLIGHT_TO_WORLD_TEXTURE );
+PixelShaderLightInfo cLightInfo[3]			: register( PSREG_LIGHT_INFO_ARRAY );				// 2 registers each - 6 registers total (4th light spread across w's)
+
+#define g_FlashlightPos					g_FlashlightPos_RimBoost.xyz
+
+sampler BaseTextureSampler		: register( s0 );	// Base map, selfillum in alpha
+sampler ShadowDepthSampler		: register( s4 );	// Flashlight shadow depth map sampler
+sampler NormalizeRandRotSampler	: register( s5 );	// Normalization / RandomRotation samplers
+sampler FlashlightSampler		: register( s6 );	// Flashlight cookie
+
+const float3 g_ViewDirection : register(c0);
+const float g_SpeedFactor : register(c3);
+
+struct PS_INPUT
+{
+	float2 baseTexCoord	: TEXCOORD0;
+	float4 lightAtten	: TEXCOORD1;
+	float3 worldNormal	: TEXCOORD2;
+	float3 worldPos		: TEXCOORD3;
+	float3 projPos		: TEXCOORD4;
+};
+
+float4 main( PS_INPUT i ) : COLOR
+{
+	// A value between 0 and 1, where texels facing the same direction as the camera have a value of 0, and those facing directly opposite have a value of 1
+	float dotProduct = 0.5 * (dot(normalize(g_ViewDirection), i.worldNormal) + 1);
+	// 1.75 - dotProduct gives a value greater than 1 if dotProduct is less than 0.75, or smaller if dotProduct is greater than 0.75. The division then increases the value for texels close to facing to camera, and decreases the value for texels that aren't facing the camera as much
+	// pow condenses the line so that colours in the middle of the gradient are more compact, the yellow is barely visible and the red is a thinner line, instead the white and pink extremes make up the majority of the colour.
+	// -0.4 translates the line so that less of the model is white and more of the model is pink
+	// max( 0.2 removes the dark band around the edge of the model.
+	float valueToAdd = max( 0.2, ((dotProduct) / pow((1.75 - dotProduct), 4) - 0.4));
+	// Can't figure out why the rgb values have no effect on the result. Ideally we would want every part of the motionvision model to be at full alpha when g_SpeedFactor is 1 which would solve problems with inner triangles being drawn when model is cloaked meaning arms,
+	// weapons and other moving models can't be seen through the parts of the model that aren't fully lit (the edges). Regardless that might still not be a full solution to the problem considering inner triangles would still render at alpha < 1, we probably want to instead use 
+	// the depth buffer to prevent drawing inner triangles, but translucent models do not by default draw to the zbuffer. See https://www.tomlooman.com/the-many-uses-of-custom-depth-in-unreal-4/ for how unreal engine uses a "Custom depth buffer" to cull inner triangles in 
+	// translucent models. This is unrelated to backface culling, the problematic triangles here are all facing the camera.
+	float4 result = (0, 0, 0, valueToAdd * g_SpeedFactor);
+
+	float fogFactor = CalcPixelFogFactor( PIXELFOGTYPE, g_FogParams, g_EyePos.z, i.worldPos.z, i.projPos.z );
+	bool bWriteDepthToAlpha = ( WRITE_DEPTH_TO_DESTALPHA != 0 ) && ( WRITEWATERFOGTODESTALPHA == 0 );
+
+	return FinalOutput( result, fogFactor, PIXELFOGTYPE, TONEMAP_SCALE_LINEAR, bWriteDepthToAlpha, i.projPos.z );
+}

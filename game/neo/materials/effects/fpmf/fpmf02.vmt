@@ -1,0 +1,8 @@
+"UnlitGeneric"
+{
+	"$basetexture" "effects\fpmf\fpmf02"
+	"$nocull" 1
+	"$additive" 1
+	"$model" 1
+	"$translucent" 1	
+}

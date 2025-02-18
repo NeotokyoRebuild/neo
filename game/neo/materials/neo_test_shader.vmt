@@ -1,0 +1,6 @@
+// This is a test shader for NT;
+// the pixel shader stage will simply render all red pixels.
+"Neo_TestShader"
+{
+	
+}

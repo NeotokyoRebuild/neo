@@ -1,0 +1,137 @@
+WeaponData
+{
+	// Weapon data is loaded by both the Game and Client DLLs.
+	"printname"		"Jitte"
+	"BulletCharacter"	"a"
+	"viewmodel"		"models/weapons/v_jinrai_jittes.mdl"
+	"team2viewmodel"	"models/weapons/v_nsf_jittes.mdl"
+	"playermodel"		"models/weapons/w_jittes.mdl"
+	"anim_prefix"		"srm"
+	"bucket"		"0"
+	"bucket_position"	"0"
+	"Damage"		"15"
+	"Penetration"		"20.0"
+	"CycleTime"		"0.085"		// time between shots
+	
+	"TPMuzzleFlashScale"	"0.5"
+
+	"clip_size"		"30"
+	"default_clip"	"90"
+	"autoswitchfrom"        "0"
+	"primary_ammo"		"AMMO_PRI" // NEO TODO (Rain): add specific ammos
+	"secondary_ammo"	"None"
+
+	"weight"		"3"
+	// ITEM_FLAG_SELECTONEMPTY = 1
+	// ITEM_FLAG_NOAUTOSWITCHEMPTY = (1 << 2)
+	// ITEM_FLAG_DOHITLOCATIONDMG = (1 << 5) 
+	// Combined as int = 37
+	"item_flags"		"37"
+	// "item_flags"		"0"
+	
+	
+	"AimType"		"1"
+	
+	"VMFov"				"54.0"
+	"VMOffsetForward"	"25.0"
+	"VMOffsetRight"		"9.0"	
+	"VMOffsetUp"		"0.0"
+ 	"VMAngleYaw"		"-2.0"
+
+	"VMAimFov"				"32.0"
+	"VMAimOffsetForward"	"-1.5"
+	"VMAimOffsetRight"		"1.31"	
+	"VMAimOffsetUp"			"2.53"
+	//"VMAimAnglePitch"		"1.0"
+	
+	"AimFov"		"38.0"	//40
+	
+	"ViewModelOffset"
+	{
+		"fov"		"54.0"
+		"forward"	"25.0"
+		"right"		"9.0"
+		"up"		"0"
+		"yaw"		"-2"
+	}
+
+	"ZoomOffset"
+	{
+		"fov"		"54.0"
+		"forward"	"5.0"
+		"right"		"7.0"
+		"up"		"4.0"
+		"pitch"		"5.0"
+	}
+	
+	"AimOffset"
+	{
+		"fov"		"32"
+		"forward"	"0.0"
+		"right"		"1.31"
+		"up"		"2.53"
+	}
+
+	// Sounds for the weapon. There is a max of 16 sounds per category (i.e. max 16 "single_shot" sounds)
+	SoundData
+	{
+		"reload"		"weapon_jitte.reload"
+		"reload_npc"		"weapon_jitte.npc_reload"
+		"empty"			"weapon_jitte.empty"
+		"single_shot"		"weapon_jitte_scoped.single"
+		"single_shot_npc"	"Weapon_jitte_scoped.NPC_Single"
+		"special1"		"Weapon_Pistol.Special1"
+		"special2"		"Weapon_Pistol.Special2"
+		"burst"			"Weapon_Pistol.Burst"
+		"melee_miss"		"Weapon_Generic.melee_swing"
+	}
+
+	// Weapon Sprite data is loaded by the Client DLL.
+	TextureData
+	{
+		"weapon"
+		{
+				"font"		"WeaponIcons"
+				"character"	"d"
+		}
+		"weapon_s"
+		{	
+				"font"		"WeaponIconsSelected"
+				"character"	"d"
+		}
+		"ammo"
+		{
+				"font"		"WeaponIcons"
+				"character"	"p"
+		}
+		"crosshair"
+		{
+				"file"		"vgui/hud/crosshair"
+				"x"		"0"
+				"y"		"0"
+				"width"		"128"
+				"height"	"128"
+		}
+		"autoaim"
+		{
+				"file"		"sprites/crosshairs"
+				"x"			"0"
+				"y"			"48"
+				"width"		"24"
+				"height"	"24"
+		}
+	}
+	ModelBounds
+	{
+		Viewmodel
+		{
+			Mins	"-10 -4 -13"
+			Maxs	"21 9 -1"
+		}
+		World
+		{
+			Mins	"-10 -7 -6"
+			Maxs	"22 8 9"
+		}
+	}	
+}

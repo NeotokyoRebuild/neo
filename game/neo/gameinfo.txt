@@ -1,0 +1,50 @@
+"GameInfo"
+{
+	Game        "Neotokyo: Rebuild"
+	Title       ""
+	Title2      ""
+	Type        Multiplayer_Only
+	Icon        "resource/icon"
+	NoModels    1
+	NoHIModel   1
+	NoCrosshair 1
+	Hidden_Maps
+	{
+		"test_speakers" 1
+		"test_hardware" 1
+	}
+	SupportsVR  0
+
+	FileSystem
+	{
+		SteamAppId 243750
+
+		SearchPaths
+		{
+			Game+Mod                         hl2mp/custom/*
+			Game+Mod                         hl2/custom/*
+
+			Mod+Mod_Write+Default_Write_Path |gameinfo_path|.
+			GameBin                          |gameinfo_path|bin
+
+			game_lv                          hl2/hl2_lv.vpk
+			Game+Mod                         hl2mp/hl2mp_english.vpk
+			Game+Mod                         hl2mp/hl2mp_pak.vpk
+			Game                             |all_source_engine_paths|hl2/hl2_english.vpk
+			Game                             |all_source_engine_paths|hl2/hl2_pak.vpk
+			Game                             |all_source_engine_paths|hl2/hl2_textures.vpk
+			Game                             |all_source_engine_paths|hl2/hl2_sound_vo_english.vpk
+			Game                             |all_source_engine_paths|hl2/hl2_sound_misc.vpk
+			Game                             |all_source_engine_paths|hl2/hl2_misc.vpk
+			Platform                         |all_source_engine_paths|platform/platform_misc.vpk
+
+			Game+Game_Write                  hl2mp
+
+			GameBin                          hl2mp/bin
+
+			Game                             |all_source_engine_paths|hl2mp
+			Game                             |all_source_engine_paths|hl2
+			Platform                         |all_source_engine_paths|platform
+		}
+	}
+}

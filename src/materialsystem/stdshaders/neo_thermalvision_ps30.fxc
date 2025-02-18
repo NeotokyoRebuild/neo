@@ -1,0 +1,25 @@
+#include "common_ps_fxc.h"
+
+sampler FrameBuffer				: register(s0);
+sampler TvTexture               : register(s1);
+//sampler BlurBuffer			    : register(s2);
+sampler NoiseTexture            : register(s3);
+
+const float g_BrightnessScale : register(c0);
+const float g_XOffset : register(c1);
+const float g_XMultiplier : register(c2);
+const float g_XNoiseOffset : register(c3);
+const float g_YNoiseOffset : register(c4);
+
+struct PS_INPUT
+{
+	float2 texCoord	: TEXCOORD0;
+};
+
+float4 main( const PS_INPUT i ) : COLOR
+{    
+	const float4 fbColor = tex2D(FrameBuffer, i.texCoord);
+	const float noise =  0.9 + (tex2D(NoiseTexture, i.texCoord + float2(g_XNoiseOffset, g_YNoiseOffset)) / 10);
+    const float avgBright = (fbColor.r * 0.3 + fbColor.g * 0.59 + fbColor.b * 0.11) * noise;
+    return tex2D(TvTexture, float2(min(1.0, (avgBright + g_XOffset) + ((avgBright - g_XOffset) * g_XMultiplier)), 0.5)) * g_BrightnessScale;
+}

@@ -1,0 +1,133 @@
+// Kyla
+WeaponData
+{
+	"printname"		"KYLA"
+	"BulletCharacter"	"a"
+	"viewmodel"		"models/weapons/v_jinrai_klya9.mdl"
+	"team2viewmodel"	"models/weapons/v_nsf_klya9.mdl"
+	"playermodel"		"models/weapons/w_klya9.mdl"
+	"anim_prefix"		"pistol"
+	"bucket"		"1"
+	"bucket_position"	"0"
+	"Damage"		"45" 		//"11"
+	"Penetration"		"10.0"
+	"CycleTime"		"0.35"		// time between shoots
+	
+	"TPMuzzleFlashScale"	"0.6"
+
+	"clip_size"		"6"
+	"default_clip"	"18"
+    "autoswitchfrom"        "0"
+	"primary_ammo"		"Pistol"
+	"secondary_ammo"	"None"
+	
+	"weight"		"2"
+	// ITEM_FLAG_SELECTONEMPTY = 1
+	// ITEM_FLAG_NOAUTOSWITCHEMPTY = (1 << 2)
+	// ITEM_FLAG_DOHITLOCATIONDMG = (1 << 5) 
+	// Combined as int = 37
+	"item_flags"		"37"
+	// "item_flags"		"0"
+	
+	"AimType"		"1"
+	
+	"VMFov"			"65.0"	
+	"VMOffsetForward"	"-1.0"
+	"VMOffsetRight"		"5.0"	
+	"VMOffsetUp"		"0.0"
+	
+	"VMAimFov"				"40.0"	
+	"VMAimOffsetForward"	"-2.0"
+	"VMAimOffsetRight"		"-3.475"	
+	"VMAimOffsetUp"			"6.9"
+
+	"AimFov"		"55.0"	
+	
+	"ViewModelOffset"
+	{
+		"fov"		"65"
+		"forward"	"-1"
+		"right"		"5"
+		"up"		"0"
+	}
+
+	"ZoomOffset"
+	{
+		"fov"		"40"
+		"forward"	"-5"
+		"right"		"1"
+		"up"		"7"
+	}
+	
+	"AimOffset"
+	{
+		"fov"		"40"
+		"forward"	"-2"
+		"right"		"-3.475"
+		"up"		"6.9"
+	}
+	
+	// Sounds for the weapon. There is a max of 16 sounds per category (i.e. max 16 "single_shot" sounds)
+	SoundData
+	{
+
+		"reload"		"weapon_kyla.reload"
+		"reload_npc"		"weapon_kyla.npc_reload"
+		"empty"			"weapon_kyla.empty"
+		"single_shot"		"weapon_kyla.single"
+		"single_shot_npc"	"Weapon_kyla.NPC_Single"
+		"special1"		"Weapon_Pistol.Special1"
+		"special2"		"Weapon_Pistol.Special2"
+		"burst"			"Weapon_Pistol.Burst"
+	}
+	
+	// Weapon Sprite data is loaded by the Client DLL.
+	TextureData
+	{
+		"weapon"
+		{
+				"font"		"WeaponIcons"
+				"character"	"d"
+		}
+		"weapon_s"
+		{	
+				"font"		"WeaponIconsSelected"
+				"character"	"d"
+		}
+		"ammo"
+		{
+				"font"		"WeaponIcons"
+				"character"	"p"
+		}
+		"crosshair"
+		{
+				"file"		"vgui/hud/crosshair"
+				"x"		"0"
+				"y"		"0"
+				"width"		"128"
+				"height"	"128"
+		}
+		"autoaim"
+		{
+				"file"		"sprites/crosshairs"
+				"x"			"0"
+				"y"			"48"
+				"width"		"24"
+				"height"	"24"
+		}
+	}
+	
+	ModelBounds
+	{
+		Viewmodel
+		{
+			Mins	"-10 -4 -13"
+			Maxs	"21 9 -1"
+		}
+		World
+		{
+			Mins	"-10 -7 -6"
+			Maxs	"22 8 9"
+		}
+	}
+}
