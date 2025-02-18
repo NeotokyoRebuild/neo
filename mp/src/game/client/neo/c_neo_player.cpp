@@ -219,6 +219,10 @@ public:
 #if DEBUG
 		DevMsg("Loadout access cb\n");
 #endif
+		if (engine->IsPlayingDemo())
+		{
+			return;
+		}
 
 		auto team = GetLocalPlayerTeam();
 		if(team < FIRST_GAME_TEAM)
@@ -294,6 +298,11 @@ class NeoClassMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback(const CCommand& command)
 	{
+		if (engine->IsPlayingDemo())
+		{
+			return;
+		}
+
 		auto team = GetLocalPlayerTeam();
 		if(team < FIRST_GAME_TEAM)
 		{
@@ -354,6 +363,11 @@ class NeoTeamMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback( const CCommand &command )
 	{
+		if (engine->IsPlayingDemo())
+		{
+			return;
+		}
+
 		if (!g_pNeoTeamMenu)
 		{
 			Assert(false);
@@ -420,10 +434,10 @@ public:
 };
 VguiCancel_Cb vguiCancel_Cb;
 
-ConCommand loadoutmenu("loadoutmenu", &neoLoadoutMenu_Cb, "Open weapon loadout selection menu.", FCVAR_USERINFO);
-ConCommand classmenu("classmenu", &neoClassMenu_Cb, "Open class selection menu.", FCVAR_USERINFO);
-ConCommand teammenu("teammenu", &neoTeamMenu_Cb, "Open team selection menu.", FCVAR_USERINFO);
-ConCommand vguicancel("vguicancel", &vguiCancel_Cb, "Cancel current vgui screen.", FCVAR_USERINFO);
+ConCommand loadoutmenu("loadoutmenu", &neoLoadoutMenu_Cb, "Open weapon loadout selection menu.", FCVAR_USERINFO | FCVAR_DONTRECORD);
+ConCommand classmenu("classmenu", &neoClassMenu_Cb, "Open class selection menu.", FCVAR_USERINFO | FCVAR_DONTRECORD);
+ConCommand teammenu("teammenu", &neoTeamMenu_Cb, "Open team selection menu.", FCVAR_USERINFO | FCVAR_DONTRECORD);
+ConCommand vguicancel("vguicancel", &vguiCancel_Cb, "Cancel current vgui screen.", FCVAR_USERINFO | FCVAR_DONTRECORD);
 
 C_NEO_Player::C_NEO_Player()
 {
@@ -644,6 +658,9 @@ int C_NEO_Player::GetAttackerHits(const int attackerIdx) const
 }
 
 extern ConVar mat_neo_toc_test;
+#ifdef GLOWS_ENABLE
+extern ConVar glow_outline_effect_enable;
+#endif // GLOWS_ENABLE
 int C_NEO_Player::DrawModel(int flags)
 {
 	if (flags & STUDIO_IGNORE_NEO_EFFECTS || !(flags & STUDIO_RENDER))
@@ -651,14 +668,18 @@ int C_NEO_Player::DrawModel(int flags)
 		return BaseClass::DrawModel(flags);
 	}
 
-	auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if (!pLocalPlayer)
+#ifdef GLOWS_ENABLE
+	auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetTargetNEOPlayer();
+#else
+	auto pTargetPlayer = C_NEO_Player::GetTargetNEOPlayer();
+#endif // GLOWS_ENABLE
+	if (!pTargetPlayer)
 	{
 		Assert(false);
 		return BaseClass::DrawModel(flags);
 	}
 	
-	bool inThermalVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_SUPPORT;
+	bool inThermalVision = pTargetPlayer ? (pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT) : false;
 
 	int ret = 0;
 	if (!IsCloaked() || inThermalVision)
@@ -1030,14 +1051,6 @@ void C_NEO_Player::ClientThink(void)
 			{
 				if (vel > 0.5) { m_flTocFactor = 0.3f; } // 0.345f
 				else { m_flTocFactor = 0.2f; } // 0.255f
-
-				int distance = GetAbsOrigin().DistTo(pLocalPlayer->GetAbsOrigin());
-				constexpr float CLOAK_FALL_OFF_WITH_DISTANCE_RATE = 0.001;
-				constexpr int CLOAK_FALL_OFF_WITH_DISTANCE_STARTING_DISTANCE = 250;
-				if (distance > CLOAK_FALL_OFF_WITH_DISTANCE_STARTING_DISTANCE)
-				{
-					m_flTocFactor = max(0.1f, m_flTocFactor - ((distance - CLOAK_FALL_OFF_WITH_DISTANCE_STARTING_DISTANCE) * CLOAK_FALL_OFF_WITH_DISTANCE_RATE));
-				}
 			}
 		}
 	}	
@@ -1148,7 +1161,7 @@ void C_NEO_Player::PostThink(void)
 		{
 			Weapon_SetZoom(false);
 		}
-		else if (m_afButtonPressed & IN_AIM)
+		else if (clientAimHold ? (m_nButtons & IN_AIM && !IsInAim()) : m_afButtonPressed & IN_AIM)
 		{
 			if (!CanSprint() || !(m_nButtons & IN_SPEED))
 			{

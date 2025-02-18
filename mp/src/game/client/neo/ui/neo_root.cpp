@@ -65,7 +65,7 @@ constexpr wchar_t WSZ_GAME_TITLE1_b[] = L"C";
 constexpr wchar_t WSZ_GAME_TITLE2[] = L"Hrebuild";
 #define SZ_WEBSITE "https://neotokyorebuild.github.io"
 
-ConCommand neo_toggleconsole("neo_toggleconsole", NeoToggleconsole);
+ConCommand neo_toggleconsole("neo_toggleconsole", NeoToggleconsole, "toggle the console", FCVAR_DONTRECORD);
 
 struct YMD
 {
@@ -520,7 +520,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		surface()->GetTextSize(g_uiCtx.fonts[NeoUI::FONT_NTNORMAL].hdl, BUILD_DISPLAY, textWidth, textHeight);
 
 		surface()->DrawSetTextPos(g_uiCtx.iMarginX, tall - textHeight - g_uiCtx.iMarginY);
-		surface()->DrawPrintText(BUILD_DISPLAY, *BUILD_DISPLAY_SIZE);
+		surface()->DrawPrintText(BUILD_DISPLAY, wcslen(BUILD_DISPLAY));
 	}
 }
 

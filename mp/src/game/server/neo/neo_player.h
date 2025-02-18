@@ -206,6 +206,7 @@ public:
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);
 
 	void InputSetPlayerModel( inputdata_t & inputData );
+	void CloakFlash(float time = 0.f);
 private:
 	bool m_bAllowGibbing;
 
@@ -217,7 +218,6 @@ private:
 	void CheckVisionButtons();
 	void CheckLeanButtons();
 	void PlayCloakSound(bool removeLocalPlayer = true);
-	void CloakFlash();
 	void SetCloakState(bool state);
 
 	bool IsAllowedToSuperJump(void);

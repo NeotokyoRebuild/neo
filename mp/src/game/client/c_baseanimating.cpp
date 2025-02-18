@@ -3133,6 +3133,9 @@ bool C_BaseAnimating::ShouldDraw()
 
 ConVar r_drawothermodels( "r_drawothermodels", "1", FCVAR_CHEAT, "0=Off, 1=Normal, 2=Wireframe" );
 
+#if defined NEO && defined GLOWS_ENABLE
+extern ConVar glow_outline_effect_enable;
+#endif // NEO && GLOWS_ENABLE
 //-----------------------------------------------------------------------------
 // Purpose: Draws the object
 // Input  : flags - 
@@ -3180,10 +3183,13 @@ int C_BaseAnimating::DrawModel( int flags )
 			extraFlags |= STUDIO_IGNORE_NEO_EFFECTS;
 		}
 
-		auto pLocalPlayer = C_NEO_Player::GetLocalNEOPlayer();
-		Assert(pLocalPlayer);
+#ifdef GLOWS_ENABLE
+		auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetTargetNEOPlayer();
+#else
+		auto pTargetPlayer = C_NEO_Player::GetTargetNEOPlayer();
+#endif // GLOWS_ENABLE
 
-		const bool inMotionVision = pLocalPlayer->IsInVision() && pLocalPlayer->GetClass() == NEO_CLASS_ASSAULT;
+		const bool inMotionVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_ASSAULT;
 		
 		auto rootMoveParent = GetRootMoveParent();
 		Vector vel;

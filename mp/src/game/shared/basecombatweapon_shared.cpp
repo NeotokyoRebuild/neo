@@ -1404,7 +1404,7 @@ bool CBaseCombatWeapon::ReloadOrSwitchWeapons( void )
 		if ( UsesClipsForAmmo1() && !AutoFiresFullClip() && 
 			 (m_iClip1 == 0) && 
 			 (GetWeaponFlags() & ITEM_FLAG_NOAUTORELOAD) == false && 
-			 m_flNextPrimaryAttack < gpGlobals->curtime && 
+			 m_flNextPrimaryAttack < gpGlobals->curtime &&
 			 m_flNextSecondaryAttack < gpGlobals->curtime )
 		{
 			// if we're successfully reloading, we're done
