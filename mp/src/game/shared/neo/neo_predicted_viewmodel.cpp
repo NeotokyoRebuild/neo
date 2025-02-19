@@ -510,9 +510,22 @@ void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 
 	newAng += angOffset;
 #ifdef CLIENT_DLL
-	if (cl_neo_lean_viewmodel_only.GetBool())
+	if (abs(newAng.z) < 0.1)
 	{
-		newAng.z += m_flLeanAngle;
+		float boneControllers[4] = {0.f};
+		pOwner->GetBaseAnimating()->GetBoneControllers(&boneControllers[0]);
+		boneControllers[0] -= 0.5f;
+		if (boneControllers[0] > 0)
+		{
+			constexpr float positiveBoneControllerToLeanFactor = 90; // ~15.0714245 / 0.167460
+			newAng.z += boneControllers[0] * positiveBoneControllerToLeanFactor;
+		}
+		else if (boneControllers[0] < 0)
+		{
+			constexpr float negativeBoneControllerToLeanFactor = 42; // ~-7.26659012 / -0.173014
+			newAng.z += boneControllers[0] * negativeBoneControllerToLeanFactor;
+		}
+
 	}
 #endif
 
