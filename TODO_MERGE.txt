@@ -3,6 +3,15 @@ cherry-pick: src/game/client/hud_pdump.h
 Comments:
 // TODO (nullsystem): 2025-02-18 SOURCE SDK 2013 CHECK
 
+Squirral/nut scripts:
+	src/game/server/spawn_helper.nut
+	src/game/server/vscript_server.nut
+I guess VPC compiles them into usable C++ headers, but for now could utilize like this
+and ifdef NEO source code a bit:
+	game/neo/nut_scripts/spawn_helper.nut
+	game/neo/nut_scripts/vscript_server.nut
+
+
 game/neo/scripts/HudLayout.res
 src/game/client/clientmode_shared.cpp
 src/game/client/hl2mp/c_hl2mp_player.cpp
