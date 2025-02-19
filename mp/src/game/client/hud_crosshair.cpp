@@ -131,7 +131,11 @@ bool CHudCrosshair::ShouldDraw( void )
 	if ( m_bHideCrosshair )
 		return false;
 
+#ifdef NEO
+	C_BasePlayer* pPlayer = IsLocalPlayerSpectator() ? UTIL_PlayerByIndex(GetSpectatorTarget()) : C_BasePlayer::GetLocalPlayer();
+#else
 	C_BasePlayer* pPlayer = C_BasePlayer::GetLocalPlayer();
+#endif // NEO
 	if ( !pPlayer )
 		return false;
 
