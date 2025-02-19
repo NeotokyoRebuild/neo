@@ -23,13 +23,13 @@ void C_NEO_Message::OnDataChanged(DataUpdateType_t updateType)
         return;
     }
 
-    if (Q_strlen(m_NetworkedMessageKey) > 0)
+    if (Q_strlen(STRING(m_NetworkedMessageKey)) > 0)
     {
-        const wchar_t* localizedText = g_pVGuiLocalize->Find(m_NetworkedMessageKey);
-        
+        wchar_t* localizedText = g_pVGuiLocalize->Find(STRING(m_NetworkedMessageKey));
+
         if (localizedText)
         {
-            m_pHudMessage->ShowMessage(const_cast<wchar_t*>(localizedText));
+            m_pHudMessage->ShowMessage(localizedText);
         }
     }
     else
