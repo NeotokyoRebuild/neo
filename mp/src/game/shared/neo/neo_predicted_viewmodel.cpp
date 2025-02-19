@@ -286,7 +286,24 @@ float GetLeanRatio(const float leanAngle)
 }
 
 #ifdef CLIENT_DLL
-ConVar cl_neo_lean_viewmodel_only("cl_neo_lean_viewmodel_only", "0", FCVAR_ARCHIVE, "Rotate view-model instead of camera when leaning", true, 0, true, 1);
+static void clNeoLeanViewmodelOnlyCallback(IConVar* var, const char* pOldValue, float flOldValue)
+{
+	const bool bCurrentValue = !(bool)flOldValue;
+	auto localPlayer = static_cast<C_NEO_Player*>(UTIL_PlayerByIndex(GetLocalPlayerIndex()));
+	if (localPlayer)
+	{
+		localPlayer->m_bUsingViewModelLean = bCurrentValue;
+		if (bCurrentValue)
+		{
+			engine->ExecuteClientCmd("useviewmodellean 1");
+		}
+		else
+		{
+			engine->ExecuteClientCmd("useviewmodellean 0");
+		}
+	}
+}
+ConVar cl_neo_lean_viewmodel_only("cl_neo_lean_viewmodel_only", "0", FCVAR_ARCHIVE | FCVAR_USERINFO, "Rotate view-model instead of camera when leaning", true, 0, true, 1, clNeoLeanViewmodelOnlyCallback);
 ConVar cl_neo_lean_automatic("cl_neo_lean_automatic", "0", FCVAR_ARCHIVE, "Automatic leaning around corners", true, 0, true, 1);
 #ifdef DEBUG
 ConVar cl_neo_lean_automatic_debug("cl_neo_lean_automatic_debug", "0", FCVAR_ARCHIVE | FCVAR_DEVELOPMENTONLY, "Show automatic leaning tracelines", true, 0, true, 1);
@@ -502,32 +519,36 @@ void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 			m_vOffset = vOffset;
 			m_angOffset = angOffset;
 		}
+#ifdef CLIENT_DLL
+		if (neoPlayer->m_bUsingViewModelLean && neoPlayer->entindex() != GetLocalPlayerIndex())
+		{	// NEOTODO (Adam) Compare this with cl_lean_viewmodel_only. If local player isn't using m_bViewModelLean then don't change newAng.z, and somewhere else figure out how to rotate camera only for the spectator
+			float boneControllers[4] = { 0.f };
+			pOwner->GetBaseAnimating()->GetBoneControllers(&boneControllers[0]);
+			boneControllers[0] -= 0.5f;
+			if (boneControllers[0] > 0)
+			{
+				constexpr float positiveBoneControllerToLeanFactor = 90; // ~15.0714245 / 0.167460
+				newAng.z = boneControllers[0] * positiveBoneControllerToLeanFactor;
+			}
+			else if (boneControllers[0] < 0)
+			{
+				constexpr float negativeBoneControllerToLeanFactor = 42; // ~-7.26659012 / -0.173014
+				newAng.z = boneControllers[0] * negativeBoneControllerToLeanFactor;
+			}
+		}
+#endif
 	}
 	
 	newPos += vForward * vOffset.x;
 	newPos += vRight * vOffset.y;
 	newPos += vUp * vOffset.z;
-
 	newAng += angOffset;
 #ifdef CLIENT_DLL
-	if (abs(newAng.z) < 0.1)
-	{
-		float boneControllers[4] = {0.f};
-		pOwner->GetBaseAnimating()->GetBoneControllers(&boneControllers[0]);
-		boneControllers[0] -= 0.5f;
-		if (boneControllers[0] > 0)
-		{
-			constexpr float positiveBoneControllerToLeanFactor = 90; // ~15.0714245 / 0.167460
-			newAng.z += boneControllers[0] * positiveBoneControllerToLeanFactor;
-		}
-		else if (boneControllers[0] < 0)
-		{
-			constexpr float negativeBoneControllerToLeanFactor = 42; // ~-7.26659012 / -0.173014
-			newAng.z += boneControllers[0] * negativeBoneControllerToLeanFactor;
-		}
-
+	if (cl_neo_lean_viewmodel_only.GetBool())
+	{	// local player can see this value when playing, use it instead since its smoother
+		newAng.z += m_flLeanAngle;
 	}
-#endif
+#endif // CLIENT_DLL
 
 	BaseClass::CalcViewModelView(pOwner, newPos, newAng);
 }

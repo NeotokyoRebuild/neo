@@ -246,6 +246,7 @@ public:
 	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
 	CNetworkVar(bool, m_bInAim);
 	CNetworkVar(int, m_bInLean);
+	CNetworkVar(bool, m_bUsingViewModelLean);
 	CNetworkVar(bool, m_bCarryingGhost);
 	CNetworkVar(bool, m_bIneligibleForLoadoutPick);
 

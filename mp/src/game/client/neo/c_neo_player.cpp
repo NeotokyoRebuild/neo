@@ -68,6 +68,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_iLoadoutWepChoice)),
 	RecvPropInt(RECVINFO(m_iNextSpawnClassChoice)),
 	RecvPropInt(RECVINFO(m_bInLean)),
+	RecvPropBool(RECVINFO(m_bUsingViewModelLean)),
 
 	RecvPropBool(RECVINFO(m_bInThermOpticCamo)),
 	RecvPropBool(RECVINFO(m_bLastTickInThermOpticCamo)),
@@ -439,6 +440,7 @@ ConCommand classmenu("classmenu", &neoClassMenu_Cb, "Open class selection menu."
 ConCommand teammenu("teammenu", &neoTeamMenu_Cb, "Open team selection menu.", FCVAR_USERINFO | FCVAR_DONTRECORD);
 ConCommand vguicancel("vguicancel", &vguiCancel_Cb, "Cancel current vgui screen.", FCVAR_USERINFO | FCVAR_DONTRECORD);
 
+extern ConVar cl_neo_lean_viewmodel_only;
 C_NEO_Player::C_NEO_Player()
 {
 	SetPredictionEligible(true);
@@ -459,6 +461,7 @@ C_NEO_Player::C_NEO_Player()
 	m_bCarryingGhost = false;
 	m_bIneligibleForLoadoutPick = false;
 	m_bInLean = NEO_LEAN_NONE;
+	m_bUsingViewModelLean = cl_neo_lean_viewmodel_only.GetBool();
 
 	m_flCamoAuxLastTime = 0;
 	m_nVisionLastTick = 0;

@@ -50,6 +50,7 @@ SendPropInt(SENDINFO(m_iXP)),
 SendPropInt(SENDINFO(m_iLoadoutWepChoice)),
 SendPropInt(SENDINFO(m_iNextSpawnClassChoice)),
 SendPropInt(SENDINFO(m_bInLean)),
+SendPropBool(SENDINFO(m_bUsingViewModelLean)),
 
 SendPropBool(SENDINFO(m_bInThermOpticCamo)),
 SendPropBool(SENDINFO(m_bLastTickInThermOpticCamo)),
@@ -88,6 +89,7 @@ DEFINE_FIELD(m_iLoadoutWepChoice, FIELD_INTEGER),
 DEFINE_FIELD(m_bIneligibleForLoadoutPick, FIELD_BOOLEAN),
 DEFINE_FIELD(m_iNextSpawnClassChoice, FIELD_INTEGER),
 DEFINE_FIELD(m_bInLean, FIELD_INTEGER),
+DEFINE_FIELD(m_bUsingViewModelLean, FIELD_BOOLEAN),
 
 DEFINE_FIELD(m_bInThermOpticCamo, FIELD_BOOLEAN),
 DEFINE_FIELD(m_bLastTickInThermOpticCamo, FIELD_BOOLEAN),
@@ -352,9 +354,25 @@ void SetLoadout(const CCommand &command)
 	}
 }
 
+void UseViewModelLean(const CCommand& command)
+{
+	auto player = static_cast<CNEO_Player*>(UTIL_GetCommandClient());
+	if (!player)
+	{
+		return;
+	}
+
+	if (command.ArgC() == 2)
+	{
+		bool usingViewModelLean = atoi(command.ArgV()[1]);
+		player->m_bUsingViewModelLean = usingViewModelLean;
+	}
+}
+
 ConCommand setclass("setclass", SetClass, "Set class", FCVAR_USERINFO);
 ConCommand setskin("SetVariant", SetSkin, "Set skin", FCVAR_USERINFO);
 ConCommand loadout("loadout", SetLoadout, "Set loadout", FCVAR_USERINFO);
+ConCommand useviewmodellean("useviewmodellean", UseViewModelLean, "Use View Model Lean", FCVAR_USERINFO | FCVAR_HIDDEN);
 
 CON_COMMAND_F(joinstar, "Join star", FCVAR_USERINFO)
 {
@@ -403,6 +421,7 @@ CNEO_Player::CNEO_Player()
 	m_bInAim = false;
 	m_bCarryingGhost = false;
 	m_bInLean = NEO_LEAN_NONE;
+	m_bUsingViewModelLean = engine->GetClientConVarValue(entindex(), "cl_neo_lean_viewmodel_only");
 
 	m_iLoadoutWepChoice = 0;
 	m_iNextSpawnClassChoice = -1;
