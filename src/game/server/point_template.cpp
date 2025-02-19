@@ -13,7 +13,11 @@
 #include "mapentities.h"
 #include "tier0/icommandline.h"
 #include "mapentities_shared.h"
+#ifdef NEO
+static HSCRIPT g_Script_spawn_helper;
+#else
 #include "spawn_helper_nut.h"
+#endif
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -442,6 +446,12 @@ void ScriptInstallPreSpawnHook()
 {
 	if ( g_pScriptVM && !g_pScriptVM->ValueExists( "__ExecutePreSpawn" ) )
 	{
+#ifdef NEO
+		if (g_Script_spawn_helper)
+		{
+			g_Script_spawn_helper = VScriptCompileScript("nut_scripts/spawn_helper.nut");
+		}
+#endif
 		g_pScriptVM->Run( g_Script_spawn_helper );
 	}
 }

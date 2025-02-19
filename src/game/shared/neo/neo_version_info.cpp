@@ -5,10 +5,10 @@
 
 const char* BUILD_DATE_SHORT = "20250219";
 const char* BUILD_DATE_LONG = "2025-02-19";
-const char* GIT_HASH = "c4d90ea";
-const char* GIT_LONGHASH = "c4d90ea733fd2c01bae522bf2174e0ac330608b1";
+const char* GIT_HASH = "799bbea";
+const char* GIT_LONGHASH = "799bbea3d7a775692cef5e900d81dd957b272bf9";
 const char* OS_BUILD = "Linux";
 const char* COMPILER_ID = "GNU";
 const char* COMPILER_VERSION = "14.2.1";
 const char* GIT_LATESTTAG = "v11.0-prealpha";
-const wchar_t* BUILD_DISPLAY = L"Build: v11.0-prealpha (20250219_c4d90ea, Linux)";
+const wchar_t* BUILD_DISPLAY = L"Build: v11.0-prealpha (20250219_799bbea, Linux)";

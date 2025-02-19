@@ -12,6 +12,7 @@ if(NEO_DEDICATED AND OS_LINUX)
     set_target_properties(server PROPERTIES OUTPUT_NAME server_srv)
 endif()
 
+set(NEXTBOT_DIR "${CMAKE_SOURCE_DIR}/game/server/NextBot")
 target_include_directories(server
     PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
@@ -29,6 +30,7 @@ target_include_directories(server
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons
     ${CMAKE_SOURCE_DIR}/utils/common
     ${CMAKE_SOURCE_DIR}/public
+	${NEXTBOT_DIR}
 )
 
 target_compile_definitions(server
@@ -1144,6 +1146,8 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl_gamemovement.h
     ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl_movedata.h
     ${CMAKE_SOURCE_DIR}/game/shared/script_intro_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/vscript_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/vscript_shared.h
     basebludgeonweapon.cpp
     basebludgeonweapon.h
     hl2/ai_allymanager.cpp
@@ -1451,6 +1455,10 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_playeranimstate.h
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_weapon_parse.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_weapon_parse.h
+    ${CMAKE_SOURCE_DIR}/game/server/hl2mp/hl2mp_bot_temp.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/hl2mp/hl2mp_bot_temp.h
+    #${CMAKE_SOURCE_DIR}/game/server/tf/tf_bot_temp.cpp # TODO (nullsystem): Should be in TF section
+    #${CMAKE_SOURCE_DIR}/game/server/tf/tf_bot_temp.h
     hl2mp/hl2mp_client.cpp
     hl2mp/hl2mp_cvars.cpp
     hl2mp/hl2mp_gameinterface.cpp
@@ -1491,4 +1499,62 @@ target_sources_grouped(
     hl2mp/grenade_tripmine.h
     hl2mp/te_hl2mp_shotgun_shot.cpp
     hl2mp/te_hl2mp_shotgun_shot.h
+)
+target_sources_grouped(
+    TARGET server
+    NAME "NextBot"
+    FILES
+    ${NEXTBOT_DIR}/NextBot.cpp
+    ${NEXTBOT_DIR}/NextBot.h
+    ${NEXTBOT_DIR}/NextBotBehavior.h
+    ${NEXTBOT_DIR}/NextBotManager.cpp
+    ${NEXTBOT_DIR}/NextBotManager.h
+    ${NEXTBOT_DIR}/NextBotUtil.h
+    ${NEXTBOT_DIR}/NextBotKnownEntity.h
+    ${NEXTBOT_DIR}/NextBotGroundLocomotion.cpp
+    ${NEXTBOT_DIR}/NextBotGroundLocomotion.h
+    ${NEXTBOT_DIR}/simple_bot.cpp
+    ${NEXTBOT_DIR}/simple_bot.h
+
+    # NextBotInterfaces
+    ${NEXTBOT_DIR}/NextBotBodyInterface.cpp
+    ${NEXTBOT_DIR}/NextBotBodyInterface.h
+    ${NEXTBOT_DIR}/NextBotComponentInterface.cpp
+    ${NEXTBOT_DIR}/NextBotComponentInterface.h
+    ${NEXTBOT_DIR}/NextBotEventResponderInterface.h
+    ${NEXTBOT_DIR}/NextBotHearingInterface.h
+    ${NEXTBOT_DIR}/NextBotIntentionInterface.cpp
+    ${NEXTBOT_DIR}/NextBotIntentionInterface.h
+    ${NEXTBOT_DIR}/NextBotInterface.cpp
+    ${NEXTBOT_DIR}/NextBotInterface.h
+    ${NEXTBOT_DIR}/NextBotLocomotionInterface.cpp
+    ${NEXTBOT_DIR}/NextBotLocomotionInterface.h
+    ${NEXTBOT_DIR}/NextBotVisionInterface.cpp
+    ${NEXTBOT_DIR}/NextBotVisionInterface.h
+    ${NEXTBOT_DIR}/NextBotContextualQueryInterface.h
+
+    # NextBotPath
+	${NEXTBOT_DIR}/Path/NextBotChasePath.cpp
+	${NEXTBOT_DIR}/Path/NextBotChasePath.h
+	${NEXTBOT_DIR}/Path/NextBotRetreatPath.h
+	${NEXTBOT_DIR}/Path/NextBotPath.cpp
+	${NEXTBOT_DIR}/Path/NextBotPath.h
+	${NEXTBOT_DIR}/Path/NextBotPathFollow.cpp
+	${NEXTBOT_DIR}/Path/NextBotPathFollow.h
+			
+    # NextBotPlayer
+	${NEXTBOT_DIR}/Player/NextBotPlayerBody.cpp
+	${NEXTBOT_DIR}/Player/NextBotPlayerBody.h
+	${NEXTBOT_DIR}/Player/NextBotPlayerLocomotion.cpp
+	${NEXTBOT_DIR}/Player/NextBotPlayerLocomotion.h
+	${NEXTBOT_DIR}/Player/NextBotPlayer.cpp
+	${NEXTBOT_DIR}/Player/NextBotPlayer.h
+
+    # NextBotCommonBehaviors
+	${NEXTBOT_DIR}/Behavior/BehaviorBackUp.h
+	${NEXTBOT_DIR}/Behavior/BehaviorMoveTo.h
+
+    # NextBotNavMeshEntities
+	${NEXTBOT_DIR}/NavMeshEntities/func_nav_prerequisite.cpp
+	${NEXTBOT_DIR}/NavMeshEntities/func_nav_prerequisite.h
 )

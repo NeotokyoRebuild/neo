@@ -72,7 +72,11 @@ public:
 	virtual void OnLostSight( CBaseEntity *subject );		// when subject leaves enters bot's visual awareness
 
 	virtual void OnSound( CBaseEntity *source, const Vector &pos, KeyValues *keys );				// when an entity emits a sound. "pos" is world coordinates of sound. "keys" are from sound's GameData
+#ifdef NEO // NEO NOTE (nullsystem): C++20 concept keyword
+	virtual void OnSpokeConcept( CBaseCombatCharacter *who, AIConcept_t aiconcept, AI_Response *response );	// when an Actor speaks a concept
+#else
 	virtual void OnSpokeConcept( CBaseCombatCharacter *who, AIConcept_t concept, AI_Response *response );	// when an Actor speaks a concept
+#endif
 	virtual void OnWeaponFired( CBaseCombatCharacter *whoFired, CBaseCombatWeapon *weapon );		// when someone fires a weapon
 
 	virtual void OnNavAreaChanged( CNavArea *newArea, CNavArea *oldArea );	// when bot enters a new navigation area
@@ -265,6 +269,15 @@ inline void INextBotEventResponder::OnSound( CBaseEntity *source, const Vector &
 	}	
 }
 
+#ifdef NEO // NEO NOTE (nullsystem): C++20 concept keyword
+inline void INextBotEventResponder::OnSpokeConcept( CBaseCombatCharacter *who, AIConcept_t aiconcept, AI_Response *response )
+{
+	for ( INextBotEventResponder *sub = FirstContainedResponder(); sub; sub = NextContainedResponder( sub ) )
+	{
+		sub->OnSpokeConcept( who, aiconcept, response );
+	}
+}
+#else
 inline void INextBotEventResponder::OnSpokeConcept( CBaseCombatCharacter *who, AIConcept_t concept, AI_Response *response )
 {
 	for ( INextBotEventResponder *sub = FirstContainedResponder(); sub; sub = NextContainedResponder( sub ) )
@@ -272,6 +285,7 @@ inline void INextBotEventResponder::OnSpokeConcept( CBaseCombatCharacter *who, A
 		sub->OnSpokeConcept( who, concept, response );
 	}	
 }
+#endif
 
 inline void INextBotEventResponder::OnWeaponFired( CBaseCombatCharacter *whoFired, CBaseCombatWeapon *weapon )
 {

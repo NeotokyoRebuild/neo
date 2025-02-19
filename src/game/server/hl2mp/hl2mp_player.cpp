@@ -30,6 +30,8 @@
 
 #ifdef NEO
 #include "neo_player.h"
+#include "vprof.h"
+#include "bone_setup.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -1782,6 +1784,7 @@ Vector CHL2MP_Player::GetAutoaimVector( float flScale )
 	return	forward;
 }
 
+#if 0 // TODO (nullsystem): 2025-02-18 SOURCE SDK 2013 CHECK
 //-----------------------------------------------------------------------------
 // Purpose: Do nothing multiplayer_animstate takes care of animation.
 // Input  : playerAnim - 
@@ -1790,6 +1793,7 @@ void CHL2MP_Player::SetAnimation( PLAYER_ANIM playerAnim )
 {
 	return;
 }
+#endif
 
 // -------------------------------------------------------------------------------- //
 // Player animation event. Sent to the client when a player fires, jumps, reloads, etc..
@@ -1833,7 +1837,9 @@ void TE_PlayerAnimEvent( CBasePlayer *pPlayer, PlayerAnimEvent_t event, int nDat
 
 void CHL2MP_Player::DoAnimationEvent( PlayerAnimEvent_t event, int nData )
 {
-	m_PlayerAnimState->DoAnimationEvent( event, nData );
+#if 0 // TODO (nullsystem): 2025-02-18 SOURCE SDK 2013 CHECK
+	m_PlayerAnimState.DoAnimationEvent( event, nData );
+#endif
 	TE_PlayerAnimEvent( this, event, nData );	// Send to any clients who can see this guy.
 }
 
@@ -1883,7 +1889,7 @@ void CHL2MP_Player::SetupBones( matrix3x4_t *pBoneToWorld, int boneMask )
 		{
 			BuildMatricesWithBoneMerge( 
 				pStudioHdr, 
-				m_PlayerAnimState->GetRenderAngles(),
+				m_PlayerAnimState.GetRenderAngles(),
 				adjOrigin, 
 				pos, 
 				q, 
@@ -1897,7 +1903,7 @@ void CHL2MP_Player::SetupBones( matrix3x4_t *pBoneToWorld, int boneMask )
 
 	Studio_BuildMatrices( 
 		pStudioHdr, 
-		m_PlayerAnimState->GetRenderAngles(),
+		m_PlayerAnimState.GetRenderAngles(),
 		adjOrigin, 
 		pos, 
 		q, 

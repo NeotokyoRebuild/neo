@@ -35,8 +35,12 @@
 	#include "hl2mp_cvars.h"
 
 #if defined(DEBUG) || defined(NEO)
+#ifdef NEO
+	#include "hl2mp_bot_temp.h"
+#else
 	#include "tf_bot_temp.h"
-#endif
+#endif // NEO
+#endif // defined(DEBUG) || defined(NEO)
 
 #ifdef NEO
 	#include "neo_gamerules.h"

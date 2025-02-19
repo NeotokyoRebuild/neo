@@ -8,6 +8,7 @@ endif()
 
 add_library_copy_target(TARGET client)
 
+set(NEXTBOT_DIR_CLIENT "${CMAKE_SOURCE_DIR}/game/client/NextBot")
 target_include_directories(client
     PRIVATE
     ${CMAKE_SOURCE_DIR}/common
@@ -20,6 +21,7 @@ target_include_directories(client
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons
     ${CMAKE_SOURCE_DIR}/public
     ${CMAKE_SOURCE_DIR}/thirdparty/sixensesdk/include
+	${NEXTBOT_DIR_CLIENT}
     game_controls
     hl2
     hl2/elements
@@ -1740,3 +1742,12 @@ target_sources_grouped(
     hl2mp/ui/hl2mptextwindow.cpp
     hl2mp/ui/hl2mptextwindow.h
 )
+
+target_sources_grouped(
+    TARGET client
+    NAME "NextBot"
+    FILES
+	${NEXTBOT_DIR_CLIENT}/C_NextBot.cpp
+	${NEXTBOT_DIR_CLIENT}/C_NextBot.h
+)
+
