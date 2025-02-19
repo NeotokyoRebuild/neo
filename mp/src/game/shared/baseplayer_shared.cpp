@@ -55,10 +55,10 @@
 #include "neo_gamerules.h"
 #include "weapon_neobasecombatweapon.h"
 #include "neo_predicted_viewmodel_muzzleflash.h"
-#include "neo_predicted_viewmodel.h"
 #ifdef GAME_DLL
 #include "neo_player.h"
 #else
+#include "neo_predicted_viewmodel.h"
 #include "c_neo_player.h"
 #endif
 #endif
