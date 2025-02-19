@@ -13,6 +13,9 @@
 #include "ai_basenpc.h"
 #include "engine/IEngineSound.h"
 #include "ai_senses.h"
+#include "neo_gamerules.h"
+#include "weapon_neobasecombatweapon.h"
+#include "weapon_ghost.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -42,9 +45,12 @@ class CNEO_NPCDummy : public CAI_BaseNPC
 	DECLARE_SERVERCLASS();
 
 public:
-	void	Precache(void);
-	void	Spawn(void);
-	Class_T Classify(void);
+	void			Precache(void);
+	void			Spawn(void);
+	Class_T			Classify(void);
+	virtual void	UpdateOnRemove(void) override;
+	int				ShouldTransmit(const CCheckTransmitInfo* pInfo) override;
+	virtual int		UpdateTransmitState() override;
 
 	DECLARE_DATADESC();
 
@@ -55,6 +61,7 @@ private:
 	string_t m_strKeyModel;
 	string_t m_strKeyWeaponModel;
 	bool m_bKeyDistortEffect;
+	int m_iPositionInDummyBeacons = MAX_DUMMY_BEACONS + 2;
 
 	void WeaponBonemerge(const char* weaponModelDir);
 };
@@ -139,6 +146,19 @@ void CNEO_NPCDummy::Spawn(void)
 	}
 
 	NPCInit();
+
+	int m_iLastDummyBeacon = NEORules()->m_iLastDummyBeacon.GetForModify();
+	if (m_iLastDummyBeacon < MAX_DUMMY_BEACONS - 1) // if space in m_iDummyBeacons i.e if last index isn't greatest possible index
+	{
+		NEORules()->m_iLastDummyBeacon.Set(m_iLastDummyBeacon+1);
+		NEORules()->m_iDummyBeacons.Set(NEORules()->m_iLastDummyBeacon, GetRefEHandle());
+		m_iPositionInDummyBeacons = NEORules()->m_iLastDummyBeacon;
+		SetTransmitState(FL_EDICT_FULLCHECK);
+	}
+	else
+	{
+		SetTransmitState(FL_EDICT_PVSCHECK); // NEO TODO (Adam) currently this dummy will never show up on ghost beacon, if space is made in m_iDummyBeacons try to find a dummy not in the list to add to the list
+	}
 }
 
 void CNEO_NPCDummy::WeaponBonemerge(const char* weaponModelDir)
@@ -166,4 +186,65 @@ void CNEO_NPCDummy::WeaponBonemerge(const char* weaponModelDir)
 Class_T	CNEO_NPCDummy::Classify(void)
 {
 	return	CLASS_NONE;
+}
+
+void CNEO_NPCDummy::UpdateOnRemove()
+{
+	// NEO TODO (Adam) If a dummy was removed from the dummyBeacons list, find a dummy that didn't make it into the list if any to fill in the gap instead
+	int m_iLastDummyBeacon = NEORules()->m_iLastDummyBeacon.GetForModify();
+	if (m_iPositionInDummyBeacons < m_iLastDummyBeacon)
+	{
+		auto lastDummy = static_cast<CNEO_NPCDummy *>(NEORules()->m_iDummyBeacons[m_iLastDummyBeacon].Get());
+		if (lastDummy)
+		{
+			lastDummy->m_iPositionInDummyBeacons = m_iPositionInDummyBeacons;
+			NEORules()->m_iDummyBeacons.Set(m_iPositionInDummyBeacons, NEORules()->m_iDummyBeacons[m_iLastDummyBeacon]);
+		}
+		NEORules()->m_iLastDummyBeacon.Set(m_iLastDummyBeacon-1);
+	}
+	else if (m_iPositionInDummyBeacons == m_iLastDummyBeacon)
+	{
+		NEORules()->m_iLastDummyBeacon.Set(m_iLastDummyBeacon-1);
+	}
+	BaseClass::UpdateOnRemove();
+}
+
+int CNEO_NPCDummy::ShouldTransmit(const CCheckTransmitInfo* pInfo)
+{
+	if (auto ent = Instance(pInfo->m_pClientEnt))
+	{
+		if (auto* otherNeoPlayer = dynamic_cast<CNEO_Player*>(ent))
+		{
+			// If other is spectator or same team
+			if (otherNeoPlayer->GetTeamNumber() == TEAM_SPECTATOR ||
+#ifdef GLOWS_ENABLE
+				otherNeoPlayer->IsDead() ||
+#endif
+				GetTeamNumber() == otherNeoPlayer->GetTeamNumber())
+			{
+				return FL_EDICT_ALWAYS;
+			}
+
+			// If the other player is actively using the ghost and therefore fetching beacons
+			auto otherWep = static_cast<CNEOBaseCombatWeapon*>(otherNeoPlayer->GetActiveWeapon());
+			if (otherWep && otherWep->GetNeoWepBits() & NEO_WEP_GHOST &&
+				static_cast<CWeaponGhost*>(otherWep)->IsPosWithinViewDistance(GetAbsOrigin()))
+			{
+				return FL_EDICT_ALWAYS;
+			}
+
+			// NEO TODO (Adam) Check if weapon attached to this npc is of type weapon_ghost? can we draw more than one ghost beacon at once?
+		}
+	}
+
+	return BaseClass::ShouldTransmit(pInfo);
+}
+
+int CNEO_NPCDummy::UpdateTransmitState()
+{
+	if (m_iPositionInDummyBeacons == MAX_DUMMY_BEACONS + 2)
+	{
+		return BaseClass::UpdateTransmitState();
+	}
+	return FL_EDICT_FULLCHECK;
 }
