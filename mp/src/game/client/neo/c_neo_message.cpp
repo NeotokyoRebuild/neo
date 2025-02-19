@@ -3,6 +3,7 @@
 #include "hud.h"
 #include "ui/neo_hud_message.h"
 #include "vgui/ILocalize.h"
+#include "tier0/valve_minmax_off.h"
 
 IMPLEMENT_CLIENTCLASS_DT(C_NEO_Message, DT_NEO_Message, CNEO_Message)
     RecvPropString(RECVINFO(m_NetworkedMessageKey))
