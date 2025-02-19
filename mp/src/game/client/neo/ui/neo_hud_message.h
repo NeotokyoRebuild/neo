@@ -1,8 +1,11 @@
 #include "neo_hud_childelement.h"
 #include "hudelement.h"
 #include <vgui_controls/Panel.h>
+
+#include "tier0/valve_minmax_off.h"
 #include <vector>
 #include <string>
+#include "tier0/valve_minmax_on.h"
 
 class CNEOHud_Message : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
 {
