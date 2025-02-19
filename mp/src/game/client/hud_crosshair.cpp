@@ -287,7 +287,11 @@ void CHudCrosshair::Paint( void )
 	if ( !IsCurrentViewAccessAllowed() )
 		return;
 
+#ifdef NEO
+	C_BasePlayer* pPlayer = IsLocalPlayerSpectator() ? UTIL_PlayerByIndex(GetSpectatorTarget()) : C_BasePlayer::GetLocalPlayer();
+#else
 	C_BasePlayer* pPlayer = C_BasePlayer::GetLocalPlayer();
+#endif // NEO
 	if ( !pPlayer )
 		return;
 
