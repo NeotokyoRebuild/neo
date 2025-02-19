@@ -1,3 +1,4 @@
+find_package(Appframework)
 find_package(Bitmap)
 find_package(ChoreoObjects)
 find_package(DMXLoader)

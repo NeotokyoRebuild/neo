@@ -1,7 +1,9 @@
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
     set(CPU_64BIT TRUE)
+    message(STATUS "64-bit build")
 elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
     set(CPU_32BIT TRUE)
+    message(STATUS "32-bit build")
 endif()
 
 if(WIN32)

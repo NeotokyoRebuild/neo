@@ -286,7 +286,6 @@ if(OS_LINUX OR OS_MACOS)
     )
 
     add_compile_options(
-	#-m32
         #-msse2
         -fno-exceptions
 
@@ -345,7 +344,6 @@ if(OS_LINUX OR OS_MACOS)
     # We should always specify -Wl,--build-id, as documented at:
     # http://linux.die.net/man/1/ld and http://fedoraproject.org/wiki/Releases/FeatureBuildId.http://fedoraproject.org/wiki/Releases/FeatureBuildId
     add_link_options(
-        #-m32
         -Wl,--build-id
         -static-libgcc
         -Wl,--no-undefined

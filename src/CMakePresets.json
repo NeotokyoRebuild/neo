@@ -12,7 +12,7 @@
     "hidden": true,
     "inherits": "base",
     "architecture": {
-      "value": "x86",
+      "value": "x86_64",
       "strategy": "external"
     },
     "cacheVariables": {

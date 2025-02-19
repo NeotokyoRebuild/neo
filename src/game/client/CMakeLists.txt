@@ -44,6 +44,7 @@ target_compile_definitions(client
 
 target_link_libraries(client
     PRIVATE
+    appframework::appframework
     bitmap::bitmap
     mathlib::mathlib
     choreo_objects::choreo_objects

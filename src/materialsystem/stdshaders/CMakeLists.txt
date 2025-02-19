@@ -51,6 +51,25 @@ target_link_libraries(game_shader_dx9
     tier1::tier1
     mathlib::mathlib
     vstdlib::vstdlib
+    matsys_controls::matsys_controls
+
+    # NEO TODO (nullsystem) !!! SORT IT OUT INSTEAD OF DUMPING IT ALL
+    appframework::appframework
+    bitmap::bitmap
+    mathlib::mathlib
+    choreo_objects::choreo_objects
+    dmx_loader::dmx_loader
+    tier0::tier0
+    tier1::tier1
+    tier2::tier2
+    tier3::tier3
+    matsys_controls::matsys_controls
+    vstdlib::vstdlib
+    particles::particles
+    vtf::vtf
+    steam_api::steam_api
+    vgui_controls::vgui_controls
+
 )
 
 target_link_directories(game_shader_dx9
