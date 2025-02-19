@@ -148,9 +148,9 @@ void CNEOHud_Message::ShowMessage(wchar_t* message)
     int maxWidth = 0;
     int totalHeight = 0;
 
-    wchar_t* messageCopy = _wcsdup(message);
+    wchar_t* messageCopy = wcsdup(message);
     wchar_t* context = nullptr;
-    wchar_t* token = wcstok_s(messageCopy, L"\n", &context); // Any \n in the localised text will declare a new line
+    wchar_t* token = wcstok(messageCopy, L"\n", &context); // Any \n in the localised text will declare a new line
 
     while (token)
     {
@@ -165,7 +165,7 @@ void CNEOHud_Message::ShowMessage(wchar_t* message)
             maxWidth = textWidth;
 
         totalHeight += textHeight + 2;
-        token = wcstok_s(nullptr, L"\n", &context);
+        token = wcstok(nullptr, L"\n", &context);
     }
     free(messageCopy);
 
