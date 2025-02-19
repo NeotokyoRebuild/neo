@@ -1,8 +1,6 @@
 #include "cbase.h"
 #include "c_neo_message.h"
 #include "hud.h"
-
-#include "tier0/valve_minmax_off.h"
 #include "ui/neo_hud_message.h"
 #include "vgui/ILocalize.h"
 
