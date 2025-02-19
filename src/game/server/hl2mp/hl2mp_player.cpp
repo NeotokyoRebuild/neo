@@ -205,10 +205,8 @@ const char *g_ppszRandomCombineModels[] =
 
 #pragma warning( disable : 4355 )
 
-CHL2MP_Player::CHL2MP_Player()
+CHL2MP_Player::CHL2MP_Player() : m_PlayerAnimState( this )
 {
-	//Tony; create our player animation state.
-	m_PlayerAnimState = CreateHL2MPPlayerAnimState( this );
 	UseClientSideAnimation();
 
 	m_angEyeAngles.Init();
@@ -230,7 +228,6 @@ CHL2MP_Player::CHL2MP_Player()
 
 CHL2MP_Player::~CHL2MP_Player( void )
 {
-	m_PlayerAnimState->Release();
 
 }
 
@@ -677,13 +674,14 @@ void CHL2MP_Player::PostThink( void )
 #endif
 	}
 
-	QAngle angles = GetLocalAngles();
-	angles[PITCH] = 0;
-	SetLocalAngles( angles );
+	m_PlayerAnimState.Update();
 
 	// Store the eye angles pitch so the client can compute its animation state correctly.
 	m_angEyeAngles = EyeAngles();
-	m_PlayerAnimState->Update( m_angEyeAngles[YAW], m_angEyeAngles[PITCH] );
+
+	QAngle angles = GetLocalAngles();
+	angles[PITCH] = 0;
+	SetLocalAngles( angles );
 }
 
 void CHL2MP_Player::PlayerDeathThink()

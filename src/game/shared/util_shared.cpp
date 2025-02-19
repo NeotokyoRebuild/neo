@@ -37,6 +37,9 @@ bool NPC_CheckBrushExclude( CBaseEntity *pEntity, CBaseEntity *pBrush );
 #endif
 
 #include "steam/steam_api.h"
+#ifdef NEO // NEO NOTE (nullsystem): Missing include?
+#include "steam/steamclientpublic.h"
+#endif
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -1339,7 +1342,7 @@ char *UTIL_GetFilteredChatText( int iPlayerIndex, char *pszText, int nTextBuffer
 }
 #endif // CLIENT_DLL
 
-char* ReadAndAllocStringValue( KeyValues *pSub, const char *pName, const char *pFilename )
+const char *ReadAndAllocStringValue( KeyValues *pSub, const char *pName, const char *pFilename )
 {
 	const char *pValue = pSub->GetString( pName, NULL );
 	if ( !pValue )

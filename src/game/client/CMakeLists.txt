@@ -136,10 +136,10 @@ if(OS_LINUX)
 
     target_link_libraries(client
         PRIVATE
-        ${CMAKE_SOURCE_DIR}/lib/common/${CRYPTOPPDIR}/libcrypto.a
-        ${CMAKE_SOURCE_DIR}/lib/common/${CRYPTOPPDIR}/libssl.a
-        ${LIBCOMMON}/libcurl.a
-        ${LIBCOMMON}/libcurlssl.a
+	#${CMAKE_SOURCE_DIR}/lib/common/linux64/libcrypto.a
+	#${CMAKE_SOURCE_DIR}/lib/common/linux64/libssl.a
+	#${LIBCOMMON}/libcurl.a
+	#${LIBCOMMON}/libcurlssl.a
         vgui_controls::vgui_controls
         dl
         m
@@ -813,6 +813,7 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/hintmessage.h
     ${CMAKE_SOURCE_DIR}/game/shared/hintsystem.h
     ${CMAKE_SOURCE_DIR}/public/steam/steam_api.h
+    ${CMAKE_SOURCE_DIR}/public/steam/steamclientpublic.h
     ScreenSpaceEffects.h
     TeamBitmapImage.h
     ViewConeImage.h
@@ -1387,6 +1388,7 @@ target_sources_grouped(
     TARGET client
     NAME "Source Files"
     FILES
+    ${CMAKE_SOURCE_DIR}/common/steamid.cpp
     # ${CMAKE_SOURCE_DIR}/game/shared/weapon_parse_default.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/predicted_viewmodel.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/predicted_viewmodel.h

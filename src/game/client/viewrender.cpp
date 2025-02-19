@@ -2249,7 +2249,7 @@ void CViewRender::RenderView( const CViewSetup &viewRender, int nClearFlags, int
 
 		PerformScreenSpaceEffects( 0, 0, viewRender.width, viewRender.height );
 
-		GetClientModeNormal()->DoPostScreenSpaceEffects(&view);
+		GetClientModeNormal()->DoPostScreenSpaceEffects( &viewRender );
 
 		if ( g_pMaterialSystemHardwareConfig->GetHDRType() == HDR_TYPE_INTEGER )
 		{

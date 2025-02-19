@@ -97,6 +97,8 @@ public:
 	void	PrecacheFootStepSounds( void );
 	bool	ValidatePlayerModel( const char *pModel );
 
+	QAngle GetAnimEyeAngles( void ) { return m_angEyeAngles.Get(); }
+
 	Vector GetAttackSpread( CBaseCombatWeapon *pWeapon, CBaseEntity *pTarget = NULL );
 	virtual Vector GetAutoaimVector( float flDelta );
 
@@ -169,7 +171,7 @@ public:
 	bool IsThreatFiringAtMe( CBaseEntity* threat ) const;
 private:
 
-	CHL2MPPlayerAnimState *m_PlayerAnimState;
+	CPlayerAnimState m_PlayerAnimState;
 
 	CNetworkQAngle( m_angEyeAngles );
 

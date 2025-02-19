@@ -846,11 +846,11 @@ void CViewRender::SetUpViews()
 #endif
 
 #ifdef NEO // NEO NOTE: Viewmodel FOV and (neo_fov) FOV are decoupled
-	view.fovViewmodel = g_pClientMode->GetViewModelFOV();
+	viewEye.fovViewmodel = g_pClientMode->GetViewModelFOV();
 #else
 	//Adjust the viewmodel's FOV to move with any FOV offsets on the viewer's end
 	viewEye.fovViewmodel = g_pClientMode->GetViewModelFOV() - flFOVOffset;
-##endif
+#endif
 
 	if ( UseVR() )
 	{

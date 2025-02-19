@@ -5358,7 +5358,7 @@ void CBaseEntity::PrecacheModelComponents( int nModelIndex )
 						{
 							char token[256];
 							const char *pOptions = pEvent->pszOptions();
-							nexttoken( token, pOptions, ' ', sizeof(token) );
+							nexttoken( token, pOptions, ' ');
 							if ( token[0] ) 
 							{
 								PrecacheParticleSystem( token );

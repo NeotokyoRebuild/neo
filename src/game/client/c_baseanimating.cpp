@@ -3677,10 +3677,9 @@ void C_BaseAnimating::DoAnimationEvents( CStudioHdr *pStudioHdr )
 			return;
 		}
 #endif
-#endif
+#endif // SRCSDK2013CHECK
 		// This can happen e.g. while reloading Heavy's shotgun, switch to the minigun.
 		Warning( "%s[%d]: Playing sequence %d but there's only %d in total?\n", GetDebugName(), entindex(), nSeqNum, nStudioNumSeq );
-#endif
 		return;
 	}
 
@@ -3829,7 +3828,7 @@ bool C_BaseAnimating::DispatchMuzzleEffect( const char *options, bool isFirstPer
 	int			weaponType = 0;
 
 	// Get the first parameter
-	p = nexttoken( token, p, ' ', sizeof(token) );
+	p = nexttoken( token, p, ' ' );
 
 	// Find the weapon type
 	if ( token[0] ) 
@@ -3873,7 +3872,7 @@ bool C_BaseAnimating::DispatchMuzzleEffect( const char *options, bool isFirstPer
 	}
 
 	// Get the second parameter
-	p = nexttoken( token, p, ' ', sizeof(token) );
+	p = nexttoken( token, p, ' ' );
 
 	int	attachmentIndex = -1;
 
@@ -4253,11 +4252,11 @@ void C_BaseAnimating::FireEvent( const Vector& origin, const QAngle& angles, int
 			const char *p = options;
 
 			// Bodygroup Name
-			p = nexttoken(token, p, ' ', sizeof(token));
+			p = nexttoken(token, p, ' ');
 			Q_strncpy( szBodygroupName, token, sizeof(szBodygroupName) );
 
 			// Get the desired value
-			p = nexttoken(token, p, ' ', sizeof(token));
+			p = nexttoken(token, p, ' ');
 			value = token[0] ? atoi( token ) : 0;
 
 			int index_ = FindBodygroupByName( szBodygroupName );
@@ -4294,13 +4293,13 @@ void C_BaseAnimating::FireObsoleteEvent( const Vector& origin, const QAngle& ang
 
 			const char *p = options;
 
-			p = nexttoken(token, p, ' ', sizeof(token));
+			p = nexttoken(token, p, ' ');
 			Q_strncpy( effectFunc, token, sizeof(effectFunc) );
 
-			p = nexttoken(token, p, ' ', sizeof(token));
+			p = nexttoken(token, p, ' ');
 			iAttachment = token[0] ? atoi(token) : -1;
 
-			p = nexttoken(token, p, ' ', sizeof(token));
+			p = nexttoken(token, p, ' ');
 			iParam = token[0] ? atoi(token) : 0;
 
 			if ( iAttachment != -1 && m_Attachments.Count() >= iAttachment )

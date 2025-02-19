@@ -1870,6 +1870,20 @@ template<class T> struct AlignOf_t { AlignOf_t(){} AlignOf_t & operator=(const A
 template < size_t NUM, class T, int ALIGN > struct AlignedByteArrayExplicit_t{};
 template < size_t NUM, class T > struct AlignedByteArray_t : public AlignedByteArrayExplicit_t< NUM, T, VALIGNOF_TEMPLATE_SAFE(T) > {};
 
+#ifdef NEO
+// NEO NOTE (nullsystem): Supress GCC warning about braces
+#define DECLARE_ALIGNED_BYTE_ARRAY( ALIGN ) \
+	template < size_t NUM, class T > \
+	struct ALIGN_N( ALIGN ) AlignedByteArrayExplicit_t< NUM, T, ALIGN > \
+	{ \
+		/* NOTE: verify alignment in the constructor (which may be wrong if this is heap-allocated, for ALIGN > MEMALLOC_MAX_AUTO_ALIGN) */ \
+		AlignedByteArrayExplicit_t()	{ if ( (ALIGN-1) & (size_t)this ) { DebuggerBreakIfDebugging(); } } \
+		T *			Base( void )		{ ValidateAlignmentExplicit<T,ALIGN>(); return (T *)&m_Data; } \
+		const T *	Base( void ) const	{ ValidateAlignmentExplicit<T,ALIGN>(); return (const T *)&m_Data; } \
+	private: \
+		byte m_Data[ NUM*sizeof( T ) ]; \
+	} ALIGN_N_POST( ALIGN );
+#else
 #define DECLARE_ALIGNED_BYTE_ARRAY( ALIGN ) \
 	template < size_t NUM, class T > \
 	struct ALIGN_N( ALIGN ) AlignedByteArrayExplicit_t< NUM, T, ALIGN > \
@@ -1881,6 +1895,7 @@ template < size_t NUM, class T > struct AlignedByteArray_t : public AlignedByteA
 	private: \
 		byte m_Data[ NUM*sizeof( T ) ]; \
 	} ALIGN_N_POST( ALIGN );
+#endif
 
 DECLARE_ALIGNED_BYTE_ARRAY(1);
 DECLARE_ALIGNED_BYTE_ARRAY(2);

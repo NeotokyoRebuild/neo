@@ -28,40 +28,16 @@
 #undef CHL2MP_Player	
 #endif
 
-<<<<<<< HEAD
-#ifndef NEO
-=======
 // misyl: Can be set to Msg if you want some info for debugging prediction
 #define MsgPredTest(...)
 #define MsgPredTest2(...)
 
 ConVar sv_infinite_aux_power( "sv_infinite_aux_power", "0", FCVAR_CHEAT | FCVAR_REPLICATED );
 
->>>>>>> 0759e2e8 (Add Team Fortress 2 SDK)
+#ifndef NEO
 LINK_ENTITY_TO_CLASS( player, C_HL2MP_Player );
 #endif
 
-<<<<<<< HEAD
-BEGIN_RECV_TABLE_NOBASE( C_HL2MP_Player, DT_HL2MPLocalPlayerExclusive )
-	RecvPropVector( RECVINFO_NAME( m_vecNetworkOrigin, m_vecOrigin ) ),
-	RecvPropFloat( RECVINFO( m_angEyeAngles[0] ) ),
-//	RecvPropFloat( RECVINFO( m_angEyeAngles[1] ) ),
-END_RECV_TABLE()
-
-BEGIN_RECV_TABLE_NOBASE( C_HL2MP_Player, DT_HL2MPNonLocalPlayerExclusive )
-	RecvPropVector( RECVINFO_NAME( m_vecNetworkOrigin, m_vecOrigin ) ),
-	RecvPropFloat( RECVINFO( m_angEyeAngles[0] ) ),
-	RecvPropFloat( RECVINFO( m_angEyeAngles[1] ) ),
-#ifdef NEO
-	RecvPropFloat( RECVINFO( m_angEyeAngles[2] ) ),
-#endif
-END_RECV_TABLE()
-
-IMPLEMENT_CLIENTCLASS_DT(C_HL2MP_Player, DT_HL2MP_Player, CHL2MP_Player)
-
-	RecvPropDataTable( "hl2mplocaldata", 0, 0, &REFERENCE_RECV_TABLE(DT_HL2MPLocalPlayerExclusive) ),
-	RecvPropDataTable( "hl2mpnonlocaldata", 0, 0, &REFERENCE_RECV_TABLE(DT_HL2MPNonLocalPlayerExclusive) ),
-=======
 // specific to the local player
 BEGIN_RECV_TABLE_NOBASE( C_HL2MP_Player, DT_HL2MPLocalPlayerExclusive )
 	RecvPropVectorXY( RECVINFO_NAME( m_vecNetworkOrigin, m_vecOrigin ) ),
@@ -69,6 +45,9 @@ BEGIN_RECV_TABLE_NOBASE( C_HL2MP_Player, DT_HL2MPLocalPlayerExclusive )
 
 	RecvPropFloat( RECVINFO( m_angEyeAngles[0] ) ),
 	RecvPropFloat( RECVINFO( m_angEyeAngles[1] ) ),
+#ifdef NEO
+	RecvPropFloat( RECVINFO( m_angEyeAngles[2] ) ),
+#endif
 END_RECV_TABLE()
 
 // all players except the local player
@@ -78,12 +57,14 @@ BEGIN_RECV_TABLE_NOBASE( C_HL2MP_Player, DT_HL2MPNonLocalPlayerExclusive )
 
 	RecvPropFloat( RECVINFO( m_angEyeAngles[0] ) ),
 	RecvPropFloat( RECVINFO( m_angEyeAngles[1] ) ),
+#ifdef NEO
+	RecvPropFloat( RECVINFO( m_angEyeAngles[2] ) ),
+#endif
 END_RECV_TABLE()
 
 IMPLEMENT_CLIENTCLASS_DT(C_HL2MP_Player, DT_HL2MP_Player, CHL2MP_Player)
 	RecvPropDataTable( "hl2mplocaldata", 0, 0, &REFERENCE_RECV_TABLE( DT_HL2MPLocalPlayerExclusive ) ),
 	RecvPropDataTable( "hl2mpnonlocaldata", 0, 0, &REFERENCE_RECV_TABLE( DT_HL2MPNonLocalPlayerExclusive ) ),
->>>>>>> 0759e2e8 (Add Team Fortress 2 SDK)
 
 	RecvPropEHandle( RECVINFO( m_hRagdoll ) ),
 	RecvPropInt( RECVINFO( m_iSpawnInterpCounter ) ),
@@ -93,25 +74,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_HL2MP_Player, DT_HL2MP_Player, CHL2MP_Player)
 END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA( C_HL2MP_Player )
-	DEFINE_PRED_FIELD( m_flCycle, FIELD_FLOAT, FTYPEDESC_OVERRIDE | FTYPEDESC_PRIVATE | FTYPEDESC_NOERRORCHECK ),
 	DEFINE_PRED_FIELD( m_fIsWalking, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE ),
-<<<<<<< HEAD
-	DEFINE_PRED_FIELD( m_nSequence, FIELD_INTEGER, FTYPEDESC_OVERRIDE | FTYPEDESC_PRIVATE | FTYPEDESC_NOERRORCHECK ),
-	DEFINE_PRED_FIELD( m_flPlaybackRate, FIELD_FLOAT, FTYPEDESC_OVERRIDE | FTYPEDESC_PRIVATE | FTYPEDESC_NOERRORCHECK ),
-	DEFINE_PRED_ARRAY_TOL( m_flEncodedController, FIELD_FLOAT, MAXSTUDIOBONECTRLS, FTYPEDESC_OVERRIDE | FTYPEDESC_PRIVATE, 0.02f ),
-	DEFINE_PRED_FIELD( m_nNewSequenceParity, FIELD_INTEGER, FTYPEDESC_OVERRIDE | FTYPEDESC_PRIVATE | FTYPEDESC_NOERRORCHECK ),
-END_PREDICTION_DATA()
-
-#ifdef NEO
-#define	HL2_WALK_SPEED NEO_ASSAULT_WALK_SPEED
-#define	HL2_NORM_SPEED NEO_ASSAULT_NORM_SPEED
-#define	HL2_SPRINT_SPEED NEO_ASSAULT_SPRINT_SPEED
-#else
-#define	HL2_WALK_SPEED 150
-#define	HL2_NORM_SPEED 190
-#define	HL2_SPRINT_SPEED 320
-#endif
-=======
 
 	// misyl: Ammo is server side entities in HL2MP. Not catastrophic to error about.
 	// Just let the server stomp all over us.
@@ -126,19 +89,21 @@ ConVar hl2_walkspeed( "hl2_walkspeed", "150", FCVAR_REPLICATED );
 ConVar hl2_normspeed( "hl2_normspeed", "190", FCVAR_REPLICATED );
 ConVar hl2_sprintspeed( "hl2_sprintspeed", "320", FCVAR_REPLICATED );
 
+#ifdef NEO
+#define	HL2_WALK_SPEED NEO_ASSAULT_WALK_SPEED
+#define	HL2_NORM_SPEED NEO_ASSAULT_NORM_SPEED
+#define	HL2_SPRINT_SPEED NEO_ASSAULT_SPRINT_SPEED
+#else
 #define	HL2_WALK_SPEED hl2_walkspeed.GetFloat()
 #define	HL2_NORM_SPEED hl2_normspeed.GetFloat()
 #define	HL2_SPRINT_SPEED hl2_sprintspeed.GetFloat()
->>>>>>> 0759e2e8 (Add Team Fortress 2 SDK)
+#endif
 
 static ConVar cl_playermodel( "cl_playermodel", "none", FCVAR_USERINFO | FCVAR_ARCHIVE | FCVAR_SERVER_CAN_EXECUTE, "Default Player Model");
 static ConVar cl_defaultweapon( "cl_defaultweapon", "weapon_physcannon", FCVAR_USERINFO | FCVAR_ARCHIVE, "Default Spawn Weapon");
 
 void SpawnBlood (Vector vecSpot, const Vector &vecDir, int bloodColor, float flDamage);
 
-<<<<<<< HEAD
-C_HL2MP_Player::C_HL2MP_Player() : m_iv_angEyeAngles( "C_HL2MP_Player::m_iv_angEyeAngles" )
-=======
 //
 // SUIT POWER DEVICES
 //
@@ -158,15 +123,13 @@ C_HL2MP_Player::C_HL2MP_Player() : m_iv_angEyeAngles( "C_HL2MP_Player::m_iv_angE
 CSuitPowerDevice SuitDeviceBreather( bits_SUIT_DEVICE_BREATHER, 6.7f );		// 100 units in 15 seconds (plus three padded seconds)
 
 C_HL2MP_Player::C_HL2MP_Player() : m_PlayerAnimState( this ), m_iv_angEyeAngles( "C_HL2MP_Player::m_iv_angEyeAngles" )
->>>>>>> 0759e2e8 (Add Team Fortress 2 SDK)
 {
 	m_iIDEntIndex = 0;
 	m_iSpawnInterpCounterCache = 0;
 
 	AddVar( &m_angEyeAngles, &m_iv_angEyeAngles, LATCH_SIMULATION_VAR );
 
-//	m_EntClientFlags |= ENTCLIENTFLAG_DONTUSEIK;
-	m_PlayerAnimState = CreateHL2MPPlayerAnimState( this );
+	m_EntClientFlags |= ENTCLIENTFLAG_DONTUSEIK;
 
 	m_blinkTimer.Invalidate();
 
@@ -178,7 +141,6 @@ C_HL2MP_Player::C_HL2MP_Player() : m_PlayerAnimState( this ), m_iv_angEyeAngles(
 C_HL2MP_Player::~C_HL2MP_Player( void )
 {
 	ReleaseFlashlight();
-	m_PlayerAnimState->Release();
 }
 
 int C_HL2MP_Player::GetIDTarget() const
@@ -278,12 +240,6 @@ CStudioHdr *C_HL2MP_Player::OnNewModel( void )
 	CStudioHdr *hdr = BaseClass::OnNewModel();
 	
 	Initialize( );
-
-	// Reset the players animation states, gestures
-	if ( m_PlayerAnimState )
-	{
-		m_PlayerAnimState->OnNewModel();
-	}
 
 	return hdr;
 }
@@ -719,7 +675,7 @@ const QAngle& C_HL2MP_Player::GetRenderAngles()
 	}
 	else
 	{
-		return m_PlayerAnimState->GetRenderAngles();
+		return m_PlayerAnimState.GetRenderAngles();
 	}
 }
 
@@ -1350,12 +1306,16 @@ void C_HL2MPRagdoll::SetupWeights( const matrix3x4_t *pBoneToWorld, int nFlexWei
 
 void C_HL2MP_Player::UpdateClientSideAnimation()
 {
-	m_PlayerAnimState->Update( EyeAngles()[YAW], EyeAngles()[PITCH] );
-
 #if 0 // TODO (nullsystem): 2025-02-18 SOURCE SDK 2013 CHECK
+	m_PlayerAnimState.Update( EyeAngles()[YAW], EyeAngles()[PITCH] );
+#else
+	m_PlayerAnimState.Update();
+#endif
+
 	BaseClass::UpdateClientSideAnimation();
 }
 
+#if 0 // TODO (nullsystem): 2025-02-18 SOURCE SDK 2013 CHECK
 // -------------------------------------------------------------------------------- //
 // Player animation event. Sent to the client when a player fires, jumps, reloads, etc..
 // -------------------------------------------------------------------------------- //
@@ -1486,6 +1446,11 @@ void C_HL2MP_Player::CalculateIKLocks( float currentTime )
 	CBaseEntity::PopEnableAbsRecomputations();
 	partition->SuppressLists( curSuppressed, true );
 #endif
+
+void C_HL2MP_Player::PostThink( void )
+{
+	BaseClass::PostThink();
+
 	// Store the eye angles pitch so the client can compute its animation state correctly.
 	m_angEyeAngles = EyeAngles();
 
@@ -1494,3 +1459,4 @@ void C_HL2MP_Player::CalculateIKLocks( float currentTime )
 		SetCollisionBounds( VEC_CROUCH_TRACE_MIN, VEC_CROUCH_TRACE_MAX );
 	}
 }
+

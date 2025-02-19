@@ -170,19 +170,23 @@ void DrawRefract_DX9( CBaseVSShader *pShader, IMaterialVar** params, IShaderDyna
 
 		// normal map
 		pShaderShadow->EnableTexture( SHADER_SAMPLER3, true );
+#if 0 // NEO NOTE (nullsystem): 2025-02-18 SOURCE SDK 2013 CHECK - NORMAL_DECODE_ATI2N_ALPHA no longer exists
 		if ( nNormalDecodeMode == NORMAL_DECODE_ATI2N_ALPHA )
 		{
 			pShaderShadow->EnableTexture( SHADER_SAMPLER6, true );	// Normal map alpha, in the compressed normal case
 		}
+#endif
 
 		if ( bSecondaryNormal )
 		{
 			pShaderShadow->EnableTexture( SHADER_SAMPLER1, true );
 
+#if 0 // NEO NOTE (nullsystem): 2025-02-18 SOURCE SDK 2013 CHECK - NORMAL_DECODE_ATI2N_ALPHA no longer exists
 			if ( nNormalDecodeMode == NORMAL_DECODE_ATI2N_ALPHA )
 			{
 				pShaderShadow->EnableTexture( SHADER_SAMPLER7, true );	// Secondary normal map alpha, in the compressed normal case
 			}
+#endif
 		}
 
 		if( bHasEnvmap )
@@ -284,22 +288,26 @@ void DrawRefract_DX9( CBaseVSShader *pShader, IMaterialVar** params, IShaderDyna
 			pShaderAPI->BindStandardTexture( SHADER_SAMPLER2, TEXTURE_FRAME_BUFFER_FULL_TEXTURE_0 );
 		}
 
+#if 0 // NEO NOTE (nullsystem): 2025-02-18 SOURCE SDK 2013 CHECK - NORMAL_DECODE_ATI2N_ALPHA no longer exists
 		if ( nNormalDecodeMode == NORMAL_DECODE_ATI2N_ALPHA )
 		{
 			pShader->BindTexture( SHADER_SAMPLER3, SHADER_SAMPLER6, info.m_nNormalMap, info.m_nBumpFrame );
 		}
 		else
+#endif
 		{
 			pShader->BindTexture( SHADER_SAMPLER3, info.m_nNormalMap, info.m_nBumpFrame );
 		}
 
 		if ( bSecondaryNormal )
 		{
+#if 0 // NEO NOTE (nullsystem): 2025-02-18 SOURCE SDK 2013 CHECK - NORMAL_DECODE_ATI2N_ALPHA no longer exists
 			if ( nNormalDecodeMode == NORMAL_DECODE_ATI2N_ALPHA )
 			{
 				pShader->BindTexture( SHADER_SAMPLER1, SHADER_SAMPLER7, info.m_nNormalMap2, info.m_nBumpFrame2 );
 			}
 			else
+#endif
 			{
 				pShader->BindTexture( SHADER_SAMPLER1, info.m_nNormalMap2, info.m_nBumpFrame2 );
 			}

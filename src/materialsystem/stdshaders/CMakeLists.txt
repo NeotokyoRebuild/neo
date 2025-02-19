@@ -14,6 +14,7 @@ target_include_directories(game_shader_dx9
         ${CMAKE_SOURCE_DIR}/public
         fxctmp9
         vshtmp9
+	include
 )
 
 target_compile_definitions(game_shader_dx9

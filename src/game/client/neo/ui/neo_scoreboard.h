@@ -38,6 +38,8 @@ public:
 	virtual bool ShowAvatars();
 	virtual bool UpdateAvatars();
 
+	GameActionSet_t GetPreferredActionSet() override { return GAME_ACTION_SET_IN_GAME_HUD; }
+
 	// both vgui::Frame and IViewPortPanel define these, so explicitly define them here as passthroughs to vgui
 	vgui::VPANEL GetVPanel( void ) { return BaseClass::GetVPanel(); }
   	virtual bool IsVisible() { return BaseClass::IsVisible(); }

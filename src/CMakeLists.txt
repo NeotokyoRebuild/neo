@@ -40,6 +40,7 @@ option(NEO_INSTALL_LIBRARIES "Install game libraries" OFF)
 option(NEO_INSTALL_RESOURCES "Install game resources" OFF)
 option(NEO_USE_SEPARATE_BUILD_INFO "Use separate build info on Linux" OFF)
 option(NEO_ENABLE_CPACK "Enable CPack" OFF)
+option(NEO_USE_MEM_DEBUG "Enable USE_MEM_DEBUG defines" OFF)
 
 message(STATUS "CI build mode: ${NEO_CI_BUILD}")
 message(STATUS "chroot build mode: ${NEO_CHROOT_BUILD}")
@@ -84,6 +85,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 set(CMAKE_POSITION_INDEPENDENT_CODE FALSE)
 
 set(SOURCESDK TRUE)
+set(SOURCE_HAS_FREETYPE TRUE)
 
 # TODO use base.xcconfig for OS_MACOS
 
@@ -92,6 +94,11 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         DEBUG
         _DEBUG
     )
+    if (NEO_USE_MEM_DEBUG)
+        add_compile_definitions(
+            USE_MEM_DEBUG
+        )
+    endif ()
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
     add_compile_definitions(
         NDEBUG
@@ -109,19 +116,27 @@ if(NEO_RAD_TELEMETRY_DISABLED)
     add_compile_definitions(RAD_TELEMETRY_DISABLED)
 endif()
 
+if (OS_LINUX)
+    set(PLATSUBDIR "/linux64")
+elseif (OS_WINDOWS)
+    set(PLATSUBDIR "/x64")
+endif ()
+
+
 if(NEO_CHROOT_BUILD)
     set(STEAM_RUNTIME_PATH /usr)
-    set(CRYPTOPPDIR ubuntu12_32_gcc48)
+    set(CRYPTOPPDIR steamrt_sniper64)
 elseif(NEO_USE_VALVE_BINDIR)
     set(STEAM_RUNTIME_PATH /valve)
-    set(CRYPTOPPDIR linux32)
+    set(CRYPTOPPDIR steamrt_sniper64)
 else()
     set(STEAM_RUNTIME_PATH /usr)
-    set(CRYPTOPPDIR ubuntu12_32)
+    set(CRYPTOPPDIR steamrt_sniper64)
 endif()
 
+
 add_compile_definitions(
-    SDK2013CE
+    # SDK2013CE # Cut out since 2025-02-18 TF2 SDK Update
     NEO
     GLOWS_ENABLE
     _DLL_EXT=${CMAKE_SHARED_LIBRARY_SUFFIX}
@@ -130,6 +145,10 @@ add_compile_definitions(
     FRAME_POINTER_OMISSION_DISABLED
     SOURCE1=1
     DEV_BUILD
+
+    # NEO NOTE (nullsystem): New defines since 2025-02-18 TF2 SDK Update
+    PLATFORM_64BITS
+    INCLUDED_STEAM2_USERID_STRUCTS
 )
 
 if(OS_WINDOWS)
@@ -165,9 +184,12 @@ if(OS_WINDOWS)
     add_compile_definitions(
         WIN32
         _WIN32
+	WIN64
+	_WIN64
         _WINDOWS
         COMPILER_MSVC
-        COMPILER_MSVC32
+	#COMPILER_MSVC32
+        COMPILER_MSVC64
         _LIB
         _CRT_SECURE_NO_DEPRECATE
         _CRT_NONSTDC_NO_DEPRECATE
@@ -264,9 +286,9 @@ if(OS_LINUX OR OS_MACOS)
     )
 
     add_compile_options(
-        -m32
+	#-m32
+        #-msse2
         -fno-exceptions
-        -msse2
 
         -Wall
         #-Wextra # if STEAM_BRANCH
@@ -323,7 +345,7 @@ if(OS_LINUX OR OS_MACOS)
     # We should always specify -Wl,--build-id, as documented at:
     # http://linux.die.net/man/1/ld and http://fedoraproject.org/wiki/Releases/FeatureBuildId.http://fedoraproject.org/wiki/Releases/FeatureBuildId
     add_link_options(
-        -m32
+        #-m32
         -Wl,--build-id
         -static-libgcc
         -Wl,--no-undefined
@@ -335,21 +357,13 @@ if(OS_LINUX OR OS_MACOS)
 endif()
 
 if(OS_LINUX)
-    set(LIBPUBLIC "${CMAKE_SOURCE_DIR}/lib/public/linux32")
-    set(LIBCOMMON "${CMAKE_SOURCE_DIR}/lib/common/linux32")
+    set(LIBPUBLIC "${CMAKE_SOURCE_DIR}/lib/public${PLATSUBDIR}")
+    set(LIBCOMMON "${CMAKE_SOURCE_DIR}/lib/common${PLATSUBDIR}")
 
     add_compile_definitions(
         LINUX
         _LINUX
-        # TODO 64-bit time to sidestep 32-bit unix timestamp 2038 issue, although could affect Valve filesystem API
-        # _FILE_OFFSET_BITS=64
-        # _TIME_BITS=64
     )
-endif()
-
-if(OS_MACOS)
-    set(LIBPUBLIC "${CMAKE_SOURCE_DIR}/lib/public/osx32")
-    set(LIBCOMMON "${CMAKE_SOURCE_DIR}/lib/common/osx32")
 endif()
 
 if(NOT NEO_DEDICATED AND (OS_LINUX OR OS_MACOS))

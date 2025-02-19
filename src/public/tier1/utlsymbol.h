@@ -75,6 +75,9 @@ protected:
 	static bool s_bAllowStaticSymbolTable;
 
 	friend class CCleanupUtlSymbolTable;
+#ifdef NEO
+	friend class CUtlSymbolTable;
+#endif
 };
 
 
@@ -105,7 +108,7 @@ public:
 	
 	inline bool HasElement( const char* pStr ) const
 	{
-		return Find( pStr ) != UTL_INVAL_SYMBOL;
+		return Find( pStr ).m_Id != UTL_INVAL_SYMBOL;
 	}
 
 	// Remove all symbols in the table.

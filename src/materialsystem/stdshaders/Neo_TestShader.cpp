@@ -16,7 +16,7 @@
 
 // We're going to be making a screenspace effect. Therefore, we need the
 // screenspace vertex shader.
-#include "SDK_screenspaceeffect_vs20.inc"
+#include "sdk_screenspaceeffect_vs20.inc"
 
 // We also need to include the pixel shader for our own shader.
 // Note that the shader compiler generates both 2.0 and 2.0b versions.

@@ -205,11 +205,6 @@ public:
 		GetStringInternal( pString, maxLenInChars );
 	}
 
-	void GetString(char* pString, size_t maxLenInChars)
-	{
-		GetStringInternal(pString, maxLenInChars);
-	}
-
 	void GetStringManualCharCount( char *pString, size_t maxLenInChars )
 	{
 		GetStringInternal( pString, maxLenInChars );

@@ -146,6 +146,7 @@ target_sources_grouped(
     TARGET server
     NAME "Source Files"
     FILES
+    ${CMAKE_SOURCE_DIR}/common/steamid.cpp
     ${CMAKE_SOURCE_DIR}/common/hl2orange.spa.h
     ${CMAKE_SOURCE_DIR}/game/server/serverbenchmark_base.cpp
     ${CMAKE_SOURCE_DIR}/game/server/serverbenchmark_base.h
@@ -317,6 +318,7 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/public/shattersurfacetypes.h
     ${CMAKE_SOURCE_DIR}/public/simple_physics.h
     ${CMAKE_SOURCE_DIR}/public/steam/steam_api.h
+    ${CMAKE_SOURCE_DIR}/public/steam/steamclientpublic.h
     ${CMAKE_SOURCE_DIR}/public/stringregistry.h
     ${CMAKE_SOURCE_DIR}/public/vphysics/performance.h
     ${CMAKE_SOURCE_DIR}/public/vphysics/stats.h
@@ -1449,8 +1451,6 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_playeranimstate.h
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_weapon_parse.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_weapon_parse.h
-    hl2mp/hl2mp_bot_temp.cpp
-    hl2mp/hl2mp_bot_temp.h
     hl2mp/hl2mp_client.cpp
     hl2mp/hl2mp_cvars.cpp
     hl2mp/hl2mp_gameinterface.cpp

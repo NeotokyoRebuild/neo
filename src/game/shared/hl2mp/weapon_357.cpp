@@ -35,7 +35,10 @@ public:
 	void	PrimaryAttack( void );
 	DECLARE_NETWORKCLASS(); 
 	DECLARE_PREDICTABLE();
+
+#ifndef CLIENT_DLL
 	DECLARE_ACTTABLE();
+#endif
 
 private:
 	
@@ -54,24 +57,24 @@ LINK_ENTITY_TO_CLASS( weapon_357, CWeapon357 );
 PRECACHE_WEAPON_REGISTER( weapon_357 );
 
 
+#ifndef CLIENT_DLL
 acttable_t CWeapon357::m_acttable[] = 
 {
-	{ ACT_MP_STAND_IDLE,				ACT_HL2MP_IDLE_PISTOL,					false },
-	{ ACT_MP_CROUCH_IDLE,				ACT_HL2MP_IDLE_CROUCH_PISTOL,			false },
-
-	{ ACT_MP_RUN,						ACT_HL2MP_RUN_PISTOL,					false },
-	{ ACT_MP_CROUCHWALK,				ACT_HL2MP_WALK_CROUCH_PISTOL,			false },
-
-	{ ACT_MP_ATTACK_STAND_PRIMARYFIRE,	ACT_HL2MP_GESTURE_RANGE_ATTACK_PISTOL,	false },
-	{ ACT_MP_ATTACK_CROUCH_PRIMARYFIRE,	ACT_HL2MP_GESTURE_RANGE_ATTACK_PISTOL,	false },
-
-	{ ACT_MP_RELOAD_STAND,				ACT_HL2MP_GESTURE_RELOAD_PISTOL,		false },
-	{ ACT_MP_RELOAD_CROUCH,				ACT_HL2MP_GESTURE_RELOAD_PISTOL,		false },
-
-	{ ACT_MP_JUMP,						ACT_HL2MP_JUMP_PISTOL,					false },
+	{ ACT_HL2MP_IDLE,					ACT_HL2MP_IDLE_PISTOL,					false },
+	{ ACT_HL2MP_RUN,					ACT_HL2MP_RUN_PISTOL,					false },
+	{ ACT_HL2MP_IDLE_CROUCH,			ACT_HL2MP_IDLE_CROUCH_PISTOL,			false },
+	{ ACT_HL2MP_WALK_CROUCH,			ACT_HL2MP_WALK_CROUCH_PISTOL,			false },
+	{ ACT_HL2MP_GESTURE_RANGE_ATTACK,	ACT_HL2MP_GESTURE_RANGE_ATTACK_PISTOL,	false },
+	{ ACT_HL2MP_GESTURE_RELOAD,			ACT_HL2MP_GESTURE_RELOAD_PISTOL,		false },
+	{ ACT_HL2MP_JUMP,					ACT_HL2MP_JUMP_PISTOL,					false },
+	{ ACT_RANGE_ATTACK1,				ACT_RANGE_ATTACK_PISTOL,				false },
 };
 
+
+
 IMPLEMENT_ACTTABLE( CWeapon357 );
+
+#endif
 
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
@@ -88,7 +91,7 @@ CWeapon357::CWeapon357( void )
 void CWeapon357::PrimaryAttack( void )
 {
 	// Only the player fires this way so we can cast
-	CHL2MP_Player *pPlayer = ToHL2MPPlayer( GetOwner() );
+	CBasePlayer *pPlayer = ToBasePlayer( GetOwner() );
 
 	if ( !pPlayer )
 	{
@@ -114,7 +117,7 @@ void CWeapon357::PrimaryAttack( void )
 	pPlayer->DoMuzzleFlash();
 
 	SendWeaponAnim( ACT_VM_PRIMARYATTACK );
-	pPlayer->DoAnimationEvent( PLAYERANIMEVENT_ATTACK_PRIMARY );
+	pPlayer->SetAnimation( PLAYER_ATTACK1 );
 
 	m_flNextPrimaryAttack = gpGlobals->curtime + 0.75;
 	m_flNextSecondaryAttack = gpGlobals->curtime + 0.75;
@@ -122,7 +125,7 @@ void CWeapon357::PrimaryAttack( void )
 	m_iClip1--;
 
 	Vector vecSrc		= pPlayer->Weapon_ShootPosition();
-	Vector vecAiming	= pPlayer->GetAutoaimVector( AUTOAIM_5DEGREES );
+	Vector vecAiming	= pPlayer->GetAutoaimVector( AUTOAIM_5DEGREES );	
 
 	FireBulletsInfo_t info( 1, vecSrc, vecAiming, vec3_origin, MAX_TRACE_LENGTH, m_iPrimaryAmmoType );
 	info.m_pAttacker = pPlayer;

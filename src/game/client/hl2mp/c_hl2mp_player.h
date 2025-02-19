@@ -64,6 +64,7 @@ public:
 	virtual int DrawModel( int flags );
 	virtual void AddEntity( void );
 
+	QAngle GetAnimEyeAngles( void ) { return m_angEyeAngles; }
 	Vector GetAttackSpread( CBaseCombatWeapon *pWeapon, CBaseEntity *pTarget = NULL );
 
 
@@ -91,27 +92,7 @@ public:
 	virtual void CalcView( Vector &eyeOrigin, QAngle &eyeAngles, float &zNear, float &zFar, float &fov );
 	virtual const QAngle& EyeAngles( void );
 
-#if 0 // TODO (nullsystem): 2025-02-18 SOURCE SDK 2013 CHECK
-#ifdef NEO
-	virtual void StartSprinting(void);
-	virtual void StopSprinting(void);
-	virtual bool CanSprint(void);
-
-	virtual void StartWalking(void);
-	virtual void StopWalking(void);
-#else
-	void	StartSprinting(void);
-	void	StopSprinting(void);
-	bool	CanSprint(void);
-
-	void StartWalking(void);
-	void StopWalking(void);
-#endif
-	
-	bool IsWalking(void) { return m_fIsWalking; }
-
 	void	HandleSpeedChanges( void );
-#endif
 
 	void SuitPower_Update( void );
 	bool SuitPower_Drain( float flPower ); // consume some of the suit's power.
@@ -124,9 +105,15 @@ public:
 	bool SuitPower_ShouldRecharge( void );
 	float SuitPower_GetCurrentPercentage( void ) { return m_HL2Local.m_flSuitPower; }
 	
+#ifdef NEO
+	virtual bool	CanSprint( void );
+	virtual void	StartSprinting( void );
+	virtual void	StopSprinting( void );
+#else
 	bool	CanSprint( void );
 	void	StartSprinting( void );
 	void	StopSprinting( void );
+#endif
 	virtual void	HandleSpeedChanges( CMoveData *mv ) OVERRIDE;
 	virtual void	ReduceTimers( CMoveData* mv ) OVERRIDE;
 	void	UpdateLookAt( void );
@@ -138,6 +125,18 @@ public:
 
 	HL2MPPlayerState State_Get() const;
 
+	// Walking
+#ifdef NEO
+	virtual void StartWalking( void );
+	virtual void StopWalking( void );
+#else
+	void StartWalking( void );
+	void StopWalking( void );
+#endif
+	bool IsWalking( void ) { return m_fIsWalking; }
+
+	virtual void PostThink( void );
+
 	virtual void					UpdateClientSideAnimation();
 	void DoAnimationEvent( PlayerAnimEvent_t event, int nData = 0 );
 	virtual void CalculateIKLocks( float currentTime );
@@ -145,7 +144,7 @@ public:
 private:
 	
 	C_HL2MP_Player( const C_HL2MP_Player & );
-	CHL2MPPlayerAnimState *m_PlayerAnimState;
+	CPlayerAnimState m_PlayerAnimState;
 
 	QAngle	m_angEyeAngles;
 

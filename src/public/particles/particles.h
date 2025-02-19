@@ -2440,7 +2440,11 @@ FORCEINLINE Vector CParticleCollection::GetControlPointVelocityAtCurrentTime( in
 
 FORCEINLINE bool CParticleCollection::IsValid( void ) const 
 { 
+#ifdef NEO // NEO NOTE (nullsystem): C++20
+	return ( m_pDef() != nullptr && m_pDef->GetMaterial() );
+#else
 	return ( m_pDef != NULL && m_pDef->GetMaterial() );  
+#endif
 }
 
 
