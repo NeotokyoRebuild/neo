@@ -71,7 +71,7 @@ On the sidebar, click "Projects" then under your current kit, click "Run". Set t
 
 Then under **Environment**, expand by clicking "Details" and add in:
 ```
-LD_LIBRARY_PATH=[INSERT_OUTPUT_HERE]:/home/YOUR_USER/.steam/steam/steamapps/common/Source SDK Base 2013 Multiplayer/bin
+LD_LIBRARY_PATH=[INSERT_OUTPUT_HERE]:/home/YOUR_USER/.steam/steam/steamapps/common/Source SDK Base 2013 Multiplayer/bin/linux64
 SDL_VIDEODRIVER=x11
 SteamEnv=1
 ```

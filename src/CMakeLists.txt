@@ -66,8 +66,15 @@ message(STATUS "Use separate build info on Linux: ${NEO_USE_SEPARATE_BUILD_INFO}
 message(STATUS "Enable CPack: ${NEO_ENABLE_CPACK}")
 message("")
 
+if (OS_LINUX)
+    set(NEO_OUTPUT_LIBRARY_PATH_64 "${CMAKE_SOURCE_DIR}/../game/neo/bin/linux64" CACHE PATH "Directory for output libraries (linux64)")
+else ()
+    set(NEO_OUTPUT_LIBRARY_PATH_64 "${CMAKE_SOURCE_DIR}/../game/neo/bin/x64" CACHE PATH "Directory for output libraries (linux64)")
+endif ()
+
 if(NEO_COPY_LIBRARIES)
     file(MAKE_DIRECTORY "${NEO_OUTPUT_LIBRARY_PATH}")
+    file(MAKE_DIRECTORY "${NEO_OUTPUT_LIBRARY_PATH_64}")
 endif()
 
 if(NEO_ENABLE_CPACK)

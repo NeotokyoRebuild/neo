@@ -65,7 +65,7 @@ function(add_library_copy_target)
 
     add_custom_target(
         ${PARSED_ARGS_TARGET}_copy_lib
-        DEPENDS ${PARSED_ARGS_TARGET} ${PARSED_ARGS_TARGET}_copy_lib_command
+        DEPENDS ${PARSED_ARGS_TARGET} ${PARSED_ARGS_TARGET}_copy_lib_command ${PARSED_ARGS_TARGET}_copy_lib_command_64
     )
 
     add_custom_command(
@@ -74,6 +74,14 @@ function(add_library_copy_target)
         WORKING_DIRECTORY "${NEO_OUTPUT_LIBRARY_PATH}"
         VERBATIM
     )
+
+    add_custom_command(
+        OUTPUT ${PARSED_ARGS_TARGET}_copy_lib_command_64
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PARSED_ARGS_TARGET}> "${NEO_OUTPUT_LIBRARY_PATH_64}/"
+        WORKING_DIRECTORY "${NEO_OUTPUT_LIBRARY_PATH_64}"
+        VERBATIM
+    )
+
 endfunction()
 
 # Used by split_debug_information
