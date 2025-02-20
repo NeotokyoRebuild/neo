@@ -52,7 +52,8 @@ void CNEO_Message::InputShowMessage(inputdata_t& inputData)
 
 	if (m_sSound != NULL_STRING)
 	{
-		CPASAttenuationFilter filter(this);
+		CRecipientFilter filter;
+		filter.AddAllPlayers();
 
 		EmitSound_t ep;
 		ep.m_nChannel = CHAN_BODY;
