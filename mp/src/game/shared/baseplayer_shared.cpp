@@ -58,6 +58,7 @@
 #ifdef GAME_DLL
 #include "neo_player.h"
 #else
+#include "neo_predicted_viewmodel.h"
 #include "c_neo_player.h"
 #endif
 #endif
@@ -1695,6 +1696,9 @@ void CBasePlayer::CalcViewModelView( const Vector& eyeOrigin, const QAngle& eyeA
 	}
 }
 
+#if defined NEO && defined CLIENT_DLL
+extern ConVar cl_neo_lean_viewmodel_only;
+#endif // NEO
 void CBasePlayer::CalcPlayerView( Vector& eyeOrigin, QAngle& eyeAngles, float& fov )
 {
 #if defined( CLIENT_DLL )
@@ -1718,6 +1722,12 @@ void CBasePlayer::CalcPlayerView( Vector& eyeOrigin, QAngle& eyeAngles, float& f
 #else
 	VectorCopy( EyeAngles(), eyeAngles );
 #endif
+#if defined NEO && defined CLIENT_DLL
+	if (cl_neo_lean_viewmodel_only.GetBool() && !IsRagdoll())
+	{
+		eyeAngles.z = 0;
+	}
+#endif // NEO && CLIENT_DLL
 
 #if defined( CLIENT_DLL )
 	if ( !prediction->InPrediction() )
