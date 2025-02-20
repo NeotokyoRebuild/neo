@@ -40,6 +40,7 @@ target_compile_definitions(client
     HL2MP
     VECTOR
     VERSION_SAFE_STEAM_API_INTERFACES
+    NEXT_BOT
 )
 
 target_link_libraries(client
@@ -330,6 +331,9 @@ target_sources_grouped(
     #${CMAKE_SOURCE_DIR}/game/shared/weapon_parse_default.cpp
     ${CMAKE_SOURCE_DIR}/game/client/c_vote_controller.cpp
     ${CMAKE_SOURCE_DIR}/game/client/c_vote_controller.h
+    ${CMAKE_SOURCE_DIR}/game/client/steamshare.cpp
+    ${CMAKE_SOURCE_DIR}/game/client/steamshare.h
+    ${CMAKE_SOURCE_DIR}/game/client/in_steamcontroller.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/EntityParticleTrail_Shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/GameStats.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/SoundEmitterSystem.cpp
@@ -421,6 +425,8 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/voice_banmgr.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/voice_status.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/weapon_parse.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/secure_command_line.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/secure_command_line.h
     ${CMAKE_SOURCE_DIR}/public/SoundParametersInternal.cpp
     ${CMAKE_SOURCE_DIR}/public/bone_accessor.cpp
     ${CMAKE_SOURCE_DIR}/public/haptics/haptic_msgs.cpp

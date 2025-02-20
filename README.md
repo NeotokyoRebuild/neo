@@ -18,6 +18,7 @@ To see the Table of Contents, please use the "Outline" feature on GitHub by clic
     * GCC/G++ 10 toolchain
     * Compiled in the sniper's Docker/Podman/Toolbx container, schroot, or systemd-nspawn
     * This can also work on native (as long as it supports C++20) even with newer GCC/G++, mostly for development setup. At least install GCC and G++ multilib from your distro's package manager.
+    * `mimalloc`
 * Both:
     * [CMake](https://cmake.org/)
     * [ninja](https://ninja-build.org/) (optional, can use nmake/make/VS instead)

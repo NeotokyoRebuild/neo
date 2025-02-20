@@ -65,7 +65,7 @@ On the sidebar, click "Projects" then under your current kit, click "Run". Set t
 
 | Property | Example value |
 | :---------------------------------- | :------------ |
-| Executable | `~/.steam/steam/steamapps/common/Source SDK Base 2013 Multiplayer/hl2_linux` |
+| Executable | `~/.steam/steam/steamapps/common/Source SDK Base 2013 Multiplayer/hl2_linux64` |
 | Command line arguments | `-allowdebug -insecure -dev -sw -game "/PATH/TO/NEO_REPO/mp/game/neo"` |
 | Working directory | `~/.steam/steam/steamapps/common/Source SDK Base 2013 Multiplayer` |
 
@@ -76,13 +76,13 @@ SDL_VIDEODRIVER=x11
 SteamEnv=1
 ```
 
-Next is finding the steam-runtime under the Steam installation. This can be found
+Next is finding the 64-bits steam-runtime under the Steam installation. This can be found
 using the following command, replacing `$HOME` if Steam is installed at another directory:
 ```
 $ find "$HOME" -type d -name 'steam-runtime' 2> /dev/null
 ```
 
-Assuming default directory, it might be in either: `~/.local/share/Steam/ubuntu12_32/steam-runtime/` or if using a Debian based distribution: `~/.steam/debian-installation/ubuntu12_32/steam-runtime/`.
+Assuming default directory, it might be in either: `~/.steam/steam/steamapps/common/SteamLinuxRuntime/var/steam-runtime` or if using a Debian based distribution: `[TODO]`.
 
 Then change to that directory and replace `[INSERT_OUTPUT_HERE]` to the output of:
 ```

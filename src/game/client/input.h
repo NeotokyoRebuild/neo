@@ -122,9 +122,9 @@ public:
 	Vector2D	PerformSteamControllerCameraMove( ESteamControllerPad ePad, Vector2D vecPadPosition, bool bFingerDown, float flFrametime );
 	void		ApplySteamControllerCameraMove( QAngle& viewangles, CUserCmd *cmd, Vector2D vecPosition );
 
-	virtual void	SetPreferredGameActionSet( GameActionSet_t action_set );
+	virtual void	 SetPreferredGameActionSet( GameActionSet_t action_set );
 	virtual GameActionSet_t GetPreferredGameActionSet();
-	virtual void	SetGameActionSetFlags( GameActionSetFlags_t action_set_flags );
+	virtual void	 SetGameActionSetFlags( GameActionSetFlags_t action_set_flags );
 
 	virtual bool IsSteamControllerActive();
 

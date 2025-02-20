@@ -447,7 +447,7 @@ void ScriptInstallPreSpawnHook()
 	if ( g_pScriptVM && !g_pScriptVM->ValueExists( "__ExecutePreSpawn" ) )
 	{
 #ifdef NEO
-		if (g_Script_spawn_helper)
+		if (g_Script_spawn_helper == nullptr)
 		{
 			g_Script_spawn_helper = VScriptCompileScript("nut_scripts/spawn_helper.nut");
 		}

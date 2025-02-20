@@ -46,6 +46,7 @@ target_compile_definitions(server
     _snprintf=use_Q_snprintf_instead
     sprintf=use_Q_snprintf_instead_of_sprintf
     strncpy=use_Q_strncpy_instead
+    NEXT_BOT
 )
 
 target_link_libraries(server
@@ -154,6 +155,8 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/server/serverbenchmark_base.h
     ${CMAKE_SOURCE_DIR}/game/server/vote_controller.cpp
     ${CMAKE_SOURCE_DIR}/game/server/vote_controller.h
+    ${CMAKE_SOURCE_DIR}/game/server/player_voice_listener.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/player_voice_listener.h
     ${CMAKE_SOURCE_DIR}/game/shared/EntityParticleTrail_Shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/GameStats.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/ModelSoundsCache.cpp
@@ -1148,6 +1151,10 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/script_intro_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/vscript_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/vscript_shared.h
+    ${CMAKE_SOURCE_DIR}/game/server/vscript_server.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/vscript_server.h
+    ${CMAKE_SOURCE_DIR}/game/server/netpropmanager.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/netpropmanager.h
     basebludgeonweapon.cpp
     basebludgeonweapon.h
     hl2/ai_allymanager.cpp

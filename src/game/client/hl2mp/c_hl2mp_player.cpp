@@ -1315,7 +1315,8 @@ void C_HL2MP_Player::UpdateClientSideAnimation()
 	BaseClass::UpdateClientSideAnimation();
 }
 
-#if 0 // TODO (nullsystem): 2025-02-18 SOURCE SDK 2013 CHECK
+// TODO (nullsystem): 2025-02-18 SOURCE SDK 2013 CHECK
+
 // -------------------------------------------------------------------------------- //
 // Player animation event. Sent to the client when a player fires, jumps, reloads, etc..
 // -------------------------------------------------------------------------------- //
@@ -1352,6 +1353,7 @@ END_RECV_TABLE()
 
 void C_HL2MP_Player::DoAnimationEvent( PlayerAnimEvent_t event, int nData )
 {
+#if 0
 	if ( IsLocalPlayer() )
 	{
 		if ( ( prediction->InPrediction() && !prediction->IsFirstTimePredicted() ) )
@@ -1359,7 +1361,8 @@ void C_HL2MP_Player::DoAnimationEvent( PlayerAnimEvent_t event, int nData )
 	}
 
 	MDLCACHE_CRITICAL_SECTION();
-	m_PlayerAnimState->DoAnimationEvent( event, nData );
+	m_PlayerAnimState.DoAnimationEvent( event, nData );
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -1445,7 +1448,7 @@ void C_HL2MP_Player::CalculateIKLocks( float currentTime )
 
 	CBaseEntity::PopEnableAbsRecomputations();
 	partition->SuppressLists( curSuppressed, true );
-#endif
+}
 
 void C_HL2MP_Player::PostThink( void )
 {

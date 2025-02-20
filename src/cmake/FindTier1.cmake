@@ -20,5 +20,12 @@ add_library(tier1::tier1 ALIAS tier1_tier1)
 set_target_properties(tier1_tier1 PROPERTIES
     IMPORTED_LOCATION "${TIER1_LIBRARY}"
     INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/public/tier1"
-    POSITION_INDEPENDENT_CODE ON
 )
+
+if (OS_LINUX)
+	target_link_options(tier1_tier1
+		PUBLIC
+			-fPIC
+	)
+endif ()
+

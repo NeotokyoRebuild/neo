@@ -3,12 +3,12 @@
  * edit is neo_version_info.cpp.in which takes defined CMake variables
  */
 
-const char* BUILD_DATE_SHORT = "20250219";
-const char* BUILD_DATE_LONG = "2025-02-19";
-const char* GIT_HASH = "fbed0f5";
-const char* GIT_LONGHASH = "fbed0f5bc21d35d386301e6c4ea611dbfdbaaaf2";
+const char* BUILD_DATE_SHORT = "20250220";
+const char* BUILD_DATE_LONG = "2025-02-20";
+const char* GIT_HASH = "509195f";
+const char* GIT_LONGHASH = "509195f8fbd9fb891cbeaa7f187c03dadcdcc769";
 const char* OS_BUILD = "Linux";
 const char* COMPILER_ID = "GNU";
 const char* COMPILER_VERSION = "14.2.1";
 const char* GIT_LATESTTAG = "v11.0-prealpha";
-const wchar_t* BUILD_DISPLAY = L"Build: v11.0-prealpha (20250219_fbed0f5, Linux)";
+const wchar_t* BUILD_DISPLAY = L"Build: v11.0-prealpha (20250220_509195f, Linux)";

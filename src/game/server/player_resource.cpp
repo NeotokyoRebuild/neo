@@ -16,7 +16,7 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-extern void SendProxy_String_tToString(const SendProp *pProp, const void *pStruct, const void *pData, DVariant *pOut, int iElement, int objectID);
+extern void SendProxy_StringT_To_String(const SendProp *pProp, const void *pStruct, const void *pData, DVariant *pOut, int iElement, int objectID);
 
 // Datatable
 IMPLEMENT_SERVERCLASS_ST_NOBASE(CPlayerResource, DT_PlayerResource)
@@ -26,10 +26,10 @@ IMPLEMENT_SERVERCLASS_ST_NOBASE(CPlayerResource, DT_PlayerResource)
 #ifdef NEO
 	SendPropArray3(SENDINFO_ARRAY3(m_iXP), SendPropInt(SENDINFO_ARRAY(m_iXP), 12)),
 	SendPropArray3(SENDINFO_ARRAY3(m_iClass), SendPropInt(SENDINFO_ARRAY(m_iClass), 12)),
-	SendPropArray3(SENDINFO_ARRAY3(m_szNeoName), SendPropString(SENDINFO_ARRAY(m_szNeoName), 0, SendProxy_String_tToString)),
+	SendPropArray3(SENDINFO_ARRAY3(m_szNeoName), SendPropString(SENDINFO_ARRAY(m_szNeoName), 0, SendProxy_StringT_To_String)),
 	SendPropArray3(SENDINFO_ARRAY3(m_iNeoNameDupeIdx), SendPropInt(SENDINFO_ARRAY(m_iNeoNameDupeIdx), 12)),
 	SendPropArray3(SENDINFO_ARRAY3(m_iStar), SendPropInt(SENDINFO_ARRAY(m_iStar), 12)),
-	SendPropArray3(SENDINFO_ARRAY3(m_szNeoClantag), SendPropString(SENDINFO_ARRAY(m_szNeoClantag), 0, SendProxy_String_tToString)),
+	SendPropArray3(SENDINFO_ARRAY3(m_szNeoClantag), SendPropString(SENDINFO_ARRAY(m_szNeoClantag), 0, SendProxy_StringT_To_String)),
 #endif
 	SendPropArray3( SENDINFO_ARRAY3(m_iScore), SendPropInt( SENDINFO_ARRAY(m_iScore), 12 ) ),
 	SendPropArray3( SENDINFO_ARRAY3(m_iDeaths), SendPropInt( SENDINFO_ARRAY(m_iDeaths), 12 ) ),

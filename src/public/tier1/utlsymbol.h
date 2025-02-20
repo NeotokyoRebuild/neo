@@ -23,6 +23,9 @@
 //-----------------------------------------------------------------------------
 class CUtlSymbolTable;
 class CUtlSymbolTableMT;
+#ifdef NEO
+class CScriptConvarAccessor;
+#endif
 
 
 //-----------------------------------------------------------------------------
@@ -77,6 +80,7 @@ protected:
 	friend class CCleanupUtlSymbolTable;
 #ifdef NEO
 	friend class CUtlSymbolTable;
+	friend class CScriptConvarAccessor;
 #endif
 };
 

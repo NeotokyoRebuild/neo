@@ -4,6 +4,12 @@ add_library(tier1::tier1 ALIAS tier1)
 
 target_compile_definitions(tier1 PRIVATE TIER1_STATIC_LIB)
 
+if (OS_LINUX)
+    set_target_properties(tier1 PROPERTIES
+        POSITION_INDEPENDENT_CODE ON
+    )
+endif ()
+
 target_include_directories(tier1
     PUBLIC
     ${CMAKE_SOURCE_DIR}/public/tier1

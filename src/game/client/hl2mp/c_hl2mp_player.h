@@ -106,9 +106,9 @@ public:
 	float SuitPower_GetCurrentPercentage( void ) { return m_HL2Local.m_flSuitPower; }
 	
 #ifdef NEO
-	virtual bool	CanSprint( void );
-	virtual void	StartSprinting( void );
-	virtual void	StopSprinting( void );
+	virtual bool	 CanSprint( void );
+	virtual void	 StartSprinting( void ) {}
+	virtual void	 StopSprinting( void ) {}
 #else
 	bool	CanSprint( void );
 	void	StartSprinting( void );

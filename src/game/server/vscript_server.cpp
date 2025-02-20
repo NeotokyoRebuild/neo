@@ -39,7 +39,11 @@
 #endif
 
 #if defined( _WIN32 ) || defined( POSIX )
+#ifdef NEO
+static HSCRIPT g_Script_vscript_server;
+#else
 #include "vscript_server_nut.h"
+#endif
 #endif
 
 #if defined( PORTAL2_PUZZLEMAKER )
@@ -250,7 +254,11 @@ bool CScriptConvarAccessor::IsConVarOnAllowList( const char *cvar )
 	if ( !cvar || !*cvar )
 		return false;
 
+#ifdef NEO // NEO NOTE (nullsystem): C++20
+	return m_AllowedConVars.Find( cvar ).m_Id != UTL_INVAL_SYMBOL;
+#else
 	return m_AllowedConVars.Find( cvar ) != UTL_INVAL_SYMBOL;
+#endif
 }
 
 BEGIN_SCRIPTDESC_ROOT_NAMED( CScriptConvarAccessor, "Convars", SCRIPT_SINGLETON "Access to convar functions" )
@@ -3499,6 +3507,12 @@ REGISTER_SCRIPT_CONST_TABLE( Server )
 
 				if ( scriptLanguage == SL_SQUIRREL )
 				{
+#ifdef NEO
+					if (g_Script_vscript_server == nullptr)
+					{
+						g_Script_vscript_server = VScriptCompileScript("nut_scripts/vscript_server.nut");
+					}
+#endif
 					g_pScriptVM->Run( g_Script_vscript_server );
 				}
 				g_VScriptGameEventListener.Init();
