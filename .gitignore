@@ -666,3 +666,6 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# Old /mp directory should no longer be used
+/mp

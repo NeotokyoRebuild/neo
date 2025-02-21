@@ -69,7 +69,7 @@ message("")
 if (OS_LINUX)
     set(NEO_OUTPUT_LIBRARY_PATH_64 "${CMAKE_SOURCE_DIR}/../game/neo/bin/linux64" CACHE PATH "Directory for output libraries (linux64)")
 else ()
-    set(NEO_OUTPUT_LIBRARY_PATH_64 "${CMAKE_SOURCE_DIR}/../game/neo/bin/x64" CACHE PATH "Directory for output libraries (linux64)")
+    set(NEO_OUTPUT_LIBRARY_PATH_64 "${CMAKE_SOURCE_DIR}/../game/neo/bin/x64" CACHE PATH "Directory for output libraries (x64)")
 endif ()
 
 if(NEO_COPY_LIBRARIES)
@@ -159,8 +159,8 @@ add_compile_definitions(
 )
 
 if(OS_WINDOWS)
-    set(LIBPUBLIC "${CMAKE_SOURCE_DIR}/lib/public")
-    set(LIBCOMMON "${CMAKE_SOURCE_DIR}/lib/common")
+    set(LIBPUBLIC "${CMAKE_SOURCE_DIR}/lib/public${PLATSUBDIR}")
+    set(LIBCOMMON "${CMAKE_SOURCE_DIR}/lib/common${PLATSUBDIR}")
 
     set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "EditAndContinue")
 

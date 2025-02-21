@@ -1,5 +1,5 @@
 if(OS_WINDOWS)
-    set(STEAM_API_LIBRARY_NAME steam_api.lib)
+    set(STEAM_API_LIBRARY_NAME steam_api64.lib)
 elseif(OS_LINUX)
     set(STEAM_API_LIBRARY_NAME libsteam_api.so)
 elseif(OS_MACOS)
