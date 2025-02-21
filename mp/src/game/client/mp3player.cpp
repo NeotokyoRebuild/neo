@@ -6,7 +6,7 @@
 
 #include "cbase.h"
 
-#if 0
+#if 1
 #include "mp3player.h"
 #include "KeyValues.h"
 #include "filesystem.h"
@@ -706,6 +706,13 @@ public:
 		SetFgColor( TREE_TEXT_COLOR );
 		SetBgColor( pScheme->GetColor( "BorderDark", Color( 0, 0, 0, 255 ) ) );
 	}
+
+#ifdef NEO
+	void OnMousePressed(MouseCode code)
+	{
+		return;
+	}
+#endif // NEO
 };
 
 CMP3Player::CMP3Player( VPANEL parent, char const *panelName ) :

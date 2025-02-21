@@ -45,9 +45,11 @@ public:
 	CUtlSymbol& operator=( CUtlSymbol const& src ) { m_Id = src.m_Id; return *this; }
 	
 	// operator==
+#ifndef NEO
 	bool operator==( CUtlSymbol const& src ) const { return m_Id == src.m_Id; }
+#endif // NEO
 	bool operator==( const char* pStr ) const;
-	
+
 	// Is valid?
 	bool IsValid() const { return m_Id != UTL_INVAL_SYMBOL; }
 	

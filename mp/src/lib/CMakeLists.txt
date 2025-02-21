@@ -30,3 +30,5 @@ endif()
 
 find_package(VSTDLib)
 find_package(VTF)
+
+add_subdirectory(../vaudio_minimp3 ${CMAKE_BINARY_DIR}/vaudio_minimp3)

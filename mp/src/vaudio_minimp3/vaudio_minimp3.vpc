@@ -1,0 +1,35 @@
+//-----------------------------------------------------------------------------
+//	VAUDIO_MINIMP3.VPC
+//
+//	Project Script
+//-----------------------------------------------------------------------------
+
+// You may need to change the below SRCDIR macro
+// depending on where you place the .vpc in your Source SDK codebase.
+$Macro SRCDIR		"..\..\.."
+$Macro OUTBINDIR	"$SRCDIR\..\game\bin"
+
+$Include "$SRCDIR\vpc_scripts\source_dll_base.vpc"
+
+$Configuration
+{
+	$Compiler
+	{
+		$AdditionalIncludeDirectories		"$BASE,..\.."
+	}
+}
+
+$Project "VAudio MiniMP3"
+{
+	$Folder	"Source Files"
+	{
+		$File	"vaudio_minimp3.cpp"
+	}
+
+	$Folder	"Header Files"
+	{
+		$File	"$SRCDIR\public\tier1\interface.h"
+		$File	"$SRCDIR\public\vaudio\ivaudio.h"
+		$File	"minimp3.h"
+	}
+}

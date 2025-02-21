@@ -1218,7 +1218,7 @@ static inline void UpdateBgm(ConVar *volCvar)
 	// Start playing the main menu bgm.
 	if (!engine->IsConnected())
 	{
-		enginesound->EmitAmbientSound(bgmFiles[0], volCvar->GetFloat());
+		//enginesound->EmitAmbientSound(bgmFiles[0], volCvar->GetFloat());
 	}
 }
 
