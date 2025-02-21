@@ -20,7 +20,6 @@ target_include_directories(client
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons
     ${CMAKE_SOURCE_DIR}/public
     ${CMAKE_SOURCE_DIR}/thirdparty/sixensesdk/include
-    ${CMAKE_SOURCE_DIR}/vendor
     game_controls
     hl2
     hl2/elements
@@ -57,7 +56,6 @@ target_link_libraries(client
     vtf::vtf
     steam_api::steam_api
     vgui_controls::vgui_controls
-    vaudio_minimp3::vaudio_minimp3
 )
 
 target_link_directories(client
