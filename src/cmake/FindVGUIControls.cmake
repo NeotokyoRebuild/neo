@@ -26,3 +26,11 @@ set_target_properties(vgui_controls_vgui_controls PROPERTIES
     IMPORTED_LOCATION "${VGUI_CONTROLS_LIBRARY}"
     INTERFACE_INCLUDE_DIRECTORIES "${VGUI_CONTROLS_INCLUDE_DIRECTORIES}"
 )
+
+if (OS_LINUX)
+    set_target_properties(vgui_controls_vgui_controls PROPERTIES
+        POSITION_INDEPENDENT_CODE ON
+    )
+endif ()
+
+

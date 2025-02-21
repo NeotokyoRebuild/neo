@@ -1,9 +1,10 @@
 # NEOTOKYO Rebuild
 
-* NEOTOKYO rebuild in Source SDK 2013 Multiplayer
+* NEOTOKYO rebuild in Source SDK 2013 Multiplayer (2025 TF2 SDK Update)
 * Forked from: https://github.com/NeotokyoRevamp/neo
 * License: SOURCE 1 SDK LICENSE, see [LICENSE](LICENSE) for details
-* See [CONTRIBUTING.md](CONTRIBUTING.md) for instructions on how the codebase work and contribute
+* For Valve's Source SDK 2013 contributing text, see [CONTRIBUTING](CONTRIBUTING) for details
+* See [CONTRIBUTING_DOC.md](CONTRIBUTING_DOC.md) for instructions on how the codebase work and contribute
 
 ## Table of contents
 To see the Table of Contents, please use the "Outline" feature on GitHub by clicking the button located in the top right of this document.
@@ -18,7 +19,7 @@ To see the Table of Contents, please use the "Outline" feature on GitHub by clic
     * GCC/G++ 10 toolchain
     * Compiled in the sniper's Docker/Podman/Toolbx container, schroot, or systemd-nspawn
     * This can also work on native (as long as it supports C++20) even with newer GCC/G++, mostly for development setup. At least install GCC and G++ multilib from your distro's package manager.
-    * `mimalloc`
+    * `mimalloc` - To run with a debugger
 * Both:
     * [CMake](https://cmake.org/)
     * [ninja](https://ninja-build.org/) (optional, can use nmake/make/VS instead)
@@ -31,14 +32,14 @@ NT;RE can be built using [VS2022 IDE](#visual-studio-2022-windows), [Qt Creator 
 2. Open the `CMakeLists.txt` found in `src`
 3. To switch to the CMake view, right-click and click on "Switch to CMake Targets View" in the "Solution Explorer", it'll be under the "Folder View".
 
-After that, it should be able to compile. For debugger/run CMake configuration, refer to: [CONTRIBUTING.md - Debugging - VS2022 + CMake (Windows)](CONTRIBUTING.md#vs2022--cmake-windows).
+After that, it should be able to compile. For debugger/run CMake configuration, refer to: [CONTRIBUTING_DOC.md - Debugging - VS2022 + CMake (Windows)](CONTRIBUTING_DOC.md#vs2022--cmake-windows).
 
 #### Qt Creator (Linux)
 1. On the "Welcome" screen, click on "Open Project..."
 2. Open the `CMakeLists.txt` found in `src`
 3. By default, the build is not done in parallel but rather sequentiality. Note, parallel builds at the default setting could deadlock the system or make it unresponsive during the process. Available since CMake 3.12, the amount of jobs can be tweaked using `--parallel <jobs>` where `<jobs>` is a number to specify parallel build level, or just simply don't apply it to turn it off. To turn on parallel builds in Qt Creator: On the "Projects" screen, in [YOUR KIT (under Build & Run)] > Build, go to "Build Steps" section, expand by clicking on "Details", and add `--parallel` to the CMake arguments.
 
-After that, it should be able to compile. For debugger/running configuration, refer to: [CONTRIBUTING.md - Debugging - Qt Creator (Linux)](CONTRIBUTING.md#qt-creator-linux)
+After that, it should be able to compile. For debugger/running configuration, refer to: [CONTRIBUTING_DOC.md - Debugging - Qt Creator (Linux)](CONTRIBUTING_DOC.md#qt-creator-linux)
 
 #### CLI (with ninja, Windows + Linux)
 ##### Windows prerequisite
@@ -319,77 +320,7 @@ shaders\fxc\sdk_screenspaceeffect_vs20.vcs
 
 ## Credits
 * [NeotokyoRevamp/neo](https://github.com/NeotokyoRevamp/neo) - Where this is forked from
-* [ValveSoftware/source-sdk-2013](https://github.com/ValveSoftware/source-sdk-2013) - Source SDK 2013
-* [Nbc66/source-sdk-2013-ce](https://github.com/Nbc66/source-sdk-2013-ce) - Community Edition for additional fixes
+* [ValveSoftware/source-sdk-2013](https://github.com/ValveSoftware/source-sdk-2013) - Source SDK 2013 (2025 TF2 SDK Update)
+* [Nbc66/source-sdk-2013-ce](https://github.com/Nbc66/source-sdk-2013-ce) - Community Edition for additional fixes prior to the TF2 SDK update
 * [tonysergi/source-sdk-2013](https://github.com/tonysergi/source-sdk-2013) - tonysergi's commits that were missing from the original SDK
 
-
-# TODO:
-
-# Source SDK 2013
-
-Source code for Source SDK 2013.
-
-Contains the game code for Half-Life 2, HL2: DM and TF2.
-
-**Now including Team Fortress 2! ✨**
-
-## Build instructions
-
-Clone the repository using the following command:
-
-`git clone https://github.com/ValveSoftware/source-sdk-2013`
-
-### Windows
-
-Requirements:
- - Source SDK 2013 Multiplayer installed via Steam
- - Visual Studio 2022
-
-Inside the cloned directory, navigate to `src`, run:
-```bat
-createallprojects.bat
-```
-This will generate the Visual Studio project `everything.sln` which will be used to build your mod.
-
-Then, on the menu bar, go to `Build > Build Solution`, and wait for everything to build.
-
-You can then select the `Client (Mod Name)` project you wish to run, right click and select `Set as Startup Project` and hit the big green `> Local Windows Debugger` button on the tool bar in order to launch your mod.
-
-The default launch options should be already filled in for the `Release` configuration.
-
-### Linux
-
-Requirements:
- - Source SDK 2013 Multiplayer installed via Steam
- - podman
-
-Inside the cloned directory, navigate to `src`, run:
-```bash
-./buildallprojects
-```
-
-This will build all the projects related to the SDK and your mods automatically against the Steam Runtime.
-
-You can then, in the root of the cloned directory, you can navigate to `game` and run your mod by launching the build launcher for your mod project, eg:
-```bash
-./mod_tf
-```
-
-*Mods that are distributed on Steam MUST be built against the Steam Runtime, which the above steps will automatically do for you.*
-
-## Distributing your Mod
-
-There is guidance on distributing your mod both on and off Steam available at the following link:
-
-https://partner.steamgames.com/doc/sdk/uploading/distributing_source_engine
-
-## Additional Resources
-
-- [Valve Developer Wiki](https://developer.valvesoftware.com/wiki/Source_SDK_2013)
-
-## License
-
-The SDK is licensed to users on a non-commercial basis under the [SOURCE 1 SDK LICENSE](LICENSE), which is contained in the [LICENSE](LICENSE) file in the root of the repository.
-
-For more information, see [Distributing your Mod](#markdown-header-distributing-your-mod).

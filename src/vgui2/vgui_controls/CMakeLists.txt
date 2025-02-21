@@ -16,6 +16,12 @@ target_link_libraries(vgui_controls
     tier1::tier1
 )
 
+if (OS_LINUX)
+    set_target_properties(vgui_controls PROPERTIES
+        POSITION_INDEPENDENT_CODE ON
+    )
+endif ()
+
 target_sources_grouped(
     TARGET vgui_controls
     NAME "Source Files"

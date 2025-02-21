@@ -23,9 +23,8 @@ set_target_properties(tier1_tier1 PROPERTIES
 )
 
 if (OS_LINUX)
-	target_link_options(tier1_tier1
-		PUBLIC
-			-fPIC
-	)
+    set_target_properties(tier1_tier1 PROPERTIES
+        POSITION_INDEPENDENT_CODE ON
+    )
 endif ()
 
