@@ -998,7 +998,7 @@ CAmmoDef *GetAmmoDef()
 
 #else
 
-#if 0 // TODO (nullsystem): 2025-02-18 SOURCE SDK 2013 CHECK
+// TODO (nullsystem): 2025-02-18 SOURCE SDK 2013 CHECK
 #ifdef GAME_DLL
 	void Bot_f(); // Handler for the "bot" command.
 	ConCommand cc_Bot("bot", Bot_f, "Add a bot.", FCVAR_CHEAT);
@@ -1053,7 +1053,6 @@ CAmmoDef *GetAmmoDef()
 #endif
 
 	ConCommand cc_Bot_Alias_BotAdd("bot_add", Bot_f, "Add a bot. Alias for \"bot\".", FCVAR_CHEAT);
-#endif
 
 	bool CHL2MPRules::FShouldSwitchWeapon( CBasePlayer *pPlayer, CBaseCombatWeapon *pWeapon )
 	{		
