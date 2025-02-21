@@ -3,25 +3,38 @@
 #include "convar.h"
 #include "dbg.h"
 
+#ifdef CLIENT_DLL
+#include "materialsystem/imaterialsystem.h"
+#endif
+
 void NeoVersionPrint()
 {
 #if defined(GAME_DLL)
 	static constexpr char HEADER[] = "neo_version (Server's build info):";
 #elif defined(CLIENT_DLL)
 	static constexpr char HEADER[] = "neo_version (Client's build info):";
+	const RenderBackend_t eRenderBackend = g_pMaterialSystem->GetRenderBackend();
 #endif
+
 	Msg("%s\n"
 		"Build version: %s_%s\n"
 		"Build date: %s\n"
 		"Git hash: %s\n"
 		"OS: %s\n"
-		"Compiler: %s %s\n",
-		HEADER,
+		"Compiler: %s %s\n"
+#ifdef CLIENT_DLL
+		"Renderer: %s\n"
+#endif
+		, HEADER,
 		BUILD_DATE_SHORT, GIT_HASH,
 		BUILD_DATE_LONG,
 		GIT_LONGHASH,
 		OS_BUILD,
-		COMPILER_ID, COMPILER_VERSION);
+		COMPILER_ID, COMPILER_VERSION
+#ifdef CLIENT_DLL
+		, GetRenderBackendName(eRenderBackend)
+#endif
+		);
 }
 
 namespace {

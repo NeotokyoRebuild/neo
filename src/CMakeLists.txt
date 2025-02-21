@@ -295,17 +295,18 @@ if(OS_LINUX OR OS_MACOS)
     add_compile_options(
         # See: https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html
 
-	# core2 - Intel Core 2 CPU with 64-bit extensions, MMX, SSE, SSE2, SSE3, SSSE3, CX16, SAHF and FXSR instruction set support. 
+        # core2 - Intel Core 2 CPU with 64-bit extensions, MMX, SSE, SSE2, SSE3, SSSE3, CX16, SAHF and FXSR instruction set support. 
         -march=core2
+        #-march=x86-64
 
-	# This option enables GCC to generate CMPXCHG16B instructions in 64-bit code to implement compare-and-exchange
-	# operations on 16-byte aligned 128-bit objects. This is useful for atomic updates of data structures exceeding
-	# one machine word in size. The compiler uses this instruction to implement Legacy __sync Built-in Functions for
-	# Atomic Memory Access. However, for Built-in Functions for Memory Model Aware Atomic Operations operating on 
-	# 128-bit integers, a library call is always used. 
-	#
-	# TL;DR 2025-released TF2-SDK requires this at least
-	-mcx16
+        # This option enables GCC to generate CMPXCHG16B instructions in 64-bit code to implement compare-and-exchange
+        # operations on 16-byte aligned 128-bit objects. This is useful for atomic updates of data structures exceeding
+        # one machine word in size. The compiler uses this instruction to implement Legacy __sync Built-in Functions for
+        # Atomic Memory Access. However, for Built-in Functions for Memory Model Aware Atomic Operations operating on 
+        # 128-bit integers, a library call is always used. 
+        #
+        # TL;DR 2025-released TF2-SDK requires this at least
+        -mcx16
 
         -fno-exceptions
 
