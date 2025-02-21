@@ -36,8 +36,8 @@ jobs:
       run: |
         preset_name="${{ matrix.platform.preset_os }}-${{ matrix.preset_build_type.name }}"
         workspace_dir="${{ github.workspace }}"
-        source_dir=${workspace_dir//\\//}/mp/src
-        build_dir=${workspace_dir//\\//}/mp/src/build/$preset_name
+        source_dir=${workspace_dir//\\//}/src
+        build_dir=${workspace_dir//\\//}/src/build/$preset_name
         install_dir=$build_dir/install
         echo "source_dir=$source_dir" >> "$GITHUB_ENV"
         echo "build_dir=$build_dir" >> "$GITHUB_ENV"
@@ -48,7 +48,7 @@ jobs:
       if: ${{ matrix.platform.os == 'ubuntu-24.04' }}
       run: |
         sudo apt update
-        sudo apt install libstdc++6 gcc-multilib g++-multilib ninja-build -y
+        sudo apt install libstdc++6 gcc g++ ninja-build -y
 
     - name: Install packages
       if: ${{ matrix.platform.os == 'windows-latest' }}
@@ -57,7 +57,7 @@ jobs:
     - uses: ilammy/msvc-dev-cmd@v1
       if: ${{ matrix.platform.os == 'windows-latest' }}
       with:
-        arch: x86
+        arch: x64
 
     - name: Print PATH
       if: ${{ matrix.platform.os == 'windows-latest' }}
@@ -163,8 +163,8 @@ jobs:
     - name: Set reusable strings
       run: |
         workspace_dir="${{ github.workspace }}"
-        source_dir=${workspace_dir//\\//}/mp/src
-        build_dir=${workspace_dir//\\//}/mp/src/build/windows-release
+        source_dir=${workspace_dir//\\//}/src
+        build_dir=${workspace_dir//\\//}/src/build/windows-release
         install_dir=$build_dir/install
         echo "source_dir=$source_dir" >> "$GITHUB_ENV"
         echo "build_dir=$build_dir" >> "$GITHUB_ENV"
@@ -175,7 +175,7 @@ jobs:
 
     - uses: ilammy/msvc-dev-cmd@v1
       with:
-        arch: x86
+        arch: x64
 
     # Resources
 
