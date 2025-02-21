@@ -186,24 +186,14 @@ void CWeaponGhost::OnPickedUp(CBaseCombatCharacter *pNewOwner)
 		soundParams.m_nChannel = CHAN_USER_BASE;
 		soundParams.m_bWarnOnDirectWaveReference = false;
 		soundParams.m_bEmitCloseCaption = false;
+		soundParams.m_SoundLevel = ATTN_TO_SNDLVL(ATTN_NONE);
 
+		CRecipientFilter soundFilter;
+		soundFilter.AddAllPlayers();
 		int ownerIndex = pNewOwner->entindex();
-		for (int i = 1; i <= gpGlobals->maxClients; ++i)
-		{
-			if (i == ownerIndex)
-			{
-				continue;
-			}
-
-			CBasePlayer* basePlayer = UTIL_PlayerByIndex(i);
-			if (basePlayer && (!basePlayer->IsBot() || basePlayer->IsHLTV()))
-			{
-				CRecipientFilter soundFilter;
-				soundFilter.AddRecipient(basePlayer);
-				soundFilter.MakeReliable();
-				basePlayer->EmitSound(soundFilter, i, soundParams);
-			}
-		}
+		soundFilter.RemoveRecipientByPlayerIndex(ownerIndex);
+		soundFilter.MakeReliable();
+		EmitSound(soundFilter, ownerIndex, soundParams);
 #endif
 	}
 }
