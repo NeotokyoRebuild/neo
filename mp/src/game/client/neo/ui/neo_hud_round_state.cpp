@@ -703,6 +703,9 @@ void CNEOHud_RoundState::CheckActiveStar()
 		return;
 	}
 
+	m_iPreviouslyActiveStar = currentStar;
+	m_iPreviouslyActiveTeam = currentTeam;
+
 	for (auto *ipStar : m_ipStars)
 	{
 		ipStar->SetVisible(false);
@@ -723,9 +726,6 @@ void CNEOHud_RoundState::CheckActiveStar()
 	vgui::ImagePanel *target = m_ipStars[currentStar];
 	target->SetVisible(true);
 	target->SetDrawColor(currentStar == STAR_NONE ? COLOR_NEO_WHITE : currentTeam == TEAM_NSF ? COLOR_NSF : COLOR_JINRAI);
-
-	m_iPreviouslyActiveStar = currentStar;
-	m_iPreviouslyActiveTeam = currentTeam;
 }
 
 void CNEOHud_RoundState::SetTextureToAvatar(int playerIndex)

@@ -51,6 +51,7 @@ void CNEOGrenadeSmoke::Spawn(void)
 	SetElasticity(sv_neo_grenade_cor.GetFloat());
 	SetGravity(sv_neo_grenade_gravity.GetFloat());
 	SetFriction(sv_neo_grenade_friction.GetFloat());
+	SetCollisionGroup(COLLISION_GROUP_WEAPON);
 	SetDetonateTimerLength(FLT_MAX);
 
 	SetThink(&CNEOGrenadeSmoke::DelayThink);
@@ -95,7 +96,7 @@ void CNEOGrenadeSmoke::DelayThink()
 
 bool CNEOGrenadeSmoke::TryDetonate(void)
 {
-	if (m_hasSettled || (gpGlobals->curtime > GetDetonateTimerLength()))
+	if (m_hasSettled && (gpGlobals->curtime > GetDetonateTimerLength()))
 	{
 		Detonate();
 		return true;

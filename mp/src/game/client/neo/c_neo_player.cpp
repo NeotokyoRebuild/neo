@@ -218,7 +218,16 @@ class NeoLoadoutMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback(const CCommand& command)
 	{
-		if (NEORules()->GetForcedWeapon() >= 0)
+#if DEBUG
+		DevMsg("Loadout access cb\n");
+#endif
+		if (engine->IsPlayingDemo() || NEORules()->GetForcedWeapon() >= 0)
+		{
+			return;
+		}
+
+		auto team = GetLocalPlayerTeam();
+		if(team < FIRST_GAME_TEAM)
 		{
 			return;
 		}
@@ -304,7 +313,13 @@ class NeoClassMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback(const CCommand& command)
 	{
-		if (NEORules()->GetForcedClass() >= 0)
+		if (engine->IsPlayingDemo() || NEORules()->GetForcedClass() >= 0)
+		{
+			return;
+		}
+
+		auto team = GetLocalPlayerTeam();
+		if(team < FIRST_GAME_TEAM)
 		{
 			return;
 		}
@@ -376,7 +391,7 @@ class NeoTeamMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback( const CCommand &command )
 	{
-		if (NEORules()->GetForcedTeam() >= 0)
+		if (engine->IsPlayingDemo() || NEORules()->GetForcedTeam() >= 0)
 		{
 			return;
 		}
@@ -460,10 +475,10 @@ public:
 };
 VguiCancel_Cb vguiCancel_Cb;
 
-ConCommand loadoutmenu("loadoutmenu", &neoLoadoutMenu_Cb, "Open weapon loadout selection menu.", FCVAR_USERINFO);
-ConCommand classmenu("classmenu", &neoClassMenu_Cb, "Open class selection menu.", FCVAR_USERINFO);
-ConCommand teammenu("teammenu", &neoTeamMenu_Cb, "Open team selection menu.", FCVAR_USERINFO);
-ConCommand vguicancel("vguicancel", &vguiCancel_Cb, "Cancel current vgui screen.", FCVAR_USERINFO);
+ConCommand loadoutmenu("loadoutmenu", &neoLoadoutMenu_Cb, "Open weapon loadout selection menu.", FCVAR_USERINFO | FCVAR_DONTRECORD);
+ConCommand classmenu("classmenu", &neoClassMenu_Cb, "Open class selection menu.", FCVAR_USERINFO | FCVAR_DONTRECORD);
+ConCommand teammenu("teammenu", &neoTeamMenu_Cb, "Open team selection menu.", FCVAR_USERINFO | FCVAR_DONTRECORD);
+ConCommand vguicancel("vguicancel", &vguiCancel_Cb, "Cancel current vgui screen.", FCVAR_USERINFO | FCVAR_DONTRECORD);
 
 C_NEO_Player::C_NEO_Player()
 {
@@ -1077,14 +1092,6 @@ void C_NEO_Player::ClientThink(void)
 			{
 				if (vel > 0.5) { m_flTocFactor = 0.3f; } // 0.345f
 				else { m_flTocFactor = 0.2f; } // 0.255f
-
-				int distance = GetAbsOrigin().DistTo(pLocalPlayer->GetAbsOrigin());
-				constexpr float CLOAK_FALL_OFF_WITH_DISTANCE_RATE = 0.001;
-				constexpr int CLOAK_FALL_OFF_WITH_DISTANCE_STARTING_DISTANCE = 250;
-				if (distance > CLOAK_FALL_OFF_WITH_DISTANCE_STARTING_DISTANCE)
-				{
-					m_flTocFactor = max(0.1f, m_flTocFactor - ((distance - CLOAK_FALL_OFF_WITH_DISTANCE_STARTING_DISTANCE) * CLOAK_FALL_OFF_WITH_DISTANCE_RATE));
-				}
 			}
 		}
 	}	
@@ -1195,7 +1202,7 @@ void C_NEO_Player::PostThink(void)
 		{
 			Weapon_SetZoom(false);
 		}
-		else if (m_afButtonPressed & IN_AIM)
+		else if (clientAimHold ? (m_nButtons & IN_AIM && !IsInAim()) : m_afButtonPressed & IN_AIM)
 		{
 			if (!CanSprint() || !(m_nButtons & IN_SPEED))
 			{

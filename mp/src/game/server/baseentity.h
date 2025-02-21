@@ -308,14 +308,14 @@ a list of all CBaseEntitys is kept in gEntList
 // creates an entity by string name, but does not spawn it
 // If iForceEdictIndex is not -1, then it will use the edict by that index. If the index is 
 // invalid or there is already an edict using that index, it will error out.
-CBaseEntity *CreateEntityByName( const char *className, int iForceEdictIndex = -1 );
+DLL_CLASS_EXPORT CBaseEntity *CreateEntityByName( const char *className, int iForceEdictIndex = -1 );
 CBaseNetworkable *CreateNetworkableByName( const char *className );
 
 // creates an entity and calls all the necessary spawn functions
 extern void SpawnEntityByName( const char *className, CEntityMapData *mapData = NULL );
 
 // calls the spawn functions for an entity
-extern int DispatchSpawn( CBaseEntity *pEntity );
+DLL_CLASS_EXPORT extern int DispatchSpawn( CBaseEntity *pEntity );
 
 inline CBaseEntity *GetContainingEntity( edict_t *pent );
 

@@ -12,6 +12,7 @@
 #pragma once
 #endif
 
+#include "interface.h"
 #include "mapentities.h"
 
 class IReplayFactory;
@@ -73,7 +74,7 @@ public:
 	virtual void			GameShutdown( void ) OVERRIDE;
 	virtual bool			LevelInit( const char *pMapName, char const *pMapEntities, char const *pOldLevel, char const *pLandmarkName, bool loadGame, bool background ) OVERRIDE;
 	virtual void			ServerActivate( edict_t *pEdictList, int edictCount, int clientMax ) OVERRIDE;
-	virtual void			LevelShutdown( void ) OVERRIDE;
+	DLL_CLASS_EXPORT virtual void			LevelShutdown( void ) OVERRIDE;
 	virtual void			GameFrame( bool simulating ) OVERRIDE; // could be called multiple times before sending data to clients
 	virtual void			PreClientUpdate( bool simulating ) OVERRIDE; // called after all GameFrame() calls, before sending data to clients
 

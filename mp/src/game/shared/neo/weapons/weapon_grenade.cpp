@@ -279,6 +279,7 @@ void CWeaponGrenade::ThrowGrenade(CNEO_Player *pPlayer, bool isAlive, CBaseEntit
 	{
 		pGrenade->SetDamage(sv_neo_grenade_blast_damage.GetFloat());
 		pGrenade->SetDamageRadius(sv_neo_grenade_blast_radius.GetFloat());
+		pGrenade->SetDetonateTimerLength(sv_neo_grenade_fuse_timer.GetFloat());
 	}
 #endif
 

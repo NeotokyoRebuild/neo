@@ -7550,6 +7550,9 @@ void CBasePlayer::Weapon_DropSlot( int weaponSlot )
 			// If the slots match, it's already occupied
 			if ( pWeapon->GetSlot() == weaponSlot )
 			{
+#ifdef NEO
+				pWeapon->AddEffects( EF_BONEMERGE );
+#endif //NEO
 				Weapon_Drop( pWeapon, NULL, NULL );
 			}
 		}
