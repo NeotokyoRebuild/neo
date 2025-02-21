@@ -114,19 +114,6 @@ CNeoLoadoutMenu::CNeoLoadoutMenu(IViewPort *pViewPort)
 
 CNeoLoadoutMenu::~CNeoLoadoutMenu()
 {
-	m_pButton1->SetAutoDelete(true);
-	m_pButton2->SetAutoDelete(true);
-	m_pButton3->SetAutoDelete(true);
-	m_pButton4->SetAutoDelete(true);
-	m_pButton5->SetAutoDelete(true);
-	m_pButton6->SetAutoDelete(true);
-	m_pButton7->SetAutoDelete(true);
-	m_pButton8->SetAutoDelete(true);
-	m_pButton9->SetAutoDelete(true);
-	m_pButton10->SetAutoDelete(true);
-	m_pButton11->SetAutoDelete(true);
-	m_pButton12->SetAutoDelete(true);
-	returnButton->SetAutoDelete(true);
 }
 
 void CNeoLoadoutMenu::FindButtons()

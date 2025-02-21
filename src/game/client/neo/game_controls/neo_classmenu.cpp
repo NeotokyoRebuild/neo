@@ -304,31 +304,31 @@ void CNeoClassMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 
     m_pRecon_Button->SetUseCaptureMouse(true);
     m_pRecon_Button->SetMouseInputEnabled(true);
-    m_pRecon_Button->InstallMouseHandler(this);
+	m_pRecon_Button->AddActionSignalTarget(this);
 
     m_pAssault_Button->SetUseCaptureMouse(true);
     m_pAssault_Button->SetMouseInputEnabled(true);
-    m_pAssault_Button->InstallMouseHandler(this);
+	m_pAssault_Button->AddActionSignalTarget(this);
 
     m_pSupport_Button->SetUseCaptureMouse(true);
     m_pSupport_Button->SetMouseInputEnabled(true);
-    m_pSupport_Button->InstallMouseHandler(this);
+	m_pSupport_Button->AddActionSignalTarget(this);
 
 	m_pSkin1_Button->SetUseCaptureMouse(true);
 	m_pSkin1_Button->SetMouseInputEnabled(true);
-	m_pSkin1_Button->InstallMouseHandler(this);
+	m_pSkin1_Button->AddActionSignalTarget(this);
 
 	m_pSkin2_Button->SetUseCaptureMouse(true);
 	m_pSkin2_Button->SetMouseInputEnabled(true);
-	m_pSkin2_Button->InstallMouseHandler(this);
+	m_pSkin2_Button->AddActionSignalTarget(this);
 
 	m_pSkin3_Button->SetUseCaptureMouse(true);
 	m_pSkin3_Button->SetMouseInputEnabled(true);
-	m_pSkin3_Button->InstallMouseHandler(this);
+	m_pSkin3_Button->AddActionSignalTarget(this);
 
     m_pBack_Button->SetUseCaptureMouse(true);
     m_pBack_Button->SetMouseInputEnabled(true);
-    m_pBack_Button->InstallMouseHandler(this);
+	m_pBack_Button->AddActionSignalTarget(this);
 
 	UpdateSkinImages();
 	InvalidateLayout();

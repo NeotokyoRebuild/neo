@@ -112,19 +112,15 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 
 CNeoTeamMenu::~CNeoTeamMenu()
 {
-	m_pJinrai_Button->RemoveActionSignalTarget(this);
-	m_pNSF_Button->RemoveActionSignalTarget(this);
-	m_pSpectator_Button->RemoveActionSignalTarget(this);
-	m_pAutoAssign_Button->RemoveActionSignalTarget(this);
-	m_pCancel_Button->RemoveActionSignalTarget(this); 
-
-	m_pJinrai_Button->SetAutoDelete(true);
-	m_pNSF_Button->SetAutoDelete(true);
-	m_pSpectator_Button->SetAutoDelete(true);
-	m_pAutoAssign_Button->SetAutoDelete(true);
-	m_pCancel_Button->SetAutoDelete(true);
-
-	g_pNeoTeamMenu = NULL;
+	for (vgui::Button *button : {m_pJinrai_Button, m_pNSF_Button, m_pSpectator_Button, m_pAutoAssign_Button, m_pCancel_Button})
+	{
+		if (button)
+		{
+			button->RemoveActionSignalTarget(this);
+			button->SetAutoDelete(true);
+		}
+	}
+	g_pNeoTeamMenu = nullptr;
 }
 
 void CNeoTeamMenu::FindButtons()
@@ -261,11 +257,11 @@ void CNeoTeamMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 	m_pAutoAssign_Button	->SetMouseInputEnabled(bMouseInputEnabled);
 	m_pCancel_Button		->SetMouseInputEnabled(bMouseInputEnabled);
 
-	m_pJinrai_Button		->InstallMouseHandler(this);
-	m_pNSF_Button			->InstallMouseHandler(this);
-	m_pSpectator_Button		->InstallMouseHandler(this);
-	m_pAutoAssign_Button	->InstallMouseHandler(this);
-	m_pCancel_Button		->InstallMouseHandler(this);
+	m_pJinrai_Button		->AddActionSignalTarget(this);
+	m_pNSF_Button			->AddActionSignalTarget(this);
+	m_pSpectator_Button		->AddActionSignalTarget(this);
+	m_pAutoAssign_Button	->AddActionSignalTarget(this);
+	m_pCancel_Button		->AddActionSignalTarget(this);
 
 	auto pJinrai = GetGlobalTeam(TEAM_JINRAI);
 	auto pNsf = GetGlobalTeam(TEAM_NSF);
