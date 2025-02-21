@@ -175,6 +175,7 @@ extern vgui::IInputInternal *g_InputInternal;
 #include "neo_mount_original.h"
 #include "ui/neo_loading.h"
 #include "neo_player_shared.h"
+#include "mp3player.h"
 extern bool NeoRootCaptureESC();
 extern CNeoLoading *g_pNeoLoading;
 extern ConVar neo_cl_streamermode_autodetect_obs;
@@ -1213,13 +1214,14 @@ static inline void UpdateBgm(ConVar *volCvar)
 			}
 		}
 	}
-
+#ifndef NEO
 	// We were not in a server nor joining a server, and there was no music playing.
 	// Start playing the main menu bgm.
 	if (!engine->IsConnected())
 	{
-		//enginesound->EmitAmbientSound(bgmFiles[0], volCvar->GetFloat());
+		enginesound->EmitAmbientSound(bgmFiles[0], volCvar->GetFloat());
 	}
+#endif // NEO
 }
 
 void MusicVol_ChangeCallback(IConVar *cvar, const char *pOldVal, float flOldVal)
