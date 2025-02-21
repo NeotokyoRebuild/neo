@@ -28,21 +28,21 @@ NT;RE can be built using [VS2022 IDE](#visual-studio-2022-windows), [Qt Creator 
 
 #### Visual Studio 2022 (Windows)
 1. Open up VS2022 without a project, then go to: `File > Open > CMake...`
-2. Open the `CMakeLists.txt` found in `mp\src`
+2. Open the `CMakeLists.txt` found in `src`
 3. To switch to the CMake view, right-click and click on "Switch to CMake Targets View" in the "Solution Explorer", it'll be under the "Folder View".
 
 After that, it should be able to compile. For debugger/run CMake configuration, refer to: [CONTRIBUTING.md - Debugging - VS2022 + CMake (Windows)](CONTRIBUTING.md#vs2022--cmake-windows).
 
 #### Qt Creator (Linux)
 1. On the "Welcome" screen, click on "Open Project..."
-2. Open the `CMakeLists.txt` found in `mp/src`
+2. Open the `CMakeLists.txt` found in `src`
 3. By default, the build is not done in parallel but rather sequentiality. Note, parallel builds at the default setting could deadlock the system or make it unresponsive during the process. Available since CMake 3.12, the amount of jobs can be tweaked using `--parallel <jobs>` where `<jobs>` is a number to specify parallel build level, or just simply don't apply it to turn it off. To turn on parallel builds in Qt Creator: On the "Projects" screen, in [YOUR KIT (under Build & Run)] > Build, go to "Build Steps" section, expand by clicking on "Details", and add `--parallel` to the CMake arguments.
 
 After that, it should be able to compile. For debugger/running configuration, refer to: [CONTRIBUTING.md - Debugging - Qt Creator (Linux)](CONTRIBUTING.md#qt-creator-linux)
 
 #### CLI (with ninja, Windows + Linux)
 ##### Windows prerequisite
-Make sure the "x86 Native Tools Command Prompt for VS2022" is used instead of the default.
+Make sure the "x64 Native Tools Command Prompt for VS2022" is used instead of the default.
 
 ##### Linux prerequisite - Steam Runtime 3 "Sniper" Container
 Your system must include the following packages:
@@ -60,20 +60,20 @@ Download and use the OCI image for Docker/Podman/Toolbx:
 ###### Running the container
 Docker:
 ```
-# docker run -v /PATH_TO_REPO/neo/mp/src:/root/neo/mp/src --rm -it --entrypoint /bin/bash registry.gitlab.steamos.cloud/steamrt/sniper/sdk
-$ cd /root/neo/mp/src/
+# docker run -v /PATH_TO_REPO/neo/src:/root/neo/src --rm -it --entrypoint /bin/bash registry.gitlab.steamos.cloud/steamrt/sniper/sdk
+$ cd /root/neo/src/
 ```
 
 Podman: 
 ```
-$ podman run -v /PATH_TO_REPO/neo/mp/src:/root/neo/mp/src --rm -it --entrypoint /bin/bash registry.gitlab.steamos.cloud/steamrt/sniper/sdk
-$ cd /root/neo/mp/src/
+$ podman run -v /PATH_TO_REPO/neo/src:/root/neo/src --rm -it --entrypoint /bin/bash registry.gitlab.steamos.cloud/steamrt/sniper/sdk
+$ cd /root/neo/src/
 ```
 
 Toolbx: 
 ```
 $ toolbox enter sniper
-$ cd /PATH_TO_REPO/neo/mp/src
+$ cd /PATH_TO_REPO/neo/src
 ```
 
 Depending on the terminal, you may need to install an additional terminfo in the container just to make it usable.
@@ -83,7 +83,7 @@ The container is based on Debian 11 "bullseye", just look for and install the re
 Using with the ninja build system, to build NT;RE using the CLI can be done with:
 
 ```
-$ cd /PATH_TO_REPO/neo/mp/src
+$ cd /PATH_TO_REPO/neo/src
 $ cmake --preset PRESET_NAME
 $ cmake --build --preset PRESET_NAME
 ```
@@ -100,7 +100,7 @@ from a tagged build, copying over the directory is fine. If you are developing o
 git branches, symlinking or just using `-game` is preferred.
 
 After apply the file copy or symlink to the sourcemods directory, launch/restart Steam
-and "Neotokyo: Revamp" should appear. To run the game, original [NEOTOKYO](https://store.steampowered.com/app/244630/NEOTOKYO/)
+and "Neotokyo: Rebuild" should appear. To run the game, original [NEOTOKYO](https://store.steampowered.com/app/244630/NEOTOKYO/)
 have to be installed and NT;RE will try to automatically mount it.
 
 The following examples assumes the default directory, but adjust if needed:
@@ -108,7 +108,7 @@ The following examples assumes the default directory, but adjust if needed:
 ### Windows symlink
 ```
 > cd C:\Program Files (x86)\Steam\steamapps\sourcemods
-> mklink /J neo "<PATH_TO_NEO_SOURCE>/mp/game/neo"
+> mklink /J neo "<PATH_TO_NEO_SOURCE>/game/neo"
 ```
 
 ### Linux symlink
@@ -116,13 +116,13 @@ NOTE: This is not persistent, use `-game` method instead for persistent usage (`
 might not work for persistent mount bind and could cause boot error if not careful):
 ```
 $ cd $HOME/.steam/steam/steamapps/sourcemods
-$ mkdir neo && sudo mount --bind <PATH_TO_NEO_SOURCE>/mp/game/neo neo
+$ mkdir neo && sudo mount --bind <PATH_TO_NEO_SOURCE>/game/neo neo
 ```
 
 ### `-game` option in Source SDK 2013MP launch option
 Another way is just add the `-game` option to "Source SDK Base 2013 Multiplayer":
 ```
-%command% -game <PATH_TO_NEO_SOURCE>/mp/game/neo
+%command% -game <PATH_TO_NEO_SOURCE>/game/neo
 ```
 
 ### `-neopath` - Pointing to a non-default original NEOTOKYO directory
@@ -137,14 +137,6 @@ https://developer.valvesoftware.com/wiki/Source_SDK_2013
 
 For setting up the Steam mod:
 https://developer.valvesoftware.com/wiki/Setup_mod_on_steam
-
-### Linux extra notes
-#### Arch Linux
-You may or may not need this, but if NT;RE crashes/segfaults on launch, then install `lib32-gperftools`,
-and set: `LD_PRELOAD=/usr/lib32/libtcmalloc.so %command%` as the launch options.
-
-Source 2013 Multiplayer also bundles with itself an outdated version of SDL2, due to which there might be false key presses (see: [link](https://github.com/ValveSoftware/Source-1-Games/issues/3335)) and doubled mouse sensitivity when compared to windows/other source games (see: [link](https://github.com/ValveSoftware/Source-1-Games/issues/1834)).
-To fix these issues as well, install `lib32-sdl2`, and set: `LD_PRELOAD=/usr/lib32/libtcmalloc.so:/usr/lib32/libSDL2-2.0.so.0 %command%` as the launch options instead.
 
 ## Server instructions
 ### Server Ops
@@ -255,10 +247,10 @@ srcds.exe -game neo -neopath "..\ognt\NeotokyoSource" +ip <YOUR_IP> -maxplayers 
     * Windows: `srcds.exe`
     * Linux: `srcds_linux`
         * You'll also see `srcds_run` but that doesn't work properly with NT;RE so ignore it
-4. Optional: Link or copy over neo, otherwise `-game <path_to_source>/mp/game/neo` can be used also:
-    * Windows: `mklink /J neo "<path_to_source>/mp/game/neo"`
+4. Optional: Link or copy over neo, otherwise `-game <path_to_source>/game/neo` can be used also:
+    * Windows: `mklink /J neo "<path_to_source>/game/neo"`
     * Linux:
-        * Non-persistent bind mount: `mkdir neo && sudo mount --bind <path_to_source>/mp/game/neo neo`
+        * Non-persistent bind mount: `mkdir neo && sudo mount --bind <path_to_source>/game/neo neo`
         * Or just copy over or use the directory directly
 5. Linux-only: Symlink the names in `<PATH_TO_STEAM>/common/Source SDK Base 2013 Dedicated Server/bin` directory:
 ```
@@ -308,7 +300,7 @@ ln -s materialsystem_srv.so materialsystem.so;
 
 Finally, you should be greeted with some compiler output akin to:
 ```
-== buildshaders stdshader_dx9_30 -game C:\git\neo\mp\src\materialsystem\stdshaders\..\..\..\game\neo -source ..\.. -dx9_30 -force30 ==
+== buildshaders stdshader_dx9_30 -game C:\git\neo\src\materialsystem\stdshaders\..\..\..\game\neo -source ..\.. -dx9_30 -force30 ==
 10.41
 Building inc files, asm vcs files, and VMPI worklist for stdshader_dx9_30...
 Publishing shader inc files to target...
