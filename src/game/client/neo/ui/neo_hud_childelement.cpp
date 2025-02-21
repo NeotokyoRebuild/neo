@@ -19,15 +19,16 @@ CNEOHud_ChildElement::CNEOHud_ChildElement()
 {
 	m_flLastUpdateTime = 0;
 
-	m_hTex_Rounded_NW = surface()->DrawGetTextureId("vgui/hud/800corner1");
-	m_hTex_Rounded_NE = surface()->DrawGetTextureId("vgui/hud/800corner2");
-	m_hTex_Rounded_SW = surface()->DrawGetTextureId("vgui/hud/800corner3");
-	m_hTex_Rounded_SE = surface()->DrawGetTextureId("vgui/hud/800corner4");
+	m_hTex_Rounded_NW = surface()->DrawGetTextureId("vgui/hud/8x800corner1");
+	m_hTex_Rounded_NE = surface()->DrawGetTextureId("vgui/hud/8x800corner2");
+	m_hTex_Rounded_SW = surface()->DrawGetTextureId("vgui/hud/8x800corner3");
+	m_hTex_Rounded_SE = surface()->DrawGetTextureId("vgui/hud/8x800corner4");
 	Assert(m_hTex_Rounded_NE > 0);
 	Assert(m_hTex_Rounded_NW > 0);
 	Assert(m_hTex_Rounded_SE > 0);
 	Assert(m_hTex_Rounded_SW > 0);
 
+#ifdef DEBUG
 	// We assume identical dimensions for all 4 corners.
 	int width_ne, width_nw, width_se, width_sw;
 	int height_ne, height_nw, height_se, height_sw;
@@ -37,10 +38,15 @@ CNEOHud_ChildElement::CNEOHud_ChildElement()
 	surface()->DrawGetTextureSize(m_hTex_Rounded_SW, width_sw, height_sw);
 	Assert(width_ne == width_nw && width_ne == width_se && width_ne == width_sw);
 	Assert(height_ne == height_nw && height_ne == height_se && height_ne == height_sw);
+#endif
 
 	// Only need to store one width/height for identically shaped corner pieces.
-	m_rounded_width = width_ne * NEO_HUDBOX_CORNER_SCALE;
-	m_rounded_height = height_ne * NEO_HUDBOX_CORNER_SCALE;
+	// NEO NOTE (nullsystem): See: Panel::GetCornerTextureSize, legacy non-8x was always w/h 8
+	// NEO TODO (nullsystem): Should actually be scaling with higher res, so remove fixed
+	// usage of LEGACY800CORNERWH eventually
+	static constexpr int LEGACY800CORNERWH = 8;
+	m_rounded_width = LEGACY800CORNERWH * NEO_HUDBOX_CORNER_SCALE;
+	m_rounded_height = LEGACY800CORNERWH * NEO_HUDBOX_CORNER_SCALE;
 	Assert(m_rounded_width > 0 && m_rounded_height > 0);
 }
 
