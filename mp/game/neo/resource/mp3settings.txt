@@ -1,0 +1,9 @@
+// mp3 settings, automatically generated
+settings
+{
+  mostrecentplaylist "C:\Users\AdamTomaszewski\UserProjects\neo\mp\game\neo\sound\playlists\defaultplaylist.txt"
+  directories
+  {
+    dirname ""
+  }
+}

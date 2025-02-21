@@ -269,8 +269,13 @@ protected:
 	int						AddSong( char const *relative, int dirnum );
 	void					RemoveFSSongs(); // Remove all non-built-in .mp3s
 	int						FindSong( char const *relative );
-
+#ifdef NEO
+public:
+#endif // NEO
 	void					PlaySong( int songIndex, float skipTime = 0.0f );
+#ifdef NEO
+protected:
+#endif // NEO
 	void					GetLocalCopyOfSong( const MP3File_t &mp3, char *outsong, size_t outlen );
 	float					GetMP3Duration( char const *songname );
 	void					OnNextTrack();

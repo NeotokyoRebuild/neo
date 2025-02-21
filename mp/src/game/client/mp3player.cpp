@@ -795,6 +795,18 @@ CMP3Player::CMP3Player( VPANEL parent, char const *panelName ) :
 	m_bMuted = false;
 
 	vgui::ivgui()->AddTickSignal( GetVPanel(), 100 );
+
+#ifdef NEO
+	LoadSettings();
+	if (!RestoreDb(DB_FILENAME) && m_Files.Count() == 0)
+	{
+		// Load the "game" stuff
+		OnRefresh();
+	}
+
+	PopulateTree();
+	PlaySong(0);
+#endif // NEO
 }
 
 CMP3Player::~CMP3Player()
@@ -1550,6 +1562,16 @@ void CMP3Player::OnTick()
 
 	if ( m_nSongGuid == 0 )
 	{
+#ifdef NEO
+		if (m_bPlaying)
+		{
+			PlaySong(m_nCurrentSong);
+			if (m_nSongGuid == 0)
+			{ // Can't play music as soon as the mp3 player loads, this gives it one more chance to try and play the selected song
+				m_bPlaying = false;
+			}
+		}
+#endif // NEO
 		return;
 	}
 
@@ -1834,8 +1856,9 @@ void CMP3Player::OnSavePlayListAs()
 
 void CMP3Player::RestoreSongs( KeyValues *songs )
 {
+#ifndef NEO
 	Assert( m_Files.Count() == 0 );
-
+#endif // NEO
 	for ( KeyValues *song = songs->GetFirstSubKey(); song != NULL; song = song->GetNextKey() )
 	{
 		int flags = 0;
@@ -2133,6 +2156,12 @@ void CMP3Player::LoadPlayList( char const *filename )
 		return;
 	}
 
+#ifdef NEO
+	// Clear existing playlist
+	m_PlayList.RemoveAll();
+	m_pFileSheet->ResetPlayList();
+#endif // NEO
+
 	m_PlayListFileName = filename;
 
 	for ( KeyValues *song = kv->GetFirstSubKey(); song != NULL; song = song->GetNextKey() )
@@ -2194,6 +2223,9 @@ void CMP3Player::LoadPlayList( char const *filename )
 			if ( songIndex >= 0 )
 			{
 				m_PlayList.AddToTail( songIndex );
+#ifdef NEO
+				m_pFileSheet->AddSongToPlayList( songIndex );
+#endif // NEO
 			}
 		}
 	}
@@ -2234,6 +2266,9 @@ void CMP3Player::SavePlayList( char const *filename )
 				}
 
 				bpr( 1, buf, "song\n" );
+#ifdef NEO
+				bpr(1, buf, "{\n");
+#endif // NEO
 				{
 					bpr( 2, buf, "%s 1\n", song.flags == MP3File_t::FLAG_FROMFS ? "fromfs" : "fromgame" );
 
@@ -2243,13 +2278,19 @@ void CMP3Player::SavePlayList( char const *filename )
 					}
 					bpr( 2, buf, "relativepath \"%s\"\n", fn );
 				}
+#ifdef NEO
+				bpr( 1, buf, "}\n" );
+#else
 				bpr( 1, buf, "\n" );
+#endif // NEO
 			}
 		}
 
 		bpr( 0, buf, "}\n" );
-
 		g_pFullFileSystem->Close( fh );
+#ifdef NEO
+		g_pFullFileSystem->WriteFile(filename, NULL, buf);
+#endif // NEO
 
 		SetMostRecentPlayList( filename );
 	}
