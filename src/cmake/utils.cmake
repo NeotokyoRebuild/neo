@@ -63,6 +63,11 @@ function(add_library_copy_target)
         message(FATAL_ERROR "You must provide a target name")
     endif()
 
+    get_target_property(TARGET_STRIPPED_FILE ${PARSED_ARGS_TARGET} STRIPPED_FILE)
+    if(NOT TARGET_STRIPPED_FILE)
+        set(TARGET_STRIPPED_FILE $<TARGET_FILE:${PARSED_ARGS_TARGET}>)
+    endif()
+
     add_custom_target(
         ${PARSED_ARGS_TARGET}_copy_lib
         DEPENDS ${PARSED_ARGS_TARGET} ${PARSED_ARGS_TARGET}_copy_lib_command ${PARSED_ARGS_TARGET}_copy_lib_command_64
@@ -70,7 +75,7 @@ function(add_library_copy_target)
 
     add_custom_command(
         OUTPUT ${PARSED_ARGS_TARGET}_copy_lib_command
-        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PARSED_ARGS_TARGET}> "${NEO_OUTPUT_LIBRARY_PATH}/"
+        COMMAND ${CMAKE_COMMAND} -E copy ${TARGET_STRIPPED_FILE} "${NEO_OUTPUT_LIBRARY_PATH}/"
         WORKING_DIRECTORY "${NEO_OUTPUT_LIBRARY_PATH}"
         VERBATIM
     )
@@ -85,7 +90,7 @@ function(add_library_copy_target)
 endfunction()
 
 # Used by split_debug_information
-if(NOT MSVC)
+if(NOT COMPILER_MSVC)
     include(CMakeFindBinUtils)
 endif()
 
@@ -98,7 +103,7 @@ function(split_debug_information)
         ${ARGN}
     )
 
-    if(MSVC)
+    if(COMPILER_MSVC)
         # MSVC splits debug information by itself
         return()
     elseif(NOT CMAKE_OBJCOPY)
@@ -130,38 +135,99 @@ function(split_debug_information)
         unset(xc_out)
     endif()
 
-    # NOTE: Prefix expression was simplified - it probably doesn't work for static libraries
-    get_property(TARGET_PREFIX TARGET ${PARSED_ARGS_TARGET} PROPERTY PREFIX)
-    get_property(TARGET_POSTFIX TARGET ${PARSED_ARGS_TARGET} PROPERTY POSTFIX)
-    get_property(TARGET_OUTPUT_NAME TARGET ${PARSED_ARGS_TARGET} PROPERTY OUTPUT_NAME)
+    get_target_property(TARGET_OUTPUT_NAME ${PARSED_ARGS_TARGET} OUTPUT_NAME)
 
-    if("${TARGET_OUTPUT_NAME}" STREQUAL "")
+    if(NOT TARGET_OUTPUT_NAME)
         set(TARGET_OUTPUT_NAME "${PARSED_ARGS_TARGET}")
     endif()
 
-    set(OUTPUT_NAME_FULL "${TARGET_PREFIX}${TARGET_OUTPUT_NAME}${TARGET_POSTFIX}.debug")
+    set(SPLITDEBUG_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_OUTPUT_NAME}.so")
+    set(SPLITDEBUG_TARGET "${CMAKE_CURRENT_BINARY_DIR}/${OUTPUT_SUBDIRECTORY}/${TARGET_OUTPUT_NAME}.so")
+    set(SPLITDEBUG_TARGET_DEBUG "${CMAKE_CURRENT_BINARY_DIR}/${OUTPUT_SUBDIRECTORY}/${TARGET_OUTPUT_NAME}.so.debug")
 
-    set(SPLITDEBUG_SOURCE "$<TARGET_FILE:${PARSED_ARGS_TARGET}>")
-    set(SPLITDEBUG_TARGET "$<TARGET_FILE_DIR:${PARSED_ARGS_TARGET}>/${OUTPUT_NAME_FULL}")
+    add_custom_target(
+        ${PARSED_ARGS_TARGET}_split_debug_information
+        ALL
+        DEPENDS ${PARSED_ARGS_TARGET} ${SPLITDEBUG_TARGET}
+    )
 
     # NOTE: objcopy --strip-debug does NOT fully strip the binary; two sections are left:
     # - .symtab: Symbol table.
     # - .strtab: String table.
     # These sections are split into the .debug file, so there's no reason to keep them in the executable
-    add_custom_command(TARGET ${PARSED_ARGS_TARGET} POST_BUILD
-        COMMAND ${CMAKE_OBJCOPY} --only-keep-debug ${OBJCOPY_COMPRESS_DEBUG_SECTIONS_PARAM} ${SPLITDEBUG_SOURCE} ${SPLITDEBUG_TARGET}
-        COMMAND ${CMAKE_STRIP} ${SPLITDEBUG_SOURCE}
-        COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink="${SPLITDEBUG_TARGET}" ${SPLITDEBUG_SOURCE}
+    add_custom_command(
+        OUTPUT ${SPLITDEBUG_TARGET}
+        COMMAND ${CMAKE_OBJCOPY} --only-keep-debug ${OBJCOPY_COMPRESS_DEBUG_SECTIONS_PARAM} ${SPLITDEBUG_SOURCE} ${SPLITDEBUG_TARGET_DEBUG}
+        COMMAND ${CMAKE_STRIP} ${SPLITDEBUG_SOURCE} -o ${SPLITDEBUG_TARGET}
+        COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink="${SPLITDEBUG_TARGET_DEBUG}" ${SPLITDEBUG_TARGET}
     )
 
     # Set the target property to allow installation
     set_target_properties(${PARSED_ARGS_TARGET} PROPERTIES
-        SPLIT_DEBUG_INFO_FILE ${SPLITDEBUG_TARGET}
+        STRIPPED_FILE ${SPLITDEBUG_TARGET}
+        SPLIT_DEBUG_INFO_FILE ${SPLITDEBUG_TARGET_DEBUG}
     )
 
     # Make sure the file is deleted when cleaning
     set_target_properties(${PARSED_ARGS_TARGET}
         PROPERTIES
-        ADDITIONAL_CLEAN_FILES ${SPLITDEBUG_TARGET}
+        ADDITIONAL_CLEAN_FILES "${SPLITDEBUG_TARGET};${SPLITDEBUG_TARGET_DEBUG}"
+    )
+endfunction()
+
+function(add_gamedata_gen_target)
+    cmake_parse_arguments(
+        PARSED_ARGS
+        ""
+        "TARGET"
+        ""
+        ${ARGN}
+    )
+
+    if(NOT PARSED_ARGS_TARGET)
+        message(FATAL_ERROR "You must provide a target name")
+    endif()
+
+    set(GAMEDATA_LIBRARY "$<TARGET_FILE:${PARSED_ARGS_TARGET}>")
+
+    set(GAMEDATA_INPUT_FILES
+        "${CMAKE_SOURCE_DIR}/gamedata/sdkhooks.games/game.neo.txt.in"
+        "${CMAKE_SOURCE_DIR}/gamedata/sdktools.games/game.neo.txt.in"
+    )
+
+    set(GAMEDATA_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/${OUTPUT_SUBDIRECTORY})
+    set(GAMEDATA_SDKHOOKS_OUTPUT_FILE "${GAMEDATA_OUTPUT_DIR}/sdkhooks.games/game.neo.txt")
+    set(GAMEDATA_SDKTOOLS_OUTPUT_FILE "${GAMEDATA_OUTPUT_DIR}/sdktools.games/game.neo.txt")
+
+    set(GAMEDATA_OUTPUT_FILES
+        "${GAMEDATA_SDKHOOKS_OUTPUT_FILE}"
+        "${GAMEDATA_SDKTOOLS_OUTPUT_FILE}"
+    )
+
+    set(GAMEDATA_OUTPUT_DIRS
+        "${GAMEDATA_OUTPUT_DIR}/sdkhooks.games"
+        "${GAMEDATA_OUTPUT_DIR}/sdktools.games"
+    )
+
+    add_custom_target(
+        ${PARSED_ARGS_TARGET}_generate_gamedata
+        ALL
+        DEPENDS ${PARSED_ARGS_TARGET} ${GAMEDATA_OUTPUT_FILES}
+    )
+
+    add_custom_command(
+        OUTPUT ${GAMEDATA_OUTPUT_FILES}
+        COMMAND ${GAMEDATA_GEN_PATH}
+            --library ${GAMEDATA_LIBRARY}
+            --input_files ${GAMEDATA_INPUT_FILES}
+            --output_dirs ${GAMEDATA_OUTPUT_DIRS}
+        DEPENDS ${GAMEDATA_INPUT_FILES}
+        VERBATIM
+    )
+
+    set_target_properties(${PARSED_ARGS_TARGET} PROPERTIES
+        GAMEDATA_SDKHOOKS_OUTPUT_FILE "${GAMEDATA_SDKHOOKS_OUTPUT_FILE}"
+        GAMEDATA_SDKTOOLS_OUTPUT_FILE "${GAMEDATA_SDKTOOLS_OUTPUT_FILE}"
+        ADDITIONAL_CLEAN_FILES "${GAMEDATA_OUTPUT_FILES}"
     )
 endfunction()

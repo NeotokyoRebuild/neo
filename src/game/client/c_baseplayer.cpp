@@ -1869,6 +1869,9 @@ void C_BasePlayer::CalcFreezeCamView( Vector& eyeOrigin, QAngle& eyeAngles, floa
 	}
 }
 
+#if defined NEO
+extern ConVar cl_neo_lean_viewmodel_only;
+#endif // NEO
 void C_BasePlayer::CalcInEyeCamView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov)
 {
 	C_BaseEntity *target = GetObserverTarget();
@@ -1893,6 +1896,12 @@ void C_BasePlayer::CalcInEyeCamView(Vector& eyeOrigin, QAngle& eyeAngles, float&
 	m_flObserverChaseDistance = 0.0;
 
 	eyeAngles = target->EyeAngles();
+#if defined NEO
+	if (cl_neo_lean_viewmodel_only.GetBool() && !IsRagdoll())
+	{
+		eyeAngles.z = 0;
+	}
+#endif // NEO && CLIENT_DLL
 	eyeOrigin = target->GetAbsOrigin();
 
 	// Apply punch angle

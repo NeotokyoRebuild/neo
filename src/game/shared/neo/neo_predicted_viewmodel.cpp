@@ -410,7 +410,7 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 
 	m_flLeanAngle = leanAngle;
 #ifdef CLIENT_DLL
-	viewAng.z = cl_neo_lean_viewmodel_only.GetBool() ? 0 : leanAngle;
+	viewAng.z = leanAngle;
 	engine->SetViewAngles(viewAng);
 #endif
 
@@ -512,7 +512,8 @@ void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 #ifdef CLIENT_DLL
 	if (cl_neo_lean_viewmodel_only.GetBool())
 	{
-		newAng.z += m_flLeanAngle;
+		QAngle angles = pOwner->EyeAngles();
+		newAng.z += angles.z;
 	}
 #endif
 

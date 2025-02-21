@@ -2,14 +2,30 @@ add_library(server SHARED)
 
 set_target_properties(server PROPERTIES PREFIX "")
 
+if(NEO_DEDICATED AND OS_LINUX)
+    set_target_properties(server PROPERTIES OUTPUT_NAME server_srv)
+endif()
+
+if(OS_LINUX AND NEO_GENERATE_GAMEDATA)
+    add_gamedata_gen_target(TARGET server)
+endif()
+
 if(NEO_USE_SEPARATE_BUILD_INFO)
     split_debug_information(TARGET server)
 endif()
 
 add_library_copy_target(TARGET server CREATE_SRV)
 
-if(NEO_DEDICATED AND OS_LINUX)
-    set_target_properties(server PROPERTIES OUTPUT_NAME server_srv)
+if(NEO_USE_SEPARATE_BUILD_INFO AND NOT COMPILER_MSVC)
+    if(OS_LINUX AND NEO_GENERATE_GAMEDATA)
+        add_dependencies(server_split_debug_information server_generate_gamedata)
+    endif()
+
+    add_dependencies(server_copy_lib server_split_debug_information)
+else()
+    if(OS_LINUX AND NEO_GENERATE_GAMEDATA)
+        add_dependencies(server_copy_lib server_generate_gamedata)
+    endif()
 endif()
 
 set(NEXTBOT_DIR "${CMAKE_SOURCE_DIR}/game/server/NextBot")

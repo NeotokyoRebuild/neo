@@ -9,6 +9,10 @@ endif()
 add_library_copy_target(TARGET client)
 
 set(NEXTBOT_DIR_CLIENT "${CMAKE_SOURCE_DIR}/game/client/NextBot")
+if(NEO_USE_SEPARATE_BUILD_INFO AND NOT COMPILER_MSVC)
+    add_dependencies(client_copy_lib client_split_debug_information)
+endif()
+
 target_include_directories(client
     PRIVATE
     ${CMAKE_SOURCE_DIR}/common
