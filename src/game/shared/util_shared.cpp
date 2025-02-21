@@ -1282,7 +1282,11 @@ char *UTIL_GetFilteredPlayerName( const CSteamID &steamID, char *pszName )
 {
 	if ( !pszName )
 	{
+#ifdef NEO // NEO NOTE (nullsystem): C++20 - const strictness
+		pszName = const_cast<char *>("");
+#else
 		pszName = "";
+#endif
 	}
 
 	if ( SteamUtils() )
