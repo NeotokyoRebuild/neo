@@ -2187,8 +2187,7 @@ void CBasePlayer::PlayerDeathThink(void)
 	{
 		fAnyButtonDown &= ~IN_DUCK;
 	}
-
-#ifndef NEO
+	
 	// wait for all buttons released
 	if (m_lifeState == LIFE_DEAD)
 	{
@@ -2202,7 +2201,7 @@ void CBasePlayer::PlayerDeathThink(void)
 
 		return;
 	}
-#endif
+
 // if the player has been dead for one second longer than allowed by forcerespawn, 
 // forcerespawn isn't on. Send the player off to an intermission camera until they 
 // choose to respawn.
