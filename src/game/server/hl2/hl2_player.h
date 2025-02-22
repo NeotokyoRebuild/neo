@@ -192,7 +192,11 @@ public:
 	bool CanSprint( void );
 	void EnableSprint( bool bEnable);
 #endif
+#ifdef NEO
+	bool IsSprinting(void) { return m_HL2Local.m_bNewSprinting; }
+#else
 	bool IsSprinting(void) { return m_fIsSprinting; }
+#endif
 
 
 	bool CanZoom( CBaseEntity *pRequester );

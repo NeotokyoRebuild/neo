@@ -107,15 +107,15 @@ public:
 	
 #ifdef NEO
 	virtual bool	 CanSprint( void );
-	virtual void	 StartSprinting( void ) {}
-	virtual void	 StopSprinting( void ) {}
+	virtual void	 StartSprinting( void );
+	virtual void	 StopSprinting( void );
 #else
 	bool	CanSprint( void );
 	void	StartSprinting( void );
 	void	StopSprinting( void );
 #endif
-	virtual void	HandleSpeedChanges( CMoveData *mv ) OVERRIDE;
-	virtual void	ReduceTimers( CMoveData* mv ) OVERRIDE;
+	virtual void	 HandleSpeedChanges( CMoveData *mv ) OVERRIDE;
+	virtual void	 ReduceTimers( CMoveData* mv ) OVERRIDE;
 	void	UpdateLookAt( void );
 	void	Initialize( void );
 	int		GetIDTarget() const;

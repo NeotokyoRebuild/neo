@@ -19,11 +19,11 @@ BEGIN_SEND_TABLE_NOBASE( CHL2PlayerLocalData, DT_HL2Local )
 	// Getting this as accurate as impossible is important... If we get out of sync with
 	// this, we can get pred errors going in/out of sprint which is SUPER JANKY!!!
 	SendPropFloat( SENDINFO(m_flSuitPower), -1, SPROP_NOSCALE, 0.0, 100.0 ),
-	SendPropFloat( SENDINFO(m_flSuitPowerLoad), -1, SPROP_NOSCALE, 0.0, 100.0 ),
-	SendPropFloat( SENDINFO(m_flTimeAllSuitDevicesOff), -1, SPROP_NOSCALE ),
 #ifdef NEO
 	SendPropFloat(SENDINFO(m_cloakPower), 10, SPROP_UNSIGNED | SPROP_ROUNDUP, 0.0, 100.0),
 #endif
+	SendPropFloat( SENDINFO(m_flSuitPowerLoad), -1, SPROP_NOSCALE, 0.0, 100.0 ),
+	SendPropFloat( SENDINFO(m_flTimeAllSuitDevicesOff), -1, SPROP_NOSCALE ),
 	SendPropInt( SENDINFO(m_bNewSprinting), 1, SPROP_UNSIGNED ),
 	SendPropInt( SENDINFO(m_bZooming), 1, SPROP_UNSIGNED ),
 	SendPropInt( SENDINFO(m_bitsActiveDevices), MAX_SUIT_DEVICES, SPROP_UNSIGNED ),

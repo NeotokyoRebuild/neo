@@ -1396,7 +1396,7 @@ void C_NEO_Player::StartSprinting(void)
 		return;
 	}
 
-	//BaseClass::StartSprinting();
+	BaseClass::StartSprinting();
 }
 
 void C_NEO_Player::StopSprinting(void)
