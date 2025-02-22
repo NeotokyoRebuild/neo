@@ -147,6 +147,7 @@ void CHL2MP_Player::PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, f
 }
 
 
+#ifndef NEO
 //==========================
 // ANIMATION CODE
 //==========================
@@ -604,3 +605,4 @@ void CPlayerAnimState::GetOuterAbsVelocity( Vector& vel )
 	vel = GetOuter()->GetAbsVelocity();
 #endif
 }
+#endif // NEO

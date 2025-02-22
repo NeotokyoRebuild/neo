@@ -40,20 +40,27 @@ LINK_ENTITY_TO_CLASS( player, C_HL2MP_Player );
 
 // specific to the local player
 BEGIN_RECV_TABLE_NOBASE( C_HL2MP_Player, DT_HL2MPLocalPlayerExclusive )
+#ifdef NEO
+	RecvPropVector( RECVINFO_NAME( m_vecNetworkOrigin, m_vecOrigin ) ),
+#else
 	RecvPropVectorXY( RECVINFO_NAME( m_vecNetworkOrigin, m_vecOrigin ) ),
 	RecvPropFloat( RECVINFO_NAME( m_vecNetworkOrigin[2], m_vecOrigin[2] ) ),
+#endif
 
 	RecvPropFloat( RECVINFO( m_angEyeAngles[0] ) ),
+#ifndef NEO
 	RecvPropFloat( RECVINFO( m_angEyeAngles[1] ) ),
-#ifdef NEO
-	RecvPropFloat( RECVINFO( m_angEyeAngles[2] ) ),
 #endif
 END_RECV_TABLE()
 
 // all players except the local player
 BEGIN_RECV_TABLE_NOBASE( C_HL2MP_Player, DT_HL2MPNonLocalPlayerExclusive )
+#ifdef NEO
+	RecvPropVector( RECVINFO_NAME( m_vecNetworkOrigin, m_vecOrigin ) ),
+#else
 	RecvPropVectorXY( RECVINFO_NAME( m_vecNetworkOrigin, m_vecOrigin ) ),
 	RecvPropFloat( RECVINFO_NAME( m_vecNetworkOrigin[2], m_vecOrigin[2] ) ),
+#endif
 
 	RecvPropFloat( RECVINFO( m_angEyeAngles[0] ) ),
 	RecvPropFloat( RECVINFO( m_angEyeAngles[1] ) ),
@@ -74,6 +81,14 @@ IMPLEMENT_CLIENTCLASS_DT(C_HL2MP_Player, DT_HL2MP_Player, CHL2MP_Player)
 END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA( C_HL2MP_Player )
+#ifdef NEO
+	DEFINE_PRED_FIELD( m_flCycle, FIELD_FLOAT, FTYPEDESC_OVERRIDE | FTYPEDESC_PRIVATE | FTYPEDESC_NOERRORCHECK ),
+	DEFINE_PRED_FIELD( m_fIsWalking, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE ),
+	DEFINE_PRED_FIELD( m_nSequence, FIELD_INTEGER, FTYPEDESC_OVERRIDE | FTYPEDESC_PRIVATE | FTYPEDESC_NOERRORCHECK ),
+	DEFINE_PRED_FIELD( m_flPlaybackRate, FIELD_FLOAT, FTYPEDESC_OVERRIDE | FTYPEDESC_PRIVATE | FTYPEDESC_NOERRORCHECK ),
+	DEFINE_PRED_ARRAY_TOL( m_flEncodedController, FIELD_FLOAT, MAXSTUDIOBONECTRLS, FTYPEDESC_OVERRIDE | FTYPEDESC_PRIVATE, 0.02f ),
+	DEFINE_PRED_FIELD( m_nNewSequenceParity, FIELD_INTEGER, FTYPEDESC_OVERRIDE | FTYPEDESC_PRIVATE | FTYPEDESC_NOERRORCHECK ),
+#else
 	DEFINE_PRED_FIELD( m_fIsWalking, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE ),
 
 	// misyl: Ammo is server side entities in HL2MP. Not catastrophic to error about.
@@ -83,6 +98,7 @@ BEGIN_PREDICTION_DATA( C_HL2MP_Player )
 	// with just altfire ammo, and get new ammo and we force reload. But the additional pred error sorts that out itself
 	// without this for every pickup which is 1000% more common.
 	DEFINE_PRED_ARRAY( m_iAmmo, FIELD_INTEGER, MAX_AMMO_TYPES, FTYPEDESC_INSENDTABLE | FTYPEDESC_OVERRIDE | FTYPEDESC_NOERRORCHECK ),
+#endif
 END_PREDICTION_DATA()
 
 ConVar hl2_walkspeed( "hl2_walkspeed", "150", FCVAR_REPLICATED );
@@ -133,7 +149,9 @@ C_HL2MP_Player::C_HL2MP_Player() : m_PlayerAnimState( this ), m_iv_angEyeAngles(
 
 	AddVar( &m_angEyeAngles, &m_iv_angEyeAngles, LATCH_SIMULATION_VAR );
 
+#ifndef NEO
 	m_EntClientFlags |= ENTCLIENTFLAG_DONTUSEIK;
+#endif
 #ifdef NEO
 	m_PlayerAnimState = CreateHL2MPPlayerAnimState( this );
 #endif
@@ -1451,6 +1469,7 @@ void C_HL2MP_Player::PostThink( void )
 {
 	BaseClass::PostThink();
 
+#if 0
 	// Store the eye angles pitch so the client can compute its animation state correctly.
 	m_angEyeAngles = EyeAngles();
 
@@ -1463,5 +1482,6 @@ void C_HL2MP_Player::PostThink( void )
 		SetCollisionBounds( VEC_CROUCH_TRACE_MIN, VEC_CROUCH_TRACE_MAX );
 #endif
 	}
+#endif
 }
 

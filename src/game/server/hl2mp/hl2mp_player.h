@@ -57,7 +57,6 @@ public:
 
 	DECLARE_SERVERCLASS();
 	DECLARE_DATADESC();
-	// TODO (nullsystem): 2025-02-18 SOURCE SDK 2013 CHECK - BEGIN
 	DECLARE_PREDICTABLE();
 
 	// This passes the event to the client's and server's CHL2MPPlayerAnimState.

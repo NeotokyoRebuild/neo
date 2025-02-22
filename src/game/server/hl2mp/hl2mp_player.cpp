@@ -57,75 +57,32 @@ LINK_ENTITY_TO_CLASS( player, CHL2MP_Player );
 LINK_ENTITY_TO_CLASS( info_player_combine, CPointEntity );
 LINK_ENTITY_TO_CLASS( info_player_rebel, CPointEntity );
 
-#if 0 //  TODO (nullsystem): 2025-02-18 SOURCE SDK 2013 CHECK
-extern void SendProxy_Origin( const SendProp *pProp, const void *pStruct, const void *pData, DVariant *pOut, int iElement, int objectID );
-
-//Tony; this should ideally be added to dt_send.cpp
-void* SendProxy_SendNonLocalDataTable( const SendProp *pProp, const void *pStruct, const void *pVarData, CSendProxyRecipients *pRecipients, int objectID )
-{
-	pRecipients->SetAllRecipients();
-	pRecipients->ClearRecipient( objectID - 1 );
-	return ( void * )pVarData;
-}
-REGISTER_SEND_PROXY_NON_MODIFIED_POINTER( SendProxy_SendNonLocalDataTable );
-
-
-BEGIN_SEND_TABLE_NOBASE( CHL2MP_Player, DT_HL2MPLocalPlayerExclusive )
-	// send a hi-res origin to the local player for use in prediction
-	SendPropVector	(SENDINFO(m_vecOrigin), -1,  SPROP_NOSCALE|SPROP_CHANGES_OFTEN, 0.0f, HIGH_DEFAULT, SendProxy_Origin ),
-	SendPropFloat( SENDINFO_VECTORELEM(m_angEyeAngles, 0), 8, SPROP_CHANGES_OFTEN, -90.0f, 90.0f ),
-//	SendPropAngle( SENDINFO_VECTORELEM(m_angEyeAngles, 1), 10, SPROP_CHANGES_OFTEN ),
-END_SEND_TABLE()
-
-BEGIN_SEND_TABLE_NOBASE( CHL2MP_Player, DT_HL2MPNonLocalPlayerExclusive )
-	// send a lo-res origin to other players
-	SendPropVector	(SENDINFO(m_vecOrigin), -1,  SPROP_COORD_MP_LOWPRECISION|SPROP_CHANGES_OFTEN, 0.0f, HIGH_DEFAULT, SendProxy_Origin ),
-	SendPropFloat( SENDINFO_VECTORELEM(m_angEyeAngles, 0), 8, SPROP_CHANGES_OFTEN, -90.0f, 90.0f ),
-	SendPropAngle( SENDINFO_VECTORELEM(m_angEyeAngles, 1), 10, SPROP_CHANGES_OFTEN ),
-#ifdef NEO
-	SendPropAngle( SENDINFO_VECTORELEM(m_angEyeAngles, 2), 11, SPROP_CHANGES_OFTEN ),
-#endif
-END_SEND_TABLE()
-
-IMPLEMENT_SERVERCLASS_ST(CHL2MP_Player, DT_HL2MP_Player)
-	SendPropExclude( "DT_BaseAnimating", "m_flPoseParameter" ),
-	SendPropExclude( "DT_BaseAnimating", "m_flPlaybackRate" ),	
-	SendPropExclude( "DT_BaseAnimating", "m_nSequence" ),
-	SendPropExclude( "DT_BaseEntity", "m_angRotation" ),
-	SendPropExclude( "DT_BaseAnimatingOverlay", "overlay_vars" ),
-
-	SendPropExclude( "DT_BaseEntity", "m_vecOrigin" ),
-
-	// playeranimstate and clientside animation takes care of these on the client
-	SendPropExclude( "DT_ServerAnimationData" , "m_flCycle" ),	
-	SendPropExclude( "DT_AnimTimeMustBeFirst" , "m_flAnimTime" ),
-
-	SendPropExclude( "DT_BaseFlex", "m_flexWeight" ),
-	SendPropExclude( "DT_BaseFlex", "m_blinktoggle" ),
-	SendPropExclude( "DT_BaseFlex", "m_viewtarget" ),
-
-	// Data that only gets sent to the local player.
-	SendPropDataTable( "hl2mplocaldata", 0, &REFERENCE_SEND_TABLE(DT_HL2MPLocalPlayerExclusive), SendProxy_SendLocalDataTable ),
-	// Data that gets sent to all other players
-	SendPropDataTable( "hl2mpnonlocaldata", 0, &REFERENCE_SEND_TABLE(DT_HL2MPNonLocalPlayerExclusive), SendProxy_SendNonLocalDataTable ),
-#endif // TODO
-
 // specific to the local player
 BEGIN_SEND_TABLE_NOBASE( CHL2MP_Player, DT_HL2MPLocalPlayerExclusive )
 	// send a hi-res origin to the local player for use in prediction
+#ifdef NEO
+	SendPropVector	(SENDINFO(m_vecOrigin), -1,  SPROP_NOSCALE|SPROP_CHANGES_OFTEN, 0.0f, HIGH_DEFAULT, SendProxy_Origin ),
+#else
 	SendPropVectorXY(SENDINFO(m_vecOrigin),               -1, SPROP_NOSCALE|SPROP_CHANGES_OFTEN, 0.0f, HIGH_DEFAULT, SendProxy_OriginXY ),
 	SendPropFloat   (SENDINFO_VECTORELEM(m_vecOrigin, 2), -1, SPROP_NOSCALE|SPROP_CHANGES_OFTEN, 0.0f, HIGH_DEFAULT, SendProxy_OriginZ ),
+#endif
 
 	SendPropFloat( SENDINFO_VECTORELEM(m_angEyeAngles, 0), 8, SPROP_CHANGES_OFTEN, -90.0f, 90.0f ),
+#ifndef NEO
 	SendPropAngle( SENDINFO_VECTORELEM(m_angEyeAngles, 1), 10, SPROP_CHANGES_OFTEN ),
+#endif
 
 END_SEND_TABLE()
 
 // all players except the local player
 BEGIN_SEND_TABLE_NOBASE( CHL2MP_Player, DT_HL2MPNonLocalPlayerExclusive )
 	// send a lo-res origin to other players
+#ifdef NEO
+	SendPropVector	(SENDINFO(m_vecOrigin), -1,  SPROP_COORD_MP_LOWPRECISION|SPROP_CHANGES_OFTEN, 0.0f, HIGH_DEFAULT, SendProxy_Origin ),
+#else
 	SendPropVectorXY(SENDINFO(m_vecOrigin),               -1, SPROP_COORD_MP_LOWPRECISION|SPROP_CHANGES_OFTEN, 0.0f, HIGH_DEFAULT, SendProxy_OriginXY ),
 	SendPropFloat   (SENDINFO_VECTORELEM(m_vecOrigin, 2), -1, SPROP_COORD_MP_LOWPRECISION|SPROP_CHANGES_OFTEN, 0.0f, HIGH_DEFAULT, SendProxy_OriginZ ),
+#endif
 
 	SendPropFloat( SENDINFO_VECTORELEM(m_angEyeAngles, 0), 8, SPROP_CHANGES_OFTEN, -90.0f, 90.0f ),
 	SendPropAngle( SENDINFO_VECTORELEM(m_angEyeAngles, 1), 10, SPROP_CHANGES_OFTEN ),
@@ -137,6 +94,22 @@ END_SEND_TABLE()
 
 IMPLEMENT_SERVERCLASS_ST(CHL2MP_Player, DT_HL2MP_Player)
 	SendPropExclude( "DT_BaseEntity", "m_vecOrigin" ),
+
+#ifdef NEO
+	SendPropExclude( "DT_BaseAnimating", "m_flPoseParameter" ),
+	SendPropExclude( "DT_BaseAnimating", "m_flPlaybackRate" ),
+	SendPropExclude( "DT_BaseAnimating", "m_nSequence" ),
+	SendPropExclude( "DT_BaseEntity", "m_angRotation" ),
+	SendPropExclude( "DT_BaseAnimatingOverlay", "overlay_vars" ),
+
+	// playeranimstate and clientside animation takes care of these on the client
+	SendPropExclude( "DT_ServerAnimationData" , "m_flCycle" ),
+	SendPropExclude( "DT_AnimTimeMustBeFirst" , "m_flAnimTime" ),
+
+	SendPropExclude( "DT_BaseFlex", "m_flexWeight" ),
+	SendPropExclude( "DT_BaseFlex", "m_blinktoggle" ),
+	SendPropExclude( "DT_BaseFlex", "m_viewtarget" ),
+#endif
 
 #ifndef NEO // NEOTODO (Adam) This is causing the player to have a m_flMaxSpeed value of 0 during prediction, even though client and server set this value correctly, causing the players position to jitter
 	// misyl:
@@ -160,11 +133,13 @@ IMPLEMENT_SERVERCLASS_ST(CHL2MP_Player, DT_HL2MP_Player)
 	SendPropInt( SENDINFO( m_iSpawnInterpCounter), 4 ),
 	SendPropInt( SENDINFO( m_iPlayerSoundType), 3 ),
 	
+#ifndef NEO
 	SendPropExclude( "DT_BaseAnimating", "m_flPoseParameter" ),
 	SendPropExclude( "DT_BaseFlex", "m_viewtarget" ),
 
 //	SendPropExclude( "DT_ServerAnimationData" , "m_flCycle" ),	
 //	SendPropExclude( "DT_AnimTimeMustBeFirst" , "m_flAnimTime" ),	
+#endif
 END_SEND_TABLE()
 
 BEGIN_DATADESC( CHL2MP_Player )
@@ -640,6 +615,7 @@ void CHL2MP_Player::SetupPlayerSoundsByModel( const char *pModelName )
 
 void CHL2MP_Player::ResetAnimation( void )
 {
+#ifndef NEO
 	if ( IsAlive() )
 	{
 		SetSequence ( -1 );
@@ -656,6 +632,7 @@ void CHL2MP_Player::ResetAnimation( void )
 		else
 			SetAnimation( PLAYER_IDLE );
 	}
+#endif
 }
 
 bool CHL2MP_Player::Weapon_Switch( CBaseCombatWeapon *pWeapon, int viewmodelindex )
@@ -822,6 +799,7 @@ Activity CHL2MP_Player::TranslateTeamActivity( Activity ActToTranslate )
 
 extern ConVar hl2_normspeed;
 
+#ifndef NEO
 // Set the activity based on an event or current state
 void CHL2MP_Player::SetAnimation( PLAYER_ANIM playerAnim )
 {
@@ -987,6 +965,7 @@ void CHL2MP_Player::SetAnimation( PLAYER_ANIM playerAnim )
 	ResetSequence( animDesired );
 	SetCycle( 0 );
 }
+#endif
 
 extern int	gEvilImpulse101;
 //-----------------------------------------------------------------------------
@@ -1806,7 +1785,6 @@ Vector CHL2MP_Player::GetAutoaimVector( float flScale )
 	return	forward;
 }
 
-#if 0 // TODO (nullsystem): 2025-02-18 SOURCE SDK 2013 CHECK
 //-----------------------------------------------------------------------------
 // Purpose: Do nothing multiplayer_animstate takes care of animation.
 // Input  : playerAnim - 
@@ -1815,7 +1793,6 @@ void CHL2MP_Player::SetAnimation( PLAYER_ANIM playerAnim )
 {
 	return;
 }
-#endif
 
 // -------------------------------------------------------------------------------- //
 // Player animation event. Sent to the client when a player fires, jumps, reloads, etc..
