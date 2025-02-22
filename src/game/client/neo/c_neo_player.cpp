@@ -1393,20 +1393,23 @@ void C_NEO_Player::StartSprinting(void)
 {
 	if (IsCarryingGhost())
 	{
+		m_HL2Local.m_bNewSprinting = false;
 		return;
 	}
 
 	BaseClass::StartSprinting();
+	m_HL2Local.m_bNewSprinting = true;
 }
 
 void C_NEO_Player::StopSprinting(void)
 {
+	m_HL2Local.m_bNewSprinting = false;
 	m_fIsSprinting = false;
 }
 
 bool C_NEO_Player::CanSprint(void)
 {
-	if (m_iNeoClass == NEO_CLASS_SUPPORT)
+	if (IsCarryingGhost() || m_iNeoClass == NEO_CLASS_SUPPORT)
 	{
 		return false;
 	}

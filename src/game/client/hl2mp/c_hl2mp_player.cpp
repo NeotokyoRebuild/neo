@@ -809,33 +809,6 @@ extern ConVar sv_maxspeed;
 //-----------------------------------------------------------------------------
 void C_HL2MP_Player::StartSprinting( void )
 {
-#ifdef NEO
-	if (m_HL2Local.m_flSuitPower < SPRINT_START_MIN)
-#else
-	if( m_HL2Local.m_flSuitPower < 10 )
-#endif
-	{
-#ifdef NEO
-#if(0)
-		CPASAttenuationFilter filter( this );
-		filter.UsePredictionRules();
-		EmitSound( filter, entindex(), "HL2Player.SprintNoPower" );
-#endif
-#endif
-
-		// Don't sprint unless there's a reasonable
-		// amount of suit power.
-		return;
-	}
-
-#ifdef NEO
-#if(0)
-	CPASAttenuationFilter filter( this );
-	filter.UsePredictionRules();
-	EmitSound( filter, entindex(), "HL2Player.SprintStart" );
-#endif
-#endif
-
 #ifndef NEO
 	SetMaxSpeed( HL2_SPRINT_SPEED );
 #endif
@@ -861,22 +834,38 @@ void C_HL2MP_Player::HandleSpeedChanges( CMoveData *mv )
 
 	bool bJustPressedSpeed = !!( nChangedButtons & IN_SPEED );
 
+#ifdef NEO
+	constexpr float MOVING_SPEED_MINIMUM = 0.5f; // NEOTODO (Adam) This is the same value as defined in cbaseanimating, should we be using the same value? Should we import it here?
+	const bool bWantSprint = ( CanSprint() && IsSuitEquipped() && ( mv->m_nButtons & IN_SPEED ) && GetLocalVelocity().IsLengthGreaterThan(MOVING_SPEED_MINIMUM));
+#else
 	const bool bWantSprint = ( CanSprint() && IsSuitEquipped() && ( mv->m_nButtons & IN_SPEED ) );
+#endif
+
+#ifdef NEO
+	const bool bWantsToChangeSprinting = ( m_HL2Local.m_bNewSprinting != bWantSprint ) && ((mv->m_nButtons & IN_SPEED) || (( nChangedButtons & IN_SPEED ) != 0));
+#else
 	const bool bWantsToChangeSprinting = ( m_HL2Local.m_bNewSprinting != bWantSprint ) && ( nChangedButtons & IN_SPEED ) != 0;
+#endif
 
 	bool bSprinting = m_HL2Local.m_bNewSprinting;
 	if ( bWantsToChangeSprinting )
 	{
 		if ( bWantSprint )
 		{
+#ifdef NEO
+			if ( m_HL2Local.m_flSuitPower < SPRINT_START_MIN )
+#else
 			if ( m_HL2Local.m_flSuitPower < 10.0f )
+#endif
 			{
+#ifndef NEO
 				if ( bJustPressedSpeed )
 				{
 					CPASAttenuationFilter filter( this );
 					filter.UsePredictionRules();
 					EmitSound( filter, entindex(), "HL2Player.SprintNoPower" );
 				}
+#endif
 			}
 			else
 			{
@@ -912,6 +901,7 @@ void C_HL2MP_Player::HandleSpeedChanges( CMoveData *mv )
 
 	m_HL2Local.m_bNewSprinting = bSprinting;
 
+#ifndef NEO
 	if ( bSprinting )
 	{
 		if ( bJustPressedSpeed )
@@ -930,6 +920,7 @@ void C_HL2MP_Player::HandleSpeedChanges( CMoveData *mv )
 	{
 		mv->m_flClientMaxSpeed = HL2_NORM_SPEED;
 	}
+#endif
 
 	mv->m_flMaxSpeed = sv_maxspeed.GetFloat();
 }
