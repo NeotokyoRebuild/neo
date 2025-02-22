@@ -1456,7 +1456,12 @@ void C_HL2MP_Player::PostThink( void )
 
 	if ( GetFlags() & FL_DUCKING )
 	{
+#ifdef NEO
+		CNEO_Player* neoPlayer = static_cast<CNEO_Player*>(this);
+		SetCollisionBounds(VEC_DUCK_HULL_MIN_NEOSCALED(neoPlayer), VEC_DUCK_HULL_MAX_NEOSCALED(neoPlayer));
+#else
 		SetCollisionBounds( VEC_CROUCH_TRACE_MIN, VEC_CROUCH_TRACE_MAX );
+#endif
 	}
 }
 
