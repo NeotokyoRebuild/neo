@@ -728,6 +728,103 @@ void CNEO_Player::CalculateSpeed(void)
 	SetMaxSpeed(speed);
 }
 
+void CNEO_Player::HandleSpeedChanges( CMoveData *mv )
+{
+	int nChangedButtons = mv->m_nButtons ^ mv->m_nOldButtons;
+
+	bool bJustPressedSpeed = !!( nChangedButtons & IN_SPEED );
+
+#ifdef NEO
+	constexpr float MOVING_SPEED_MINIMUM = 0.5f; // NEOTODO (Adam) This is the same value as defined in cbaseanimating, should we be using the same value? Should we import it here?
+	const bool bWantSprint = ( CanSprint() && IsSuitEquipped() && ( mv->m_nButtons & IN_SPEED ) && GetLocalVelocity().IsLengthGreaterThan(MOVING_SPEED_MINIMUM));
+#else
+	const bool bWantSprint = ( CanSprint() && IsSuitEquipped() && ( mv->m_nButtons & IN_SPEED ) );
+#endif
+
+#ifdef NEO
+	const bool bWantsToChangeSprinting = ( m_HL2Local.m_bNewSprinting != bWantSprint ) && ((mv->m_nButtons & IN_SPEED) || (( nChangedButtons & IN_SPEED ) != 0));
+#else
+	const bool bWantsToChangeSprinting = ( m_HL2Local.m_bNewSprinting != bWantSprint ) && ( nChangedButtons & IN_SPEED ) != 0;
+#endif
+
+	bool bSprinting = m_HL2Local.m_bNewSprinting;
+	if ( bWantsToChangeSprinting )
+	{
+		if ( bWantSprint )
+		{
+#ifdef NEO
+			if ( m_HL2Local.m_flSuitPower < SPRINT_START_MIN )
+#else
+			if ( m_HL2Local.m_flSuitPower < 10.0f )
+#endif
+			{
+#ifndef NEO
+				if ( bJustPressedSpeed )
+				{
+					CPASAttenuationFilter filter( this );
+					filter.UsePredictionRules();
+					EmitSound( filter, entindex(), "HL2Player.SprintNoPower" );
+				}
+#endif
+			}
+			else
+			{
+				bSprinting = true;
+			}
+		}
+		else
+		{
+			bSprinting = false;
+		}
+	}
+
+	if ( m_HL2Local.m_flSuitPower < 0.01 )
+	{
+		bSprinting = false;
+	}
+
+	bool bWantWalking;
+
+	if ( IsSuitEquipped() )
+	{
+		bWantWalking = ( mv->m_nButtons & IN_WALK ) && !bSprinting && !( mv->m_nButtons & IN_DUCK );
+	}
+	else
+	{
+		bWantWalking = true;
+	}
+
+	if ( bWantWalking )
+	{
+		bSprinting = false;
+	}
+
+	m_HL2Local.m_bNewSprinting = bSprinting;
+
+	if ( bSprinting )
+	{
+#ifndef NEO
+		if ( bJustPressedSpeed )
+		{
+			CPASAttenuationFilter filter( this );
+			filter.UsePredictionRules();
+			EmitSound( filter, entindex(), "HL2Player.SprintStart" );
+		}
+#endif
+		mv->m_flClientMaxSpeed = GetSprintSpeed_WithActiveWepEncumberment();
+	}
+	else if ( bWantWalking )
+	{
+		mv->m_flClientMaxSpeed = GetWalkSpeed_WithActiveWepEncumberment();
+	}
+	else
+	{
+		mv->m_flClientMaxSpeed = GetNormSpeed_WithActiveWepEncumberment();
+	}
+
+	mv->m_flMaxSpeed = MaxSpeed();
+}
+
 void CNEO_Player::PreThink(void)
 {
 	BaseClass::PreThink();

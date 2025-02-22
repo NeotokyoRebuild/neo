@@ -188,6 +188,8 @@ public:
 	float GetCrouchSpeed(void) const;
 	float GetWalkSpeed(void) const;
 	float GetSprintSpeed(void) const;
+
+	void HandleSpeedChanges( CMoveData *mv ) override;
 	
 	int ShouldTransmit( const CCheckTransmitInfo *pInfo) OVERRIDE;
 

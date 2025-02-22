@@ -92,8 +92,6 @@ public:
 	virtual void CalcView( Vector &eyeOrigin, QAngle &eyeAngles, float &zNear, float &zFar, float &fov );
 	virtual const QAngle& EyeAngles( void );
 
-	void	HandleSpeedChanges( void );
-
 	void SuitPower_Update( void );
 	bool SuitPower_Drain( float flPower ); // consume some of the suit's power.
 	void SuitPower_Charge( float flPower ); // add suit power.

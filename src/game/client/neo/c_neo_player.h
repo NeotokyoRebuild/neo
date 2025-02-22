@@ -120,6 +120,8 @@ public:
 	float GetWalkSpeed(void) const;
 	float GetSprintSpeed(void) const;
 
+	void HandleSpeedChanges( CMoveData *mv ) override;
+
 private:
 	float GetActiveWeaponSpeedScale() const;
 

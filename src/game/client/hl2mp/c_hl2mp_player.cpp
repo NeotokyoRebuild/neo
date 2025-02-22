@@ -827,7 +827,6 @@ void C_HL2MP_Player::StopSprinting( void )
 	m_fIsSprinting = false;
 }
 
-#if 1
 void C_HL2MP_Player::HandleSpeedChanges( CMoveData *mv )
 {
 	int nChangedButtons = mv->m_nButtons ^ mv->m_nOldButtons;
@@ -901,7 +900,10 @@ void C_HL2MP_Player::HandleSpeedChanges( CMoveData *mv )
 
 	m_HL2Local.m_bNewSprinting = bSprinting;
 
-#ifndef NEO
+	// NEO TODO (nullsystem): Really we should start using this kind of max speed setting
+#ifdef NEO
+	mv->m_flClientMaxSpeed = MaxSpeed();
+#else
 	if ( bSprinting )
 	{
 		if ( bJustPressedSpeed )
@@ -924,63 +926,6 @@ void C_HL2MP_Player::HandleSpeedChanges( CMoveData *mv )
 
 	mv->m_flMaxSpeed = sv_maxspeed.GetFloat();
 }
-#else
-void C_HL2MP_Player::HandleSpeedChanges( CMoveData *mv )
-{
-	int buttonsChanged = m_afButtonPressed | m_afButtonReleased;
-
-	if( buttonsChanged & (IN_SPEED | IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)  || m_nButtons & IN_SPEED)
-	{
-		// The state of the sprint/run button has changed.
-		if ( IsSuitEquipped() )
-		{
-#ifdef NEO
-			constexpr float MOVING_SPEED_MINIMUM = 0.5f; // NEOTODO (Adam) This is the same value as defined in cbaseanimating, should we be using the same value? Should we import it here?
-			if (!(m_nButtons & IN_SPEED) && IsSprinting())
-#else
-			if ( !(m_nButtons & (IN_SPEED | IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)) && IsSprinting())
-#endif
-			{
-				StopSprinting();
-			}
-#ifdef NEO
-			else if ((m_nButtons & IN_SPEED) && !IsSprinting() && GetLocalVelocity().IsLengthGreaterThan(MOVING_SPEED_MINIMUM))
-#else
-			else if ( (m_afButtonPressed & IN_SPEED) && (m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)) && !IsSprinting() )
-#endif
-			{
-				if ( CanSprint() )
-				{
-					StartSprinting();
-				}
-				else
-				{
-					// Reset key, so it will be activated post whatever is suppressing it.
-					m_nButtons &= ~IN_SPEED;
-				}
-			}
-		}
-	}
-	else if( buttonsChanged & IN_WALK )
-	{
-		if ( IsSuitEquipped() )
-		{
-			// The state of the WALK button has changed.
-			if( IsWalking() && !(m_afButtonPressed & IN_WALK) )
-			{
-				StopWalking();
-			}
-			else if( !IsWalking() && !IsSprinting() && (m_afButtonPressed & IN_WALK) && !(m_nButtons & IN_DUCK) )
-			{
-				StartWalking();
-			}
-		}
-	}
-
-	if ( IsSuitEquipped() && m_fIsWalking && !(m_nButtons & IN_WALK)  )
-		StopWalking();
-}
-#endif
 
 void C_HL2MP_Player::ReduceTimers( CMoveData* mv )
 {

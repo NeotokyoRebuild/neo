@@ -610,7 +610,10 @@ void CHL2_Player::HandleSpeedChanges( CMoveData *mv )
 
 	m_HL2Local.m_bNewSprinting = bSprinting;
 
-#ifndef NEO
+	// NEO TODO (nullsystem): Really we should start using this kind of max speed setting
+#ifdef NEO
+	mv->m_flClientMaxSpeed = MaxSpeed();
+#else
 	if ( bSprinting )
 	{
 		if ( bJustPressedSpeed )

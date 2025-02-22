@@ -294,7 +294,11 @@ public:
 	void  HandleAdmireGlovesAnimation( void );
 	void  StartAdmireGlovesAnimation( void );
 	
+#ifdef NEO
+	virtual void HandleSpeedChanges( CMoveData *mv );
+#else
 	void HandleSpeedChanges( CMoveData *mv );
+#endif
 	void ReduceTimers( CMoveData* mv );
 
 	void SetControlClass( Class_T controlClass ) { m_nControlClass = controlClass; }
