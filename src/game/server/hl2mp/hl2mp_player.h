@@ -172,7 +172,11 @@ public:
 	bool IsThreatFiringAtMe( CBaseEntity* threat ) const;
 private:
 
+#ifdef NEO
+	CHL2MPPlayerAnimState *m_PlayerAnimState;
+#else
 	CPlayerAnimState m_PlayerAnimState;
+#endif
 
 	CNetworkQAngle( m_angEyeAngles );
 

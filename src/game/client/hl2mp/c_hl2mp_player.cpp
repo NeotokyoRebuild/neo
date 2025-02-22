@@ -122,7 +122,11 @@ void SpawnBlood (Vector vecSpot, const Vector &vecDir, int bloodColor, float flD
 #endif
 CSuitPowerDevice SuitDeviceBreather( bits_SUIT_DEVICE_BREATHER, 6.7f );		// 100 units in 15 seconds (plus three padded seconds)
 
+#ifdef NEO
+C_HL2MP_Player::C_HL2MP_Player() : m_iv_angEyeAngles( "C_HL2MP_Player::m_iv_angEyeAngles" )
+#else
 C_HL2MP_Player::C_HL2MP_Player() : m_PlayerAnimState( this ), m_iv_angEyeAngles( "C_HL2MP_Player::m_iv_angEyeAngles" )
+#endif
 {
 	m_iIDEntIndex = 0;
 	m_iSpawnInterpCounterCache = 0;
@@ -130,6 +134,9 @@ C_HL2MP_Player::C_HL2MP_Player() : m_PlayerAnimState( this ), m_iv_angEyeAngles(
 	AddVar( &m_angEyeAngles, &m_iv_angEyeAngles, LATCH_SIMULATION_VAR );
 
 	m_EntClientFlags |= ENTCLIENTFLAG_DONTUSEIK;
+#ifdef NEO
+	m_PlayerAnimState = CreateHL2MPPlayerAnimState( this );
+#endif
 
 	m_blinkTimer.Invalidate();
 
@@ -141,6 +148,9 @@ C_HL2MP_Player::C_HL2MP_Player() : m_PlayerAnimState( this ), m_iv_angEyeAngles(
 C_HL2MP_Player::~C_HL2MP_Player( void )
 {
 	ReleaseFlashlight();
+#ifdef NEO
+	m_PlayerAnimState->Release();
+#endif
 }
 
 int C_HL2MP_Player::GetIDTarget() const
@@ -240,6 +250,14 @@ CStudioHdr *C_HL2MP_Player::OnNewModel( void )
 	CStudioHdr *hdr = BaseClass::OnNewModel();
 	
 	Initialize( );
+
+#ifdef NEO
+	// Reset the players animation states, gestures
+	if ( m_PlayerAnimState )
+	{
+		m_PlayerAnimState->OnNewModel();
+	}
+#endif
 
 	return hdr;
 }
@@ -675,7 +693,11 @@ const QAngle& C_HL2MP_Player::GetRenderAngles()
 	}
 	else
 	{
+#ifdef NEO
+		return m_PlayerAnimState->GetRenderAngles();
+#else
 		return m_PlayerAnimState.GetRenderAngles();
+#endif
 	}
 }
 
@@ -1306,8 +1328,8 @@ void C_HL2MPRagdoll::SetupWeights( const matrix3x4_t *pBoneToWorld, int nFlexWei
 
 void C_HL2MP_Player::UpdateClientSideAnimation()
 {
-#if 0 // TODO (nullsystem): 2025-02-18 SOURCE SDK 2013 CHECK
-	m_PlayerAnimState.Update( EyeAngles()[YAW], EyeAngles()[PITCH] );
+#ifdef NEO // TODO (nullsystem): 2025-02-18 SOURCE SDK 2013 CHECK
+	m_PlayerAnimState->Update( EyeAngles()[YAW], EyeAngles()[PITCH] );
 #else
 	m_PlayerAnimState.Update();
 #endif
@@ -1353,7 +1375,6 @@ END_RECV_TABLE()
 
 void C_HL2MP_Player::DoAnimationEvent( PlayerAnimEvent_t event, int nData )
 {
-#if 0
 	if ( IsLocalPlayer() )
 	{
 		if ( ( prediction->InPrediction() && !prediction->IsFirstTimePredicted() ) )
@@ -1361,6 +1382,9 @@ void C_HL2MP_Player::DoAnimationEvent( PlayerAnimEvent_t event, int nData )
 	}
 
 	MDLCACHE_CRITICAL_SECTION();
+#ifdef NEO
+	m_PlayerAnimState->DoAnimationEvent( event, nData );
+#else
 	m_PlayerAnimState.DoAnimationEvent( event, nData );
 #endif
 }

@@ -207,8 +207,16 @@ const char *g_ppszRandomCombineModels[] =
 
 #pragma warning( disable : 4355 )
 
+#ifdef NEO
+CHL2MP_Player::CHL2MP_Player()
+#else
 CHL2MP_Player::CHL2MP_Player() : m_PlayerAnimState( this )
+#endif
 {
+#ifdef NEO
+	//Tony; create our player animation state.
+	m_PlayerAnimState = CreateHL2MPPlayerAnimState( this );
+#endif
 	UseClientSideAnimation();
 
 	m_angEyeAngles.Init();
@@ -230,7 +238,9 @@ CHL2MP_Player::CHL2MP_Player() : m_PlayerAnimState( this )
 
 CHL2MP_Player::~CHL2MP_Player( void )
 {
-
+#ifdef NEO
+	m_PlayerAnimState->Release();
+#endif
 }
 
 void CHL2MP_Player::UpdateOnRemove( void )
@@ -664,7 +674,7 @@ void CHL2MP_Player::PreThink( void )
 
 void CHL2MP_Player::PostThink( void )
 {
-	BaseClass::PostThink();
+	CBasePlayer::PostThink();
 	
 	if ( GetFlags() & FL_DUCKING )
 	{
@@ -676,6 +686,15 @@ void CHL2MP_Player::PostThink( void )
 #endif
 	}
 
+#ifdef NEO
+	QAngle angles = GetLocalAngles();
+	angles[PITCH] = 0;
+	SetLocalAngles( angles );
+
+	// Store the eye angles pitch so the client can compute its animation state correctly.
+	m_angEyeAngles = EyeAngles();
+	m_PlayerAnimState->Update( m_angEyeAngles[YAW], m_angEyeAngles[PITCH] );
+#else
 	m_PlayerAnimState.Update();
 
 	// Store the eye angles pitch so the client can compute its animation state correctly.
@@ -684,6 +703,7 @@ void CHL2MP_Player::PostThink( void )
 	QAngle angles = GetLocalAngles();
 	angles[PITCH] = 0;
 	SetLocalAngles( angles );
+#endif
 }
 
 void CHL2MP_Player::PlayerDeathThink()
@@ -1837,8 +1857,8 @@ void TE_PlayerAnimEvent( CBasePlayer *pPlayer, PlayerAnimEvent_t event, int nDat
 
 void CHL2MP_Player::DoAnimationEvent( PlayerAnimEvent_t event, int nData )
 {
-#if 0 // TODO (nullsystem): 2025-02-18 SOURCE SDK 2013 CHECK
-	m_PlayerAnimState.DoAnimationEvent( event, nData );
+#ifdef NEO
+	m_PlayerAnimState->DoAnimationEvent( event, nData );
 #endif
 	TE_PlayerAnimEvent( this, event, nData );	// Send to any clients who can see this guy.
 }
@@ -1889,7 +1909,11 @@ void CHL2MP_Player::SetupBones( matrix3x4_t *pBoneToWorld, int boneMask )
 		{
 			BuildMatricesWithBoneMerge( 
 				pStudioHdr, 
+#ifdef NEO
+				m_PlayerAnimState->GetRenderAngles(),
+#else
 				m_PlayerAnimState.GetRenderAngles(),
+#endif
 				adjOrigin, 
 				pos, 
 				q, 
@@ -1903,7 +1927,11 @@ void CHL2MP_Player::SetupBones( matrix3x4_t *pBoneToWorld, int boneMask )
 
 	Studio_BuildMatrices( 
 		pStudioHdr, 
+#ifdef NEO
+		m_PlayerAnimState->GetRenderAngles(),
+#else
 		m_PlayerAnimState.GetRenderAngles(),
+#endif
 		adjOrigin, 
 		pos, 
 		q, 

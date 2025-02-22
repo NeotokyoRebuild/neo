@@ -144,7 +144,11 @@ public:
 private:
 	
 	C_HL2MP_Player( const C_HL2MP_Player & );
+#ifdef NEO
+	CHL2MPPlayerAnimState *m_PlayerAnimState;
+#else
 	CPlayerAnimState m_PlayerAnimState;
+#endif
 
 	QAngle	m_angEyeAngles;
 
