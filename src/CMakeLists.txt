@@ -480,32 +480,32 @@ if(NEO_INSTALL_LIBRARIES)
             if(OS_WINDOWS)
                 install(
                     TARGETS server
-                    LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}"
-                    RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}"
+                    LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}/x64"
+                    RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}/x64"
                 )
 
                 install(
                     FILES "$<TARGET_PDB_FILE:server>"
-                    DESTINATION "${SPLIT_DEBUG_INFO_INSTALL_PATH}"
+                    DESTINATION "${SPLIT_DEBUG_INFO_INSTALL_PATH}/x64"
                 )
             else()
                 get_target_property(SERVER_STRIPPED_FILE server STRIPPED_FILE)
                 install(
                     FILES ${SERVER_STRIPPED_FILE}
-                    DESTINATION "${LIBRARY_INSTALL_PATH}"
+                    DESTINATION "${LIBRARY_INSTALL_PATH}/linux64"
                 )
 
                 get_target_property(SERVER_SPLIT_DEBUG_INFO_FILE server SPLIT_DEBUG_INFO_FILE)
                 install(
                     FILES ${SERVER_SPLIT_DEBUG_INFO_FILE}
-                    DESTINATION "${SPLIT_DEBUG_INFO_INSTALL_PATH}"
+                    DESTINATION "${SPLIT_DEBUG_INFO_INSTALL_PATH}/linux64"
                 )
             endif()
         else()
             install(
                 TARGETS server
-                LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}"
-                RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}"
+                LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}${PLATSUBDIR}"
+                RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}${PLATSUBDIR}"
             )
         endif()
     else()
@@ -517,8 +517,8 @@ if(NEO_INSTALL_LIBRARIES)
             if(OS_WINDOWS)
                 install(
                     TARGETS client game_shader_dx9 server
-                    LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}"
-                    RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}"
+                    LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}/x64"
+                    RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}/x64"
                 )
 
                 install(
@@ -526,7 +526,7 @@ if(NEO_INSTALL_LIBRARIES)
                         $<TARGET_PDB_FILE:client>
                         $<TARGET_PDB_FILE:game_shader_dx9>
                         $<TARGET_PDB_FILE:server>
-                    DESTINATION "${SPLIT_DEBUG_INFO_INSTALL_PATH}"
+                    DESTINATION "${SPLIT_DEBUG_INFO_INSTALL_PATH}/x64"
                 )
             else()
                 get_target_property(CLIENT_STRIPPED_FILE client STRIPPED_FILE)
@@ -537,7 +537,7 @@ if(NEO_INSTALL_LIBRARIES)
                         ${CLIENT_STRIPPED_FILE}
                         ${SHADER_STRIPPED_FILE}
                         ${SERVER_STRIPPED_FILE}
-                    DESTINATION "${LIBRARY_INSTALL_PATH}"
+                    DESTINATION "${LIBRARY_INSTALL_PATH}/linux64"
                 )
 
                 get_target_property(CLIENT_SPLIT_DEBUG_INFO_FILE client SPLIT_DEBUG_INFO_FILE)
@@ -548,14 +548,14 @@ if(NEO_INSTALL_LIBRARIES)
                         ${CLIENT_SPLIT_DEBUG_INFO_FILE}
                         ${SHADER_SPLIT_DEBUG_INFO_FILE}
                         ${SERVER_SPLIT_DEBUG_INFO_FILE}
-                    DESTINATION "${SPLIT_DEBUG_INFO_INSTALL_PATH}"
+                    DESTINATION "${SPLIT_DEBUG_INFO_INSTALL_PATH}/linux64"
                 )
             endif()
         else()
             install(
                 TARGETS client game_shader_dx9 server
-                LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}"
-                RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}"
+                LIBRARY DESTINATION "${LIBRARY_INSTALL_PATH}${PLATSUBDIR}"
+                RUNTIME DESTINATION "${LIBRARY_INSTALL_PATH}${PLATSUBDIR}"
             )
         endif()
     endif()
