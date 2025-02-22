@@ -122,6 +122,7 @@ jobs:
       with:
         name: ${{ env.libraries }}
         path: ${{ env.install_dir }}/${{ env.libraries }}
+        label: ${{ env.libraries }}.${{ matrix.platform.preset_os }}
 
     - name: Upload libraries debug information
       uses: actions/upload-artifact@v4
@@ -134,6 +135,7 @@ jobs:
       with:
         name: ${{ env.dedicated }}
         path: ${{ env.install_dir }}/${{ env.dedicated }}
+        label: ${{ env.dedicated }}.${{ matrix.platform.preset_os }}
 
     - name: Upload dedicated library debug information
       uses: actions/upload-artifact@v4
