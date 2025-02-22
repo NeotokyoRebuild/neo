@@ -74,9 +74,20 @@ void CHL2MP_Player::PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, f
 		return;
 
 #if defined( CLIENT_DLL )
+#ifdef NEO
+	// during prediction play footstep sounds only once NEOTODO this should be done for all players but currently works only if done for local player only
+	if (IsLocalPlayer())
+	{
+		if (!prediction->IsFirstTimePredicted())
+		{
+			return;
+		}
+	}
+#else
 	// during prediction play footstep sounds only once
 	if ( !prediction->IsFirstTimePredicted() )
 		return;
+#endif
 #endif
 
 	if ( GetFlags() & FL_DUCKING )
@@ -95,8 +106,22 @@ void CHL2MP_Player::PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, f
 		Q_snprintf( szStepSound, sizeof( szStepSound ), "%s.RunFootstepRight", g_ppszPlayerSoundPrefixNames[m_iPlayerSoundType] );
 	}
 
+#ifdef NEO
+	unsigned short stepSoundName = m_Local.m_nStepside ? psurface->sounds.stepleft : psurface->sounds.stepright;
+	const char* pSoundName = physprops->GetString(stepSoundName);
+
+	if (!stepSoundName) // If can't find material step sound use default footstep sound
+	{
+		pSoundName = szStepSound;
+	}
+#endif
+
 	CSoundParameters params;
+#ifdef NEO
+	if ( GetParametersForSound( pSoundName, params, NULL ) == false )
+#else
 	if ( GetParametersForSound( szStepSound, params, NULL ) == false )
+#endif
 		return;
 
 	CRecipientFilter filter;
