@@ -666,7 +666,6 @@
 		"TextColor"	"255 255 255 192"
 
 	}
-<<<<<<< HEAD:game/neo/scripts/HudLayout.res
 
 	HudMenu
 	{
@@ -723,8 +722,6 @@
 		"visible"	"0"
 		"enabled" 	"0"
 	}
-=======
->>>>>>> 0759e2e8 (Add Team Fortress 2 SDK):game/mod_hl2mp/scripts/HudLayout.res
 	
 	HUDAutoAim
 	{
@@ -805,10 +802,16 @@
 	CHudVote
 	{
 		"fieldName"		"CHudVote"
-<<<<<<< HEAD:game/neo/scripts/HudLayout.res
-		"visible"		"0"
-		"enabled"		"0"
-	}
+		"xpos"			"0"			
+		"ypos"			"0"
+		"wide"			"640"
+		"tall"			"480"
+		"visible"		"1"
+		"enabled"		"1"
+		"bgcolor_override"	"0 0 0 0"
+		"PaintBackgroundType"	"0" // rounded corners
+	}	
+
 	NHudCompass
 	{
 		"fieldName"		"NHudCompass"
@@ -965,17 +968,5 @@
 		"xpos"	"6"
 		"ypos"	"440"
 		"wide"	"640"
-  }
+	}
 }
-=======
-		"xpos"			"0"			
-		"ypos"			"0"
-		"wide"			"640"
-		"tall"			"480"
-		"visible"		"1"
-		"enabled"		"1"
-		"bgcolor_override"	"0 0 0 0"
-		"PaintBackgroundType"	"0" // rounded corners
-	}	
-}
->>>>>>> 0759e2e8 (Add Team Fortress 2 SDK):game/mod_hl2mp/scripts/HudLayout.res
