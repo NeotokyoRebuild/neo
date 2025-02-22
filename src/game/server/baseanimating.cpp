@@ -1317,19 +1317,7 @@ void CBaseAnimating::HandleAnimEvent( animevent_t *pEvent )
 //=========================================================
 float CBaseAnimating::SetPoseParameter( CStudioHdr *pStudioHdr, const char *szName, float flValue )
 {
-#ifdef NEO
-	int poseParam = -1;
-	if (V_strcmp(szName, "aim_pitch") == 0)
-	{
-		poseParam = LookupPoseParameter( pStudioHdr, "body_pitch" );
-	}
-	else
-	{
-		poseParam = LookupPoseParameter( pStudioHdr, szName );
-	}
-#else
 	int poseParam = LookupPoseParameter( pStudioHdr, szName );
-#endif
 	AssertMsg2(poseParam >= 0, "SetPoseParameter called with invalid argument %s by %s", szName, GetDebugName());
 	return SetPoseParameter( pStudioHdr, poseParam, flValue );
 }
