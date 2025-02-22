@@ -68,9 +68,16 @@ private:
 
 	EHANDLE			m_hDumpEntity;
 
+#ifdef NEO
+	// NEOTODO (Adam) I guess we don't have these fonts defined yet, at least on windows cl_pdump doesn't show anything because of it, reverting to old font for time being, fix?
+	CPanelAnimationVar( vgui::HFont, m_FontSmall, "ItemFont", "DefaultVerySmall" );
+	CPanelAnimationVar( vgui::HFont, m_FontMedium, "LabelFont", "DefaultSmall" );
+	CPanelAnimationVar( vgui::HFont, m_FontBig, "TitleFont", "Trebuchet24" );
+#else
 	CPanelAnimationVar( vgui::HFont, m_FontSmall, "ItemFont", "PDumpVerySmall" );
 	CPanelAnimationVar( vgui::HFont, m_FontMedium, "LabelFont", "PDumpSmall" );
 	CPanelAnimationVar( vgui::HFont, m_FontBig, "TitleFont", "PDump" );
+#endif // NEO
 };
 
 CPDumpPanel *GetPDumpPanel();
