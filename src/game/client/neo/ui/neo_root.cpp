@@ -884,6 +884,7 @@ void CNeoRoot::MainLoopNewGame(const MainLoopParam param)
 			NeoUI::SliderInt(L"Max players", &m_newGame.iMaxPlayers, 1, 32);
 			NeoUI::TextEdit(L"Password", m_newGame.wszPassword, SZWSZ_LEN(m_newGame.wszPassword));
 			NeoUI::RingBoxBool(L"Friendly fire", &m_newGame.bFriendlyFire);
+			NeoUI::RingBoxBool(L"Use Steam networking", &m_newGame.bUseSteamNetworking);
 		}
 		NeoUI::EndSection();
 		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
@@ -918,6 +919,7 @@ void CNeoRoot::MainLoopNewGame(const MainLoopParam param)
 					ConVarRef("hostname").SetValue(szHostname);
 					ConVarRef("sv_password").SetValue(szPassword);
 					ConVarRef("mp_friendlyfire").SetValue(m_newGame.bFriendlyFire);
+					ConVarRef("sv_use_steam_networking").SetValue(m_newGame.bUseSteamNetworking);
 
 					char cmdStr[256];
 					V_sprintf_safe(cmdStr, "maxplayers %d; progress_enable; map \"%s\"", m_newGame.iMaxPlayers, szMap);

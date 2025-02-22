@@ -68,6 +68,15 @@ enum FilteringEnum
 	FILTERING__TOTAL,
 };
 
+enum WindowModeEnum
+{
+	WINDOWMODE_FULLSCREEN = 0,
+	WINDOWMODE_WINDOWED,
+	WINDOWMODE_WINDOWEDNOBORDER,
+
+	WINDOWMODE__TOTAL,
+};
+
 static const wchar_t *SPEAKER_CFG_LABELS[] = {
 	L"Auto",
 	L"Headphones",
@@ -321,7 +330,12 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 			}
 		}
 
-		pVideo->iWindow = static_cast<int>(g_pMaterialSystem->GetCurrentConfigForVideoCard().Windowed());
+		const bool bIsWindowed = g_pMaterialSystem->GetCurrentConfigForVideoCard().Windowed();
+		pVideo->iWindow = static_cast<int>(bIsWindowed);
+		if (bIsWindowed)
+		{
+			pVideo->iWindow += static_cast<int>(g_pMaterialSystem->GetCurrentConfigForVideoCard().NoWindowBorder());
+		}
 		const int queueMode = cvr->mat_queue_mode.GetInt();
 		pVideo->iCoreRendering = (queueMode == -1 || queueMode == 2) ? THREAD_MULTI : THREAD_SINGLE;
 		pVideo->iModelDetail = 2 - cvr->r_rootlod.GetInt(); // Inverse, highest = 0, lowest = 2
@@ -537,6 +551,10 @@ void NeoSettingsSave(const NeoSettings *ns)
 			char cmdStr[128];
 			V_sprintf_safe(cmdStr, "mat_setvideomode %d %d %d", vm->width, vm->height, pVideo->iWindow);
 			engine->ClientCmd_Unrestricted(cmdStr);
+
+			MaterialSystem_Config_t newMaterialSystemCfg = g_pMaterialSystem->GetCurrentConfigForVideoCard();
+			newMaterialSystemCfg.SetFlag(MATSYS_VIDCFG_FLAGS_NO_WINDOW_BORDER, pVideo->iWindow == WINDOWMODE_WINDOWEDNOBORDER);
+			g_pMaterialSystem->OverrideConfig(newMaterialSystemCfg, true);
 		}
 		cvr->mat_queue_mode.SetValue((pVideo->iCoreRendering == THREAD_MULTI) ? 2 : 0);
 		cvr->r_rootlod.SetValue(2 - pVideo->iModelDetail);
@@ -746,7 +764,7 @@ void NeoSettings_Audio(NeoSettings *ns)
 	}
 }
 
-static const wchar_t *WINDOW_MODE[] = { L"Fullscreen", L"Windowed", };
+static const wchar_t *WINDOW_MODE[WINDOWMODE__TOTAL] = { L"Fullscreen", L"Windowed", L"Windowed (Borderless)" };
 static const wchar_t *QUEUE_MODE[] = { L"Single", L"Multi", };
 static const wchar_t *QUALITY2_LABELS[] = { L"Low", L"High", };
 static const wchar_t *FILTERING_LABELS[FILTERING__TOTAL] = {
@@ -760,7 +778,7 @@ void NeoSettings_Video(NeoSettings *ns)
 {
 	NeoSettings::Video *pVideo = &ns->video;
 	NeoUI::RingBox(L"Resolution", const_cast<const wchar_t **>(pVideo->p2WszVmDispList), pVideo->iVMListSize, &pVideo->iResolution);
-	NeoUI::RingBox(L"Window", WINDOW_MODE, ARRAYSIZE(WINDOW_MODE), &pVideo->iWindow);
+	NeoUI::RingBox(L"Window", WINDOW_MODE, WINDOWMODE__TOTAL, &pVideo->iWindow);
 	NeoUI::RingBox(L"Core Rendering", QUEUE_MODE, ARRAYSIZE(QUEUE_MODE), &pVideo->iCoreRendering);
 	NeoUI::RingBox(L"Model detail", QUALITY_LABELS, 3, &pVideo->iModelDetail);
 	NeoUI::RingBox(L"Texture detail", QUALITY_LABELS, 4, &pVideo->iTextureDetail);
