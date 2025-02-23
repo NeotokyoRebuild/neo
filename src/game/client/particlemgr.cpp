@@ -146,7 +146,11 @@ CParticleEffectBinding::CParticleEffectBinding()
 	m_LastMin = m_Min;
 	m_LastMax = m_Max;
 
+#ifdef NEO
+	m_flParticleCullRadius = 0.f;
+#else
 	SetParticleCullRadius( 0.0f );
+#endif // NEO
 	m_nActiveParticles = 0;
 
 	m_FrameCode = 0;
