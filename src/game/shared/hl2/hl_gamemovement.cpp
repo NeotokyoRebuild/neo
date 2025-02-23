@@ -576,6 +576,14 @@ void CHL2GameMovement::ReduceTimers( void )
 //-----------------------------------------------------------------------------
 void CHL2GameMovement::FullLadderMove()
 {
+#ifdef NEO
+	if (!GetLadder())
+	{
+		BaseClass::FullLadderMove();
+		return;
+	}
+#endif
+
 	CFuncLadder *ladder = GetLadder();
 	Assert( ladder );
 	if ( !ladder )
