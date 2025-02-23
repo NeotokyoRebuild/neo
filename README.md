@@ -3,8 +3,7 @@
 * NEOTOKYO rebuild in Source SDK 2013 Multiplayer (2025 TF2 SDK Update)
 * Forked from: https://github.com/NeotokyoRevamp/neo
 * License: SOURCE 1 SDK LICENSE, see [LICENSE](LICENSE) for details
-* For Valve's Source SDK 2013 contributing text, see [CONTRIBUTING](CONTRIBUTING) for details
-* See [CONTRIBUTING_DOC.md](CONTRIBUTING_DOC.md) for instructions on how the codebase work and contribute
+* See [CONTRIBUTING.md](CONTRIBUTING.md) for instructions on how the codebase work and contribute
 
 ## Table of contents
 To see the Table of Contents, please use the "Outline" feature on GitHub by clicking the button located in the top right of this document.
@@ -32,14 +31,14 @@ NT;RE can be built using [VS2022 IDE](#visual-studio-2022-windows), [Qt Creator 
 2. Open the `CMakeLists.txt` found in `src`
 3. To switch to the CMake view, right-click and click on "Switch to CMake Targets View" in the "Solution Explorer", it'll be under the "Folder View".
 
-After that, it should be able to compile. For debugger/run CMake configuration, refer to: [CONTRIBUTING_DOC.md - Debugging - VS2022 + CMake (Windows)](CONTRIBUTING_DOC.md#vs2022--cmake-windows).
+After that, it should be able to compile. For debugger/run CMake configuration, refer to: [CONTRIBUTING.md - Debugging - VS2022 + CMake (Windows)](CONTRIBUTING.md#vs2022--cmake-windows).
 
 #### Qt Creator (Linux)
 1. On the "Welcome" screen, click on "Open Project..."
 2. Open the `CMakeLists.txt` found in `src`
 3. By default, the build is not done in parallel but rather sequentiality. Note, parallel builds at the default setting could deadlock the system or make it unresponsive during the process. Available since CMake 3.12, the amount of jobs can be tweaked using `--parallel <jobs>` where `<jobs>` is a number to specify parallel build level, or just simply don't apply it to turn it off. To turn on parallel builds in Qt Creator: On the "Projects" screen, in [YOUR KIT (under Build & Run)] > Build, go to "Build Steps" section, expand by clicking on "Details", and add `--parallel` to the CMake arguments.
 
-After that, it should be able to compile. For debugger/running configuration, refer to: [CONTRIBUTING_DOC.md - Debugging - Qt Creator (Linux)](CONTRIBUTING_DOC.md#qt-creator-linux)
+After that, it should be able to compile. For debugger/running configuration, refer to: [CONTRIBUTING.md - Debugging - Qt Creator (Linux)](CONTRIBUTING.md#qt-creator-linux)
 
 #### CLI (with ninja, Windows + Linux)
 ##### Windows prerequisite
