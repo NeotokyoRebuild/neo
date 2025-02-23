@@ -131,6 +131,7 @@ public:
 
 	int GetClass() const { return m_iNeoClass; }
 	int GetStar() const { return m_iNeoStar; }
+	int GetDisplayedHealth(bool asPercent) const;
 
 	bool IsCarryingGhost(void) const;
 
