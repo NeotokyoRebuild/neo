@@ -90,8 +90,10 @@ void CHL2MP_Player::PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, f
 #endif
 #endif
 
+#ifndef NEO
 	if ( GetFlags() & FL_DUCKING )
 		return;
+#endif
 
 	m_Local.m_nStepside = !m_Local.m_nStepside;
 
