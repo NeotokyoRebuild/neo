@@ -652,3 +652,21 @@ Vector CNavLadder::GetPosAtHeight( float height ) const
 }
 
 //--------------------------------------------------------------------------------------------------------------
+
+#ifdef NEO
+// DG: This is added to avoid missing entity errors on maps old and new. VBSP issue
+class CInfoLadder : public CBaseEntity 
+{
+public:
+	DECLARE_CLASS(CInfoLadder, CBaseEntity);
+
+	void Spawn(void);
+};
+
+// For now, do nothing
+void CInfoLadder::Spawn(void)
+{
+	UTIL_Remove(this);
+}
+LINK_ENTITY_TO_CLASS(info_ladder, CInfoLadder);
+#endif
