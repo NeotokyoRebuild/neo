@@ -681,7 +681,16 @@
 		"wide"	"142"
 		"tall"	"284"
 	}
-  
+
+	neo_message
+	{
+		"fieldName"		"neo_message"
+		"xpos"	"80"
+		"ypos"	"60"
+		"wide"	"300"
+		"tall"	"200"
+	}
+
 	neo_ghost_startup_sequence
 	{
 		"fieldName"		"neo_ghost_startup_sequence"
