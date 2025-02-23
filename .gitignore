@@ -669,3 +669,5 @@ FodyWeavers.xsd
 
 # Old /mp directory should no longer be used
 /mp
+
+/game/neo/cache/DownloadCache.db
