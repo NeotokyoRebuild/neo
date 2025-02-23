@@ -46,7 +46,7 @@ target_include_directories(server
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons
     ${CMAKE_SOURCE_DIR}/utils/common
     ${CMAKE_SOURCE_DIR}/public
-	${NEXTBOT_DIR}
+    ${NEXTBOT_DIR}
 )
 
 target_compile_definitions(server
@@ -1527,57 +1527,57 @@ target_sources_grouped(
     TARGET server
     NAME "NextBot"
     FILES
-    ${NEXTBOT_DIR}/NextBot.cpp
-    ${NEXTBOT_DIR}/NextBot.h
-    ${NEXTBOT_DIR}/NextBotBehavior.h
-    ${NEXTBOT_DIR}/NextBotManager.cpp
-    ${NEXTBOT_DIR}/NextBotManager.h
-    ${NEXTBOT_DIR}/NextBotUtil.h
-    ${NEXTBOT_DIR}/NextBotKnownEntity.h
-    ${NEXTBOT_DIR}/NextBotGroundLocomotion.cpp
-    ${NEXTBOT_DIR}/NextBotGroundLocomotion.h
-    ${NEXTBOT_DIR}/simple_bot.cpp
-    ${NEXTBOT_DIR}/simple_bot.h
+        ${NEXTBOT_DIR}/NextBot.cpp
+        ${NEXTBOT_DIR}/NextBot.h
+        ${NEXTBOT_DIR}/NextBotBehavior.h
+        ${NEXTBOT_DIR}/NextBotManager.cpp
+        ${NEXTBOT_DIR}/NextBotManager.h
+        ${NEXTBOT_DIR}/NextBotUtil.h
+        ${NEXTBOT_DIR}/NextBotKnownEntity.h
+        ${NEXTBOT_DIR}/NextBotGroundLocomotion.cpp
+        ${NEXTBOT_DIR}/NextBotGroundLocomotion.h
+        ${NEXTBOT_DIR}/simple_bot.cpp
+        ${NEXTBOT_DIR}/simple_bot.h
 
-    # NextBotInterfaces
-    ${NEXTBOT_DIR}/NextBotBodyInterface.cpp
-    ${NEXTBOT_DIR}/NextBotBodyInterface.h
-    ${NEXTBOT_DIR}/NextBotComponentInterface.cpp
-    ${NEXTBOT_DIR}/NextBotComponentInterface.h
-    ${NEXTBOT_DIR}/NextBotEventResponderInterface.h
-    ${NEXTBOT_DIR}/NextBotHearingInterface.h
-    ${NEXTBOT_DIR}/NextBotIntentionInterface.cpp
-    ${NEXTBOT_DIR}/NextBotIntentionInterface.h
-    ${NEXTBOT_DIR}/NextBotInterface.cpp
-    ${NEXTBOT_DIR}/NextBotInterface.h
-    ${NEXTBOT_DIR}/NextBotLocomotionInterface.cpp
-    ${NEXTBOT_DIR}/NextBotLocomotionInterface.h
-    ${NEXTBOT_DIR}/NextBotVisionInterface.cpp
-    ${NEXTBOT_DIR}/NextBotVisionInterface.h
-    ${NEXTBOT_DIR}/NextBotContextualQueryInterface.h
+        # NextBotInterfaces
+        ${NEXTBOT_DIR}/NextBotBodyInterface.cpp
+        ${NEXTBOT_DIR}/NextBotBodyInterface.h
+        ${NEXTBOT_DIR}/NextBotComponentInterface.cpp
+        ${NEXTBOT_DIR}/NextBotComponentInterface.h
+        ${NEXTBOT_DIR}/NextBotEventResponderInterface.h
+        ${NEXTBOT_DIR}/NextBotHearingInterface.h
+        ${NEXTBOT_DIR}/NextBotIntentionInterface.cpp
+        ${NEXTBOT_DIR}/NextBotIntentionInterface.h
+        ${NEXTBOT_DIR}/NextBotInterface.cpp
+        ${NEXTBOT_DIR}/NextBotInterface.h
+        ${NEXTBOT_DIR}/NextBotLocomotionInterface.cpp
+        ${NEXTBOT_DIR}/NextBotLocomotionInterface.h
+        ${NEXTBOT_DIR}/NextBotVisionInterface.cpp
+        ${NEXTBOT_DIR}/NextBotVisionInterface.h
+        ${NEXTBOT_DIR}/NextBotContextualQueryInterface.h
 
-    # NextBotPath
-	${NEXTBOT_DIR}/Path/NextBotChasePath.cpp
-	${NEXTBOT_DIR}/Path/NextBotChasePath.h
-	${NEXTBOT_DIR}/Path/NextBotRetreatPath.h
-	${NEXTBOT_DIR}/Path/NextBotPath.cpp
-	${NEXTBOT_DIR}/Path/NextBotPath.h
-	${NEXTBOT_DIR}/Path/NextBotPathFollow.cpp
-	${NEXTBOT_DIR}/Path/NextBotPathFollow.h
-			
-    # NextBotPlayer
-	${NEXTBOT_DIR}/Player/NextBotPlayerBody.cpp
-	${NEXTBOT_DIR}/Player/NextBotPlayerBody.h
-	${NEXTBOT_DIR}/Player/NextBotPlayerLocomotion.cpp
-	${NEXTBOT_DIR}/Player/NextBotPlayerLocomotion.h
-	${NEXTBOT_DIR}/Player/NextBotPlayer.cpp
-	${NEXTBOT_DIR}/Player/NextBotPlayer.h
+        # NextBotPath
+        ${NEXTBOT_DIR}/Path/NextBotChasePath.cpp
+        ${NEXTBOT_DIR}/Path/NextBotChasePath.h
+        ${NEXTBOT_DIR}/Path/NextBotRetreatPath.h
+        ${NEXTBOT_DIR}/Path/NextBotPath.cpp
+        ${NEXTBOT_DIR}/Path/NextBotPath.h
+        ${NEXTBOT_DIR}/Path/NextBotPathFollow.cpp
+        ${NEXTBOT_DIR}/Path/NextBotPathFollow.h
+                        
+        # NextBotPlayer
+        ${NEXTBOT_DIR}/Player/NextBotPlayerBody.cpp
+        ${NEXTBOT_DIR}/Player/NextBotPlayerBody.h
+        ${NEXTBOT_DIR}/Player/NextBotPlayerLocomotion.cpp
+        ${NEXTBOT_DIR}/Player/NextBotPlayerLocomotion.h
+        ${NEXTBOT_DIR}/Player/NextBotPlayer.cpp
+        ${NEXTBOT_DIR}/Player/NextBotPlayer.h
 
-    # NextBotCommonBehaviors
-	${NEXTBOT_DIR}/Behavior/BehaviorBackUp.h
-	${NEXTBOT_DIR}/Behavior/BehaviorMoveTo.h
+        # NextBotCommonBehaviors
+        ${NEXTBOT_DIR}/Behavior/BehaviorBackUp.h
+        ${NEXTBOT_DIR}/Behavior/BehaviorMoveTo.h
 
-    # NextBotNavMeshEntities
-	${NEXTBOT_DIR}/NavMeshEntities/func_nav_prerequisite.cpp
-	${NEXTBOT_DIR}/NavMeshEntities/func_nav_prerequisite.h
+        # NextBotNavMeshEntities
+        ${NEXTBOT_DIR}/NavMeshEntities/func_nav_prerequisite.cpp
+        ${NEXTBOT_DIR}/NavMeshEntities/func_nav_prerequisite.h
 )

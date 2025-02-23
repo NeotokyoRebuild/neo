@@ -183,17 +183,17 @@ if(OS_WINDOWS)
         /wd4838
         #/wd4316
         #/wd4565
-	#/wd26945 # This is an IntelliSense not build warning, this won't even mask it anyway
+        #/wd26945 # This is an IntelliSense not build warning, this won't even mask it anyway
     )
 
     add_compile_definitions(
         WIN32
         _WIN32
-	WIN64
-	_WIN64
+        WIN64
+        _WIN64
         _WINDOWS
         COMPILER_MSVC
-	#COMPILER_MSVC32
+        #COMPILER_MSVC32
         COMPILER_MSVC64
         _LIB
         _CRT_SECURE_NO_DEPRECATE
@@ -401,7 +401,7 @@ endif()
 
 if(NEO_USE_VALVE_BINDIR)
     # On dedicated servers, some plugins depend on global variable symbols in addition to functions.
-	# So symbols like _Z16ClearMultiDamagev should show up when you do "nm server_srv.so" in TF2.
+        # So symbols like _Z16ClearMultiDamagev should show up when you do "nm server_srv.so" in TF2.
 
     # TODO disable strip
 endif()

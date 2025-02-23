@@ -25,7 +25,7 @@ target_include_directories(client
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons
     ${CMAKE_SOURCE_DIR}/public
     ${CMAKE_SOURCE_DIR}/thirdparty/sixensesdk/include
-	${NEXTBOT_DIR_CLIENT}
+    ${NEXTBOT_DIR_CLIENT}
     game_controls
     hl2
     hl2/elements
@@ -144,10 +144,10 @@ if(OS_LINUX)
 
     target_link_libraries(client
         PRIVATE
-	#${CMAKE_SOURCE_DIR}/lib/common/linux64/libcrypto.a
-	#${CMAKE_SOURCE_DIR}/lib/common/linux64/libssl.a
-	#${LIBCOMMON}/libcurl.a
-	#${LIBCOMMON}/libcurlssl.a
+        #${CMAKE_SOURCE_DIR}/lib/common/linux64/libcrypto.a
+        #${CMAKE_SOURCE_DIR}/lib/common/linux64/libssl.a
+        #${LIBCOMMON}/libcurl.a
+        #${LIBCOMMON}/libcurlssl.a
         vgui_controls::vgui_controls
         dl
         m
@@ -1758,7 +1758,7 @@ target_sources_grouped(
     TARGET client
     NAME "NextBot"
     FILES
-	${NEXTBOT_DIR_CLIENT}/C_NextBot.cpp
-	${NEXTBOT_DIR_CLIENT}/C_NextBot.h
+        ${NEXTBOT_DIR_CLIENT}/C_NextBot.cpp
+        ${NEXTBOT_DIR_CLIENT}/C_NextBot.h
 )
 
