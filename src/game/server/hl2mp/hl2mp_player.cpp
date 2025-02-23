@@ -613,9 +613,9 @@ void CHL2MP_Player::SetupPlayerSoundsByModel( const char *pModelName )
 	}
 }
 
+#ifndef NEO
 void CHL2MP_Player::ResetAnimation( void )
 {
-#ifndef NEO
 	if ( IsAlive() )
 	{
 		SetSequence ( -1 );
@@ -632,8 +632,8 @@ void CHL2MP_Player::ResetAnimation( void )
 		else
 			SetAnimation( PLAYER_IDLE );
 	}
-#endif
 }
+#endif
 
 bool CHL2MP_Player::Weapon_Switch( CBaseCombatWeapon *pWeapon, int viewmodelindex )
 {

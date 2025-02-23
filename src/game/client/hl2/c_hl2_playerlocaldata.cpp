@@ -18,7 +18,9 @@ BEGIN_RECV_TABLE_NOBASE( C_HL2PlayerLocalData, DT_HL2Local )
 #endif
 	RecvPropFloat( RECVINFO(m_flSuitPowerLoad) ),
 	RecvPropFloat( RECVINFO(m_flTimeAllSuitDevicesOff) ),
+#ifndef NEO
 	RecvPropInt( RECVINFO(m_bNewSprinting) ),
+#endif
 	RecvPropInt( RECVINFO(m_bZooming) ),
 	RecvPropInt( RECVINFO(m_bitsActiveDevices) ),
 	RecvPropInt( RECVINFO(m_iSquadMemberCount) ),
@@ -44,7 +46,9 @@ BEGIN_PREDICTION_DATA_NO_BASE( C_HL2PlayerLocalData )
 	DEFINE_PRED_FIELD( m_flSuitPower, FIELD_FLOAT, FTYPEDESC_INSENDTABLE ),
 	DEFINE_PRED_FIELD( m_flSuitPowerLoad, FIELD_FLOAT, FTYPEDESC_INSENDTABLE ),
 	DEFINE_PRED_FIELD( m_flTimeAllSuitDevicesOff, FIELD_FLOAT, FTYPEDESC_INSENDTABLE ),
+#ifndef NEO
 	DEFINE_PRED_FIELD( m_bNewSprinting, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE ),
+#endif
 	DEFINE_PRED_FIELD( m_bitsActiveDevices, FIELD_INTEGER, FTYPEDESC_INSENDTABLE ),
 
 	DEFINE_PRED_TYPEDESCRIPTION( m_LadderMove, LadderMove_t ),
@@ -59,7 +63,9 @@ C_HL2PlayerLocalData::C_HL2PlayerLocalData()
 	m_flSuitPowerLoad = 0.0f;
 	m_flTimeAllSuitDevicesOff = 0.0f;
 	m_bZooming = false;
+#ifndef NEO
 	m_bNewSprinting = false;
+#endif
 	m_iSquadMemberCount = 0;
 	m_iSquadMedicCount = 0;
 	m_fSquadInFollowMode = false;

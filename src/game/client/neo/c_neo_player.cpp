@@ -884,6 +884,63 @@ void C_NEO_Player::CalculateSpeed(void)
 	SetMaxSpeed(speed);
 }
 
+void C_NEO_Player::HandleSpeedChangesLegacy()
+{
+	int buttonsChanged = m_afButtonPressed | m_afButtonReleased;
+
+	if( buttonsChanged & (IN_SPEED | IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)  || m_nButtons & IN_SPEED)
+	{
+		// The state of the sprint/run button has changed.
+		if ( IsSuitEquipped() )
+		{
+#ifdef NEO
+			constexpr float MOVING_SPEED_MINIMUM = 0.5f; // NEOTODO (Adam) This is the same value as defined in cbaseanimating, should we be using the same value? Should we import it here?
+			if (!(m_nButtons & IN_SPEED) && IsSprinting())
+#else
+			if ( !(m_nButtons & (IN_SPEED | IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)) && IsSprinting())
+#endif
+			{
+				StopSprinting();
+			}
+#ifdef NEO
+			else if ((m_nButtons & IN_SPEED) && !IsSprinting() && GetLocalVelocity().IsLengthGreaterThan(MOVING_SPEED_MINIMUM))
+#else
+			else if ( (m_afButtonPressed & IN_SPEED) && (m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)) && !IsSprinting() )
+#endif
+			{
+				if ( CanSprint() )
+				{
+					StartSprinting();
+				}
+				else
+				{
+					// Reset key, so it will be activated post whatever is suppressing it.
+					m_nButtons &= ~IN_SPEED;
+				}
+			}
+		}
+	}
+	else if( buttonsChanged & IN_WALK )
+	{
+		if ( IsSuitEquipped() )
+		{
+			// The state of the WALK button has changed.
+			if( IsWalking() && !(m_afButtonPressed & IN_WALK) )
+			{
+				StopWalking();
+			}
+			else if( !IsWalking() && !IsSprinting() && (m_afButtonPressed & IN_WALK) && !(m_nButtons & IN_DUCK) )
+			{
+				StartWalking();
+			}
+		}
+	}
+
+	if ( IsSuitEquipped() && m_fIsWalking && !(m_nButtons & IN_WALK)  )
+		StopWalking();
+}
+
+#if 0
 void C_NEO_Player::HandleSpeedChanges( CMoveData *mv )
 {
 	int nChangedButtons = mv->m_nButtons ^ mv->m_nOldButtons;
@@ -898,12 +955,12 @@ void C_NEO_Player::HandleSpeedChanges( CMoveData *mv )
 #endif
 
 #ifdef NEO
-	const bool bWantsToChangeSprinting = ( m_HL2Local.m_bNewSprinting != bWantSprint ) && ((mv->m_nButtons & IN_SPEED) || (( nChangedButtons & IN_SPEED ) != 0));
+	const bool bWantsToChangeSprinting = ( IsSprinting() != bWantSprint ) && ((mv->m_nButtons & IN_SPEED) || (( nChangedButtons & IN_SPEED ) != 0));
 #else
 	const bool bWantsToChangeSprinting = ( m_HL2Local.m_bNewSprinting != bWantSprint ) && ( nChangedButtons & IN_SPEED ) != 0;
 #endif
 
-	bool bSprinting = m_HL2Local.m_bNewSprinting;
+	bool bSprinting = IsSprinting();
 	if ( bWantsToChangeSprinting )
 	{
 		if ( bWantSprint )
@@ -980,6 +1037,7 @@ void C_NEO_Player::HandleSpeedChanges( CMoveData *mv )
 
 	mv->m_flMaxSpeed = MaxSpeed();
 }
+#endif
 
 extern ConVar sv_infinite_aux_power;
 extern ConVar glow_outline_effect_enable;
@@ -1490,17 +1548,14 @@ void C_NEO_Player::StartSprinting(void)
 {
 	if (IsCarryingGhost())
 	{
-		m_HL2Local.m_bNewSprinting = false;
 		return;
 	}
 
 	BaseClass::StartSprinting();
-	m_HL2Local.m_bNewSprinting = true;
 }
 
 void C_NEO_Player::StopSprinting(void)
 {
-	m_HL2Local.m_bNewSprinting = false;
 	m_fIsSprinting = false;
 }
 

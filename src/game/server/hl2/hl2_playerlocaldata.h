@@ -34,7 +34,9 @@ public:
 #endif
 	CNetworkVar( float, m_flSuitPowerLoad );
 	CNetworkVar( float, m_flTimeAllSuitDevicesOff );
+#ifndef NEO
 	CNetworkVar( bool,  m_bNewSprinting );
+#endif
 	CNetworkVar( bool,	m_bZooming );
 	CNetworkVar( int,	m_bitsActiveDevices );
 	CNetworkVar( int,	m_iSquadMemberCount );

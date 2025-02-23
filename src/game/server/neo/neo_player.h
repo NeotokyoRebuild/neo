@@ -189,7 +189,10 @@ public:
 	float GetWalkSpeed(void) const;
 	float GetSprintSpeed(void) const;
 
+	void HandleSpeedChangesLegacy();
+#if 0
 	void HandleSpeedChanges( CMoveData *mv ) override;
+#endif
 	
 	int ShouldTransmit( const CCheckTransmitInfo *pInfo) OVERRIDE;
 

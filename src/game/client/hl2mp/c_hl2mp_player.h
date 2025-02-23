@@ -107,6 +107,7 @@ public:
 	virtual bool	 CanSprint( void );
 	virtual void	 StartSprinting( void );
 	virtual void	 StopSprinting( void );
+	virtual void HandleSpeedChangesLegacy() {}
 #else
 	bool	CanSprint( void );
 	void	StartSprinting( void );

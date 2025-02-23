@@ -24,7 +24,9 @@ BEGIN_SEND_TABLE_NOBASE( CHL2PlayerLocalData, DT_HL2Local )
 #endif
 	SendPropFloat( SENDINFO(m_flSuitPowerLoad), -1, SPROP_NOSCALE, 0.0, 100.0 ),
 	SendPropFloat( SENDINFO(m_flTimeAllSuitDevicesOff), -1, SPROP_NOSCALE ),
+#ifndef NEO
 	SendPropInt( SENDINFO(m_bNewSprinting), 1, SPROP_UNSIGNED ),
+#endif
 	SendPropInt( SENDINFO(m_bZooming), 1, SPROP_UNSIGNED ),
 	SendPropInt( SENDINFO(m_bitsActiveDevices), MAX_SUIT_DEVICES, SPROP_UNSIGNED ),
 	SendPropInt( SENDINFO(m_iSquadMemberCount) ),
@@ -46,13 +48,15 @@ END_SEND_TABLE()
 
 BEGIN_SIMPLE_DATADESC( CHL2PlayerLocalData )
 	DEFINE_FIELD( m_flSuitPower, FIELD_FLOAT ),
-	DEFINE_FIELD( m_flSuitPowerLoad, FIELD_FLOAT ),
-	DEFINE_FIELD( m_flTimeAllSuitDevicesOff, FIELD_FLOAT ),
 #ifdef NEO
 	DEFINE_FIELD( m_cloakPower, FIELD_FLOAT ),
 #endif
+	DEFINE_FIELD( m_flSuitPowerLoad, FIELD_FLOAT ),
+	DEFINE_FIELD( m_flTimeAllSuitDevicesOff, FIELD_FLOAT ),
 	DEFINE_FIELD( m_bZooming, FIELD_BOOLEAN ),
+#ifndef NEO
 	DEFINE_FIELD( m_bNewSprinting, FIELD_BOOLEAN ),
+#endif
 	DEFINE_FIELD( m_bitsActiveDevices, FIELD_INTEGER ),
 	DEFINE_FIELD( m_iSquadMemberCount, FIELD_INTEGER ),
 	DEFINE_FIELD( m_iSquadMedicCount, FIELD_INTEGER ),
@@ -72,13 +76,15 @@ END_DATADESC()
 CHL2PlayerLocalData::CHL2PlayerLocalData()
 {
 	m_flSuitPower = 0.0f;
-	m_flSuitPowerLoad = 0.0f;
-	m_flTimeAllSuitDevicesOff = 0.0f;
 #ifdef NEO
 	m_cloakPower = 0.0;
 #endif
+	m_flSuitPowerLoad = 0.0f;
+	m_flTimeAllSuitDevicesOff = 0.0f;
 	m_bZooming = false;
+#ifndef NEO
 	m_bNewSprinting = false;
+#endif
 	m_bWeaponLowered = false;
 	m_hAutoAimTarget.Set(NULL);
 	m_hLadder.Set(NULL);

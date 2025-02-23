@@ -107,7 +107,6 @@ public:
 
 #ifdef NEO
 	virtual void GiveDefaultItems(void);
-	virtual void ResetAnimation(); // TODO (nullsystem): 2025-02-18 SOURCE SDK 2013 CHECK
 #else
 	void GiveDefaultItems( void );
 #endif

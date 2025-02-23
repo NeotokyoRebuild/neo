@@ -36,7 +36,9 @@ public:
 #endif
 	float	m_flSuitPowerLoad;
 	float	m_flTimeAllSuitDevicesOff;
+#ifndef NEO
 	bool	m_bNewSprinting;
+#endif
 	bool	m_bZooming;
 	int		m_bitsActiveDevices;
 	int		m_iSquadMemberCount;

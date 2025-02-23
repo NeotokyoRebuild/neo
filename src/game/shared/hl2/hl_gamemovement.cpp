@@ -540,6 +540,7 @@ void CHL2GameMovement::ProcessMovement( CBasePlayer *pPlayer, CMoveData *pMove )
 
 void CHL2GameMovement::CheckParameters( void )
 {
+#ifndef NEO
 #if defined( HL2_DLL ) || defined( HL2_CLIENT_DLL )
 	// Handle speed changes here so they are predicted correctly.
 #ifdef HL2MP
@@ -549,6 +550,7 @@ void CHL2GameMovement::CheckParameters( void )
 #endif
 	pHL2Player->HandleSpeedChanges( mv );
 #endif
+#endif // NEO
 
 	BaseClass::CheckParameters();
 }

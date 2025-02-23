@@ -45,11 +45,7 @@ public:
 
 	LadderMove_t		*GetLadderMove() { return &m_HL2Local.m_LadderMove; }
 	virtual void		ExitLadder();
-#ifdef NEO
-	bool				IsSprinting() const { return m_HL2Local.m_bNewSprinting; }
-#else
 	bool				IsSprinting() const { return m_fIsSprinting; }
-#endif
 	
 	// Input handling
 	virtual bool	CreateMove( float flInputSampleTime, CUserCmd *pCmd );

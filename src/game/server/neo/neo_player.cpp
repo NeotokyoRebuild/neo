@@ -128,6 +128,7 @@ extern CBaseEntity *g_pLastSpawn;
 extern ConVar neo_sv_ignore_wep_xp_limit;
 extern ConVar neo_sv_clantag_allow;
 extern ConVar neo_sv_dev_test_clantag;
+extern ConVar sv_stickysprint;
 
 ConVar sv_neo_can_change_classes_anytime("sv_neo_can_change_classes_anytime", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "Can players change classes at any moment, even mid-round?",
 	true, 0.0f, true, 1.0f);
@@ -728,6 +729,85 @@ void CNEO_Player::CalculateSpeed(void)
 	SetMaxSpeed(speed);
 }
 
+void CNEO_Player::HandleSpeedChangesLegacy()
+{
+	int buttonsChanged = m_afButtonPressed | m_afButtonReleased;
+
+	bool bCanSprint = CanSprint();
+	bool bIsSprinting = IsSprinting();
+#ifdef NEO
+	constexpr float MOVING_SPEED_MINIMUM = 0.5f; // NEOTODO (Adam) This is the same value as defined in cbaseanimating, should we be using the same value? Should we import it here?
+	bool bWantSprint = (bCanSprint && IsSuitEquipped() && (m_nButtons & IN_SPEED) && GetLocalVelocity().IsLengthGreaterThan(MOVING_SPEED_MINIMUM));
+#else
+	bool bWantSprint = ( bCanSprint && IsSuitEquipped() && (m_nButtons & IN_SPEED) && (m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)));
+#endif
+#ifdef NEO
+	if ( bIsSprinting != bWantSprint && ((m_nButtons & IN_SPEED) || buttonsChanged & IN_SPEED))
+#else
+	if ( bIsSprinting != bWantSprint && (buttonsChanged & IN_SPEED)  )
+#endif
+	{
+		// If someone wants to sprint, make sure they've pressed the button to do so. We want to prevent the
+		// case where a player can hold down the sprint key and burn tiny bursts of sprint as the suit recharges
+		// We want a full debounce of the key to resume sprinting after the suit is completely drained
+		if ( bWantSprint )
+		{
+			if ( sv_stickysprint.GetBool() )
+			{
+				StartAutoSprint();
+			}
+			else
+			{
+				StartSprinting();
+			}
+		}
+		else
+		{
+			if ( !sv_stickysprint.GetBool() )
+			{
+				StopSprinting();
+			}
+			// Reset key, so it will be activated post whatever is suppressing it.
+			m_nButtons &= ~IN_SPEED;
+		}
+	}
+
+#ifdef NEO
+	if (bIsSprinting && GetLocalVelocity().IsLengthLessThan(MOVING_SPEED_MINIMUM))
+#else
+	if (bIsSprinting && !(m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)))
+#endif
+	{
+		StopSprinting();
+	}
+
+	bool bIsWalking = IsWalking();
+	// have suit, pressing button, not sprinting or ducking
+	bool bWantWalking;
+
+	if( IsSuitEquipped() )
+	{
+		bWantWalking = (m_nButtons & IN_WALK) && !IsSprinting() && !(m_nButtons & IN_DUCK);
+	}
+	else
+	{
+		bWantWalking = true;
+	}
+
+	if( bIsWalking != bWantWalking )
+	{
+		if ( bWantWalking )
+		{
+			StartWalking();
+		}
+		else
+		{
+			StopWalking();
+		}
+	}
+}
+
+#if 0
 void CNEO_Player::HandleSpeedChanges( CMoveData *mv )
 {
 	int nChangedButtons = mv->m_nButtons ^ mv->m_nOldButtons;
@@ -742,12 +822,12 @@ void CNEO_Player::HandleSpeedChanges( CMoveData *mv )
 #endif
 
 #ifdef NEO
-	const bool bWantsToChangeSprinting = ( m_HL2Local.m_bNewSprinting != bWantSprint ) && ((mv->m_nButtons & IN_SPEED) || (( nChangedButtons & IN_SPEED ) != 0));
+	const bool bWantsToChangeSprinting = ( IsSprinting() != bWantSprint ) && ((mv->m_nButtons & IN_SPEED) || (( nChangedButtons & IN_SPEED ) != 0));
 #else
 	const bool bWantsToChangeSprinting = ( m_HL2Local.m_bNewSprinting != bWantSprint ) && ( nChangedButtons & IN_SPEED ) != 0;
 #endif
 
-	bool bSprinting = m_HL2Local.m_bNewSprinting;
+	bool bSprinting = IsSprinting();
 	if ( bWantsToChangeSprinting )
 	{
 		if ( bWantSprint )
@@ -824,6 +904,7 @@ void CNEO_Player::HandleSpeedChanges( CMoveData *mv )
 
 	mv->m_flMaxSpeed = MaxSpeed();
 }
+#endif
 
 void CNEO_Player::PreThink(void)
 {

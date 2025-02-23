@@ -123,9 +123,41 @@ void SpawnBlood (Vector vecSpot, const Vector &vecDir, int bloodColor, float flD
 //
 // SUIT POWER DEVICES
 //
-#define SUITPOWER_CHARGE_RATE	12.5											// 100 units in 8 seconds
+#ifdef NEO
+#define SUITPOWER_CHARGE_RATE GetAuxChargeRate(this)
+static inline float GetAuxChargeRate(C_BaseCombatCharacter *player)
+{
+	auto neoPlayer = static_cast<C_NEO_Player*>(player);
 
-#ifdef HL2MP
+	switch (neoPlayer->GetClass())
+	{
+	case NEO_CLASS_RECON:
+		if (neoPlayer->IsSprinting())
+		{
+			return 2.5f;	// 100 units in 40 seconds
+		}
+		return 5.0f;	// 100 units in 20 seconds
+	case NEO_CLASS_ASSAULT:
+		if (neoPlayer->IsSprinting())
+		{
+			return 0.0f;
+		}
+		return 2.5f;	// 100 units in 40 seconds
+	case NEO_CLASS_VIP:
+		return 2.5f;	// 100 units in 40 seconds
+	default:
+		break;
+	}
+	return 0.0f;
+}
+
+#else
+#define SUITPOWER_CHARGE_RATE	12.5											// 100 units in 8 seconds
+#endif
+
+#if defined(NEO)
+	CSuitPowerDevice SuitDeviceSprint( bits_SUIT_DEVICE_SPRINT, 5.0f );					// 100 units in 20 seconds
+#elif defined(HL2MP)
 	CSuitPowerDevice SuitDeviceSprint( bits_SUIT_DEVICE_SPRINT, 25.0f );				// 100 units in 4 seconds
 #else
 	CSuitPowerDevice SuitDeviceSprint( bits_SUIT_DEVICE_SPRINT, 12.5f );				// 100 units in 8 seconds
@@ -420,6 +452,18 @@ void C_HL2MP_Player::DoImpactEffect( trace_t &tr, int nDamageType )
 void C_HL2MP_Player::PreThink( void )
 {
 	BaseClass::PreThink();
+
+#ifdef NEO
+	HandleSpeedChangesLegacy();
+
+	if ( m_HL2Local.m_flSuitPower <= 0.0f )
+	{
+		if( IsSprinting() )
+		{
+			StopSprinting();
+		}
+	}
+#endif
 }
 
 const QAngle &C_HL2MP_Player::EyeAngles()
@@ -530,6 +574,11 @@ bool C_HL2MP_Player::SuitPower_RemoveDevice( const CSuitPowerDevice &device )
 	m_HL2Local.m_bitsActiveDevices &= ~device.GetDeviceID();
 	m_HL2Local.m_flSuitPowerLoad -= device.GetDeviceDrainRate();
 
+#ifdef NEO
+	if (static_cast<CNEO_Player*>(this)->GetClass() == NEO_CLASS_RECON)
+		return true;
+#endif
+
 	if( m_HL2Local.m_bitsActiveDevices == 0x00000000 )
 	{
 		// With this device turned off, we can set this timer which tells us when the
@@ -547,7 +596,39 @@ bool C_HL2MP_Player::SuitPower_ShouldRecharge( void )
 {
 	// Make sure all devices are off.
 	if( m_HL2Local.m_bitsActiveDevices != 0x00000000 )
+	{
+#ifdef NEO
+		// Is the system fully charged?
+		if (m_HL2Local.m_flSuitPower >= 100.0f)
+		{
+			return false;
+		}
+
+		// Has the system been in a no-load state for long enough
+		// to begin recharging?
+		if (gpGlobals->curtime < m_HL2Local.m_flTimeAllSuitDevicesOff + SUITPOWER_BEGIN_RECHARGE_DELAY)
+		{
+			return false;
+		}
+
+		auto neoPlayer = static_cast<C_NEO_Player *>(this);
+		switch (neoPlayer->GetClass())
+		{
+		case NEO_CLASS_RECON:
+		{
+			// Recons are allowed to recharge AUX whilst sprinting
+			return ((m_HL2Local.m_bitsActiveDevices & ~bits_SUIT_DEVICE_SPRINT) == 0);
+		} break;
+		case NEO_CLASS_ASSAULT:
+		{
+			return !neoPlayer->IsSprinting();
+		} break;
+		default:
+			break;
+		}
+#endif
 		return false;
+	}
 
 	// Is the system fully charged?
 	if( m_HL2Local.m_flSuitPower >= 100.0f )
@@ -569,7 +650,11 @@ void C_HL2MP_Player::SuitPower_Update( void )
 	}
 	else if( m_HL2Local.m_bitsActiveDevices )
 	{
+#ifdef NEO
+		float flPowerLoad = SuitDeviceSprint.GetDeviceDrainRate();
+#else
 		float flPowerLoad = m_HL2Local.m_flSuitPowerLoad;
+#endif
 
 		//Since stickysprint quickly shuts off sprint if it isn't being used, this isn't an issue.
 		// misyl: no sticky sprint for hl2mp.
@@ -577,6 +662,20 @@ void C_HL2MP_Player::SuitPower_Update( void )
 		{
 			if( SuitPower_IsDeviceActive(SuitDeviceSprint) )
 			{
+#ifdef NEO
+				if( !fabs(GetAbsVelocity().x) && !fabs(GetAbsVelocity().y) )
+				{
+					// If player's not moving, don't drain sprint juice.
+					flPowerLoad -= SuitDeviceSprint.GetDeviceDrainRate();
+				}
+				else
+				{
+					if (static_cast<C_NEO_Player*>(this)->GetClass() == NEO_CLASS_RECON)
+					{
+						flPowerLoad -= SuitDeviceSprint.GetDeviceDrainRate();
+					}
+				}
+#else
 				if( CloseEnough(fabs(GetAbsVelocity().x), 0.0f) && CloseEnough(fabs(GetAbsVelocity().y), 0.0f) )
 				{
 					if ( CloseEnough( m_HL2Local.m_flSuitPowerLoad, SuitDeviceSprint.GetDeviceDrainRate() ) )
@@ -589,6 +688,7 @@ void C_HL2MP_Player::SuitPower_Update( void )
 						flPowerLoad -= SuitDeviceSprint.GetDeviceDrainRate();
 					}
 				}
+#endif
 			}
 		}
 
@@ -827,6 +927,33 @@ extern ConVar sv_maxspeed;
 //-----------------------------------------------------------------------------
 void C_HL2MP_Player::StartSprinting( void )
 {
+#ifdef NEO
+	if (m_HL2Local.m_flSuitPower < SPRINT_START_MIN)
+#else
+	if( m_HL2Local.m_flSuitPower < 10 )
+#endif
+	{
+#ifdef NEO
+#if(0)
+		CPASAttenuationFilter filter( this );
+		filter.UsePredictionRules();
+		EmitSound( filter, entindex(), "HL2Player.SprintNoPower" );
+#endif
+#endif
+
+		// Don't sprint unless there's a reasonable
+		// amount of suit power.
+		return;
+	}
+
+#ifdef NEO
+#if(0)
+	CPASAttenuationFilter filter( this );
+	filter.UsePredictionRules();
+	EmitSound( filter, entindex(), "HL2Player.SprintStart" );
+#endif
+#endif
+
 #ifndef NEO
 	SetMaxSpeed( HL2_SPRINT_SPEED );
 #endif
@@ -847,6 +974,7 @@ void C_HL2MP_Player::StopSprinting( void )
 
 void C_HL2MP_Player::HandleSpeedChanges( CMoveData *mv )
 {
+#ifndef NEO
 	int nChangedButtons = mv->m_nButtons ^ mv->m_nOldButtons;
 
 	bool bJustPressedSpeed = !!( nChangedButtons & IN_SPEED );
@@ -943,11 +1071,16 @@ void C_HL2MP_Player::HandleSpeedChanges( CMoveData *mv )
 #endif
 
 	mv->m_flMaxSpeed = sv_maxspeed.GetFloat();
+#endif // NEO
 }
 
 void C_HL2MP_Player::ReduceTimers( CMoveData* mv )
 {
+#ifdef NEO
+	bool bSprinting = IsSprinting();
+#else
 	bool bSprinting = mv->m_flClientMaxSpeed == HL2_SPRINT_SPEED;
+#endif
 
 	if ( bSprinting )
 	{
@@ -1469,7 +1602,6 @@ void C_HL2MP_Player::PostThink( void )
 {
 	BaseClass::PostThink();
 
-#if 0
 	// Store the eye angles pitch so the client can compute its animation state correctly.
 	m_angEyeAngles = EyeAngles();
 
@@ -1482,6 +1614,5 @@ void C_HL2MP_Player::PostThink( void )
 		SetCollisionBounds( VEC_CROUCH_TRACE_MIN, VEC_CROUCH_TRACE_MAX );
 #endif
 	}
-#endif
 }
 

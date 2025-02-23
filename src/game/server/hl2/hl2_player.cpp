@@ -422,6 +422,10 @@ static inline float GetAuxChargeRate(CBaseCombatCharacter *player)
 		}
 		return 5.0f;	// 100 units in 20 seconds
 	case NEO_CLASS_ASSAULT:
+		if (neoPlayer->IsSprinting())
+		{
+			return 0.0f;
+		}
 		return 2.5f;	// 100 units in 40 seconds
 	case NEO_CLASS_VIP:
 		return 2.5f;	// 100 units in 40 seconds
@@ -527,18 +531,75 @@ void CHL2_Player::RemoveSuit( void )
 
 void CHL2_Player::StartSprinting( void )
 {
+#ifndef NEO
+	if ( m_HL2Local.m_flSuitPower < 10 )
+#else
+	if (m_HL2Local.m_flSuitPower < SPRINT_START_MIN)
+#endif
+	{
+#ifndef NEO
+		// debounce the button for sound playing
+		if ( m_afButtonPressed & IN_SPEED )
+		{
+			CPASAttenuationFilter filter( this );
+			filter.UsePredictionRules();
+			EmitSound( filter, entindex(), "HL2Player.SprintNoPower" );
+		}
+#endif
+		// Don't sprint unless there's a reasonable
+		// amount of suit power.
+		return;
+	}
 
+	if( !SuitPower_AddDevice( SuitDeviceSprint ) )
+		return;
+
+
+#ifndef NEO
+	CPASAttenuationFilter filter( this );
+	filter.UsePredictionRules();
+	EmitSound( filter, entindex(), "HL2Player.SprintStart" );
+#endif
+
+#ifndef NEO
+	SetMaxSpeed( HL2_SPRINT_SPEED );
+#endif
+
+	m_fIsSprinting = true;
 }
 
 void CHL2_Player::StopSprinting( void )
 {
+	if ( m_HL2Local.m_bitsActiveDevices & SuitDeviceSprint.GetDeviceID() )
+	{
+		SuitPower_RemoveDevice( SuitDeviceSprint );
+	}
 
+#ifndef NEO
+	if( IsSuitEquipped() )
+	{
+		SetMaxSpeed( HL2_NORM_SPEED );
+	}
+	else
+	{
+		SetMaxSpeed( HL2_WALK_SPEED );
+	}
+#endif
+
+	m_fIsSprinting = false;
+
+	if ( sv_stickysprint.GetBool() )
+	{
+		m_bIsAutoSprinting = false;
+		m_fAutoSprintMinTime = 0.0f;
+	}
 }
 
 extern ConVar sv_maxspeed;
 
 void CHL2_Player::HandleSpeedChanges( CMoveData *mv )
 {
+#ifndef NEO
 	int nChangedButtons = mv->m_nButtons ^ mv->m_nOldButtons;
 
 	bool bJustPressedSpeed = !!( nChangedButtons & IN_SPEED );
@@ -635,11 +696,16 @@ void CHL2_Player::HandleSpeedChanges( CMoveData *mv )
 #endif
 
 	mv->m_flMaxSpeed = sv_maxspeed.GetFloat();
+#endif // NEO
 }
 
 void CHL2_Player::ReduceTimers( CMoveData *mv )
 {
+#ifdef NEO
+	bool bSprinting = IsSprinting();
+#else
 	bool bSprinting = mv->m_flClientMaxSpeed == HL2_SPRINT_SPEED;
+#endif
 
 	if ( bSprinting )
 	{
@@ -758,7 +824,9 @@ void CHL2_Player::PreThink(void)
 	}
 
 	VPROF_SCOPE_BEGIN( "CHL2_Player::PreThink-Speed" );
-
+#ifdef NEO
+	HandleSpeedChangesLegacy();
+#endif
 #ifdef HL2_EPISODIC
 	HandleArmorReduction();
 #endif
@@ -1956,13 +2024,31 @@ void CHL2_Player::SuitPower_Update( void )
 	}
 	else if( m_HL2Local.m_bitsActiveDevices )
 	{
+#ifdef NEO
+		float flPowerLoad = SuitDeviceSprint.GetDeviceDrainRate();
+#else
 		float flPowerLoad = m_HL2Local.m_flSuitPowerLoad;
+#endif
 
 		//Since stickysprint quickly shuts off sprint if it isn't being used, this isn't an issue.
 		if ( !sv_stickysprint.GetBool() )
 		{
 			if( SuitPower_IsDeviceActive(SuitDeviceSprint) )
 			{
+#ifdef NEO
+				if( !fabs(GetAbsVelocity().x) && !fabs(GetAbsVelocity().y) )
+				{
+					// If player's not moving, don't drain sprint juice.
+					flPowerLoad -= SuitDeviceSprint.GetDeviceDrainRate();
+				}
+				else
+				{
+					if (static_cast<CNEO_Player*>(this)->GetClass() == NEO_CLASS_RECON)
+					{
+						flPowerLoad -= SuitDeviceSprint.GetDeviceDrainRate();
+					}
+				}
+#else
 				if ( CloseEnough( fabs( GetAbsVelocity().x ), 0.0f ) && CloseEnough( fabs( GetAbsVelocity().y ), 0.0f ) )
 				{
 					if ( CloseEnough( m_HL2Local.m_flSuitPowerLoad, SuitDeviceSprint.GetDeviceDrainRate() ) )
@@ -1983,7 +2069,8 @@ void CHL2_Player::SuitPower_Update( void )
 						flPowerLoad -= SuitDeviceSprint.GetDeviceDrainRate();
 					}
 				}
-#endif
+#endif // NEO
+#endif // NEO
 			}
 		}
 
@@ -2153,23 +2240,33 @@ bool CHL2_Player::SuitPower_ShouldRecharge( void )
 	if (m_HL2Local.m_bitsActiveDevices != 0x00000000)
 	{
 #ifdef NEO
-		if (static_cast<CNEO_Player*>(this)->GetClass() == NEO_CLASS_RECON)
+		// Is the system fully charged?
+		if (m_HL2Local.m_flSuitPower >= 100.0f)
 		{
-			// Is the system fully charged?
-			if (m_HL2Local.m_flSuitPower >= 100.0f)
-			{
-				return false;
-			}
+			return false;
+		}
 
-			// Has the system been in a no-load state for long enough
-			// to begin recharging?
-			if (gpGlobals->curtime < m_HL2Local.m_flTimeAllSuitDevicesOff + SUITPOWER_BEGIN_RECHARGE_DELAY)
-			{
-				return false;
-			}
+		// Has the system been in a no-load state for long enough
+		// to begin recharging?
+		if (gpGlobals->curtime < m_HL2Local.m_flTimeAllSuitDevicesOff + SUITPOWER_BEGIN_RECHARGE_DELAY)
+		{
+			return false;
+		}
 
+		auto neoPlayer = static_cast<CNEO_Player *>(this);
+		switch (neoPlayer->GetClass())
+		{
+		case NEO_CLASS_RECON:
+		{
 			// Recons are allowed to recharge AUX whilst sprinting
 			return ((m_HL2Local.m_bitsActiveDevices & ~bits_SUIT_DEVICE_SPRINT) == 0);
+		} break;
+		case NEO_CLASS_ASSAULT:
+		{
+			return !neoPlayer->IsSprinting();
+		} break;
+		default:
+			break;
 		}
 #endif
 		return false;
