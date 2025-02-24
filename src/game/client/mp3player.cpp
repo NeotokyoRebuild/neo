@@ -780,6 +780,9 @@ CMP3Player::CMP3Player( VPANEL parent, char const *panelName ) :
 	SetTitle( "#MP3PlayerTitle", true );
 
 	LoadControlSettings( "resource/MP3Player.res" );
+#ifdef NEO // NEO NOTE (Adam) mzync changed how button activation type is assigned in 1a6b546e, restore button activation type here
+	m_pOptions->SetButtonActivationType(Button::ACTIVATE_ONPRESSED);
+#endif // NEO
 
 	m_pCurrentSong->SetText( "#NoSong" );
 	m_pDuration->SetText( "" );
@@ -805,7 +808,10 @@ CMP3Player::CMP3Player( VPANEL parent, char const *panelName ) :
 	}
 
 	PopulateTree();
-	PlaySong(0);
+	if (m_Files.Count())
+	{
+		PlaySong(0);
+	}
 #endif // NEO
 }
 
