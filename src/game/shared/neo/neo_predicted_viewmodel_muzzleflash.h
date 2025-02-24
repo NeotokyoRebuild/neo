@@ -18,14 +18,11 @@ class CNEOPredictedViewModelMuzzleFlash : public CPredictedViewModel
 public:
 	DECLARE_NETWORKCLASS();
 	DECLARE_PREDICTABLE();
-	CNEOPredictedViewModelMuzzleFlash()
-	{
-		m_bActive = true;
-		m_iAngleZ = 0;
-		m_iAngleZIncrement = -5;
-		m_flTimeSwitchOffMuzzleFlash = gpGlobals->curtime;
-	}
-
+	CNEOPredictedViewModelMuzzleFlash();
+	virtual ~CNEOPredictedViewModelMuzzleFlash();
+	void UpdateMuzzleFlashProperties(CBaseCombatWeapon* pWeapon, bool repeat = true);
+	virtual void Spawn(void) override;
+	virtual void Precache(void) override;
 #ifdef CLIENT_DLL
 	virtual ShadowType_t	ShadowCastType() final override { return SHADOWS_NONE; };
 	virtual RenderGroup_t	GetRenderGroup() final override { return RENDER_GROUP_VIEW_MODEL_TRANSLUCENT; };
@@ -37,14 +34,21 @@ public:
 		m_flTimeSwitchOffMuzzleFlash = gpGlobals->curtime + 0.01f;
 		BaseClass::ProcessMuzzleFlashEvent();
 	}
+	virtual void			ClientThink() override;
 #endif
 
-	virtual void Spawn(void) override;
-	virtual void Precache(void) override;
+#ifdef CLIENT_DLL
 	bool	m_bActive;
 	int		m_iAngleZ;
 	int		m_iAngleZIncrement;
-	float	m_flTimeSwitchOffMuzzleFlash; // If the server can fire a user's weapon (maybe some kind of server triggered weapon cook off or something), this will need to be networked too.
+	bool	m_bScaleChangeFlag;
+#else
+	CNetworkVar(bool, m_bActive);
+	CNetworkVar(int, m_iAngleZ);
+	CNetworkVar(int, m_iAngleZIncrement);
+	CNetworkVar(bool, m_bScaleChangeFlag);
+#endif // CLIENT_DLL
+	float	m_flTimeSwitchOffMuzzleFlash;
 };
 
 #endif // NEO_PREDICTED_VIEWMODEL_MUZZLEFLASH_H

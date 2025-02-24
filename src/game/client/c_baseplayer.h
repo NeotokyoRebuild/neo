@@ -263,9 +263,6 @@ public:
 	virtual void				Weapon_SetLast( C_BaseCombatWeapon *pWeapon );
 	virtual bool				Weapon_ShouldSetLast( C_BaseCombatWeapon *pOldWeapon, C_BaseCombatWeapon *pNewWeapon ) { return true; }
 	virtual bool				Weapon_ShouldSelectItem( C_BaseCombatWeapon *pWeapon );
-#ifdef NEO
-	void						UpdateMuzzleFlashProperties( C_BaseCombatWeapon* pWeapon );
-#endif
 	virtual	bool				Weapon_Switch( C_BaseCombatWeapon *pWeapon, int viewmodelindex = 0 );		// Switch to given weapon if has ammo (false if failed)
 	virtual C_BaseCombatWeapon *GetLastWeapon( void ) { return m_hLastWeapon.Get(); }
 	void						ResetAutoaim( void );
