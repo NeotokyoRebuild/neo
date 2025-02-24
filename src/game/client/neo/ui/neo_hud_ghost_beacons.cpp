@@ -88,15 +88,15 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 		return;
 	}
 
-	auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if (localPlayer->GetTeamNumber() < FIRST_GAME_TEAM || !localPlayer->IsAlive() || NEORules()->IsRoundOver())
+	auto spectateTarget = IsLocalPlayerSpectator() ? UTIL_PlayerByIndex(GetSpectatorTarget()) : C_NEO_Player::GetLocalNEOPlayer();
+	if (!spectateTarget || spectateTarget->GetTeamNumber() < FIRST_GAME_TEAM || !spectateTarget->IsAlive() || NEORules()->IsRoundOver())
 	{
 		// NEO NOTE (nullsystem): Spectator and dead players even in spec shouldn't see beacons
 		// Post-round also should switch off beacon
 		return;
 	}
 
-	auto ghost = dynamic_cast<C_WeaponGhost*>(localPlayer->GetActiveWeapon());
+	auto ghost = dynamic_cast<C_WeaponGhost*>(spectateTarget->GetActiveWeapon());
 	if (!ghost) //Check ghost ready here as players might be in PVS
 	{
 		m_bHoldingGhost = false;
@@ -113,7 +113,7 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 	m_pGhost = ghost;
 	const bool showGhost = (gpGlobals->curtime > m_flNextAllowGhostShowTime);
 
-	auto enemyTeamId = localPlayer->GetTeamNumber() == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI;
+	auto enemyTeamId = spectateTarget->GetTeamNumber() == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI;
 	auto enemyTeam = GetGlobalTeam(enemyTeamId);
 	auto enemyTeamCount = enemyTeam->GetNumPlayers();
 	float closestEnemy = FLT_MAX;

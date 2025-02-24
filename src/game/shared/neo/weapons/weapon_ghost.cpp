@@ -181,11 +181,19 @@ void CWeaponGhost::OnPickedUp(CBaseCombatCharacter *pNewOwner)
 		neoOwner->m_bCarryingGhost = true;
 
 #ifdef GAME_DLL
-		CTeamRecipientFilter filter(NEORules()->GetOpposingTeam(neoOwner), true);
-		EmitSound_t params;
-		params.m_nChannel = CHAN_USER_BASE;
-		params.m_pSoundName = "HUD.GhostPickUp";
-		EmitSound(filter, neoOwner->entindex(), params);
+		EmitSound_t soundParams;
+		soundParams.m_pSoundName = "HUD.GhostPickUp";
+		soundParams.m_nChannel = CHAN_USER_BASE;
+		soundParams.m_bWarnOnDirectWaveReference = false;
+		soundParams.m_bEmitCloseCaption = false;
+		soundParams.m_SoundLevel = ATTN_TO_SNDLVL(ATTN_NONE);
+
+		CRecipientFilter soundFilter;
+		soundFilter.AddAllPlayers();
+		int ownerIndex = pNewOwner->entindex();
+		soundFilter.RemoveRecipientByPlayerIndex(ownerIndex);
+		soundFilter.MakeReliable();
+		EmitSound(soundFilter, ownerIndex, soundParams);
 #endif
 	}
 }
