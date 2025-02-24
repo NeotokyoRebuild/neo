@@ -1,0 +1,19 @@
+// mp3 playlist
+playlist
+{
+  song
+  {
+    fromgame 1
+    relativepath "ed_harrison\neotokyo(sfr08)\02_tin_soldiers_(sfr08).mp3"
+  }
+  song
+  {
+    fromgame 1
+    relativepath "ed_harrison\neotokyo(sfr08)\03_beacon_(sfr08).mp3"
+  }
+  song
+  {
+    fromgame 1
+    relativepath "ed_harrison\neotokyo(sfr08)\04_imbrium_(sfr08).mp3"
+  }
+}
