@@ -43,12 +43,30 @@ END_NETWORK_TABLE()
 
 #ifdef CLIENT_DLL
 BEGIN_PREDICTION_DATA(CNEOPredictedViewModelMuzzleFlash)
+DEFINE_PRED_FIELD(m_hNetworkMoveParent, FIELD_EHANDLE, FTYPEDESC_INSENDTABLE),
+DEFINE_PRED_FIELD(m_bActive, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+DEFINE_PRED_FIELD(m_iAngleZ, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
+DEFINE_PRED_FIELD(m_iAngleZIncrement, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
+DEFINE_PRED_FIELD(m_bScaleChangeFlag, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 #endif
 
 LINK_ENTITY_TO_CLASS(neo_predicted_viewmodel_muzzleflash, CNEOPredictedViewModelMuzzleFlash);
 
 constexpr const char* MUZZLE_FLASH_ENTITY_MODEL = "models/effect/fpmf/fpmf01.mdl";
+
+CNEOPredictedViewModelMuzzleFlash::CNEOPredictedViewModelMuzzleFlash()
+{
+	m_bActive = true;
+	m_iAngleZ = 0;
+	m_iAngleZIncrement = -5;
+	m_flTimeSwitchOffMuzzleFlash = gpGlobals->curtime;
+	m_bScaleChangeFlag = false;
+}
+
+CNEOPredictedViewModelMuzzleFlash::~CNEOPredictedViewModelMuzzleFlash()
+{
+}
 
 //-----------------------------------------------------------------------------
 // Purpose: Precache assets used by the entity

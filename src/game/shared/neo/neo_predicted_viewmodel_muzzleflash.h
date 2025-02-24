@@ -18,13 +18,8 @@ class CNEOPredictedViewModelMuzzleFlash : public CPredictedViewModel
 public:
 	DECLARE_NETWORKCLASS();
 	DECLARE_PREDICTABLE();
-	CNEOPredictedViewModelMuzzleFlash()
-	{
-		m_bActive = true;
-		m_iAngleZ = 0;
-		m_iAngleZIncrement = -5;
-		m_flTimeSwitchOffMuzzleFlash = gpGlobals->curtime;
-	}
+	CNEOPredictedViewModelMuzzleFlash();
+	virtual ~CNEOPredictedViewModelMuzzleFlash();
 	void UpdateMuzzleFlashProperties(CBaseCombatWeapon* pWeapon, bool repeat = true);
 	virtual void Spawn(void) override;
 	virtual void Precache(void) override;
