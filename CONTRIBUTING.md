@@ -40,7 +40,7 @@ In the CMake Target View, right-click "client (shared library)" and click on "Ad
   "configurations": [
     {
       "type": "dll",
-      "exe": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Source SDK Base 2013 Multiplayer\\hl2.exe",
+      "exe": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Source SDK Base 2013 Multiplayer\\hl2_win64.exe",
       "project": "CMakeLists.txt",
       "projectTarget": "client.dll (game\\client\\client.dll)",
       "name": "client.dll (game\\client\\client.dll)",
@@ -53,7 +53,7 @@ In the CMake Target View, right-click "client (shared library)" and click on "Ad
         "-neopath",
         "C:\\PATH\\TO\\NEOTOKYOSOURCE"
         "-game",
-        "C:\\PATH\\TO\\REPO_ROOT\\neo\\mp\\game\\neo"
+        "C:\\PATH\\TO\\REPO_ROOT\\neo\\game\\neo"
       ]
     }
   ]
@@ -65,24 +65,24 @@ On the sidebar, click "Projects" then under your current kit, click "Run". Set t
 
 | Property | Example value |
 | :---------------------------------- | :------------ |
-| Executable | `~/.steam/steam/steamapps/common/Source SDK Base 2013 Multiplayer/hl2_linux` |
-| Command line arguments | `-allowdebug -insecure -dev -sw -game "/PATH/TO/NEO_REPO/mp/game/neo"` |
+| Executable | `~/.steam/steam/steamapps/common/Source SDK Base 2013 Multiplayer/hl2_linux64` |
+| Command line arguments | `-allowdebug -insecure -dev -sw -game "/PATH/TO/NEO_REPO/game/neo"` |
 | Working directory | `~/.steam/steam/steamapps/common/Source SDK Base 2013 Multiplayer` |
 
 Then under **Environment**, expand by clicking "Details" and add in:
 ```
-LD_LIBRARY_PATH=[INSERT_OUTPUT_HERE]:/home/YOUR_USER/.steam/steam/steamapps/common/Source SDK Base 2013 Multiplayer/bin
+LD_LIBRARY_PATH=[INSERT_OUTPUT_HERE]:/home/YOUR_USER/.steam/steam/steamapps/common/Source SDK Base 2013 Multiplayer/bin/linux64
 SDL_VIDEODRIVER=x11
 SteamEnv=1
 ```
 
-Next is finding the steam-runtime under the Steam installation. This can be found
+Next is finding the 64-bits steam-runtime under the Steam installation. This can be found
 using the following command, replacing `$HOME` if Steam is installed at another directory:
 ```
 $ find "$HOME" -type d -name 'steam-runtime' 2> /dev/null
 ```
 
-Assuming default directory, it might be in either: `~/.local/share/Steam/ubuntu12_32/steam-runtime/` or if using a Debian based distribution: `~/.steam/debian-installation/ubuntu12_32/steam-runtime/`.
+Assuming default directory, it might be in either: `~/.steam/steam/steamapps/common/SteamLinuxRuntime/var/steam-runtime` or if using a Debian based distribution: `[TODO]`.
 
 Then change to that directory and replace `[INSERT_OUTPUT_HERE]` to the output of:
 ```
@@ -97,15 +97,15 @@ Example settings for debugging from Visual Studio solutions:
 
 | Configuration Properties->Debugging | Example value |
 | :---------------------------------- | :------------ |
-| Command | C:\Program Files (x86)\Steam\steamapps\common\Source SDK Base 2013 Multiplayer\hl2.exe |
-| Command Arguments | -allowdebug -insecure -dev -sw -game "C:\git\neo\mp\game\neo" |
+| Command | C:\Program Files (x86)\Steam\steamapps\common\Source SDK Base 2013 Multiplayer\hl2_win64.exe |
+| Command Arguments | -allowdebug -insecure -dev -sw -game "C:\git\neo\game\neo" |
 | Working Directory | C:\Program Files (x86)\Steam\steamapps\common\Source SDK Base 2013 Multiplayer |
 
 ### Game loop and reference material
 
-[Break pointing and stepping](https://developer.valvesoftware.com/wiki/Installing_and_Debugging_the_Source_Code) the method [CServerGameDLL::GameFrame](mp/src/game/server/gameinterface.cpp), or relevant methods in [C_NEO_Player](mp/src/game/client/neo/c_neo_player.h) (clientside player) / [CNEO_Player](mp/src/game/server/neo/neo_player.h) (serverside player) can help with figuring out the general game loop. Neo specific files usually live in [game/client/neo](mp/src/game/client/neo), [game/server/neo](mp/src/game/server/neo), or [game/shared/neo](mp/src/game/shared/neo), similar to how most hl2mp code is laid out.
+[Break pointing and stepping](https://developer.valvesoftware.com/wiki/Installing_and_Debugging_the_Source_Code) the method [CServerGameDLL::GameFrame](src/game/server/gameinterface.cpp), or relevant methods in [C_NEO_Player](src/game/client/neo/c_neo_player.h) (clientside player) / [CNEO_Player](src/game/server/neo/neo_player.h) (serverside player) can help with figuring out the general game loop. Neo specific files usually live in [game/client/neo](src/game/client/neo), [game/server/neo](src/game/server/neo), or [game/shared/neo](src/game/shared/neo), similar to how most hl2mp code is laid out.
 
-Ochii's impressive [reverse engineering project](https://github.com/Ochii/neotokyo-re) can also serve as reference for figuring things out. However, please refrain from copying reversed instructions line by line, as the plan is to write an open(ed) source (wherever applicable, note the Source SDK license) reimplementation, and steer clear of any potential copyright issues. Same thing applies for original NT assets; you can depend on the original NT installation (it's mounted to the engine filesystem by [a shared neo header](mp/src/game/shared/neo/neo_mount_original.h)), but avoid pushing those assets in the repo.
+Ochii's impressive [reverse engineering project](https://github.com/Ochii/neotokyo-re) can also serve as reference for figuring things out. However, please refrain from copying reversed instructions line by line, as the plan is to write an open(ed) source (wherever applicable, note the Source SDK license) reimplementation, and steer clear of any potential copyright issues. Same thing applies for original NT assets; you can depend on the original NT installation (it's mounted to the engine filesystem by [a shared neo header](src/game/shared/neo/neo_mount_original.h)), but avoid pushing those assets in the repo.
 
 ## Good to know
 
