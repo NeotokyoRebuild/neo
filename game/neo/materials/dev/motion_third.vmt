@@ -1,0 +1,13 @@
+"Neo_Motion_Model"
+{
+	$model 1
+	$nodecal 1
+
+	proxies
+	{
+		EntitySpeed
+		{
+			resultVar $speed
+		}
+	}
+}

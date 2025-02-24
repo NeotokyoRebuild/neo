@@ -1,0 +1,8 @@
+
+LightmappedGeneric
+{
+	"$basetexture"	"vgui/logos/asuka_blue_monochrome_bed_dark_crop_out_1080p"
+	"$translucent" "1"
+	"$decal" "1"
+	"$decalscale" "0.250"
+}

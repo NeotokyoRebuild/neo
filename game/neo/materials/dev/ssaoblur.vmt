@@ -1,0 +1,4 @@
+"neo_gaussianblur"
+{
+	"$basetexture" "_rt_SSAO"
+}

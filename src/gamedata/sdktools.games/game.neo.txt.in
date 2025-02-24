@@ -1,0 +1,134 @@
+"Games"
+{
+	"neo"
+	{
+		"Offsets"
+		{
+			"AcceptInput"
+			{
+				"windows"	"#CBasePlayer::CBaseEntity::AcceptInput(char const*, CBaseEntity*, CBaseEntity*, variant_t, int).windows#"
+				"linux"		"#CBasePlayer::CBaseEntity::AcceptInput(char const*, CBaseEntity*, CBaseEntity*, variant_t, int).linux#"
+			}
+			"Activate"
+			{
+				"windows"	"#CBasePlayer::CBasePlayer::Activate().windows#"
+				"linux"		"#CBasePlayer::CBasePlayer::Activate().linux#"
+			}
+			"CommitSuicide"
+			{
+				"windows"	"#CBasePlayer::CBasePlayer::CommitSuicide(bool, bool).windows#"
+				"linux"		"#CBasePlayer::CBasePlayer::CommitSuicide(bool, bool).linux#"
+			}
+			"CreateEntityByName"
+			{
+				"windows"	"#CServerTools::CServerTools::CreateEntityByName(char const*).windows#"
+				"linux"		"#CServerTools::CServerTools::CreateEntityByName(char const*).linux#"
+			}
+			"DispatchSpawn"
+			{
+				"windows"	"#CServerTools::CServerTools::DispatchSpawn(CBaseEntity*).windows#"
+				"linux"		"#CServerTools::CServerTools::DispatchSpawn(CBaseEntity*).linux#"
+			}
+			"Extinguish"
+			{
+				"windows"	"#CBasePlayer::CBaseAnimating::Extinguish().windows#"
+				"linux"		"#CBasePlayer::CBaseAnimating::Extinguish().linux#"
+			}
+			"EyeAngles"
+			{
+				"windows"	"#CBasePlayer::CBasePlayer::EyeAngles().windows#"
+				"linux"		"#CBasePlayer::CBasePlayer::EyeAngles().linux#"
+			}
+			"FindEntityByClassname"
+			{
+				"windows"	"#CServerTools::CServerTools::FindEntityByClassname(CBaseEntity*, char const*).windows#"
+				"linux"		"#CServerTools::CServerTools::FindEntityByClassname(CBaseEntity*, char const*).linux#"
+			}
+			"GetAttachment"
+			{
+				"windows"	"#CBasePlayer::CBaseAnimating::GetAttachment(int, matrix3x4_t&).windows#"
+				"linux"		"#CBasePlayer::CBaseAnimating::GetAttachment(int, matrix3x4_t&).linux#"
+			}
+			"GetVelocity"
+			{
+				"windows"	"#CBasePlayer::CBaseAnimating::GetVelocity(Vector*, Vector*).windows#"
+				"linux"		"#CBasePlayer::CBaseAnimating::GetVelocity(Vector*, Vector*).linux#"
+			}
+			"GiveAmmo"
+			{
+				"windows"	"#CBasePlayer::CBaseCombatCharacter::GiveAmmo(int, int, bool).windows#"
+				"linux"		"#CBasePlayer::CBaseCombatCharacter::GiveAmmo(int, int, bool).linux#"
+			}
+			"GiveNamedItem"
+			{
+				"windows"	"#CBasePlayer::CBasePlayer::GiveNamedItem(char const*, int).windows#"
+				"linux"		"#CBasePlayer::CBasePlayer::GiveNamedItem(char const*, int).linux#"
+			}
+			"Ignite"
+			{
+				"windows"	"#CBasePlayer::CBaseAnimating::Ignite(float, bool, float, bool).windows#"
+				"linux"		"#CBasePlayer::CBaseAnimating::Ignite(float, bool, float, bool).linux#"
+			}
+			"RemovePlayerItem"
+			{
+				"windows"	"#CBasePlayer::CBasePlayer::RemovePlayerItem(CBaseCombatWeapon*).windows#"
+				"linux"		"#CBasePlayer::CBasePlayer::RemovePlayerItem(CBaseCombatWeapon*).linux#"
+			}
+			"SetOwnerEntity"
+			{
+				"windows"	"#CBasePlayer::CBaseEntity::SetOwnerEntity(CBaseEntity*).windows#"
+				"linux"		"#CBasePlayer::CBaseEntity::SetOwnerEntity(CBaseEntity*).linux#"
+			}
+			"Teleport"
+			{
+				"windows"	"#CBasePlayer::CBaseFlex::Teleport(Vector const*, QAngle const*, Vector const*).windows#"
+				"linux"		"#CBasePlayer::CBaseFlex::Teleport(Vector const*, QAngle const*, Vector const*).linux#"
+			}
+			"Weapon_GetSlot"
+			{
+				"windows"	"#CBasePlayer::CBaseCombatCharacter::Weapon_GetSlot(int) const.windows#"
+				"linux"		"#CBasePlayer::CBaseCombatCharacter::Weapon_GetSlot(int) const.linux#"
+			}
+		}
+		"Signatures"
+		{
+			"FireOutput"
+			{
+				"linux"		"@_ZN17CBaseEntityOutput10FireOutputE9variant_tP11CBaseEntityS2_f"
+				"windows"	"@?FireOutput@CBaseEntityOutput@@QAEXVvariant_t@@PAVCBaseEntity@@1M@Z"
+			}
+			"LookupAttachment"
+			{
+				"linux"		"@_ZN14CBaseAnimating16LookupAttachmentEPKc"
+				"windows"	"@?LookupAttachment@CBaseAnimating@@QAEHPBD@Z"
+			}
+			
+			"LevelShutdown"
+			{
+				"linux"		"@_ZN14CServerGameDLL13LevelShutdownEv"
+				"windows"	"@?LevelShutdown@CServerGameDLL@@UAEXXZ"
+			}
+			"DispatchSpawn"
+			{
+				"linux"		"@_Z13DispatchSpawnP11CBaseEntity"
+				"windows"	"@?DispatchSpawn@@YAHPAVCBaseEntity@@@Z"
+			}
+			"CreateEntityByName"
+			{
+				"linux"		"@_Z18CreateEntityByNamePKci"
+				"windows"	"@?CreateEntityByName@@YAPAVCBaseEntity@@PBDH@Z"
+
+			}
+			"FindEntityByClassname"
+			{
+				"linux"		"@_ZN17CGlobalEntityList21FindEntityByClassnameEP11CBaseEntityPKc"
+				"windows"	"@?FindEntityByClassname@CGlobalEntityList@@QAEPAVCBaseEntity@@PAV2@PBD@Z"
+			}
+		}
+		"Keys"
+		{
+			"GameRulesProxy"		"CNEOGameRulesProxy"
+			"GameRulesDataTable"	"neo_gamerules_data"
+		}
+	}
+}

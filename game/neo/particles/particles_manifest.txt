@@ -1,0 +1,15 @@
+particles_manifest
+{
+	file	"!particles/error.pcf"
+	file	"particles/antlion_blood.pcf"
+	file	"particles/blood_impact.pcf"
+	file	"particles/burning_fx.pcf"
+	file	"particles/combineball.pcf"
+	file	"particles/fire_01.pcf"
+	file	"particles/impact_fx.pcf"
+	file	"particles/rocket_fx.pcf"
+	file	"particles/train_steam.pcf"
+	file	"particles/vortigaunt_fx.pcf"
+	file	"particles/water_impact.pcf"
+	file	"particles/ntr_muzzle_flash.pcf"
+}

@@ -1,0 +1,5 @@
+"Neo_Thermal_Model"
+{
+	$model 1
+	$nodecal 1
+}

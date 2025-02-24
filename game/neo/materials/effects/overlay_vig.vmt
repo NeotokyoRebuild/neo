@@ -1,0 +1,9 @@
+"UnlitGeneric"
+{
+	"$basetexture" "effects/overlay_vig"
+	"$translucent" "1"
+	"$ignorez" "1"
+	"$no_fullbright" "1"
+	"$nolod" "1"
+}
+

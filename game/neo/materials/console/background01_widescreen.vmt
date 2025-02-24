@@ -1,0 +1,37 @@
+"UnlitTwoTexture"
+{
+	"$basetexture" "console/background01"
+	"$vertexcolor" 1
+	"$vertexalpha" 1
+	"$ignorez" 1
+	"$no_fullbright" "1"
+	"$nolod" "1"
+	"$texture2"	"console/backroundscan_wide"
+
+	"Proxies"
+	{
+
+		"AnimatedTexture"
+		{
+			"animatedtexturevar" "$basetexture"
+			"animatedtextureframenumvar" "$frame"
+			"animatedtextureframerate" 10
+		}
+
+		"Sine"
+		{
+			"resultVar"	"$color"
+			"sineperiod"	5
+			"sinemin"	0.86,0.86,0.86
+			"sinemax"	0.99,0.99,0.99
+		}
+
+		"TextureScroll"
+		{
+			"texturescrollvar" "$texture2transform"
+			"texturescrollrate" .12
+			"texturescrollangle" -90
+		}
+	}
+}
+

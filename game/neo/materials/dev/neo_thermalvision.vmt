@@ -1,0 +1,17 @@
+"Neo_ThermalVision"
+{
+	"$fbtexture" "_rt_ThermalVision"
+	//"$blurtexture" "_rt_SmallHDR0"
+	"$tvtexture" "dev/tvgrad2"
+	"$noisetexture" "dev/noise"
+
+	"Proxies"
+	{
+		"TextureScroll"
+		{
+			"texturescrollvar" "$noisetransform"
+			"texturescrollrate" 10
+			"texturescrollangle" 70
+		}
+	}
+}
