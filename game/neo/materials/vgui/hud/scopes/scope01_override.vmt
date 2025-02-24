@@ -1,0 +1,9 @@
+// This is an override for using scope01, because its .vmt file points to scope03 in the original files.
+"UnlitGeneric"
+{
+	"$basetexture" "vgui\hud\scopes\scope01"
+	"$vertexcolor" 1
+	"$vertexalpha" 1
+	"$translucent" 1
+	"$ignorez" 1
+}

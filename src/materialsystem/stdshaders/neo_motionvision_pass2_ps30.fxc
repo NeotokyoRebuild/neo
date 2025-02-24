@@ -1,0 +1,16 @@
+#include "common_ps_fxc.h"
+
+sampler Original				: register(s0);
+sampler MVGrad	         	   	: register(s1);
+
+struct PS_INPUT
+{
+	HALF2 vTexCoord	: TEXCOORD0;
+};
+
+float4 main( const PS_INPUT i ) : COLOR
+{
+	const float4 imTex = tex2D(Original, i.vTexCoord);
+	const float bwTint = pow(imTex.r * 0.2126 + imTex.g * 0.7152 + imTex.b * 0.0722, 0.454545); // 0.454545 ~= 1/2.2
+	return tex1D( MVGrad, bwTint);
+}
