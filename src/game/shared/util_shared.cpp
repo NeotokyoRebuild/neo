@@ -286,9 +286,15 @@ CTraceFilterSimple::CTraceFilterSimple( const IHandleEntity *passedict, int coll
 }
 
 #ifdef NEO
-ConVar sv_neo_collision_enemy_collisions("sv_neo_collision_enemy_collisions", "0", FCVAR_REPLICATED, "Whether players on opposite teams can collide with one another", true, 0, true, 1);
-ConVar sv_neo_collision_friendly_head_collisions("sv_neo_collision_friendly_head_collisions", "0", FCVAR_REPLICATED, "Whether players on the same team can jump on each other's heads", true, 0, true, 1);
-ConVar sv_neo_collision_friendly_head_collisions_overlap("sv_neo_collision_friendly_head_collisions_overlap", "-0.5", FCVAR_REPLICATED, "Difference above this value between collision box max z value of bottom player and origin z value of top player will enable collision");
+enum NeoPlayerCollisionsType
+{
+	NEO_PLAYER_COLLISIONS_TYPE_NONE = 0,
+	NEO_PLAYER_COLLISIONS_TYPE_BOOSTING,
+	NEO_PLAYER_COLLISIONS_TYPE_ENEMY
+	// NEO_PLAYER_COLLISIONS_TYPE_BOTH = NEO_PLAYER_COLLISIONS_TYPE_BOOSTING + NEO_PLAYER_COLLISIONS_TYPE_ENEMY = 3
+};
+ConVar sv_neo_player_collisions("sv_neo_player_collisions", "0", FCVAR_REPLICATED, "Player collisions. None=0, Boosting=1, Enemy=2, Both=3", true, 0, true, 3);
+ConVar sv_neo_player_collisions_boosting_overlap("sv_neo_player_collisions_boosting_overlap", "-0.5", FCVAR_REPLICATED, "Difference above this value between collision box max z value of bottom player and origin z value of top player will enable collision");
 #endif
 //-----------------------------------------------------------------------------
 // The trace filter!
@@ -318,14 +324,14 @@ bool CTraceFilterSimple::ShouldHitEntity( IHandleEntity *pHandleEntity, int cont
 		const CBaseEntity *pEntity2 = EntityFromEntityHandle(m_pPassEnt);
 		if (pEntity2 && pEntity2->IsPlayer())
 		{
-			if (sv_neo_collision_enemy_collisions.GetBool())
+			if (sv_neo_player_collisions.GetInt() & NEO_PLAYER_COLLISIONS_TYPE_ENEMY)
 			{
 				if (pEntity->GetTeamNumber() != pEntity2->GetTeamNumber())
 				{
 					return true;
 				}
 			}
-			if (sv_neo_collision_friendly_head_collisions.GetBool())
+			if (sv_neo_player_collisions.GetInt() & NEO_PLAYER_COLLISIONS_TYPE_BOOSTING)
 			{
 				if (pEntity->GetAbsOrigin().z > pEntity2->GetAbsOrigin().z)
 				{ // pEntity is always the entity with a lower z value to pEntity 2
@@ -335,7 +341,7 @@ bool CTraceFilterSimple::ShouldHitEntity( IHandleEntity *pHandleEntity, int cont
 				if (pEntity2->GetAbsVelocity().z <= pEntity->GetAbsVelocity().z)
 				{ // If the entity on top is moving upwards faster than the entity on the bottom, ignore collision. Makes it easier for recons to bunnyhop out of spawn
 					const float heightDifference = (pEntity2->GetAbsOrigin().z - (pEntity->GetAbsOrigin().z + pEntity->CollisionProp()->OBBMaxs().z));
-					if (heightDifference > sv_neo_collision_friendly_head_collisions_overlap.GetFloat())
+					if (heightDifference > sv_neo_player_collisions_boosting_overlap.GetFloat())
 					{
 						return true;
 					}
