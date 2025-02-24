@@ -1,0 +1,4 @@
+"Neo_Noise"
+{
+	"$framebuffer" "_rt_MotionVision"
+}

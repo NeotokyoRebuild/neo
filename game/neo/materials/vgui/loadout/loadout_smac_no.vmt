@@ -1,0 +1,32 @@
+"UnlitTwoTexture"
+{
+	"$basetexture" 		"vgui\loadout\loadout_smac_no"
+	"$translucent" 1
+	"$vertexcolor" 1
+	"$vertexalpha" 1
+	"$ignorez" 1
+	"$no_fullbright" 1
+	//"$additive" 1
+	"$selfillum" "1"
+        "$texture2"	"vgui\loadout\loadout_scanlines"
+        "Proxies" 
+       { 
+		
+        "Sine"
+	{
+			"resultVar"	"$color"
+			"sineperiod"	6
+			"sinemin"	0.85,0.85,0.85
+			"sinemax"	0.99,0.99,0.99
+		}
+		
+        "TextureScroll"
+		{
+                       //this makes the scanlines scroll to finish the lcd effect
+			"texturescrollvar" "$texture2transform"
+			"texturescrollrate" .16
+			"texturescrollangle" -90
+		}	
+	}
+}
+

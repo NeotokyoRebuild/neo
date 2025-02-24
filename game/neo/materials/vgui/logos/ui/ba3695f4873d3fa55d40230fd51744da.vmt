@@ -1,0 +1,11 @@
+
+"UnlitGeneric"
+{
+// Original shader: BaseTimesVertexColorAlphaBlendNoOverbright
+"$translucent" 1
+"$basetexture" "VGUI/logos/ba3695f4873d3fa55d40230fd51744da"
+"$vertexcolor" 1
+"$vertexalpha" 1
+"$no_fullbright" 1
+"$ignorez" 1
+}
