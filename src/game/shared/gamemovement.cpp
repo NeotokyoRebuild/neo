@@ -1949,10 +1949,13 @@ void CGameMovement::WalkMove( void )
 	if (mv->m_flForwardMove < 0.0) {
 		mv->m_flForwardMove *= 0.75;
 	}
-#endif // NEO
+	QAngle vecViewAngles = mv->m_vecViewAngles;
+	vecViewAngles.z = 0.f;
+	AngleVectors (vecViewAngles, &forward, &right, &up);  // Determine movement angles
+#else
 
 	AngleVectors (mv->m_vecViewAngles, &forward, &right, &up);  // Determine movement angles
-
+#endif // NEO
 	CHandle< CBaseEntity > oldground;
 	oldground = player->GetGroundEntity();
 
