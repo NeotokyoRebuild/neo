@@ -22,7 +22,7 @@ jobs:
 
       matrix:
         platform:
-        - { display_name: 'Linux Native Libraries', os: ubuntu-latest, preset_os: linux }
+        - { display_name: 'Linux Native Libraries', os: ubuntu-24.04, preset_os: linux }
         - { display_name: 'Windows Native Libraries', os: windows-latest, preset_os: windows }
 
         preset_build_type:
@@ -36,8 +36,8 @@ jobs:
       run: |
         preset_name="${{ matrix.platform.preset_os }}-${{ matrix.preset_build_type.name }}"
         workspace_dir="${{ github.workspace }}"
-        source_dir=${workspace_dir//\\//}/mp/src
-        build_dir=${workspace_dir//\\//}/mp/src/build/$preset_name
+        source_dir=${workspace_dir//\\//}/src
+        build_dir=${workspace_dir//\\//}/src/build/$preset_name
         install_dir=$build_dir/install
         echo "source_dir=$source_dir" >> "$GITHUB_ENV"
         echo "build_dir=$build_dir" >> "$GITHUB_ENV"
@@ -45,10 +45,10 @@ jobs:
         echo "preset_name=$preset_name" >> "$GITHUB_ENV"
 
     - name: Install packages
-      if: ${{ matrix.platform.os == 'ubuntu-latest' }}
+      if: ${{ matrix.platform.os == 'ubuntu-24.04' }}
       run: |
         sudo apt update
-        sudo apt install gcc-multilib g++-multilib ninja-build -y
+        sudo apt install libstdc++6 gcc g++ ninja-build -y
 
     - name: Install packages
       if: ${{ matrix.platform.os == 'windows-latest' }}
@@ -57,7 +57,7 @@ jobs:
     - uses: ilammy/msvc-dev-cmd@v1
       if: ${{ matrix.platform.os == 'windows-latest' }}
       with:
-        arch: x86
+        arch: x64
 
     - name: Print PATH
       if: ${{ matrix.platform.os == 'windows-latest' }}
@@ -97,6 +97,7 @@ jobs:
         cmake
         --preset ${{ env.preset_name }}
         -DNEO_DEDICATED=ON
+        -DNEO_GENERATE_GAMEDATA=ON
 
     - name: CMake dedicated library build
       working-directory: ${{ env.source_dir }}
@@ -114,6 +115,7 @@ jobs:
         echo "libraries_debuginfo=$(find . -regex '\.\/neo-\w*-\w*-libraries-debuginfo-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
         echo "dedicated=$(find . -regex '\.\/neo-\w*-\w*-dedicated-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
         echo "dedicated_debuginfo=$(find . -regex '\.\/neo-\w*-\w*-dedicated-debuginfo-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
+        echo "gamedata=$(find . -regex '\.\/neo-\w*-\w*-gamedata' -printf '%f')" >> "$GITHUB_ENV"
 
     - name: Upload libraries
       uses: actions/upload-artifact@v4
@@ -139,6 +141,13 @@ jobs:
         name: ${{ env.dedicated_debuginfo }}
         path: ${{ env.install_dir }}/${{ env.dedicated_debuginfo }}
 
+    - name: Upload SourceMod gamedata
+      if: ${{ matrix.platform.preset_os == 'linux' && matrix.preset_build_type.name == 'release' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.gamedata }}
+        path: ${{ env.install_dir }}/${{ env.gamedata }}
+
   pack-resources:
     name: Windows Native Resources
 
@@ -154,8 +163,8 @@ jobs:
     - name: Set reusable strings
       run: |
         workspace_dir="${{ github.workspace }}"
-        source_dir=${workspace_dir//\\//}/mp/src
-        build_dir=${workspace_dir//\\//}/mp/src/build/windows-release
+        source_dir=${workspace_dir//\\//}/src
+        build_dir=${workspace_dir//\\//}/src/build/windows-release
         install_dir=$build_dir/install
         echo "source_dir=$source_dir" >> "$GITHUB_ENV"
         echo "build_dir=$build_dir" >> "$GITHUB_ENV"
@@ -166,7 +175,7 @@ jobs:
 
     - uses: ilammy/msvc-dev-cmd@v1
       with:
-        arch: x86
+        arch: x64
 
     # Resources
 
@@ -197,18 +206,18 @@ jobs:
     name: Upload Latest Build
 
     needs: [build, pack-resources]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.ref == 'refs/heads/master'
     permissions:
       contents: write
-    
+
     steps:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
 
     - name: Packing artifacts
       run: 'parallel 7z a -tzip -mx=9 "{}.zip" "./{}/*" ::: neo-*'
-        
+
     - name: Create & upload latest build
       env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -223,11 +232,11 @@ jobs:
     name: Upload Release
 
     needs: [build, pack-resources]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.event_name == 'release' && github.event.action == 'published'
     permissions:
       contents: write
-    
+
     steps:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
@@ -237,7 +246,7 @@ jobs:
 
     - name: Packing artifacts
       run: 'parallel 7z a -tzip -mx=9 "{= s/neo-(.*)/neo-$GITHUB_REF_NAME-\1.zip/ =}" "./{}/*" ::: neo-*'
-        
+
     - name: Upload assets to a release
       env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
