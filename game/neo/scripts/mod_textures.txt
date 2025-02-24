@@ -218,11 +218,11 @@
 		}
 		"voice_self"
 		{
-				"file"		"voice/icntlk_local"
+				"file"		"vgui/hud/voice_transmit"
 				"x"		"0"
 				"y"		"0"
-				"width"		"32"
-				"height"	"32"
+				"width"		"64"
+				"height"	"64"
 		}
 	}	
 }
