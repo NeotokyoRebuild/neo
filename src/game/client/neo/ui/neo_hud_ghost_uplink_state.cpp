@@ -20,6 +20,7 @@ CNEOHud_GhostUplinkState::CNEOHud_GhostUplinkState(const char *pElementName, vgu
 	: CHudElement(pElementName), Panel(parent, pElementName)
 {
 	SetAutoDelete(true);
+	m_iHideHudElementNumber = NEO_HUD_ELEMENT_GHOST_UPLINK_STATE;
 
 	if (parent) {
 		SetParent(parent);

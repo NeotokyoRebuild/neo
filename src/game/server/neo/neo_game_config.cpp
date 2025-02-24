@@ -7,6 +7,11 @@ LINK_ENTITY_TO_CLASS(neo_game_config, CNEOGameConfig);
 
 BEGIN_DATADESC(CNEOGameConfig)
 	DEFINE_KEYFIELD(m_GameType, FIELD_INTEGER, "GameType"),
+	DEFINE_KEYFIELD(m_HiddenHudElements, FIELD_INTEGER, "spawnflags"),
+	DEFINE_KEYFIELD(m_ForcedTeam, FIELD_INTEGER, "ForcedTeam"),
+	DEFINE_KEYFIELD(m_ForcedClass, FIELD_INTEGER, "ForcedClass"),
+	DEFINE_KEYFIELD(m_ForcedSkin, FIELD_INTEGER, "ForcedSkin"),
+	DEFINE_KEYFIELD(m_ForcedWeapon, FIELD_INTEGER, "ForcedWeapon"),
 
 	DEFINE_INPUTFUNC(FIELD_INTEGER, "FireTeamWin", InputFireTeamWin),
 	DEFINE_INPUTFUNC(FIELD_VOID, "FireDMPlayerWin", InputFireDMPlayerWin),

@@ -21,6 +21,7 @@
 #include "hudelement.h"
 #include "clienteffectprecachesystem.h"
 #include "sourcevr/isourcevirtualreality.h"
+#include "neo_gamerules.h"
 
 using namespace vgui;
 
@@ -104,6 +105,10 @@ void CNEOHudDamageIndicator::Init(void)
 //-----------------------------------------------------------------------------
 bool CNEOHudDamageIndicator::ShouldDraw(void)
 {
+	if (NEORules() && NEORules()->GetHiddenHudElements() & NEO_HUD_ELEMENT_DAMAGE_INDICATOR)
+	{
+		return false;
+	}
 	bool bNeedsDraw = m_DmgFullscreenColor[3];
 
 	return (bNeedsDraw && CHudElement::ShouldDraw());

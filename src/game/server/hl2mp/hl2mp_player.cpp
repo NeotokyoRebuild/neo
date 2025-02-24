@@ -394,8 +394,12 @@ void CHL2MP_Player::Spawn(void)
 	PickDefaultSpawnTeam();
 
 	BaseClass::Spawn();
-	
+
+#ifdef NEO
+	if ( !IsObserver() && GetTeamNumber() != TEAM_UNASSIGNED )
+#else
 	if ( !IsObserver() )
+#endif // NEO
 	{
 		pl.deadflag = false;
 		RemoveSolidFlags( FSOLID_NOT_SOLID );

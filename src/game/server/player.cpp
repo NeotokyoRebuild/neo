@@ -2349,7 +2349,15 @@ bool CBasePlayer::StartObserverMode(int mode)
 
 	if ( gpGlobals->eLoadType != MapLoad_Background )
 	{
+
+#ifdef NEO
+		if (GetTeamNumber() != TEAM_UNASSIGNED)
+		{ // we don't want to fly around or show the spectator gui when first joining the server
+#endif // NEO
 		ShowViewPortPanel( "specgui" , ModeWantsSpectatorGUI(mode) );
+#ifdef NEO
+		}
+#endif // NEO
 	}
 	
 	// Setup flags
@@ -5274,8 +5282,11 @@ void CBasePlayer::Spawn( void )
 		m_iPlayerLocked = false;
 		LockPlayerInPlace();
 	}
-
+#ifdef NEO
+	if ( GetTeamNumber() != TEAM_SPECTATOR && GetTeamNumber() != TEAM_UNASSIGNED )
+#else
 	if ( GetTeamNumber() != TEAM_SPECTATOR )
+#endif // NEO
 	{
 		StopObserverMode();
 	}

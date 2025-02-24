@@ -99,8 +99,6 @@ protected:
 	vgui::Button *m_pSkin3_Button;
     vgui::Button *m_pBack_Button;
 
-    // Which class to highlight for auto selection
-    int m_iDefaultClass;
     bool m_bClassMenu;
 
 protected:

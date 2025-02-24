@@ -21,6 +21,8 @@
 #include "neo_predicted_viewmodel.h"
 
 #include "game_controls/neo_teammenu.h"
+#include "game_controls/neo_classmenu.h"
+#include "game_controls/neo_loadoutmenu.h"
 
 #include "ui/neo_hud_compass.h"
 #include "ui/neo_hud_game_event.h"
@@ -219,7 +221,7 @@ public:
 #if DEBUG
 		DevMsg("Loadout access cb\n");
 #endif
-		if (engine->IsPlayingDemo())
+		if (engine->IsPlayingDemo() || NEORules()->GetForcedWeapon() >= 0)
 		{
 			return;
 		}
@@ -238,6 +240,19 @@ public:
 			Assert(false);
 			Warning("Couldn't find weapon loadout panel\n");
 			return;
+		}
+
+		auto classPanel = dynamic_cast<CNeoClassMenu*>(GetClientModeNormal()->
+			GetViewport()->FindChildByName(PANEL_CLASS));
+		if (classPanel)
+		{
+			classPanel->ShowPanel(false);
+		}
+		auto teamPanel = dynamic_cast<CNeoTeamMenu*>(GetClientModeNormal()->
+			GetViewport()->FindChildByName(PANEL_TEAM));
+		if (teamPanel)
+		{
+			teamPanel->ShowPanel(false);
 		}
 
 		if (panel->IsVisible() && panel->IsEnabled())
@@ -298,7 +313,7 @@ class NeoClassMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback(const CCommand& command)
 	{
-		if (engine->IsPlayingDemo())
+		if (engine->IsPlayingDemo() || NEORules()->GetForcedClass() >= 0)
 		{
 			return;
 		}
@@ -323,6 +338,19 @@ public:
 			Assert(false);
 			Warning("Couldn't find class panel\n");
 			return;
+		}
+
+		auto loadoutPanel = dynamic_cast<CNeoLoadoutMenu*>(GetClientModeNormal()->
+			GetViewport()->FindChildByName(PANEL_NEO_LOADOUT));
+		if (loadoutPanel)
+		{
+			loadoutPanel->ShowPanel(false);
+		}
+		auto teamPanel = dynamic_cast<CNeoTeamMenu*>(GetClientModeNormal()->
+			GetViewport()->FindChildByName(PANEL_TEAM));
+		if (teamPanel)
+		{
+			teamPanel->ShowPanel(false);
 		}
 
 		if (panel->IsVisible() && panel->IsEnabled())
@@ -363,7 +391,7 @@ class NeoTeamMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback( const CCommand &command )
 	{
-		if (engine->IsPlayingDemo())
+		if (engine->IsPlayingDemo() || NEORules()->GetForcedTeam() >= 0)
 		{
 			return;
 		}
@@ -382,6 +410,19 @@ public:
 			Assert(false);
 			Warning("Couldn't find team panel\n");
 			return;
+		}
+
+		auto loadoutPanel = dynamic_cast<CNeoLoadoutMenu*>(GetClientModeNormal()->
+			GetViewport()->FindChildByName(PANEL_NEO_LOADOUT));
+		if (loadoutPanel)
+		{
+			loadoutPanel->ShowPanel(false);
+		}
+		auto classPanel = dynamic_cast<CNeoClassMenu*>(GetClientModeNormal()->
+			GetViewport()->FindChildByName(PANEL_CLASS));
+		if (classPanel)
+		{
+			classPanel->ShowPanel(false);
 		}
 
 		if (panel->IsVisible() && panel->IsEnabled())
@@ -443,13 +484,13 @@ C_NEO_Player::C_NEO_Player()
 {
 	SetPredictionEligible(true);
 
-	m_iNeoClass = NEO_CLASS_ASSAULT;
-	m_iNeoSkin = NEO_SKIN_FIRST;
+	m_iNeoClass = NEORules()->GetForcedClass() >= 0 ? NEORules()->GetForcedClass() : NEO_CLASS_ASSAULT;
+	m_iNeoSkin = NEORules()->GetForcedSkin() >= 0 ? NEORules()->GetForcedSkin() : NEO_SKIN_FIRST;
 	m_iNeoStar = NEO_DEFAULT_STAR;
 	V_memset(m_szNeoName.GetForModify(), 0, sizeof(m_szNeoName));
 	V_memset(m_szNeoClantag.GetForModify(), 0, sizeof(m_szNeoClantag));
 
-	m_iLoadoutWepChoice = 0;
+	m_iLoadoutWepChoice = NEORules()->GetForcedWeapon() >= 0 ? NEORules()->GetForcedWeapon() : 0;
 	m_iNextSpawnClassChoice = -1;
 	m_iXP.GetForModify() = 0;
 
@@ -1236,7 +1277,7 @@ void C_NEO_Player::PostThink(void)
 			m_bInVision = false;
 			IN_LeanReset();
 
-			if (IsLocalPlayer() && (GetTeamNumber() == TEAM_JINRAI || GetTeamNumber() == TEAM_NSF))
+			if (IsLocalPlayer() && GetDeathTime() != 0 && (GetTeamNumber() == TEAM_JINRAI || GetTeamNumber() == TEAM_NSF))
 			{
 				SetObserverMode(OBS_MODE_DEATHCAM);
 				// Fade out 8s to blackout + 2s full blackout
@@ -1360,10 +1401,6 @@ void C_NEO_Player::CalcDeathCamView(Vector &eyeOrigin, QAngle &eyeAngles, float 
 
 void C_NEO_Player::TeamChange(int iNewTeam)
 {
-	if (IsLocalPlayer())
-	{
-		engine->ClientCmd(classmenu.GetName());
-	}
 	BaseClass::TeamChange(iNewTeam);
 }
 
@@ -1489,11 +1526,6 @@ void C_NEO_Player::Spawn( void )
 				neoHud->resetLastUpdateTime();
 				neoHud->resetHUDState();
 			}
-		}
-
-		if (GetTeamNumber() == TEAM_UNASSIGNED && !engine->IsLevelMainMenuBackground())
-		{
-			engine->ClientCmd(teammenu.GetName());
 		}
 	}
 }

@@ -28,6 +28,7 @@ CNEOHud_GameEvent::CNEOHud_GameEvent(const char *pElementName, vgui::Panel *pare
 	: CHudElement(pElementName), EditablePanel(parent, pElementName)
 {
 	SetAutoDelete(true);
+	m_iHideHudElementNumber = NEO_HUD_ELEMENT_GAME_EVENT;
 
 	HOOK_HUD_MESSAGE(CNEOHud_GameEvent, RoundResult);
 
