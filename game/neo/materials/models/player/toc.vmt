@@ -1,0 +1,88 @@
+"Refract"
+{
+	"$model" 1
+	"$refractamount" "0.2"
+	"$refracttint" "[1.0 1.0 1.0]"
+	"$translucent" 1
+	"$forcerefract" 1
+	"$vertexalpha" "1"
+	"$vertexcolor" "1"
+	"$bluramount" "1.6"		
+
+	"$dudvmap" "dev/water_dudv"
+	"$normalmap" "dev/water_normal"
+
+	"$surfaceprop" "water"
+	"$bumpframe" "0"
+	
+	"$thermoptic" 0
+	"$temp" 0
+	"$one" 1
+	"$two" 2
+	"$blurstart" .2
+	//"$mod" .8
+	"$modtwo" .6
+	
+	"$alpha" 255
+
+	"Proxies"
+	{
+		"TextureScroll"
+		{
+			"texturescrollvar" "$bumptransform"
+			"texturescrollrate" .05
+			"texturescrollangle" 45.00
+		}
+		"PlayerTO"
+		{
+			"resultvar" "$thermoptic"
+		}
+		"Equals"
+		{
+			"srcvar1"	"$thermoptic"
+			"resultvar"	"$refractamount"
+		}
+		//"Multiply"
+		//{
+		//	"srcvar1"	"$mod"
+		//	"srcvar2"	"$thermoptic"
+		//	"resultvar"	"$temp"
+		//}
+		"Multiply"
+		{
+			"srcvar1"	"$modtwo"
+			"srcvar2"	"$thermoptic"
+			"resultvar"	"$temp"
+		}	
+		"Subtract"
+		{
+			"srcvar1"	"$one"
+			"srcvar2"	"$temp"
+			"resultvar"	"$refracttint[0]"
+		}	
+		"Subtract"
+		{
+			"srcvar1"	"$one"
+			"srcvar2"	"$temp"
+			"resultvar"	"$refracttint[1]"
+		}		
+		"Subtract"
+		{
+			"srcvar1"	"$one"
+			"srcvar2"	"$temp"
+			"resultvar"	"$refracttint[2]"
+		}
+		"Multiply"
+		{
+			"srcvar1"	"$two"
+			"srcvar2"	"$thermoptic"
+			"resultvar"	"$temp"
+		}
+		"Add"
+		{
+			"srcvar1"	"$blurstart"
+			"srcvar2"	"$temp"
+			"resultvar"	"$bluramount"
+		}								
+	}
+}
