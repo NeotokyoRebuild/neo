@@ -61,15 +61,14 @@ public:
 #endif
 
 #ifdef GAME_DLL
-	CNetworkVar(float, m_flYPrevious);
+	CNetworkVar(float, m_flLeanRatio);
 #else
-	float m_flYPrevious;
-	CInterpolatedVar<float> m_iv_flYPrevious;
+	float m_flLeanRatio;
+	CInterpolatedVar<float> m_iv_flLeanRatio;
 #endif
 
 private:
 	float m_flStartAimingChange;
-	float m_flLeanAngle;
 	bool m_bViewAim;
 	Vector m_vOffset;
 	QAngle m_angOffset;
