@@ -40,6 +40,7 @@ public:
 	void	Precache(void);
 	void	PrimaryAttack(void);
 	void	DecrementAmmo(CBaseCombatCharacter* pOwner);
+	virtual void	ProcessAnimationEvents() override;
 	void	ItemPostFrame(void);
 
 	bool	Deploy(void);

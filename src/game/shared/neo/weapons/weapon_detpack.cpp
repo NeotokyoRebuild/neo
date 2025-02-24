@@ -165,6 +165,7 @@ void CWeaponDetpack::PrimaryAttack(void)
 			DevMsg("Preparing primary attack\n");
 #endif
 			SendWeaponAnim(ACT_VM_PRIMARYATTACK);
+			m_bLowered = false;
 			m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
 			m_flTimeWeaponIdle = FLT_MAX;
 		}
@@ -174,6 +175,53 @@ void CWeaponDetpack::PrimaryAttack(void)
 void CWeaponDetpack::DecrementAmmo(CBaseCombatCharacter* pOwner)
 {
 	pOwner->RemoveAmmo(1, m_iPrimaryAmmoType);
+}
+
+// Handles lowering the weapon view model when character is sprinting
+void CWeaponDetpack::ProcessAnimationEvents()
+{
+	CNEO_Player* pOwner = static_cast<CNEO_Player*>(ToBasePlayer(GetOwner()));
+	if (!pOwner)
+	{
+		return;
+	}
+
+	const auto next = [this](const int activity, const float nextAttackDelay = 0.2) {
+		SendWeaponAnim(activity);
+		if (GetNeoWepBits() & NEO_WEP_THROWABLE)
+		{
+			return;
+		}
+		m_flNextPrimaryAttack = max(gpGlobals->curtime + nextAttackDelay, m_flNextPrimaryAttack);
+		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
+		};
+
+	bool isThrowingOrHasThrownDetpack = m_bWantsToThrowThisDetpack || m_bThisDetpackHasBeenThrown;
+	if (!m_bLowered && !isThrowingOrHasThrownDetpack &&
+		(pOwner->IsSprinting() || pOwner->GetMoveType() == MOVETYPE_LADDER))
+	{
+		m_bLowered = true;
+		next(ACT_VM_IDLE_LOWERED);
+	}
+	else if (m_bLowered && !(pOwner->IsSprinting() || pOwner->GetMoveType() == MOVETYPE_LADDER))
+	{
+		m_bLowered = false;
+		next(ACT_VM_IDLE);
+	}
+	else if (m_bLowered && gpGlobals->curtime > m_flNextPrimaryAttack)
+	{
+		SetWeaponIdleTime(gpGlobals->curtime + 0.2);
+		if (GetNeoWepBits() & NEO_WEP_THROWABLE)
+		{
+			if (!HasPrimaryAmmo())
+			{ // switch our vm activity to something else so throwables postframe picks up that we've finished the throw
+				SendWeaponAnim(ACT_VM_DRAW);
+			}
+			return;
+		}
+		m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
+		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
+	}
 }
 
 void CWeaponDetpack::ItemPostFrame(void)
@@ -212,6 +260,10 @@ void CWeaponDetpack::ItemPostFrame(void)
 						{
 							pOwner->Weapon_Drop(this);
 						}
+						else
+						{
+							pOwner->GetActiveWeapon()->SendWeaponAnim(ACT_VM_DRAW);
+						}
 					}
 				}
 				UTIL_Remove(this);
@@ -227,13 +279,11 @@ void CWeaponDetpack::ItemPostFrame(void)
 					TossDetpack(ToBasePlayer(pOwner));
 					m_bThisDetpackHasBeenThrown = true;
 					pOwner->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
-					// SendWeaponAnim(ACT_VM_DRAW_DEPLOYED);
-					// SendWeaponAnim(ACT_VM_THROW);
 					m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
 					m_fDrawbackFinished = false;
 				}
 			}
-			else
+			else if (!m_bRemoteHasBeenTriggered)
 			{
 				if (gpGlobals->curtime > m_flNextPrimaryAttack)
 				{
@@ -299,8 +349,7 @@ void CWeaponDetpack::TossDetpack(CBasePlayer* pPlayer)
 
 	vecSrc += vForward * 16;
 
-	Vector vecThrow = vForward * flVel + pPlayer->GetAbsVelocity();
-	m_pDetpack = static_cast<CNEODeployedDetpack*>(NEODeployedDetpack_Create(vecSrc, vec3_angle, vecThrow, AngularImpulse(600, random->RandomInt(-1200, 1200), 0), pPlayer));
+	m_pDetpack = static_cast<CNEODeployedDetpack*>(NEODeployedDetpack_Create(vecSrc, vec3_angle, vec3_origin, AngularImpulse(600, random->RandomInt(-1200, 1200), 0), pPlayer));
 
 	if (m_pDetpack)
 	{
