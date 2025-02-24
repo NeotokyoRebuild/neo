@@ -1,0 +1,71 @@
+"VertexLitGeneric"
+{
+	$model 1
+	
+	"$translucent" 1
+	//$alphatest 1
+	//$alphatestreference .5
+	//$allowalphatocoverage 1
+	
+	"$surfaceprop"					"water"
+	
+	"$cloakpassenabled"				1
+	"$cloakfactor"					0.55
+	//"$cloakcolortint"				"[128 128 128]"
+	
+	"$forcerefract" 1
+	"$vertexalpha" "1"
+	"$vertexcolor" "1"
+	"$bluramount" "1.6"	
+	
+	"$refractamount" "0.2"
+	"$refracttint" "[1.0 1.0 1.0]"
+	
+	//$halflambert 1
+	
+	//$ssbump 1
+	
+	//$selfillum 0
+	
+	"$bumpframe" "0"
+	"$bumpmap"						"dev/water_dudv"
+	"$basetexture" "models/toc_base"
+	"$dudvmap" "dev/water_dudv"
+	"$normalmap"					"dev/water_normal"
+	
+	//"$phong" "1"
+	//"$phongexponent" "55"
+	//"$phongboost" "1"	
+	//"$phongfresnelranges"	"[1 2 6]"
+	
+	$envmap			env_cubemap
+	//$envmapmask "tools/toolsblack"
+	
+	"$bumptransform" "center .5 .5 scale 1 1 rotate 0 translate 0 0"
+	
+	$alpha 0
+	
+	"Proxies"
+	{
+		"Sine"
+		{
+			"sineperiod"			"10.0"
+			"sinemin"				"0.133"
+			"sinemax"				"0.266"
+			"resultVar"				"$refractamount"
+		}
+		"Sine"
+		{
+			"sineperiod"			"10.0"
+			"sinemin"				"0.92"
+			"sinemax"				"0.95"
+			"resultVar"				"$cloakfactor"
+		}
+		"TextureScroll"
+		{
+			"texturescrollvar" "$bumptransform"
+			"texturescrollrate" .05
+			"texturescrollangle" 45.00
+		}
+	}
+}
