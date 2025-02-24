@@ -208,12 +208,6 @@ void CWeaponDetpack::ProcessAnimationEvents()
 		m_bLowered = false;
 		next(ACT_VM_IDLE);
 	}
-	else if (m_bLowered && m_bRoundBeingChambered)
-	{ // For bolt action weapons
-		m_bLowered = false;
-		next(ACT_VM_PULLBACK, 1.2f);
-	}
-
 	else if (m_bLowered && gpGlobals->curtime > m_flNextPrimaryAttack)
 	{
 		SetWeaponIdleTime(gpGlobals->curtime + 0.2);
