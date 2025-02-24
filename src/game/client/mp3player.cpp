@@ -31,6 +31,10 @@
 #include "vgui_controls/DirectorySelectDialog.h"
 #include "checksum_crc.h"
 
+#ifdef NEO
+#include "neo_player_shared.h"
+#endif // NEO
+
 #include "engine/IEngineSound.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -703,14 +707,18 @@ public:
 	{
 		BaseClass::ApplySchemeSettings( pScheme );
 
+#ifdef NEO
+		SetFgColor(random->RandomInt(0, 1) ? COLOR_JINRAI : COLOR_NSF);
+#else
 		SetFgColor( TREE_TEXT_COLOR );
+#endif // NEO
 		SetBgColor( pScheme->GetColor( "BorderDark", Color( 0, 0, 0, 255 ) ) );
 	}
 
 #ifdef NEO
 	void OnMousePressed(MouseCode code)
 	{
-		return;
+		return; 
 	}
 #endif // NEO
 };
@@ -1480,6 +1488,9 @@ void CMP3Player::PlaySong( int songIndex, float skipTime /*= 0.0f */ )
 
 	m_pDuration->SetText( durationstr );
 	
+#ifdef NEO
+	enginesound->SetVolumeByGuid(m_nSongGuid, m_flCurrentVolume);
+#endif // NEO
 	m_pSongProgress->SetProgress( 0.0f );
 }
 
