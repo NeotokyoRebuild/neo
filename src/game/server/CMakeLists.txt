@@ -28,7 +28,6 @@ else()
     endif()
 endif()
 
-set(NEXTBOT_DIR "${CMAKE_SOURCE_DIR}/game/server/NextBot")
 target_include_directories(server
     PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
@@ -37,8 +36,8 @@ target_include_directories(server
     ${CMAKE_SOURCE_DIR}/game/server/hl2
     ${CMAKE_SOURCE_DIR}/game/server/hl2mp
     ${CMAKE_SOURCE_DIR}/game/server/neo
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot
     ${CMAKE_SOURCE_DIR}/game/shared
-    ${CMAKE_SOURCE_DIR}/game/shared/econ
     ${CMAKE_SOURCE_DIR}/game/shared/hl2
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp
     ${CMAKE_SOURCE_DIR}/game/shared/Multiplayer
@@ -46,7 +45,6 @@ target_include_directories(server
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons
     ${CMAKE_SOURCE_DIR}/utils/common
     ${CMAKE_SOURCE_DIR}/public
-    ${NEXTBOT_DIR}
 )
 
 target_compile_definitions(server
@@ -861,7 +859,6 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/beam_flags.h
     ${CMAKE_SOURCE_DIR}/game/shared/death_pose.h
     ${CMAKE_SOURCE_DIR}/game/shared/decals.h
-    ${CMAKE_SOURCE_DIR}/game/shared/econ/ihasowner.h
     ${CMAKE_SOURCE_DIR}/game/shared/effect_dispatch_data.h
     ${CMAKE_SOURCE_DIR}/game/shared/ehandle.h
     ${CMAKE_SOURCE_DIR}/game/shared/entitydatainstantiator.h
@@ -1525,57 +1522,57 @@ target_sources_grouped(
     TARGET server
     NAME "NextBot"
     FILES
-        ${NEXTBOT_DIR}/NextBot.cpp
-        ${NEXTBOT_DIR}/NextBot.h
-        ${NEXTBOT_DIR}/NextBotBehavior.h
-        ${NEXTBOT_DIR}/NextBotManager.cpp
-        ${NEXTBOT_DIR}/NextBotManager.h
-        ${NEXTBOT_DIR}/NextBotUtil.h
-        ${NEXTBOT_DIR}/NextBotKnownEntity.h
-        ${NEXTBOT_DIR}/NextBotGroundLocomotion.cpp
-        ${NEXTBOT_DIR}/NextBotGroundLocomotion.h
-        ${NEXTBOT_DIR}/simple_bot.cpp
-        ${NEXTBOT_DIR}/simple_bot.h
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBot.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBot.h
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotBehavior.h
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotManager.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotManager.h
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotUtil.h
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotKnownEntity.h
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotGroundLocomotion.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotGroundLocomotion.h
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/simple_bot.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/simple_bot.h
 
-        # NextBotInterfaces
-        ${NEXTBOT_DIR}/NextBotBodyInterface.cpp
-        ${NEXTBOT_DIR}/NextBotBodyInterface.h
-        ${NEXTBOT_DIR}/NextBotComponentInterface.cpp
-        ${NEXTBOT_DIR}/NextBotComponentInterface.h
-        ${NEXTBOT_DIR}/NextBotEventResponderInterface.h
-        ${NEXTBOT_DIR}/NextBotHearingInterface.h
-        ${NEXTBOT_DIR}/NextBotIntentionInterface.cpp
-        ${NEXTBOT_DIR}/NextBotIntentionInterface.h
-        ${NEXTBOT_DIR}/NextBotInterface.cpp
-        ${NEXTBOT_DIR}/NextBotInterface.h
-        ${NEXTBOT_DIR}/NextBotLocomotionInterface.cpp
-        ${NEXTBOT_DIR}/NextBotLocomotionInterface.h
-        ${NEXTBOT_DIR}/NextBotVisionInterface.cpp
-        ${NEXTBOT_DIR}/NextBotVisionInterface.h
-        ${NEXTBOT_DIR}/NextBotContextualQueryInterface.h
+    # NextBotInterfaces
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotBodyInterface.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotBodyInterface.h
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotComponentInterface.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotComponentInterface.h
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotEventResponderInterface.h
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotHearingInterface.h
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotIntentionInterface.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotIntentionInterface.h
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotInterface.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotInterface.h
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotLocomotionInterface.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotLocomotionInterface.h
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotVisionInterface.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotVisionInterface.h
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NextBotContextualQueryInterface.h
 
-        # NextBotPath
-        ${NEXTBOT_DIR}/Path/NextBotChasePath.cpp
-        ${NEXTBOT_DIR}/Path/NextBotChasePath.h
-        ${NEXTBOT_DIR}/Path/NextBotRetreatPath.h
-        ${NEXTBOT_DIR}/Path/NextBotPath.cpp
-        ${NEXTBOT_DIR}/Path/NextBotPath.h
-        ${NEXTBOT_DIR}/Path/NextBotPathFollow.cpp
-        ${NEXTBOT_DIR}/Path/NextBotPathFollow.h
-                        
-        # NextBotPlayer
-        ${NEXTBOT_DIR}/Player/NextBotPlayerBody.cpp
-        ${NEXTBOT_DIR}/Player/NextBotPlayerBody.h
-        ${NEXTBOT_DIR}/Player/NextBotPlayerLocomotion.cpp
-        ${NEXTBOT_DIR}/Player/NextBotPlayerLocomotion.h
-        ${NEXTBOT_DIR}/Player/NextBotPlayer.cpp
-        ${NEXTBOT_DIR}/Player/NextBotPlayer.h
+    # NextBotPath
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/Path/NextBotChasePath.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/Path/NextBotChasePath.h
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/Path/NextBotRetreatPath.h
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/Path/NextBotPath.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/Path/NextBotPath.h
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/Path/NextBotPathFollow.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/Path/NextBotPathFollow.h
+                    
+    # NextBotPlayer
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/Player/NextBotPlayerBody.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/Player/NextBotPlayerBody.h
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/Player/NextBotPlayerLocomotion.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/Player/NextBotPlayerLocomotion.h
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/Player/NextBotPlayer.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/Player/NextBotPlayer.h
 
-        # NextBotCommonBehaviors
-        ${NEXTBOT_DIR}/Behavior/BehaviorBackUp.h
-        ${NEXTBOT_DIR}/Behavior/BehaviorMoveTo.h
+    # NextBotCommonBehaviors
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/Behavior/BehaviorBackUp.h
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/Behavior/BehaviorMoveTo.h
 
-        # NextBotNavMeshEntities
-        ${NEXTBOT_DIR}/NavMeshEntities/func_nav_prerequisite.cpp
-        ${NEXTBOT_DIR}/NavMeshEntities/func_nav_prerequisite.h
+    # NextBotNavMeshEntities
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NavMeshEntities/func_nav_prerequisite.cpp
+    ${CMAKE_SOURCE_DIR}/game/server/NextBot/NavMeshEntities/func_nav_prerequisite.h
 )

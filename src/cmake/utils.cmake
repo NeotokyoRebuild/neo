@@ -70,13 +70,13 @@ function(add_library_copy_target)
 
     add_custom_target(
         ${PARSED_ARGS_TARGET}_copy_lib
-        DEPENDS ${PARSED_ARGS_TARGET} ${PARSED_ARGS_TARGET}_copy_lib_command_64
+        DEPENDS ${PARSED_ARGS_TARGET} ${PARSED_ARGS_TARGET}_copy_lib_command
     )
 
     add_custom_command(
-        OUTPUT ${PARSED_ARGS_TARGET}_copy_lib_command_64
-        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PARSED_ARGS_TARGET}> "${NEO_OUTPUT_LIBRARY_PATH_64}/"
-        WORKING_DIRECTORY "${NEO_OUTPUT_LIBRARY_PATH_64}"
+        OUTPUT ${PARSED_ARGS_TARGET}_copy_lib_command
+        COMMAND ${CMAKE_COMMAND} -E copy ${TARGET_STRIPPED_FILE} "${NEO_OUTPUT_LIBRARY_PATH}/"
+        WORKING_DIRECTORY "${NEO_OUTPUT_LIBRARY_PATH}"
         VERBATIM
     )
 

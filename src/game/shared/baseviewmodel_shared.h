@@ -15,7 +15,9 @@
 #include "utlvector.h"
 #include "baseplayer_shared.h"
 #include "shared_classnames.h"
+#ifndef NEO
 #include "econ/ihasowner.h"
+#endif
 
 class CBaseCombatWeapon;
 class CBaseCombatCharacter;
@@ -28,7 +30,11 @@ class CVGuiScreen;
 
 #define VIEWMODEL_INDEX_BITS 1
 
+#ifdef NEO
+class CBaseViewModel : public CBaseAnimating
+#else
 class CBaseViewModel : public CBaseAnimating, public IHasOwner
+#endif
 {
 	DECLARE_CLASS( CBaseViewModel, CBaseAnimating );
 public:

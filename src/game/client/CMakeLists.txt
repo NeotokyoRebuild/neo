@@ -8,7 +8,6 @@ endif()
 
 add_library_copy_target(TARGET client)
 
-set(NEXTBOT_DIR_CLIENT "${CMAKE_SOURCE_DIR}/game/client/NextBot")
 if(NEO_USE_SEPARATE_BUILD_INFO AND NOT COMPILER_MSVC)
     add_dependencies(client_copy_lib client_split_debug_information)
 endif()
@@ -25,7 +24,7 @@ target_include_directories(client
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons
     ${CMAKE_SOURCE_DIR}/public
     ${CMAKE_SOURCE_DIR}/thirdparty/sixensesdk/include
-    ${NEXTBOT_DIR_CLIENT}
+    ${CMAKE_SOURCE_DIR}/game/client/NextBot
     game_controls
     hl2
     hl2/elements
@@ -822,7 +821,6 @@ target_sources_grouped(
     FILES
     ${CMAKE_SOURCE_DIR}/common/language.h
     ${CMAKE_SOURCE_DIR}/game/shared/GameEventListener.h
-    ${CMAKE_SOURCE_DIR}/game/shared/econ/ihasowner.h
     ${CMAKE_SOURCE_DIR}/game/shared/hintmessage.h
     ${CMAKE_SOURCE_DIR}/game/shared/hintsystem.h
     ${CMAKE_SOURCE_DIR}/public/steam/steam_api.h
@@ -1758,7 +1756,7 @@ target_sources_grouped(
     TARGET client
     NAME "NextBot"
     FILES
-        ${NEXTBOT_DIR_CLIENT}/C_NextBot.cpp
-        ${NEXTBOT_DIR_CLIENT}/C_NextBot.h
+    ${CMAKE_SOURCE_DIR}/game/client/NextBot/C_NextBot.cpp
+    ${CMAKE_SOURCE_DIR}/game/client/NextBot/C_NextBot.h
 )
 
