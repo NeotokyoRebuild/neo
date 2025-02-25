@@ -283,7 +283,13 @@ protected:
 
 	void					OnPlay();
 	void					OnStop();
+#ifdef NEO
+	void					OnPause();
+#endif // NEO
 	void					OnChangeVolume( float newVol );
+#ifdef NEO
+	float					GetIdealVolume();
+#endif // NEO
 
 	void					AddGameSounds( bool recurse );
 	SoundDirectory_t		*AddSoundDirectory( char const *fullpath, bool recurse );
@@ -335,6 +341,10 @@ private:
 	vgui::CheckButton		*m_pMute;
 	vgui::CheckButton		*m_pShuffle;
 	vgui::Slider			*m_pVolume;
+#ifdef NEO
+	vgui::Slider			*m_pVolumeInGame;
+	vgui::CheckButton		*m_pGamePause;
+#endif // NEO
 
 // Raw list of all known files
 	CUtlVector< MP3File_t >	m_Files;
@@ -352,6 +362,10 @@ private:
 	FileNameHandle_t		m_LastSong;
 	float					m_flCurrentVolume;
 	bool					m_bMuted;
+#ifdef NEO
+	bool					m_bShuffle;
+	bool					m_bPauseInGame;
+#endif // NEO
 
 // Currently playing a song?
 	bool					m_bPlaying;
@@ -363,6 +377,9 @@ private:
 // For the UI
 	int						m_nSongMinutes;
 	int						m_nSongSeconds;
+#ifdef NEO
+	float					m_flTimePaused;
+#endif // NEO
 
 // List of all added directories
 	CUtlVector< SoundDirectory_t * >	m_SoundDirectories;
