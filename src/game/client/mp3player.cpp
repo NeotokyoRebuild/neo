@@ -2061,7 +2061,11 @@ void CMP3Player::OnLoadPlayList()
 
 void CMP3Player::OnSavePlayList()
 {
+#ifdef NEO
+	if ( !m_PlayListFileName.IsValid() )
+#else
 	if ( UTL_INVAL_SYMBOL == m_PlayListFileName )
+#endif // NEO
 	{
 		OnSavePlayListAs();
 		return;
@@ -2654,7 +2658,11 @@ void CMP3Player::SaveSettings()
 		bpr( 0, buf, "settings\n{\n" );
 
 		// FIXME:  Move to function if there are more settings to save...
+#ifdef NEO
+		if ( m_PlayListFileName.IsValid() )
+#else
 		if ( UTL_INVAL_SYMBOL != m_PlayListFileName )
+#endif // NEO
 		{
 			bpr( 1, buf, "mostrecentplaylist \"%s\"\n", m_PlayListFileName.String() );
 		}

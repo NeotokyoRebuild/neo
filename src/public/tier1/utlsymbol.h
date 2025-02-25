@@ -48,9 +48,7 @@ public:
 	CUtlSymbol& operator=( CUtlSymbol const& src ) { m_Id = src.m_Id; return *this; }
 	
 	// operator==
-#if defined NEO && !defined WIN32
 	bool operator==( CUtlSymbol const& src ) const { return m_Id == src.m_Id; }
-#endif // NEO
 	bool operator==( const char* pStr ) const;
 
 	// Is valid?
