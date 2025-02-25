@@ -1425,33 +1425,7 @@ extern "C"
 {
 	extern int __stdcall CopyFileA( char *pszSource, char *pszDest, int bFailIfExists );
 };
-#endif // NEO
-
-#if defined( WIN32 ) && !defined( _X360 )
-#include <windows.h> // SRC only!!
-#elif defined( POSIX )
-#include <stdio.h>
-#include <sys/stat.h>
-#ifdef OSX
-#include <copyfile.h>
-#endif
-#endif
-
-static bool DoCopyFile(char* source, char* destination)
-{
-#if defined( WIN32 )
-	return CopyFile(source, destination, true);
-#elif defined( OSX )
-	return copyfile(source, destination, NULL, COPYFILE_ALL);
-#elif defined( ENGINE_DLL )
-	::COM_CopyFile(source, destination);
-	return true;
-#elif REPLAY_DLL
-	return g_pEngine->CopyFile(source, destination);
-#else
-	return engine->CopyLocalFile(source, destination);
-#endif
-}
+#endif  //NEO
 
 void CMP3Player::GetLocalCopyOfSong( const MP3File_t &mp3, char *outsong, size_t outlen )
 {
@@ -1506,16 +1480,20 @@ void CMP3Player::GetLocalCopyOfSong( const MP3File_t &mp3, char *outsong, size_t
 		Q_FixSlashes( sourcepath );
 
 #ifdef NEO
-		int success = DoCopyFile(sourcepath, destpath);
+		bool success = engine->CopyLocalFile(sourcepath, destpath);
+		if (success)
+		{
+			Q_snprintf(outsong, outlen, "_mp3/%s.mp3", hexname);
+		}
 #else
 		// !!!HACK HACK:
 		// Total hack right now, using windows OS calls to copy file to full destination
 		int success = ::CopyFileA( sourcepath, destpath, TRUE );
-#endif
 		if ( success > 0 )
 		{
 			Q_snprintf( outsong, outlen, "_mp3/%s.mp3", hexname );
 		}
+#endif
 	}
 
 	Q_FixSlashes( outsong );
