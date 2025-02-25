@@ -212,9 +212,9 @@
 	{
 		"ControlName"		"Label"
 		"fieldName"		"Label1"
-		"xpos"		"150"
+		"xpos"		"145"
 		"ypos"		"73"
-		"wide"		"70"
+		"wide"		"75"
 		"tall"		"20"
 		"autoResize"		"0"
 		"pinCorner"		"0"
@@ -245,9 +245,9 @@
 	{
 		"ControlName"		"Label"
 		"fieldName"		"Label2"
-		"xpos"		"150"
+		"xpos"		"145"
 		"ypos"		"93"
-		"wide"		"70"
+		"wide"		"75"
 		"tall"		"20"
 		"autoResize"		"0"
 		"pinCorner"		"0"
