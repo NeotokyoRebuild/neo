@@ -2081,11 +2081,22 @@ void C_BasePlayer::ThirdPersonSwitch( bool bThirdperson )
 		}
 
 		//Notify weapon.
+#ifndef NEO
 		CBaseCombatWeapon *pWeapon = GetActiveWeapon();
 		if ( pWeapon )
 		{
 			pWeapon->ThirdPersonSwitch( bThirdperson );
 		}
+#else
+		for (int i = 0; i < WeaponCount(); i++)
+		{
+			CBaseCombatWeapon* pWeapon = GetWeapon(i);
+			if (pWeapon)
+			{
+				pWeapon->ThirdPersonSwitch( bThirdperson );
+			}
+		}
+#endif // NEO
 	}
 }
 

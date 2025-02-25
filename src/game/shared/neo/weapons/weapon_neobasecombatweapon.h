@@ -252,6 +252,8 @@ public:
 	virtual bool Holster(CBaseCombatWeapon* pSwitchingTo);
 	virtual void ItemHolsterFrame() override;
 	virtual bool ShouldDraw(void) override;
+	virtual void ThirdPersonSwitch(bool bThirdPerson) override;
+	virtual int RestoreData(const char* context, int slot, int type) override;
 	virtual int DrawModel(int flags) override;
 	virtual RenderGroup_t GetRenderGroup() override;
 	virtual bool UsesPowerOfTwoFrameBufferTexture() override;
