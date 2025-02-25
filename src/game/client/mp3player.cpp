@@ -429,7 +429,8 @@ public:
 #ifdef NEO
 	int GetSong(int index = -1)
 	{
-		KeyValues* kv = m_pList->GetItem(index >= 0 ? index : random->RandomInt(0, m_pList->GetItemCount()));
+		index = index >= 0 ? index : random->RandomInt(0, m_pList->GetItemCount() - 1);
+		KeyValues* kv = m_pList->GetItem(index);
 		if (!kv)
 		{
 			return -1;
@@ -837,6 +838,8 @@ CMP3Player::CMP3Player( VPANEL parent, char const *panelName ) :
 	LoadControlSettings( "resource/MP3Player.res" );
 #ifdef NEO // NEO NOTE (Adam) mzync changed how button activation type is assigned in 1a6b546e, restore button activation type here
 	m_pOptions->SetButtonActivationType(Button::ACTIVATE_ONPRESSED);
+	m_pPlay->SetText("#Play");
+	m_pStop->SetText("#Pause");
 
 	m_pMute->SetSelected(cl_neo_radio_mute.GetBool());
 	m_pShuffle->SetSelected(cl_neo_radio_shuffle.GetBool());
@@ -1634,9 +1637,6 @@ void CMP3Player::OnPlay()
 		}
 	}
 #ifdef NEO
-	m_flTimePaused = 0.f;
-	m_pStop->SetText("Pause");
-	m_pPlay->SetText("Stop");
 	if (c == 0)
 	{ // play a random song from the playlist, if any
 		int randomSong = m_pFileSheet->GetPlayList()->GetSong();
@@ -1644,6 +1644,12 @@ void CMP3Player::OnPlay()
 		{
 			PlaySong(randomSong);
 		}
+	}
+	if (m_bPlaying)
+	{
+		m_flTimePaused = 0.f;
+		m_pStop->SetText("Pause");
+		m_pPlay->SetText("Stop");
 	}
 #endif // NEO
 }
@@ -1826,7 +1832,7 @@ float CMP3Player::GetIdealVolume()
 		constexpr float LOWEST_POSSIBLE_VOLUME = ((int)(MUTED_VOLUME * 100.f)) / 100.f;
 		return LOWEST_POSSIBLE_VOLUME;
 	}
-	if (engine->IsInGame())
+	if (engine->IsInGame() && !engine->IsLevelMainMenuBackground())
 	{
 		return (float)m_pVolumeInGame->GetValue() / 100.0f;
 	}
@@ -2673,7 +2679,7 @@ void CMP3Player::EnableAutoAdvance( bool state )
 {
 	m_bEnableAutoAdvance = state;
 #ifdef NEO
-	if (state && m_flTimePaused == 0.f && m_bPauseInGame)
+	if (state && m_flTimePaused == 0.f && m_bPauseInGame && !engine->IsLevelMainMenuBackground())
 	{
 		OnPause();
 	}
