@@ -6,484 +6,12 @@ songs
     filenumber 0
     fromgame 1
     subdirindex 0
-    short "02_Tin_Soldiers_(SFR08).mp3"
-    filename "ed_harrison\neotokyo(sfr08)\02_tin_soldiers_(sfr08).mp3"
+    short "gamestartup1.mp3"
+    filename "ui\gamestartup1.mp3"
   }
   file
   {
     filenumber 1
-    fromgame 1
-    subdirindex 0
-    short "03_Beacon_(SFR08).mp3"
-    filename "ed_harrison\neotokyo(sfr08)\03_beacon_(sfr08).mp3"
-  }
-  file
-  {
-    filenumber 2
-    fromgame 1
-    subdirindex 0
-    short "04_Imbrium_(SFR08).mp3"
-    filename "ed_harrison\neotokyo(sfr08)\04_imbrium_(sfr08).mp3"
-  }
-  file
-  {
-    filenumber 3
-    fromgame 1
-    subdirindex 0
-    short "05_Automata_(SFR08).mp3"
-    filename "ed_harrison\neotokyo(sfr08)\05_automata_(sfr08).mp3"
-  }
-  file
-  {
-    filenumber 4
-    fromgame 1
-    subdirindex 0
-    short "06_Hiroden_651_(SFR08).mp3"
-    filename "ed_harrison\neotokyo(sfr08)\06_hiroden_651_(sfr08).mp3"
-  }
-  file
-  {
-    filenumber 5
-    fromgame 1
-    subdirindex 0
-    short "07_Tachi_(SFR08).mp3"
-    filename "ed_harrison\neotokyo(sfr08)\07_tachi_(sfr08).mp3"
-  }
-  file
-  {
-    filenumber 6
-    fromgame 1
-    subdirindex 0
-    short "08_Sprawl_(SFR08).mp3"
-    filename "ed_harrison\neotokyo(sfr08)\08_sprawl_(sfr08).mp3"
-  }
-  file
-  {
-    filenumber 7
-    fromgame 1
-    subdirindex 0
-    short "09_Mechanism_(SFR08).mp3"
-    filename "ed_harrison\neotokyo(sfr08)\09_mechanism_(sfr08).mp3"
-  }
-  file
-  {
-    filenumber 8
-    fromgame 1
-    subdirindex 0
-    short "10_Paperhouse_(SFR08).mp3"
-    filename "ed_harrison\neotokyo(sfr08)\10_paperhouse_(sfr08).mp3"
-  }
-  file
-  {
-    filenumber 9
-    fromgame 1
-    subdirindex 0
-    short "11_Footprint_(SFR08).mp3"
-    filename "ed_harrison\neotokyo(sfr08)\11_footprint_(sfr08).mp3"
-  }
-  file
-  {
-    filenumber 10
-    fromgame 1
-    subdirindex 0
-    short "12_Out_(SFR08).mp3"
-    filename "ed_harrison\neotokyo(sfr08)\12_out_(sfr08).mp3"
-  }
-  file
-  {
-    filenumber 11
-    fromgame 1
-    subdirindex 0
-    short "13_Welcome_(SFR08).mp3"
-    filename "ed_harrison\neotokyo(sfr08)\13_welcome_(sfr08).mp3"
-  }
-  file
-  {
-    filenumber 12
-    fromgame 1
-    subdirindex 0
-    short "14_Scrap_I-O_(SFR08).mp3"
-    filename "ed_harrison\neotokyo(sfr08)\14_scrap_i-o_(sfr08).mp3"
-  }
-  file
-  {
-    filenumber 13
-    fromgame 1
-    subdirindex 0
-    short "15_Departure_(SFR08).mp3"
-    filename "ed_harrison\neotokyo(sfr08)\15_departure_(sfr08).mp3"
-  }
-  file
-  {
-    filenumber 14
-    fromgame 1
-    subdirindex 0
-    short "16_Prabhava_(SFR08).mp3"
-    filename "ed_harrison\neotokyo(sfr08)\16_prabhava_(sfr08).mp3"
-  }
-  file
-  {
-    filenumber 15
-    fromgame 1
-    subdirindex 0
-    short "17_Distance_(SFR08).mp3"
-    filename "ed_harrison\neotokyo(sfr08)\17_distance_(sfr08).mp3"
-  }
-  file
-  {
-    filenumber 16
-    fromgame 1
-    subdirindex 0
-    short "18_Impetus_(SFR08).mp3"
-    filename "ed_harrison\neotokyo(sfr08)\18_impetus_(sfr08).mp3"
-  }
-  file
-  {
-    filenumber 17
-    fromgame 1
-    subdirindex 0
-    short "19_Carapace_(SFR08).mp3"
-    filename "ed_harrison\neotokyo(sfr08)\19_carapace_(sfr08).mp3"
-  }
-  file
-  {
-    filenumber 18
-    fromgame 1
-    subdirindex 0
-    short "20_Stopgap_(SFR08).mp3"
-    filename "ed_harrison\neotokyo(sfr08)\20_stopgap_(sfr08).mp3"
-  }
-  file
-  {
-    filenumber 19
-    fromgame 1
-    subdirindex 0
-    short "21_Radius_(SFR08).mp3"
-    filename "ed_harrison\neotokyo(sfr08)\21_radius_(sfr08).mp3"
-  }
-  file
-  {
-    filenumber 20
-    fromgame 1
-    subdirindex 0
-    short "22_Rebuild_(SFR08).mp3"
-    filename "ed_harrison\neotokyo(sfr08)\22_rebuild_(sfr08).mp3"
-  }
-  file
-  {
-    filenumber 21
-    fromgame 1
-    subdirindex 0
-    short "23_Reboot_(SFR08).mp3"
-    filename "ed_harrison\neotokyo(sfr08)\23_reboot_(sfr08).mp3"
-  }
-  file
-  {
-    filenumber 22
-    fromgame 1
-    subdirindex 0
-    short "24_Haka_(SFR08).mp3"
-    filename "ed_harrison\neotokyo(sfr08)\24_haka_(sfr08).mp3"
-  }
-  file
-  {
-    filenumber 23
-    fromgame 1
-    subdirindex 0
-    short "25_Surface_(SFR08).mp3"
-    filename "ed_harrison\neotokyo(sfr08)\25_surface_(sfr08).mp3"
-  }
-  file
-  {
-    filenumber 24
-    fromgame 1
-    subdirindex 0
-    short "26_Nimbus_(SFR08).mp3"
-    filename "ed_harrison\neotokyo(sfr08)\26_nimbus_(sfr08).mp3"
-  }
-  file
-  {
-    filenumber 25
-    fromgame 1
-    subdirindex 0
-    short "wind_thru_trees_4.mp3"
-    filename "forest\wind_thru_trees_4.mp3"
-  }
-  file
-  {
-    filenumber 26
-    fromgame 1
-    subdirindex 0
-    short "hopperland.mp3"
-    filename "\hopperland.mp3"
-  }
-  file
-  {
-    filenumber 27
-    fromgame 1
-    subdirindex 0
-    short "hoppertakeoff.mp3"
-    filename "\hoppertakeoff.mp3"
-  }
-  file
-  {
-    filenumber 28
-    fromgame 1
-    subdirindex 0
-    short "hot_work_i.mp3"
-    filename "\hot_work_i.mp3"
-  }
-  file
-  {
-    filenumber 29
-    fromgame 1
-    subdirindex 0
-    short "hot_work_o.mp3"
-    filename "\hot_work_o.mp3"
-  }
-  file
-  {
-    filenumber 30
-    fromgame 1
-    subdirindex 0
-    short "life_cuts_i.mp3"
-    filename "\life_cuts_i.mp3"
-  }
-  file
-  {
-    filenumber 31
-    fromgame 1
-    subdirindex 0
-    short "life_cuts_o.mp3"
-    filename "\life_cuts_o.mp3"
-  }
-  file
-  {
-    filenumber 32
-    fromgame 1
-    subdirindex 0
-    short "lift_mix.mp3"
-    filename "\lift_mix.mp3"
-  }
-  file
-  {
-    filenumber 33
-    fromgame 1
-    subdirindex 0
-    short "NT_female001.mp3"
-    filename "\nt_female001.mp3"
-  }
-  file
-  {
-    filenumber 34
-    fromgame 1
-    subdirindex 0
-    short "NT_female002b.mp3"
-    filename "\nt_female002b.mp3"
-  }
-  file
-  {
-    filenumber 35
-    fromgame 1
-    subdirindex 0
-    short "NT_female006.mp3"
-    filename "\nt_female006.mp3"
-  }
-  file
-  {
-    filenumber 36
-    fromgame 1
-    subdirindex 0
-    short "NT_female008.mp3"
-    filename "\nt_female008.mp3"
-  }
-  file
-  {
-    filenumber 37
-    fromgame 1
-    subdirindex 0
-    short "NT_female009.mp3"
-    filename "\nt_female009.mp3"
-  }
-  file
-  {
-    filenumber 38
-    fromgame 1
-    subdirindex 0
-    short "nt_office_hopper_pass.mp3"
-    filename "office\nt_office_hopper_pass.mp3"
-  }
-  file
-  {
-    filenumber 39
-    fromgame 1
-    subdirindex 0
-    short "nt_office_outside_flyby_1.mp3"
-    filename "office\nt_office_outside_flyby_1.mp3"
-  }
-  file
-  {
-    filenumber 40
-    fromgame 1
-    subdirindex 0
-    short "nt_office_outside_flyby_2.mp3"
-    filename "office\nt_office_outside_flyby_2.mp3"
-  }
-  file
-  {
-    filenumber 41
-    fromgame 1
-    subdirindex 0
-    short "bloodbath.mp3"
-    filename "quake\neotokyo\bloodbath.mp3"
-  }
-  file
-  {
-    filenumber 42
-    fromgame 1
-    subdirindex 0
-    short "combowhore.mp3"
-    filename "quake\neotokyo\combowhore.mp3"
-  }
-  file
-  {
-    filenumber 43
-    fromgame 1
-    subdirindex 0
-    short "doublekill.mp3"
-    filename "quake\neotokyo\doublekill.mp3"
-  }
-  file
-  {
-    filenumber 44
-    fromgame 1
-    subdirindex 0
-    short "godlike.mp3"
-    filename "quake\neotokyo\godlike.mp3"
-  }
-  file
-  {
-    filenumber 45
-    fromgame 1
-    subdirindex 0
-    short "holyshit.mp3"
-    filename "quake\neotokyo\holyshit.mp3"
-  }
-  file
-  {
-    filenumber 46
-    fromgame 1
-    subdirindex 0
-    short "humiliation.mp3"
-    filename "quake\neotokyo\humiliation.mp3"
-  }
-  file
-  {
-    filenumber 47
-    fromgame 1
-    subdirindex 0
-    short "killingspree.mp3"
-    filename "quake\neotokyo\killingspree.mp3"
-  }
-  file
-  {
-    filenumber 48
-    fromgame 1
-    subdirindex 0
-    short "monsterkill.mp3"
-    filename "quake\neotokyo\monsterkill.mp3"
-  }
-  file
-  {
-    filenumber 49
-    fromgame 1
-    subdirindex 0
-    short "multikill.mp3"
-    filename "quake\neotokyo\multikill.mp3"
-  }
-  file
-  {
-    filenumber 50
-    fromgame 1
-    subdirindex 0
-    short "perfect.mp3"
-    filename "quake\neotokyo\perfect.mp3"
-  }
-  file
-  {
-    filenumber 51
-    fromgame 1
-    subdirindex 0
-    short "rampage.mp3"
-    filename "quake\neotokyo\rampage.mp3"
-  }
-  file
-  {
-    filenumber 52
-    fromgame 1
-    subdirindex 0
-    short "teamkiller.mp3"
-    filename "quake\neotokyo\teamkiller.mp3"
-  }
-  file
-  {
-    filenumber 53
-    fromgame 1
-    subdirindex 0
-    short "saitama_corp_i.mp3"
-    filename "\saitama_corp_i.mp3"
-  }
-  file
-  {
-    filenumber 54
-    fromgame 1
-    subdirindex 0
-    short "saitama_corp_o.mp3"
-    filename "\saitama_corp_o.mp3"
-  }
-  file
-  {
-    filenumber 55
-    fromgame 1
-    subdirindex 0
-    short "shipping_area_i.mp3"
-    filename "\shipping_area_i.mp3"
-  }
-  file
-  {
-    filenumber 56
-    fromgame 1
-    subdirindex 0
-    short "shipping_area_o.mp3"
-    filename "\shipping_area_o.mp3"
-  }
-  file
-  {
-    filenumber 57
-    fromgame 1
-    subdirindex 0
-    short "thunder_dj.mp3"
-    filename "\thunder_dj.mp3"
-  }
-  file
-  {
-    filenumber 58
-    fromgame 1
-    subdirindex 0
-    short "thunder_dj2.mp3"
-    filename "\thunder_dj2.mp3"
-  }
-  file
-  {
-    filenumber 59
-    fromgame 1
-    subdirindex 0
-    short "train_pass.mp3"
-    filename "\train_pass.mp3"
-  }
-  file
-  {
-    filenumber 60
     fromgame 1
     subdirindex 0
     short "gamestartup1.mp3"
@@ -491,483 +19,123 @@ songs
   }
   file
   {
-    filenumber 61
+    filenumber 2
     fromgame 1
     subdirindex 0
-    short "warning_crane_i.mp3"
-    filename "\warning_crane_i.mp3"
+    short "101 - annul.mp3"
+    filename "..\soundtrack\101 - annul.mp3"
   }
   file
   {
-    filenumber 62
+    filenumber 3
     fromgame 1
     subdirindex 0
-    short "warning_crane_o.mp3"
-    filename "\warning_crane_o.mp3"
+    short "102 - tinsoldiers.mp3"
+    filename "..\soundtrack\102 - tinsoldiers.mp3"
   }
   file
   {
-    filenumber 63
+    filenumber 4
     fromgame 1
     subdirindex 0
-    short "warning_lvl3_i.mp3"
-    filename "\warning_lvl3_i.mp3"
+    short "103 - beacon.mp3"
+    filename "..\soundtrack\103 - beacon.mp3"
   }
   file
   {
-    filenumber 64
+    filenumber 5
     fromgame 1
     subdirindex 0
-    short "warning_lvl3_o.mp3"
-    filename "\warning_lvl3_o.mp3"
+    short "104 - imbrium.mp3"
+    filename "..\soundtrack\104 - imbrium.mp3"
   }
   file
   {
-    filenumber 65
+    filenumber 6
     fromgame 1
     subdirindex 0
-    short "wood_creak_01.mp3"
-    filename "\wood_creak_01.mp3"
+    short "105 - automata.mp3"
+    filename "..\soundtrack\105 - automata.mp3"
   }
   file
   {
-    filenumber 66
+    filenumber 7
     fromgame 1
     subdirindex 0
-    short "wood_creak_02.mp3"
-    filename "\wood_creak_02.mp3"
+    short "106 - hiroden 651.mp3"
+    filename "..\soundtrack\106 - hiroden 651.mp3"
   }
   file
   {
-    filenumber 67
+    filenumber 8
     fromgame 1
     subdirindex 0
-    short "citadel_hub_ambience1.mp3"
-    filename "ambient\levels\citadel\citadel_hub_ambience1.mp3"
+    short "109 - mechanism.mp3"
+    filename "..\soundtrack\109 - mechanism.mp3"
   }
   file
   {
-    filenumber 68
+    filenumber 9
     fromgame 1
     subdirindex 0
-    short "hl1_song10.mp3"
-    filename "music\hl1_song10.mp3"
+    short "110 - paperhouse.mp3"
+    filename "..\soundtrack\110 - paperhouse.mp3"
   }
   file
   {
-    filenumber 69
+    filenumber 10
     fromgame 1
     subdirindex 0
-    short "hl1_song11.mp3"
-    filename "music\hl1_song11.mp3"
+    short "111 - footprint.mp3"
+    filename "..\soundtrack\111 - footprint.mp3"
   }
   file
   {
-    filenumber 70
+    filenumber 11
     fromgame 1
     subdirindex 0
-    short "hl1_song14.mp3"
-    filename "music\hl1_song14.mp3"
+    short "112 - out.mp3"
+    filename "..\soundtrack\112 - out.mp3"
   }
   file
   {
-    filenumber 71
+    filenumber 12
     fromgame 1
     subdirindex 0
-    short "hl1_song15.mp3"
-    filename "music\hl1_song15.mp3"
+    short "202 - scrap.mp3"
+    filename "..\soundtrack\202 - scrap.mp3"
   }
   file
   {
-    filenumber 72
+    filenumber 13
     fromgame 1
     subdirindex 0
-    short "hl1_song17.mp3"
-    filename "music\hl1_song17.mp3"
+    short "207 - carapace.mp3"
+    filename "..\soundtrack\207 - carapace.mp3"
   }
   file
   {
-    filenumber 73
+    filenumber 14
     fromgame 1
     subdirindex 0
-    short "hl1_song19.mp3"
-    filename "music\hl1_song19.mp3"
+    short "208 - stopgap.mp3"
+    filename "..\soundtrack\208 - stopgap.mp3"
   }
   file
   {
-    filenumber 74
+    filenumber 15
     fromgame 1
     subdirindex 0
-    short "hl1_song20.mp3"
-    filename "music\hl1_song20.mp3"
+    short "209 - radius.mp3"
+    filename "..\soundtrack\209 - radius.mp3"
   }
   file
   {
-    filenumber 75
+    filenumber 16
     fromgame 1
     subdirindex 0
-    short "hl1_song21.mp3"
-    filename "music\hl1_song21.mp3"
-  }
-  file
-  {
-    filenumber 76
-    fromgame 1
-    subdirindex 0
-    short "hl1_song24.mp3"
-    filename "music\hl1_song24.mp3"
-  }
-  file
-  {
-    filenumber 77
-    fromgame 1
-    subdirindex 0
-    short "hl1_song25_remix3.mp3"
-    filename "music\hl1_song25_remix3.mp3"
-  }
-  file
-  {
-    filenumber 78
-    fromgame 1
-    subdirindex 0
-    short "hl1_song26.mp3"
-    filename "music\hl1_song26.mp3"
-  }
-  file
-  {
-    filenumber 79
-    fromgame 1
-    subdirindex 0
-    short "hl1_song3.mp3"
-    filename "music\hl1_song3.mp3"
-  }
-  file
-  {
-    filenumber 80
-    fromgame 1
-    subdirindex 0
-    short "hl1_song5.mp3"
-    filename "music\hl1_song5.mp3"
-  }
-  file
-  {
-    filenumber 81
-    fromgame 1
-    subdirindex 0
-    short "hl1_song6.mp3"
-    filename "music\hl1_song6.mp3"
-  }
-  file
-  {
-    filenumber 82
-    fromgame 1
-    subdirindex 0
-    short "hl1_song9.mp3"
-    filename "music\hl1_song9.mp3"
-  }
-  file
-  {
-    filenumber 83
-    fromgame 1
-    subdirindex 0
-    short "hl2_intro.mp3"
-    filename "music\hl2_intro.mp3"
-  }
-  file
-  {
-    filenumber 84
-    fromgame 1
-    subdirindex 0
-    short "hl2_song0.mp3"
-    filename "music\hl2_song0.mp3"
-  }
-  file
-  {
-    filenumber 85
-    fromgame 1
-    subdirindex 0
-    short "hl2_song1.mp3"
-    filename "music\hl2_song1.mp3"
-  }
-  file
-  {
-    filenumber 86
-    fromgame 1
-    subdirindex 0
-    short "hl2_song10.mp3"
-    filename "music\hl2_song10.mp3"
-  }
-  file
-  {
-    filenumber 87
-    fromgame 1
-    subdirindex 0
-    short "hl2_song11.mp3"
-    filename "music\hl2_song11.mp3"
-  }
-  file
-  {
-    filenumber 88
-    fromgame 1
-    subdirindex 0
-    short "hl2_song12_long.mp3"
-    filename "music\hl2_song12_long.mp3"
-  }
-  file
-  {
-    filenumber 89
-    fromgame 1
-    subdirindex 0
-    short "hl2_song13.mp3"
-    filename "music\hl2_song13.mp3"
-  }
-  file
-  {
-    filenumber 90
-    fromgame 1
-    subdirindex 0
-    short "hl2_song14.mp3"
-    filename "music\hl2_song14.mp3"
-  }
-  file
-  {
-    filenumber 91
-    fromgame 1
-    subdirindex 0
-    short "hl2_song15.mp3"
-    filename "music\hl2_song15.mp3"
-  }
-  file
-  {
-    filenumber 92
-    fromgame 1
-    subdirindex 0
-    short "hl2_song16.mp3"
-    filename "music\hl2_song16.mp3"
-  }
-  file
-  {
-    filenumber 93
-    fromgame 1
-    subdirindex 0
-    short "hl2_song17.mp3"
-    filename "music\hl2_song17.mp3"
-  }
-  file
-  {
-    filenumber 94
-    fromgame 1
-    subdirindex 0
-    short "hl2_song19.mp3"
-    filename "music\hl2_song19.mp3"
-  }
-  file
-  {
-    filenumber 95
-    fromgame 1
-    subdirindex 0
-    short "hl2_song2.mp3"
-    filename "music\hl2_song2.mp3"
-  }
-  file
-  {
-    filenumber 96
-    fromgame 1
-    subdirindex 0
-    short "hl2_song20_submix0.mp3"
-    filename "music\hl2_song20_submix0.mp3"
-  }
-  file
-  {
-    filenumber 97
-    fromgame 1
-    subdirindex 0
-    short "hl2_song20_submix4.mp3"
-    filename "music\hl2_song20_submix4.mp3"
-  }
-  file
-  {
-    filenumber 98
-    fromgame 1
-    subdirindex 0
-    short "hl2_song23_suitsong3.mp3"
-    filename "music\hl2_song23_suitsong3.mp3"
-  }
-  file
-  {
-    filenumber 99
-    fromgame 1
-    subdirindex 0
-    short "hl2_song25_teleporter.mp3"
-    filename "music\hl2_song25_teleporter.mp3"
-  }
-  file
-  {
-    filenumber 100
-    fromgame 1
-    subdirindex 0
-    short "hl2_song26.mp3"
-    filename "music\hl2_song26.mp3"
-  }
-  file
-  {
-    filenumber 101
-    fromgame 1
-    subdirindex 0
-    short "hl2_song26_trainstation1.mp3"
-    filename "music\hl2_song26_trainstation1.mp3"
-  }
-  file
-  {
-    filenumber 102
-    fromgame 1
-    subdirindex 0
-    short "hl2_song27_trainstation2.mp3"
-    filename "music\hl2_song27_trainstation2.mp3"
-  }
-  file
-  {
-    filenumber 103
-    fromgame 1
-    subdirindex 0
-    short "hl2_song28.mp3"
-    filename "music\hl2_song28.mp3"
-  }
-  file
-  {
-    filenumber 104
-    fromgame 1
-    subdirindex 0
-    short "hl2_song29.mp3"
-    filename "music\hl2_song29.mp3"
-  }
-  file
-  {
-    filenumber 105
-    fromgame 1
-    subdirindex 0
-    short "hl2_song3.mp3"
-    filename "music\hl2_song3.mp3"
-  }
-  file
-  {
-    filenumber 106
-    fromgame 1
-    subdirindex 0
-    short "hl2_song30.mp3"
-    filename "music\hl2_song30.mp3"
-  }
-  file
-  {
-    filenumber 107
-    fromgame 1
-    subdirindex 0
-    short "hl2_song31.mp3"
-    filename "music\hl2_song31.mp3"
-  }
-  file
-  {
-    filenumber 108
-    fromgame 1
-    subdirindex 0
-    short "hl2_song32.mp3"
-    filename "music\hl2_song32.mp3"
-  }
-  file
-  {
-    filenumber 109
-    fromgame 1
-    subdirindex 0
-    short "hl2_song33.mp3"
-    filename "music\hl2_song33.mp3"
-  }
-  file
-  {
-    filenumber 110
-    fromgame 1
-    subdirindex 0
-    short "hl2_song4.mp3"
-    filename "music\hl2_song4.mp3"
-  }
-  file
-  {
-    filenumber 111
-    fromgame 1
-    subdirindex 0
-    short "hl2_song6.mp3"
-    filename "music\hl2_song6.mp3"
-  }
-  file
-  {
-    filenumber 112
-    fromgame 1
-    subdirindex 0
-    short "hl2_song7.mp3"
-    filename "music\hl2_song7.mp3"
-  }
-  file
-  {
-    filenumber 113
-    fromgame 1
-    subdirindex 0
-    short "hl2_song8.mp3"
-    filename "music\hl2_song8.mp3"
-  }
-  file
-  {
-    filenumber 114
-    fromgame 1
-    subdirindex 0
-    short "radio1.mp3"
-    filename "music\radio1.mp3"
-  }
-  file
-  {
-    filenumber 115
-    fromgame 1
-    subdirindex 0
-    short "ravenholm_1.mp3"
-    filename "music\ravenholm_1.mp3"
-  }
-  file
-  {
-    filenumber 116
-    fromgame 1
-    subdirindex 0
-    short "hl1_stinger_song16.mp3"
-    filename "music\stingers\hl1_stinger_song16.mp3"
-  }
-  file
-  {
-    filenumber 117
-    fromgame 1
-    subdirindex 0
-    short "hl1_stinger_song27.mp3"
-    filename "music\stingers\hl1_stinger_song27.mp3"
-  }
-  file
-  {
-    filenumber 118
-    fromgame 1
-    subdirindex 0
-    short "hl1_stinger_song28.mp3"
-    filename "music\stingers\hl1_stinger_song28.mp3"
-  }
-  file
-  {
-    filenumber 119
-    fromgame 1
-    subdirindex 0
-    short "hl1_stinger_song7.mp3"
-    filename "music\stingers\hl1_stinger_song7.mp3"
-  }
-  file
-  {
-    filenumber 120
-    fromgame 1
-    subdirindex 0
-    short "hl1_stinger_song8.mp3"
-    filename "music\stingers\hl1_stinger_song8.mp3"
+    short "210 - rebuild.mp3"
+    filename "..\soundtrack\210 - rebuild.mp3"
   }
 }
 directories
@@ -978,129 +146,5 @@ directories
     name ""
     dirname "Game Sounds"
     fullpath ""
-    files
-    {
-      file 26
-      file 27
-      file 28
-      file 29
-      file 30
-      file 31
-      file 32
-      file 33
-      file 34
-      file 35
-      file 36
-      file 37
-      file 53
-      file 54
-      file 55
-      file 56
-      file 57
-      file 58
-      file 59
-      file 61
-      file 62
-      file 63
-      file 64
-      file 65
-      file 66
-      file 0
-      file 1
-      file 2
-      file 3
-      file 4
-      file 5
-      file 6
-      file 7
-      file 8
-      file 9
-      file 10
-      file 11
-      file 12
-      file 13
-      file 14
-      file 15
-      file 16
-      file 17
-      file 18
-      file 19
-      file 20
-      file 21
-      file 22
-      file 23
-      file 24
-      file 25
-      file 38
-      file 39
-      file 40
-      file 41
-      file 42
-      file 43
-      file 44
-      file 45
-      file 46
-      file 47
-      file 48
-      file 49
-      file 50
-      file 51
-      file 52
-      file 60
-      file 67
-      file 68
-      file 69
-      file 70
-      file 71
-      file 72
-      file 73
-      file 74
-      file 75
-      file 76
-      file 77
-      file 78
-      file 79
-      file 80
-      file 81
-      file 82
-      file 83
-      file 84
-      file 85
-      file 86
-      file 87
-      file 88
-      file 89
-      file 90
-      file 91
-      file 92
-      file 93
-      file 94
-      file 95
-      file 96
-      file 97
-      file 98
-      file 99
-      file 100
-      file 101
-      file 102
-      file 103
-      file 104
-      file 105
-      file 106
-      file 107
-      file 108
-      file 109
-      file 110
-      file 111
-      file 112
-      file 113
-      file 114
-      file 115
-      file 116
-      file 117
-      file 118
-      file 119
-      file 120
-    }
   }
 }

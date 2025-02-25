@@ -4,7 +4,6 @@ playlist
   song
   {
     fromgame 1
-    directory "c:\Program Files (x86)\Steam\steamapps\common\NEOTOKYO\neotokyosource\soundtrack"
     relativepath "ui\gamestartup1.mp3"
   }
 }
