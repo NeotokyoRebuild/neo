@@ -4,7 +4,7 @@
 	{
 		"ControlName"		"CMP3Player"
 		"fieldName"		"MP3Player"
-		"xpos"		"r400"
+		"xpos"		"r478"
 		"ypos"		"r400"
 		"wide"		"350"
 		"tall"		"400"

@@ -753,6 +753,27 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	}
 	NeoUI::EndSection();
 #endif (0)
+	g_uiCtx.dPanel.x = param.wide - 112;
+	g_uiCtx.dPanel.y = param.tall - 48;
+	g_uiCtx.dPanel.wide = 96;
+	g_uiCtx.dPanel.tall = 32;
+	NeoUI::BeginSection();
+	g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
+	const auto musicPlayerBtn = NeoUI::Button(L"MP3");
+	if (musicPlayerBtn.bPressed)
+	{
+		surface()->PlaySound("ui/buttonclickrelease.wav");
+		engine->ClientCmd("mp3");
+
+	}
+	if (musicPlayerBtn.bMouseHover && BTNS_TOTAL != m_iHoverBtn)
+	{
+		// Sound rollover feedback
+		surface()->PlaySound("ui/buttonrollover.wav");
+		m_iHoverBtn = BTNS_TOTAL;
+	}
+	
+	NeoUI::EndSection();
 	NeoUI::EndContext();
 }
 
