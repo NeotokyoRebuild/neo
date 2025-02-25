@@ -1,9 +1,0 @@
-// mp3 playlist
-playlist
-{
-  song
-  {
-    fromgame 1
-    relativepath "ui\gamestartup1.mp3"
-  }
-}
