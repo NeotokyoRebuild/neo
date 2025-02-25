@@ -344,6 +344,8 @@ private:
 #ifdef NEO
 	vgui::Slider			*m_pVolumeInGame;
 	vgui::CheckButton		*m_pGamePause;
+
+	bool					m_bFirstEverTick = true;
 #endif // NEO
 
 // Raw list of all known files

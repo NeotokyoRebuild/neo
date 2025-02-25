@@ -753,11 +753,12 @@ public:
 };
 
 #ifdef NEO
-ConVar cl_neo_radio_shuffle("cl_neo_radio_shuffle", "0", FCVAR_ARCHIVE | FCVAR_DONTRECORD, "Randomize song order", true, 0, true, 1);
-ConVar cl_neo_radio_mute("cl_neo_radio_mute", "0", FCVAR_ARCHIVE | FCVAR_DONTRECORD, "Turn down sound volume as far as possible", true, 0, true, 1);
-ConVar cl_neo_radio_game_pause("cl_neo_radio_game_pause", "0", FCVAR_ARCHIVE | FCVAR_DONTRECORD, "Pause NEO Radio song when loading into a game", true, 0, true, 1);
-ConVar cl_neo_radio_volume("cl_neo_radio_volume", "80", FCVAR_ARCHIVE | FCVAR_DONTRECORD, "NEO Radio song volume", true, MUTED_VOLUME, true, 100);
-ConVar cl_neo_radio_volume_ingame("cl_neo_radio_volume_ingame", "20", FCVAR_ARCHIVE | FCVAR_DONTRECORD, "NEO Radio song volume in game", true, MUTED_VOLUME, true, 100);
+ConVar cl_neo_radio_shuffle("cl_neo_radio_shuffle", "0", FCVAR_CLIENTDLL| FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "Randomize song order", true, 0, true, 1);
+ConVar cl_neo_radio_mute("cl_neo_radio_mute", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "Turn down sound volume as far as possible", true, 0, true, 1);
+ConVar cl_neo_radio_game_pause("cl_neo_radio_game_pause", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "Pause NEO Radio song when loading into a game", true, 0, true, 1);
+ConVar cl_neo_radio_volume("cl_neo_radio_volume", "80", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "NEO Radio song volume", true, MUTED_VOLUME, true, 100);
+ConVar cl_neo_radio_volume_ingame("cl_neo_radio_volume_ingame", "20", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "NEO Radio song volume in game", true, MUTED_VOLUME, true, 100);
+ConVar cl_neo_radio_unused_variable("cl_neo_radio_unused_variable", "20", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_DONTRECORD, "cl_neo_radio_unused_variable", true, MUTED_VOLUME, true, 100);
 #endif // NEO
 CMP3Player::CMP3Player( VPANEL parent, char const *panelName ) :
 	BaseClass( NULL, panelName ),
@@ -839,13 +840,6 @@ CMP3Player::CMP3Player( VPANEL parent, char const *panelName ) :
 #ifdef NEO // NEO NOTE (Adam) mzync changed how button activation type is assigned in 1a6b546e, restore button activation type here
 	m_pOptions->SetButtonActivationType(Button::ACTIVATE_ONPRESSED);
 	m_pPlay->SetText("#Play");
-	m_pStop->SetText("#Pause");
-
-	m_pMute->SetSelected(cl_neo_radio_mute.GetBool());
-	m_pShuffle->SetSelected(cl_neo_radio_shuffle.GetBool());
-	m_pGamePause->SetSelected(cl_neo_radio_game_pause.GetBool());
-	m_pVolume->SetValue(cl_neo_radio_volume.GetInt());
-	m_pVolumeInGame->SetValue(cl_neo_radio_volume_ingame.GetInt());
 #endif // NEO
 
 	m_pCurrentSong->SetText( "#NoSong" );
@@ -880,6 +874,7 @@ CMP3Player::CMP3Player( VPANEL parent, char const *panelName ) :
 	if (randomSong >= 0)
 	{
 		PlaySong(randomSong);
+		m_pStop->SetText("Pause");
 	}
 #endif // NEO
 }
@@ -1683,10 +1678,28 @@ void CMP3Player::OnTick()
 {
 	BaseClass::OnTick();
 
+#ifdef NEO
+	if (m_bFirstEverTick)
+	{ // NEO HACK (Adam) Saved values for these convars are not read until after this Panel is initialized, read values on first tick instead
+		m_bFirstEverTick = false;
+		m_pMute->SetSelected(cl_neo_radio_mute.GetBool());
+		m_pShuffle->SetSelected(cl_neo_radio_shuffle.GetBool());
+		m_pGamePause->SetSelected(cl_neo_radio_game_pause.GetBool());
+		m_pVolume->SetValue(cl_neo_radio_volume.GetInt());
+		m_pVolumeInGame->SetValue(cl_neo_radio_volume_ingame.GetInt());
+		m_flCurrentVolume = m_pVolume->GetValue();
+		m_bMuted = m_pMute->IsSelected();
+		m_bShuffle = m_pShuffle->IsSelected();
+		m_bPauseInGame = m_pGamePause->IsSelected();
+	}
+#endif // NEO
+
+#ifndef NEO
 	if ( !m_bPlaying )
 	{
 		return;
 	}
+#endif // NEO
 
 #ifdef NEO
 	float newVol = GetIdealVolume();
@@ -1723,6 +1736,12 @@ void CMP3Player::OnTick()
 	{
 		m_bPauseInGame = m_pGamePause->IsSelected();
 		cl_neo_radio_game_pause.SetValue(m_bPauseInGame);
+	}
+
+	// For now we want to save these button states even when not playing any music so move this down
+	if (!m_bPlaying)
+	{
+		return;
 	}
 #endif // NEO
 

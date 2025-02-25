@@ -4,91 +4,76 @@ playlist
   song
   {
     fromgame 1
-    directory "c:\Program Files (x86)\Steam\steamapps\common\NEOTOKYO\neotokyosource\soundtrack"
-    relativepath "soundtrack\101 - annul.mp3"
+    relativepath "..\soundtrack\101 - annul.mp3"
   }
   song
   {
     fromgame 1
-    directory "c:\Program Files (x86)\Steam\steamapps\common\NEOTOKYO\neotokyosource\soundtrack"
-    relativepath "soundtrack\102 - tinsoldiers.mp3"
+    relativepath "..\soundtrack\102 - tinsoldiers.mp3"
   }
   song
   {
     fromgame 1
-    directory "c:\Program Files (x86)\Steam\steamapps\common\NEOTOKYO\neotokyosource\soundtrack"
-    relativepath "soundtrack\103 - beacon.mp3"
+    relativepath "..\soundtrack\103 - beacon.mp3"
   }
   song
   {
     fromgame 1
-    directory "c:\Program Files (x86)\Steam\steamapps\common\NEOTOKYO\neotokyosource\soundtrack"
-    relativepath "soundtrack\104 - imbrium.mp3"
+    relativepath "..\soundtrack\104 - imbrium.mp3"
   }
   song
   {
     fromgame 1
-    directory "c:\Program Files (x86)\Steam\steamapps\common\NEOTOKYO\neotokyosource\soundtrack"
-    relativepath "soundtrack\105 - automata.mp3"
+    relativepath "..\soundtrack\105 - automata.mp3"
   }
   song
   {
     fromgame 1
-    directory "c:\Program Files (x86)\Steam\steamapps\common\NEOTOKYO\neotokyosource\soundtrack"
-    relativepath "soundtrack\106 - hiroden 651.mp3"
+    relativepath "..\soundtrack\106 - hiroden 651.mp3"
   }
   song
   {
     fromgame 1
-    directory "c:\Program Files (x86)\Steam\steamapps\common\NEOTOKYO\neotokyosource\soundtrack"
-    relativepath "soundtrack\109 - mechanism.mp3"
+    relativepath "..\soundtrack\109 - mechanism.mp3"
   }
   song
   {
     fromgame 1
-    directory "c:\Program Files (x86)\Steam\steamapps\common\NEOTOKYO\neotokyosource\soundtrack"
-    relativepath "soundtrack\110 - paperhouse.mp3"
+    relativepath "..\soundtrack\110 - paperhouse.mp3"
   }
   song
   {
     fromgame 1
-    directory "c:\Program Files (x86)\Steam\steamapps\common\NEOTOKYO\neotokyosource\soundtrack"
-    relativepath "soundtrack\111 - footprint.mp3"
+    relativepath "..\soundtrack\111 - footprint.mp3"
   }
   song
   {
     fromgame 1
-    directory "c:\Program Files (x86)\Steam\steamapps\common\NEOTOKYO\neotokyosource\soundtrack"
-    relativepath "soundtrack\112 - out.mp3"
+    relativepath "..\soundtrack\112 - out.mp3"
   }
   song
   {
     fromgame 1
-    directory "c:\Program Files (x86)\Steam\steamapps\common\NEOTOKYO\neotokyosource\soundtrack"
-    relativepath "soundtrack\202 - scrap.mp3"
+    relativepath "..\soundtrack\202 - scrap.mp3"
   }
   song
   {
     fromgame 1
-    directory "c:\Program Files (x86)\Steam\steamapps\common\NEOTOKYO\neotokyosource\soundtrack"
-    relativepath "soundtrack\207 - carapace.mp3"
+    relativepath "..\soundtrack\207 - carapace.mp3"
   }
   song
   {
     fromgame 1
-    directory "c:\Program Files (x86)\Steam\steamapps\common\NEOTOKYO\neotokyosource\soundtrack"
-    relativepath "soundtrack\208 - stopgap.mp3"
+    relativepath "..\soundtrack\208 - stopgap.mp3"
   }
   song
   {
     fromgame 1
-    directory "c:\Program Files (x86)\Steam\steamapps\common\NEOTOKYO\neotokyosource\soundtrack"
-    relativepath "soundtrack\209 - radius.mp3"
+    relativepath "..\soundtrack\209 - radius.mp3"
   }
   song
   {
     fromgame 1
-    directory "c:\Program Files (x86)\Steam\steamapps\common\NEOTOKYO\neotokyosource\soundtrack"
-    relativepath "soundtrack\210 - rebuild.mp3"
+    relativepath "..\soundtrack\210 - rebuild.mp3"
   }
 }

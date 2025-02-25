@@ -1,7 +1,7 @@
 // mp3 settings, automatically generated
 settings
 {
-  mostrecentplaylist "C:\Users\AdamTomaszewski\UserProjects\neo\game\neo\sound\playlist\default.txt"
+  mostrecentplaylist "sound\playlist\soundtrack.txt"
   directories
   {
     dirname ""
