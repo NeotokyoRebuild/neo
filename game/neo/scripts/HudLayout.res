@@ -969,4 +969,13 @@
 		"ypos"	"440"
 		"wide"	"640"
 	}
+	
+	neo_message
+	{
+		"fieldName"		"neo_message"
+		"xpos"	"80"
+		"ypos"	"60"
+		"wide"	"300"
+		"tall"	"200"
+	}
 }
