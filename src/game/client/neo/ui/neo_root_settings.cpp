@@ -501,6 +501,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		}
 		// Reset the cache to none so it'll refresh on next KeyCodeTyped
 		const_cast<NeoSettings::Keys *>(pKeys)->bcConsole = KEY_NONE;
+		const_cast<NeoSettings::Keys *>(pKeys)->bcMP3Player = KEY_NONE;
 	}
 	{
 		const NeoSettings::Mouse *pMouse = &ns->mouse;

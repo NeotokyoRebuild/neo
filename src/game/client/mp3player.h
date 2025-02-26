@@ -409,4 +409,9 @@ private:
 	bool					m_bEnableAutoAdvance;
 };
 
+#ifdef NEO
+// Singleton
+static CMP3Player* g_pPlayer = NULL;
+#endif // NEO
+
 #endif // !MP3PLAYER_H

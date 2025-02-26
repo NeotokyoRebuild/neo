@@ -442,11 +442,16 @@ void CNeoRoot::FireGameEvent(IGameEvent *event)
 	}
 }
 
+#include "mp3player.h";
 void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 {
 	if (m_ns.keys.bcConsole <= KEY_NONE)
 	{
 		m_ns.keys.bcConsole = gameuifuncs->GetButtonCodeForBind("neo_toggleconsole");
+	}
+	if (m_ns.keys.bcMP3Player <= KEY_NONE)
+	{
+		m_ns.keys.bcMP3Player = gameuifuncs->GetButtonCodeForBind("neo_mp3");
 	}
 
 	if (code == m_ns.keys.bcConsole && code != KEY_BACKQUOTE)
@@ -458,6 +463,10 @@ void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 		// opened which generally doesn't endup calling OnRelayedKeyCodeTyped anyway.
 		NeoToggleconsole();
 		return;
+	}
+	else if (code == m_ns.keys.bcMP3Player)
+	{
+		engine->ClientCmd_Unrestricted("neo_mp3");
 	}
 	g_uiCtx.eCode = code;
 	OnMainLoop(NeoUI::MODE_KEYPRESSED);

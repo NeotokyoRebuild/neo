@@ -1441,6 +1441,13 @@ void CHLClient::Shutdown( void )
         g_pAchievementsAndStatsInterface->ReleasePanel();
     }
 
+#ifdef NEO
+	if (g_pPlayer)
+	{
+		vgui::ivgui()->RemoveTickSignal(g_pPlayer->GetVPanel());
+	}
+#endif // NEO
+
 #ifdef SIXENSE
 	g_pSixenseInput->Shutdown();
 	delete g_pSixenseInput;

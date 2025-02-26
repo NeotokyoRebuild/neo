@@ -33,6 +33,7 @@
 
 #ifdef NEO
 #include "neo_player_shared.h"
+#include <IGameUIFuncs.h>
 #endif // NEO
 
 #include "engine/IEngineSound.h"
@@ -42,8 +43,10 @@
 
 using namespace vgui;
 
+#ifndef NEO
 // Singleton
 static CMP3Player *g_pPlayer = NULL;
+#endif // NEO
 
 vgui::Panel *GetSDKRootPanel();
 
@@ -1073,6 +1076,30 @@ void CMP3Player::ApplySchemeSettings(IScheme *pScheme)
 	HFont treeFont = pScheme->GetFont( "DefaultVerySmall" );
 	m_pTree->SetFont( treeFont );
 }
+#ifdef NEO
+
+class neo_mp3_Cb : public ICommandCallback
+{
+public:
+	virtual void CommandCallback(const CCommand& command)
+	{
+		if (g_pPlayer) { g_pPlayer->SetVisible(!g_pPlayer->IsVisible()); }
+	}
+};
+neo_mp3_Cb neo_mp3_callback;
+
+ConCommand neo_mp3("neo_mp3", &neo_mp3_callback, "Toggle the mp3 player", FCVAR_DONTRECORD);
+#endif // NEO
+
+
+void CMP3Player::OnKeyCodeReleased(vgui::KeyCode code)
+{
+	const auto toggleMP3Bind = gameuifuncs->GetButtonCodeForBind("neo_mp3");
+	if (toggleMP3Bind == code)
+	{
+		g_pPlayer->SetVisible(!g_pPlayer->IsVisible());
+	}
+}
 
 void CMP3Player::OnCommand( char const *cmd )
 {
@@ -1128,16 +1155,6 @@ void CMP3Player::OnCommand( char const *cmd )
 		BaseClass::OnCommand( cmd );
 	}
 }
-
-#ifdef NEO
-void CMP3Player::OnKeyCodeReleased(vgui::KeyCode code)
-{
-	switch (code) {
-	case KEY_P:
-		SetVisible(false);
-	}
-}
-#endif // NEO
 
 void CMP3Player::SplitFile( CUtlVector< CUtlSymbol >& splitList, char const *relative )
 {
@@ -1590,10 +1607,7 @@ void CMP3Player::PlaySong( int songIndex, float skipTime /*= 0.0f */ )
 	m_flTimePaused = 0.f;
 	m_pStop->SetText("Pause");
 	m_pPlay->SetText("Stop");
-	if (enginesound->IsSoundStillPlaying(m_nSongGuid));
-	{ // NEO TODO (Adam) This will crash on exit, sometimes, the line above is not effective in preventing this but seems to help somewhat(?), find a different solution, don't want to be performing operations on null pointers
-		enginesound->SetVolumeByGuid(m_nSongGuid, GetIdealVolume());
-	}
+	enginesound->SetVolumeByGuid(m_nSongGuid, GetIdealVolume());
 #endif // NEO
 	m_pSongProgress->SetProgress( 0.0f );
 }
