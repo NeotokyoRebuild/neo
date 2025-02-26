@@ -1370,6 +1370,7 @@ target_sources_grouped(
     neo/neo_grenade.h
     neo/neo_model_manager.cpp
     neo/neo_model_manager.h
+    neo/neo_npc_dummy.cpp
     neo/neo_player.cpp
     neo/neo_player.h
     neo/neo_smokegrenade.cpp

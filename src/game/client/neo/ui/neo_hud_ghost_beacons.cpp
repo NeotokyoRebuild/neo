@@ -131,6 +131,21 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 			closestEnemy = Min(distance, closestEnemy);
 		}
 	}
+	engine->Con_NPrintf(0, "%i", NEORules()->m_iLastDummyBeacon);
+	for (int i = 0; i <= NEORules()->m_iLastDummyBeacon; i++)
+	{
+		auto dummy = ClientEntityList().GetBaseEntityFromHandle(NEORules()->m_iDummyBeacons[i]);
+		if (dummy)
+		{
+			auto dummyPos = dummy->GetAbsOrigin();
+			float distance = FLT_MAX;
+			if (dummy->IsAlive() && ghost->IsPosWithinViewDistance(dummyPos, distance) && !dummy->IsDormant() && showGhost)
+			{
+				DrawPlayer(dummyPos);
+			}
+			closestEnemy = Min(distance, closestEnemy);
+		}
+	}
 	ghost->TryGhostPing(closestEnemy * METERS_PER_INCH);
 }
 

@@ -1498,6 +1498,7 @@ target_sources_grouped(
     TARGET client
     NAME "Source Files\\NEO"
     FILES
+    neo/c_neo_npc_dummy.cpp
     neo/c_neo_player.cpp
     neo/c_neo_player.h
     neo/c_neo_te_tocflash.cpp
