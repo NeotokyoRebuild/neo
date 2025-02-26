@@ -1,38 +1,43 @@
 # Files to ignore when considering what GIT should commit.
 
 # Qt Creator
-mp/build-src-*
+/build-src-*
 
 # CMake build dir
-mp/src/build
+/src/build
 out
 
-mp/src/CMakeSettings.json
+/src/CMakeSettings.json
 
 # Possible symlink for fixing tools that hardcode "game/mod_hl2mp" - we use "game/neo".
-mp/game/mod_hl2mp
+/game/mod_hl2mp
 
-mp/game/neo/screenshots
+/game/neo/screenshots
 
 # Binary Assets
-mp/game/neo/maps
-mp/game/neo/mapsrc
-mp/game/neo/materials
-mp/game/neo/particles
-mp/game/neo/shaders
-mp/game/neo/models
+/game/neo/maps
+/game/neo/mapsrc
+/game/neo/materials
+/game/neo/particles
+/game/neo/shaders
+/game/neo/models
+game/neo/materials/temp
+
+# Use -f to override it
+*.vmt
+*.vmf
 
 # Any debug or user specific configs that shouldn't be pushed
-mp/game/neo/cfg/config.cfg
-mp/game/neo/cfg/rain.cfg
+/game/neo/cfg/config.cfg
+/game/neo/cfg/rain.cfg
 
 # Shader state debug image dumps
-mp/game/neo/*.tga
+/game/neo/*.tga
 
 # Map compile artifacts
-mp/game/neo/mapsrc/*.bsp
-mp/game/neo/mapsrc/*.prt
-mp/game/neo/mapsrc/*.vmx
+/game/neo/mapsrc/*.bsp
+/game/neo/mapsrc/*.prt
+/game/neo/mapsrc/*.vmx
 
 # Object files
 *.o
@@ -73,54 +78,54 @@ ipch
 .vs/
 Degub/
 Release/
-mp/src/fgdlib/Debug/
-mp/src/fgdlib/Release/
-mp/src/game/client/Debug_neo/
-mp/src/game/client/Release_neo/
-mp/src/game/server/Debug_neo/
-mp/src/game/server/Release_neo/
-mp/src/materialsystem/stdshaders/Debug_dx9_neo/
-mp/src/materialsystem/stdshaders/Release_dx9_neo/
-mp/src/mathlib/Debug/
-mp/src/mathlib/Release/
-mp/src/raytrace/Debug/
-mp/src/raytrace/Release/
-mp/src/tier1/Debug/
-mp/src/tier1/Release/
-mp/src/utils/captioncompiler/Debug/
-mp/src/utils/captioncompiler/Release/
-mp/src/utils/glview/Debug/
-mp/src/utils/glview/Release/
-mp/src/utils/height2normal/Debug/
-mp/src/utils/height2normal/Release/
-mp/src/utils/motionmapper/Debug/
-mp/src/utils/motionmapper/Release/
-mp/src/utils/phonemeextractor/Debug/
-mp/src/utils/phonemeextractor/Release/
-mp/src/utils/qc_eyes/Debug/
-mp/src/utils/qc_eyes/Release/
-mp/src/utils/serverplugin_sample/Debug/
-mp/src/utils/serverplugin_sample/Release/
-mp/src/utils/tgadiff/Debug/
-mp/src/utils/tgadiff/Release/
-mp/src/utils/vbsp/Debug/
-mp/src/utils/vbsp/Release/
-mp/src/utils/vice/Debug/
-mp/src/utils/vice/Release/
-mp/src/utils/vrad/Debug/
-mp/src/utils/vrad/Release/
-mp/src/utils/vrad_launcher/Debug/
-mp/src/utils/vrad_launcher/Release/
-mp/src/utils/vtf2tga/Debug/
-mp/src/utils/vtf2tga/Release/
-mp/src/utils/vtfdiff/Debug/
-mp/src/utils/vtfdiff/Release/
-mp/src/utils/vvis/Debug/
-mp/src/utils/vvis/Release/
-mp/src/utils/vvis_launcher/Debug/
-mp/src/utils/vvis_launcher/Release/
-mp/src/vgui2/vgui_controls/Debug/
-mp/src/vgui2/vgui_controls/Release/
+/src/fgdlib/Debug/
+/src/fgdlib/Release/
+/src/game/client/Debug_neo/
+/src/game/client/Release_neo/
+/src/game/server/Debug_neo/
+/src/game/server/Release_neo/
+/src/materialsystem/stdshaders/Debug_dx9_neo/
+/src/materialsystem/stdshaders/Release_dx9_neo/
+/src/mathlib/Debug/
+/src/mathlib/Release/
+/src/raytrace/Debug/
+/src/raytrace/Release/
+/src/tier1/Debug/
+/src/tier1/Release/
+/src/utils/captioncompiler/Debug/
+/src/utils/captioncompiler/Release/
+/src/utils/glview/Debug/
+/src/utils/glview/Release/
+/src/utils/height2normal/Debug/
+/src/utils/height2normal/Release/
+/src/utils/motionmapper/Debug/
+/src/utils/motionmapper/Release/
+/src/utils/phonemeextractor/Debug/
+/src/utils/phonemeextractor/Release/
+/src/utils/qc_eyes/Debug/
+/src/utils/qc_eyes/Release/
+/src/utils/serverplugin_sample/Debug/
+/src/utils/serverplugin_sample/Release/
+/src/utils/tgadiff/Debug/
+/src/utils/tgadiff/Release/
+/src/utils/vbsp/Debug/
+/src/utils/vbsp/Release/
+/src/utils/vice/Debug/
+/src/utils/vice/Release/
+/src/utils/vrad/Debug/
+/src/utils/vrad/Release/
+/src/utils/vrad_launcher/Debug/
+/src/utils/vrad_launcher/Release/
+/src/utils/vtf2tga/Debug/
+/src/utils/vtf2tga/Release/
+/src/utils/vtfdiff/Debug/
+/src/utils/vtfdiff/Release/
+/src/utils/vvis/Debug/
+/src/utils/vvis/Release/
+/src/utils/vvis_launcher/Debug/
+/src/utils/vvis_launcher/Release/
+/src/vgui2/vgui_controls/Debug/
+/src/vgui2/vgui_controls/Release/
 
 # Speech SDK API
 sapi51/
@@ -187,34 +192,487 @@ textwindow_temp.html
 
 # shader generation files
 *.tmp
-mp/src/materialsystem/stdshaders/fxctmp9_tmp/
-mp/src/materialsystem/stdshaders/shaders/fxc/
-mp/src/materialsystem/stdshaders/filelist.txt
-mp/src/materialsystem/stdshaders/filelistgen.txt
-mp/src/materialsystem/stdshaders/filestocopy.txt
-mp/src/materialsystem/stdshaders/inclist.txt
-mp/src/materialsystem/stdshaders/uniquefilestocopy.txt
-mp/src/materialsystem/stdshaders/vcslist.txt
-mp/src/materialsystem/stdshaders/makefile.stdshader_dx9_20b
-mp/src/materialsystem/stdshaders/makefile.stdshader_dx9_20b.copy
-mp/src/materialsystem/stdshaders/makefile.stdshader_dx9_30
-mp/src/materialsystem/stdshaders/makefile.stdshader_dx9_30.copy
-mp/src/materialsystem/stdshaders/buildhl2mpshaders.bat
+/src/materialsystem/stdshaders/fxctmp9_tmp/
+/src/materialsystem/stdshaders/shaders/fxc/
+/src/materialsystem/stdshaders/filelist.txt
+/src/materialsystem/stdshaders/filelistgen.txt
+/src/materialsystem/stdshaders/filestocopy.txt
+/src/materialsystem/stdshaders/inclist.txt
+/src/materialsystem/stdshaders/uniquefilestocopy.txt
+/src/materialsystem/stdshaders/vcslist.txt
+/src/materialsystem/stdshaders/makefile.stdshader_dx9_20b
+/src/materialsystem/stdshaders/makefile.stdshader_dx9_20b.copy
+/src/materialsystem/stdshaders/makefile.stdshader_dx9_30
+/src/materialsystem/stdshaders/makefile.stdshader_dx9_30.copy
+/src/materialsystem/stdshaders/buildhl2mpshaders.bat
 
 # Server plugin files
-mp/game/neo/addons
-mp/game/neo/cfg/sourcemod
+/game/neo/addons
+/game/neo/cfg/sourcemod
 
 # Excludes
 !makefile_base_posix.mak
 !sourcesdk_def.mak
 
-/sp
-/mp/game/neo/cfg/user.scr
+/game/neo/cfg/user.scr
 
 # Auto-generated by CMake
-mp/game/neo/resource/GameMenu.res
-mp/src/game/shared/neo/neo_version_info.cpp
+/game/neo/resource/GameMenu.res
+/src/game/shared/neo/neo_version_info.cpp
 
 # News cache
-mp/game/neo/news.txt
+/game/neo/news.txt
+
+# GCH
+*.h.gch
+*.h.gch.d
+
+*.sln
+*.slnx
+*.vcproj
+*.vcxproj
+*.vcxproj.*
+*.obj
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+mono_crash.*
+.vs/*
+*.pdb
+*.log
+*.tlog
+*.exp
+*.FileListAbsolute.txt
+
+evntprov.h
+
+generated_proto_*
+*.pb.cc
+*.pb.hh
+
+*_Release/
+*_Debug/
+Release/x64/*
+Debug/x64/*
+Release_*/
+Debug_*/
+*.lastbuildstate
+*.recipe
+
+*_nut.h # vscript autogen file
+
+*.vpc.sentinel
+*.vpc_crc
+*.vpc_cache
+
+*_nut.h
+
+__vpc__/
+_vpc_/
+
+## Ignore Visual Studio temporary files, build results, and
+## files generated by popular Visual Studio add-ons.
+##
+## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# User-specific files (MonoDevelop/Xamarin Studio)
+*.userprefs
+
+# Mono auto generated files
+mono_crash.*
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio 2015/2017 cache/options directory
+.vs/
+# Uncomment if you have tasks that create the project's static files in wwwroot
+#wwwroot/
+
+# Visual Studio 2017 auto generated files
+Generated\ Files/
+
+# MSTest test Results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+
+# NUnit
+*.VisualState.xml
+TestResult.xml
+nunit-*.xml
+
+# Build Results of an ATL Project
+[Dd]ebugPS/
+[Rr]eleasePS/
+dlldata.c
+
+# Benchmark Results
+BenchmarkDotNet.Artifacts/
+
+# .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# StyleCop
+StyleCopReport.xml
+
+# Files built by Visual Studio
+*_i.c
+*_p.c
+*_h.h
+*.ilk
+*.meta
+*.obj
+*.iobj
+*.pch
+*.pdb
+*.ipdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp
+*.tmp_proj
+*_wpftmp.csproj
+*.log
+*.tlog
+*.vspscc
+*.vssscc
+.builds
+*.pidb
+*.svclog
+*.scc
+
+# Chutzpah Test files
+_Chutzpah*
+
+# Visual C++ cache files
+ipch/
+*.aps
+*.ncb
+*.opendb
+*.opensdf
+*.sdf
+*.cachefile
+*.VC.db
+*.VC.VC.opendb
+
+# Visual Studio profiler
+*.psess
+*.vsp
+*.vspx
+*.sap
+
+# Visual Studio Trace Files
+*.e2e
+
+# TFS 2012 Local Workspace
+$tf/
+
+# Guidance Automation Toolkit
+*.gpState
+
+# ReSharper is a .NET coding add-in
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# TeamCity is a build add-in
+_TeamCity*
+
+# DotCover is a Code Coverage Tool
+*.dotCover
+
+# AxoCover is a Code Coverage Tool
+.axoCover/*
+!.axoCover/settings.json
+
+# Coverlet is a free, cross platform Code Coverage Tool
+coverage*.json
+coverage*.xml
+coverage*.info
+
+# Visual Studio code coverage results
+*.coverage
+*.coveragexml
+
+# NCrunch
+_NCrunch_*
+.*crunch*.local.xml
+nCrunchTemp_*
+
+# MightyMoose
+*.mm.*
+AutoTest.Net/
+
+# Web workbench (sass)
+.sass-cache/
+
+# Installshield output folder
+[Ee]xpress/
+
+# DocProject is a documentation generator add-in
+DocProject/buildhelp/
+DocProject/Help/*.HxT
+DocProject/Help/*.HxC
+DocProject/Help/*.hhc
+DocProject/Help/*.hhk
+DocProject/Help/*.hhp
+DocProject/Help/Html2
+DocProject/Help/html
+
+# Click-Once directory
+publish/
+
+# Publish Web Output
+*.[Pp]ublish.xml
+*.azurePubxml
+# Note: Comment the next line if you want to checkin your web deploy settings,
+# but database connection strings (with potential passwords) will be unencrypted
+*.pubxml
+*.publishproj
+
+# Microsoft Azure Web App publish settings. Comment the next line if you want to
+# checkin your Azure Web App publish settings, but sensitive information contained
+# in these scripts will be unencrypted
+PublishScripts/
+
+# NuGet Packages
+*.nupkg
+# NuGet Symbol Packages
+*.snupkg
+# The packages folder can be ignored because of Package Restore
+**/[Pp]ackages/*
+# except build/, which is used as an MSBuild target.
+!**/[Pp]ackages/build/
+# Uncomment if necessary however generally it will be regenerated when needed
+#!**/[Pp]ackages/repositories.config
+# NuGet v3's project.json files produces more ignorable files
+*.nuget.props
+*.nuget.targets
+
+# Microsoft Azure Build Output
+csx/
+*.build.csdef
+
+# Microsoft Azure Emulator
+ecf/
+rcf/
+
+# Windows Store app package directories and files
+AppPackages/
+BundleArtifacts/
+Package.StoreAssociation.xml
+_pkginfo.txt
+*.appx
+*.appxbundle
+*.appxupload
+
+# Visual Studio cache files
+# files ending in .cache can be ignored
+*.[Cc]ache
+# but keep track of directories ending in .cache
+!?*.[Cc]ache/
+
+# Others
+ClientBin/
+~$*
+*~
+*.dbmdl
+*.dbproj.schemaview
+*.jfm
+*.pfx
+*.publishsettings
+orleans.codegen.cs
+
+# Including strong name files can present a security risk
+# (https://github.com/github/gitignore/pull/2483#issue-259490424)
+#*.snk
+
+# Since there are multiple workflows, uncomment next line to ignore bower_components
+# (https://github.com/github/gitignore/pull/1529#issuecomment-104372622)
+#bower_components/
+
+# RIA/Silverlight projects
+Generated_Code/
+
+# Backup & report files from converting an old project file
+# to a newer Visual Studio version. Backup files are not needed,
+# because we have git ;-)
+_UpgradeReport_Files/
+Backup*/
+UpgradeLog*.XML
+UpgradeLog*.htm
+ServiceFabricBackup/
+*.rptproj.bak
+
+# SQL Server files
+*.mdf
+*.ldf
+*.ndf
+
+# Business Intelligence projects
+*.rdl.data
+*.bim.layout
+*.bim_*.settings
+*.rptproj.rsuser
+*- [Bb]ackup.rdl
+*- [Bb]ackup ([0-9]).rdl
+*- [Bb]ackup ([0-9][0-9]).rdl
+
+# Microsoft Fakes
+FakesAssemblies/
+
+# GhostDoc plugin setting file
+*.GhostDoc.xml
+
+# Node.js Tools for Visual Studio
+.ntvs_analysis.dat
+node_modules/
+
+# Visual Studio 6 build log
+*.plg
+
+# Visual Studio 6 workspace options file
+*.opt
+
+# Visual Studio 6 auto-generated workspace file (contains which files were open etc.)
+*.vbw
+
+# Visual Studio 6 auto-generated project file (contains which files were open etc.)
+*.vbp
+
+# Visual Studio 6 workspace and project file (working project files containing files to include in project)
+*.dsw
+*.dsp
+
+# Visual Studio 6 technical files
+*.ncb
+*.aps
+
+# Visual Studio LightSwitch build output
+**/*.HTMLClient/GeneratedArtifacts
+**/*.DesktopClient/GeneratedArtifacts
+**/*.DesktopClient/ModelManifest.xml
+**/*.Server/GeneratedArtifacts
+**/*.Server/ModelManifest.xml
+_Pvt_Extensions
+
+# Paket dependency manager
+.paket/paket.exe
+paket-files/
+
+# FAKE - F# Make
+.fake/
+
+# CodeRush personal settings
+.cr/personal
+
+# Python Tools for Visual Studio (PTVS)
+__pycache__/
+*.pyc
+
+# Cake - Uncomment if you are using it
+# tools/**
+# !tools/packages.config
+
+# Tabs Studio
+*.tss
+
+# Telerik's JustMock configuration file
+*.jmconfig
+
+# BizTalk build output
+*.btp.cs
+*.btm.cs
+*.odx.cs
+*.xsd.cs
+
+# OpenCover UI analysis results
+OpenCover/
+
+# Azure Stream Analytics local run output
+ASALocalRun/
+
+# MSBuild Binary and Structured Log
+*.binlog
+
+# NVidia Nsight GPU debugger configuration file
+*.nvuser
+
+# MFractors (Xamarin productivity tool) working folder
+.mfractor/
+
+# Local History for Visual Studio
+.localhistory/
+
+# Visual Studio History (VSHistory) files
+.vshistory/
+
+# BeatPulse healthcheck temp database
+healthchecksdb
+
+# Backup folder for Package Reference Convert tool in Visual Studio 2017
+MigrationBackup/
+
+# Ionide (cross platform F# VS Code tools) working folder
+.ionide/
+
+# Fody - auto-generated XML schema
+FodyWeavers.xsd
+
+# VS Code files for those working on multiple tools
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# Local History for Visual Studio Code
+.history/
+
+# Windows Installer files from build outputs
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+
+# JetBrains Rider
+*.sln.iml
+
+# Old /mp directory should no longer be used
+/mp
+
+/game/neo/cache/DownloadCache.db
