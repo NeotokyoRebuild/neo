@@ -1,0 +1,1762 @@
+add_library(client SHARED)
+
+set_target_properties(client PROPERTIES PREFIX "")
+
+if(NEO_USE_SEPARATE_BUILD_INFO)
+    split_debug_information(TARGET client)
+endif()
+
+add_library_copy_target(TARGET client)
+
+if(NEO_USE_SEPARATE_BUILD_INFO AND NOT COMPILER_MSVC)
+    add_dependencies(client_copy_lib client_split_debug_information)
+endif()
+
+target_include_directories(client
+    PRIVATE
+    ${CMAKE_SOURCE_DIR}/common
+    ${CMAKE_SOURCE_DIR}/game/client
+    ${CMAKE_SOURCE_DIR}/game/shared
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp
+    ${CMAKE_SOURCE_DIR}/game/shared/Multiplayer
+    ${CMAKE_SOURCE_DIR}/game/shared/neo
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons
+    ${CMAKE_SOURCE_DIR}/public
+    ${CMAKE_SOURCE_DIR}/thirdparty/sixensesdk/include
+    ${CMAKE_SOURCE_DIR}/game/client/NextBot
+    game_controls
+    hl2
+    hl2/elements
+    hl2mp
+    hl2mp/ui
+    neo
+)
+
+target_compile_definitions(client
+    PRIVATE
+    CLIENT_DLL
+    DLLNAME=client
+    HL2_CLIENT_DLL
+    #PROTECTED_THINGS_ENABLE
+    NO_STRING_T
+    HL2MP
+    VECTOR
+    VERSION_SAFE_STEAM_API_INTERFACES
+    NEXT_BOT
+)
+
+target_link_libraries(client
+    PRIVATE
+    appframework::appframework
+    bitmap::bitmap
+    mathlib::mathlib
+    choreo_objects::choreo_objects
+    dmx_loader::dmx_loader
+    tier0::tier0
+    tier1::tier1
+    tier2::tier2
+    tier3::tier3
+    matsys_controls::matsys_controls
+    vstdlib::vstdlib
+    particles::particles
+    vtf::vtf
+    steam_api::steam_api
+    vgui_controls::vgui_controls
+)
+
+target_link_directories(client
+    PRIVATE
+    ${LIBCOMMON}
+    ${LIBPUBLIC}
+)
+
+if(NEO_STAGING_ONLY)
+    target_compile_definitions(client PRIVATE STAGING_ONLY)
+endif()
+
+if(NEO_RELEASE_ASSERTS)
+    target_compile_definitions(client PRIVATE RELEASEASSERTS)
+endif()
+
+if(NEO_RETAIL)
+    target_compile_definitions(client PRIVATE RETAIL)
+endif()
+
+if(NEO_DEDICATED)
+    target_compile_definitions(client PRIVATE DEDICATED)
+endif()
+
+if(NEO_BUILD_WEAPON_PBK56S)
+    target_compile_definitions(client PRIVATE INCLUDE_WEP_PBK)
+endif()
+
+# AVI_VIDEO        - controls availability of IAvi interface, playing of AVI Video files in Engine
+# WMV_VIDEO        - controls availability of playing WMV MPEG video files in Engine
+# BINK_VIDEO       - controls availability of IBik interface
+# QUICKTIME_VIDEO  - controls availability of IQuickTime interface
+# FORCE_QUICKTIME  - causes engine to force change ".bik" ".wmv" ".avi" extensions to ".mov" and
+#                    look for Quicktime playback *IF* the same file exists in .mov form
+
+if(OS_WINDOWS)
+    if(NEO_QUICKTIME_VIDEO)
+        target_compile_definitions(client PRIVATE QUICKTIME_VIDEO)
+    else()
+        target_compile_definitions(client PRIVATE BINK_VIDEO)
+    endif()
+
+    if(NEO_BUILD_REPLAY)
+        target_compile_definitions(client PRIVATE CURL_STATICLIB)
+
+        target_link_libraries(client
+            PRIVATE
+            wsock32.lib
+            Ws2_32.lib
+        )
+    endif()
+
+    target_compile_definitions(client
+        PRIVATE
+        AVI_VIDEO
+        WMV_VIDEO
+        fopen=dont_use_fopen
+        PSAPI_VERSION=1
+    )
+
+    target_link_libraries(client
+        PRIVATE
+        legacy_stdio_definitions.lib
+        #winmm.lib
+        libz
+        Psapi.lib
+    )
+endif()
+
+if(OS_LINUX)
+    target_compile_definitions(client
+        PRIVATE
+        LINUX
+        _LINUX
+        BINK_VIDEO
+        USE_WEBM_FOR_REPLAY
+    )
+
+    target_link_libraries(client
+        PRIVATE
+        #${CMAKE_SOURCE_DIR}/lib/common/linux64/libcrypto.a
+        #${CMAKE_SOURCE_DIR}/lib/common/linux64/libssl.a
+        #${LIBCOMMON}/libcurl.a
+        #${LIBCOMMON}/libcurlssl.a
+        vgui_controls::vgui_controls
+        dl
+        m
+        pthread
+        rt
+        z
+    )
+endif()
+
+if(OS_MACOS)
+    target_compile_definitions(client
+        PRIVATE
+        OSX
+        _OSX
+        _DARWIN_UNLIMITED_SELECT
+        FD_SETSIZE=10240 # the 10240 is the output of `sysctl -n kern.maxfilesperproc`
+        OVERRIDE_V_DEFINES
+        QUICKTIME_VIDEO
+        FORCE_QUICKTIME
+    )
+
+    target_compile_options(client
+        PRIVATE
+        -arch x86_64
+    )
+
+    target_link_options(client
+        PRIVATE
+        -arch x86_64
+    )
+
+    target_link_libraries(client
+        PRIVATE
+        iconv
+        # NOTE no file for MACOS
+        #${CMAKE_SOURCE_DIR}/lib/common/${CRYPTOPPDIR}/libcrypto.a
+    )
+
+    #SystemFrameworks "Carbon"
+endif()
+
+set_source_files_properties(${CMAKE_SOURCE_DIR}/public/tier0/memoverride.cpp PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
+
+target_precompile_headers(client PUBLIC cbase.h)
+
+target_sources_grouped(
+    TARGET client
+    NAME "Replay"
+    FILES
+    replay/cdll_replay.cpp
+    replay/cdll_replay.h
+    replay/replaycamera.cpp
+    replay/replaycamera.h
+)
+
+if(NEO_BUILD_REPLAY)
+    target_sources_grouped(
+        TARGET client
+        NAME "Replay"
+        FILES
+        #${CMAKE_SOURCE_DIR}/game/client/youtubeapi.cpp
+        #${CMAKE_SOURCE_DIR}/game/client/youtubeapi.h
+        #${CMAKE_SOURCE_DIR}/game/shared/replay_gamestats_shared.cpp
+        #${CMAKE_SOURCE_DIR}/game/shared/replay_gamestats_shared.h
+        replay/gamedefs.cpp
+        replay/gamedefs.h
+        replay/genericclassbased_replay.cpp
+        replay/genericclassbased_replay.h
+        replay/replay_ragdoll.cpp
+        replay/replay_ragdoll.h
+        replay/replay_screenshot.cpp
+        replay/replay_screenshot.h
+        replay/replayperformanceplaybackhandler.cpp
+        replay/replayperformanceplaybackhandler.h
+        replay/replayrenderer.cpp
+        replay/replayrenderer.h
+        replay/replayvideo.cpp
+        replay/replayvideo.h
+    )
+
+    set_source_files_properties(${CMAKE_SOURCE_DIR}/game/client/youtubeapi.cpp PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
+
+    target_sources_grouped(
+        TARGET client
+        NAME "UI"
+        FILES
+        #${CMAKE_SOURCE_DIR}/common/movieobjects/timeutils.cpp
+        #${CMAKE_SOURCE_DIR}/public/movieobjects/timeutils.h
+        #game_controls/slideshowpanel.cpp
+        #game_controls/slideshowpanel.h
+        replay/replayyoutubeapi.cpp
+        replay/replayyoutubeapi.h
+        replay/vgui/replaybrowserbasepage.cpp
+        replay/vgui/replaybrowserbasepage.h
+        replay/vgui/replaybrowserbasepanel.cpp
+        replay/vgui/replaybrowserbasepanel.h
+        replay/vgui/replaybrowserdetailspanel.cpp
+        replay/vgui/replaybrowserdetailspanel.h
+        replay/vgui/replaybrowseritemmanager.cpp
+        replay/vgui/replaybrowseritemmanager.h
+        replay/vgui/replaybrowserlistitempanel.cpp
+        replay/vgui/replaybrowserlistitempanel.h
+        replay/vgui/replaybrowserlistpanel.cpp
+        replay/vgui/replaybrowserlistpanel.h
+        replay/vgui/replaybrowsermainpanel.cpp
+        replay/vgui/replaybrowsermainpanel.h
+        replay/vgui/replaybrowsermovieplayerpanel.cpp
+        replay/vgui/replaybrowsermovieplayerpanel.h
+        replay/vgui/replaybrowserpreviewpanel.cpp
+        replay/vgui/replaybrowserpreviewpanel.h
+        replay/vgui/replaybrowserrenderdialog.cpp
+        replay/vgui/replaybrowserrenderdialog.h
+        replay/vgui/replayconfirmquitdlg.cpp
+        replay/vgui/replayconfirmquitdlg.h
+        replay/vgui/replayinputpanel.cpp
+        replay/vgui/replayinputpanel.h
+        replay/vgui/replaymessagepanel.cpp
+        replay/vgui/replaymessagepanel.h
+        replay/vgui/replayperformanceeditor.cpp
+        replay/vgui/replayperformanceeditor.h
+        replay/vgui/replayperformancesavedlg.cpp
+        replay/vgui/replayperformancesavedlg.h
+        replay/vgui/replayreminderpanel.cpp
+        replay/vgui/replayreminderpanel.h
+        replay/vgui/replayrenderoverlay.cpp
+        replay/vgui/replayrenderoverlay.h
+    )
+
+    if(SOURCESDK)
+        target_sources_grouped(
+            TARGET client
+            NAME "UI"
+            FILES
+            replay/replayyoutubeapi_key_sdk.cpp
+        )
+    else()
+        target_sources_grouped(
+            TARGET client
+            NAME "UI"
+            FILES
+            replay/replayyoutubeapi_key.cpp
+        )
+    endif()
+endif()
+
+set(SOURCE_FILES_WITHOUT_PCH
+    ${CMAKE_SOURCE_DIR}/common/compiledcaptionswap.cpp
+    ${CMAKE_SOURCE_DIR}/common/language.cpp
+    ${CMAKE_SOURCE_DIR}/common/randoverride.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/interval.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/sheetsimulator.cpp
+    ${CMAKE_SOURCE_DIR}/public/tier0/memoverride.cpp
+    ${CMAKE_SOURCE_DIR}/public/ScratchPadUtils.cpp
+    ${CMAKE_SOURCE_DIR}/public/bone_setup.cpp
+    ${CMAKE_SOURCE_DIR}/public/client_class.cpp
+    ${CMAKE_SOURCE_DIR}/public/collisionutils.cpp
+    ${CMAKE_SOURCE_DIR}/public/crtmemdebug.cpp
+    ${CMAKE_SOURCE_DIR}/public/dt_recv.cpp
+    ${CMAKE_SOURCE_DIR}/public/dt_utlvector_common.cpp
+    ${CMAKE_SOURCE_DIR}/public/dt_utlvector_recv.cpp
+    ${CMAKE_SOURCE_DIR}/public/filesystem_helpers.cpp
+    ${CMAKE_SOURCE_DIR}/public/interpolatortypes.cpp
+    ${CMAKE_SOURCE_DIR}/public/jigglebones.cpp
+    ${CMAKE_SOURCE_DIR}/public/networkvar.cpp
+    ${CMAKE_SOURCE_DIR}/public/posedebugger.cpp
+    ${CMAKE_SOURCE_DIR}/public/renamed_recvtable_compat.cpp
+    ${CMAKE_SOURCE_DIR}/public/rope_physics.cpp
+    ${CMAKE_SOURCE_DIR}/public/scratchpad3d.cpp
+    ${CMAKE_SOURCE_DIR}/public/sentence.cpp
+    ${CMAKE_SOURCE_DIR}/public/simple_physics.cpp
+    ${CMAKE_SOURCE_DIR}/public/stringregistry.cpp
+    ${CMAKE_SOURCE_DIR}/public/studio.cpp
+    ${CMAKE_SOURCE_DIR}/public/vallocator.cpp
+    ${CMAKE_SOURCE_DIR}/public/vgui_controls/vgui_controls.cpp
+    hud_lcd.cpp
+    in_mouse.cpp
+    mumble.cpp
+    rendertexture.cpp
+)
+
+target_sources_grouped(
+    TARGET client
+    NAME "Source Files"
+    FILES
+    #${CMAKE_SOURCE_DIR}/game/shared/weapon_parse_default.cpp
+    ${CMAKE_SOURCE_DIR}/game/client/c_vote_controller.cpp
+    ${CMAKE_SOURCE_DIR}/game/client/c_vote_controller.h
+    ${CMAKE_SOURCE_DIR}/game/client/steamshare.cpp
+    ${CMAKE_SOURCE_DIR}/game/client/steamshare.h
+    ${CMAKE_SOURCE_DIR}/game/client/in_steamcontroller.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/EntityParticleTrail_Shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/GameStats.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/SoundEmitterSystem.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/Sprite.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/SpriteTrail.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/achievement_saverestore.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/achievement_saverestore.h
+    ${CMAKE_SOURCE_DIR}/game/shared/achievementmgr.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/achievementmgr.h
+    ${CMAKE_SOURCE_DIR}/game/shared/achievements_and_stats_interface.h
+    ${CMAKE_SOURCE_DIR}/game/shared/achievements_hlx.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/activitylist.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/ammodef.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/animation.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/base_playeranimstate.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/baseachievement.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/baseachievement.h
+    ${CMAKE_SOURCE_DIR}/game/shared/basecombatcharacter_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/basecombatweapon_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/baseentity_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/basegrenade_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/basegrenade_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/sdk/sdk_basegrenade_projectile.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/sdk/sdk_basegrenade_projectile.h
+    ${CMAKE_SOURCE_DIR}/game/shared/baseparticleentity.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/baseplayer_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/baseprojectile.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/baseprojectile.h
+    ${CMAKE_SOURCE_DIR}/game/shared/baseviewmodel_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/beam_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/cam_thirdperson.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/cam_thirdperson.h
+    ${CMAKE_SOURCE_DIR}/game/shared/collisionproperty.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/death_pose.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/debugoverlay_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/decals.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/effect_dispatch_data.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/ehandle.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/entitylist_base.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/env_detail_controller.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/env_wind_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/eventlist.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/func_ladder.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/gamemovement.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/gamerules.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/gamerules_register.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/gamestringpool.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/gamevars_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hintmessage.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hintsystem.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/igamesystem.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/mapentities_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/movevars_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/mp_shareddefs.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/multiplay_gamerules.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/obstacle_pushaway.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/particle_parse.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/particle_parse.h
+    ${CMAKE_SOURCE_DIR}/game/shared/particle_property.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/particle_property.h
+    ${CMAKE_SOURCE_DIR}/game/shared/particlesystemquery.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/physics_main_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/physics_saverestore.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/physics_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/point_bonusmaps_accessor.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/point_bonusmaps_accessor.h
+    ${CMAKE_SOURCE_DIR}/game/shared/point_posecontroller.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/precache_register.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/predictableid.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/predictioncopy.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/props_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/ragdoll_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/rope_helpers.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/saverestore.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/sceneentity_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/sequence_Transitioner.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/simtimer.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/singleplay_gamerules.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/soundenvelope.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/studio_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/takedamageinfo.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/teamplay_gamerules.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/teamplayroundbased_gamerules.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/test_ehandle.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/usercmd.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/usermessages.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/util_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/vehicle_viewblend_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/voice_banmgr.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/voice_status.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/weapon_parse.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/secure_command_line.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/secure_command_line.h
+    ${CMAKE_SOURCE_DIR}/public/SoundParametersInternal.cpp
+    ${CMAKE_SOURCE_DIR}/public/bone_accessor.cpp
+    ${CMAKE_SOURCE_DIR}/public/haptics/haptic_msgs.cpp
+    ${SOURCE_FILES_WITHOUT_PCH}
+    AnimateSpecificTextureProxy.cpp
+    C_MaterialModifyControl.cpp
+    C_WaterLODControl.cpp
+    EffectsClient.cpp
+    IsNPCProxy.cpp
+    ProxyHealth.cpp
+    ScreenSpaceEffects.cpp
+    ViewConeImage.cpp
+    WaterLODMaterialProxy.cpp
+    WorldDimsProxy.cpp
+    achievement_notification_panel.cpp
+    achievement_notification_panel.h
+    alphamaterialproxy.cpp
+    animatedentitytextureproxy.cpp
+    animatedoffsettextureproxy.cpp
+    animatedtextureproxy.cpp
+    baseanimatedtextureproxy.cpp
+    baseclientrendertargets.cpp
+    basepresence.cpp
+    beamdraw.cpp
+    bone_merge_cache.cpp
+    c_ai_basehumanoid.cpp
+    c_ai_basenpc.cpp
+    c_baseanimating.cpp
+    c_baseanimatingoverlay.cpp
+    c_basecombatcharacter.cpp
+    c_basecombatweapon.cpp
+    c_basedoor.cpp
+    c_baseentity.cpp
+    c_baseflex.cpp
+    c_baseplayer.cpp
+    c_baseviewmodel.cpp
+    c_breakableprop.cpp
+    c_colorcorrection.cpp
+    c_colorcorrectionvolume.cpp
+    c_dynamiclight.cpp
+    c_entitydissolve.cpp
+    c_entityparticletrail.cpp
+    c_env_fog_controller.cpp
+    c_env_particlescript.cpp
+    c_env_projectedtexture.cpp
+    c_env_screenoverlay.cpp
+    c_env_tonemap_controller.cpp
+    c_fire_smoke.cpp
+    c_fish.cpp
+    c_func_areaportalwindow.cpp
+    c_func_breakablesurf.cpp
+    c_func_conveyor.cpp
+    c_func_dust.cpp
+    c_func_lod.cpp
+    c_func_occluder.cpp
+    c_func_reflective_glass.cpp
+    c_func_rotating.cpp
+    c_func_smokevolume.cpp
+    c_func_tracktrain.cpp
+    c_gib.cpp
+    c_hairball.cpp
+    c_info_overlay_accessor.cpp
+    c_lightglow.cpp
+    c_particle_system.cpp
+    c_physbox.cpp
+    c_physicsprop.cpp
+    c_physmagnet.cpp
+    c_pixel_visibility.cpp
+    c_plasma.cpp
+    c_playerresource.cpp
+    c_point_camera.cpp
+    c_point_commentary_node.cpp
+    c_props.cpp
+    c_props.h
+    c_ragdoll_manager.cpp
+    c_rope.cpp
+    c_rumble.cpp
+    c_sceneentity.cpp
+    c_shadowcontrol.cpp
+    c_slideshow_display.cpp
+    c_slideshow_display.h
+    c_soundscape.cpp
+    c_spotlight_end.cpp
+    c_sprite.cpp
+    c_sprite_perfmonitor.cpp
+    c_sun.cpp
+    c_team.cpp
+    c_tesla.cpp
+    c_test_proxytoggle.cpp
+    c_user_message_register.cpp
+    c_vehicle_choreo_generic.cpp
+    c_vehicle_jeep.cpp
+    c_vguiscreen.cpp
+    c_world.cpp
+    camomaterialproxy.cpp
+    cdll_bounded_cvars.cpp
+    cdll_bounded_cvars.h
+    cdll_client_int.cpp
+    cdll_util.cpp
+    cl_mat_stub.cpp
+    classmap.cpp
+    client_factorylist.cpp
+    client_thinklist.cpp
+    client_virtualreality.cpp
+    client_virtualreality.h
+    clienteffectprecachesystem.cpp
+    cliententitylist.cpp
+    clientleafsystem.cpp
+    clientmode_shared.cpp
+    clientshadowmgr.cpp
+    clientsideeffects.cpp
+    clientsideeffects_test.cpp
+    clientsteamcontext.cpp
+    clientsteamcontext.h
+    colorcorrectionmgr.cpp
+    commentary_modelviewer.cpp
+    commentary_modelviewer.h
+    detailobjectsystem.cpp
+    dummyproxy.cpp
+    entityoriginmaterialproxy.cpp
+    flashlighteffect.cpp
+    functionproxy.cpp
+    fx_blood.cpp
+    fx_cube.cpp
+    fx_explosion.cpp
+    fx_fleck.cpp
+    fx_impact.cpp
+    fx_interpvalue.cpp
+    fx_quad.cpp
+    fx_shelleject.cpp
+    fx_staticline.cpp
+    fx_tracer.cpp
+    fx_trail.cpp
+    fx_water.cpp
+    gametrace_client.cpp
+    geiger.cpp
+    glow_outline_effect.cpp
+    glow_overlay.cpp
+    history_resource.cpp
+    hl2/C_Func_Monitor.cpp
+    hl2/c_waterbullet.cpp
+    hl2/hud_autoaim.cpp
+    hl2/hud_filmdemo.cpp
+    hl2/hud_hdrdemo.cpp
+    hltvcamera.cpp
+    hud.cpp
+    hud_animationinfo.cpp
+    hud_basechat.cpp
+    hud_basetimer.cpp
+    hud_bitmapnumericdisplay.cpp
+    hud_closecaption.cpp
+    hud_crosshair.cpp
+    hud_element_helper.cpp
+    hud_hintdisplay.cpp
+    hud_msg.cpp
+    hud_numericdisplay.cpp
+    hud_pdump.cpp
+    hud_redraw.cpp
+    hud_vehicle.cpp
+    hud_weapon.cpp
+    in_camera.cpp
+    in_joystick.cpp
+    in_main.cpp
+    initializer.cpp
+    interpolatedvar.cpp
+    lampbeamproxy.cpp
+    lamphaloproxy.cpp
+    mathproxy.cpp
+    matrixproxy.cpp
+    menu.cpp
+    message.cpp
+    movehelper_client.cpp
+    panelmetaclassmgr.cpp
+    particle_collision.cpp
+    particle_litsmokeemitter.cpp
+    particle_proxies.cpp
+    particle_simple3d.cpp
+    particlemgr.cpp
+    particles_attractor.cpp
+    particles_ez.cpp
+    particles_localspace.cpp
+    particles_new.cpp
+    particles_simple.cpp
+    perfvisualbenchmark.cpp
+    physics.cpp
+    physics_main_client.cpp
+    physpropclientside.cpp
+    playerandobjectenumerator.cpp
+    playerspawncache.cpp
+    prediction.cpp
+    proxyentity.cpp
+    proxyplayer.cpp
+    proxypupil.cpp
+    ragdoll.cpp
+    recvproxy.cpp
+    simple_keys.cpp
+    splinepatch.cpp
+    spritemodel.cpp
+    studio_stats.cpp
+    studio_stats.h
+    text_message.cpp
+    texturescrollmaterialproxy.cpp
+    timematerialproxy.cpp
+    toggletextureproxy.cpp
+    train.cpp
+    vgui_avatarimage.cpp
+    vgui_avatarimage.h
+    vgui_basepanel.cpp
+    vgui_bitmapbutton.cpp
+    vgui_bitmapimage.cpp
+    vgui_bitmappanel.cpp
+    vgui_centerstringpanel.cpp
+    vgui_consolepanel.cpp
+    vgui_debugoverlaypanel.cpp
+    vgui_fpspanel.cpp
+    vgui_game_viewport.cpp
+    vgui_grid.cpp
+    vgui_int.cpp
+    vgui_loadingdiscpanel.cpp
+    vgui_messagechars.cpp
+    vgui_netgraphpanel.cpp
+    vgui_schemevisualizer.cpp
+    vgui_slideshow_display_screen.cpp
+    vgui_video.cpp
+    vgui_video_player.cpp
+    view.cpp
+    view_beams.cpp
+    view_effects.cpp
+    view_scene.cpp
+    viewangleanim.cpp
+    viewdebug.cpp
+    viewdebug.h
+    viewpostprocess.cpp
+    viewpostprocess.h
+    viewrender.cpp
+    warp_overlay.cpp
+    weapon_selection.cpp
+    weapons_resource.cpp
+)
+
+if(OS_LINUX)
+    target_sources_grouped(
+        TARGET client
+        NAME "Source Files"
+        FILES
+        ${CMAKE_SOURCE_DIR}/game/shared/math_finite_fix.cpp
+    )
+endif()
+
+# Files not using precompiled header cbase.h
+set_source_files_properties(
+    ${SOURCE_FILES_WITHOUT_PCH}
+    PROPERTIES
+        SKIP_PRECOMPILE_HEADERS ON
+)
+
+if(OS_WINDOWS)
+    target_sources_grouped(
+        TARGET client
+        NAME "Source Files"
+        FILES
+        ${CMAKE_SOURCE_DIR}/public/haptics/haptic_utils.cpp
+    )
+endif()
+
+target_sources_grouped(
+    TARGET client
+    NAME "Sixense"
+    FILES
+    ${CMAKE_SOURCE_DIR}/game/shared/sixense/sixense_convars.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/sixense/sixense_convars_extern.h
+    sixense/in_sixense.cpp
+    sixense/in_sixense.h
+    sixense/in_sixense_gesture_bindings.cpp
+    sixense/in_sixense_gesture_bindings.h
+)
+
+target_sources_grouped(
+    TARGET client
+    NAME "Temporary Entities"
+    FILES
+    c_basetempentity.cpp
+    c_effects.cpp
+    c_impact_effects.cpp
+    c_movie_explosion.cpp
+    c_particle_fire.cpp
+    c_particle_smokegrenade.cpp
+    c_prop_vehicle.cpp
+    c_recipientfilter.cpp
+    c_smoke_trail.cpp
+    c_smokestack.cpp
+    c_steamjet.cpp
+    c_stickybolt.cpp
+    c_te.cpp
+    c_te_armorricochet.cpp
+    c_te_basebeam.cpp
+    c_te_beamentpoint.cpp
+    c_te_beaments.cpp
+    c_te_beamfollow.cpp
+    c_te_beamlaser.cpp
+    c_te_beampoints.cpp
+    c_te_beamring.cpp
+    c_te_beamringpoint.cpp
+    c_te_beamspline.cpp
+    c_te_bloodsprite.cpp
+    c_te_bloodstream.cpp
+    c_te_breakmodel.cpp
+    c_te_bspdecal.cpp
+    c_te_bubbles.cpp
+    c_te_bubbletrail.cpp
+    c_te_clientprojectile.cpp
+    c_te_decal.cpp
+    c_te_dynamiclight.cpp
+    c_te_effect_dispatch.cpp
+    c_te_energysplash.cpp
+    c_te_explosion.cpp
+    c_te_fizz.cpp
+    c_te_footprint.cpp
+    c_te_glassshatter.cpp
+    c_te_glowsprite.cpp
+    c_te_impact.cpp
+    c_te_killplayerattachments.cpp
+    c_te_largefunnel.cpp
+    c_te_legacytempents.cpp
+    c_te_muzzleflash.cpp
+    c_te_particlesystem.cpp
+    c_te_physicsprop.cpp
+    c_te_playerdecal.cpp
+    c_te_projecteddecal.cpp
+    c_te_showline.cpp
+    c_te_smoke.cpp
+    c_te_sparks.cpp
+    c_te_sprite.cpp
+    c_te_spritespray.cpp
+    c_te_worlddecal.cpp
+    c_testtraceline.cpp
+    c_tracer.cpp
+    fx.cpp
+    fx_discreetline.cpp
+    fx_envelope.cpp
+    fx_line.cpp
+    fx_sparks.cpp
+    particlesphererenderer.cpp
+    smoke_fog_overlay.cpp
+)
+
+target_sources_grouped(
+    TARGET client
+    NAME "Game Controls"
+    FILES
+    game_controls/ClientScoreBoardDialog.cpp
+    game_controls/IconPanel.cpp
+    game_controls/MapOverview.cpp
+    game_controls/NavProgress.cpp
+    game_controls/SpectatorGUI.cpp
+    game_controls/basemodel_panel.cpp
+    game_controls/basemodel_panel.h
+    game_controls/basemodelpanel.cpp
+    game_controls/basemodelpanel.h
+    game_controls/baseviewport.cpp
+    game_controls/commandmenu.cpp
+    game_controls/intromenu.cpp
+    game_controls/teammenu.cpp
+    game_controls/vguitextwindow.cpp
+)
+
+target_sources_grouped(
+    TARGET client
+    NAME "MP3"
+    FILES
+    mp3player.cpp
+    mp3player.h
+)
+
+target_sources_grouped(
+    TARGET client
+    NAME "Tool Framework"
+    FILES
+    ${CMAKE_SOURCE_DIR}/public/tools/bonelist.cpp
+    ${CMAKE_SOURCE_DIR}/public/tools/bonelist.h
+    entity_client_tools.cpp
+    toolframework_client.cpp
+    toolframework_client.h
+)
+
+target_sources_grouped(
+    TARGET client
+    NAME "Header Files"
+    FILES
+    ${CMAKE_SOURCE_DIR}/common/language.h
+    ${CMAKE_SOURCE_DIR}/game/shared/GameEventListener.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hintmessage.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hintsystem.h
+    ${CMAKE_SOURCE_DIR}/public/steam/steam_api.h
+    ${CMAKE_SOURCE_DIR}/public/steam/steamclientpublic.h
+    ScreenSpaceEffects.h
+    TeamBitmapImage.h
+    ViewConeImage.h
+    animationlayer.h
+    baseanimatedtextureproxy.h
+    baseclientrendertargets.h
+    basepresence.h
+    beamdraw.h
+    bone_merge_cache.h
+    c_ai_basenpc.h
+    c_baseanimating.h
+    c_baseanimatingoverlay.h
+    c_basecombatcharacter.h
+    c_basecombatweapon.h
+    c_basedoor.h
+    c_baseentity.h
+    c_baseflex.h
+    c_baseplayer.h
+    c_basetempentity.h
+    c_baseviewmodel.h
+    c_breakableprop.h
+    c_effects.h
+    c_entitydissolve.h
+    c_env_fog_controller.h
+    c_fire_smoke.h
+    c_func_dust.h
+    c_func_reflective_glass.h
+    c_gib.h
+    c_impact_effects.h
+    c_physbox.h
+    c_physicsprop.h
+    c_pixel_visibility.h
+    c_playerlocaldata.h
+    c_playerresource.h
+    c_point_camera.h
+    c_prop_vehicle.h
+    c_recipientfilter.h
+    c_rope.h
+    c_rumble.h
+    c_sceneentity.h
+    c_smoke_trail.h
+    c_soundscape.h
+    c_sprite.h
+    c_sun.h
+    c_te_basebeam.h
+    c_te_effect_dispatch.h
+    c_te_legacytempents.h
+    c_te_particlesystem.h
+    c_team.h
+    c_tesla.h
+    c_tracer.h
+    c_user_message_register.h
+    c_vehicle_jeep.h
+    c_vguiscreen.h
+    c_weapon__stubs.h
+    c_world.h
+    cbase.h
+    cdll_client_int.h
+    cdll_util.h
+    cl_animevent.h
+    cl_mat_stub.h
+    client_factorylist.h
+    client_thinklist.h
+    clienteffectprecachesystem.h
+    cliententitylist.h
+    clientleafsystem.h
+    clientmode.h
+    clientmode_shared.h
+    clientsideeffects.h
+    colorcorrectionmgr.h
+    detailobjectsystem.h
+    enginesprite.h
+    flashlighteffect.h
+    fontabc.h
+    functionproxy.h
+    fx.h
+    fx_blood.h
+    fx_discreetline.h
+    fx_envelope.h
+    fx_explosion.h
+    fx_fleck.h
+    fx_impact.h
+    fx_interpvalue.h
+    fx_line.h
+    fx_quad.h
+    fx_sparks.h
+    fx_staticline.h
+    fx_trail.h
+    fx_water.h
+    glow_outline_effect.h
+    glow_overlay.h
+    history_resource.h
+    hltvcamera.h
+    hud.h
+    hud_basechat.h
+    hud_basetimer.h
+    hud_bitmapnumericdisplay.h
+    hud_chat.h
+    hud_closecaption.h
+    hud_crosshair.h
+    hud_element_helper.h
+    hud_lcd.h
+    hud_macros.h
+    hud_numericdisplay.h
+    hud_pdump.h
+    hud_vehicle.h
+    hudelement.h
+    hudtexturehandle.h
+    iclassmap.h
+    icliententityinternal.h
+    iclientmode.h
+    iclientshadowmgr.h
+    iclientvehicle.h
+    iconsole.h
+    idebugoverlaypanel.h
+    ifpspanel.h
+    ihudlcd.h
+    iinput.h
+    iloadingdisc.h
+    imessagechars.h
+    in_main.h
+    inetgraphpanel.h
+    initializer.h
+    input.h
+    interpolatedvar.h
+    ipresence.h
+    iprofiling.h
+    itextmessage.h
+    ivieweffects.h
+    iviewrender.h
+    iviewrender_beams.h
+    ivmodemanager.h
+    kbutton.h
+    lerp_functions.h
+    menu.h
+    movehelper_client.h
+    mumble.h
+    networkstringtable_clientdll.h
+    panelmetaclassmgr.h
+    particle_collision.h
+    particle_iterators.h
+    particle_litsmokeemitter.h
+    particle_prototype.h
+    particle_simple3d.h
+    particle_util.h
+    particledraw.h
+    particlemgr.h
+    particles_attractor.h
+    particles_ez.h
+    particles_localspace.h
+    particles_new.h
+    particles_simple.h
+    particlesphererenderer.h
+    perfvisualbenchmark.h
+    physics.h
+    physpropclientside.h
+    playerandobjectenumerator.h
+    playerenumerator.h
+    playerspawncache.h
+    prediction.h
+    prediction_private.h
+    proxyentity.h
+    ragdoll.h
+    ragdollexplosionenumerator.h
+    recvproxy.h
+    rendertexture.h
+    simple_keys.h
+    smoke_fog_overlay.h
+    splinepatch.h
+    tempent.h
+    text_message.h
+    timedevent.h
+    toggletextureproxy.h
+    vgui_basepanel.h
+    vgui_bitmapbutton.h
+    vgui_bitmapimage.h
+    vgui_bitmappanel.h
+    vgui_entityimagepanel.h
+    vgui_entitypanel.h
+    vgui_grid.h
+    vgui_helpers.h
+    vgui_imagehealthpanel.h
+    vgui_int.h
+    vgui_schemevisualizer.h
+    vgui_video.h
+    vgui_video_player.h
+    vguicenterprint.h
+    view.h
+    view_scene.h
+    viewangleanim.h
+    viewrender.h
+    weapon_selection.h
+    weapons_resource.h
+)
+
+target_sources_grouped(
+    TARGET client
+    NAME "Public Header Files"
+    FILES
+    ${CMAKE_SOURCE_DIR}/public/Color.h
+    ${CMAKE_SOURCE_DIR}/public/IGameUIFuncs.h
+    ${CMAKE_SOURCE_DIR}/public/PlayerState.h
+    ${CMAKE_SOURCE_DIR}/public/ScratchPadUtils.h
+    ${CMAKE_SOURCE_DIR}/public/SoundEmitterSystem/isoundemittersystembase.h
+    ${CMAKE_SOURCE_DIR}/public/VGuiMatSurface/IMatSystemSurface.h
+    ${CMAKE_SOURCE_DIR}/public/appframework/IAppSystem.h
+    ${CMAKE_SOURCE_DIR}/public/basehandle.h
+    ${CMAKE_SOURCE_DIR}/public/bitvec.h
+    ${CMAKE_SOURCE_DIR}/public/bone_accessor.h
+    ${CMAKE_SOURCE_DIR}/public/bone_setup.h
+    ${CMAKE_SOURCE_DIR}/public/bspfile.h
+    ${CMAKE_SOURCE_DIR}/public/bspflags.h
+    ${CMAKE_SOURCE_DIR}/public/bsptreedata.h
+    ${CMAKE_SOURCE_DIR}/public/cdll_int.h
+    ${CMAKE_SOURCE_DIR}/public/client_class.h
+    ${CMAKE_SOURCE_DIR}/public/client_render_handle.h
+    ${CMAKE_SOURCE_DIR}/public/client_textmessage.h
+    ${CMAKE_SOURCE_DIR}/public/clientstats.h
+    ${CMAKE_SOURCE_DIR}/public/cmodel.h
+    ${CMAKE_SOURCE_DIR}/public/collisionutils.h
+    ${CMAKE_SOURCE_DIR}/public/con_nprint.h
+    ${CMAKE_SOURCE_DIR}/public/const.h
+    ${CMAKE_SOURCE_DIR}/public/coordsize.h
+    ${CMAKE_SOURCE_DIR}/public/crtmemdebug.h
+    ${CMAKE_SOURCE_DIR}/public/datamap.h
+    ${CMAKE_SOURCE_DIR}/public/dlight.h
+    ${CMAKE_SOURCE_DIR}/public/dt_common.h
+    ${CMAKE_SOURCE_DIR}/public/dt_recv.h
+    ${CMAKE_SOURCE_DIR}/public/dt_send.h
+    ${CMAKE_SOURCE_DIR}/public/dt_utlvector_common.h
+    ${CMAKE_SOURCE_DIR}/public/dt_utlvector_recv.h
+    ${CMAKE_SOURCE_DIR}/public/edict.h
+    ${CMAKE_SOURCE_DIR}/public/engine/IClientLeafSystem.h
+    ${CMAKE_SOURCE_DIR}/public/engine/ICollideable.h
+    ${CMAKE_SOURCE_DIR}/public/engine/IEngineSound.h
+    ${CMAKE_SOURCE_DIR}/public/engine/IEngineTrace.h
+    ${CMAKE_SOURCE_DIR}/public/engine/IStaticPropMgr.h
+    ${CMAKE_SOURCE_DIR}/public/engine/ishadowmgr.h
+    ${CMAKE_SOURCE_DIR}/public/engine/ivdebugoverlay.h
+    ${CMAKE_SOURCE_DIR}/public/engine/ivmodelinfo.h
+    ${CMAKE_SOURCE_DIR}/public/engine/ivmodelrender.h
+    ${CMAKE_SOURCE_DIR}/public/filesystem.h
+    ${CMAKE_SOURCE_DIR}/public/filesystem_helpers.h
+    ${CMAKE_SOURCE_DIR}/public/game/client/iclientrendertargets.h
+    ${CMAKE_SOURCE_DIR}/public/game/client/iviewport.h
+    ${CMAKE_SOURCE_DIR}/public/gamebspfile.h
+    ${CMAKE_SOURCE_DIR}/public/gametrace.h
+    ${CMAKE_SOURCE_DIR}/public/globalvars_base.h
+    ${CMAKE_SOURCE_DIR}/public/iachievementmgr.h
+    ${CMAKE_SOURCE_DIR}/public/icliententity.h
+    ${CMAKE_SOURCE_DIR}/public/icliententitylist.h
+    ${CMAKE_SOURCE_DIR}/public/iclientnetworkable.h
+    ${CMAKE_SOURCE_DIR}/public/iclientrenderable.h
+    ${CMAKE_SOURCE_DIR}/public/iclientthinkable.h
+    ${CMAKE_SOURCE_DIR}/public/iclientunknown.h
+    ${CMAKE_SOURCE_DIR}/public/icvar.h
+    ${CMAKE_SOURCE_DIR}/public/iefx.h
+    ${CMAKE_SOURCE_DIR}/public/ienginevgui.h
+    ${CMAKE_SOURCE_DIR}/public/igameevents.h
+    ${CMAKE_SOURCE_DIR}/public/igameresources.h
+    ${CMAKE_SOURCE_DIR}/public/ihandleentity.h
+    ${CMAKE_SOURCE_DIR}/public/imapoverview.h
+    ${CMAKE_SOURCE_DIR}/public/inetchannelinfo.h
+    ${CMAKE_SOURCE_DIR}/public/interpolatortypes.h
+    ${CMAKE_SOURCE_DIR}/public/iprediction.h
+    ${CMAKE_SOURCE_DIR}/public/irecipientfilter.h
+    ${CMAKE_SOURCE_DIR}/public/isaverestore.h
+    ${CMAKE_SOURCE_DIR}/public/iscratchpad3d.h
+    ${CMAKE_SOURCE_DIR}/public/iserverentity.h
+    ${CMAKE_SOURCE_DIR}/public/iservernetworkable.h
+    ${CMAKE_SOURCE_DIR}/public/iserverunknown.h
+    ${CMAKE_SOURCE_DIR}/public/ispatialpartition.h
+    ${CMAKE_SOURCE_DIR}/public/istudiorender.h
+    ${CMAKE_SOURCE_DIR}/public/ivguicenterprint.h
+    ${CMAKE_SOURCE_DIR}/public/ivrenderview.h
+    ${CMAKE_SOURCE_DIR}/public/jigglebones.h
+    ${CMAKE_SOURCE_DIR}/public/materialsystem/imaterial.h
+    ${CMAKE_SOURCE_DIR}/public/materialsystem/imaterialproxy.h
+    ${CMAKE_SOURCE_DIR}/public/materialsystem/imaterialsystem.h
+    ${CMAKE_SOURCE_DIR}/public/materialsystem/imaterialsystemhardwareconfig.h
+    ${CMAKE_SOURCE_DIR}/public/materialsystem/imaterialsystemstub.h
+    ${CMAKE_SOURCE_DIR}/public/materialsystem/imaterialvar.h
+    ${CMAKE_SOURCE_DIR}/public/materialsystem/imesh.h
+    ${CMAKE_SOURCE_DIR}/public/materialsystem/itexture.h
+    ${CMAKE_SOURCE_DIR}/public/mathlib/amd3dx.h
+    ${CMAKE_SOURCE_DIR}/public/mathlib/bumpvects.h
+    ${CMAKE_SOURCE_DIR}/public/mathlib/compressed_light_cube.h
+    ${CMAKE_SOURCE_DIR}/public/mathlib/compressed_vector.h
+    ${CMAKE_SOURCE_DIR}/public/mathlib/mathlib.h
+    ${CMAKE_SOURCE_DIR}/public/mathlib/polyhedron.h
+    ${CMAKE_SOURCE_DIR}/public/mathlib/vector.h
+    ${CMAKE_SOURCE_DIR}/public/mathlib/vector2d.h
+    ${CMAKE_SOURCE_DIR}/public/mathlib/vector4d.h
+    ${CMAKE_SOURCE_DIR}/public/mathlib/vmatrix.h
+    ${CMAKE_SOURCE_DIR}/public/mathlib/vplane.h
+    ${CMAKE_SOURCE_DIR}/public/model_types.h
+    ${CMAKE_SOURCE_DIR}/public/mouthinfo.h
+    ${CMAKE_SOURCE_DIR}/public/networkstringtabledefs.h
+    ${CMAKE_SOURCE_DIR}/public/networkvar.h
+    ${CMAKE_SOURCE_DIR}/public/overlaytext.h
+    ${CMAKE_SOURCE_DIR}/public/pixelwriter.h
+    ${CMAKE_SOURCE_DIR}/public/r_efx.h
+    ${CMAKE_SOURCE_DIR}/public/renamed_recvtable_compat.h
+    ${CMAKE_SOURCE_DIR}/public/rope_physics.h
+    ${CMAKE_SOURCE_DIR}/public/rope_shared.h
+    ${CMAKE_SOURCE_DIR}/public/saverestoretypes.h
+    ${CMAKE_SOURCE_DIR}/public/scratchpad3d.h
+    ${CMAKE_SOURCE_DIR}/public/sentence.h
+    ${CMAKE_SOURCE_DIR}/public/server_class.h
+    ${CMAKE_SOURCE_DIR}/public/shake.h
+    ${CMAKE_SOURCE_DIR}/public/shattersurfacetypes.h
+    ${CMAKE_SOURCE_DIR}/public/simple_physics.h
+    ${CMAKE_SOURCE_DIR}/public/soundchars.h
+    ${CMAKE_SOURCE_DIR}/public/soundflags.h
+    ${CMAKE_SOURCE_DIR}/public/soundinfo.h
+    ${CMAKE_SOURCE_DIR}/public/string_t.h
+    ${CMAKE_SOURCE_DIR}/public/stringregistry.h
+    ${CMAKE_SOURCE_DIR}/public/studio.h
+    ${CMAKE_SOURCE_DIR}/public/surfinfo.h
+    ${CMAKE_SOURCE_DIR}/public/texture_group_names.h
+    ${CMAKE_SOURCE_DIR}/public/tier0/basetypes.h
+    ${CMAKE_SOURCE_DIR}/public/tier0/commonmacros.h
+    ${CMAKE_SOURCE_DIR}/public/tier0/dbg.h
+    ${CMAKE_SOURCE_DIR}/public/tier0/fasttimer.h
+    ${CMAKE_SOURCE_DIR}/public/tier0/icommandline.h
+    ${CMAKE_SOURCE_DIR}/public/tier0/l2cache.h
+    ${CMAKE_SOURCE_DIR}/public/tier0/mem.h
+    ${CMAKE_SOURCE_DIR}/public/tier0/memalloc.h
+    ${CMAKE_SOURCE_DIR}/public/tier0/memdbgoff.h
+    ${CMAKE_SOURCE_DIR}/public/tier0/memdbgon.h
+    ${CMAKE_SOURCE_DIR}/public/tier0/platform.h
+    ${CMAKE_SOURCE_DIR}/public/tier0/protected_things.h
+    ${CMAKE_SOURCE_DIR}/public/tier0/vprof.h
+    ${CMAKE_SOURCE_DIR}/public/tier1/KeyValues.h
+    ${CMAKE_SOURCE_DIR}/public/tier1/bitbuf.h
+    ${CMAKE_SOURCE_DIR}/public/tier1/characterset.h
+    ${CMAKE_SOURCE_DIR}/public/tier1/checksum_md5.h
+    ${CMAKE_SOURCE_DIR}/public/tier1/convar.h
+    ${CMAKE_SOURCE_DIR}/public/tier1/fmtstr.h
+    ${CMAKE_SOURCE_DIR}/public/tier1/interface.h
+    ${CMAKE_SOURCE_DIR}/public/tier1/mempool.h
+    ${CMAKE_SOURCE_DIR}/public/tier1/processor_detect.h
+    ${CMAKE_SOURCE_DIR}/public/tier1/rangecheckedvar.h
+    ${CMAKE_SOURCE_DIR}/public/tier1/smartptr.h
+    ${CMAKE_SOURCE_DIR}/public/tier1/stringpool.h
+    ${CMAKE_SOURCE_DIR}/public/tier1/strtools.h
+    ${CMAKE_SOURCE_DIR}/public/tier1/utlbidirectionalset.h
+    ${CMAKE_SOURCE_DIR}/public/tier1/utlbuffer.h
+    ${CMAKE_SOURCE_DIR}/public/tier1/utldict.h
+    ${CMAKE_SOURCE_DIR}/public/tier1/utlfixedmemory.h
+    ${CMAKE_SOURCE_DIR}/public/tier1/utlhash.h
+    ${CMAKE_SOURCE_DIR}/public/tier1/utllinkedlist.h
+    ${CMAKE_SOURCE_DIR}/public/tier1/utlmap.h
+    ${CMAKE_SOURCE_DIR}/public/tier1/utlmemory.h
+    ${CMAKE_SOURCE_DIR}/public/tier1/utlmultilist.h
+    ${CMAKE_SOURCE_DIR}/public/tier1/utlpriorityqueue.h
+    ${CMAKE_SOURCE_DIR}/public/tier1/utlqueue.h
+    ${CMAKE_SOURCE_DIR}/public/tier1/utlrbtree.h
+    ${CMAKE_SOURCE_DIR}/public/tier1/utlstack.h
+    ${CMAKE_SOURCE_DIR}/public/tier1/utlsymbol.h
+    ${CMAKE_SOURCE_DIR}/public/tier1/utlvector.h
+    ${CMAKE_SOURCE_DIR}/public/vallocator.h
+    ${CMAKE_SOURCE_DIR}/public/vcollide.h
+    ${CMAKE_SOURCE_DIR}/public/vcollide_parse.h
+    ${CMAKE_SOURCE_DIR}/public/vgui/Cursor.h
+    ${CMAKE_SOURCE_DIR}/public/vgui/Dar.h
+    ${CMAKE_SOURCE_DIR}/public/vgui/IClientPanel.h
+    ${CMAKE_SOURCE_DIR}/public/vgui/IHTML.h
+    ${CMAKE_SOURCE_DIR}/public/vgui/IImage.h
+    ${CMAKE_SOURCE_DIR}/public/vgui/IInput.h
+    ${CMAKE_SOURCE_DIR}/public/vgui/IInputInternal.h
+    ${CMAKE_SOURCE_DIR}/public/vgui/ILocalize.h
+    ${CMAKE_SOURCE_DIR}/public/vgui/IPanel.h
+    ${CMAKE_SOURCE_DIR}/public/vgui/IScheme.h
+    ${CMAKE_SOURCE_DIR}/public/vgui/ISurface.h
+    ${CMAKE_SOURCE_DIR}/public/vgui/ISystem.h
+    ${CMAKE_SOURCE_DIR}/public/vgui/IVGui.h
+    ${CMAKE_SOURCE_DIR}/public/vgui/KeyCode.h
+    ${CMAKE_SOURCE_DIR}/public/vgui/MouseCode.h
+    ${CMAKE_SOURCE_DIR}/public/vgui/VGUI.h
+    ${CMAKE_SOURCE_DIR}/public/vgui_controls/AnimationController.h
+    ${CMAKE_SOURCE_DIR}/public/vgui_controls/Button.h
+    ${CMAKE_SOURCE_DIR}/public/vgui_controls/ComboBox.h
+    ${CMAKE_SOURCE_DIR}/public/vgui_controls/Controls.h
+    ${CMAKE_SOURCE_DIR}/public/vgui_controls/EditablePanel.h
+    ${CMAKE_SOURCE_DIR}/public/vgui_controls/FocusNavGroup.h
+    ${CMAKE_SOURCE_DIR}/public/vgui_controls/HTML.h
+    ${CMAKE_SOURCE_DIR}/public/vgui_controls/Image.h
+    ${CMAKE_SOURCE_DIR}/public/vgui_controls/ImageList.h
+    ${CMAKE_SOURCE_DIR}/public/vgui_controls/ImagePanel.h
+    ${CMAKE_SOURCE_DIR}/public/vgui_controls/Label.h
+    ${CMAKE_SOURCE_DIR}/public/vgui_controls/ListPanel.h
+    ${CMAKE_SOURCE_DIR}/public/vgui_controls/Menu.h
+    ${CMAKE_SOURCE_DIR}/public/vgui_controls/MenuItem.h
+    ${CMAKE_SOURCE_DIR}/public/vgui_controls/MessageMap.h
+    ${CMAKE_SOURCE_DIR}/public/vgui_controls/PHandle.h
+    ${CMAKE_SOURCE_DIR}/public/vgui_controls/Panel.h
+    ${CMAKE_SOURCE_DIR}/public/vgui_controls/PanelAnimationVar.h
+    ${CMAKE_SOURCE_DIR}/public/vgui_controls/PanelListPanel.h
+    ${CMAKE_SOURCE_DIR}/public/vgui_controls/RichText.h
+    ${CMAKE_SOURCE_DIR}/public/vgui_controls/ScrollBar.h
+    ${CMAKE_SOURCE_DIR}/public/vgui_controls/SectionedListPanel.h
+    ${CMAKE_SOURCE_DIR}/public/vgui_controls/TextEntry.h
+    ${CMAKE_SOURCE_DIR}/public/vgui_controls/TextImage.h
+    ${CMAKE_SOURCE_DIR}/public/vgui_controls/TreeView.h
+    ${CMAKE_SOURCE_DIR}/public/vgui_controls/WizardPanel.h
+    ${CMAKE_SOURCE_DIR}/public/vgui_controls/WizardSubPanel.h
+    ${CMAKE_SOURCE_DIR}/public/view_shared.h
+    ${CMAKE_SOURCE_DIR}/public/vphysics/collision_set.h
+    ${CMAKE_SOURCE_DIR}/public/vphysics/constraints.h
+    ${CMAKE_SOURCE_DIR}/public/vphysics/friction.h
+    ${CMAKE_SOURCE_DIR}/public/vphysics/object_hash.h
+    ${CMAKE_SOURCE_DIR}/public/vphysics_interface.h
+    ${CMAKE_SOURCE_DIR}/public/vstdlib/IKeyValuesSystem.h
+    ${CMAKE_SOURCE_DIR}/public/vstdlib/random.h
+    ${CMAKE_SOURCE_DIR}/public/vstdlib/vstdlib.h
+    ${CMAKE_SOURCE_DIR}/public/vtf/vtf.h
+    ${CMAKE_SOURCE_DIR}/public/worldsize.h
+    ${CMAKE_SOURCE_DIR}/public/zip_uncompressed.h
+    ${CMAKE_SOURCE_DIR}/public/ivoicetweak.h
+)
+
+if(OS_WINDOWS)
+    target_sources_grouped(
+        TARGET client
+        NAME "Public Header Files"
+        FILES
+        ${CMAKE_SOURCE_DIR}/public/haptics/haptic_utils.h
+        ${CMAKE_SOURCE_DIR}/public/haptics/ihaptics.h
+    )
+endif()
+
+target_sources_grouped(
+    TARGET client
+    NAME "Game Shared Header Files"
+    FILES
+    ${CMAKE_SOURCE_DIR}/game/shared/IEffects.h
+    ${CMAKE_SOURCE_DIR}/game/shared/IVehicle.h
+    ${CMAKE_SOURCE_DIR}/game/shared/Sprite.h
+    ${CMAKE_SOURCE_DIR}/game/shared/SpriteTrail.h
+    ${CMAKE_SOURCE_DIR}/game/shared/activitylist.h
+    ${CMAKE_SOURCE_DIR}/game/shared/ai_activity.h
+    ${CMAKE_SOURCE_DIR}/game/shared/ai_debug_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/ammodef.h
+    ${CMAKE_SOURCE_DIR}/game/shared/animation.h
+    ${CMAKE_SOURCE_DIR}/game/shared/apparent_velocity_helper.h
+    ${CMAKE_SOURCE_DIR}/game/shared/base_playeranimstate.h
+    ${CMAKE_SOURCE_DIR}/game/shared/baseentity_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/basegrenade_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/baseparticleentity.h
+    ${CMAKE_SOURCE_DIR}/game/shared/baseplayer_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/baseviewmodel_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/beam_flags.h
+    ${CMAKE_SOURCE_DIR}/game/shared/beam_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/choreoactor.h
+    ${CMAKE_SOURCE_DIR}/game/shared/choreochannel.h
+    ${CMAKE_SOURCE_DIR}/game/shared/choreoevent.h
+    ${CMAKE_SOURCE_DIR}/game/shared/choreoscene.h
+    ${CMAKE_SOURCE_DIR}/game/shared/collisionproperty.h
+    ${CMAKE_SOURCE_DIR}/game/shared/death_pose.h
+    ${CMAKE_SOURCE_DIR}/game/shared/decals.h
+    ${CMAKE_SOURCE_DIR}/game/shared/effect_color_tables.h
+    ${CMAKE_SOURCE_DIR}/game/shared/effect_dispatch_data.h
+    ${CMAKE_SOURCE_DIR}/game/shared/ehandle.h
+    ${CMAKE_SOURCE_DIR}/game/shared/entitydatainstantiator.h
+    ${CMAKE_SOURCE_DIR}/game/shared/entitylist_base.h
+    ${CMAKE_SOURCE_DIR}/game/shared/entityparticletrail_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/env_detail_controller.h
+    ${CMAKE_SOURCE_DIR}/game/shared/env_wind_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/eventlist.h
+    ${CMAKE_SOURCE_DIR}/game/shared/func_dust_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/func_ladder.h
+    ${CMAKE_SOURCE_DIR}/game/shared/gameeventdefs.h
+    ${CMAKE_SOURCE_DIR}/game/shared/gamemovement.h
+    ${CMAKE_SOURCE_DIR}/game/shared/gamerules.h
+    ${CMAKE_SOURCE_DIR}/game/shared/gamerules_register.h
+    ${CMAKE_SOURCE_DIR}/game/shared/gamestats.h
+    ${CMAKE_SOURCE_DIR}/game/shared/gamestringpool.h
+    ${CMAKE_SOURCE_DIR}/game/shared/gamevars_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/groundlink.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2/basehlcombatweapon_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl2_player_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl_movedata.h
+    ${CMAKE_SOURCE_DIR}/game/shared/ichoreoeventcallback.h
+    ${CMAKE_SOURCE_DIR}/game/shared/igamemovement.h
+    ${CMAKE_SOURCE_DIR}/game/shared/igamesystem.h
+    ${CMAKE_SOURCE_DIR}/game/shared/imovehelper.h
+    ${CMAKE_SOURCE_DIR}/game/shared/in_buttons.h
+    ${CMAKE_SOURCE_DIR}/game/shared/interval.h
+    ${CMAKE_SOURCE_DIR}/game/shared/iplayeranimstate.h
+    ${CMAKE_SOURCE_DIR}/game/shared/ipredictionsystem.h
+    ${CMAKE_SOURCE_DIR}/game/shared/itempents.h
+    ${CMAKE_SOURCE_DIR}/game/shared/mapdata_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/mapentities_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/movevars_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/mp_shareddefs.h
+    ${CMAKE_SOURCE_DIR}/game/shared/multiplay_gamerules.h
+    ${CMAKE_SOURCE_DIR}/game/shared/npcevent.h
+    ${CMAKE_SOURCE_DIR}/game/shared/obstacle_pushaway.h
+    ${CMAKE_SOURCE_DIR}/game/shared/physics_saverestore.h
+    ${CMAKE_SOURCE_DIR}/game/shared/physics_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/playernet_vars.h
+    ${CMAKE_SOURCE_DIR}/game/shared/point_posecontroller.h
+    ${CMAKE_SOURCE_DIR}/game/shared/positionwatcher.h
+    ${CMAKE_SOURCE_DIR}/game/shared/precache_register.h
+    ${CMAKE_SOURCE_DIR}/game/shared/precipitation_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/predictable_entity.h
+    ${CMAKE_SOURCE_DIR}/game/shared/predictableid.h
+    ${CMAKE_SOURCE_DIR}/game/shared/predictioncopy.h
+    ${CMAKE_SOURCE_DIR}/game/shared/ragdoll_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/rope_helpers.h
+    ${CMAKE_SOURCE_DIR}/game/shared/saverestore.h
+    ${CMAKE_SOURCE_DIR}/game/shared/saverestore_bitstring.h
+    ${CMAKE_SOURCE_DIR}/game/shared/saverestore_utlclass.h
+    ${CMAKE_SOURCE_DIR}/game/shared/saverestore_utlsymbol.h
+    ${CMAKE_SOURCE_DIR}/game/shared/saverestore_utlvector.h
+    ${CMAKE_SOURCE_DIR}/game/shared/sceneentity_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/scriptevent.h
+    ${CMAKE_SOURCE_DIR}/game/shared/sequence_Transitioner.h
+    ${CMAKE_SOURCE_DIR}/game/shared/sharedInterface.h
+    ${CMAKE_SOURCE_DIR}/game/shared/shared_classnames.h
+    ${CMAKE_SOURCE_DIR}/game/shared/shareddefs.h
+    ${CMAKE_SOURCE_DIR}/game/shared/sheetsimulator.h
+    ${CMAKE_SOURCE_DIR}/game/shared/shot_manipulator.h
+    ${CMAKE_SOURCE_DIR}/game/shared/simtimer.h
+    ${CMAKE_SOURCE_DIR}/game/shared/singleplay_gamerules.h
+    ${CMAKE_SOURCE_DIR}/game/shared/smoke_fog_overlay_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/solidsetdefaults.h
+    ${CMAKE_SOURCE_DIR}/game/shared/soundenvelope.h
+    ${CMAKE_SOURCE_DIR}/game/shared/sun_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/takedamageinfo.h
+    ${CMAKE_SOURCE_DIR}/game/shared/teamplay_gamerules.h
+    ${CMAKE_SOURCE_DIR}/game/shared/teamplayroundbased_gamerules.h
+    ${CMAKE_SOURCE_DIR}/game/shared/tempentity.h
+    ${CMAKE_SOURCE_DIR}/game/shared/touchlink.h
+    ${CMAKE_SOURCE_DIR}/game/shared/usercmd.h
+    ${CMAKE_SOURCE_DIR}/game/shared/usermessages.h
+    ${CMAKE_SOURCE_DIR}/game/shared/util_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/vehicle_choreo_generic_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/vehicle_viewblend_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/vgui_defaultinputsignal.h
+    ${CMAKE_SOURCE_DIR}/game/shared/viewport_panel_names.h
+    ${CMAKE_SOURCE_DIR}/game/shared/voice_banmgr.h
+    ${CMAKE_SOURCE_DIR}/game/shared/voice_common.h
+    ${CMAKE_SOURCE_DIR}/game/shared/voice_gamemgr.h
+    ${CMAKE_SOURCE_DIR}/game/shared/voice_status.h
+    ${CMAKE_SOURCE_DIR}/game/shared/vphysics_sound.h
+    ${CMAKE_SOURCE_DIR}/game/shared/weapon_ifmsteadycam.h
+    ${CMAKE_SOURCE_DIR}/game/shared/weapon_parse.h
+    ${CMAKE_SOURCE_DIR}/game/shared/weapon_proficiency.h
+)
+
+target_sources_grouped(
+    TARGET client
+    NAME "Game Controls Header Files"
+    FILES
+    game_controls/IconPanel.h
+    game_controls/baseviewport.h
+    game_controls/clientscoreboarddialog.h
+    game_controls/commandmenu.h
+    game_controls/imagemouseoverbutton.h
+    game_controls/intromenu.h
+    game_controls/mapoverview.h
+    game_controls/mouseoverhtmlbutton.h
+    game_controls/mouseoverpanelbutton.h
+    game_controls/spectatorgui.h
+    game_controls/teammenu.h
+    game_controls/vguitextwindow.h
+)
+
+target_sources_grouped(
+    TARGET client
+    NAME "Source Files"
+    FILES
+    ${CMAKE_SOURCE_DIR}/common/steamid.cpp
+    # ${CMAKE_SOURCE_DIR}/game/shared/weapon_parse_default.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/predicted_viewmodel.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/predicted_viewmodel.h
+    ${CMAKE_SOURCE_DIR}/game/shared/teamplay_round_timer.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/teamplay_round_timer.h
+    c_team_objectiveresource.cpp
+    c_team_objectiveresource.h
+    c_team_train_watcher.cpp
+    c_team_train_watcher.h
+    hud_voicestatus.cpp
+)
+
+target_sources_grouped(
+    TARGET client
+    NAME "Source Files\\HL2 DLL"
+    FILES
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2/basehlcombatweapon_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2/citadel_effects_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2/env_headcrabcanister_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2/env_headcrabcanister_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl2_gamerules.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl2_gamerules.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl2_shareddefs.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl2_usermessages.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl_gamemovement.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2/hl_gamemovement.h
+    ${CMAKE_SOURCE_DIR}/game/shared/script_intro_shared.cpp
+    episodic/c_vort_charge_token.cpp
+    episodic/episodic_screenspaceeffects.cpp
+    episodic/episodic_screenspaceeffects.h
+    hl2/c_antlion_dust.cpp
+    hl2/c_ar2_explosion.cpp
+    hl2/c_barnacle.cpp
+    hl2/c_barney.cpp
+    hl2/c_basehelicopter.cpp
+    hl2/c_basehelicopter.h
+    hl2/c_basehlcombatweapon.cpp
+    hl2/c_basehlcombatweapon.h
+    hl2/c_basehlplayer.cpp
+    hl2/c_basehlplayer.h
+    hl2/c_citadel_effects.cpp
+    hl2/c_corpse.cpp
+    hl2/c_corpse.h
+    hl2/c_env_alyxtemp.cpp
+    hl2/c_env_headcrabcanister.cpp
+    hl2/c_env_starfield.cpp
+    hl2/c_func_tankmortar.cpp
+    hl2/c_hl2_playerlocaldata.cpp
+    hl2/c_hl2_playerlocaldata.h
+    hl2/c_info_teleporter_countdown.cpp
+    hl2/c_npc_antlionguard.cpp
+    hl2/c_npc_combinegunship.cpp
+    hl2/c_npc_manhack.cpp
+    hl2/c_npc_rollermine.cpp
+    hl2/c_plasma_beam_node.cpp
+    hl2/c_prop_combine_ball.cpp
+    hl2/c_prop_combine_ball.h
+    hl2/c_rotorwash.cpp
+    hl2/c_script_intro.cpp
+    hl2/c_strider.cpp
+    hl2/c_te_concussiveexplosion.cpp
+    hl2/c_te_flare.cpp
+    hl2/c_thumper_dust.cpp
+    hl2/c_vehicle_airboat.cpp
+    hl2/c_vehicle_cannon.cpp
+    hl2/c_vehicle_crane.cpp
+    hl2/c_vehicle_crane.h
+    hl2/c_vehicle_prisoner_pod.cpp
+    hl2/c_weapon__stubs_hl2.cpp
+    hl2/c_weapon_crossbow.cpp
+    hl2/fx_antlion.cpp
+    hl2/fx_bugbait.cpp
+    hl2/fx_hl2_impacts.cpp
+    hl2/fx_hl2_tracers.cpp
+    hl2/hl2_clientmode.cpp
+    hl2/hl_in_main.cpp
+    hl2/hl_prediction.cpp
+    hl2/hud_ammo.cpp
+    hl2/hud_battery.cpp
+    hl2/hud_blood.cpp
+    hl2/hud_credits.cpp
+    hl2/hud_flashlight.cpp
+    hl2/hud_health.cpp
+    hl2/hud_poisondamageindicator.cpp
+    hl2/hud_quickinfo.cpp
+    hl2/hud_suitpower.cpp
+    hl2/hud_suitpower.h
+    hl2/hud_weaponselection.cpp
+    hl2/hud_zoom.cpp
+    hl2/shieldproxy.cpp
+    hl2/vgui_rootpanel_hl2.cpp
+    hud_squadstatus.cpp
+)
+
+target_sources_grouped(
+    TARGET client
+    NAME "Source Files\\NEO"
+    FILES
+    neo/c_neo_player.cpp
+    neo/c_neo_player.h
+    neo/c_neo_te_tocflash.cpp
+    neo/c_neo_te_tocflash.h
+    neo/neo_fixup_glshaders.cpp
+    neo/neo_fixup_glshaders.h
+    neo/c_neo_bloom_controller.cpp
+)
+
+target_sources_grouped(
+    TARGET client
+    NAME "Source Files\\NEO\\Game_Controls"
+    FILES
+    neo/game_controls/neo_classmenu.cpp
+    neo/game_controls/neo_classmenu.h
+    neo/game_controls/neo_loadoutmenu.cpp
+    neo/game_controls/neo_loadoutmenu.h
+    neo/game_controls/neo_teammenu.cpp
+    neo/game_controls/neo_teammenu.h
+)
+
+target_sources_grouped(
+    TARGET client
+    NAME "Source Files\\NEO\\Material Proxies"
+    FILES
+    neo/material_proxies/neo_matproxy_thermoptic.cpp
+    neo/material_proxies/neo_matproxy_thermoptic.h
+    neo/material_proxies/neo_matproxy_teamnum.cpp
+)
+
+target_sources_grouped(
+    TARGET client
+    NAME "Source Files\\NEO\\UI"
+    FILES
+    neo/ui/neo_root.cpp
+    neo/ui/neo_root.h
+    neo/ui/neo_root_serverbrowser.cpp
+    neo/ui/neo_root_serverbrowser.h
+    neo/ui/neo_root_settings.cpp
+    neo/ui/neo_root_settings.h
+    neo/ui/neo_loading.cpp
+    neo/ui/neo_loading.h
+    neo/ui/neo_ui.cpp
+    neo/ui/neo_ui.h
+    neo/ui/IOverrideInterface.h
+    neo/ui/OverrideInterface.cpp
+    neo/ui/neo_hud_ammo.cpp
+    neo/ui/neo_hud_ammo.h
+    neo/ui/neo_hud_childelement.cpp
+    neo/ui/neo_hud_childelement.h
+    neo/ui/neo_hud_compass.cpp
+    neo/ui/neo_hud_compass.h
+    neo/ui/neo_hud_crosshair.cpp
+    neo/ui/neo_hud_crosshair.h
+    neo/ui/neo_hud_damage_indicator.cpp
+    neo/ui/neo_hud_friendly_marker.cpp
+    neo/ui/neo_hud_friendly_marker.h
+    neo/ui/neo_hud_game_event.cpp
+    neo/ui/neo_hud_game_event.h
+    neo/ui/neo_hud_ghost_beacons.cpp
+    neo/ui/neo_hud_ghost_beacons.h
+    neo/ui/neo_hud_ghost_cap_point.cpp
+    neo/ui/neo_hud_ghost_cap_point.h
+    neo/ui/neo_hud_ghost_marker.cpp
+    neo/ui/neo_hud_ghost_marker.h
+    neo/ui/neo_hud_ghost_uplink_state.cpp
+    neo/ui/neo_hud_ghost_uplink_state.h
+    neo/ui/neo_hud_health_thermoptic_aux.cpp
+    neo/ui/neo_hud_health_thermoptic_aux.h
+    neo/ui/neo_hud_hint.cpp
+    neo/ui/neo_hud_hint.h
+    neo/ui/neo_hud_round_state.cpp
+    neo/ui/neo_hud_round_state.h
+    neo/ui/neo_hud_startup_sequence.cpp
+    neo/ui/neo_hud_startup_sequence.h
+    neo/ui/neo_hud_worldpos_marker.cpp
+    neo/ui/neo_hud_worldpos_marker.h
+    neo/ui/neo_scoreboard.cpp
+    neo/ui/neo_scoreboard.h
+)
+
+target_sources_grouped(
+    TARGET client
+    NAME "Source Files\\Shared"
+    FILES
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_gamerules.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_gamerules.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_mount_original.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_spawnpoint.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_spawnpoint.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel_muzzleflash.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_predicted_viewmodel_muzzleflash.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_shot_manipulator.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_shot_manipulator.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_misc.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_misc.h
+)
+
+target_sources_grouped(
+    TARGET client
+    NAME "Source Files\\Shared\\Weapons"
+    FILES
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_aa13.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_aa13.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_detpack.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_detpack.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_ghost.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_ghost.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_grenade.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_grenade.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_jitte.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_jitte.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_jittes.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_jittes.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_knife.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_knife.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_kyla.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_kyla.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_m41.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_m41.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_m41l.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_m41l.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_m41s.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_m41s.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_milso.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_milso.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mpn.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mpn.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mpns.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mpns.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mx.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mx.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mxs.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_mxs.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_neobasecombatweapon.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_neobasecombatweapon.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_proxmine.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_proxmine.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_pz.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_pz.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_smac.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_smac.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_smokegrenade.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_smokegrenade.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_srm.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_srm.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_srms.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_srms.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_srs.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_srs.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_supa7.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_supa7.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_tachi.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_tachi.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68c.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68c.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68l.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68l.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68s.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_zr68s.h
+)
+
+if(NEO_BUILD_WEAPON_PBK56S)
+    target_sources_grouped(
+        TARGET client
+        NAME "Source Files\\Shared\\Weapons"
+        FILES
+        ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_pbk56s.cpp
+        ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_pbk56s.h
+    )
+endif()
+
+target_sources_grouped(
+    TARGET client
+    NAME "Source Files\\Shared\\Multiplayer"
+    FILES
+    ${CMAKE_SOURCE_DIR}/game/shared/Multiplayer/multiplayer_animstate.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/Multiplayer/multiplayer_animstate.h
+)
+
+target_sources_grouped(
+    TARGET client
+    NAME "HL2MP"
+    FILES
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_gamerules.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_gamerules.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_player_shared.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_player_shared.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_playeranimstate.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_playeranimstate.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_weapon_parse.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_weapon_parse.h
+    hl2mp/c_hl2mp_player.cpp
+    hl2mp/c_hl2mp_player.h
+    hl2mp/c_te_hl2mp_shotgun_shot.cpp
+    hl2mp/clientmode_hl2mpnormal.cpp
+    hl2mp/clientmode_hl2mpnormal.h
+)
+
+target_sources_grouped(
+    TARGET client
+    NAME "HL2MP\\Weapons"
+    FILES
+    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_357.cpp
+    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_ar2.cpp
+    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_ar2.h
+    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_crossbow.cpp
+    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_crowbar.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_frag.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbase.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbase.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbase_machinegun.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbase_machinegun.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbasebasebludgeon.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbasehlmpcombatweapon.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbasehlmpcombatweapon.h
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_physcannon.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_physcannon.h
+    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_pistol.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_rpg.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_rpg.h
+    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_shotgun.cpp
+    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_slam.cpp
+    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_slam.h
+    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_smg1.cpp
+    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_stunstick.cpp
+)
+
+target_sources_grouped(
+    TARGET client
+    NAME "HL2MP\\UI"
+    FILES
+    hl2mp/hl2mp_hud_chat.cpp
+    hl2mp/hl2mp_hud_chat.h
+    #hl2mp/hl2mp_hud_target_id.cpp
+    hl2mp/hl2mp_hud_team.cpp
+    hl2mp/hud_deathnotice.cpp
+    hl2mp/ui/backgroundpanel.cpp
+    hl2mp/ui/backgroundpanel.h
+    hl2mp/ui/hl2mpclientscoreboard.cpp
+    hl2mp/ui/hl2mpclientscoreboard.h
+    hl2mp/ui/hl2mptextwindow.cpp
+    hl2mp/ui/hl2mptextwindow.h
+)
+
+target_sources_grouped(
+    TARGET client
+    NAME "NextBot"
+    FILES
+    ${CMAKE_SOURCE_DIR}/game/client/NextBot/C_NextBot.cpp
+    ${CMAKE_SOURCE_DIR}/game/client/NextBot/C_NextBot.h
+)
+

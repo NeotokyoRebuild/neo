@@ -1,0 +1,15 @@
+"Refract"
+{
+	"$model"		"1"
+	"$refractamount"		"2"
+	"$refracttint" "[1.0 1.0 1.0]"
+	"$bluramount"		"0"
+	"$dudvmap"		"dev/water_dudv"
+	"$normalmap"		"dev/water_normal"
+	"$surfaceprop"		"water"
+	"$bumpframe"		"0"
+	"$translucent" 1
+	"$forcerefract" 1
+	"$vertexalpha" "1"
+	"$vertexcolor" "1"
+}

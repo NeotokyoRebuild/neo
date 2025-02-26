@@ -1,0 +1,129 @@
+"Games"
+{
+	"neo"
+	{
+		"Offsets"
+		{
+			"EndTouch"
+			{
+				"windows"	"#CBaseEntity::CBaseEntity::EndTouch(CBaseEntity*).windows#"
+				"linux"		"#CBaseEntity::CBaseEntity::EndTouch(CBaseEntity*).linux#"
+			}
+			"FireBullets"
+			{
+				"windows"	"#CBaseEntity::CBaseEntity::FireBullets(FireBulletsInfo_t const&).windows#"
+				"linux"		"#CBaseEntity::CBaseEntity::FireBullets(FireBulletsInfo_t const&).linux#"
+			}
+			"OnTakeDamage"
+			{
+				"windows"	"#CBaseEntity::CBaseEntity::OnTakeDamage(CTakeDamageInfo const&).windows#"
+				"linux"		"#CBaseEntity::CBaseEntity::OnTakeDamage(CTakeDamageInfo const&).linux#"
+			}
+			"OnTakeDamage_Alive"
+			{
+				"windows"	"#CBaseCombatCharacter::CBaseCombatCharacter::OnTakeDamage_Alive(CTakeDamageInfo const&).windows#"
+				"linux"		"#CBaseCombatCharacter::CBaseCombatCharacter::OnTakeDamage_Alive(CTakeDamageInfo const&).linux#"
+			}
+			"PreThink"
+			{
+				"windows"	"#CBasePlayer::CBasePlayer::PreThink().windows#"
+				"linux"		"#CBasePlayer::CBasePlayer::PreThink().linux#"
+			}
+			"PostThink"
+			{
+				"windows"	"#CBasePlayer::CBasePlayer::PostThink().windows#"
+				"linux"		"#CBasePlayer::CBasePlayer::PostThink().linux#"
+			}
+			"SetTransmit"
+			{
+				"windows"	"#CBaseEntity::CBaseEntity::SetTransmit(CCheckTransmitInfo*, bool).windows#"
+				"linux"		"#CBaseEntity::CBaseEntity::SetTransmit(CCheckTransmitInfo*, bool).linux#"
+			}
+			"Spawn"
+			{
+				"windows"	"#CBaseEntity::CBaseEntity::Spawn().windows#"
+				"linux"		"#CBaseEntity::CBaseEntity::Spawn().linux#"
+			}
+			"StartTouch"
+			{
+				"windows"	"#CBaseEntity::CBaseEntity::StartTouch(CBaseEntity*).windows#"
+				"linux"		"#CBaseEntity::CBaseEntity::StartTouch(CBaseEntity*).linux#"
+			}
+			"Think"
+			{
+				"windows"	"#CBaseEntity::CBaseEntity::Think().windows#"
+				"linux"		"#CBaseEntity::CBaseEntity::Think().linux#"
+			}
+			"Touch"
+			{
+				"windows"	"#CBaseEntity::CBaseEntity::Touch(CBaseEntity*).windows#"
+				"linux"		"#CBaseEntity::CBaseEntity::Touch(CBaseEntity*).linux#"
+			}
+			"TraceAttack"
+			{
+				"windows"	"#CBaseEntity::CBaseEntity::TraceAttack(CTakeDamageInfo const&, Vector const&, CGameTrace*, CDmgAccumulator*).windows#"
+				"linux"		"#CBaseEntity::CBaseEntity::TraceAttack(CTakeDamageInfo const&, Vector const&, CGameTrace*, CDmgAccumulator*).linux#"
+			}
+			"Weapon_CanSwitchTo"
+			{
+				"windows"	"#CBaseCombatCharacter::CBaseCombatCharacter::Weapon_CanSwitchTo(CBaseCombatWeapon*).windows#"
+				"linux"		"#CBaseCombatCharacter::CBaseCombatCharacter::Weapon_CanSwitchTo(CBaseCombatWeapon*).linux#"
+			}
+			"Weapon_CanUse"
+			{
+				"windows"	"#CBasePlayer::CBasePlayer::Weapon_CanUse(CBaseCombatWeapon*).windows#"
+				"linux"		"#CBasePlayer::CBasePlayer::Weapon_CanUse(CBaseCombatWeapon*).linux#"
+			}
+			"Weapon_Drop"
+			{
+				"windows"	"#CBasePlayer::CBasePlayer::Weapon_Drop(CBaseCombatWeapon*, Vector const*, Vector const*).windows#"
+				"linux"		"#CBasePlayer::CBasePlayer::Weapon_Drop(CBaseCombatWeapon*, Vector const*, Vector const*).linux#"
+			}
+			"Weapon_Equip"
+			{
+				"windows"	"#CBasePlayer::CBasePlayer::Weapon_Equip(CBaseCombatWeapon*).windows#"
+				"linux"		"#CBasePlayer::CBasePlayer::Weapon_Equip(CBaseCombatWeapon*).linux#"
+			}
+			"Weapon_Switch"
+			{
+				"windows"	"#CBasePlayer::CBasePlayer::Weapon_Switch(CBaseCombatWeapon*, int).windows#"
+				"linux"		"#CBasePlayer::CBasePlayer::Weapon_Switch(CBaseCombatWeapon*, int).linux#"
+			}
+			"ShouldCollide"
+			{
+				"windows"	"#CBaseEntity::CBaseEntity::ShouldCollide(int, int) const.windows#"
+				"linux"		"#CBaseEntity::CBaseEntity::ShouldCollide(int, int) const.linux#"
+			}
+			"VPhysicsUpdate"
+			{
+				"windows"	"#CBaseEntity::CBaseEntity::VPhysicsUpdate(IPhysicsObject*).windows#"
+				"linux"		"#CBaseEntity::CBaseEntity::VPhysicsUpdate(IPhysicsObject*).linux#"
+			}
+			"Use"
+			{
+				"windows"	"#CBaseEntity::CBaseEntity::Use(CBaseEntity*, CBaseEntity*, USE_TYPE, float).windows#"
+				"linux"		"#CBaseEntity::CBaseEntity::Use(CBaseEntity*, CBaseEntity*, USE_TYPE, float).linux#"
+			}
+			"Reload"
+			{
+				"windows"	"#CBaseCombatWeapon::CBaseCombatWeapon::Reload().windows#"
+				"linux"		"#CBaseCombatWeapon::CBaseCombatWeapon::Reload().linux#"
+			}
+			"GetMaxHealth"
+			{
+				"windows"	"#CBaseEntity::CBaseEntity::GetMaxHealth() const.windows#"
+				"linux"		"#CBaseEntity::CBaseEntity::GetMaxHealth() const.linux#"
+			}
+			"Blocked"
+			{
+				"windows"	"#CBaseEntity::CBaseEntity::Blocked(CBaseEntity*).windows#"
+				"linux"		"#CBaseEntity::CBaseEntity::Blocked(CBaseEntity*).linux#"
+			}
+			"CanBeAutobalanced"
+			{
+				"windows"	"#CBaseMultiplayerPlayer::CBaseMultiplayerPlayer::CanBeAutobalanced().windows#"
+				"linux"		"#CBaseMultiplayerPlayer::CBaseMultiplayerPlayer::CanBeAutobalanced().linux#"
+			}
+		}
+	}
+}
