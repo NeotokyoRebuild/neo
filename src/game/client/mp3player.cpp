@@ -52,7 +52,11 @@ vgui::Panel *GetSDKRootPanel();
 
 #define SOUND_ROOT "sound"
 
+#ifdef NEO
+#define MUTED_VOLUME		3
+#else
 #define MUTED_VOLUME		0.02f
+#endif // NEO
 
 #define TREE_TEXT_COLOR		Color( 200, 255, 200, 255 )
 #define LIST_TEXT_COLOR		TREE_TEXT_COLOR
@@ -814,10 +818,14 @@ CMP3Player::CMP3Player( VPANEL parent, char const *panelName ) :
 	m_pShuffle = new CheckButton( this, "Shuffle", "#Shuffle" );
 
 	m_pVolume = new Slider( this, "Volume" );
+#ifdef NEO
+	m_pVolume->SetRange( MUTED_VOLUME, 100 );
+#else
 	m_pVolume->SetRange( (int)( MUTED_VOLUME * 100.0f ), 100 );
+#endif // NEO
 #ifdef NEO
 	m_pVolumeInGame = new Slider(this, "VolumeInGame");
-	m_pVolumeInGame->SetRange((int)( MUTED_VOLUME * 100.0f ), 100);
+	m_pVolumeInGame->SetRange( MUTED_VOLUME, 100);
 
 	m_pGamePause = new CheckButton(this, "GamePause", "#GamePause");
 #else
@@ -839,7 +847,6 @@ CMP3Player::CMP3Player( VPANEL parent, char const *panelName ) :
 	LoadControlSettings( "resource/MP3Player.res" );
 #ifdef NEO // NEO NOTE (Adam) mzync changed how button activation type is assigned in 1a6b546e, restore button activation type here
 	m_pOptions->SetButtonActivationType(Button::ACTIVATE_ONPRESSED);
-	m_pPlay->SetText("#Play");
 #endif // NEO
 
 	m_pCurrentSong->SetText( "#NoSong" );
@@ -874,7 +881,6 @@ CMP3Player::CMP3Player( VPANEL parent, char const *panelName ) :
 	if (randomSong >= 0)
 	{
 		PlaySong(randomSong);
-		m_pStop->SetText("Pause");
 	}
 #endif // NEO
 }
@@ -1122,6 +1128,16 @@ void CMP3Player::OnCommand( char const *cmd )
 		BaseClass::OnCommand( cmd );
 	}
 }
+
+#ifdef NEO
+void CMP3Player::OnKeyCodeReleased(vgui::KeyCode code)
+{
+	switch (code) {
+	case KEY_P:
+		SetVisible(false);
+	}
+}
+#endif // NEO
 
 void CMP3Player::SplitFile( CUtlVector< CUtlSymbol >& splitList, char const *relative )
 {
@@ -1571,6 +1587,9 @@ void CMP3Player::PlaySong( int songIndex, float skipTime /*= 0.0f */ )
 	m_pDuration->SetText( durationstr );
 	
 #ifdef NEO
+	m_flTimePaused = 0.f;
+	m_pStop->SetText("Pause");
+	m_pPlay->SetText("Stop");
 	if (enginesound->IsSoundStillPlaying(m_nSongGuid));
 	{ // NEO TODO (Adam) This will crash on exit, sometimes, the line above is not effective in preventing this but seems to help somewhat(?), find a different solution, don't want to be performing operations on null pointers
 		enginesound->SetVolumeByGuid(m_nSongGuid, GetIdealVolume());
@@ -1651,12 +1670,6 @@ void CMP3Player::OnPlay()
 		{
 			PlaySong(randomSong);
 		}
-	}
-	if (m_bPlaying)
-	{
-		m_flTimePaused = 0.f;
-		m_pStop->SetText("Pause");
-		m_pPlay->SetText("Stop");
 	}
 #endif // NEO
 }
@@ -1859,8 +1872,8 @@ float CMP3Player::GetIdealVolume()
 		return 0;
 	}
 	if (m_bMuted)
-	{	// Lowest value returned by slider is MUTED_VOLUME rounded up to nearest integer / 100.f
-		constexpr float LOWEST_POSSIBLE_VOLUME = ((int)(MUTED_VOLUME * 100.f)) / 100.f;
+	{
+		constexpr float LOWEST_POSSIBLE_VOLUME = MUTED_VOLUME / 100.f;
 		return LOWEST_POSSIBLE_VOLUME;
 	}
 	if (engine->IsInGame() && !engine->IsLevelMainMenuBackground())

@@ -64,6 +64,7 @@
 "quit"					"#Valve_Quit_Game"
 "timeleft"				"Time Left in Round"
 "askconnect_accept"	    "#Valve_Accept_Redirect"
+"mp3"					"MP3 Player"
 "blank"			"=========================="
 "blank"			"#Valve_Miscellaneous_Keyboard_Keys_Title"
 "blank"			"=========================="
