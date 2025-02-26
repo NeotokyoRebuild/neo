@@ -42,7 +42,7 @@ public:
 
 	static int GetNumberOfLoadoutWeapons(int rank, int classType, int isDev)
 	{
-		if (classType < NEO_CLASS_RECON || classType > NEO_CLASS_VIP)
+		if (classType < NEO_CLASS_RECON || classType > NEO_CLASS_PSYCHO)
 		{ // We don't have a loadout for this class
 			Assert(false);
 			return 0;
@@ -62,7 +62,6 @@ public:
 		case NEO_CLASS_VIP:
 			return iterateThroughLoadout(rank, s_VIPLoadoutWeapons, VIP_WEAPON_LOADOUTS);
 		default:
-			Assert(false);
 			return 0;
 		}
 	}
@@ -103,7 +102,6 @@ public:
 			if (weaponPositionInLoadout < VIP_WEAPON_LOADOUTS) { return s_VIPLoadoutWeapons[weaponPositionInLoadout].m_szVguiImage; }
 			return "";
 		default:
-			Assert(false);
 			return "";
 		}
 	}
@@ -128,7 +126,6 @@ public:
 			if (weaponPositionInLoadout < VIP_WEAPON_LOADOUTS) { return s_VIPLoadoutWeapons[weaponPositionInLoadout].m_szVguiImageNo; }
 			return "";
 		default:
-			Assert(false);
 			return "";
 		}
 	}
@@ -154,7 +151,6 @@ public:
 			if (weaponPositionInLoadout < VIP_WEAPON_LOADOUTS) { return s_VIPLoadoutWeapons[weaponPositionInLoadout].m_szWeaponEntityName; }
 			return "";
 		default:
-			Assert(false);
 			return "";
 		}
 	}

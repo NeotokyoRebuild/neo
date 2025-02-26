@@ -52,6 +52,7 @@ public:
 	virtual void Spawn(void);
 
 	int owningTeamAlternate() const;
+	int originalOwningTeam() const;
 
 #ifdef CLIENT_DLL
 	virtual void ClientThink(void);
@@ -88,8 +89,9 @@ private:
 
 	CNetworkVar(float, m_flCapzoneRadius);
 
-	CNetworkVar(bool, m_bGhostHasBeenCaptured);
+	CNetworkVar(bool, m_bGhostHasBeenCaptured); // reuse for vip?
 	CNetworkVar(bool, m_bIsActive);
+	int m_iGameType;
 #else
 	int m_iOwningTeam;
 	int m_iSuccessfulCaptorClientIndex;

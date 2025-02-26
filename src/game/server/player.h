@@ -550,6 +550,12 @@ public:
 	void					SetWaterJumpTime( float flWaterJumpTime );
 	float					GetSwimSoundTime( void ) const;
 	void					SetSwimSoundTime( float flSwimSoundTime );
+#ifdef NEO
+	bool					GetTouchingWall(void) const;
+	void					SetTouchingWall(bool bTouchingWall);
+	bool					GetClingingToWall(void) const;
+	void					SetClingingToWall(bool bClingingToWall);
+#endif
 
 	virtual void			SetPlayerUnderwater( bool state );
 	void					UpdateUnderwaterState( void );
@@ -718,7 +724,7 @@ public:
 	void	SetConnected( PlayerConnectedState iConnected ) { m_iConnected = iConnected; }
 	virtual void EquipSuit( bool bPlayEffects = true );
 	virtual void RemoveSuit( void );
-	void	SetMaxSpeed( float flMaxSpeed ) { m_flMaxspeed = flMaxSpeed; }
+ 	void	SetMaxSpeed( float flMaxSpeed ) { m_flMaxspeed = flMaxSpeed; }
 
 	void	NotifyNearbyRadiationSource( float flRange );
 
@@ -1110,7 +1116,10 @@ private:
 	int						m_nImpulse;
 	float					m_flSwimSoundTime;
 	Vector					m_vecLadderNormal;
-
+#ifdef NEO
+	bool					m_bTouchingWall;
+	bool					m_bClingingToWall;
+#endif
 	float					m_flFlashTime;
 	int						m_nDrownDmgRate;		// Drowning damage in points per second without air.
 

@@ -475,6 +475,7 @@ BEGIN_DATADESC( CBasePlayer )
 	DEFINE_FIELD( m_nNumCrateHudHints, FIELD_INTEGER ),
 
 	DEFINE_INPUTFUNC( FIELD_STRING, "SetScriptOverlayMaterial", InputSetScriptOverlayMaterial ),
+	DEFINE_FIELD( m_bClingingToWall, FIELD_BOOLEAN ),
 
 	// DEFINE_FIELD( m_nBodyPitchPoseParam, FIELD_INTEGER ),
 	// DEFINE_ARRAY( m_StepSoundCache, StepSoundCache_t,  2  ),
@@ -669,6 +670,7 @@ CBasePlayer::CBasePlayer( )
 
 #ifdef NEO
 	m_flDeathTime = 0.0f;
+	m_bClingingToWall = false;
 #endif
 }
 
@@ -2111,6 +2113,26 @@ void CBasePlayer::SetSwimSoundTime( float flSwimSoundTime )
 {
 	m_flSwimSoundTime = flSwimSoundTime;
 }
+#ifdef NEO
+bool CBasePlayer::GetTouchingWall(void) const
+{
+	return m_bTouchingWall;
+}
+
+void CBasePlayer::SetTouchingWall(bool bTouchingWall)
+{
+	m_bTouchingWall = bTouchingWall;
+}
+bool CBasePlayer::GetClingingToWall( void ) const
+{
+	return m_bClingingToWall;
+}
+
+void CBasePlayer::SetClingingToWall(bool bClingingToWall)
+{
+	m_bClingingToWall = bClingingToWall;
+}
+#endif
 
 void CBasePlayer::ShowViewPortPanel( const char * name, bool bShow, KeyValues *data )
 {

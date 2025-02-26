@@ -134,6 +134,11 @@ int CNEOGhostCapturePoint::owningTeamAlternate() const
 	return owningTeam;
 }
 
+int CNEOGhostCapturePoint::originalOwningTeam() const
+{
+	return m_iOwningTeam;
+}
+
 void CNEOGhostCapturePoint::Spawn(void)
 {
 	BaseClass::Spawn();
@@ -200,6 +205,12 @@ void CNEOGhostCapturePoint::Think_CheckMyRadius(void)
 
 	// This round has already ended, we can't be capped into
 	if (NEORules()->IsRoundOver())
+	{
+		return;
+	}
+
+	// If capture point isn't active, we can't be capped into
+	if (!m_bIsActive)
 	{
 		return;
 	}
@@ -275,7 +286,7 @@ void CNEOGhostCapturePoint::ClientThink(void)
 	m_pHUDCapPoint->SetPos(GetAbsOrigin());
 	m_pHUDCapPoint->SetRadius(m_flCapzoneRadius);
 	m_pHUDCapPoint->SetTeam(owningTeamAlternate());
-	m_pHUDCapPoint->SetVisible(true);
+	m_pHUDCapPoint->SetVisible(m_bIsActive);
 
 	SetNextClientThink(gpGlobals->curtime + NEO_GHOSTCAP_GRAPHICS_THINK_INTERVAL);
 }

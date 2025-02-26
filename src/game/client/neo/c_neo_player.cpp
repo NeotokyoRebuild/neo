@@ -48,6 +48,7 @@
 #include "model_types.h"
 
 #include "c_user_message_register.h"
+#include "materialsystem/imaterialvar.h"
 
 // Don't alias here
 #if defined( CNEO_Player )
@@ -230,6 +231,12 @@ public:
 			return;
 		}
 
+		auto playerNeoClass = C_NEO_Player::GetLocalNEOPlayer()->m_iNeoClass;
+		if (playerNeoClass == NEO_CLASS_PSYCHO)
+		{
+			return;
+		}
+
 		auto panel = dynamic_cast<vgui::EditablePanel*>(GetClientModeNormal()->
 			GetViewport()->FindChildByName(PANEL_NEO_LOADOUT));
 
@@ -310,7 +317,7 @@ public:
 		}
 
 		auto playerNeoClass = C_NEO_Player::GetLocalNEOPlayer()->m_iNeoClass;
-		if (playerNeoClass == NEO_CLASS_VIP)
+		if (playerNeoClass == NEO_CLASS_VIP || playerNeoClass == NEO_CLASS_PSYCHO)
 		{
 			return;
 		}
@@ -490,7 +497,7 @@ void C_NEO_Player::CheckThermOpticButtons()
 
 	if ((m_afButtonPressed & IN_THERMOPTIC) && IsAlive())
 	{
-		if (GetClass() == NEO_CLASS_SUPPORT)
+		if (GetClass() == NEO_CLASS_SUPPORT || GetClass() == NEO_CLASS_VIP || GetClass() == NEO_CLASS_PSYCHO)
 		{
 			return;
 		}
@@ -824,6 +831,10 @@ void C_NEO_Player::PostDataUpdate( DataUpdateType_t updateType )
 void C_NEO_Player::PlayStepSound( Vector &vecOrigin,
 	surfacedata_t *psurface, float fvol, bool force )
 {
+	if (m_iNeoClass == NEO_CLASS_PSYCHO)
+	{
+		return;
+	}
 	BaseClass::PlayStepSound(vecOrigin, psurface, fvol, force);
 }
 
@@ -881,7 +892,23 @@ void C_NEO_Player::CalculateSpeed(void)
 			speed = MAX(75, speed * (1 - ((SLOWDOWN_TIME - timeSinceJumping) * 1.75)));
 		}
 	}
-	SetMaxSpeed(speed);
+	if (m_iNeoClass == NEO_CLASS_PSYCHO && m_nButtons & IN_WALK && GetGroundEntity() == NULL && (GetTouchingWall() || GetClingingToWall()))
+	{
+		SetLocalVelocity(Vector(0, 0, 0));
+		SetClingingToWall(true);
+	}
+	else
+	{
+		SetClingingToWall(false);
+	}
+	if (m_iNeoClass == NEO_CLASS_PSYCHO && GetClingingToWall())
+	{
+		SetMaxSpeed(0);
+	}
+	else
+	{
+		SetMaxSpeed(speed);
+	}
 }
 
 void C_NEO_Player::HandleSpeedChangesLegacy()
@@ -1063,27 +1090,30 @@ void C_NEO_Player::PreThink( void )
 		}
 		else
 		{
-			const float deltaTime = gpGlobals->curtime - m_flCamoAuxLastTime;
-			if (deltaTime >= 1)
+			if (m_iNeoClass != NEO_CLASS_PSYCHO)
 			{
-				// NEO TODO (Rain): add interface for predicting this
-
-				const float auxToDrain = deltaTime * CLOAK_AUX_COST;
-				if (m_HL2Local.m_cloakPower <= auxToDrain)
+				const float deltaTime = gpGlobals->curtime - m_flCamoAuxLastTime;
+				if (deltaTime >= 1)
 				{
-					m_HL2Local.m_cloakPower = 0.0f;
-				}
+					// NEO TODO (Rain): add interface for predicting this
 
-				if (m_HL2Local.m_cloakPower < MIN_CLOAK_AUX)
-				{
-					SetCloakState(false);
+					const float auxToDrain = deltaTime * CLOAK_AUX_COST;
+					if (m_HL2Local.m_cloakPower <= auxToDrain)
+					{
+						m_HL2Local.m_cloakPower = 0.0f;
+					}
 
-					m_HL2Local.m_cloakPower = 0.0f;
-					m_flCamoAuxLastTime = 0;
-				}
-				else
-				{
-					m_flCamoAuxLastTime = gpGlobals->curtime;
+					if (m_HL2Local.m_cloakPower < MIN_CLOAK_AUX)
+					{
+						SetCloakState(false);
+
+						m_HL2Local.m_cloakPower = 0.0f;
+						m_flCamoAuxLastTime = 0;
+					}
+					else
+					{
+						m_flCamoAuxLastTime = gpGlobals->curtime;
+					}
 				}
 			}
 		}
@@ -1369,7 +1399,7 @@ void C_NEO_Player::TeamChange(int iNewTeam)
 
 bool C_NEO_Player::IsAllowedToSuperJump(void)
 {
-	if (!IsSprinting())
+	if (!IsSprinting() && m_iNeoClass != NEO_CLASS_PSYCHO)
 		return false;
 
 	if (IsCarryingGhost())
@@ -1382,18 +1412,19 @@ bool C_NEO_Player::IsAllowedToSuperJump(void)
 		return false;
 
 	// Can't superjump whilst airborne (although it is kind of cool)
-	if (m_bHasBeenAirborneForTooLongToSuperJump)
+	if (m_bHasBeenAirborneForTooLongToSuperJump && !GetClingingToWall())
 		return false;
 
 	// Only superjump if we have a reasonable jump direction in mind
 	// NEO TODO (Rain): should we support sideways superjumping?
-	if ((m_nButtons & (IN_FORWARD | IN_BACK)) == 0)
+	if (m_iNeoClass != NEO_CLASS_PSYCHO && (m_nButtons & (IN_FORWARD | IN_BACK)) == 0)
 	{
 		return false;
 	}
 
 	// The suit check is for prediction only, actual power drain happens serverside
-	if (m_HL2Local.m_flSuitPower < SUPER_JMP_COST)
+	if ((m_iNeoClass == NEO_CLASS_RECON && m_HL2Local.m_flSuitPower < SUPER_JMP_COST) ||
+		m_iNeoClass == NEO_CLASS_PSYCHO && m_HL2Local.m_flSuitPower < HIDDEN_JMP_COST)
 		return false;
 
 	if (SUPER_JMP_DELAY_BETWEEN_JUMPS > 0)
@@ -1414,9 +1445,18 @@ void C_NEO_Player::SuperJump(void)
 {
 	Vector forward;
 	AngleVectors(EyeAngles(), &forward);
+	if (GetClingingToWall() || GetGroundEntity() == NULL)
+	{
+		forward *= 2;
+		SetClingingToWall(false);
+		SetTouchingWall(false);
+	}
 
 	// We don't give an upwards boost aside from regular jump
-	forward.z = 0;
+	if (m_iNeoClass == NEO_CLASS_RECON)
+	{
+		forward.z = 0;
+	}
 
 	ApplyAbsVelocityImpulse(forward * neo_recon_superjump_intensity.GetFloat());
 }

@@ -2975,6 +2975,11 @@ void DoEnginePostProcessing( int x, int y, int w, int h, bool bFlashlightIsOn, b
 			case NEO_CLASS_VIP:
 				// Cry a little
 				break;
+			case NEO_CLASS_PSYCHO:
+			{
+				DoNightVision(x, y, w, h);
+				break;
+			}
 			default:
 				Assert(false);
 			}

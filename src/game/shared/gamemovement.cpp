@@ -1290,6 +1290,10 @@ void CGameMovement::StartGravity( void )
 
 	if (player->GetGravity())
 		ent_gravity = player->GetGravity();
+#ifdef NEO
+	else if (player->GetClingingToWall())
+		ent_gravity = 0.f;
+#endif
 	else
 		ent_gravity = 1.0;
 
@@ -1729,6 +1733,10 @@ void CGameMovement::FinishGravity( void )
 
 	if ( player->GetGravity() )
 		ent_gravity = player->GetGravity();
+#ifdef NEO
+	else if (player->GetClingingToWall())
+		ent_gravity = 0.f;
+#endif
 	else
 		ent_gravity = 1.0;
 
@@ -2871,6 +2879,16 @@ int CGameMovement::TryPlayerMove( Vector *pFirstDest, trace_t *pFirstTrace, floa
 	{
 		fSlamVol = 0.85f;
 	}
+#ifdef NEO
+	if (fLateralStoppingAmount > 0)
+	{
+		player->SetTouchingWall(true);
+	}
+	else
+	{
+		player->SetTouchingWall(false);
+	}
+#endif
 
 	PlayerRoughLandingEffects( fSlamVol );
 
