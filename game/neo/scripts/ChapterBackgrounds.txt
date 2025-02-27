@@ -1,0 +1,7 @@
+"chapters"
+{
+	1	"background01"
+	2	"background_alley"
+	3	"background_door"
+	4	"background_door"
+}
