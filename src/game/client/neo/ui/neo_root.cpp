@@ -448,9 +448,6 @@ void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 	if (m_ns.keys.bcConsole <= KEY_NONE)
 	{
 		m_ns.keys.bcConsole = gameuifuncs->GetButtonCodeForBind("neo_toggleconsole");
-	}
-	if (m_ns.keys.bcMP3Player <= KEY_NONE)
-	{
 		m_ns.keys.bcMP3Player = gameuifuncs->GetButtonCodeForBind("neo_mp3");
 	}
 
