@@ -389,11 +389,16 @@
 
 	HudDeathNotice
 	{
-		"fieldName" "HudDeathNotice"
-		"visible" "1"
-		"enabled" "1"
-		"wide"	 "640"
-		"tall"	 "480"
+		"fieldName" 		"HudDeathNotice"
+		"visible" 			"1"
+		"enabled" 			"1"
+		"wide"	 			"640"
+		"tall"	 			"480"
+		"LineHeight"		"15"
+		"MaxDeathNotices" 	"4"
+		"RightJustify"		"1"
+		"TextFont"			"HudNumbersTimer"
+		
 	}
 
 	HudVehicle

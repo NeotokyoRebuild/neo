@@ -1163,6 +1163,70 @@ Scheme
 				//"additive"	"1"
 			}
 		}
+		NHudKillfeedIcons
+		{
+			"1"
+			{
+				"name"		"KillfeedIcons"
+				"tall"		"12"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"480 599"
+			}
+			"2"
+			{
+				"name"		"KillfeedIcons"
+				"tall"		"14"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"600 767"
+			}
+			"3"
+			{
+				"name"		"KillfeedIcons"
+				"tall"		"16"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"768 1023"
+				"antialias"	"1"
+			}
+			"4"
+			{
+				"name"		"KillfeedIcons"
+				"tall"		"20"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1024 1199"
+				"antialias"	"1"
+			}
+			"5"
+			{
+				"name"		"KillfeedIcons"
+				"tall"		"24"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1200 1440"
+				"antialias"	"1"
+			}
+			"6"
+			{
+				"name"		"KillfeedIcons"
+				"tall"		"26"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1441 1599"
+				"antialias"	"1"
+			}
+			"7"
+			{
+				"name"		"KillfeedIcons"
+				"tall"		"28"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1600 6000"
+				"antialias"	"1"
+			}
+		}
 		NHudOCRSmall
 		{
 			"1"
@@ -1298,7 +1362,6 @@ Scheme
 				"antialias"	"1"
 			}
 		}
-
 		NHudOCR
 		{
 			"1"

@@ -1553,6 +1553,7 @@ target_sources_grouped(
     neo/ui/neo_hud_crosshair.cpp
     neo/ui/neo_hud_crosshair.h
     neo/ui/neo_hud_damage_indicator.cpp
+    neo/ui/neo_hud_deathnotice.cpp
     neo/ui/neo_hud_friendly_marker.cpp
     neo/ui/neo_hud_friendly_marker.h
     neo/ui/neo_hud_game_event.cpp
@@ -1743,7 +1744,6 @@ target_sources_grouped(
     hl2mp/hl2mp_hud_chat.h
     #hl2mp/hl2mp_hud_target_id.cpp
     hl2mp/hl2mp_hud_team.cpp
-    hl2mp/hud_deathnotice.cpp
     hl2mp/ui/backgroundpanel.cpp
     hl2mp/ui/backgroundpanel.h
     hl2mp/ui/hl2mpclientscoreboard.cpp

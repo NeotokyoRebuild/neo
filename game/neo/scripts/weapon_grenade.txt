@@ -3,6 +3,7 @@ WeaponData
 {
 	// Weapon data is loaded by both the Game and Client DLLs.
 	"printname"			"Frag Grenade"
+	"iDeathIcon"		"2"
 	"viewmodel"			"models/weapons/v_jinrai_frag.mdl"
 	"team2viewmodel"		"models/weapons/v_nsf_frag.mdl"
 	"playermodel"			"models/weapons/w_frag.mdl"	
