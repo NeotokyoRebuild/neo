@@ -3267,7 +3267,7 @@ void CNEORules::DeathNotice(CBasePlayer* pVictim, const CTakeDamageInfo& info)
 	const int assists_ID = (pAssister) ? pAssister->GetUserID() : 0;
 
 	bool isExplosiveKill = false;
-	bool isANeoDerivedWeapon = false;
+	CNEOBaseCombatWeapon* neoWep;
 
 	// Custom kill type?
 	if (info.GetDamageCustom())
@@ -3293,11 +3293,9 @@ void CNEORules::DeathNotice(CBasePlayer* pVictim, const CTakeDamageInfo& info)
 					if (pScorer->GetActiveWeapon())
 					{
 						killer_weapon_name = pScorer->GetActiveWeapon()->GetClassname();
-
-						auto neoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pScorer->GetActiveWeapon());
+						neoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pScorer->GetActiveWeapon());
 						if (neoWep)
 						{
-							isANeoDerivedWeapon = true;
 							isExplosiveKill = (neoWep->GetNeoWepBits() & NEO_WEP_EXPLOSIVE) ? true : false;
 						}
 					}
@@ -3352,44 +3350,22 @@ void CNEORules::DeathNotice(CBasePlayer* pVictim, const CTakeDamageInfo& info)
 		event->SetInt("userid", pVictim->GetUserID());
 		event->SetInt("attacker", killer_ID);
 		event->SetInt("assists", assists_ID);
-		event->SetString("weapon", killer_weapon_name);
 		event->SetInt("priority", 7);
 
-		// Which deathnotice icon to draw.
-		// This value needs to be the same as original NT for plugin compatibility.
-		short killfeed_icon;
-
-		// NEO HACK/TODO (Rain):
-		// Knife is not yet derived from nt base wep class, so we can't yet get its bits
-		if (!isANeoDerivedWeapon)
+		event->SetString("weapon", killer_weapon_name);
+		event->SetBool("headshot", pVictim->LastHitGroup() == HITGROUP_HEAD);
+		event->SetBool("suicide", pKiller == pVictim);
+		if (neoWep)
 		{
-			killfeed_icon = 0; // NEO TODO (Rain): set correct icon
+			event->SetInt("deathIcon", neoWep->GetWpnData().iDeathIcon);
+			event->SetBool("explosive", isExplosiveKill);
 		}
 		else
 		{
-			// Suicide icon
-			if (pKiller == pVictim)
-			{
-				killfeed_icon = 0; // NEO TODO (Rain): set correct icon
-			}
-			// Explosion icon
-			else if (isExplosiveKill)
-			{
-				killfeed_icon = 0; // NEO TODO (Rain): set correct icon
-			}
-			// Headshot icon
-			else if (pVictim->LastHitGroup() == HITGROUP_HEAD)
-			{
-				killfeed_icon = NEO_DEATH_EVENT_ICON_HEADSHOT;
-			}
-			// Generic weapon kill icon
-			else
-			{
-				killfeed_icon = 0; // NEO TODO (Rain): set correct icon
-			}
+			event->SetInt("weaponIcon", 0);
+			event->SetBool("explosive", false);
 		}
-
-		event->SetInt("icon", killfeed_icon);
+		event->SetBool("ghoster", m_iGhosterPlayer == pVictim->entindex());
 
 		gameeventmanager->FireEvent(event);
 	}

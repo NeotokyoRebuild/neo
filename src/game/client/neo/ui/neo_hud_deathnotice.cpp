@@ -38,19 +38,21 @@ struct DeathNoticePlayer
 struct DeathNoticeItem 
 {
 	DeathNoticePlayer	Killer;
-	bool				bRankChange;
-	int					oldRank;
-	int					newRank;
-	bool				bGhostCap;
+	bool				bRankChange = false;
+	int					oldRank = 0;
+	int					newRank = 0;
+	bool				bRankUp = false;
+	bool				bGhostCap = false;
 	DeathNoticePlayer	Assist;
-	char				iDeathIcon;
-	bool				bExplosive;
-	bool				bSuicide;
-	bool				bHeadshot;
+	char				iDeathIcon = 0;
+	bool				bExplosive = false;
+	bool				bSuicide = false;
+	bool				bHeadshot = false;
 	DeathNoticePlayer   Victim;
-	bool				bWasCarryingGhost;
-	int					iLength;
-	float				flDisplayTime;
+	bool				bWasCarryingGhost = false;
+
+	int					iLength = 0;
+	float				flHideTime = 0.f;
 };
 
 //-----------------------------------------------------------------------------
@@ -72,6 +74,15 @@ public:
 	void RetireExpiredDeathNotices( void );
 	
 	virtual void FireGameEvent( IGameEvent * event );
+	void AddPlayerDeath(IGameEvent* event);
+	void AddPlayerRankChange(IGameEvent* event);
+	void AddPlayerGhostCapture(IGameEvent* event);
+
+	int GetDeathNoticeItemLength(IGameEvent* event);
+
+	void DrawPlayerDeath(int index);
+	void DrawPlayerRankChange(int index);
+	void DrawPlayerGhostCapture(int index);
 
 private:
 
@@ -369,6 +380,26 @@ void CHudDeathNotice::Paint()
 	RetireExpiredDeathNotices();
 }
 
+int CHudDeathNotice::GetDeathNoticeItemLength(IGameEvent* event)
+{
+	return 0;
+}
+
+void CHudDeathNotice::DrawPlayerDeath(int index)
+{
+
+}
+
+void CHudDeathNotice::DrawPlayerRankChange(int index)
+{
+
+}
+
+void CHudDeathNotice::DrawPlayerGhostCapture(int index)
+{
+
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: This message handler may be better off elsewhere
 //-----------------------------------------------------------------------------
@@ -378,7 +409,7 @@ void CHudDeathNotice::RetireExpiredDeathNotices( void )
 	int iSize = m_DeathNotices.Size();
 	for ( int i = iSize-1; i >= 0; i-- )
 	{
-		if ( m_DeathNotices[i].flDisplayTime < gpGlobals->curtime )
+		if ( m_DeathNotices[i].flHideTime < gpGlobals->curtime )
 		{
 			m_DeathNotices.Remove(i);
 		}
@@ -395,11 +426,37 @@ void CHudDeathNotice::FireGameEvent(IGameEvent* event)
 
 	if (hud_deathnotice_time.GetFloat() == 0)
 		return;
+	
+	// Do we have too many death messages in the queue?
+	if (m_DeathNotices.Count() > 0 &&
+		m_DeathNotices.Count() >= (int)m_flMaxDeathNotices)
+	{
+		// Remove the oldest one in the queue, which will always be the first
+		m_DeathNotices.Remove(0);
+	}
 
+	auto eventName = event->GetName();
+	if (!Q_stricmp(eventName, "player_death"))
+	{
+		AddPlayerDeath(event);
+	}
+	else if (!Q_stricmp(eventName, "player_rankup"))
+	{
+		AddPlayerRankChange(event);
+	}
+	else //if (!Q_stricmp(eventName, "ghost_capture"))
+	{
+		AddPlayerGhostCapture(event);
+	}
+
+}
+
+void CHudDeathNotice::AddPlayerDeath(IGameEvent* event)
+{
 	// the event should be "player_death"
 	const int killer = engine->GetPlayerForUserID(event->GetInt("attacker"));
 	const int victim = engine->GetPlayerForUserID(event->GetInt("userid"));
-	const int assistInt = event->GetInt("assist");
+	const int assistInt = event->GetInt("assists");
 	const int assist = engine->GetPlayerForUserID(assistInt);
 	const bool hasAssists = assist > 0;
 	const char* killedwith = event->GetString("weapon");
@@ -413,14 +470,6 @@ void CHudDeathNotice::FireGameEvent(IGameEvent* event)
 	else
 	{
 		fullkilledwith[0] = 0;
-	}
-
-	// Do we have too many death messages in the queue?
-	if (m_DeathNotices.Count() > 0 &&
-		m_DeathNotices.Count() >= (int)m_flMaxDeathNotices)
-	{
-		// Remove the oldest one in the queue, which will always be the first
-		m_DeathNotices.Remove(0);
 	}
 
 	// Get the names of the players
@@ -438,49 +487,25 @@ void CHudDeathNotice::FireGameEvent(IGameEvent* event)
 	DeathNoticeItem deathMsg;
 	deathMsg.Killer.iEntIndex = killer;
 	deathMsg.Victim.iEntIndex = victim;
+	deathMsg.Assist.iEntIndex = assist;
 	Q_strncpy(deathMsg.Killer.szName, killer_name, MAX_PLAYER_NAME_LENGTH);
 	Q_strncpy(deathMsg.Victim.szName, victim_name, MAX_PLAYER_NAME_LENGTH);
-	deathMsg.flDisplayTime = gpGlobals->curtime + hud_deathnotice_time.GetFloat();
-	deathMsg.bSuicide = (!killer || killer == victim);
-
-	deathMsg.Assist.iEntIndex = assist;
 	Q_strncpy(deathMsg.Assist.szName, assists_name, MAX_PLAYER_NAME_LENGTH);
-
-	// NEO TODO (Rain): we're passing an event->"icon" as short here.
-	// Only headshot's icon is implemented thus far, but we should
-	// implement them all and use them to determine what to draw here
-	// instead of doing all these test cases.
-
+	deathMsg.flHideTime = gpGlobals->curtime + hud_deathnotice_time.GetFloat();
+	deathMsg.bExplosive = event->GetBool("explosive");
+	deathMsg.bSuicide = event->GetBool("suicide");
+	deathMsg.bHeadshot = event->GetBool("headshot");
+	deathMsg.iDeathIcon = event->GetInt("deathIcon");
 	if (deathMsg.bSuicide)
 	{
 		deathMsg.iDeathIcon = NEO_HUD_DEATHNOTICEICON_SHORTBUS;
-	}
-	else
-	{
-		// Explosive
-		if (V_stristr(killedwith, "gre") || V_stristr(killedwith, "det"))
-		{
-			deathMsg.bHeadshot = false;
-			deathMsg.bExplosive = true;
-		}
-
-		deathMsg.bHeadshot = event->GetInt("icon") == NEO_DEATH_EVENT_ICON_HEADSHOT;
-		deathMsg.iDeathIcon = weaponIcon;
-	}
-
-	if (!deathMsg.iDeathIcon)
-	{
-		Assert(false);
-		// Can't find it, so use the default skull & crossbones icon
-		deathMsg.iDeathIcon = NEO_HUD_DEATHNOTICEICON_KILL;
 	}
 
 	// Add it to our list of death notices
 	m_DeathNotices.AddToTail(deathMsg);
 
-	char sDeathMsg[512];
-
 	// Record the death notice in the console
+	char sDeathMsg[512];
 	if (deathMsg.bSuicide)
 	{
 		if (!strcmp(fullkilledwith, "d_worldspawn"))
@@ -516,5 +541,43 @@ void CHudDeathNotice::FireGameEvent(IGameEvent* event)
 	Msg("%s\n", sDeathMsg);
 }
 
+void CHudDeathNotice::AddPlayerRankChange(IGameEvent* event)
+{
+	// the event should be "player_rank_change"
+	const int playerRankChange = engine->GetPlayerForUserID(event->GetInt("userid"));
+	const int oldRank = event->GetInt("oldRank");
+	const int newRank = event->GetInt("newRank");
 
+	// Get the name of the player
+	const char* playerRankChangeName = g_PR->GetPlayerName(playerRankChange);
+	if (!playerRankChangeName)
+		playerRankChangeName = "";
 
+	// Make a new death notice
+	DeathNoticeItem deathMsg;
+	deathMsg.Killer.iEntIndex = playerRankChange;
+	Q_strncpy(deathMsg.Killer.szName, playerRankChangeName, MAX_PLAYER_NAME_LENGTH);
+	deathMsg.flHideTime = gpGlobals->curtime + hud_deathnotice_time.GetFloat();
+	deathMsg.bRankChange = true;
+	deathMsg.oldRank = event->GetInt("oldRank");
+	deathMsg.newRank = event->GetInt("newRank");
+	deathMsg.bRankUp = newRank > oldRank;
+}
+
+void CHudDeathNotice::AddPlayerGhostCapture(IGameEvent* event)
+{
+	// the event should be "player_ghost_capture"
+	const int playerCapturedGhost = engine->GetPlayerForUserID(event->GetInt("userid"));
+
+	// Get the name of the player
+	const char* playerCapturedGhostName = g_PR->GetPlayerName(playerCapturedGhost);
+	if (!playerCapturedGhostName)
+		playerCapturedGhostName = "";
+
+	// Make a new death notice
+	DeathNoticeItem deathMsg;
+	deathMsg.Killer.iEntIndex = playerCapturedGhost;
+	Q_strncpy(deathMsg.Killer.szName, playerCapturedGhostName, MAX_PLAYER_NAME_LENGTH);
+	deathMsg.flHideTime = gpGlobals->curtime + hud_deathnotice_time.GetFloat();
+	deathMsg.bGhostCap = true;
+}
