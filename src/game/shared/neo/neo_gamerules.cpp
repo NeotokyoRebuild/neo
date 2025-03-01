@@ -1072,6 +1072,13 @@ void CNEORules::Think(void)
 				// And then announce team victory
 				SetWinningTeam(captorTeam, NEO_VICTORY_GHOST_CAPTURE, false, true, false, false);
 
+				IGameEvent* event = gameeventmanager->CreateEvent("ghost_capture");
+				if (event)
+				{
+					event->SetInt("userid", UTIL_PlayerByIndex(m_iGhosterPlayer)->GetUserID());
+					gameeventmanager->FireEvent(event);
+				}
+
 				if (m_iEscortingTeam && m_iEscortingTeam == captorTeam)
 				{
 					break;

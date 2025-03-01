@@ -26,7 +26,7 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-static ConVar hud_deathnotice_time( "hud_deathnotice_time", "6", 0 );
+static ConVar hud_deathnotice_time( "hud_deathnotice_time", "20", 0 );
 
 // Player entries in a death notice
 struct DeathNoticePlayer
@@ -52,6 +52,7 @@ struct DeathNoticeItem
 	bool				bHeadshot = false;
 	DeathNoticePlayer   Victim;
 	bool				bWasCarryingGhost = false;
+	bool				bInvolved = false;
 
 	int					iLength = 0;
 	int					iHeight = 0;
@@ -99,10 +100,8 @@ private:
 	CPanelAnimationVarAliasType( int, m_iLineMargin, "LineMargin", "2", "proportional_ypos");
 	CPanelAnimationVar( int, m_iMaxDeathNotices, "MaxDeathNotices", "8" );
 	CPanelAnimationVar( bool, m_bRightJustify, "RightJustify", "1" );
-	CPanelAnimationVar( int, m_iRed, "Red", "200");
-	CPanelAnimationVar( int, m_iGreen, "Green", "200");
-	CPanelAnimationVar( int, m_iBlue, "Blue", "200");
-	CPanelAnimationVar( int, m_iAlpha, "Alpha", "40");
+	CPanelAnimationVar( Color, m_BackgroundColour, "BackgroundColour", "200 200 200 40");
+	CPanelAnimationVar( Color, m_BackgroundColourInvolved, "BackgroundColourInvolved", "50 50 50 200");
 
 	CUtlVector<DeathNoticeItem> m_DeathNotices;
 };
@@ -197,6 +196,8 @@ void CNEOHud_DeathNotice::ApplySchemeSettings( IScheme *scheme )
 void CNEOHud_DeathNotice::Init( void )
 {
 	ListenForGameEvent( "player_death" );
+	ListenForGameEvent( "player_rankup" );
+	ListenForGameEvent( "ghost_capture" );
 }
 
 //-----------------------------------------------------------------------------
@@ -249,8 +250,10 @@ void CNEOHud_DeathNotice::DrawNeoHudElement()
 	RetireExpiredDeathNotices();
 }
 
-static constexpr wchar_t ASSIST_SEPARATOR[] = L" + ";
-static constexpr wchar_t GHOST_CAPTURE_TEXT[] = L" has captured the ";
+constexpr int ASSIST_SEPARATOR_LENGTH = 4;
+constexpr wchar_t ASSIST_SEPARATOR[ASSIST_SEPARATOR_LENGTH] = L" + ";
+constexpr int GHOST_CAPTURE_TEXT_LENGTH = 19;
+constexpr wchar_t GHOST_CAPTURE_TEXT[GHOST_CAPTURE_TEXT_LENGTH] = L" has captured the ";
 void CNEOHud_DeathNotice::SetDeathNoticeItemDimensions(DeathNoticeItem* deathNoticeItem)
 {
 	int totalWidth = 0;
@@ -280,11 +283,9 @@ void CNEOHud_DeathNotice::SetDeathNoticeItemDimensions(DeathNoticeItem* deathNot
 			surface()->GetTextSize(g_hFontKillfeed, deathNoticeItem->Killer.szName, width, height);
 			totalWidth += width;
 		}
-		/*surface()->GetTextSize(g_hFontKillfeedIcons, deathNoticeItem->szDeathIcon, width, height);
-		totalWidth += width;
-		totalWidth += surface()->GetCharacterWidth(g_hFontKillfeedIcons, NEO_HUD_DEATHNOTICEICON_RANKLESS_DOG + deathNoticeItem->szOldRank);
+		totalWidth += surface()->GetCharacterWidth(g_hFontKillfeedIcons, NEO_HUD_DEATHNOTICEICON_RANKLESS_DOG + deathNoticeItem->szOldRank[0]);
 		totalWidth += surface()->GetCharacterWidth(g_hFontKillfeedIcons, deathNoticeItem->bRankUp ? NEO_HUD_DEATHNOTICEICON_RANKUP : NEO_HUD_DEATHNOTICEICON_RANKDOWN);
-		totalWidth += surface()->GetCharacterWidth(g_hFontKillfeedIcons, NEO_HUD_DEATHNOTICEICON_RANKLESS_DOG + deathNoticeItem->szNewRank);*/
+		totalWidth += surface()->GetCharacterWidth(g_hFontKillfeedIcons, NEO_HUD_DEATHNOTICEICON_RANKLESS_DOG + deathNoticeItem->szNewRank[0]);
 	}
 	else if (deathNoticeItem->bGhostCap)
 	{	// Ghost capture message
@@ -358,17 +359,11 @@ void CNEOHud_DeathNotice::DrawPlayerDeath(int i)
 
 	// Background
 	int halfMargin = m_iLineMargin / 2;
-	DrawNeoHudRoundedBox(xStart - m_iLineMargin -2,
-		yStart - halfMargin - 2,
-		xStart + m_DeathNotices[i].iLength + m_iLineMargin + 2,
-		yStart + m_DeathNotices[i].iHeight + halfMargin + 2,
-		COLOR_BLACK,
-		true, true, true, true);
 	DrawNeoHudRoundedBox(xStart - m_iLineMargin,
 		yStart - halfMargin, 
 		xStart + m_DeathNotices[i].iLength + m_iLineMargin,
 		yStart + m_DeathNotices[i].iHeight + halfMargin,
-		Color(m_iRed, m_iGreen, m_iBlue, m_iAlpha),
+		m_DeathNotices[i].bInvolved ? m_BackgroundColourInvolved : m_BackgroundColour,
 		true, true, true, true);
 
 	surface()->DrawSetTextPos(xStart, yStart);
@@ -383,7 +378,7 @@ void CNEOHud_DeathNotice::DrawPlayerDeath(int i)
 	if (m_DeathNotices[i].Assist.iEntIndex != 0)
 	{
 		surface()->DrawSetTextColor(COLOR_NEO_WHITE);
-		surface()->DrawPrintText(ASSIST_SEPARATOR, 3);
+		surface()->DrawPrintText(ASSIST_SEPARATOR, ASSIST_SEPARATOR_LENGTH - 1);
 
 		SetColorForNoticePlayer(GetPlayersTeam(m_DeathNotices[i].Assist.iEntIndex)->m_iTeamNum);
 		surface()->DrawSetTextFont(g_hFontKillfeed);
@@ -446,14 +441,82 @@ void CNEOHud_DeathNotice::DrawPlayerDeath(int i)
 	}
 }
 
-void CNEOHud_DeathNotice::DrawPlayerRankChange(int index)
+void CNEOHud_DeathNotice::DrawPlayerRankChange(int i)
 {
+	int width, height;
+	GetSize(width, height);
+	int yStart = GetClientModeHL2MPNormal()->GetDeathMessageStartHeight();
+	if (g_pSpectatorGUI->IsVisible())
+	{
+		yStart += g_pSpectatorGUI->GetTopBarHeight();
+	}
+	yStart += m_iLineMargin + (((m_iLineMargin * 2) + m_DeathNotices[i].iHeight) * i);
+	int xStart = m_bRightJustify ? width - m_DeathNotices[i].iLength - (m_iLineMargin * 2) : (m_iLineMargin * 2);
 
+	// Background
+	int halfMargin = m_iLineMargin / 2;
+	DrawNeoHudRoundedBox(xStart - m_iLineMargin,
+		yStart - halfMargin,
+		xStart + m_DeathNotices[i].iLength + m_iLineMargin,
+		yStart + m_DeathNotices[i].iHeight + halfMargin,
+		m_DeathNotices[i].bInvolved ? m_BackgroundColourInvolved : m_BackgroundColour,
+		true, true, true, true);
+
+	surface()->DrawSetTextPos(xStart, yStart);
+
+	surface()->DrawSetTextFont(g_hFontKillfeed);
+	SetColorForNoticePlayer(GetPlayersTeam(m_DeathNotices[i].Killer.iEntIndex)->m_iTeamNum);
+	surface()->DrawPrintText(m_DeathNotices[i].Killer.szName, m_DeathNotices[i].Killer.iNameLength);
+
+	surface()->DrawSetTextFont(g_hFontKillfeedIcons);
+	wchar_t icon = NEO_HUD_DEATHNOTICEICON_RANKLESS_DOG + m_DeathNotices[i].szOldRank[0];
+	surface()->DrawPrintText(&icon, 1);
+
+	if (!m_DeathNotices[i].bRankUp)
+	{
+		surface()->DrawSetTextColor(COLOR_RED);
+	}
+	icon = m_DeathNotices[i].bRankUp ? NEO_HUD_DEATHNOTICEICON_RANKUP : NEO_HUD_DEATHNOTICEICON_RANKDOWN;
+	surface()->DrawPrintText(&icon, 1);
+
+	SetColorForNoticePlayer(GetPlayersTeam(m_DeathNotices[i].Killer.iEntIndex)->m_iTeamNum);
+	icon = NEO_HUD_DEATHNOTICEICON_RANKLESS_DOG + m_DeathNotices[i].szNewRank[0];
+	surface()->DrawPrintText(&icon, 1);
 }
 
-void CNEOHud_DeathNotice::DrawPlayerGhostCapture(int index)
+void CNEOHud_DeathNotice::DrawPlayerGhostCapture(int i)
 {
+	int width, height;
+	GetSize(width, height);
+	int yStart = GetClientModeHL2MPNormal()->GetDeathMessageStartHeight();
+	if (g_pSpectatorGUI->IsVisible())
+	{
+		yStart += g_pSpectatorGUI->GetTopBarHeight();
+	}
+	yStart += m_iLineMargin + (((m_iLineMargin * 2) + m_DeathNotices[i].iHeight) * i);
+	int xStart = m_bRightJustify ? width - m_DeathNotices[i].iLength - (m_iLineMargin * 2) : (m_iLineMargin * 2);
 
+	// Background
+	int halfMargin = m_iLineMargin / 2;
+	DrawNeoHudRoundedBox(xStart - m_iLineMargin,
+		yStart - halfMargin,
+		xStart + m_DeathNotices[i].iLength + m_iLineMargin,
+		yStart + m_DeathNotices[i].iHeight + halfMargin,
+		m_DeathNotices[i].bInvolved ? m_BackgroundColourInvolved : m_BackgroundColour,
+		true, true, true, true);
+
+	surface()->DrawSetTextPos(xStart, yStart);
+
+	surface()->DrawSetTextFont(g_hFontKillfeed);
+	SetColorForNoticePlayer(GetPlayersTeam(m_DeathNotices[i].Killer.iEntIndex)->m_iTeamNum);
+	surface()->DrawPrintText(m_DeathNotices[i].Killer.szName, m_DeathNotices[i].Killer.iNameLength);
+
+	surface()->DrawSetTextColor(COLOR_NEO_WHITE);
+	surface()->DrawPrintText(GHOST_CAPTURE_TEXT, GHOST_CAPTURE_TEXT_LENGTH - 1);
+
+	surface()->DrawSetTextFont(g_hFontKillfeedIcons);
+	wchar_t icon = NEO_HUD_DEATHNOTICEICON_GHOST;
+	surface()->DrawPrintText(&icon, 1);
 }
 
 //-----------------------------------------------------------------------------
@@ -552,8 +615,10 @@ void CNEOHud_DeathNotice::AddPlayerDeath(IGameEvent* event)
 	deathMsg.bExplosive = event->GetBool("explosive");
 	deathMsg.bSuicide = event->GetBool("suicide");
 	deathMsg.bHeadshot = event->GetBool("headshot");
+	deathMsg.bWasCarryingGhost = event->GetBool("ghoster");
 	const char* deathIcon = event->GetString("deathIcon");
 	g_pVGuiLocalize->ConvertANSIToUnicode(deathIcon, deathMsg.szDeathIcon, sizeof(deathMsg.szDeathIcon));
+	deathMsg.bInvolved = killer == GetLocalPlayerIndex() || victim == GetLocalPlayerIndex() || assist == GetLocalPlayerIndex();
 
 	SetDeathNoticeItemDimensions(&deathMsg);
 
@@ -612,6 +677,7 @@ void CNEOHud_DeathNotice::AddPlayerRankChange(IGameEvent* event)
 	// Make a new death notice
 	DeathNoticeItem deathMsg;
 	deathMsg.Killer.iEntIndex = playerRankChange;
+	deathMsg.Killer.iNameLength = strlen(playerRankChangeName);
 	g_pVGuiLocalize->ConvertANSIToUnicode(playerRankChangeName, deathMsg.Killer.szName, sizeof(deathMsg.Killer.szName));
 	deathMsg.flHideTime = gpGlobals->curtime + hud_deathnotice_time.GetFloat();
 	deathMsg.bRankChange = true;
@@ -620,6 +686,12 @@ void CNEOHud_DeathNotice::AddPlayerRankChange(IGameEvent* event)
 	const char* newRankIcon = event->GetString("newRank");
 	g_pVGuiLocalize->ConvertANSIToUnicode(newRankIcon, deathMsg.szNewRank, sizeof(deathMsg.szNewRank));
 	deathMsg.bRankUp = newRank > oldRank;
+	deathMsg.bInvolved = deathMsg.Killer.iEntIndex == GetLocalPlayerIndex();
+
+	SetDeathNoticeItemDimensions(&deathMsg);
+
+	// Add it to our list of death notices
+	m_DeathNotices.AddToTail(deathMsg);
 }
 
 void CNEOHud_DeathNotice::AddPlayerGhostCapture(IGameEvent* event)
@@ -635,9 +707,16 @@ void CNEOHud_DeathNotice::AddPlayerGhostCapture(IGameEvent* event)
 	// Make a new death notice
 	DeathNoticeItem deathMsg;
 	deathMsg.Killer.iEntIndex = playerCapturedGhost;
+	deathMsg.Killer.iNameLength = strlen(playerCapturedGhostName);
 	g_pVGuiLocalize->ConvertANSIToUnicode(playerCapturedGhostName, deathMsg.Killer.szName, sizeof(deathMsg.Killer.szName));
 	deathMsg.flHideTime = gpGlobals->curtime + hud_deathnotice_time.GetFloat();
 	deathMsg.bGhostCap = true;
+	deathMsg.bInvolved = deathMsg.Killer.iEntIndex == GetLocalPlayerIndex();
+
+	SetDeathNoticeItemDimensions(&deathMsg);
+
+	// Add it to our list of death notices
+	m_DeathNotices.AddToTail(deathMsg);
 }
 
 void CNEOHud_DeathNotice::Paint()

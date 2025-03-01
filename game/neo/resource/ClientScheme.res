@@ -1172,6 +1172,7 @@ Scheme
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"	"480 599"
+				"additive"	"0"
 			}
 			"2"
 			{
@@ -1180,6 +1181,7 @@ Scheme
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"	"600 767"
+				"additive"	"0"
 			}
 			"3"
 			{
@@ -1189,6 +1191,7 @@ Scheme
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"	"768 1023"
 				"antialias"	"1"
+				"additive"	"0"
 			}
 			"4"
 			{
@@ -1198,6 +1201,7 @@ Scheme
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"	"1024 1199"
 				"antialias"	"1"
+				"additive"	"0"
 			}
 			"5"
 			{
@@ -1207,6 +1211,7 @@ Scheme
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"	"1200 1440"
 				"antialias"	"1"
+				"additive"	"0"
 			}
 			"6"
 			{
@@ -1216,6 +1221,7 @@ Scheme
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"	"1441 1599"
 				"antialias"	"1"
+				"additive"	"0"
 			}
 			"7"
 			{
@@ -1225,6 +1231,7 @@ Scheme
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"	"1600 6000"
 				"antialias"	"1"
+				"additive"	"0"
 			}
 		}
 		NHudOCRSmall

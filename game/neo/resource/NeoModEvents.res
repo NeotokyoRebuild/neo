@@ -40,6 +40,16 @@
 		"explosive"	"bool"		// killed by explosion
 		"ghoster"	"bool"		// user who died was ghoster
 	}
+	"player_rankup"
+	{
+		"userid"	"short"		// user who's rank changed
+		"oldRank"	"short"
+		"newRank"	"short"
+	}
+	"ghost_capture"
+	{
+		"userid"	"short"		// user who captured the ghost
+	}
 	"player_changeneoname"			// player_changename, but for neo_name
 	{
 		"userid"	"short"   	// user ID who neo_name changed
