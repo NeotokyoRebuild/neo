@@ -1126,6 +1126,11 @@ void CNEORules::Think(void)
 				// Assume vip player disconnected, forfeit round
 				SetWinningTeam(GetOpposingTeam(m_iEscortingTeam), NEO_VICTORY_FORFEIT, false, true, false, false);
 			}
+			IGameEvent* event = gameeventmanager->CreateEvent("vip_death");
+			if (event)
+			{
+				gameeventmanager->FireEvent(event);
+			}
 		}
 
 		if (!m_pVIP->IsAlive())
@@ -1139,6 +1144,12 @@ void CNEORules::Think(void)
 			{
 				// VIP was killed, end round
 				SetWinningTeam(GetOpposingTeam(m_iEscortingTeam), NEO_VICTORY_VIP_ELIMINATION, false, true, false, false);
+			}
+			IGameEvent* event = gameeventmanager->CreateEvent("vip_death");
+			if (event)
+			{
+				event->SetInt("userid", m_pVIP->GetUserID());
+				gameeventmanager->FireEvent(event);
 			}
 		}
 
@@ -1165,6 +1176,13 @@ void CNEORules::Think(void)
 
 				// And then announce team victory
 				SetWinningTeam(captorTeam, NEO_VICTORY_VIP_ESCORT, false, true, false, false);
+
+				IGameEvent* event = gameeventmanager->CreateEvent("vip_extract");
+				if (event)
+				{
+					event->SetInt("userid", m_pVIP->GetUserID());
+					gameeventmanager->FireEvent(event);
+				}
 
 				for (int i = 1; i <= gpGlobals->maxClients; i++)
 				{

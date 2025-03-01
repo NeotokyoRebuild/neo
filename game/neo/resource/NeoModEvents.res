@@ -50,6 +50,15 @@
 	{
 		"userid"	"short"		// user who captured the ghost
 	}
+	"vip_extract"
+	{
+		"userid"	"short"		// user who escaped as VIP
+	}
+	"vip_death"
+	{
+		"userid"	"short"		// user who died as VIP		
+		"attacker"	"short"	 	// user who killed the VIP
+	}
 	"player_changeneoname"			// player_changename, but for neo_name
 	{
 		"userid"	"short"   	// user ID who neo_name changed
