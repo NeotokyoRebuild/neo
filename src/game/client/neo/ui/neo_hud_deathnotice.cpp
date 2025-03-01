@@ -205,6 +205,8 @@ void CNEOHud_DeathNotice::Init( void )
 	ListenForGameEvent( "player_death" );
 	ListenForGameEvent( "player_rankchange" );
 	ListenForGameEvent( "ghost_capture" );
+	ListenForGameEvent( "vip_extract" );
+	ListenForGameEvent( "vip_death" );
 }
 
 //-----------------------------------------------------------------------------
@@ -246,6 +248,14 @@ void CNEOHud_DeathNotice::DrawNeoHudElement()
 		else if (m_DeathNotices[i].bGhostCap)
 		{
 			DrawPlayerGhostCapture(i);
+		}
+		else if (m_DeathNotices[i].bVIPExtract)
+		{
+			DrawVIPExtract(i);
+		}
+		else if (m_DeathNotices[i].bVIPDeath)
+		{
+			DrawVIPDeath(i);
 		}
 		else
 		{
@@ -815,10 +825,10 @@ void CNEOHud_DeathNotice::AddPlayerGhostCapture(IGameEvent* event)
 
 void CNEOHud_DeathNotice::AddVIPExtract(IGameEvent* event)
 {
-	// the event should be "player_ghost_capture"
+	// the event should be "vip_extract"
 	const int playerExtracted = engine->GetPlayerForUserID(event->GetInt("userid"));
 
-	// Get the name of the player
+	// Name of VIP
 	const char* playerExtractedName = g_PR->GetPlayerName(playerExtracted);
 	if (!playerExtractedName)
 		playerExtractedName = "";
@@ -840,19 +850,26 @@ void CNEOHud_DeathNotice::AddVIPExtract(IGameEvent* event)
 
 void CNEOHud_DeathNotice::AddVIPDeath(IGameEvent* event)
 {
-	// the event should be "player_ghost_capture"
+	// the event should be "vip_death"
 	const int playerKilled = engine->GetPlayerForUserID(event->GetInt("userid"));
+	const int VIPKiller = engine->GetPlayerForUserID(event->GetInt("attacker"));
 
-	// Get the name of the player
+	// Names of vip and killer
 	const char* playerKilledName = g_PR->GetPlayerName(playerKilled);
 	if (!playerKilledName)
 		playerKilledName = "";
+	const char* VIPKillerName = g_PR->GetPlayerName(VIPKiller);
+	if (!VIPKillerName)
+		VIPKillerName = "";
 
 	// Make a new death notice
 	DeathNoticeItem deathMsg;
-	deathMsg.Killer.iEntIndex = playerKilled;
-	deathMsg.Killer.iNameLength = strlen(playerKilledName);
-	g_pVGuiLocalize->ConvertANSIToUnicode(playerKilledName, deathMsg.Killer.szName, sizeof(deathMsg.Killer.szName));
+	deathMsg.Victim.iEntIndex = playerKilled;
+	deathMsg.Victim.iNameLength = strlen(playerKilledName);
+	g_pVGuiLocalize->ConvertANSIToUnicode(playerKilledName, deathMsg.Victim.szName, sizeof(deathMsg.Victim.szName));
+	deathMsg.Killer.iEntIndex = VIPKiller;
+	deathMsg.Killer.iNameLength = strlen(VIPKillerName);
+	g_pVGuiLocalize->ConvertANSIToUnicode(VIPKillerName, deathMsg.Killer.szName, sizeof(deathMsg.Killer.szName));
 	deathMsg.flHideTime = gpGlobals->curtime + hud_deathnotice_time.GetFloat();
 	deathMsg.bVIPDeath = true;
 	deathMsg.bInvolved = deathMsg.Killer.iEntIndex == GetLocalPlayerIndex();
