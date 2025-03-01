@@ -712,6 +712,27 @@ void C_NEO_Player::AddEntity( void )
 	BaseClass::AddEntity();
 }
 
+void C_NEO_Player::AddPoints(int score, bool bAllowNegativeScore)
+{
+	// Positive score always adds
+	if (score < 0)
+	{
+		if (!bAllowNegativeScore)
+		{
+			if (m_iXP < 0)		// Can't go more negative
+				return;
+
+			if (-score > m_iXP)	// Will this go negative?
+			{
+				score = -m_iXP;		// Sum will be 0
+			}
+		}
+	}
+
+	m_iXP += score;
+	//pl.frags = m_iFrags; NEO TODO (Adam) Is this actually used anywhere? should we include a xp field in CPlayerState?
+}
+
 ShadowType_t C_NEO_Player::ShadowCastType( void ) 
 {
 	if (IsCloaked())

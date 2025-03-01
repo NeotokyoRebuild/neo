@@ -40,6 +40,7 @@ public:
 
 	virtual int DrawModel( int flags );
 	virtual void AddEntity( void );
+	virtual void AddPoints(int score, bool bAllowNegativeScore);
 
 	virtual void PreDataUpdate(DataUpdateType_t updateType) OVERRIDE;
 

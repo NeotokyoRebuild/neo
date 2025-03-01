@@ -1816,8 +1816,24 @@ void CNEO_Player::AddPoints(int score, bool bAllowNegativeScore)
 		}
 	}
 
+	int oldRank = GetRank(m_iXP);
 	m_iXP += score;
-	//pl.frags = m_iFrags; NEOTODO (Adma) Is this actually used anywhere? should we include a xp field in CPlayerState ? 
+	//pl.frags = m_iFrags; NEO TODO (Adam) Is this actually used anywhere? should we include a xp field in CPlayerState ?
+	int newRank = GetRank(m_iXP);
+	if (oldRank == newRank)
+	{
+		return;
+	}
+
+	IGameEvent* event = gameeventmanager->CreateEvent("player_rankchange");
+	if (event)
+	{
+		event->SetInt("userid", GetUserID());
+		event->SetInt("oldrank", oldRank);
+		event->SetInt("newrank", newRank);
+
+		gameeventmanager->FireEvent(event);
+	}
 }
 
 void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )

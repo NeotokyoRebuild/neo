@@ -196,7 +196,7 @@ void CNEOHud_DeathNotice::ApplySchemeSettings( IScheme *scheme )
 void CNEOHud_DeathNotice::Init( void )
 {
 	ListenForGameEvent( "player_death" );
-	ListenForGameEvent( "player_rankup" );
+	ListenForGameEvent( "player_rankchange" );
 	ListenForGameEvent( "ghost_capture" );
 }
 
@@ -236,7 +236,7 @@ void CNEOHud_DeathNotice::DrawNeoHudElement()
 		{
 			DrawPlayerRankChange(i);
 		}
-		if (m_DeathNotices[i].bGhostCap)
+		else if (m_DeathNotices[i].bGhostCap)
 		{
 			DrawPlayerGhostCapture(i);
 		}
@@ -283,9 +283,12 @@ void CNEOHud_DeathNotice::SetDeathNoticeItemDimensions(DeathNoticeItem* deathNot
 			surface()->GetTextSize(g_hFontKillfeed, deathNoticeItem->Killer.szName, width, height);
 			totalWidth += width;
 		}
-		totalWidth += surface()->GetCharacterWidth(g_hFontKillfeedIcons, NEO_HUD_DEATHNOTICEICON_RANKLESS_DOG + deathNoticeItem->szOldRank[0]);
+		totalWidth += spaceLength;
+		totalWidth += surface()->GetCharacterWidth(g_hFontKillfeedIcons, deathNoticeItem->szOldRank[0]);
+		totalWidth += spaceLength;
 		totalWidth += surface()->GetCharacterWidth(g_hFontKillfeedIcons, deathNoticeItem->bRankUp ? NEO_HUD_DEATHNOTICEICON_RANKUP : NEO_HUD_DEATHNOTICEICON_RANKDOWN);
-		totalWidth += surface()->GetCharacterWidth(g_hFontKillfeedIcons, NEO_HUD_DEATHNOTICEICON_RANKLESS_DOG + deathNoticeItem->szNewRank[0]);
+		totalWidth += spaceLength;
+		totalWidth += surface()->GetCharacterWidth(g_hFontKillfeedIcons, deathNoticeItem->szNewRank[0]);
 	}
 	else if (deathNoticeItem->bGhostCap)
 	{	// Ghost capture message
@@ -340,6 +343,7 @@ void CNEOHud_DeathNotice::SetDeathNoticeItemDimensions(DeathNoticeItem* deathNot
 		}
 	}
 	deathNoticeItem->iLength = totalWidth;
+	surface()->GetTextSize(g_hFontKillfeed, ASSIST_SEPARATOR, width, height);
 	deathNoticeItem->iHeight = height;
 }
 
@@ -467,21 +471,27 @@ void CNEOHud_DeathNotice::DrawPlayerRankChange(int i)
 	surface()->DrawSetTextFont(g_hFontKillfeed);
 	SetColorForNoticePlayer(GetPlayersTeam(m_DeathNotices[i].Killer.iEntIndex)->m_iTeamNum);
 	surface()->DrawPrintText(m_DeathNotices[i].Killer.szName, m_DeathNotices[i].Killer.iNameLength);
+	surface()->DrawPrintText(L" ", 1);
 
 	surface()->DrawSetTextFont(g_hFontKillfeedIcons);
-	wchar_t icon = NEO_HUD_DEATHNOTICEICON_RANKLESS_DOG + m_DeathNotices[i].szOldRank[0];
-	surface()->DrawPrintText(&icon, 1);
+	surface()->DrawSetTextColor(COLOR_NEO_WHITE);
+	surface()->DrawPrintText(&m_DeathNotices[i].szOldRank[0], 1);
+	surface()->DrawSetTextFont(g_hFontKillfeed);
+	surface()->DrawPrintText(L" ", 1);
 
 	if (!m_DeathNotices[i].bRankUp)
 	{
 		surface()->DrawSetTextColor(COLOR_RED);
 	}
-	icon = m_DeathNotices[i].bRankUp ? NEO_HUD_DEATHNOTICEICON_RANKUP : NEO_HUD_DEATHNOTICEICON_RANKDOWN;
+	wchar_t icon = m_DeathNotices[i].bRankUp ? NEO_HUD_DEATHNOTICEICON_RANKUP : NEO_HUD_DEATHNOTICEICON_RANKDOWN;
+	surface()->DrawSetTextFont(g_hFontKillfeedIcons);
 	surface()->DrawPrintText(&icon, 1);
+	surface()->DrawSetTextFont(g_hFontKillfeed);
+	surface()->DrawPrintText(L" ", 1);
 
-	SetColorForNoticePlayer(GetPlayersTeam(m_DeathNotices[i].Killer.iEntIndex)->m_iTeamNum);
-	icon = NEO_HUD_DEATHNOTICEICON_RANKLESS_DOG + m_DeathNotices[i].szNewRank[0];
-	surface()->DrawPrintText(&icon, 1);
+	surface()->DrawSetTextFont(g_hFontKillfeedIcons);
+	surface()->DrawSetTextColor(COLOR_NEO_WHITE);
+	surface()->DrawPrintText(&m_DeathNotices[i].szNewRank[0], 1);
 }
 
 void CNEOHud_DeathNotice::DrawPlayerGhostCapture(int i)
@@ -558,11 +568,11 @@ void CNEOHud_DeathNotice::FireGameEvent(IGameEvent* event)
 	{
 		AddPlayerDeath(event);
 	}
-	else if (!Q_stricmp(eventName, "player_rankup"))
+	else if (!Q_stricmp(eventName, "player_rankchange"))
 	{
 		AddPlayerRankChange(event);
 	}
-	else //if (!Q_stricmp(eventName, "ghost_capture"))
+	else if (!Q_stricmp(eventName, "ghost_capture"))
 	{
 		AddPlayerGhostCapture(event);
 	}
@@ -681,10 +691,9 @@ void CNEOHud_DeathNotice::AddPlayerRankChange(IGameEvent* event)
 	g_pVGuiLocalize->ConvertANSIToUnicode(playerRankChangeName, deathMsg.Killer.szName, sizeof(deathMsg.Killer.szName));
 	deathMsg.flHideTime = gpGlobals->curtime + hud_deathnotice_time.GetFloat();
 	deathMsg.bRankChange = true;
-	const char* oldRankIcon = event->GetString("oldRank");
-	g_pVGuiLocalize->ConvertANSIToUnicode(oldRankIcon, deathMsg.szOldRank, sizeof(deathMsg.szOldRank));
-	const char* newRankIcon = event->GetString("newRank");
-	g_pVGuiLocalize->ConvertANSIToUnicode(newRankIcon, deathMsg.szNewRank, sizeof(deathMsg.szNewRank));
+
+	deathMsg.szOldRank[0] = NEO_HUD_DEATHNOTICEICON_RANKLESS_DOG + oldRank;
+	deathMsg.szNewRank[0] = NEO_HUD_DEATHNOTICEICON_RANKLESS_DOG + newRank;
 	deathMsg.bRankUp = newRank > oldRank;
 	deathMsg.bInvolved = deathMsg.Killer.iEntIndex == GetLocalPlayerIndex();
 

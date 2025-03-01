@@ -40,7 +40,7 @@
 		"explosive"	"bool"		// killed by explosion
 		"ghoster"	"bool"		// user who died was ghoster
 	}
-	"player_rankup"
+	"player_rankchange"
 	{
 		"userid"	"short"		// user who's rank changed
 		"oldRank"	"short"

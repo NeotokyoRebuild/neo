@@ -1102,7 +1102,7 @@ void CNEORules::Think(void)
 						else
 						{
 							auto* neoPlayer = static_cast<CNEO_Player*>(player);
-							neoPlayer->m_iXP.GetForModify()++;
+							neoPlayer->AddPoints(1, false);
 						}
 					}
 				}
@@ -1184,7 +1184,7 @@ void CNEORules::Think(void)
 						else
 						{
 							auto* neoPlayer = static_cast<CNEO_Player*>(player);
-							neoPlayer->m_iXP.GetForModify()++;
+							neoPlayer->AddPoints(1, false);
 						}
 					}
 				}
@@ -1341,13 +1341,13 @@ void CNEORules::AwardRankUp(CNEO_Player *pClient)
 	{
 		if (pClient->m_iXP.Get() < ranks[i])
 		{
-			pClient->m_iXP.GetForModify() = ranks[i];
+			pClient->AddPoints(ranks[i] - pClient->m_iXP, false);
 			return;
 		}
 	}
 
 	// If we're beyond max rank, just award +1 point.
-	pClient->m_iXP.GetForModify()++;
+	pClient->AddPoints(1, false);
 }
 
 // Return remaining time in seconds. Zero means there is no time limit.
@@ -2964,7 +2964,7 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 						xpAward += static_cast<int>(player->IsCarryingGhost());
 					}
 				}
-				player->m_iXP.GetForModify() += xpAward;
+				player->AddPoints(xpAward, false);
 			}
 
 			// Any human player still alive, show them damage stats in round end
@@ -3114,7 +3114,7 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 	// Suicide or suicide by environment (non-grenade as grenade is likely from a player)
 	if (attacker == victim || (!attacker && !grenade))
 	{
-		victim->m_iXP.GetForModify() -= 1;
+		victim->AddPoints(-1, true);
 #ifdef GAME_DLL
 		CheckIfCapPrevent(victim);
 #endif
@@ -3131,7 +3131,7 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 		// Team kill
 		if (IsTeamplay() && attacker->GetTeamNumber() == victim->GetTeamNumber())
 		{
-			attacker->m_iXP.GetForModify() -= 1;
+			attacker->AddPoints(-1, true);
 #ifdef GAME_DLL
 			if (neo_sv_teamdamage_kick.GetBool() && m_nRoundStatus == NeoRoundStatus::RoundLive)
 			{
@@ -3156,7 +3156,7 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 		// Enemy kill
 		else
 		{
-			attacker->m_iXP.GetForModify() += 1;
+			attacker->AddPoints(1, false);
 		}
 
 		if (auto *assister = FetchAssists(attacker, victim))
@@ -3164,12 +3164,12 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 			// Team kill assist
 			if (assister->GetTeamNumber() == victim->GetTeamNumber())
 			{
-				assister->m_iXP.GetForModify() -= 1;
+				assister->AddPoints(-1, true);
 			}
 			// Enemy kill assist
 			else
 			{
-				assister->m_iXP.GetForModify() += 1;
+				assister->AddPoints(1, false);
 			}
 		}
 	}
