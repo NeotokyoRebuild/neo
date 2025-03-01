@@ -17,7 +17,7 @@ To see the Table of Contents, please use the "Outline" feature on GitHub by clic
 * Linux: [Steam Runtime 3 "Sniper"](https://gitlab.steamos.cloud/steamrt/sniper/sdk)
     * GCC/G++ 10 toolchain
     * Compiled in the sniper's Docker/Podman/Toolbx container, schroot, or systemd-nspawn
-    * This can also work on native (as long as it supports C++20) even with newer GCC/G++, mostly for development setup. At least install GCC and G++ multilib from your distro's package manager.
+    * This can also work on native (as long as it supports C++20) even with newer GCC/G++, mostly for development setup. At least install GCC and G++ from your distro's package manager.
     * `mimalloc` - To run with a debugger
 * Both:
     * [CMake](https://cmake.org/)
@@ -46,7 +46,7 @@ Make sure the "x64 Native Tools Command Prompt for VS2022" is used instead of th
 
 ##### Linux prerequisite - Steam Runtime 3 "Sniper" Container
 Your system must include the following packages:
-`gcc-multilib g++-multilib cmake ninja-build docker-ce docker-ce-cli containerd.io apt-transport-https ca-certificates curl gnupg gnupg-utils cmake build-essential`
+`gcc g++ cmake ninja-build docker-ce docker-ce-cli containerd.io apt-transport-https ca-certificates curl gnupg gnupg-utils cmake build-essential`
 
 **Note:** Depending on your operating system, the package names may vary, please consult google or your package manager for correct package names. The listed are for debian `apt`. (Includes Ubuntu, Linux Mint, etc)
 
@@ -139,6 +139,11 @@ For setting up the Steam mod:
 https://developer.valvesoftware.com/wiki/Setup_mod_on_steam
 
 ## Server instructions
+### Steam Networking
+Since the TF2-SDK/64-bit update, NT;RE has Steam Networking support, meaning hosting an online server is
+as easy as doing: `"Create Server" -> "Start"`. Just make sure "Use Steam networking" is set to "Enabled" and
+alter the relevant configurations.
+
 ### Server Ops
 #### Dedicated Server on Linux
 These instructions have been written with a Debian 12 machine in mind, but they should work for other systems as well.
@@ -161,7 +166,16 @@ These instructions have been written with a Debian 12 machine in mind, but they 
     (wait for it to install)
     quit
     ```
-6. Make a symlink for original NEOTOKYO so that NT;RE can find it's assets:
+6. The distribution of the dedicated servers currently misplaced some few files, here's the following files missing on Linux:
+    ```
+    srcds_linux64
+    srcds_run_64
+    bin/linux64/libsteam_api.so
+    ```
+    You may either fetch them from the Linux Source SDK 2013 Multiplayer client (appid 243750) or TF2's Dedicated Server (appid 232250).
+    Once they're fetched, place them in the `<YOUR_LOCATION>/ntrebuild` directory.
+
+7. Make a symlink for original NEOTOKYO so that NT;RE can find it's assets:
 
     Run the following command as root:
     ```
@@ -172,36 +186,38 @@ These instructions have been written with a Debian 12 machine in mind, but they 
     This is the only command that needs root, so you can logout from root.
 8. Make a symlink so that Src2013 dedicated server can see SteamCMD's binaries:
 
-    (NOTE: I'm NOT sure if this is how it is on other systems other than Debian 12, so please, check first if you have `~/.steam/sdk32` before running these! If you have Desktop Steam installed, then you should have this directory, but it doesn't seem to be the case with SteamCMD, which is why we need to do this.)
+    (NOTE: I'm NOT sure if this is how it is on other systems other than Debian 12, so please, check first if you have `~/.steam/sdk64` before running these! If you have Desktop Steam installed, then you should have this directory, but it doesn't seem to be the case with SteamCMD, which is why we need to do this.)
     ```
-    ln -s ~/.steam/steam/steamcmd/linux32 ~/.steam/sdk32
+    ln -s ~/.steam/steam/steamcmd/linux64 ~/.steam/sdk64
     ```
 9. For firewall, open the following ports:
     * 27015 TCP+UDP (you can keep the TCP port closed if you don't need RCON support)
     * 27020 UDP
     * 27005 UDP
     * 26900 UDP
-10. `cd` into `<YOUR_LOCATION>/ntrebuild/bin`.
+10. `cd` into `<YOUR_LOCATION>/ntrebuild/bin/linux64`.
 11. Run these commands to make symlinks for needed files:
     ```
-    ln -s vphysics_srv.so vphysics.so;
-    ln -s studiorender_srv.so studiorender.so;
-    ln -s soundemittersystem_srv.so soundemittersystem.so;
-    ln -s shaderapiempty_srv.so shaderapiempty.so;
-    ln -s scenefilecache_srv.so scenefilecache.so;
-    ln -s replay_srv.so replay.so;
+    ln -s datacache_srv.so datacache.so;
+    ln -s dedicated_srv.so dedicated.so;
+    ln -s engine_srv.so engine.so;
+    ln -s libtier0_srv.so libtier0.so;
+    ln -s libvstdlib_srv.so libvstdlib.so;
     ln -s materialsystem_srv.so materialsystem.so;
+    ln -s replay_srv.so replay.so;
+    ln -s scenefilecache_srv.so scenefilecache.so;
+    ln -s shaderapiempty_srv.so shaderapiempty.so;
+    ln -s soundemittersystem_srv.so soundemittersystem.so;
+    ln -s studiorender_srv.so studiorender.so;
+    ln -s vphysics_srv.so vphysics.so;
+    ln -s vscript_srv.so vscript.so;
     ```
-12. Run the following command to rename a file that is incompatible with NT;RE:
-     ```
-     mv libstdc++.so.6 libstdc++.so.6.bak
-     ```
-13. `cd` up a folder, so that you will be in `<YOUR_LOCATION>/ntrebuild`.
-14. Extract the latest release of NT;RE into `<YOUR_LOCATION>/ntrebuild`, so you will have a directory `<YOUR_LOCATION>/ntrebuild/neo` with a `gameinfo.txt` inside.
+12. `cd` up directories twice, so that you will be in `<YOUR_LOCATION>/ntrebuild`.
+13. Extract the latest release of NT;RE into `<YOUR_LOCATION>/ntrebuild`, so you will have a directory `<YOUR_LOCATION>/ntrebuild/neo` with a `gameinfo.txt` inside.
 
 Now you have a dedicated server setup for NT;RE. To run it, you will need to be in the `<YOUR_LOCATION>/ntrebuild` directory and run `srcds_run` with whatever arguments. You can adapt the following command to your own liking:
 ```
-./srcds_run +sv_lan 0 -insecure -console -game neo +ip <YOUR_IP> -maxplayers <1-32> +map <MAP_NAME>
+./srcds_run_64 +sv_lan 0 -insecure -console -game neo +ip <YOUR_IP> -maxplayers <1-32> +map <MAP_NAME>
 ```
 #### Dedicated Server on Windows
 These instructions were tested on Windows Server 2016 and Windows 11 machines, they will probably work in all Windows versions.
@@ -225,48 +241,78 @@ These instructions were tested on Windows Server 2016 and Windows 11 machines, t
     (wait for it to install)
     quit
     ```
-6. Extract the latest release of NT;RE into `<YOUR_LOCATION>\ntrebuild`, so you will have a directory `<YOUR_LOCATION>\ntrebuild\neo` with a `gameinfo.txt` inside.
-7. Allow all Inbound and Outbound TCP and UDP requests for the following ports via Windows Firewall. [See how](https://learn.microsoft.com/en-us/windows/security/operating-system-security/network-security/windows-firewall/configure#create-an-inbound-port-rule)
+6. The distribution of the dedicated servers currently misplaced some few files, here's the following files missing on Windows:
+    ```
+    srcds_win64.exe
+    ```
+    You may either fetch them from the Windows Source SDK 2013 Multiplayer client (appid 243750) or TF2's Dedicated Server (appid 232250).
+    Once they're fetched, place them in the `<YOUR_LOCATION>\ntrebuild` directory.
+
+7. Extract the latest release of NT;RE into `<YOUR_LOCATION>\ntrebuild`, so you will have a directory `<YOUR_LOCATION>\ntrebuild\neo` with a `gameinfo.txt` inside.
+8. Allow all Inbound and Outbound TCP and UDP requests for the following ports via Windows Firewall. [See how](https://learn.microsoft.com/en-us/windows/security/operating-system-security/network-security/windows-firewall/configure#create-an-inbound-port-rule)
     * 27015 TCP+UDP (you can keep the TCP port closed if you don't need RCON support)
     * 27020 UDP
     * 27005 UDP
     * 26900 UDP
-8. Your server should be ready to go, launch it inside your main directory (`(...)\ntrebuild\`) with the following command: (You can alter any argument to your liking, except `-game` and `-neopath`) 
+9. Your server should be ready to go, launch it inside your main directory (`(...)\ntrebuild\`) with the following command: (You can alter any argument to your liking, except `-game` and `-neopath`) 
 ```
-srcds.exe -game neo -neopath "..\ognt\NeotokyoSource" +ip <YOUR_IP> -maxplayers <1-32> +map <MAP_NAME>
+srcds_win64.exe -game neo -neopath "..\ognt\NeotokyoSource" +ip <YOUR_IP> -maxplayers <1-32> +map <MAP_NAME>
 ```
 
 ### Testers/Devs
+
+> [!WARNING]
+> As of the TF2-SDK update, Linux will fail to find the files necessary to startup a working server. Just follow the normal dedicated server instruction for now.
+
 1. To run a server, install "Source SDK Base 2013 Dedicated Server" (appid 244310).
 2. For firewall, open the following ports:
     * 27015 TCP+UDP (you can keep the TCP port closed if you don't need RCON support)
     * 27020 UDP
     * 27005 UDP
     * 26900 UDP
-3. After it installed, go to the install directory in CMD, should see:
-    * Windows: `srcds.exe`
-    * Linux: `srcds_linux`
-        * You'll also see `srcds_run` but that doesn't work properly with NT;RE so ignore it
-4. Optional: Link or copy over neo, otherwise `-game <path_to_source>/game/neo` can be used also:
+3. The distribution of the dedicated servers currently misplaced some few files:
+    * Linux:
+        ```
+        srcds_linux64
+        srcds_run_64
+        bin/linux64/libsteam_api.so
+        ```
+    * Windows:
+        ```
+        srcds_win64.exe
+        ```
+    You may either fetch them from the Source SDK 2013 Multiplayer client (appid 243750) or TF2's Dedicated Server (appid 232250).
+    Once they're fetched, place them in the `<PATH_TO_STEAM>/common/Source SDK Base 2013 Dedicated Server` directory.
+4. After it installed, go to the install directory in CMD, should see:
+    * Windows: `srcds_win64.exe`
+    * Linux: `srcds_linux64`
+5. Optional: Link or copy over neo, otherwise `-game <path_to_source>/game/neo` can be used also:
     * Windows: `mklink /J neo "<path_to_source>/game/neo"`
     * Linux:
         * Non-persistent bind mount: `mkdir neo && sudo mount --bind <path_to_source>/game/neo neo`
         * Or just copy over or use the directory directly
-5. Linux-only: Symlink the names in `<PATH_TO_STEAM>/common/Source SDK Base 2013 Dedicated Server/bin` directory:
-```
-ln -s vphysics_srv.so vphysics.so;
-ln -s studiorender_srv.so studiorender.so;
-ln -s soundemittersystem_srv.so soundemittersystem.so;
-ln -s shaderapiempty_srv.so shaderapiempty.so;
-ln -s scenefilecache_srv.so scenefilecache.so;
-ln -s replay_srv.so replay.so;
-ln -s materialsystem_srv.so materialsystem.so;
-```
-6. Linux-only: Before running `srcds_linux`, some few environment variables need to setup:
+6. Linux-only: Symlink the names in `<PATH_TO_STEAM>/common/Source SDK Base 2013 Dedicated Server/bin/linux64` directory:
+    ```
+    ln -s datacache_srv.so datacache.so;
+    ln -s dedicated_srv.so dedicated.so;
+    ln -s engine_srv.so engine.so;
+    ln -s libtier0_srv.so libtier0.so;
+    ln -s libvstdlib_srv.so libvstdlib.so;
+    ln -s materialsystem_srv.so materialsystem.so;
+    ln -s replay_srv.so replay.so;
+    ln -s scenefilecache_srv.so scenefilecache.so;
+    ln -s shaderapiempty_srv.so shaderapiempty.so;
+    ln -s soundemittersystem_srv.so soundemittersystem.so;
+    ln -s studiorender_srv.so studiorender.so;
+    ln -s vphysics_srv.so vphysics.so;
+    ln -s vscript_srv.so vscript.so;
+    ```
+6. Linux-only: Before running `srcds_linux64`, some few environment variables need to setup:
     * `SteamEnv=1`
     * `LD_LIBRARY_PATH=$(<STEAM-RUNTIME-DIR>/run.sh printenv LD_LIBRARY_PATH):/home/YOUR_USER/.steam/steam/steamapps/Source SDK Base 2013 Dedicated Server/bin`
         * Where `<STEAM-RUNTIME-DIR>` can be found from: `$ find "$HOME" -type d -name 'steam-runtime' 2> /dev/null`
-7. Run: `<srcds.exe|srcds_linux> +sv_lan 0 -insecure -game neo +map <some map> +maxplayers 24 -autoupdate -console`
+        * **Note, this should be the 64-bit variant**
+7. Run: `<srcds_win64.exe|srcds_linux64> +sv_lan 0 -insecure -game neo +map <some map> +maxplayers 24 -autoupdate -console`
     * Double check on the log that VAC is disabled before continuing
 7. In-game on Windows it'll showup in the server list, on Linux it probably won't and you'll have to use `connect` command directly (EX: `connect 192.168.1.###` for LAN server)
 

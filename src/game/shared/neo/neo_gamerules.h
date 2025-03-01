@@ -37,7 +37,7 @@ enum
 #define TEAM_STR_NSF "NSF"
 #define TEAM_STR_SPEC "Spectator"
 
-#define NEO_GAME_NAME "Neotokyo: Revamp"
+#define NEO_GAME_NAME "Neotokyo: Rebuild"
 
 #ifdef CLIENT_DLL
 	#define CNEORules C_NEORules
