@@ -387,17 +387,16 @@
 		"tall"	 "480"
 	}
 
-	HudDeathNotice
+	neo_death_notice
 	{
-		"fieldName" 		"HudDeathNotice"
+		"fieldName" 		"neo_death_notice"
 		"visible" 			"1"
 		"enabled" 			"1"
 		"wide"	 			"640"
 		"tall"	 			"480"
 		"LineHeight"		"15"
-		"MaxDeathNotices" 	"4"
+		"MaxDeathNotices" 	"8"
 		"RightJustify"		"1"
-		"TextFont"			"HudNumbersTimer"
 		
 	}
 

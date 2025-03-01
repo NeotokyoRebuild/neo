@@ -3266,8 +3266,9 @@ void CNEORules::DeathNotice(CBasePlayer* pVictim, const CTakeDamageInfo& info)
 	CBasePlayer* pAssister = FetchAssists(dynamic_cast<CNEO_Player*>(pKiller), dynamic_cast<CNEO_Player*>(pVictim));
 	const int assists_ID = (pAssister) ? pAssister->GetUserID() : 0;
 
-	bool isExplosiveKill = false;
-	CNEOBaseCombatWeapon* neoWep;
+	bool isGrenade = false;
+	bool isRemoteDetpack = false;
+	CNEOBaseCombatWeapon* neoWep = static_cast<CNEOBaseCombatWeapon*>(pScorer->GetActiveWeapon());
 
 	// Custom kill type?
 	if (info.GetDamageCustom())
@@ -3293,16 +3294,13 @@ void CNEORules::DeathNotice(CBasePlayer* pVictim, const CTakeDamageInfo& info)
 					if (pScorer->GetActiveWeapon())
 					{
 						killer_weapon_name = pScorer->GetActiveWeapon()->GetClassname();
-						neoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pScorer->GetActiveWeapon());
-						if (neoWep)
-						{
-							isExplosiveKill = (neoWep->GetNeoWepBits() & NEO_WEP_EXPLOSIVE) ? true : false;
-						}
 					}
 				}
 				else
 				{
 					killer_weapon_name = pInflictor->GetClassname();  // it's just that easy
+					isGrenade = !Q_strnicmp(killer_weapon_name, "neo_gre", 7);
+					isRemoteDetpack = !Q_strnicmp(killer_weapon_name, "neo_dep", 7);
 				}
 			}
 		}
@@ -3350,21 +3348,29 @@ void CNEORules::DeathNotice(CBasePlayer* pVictim, const CTakeDamageInfo& info)
 		event->SetInt("userid", pVictim->GetUserID());
 		event->SetInt("attacker", killer_ID);
 		event->SetInt("assists", assists_ID);
-		event->SetInt("priority", 7);
 
 		event->SetString("weapon", killer_weapon_name);
 		event->SetBool("headshot", pVictim->LastHitGroup() == HITGROUP_HEAD);
 		event->SetBool("suicide", pKiller == pVictim);
-		if (neoWep)
+		
+		if (isGrenade)
 		{
-			event->SetInt("deathIcon", neoWep->GetWpnData().iDeathIcon);
-			event->SetBool("explosive", isExplosiveKill);
+			event->SetString("deathIcon", "2"); // NEO TODO (Adam) get from enum
+		}
+		else if (isRemoteDetpack)
+		{
+			event->SetString("deathIcon", "A"); // NEO TODO (Adam) get from enum
+		}
+		else if (neoWep)
+		{
+			event->SetString("deathIcon", neoWep->GetWpnData().szDeathIcon);
 		}
 		else
 		{
-			event->SetInt("weaponIcon", 0);
-			event->SetBool("explosive", false);
+			event->SetString("deathIcon", "");
 		}
+
+		event->SetBool("explosive", isGrenade || isRemoteDetpack);
 		event->SetBool("ghoster", m_iGhosterPlayer == pVictim->entindex());
 
 		gameeventmanager->FireEvent(event);

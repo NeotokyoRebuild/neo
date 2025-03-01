@@ -248,6 +248,30 @@ inline const char *GetRankName(int xp, bool shortened = false)
 	}
 }
 
+inline const int GetRank(int xp)
+{
+	if (xp < 0)
+	{
+		return 0;
+	}
+	else if (xp < 4)
+	{
+		return 1;
+	}
+	else if (xp < 10)
+	{
+		return 2;
+	}
+	else if (xp < 20)
+	{
+		return 3;
+	}
+	else
+	{
+		return 4;
+	}
+}
+
 CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, const NEO_WEP_BITS_UNDERLYING_TYPE& neoWepBits);
 
 enum NeoLeanDirectionE {

@@ -2773,6 +2773,7 @@ Scheme
 		"11"		"resource/nocr.ttf"
 		"12"		"resource/NEUROPOL2.ttf"
 		"13"		"resource/neotokyo_press_n.ttf"
+		"14"		"resource/KillfeedIcons.ttf"
 	}
 
 }
