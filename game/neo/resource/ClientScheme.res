@@ -1862,6 +1862,28 @@ Scheme
 				//"additive"	"1"
 			}
 		}
+		NHudMessage
+		{
+			"1"
+			{
+				"name"		"Arial"
+				"tall"		"10"
+				"weight"	"100"
+				"additive"	"1"
+				"antialias" "1"
+			}
+		}
+		NHudMessageTitle
+		{
+			"1"
+			{
+				"name"		"Arial"
+				"tall"		"7"
+				"weight"	"1000"
+				"additive"	"1"
+				"antialias" "1"
+			}
+		}
 		MVP
 		{
 			"1"
