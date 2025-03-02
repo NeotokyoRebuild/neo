@@ -2,7 +2,8 @@
 #include "c_ai_basenpc.h"
 #include "model_types.h"
 #include "c_neo_player.h"
-
+// memdbgon must be the last include file in a .cpp file!!!
+#include "tier0/memdbgon.h"
 class C_NEO_NPCDummy : public C_AI_BaseNPC
 {
     DECLARE_CLASS(C_NEO_NPCDummy, C_AI_BaseNPC);
