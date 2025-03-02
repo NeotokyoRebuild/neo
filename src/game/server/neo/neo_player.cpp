@@ -708,7 +708,6 @@ void CNEO_Player::CalculateSpeed(void)
 				speed *= NEO_SUPPORT_SPRINT_MODIFIER; // Should never happen
 				break;
 			default:
-				speed *= 1;
 				break;
 		}
 	}
