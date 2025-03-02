@@ -307,6 +307,17 @@ void CMP3FileListPage::OnCommand( char const *cmd )
 	}
 }
 
+class CMP3PlayListListPanel : public ListPanel
+{
+public:
+	CMP3PlayListListPanel(Panel* parent, const char* panelName) : ListPanel(parent, panelName) {}
+
+	void OnMouseDoublePressed(vgui::MouseCode code)
+	{
+		g_pPlayer->PlaySong(GetSelectedItem(0));
+	}
+};
+
 class CMP3PlayListPage : public PropertyPage
 {
 	DECLARE_CLASS_SIMPLE( CMP3PlayListPage, PropertyPage );
@@ -317,7 +328,7 @@ public:
 	  BaseClass( parent, panelName ),
 	  m_pPlayer( player )
 	{
-		m_pList = new ListPanel( this, "PlayList" );
+		m_pList = new CMP3PlayListListPanel( this, "PlayList" );
 		m_pList->AddColumnHeader( 0, "File", "File", 400, ListPanel::COLUMN_RESIZEWITHWINDOW );
 		m_pList->AddColumnHeader( 1, "Artist", "Artist", 150, ListPanel::COLUMN_RESIZEWITHWINDOW );
 		m_pList->AddColumnHeader( 2, "Album", "Album", 150, ListPanel::COLUMN_RESIZEWITHWINDOW );
@@ -450,7 +461,7 @@ public:
 private:
 
 	CMP3Player		*m_pPlayer;
-	ListPanel		*m_pList;
+	CMP3PlayListListPanel	*m_pList;
 
 	DHANDLE< Menu >	m_hMenu;
 };
