@@ -207,7 +207,11 @@ void ServerBrowserDrawRow(const gameserveritem_t &server)
 		wchar_t wszServerName[k_cbMaxGameServerName];
 		const int iSize = g_pVGuiLocalize->ConvertANSIToUnicode(server.GetName(), wszServerName, sizeof(wszServerName));
 		NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
+#ifdef POSIX
 		vgui::surface()->DrawPrintText(wszServerName, iSize);
+#else
+		vgui::surface()->DrawPrintText(wszServerName, iSize - 1);
+#endif
 	}
 	xPos += g_iGSIX[GSIW_NAME];
 
@@ -218,7 +222,11 @@ void ServerBrowserDrawRow(const gameserveritem_t &server)
 		wchar_t wszMapName[k_cbMaxGameServerMapName];
 		const int iSize = g_pVGuiLocalize->ConvertANSIToUnicode(server.m_szMap, wszMapName, sizeof(wszMapName));
 		NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
+#ifdef POSIX
 		vgui::surface()->DrawPrintText(wszMapName, iSize);
+#else
+		vgui::surface()->DrawPrintText(wszMapName, iSize - 1);
+#endif
 	}
 	xPos += g_iGSIX[GSIW_MAP];
 
