@@ -411,7 +411,7 @@ private:
 
 #ifdef NEO
 // Singleton
-static CMP3Player* g_pPlayer = NULL;
+static CMP3Player* g_pPlayer;
 #endif // NEO
 
 #endif // !MP3PLAYER_H

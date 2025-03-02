@@ -1547,8 +1547,11 @@ void CMP3Player::PlaySong( int songIndex, float skipTime /*= 0.0f */ )
 {
 	MP3File_t& song = m_Files[ songIndex ];
 
+#ifdef NEO
+	float volume = GetIdealVolume();
+#else
 	float volume = 1.0f;
-
+#endif // NEO
 	char soundname[ 512 ];
 
 	soundname[ 0 ] = 0;
@@ -1618,7 +1621,6 @@ void CMP3Player::PlaySong( int songIndex, float skipTime /*= 0.0f */ )
 	m_flTimePaused = 0.f;
 	m_pStop->SetText("Pause");
 	m_pPlay->SetText("Stop");
-	enginesound->SetVolumeByGuid(m_nSongGuid, GetIdealVolume());
 #endif // NEO
 	m_pSongProgress->SetProgress( 0.0f );
 }

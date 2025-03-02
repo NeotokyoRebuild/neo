@@ -178,7 +178,6 @@ extern vgui::IInputInternal *g_InputInternal;
 #include "neo_mount_original.h"
 #include "ui/neo_loading.h"
 #include "neo_player_shared.h"
-#include "mp3player.h"
 extern bool NeoRootCaptureESC();
 extern CNeoLoading *g_pNeoLoading;
 extern ConVar neo_cl_streamermode_autodetect_obs;
@@ -1440,13 +1439,6 @@ void CHLClient::Shutdown( void )
     {
         g_pAchievementsAndStatsInterface->ReleasePanel();
     }
-
-#ifdef NEO
-	if (g_pPlayer)
-	{
-		vgui::ivgui()->RemoveTickSignal(g_pPlayer->GetVPanel());
-	}
-#endif // NEO
 
 #ifdef SIXENSE
 	g_pSixenseInput->Shutdown();
