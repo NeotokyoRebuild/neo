@@ -95,7 +95,7 @@ void CNEODeployedDetpack::DelayThink()
 		m_bHasWarnedAI = true;
 	}
 
-	m_hasSettled = CloseEnough(m_lastPos, GetAbsOrigin(), 0.1f);
+	m_hasSettled = GetLocalVelocity().LengthSqr() < 0.5f && GetGroundEntity();
 	m_lastPos = GetAbsOrigin();
 
 	if (m_hasSettled && !m_hasBeenMadeNonSolid)
