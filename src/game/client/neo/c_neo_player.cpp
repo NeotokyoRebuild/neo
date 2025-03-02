@@ -841,9 +841,14 @@ void C_NEO_Player::CalculateSpeed(void)
 		speed *= pNeoWep->GetSpeedScale();
 	}
 
-	if ((GetFlags() & FL_DUCKING) || (m_nButtons & IN_WALK))
+	if (GetFlags() & FL_DUCKING)
 	{
 		speed *= NEO_CROUCH_WALK_MODIFIER;
+	}
+
+	if (m_nButtons & IN_WALK)
+	{
+		speed *= NEO_CROUCH_WALK_MODIFIER; // They stack
 	}
 
 	if (IsSprinting())
