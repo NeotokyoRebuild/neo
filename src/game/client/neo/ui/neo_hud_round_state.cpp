@@ -628,7 +628,8 @@ void CNEOHud_RoundState::DrawPlayerList()
 			const int playerTeam = g_PR->GetTeam(i);
 			if (playerTeam != leftTeam)
 			{
-				if (g_PR->IsAlive(i)) {
+				if (g_PR->IsAlive(i)) 
+				{
 					m_iRightPlayersAlive++;
 				}
 				continue;
@@ -636,7 +637,7 @@ void CNEOHud_RoundState::DrawPlayerList()
 			else {
 				if (g_PR->IsAlive(i))
 				{
-				m_iLeftPlayersAlive++;
+					m_iLeftPlayersAlive++;
 				}
 			}
 			if (i == localPlayerIndex)
