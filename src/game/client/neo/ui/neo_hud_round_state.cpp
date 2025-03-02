@@ -614,19 +614,32 @@ void CNEOHud_RoundState::DrawPlayerList()
 				offset += 12;
 			}
 		}
+
+		m_iLeftPlayersAlive = 0;
+		m_iRightPlayersAlive = 0;
+
 		// Draw other team mates
 		for (int i = 0; i < (MAX_PLAYERS + 1); i++)
 		{
-			if (i == localPlayerIndex)
-			{
-				continue;
-			}
 			if (!g_PR->IsConnected(i))
 			{
 				continue;
 			}
 			const int playerTeam = g_PR->GetTeam(i);
 			if (playerTeam != leftTeam)
+			{
+				if (g_PR->IsAlive(i)) {
+					m_iRightPlayersAlive++;
+				}
+				continue;
+			}
+			else {
+				if (g_PR->IsAlive(i))
+				{
+				m_iLeftPlayersAlive++;
+				}
+			}
+			if (i == localPlayerIndex)
 			{
 				continue;
 			}
