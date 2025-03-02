@@ -384,13 +384,9 @@ bool CNEOBaseCombatWeapon::Deploy(void)
 
 		if (pOwner)
 		{
-			if (pOwner->GetFlags() & FL_DUCKING)
+			if (pOwner->GetFlags() & FL_DUCKING || pOwner->IsWalking())
 			{
 				pOwner->SetMaxSpeed(pOwner->GetCrouchSpeed_WithWepEncumberment(this));
-			}
-			else if (pOwner->IsWalking())
-			{
-				pOwner->SetMaxSpeed(pOwner->GetWalkSpeed_WithWepEncumberment(this));
 			}
 			else if (pOwner->IsSprinting())
 			{
