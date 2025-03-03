@@ -2233,7 +2233,7 @@ const SZWSZTexts NEO_GAME_TYPE_DESC_STRS[NEO_GAME_TYPE__TOTAL] = {
 	SZWSZ_INIT("Extract or Kill the VIP"),
 	SZWSZ_INIT("Deathmatch"),
 	SZWSZ_INIT("Free Roam"),
-	SZWSZ_INIT(""),
+	SZWSZ_INIT("Training"),
 };
 
 const char *CNEORules::GetGameDescription(void)
