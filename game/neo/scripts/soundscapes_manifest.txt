@@ -15,4 +15,6 @@ soundscaples_manifest
 	"file"		"scripts/soundscapes_trainyard.txt"
 	"file"		"scripts/soundscapes_labs.txt"
 	"file"		"scripts/soundscapes_strike.txt"
+	
+	"file"		"scripts/soundscapes_rebuild_tutorial.txt"
 }
