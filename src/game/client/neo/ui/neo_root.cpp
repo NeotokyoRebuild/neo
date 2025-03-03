@@ -165,13 +165,17 @@ void CNeoRootInput::OnThink()
 }
 
 constexpr WidgetInfo BTNS_INFO[BTNS_TOTAL] = {
-	{ "#GameUI_GameMenu_ResumeGame", "ResumeGame", STATE__TOTAL, FLAG_SHOWINGAME },
-	{ "#GameUI_GameMenu_FindServers", nullptr, STATE_SERVERBROWSER, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
-	{ "#GameUI_GameMenu_CreateServer", nullptr, STATE_NEWGAME, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
-	{ "#GameUI_GameMenu_Disconnect", "Disconnect", STATE__TOTAL, FLAG_SHOWINGAME },
-	{ "#GameUI_GameMenu_PlayerList", nullptr, STATE_PLAYERLIST, FLAG_SHOWINGAME },
-	{ "#GameUI_GameMenu_Options", nullptr, STATE_SETTINGS, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
-	{ "#GameUI_GameMenu_Quit", nullptr, STATE_QUIT, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
+	{ "#GameUI_GameMenu_ResumeGame", false, "ResumeGame", true, STATE__TOTAL, FLAG_SHOWINGAME },
+	{ "#GameUI_GameMenu_FindServers", false, nullptr, true, STATE_SERVERBROWSER, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
+	{ "#GameUI_GameMenu_CreateServer", false, nullptr, true, STATE_NEWGAME, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
+	{ "#GameUI_GameMenu_Disconnect", false, "Disconnect", true, STATE__TOTAL, FLAG_SHOWINGAME },
+	{ "#GameUI_GameMenu_PlayerList", false, nullptr, true, STATE_PLAYERLIST, FLAG_SHOWINGAME },
+	{ "", true, nullptr, true, STATE__TOTAL, FLAG_SHOWINMAIN },
+	{ "#GameUI_GameMenu_Tutorial", false, "map ntr_class_tut", false, STATE__TOTAL, FLAG_SHOWINMAIN},
+	{ "#GameUI_GameMenu_FiringRange", false, "map ntr_shooting_tut", false, STATE__TOTAL, FLAG_SHOWINMAIN},
+	{ "", true, nullptr, true, STATE__TOTAL, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
+	{ "#GameUI_GameMenu_Options", false, nullptr, true, STATE_SETTINGS, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
+	{ "#GameUI_GameMenu_Quit", false, nullptr, true, STATE_QUIT, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
 };
 
 CNeoRoot::CNeoRoot(VPANEL parent)
@@ -548,14 +552,26 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 			const auto btnInfo = BTNS_INFO[i];
 			if (btnInfo.flags & iFlagToMatch)
 			{
+				if (btnInfo.isFake)
+				{
+					NeoUI::Pad();
+					continue;
+				}
 				const auto retBtn = NeoUI::Button(m_wszDispBtnTexts[i]);
 				if (retBtn.bPressed || (i == MMBTN_QUIT && !IsInGame() && NeoUI::Bind(KEY_ESCAPE)))
 				{
 					surface()->PlaySound("ui/buttonclickrelease.wav");
-					if (btnInfo.gamemenucommand)
+					if (btnInfo.command)
 					{
 						m_state = STATE_ROOT;
-						GetGameUI()->SendMainMenuCommand(btnInfo.gamemenucommand);
+						if (btnInfo.isMainMenuMommand)
+						{
+							GetGameUI()->SendMainMenuCommand(btnInfo.command);
+						}
+						else
+						{
+							engine->ClientCmd(btnInfo.command);
+						}
 					}
 					else if (btnInfo.nextState < STATE__TOTAL)
 					{
