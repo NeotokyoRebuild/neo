@@ -5,9 +5,6 @@
 #include "filesystem.h"
 #include "icvar.h"
 
-// Stdlib
-#include <source_location>
-
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -15,9 +12,8 @@
 // For details, see: https://github.com/NeotokyoRebuild/neo/pull/587
 void FixupGlShaders(IFileSystem* filesystem, ICvar* cvar)
 {
-	constexpr auto filename = "glshaders.cfg",
-		pathID = "MOD",
-		funcName = std::source_location::current().function_name();
+	constexpr auto filename = "glshaders.cfg";
+	constexpr auto pathID = "MOD";
 
 	// This prevents the game from generating the problematic file on exit.
 	// There's also a "mat_autoload_glshaders", but it seems by the time we load,
@@ -28,7 +24,7 @@ void FixupGlShaders(IFileSystem* filesystem, ICvar* cvar)
 	ConVar* autosaveGlShaders;
 	if (!(autosaveGlShaders = cvar->FindVar(cvarname)))
 	{
-		Warning("%s: cvar %s not found\n", funcName, cvarname);
+		Warning("%s: cvar %s not found\n", __FUNCTION__, cvarname);
 		return;
 	}
 	autosaveGlShaders->SetValue(false);
@@ -47,7 +43,7 @@ void FixupGlShaders(IFileSystem* filesystem, ICvar* cvar)
 	if (filesystem->IsDirectory(filename, pathID))
 	{
 		Warning("%s: Expected to find a file at %s path %s, but it was a dir\n",
-			funcName, pathID, filename);
+			__FUNCTION__, pathID, filename);
 		return;
 	}
 
