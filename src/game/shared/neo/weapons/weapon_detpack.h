@@ -48,7 +48,7 @@ public:
 
 	bool	Reload(void) { return false; }
 
-	virtual float GetSpeedScale(void) const { return 1.0; }
+	virtual float GetSpeedScale(void) const OVERRIDE { return 0.85f; }
 
 	bool	CanDrop(void) OVERRIDE;
 	virtual bool CanPerformSecondaryAttack() const override final { return false; }

@@ -37,6 +37,8 @@
 
 #include "neo_weapon_loadout.h"
 
+#include "neo_player_shared.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -682,25 +684,37 @@ void CNEO_Player::CalculateSpeed(void)
 		speed *= pNeoWep->GetSpeedScale();
 	}
 
-	static constexpr float DUCK_WALK_SPEED_MODIFIER = 0.75;
 	if (GetFlags() & FL_DUCKING)
 	{
-		speed *= DUCK_WALK_SPEED_MODIFIER;
+		speed *= NEO_CROUCH_WALK_MODIFIER;
 	}
+
 	if (m_nButtons & IN_WALK)
 	{
-		speed *= DUCK_WALK_SPEED_MODIFIER;
+		speed *= NEO_CROUCH_WALK_MODIFIER; // They stack
 	}
+
 	if (IsSprinting())
 	{
-		static constexpr float RECON_SPRINT_SPEED_MODIFIER = 1.35;
-		static constexpr float OTHER_CLASSES_SPRINT_SPEED_MODIFIER = 1.6;
-		speed *= m_iNeoClass == NEO_CLASS_RECON ? RECON_SPRINT_SPEED_MODIFIER : OTHER_CLASSES_SPRINT_SPEED_MODIFIER;
+		switch (m_iNeoClass) {
+			case NEO_CLASS_RECON:
+				speed *= NEO_RECON_SPRINT_MODIFIER;
+				break;
+			case NEO_CLASS_ASSAULT:
+			case NEO_CLASS_VIP:
+				speed *= NEO_ASSAULT_SPRINT_MODIFIER;
+				break;
+			case NEO_CLASS_SUPPORT:
+				speed *= NEO_SUPPORT_SPRINT_MODIFIER; // Should never happen
+				break;
+			default:
+				break;
+		}
 	}
+
 	if (IsInAim())
 	{
-		static constexpr float AIM_SPEED_MODIFIER = 0.6;
-		speed *= AIM_SPEED_MODIFIER;
+		speed *= NEO_AIM_MODIFIER;
 	}
 
 	Vector absoluteVelocity = GetAbsVelocity();
@@ -895,7 +909,7 @@ void CNEO_Player::HandleSpeedChanges( CMoveData *mv )
 	}
 	else if ( bWantWalking )
 	{
-		mv->m_flClientMaxSpeed = GetWalkSpeed_WithActiveWepEncumberment();
+		mv->m_flClientMaxSpeed = GetCrouchSpeed_WithActiveWepEncumberment();
 	}
 	else
 	{
@@ -3054,11 +3068,6 @@ float CNEO_Player::GetNormSpeed_WithActiveWepEncumberment(void) const
 	return GetNormSpeed() * GetActiveWeaponSpeedScale();
 }
 
-float CNEO_Player::GetWalkSpeed_WithActiveWepEncumberment(void) const
-{
-	return GetWalkSpeed() * GetActiveWeaponSpeedScale();
-}
-
 float CNEO_Player::GetSprintSpeed_WithActiveWepEncumberment(void) const
 {
 	return GetSprintSpeed() * GetActiveWeaponSpeedScale();
@@ -3074,12 +3083,6 @@ float CNEO_Player::GetNormSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWe
 {
 	Assert(pNeoWep);
 	return GetNormSpeed() * pNeoWep->GetSpeedScale();
-}
-
-float CNEO_Player::GetWalkSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const
-{
-	Assert(pNeoWep);
-	return GetWalkSpeed() * pNeoWep->GetSpeedScale();
 }
 
 float CNEO_Player::GetSprintSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const
@@ -3101,7 +3104,7 @@ float CNEO_Player::GetCrouchSpeed(void) const
 	case NEO_CLASS_VIP:
 		return NEO_VIP_CROUCH_SPEED;
 	default:
-		return NEO_BASE_CROUCH_SPEED;
+		return (NEO_BASE_SPEED * NEO_CROUCH_WALK_MODIFIER);
 	}
 }
 
@@ -3110,32 +3113,15 @@ float CNEO_Player::GetNormSpeed(void) const
 	switch (m_iNeoClass)
 	{
 	case NEO_CLASS_RECON:
-		return NEO_RECON_NORM_SPEED;
+		return NEO_RECON_BASE_SPEED;
 	case NEO_CLASS_ASSAULT:
-		return NEO_ASSAULT_NORM_SPEED;
+		return NEO_ASSAULT_BASE_SPEED;
 	case NEO_CLASS_SUPPORT:
-		return NEO_SUPPORT_NORM_SPEED;
+		return NEO_SUPPORT_BASE_SPEED;
 	case NEO_CLASS_VIP:
-		return NEO_VIP_NORM_SPEED;
+		return NEO_VIP_BASE_SPEED;
 	default:
-		return NEO_BASE_NORM_SPEED;
-	}
-}
-
-float CNEO_Player::GetWalkSpeed(void) const
-{
-	switch (m_iNeoClass)
-	{
-	case NEO_CLASS_RECON:
-		return NEO_RECON_WALK_SPEED;
-	case NEO_CLASS_ASSAULT:
-		return NEO_ASSAULT_WALK_SPEED;
-	case NEO_CLASS_SUPPORT:
-		return NEO_SUPPORT_WALK_SPEED;
-	case NEO_CLASS_VIP:
-		return NEO_VIP_WALK_SPEED;
-	default:
-		return NEO_BASE_WALK_SPEED;
+		return NEO_BASE_SPEED;
 	}
 }
 
@@ -3152,7 +3138,7 @@ float CNEO_Player::GetSprintSpeed(void) const
 	case NEO_CLASS_VIP:
 		return NEO_VIP_SPRINT_SPEED;
 	default:
-		return NEO_BASE_SPRINT_SPEED;
+		return NEO_BASE_SPEED; // No generic sprint modifier; default speed.
 	}
 }
 
