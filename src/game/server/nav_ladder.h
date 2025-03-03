@@ -149,6 +149,17 @@ inline const Vector &CNavLadder::GetNormal( void ) const
 {
 	return m_normal;
 }
+#ifdef NEO
+class CInfoLadder : public CBaseEntity
+{
+public:
+	DECLARE_CLASS( CInfoLadder, CBaseEntity );
 
+	bool KeyValue( const char *szKeyName, const char *szValue );
+
+	Vector mins;
+	Vector maxs;
+};
+#endif // NEO
 
 #endif // _NAV_LADDER_H_

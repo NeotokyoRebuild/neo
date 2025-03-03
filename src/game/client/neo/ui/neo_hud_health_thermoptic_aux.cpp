@@ -154,7 +154,7 @@ void CNEOHud_HTA::DrawHTA() const
 		surface()->DrawPrintText(L"THERM-OPTIC", 11);
 		surface()->DrawSetTextColor(m_sprintTextColor);
 		surface()->DrawSetTextPos(sprinttext_xpos + xpos, sprinttext_ypos + ypos);
-		surface()->DrawPrintText(L"AUX", 3);
+		surface()->DrawPrintText(L"AUX POWER", 9);
 	}
 
 	int fontWidth, fontHeight;

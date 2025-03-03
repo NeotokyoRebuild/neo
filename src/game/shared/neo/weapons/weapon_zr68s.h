@@ -36,7 +36,7 @@ public:
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const OVERRIDE { return NEO_WEP_ZR68_S | NEO_WEP_SUPPRESSED; }
 	virtual int GetNeoWepXPCost(const int neoClass) const OVERRIDE { return 0; }
 
-	virtual float GetSpeedScale(void) const OVERRIDE { return 155.0 / 170.0; }
+	virtual float GetSpeedScale(void) const OVERRIDE { return 0.775f; }
 
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }

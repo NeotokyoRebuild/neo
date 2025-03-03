@@ -238,6 +238,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->bViewmodelRighthand = cvr->cl_righthand.GetBool();
 		pGeneral->bLeanViewmodelOnly = cvr->cl_neo_lean_viewmodel_only.GetBool();
 		pGeneral->bLeanAutomatic = cvr->cl_neo_lean_automatic.GetBool();
+		pGeneral->bShowSquadList = cvr->cl_neo_squad_hud_original.GetBool();
 		pGeneral->bShowPlayerSprays = !(cvr->cl_playerspraydisable.GetBool()); // Inverse
 		pGeneral->bShowPos = cvr->cl_showpos.GetBool();
 		pGeneral->iShowFps = cvr->cl_showfps.GetInt();
@@ -462,6 +463,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_righthand.SetValue(pGeneral->bViewmodelRighthand);
 		cvr->cl_neo_lean_viewmodel_only.SetValue(pGeneral->bLeanViewmodelOnly);
 		cvr->cl_neo_lean_automatic.SetValue(pGeneral->bLeanAutomatic);
+		cvr->cl_neo_squad_hud_original.SetValue(pGeneral->bShowSquadList);
 		cvr->cl_playerspraydisable.SetValue(!pGeneral->bShowPlayerSprays); // Inverse
 		cvr->cl_showpos.SetValue(pGeneral->bShowPos);
 		cvr->cl_showfps.SetValue(pGeneral->iShowFps);
@@ -668,6 +670,7 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBoxBool(L"Right hand viewmodel", &pGeneral->bViewmodelRighthand);
 	NeoUI::RingBoxBool(L"Lean viewmodel only", &pGeneral->bLeanViewmodelOnly);
 	NeoUI::RingBoxBool(L"Automatic leaning", &pGeneral->bLeanAutomatic);
+	NeoUI::RingBoxBool(L"Classic squad list", &pGeneral->bShowSquadList);
 	NeoUI::RingBoxBool(L"Show player spray", &pGeneral->bShowPlayerSprays);
 	NeoUI::RingBoxBool(L"Show position", &pGeneral->bShowPos);
 	NeoUI::RingBox(L"Show FPS", SHOWFPS_LABELS, ARRAYSIZE(SHOWFPS_LABELS), &pGeneral->iShowFps);

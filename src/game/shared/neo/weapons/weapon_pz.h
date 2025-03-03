@@ -36,7 +36,7 @@ public:
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const override { return NEO_WEP_PZ; }
 	virtual int GetNeoWepXPCost(const int neoClass) const override { return 20; }
 
-	virtual float GetSpeedScale(void) const override { return 108.0 / 136.0; }
+	virtual float GetSpeedScale(void) const OVERRIDE { return 0.675f; }
 
 	bool CanBePickedUpByClass(int classId) OVERRIDE;
 protected:

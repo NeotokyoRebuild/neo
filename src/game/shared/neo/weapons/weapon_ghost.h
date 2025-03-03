@@ -41,7 +41,7 @@ public:
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { return NEO_WEP_GHOST; }
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
 
-	virtual float GetSpeedScale(void) const { return 1.0; }
+	virtual float GetSpeedScale(void) const OVERRIDE { return 0.85f; }
 	float GetGhostRangeInHammerUnits() const;
 	bool IsPosWithinViewDistance(const Vector &otherPlayerPos);
 	bool IsPosWithinViewDistance(const Vector &otherPlayerPos, float &dist);
