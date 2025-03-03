@@ -71,7 +71,7 @@ struct WidgetInfo
 	const char *label;
 	bool isFake;
 	const char *command; // TODO: Replace
-	bool isMainMenuMommand;
+	bool isMainMenuCommand;
 	RootState nextState;
 	int flags;
 };

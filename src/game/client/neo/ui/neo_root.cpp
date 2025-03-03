@@ -564,7 +564,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 					if (btnInfo.command)
 					{
 						m_state = STATE_ROOT;
-						if (btnInfo.isMainMenuMommand)
+						if (btnInfo.isMainMenuCommand)
 						{
 							GetGameUI()->SendMainMenuCommand(btnInfo.command);
 						}
