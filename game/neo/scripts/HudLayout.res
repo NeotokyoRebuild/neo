@@ -63,10 +63,10 @@
 		"fieldName" "HudVoiceSelfStatus"
 		"visible" "1"
 		"enabled" "1"
-		"xpos" "r43"
-		"ypos" "355"
-		"wide" "24"
-		"tall" "24"
+		"xpos" "0"
+		"ypos" "412"
+		"wide" "38"
+		"tall" "32"
 	}
 
 	HudVoiceStatus
@@ -968,5 +968,14 @@
 		"xpos"	"6"
 		"ypos"	"440"
 		"wide"	"640"
+	}
+	
+	neo_message
+	{
+		"fieldName"		"neo_message"
+		"xpos"	"80"
+		"ypos"	"60"
+		"wide"	"300"
+		"tall"	"200"
 	}
 }

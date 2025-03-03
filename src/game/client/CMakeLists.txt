@@ -1498,6 +1498,9 @@ target_sources_grouped(
     TARGET client
     NAME "Source Files\\NEO"
     FILES
+    neo/c_neo_message.cpp
+    neo/c_neo_message.h
+    neo/c_neo_npc_dummy.cpp
     neo/c_neo_player.cpp
     neo/c_neo_player.h
     neo/c_neo_te_tocflash.cpp
@@ -1569,6 +1572,8 @@ target_sources_grouped(
     neo/ui/neo_hud_health_thermoptic_aux.h
     neo/ui/neo_hud_hint.cpp
     neo/ui/neo_hud_hint.h
+    neo/ui/neo_hud_message.cpp
+    neo/ui/neo_hud_message.h
     neo/ui/neo_hud_round_state.cpp
     neo/ui/neo_hud_round_state.h
     neo/ui/neo_hud_startup_sequence.cpp
