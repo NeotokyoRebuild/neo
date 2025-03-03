@@ -300,6 +300,11 @@ void SetClass(const CCommand &command)
 		return;
 	}
 
+	if (player->IsAlive() && NEORules()->GetGameType() == NEO_GAME_TYPE_TUT)
+	{
+		return;
+	}
+
 	if (command.ArgC() == 2)
 	{
 		// Class number from the .res button click action.
@@ -319,10 +324,16 @@ void SetClass(const CCommand &command)
 	}
 }
 
+extern void respawn(CBaseEntity* pEdict, bool fCopyCorpse);
 void SetSkin(const CCommand &command)
 {
 	auto player = static_cast<CNEO_Player*>(UTIL_GetCommandClient());
 	if (!player)
+	{
+		return;
+	}
+
+	if (player->IsAlive() && NEORules()->GetGameType() == NEO_GAME_TYPE_TUT)
 	{
 		return;
 	}
@@ -338,6 +349,11 @@ void SetSkin(const CCommand &command)
 
 		player->RequestSetSkin(nextSkin);
 	}
+
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_TUT && NEORules()->GetForcedWeapon() >= 0)
+	{
+		respawn(player, false);
+	}
 }
 
 void SetLoadout(const CCommand &command)
@@ -348,10 +364,20 @@ void SetLoadout(const CCommand &command)
 		return;
 	}
 
+	if (player->IsAlive() && NEORules()->GetGameType() == NEO_GAME_TYPE_TUT)
+	{
+		return;
+	}
+
 	if (command.ArgC() == 2)
 	{
 		int loadoutNumber = atoi(command.ArgV()[1]);
 		player->RequestSetLoadout(loadoutNumber);
+	}
+
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_TUT)
+	{
+		respawn(player, false);
 	}
 }
 
@@ -393,8 +419,8 @@ static int GetNumOtherPlayersConnected(CNEO_Player *asker)
 
 CNEO_Player::CNEO_Player()
 {
-	m_iNeoClass = NEO_CLASS_ASSAULT;
-	m_iNeoSkin = NEO_SKIN_FIRST;
+	m_iNeoClass = NEORules()->GetForcedClass() >= 0 ? NEORules()->GetForcedClass() : NEO_CLASS_ASSAULT;
+	m_iNeoSkin = NEORules()->GetForcedSkin() >= 0 ? NEORules()->GetForcedSkin() : NEO_SKIN_FIRST;
 	m_iNeoStar = NEO_DEFAULT_STAR;
 	m_iXP.GetForModify() = 0;
 	V_memset(m_szNeoName.GetForModify(), 0, sizeof(m_szNeoName));
@@ -407,7 +433,7 @@ CNEO_Player::CNEO_Player()
 	m_bCarryingGhost = false;
 	m_bInLean = NEO_LEAN_NONE;
 
-	m_iLoadoutWepChoice = 0;
+	m_iLoadoutWepChoice = NEORules()->GetForcedWeapon() >= 0 ? NEORules()->GetForcedWeapon() : 0;
 	m_iNextSpawnClassChoice = -1;
 
 	m_bShowTestMessage = false;
@@ -578,6 +604,33 @@ void CNEO_Player::Spawn(void)
 	if (teamNumber == TEAM_JINRAI || teamNumber == TEAM_NSF)
 	{
 		GiveLoadoutWeapon();
+	}
+
+	if (teamNumber == TEAM_UNASSIGNED && gpGlobals->eLoadType != MapLoad_Background)
+	{
+		char commandBuffer[11];
+		int forcedTeam = NEORules()->GetForcedTeam();
+		if (NEORules()->GetForcedTeam() < 1) // don't let this loop infinitely if forcedTeam set to TEAM_UNASSIGNED
+		{
+			engine->ClientCommand(this->edict(), "teammenu");
+			return;
+		}
+		ChangeTeam(forcedTeam);
+
+		if (NEORules()->GetForcedClass() < 0)
+		{
+			engine->ClientCommand(this->edict(), "classmenu");
+			return;
+		}
+		m_iNeoClass = NEORules()->GetForcedClass();
+
+		if (NEORules()->GetForcedWeapon() < 0)
+		{
+			engine->ClientCommand(this->edict(), "loadoutmenu");
+			return;
+		}
+		m_iLoadoutWepChoice = NEORules()->GetForcedWeapon();
+		respawn(this, false);
 	}
 }
 
@@ -1312,6 +1365,10 @@ void CNEO_Player::PostThink(void)
 
 void CNEO_Player::PlayerDeathThink()
 {
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_TUT)
+	{	// no respawning in TUT gamemode if team class and weapon enforced, NEO TODO (Adam) look at this later
+		return;
+	}
 	if (m_nButtons & ~IN_SCORE)
 	{
 		m_bEnterObserver = true;
@@ -1493,6 +1550,11 @@ bool CNEO_Player::HandleCommand_JoinTeam( int team )
 		UTIL_ClientPrintFilter(filterNonStreamers, HUD_PRINTTALK,
 							   "%s1 joined team %s2\n", GetNeoPlayerName(), GetTeam()->GetName());
 		UTIL_ClientPrintFilter(filterStreamers, HUD_PRINTTALK, "Player joined team %s1\n", GetTeam()->GetName());
+	}
+
+	if (isAllowedToJoin && NEORules()->GetForcedClass() >= 0 && NEORules()->GetForcedWeapon() >= 0)
+	{
+		respawn(this, false);
 	}
 
 	return isAllowedToJoin;
@@ -2457,40 +2519,7 @@ void CNEO_Player::PickDefaultSpawnTeam(void)
 {
 	if (!GetTeamNumber())
 	{
-		if (!NEORules()->IsTeamplay())
-		{
-			ProcessTeamSwitchRequest(TEAM_SPECTATOR);
-		}
-		else
-		{
-			ProcessTeamSwitchRequest(TEAM_SPECTATOR);
-
-#if(0) // code for random team selection
-			CTeam *pJinrai = g_Teams[TEAM_JINRAI];
-			CTeam *pNSF = g_Teams[TEAM_NSF];
-
-			if (!pJinrai || !pNSF)
-			{
-				ProcessTeamSwitchRequest(random->RandomInt(TEAM_JINRAI, TEAM_NSF));
-			}
-			else
-			{
-				if (pJinrai->GetNumPlayers() > pNSF->GetNumPlayers())
-				{
-					ProcessTeamSwitchRequest(TEAM_NSF);
-				}
-				else if (pNSF->GetNumPlayers() > pJinrai->GetNumPlayers())
-				{
-					ProcessTeamSwitchRequest(TEAM_JINRAI);
-				}
-				else
-				{
-					ProcessTeamSwitchRequest(random->RandomInt(TEAM_JINRAI, TEAM_NSF));
-				}
-			}
-#endif
-		}
-
+		ProcessTeamSwitchRequest(TEAM_UNASSIGNED);
 		if (!GetModelPtr())
 		{
 			SetPlayerTeamModel();
@@ -2500,7 +2529,7 @@ void CNEO_Player::PickDefaultSpawnTeam(void)
 
 bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 {
-	if (!GetGlobalTeam(iTeam) || iTeam == 0)
+	if (!GetGlobalTeam(iTeam))
 	{
 		Warning("HandleCommand_JoinTeam( %d ) - invalid team index.\n", iTeam);
 		return false;
@@ -2567,7 +2596,7 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	}
 
 	const bool suicidePlayerIfAlive = sv_neo_change_suicide_player.GetBool();
-	if (iTeam == TEAM_SPECTATOR)
+	if (iTeam == TEAM_SPECTATOR || iTeam == TEAM_UNASSIGNED)
 	{
 		if (!mp_allowspectators.GetInt())
 		{
@@ -2607,7 +2636,7 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	{
 		if (!justJoined && GetTeamNumber() != TEAM_SPECTATOR && !IsDead())
 		{
-			if (suicidePlayerIfAlive)
+			if (suicidePlayerIfAlive || NEORules()->CanChangeTeamClassWeaponWhenAlive())
 			{
 				SoftSuicide();
 			}

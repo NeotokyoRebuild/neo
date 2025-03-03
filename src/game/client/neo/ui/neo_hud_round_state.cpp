@@ -45,6 +45,7 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 {
 	m_pWszStatusUnicode = L"";
 	SetAutoDelete(true);
+	m_iHideHudElementNumber = NEO_HUD_ELEMENT_ROUND_STATE;
 
 	if (parent)
 	{
@@ -373,6 +374,8 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 
 void CNEOHud_RoundState::DrawNeoHudElement()
 {
+	CheckActiveStar();
+
 	if (!ShouldDraw())
 	{
 		return;
@@ -552,8 +555,6 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 	{
 		DrawPlayerList();
 	}
-
-	CheckActiveStar();
 }
 
 void CNEOHud_RoundState::DrawPlayerList()
@@ -761,7 +762,15 @@ void CNEOHud_RoundState::CheckActiveStar()
 	auto player = C_NEO_Player::GetLocalNEOPlayer();
 	Assert(player);
 
-	int currentStar = player->GetStar();
+	int currentStar;
+	if (!ShouldDraw())
+	{
+		currentStar = STAR_NONE;
+	}
+	else
+	{
+		currentStar = player->GetStar();
+	}
 	const int currentTeam = player->GetTeamNumber();
 
 	if (m_iPreviouslyActiveStar == currentStar && m_iPreviouslyActiveTeam == currentTeam)

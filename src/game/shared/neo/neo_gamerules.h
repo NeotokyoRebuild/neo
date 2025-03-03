@@ -104,9 +104,13 @@ enum NeoGameType {
 	NEO_GAME_TYPE_CTG,
 	NEO_GAME_TYPE_VIP,
 	NEO_GAME_TYPE_DM,
+	NEO_GAME_TYPE_EMT,
+	NEO_GAME_TYPE_TUT,
 
 	NEO_GAME_TYPE__TOTAL // Number of game types
 };
+
+struct NeoGameTypeSettings;
 
 extern const SZWSZTexts NEO_GAME_TYPE_DESC_STRS[NEO_GAME_TYPE__TOTAL];
 
@@ -129,6 +133,27 @@ enum NeoWinReason {
 	NEO_VICTORY_FORFEIT,
 	NEO_VICTORY_STALEMATE, // Not actually a victory
 	NEO_VICTORY_MAPIO
+};
+
+#define NEO_HUD_BITS_UNDERLYING_TYPE int
+enum NeoHudElements : NEO_HUD_BITS_UNDERLYING_TYPE {
+	NEO_HUD_ELEMENT_INVALID = 0x0,
+
+	NEO_HUD_ELEMENT_AMMO = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 0),
+	NEO_HUD_ELEMENT_COMPASS = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 1),
+	NEO_HUD_ELEMENT_CROSSHAIR = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 2),
+	NEO_HUD_ELEMENT_DAMAGE_INDICATOR = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 3),
+	NEO_HUD_ELEMENT_FRIENDLY_MARKER = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 4),
+	NEO_HUD_ELEMENT_GAME_EVENT = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 5),
+	NEO_HUD_ELEMENT_GHOST_BEACONS = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 6),
+	NEO_HUD_ELEMENT_GHOST_CAP_POINTS = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 7),
+	NEO_HUD_ELEMENT_GHOST_MARKER = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 8),
+	NEO_HUD_ELEMENT_GHOST_UPLINK_STATE = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 9),
+	NEO_HUD_ELEMENT_HEALTH_THERMOPTIC_AUX = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 10),
+	NEO_HUD_ELEMENT_HINT = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 11),
+	NEO_HUD_ELEMENT_ROUND_STATE = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 12),
+	NEO_HUD_ELEMENT_WORLDPOS_MARKER = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 13),
+	NEO_HUD_ELEMENT_SCOREBOARD = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 14),
 };
 
 class CNEORules : public CHL2MPRules, public CGameEventListener
@@ -176,7 +201,13 @@ public:
 #endif
 
 	virtual int GetGameType(void) OVERRIDE;
+	int GetHiddenHudElements();
+	int GetForcedTeam();
+	int GetForcedClass();
+	int GetForcedSkin();
+	int GetForcedWeapon();
 	virtual const char* GetGameTypeName(void) OVERRIDE;
+	bool CanChangeTeamClassWeaponWhenAlive();
 
 	void GetDMHighestScorers(
 #ifdef GAME_DLL
@@ -274,12 +305,15 @@ public:
 	bool ReadyUpPlayerIsReady(CNEO_Player *pNeoPlayer) const;
 
 	void CheckGameType();
+	void CheckHiddenHudElements();
+	void CheckPlayerForced();
 	void StartNextRound();
 
 	virtual const char* GetChatFormat(bool bTeamOnly, CBasePlayer* pPlayer) OVERRIDE;
 	virtual const char* GetChatPrefix(bool bTeamOnly, CBasePlayer* pPlayer) OVERRIDE { return ""; } // handled by GetChatFormat
 	virtual const char* GetChatLocation(bool bTeamOnly, CBasePlayer* pPlayer) OVERRIDE { return NULL; } // unimplemented
 #endif
+	bool CheckShouldNotThink();
 
 	void SetRoundStatus(NeoRoundStatus status);
 	NeoRoundStatus GetRoundStatus() const;
@@ -386,6 +420,11 @@ private:
 	bool m_bGamemodeTypeBeenInitialized = false;
 #endif
 	CNetworkVar(int, m_nRoundStatus);
+	CNetworkVar(int, m_iHiddenHudElements);
+	CNetworkVar(int, m_iForcedTeam);
+	CNetworkVar(int, m_iForcedClass);
+	CNetworkVar(int, m_iForcedSkin);
+	CNetworkVar(int, m_iForcedWeapon);
 	CNetworkVar(int, m_nGameTypeSelected);
 	CNetworkVar(int, m_iRoundNumber);
 	CNetworkString(m_szNeoJinraiClantag, NEO_MAX_CLANTAG_LENGTH);
