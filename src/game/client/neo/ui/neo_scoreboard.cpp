@@ -278,10 +278,10 @@ bool CNEOScoreBoard::ShowAvatars()
 	return neo_show_scoreboard_avatars.GetBool() && !neo_cl_streamermode.GetBool();
 }
 
-extern ConVar neo_cl_squad_hud_original;
+extern ConVar cl_neo_squad_hud_original;
 bool CNEOScoreBoard::UpdateAvatars()
 {
-	return !neo_cl_streamermode.GetBool() && (neo_show_scoreboard_avatars.GetBool() || !neo_cl_squad_hud_original.GetBool());
+	return !neo_cl_streamermode.GetBool() && (neo_show_scoreboard_avatars.GetBool() || !cl_neo_squad_hud_original.GetBool());
 }
 
 void CNEOScoreBoard::FireGameEvent( IGameEvent *event )
