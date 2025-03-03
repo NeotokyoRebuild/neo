@@ -307,6 +307,7 @@ void CMP3FileListPage::OnCommand( char const *cmd )
 	}
 }
 
+#ifdef NEO
 class CMP3PlayListListPanel : public ListPanel
 {
 public:
@@ -318,6 +319,7 @@ public:
 	}
 };
 
+#endif // NEO
 class CMP3PlayListPage : public PropertyPage
 {
 	DECLARE_CLASS_SIMPLE( CMP3PlayListPage, PropertyPage );
@@ -328,7 +330,11 @@ public:
 	  BaseClass( parent, panelName ),
 	  m_pPlayer( player )
 	{
+#ifdef NEO
 		m_pList = new CMP3PlayListListPanel( this, "PlayList" );
+#else
+		m_pList = new ListPanel( this, "PlayList" );
+#endif // NEO
 		m_pList->AddColumnHeader( 0, "File", "File", 400, ListPanel::COLUMN_RESIZEWITHWINDOW );
 		m_pList->AddColumnHeader( 1, "Artist", "Artist", 150, ListPanel::COLUMN_RESIZEWITHWINDOW );
 		m_pList->AddColumnHeader( 2, "Album", "Album", 150, ListPanel::COLUMN_RESIZEWITHWINDOW );
@@ -461,7 +467,11 @@ public:
 private:
 
 	CMP3Player		*m_pPlayer;
+#ifdef NEO
 	CMP3PlayListListPanel	*m_pList;
+#else
+	ListPanel		*m_pList;
+#endif // NEO
 
 	DHANDLE< Menu >	m_hMenu;
 };
@@ -1087,8 +1097,8 @@ void CMP3Player::ApplySchemeSettings(IScheme *pScheme)
 	HFont treeFont = pScheme->GetFont( "DefaultVerySmall" );
 	m_pTree->SetFont( treeFont );
 }
-#ifdef NEO
 
+#ifdef NEO
 class neo_mp3_Cb : public ICommandCallback
 {
 public:
@@ -1100,8 +1110,6 @@ public:
 neo_mp3_Cb neo_mp3_callback;
 
 ConCommand neo_mp3("neo_mp3", &neo_mp3_callback, "Toggle the mp3 player", FCVAR_DONTRECORD);
-#endif // NEO
-
 
 void CMP3Player::OnKeyCodeReleased(vgui::KeyCode code)
 {
@@ -1112,6 +1120,7 @@ void CMP3Player::OnKeyCodeReleased(vgui::KeyCode code)
 	}
 }
 
+#endif // NEO
 void CMP3Player::OnCommand( char const *cmd )
 {
 	if ( !Q_stricmp( cmd, "OnClose" ) )
@@ -1892,6 +1901,7 @@ void CMP3Player::OnChangeVolume( float newVol )
 	enginesound->SetVolumeByGuid( m_nSongGuid, newVol );
 }
 
+#ifdef NEO
 float CMP3Player::GetIdealVolume()
 {
 	if (m_flTimePaused > 0.f)
@@ -1911,6 +1921,7 @@ float CMP3Player::GetIdealVolume()
 	return (float)m_pVolume->GetValue() / 100.0f;
 }
 
+#endif // NEO
 void CMP3Player::GoToNextSong( int skip )
 {
 	bool shuffle = m_pShuffle->IsSelected();
