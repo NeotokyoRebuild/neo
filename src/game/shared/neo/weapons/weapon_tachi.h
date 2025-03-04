@@ -43,7 +43,7 @@ public:
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const override { return NEO_WEP_TACHI; }
 	virtual int GetNeoWepXPCost(const int neoClass) const override { return 0; }
 
-	virtual float GetSpeedScale(void) const override { return 1.0; }
+	virtual float GetSpeedScale(void) const OVERRIDE { return 0.85f; }
 
 	virtual int	GetMinBurst() OVERRIDE { return 1; }
 	virtual int	GetMaxBurst() OVERRIDE { return 3; }

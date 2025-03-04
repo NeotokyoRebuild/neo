@@ -11,7 +11,7 @@
 		"enabled" "1"
 
 		"PaintBackgroundType"	"2"
-		
+
 		"text_xpos" "8"
 		"text_ypos" "20"
 		"digit_xpos" "50"
@@ -28,7 +28,7 @@
 		"enabled" "1"
 
 		"PaintBackgroundType"	"2"
-		
+
 		"text_xpos" "8"
 		"text_ypos" "23"
 		"digit_xpos" "66"
@@ -57,16 +57,16 @@
 	    "text_xpos" "8"
 	    "text_ypos" "4"
 	}
-	
+
 	HudVoiceSelfStatus
 	{
 		"fieldName" "HudVoiceSelfStatus"
 		"visible" "1"
 		"enabled" "1"
-		"xpos" "r43"
-		"ypos" "355"
-		"wide" "24"
-		"tall" "24"
+		"xpos" "0"
+		"ypos" "412"
+		"wide" "38"
+		"tall" "32"
 	}
 
 	HudVoiceStatus
@@ -80,24 +80,24 @@
 		"tall" "400"
 
 		"item_wide"	"135"
-		
+
 		"show_avatar"		"0"
-		
+
 		"show_dead_icon"	"1"
 		"dead_xpos"			"1"
 		"dead_ypos"			"0"
 		"dead_wide"			"16"
 		"dead_tall"			"16"
-		
+
 		"show_voice_icon"	"1"
 		"icon_ypos"			"0"
 		"icon_xpos"			"15"
 		"icon_tall"			"16"
 		"icon_wide"			"16"
-		
+
 		"text_xpos"			"33"
 	}
-	
+
 	HudSuit [!$DECK]
 	{
 		"fieldName"		"HudSuit"
@@ -126,7 +126,7 @@
 		"enabled" "1"
 
 		"PaintBackgroundType"	"2"
-		
+
 		"text_xpos" "8"
 		"text_ypos" "23"
 		"digit_xpos" "56"
@@ -207,7 +207,7 @@
 		"digit_xpos" "42"
 		"digit_ypos" "0"
 	}
-	
+
 	HudSuitPower [!$DECK]
 	{
 		"fieldName" "HudSuitPower"
@@ -217,7 +217,7 @@
 		"ypos"	"396"
 		"wide"	"102"
 		"tall"	"26"
-		
+
 		"AuxPowerLowColor" "255 0 0 220"
 		"AuxPowerHighColor" "255 220 0 220"
 		"AuxPowerDisabledAlpha" "70"
@@ -247,7 +247,7 @@
 		"ypos"	"386"
 		"wide"	"112"
 		"tall"	"54"
-		
+
 		"AuxPowerLowColor" "255 0 0 220"
 		"AuxPowerHighColor" "255 220 0 220"
 		"AuxPowerDisabledAlpha" "70"
@@ -294,7 +294,7 @@
 		"icon_xpos"	"10"
 		"icon_ypos" 	"2"
 	}
-	
+
 	HudFlashlight
 	{
 		"fieldName" "HudFlashlight"
@@ -305,18 +305,18 @@
 		"ypos"	"436"		[$DECK]
 		"xpos_hidef"	"306"		[$X360]		// aligned to left
 		"xpos_lodef"	"c-18"		[$X360]		// centered in screen
-		"ypos"	"428"		[$X360]				
+		"ypos"	"428"		[$X360]
 		"tall"  "24" [!$DECK]
 		"tall"  "30" [$DECK]
 		"wide"	"36" [!$DECK]
 		"wide"	"46" [$DECK]
 		"font"	"WeaponIconsSmall" [!$DECK]
 		"font"	"FlashlightDeck" [$DECK]
-		
+
 		"icon_xpos"	"4"
 		"icon_ypos" "-8" [!$DECK]
 		"icon_ypos" "-12"  [$DECK]
-		
+
 		"BarInsetX" "4"
 		"BarInsetY" "18" [!$DECK]
 		"BarInsetY" "22" [$DECK]
@@ -335,7 +335,7 @@
 		"enabled" "1"
 		"DmgColorLeft" "255 0 0 0"
 		"DmgColorRight" "255 0 0 0"
-		
+
 		"dmg_xpos" "30"
 		"dmg_ypos" "100"
 		"dmg_wide" "36"
@@ -352,7 +352,7 @@
 		"Circle2Radius"	"74"
 		"DashGap"	"16"
 		"DashHeight" "4"	[$WIN32]
-		"DashHeight" "6"	[$X360]		
+		"DashHeight" "6"	[$X360]
 		"BorderThickness" "88"
 	}
 	HudWeaponSelection
@@ -563,7 +563,7 @@
 		"center_x"				"0"	// center text horizontally
 		"center_y"				"-1"	// align text on the bottom
 		"paintbackground"		"0"
-	}	
+	}
 
 	HudHintKeyDisplay
 	{
@@ -706,8 +706,8 @@
 		"tall"	 		"120"
 		"PaintBackgroundType"	"2"
 	}
-	
-	AchievementNotificationPanel	
+
+	AchievementNotificationPanel
 	{
 		"fieldName"	"AchievementNotificationPanel"
 		"visible"	"0"
@@ -715,14 +715,14 @@
 		"wide"	"0"
 		"tall"	"0"
 	}
-	
+
 	HudHintKeyDisplay
 	{
 		"fieldName"	"HudHintKeyDisplay"
 		"visible"	"0"
 		"enabled" 	"0"
 	}
-	
+
 	HUDAutoAim
 	{
 		"fieldName" "HUDAutoAim"
@@ -743,9 +743,9 @@
 		"tall"  "40"
 		"visible" "1"
 		"enabled" "1"
-		
+
 		"PaintBackgroundType"	"2"
-		
+
 		"bar_xpos"		"50"
 		"bar_ypos"		"20"
 		"bar_height"	"8"
@@ -754,14 +754,14 @@
 		"speaker_ypos"	"8"
 		"count_xpos_from_right"	"10"	// Counts from the right side
 		"count_ypos"	"8"
-		
+
 		"icon_texture"	"vgui/hud/icon_commentary"
 		"icon_xpos"		"0"
-		"icon_ypos"		"0"		
+		"icon_ypos"		"0"
 		"icon_width"	"40"
 		"icon_height"	"40"
 	}
-	
+
 	HudHDRDemo
 	{
 		"fieldName" "HudHDRDemo"
@@ -771,23 +771,23 @@
 		"tall"  "480"
 		"visible" "1"
 		"enabled" "1"
-		
+
 		"Alpha"	"255"
 		"PaintBackgroundType"	"2"
-		
+
 		"BorderColor"	"0 0 0 255"
 		"BorderLeft"	"16"
 		"BorderRight"	"16"
 		"BorderTop"		"16"
 		"BorderBottom"	"64"
 		"BorderCenter"	"0"
-		
+
 		"TextColor"		"255 255 255 255"
 		"LeftTitleY"	"422"
 		"RightTitleY"	"422"
 	}
 
-	AchievementNotificationPanel	
+	AchievementNotificationPanel
 	{
 		"fieldName"				"AchievementNotificationPanel"
 		"visible"				"1"
@@ -802,7 +802,7 @@
 	CHudVote
 	{
 		"fieldName"		"CHudVote"
-		"xpos"			"0"			
+		"xpos"			"0"
 		"ypos"			"0"
 		"wide"			"640"
 		"tall"			"480"
@@ -810,7 +810,7 @@
 		"enabled"		"1"
 		"bgcolor_override"	"0 0 0 0"
 		"PaintBackgroundType"	"0" // rounded corners
-	}	
+	}
 
 	NHudCompass
 	{
@@ -833,9 +833,9 @@
 		"tall"			"32"
 		"box_color"		"200 200 200 40"
 		"top_left_corner"	"1"
-		"top_right_corner"	"1"
+		"top_right_corner"	"0"
 		"bottom_left_corner"	"1"
-		"bottom_right_corner"	"1"
+		"bottom_right_corner"	"0"
 		"text_xpos"		"194"
 		"text_ypos"		"2"
 		"digit_as_number"	"0"
@@ -860,9 +860,9 @@
 		"wide"			"203"
 		"tall"			"32"
 		"box_color"		"200 200 200 40"
-		"top_left_corner"	"1"
+		"top_left_corner"	"0"
 		"top_right_corner"	"1"
-		"bottom_left_corner"	"1"
+		"bottom_left_corner"	"0"
 		"bottom_right_corner"	"1"
 		"healthtext_xpos"	"6"
 		"healthtext_ypos"	"2"
@@ -907,7 +907,7 @@
 		"box_color"		"200 200 200 40"
 		"health_monochrome"	"1"
 	}
-	
+
 	neo_ghost_uplink_state
 	{
 		"fieldName"		"neo_ghost_uplink_state"
@@ -916,7 +916,7 @@
 		"wide"	"640"
 		"tall"	"480"
 	}
-	
+
 	neo_ghost_marker
 	{
 		"fieldName"		"neo_ghost_marker"
@@ -925,7 +925,7 @@
 		"wide"	"640"
 		"tall"	"480"
 	}
-	
+
 	neo_ghost_beacons
 	{
 		"fieldName"		"neo_ghost_beacons"
@@ -934,7 +934,7 @@
 		"wide"	"640"
 		"tall"	"480"
 	}
-	
+
 	CNEOHud_GameEvent
 	{
 		"fieldName"		"CNEOHud_GameEvent"
@@ -943,7 +943,7 @@
 		"wide"	"640"
 		"tall"	"480"
 	}
-	
+
 	neo_iff
 	{
 		"fieldName"		"neo_iff"
@@ -961,12 +961,21 @@
 		"wide"	"142"
 		"tall"	"284"
 	}
-  
+
 	neo_ghost_startup_sequence
 	{
 		"fieldName"		"neo_ghost_startup_sequence"
 		"xpos"	"6"
 		"ypos"	"440"
 		"wide"	"640"
+	}
+	
+	neo_message
+	{
+		"fieldName"		"neo_message"
+		"xpos"	"80"
+		"ypos"	"60"
+		"wide"	"300"
+		"tall"	"200"
 	}
 }

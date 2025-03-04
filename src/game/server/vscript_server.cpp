@@ -3512,10 +3512,7 @@ REGISTER_SCRIPT_CONST_TABLE( Server )
 				if ( scriptLanguage == SL_SQUIRREL )
 				{
 #ifdef NEO
-					if (g_Script_vscript_server == nullptr)
-					{
-						g_Script_vscript_server = VScriptCompileScript("nut_scripts/vscript_server.nut");
-					}
+					g_Script_vscript_server = VScriptCompileScript("vscript_server.nut");
 #endif
 					g_pScriptVM->Run( g_Script_vscript_server );
 				}

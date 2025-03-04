@@ -38,6 +38,7 @@ CNEOHud_FriendlyMarker::CNEOHud_FriendlyMarker(const char* pElemName, vgui::Pane
 	: CNEOHud_WorldPosMarker(pElemName, parent)
 {
 	SetAutoDelete(true);
+	m_iHideHudElementNumber = NEO_HUD_ELEMENT_FRIENDLY_MARKER;
 
 	if (parent)
 	{

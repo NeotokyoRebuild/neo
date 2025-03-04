@@ -40,6 +40,7 @@ public:
 	void	Precache(void);
 	void	PrimaryAttack(void);
 	void	DecrementAmmo(CBaseCombatCharacter* pOwner);
+	virtual void	ProcessAnimationEvents() override;
 	void	ItemPostFrame(void);
 
 	bool	Deploy(void);
@@ -47,7 +48,7 @@ public:
 
 	bool	Reload(void) { return false; }
 
-	virtual float GetSpeedScale(void) const { return 1.0; }
+	virtual float GetSpeedScale(void) const OVERRIDE { return 0.85f; }
 
 	bool	CanDrop(void) OVERRIDE;
 	virtual bool CanPerformSecondaryAttack() const override final { return false; }

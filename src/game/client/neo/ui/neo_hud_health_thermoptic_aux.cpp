@@ -31,6 +31,7 @@ CNEOHud_HTA::CNEOHud_HTA(const char* pElementName, vgui::Panel* parent)
 	: CHudElement(pElementName), EditablePanel(parent, pElementName)
 {
 	SetAutoDelete(true);
+	m_iHideHudElementNumber = NEO_HUD_ELEMENT_HEALTH_THERMOPTIC_AUX;
 
 	if (parent)
 	{
@@ -154,7 +155,7 @@ void CNEOHud_HTA::DrawHTA() const
 		surface()->DrawPrintText(L"THERM-OPTIC", 11);
 		surface()->DrawSetTextColor(m_sprintTextColor);
 		surface()->DrawSetTextPos(sprinttext_xpos + xpos, sprinttext_ypos + ypos);
-		surface()->DrawPrintText(L"AUX", 3);
+		surface()->DrawPrintText(L"AUX POWER", 9);
 	}
 
 	int fontWidth, fontHeight;

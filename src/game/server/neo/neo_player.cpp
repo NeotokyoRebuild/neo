@@ -37,6 +37,8 @@
 
 #include "neo_weapon_loadout.h"
 
+#include "neo_player_shared.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -298,6 +300,11 @@ void SetClass(const CCommand &command)
 		return;
 	}
 
+	if (player->IsAlive() && NEORules()->GetGameType() == NEO_GAME_TYPE_TUT)
+	{
+		return;
+	}
+
 	if (command.ArgC() == 2)
 	{
 		// Class number from the .res button click action.
@@ -317,10 +324,16 @@ void SetClass(const CCommand &command)
 	}
 }
 
+extern void respawn(CBaseEntity* pEdict, bool fCopyCorpse);
 void SetSkin(const CCommand &command)
 {
 	auto player = static_cast<CNEO_Player*>(UTIL_GetCommandClient());
 	if (!player)
+	{
+		return;
+	}
+
+	if (player->IsAlive() && NEORules()->GetGameType() == NEO_GAME_TYPE_TUT)
 	{
 		return;
 	}
@@ -336,6 +349,11 @@ void SetSkin(const CCommand &command)
 
 		player->RequestSetSkin(nextSkin);
 	}
+
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_TUT && NEORules()->GetForcedWeapon() >= 0)
+	{
+		respawn(player, false);
+	}
 }
 
 void SetLoadout(const CCommand &command)
@@ -346,10 +364,20 @@ void SetLoadout(const CCommand &command)
 		return;
 	}
 
+	if (player->IsAlive() && NEORules()->GetGameType() == NEO_GAME_TYPE_TUT)
+	{
+		return;
+	}
+
 	if (command.ArgC() == 2)
 	{
 		int loadoutNumber = atoi(command.ArgV()[1]);
 		player->RequestSetLoadout(loadoutNumber);
+	}
+
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_TUT)
+	{
+		respawn(player, false);
 	}
 }
 
@@ -391,8 +419,8 @@ static int GetNumOtherPlayersConnected(CNEO_Player *asker)
 
 CNEO_Player::CNEO_Player()
 {
-	m_iNeoClass = NEO_CLASS_ASSAULT;
-	m_iNeoSkin = NEO_SKIN_FIRST;
+	m_iNeoClass = NEORules()->GetForcedClass() >= 0 ? NEORules()->GetForcedClass() : NEO_CLASS_ASSAULT;
+	m_iNeoSkin = NEORules()->GetForcedSkin() >= 0 ? NEORules()->GetForcedSkin() : NEO_SKIN_FIRST;
 	m_iNeoStar = NEO_DEFAULT_STAR;
 	m_iXP.GetForModify() = 0;
 	V_memset(m_szNeoName.GetForModify(), 0, sizeof(m_szNeoName));
@@ -405,7 +433,7 @@ CNEO_Player::CNEO_Player()
 	m_bCarryingGhost = false;
 	m_bInLean = NEO_LEAN_NONE;
 
-	m_iLoadoutWepChoice = 0;
+	m_iLoadoutWepChoice = NEORules()->GetForcedWeapon() >= 0 ? NEORules()->GetForcedWeapon() : 0;
 	m_iNextSpawnClassChoice = -1;
 
 	m_bShowTestMessage = false;
@@ -577,6 +605,33 @@ void CNEO_Player::Spawn(void)
 	{
 		GiveLoadoutWeapon();
 	}
+
+	if (teamNumber == TEAM_UNASSIGNED && gpGlobals->eLoadType != MapLoad_Background)
+	{
+		char commandBuffer[11];
+		int forcedTeam = NEORules()->GetForcedTeam();
+		if (NEORules()->GetForcedTeam() < 1) // don't let this loop infinitely if forcedTeam set to TEAM_UNASSIGNED
+		{
+			engine->ClientCommand(this->edict(), "teammenu");
+			return;
+		}
+		ChangeTeam(forcedTeam);
+
+		if (NEORules()->GetForcedClass() < 0)
+		{
+			engine->ClientCommand(this->edict(), "classmenu");
+			return;
+		}
+		m_iNeoClass = NEORules()->GetForcedClass();
+
+		if (NEORules()->GetForcedWeapon() < 0)
+		{
+			engine->ClientCommand(this->edict(), "loadoutmenu");
+			return;
+		}
+		m_iLoadoutWepChoice = NEORules()->GetForcedWeapon();
+		respawn(this, false);
+	}
 }
 
 extern ConVar neo_lean_angle;
@@ -682,25 +737,37 @@ void CNEO_Player::CalculateSpeed(void)
 		speed *= pNeoWep->GetSpeedScale();
 	}
 
-	static constexpr float DUCK_WALK_SPEED_MODIFIER = 0.75;
 	if (GetFlags() & FL_DUCKING)
 	{
-		speed *= DUCK_WALK_SPEED_MODIFIER;
+		speed *= NEO_CROUCH_WALK_MODIFIER;
 	}
+
 	if (m_nButtons & IN_WALK)
 	{
-		speed *= DUCK_WALK_SPEED_MODIFIER;
+		speed *= NEO_CROUCH_WALK_MODIFIER; // They stack
 	}
+
 	if (IsSprinting())
 	{
-		static constexpr float RECON_SPRINT_SPEED_MODIFIER = 1.35;
-		static constexpr float OTHER_CLASSES_SPRINT_SPEED_MODIFIER = 1.6;
-		speed *= m_iNeoClass == NEO_CLASS_RECON ? RECON_SPRINT_SPEED_MODIFIER : OTHER_CLASSES_SPRINT_SPEED_MODIFIER;
+		switch (m_iNeoClass) {
+			case NEO_CLASS_RECON:
+				speed *= NEO_RECON_SPRINT_MODIFIER;
+				break;
+			case NEO_CLASS_ASSAULT:
+			case NEO_CLASS_VIP:
+				speed *= NEO_ASSAULT_SPRINT_MODIFIER;
+				break;
+			case NEO_CLASS_SUPPORT:
+				speed *= NEO_SUPPORT_SPRINT_MODIFIER; // Should never happen
+				break;
+			default:
+				break;
+		}
 	}
+
 	if (IsInAim())
 	{
-		static constexpr float AIM_SPEED_MODIFIER = 0.6;
-		speed *= AIM_SPEED_MODIFIER;
+		speed *= NEO_AIM_MODIFIER;
 	}
 
 	Vector absoluteVelocity = GetAbsVelocity();
@@ -895,7 +962,7 @@ void CNEO_Player::HandleSpeedChanges( CMoveData *mv )
 	}
 	else if ( bWantWalking )
 	{
-		mv->m_flClientMaxSpeed = GetWalkSpeed_WithActiveWepEncumberment();
+		mv->m_flClientMaxSpeed = GetCrouchSpeed_WithActiveWepEncumberment();
 	}
 	else
 	{
@@ -1298,6 +1365,10 @@ void CNEO_Player::PostThink(void)
 
 void CNEO_Player::PlayerDeathThink()
 {
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_TUT)
+	{	// no respawning in TUT gamemode if team class and weapon enforced, NEO TODO (Adam) look at this later
+		return;
+	}
 	if (m_nButtons & ~IN_SCORE)
 	{
 		m_bEnterObserver = true;
@@ -1479,6 +1550,11 @@ bool CNEO_Player::HandleCommand_JoinTeam( int team )
 		UTIL_ClientPrintFilter(filterNonStreamers, HUD_PRINTTALK,
 							   "%s1 joined team %s2\n", GetNeoPlayerName(), GetTeam()->GetName());
 		UTIL_ClientPrintFilter(filterStreamers, HUD_PRINTTALK, "Player joined team %s1\n", GetTeam()->GetName());
+	}
+
+	if (isAllowedToJoin && NEORules()->GetForcedClass() >= 0 && NEORules()->GetForcedWeapon() >= 0)
+	{
+		respawn(this, false);
 	}
 
 	return isAllowedToJoin;
@@ -2443,40 +2519,7 @@ void CNEO_Player::PickDefaultSpawnTeam(void)
 {
 	if (!GetTeamNumber())
 	{
-		if (!NEORules()->IsTeamplay())
-		{
-			ProcessTeamSwitchRequest(TEAM_SPECTATOR);
-		}
-		else
-		{
-			ProcessTeamSwitchRequest(TEAM_SPECTATOR);
-
-#if(0) // code for random team selection
-			CTeam *pJinrai = g_Teams[TEAM_JINRAI];
-			CTeam *pNSF = g_Teams[TEAM_NSF];
-
-			if (!pJinrai || !pNSF)
-			{
-				ProcessTeamSwitchRequest(random->RandomInt(TEAM_JINRAI, TEAM_NSF));
-			}
-			else
-			{
-				if (pJinrai->GetNumPlayers() > pNSF->GetNumPlayers())
-				{
-					ProcessTeamSwitchRequest(TEAM_NSF);
-				}
-				else if (pNSF->GetNumPlayers() > pJinrai->GetNumPlayers())
-				{
-					ProcessTeamSwitchRequest(TEAM_JINRAI);
-				}
-				else
-				{
-					ProcessTeamSwitchRequest(random->RandomInt(TEAM_JINRAI, TEAM_NSF));
-				}
-			}
-#endif
-		}
-
+		ProcessTeamSwitchRequest(TEAM_UNASSIGNED);
 		if (!GetModelPtr())
 		{
 			SetPlayerTeamModel();
@@ -2486,7 +2529,7 @@ void CNEO_Player::PickDefaultSpawnTeam(void)
 
 bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 {
-	if (!GetGlobalTeam(iTeam) || iTeam == 0)
+	if (!GetGlobalTeam(iTeam))
 	{
 		Warning("HandleCommand_JoinTeam( %d ) - invalid team index.\n", iTeam);
 		return false;
@@ -2553,7 +2596,7 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	}
 
 	const bool suicidePlayerIfAlive = sv_neo_change_suicide_player.GetBool();
-	if (iTeam == TEAM_SPECTATOR)
+	if (iTeam == TEAM_SPECTATOR || iTeam == TEAM_UNASSIGNED)
 	{
 		if (!mp_allowspectators.GetInt())
 		{
@@ -2593,7 +2636,7 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	{
 		if (!justJoined && GetTeamNumber() != TEAM_SPECTATOR && !IsDead())
 		{
-			if (suicidePlayerIfAlive)
+			if (suicidePlayerIfAlive || NEORules()->CanChangeTeamClassWeaponWhenAlive())
 			{
 				SoftSuicide();
 			}
@@ -3054,11 +3097,6 @@ float CNEO_Player::GetNormSpeed_WithActiveWepEncumberment(void) const
 	return GetNormSpeed() * GetActiveWeaponSpeedScale();
 }
 
-float CNEO_Player::GetWalkSpeed_WithActiveWepEncumberment(void) const
-{
-	return GetWalkSpeed() * GetActiveWeaponSpeedScale();
-}
-
 float CNEO_Player::GetSprintSpeed_WithActiveWepEncumberment(void) const
 {
 	return GetSprintSpeed() * GetActiveWeaponSpeedScale();
@@ -3074,12 +3112,6 @@ float CNEO_Player::GetNormSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWe
 {
 	Assert(pNeoWep);
 	return GetNormSpeed() * pNeoWep->GetSpeedScale();
-}
-
-float CNEO_Player::GetWalkSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const
-{
-	Assert(pNeoWep);
-	return GetWalkSpeed() * pNeoWep->GetSpeedScale();
 }
 
 float CNEO_Player::GetSprintSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const
@@ -3101,7 +3133,7 @@ float CNEO_Player::GetCrouchSpeed(void) const
 	case NEO_CLASS_VIP:
 		return NEO_VIP_CROUCH_SPEED;
 	default:
-		return NEO_BASE_CROUCH_SPEED;
+		return (NEO_BASE_SPEED * NEO_CROUCH_WALK_MODIFIER);
 	}
 }
 
@@ -3110,32 +3142,15 @@ float CNEO_Player::GetNormSpeed(void) const
 	switch (m_iNeoClass)
 	{
 	case NEO_CLASS_RECON:
-		return NEO_RECON_NORM_SPEED;
+		return NEO_RECON_BASE_SPEED;
 	case NEO_CLASS_ASSAULT:
-		return NEO_ASSAULT_NORM_SPEED;
+		return NEO_ASSAULT_BASE_SPEED;
 	case NEO_CLASS_SUPPORT:
-		return NEO_SUPPORT_NORM_SPEED;
+		return NEO_SUPPORT_BASE_SPEED;
 	case NEO_CLASS_VIP:
-		return NEO_VIP_NORM_SPEED;
+		return NEO_VIP_BASE_SPEED;
 	default:
-		return NEO_BASE_NORM_SPEED;
-	}
-}
-
-float CNEO_Player::GetWalkSpeed(void) const
-{
-	switch (m_iNeoClass)
-	{
-	case NEO_CLASS_RECON:
-		return NEO_RECON_WALK_SPEED;
-	case NEO_CLASS_ASSAULT:
-		return NEO_ASSAULT_WALK_SPEED;
-	case NEO_CLASS_SUPPORT:
-		return NEO_SUPPORT_WALK_SPEED;
-	case NEO_CLASS_VIP:
-		return NEO_VIP_WALK_SPEED;
-	default:
-		return NEO_BASE_WALK_SPEED;
+		return NEO_BASE_SPEED;
 	}
 }
 
@@ -3152,7 +3167,7 @@ float CNEO_Player::GetSprintSpeed(void) const
 	case NEO_CLASS_VIP:
 		return NEO_VIP_SPRINT_SPEED;
 	default:
-		return NEO_BASE_SPRINT_SPEED;
+		return NEO_BASE_SPEED; // No generic sprint modifier; default speed.
 	}
 }
 
