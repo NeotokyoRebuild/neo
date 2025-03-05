@@ -147,6 +147,11 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropInt(RECVINFO(m_nRoundStatus)),
 	RecvPropInt(RECVINFO(m_nGameTypeSelected)),
 	RecvPropInt(RECVINFO(m_iRoundNumber)),
+	RecvPropInt(RECVINFO(m_iHiddenHudElements)),
+	RecvPropInt(RECVINFO(m_iForcedTeam)),
+	RecvPropInt(RECVINFO(m_iForcedClass)),
+	RecvPropInt(RECVINFO(m_iForcedSkin)),
+	RecvPropInt(RECVINFO(m_iForcedWeapon)),
 	RecvPropString(RECVINFO(m_szNeoJinraiClantag)),
 	RecvPropString(RECVINFO(m_szNeoNSFClantag)),
 	RecvPropInt(RECVINFO(m_iGhosterTeam)),
@@ -163,6 +168,11 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropInt(SENDINFO(m_nRoundStatus)),
 	SendPropInt(SENDINFO(m_nGameTypeSelected)),
 	SendPropInt(SENDINFO(m_iRoundNumber)),
+	SendPropInt(SENDINFO(m_iHiddenHudElements)),
+	SendPropInt(SENDINFO(m_iForcedTeam)),
+	SendPropInt(SENDINFO(m_iForcedClass)),
+	SendPropInt(SENDINFO(m_iForcedSkin)),
+	SendPropInt(SENDINFO(m_iForcedWeapon)),
 	SendPropString(SENDINFO(m_szNeoJinraiClantag)),
 	SendPropString(SENDINFO(m_szNeoNSFClantag)),
 	SendPropInt(SENDINFO(m_iGhosterTeam)),
@@ -200,6 +210,25 @@ static NEOViewVectors g_NEOViewVectors(
 	Vector(-16, -16, 0 ),	  //VEC_CROUCH_TRACE_MIN (m_vCrouchTraceMin)
 	Vector(16, 16, 60)	  //VEC_CROUCH_TRACE_MAX (m_vCrouchTraceMax)
 );
+
+struct NeoGameTypeSettings {
+	const char* gameTypeName;
+	bool respawns;
+	bool neoRulesThink;
+	bool changeTeamClassLoadoutWhenAlive;
+	bool comp;
+	bool capPrevent;
+};
+
+const NeoGameTypeSettings NEO_GAME_TYPE_SETTINGS[NEO_GAME_TYPE__TOTAL] = {
+//						gametypeName	respawns	neoRulesThink	changeTeamClassLoadoutWhenAlive	comp	capPrevent
+/*NEO_GAME_TYPE_TDM*/	{"TDM",			true,		true,			false,							false,	false},
+/*NEO_GAME_TYPE_CTG*/	{"CTG",			false,		true,			false,							true,	true},
+/*NEO_GAME_TYPE_VIP*/	{"VIP",			false,		true,			false,							true,	true},
+/*NEO_GAME_TYPE_DM*/	{"DM",			true,		true,			false,							false,	false},
+/*NEO_GAME_TYPE_EMT*/	{"EMT",			true,		false,			true,							false,	false},
+/*NEO_GAME_TYPE_TUT*/	{"TUT",			false,		false,			false,							false,	false},
+};
 
 #ifdef CLIENT_DLL
 	void RecvProxy_NEORules( const RecvProp *pProp, void **pOut,
@@ -403,6 +432,11 @@ CNEORules::CNEORules()
 
 	m_nGameTypeSelected = NEO_GAME_TYPE_CTG;
 #endif
+	m_iHiddenHudElements = 0;
+	m_iForcedTeam = -1;
+	m_iForcedClass = -1;
+	m_iForcedSkin = -1;
+	m_iForcedWeapon = -1;
 
 	ResetMapSessionCommon();
 	ListenForGameEvent("round_start");
@@ -763,24 +797,50 @@ void CNEORules::CheckGameType()
 	iStaticInitOnCmd = iGamemodeEnforce;
 	iStaticInitOnRandAllow = iGamemodeRandAllow;
 }
+
+void CNEORules::CheckHiddenHudElements()
+{
+	const auto pEntGameCfg = static_cast<CNEOGameConfig*>(gEntList.FindEntityByClassname(nullptr, "neo_game_config"));
+	m_iHiddenHudElements = (pEntGameCfg) ? pEntGameCfg->m_HiddenHudElements : 0;
+}
+
+void CNEORules::CheckPlayerForced()
+{
+	const auto pEntGameCfg = static_cast<CNEOGameConfig*>(gEntList.FindEntityByClassname(nullptr, "neo_game_config"));
+	m_iForcedTeam = (pEntGameCfg) ? pEntGameCfg->m_ForcedTeam : -1;
+	m_iForcedClass = (pEntGameCfg) ? pEntGameCfg->m_ForcedClass : -1;
+	m_iForcedSkin = (pEntGameCfg) ? pEntGameCfg->m_ForcedSkin : -1;
+	m_iForcedWeapon = (pEntGameCfg) ? pEntGameCfg->m_ForcedWeapon : -1;
+}
 #endif
+
+bool CNEORules::CheckShouldNotThink()
+{
+#ifdef GAME_DLL
+	if (gpGlobals->eLoadType == MapLoad_Background || !NEO_GAME_TYPE_SETTINGS[m_nGameTypeSelected].neoRulesThink)
+#else // CLIENT_DLL
+	if (engine->IsLevelMainMenuBackground() || !NEO_GAME_TYPE_SETTINGS[m_nGameTypeSelected].neoRulesThink)
+#endif // GAME_DLL || CLIENT_DLL
+	{
+		return true;
+	}
+	return false;
+}
 
 void CNEORules::Think(void)
 {
 #ifdef GAME_DLL
-	if (gpGlobals->eLoadType == MapLoad_Background)
-#else // CLIENT_DLL
-	if (engine->IsLevelMainMenuBackground())
-#endif // GAME_DLL || CLIENT_DLL
+	CheckHiddenHudElements();
+	CheckGameType();
+	CheckPlayerForced();
+	if (CheckShouldNotThink())
 	{
 		return;
 	}
-#ifdef GAME_DLL
 	const bool bIsIdleState = m_nRoundStatus == NeoRoundStatus::Idle || m_nRoundStatus == NeoRoundStatus::Warmup;
 	bool bIsPause = m_nRoundStatus == NeoRoundStatus::Pause;
 	if (bIsIdleState && gpGlobals->curtime > m_flNeoNextRoundStartTime)
 	{
-		CheckGameType();
 		StartNextRound();
 		return;
 	}
@@ -1656,7 +1716,7 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 		return;
 	}
 
-	const bool bNonCmdGameType = (NEORules()->GetGameType() == NEO_GAME_TYPE_DM || NEORules()->GetGameType() == NEO_GAME_TYPE_TDM);
+	const bool bNonCmdGameType = !NEO_GAME_TYPE_SETTINGS[GetGameType()].comp;
 
 	if (neo_sv_readyup_lobby.GetBool() && (bNonCmdGameType || m_nRoundStatus != NeoRoundStatus::Idle))
 	{
@@ -2177,6 +2237,8 @@ const SZWSZTexts NEO_GAME_TYPE_DESC_STRS[NEO_GAME_TYPE__TOTAL] = {
 	SZWSZ_INIT("Capture the Ghost"),
 	SZWSZ_INIT("Extract or Kill the VIP"),
 	SZWSZ_INIT("Deathmatch"),
+	SZWSZ_INIT("Free Roam"),
+	SZWSZ_INIT("Training"),
 };
 
 const char *CNEORules::GetGameDescription(void)
@@ -3029,7 +3091,7 @@ static CNEO_Player* FetchAssists(CNEO_Player* attacker, CNEO_Player* victim)
 #ifdef GAME_DLL
 void CNEORules::CheckIfCapPrevent(CNEO_Player *capPreventerPlayer)
 {
-	if (m_nGameTypeSelected != NEO_GAME_TYPE_CTG && m_nGameTypeSelected != NEO_GAME_TYPE_VIP)
+	if (!NEO_GAME_TYPE_SETTINGS[GetGameType()].capPrevent)
 	{
 		return;
 	}
@@ -3471,18 +3533,20 @@ bool CNEORules::FPlayerCanRespawn(CBasePlayer* pPlayer)
 {
 	auto gameType = GetGameType();
 
-	if (gameType == NEO_GAME_TYPE_TDM || gameType == NEO_GAME_TYPE_DM)
+	if (NEO_GAME_TYPE_SETTINGS[gameType].respawns)
 	{
-		return true;
-	}
-	// Some unknown game mode
-	else if (gameType != NEO_GAME_TYPE_CTG && gameType != NEO_GAME_TYPE_VIP)
-	{
-		Assert(false);
 		return true;
 	}
 
-	// Mode is CTG
+	else if (gameType == NEO_GAME_TYPE_TUT)
+	{
+		if (pPlayer->IsAlive())
+		{
+			return false;
+		}
+		return true;
+	}
+
 	auto jinrai = GetGlobalTeam(TEAM_JINRAI);
 	auto nsf = GetGlobalTeam(TEAM_NSF);
 
@@ -3603,22 +3667,39 @@ int CNEORules::GetGameType(void)
 	return m_nGameTypeSelected;
 }
 
+int CNEORules::GetHiddenHudElements(void)
+{
+	return m_iHiddenHudElements;
+}
+
+int CNEORules::GetForcedTeam(void)
+{
+	return m_iForcedTeam.Get();
+}
+
+int CNEORules::GetForcedClass(void)
+{
+	return m_iForcedClass;
+}
+
+int CNEORules::GetForcedSkin(void)
+{
+	return m_iForcedSkin;
+}
+
+int CNEORules::GetForcedWeapon(void)
+{
+	return m_iForcedWeapon;
+}
+
 const char* CNEORules::GetGameTypeName(void)
 {
-	switch (GetGameType())
-	{
-	case NEO_GAME_TYPE_TDM:
-		return "TDM";
-	case NEO_GAME_TYPE_CTG:
-		return "CTG";
-	case NEO_GAME_TYPE_VIP:
-		return "VIP";
-	case NEO_GAME_TYPE_DM:
-		return "DM";
-	default:
-		Assert(false);
-		return "NAN";
-	}
+	return NEO_GAME_TYPE_SETTINGS[GetGameType()].gameTypeName;
+}
+
+bool CNEORules::CanChangeTeamClassWeaponWhenAlive()
+{
+	return NEO_GAME_TYPE_SETTINGS[GetGameType()].changeTeamClassLoadoutWhenAlive;
 }
 
 float CNEORules::GetRemainingPreRoundFreezeTime(const bool clampToZero) const

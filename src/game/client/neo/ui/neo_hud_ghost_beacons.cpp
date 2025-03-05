@@ -41,6 +41,7 @@ CNEOHud_GhostBeacons::CNEOHud_GhostBeacons(const char *pElementName, vgui::Panel
 	: CHudElement(pElementName), EditablePanel(parent, pElementName)
 {
 	SetAutoDelete(true);
+	m_iHideHudElementNumber = NEO_HUD_ELEMENT_GHOST_BEACONS;
 
 	if (parent)
 	{
