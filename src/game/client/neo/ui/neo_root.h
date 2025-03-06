@@ -69,7 +69,9 @@ enum RootState
 struct WidgetInfo
 {
 	const char *label;
-	const char *gamemenucommand; // TODO: Replace
+	bool isFake;
+	const char *command; // TODO: Replace
+	bool isMainMenuCommand;
 	RootState nextState;
 	int flags;
 };
@@ -88,6 +90,10 @@ enum MainMenuButtons
 	MMBTN_CREATESERVER,
 	MMBTN_DISCONNECT,
 	MMBTN_PLAYERLIST,
+	MMBTN_SEPARATOR1,
+	MMBTN_TUTORIAL,
+	MMBTN_FIRINGRANGE,
+	MMBTN_SEPARATOR2,
 	MMBTN_OPTIONS,
 	MMBTN_QUIT,
 
