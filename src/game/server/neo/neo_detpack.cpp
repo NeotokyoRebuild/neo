@@ -105,7 +105,7 @@ void CNEODeployedDetpack::DelayThink()
 		SetSolid(SOLID_NONE);
 		SetAbsVelocity(vec3_origin);
 		SetMoveType(MOVETYPE_NONE);
-		if (!groundEntity->IsWorld())
+		if (!groundEntity->IsWorld() && !groundEntity->IsBaseCombatWeapon())
 		{
 			SetParent(groundEntity);
 		}
