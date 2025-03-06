@@ -104,7 +104,10 @@ void CNEODeployedDetpack::DelayThink()
 		SetSolid(SOLID_NONE);
 		SetAbsVelocity(vec3_origin);
 		SetMoveType(MOVETYPE_NONE);
-
+		if (GetGroundEntity()->entindex() != 0)
+		{
+			SetParent(GetGroundEntity());
+		}
 		m_hasBeenMadeNonSolid = true;
 		// Clear think function
 		SetThink(NULL);
