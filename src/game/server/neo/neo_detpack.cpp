@@ -95,7 +95,8 @@ void CNEODeployedDetpack::DelayThink()
 		m_bHasWarnedAI = true;
 	}
 
-	m_hasSettled = GetLocalVelocity().LengthSqr() < 0.5f && GetGroundEntity();
+	CBaseEntity* groundEntity = GetGroundEntity();
+	m_hasSettled = GetLocalVelocity().LengthSqr() < 0.5f && groundEntity;
 	m_lastPos = GetAbsOrigin();
 
 	if (m_hasSettled && !m_hasBeenMadeNonSolid)
@@ -104,9 +105,9 @@ void CNEODeployedDetpack::DelayThink()
 		SetSolid(SOLID_NONE);
 		SetAbsVelocity(vec3_origin);
 		SetMoveType(MOVETYPE_NONE);
-		if (GetGroundEntity()->entindex() != 0)
+		if (!groundEntity->IsWorld())
 		{
-			SetParent(GetGroundEntity());
+			SetParent(groundEntity);
 		}
 		m_hasBeenMadeNonSolid = true;
 		// Clear think function
