@@ -61,6 +61,12 @@ body:
         A clear and concise description of what you expected to happen.
     validations:
       required: true
+  - type: textarea
+    id: behavior_actual
+    attributes:
+      label: Actual behavior
+      description: |
+        A clear and concise description of what happened instead of the expected behavior.
   - type: checkboxes
     id: machine_os
     attributes:
@@ -77,6 +83,24 @@ body:
       placeholder: "For Windows: EX: 10 or 11; For Linux: EX: Arch, Debian 12, Fedora 40, SteamOS, etc..."
     validations:
       required: true
+  - type: input
+    id: machine_cpu
+    attributes:
+      label: Machine's CPU
+      description: "If applicable, put in the model of the CPU."
+      placeholder: "EX: Intel i5-4670k, AMD Ryzen 7500f, Intel Xeon E3-1275 v3, etc..."
+  - type: input
+    id: machine_gpu
+    attributes:
+      label: Machine's GPU
+      description: "If applicable, put in the model of the GPU."
+      placeholder: "EX: AMD RX 580, NVIDIA RTX 4070, Intel iGPU, AMD APU, etc..."
+  - type: input
+    id: gpu_driver
+    attributes:
+      label: GPU's driver
+      description: "If applicable, put in the driver for the GPU."
+      placeholder: "EX: NVIDIA 555.99, AMD Adrenalin 24.5.1, Mesa, etc..."
   - type: input
     id: build_compiler
     attributes:
