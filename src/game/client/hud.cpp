@@ -160,6 +160,7 @@ void FreeHudTextureList( CUtlDict< CHudTexture *, int >& list )
 vgui::HFont g_hFontTrebuchet24 = vgui::INVALID_FONT;
 #ifdef NEO
 vgui::HFont g_hFontKillfeed = vgui::INVALID_FONT;
+vgui::HFont g_hFontKillfeedIcons = vgui::INVALID_FONT;
 vgui::HFont g_hFontJoinMenus = vgui::INVALID_FONT;
 #endif
 
@@ -498,12 +499,18 @@ void CHud::InitFonts()
 	g_hFontTrebuchet24 = pScheme->GetFont("CenterPrintText", true);
 
 #ifdef NEO
-	g_hFontKillfeed = pScheme->GetFont("NHudOCRSmall", true);
+	g_hFontKillfeed = pScheme->GetFont("NHudOCRSmallNoAdditive", true);
+	g_hFontKillfeedIcons = pScheme->GetFont("NHudKillFeedIcons", true);
 
 	if (g_hFontKillfeed == vgui::INVALID_FONT)
 	{
 		Assert(false);
 		g_hFontKillfeed = g_hFontTrebuchet24;
+	}
+	if (g_hFontKillfeedIcons == vgui::INVALID_FONT)
+	{
+		Assert(false);
+		g_hFontKillfeedIcons = g_hFontTrebuchet24;
 	}
 #endif
 }

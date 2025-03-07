@@ -3,6 +3,7 @@ WeaponData
 {
 	"printname"		"MilSO"
 	"BulletCharacter"	"b"
+	"iDeathIcon"		":"
 	"viewmodel"		"models/weapons/v_jinrai_milso.mdl"
 	"team2viewmodel"	"models/weapons/v_nsf_milso.mdl"
 	"playermodel"		"models/weapons/w_milso.mdl"

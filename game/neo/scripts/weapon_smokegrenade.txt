@@ -2,6 +2,7 @@ WeaponData
 {
 	// Weapon data is loaded by both the Game and Client DLLs.
 	"printname"			"Smoke Grenade"
+	"iDeathIcon"		"C"
 	"viewmodel"			"models/weapons/v_jinrai_smokenade.mdl"
 	"team2viewmodel"		"models/weapons/v_nsf_smokenade.mdl"
 	"playermodel"			"models/weapons/w_smokenade.mdl"	

@@ -387,13 +387,18 @@
 		"tall"	 "480"
 	}
 
-	HudDeathNotice
+	neo_death_notice
 	{
-		"fieldName" "HudDeathNotice"
-		"visible" "1"
-		"enabled" "1"
-		"wide"	 "640"
-		"tall"	 "480"
+		"fieldName" 		"neo_death_notice"
+		"visible" 			"1"
+		"enabled" 			"1"
+		//"wide"	 			"640"
+		//"tall"	 			"480"
+		"LineMargin"		"2"
+		"MaxDeathNotices" 	"8"
+		"RightJustify"		"1"
+		"BackgroundColor"	"200 200 200 40"
+		"BackgroundColourInvolved"	"20 20 20 220"
 	}
 
 	HudVehicle

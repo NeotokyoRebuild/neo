@@ -6,6 +6,7 @@ WeaponData
 	"printname"		"ZR68S"
 	
 	"BulletCharacter"	"c"
+	"iDeathIcon"		"K"
 	
 	"viewmodel"		"models/weapons/v_jinrai_zr68s.mdl"
 	"team2viewmodel"	"models/weapons/v_nsf_zr68s.mdl"
