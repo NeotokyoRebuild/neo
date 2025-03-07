@@ -292,7 +292,7 @@ float EaseOut(float current, float target, float step)
 
 #ifdef CLIENT_DLL
 ConVar cl_neo_lean_viewmodel_only("cl_neo_lean_viewmodel_only", "0", FCVAR_ARCHIVE, "Rotate view-model instead of camera when leaning", true, 0, true, 1);
-ConVar cl_neo_lean_automatic("cl_neo_lean_automatic", "0", FCVAR_ARCHIVE, "Automatic leaning around corners", true, 0, true, 1);
+ConVar cl_neo_lean_automatic("cl_neo_lean_automatic", "0", FCVAR_ARCHIVE, "Automatic leaning around corners", true, 0, true, 2);
 #ifdef DEBUG
 ConVar cl_neo_lean_automatic_debug("cl_neo_lean_automatic_debug", "0", FCVAR_ARCHIVE | FCVAR_DEVELOPMENTONLY, "Show automatic leaning tracelines", true, 0, true, 1);
 #endif // DEBUG
@@ -309,54 +309,57 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 	if (player->IsAlive() && player->GetFlags() & FL_ONGROUND)
 	{
 #ifdef CLIENT_DLL
-		if (cl_neo_lean_automatic.GetBool())
+		int cl_neo_lean_automatic_value = cl_neo_lean_automatic.GetInt();
+		if (cl_neo_lean_automatic_value)
 		{
-			Vector startPos = player->GetAbsOrigin();
-			startPos.z = player->EyePosition().z; // Ideally shouldn't move due to lean but this is a nice spot
-			constexpr float tracelineAngleChange = 15.f;
-			constexpr int startingDistance = 80;
-			int distance = startingDistance;
 			int total = 0;
-			trace_t tr;
-			CTraceFilterHitAll filter;
-			for (int i = 1; i <= 10; i++)
+			if (cl_neo_lean_automatic_value == 2 || (cl_neo_lean_automatic_value == 1 && player->IsInAim()))
 			{
-				Vector endPos = startPos;
-				float offset = (i / (tracelineAngleChange - i));
-				endPos.x += cos(DEG2RAD(viewAng.y) + offset) * distance;
-				endPos.y += sin(DEG2RAD(viewAng.y) + offset) * distance;
-				UTIL_TraceLine(startPos, endPos, MASK_ALL, &filter, &tr);
-				if (tr.fraction != 1.0)
+				Vector startPos = player->GetAbsOrigin();
+				startPos.z = player->EyePosition().z; // Ideally shouldn't move due to lean but this is a nice spot
+				constexpr float tracelineAngleChange = 15.f;
+				constexpr int startingDistance = 80;
+				int distance = startingDistance;
+				trace_t tr;
+				for (int i = 1; i <= 10; i++)
 				{
-					total -= 1;
+					Vector endPos = startPos;
+					float offset = (i / (tracelineAngleChange - i));
+					endPos.x += cos(DEG2RAD(viewAng.y) + offset) * distance;
+					endPos.y += sin(DEG2RAD(viewAng.y) + offset) * distance;
+					UTIL_TraceLine(startPos, endPos, MASK_SHOT_HULL, player, COLLISION_GROUP_NONE, &tr);
+					if (tr.fraction != 1.0)
+					{
+						total -= 1;
+					}
+					distance = Max(20, distance - 5);
+	#ifdef DEBUG
+					if (cl_neo_lean_automatic_debug.GetBool())
+					{
+						DebugDrawLine(startPos, endPos, 0, tr.fraction == 1.0 ? 255 : 0, 255, 0, 0);
+					}
+	#endif // DEBUG
 				}
-				distance = Max(20, distance - 5);
-#ifdef DEBUG
-				if (cl_neo_lean_automatic_debug.GetBool())
+				distance = startingDistance;
+				for (int i = -1; i >= -10; i--)
 				{
-					DebugDrawLine(startPos, endPos, 0, tr.fraction == 1.0 ? 255 : 0, 255, 0, 0);
+					Vector endPos = startPos;
+					float offset = (i / (tracelineAngleChange + i));
+					endPos.x += cos(DEG2RAD(viewAng.y) + offset) * distance;
+					endPos.y += sin(DEG2RAD(viewAng.y) + offset) * distance;
+					UTIL_TraceLine(startPos, endPos, MASK_SHOT_HULL, player, COLLISION_GROUP_NONE, &tr);
+					if (tr.fraction != 1.0)
+					{
+						total += 1;
+					}
+					distance = Max(20, distance - 5);
+	#ifdef DEBUG
+					if (cl_neo_lean_automatic_debug.GetBool())
+					{
+						DebugDrawLine(startPos, endPos, 255, tr.fraction == 1.0 ? 255 : 0, 0, 0, 0);
+					}
+	#endif // DEBUG
 				}
-#endif // DEBUG
-			}
-			distance = startingDistance;
-			for (int i = -1; i >= -10; i--)
-			{
-				Vector endPos = startPos;
-				float offset = (i / (tracelineAngleChange + i));
-				endPos.x += cos(DEG2RAD(viewAng.y) + offset) * distance;
-				endPos.y += sin(DEG2RAD(viewAng.y) + offset) * distance;
-				UTIL_TraceLine(startPos, endPos, MASK_ALL, &filter, &tr);
-				if (tr.fraction != 1.0)
-				{
-					total += 1;
-				}
-				distance = Max(20, distance - 5);
-#ifdef DEBUG
-				if (cl_neo_lean_automatic_debug.GetBool())
-				{
-					DebugDrawLine(startPos, endPos, 255, tr.fraction == 1.0 ? 255 : 0, 0, 0, 0);
-				}
-#endif // DEBUG
 			}
 			if (total < 0)	{ IN_LeanRight(); }
 			else if (total > 0) { IN_LeanLeft(); }

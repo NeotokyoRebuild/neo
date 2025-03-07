@@ -37,7 +37,7 @@ struct NeoSettings
 		bool bReloadEmpty;
 		bool bViewmodelRighthand;
 		bool bLeanViewmodelOnly;
-		bool bLeanAutomatic;
+		int iLeanAutomatic;
 		bool bShowSquadList;
 		bool bShowPlayerSprays;
 		bool bShowPos;
