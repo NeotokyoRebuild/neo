@@ -570,16 +570,14 @@
 		"fieldName"	"HudHintKeyDisplay"
 		"visible"	"0"
 		"enabled" 	"1"
-		"xpos"		"r120"	[$WIN32]
-		"ypos"		"r340"	[$WIN32]
-		"xpos"		"r148"	[$X360]
-		"ypos"		"r338"	[$X360]
-		"wide"		"100"
+		"xpos"		"0"
+		"ypos"		"420"
+		"wide"		"200"
 		"tall"		"200"
 		"text_xpos"	"8"
 		"text_ypos"	"8"
-		"text_xgap"	"8"
-		"text_ygap"	"8"
+		"text_xgap"	"0"
+		"text_ygap"	"0"
 		"TextColor"	"255 170 0 220"
 
 		"PaintBackgroundType"	"2"
