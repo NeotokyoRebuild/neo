@@ -140,12 +140,13 @@ void CWeaponSmokeGrenade::DecrementAmmo(CBaseCombatCharacter* pOwner)
 
 void CWeaponSmokeGrenade::ItemPostFrame(void)
 {
+	if (m_bRemoving) { return; }
+
 	if (!HasPrimaryAmmo() && (GetIdealActivity() == ACT_VM_IDLE || GetIdealActivity() == ACT_VM_DRAW)) {
 		// Finished Throwing Animation, switch to next weapon and destroy this one
 		CBasePlayer* pOwner = ToBasePlayer(GetOwner());
 		if (pOwner) {
-			pOwner->SwitchToNextBestWeapon(this);
-			return;
+			m_bRemoving = pOwner->SwitchToNextBestWeapon(this);
 		}
 #ifdef GAME_DLL
 		// Grenade with no owner and no ammo, just destroy it

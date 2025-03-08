@@ -52,6 +52,8 @@ public:
 	bool	Deploy(void);
 	bool	Holster(CBaseCombatWeapon *pSwitchingTo = NULL);
 
+	virtual float GetFastestDryRefireTime() const { return 1.f; } // is called if attack button spammed, doesn't really mean much for grenades
+
 	bool	Reload(void);
 
 	void	Drop(const Vector& vecVelocity) OVERRIDE;
@@ -73,6 +75,8 @@ private:
 
 	CNetworkVar(int, m_AttackPaused);
 	CNetworkVar(bool, m_bDrawbackFinished);
+
+	bool m_bRemoving = false;
 
 	CWeaponGrenade(const CWeaponGrenade &other);
 };

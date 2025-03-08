@@ -228,6 +228,8 @@ int CNEOPredictedViewModel::DrawModel(int flags)
 {
 	auto pPlayer = static_cast<C_NEO_Player*>(GetOwner());
 
+	engine->Con_NPrintf(0, "Model: %i ", GetModelIndex());
+
 	if (pPlayer)
 	{
 		if (pPlayer->IsCloaked())
