@@ -1522,7 +1522,6 @@ bool CBaseCombatWeapon::Holster( CBaseCombatWeapon *pSwitchingTo )
 	// kill any think functions
 	SetThink(NULL);
 
-#ifndef NEO
 	// Send holster animation
 	SendWeaponAnim( ACT_VM_HOLSTER );
 
@@ -1544,6 +1543,7 @@ bool CBaseCombatWeapon::Holster( CBaseCombatWeapon *pSwitchingTo )
 	{
 		SetWeaponVisible( false );
 	}
+#ifndef NEO
 	else
 	{
 		// Hide the weapon when the holster animation's finished
