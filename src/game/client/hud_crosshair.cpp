@@ -164,7 +164,11 @@ bool CHudCrosshair::ShouldDraw( void )
 			( !pPlayer->IsSuitEquipped() || g_pGameRules->IsMultiplayer() ) &&
 			g_pClientMode->ShouldDrawCrosshair() &&
 			!( pPlayer->GetFlags() & FL_FROZEN ) &&
+#ifdef NEO
+			( GetLocalPlayerIndex() == render->GetViewEntity()) &&
+#else
 			( pPlayer->entindex() == render->GetViewEntity() ) &&
+#endif // NEO
 			( pPlayer->IsAlive() ||	( pPlayer->GetObserverMode() == OBS_MODE_IN_EYE ) || ( cl_observercrosshair.GetBool() && pPlayer->GetObserverMode() == OBS_MODE_ROAMING ) );
 	}
 	else
@@ -175,7 +179,11 @@ bool CHudCrosshair::ShouldDraw( void )
 			!engine->IsPaused() && 
 			g_pClientMode->ShouldDrawCrosshair() &&
 			!( pPlayer->GetFlags() & FL_FROZEN ) &&
+#ifdef NEO
+			(GetLocalPlayerIndex() == render->GetViewEntity()) &&
+#else
 			( pPlayer->entindex() == render->GetViewEntity() ) &&
+#endif // NEO
 			!pPlayer->IsInVGuiInputMode() &&
 			( pPlayer->IsAlive() ||	( pPlayer->GetObserverMode() == OBS_MODE_IN_EYE ) || ( cl_observercrosshair.GetBool() && pPlayer->GetObserverMode() == OBS_MODE_ROAMING ) );
 	}
