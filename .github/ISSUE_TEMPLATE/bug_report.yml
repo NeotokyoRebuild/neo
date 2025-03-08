@@ -1,6 +1,6 @@
-name: Bug report
+name: Bug Report
 description: General bugs, program crashes, broken files, wrong values, etc...
-labels: "Bug Report"
+labels: ["Bug Report", "Bug"]
 projects: ["NeotokyoRebuild/1"]
 body:
   - type: markdown
@@ -14,20 +14,19 @@ body:
         description and reproducible steps using the form below.
 
         Make sure the title describes the issue with the current state
-        of the game ie. if the bug is that recons can see through
+        of the game.
+        Examples:
+        - if the bug is that recons can see through
         walls when using their NVGs, the title should
-        be "recons can see through walls with NVGs" and if the
-        bug is that NVGs don't light up dark areas the title should be
-        "recons can't see in the dark with NVGs").
+        be "recons can see through walls with NVGs".
+        - if the bug is that NVGs don't light up dark areas 
+        the title should be "recons can't see in the dark with NVGs".
   - type: input
     id: build
     attributes:
       label: Build Info
       description: |
-        In which build was this bug seen? Replace [DATE] with YYYYMMDD
-        and [GIT HASH] with the Git short hash the build was built on.
-        The main menu contains this in the bottom left corner
-        and the `neo_version` command can also be used to retrieve this
+        In which build was this bug seen? Type `neo_version` command into the console and copy the first line of output labeled "Build version" to retrieve this
         information.
       placeholder: "[DATE]_[GIT HASH] (EX: 20240609_759f6e5)"
     validations:
@@ -68,8 +67,6 @@ body:
       label: Actual behavior
       description: |
         A clear and concise description of what happened instead of the expected behavior.
-    validations:
-      required: true
   - type: checkboxes
     id: machine_os
     attributes:
@@ -78,8 +75,6 @@ body:
       options:
         - label: Windows
         - label: Linux
-    validations:
-      required: true
   - type: input
     id: machine_os_detail
     attributes:
