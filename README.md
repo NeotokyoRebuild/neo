@@ -14,6 +14,7 @@ To see the Table of Contents, please use the "Outline" feature on GitHub by clic
 
 * Windows: [Visual Studio 2022 (MSVC v143)](https://visualstudio.microsoft.com/downloads/)
     * Make sure to include C++ development environment, C++ MFC Library, Windows 10/11 SDK, and CMake during installation
+    * Windows 11 SDK (10.0.22621.0) or Windows 10 SDK (10.0.19041.1)
 * Linux: [Steam Runtime 3 "Sniper"](https://gitlab.steamos.cloud/steamrt/sniper/sdk)
     * GCC/G++ 10 toolchain
     * Compiled in the sniper's Docker/Podman/Toolbx container, schroot, or systemd-nspawn
