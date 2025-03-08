@@ -534,6 +534,8 @@ void IN_LeanLeft() { KeyUp(&in_lean_right, nullptr); KeyDown(&in_lean_left, null
 void IN_LeanRight() { KeyUp(&in_lean_left, nullptr); KeyDown(&in_lean_right, nullptr); }
 void IN_LeanReset() { KeyUp(&in_lean_left, nullptr); KeyUp(&in_lean_right, nullptr); }
 
+void IN_SpeedReset() { KeyUp(&in_speed, nullptr); }
+
 void IN_LeanRightUp( const CCommand &args ) { KeyUp( &in_lean_right, args[1] ); }
 void IN_LeanRightDown( const CCommand &args ) { KeyDown( &in_lean_right, args[1] ); }
 

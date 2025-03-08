@@ -1102,6 +1102,13 @@ void C_NEO_Player::PreThink( void )
 {
 	BaseClass::PreThink();
 
+	HandleSpeedChangesLegacy();
+
+	if (m_HL2Local.m_flSuitPower <= 0.0f && IsSprinting())
+	{
+		StopSprinting();
+	}
+
 	CalculateSpeed();
 
 	CheckThermOpticButtons();
@@ -1605,6 +1612,7 @@ void C_NEO_Player::StartSprinting(void)
 void C_NEO_Player::StopSprinting(void)
 {
 	m_fIsSprinting = false;
+	IN_SpeedReset();
 }
 
 bool C_NEO_Player::CanSprint(void)

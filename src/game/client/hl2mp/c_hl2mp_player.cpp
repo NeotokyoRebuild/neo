@@ -452,18 +452,6 @@ void C_HL2MP_Player::DoImpactEffect( trace_t &tr, int nDamageType )
 void C_HL2MP_Player::PreThink( void )
 {
 	BaseClass::PreThink();
-
-#ifdef NEO
-	HandleSpeedChangesLegacy();
-
-	if ( m_HL2Local.m_flSuitPower <= 0.0f )
-	{
-		if( IsSprinting() )
-		{
-			StopSprinting();
-		}
-	}
-#endif
 }
 
 const QAngle &C_HL2MP_Player::EyeAngles()
