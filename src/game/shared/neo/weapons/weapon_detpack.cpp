@@ -152,7 +152,7 @@ void CWeaponDetpack::PrimaryAttack(void)
 #endif
 		SendWeaponAnim(ACT_VM_PRIMARYATTACK_DEPLOYED);
 		pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
-		m_flNextPrimaryAttack = gpGlobals->curtime + (SequenceDuration() / 3);
+		m_flNextPrimaryAttack = gpGlobals->curtime + (SequenceDuration() * 0.5);
 		m_flTimeWeaponIdle = FLT_MAX;
 	}
 	else
