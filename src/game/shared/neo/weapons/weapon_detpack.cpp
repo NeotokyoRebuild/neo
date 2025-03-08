@@ -349,7 +349,8 @@ void CWeaponDetpack::TossDetpack(CBasePlayer* pPlayer)
 
 	vecSrc += vForward * 16;
 
-	m_pDetpack = static_cast<CNEODeployedDetpack*>(NEODeployedDetpack_Create(vecSrc, vec3_angle, vec3_origin, AngularImpulse(600, random->RandomInt(-1200, 1200), 0), pPlayer));
+	Vector vecThrow = pPlayer->GetAbsVelocity() * 0.5;
+	m_pDetpack = static_cast<CNEODeployedDetpack*>(NEODeployedDetpack_Create(vecSrc, vec3_angle, vecThrow, AngularImpulse(600, random->RandomInt(-1200, 1200), 0), pPlayer));
 
 	if (m_pDetpack)
 	{
