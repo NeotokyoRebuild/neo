@@ -180,7 +180,7 @@ extern vgui::IInputInternal *g_InputInternal;
 #include "neo_player_shared.h"
 extern bool NeoRootCaptureESC();
 extern CNeoLoading *g_pNeoLoading;
-extern ConVar neo_cl_streamermode_autodetect_obs;
+extern ConVar cl_neo_streamermode_autodetect_obs;
 bool g_bOBSDetected = false;
 
 #ifdef WIN32
@@ -1356,7 +1356,7 @@ void CHLClient::PostInit()
 	NeoToggleConsoleEnforce();
 
 	// Detect OBS - Only on startup
-	if (neo_cl_streamermode_autodetect_obs.GetBool())
+	if (cl_neo_streamermode_autodetect_obs.GetBool())
 	{
 		g_bOBSDetected = false;
 #ifdef LINUX
@@ -1408,7 +1408,7 @@ void CHLClient::PostInit()
 			CloseHandle(hSnapShot);
 		}
 #endif
-		ConVarRef("neo_cl_streamermode").SetValue(g_bOBSDetected);
+		ConVarRef("cl_neo_streamermode").SetValue(g_bOBSDetected);
 	}
 
 	// Initialize streamer mode names

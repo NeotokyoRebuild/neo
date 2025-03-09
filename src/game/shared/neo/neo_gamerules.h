@@ -88,16 +88,16 @@ class CNEOGhostCapturePoint;
 class CNEO_Player;
 class CWeaponGhost;
 
-extern ConVar neo_sv_mirror_teamdamage_multiplier;
-extern ConVar neo_sv_mirror_teamdamage_duration;
-extern ConVar neo_sv_mirror_teamdamage_immunity;
-extern ConVar neo_sv_teamdamage_kick;
+extern ConVar sv_neo_mirror_teamdamage_multiplier;
+extern ConVar sv_neo_mirror_teamdamage_duration;
+extern ConVar sv_neo_mirror_teamdamage_immunity;
+extern ConVar sv_neo_teamdamage_kick;
 
 #else
 class C_NEO_Player;
 #endif
 
-extern ConVar neo_sv_player_restore;
+extern ConVar sv_neo_player_restore;
 
 enum NeoGameType {
 	NEO_GAME_TYPE_TDM = 0,

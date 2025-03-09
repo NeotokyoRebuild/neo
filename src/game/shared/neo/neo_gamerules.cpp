@@ -31,13 +31,13 @@
 extern ConVar weaponstay;
 #endif
 
-ConVar mp_neo_loopback_warmup_round("mp_neo_loopback_warmup_round", "0", FCVAR_REPLICATED, "Allow loopback server to do warmup rounds.", true, 0.0f, true, 1.0f);
-ConVar mp_neo_warmup_round_time("mp_neo_warmup_round_time", "45", FCVAR_REPLICATED, "The warmup round time, in seconds.", true, 0.0f, false, 0.0f);
-ConVar mp_neo_preround_freeze_time("mp_neo_preround_freeze_time", "15", FCVAR_REPLICATED, "The pre-round freeze time, in seconds.", true, 0.0, false, 0);
-ConVar mp_neo_latespawn_max_time("mp_neo_latespawn_max_time", "15", FCVAR_REPLICATED, "How many seconds late are players still allowed to spawn.", true, 0.0, false, 0);
+ConVar sv_neo_loopback_warmup_round("sv_neo_loopback_warmup_round", "0", FCVAR_REPLICATED, "Allow loopback server to do warmup rounds.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_warmup_round_time("sv_neo_warmup_round_time", "45", FCVAR_REPLICATED, "The warmup round time, in seconds.", true, 0.0f, false, 0.0f);
+ConVar sv_neo_preround_freeze_time("sv_neo_preround_freeze_time", "15", FCVAR_REPLICATED, "The pre-round freeze time, in seconds.", true, 0.0, false, 0);
+ConVar sv_neo_latespawn_max_time("sv_neo_latespawn_max_time", "15", FCVAR_REPLICATED, "How many seconds late are players still allowed to spawn.", true, 0.0, false, 0);
 
 ConVar sv_neo_wep_dmg_modifier("sv_neo_wep_dmg_modifier", "1", FCVAR_REPLICATED, "Temp global weapon damage modifier.", true, 0.0, true, 100.0);
-ConVar neo_sv_player_restore("neo_sv_player_restore", "1", FCVAR_REPLICATED, "If enabled, the server will save players XP and deaths per match session and restore them if they reconnect.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_player_restore("sv_neo_player_restore", "1", FCVAR_REPLICATED, "If enabled, the server will save players XP and deaths per match session and restore them if they reconnect.", true, 0.0f, true, 1.0f);
 
 ConVar sv_neo_spraydisable("sv_neo_spraydisable", "0", FCVAR_REPLICATED, "If enabled, disables the players ability to spray.", true, 0.0f, true, 1.0f);
 
@@ -47,15 +47,15 @@ ConVar cl_onlysteamnick("cl_onlysteamnick", "0", FCVAR_USERINFO | FCVAR_ARCHIVE,
 
 ConVar neo_clantag("neo_clantag", "", FCVAR_USERINFO | FCVAR_ARCHIVE, "The clantag to set.");
 #endif
-ConVar neo_sv_clantag_allow("neo_sv_clantag_allow", "1", FCVAR_REPLICATED, "", true, 0.0f, true, 1.0f);
+ConVar sv_neo_clantag_allow("sv_neo_clantag_allow", "1", FCVAR_REPLICATED, "", true, 0.0f, true, 1.0f);
 #ifdef DEBUG
-ConVar neo_sv_dev_test_clantag("neo_sv_dev_test_clantag", "", FCVAR_REPLICATED | FCVAR_CHEAT | FCVAR_DEVELOPMENTONLY, "Debug-mode only - Override all clantags with this value.");
+ConVar sv_neo_dev_test_clantag("sv_neo_dev_test_clantag", "", FCVAR_REPLICATED | FCVAR_CHEAT | FCVAR_DEVELOPMENTONLY, "Debug-mode only - Override all clantags with this value.");
 #endif
 
 #define STR_GAMEOPTS "TDM=0, CTG=1, VIP=2, DM=3"
 #define STR_GAMEBWOPTS "TDM=1, CTG=2, VIP=4, DM=8"
 ConVar neo_vote_game_mode("neo_vote_game_mode", "1", FCVAR_USERINFO, "Vote on game mode to play. " STR_GAMEOPTS, true, 0, true, NEO_GAME_TYPE__TOTAL - 1);
-ConVar neo_vip_eligible("neo_cl_vip_eligible", "1", FCVAR_ARCHIVE, "Eligible for VIP", true, 0, true, 1);
+ConVar neo_vip_eligible("cl_neo_vip_eligible", "1", FCVAR_ARCHIVE, "Eligible for VIP", true, 0, true, 1);
 #ifdef GAME_DLL
 ConVar sv_neo_vip_ctg_on_death("sv_neo_vip_ctg_on_death", "0", FCVAR_ARCHIVE, "Spawn Ghost when VIP dies, continue the game", true, 0, true, 1);
 #endif
@@ -71,12 +71,12 @@ enum eGamemodeEnforcement
 
 	GAMEMODE_ENFORCEMENT__TOTAL,
 };
-ConVar neo_sv_gamemode_enforcement("neo_sv_gamemode_enforcement", "0", FCVAR_REPLICATED,
-								   "How the gamemode are determined. 0 = By map, 1 = By neo_sv_gamemode_single, 2 = Random, 3 = Pre-match voting",
+ConVar sv_neo_gamemode_enforcement("sv_neo_gamemode_enforcement", "0", FCVAR_REPLICATED,
+								   "How the gamemode are determined. 0 = By map, 1 = By sv_neo_gamemode_single, 2 = Random, 3 = Pre-match voting",
 								   true, 0.0f, true, GAMEMODE_ENFORCEMENT__TOTAL - 1);
-ConVar neo_sv_gamemode_single("neo_sv_gamemode_single", "3", FCVAR_REPLICATED, "The gamemode that is enforced by the server. " STR_GAMEOPTS,
+ConVar sv_neo_gamemode_single("sv_neo_gamemode_single", "3", FCVAR_REPLICATED, "The gamemode that is enforced by the server. " STR_GAMEOPTS,
 							  true, 0.0f, true, NEO_GAME_TYPE__TOTAL - 1);
-ConVar neo_sv_gamemode_random_allow("neo_sv_gamemode_random_allow", "11", FCVAR_REPLICATED,
+ConVar sv_neo_gamemode_random_allow("sv_neo_gamemode_random_allow", "11", FCVAR_REPLICATED,
 									"In bitwise, the gamemodes that are allowed for random selection. Default = TDM+CTG+DM. " STR_GAMEBWOPTS,
 									true, 1.0f, true, (1 << NEO_GAME_TYPE__TOTAL)); // Can't be zero, minimum has to set to a bitwise value
 #endif
@@ -88,11 +88,11 @@ static constexpr char INTEGRITY_CHECK_DBG[] = "1";
 #else
 static constexpr char INTEGRITY_CHECK_DBG[] = "0";
 #endif // DEBUG
-ConVar neo_sv_build_integrity_check("neo_sv_build_integrity_check", "1", FCVAR_GAMEDLL | FCVAR_REPLICATED,
+ConVar sv_neo_build_integrity_check("sv_neo_build_integrity_check", "1", FCVAR_GAMEDLL | FCVAR_REPLICATED,
 									"If enabled, the server checks the build's Git hash between the client and"
 									" the server. If it doesn't match, the server rejects and disconnects the client.",
 									true, 0.0f, true, 1.0f);
-ConVar neo_sv_build_integrity_check_allow_debug("neo_sv_build_integrity_check_allow_debug", INTEGRITY_CHECK_DBG, FCVAR_GAMEDLL | FCVAR_REPLICATED,
+ConVar sv_neo_build_integrity_check_allow_debug("sv_neo_build_integrity_check_allow_debug", INTEGRITY_CHECK_DBG, FCVAR_GAMEDLL | FCVAR_REPLICATED,
 									"If enabled, when the server checks the client hashes, it'll also allow debug"
 									" builds which has a given special bit to bypass the check.",
 									true, 0.0f, true, 1.0f);
@@ -102,14 +102,14 @@ static constexpr char TEAMDMG_MULTI[] = "0";
 #else
 static constexpr char TEAMDMG_MULTI[] = "2";
 #endif // DEBUG
-ConVar neo_sv_mirror_teamdamage_multiplier("neo_sv_mirror_teamdamage_multiplier", TEAMDMG_MULTI, FCVAR_REPLICATED, "The damage multiplier given to the friendly-firing individual. Set value to 0 to disable mirror team damage.", true, 0.0f, true, 100.0f);
-ConVar neo_sv_mirror_teamdamage_duration("neo_sv_mirror_teamdamage_duration", "7", FCVAR_REPLICATED, "How long in seconds the mirror damage is active for the start of each round. Set to 0 for the entire round.", true, 0.0f, true, 10000.0f);
-ConVar neo_sv_mirror_teamdamage_immunity("neo_sv_mirror_teamdamage_immunity", "1", FCVAR_REPLICATED, "If enabled, the victim will not take damage from a teammate during the mirror team damage duration.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_mirror_teamdamage_multiplier("sv_neo_mirror_teamdamage_multiplier", TEAMDMG_MULTI, FCVAR_REPLICATED, "The damage multiplier given to the friendly-firing individual. Set value to 0 to disable mirror team damage.", true, 0.0f, true, 100.0f);
+ConVar sv_neo_mirror_teamdamage_duration("sv_neo_mirror_teamdamage_duration", "7", FCVAR_REPLICATED, "How long in seconds the mirror damage is active for the start of each round. Set to 0 for the entire round.", true, 0.0f, true, 10000.0f);
+ConVar sv_neo_mirror_teamdamage_immunity("sv_neo_mirror_teamdamage_immunity", "1", FCVAR_REPLICATED, "If enabled, the victim will not take damage from a teammate during the mirror team damage duration.", true, 0.0f, true, 1.0f);
 
-ConVar neo_sv_teamdamage_kick("neo_sv_teamdamage_kick", "0", FCVAR_REPLICATED, "If enabled, the friendly-firing individual will be kicked if damage is received during the neo_sv_mirror_teamdamage_duration, exceeds the neo_sv_teamdamage_kick_hp value, or executes a teammate.", true, 0.0f, true, 1.0f);
-ConVar neo_sv_teamdamage_kick_hp("neo_sv_teamdamage_kick_hp", "900", FCVAR_REPLICATED, "The threshold for the amount of HP damage inflicted on teammates before the client is kicked.", true, 100.0f, false, 0.0f);
-ConVar neo_sv_teamdamage_kick_kills("neo_sv_teamdamage_kick_kills", "6", FCVAR_REPLICATED, "The threshold for the amount of team kills before the client is kicked.", true, 1.0f, false, 0.0f);
-ConVar neo_sv_suicide_prevent_cap_punish("neo_sv_suicide_prevent_cap_punish", "1", FCVAR_REPLICATED,
+ConVar sv_neo_teamdamage_kick("sv_neo_teamdamage_kick", "0", FCVAR_REPLICATED, "If enabled, the friendly-firing individual will be kicked if damage is received during the sv_neo_mirror_teamdamage_duration, exceeds the sv_neo_teamdamage_kick_hp value, or executes a teammate.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_teamdamage_kick_hp("sv_neo_teamdamage_kick_hp", "900", FCVAR_REPLICATED, "The threshold for the amount of HP damage inflicted on teammates before the client is kicked.", true, 100.0f, false, 0.0f);
+ConVar sv_neo_teamdamage_kick_kills("sv_neo_teamdamage_kick_kills", "6", FCVAR_REPLICATED, "The threshold for the amount of team kills before the client is kicked.", true, 1.0f, false, 0.0f);
+ConVar sv_neo_suicide_prevent_cap_punish("sv_neo_suicide_prevent_cap_punish", "1", FCVAR_REPLICATED,
 										 "If enabled, if a player suicides and is the only one alive in their team, "
 										 "while the other team is holding the ghost, reward the ghost holder team "
 										 "a rank up.",
@@ -117,25 +117,25 @@ ConVar neo_sv_suicide_prevent_cap_punish("neo_sv_suicide_prevent_cap_punish", "1
 
 #define DEF_TEAMPLAYERTHRES 5
 static_assert(DEF_TEAMPLAYERTHRES <= ((MAX_PLAYERS - 1) / 2));
-ConVar neo_sv_readyup_teamplayersthres("neo_sv_readyup_teamplayersthres", V_STRINGIFY(DEF_TEAMPLAYERTHRES), FCVAR_REPLICATED, "The exact total players per team to be in and ready up to start a game.", true, 0.0f, true, (MAX_PLAYERS - 1) / 2);
-ConVar neo_sv_readyup_skipwarmup("neo_sv_readyup_skipwarmup", "1", FCVAR_REPLICATED, "Skip the warmup round when already using ready up.", true, 0.0f, true, 1.0f);
-ConVar neo_sv_readyup_autointermission("neo_sv_readyup_autointermission", "0", FCVAR_REPLICATED, "If disabled, skips the automatic intermission at the end of the match.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_readyup_teamplayersthres("sv_neo_readyup_teamplayersthres", V_STRINGIFY(DEF_TEAMPLAYERTHRES), FCVAR_REPLICATED, "The exact total players per team to be in and ready up to start a game.", true, 0.0f, true, (MAX_PLAYERS - 1) / 2);
+ConVar sv_neo_readyup_skipwarmup("sv_neo_readyup_skipwarmup", "1", FCVAR_REPLICATED, "Skip the warmup round when already using ready up.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_readyup_autointermission("sv_neo_readyup_autointermission", "0", FCVAR_REPLICATED, "If disabled, skips the automatic intermission at the end of the match.", true, 0.0f, true, 1.0f);
 #endif // GAME_DLL
 
 // Both CLIENT_DLL + GAME_DLL, but server-side setting so it's replicated onto client to read the values
-ConVar neo_sv_readyup_lobby("neo_sv_readyup_lobby", "0", FCVAR_REPLICATED, "If enabled, players would need to ready up and match the players total requirements to start a game.", true, 0.0f, true, 1.0f);
-ConVar neo_sv_pausematch_enabled("neo_sv_pausematch_enabled", "0", FCVAR_REPLICATED, "If enabled, players will be able to pause the match mid-game.", true, 0.0f, true, 1.0f);
-ConVar neo_sv_pausematch_unpauseimmediate("neo_sv_pausematch_unpauseimmediate", "0", FCVAR_REPLICATED | FCVAR_CHEAT, "Testing only - If enabled, unpause will be immediate.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_readyup_lobby("sv_neo_readyup_lobby", "0", FCVAR_REPLICATED, "If enabled, players would need to ready up and match the players total requirements to start a game.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_pausematch_enabled("sv_neo_pausematch_enabled", "0", FCVAR_REPLICATED, "If enabled, players will be able to pause the match mid-game.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_pausematch_unpauseimmediate("sv_neo_pausematch_unpauseimmediate", "0", FCVAR_REPLICATED | FCVAR_CHEAT, "Testing only - If enabled, unpause will be immediate.", true, 0.0f, true, 1.0f);
 
 static void neoSvCompCallback(IConVar* var, const char* pOldValue, float flOldValue)
 {
 	const bool bCurrentValue = !(bool)flOldValue;
-	neo_sv_readyup_lobby.SetValue(bCurrentValue);
+	sv_neo_readyup_lobby.SetValue(bCurrentValue);
 	mp_forcecamera.SetValue(bCurrentValue); // 0 = OBS_ALLOWS_ALL, 1 = OBS_ALLOW_TEAM. For strictly original neotokyo spectator experience, 2 = OBS_ALLOW_NONE
 	sv_neo_spraydisable.SetValue(bCurrentValue);
 }
 
-ConVar neo_sv_comp("neo_sv_comp", "0", FCVAR_REPLICATED, "Enables competitive gamerules", true, 0.f, true, 1.f, neoSvCompCallback);
+ConVar sv_neo_comp("sv_neo_comp", "0", FCVAR_REPLICATED, "Enables competitive gamerules", true, 0.f, true, 1.f, neoSvCompCallback);
 
 ConVar snd_victory_volume("snd_victory_volume", "0.33", FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_USERINFO, "Loudness of the victory jingle (0-1).", true, 0.0, true, 1.0);
 
@@ -294,10 +294,10 @@ ConVar neo_vip_round_timelimit("neo_vip_round_timelimit", "3.25", FCVAR_REPLICAT
 ConVar neo_dm_round_timelimit("neo_dm_round_timelimit", "10.25", FCVAR_REPLICATED, "DM round timelimit, in minutes.",
 	true, 0.0f, false, 600.0f);
 
-ConVar neo_sv_ignore_wep_xp_limit("neo_sv_ignore_wep_xp_limit", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "If true, allow equipping any loadout regardless of player XP.",
+ConVar sv_neo_ignore_wep_xp_limit("sv_neo_ignore_wep_xp_limit", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "If true, allow equipping any loadout regardless of player XP.",
 	true, 0.0f, true, 1.0f);
 
-ConVar neo_sv_dm_win_xp("neo_sv_dm_win_xp", "50", FCVAR_REPLICATED, "The XP limit to win the match.",
+ConVar sv_neo_dm_win_xp("sv_neo_dm_win_xp", "50", FCVAR_REPLICATED, "The XP limit to win the match.",
 	true, 0.0f, true, 1000.0f);
 
 
@@ -628,7 +628,7 @@ void CNEORules::ResetMapSessionCommon()
 void CNEORules::ChangeLevel(void)
 {
 	ResetMapSessionCommon();
-	if (neo_sv_readyup_lobby.GetBool() && !neo_sv_readyup_autointermission.GetBool())
+	if (sv_neo_readyup_lobby.GetBool() && !sv_neo_readyup_autointermission.GetBool())
 	{
 		m_bChangelevelDone = false;
 	}
@@ -720,9 +720,9 @@ void CNEORules::CheckGameType()
 	static bool staticGamemodesCanPick[NEO_GAME_TYPE__TOTAL] = {};
 	static int iStaticLastPick = -1; // Mostly so it doesn't repeat on array refresh
 
-	const int iGamemodeEnforce = neo_sv_gamemode_enforcement.GetInt();
-	const int iGamemodeRandAllow = neo_sv_gamemode_random_allow.GetInt();
-	// Update on what to select on first map load or server operator changes neo_sv_gamemode_enforcement
+	const int iGamemodeEnforce = sv_neo_gamemode_enforcement.GetInt();
+	const int iGamemodeRandAllow = sv_neo_gamemode_random_allow.GetInt();
+	// Update on what to select on first map load or server operator changes sv_neo_gamemode_enforcement
 	const bool bCheckOnGameType = (!m_bGamemodeTypeBeenInitialized || iGamemodeEnforce != iStaticInitOnCmd ||
 			iGamemodeRandAllow != iStaticInitOnRandAllow);
 	if (!bCheckOnGameType)
@@ -736,11 +736,11 @@ void CNEORules::CheckGameType()
 	{
 	case GAMEMODE_ENFORCEMENT_SINGLE:
 	{
-		m_nGameTypeSelected = neo_sv_gamemode_single.GetInt();
+		m_nGameTypeSelected = sv_neo_gamemode_single.GetInt();
 	} break;
 	case GAMEMODE_ENFORCEMENT_RAND:
 	{
-		const int iBWAllow = neo_sv_gamemode_random_allow.GetInt(); // Min of 1, cannot be zero
+		const int iBWAllow = sv_neo_gamemode_random_allow.GetInt(); // Min of 1, cannot be zero
 		Assert(iBWAllow > 0);
 
 		// Check if all are used up
@@ -1000,11 +1000,11 @@ void CNEORules::Think(void)
 		m_flPrevThinkMirrorDmg = gpGlobals->curtime;
 	}
 
-	if (neo_sv_teamdamage_kick.GetBool() && m_nRoundStatus == NeoRoundStatus::RoundLive &&
+	if (sv_neo_teamdamage_kick.GetBool() && m_nRoundStatus == NeoRoundStatus::RoundLive &&
 			gpGlobals->curtime > (m_flPrevThinkKick + 0.5f))
 	{
-		const int iThresKickHp = neo_sv_teamdamage_kick_hp.GetInt();
-		const int iThresKickKills = neo_sv_teamdamage_kick_kills.GetInt();
+		const int iThresKickHp = sv_neo_teamdamage_kick_hp.GetInt();
+		const int iThresKickKills = sv_neo_teamdamage_kick_kills.GetInt();
 
 		// Separate command from check so kick not affected by player index
 		int userIDsToKick[MAX_PLAYERS + 1] = {};
@@ -1263,7 +1263,7 @@ void CNEORules::Think(void)
 		}
 		else
 		{
-			if (gpGlobals->curtime > m_flNeoRoundStartTime + mp_neo_preround_freeze_time.GetFloat())
+			if (gpGlobals->curtime > m_flNeoRoundStartTime + sv_neo_preround_freeze_time.GetFloat())
 			{
 				SetRoundStatus(NeoRoundStatus::RoundLive);
 			}
@@ -1294,14 +1294,14 @@ void CNEORules::Think(void)
 					}
 				}
 			}
-			if (GetGameType() == NEO_GAME_TYPE_DM && neo_sv_dm_win_xp.GetInt() > 0)
+			if (GetGameType() == NEO_GAME_TYPE_DM && sv_neo_dm_win_xp.GetInt() > 0)
 			{
 				// End game early if there's already a player past the winning XP
 				CNEO_Player *pHighestPlayers[MAX_PLAYERS + 1] = {};
 				int iWinningTotal = 0;
 				int iWinningXP = 0;
 				GetDMHighestScorers(&pHighestPlayers, &iWinningTotal, &iWinningXP);
-				if (iWinningXP >= neo_sv_dm_win_xp.GetInt() && iWinningTotal == 1)
+				if (iWinningXP >= sv_neo_dm_win_xp.GetInt() && iWinningTotal == 1)
 				{
 					SetWinningDMPlayer(pHighestPlayers[0]);
 				}
@@ -1422,7 +1422,7 @@ float CNEORules::GetRoundRemainingTime() const
 	float roundTimeLimit = 0.f;
 	if (m_nRoundStatus == NeoRoundStatus::Warmup)
 	{
-		roundTimeLimit = mp_neo_warmup_round_time.GetFloat();
+		roundTimeLimit = sv_neo_warmup_round_time.GetFloat();
 	}
 	else
 	{
@@ -1449,7 +1449,7 @@ float CNEORules::GetRoundRemainingTime() const
 
 float CNEORules::GetRoundAccumulatedTime() const
 {
-	return gpGlobals->curtime - (m_flNeoRoundStartTime + mp_neo_preround_freeze_time.GetFloat());
+	return gpGlobals->curtime - (m_flNeoRoundStartTime + sv_neo_preround_freeze_time.GetFloat());
 }
 
 #ifdef GAME_DLL
@@ -1460,8 +1460,8 @@ float CNEORules::MirrorDamageMultiplier() const
 		return 0.0f;
 	}
 	const float flAccTime = GetRoundAccumulatedTime();
-	const float flMirrorMult = neo_sv_mirror_teamdamage_multiplier.GetFloat();
-	const float flMirrorDur = neo_sv_mirror_teamdamage_duration.GetFloat();
+	const float flMirrorMult = sv_neo_mirror_teamdamage_multiplier.GetFloat();
+	const float flMirrorDur = sv_neo_mirror_teamdamage_duration.GetFloat();
 	return (flMirrorDur == 0.0f || (0.0f <= flAccTime && flAccTime < flMirrorDur)) ? flMirrorMult : 0.0f;
 }
 #endif
@@ -1619,7 +1619,7 @@ void CNEORules::SelectTheVIP()
 			sameTeamAsVIPTop++;
 			sameTeamAsVIP[sameTeamAsVIPTop] = pPlayer->entindex();
 
-			const bool clientWantsToBeVIP = engine->GetClientConVarValue(sameTeamAsVIP[sameTeamAsVIPTop], "neo_cl_vip_eligible");
+			const bool clientWantsToBeVIP = engine->GetClientConVarValue(sameTeamAsVIP[sameTeamAsVIPTop], "cl_neo_vip_eligible");
 			if (!clientWantsToBeVIP)
 				continue;
 			eligibleForVIPTop++;
@@ -1695,7 +1695,7 @@ bool CNEORules::ReadyUpPlayerIsReady(CNEO_Player *pNeoPlayer) const
 
 void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat)
 {
-	const bool bHasCmds = neo_sv_readyup_lobby.GetBool() || neo_sv_pausematch_enabled.GetBool();
+	const bool bHasCmds = sv_neo_readyup_lobby.GetBool() || sv_neo_pausematch_enabled.GetBool();
 	if (!bHasCmds || !pNeoCmdPlayer || !pSzChat || pSzChat[0] != '.') return;
 	++pSzChat;
 
@@ -1703,14 +1703,14 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 	{
 		char szHelpText[512];
 		V_sprintf_safe(szHelpText, "Available commands:\n%s%s",
-					   neo_sv_readyup_lobby.GetBool() ?
+					   sv_neo_readyup_lobby.GetBool() ?
 						   "Ready up commands (only available while waiting for players):\n"
 						   ".ready - Ready up yourself\n"
 						   ".unready - Unready yourself\n"
 						   ".start - Override players amount restriction\n"
 						   ".readylist - List players that are not ready\n"
 						 : "",
-					   neo_sv_pausematch_enabled.GetBool() ?
+					   sv_neo_pausematch_enabled.GetBool() ?
 						   "Pause commands (only available during a match):\n"
 						   ".pause - Pause the match\n"
 						   ".unpause - Unpause the match\n"
@@ -1721,7 +1721,7 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 
 	const bool bNonCmdGameType = !NEO_GAME_TYPE_SETTINGS[GetGameType()].comp;
 
-	if (neo_sv_readyup_lobby.GetBool() && (bNonCmdGameType || m_nRoundStatus != NeoRoundStatus::Idle))
+	if (sv_neo_readyup_lobby.GetBool() && (bNonCmdGameType || m_nRoundStatus != NeoRoundStatus::Idle))
 	{
 		for (const auto pSzCheck : {"ready", "unready", "start", "readylist"})
 		{
@@ -1735,12 +1735,12 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 			}
 		}
 	}
-	else if (neo_sv_readyup_lobby.GetBool() && m_nRoundStatus == NeoRoundStatus::Idle)
+	else if (sv_neo_readyup_lobby.GetBool() && m_nRoundStatus == NeoRoundStatus::Idle)
 	{
 		const CSteamID steamID = GetSteamIDForPlayerIndex(pNeoCmdPlayer->entindex());
 		if (steamID.IsValid())
 		{
-			const int iThres = neo_sv_readyup_teamplayersthres.GetInt();
+			const int iThres = sv_neo_readyup_teamplayersthres.GetInt();
 			if (V_strcmp(pSzChat, "ready") == 0)
 			{
 				m_readyAccIDs.Insert(steamID.GetAccountID());
@@ -1840,7 +1840,7 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 		}
 	}
 
-	if (neo_sv_pausematch_enabled.GetBool())
+	if (sv_neo_pausematch_enabled.GetBool())
 	{
 		if (bNonCmdGameType || m_nRoundStatus == Idle || m_nRoundStatus == Warmup)
 		{
@@ -1883,8 +1883,8 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 						// non-pausing team to .unpause to accept unpause
 						if (m_iPausingTeam == pNeoCmdPlayer->GetTeamNumber())
 						{
-							// neo_sv_pausematch_unpauseimmediate is locked behind cheat flag, so generally shouldn't happen
-							if (neo_sv_pausematch_unpauseimmediate.GetBool())
+							// sv_neo_pausematch_unpauseimmediate is locked behind cheat flag, so generally shouldn't happen
+							if (sv_neo_pausematch_unpauseimmediate.GetBool())
 							{
 								m_flPauseEnd = gpGlobals->curtime;
 								UTIL_ClientPrintAll(HUD_PRINTTALK, "The game is now unpaused.");
@@ -1959,7 +1959,7 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 CNEORules::ReadyPlayers CNEORules::FetchReadyPlayers() const
 {
 	ReadyPlayers readyPlayers = {};
-	if (!neo_sv_readyup_lobby.GetBool())
+	if (!sv_neo_readyup_lobby.GetBool())
 	{
 		return readyPlayers;
 	}
@@ -1978,8 +1978,8 @@ CNEORules::ReadyPlayers CNEORules::FetchReadyPlayers() const
 void CNEORules::StartNextRound()
 {
 	// Only check ready-up on idle state
-	const bool bLobby = neo_sv_readyup_lobby.GetBool() && m_nRoundStatus == NeoRoundStatus::Idle;
-	const int iThres = neo_sv_readyup_teamplayersthres.GetInt();
+	const bool bLobby = sv_neo_readyup_lobby.GetBool() && m_nRoundStatus == NeoRoundStatus::Idle;
+	const int iThres = sv_neo_readyup_teamplayersthres.GetInt();
 	const bool bEqualThres = (iThres == GetGlobalTeam(TEAM_JINRAI)->GetNumPlayers()) && (iThres == GetGlobalTeam(TEAM_NSF)->GetNumPlayers());
 	const auto readyPlayers = FetchReadyPlayers();
 	// Do not start if: Non-ready-up mode, no players in either teams
@@ -1992,7 +1992,7 @@ void CNEORules::StartNextRound()
 				 || GetGlobalTeam(TEAM_JINRAI)->GetNumPlayers() != GetGlobalTeam(TEAM_NSF)->GetNumPlayers()))
 			)
 	{
-		if (neo_sv_readyup_lobby.GetBool())
+		if (sv_neo_readyup_lobby.GetBool())
 		{
 			bool bPrintHelpInfo = (m_iPrintHelpCounter == 0);
 			if (!m_bIgnoreOverThreshold && (readyPlayers.array[TEAM_JINRAI] > iThres || readyPlayers.array[TEAM_NSF] > iThres))
@@ -2036,7 +2036,7 @@ void CNEORules::StartNextRound()
 	{
 		// NOTE (nullsystem): If it's a loopback server, then go straight in. Mostly ease for testing other stuff.
 		bool loopbackSkipWarmup = false;
-		if (!mp_neo_loopback_warmup_round.GetBool())
+		if (!sv_neo_loopback_warmup_round.GetBool())
 		{
 			for (int i = 1; i <= gpGlobals->maxClients; i++)
 			{
@@ -2058,12 +2058,12 @@ void CNEORules::StartNextRound()
 
 		SetRoundStatus(NeoRoundStatus::Warmup);
 		m_iRoundNumber = 0;
-		if (!loopbackSkipWarmup && !(bLobby && neo_sv_readyup_skipwarmup.GetBool()))
+		if (!loopbackSkipWarmup && !(bLobby && sv_neo_readyup_skipwarmup.GetBool()))
 		{
 			// Moving from 0 players from either team to playable at team state
 			UTIL_CenterPrintAll("- WARMUP COUNTDOWN STARTED -\n");
 			m_flNeoRoundStartTime = gpGlobals->curtime;
-			m_flNeoNextRoundStartTime = gpGlobals->curtime + mp_neo_warmup_round_time.GetFloat();
+			m_flNeoNextRoundStartTime = gpGlobals->curtime + sv_neo_warmup_round_time.GetFloat();
 			return;
 		}
 	}
@@ -2083,7 +2083,7 @@ void CNEORules::StartNextRound()
 
 	CleanUpMap();
 
-	if (neo_sv_gamemode_enforcement.GetInt() == GAMEMODE_ENFORCEMENT_VOTE && m_nRoundStatus == NeoRoundStatus::Warmup)
+	if (sv_neo_gamemode_enforcement.GetInt() == GAMEMODE_ENFORCEMENT_VOTE && m_nRoundStatus == NeoRoundStatus::Warmup)
 	{
 		GatherGameTypeVotes();
 	}
@@ -2604,10 +2604,10 @@ void CNEORules::RestartGame()
 #ifdef GAME_DLL
 bool CNEORules::ClientConnected(edict_t *pEntity, const char *pszName, const char *pszAddress, char *reject, int maxrejectlen)
 {
-	if (neo_sv_build_integrity_check.GetBool())
+	if (sv_neo_build_integrity_check.GetBool())
 	{
-		const char *clientGitHash = engine->GetClientConVarValue(engine->IndexOfEdict(pEntity), "__neo_cl_git_hash");
-		const bool dbgBuildSkip = (neo_sv_build_integrity_check_allow_debug.GetBool()) ? (clientGitHash[0] & 0b1000'0000) : false;
+		const char *clientGitHash = engine->GetClientConVarValue(engine->IndexOfEdict(pEntity), "__cl_neo_git_hash");
+		const bool dbgBuildSkip = (sv_neo_build_integrity_check_allow_debug.GetBool()) ? (clientGitHash[0] & 0b1000'0000) : false;
 		if (dbgBuildSkip)
 		{
 			DevWarning("Client debug build integrity check bypass! Client: %s | Server: %s\n", clientGitHash, GIT_LONGHASH);
@@ -2715,7 +2715,7 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 		updateDupeCheck = true;
 	}
 	pNEOPlayer->SetClientWantNeoName(clientAllowsNeoName);
-	const auto optClStreamerMode = StrToInt(engine->GetClientConVarValue(engine->IndexOfEdict(pNEOPlayer->edict()), "neo_cl_streamermode"));
+	const auto optClStreamerMode = StrToInt(engine->GetClientConVarValue(engine->IndexOfEdict(pNEOPlayer->edict()), "cl_neo_streamermode"));
 	pNEOPlayer->m_bClientStreamermode = (optClStreamerMode && *optClStreamerMode);
 
 	const char *pszNeoClantag = engine->GetClientConVarValue(pNEOPlayer->entindex(), "neo_clantag");
@@ -3050,7 +3050,7 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 
 	if (gotMatchWinner)
 	{
-		if (neo_sv_readyup_lobby.GetBool() && !neo_sv_readyup_autointermission.GetBool())
+		if (sv_neo_readyup_lobby.GetBool() && !sv_neo_readyup_autointermission.GetBool())
 		{
 			ResetMapSessionCommon();
 		}
@@ -3101,7 +3101,7 @@ void CNEORules::CheckIfCapPrevent(CNEO_Player *capPreventerPlayer)
 
 	// If this is the only player alive left before the suicide/disconnect and the other team was holding
 	// the ghost, reward the other team an XP to the next rank as a ghost cap was prevented.
-	const bool bShouldCheck = (neo_sv_suicide_prevent_cap_punish.GetBool()
+	const bool bShouldCheck = (sv_neo_suicide_prevent_cap_punish.GetBool()
 							   && m_nRoundStatus == NeoRoundStatus::RoundLive
 							   && !m_bTeamBeenAwardedDueToCapPrevent);
 	if (!bShouldCheck)
@@ -3196,7 +3196,7 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 		{
 			attacker->m_iXP.GetForModify() -= 1;
 #ifdef GAME_DLL
-			if (neo_sv_teamdamage_kick.GetBool() && m_nRoundStatus == NeoRoundStatus::RoundLive)
+			if (sv_neo_teamdamage_kick.GetBool() && m_nRoundStatus == NeoRoundStatus::RoundLive)
 			{
 				++attacker->m_iTeamKillsInflicted;
 			}
@@ -3488,7 +3488,7 @@ void CNEORules::ClientDisconnected(edict_t* pClient)
 		pNeoPlayer->RemoveAllWeapons();
 
 		// Save XP/death counts
-		if (neo_sv_player_restore.GetBool())
+		if (sv_neo_player_restore.GetBool())
 		{
 			const CSteamID steamID = GetSteamIDForPlayerIndex(pNeoPlayer->entindex());
 			if (steamID.IsValid())
@@ -3578,7 +3578,7 @@ bool CNEORules::FPlayerCanRespawn(CBasePlayer* pPlayer)
 	}
 
 	// Did we make it in time to spawn for this round?
-	if (GetRemainingPreRoundFreezeTime(false) + mp_neo_latespawn_max_time.GetFloat() > 0)
+	if (GetRemainingPreRoundFreezeTime(false) + sv_neo_latespawn_max_time.GetFloat() > 0)
 	{
 		return true;
 	}
@@ -3710,12 +3710,12 @@ float CNEORules::GetRemainingPreRoundFreezeTime(const bool clampToZero) const
 	// If there's no time left, return 0 instead of a negative value.
 	if (clampToZero)
 	{
-		return Max(0.0f, m_flNeoRoundStartTime + mp_neo_preround_freeze_time.GetFloat() - gpGlobals->curtime);
+		return Max(0.0f, m_flNeoRoundStartTime + sv_neo_preround_freeze_time.GetFloat() - gpGlobals->curtime);
 	}
 	// Or return negative value of how many seconds late we were.
 	else
 	{
-		return m_flNeoRoundStartTime + mp_neo_preround_freeze_time.GetFloat() - gpGlobals->curtime;
+		return m_flNeoRoundStartTime + sv_neo_preround_freeze_time.GetFloat() - gpGlobals->curtime;
 	}
 }
 

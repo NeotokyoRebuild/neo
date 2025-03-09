@@ -23,7 +23,7 @@ using vgui::surface;
 
 ConVar neo_friendly_marker_hud_scale_factor("neo_friendly_marker_hud_scale_factor", "0.5", FCVAR_USERINFO,
 	"Friendly player marker HUD element scaling factor", true, 0.01, false, 0);
-ConVar neo_cl_clantag_friendly_marker_spec_only("neo_cl_clantag_friendly_marker_spec_only", "1", FCVAR_ARCHIVE,
+ConVar cl_neo_clantag_friendly_marker_spec_only("cl_neo_clantag_friendly_marker_spec_only", "1", FCVAR_ARCHIVE,
 												"Clantags only appear for spectators.", true, 0.0f, true, 1.0f);
 
 DECLARE_NAMED_HUDELEMENT(CNEOHud_FriendlyMarker, neo_iff);
@@ -180,7 +180,7 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 			// Only show clan tag if spectator/no playing and this player has a clantag
 			const char *playerClantag = player->GetNeoClantag();
 			if (playerClantag && playerClantag[0] &&
-					(!neo_cl_clantag_friendly_marker_spec_only.GetBool() || localPlayerSpec))
+					(!cl_neo_clantag_friendly_marker_spec_only.GetBool() || localPlayerSpec))
 			{
 				V_sprintf_safe(textASCII, "[%s] %s", playerClantag, playerName);
 			}
