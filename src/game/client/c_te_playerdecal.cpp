@@ -28,6 +28,10 @@ static ConVar cl_spraydisable( "cl_spraydisable", "1", FCVAR_CLIENTDLL | FCVAR_A
 static ConVar cl_spraydisable( "cl_spraydisable", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE, "Disable player sprays." );
 #endif
 
+#ifdef NEO
+extern ConVar sv_neo_spraydisable;
+#endif
+
 #ifndef _XBOX
 CLIENTEFFECT_REGISTER_BEGIN( PrecachePlayerDecal )
 CLIENTEFFECT_MATERIAL( "decals/playerlogo01" )
@@ -225,6 +229,13 @@ void TE_PlayerDecal( IRecipientFilter& filter, float delay,
 {
 	if ( cl_spraydisable.GetBool() )
 		return;
+
+#ifdef NEO
+	if (sv_neo_spraydisable.GetBool())
+	{
+		return;
+	}
+#endif
 
 	// No valid target?
 	C_BaseEntity *ent = cl_entitylist->GetEnt( entity );
