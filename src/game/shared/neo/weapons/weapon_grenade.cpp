@@ -166,7 +166,7 @@ void CWeaponGrenade::ItemPostFrame(void)
 	if (!HasPrimaryAmmo() && (GetIdealActivity() == ACT_VM_IDLE || GetIdealActivity() == ACT_VM_DRAW)) {
 		// Finished Throwing Animation, switch to next weapon and destroy this one
 #ifdef GAME_DLL
-		CBasePlayer *pOwner = ToBasePlayer(GetOwner());
+		CBasePlayer* pOwner = ToBasePlayer(GetOwner());
 		if (pOwner)
 		{
 			pOwner->SwitchToNextBestWeapon(this);
