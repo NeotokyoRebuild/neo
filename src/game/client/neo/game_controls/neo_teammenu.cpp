@@ -108,6 +108,8 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 	SetTitleBarVisible(false);
 
 	FindButtons();
+	ListenForGameEvent("team_score");
+	ListenForGameEvent("player_team");
 }
 
 CNeoTeamMenu::~CNeoTeamMenu()
@@ -121,6 +123,58 @@ CNeoTeamMenu::~CNeoTeamMenu()
 		}
 	}
 	g_pNeoTeamMenu = nullptr;
+}
+
+void CNeoTeamMenu::FireGameEvent(IGameEvent* event)
+{
+	const char* type = event->GetName();
+
+	if (!Q_strcmp(type, "team_score"))
+	{ // team score increased, update score label
+		const int teamID = event->GetInt("teamid");
+		const int score = event->GetInt("score");
+		char textBuff[13 + 1];
+		V_sprintf_safe(textBuff, "SCORE: %d", score);
+		if (teamID == TEAM_JINRAI)
+		{
+			m_pJinrai_ScoreLabel->SetText(textBuff);
+		}
+		else if (teamID == TEAM_NSF)
+		{
+			m_pNSF_ScoreLabel->SetText(textBuff);
+		}
+	}
+	else //if (!Q_strcmp(type, "player_team"))
+	{ // player joined a new team (also handles disconnects)
+		const int oldTeamID = event->GetInt("oldteam");
+		const int newTeamID = event->GetInt("team");
+
+		auto pJinrai = GetGlobalTeam(TEAM_JINRAI);
+		auto pNsf = GetGlobalTeam(TEAM_NSF);
+
+		char textBuff[13 + 1];
+		if (oldTeamID == TEAM_JINRAI)
+		{
+			V_sprintf_safe(textBuff, "PLAYERS: %d", pJinrai->GetNumPlayers() - 1);
+			m_pJinrai_PlayercountLabel->SetText(textBuff);
+		}
+		else if (oldTeamID == TEAM_NSF)
+		{
+			V_sprintf_safe(textBuff, "PLAYERS: %d", pNsf->GetNumPlayers() - 1);
+			m_pNSF_PlayercountLabel->SetText(textBuff);
+		}
+
+		if (newTeamID == TEAM_JINRAI)
+		{
+			V_sprintf_safe(textBuff, "PLAYERS: %d", pJinrai->GetNumPlayers() + 1);
+			m_pJinrai_PlayercountLabel->SetText(textBuff);
+		}
+		else if (newTeamID == TEAM_NSF)
+		{
+			V_sprintf_safe(textBuff, "PLAYERS: %d", pNsf->GetNumPlayers() + 1);
+			m_pNSF_PlayercountLabel->SetText(textBuff);
+		}
+	}
 }
 
 void CNeoTeamMenu::FindButtons()
@@ -278,10 +332,10 @@ void CNeoTeamMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 	Assert(m_pNSF_PlayercountLabel);
 
 	char textBuff[13 + 1];
-	V_sprintf_safe(textBuff, "SCORE:%d", jinScore);
+	V_sprintf_safe(textBuff, "SCORE: %d", jinScore);
 	m_pJinrai_ScoreLabel->SetText(textBuff);
 
-	V_sprintf_safe(textBuff, "SCORE:%d", nsfScore);
+	V_sprintf_safe(textBuff, "SCORE: %d", nsfScore);
 	m_pNSF_ScoreLabel->SetText(textBuff);
 
 	V_sprintf_safe(textBuff, "PLAYERS: %d", jinNumPlayers);
