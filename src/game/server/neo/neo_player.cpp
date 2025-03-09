@@ -127,17 +127,17 @@ CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
 CNEOGameRulesProxy* neoGameRules;
 extern CBaseEntity *g_pLastSpawn;
 
-extern ConVar neo_sv_ignore_wep_xp_limit;
-extern ConVar neo_sv_clantag_allow;
-extern ConVar neo_sv_dev_test_clantag;
+extern ConVar sv_neo_ignore_wep_xp_limit;
+extern ConVar sv_neo_clantag_allow;
+extern ConVar sv_neo_dev_test_clantag;
 extern ConVar sv_stickysprint;
 
 ConVar sv_neo_can_change_classes_anytime("sv_neo_can_change_classes_anytime", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "Can players change classes at any moment, even mid-round?",
 	true, 0.0f, true, 1.0f);
 ConVar sv_neo_change_suicide_player("sv_neo_change_suicide_player", "0", FCVAR_REPLICATED, "Kill the player if they change the team and they're alive.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_change_threshold_interval("sv_neo_change_threshold_interval", "0.25", FCVAR_REPLICATED, "The interval threshold limit in seconds before the player is allowed to change team.", true, 0.0f, true, 1000.0f);
-ConVar neo_sv_dm_max_class_dur("neo_sv_dm_max_class_dur", "10", FCVAR_REPLICATED, "The time in seconds when the player can change class on respawn during deathmatch.", true, 0.0f, true, 60.0f);
-ConVar neo_sv_warmup_godmode("neo_sv_warmup_godmode", "0", FCVAR_REPLICATED, "If enabled, everyone is invincible on idle and warmup.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_dm_max_class_dur("sv_neo_dm_max_class_dur", "10", FCVAR_REPLICATED, "The time in seconds when the player can change class on respawn during deathmatch.", true, 0.0f, true, 60.0f);
+ConVar sv_neo_warmup_godmode("sv_neo_warmup_godmode", "0", FCVAR_REPLICATED, "If enabled, everyone is invincible on idle and warmup.", true, 0.0f, true, 1.0f);
 
 void CNEO_Player::RequestSetClass(int newClass)
 {
@@ -151,7 +151,7 @@ void CNEO_Player::RequestSetClass(int newClass)
 	const NeoRoundStatus status = NEORules()->GetRoundStatus();
 	if (IsDead() || sv_neo_can_change_classes_anytime.GetBool() ||
 		(!m_bIneligibleForLoadoutPick && NEORules()->GetRemainingPreRoundFreezeTime(false) > 0) ||
-		(bIsTypeDM && !m_bIneligibleForLoadoutPick && GetAliveDuration() < neo_sv_dm_max_class_dur.GetFloat()) ||
+		(bIsTypeDM && !m_bIneligibleForLoadoutPick && GetAliveDuration() < sv_neo_dm_max_class_dur.GetFloat()) ||
 		(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup))
 	{
 		m_iNeoClass = newClass;
@@ -272,7 +272,7 @@ bool CNEO_Player::RequestSetLoadout(int loadoutNumber)
 		result = false;
 	}
 
-	if (!neo_sv_ignore_wep_xp_limit.GetBool() && loadoutNumber+1 > CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(m_iXP, classChosen, false))
+	if (!sv_neo_ignore_wep_xp_limit.GetBool() && loadoutNumber+1 > CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(m_iXP, classChosen, false))
 	{
 		DevMsg("Insufficient XP for %s\n", pszWepName);
 		result = false;
@@ -1405,12 +1405,12 @@ int CNEO_Player::NameDupePos() const
 
 const char *CNEO_Player::GetNeoClantag() const
 {
-	if (!neo_sv_clantag_allow.GetBool())
+	if (!sv_neo_clantag_allow.GetBool())
 	{
 		return "";
 	}
 #ifdef DEBUG
-	const char *overrideClantag = neo_sv_dev_test_clantag.GetString();
+	const char *overrideClantag = sv_neo_dev_test_clantag.GetString();
 	if (overrideClantag && overrideClantag[0])
 	{
 		return overrideClantag;
@@ -2723,7 +2723,7 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 {
 	if (m_takedamage != DAMAGE_EVENTS_ONLY)
 	{
-		if (neo_sv_warmup_godmode.GetBool() &&
+		if (sv_neo_warmup_godmode.GetBool() &&
 				(NEORules()->GetRoundStatus() == NeoRoundStatus::Idle ||
 				 NEORules()->GetRoundStatus() == NeoRoundStatus::Warmup))
 		{
@@ -2766,7 +2766,7 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 						attacker->m_bKilledInflicted = true;
 					}
 
-					if (neo_sv_mirror_teamdamage_immunity.GetBool())
+					if (sv_neo_mirror_teamdamage_immunity.GetBool())
 					{
 						// Give immunity to the victim and don't go through the OnTakeDamage_Alive
 						return 0;
@@ -2781,7 +2781,7 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 				m_rfAttackersAccumlator.Set(attackerIdx, flDmgAccumlator);
 				m_rfAttackersHits.GetForModify(attackerIdx) += 1;
 
-				if (bIsTeamDmg && neo_sv_teamdamage_kick.GetBool() && NEORules()->GetRoundStatus() == NeoRoundStatus::RoundLive)
+				if (bIsTeamDmg && sv_neo_teamdamage_kick.GetBool() && NEORules()->GetRoundStatus() == NeoRoundStatus::RoundLive)
 				{
 					attacker->m_iTeamDamageInflicted += iDamage;
 				}
@@ -2906,7 +2906,7 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 	CNEOBaseCombatWeapon *pNeoWeapon = dynamic_cast<CNEOBaseCombatWeapon*>((CBaseEntity*)pEnt);
 	if (pNeoWeapon)
 	{
-		if (neo_sv_ignore_wep_xp_limit.GetBool() || m_iLoadoutWepChoice+1 <= CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(m_iXP, m_iNeoClass.Get(), false))
+		if (sv_neo_ignore_wep_xp_limit.GetBool() || m_iLoadoutWepChoice+1 <= CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(m_iXP, m_iNeoClass.Get(), false))
 		{
 			pNeoWeapon->SetSubType(wepSubType);
 

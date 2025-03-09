@@ -211,11 +211,11 @@ ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
 	"Whether to display HL2 style ammo/health info near crosshair.",
 	true, 0.0f, true, 1.0f);
 
-ConVar neo_cl_streamermode("neo_cl_streamermode", "0", FCVAR_ARCHIVE | FCVAR_USERINFO, "Streamer mode turns player names into generic names and hide avatars.", true, 0.0f, true, 1.0f);
-ConVar neo_cl_streamermode_autodetect_obs("neo_cl_streamermode_autodetect_obs", "0", FCVAR_ARCHIVE, "Automatically turn neo_cl_streamermode on if OBS was detected on startup.", true, 0.0f, true, 1.0f);
+ConVar cl_neo_streamermode("cl_neo_streamermode", "0", FCVAR_ARCHIVE | FCVAR_USERINFO, "Streamer mode turns player names into generic names and hide avatars.", true, 0.0f, true, 1.0f);
+ConVar cl_neo_streamermode_autodetect_obs("cl_neo_streamermode_autodetect_obs", "0", FCVAR_ARCHIVE, "Automatically turn cl_neo_streamermode on if OBS was detected on startup.", true, 0.0f, true, 1.0f);
 
-extern ConVar neo_sv_clantag_allow;
-extern ConVar neo_sv_dev_test_clantag;
+extern ConVar sv_neo_clantag_allow;
+extern ConVar sv_neo_dev_test_clantag;
 
 class NeoLoadoutMenu_Cb : public ICommandCallback
 {
@@ -631,13 +631,13 @@ int C_NEO_Player::GetAttackersScores(const int attackerIdx) const
 
 const char *C_NEO_Player::GetNeoClantag() const
 {
-	if (!neo_sv_clantag_allow.GetBool() ||
-			(neo_cl_streamermode.GetBool() && !IsLocalPlayer()))
+	if (!sv_neo_clantag_allow.GetBool() ||
+			(cl_neo_streamermode.GetBool() && !IsLocalPlayer()))
 	{
 		return "";
 	}
 #ifdef DEBUG
-	const char *overrideClantag = neo_sv_dev_test_clantag.GetString();
+	const char *overrideClantag = sv_neo_dev_test_clantag.GetString();
 	if (overrideClantag && overrideClantag[0])
 	{
 		return overrideClantag;
@@ -680,7 +680,7 @@ const char *C_NEO_Player::InternalGetNeoPlayerName() const
 
 const char *C_NEO_Player::GetNeoPlayerName() const
 {
-	if (neo_cl_streamermode.GetBool() && !IsLocalPlayer())
+	if (cl_neo_streamermode.GetBool() && !IsLocalPlayer())
 	{
 		[[maybe_unused]] uchar32 u32Out;
 		bool bError = false;
