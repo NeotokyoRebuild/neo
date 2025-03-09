@@ -22,7 +22,7 @@ out
 /game/neo/shaders
 /game/neo/models
 game/neo/materials/temp
-/game/neo/sound
+/game/neo/sound/tutorial
 
 
 # Use -f to override it
