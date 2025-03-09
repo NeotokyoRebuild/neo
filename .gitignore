@@ -22,6 +22,8 @@ out
 /game/neo/shaders
 /game/neo/models
 game/neo/materials/temp
+/game/neo/sound
+
 
 # Use -f to override it
 *.vmt
