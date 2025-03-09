@@ -489,6 +489,11 @@ void CNEOBaseCombatWeapon::ItemPreFrame(void)
 // Handles lowering the weapon view model when character is sprinting
 void CNEOBaseCombatWeapon::ProcessAnimationEvents()
 {
+	if (GetNeoWepBits() & NEO_WEP_THROWABLE)
+	{
+		return;
+	}
+
 	CNEO_Player* pOwner = static_cast<CNEO_Player*>(ToBasePlayer(GetOwner()));
 	if (!pOwner)
 	{
@@ -527,14 +532,6 @@ void CNEOBaseCombatWeapon::ProcessAnimationEvents()
 	else if (m_bLowered && gpGlobals->curtime > m_flNextPrimaryAttack)
 	{
 		SetWeaponIdleTime(gpGlobals->curtime + 0.2);
-		if (GetNeoWepBits() & NEO_WEP_THROWABLE)
-		{
-			if (!HasPrimaryAmmo())
-			{ // switch our vm activity to something else so throwables postframe picks up that we've finished the throw
-				SendWeaponAnim(ACT_VM_DRAW);
-			}
-			return;
-		}
 		m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
 		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
 	}
