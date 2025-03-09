@@ -261,7 +261,6 @@ void CWeaponDetpack::CheckTossPosition(CBasePlayer* pPlayer, const Vector& vecEy
 bool CWeaponDetpack::CanDrop()
 {
 	auto owner = GetOwner();
-	return true;
 	return m_bThisDetpackHasBeenThrown && owner && !GetOwner()->IsAlive();
 }
 

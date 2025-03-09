@@ -76,8 +76,6 @@ private:
 	CNetworkVar(int, m_AttackPaused);
 	CNetworkVar(bool, m_bDrawbackFinished);
 
-	bool m_bRemoving = false;
-
 	CWeaponGrenade(const CWeaponGrenade &other);
 };
 
