@@ -21,7 +21,7 @@ class C_NEO_Player;
 #define NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(HudElementId, DefaultUpdateFrequencyInSeconds) ConVar NEO_HUD_ELEMENT_FREQ_CVAR_NAME(HudElementId)(xstr(NEO_HUD_ELEMENT_FREQ_CVAR_NAME(HudElementId)), #DefaultUpdateFrequencyInSeconds, NEO_HUD_ELEMENT_FREQ_CVAR_FLAGS, NEO_HUD_ELEMENT_FREQ_CVAR_DESCRIPTION, NEO_HUD_ELEMENT_FREQ_CVAR_MINMAX_PARMS); \
 	ConVar* CNEOHud_ ## HudElementId::GetUpdateFrequencyConVar() const { return &NEO_HUD_ELEMENT_FREQ_CVAR_NAME(HudElementId); }
 
-extern ConVar neo_cl_hud_ammo_enabled;
+extern ConVar cl_neo_hud_ammo_enabled;
 
 class CNEOHud_ChildElement
 {

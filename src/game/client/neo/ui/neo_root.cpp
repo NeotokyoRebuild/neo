@@ -44,14 +44,14 @@ static CDllDemandLoader g_GameUIDLL("GameUI");
 
 extern ConVar neo_name;
 extern ConVar cl_onlysteamnick;
-extern ConVar neo_cl_streamermode;
+extern ConVar cl_neo_streamermode;
 extern ConVar neo_clantag;
 
 CNeoRoot *g_pNeoRoot = nullptr;
 void NeoToggleconsole();
 extern CNeoLoading *g_pNeoLoading;
 inline NeoUI::Context g_uiCtx;
-inline ConVar neo_cl_toggleconsole("neo_cl_toggleconsole", "0", FCVAR_ARCHIVE,
+inline ConVar cl_neo_toggleconsole("cl_neo_toggleconsole", "0", FCVAR_ARCHIVE,
 								   "If the console can be toggled with the ` keybind or not.", true, 0.0f, true, 1.0f);
 inline int g_iRowsInScreen;
 
@@ -698,7 +698,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 				wchar_t wszStatusTotal[48];
 				const int iStatusTotalSize = V_swprintf_safe(wszStatusTotal, L"%ls%ls",
 								WSZ_PERSONA_STATES[static_cast<int>(eCurStatus)],
-								neo_cl_streamermode.GetBool() ? L" [Streamer mode on]" : L"");
+								cl_neo_streamermode.GetBool() ? L" [Streamer mode on]" : L"");
 				const int iStatusTextStartPosY = g_uiCtx.iMarginY + iMainTextHeight + g_uiCtx.iMarginY;
 
 				[[maybe_unused]] int iStatusWide;
@@ -1268,7 +1268,7 @@ void CNeoRoot::MainLoopServerDetails(const MainLoopParam param)
 			wchar_t wszText[128];
 			if (bP) g_pVGuiLocalize->ConvertANSIToUnicode(gameServer->GetName(), wszText, sizeof(wszText));
 			NeoUI::Label(L"Name:", wszText);
-			if (!neo_cl_streamermode.GetBool())
+			if (!cl_neo_streamermode.GetBool())
 			{
 				if (bP) g_pVGuiLocalize->ConvertANSIToUnicode(gameServer->m_NetAdr.GetConnectionAddressString(), wszText, sizeof(wszText));
 				NeoUI::Label(L"Address:", wszText);
@@ -1289,7 +1289,7 @@ void CNeoRoot::MainLoopServerDetails(const MainLoopParam param)
 		g_uiCtx.dPanel.tall = (iTallTotal - g_uiCtx.iRowTall) - g_uiCtx.dPanel.tall;
 		NeoUI::BeginSection();
 		{
-			if (!neo_cl_streamermode.GetBool())
+			if (!cl_neo_streamermode.GetBool())
 			{
 				if (m_serverPlayers.m_players.IsEmpty())
 				{
@@ -1619,7 +1619,7 @@ bool NeoRootCaptureESC()
 
 void NeoToggleconsole()
 {
-	if (neo_cl_toggleconsole.GetBool())
+	if (cl_neo_toggleconsole.GetBool())
 	{
 		if (engine->IsInGame() && g_pNeoRoot)
 		{

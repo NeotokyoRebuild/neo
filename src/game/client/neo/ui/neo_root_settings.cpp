@@ -23,7 +23,7 @@ extern CNeoRoot *g_pNeoRoot;
 extern NeoUI::Context g_uiCtx;
 extern int g_iRowsInScreen;
 extern bool g_bOBSDetected;
-extern ConVar neo_cl_streamermode;
+extern ConVar cl_neo_streamermode;
 
 const wchar_t *QUALITY_LABELS[] = {
 	L"Low",
@@ -236,7 +236,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		g_pVGuiLocalize->ConvertANSIToUnicode(cvr->neo_name.GetString(), pGeneral->wszNeoName, sizeof(pGeneral->wszNeoName));
 		g_pVGuiLocalize->ConvertANSIToUnicode(cvr->neo_clantag.GetString(), pGeneral->wszNeoClantag, sizeof(pGeneral->wszNeoClantag));
 		pGeneral->bOnlySteamNick = cvr->cl_onlysteamnick.GetBool();
-		pGeneral->bMarkerSpecOnlyClantag = cvr->neo_cl_clantag_friendly_marker_spec_only.GetBool();
+		pGeneral->bMarkerSpecOnlyClantag = cvr->cl_neo_clantag_friendly_marker_spec_only.GetBool();
 		pGeneral->iFov = cvr->neo_fov.GetInt();
 		pGeneral->iViewmodelFov = cvr->neo_viewmodel_fov_offset.GetInt();
 		pGeneral->bAimHold = cvr->neo_aim_hold.GetBool();
@@ -260,15 +260,15 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 				}
 			}
 		}
-		pGeneral->bStreamerMode = cvr->neo_cl_streamermode.GetBool();
-		pGeneral->bAutoDetectOBS = cvr->neo_cl_streamermode_autodetect_obs.GetBool();
-		pGeneral->bEnableRangeFinder = cvr->neo_cl_hud_rangefinder_enabled.GetBool();
+		pGeneral->bStreamerMode = cvr->cl_neo_streamermode.GetBool();
+		pGeneral->bAutoDetectOBS = cvr->cl_neo_streamermode_autodetect_obs.GetBool();
+		pGeneral->bEnableRangeFinder = cvr->cl_neo_hud_rangefinder_enabled.GetBool();
 		pGeneral->iBackground = cvr->sv_unlockedchapters.GetInt();
 	}
 	{
 		NeoSettings::Keys *pKeys = &ns->keys;
 		pKeys->bWeaponFastSwitch = cvr->hud_fastswitch.GetBool();
-		pKeys->bDeveloperConsole = cvr->neo_cl_toggleconsole.GetBool();
+		pKeys->bDeveloperConsole = cvr->cl_neo_toggleconsole.GetBool();
 		if (!(flagsKeys & NeoSettings::Keys::SKIP_KEYS))
 		{
 			for (int i = 0; i < pKeys->iBindsSize; ++i)
@@ -396,21 +396,21 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 	}
 	{
 		NeoSettings::Crosshair *pCrosshair = &ns->crosshair;
-		pCrosshair->iStyle = cvr->neo_cl_crosshair_style.GetInt();
-		pCrosshair->info.color[0] = (uint8)(cvr->neo_cl_crosshair_color_r.GetInt());
-		pCrosshair->info.color[1] = (uint8)(cvr->neo_cl_crosshair_color_g.GetInt());
-		pCrosshair->info.color[2] = (uint8)(cvr->neo_cl_crosshair_color_b.GetInt());
-		pCrosshair->info.color[3] = (uint8)(cvr->neo_cl_crosshair_color_a.GetInt());
-		pCrosshair->info.iESizeType = cvr->neo_cl_crosshair_size_type.GetInt();
-		pCrosshair->info.iSize = cvr->neo_cl_crosshair_size.GetInt();
-		pCrosshair->info.flScrSize = cvr->neo_cl_crosshair_size_screen.GetFloat();
-		pCrosshair->info.iThick = cvr->neo_cl_crosshair_thickness.GetInt();
-		pCrosshair->info.iGap = cvr->neo_cl_crosshair_gap.GetInt();
-		pCrosshair->info.iOutline = cvr->neo_cl_crosshair_outline.GetInt();
-		pCrosshair->info.iCenterDot = cvr->neo_cl_crosshair_center_dot.GetInt();
-		pCrosshair->info.bTopLine = cvr->neo_cl_crosshair_top_line.GetBool();
-		pCrosshair->info.iCircleRad = cvr->neo_cl_crosshair_circle_radius.GetInt();
-		pCrosshair->info.iCircleSegments = cvr->neo_cl_crosshair_circle_segments.GetInt();
+		pCrosshair->iStyle = cvr->cl_neo_crosshair_style.GetInt();
+		pCrosshair->info.color[0] = (uint8)(cvr->cl_neo_crosshair_color_r.GetInt());
+		pCrosshair->info.color[1] = (uint8)(cvr->cl_neo_crosshair_color_g.GetInt());
+		pCrosshair->info.color[2] = (uint8)(cvr->cl_neo_crosshair_color_b.GetInt());
+		pCrosshair->info.color[3] = (uint8)(cvr->cl_neo_crosshair_color_a.GetInt());
+		pCrosshair->info.iESizeType = cvr->cl_neo_crosshair_size_type.GetInt();
+		pCrosshair->info.iSize = cvr->cl_neo_crosshair_size.GetInt();
+		pCrosshair->info.flScrSize = cvr->cl_neo_crosshair_size_screen.GetFloat();
+		pCrosshair->info.iThick = cvr->cl_neo_crosshair_thickness.GetInt();
+		pCrosshair->info.iGap = cvr->cl_neo_crosshair_gap.GetInt();
+		pCrosshair->info.iOutline = cvr->cl_neo_crosshair_outline.GetInt();
+		pCrosshair->info.iCenterDot = cvr->cl_neo_crosshair_center_dot.GetInt();
+		pCrosshair->info.bTopLine = cvr->cl_neo_crosshair_top_line.GetBool();
+		pCrosshair->info.iCircleRad = cvr->cl_neo_crosshair_circle_radius.GetInt();
+		pCrosshair->info.iCircleSegments = cvr->cl_neo_crosshair_circle_segments.GetInt();
 	}
 }
 
@@ -461,7 +461,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		g_pVGuiLocalize->ConvertUnicodeToANSI(pGeneral->wszNeoClantag, neoClantagText, sizeof(neoClantagText));
 		cvr->neo_clantag.SetValue(neoClantagText);
 		cvr->cl_onlysteamnick.SetValue(pGeneral->bOnlySteamNick);
-		cvr->neo_cl_clantag_friendly_marker_spec_only.SetValue(pGeneral->bMarkerSpecOnlyClantag);
+		cvr->cl_neo_clantag_friendly_marker_spec_only.SetValue(pGeneral->bMarkerSpecOnlyClantag);
 		cvr->neo_fov.SetValue(pGeneral->iFov);
 		cvr->neo_viewmodel_fov_offset.SetValue(pGeneral->iViewmodelFov);
 		cvr->neo_aim_hold.SetValue(pGeneral->bAimHold);
@@ -474,16 +474,16 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_showpos.SetValue(pGeneral->bShowPos);
 		cvr->cl_showfps.SetValue(pGeneral->iShowFps);
 		cvr->cl_downloadfilter.SetValue(DLFILTER_STRMAP[pGeneral->iDlFilter]);
-		cvr->neo_cl_streamermode.SetValue(pGeneral->bStreamerMode);
-		cvr->neo_cl_streamermode_autodetect_obs.SetValue(pGeneral->bAutoDetectOBS);
-		cvr->neo_cl_hud_rangefinder_enabled.SetValue(pGeneral->bEnableRangeFinder);
+		cvr->cl_neo_streamermode.SetValue(pGeneral->bStreamerMode);
+		cvr->cl_neo_streamermode_autodetect_obs.SetValue(pGeneral->bAutoDetectOBS);
+		cvr->cl_neo_hud_rangefinder_enabled.SetValue(pGeneral->bEnableRangeFinder);
 		cvr->sv_unlockedchapters.SetValue(pGeneral->iBackground);
 	}
 	{
 		const NeoSettings::Keys *pKeys = &ns->keys;
 		cvr->hud_fastswitch.SetValue(pKeys->bWeaponFastSwitch);
 		NeoToggleConsoleEnforce();
-		cvr->neo_cl_toggleconsole.SetValue(pKeys->bDeveloperConsole);
+		cvr->cl_neo_toggleconsole.SetValue(pKeys->bDeveloperConsole);
 		for (int i = 0; i < pKeys->iBindsSize; ++i)
 		{
 			const auto *bind = &pKeys->vBinds[i];
@@ -586,21 +586,21 @@ void NeoSettingsSave(const NeoSettings *ns)
 	}
 	{
 		const NeoSettings::Crosshair *pCrosshair = &ns->crosshair;
-		cvr->neo_cl_crosshair_style.SetValue(pCrosshair->iStyle);
-		cvr->neo_cl_crosshair_color_r.SetValue(pCrosshair->info.color.r());
-		cvr->neo_cl_crosshair_color_g.SetValue(pCrosshair->info.color.g());
-		cvr->neo_cl_crosshair_color_b.SetValue(pCrosshair->info.color.b());
-		cvr->neo_cl_crosshair_color_a.SetValue(pCrosshair->info.color.a());
-		cvr->neo_cl_crosshair_size_type.SetValue(pCrosshair->info.iESizeType);
-		cvr->neo_cl_crosshair_size.SetValue(pCrosshair->info.iSize);
-		cvr->neo_cl_crosshair_size_screen.SetValue(pCrosshair->info.flScrSize);
-		cvr->neo_cl_crosshair_thickness.SetValue(pCrosshair->info.iThick);
-		cvr->neo_cl_crosshair_gap.SetValue(pCrosshair->info.iGap);
-		cvr->neo_cl_crosshair_outline.SetValue(pCrosshair->info.iOutline);
-		cvr->neo_cl_crosshair_center_dot.SetValue(pCrosshair->info.iCenterDot);
-		cvr->neo_cl_crosshair_top_line.SetValue(pCrosshair->info.bTopLine);
-		cvr->neo_cl_crosshair_circle_radius.SetValue(pCrosshair->info.iCircleRad);
-		cvr->neo_cl_crosshair_circle_segments.SetValue(pCrosshair->info.iCircleSegments);
+		cvr->cl_neo_crosshair_style.SetValue(pCrosshair->iStyle);
+		cvr->cl_neo_crosshair_color_r.SetValue(pCrosshair->info.color.r());
+		cvr->cl_neo_crosshair_color_g.SetValue(pCrosshair->info.color.g());
+		cvr->cl_neo_crosshair_color_b.SetValue(pCrosshair->info.color.b());
+		cvr->cl_neo_crosshair_color_a.SetValue(pCrosshair->info.color.a());
+		cvr->cl_neo_crosshair_size_type.SetValue(pCrosshair->info.iESizeType);
+		cvr->cl_neo_crosshair_size.SetValue(pCrosshair->info.iSize);
+		cvr->cl_neo_crosshair_size_screen.SetValue(pCrosshair->info.flScrSize);
+		cvr->cl_neo_crosshair_thickness.SetValue(pCrosshair->info.iThick);
+		cvr->cl_neo_crosshair_gap.SetValue(pCrosshair->info.iGap);
+		cvr->cl_neo_crosshair_outline.SetValue(pCrosshair->info.iOutline);
+		cvr->cl_neo_crosshair_center_dot.SetValue(pCrosshair->info.iCenterDot);
+		cvr->cl_neo_crosshair_top_line.SetValue(pCrosshair->info.bTopLine);
+		cvr->cl_neo_crosshair_circle_radius.SetValue(pCrosshair->info.iCircleRad);
+		cvr->cl_neo_crosshair_circle_segments.SetValue(pCrosshair->info.iCircleSegments);
 	}
 
 	engine->ClientCmd_Unrestricted("host_writeconfig");
