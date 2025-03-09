@@ -168,7 +168,6 @@ void CWeaponDetpack::PrimaryAttack(void)
 			m_bLowered = false;
 			m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
 			m_flTimeWeaponIdle = gpGlobals->curtime + SequenceDuration();
-			m_bTriggerRemoteDeploy = true;
 		}
 	}
 }
@@ -235,14 +234,6 @@ void CWeaponDetpack::ItemPostFrame(void)
 					pOwner->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
 					m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
 					m_fDrawbackFinished = false;
-				}
-			}
-			else if (!m_bRemoteHasBeenTriggered)
-			{
-				if (gpGlobals->curtime > m_flNextPrimaryAttack && m_bTriggerRemoteDeploy)
-				{
-					SendWeaponAnim(ACT_VM_DRAW_DEPLOYED);
-					m_bTriggerRemoteDeploy = false;
 				}
 			}
 		}
@@ -318,9 +309,19 @@ void CWeaponDetpack::TossDetpack(CBasePlayer* pPlayer)
 	}
 #endif
 	SetModel(GetWorldModel());
-#ifdef GAME_DLL
-	m_iWorldModelIndex = GetModelIndex();
-#endif // GAME_DLL
+	Precache();
+	if (GetOwner()->IsPlayer())
+	{
+		SetModel(GetViewModel());
+	}
+	else
+	{
+		// Make the weapon ready as soon as any NPC picks it up.
+		m_flNextPrimaryAttack = gpGlobals->curtime;
+		m_flNextSecondaryAttack = gpGlobals->curtime;
+		SetModel(GetWorldModel());
+	}
+	DefaultDeploy((char*)GetViewModel(), (char*)GetModel(), ACT_VM_DRAW_DEPLOYED, (char*)GetAnimPrefix());
 
 	pPlayer->SetAnimation(PLAYER_ATTACK1);
 }

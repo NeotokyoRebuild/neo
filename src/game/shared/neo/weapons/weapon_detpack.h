@@ -73,7 +73,6 @@ public:
 	CNetworkVar(bool, m_bWantsToThrowThisDetpack);
 	CNetworkVar(bool, m_bThisDetpackHasBeenThrown);
 	CNetworkVar(bool, m_bRemoteHasBeenTriggered);
-	bool m_bTriggerRemoteDeploy;
 
 private:
 	// Check a throw from vecSrc.  If not valid, move the position back along the line to vecEye
