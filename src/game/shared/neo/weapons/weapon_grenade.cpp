@@ -167,8 +167,11 @@ void CWeaponGrenade::ItemPostFrame(void)
 		// Finished Throwing Animation, switch to next weapon and destroy this one
 #ifdef GAME_DLL
 		CBasePlayer *pOwner = ToBasePlayer(GetOwner());
-		pOwner->SwitchToNextBestWeapon(this);
-		pOwner->Weapon_Drop(this, NULL, NULL);
+		if (pOwner)
+		{
+			pOwner->SwitchToNextBestWeapon(this);
+			pOwner->Weapon_Drop(this, NULL, NULL);
+		}
 		UTIL_Remove(this);
 #endif
 		return;

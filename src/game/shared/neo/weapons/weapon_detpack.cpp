@@ -308,19 +308,15 @@ void CWeaponDetpack::TossDetpack(CBasePlayer* pPlayer)
 		Assert(false);
 	}
 #endif
-	SetModel(GetWorldModel());
-	Precache();
-	if (GetOwner()->IsPlayer())
+	if (GetOwner()->IsPlayer()) // NEO NOTE (Adam) if else taken from CBaseCombatWeapon::Equip, this must be what was fixing the viewmodel previously after dropping and picking up the detremote
 	{
 		SetModel(GetViewModel());
 	}
 	else
 	{
-		// Make the weapon ready as soon as any NPC picks it up.
-		m_flNextPrimaryAttack = gpGlobals->curtime;
-		m_flNextSecondaryAttack = gpGlobals->curtime;
 		SetModel(GetWorldModel());
 	}
+	Precache();
 	DefaultDeploy((char*)GetViewModel(), (char*)GetModel(), ACT_VM_DRAW_DEPLOYED, (char*)GetAnimPrefix());
 
 	pPlayer->SetAnimation(PLAYER_ATTACK1);
