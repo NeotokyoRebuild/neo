@@ -1898,6 +1898,8 @@ void CNEO_Player::AddPoints(int score, bool bAllowNegativeScore)
 
 void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 {
+	BaseClass::Event_Killed(info);
+
 	// Calculate force for weapon drop
 	Vector forceVector = CalcDamageForceVector(info);
 
@@ -1935,8 +1937,6 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 	{
 		GetGlobalTeam(NEORules()->GetOpposingTeam(this))->AddScore(1);
 	}
-
-	BaseClass::Event_Killed(info);
 
 	// Handle Corpse and Gibs
 	if (!m_bCorpseSet) // Event_Killed can be called multiple times, only set the dead model and spawn gibs once
@@ -2008,8 +2008,8 @@ void CNEO_Player::SetDeadModel(const CTakeDamageInfo& info)
 		return;
 	}
 
-	if (info.GetDamageType() & (1 << 6)) //info.GetDamage() >= 100
-	{ // Died to blast damage, remove all limbs
+	if (info.GetDamageType() & DMG_BLAST)
+	{
 		deadModelType = 0;
 	}
 	else
@@ -2044,39 +2044,20 @@ void CNEO_Player::SetDeadModel(const CTakeDamageInfo& info)
 		Warning("Failed to get Neo model manager\n");
 		return;
 	}
-	switch (deadModelType)
+
+	if (deadModelType == 0)
 	{
-	case 0: // Spawn all gibs
-		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_HEAD));
-		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_LARM));
-		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_LLEG));
-		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_RARM));
-		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_RLEG));
-		SetPlayerCorpseModel(deadModelType);
-		break;
-	case 1: // head
-		SetPlayerCorpseModel(deadModelType);
-		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_HEAD));
-		break;
-	case 2: // left arm
-		SetPlayerCorpseModel(deadModelType);
-		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_LARM));
-		break;
-	case 3: // left leg
-		SetPlayerCorpseModel(deadModelType);
-		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_LLEG));
-		break;
-	case 4: // right arm
-		SetPlayerCorpseModel(deadModelType);
-		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_RARM));
-		break;
-	case 5: // right leg
-		SetPlayerCorpseModel(deadModelType);
-		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_RLEG));
-		break;
-	default:
-		break;
+		for (int i = 0; i < NEO_GIB_LIMB__ENUM_COUNT; i++)
+		{
+			CGib::SpawnSpecificGibs(this, 1, 10, 1000, modelManager->GetGibModel((NeoSkin)GetSkin(), (NeoClass)GetClass(), GetTeamNumber(), NeoGibLimb(i)));
+		}
 	}
+	else
+	{
+		CGib::SpawnSpecificGibs(this, 1, 10, 1000, modelManager->GetGibModel((NeoSkin)GetSkin(), (NeoClass)GetClass(), GetTeamNumber(), NeoGibLimb(deadModelType-1)));
+	}
+	UTIL_BloodSpray(info.GetDamagePosition(), info.GetDamageForce(), BLOOD_COLOR_RED, 10, FX_BLOODSPRAY_ALL); // blood color prob is wrong
+	SetPlayerCorpseModel(deadModelType);
 }
 
 void CNEO_Player::SetPlayerCorpseModel(int type)
@@ -2088,7 +2069,7 @@ void CNEO_Player::SetPlayerCorpseModel(int type)
 		Warning("Failed to get Neo model manager\n");
 		return;
 	}
-	const char* model = modelManager->GetCorpseModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NeoGib(type));
+	const char* model = modelManager->GetCorpseModel((NeoSkin)GetSkin(), (NeoClass)GetClass(), GetTeamNumber(), NeoGib(type));
 
 	if (!*model)
 	{
