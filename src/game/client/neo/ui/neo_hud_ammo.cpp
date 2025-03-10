@@ -132,7 +132,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 	const int numClips = ceil(abs((float)ammoCount / activeWep->GetMaxClip1())); // abs because grenades return negative values (???) // casting division to float in case we have a half-empty mag, rounding up to show the half mag as one more mag
 	const bool isSupa = activeWep->GetNeoWepBits() & NEO_WEP_SUPA7;
 		
-	if (activeWep->UsesClipsForAmmo1()) {
+	if (activeWep->UsesClipsForAmmo1() && !(activeWep->GetNeoWepBits() & NEO_WEP_DETPACK)) {
 		const int maxLen = 5;
 		char clipsText[maxLen]{ '\0' };
 		if(isSupa)
@@ -161,7 +161,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 	int magSizeMax = 0;
 	int magSizeCurrent = 0;
 		
-	if (activeWep->UsesClipsForAmmo1()) 
+	if (activeWep->UsesClipsForAmmo1() && !(activeWep->GetNeoWepBits() & NEO_WEP_THROWABLE)) 
 	{
 		char fireModeText[2]{ '\0' };
 
