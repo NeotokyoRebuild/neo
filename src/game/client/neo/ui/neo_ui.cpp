@@ -6,6 +6,7 @@
 #include <vgui_controls/Controls.h>
 #include <filesystem.h>
 #include <stb_image.h>
+#include <materialsystem/imaterial.h>
 
 #include "neo_misc.h"
 
@@ -634,7 +635,8 @@ NeoUI::RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText)
 	return ret;
 }
 
-bool Texture(const char *szTexturePath, const int x, const int y, const int width, const int height)
+bool Texture(const char *szTexturePath, const int x, const int y, const int width, const int height,
+			 const char *szTextureGroup)
 {
 	auto hdl = g_pCtx->htTexMap.Find(szTexturePath);
 	if (hdl == g_pCtx->htTexMap.InvalidHandle() && g_pCtx->eMode == MODE_PAINT)
@@ -691,7 +693,7 @@ bool Texture(const char *szTexturePath, const int x, const int y, const int widt
 				}
 			}
 		}
-		else
+		else if (!IsErrorMaterial(materials->FindMaterial(szTexturePath, szTextureGroup)))
 		{
 			// Direct texture determined by vmt (without extension)
 			iTex = surface()->CreateNewTextureID(true);

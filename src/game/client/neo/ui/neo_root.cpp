@@ -1669,11 +1669,14 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 					if (NeoUI::Button(L"Yes (Enter)").bPressed || NeoUI::Bind(KEY_ENTER))
 					{
 						// NOTE (nullsystem): Spray related files to remove:
+						// * materials/vgui/logos/SPRAY.vtf
 						// * materials/vgui/logos/SPRAY.vmt
 						// * materials/vgui/logos/ui/SPRAY.vmt
 						// * materials/vgui/logos/ui/SPRAY.vtf
 						char szPathToDel[MAX_PATH];
 
+						V_sprintf_safe(szPathToDel, "materials/vgui/logos/%s.vtf", m_sprayToDelete.szBaseName);
+						filesystem->RemoveFile(szPathToDel);
 						V_sprintf_safe(szPathToDel, "materials/vgui/logos/%s.vmt", m_sprayToDelete.szBaseName);
 						filesystem->RemoveFile(szPathToDel);
 						V_sprintf_safe(szPathToDel, "materials/vgui/logos/ui/%s.vmt", m_sprayToDelete.szBaseName);
