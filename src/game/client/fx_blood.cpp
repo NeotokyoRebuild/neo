@@ -85,6 +85,14 @@ void FX_BloodSpray( const Vector &origin, const Vector &normal, float scale, uns
 	
 	//Find area ambient light color and use it to tint smoke
 	Vector worldLight = WorldGetLightForPoint( origin, true );
+
+#ifdef NEO // NEO NOTE (Adam) borrowing this from FX_BloodBulletImpact below, worldLight is just way too dim
+	if (gpGlobals->maxClients > 1)
+	{
+		worldLight = Vector(1.0, 1.0, 1.0);
+	}
+#endif // NEO
+
 	Vector color = Vector( (float)(worldLight[0] * r) / 255.0f, (float)(worldLight[1] * g) / 255.0f, (float)(worldLight[2] * b) / 255.0f );
 	float colorRamp;
 
