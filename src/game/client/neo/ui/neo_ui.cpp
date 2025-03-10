@@ -634,18 +634,13 @@ NeoUI::RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText)
 	return ret;
 }
 
-void Texture(const char *szTexturePath, const int x, const int y, const int width, const int height)
+bool Texture(const char *szTexturePath, const int x, const int y, const int width, const int height)
 {
-	if (g_pCtx->eMode != MODE_PAINT)
-	{
-		return;
-	}
-
 	auto hdl = g_pCtx->htTexMap.Find(szTexturePath);
-	if (hdl == g_pCtx->htTexMap.InvalidHandle())
+	if (hdl == g_pCtx->htTexMap.InvalidHandle() && g_pCtx->eMode == MODE_PAINT)
 	{
 		bool bApplied = false;
-		const int iTex = surface()->CreateNewTextureID(true);
+		int iTex = -1;
 		if (V_striEndsWith(szTexturePath, ".png") || V_striEndsWith(szTexturePath, ".jpg") ||
 				V_striEndsWith(szTexturePath, ".jpeg"))
 		{
@@ -668,6 +663,7 @@ void Texture(const char *szTexturePath, const int x, const int y, const int widt
 				{
 					Assert(false);
 				}
+				iTex = surface()->CreateNewTextureID(true);
 				surface()->DrawSetTextureRGBAEx(iTex, data, width, height, IMAGE_FORMAT_RGBA8888);
 				stbi_image_free(data);
 				bApplied = true;
@@ -685,6 +681,7 @@ void Texture(const char *szTexturePath, const int x, const int y, const int widt
 					if (pVTFTexture->Unserialize(buf))
 					{
 						pVTFTexture->ConvertImageFormat(IMAGE_FORMAT_RGBA8888, false);
+						iTex = surface()->CreateNewTextureID(true);
 						surface()->DrawSetTextureRGBAEx(iTex, pVTFTexture->ImageData(0, 0, 0),
 														pVTFTexture->Width(), pVTFTexture->Height(),
 														IMAGE_FORMAT_RGBA8888);
@@ -697,6 +694,7 @@ void Texture(const char *szTexturePath, const int x, const int y, const int widt
 		else
 		{
 			// Direct texture determined by vmt (without extension)
+			iTex = surface()->CreateNewTextureID(true);
 			surface()->DrawSetTextureFile(iTex, szTexturePath, false, true);
 			bApplied = true;
 		}
@@ -706,51 +704,56 @@ void Texture(const char *szTexturePath, const int x, const int y, const int widt
 	if (hdl != g_pCtx->htTexMap.InvalidHandle())
 	{
 		const int iTex = g_pCtx->htTexMap.Element(hdl);
-		if (surface()->IsTextureIDValid(iTex))
+		if (surface()->IsTextureIDValid(iTex) && iTex != -1)
 		{
-			// Letterboxing
-			int iTexWide, iTexTall;
-			surface()->DrawGetTextureSize(iTex, iTexWide, iTexTall);
+			if (g_pCtx->eMode == MODE_PAINT)
+			{
+				// Letterboxing
+				int iTexWide, iTexTall;
+				surface()->DrawGetTextureSize(iTex, iTexWide, iTexTall);
 
-			int iDispWide, iDispTall;
-			if (iTexWide > iTexTall)
-			{
-				iDispWide = width;
-				iDispTall = width * (iTexTall / iTexWide);
-			}
-			else if (iTexWide < iTexTall)
-			{
-				iDispWide = height * (iTexWide / iTexTall);
-				iDispTall = height;
-			}
-			else
-			{
-				iDispWide = min(width, height);
-				iDispTall = iDispWide;
-			}
+				int iDispWide, iDispTall;
+				if (iTexWide > iTexTall)
+				{
+					iDispWide = width;
+					iDispTall = width * (iTexTall / iTexWide);
+				}
+				else if (iTexWide < iTexTall)
+				{
+					iDispWide = height * (iTexWide / iTexTall);
+					iDispTall = height;
+				}
+				else
+				{
+					iDispWide = min(width, height);
+					iDispTall = iDispWide;
+				}
 
-			// Only about bottom part since top always set to partition's Y position
-			const int iImgEnd = y + (height / 2) + (iDispTall / 2);
-			float flPartialShow = 1.0f;
-			if (iImgEnd > g_pCtx->dPanel.tall)
-			{
-				const int iExtra = iImgEnd - g_pCtx->dPanel.tall;
-				flPartialShow = (iDispTall - iExtra) / static_cast<float>(iDispTall);
-			}
+				// Only about bottom part since top always set to partition's Y position
+				const int iImgEnd = y + (height / 2) + (iDispTall / 2);
+				float flPartialShow = 1.0f;
+				if (iImgEnd > g_pCtx->dPanel.tall)
+				{
+					const int iExtra = iImgEnd - g_pCtx->dPanel.tall;
+					flPartialShow = (iDispTall - iExtra) / static_cast<float>(iDispTall);
+				}
 
-			const int iStartX = g_pCtx->dPanel.x + x + (width / 2) - (iDispWide / 2);
-			const int iStartY = g_pCtx->dPanel.y + y + (height / 2) - (iDispTall / 2);
-			surface()->DrawSetColor(COLOR_WHITE);
-			surface()->DrawSetTexture(iTex);
-			surface()->DrawTexturedSubRect(
-						iStartX,
-						iStartY,
-						iStartX + iDispWide,
-						iStartY + (iDispTall * flPartialShow),
-						0.0f, 0.0f, 1.0f, flPartialShow);
-			surface()->DrawSetColor(g_pCtx->normalBgColor);
+				const int iStartX = g_pCtx->dPanel.x + x + (width / 2) - (iDispWide / 2);
+				const int iStartY = g_pCtx->dPanel.y + y + (height / 2) - (iDispTall / 2);
+				surface()->DrawSetColor(COLOR_WHITE);
+				surface()->DrawSetTexture(iTex);
+				surface()->DrawTexturedSubRect(
+							iStartX,
+							iStartY,
+							iStartX + iDispWide,
+							iStartY + (iDispTall * flPartialShow),
+							0.0f, 0.0f, 1.0f, flPartialShow);
+				surface()->DrawSetColor(g_pCtx->normalBgColor);
+			}
+			return true;
 		}
 	}
+	return false;
 }
 
 NeoUI::RetButton ButtonTexture(const char *szTexturePath)

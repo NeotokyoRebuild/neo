@@ -233,7 +233,7 @@ RetButton Button(const wchar_t *wszText);
 RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText);
 RetButton ButtonTexture(const char *szTexturePath);
 // NeoUI::Texture is non-widget, but utilizes NeoUI's image/texture handling
-void Texture(const char *szTexturePath, const int x, const int y, const int width, const int height);
+bool Texture(const char *szTexturePath, const int x, const int y, const int width, const int height);
 void ResetTextures();
 void RingBoxBool(const wchar_t *wszLeftLabel, bool *bChecked);
 void RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);

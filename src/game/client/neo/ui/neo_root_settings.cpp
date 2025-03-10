@@ -733,11 +733,18 @@ void NeoSettings_General(NeoSettings *ns)
 
 	static constexpr int TEXWH = 6;
 	const int iTexSprayWH = g_uiCtx.iRowTall * TEXWH;
-	NeoUI::Texture("vgui/logos/ui/spray",
+	const bool bHasSprayTex = NeoUI::Texture("materials/vgui/logos/spray.vtf",
 				   g_uiCtx.iLayoutX + (g_uiCtx.dPanel.wide / 2) - (iTexSprayWH / 2), g_uiCtx.iLayoutY,
 				   iTexSprayWH, iTexSprayWH);
+	if (!bHasSprayTex)
+	{
+		g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
+		NeoUI::Label(L"No spray applied");
+		g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_LEFT;
+	}
 
-	for (int i = 0; i < TEXWH; ++i)
+	const int iMaxPad = bHasSprayTex ? TEXWH : TEXWH - 1;
+	for (int i = 0; i < iMaxPad; ++i)
 	{
 		++g_uiCtx.iWidget;
 		NeoUI::Pad();
