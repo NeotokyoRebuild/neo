@@ -39,6 +39,8 @@ ConVar sv_neo_latespawn_max_time("sv_neo_latespawn_max_time", "15", FCVAR_REPLIC
 ConVar sv_neo_wep_dmg_modifier("sv_neo_wep_dmg_modifier", "1", FCVAR_REPLICATED, "Temp global weapon damage modifier.", true, 0.0, true, 100.0);
 ConVar sv_neo_player_restore("sv_neo_player_restore", "1", FCVAR_REPLICATED, "If enabled, the server will save players XP and deaths per match session and restore them if they reconnect.", true, 0.0f, true, 1.0f);
 
+ConVar sv_neo_spraydisable("sv_neo_spraydisable", "0", FCVAR_REPLICATED, "If enabled, disables the players ability to spray.", true, 0.0f, true, 1.0f);
+
 #ifdef CLIENT_DLL
 ConVar neo_name("neo_name", "", FCVAR_USERINFO | FCVAR_ARCHIVE, "The nickname to set instead of the steam profile name.");
 ConVar cl_onlysteamnick("cl_onlysteamnick", "0", FCVAR_USERINFO | FCVAR_ARCHIVE, "Only show players Steam names, otherwise show player set names.", true, 0.0f, true, 1.0f);
@@ -130,6 +132,7 @@ static void neoSvCompCallback(IConVar* var, const char* pOldValue, float flOldVa
 	const bool bCurrentValue = !(bool)flOldValue;
 	sv_neo_readyup_lobby.SetValue(bCurrentValue);
 	mp_forcecamera.SetValue(bCurrentValue); // 0 = OBS_ALLOWS_ALL, 1 = OBS_ALLOW_TEAM. For strictly original neotokyo spectator experience, 2 = OBS_ALLOW_NONE
+	sv_neo_spraydisable.SetValue(bCurrentValue);
 }
 
 ConVar sv_neo_comp("sv_neo_comp", "0", FCVAR_REPLICATED, "Enables competitive gamerules", true, 0.f, true, 1.f, neoSvCompCallback);

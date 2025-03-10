@@ -179,6 +179,7 @@ struct Context
 
 	const char *pSzCurCtxName;
 	CUtlHashtable<const wchar_t *, SliderInfo> htSliders;
+	CUtlHashtable<CUtlConstString, int> htTexMap;
 };
 
 #define COLOR_NEOPANELNORMALBG Color(0, 0, 0, 170)
@@ -204,7 +205,7 @@ void EndSection();
 void BeginHorizontal(const int iHorizontalWidth, const int iHorizontalMargin = 0);
 void EndHorizontal();
 
-void SwapFont(const EFont eFont);
+void SwapFont(const EFont eFont, const bool bForce = false);
 void SwapColorNormal(const Color &color);
 
 struct RetButton
@@ -215,13 +216,26 @@ struct RetButton
 	bool bMouseHover;
 	bool bMouseDoublePressed;
 };
+
+struct LabelExOpt
+{
+	TextStyle eTextStyle;
+	EFont eFont;
+};
+
 void Pad();
 void LabelWrap(const wchar_t *wszText);
 void Label(const wchar_t *wszText);
+void Label(const wchar_t *wszText, const LabelExOpt &opt);
 void Label(const wchar_t *wszLabel, const wchar_t *wszText);
 void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
 RetButton Button(const wchar_t *wszText);
 RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText);
+RetButton ButtonTexture(const char *szTexturePath);
+// NeoUI::Texture is non-widget, but utilizes NeoUI's image/texture handling
+bool Texture(const char *szTexturePath, const int x, const int y, const int width, const int height,
+			 const char *szTextureGroup = "");
+void ResetTextures();
 void RingBoxBool(const wchar_t *wszLeftLabel, bool *bChecked);
 void RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
 void Progress(const float flValue, const float flMin, const float flMax);

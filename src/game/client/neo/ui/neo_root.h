@@ -51,9 +51,13 @@ enum RootState
 	STATE_NEWGAME,
 	STATE_SERVERBROWSER,
 
-	STATE_MAPLIST,
+	// Those that are not the main states goes under here
+	STATE__SUBSTATES,
+	STATE_MAPLIST = STATE__SUBSTATES,
 	STATE_SERVERDETAILS,
 	STATE_PLAYERLIST,
+	STATE_SPRAYPICKER,
+	STATE_SPRAYDELETER,
 
 	// Those that uses CNeoRoot::MainLoopPopup only starts here
 	STATE__POPUPSTART,
@@ -62,6 +66,7 @@ enum RootState
 	STATE_QUIT,
 	STATE_SERVERPASSWORD,
 	STATE_SETTINGSRESETDEFAULT,
+	STATE_SPRAYDELETERCONFIRM,
 
 	STATE__TOTAL,
 };
@@ -98,6 +103,13 @@ enum MainMenuButtons
 	MMBTN_QUIT,
 
 	BTNS_TOTAL,
+};
+
+struct SprayInfo
+{
+	char szBaseName[MAX_PATH];
+	char szPath[MAX_PATH];
+	char szVtf[MAX_PATH];
 };
 
 // This class is what is actually used instead of the main menu.
@@ -150,6 +162,7 @@ public:
 	void MainLoopMapList(const MainLoopParam param);
 	void MainLoopServerDetails(const MainLoopParam param);
 	void MainLoopPlayerList(const MainLoopParam param);
+	void MainLoopSprayPicker(const MainLoopParam param);
 	void MainLoopPopup(const MainLoopParam param);
 
 	NeoSettings m_ns = {};
@@ -195,12 +208,26 @@ public:
 	void ReadNewsFile(CUtlBuffer &buf);
 	bool m_bShowBrowserLabel = false;
 
+	enum FileIODialogMode
+	{
+		FILEIODLGMODE_CROSSHAIR = 0,
+		FILEIODLGMODE_SPRAY,
+
+		FILEIODLGMODE__TOTAL,
+	};
+	FileIODialogMode m_eFileIOMode;
 	vgui::FileOpenDialog *m_pFileIODialog = nullptr;
 	MESSAGE_FUNC_CHARPTR(OnFileSelected, "FileSelected", fullpath);
 
 	bool m_bOnLoadingScreen = false;
 	int m_iSavedYOffsets[NeoUI::MAX_SECTIONS] = {};
+	bool m_bSprayGalleryRefresh = false;
 	float m_flWideAs43 = 0.0f;
+	SprayInfo m_sprayToDelete = {};
+
+private:
+	void OnFileSelectedMode_Crosshair(const char *szFullpath);
+	void OnFileSelectedMode_Spray(const char *szFullpath);
 };
 
 extern CNeoRoot *g_pNeoRoot;

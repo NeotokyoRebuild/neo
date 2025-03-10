@@ -264,6 +264,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->bAutoDetectOBS = cvr->cl_neo_streamermode_autodetect_obs.GetBool();
 		pGeneral->bEnableRangeFinder = cvr->cl_neo_hud_rangefinder_enabled.GetBool();
 		pGeneral->iBackground = cvr->sv_unlockedchapters.GetInt();
+		NeoUI::ResetTextures();
 	}
 	{
 		NeoSettings::Keys *pKeys = &ns->keys;
@@ -677,15 +678,77 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBoxBool(L"Lean viewmodel only", &pGeneral->bLeanViewmodelOnly);
 	NeoUI::RingBox(L"Automatic leaning", AUTOMATIC_LEAN_LABELS, ARRAYSIZE(AUTOMATIC_LEAN_LABELS), &pGeneral->iLeanAutomatic);
 	NeoUI::RingBoxBool(L"Classic squad list", &pGeneral->bShowSquadList);
-	NeoUI::RingBoxBool(L"Show player spray", &pGeneral->bShowPlayerSprays);
 	NeoUI::RingBoxBool(L"Show position", &pGeneral->bShowPos);
 	NeoUI::RingBox(L"Show FPS", SHOWFPS_LABELS, ARRAYSIZE(SHOWFPS_LABELS), &pGeneral->iShowFps);
-	NeoUI::RingBox(L"Download filter", DLFILTER_LABELS, ARRAYSIZE(DLFILTER_LABELS), &pGeneral->iDlFilter);
+	NeoUI::RingBoxBool(L"Show rangefinder", &pGeneral->bEnableRangeFinder);
+	NeoUI::SliderInt(L"Selected Background", &pGeneral->iBackground, 1, 4); // NEO TODO (Adam) switch to RingBox with values read from ChapterBackgrounds.txt
+
+	const NeoUI::LabelExOpt CENTER_OPT{NeoUI::TEXTSTYLE_CENTER, NeoUI::FONT_NTNORMAL};
+
+	NeoUI::Label(L"STREAMER MODE", CENTER_OPT);
 	NeoUI::RingBoxBool(L"Streamer mode", &pGeneral->bStreamerMode);
 	NeoUI::RingBoxBool(L"Auto streamer mode (requires restart)", &pGeneral->bAutoDetectOBS);
 	NeoUI::Label(L"OBS detection", g_bOBSDetected ? L"OBS detected on startup" : L"Not detected on startup");
-	NeoUI::RingBoxBool(L"Show rangefinder", &pGeneral->bEnableRangeFinder);
-	NeoUI::SliderInt(L"Selected Background", &pGeneral->iBackground, 1, 4); // NEO TODO (Adam) switch to RingBox with values read from ChapterBackgrounds.txt
+
+	NeoUI::Label(L"DOWNLOADING", CENTER_OPT);
+	NeoUI::RingBoxBool(L"Show player spray", &pGeneral->bShowPlayerSprays);
+	NeoUI::RingBox(L"Download filter", DLFILTER_LABELS, ARRAYSIZE(DLFILTER_LABELS), &pGeneral->iDlFilter);
+
+	NeoUI::Label(L"SPRAY", CENTER_OPT);
+	if (engine->IsInGame())
+	{
+		g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
+		NeoUI::Label(L"Disconnect to update in-game spray");
+		g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_LEFT;
+	}
+
+	NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 3);
+	{
+		if (NeoUI::Button(L"Import").bPressed)
+		{
+			if (g_pNeoRoot->m_pFileIODialog)
+			{
+				g_pNeoRoot->m_pFileIODialog->MarkForDeletion();
+			}
+			g_pNeoRoot->m_pFileIODialog = new vgui::FileOpenDialog(g_pNeoRoot, "Import spray", vgui::FOD_OPEN);
+			g_pNeoRoot->m_eFileIOMode = CNeoRoot::FILEIODLGMODE_SPRAY;
+			g_pNeoRoot->m_pFileIODialog->AddFilter("*.jpg;*.jpeg;*.png;*.vtf", "Images (JPEG, PNG, VTF)", true);
+			g_pNeoRoot->m_pFileIODialog->AddFilter("*.jpg;*.jpeg", "JPEG Image", false);
+			g_pNeoRoot->m_pFileIODialog->AddFilter("*.png", "PNG Image", false);
+			g_pNeoRoot->m_pFileIODialog->AddFilter("*.vtf", "VTF Image", false);
+			g_pNeoRoot->m_pFileIODialog->DoModal();
+		}
+		if (NeoUI::Button(L"Pick").bPressed)
+		{
+			g_pNeoRoot->m_state = STATE_SPRAYPICKER;
+			g_pNeoRoot->m_bSprayGalleryRefresh = true;
+		}
+		if (NeoUI::Button(L"Delete").bPressed)
+		{
+			g_pNeoRoot->m_state = STATE_SPRAYDELETER;
+			g_pNeoRoot->m_bSprayGalleryRefresh = true;
+		}
+	}
+	NeoUI::EndHorizontal();
+
+	static constexpr int TEXWH = 6;
+	const int iTexSprayWH = g_uiCtx.iRowTall * TEXWH;
+	const bool bHasSprayTex = NeoUI::Texture("vgui/logos/ui/spray",
+				   g_uiCtx.iLayoutX + (g_uiCtx.dPanel.wide / 2) - (iTexSprayWH / 2), g_uiCtx.iLayoutY,
+				   iTexSprayWH, iTexSprayWH, TEXTURE_GROUP_DECAL);
+	if (!bHasSprayTex)
+	{
+		g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
+		NeoUI::Label(L"No spray applied");
+		g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_LEFT;
+	}
+
+	const int iMaxPad = bHasSprayTex ? TEXWH : TEXWH - 1;
+	for (int i = 0; i < iMaxPad; ++i)
+	{
+		++g_uiCtx.iWidget;
+		NeoUI::Pad();
+	}
 }
 
 void NeoSettings_Keys(NeoSettings *ns)
@@ -844,6 +907,7 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 					g_pNeoRoot->m_pFileIODialog->MarkForDeletion();
 				}
 				pCrosshair->eFileIOMode = bPresImport ? vgui::FOD_OPEN : vgui::FOD_SAVE;
+				g_pNeoRoot->m_eFileIOMode = CNeoRoot::FILEIODLGMODE_CROSSHAIR;
 				g_pNeoRoot->m_pFileIODialog = new vgui::FileOpenDialog(g_pNeoRoot,
 																	   bPresImport ? "Import crosshair" : "Export crosshair",
 																	   pCrosshair->eFileIOMode);
