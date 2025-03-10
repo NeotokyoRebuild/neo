@@ -1,0 +1,9 @@
+// mp3 settings, automatically generated
+settings
+{
+  mostrecentplaylist "sound\playlist\soundtrack.txt"
+  directories
+  {
+    dirname ""
+  }
+}
