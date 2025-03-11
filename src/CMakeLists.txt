@@ -428,8 +428,8 @@ if(NEO_GENERATE_GAMEDATA)
 
     FetchContent_Declare(
         gamedata-gen
-        URL https://github.com/NeotokyoRebuild/gamedata-gen/releases/download/v2-sniper-test/gamedata-gen.zip
-        URL_HASH MD5=e29f8a2ec9a22afe9eab10261e550923
+        URL https://github.com/NeotokyoRebuild/gamedata-gen/releases/download/v2/gamedata-gen.zip
+        URL_HASH MD5=2a988c84e7e192d33819868c37ad3150
     )
 
     FetchContent_MakeAvailable(gamedata-gen)
