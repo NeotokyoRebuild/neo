@@ -14,6 +14,7 @@
 #include "weapon_neobasecombatweapon.h"
 #include "neo_weapon_loadout.h"
 #include "neo_gamerules.h"
+#include "ui/neo_root.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -289,12 +290,15 @@ void CNeoLoadoutMenu::ChangeMenu(const char* menuName = NULL)
 
 void CNeoLoadoutMenu::OnKeyCodeReleased(vgui::KeyCode code)
 {
-	switch (code) {
-	case KEY_F3: // F3 - Close the menu
+	if (code == g_pNeoRoot->m_ns.keys.bcLoadoutMenu)
+	{
 		ChangeMenu(NULL);
-		break;
-	case KEY_SPACE: // Spacebar - Try to equip weapon in the second slot like in the base game
-		OnCommand("loadout 1");
+		return;
+	}
+
+	switch (code) {
+	case KEY_SPACE: // Continue with the currently selected weapon
+		ChangeMenu(NULL);
 		break;
 	default:
 		// Ignore other key presses

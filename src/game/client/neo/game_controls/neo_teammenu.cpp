@@ -39,6 +39,7 @@
 #include <imapoverview.h>
 #include <shareddefs.h>
 #include "neo_gamerules.h"
+#include "ui/neo_root.h"
 #include <igameresources.h>
 
 #include <vgui/MouseCode.h>
@@ -226,9 +227,10 @@ void CNeoTeamMenu::CloseMenu()
 
 void CNeoTeamMenu::OnKeyCodeReleased(vgui::KeyCode code)
 { // Navigating using the keyboard hack
-	switch (code) {
-	case KEY_F1: // F1 - Close the menu
+	if (code == g_pNeoRoot->m_ns.keys.bcTeamMenu)
+	{
 		CloseMenu();
+		return;
 	}
 	// Leaving this here, useful to check what key is being pressed
 	/*char buffer[8] = "";

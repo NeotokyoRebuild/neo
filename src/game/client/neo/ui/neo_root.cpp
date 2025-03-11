@@ -451,6 +451,9 @@ void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 	if (m_ns.keys.bcConsole <= KEY_NONE)
 	{
 		m_ns.keys.bcConsole = gameuifuncs->GetButtonCodeForBind("neo_toggleconsole");
+		m_ns.keys.bcTeamMenu = gameuifuncs->GetButtonCodeForBind("teammenu");
+		m_ns.keys.bcClassMenu = gameuifuncs->GetButtonCodeForBind("classmenu");
+		m_ns.keys.bcLoadoutMenu = gameuifuncs->GetButtonCodeForBind("loadoutmenu");
 	}
 
 	if (code == m_ns.keys.bcConsole && code != KEY_BACKQUOTE)
