@@ -182,6 +182,12 @@ void CNeoTeamMenu::OnCommand(const char *command)
 		NextMenu();
 		return;
 	}
+	if (Q_strcmp(commandBuffer, "jointeam 1") == 0)
+	{ // joining spectator
+		CloseMenu();
+		engine->ClientCmd(commandBuffer);
+		return;
+	}
 
 	if (Q_stristr(commandBuffer, "jointeam") != 0) // Note using stristr, not strcmp. Equates to true when jointeam in commandBuffer
 	{ // joining jinrai or nsf
@@ -204,7 +210,7 @@ void CNeoTeamMenu::NextMenu()
 {
 	if (NEORules()->GetForcedClass() < 0)
 	{
-		engine->ClientCmd("classmenu");
+		engine->ClientCmd("classmenu skipTeamCheck");
 	}
 	else if (NEORules()->GetForcedWeapon() < 0)
 	{
