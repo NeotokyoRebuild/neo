@@ -244,14 +244,7 @@ void CWeaponSmokeGrenade::ThrowGrenade(CNEO_Player* pPlayer, bool isAlive, CBase
 
 	Vector vecThrow = vForward * flVel + pPlayer->GetAbsVelocity();
 
-	// Sampled angular impulses from original NT frags:
-	// (Assuming here that smokes behave the same as frags.)
-	// x: -584, 630, -1028, 967, -466, -535 (random, seems roughly in the same (-1200, 1200) range)
-	// y: 0 (constant)
-	// z: 600 (constant)
-	// This SDK original impulse line: AngularImpulse(600, random->RandomInt(-1200, 1200), 0)
-
-	CBaseGrenadeProjectile* pGrenade = NEOSmokegrenade_Create(vecSrc, vec3_angle, vecThrow, AngularImpulse(random->RandomInt(-1200, 1200), 0, 600), ((!(pPlayer->IsAlive()) || !isAlive) && pAttacker) ? pAttacker : pPlayer);
+	CBaseGrenadeProjectile* pGrenade = NEOSmokegrenade_Create(vecSrc, vec3_angle, vecThrow, AngularImpulse(600, random->RandomInt(-1200, 1200), 0), ((!(pPlayer->IsAlive()) || !isAlive) && pAttacker) ? pAttacker : pPlayer);
 
 	if (pGrenade)
 	{
