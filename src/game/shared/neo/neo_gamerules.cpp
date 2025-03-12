@@ -3633,17 +3633,9 @@ void CNEORules::SetRoundStatus(NeoRoundStatus status)
 	}
 
 #ifdef GAME_DLL
-	if (status == NeoRoundStatus::PostRound)
-	{
-		for (int i = 1; i < gpGlobals->maxClients; i++)
-		{
-			if (auto player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i)))
-			{
-				player->m_bSpawnedThisRound = false;
-				player->SetDeathTime(0.f);
-			}
-		}
-
+	if (status == NeoRoundStatus::PreRoundFreeze)
+	{ // we clear these so people who rejoin on a different round to the round when they left aren't prevented from spawning. This is done before all players are 
+	  // spawned on the new round so these values will be overwritten for those players who are still in the game
 		auto currentHandle = m_pRestoredInfos.FirstHandle();
 		while (m_pRestoredInfos.IsValidHandle(currentHandle))
 		{
