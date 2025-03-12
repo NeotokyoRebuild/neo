@@ -400,7 +400,7 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 	player->SetViewOffset(viewOffset);
 
 #ifdef CLIENT_DLL
-	viewAng.z = -m_flLeanRatio * neo_lean_fp_angle.GetFloat();;
+	viewAng.z = -m_flLeanRatio * neo_lean_fp_angle.GetFloat();
 	engine->SetViewAngles(viewAng);
 #endif
 
@@ -487,12 +487,11 @@ void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 			if (cl_neo_lean_viewmodel_only.GetBool())
 			{ // extra viewmodel offset for when gun rotation would obstruct center of the screen. Should probably be done on a per weapon basis instead
 				QAngle angles = pOwner->EyeAngles();
-				float percent = angles.z * 0.05;
+				float percent = angles.z / neo_lean_fp_angle.GetFloat();
 				bool rightHand = cl_righthand.GetBool();
 				if ((rightHand && percent > 0) || (!rightHand && percent < 0))
 				{
-					if (percent < 0)
-						percent *= -1;
+					percent = abs(percent);
 					constexpr float FINAL_Y_EXTRA_OFFSET = 3;
 					constexpr float FINAL_Z_EXTRA_OFFSET = 1;
 					vOffset.y += FINAL_Y_EXTRA_OFFSET * percent;
