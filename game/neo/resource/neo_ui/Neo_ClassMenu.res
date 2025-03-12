@@ -118,7 +118,7 @@
 	}	
 	"Scout_Button"
 	{
-		"ControlName"		"Button"
+		"ControlName"		"CNeoButton"
 		"fieldName"		"Scout_Button"
 		"xpos"		"10"
 		"ypos"		"55"
@@ -140,7 +140,7 @@
 	}
 	"Assault_Button"
 	{
-		"ControlName"		"Button"
+		"ControlName"		"CNeoButton"
 		"fieldName"		"Assault_Button"
 		"xpos"		"150"
 		"ypos"		"55"
@@ -161,7 +161,7 @@
 	}
 	"Heavy_Button"
 	{
-		"ControlName"		"Button"
+		"ControlName"		"CNeoButton"
 		"fieldName"		"Heavy_Button"
 		"xpos"		"290"
 		"ypos"		"55"
@@ -278,7 +278,7 @@
 	}
 	"Back_Button"
 	{
-		"ControlName"		"Button"
+		"ControlName"		"CNeoButton"
 		"fieldName"		"Back_Button"
 		"xpos"		"8"
 		"ypos"		"394"

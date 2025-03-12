@@ -4,6 +4,7 @@
 #include "vgui_controls/Label.h"
 #include "vgui_controls/ImagePanel.h"
 #include "vgui_controls/Button.h"
+#include "neo/game_controls/neo_button.h"
 
 #include <vgui/ILocalize.h>
 #include <vgui/ISurface.h>
@@ -131,7 +132,6 @@ void CNeoLoadoutMenu::FindButtons()
 	m_pButton10 = FindControl<Button>(CONTROL_BUTTON10);
 	m_pButton11 = FindControl<Button>(CONTROL_BUTTON11);
 	m_pButton12 = FindControl<Button>(CONTROL_BUTTON12);
-	returnButton = FindControl<Button>("ReturnButton");
 
 	for (int i = 0; i < iNumButtonStrings; i++)
 	{
@@ -148,6 +148,7 @@ void CNeoLoadoutMenu::FindButtons()
 		button->SetMouseInputEnabled(true);
 	}
 
+	returnButton = FindControl<CNeoButton>("ReturnButton");
 	returnButton->SetUseCaptureMouse(true);
 	returnButton->SetMouseInputEnabled(true);
 	if (!returnButton)
@@ -350,7 +351,7 @@ void CNeoLoadoutMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 		image->SetImage("loadout/loadout_none");
 	}
 
-	returnButton = FindControl<Button>("ReturnButton");
+	returnButton = FindControl<CNeoButton>("ReturnButton");
 	returnButton->SetUseCaptureMouse(true);
 	returnButton->SetMouseInputEnabled(true);
 	InvalidateLayout();

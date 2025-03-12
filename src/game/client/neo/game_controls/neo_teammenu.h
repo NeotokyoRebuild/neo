@@ -8,7 +8,7 @@
 #include <vgui/KeyCode.h>
 #include <vgui_controls/Frame.h>
 #include <vgui_controls/EditablePanel.h>
-#include <vgui_controls/Button.h>
+#include "neo/game_controls/neo_button.h"
 #include <vgui_controls/ComboBox.h>
 #include <vgui_controls/ImagePanel.h>
 #include <igameevents.h>
@@ -91,11 +91,11 @@ protected:
 #endif
 
     // Buttons
-    vgui::Button *m_pJinrai_Button;
-    vgui::Button *m_pNSF_Button;
-    vgui::Button *m_pSpectator_Button;
-    vgui::Button *m_pAutoAssign_Button;
-    vgui::Button *m_pCancel_Button;
+    vgui::CNeoButton *m_pJinrai_Button;
+    vgui::CNeoButton*m_pNSF_Button;
+    vgui::CNeoButton*m_pSpectator_Button;
+    vgui::CNeoButton*m_pAutoAssign_Button;
+    vgui::CNeoButton*m_pCancel_Button;
 
     // Our viewport interface accessor
     IViewPort *m_pViewPort;
