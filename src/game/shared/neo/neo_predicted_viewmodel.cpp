@@ -412,6 +412,7 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 	return -m_flLeanRatio * neo_lean_tp_angle.GetFloat();
 }
 
+extern ConVar cl_righthand;
 void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 	const Vector& eyePosition, const QAngle& eyeAngles)
 {
@@ -481,21 +482,39 @@ void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 				vOffset = (playerAiming) ? data.m_vecVMAimPosOffset : data.m_vecVMPosOffset;
 				angOffset = (playerAiming) ? data.m_angVMAimAngOffset : data.m_angVMAngOffset;
 			}
+
+#ifdef CLIENT_DLL
+			if (cl_neo_lean_viewmodel_only.GetBool())
+			{ // extra viewmodel offset for when gun rotation would obstruct center of the screen. Should probably be done on a per weapon basis instead
+				QAngle angles = pOwner->EyeAngles();
+				float percent = angles.z * 0.05;
+				bool rightHand = cl_righthand.GetBool();
+				if ((rightHand && percent > 0) || (!rightHand && percent < 0))
+				{
+					if (percent < 0)
+						percent *= -1;
+					constexpr float FINAL_Y_EXTRA_OFFSET = 3;
+					constexpr float FINAL_Z_EXTRA_OFFSET = 1;
+					vOffset.y += FINAL_Y_EXTRA_OFFSET * percent;
+					vOffset.z -= FINAL_Z_EXTRA_OFFSET * percent;
+				}
+			}
+#endif // CLIENT_DLL
 			m_vOffset = vOffset;
 			m_angOffset = angOffset;
 		}
-	}
 
-	newPos += vForward * vOffset.x;
-	newPos += vRight * vOffset.y;
-	newPos += vUp * vOffset.z;
+		newPos += vForward * vOffset.x;
+		newPos += vRight * vOffset.y;
+		newPos += vUp * vOffset.z;
+	}
 
 	newAng += angOffset;
 #ifdef CLIENT_DLL
 	if (cl_neo_lean_viewmodel_only.GetBool())
 	{
 		QAngle angles = pOwner->EyeAngles();
-		newAng.z += angles.z;
+		newAng.z += cl_righthand.GetBool() ? angles.z : -angles.z;
 	}
 #endif
 
