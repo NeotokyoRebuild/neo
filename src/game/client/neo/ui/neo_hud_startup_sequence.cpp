@@ -87,7 +87,7 @@ struct FlavourTextEntry
 
 void CNEOHud_StartupSequence::DrawNeoHudElement()
 {
-	if (!ShouldDraw())
+	if (!ShouldDraw() || IsLocalPlayerSpectator())
 	{
 		return;
 	}
