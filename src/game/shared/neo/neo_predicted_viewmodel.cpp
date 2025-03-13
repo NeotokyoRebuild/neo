@@ -145,7 +145,7 @@ ConVar neo_lean_speed("neo_lean_speed", "0.2", FCVAR_REPLICATED | FCVAR_CHEAT, "
 ConVar neo_lean_peek_left_amount("neo_lean_peek_left_amount", "7.5", FCVAR_REPLICATED | FCVAR_CHEAT, "How far sideways will a full left lean view reach.", true, 0.001f, false, 0); // 7.5 in OGNT
 ConVar neo_lean_peek_right_amount("neo_lean_peek_right_amount", "15.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How far sideways will a full right lean view reach.", true, 0.001f, false, 0); // 15 in OGNT
 ConVar neo_lean_fp_angle("neo_lean_fp_angle", "20", FCVAR_REPLICATED | FCVAR_CHEAT, "How many degrees does the camera lean.", true, 0.0, true, 45.0); // 20 in OGNT
-ConVar neo_lean_tp_angle("neo_lean_tp_angle", "35", FCVAR_REPLICATED | FCVAR_CHEAT, "How many degrees does the player character lean.", true, 0.0, true, 45.0); // 20 in OGNT
+ConVar neo_lean_tp_angle("neo_lean_tp_angle", "35", FCVAR_REPLICATED | FCVAR_CHEAT, "How many degrees does the player character lean.", true, 0.0, true, 45.0); // 35 in OGNT
 ConVar neo_lean_fp_lower_eyes("neo_lean_fp_lower_eyes", "2", FCVAR_REPLICATED | FCVAR_CHEAT, "How low to bring eye-level when leaning.", true, 0.0, false, 0); // 0 in OGNT
 
 #if(0)
