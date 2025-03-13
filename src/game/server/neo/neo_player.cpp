@@ -977,6 +977,11 @@ void CNEO_Player::PreThink(void)
 {
 	BaseClass::PreThink();
 
+	if (m_HL2Local.m_flSuitPower <= 0.0f && IsSprinting())
+	{
+		StopSprinting();
+	}
+
 	if (!m_bInThermOpticCamo)
 	{
 		CloakPower_Update();

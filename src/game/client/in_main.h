@@ -22,6 +22,7 @@ extern kbutton_t in_ducktoggle;
 void IN_LeanLeft();
 void IN_LeanRight();
 void IN_LeanReset();
+void IN_SpeedReset();
 #endif // NEO
 
 #endif // IN_MAIN_H
