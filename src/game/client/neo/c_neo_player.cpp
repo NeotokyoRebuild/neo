@@ -1101,6 +1101,7 @@ extern ConVar glow_outline_effect_enable;
 void C_NEO_Player::PreThink( void )
 {
 	BaseClass::PreThink();
+	engine->Con_NPrintf(0, "Observer Mode: %i", GetObserverMode());
 
 	CalculateSpeed();
 
