@@ -2662,7 +2662,11 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 			}
 		}
 
-		StopObserverMode();
+		CHL2_Player::ChangeTeam(iTeam, false, justJoined);
+		changedTeams = true;
+		
+		// If we're not allowed to be in the currect observer mode, this will give us a new observer mode.
+		SetObserverMode(GetObserverMode());
 	}
 	else
 	{
