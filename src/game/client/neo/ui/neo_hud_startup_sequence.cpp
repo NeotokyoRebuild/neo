@@ -93,9 +93,7 @@ void CNEOHud_StartupSequence::Reset()
 
 bool CNEOHud_StartupSequence::ShouldDraw()
 {
-	auto localPlayer = UTIL_PlayerByIndex(GetLocalPlayerIndex());
-	int observerMode = localPlayer ? localPlayer->GetObserverMode() : -1;
-	if (!CHudElement::ShouldDraw() || NEORules()->GetRoundStatus() != NeoRoundStatus::PreRoundFreeze || (observerMode != OBS_MODE_NONE && observerMode != OBS_MODE_IN_EYE))
+	if (!CHudElement::ShouldDraw() || NEORules()->GetRoundStatus() != NeoRoundStatus::PreRoundFreeze || IsLocalPlayerSpectator() )
 	{
 		return false;
 	}
