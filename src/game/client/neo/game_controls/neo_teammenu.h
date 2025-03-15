@@ -31,7 +31,7 @@ class MouseCode;
 
 // NOTE: this class name must match its res file description.
 class CNeoTeamMenu : public vgui::Frame,
-    public IViewPortPanel
+    public IViewPortPanel, public CGameEventListener
 {
     DECLARE_CLASS_SIMPLE( CNeoTeamMenu, vgui::Frame );
 
@@ -48,6 +48,9 @@ public:
 	virtual void ShowPanel( bool bShow );
 
 	GameActionSet_t GetPreferredActionSet() override { return GAME_ACTION_SET_IN_GAME_HUD; }
+
+    // IGameEventListener interface:
+    virtual void FireGameEvent(IGameEvent* event);
 
     // both vgui::Frame and IViewPortPanel define these, so explicitly define them here as passthroughs to vgui
 	vgui::VPANEL GetVPanel( void ) { return BaseClass::GetVPanel(); }
