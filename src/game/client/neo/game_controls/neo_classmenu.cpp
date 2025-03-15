@@ -127,10 +127,10 @@ void CNeoClassMenu::FindButtons()
 	m_pSkin1_Button = FindControl<Button>("Skin1_Button");
 	m_pSkin2_Button = FindControl<Button>("Skin2_Button");
 	m_pSkin3_Button = FindControl<Button>("Skin3_Button");
-	m_pRecon_Button = FindControl<Button>("Scout_Button");
-	m_pAssault_Button = FindControl<Button>("Assault_Button");
-	m_pSupport_Button = FindControl<Button>("Heavy_Button");
-	m_pBack_Button = FindControl<Button>("Back_Button");
+	m_pRecon_Button = FindControl<CNeoButton>("Scout_Button");
+	m_pAssault_Button = FindControl<CNeoButton>("Assault_Button");
+	m_pSupport_Button = FindControl<CNeoButton>("Heavy_Button");
+	m_pBack_Button = FindControl<CNeoButton>("Back_Button");
 
 	UpdateSkinImages(-1);
 }

@@ -1527,6 +1527,8 @@ target_sources_grouped(
     FILES
     neo/game_controls/neo_classmenu.cpp
     neo/game_controls/neo_classmenu.h
+    neo/game_controls/neo_button.cpp
+    neo/game_controls/neo_button.h
     neo/game_controls/neo_loadoutmenu.cpp
     neo/game_controls/neo_loadoutmenu.h
     neo/game_controls/neo_teammenu.cpp
