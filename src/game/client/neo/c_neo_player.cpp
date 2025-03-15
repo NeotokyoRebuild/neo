@@ -322,10 +322,13 @@ public:
 			return;
 		}
 
-		auto team = GetLocalPlayerTeam();
-		if(team < FIRST_GAME_TEAM)
-		{
-			return;
+		if (command.ArgC() > 1 && !command.FindArg("skipTeamCheck"))
+		{ // A smarter way to do this might be to assign the buttons for class and weapons menu to unique commands that check the current team and call this commandcallback
+			auto team = GetLocalPlayerTeam();
+			if(team < FIRST_GAME_TEAM)
+			{
+				return;
+			}
 		}
 
 		auto playerNeoClass = C_NEO_Player::GetLocalNEOPlayer()->m_iNeoClass;

@@ -37,6 +37,7 @@
 #include <imapoverview.h>
 #include <shareddefs.h>
 #include "neo_gamerules.h"
+#include "ui/neo_root.h"
 #include <igameresources.h>
 
 #include <vgui/MouseCode.h>
@@ -214,10 +215,13 @@ void CNeoClassMenu::ChangeMenu(const char* menuName = NULL)
 
 void CNeoClassMenu::OnKeyCodeReleased(vgui::KeyCode code)
 {
-	switch (code) {
-	case KEY_F2: // F2 - Close the menu
+	if (code == g_pNeoRoot->m_ns.keys.bcClassMenu)
+	{
 		ChangeMenu(NULL);
-		break;
+		return;
+	}
+
+	switch (code) {
 	case KEY_1:
 		UpdateSkinImages(0);
 		engine->ClientCmd("setclass 1");
@@ -230,7 +234,7 @@ void CNeoClassMenu::OnKeyCodeReleased(vgui::KeyCode code)
 		UpdateSkinImages(2);
 		engine->ClientCmd("setclass 3");
 		break;
-	case KEY_SPACE: // Spacebar - Continue with currently selected class and skin
+	case KEY_SPACE: // Continue with currently selected class and skin
 		ChangeMenu("loadoutmenu");
 		break;
 	}
