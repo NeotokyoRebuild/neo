@@ -85,20 +85,23 @@ struct FlavourTextEntry
 	{ WSZ(L".Init sequence started") },
 };
 
+void CNEOHud_StartupSequence::Reset()
+{
+	m_flNextTimeChangeText = gpGlobals->curtime + 1.f;
+	m_iSelectedText = FLAVOUR_TEXT_SIZE - 1;
+};
+
+bool CNEOHud_StartupSequence::ShouldDraw()
+{
+	if (!CHudElement::ShouldDraw() || NEORules()->GetRoundStatus() != NeoRoundStatus::PreRoundFreeze || IsLocalPlayerSpectator() )
+	{
+		return false;
+	}
+	return true;
+}
+
 void CNEOHud_StartupSequence::DrawNeoHudElement()
 {
-	if (!ShouldDraw())
-	{
-		return;
-	}
-
-	if (NEORules()->GetRoundStatus() != NeoRoundStatus::PreRoundFreeze)
-	{
-		m_flNextTimeChangeText = gpGlobals->curtime + 1.f;
-		m_iSelectedText = FLAVOUR_TEXT_SIZE - 1;
-		return;
-	}
-
 	if (gpGlobals->curtime >= m_flNextTimeChangeText)
 	{
 		m_flNextTimeChangeText = gpGlobals->curtime + 0.333 + MAX(0, randomgaussian->RandomFloat(0.25, 0.25));
