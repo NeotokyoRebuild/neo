@@ -11,11 +11,13 @@ class CNEOHud_StartupSequence : public CNEOHud_ChildElement, public CHudElement,
 public:
 	CNEOHud_StartupSequence(const char *pElementName, vgui::Panel *parent = NULL);
 	void ApplySchemeSettings(vgui::IScheme* pScheme) override;
-
+	virtual void FireGameEvent(IGameEvent* event) override;
+	virtual void Reset() override;
 	virtual void Paint() override;
 
 protected:
 	virtual void UpdateStateForNeoHudElementDraw() override;
+	virtual bool ShouldDraw() override;
 	virtual void DrawNeoHudElement() override;
 	virtual ConVar* GetUpdateFrequencyConVar() const override;
 
