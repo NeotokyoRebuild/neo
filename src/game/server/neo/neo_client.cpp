@@ -101,8 +101,7 @@ void FinishClientPutInServer( CNEO_Player *pPlayer )
 
 	// NEO TODO (Rain): Team selection HUD here.
 
-	// If player chooses to spectate upon joining, start in free roam mode.
-	pPlayer->StartObserverMode(OBS_MODE_ROAMING);
+	pPlayer->StartObserverMode(OBS_MODE_FIXED);
 }
 
 /*

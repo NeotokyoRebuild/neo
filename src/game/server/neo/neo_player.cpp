@@ -600,10 +600,10 @@ void CNEO_Player::Spawn(void)
 	SetTransmitState(FL_EDICT_PVSCHECK);
 
 	SetPlayerTeamModel();
-	SetViewOffset(VEC_VIEW_NEOSCALE(this));
 	if (teamNumber == TEAM_JINRAI || teamNumber == TEAM_NSF)
 	{
 		GiveLoadoutWeapon();
+		SetViewOffset(VEC_VIEW_NEOSCALE(this));
 	}
 
 	if (teamNumber == TEAM_UNASSIGNED && gpGlobals->eLoadType != MapLoad_Background)
@@ -1661,6 +1661,7 @@ void CNEO_Player::CreateViewModel( int index )
 			DispatchSpawn(vm);
 			vm->FollowEntity(this, false);
 			m_hViewModel.Set(index, vm);
+			vm->AddEffects(EF_NODRAW);
 		}
 	}
 
@@ -1685,6 +1686,7 @@ void CNEO_Player::CreateViewModel( int index )
 		vmm->SetParent(vm);
 		DispatchSpawn(vmm);
 		m_hViewModel.Set(MUZZLE_FLASH_VIEW_MODEL_INDEX, vmm);
+		vmm->AddEffects(EF_NODRAW);
 	}
 }
 
@@ -2510,6 +2512,11 @@ void CNEO_Player::StopObserverMode()
 	BaseClass::StopObserverMode();
 }
 
+bool CNEO_Player::ModeWantsSpectatorGUI(int iMode)
+{ 
+	return iMode != OBS_MODE_FIXED;
+}
+
 bool CNEO_Player::CanHearAndReadChatFrom( CBasePlayer *pPlayer )
 {
 	return BaseClass::CanHearAndReadChatFrom(pPlayer);
@@ -2596,7 +2603,8 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	}
 
 	const bool suicidePlayerIfAlive = sv_neo_change_suicide_player.GetBool();
-	if (iTeam == TEAM_SPECTATOR || iTeam == TEAM_UNASSIGNED)
+	bool changedTeams = false;
+	if (iTeam == TEAM_SPECTATOR)
 	{
 		if (!mp_allowspectators.GetInt())
 		{
@@ -2620,6 +2628,11 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 			}
 		}
 
+		// StartObserverMode and State_Transition will check whether we are on the Spectator team to decide whether to enforce certain camera modes, easier if we switch teams beforehand
+		CHL2_Player::ChangeTeam(iTeam, false, justJoined);
+		changedTeams = true;
+
+		State_Transition(STATE_OBSERVER_MODE);
 		// Default to free fly camera if there's nobody to spectate
 		if (justJoined || GetNumOtherPlayersConnected(this) == 0)
 		{
@@ -2627,9 +2640,11 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 		}
 		else
 		{
-			StartObserverMode(m_iObserverLastMode);
+			StartObserverMode(OBS_MODE_IN_EYE);
 		}
-
+	}
+	else if (iTeam == TEAM_UNASSIGNED)
+	{
 		State_Transition(STATE_OBSERVER_MODE);
 	}
 	else if (iTeam == TEAM_JINRAI || iTeam == TEAM_NSF)
@@ -2647,7 +2662,11 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 			}
 		}
 
-		StopObserverMode();
+		CHL2_Player::ChangeTeam(iTeam, false, justJoined);
+		changedTeams = true;
+		
+		// If we're not allowed to be in the currect observer mode, this will give us a new observer mode.
+		SetObserverMode(GetObserverMode());
 	}
 	else
 	{
@@ -2671,9 +2690,12 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 		SetPlayerTeamModel();
 	}
 
-	// We're skipping over HL2MP player because we don't care about
-	// deathmatch rules or Combine/Rebels model stuff.
-	CHL2_Player::ChangeTeam(iTeam, false, justJoined);
+	if (!changedTeams)
+	{
+		// We're skipping over HL2MP player because we don't care about
+		// deathmatch rules or Combine/Rebels model stuff.
+		CHL2_Player::ChangeTeam(iTeam, false, justJoined);
+	}
 	NEORules()->m_bThinkCheckClantags = true;
 
 	return true;

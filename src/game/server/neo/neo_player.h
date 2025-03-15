@@ -116,6 +116,7 @@ public:
 
 	virtual bool StartObserverMode(int mode) OVERRIDE;
 	virtual void StopObserverMode(void) OVERRIDE;
+	virtual bool ModeWantsSpectatorGUI(int iMode) override;
 
 	virtual bool	CanHearAndReadChatFrom(CBasePlayer *pPlayer) OVERRIDE;
 
