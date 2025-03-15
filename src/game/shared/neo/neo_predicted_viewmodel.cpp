@@ -507,14 +507,14 @@ void CNEOPredictedViewModel::ProcessMuzzleFlashEvent()
 {
 	Vector vAttachment;
 	QAngle dummyAngles;
-	GetAttachment(2, vAttachment, dummyAngles);
+	GetAttachment(1, vAttachment, dummyAngles);
 
 	// Make a dlight
 	dlight_t* dl = effects->CL_AllocDlight(LIGHT_INDEX_MUZZLEFLASH + index);
 	dl->origin = vAttachment;
 	dl->radius = random->RandomInt(64, 96);
-	dl->decay = dl->radius / 0.1f;
-	dl->die = gpGlobals->curtime + 0.1f;
+	dl->decay = dl->radius / 0.05f;
+	dl->die = gpGlobals->curtime + 0.05f;
 	dl->color.r = 255;
 	dl->color.g = 192;
 	dl->color.b = 64;
