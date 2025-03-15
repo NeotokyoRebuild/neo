@@ -2632,6 +2632,15 @@ void CClientShadowMgr::BuildFlashlight( ClientShadowHandle_t handle )
 
 	VPROF_BUDGET( "CClientShadowMgr::BuildFlashlight", VPROF_BUDGETGROUP_SHADOW_DEPTH_TEXTURING );
 
+#ifdef NEO
+	// Don't project the flashlight if the frustum AABB is not in our view
+	Vector mins, maxs;
+	CalculateAABBFromProjectionMatrix(shadow.m_WorldToShadow, &mins, &maxs);
+
+	if (engine->CullBox(mins, maxs))
+		return;
+#endif
+
 	bool bLightModels = r_flashlightmodels.GetBool();
 	bool bLightSpecificEntity = shadow.m_hTargetEntity.Get() != NULL;
 	bool bLightWorld = ( shadow.m_Flags & SHADOW_FLAGS_LIGHT_WORLD ) != 0;
@@ -3858,7 +3867,7 @@ int CClientShadowMgr::BuildActiveShadowDepthList( const CViewSetup &viewSetup, i
 		// Bail if this flashlight doesn't want shadows
 		if ( !flashlightState.m_bEnableShadows )
 			continue;
-
+#ifndef NEO
 		// Calculate an AABB around the shadow frustum
 		Vector vecAbsMins, vecAbsMaxs;
 		CalculateAABBFromProjectionMatrix( shadow.m_WorldToShadow, &vecAbsMins, &vecAbsMaxs );
@@ -3873,7 +3882,7 @@ int CClientShadowMgr::BuildActiveShadowDepthList( const CViewSetup &viewSetup, i
 			shadowmgr->SetFlashlightDepthTexture( shadow.m_ShadowHandle, NULL, 0 );
 			continue;
 		}
-
+#endif
 		if ( nActiveDepthShadowCount >= nMaxDepthShadows )
 		{
 			static bool s_bOverflowWarning = false;
