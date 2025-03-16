@@ -2857,6 +2857,13 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 		if (!bDontAddScore)
 		{
 			winningTeam->IncrementRoundsWon();
+			IGameEvent* event = gameeventmanager->CreateEvent("team_score");
+			if (event)
+			{
+				event->SetInt("teamid", winningTeam->GetTeamNumber());
+				event->SetInt("score", winningTeam->GetRoundsWon());
+				gameeventmanager->FireEvent(event);
+			}
 		}
 	}
 
