@@ -152,6 +152,10 @@ void CNeoTeamMenu::FireGameEvent(IGameEvent* event)
 
 		auto pJinrai = GetGlobalTeam(TEAM_JINRAI);
 		auto pNsf = GetGlobalTeam(TEAM_NSF);
+		if (!pJinrai || !pNsf)
+		{
+			return;
+		}
 
 		char textBuff[13 + 1];
 		if (oldTeamID == TEAM_JINRAI)
