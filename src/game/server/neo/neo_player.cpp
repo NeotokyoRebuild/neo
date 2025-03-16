@@ -2645,7 +2645,8 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 		changedTeams = true;
 		
 		// If we're not allowed to be in the currect observer mode, this will give us a new observer mode.
-		SetObserverMode(GetObserverMode());
+		// SetObserverMode(GetObserverMode()); // NEO TODO (Adam) We want to switch to a valid observer mode and find a valid observer target if unable to respawn, but want to still be able to spawn if able to spawn
+		StopObserverMode();
 	}
 	else
 	{
