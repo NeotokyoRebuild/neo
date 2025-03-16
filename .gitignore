@@ -678,3 +678,5 @@ FodyWeavers.xsd
 /mp
 
 /game/neo/cache/DownloadCache.db
+/game/neo/lights.rad
+/game/neo/rebuild.fgd
