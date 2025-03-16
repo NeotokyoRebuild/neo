@@ -18,6 +18,7 @@ public:
 	wchar_t m_wszLoadingMap[256] = {};
 
 	void ApplySchemeSettings(vgui::IScheme *pScheme) final;
+	void ResetSizes(const int wide, const int tall);
 	void OnMessage(const KeyValues *params, vgui::VPANEL fromPanel) final;
 	void FetchGameUIPanels();
 

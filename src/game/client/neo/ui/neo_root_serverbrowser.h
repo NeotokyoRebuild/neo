@@ -36,8 +36,6 @@ enum AnitCheatMode
 	ANTICHEAT__TOTAL,
 };
 
-extern int g_iGSIX[GSIW__TOTAL];
-
 struct GameServerSortContext
 {
 	GameServerInfoW col = GSIW_NAME;
@@ -91,5 +89,3 @@ struct ServerBrowserFilters
 	int iAntiCheat = 0;
 	int iMaxPing = 0;
 };
-
-void ServerBrowserDrawRow(const gameserveritem_t &server);
