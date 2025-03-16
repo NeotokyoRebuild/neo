@@ -1683,7 +1683,6 @@ void CNEO_Player::CreateViewModel( int index )
 		vmm->SetParent(vm);
 		DispatchSpawn(vmm);
 		m_hViewModel.Set(MUZZLE_FLASH_VIEW_MODEL_INDEX, vmm);
-		vmm->AddEffects(EF_NODRAW);
 	}
 }
 
