@@ -191,10 +191,11 @@ CBaseEntity *CGameRules::GetPlayerSpawnSpot( CBasePlayer *pPlayer )
 	CBaseEntity *pSpawnSpot = pPlayer->EntSelectSpawnPoint();
 	Assert( pSpawnSpot );
 #ifdef NEO
-	Vector spawnPosition = pSpawnSpot->GetAbsOrigin() + Vector(0, 0, 1);
-	if (!Q_strcmp( pSpawnSpot->m_iClassname.ToCStr(), "info_player_start" ) )
-	{
-		spawnPosition += Vector(0, 0, 64);
+	Vector spawnPosition = pSpawnSpot->GetAbsOrigin();
+	if ( !Q_strcmp( pSpawnSpot->m_iClassname.ToCStr(), "info_player_start" ) )
+	{ // at the map preview position, we want everyone's eyes to be in the same position NEO TODO (Adam) should we remove this offset and make the info_player_start origin the camera origin? Would need to move all info_player_start s 
+		// in the base maps, and the current info_player_start preview model wouldn't make as much sense (a small camera looking box would then be better), but would be easier for mappers to get the right position
+		spawnPosition = spawnPosition - pPlayer->GetViewOffset() + Vector(0, 0, 65);
 	}
 	pPlayer->SetLocalOrigin( spawnPosition );
 #else
