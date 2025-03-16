@@ -142,13 +142,13 @@ void CWeaponSmokeGrenade::ItemPostFrame(void)
 {
 	if (!HasPrimaryAmmo() && (GetIdealActivity() == ACT_VM_IDLE || GetIdealActivity() == ACT_VM_DRAW)) {
 		// Finished Throwing Animation, switch to next weapon and destroy this one
-		CBasePlayer* pOwner = ToBasePlayer(GetOwner());
-		if (pOwner) {
-			pOwner->SwitchToNextBestWeapon(this);
-			return;
-		}
 #ifdef GAME_DLL
-		// Grenade with no owner and no ammo, just destroy it
+		CBasePlayer* pOwner = ToBasePlayer(GetOwner());
+		if (pOwner)
+		{ // NEO NOTE (Adam) we could call SwitchToNextBestWeapon both on client and server but that's causing some stutter when throwing the last smokegrenade. HL2MP weapons like slam handle this only server side
+			pOwner->SwitchToNextBestWeapon(this);
+			pOwner->Weapon_Drop(this, NULL, NULL);
+		}
 		UTIL_Remove(this);
 #endif
 		return;
