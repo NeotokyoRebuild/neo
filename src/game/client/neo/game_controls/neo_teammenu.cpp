@@ -35,6 +35,7 @@
 #include <vgui_controls/ImagePanel.h>
 #include <vgui_controls/Panel.h>
 #include <vgui_controls/Menu.h>
+#include "neo/game_controls/neo_button.h"
 #include "IGameUIFuncs.h" // for key bindings
 #include <imapoverview.h>
 #include <shareddefs.h>
@@ -112,7 +113,7 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 
 CNeoTeamMenu::~CNeoTeamMenu()
 {
-	for (vgui::Button *button : {m_pJinrai_Button, m_pNSF_Button, m_pSpectator_Button, m_pAutoAssign_Button, m_pCancel_Button})
+	for (vgui::CNeoButton*button : {m_pJinrai_Button, m_pNSF_Button, m_pSpectator_Button, m_pAutoAssign_Button, m_pCancel_Button})
 	{
 		if (button)
 		{
@@ -129,11 +130,11 @@ void CNeoTeamMenu::FindButtons()
 	m_pNSF_PlayercountLabel = FindControl<Label>(CONTROL_NSF_PLAYERCOUNT_LABEL);
 	m_pJinrai_ScoreLabel = FindControl<Label>(CONTROL_JINRAI_SCORE_LABEL);
 	m_pNSF_ScoreLabel = FindControl<Label>(CONTROL_NSF_SCORE_LABEL);
-	m_pJinrai_Button = FindControl<Button>(CONTROL_JINRAI_BUTTON);
-	m_pNSF_Button = FindControl<Button>(CONTROL_NSF_BUTTON);
-	m_pSpectator_Button = FindControl<Button>(CONTROL_SPEC_BUTTON);
-	m_pAutoAssign_Button = FindControl<Button>(CONTROL_AUTO_BUTTON);
-	m_pCancel_Button = FindControl<Button>(CONTROL_CANCEL_BUTTON);
+	m_pJinrai_Button = FindControl<CNeoButton>(CONTROL_JINRAI_BUTTON);
+	m_pNSF_Button = FindControl<CNeoButton>(CONTROL_NSF_BUTTON);
+	m_pSpectator_Button = FindControl<CNeoButton>(CONTROL_SPEC_BUTTON);
+	m_pAutoAssign_Button = FindControl<CNeoButton>(CONTROL_AUTO_BUTTON);
+	m_pCancel_Button = FindControl<CNeoButton>(CONTROL_CANCEL_BUTTON);
 }
 
 void CNeoTeamMenu::OnClose()
@@ -179,20 +180,7 @@ void CNeoTeamMenu::OnCommand(const char *command)
 		V_sprintf_safe(commandBuffer, "jointeam %i", randomTeam);
 		CloseMenu();
 		engine->ClientCmd(commandBuffer);
-		return;
-	}
-
-	if (Q_strcmp(commandBuffer, "jointeam 1") == 0)
-	{ // joining spectators
-		CloseMenu();
-		engine->ClientCmd(commandBuffer);
-		return;
-	}
-
-	if (Q_strcmp(commandBuffer, "jointeam 0") == 0)
-	{ // joining unnasigned
-		CloseMenu();
-		engine->ClientCmd(commandBuffer);
+		NextMenu();
 		return;
 	}
 
@@ -200,6 +188,7 @@ void CNeoTeamMenu::OnCommand(const char *command)
 	{ // joining jinrai or nsf
 		CloseMenu();
 		engine->ClientCmd(commandBuffer);
+		NextMenu();
 		return;
 	}
 
@@ -210,6 +199,18 @@ void CNeoTeamMenu::OnCommand(const char *command)
 	
 	// new command, should we sanitize and return without executing? (Players can edit button commands with ctrl-alt-shift-b) NEO FIXME
 	engine->ClientCmd(command);
+}
+
+void CNeoTeamMenu::NextMenu()
+{
+	if (NEORules()->GetForcedClass() < 0)
+	{
+		engine->ClientCmd("classmenu");
+	}
+	else if (NEORules()->GetForcedWeapon() < 0)
+	{
+		engine->ClientCmd("loadoutmenu");
+	}
 }
 
 void CNeoTeamMenu::CloseMenu()

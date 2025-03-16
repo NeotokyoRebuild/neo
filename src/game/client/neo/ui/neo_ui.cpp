@@ -4,6 +4,9 @@
 #include <vgui/ISurface.h>
 #include <vgui/IInput.h>
 #include <vgui_controls/Controls.h>
+#include <filesystem.h>
+#include <stb_image.h>
+#include <materialsystem/imaterial.h>
 
 #include "neo_misc.h"
 
@@ -39,9 +42,9 @@ void GCtxDrawSetTextPos(const int x, const int y)
 	surface()->DrawSetTextPos(g_pCtx->dPanel.x + x, g_pCtx->dPanel.y + y);
 }
 
-void SwapFont(const EFont eFont)
+void SwapFont(const EFont eFont, const bool bForce)
 {
-	if (g_pCtx->eMode != MODE_PAINT) return;
+	if (g_pCtx->eMode != MODE_PAINT || (!bForce && (g_pCtx->eFont == eFont))) return;
 	g_pCtx->eFont = eFont;
 	surface()->DrawSetTextFont(g_pCtx->fonts[g_pCtx->eFont].hdl);
 }
@@ -131,7 +134,8 @@ void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode, const wchar_t *w
 		break;
 	}
 
-	SwapFont(FONT_NTNORMAL);
+	// Force SwapFont on main to prevent crash on startup
+	SwapFont(FONT_NTNORMAL, true);
 	surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
 }
 
@@ -261,12 +265,13 @@ void EndSection()
 
 	// Scroll handling
 	const int iRowsInScreen = g_pCtx->dPanel.tall / g_pCtx->iRowTall;
+	const int iScrollThick = g_pCtx->iMarginX * 4;
 	const bool bHasScroll = (g_pCtx->iPartitionY > iRowsInScreen);
 	vgui::IntRect rectScrollArea = (bHasScroll) ?
 			vgui::IntRect{
 				.x0 = g_pCtx->dPanel.x + g_pCtx->dPanel.wide,
 				.y0 = g_pCtx->dPanel.y,
-				.x1 = g_pCtx->dPanel.x + g_pCtx->dPanel.wide + g_pCtx->iRowTall,
+				.x1 = g_pCtx->dPanel.x + g_pCtx->dPanel.wide + iScrollThick,
 				.y1 = g_pCtx->dPanel.y + g_pCtx->dPanel.tall,
 			} : vgui::IntRect{};
 	const bool bMouseInScrollbar = bHasScroll && InRect(rectScrollArea, g_pCtx->iMouseAbsX, g_pCtx->iMouseAbsY);
@@ -287,6 +292,7 @@ void EndSection()
 	else if (g_pCtx->eMode == MODE_KEYPRESSED && (g_pCtx->eCode == KEY_DOWN || g_pCtx->eCode == KEY_UP) &&
 			 (g_pCtx->iActiveSection == g_pCtx->iSection || g_pCtx->iHotSection == g_pCtx->iSection))
 	{
+		// NEO FIXME (nullsystem): iWidget -> iPartitionY, iActive -> iActivePartY?
 		if (!bHasScroll)
 		{
 			// Disable scroll if it doesn't need to
@@ -309,12 +315,12 @@ void EndSection()
 	{
 		const int iYStart = g_pCtx->iYOffset[g_pCtx->iSection];
 		const int iYEnd = iYStart + iRowsInScreen;
-		const float flYPercStart = iYStart / static_cast<float>(g_pCtx->iWidget);
-		const float flYPercEnd = iYEnd / static_cast<float>(g_pCtx->iWidget);
+		const float flYPercStart = iYStart / static_cast<float>(g_pCtx->iPartitionY);
+		const float flYPercEnd = iYEnd / static_cast<float>(g_pCtx->iPartitionY);
 		vgui::IntRect rectHandle{
 			g_pCtx->dPanel.x + g_pCtx->dPanel.wide,
 			g_pCtx->dPanel.y + static_cast<int>(g_pCtx->dPanel.tall * flYPercStart),
-			g_pCtx->dPanel.x + g_pCtx->dPanel.wide + g_pCtx->iRowTall,
+			g_pCtx->dPanel.x + g_pCtx->dPanel.wide + iScrollThick,
 			g_pCtx->dPanel.y + static_cast<int>(g_pCtx->dPanel.tall * flYPercEnd)
 		};
 
@@ -351,7 +357,7 @@ void EndSection()
 		if (bAlterOffset)
 		{
 			const float flXPercMouse = static_cast<float>(g_pCtx->iMouseRelY - g_pCtx->iStartMouseDragOffset[g_pCtx->iSection]) / static_cast<float>(g_pCtx->dPanel.tall);
-			g_pCtx->iYOffset[g_pCtx->iSection] = clamp(flXPercMouse * g_pCtx->iWidget, 0, (g_pCtx->iWidget - iRowsInScreen));
+			g_pCtx->iYOffset[g_pCtx->iSection] = clamp(flXPercMouse * g_pCtx->iPartitionY, 0, (g_pCtx->iPartitionY - iRowsInScreen));
 		}
 	}
 
@@ -524,6 +530,20 @@ void Label(const wchar_t *wszText)
 	InternalUpdatePartitionState(GetMouseinFocusedRet{true, true});
 }
 
+void Label(const wchar_t *wszText, const LabelExOpt &opt)
+{
+	const LabelExOpt bkup{
+		.eTextStyle = g_pCtx->eLabelTextStyle,
+		.eFont = g_pCtx->eFont,
+	};
+
+	SwapFont(opt.eFont);
+	g_pCtx->eLabelTextStyle = opt.eTextStyle;
+	Label(wszText);
+	g_pCtx->eLabelTextStyle = bkup.eTextStyle;
+	SwapFont(bkup.eFont);
+}
+
 void Label(const wchar_t *wszLabel, const wchar_t *wszText)
 {
 	GCtxSkipActive();
@@ -613,6 +633,190 @@ NeoUI::RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText)
 	++g_pCtx->iCanActives;
 	InternalUpdatePartitionState(wdgState);
 	return ret;
+}
+
+bool Texture(const char *szTexturePath, const int x, const int y, const int width, const int height,
+			 const char *szTextureGroup)
+{
+	auto hdl = g_pCtx->htTexMap.Find(szTexturePath);
+	if (hdl == g_pCtx->htTexMap.InvalidHandle() && g_pCtx->eMode == MODE_PAINT)
+	{
+		bool bApplied = false;
+		int iTex = -1;
+		if (V_striEndsWith(szTexturePath, ".png") || V_striEndsWith(szTexturePath, ".jpg") ||
+				V_striEndsWith(szTexturePath, ".jpeg"))
+		{
+			// General images decoded via stb_image
+			int width, height, channels;
+			uint8 *data = stbi_load(szTexturePath, &width, &height, &channels, 0);
+			if (data)
+			{
+				if (channels == 3)
+				{
+					uint8 *rgbaData = reinterpret_cast<uint8 *>(calloc(width * height, sizeof(uint8) * 4));
+					ImageLoader::ConvertImageFormat(data, IMAGE_FORMAT_RGB888,
+													rgbaData, IMAGE_FORMAT_RGBA8888,
+													width, height);
+					stbi_image_free(data);
+					data = rgbaData;
+					channels = 4;
+				}
+				else if (channels != 4)
+				{
+					Assert(false);
+				}
+				iTex = surface()->CreateNewTextureID(true);
+				surface()->DrawSetTextureRGBAEx(iTex, data, width, height, IMAGE_FORMAT_RGBA8888);
+				stbi_image_free(data);
+				bApplied = true;
+			}
+		}
+		else if (V_striEndsWith(szTexturePath, ".vtf"))
+		{
+			// Direct vtf file
+			CUtlBuffer buf(0, 0, CUtlBuffer::READ_ONLY);
+			if (filesystem->ReadFile(szTexturePath, nullptr, buf))
+			{
+				IVTFTexture *pVTFTexture = CreateVTFTexture();
+				if (pVTFTexture)
+				{
+					if (pVTFTexture->Unserialize(buf))
+					{
+						pVTFTexture->ConvertImageFormat(IMAGE_FORMAT_RGBA8888, false);
+						iTex = surface()->CreateNewTextureID(true);
+						surface()->DrawSetTextureRGBAEx(iTex, pVTFTexture->ImageData(0, 0, 0),
+														pVTFTexture->Width(), pVTFTexture->Height(),
+														IMAGE_FORMAT_RGBA8888);
+						bApplied = true;
+					}
+					DestroyVTFTexture(pVTFTexture);
+				}
+			}
+		}
+		else if (!IsErrorMaterial(materials->FindMaterial(szTexturePath, szTextureGroup)))
+		{
+			// Direct texture determined by vmt (without extension)
+			iTex = surface()->CreateNewTextureID(true);
+			surface()->DrawSetTextureFile(iTex, szTexturePath, false, true);
+			bApplied = true;
+		}
+		hdl = g_pCtx->htTexMap.Insert(szTexturePath, (bApplied) ? iTex : -1);
+	}
+
+	if (hdl != g_pCtx->htTexMap.InvalidHandle())
+	{
+		const int iTex = g_pCtx->htTexMap.Element(hdl);
+		if (surface()->IsTextureIDValid(iTex) && iTex != -1)
+		{
+			if (g_pCtx->eMode == MODE_PAINT)
+			{
+				// Letterboxing
+				int iTexWide, iTexTall;
+				surface()->DrawGetTextureSize(iTex, iTexWide, iTexTall);
+
+				int iDispWide, iDispTall;
+				if (iTexWide > iTexTall)
+				{
+					iDispWide = width;
+					iDispTall = width * (iTexTall / iTexWide);
+				}
+				else if (iTexWide < iTexTall)
+				{
+					iDispWide = height * (iTexWide / iTexTall);
+					iDispTall = height;
+				}
+				else
+				{
+					iDispWide = min(width, height);
+					iDispTall = iDispWide;
+				}
+
+				// Only about bottom part since top always set to partition's Y position
+				const int iImgEnd = y + (height / 2) + (iDispTall / 2);
+				float flPartialShow = 1.0f;
+				if (iImgEnd > g_pCtx->dPanel.tall)
+				{
+					const int iExtra = iImgEnd - g_pCtx->dPanel.tall;
+					flPartialShow = (iDispTall - iExtra) / static_cast<float>(iDispTall);
+				}
+
+				const int iStartX = g_pCtx->dPanel.x + x + (width / 2) - (iDispWide / 2);
+				const int iStartY = g_pCtx->dPanel.y + y + (height / 2) - (iDispTall / 2);
+				surface()->DrawSetColor(COLOR_WHITE);
+				surface()->DrawSetTexture(iTex);
+				surface()->DrawTexturedSubRect(
+							iStartX,
+							iStartY,
+							iStartX + iDispWide,
+							iStartY + (iDispTall * flPartialShow),
+							0.0f, 0.0f, 1.0f, flPartialShow);
+				surface()->DrawSetColor(g_pCtx->normalBgColor);
+			}
+			return true;
+		}
+	}
+	return false;
+}
+
+NeoUI::RetButton ButtonTexture(const char *szTexturePath)
+{
+	RetButton ret = {};
+	const auto wdgState = InternalGetMouseinFocused();
+	ret.bMouseHover = wdgState.bHot;
+
+	if (IN_BETWEEN_AR(0, g_pCtx->iLayoutY, g_pCtx->dPanel.tall))
+	{
+		const int iImgWidth = g_pCtx->iHorizontalWidth ? g_pCtx->iHorizontalWidth : g_pCtx->dPanel.wide;
+		switch (g_pCtx->eMode)
+		{
+		case MODE_PAINT:
+		{
+			GCtxDrawFilledRectXtoX(0, iImgWidth);
+			Texture(szTexturePath, g_pCtx->iLayoutX, g_pCtx->iLayoutY, iImgWidth, g_pCtx->iRowTall);
+		}
+		break;
+		case MODE_MOUSEPRESSED:
+		{
+			ret.bMousePressed = ret.bPressed = (ret.bMouseHover && g_pCtx->eCode == MOUSE_LEFT);
+		}
+		break;
+		case MODE_MOUSEDOUBLEPRESSED:
+		{
+			ret.bMouseDoublePressed = ret.bPressed = (ret.bMouseHover && g_pCtx->eCode == MOUSE_LEFT);
+		}
+		break;
+		case MODE_KEYPRESSED:
+		{
+			ret.bKeyPressed = ret.bPressed = (wdgState.bActive && g_pCtx->eCode == KEY_ENTER);
+		}
+		break;
+		default:
+			break;
+		}
+
+		if (ret.bPressed)
+		{
+			g_pCtx->iActive = g_pCtx->iWidget;
+			g_pCtx->iActiveSection = g_pCtx->iSection;
+			g_pCtx->iActiveDirection = 0;
+		}
+
+	}
+
+	++g_pCtx->iCanActives;
+	InternalUpdatePartitionState(wdgState);
+	return ret;
+}
+
+void ResetTextures()
+{
+	CUtlHashtable<CUtlConstString, int> *pHtTexMap = &(g_pCtx->htTexMap);
+	for (auto hdl = pHtTexMap->FirstHandle(); hdl != pHtTexMap->InvalidHandle(); hdl = pHtTexMap->NextHandle(hdl))
+	{
+		const int iTex = pHtTexMap->Element(hdl);
+		surface()->DeleteTextureByID(iTex);
+	}
+	pHtTexMap->Purge();
 }
 
 void RingBoxBool(const wchar_t *wszLeftLabel, bool *bChecked)

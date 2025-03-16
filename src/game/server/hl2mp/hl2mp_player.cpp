@@ -394,7 +394,7 @@ void CHL2MP_Player::Spawn(void)
 	PickDefaultSpawnTeam();
 
 	BaseClass::Spawn();
-	
+
 	if ( !IsObserver() )
 	{
 		pl.deadflag = false;

@@ -9,6 +9,7 @@
 #include <vgui_controls/Frame.h>
 #include <vgui_controls/EditablePanel.h>
 #include <vgui_controls/Button.h>
+#include "neo/game_controls/neo_button.h"
 #include <vgui_controls/ComboBox.h>
 #include <igameevents.h>
 #include "GameEventListener.h"
@@ -91,16 +92,14 @@ protected:
     vgui::ImagePanel *m_pSkinPanel3;
 
     // Buttons
-    vgui::Button *m_pRecon_Button;
-    vgui::Button *m_pAssault_Button;
-    vgui::Button *m_pSupport_Button;
+    vgui::CNeoButton*m_pRecon_Button;
+    vgui::CNeoButton*m_pAssault_Button;
+    vgui::CNeoButton*m_pSupport_Button;
 	vgui::Button *m_pSkin1_Button;
 	vgui::Button *m_pSkin2_Button;
 	vgui::Button *m_pSkin3_Button;
-    vgui::Button *m_pBack_Button;
+    vgui::CNeoButton*m_pBack_Button;
 
-    // Which class to highlight for auto selection
-    int m_iDefaultClass;
     bool m_bClassMenu;
 
 protected:

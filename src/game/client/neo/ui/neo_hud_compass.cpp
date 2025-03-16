@@ -23,27 +23,27 @@
 
 using vgui::surface;
 
-ConVar neo_cl_hud_debug_compass_enabled("neo_cl_hud_debug_compass_enabled", "0", FCVAR_USERINFO | FCVAR_CHEAT,
+ConVar cl_neo_hud_debug_compass_enabled("cl_neo_hud_debug_compass_enabled", "0", FCVAR_USERINFO | FCVAR_CHEAT,
 	"Whether the Debug HUD compass is enabled or not.", true, 0.0f, true, 1.0f);
-ConVar neo_cl_hud_debug_compass_pos_x("neo_cl_hud_debug_compass_pos_x", "0.45", FCVAR_USERINFO | FCVAR_CHEAT,
+ConVar cl_neo_hud_debug_compass_pos_x("cl_neo_hud_debug_compass_pos_x", "0.45", FCVAR_USERINFO | FCVAR_CHEAT,
 	"Horizontal position of the Debug compass, in range 0 to 1.", true, 0.0f, true, 1.0f);
-ConVar neo_cl_hud_debug_compass_pos_y("neo_cl_hud_debug_compass_pos_y", "0.925", FCVAR_USERINFO | FCVAR_CHEAT,
+ConVar cl_neo_hud_debug_compass_pos_y("cl_neo_hud_debug_compass_pos_y", "0.925", FCVAR_USERINFO | FCVAR_CHEAT,
 	"Vertical position of the Debug compass, in range 0 to 1.", true, 0.0f, true, 1.0f);
-ConVar neo_cl_hud_debug_compass_color_r("neo_cl_hud_debug_compass_color_r", "190", FCVAR_USERINFO | FCVAR_CHEAT,
+ConVar cl_neo_hud_debug_compass_color_r("cl_neo_hud_debug_compass_color_r", "190", FCVAR_USERINFO | FCVAR_CHEAT,
 	"Red color value of the Debug compass, in range 0 - 255.", true, 0.0f, true, 255.0f);
-ConVar neo_cl_hud_debug_compass_color_g("neo_cl_hud_debug_compass_color_g", "185", FCVAR_USERINFO | FCVAR_CHEAT,
+ConVar cl_neo_hud_debug_compass_color_g("cl_neo_hud_debug_compass_color_g", "185", FCVAR_USERINFO | FCVAR_CHEAT,
 	"Green color value of the Debug compass, in range 0 - 255.", true, 0.0f, true, 255.0f);
-ConVar neo_cl_hud_debug_compass_color_b("neo_cl_hud_debug_compass_color_b", "205", FCVAR_USERINFO | FCVAR_CHEAT,
+ConVar cl_neo_hud_debug_compass_color_b("cl_neo_hud_debug_compass_color_b", "205", FCVAR_USERINFO | FCVAR_CHEAT,
 	"Blue value of the Debug compass, in range 0 - 255.", true, 0.0f, true, 255.0f);
-ConVar neo_cl_hud_debug_compass_color_a("neo_cl_hud_debug_compass_color_a", "255", FCVAR_USERINFO | FCVAR_CHEAT,
+ConVar cl_neo_hud_debug_compass_color_a("cl_neo_hud_debug_compass_color_a", "255", FCVAR_USERINFO | FCVAR_CHEAT,
 	"Alpha color value of the Debug compass, in range 0 - 255.", true, 0.0f, true, 255.0f);
 
-ConVar neo_cl_hud_rangefinder_enabled("neo_cl_hud_rangefinder_enabled", "1", FCVAR_ARCHIVE,
+ConVar cl_neo_hud_rangefinder_enabled("cl_neo_hud_rangefinder_enabled", "1", FCVAR_ARCHIVE,
 									  "Whether the rangefinder HUD is enabled or not.", true, 0.0f, true, 1.0f);
-ConVar neo_cl_hud_rangefinder_pos_frac_x("neo_cl_hud_rangefinder_pos_frac_x", "0.55", FCVAR_ARCHIVE,
+ConVar cl_neo_hud_rangefinder_pos_frac_x("cl_neo_hud_rangefinder_pos_frac_x", "0.55", FCVAR_ARCHIVE,
 										 "In fractional to the total screen width, the x-axis position of the rangefinder.",
 										 true, 0.0f, true, 1.0f);
-ConVar neo_cl_hud_rangefinder_pos_frac_y("neo_cl_hud_rangefinder_pos_frac_y", "0.55", FCVAR_ARCHIVE,
+ConVar cl_neo_hud_rangefinder_pos_frac_y("cl_neo_hud_rangefinder_pos_frac_y", "0.55", FCVAR_ARCHIVE,
 										 "In fractional to the total screen height, the y-axis position of the rangefinder.",
 										 true, 0.0f, true, 1.0f);
 
@@ -55,6 +55,7 @@ CNEOHud_Compass::CNEOHud_Compass(const char *pElementName, vgui::Panel *parent)
 	: CHudElement(pElementName), EditablePanel(parent, pElementName)
 {
 	SetAutoDelete(true);
+	m_iHideHudElementNumber = NEO_HUD_ELEMENT_COMPASS;
 
 	if (parent)
 	{
@@ -164,7 +165,7 @@ void CNEOHud_Compass::UpdateStateForNeoHudElementDraw()
 	angle = safeAngle(angle);
 	GetCompassUnicodeString(angle, m_wszCompassUnicode);
 
-	if (neo_cl_hud_rangefinder_enabled.GetBool())
+	if (cl_neo_hud_rangefinder_enabled.GetBool())
 	{
 		C_NEO_Player *pFPPlayer = GetFirstPersonPlayer();
 		if (pFPPlayer->IsInAim())
@@ -200,17 +201,17 @@ void CNEOHud_Compass::DrawNeoHudElement(void)
 		DrawCompass();
 	}
 
-	if (neo_cl_hud_debug_compass_enabled.GetBool())
+	if (cl_neo_hud_debug_compass_enabled.GetBool())
 	{
 		DrawDebugCompass();
 	}
 
-	if (neo_cl_hud_rangefinder_enabled.GetBool() && GetFirstPersonPlayer()->IsInAim())
+	if (cl_neo_hud_rangefinder_enabled.GetBool() && GetFirstPersonPlayer()->IsInAim())
 	{
 		surface()->DrawSetTextColor(COLOR_NEO_WHITE);
 		surface()->DrawSetTextFont(m_hFont);
-		surface()->DrawSetTextPos((m_resX * neo_cl_hud_rangefinder_pos_frac_x.GetFloat()),
-								  (m_resY * neo_cl_hud_rangefinder_pos_frac_y.GetFloat()));
+		surface()->DrawSetTextPos((m_resX * cl_neo_hud_rangefinder_pos_frac_x.GetFloat()),
+								  (m_resY * cl_neo_hud_rangefinder_pos_frac_y.GetFloat()));
 		surface()->DrawPrintText(m_wszRangeFinder, ARRAYSIZE(m_wszRangeFinder) - 1);
 	}
 }
@@ -376,12 +377,12 @@ void CNEOHud_Compass::DrawDebugCompass() const
 
 	// Draw the compass for this frame
 	debugoverlay->AddScreenTextOverlay(
-		neo_cl_hud_debug_compass_pos_x.GetFloat(),
-		neo_cl_hud_debug_compass_pos_y.GetFloat(),
+		cl_neo_hud_debug_compass_pos_x.GetFloat(),
+		cl_neo_hud_debug_compass_pos_y.GetFloat(),
 		gpGlobals->frametime,
-		neo_cl_hud_debug_compass_color_r.GetInt(),
-		neo_cl_hud_debug_compass_color_g.GetInt(),
-		neo_cl_hud_debug_compass_color_b.GetInt(),
-		neo_cl_hud_debug_compass_color_a.GetInt(),
+		cl_neo_hud_debug_compass_color_r.GetInt(),
+		cl_neo_hud_debug_compass_color_g.GetInt(),
+		cl_neo_hud_debug_compass_color_b.GetInt(),
+		cl_neo_hud_debug_compass_color_a.GetInt(),
 		compass);
 }

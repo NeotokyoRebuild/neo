@@ -6,6 +6,7 @@
 
 #include <vgui_controls/Frame.h>
 #include <game/client/iviewport.h>
+#include "neo/game_controls/neo_button.h"
 
 #define CNeoLoadoutMenu CNeoLoadoutMenu_Dev
 
@@ -77,7 +78,7 @@ protected:
 	vgui::Button *m_pButton10;
 	vgui::Button *m_pButton11;
 	vgui::Button *m_pButton12;
-	vgui::Button *returnButton;
+	vgui::CNeoButton*returnButton;
 
 	// Our viewport interface accessor
 	IViewPort *m_pViewPort;

@@ -10,7 +10,7 @@
 
 ConVar neo_ghost_cap_point_hud_scale_factor("neo_ghost_cap_point_hud_scale_factor", "0.33", FCVAR_USERINFO,
 	"Ghost cap HUD element scaling factor", true, 0.01, false, 0);
-ConVar neo_cl_hud_center_ghost_cap_size("neo_cl_hud_center_ghost_cap_size", "12.5", FCVAR_USERINFO,
+ConVar cl_neo_hud_center_ghost_cap_size("cl_neo_hud_center_ghost_cap_size", "12.5", FCVAR_USERINFO,
 	"HUD center size in percentage to fade ghost cap point.", true, 1, false, 0);
 
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(GhostCapPoint, 0.01)
@@ -19,6 +19,7 @@ CNEOHud_GhostCapPoint::CNEOHud_GhostCapPoint(const char *pElementName, vgui::Pan
 	: CNEOHud_WorldPosMarker(pElementName, parent)
 {
 	SetAutoDelete(true);
+	m_iHideHudElementNumber = NEO_HUD_ELEMENT_GHOST_CAP_POINTS;
 
 	if (parent)
 	{
@@ -51,7 +52,7 @@ void CNEOHud_GhostCapPoint::ApplySchemeSettings(vgui::IScheme *pScheme)
 
 	// Override CNEOHud_WorldPosMarker's sizing with our own
 	const int widerAxis = max(m_viewWidth, m_viewHeight);
-	m_viewCentreSize = widerAxis * (neo_cl_hud_center_ghost_cap_size.GetFloat() / 100.0f);
+	m_viewCentreSize = widerAxis * (cl_neo_hud_center_ghost_cap_size.GetFloat() / 100.0f);
 }
 
 void CNEOHud_GhostCapPoint::UpdateStateForNeoHudElementDraw()

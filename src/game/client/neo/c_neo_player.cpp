@@ -21,6 +21,8 @@
 #include "neo_predicted_viewmodel.h"
 
 #include "game_controls/neo_teammenu.h"
+#include "game_controls/neo_classmenu.h"
+#include "game_controls/neo_loadoutmenu.h"
 
 #include "ui/neo_hud_compass.h"
 #include "ui/neo_hud_game_event.h"
@@ -209,11 +211,11 @@ ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
 	"Whether to display HL2 style ammo/health info near crosshair.",
 	true, 0.0f, true, 1.0f);
 
-ConVar neo_cl_streamermode("neo_cl_streamermode", "0", FCVAR_ARCHIVE | FCVAR_USERINFO, "Streamer mode turns player names into generic names and hide avatars.", true, 0.0f, true, 1.0f);
-ConVar neo_cl_streamermode_autodetect_obs("neo_cl_streamermode_autodetect_obs", "0", FCVAR_ARCHIVE, "Automatically turn neo_cl_streamermode on if OBS was detected on startup.", true, 0.0f, true, 1.0f);
+ConVar cl_neo_streamermode("cl_neo_streamermode", "0", FCVAR_ARCHIVE | FCVAR_USERINFO, "Streamer mode turns player names into generic names and hide avatars.", true, 0.0f, true, 1.0f);
+ConVar cl_neo_streamermode_autodetect_obs("cl_neo_streamermode_autodetect_obs", "0", FCVAR_ARCHIVE, "Automatically turn cl_neo_streamermode on if OBS was detected on startup.", true, 0.0f, true, 1.0f);
 
-extern ConVar neo_sv_clantag_allow;
-extern ConVar neo_sv_dev_test_clantag;
+extern ConVar sv_neo_clantag_allow;
+extern ConVar sv_neo_dev_test_clantag;
 
 class NeoLoadoutMenu_Cb : public ICommandCallback
 {
@@ -223,7 +225,7 @@ public:
 #if DEBUG
 		DevMsg("Loadout access cb\n");
 #endif
-		if (engine->IsPlayingDemo())
+		if (engine->IsPlayingDemo() || NEORules()->GetForcedWeapon() >= 0)
 		{
 			return;
 		}
@@ -242,6 +244,19 @@ public:
 			Assert(false);
 			Warning("Couldn't find weapon loadout panel\n");
 			return;
+		}
+
+		auto classPanel = dynamic_cast<CNeoClassMenu*>(GetClientModeNormal()->
+			GetViewport()->FindChildByName(PANEL_CLASS));
+		if (classPanel)
+		{
+			classPanel->ShowPanel(false);
+		}
+		auto teamPanel = dynamic_cast<CNeoTeamMenu*>(GetClientModeNormal()->
+			GetViewport()->FindChildByName(PANEL_TEAM));
+		if (teamPanel)
+		{
+			teamPanel->ShowPanel(false);
 		}
 
 		if (panel->IsVisible() && panel->IsEnabled())
@@ -302,7 +317,7 @@ class NeoClassMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback(const CCommand& command)
 	{
-		if (engine->IsPlayingDemo())
+		if (engine->IsPlayingDemo() || NEORules()->GetForcedClass() >= 0)
 		{
 			return;
 		}
@@ -327,6 +342,19 @@ public:
 			Assert(false);
 			Warning("Couldn't find class panel\n");
 			return;
+		}
+
+		auto loadoutPanel = dynamic_cast<CNeoLoadoutMenu*>(GetClientModeNormal()->
+			GetViewport()->FindChildByName(PANEL_NEO_LOADOUT));
+		if (loadoutPanel)
+		{
+			loadoutPanel->ShowPanel(false);
+		}
+		auto teamPanel = dynamic_cast<CNeoTeamMenu*>(GetClientModeNormal()->
+			GetViewport()->FindChildByName(PANEL_TEAM));
+		if (teamPanel)
+		{
+			teamPanel->ShowPanel(false);
 		}
 
 		if (panel->IsVisible() && panel->IsEnabled())
@@ -367,7 +395,7 @@ class NeoTeamMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback( const CCommand &command )
 	{
-		if (engine->IsPlayingDemo())
+		if (engine->IsPlayingDemo() || NEORules()->GetForcedTeam() >= 0)
 		{
 			return;
 		}
@@ -386,6 +414,19 @@ public:
 			Assert(false);
 			Warning("Couldn't find team panel\n");
 			return;
+		}
+
+		auto loadoutPanel = dynamic_cast<CNeoLoadoutMenu*>(GetClientModeNormal()->
+			GetViewport()->FindChildByName(PANEL_NEO_LOADOUT));
+		if (loadoutPanel)
+		{
+			loadoutPanel->ShowPanel(false);
+		}
+		auto classPanel = dynamic_cast<CNeoClassMenu*>(GetClientModeNormal()->
+			GetViewport()->FindChildByName(PANEL_CLASS));
+		if (classPanel)
+		{
+			classPanel->ShowPanel(false);
 		}
 
 		if (panel->IsVisible() && panel->IsEnabled())
@@ -447,13 +488,13 @@ C_NEO_Player::C_NEO_Player()
 {
 	SetPredictionEligible(true);
 
-	m_iNeoClass = NEO_CLASS_ASSAULT;
-	m_iNeoSkin = NEO_SKIN_FIRST;
+	m_iNeoClass = NEORules()->GetForcedClass() >= 0 ? NEORules()->GetForcedClass() : NEO_CLASS_ASSAULT;
+	m_iNeoSkin = NEORules()->GetForcedSkin() >= 0 ? NEORules()->GetForcedSkin() : NEO_SKIN_FIRST;
 	m_iNeoStar = NEO_DEFAULT_STAR;
 	V_memset(m_szNeoName.GetForModify(), 0, sizeof(m_szNeoName));
 	V_memset(m_szNeoClantag.GetForModify(), 0, sizeof(m_szNeoClantag));
 
-	m_iLoadoutWepChoice = 0;
+	m_iLoadoutWepChoice = NEORules()->GetForcedWeapon() >= 0 ? NEORules()->GetForcedWeapon() : 0;
 	m_iNextSpawnClassChoice = -1;
 	m_iXP.GetForModify() = 0;
 
@@ -590,13 +631,13 @@ int C_NEO_Player::GetAttackersScores(const int attackerIdx) const
 
 const char *C_NEO_Player::GetNeoClantag() const
 {
-	if (!neo_sv_clantag_allow.GetBool() ||
-			(neo_cl_streamermode.GetBool() && !IsLocalPlayer()))
+	if (!sv_neo_clantag_allow.GetBool() ||
+			(cl_neo_streamermode.GetBool() && !IsLocalPlayer()))
 	{
 		return "";
 	}
 #ifdef DEBUG
-	const char *overrideClantag = neo_sv_dev_test_clantag.GetString();
+	const char *overrideClantag = sv_neo_dev_test_clantag.GetString();
 	if (overrideClantag && overrideClantag[0])
 	{
 		return overrideClantag;
@@ -639,7 +680,7 @@ const char *C_NEO_Player::InternalGetNeoPlayerName() const
 
 const char *C_NEO_Player::GetNeoPlayerName() const
 {
-	if (neo_cl_streamermode.GetBool() && !IsLocalPlayer())
+	if (cl_neo_streamermode.GetBool() && !IsLocalPlayer())
 	{
 		[[maybe_unused]] uchar32 u32Out;
 		bool bError = false;
@@ -1082,6 +1123,13 @@ void C_NEO_Player::PreThink( void )
 {
 	BaseClass::PreThink();
 
+	HandleSpeedChangesLegacy();
+
+	if (m_HL2Local.m_flSuitPower <= 0.0f && IsSprinting())
+	{
+		StopSprinting();
+	}
+
 	CalculateSpeed();
 
 	CheckThermOpticButtons();
@@ -1273,7 +1321,7 @@ void C_NEO_Player::PostThink(void)
 			m_bInVision = false;
 			IN_LeanReset();
 
-			if (IsLocalPlayer() && (GetTeamNumber() == TEAM_JINRAI || GetTeamNumber() == TEAM_NSF))
+			if (IsLocalPlayer() && GetDeathTime() != 0 && (GetTeamNumber() == TEAM_JINRAI || GetTeamNumber() == TEAM_NSF))
 			{
 				SetObserverMode(OBS_MODE_DEATHCAM);
 				// Fade out 8s to blackout + 2s full blackout
@@ -1397,10 +1445,6 @@ void C_NEO_Player::CalcDeathCamView(Vector &eyeOrigin, QAngle &eyeAngles, float 
 
 void C_NEO_Player::TeamChange(int iNewTeam)
 {
-	if (IsLocalPlayer())
-	{
-		engine->ClientCmd(classmenu.GetName());
-	}
 	BaseClass::TeamChange(iNewTeam);
 }
 
@@ -1527,11 +1571,6 @@ void C_NEO_Player::Spawn( void )
 				neoHud->resetHUDState();
 			}
 		}
-
-		if (GetTeamNumber() == TEAM_UNASSIGNED && !engine->IsLevelMainMenuBackground())
-		{
-			engine->ClientCmd(teammenu.GetName());
-		}
 	}
 }
 
@@ -1594,6 +1633,7 @@ void C_NEO_Player::StartSprinting(void)
 void C_NEO_Player::StopSprinting(void)
 {
 	m_fIsSprinting = false;
+	IN_SpeedReset();
 }
 
 bool C_NEO_Player::CanSprint(void)

@@ -54,7 +54,7 @@ static inline bool g_bInstalledCVarCallback = false;
 void CVGlobal_NeoClCrosshair(IConVar *var, [[maybe_unused]] const char *pOldString, [[maybe_unused]] float flOldValue)
 {
 	CHudCrosshair *crosshair = GET_HUDELEMENT(CHudCrosshair);
-	if (crosshair && V_strstr(var->GetName(), "neo_cl_crosshair"))
+	if (crosshair && V_strstr(var->GetName(), "cl_neo_crosshair"))
 	{
 		// NEO NOTE (nullsystem): Only mark for refresh, not immediate as they will likely be multiple of convars sent
 		// over
@@ -164,7 +164,11 @@ bool CHudCrosshair::ShouldDraw( void )
 			( !pPlayer->IsSuitEquipped() || g_pGameRules->IsMultiplayer() ) &&
 			g_pClientMode->ShouldDrawCrosshair() &&
 			!( pPlayer->GetFlags() & FL_FROZEN ) &&
+#ifdef NEO
+			( GetLocalPlayerIndex() == render->GetViewEntity()) &&
+#else
 			( pPlayer->entindex() == render->GetViewEntity() ) &&
+#endif // NEO
 			( pPlayer->IsAlive() ||	( pPlayer->GetObserverMode() == OBS_MODE_IN_EYE ) || ( cl_observercrosshair.GetBool() && pPlayer->GetObserverMode() == OBS_MODE_ROAMING ) );
 	}
 	else
@@ -175,7 +179,11 @@ bool CHudCrosshair::ShouldDraw( void )
 			!engine->IsPaused() && 
 			g_pClientMode->ShouldDrawCrosshair() &&
 			!( pPlayer->GetFlags() & FL_FROZEN ) &&
+#ifdef NEO
+			(GetLocalPlayerIndex() == render->GetViewEntity()) &&
+#else
 			( pPlayer->entindex() == render->GetViewEntity() ) &&
+#endif // NEO
 			!pPlayer->IsInVGuiInputMode() &&
 			( pPlayer->IsAlive() ||	( pPlayer->GetObserverMode() == OBS_MODE_IN_EYE ) || ( cl_observercrosshair.GetBool() && pPlayer->GetObserverMode() == OBS_MODE_ROAMING ) );
 	}
@@ -384,7 +392,7 @@ void CHudCrosshair::Paint( void )
 	// NEO TODO (nullsystem): Probably be better if the entire class refreshed to our own
 	// thing and can do away with that CHudTexture nonsense entirely
 	const bool bIsScoped = pNeoWep && pNeoWep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON;
-	const int iXHairStyle = neo_cl_crosshair_style.GetInt();
+	const int iXHairStyle = cl_neo_crosshair_style.GetInt();
 
 	trace_t iffTrace;
 	if (NEORules()->GetGameType() != NEO_GAME_TYPE_DM)
@@ -435,18 +443,18 @@ void CHudCrosshair::Paint( void )
 		{
 			m_crosshairInfo = CrosshairInfo{
 					.color = Color(
-						neo_cl_crosshair_color_r.GetInt(), neo_cl_crosshair_color_g.GetInt(),
-						neo_cl_crosshair_color_b.GetInt(), neo_cl_crosshair_color_a.GetInt()),
-					.iESizeType = neo_cl_crosshair_size_type.GetInt(),
-					.iSize = neo_cl_crosshair_size.GetInt(),
-					.flScrSize = neo_cl_crosshair_size_screen.GetFloat(),
-					.iThick = neo_cl_crosshair_thickness.GetInt(),
-					.iGap = neo_cl_crosshair_gap.GetInt(),
-					.iOutline = neo_cl_crosshair_outline.GetInt(),
-					.iCenterDot = neo_cl_crosshair_center_dot.GetInt(),
-					.bTopLine = neo_cl_crosshair_top_line.GetBool(),
-					.iCircleRad = neo_cl_crosshair_circle_radius.GetInt(),
-					.iCircleSegments = neo_cl_crosshair_circle_segments.GetInt(),
+						cl_neo_crosshair_color_r.GetInt(), cl_neo_crosshair_color_g.GetInt(),
+						cl_neo_crosshair_color_b.GetInt(), cl_neo_crosshair_color_a.GetInt()),
+					.iESizeType = cl_neo_crosshair_size_type.GetInt(),
+					.iSize = cl_neo_crosshair_size.GetInt(),
+					.flScrSize = cl_neo_crosshair_size_screen.GetFloat(),
+					.iThick = cl_neo_crosshair_thickness.GetInt(),
+					.iGap = cl_neo_crosshair_gap.GetInt(),
+					.iOutline = cl_neo_crosshair_outline.GetInt(),
+					.iCenterDot = cl_neo_crosshair_center_dot.GetInt(),
+					.bTopLine = cl_neo_crosshair_top_line.GetBool(),
+					.iCircleRad = cl_neo_crosshair_circle_radius.GetInt(),
+					.iCircleSegments = cl_neo_crosshair_circle_segments.GetInt(),
 				};
 			m_bRefreshCrosshair = false;
 		}

@@ -31,8 +31,8 @@ NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(RoundState, 0.1)
 
 ConVar cl_neo_squad_hud_original("cl_neo_squad_hud_original", "1", FCVAR_ARCHIVE, "Use the old squad HUD", true, 0.0, true, 1.0);
 ConVar cl_neo_squad_hud_star_scale("cl_neo_squad_hud_star_scale", "0", FCVAR_ARCHIVE, "Scaling to apply from 1080p, 0 disables scaling");
-extern ConVar neo_sv_dm_win_xp;
-extern ConVar neo_cl_streamermode;
+extern ConVar sv_neo_dm_win_xp;
+extern ConVar cl_neo_streamermode;
 
 namespace {
 constexpr int Y_POS = 0;
@@ -45,6 +45,7 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 {
 	m_pWszStatusUnicode = L"";
 	SetAutoDelete(true);
+	m_iHideHudElementNumber = NEO_HUD_ELEMENT_ROUND_STATE;
 
 	if (parent)
 	{
@@ -194,7 +195,7 @@ void CNEOHud_RoundState::ApplySchemeSettings(vgui::IScheme* pScheme)
 	SetZPos(90);
 }
 
-extern ConVar neo_sv_readyup_lobby;
+extern ConVar sv_neo_readyup_lobby;
 
 void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 {
@@ -205,7 +206,7 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 
 	m_pWszStatusUnicode = (roundStatus == NeoRoundStatus::Warmup) ? L"Warmup" : L"";
 	if (roundStatus == NeoRoundStatus::Idle) {
-		m_pWszStatusUnicode = neo_sv_readyup_lobby.GetBool() ? L"Waiting for players to ready up" : L"Waiting for players";
+		m_pWszStatusUnicode = sv_neo_readyup_lobby.GetBool() ? L"Waiting for players to ready up" : L"Waiting for players";
 	}
 	else if (inSuddenDeath)
 	{
@@ -285,9 +286,9 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	if (NEORules()->GetGameType() == NEO_GAME_TYPE_DM)
 	{
 		// NEO NOTE (nullsystem): Show highest player score
-		if (neo_sv_dm_win_xp.GetInt() > 0)
+		if (sv_neo_dm_win_xp.GetInt() > 0)
 		{
-			V_sprintf_safe(szPlayersAliveANSI, "Lead: %d/%d", iDMHighestXP, neo_sv_dm_win_xp.GetInt());
+			V_sprintf_safe(szPlayersAliveANSI, "Lead: %d/%d", iDMHighestXP, sv_neo_dm_win_xp.GetInt());
 		}
 		else
 		{
@@ -373,6 +374,8 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 
 void CNEOHud_RoundState::DrawNeoHudElement()
 {
+	CheckActiveStar();
+
 	if (!ShouldDraw())
 	{
 		return;
@@ -552,8 +555,6 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 	{
 		DrawPlayerList();
 	}
-
-	CheckActiveStar();
 }
 
 void CNEOHud_RoundState::DrawPlayerList()
@@ -761,7 +762,15 @@ void CNEOHud_RoundState::CheckActiveStar()
 	auto player = C_NEO_Player::GetLocalNEOPlayer();
 	Assert(player);
 
-	int currentStar = player->GetStar();
+	int currentStar;
+	if (!ShouldDraw())
+	{
+		currentStar = STAR_NONE;
+	}
+	else
+	{
+		currentStar = player->GetStar();
+	}
 	const int currentTeam = player->GetTeamNumber();
 
 	if (m_iPreviouslyActiveStar == currentStar && m_iPreviouslyActiveTeam == currentTeam)
@@ -801,7 +810,7 @@ void CNEOHud_RoundState::SetTextureToAvatar(int playerIndex)
 		return;
 	}
 
-	if (neo_cl_streamermode.GetBool())
+	if (cl_neo_streamermode.GetBool())
 	{
 		return;
 	}

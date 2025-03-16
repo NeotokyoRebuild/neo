@@ -471,8 +471,7 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"Verdana" [!$OSX]
-				"name"		"Helvetica Bold" [$OSX]
+				"name"		"xscale"
 				"tall"		"14"
 				"weight"	"1000"
 				"antialias" "1"
@@ -483,9 +482,8 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"Verdana" [!$OSX]
-				"name"		"Helvetica" [$OSX]
-				"tall"		"11"
+				"name"		"xscale"
+				"tall"		"14"
 				"weight"	"0"
 				"antialias" "1"
 				"additive"	"1"

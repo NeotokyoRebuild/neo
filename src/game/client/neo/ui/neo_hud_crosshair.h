@@ -25,21 +25,21 @@ enum NeoHudCrosshairSizeType
 	CROSSHAIR_SIZETYPE__TOTAL,
 };
 
-extern ConVar neo_cl_crosshair_style;
-extern ConVar neo_cl_crosshair_color_r;
-extern ConVar neo_cl_crosshair_color_g;
-extern ConVar neo_cl_crosshair_color_b;
-extern ConVar neo_cl_crosshair_color_a;
-extern ConVar neo_cl_crosshair_size;
-extern ConVar neo_cl_crosshair_size_screen;
-extern ConVar neo_cl_crosshair_size_type;
-extern ConVar neo_cl_crosshair_thickness;
-extern ConVar neo_cl_crosshair_gap;
-extern ConVar neo_cl_crosshair_outline;
-extern ConVar neo_cl_crosshair_center_dot;
-extern ConVar neo_cl_crosshair_top_line;
-extern ConVar neo_cl_crosshair_circle_radius;
-extern ConVar neo_cl_crosshair_circle_segments;
+extern ConVar cl_neo_crosshair_style;
+extern ConVar cl_neo_crosshair_color_r;
+extern ConVar cl_neo_crosshair_color_g;
+extern ConVar cl_neo_crosshair_color_b;
+extern ConVar cl_neo_crosshair_color_a;
+extern ConVar cl_neo_crosshair_size;
+extern ConVar cl_neo_crosshair_size_screen;
+extern ConVar cl_neo_crosshair_size_type;
+extern ConVar cl_neo_crosshair_thickness;
+extern ConVar cl_neo_crosshair_gap;
+extern ConVar cl_neo_crosshair_outline;
+extern ConVar cl_neo_crosshair_center_dot;
+extern ConVar cl_neo_crosshair_top_line;
+extern ConVar cl_neo_crosshair_circle_radius;
+extern ConVar cl_neo_crosshair_circle_segments;
 
 extern const char **CROSSHAIR_FILES;
 extern const wchar_t **CROSSHAIR_LABELS;

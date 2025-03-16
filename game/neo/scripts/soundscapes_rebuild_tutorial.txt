@@ -1,0 +1,67 @@
+
+"rebuild_tutorial.util_random"
+{
+	"playrandom"
+	{
+		"time"		"4, 20"
+		"volume"	"0.75,1.0"
+		"pitch"		"90,110"
+		"soundlevel"	"SNDLVL_140dB"
+		"position"	"random"
+		"rndwave"
+		{
+			"wave"	"tutorial/ambient/randm_1.wav"
+			"wave"	"tutorial/ambient/randm_2.wav"
+			"wave"	"tutorial/ambient/randm_3.wav"
+			"wave"	"tutorial/ambient/randm_4.wav"
+			"wave"	"tutorial/ambient/randm_5.wav"
+			"wave"	"tutorial/ambient/randm_6.wav"
+			"wave"	"tutorial/ambient/randm_7.wav"
+			"wave"	"tutorial/ambient/randm_8.wav"
+			"wave"	"tutorial/ambient/randm_9.wav"
+		}
+	}
+}
+
+"rebuild_tutorial.outside"
+{
+	"dsp"	"1"
+
+	"playlooping"
+	{
+		"volume"	"0.4"
+		"pitch"		"100"
+		"wave"		"ambient/levels/citadel/citadel_drone_loop2.wav"
+	}
+
+	"playsoundscape"
+	{
+		"name"		"rebuild_tutorial.util_random"
+		"volume"	"1.0"
+	}
+}
+
+"rebuild_tutorial.inside"
+{
+	"dsp"	"1"
+
+	"playlooping"
+	{
+		"volume"	"0.1"
+		"pitch"		"100"
+		"wave"		"ambient/levels/citadel/citadel_drone_loop2.wav"
+	}
+	
+	"playlooping"
+	{
+		"volume"	"1.0"
+		"pitch"		"100"
+		"wave"		"tutorial/ambient/cyber_wind.wav"
+	}
+
+	"playsoundscape"
+	{
+		"name"		"rebuild_tutorial.util_random"
+		"volume"	"0.75"
+	}
+}

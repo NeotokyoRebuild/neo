@@ -1,7 +1,7 @@
 name: Feature request
 description: Suggest an idea for NT;RE
 title: "[FEATURE] "
-labels: enhancement
+labels: ["enhancement"]
 projects: ["NeotokyoRebuild/1"]
 body:
   - type: markdown

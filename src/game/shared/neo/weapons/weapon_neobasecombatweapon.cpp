@@ -489,6 +489,11 @@ void CNEOBaseCombatWeapon::ItemPreFrame(void)
 // Handles lowering the weapon view model when character is sprinting
 void CNEOBaseCombatWeapon::ProcessAnimationEvents()
 {
+	if (GetNeoWepBits() & NEO_WEP_THROWABLE)
+	{
+		return;
+	}
+
 	CNEO_Player* pOwner = static_cast<CNEO_Player*>(ToBasePlayer(GetOwner()));
 	if (!pOwner)
 	{
@@ -527,14 +532,6 @@ void CNEOBaseCombatWeapon::ProcessAnimationEvents()
 	else if (m_bLowered && gpGlobals->curtime > m_flNextPrimaryAttack)
 	{
 		SetWeaponIdleTime(gpGlobals->curtime + 0.2);
-		if (GetNeoWepBits() & NEO_WEP_THROWABLE)
-		{
-			if (!HasPrimaryAmmo())
-			{ // switch our vm activity to something else so throwables postframe picks up that we've finished the throw
-				SendWeaponAnim(ACT_VM_DRAW);
-			}
-			return;
-		}
 		m_flNextPrimaryAttack = max(gpGlobals->curtime + 0.2, m_flNextPrimaryAttack);
 		m_flNextSecondaryAttack = m_flNextPrimaryAttack;
 	}
@@ -990,9 +987,9 @@ void CNEOBaseCombatWeapon::ProcessMuzzleFlashEvent()
 	// environment light
 	dlight_t* el = effects->CL_AllocDlight(LIGHT_INDEX_MUZZLEFLASH + index);
 	el->origin = vAttachment;
-	el->radius = random->RandomInt(64, 96);
-	el->decay = el->radius / 0.1f;
-	el->die = gpGlobals->curtime + 0.1f;
+	el->radius = random->RandomInt(32, 64);
+	el->decay = el->radius / 0.05f;
+	el->die = gpGlobals->curtime + 0.05f;
 	el->color.r = 255;
 	el->color.g = 192;
 	el->color.b = 64;
@@ -1022,8 +1019,8 @@ void CNEOBaseCombatWeapon::DrawCrosshair()
 
 	if (GetWpnData().iconCrosshair)
 	{
-		const Color color(neo_cl_crosshair_color_r.GetInt(), neo_cl_crosshair_color_g.GetInt(),
-						  neo_cl_crosshair_color_b.GetInt(), neo_cl_crosshair_color_a.GetInt());
+		const Color color(cl_neo_crosshair_color_r.GetInt(), cl_neo_crosshair_color_g.GetInt(),
+						  cl_neo_crosshair_color_b.GetInt(), cl_neo_crosshair_color_a.GetInt());
 		crosshair->SetCrosshair(GetWpnData().iconCrosshair, color);
 	}
 	else

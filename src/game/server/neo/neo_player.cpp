@@ -127,17 +127,17 @@ CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
 CNEOGameRulesProxy* neoGameRules;
 extern CBaseEntity *g_pLastSpawn;
 
-extern ConVar neo_sv_ignore_wep_xp_limit;
-extern ConVar neo_sv_clantag_allow;
-extern ConVar neo_sv_dev_test_clantag;
+extern ConVar sv_neo_ignore_wep_xp_limit;
+extern ConVar sv_neo_clantag_allow;
+extern ConVar sv_neo_dev_test_clantag;
 extern ConVar sv_stickysprint;
 
 ConVar sv_neo_can_change_classes_anytime("sv_neo_can_change_classes_anytime", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "Can players change classes at any moment, even mid-round?",
 	true, 0.0f, true, 1.0f);
 ConVar sv_neo_change_suicide_player("sv_neo_change_suicide_player", "0", FCVAR_REPLICATED, "Kill the player if they change the team and they're alive.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_change_threshold_interval("sv_neo_change_threshold_interval", "0.25", FCVAR_REPLICATED, "The interval threshold limit in seconds before the player is allowed to change team.", true, 0.0f, true, 1000.0f);
-ConVar neo_sv_dm_max_class_dur("neo_sv_dm_max_class_dur", "10", FCVAR_REPLICATED, "The time in seconds when the player can change class on respawn during deathmatch.", true, 0.0f, true, 60.0f);
-ConVar neo_sv_warmup_godmode("neo_sv_warmup_godmode", "0", FCVAR_REPLICATED, "If enabled, everyone is invincible on idle and warmup.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_dm_max_class_dur("sv_neo_dm_max_class_dur", "10", FCVAR_REPLICATED, "The time in seconds when the player can change class on respawn during deathmatch.", true, 0.0f, true, 60.0f);
+ConVar sv_neo_warmup_godmode("sv_neo_warmup_godmode", "0", FCVAR_REPLICATED, "If enabled, everyone is invincible on idle and warmup.", true, 0.0f, true, 1.0f);
 
 void CNEO_Player::RequestSetClass(int newClass)
 {
@@ -151,7 +151,7 @@ void CNEO_Player::RequestSetClass(int newClass)
 	const NeoRoundStatus status = NEORules()->GetRoundStatus();
 	if (IsDead() || sv_neo_can_change_classes_anytime.GetBool() ||
 		(!m_bIneligibleForLoadoutPick && NEORules()->GetRemainingPreRoundFreezeTime(false) > 0) ||
-		(bIsTypeDM && !m_bIneligibleForLoadoutPick && GetAliveDuration() < neo_sv_dm_max_class_dur.GetFloat()) ||
+		(bIsTypeDM && !m_bIneligibleForLoadoutPick && GetAliveDuration() < sv_neo_dm_max_class_dur.GetFloat()) ||
 		(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup))
 	{
 		m_iNeoClass = newClass;
@@ -272,7 +272,7 @@ bool CNEO_Player::RequestSetLoadout(int loadoutNumber)
 		result = false;
 	}
 
-	if (!neo_sv_ignore_wep_xp_limit.GetBool() && loadoutNumber+1 > CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(m_iXP, classChosen, false))
+	if (!sv_neo_ignore_wep_xp_limit.GetBool() && loadoutNumber+1 > CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(m_iXP, classChosen, false))
 	{
 		DevMsg("Insufficient XP for %s\n", pszWepName);
 		result = false;
@@ -300,6 +300,11 @@ void SetClass(const CCommand &command)
 		return;
 	}
 
+	if (player->IsAlive() && NEORules()->GetGameType() == NEO_GAME_TYPE_TUT)
+	{
+		return;
+	}
+
 	if (command.ArgC() == 2)
 	{
 		// Class number from the .res button click action.
@@ -319,10 +324,16 @@ void SetClass(const CCommand &command)
 	}
 }
 
+extern void respawn(CBaseEntity* pEdict, bool fCopyCorpse);
 void SetSkin(const CCommand &command)
 {
 	auto player = static_cast<CNEO_Player*>(UTIL_GetCommandClient());
 	if (!player)
+	{
+		return;
+	}
+
+	if (player->IsAlive() && NEORules()->GetGameType() == NEO_GAME_TYPE_TUT)
 	{
 		return;
 	}
@@ -338,6 +349,11 @@ void SetSkin(const CCommand &command)
 
 		player->RequestSetSkin(nextSkin);
 	}
+
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_TUT && NEORules()->GetForcedWeapon() >= 0)
+	{
+		respawn(player, false);
+	}
 }
 
 void SetLoadout(const CCommand &command)
@@ -348,10 +364,20 @@ void SetLoadout(const CCommand &command)
 		return;
 	}
 
+	if (player->IsAlive() && NEORules()->GetGameType() == NEO_GAME_TYPE_TUT)
+	{
+		return;
+	}
+
 	if (command.ArgC() == 2)
 	{
 		int loadoutNumber = atoi(command.ArgV()[1]);
 		player->RequestSetLoadout(loadoutNumber);
+	}
+
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_TUT)
+	{
+		respawn(player, false);
 	}
 }
 
@@ -393,8 +419,8 @@ static int GetNumOtherPlayersConnected(CNEO_Player *asker)
 
 CNEO_Player::CNEO_Player()
 {
-	m_iNeoClass = NEO_CLASS_ASSAULT;
-	m_iNeoSkin = NEO_SKIN_FIRST;
+	m_iNeoClass = NEORules()->GetForcedClass() >= 0 ? NEORules()->GetForcedClass() : NEO_CLASS_ASSAULT;
+	m_iNeoSkin = NEORules()->GetForcedSkin() >= 0 ? NEORules()->GetForcedSkin() : NEO_SKIN_FIRST;
 	m_iNeoStar = NEO_DEFAULT_STAR;
 	m_iXP.GetForModify() = 0;
 	V_memset(m_szNeoName.GetForModify(), 0, sizeof(m_szNeoName));
@@ -407,7 +433,7 @@ CNEO_Player::CNEO_Player()
 	m_bCarryingGhost = false;
 	m_bInLean = NEO_LEAN_NONE;
 
-	m_iLoadoutWepChoice = 0;
+	m_iLoadoutWepChoice = NEORules()->GetForcedWeapon() >= 0 ? NEORules()->GetForcedWeapon() : 0;
 	m_iNextSpawnClassChoice = -1;
 
 	m_bShowTestMessage = false;
@@ -574,10 +600,37 @@ void CNEO_Player::Spawn(void)
 	SetTransmitState(FL_EDICT_PVSCHECK);
 
 	SetPlayerTeamModel();
-	SetViewOffset(VEC_VIEW_NEOSCALE(this));
 	if (teamNumber == TEAM_JINRAI || teamNumber == TEAM_NSF)
 	{
 		GiveLoadoutWeapon();
+		SetViewOffset(VEC_VIEW_NEOSCALE(this));
+	}
+
+	if (teamNumber == TEAM_UNASSIGNED && gpGlobals->eLoadType != MapLoad_Background)
+	{
+		char commandBuffer[11];
+		int forcedTeam = NEORules()->GetForcedTeam();
+		if (NEORules()->GetForcedTeam() < 1) // don't let this loop infinitely if forcedTeam set to TEAM_UNASSIGNED
+		{
+			engine->ClientCommand(this->edict(), "teammenu");
+			return;
+		}
+		ChangeTeam(forcedTeam);
+
+		if (NEORules()->GetForcedClass() < 0)
+		{
+			engine->ClientCommand(this->edict(), "classmenu");
+			return;
+		}
+		m_iNeoClass = NEORules()->GetForcedClass();
+
+		if (NEORules()->GetForcedWeapon() < 0)
+		{
+			engine->ClientCommand(this->edict(), "loadoutmenu");
+			return;
+		}
+		m_iLoadoutWepChoice = NEORules()->GetForcedWeapon();
+		respawn(this, false);
 	}
 }
 
@@ -924,6 +977,11 @@ void CNEO_Player::PreThink(void)
 {
 	BaseClass::PreThink();
 
+	if (m_HL2Local.m_flSuitPower <= 0.0f && IsSprinting())
+	{
+		StopSprinting();
+	}
+
 	if (!m_bInThermOpticCamo)
 	{
 		CloakPower_Update();
@@ -1039,14 +1097,6 @@ void CNEO_Player::PreThink(void)
 	}
 }
 
-ConVar sv_neo_cloak_color_r("sv_neo_cloak_color_r", "1", FCVAR_CHEAT, "Thermoptic cloak flash color (red channel).", true, 0.0f, true, 255.0f);
-ConVar sv_neo_cloak_color_g("sv_neo_cloak_color_g", "1", FCVAR_CHEAT, "Thermoptic cloak flash color (green channel).", true, 0.0f, true, 255.0f);
-ConVar sv_neo_cloak_color_b("sv_neo_cloak_color_b", "4", FCVAR_CHEAT, "Thermoptic cloak flash color (blue channel).", true, 0.0f, true, 255.0f);
-ConVar sv_neo_cloak_color_radius("sv_neo_cloak_color_radius", "80", FCVAR_CHEAT, "Thermoptic cloak flash effect radius.", true, 0.0f, true, 2056.0f);
-ConVar sv_neo_cloak_time("sv_neo_cloak_time", "0.5", FCVAR_CHEAT, "How long should the thermoptic flash be visible, in seconds.", true, 0.0f, true, 1.0f);
-ConVar sv_neo_cloak_decay("sv_neo_cloak_decay", "150", FCVAR_CHEAT, "After the cloak time, how quickly should the flash effect disappear.", true, 0.f, true, 2056.f);
-ConVar sv_neo_cloak_exponent("sv_neo_cloak_exponent", "16", FCVAR_CHEAT, "Cloak flash lighting exponent.", true, 0.0f, false, 0.0f);
-
 void CNEO_Player::PlayCloakSound(bool removeLocalPlayer)
 {
 	CRecipientFilter filter;
@@ -1115,14 +1165,14 @@ void CNEO_Player::CloakFlash(float time)
 	CRecipientFilter filter;
 	filter.AddRecipientsByPVS(GetAbsOrigin());
 
-	g_NEO_TE_TocFlash.r = sv_neo_cloak_color_r.GetInt();
-	g_NEO_TE_TocFlash.g = sv_neo_cloak_color_g.GetInt();
-	g_NEO_TE_TocFlash.b = sv_neo_cloak_color_b.GetInt();
-	g_NEO_TE_TocFlash.m_vecOrigin = GetAbsOrigin() + Vector(0, 0, 4);
-	g_NEO_TE_TocFlash.exponent = sv_neo_cloak_exponent.GetInt();
-	g_NEO_TE_TocFlash.m_fRadius = sv_neo_cloak_color_radius.GetFloat();
-	g_NEO_TE_TocFlash.m_fTime = time ? time : sv_neo_cloak_time.GetFloat();
-	g_NEO_TE_TocFlash.m_fDecay = sv_neo_cloak_decay.GetFloat();
+	g_NEO_TE_TocFlash.r = 64;
+	g_NEO_TE_TocFlash.g = 64;
+	g_NEO_TE_TocFlash.b = 255;
+	g_NEO_TE_TocFlash.m_vecOrigin = GetAbsOrigin();
+	g_NEO_TE_TocFlash.exponent = 10;
+	g_NEO_TE_TocFlash.m_fRadius = 96;
+	g_NEO_TE_TocFlash.m_fTime = time ? time : 0.5;
+	g_NEO_TE_TocFlash.m_fDecay = 192;
 
 	g_NEO_TE_TocFlash.Create(filter);
 }
@@ -1312,6 +1362,10 @@ void CNEO_Player::PostThink(void)
 
 void CNEO_Player::PlayerDeathThink()
 {
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_TUT)
+	{	// no respawning in TUT gamemode if team class and weapon enforced, NEO TODO (Adam) look at this later
+		return;
+	}
 	if (m_nButtons & ~IN_SCORE)
 	{
 		m_bEnterObserver = true;
@@ -1348,12 +1402,12 @@ int CNEO_Player::NameDupePos() const
 
 const char *CNEO_Player::GetNeoClantag() const
 {
-	if (!neo_sv_clantag_allow.GetBool())
+	if (!sv_neo_clantag_allow.GetBool())
 	{
 		return "";
 	}
 #ifdef DEBUG
-	const char *overrideClantag = neo_sv_dev_test_clantag.GetString();
+	const char *overrideClantag = sv_neo_dev_test_clantag.GetString();
 	if (overrideClantag && overrideClantag[0])
 	{
 		return overrideClantag;
@@ -1495,6 +1549,11 @@ bool CNEO_Player::HandleCommand_JoinTeam( int team )
 		UTIL_ClientPrintFilter(filterStreamers, HUD_PRINTTALK, "Player joined team %s1\n", GetTeam()->GetName());
 	}
 
+	if (isAllowedToJoin && NEORules()->GetForcedClass() >= 0 && NEORules()->GetForcedWeapon() >= 0)
+	{
+		respawn(this, false);
+	}
+
 	return isAllowedToJoin;
 }
 
@@ -1599,6 +1658,7 @@ void CNEO_Player::CreateViewModel( int index )
 			DispatchSpawn(vm);
 			vm->FollowEntity(this, false);
 			m_hViewModel.Set(index, vm);
+			vm->AddEffects(EF_NODRAW);
 		}
 	}
 
@@ -1623,6 +1683,7 @@ void CNEO_Player::CreateViewModel( int index )
 		vmm->SetParent(vm);
 		DispatchSpawn(vmm);
 		m_hViewModel.Set(MUZZLE_FLASH_VIEW_MODEL_INDEX, vmm);
+		vmm->AddEffects(EF_NODRAW);
 	}
 }
 
@@ -1852,6 +1913,8 @@ void CNEO_Player::AddPoints(int score, bool bAllowNegativeScore)
 
 void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 {
+	BaseClass::Event_Killed(info);
+
 	// Calculate force for weapon drop
 	Vector forceVector = CalcDamageForceVector(info);
 
@@ -1889,8 +1952,6 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 	{
 		GetGlobalTeam(NEORules()->GetOpposingTeam(this))->AddScore(1);
 	}
-
-	BaseClass::Event_Killed(info);
 
 	// Handle Corpse and Gibs
 	if (!m_bCorpseSet) // Event_Killed can be called multiple times, only set the dead model and spawn gibs once
@@ -1962,8 +2023,8 @@ void CNEO_Player::SetDeadModel(const CTakeDamageInfo& info)
 		return;
 	}
 
-	if (info.GetDamageType() & (1 << 6)) //info.GetDamage() >= 100
-	{ // Died to blast damage, remove all limbs
+	if (info.GetDamageType() & DMG_BLAST)
+	{
 		deadModelType = 0;
 	}
 	else
@@ -1998,39 +2059,21 @@ void CNEO_Player::SetDeadModel(const CTakeDamageInfo& info)
 		Warning("Failed to get Neo model manager\n");
 		return;
 	}
-	switch (deadModelType)
+
+	if (deadModelType == 0)
 	{
-	case 0: // Spawn all gibs
-		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_HEAD));
-		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_LARM));
-		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_LLEG));
-		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_RARM));
-		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_RLEG));
-		SetPlayerCorpseModel(deadModelType);
-		break;
-	case 1: // head
-		SetPlayerCorpseModel(deadModelType);
-		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_HEAD));
-		break;
-	case 2: // left arm
-		SetPlayerCorpseModel(deadModelType);
-		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_LARM));
-		break;
-	case 3: // left leg
-		SetPlayerCorpseModel(deadModelType);
-		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_LLEG));
-		break;
-	case 4: // right arm
-		SetPlayerCorpseModel(deadModelType);
-		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_RARM));
-		break;
-	case 5: // right leg
-		SetPlayerCorpseModel(deadModelType);
-		CGib::SpawnSpecificGibs(this, 1, 750, 1500, modelManager->GetGibModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NEO_GIB_LIMB_RLEG));
-		break;
-	default:
-		break;
+		for (int i = 0; i < NEO_GIB_LIMB__ENUM_COUNT; i++)
+		{
+			CGib::SpawnSpecificGibs(this, 1, 10, 1000, modelManager->GetGibModel((NeoSkin)GetSkin(), (NeoClass)GetClass(), GetTeamNumber(), NeoGibLimb(i)));
+		}
+		UTIL_BloodSpray(info.GetDamagePosition(), info.GetDamageForce(), BLOOD_COLOR_RED, 10, FX_BLOODSPRAY_ALL);
 	}
+	else
+	{
+		CGib::SpawnSpecificGibs(this, 1, 10, 1000, modelManager->GetGibModel((NeoSkin)GetSkin(), (NeoClass)GetClass(), GetTeamNumber(), NeoGibLimb(deadModelType-1)));
+		UTIL_BloodSpray(info.GetDamagePosition(), info.GetDamageForce(), BLOOD_COLOR_RED, 10, FX_BLOODSPRAY_GORE | FX_BLOODSPRAY_DROPS);
+	}
+	SetPlayerCorpseModel(deadModelType);
 }
 
 void CNEO_Player::SetPlayerCorpseModel(int type)
@@ -2042,7 +2085,7 @@ void CNEO_Player::SetPlayerCorpseModel(int type)
 		Warning("Failed to get Neo model manager\n");
 		return;
 	}
-	const char* model = modelManager->GetCorpseModel(static_cast<NeoSkin>(GetSkin()), static_cast<NeoClass>(GetClass()), GetTeamNumber(), NeoGib(type));
+	const char* model = modelManager->GetCorpseModel((NeoSkin)GetSkin(), (NeoClass)GetClass(), GetTeamNumber(), NeoGib(type));
 
 	if (!*model)
 	{
@@ -2464,6 +2507,11 @@ void CNEO_Player::StopObserverMode()
 	BaseClass::StopObserverMode();
 }
 
+bool CNEO_Player::ModeWantsSpectatorGUI(int iMode)
+{ 
+	return iMode != OBS_MODE_FIXED;
+}
+
 bool CNEO_Player::CanHearAndReadChatFrom( CBasePlayer *pPlayer )
 {
 	return BaseClass::CanHearAndReadChatFrom(pPlayer);
@@ -2473,40 +2521,7 @@ void CNEO_Player::PickDefaultSpawnTeam(void)
 {
 	if (!GetTeamNumber())
 	{
-		if (!NEORules()->IsTeamplay())
-		{
-			ProcessTeamSwitchRequest(TEAM_SPECTATOR);
-		}
-		else
-		{
-			ProcessTeamSwitchRequest(TEAM_SPECTATOR);
-
-#if(0) // code for random team selection
-			CTeam *pJinrai = g_Teams[TEAM_JINRAI];
-			CTeam *pNSF = g_Teams[TEAM_NSF];
-
-			if (!pJinrai || !pNSF)
-			{
-				ProcessTeamSwitchRequest(random->RandomInt(TEAM_JINRAI, TEAM_NSF));
-			}
-			else
-			{
-				if (pJinrai->GetNumPlayers() > pNSF->GetNumPlayers())
-				{
-					ProcessTeamSwitchRequest(TEAM_NSF);
-				}
-				else if (pNSF->GetNumPlayers() > pJinrai->GetNumPlayers())
-				{
-					ProcessTeamSwitchRequest(TEAM_JINRAI);
-				}
-				else
-				{
-					ProcessTeamSwitchRequest(random->RandomInt(TEAM_JINRAI, TEAM_NSF));
-				}
-			}
-#endif
-		}
-
+		ProcessTeamSwitchRequest(TEAM_UNASSIGNED);
 		if (!GetModelPtr())
 		{
 			SetPlayerTeamModel();
@@ -2516,7 +2531,7 @@ void CNEO_Player::PickDefaultSpawnTeam(void)
 
 bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 {
-	if (!GetGlobalTeam(iTeam) || iTeam == 0)
+	if (!GetGlobalTeam(iTeam))
 	{
 		Warning("HandleCommand_JoinTeam( %d ) - invalid team index.\n", iTeam);
 		return false;
@@ -2583,6 +2598,7 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	}
 
 	const bool suicidePlayerIfAlive = sv_neo_change_suicide_player.GetBool();
+	bool changedTeams = false;
 	if (iTeam == TEAM_SPECTATOR)
 	{
 		if (!mp_allowspectators.GetInt())
@@ -2607,6 +2623,11 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 			}
 		}
 
+		// StartObserverMode and State_Transition will check whether we are on the Spectator team to decide whether to enforce certain camera modes, easier if we switch teams beforehand
+		CHL2_Player::ChangeTeam(iTeam, false, justJoined);
+		changedTeams = true;
+
+		State_Transition(STATE_OBSERVER_MODE);
 		// Default to free fly camera if there's nobody to spectate
 		if (justJoined || GetNumOtherPlayersConnected(this) == 0)
 		{
@@ -2614,16 +2635,18 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 		}
 		else
 		{
-			StartObserverMode(m_iObserverLastMode);
+			StartObserverMode(OBS_MODE_IN_EYE);
 		}
-
+	}
+	else if (iTeam == TEAM_UNASSIGNED)
+	{
 		State_Transition(STATE_OBSERVER_MODE);
 	}
 	else if (iTeam == TEAM_JINRAI || iTeam == TEAM_NSF)
 	{
 		if (!justJoined && GetTeamNumber() != TEAM_SPECTATOR && !IsDead())
 		{
-			if (suicidePlayerIfAlive)
+			if (suicidePlayerIfAlive || NEORules()->CanChangeTeamClassWeaponWhenAlive())
 			{
 				SoftSuicide();
 			}
@@ -2634,7 +2657,11 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 			}
 		}
 
-		StopObserverMode();
+		CHL2_Player::ChangeTeam(iTeam, false, justJoined);
+		changedTeams = true;
+		
+		// If we're not allowed to be in the currect observer mode, this will give us a new observer mode.
+		SetObserverMode(GetObserverMode());
 	}
 	else
 	{
@@ -2658,9 +2685,12 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 		SetPlayerTeamModel();
 	}
 
-	// We're skipping over HL2MP player because we don't care about
-	// deathmatch rules or Combine/Rebels model stuff.
-	CHL2_Player::ChangeTeam(iTeam, false, justJoined);
+	if (!changedTeams)
+	{
+		// We're skipping over HL2MP player because we don't care about
+		// deathmatch rules or Combine/Rebels model stuff.
+		CHL2_Player::ChangeTeam(iTeam, false, justJoined);
+	}
 	NEORules()->m_bThinkCheckClantags = true;
 
 	return true;
@@ -2710,7 +2740,7 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 {
 	if (m_takedamage != DAMAGE_EVENTS_ONLY)
 	{
-		if (neo_sv_warmup_godmode.GetBool() &&
+		if (sv_neo_warmup_godmode.GetBool() &&
 				(NEORules()->GetRoundStatus() == NeoRoundStatus::Idle ||
 				 NEORules()->GetRoundStatus() == NeoRoundStatus::Warmup))
 		{
@@ -2753,7 +2783,7 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 						attacker->m_bKilledInflicted = true;
 					}
 
-					if (neo_sv_mirror_teamdamage_immunity.GetBool())
+					if (sv_neo_mirror_teamdamage_immunity.GetBool())
 					{
 						// Give immunity to the victim and don't go through the OnTakeDamage_Alive
 						return 0;
@@ -2768,7 +2798,7 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 				m_rfAttackersAccumlator.Set(attackerIdx, flDmgAccumlator);
 				m_rfAttackersHits.GetForModify(attackerIdx) += 1;
 
-				if (bIsTeamDmg && neo_sv_teamdamage_kick.GetBool() && NEORules()->GetRoundStatus() == NeoRoundStatus::RoundLive)
+				if (bIsTeamDmg && sv_neo_teamdamage_kick.GetBool() && NEORules()->GetRoundStatus() == NeoRoundStatus::RoundLive)
 				{
 					attacker->m_iTeamDamageInflicted += iDamage;
 				}
@@ -2893,7 +2923,7 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 	CNEOBaseCombatWeapon *pNeoWeapon = dynamic_cast<CNEOBaseCombatWeapon*>((CBaseEntity*)pEnt);
 	if (pNeoWeapon)
 	{
-		if (neo_sv_ignore_wep_xp_limit.GetBool() || m_iLoadoutWepChoice+1 <= CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(m_iXP, m_iNeoClass.Get(), false))
+		if (sv_neo_ignore_wep_xp_limit.GetBool() || m_iLoadoutWepChoice+1 <= CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(m_iXP, m_iNeoClass.Get(), false))
 		{
 			pNeoWeapon->SetSubType(wepSubType);
 
