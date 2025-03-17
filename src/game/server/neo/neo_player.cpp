@@ -1896,7 +1896,7 @@ void CNEO_Player::AddPoints(int score, bool bAllowNegativeScore)
 
 void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 {
-	BaseClass::Event_Killed(info);
+	CreateRagdollEntity();
 
 	// Calculate force for weapon drop
 	Vector forceVector = CalcDamageForceVector(info);
@@ -1925,6 +1925,8 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 			Weapon_DropOnDeath(pWep, forceVector, info.GetAttacker());
 		}
 	}
+	
+	BaseClass::Event_Killed(info);
 
 	if (!IsBot() && !IsHLTV())
 	{
