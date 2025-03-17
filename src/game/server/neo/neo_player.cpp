@@ -1925,8 +1925,6 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 			Weapon_DropOnDeath(pWep, forceVector, info.GetAttacker());
 		}
 	}
-	
-	BaseClass::Event_Killed(info);
 
 	if (!IsBot() && !IsHLTV())
 	{
@@ -1937,6 +1935,8 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 	{
 		GetGlobalTeam(NEORules()->GetOpposingTeam(this))->AddScore(1);
 	}
+
+	BaseClass::Event_Killed(info);
 
 	// Handle Corpse and Gibs
 	if (!m_bCorpseSet) // Event_Killed can be called multiple times, only set the dead model and spawn gibs once
