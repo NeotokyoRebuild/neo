@@ -799,6 +799,11 @@ void CNEORules::CheckGameType()
 	m_bGamemodeTypeBeenInitialized = true;
 	iStaticInitOnCmd = iGamemodeEnforce;
 	iStaticInitOnRandAllow = iGamemodeRandAllow;
+
+	if (CNEOGameConfig::s_pGameRulesToConfig && sv_neo_comp.GetBool())
+	{
+		CNEOGameConfig::s_pGameRulesToConfig->OutputCompetitive();
+	}
 }
 
 void CNEORules::CheckHiddenHudElements()
@@ -2394,6 +2399,11 @@ void CNEORules::CleanUpMap()
 	MapEntity_ParseAllEntities(engine->GetMapEntitiesString(), &filter, true);
 
 	ResetGhostCapPoints();
+
+	if (CNEOGameConfig::s_pGameRulesToConfig && sv_neo_comp.GetBool())
+	{
+		CNEOGameConfig::s_pGameRulesToConfig->OutputCompetitive();
+	}
 }
 
 void CNEORules::CheckRestartGame()
