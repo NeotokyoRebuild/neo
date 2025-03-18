@@ -1896,7 +1896,7 @@ void CNEO_Player::AddPoints(int score, bool bAllowNegativeScore)
 
 void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 {
-	BaseClass::Event_Killed(info);
+	CreateRagdollEntity();
 
 	// Calculate force for weapon drop
 	Vector forceVector = CalcDamageForceVector(info);
@@ -1935,6 +1935,8 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 	{
 		GetGlobalTeam(NEORules()->GetOpposingTeam(this))->AddScore(1);
 	}
+
+	BaseClass::Event_Killed(info);
 
 	// Handle Corpse and Gibs
 	if (!m_bCorpseSet) // Event_Killed can be called multiple times, only set the dead model and spawn gibs once
