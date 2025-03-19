@@ -1,0 +1,45 @@
+// sound design and scripting by filterdecay@hotmail.com
+//--------------------------------------- version 3 
+// Place Forest folder in NeotokyoSource/sound
+// place this script file in your scripts folder
+
+"nt_tarmac_ctg.outdoors"
+
+//
+//---------------------------------------
+//wind loop
+
+
+{
+	"dsp"	"0"
+	"playlooping"
+	{
+		"volume"	"1"
+		"pitch"		"100"
+		"wave"		"forest/wind_loop.wav"
+	}
+
+
+//----------------------------------------
+// gusts
+
+	
+    "playrandom"
+	{
+
+		"time"		"15,40"
+		"volume"	".05"
+		"pitch"		"100"
+
+		"rndwave"
+		{
+					
+			"wave"	"inaka/wind_gust_10.wav"
+			"wave"	"inaka/wind_gust_8.wav"
+			"wave"	"inaka/inaka_plane_overhead.wav"
+		}
+	}
+
+}
+
+

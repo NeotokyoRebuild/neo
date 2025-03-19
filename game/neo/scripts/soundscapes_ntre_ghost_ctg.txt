@@ -1,0 +1,80 @@
+
+
+"nt_ghost_ctg.outdoors"
+
+//
+//---------------------------------------
+//wind thru trees base
+
+
+{
+	"dsp"	"0"
+	"playlooping"
+	{
+		"volume"	".08"
+		"pitch"		"100"
+		"wave"		"rain_02.wav"
+	}
+
+//---------------------------------------
+//traffic loop
+	
+	"dsp"	"0"
+	"playlooping"
+	{
+		"volume"	".05"
+		"pitch"		"100"
+		"wave"		"office/traffic.wav"
+	}
+	
+//
+//----------------------------------------
+// Wind
+
+	
+	"playlooping"
+	{
+		"volume"	".07"
+		"pitch"		"100"
+		"wave"		"forest/wind_loop.wav"
+	}
+
+//
+//----------------------------------------
+// Thunder and wind
+
+	"playrandom"
+	{
+
+		"time"		"10,20"
+		"volume"	"0.8,1"
+		"pitch"		"98,102"
+
+		"rndwave"
+		{
+			"wave"	"forest/wind_thru_trees_1.wav"
+			"wave"	"forest/wind_thru_trees_2.wav"			
+			"wave"	"thunder_dj.mp3"
+			"wave"	"thunder_dj2.mp3"	
+		}
+	}
+
+//
+//----------------------------------------
+// Wind thru Trees
+
+	"playrandom"
+	{
+
+		"time"		"20,40"
+		"volume"	".07"
+		"pitch"		"100"
+
+		"rndwave"
+		{
+			"wave"	"warning_crane_o.mp3"
+			"wave"	"warning_lvl3_o.mp3"			
+			"wave"	"life_cuts_o.mp3"
+		}
+	}
+}
