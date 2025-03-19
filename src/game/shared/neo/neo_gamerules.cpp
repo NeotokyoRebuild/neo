@@ -1140,6 +1140,13 @@ void CNEORules::Think(void)
 				// And then announce team victory
 				SetWinningTeam(captorTeam, NEO_VICTORY_GHOST_CAPTURE, false, true, false, false);
 
+				IGameEvent* event = gameeventmanager->CreateEvent("ghost_capture");
+				if (event)
+				{
+					event->SetInt("userid", UTIL_PlayerByIndex(m_iGhosterPlayer)->GetUserID());
+					gameeventmanager->FireEvent(event);
+				}
+
 				if (m_iEscortingTeam && m_iEscortingTeam == captorTeam)
 				{
 					break;
@@ -1163,7 +1170,7 @@ void CNEORules::Think(void)
 						else
 						{
 							auto* neoPlayer = static_cast<CNEO_Player*>(player);
-							neoPlayer->m_iXP.GetForModify()++;
+							neoPlayer->AddPoints(1, false);
 						}
 					}
 				}
@@ -1187,6 +1194,11 @@ void CNEORules::Think(void)
 				// Assume vip player disconnected, forfeit round
 				SetWinningTeam(GetOpposingTeam(m_iEscortingTeam), NEO_VICTORY_FORFEIT, false, true, false, false);
 			}
+			IGameEvent* event = gameeventmanager->CreateEvent("vip_death");
+			if (event)
+			{
+				gameeventmanager->FireEvent(event);
+			}
 		}
 
 		if (!m_pVIP->IsAlive())
@@ -1200,6 +1212,12 @@ void CNEORules::Think(void)
 			{
 				// VIP was killed, end round
 				SetWinningTeam(GetOpposingTeam(m_iEscortingTeam), NEO_VICTORY_VIP_ELIMINATION, false, true, false, false);
+			}
+			IGameEvent* event = gameeventmanager->CreateEvent("vip_death");
+			if (event)
+			{
+				event->SetInt("userid", m_pVIP->GetUserID());
+				gameeventmanager->FireEvent(event);
 			}
 		}
 
@@ -1227,6 +1245,13 @@ void CNEORules::Think(void)
 				// And then announce team victory
 				SetWinningTeam(captorTeam, NEO_VICTORY_VIP_ESCORT, false, true, false, false);
 
+				IGameEvent* event = gameeventmanager->CreateEvent("vip_extract");
+				if (event)
+				{
+					event->SetInt("userid", m_pVIP->GetUserID());
+					gameeventmanager->FireEvent(event);
+				}
+
 				for (int i = 1; i <= gpGlobals->maxClients; i++)
 				{
 					if (i == captorClient)
@@ -1245,7 +1270,7 @@ void CNEORules::Think(void)
 						else
 						{
 							auto* neoPlayer = static_cast<CNEO_Player*>(player);
-							neoPlayer->m_iXP.GetForModify()++;
+							neoPlayer->AddPoints(1, false);
 						}
 					}
 				}
@@ -1402,13 +1427,13 @@ void CNEORules::AwardRankUp(CNEO_Player *pClient)
 	{
 		if (pClient->m_iXP.Get() < ranks[i])
 		{
-			pClient->m_iXP.GetForModify() = ranks[i];
+			pClient->AddPoints(ranks[i] - pClient->m_iXP, false);
 			return;
 		}
 	}
 
 	// If we're beyond max rank, just award +1 point.
-	pClient->m_iXP.GetForModify()++;
+	pClient->AddPoints(1, false);
 }
 
 // Return remaining time in seconds. Zero means there is no time limit.
@@ -3034,7 +3059,7 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 						xpAward += static_cast<int>(player->IsCarryingGhost());
 					}
 				}
-				player->m_iXP.GetForModify() += xpAward;
+				player->AddPoints(xpAward, false);
 			}
 
 			// Any human player still alive, show them damage stats in round end
@@ -3184,7 +3209,7 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 	// Suicide or suicide by environment (non-grenade as grenade is likely from a player)
 	if (attacker == victim || (!attacker && !grenade))
 	{
-		victim->m_iXP.GetForModify() -= 1;
+		victim->AddPoints(-1, true);
 #ifdef GAME_DLL
 		CheckIfCapPrevent(victim);
 #endif
@@ -3201,7 +3226,7 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 		// Team kill
 		if (IsTeamplay() && attacker->GetTeamNumber() == victim->GetTeamNumber())
 		{
-			attacker->m_iXP.GetForModify() -= 1;
+			attacker->AddPoints(-1, true);
 #ifdef GAME_DLL
 			if (sv_neo_teamdamage_kick.GetBool() && m_nRoundStatus == NeoRoundStatus::RoundLive)
 			{
@@ -3226,7 +3251,7 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 		// Enemy kill
 		else
 		{
-			attacker->m_iXP.GetForModify() += 1;
+			attacker->AddPoints(1, false);
 		}
 
 		if (auto *assister = FetchAssists(attacker, victim))
@@ -3234,12 +3259,12 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 			// Team kill assist
 			if (assister->GetTeamNumber() == victim->GetTeamNumber())
 			{
-				assister->m_iXP.GetForModify() -= 1;
+				assister->AddPoints(-1, true);
 			}
 			// Enemy kill assist
 			else
 			{
-				assister->m_iXP.GetForModify() += 1;
+				assister->AddPoints(1, false);
 			}
 		}
 	}
@@ -3343,8 +3368,9 @@ void CNEORules::DeathNotice(CBasePlayer* pVictim, const CTakeDamageInfo& info)
 	CBasePlayer* pAssister = FetchAssists(dynamic_cast<CNEO_Player*>(pKiller), dynamic_cast<CNEO_Player*>(pVictim));
 	const int assists_ID = (pAssister) ? pAssister->GetUserID() : 0;
 
-	bool isExplosiveKill = false;
-	bool isANeoDerivedWeapon = false;
+	bool isGrenade = false;
+	bool isRemoteDetpack = false;
+	CNEOBaseCombatWeapon* neoWep = static_cast<CNEOBaseCombatWeapon*>(pScorer->GetActiveWeapon());
 
 	// Custom kill type?
 	if (info.GetDamageCustom())
@@ -3370,18 +3396,13 @@ void CNEORules::DeathNotice(CBasePlayer* pVictim, const CTakeDamageInfo& info)
 					if (pScorer->GetActiveWeapon())
 					{
 						killer_weapon_name = pScorer->GetActiveWeapon()->GetClassname();
-
-						auto neoWep = dynamic_cast<CNEOBaseCombatWeapon*>(pScorer->GetActiveWeapon());
-						if (neoWep)
-						{
-							isANeoDerivedWeapon = true;
-							isExplosiveKill = (neoWep->GetNeoWepBits() & NEO_WEP_EXPLOSIVE) ? true : false;
-						}
 					}
 				}
 				else
 				{
 					killer_weapon_name = pInflictor->GetClassname();  // it's just that easy
+					isGrenade = !Q_strnicmp(killer_weapon_name, "neo_gre", 7);
+					isRemoteDetpack = !Q_strnicmp(killer_weapon_name, "neo_dep", 7);
 				}
 			}
 		}
@@ -3429,44 +3450,31 @@ void CNEORules::DeathNotice(CBasePlayer* pVictim, const CTakeDamageInfo& info)
 		event->SetInt("userid", pVictim->GetUserID());
 		event->SetInt("attacker", killer_ID);
 		event->SetInt("assists", assists_ID);
+
 		event->SetString("weapon", killer_weapon_name);
 		event->SetInt("priority", 7);
-
-		// Which deathnotice icon to draw.
-		// This value needs to be the same as original NT for plugin compatibility.
-		short killfeed_icon;
-
-		// NEO HACK/TODO (Rain):
-		// Knife is not yet derived from nt base wep class, so we can't yet get its bits
-		if (!isANeoDerivedWeapon)
+		event->SetBool("headshot", pVictim->LastHitGroup() == HITGROUP_HEAD);
+		event->SetBool("suicide", pKiller == pVictim);
+		
+		if (isGrenade)
 		{
-			killfeed_icon = 0; // NEO TODO (Rain): set correct icon
+			event->SetString("deathIcon", "2"); // NEO TODO (Adam) get from enum
+		}
+		else if (isRemoteDetpack)
+		{
+			event->SetString("deathIcon", "A"); // NEO TODO (Adam) get from enum
+		}
+		else if (neoWep)
+		{
+			event->SetString("deathIcon", neoWep->GetWpnData().szDeathIcon);
 		}
 		else
 		{
-			// Suicide icon
-			if (pKiller == pVictim)
-			{
-				killfeed_icon = 0; // NEO TODO (Rain): set correct icon
-			}
-			// Explosion icon
-			else if (isExplosiveKill)
-			{
-				killfeed_icon = 0; // NEO TODO (Rain): set correct icon
-			}
-			// Headshot icon
-			else if (pVictim->LastHitGroup() == HITGROUP_HEAD)
-			{
-				killfeed_icon = NEO_DEATH_EVENT_ICON_HEADSHOT;
-			}
-			// Generic weapon kill icon
-			else
-			{
-				killfeed_icon = 0; // NEO TODO (Rain): set correct icon
-			}
+			event->SetString("deathIcon", "");
 		}
 
-		event->SetInt("icon", killfeed_icon);
+		event->SetBool("explosive", isGrenade || isRemoteDetpack);
+		event->SetBool("ghoster", m_iGhosterPlayer == pVictim->entindex());
 
 		gameeventmanager->FireEvent(event);
 	}
