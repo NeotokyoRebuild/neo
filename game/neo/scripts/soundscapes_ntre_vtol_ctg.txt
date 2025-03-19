@@ -1,0 +1,43 @@
+
+
+"nt_vtol_ctg.outdoors"
+
+//
+//---------------------------------------
+//wind thru trees base
+
+
+{
+	"dsp"	"0"
+	"playlooping"
+
+
+	{
+		"volume"	"1"
+		"pitch"		"100"
+		"wave"		"forest/wind_thru_trees_base.wav"
+	}
+
+//
+//----------------------------------------
+// Wind
+
+	
+    "playlooping"
+
+
+	{
+		"volume"	"1"
+		"pitch"		"100"
+		"wave"		"forest/wind_loop.wav"
+	}
+
+
+
+//
+//----------------------------------------
+
+
+
+
+}	
