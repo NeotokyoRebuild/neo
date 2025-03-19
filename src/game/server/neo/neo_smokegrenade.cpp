@@ -27,7 +27,7 @@ DEFINE_INPUTFUNC(FIELD_FLOAT, "SetTimer", InputSetTimer),
 END_DATADESC()
 
 ConVar sv_neo_smoke_bloom_duration("sv_neo_smoke_bloom_duration", "25", FCVAR_CHEAT, "How long should the smoke bloom be up, in seconds.", true, 0.0, true, 60.0);
-ConVar sv_neo_smoke_bloom_layers("sv_neo_smoke_bloom_layers", "5", FCVAR_CHEAT, "Amount of smoke layers atop each other.", true, 0.0, true, 32.0);
+ConVar sv_neo_smoke_bloom_layers("sv_neo_smoke_bloom_layers", "2", FCVAR_CHEAT, "Amount of smoke layers atop each other.", true, 0.0, true, 32.0);
 extern ConVar sv_neo_grenade_cor;
 extern ConVar sv_neo_grenade_gravity;
 extern ConVar sv_neo_grenade_friction;
