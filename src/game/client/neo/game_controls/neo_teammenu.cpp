@@ -40,6 +40,7 @@
 #include <imapoverview.h>
 #include <shareddefs.h>
 #include "neo_gamerules.h"
+#include "ui/neo_root.h"
 #include <igameresources.h>
 
 #include <vgui/MouseCode.h>
@@ -241,6 +242,12 @@ void CNeoTeamMenu::OnCommand(const char *command)
 		NextMenu();
 		return;
 	}
+	if (Q_strcmp(commandBuffer, "jointeam 1") == 0)
+	{ // joining spectator
+		CloseMenu();
+		engine->ClientCmd(commandBuffer);
+		return;
+	}
 
 	if (Q_stristr(commandBuffer, "jointeam") != 0) // Note using stristr, not strcmp. Equates to true when jointeam in commandBuffer
 	{ // joining jinrai or nsf
@@ -263,7 +270,7 @@ void CNeoTeamMenu::NextMenu()
 {
 	if (NEORules()->GetForcedClass() < 0)
 	{
-		engine->ClientCmd("classmenu");
+		engine->ClientCmd("classmenu skipTeamCheck");
 	}
 	else if (NEORules()->GetForcedWeapon() < 0)
 	{
@@ -279,9 +286,10 @@ void CNeoTeamMenu::CloseMenu()
 
 void CNeoTeamMenu::OnKeyCodeReleased(vgui::KeyCode code)
 { // Navigating using the keyboard hack
-	switch (code) {
-	case KEY_F1: // F1 - Close the menu
+	if (code == g_pNeoRoot->m_ns.keys.bcTeamMenu)
+	{
 		CloseMenu();
+		return;
 	}
 	// Leaving this here, useful to check what key is being pressed
 	/*char buffer[8] = "";
