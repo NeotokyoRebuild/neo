@@ -18,7 +18,8 @@ BEGIN_DATADESC(CNEOGameConfig)
 	DEFINE_INPUTFUNC(FIELD_VOID, "FireRoundTie", InputFireRoundTie),
 
 	DEFINE_OUTPUT(m_OnRoundEnd, "OnRoundEnd"),
-	DEFINE_OUTPUT(m_OnRoundStart, "OnRoundStart")
+	DEFINE_OUTPUT(m_OnRoundStart, "OnRoundStart"),
+	DEFINE_OUTPUT(m_OnCompetitive, "OnCompetitive")
 END_DATADESC()
 
 CNEOGameConfig* CNEOGameConfig::s_pGameRulesToConfig = nullptr;
@@ -68,4 +69,9 @@ void CNEOGameConfig::OutputRoundEnd()
 void CNEOGameConfig::OutputRoundStart()
 {
 	m_OnRoundStart.FireOutput(NULL, this);
+}
+
+void CNEOGameConfig::OutputCompetitive()
+{
+	m_OnCompetitive.FireOutput(NULL, this);
 }
