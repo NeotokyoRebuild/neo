@@ -683,27 +683,24 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBoxBool(L"Show rangefinder", &pGeneral->bEnableRangeFinder);
 	NeoUI::SliderInt(L"Selected Background", &pGeneral->iBackground, 1, 4); // NEO TODO (Adam) switch to RingBox with values read from ChapterBackgrounds.txt
 
-	const NeoUI::LabelExOpt CENTER_OPT{NeoUI::TEXTSTYLE_CENTER, NeoUI::FONT_NTNORMAL};
-
-	NeoUI::Label(L"STREAMER MODE", CENTER_OPT);
+	NeoUI::HeadingLabel(L"STREAMER MODE");
 	NeoUI::RingBoxBool(L"Streamer mode", &pGeneral->bStreamerMode);
 	NeoUI::RingBoxBool(L"Auto streamer mode (requires restart)", &pGeneral->bAutoDetectOBS);
 	NeoUI::Label(L"OBS detection", g_bOBSDetected ? L"OBS detected on startup" : L"Not detected on startup");
 
-	NeoUI::Label(L"DOWNLOADING", CENTER_OPT);
+	NeoUI::HeadingLabel(L"DOWNLOADING");
 	NeoUI::RingBoxBool(L"Show player spray", &pGeneral->bShowPlayerSprays);
 	NeoUI::RingBox(L"Download filter", DLFILTER_LABELS, ARRAYSIZE(DLFILTER_LABELS), &pGeneral->iDlFilter);
 
-	NeoUI::Label(L"SPRAY", CENTER_OPT);
+	NeoUI::HeadingLabel(L"SPRAY");
 	if (engine->IsInGame())
 	{
-		g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
-		NeoUI::Label(L"Disconnect to update in-game spray");
-		g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_LEFT;
+		NeoUI::HeadingLabel(L"Disconnect to update in-game spray");
 	}
 
-	NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 3);
+	NeoUI::SetPerRowLayout(3);
 	{
+		g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
 		if (NeoUI::Button(L"Import").bPressed)
 		{
 			if (g_pNeoRoot->m_pFileIODialog)
@@ -728,27 +725,11 @@ void NeoSettings_General(NeoSettings *ns)
 			g_pNeoRoot->m_state = STATE_SPRAYDELETER;
 			g_pNeoRoot->m_bSprayGalleryRefresh = true;
 		}
-	}
-	NeoUI::EndHorizontal();
-
-	static constexpr int TEXWH = 6;
-	const int iTexSprayWH = g_uiCtx.iRowTall * TEXWH;
-	const bool bHasSprayTex = NeoUI::Texture("vgui/logos/ui/spray",
-				   g_uiCtx.iLayoutX + (g_uiCtx.dPanel.wide / 2) - (iTexSprayWH / 2), g_uiCtx.iLayoutY,
-				   iTexSprayWH, iTexSprayWH, TEXTURE_GROUP_DECAL);
-	if (!bHasSprayTex)
-	{
-		g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
-		NeoUI::Label(L"No spray applied");
-		g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_LEFT;
+		g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
 	}
 
-	const int iMaxPad = bHasSprayTex ? TEXWH : TEXWH - 1;
-	for (int i = 0; i < iMaxPad; ++i)
-	{
-		++g_uiCtx.iWidget;
-		NeoUI::Pad();
-	}
+	NeoUI::SetPerRowLayout(1, nullptr, g_uiCtx.layout.iRowTall * 6);
+	NeoUI::ImageTexture("vgui/logos/ui/spray", L"No spray applied", TEXTURE_GROUP_DECAL);
 }
 
 void NeoSettings_Keys(NeoSettings *ns)
@@ -756,13 +737,13 @@ void NeoSettings_Keys(NeoSettings *ns)
 	NeoSettings::Keys *pKeys = &ns->keys;
 	NeoUI::RingBoxBool(L"Weapon fastswitch", &pKeys->bWeaponFastSwitch);
 	NeoUI::RingBoxBool(L"Developer console", &pKeys->bDeveloperConsole);
-	g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
+	g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
 	for (int i = 0; i < pKeys->iBindsSize; ++i)
 	{
 		const auto &bind = pKeys->vBinds[i];
 		if (bind.szBindingCmd[0] == '\0')
 		{
-			NeoUI::Label(bind.wszDisplayText);
+			NeoUI::HeadingLabel(bind.wszDisplayText);
 		}
 		else
 		{
@@ -817,8 +798,10 @@ void NeoSettings_Audio(NeoSettings *ns)
 			pAudio->flLastFetchInterval = gpGlobals->curtime;
 		}
 		vgui::surface()->DrawSetColor(COLOR_NEOPANELMICTEST);
-		NeoUI::GCtxDrawFilledRectXtoX(g_uiCtx.iWgXPos, 0,
-									  g_uiCtx.iWgXPos + (pAudio->flSpeakingVol * (g_uiCtx.dPanel.wide - g_uiCtx.iWgXPos)), g_uiCtx.iRowTall);
+		vgui::surface()->DrawFilledRect(g_uiCtx.rWidgetArea.x0,
+										g_uiCtx.rWidgetArea.y0 + g_uiCtx.layout.iRowTall,
+										g_uiCtx.rWidgetArea.x0 + (pAudio->flSpeakingVol * g_uiCtx.irWidgetWide),
+										g_uiCtx.rWidgetArea.y1 + g_uiCtx.layout.iRowTall);
 		vgui::surface()->DrawSetColor(COLOR_TRANSPARENT);
 		g_uiCtx.selectBgColor = COLOR_TRANSPARENT;
 	}
@@ -872,76 +855,81 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 	NeoSettings::Crosshair *pCrosshair = &ns->crosshair;
 
 	g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
-	g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * IVIEW_ROWS;
-	NeoUI::BeginSection();
-	const bool bTextured = CROSSHAIR_FILES[pCrosshair->iStyle][0];
-	if (bTextured)
-	{
-		NeoSettings::Crosshair::Texture *pTex = &ns->crosshair.arTextures[pCrosshair->iStyle];
-		vgui::surface()->DrawSetTexture(pTex->iTexId);
-		vgui::surface()->DrawSetColor(pCrosshair->info.color);
-		vgui::surface()->DrawTexturedRect(
-			g_uiCtx.dPanel.x + g_uiCtx.iLayoutX - (pTex->iWide / 2) + (g_uiCtx.dPanel.wide / 2),
-			g_uiCtx.dPanel.y + g_uiCtx.iLayoutY,
-			g_uiCtx.dPanel.x + g_uiCtx.iLayoutX + (pTex->iWide / 2) + (g_uiCtx.dPanel.wide / 2),
-			g_uiCtx.dPanel.y + g_uiCtx.iLayoutY + pTex->iTall);
-	}
-	else
-	{
-		PaintCrosshair(pCrosshair->info,
-					   g_uiCtx.dPanel.x + g_uiCtx.iLayoutX + (g_uiCtx.dPanel.wide / 2),
-					   g_uiCtx.dPanel.y + g_uiCtx.iLayoutY + (g_uiCtx.dPanel.tall / 2));
-	}
-	vgui::surface()->DrawSetColor(g_uiCtx.normalBgColor);
+	g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall * IVIEW_ROWS;
 
-	if (pCrosshair->iStyle == CROSSHAIR_STYLE_CUSTOM)
+	const bool bTextured = CROSSHAIR_FILES[pCrosshair->iStyle][0];
+	NeoUI::BeginSection();
 	{
-		NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 5);
+		if (bTextured)
 		{
-			const bool bPresExport = NeoUI::Button(L"Export").bPressed;
-			const bool bPresImport = NeoUI::Button(L"Import").bPressed;
-			if (bPresExport || bPresImport)
+			NeoSettings::Crosshair::Texture *pTex = &ns->crosshair.arTextures[pCrosshair->iStyle];
+			vgui::surface()->DrawSetTexture(pTex->iTexId);
+			vgui::surface()->DrawSetColor(pCrosshair->info.color);
+			vgui::surface()->DrawTexturedRect(
+				g_uiCtx.dPanel.x + g_uiCtx.iLayoutX - (pTex->iWide / 2) + (g_uiCtx.dPanel.wide / 2),
+				g_uiCtx.dPanel.y + g_uiCtx.iLayoutY,
+				g_uiCtx.dPanel.x + g_uiCtx.iLayoutX + (pTex->iWide / 2) + (g_uiCtx.dPanel.wide / 2),
+				g_uiCtx.dPanel.y + g_uiCtx.iLayoutY + pTex->iTall);
+		}
+		else
+		{
+			PaintCrosshair(pCrosshair->info,
+						   g_uiCtx.dPanel.x + g_uiCtx.iLayoutX + (g_uiCtx.dPanel.wide / 2),
+						   g_uiCtx.dPanel.y + g_uiCtx.iLayoutY + (g_uiCtx.dPanel.tall / 2));
+		}
+		vgui::surface()->DrawSetColor(g_uiCtx.normalBgColor);
+
+		if (pCrosshair->iStyle == CROSSHAIR_STYLE_CUSTOM)
+		{
+			NeoUI::SetPerRowLayout(5);
 			{
-				if (g_pNeoRoot->m_pFileIODialog)
+				const bool bPresExport = NeoUI::Button(L"Export").bPressed;
+				const bool bPresImport = NeoUI::Button(L"Import").bPressed;
+				if (bPresExport || bPresImport)
 				{
-					g_pNeoRoot->m_pFileIODialog->MarkForDeletion();
+					if (g_pNeoRoot->m_pFileIODialog)
+					{
+						g_pNeoRoot->m_pFileIODialog->MarkForDeletion();
+					}
+					pCrosshair->eFileIOMode = bPresImport ? vgui::FOD_OPEN : vgui::FOD_SAVE;
+					g_pNeoRoot->m_eFileIOMode = CNeoRoot::FILEIODLGMODE_CROSSHAIR;
+					g_pNeoRoot->m_pFileIODialog = new vgui::FileOpenDialog(g_pNeoRoot,
+																		   bPresImport ? "Import crosshair" : "Export crosshair",
+																		   pCrosshair->eFileIOMode);
+					g_pNeoRoot->m_pFileIODialog->AddFilter("*." NEO_XHAIR_EXT, "NT;RE Crosshair", true);
+					g_pNeoRoot->m_pFileIODialog->DoModal();
 				}
-				pCrosshair->eFileIOMode = bPresImport ? vgui::FOD_OPEN : vgui::FOD_SAVE;
-				g_pNeoRoot->m_eFileIOMode = CNeoRoot::FILEIODLGMODE_CROSSHAIR;
-				g_pNeoRoot->m_pFileIODialog = new vgui::FileOpenDialog(g_pNeoRoot,
-																	   bPresImport ? "Import crosshair" : "Export crosshair",
-																	   pCrosshair->eFileIOMode);
-				g_pNeoRoot->m_pFileIODialog->AddFilter("*." NEO_XHAIR_EXT, "NT;RE Crosshair", true);
-				g_pNeoRoot->m_pFileIODialog->DoModal();
 			}
 		}
-		NeoUI::EndHorizontal();
 	}
 	NeoUI::EndSection();
 
 	g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
-	g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * (g_iRowsInScreen - IVIEW_ROWS);
+	g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall * (g_iRowsInScreen - IVIEW_ROWS);
 	NeoUI::BeginSection(true);
-	NeoUI::RingBox(L"Crosshair style", CROSSHAIR_LABELS, CROSSHAIR_STYLE__TOTAL, &pCrosshair->iStyle);
-	NeoUI::SliderU8(L"Red", &pCrosshair->info.color[0], 0, UCHAR_MAX);
-	NeoUI::SliderU8(L"Green", &pCrosshair->info.color[1], 0, UCHAR_MAX);
-	NeoUI::SliderU8(L"Blue", &pCrosshair->info.color[2], 0, UCHAR_MAX);
-	NeoUI::SliderU8(L"Alpha", &pCrosshair->info.color[3], 0, UCHAR_MAX);
-	if (!bTextured)
 	{
-		NeoUI::RingBox(L"Size type", CROSSHAIR_SIZETYPE_LABELS, CROSSHAIR_SIZETYPE__TOTAL, &pCrosshair->info.iESizeType);
-		switch (pCrosshair->info.iESizeType)
+		NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
+		NeoUI::RingBox(L"Crosshair style", CROSSHAIR_LABELS, CROSSHAIR_STYLE__TOTAL, &pCrosshair->iStyle);
+		NeoUI::SliderU8(L"Red", &pCrosshair->info.color[0], 0, UCHAR_MAX);
+		NeoUI::SliderU8(L"Green", &pCrosshair->info.color[1], 0, UCHAR_MAX);
+		NeoUI::SliderU8(L"Blue", &pCrosshair->info.color[2], 0, UCHAR_MAX);
+		NeoUI::SliderU8(L"Alpha", &pCrosshair->info.color[3], 0, UCHAR_MAX);
+		if (!bTextured)
 		{
-		case CROSSHAIR_SIZETYPE_ABSOLUTE: NeoUI::SliderInt(L"Size", &pCrosshair->info.iSize, 0, CROSSHAIR_MAX_SIZE); break;
-		case CROSSHAIR_SIZETYPE_SCREEN: NeoUI::Slider(L"Size", &pCrosshair->info.flScrSize, 0.0f, 1.0f, 5, 0.01f); break;
+			NeoUI::RingBox(L"Size type", CROSSHAIR_SIZETYPE_LABELS, CROSSHAIR_SIZETYPE__TOTAL, &pCrosshair->info.iESizeType);
+			switch (pCrosshair->info.iESizeType)
+			{
+			case CROSSHAIR_SIZETYPE_ABSOLUTE: NeoUI::SliderInt(L"Size", &pCrosshair->info.iSize, 0, CROSSHAIR_MAX_SIZE); break;
+			case CROSSHAIR_SIZETYPE_SCREEN: NeoUI::Slider(L"Size", &pCrosshair->info.flScrSize, 0.0f, 1.0f, 5, 0.01f); break;
+			}
+			NeoUI::SliderInt(L"Thickness", &pCrosshair->info.iThick, 0, CROSSHAIR_MAX_THICKNESS);
+			NeoUI::SliderInt(L"Gap", &pCrosshair->info.iGap, 0, CROSSHAIR_MAX_GAP);
+			NeoUI::SliderInt(L"Outline", &pCrosshair->info.iOutline, 0, CROSSHAIR_MAX_OUTLINE);
+			NeoUI::SliderInt(L"Center dot", &pCrosshair->info.iCenterDot, 0, CROSSHAIR_MAX_CENTER_DOT);
+			NeoUI::RingBoxBool(L"Draw top line", &pCrosshair->info.bTopLine);
+			NeoUI::SliderInt(L"Circle radius", &pCrosshair->info.iCircleRad, 0, CROSSHAIR_MAX_CIRCLE_RAD);
+			NeoUI::SliderInt(L"Circle segments", &pCrosshair->info.iCircleSegments, 0, CROSSHAIR_MAX_CIRCLE_SEGMENTS);
 		}
-		NeoUI::SliderInt(L"Thickness", &pCrosshair->info.iThick, 0, CROSSHAIR_MAX_THICKNESS);
-		NeoUI::SliderInt(L"Gap", &pCrosshair->info.iGap, 0, CROSSHAIR_MAX_GAP);
-		NeoUI::SliderInt(L"Outline", &pCrosshair->info.iOutline, 0, CROSSHAIR_MAX_OUTLINE);
-		NeoUI::SliderInt(L"Center dot", &pCrosshair->info.iCenterDot, 0, CROSSHAIR_MAX_CENTER_DOT);
-		NeoUI::RingBoxBool(L"Draw top line", &pCrosshair->info.bTopLine);
-		NeoUI::SliderInt(L"Circle radius", &pCrosshair->info.iCircleRad, 0, CROSSHAIR_MAX_CIRCLE_RAD);
-		NeoUI::SliderInt(L"Circle segments", &pCrosshair->info.iCircleSegments, 0, CROSSHAIR_MAX_CIRCLE_SEGMENTS);
 	}
 	NeoUI::EndSection();
 }

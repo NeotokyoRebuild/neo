@@ -8,7 +8,6 @@
 #include "neo_ui.h"
 
 extern NeoUI::Context g_uiCtx;
-inline int g_iGSIX[GSIW__TOTAL] = {};
 
 void CNeoServerList::UpdateFilteredList()
 {
@@ -182,61 +181,4 @@ void CNeoServerPlayers::PlayersFailedToRespond()
 void CNeoServerPlayers::PlayersRefreshComplete()
 {
 	m_hdlQuery = HSERVERQUERY_INVALID;
-}
-
-void ServerBrowserDrawRow(const gameserveritem_t &server)
-{
-	int xPos = 0;
-	const int fontStartYPos = g_uiCtx.fonts[g_uiCtx.eFont].iYOffset;
-
-	if (server.m_bPassword)
-	{
-		NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
-		vgui::surface()->DrawPrintText(L"P", 1);
-	}
-	xPos += g_iGSIX[GSIW_LOCKED];
-
-	if (server.m_bSecure)
-	{
-		NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
-		vgui::surface()->DrawPrintText(L"S", 1);
-	}
-	xPos += g_iGSIX[GSIW_VAC];
-
-	{
-		wchar_t wszServerName[k_cbMaxGameServerName];
-		const int iSize = g_pVGuiLocalize->ConvertANSIToUnicode(server.GetName(), wszServerName, sizeof(wszServerName));
-		NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
-		vgui::surface()->DrawPrintText(wszServerName, iSize - 1);
-	}
-	xPos += g_iGSIX[GSIW_NAME];
-
-	{
-		// In lower resolution, it may overlap from name, so paint a background here
-		NeoUI::GCtxDrawFilledRectXtoX(xPos, -g_uiCtx.iRowTall, g_uiCtx.dPanel.wide, 0);
-
-		wchar_t wszMapName[k_cbMaxGameServerMapName];
-		const int iSize = g_pVGuiLocalize->ConvertANSIToUnicode(server.m_szMap, wszMapName, sizeof(wszMapName));
-		NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
-		vgui::surface()->DrawPrintText(wszMapName, iSize - 1);
-	}
-	xPos += g_iGSIX[GSIW_MAP];
-
-	{
-		// In lower resolution, it may overlap from name, so paint a background here
-		NeoUI::GCtxDrawFilledRectXtoX(xPos, -g_uiCtx.iRowTall, g_uiCtx.dPanel.wide, 0);
-
-		wchar_t wszPlayers[10];
-		const int iSize = V_swprintf_safe(wszPlayers, L"%d/%d", server.m_nPlayers, server.m_nMaxPlayers);
-		NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
-		vgui::surface()->DrawPrintText(wszPlayers, iSize);
-	}
-	xPos += g_iGSIX[GSIW_PLAYERS];
-
-	{
-		wchar_t wszPing[10];
-		const int iSize = V_swprintf_safe(wszPing, L"%d", server.m_nPing);
-		NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
-		vgui::surface()->DrawPrintText(wszPing, iSize);
-	}
 }
