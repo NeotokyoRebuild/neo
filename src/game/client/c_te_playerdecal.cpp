@@ -182,22 +182,14 @@ IMaterial *CreateTempMaterialForPlayerLogo( int iPlayerIndex, player_info_t *inf
 
 	if ( !filesystem->FileExists( fulltexname ) )
 	{
-#ifdef NEO
-		if (engine->GetLocalPlayer() == iPlayerIndex)
-		{
-			// NEO NOTE (nullsystem): Limit copying spray.vtf over for local player
-			engine->CopyLocalFile("materials/vgui/logos/spray.vtf", fulltexname);
-		}
-#endif
-
 		char custname[ 512 ];
 		Q_snprintf( custname, sizeof( custname ), "download/user_custom/%c%c/%s.dat", logohex[0], logohex[1], logohex );
 		// it may have been downloaded but not copied under materials folder
 		if (!filesystem->FileExists(custname))
 		{
 #ifdef NEO
-			if (engine->GetLocalPlayer() != iPlayerIndex ||
-					!engine->CopyLocalFile(fulltexname, custname))
+			Q_snprintf( custname, sizeof( custname ), "user_custom/%c%c/%s.dat", logohex[0], logohex[1], logohex );
+			if (!filesystem->FileExists(custname))
 			{
 				return nullptr;
 			}
