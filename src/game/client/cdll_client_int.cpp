@@ -1347,6 +1347,7 @@ void CHLClient::PostInit()
 		g_pCVar->FindVar("snd_musicvolume")->InstallChangeCallback(MusicVol_ChangeCallback);
 		g_pCVar->FindVar("neo_name")->InstallChangeCallback(NeoName_ChangeCallback);
 		g_pCVar->FindVar("neo_clantag")->InstallChangeCallback(NeoClantag_ChangeCallback);
+		g_pCVar->FindVar("sv_use_steam_networking")->SetValue(false);
 	}
 	else
 	{
