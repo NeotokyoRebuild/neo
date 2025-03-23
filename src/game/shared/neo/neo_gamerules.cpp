@@ -3380,7 +3380,7 @@ void CNEORules::DeathNotice(CBasePlayer* pVictim, const CTakeDamageInfo& info)
 
 	bool isGrenade = false;
 	bool isRemoteDetpack = false;
-	CNEOBaseCombatWeapon* neoWep = static_cast<CNEOBaseCombatWeapon*>(pScorer->GetActiveWeapon());
+	CNEOBaseCombatWeapon* neoWep = pScorer ? static_cast<CNEOBaseCombatWeapon*>(pScorer->GetActiveWeapon()) : nullptr;
 
 	// Custom kill type?
 	if (info.GetDamageCustom())
