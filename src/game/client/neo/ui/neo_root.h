@@ -18,7 +18,7 @@ struct NeoNewGame
 	int iMaxPlayers = 24;
 	wchar_t wszPassword[64] = L"neo";
 	bool bFriendlyFire = true;
-	bool bUseSteamNetworking = true;
+	bool bUseSteamNetworking = false;
 };
 
 class CNeoRoot;
