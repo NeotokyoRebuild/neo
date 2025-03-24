@@ -227,6 +227,7 @@ void MenuBar::OnCursorEnteredMenuButton(vgui::Panel* VPanel)
 void MenuBar::OnCursorEnteredMenuButton(int VPanel)
 #endif
 {
+	VPANEL menuButton = (VPANEL)VPanel;
 	// see if we had a menu open
 	for ( int i = 0; i < m_pMenuButtons.Count(); i++)
 	{
