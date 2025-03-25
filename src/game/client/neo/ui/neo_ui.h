@@ -33,6 +33,7 @@
  *         {
  *             // Do things here...
  *         }
+ *         NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
  *         NeoUI::RingBoxBool(L"Example boolean ringbox", &bTest);
  *         NeoUI::SliderInt(L"Example int slider", &iTest, 0, 150);
  *     }
@@ -43,9 +44,6 @@
  * For a better example, just take a look at the CNeoRoot source code.
  *
  * NEO TODO (nullsystem)
- * - Change how layout works
- * 		- Now define layout on top section
- * 		- Scrolling not by partition?
  * - Change how styling works
  * 		- Colors
  * 		- Padding/margins
