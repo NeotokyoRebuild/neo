@@ -140,7 +140,7 @@ void CNEOHud_DeathNotice::UpdateStateForNeoHudElementDraw()
 	
 }
 
-enum NeoHudDeathNoticeIcon
+enum NeoHudDeathNoticeIcon : wchar_t
 {
 	NEO_HUD_DEATHNOTICEICON_EXPLODE = '!',
 	NEO_HUD_DEATHNOTICEICON_GUN,
@@ -762,12 +762,12 @@ void CNEOHud_DeathNotice::AddPlayerDeath(IGameEvent* event)
 	deathMsg.Killer.iEntIndex = killer;
 	deathMsg.Victim.iEntIndex = victim;
 	deathMsg.Assist.iEntIndex = assist;
-	deathMsg.Killer.iNameLength = strlen(killer_name);
-	deathMsg.Victim.iNameLength = strlen(victim_name);
-	deathMsg.Assist.iNameLength = strlen(assists_name);
 	g_pVGuiLocalize->ConvertANSIToUnicode(killer_name, deathMsg.Killer.szName, sizeof(deathMsg.Killer.szName));
 	g_pVGuiLocalize->ConvertANSIToUnicode(victim_name, deathMsg.Victim.szName, sizeof(deathMsg.Victim.szName));
 	g_pVGuiLocalize->ConvertANSIToUnicode(assists_name, deathMsg.Assist.szName, sizeof(deathMsg.Assist.szName));
+	deathMsg.Killer.iNameLength = wcslen(deathMsg.Killer.szName);
+	deathMsg.Victim.iNameLength = wcslen(deathMsg.Victim.szName);
+	deathMsg.Assist.iNameLength = wcslen(deathMsg.Assist.szName);
 	deathMsg.flHideTime = gpGlobals->curtime + hud_deathnotice_time.GetFloat();
 	deathMsg.bExplosive = event->GetBool("explosive");
 	deathMsg.bSuicide = event->GetBool("suicide");
@@ -788,11 +788,11 @@ void CNEOHud_DeathNotice::AddPlayerDeath(IGameEvent* event)
 	{
 		if (!strcmp(fullkilledwith, "d_worldspawn"))
 		{
-			Q_snprintf(sDeathMsg, sizeof(sDeathMsg), "%s died.", deathMsg.Victim.szName);
+			Q_snprintf(sDeathMsg, sizeof(sDeathMsg), "%ls died.", deathMsg.Victim.szName);
 		}
 		else	//d_world
 		{
-			Q_snprintf(sDeathMsg, sizeof(sDeathMsg), "%s suicided.", deathMsg.Victim.szName);
+			Q_snprintf(sDeathMsg, sizeof(sDeathMsg), "%ls suicided.", deathMsg.Victim.szName);
 		}
 	}
 	else
@@ -801,7 +801,7 @@ void CNEOHud_DeathNotice::AddPlayerDeath(IGameEvent* event)
 #define HEADSHOT_LINGO "headshot'd"
 #define NON_HEADSHOT_LINGO "killed"
 
-		Q_snprintf(sDeathMsg, sizeof(sDeathMsg), "%s %s %s",
+		Q_snprintf(sDeathMsg, sizeof(sDeathMsg), "%ls %s %ls",
 			deathMsg.Killer.szName,
 			(deathMsg.bHeadshot ? HEADSHOT_LINGO : NON_HEADSHOT_LINGO),
 			deathMsg.Victim.szName);
@@ -834,8 +834,8 @@ void CNEOHud_DeathNotice::AddPlayerRankChange(IGameEvent* event)
 	// Make a new death notice
 	DeathNoticeItem deathMsg;
 	deathMsg.Killer.iEntIndex = playerRankChange;
-	deathMsg.Killer.iNameLength = strlen(playerRankChangeName);
 	g_pVGuiLocalize->ConvertANSIToUnicode(playerRankChangeName, deathMsg.Killer.szName, sizeof(deathMsg.Killer.szName));
+	deathMsg.Killer.iNameLength = wcslen(deathMsg.Killer.szName);
 	deathMsg.flHideTime = gpGlobals->curtime + hud_deathnotice_time.GetFloat();
 	deathMsg.bRankChange = true;
 
@@ -863,8 +863,8 @@ void CNEOHud_DeathNotice::AddPlayerGhostCapture(IGameEvent* event)
 	// Make a new death notice
 	DeathNoticeItem deathMsg;
 	deathMsg.Killer.iEntIndex = playerCapturedGhost;
-	deathMsg.Killer.iNameLength = strlen(playerCapturedGhostName);
 	g_pVGuiLocalize->ConvertANSIToUnicode(playerCapturedGhostName, deathMsg.Killer.szName, sizeof(deathMsg.Killer.szName));
+	deathMsg.Killer.iNameLength = wcslen(deathMsg.Killer.szName);
 	deathMsg.flHideTime = gpGlobals->curtime + hud_deathnotice_time.GetFloat();
 	deathMsg.bGhostCap = true;
 	deathMsg.bInvolved = deathMsg.Killer.iEntIndex == GetLocalPlayerIndex();
@@ -888,8 +888,8 @@ void CNEOHud_DeathNotice::AddVIPExtract(IGameEvent* event)
 	// Make a new death notice
 	DeathNoticeItem deathMsg;
 	deathMsg.Killer.iEntIndex = playerExtracted;
-	deathMsg.Killer.iNameLength = strlen(playerExtractedName);
 	g_pVGuiLocalize->ConvertANSIToUnicode(playerExtractedName, deathMsg.Killer.szName, sizeof(deathMsg.Killer.szName));
+	deathMsg.Killer.iNameLength = wcslen(deathMsg.Killer.szName);
 	deathMsg.flHideTime = gpGlobals->curtime + hud_deathnotice_time.GetFloat();
 	deathMsg.bVIPExtract = true;
 	deathMsg.bInvolved = deathMsg.Killer.iEntIndex == GetLocalPlayerIndex();
@@ -917,11 +917,11 @@ void CNEOHud_DeathNotice::AddVIPDeath(IGameEvent* event)
 	// Make a new death notice
 	DeathNoticeItem deathMsg;
 	deathMsg.Victim.iEntIndex = playerKilled;
-	deathMsg.Victim.iNameLength = strlen(playerKilledName);
 	g_pVGuiLocalize->ConvertANSIToUnicode(playerKilledName, deathMsg.Victim.szName, sizeof(deathMsg.Victim.szName));
+	deathMsg.Victim.iNameLength = wcslen(deathMsg.Victim.szName);
 	deathMsg.Killer.iEntIndex = VIPKiller;
-	deathMsg.Killer.iNameLength = strlen(VIPKillerName);
 	g_pVGuiLocalize->ConvertANSIToUnicode(VIPKillerName, deathMsg.Killer.szName, sizeof(deathMsg.Killer.szName));
+	deathMsg.Killer.iNameLength = wcslen(deathMsg.Killer.szName);
 	deathMsg.flHideTime = gpGlobals->curtime + hud_deathnotice_time.GetFloat();
 	deathMsg.bVIPDeath = true;
 	deathMsg.bInvolved = deathMsg.Killer.iEntIndex == GetLocalPlayerIndex();
