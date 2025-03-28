@@ -324,6 +324,8 @@ void Precache_NEO_Sounds( void )
 	CBaseEntity::PrecacheScriptSound("Victory.Draw");
 	CBaseEntity::PrecacheScriptSound("Victory.Jinrai");
 	CBaseEntity::PrecacheScriptSound("Victory.NSF");
+
+	CBaseEntity::PrecacheSound("tutorial/hitsound.wav");
 }
 
 //-----------------------------------------------------------------------------
