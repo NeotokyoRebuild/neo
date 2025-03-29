@@ -194,7 +194,7 @@ void CWeaponGrenade::ItemPostFrame(void)
 			switch (m_AttackPaused)
 			{
 			case GRENADE_PAUSED_PRIMARY:
-				if (!(pOwner->m_nButtons & IN_ATTACK))
+				if (!(pOwner->m_nButtons & IN_ATTACK) && gpGlobals->curtime >= m_flNextPrimaryAttack)
 				{
 					ThrowGrenade(pOwner);
 

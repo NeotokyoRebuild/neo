@@ -522,7 +522,11 @@ void CWeaponSupa7::ItemPostFrame(void)
 				}
 			}
 		}
-		WeaponIdle();
+
+		if (!m_bInReload)
+		{
+			WeaponIdle();
+		}
 	}
 }
 
