@@ -1310,3 +1310,16 @@
 
 	"wave"			"weapons/mp5navy/mp5_slideback.wav" 
 }
+
+// --------------------------
+// Tank
+// --------------------------
+
+"ht_tank.single"
+{
+	"channel"			"CHAN_WEAPON"
+	"soundlevel"		"SNDLVL_150dB"
+	"volume"			"1.0"
+	"pitch"				"98,102"
+	"wave"				"^rogue/ht_ubr_fire.wav"
+}
