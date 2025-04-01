@@ -693,39 +693,41 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBox(L"Download filter", DLFILTER_LABELS, ARRAYSIZE(DLFILTER_LABELS), &pGeneral->iDlFilter);
 
 	NeoUI::HeadingLabel(L"SPRAY");
-	if (engine->IsInGame())
+	if (IsInGame())
 	{
 		NeoUI::HeadingLabel(L"Disconnect to update in-game spray");
 	}
-
-	NeoUI::SetPerRowLayout(3);
+	else
 	{
-		g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
-		if (NeoUI::Button(L"Import").bPressed)
+		NeoUI::SetPerRowLayout(3);
 		{
-			if (g_pNeoRoot->m_pFileIODialog)
+			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
+			if (NeoUI::Button(L"Import").bPressed)
 			{
-				g_pNeoRoot->m_pFileIODialog->MarkForDeletion();
+				if (g_pNeoRoot->m_pFileIODialog)
+				{
+					g_pNeoRoot->m_pFileIODialog->MarkForDeletion();
+				}
+				g_pNeoRoot->m_pFileIODialog = new vgui::FileOpenDialog(g_pNeoRoot, "Import spray", vgui::FOD_OPEN);
+				g_pNeoRoot->m_eFileIOMode = CNeoRoot::FILEIODLGMODE_SPRAY;
+				g_pNeoRoot->m_pFileIODialog->AddFilter("*.jpg;*.jpeg;*.png;*.vtf", "Images (JPEG, PNG, VTF)", true);
+				g_pNeoRoot->m_pFileIODialog->AddFilter("*.jpg;*.jpeg", "JPEG Image", false);
+				g_pNeoRoot->m_pFileIODialog->AddFilter("*.png", "PNG Image", false);
+				g_pNeoRoot->m_pFileIODialog->AddFilter("*.vtf", "VTF Image", false);
+				g_pNeoRoot->m_pFileIODialog->DoModal();
 			}
-			g_pNeoRoot->m_pFileIODialog = new vgui::FileOpenDialog(g_pNeoRoot, "Import spray", vgui::FOD_OPEN);
-			g_pNeoRoot->m_eFileIOMode = CNeoRoot::FILEIODLGMODE_SPRAY;
-			g_pNeoRoot->m_pFileIODialog->AddFilter("*.jpg;*.jpeg;*.png;*.vtf", "Images (JPEG, PNG, VTF)", true);
-			g_pNeoRoot->m_pFileIODialog->AddFilter("*.jpg;*.jpeg", "JPEG Image", false);
-			g_pNeoRoot->m_pFileIODialog->AddFilter("*.png", "PNG Image", false);
-			g_pNeoRoot->m_pFileIODialog->AddFilter("*.vtf", "VTF Image", false);
-			g_pNeoRoot->m_pFileIODialog->DoModal();
+			if (NeoUI::Button(L"Pick").bPressed)
+			{
+				g_pNeoRoot->m_state = STATE_SPRAYPICKER;
+				g_pNeoRoot->m_bSprayGalleryRefresh = true;
+			}
+			if (NeoUI::Button(L"Delete").bPressed)
+			{
+				g_pNeoRoot->m_state = STATE_SPRAYDELETER;
+				g_pNeoRoot->m_bSprayGalleryRefresh = true;
+			}
+			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
 		}
-		if (NeoUI::Button(L"Pick").bPressed)
-		{
-			g_pNeoRoot->m_state = STATE_SPRAYPICKER;
-			g_pNeoRoot->m_bSprayGalleryRefresh = true;
-		}
-		if (NeoUI::Button(L"Delete").bPressed)
-		{
-			g_pNeoRoot->m_state = STATE_SPRAYDELETER;
-			g_pNeoRoot->m_bSprayGalleryRefresh = true;
-		}
-		g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
 	}
 
 	NeoUI::SetPerRowLayout(1, nullptr, g_uiCtx.layout.iRowTall * 6);
