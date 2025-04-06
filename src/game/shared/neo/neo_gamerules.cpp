@@ -133,6 +133,7 @@ static void neoSvCompCallback(IConVar* var, const char* pOldValue, float flOldVa
 	sv_neo_readyup_lobby.SetValue(bCurrentValue);
 	mp_forcecamera.SetValue(bCurrentValue); // 0 = OBS_ALLOWS_ALL, 1 = OBS_ALLOW_TEAM. For strictly original neotokyo spectator experience, 2 = OBS_ALLOW_NONE
 	sv_neo_spraydisable.SetValue(bCurrentValue);
+	sv_neo_pausematch_enabled.SetValue(bCurrentValue);
 }
 
 ConVar sv_neo_comp("sv_neo_comp", "0", FCVAR_REPLICATED, "Enables competitive gamerules", true, 0.f, true, 1.f, neoSvCompCallback);
@@ -1731,21 +1732,27 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 
 	if (V_strcmp(pSzChat, "help") == 0)
 	{
-		char szHelpText[512];
-		V_sprintf_safe(szHelpText, "Available commands:\n%s%s",
-					   sv_neo_readyup_lobby.GetBool() ?
-						   "Ready up commands (only available while waiting for players):\n"
-						   ".ready - Ready up yourself\n"
-						   ".unready - Unready yourself\n"
-						   ".start - Override players amount restriction\n"
-						   ".readylist - List players that are not ready\n"
-						 : "",
-					   sv_neo_pausematch_enabled.GetBool() ?
-						   "Pause commands (only available during a match):\n"
-						   ".pause - Pause the match\n"
-						   ".unpause - Unpause the match\n"
-						 : "");
+		char szHelpText[256];
+		V_strcpy_safe(szHelpText, "Available commands:\n");
 		ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, szHelpText);
+		if (sv_neo_readyup_lobby.GetBool())
+		{
+			V_strcpy_safe(szHelpText,
+					"Ready up commands (only available while waiting for players):\n"
+					".ready - Ready up yourself\n"
+					".unready - Unready yourself\n"
+					".start - Override players amount restriction\n"
+					".readylist - List players that are not ready\n");
+			ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, szHelpText);
+		}
+		if (sv_neo_pausematch_enabled.GetBool())
+		{
+			V_strcpy_safe(szHelpText,
+					"Pause commands (only available during a match):\n"
+					".pause - Pause the match\n"
+					".unpause - Unpause the match\n");
+			ClientPrint(pNeoCmdPlayer, HUD_PRINTTALK, szHelpText);
+		}
 		return;
 	}
 
@@ -1959,7 +1966,7 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 				}
 				else
 				{
-					// Present a pause menu, giving short (30s) vs long (3m)
+					// Present a pause menu, giving short (1m) vs long (3m)
 					pNeoCmdPlayer->m_eMenuSelectType = MENU_SELECT_TYPE_PAUSE;
 					CSingleUserRecipientFilter filter(pNeoCmdPlayer);
 					filter.MakeReliable();
@@ -1975,7 +1982,7 @@ void CNEORules::CheckChatCommand(CNEO_Player *pNeoCmdPlayer, const char *pSzChat
 						WRITE_BYTE(static_cast<unsigned int>(0));
 						WRITE_STRING("Pause match:\n"
 									 "\n"
-									 "->1. Short pause (30 seconds)\n"
+									 "->1. Short pause (1 minute)\n"
 									 "->2. Long pause (3 minutes)\n"
 									 "->3. Dismiss\n");
 					}
