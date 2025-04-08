@@ -1621,14 +1621,14 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 				// - If during live-round, after round finishes pausing
 				NEORules()->m_iPausingTeam = GetTeamNumber();
 				NEORules()->m_iPausingRound = NEORules()->roundNumber() + 1;
-				NEORules()->m_flPauseDur = (slot == PAUSE_MENU_SELECT_SHORT) ? 30.0f : 180.0f;
+				NEORules()->m_flPauseDur = (slot == PAUSE_MENU_SELECT_SHORT) ? 60.0f : 180.0f;
 
 				char szPauseMsg[128];
 				V_sprintf_safe(szPauseMsg, "Pause requested by %s. Pausing the match %s for %s.",
 							   (GetTeamNumber() == TEAM_JINRAI) ? "Jinrai" : "NSF",
 							   (NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze) ?
 								   "immediately" : "when the round ends",
-							   (slot == PAUSE_MENU_SELECT_SHORT) ? "30 seconds" : "3 minutes");
+							   (slot == PAUSE_MENU_SELECT_SHORT) ? "1 minute" : "3 minutes");
 				UTIL_ClientPrintAll(HUD_PRINTTALK, szPauseMsg);
 			}
 			break;
