@@ -45,6 +45,9 @@
 			Game                             |all_source_engine_paths|hl2mp
 			Game                             |all_source_engine_paths|hl2
 			Platform                         |all_source_engine_paths|platform
+
+			game+download                    |gameinfo_path|download
+			game+download                    |gameinfo_path|user_custom
 		}
 	}
 }
