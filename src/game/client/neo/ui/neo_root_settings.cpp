@@ -348,7 +348,15 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pVideo->iCoreRendering = (queueMode == -1 || queueMode == 2) ? THREAD_MULTI : THREAD_SINGLE;
 		pVideo->iModelDetail = 2 - cvr->r_rootlod.GetInt(); // Inverse, highest = 0, lowest = 2
 		pVideo->iTextureDetail = 3 - (cvr->mat_picmip.GetInt() + 1); // Inverse+1, highest = -1, lowest = 2
-		pVideo->iShaderDetail = 1 - cvr->mat_reducefillrate.GetInt(); // Inverse, 1 = low, 0 = high
+		// Shader detail
+		//					mat_reducefillrate			r_lightmap_bicubic
+		// Low:						1							0
+		// High:					0							0
+		// Very High:				0							1
+		pVideo->iShaderDetail = (cvr->r_lightmap_bicubic.GetBool()) ?	QUALITY_HIGH : // Label will read "Very High"
+								(cvr->mat_reducefillrate.GetBool()) ?	QUALITY_LOW :
+																		QUALITY_MEDIUM;
+		
 		// Water detail
 		//                r_waterforceexpensive        r_waterforcereflectentities
 		// Simple:                  0                              0
