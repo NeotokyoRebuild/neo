@@ -209,6 +209,7 @@ struct NeoSettings
 		CONVARREF_DEF(r_rootlod);
 		CONVARREF_DEF(mat_picmip);
 		CONVARREF_DEF(mat_reducefillrate);
+		CONVARREF_DEF(r_lightmap_bicubic);
 		CONVARREF_DEF(r_waterforceexpensive);
 		CONVARREF_DEF(r_waterforcereflectentities);
 		CONVARREF_DEF(r_flashlightdepthtexture);
