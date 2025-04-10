@@ -428,6 +428,14 @@ void CNeoRoot::OnTick()
 			pSbTab->m_bModified = false;
 		}
 	}
+	else if (m_state == STATE_SERVERDETAILS)
+	{
+		if (m_bSPlayersSortModified)
+		{
+			m_serverPlayers.UpdateSortedList();
+			m_bSPlayersSortModified = false;
+		}
+	}
 }
 
 void CNeoRoot::FireGameEvent(IGameEvent *event)
@@ -1032,6 +1040,27 @@ static void ServerBrowserDrawRow(const gameserveritem_t &server)
 	}
 }
 
+static void DrawSortHint(const bool bDescending)
+{
+	if (g_uiCtx.eMode != NeoUI::MODE_PAINT || !IN_BETWEEN_AR(0, g_uiCtx.iLayoutY, g_uiCtx.dPanel.tall))
+	{
+		return;
+	}
+	int iHintTall = g_uiCtx.iMarginY / 3;
+	vgui::surface()->DrawSetColor(COLOR_NEOPANELTEXTNORMAL);
+	if (!bDescending)
+	{
+		vgui::surface()->DrawFilledRect(g_uiCtx.rWidgetArea.x0, g_uiCtx.rWidgetArea.y0,
+										g_uiCtx.rWidgetArea.x1, g_uiCtx.rWidgetArea.y0 + iHintTall);
+	}
+	else
+	{
+		vgui::surface()->DrawFilledRect(g_uiCtx.rWidgetArea.x0, g_uiCtx.rWidgetArea.y1 - iHintTall,
+										g_uiCtx.rWidgetArea.x1, g_uiCtx.rWidgetArea.y1);
+	}
+	vgui::surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
+}
+
 void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 {
 	static const wchar_t *GS_NAMES[GS__TOTAL] = {
@@ -1082,21 +1111,9 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 					m_bSBFiltModified = true;
 				}
 
-				if (param.eMode == NeoUI::MODE_PAINT && m_sortCtx.col == i)
+				if (m_sortCtx.col == i)
 				{
-					int iHintTall = g_uiCtx.iMarginY / 3;
-					vgui::surface()->DrawSetColor(COLOR_NEOPANELTEXTNORMAL);
-					if (!m_sortCtx.bDescending)
-					{
-						vgui::surface()->DrawFilledRect(g_uiCtx.rWidgetArea.x0, g_uiCtx.rWidgetArea.y0,
-														g_uiCtx.rWidgetArea.x1, g_uiCtx.rWidgetArea.y0 + iHintTall);
-					}
-					else
-					{
-						vgui::surface()->DrawFilledRect(g_uiCtx.rWidgetArea.x0, g_uiCtx.rWidgetArea.y1 - iHintTall,
-														g_uiCtx.rWidgetArea.x1, g_uiCtx.rWidgetArea.y1);
-					}
-					vgui::surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
+					DrawSortHint(m_sortCtx.bDescending);
 				}
 			}
 
@@ -1125,7 +1142,7 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 					V_swprintf_safe(wszInfo, L"No %ls queries found. Press Refresh to re-check", GS_NAMES[m_iServerBrowserTab]);
 				}
 				NeoUI::HeadingLabel(wszInfo);
-#if 0 // Filp to 1 to just test layout with no servers
+#if 0 // NEO NOTE (nullsystem): Flip to 1 to just test layout with no servers
 				NeoUI::Button(L""); // dummy button
 				if (param.eMode == NeoUI::MODE_PAINT)
 				{
@@ -1470,6 +1487,7 @@ void CNeoRoot::MainLoopServerDetails(const MainLoopParam param)
 	NeoUI::BeginContext(&g_uiCtx, param.eMode, L"Server details", "CtxServerDetail");
 	{
 		NeoUI::BeginSection(true);
+		NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
 		{
 			const bool bP = param.eMode == NeoUI::MODE_PAINT;
 			wchar_t wszText[128];
@@ -1492,27 +1510,110 @@ void CNeoRoot::MainLoopServerDetails(const MainLoopParam param)
 			// TODO: Header same-style as serverlist's header
 		}
 		NeoUI::EndSection();
-		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
-		g_uiCtx.dPanel.tall = (iTallTotal - g_uiCtx.layout.iRowTall) - g_uiCtx.dPanel.tall;
-		NeoUI::BeginSection();
+		if (!cl_neo_streamermode.GetBool())
 		{
-			if (!cl_neo_streamermode.GetBool())
+			if (m_serverPlayers.m_players.IsEmpty())
 			{
-				if (m_serverPlayers.m_players.IsEmpty())
+				g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+				g_uiCtx.dPanel.tall = (iTallTotal - g_uiCtx.layout.iRowTall) - g_uiCtx.dPanel.tall;
+				NeoUI::BeginSection();
 				{
+					NeoUI::SetPerRowLayout(1);
 					NeoUI::HeadingLabel(L"There are no players in the server.");
-				}
-				else
-				{
-					for (const auto &player : m_serverPlayers.m_players)
+#if 0 // NEO NOTE (nullsystem): Flip to 1 to just test layout with no players
+					float flExSecs = 1.0f;
+					for (int i = 0; i < 32; ++i)
 					{
-						NeoUI::Label(player.wszName);
-						// TODO
+						CNeoServerPlayers::PlayerInfo player = {};
+						player.iScore = i;
+						player.flTimePlayed = flExSecs;
+						flExSecs *= 2;
+						V_swprintf_safe(player.wszName, L"Example %c", 'A' + i);
+						m_serverPlayers.m_players.AddToTail(player);
+					}
+					m_serverPlayers.UpdateSortedList();
+#endif
+				}
+				NeoUI::EndSection();
+			}
+			else
+			{
+				static constexpr const int PLAYER_ROW_PROP[] = { 15, 65, -1 };
+
+				const int iInfoTall = g_uiCtx.dPanel.tall;
+				g_uiCtx.dPanel.y += iInfoTall;
+				g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall;
+				NeoUI::BeginSection();
+				{
+					NeoUI::SetPerRowLayout(ARRAYSIZE(PLAYER_ROW_PROP), PLAYER_ROW_PROP);
+					// Headers
+					static constexpr const wchar_t *PLAYER_HEADERS[GSPS__TOTAL] = {
+						L"Score", L"Name", L"Time"
+					};
+					for (int i = 0; i < GSPS__TOTAL; ++i)
+					{
+						vgui::surface()->DrawSetColor((m_serverPlayers.m_sortCtx.col == i) ? COLOR_NEOPANELACCENTBG : COLOR_NEOPANELNORMALBG);
+						if (NeoUI::Button(PLAYER_HEADERS[i]).bPressed)
+						{
+							m_bSPlayersSortModified = true;
+							if (m_serverPlayers.m_sortCtx.col == i)
+							{
+								m_serverPlayers.m_sortCtx.bDescending = !m_serverPlayers.m_sortCtx.bDescending;
+							}
+							else
+							{
+								m_serverPlayers.m_sortCtx.col = static_cast<GameServerPlayerSort>(i);
+							}
+						}
+
+						if (m_serverPlayers.m_sortCtx.col == i)
+						{
+							DrawSortHint(m_serverPlayers.m_sortCtx.bDescending);
+						}
 					}
 				}
+				NeoUI::EndSection();
+
+				g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+				g_uiCtx.dPanel.tall = iTallTotal - (2 * g_uiCtx.layout.iRowTall) - iInfoTall;
+				NeoUI::BeginSection();
+				{
+					NeoUI::SetPerRowLayout(ARRAYSIZE(PLAYER_ROW_PROP), PLAYER_ROW_PROP);
+					// Players - rows
+					for (const auto &player : m_serverPlayers.m_sortedPlayers)
+					{
+						wchar_t wszText[32];
+
+						V_swprintf_safe(wszText, L"%d", player.iScore);
+						NeoUI::Label(wszText);
+						NeoUI::Label(player.wszName);
+						{
+							static constexpr float FL_SECSINMIN = 60.0f;
+							static constexpr float FL_SECSINHRS = 60.0f * FL_SECSINMIN;
+							if (player.flTimePlayed < FL_SECSINMIN)
+							{
+								V_swprintf_safe(wszText, L"%.0fs", player.flTimePlayed);
+							}
+							else if (player.flTimePlayed < FL_SECSINMIN * 60.0f)
+							{
+								const int iMin = player.flTimePlayed / FL_SECSINMIN;
+								const int iSec = player.flTimePlayed - (iMin * FL_SECSINMIN);
+								V_swprintf_safe(wszText, L"%dm %ds", iMin, iSec);
+							}
+							else
+							{
+								const int iHrs = player.flTimePlayed / FL_SECSINHRS;
+								const int iMin = (player.flTimePlayed - (iHrs * FL_SECSINHRS)) / FL_SECSINMIN;
+								const int iSec = player.flTimePlayed - (iHrs * FL_SECSINHRS) - (iMin * FL_SECSINMIN);
+								V_swprintf_safe(wszText, L"%dh %dm %ds", iHrs, iMin, iSec);
+							}
+						}
+						NeoUI::Label(wszText);
+					}
+				}
+				NeoUI::EndSection();
 			}
 		}
-		NeoUI::EndSection();
 		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
 		g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall;
 		NeoUI::BeginSection();
@@ -1676,9 +1777,12 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 			{
 				NeoUI::Label(L"Enter the server password");
 				NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
-				g_uiCtx.bTextEditIsPassword = true;
-				NeoUI::TextEdit(L"Password:", m_wszServerPassword, SZWSZ_LEN(m_wszServerPassword));
-				g_uiCtx.bTextEditIsPassword = false;
+				{
+					NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
+					g_uiCtx.bTextEditIsPassword = true;
+					NeoUI::TextEdit(L"Password:", m_wszServerPassword, SZWSZ_LEN(m_wszServerPassword));
+					g_uiCtx.bTextEditIsPassword = false;
+				}
 				NeoUI::SetPerRowLayout(3);
 				{
 					if (NeoUI::Button(L"Enter (Enter)").bPressed || NeoUI::Bind(KEY_ENTER))
