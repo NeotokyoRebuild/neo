@@ -132,7 +132,6 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 			closestEnemy = Min(distance, closestEnemy);
 		}
 	}
-	engine->Con_NPrintf(0, "%i", NEORules()->m_iLastDummyBeacon);
 	for (int i = 0; i <= NEORules()->m_iLastDummyBeacon; i++)
 	{
 		auto dummy = ClientEntityList().GetBaseEntityFromHandle(NEORules()->m_iDummyBeacons[i]);
