@@ -32,12 +32,25 @@ const wchar_t *QUALITY_LABELS[] = {
 	L"Very High",
 };
 
+const wchar_t* QUALITY3_LABELS[] = {
+	L"Low",
+	L"High",
+	L"Very High",
+};
+
 enum QualityEnum
 {
 	QUALITY_LOW = 0,
 	QUALITY_MEDIUM,
 	QUALITY_HIGH,
 	QUALITY_VERYHIGH,
+};
+
+enum Quality3Enum
+{
+	QUALITY3_LOW = 0,
+	QUALITY3_HIGH,
+	QUALITY3_VERYHIGH,
 };
 
 enum ESpeaker
@@ -353,9 +366,9 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		// Low:						1							0
 		// High:					0							0
 		// Very High:				0							1
-		pVideo->iShaderDetail = (cvr->r_lightmap_bicubic.GetBool()) ?	QUALITY_HIGH : // Label will read "Very High"
-								(cvr->mat_reducefillrate.GetBool()) ?	QUALITY_LOW :
-																		QUALITY_MEDIUM;
+		pVideo->iShaderDetail = (cvr->r_lightmap_bicubic.GetBool()) ?	QUALITY3_VERYHIGH :
+								(cvr->mat_reducefillrate.GetBool()) ?	QUALITY3_LOW :
+																		QUALITY3_HIGH;
 		
 		// Water detail
 		//                r_waterforceexpensive        r_waterforcereflectentities
@@ -576,8 +589,8 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->mat_queue_mode.SetValue((pVideo->iCoreRendering == THREAD_MULTI) ? 2 : 0);
 		cvr->r_rootlod.SetValue(2 - pVideo->iModelDetail);
 		cvr->mat_picmip.SetValue(2 - pVideo->iTextureDetail);
-		cvr->mat_reducefillrate.SetValue(pVideo->iShaderDetail == QUALITY_LOW);
-		cvr->r_lightmap_bicubic.SetValue(pVideo->iShaderDetail == 2); // No Medium option, label will say "Very High"
+		cvr->mat_reducefillrate.SetValue(pVideo->iShaderDetail == QUALITY3_LOW);
+		cvr->r_lightmap_bicubic.SetValue(pVideo->iShaderDetail == QUALITY3_VERYHIGH);
 		cvr->r_waterforceexpensive.SetValue(pVideo->iWaterDetail >= QUALITY_MEDIUM);
 		cvr->r_waterforcereflectentities.SetValue(pVideo->iWaterDetail == QUALITY_HIGH);
 		cvr->r_shadowrendertotexture.SetValue(pVideo->iShadowDetail >= QUALITY_MEDIUM);
@@ -832,7 +845,7 @@ void NeoSettings_Audio(NeoSettings *ns)
 
 static const wchar_t *WINDOW_MODE[WINDOWMODE__TOTAL] = { L"Fullscreen", L"Windowed", L"Windowed (Borderless)" };
 static const wchar_t *QUEUE_MODE[] = { L"Single", L"Multi", };
-static const wchar_t *QUALITY2_LABELS[] = { L"Low", L"High", L"Very High" };
+static const wchar_t *QUALITY2_LABELS[] = { L"Low", L"High" };
 static const wchar_t *FILTERING_LABELS[FILTERING__TOTAL] = {
 	L"Bilinear", L"Trilinear", L"Anisotropic 2X", L"Anisotropic 4X", L"Anisotropic 8X", L"Anisotropic 16X",
 };
@@ -848,7 +861,7 @@ void NeoSettings_Video(NeoSettings *ns)
 	NeoUI::RingBox(L"Core Rendering", QUEUE_MODE, ARRAYSIZE(QUEUE_MODE), &pVideo->iCoreRendering);
 	NeoUI::RingBox(L"Model detail", QUALITY_LABELS, 3, &pVideo->iModelDetail);
 	NeoUI::RingBox(L"Texture detail", QUALITY_LABELS, 4, &pVideo->iTextureDetail);
-	NeoUI::RingBox(L"Shader detail", QUALITY2_LABELS, 3, &pVideo->iShaderDetail);
+	NeoUI::RingBox(L"Shader detail", QUALITY3_LABELS, 3, &pVideo->iShaderDetail);
 	NeoUI::RingBox(L"Water detail", WATER_LABELS, ARRAYSIZE(WATER_LABELS), &pVideo->iWaterDetail);
 	NeoUI::RingBox(L"Shadow detail", QUALITY_LABELS, 3, &pVideo->iShadowDetail);
 	NeoUI::RingBoxBool(L"Color correction", &pVideo->bColorCorrection);
