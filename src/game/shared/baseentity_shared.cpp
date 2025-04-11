@@ -2213,7 +2213,7 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 	}
 
 	if (tr.m_pEnt && tr.m_pEnt->IsPlayer())
-	{ // If hit entity is player 1. We don't want them taking damage more than once 2. Tracelines get stuck inside of hitboxes at the start of the traceline unlike other objects where they pass straight through
+	{ // If hit entity is player 1. We don't want them taking damage more than once 2. Tracelines get stuck inside of hitboxes at the start of the traceline, like in props and unlike in brushes
 		static_cast<CBulletsTraceFilter*>(pTraceFilter)->AddEntityToIgnore(tr.m_pEnt);
 	}
 
@@ -2230,13 +2230,13 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 #endif // CLIENT_DLL
 
 	// Find the furthest point along the bullets trajectory
-	Vector	testPos = tr.endpos + (vecDir.Normalized() * MAX_PENETRATION_DEPTH);
+	Vector	testPos = tr.endpos + (vecDir * MAX_PENETRATION_DEPTH);
 
 	// Instead of tracing backwards from the furthest point the bullet could penetrate given a thick enough object initially penetrated, step into the object originally hit and find the next object behind this object,
 	// if any, and trace backwards from that next object. There must be empty space between the next object and the object originally hit for the next object to be detected. This is a limitation of traceline and is why
 	// placing toolsbulletblock inside of an object doesn't stop bullets penetrating straight through the bigger object.
 	trace_t	nextObjectTrace;
-	UTIL_TraceLine(tr.endpos + (vecDir.Normalized()* 0.1), testPos, MASK_SHOT, pTraceFilter, &nextObjectTrace);
+	UTIL_TraceLine(tr.endpos + (vecDir * 0.1), testPos, MASK_SHOT, pTraceFilter, &nextObjectTrace);
 
 	CEffectData	data;
 
@@ -2246,7 +2246,9 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 	trace_t	penetrationTrace;
 
 	// Re-trace backwards to find the bullet ext
-	UTIL_TraceLine(nextObjectTrace.endpos - (vecDir.Normalized()*0.1), tr.endpos, MASK_SHOT, nullptr, &penetrationTrace);
+	// tracelines started inside of props get stuck unlike those started inside of brushes, revert to the original behaviour in those cases
+	Vector penetrationTraceStart = nextObjectTrace.fraction == 0.0f ? tr.endpos + (vecDir * MAX_PENETRATION_DEPTH) : nextObjectTrace.endpos - (vecDir * 0.1);
+	UTIL_TraceLine(penetrationTraceStart, tr.endpos, MASK_SHOT, nullptr, &penetrationTrace);
 
 	// See if we found the surface again
 	if (penetrationTrace.startsolid || tr.fraction == 0.0f || penetrationTrace.fraction == 1.0f)
