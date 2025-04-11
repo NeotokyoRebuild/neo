@@ -3208,7 +3208,8 @@ int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 
 			// If the other player is actively using the ghost and therefore fetching beacons
 			auto otherWep = static_cast<CNEOBaseCombatWeapon *>(otherNeoPlayer->GetActiveWeapon());
-			if (otherWep && otherWep->GetNeoWepBits() & NEO_WEP_GHOST)
+			if (otherWep && otherWep->GetNeoWepBits() & NEO_WEP_GHOST &&
+				static_cast<CWeaponGhost*>(otherWep)->IsPosWithinViewDistance(GetAbsOrigin()))
 			{
 				return FL_EDICT_ALWAYS;
 			}
