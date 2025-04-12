@@ -15,6 +15,7 @@ class CNeoLoading : public vgui::EditablePanel
 	DECLARE_CLASS_SIMPLE(CNeoLoading, vgui::EditablePanel);
 public:
 	CNeoLoading();
+	~CNeoLoading();
 	wchar_t m_wszLoadingMap[256] = {};
 
 	void ApplySchemeSettings(vgui::IScheme *pScheme) final;

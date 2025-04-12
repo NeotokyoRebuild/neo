@@ -294,6 +294,8 @@ CNeoRoot::~CNeoRoot()
 
 	m_gameui = nullptr;
 	g_GameUIDLL.Unload();
+
+	NeoUI::FreeContext(&g_uiCtx);
 }
 
 IGameUI *CNeoRoot::GetGameUI()
