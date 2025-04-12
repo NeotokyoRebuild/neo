@@ -1292,7 +1292,8 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 		{
 			if (wdgState.bActive && vgui::input()->IsMouseDown(MOUSE_LEFT) && c->eMousePressedStart == MOUSESTART_SLIDER)
 			{
-				const float flPerc = static_cast<float>(c->iMouseRelX - c->layout.iRowTall) / static_cast<float>(c->irWidgetWide - (2 * c->layout.iRowTall));
+				const int iMouseRelXWidget = c->iMouseAbsX - c->rWidgetArea.x0;
+				const float flPerc = static_cast<float>(iMouseRelXWidget - c->layout.iRowTall) / static_cast<float>(c->irWidgetWide - (2 * c->layout.iRowTall));
 				*flValue = flMin + (flPerc * (flMax - flMin));
 				*flValue = ClampAndLimitDp(*flValue, flMin, flMax, iDp);
 				c->bValueEdited = true;
