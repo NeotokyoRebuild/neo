@@ -419,7 +419,6 @@ private:
 	int m_iEntPrevCapSize = 0;
 	int m_iPrintHelpCounter = 0;
 	bool m_bGamemodeTypeBeenInitialized = false;
-	float m_flPrevCountdownBeep = 0.0f;
 #endif
 	CNetworkVar(int, m_nRoundStatus);
 	CNetworkVar(int, m_iHiddenHudElements);

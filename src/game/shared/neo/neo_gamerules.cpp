@@ -848,39 +848,6 @@ void CNEORules::Think(void)
 		return;
 	}
 
-	if (m_nRoundStatus == NeoRoundStatus::Countdown && gpGlobals->curtime > (m_flPrevCountdownBeep + 1.0f))
-	{
-		EmitSound_t soundParams;
-		soundParams.m_nChannel = CHAN_AUTO;
-		soundParams.m_SoundLevel = SNDLVL_NONE;
-		soundParams.m_flVolume = 0.33f;
-		soundParams.m_pSoundName = "tutorial/hitsound.wav";
-		soundParams.m_bWarnOnDirectWaveReference = false;
-		soundParams.m_bEmitCloseCaption = false;
-
-		for (int i = 1; i <= gpGlobals->maxClients; ++i)
-		{
-			CBasePlayer* basePlayer = UTIL_PlayerByIndex(i);
-			auto player = static_cast<CNEO_Player*>(basePlayer);
-			if (player)
-			{
-				if (!player->IsBot() || player->IsHLTV())
-				{
-					const char* volStr = engine->GetClientConVarValue(i, snd_victory_volume.GetName());
-					const float jingleVolume = volStr ? atof(volStr) : 0.33f;
-					soundParams.m_flVolume = jingleVolume;
-
-					CRecipientFilter soundFilter;
-					soundFilter.AddRecipient(basePlayer);
-					soundFilter.MakeReliable();
-					player->EmitSound(soundFilter, i, soundParams);
-				}
-			}
-		}
-
-		m_flPrevCountdownBeep = gpGlobals->curtime;
-	}
-
 	const bool bIsIdleState = m_nRoundStatus == NeoRoundStatus::Idle
 			|| m_nRoundStatus == NeoRoundStatus::Warmup
 			|| m_nRoundStatus == NeoRoundStatus::Countdown;
