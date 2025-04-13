@@ -126,8 +126,7 @@ END_NETWORK_TABLE()
 
 	void CBaseGrenadeProjectile::ClientThink()
 	{
-		constexpr float timeForWeaponToCoolFully = 5;
-		m_flTemperature = min(1, m_flTemperature + (TICK_INTERVAL / timeForWeaponToCoolFully));
+		m_flTemperature = min(1, m_flTemperature + (TICK_INTERVAL / THERMALS_OBJECT_COOL_TIME));
 		if (m_flTemperature > 0)
 		{
 			SetNextClientThink(gpGlobals->curtime + TICK_INTERVAL);

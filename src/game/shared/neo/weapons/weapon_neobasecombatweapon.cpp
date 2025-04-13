@@ -253,14 +253,13 @@ void CNEOBaseCombatWeapon::Spawn()
 #ifdef CLIENT_DLL
 void CNEOBaseCombatWeapon::ClientThink()
 {
-	constexpr float timeForWeaponToCoolFully = 5;
 	if (GetOwner())
 	{
-		m_flTemperature = max(0, m_flTemperature - (TICK_INTERVAL / timeForWeaponToCoolFully));
+		m_flTemperature = max(0, m_flTemperature - (TICK_INTERVAL / THERMALS_OBJECT_COOL_TIME));
 	}
 	else
 	{
-		m_flTemperature = min(1, m_flTemperature + (TICK_INTERVAL / timeForWeaponToCoolFully));
+		m_flTemperature = min(1, m_flTemperature + (TICK_INTERVAL / THERMALS_OBJECT_COOL_TIME));
 	}
 	SetNextClientThink(gpGlobals->curtime + TICK_INTERVAL);
 }

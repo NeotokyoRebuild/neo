@@ -3281,7 +3281,7 @@ int C_BaseAnimating::DrawModel( int flags )
 		const bool inThermalVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT;
 		if (m_bIsGib && inThermalVision)
 		{
-			IMaterial* pass = materials->FindMaterial("dev/thermal_baseanimating_model", TEXTURE_GROUP_MODEL);
+			IMaterial* pass = materials->FindMaterial("dev/thermal_base_animating_model", TEXTURE_GROUP_MODEL);
 			Assert(!IsErrorMaterial(pass));
 			modelrender->ForcedMaterialOverride(pass);
 		}
