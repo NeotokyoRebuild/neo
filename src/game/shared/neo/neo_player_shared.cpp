@@ -112,32 +112,6 @@ bool ClientWantsAimHold(const CNEO_Player* player)
 #endif
 }
 
-int DmgLineStr(char* infoLine, const int infoLineMax,
-	const char* dmgerName, const char* dmgerClass,
-	const AttackersTotals &totals)
-{
-	memset(infoLine, 0, infoLineMax);
-	if (totals.dealtDmgs > 0 && totals.takenDmgs > 0)
-	{
-		Q_snprintf(infoLine, infoLineMax, "%s [%s]: Dealt: %d in %d hits | Taken: %d in %d hits\n",
-				   dmgerName, dmgerClass,
-				   totals.dealtDmgs, totals.dealtHits, totals.takenDmgs, totals.takenHits);
-	}
-	else if (totals.dealtDmgs > 0)
-	{
-		Q_snprintf(infoLine, infoLineMax, "%s [%s]: Dealt: %d in %d hits\n",
-				   dmgerName, dmgerClass,
-				   totals.dealtDmgs, totals.dealtHits);
-	}
-	else if (totals.takenDmgs > 0)
-	{
-		Q_snprintf(infoLine, infoLineMax, "%s [%s]: Taken: %d in %d hits\n",
-				   dmgerName, dmgerClass,
-				   totals.takenDmgs, totals.takenHits);
-	}
-	return Q_strlen(infoLine);
-}
-
 void KillerLineStr(char* killByLine, const int killByLineMax,
 	CNEO_Player* neoAttacker, const CNEO_Player* neoVictim, const char* killedWith)
 {
