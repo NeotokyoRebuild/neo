@@ -259,6 +259,8 @@ void BeginSection(const bool bDefaultFocus)
 	c->iWidget = 0;
 	c->iCanActives = 0;
 	c->iIdxRowParts = -1;
+	c->iIdxVertParts = -1;
+	c->iVertLayoutY = 0;
 
 	c->iMouseRelX = c->iMouseAbsX - c->dPanel.x;
 	c->iMouseRelY = c->iMouseAbsY - c->dPanel.y;
@@ -431,6 +433,14 @@ void SetPerRowLayout(const int iColTotal, const int *iColProportions, const int 
 	c->iIdxRowParts = -1;
 }
 
+void SetPerCellVertLayout(const int iRowTotal, const int *iRowProportions)
+{
+	c->layout.iVertPartsTotal = iRowTotal;
+	c->layout.iVertParts = iRowProportions;
+	c->iIdxVertParts = -1;
+	c->iVertLayoutY = 0;
+}
+
 static GetMouseinFocusedRet InternalGetMouseinFocused()
 {
 	const bool bMouseIn = IN_BETWEEN_EQ(c->rWidgetArea.x0, c->iMouseAbsX, c->rWidgetArea.x1)
@@ -461,14 +471,47 @@ void BeginWidget(const WidgetFlag eWidgetFlag)
 		c->wdgInfos = (DynWidgetInfos *)(realloc(c->wdgInfos, sizeof(DynWidgetInfos) * c->iWdgInfosMax));
 	}
 
-	if (c->iIdxRowParts < 0 || c->iIdxRowParts >= (c->layout.iRowPartsTotal - 1))
+	const bool bNewRow = c->iIdxRowParts < 0 || c->iIdxRowParts >= (c->layout.iRowPartsTotal - 1);
+	if (bNewRow)
 	{
 		// Shift to the next row once we're out of partition
 		c->iLayoutX = 0;
 		c->iLayoutY += (c->iIdxRowParts < 0) ? 0 : c->layout.iRowTall;
 		c->iIdxRowParts = 0;
 	}
-	else
+
+	int iVertYOffset = 0;
+	int iWdgTall = c->layout.iRowTall;
+	bool bShiftIdxRowParts = true;
+	const bool bVertMode = c->layout.iVertPartsTotal > 0;
+	if (bVertMode)
+	{
+		if (c->iIdxVertParts < 0 || c->iIdxVertParts >= (c->layout.iVertPartsTotal - 1))
+		{
+			c->iIdxVertParts = 0;
+			c->iVertLayoutY = 0;
+		}
+		else
+		{
+			++c->iIdxVertParts;
+			if (c->iIdxVertParts < c->layout.iVertPartsTotal)
+			{
+				bShiftIdxRowParts = false;
+			}
+		}
+		if (c->layout.iVertParts)
+		{
+			iWdgTall = (c->layout.iVertParts[c->iIdxVertParts] / 100.0f) * c->layout.iRowTall;
+		}
+		else
+		{
+			iWdgTall = (1.0f / static_cast<float>(c->layout.iVertPartsTotal)) * c->layout.iRowTall;
+		}
+		c->iVertLayoutY += iWdgTall;
+		iVertYOffset = c->iVertLayoutY - iWdgTall;
+	}
+
+	if (!bNewRow && bShiftIdxRowParts)
 	{
 		if (c->layout.iRowParts)
 		{
@@ -490,9 +533,9 @@ void BeginWidget(const WidgetFlag eWidgetFlag)
 			  : (1.0f / static_cast<float>(c->layout.iRowPartsTotal)) * c->dPanel.wide;
 	c->rWidgetArea = vgui::IntRect{
 		.x0 = c->dPanel.x + c->iLayoutX,
-		.y0 = c->dPanel.y + c->iLayoutY,
+		.y0 = c->dPanel.y + c->iLayoutY + iVertYOffset,
 		.x1 = c->dPanel.x + c->iLayoutX + xWide,
-		.y1 = c->dPanel.y + c->iLayoutY + c->layout.iRowTall,
+		.y1 = c->dPanel.y + c->iLayoutY + iWdgTall,
 	};
 	c->irWidgetWide = c->rWidgetArea.x1 - c->rWidgetArea.x0;
 	c->irWidgetTall = c->rWidgetArea.y1 - c->rWidgetArea.y0;

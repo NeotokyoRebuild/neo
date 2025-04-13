@@ -15,6 +15,7 @@
 #endif
 
 #include "neo_predicted_viewmodel.h"
+#include "neo_misc.h"
 
 #ifdef INCLUDE_WEP_PBK
 // Type to use if we need to ensure more than 32 bits in the mask.
@@ -239,16 +240,21 @@ extern ConVar neo_recon_superjump_intensity;
 
 //ConVar sv_neo_resupply_anywhere("sv_neo_resupply_anywhere", "0", FCVAR_CHEAT | FCVAR_REPLICATED);
 
-inline const char* GetNeoClassName(int neoClassIdx)
+static constexpr const SZWSZTexts SZWSZ_NEO_CLASS_STRS[NEO_CLASS__ENUM_COUNT] = {
+	SZWSZ_INIT("Recon"),
+	SZWSZ_INIT("Assault"),
+	SZWSZ_INIT("Support"),
+	SZWSZ_INIT("VIP"),
+};
+
+inline const char *GetNeoClassName(const int neoClassIdx)
 {
-	switch (neoClassIdx)
-	{
-	case NEO_CLASS_RECON: return "Recon";
-	case NEO_CLASS_ASSAULT: return "Assault";
-	case NEO_CLASS_SUPPORT: return "Support";
-	case NEO_CLASS_VIP: return "VIP";
-	default: return "";
-	}
+	return (IN_BETWEEN_AR(0, neoClassIdx, NEO_CLASS__ENUM_COUNT)) ? SZWSZ_NEO_CLASS_STRS[neoClassIdx].szStr : "";
+}
+
+inline const wchar_t *GetNeoClassNameW(const int neoClassIdx)
+{
+	return (IN_BETWEEN_AR(0, neoClassIdx, NEO_CLASS__ENUM_COUNT)) ? SZWSZ_NEO_CLASS_STRS[neoClassIdx].wszStr : L"";
 }
 
 inline const char *GetRankName(int xp, bool shortened = false)
@@ -331,11 +337,7 @@ struct AttackersTotals
 	}
 };
 
-int DmgLineStr(char* infoLine, const int infoLineMax,
-	const char* dmgerName, const char* dmgerClass,
-	const AttackersTotals &totals);
-
-void KillerLineStr(char* killByLine, const int killByLineMax,
+[[deprecated]] void KillerLineStr(char* killByLine, const int killByLineMax,
 	CNEO_Player* neoAttacker, const CNEO_Player* neoVictim, const char* killedWith = "");
 
 [[nodiscard]] auto StrToInt(std::string_view strView) -> std::optional<int>;

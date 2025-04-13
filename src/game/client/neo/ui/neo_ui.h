@@ -165,6 +165,9 @@ struct Context
 		const int *iRowParts;
 		int iRowTall;
 		int iDefRowTall;
+
+		int iVertPartsTotal;
+		const int *iVertParts;
 	};
 	Layout layout;
 
@@ -181,8 +184,10 @@ struct Context
 
 	// Active layouting
 	int iIdxRowParts;
+	int iIdxVertParts;
 	int iLayoutX;
 	int iLayoutY;
+	int iVertLayoutY;
 	int iYOffset[MAX_SECTIONS] = {};
 	bool abYMouseDragOffset[MAX_SECTIONS] = {};
 	int iStartMouseDragOffset[MAX_SECTIONS] = {};
@@ -269,6 +274,9 @@ void BeginWidget(const WidgetFlag eWidgetFlag = WIDGETFLAG_NONE);
 void EndWidget(const GetMouseinFocusedRet wdgState);
 
 void SetPerRowLayout(const int iColTotal, const int *iColProportions = nullptr, const int iRowHeight = -1);
+// Layout a vertical within the (horizontal) column, iRowTotal = 0 to disable
+void SetPerCellVertLayout(const int iRowTotal, const int *iRowProportions = nullptr);
+
 void SwapFont(const EFont eFont, const bool bForce = false);
 void SwapColorNormal(const Color &color);
 void MultiWidgetHighlighter(const int iTotalWidgets);

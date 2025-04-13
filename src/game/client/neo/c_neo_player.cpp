@@ -46,6 +46,9 @@
 #include <materialsystem/itexture.h>
 #include "rendertexture.h"
 #include "ivieweffects.h"
+#include "c_neo_killer_damage_infos.h"
+#include <vgui/ILocalize.h>
+#include <tier3.h>
 
 #include "model_types.h"
 
@@ -144,18 +147,45 @@ static void __MsgFunc_DamageInfo(bf_read& msg)
 
 	static const char* BORDER = "==========================\n";
 	bool setKillByLine = false;
+
+	V_memset(&g_neoKDmgInfos, 0, sizeof(CNEOKillerDamageInfos));
+	g_neoKDmgInfos.bHasDmgInfos = true;
+
 	if (killerIdx > 0)
 	{
 		auto *neoAttacker = dynamic_cast<C_NEO_Player*>(UTIL_PlayerByIndex(killerIdx));
-		if (neoAttacker && neoAttacker->entindex() != thisIdx)
+		if (neoAttacker)
 		{
-			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, localPlayer, foundKilledBy ? killedBy : NULL);
-			setKillByLine = true;
+			g_pVGuiLocalize->ConvertANSIToUnicode(neoAttacker->GetNeoPlayerName(),
+												  g_neoKDmgInfos.wszKillerName,
+												  sizeof(g_neoKDmgInfos.wszKillerName));
+			g_neoKDmgInfos.iKillerNameSize = wcslen(g_neoKDmgInfos.wszKillerName);
+		}
+		// If not neoAttacker, already cleared out by memset earlier
+
+		if (neoAttacker)
+		{
+			CNEOKillerInfo killerInfo = {
+				.iEntIndex = killerIdx,
+				.iClass = neoAttacker->GetClass(),
+				.iHP = neoAttacker->GetHealth(),
+				.flDistance = METERS_PER_INCH * neoAttacker->GetAbsOrigin().DistTo(localPlayer->GetAbsOrigin()),
+			};
+			g_neoKDmgInfos.killerInfo = killerInfo;
+
+			if (neoAttacker->entindex() != thisIdx)
+			{
+				V_sprintf_safe(killByLine, "Killed by: %s [%s | %d hp] with %s at %.0f m\n",
+							   neoAttacker->GetNeoPlayerName(), GetNeoClassName(killerInfo.iClass),
+							   killerInfo.iHP, foundKilledBy ? killedBy : "", killerInfo.flDistance);
+				setKillByLine = true;
+			}
 		}
 	}
 
 	ConMsg("%sDamage infos (Round %d):\n%s\n", BORDER, NEORules()->roundNumber(), setKillByLine ? killByLine : "");
 	
+	// NEO TODO (nullsystem): Fill pHudKillerDmgInfo CNEOHud_KillerDamageInfo infos
 	for (int pIdx = 1; pIdx <= gpGlobals->maxClients; ++pIdx)
 	{
 		if (pIdx == thisIdx)
@@ -185,8 +215,25 @@ static void __MsgFunc_DamageInfo(bf_read& msg)
 		{
 			const char *dmgerClass = GetNeoClassName(neoAttacker->GetClass());
 
-			static char infoLine[128];
-			DmgLineStr(infoLine, sizeof(infoLine), dmgerName, dmgerClass, attackerInfo);
+			char infoLine[128];
+			if (totals.dealtDmgs > 0 && totals.takenDmgs > 0)
+			{
+				V_sprintf_safe(infoLine, "%s [%s]: Dealt: %d in %d hits | Taken: %d in %d hits\n",
+						   dmgerName, dmgerClass,
+						   totals.dealtDmgs, totals.dealtHits, totals.takenDmgs, totals.takenHits);
+			}
+			else if (totals.dealtDmgs > 0)
+			{
+				V_sprintf_safe(infoLine, "%s [%s]: Dealt: %d in %d hits\n",
+						   dmgerName, dmgerClass,
+						   totals.dealtDmgs, totals.dealtHits);
+			}
+			else if (totals.takenDmgs > 0)
+			{
+				V_sprintf_safe(infoLine, "%s [%s]: Taken: %d in %d hits\n",
+						   dmgerName, dmgerClass,
+						   totals.takenDmgs, totals.takenHits);
+			}
 			ConMsg("%s", infoLine);
 
 			totals += attackerInfo;
@@ -1534,6 +1581,8 @@ float C_NEO_Player::CloakPower_CurrentVisualPercentage(void) const
 void C_NEO_Player::Spawn( void )
 {
 	BaseClass::Spawn();
+
+	g_neoKDmgInfos.bHasDmgInfos = false;
 
 	m_bLastTickInThermOpticCamo = m_bInThermOpticCamo = false;
 	m_flCamoAuxLastTime = 0;
