@@ -67,6 +67,12 @@ END_NETWORK_TABLE()
 		}
 	}
 
+#ifdef NEO
+#include "c_neo_player.h"
+#ifdef GLOWS_ENABLE
+	extern ConVar glow_outline_effect_enable;
+#endif // GLOWS_ENABLE
+#endif // NEO
 	int CBaseGrenadeProjectile::DrawModel( int flags )
 	{
 #ifndef NEO
@@ -85,6 +91,23 @@ END_NETWORK_TABLE()
 			}
 		}
 #endif // NEO
+#ifdef NEO
+#ifdef GLOWS_ENABLE
+		auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetTargetNEOPlayer();
+#else
+		auto pTargetPlayer = C_NEO_Player::GetTargetNEOPlayer();
+#endif // GLOWS_ENABLE
+		bool inThermalVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT;
+		if (inThermalVision)
+		{
+			int ret = 0;
+			IMaterial* pass = materials->FindMaterial("dev/thermal_grenade_projectile_model", TEXTURE_GROUP_MODEL);
+			modelrender->ForcedMaterialOverride(pass);
+			ret |= BaseClass::DrawModel(flags);
+			modelrender->ForcedMaterialOverride(nullptr);
+			return ret;
+		}
+#endif // NEO
 		return BaseClass::DrawModel( flags );
 	}
 
@@ -92,7 +115,25 @@ END_NETWORK_TABLE()
 	{
 		m_flSpawnTime = gpGlobals->curtime;
 		BaseClass::Spawn();
+#ifdef NEO
+		m_flTemperature = 0.f;	// NEO NOTE (Adam) The server doesn't know the client side temperature of the weapon that spawned this projectile, and the client doesn't know what weapon spawned this projectile (may not exist already)
+								// NEO TODO use the temperature of the weapon at the time this projectile was created as the starting projectile temperature.
+		SetNextClientThink(gpGlobals->curtime + TICK_INTERVAL);
+#endif // NEO
 	}
+
+#ifdef NEO
+
+	void CBaseGrenadeProjectile::ClientThink()
+	{
+		constexpr float timeForWeaponToCoolFully = 5;
+		m_flTemperature = min(1, m_flTemperature + (TICK_INTERVAL / timeForWeaponToCoolFully));
+		if (m_flTemperature > 0)
+		{
+			SetNextClientThink(gpGlobals->curtime + TICK_INTERVAL);
+		}
+	}
+#endif // NEO
 
 #else
 

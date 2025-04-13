@@ -205,7 +205,11 @@ IMPLEMENT_CLIENTCLASS_DT(C_BaseAnimating, DT_BaseAnimating, CBaseAnimating)
 
 	RecvPropFloat( RECVINFO( m_fadeMinDist ) ), 
 	RecvPropFloat( RECVINFO( m_fadeMaxDist ) ), 
-	RecvPropFloat( RECVINFO( m_flFadeScale ) ), 
+	RecvPropFloat( RECVINFO( m_flFadeScale ) ),
+
+#ifdef NEO
+	RecvPropBool( RECVINFO( m_bIsGib ) ),
+#endif // NEO
 
 END_RECV_TABLE()
 
@@ -749,6 +753,9 @@ C_BaseAnimating::C_BaseAnimating() :
 	Q_memset(&m_mouth, 0, sizeof(m_mouth));
 	m_flCycle = 0;
 	m_flOldCycle = 0;
+#ifdef NEO
+	m_flNeoCreateTime = gpGlobals->curtime;
+#endif // NEO
 }
 
 //-----------------------------------------------------------------------------
@@ -3244,7 +3251,6 @@ int C_BaseAnimating::DrawModel( int flags )
 #endif // GLOWS_ENABLE
 
 		const bool inMotionVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_ASSAULT;
-		
 		auto rootMoveParent = GetRootMoveParent();
 		Vector vel;
 		if (IsRagdoll())
@@ -3271,6 +3277,15 @@ int C_BaseAnimating::DrawModel( int flags )
 				modelrender->ForcedMaterialOverride(pass);
 			}
 		}
+
+		const bool inThermalVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT;
+		if (m_bIsGib && inThermalVision)
+		{
+			IMaterial* pass = materials->FindMaterial("dev/thermal_baseanimating_model", TEXTURE_GROUP_MODEL);
+			Assert(!IsErrorMaterial(pass));
+			modelrender->ForcedMaterialOverride(pass);
+		}
+
 #endif // NEO
 
 		if ( flags & ( STUDIO_NO_OVERRIDE_FOR_ATTACH ) ) 

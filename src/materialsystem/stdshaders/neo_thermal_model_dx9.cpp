@@ -8,7 +8,7 @@
 #include "convar.h"
 #include "neo_thermal_model_dx9_helper.h"
 
-ConVar mat_neo_tv_model_offset("mat_neo_tv_model_offset", "0.4125", FCVAR_CHEAT);
+ConVar mat_neo_tv_model_offset("mat_neo_tv_model_offset", "0", FCVAR_CHEAT);
 
 DEFINE_FALLBACK_SHADER( Neo_Thermal_Model, Neo_Thermal_Model_DX9 )
 BEGIN_VS_SHADER( Neo_Thermal_Model_DX9, "Help for thermal model shader" )
@@ -16,6 +16,8 @@ BEGIN_VS_SHADER( Neo_Thermal_Model_DX9, "Help for thermal model shader" )
 	BEGIN_SHADER_PARAMS
 		SHADER_PARAM( ALPHATESTREFERENCE, SHADER_PARAM_TYPE_FLOAT, "0.0", "" )
 		SHADER_PARAM( TVMGRADTEXTURE, SHADER_PARAM_TYPE_TEXTURE, "dev/tvmgrad2", "")
+		SHADER_PARAM( TEMPERATUREVALUE, SHADER_PARAM_TYPE_FLOAT, "0.0", "")
+		SHADER_PARAM( MAXTEMPERATUREOFFSET, SHADER_PARAM_TYPE_FLOAT, "0.4", "")
 	END_SHADER_PARAMS
 
 	void SetupVars( NeoThermalModel_DX9_Vars_t& info )
@@ -26,6 +28,8 @@ BEGIN_VS_SHADER( Neo_Thermal_Model_DX9, "Help for thermal model shader" )
 		info.m_nAlphaTestReference = ALPHATESTREFERENCE;
 		info.m_nFlashlightTexture = FLASHLIGHTTEXTURE;
 		info.m_nFlashlightTextureFrame = FLASHLIGHTTEXTUREFRAME;
+		info.m_nTimeSinceDeath = TEMPERATUREVALUE;
+		info.m_nMaxTemperatureOffset = MAXTEMPERATUREOFFSET;
 	}
 
 	SHADER_INIT_PARAMS()
@@ -75,10 +79,17 @@ BEGIN_VS_SHADER( Neo_Thermal_Model_DX9, "Help for thermal model shader" )
 			VMatrix mat, transpose;
 			s_pShaderAPI->GetMatrix(MATERIAL_VIEW, mat.m[0]);
 			MatrixTranspose(mat, transpose);
-			s_pShaderAPI->SetPixelShaderConstant(2, transpose.m[2], 3);
+			s_pShaderAPI->SetPixelShaderConstant(0, transpose.m[2], 3);
 
-			const float flModelOffset = mat_neo_tv_model_offset.GetFloat();
-			pShaderAPI->SetPixelShaderConstant(3, &flModelOffset);
+			/*const float flModelOffset = mat_neo_tv_model_offset.GetFloat();
+			pShaderAPI->SetPixelShaderConstant(3, &flModelOffset);*/
+
+			constexpr float timeForBodyToCoolFully = 5;
+			const float maximumTemperatureOffsetValue = params[MAXTEMPERATUREOFFSET]->GetFloatValue();
+			const float temperatureValue = params[TEMPERATUREVALUE]->GetFloatValue();
+			const float temperatureCoefficient = maximumTemperatureOffsetValue * min(1.f, temperatureValue / timeForBodyToCoolFully);
+			
+			s_pShaderAPI->SetPixelShaderConstant(3, &temperatureCoefficient);
 		}
 
 		NeoThermalModel_DX9_Vars_t info;

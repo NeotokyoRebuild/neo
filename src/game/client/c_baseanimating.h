@@ -604,6 +604,12 @@ protected:
 	float							m_flOldCycle;
 	bool							m_bNoModelParticles;
 
+#ifdef NEO
+	bool							m_bIsGib;
+public:
+	float							m_flNeoCreateTime;
+#endif // NEO
+
 private:
 	float							m_flOldModelScale;
 	int								m_nOldSequence;
