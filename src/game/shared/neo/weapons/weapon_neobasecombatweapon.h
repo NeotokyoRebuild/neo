@@ -270,6 +270,7 @@ public:
 	float GetPenetration() const;
 #ifdef CLIENT_DLL
 	float GetTemperature() { return m_flTemperature; }
+	float m_flTemperature;
 #endif // CLIENT_DLL
 
 protected:
@@ -290,9 +291,6 @@ protected:
 	CNetworkVar(int, m_nNumShotsFired);
 	CNetworkVar(bool, m_bRoundChambered);
 	CNetworkVar(bool, m_bRoundBeingChambered);
-#ifdef CLIENT_DLL
-	float m_flTemperature;
-#endif // CLIENT_DLL
 
 private:
 	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &other);

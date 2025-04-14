@@ -926,8 +926,6 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 #else
 	//!!!HACKHACK - what does the client want this function for?
 	info.m_vecSpread = GetActiveWeapon()->GetBulletSpread();
-	constexpr float BULLET_HEAT_COST = 0.025;
-	m_flTemperature = max(-0.5, m_flTemperature - (info.m_iShots * BULLET_HEAT_COST));
 #endif // CLIENT_DLL
 
 	info.m_flPenetration = GetPenetration();
