@@ -57,12 +57,19 @@ struct PS_INPUT
 
 float4 main( PS_INPUT i ) : COLOR
 {
+	// parts of the model facing the camera directly have a value of 1, and parts facing away have a value of 0
 	float dotProduct = (0.5 * dot(g_ViewDirection, i.worldNormal)) + 0.5;
+	
+	// The colder the object the smaller the difference between the hottest and coldest part of the object
 	dotProduct += (g_Offset * 0.5);
 	dotProduct /= (1 + g_Offset);
-	float4 baseColor = tex2D( ModelGradientSampler, float2(dotProduct, 0.5) ) + 0.4125;
+	
+	// get the value from the gradient. Translate by 0.4125 so everything is brighter
+	float4 baseColor = tex2D( ModelGradientSampler, float2(dotProduct, 0.5)) + 0.35;
+	
+	// cool down by the offset
 	baseColor.rgb -= g_Offset;
-
+	
 	float fogFactor = CalcPixelFogFactor( PIXELFOGTYPE, g_FogParams, g_EyePos.z, i.worldPos.z, i.projPos.z );
 	bool bWriteDepthToAlpha = ( WRITE_DEPTH_TO_DESTALPHA != 0 ) && ( WRITEWATERFOGTODESTALPHA == 0 );
 

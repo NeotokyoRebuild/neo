@@ -10,4 +10,4 @@ set GAME_DIR="..\..\..\game\neo"
 
 %BUILD_SHADER% neoshader_dx9_20b       -game %GAME_DIR% -source %SOURCE_DIR%
 rem %BUILD_SHADER% neoshader_dx9_20b_new   -game %GAME_DIR% -source %SOURCE_DIR%
-rem %BUILD_SHADER% neoshader_dx9_30        -game %GAME_DIR% -source %SOURCE_DIR% -force30
+%BUILD_SHADER% neoshader_dx9_30        -game %GAME_DIR% -source %SOURCE_DIR% -force30

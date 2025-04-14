@@ -10,16 +10,33 @@ const float g_XOffset : register(c1);
 const float g_XMultiplier : register(c2);
 const float g_XNoiseOffset : register(c3);
 const float g_YNoiseOffset : register(c4);
+const float g_BrightnessNerfThreshold : register(c5);
+const float g_BrightnessNerf : register(c6);
 
 struct PS_INPUT
 {
 	float2 texCoord	: TEXCOORD0;
 };
 
+float D3DX_FLOAT_to_SRGB(float val)
+{ 
+    if( val < 0.0031308f )
+        val *= 12.92f;
+    else
+        val = 1.055f * pow(val,1.0f/2.4f) - 0.055f;
+    return val;
+}
+
 float4 main( const PS_INPUT i ) : COLOR
 {    
 	const float4 fbColor = tex2D(FrameBuffer, i.texCoord);
 	const float noise =  0.9 + (tex2D(NoiseTexture, i.texCoord + float2(g_XNoiseOffset, g_YNoiseOffset)) / 10);
-    const float avgBright = (fbColor.r * 0.3 + fbColor.g * 0.59 + fbColor.b * 0.11) * noise;
-    return tex2D(TvTexture, float2(min(1.0, (avgBright + g_XOffset) + ((avgBright - g_XOffset) * g_XMultiplier)), 0.5)) * g_BrightnessScale;
+    float avgBright = (fbColor.r * 0.3 + fbColor.g * 0.59 + fbColor.b * 0.11) * noise;
+	avgBright = (avgBright * g_XMultiplier) + g_XOffset;
+	if (avgBright > g_BrightnessNerfThreshold)
+	{
+		avgBright = g_BrightnessNerfThreshold + ((avgBright - g_BrightnessNerfThreshold) * g_BrightnessNerf);
+	}
+	float4 colour = tex2D(TvTexture, float2(min(1.0, avgBright), 0.5));
+    return colour;
 }
