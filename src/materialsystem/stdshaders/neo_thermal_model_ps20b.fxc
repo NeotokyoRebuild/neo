@@ -64,7 +64,7 @@ float4 main( PS_INPUT i ) : COLOR
 	dotProduct += (g_Offset * 0.5);
 	dotProduct /= (1 + g_Offset);
 	
-	// get the value from the gradient. Translate by 0.4125 so everything is brighter
+	// get the value from the gradient. Translate so brighter
 	float4 baseColor = tex2D( ModelGradientSampler, float2(dotProduct, 0.5)) + 0.35;
 	
 	// cool down by the offset

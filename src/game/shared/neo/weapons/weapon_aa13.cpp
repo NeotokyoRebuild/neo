@@ -108,6 +108,11 @@ void CWeaponAA13::PrimaryAttack(void)
 
 	m_flNextPrimaryAttack = m_flNextPrimaryAttack + GetFireRate();
 
+#ifdef CLIENT_DLL
+	constexpr float BUCKSHOT_HEAT_COST = 0.01;
+	m_flTemperature = max(-0.5, m_flTemperature - (info.m_iShots * BUCKSHOT_HEAT_COST));
+#endif // CLIENT_DLL
+
 	// Fire the bullets, and force the first shot to be perfectly accurate
 	pPlayer->FireBullets(info);
 

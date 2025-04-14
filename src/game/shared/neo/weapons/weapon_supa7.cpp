@@ -314,11 +314,19 @@ void CWeaponSupa7::PrimaryAttack(void)
 		ammoType = m_iSecondaryAmmoType;
 		WeaponSound(WPN_DOUBLE);
 		WeaponSound(SPECIAL2);
+#ifdef CLIENT_DLL
+		constexpr float SLUG_HEAT_COST = 0.25;
+		m_flTemperature = max(-0.5, m_flTemperature - (numBullets * SLUG_HEAT_COST));
+#endif // CLIENT_DLL
 	}
 	else
 	{
 		// MUST call sound before removing a round from the clip of a CMachineGun
 		WeaponSound(SINGLE);
+#ifdef CLIENT_DLL
+		constexpr float BUCKSHOT_HEAT_COST = 0.025;
+		m_flTemperature = max(-0.5, m_flTemperature - (numBullets * BUCKSHOT_HEAT_COST));
+#endif // CLIENT_DLL
 	}
 
 	FireBulletsInfo_t info(numBullets, vecSrc, vecAiming, bulletSpread, MAX_TRACE_LENGTH, ammoType);

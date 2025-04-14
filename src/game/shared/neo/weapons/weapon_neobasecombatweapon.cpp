@@ -253,11 +253,11 @@ void CNEOBaseCombatWeapon::Spawn()
 #ifdef CLIENT_DLL
 void CNEOBaseCombatWeapon::ClientThink()
 {
-	if (GetOwner())
+	if (GetOwner() && m_flTemperature > 0)
 	{
 		m_flTemperature = max(0, m_flTemperature - (TICK_INTERVAL / THERMALS_OBJECT_COOL_TIME));
 	}
-	else
+	else if (m_flTemperature < 1)
 	{
 		m_flTemperature = min(1, m_flTemperature + (TICK_INTERVAL / THERMALS_OBJECT_COOL_TIME));
 	}
@@ -926,6 +926,8 @@ void CNEOBaseCombatWeapon::PrimaryAttack(void)
 #else
 	//!!!HACKHACK - what does the client want this function for?
 	info.m_vecSpread = GetActiveWeapon()->GetBulletSpread();
+	constexpr float BULLET_HEAT_COST = 0.025;
+	m_flTemperature = max(-0.5, m_flTemperature - (info.m_iShots * BULLET_HEAT_COST));
 #endif // CLIENT_DLL
 
 	info.m_flPenetration = GetPenetration();

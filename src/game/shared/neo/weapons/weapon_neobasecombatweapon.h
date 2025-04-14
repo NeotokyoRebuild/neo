@@ -290,13 +290,13 @@ protected:
 	CNetworkVar(int, m_nNumShotsFired);
 	CNetworkVar(bool, m_bRoundChambered);
 	CNetworkVar(bool, m_bRoundBeingChambered);
+#ifdef CLIENT_DLL
+	float m_flTemperature;
+#endif // CLIENT_DLL
 
 private:
 	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &other);
 
-#ifdef CLIENT_DLL
-	float m_flTemperature;
-#endif // CLIENT_DLL
 };
 
 #endif // WEAPON_NEO_BASECOMBATWEAPON_SHARED_H
