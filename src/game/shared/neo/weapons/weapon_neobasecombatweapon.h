@@ -269,7 +269,6 @@ public:
 	virtual bool GetRoundBeingChambered() const { return 0; }
 	float GetPenetration() const;
 #ifdef CLIENT_DLL
-	float GetTemperature() { return m_flTemperature; }
 	float m_flTemperature;
 #endif // CLIENT_DLL
 

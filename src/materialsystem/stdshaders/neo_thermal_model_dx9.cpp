@@ -8,9 +8,6 @@
 #include "convar.h"
 #include "neo_thermal_model_dx9_helper.h"
 
-ConVar mat_neo_tv_model_offset("mat_neo_tv_model_offset", "0", FCVAR_CHEAT);
-ConVar mat_neo_tv_model_Xmultiplier("mat_neo_tv_model_Xmultiplier", "1", FCVAR_CHEAT);
-
 DEFINE_FALLBACK_SHADER( Neo_Thermal_Model, Neo_Thermal_Model_DX9 )
 BEGIN_VS_SHADER( Neo_Thermal_Model_DX9, "Help for thermal model shader" )
 
@@ -87,9 +84,6 @@ BEGIN_VS_SHADER( Neo_Thermal_Model_DX9, "Help for thermal model shader" )
 			const float temperatureValue = params[TEMPERATUREVALUE]->GetFloatValue();
 			const float temperatureCoefficient = maximumTemperatureOffsetValue * min(1.f, temperatureValue / timeForBodyToCoolFully);
 			s_pShaderAPI->SetPixelShaderConstant(3, &temperatureCoefficient);
-
-			/*const float xMultiplier = mat_neo_tv_model_Xmultiplier.GetFloat();
-			s_pShaderAPI->SetPixelShaderConstant(4, &xMultiplier);*/
 		}
 
 		NeoThermalModel_DX9_Vars_t info;

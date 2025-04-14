@@ -395,7 +395,7 @@ void CWeaponTemperature::OnBind(void* pC_BaseEntity)
 	}
 	else
 	{
-		const float temperature = pEntityWeapon->GetTemperature();
+		const float temperature = pEntityWeapon->m_flTemperature;
 		m_pResult->SetFloatValue(temperature);
 	}
 

@@ -396,7 +396,7 @@ void CSimpleEmitter::RenderParticles( CParticleRenderIterator *pIterator )
 		float sortKey = (int) tPos.z;
 
 #ifdef NEO
-		Vector color = (pIterator->m_bInThermalVision && pParticle->m_bHighlightInThermals) ? Vector(1, 1, 1) : Vector(pParticle->m_uchColor[0] / 255.0f, pParticle->m_uchColor[1] / 255.0f, pParticle->m_uchColor[2] / 255.0f);
+		Vector color = (pIterator->m_bInThermalVision && pParticle->m_bHighlightInThermals) ? Vector(1, 1, 1) : UpdateColor(pParticle);
 #endif // NEO
 
 		//Render it

@@ -40,10 +40,11 @@ public:
 	CBaseGrenadeProjectile( const CBaseGrenadeProjectile& ) {}
 	virtual int DrawModel( int flags );
 	virtual void PostDataUpdate( DataUpdateType_t type );
-
+#ifdef NEO
 	virtual void ClientThink() override;
-	float m_flSpawnTime;
 	float m_flTemperature;
+#endif // NEO
+	float m_flSpawnTime;
 #else
 	DECLARE_DATADESC();
 
