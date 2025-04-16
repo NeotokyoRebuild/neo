@@ -175,7 +175,6 @@ extern vgui::IInputInternal *g_InputInternal;
 
 #ifdef NEO
 #include "neo_version.h"
-#include "neo_mount_original.h"
 #include "ui/neo_loading.h"
 #include "neo_player_shared.h"
 extern bool NeoRootCaptureESC();
@@ -1073,16 +1072,8 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 	IGameSystem::Add( GetPredictionCopyTester() );
 #endif
 
-#ifdef NEO
-	// We mount before clientmode any init because we rely on NT VGUI files existing
-	if (!FindOriginalNeotokyoAssets(g_pFullFileSystem, true))
-	{
-		return false;
-	}
-
-#ifdef LINUX
+#if defined(NEO) && defined(LINUX)
     FixupGlShaders(filesystem, g_pCVar);
-#endif
 #endif
 
 	modemanager->Init( );
