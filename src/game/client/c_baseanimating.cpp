@@ -3372,7 +3372,12 @@ bool C_BaseAnimating::OnInternalDrawModel( ClientModelRenderInfo_t *pInfo )
 		pInfoLighting->GetLightingOffset( pInfo->lightingOffset );
 		pInfo->pLightingOffset = &pInfo->lightingOffset;
 	}
+#ifdef NEO
+	auto lightingOrigin = m_hLightingOrigin.Get();
+	if ( m_hLightingOrigin.Get() )
+#else
 	if ( m_hLightingOrigin )
+#endif // NEO
 	{
 		pInfo->pLightingOrigin = &(m_hLightingOrigin->GetAbsOrigin());
 	}
@@ -3558,6 +3563,18 @@ int C_BaseAnimating::InternalDrawModel( int flags )
 		// Turns the origin + angles into a matrix
 		AngleMatrix( pInfo->angles, pInfo->origin, pInfo->modelToWorld );
 	}
+
+#ifdef NEO
+	if (IsViewModel())
+	{ // view models become dark when standing close to and facing a wall, change lighting origin
+		auto pOwner = UTIL_PlayerByIndex(GetLocalPlayerIndex());
+		if (pOwner)
+		{
+			const Vector ownerOrigin = pOwner->EyePosition();
+			pInfo->pLightingOrigin = &ownerOrigin;
+		}
+	}
+#endif // NEO
 
 	DrawModelState_t state;
 	matrix3x4_t *pBoneToWorld = NULL;
