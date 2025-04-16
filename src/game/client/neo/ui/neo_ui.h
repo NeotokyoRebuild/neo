@@ -33,6 +33,7 @@
  *         {
  *             // Do things here...
  *         }
+ *         NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
  *         NeoUI::RingBoxBool(L"Example boolean ringbox", &bTest);
  *         NeoUI::SliderInt(L"Example int slider", &iTest, 0, 150);
  *     }
@@ -43,9 +44,6 @@
  * For a better example, just take a look at the CNeoRoot source code.
  *
  * NEO TODO (nullsystem)
- * - Change how layout works
- * 		- Now define layout on top section
- * 		- Scrolling not by partition?
  * - Change how styling works
  * 		- Colors
  * 		- Padding/margins
@@ -95,7 +93,6 @@ static constexpr int FOCUSOFF_NUM = -1000;
 static constexpr int MAX_SECTIONS = 5;
 static constexpr int SIZEOF_SECTIONS = sizeof(int) * MAX_SECTIONS;
 static constexpr int MAX_TEXTINPUT_U8BYTES_LIMIT = 256;
-static constexpr int MAX_WIDGETS = 128;
 
 extern const int ROWLAYOUT_TWOSPLIT[];
 
@@ -133,6 +130,13 @@ struct SliderInfo
 	float flCachedValue;
 	int iMaxStrSize;
 	bool bActive;
+};
+
+struct DynWidgetInfos
+{
+	int iYOffsets;
+	int iYTall;
+	bool bCannotActive;
 };
 
 struct Context
@@ -183,9 +187,8 @@ struct Context
 	int iStartMouseDragOffset[MAX_SECTIONS] = {};
 
 	// Saved infos for EndSection managing scrolling
-	int iWdgYOffsets[MAX_WIDGETS] = {};
-	int iWdgYTall[MAX_WIDGETS] = {};
-	bool bWdgCannotActive[MAX_WIDGETS] = {};
+	DynWidgetInfos *wdgInfos = nullptr;
+	int iWdgInfosMax = 0;
 
 	TextStyle eButtonTextStyle;
 	TextStyle eLabelTextStyle;
@@ -254,6 +257,8 @@ enum WidgetFlag
 	WIDGETFLAG_NONE = 0,
 	WIDGETFLAG_SKIPACTIVE = 1 << 0,
 };
+
+void FreeContext(NeoUI::Context *pCtx);
 
 void BeginContext(NeoUI::Context *pNextCtx, const NeoUI::Mode eMode, const wchar_t *wszTitle, const char *pSzCtxName);
 void EndContext();

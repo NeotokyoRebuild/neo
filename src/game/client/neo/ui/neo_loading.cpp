@@ -33,6 +33,11 @@ CNeoLoading::CNeoLoading()
 	ApplySchemeSettings(pScheme);
 }
 
+CNeoLoading::~CNeoLoading()
+{
+	NeoUI::FreeContext(&m_uiCtx);
+}
+
 void CNeoLoading::ApplySchemeSettings(vgui::IScheme *pScheme)
 {
 	BaseClass::ApplySchemeSettings(pScheme);

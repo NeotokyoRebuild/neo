@@ -183,6 +183,7 @@ public:
 	ServerBrowserFilters m_sbFilters;
 	bool m_bSBFiltModified = false;
 	bool m_bShowFilterPanel = false;
+	bool m_bSPlayersSortModified = false;
 	GameServerSortContext m_sortCtx = {};
 
 	wchar_t m_wszBindingText[128];
