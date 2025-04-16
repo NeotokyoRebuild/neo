@@ -2085,7 +2085,7 @@ void CNEORules::StartNextRound()
 			m_iRoundNumber = 0;
 			m_flNeoRoundStartTime = gpGlobals->curtime;
 			m_flNeoNextRoundStartTime = gpGlobals->curtime + sv_neo_readyup_countdown.GetFloat();
-			UTIL_CenterPrintAll("- ALL PLAYERS NOW READY: MATCH STARTING SOON... -\n");
+			UTIL_CenterPrintAll("- ALL PLAYERS READY: MATCH STARTING SOON... -\n");
 			return;
 		}
 		else
