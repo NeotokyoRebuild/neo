@@ -3372,12 +3372,7 @@ bool C_BaseAnimating::OnInternalDrawModel( ClientModelRenderInfo_t *pInfo )
 		pInfoLighting->GetLightingOffset( pInfo->lightingOffset );
 		pInfo->pLightingOffset = &pInfo->lightingOffset;
 	}
-#ifdef NEO
-	auto lightingOrigin = m_hLightingOrigin.Get();
-	if ( m_hLightingOrigin.Get() )
-#else
 	if ( m_hLightingOrigin )
-#endif // NEO
 	{
 		pInfo->pLightingOrigin = &(m_hLightingOrigin->GetAbsOrigin());
 	}
