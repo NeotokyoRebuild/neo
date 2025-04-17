@@ -3559,6 +3559,18 @@ int C_BaseAnimating::InternalDrawModel( int flags )
 		AngleMatrix( pInfo->angles, pInfo->origin, pInfo->modelToWorld );
 	}
 
+#ifdef NEO
+	if (IsViewModel())
+	{ // view models become dark when standing close to and facing a wall, change lighting origin
+		auto pOwner = UTIL_PlayerByIndex(GetLocalPlayerIndex());
+		if (pOwner)
+		{
+			const Vector ownerOrigin = pOwner->EyePosition();
+			pInfo->pLightingOrigin = &ownerOrigin;
+		}
+	}
+#endif // NEO
+
 	DrawModelState_t state;
 	matrix3x4_t *pBoneToWorld = NULL;
 	bool bMarkAsDrawn = modelrender->DrawModelSetup( *pInfo, &state, NULL, &pBoneToWorld );
