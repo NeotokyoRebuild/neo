@@ -717,7 +717,7 @@ void ImageTexture(const char *szTexturePath, const wchar_t *wszErrorMsg, const c
 }
 
 bool Texture(const char *szTexturePath, const int x, const int y, const int width, const int height,
-			 const char *szTextureGroup)
+			 const char *szTextureGroup, const TextureOptFlags texFlags)
 {
 	auto hdl = c->htTexMap.Find(szTexturePath);
 	if (hdl == c->htTexMap.InvalidHandle() && c->eMode == MODE_PAINT)
@@ -815,25 +815,36 @@ bool Texture(const char *szTexturePath, const int x, const int y, const int widt
 				const int iStartX = x + (width / 2) - (iDispWide / 2);
 				const int iStartY = y + (height / 2) - (iDispTall / 2);
 
-				// Only about bottom part since top always set to partition's Y position
-				const int iImgEnd = iStartY + iDispTall;
-				const int iEndOfPanelY = c->dPanel.y + c->dPanel.tall;
-
-				float flPartialShow = 1.0f;
-				if (iImgEnd > iEndOfPanelY)
-				{
-					const int iExtra = iImgEnd - iEndOfPanelY;
-					flPartialShow = 1.0f - (iExtra / static_cast<float>(iDispTall));
-				}
-
 				vgui::surface()->DrawSetColor(COLOR_WHITE);
 				vgui::surface()->DrawSetTexture(iTex);
-				vgui::surface()->DrawTexturedSubRect(
-							iStartX,
-							iStartY,
-							iStartX + iDispWide,
-							iStartY + (iDispTall * flPartialShow),
-							0.0f, 0.0f, 1.0f, flPartialShow);
+				if (texFlags & TEXTUREOPTFLAGS_DONOTCROPTOPANEL)
+				{
+					vgui::surface()->DrawTexturedRect(
+						iStartX,
+						iStartY,
+						iStartX + iDispWide,
+						iStartY + iDispTall);
+				}
+				else
+				{
+					// Only about bottom part since top always set to partition's Y position
+					const int iImgEnd = iStartY + iDispTall;
+					const int iEndOfPanelY = c->dPanel.y + c->dPanel.tall;
+
+					float flPartialShow = 1.0f;
+					if (iImgEnd > iEndOfPanelY)
+					{
+						const int iExtra = iImgEnd - iEndOfPanelY;
+						flPartialShow = 1.0f - (iExtra / static_cast<float>(iDispTall));
+					}
+
+					vgui::surface()->DrawTexturedSubRect(
+						iStartX,
+						iStartY,
+						iStartX + iDispWide,
+						iStartY + (iDispTall * flPartialShow),
+						0.0f, 0.0f, 1.0f, flPartialShow);
+				}
 				vgui::surface()->DrawSetColor(c->normalBgColor);
 			}
 			return true;

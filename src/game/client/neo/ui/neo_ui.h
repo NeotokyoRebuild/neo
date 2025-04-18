@@ -301,8 +301,13 @@ void MultiWidgetHighlighter(const int iTotalWidgets);
 /*SW*/ void ImageTexture(const char *szTexturePath, const wchar_t *wszErrorMsg = L"", const char *szTextureGroup = "");
 
 // NeoUI::Texture is non-widget, but utilizes NeoUI's image/texture handling
+enum TextureOptFlags
+{
+	TEXTUREOPTFLAGS_NONE = 0,
+	TEXTUREOPTFLAGS_DONOTCROPTOPANEL = 1, // Disable cropping based on panel's dimension
+};
 bool Texture(const char *szTexturePath, const int x, const int y, const int width, const int height,
-			 const char *szTextureGroup = "");
+			 const char *szTextureGroup = "", const TextureOptFlags texFlags = TEXTUREOPTFLAGS_NONE);
 void ResetTextures();
 
 // Non-widgets/convenience functions
