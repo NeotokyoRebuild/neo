@@ -153,7 +153,7 @@ ConVar neo_lean_thirdperson_roll_lerp_scale("neo_lean_thirdperson_roll_lerp_scal
 	FCVAR_REPLICATED | FCVAR_CHEAT, "Multiplier for 3rd person lean roll lerping.", true, 0.0, false, 0);
 #endif
 
-float CNEOPredictedViewModel::freeRoomForLean(float leanAmount, CNEO_Player *player){
+float CNEOPredictedViewModel::freeRoomForLean(float leanAmount, CNEO_Player *player, bool &leanObstacle){
 	const Vector playerDefaultViewPos = player->GetAbsOrigin();
 	Vector deltaPlayerViewPos(0, leanAmount, 0);
 	VectorYawRotate(deltaPlayerViewPos, player->LocalEyeAngles().y, deltaPlayerViewPos);
@@ -167,16 +167,17 @@ float CNEOPredictedViewModel::freeRoomForLean(float leanAmount, CNEO_Player *pla
 	// Need this much z clearance to not "bump" our head whilst leaning
 	const Vector groundClearance(0, 0, 30);
 
+	Vector hullModifier = Vector(0.75, 0.75, 1);
 #if(0) // same view limits regardless of player class
 #define STAND_MINS (NEORules()->GetViewVectors()->m_vHullMin + groundClearance)
 #define STAND_MAXS (NEORules()->GetViewVectors()->m_vHullMax)
 #define DUCK_MINS (NEORules()->GetViewVectors()->m_vDuckHullMin + groundClearance)
 #define DUCK_MAXS (NEORules()->GetViewVectors()->m_vDuckHullMax)
 #else // class hull specific limits
-#define STAND_MINS (VEC_HULL_MIN_SCALED(player) + groundClearance)
-#define STAND_MAXS (VEC_HULL_MAX_SCALED(player))
-#define DUCK_MINS (VEC_DUCK_HULL_MIN_SCALED(player) + groundClearance)
-#define DUCK_MAXS (VEC_DUCK_HULL_MAX_SCALED(player))
+#define STAND_MINS ((VEC_HULL_MIN_SCALED(player) * hullModifier) + groundClearance)
+#define STAND_MAXS (VEC_HULL_MAX_SCALED(player) * hullModifier)
+#define DUCK_MINS ((VEC_DUCK_HULL_MIN_SCALED(player) * hullModifier) + groundClearance)
+#define DUCK_MAXS (VEC_DUCK_HULL_MAX_SCALED(player) * hullModifier)
 #endif
 
 	if (player->GetFlags() & FL_DUCKING)
@@ -194,6 +195,10 @@ float CNEOPredictedViewModel::freeRoomForLean(float leanAmount, CNEO_Player *pla
 
 	trace_t trace;
 	UTIL_TraceHull(playerDefaultViewPos, leanEndPos, hullMins, hullMaxs, player->PhysicsSolidMaskForEntity(), &filter, &trace);
+	if (trace.fraction < 1)
+	{
+		leanObstacle = true;
+	}
 
 #ifdef CLIENT_DLL
 	if (neo_lean_debug_draw_hull.GetBool())
@@ -305,6 +310,7 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 #endif
 	QAngle viewAng = player->LocalEyeAngles();
 	float leanRatio = 0;
+	bool leanObstacle = false;
 
 	if (player->IsAlive() && player->GetFlags() & FL_ONGROUND)
 	{
@@ -370,10 +376,10 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 		switch (player->m_bInLean.Get())
 		{
 		case NEO_LEAN_LEFT:
-			leanRatio = freeRoomForLean(neo_lean_peek_left_amount.GetFloat(), player) / neo_lean_peek_left_amount.GetFloat();
+			leanRatio = freeRoomForLean(neo_lean_peek_left_amount.GetFloat(), player, leanObstacle) / neo_lean_peek_left_amount.GetFloat();
 			break;
 		case NEO_LEAN_RIGHT:
-			leanRatio = -freeRoomForLean(-neo_lean_peek_right_amount.GetFloat(), player) / neo_lean_peek_right_amount.GetFloat();
+			leanRatio = -freeRoomForLean(-neo_lean_peek_right_amount.GetFloat(), player, leanObstacle) / neo_lean_peek_right_amount.GetFloat();
 			break;
 		default:
 			// not leaning, or leaning both ways; move towards zero
@@ -385,8 +391,15 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 
 	if (diff != 0)
 	{
-		const float leanStep = 1 / neo_lean_speed.GetFloat() * gpGlobals->frametime;
-		m_flLeanRatio = EaseOut(m_flLeanRatio, leanRatio, leanStep);
+		if (leanObstacle && abs(m_flLeanRatio) > abs(leanRatio))
+		{ // If running into a wall, bring us back immediately to minimize camera clipping through wall. A bit jarring maybe, but maybe running your head into a wall should be
+			m_flLeanRatio = leanRatio;
+		}
+		else
+		{
+			const float leanStep = 1 / neo_lean_speed.GetFloat() * gpGlobals->frametime;
+			m_flLeanRatio = EaseOut(m_flLeanRatio, leanRatio, leanStep);
+		}
 	}
 
 	Vector viewOffset(0, 0, 0);
