@@ -1365,8 +1365,8 @@ void CNeoRoot::MainLoopSprayPicker(const MainLoopParam param)
 		vecStaticSprays.Purge();
 		FileFindHandle_t findHdl;
 		for (const char *pszFilename = filesystem->FindFirst("materials/vgui/logos/ui/*.vmt", &findHdl);
-			 pszFilename;
-			 pszFilename = filesystem->FindNext(findHdl))
+				pszFilename;
+				pszFilename = filesystem->FindNext(findHdl))
 		{
 			// spray.vmt is only used for currently applying spray
 			if (V_strcmp(pszFilename, "spray.vmt") == 0)
@@ -1410,7 +1410,10 @@ void CNeoRoot::MainLoopSprayPicker(const MainLoopParam param)
 			V_sprintf_safe(sprayInfo.szPath, "vgui/logos/ui/%s", sprayInfo.szBaseName);
 			V_sprintf_safe(sprayInfo.szVtf, "materials/vgui/logos/%s.vtf", sprayInfo.szBaseName);
 
-			vecStaticSprays.AddToTail(sprayInfo);
+			if (filesystem->FileExists(sprayInfo.szVtf))
+			{
+				vecStaticSprays.AddToTail(sprayInfo);
+			}
 		}
 		filesystem->FindClose(findHdl);
 
@@ -1834,11 +1837,12 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 			{
 				static constexpr int TEXWH = 6;
 				const int iTexSprayWH = g_uiCtx.layout.iRowTall * TEXWH;
+				int scrWide, scrTall;
+				vgui::surface()->GetScreenSize(scrWide, scrTall);
 				NeoUI::Texture(m_sprayToDelete.szPath,
-							   g_uiCtx.iLayoutX + (g_uiCtx.dPanel.wide / 2) - (iTexSprayWH / 2),
-							   g_uiCtx.iLayoutY - iTexSprayWH - g_uiCtx.layout.iRowTall,
-							   iTexSprayWH,
-							   iTexSprayWH);
+							   (scrWide / 2) - (iTexSprayWH / 2),
+							   (scrTall / 3) - (iTexSprayWH / 2),
+							   iTexSprayWH, iTexSprayWH, "", NeoUI::TEXTUREOPTFLAGS_DONOTCROPTOPANEL);
 
 				NeoUI::Label(L"Do you want to delete this spray?");
 				NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
@@ -2037,7 +2041,16 @@ void CNeoRoot::OnFileSelectedMode_Spray(const char *szFullpath)
 
 	char szBaseFName[MAX_PATH] = {};
 	{
-		const char *pLastSlash = V_strrchr(szFullpath, '/');
+		static constexpr const char OS_PATH_SEP =
+#ifdef WIN32
+			'\\'
+#else
+			'/'
+#endif
+		;
+
+		const char *pLastSlash = V_strrchr(szFullpath, OS_PATH_SEP);
+
 		const char *pszBaseName = pLastSlash ? pLastSlash + 1 : szFullpath;
 		int iSzLen = V_strlen(pszBaseName);
 		const char *pszDot = strchr(pszBaseName, '.');
