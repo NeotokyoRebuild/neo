@@ -391,7 +391,10 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 
 	if (diff != 0)
 	{
-		if (leanObstacle && abs(m_flLeanRatio) > abs(leanRatio))
+		bool currentGreaterThanZero = m_flLeanRatio > 0;
+		bool targetGreaterThanZero = leanRatio > 0;
+		bool sameSide = (currentGreaterThanZero && targetGreaterThanZero) || (!currentGreaterThanZero && !targetGreaterThanZero);
+		if (leanObstacle && sameSide && abs(m_flLeanRatio) > abs(leanRatio))
 		{ // If running into a wall, bring us back immediately to minimize camera clipping through wall. A bit jarring maybe, but maybe running your head into a wall should be
 			m_flLeanRatio = leanRatio;
 		}
