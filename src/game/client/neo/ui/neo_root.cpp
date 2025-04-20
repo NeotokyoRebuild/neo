@@ -1850,6 +1850,58 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 				{
 					if (NeoUI::Button(L"Yes (Enter)").bPressed || NeoUI::Bind(KEY_ENTER))
 					{
+						// NOTE (nullsystem): Check if the texture matches byte for byte
+						// for the current set spray. If so, replace it with the default spray.
+						{
+							static constexpr const char PSZ_CURRENT_SPRAY[] = "materials/vgui/logos/spray.vtf";
+							char szPathToAboutToDel[MAX_PATH];
+							V_sprintf_safe(szPathToAboutToDel, "materials/vgui/logos/%s.vtf", m_sprayToDelete.szBaseName);
+
+							bool bDelCurSpray = false;
+
+							if (filesystem->FileExists(PSZ_CURRENT_SPRAY) &&
+									filesystem->FileExists(szPathToAboutToDel))
+							{
+								const unsigned int uSizeCurSpray = filesystem->Size(PSZ_CURRENT_SPRAY);
+								const unsigned int uSizeDelSpray = filesystem->Size(szPathToAboutToDel);
+								if (uSizeCurSpray == uSizeDelSpray)
+								{
+									const unsigned int uSizeSpray = uSizeCurSpray;
+									FileHandle_t hdlCurSpray = filesystem->Open(PSZ_CURRENT_SPRAY, "rb");
+									FileHandle_t hdlDelSpray = filesystem->Open(szPathToAboutToDel, "rb");
+									if (hdlCurSpray && hdlDelSpray)
+									{
+										unsigned char *pbCurSpray = reinterpret_cast<unsigned char *>(calloc(
+													uSizeSpray * 2, sizeof(unsigned char)));
+
+										if (pbCurSpray)
+										{
+											unsigned char *pbDelSpray = pbCurSpray + uSizeSpray;
+
+											filesystem->Read(pbCurSpray, uSizeSpray, hdlCurSpray);
+											filesystem->Read(pbDelSpray, uSizeSpray, hdlDelSpray);
+
+											// Check byte for byte if it matches to determine deletion
+											bDelCurSpray = (V_memcmp(pbCurSpray, pbDelSpray, uSizeSpray) == 0);
+
+											pbDelSpray = nullptr;
+											free(pbCurSpray);
+										}
+									}
+									if (hdlCurSpray) filesystem->Close(hdlCurSpray);
+									if (hdlDelSpray) filesystem->Close(hdlDelSpray);
+								}
+							}
+
+							// NOTE (nullsystem): If current spray matches deleted one,
+							// replace it with the default spray
+							if (bDelCurSpray)
+							{
+								m_eFileIOMode = FILEIODLGMODE_SPRAY;
+								OnFileSelected("materials/vgui/logos/spray_lambda.vtf");
+							}
+						}
+
 						// NOTE (nullsystem): Spray related files to remove:
 						// * materials/vgui/logos/SPRAY.vtf
 						// * materials/vgui/logos/SPRAY.vmt
