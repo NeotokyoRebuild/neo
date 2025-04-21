@@ -222,9 +222,6 @@ class NeoLoadoutMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback(const CCommand& command)
 	{
-#if DEBUG
-		DevMsg("Loadout access cb\n");
-#endif
 		if (engine->IsPlayingDemo() || NEORules()->GetForcedWeapon() >= 0)
 		{
 			return;
@@ -322,7 +319,7 @@ public:
 			return;
 		}
 
-		if (command.ArgC() > 1 && !command.FindArg("skipTeamCheck"))
+		if (!command.FindArg("skipTeamCheck"))
 		{ // A smarter way to do this might be to assign the buttons for class and weapons menu to unique commands that check the current team and call this commandcallback
 			auto team = GetLocalPlayerTeam();
 			if(team < FIRST_GAME_TEAM)
