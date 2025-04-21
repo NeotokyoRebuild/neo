@@ -1310,7 +1310,7 @@ void C_NEO_Player::PostThink(void)
 
 	if (IsLocalPlayer())
 	{
-		neo_this_client_speed.SetValue(MIN(GetAbsVelocity().Length2D() / GetNormSpeed(), 1.0f));
+	neo_this_client_speed.SetValue(MIN(GetAbsVelocity().Length2D() / GetNormSpeed(), 1.0f));
 	}
 
 	if (!IsAlive())
@@ -1366,16 +1366,6 @@ void C_NEO_Player::PostThink(void)
 				.a = 255,
 			};
 			vieweffects->Fade(sfade);
-
-			auto target = GetObserverTarget();
-			if (!IsValidObserverTarget(target))
-			{
-				auto nextTarget = FindNextObserverTarget(false);
-				if (nextTarget && nextTarget != target)
-				{
-					SetObserverTarget(nextTarget);
-				}
-			}
 		}
 		return;
 	}
@@ -1741,40 +1731,6 @@ float C_NEO_Player::GetSprintSpeed(void) const
 	default:
 		return NEO_BASE_SPEED; // No generic sprint modifier; default speed.
 	}
-}
-
-void C_NEO_Player::CalcChaseCamView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov)
-{
-	if (!HandleDeathSpecCamSwitch(eyeOrigin, eyeAngles, fov))
-	{
-		BaseClass::CalcChaseCamView(eyeOrigin, eyeAngles, fov);
-	}
-}
-
-void C_NEO_Player::CalcInEyeCamView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov)
-{
-	if (!HandleDeathSpecCamSwitch(eyeOrigin, eyeAngles, fov))
-	{
-		BaseClass::CalcInEyeCamView(eyeOrigin, eyeAngles, fov);
-	}
-}
-
-bool C_NEO_Player::HandleDeathSpecCamSwitch(Vector& eyeOrigin, QAngle& eyeAngles, float& fov)
-{
-	fov = GetFOV(); // jic the caller relies on us initializing this
-	auto target = GetObserverTarget();
-	if (!IsValidObserverTarget(target))
-	{
-		auto nextTarget = FindNextObserverTarget(false);
-		if (nextTarget && nextTarget != target)
-		{
-			SetObserverTarget(nextTarget);
-		}
-		VectorCopy(EyePosition(), eyeOrigin);
-		VectorCopy(EyeAngles(), eyeAngles);
-		return true;
-	}
-	return false;
 }
 
 float C_NEO_Player::GetActiveWeaponSpeedScale() const

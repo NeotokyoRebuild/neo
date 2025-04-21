@@ -1316,6 +1316,35 @@ void CNEO_Player::PostThink(void)
 			m_bInLean = NEO_LEAN_NONE;
 		}
 
+		auto observerMode = GetObserverMode();
+		if (observerMode == OBS_MODE_CHASE || observerMode == OBS_MODE_IN_EYE)
+		{
+			auto target = GetObserverTarget();
+			if (!IsValidObserverTarget(target))
+			{
+				auto nextTarget = FindNextObserverTarget(false);
+				if (nextTarget && nextTarget != target)
+				{
+					SetObserverTarget(nextTarget);
+				}
+			}
+		}
+
+		if ((observerMode == OBS_MODE_DEATHCAM || observerMode == OBS_MODE_NONE) && gpGlobals->curtime >= (GetDeathTime() + DEATH_ANIMATION_TIME))
+		{ // We switch observer mode to none to view own body in third person so assume should still be changing observer targets
+			auto target = GetObserverTarget();
+			if (!IsValidObserverTarget(target))
+			{
+				auto nextTarget = FindNextObserverTarget(false);
+				if (nextTarget && nextTarget != target)
+				{
+					SetObserverTarget(nextTarget);
+				}
+			}
+			SetObserverMode(OBS_MODE_IN_EYE);
+		}
+
+
 		return;
 	}
 	else
