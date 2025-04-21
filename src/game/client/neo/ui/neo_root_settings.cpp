@@ -456,7 +456,8 @@ void NeoToggleConsoleEnforce()
 
 void NeoSettingsSave(const NeoSettings *ns)
 {
-	const_cast<NeoSettings *>(ns)->bModified = false;
+	auto modifiableNS = const_cast<NeoSettings*>(ns);
+	modifiableNS->bModified = false;
 	auto *cvr = const_cast<NeoSettings::CVR *>(&ns->cvr);
 	{
 		const NeoSettings::General *pGeneral = &ns->general;
@@ -611,6 +612,11 @@ void NeoSettingsSave(const NeoSettings *ns)
 
 	engine->ClientCmd_Unrestricted("host_writeconfig");
 	engine->ClientCmd_Unrestricted("mat_savechanges");
+
+	// Precache gamecontrolui buttons (maybe precache neo_toggleconsole here since it sometimes doesn't work?)
+	modifiableNS->keys.bcTeamMenu = gameuifuncs->GetButtonCodeForBind("teammenu");
+	modifiableNS->keys.bcClassMenu = gameuifuncs->GetButtonCodeForBind("classmenu");
+	modifiableNS->keys.bcLoadoutMenu = gameuifuncs->GetButtonCodeForBind("loadoutmenu");
 }
 
 void NeoSettingsResetToDefault(NeoSettings *ns)
