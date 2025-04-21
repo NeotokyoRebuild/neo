@@ -1310,7 +1310,7 @@ void C_NEO_Player::PostThink(void)
 
 	if (IsLocalPlayer())
 	{
-	neo_this_client_speed.SetValue(MIN(GetAbsVelocity().Length2D() / GetNormSpeed(), 1.0f));
+		neo_this_client_speed.SetValue(MIN(GetAbsVelocity().Length2D() / GetNormSpeed(), 1.0f));
 	}
 
 	if (!IsAlive())
