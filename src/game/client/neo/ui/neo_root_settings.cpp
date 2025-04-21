@@ -220,7 +220,7 @@ void NeoSettingsInit(NeoSettings *ns)
 		}
 	}
 
-	// Precache gamecontrolui buttons
+	// Precache gamecontrolui buttons (maybe precache neo_toggleconsole here since it sometimes doesn't work?)
 	ns->keys.bcTeamMenu = gameuifuncs->GetButtonCodeForBind("teammenu");
 	ns->keys.bcClassMenu = gameuifuncs->GetButtonCodeForBind("classmenu");
 	ns->keys.bcLoadoutMenu = gameuifuncs->GetButtonCodeForBind("loadoutmenu");
