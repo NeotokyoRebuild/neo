@@ -219,6 +219,11 @@ void NeoSettingsInit(NeoSettings *ns)
 			vgui::surface()->DrawGetTextureSize(pTex->iTexId, pTex->iWide, pTex->iTall);
 		}
 	}
+
+	// Precache gamecontrolui buttons
+	ns->keys.bcTeamMenu = gameuifuncs->GetButtonCodeForBind("teammenu");
+	ns->keys.bcClassMenu = gameuifuncs->GetButtonCodeForBind("classmenu");
+	ns->keys.bcLoadoutMenu = gameuifuncs->GetButtonCodeForBind("loadoutmenu");
 }
 
 void NeoSettingsDeinit(NeoSettings *ns)
