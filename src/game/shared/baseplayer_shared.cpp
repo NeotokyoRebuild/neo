@@ -560,7 +560,8 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 		return;
 	
 #ifdef NEO
-	if (static_cast<CNEO_Player*>(this)->GetNeoFlags() & NEO_FL_FREEZETIME)
+	auto neoPlayer = static_cast<CNEO_Player*>(this);
+	if (neoPlayer->GetNeoFlags() & NEO_FL_FREEZETIME)
 		return;
 #endif
 
@@ -688,7 +689,7 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 	if ( GetFlags() & FL_DUCKING )
 	{
 		fvol *= 0.65;
-#ifdef NEO
+#ifndef NEO
 		if (speed <= 60)
 		{
 			return;
@@ -696,9 +697,12 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 #endif // NEO
 	}
 #ifdef NEO
-	else if ( speed <= 90) {
+
+	if (speed <= 200 && !(neoPlayer->IsSprinting()) && neoPlayer->IsWalking())
+	{
 		return;
 	}
+
 #endif
 	PlayStepSound( feet, psurface, fvol, false );
 }
