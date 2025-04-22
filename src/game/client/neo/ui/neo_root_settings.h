@@ -246,6 +246,7 @@ void NeoSettingsDeinit(NeoSettings *ns);
 void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKeys = NeoSettings::Keys::NONE);
 void NeoSettingsSave(const NeoSettings *ns);
 void NeoSettingsResetToDefault(NeoSettings *ns);
+void NeoSettingsUpdateCached(NeoSettings *ns);
 
 void NeoSettings_General(NeoSettings *ns);
 void NeoSettings_Keys(NeoSettings *ns);
