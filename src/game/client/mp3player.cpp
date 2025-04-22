@@ -2446,6 +2446,10 @@ void CMP3Player::LoadPlayList( char const *filename )
 	// Clear existing playlist
 	m_PlayList.RemoveAll();
 	m_pFileSheet->ResetPlayList();
+	m_Files.RemoveAll();
+
+	// Update most recent playlist
+	SetMostRecentPlayList(filename);
 #endif // NEO
 
 	m_PlayListFileName = filename;
