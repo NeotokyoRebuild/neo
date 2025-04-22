@@ -26,16 +26,16 @@
 
 using vgui::surface;
 
-ConVar neo_cl_hud_ammo_enabled("neo_cl_hud_ammo_enabled", "1", FCVAR_USERINFO,
+ConVar cl_neo_hud_ammo_enabled("cl_neo_hud_ammo_enabled", "1", FCVAR_USERINFO,
 	"Whether the HUD ammo is enabled or not.", true, 0, true, 1);
 
-ConVar neo_cl_hud_debug_ammo_color_r("neo_cl_hud_debug_ammo_color_r", "190", FCVAR_USERINFO | FCVAR_CHEAT,
+ConVar cl_neo_hud_debug_ammo_color_r("cl_neo_hud_debug_ammo_color_r", "190", FCVAR_USERINFO | FCVAR_CHEAT,
 	"Red color value of the ammo, in range 0 - 255.", true, 0.0f, true, 255.0f);
-ConVar neo_cl_hud_debug_ammo_color_g("neo_cl_hud_debug_ammo_color_g", "185", FCVAR_USERINFO | FCVAR_CHEAT,
+ConVar cl_neo_hud_debug_ammo_color_g("cl_neo_hud_debug_ammo_color_g", "185", FCVAR_USERINFO | FCVAR_CHEAT,
 	"Green color value of the ammo, in range 0 - 255.", true, 0.0f, true, 255.0f);
-ConVar neo_cl_hud_debug_ammo_color_b("neo_cl_hud_debug_ammo_color_b", "205", FCVAR_USERINFO | FCVAR_CHEAT,
+ConVar cl_neo_hud_debug_ammo_color_b("cl_neo_hud_debug_ammo_color_b", "205", FCVAR_USERINFO | FCVAR_CHEAT,
 	"Blue value of the ammo, in range 0 - 255.", true, 0.0f, true, 255.0f);
-ConVar neo_cl_hud_debug_ammo_color_a("neo_cl_hud_debug_ammo_color_a", "255", FCVAR_USERINFO | FCVAR_CHEAT,
+ConVar cl_neo_hud_debug_ammo_color_a("cl_neo_hud_debug_ammo_color_a", "255", FCVAR_USERINFO | FCVAR_CHEAT,
 	"Alpha color value of the ammo, in range 0 - 255.", true, 0.0f, true, 255.0f);
 
 DECLARE_NAMED_HUDELEMENT(CNEOHud_Ammo, NHudWeapon);
@@ -46,6 +46,7 @@ CNEOHud_Ammo::CNEOHud_Ammo(const char* pElementName, vgui::Panel* parent)
 	: CHudElement(pElementName), EditablePanel(parent, pElementName)
 {
 	SetAutoDelete(true);
+	m_iHideHudElementNumber = NEO_HUD_ELEMENT_AMMO;
 
 	if (parent)
 	{
@@ -59,7 +60,7 @@ CNEOHud_Ammo::CNEOHud_Ammo(const char* pElementName, vgui::Panel* parent)
 	surface()->GetScreenSize(m_resX, m_resY);
 	SetBounds(0, 0, m_resX, m_resY);
 
-	SetVisible(neo_cl_hud_ammo_enabled.GetBool());
+	SetVisible(cl_neo_hud_ammo_enabled.GetBool());
 
 	SetHiddenBits(HIDEHUD_HEALTH | HIDEHUD_PLAYERDEAD | HIDEHUD_NEEDSUIT | HIDEHUD_WEAPONSELECTION);
 }
@@ -131,7 +132,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 	const int numClips = ceil(abs((float)ammoCount / activeWep->GetMaxClip1())); // abs because grenades return negative values (???) // casting division to float in case we have a half-empty mag, rounding up to show the half mag as one more mag
 	const bool isSupa = activeWep->GetNeoWepBits() & NEO_WEP_SUPA7;
 		
-	if (activeWep->UsesClipsForAmmo1()) {
+	if (activeWep->UsesClipsForAmmo1() && !(activeWep->GetNeoWepBits() & NEO_WEP_DETPACK)) {
 		const int maxLen = 5;
 		char clipsText[maxLen]{ '\0' };
 		if(isSupa)
@@ -160,7 +161,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 	int magSizeMax = 0;
 	int magSizeCurrent = 0;
 		
-	if (activeWep->UsesClipsForAmmo1()) 
+	if (activeWep->UsesClipsForAmmo1() && !(activeWep->GetNeoWepBits() & NEO_WEP_THROWABLE)) 
 	{
 		char fireModeText[2]{ '\0' };
 
@@ -290,7 +291,7 @@ void CNEOHud_Ammo::DrawNeoHudElement()
 		return;
 	}
 
-	if (neo_cl_hud_ammo_enabled.GetBool())
+	if (cl_neo_hud_ammo_enabled.GetBool())
 	{
 		DrawAmmo();
 	}

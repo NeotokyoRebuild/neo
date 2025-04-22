@@ -3,6 +3,7 @@ WeaponData
 	// Weapon data is loaded by both the Game and Client DLLs.
 	"printname"		"SMAC"
 	"BulletCharacter"	"a"
+	"iDeathIcon"		"B"
 	"viewmodel"		"models/weapons/v_vip_smac.mdl"
 	"team2viewmodel"	"models/weapons/v_vip_smac.mdl"
 	"playermodel"		"models/weapons/w_smac.mdl"

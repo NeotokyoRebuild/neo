@@ -14,6 +14,11 @@ public:
 	static CNEOGameConfig* s_pGameRulesToConfig;
 
 	int m_GameType = NEO_GAME_TYPE_TDM;
+	int m_HiddenHudElements = 0;
+	int m_ForcedTeam = -1;
+	int m_ForcedClass = -1;
+	int m_ForcedSkin = -1;
+	int m_ForcedWeapon = -1;
 
 	// Inputs
 	void InputFireTeamWin(inputdata_t& inputData);
@@ -23,7 +28,9 @@ public:
 	// Outputs
 	void OutputRoundEnd();
 	void OutputRoundStart();
+	void OutputCompetitive();
 
 	COutputEvent m_OnRoundEnd;
 	COutputEvent m_OnRoundStart;
+	COutputEvent m_OnCompetitive;
 };

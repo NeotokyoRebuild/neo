@@ -4,6 +4,7 @@
 #include "vgui_controls/Label.h"
 #include "vgui_controls/ImagePanel.h"
 #include "vgui_controls/Button.h"
+#include "neo/game_controls/neo_button.h"
 
 #include <vgui/ILocalize.h>
 #include <vgui/ISurface.h>
@@ -13,6 +14,8 @@
 #include "c_neo_player.h"
 #include "weapon_neobasecombatweapon.h"
 #include "neo_weapon_loadout.h"
+#include "neo_gamerules.h"
+#include "ui/neo_root.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -130,7 +133,6 @@ void CNeoLoadoutMenu::FindButtons()
 	m_pButton10 = FindControl<Button>(CONTROL_BUTTON10);
 	m_pButton11 = FindControl<Button>(CONTROL_BUTTON11);
 	m_pButton12 = FindControl<Button>(CONTROL_BUTTON12);
-	returnButton = FindControl<Button>("ReturnButton");
 
 	for (int i = 0; i < iNumButtonStrings; i++)
 	{
@@ -147,6 +149,7 @@ void CNeoLoadoutMenu::FindButtons()
 		button->SetMouseInputEnabled(true);
 	}
 
+	returnButton = FindControl<CNeoButton>("ReturnButton");
 	returnButton->SetUseCaptureMouse(true);
 	returnButton->SetMouseInputEnabled(true);
 	if (!returnButton)
@@ -214,7 +217,7 @@ void CNeoLoadoutMenu::OnMousePressed(vgui::MouseCode code)
 
 extern ConCommand loadoutmenu;
 
-extern ConVar neo_sv_ignore_wep_xp_limit;
+extern ConVar sv_neo_ignore_wep_xp_limit;
 
 void CNeoLoadoutMenu::OnClose()
 {
@@ -232,10 +235,8 @@ void CNeoLoadoutMenu::OnCommand(const char* command)
 	}
 
 	if (Q_stristr(command, "classmenu"))
-	{ // return to class selection 
-		CommandCompletion();
+	{ // return to class selection
 		ChangeMenu("classmenu");
-		engine->ClientCmd(command);
 		return;
 	}
 
@@ -277,33 +278,28 @@ void CNeoLoadoutMenu::ChangeMenu(const char* menuName = NULL)
 {
 	CommandCompletion();
 	ShowPanel(false);
-	C_NEO_Player* player = C_NEO_Player::GetLocalNEOPlayer();
-	if (player)
+	m_bLoadoutMenu = false;
+	if (menuName == NULL)
 	{
-		m_bLoadoutMenu = false;
-		if (menuName == NULL)
-		{
-			return;
-		}
-		if (Q_stricmp(menuName, "classmenu") == 0)
-		{
-			engine->ClientCmd(menuName);
-		}
+		return;
 	}
-	else
+	if (Q_stricmp(menuName, "classmenu") == 0 && NEORules()->GetForcedClass() < 0)
 	{
-		Assert(false);
+		engine->ClientCmd(menuName);
 	}
 }
 
 void CNeoLoadoutMenu::OnKeyCodeReleased(vgui::KeyCode code)
 {
-	switch (code) {
-	case KEY_F3: // F3 - Close the menu
+	if (code == g_pNeoRoot->m_ns.keys.bcLoadoutMenu)
+	{
 		ChangeMenu(NULL);
-		break;
-	case KEY_SPACE: // Spacebar - Try to equip weapon in the second slot like in the base game
-		OnCommand("loadout 1");
+		return;
+	}
+
+	switch (code) {
+	case KEY_SPACE: // Continue with the currently selected weapon
+		ChangeMenu(NULL);
 		break;
 	default:
 		// Ignore other key presses
@@ -359,7 +355,7 @@ void CNeoLoadoutMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 		image->SetImage("loadout/loadout_none");
 	}
 
-	returnButton = FindControl<Button>("ReturnButton");
+	returnButton = FindControl<CNeoButton>("ReturnButton");
 	returnButton->SetUseCaptureMouse(true);
 	returnButton->SetMouseInputEnabled(true);
 	InvalidateLayout();

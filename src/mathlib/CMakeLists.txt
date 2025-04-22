@@ -22,6 +22,12 @@ target_link_libraries(mathlib
 	tier1::tier1
 )
 
+if (OS_LINUX)
+    set_target_properties(mathlib PROPERTIES
+        POSITION_INDEPENDENT_CODE ON
+    )
+endif ()
+
 target_sources_grouped(
     TARGET mathlib
     NAME "Source Files"

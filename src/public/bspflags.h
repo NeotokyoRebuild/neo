@@ -123,15 +123,9 @@
 // everything that blocks line of sight for players, but with monsters added.
 #define MASK_VISIBLE_AND_NPCS		(MASK_OPAQUE_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE)
 // bullets see these as solid
-#ifdef NEO
-#define	MASK_SHOT					(CONTENTS_WATER|CONTENTS_SOLID|CONTENTS_MOVEABLE|CONTENTS_MONSTER|CONTENTS_WINDOW|CONTENTS_DEBRIS|CONTENTS_HITBOX)
-// non-raycasted weapons see this as solid (includes grates)
-#define MASK_SHOT_HULL				(CONTENTS_WATER|CONTENTS_SOLID|CONTENTS_MOVEABLE|CONTENTS_MONSTER|CONTENTS_WINDOW|CONTENTS_DEBRIS|CONTENTS_GRATE)
-#else
 #define	MASK_SHOT					(CONTENTS_SOLID|CONTENTS_MOVEABLE|CONTENTS_MONSTER|CONTENTS_WINDOW|CONTENTS_DEBRIS|CONTENTS_HITBOX)
 // non-raycasted weapons see this as solid (includes grates)
 #define MASK_SHOT_HULL				(CONTENTS_SOLID|CONTENTS_MOVEABLE|CONTENTS_MONSTER|CONTENTS_WINDOW|CONTENTS_DEBRIS|CONTENTS_GRATE)
-#endif
 // hits solids (not grates) and passes through everything else
 #define MASK_SHOT_PORTAL			(CONTENTS_SOLID|CONTENTS_MOVEABLE|CONTENTS_WINDOW|CONTENTS_MONSTER)
 // everything normally solid, except monsters (world+brush only)

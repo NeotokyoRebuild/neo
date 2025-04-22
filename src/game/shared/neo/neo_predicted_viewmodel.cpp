@@ -145,7 +145,7 @@ ConVar neo_lean_speed("neo_lean_speed", "0.2", FCVAR_REPLICATED | FCVAR_CHEAT, "
 ConVar neo_lean_peek_left_amount("neo_lean_peek_left_amount", "7.5", FCVAR_REPLICATED | FCVAR_CHEAT, "How far sideways will a full left lean view reach.", true, 0.001f, false, 0); // 7.5 in OGNT
 ConVar neo_lean_peek_right_amount("neo_lean_peek_right_amount", "15.0", FCVAR_REPLICATED | FCVAR_CHEAT, "How far sideways will a full right lean view reach.", true, 0.001f, false, 0); // 15 in OGNT
 ConVar neo_lean_fp_angle("neo_lean_fp_angle", "20", FCVAR_REPLICATED | FCVAR_CHEAT, "How many degrees does the camera lean.", true, 0.0, true, 45.0); // 20 in OGNT
-ConVar neo_lean_tp_angle("neo_lean_tp_angle", "20", FCVAR_REPLICATED | FCVAR_CHEAT, "How many degrees does the player character lean.", true, 0.0, true, 45.0); // 20 in OGNT
+ConVar neo_lean_tp_angle("neo_lean_tp_angle", "35", FCVAR_REPLICATED | FCVAR_CHEAT, "How many degrees does the player character lean.", true, 0.0, true, 45.0); // 35 in OGNT
 ConVar neo_lean_fp_lower_eyes("neo_lean_fp_lower_eyes", "2", FCVAR_REPLICATED | FCVAR_CHEAT, "How low to bring eye-level when leaning.", true, 0.0, false, 0); // 0 in OGNT
 
 #if(0)
@@ -292,7 +292,7 @@ float EaseOut(float current, float target, float step)
 
 #ifdef CLIENT_DLL
 ConVar cl_neo_lean_viewmodel_only("cl_neo_lean_viewmodel_only", "0", FCVAR_ARCHIVE, "Rotate view-model instead of camera when leaning", true, 0, true, 1);
-ConVar cl_neo_lean_automatic("cl_neo_lean_automatic", "0", FCVAR_ARCHIVE, "Automatic leaning around corners", true, 0, true, 1);
+ConVar cl_neo_lean_automatic("cl_neo_lean_automatic", "0", FCVAR_ARCHIVE, "Automatic leaning around corners", true, 0, true, 2);
 #ifdef DEBUG
 ConVar cl_neo_lean_automatic_debug("cl_neo_lean_automatic_debug", "0", FCVAR_ARCHIVE | FCVAR_DEVELOPMENTONLY, "Show automatic leaning tracelines", true, 0, true, 1);
 #endif // DEBUG
@@ -309,54 +309,57 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 	if (player->IsAlive() && player->GetFlags() & FL_ONGROUND)
 	{
 #ifdef CLIENT_DLL
-		if (cl_neo_lean_automatic.GetBool())
+		int cl_neo_lean_automatic_value = cl_neo_lean_automatic.GetInt();
+		if (cl_neo_lean_automatic_value)
 		{
-			Vector startPos = player->GetAbsOrigin();
-			startPos.z = player->EyePosition().z; // Ideally shouldn't move due to lean but this is a nice spot
-			constexpr float tracelineAngleChange = 15.f;
-			constexpr int startingDistance = 80;
-			int distance = startingDistance;
 			int total = 0;
-			trace_t tr;
-			CTraceFilterHitAll filter;
-			for (int i = 1; i <= 10; i++)
+			if (cl_neo_lean_automatic_value == 2 || (cl_neo_lean_automatic_value == 1 && player->IsInAim()))
 			{
-				Vector endPos = startPos;
-				float offset = (i / (tracelineAngleChange - i));
-				endPos.x += cos(DEG2RAD(viewAng.y) + offset) * distance;
-				endPos.y += sin(DEG2RAD(viewAng.y) + offset) * distance;
-				UTIL_TraceLine(startPos, endPos, MASK_ALL, &filter, &tr);
-				if (tr.fraction != 1.0)
+				Vector startPos = player->GetAbsOrigin();
+				startPos.z = player->EyePosition().z; // Ideally shouldn't move due to lean but this is a nice spot
+				constexpr float tracelineAngleChange = 15.f;
+				constexpr int startingDistance = 80;
+				int distance = startingDistance;
+				trace_t tr;
+				for (int i = 1; i <= 10; i++)
 				{
-					total -= 1;
+					Vector endPos = startPos;
+					float offset = (i / (tracelineAngleChange - i));
+					endPos.x += cos(DEG2RAD(viewAng.y) + offset) * distance;
+					endPos.y += sin(DEG2RAD(viewAng.y) + offset) * distance;
+					UTIL_TraceLine(startPos, endPos, MASK_SHOT_HULL, player, COLLISION_GROUP_NONE, &tr);
+					if (tr.fraction != 1.0)
+					{
+						total -= 1;
+					}
+					distance = Max(20, distance - 5);
+	#ifdef DEBUG
+					if (cl_neo_lean_automatic_debug.GetBool())
+					{
+						DebugDrawLine(startPos, endPos, 0, tr.fraction == 1.0 ? 255 : 0, 255, 0, 0);
+					}
+	#endif // DEBUG
 				}
-				distance = Max(20, distance - 5);
-#ifdef DEBUG
-				if (cl_neo_lean_automatic_debug.GetBool())
+				distance = startingDistance;
+				for (int i = -1; i >= -10; i--)
 				{
-					DebugDrawLine(startPos, endPos, 0, tr.fraction == 1.0 ? 255 : 0, 255, 0, 0);
+					Vector endPos = startPos;
+					float offset = (i / (tracelineAngleChange + i));
+					endPos.x += cos(DEG2RAD(viewAng.y) + offset) * distance;
+					endPos.y += sin(DEG2RAD(viewAng.y) + offset) * distance;
+					UTIL_TraceLine(startPos, endPos, MASK_SHOT_HULL, player, COLLISION_GROUP_NONE, &tr);
+					if (tr.fraction != 1.0)
+					{
+						total += 1;
+					}
+					distance = Max(20, distance - 5);
+	#ifdef DEBUG
+					if (cl_neo_lean_automatic_debug.GetBool())
+					{
+						DebugDrawLine(startPos, endPos, 255, tr.fraction == 1.0 ? 255 : 0, 0, 0, 0);
+					}
+	#endif // DEBUG
 				}
-#endif // DEBUG
-			}
-			distance = startingDistance;
-			for (int i = -1; i >= -10; i--)
-			{
-				Vector endPos = startPos;
-				float offset = (i / (tracelineAngleChange + i));
-				endPos.x += cos(DEG2RAD(viewAng.y) + offset) * distance;
-				endPos.y += sin(DEG2RAD(viewAng.y) + offset) * distance;
-				UTIL_TraceLine(startPos, endPos, MASK_ALL, &filter, &tr);
-				if (tr.fraction != 1.0)
-				{
-					total += 1;
-				}
-				distance = Max(20, distance - 5);
-#ifdef DEBUG
-				if (cl_neo_lean_automatic_debug.GetBool())
-				{
-					DebugDrawLine(startPos, endPos, 255, tr.fraction == 1.0 ? 255 : 0, 0, 0, 0);
-				}
-#endif // DEBUG
 			}
 			if (total < 0)	{ IN_LeanRight(); }
 			else if (total > 0) { IN_LeanLeft(); }
@@ -397,7 +400,7 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 	player->SetViewOffset(viewOffset);
 
 #ifdef CLIENT_DLL
-	viewAng.z = -m_flLeanRatio * neo_lean_fp_angle.GetFloat();;
+	viewAng.z = -m_flLeanRatio * neo_lean_fp_angle.GetFloat();
 	engine->SetViewAngles(viewAng);
 #endif
 
@@ -409,6 +412,7 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 	return -m_flLeanRatio * neo_lean_tp_angle.GetFloat();
 }
 
+extern ConVar cl_righthand;
 void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 	const Vector& eyePosition, const QAngle& eyeAngles)
 {
@@ -478,21 +482,37 @@ void CNEOPredictedViewModel::CalcViewModelView(CBasePlayer *pOwner,
 				vOffset = (playerAiming) ? data.m_vecVMAimPosOffset : data.m_vecVMPosOffset;
 				angOffset = (playerAiming) ? data.m_angVMAimAngOffset : data.m_angVMAngOffset;
 			}
+
+#ifdef CLIENT_DLL
+			if (cl_neo_lean_viewmodel_only.GetBool())
+			{ // extra viewmodel offset for when gun rotation would obstruct center of the screen. Should probably be done on a per weapon basis instead
+				float percent = m_iv_flLeanRatio.GetCurrent();
+				const bool rightHand = cl_righthand.GetBool();
+				if ((rightHand && percent < 0) || (!rightHand && percent > 0))
+				{
+					percent = abs(percent);
+					constexpr float FINAL_Y_EXTRA_OFFSET = 3;
+					constexpr float FINAL_Z_EXTRA_OFFSET = 1;
+					vOffset.y += FINAL_Y_EXTRA_OFFSET * percent;
+					vOffset.z -= FINAL_Z_EXTRA_OFFSET * percent;
+				}
+			}
+#endif // CLIENT_DLL
 			m_vOffset = vOffset;
 			m_angOffset = angOffset;
 		}
-	}
 
-	newPos += vForward * vOffset.x;
-	newPos += vRight * vOffset.y;
-	newPos += vUp * vOffset.z;
+		newPos += vForward * vOffset.x;
+		newPos += vRight * vOffset.y;
+		newPos += vUp * vOffset.z;
+	}
 
 	newAng += angOffset;
 #ifdef CLIENT_DLL
 	if (cl_neo_lean_viewmodel_only.GetBool())
 	{
 		QAngle angles = pOwner->EyeAngles();
-		newAng.z += angles.z;
+		newAng.z += cl_righthand.GetBool() ? angles.z : -angles.z;
 	}
 #endif
 
@@ -504,14 +524,14 @@ void CNEOPredictedViewModel::ProcessMuzzleFlashEvent()
 {
 	Vector vAttachment;
 	QAngle dummyAngles;
-	GetAttachment(2, vAttachment, dummyAngles);
+	GetAttachment(1, vAttachment, dummyAngles);
 
 	// Make a dlight
 	dlight_t* dl = effects->CL_AllocDlight(LIGHT_INDEX_MUZZLEFLASH + index);
 	dl->origin = vAttachment;
 	dl->radius = random->RandomInt(64, 96);
-	dl->decay = dl->radius / 0.1f;
-	dl->die = gpGlobals->curtime + 0.1f;
+	dl->decay = dl->radius / 0.05f;
+	dl->die = gpGlobals->curtime + 0.05f;
 	dl->color.r = 255;
 	dl->color.g = 192;
 	dl->color.b = 64;

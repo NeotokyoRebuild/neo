@@ -142,13 +142,13 @@ void CWeaponSmokeGrenade::ItemPostFrame(void)
 {
 	if (!HasPrimaryAmmo() && (GetIdealActivity() == ACT_VM_IDLE || GetIdealActivity() == ACT_VM_DRAW)) {
 		// Finished Throwing Animation, switch to next weapon and destroy this one
-		CBasePlayer* pOwner = ToBasePlayer(GetOwner());
-		if (pOwner) {
-			pOwner->SwitchToNextBestWeapon(this);
-			return;
-		}
 #ifdef GAME_DLL
-		// Grenade with no owner and no ammo, just destroy it
+		CBasePlayer* pOwner = ToBasePlayer(GetOwner());
+		if (pOwner)
+		{ // NEO NOTE (Adam) we could call SwitchToNextBestWeapon both on client and server but that's causing some stutter when throwing the last smokegrenade. HL2MP weapons like slam handle this only server side
+			pOwner->SwitchToNextBestWeapon(this);
+			pOwner->Weapon_Drop(this, NULL, NULL);
+		}
 		UTIL_Remove(this);
 #endif
 		return;
@@ -171,7 +171,7 @@ void CWeaponSmokeGrenade::ItemPostFrame(void)
 			switch (m_AttackPaused)
 			{
 			case GRENADE_PAUSED_PRIMARY:
-				if (!(pOwner->m_nButtons & IN_ATTACK))
+				if (!(pOwner->m_nButtons & IN_ATTACK) && gpGlobals->curtime >= m_flNextPrimaryAttack)
 				{
 					ThrowGrenade(pOwner);
 
@@ -244,14 +244,7 @@ void CWeaponSmokeGrenade::ThrowGrenade(CNEO_Player* pPlayer, bool isAlive, CBase
 
 	Vector vecThrow = vForward * flVel + pPlayer->GetAbsVelocity();
 
-	// Sampled angular impulses from original NT frags:
-	// (Assuming here that smokes behave the same as frags.)
-	// x: -584, 630, -1028, 967, -466, -535 (random, seems roughly in the same (-1200, 1200) range)
-	// y: 0 (constant)
-	// z: 600 (constant)
-	// This SDK original impulse line: AngularImpulse(600, random->RandomInt(-1200, 1200), 0)
-
-	CBaseGrenadeProjectile* pGrenade = NEOSmokegrenade_Create(vecSrc, vec3_angle, vecThrow, AngularImpulse(random->RandomInt(-1200, 1200), 0, 600), ((!(pPlayer->IsAlive()) || !isAlive) && pAttacker) ? pAttacker : pPlayer);
+	CBaseGrenadeProjectile* pGrenade = NEOSmokegrenade_Create(vecSrc, vec3_angle, vecThrow, AngularImpulse(600, random->RandomInt(-1200, 1200), 0), ((!(pPlayer->IsAlive()) || !isAlive) && pAttacker) ? pAttacker : pPlayer);
 
 	if (pGrenade)
 	{

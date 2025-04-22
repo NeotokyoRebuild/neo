@@ -2380,6 +2380,22 @@ bool CBasePlayer::SetObserverMode(int mode )
 		if (m_iObserverMode < OBS_MODE_POI) mode = OBS_MODE_ROAMING;
 		else mode = OBS_MODE_CHASE;
 	}
+
+	if (mode == OBS_MODE_CHASE || mode == OBS_MODE_IN_EYE)
+	{ // verify we have a valid observer target, otherwise take us to roaming
+		if (!IsValidObserverTarget(m_hObserverTarget))
+		{ // Current target not valid, try to find a new target
+			CBaseEntity* target = FindNextObserverTarget(true);
+			if (target)
+			{
+				SetObserverTarget(target);
+			}
+			else
+			{ // skip to roaming mode
+				mode = OBS_MODE_ROAMING;
+			}
+		}
+	}
 #endif
 
 	// check mp_forcecamera settings for dead players
@@ -5274,8 +5290,11 @@ void CBasePlayer::Spawn( void )
 		m_iPlayerLocked = false;
 		LockPlayerInPlace();
 	}
-
+#ifdef NEO
+	if ( GetTeamNumber() != TEAM_SPECTATOR && GetTeamNumber() != TEAM_UNASSIGNED )
+#else
 	if ( GetTeamNumber() != TEAM_SPECTATOR )
+#endif // NEO
 	{
 		StopObserverMode();
 	}
@@ -6821,8 +6840,13 @@ bool CBasePlayer::ClientCommand( const CCommand &args )
 
 		}
 	
+#ifdef NEO
+		// don't allow input while player or death cam animation or on team unassigned
+		if ( GetObserverMode() > OBS_MODE_DEATHCAM && GetTeamNumber() != TEAM_UNASSIGNED)
+#else
 		// don't allow input while player or death cam animation
 		if ( GetObserverMode() > OBS_MODE_DEATHCAM )
+#endif // NEO
 		{
 			// set new spectator mode, don't allow OBS_MODE_NONE
 			if ( !SetObserverMode( mode ) )

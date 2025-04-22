@@ -1,0 +1,127 @@
+
+
+"nt_shrine_ctg.outdoors"
+
+//
+//---------------------------------------
+//wind loop
+
+
+{
+	"dsp"	"0"
+	"playlooping"
+	{
+		"volume"	".09"
+		"pitch"		"100"
+		"wave"		"windbirds01.wav"
+	}
+
+//---------------------------------------
+//cicada loop
+	
+	"dsp"	"0"
+	"playlooping"
+	{
+		"volume"	".08"
+		"pitch"		"100"
+		"wave"		"cicada02.wav"
+	}
+	
+//---------------------------------------
+//cicada loop
+	
+	"dsp"	"0"
+	"playlooping"
+	{
+		"volume"	".09"
+		"pitch"		"100"
+		"wave"		"birds02.wav"
+	}
+	
+//
+//----------------------------------------
+// Wind thru trees
+
+	
+    "playrandom"
+	{
+
+		"time"		"10,20"
+		"volume"	".07"
+		"pitch"		"100"
+
+		"rndwave"
+		{
+			
+			"wave"	"forest/wind_thru_trees_1.wav"
+			"wave"	"forest/wind_thru_trees_2.wav"	
+		}
+	}
+
+}
+
+
+"nt_shrine_ctg.indoors"
+
+//
+//ambient base loop
+
+{
+	"dsp"	"0"
+	"playlooping"
+	{
+		"volume"	".03"
+		"pitch"		"100"
+		"wave"		"office/ambience.wav"
+	}
+
+//creaking
+
+	"playrandom"
+	{
+
+		"time"		"10,15"
+		"volume"	".05"
+		"pitch"		"70,100"
+
+		"rndwave"
+		{
+					
+			"wave"	"wood_creak_01.mp3"
+			"wave"	"wood_creak_02.mp3"	
+		}
+	}
+
+//cicada loop
+	
+	"dsp"	"0"
+	"playlooping"
+	{
+		"volume"	".04"
+		"pitch"		"100"
+		"wave"		"cicada02.wav"
+	}
+	
+//cicada loop
+	
+	"dsp"	"0"
+	"playlooping"
+	{
+		"volume"	".04"
+		"pitch"		"100"
+		"wave"		"birds01.wav"
+	}
+	
+//
+//ambient loop
+
+
+	"dsp"	"0"
+	"playlooping"
+	{
+		"volume"	".06"
+		"pitch"		"100"
+		"wave"		"windbirds01.wav"
+	}
+}
+	

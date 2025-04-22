@@ -8,7 +8,7 @@
 #include <vgui/KeyCode.h>
 #include <vgui_controls/Frame.h>
 #include <vgui_controls/EditablePanel.h>
-#include <vgui_controls/Button.h>
+#include "neo/game_controls/neo_button.h"
 #include <vgui_controls/ComboBox.h>
 #include <vgui_controls/ImagePanel.h>
 #include <igameevents.h>
@@ -31,7 +31,7 @@ class MouseCode;
 
 // NOTE: this class name must match its res file description.
 class CNeoTeamMenu : public vgui::Frame,
-    public IViewPortPanel
+    public IViewPortPanel, public CGameEventListener
 {
     DECLARE_CLASS_SIMPLE( CNeoTeamMenu, vgui::Frame );
 
@@ -48,6 +48,9 @@ public:
 	virtual void ShowPanel( bool bShow );
 
 	GameActionSet_t GetPreferredActionSet() override { return GAME_ACTION_SET_IN_GAME_HUD; }
+
+    // IGameEventListener interface:
+    virtual void FireGameEvent(IGameEvent* event);
 
     // both vgui::Frame and IViewPortPanel define these, so explicitly define them here as passthroughs to vgui
 	vgui::VPANEL GetVPanel( void ) { return BaseClass::GetVPanel(); }
@@ -91,17 +94,14 @@ protected:
 #endif
 
     // Buttons
-    vgui::Button *m_pJinrai_Button;
-    vgui::Button *m_pNSF_Button;
-    vgui::Button *m_pSpectator_Button;
-    vgui::Button *m_pAutoAssign_Button;
-    vgui::Button *m_pCancel_Button;
+    vgui::CNeoButton *m_pJinrai_Button;
+    vgui::CNeoButton*m_pNSF_Button;
+    vgui::CNeoButton*m_pSpectator_Button;
+    vgui::CNeoButton*m_pAutoAssign_Button;
+    vgui::CNeoButton*m_pCancel_Button;
 
     // Our viewport interface accessor
     IViewPort *m_pViewPort;
-
-    // Which team to highlight for auto selection
-    int m_iDefaultTeam;
 
     bool m_bTeamMenu;
 
@@ -111,6 +111,7 @@ protected:
 
 private:
     inline vgui::Button *GetPressedButton();
+    void NextMenu();
 };
 
 extern CNeoTeamMenu *g_pNeoTeamMenu;

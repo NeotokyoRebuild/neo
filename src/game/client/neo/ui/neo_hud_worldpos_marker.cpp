@@ -7,7 +7,7 @@
 using vgui::surface;
 
 
-ConVar neo_cl_hud_centre_size("neo_cl_hud_centre_size", "25", FCVAR_USERINFO,
+ConVar cl_neo_hud_centre_size("cl_neo_hud_centre_size", "25", FCVAR_USERINFO,
                               "HUD centre size in percentage to fade markers.", true, 1, false, 0);
 
 CNEOHud_WorldPosMarker::CNEOHud_WorldPosMarker(const char* pElementName, Panel* parent)
@@ -19,6 +19,7 @@ CNEOHud_WorldPosMarker::CNEOHud_WorldPosMarker(const char* pElementName, Panel* 
       m_viewCentreX(0),
       m_viewCentreY(0)
 {
+    m_iHideHudElementNumber = NEO_HUD_ELEMENT_WORLDPOS_MARKER;
 }
 
 void CNEOHud_WorldPosMarker::ApplySchemeSettings(vgui::IScheme* pScheme)
@@ -30,7 +31,7 @@ void CNEOHud_WorldPosMarker::ApplySchemeSettings(vgui::IScheme* pScheme)
     m_viewCentreY = m_viewHeight / 2;
 
     auto widerAxis = max(m_viewWidth, m_viewHeight);
-    m_viewCentreSize = widerAxis * (static_cast<float>(neo_cl_hud_centre_size.GetInt()) / 100);
+    m_viewCentreSize = widerAxis * (static_cast<float>(cl_neo_hud_centre_size.GetInt()) / 100);
 
     BaseClass::ApplySchemeSettings(pScheme);
 }

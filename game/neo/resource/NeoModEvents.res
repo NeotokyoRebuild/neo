@@ -31,10 +31,33 @@
 	{
 		"userid"	"short"   	// user ID who died				
 		"attacker"	"short"	 	// user ID who killed
-		"weapon"	"string" 	// weapon name killed used
-		// inherited from NT
-		"icon"		"short"		// icon
 		"assists"	"short"		// user ID who assists
+		"weapon"	"string" 	// weapon name killed used
+		"headshot"	"bool"		// killed by headshot
+		"suicide"	"bool"		// suicide
+		"headshot"	"bool"		// killed by headshot
+		"deathIcon"	"string"	// weapon icon
+		"explosive"	"bool"		// killed by explosion
+		"ghoster"	"bool"		// user who died was ghoster
+	}
+	"player_rankchange"
+	{
+		"userid"	"short"		// user who's rank changed
+		"oldRank"	"short"
+		"newRank"	"short"
+	}
+	"ghost_capture"
+	{
+		"userid"	"short"		// user who captured the ghost
+	}
+	"vip_extract"
+	{
+		"userid"	"short"		// user who escaped as VIP
+	}
+	"vip_death"
+	{
+		"userid"	"short"		// user who died as VIP		
+		"attacker"	"short"	 	// user who killed the VIP
 	}
 	"player_changeneoname"			// player_changename, but for neo_name
 	{

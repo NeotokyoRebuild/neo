@@ -39,3 +39,10 @@
 {
 	"gamematerial"	"J"
 }
+
+"barrier"
+{
+	"density"	"900"
+	"gamematerial" "-"
+	"bulletimpact"	"Tutorial.Barrier"
+}

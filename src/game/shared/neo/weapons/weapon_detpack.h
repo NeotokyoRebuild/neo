@@ -40,22 +40,32 @@ public:
 	void	Precache(void);
 	void	PrimaryAttack(void);
 	void	DecrementAmmo(CBaseCombatCharacter* pOwner);
-	virtual void	ProcessAnimationEvents() override;
 	void	ItemPostFrame(void);
 
 	bool	Deploy(void);
 	virtual bool	Holster(CBaseCombatWeapon* pSwitchingTo = NULL) OVERRIDE;
 
+	virtual float GetFastestDryRefireTime() const { return 1.f; } // is called if attack button spammed, doesn't really mean much for grenades
+	const char* GetWorldModel(void) const override { return	m_bThisDetpackHasBeenThrown ? "models/weapons/w_detremote.mdl" : "models/weapons/w_detpack.mdl"; };
 	bool	Reload(void) { return false; }
 
-	virtual float GetSpeedScale(void) const { return 1.0; }
+	virtual float GetSpeedScale(void) const OVERRIDE { return 0.85f; }
 
 	bool	CanDrop(void) OVERRIDE;
 	virtual bool CanPerformSecondaryAttack() const override final { return false; }
 
 #ifndef CLIENT_DLL
 	void Operator_HandleAnimEvent(animevent_t* pEvent, CBaseCombatCharacter* pOperator);
+
 #endif
+	void WeaponIdle(void)
+	{
+		if (HasWeaponIdleTimeElapsed())
+		{
+			m_bThisDetpackHasBeenThrown ? SendWeaponAnim(ACT_VM_IDLE_DEPLOYED) : SendWeaponAnim(ACT_VM_IDLE);
+			SetWeaponIdleTime(gpGlobals->curtime + GetViewModelSequenceDuration());
+		}
+	}
 
 	void	TossDetpack(CBasePlayer* pPlayer);
 

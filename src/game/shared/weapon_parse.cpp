@@ -350,6 +350,7 @@ FileWeaponInfo_t::FileWeaponInfo_t()
 #ifdef NEO
 	vecVmOffset = vec3_origin;
 	szBulletCharacter[0] = 0;
+	szDeathIcon[0] = 0;
 	iAimFOV = 0;
 	m_flPenetration = 0.f;
 	m_bDropOnDeath = 1;
@@ -430,6 +431,7 @@ void FileWeaponInfo_t::Parse( KeyValues *pKeyValuesData, const char *szWeaponNam
 	const float VMOffsetUp = pKeyValuesData->GetFloat("VMOffsetUp");
 	vecVmOffset = Vector(VMOffsetForward, VMOffsetRight, VMOffsetUp);
 	Q_strncpy( szBulletCharacter, pKeyValuesData->GetString("BulletCharacter", "a"), MAX_BULLET_CHARACTER);
+	Q_strncpy( szDeathIcon, pKeyValuesData->GetString("iDeathIcon", ""), MAX_BULLET_CHARACTER);
 	iAimFOV = pKeyValuesData->GetInt("AimFov", 45);
 	m_flPenetration = pKeyValuesData->GetFloat("Penetration", 0);
 	m_bDropOnDeath = pKeyValuesData->GetBool("DropOnDeath", true);

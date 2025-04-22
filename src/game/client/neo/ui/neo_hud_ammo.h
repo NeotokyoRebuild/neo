@@ -47,9 +47,9 @@ private:
 	CPanelAnimationVar(Color, box_color, "box_color", "200 200 200 40");
 
 	CPanelAnimationVarAliasType(bool, top_left_corner, "top_left_corner", "1", "bool");
-	CPanelAnimationVarAliasType(bool, top_right_corner, "top_right_corner", "1", "bool");
+	CPanelAnimationVarAliasType(bool, top_right_corner, "top_right_corner", "0", "bool");
 	CPanelAnimationVarAliasType(bool, bottom_left_corner, "bottom_left_corner", "1", "bool");
-	CPanelAnimationVarAliasType(bool, bottom_right_corner, "bottom_right_corner", "1", "bool");
+	CPanelAnimationVarAliasType(bool, bottom_right_corner, "bottom_right_corner", "0", "bool");
 
 	CPanelAnimationVarAliasType(int, text_xpos, "text_xpos", "194", "proportional_xpos");
 	CPanelAnimationVarAliasType(int, text_ypos, "text_ypos", "2", "proportional_ypos");

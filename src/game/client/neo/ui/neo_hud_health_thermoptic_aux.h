@@ -44,9 +44,9 @@ private:
 	CPanelAnimationVarAliasType(float, enabled, "enabled", "1", "proportional_float");
 	CPanelAnimationVar(Color, m_boxColor, "box_color", "200 200 200 40");
 
-	CPanelAnimationVarAliasType(bool, top_left_corner, "top_left_corner", "1", "bool");
+	CPanelAnimationVarAliasType(bool, top_left_corner, "top_left_corner", "0", "bool");
 	CPanelAnimationVarAliasType(bool, top_right_corner, "top_right_corner", "1", "bool");
-	CPanelAnimationVarAliasType(bool, bottom_left_corner, "bottom_left_corner", "1", "bool");
+	CPanelAnimationVarAliasType(bool, bottom_left_corner, "bottom_left_corner", "0", "bool");
 	CPanelAnimationVarAliasType(bool, bottom_right_corner, "bottom_right_corner", "1", "bool");
 
 	CPanelAnimationVarAliasType(int, healthtext_xpos, "healthtext_xpos", "6", "proportional_xpos");

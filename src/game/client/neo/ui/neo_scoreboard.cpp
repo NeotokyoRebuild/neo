@@ -48,7 +48,7 @@ using namespace vgui;
 #define SHOW_ENEMY_STATUS true
 
 ConVar neo_show_scoreboard_avatars("neo_show_scoreboard_avatars", "1", FCVAR_ARCHIVE, "Show avatars on scoreboard.", true, 0.0, true, 1.0 );
-extern ConVar neo_cl_streamermode;
+extern ConVar cl_neo_streamermode;
 
 CNEOScoreBoard* g_pNeoScoreBoard = NULL;
 
@@ -242,6 +242,10 @@ void CNEOScoreBoard::PostApplySchemeSettings( vgui::IScheme *pScheme )
 //-----------------------------------------------------------------------------
 void CNEOScoreBoard::ShowPanel(bool bShow)
 {
+	if (NEORules() && NEORules()->GetHiddenHudElements() & NEO_HUD_ELEMENT_SCOREBOARD)
+	{
+		return;
+	}
 	// Catch the case where we call ShowPanel before ApplySchemeSettings, eg when
 	// going from windowed <-> fullscreen
 	if ( m_pImageList == NULL )
@@ -275,13 +279,13 @@ void CNEOScoreBoard::ShowPanel(bool bShow)
 
 bool CNEOScoreBoard::ShowAvatars()
 {
-	return neo_show_scoreboard_avatars.GetBool() && !neo_cl_streamermode.GetBool();
+	return neo_show_scoreboard_avatars.GetBool() && !cl_neo_streamermode.GetBool();
 }
 
-extern ConVar neo_cl_squad_hud_original;
+extern ConVar cl_neo_squad_hud_original;
 bool CNEOScoreBoard::UpdateAvatars()
 {
-	return !neo_cl_streamermode.GetBool() && (neo_show_scoreboard_avatars.GetBool() || !neo_cl_squad_hud_original.GetBool());
+	return !cl_neo_streamermode.GetBool() && (neo_show_scoreboard_avatars.GetBool() || !cl_neo_squad_hud_original.GetBool());
 }
 
 void CNEOScoreBoard::FireGameEvent( IGameEvent *event )
@@ -718,7 +722,7 @@ void CNEOScoreBoard::GetPlayerScoreInfo(int playerIndex, KeyValues *kv)
 	const int neoTeam = g_PR->GetTeam(playerIndex);
 	kv->SetInt("team", neoTeam);
 	const char *pClantag = g_PR->GetClanTag(playerIndex);
-	if (pClantag && pClantag[0] && (!neo_cl_streamermode.GetBool() || g_PR->IsLocalPlayer(playerIndex)))
+	if (pClantag && pClantag[0] && (!cl_neo_streamermode.GetBool() || g_PR->IsLocalPlayer(playerIndex)))
 	{
 		char szClanTagWName[MAX_PLAYER_NAME_LENGTH + 1 + NEO_MAX_CLANTAG_LENGTH + 1];
 		V_sprintf_safe(szClanTagWName, "[%s] %s", pClantag, g_PR->GetPlayerName(playerIndex));

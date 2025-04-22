@@ -33,6 +33,11 @@ CNeoLoading::CNeoLoading()
 	ApplySchemeSettings(pScheme);
 }
 
+CNeoLoading::~CNeoLoading()
+{
+	NeoUI::FreeContext(&m_uiCtx);
+}
+
 void CNeoLoading::ApplySchemeSettings(vgui::IScheme *pScheme)
 {
 	BaseClass::ApplySchemeSettings(pScheme);
@@ -52,10 +57,15 @@ void CNeoLoading::ApplySchemeSettings(vgui::IScheme *pScheme)
 		m_uiCtx.fonts[i].hdl = pScheme->GetFont(FONT_NAMES[i], true);
 	}
 
-	// In 1080p, g_uiCtx.iRowTall == 40, g_uiCtx.iMarginX = 10, g_iAvatar = 64,
+	ResetSizes(wide, tall);
+}
+
+void CNeoLoading::ResetSizes(const int wide, const int tall)
+{
+	// In 1080p, g_uiCtx.layout.iDefRowTall == 40, g_uiCtx.iMarginX = 10, g_iAvatar = 64,
 	// other resolution scales up/down from it
-	m_uiCtx.iRowTall = tall / 27;
-	m_iRowsInScreen = (tall * 0.85f) / m_uiCtx.iRowTall;
+	m_uiCtx.layout.iDefRowTall = tall / 27;
+	m_iRowsInScreen = (tall * 0.85f) / m_uiCtx.layout.iDefRowTall;
 	m_uiCtx.iMarginX = wide / 192;
 	m_uiCtx.iMarginY = tall / 108;
 	m_uiCtx.selectBgColor = COLOR_NEOPANELACCENTBG;
@@ -164,11 +174,18 @@ void CNeoLoading::OnMainLoop(const NeoUI::Mode eMode)
 	static constexpr int BOTTOM_ROWS = 3;
 
 	int wide, tall;
-	GetSize(wide, tall);
+	vgui::surface()->GetScreenSize(wide, tall);
+	int panWide, panTall;
+	GetSize(panWide, panTall);
+	if (panWide != wide || panTall != tall)
+	{
+		SetSize(wide, tall);
+		ResetSizes(wide, tall);
+	}
 	m_uiCtx.dPanel.x = (wide / 2) - (m_iRootSubPanelWide / 2);
 	m_uiCtx.dPanel.wide = m_iRootSubPanelWide;
-	m_uiCtx.dPanel.tall = (m_iRowsInScreen - BOTTOM_ROWS) * m_uiCtx.iRowTall;
-	m_uiCtx.dPanel.y = (tall / 2) - ((m_iRowsInScreen * m_uiCtx.iRowTall) / 2);
+	m_uiCtx.dPanel.tall = (m_iRowsInScreen - BOTTOM_ROWS) * m_uiCtx.layout.iRowTall;
+	m_uiCtx.dPanel.y = (tall / 2) - ((m_iRowsInScreen * m_uiCtx.layout.iRowTall) / 2);
 	m_uiCtx.bgColor = COLOR_TRANSPARENT;
 
 	// NEO JANK (nullsystem): Since we don't have proper access to loading internals,
@@ -187,7 +204,7 @@ void CNeoLoading::OnMainLoop(const NeoUI::Mode eMode)
 		}
 		NeoUI::EndSection();
 		m_uiCtx.dPanel.y += m_uiCtx.dPanel.tall;
-		m_uiCtx.dPanel.tall = BOTTOM_ROWS * m_uiCtx.iRowTall;
+		m_uiCtx.dPanel.tall = BOTTOM_ROWS * m_uiCtx.layout.iRowTall;
 		m_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
 		NeoUI::BeginSection(true);
 		{
@@ -199,7 +216,7 @@ void CNeoLoading::OnMainLoop(const NeoUI::Mode eMode)
 	}
 	else if (iStrIdx == m_aStrIdxMap[LOADINGSTATE_DISCONNECTED])
 	{
-		m_uiCtx.dPanel.tall = (m_iRowsInScreen / 2) * m_uiCtx.iRowTall;
+		m_uiCtx.dPanel.tall = (m_iRowsInScreen / 2) * m_uiCtx.layout.iRowTall;
 		m_uiCtx.dPanel.y = (tall / 2) - (m_uiCtx.dPanel.tall / 2);
 		m_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
 		NeoUI::BeginSection(true);

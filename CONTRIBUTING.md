@@ -50,8 +50,6 @@ In the CMake Target View, right-click "client (shared library)" and click on "Ad
         "-insecure",
         "-dev",
         "-sw",
-        "-neopath",
-        "C:\\PATH\\TO\\NEOTOKYOSOURCE"
         "-game",
         "C:\\PATH\\TO\\REPO_ROOT\\neo\\game\\neo"
       ]
@@ -105,7 +103,7 @@ Example settings for debugging from Visual Studio solutions:
 
 [Break pointing and stepping](https://developer.valvesoftware.com/wiki/Installing_and_Debugging_the_Source_Code) the method [CServerGameDLL::GameFrame](src/game/server/gameinterface.cpp), or relevant methods in [C_NEO_Player](src/game/client/neo/c_neo_player.h) (clientside player) / [CNEO_Player](src/game/server/neo/neo_player.h) (serverside player) can help with figuring out the general game loop. Neo specific files usually live in [game/client/neo](src/game/client/neo), [game/server/neo](src/game/server/neo), or [game/shared/neo](src/game/shared/neo), similar to how most hl2mp code is laid out.
 
-Ochii's impressive [reverse engineering project](https://github.com/Ochii/neotokyo-re) can also serve as reference for figuring things out. However, please refrain from copying reversed instructions line by line, as the plan is to write an open(ed) source (wherever applicable, note the Source SDK license) reimplementation, and steer clear of any potential copyright issues. Same thing applies for original NT assets; you can depend on the original NT installation (it's mounted to the engine filesystem by [a shared neo header](src/game/shared/neo/neo_mount_original.h)), but avoid pushing those assets in the repo.
+Ochii's impressive [reverse engineering project](https://github.com/Ochii/neotokyo-re) can also serve as reference for figuring things out. However, please refrain from copying reversed instructions line by line, as the plan is to write an open(ed) source (wherever applicable, note the Source SDK license) reimplementation, and steer clear of any potential copyright issues. Same thing applies for original NT assets; you can depend on the original NT installation (it's mounted to the engine filesystem by gameinfo.txt `|appid_244630|`), but avoid pushing those assets in the repo.
 
 ## Good to know
 

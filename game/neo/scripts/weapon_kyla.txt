@@ -3,6 +3,7 @@ WeaponData
 {
 	"printname"		"KYLA"
 	"BulletCharacter"	"a"
+	"iDeathIcon"		"6"
 	"viewmodel"		"models/weapons/v_jinrai_klya9.mdl"
 	"team2viewmodel"	"models/weapons/v_nsf_klya9.mdl"
 	"playermodel"		"models/weapons/w_klya9.mdl"
