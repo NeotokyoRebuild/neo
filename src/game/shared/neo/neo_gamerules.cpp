@@ -32,6 +32,7 @@ extern ConVar weaponstay;
 #endif
 
 ConVar sv_neo_loopback_warmup_round("sv_neo_loopback_warmup_round", "0", FCVAR_REPLICATED, "Allow loopback server to do warmup rounds.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_botsonly_warmup_round("sv_neo_botsonly_warmup_round", "0", FCVAR_REPLICATED, "Allow bots-only match to do warmup rounds.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_warmup_round_time("sv_neo_warmup_round_time", "45", FCVAR_REPLICATED, "The warmup round time, in seconds.", true, 0.0f, false, 0.0f);
 ConVar sv_neo_preround_freeze_time("sv_neo_preround_freeze_time", "15", FCVAR_REPLICATED, "The pre-round freeze time, in seconds.", true, 0.0, false, 0);
 ConVar sv_neo_latespawn_max_time("sv_neo_latespawn_max_time", "15", FCVAR_REPLICATED, "How many seconds late are players still allowed to spawn.", true, 0.0, false, 0);
@@ -2090,25 +2091,43 @@ void CNEORules::StartNextRound()
 		}
 		else
 		{
-			// NOTE (nullsystem): If it's a loopback server, then go straight in. Mostly ease for testing other stuff.
+			// NOTE (nullsystem): If it's a loopback server or bots only, then go straight in.
+			// Mostly ease for testing other stuff.
 			bool loopbackSkipWarmup = false;
-			if (!sv_neo_loopback_warmup_round.GetBool())
+			const bool bLoopbackDontDoWarmup = !sv_neo_loopback_warmup_round.GetBool();
+			const bool bBotsonlyDontDoWarmup = !sv_neo_botsonly_warmup_round.GetBool();
+			if (bLoopbackDontDoWarmup || bBotsonlyDontDoWarmup)
 			{
+				int iCountBots = 0;
+				int iCountHumans = 0;
+				int iCountLoopback = 0;
+
 				for (int i = 1; i <= gpGlobals->maxClients; i++)
 				{
 					if (auto* pPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i)))
 					{
 						const int teamNum = pPlayer->GetTeamNumber();
-						if (!pPlayer->IsBot() && (teamNum == TEAM_JINRAI || teamNum == TEAM_NSF))
+						if (teamNum == TEAM_JINRAI || teamNum == TEAM_NSF)
 						{
-							INetChannelInfo* nci = engine->GetPlayerNetInfo(i);
-							loopbackSkipWarmup = nci->IsLoopback();
-							if (!loopbackSkipWarmup)
+							const bool bIsBot = pPlayer->IsBot();
+							const bool bIsHuman = (!bIsBot && !pPlayer->IsHLTV());
+							iCountBots += bIsBot;
+							iCountHumans += bIsHuman;
+							if (bIsHuman)
 							{
-								break;
+								INetChannelInfo* nci = engine->GetPlayerNetInfo(i);
+								iCountLoopback += nci->IsLoopback();
 							}
 						}
 					}
+				}
+				if (bLoopbackDontDoWarmup)
+				{
+					loopbackSkipWarmup = (iCountLoopback > 0 && iCountLoopback == iCountHumans);
+				}
+				if (bBotsonlyDontDoWarmup && !loopbackSkipWarmup)
+				{
+					loopbackSkipWarmup = (iCountBots > 0 && iCountHumans == 0);
 				}
 			}
 
