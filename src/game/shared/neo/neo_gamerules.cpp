@@ -1648,10 +1648,10 @@ void CNEORules::SpawnTheGhost(const Vector *origin)
 
 	m_vecPreviousGhostSpawn = m_pGhost->GetAbsOrigin();
 	DevMsg("%s ghost at coords:\n\t%.1f %.1f %.1f\n",
-		   spawnedGhostNow ? "Spawned" : "Moved",
-		   m_pGhost->GetAbsOrigin().x,
-		   m_pGhost->GetAbsOrigin().y,
-		   m_pGhost->GetAbsOrigin().z);
+			spawnedGhostNow ? "Spawned" : "Moved",
+			m_vecPreviousGhostSpawn.x,
+			m_vecPreviousGhostSpawn.y,
+			m_vecPreviousGhostSpawn.z);
 }
 
 void CNEORules::SelectTheVIP()
