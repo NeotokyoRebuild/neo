@@ -98,6 +98,8 @@ private:
 	int m_iGraphicID[NEO_CLASS__ENUM_COUNT] = {};
 	TeamLogoColor m_teamLogoColors[TEAM__TOTAL] = {};
 
+	int m_iBeepSecsTotal = 0;
+	NeoRoundStatus m_ePrevRoundStatus = NeoRoundStatus::Idle;
 
 	CPanelAnimationVar(Color, box_color, "box_color", "200 200 200 40");
 	CPanelAnimationVarAliasType(bool, health_monochrome, "health_monochrome", "1", "bool");

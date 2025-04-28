@@ -11,6 +11,9 @@
 
 class CAvatarImage;
 
+// Checks if it's in a playable game (and not a background main menu)
+bool IsInGame();
+
 struct NeoNewGame
 {
 	wchar_t wszMap[64] = L"nt_oilstain_ctg";
@@ -144,7 +147,6 @@ public:
 	void OnCursorMoved(int x, int y) final;
 	void OnTick() final;
 	void FireGameEvent(IGameEvent *event) final;
-	bool IsInGame() { return (engine->IsInGame() && !engine->IsLevelMainMenuBackground()); }
 
 	void OnMainLoop(const NeoUI::Mode eMode);
 
@@ -181,6 +183,7 @@ public:
 	ServerBrowserFilters m_sbFilters;
 	bool m_bSBFiltModified = false;
 	bool m_bShowFilterPanel = false;
+	bool m_bSPlayersSortModified = false;
 	GameServerSortContext m_sortCtx = {};
 
 	wchar_t m_wszBindingText[128];

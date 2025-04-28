@@ -121,6 +121,7 @@ enum NeoRoundStatus {
 	RoundLive,
 	PostRound,
 	Pause,
+	Countdown,
 };
 
 enum NeoWinReason {

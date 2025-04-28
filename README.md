@@ -125,11 +125,8 @@ Another way is just add the `-game` option to "Source SDK Base 2013 Multiplayer"
 %command% -game <PATH_TO_NEO_SOURCE>/game/neo
 ```
 
-### `-neopath` - Pointing to a non-default original NEOTOKYO directory
-
-This is generally isn't necessary if NEOTOKYO is installed at a default location. However,
-if you have it installed at a different location, adding `-neopath` to the launch option
-can be used to direct to it.
+## SDK tools and SRCDS original NEOTOKYO mounting
+By default the `gameinfo.txt` provided utilizes TF2-SDK's new `|appid_244630|` appid based search path to mount the original NEOTOKYO assets. However, some SDK tools and SRCDS either refuses to mount or crashes when trying to use this. If the appid based search path an issue, just comment this line out and uncomment `|gameinfo_path|../../NEOTOKYO/NeotokyoSource` line below and alter if needed to the actual path of your original `NeotokyoSource` installation.
 
 ## Further information
 For further information for your platform, refer to the VDC wiki on setting up extras, chroot/containers, etc...:
@@ -162,7 +159,7 @@ These instructions have been written for and tested on Debian 12 and Arch for Li
 3. Run SteamCMD: `steamcmd`/`steamcmd.exe`
 4. Enter the following commands in SteamCMD (Note that you need to use an absolute path for the install dir):
     ```
-    force_install_dir <YOUR_LOCATION>/ognt/
+    force_install_dir <YOUR_LOCATION>/NEOTOKYO/
     login anonymous
     app_update 313600 validate
     (wait for it to install)
@@ -192,22 +189,13 @@ These instructions have been written for and tested on Debian 12 and Arch for Li
     Once they're fetched, place them in the `<YOUR_LOCATION>/ntrebuild` directory.
 
 #### Linux-only additional instructions
-1. **Linux only:** Make a symlink for original NEOTOKYO so that NT;RE can find it's assets:
-
-    Run the following command as root:
-    ```
-    ln -s <YOUR_LOCATION>/ognt /usr/share/neotokyo
-    ```
-    It should now be possible to access `/usr/share/neotokyo/NeotokyoSource`.
-   
-    This is the only command that needs root, so you can logout from root.
-2. **Linux only:** Make a symlink so that Src2013 dedicated server can see SteamCMD's binaries:
+1. **Linux only:** Make a symlink so that Src2013 dedicated server can see SteamCMD's binaries:
 
     (NOTE: I'm NOT sure if this is how it is on other systems other than Debian 12, so please, check first if you have `~/.steam/sdk64` before running these! If you have Desktop Steam installed, then you should have this directory, but it doesn't seem to be the case with SteamCMD, which is why we need to do this.)
     ```
     ln -s ~/.steam/steam/steamcmd/linux64 ~/.steam/sdk64
     ```
-3. **Linux only:** Change directory into `<YOUR_LOCATION>/ntrebuild/bin/linux64` then run these commands to make symlinks for needed files:
+2. **Linux only:** Change directory into `<YOUR_LOCATION>/ntrebuild/bin/linux64` then run these commands to make symlinks for needed files:
     ```
     ln -s datacache_srv.so datacache.so;
     ln -s dedicated_srv.so dedicated.so;
@@ -223,10 +211,11 @@ These instructions have been written for and tested on Debian 12 and Arch for Li
     ln -s vphysics_srv.so vphysics.so;
     ln -s vscript_srv.so vscript.so;
     ```
-4. `cd` up directories twice, so that you will be in `<YOUR_LOCATION>/ntrebuild`.
+3. `cd` up directories twice, so that you will be in `<YOUR_LOCATION>/ntrebuild`.
 
-#### Extracting NT;RE
-Extract the latest release of NT;RE into `<YOUR_LOCATION>/ntrebuild`, so you will have a directory `<YOUR_LOCATION>/ntrebuild/neo` with a `gameinfo.txt` inside.
+#### Extracting NT;RE and editing gameinfo.txt
+1. Extract the latest release of NT;RE into `<YOUR_LOCATION>/ntrebuild`, so you will have a directory `<YOUR_LOCATION>/ntrebuild/neo` with a `gameinfo.txt` inside.
+2. Open up gameinfo.txt with your text editor and comment out `|appid_244630|` line and un-comment `|gameinfo_path|../../NEOTOKYO/NeotokyoSource` line. This is to ensure OG:NT mounting works properly with srcds.
 
 ##### Developer-only: Mounting NT;RE
 If you're developing and just testing the server, it may be more useful to mount it to your `game/neo` from the git checkout.
@@ -264,7 +253,7 @@ You will need to be in the `<YOUR_LOCATION>/ntrebuild` directory and run `srcds_
 
 * Windows:
     ```
-    srcds_win64.exe -game neo -neopath "<YOUR_LOCATION>\ognt\NeotokyoSource" +sv_lan 0 -insecure +ip <YOUR_IP> -maxplayers <1-32> +map <MAP_NAME>
+    srcds_win64.exe -game neo +sv_lan 0 -insecure +ip <YOUR_IP> -maxplayers <1-32> +map <MAP_NAME>
     ```
 * Linux with `srcds_run_64` script:
     ```

@@ -1522,6 +1522,19 @@ void CPrecipitation::Spawn( void )
 }
 #endif
 
+#ifdef NEO
+class CDetailBlocker : public CServerOnlyEntity
+{
+	DECLARE_CLASS( CDetailBlocker, CServerOnlyEntity );
+public:
+
+	CDetailBlocker() : CServerOnlyEntity() {}
+	virtual ~CDetailBlocker() {}
+};
+
+LINK_ENTITY_TO_CLASS( func_detail_blocker, CDetailBlocker );
+#endif
+
 //-----------------------------------------------------------------------------
 // EnvWind - global wind info
 //-----------------------------------------------------------------------------
@@ -1868,19 +1881,33 @@ public:
 
 	// Input handlers
 	void	InputFire( inputdata_t &inputdata );
+#ifdef NEO
+	void	InputStop( inputdata_t& inputdata );
+
+	void	Think();
+#endif
 
 	DECLARE_DATADESC();
 
 	float	m_flScale;
 	string_t m_iszParentAttachment;
+#ifdef NEO
+	bool	m_bLoop;
+#endif
 };
 
 BEGIN_DATADESC( CEnvMuzzleFlash )
 
 	DEFINE_KEYFIELD( m_flScale, FIELD_FLOAT, "scale" ),
 	DEFINE_KEYFIELD( m_iszParentAttachment, FIELD_STRING, "parentattachment" ),
+#ifdef NEO
+	DEFINE_KEYFIELD( m_bLoop, FIELD_BOOLEAN, "loop" ),
+#endif
 
 	DEFINE_INPUTFUNC( FIELD_VOID, "Fire", InputFire ),
+#ifdef NEO
+	DEFINE_INPUTFUNC( FIELD_VOID, "Stop", InputStop ),
+#endif
 
 END_DATADESC()
 
@@ -1893,6 +1920,9 @@ LINK_ENTITY_TO_CLASS( env_muzzleflash, CEnvMuzzleFlash );
 //-----------------------------------------------------------------------------
 void CEnvMuzzleFlash::Spawn()
 {
+#ifdef NEO
+	SetThink(&CEnvMuzzleFlash::Think);
+#endif
 	if ( (m_iszParentAttachment != NULL_STRING) && GetParent() && GetParent()->GetBaseAnimating() )
 	{
 		CBaseAnimating *pAnim = GetParent()->GetBaseAnimating();
@@ -1913,9 +1943,32 @@ void CEnvMuzzleFlash::Spawn()
 //-----------------------------------------------------------------------------
 void CEnvMuzzleFlash::InputFire( inputdata_t &inputdata )
 {
+#ifdef NEO
+	if ( m_bLoop )
+	{
+		SetNextThink( gpGlobals->curtime );
+	}
+	else
+	{
+		g_pEffects->MuzzleFlash( GetAbsOrigin(), GetAbsAngles(), m_flScale, MUZZLEFLASH_TYPE_DEFAULT );
+	}
+#else
 	g_pEffects->MuzzleFlash( GetAbsOrigin(), GetAbsAngles(), m_flScale, MUZZLEFLASH_TYPE_DEFAULT );
+#endif
 }
 
+#ifdef NEO
+void CEnvMuzzleFlash::Think()
+{
+	g_pEffects->MuzzleFlash( GetAbsOrigin(), GetAbsAngles(), m_flScale, MUZZLEFLASH_TYPE_DEFAULT );
+	SetNextThink( gpGlobals->curtime + 0.1f );
+}
+
+void CEnvMuzzleFlash::InputStop( inputdata_t& inputdata )
+{
+	SetNextThink( TICK_NEVER_THINK );
+}
+#endif
 
 //=========================================================
 // Splash!

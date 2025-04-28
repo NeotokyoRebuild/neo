@@ -6,6 +6,7 @@
 
 #include "iclientmode.h"
 #include "ienginevgui.h"
+#include "engine/IEngineSound.h"
 
 #include <vgui/ILocalize.h>
 #include <vgui/ISurface.h>
@@ -33,6 +34,8 @@ ConVar cl_neo_squad_hud_original("cl_neo_squad_hud_original", "1", FCVAR_ARCHIVE
 ConVar cl_neo_squad_hud_star_scale("cl_neo_squad_hud_star_scale", "0", FCVAR_ARCHIVE, "Scaling to apply from 1080p, 0 disables scaling");
 extern ConVar sv_neo_dm_win_xp;
 extern ConVar cl_neo_streamermode;
+extern ConVar snd_victory_volume;
+extern ConVar sv_neo_readyup_countdown;
 
 namespace {
 constexpr int Y_POS = 0;
@@ -204,9 +207,18 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	const bool inSuddenDeath = NEORules()->RoundIsInSuddenDeath();
 	const bool inMatchPoint = NEORules()->RoundIsMatchPoint();
 
-	m_pWszStatusUnicode = (roundStatus == NeoRoundStatus::Warmup) ? L"Warmup" : L"";
-	if (roundStatus == NeoRoundStatus::Idle) {
+	m_pWszStatusUnicode = L"";
+	if (roundStatus == NeoRoundStatus::Idle)
+	{
 		m_pWszStatusUnicode = sv_neo_readyup_lobby.GetBool() ? L"Waiting for players to ready up" : L"Waiting for players";
+	}
+	else if (roundStatus == NeoRoundStatus::Warmup)
+	{
+		m_pWszStatusUnicode = L"Warmup";
+	}
+	else if (roundStatus == NeoRoundStatus::Countdown)
+	{
+		m_pWszStatusUnicode = L"Match is starting...";
 	}
 	else if (inSuddenDeath)
 	{
@@ -241,6 +253,10 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	{
 		m_iWszRoundUCSize = V_swprintf_safe(m_wszRoundUnicode, L"PAUSED");
 		roundTimeLeft = NEORules()->m_flPauseEnd.Get() - gpGlobals->curtime;
+	}
+	else if (NEORules()->GetRoundStatus() == NeoRoundStatus::Countdown)
+	{
+		m_iWszRoundUCSize = V_swprintf_safe(m_wszRoundUnicode, L"STARTING");
 	}
 	else
 	{
@@ -351,7 +367,8 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 		break;
 	}
 
-	if (NEORules()->GetRoundStatus() == NeoRoundStatus::Pause)
+	if (NEORules()->GetRoundStatus() == NeoRoundStatus::Pause ||
+			NEORules()->GetRoundStatus() == NeoRoundStatus::Countdown)
 	{
 		szGameTypeDescription[0] = '\0';
 	}
@@ -369,7 +386,29 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 		}
 
 		g_pVGuiLocalize->ConvertANSIToUnicode(szGameTypeDescription, m_wszGameTypeDescription, m_iGameTypeDescriptionState * sizeof(wchar_t));
+
+		if (NEORules()->GetRoundStatus() == NeoRoundStatus::Countdown)
+		{
+			// NEO NOTE (nullsystem): Keep secs in integer and previous round state
+			// so it beeps client-side in sync with time change
+			if (m_ePrevRoundStatus != NeoRoundStatus::Countdown)
+			{
+				m_iBeepSecsTotal = sv_neo_readyup_countdown.GetInt();
+			}
+
+			if (m_iBeepSecsTotal != secsTotal)
+			{
+				const bool bEndBeep = secsTotal == 0;
+				const float flVol = (bEndBeep) ? (1.3f * snd_victory_volume.GetFloat()) : snd_victory_volume.GetFloat();
+				static constexpr int PITCH_END = 165;
+				enginesound->EmitAmbientSound("tutorial/hitsound.wav", flVol, bEndBeep ? PITCH_END : PITCH_NORM);
+				m_iBeepSecsTotal = secsTotal;
+			}
+			// Otherwise don't beep/alter m_iBeepSecsTotal
+		}
 	}
+
+	m_ePrevRoundStatus = NEORules()->GetRoundStatus();
 }
 
 void CNEOHud_RoundState::DrawNeoHudElement()
@@ -421,7 +460,8 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 	// Draw time
 	surface()->DrawSetTextFont(m_hOCRFont);
 	surface()->GetTextSize(m_hOCRFont, m_wszTime, fontWidth, fontHeight);
-	surface()->DrawSetTextColor(NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze ?
+	surface()->DrawSetTextColor((NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze ||
+								 NEORules()->GetRoundStatus() == NeoRoundStatus::Countdown) ?
 									COLOR_RED : COLOR_WHITE);
 	surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), m_iBoxYEnd / 2 - fontHeight / 2);
 	surface()->DrawPrintText(m_wszTime, 6);

@@ -152,7 +152,7 @@ void CNEO_Player::RequestSetClass(int newClass)
 	if (IsDead() || sv_neo_can_change_classes_anytime.GetBool() ||
 		(!m_bIneligibleForLoadoutPick && NEORules()->GetRemainingPreRoundFreezeTime(false) > 0) ||
 		(bIsTypeDM && !m_bIneligibleForLoadoutPick && GetAliveDuration() < sv_neo_dm_max_class_dur.GetFloat()) ||
-		(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup))
+		(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup || status == NeoRoundStatus::Countdown))
 	{
 		m_iNeoClass = newClass;
 		m_iNextSpawnClassChoice = -1;
@@ -1621,14 +1621,14 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 				// - If during live-round, after round finishes pausing
 				NEORules()->m_iPausingTeam = GetTeamNumber();
 				NEORules()->m_iPausingRound = NEORules()->roundNumber() + 1;
-				NEORules()->m_flPauseDur = (slot == PAUSE_MENU_SELECT_SHORT) ? 30.0f : 180.0f;
+				NEORules()->m_flPauseDur = (slot == PAUSE_MENU_SELECT_SHORT) ? 60.0f : 180.0f;
 
 				char szPauseMsg[128];
 				V_sprintf_safe(szPauseMsg, "Pause requested by %s. Pausing the match %s for %s.",
 							   (GetTeamNumber() == TEAM_JINRAI) ? "Jinrai" : "NSF",
 							   (NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze) ?
 								   "immediately" : "when the round ends",
-							   (slot == PAUSE_MENU_SELECT_SHORT) ? "30 seconds" : "3 minutes");
+							   (slot == PAUSE_MENU_SELECT_SHORT) ? "1 minute" : "3 minutes");
 				UTIL_ClientPrintAll(HUD_PRINTTALK, szPauseMsg);
 			}
 			break;
@@ -2744,7 +2744,8 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 	{
 		if (sv_neo_warmup_godmode.GetBool() &&
 				(NEORules()->GetRoundStatus() == NeoRoundStatus::Idle ||
-				 NEORules()->GetRoundStatus() == NeoRoundStatus::Warmup))
+				 NEORules()->GetRoundStatus() == NeoRoundStatus::Warmup ||
+				 NEORules()->GetRoundStatus() == NeoRoundStatus::Countdown))
 		{
 			return 0;
 		}
@@ -2890,7 +2891,7 @@ ConVar sv_neo_time_alive_until_cant_change_loadout("sv_neo_time_alive_until_cant
 void CNEO_Player::GiveLoadoutWeapon(void)
 {
 	const NeoRoundStatus status = NEORules()->GetRoundStatus();
-	if (!(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup) &&
+	if (!(status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup || status == NeoRoundStatus::Countdown) &&
 		(IsObserver() || IsDead() || m_bIneligibleForLoadoutPick
 		 || m_aliveTimer.IsGreaterThen(sv_neo_time_alive_until_cant_change_loadout.GetFloat())))
 	{
