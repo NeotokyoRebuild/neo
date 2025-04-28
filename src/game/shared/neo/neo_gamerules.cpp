@@ -164,6 +164,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropInt(RECVINFO(m_iGhosterPlayer)),
 	RecvPropInt(RECVINFO(m_iEscortingTeam)),
 	RecvPropBool(RECVINFO(m_bGhostExists)),
+	RecvPropFloat(RECVINFO(m_flAccumulatedOvertime)),
 	RecvPropVector(RECVINFO(m_vecGhostMarkerPos)),
 	RecvPropArray(RecvPropEHandle(RECVINFO(m_iDummyBeacons[0])), m_iDummyBeacons),
 	RecvPropInt(RECVINFO(m_iLastDummyBeacon)),
@@ -185,6 +186,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropInt(SENDINFO(m_iGhosterPlayer)),
 	SendPropInt(SENDINFO(m_iEscortingTeam)),
 	SendPropBool(SENDINFO(m_bGhostExists)),
+	SendPropFloat(SENDINFO(m_flAccumulatedOvertime)),
 	SendPropVector(SENDINFO(m_vecGhostMarkerPos), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT),
 	SendPropArray(SendPropEHandle(SENDINFO_ARRAY(m_iDummyBeacons)), m_iDummyBeacons),
 	SendPropInt(SENDINFO(m_iLastDummyBeacon)),
@@ -303,6 +305,10 @@ ConVar sv_neo_ignore_wep_xp_limit("sv_neo_ignore_wep_xp_limit", "0", FCVAR_CHEAT
 ConVar sv_neo_dm_win_xp("sv_neo_dm_win_xp", "50", FCVAR_REPLICATED, "The XP limit to win the match.",
 	true, 0.0f, true, 1000.0f);
 
+ConVar neo_ctg_ghost_overtime_enabled("neo_ctg_ghost_overtime_enabled", "0", FCVAR_REPLICATED, "Enable ghost overtime.", true, 0, true, 1);
+ConVar neo_ctg_ghost_overtime("neo_ctg_ghost_overtime", "45", FCVAR_REPLICATED, "Adds up to this many seconds to the round while the ghost is held.", true, 0, true, 120);
+ConVar neo_ctg_ghost_overtime_grace("neo_ctg_ghost_overtime_grace", "15", FCVAR_REPLICATED, "Number of seconds left in the round at which ghost overtime should start.", true, 0, true, 30);
+ConVar neo_ctg_ghost_overtime_grace_reset("neo_ctg_ghost_overtime_grace_reset", "1", FCVAR_REPLICATED, "Regardless of when the ghost is picked up and dropped during ghost overtime, use the ghost overtime timer as long as it is held during overtime", true, 0, true, 1);
 
 #ifdef CLIENT_DLL
 extern ConVar neo_fov;
@@ -601,6 +607,7 @@ void CNEORules::ResetMapSessionCommon()
 	m_vecGhostMarkerPos = vec3_origin;
 	m_flNeoRoundStartTime = 0.0f;
 	m_flNeoNextRoundStartTime = 0.0f;
+	m_flAccumulatedOvertime = 0.f;
 #ifdef GAME_DLL
 	m_pRestoredInfos.Purge();
 	m_readyAccIDs.Purge();
@@ -977,6 +984,25 @@ void CNEORules::Think(void)
 		return;
 	}
 
+	if (m_nGameTypeSelected == NEO_GAME_TYPE_CTG && neo_ctg_ghost_overtime_enabled.GetBool() && m_nRoundStatus == NeoRoundStatus::RoundLive && (m_flNeoRoundStartTime + (neo_ctg_round_timelimit.GetFloat() * 60) - neo_ctg_ghost_overtime_grace.GetFloat()) < gpGlobals->curtime)
+	{
+		m_nRoundStatus = NeoRoundStatus::Overtime;
+	}
+
+	engine->Con_NPrintf(0, "Accumulated Time: %f", m_flAccumulatedOvertime.Get());
+	engine->Con_NPrintf(1, "Seconds spent in overtime: %f", gpGlobals->curtime - m_flNeoRoundStartTime - (neo_ctg_round_timelimit.GetFloat() * 60.f) + neo_ctg_ghost_overtime_grace.GetFloat());
+	if (m_nGameTypeSelected == NEO_GAME_TYPE_CTG && m_nRoundStatus == NeoRoundStatus::Overtime)
+	{
+		if (neo_ctg_ghost_overtime_grace_reset.GetBool() && m_iGhosterPlayer)
+		{
+			m_flAccumulatedOvertime = (gpGlobals->curtime - m_flNeoRoundStartTime - (neo_ctg_round_timelimit.GetFloat() * 60.f) + neo_ctg_ghost_overtime_grace.GetFloat());
+		}
+		else
+		{
+			m_flAccumulatedOvertime += m_iGhosterPlayer ? gpGlobals->interval_per_tick : gpGlobals->interval_per_tick * ((neo_ctg_ghost_overtime.GetFloat() + neo_ctg_ghost_overtime_grace.GetFloat()) / neo_ctg_ghost_overtime_grace.GetFloat());
+		}
+	}
+
 	if (g_fGameOver)   // someone else quit the game already
 	{
 		// check to see if we should change levels now
@@ -1011,7 +1037,7 @@ void CNEORules::Think(void)
 		m_flPrevThinkMirrorDmg = gpGlobals->curtime;
 	}
 
-	if (sv_neo_teamdamage_kick.GetBool() && m_nRoundStatus == NeoRoundStatus::RoundLive &&
+	if (sv_neo_teamdamage_kick.GetBool() && IsRoundLive() &&
 			gpGlobals->curtime > (m_flPrevThinkKick + 0.5f))
 	{
 		const int iThresKickHp = sv_neo_teamdamage_kick_hp.GetInt();
@@ -1191,7 +1217,7 @@ void CNEORules::Think(void)
 		}
 	}
 
-	if (GetGameType() == NEO_GAME_TYPE_VIP && m_nRoundStatus == NeoRoundStatus::RoundLive && !m_pGhost)
+	if (GetGameType() == NEO_GAME_TYPE_VIP && IsRoundLive() && !m_pGhost)
 	{
 		if (!m_pVIP)
 		{
@@ -1305,7 +1331,7 @@ void CNEORules::Think(void)
 			}
 		}
 	}
-	else if (m_nRoundStatus != NeoRoundStatus::RoundLive)
+	else if (!IsRoundLive())
 	{
 		if (!IsRoundOver())
 		{
@@ -1317,7 +1343,7 @@ void CNEORules::Think(void)
 	}
 	else
 	{
-		if (m_nRoundStatus == NeoRoundStatus::RoundLive)
+		if (IsRoundLive())
 		{
 			COMPILE_TIME_ASSERT(TEAM_JINRAI == 2 && TEAM_NSF == 3);
 			if (GetGameType() != NEO_GAME_TYPE_TDM && GetGameType() != NEO_GAME_TYPE_DM)
@@ -1472,6 +1498,24 @@ float CNEORules::GetRoundRemainingTime() const
 				break;
 			case NEO_GAME_TYPE_CTG:
 				roundTimeLimit = neo_ctg_round_timelimit.GetFloat() * 60.f;
+				if (m_nRoundStatus == NeoRoundStatus::Overtime)
+				{
+					if (m_iGhosterPlayer)
+					{
+						if (neo_ctg_ghost_overtime_grace_reset.GetBool())
+						{
+							roundTimeLimit += neo_ctg_ghost_overtime.GetFloat();
+						}
+						else
+						{
+							return neo_ctg_ghost_overtime.GetFloat() + neo_ctg_ghost_overtime_grace.GetFloat() - m_flAccumulatedOvertime;
+						}
+					}
+					else
+					{
+						return (neo_ctg_ghost_overtime.GetFloat() + neo_ctg_ghost_overtime_grace.GetFloat() - m_flAccumulatedOvertime) / ((neo_ctg_ghost_overtime.GetFloat() + neo_ctg_ghost_overtime_grace.GetFloat()) / neo_ctg_ghost_overtime_grace.GetFloat());
+					}
+				}
 				break;
 			case NEO_GAME_TYPE_VIP:
 				roundTimeLimit = neo_vip_round_timelimit.GetFloat() * 60.f;
@@ -1495,7 +1539,7 @@ float CNEORules::GetRoundAccumulatedTime() const
 #ifdef GAME_DLL
 float CNEORules::MirrorDamageMultiplier() const
 {
-	if (m_nRoundStatus != NeoRoundStatus::RoundLive)
+	if (!IsRoundLive())
 	{
 		return 0.0f;
 	}
@@ -2156,6 +2200,7 @@ void CNEORules::StartNextRound()
 
 	m_flNeoRoundStartTime = gpGlobals->curtime;
 	m_flNeoNextRoundStartTime = 0;
+	m_flAccumulatedOvertime = 0;
 
 	CleanUpMap();
 	const bool bFromStarting = (m_nRoundStatus == NeoRoundStatus::Warmup
@@ -2288,7 +2333,7 @@ bool CNEORules::IsRoundOver() const
 
 bool CNEORules::IsRoundLive() const
 {
-	return m_nRoundStatus == NeoRoundStatus::RoundLive;
+	return (m_nRoundStatus == NeoRoundStatus::RoundLive || m_nRoundStatus == NeoRoundStatus::Overtime);
 }
 
 bool CNEORules::IsRoundOn() const
@@ -3191,7 +3236,7 @@ void CNEORules::CheckIfCapPrevent(CNEO_Player *capPreventerPlayer)
 	// If this is the only player alive left before the suicide/disconnect and the other team was holding
 	// the ghost, reward the other team an XP to the next rank as a ghost cap was prevented.
 	const bool bShouldCheck = (sv_neo_suicide_prevent_cap_punish.GetBool()
-							   && m_nRoundStatus == NeoRoundStatus::RoundLive
+							   && IsRoundLive()
 							   && !m_bTeamBeenAwardedDueToCapPrevent);
 	if (!bShouldCheck)
 	{
@@ -3285,7 +3330,7 @@ void CNEORules::PlayerKilled(CBasePlayer *pVictim, const CTakeDamageInfo &info)
 		{
 			attacker->AddPoints(-1, true);
 #ifdef GAME_DLL
-			if (sv_neo_teamdamage_kick.GetBool() && m_nRoundStatus == NeoRoundStatus::RoundLive)
+			if (sv_neo_teamdamage_kick.GetBool() && IsRoundLive())
 			{
 				++attacker->m_iTeamKillsInflicted;
 			}

@@ -461,7 +461,8 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 	surface()->DrawSetTextFont(m_hOCRFont);
 	surface()->GetTextSize(m_hOCRFont, m_wszTime, fontWidth, fontHeight);
 	surface()->DrawSetTextColor((NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze ||
-								 NEORules()->GetRoundStatus() == NeoRoundStatus::Countdown) ?
+								 NEORules()->GetRoundStatus() == NeoRoundStatus::Countdown ||
+								 NEORules()->GetRoundStatus() == NeoRoundStatus::Overtime) ?
 									COLOR_RED : COLOR_WHITE);
 	surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), m_iBoxYEnd / 2 - fontHeight / 2);
 	surface()->DrawPrintText(m_wszTime, 6);

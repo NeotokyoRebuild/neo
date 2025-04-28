@@ -119,6 +119,7 @@ enum NeoRoundStatus {
 	Warmup,
 	PreRoundFreeze,
 	RoundLive,
+	Overtime,
 	PostRound,
 	Pause,
 	Countdown,
@@ -436,6 +437,7 @@ private:
 	CNetworkVar(int, m_iGhosterPlayer);
 	CNetworkVector(m_vecGhostMarkerPos);
 	CNetworkVar(bool, m_bGhostExists);
+	CNetworkVar(float, m_flAccumulatedOvertime);
 
 	CNetworkVar(float, m_flNeoRoundStartTime);
 	CNetworkVar(float, m_flNeoNextRoundStartTime);
