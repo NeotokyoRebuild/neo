@@ -267,6 +267,7 @@ public:
 	virtual bool CheckGameOver(void) OVERRIDE;
 
 	float GetRoundRemainingTime() const;
+	void GetCTGOverTime(float *withGhost = nullptr, float *withoutGhost = nullptr) const;
 	float GetRoundAccumulatedTime() const;
 #ifdef GAME_DLL
 	float MirrorDamageMultiplier() const;

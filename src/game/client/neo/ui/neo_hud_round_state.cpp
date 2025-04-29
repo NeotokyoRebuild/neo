@@ -28,6 +28,7 @@ using vgui::surface;
 
 DECLARE_NAMED_HUDELEMENT(CNEOHud_RoundState, NRoundState);
 
+constexpr float NEO_HUD_ROUND_STATE_UPDATE_FREQUENCY = 0.1;
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(RoundState, 0.1)
 
 ConVar cl_neo_squad_hud_original("cl_neo_squad_hud_original", "1", FCVAR_ARCHIVE, "Use the old squad HUD", true, 0.0, true, 1.0);
@@ -258,6 +259,10 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	{
 		m_iWszRoundUCSize = V_swprintf_safe(m_wszRoundUnicode, L"STARTING");
 	}
+	else if (NEORules()->GetRoundStatus() == NeoRoundStatus::Overtime)
+	{
+		m_iWszRoundUCSize = V_swprintf_safe(m_wszRoundUnicode, L"OVERTIME");
+	}
 	else
 	{
 		if (NEORules()->GetGameType() == NEO_GAME_TYPE_DM)
@@ -274,9 +279,46 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 		roundTimeLeft = NEORules()->GetRemainingPreRoundFreezeTime(true);
 
 	const int secsTotal = RoundFloatToInt(roundTimeLeft);
-	const int secsRemainder = secsTotal % 60;
-	const int minutes = (secsTotal - secsRemainder) / 60;
-	V_snwprintf(m_wszTime, 6, L"%02d:%02d", minutes, secsRemainder);
+	constexpr float SECONDS_TO_FULL_OPACITY = 2;
+	constexpr float MINIMUM_TIMER_OPACITY = 20;
+	constexpr float MAXIMUM_TIMER_OPACITY = 255;
+	constexpr float OPACITY_STEP = (MAXIMUM_TIMER_OPACITY - MINIMUM_TIMER_OPACITY) / (SECONDS_TO_FULL_OPACITY / NEO_HUD_ROUND_STATE_UPDATE_FREQUENCY);
+	if (roundStatus == NeoRoundStatus::Overtime && NEORules()->GetGameType() == NEO_GAME_TYPE_CTG)
+	{
+		float overTimeWithGhost = 0;
+		float overTimeWithoutGhost = 0;
+		NEORules()->GetCTGOverTime(&overTimeWithGhost, &overTimeWithoutGhost);
+		V_snwprintf(m_wszOvertimeWithGhost, 3, L"%02d", RoundFloatToInt(overTimeWithGhost));
+		V_snwprintf(m_wszTime, 6, L"00:%02d", RoundFloatToInt(overTimeWithoutGhost));
+
+		if (NEORules()->GetGhosterPlayer())
+		{
+			m_flOverTimeWithGhostOpacity = min(MAXIMUM_TIMER_OPACITY, m_flOverTimeWithGhostOpacity + OPACITY_STEP);
+			m_flTimeOpacity = max(MINIMUM_TIMER_OPACITY, m_flTimeOpacity - OPACITY_STEP);
+		}
+		else
+		{
+			m_flTimeOpacity = min(MAXIMUM_TIMER_OPACITY, m_flTimeOpacity + OPACITY_STEP);
+			m_flOverTimeWithGhostOpacity = max(MINIMUM_TIMER_OPACITY, m_flOverTimeWithGhostOpacity - OPACITY_STEP);
+		}
+
+		if (m_flTimeOpacity == MINIMUM_TIMER_OPACITY)
+		{
+			engine->Con_NPrintf(2, "MinimumOpacityAtTime: %f", gpGlobals->curtime);
+		}
+		else if (m_flTimeOpacity == MAXIMUM_TIMER_OPACITY)
+		{
+			engine->Con_NPrintf(3, "MaximumOpacityAtTime: %f", gpGlobals->curtime);
+		}
+	}
+	else
+	{
+		const int secsRemainder = secsTotal % 60;
+		const int minutes = (secsTotal - secsRemainder) / 60;
+		V_snwprintf(m_wszTime, 6, L"%02d:%02d", minutes, secsRemainder);
+		m_flOverTimeWithGhostOpacity = MAXIMUM_TIMER_OPACITY;
+		m_flTimeOpacity = MAXIMUM_TIMER_OPACITY;
+	}
 
 	int iDMHighestXP = 0;
 
@@ -458,15 +500,128 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 	surface()->DrawPrintText(m_wszPlayersAliveUnicode, ARRAYSIZE(m_wszPlayersAliveUnicode) - 1);
 
 	// Draw time
+	bool displayExtraOvertime = false;
+	bool active = NEORules()->GetGhosterPlayer();
+	
+	float spaceForOvertime = 0;
+	if (NEORules()->GetRoundStatus() == NeoRoundStatus::Overtime && NEORules()->GetGameType() == NEO_GAME_TYPE_CTG)
+	{
+		int finalSpaceForOverTime = 0;
+		int unused = 0;
+		surface()->GetTextSize(m_hOCRFont, L"00", finalSpaceForOverTime, unused);
+		spaceForOvertime = finalSpaceForOverTime + 10;
+	}
+	
+	int timerWidth, timerHeight;
+	surface()->GetTextSize(m_hOCRFont, m_wszTime, timerWidth, timerHeight);
+
+	if (NEORules()->GetRoundStatus() == NeoRoundStatus::Overtime && NEORules()->GetGameType() == NEO_GAME_TYPE_CTG)
+	{
+		displayExtraOvertime = true;
+		surface()->GetTextSize(m_hOCRFont, m_wszOvertimeWithGhost, fontWidth, fontHeight);
+		if (!active)
+		{
+			Color colour = COLOR_WHITE;
+			colour.SetColor(COLOR_WHITE.r(), COLOR_WHITE.g(), COLOR_WHITE.b(), m_flOverTimeWithGhostOpacity);
+			surface()->DrawSetTextColor(colour);
+			surface()->DrawSetTextPos(m_iXpos + (timerWidth / 2) - (spaceForOvertime / 4), m_iBoxYEnd / 2 - fontHeight / 2);
+			surface()->DrawSetTextFont(m_hOCRFont);
+			surface()->DrawPrintText(m_wszOvertimeWithGhost, 3);
+		}
+		else
+		{
+			Color colour = COLOR_RED;
+			colour.SetColor(COLOR_RED.r(), COLOR_RED.g(), COLOR_RED.b(), m_flOverTimeWithGhostOpacity);
+			surface()->DrawSetTextColor(colour);
+			surface()->DrawSetTextPos(m_iXpos + (timerWidth / 2) - (spaceForOvertime / 4), m_iBoxYEnd / 2 - fontHeight / 2);
+			surface()->DrawSetTextFont(m_hOCRFont);
+			surface()->DrawPrintText(m_wszOvertimeWithGhost, 3);
+		}
+	}
+
+	if (NEORules()->GetRoundStatus() == NeoRoundStatus::Overtime)
+	{
+		if (!active)
+		{
+			Color colour = COLOR_RED;
+			colour.SetColor(COLOR_RED.r(), COLOR_RED.g(), COLOR_RED.b(), m_flTimeOpacity);
+			surface()->DrawSetTextColor(colour);
+		}
+		else
+		{
+			Color colour = COLOR_WHITE;
+			colour.SetColor(COLOR_WHITE.r(), COLOR_WHITE.g(), COLOR_WHITE.b(), m_flTimeOpacity);
+			surface()->DrawSetTextColor(colour);
+		}
+	}
+	else
+	{
+		Color colour = COLOR_WHITE;
+		colour.SetColor(COLOR_WHITE.r(), COLOR_WHITE.g(), COLOR_WHITE.b(), m_flOverTimeWithGhostOpacity);
+		surface()->DrawSetTextColor((NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze ||
+										NEORules()->GetRoundStatus() == NeoRoundStatus::Countdown) ?
+										COLOR_RED : COLOR_WHITE);
+	}
+	surface()->DrawSetTextPos(m_iXpos - (timerWidth / 2) - (spaceForOvertime / 2), m_iBoxYEnd / 2 - timerHeight / 2);
 	surface()->DrawSetTextFont(m_hOCRFont);
-	surface()->GetTextSize(m_hOCRFont, m_wszTime, fontWidth, fontHeight);
-	surface()->DrawSetTextColor((NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze ||
-								 NEORules()->GetRoundStatus() == NeoRoundStatus::Countdown ||
-								 NEORules()->GetRoundStatus() == NeoRoundStatus::Overtime) ?
-									COLOR_RED : COLOR_WHITE);
-	surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), m_iBoxYEnd / 2 - fontHeight / 2);
 	surface()->DrawPrintText(m_wszTime, 6);
 
+	surface()->DrawSetTextFont(m_hOCRFont);
+
+	//// Draw time
+	//if (NEORules()->GetRoundStatus() == NeoRoundStatus::Overtime && NEORules()->GetGameType() == NEO_GAME_TYPE_CTG)
+	//{
+	//	int fontWidthSmall = 0;
+	//	int fontHeightSmall = 0;
+	//	bool active = NEORules()->GetGhosterPlayer();
+	//	surface()->GetTextSize(m_hOCRFont, m_wszOvertimeWithGhost, fontWidth, fontHeight);
+	//	if (!active)
+	//	{
+	//		surface()->DrawSetTextColor(COLOR_RED);
+	//		surface()->GetTextSize(m_hOCRSmallFont, m_wszOvertimeWithGhost, fontWidthSmall, fontHeightSmall);
+	//		surface()->DrawSetTextPos(m_iXpos - 10 - fontWidth + (fontWidthSmall / 2), m_iBoxYEnd / 2 - fontHeightSmall / 2);
+	//		surface()->DrawSetTextFont(m_hOCRSmallFont);
+	//		surface()->DrawPrintText(m_wszOvertimeWithGhost, 3);
+	//	}
+	//	else
+	//	{
+	//		surface()->DrawSetTextColor(COLOR_YELLOW);
+	//		surface()->DrawSetTextPos(m_iXpos - fontWidth - 10, m_iBoxYEnd / 2 - fontHeight / 2);
+	//		surface()->DrawSetTextFont(m_hOCRFont);
+	//		surface()->DrawPrintText(m_wszOvertimeWithGhost, 3);
+	//	}
+
+	//	active = !NEORules()->GetGhosterPlayer();
+	//	surface()->GetTextSize(m_hOCRFont, m_wszOvertimeWithoutGhost, fontWidth, fontHeight);
+	//	if (!active)
+	//	{
+	//		surface()->DrawSetTextColor(COLOR_RED);
+	//		surface()->GetTextSize(m_hOCRSmallFont, m_wszOvertimeWithoutGhost, fontWidthSmall, fontHeightSmall);
+	//		surface()->DrawSetTextPos(m_iXpos + 10 + (fontWidthSmall / 2), m_iBoxYEnd / 2 - fontHeightSmall / 2);
+	//		surface()->DrawSetTextFont(m_hOCRSmallFont);
+	//		surface()->DrawPrintText(m_wszOvertimeWithoutGhost, 3);
+	//	}
+	//	else
+	//	{
+	//		surface()->DrawSetTextColor(COLOR_YELLOW);
+	//		surface()->DrawSetTextPos(m_iXpos + 10, m_iBoxYEnd / 2 - fontHeight / 2);
+	//		surface()->DrawSetTextFont(m_hOCRFont);
+	//		surface()->DrawPrintText(m_wszOvertimeWithoutGhost, 3);
+	//	}
+	//}
+	//else
+	//{
+	//	surface()->GetTextSize(m_hOCRFont, m_wszTime, fontWidth, fontHeight);
+	//	surface()->DrawSetTextColor((NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze ||
+	//		NEORules()->GetRoundStatus() == NeoRoundStatus::Countdown ||
+	//		NEORules()->GetRoundStatus() == NeoRoundStatus::Overtime) ?
+	//		COLOR_RED : COLOR_WHITE);
+	//	surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), m_iBoxYEnd / 2 - fontHeight / 2);
+	//	surface()->DrawSetTextFont(m_hOCRFont);
+	//	surface()->DrawPrintText(m_wszTime, 6);
+	//}
+
+	//surface()->DrawSetTextFont(m_hOCRFont);
 	if (NEORules()->IsTeamplay())
 	{
 		// Draw score logo

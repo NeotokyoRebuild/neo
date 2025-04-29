@@ -1502,18 +1502,13 @@ float CNEORules::GetRoundRemainingTime() const
 				{
 					if (m_iGhosterPlayer)
 					{
-						if (neo_ctg_ghost_overtime_grace_reset.GetBool())
-						{
-							roundTimeLimit += neo_ctg_ghost_overtime.GetFloat();
-						}
-						else
-						{
-							return neo_ctg_ghost_overtime.GetFloat() + neo_ctg_ghost_overtime_grace.GetFloat() - m_flAccumulatedOvertime;
-						}
+						GetCTGOverTime(&roundTimeLimit, nullptr);
+						return roundTimeLimit;
 					}
 					else
 					{
-						return (neo_ctg_ghost_overtime.GetFloat() + neo_ctg_ghost_overtime_grace.GetFloat() - m_flAccumulatedOvertime) / ((neo_ctg_ghost_overtime.GetFloat() + neo_ctg_ghost_overtime_grace.GetFloat()) / neo_ctg_ghost_overtime_grace.GetFloat());
+						GetCTGOverTime(nullptr, &roundTimeLimit);
+						return roundTimeLimit;
 					}
 				}
 				break;
@@ -1529,6 +1524,28 @@ float CNEORules::GetRoundRemainingTime() const
 	}
 
 	return (m_flNeoRoundStartTime + roundTimeLimit) - gpGlobals->curtime;
+}
+
+void CNEORules::GetCTGOverTime(float *withGhost, float *withoutGhost) const
+{
+	float roundTimeLimit = neo_ctg_round_timelimit.GetFloat() * 60.f;
+
+	if (withGhost)
+	{
+		if (neo_ctg_ghost_overtime_grace_reset.GetBool())
+		{
+			*withGhost = (m_flNeoRoundStartTime + roundTimeLimit + neo_ctg_ghost_overtime.GetFloat()) - gpGlobals->curtime;
+		}
+		else
+		{
+			*withGhost = neo_ctg_ghost_overtime.GetFloat() + neo_ctg_ghost_overtime_grace.GetFloat() - m_flAccumulatedOvertime;
+		}
+	}
+
+	if (withoutGhost)
+	{
+		*withoutGhost = (neo_ctg_ghost_overtime.GetFloat() + neo_ctg_ghost_overtime_grace.GetFloat() - m_flAccumulatedOvertime) / ((neo_ctg_ghost_overtime.GetFloat() + neo_ctg_ghost_overtime_grace.GetFloat()) / neo_ctg_ghost_overtime_grace.GetFloat());
+	}
 }
 
 float CNEORules::GetRoundAccumulatedTime() const
