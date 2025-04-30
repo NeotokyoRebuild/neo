@@ -1339,6 +1339,8 @@ void CHLClient::PostInit()
 		g_pCVar->FindVar("neo_name")->InstallChangeCallback(NeoName_ChangeCallback);
 		g_pCVar->FindVar("neo_clantag")->InstallChangeCallback(NeoClantag_ChangeCallback);
 		g_pCVar->FindVar("sv_use_steam_networking")->SetValue(false);
+		g_pCVar->FindVar("con_enable")->SetValue(true);
+		g_pCVar->FindVar("hud_fastswitch")->SetValue(true);
 	}
 	else
 	{
