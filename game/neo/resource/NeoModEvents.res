@@ -81,6 +81,15 @@
 		"achievement"	"short"		// achievement ID
 	}
 	
+	"player_ping"
+	{
+		"playerindex"	"byte"		// entindex of the player
+		"pingx"			"short"		// ping x position
+		"pingy"			"short"		// ping y position
+		"pingz"			"short"		// ping z position
+		"ghosterping"	"bool"		// the player is carrying the ghost
+	}
+	
 	// inherited from NT
 	"game_round_start"
 	{

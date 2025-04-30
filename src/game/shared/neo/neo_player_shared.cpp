@@ -112,6 +112,41 @@ bool ClientWantsAimHold(const CNEO_Player* player)
 #endif
 }
 
+bool CheckPingButton(const CNEO_Player* player)
+{
+	if (player->m_nButtons & IN_ATTACK3 && player->m_flNextPingTime <= gpGlobals->curtime)
+	{
+		IGameEvent* event = gameeventmanager->CreateEvent("player_ping");
+		if (event)
+		{
+			trace_t tr;
+			Vector forward;
+			CBasePlayer* basePlayer = UTIL_PlayerByIndex(player->entindex());
+			basePlayer->EyeVectors(&forward);
+			UTIL_TraceLine(basePlayer->EyePosition(), basePlayer->EyePosition() + forward * MAX_COORD_RANGE, MASK_SOLID, player, COLLISION_GROUP_NONE, &tr);
+
+			if (Q_stristr(tr.surface.name, "SKYBOX"))
+			{
+				return false;
+			}
+
+			event->SetInt("playerindex", player->entindex());
+			event->SetInt("pingx", tr.endpos.x);
+			event->SetInt("pingy", tr.endpos.y);
+			constexpr float PING_OFFSET = 1024;
+			event->SetInt("pingz", tr.endpos.z + (tr.fraction * PING_OFFSET));
+			event->SetBool("ghosterping", NEORules()->GetGhosterPlayer() == player->entindex());
+#ifdef GAME_DLL
+			gameeventmanager->FireEvent(event);
+#else
+			gameeventmanager->FireEventClientSide(event);
+#endif // GAME_DLL
+			return true;
+		}
+	}
+	return false;
+}
+
 int DmgLineStr(char* infoLine, const int infoLineMax,
 	const char* dmgerName, const char* dmgerClass,
 	const AttackersTotals &totals)

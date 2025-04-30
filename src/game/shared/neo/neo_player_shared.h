@@ -165,6 +165,8 @@ COMPILE_TIME_ASSERT(NEO_ASSAULT_CROUCH_SPEED == NEO_VIP_CROUCH_SPEED);
 #define NEO_ANIMSTATE_USES_AIMSEQUENCES true
 #define NEO_ANIMSTATE_MAX_BODY_YAW_DEGREES 90.0f
 
+#define NEO_PING_DELAY 2.f
+
 static constexpr float NEO_ZOOM_SPEED = 0.115f;
 static_assert(NEO_ZOOM_SPEED != 0.0f, "Divide by zero");
 
@@ -310,6 +312,8 @@ enum NeoWeponAimToggleE {
 };
 
 bool ClientWantsAimHold(const CNEO_Player* player);
+
+bool CheckPingButton(const CNEO_Player* player);
 
 struct AttackersTotals
 {

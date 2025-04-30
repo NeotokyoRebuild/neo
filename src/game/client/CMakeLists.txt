@@ -1590,6 +1590,8 @@ target_sources_grouped(
     neo/ui/neo_hud_hint.h
     neo/ui/neo_hud_message.cpp
     neo/ui/neo_hud_message.h
+    neo/ui/neo_hud_player_ping.cpp
+    neo/ui/neo_hud_player_ping.h
     neo/ui/neo_hud_round_state.cpp
     neo/ui/neo_hud_round_state.h
     neo/ui/neo_hud_startup_sequence.cpp
