@@ -60,6 +60,7 @@ SendPropBool(SENDINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 SendPropBool(SENDINFO(m_bShowTestMessage)),
 SendPropBool(SENDINFO(m_bInAim)),
 SendPropBool(SENDINFO(m_bIneligibleForLoadoutPick)),
+SendPropBool(SENDINFO(m_bCarryingGhost)),
 
 SendPropTime(SENDINFO(m_flCamoAuxLastTime)),
 SendPropInt(SENDINFO(m_nVisionLastTick)),
