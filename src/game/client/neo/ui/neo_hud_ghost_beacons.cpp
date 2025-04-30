@@ -82,6 +82,7 @@ void CNEOHud_GhostBeacons::ApplySchemeSettings(vgui::IScheme* pScheme)
 	SetBgColor(COLOR_TRANSPARENT);
 }
 
+extern ConVar neo_ctg_ghost_beacons_when_inactive;
 void CNEOHud_GhostBeacons::DrawNeoHudElement()
 {
 	if (!ShouldDraw())
@@ -97,7 +98,16 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 		return;
 	}
 
-	auto ghost = dynamic_cast<C_WeaponGhost*>(spectateTarget->GetActiveWeapon());
+	C_WeaponGhost *ghost;
+	if (neo_ctg_ghost_beacons_when_inactive.GetBool())
+	{ // Doing a search through 48 weapons every draw call is not ideal, NEO TODO (Adam) save a pointer to the ghost somewhere client side when a player picks a ghost up? (OnPickedUp doesn't run client side fyi)
+		ghost = dynamic_cast<C_WeaponGhost*>(spectateTarget->Weapon_OwnsThisType("weapon_ghost"));
+	}
+	else
+	{
+		ghost = dynamic_cast<C_WeaponGhost*>(spectateTarget->GetActiveWeapon());
+	}
+
 	if (!ghost) //Check ghost ready here as players might be in PVS
 	{
 		m_bHoldingGhost = false;

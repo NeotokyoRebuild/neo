@@ -3191,6 +3191,7 @@ float CNEO_Player::GetSprintSpeed(void) const
 	}
 }
 
+extern ConVar neo_ctg_ghost_beacons_when_inactive;
 int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 {
 	if (auto ent = Instance(pInfo->m_pClientEnt))
@@ -3207,12 +3208,22 @@ int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 				return FL_EDICT_ALWAYS;
 			}
 
-			// If the other player is actively using the ghost and therefore fetching beacons
-			auto otherWep = static_cast<CNEOBaseCombatWeapon *>(otherNeoPlayer->GetActiveWeapon());
-			if (otherWep && otherWep->GetNeoWepBits() & NEO_WEP_GHOST &&
-					static_cast<CWeaponGhost *>(otherWep)->IsPosWithinViewDistance(GetAbsOrigin()))
+			if (neo_ctg_ghost_beacons_when_inactive.GetBool())
 			{
-				return FL_EDICT_ALWAYS;
+				if (NEORules()->GetGhosterPlayer() == otherNeoPlayer->entindex())
+				{
+					return FL_EDICT_ALWAYS;
+				}
+			}
+			else
+			{
+				// If the other player is actively using the ghost and therefore fetching beacons
+				auto otherWep = static_cast<CNEOBaseCombatWeapon *>(otherNeoPlayer->GetActiveWeapon());
+				if (otherWep && otherWep->GetNeoWepBits() & NEO_WEP_GHOST &&
+						static_cast<CWeaponGhost *>(otherWep)->IsPosWithinViewDistance(GetAbsOrigin()))
+				{
+					return FL_EDICT_ALWAYS;
+				}
 			}
 
 			// If this player is carrying the ghost (wether active or not)

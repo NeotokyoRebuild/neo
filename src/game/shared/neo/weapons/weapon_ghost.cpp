@@ -20,6 +20,7 @@
 #include "tier0/memdbgon.h"
 
 ConVar cl_neo_ghost_view_distance("cl_neo_ghost_view_distance", "45", FCVAR_REPLICATED, "How far can the ghost user see players in meters.");
+ConVar neo_ctg_ghost_beacons_when_inactive("neo_ctg_ghost_beacons_when_inactive", "0", FCVAR_REPLICATED, "Show ghost beacons when the ghost isn't the active weapon.");
 
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponGhost, DT_WeaponGhost)
 
@@ -52,7 +53,10 @@ CWeaponGhost::CWeaponGhost(void)
 void CWeaponGhost::ItemPreFrame(void)
 {
 #ifdef CLIENT_DLL
-	HandleGhostEquip();
+	if (!neo_ctg_ghost_beacons_when_inactive.GetBool())
+	{
+		HandleGhostEquip();
+	}
 #endif
 }
 
@@ -74,6 +78,34 @@ int CWeaponGhost::ShouldTransmit(const CCheckTransmitInfo *pInfo)
 	return BaseClass::ShouldTransmit(pInfo);
 }
 #endif
+
+// Consider calling HandleGhostEquip instead.
+void CWeaponGhost::PlayGhostSound(float volume)
+{
+#ifdef CLIENT_DLL
+	auto owner = static_cast<C_BasePlayer*>(GetOwner());
+#else
+	auto owner = static_cast<CBasePlayer*>(GetOwner());
+#endif // CLIENT_DLL
+	if (!owner)
+	{
+		return;
+	}
+
+#ifdef CLIENT_DLL
+	C_RecipientFilter filter;
+#else
+	CRecipientFilter filter;
+#endif // CLIENT_DLL
+	filter.AddRecipient(owner);
+
+	EmitSound_t emitSoundType;
+	emitSoundType.m_flVolume = volume;
+	emitSoundType.m_pSoundName = "HUD.GhostEquip";
+	emitSoundType.m_nFlags |= SND_SHOULDPAUSE | SND_DO_NOT_OVERWRITE_EXISTING_ON_CHANNEL;
+
+	EmitSound(filter, entindex(), emitSoundType);
+}
 
 #ifdef CLIENT_DLL
 void CWeaponGhost::HandleGhostEquip(void)
@@ -115,26 +147,6 @@ void CWeaponGhost::HandleGhostUnequip(void)
 	}
 }
 
-// Consider calling HandleGhostEquip instead.
-void CWeaponGhost::PlayGhostSound(float volume)
-{
-	auto owner = static_cast<C_BasePlayer*>(GetOwner());
-	if (!owner)
-	{
-		return;
-	}
-
-	C_RecipientFilter filter;
-	filter.AddRecipient(owner);
-
-	EmitSound_t emitSoundType;
-	emitSoundType.m_flVolume = volume;
-	emitSoundType.m_pSoundName = "HUD.GhostEquip";
-	emitSoundType.m_nFlags |= SND_SHOULDPAUSE | SND_DO_NOT_OVERWRITE_EXISTING_ON_CHANNEL;
-
-	EmitSound(filter, entindex(), emitSoundType);
-}
-
 // Consider calling HandleGhostUnequip instead.
 void CWeaponGhost::StopGhostSound(void)
 {
@@ -147,7 +159,10 @@ void CWeaponGhost::ItemHolsterFrame(void)
 	BaseClass::ItemHolsterFrame();
 
 #ifdef CLIENT_DLL
-	HandleGhostUnequip(); // is there some callback, so we don't have to keep calling this?
+	if (!neo_ctg_ghost_beacons_when_inactive.GetBool())
+	{
+		HandleGhostUnequip(); // is there some callback, so we don't have to keep calling this?
+	}
 #endif
 }
 
@@ -194,6 +209,11 @@ void CWeaponGhost::OnPickedUp(CBaseCombatCharacter *pNewOwner)
 		soundFilter.RemoveRecipientByPlayerIndex(ownerIndex);
 		soundFilter.MakeReliable();
 		EmitSound(soundFilter, ownerIndex, soundParams);
+
+		if (neo_ctg_ghost_beacons_when_inactive.GetBool())
+		{
+			PlayGhostSound();
+		}
 #endif
 	}
 }
