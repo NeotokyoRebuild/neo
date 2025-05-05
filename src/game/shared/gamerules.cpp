@@ -237,8 +237,11 @@ bool CGameRules::IsSpawnPointValid( CBaseEntity *pSpot, CBasePlayer *pPlayer  )
 	{
 		return false;
 	}
-
+#ifdef NEO
 	for ( CEntitySphereQuery sphere( pSpot->GetAbsOrigin(), 16 ); (ent = sphere.GetCurrentEntity()) != NULL; sphere.NextEntity() )
+#else
+	for ( CEntitySphereQuery sphere( pSpot->GetAbsOrigin(), 128 ); (ent = sphere.GetCurrentEntity()) != NULL; sphere.NextEntity() )
+#endif
 	{
 		// if ent is a client, don't spawn on 'em
 		if ( ent->IsPlayer() && ent != pPlayer )
