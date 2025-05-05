@@ -19,7 +19,7 @@ CNEOHud_PlayerPing::CNEOHud_PlayerPing(const char* pElementName, vgui::Panel* pa
 	: CHudElement(pElementName), Panel(parent, pElementName)
 {
 	SetAutoDelete(true);
-	m_iHideHudElementNumber = NEO_HUD_ELEMENT_GHOST_CAP_POINTS;
+	m_iHideHudElementNumber = NEO_HUD_ELEMENT_PLAYER_PING;
 
 	if (parent)
 	{
@@ -61,8 +61,7 @@ void CNEOHud_PlayerPing::UpdateStateForNeoHudElementDraw()
 	if (!player) return;
 
 	const int playerTeam = player->GetTeamNumber();
-	const bool playerIsPlaying = (playerTeam == TEAM_JINRAI || playerTeam == TEAM_NSF);
-	if (!playerIsPlaying)
+	if (playerTeam != TEAM_JINRAI && playerTeam != TEAM_NSF)
 	{
 		return;
 	}
@@ -74,8 +73,7 @@ void CNEOHud_PlayerPing::UpdateStateForNeoHudElementDraw()
 			continue;
 		}
 
-		m_iPlayerPings[i].distance = METERS_PER_INCH * player->GetAbsOrigin().DistTo(m_iPlayerPings[i].worldPos);
-		m_iPlayerPings[i].distanceYOffset = min(m_iPosY * MAX_Y_DISTANCE_OFFSET_RATIO, m_iPlayerPings[i].distance * 2 * (m_iPosY / 480));
+		UpdateDistanceToPlayer(player, i);
 	}
 }
 
@@ -166,22 +164,24 @@ void CNEOHud_PlayerPing::DrawNeoHudElement()
 		float opacity = PING_MAX_OPACITY;
 
 		constexpr float PING_FADE_START = 1.f;
-		float deathTimeDelta = m_iPlayerPings[i].deathTime - gpGlobals->curtime;
-		if (deathTimeDelta < PING_FADE_START)
+		const float timeTillDeath = m_iPlayerPings[i].deathTime - gpGlobals->curtime;
+		if (timeTillDeath < PING_FADE_START)
 		{
-			opacity *= deathTimeDelta / PING_FADE_START;
+			opacity *= timeTillDeath / PING_FADE_START;
 		}
 
-		int offsetTexture = m_iPlayerPings[i].ghosterPing ? m_iTexTall * 0.8 : m_iTexTall * 0.5;
+		// Draw Ping Shape
+		const int halfTexture = m_iPlayerPings[i].ghosterPing ? m_iTexTall * 0.8 : m_iTexTall * 0.5;
 		Color color = m_iPlayerPings[i].ghosterPing ? COLOR_GREY : (playerTeam == TEAM_JINRAI) ? COLOR_JINRAI : COLOR_NSF;
 		color.SetColor(color.r(), color.g(), color.b(), opacity);
 		vgui::surface()->DrawSetColor(color);
 		vgui::surface()->DrawTexturedRect(
-			x - offsetTexture,
-			y2 - offsetTexture,
-			x + offsetTexture,
-			y2 + offsetTexture);
+			x - halfTexture,
+			y2 - halfTexture,
+			x + halfTexture,
+			y2 + halfTexture);
 
+		// Draw Line to root of Ping
 		if (y - y2 > m_iTexTall)
 		{
 			vgui::surface()->DrawLine(x-1,y,x-1,y2 + m_iTexTall);
@@ -190,12 +190,13 @@ void CNEOHud_PlayerPing::DrawNeoHudElement()
 			vgui::surface()->DrawLine(x, y+1, x, y2+1 + m_iTexTall);
 		}
 
+		// Draw Distance to Ping in meters
 		vgui::surface()->DrawSetTextFont(m_iPlayerPings[i].ghosterPing ? m_hFont : m_hFontSmall);
 		char m_szMarkerText[4 + 1] = {};
 		wchar_t m_wszMarkerTextUnicode[4 + 1] = {};
 		V_snprintf(m_szMarkerText, sizeof(m_szMarkerText), "%im", (int)m_iPlayerPings[i].distance);
 		g_pVGuiLocalize->ConvertANSIToUnicode(m_szMarkerText, m_wszMarkerTextUnicode, sizeof(m_wszMarkerTextUnicode));
-		int halfTextWidth = 0.5 * GetStringPixelWidth(m_wszMarkerTextUnicode, m_iPlayerPings[i].ghosterPing ? m_hFont : m_hFontSmall);
+		const int halfTextWidth = 0.5 * GetStringPixelWidth(m_wszMarkerTextUnicode, m_iPlayerPings[i].ghosterPing ? m_hFont : m_hFontSmall);
 
 		color.SetColor(COLOR_BLACK.r(), COLOR_BLACK.g(), COLOR_BLACK.b(), opacity);
 		vgui::surface()->DrawSetTextColor(color);
@@ -209,6 +210,15 @@ void CNEOHud_PlayerPing::DrawNeoHudElement()
 	}
 }
 
+void CNEOHud_PlayerPing::Paint()
+{
+	BaseClass::Paint();
+	PaintNeoElement();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Compute length of string using given font, borrowed from hud_credits, maybe make this part of CNEOHud_ChildElement?
+//-----------------------------------------------------------------------------
 int CNEOHud_PlayerPing::GetStringPixelWidth(wchar_t* pString, vgui::HFont hFont)
 {
 	int iLength = 0;
@@ -221,8 +231,32 @@ int CNEOHud_PlayerPing::GetStringPixelWidth(wchar_t* pString, vgui::HFont hFont)
 	return iLength;
 }
 
-void CNEOHud_PlayerPing::Paint()
+void CNEOHud_PlayerPing::HideAllPings()
 {
-	BaseClass::Paint();
-	PaintNeoElement();
+	for (int i = 0; i < MAX_PLAYERS; i++)
+	{
+		m_iPlayerPings[i].deathTime = 0;
+	}
+}
+
+void CNEOHud_PlayerPing::UpdateDistanceToPlayer(C_BasePlayer* player, int pingIndex)
+{
+	m_iPlayerPings[pingIndex].distance = METERS_PER_INCH * player->GetAbsOrigin().DistTo(m_iPlayerPings[pingIndex].worldPos);
+	m_iPlayerPings[pingIndex].distanceYOffset = min(m_iPosY * MAX_Y_DISTANCE_OFFSET_RATIO, m_iPlayerPings[pingIndex].distance * 2 * (m_iPosY / 480));
+}
+
+void CNEOHud_PlayerPing::SetPos(const int index, Vector& pos, bool ghosterPing) {
+	constexpr float PLAYER_PING_LIFETIME = 8;
+	auto localPlayer = UTIL_PlayerByIndex(GetLocalPlayerIndex());
+	if (!localPlayer) { return; }
+	auto pingPlayer = UTIL_PlayerByIndex(index);
+	if (!pingPlayer) { return; }
+
+	const int pingIndex = index - 1;
+	m_iPlayerPings[pingIndex].worldPos = pos;
+	m_iPlayerPings[pingIndex].deathTime = gpGlobals->curtime + PLAYER_PING_LIFETIME;
+	m_iPlayerPings[pingIndex].team = pingPlayer->GetTeamNumber();
+	m_iPlayerPings[pingIndex].ghosterPing = ghosterPing;
+
+	UpdateDistanceToPlayer(localPlayer, pingIndex);
 }

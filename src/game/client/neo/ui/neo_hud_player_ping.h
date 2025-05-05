@@ -28,29 +28,17 @@ public:
 	virtual void Paint() override;
 	virtual void UpdateStateForNeoHudElementDraw() override;
 	virtual void DrawNeoHudElement() override;
-	int GetStringPixelWidth(wchar_t* pString, vgui::HFont hFont);
 	virtual ConVar *GetUpdateFrequencyConVar() const override;
-
 	virtual void LevelShutdown(void) override;
-
-	void SetPos(const int index, Vector& pos, bool ghosterPing) {
-		constexpr float PLAYER_PING_LIFETIME = 8;
-		auto localPlayer = UTIL_PlayerByIndex(GetLocalPlayerIndex());
-		if (!localPlayer) { return; }
-		auto pingPlayer = UTIL_PlayerByIndex(index);
-		if (!pingPlayer) { return; }
-
-		const int pingIndex = index - 1;
-		m_iPlayerPings[pingIndex].worldPos = pos;
-		m_iPlayerPings[pingIndex].deathTime = gpGlobals->curtime + PLAYER_PING_LIFETIME;
-		m_iPlayerPings[pingIndex].distance = METERS_PER_INCH * pos.DistTo(localPlayer->GetAbsOrigin());
-		m_iPlayerPings[pingIndex].distanceYOffset = min(m_iPosY * MAX_Y_DISTANCE_OFFSET_RATIO, m_iPlayerPings[pingIndex].distance * 2 * (m_iPosY / 480));
-		m_iPlayerPings[pingIndex].team = pingPlayer->GetTeamNumber();
-		m_iPlayerPings[pingIndex].ghosterPing = ghosterPing;
-	}
 
 protected:
 	virtual void FireGameEvent(IGameEvent* event);
+
+private:
+	int GetStringPixelWidth(wchar_t* pString, vgui::HFont hFont);
+	void HideAllPings();
+	void UpdateDistanceToPlayer(C_BasePlayer* player, int pingIndex);
+	void SetPos(const int index, Vector& pos, bool ghosterPing);
 
 private:
 	playerPing m_iPlayerPings[MAX_PLAYERS] = {};
