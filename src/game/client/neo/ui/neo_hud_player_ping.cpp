@@ -15,6 +15,17 @@ DECLARE_NAMED_HUDELEMENT(CNEOHud_PlayerPing, NHudPlayerPing);
 
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(PlayerPing, 0.05) // distances to pings and thus ping offset update at 20Hz looks nice enough
 
+CNEOHud_PlayerPing* playerPingHudElement;
+static void clNeoPlayerPingsCallback(IConVar* var, const char* pOldValue, float flOldValue)
+{
+	const bool bCurrentValue = !(bool)flOldValue;
+	if (!bCurrentValue && playerPingHudElement)
+	{
+		playerPingHudElement->HideAllPings();
+	}
+}
+ConVar cl_neo_player_pings("cl_neo_player_pings", "1", FCVAR_ARCHIVE | FCVAR_USERINFO, "Show player pings.", true, 0, true, 1, clNeoPlayerPingsCallback);
+
 CNEOHud_PlayerPing::CNEOHud_PlayerPing(const char* pElementName, vgui::Panel* parent)
 	: CHudElement(pElementName), Panel(parent, pElementName)
 {
@@ -34,6 +45,8 @@ CNEOHud_PlayerPing::CNEOHud_PlayerPing(const char* pElementName, vgui::Panel* pa
 	Assert(m_hTexture > 0);
 
 	SetVisible(true);
+
+	playerPingHudElement = this;
 }
 
 void CNEOHud_PlayerPing::ApplySchemeSettings(vgui::IScheme *pScheme)
@@ -96,7 +109,7 @@ void CNEOHud_PlayerPing::FireGameEvent(IGameEvent* event)
 		return;
 
 	auto eventName = event->GetName();
-	if (!Q_stricmp(eventName, "player_ping"))
+	if (!Q_stricmp(eventName, "player_ping") && cl_neo_player_pings.GetBool())
 	{
 		int playerIndex = event->GetInt("playerindex");
 		Vector worldpos = Vector(event->GetInt("pingx"), event->GetInt("pingy"), event->GetInt("pingz"));
@@ -105,20 +118,14 @@ void CNEOHud_PlayerPing::FireGameEvent(IGameEvent* event)
 	}
 	else if (!Q_stricmp(eventName, "round_start"))
 	{
-		for (int i = 0; i < MAX_PLAYERS; i++)
-		{
-			m_iPlayerPings[i].deathTime = 0;
-		}
+		HideAllPings();
 	}
 	else if (!Q_stricmp(eventName, "player_team"))
 	{
 		auto player = UTIL_PlayerByUserId(event->GetInt("userid"));
 		if (player && player->IsLocalPlayer())
 		{
-			for (int i = 0; i < MAX_PLAYERS; i++)
-			{
-				m_iPlayerPings[i].deathTime = 0;
-			}
+			HideAllPings();
 		}
 	}
 
@@ -160,8 +167,9 @@ void CNEOHud_PlayerPing::DrawNeoHudElement()
 
 		float y2 = y - m_iPlayerPings[i].distanceYOffset;
 
-		constexpr float PING_MAX_OPACITY = 200;
-		float opacity = PING_MAX_OPACITY;
+		constexpr float PING_NORMAL_OPACITY = 200;
+		constexpr float PING_OBSTRUCTED_OPACITY = 80;
+		float opacity = m_iPlayerPings[i].noLineOfSight ? PING_OBSTRUCTED_OPACITY : PING_NORMAL_OPACITY;
 
 		constexpr float PING_FADE_START = 1.f;
 		const float timeTillDeath = m_iPlayerPings[i].deathTime - gpGlobals->curtime;
@@ -245,6 +253,10 @@ void CNEOHud_PlayerPing::UpdateDistanceToPlayer(C_BasePlayer* player, int pingIn
 
 	constexpr float MAX_Y_DISTANCE_OFFSET_RATIO = 1.f / 8;
 	m_iPlayerPings[pingIndex].distanceYOffset = min(m_iPosY * MAX_Y_DISTANCE_OFFSET_RATIO, m_iPlayerPings[pingIndex].distance * 2 * (m_iPosY / 480));
+
+	trace_t tr;
+	UTIL_TraceLine(player->EyePosition(), m_iPlayerPings[pingIndex].worldPos, MASK_VISIBLE_AND_NPCS, player, COLLISION_GROUP_NONE, &tr);
+	m_iPlayerPings[pingIndex].noLineOfSight = tr.fraction < 0.999;
 }
 
 void CNEOHud_PlayerPing::SetPos(const int index, Vector& pos, bool ghosterPing) {

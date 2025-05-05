@@ -11,6 +11,7 @@ struct playerPing
 	float distance;
 	int distanceYOffset;
 	int team;
+	bool noLineOfSight;
 	bool ghosterPing;
 };
 
@@ -29,12 +30,12 @@ public:
 	virtual ConVar *GetUpdateFrequencyConVar() const override;
 	virtual void LevelShutdown(void) override;
 
+	void HideAllPings();
 protected:
 	virtual void FireGameEvent(IGameEvent* event);
 
 private:
 	int GetStringPixelWidth(wchar_t* pString, vgui::HFont hFont);
-	void HideAllPings();
 	void UpdateDistanceToPlayer(C_BasePlayer* player, int pingIndex);
 	void SetPos(const int index, Vector& pos, bool ghosterPing);
 

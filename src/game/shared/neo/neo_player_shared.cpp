@@ -112,9 +112,18 @@ bool ClientWantsAimHold(const CNEO_Player* player)
 #endif
 }
 
+#ifdef CLIENT_DLL
+extern ConVar cl_neo_player_pings;
+#endif // CLIENT_DLL
 bool CheckPingButton(const CNEO_Player* player)
 {
-	if (player->m_afButtonPressed & IN_ATTACK3 && player->m_flNextPingTime <= gpGlobals->curtime)
+#ifdef GAME_DLL
+	const bool showPlayerPings = engine->GetClientConVarValue(player->entindex(), "cl_neo_player_pings");
+#else
+	const bool showPlayerPings = cl_neo_player_pings.GetBool();
+#endif // GAME_DLL
+
+	if (showPlayerPings && player->m_afButtonPressed & IN_ATTACK3 && player->m_flNextPingTime <= gpGlobals->curtime)
 	{
 		IGameEvent* event = gameeventmanager->CreateEvent("player_ping");
 		if (event)
