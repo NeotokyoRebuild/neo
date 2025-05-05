@@ -128,6 +128,7 @@ ConVar sv_neo_readyup_lobby("sv_neo_readyup_lobby", "0", FCVAR_REPLICATED, "If e
 ConVar sv_neo_pausematch_enabled("sv_neo_pausematch_enabled", "0", FCVAR_REPLICATED, "If enabled, players will be able to pause the match mid-game.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_pausematch_unpauseimmediate("sv_neo_pausematch_unpauseimmediate", "0", FCVAR_REPLICATED | FCVAR_CHEAT, "Testing only - If enabled, unpause will be immediate.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_readyup_countdown("sv_neo_readyup_countdown", "5", FCVAR_REPLICATED, "Set the countdown from fully ready to start of match in seconds.", true, 0.0f, true, 120.0f);
+ConVar sv_neo_ghost_spawn_bias("sv_neo_ghost_spawn_bias", "0", FCVAR_REPLICATED, "Spawn ghost in the same location as the previous round on odd-indexed rounds (Round 1 = index 0)", true, 0, true, 1);
 
 static void neoSvCompCallback(IConVar* var, const char* pOldValue, float flOldValue)
 {
@@ -136,6 +137,7 @@ static void neoSvCompCallback(IConVar* var, const char* pOldValue, float flOldVa
 	mp_forcecamera.SetValue(bCurrentValue); // 0 = OBS_ALLOWS_ALL, 1 = OBS_ALLOW_TEAM. For strictly original neotokyo spectator experience, 2 = OBS_ALLOW_NONE
 	sv_neo_spraydisable.SetValue(bCurrentValue);
 	sv_neo_pausematch_enabled.SetValue(bCurrentValue);
+	sv_neo_ghost_spawn_bias.SetValue(bCurrentValue);
 }
 
 ConVar sv_neo_comp("sv_neo_comp", "0", FCVAR_REPLICATED, "Enables competitive gamerules", true, 0.f, true, 1.f, neoSvCompCallback);
@@ -624,6 +626,7 @@ void CNEORules::ResetMapSessionCommon()
 	V_memset(m_arrayiEntPrevCap, 0, sizeof(m_arrayiEntPrevCap));
 	m_iEntPrevCapSize = 0;
 	DMSpawnComCallbackLoad();
+	m_vecPreviousGhostSpawn = vec3_origin;
 #endif
 }
 
@@ -1586,13 +1589,19 @@ void CNEORules::SpawnTheGhost(const Vector *origin)
 		}
 
 		m_pGhost->SetAbsOrigin(*origin);
-		m_pGhost->Drop(Vector{ 0.0f, 0.0f, 0.0f });
+		m_pGhost->Drop(vec3_origin);
 	}
 	// We didn't have any spawns, spawn ghost at origin
 	else if (numGhostSpawns == 0)
 	{
 		Warning("No ghost spawns found! Spawning ghost at map origin, instead.\n");
 		m_pGhost->SetAbsOrigin(vec3_origin);
+		m_pGhost->Drop(vec3_origin);
+	}
+	else if (sv_neo_ghost_spawn_bias.GetBool() == true && roundAlternate())
+	{
+		m_pGhost->SetAbsOrigin(m_vecPreviousGhostSpawn);
+		m_pGhost->Drop(vec3_origin);
 	}
 	else
 	{
@@ -1619,13 +1628,14 @@ void CNEORules::SpawnTheGhost(const Vector *origin)
 					if (!ghostSpawn->GetAbsOrigin().IsValid())
 					{
 						m_pGhost->SetAbsOrigin(vec3_origin);
+						m_pGhost->Drop(vec3_origin);
 						Warning("Failed to get ghost spawn coords; spawning ghost at map origin instead!\n");
 						Assert(false);
 					}
 					else
 					{
 						m_pGhost->SetAbsOrigin(ghostSpawn->GetAbsOrigin());
-						m_pGhost->Drop(Vector{0.0f, 0.0f, 0.0f});
+						m_pGhost->Drop(vec3_origin);
 					}
 
 					break;
@@ -1636,11 +1646,12 @@ void CNEORules::SpawnTheGhost(const Vector *origin)
 		}
 	}
 
+	m_vecPreviousGhostSpawn = m_pGhost->GetAbsOrigin();
 	DevMsg("%s ghost at coords:\n\t%.1f %.1f %.1f\n",
-		   spawnedGhostNow ? "Spawned" : "Moved",
-		   m_pGhost->GetAbsOrigin().x,
-		   m_pGhost->GetAbsOrigin().y,
-		   m_pGhost->GetAbsOrigin().z);
+			spawnedGhostNow ? "Spawned" : "Moved",
+			m_vecPreviousGhostSpawn.x,
+			m_vecPreviousGhostSpawn.y,
+			m_vecPreviousGhostSpawn.z);
 }
 
 void CNEORules::SelectTheVIP()
