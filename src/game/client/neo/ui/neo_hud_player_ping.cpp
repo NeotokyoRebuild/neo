@@ -13,7 +13,7 @@
 
 DECLARE_NAMED_HUDELEMENT(CNEOHud_PlayerPing, NHudPlayerPing);
 
-NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(PlayerPing, 0.1)
+NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(PlayerPing, 0.05) // distances to pings and thus ping offset update at 20Hz looks nice enough
 
 CNEOHud_PlayerPing::CNEOHud_PlayerPing(const char* pElementName, vgui::Panel* parent)
 	: CHudElement(pElementName), Panel(parent, pElementName)
@@ -41,9 +41,9 @@ void CNEOHud_PlayerPing::ApplySchemeSettings(vgui::IScheme *pScheme)
 	BaseClass::ApplySchemeSettings(pScheme);
 
 	m_hFont = pScheme->GetFont("NHudOCRSmall");
-	m_hFontSmall = pScheme->GetFont("NHudOCRSmaller");
-	m_iFontTall = vgui::surface()->GetFontTall(m_hFont);
-	m_iTexTall = m_iFontTall * 2;
+	m_hFontSmall = pScheme->GetFont("NHudOCRSmallerNoAdditive");
+	m_iFontTall = vgui::surface()->GetFontTall(m_hFontSmall);
+	m_iTexTall = m_iFontTall;
 
 	vgui::surface()->DrawSetTextureFile(m_hTexture, "vgui/hud/ping/ping", 1, false);
 	vgui::surface()->DrawGetTextureSize(m_hTexture, m_iTexWidth, m_iTexHeight);
@@ -75,6 +75,7 @@ void CNEOHud_PlayerPing::UpdateStateForNeoHudElementDraw()
 		}
 
 		m_iPlayerPings[i].distance = METERS_PER_INCH * player->GetAbsOrigin().DistTo(m_iPlayerPings[i].worldPos);
+		m_iPlayerPings[i].distanceYOffset = min(m_iPosY * MAX_Y_DISTANCE_OFFSET_RATIO, m_iPlayerPings[i].distance * 2 * (m_iPosY / 480));
 	}
 }
 
@@ -84,6 +85,8 @@ void CNEOHud_PlayerPing::UpdateStateForNeoHudElementDraw()
 void CNEOHud_PlayerPing::Init(void)
 {
 	ListenForGameEvent("player_ping");
+	ListenForGameEvent("round_start");
+	ListenForGameEvent("player_team");
 }
 
 //-----------------------------------------------------------------------------
@@ -101,6 +104,33 @@ void CNEOHud_PlayerPing::FireGameEvent(IGameEvent* event)
 		Vector worldpos = Vector(event->GetInt("pingx"), event->GetInt("pingy"), event->GetInt("pingz"));
 		bool ghosterPing = event->GetBool("ghosterping");
 		SetPos(playerIndex, worldpos, ghosterPing);
+	}
+	else if (!Q_stricmp(eventName, "round_start"))
+	{
+		for (int i = 0; i < MAX_PLAYERS; i++)
+		{
+			m_iPlayerPings[i].deathTime = 0;
+		}
+	}
+	else if (!Q_stricmp(eventName, "player_team"))
+	{
+		auto player = UTIL_PlayerByUserId(event->GetInt("userid"));
+		if (player && player->IsLocalPlayer())
+		{
+			for (int i = 0; i < MAX_PLAYERS; i++)
+			{
+				m_iPlayerPings[i].deathTime = 0;
+			}
+		}
+	}
+
+}
+
+void CNEOHud_PlayerPing::LevelShutdown(void)
+{
+	for (int i = 0; i < MAX_PLAYERS; i++)
+	{
+		m_iPlayerPings[i].deathTime = 0;
 	}
 }
 
@@ -125,27 +155,15 @@ void CNEOHud_PlayerPing::DrawNeoHudElement()
 	vgui::surface()->DrawSetTexture(m_hTexture);
 	for (int i = 0; i < gpGlobals->maxClients; i++)
 	{
-		if (gpGlobals->curtime >= m_iPlayerPings[i].deathTime || m_iPlayerPings[i].team != playerTeam)
+		if (gpGlobals->curtime >= m_iPlayerPings[i].deathTime || m_iPlayerPings[i].team != playerTeam || !GetVectorInScreenSpace(m_iPlayerPings[i].worldPos, x, y))
 		{
 			continue;
 		}
 
-		GetVectorInScreenSpace(m_iPlayerPings[i].worldPos, x, y);
+		float y2 = y - m_iPlayerPings[i].distanceYOffset;
 
 		constexpr float PING_MAX_OPACITY = 200;
-		constexpr float PING_MIN_OPACITY = 25;
 		float opacity = PING_MAX_OPACITY;
-		float distanceToCenter = static_cast<float>(sqrt(pow((m_iPosX * 0.5) - x, 2) + pow(y - (m_iPosY * 0.5), 2)));
-		float FADE_FROM_CENTER_START = 120 * (m_iPosY / 480);
-		float FADE_FROM_CENTER_END = 60 * (m_iPosY / 480);
-		if (distanceToCenter < FADE_FROM_CENTER_END)
-		{
-			opacity = PING_MIN_OPACITY;
-		}
-		else if (distanceToCenter < FADE_FROM_CENTER_START)
-		{
-			opacity = PING_MIN_OPACITY + ((PING_MAX_OPACITY - PING_MIN_OPACITY) * (distanceToCenter - FADE_FROM_CENTER_END) / (FADE_FROM_CENTER_START - FADE_FROM_CENTER_END));
-		}
 
 		constexpr float PING_FADE_START = 1.f;
 		float deathTimeDelta = m_iPlayerPings[i].deathTime - gpGlobals->curtime;
@@ -154,35 +172,39 @@ void CNEOHud_PlayerPing::DrawNeoHudElement()
 			opacity *= deathTimeDelta / PING_FADE_START;
 		}
 
-		int offsetTexture = m_iPlayerPings[i].ghosterPing ? m_iTexTall * 0.7 : m_iTexTall * 0.5;
+		int offsetTexture = m_iPlayerPings[i].ghosterPing ? m_iTexTall * 0.8 : m_iTexTall * 0.5;
 		Color color = m_iPlayerPings[i].ghosterPing ? COLOR_GREY : (playerTeam == TEAM_JINRAI) ? COLOR_JINRAI : COLOR_NSF;
 		color.SetColor(color.r(), color.g(), color.b(), opacity);
 		vgui::surface()->DrawSetColor(color);
 		vgui::surface()->DrawTexturedRect(
 			x - offsetTexture,
-			y - offsetTexture,
+			y2 - offsetTexture,
 			x + offsetTexture,
-			y + offsetTexture);
+			y2 + offsetTexture);
 
-		char character = i >= 10 ? 'A' + i - 10 : '0' + i; // NEO TODO (Adam) Index in team instead of in server?
-		int xWide = vgui::surface()->GetCharacterWidth(m_hFont, character);
+		if (y - y2 > m_iTexTall)
+		{
+			vgui::surface()->DrawLine(x-1,y,x-1,y2 + m_iTexTall);
+			color.SetColor(COLOR_BLACK.r(), COLOR_BLACK.g(), COLOR_BLACK.b(), opacity);
+			vgui::surface()->DrawSetColor(color);
+			vgui::surface()->DrawLine(x, y+1, x, y2+1 + m_iTexTall);
+		}
 
-		color = COLOR_WHITE;
-		color.SetColor(color.r(), color.g(), color.b(), opacity);
-
-		vgui::surface()->DrawSetTextColor(color);
-		vgui::surface()->DrawSetTextFont(m_hFont);
-		vgui::surface()->DrawSetTextPos(x - (xWide / 2), y - (m_iFontTall / 2));
-		vgui::surface()->DrawUnicodeChar(character);
-
-		vgui::surface()->DrawSetTextFont(m_hFontSmall);
+		vgui::surface()->DrawSetTextFont(m_iPlayerPings[i].ghosterPing ? m_hFont : m_hFontSmall);
 		char m_szMarkerText[4 + 1] = {};
 		wchar_t m_wszMarkerTextUnicode[4 + 1] = {};
-		V_snprintf(m_szMarkerText, sizeof(m_szMarkerText), "%im", m_iPlayerPings[i].distance);
+		V_snprintf(m_szMarkerText, sizeof(m_szMarkerText), "%im", (int)m_iPlayerPings[i].distance);
 		g_pVGuiLocalize->ConvertANSIToUnicode(m_szMarkerText, m_wszMarkerTextUnicode, sizeof(m_wszMarkerTextUnicode));
-		xWide = GetStringPixelWidth(m_wszMarkerTextUnicode, m_hFontSmall);
+		int halfTextWidth = 0.5 * GetStringPixelWidth(m_wszMarkerTextUnicode, m_iPlayerPings[i].ghosterPing ? m_hFont : m_hFontSmall);
 
-		vgui::surface()->DrawSetTextPos(x - (xWide / 2), y - ((3*m_iFontTall) / 2));
+		color.SetColor(COLOR_BLACK.r(), COLOR_BLACK.g(), COLOR_BLACK.b(), opacity);
+		vgui::surface()->DrawSetTextColor(color);
+		vgui::surface()->DrawSetTextPos(x - halfTextWidth, y2 + 1 - m_iTexTall - m_iFontTall);
+		vgui::surface()->DrawPrintText(m_wszMarkerTextUnicode, 5);
+
+		color.SetColor(COLOR_WHITE.r(), COLOR_WHITE.g(), COLOR_WHITE.b(), opacity);
+		vgui::surface()->DrawSetTextColor(color);
+		vgui::surface()->DrawSetTextPos(x - 1 - halfTextWidth, y2 - m_iTexTall - m_iFontTall);
 		vgui::surface()->DrawPrintText(m_wszMarkerTextUnicode, 5);
 	}
 }

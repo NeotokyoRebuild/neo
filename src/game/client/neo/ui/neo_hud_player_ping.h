@@ -8,10 +8,13 @@ struct playerPing
 {
 	Vector worldPos;
 	float deathTime;
-	int distance;
+	float distance;
+	int distanceYOffset;
 	int team;
 	bool ghosterPing;
 };
+
+constexpr float MAX_Y_DISTANCE_OFFSET_RATIO = 1.f/8;
 
 class CNEOHud_PlayerPing : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
 {
@@ -28,6 +31,8 @@ public:
 	int GetStringPixelWidth(wchar_t* pString, vgui::HFont hFont);
 	virtual ConVar *GetUpdateFrequencyConVar() const override;
 
+	virtual void LevelShutdown(void) override;
+
 	void SetPos(const int index, Vector& pos, bool ghosterPing) {
 		constexpr float PLAYER_PING_LIFETIME = 8;
 		auto localPlayer = UTIL_PlayerByIndex(GetLocalPlayerIndex());
@@ -35,11 +40,13 @@ public:
 		auto pingPlayer = UTIL_PlayerByIndex(index);
 		if (!pingPlayer) { return; }
 
-		m_iPlayerPings[index - 1].worldPos = pos;
-		m_iPlayerPings[index - 1].deathTime = gpGlobals->curtime + PLAYER_PING_LIFETIME;
-		m_iPlayerPings[index - 1].distance = METERS_PER_INCH * pos.DistTo(localPlayer->GetAbsOrigin());
-		m_iPlayerPings[index - 1].team = pingPlayer->GetTeamNumber();
-		m_iPlayerPings[index - 1].ghosterPing = ghosterPing;
+		const int pingIndex = index - 1;
+		m_iPlayerPings[pingIndex].worldPos = pos;
+		m_iPlayerPings[pingIndex].deathTime = gpGlobals->curtime + PLAYER_PING_LIFETIME;
+		m_iPlayerPings[pingIndex].distance = METERS_PER_INCH * pos.DistTo(localPlayer->GetAbsOrigin());
+		m_iPlayerPings[pingIndex].distanceYOffset = min(m_iPosY * MAX_Y_DISTANCE_OFFSET_RATIO, m_iPlayerPings[pingIndex].distance * 2 * (m_iPosY / 480));
+		m_iPlayerPings[pingIndex].team = pingPlayer->GetTeamNumber();
+		m_iPlayerPings[pingIndex].ghosterPing = ghosterPing;
 	}
 
 protected:
@@ -47,7 +54,7 @@ protected:
 
 private:
 	playerPing m_iPlayerPings[MAX_PLAYERS] = {};
-	
+
 	int m_iPosX, m_iPosY;
 
 	vgui::HFont m_hFont = 0UL;

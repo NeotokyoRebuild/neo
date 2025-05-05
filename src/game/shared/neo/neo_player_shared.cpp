@@ -114,7 +114,7 @@ bool ClientWantsAimHold(const CNEO_Player* player)
 
 bool CheckPingButton(const CNEO_Player* player)
 {
-	if (player->m_nButtons & IN_ATTACK3 && player->m_flNextPingTime <= gpGlobals->curtime)
+	if (player->m_afButtonPressed & IN_ATTACK3 && player->m_flNextPingTime <= gpGlobals->curtime)
 	{
 		IGameEvent* event = gameeventmanager->CreateEvent("player_ping");
 		if (event)
@@ -123,7 +123,8 @@ bool CheckPingButton(const CNEO_Player* player)
 			Vector forward;
 			CBasePlayer* basePlayer = UTIL_PlayerByIndex(player->entindex());
 			basePlayer->EyeVectors(&forward);
-			UTIL_TraceLine(basePlayer->EyePosition(), basePlayer->EyePosition() + forward * MAX_COORD_RANGE, MASK_SOLID, player, COLLISION_GROUP_NONE, &tr);
+			Vector eyePosition = basePlayer->EyePosition();
+			UTIL_TraceLine(eyePosition, eyePosition + forward * MAX_COORD_RANGE, MASK_VISIBLE_AND_NPCS, player, COLLISION_GROUP_NONE, &tr);
 
 			if (Q_stristr(tr.surface.name, "SKYBOX"))
 			{
@@ -133,8 +134,7 @@ bool CheckPingButton(const CNEO_Player* player)
 			event->SetInt("playerindex", player->entindex());
 			event->SetInt("pingx", tr.endpos.x);
 			event->SetInt("pingy", tr.endpos.y);
-			constexpr float PING_OFFSET = 1024;
-			event->SetInt("pingz", tr.endpos.z + (tr.fraction * PING_OFFSET));
+			event->SetInt("pingz", tr.endpos.z);
 			event->SetBool("ghosterping", NEORules()->GetGhosterPlayer() == player->entindex());
 #ifdef GAME_DLL
 			gameeventmanager->FireEvent(event);
