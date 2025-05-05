@@ -242,6 +242,8 @@ void CNEOHud_PlayerPing::HideAllPings()
 void CNEOHud_PlayerPing::UpdateDistanceToPlayer(C_BasePlayer* player, int pingIndex)
 {
 	m_iPlayerPings[pingIndex].distance = METERS_PER_INCH * player->GetAbsOrigin().DistTo(m_iPlayerPings[pingIndex].worldPos);
+
+	constexpr float MAX_Y_DISTANCE_OFFSET_RATIO = 1.f / 8;
 	m_iPlayerPings[pingIndex].distanceYOffset = min(m_iPosY * MAX_Y_DISTANCE_OFFSET_RATIO, m_iPlayerPings[pingIndex].distance * 2 * (m_iPosY / 480));
 }
 

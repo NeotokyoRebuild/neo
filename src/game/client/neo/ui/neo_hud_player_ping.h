@@ -14,8 +14,6 @@ struct playerPing
 	bool ghosterPing;
 };
 
-constexpr float MAX_Y_DISTANCE_OFFSET_RATIO = 1.f/8;
-
 class CNEOHud_PlayerPing : public CNEOHud_ChildElement, public CHudElement, public vgui::Panel
 {
 	DECLARE_CLASS_SIMPLE(CNEOHud_PlayerPing, Panel)
