@@ -467,7 +467,7 @@ CNEO_Player::CNEO_Player()
 	m_iDmgMenuCurPage = 0;
 	m_iDmgMenuNextPage = 0;
 
-	m_flNextPingTime = gpGlobals->curtime;
+	m_flNextPingTime = 0;
 }
 
 CNEO_Player::~CNEO_Player( void )
@@ -600,7 +600,7 @@ void CNEO_Player::Spawn(void)
 		m_rfAttackersHits.Set(i, 0);
 	}
 
-	m_flNextPingTime = gpGlobals->curtime;
+	m_flNextPingTime = 0;
 
 	Weapon_SetZoom(false);
 
@@ -998,10 +998,7 @@ void CNEO_Player::PreThink(void)
 
 	CheckThermOpticButtons();
 	CheckVisionButtons();
-	if (CheckPingButton(this))
-	{
-		m_flNextPingTime = gpGlobals->curtime + NEO_PING_DELAY;
-	}
+	CheckPingButton(this);
 
 	if (m_bInThermOpticCamo)
 	{

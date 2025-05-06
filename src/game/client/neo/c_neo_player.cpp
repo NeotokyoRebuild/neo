@@ -1140,10 +1140,7 @@ void C_NEO_Player::PreThink( void )
 
 	CheckThermOpticButtons();
 	CheckVisionButtons();
-	if (CheckPingButton(this))
-	{
-		m_flNextPingTime = gpGlobals->curtime + NEO_PING_DELAY;
-	}
+	CheckPingButton(this);
 
 	if (m_bInThermOpticCamo)
 	{
