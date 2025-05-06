@@ -8,6 +8,7 @@
 #include "iclientmode.h"
 #include <vgui/ILocalize.h>
 #include <vgui/ISurface.h>
+#include "engine/IEngineSound.h"
 
 #include "ienginevgui.h"
 
@@ -43,6 +44,9 @@ CNEOHud_PlayerPing::CNEOHud_PlayerPing(const char* pElementName, vgui::Panel* pa
 
 	m_hTexture = vgui::surface()->CreateNewTextureID();
 	Assert(m_hTexture > 0);
+
+	pingSoundHandle = CBaseEntity::PrecacheScriptSound("HUD.Ping");
+	Assert(pingSoundHandle > -1);
 
 	SetVisible(true);
 
@@ -115,6 +119,7 @@ void CNEOHud_PlayerPing::FireGameEvent(IGameEvent* event)
 		Vector worldpos = Vector(event->GetInt("pingx"), event->GetInt("pingy"), event->GetInt("pingz"));
 		bool ghosterPing = event->GetBool("ghosterping");
 		SetPos(playerIndex, worldpos, ghosterPing);
+		PlayPingSound();
 	}
 	else if (!Q_stricmp(eventName, "round_start"))
 	{
@@ -176,6 +181,12 @@ void CNEOHud_PlayerPing::DrawNeoHudElement()
 		if (timeTillDeath < PING_FADE_START)
 		{
 			opacity *= timeTillDeath / PING_FADE_START;
+		}
+
+		if (timeTillDeath > 7.5)
+		{
+			constexpr float pi = 3.14159;
+			y2 += ((y - y2) * 0.5) * sin(pi * (timeTillDeath - 7.5) * 2);
 		}
 
 		// Draw Ping Shape
@@ -273,4 +284,17 @@ void CNEOHud_PlayerPing::SetPos(const int index, Vector& pos, bool ghosterPing) 
 	m_iPlayerPings[pingIndex].ghosterPing = ghosterPing;
 
 	UpdateDistanceToPlayer(localPlayer, pingIndex);
+	PlayPingSound();
+}
+
+ConVar snd_ping_volume("snd_ping_volume", "0.33", FCVAR_ARCHIVE, "Player ping volume", true, 0.f, true, 1.f);
+void CNEOHud_PlayerPing::PlayPingSound()
+{
+	EmitSound_t et;
+	et.m_hSoundScriptHandle = pingSoundHandle;
+	et.m_nFlags |= SND_CHANGE_VOL;
+	et.m_flVolume = snd_ping_volume.GetFloat();
+
+	CLocalPlayerFilter filter;
+	C_BaseEntity::EmitSound(filter, GetLocalPlayerIndex(), et);
 }

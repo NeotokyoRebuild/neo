@@ -38,11 +38,14 @@ private:
 	int GetStringPixelWidth(wchar_t* pString, vgui::HFont hFont);
 	void UpdateDistanceToPlayer(C_BasePlayer* player, int pingIndex);
 	void SetPos(const int index, Vector& pos, bool ghosterPing);
+	void PlayPingSound();
 
 private:
 	playerPing m_iPlayerPings[MAX_PLAYERS] = {};
 
 	int m_iPosX, m_iPosY;
+
+	HSOUNDSCRIPTHANDLE pingSoundHandle;
 
 	vgui::HFont m_hFont = 0UL;
 	vgui::HFont m_hFontSmall = 0UL;
