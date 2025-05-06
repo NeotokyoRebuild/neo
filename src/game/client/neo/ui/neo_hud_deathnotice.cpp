@@ -688,7 +688,7 @@ void CNEOHud_DeathNotice::RetireExpiredDeathNotices( void )
 //-----------------------------------------------------------------------------
 // Purpose: Server's told us that someone's died
 //-----------------------------------------------------------------------------
-ConVar cl_neo_hud_extended_killfeed("cl_neo_hud_extended_killfeed", "1", FCVAR_CLIENTDLL, "Show extra events in killfeed", true, 0, true, 1);
+ConVar cl_neo_hud_extended_killfeed("cl_neo_hud_extended_killfeed", "1", FCVAR_ARCHIVE, "Show extra events in killfeed", true, 0, true, 1);
 void CNEOHud_DeathNotice::FireGameEvent(IGameEvent* event)
 {
 	if (!g_PR)
