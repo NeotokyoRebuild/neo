@@ -46,7 +46,7 @@ CNEOHud_PlayerPing::CNEOHud_PlayerPing(const char* pElementName, vgui::Panel* pa
 	Assert(m_hTexture > 0);
 
 	pingSoundHandle = CBaseEntity::PrecacheScriptSound("HUD.Ping");
-	Assert(pingSoundHandle > -1);
+	//Assert(pingSoundHandle > -1); Sometimes inexplicably doesn't work
 
 	SetVisible(true);
 
@@ -188,16 +188,14 @@ void CNEOHud_PlayerPing::DrawNeoHudElement()
 		constexpr float PING_PLACE_ANIMATION_DURATION = 0.5;
 		if (timeTillDeath > PLAYER_PING_LIFETIME - PING_PLACE_ANIMATION_DURATION)
 		{
-			constexpr float pi = 3.14159;
-			constexpr float PING_PLACE_ANIMATION_MAX_OFFSET = 0.5;
-			y2 += ((y - y2) * PING_PLACE_ANIMATION_MAX_OFFSET) * sin(pi * (timeTillDeath - (PLAYER_PING_LIFETIME - PING_PLACE_ANIMATION_DURATION)) * (1 / PING_PLACE_ANIMATION_DURATION));
+			constexpr float PING_PLACE_ANIMATION_MAX_OFFSET = 0.25;
+			y2 += ((y - y2) * PING_PLACE_ANIMATION_MAX_OFFSET) * sin(M_PI * (timeTillDeath - (PLAYER_PING_LIFETIME - PING_PLACE_ANIMATION_DURATION)) * (1 / PING_PLACE_ANIMATION_DURATION));
 		}
 
 		// Idle animation
 		/*constexpr float PLAYER_PING_BOUNCE_INTERVAL = 2;
 		constexpr float PING_PLACE_ANIMATION_MAX_OFFSET = 0.2;
-		constexpr float pi = 3.14159;
-		y2 += ((y - y2) * PING_PLACE_ANIMATION_MAX_OFFSET) * sin(pi * timeTillDeath * (2 / PLAYER_PING_BOUNCE_INTERVAL));*/
+		y2 += ((y - y2) * PING_PLACE_ANIMATION_MAX_OFFSET) * sin(M_PI * timeTillDeath * (2 / PLAYER_PING_BOUNCE_INTERVAL));*/
 
 		// Draw Ping Shape
 		const int halfTexture = m_iPlayerPings[i].ghosterPing ? m_iTexTall * 0.8 : m_iTexTall * 0.5;
@@ -307,7 +305,14 @@ void CNEOHud_PlayerPing::PlayPingSound()
 	m_flNextPingSoundTime = gpGlobals->curtime + 3;
 
 	EmitSound_t et;
-	et.m_hSoundScriptHandle = pingSoundHandle;
+	if (!pingSoundHandle)
+	{
+		et.m_pSoundName = "gameplay/ping.wav";
+	}
+	else
+	{
+		et.m_hSoundScriptHandle = pingSoundHandle;
+	}
 	et.m_nFlags |= SND_CHANGE_VOL;
 	et.m_flVolume = snd_ping_volume.GetFloat();
 

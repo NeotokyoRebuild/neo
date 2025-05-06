@@ -119,14 +119,17 @@ bool CheckPingButton(const CNEO_Player* player)
 {
 	if (player->m_afButtonPressed & IN_ATTACK3 && player->m_flNextPingTime <= gpGlobals->curtime)
 	{
-#ifdef GAME_DLL
-		const bool showPlayerPings = engine->GetClientConVarValue(engine->IndexOfEdict(player->edict()), "cl_neo_player_pings");
-#else
-		const bool showPlayerPings = cl_neo_player_pings.GetBool();
-#endif // GAME_DLL
-		if (!showPlayerPings)
+		if (!player->IsBot())
 		{
-			return false;
+#ifdef GAME_DLL
+			const bool showPlayerPings = atoi(engine->GetClientConVarValue(engine->IndexOfEdict(player->edict()), "cl_neo_player_pings"));
+#else
+			const bool showPlayerPings = cl_neo_player_pings.GetBool();
+#endif // GAME_DLL
+			if (!showPlayerPings)
+			{
+				return false;
+			}
 		}
 
 		IGameEvent* event = gameeventmanager->CreateEvent("player_ping");
