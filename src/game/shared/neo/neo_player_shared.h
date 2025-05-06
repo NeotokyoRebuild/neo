@@ -13,9 +13,6 @@
 #ifndef max
 	#define max(a,b)  (((a) > (b)) ? (a) : (b))
 #endif
-#ifndef clamp
-	#define clamp(a,b,c) (a > b ? a : b < c ? b : c)
-#endif
 
 #include "neo_predicted_viewmodel.h"
 
