@@ -46,6 +46,7 @@ private:
 	int m_iPosX, m_iPosY;
 
 	HSOUNDSCRIPTHANDLE pingSoundHandle;
+	float m_flNextPingSoundTime = 0;
 
 	vgui::HFont m_hFont = 0UL;
 	vgui::HFont m_hFontSmall = 0UL;

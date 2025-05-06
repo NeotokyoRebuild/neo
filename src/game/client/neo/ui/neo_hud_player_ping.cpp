@@ -183,11 +183,21 @@ void CNEOHud_PlayerPing::DrawNeoHudElement()
 			opacity *= timeTillDeath / PING_FADE_START;
 		}
 
-		if (timeTillDeath > 7.5)
+		// Land animation
+		constexpr float PLAYER_PING_LIFETIME = 8;
+		constexpr float PING_PLACE_ANIMATION_DURATION = 0.5;
+		if (timeTillDeath > PLAYER_PING_LIFETIME - PING_PLACE_ANIMATION_DURATION)
 		{
 			constexpr float pi = 3.14159;
-			y2 += ((y - y2) * 0.5) * sin(pi * (timeTillDeath - 7.5) * 2);
+			constexpr float PING_PLACE_ANIMATION_MAX_OFFSET = 0.5;
+			y2 += ((y - y2) * PING_PLACE_ANIMATION_MAX_OFFSET) * sin(pi * (timeTillDeath - (PLAYER_PING_LIFETIME - PING_PLACE_ANIMATION_DURATION)) * (1 / PING_PLACE_ANIMATION_DURATION));
 		}
+
+		// Idle animation
+		/*constexpr float PLAYER_PING_BOUNCE_INTERVAL = 2;
+		constexpr float PING_PLACE_ANIMATION_MAX_OFFSET = 0.2;
+		constexpr float pi = 3.14159;
+		y2 += ((y - y2) * PING_PLACE_ANIMATION_MAX_OFFSET) * sin(pi * timeTillDeath * (2 / PLAYER_PING_BOUNCE_INTERVAL));*/
 
 		// Draw Ping Shape
 		const int halfTexture = m_iPlayerPings[i].ghosterPing ? m_iTexTall * 0.8 : m_iTexTall * 0.5;
@@ -290,6 +300,12 @@ void CNEOHud_PlayerPing::SetPos(const int index, Vector& pos, bool ghosterPing) 
 ConVar snd_ping_volume("snd_ping_volume", "0.33", FCVAR_ARCHIVE, "Player ping volume", true, 0.f, true, 1.f);
 void CNEOHud_PlayerPing::PlayPingSound()
 {
+	if (gpGlobals->curtime < m_flNextPingSoundTime)
+	{
+		return;
+	}
+	m_flNextPingSoundTime = gpGlobals->curtime + 3;
+
 	EmitSound_t et;
 	et.m_hSoundScriptHandle = pingSoundHandle;
 	et.m_nFlags |= SND_CHANGE_VOL;
