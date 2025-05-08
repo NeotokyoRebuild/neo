@@ -3522,7 +3522,7 @@ void CNEORules::DeathNotice(CBasePlayer* pVictim, const CTakeDamageInfo& info)
 		event->SetString("weapon", killer_weapon_name);
 		event->SetInt("priority", 7);
 		event->SetBool("headshot", pVictim->LastHitGroup() == HITGROUP_HEAD);
-		event->SetBool("suicide", pKiller == pVictim);
+		event->SetBool("suicide", pKiller == pVictim || !pKiller->IsPlayer());
 		
 		if (isGrenade)
 		{
