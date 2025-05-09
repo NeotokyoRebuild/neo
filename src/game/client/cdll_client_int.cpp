@@ -1232,13 +1232,14 @@ static inline void UpdateBgm(ConVar *volCvar)
 			}
 		}
 	}
-
+#ifndef NEO
 	// We were not in a server nor joining a server, and there was no music playing.
 	// Start playing the main menu bgm.
 	if (!engine->IsConnected())
 	{
 		enginesound->EmitAmbientSound(bgmFiles[0], volCvar->GetFloat());
 	}
+#endif // NEO
 }
 
 void MusicVol_ChangeCallback(IConVar *cvar, const char *pOldVal, float flOldVal)
