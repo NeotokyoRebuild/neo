@@ -205,6 +205,8 @@ public:
 	CNetworkVar(int, m_nVisionLastTick);
 	CNetworkVar(float, m_flJumpLastTime);
 
+	CNetworkVar(float, m_flNextPingTime);
+
 	CNetworkVar(bool, m_bInThermOpticCamo);
 	CNetworkVar(bool, m_bLastTickInThermOpticCamo);
 	CNetworkVar(bool, m_bInVision);
