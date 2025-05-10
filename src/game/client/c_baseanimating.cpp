@@ -3565,7 +3565,8 @@ int C_BaseAnimating::InternalDrawModel( int flags )
 		auto pOwner = UTIL_PlayerByIndex(GetLocalPlayerIndex());
 		if (pOwner)
 		{
-			static const Vector ownerOrigin = pOwner->EyePosition();
+			static Vector ownerOrigin;
+			ownerOrigin = pOwner->EyePosition();
 			pInfo->pLightingOrigin = &ownerOrigin;
 		}
 	}
