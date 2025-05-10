@@ -232,6 +232,8 @@ void NeoSettingsInit(NeoSettings *ns)
 			vgui::surface()->DrawGetTextureSize(pTex->iTexId, pTex->iWide, pTex->iTall);
 		}
 	}
+
+	NeoSettingsUpdateCached(ns);
 }
 
 void NeoSettingsDeinit(NeoSettings *ns)
@@ -473,7 +475,8 @@ void NeoToggleConsoleEnforce()
 
 void NeoSettingsSave(const NeoSettings *ns)
 {
-	const_cast<NeoSettings *>(ns)->bModified = false;
+	auto modifiableNS = const_cast<NeoSettings*>(ns);
+	modifiableNS->bModified = false;
 	auto *cvr = const_cast<NeoSettings::CVR *>(&ns->cvr);
 	{
 		const NeoSettings::General *pGeneral = &ns->general;
@@ -630,6 +633,8 @@ void NeoSettingsSave(const NeoSettings *ns)
 
 	engine->ClientCmd_Unrestricted("host_writeconfig");
 	engine->ClientCmd_Unrestricted("mat_savechanges");
+
+	NeoSettingsUpdateCached(modifiableNS);
 }
 
 void NeoSettingsResetToDefault(NeoSettings *ns)
@@ -671,6 +676,14 @@ void NeoSettingsResetToDefault(NeoSettings *ns)
 	// NEO JANK (nullsystem): For some reason, bind -> gameuifuncs->GetButtonCodeForBind is too quick for
 	// the game engine at this point. So just omit setting binds in restore since we already have anyway.
 	NeoSettingsRestore(ns, NeoSettings::Keys::SKIP_KEYS);
+}
+
+void NeoSettingsUpdateCached(NeoSettings* ns)
+{
+	// Precache gamecontrolui buttons (maybe precache neo_toggleconsole here since it sometimes doesn't work?)
+	ns->keys.bcTeamMenu = gameuifuncs->GetButtonCodeForBind("teammenu");
+	ns->keys.bcClassMenu = gameuifuncs->GetButtonCodeForBind("classmenu");
+	ns->keys.bcLoadoutMenu = gameuifuncs->GetButtonCodeForBind("loadoutmenu");
 }
 
 static const wchar_t *DLFILTER_LABELS[] = {
