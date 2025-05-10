@@ -170,7 +170,7 @@ void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, c
 				int textWidth, textHeight;
 				surface()->GetTextSize(m_hFont, textUTF, textWidth, textHeight);
 				surface()->DrawSetTextPos(x - (textWidth / 2), y + (drawOutline ? 0 : m_iMarkerHeight) + textYOffset);
-				surface()->DrawPrintText(textUTF, V_strlen(textASCII));
+				surface()->DrawPrintText(textUTF, V_wcslen(textUTF));
 				textYOffset += textHeight;
 			};
 

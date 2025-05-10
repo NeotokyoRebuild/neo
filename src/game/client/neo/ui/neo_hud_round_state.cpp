@@ -733,7 +733,7 @@ int CNEOHud_RoundState::DrawPlayerRow(int playerIndex, const int yOffset, bool s
 	surface()->GetTextSize(m_hOCRSmallFont, m_wszPlayersAliveUnicode, fontWidth, fontHeight);
 	surface()->DrawSetTextColor(isAlive ? COLOR_FADED_WHITE : COLOR_DARK_FADED_WHITE);
 	surface()->DrawSetTextPos(8, yOffset);
-	surface()->DrawPrintText(wSquadMateText, Q_strlen(squadMateText));
+	surface()->DrawPrintText(wSquadMateText, V_wcslen(wSquadMateText));
 
 	return yOffset + fontHeight;
 }
