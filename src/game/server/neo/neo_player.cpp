@@ -743,11 +743,6 @@ void CNEO_Player::CalculateSpeed(void)
 		speed *= NEO_CROUCH_WALK_MODIFIER;
 	}
 
-	if (m_nButtons & IN_WALK)
-	{
-		speed *= NEO_CROUCH_WALK_MODIFIER; // They stack
-	}
-
 	if (IsSprinting())
 	{
 		switch (m_iNeoClass) {
@@ -769,6 +764,11 @@ void CNEO_Player::CalculateSpeed(void)
 	if (IsInAim())
 	{
 		speed *= NEO_AIM_MODIFIER;
+	}
+
+	if (m_nButtons & IN_WALK)
+	{
+		speed = MIN(90, speed);
 	}
 
 	Vector absoluteVelocity = GetAbsVelocity();
