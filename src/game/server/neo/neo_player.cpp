@@ -2854,7 +2854,7 @@ void GiveDet(CNEO_Player* pPlayer)
 		}
 		else
 		{
-			pent->SetAbsOrigin(pPlayer->EyePosition());
+			pent->SetLocalOrigin(pPlayer->GetLocalOrigin());
 			pent->AddSpawnFlags(SF_NORESPAWN);
 
 			auto pWeapon = dynamic_cast<CNEOBaseCombatWeapon*>((CBaseEntity*)pent);
@@ -2950,7 +2950,7 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 		return;
 	}
 
-	pEnt->SetAbsOrigin(EyePosition());
+	pEnt->SetLocalOrigin(GetLocalOrigin());
 	pEnt->AddSpawnFlags(SF_NORESPAWN);
 
 	CNEOBaseCombatWeapon *pNeoWeapon = dynamic_cast<CNEOBaseCombatWeapon*>((CBaseEntity*)pEnt);
