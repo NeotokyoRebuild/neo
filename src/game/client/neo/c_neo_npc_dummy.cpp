@@ -24,7 +24,7 @@ int C_NEO_NPCDummy::DrawModel(int flags) // From c_neo_player
         return BaseClass::DrawModel(flags);
     }
 
-    auto pTargetPlayer = C_NEO_Player::GetTargetNEOPlayer();
+    auto pTargetPlayer = C_NEO_Player::GetVisionTargetNEOPlayer();
     if (!pTargetPlayer)
     {
         Assert(false);
