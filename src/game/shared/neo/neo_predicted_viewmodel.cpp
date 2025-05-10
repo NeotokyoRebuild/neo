@@ -153,7 +153,7 @@ ConVar neo_lean_thirdperson_roll_lerp_scale("neo_lean_thirdperson_roll_lerp_scal
 	FCVAR_REPLICATED | FCVAR_CHEAT, "Multiplier for 3rd person lean roll lerping.", true, 0.0, false, 0);
 #endif
 
-float CNEOPredictedViewModel::freeRoomForLean(float leanAmount, CNEO_Player *player, bool &leanObstacle){
+float CNEOPredictedViewModel::freeRoomForLean(float leanAmount, CNEO_Player *player){
 	const Vector playerDefaultViewPos = player->GetAbsOrigin();
 	Vector deltaPlayerViewPos(0, leanAmount, 0);
 	VectorYawRotate(deltaPlayerViewPos, player->LocalEyeAngles().y, deltaPlayerViewPos);
@@ -195,10 +195,6 @@ float CNEOPredictedViewModel::freeRoomForLean(float leanAmount, CNEO_Player *pla
 
 	trace_t trace;
 	UTIL_TraceHull(playerDefaultViewPos, leanEndPos, hullMins, hullMaxs, player->PhysicsSolidMaskForEntity(), &filter, &trace);
-	if (trace.fraction < 1)
-	{
-		leanObstacle = true;
-	}
 
 #ifdef CLIENT_DLL
 	if (neo_lean_debug_draw_hull.GetBool())
@@ -310,7 +306,6 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 #endif
 	QAngle viewAng = player->LocalEyeAngles();
 	float leanRatio = 0;
-	bool leanObstacle = false;
 
 	if (player->IsAlive() && player->GetFlags() & FL_ONGROUND)
 	{
@@ -376,10 +371,10 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 		switch (player->m_bInLean.Get())
 		{
 		case NEO_LEAN_LEFT:
-			leanRatio = freeRoomForLean(neo_lean_peek_left_amount.GetFloat(), player, leanObstacle) / neo_lean_peek_left_amount.GetFloat();
+			leanRatio = freeRoomForLean(neo_lean_peek_left_amount.GetFloat(), player) / neo_lean_peek_left_amount.GetFloat();
 			break;
 		case NEO_LEAN_RIGHT:
-			leanRatio = -freeRoomForLean(-neo_lean_peek_right_amount.GetFloat(), player, leanObstacle) / neo_lean_peek_right_amount.GetFloat();
+			leanRatio = -freeRoomForLean(-neo_lean_peek_right_amount.GetFloat(), player) / neo_lean_peek_right_amount.GetFloat();
 			break;
 		default:
 			// not leaning, or leaning both ways; move towards zero
@@ -391,18 +386,8 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 
 	if (diff != 0)
 	{
-		bool currentGreaterThanZero = m_flLeanRatio > 0;
-		bool targetGreaterThanZero = leanRatio > 0;
-		bool sameSide = (currentGreaterThanZero && targetGreaterThanZero) || (!currentGreaterThanZero && !targetGreaterThanZero);
-		if (leanObstacle && sameSide && abs(m_flLeanRatio) > abs(leanRatio))
-		{ // If running into a wall, bring us back immediately to minimize camera clipping through wall. A bit jarring maybe, but maybe running your head into a wall should be
-			m_flLeanRatio = leanRatio;
-		}
-		else
-		{
-			const float leanStep = 1 / neo_lean_speed.GetFloat() * gpGlobals->frametime;
-			m_flLeanRatio = EaseOut(m_flLeanRatio, leanRatio, leanStep);
-		}
+		const float leanStep = 1 / neo_lean_speed.GetFloat() * gpGlobals->frametime;
+		m_flLeanRatio = EaseOut(m_flLeanRatio, leanRatio, leanStep);
 	}
 
 	Vector viewOffset(0, 0, 0);
