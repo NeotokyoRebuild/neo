@@ -162,10 +162,7 @@ void CNEO_NPCTargetSystem::Think(void)
     for (int i = 1; i <= gpGlobals->maxClients; i++)
     {
         CBasePlayer* pPlayer = UTIL_PlayerByIndex(i);
-        if (!pPlayer)
-            continue;
-
-        if (!pPlayer->IsAlive()) // We cannot combine this with the above check
+        if (!pPlayer || !pPlayer->IsAlive())
             continue;
 
         if (m_pFilter && !m_pFilter->PassesFilter(this, pPlayer))
