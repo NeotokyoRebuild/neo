@@ -145,8 +145,8 @@ extern ConVar glow_outline_effect_enable;
 void CNEOHud_FriendlyMarker::DrawPlayer(Color teamColor, C_NEO_Player *player, const C_NEO_Player *localPlayer) const
 {
 	int x, y;
-	static const float heightOffset = 48.0f;
-	auto pos = player->EyePosition();
+	constexpr float HEIGHT_OFFSET = 56.0f;
+	auto pos = player->GetAbsOrigin() + Vector(0, 0, HEIGHT_OFFSET);
 
 	bool drawOutline = glow_outline_effect_enable.GetBool();
 	Vector offset = drawOutline ? Vector(0, 0, 7) : vec3_origin;
