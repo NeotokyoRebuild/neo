@@ -286,6 +286,12 @@ void CNeoTeamMenu::CloseMenu()
 
 void CNeoTeamMenu::OnKeyCodeReleased(vgui::KeyCode code)
 { // Navigating using the keyboard hack
+	int localPlayerTeam = GetLocalPlayerTeam();
+	if (localPlayerTeam == TEAM_UNASSIGNED)
+	{
+		return;
+	}
+
 	if (code == g_pNeoRoot->m_ns.keys.bcTeamMenu)
 	{
 		CloseMenu();
