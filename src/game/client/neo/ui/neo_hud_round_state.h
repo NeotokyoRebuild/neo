@@ -49,6 +49,8 @@ private:
 					const int xOffset, const bool drawHealthClass);
 	void SetTextureToAvatar(int playerIndex);
 
+	virtual void LevelShutdown(void) override;
+
 private:
 	vgui::HFont m_hOCRLargeFont = 0UL;
 	vgui::HFont m_hOCRFont = 0UL;

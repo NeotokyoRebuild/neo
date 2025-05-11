@@ -143,7 +143,6 @@ void CNEOHud_Ammo::DrawAmmo() const
 			V_sprintf_safe(clipsText, "%d", numClips);
 		}
 
-		textLen = V_strlen(clipsText);
 		wchar_t unicodeClipsText[maxLen]{ L'\0' };
 		g_pVGuiLocalize->ConvertANSIToUnicode(clipsText, unicodeClipsText, sizeof(unicodeClipsText));
 
@@ -153,7 +152,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 
 		surface()->GetTextSize(m_hTextFont, unicodeClipsText, fontWidth, fontHeight);
 		surface()->DrawSetTextPos(digit2_xpos + xpos - fontWidth, digit2_ypos + ypos);
-		surface()->DrawPrintText(unicodeClipsText, textLen);
+		surface()->DrawPrintText(unicodeClipsText, V_wcslen(unicodeClipsText));
 	}
 
 	const char* ammoChar = nullptr;
@@ -187,7 +186,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 
 			surface()->DrawSetTextFont(m_hBulletFont);
 			surface()->DrawSetTextPos(icon_xpos + xpos, icon_ypos + ypos);
-			surface()->DrawPrintText(unicodeFireModeText, V_strlen(fireModeText));
+			surface()->DrawPrintText(unicodeFireModeText, V_wcslen(unicodeFireModeText));
 
 			surface()->GetTextSize(m_hBulletFont, unicodeFireModeText, fireModeWidth, fireModeHeight);
 		}

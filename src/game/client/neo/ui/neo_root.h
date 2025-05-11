@@ -16,8 +16,8 @@ bool IsInGame();
 
 struct NeoNewGame
 {
-	wchar_t wszMap[64] = L"nt_oilstain_ctg";
-	wchar_t wszHostname[64] = L"NeoTokyo Rebuild";
+	wchar_t wszMap[64] = L"ntre_oilstain_ctg";
+	wchar_t wszHostname[64] = L"NEOTOKYO;REBUILD Listen Server";
 	int iMaxPlayers = 24;
 	wchar_t wszPassword[64] = L"neo";
 	bool bFriendlyFire = true;

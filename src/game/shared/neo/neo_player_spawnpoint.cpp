@@ -39,6 +39,14 @@ END_RECV_TABLE()
 #endif
 
 BEGIN_DATADESC(CNEOSpawnPoint)
+#ifdef GAME_DLL
+	DEFINE_KEYFIELD(m_bDisabled, FIELD_BOOLEAN, "StartDisabled"),
+
+	DEFINE_INPUTFUNC(FIELD_VOID, "Enable", InputEnable),
+	DEFINE_INPUTFUNC(FIELD_VOID, "Disable", InputDisable),
+
+	DEFINE_OUTPUT(m_OnPlayerSpawn, "OnPlayerSpawn")
+#endif
 END_DATADESC()
 
 CNEOSpawnPoint::CNEOSpawnPoint()
@@ -64,3 +72,15 @@ void CNEOSpawnPoint::Spawn()
 		GetAbsOrigin().x, GetAbsOrigin().y, GetAbsOrigin().z);
 #endif
 }
+
+#ifdef GAME_DLL
+void CNEOSpawnPoint::InputEnable(inputdata_t& inputData)
+{
+	m_bDisabled = false;
+}
+
+void CNEOSpawnPoint::InputDisable(inputdata_t& inputData)
+{
+	m_bDisabled = true;
+}
+#endif

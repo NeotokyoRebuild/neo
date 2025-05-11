@@ -13,6 +13,8 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 set(OUTPUT_SUBDIRECTORY out)
 
+set(FETCHCONTENT_QUIET FALSE CACHE BOOL "Hide all FetchContent population output")
+
 include(cmake/utils.cmake)
 include(cmake/build_info.cmake)
 
@@ -430,6 +432,8 @@ if(NEO_GENERATE_GAMEDATA)
         gamedata-gen
         URL https://github.com/NeotokyoRebuild/gamedata-gen/releases/download/v2/gamedata-gen.zip
         URL_HASH MD5=2a988c84e7e192d33819868c37ad3150
+        GIT_PROGRESS TRUE
+        USES_TERMINAL_DOWNLOAD TRUE
     )
 
     FetchContent_MakeAvailable(gamedata-gen)
@@ -587,6 +591,8 @@ if(NEO_EXTRA_ASSETS)
         GIT_REPOSITORY https://github.com/NeotokyoRebuild/neoAssets.git
         GIT_TAG master # Replace with a commit hash or other tag to select a specific version of the assets, remove GIT_SHALLOW if using commit hash
         GIT_SHALLOW 1
+        GIT_PROGRESS TRUE
+        USES_TERMINAL_DOWNLOAD TRUE
     )
 
     FetchContent_MakeAvailable(neo_assets)
