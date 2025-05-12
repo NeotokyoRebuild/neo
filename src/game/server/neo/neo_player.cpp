@@ -1942,7 +1942,10 @@ void CNEO_Player::AddPoints(int score, bool bAllowNegativeScore)
 
 void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 {
-	CreateRagdollEntity();
+	if (!m_bForceServerRagdoll)
+	{
+		CreateRagdollEntity();
+	}
 
 	// Calculate force for weapon drop
 	Vector forceVector = CalcDamageForceVector(info);
@@ -2049,7 +2052,7 @@ void CNEO_Player::SetDeadModel(const CTakeDamageInfo& info)
 
 	int deadModelType = -1;
 
-	if (!m_bAllowGibbing) // Prevent gibbing if a custom player model has been set via I/O
+	if (!m_bAllowGibbing || m_bForceServerRagdoll) // Prevent gibbing if a custom player model has been set via I/O or the ragdoll is serverside
 	{
 		return;
 	}
