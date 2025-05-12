@@ -2560,6 +2560,7 @@ void CNEO_Player::PickDefaultSpawnTeam(void)
 	}
 }
 
+extern bool RespawnWithRet(CBaseEntity* pEdict, bool fCopyCorpse);
 bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 {
 	if (!GetGlobalTeam(iTeam))
@@ -2630,6 +2631,7 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 
 	const bool suicidePlayerIfAlive = sv_neo_change_suicide_player.GetBool();
 	bool changedTeams = false;
+	bool spawn = false;
 	if (iTeam == TEAM_SPECTATOR)
 	{
 		if (!mp_allowspectators.GetInt())
@@ -2671,6 +2673,7 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	}
 	else if (iTeam == TEAM_UNASSIGNED)
 	{
+		SetObserverMode(OBS_MODE_FIXED);
 		State_Transition(STATE_OBSERVER_MODE);
 	}
 	else if (iTeam == TEAM_JINRAI || iTeam == TEAM_NSF)
@@ -2691,9 +2694,13 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 		CHL2_Player::ChangeTeam(iTeam, false, justJoined);
 		changedTeams = true;
 		
-		// If we're not allowed to be in the currect observer mode, this will give us a new observer mode.
-		// SetObserverMode(GetObserverMode()); // NEO TODO (Adam) We want to switch to a valid observer mode and find a valid observer target if unable to respawn, but want to still be able to spawn if able to spawn
-		StopObserverMode();
+		spawn = NEORules()->FPlayerCanRespawn(this);
+		if (!spawn)
+		{
+			// If we're not allowed to be in the current observer mode (because of mp_forcecamera for example), this will give us a new observer mode.
+			SetObserverMode(GetObserverMode());
+			State_Transition(STATE_OBSERVER_MODE);
+		}
 	}
 	else
 	{
@@ -2723,6 +2730,18 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 		// deathmatch rules or Combine/Rebels model stuff.
 		CHL2_Player::ChangeTeam(iTeam, false, justJoined);
 	}
+
+	if (spawn)
+	{ // Spawn after all the items are removed
+		bool success = RespawnWithRet(this, false);
+		if (!success)
+		{ // shouldn't fail if NEORules()->FPlayerCanRespawn(this) returns true
+			Assert(false);
+			SetObserverMode(GetObserverMode());
+			State_Transition(STATE_OBSERVER_MODE);
+		}
+	}
+
 	NEORules()->m_bThinkCheckClantags = true;
 
 	return true;
