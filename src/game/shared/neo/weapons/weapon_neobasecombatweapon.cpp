@@ -215,7 +215,7 @@ void CNEOBaseCombatWeapon::Precache()
 	BaseClass::Precache();
 
 	if ((GetNeoWepBits() & NEO_WEP_SUPPRESSED))
-		PrecacheParticleSystem("ntr_muzzle_source");
+		PrecacheParticleSystem("ntr_muzzle_flash");
 }
 
 void CNEOBaseCombatWeapon::Spawn()
@@ -1030,7 +1030,7 @@ void CNEOBaseCombatWeapon::DrawCrosshair()
 }
 
 void CNEOBaseCombatWeapon::DispatchMuzzleParticleEffect(int iAttachment) {
-	static constexpr char particleName[] = "ntr_muzzle_source";
+	static constexpr char particleName[] = "ntr_muzzle_flash";
 	constexpr bool resetAllParticlesOnEntity = false;
 	const ParticleAttachment_t iAttachType = ParticleAttachment_t::PATTACH_POINT_FOLLOW;
 
