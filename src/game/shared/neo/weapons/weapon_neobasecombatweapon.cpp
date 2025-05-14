@@ -1005,7 +1005,7 @@ void CNEOBaseCombatWeapon::ProcessMuzzleFlashEvent()
 	el->color.exponent = 5;
 
 	// Muzzle flash particle
-	DispatchMuzzleParticleEffect(iAttachment);
+	ParticleProp()->Create("ntr_muzzle_source", PATTACH_POINT_FOLLOW, iAttachment);
 }
 
 void CNEOBaseCombatWeapon::DrawCrosshair()
@@ -1036,11 +1036,6 @@ void CNEOBaseCombatWeapon::DrawCrosshair()
 	{
 		crosshair->ResetCrosshair();
 	}
-}
-
-void CNEOBaseCombatWeapon::DispatchMuzzleParticleEffect(int iAttachment)
-{
-	CNewParticleEffect* pMuzzleFlashParticle = ParticleProp()->Create("ntr_muzzle_source", PATTACH_POINT_FOLLOW, iAttachment);
 }
 
 static inline bool ShouldDrawLocalPlayerViewModel(void)
