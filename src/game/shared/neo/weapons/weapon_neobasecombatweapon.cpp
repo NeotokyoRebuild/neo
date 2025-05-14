@@ -961,8 +961,17 @@ bool CNEOBaseCombatWeapon::CanBePickedUpByClass(int classId)
 #ifdef CLIENT_DLL
 void CNEOBaseCombatWeapon::ProcessMuzzleFlashEvent()
 {
-	if (GetPlayerOwner() == NULL)
+	C_BasePlayer *owner = GetPlayerOwner();
+	if (!owner)
 		return; // If using a view model in first person, muzzle flashes are not processed until the player drops their weapon. In that case, do not play a muzzle flash effect. Need to change how this is calculated if we want to allow dropped weapons to cook off for example
+
+	C_BasePlayer *localPlayer = UTIL_PlayerByIndex(GetLocalPlayerIndex());
+	if (!localPlayer)
+		return;
+
+	// bIsVisible in function calling ProcessMuzzleFlashEvent is set to true even though this weapon may not be drawn? Probably same reason for the same check in C_BaseCombatWeapon::DrawModel
+	if (localPlayer->IsObserver() && localPlayer->GetObserverMode() == OBS_MODE_IN_EYE && localPlayer->GetObserverTarget() == owner)
+		return;
 
 	if ((GetNeoWepBits() & NEO_WEP_SUPPRESSED))
 		return;
@@ -1029,25 +1038,9 @@ void CNEOBaseCombatWeapon::DrawCrosshair()
 	}
 }
 
-void CNEOBaseCombatWeapon::DispatchMuzzleParticleEffect(int iAttachment) {
-	static constexpr char particleName[] = "ntr_muzzle_source";
-	constexpr bool resetAllParticlesOnEntity = false;
-	const ParticleAttachment_t iAttachType = ParticleAttachment_t::PATTACH_POINT_FOLLOW;
-
-	CEffectData	data;
-
-	data.m_nHitBox = GetParticleSystemIndex(particleName);
-	data.m_hEntity = this;
-	data.m_fFlags |= PARTICLE_DISPATCH_FROM_ENTITY;
-	data.m_vOrigin = GetAbsOrigin();
-	data.m_nDamageType = iAttachType;
-	data.m_nAttachmentIndex = iAttachment;
-
-	if (resetAllParticlesOnEntity)
-		data.m_fFlags |= PARTICLE_DISPATCH_RESET_PARTICLES;
-
-	CSingleUserRecipientFilter filter(UTIL_PlayerByIndex(GetLocalPlayerIndex()));
-	te->DispatchEffect(filter, 0.0, data.m_vOrigin, "ParticleEffect", data);
+void CNEOBaseCombatWeapon::DispatchMuzzleParticleEffect(int iAttachment)
+{
+	CNewParticleEffect* pMuzzleFlashParticle = ParticleProp()->Create("ntr_muzzle_source", PATTACH_POINT_FOLLOW, iAttachment);
 }
 
 static inline bool ShouldDrawLocalPlayerViewModel(void)
