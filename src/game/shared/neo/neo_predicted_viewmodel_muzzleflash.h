@@ -44,7 +44,6 @@ public:
 	bool	m_bScaleChangeFlag;
 #else
 	CNetworkVar(bool, m_bActive);
-	CNetworkVar(int, m_iAngleZ);
 	CNetworkVar(int, m_iAngleZIncrement);
 	CNetworkVar(bool, m_bScaleChangeFlag);
 #endif // CLIENT_DLL

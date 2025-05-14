@@ -29,13 +29,11 @@ BEGIN_NETWORK_TABLE(CNEOPredictedViewModelMuzzleFlash, DT_NEOPredictedViewModelM
 #ifndef CLIENT_DLL
 SendPropEHandle(SENDINFO_NAME(m_hMoveParent, moveparent)),
 SendPropBool(SENDINFO(m_bActive)),
-SendPropInt(SENDINFO(m_iAngleZ)),
 SendPropInt(SENDINFO(m_iAngleZIncrement)),
 SendPropBool(SENDINFO(m_bScaleChangeFlag))
 #else
 RecvPropInt(RECVINFO_NAME(m_hNetworkMoveParent, moveparent), 0, RecvProxy_IntToMoveParent),
 RecvPropBool(RECVINFO(m_bActive)),
-RecvPropInt(RECVINFO(m_iAngleZ)),
 RecvPropInt(RECVINFO(m_iAngleZIncrement)),
 RecvPropEHandle(RECVINFO(m_bScaleChangeFlag), RecvProxy_ScaleChangeFlag)
 #endif
@@ -45,7 +43,6 @@ END_NETWORK_TABLE()
 BEGIN_PREDICTION_DATA(CNEOPredictedViewModelMuzzleFlash)
 DEFINE_PRED_FIELD(m_hNetworkMoveParent, FIELD_EHANDLE, FTYPEDESC_INSENDTABLE),
 DEFINE_PRED_FIELD(m_bActive, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
-DEFINE_PRED_FIELD(m_iAngleZ, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 DEFINE_PRED_FIELD(m_iAngleZIncrement, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 DEFINE_PRED_FIELD(m_bScaleChangeFlag, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
@@ -58,7 +55,9 @@ constexpr const char* MUZZLE_FLASH_ENTITY_MODEL = "models/effect/fpmf/fpmf01.mdl
 CNEOPredictedViewModelMuzzleFlash::CNEOPredictedViewModelMuzzleFlash()
 {
 	m_bActive = true;
+#ifdef CLIENT_DLL
 	m_iAngleZ = 0;
+#endif // CLIENT_DLL
 	m_iAngleZIncrement = -5;
 	m_flTimeSwitchOffMuzzleFlash = gpGlobals->curtime;
 	m_bScaleChangeFlag = false;
@@ -108,7 +107,7 @@ int CNEOPredictedViewModelMuzzleFlash::DrawModel(int flags)
 		vm->GetAttachment(iAttachment, localOrigin, localAngle);
 		UncorrectViewModelAttachment(localOrigin); // Need position of muzzle without fov modifications & viewmodel offset
 		m_iAngleZ = (m_iAngleZ + m_iAngleZIncrement) % 360; // NEOTODO (Adam) ? Speed of rotation depends on how often DrawModel() is called. Should this be tied to global time?
-		localAngle.z = m_iAngleZ;
+		localAngle.z += m_iAngleZ;
 		SetAbsOrigin(localOrigin);
 		SetAbsAngles(localAngle);
 
@@ -145,6 +144,9 @@ void CNEOPredictedViewModelMuzzleFlash::UpdateMuzzleFlashProperties(CBaseCombatW
 		return;
 	}
 
+#ifdef CLIENT_DLL
+	m_iAngleZ = 0;
+#endif // CLIENT_DLL
 	const auto neoWepBits = neoWep->GetNeoWepBits();
 	if (neoWepBits & (NEO_WEP_THROWABLE | NEO_WEP_GHOST | NEO_WEP_KNIFE | NEO_WEP_SUPPRESSED))
 	{
@@ -154,7 +156,6 @@ void CNEOPredictedViewModelMuzzleFlash::UpdateMuzzleFlashProperties(CBaseCombatW
 	{
 		m_bActive = true;
 		m_nSkin = 1;
-		m_iAngleZ = 0;
 		m_iAngleZIncrement = -100;
 		SetModelScale(0.75);
 		m_bScaleChangeFlag = !m_bScaleChangeFlag;
@@ -163,7 +164,6 @@ void CNEOPredictedViewModelMuzzleFlash::UpdateMuzzleFlashProperties(CBaseCombatW
 	{
 		m_bActive = true;
 		m_nSkin = 1;
-		m_iAngleZ = 0;
 		m_iAngleZIncrement = -90;
 		SetModelScale(2);
 		m_bScaleChangeFlag = !m_bScaleChangeFlag;
@@ -172,7 +172,6 @@ void CNEOPredictedViewModelMuzzleFlash::UpdateMuzzleFlashProperties(CBaseCombatW
 	{
 		m_bActive = true;
 		m_nSkin = 0;
-		m_iAngleZ = 0;
 		m_iAngleZIncrement = -90;
 		SetModelScale(0.75);
 		m_bScaleChangeFlag = !m_bScaleChangeFlag;
@@ -181,7 +180,6 @@ void CNEOPredictedViewModelMuzzleFlash::UpdateMuzzleFlashProperties(CBaseCombatW
 	{
 		m_bActive = true;
 		m_nSkin = 0;
-		m_iAngleZ = 0;
 		m_iAngleZIncrement = -100;
 		SetModelScale(0.6);
 		m_bScaleChangeFlag = !m_bScaleChangeFlag;
@@ -190,7 +188,6 @@ void CNEOPredictedViewModelMuzzleFlash::UpdateMuzzleFlashProperties(CBaseCombatW
 	{
 		m_bActive = true;
 		m_nSkin = 0;
-		m_iAngleZ = 0;
 		m_iAngleZIncrement = -90;
 		SetModelScale(0.75);
 		m_bScaleChangeFlag = !m_bScaleChangeFlag;
