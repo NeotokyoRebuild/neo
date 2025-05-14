@@ -92,28 +92,11 @@ void CNEOPredictedViewModelMuzzleFlash::Spawn(void)
 #ifdef CLIENT_DLL
 int CNEOPredictedViewModelMuzzleFlash::DrawModel(int flags)
 {
-	if (m_flTimeSwitchOffMuzzleFlash > gpGlobals->curtime && m_bActive)
+	if (!m_bActive || m_flTimeSwitchOffMuzzleFlash <= gpGlobals->curtime && m_bActive)
 	{
-		CBasePlayer* pOwner = ToBasePlayer(GetOwner());
-		if (pOwner == NULL) { return -1; }
-		CBaseViewModel* vm = pOwner->GetViewModel(0, false);
-		if (vm == NULL || !vm->IsVisible()) { return -1; }
-
-		int iAttachment = vm->LookupAttachment("muzzle");
-		if (iAttachment < 0) { return -1; }
-
-		Vector localOrigin;
-		QAngle localAngle;
-		vm->GetAttachment(iAttachment, localOrigin, localAngle);
-		UncorrectViewModelAttachment(localOrigin); // Need position of muzzle without fov modifications & viewmodel offset
-		m_iAngleZ = (m_iAngleZ + m_iAngleZIncrement) % 360; // NEOTODO (Adam) ? Speed of rotation depends on how often DrawModel() is called. Should this be tied to global time?
-		localAngle.z += m_iAngleZ;
-		SetAbsOrigin(localOrigin);
-		SetAbsAngles(localAngle);
-
-		return BaseClass::DrawModel(flags);
+		return -1;
 	}
-	return -1;
+	return BaseClass::DrawModel(flags);
 }
 
 void CNEOPredictedViewModelMuzzleFlash::ClientThink()
@@ -128,6 +111,41 @@ void CNEOPredictedViewModelMuzzleFlash::ClientThink()
 }
 
 #endif //CLIENT_DLL
+
+void CNEOPredictedViewModelMuzzleFlash::CalcViewModelView(CBasePlayer* pOwner,
+	const Vector& eyePosition, const QAngle& eyeAngles)
+{
+#ifdef GAME_DLL
+	return;
+#endif // GAME_DLL
+
+	if (!m_bActive || m_flTimeSwitchOffMuzzleFlash <= gpGlobals->curtime && m_bActive)
+	{
+		return;
+	}
+
+	auto vm = static_cast<CNEOPredictedViewModel*>(GetMoveParent());
+	if (!vm)
+	{
+		return;
+	}
+
+	int iAttachment = vm->LookupAttachment("muzzle");
+	if (iAttachment < 0) {
+		return;
+	}
+
+	Vector localOrigin;
+	QAngle localAngle;
+	vm->GetAttachment(iAttachment, localOrigin, localAngle);
+#ifdef CLIENT_DLL
+	UncorrectViewModelAttachment(localOrigin); // Need position of muzzle without fov modifications & viewmodel offset
+	m_iAngleZ = (m_iAngleZ + m_iAngleZIncrement) % 360; // NEOTODO (Adam) ? Speed of rotation depends on how often DrawModel() is called. Should this be tied to global time?
+	localAngle.z += m_iAngleZ;
+#endif //CLIENT_DLL
+	SetAbsOrigin(localOrigin);
+	SetAbsAngles(localAngle);
+}
 
 void CNEOPredictedViewModelMuzzleFlash::UpdateMuzzleFlashProperties(CBaseCombatWeapon* pWeapon, bool repeat)
 {

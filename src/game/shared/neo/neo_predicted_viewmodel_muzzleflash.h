@@ -20,6 +20,7 @@ public:
 	DECLARE_PREDICTABLE();
 	CNEOPredictedViewModelMuzzleFlash();
 	virtual ~CNEOPredictedViewModelMuzzleFlash();
+	virtual void CalcViewModelView(CBasePlayer* pOwner,	const Vector& eyePosition, const QAngle& eyeAngles);
 	void UpdateMuzzleFlashProperties(CBaseCombatWeapon* pWeapon, bool repeat = true);
 	virtual void Spawn(void) override;
 	virtual void Precache(void) override;
