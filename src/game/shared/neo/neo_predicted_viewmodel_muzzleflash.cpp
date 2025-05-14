@@ -119,11 +119,6 @@ void CNEOPredictedViewModelMuzzleFlash::CalcViewModelView(CBasePlayer* pOwner,
 	return;
 #endif // GAME_DLL
 
-	if (!m_bActive || m_flTimeSwitchOffMuzzleFlash <= gpGlobals->curtime && m_bActive)
-	{
-		return;
-	}
-
 	auto vm = static_cast<CNEOPredictedViewModel*>(GetMoveParent());
 	if (!vm)
 	{
