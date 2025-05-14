@@ -140,7 +140,7 @@ void CNEOPredictedViewModelMuzzleFlash::CalcViewModelView(CBasePlayer* pOwner,
 	vm->GetAttachment(iAttachment, localOrigin, localAngle);
 #ifdef CLIENT_DLL
 	UncorrectViewModelAttachment(localOrigin); // Need position of muzzle without fov modifications & viewmodel offset
-	m_iAngleZ = (m_iAngleZ + m_iAngleZIncrement) % 360; // NEOTODO (Adam) ? Speed of rotation depends on how often DrawModel() is called. Should this be tied to global time?
+	m_iAngleZ = (m_iAngleZ + m_iAngleZIncrement) % 360; // NEOTODO (Adam) ? Speed of rotation depends on how often CalcViewModel() is called. Should this be tied to global time?
 	localAngle.z += m_iAngleZ;
 #endif //CLIENT_DLL
 	SetAbsOrigin(localOrigin);
