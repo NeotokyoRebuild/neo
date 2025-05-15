@@ -487,10 +487,21 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 {
 	int wide, tall;
 	GetSize(wide, tall);
+	float secondsSpentOnLoadingScreen = (gpGlobals->realtime - g_pNeoRoot->m_flTimeLoadingScreenTransition);
+	if (secondsSpentOnLoadingScreen < NEO_MENU_SECONDS_DELAY)
+	{
+		return;
+	}
+	secondsSpentOnLoadingScreen -= NEO_MENU_SECONDS_DELAY;
+	if (secondsSpentOnLoadingScreen < NEO_MENU_SECONDS_TILL_FULLY_OPAQUE)
+	{
+		// Quadratic ease in
+		surface()->DrawSetAlphaMultiplier((secondsSpentOnLoadingScreen * secondsSpentOnLoadingScreen) / (NEO_MENU_SECONDS_TILL_FULLY_OPAQUE * NEO_MENU_SECONDS_TILL_FULLY_OPAQUE));
+	}
 
 	const RootState ePrevState = m_state;
 
-	// Laading screen just overlays over the root, so don't render anything else if so
+	// Loading screen just overlays over the root, so don't render anything else if so
 	if (!m_bOnLoadingScreen)
 	{
 		static constexpr void (CNeoRoot::*P_FN_MAIN_LOOP[STATE__TOTAL])(const MainLoopParam param) = {
@@ -527,6 +538,8 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 			}
 		}
 	}
+
+	surface()->DrawSetAlphaMultiplier(1);
 
 	if (eMode == NeoUI::MODE_PAINT)
 	{
@@ -937,6 +950,8 @@ void CNeoRoot::MainLoopNewGame(const MainLoopParam param)
 				NeoUI::Pad();
 				if (NeoUI::Button(L"Start").bPressed)
 				{
+					g_pNeoRoot->m_flTimeLoadingScreenTransition = gpGlobals->realtime;
+
 					if (IsInGame())
 					{
 						engine->ClientCmd_Unrestricted("disconnect");

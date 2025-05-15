@@ -79,6 +79,9 @@ void CNeoLoading::OnMessage(const KeyValues *params, vgui::VPANEL fromPanel)
 {
 	BaseClass::OnMessage(params, fromPanel);
 	const char *pSzMsgName = params->GetName();
+	m_bIsBackgroundMap = false;
+	m_bFoundMap = false;
+	g_pNeoRoot->m_flTimeLoadingScreenTransition = gpGlobals->realtime;
 	if (V_strcmp(pSzMsgName, "Activate") == 0)
 	{
 		FetchGameUIPanels();
@@ -87,6 +90,10 @@ void CNeoLoading::OnMessage(const KeyValues *params, vgui::VPANEL fromPanel)
 	else if (V_strcmp(pSzMsgName, "deactivate") == 0)
 	{
 		g_pNeoRoot->m_bOnLoadingScreen = false;
+		if (engine->IsConnected() && !engine->IsLevelMainMenuBackground())
+		{
+			g_pNeoRoot->m_flTimeLoadingScreenTransition -= (NEO_MENU_SECONDS_DELAY + NEO_MENU_SECONDS_TILL_FULLY_OPAQUE); // Don't fade in the menu on disconnect
+		}
 	}
 }
 
@@ -171,6 +178,36 @@ void CNeoLoading::Paint()
 
 void CNeoLoading::OnMainLoop(const NeoUI::Mode eMode)
 {
+	// NEO JANK (nullsystem): Since we don't have proper access to loading internals,
+	// determining by localization text index should be good enough to differ between
+	// loading and disconnect state.
+	vgui::TextImage* pTITitle = m_pLoadingPanel ? m_pLoadingPanel->TITitlePtr() : nullptr;
+	const StringIndex_t iStrIdx = pTITitle ? pTITitle->GetUnlocalizedTextSymbol() : INVALID_LOCALIZE_STRING_INDEX;
+
+	if (iStrIdx == m_aStrIdxMap[LOADINGSTATE_LOADING] && m_bIsBackgroundMap)
+	{
+		return;
+	}
+
+	if (iStrIdx == m_aStrIdxMap[LOADINGSTATE_LOADING] && !m_bFoundMap)
+	{
+		auto hostMapConVar = g_pCVar->FindVar("host_map"); 
+		if (hostMapConVar)
+		{
+			auto hostMapName = hostMapConVar->GetString();
+			if (V_strlen(hostMapName) != 0)
+			{
+				if (Q_stristr(hostMapName, "background_"))
+				{ // Would be nice if we could figure this out quicker without checking the name
+					m_bIsBackgroundMap = true;
+				}
+				m_bFoundMap = true;
+				// NEO TODO (Adam) Replace the background image with an appropriate one for this map?
+			}
+		}
+		return;
+	}
+
 	static constexpr int BOTTOM_ROWS = 3;
 
 	int wide, tall;
@@ -188,11 +225,6 @@ void CNeoLoading::OnMainLoop(const NeoUI::Mode eMode)
 	m_uiCtx.dPanel.y = (tall / 2) - ((m_iRowsInScreen * m_uiCtx.layout.iRowTall) / 2);
 	m_uiCtx.bgColor = COLOR_TRANSPARENT;
 
-	// NEO JANK (nullsystem): Since we don't have proper access to loading internals,
-	// determining by localization text index should be good enough to differ between
-	// loading and disconnect state.
-	vgui::TextImage *pTITitle = m_pLoadingPanel ? m_pLoadingPanel->TITitlePtr() : nullptr;
-	const StringIndex_t iStrIdx = pTITitle ? pTITitle->GetUnlocalizedTextSymbol() : INVALID_LOCALIZE_STRING_INDEX;
 	NeoUI::BeginContext(&m_uiCtx, eMode, pTITitle ? pTITitle->GetUText() : L"Loading...", "NeoLoadingMainCtx");
 	if (iStrIdx == m_aStrIdxMap[LOADINGSTATE_LOADING])
 	{
