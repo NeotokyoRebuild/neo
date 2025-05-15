@@ -1297,6 +1297,8 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 						}
 						else
 						{
+							g_pNeoRoot->m_flTimeLoadingScreenTransition = gpGlobals->realtime;
+
 							char connectCmd[256];
 							const char *szAddress = gameServer.m_NetAdr.GetConnectionAddressString();
 							V_sprintf_safe(connectCmd, "progress_enable; wait; connect %s", szAddress);
@@ -1808,6 +1810,8 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 				{
 					if (NeoUI::Button(L"Enter (Enter)").bPressed || NeoUI::Bind(KEY_ENTER))
 					{
+						g_pNeoRoot->m_flTimeLoadingScreenTransition = gpGlobals->realtime;
+
 						char szServerPassword[ARRAYSIZE(m_wszServerPassword)];
 						g_pVGuiLocalize->ConvertUnicodeToANSI(m_wszServerPassword, szServerPassword, sizeof(szServerPassword));
 						ConVarRef("password").SetValue(szServerPassword);
