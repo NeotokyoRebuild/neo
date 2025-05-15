@@ -482,6 +482,9 @@ private:
 						CEffectMaterial *pMaterial, 
 						float flTimeDelta,
 						bool bWireframe
+#ifdef NEO
+						,bool bInThermalVision
+#endif // NEO
 						 );
 
 	void			GrowBBoxFromParticlePositions( CEffectMaterial *pMaterial, bool &bboxSet, Vector &bbMin, Vector &bbMax );
