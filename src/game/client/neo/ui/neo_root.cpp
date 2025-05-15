@@ -490,6 +490,7 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 	float secondsSpentOnLoadingScreen = (gpGlobals->realtime - g_pNeoRoot->m_flTimeLoadingScreenTransition);
 	if (secondsSpentOnLoadingScreen < NEO_MENU_SECONDS_DELAY)
 	{
+		// version number will not print here, could draw before return or could just ignore since we will be removing the version number anyway
 		return;
 	}
 	secondsSpentOnLoadingScreen -= NEO_MENU_SECONDS_DELAY;
