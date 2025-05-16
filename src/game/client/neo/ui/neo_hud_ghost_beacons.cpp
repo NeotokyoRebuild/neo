@@ -60,8 +60,6 @@ CNEOHud_GhostBeacons::CNEOHud_GhostBeacons(const char *pElementName, vgui::Panel
 	Assert(m_hTex > 0);
 	surface()->DrawSetTextureFile(m_hTex, "vgui/hud/ctg/g_beacon_enemy", 1, false);
 
-	surface()->DrawGetTextureSize(m_hTex, m_iBeaconTextureWidth, m_iBeaconTextureHeight);
-
 	SetVisible(true);
 }
 
@@ -160,17 +158,20 @@ void CNEOHud_GhostBeacons::DrawPlayer(const Vector& playerPos) const
 	auto dist = m_pGhost->DistanceToPos(playerPos);	//Move this to some util
 	auto distInMeters = dist * METERS_PER_INCH;
 
+	float scale = neo_ghost_beacon_scale_toggle.GetBool() ? (neo_ghost_beacon_scale_baseline.GetInt() / dist) : 0.5;
+	constexpr float HALF_BASE_TEX_LENGTH = 64;
+	float halfBeaconLength = HALF_BASE_TEX_LENGTH * scale;
+
 	int posX, posY;
+	Vector ghostBeaconOffset = Vector(0, 0, 32); // The center of the player
+	GetVectorInScreenSpace(playerPos, posX, posY, &ghostBeaconOffset);
 	if (neo_ghost_beacon_scale_toggle.GetInt() == 0)
-	{
-		static constexpr int DISTANCE_AT_WHICH_MARKER_ON_FLOOR = 25;
-		static constexpr int MAX_DISTANCE_TO_RAISE_GHOST_BREACON = DISTANCE_AT_WHICH_MARKER_ON_FLOOR * 2;
-		Vector ghostBeaconOffset = Vector(0, 0, (MAX_DISTANCE_TO_RAISE_GHOST_BREACON - (distInMeters * 2)));
-		GetVectorInScreenSpace(playerPos, posX, posY, &ghostBeaconOffset);
-	} 
-	else
-	{
-		GetVectorInScreenSpace(playerPos, posX, posY);
+	{ // This is more intuitive than the previous version, but the size of the element remains constant regardless of camera rotation, 
+		// whereas players themselves become bigger the closer they are to the edge of the screen
+		int pos2X, pos2Y;
+		Vector ghostBeaconOffset2 = Vector(0, 0, 64); // The top of the player
+		GetVectorInScreenSpace(playerPos, pos2X, pos2Y, &ghostBeaconOffset2);
+		halfBeaconLength = (pos2Y - posY) * 0.5;
 	}
 	
 	char m_szBeaconTextANSI[4 + 1];
@@ -184,23 +185,16 @@ void CNEOHud_GhostBeacons::DrawPlayer(const Vector& playerPos) const
 	surface()->DrawSetTextFont(m_hFont);
 	int textWidth, textHeight;
 	surface()->GetTextSize(m_hFont, m_wszBeaconTextUnicode, textWidth, textHeight);
-	surface()->DrawSetTextPos(posX - (textWidth / 2), posY);
+	surface()->DrawSetTextPos(posX - (textWidth / 2), posY + halfBeaconLength);
 	surface()->DrawPrintText(m_wszBeaconTextUnicode, sizeof(m_szBeaconTextANSI));
 
 	surface()->DrawSetColor(255, 20, 20, alpha);
 	surface()->DrawSetTexture(m_hTex);
 
-	float scale = neo_ghost_beacon_scale_toggle.GetBool() ? (neo_ghost_beacon_scale_baseline.GetInt() / dist) : 0.25;
-
-	// Offset screen space starting positions by half of the texture x/y coords,
-	// so it starts centered on target.
-	const int posfix_X = posX - ((m_iBeaconTextureWidth / 2) * scale);
-	const int posfix_Y = posY - (m_iBeaconTextureHeight * scale);
-
 	// End coordinates according to art size (and our distance scaling)
 	surface()->DrawTexturedRect(
-		posfix_X,
-		posfix_Y,
-		posfix_X + (m_iBeaconTextureWidth * scale),
-		posfix_Y + (m_iBeaconTextureHeight * scale));
+		posX - halfBeaconLength,
+		posY - halfBeaconLength,
+		posX + halfBeaconLength,
+		posY + halfBeaconLength);
 }
