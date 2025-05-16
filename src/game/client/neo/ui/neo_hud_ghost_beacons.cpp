@@ -18,8 +18,11 @@
 
 using vgui::surface;
 
-ConVar neo_ghost_beacon_scale_toggle("neo_ghost_beacon_scale_toggle", "0", FCVAR_ARCHIVE,
-	"Toggles the scaling of ghost beacons.", true, 0, true, 1);
+ConVar neo_ghost_beacon_scale("neo_ghost_beacon_scale", "1", FCVAR_ARCHIVE,
+	"Ghost beacons scale.", true, 0.01, false, 0);
+
+ConVar neo_ghost_beacon_scale_with_distance("neo_ghost_beacon_scale_with_distance", "0", FCVAR_ARCHIVE,
+	"Toggles the scaling of ghost beacons with distance.", true, 0, true, 1);
 
 ConVar neo_ghost_beacon_alpha("neo_ghost_beacon_alpha", "150", FCVAR_ARCHIVE,
 	"Alpha channel transparency of HUD ghost beacons.", true, 0, true, 255);
@@ -152,14 +155,14 @@ void CNEOHud_GhostBeacons::DrawPlayer(const Vector& playerPos) const
 	auto dist = m_pGhost->DistanceToPos(playerPos);	//Move this to some util
 	auto distInMeters = dist * METERS_PER_INCH;
 
-	float scale = neo_ghost_beacon_scale_toggle.GetBool() ? (neo_ghost_beacon_scale_baseline.GetInt() / dist) : 0.5;
-	constexpr float HALF_BASE_TEX_LENGTH = 64;
+	float scale = neo_ghost_beacon_scale.GetFloat();
+	constexpr float HALF_BASE_TEX_LENGTH = 32;
 	float halfBeaconLength = HALF_BASE_TEX_LENGTH * scale;
 
 	int posX, posY;
-	Vector ghostBeaconOffset = Vector(0, 0, 32); // The center of the player
+	Vector ghostBeaconOffset = Vector(0, 0, neo_ghost_beacon_scale_with_distance.GetBool() ? 32 : 48); // The center of the player, or raise slightly if not scaling
 	GetVectorInScreenSpace(playerPos, posX, posY, &ghostBeaconOffset);
-	if (neo_ghost_beacon_scale_toggle.GetBool())
+	if (neo_ghost_beacon_scale_with_distance.GetBool())
 	{
 		int pos2X, pos2Y;
 		Vector ghostBeaconOffset2 = Vector(0, 0, 64); // The top of the player
