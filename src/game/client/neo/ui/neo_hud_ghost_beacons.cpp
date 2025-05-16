@@ -167,7 +167,7 @@ void CNEOHud_GhostBeacons::DrawPlayer(const Vector& playerPos) const
 		int pos2X, pos2Y;
 		Vector ghostBeaconOffset2 = Vector(0, 0, 64); // The top of the player
 		GetVectorInScreenSpace(playerPos, pos2X, pos2Y, &ghostBeaconOffset2);
-		halfBeaconLength = (posY - pos2Y) * 0.5;
+		halfBeaconLength = (posY - pos2Y) * 0.5 * scale;
 	}
 	
 	wchar_t m_wszBeaconTextUnicode[4 + 1];
