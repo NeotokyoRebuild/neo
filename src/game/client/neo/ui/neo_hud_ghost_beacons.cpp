@@ -165,20 +165,16 @@ void CNEOHud_GhostBeacons::DrawPlayer(const Vector& playerPos) const
 	int posX, posY;
 	Vector ghostBeaconOffset = Vector(0, 0, 32); // The center of the player
 	GetVectorInScreenSpace(playerPos, posX, posY, &ghostBeaconOffset);
-	if (neo_ghost_beacon_scale_toggle.GetInt() == 0)
-	{ // This is more intuitive than the previous version, but the size of the element remains constant regardless of camera rotation, 
-		// whereas players themselves become bigger the closer they are to the edge of the screen
+	if (neo_ghost_beacon_scale_toggle.GetBool())
+	{
 		int pos2X, pos2Y;
 		Vector ghostBeaconOffset2 = Vector(0, 0, 64); // The top of the player
 		GetVectorInScreenSpace(playerPos, pos2X, pos2Y, &ghostBeaconOffset2);
-		halfBeaconLength = (pos2Y - posY) * 0.5;
+		halfBeaconLength = (posY - pos2Y) * 0.5;
 	}
 	
-	char m_szBeaconTextANSI[4 + 1];
 	wchar_t m_wszBeaconTextUnicode[4 + 1];
-
-	V_snprintf(m_szBeaconTextANSI, sizeof(m_szBeaconTextANSI), "%02d m", FastFloatToSmallInt(dist * METERS_PER_INCH));
-	g_pVGuiLocalize->ConvertANSIToUnicode(m_szBeaconTextANSI, m_wszBeaconTextUnicode, sizeof(m_wszBeaconTextUnicode));
+	V_snwprintf(m_wszBeaconTextUnicode, ARRAYSIZE(m_wszBeaconTextUnicode), L"%02d m", FastFloatToSmallInt(dist * METERS_PER_INCH));
 
 	int alpha = distInMeters < 35 ? neo_ghost_beacon_alpha.GetInt() : neo_ghost_beacon_alpha.GetInt() * ((45 - distInMeters) / 10);
 	surface()->DrawSetTextColor(255, 255, 255, alpha);
@@ -186,7 +182,7 @@ void CNEOHud_GhostBeacons::DrawPlayer(const Vector& playerPos) const
 	int textWidth, textHeight;
 	surface()->GetTextSize(m_hFont, m_wszBeaconTextUnicode, textWidth, textHeight);
 	surface()->DrawSetTextPos(posX - (textWidth / 2), posY + halfBeaconLength);
-	surface()->DrawPrintText(m_wszBeaconTextUnicode, sizeof(m_szBeaconTextANSI));
+	surface()->DrawPrintText(m_wszBeaconTextUnicode, V_wcslen(m_wszBeaconTextUnicode));
 
 	surface()->DrawSetColor(255, 20, 20, alpha);
 	surface()->DrawSetTexture(m_hTex);
