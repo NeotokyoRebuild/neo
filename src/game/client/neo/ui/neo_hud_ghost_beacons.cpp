@@ -18,16 +18,10 @@
 
 using vgui::surface;
 
-// NEO HACK (Rain): This is a sort of magic number to help with screenspace hud elements
-// scaling in world space. There's most likely some nicer and less confusing way to do this.
-// Check which files make reference to this, if you decide to tweak it.
-ConVar neo_ghost_beacon_scale_baseline("neo_ghost_beacon_scale_baseline", "150", FCVAR_USERINFO,
-	"Distance in HU where ghost marker is same size as player.", true, 0, true, 9999);
-
-ConVar neo_ghost_beacon_scale_toggle("neo_ghost_beacon_scale_toggle", "0", FCVAR_USERINFO,
+ConVar neo_ghost_beacon_scale_toggle("neo_ghost_beacon_scale_toggle", "0", FCVAR_ARCHIVE,
 	"Toggles the scaling of ghost beacons.", true, 0, true, 1);
 
-ConVar neo_ghost_beacon_alpha("neo_ghost_beacon_alpha", "150", FCVAR_USERINFO,
+ConVar neo_ghost_beacon_alpha("neo_ghost_beacon_alpha", "150", FCVAR_ARCHIVE,
 	"Alpha channel transparency of HUD ghost beacons.", true, 0, true, 255);
 
 ConVar neo_ghost_delay_secs("neo_ghost_delay_secs", "3.3", FCVAR_CHEAT | FCVAR_REPLICATED,

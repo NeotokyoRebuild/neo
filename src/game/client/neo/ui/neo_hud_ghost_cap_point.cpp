@@ -8,9 +8,9 @@
 #include "c_neo_player.h"
 #include "neo_gamerules.h"
 
-ConVar neo_ghost_cap_point_hud_scale_factor("neo_ghost_cap_point_hud_scale_factor", "1", FCVAR_USERINFO,
+ConVar neo_ghost_cap_point_hud_scale_factor("neo_ghost_cap_point_hud_scale_factor", "1", FCVAR_ARCHIVE,
 	"Ghost cap HUD element scaling factor", true, 0.01, false, 0);
-ConVar cl_neo_hud_center_ghost_cap_size("cl_neo_hud_center_ghost_cap_size", "12.5", FCVAR_USERINFO,
+ConVar cl_neo_hud_center_ghost_cap_size("cl_neo_hud_center_ghost_cap_size", "12.5", FCVAR_ARCHIVE,
 	"HUD center size in percentage to fade ghost cap point.", true, 1, false, 0);
 
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(GhostCapPoint, 0.01)

@@ -23,9 +23,9 @@
 
 using vgui::surface;
 
-ConVar neo_ghost_marker_hud_scale_factor("neo_ghost_marker_hud_scale_factor", "1", FCVAR_USERINFO,
+ConVar neo_ghost_marker_hud_scale_factor("neo_ghost_marker_hud_scale_factor", "1", FCVAR_ARCHIVE,
 	"Ghost marker HUD element scaling factor", true, 0.01, false, 0);
-ConVar cl_neo_hud_center_ghost_marker_size("cl_neo_hud_center_ghost_marker_size", "12.5", FCVAR_USERINFO,
+ConVar cl_neo_hud_center_ghost_marker_size("cl_neo_hud_center_ghost_marker_size", "12.5", FCVAR_ARCHIVE,
 	"HUD center size in percentage to fade ghost marker.", true, 1, false, 0);
 
 
