@@ -115,8 +115,8 @@ struct SprayInfo
 	char szVtf[MAX_PATH];
 };
 
-#define NEO_MENU_SECONDS_DELAY 0.25
-#define NEO_MENU_SECONDS_TILL_FULLY_OPAQUE 0.75
+#define NEO_MENU_SECONDS_DELAY 0.25f
+#define NEO_MENU_SECONDS_TILL_FULLY_OPAQUE 0.75f
 
 // This class is what is actually used instead of the main menu.
 class CNeoRoot : public vgui::EditablePanel, public CGameEventListener
@@ -226,7 +226,7 @@ public:
 	MESSAGE_FUNC_CHARPTR(OnFileSelected, "FileSelected", fullpath);
 
 	bool m_bOnLoadingScreen = false;
-	float m_flTimeLoadingScreenTransition = 0;
+	float m_flTimeLoadingScreenTransition = 0.0f;
 	int m_iSavedYOffsets[NeoUI::MAX_SECTIONS] = {};
 	bool m_bSprayGalleryRefresh = false;
 	float m_flWideAs43 = 0.0f;

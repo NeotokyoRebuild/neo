@@ -31,6 +31,9 @@ CNeoLoading::CNeoLoading()
 
 	vgui::IScheme *pScheme = vgui::scheme()->GetIScheme(neoscheme);
 	ApplySchemeSettings(pScheme);
+
+	m_pHostMap = g_pCVar->FindVar("host_map");
+	Assert(m_pHostMap != nullptr);
 }
 
 CNeoLoading::~CNeoLoading()
@@ -79,8 +82,6 @@ void CNeoLoading::OnMessage(const KeyValues *params, vgui::VPANEL fromPanel)
 {
 	BaseClass::OnMessage(params, fromPanel);
 	const char *pSzMsgName = params->GetName();
-	m_bIsBackgroundMap = false;
-	m_bFoundMap = false;
 	g_pNeoRoot->m_flTimeLoadingScreenTransition = gpGlobals->realtime;
 	if (V_strcmp(pSzMsgName, "Activate") == 0)
 	{
@@ -184,28 +185,20 @@ void CNeoLoading::OnMainLoop(const NeoUI::Mode eMode)
 	vgui::TextImage* pTITitle = m_pLoadingPanel ? m_pLoadingPanel->TITitlePtr() : nullptr;
 	const StringIndex_t iStrIdx = pTITitle ? pTITitle->GetUnlocalizedTextSymbol() : INVALID_LOCALIZE_STRING_INDEX;
 
-	if (iStrIdx == m_aStrIdxMap[LOADINGSTATE_LOADING] && m_bIsBackgroundMap)
+	if (iStrIdx == m_aStrIdxMap[LOADINGSTATE_LOADING])
 	{
-		return;
-	}
-
-	if (iStrIdx == m_aStrIdxMap[LOADINGSTATE_LOADING] && !m_bFoundMap)
-	{
-		auto hostMapConVar = g_pCVar->FindVar("host_map"); 
-		if (hostMapConVar)
+		auto hostMapName = m_pHostMap->GetString();
+		if (V_strlen(hostMapName) == 0)
 		{
-			auto hostMapName = hostMapConVar->GetString();
-			if (V_strlen(hostMapName) != 0)
-			{
-				if (Q_stristr(hostMapName, "background_"))
-				{ // Would be nice if we could figure this out quicker without checking the name
-					m_bIsBackgroundMap = true;
-				}
-				m_bFoundMap = true;
-				// NEO TODO (Adam) Replace the background image with an appropriate one for this map?
-			}
+			return;
 		}
-		return;
+
+		if (Q_stristr(hostMapName, "background_"))
+		{
+			return;
+		}
+
+		// Check whether current background corresponds to the map we're loading into here?
 	}
 
 	static constexpr int BOTTOM_ROWS = 3;
