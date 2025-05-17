@@ -3238,9 +3238,9 @@ int C_BaseAnimating::DrawModel( int flags )
 		}
 
 #ifdef GLOWS_ENABLE
-		auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetTargetNEOPlayer();
+		auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetVisionTargetNEOPlayer();
 #else
-		auto pTargetPlayer = C_NEO_Player::GetTargetNEOPlayer();
+		auto pTargetPlayer = C_NEO_Player::GetVisionTargetNEOPlayer();
 #endif // GLOWS_ENABLE
 
 		const bool inMotionVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_ASSAULT;
@@ -3558,6 +3558,19 @@ int C_BaseAnimating::InternalDrawModel( int flags )
 		// Turns the origin + angles into a matrix
 		AngleMatrix( pInfo->angles, pInfo->origin, pInfo->modelToWorld );
 	}
+
+#ifdef NEO
+	if (IsViewModel())
+	{ // view models become dark when standing close to and facing a wall, change lighting origin
+		auto pOwner = UTIL_PlayerByIndex(GetLocalPlayerIndex());
+		if (pOwner)
+		{
+			static Vector ownerOrigin;
+			ownerOrigin = pOwner->EyePosition();
+			pInfo->pLightingOrigin = &ownerOrigin;
+		}
+	}
+#endif // NEO
 
 	DrawModelState_t state;
 	matrix3x4_t *pBoneToWorld = NULL;

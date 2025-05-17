@@ -66,6 +66,8 @@ public:
 	float m_flLeanRatio;
 	CInterpolatedVar<float> m_iv_flLeanRatio;
 #endif
+	float m_flGunPush = 0.f;
+	float m_flGunPushLastChangeTime = 0.f;
 
 private:
 	float m_flStartAimingChange;

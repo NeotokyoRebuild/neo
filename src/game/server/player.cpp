@@ -2782,7 +2782,12 @@ bool CBasePlayer::IsValidObserverTarget(CBaseEntity * target)
 
 	if ( player->m_lifeState == LIFE_DEAD || player->m_lifeState == LIFE_DYING )
 	{
+#ifdef NEO
+		constexpr int DEATH_SPEC_TIME = 3.0f; // OGNT switches spectator targets much faster than the DEATH_ANIMATION_TIME
+		if ((player->m_flDeathTime + DEATH_SPEC_TIME) < gpGlobals->curtime)
+#else
 		if ( (player->m_flDeathTime + DEATH_ANIMATION_TIME ) < gpGlobals->curtime )
+#endif // NEO
 		{
 			return false;	// allow watching until 3 seconds after death to see death animation
 		}
@@ -6070,12 +6075,9 @@ CBaseEntity	*CBasePlayer::GiveNamedItem( const char *pszName, int iSubType )
 		Msg( "NULL Ent in GiveNamedItem!\n" );
 		return NULL;
 	}
-#ifdef NEO
-	pent->SetAbsOrigin(EyePosition());
-#else
+
 	pent->SetLocalOrigin( GetLocalOrigin() );
-#endif
-	pent->AddSpawnFlags( SF_NORESPAWN );
+	pent->AddSpawnFlags(SF_NORESPAWN);
 
 	CBaseCombatWeapon *pWeapon = dynamic_cast<CBaseCombatWeapon*>( (CBaseEntity*)pent );
 	if ( pWeapon )
