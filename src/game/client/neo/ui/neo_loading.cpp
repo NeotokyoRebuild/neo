@@ -185,7 +185,7 @@ void CNeoLoading::OnMainLoop(const NeoUI::Mode eMode)
 	vgui::TextImage* pTITitle = m_pLoadingPanel ? m_pLoadingPanel->TITitlePtr() : nullptr;
 	const StringIndex_t iStrIdx = pTITitle ? pTITitle->GetUnlocalizedTextSymbol() : INVALID_LOCALIZE_STRING_INDEX;
 
-	if (iStrIdx == m_aStrIdxMap[LOADINGSTATE_LOADING])
+	if (iStrIdx == m_aStrIdxMap[LOADINGSTATE_LOADING] && m_pHostMap)
 	{
 		auto hostMapName = m_pHostMap->GetString();
 		if (V_strlen(hostMapName) == 0)
