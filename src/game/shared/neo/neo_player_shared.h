@@ -44,6 +44,7 @@
 // Crouch Modifier
 #define NEO_CROUCH_MODIFIER 0.75
 #define NEO_WALK_SPEED 90
+#define NEO_CROUCH_WALK_SPEED 60
 
 
 // Movement Calculations

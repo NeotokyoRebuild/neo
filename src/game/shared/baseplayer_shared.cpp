@@ -598,7 +598,11 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 
 //	MoveHelper()->PlayerSetAnimation( PLAYER_WALK );
 
+#ifdef NEO
+	bWalking = speed < velrun && !neoPlayer->IsSprinting();
+#else
 	bWalking = speed < velrun;		
+#endif // NEO
 
 	VectorCopy( vecOrigin, knee );
 	VectorCopy( vecOrigin, feet );
@@ -690,7 +694,7 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 	{
 		fvol *= 0.65;
 #ifdef NEO
-		if (speed <= 60)
+		if (speed <= NEO_CROUCH_WALK_SPEED + 20)
 		{
 			return;
 		}
@@ -698,7 +702,7 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 	}
 #ifdef NEO
 
-	else if (speed <= 110)
+	else if (speed <= NEO_WALK_SPEED + 20)
 	{
 		return;
 	}
