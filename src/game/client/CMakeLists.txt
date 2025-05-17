@@ -84,8 +84,13 @@ if(NEO_RETAIL)
     target_compile_definitions(client PRIVATE RETAIL)
 endif()
 
-if(NEO_DEDICATED)
-    target_compile_definitions(client PRIVATE DEDICATED)
+if(OS_LINUX OR OS_MACOS)
+    target_compile_definitions(client
+        PRIVATE
+        GL_GLEXT_PROTOTYPES
+        DX_TO_GL_ABSTRACTION
+        USE_SDL
+    )
 endif()
 
 if(NEO_BUILD_WEAPON_PBK56S)
