@@ -104,6 +104,7 @@ CNeoClassMenu::CNeoClassMenu(IViewPort *pViewPort)
 	SetTitleBarVisible(false);
 
 	FindButtons();
+	ListenForGameEvent("player_team");
 }
 
 CNeoClassMenu::~CNeoClassMenu()
@@ -118,6 +119,24 @@ CNeoClassMenu::~CNeoClassMenu()
 	m_pAssault_Button->SetAutoDelete(true);
 	m_pSupport_Button->SetAutoDelete(true);
 	m_pBack_Button->SetAutoDelete(true);
+}
+
+void CNeoClassMenu::FireGameEvent(IGameEvent* event)
+{
+	//const char* type = event->GetName();
+
+	//if (!Q_strcmp(type, "player_team"))
+	{ // player joined a new team
+		const int playerIndex = engine->GetPlayerForUserID(event->GetInt("userid"));
+		if (playerIndex != GetLocalPlayerIndex())
+		{
+			return;
+		}
+
+		const int team = event->GetInt("team");
+		// Local player joined a new team, update images
+		UpdateSkinImages(-1, team);
+	}
 }
 
 void CNeoClassMenu::FindButtons()
@@ -242,14 +261,14 @@ void CNeoClassMenu::OnKeyCodeReleased(vgui::KeyCode code)
 	//BaseClass::OnKeyCodeReleased(code);
 }
 
-void CNeoClassMenu::UpdateSkinImages(int classNumber = -1)
+void CNeoClassMenu::UpdateSkinImages(int classNumber, int overrideTeamNumber)
 {
 	C_NEO_Player* player = C_NEO_Player::GetLocalNEOPlayer();
 	if (!player)
 	{
 		return;
 	}
-	int teamNumber = player->GetTeamNumber() - 2;
+	int teamNumber = overrideTeamNumber != -1 ? overrideTeamNumber - 2 : player->GetTeamNumber() - 2;
 	if (teamNumber < 0 || teamNumber>1)
 	{ // player hasn't joined jinrai or nsf yet, do not update images
 		return;

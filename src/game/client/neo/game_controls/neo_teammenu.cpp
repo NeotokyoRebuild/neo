@@ -248,7 +248,6 @@ void CNeoTeamMenu::OnCommand(const char *command)
 		engine->ClientCmd(commandBuffer);
 		return;
 	}
-
 	if (Q_stristr(commandBuffer, "jointeam") != 0) // Note using stristr, not strcmp. Equates to true when jointeam in commandBuffer
 	{ // joining jinrai or nsf
 		CloseMenu();
@@ -257,7 +256,8 @@ void CNeoTeamMenu::OnCommand(const char *command)
 		return;
 	}
 
-	if (Q_stricmp(commandBuffer, "vguicancel") == 0)
+	int localPlayerTeam = GetLocalPlayerTeam();
+	if (localPlayerTeam != TEAM_UNASSIGNED && Q_stricmp(commandBuffer, "vguicancel") == 0)
 	{ // cancel, close menu
 		CloseMenu();
 	}
@@ -286,6 +286,12 @@ void CNeoTeamMenu::CloseMenu()
 
 void CNeoTeamMenu::OnKeyCodeReleased(vgui::KeyCode code)
 { // Navigating using the keyboard hack
+	int localPlayerTeam = GetLocalPlayerTeam();
+	if (localPlayerTeam == TEAM_UNASSIGNED)
+	{
+		return;
+	}
+
 	if (code == g_pNeoRoot->m_ns.keys.bcTeamMenu)
 	{
 		CloseMenu();
@@ -329,6 +335,8 @@ void CNeoTeamMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 	m_pSpectator_Button		->AddActionSignalTarget(this);
 	m_pAutoAssign_Button	->AddActionSignalTarget(this);
 	m_pCancel_Button		->AddActionSignalTarget(this);
+
+	m_pCancel_Button		->SetEnabled(GetLocalPlayerTeam() != TEAM_UNASSIGNED);
 
 	auto pJinrai = GetGlobalTeam(TEAM_JINRAI);
 	auto pNsf = GetGlobalTeam(TEAM_NSF);
