@@ -219,8 +219,6 @@ void NeoSettingsInit(NeoSettings *ns)
 			vgui::surface()->DrawGetTextureSize(pTex->iTexId, pTex->iWide, pTex->iTall);
 		}
 	}
-
-	NeoSettingsUpdateCached(ns, true);
 }
 
 void NeoSettingsDeinit(NeoSettings *ns)
@@ -453,8 +451,7 @@ void NeoToggleConsoleEnforce()
 
 void NeoSettingsSave(const NeoSettings *ns)
 {
-	auto modifiableNS = const_cast<NeoSettings*>(ns);
-	modifiableNS->bModified = false;
+	const_cast<NeoSettings*>(ns)->bModified = false;
 	auto *cvr = const_cast<NeoSettings::CVR *>(&ns->cvr);
 	{
 		const NeoSettings::General *pGeneral = &ns->general;
@@ -609,8 +606,6 @@ void NeoSettingsSave(const NeoSettings *ns)
 
 	engine->ClientCmd_Unrestricted("host_writeconfig");
 	engine->ClientCmd_Unrestricted("mat_savechanges");
-
-	NeoSettingsUpdateCached(modifiableNS);
 }
 
 void NeoSettingsResetToDefault(NeoSettings *ns)
@@ -649,44 +644,9 @@ void NeoSettingsResetToDefault(NeoSettings *ns)
 
 	engine->ClientCmd_Unrestricted("host_writeconfig");
 
-	NeoSettingsUpdateCached(ns);
-
 	// NEO JANK (nullsystem): For some reason, bind -> gameuifuncs->GetButtonCodeForBind is too quick for
 	// the game engine at this point. So just omit setting binds in restore since we already have anyway.
 	NeoSettingsRestore(ns, NeoSettings::Keys::SKIP_KEYS);
-}
-
-void NeoSettingsUpdateCached(NeoSettings* ns, bool fromUserConfig)
-{
-	if (fromUserConfig)
-	{
-		CUtlBuffer bufDef(0, 0, CUtlBuffer::TEXT_BUFFER | CUtlBuffer::READ_ONLY);
-		if (filesystem->ReadFile("cfg/config.cfg", nullptr, bufDef))
-		{
-			while (bufDef.IsValid())
-			{
-				char szLine[128];
-				bufDef.GetLine(szLine, sizeof(szLine));
-
-				const char* commandsToPreCache[] = {"teammenu", "classmenu", "loadoutmenu"};
-				for (int i = 0; i < ARRAYSIZE(commandsToPreCache); i++)
-				{
-					if (Q_stristr(szLine, commandsToPreCache[i]))
-					{
-						engine->ClientCmd_Unrestricted(szLine);
-					}
-				}
-			}
-		}
-	}
-
-	// Execute any bind commands now so GetButtonCodeForBind returns the correct button
-	engine->ExecuteClientCmd("");
-
-	// Precache gamecontrolui buttons (maybe precache neo_toggleconsole here since it sometimes doesn't work?)
-	ns->keys.bcTeamMenu = gameuifuncs->GetButtonCodeForBind("teammenu");
-	ns->keys.bcClassMenu = gameuifuncs->GetButtonCodeForBind("classmenu");
-	ns->keys.bcLoadoutMenu = gameuifuncs->GetButtonCodeForBind("loadoutmenu");
 }
 
 static const wchar_t *DLFILTER_LABELS[] = {

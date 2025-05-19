@@ -67,9 +67,6 @@ struct NeoSettings
 
 		// Will be checked often so cached
 		ButtonCode_t bcConsole;
-		ButtonCode_t bcTeamMenu;
-		ButtonCode_t bcClassMenu;
-		ButtonCode_t bcLoadoutMenu;
 
 		enum Flags
 		{
@@ -246,7 +243,6 @@ void NeoSettingsDeinit(NeoSettings *ns);
 void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKeys = NeoSettings::Keys::NONE);
 void NeoSettingsSave(const NeoSettings *ns);
 void NeoSettingsResetToDefault(NeoSettings *ns);
-void NeoSettingsUpdateCached(NeoSettings *ns, bool fromUserConfig = false);
 
 void NeoSettings_General(NeoSettings *ns);
 void NeoSettings_Keys(NeoSettings *ns);
