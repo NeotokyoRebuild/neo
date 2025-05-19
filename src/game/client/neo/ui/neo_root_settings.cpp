@@ -303,6 +303,14 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pMouse->flExponent = cvr->m_customaccel_exponent.GetFloat();
 	}
 	{
+		NeoSettings::Controller *pController = &ns->controller;
+		pController->bEnabled = cvr->joystick.GetBool();
+		pController->bReverse = cvr->joy_inverty.GetBool();
+		pController->bSwapSticks = cvr->joy_movement_stick.GetBool();
+		pController->flSensHorizontal = -cvr->joy_yawsensitivity.GetFloat(); // Negate convar
+		pController->flSensVertical = cvr->joy_pitchsensitivity.GetFloat();
+	}
+	{
 		NeoSettings::Audio *pAudio = &ns->audio;
 
 		// Output
@@ -543,6 +551,14 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->m_pitch.SetValue(pMouse->bReverse ? -absPitch : absPitch);
 		cvr->m_customaccel.SetValue(pMouse->bCustomAccel ? 3 : 0);
 		cvr->m_customaccel_exponent.SetValue(pMouse->flExponent);
+	}
+	{
+		const NeoSettings::Controller *pController = &ns->controller;
+		cvr->joystick.SetValue(pController->bEnabled);
+		cvr->joy_inverty.SetValue(pController->bReverse);
+		cvr->joy_movement_stick.SetValue(pController->bSwapSticks);
+		cvr->joy_yawsensitivity.SetValue(-pController->flSensHorizontal); // Negate convar
+		cvr->joy_pitchsensitivity.SetValue(pController->flSensVertical);
 	}
 	{
 		const NeoSettings::Audio *pAudio = &ns->audio;
@@ -796,6 +812,16 @@ void NeoSettings_Mouse(NeoSettings *ns)
 	NeoUI::Slider(L"Exponent", &pMouse->flExponent, 1.0f, 1.4f, 2, 0.1f);
 }
 
+void NeoSettings_Controller(NeoSettings *ns)
+{
+	NeoSettings::Controller *pController = &ns->controller;
+	NeoUI::RingBoxBool(L"Enabled", &pController->bEnabled);
+	NeoUI::RingBoxBool(L"Reverse stick", &pController->bReverse);
+	NeoUI::RingBoxBool(L"Swap sticks", &pController->bSwapSticks);
+	NeoUI::Slider(L"Horizontal sensitivity", &pController->flSensHorizontal, 0.5f, 7.0f, 2, 0.1f);
+	NeoUI::Slider(L"Vertical sensitivity", &pController->flSensVertical, 0.5f, 7.0f, 2, 0.1f);
+}
+
 void NeoSettings_Audio(NeoSettings *ns)
 {
 	NeoSettings::Audio *pAudio = &ns->audio;
@@ -885,7 +911,7 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 	g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall * IVIEW_ROWS;
 
 	const bool bTextured = CROSSHAIR_FILES[pCrosshair->iStyle][0];
-	NeoUI::BeginSection();
+	NeoUI::BeginSection(NeoUI::SECTIONFLAG_EXCLUDECONTROLLER);
 	{
 		if (bTextured)
 		{
@@ -910,8 +936,12 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 		{
 			NeoUI::SetPerRowLayout(5);
 			{
-				const bool bPresExport = NeoUI::Button(L"Export").bPressed;
-				const bool bPresImport = NeoUI::Button(L"Import").bPressed;
+				static constexpr const ButtonCode_t BUTTON_CODES_EXPORT[] = { KEY_XBUTTON_X, STEAMCONTROLLER_X };
+				static constexpr const ButtonCode_t BUTTON_CODES_IMPORT[] = { KEY_XBUTTON_Y, STEAMCONTROLLER_Y };
+				const bool bPresExport = NeoUI::Button(NeoUI::HintAlt(L"Export", L"Export (X)")).bPressed ||
+						NeoUI::Bind(BUTTON_CODES_EXPORT, ARRAYSIZE(BUTTON_CODES_EXPORT));
+				const bool bPresImport = NeoUI::Button(NeoUI::HintAlt(L"Import", L"Import (Y)")).bPressed ||
+						NeoUI::Bind(BUTTON_CODES_IMPORT, ARRAYSIZE(BUTTON_CODES_IMPORT));
 				if (bPresExport || bPresImport)
 				{
 					if (g_pNeoRoot->m_pFileIODialog)
@@ -933,7 +963,7 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 
 	g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
 	g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall * (g_iRowsInScreen - IVIEW_ROWS);
-	NeoUI::BeginSection(true);
+	NeoUI::BeginSection(NeoUI::SECTIONFLAG_DEFAULTFOCUS);
 	{
 		NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
 		NeoUI::RingBox(L"Crosshair style", CROSSHAIR_LABELS, CROSSHAIR_STYLE__TOTAL, &pCrosshair->iStyle);

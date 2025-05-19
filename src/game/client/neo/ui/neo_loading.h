@@ -34,6 +34,7 @@ public:
 	vgui::Frame *m_pLoadingPanel = nullptr;
 	vgui::ProgressBar *m_pProgressBarMain = nullptr;
 	vgui::Label *m_pLabelInfo = nullptr;
+	vgui::Button *m_pButtonCancel = nullptr;
 
 	enum ELoadingState
 	{
