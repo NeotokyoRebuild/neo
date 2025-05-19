@@ -451,7 +451,7 @@ void NeoToggleConsoleEnforce()
 
 void NeoSettingsSave(const NeoSettings *ns)
 {
-	const_cast<NeoSettings*>(ns)->bModified = false;
+	const_cast<NeoSettings *>(ns)->bModified = false;
 	auto *cvr = const_cast<NeoSettings::CVR *>(&ns->cvr);
 	{
 		const NeoSettings::General *pGeneral = &ns->general;
