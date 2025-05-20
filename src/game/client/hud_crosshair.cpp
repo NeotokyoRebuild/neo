@@ -64,15 +64,14 @@ void CVGlobal_NeoClCrosshair(IConVar *var, [[maybe_unused]] const char *pOldStri
 }
 
 CHudCrosshair* g_pCHudCrosshair = nullptr;
-void cl_neo_crosshair_aim_only_callback([[maybe_unused]] IConVar* var, [[maybe_unused]] const char* pOldString, float flOldValue)
+void cl_neo_crosshair_hip_fire_callback([[maybe_unused]] IConVar* var, [[maybe_unused]] const char* pOldString, float flOldValue)
 {
 	if (g_pCHudCrosshair)
 	{
-		bool showCrosshairInHipFire = !flOldValue;
-		g_pCHudCrosshair->SetHiddenBits(HIDEHUD_PLAYERDEAD | (showCrosshairInHipFire ? HIDEHUD_CROSSHAIR : 0));
+		g_pCHudCrosshair->SetHiddenBits(HIDEHUD_PLAYERDEAD | (flOldValue ? HIDEHUD_CROSSHAIR : 0));
 	}
 }
-ConVar cl_neo_crosshair_aim_only("cl_neo_crosshair_aim_only", "1", FCVAR_ARCHIVE, "Show the crosshair only when aiming", true, 0, true, 1, cl_neo_crosshair_aim_only_callback);
+ConVar cl_neo_crosshair_hip_fire("cl_neo_crosshair_hip_fire", "1", FCVAR_ARCHIVE, "Show the crosshair when not aiming", true, 0, true, 1, cl_neo_crosshair_hip_fire_callback);
 ConVar cl_neo_crosshair_scope_inaccuracy("cl_neo_crosshair_scope_inaccuracy", "1", FCVAR_ARCHIVE, "Show the player's inaccuracy when scoped", true, 0, true, 1);
 #endif
 
@@ -111,8 +110,15 @@ CHudCrosshair::CHudCrosshair( const char *pElementName ) :
 	m_vecCrossHairOffsetAngle.Init();
 
 #ifdef NEO
+	m_hCrosshairLight = surface()->CreateNewTextureID();
+	Assert(m_hCrosshairLight > 0);
+	// NEO TODO (Adam) This is a copy of the original with everything but the center cross removed, perhaps move to ApplySchemeSettings and workout this name based off of the name of m_pCrosshair
+	// in case of custom scopes (if we want to allow custom scopes I guess)
+	surface()->DrawSetTextureFile(m_hCrosshairLight, "vgui/hud/scopes/scope03-1", 1, false);
+	surface()->DrawGetTextureSize(m_hCrosshairLight, m_iCrosshairLightWidth, m_iCrosshairLightHeight);
+
 	g_pCHudCrosshair = this;
-	SetHiddenBits( HIDEHUD_PLAYERDEAD | (cl_neo_crosshair_aim_only.GetBool() ? HIDEHUD_CROSSHAIR : 0) );
+	SetHiddenBits( HIDEHUD_PLAYERDEAD | (cl_neo_crosshair_hip_fire.GetBool() ? 0 : HIDEHUD_CROSSHAIR) );
 #else
 	SetHiddenBits( HIDEHUD_PLAYERDEAD | HIDEHUD_CROSSHAIR );
 #endif // NEO
@@ -442,21 +448,24 @@ void CHudCrosshair::Paint( void )
 
 		if (cl_neo_crosshair_scope_inaccuracy.GetBool())
 		{
-			const float size = m_iHalfScreenHeight / ((pPlayer->GetFOV() * 0.5) / RAD2DEG(pWeapon->GetBulletSpread().x));
-			m_pCrosshair->DrawSelfCropped(
-				iX - (iWidth / 2) - size, iY - (iHeight / 2) - size,
-				0, 0,
-				iTextureW, iTextureH,
-				iWidth, iHeight,
-				COLOR_FADED_WHITE
-			);
-			m_pCrosshair->DrawSelfCropped(
-				iX - (iWidth / 2) + size, iY - (iHeight / 2) + size,
-				0, 0,
-				iTextureW, iTextureH,
-				iWidth, iHeight,
-				COLOR_FADED_WHITE
-			);
+			const int size = m_iHalfScreenHeight / ((pPlayer->GetFOV() * 0.5) / RAD2DEG(pWeapon->GetBulletSpread().x));
+			if (size)
+			{
+				surface()->DrawSetTexture(m_hCrosshairLight);
+				surface()->DrawSetColor(COLOR_FADED_WHITE);
+				surface()->DrawTexturedRect(
+					x - size - m_iCrosshairLightWidth,
+					y - size - m_iCrosshairLightHeight,
+					x - size + m_iCrosshairLightWidth,
+					y - size + m_iCrosshairLightHeight
+				);
+				surface()->DrawTexturedRect(
+					x + size - m_iCrosshairLightWidth,
+					y + size - m_iCrosshairLightHeight,
+					x + size + m_iCrosshairLightWidth,
+					y + size + m_iCrosshairLightHeight
+				);
+			}
 		}
 	}
 	else if (NEORules()->GetGameType() != NEO_GAME_TYPE_DM && IsPlayerIndex(iffTrace.GetEntityIndex()) && iffTrace.m_pEnt->GetTeamNumber() == pPlayer->GetTeamNumber())
@@ -483,6 +492,7 @@ void CHudCrosshair::Paint( void )
 	{
 		if (pWeapon && cl_neo_crosshair_dynamic.GetBool() && pWeapon->GetNeoWepBits() & NEO_WEP_FIREARM)
 		{
+			m_bRefreshDynamicCrosshair = true;
 			const float size = m_iHalfScreenHeight / ((pPlayer->GetFOV() * 0.5) / RAD2DEG(pWeapon->GetBulletSpread().x));
 
 			switch (cl_neo_crosshair_dynamic_type.GetInt())
@@ -501,8 +511,9 @@ void CHudCrosshair::Paint( void )
 				break;
 			}
 		}
-		else
+		else if (m_bRefreshDynamicCrosshair)
 		{
+			m_bRefreshDynamicCrosshair = false;
 			m_crosshairInfo.iGap = cl_neo_crosshair_gap.GetInt();
 			m_crosshairInfo.iCircleRad = cl_neo_crosshair_circle_radius.GetInt();
 			m_crosshairInfo.iSize = cl_neo_crosshair_size.GetInt();
