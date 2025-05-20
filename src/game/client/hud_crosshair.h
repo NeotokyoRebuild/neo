@@ -64,7 +64,7 @@ protected:
 	int m_iCrosshairLightHeight = 0;
 	int m_iTexXHId[CROSSHAIR_STYLE__TOTAL] = {};
 	int m_iTexIFFId = NULL;
-	int m_iHalfScreenHeight = 0;
+	int m_iHalfScreenWidth = 0;
 #endif
 
 	CPanelAnimationVar( bool, m_bHideCrosshair, "never_draw", "false" );

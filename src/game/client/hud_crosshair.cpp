@@ -139,7 +139,7 @@ void CHudCrosshair::ApplySchemeSettings( IScheme *scheme )
 	SetPaintBackgroundEnabled( false );
 
 #ifdef NEO
-	m_iHalfScreenHeight = ScreenHeight() * 0.5;
+	m_iHalfScreenWidth = ScreenWidth() * 0.5;
 #endif // NEO
     SetSize( ScreenWidth(), ScreenHeight());
 
@@ -432,6 +432,18 @@ void CHudCrosshair::Paint( void )
 		UTIL_TraceLine(pPlayer->Weapon_ShootPosition(), pPlayer->Weapon_ShootPosition() + pPlayer->GetAutoaimVector(0) * IFF_TRACELINE_LENGTH, MASK_SHOT_HULL, &iffTraceFilter, &iffTrace);
 	}
 
+	auto HalfInaccuracyConeInScreenPixels = [](C_NEO_Player *pPlayer, C_NEOBaseCombatWeapon *pWeapon, int m_iHalfScreenWidth)
+		{
+			// Hor+ FOV, e.g for a horizontal fov of 110, the actual horizontal fov is ~120
+			const float scaledFov = ScaleFOVByWidthRatio(pPlayer->GetFOV(), engine->GetScreenAspectRatio() * 0.75f); //  4 / 3
+			const float halfInaccuracy = RAD2DEG(asin(pWeapon->GetBulletSpread().x));
+			// No clue, just found a value which works well (fired some shots at 15 fov, then increased fov to 120 and scaled the circle down until it worked)
+			// NEO TODO (Adam) I welcome any suggestions on how to improve this, I assume its something to do with how higher fields of view distort an image.
+			constexpr float MAGIC_FOV_DISTORTION_VALUE = 0.4f / 120.0f;
+			const int size = (m_iHalfScreenWidth / ((scaledFov * 0.5f) / halfInaccuracy)) * (1 - (scaledFov * MAGIC_FOV_DISTORTION_VALUE));
+			return size;
+		};
+
 	if (bIsScoped && pPlayer->m_bInAim)
 	{
 		m_pCrosshair->DrawSelfCropped (
@@ -448,7 +460,7 @@ void CHudCrosshair::Paint( void )
 
 		if (cl_neo_crosshair_scope_inaccuracy.GetBool())
 		{
-			const int size = m_iHalfScreenHeight / ((pPlayer->GetFOV() * 0.5) / RAD2DEG(pWeapon->GetBulletSpread().x));
+			const int size = HalfInaccuracyConeInScreenPixels(pPlayer, pWeapon, m_iHalfScreenWidth);
 			if (size)
 			{
 				surface()->DrawSetTexture(m_hCrosshairLight);
@@ -493,7 +505,7 @@ void CHudCrosshair::Paint( void )
 		if (pWeapon && cl_neo_crosshair_dynamic.GetBool() && pWeapon->GetNeoWepBits() & NEO_WEP_FIREARM)
 		{
 			m_bRefreshDynamicCrosshair = true;
-			const float size = m_iHalfScreenHeight / ((pPlayer->GetFOV() * 0.5) / RAD2DEG(pWeapon->GetBulletSpread().x));
+			const int size = HalfInaccuracyConeInScreenPixels(pPlayer, pWeapon, m_iHalfScreenWidth);
 
 			switch (cl_neo_crosshair_dynamic_type.GetInt())
 			{
