@@ -119,6 +119,7 @@ void PaintCrosshair(const CrosshairInfo &crh, const int x, const int y)
 enum NeoXHairSerial
 {
 	NEOXHAIR_SERIAL_PREALPHA_V8_2 = 1,
+	NEOXHAIR_SERIAL_PREALPHA_V16_0,
 
 	NEOXHAIR_SERIAL__LATESTPLUSONE,
 	NEOXHAIR_SERIAL_CURRENT = NEOXHAIR_SERIAL__LATESTPLUSONE - 1,
@@ -153,8 +154,16 @@ void ImportCrosshair(CrosshairInfo *crh, const char *szFullpath)
 	}
 
 	crh->color.SetRawColor(buf.GetInt());
-	crh->bDynamic = buf.GetInt();
-	crh->iEDynamicType = buf.GetInt();
+	if (version >= NEOXHAIR_SERIAL_PREALPHA_V16_0)
+	{
+		crh->bDynamic = buf.GetChar();
+		crh->iEDynamicType = buf.GetInt();
+	}
+	else
+	{
+		crh->bDynamic = 0;
+		crh->iEDynamicType = 0;
+	}
 	crh->iESizeType = buf.GetInt();
 	crh->iSize = buf.GetInt();
 	crh->flScrSize = buf.GetFloat();
@@ -181,7 +190,7 @@ void ExportCrosshair(CrosshairInfo *crh, const char *szFullpath)
 	buf.PutInt(NEOXHAIR_SERIAL_CURRENT);
 
 	buf.PutInt(crh->color.GetRawColor());
-	buf.PutInt(crh->bDynamic);
+	buf.PutChar(crh->bDynamic);
 	buf.PutInt(crh->iEDynamicType);
 	buf.PutInt(crh->iESizeType);
 	buf.PutInt(crh->iSize);
