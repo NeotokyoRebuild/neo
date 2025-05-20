@@ -424,6 +424,8 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pCrosshair->info.color[1] = (uint8)(cvr->cl_neo_crosshair_color_g.GetInt());
 		pCrosshair->info.color[2] = (uint8)(cvr->cl_neo_crosshair_color_b.GetInt());
 		pCrosshair->info.color[3] = (uint8)(cvr->cl_neo_crosshair_color_a.GetInt());
+		pCrosshair->info.bDynamic = cvr->cl_neo_crosshair_dynamic.GetBool();
+		pCrosshair->info.iEDynamicType = cvr->cl_neo_crosshair_dynamic_type.GetInt();
 		pCrosshair->info.iESizeType = cvr->cl_neo_crosshair_size_type.GetInt();
 		pCrosshair->info.iSize = cvr->cl_neo_crosshair_size.GetInt();
 		pCrosshair->info.flScrSize = cvr->cl_neo_crosshair_size_screen.GetFloat();
@@ -616,6 +618,8 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_neo_crosshair_color_g.SetValue(pCrosshair->info.color.g());
 		cvr->cl_neo_crosshair_color_b.SetValue(pCrosshair->info.color.b());
 		cvr->cl_neo_crosshair_color_a.SetValue(pCrosshair->info.color.a());
+		cvr->cl_neo_crosshair_dynamic.SetValue(pCrosshair->info.bDynamic);
+		cvr->cl_neo_crosshair_dynamic_type.SetValue(pCrosshair->info.iEDynamicType);
 		cvr->cl_neo_crosshair_size_type.SetValue(pCrosshair->info.iESizeType);
 		cvr->cl_neo_crosshair_size.SetValue(pCrosshair->info.iSize);
 		cvr->cl_neo_crosshair_size_screen.SetValue(pCrosshair->info.flScrSize);
@@ -943,6 +947,8 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 		NeoUI::SliderU8(L"Alpha", &pCrosshair->info.color[3], 0, UCHAR_MAX);
 		if (!bTextured)
 		{
+			NeoUI::RingBoxBool(L"Dynamic crosshair", &pCrosshair->info.bDynamic);
+			NeoUI::RingBox(L"Dynamic type", CROSSHAIR_DYNAMICTYPE_LABELS, CROSSHAIR_DYNAMICTYPE_TOTAL, &pCrosshair->info.iEDynamicType);
 			NeoUI::RingBox(L"Size type", CROSSHAIR_SIZETYPE_LABELS, CROSSHAIR_SIZETYPE__TOTAL, &pCrosshair->info.iESizeType);
 			switch (pCrosshair->info.iESizeType)
 			{

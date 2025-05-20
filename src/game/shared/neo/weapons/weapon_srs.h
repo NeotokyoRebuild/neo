@@ -38,7 +38,7 @@ public:
 	virtual bool	Reload(void) OVERRIDE;
 	virtual void	FinishReload(void) OVERRIDE;
 
-	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const override { return NEO_WEP_SRS | NEO_WEP_SCOPEDWEAPON; }
+	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const override { return NEO_WEP_SRS | NEO_WEP_SCOPEDWEAPON | NEO_WEP_FIREARM; }
 	virtual int GetNeoWepXPCost(const int neoClass) const override { return 20; }
 
 	virtual float GetSpeedScale(void) const OVERRIDE { return 0.725f; }

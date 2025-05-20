@@ -25,6 +25,15 @@ enum NeoHudCrosshairSizeType
 	CROSSHAIR_SIZETYPE__TOTAL,
 };
 
+enum NeoHudCrosshairDynamicType
+{
+	CROSSHAIR_DYNAMICTYPE_GAP = 0,
+	CROSSHAIR_DYNAMICTYPE_CIRCLE,
+	CROSSHAIR_DYNAMICTYPE_SIZE,
+
+	CROSSHAIR_DYNAMICTYPE_TOTAL,
+};
+
 extern ConVar cl_neo_crosshair_style;
 extern ConVar cl_neo_crosshair_color_r;
 extern ConVar cl_neo_crosshair_color_g;
@@ -44,12 +53,15 @@ extern ConVar cl_neo_crosshair_circle_segments;
 extern const char **CROSSHAIR_FILES;
 extern const wchar_t **CROSSHAIR_LABELS;
 extern const wchar_t **CROSSHAIR_SIZETYPE_LABELS;
+extern const wchar_t **CROSSHAIR_DYNAMICTYPE_LABELS;
 
 #define NEO_XHAIR_EXT "neoxhr"
 
 struct CrosshairInfo
 {
 	Color color;
+	bool bDynamic;
+	int iEDynamicType; // int NeoHudCrosshairDynamicType
 	int iESizeType; // int NeoHudCrosshairSizeType
 	int iSize;
 	float flScrSize;

@@ -30,6 +30,7 @@
 #ifdef NEO
 #include "weapon_neobasecombatweapon.h"
 #include "neo_gamerules.h"
+#include "hud_crosshair.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -61,6 +62,18 @@ void CVGlobal_NeoClCrosshair(IConVar *var, [[maybe_unused]] const char *pOldStri
 		crosshair->m_bRefreshCrosshair = true;
 	}
 }
+
+CHudCrosshair* g_pCHudCrosshair = nullptr;
+void cl_neo_crosshair_aim_only_callback([[maybe_unused]] IConVar* var, [[maybe_unused]] const char* pOldString, float flOldValue)
+{
+	if (g_pCHudCrosshair)
+	{
+		bool showCrosshairInHipFire = !flOldValue;
+		g_pCHudCrosshair->SetHiddenBits(HIDEHUD_PLAYERDEAD | (showCrosshairInHipFire ? HIDEHUD_CROSSHAIR : 0));
+	}
+}
+ConVar cl_neo_crosshair_aim_only("cl_neo_crosshair_aim_only", "1", FCVAR_ARCHIVE, "Show the crosshair only when aiming", true, 0, true, 1, cl_neo_crosshair_aim_only_callback);
+ConVar cl_neo_crosshair_scope_inaccuracy("cl_neo_crosshair_scope_inaccuracy", "1", FCVAR_ARCHIVE, "Show the player's inaccuracy when scoped", true, 0, true, 1);
 #endif
 
 CHudCrosshair::CHudCrosshair( const char *pElementName ) :
@@ -97,7 +110,12 @@ CHudCrosshair::CHudCrosshair( const char *pElementName ) :
 
 	m_vecCrossHairOffsetAngle.Init();
 
+#ifdef NEO
+	g_pCHudCrosshair = this;
+	SetHiddenBits( HIDEHUD_PLAYERDEAD | (cl_neo_crosshair_aim_only.GetBool() ? HIDEHUD_CROSSHAIR : 0) );
+#else
 	SetHiddenBits( HIDEHUD_PLAYERDEAD | HIDEHUD_CROSSHAIR );
+#endif // NEO
 }
 
 CHudCrosshair::~CHudCrosshair()
@@ -114,7 +132,10 @@ void CHudCrosshair::ApplySchemeSettings( IScheme *scheme )
 	m_pDefaultCrosshair = gHUD.GetIcon("crosshair_default");
 	SetPaintBackgroundEnabled( false );
 
-    SetSize( ScreenWidth(), ScreenHeight() );
+#ifdef NEO
+	m_iHalfScreenHeight = ScreenHeight() * 0.5;
+#endif // NEO
+    SetSize( ScreenWidth(), ScreenHeight());
 
 	SetForceStereoRenderToFrameBuffer( true );
 }
@@ -291,6 +312,10 @@ void CHudCrosshair::GetDrawPosition ( float *pX, float *pY, bool *pbBehindCamera
 ConVar cl_neo_scope_restrict_to_rectangle("cl_neo_scope_restrict_to_rectangle", "1", FCVAR_CHEAT,
 	"Whether to enforce rectangular sniper scope shape regardless of screen ratio.", true, 0.0, true, 1.0);
 
+#ifdef NEO
+extern ConVar cl_neo_crosshair_dynamic;
+extern ConVar cl_neo_crosshair_dynamic_type;
+#endif // NEO
 void CHudCrosshair::Paint( void )
 {
 	if ( !m_pCrosshair )
@@ -300,7 +325,7 @@ void CHudCrosshair::Paint( void )
 		return;
 
 #ifdef NEO
-	C_BasePlayer* pPlayer = IsLocalPlayerSpectator() ? UTIL_PlayerByIndex(GetSpectatorTarget()) : C_BasePlayer::GetLocalPlayer();
+	auto* pPlayer = IsLocalPlayerSpectator() ? static_cast<C_NEO_Player*>(UTIL_PlayerByIndex(GetSpectatorTarget())) : static_cast<C_NEO_Player *>(C_NEO_Player::GetLocalPlayer());
 #else
 	C_BasePlayer* pPlayer = C_BasePlayer::GetLocalPlayer();
 #endif // NEO
@@ -331,13 +356,11 @@ void CHudCrosshair::Paint( void )
 		return;
 	}
 
-	C_BaseCombatWeapon *pWeapon = pPlayer->GetActiveWeapon();
-	CNEOBaseCombatWeapon* pNeoWep = NULL;
+	auto *pWeapon = static_cast<CNEOBaseCombatWeapon *>(pPlayer->GetActiveWeapon());
 	if ( pWeapon )
 	{
 		// NEO HACK (Rain): this should get implemented in virtual pNeoWep->GetWeaponCrosshairScale
-		pNeoWep = static_cast<CNEOBaseCombatWeapon *>(pWeapon);
-		if (pNeoWep && pNeoWep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
+		if (pWeapon && pWeapon->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON)
 		{
 			int screenWidth, screenHeight;
 			GetHudSize(screenWidth, screenHeight);
@@ -391,7 +414,7 @@ void CHudCrosshair::Paint( void )
 
 	// NEO TODO (nullsystem): Probably be better if the entire class refreshed to our own
 	// thing and can do away with that CHudTexture nonsense entirely
-	const bool bIsScoped = pNeoWep && pNeoWep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON;
+	const bool bIsScoped = pWeapon && pWeapon->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON;
 	const int iXHairStyle = cl_neo_crosshair_style.GetInt();
 
 	trace_t iffTrace;
@@ -403,7 +426,7 @@ void CHudCrosshair::Paint( void )
 		UTIL_TraceLine(pPlayer->Weapon_ShootPosition(), pPlayer->Weapon_ShootPosition() + pPlayer->GetAutoaimVector(0) * IFF_TRACELINE_LENGTH, MASK_SHOT_HULL, &iffTraceFilter, &iffTrace);
 	}
 
-	if (bIsScoped)
+	if (bIsScoped && pPlayer->m_bInAim)
 	{
 		m_pCrosshair->DrawSelfCropped (
 			iX-(iWidth/2), iY-(iHeight/2),
@@ -416,6 +439,25 @@ void CHudCrosshair::Paint( void )
 			COLOR_WHITE
 #endif
 		);
+
+		if (cl_neo_crosshair_scope_inaccuracy.GetBool())
+		{
+			const float size = m_iHalfScreenHeight / ((pPlayer->GetFOV() * 0.5) / RAD2DEG(pWeapon->GetBulletSpread().x));
+			m_pCrosshair->DrawSelfCropped(
+				iX - (iWidth / 2) - size, iY - (iHeight / 2) - size,
+				0, 0,
+				iTextureW, iTextureH,
+				iWidth, iHeight,
+				COLOR_FADED_WHITE
+			);
+			m_pCrosshair->DrawSelfCropped(
+				iX - (iWidth / 2) + size, iY - (iHeight / 2) + size,
+				0, 0,
+				iTextureW, iTextureH,
+				iWidth, iHeight,
+				COLOR_FADED_WHITE
+			);
+		}
 	}
 	else if (NEORules()->GetGameType() != NEO_GAME_TYPE_DM && IsPlayerIndex(iffTrace.GetEntityIndex()) && iffTrace.m_pEnt->GetTeamNumber() == pPlayer->GetTeamNumber())
 	{
@@ -439,6 +481,33 @@ void CHudCrosshair::Paint( void )
 	}
 	else
 	{
+		if (pWeapon && cl_neo_crosshair_dynamic.GetBool() && pWeapon->GetNeoWepBits() & NEO_WEP_FIREARM)
+		{
+			const float size = m_iHalfScreenHeight / ((pPlayer->GetFOV() * 0.5) / RAD2DEG(pWeapon->GetBulletSpread().x));
+
+			switch (cl_neo_crosshair_dynamic_type.GetInt())
+			{
+			case CROSSHAIR_DYNAMICTYPE_GAP:
+				m_crosshairInfo.iGap = size;
+				break;
+			case CROSSHAIR_DYNAMICTYPE_CIRCLE:
+				m_crosshairInfo.iCircleRad = size;
+				break;
+			case CROSSHAIR_DYNAMICTYPE_SIZE:
+				m_crosshairInfo.iSize = size;
+				break;
+			default:
+				Assert(false);
+				break;
+			}
+		}
+		else
+		{
+			m_crosshairInfo.iGap = cl_neo_crosshair_gap.GetInt();
+			m_crosshairInfo.iCircleRad = cl_neo_crosshair_circle_radius.GetInt();
+			m_crosshairInfo.iSize = cl_neo_crosshair_size.GetInt();
+		}
+
 		if (m_bRefreshCrosshair)
 		{
 			m_crosshairInfo = CrosshairInfo{
@@ -461,7 +530,7 @@ void CHudCrosshair::Paint( void )
 		PaintCrosshair(m_crosshairInfo, iX, iY);
 	}
 
-	if (bIsScoped)
+	if (bIsScoped && pPlayer->m_bInAim)
 	{
 		int screenWidth, screenHeight;
 		GetHudSize(screenWidth, screenHeight);

@@ -231,6 +231,8 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_crosshair_color_g);
 		CONVARREF_DEF(cl_neo_crosshair_color_b);
 		CONVARREF_DEF(cl_neo_crosshair_color_a);
+		CONVARREF_DEF(cl_neo_crosshair_dynamic);
+		CONVARREF_DEF(cl_neo_crosshair_dynamic_type);
 		CONVARREF_DEF(cl_neo_crosshair_size_type);
 		CONVARREF_DEF(cl_neo_crosshair_size);
 		CONVARREF_DEF(cl_neo_crosshair_size_screen);
