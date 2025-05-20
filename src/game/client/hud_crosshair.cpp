@@ -434,7 +434,7 @@ void CHudCrosshair::Paint( void )
 
 	auto HalfInaccuracyConeInScreenPixels = [](C_NEO_Player *pPlayer, C_NEOBaseCombatWeapon *pWeapon, int m_iHalfScreenWidth)
 		{
-			// Hor+ FOV, e.g for a horizontal fov of 110, the actual horizontal fov is ~120
+			// Hor+ FOV, e.g at an aspect ratio of 16:9 and horizontal fov of 110, the actual horizontal fov is ~120
 			const float scaledFov = ScaleFOVByWidthRatio(pPlayer->GetFOV(), engine->GetScreenAspectRatio() * 0.75f); //  4 / 3
 			const float halfInaccuracy = RAD2DEG(asin(pWeapon->GetBulletSpread().x));
 			// No clue, just found a value which works well (fired some shots at 15 fov, then increased fov to 120 and scaled the circle down until it worked)
