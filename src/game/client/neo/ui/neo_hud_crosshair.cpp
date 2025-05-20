@@ -119,7 +119,7 @@ void PaintCrosshair(const CrosshairInfo &crh, const int x, const int y)
 enum NeoXHairSerial
 {
 	NEOXHAIR_SERIAL_PREALPHA_V8_2 = 1,
-	NEOXHAIR_SERIAL_PREALPHA_V16_0,
+	NEOXHAIR_SERIAL_PREALPHA_V17_0,
 
 	NEOXHAIR_SERIAL__LATESTPLUSONE,
 	NEOXHAIR_SERIAL_CURRENT = NEOXHAIR_SERIAL__LATESTPLUSONE - 1,
@@ -154,7 +154,7 @@ void ImportCrosshair(CrosshairInfo *crh, const char *szFullpath)
 	}
 
 	crh->color.SetRawColor(buf.GetInt());
-	if (version >= NEOXHAIR_SERIAL_PREALPHA_V16_0)
+	if (version >= NEOXHAIR_SERIAL_PREALPHA_V17_0)
 	{
 		crh->bDynamic = buf.GetChar();
 		crh->iEDynamicType = buf.GetInt();
