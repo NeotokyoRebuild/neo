@@ -118,7 +118,7 @@ CNeoRootInput::CNeoRootInput(CNeoRoot *rootPanel)
 {
 	MakePopup(true);
 	SetKeyBoardInputEnabled(true);
-	SetMouseInputEnabled(false);
+	SetMouseInputEnabled(true);
 	SetVisible(true);
 	SetEnabled(true);
 	PerformLayout();
@@ -126,8 +126,10 @@ CNeoRootInput::CNeoRootInput(CNeoRoot *rootPanel)
 
 void CNeoRootInput::PerformLayout()
 {
+	int iScrWide, iScrTall;
+	vgui::surface()->GetScreenSize(iScrWide, iScrTall);
 	SetPos(0, 0);
-	SetSize(1, 1);
+	SetSize(iScrWide, iScrTall);
 	SetBgColor(COLOR_TRANSPARENT);
 	SetFgColor(COLOR_TRANSPARENT);
 }
@@ -140,6 +142,31 @@ void CNeoRootInput::OnKeyCodeTyped(vgui::KeyCode code)
 void CNeoRootInput::OnKeyTyped(wchar_t unichar)
 {
 	m_pNeoRoot->OnRelayedKeyTyped(unichar);
+}
+
+void CNeoRootInput::OnMousePressed(vgui::MouseCode code)
+{
+	m_pNeoRoot->OnRelayedMousePressed(code);
+}
+
+void CNeoRootInput::OnMouseReleased(vgui::MouseCode code)
+{
+	m_pNeoRoot->OnRelayedMouseReleased(code);
+}
+
+void CNeoRootInput::OnMouseDoublePressed(vgui::MouseCode code)
+{
+	m_pNeoRoot->OnRelayedMouseDoublePressed(code);
+}
+
+void CNeoRootInput::OnMouseWheeled(int delta)
+{
+	m_pNeoRoot->OnRelayedMouseWheeled(delta);
+}
+
+void CNeoRootInput::OnCursorMoved(int x, int y)
+{
+	m_pNeoRoot->OnRelayedCursorMoved(x, y);
 }
 
 void CNeoRootInput::OnThink()
@@ -377,31 +404,31 @@ void CNeoRoot::Paint()
 	OnMainLoop(NeoUI::MODE_PAINT);
 }
 
-void CNeoRoot::OnMousePressed(vgui::MouseCode code)
+void CNeoRoot::OnRelayedMousePressed(vgui::MouseCode code)
 {
 	g_uiCtx.eCode = code;
 	OnMainLoop(NeoUI::MODE_MOUSEPRESSED);
 }
 
-void CNeoRoot::OnMouseReleased(vgui::MouseCode code)
+void CNeoRoot::OnRelayedMouseReleased(vgui::MouseCode code)
 {
 	g_uiCtx.eCode = code;
 	OnMainLoop(NeoUI::MODE_MOUSERELEASED);
 }
 
-void CNeoRoot::OnMouseDoublePressed(vgui::MouseCode code)
+void CNeoRoot::OnRelayedMouseDoublePressed(vgui::MouseCode code)
 {
 	g_uiCtx.eCode = code;
 	OnMainLoop(NeoUI::MODE_MOUSEDOUBLEPRESSED);
 }
 
-void CNeoRoot::OnMouseWheeled(int delta)
+void CNeoRoot::OnRelayedMouseWheeled(int delta)
 {
 	g_uiCtx.eCode = (delta > 0) ? MOUSE_WHEEL_UP : MOUSE_WHEEL_DOWN;
 	OnMainLoop(NeoUI::MODE_MOUSEWHEELED);
 }
 
-void CNeoRoot::OnCursorMoved(int x, int y)
+void CNeoRoot::OnRelayedCursorMoved(int x, int y)
 {
 	g_uiCtx.iMouseAbsX = x;
 	g_uiCtx.iMouseAbsY = y;
