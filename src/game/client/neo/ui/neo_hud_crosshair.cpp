@@ -11,6 +11,8 @@ ConVar cl_neo_crosshair_color_r("cl_neo_crosshair_color_r", "255", FCVAR_ARCHIVE
 ConVar cl_neo_crosshair_color_g("cl_neo_crosshair_color_g", "255", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the green value of the crosshair color", true, 0.0f, true, UCHAR_MAX);
 ConVar cl_neo_crosshair_color_b("cl_neo_crosshair_color_b", "255", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the blue value of the crosshair color", true, 0.0f, true, UCHAR_MAX);
 ConVar cl_neo_crosshair_color_a("cl_neo_crosshair_color_a", "255", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the alpha value of the crosshair color", true, 0.0f, true, UCHAR_MAX);
+ConVar cl_neo_crosshair_dynamic("cl_neo_crosshair_dynamic", "0", FCVAR_ARCHIVE | FCVAR_USERINFO, "Grow crosshair with player inaccuracy", true, 0, true, 1);
+ConVar cl_neo_crosshair_dynamic_type("cl_neo_crosshair_dynamic_type", "0", FCVAR_ARCHIVE | FCVAR_USERINFO, "Dynamic crosshair type. 0 = gap, 1 = circle, 2 = size", true, 0, true, 2);
 ConVar cl_neo_crosshair_size("cl_neo_crosshair_size", "15", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the size of the crosshair (custom only)", true, 0.0f, true, CROSSHAIR_MAX_SIZE);
 ConVar cl_neo_crosshair_size_screen("cl_neo_crosshair_size_screen", "0", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the size of the crosshair by half-screen scale (custom only)", true, 0.0f, true, 1.0f);
 ConVar cl_neo_crosshair_size_type("cl_neo_crosshair_size_type", "0", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the size unit used for the crosshair. 0 = cl_neo_crosshair_size, 1 = cl_neo_crosshair_size_screen (custom only)", true, 0.0f, true, (CROSSHAIR_SIZETYPE__TOTAL - 1));
@@ -27,6 +29,9 @@ const char **CROSSHAIR_FILES = INTERNAL_CROSSHAIR_FILES;
 
 static const wchar_t *INTERNAL_CROSSHAIR_LABELS[CROSSHAIR_STYLE__TOTAL] = { L"Default", L"Alt", L"Custom" };
 const wchar_t **CROSSHAIR_LABELS = INTERNAL_CROSSHAIR_LABELS;
+
+static const wchar_t* INTERNAL_CROSSHAIR_DYNAMICTYPE_LABELS[CROSSHAIR_DYNAMICTYPE_TOTAL] = { L"Gap", L"Circle", L"Size" };
+const wchar_t **CROSSHAIR_DYNAMICTYPE_LABELS = INTERNAL_CROSSHAIR_DYNAMICTYPE_LABELS;
 
 static const wchar_t *INTERNAL_CROSSHAIR_SIZETYPE_LABELS[CROSSHAIR_SIZETYPE__TOTAL] = { L"Absolute", L"Screen halves" };
 const wchar_t **CROSSHAIR_SIZETYPE_LABELS = INTERNAL_CROSSHAIR_SIZETYPE_LABELS;
@@ -114,6 +119,7 @@ void PaintCrosshair(const CrosshairInfo &crh, const int x, const int y)
 enum NeoXHairSerial
 {
 	NEOXHAIR_SERIAL_PREALPHA_V8_2 = 1,
+	NEOXHAIR_SERIAL_PREALPHA_V17_0,
 
 	NEOXHAIR_SERIAL__LATESTPLUSONE,
 	NEOXHAIR_SERIAL_CURRENT = NEOXHAIR_SERIAL__LATESTPLUSONE - 1,
@@ -148,6 +154,16 @@ void ImportCrosshair(CrosshairInfo *crh, const char *szFullpath)
 	}
 
 	crh->color.SetRawColor(buf.GetInt());
+	if (version >= NEOXHAIR_SERIAL_PREALPHA_V17_0)
+	{
+		crh->bDynamic = buf.GetChar();
+		crh->iEDynamicType = buf.GetInt();
+	}
+	else
+	{
+		crh->bDynamic = 0;
+		crh->iEDynamicType = 0;
+	}
 	crh->iESizeType = buf.GetInt();
 	crh->iSize = buf.GetInt();
 	crh->flScrSize = buf.GetFloat();
@@ -174,6 +190,8 @@ void ExportCrosshair(CrosshairInfo *crh, const char *szFullpath)
 	buf.PutInt(NEOXHAIR_SERIAL_CURRENT);
 
 	buf.PutInt(crh->color.GetRawColor());
+	buf.PutChar(crh->bDynamic);
+	buf.PutInt(crh->iEDynamicType);
 	buf.PutInt(crh->iESizeType);
 	buf.PutInt(crh->iSize);
 	buf.PutFloat(crh->flScrSize);

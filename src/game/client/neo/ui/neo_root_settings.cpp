@@ -257,6 +257,8 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->bViewmodelRighthand = cvr->cl_righthand.GetBool();
 		pGeneral->bLeanViewmodelOnly = cvr->cl_neo_lean_viewmodel_only.GetBool();
 		pGeneral->iLeanAutomatic = cvr->cl_neo_lean_automatic.GetInt();
+		pGeneral->bInaccuracyInScope = cvr->cl_neo_crosshair_scope_inaccuracy.GetBool();
+		pGeneral->bHipFireCrosshair = cvr->cl_neo_crosshair_hip_fire.GetBool();
 		pGeneral->bShowSquadList = cvr->cl_neo_squad_hud_original.GetBool();
 		pGeneral->bShowPlayerSprays = !(cvr->cl_playerspraydisable.GetBool()); // Inverse
 		pGeneral->bShowPos = cvr->cl_showpos.GetBool();
@@ -424,6 +426,8 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pCrosshair->info.color[1] = (uint8)(cvr->cl_neo_crosshair_color_g.GetInt());
 		pCrosshair->info.color[2] = (uint8)(cvr->cl_neo_crosshair_color_b.GetInt());
 		pCrosshair->info.color[3] = (uint8)(cvr->cl_neo_crosshair_color_a.GetInt());
+		pCrosshair->info.bDynamic = cvr->cl_neo_crosshair_dynamic.GetBool();
+		pCrosshair->info.iEDynamicType = cvr->cl_neo_crosshair_dynamic_type.GetInt();
 		pCrosshair->info.iESizeType = cvr->cl_neo_crosshair_size_type.GetInt();
 		pCrosshair->info.iSize = cvr->cl_neo_crosshair_size.GetInt();
 		pCrosshair->info.flScrSize = cvr->cl_neo_crosshair_size_screen.GetFloat();
@@ -492,6 +496,8 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_righthand.SetValue(pGeneral->bViewmodelRighthand);
 		cvr->cl_neo_lean_viewmodel_only.SetValue(pGeneral->bLeanViewmodelOnly);
 		cvr->cl_neo_lean_automatic.SetValue(pGeneral->iLeanAutomatic);
+		cvr->cl_neo_crosshair_scope_inaccuracy.SetValue(pGeneral->bInaccuracyInScope);
+		cvr->cl_neo_crosshair_hip_fire.SetValue(pGeneral->bHipFireCrosshair);
 		cvr->cl_neo_squad_hud_original.SetValue(pGeneral->bShowSquadList);
 		cvr->cl_playerspraydisable.SetValue(!pGeneral->bShowPlayerSprays); // Inverse
 		cvr->cl_showpos.SetValue(pGeneral->bShowPos);
@@ -616,6 +622,8 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_neo_crosshair_color_g.SetValue(pCrosshair->info.color.g());
 		cvr->cl_neo_crosshair_color_b.SetValue(pCrosshair->info.color.b());
 		cvr->cl_neo_crosshair_color_a.SetValue(pCrosshair->info.color.a());
+		cvr->cl_neo_crosshair_dynamic.SetValue(pCrosshair->info.bDynamic);
+		cvr->cl_neo_crosshair_dynamic_type.SetValue(pCrosshair->info.iEDynamicType);
 		cvr->cl_neo_crosshair_size_type.SetValue(pCrosshair->info.iESizeType);
 		cvr->cl_neo_crosshair_size.SetValue(pCrosshair->info.iSize);
 		cvr->cl_neo_crosshair_size_screen.SetValue(pCrosshair->info.flScrSize);
@@ -701,6 +709,8 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBoxBool(L"Right hand viewmodel", &pGeneral->bViewmodelRighthand);
 	NeoUI::RingBoxBool(L"Lean viewmodel only", &pGeneral->bLeanViewmodelOnly);
 	NeoUI::RingBox(L"Automatic leaning", AUTOMATIC_LEAN_LABELS, ARRAYSIZE(AUTOMATIC_LEAN_LABELS), &pGeneral->iLeanAutomatic);
+	NeoUI::RingBoxBool(L"Inaccuracy in scope", &pGeneral->bInaccuracyInScope);
+	NeoUI::RingBoxBool(L"Hip fire crosshair", &pGeneral->bHipFireCrosshair);
 	NeoUI::RingBoxBool(L"Classic squad list", &pGeneral->bShowSquadList);
 	NeoUI::RingBoxBool(L"Show position", &pGeneral->bShowPos);
 	NeoUI::RingBox(L"Show FPS", SHOWFPS_LABELS, ARRAYSIZE(SHOWFPS_LABELS), &pGeneral->iShowFps);
@@ -943,6 +953,8 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 		NeoUI::SliderU8(L"Alpha", &pCrosshair->info.color[3], 0, UCHAR_MAX);
 		if (!bTextured)
 		{
+			NeoUI::RingBoxBool(L"Dynamic crosshair", &pCrosshair->info.bDynamic);
+			NeoUI::RingBox(L"Dynamic type", CROSSHAIR_DYNAMICTYPE_LABELS, CROSSHAIR_DYNAMICTYPE_TOTAL, &pCrosshair->info.iEDynamicType);
 			NeoUI::RingBox(L"Size type", CROSSHAIR_SIZETYPE_LABELS, CROSSHAIR_SIZETYPE__TOTAL, &pCrosshair->info.iESizeType);
 			switch (pCrosshair->info.iESizeType)
 			{
