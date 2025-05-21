@@ -4,7 +4,7 @@
 #include "neo_player.h"
 #include "tier0/memdbgon.h"
 
-#define CLOAKED_VELOCITY_THRESHOLD 180.0f
+#define CLOAKED_VELOCITY_THRESHOLD 32400
 
 class CNEO_NPCTargetSystem : public CBaseEntity
 {
@@ -173,7 +173,7 @@ void CNEO_NPCTargetSystem::Think(void)
         CNEO_Player* pNEOPlayer = static_cast<CNEO_Player*>(pPlayer);
         if (pNEOPlayer->m_bInThermOpticCamo)
         {
-            if (pPlayer->GetAbsVelocity().Length2D() < CLOAKED_VELOCITY_THRESHOLD)
+            if (pPlayer->GetAbsVelocity().Length2DSqr() < CLOAKED_VELOCITY_THRESHOLD)
                 continue;
         }
 
