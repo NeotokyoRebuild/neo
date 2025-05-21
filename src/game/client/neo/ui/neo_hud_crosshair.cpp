@@ -104,6 +104,7 @@ void PaintCrosshair(const CrosshairInfo &crh, const int x, const int y)
 
 	if (crh.iCircleRad > 0 && crh.iCircleSegments > 0)
 	{
+		vgui::surface()->DrawSetColor(crh.color);
 		vgui::surface()->DrawOutlinedCircle(x, y, crh.iCircleRad, crh.iCircleSegments);
 	}
 }
