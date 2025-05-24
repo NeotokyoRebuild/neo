@@ -89,6 +89,15 @@ struct NeoSettings
 		float flExponent;
 	};
 
+	struct Controller
+	{
+		bool bEnabled;
+		bool bReverse;
+		bool bSwapSticks;
+		float flSensHorizontal;
+		float flSensVertical;
+	};
+
 	struct Audio
 	{
 		float flVolMain;
@@ -149,6 +158,7 @@ struct NeoSettings
 	General general;
 	Keys keys;
 	Mouse mouse;
+	Controller controller;
 	Audio audio;
 	Video video;
 	Crosshair crosshair;
@@ -194,6 +204,13 @@ struct NeoSettings
 		CONVARREF_DEF(m_customaccel);
 		CONVARREF_DEF(m_customaccel_exponent);
 		CONVARREF_DEF(m_rawinput);
+
+		// Controller
+		CONVARREF_DEF(joystick);
+		CONVARREF_DEF(joy_inverty);
+		CONVARREF_DEF(joy_movement_stick);
+		CONVARREF_DEF(joy_yawsensitivity);
+		CONVARREF_DEF(joy_pitchsensitivity);
 
 		// Audio
 		CONVARREF_DEFNOGLOBALPTR(volume);
@@ -253,6 +270,7 @@ void NeoSettingsResetToDefault(NeoSettings *ns);
 void NeoSettings_General(NeoSettings *ns);
 void NeoSettings_Keys(NeoSettings *ns);
 void NeoSettings_Mouse(NeoSettings *ns);
+void NeoSettings_Controller(NeoSettings *ns);
 void NeoSettings_Audio(NeoSettings *ns);
 void NeoSettings_Video(NeoSettings *ns);
 void NeoSettings_Crosshair(NeoSettings *ns);
