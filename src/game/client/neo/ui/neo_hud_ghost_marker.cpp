@@ -25,7 +25,7 @@ using vgui::surface;
 
 ConVar neo_ghost_marker_hud_scale_factor("neo_ghost_marker_hud_scale_factor", "0.5", FCVAR_USERINFO,
 	"Ghost marker HUD element scaling factor", true, 0.01, false, 0);
-ConVar neo_cl_hud_center_ghost_marker_size("neo_cl_hud_center_ghost_marker_size", "12.5", FCVAR_USERINFO,
+ConVar cl_neo_hud_center_ghost_marker_size("cl_neo_hud_center_ghost_marker_size", "12.5", FCVAR_USERINFO,
 	"HUD center size in percentage to fade ghost marker.", true, 1, false, 0);
 
 
@@ -48,6 +48,7 @@ CNEOHud_GhostMarker::CNEOHud_GhostMarker(const char* pElemName, vgui::Panel* par
 	g_pVGuiLocalize->ConvertANSIToUnicode(m_szMarkerText, m_wszMarkerTextUnicode, sizeof(m_wszMarkerTextUnicode));
 
 	SetAutoDelete(true);
+	m_iHideHudElementNumber = NEO_HUD_ELEMENT_GHOST_MARKER;
 
 	if (parent)
 	{
@@ -89,7 +90,7 @@ void CNEOHud_GhostMarker::ApplySchemeSettings(vgui::IScheme *pScheme)
 
 	// Override CNEOHud_WorldPosMarker's sizing with our own
 	const int widerAxis = max(m_viewWidth, m_viewHeight);
-	m_viewCentreSize = widerAxis * (neo_cl_hud_center_ghost_marker_size.GetFloat() / 100.0f);
+	m_viewCentreSize = widerAxis * (cl_neo_hud_center_ghost_marker_size.GetFloat() / 100.0f);
 }
 
 void CNEOHud_GhostMarker::UpdateStateForNeoHudElementDraw()

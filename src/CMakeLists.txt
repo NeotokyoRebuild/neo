@@ -13,6 +13,8 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 set(OUTPUT_SUBDIRECTORY out)
 
+set(FETCHCONTENT_QUIET FALSE CACHE BOOL "Hide all FetchContent population output")
+
 include(cmake/utils.cmake)
 include(cmake/build_info.cmake)
 
@@ -21,9 +23,7 @@ if(NOT OS_WINDOWS AND NOT OS_LINUX AND NOT OS_MACOS)
 endif()
 
 option(NEO_CI_BUILD "CI build mode" OFF)
-option(NEO_CHROOT_BUILD "chroot build mode" OFF)
 option(NEO_USE_CCACHE "Use ccache" ${OS_LINUX})
-option(NEO_USE_VALVE_BINDIR "Use /valve bindir" OFF) # NOTE probably should be used with NEO_DEDICATED
 option(NEO_STAGING_ONLY "Staging mode (STAGING_ONLY)" OFF)
 option(NEO_RELEASE_ASSERTS "Release asserts (RELEASEASSERTS)" OFF)
 option(NEO_RETAIL "Retail mode" OFF)
@@ -50,9 +50,7 @@ option(NEO_USE_MEM_DEBUG "Enable USE_MEM_DEBUG defines" OFF)
 option(NEO_GENERATE_GAMEDATA "Generate SourceMod gamedata" ${NEO_DEDICATED})
 
 message(STATUS "CI build mode: ${NEO_CI_BUILD}")
-message(STATUS "chroot build mode: ${NEO_CHROOT_BUILD}")
 message(STATUS "Use ccache: ${NEO_USE_CCACHE}")
-message(STATUS "Use /valve bindir: ${NEO_USE_VALVE_BINDIR}")
 message(STATUS "Staging (STAGING_ONLY): ${NEO_STAGING_ONLY}")
 message(STATUS "Release asserts (RELEASEASSERTS): ${NEO_RELEASE_ASSERTS}")
 message(STATUS "Retail mode (RETAIL): ${NEO_RETAIL}")
@@ -127,18 +125,8 @@ elseif (OS_WINDOWS)
     set(PLATSUBDIR "/x64")
 endif ()
 
-
-if(NEO_CHROOT_BUILD)
-    set(STEAM_RUNTIME_PATH /usr)
-    set(CRYPTOPPDIR steamrt_sniper64)
-elseif(NEO_USE_VALVE_BINDIR)
-    set(STEAM_RUNTIME_PATH /valve)
-    set(CRYPTOPPDIR steamrt_sniper64)
-else()
-    set(STEAM_RUNTIME_PATH /usr)
-    set(CRYPTOPPDIR steamrt_sniper64)
-endif()
-
+set(STEAM_RUNTIME_PATH /usr)
+set(CRYPTOPPDIR steamrt_sniper64)
 
 add_compile_definitions(
     # SDK2013CE # Cut out since 2025-02-18 TF2 SDK Update
@@ -383,27 +371,12 @@ if(OS_LINUX)
     )
 endif()
 
-if(NOT NEO_DEDICATED AND (OS_LINUX OR OS_MACOS))
-    add_compile_definitions(
-        GL_GLEXT_PROTOTYPES
-        DX_TO_GL_ABSTRACTION
-        USE_SDL
-    )
-endif()
-
 if(COMPILER_MSVC)
     add_compile_definitions(COMPILER_MSVC)
 elseif(COMPILER_GCC)
     add_compile_definitions(COMPILER_GCC)
 elseif(COMPILER_CLANG)
     add_compile_definitions(COMPILER_CLANG)
-endif()
-
-if(NEO_USE_VALVE_BINDIR)
-    # On dedicated servers, some plugins depend on global variable symbols in addition to functions.
-        # So symbols like _Z16ClearMultiDamagev should show up when you do "nm server_srv.so" in TF2.
-
-    # TODO disable strip
 endif()
 
 if(NEO_USE_CCACHE)
@@ -428,8 +401,10 @@ if(NEO_GENERATE_GAMEDATA)
 
     FetchContent_Declare(
         gamedata-gen
-        URL https://github.com/NeotokyoRebuild/gamedata-gen/releases/download/v1/gamedata-gen.zip
-        URL_HASH MD5=cdf528d1ebbf19b3b67e4129a0dcbe98
+        URL https://github.com/NeotokyoRebuild/gamedata-gen/releases/download/v2/gamedata-gen.zip
+        URL_HASH MD5=2a988c84e7e192d33819868c37ad3150
+        GIT_PROGRESS TRUE
+        USES_TERMINAL_DOWNLOAD TRUE
     )
 
     FetchContent_MakeAvailable(gamedata-gen)
@@ -587,6 +562,8 @@ if(NEO_EXTRA_ASSETS)
         GIT_REPOSITORY https://github.com/NeotokyoRebuild/neoAssets.git
         GIT_TAG master # Replace with a commit hash or other tag to select a specific version of the assets, remove GIT_SHALLOW if using commit hash
         GIT_SHALLOW 1
+        GIT_PROGRESS TRUE
+        USES_TERMINAL_DOWNLOAD TRUE
     )
 
     FetchContent_MakeAvailable(neo_assets)

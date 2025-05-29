@@ -2380,6 +2380,22 @@ bool CBasePlayer::SetObserverMode(int mode )
 		if (m_iObserverMode < OBS_MODE_POI) mode = OBS_MODE_ROAMING;
 		else mode = OBS_MODE_CHASE;
 	}
+
+	if (mode == OBS_MODE_CHASE || mode == OBS_MODE_IN_EYE)
+	{ // verify we have a valid observer target, otherwise take us to roaming
+		if (!IsValidObserverTarget(m_hObserverTarget))
+		{ // Current target not valid, try to find a new target
+			CBaseEntity* target = FindNextObserverTarget(true);
+			if (target)
+			{
+				SetObserverTarget(target);
+			}
+			else
+			{ // skip to roaming mode
+				mode = OBS_MODE_ROAMING;
+			}
+		}
+	}
 #endif
 
 	// check mp_forcecamera settings for dead players
@@ -2766,7 +2782,12 @@ bool CBasePlayer::IsValidObserverTarget(CBaseEntity * target)
 
 	if ( player->m_lifeState == LIFE_DEAD || player->m_lifeState == LIFE_DYING )
 	{
+#ifdef NEO
+		constexpr int DEATH_SPEC_TIME = 3.0f; // OGNT switches spectator targets much faster than the DEATH_ANIMATION_TIME
+		if ((player->m_flDeathTime + DEATH_SPEC_TIME) < gpGlobals->curtime)
+#else
 		if ( (player->m_flDeathTime + DEATH_ANIMATION_TIME ) < gpGlobals->curtime )
+#endif // NEO
 		{
 			return false;	// allow watching until 3 seconds after death to see death animation
 		}
@@ -5274,8 +5295,11 @@ void CBasePlayer::Spawn( void )
 		m_iPlayerLocked = false;
 		LockPlayerInPlace();
 	}
-
+#ifdef NEO
+	if ( GetTeamNumber() != TEAM_SPECTATOR && GetTeamNumber() != TEAM_UNASSIGNED )
+#else
 	if ( GetTeamNumber() != TEAM_SPECTATOR )
+#endif // NEO
 	{
 		StopObserverMode();
 	}
@@ -6051,12 +6075,9 @@ CBaseEntity	*CBasePlayer::GiveNamedItem( const char *pszName, int iSubType )
 		Msg( "NULL Ent in GiveNamedItem!\n" );
 		return NULL;
 	}
-#ifdef NEO
-	pent->SetAbsOrigin(EyePosition());
-#else
+
 	pent->SetLocalOrigin( GetLocalOrigin() );
-#endif
-	pent->AddSpawnFlags( SF_NORESPAWN );
+	pent->AddSpawnFlags(SF_NORESPAWN);
 
 	CBaseCombatWeapon *pWeapon = dynamic_cast<CBaseCombatWeapon*>( (CBaseEntity*)pent );
 	if ( pWeapon )
@@ -6821,8 +6842,13 @@ bool CBasePlayer::ClientCommand( const CCommand &args )
 
 		}
 	
+#ifdef NEO
+		// don't allow input while player or death cam animation or on team unassigned
+		if ( GetObserverMode() > OBS_MODE_DEATHCAM && GetTeamNumber() != TEAM_UNASSIGNED)
+#else
 		// don't allow input while player or death cam animation
 		if ( GetObserverMode() > OBS_MODE_DEATHCAM )
+#endif // NEO
 		{
 			// set new spectator mode, don't allow OBS_MODE_NONE
 			if ( !SetObserverMode( mode ) )

@@ -11,14 +11,17 @@
 
 class CAvatarImage;
 
+// Checks if it's in a playable game (and not a background main menu)
+bool IsInGame();
+
 struct NeoNewGame
 {
-	wchar_t wszMap[64] = L"nt_oilstain_ctg";
-	wchar_t wszHostname[64] = L"NeoTokyo Rebuild";
+	wchar_t wszMap[64] = L"ntre_oilstain_ctg";
+	wchar_t wszHostname[64] = L"NEOTOKYO;REBUILD Listen Server";
 	int iMaxPlayers = 24;
 	wchar_t wszPassword[64] = L"neo";
 	bool bFriendlyFire = true;
-	bool bUseSteamNetworking = true;
+	bool bUseSteamNetworking = false;
 };
 
 class CNeoRoot;
@@ -40,6 +43,11 @@ public:
 	void PerformLayout() final;
 	void OnKeyCodeTyped(vgui::KeyCode code) final;
 	void OnKeyTyped(wchar_t unichar) final;
+	void OnMousePressed(vgui::MouseCode code) final;
+	void OnMouseReleased(vgui::MouseCode code) final;
+	void OnMouseDoublePressed(vgui::MouseCode code) final;
+	void OnMouseWheeled(int delta) final;
+	void OnCursorMoved(int x, int y) final;
 	void OnThink();
 	CNeoRoot *m_pNeoRoot = nullptr;
 };
@@ -51,9 +59,13 @@ enum RootState
 	STATE_NEWGAME,
 	STATE_SERVERBROWSER,
 
-	STATE_MAPLIST,
+	// Those that are not the main states goes under here
+	STATE__SUBSTATES,
+	STATE_MAPLIST = STATE__SUBSTATES,
 	STATE_SERVERDETAILS,
 	STATE_PLAYERLIST,
+	STATE_SPRAYPICKER,
+	STATE_SPRAYDELETER,
 
 	// Those that uses CNeoRoot::MainLoopPopup only starts here
 	STATE__POPUPSTART,
@@ -62,6 +74,7 @@ enum RootState
 	STATE_QUIT,
 	STATE_SERVERPASSWORD,
 	STATE_SETTINGSRESETDEFAULT,
+	STATE_SPRAYDELETERCONFIRM,
 
 	STATE__TOTAL,
 };
@@ -69,7 +82,9 @@ enum RootState
 struct WidgetInfo
 {
 	const char *label;
-	const char *gamemenucommand; // TODO: Replace
+	bool isFake;
+	const char *command; // TODO: Replace
+	bool isMainMenuCommand;
 	RootState nextState;
 	int flags;
 };
@@ -88,10 +103,21 @@ enum MainMenuButtons
 	MMBTN_CREATESERVER,
 	MMBTN_DISCONNECT,
 	MMBTN_PLAYERLIST,
+	MMBTN_SEPARATOR1,
+	MMBTN_TUTORIAL,
+	MMBTN_FIRINGRANGE,
+	MMBTN_SEPARATOR2,
 	MMBTN_OPTIONS,
 	MMBTN_QUIT,
 
 	BTNS_TOTAL,
+};
+
+struct SprayInfo
+{
+	char szBaseName[MAX_PATH];
+	char szPath[MAX_PATH];
+	char szVtf[MAX_PATH];
 };
 
 // This class is what is actually used instead of the main menu.
@@ -119,14 +145,13 @@ public:
 	void OnRelayedKeyTyped(wchar_t unichar);
 	void ApplySchemeSettings(vgui::IScheme *pScheme) final;
 	void Paint() final;
-	void OnMousePressed(vgui::MouseCode code) final;
-	void OnMouseReleased(vgui::MouseCode code) final;
-	void OnMouseDoublePressed(vgui::MouseCode code) final;
-	void OnMouseWheeled(int delta) final;
-	void OnCursorMoved(int x, int y) final;
+	void OnRelayedMousePressed(vgui::MouseCode code);
+	void OnRelayedMouseReleased(vgui::MouseCode code);
+	void OnRelayedMouseDoublePressed(vgui::MouseCode code);
+	void OnRelayedMouseWheeled(int delta);
+	void OnRelayedCursorMoved(int x, int y);
 	void OnTick() final;
 	void FireGameEvent(IGameEvent *event) final;
-	bool IsInGame() { return (engine->IsInGame() && !engine->IsLevelMainMenuBackground()); }
 
 	void OnMainLoop(const NeoUI::Mode eMode);
 
@@ -144,6 +169,7 @@ public:
 	void MainLoopMapList(const MainLoopParam param);
 	void MainLoopServerDetails(const MainLoopParam param);
 	void MainLoopPlayerList(const MainLoopParam param);
+	void MainLoopSprayPicker(const MainLoopParam param);
 	void MainLoopPopup(const MainLoopParam param);
 
 	NeoSettings m_ns = {};
@@ -162,6 +188,7 @@ public:
 	ServerBrowserFilters m_sbFilters;
 	bool m_bSBFiltModified = false;
 	bool m_bShowFilterPanel = false;
+	bool m_bSPlayersSortModified = false;
 	GameServerSortContext m_sortCtx = {};
 
 	wchar_t m_wszBindingText[128];
@@ -189,12 +216,26 @@ public:
 	void ReadNewsFile(CUtlBuffer &buf);
 	bool m_bShowBrowserLabel = false;
 
+	enum FileIODialogMode
+	{
+		FILEIODLGMODE_CROSSHAIR = 0,
+		FILEIODLGMODE_SPRAY,
+
+		FILEIODLGMODE__TOTAL,
+	};
+	FileIODialogMode m_eFileIOMode;
 	vgui::FileOpenDialog *m_pFileIODialog = nullptr;
 	MESSAGE_FUNC_CHARPTR(OnFileSelected, "FileSelected", fullpath);
 
 	bool m_bOnLoadingScreen = false;
 	int m_iSavedYOffsets[NeoUI::MAX_SECTIONS] = {};
+	bool m_bSprayGalleryRefresh = false;
 	float m_flWideAs43 = 0.0f;
+	SprayInfo m_sprayToDelete = {};
+
+private:
+	void OnFileSelectedMode_Crosshair(const char *szFullpath);
+	void OnFileSelectedMode_Spray(const char *szFullpath);
 };
 
 extern CNeoRoot *g_pNeoRoot;

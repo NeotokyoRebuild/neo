@@ -43,13 +43,19 @@ private:
 	};
 
 	void CheckActiveStar();
+	void DrawPlayerList();
+	int DrawPlayerRow(int playerIndex, int yOffset, bool small = false);
 	void DrawPlayer(int playerIndex, int teamIndex, const TeamLogoColor &teamLogoColor,
 					const int xOffset, const bool drawHealthClass);
 	void SetTextureToAvatar(int playerIndex);
 
+	virtual void LevelShutdown(void) override;
+
 private:
-	vgui::HFont m_hOCRSmallFont = 0UL;
+	vgui::HFont m_hOCRLargeFont = 0UL;
 	vgui::HFont m_hOCRFont = 0UL;
+	vgui::HFont m_hOCRSmallFont = 0UL;
+	vgui::HFont m_hOCRSmallerFont = 0UL;
 
 	int m_iXpos = 0;
 
@@ -94,9 +100,15 @@ private:
 	int m_iGraphicID[NEO_CLASS__ENUM_COUNT] = {};
 	TeamLogoColor m_teamLogoColors[TEAM__TOTAL] = {};
 
+	int m_iBeepSecsTotal = 0;
+	NeoRoundStatus m_ePrevRoundStatus = NeoRoundStatus::Idle;
 
 	CPanelAnimationVar(Color, box_color, "box_color", "200 200 200 40");
 	CPanelAnimationVarAliasType(bool, health_monochrome, "health_monochrome", "1", "bool");
+	CPanelAnimationVarAliasType(bool, top_left_corner, "top_left_corner", "0", "bool");
+	CPanelAnimationVarAliasType(bool, top_right_corner, "top_right_corner", "0", "bool");
+	CPanelAnimationVarAliasType(bool, bottom_left_corner, "bottom_left_corner", "1", "bool");
+	CPanelAnimationVarAliasType(bool, bottom_right_corner, "bottom_right_corner", "1", "bool");
 
 private:
 	CNEOHud_RoundState(const CNEOHud_RoundState &other);

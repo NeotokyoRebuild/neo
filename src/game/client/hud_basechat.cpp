@@ -56,7 +56,7 @@ Color g_ColorYellow( 255, 178, 0, 255 );
 Color g_ColorGrey( 204, 204, 204, 255 );
 
 #ifdef NEO
-extern ConVar neo_cl_streamermode;
+extern ConVar cl_neo_streamermode;
 #endif
 
 // removes all color markup characters, so Msg can deal with the string properly
@@ -846,7 +846,7 @@ void CBaseHudChat::MsgFunc_SayText2( bf_read &msg )
 	ReadLocalizedString( msg, szBuf[4], sizeof( szBuf[4] ), true );
 
 #ifdef NEO
-	if (neo_cl_streamermode.GetBool())
+	if (cl_neo_streamermode.GetBool())
 	{
 		V_memset(szBuf[1], 0, sizeof(szBuf[1]));
 		g_pVGuiLocalize->ConvertANSIToUnicode(g_PR->GetPlayerName(client), szBuf[1], sizeof(szBuf[1]));
@@ -1830,10 +1830,6 @@ void CBaseHudChat::LevelShutdown( void )
 //-----------------------------------------------------------------------------
 void CBaseHudChat::ChatPrintf( int iPlayerIndex, int iFilter, const char *fmt, ... )
 {
-	if (engine->IsLevelMainMenuBackground())
-	{
-		return;
-	}
 	va_list marker;
 	char msg[4096];
 
@@ -1885,7 +1881,7 @@ void CBaseHudChat::ChatPrintf( int iPlayerIndex, int iFilter, const char *fmt, .
 	}
 
 #ifdef NEO
-	if (neo_cl_streamermode.GetBool())
+	if (cl_neo_streamermode.GetBool())
 	{
 		auto neoPlayer = static_cast<CNEO_Player *>(UTIL_PlayerByIndex(iPlayerIndex));
 		if (neoPlayer && !neoPlayer->IsLocalPlayer())

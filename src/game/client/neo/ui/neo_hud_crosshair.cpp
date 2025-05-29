@@ -1,25 +1,26 @@
 #include "neo_hud_crosshair.h"
+#include "neo_gamerules.h"
 
 #include "filesystem.h"
 #include "vgui/ISurface.h"
 #include "vgui_controls/Controls.h"
 #include "ui/neo_root.h"
 
-ConVar neo_cl_crosshair_style("neo_cl_crosshair_style", "0", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the crosshair style. 0 = default, 0 to 1 = textured, 2 = custom", true, 0.0f, true, CROSSHAIR_STYLE__TOTAL);
-ConVar neo_cl_crosshair_color_r("neo_cl_crosshair_color_r", "255", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the red value of the crosshair color", true, 0.0f, true, UCHAR_MAX);
-ConVar neo_cl_crosshair_color_g("neo_cl_crosshair_color_g", "255", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the green value of the crosshair color", true, 0.0f, true, UCHAR_MAX);
-ConVar neo_cl_crosshair_color_b("neo_cl_crosshair_color_b", "255", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the blue value of the crosshair color", true, 0.0f, true, UCHAR_MAX);
-ConVar neo_cl_crosshair_color_a("neo_cl_crosshair_color_a", "255", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the alpha value of the crosshair color", true, 0.0f, true, UCHAR_MAX);
-ConVar neo_cl_crosshair_size("neo_cl_crosshair_size", "15", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the size of the crosshair (custom only)", true, 0.0f, true, CROSSHAIR_MAX_SIZE);
-ConVar neo_cl_crosshair_size_screen("neo_cl_crosshair_size_screen", "0", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the size of the crosshair by half-screen scale (custom only)", true, 0.0f, true, 1.0f);
-ConVar neo_cl_crosshair_size_type("neo_cl_crosshair_size_type", "0", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the size unit used for the crosshair. 0 = neo_cl_crosshair_size, 1 = neo_cl_crosshair_size_screen (custom only)", true, 0.0f, true, (CROSSHAIR_SIZETYPE__TOTAL - 1));
-ConVar neo_cl_crosshair_thickness("neo_cl_crosshair_thickness", "1", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the thickness of the crosshair (custom only)", true, 0.0f, true, CROSSHAIR_MAX_THICKNESS);
-ConVar neo_cl_crosshair_gap("neo_cl_crosshair_gap", "5", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the gap of the crosshair (custom only)", true, 0.0f, true, CROSSHAIR_MAX_GAP);
-ConVar neo_cl_crosshair_outline("neo_cl_crosshair_outline", "0", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the crosshair outline (custom only)", true, 0.0f, true, CROSSHAIR_MAX_OUTLINE);
-ConVar neo_cl_crosshair_center_dot("neo_cl_crosshair_center_dot", "0", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the size of the center dot (custom only)", true, 0.0f, true, CROSSHAIR_MAX_CENTER_DOT);
-ConVar neo_cl_crosshair_top_line("neo_cl_crosshair_top_line", "1", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set if the top line will be shown (custom only)", true, 0.0f, true, 1.0f);
-ConVar neo_cl_crosshair_circle_radius("neo_cl_crosshair_circle_radius", "0", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the circle radius of the crosshair (custom only)", true, 0.0f, true, CROSSHAIR_MAX_CIRCLE_RAD);
-ConVar neo_cl_crosshair_circle_segments("neo_cl_crosshair_circle_segments", "30", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the segments of the circle (custom only)", true, 0.0f, true, CROSSHAIR_MAX_CIRCLE_SEGMENTS);
+ConVar cl_neo_crosshair_style("cl_neo_crosshair_style", "0", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the crosshair style. 0 = default, 0 to 1 = textured, 2 = custom", true, 0.0f, true, CROSSHAIR_STYLE__TOTAL);
+ConVar cl_neo_crosshair_color_r("cl_neo_crosshair_color_r", "255", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the red value of the crosshair color", true, 0.0f, true, UCHAR_MAX);
+ConVar cl_neo_crosshair_color_g("cl_neo_crosshair_color_g", "255", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the green value of the crosshair color", true, 0.0f, true, UCHAR_MAX);
+ConVar cl_neo_crosshair_color_b("cl_neo_crosshair_color_b", "255", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the blue value of the crosshair color", true, 0.0f, true, UCHAR_MAX);
+ConVar cl_neo_crosshair_color_a("cl_neo_crosshair_color_a", "255", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the alpha value of the crosshair color", true, 0.0f, true, UCHAR_MAX);
+ConVar cl_neo_crosshair_size("cl_neo_crosshair_size", "15", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the size of the crosshair (custom only)", true, 0.0f, true, CROSSHAIR_MAX_SIZE);
+ConVar cl_neo_crosshair_size_screen("cl_neo_crosshair_size_screen", "0", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the size of the crosshair by half-screen scale (custom only)", true, 0.0f, true, 1.0f);
+ConVar cl_neo_crosshair_size_type("cl_neo_crosshair_size_type", "0", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the size unit used for the crosshair. 0 = cl_neo_crosshair_size, 1 = cl_neo_crosshair_size_screen (custom only)", true, 0.0f, true, (CROSSHAIR_SIZETYPE__TOTAL - 1));
+ConVar cl_neo_crosshair_thickness("cl_neo_crosshair_thickness", "1", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the thickness of the crosshair (custom only)", true, 0.0f, true, CROSSHAIR_MAX_THICKNESS);
+ConVar cl_neo_crosshair_gap("cl_neo_crosshair_gap", "5", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the gap of the crosshair (custom only)", true, 0.0f, true, CROSSHAIR_MAX_GAP);
+ConVar cl_neo_crosshair_outline("cl_neo_crosshair_outline", "0", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the crosshair outline (custom only)", true, 0.0f, true, CROSSHAIR_MAX_OUTLINE);
+ConVar cl_neo_crosshair_center_dot("cl_neo_crosshair_center_dot", "0", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the size of the center dot (custom only)", true, 0.0f, true, CROSSHAIR_MAX_CENTER_DOT);
+ConVar cl_neo_crosshair_top_line("cl_neo_crosshair_top_line", "1", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set if the top line will be shown (custom only)", true, 0.0f, true, 1.0f);
+ConVar cl_neo_crosshair_circle_radius("cl_neo_crosshair_circle_radius", "0", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the circle radius of the crosshair (custom only)", true, 0.0f, true, CROSSHAIR_MAX_CIRCLE_RAD);
+ConVar cl_neo_crosshair_circle_segments("cl_neo_crosshair_circle_segments", "30", FCVAR_ARCHIVE | FCVAR_USERINFO, "Set the segments of the circle (custom only)", true, 0.0f, true, CROSSHAIR_MAX_CIRCLE_SEGMENTS);
 
 static const char *INTERNAL_CROSSHAIR_FILES[CROSSHAIR_STYLE__TOTAL] = { "vgui/hud/crosshair", "vgui/hud/crosshair_b", "" };
 const char **CROSSHAIR_FILES = INTERNAL_CROSSHAIR_FILES;
@@ -32,6 +33,10 @@ const wchar_t **CROSSHAIR_SIZETYPE_LABELS = INTERNAL_CROSSHAIR_SIZETYPE_LABELS;
 
 void PaintCrosshair(const CrosshairInfo &crh, const int x, const int y)
 {
+	if (NEORules() && NEORules()->GetHiddenHudElements() & NEO_HUD_ELEMENT_CROSSHAIR)
+	{
+		return;
+	}
 	if (crh.iSize > 0)
 	{
 		int iSize = crh.iSize;
@@ -99,6 +104,7 @@ void PaintCrosshair(const CrosshairInfo &crh, const int x, const int y)
 
 	if (crh.iCircleRad > 0 && crh.iCircleSegments > 0)
 	{
+		vgui::surface()->DrawSetColor(crh.color);
 		vgui::surface()->DrawOutlinedCircle(x, y, crh.iCircleRad, crh.iCircleSegments);
 	}
 }

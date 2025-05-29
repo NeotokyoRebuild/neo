@@ -471,8 +471,7 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"Verdana" [!$OSX]
-				"name"		"Helvetica Bold" [$OSX]
+				"name"		"xscale"
 				"tall"		"14"
 				"weight"	"1000"
 				"antialias" "1"
@@ -483,9 +482,8 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"Verdana" [!$OSX]
-				"name"		"Helvetica" [$OSX]
-				"tall"		"11"
+				"name"		"xscale"
+				"tall"		"14"
 				"weight"	"0"
 				"antialias" "1"
 				"additive"	"1"
@@ -708,7 +706,7 @@ Scheme
 			}
 			// It seems that 127 is the largest a font can be, so we can't make the title any bigger than this
 		}
-		
+
 		ClientTitleFontSmall
 		{
 			"1"
@@ -1111,7 +1109,7 @@ Scheme
 				"antialias" "1"
 				"custom" "1" [$OSX]
 			}
-		}	
+		}
 		NHudText
 		{
 			"1"
@@ -1161,6 +1159,148 @@ Scheme
 				"yres"	"1200 6000"
 				"antialias"	"1"
 				//"additive"	"1"
+			}
+		}
+		NHudOCRSmaller
+		{
+			"1"
+			{
+				"name"		"Neuropol2"
+				"tall"		"10"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"480 599"
+				"additive"	"1"
+			}
+			"2"
+			{
+				"name"		"Neuropol2"
+				"tall"		"12"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"600 767"
+				"additive"	"1"
+			}
+			"3"
+			{
+				"name"		"Neuropol2"
+				"tall"		"14"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"768 1023"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"4"
+			{
+				"name"		"Neuropol2"
+				"tall"		"17"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1024 1199"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"5"
+			{
+				"name"		"Neuropol2"
+				"tall"		"20"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1200 1440"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"6"
+			{
+				"name"		"Neuropol2"
+				"tall"		"24"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1441 1599"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"7"
+			{
+				"name"		"Neuropol2"
+				"tall"		"26"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1600 6000"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+		}
+		NHudKillfeedIcons
+		{
+			"1"
+			{
+				"name"		"KillfeedIcons"
+				"tall"		"12"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"480 599"
+				"additive"	"0"
+			}
+			"2"
+			{
+				"name"		"KillfeedIcons"
+				"tall"		"14"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"600 767"
+				"additive"	"0"
+			}
+			"3"
+			{
+				"name"		"KillfeedIcons"
+				"tall"		"16"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"768 1023"
+				"antialias"	"1"
+				"additive"	"0"
+			}
+			"4"
+			{
+				"name"		"KillfeedIcons"
+				"tall"		"20"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1024 1199"
+				"antialias"	"1"
+				"additive"	"0"
+			}
+			"5"
+			{
+				"name"		"KillfeedIcons"
+				"tall"		"24"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1200 1440"
+				"antialias"	"1"
+				"additive"	"0"
+			}
+			"6"
+			{
+				"name"		"KillfeedIcons"
+				"tall"		"26"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1441 1599"
+				"antialias"	"1"
+				"additive"	"0"
+			}
+			"7"
+			{
+				"name"		"KillfeedIcons"
+				"tall"		"28"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1600 6000"
+				"antialias"	"1"
+				"additive"	"0"
 			}
 		}
 		NHudOCRSmall
@@ -1298,7 +1438,6 @@ Scheme
 				"antialias"	"1"
 			}
 		}
-
 		NHudOCR
 		{
 			"1"
@@ -1432,6 +1571,77 @@ Scheme
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
 				"yres"	"1600 6000"
 				"antialias"	"1"
+			}
+		}
+		NHudOCRLarge
+		{
+			"1"
+			{
+				"name"		"Neuropol2"
+				"tall"		"26"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"480 599"
+				"additive"	"1"
+			}
+			"2"
+			{
+				"name"		"Neuropol2"
+				"tall"		"28"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"600 767"
+				"additive"	"1"
+			}
+			"3"
+			{
+				"name"		"Neuropol2"
+				"tall"		"30"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"		"768 1023"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"4"
+			{
+				"name"		"Neuropol2"
+				"tall"		"32"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1024 1199"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"5"
+			{
+				"name"		"Neuropol2"
+				"tall"		"34"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1200 1440"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"6"
+			{
+				"name"		"Neuropol2"
+				"tall"		"36"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1441 1599"
+				"antialias"	"1"
+				"additive"	"1"
+			}
+			"7"
+			{
+				"name"		"Neuropol2"
+				"tall"		"38"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1600 6000"
+				"antialias"	"1"
+				"additive"	"1"
 			}
 		}
 		NHudOCRBlur
@@ -1860,6 +2070,28 @@ Scheme
 				"yres"	"1600 6000"
 				"antialias"	"1"
 				//"additive"	"1"
+			}
+		}
+		NHudMessage
+		{
+			"1"
+			{
+				"name"		"Arial"
+				"tall"		"10"
+				"weight"	"100"
+				"additive"	"1"
+				"antialias" "1"
+			}
+		}
+		NHudMessageTitle
+		{
+			"1"
+			{
+				"name"		"Arial"
+				"tall"		"7"
+				"weight"	"1000"
+				"additive"	"1"
+				"antialias" "1"
 			}
 		}
 		MVP
@@ -2710,6 +2942,7 @@ Scheme
 		"11"		"resource/nocr.ttf"
 		"12"		"resource/NEUROPOL2.ttf"
 		"13"		"resource/neotokyo_press_n.ttf"
+		"14"		"resource/KillfeedIcons.ttf"
 	}
 
 }

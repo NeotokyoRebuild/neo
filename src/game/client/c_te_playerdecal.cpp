@@ -28,6 +28,10 @@ static ConVar cl_spraydisable( "cl_spraydisable", "1", FCVAR_CLIENTDLL | FCVAR_A
 static ConVar cl_spraydisable( "cl_spraydisable", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE, "Disable player sprays." );
 #endif
 
+#ifdef NEO
+extern ConVar sv_neo_spraydisable;
+#endif
+
 #ifndef _XBOX
 CLIENTEFFECT_REGISTER_BEGIN( PrecachePlayerDecal )
 CLIENTEFFECT_MATERIAL( "decals/playerlogo01" )
@@ -181,8 +185,18 @@ IMaterial *CreateTempMaterialForPlayerLogo( int iPlayerIndex, player_info_t *inf
 		char custname[ 512 ];
 		Q_snprintf( custname, sizeof( custname ), "download/user_custom/%c%c/%s.dat", logohex[0], logohex[1], logohex );
 		// it may have been downloaded but not copied under materials folder
-		if ( !filesystem->FileExists( custname ) )
+		if (!filesystem->FileExists(custname))
+		{
+#ifdef NEO
+			Q_snprintf( custname, sizeof( custname ), "user_custom/%c%c/%s.dat", logohex[0], logohex[1], logohex );
+			if (!filesystem->FileExists(custname))
+			{
+				return nullptr;
+			}
+#else
 			return NULL; // not downloaded yet
+#endif
+		}
 
 		// copy from download folder to materials/temp folder
 		// this is done since material system can access only materials/*.vtf files
@@ -207,6 +221,13 @@ void TE_PlayerDecal( IRecipientFilter& filter, float delay,
 {
 	if ( cl_spraydisable.GetBool() )
 		return;
+
+#ifdef NEO
+	if (sv_neo_spraydisable.GetBool())
+	{
+		return;
+	}
+#endif
 
 	// No valid target?
 	C_BaseEntity *ent = cl_entitylist->GetEnt( entity );

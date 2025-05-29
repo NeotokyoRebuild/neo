@@ -27,7 +27,7 @@ enum GameServerInfoW
 	GSIW__TOTAL,
 };
 
-enum AnitCheatMode
+enum AntiCheatMode
 {
 	ANTICHEAT_ANY,
 	ANTICHEAT_ON,
@@ -36,12 +36,25 @@ enum AnitCheatMode
 	ANTICHEAT__TOTAL,
 };
 
-extern int g_iGSIX[GSIW__TOTAL];
+enum GameServerPlayerSort
+{
+	GSPS_SCORE = 0,
+	GSPS_NAME,
+	GSPS_TIME,
+
+	GSPS__TOTAL,
+};
 
 struct GameServerSortContext
 {
 	GameServerInfoW col = GSIW_NAME;
 	bool bDescending = false;
+};
+
+struct GameServerPlayerSortContext
+{
+	GameServerPlayerSort col = GSPS_SCORE;
+	bool bDescending = true;
 };
 
 class CNeoServerList : public ISteamMatchmakingServerListResponse
@@ -60,6 +73,7 @@ public:
 	bool m_bModified = false;
 	bool m_bSearching = false;
 	bool m_bReloadedAtLeastOnce = false;
+	// Pointer because all GameServerType to unify under one sorting
 	GameServerSortContext *m_pSortCtx = nullptr;
 };
 
@@ -67,6 +81,7 @@ class CNeoServerPlayers : public ISteamMatchmakingPlayersResponse
 {
 public:
 	~CNeoServerPlayers();
+	void UpdateSortedList();
 	void RequestList(uint32 unIP, uint16 usPort);
 	void AddPlayerToList(const char *pchName, int nScore, float flTimePlayed) final;
 	void PlayersFailedToRespond() final;
@@ -74,13 +89,15 @@ public:
 
 	struct PlayerInfo
 	{
-		wchar_t wszName[33];
+		wchar_t wszName[MAX_PLAYER_NAME_LENGTH + 1];
 		int iScore;
 		float flTimePlayed;
 	};
 	CUtlVector<PlayerInfo> m_players;
+	CUtlVector<PlayerInfo> m_sortedPlayers;
 	HServerQuery m_hdlQuery = HSERVERQUERY_INVALID;
 	bool m_bFetching = false;
+	GameServerPlayerSortContext m_sortCtx;
 };
 
 struct ServerBrowserFilters
@@ -91,5 +108,3 @@ struct ServerBrowserFilters
 	int iAntiCheat = 0;
 	int iMaxPing = 0;
 };
-
-void ServerBrowserDrawRow(const gameserveritem_t &server);

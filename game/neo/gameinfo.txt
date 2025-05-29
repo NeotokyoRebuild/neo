@@ -24,8 +24,17 @@
 			Game+Mod                         hl2mp/custom/*
 			Game+Mod                         hl2/custom/*
 
-			Mod+Mod_Write+Default_Write_Path |gameinfo_path|.
+			Game+Mod+Mod_Write+Default_Write_Path |gameinfo_path|.
 			GameBin                          |gameinfo_path|bin
+
+			// Find OG:NT through Steam, works with the game client
+			Game                             |appid_244630|NeotokyoSource
+			// However it may fail with SRCDS/dedicated server and SDK tools,
+			// so comment out above and un-comment below
+			//
+			// The path is assuming a SRCDS where NEOTOKYO directory is next
+			// to the NT;RE directory, alter if needed.
+			//Game                             |gameinfo_path|../../NEOTOKYO/NeotokyoSource
 
 			game_lv                          hl2/hl2_lv.vpk
 			Game+Mod                         hl2mp/hl2mp_english.vpk
@@ -45,6 +54,9 @@
 			Game                             |all_source_engine_paths|hl2mp
 			Game                             |all_source_engine_paths|hl2
 			Platform                         |all_source_engine_paths|platform
+
+			game+download                    |gameinfo_path|download
+			game+download                    |gameinfo_path|user_custom
 		}
 	}
 }

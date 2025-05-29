@@ -474,7 +474,7 @@
 	}
 	"ReturnButton"
 	{
-		"ControlName"		"Button"
+		"ControlName"		"CNeoButton"
 		"fieldName"		"ReturnButton"
 		"xpos"		"8"
 		"ypos"		"608"

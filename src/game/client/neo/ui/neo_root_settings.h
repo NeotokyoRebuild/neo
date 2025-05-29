@@ -37,7 +37,8 @@ struct NeoSettings
 		bool bReloadEmpty;
 		bool bViewmodelRighthand;
 		bool bLeanViewmodelOnly;
-		bool bLeanAutomatic;
+		int iLeanAutomatic;
+		bool bShowSquadList;
 		bool bShowPlayerSprays;
 		bool bShowPos;
 		int iShowFps;
@@ -45,6 +46,7 @@ struct NeoSettings
 		bool bStreamerMode;
 		bool bAutoDetectOBS;
 		bool bEnableRangeFinder;
+		bool bExtendedKillfeed;
 		int iBackground;
 	};
 
@@ -66,6 +68,9 @@ struct NeoSettings
 
 		// Will be checked often so cached
 		ButtonCode_t bcConsole;
+		ButtonCode_t bcTeamMenu;
+		ButtonCode_t bcClassMenu;
+		ButtonCode_t bcLoadoutMenu;
 
 		enum Flags
 		{
@@ -159,7 +164,7 @@ struct NeoSettings
 		CONVARREF_DEF(neo_name);
 		CONVARREF_DEF(neo_clantag);
 		CONVARREF_DEF(cl_onlysteamnick);
-		CONVARREF_DEF(neo_cl_clantag_friendly_marker_spec_only);
+		CONVARREF_DEF(cl_neo_clantag_friendly_marker_spec_only);
 		CONVARREF_DEF(neo_fov);
 		CONVARREF_DEF(neo_viewmodel_fov_offset);
 		CONVARREF_DEF(neo_aim_hold);
@@ -167,13 +172,15 @@ struct NeoSettings
 		CONVARREF_DEF(cl_righthand);
 		CONVARREF_DEF(cl_neo_lean_viewmodel_only);
 		CONVARREF_DEF(cl_neo_lean_automatic);
+		CONVARREF_DEF(cl_neo_squad_hud_original);
+		CONVARREF_DEF(cl_neo_hud_extended_killfeed);
 		CONVARREF_DEF(cl_showpos);
 		CONVARREF_DEF(cl_showfps);
 		CONVARREF_DEF(hud_fastswitch);
-		CONVARREF_DEF(neo_cl_toggleconsole);
-		CONVARREF_DEF(neo_cl_streamermode);
-		CONVARREF_DEF(neo_cl_streamermode_autodetect_obs);
-		CONVARREF_DEF(neo_cl_hud_rangefinder_enabled);
+		CONVARREF_DEF(cl_neo_toggleconsole);
+		CONVARREF_DEF(cl_neo_streamermode);
+		CONVARREF_DEF(cl_neo_streamermode_autodetect_obs);
+		CONVARREF_DEF(cl_neo_hud_rangefinder_enabled);
 		CONVARREF_DEF(sv_unlockedchapters);
 
 		// Multiplayer
@@ -204,6 +211,7 @@ struct NeoSettings
 		CONVARREF_DEF(r_rootlod);
 		CONVARREF_DEF(mat_picmip);
 		CONVARREF_DEF(mat_reducefillrate);
+		CONVARREF_DEF(r_lightmap_bicubic);
 		CONVARREF_DEF(r_waterforceexpensive);
 		CONVARREF_DEF(r_waterforcereflectentities);
 		CONVARREF_DEF(r_flashlightdepthtexture);
@@ -218,21 +226,21 @@ struct NeoSettings
 		CONVARREF_DEF(mat_monitorgamma);
 
 		// Crosshair
-		CONVARREF_DEF(neo_cl_crosshair_style);
-		CONVARREF_DEF(neo_cl_crosshair_color_r);
-		CONVARREF_DEF(neo_cl_crosshair_color_g);
-		CONVARREF_DEF(neo_cl_crosshair_color_b);
-		CONVARREF_DEF(neo_cl_crosshair_color_a);
-		CONVARREF_DEF(neo_cl_crosshair_size_type);
-		CONVARREF_DEF(neo_cl_crosshair_size);
-		CONVARREF_DEF(neo_cl_crosshair_size_screen);
-		CONVARREF_DEF(neo_cl_crosshair_thickness);
-		CONVARREF_DEF(neo_cl_crosshair_gap);
-		CONVARREF_DEF(neo_cl_crosshair_outline);
-		CONVARREF_DEF(neo_cl_crosshair_center_dot);
-		CONVARREF_DEF(neo_cl_crosshair_top_line);
-		CONVARREF_DEF(neo_cl_crosshair_circle_radius);
-		CONVARREF_DEF(neo_cl_crosshair_circle_segments);
+		CONVARREF_DEF(cl_neo_crosshair_style);
+		CONVARREF_DEF(cl_neo_crosshair_color_r);
+		CONVARREF_DEF(cl_neo_crosshair_color_g);
+		CONVARREF_DEF(cl_neo_crosshair_color_b);
+		CONVARREF_DEF(cl_neo_crosshair_color_a);
+		CONVARREF_DEF(cl_neo_crosshair_size_type);
+		CONVARREF_DEF(cl_neo_crosshair_size);
+		CONVARREF_DEF(cl_neo_crosshair_size_screen);
+		CONVARREF_DEF(cl_neo_crosshair_thickness);
+		CONVARREF_DEF(cl_neo_crosshair_gap);
+		CONVARREF_DEF(cl_neo_crosshair_outline);
+		CONVARREF_DEF(cl_neo_crosshair_center_dot);
+		CONVARREF_DEF(cl_neo_crosshair_top_line);
+		CONVARREF_DEF(cl_neo_crosshair_circle_radius);
+		CONVARREF_DEF(cl_neo_crosshair_circle_segments);
 	};
 	CVR cvr;
 };

@@ -877,65 +877,6 @@ void CBasePlayer::Weapon_SetLast( CBaseCombatWeapon *pWeapon )
 	m_hLastWeapon = pWeapon;
 }
 
-#ifdef NEO
-void CBasePlayer::UpdateMuzzleFlashProperties(CBaseCombatWeapon* pWeapon)
-{
-	auto neoWep = static_cast<CNEOBaseCombatWeapon*>(pWeapon);
-	if (!neoWep)
-		return;
-
-	auto* neoViewModelMuzzleflash = static_cast<CNEOPredictedViewModelMuzzleFlash*>(m_hViewModel[MUZZLE_FLASH_VIEW_MODEL_INDEX].Get());
-	if (!neoViewModelMuzzleflash)
-		return;
-	
-	const auto neoWepBits = neoWep->GetNeoWepBits();
-	if (neoWepBits & (NEO_WEP_THROWABLE | NEO_WEP_GHOST | NEO_WEP_KNIFE | NEO_WEP_SUPPRESSED))
-	{
-		neoViewModelMuzzleflash->m_bActive = false;
-	}
-	else if (neoWepBits & (NEO_WEP_PZ | NEO_WEP_TACHI | NEO_WEP_KYLA))
-	{
-		neoViewModelMuzzleflash->m_bActive = true;
-		neoViewModelMuzzleflash->m_nSkin = 1;
-		neoViewModelMuzzleflash->m_iAngleZ = 0;
-		neoViewModelMuzzleflash->m_iAngleZIncrement = -100;
-		neoViewModelMuzzleflash->SetModelScale(0.75);
-	}
-	else if (neoWepBits & NEO_WEP_SUPA7)
-	{
-		neoViewModelMuzzleflash->m_bActive = true;
-		neoViewModelMuzzleflash->m_nSkin = 1;
-		neoViewModelMuzzleflash->m_iAngleZ = 0;
-		neoViewModelMuzzleflash->m_iAngleZIncrement = -90;
-		neoViewModelMuzzleflash->SetModelScale(2);
-	}
-	else if (neoWepBits & (NEO_WEP_SRM | NEO_WEP_JITTE))
-	{
-		neoViewModelMuzzleflash->m_bActive = true;
-		neoViewModelMuzzleflash->m_nSkin = 0;
-		neoViewModelMuzzleflash->m_iAngleZ = 0;
-		neoViewModelMuzzleflash->m_iAngleZIncrement = -90;
-		neoViewModelMuzzleflash->SetModelScale(0.75);
-	}
-	else if (neoWepBits & (NEO_WEP_MX | NEO_WEP_AA13))
-	{
-		neoViewModelMuzzleflash->m_bActive = true;
-		neoViewModelMuzzleflash->m_nSkin = 0;
-		neoViewModelMuzzleflash->m_iAngleZ = 0;
-		neoViewModelMuzzleflash->m_iAngleZIncrement = -100;
-		neoViewModelMuzzleflash->SetModelScale(0.6);
-	}
-	else
-	{
-		neoViewModelMuzzleflash->m_bActive = true;
-		neoViewModelMuzzleflash->m_nSkin = 0;
-		neoViewModelMuzzleflash->m_iAngleZ = 0;
-		neoViewModelMuzzleflash->m_iAngleZIncrement = -90;
-		neoViewModelMuzzleflash->SetModelScale(0.75);
-	}
-}
-#endif // NEO
-
 //-----------------------------------------------------------------------------
 // Purpose: Override base class so player can reset autoaim
 // Input  :
@@ -959,19 +900,13 @@ bool CBasePlayer::Weapon_Switch( CBaseCombatWeapon *pWeapon, int viewmodelindex 
 		ResetAutoaim( );
 
 #ifdef NEO
-		UpdateMuzzleFlashProperties(pWeapon);
+		CNEOPredictedViewModelMuzzleFlash* pNeoViewModel = static_cast<CNEOPredictedViewModelMuzzleFlash*>(GetViewModel(MUZZLE_FLASH_VIEW_MODEL_INDEX));
+		pNeoViewModel->UpdateMuzzleFlashProperties(pWeapon);
 #endif // NEO
 
 		return true;
 	}
 
-#ifdef NEO
-	if (IsAlive() == false)
-	{
-		// Active weapon was probably updated, update muzzle flash properties regardless
-		UpdateMuzzleFlashProperties(pWeapon);
-	}
-#endif // NEO
 	return false;
 }
 

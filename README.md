@@ -17,7 +17,7 @@ To see the Table of Contents, please use the "Outline" feature on GitHub by clic
 * Linux: [Steam Runtime 3 "Sniper"](https://gitlab.steamos.cloud/steamrt/sniper/sdk)
     * GCC/G++ 10 toolchain
     * Compiled in the sniper's Docker/Podman/Toolbx container, schroot, or systemd-nspawn
-    * This can also work on native (as long as it supports C++20) even with newer GCC/G++, mostly for development setup. At least install GCC and G++ multilib from your distro's package manager.
+    * This can also work on native (as long as it supports C++20) even with newer GCC/G++, mostly for development setup. At least install GCC and G++ from your distro's package manager.
     * `mimalloc` - To run with a debugger
 * Both:
     * [CMake](https://cmake.org/)
@@ -46,7 +46,7 @@ Make sure the "x64 Native Tools Command Prompt for VS2022" is used instead of th
 
 ##### Linux prerequisite - Steam Runtime 3 "Sniper" Container
 Your system must include the following packages:
-`gcc-multilib g++-multilib cmake ninja-build docker-ce docker-ce-cli containerd.io apt-transport-https ca-certificates curl gnupg gnupg-utils cmake build-essential`
+`gcc g++ cmake ninja-build docker-ce docker-ce-cli containerd.io apt-transport-https ca-certificates curl gnupg gnupg-utils cmake build-essential`
 
 **Note:** Depending on your operating system, the package names may vary, please consult google or your package manager for correct package names. The listed are for debian `apt`. (Includes Ubuntu, Linux Mint, etc)
 
@@ -125,11 +125,11 @@ Another way is just add the `-game` option to "Source SDK Base 2013 Multiplayer"
 %command% -game <PATH_TO_NEO_SOURCE>/game/neo
 ```
 
-### `-neopath` - Pointing to a non-default original NEOTOKYO directory
+## SDK tools and SRCDS original NEOTOKYO mounting
+By default the `gameinfo.txt` provided utilizes TF2-SDK's new `|appid_244630|` appid based search path to mount the original NEOTOKYO assets. However, some SDK tools and SRCDS either refuses to mount or crashes when trying to use this. If the appid based search path an issue, just comment this line out and uncomment `|gameinfo_path|../../NEOTOKYO/NeotokyoSource` line below and alter if needed to the actual path of your original `NeotokyoSource` installation.
 
-This is generally isn't necessary if NEOTOKYO is installed at a default location. However,
-if you have it installed at a different location, adding `-neopath` to the launch option
-can be used to direct to it.
+## Using `-tools`
+Engine tools have been broken since the TF2-SDK/64-bit update due to libraries being misplaced. To fix this, go to your Source SDK Base 2013 Multiplayer installation folder and move all files in `bin/tools/x64` to `bin/x64/tools`. You may have to create a tools folder if one does not exist already.
 
 ## Further information
 For further information for your platform, refer to the VDC wiki on setting up extras, chroot/containers, etc...:
@@ -139,15 +139,30 @@ For setting up the Steam mod:
 https://developer.valvesoftware.com/wiki/Setup_mod_on_steam
 
 ## Server instructions
-### Server Ops
-#### Dedicated Server on Linux
-These instructions have been written with a Debian 12 machine in mind, but they should work for other systems as well.
-1. Install SteamCMD following these instructions: [LINK](https://developer.valvesoftware.com/wiki/SteamCMD#Linux)
-2. Decide on a location you'd like to install the server to, for example, `/home/<username>/neoserver`, and create it.
-3. Run SteamCMD: `steamcmd`
+
+### Hosting from the client - Steam Networking
+Since the TF2-SDK/64-bit update, NT;RE has Steam Networking support, meaning hosting an online server is
+as easy as doing: `"Create Server" -> "Start"`. Just make sure "Use Steam networking" is set to "Enabled" and
+alter the relevant configurations.
+
+### Dedicated server hosting
+
+These instructions have been written for and tested on Debian 12 and Arch for Linux, and Windows Server 2016 and Windows 11 for Windows, but should work with a fairly up to date Linux and Windows systems as well.
+
+#### Downloading server files - SteamCMD
+
+> [!TIP]
+> Server operators should always use the SteamCMD setup, otherwise if doing quick tests or developing and have Steam installed, you can just install "Source SDK Base 2013 Dedicated Server" (appid 244310) from Steam and assuming you've already have NT;RE client setup can skip the SteamCMD steps. Any instructions referring to `<YOUR_LOCATION>/ntrebuild` will instead use: `<PATH_TO_STEAM>/common/Source SDK Base 2013 Dedicated Server`.
+
+> [!WARNING]
+> As of the TF2-SDK update, if trying to use the dedicated server downloaded from Steam but not through the detailed SteamCMD instructions, Linux will fail to find the files necessary to startup a working server. Just follow the SteamCMD server setup instructions for now.
+
+1. Install SteamCMD following these instructions: [LINK](https://developer.valvesoftware.com/wiki/SteamCMD#Downloading_SteamCMD)
+2. Choose a location you'd like to install the server to, for example on Linux: `/home/<username>/neoserver` or on Windows: `C:\NeotokyoServer\`, and create it. **This will be referred as `<YOUR_LOCATION>` in the later instructions. Also for Windows, replace `/` with `\` as directories separators.**
+3. Run SteamCMD: `steamcmd`/`steamcmd.exe`
 4. Enter the following commands in SteamCMD (Note that you need to use an absolute path for the install dir):
     ```
-    force_install_dir <YOUR_LOCATION>/ognt/
+    force_install_dir <YOUR_LOCATION>/NEOTOKYO/
     login anonymous
     app_update 313600 validate
     (wait for it to install)
@@ -161,116 +176,105 @@ These instructions have been written with a Debian 12 machine in mind, but they 
     (wait for it to install)
     quit
     ```
-6. Make a symlink for original NEOTOKYO so that NT;RE can find it's assets:
-
-    Run the following command as root:
-    ```
-    ln -s <YOUR_LOCATION>/ognt /usr/share/neotokyo
-    ```
-    It should now be possible to access `/usr/share/neotokyo/NeotokyoSource`.
-   
-    This is the only command that needs root, so you can logout from root.
-8. Make a symlink so that Src2013 dedicated server can see SteamCMD's binaries:
-
-    (NOTE: I'm NOT sure if this is how it is on other systems other than Debian 12, so please, check first if you have `~/.steam/sdk32` before running these! If you have Desktop Steam installed, then you should have this directory, but it doesn't seem to be the case with SteamCMD, which is why we need to do this.)
-    ```
-    ln -s ~/.steam/steam/steamcmd/linux32 ~/.steam/sdk32
-    ```
-9. For firewall, open the following ports:
-    * 27015 TCP+UDP (you can keep the TCP port closed if you don't need RCON support)
-    * 27020 UDP
-    * 27005 UDP
-    * 26900 UDP
-10. `cd` into `<YOUR_LOCATION>/ntrebuild/bin`.
-11. Run these commands to make symlinks for needed files:
-    ```
-    ln -s vphysics_srv.so vphysics.so;
-    ln -s studiorender_srv.so studiorender.so;
-    ln -s soundemittersystem_srv.so soundemittersystem.so;
-    ln -s shaderapiempty_srv.so shaderapiempty.so;
-    ln -s scenefilecache_srv.so scenefilecache.so;
-    ln -s replay_srv.so replay.so;
-    ln -s materialsystem_srv.so materialsystem.so;
-    ```
-12. Run the following command to rename a file that is incompatible with NT;RE:
-     ```
-     mv libstdc++.so.6 libstdc++.so.6.bak
-     ```
-13. `cd` up a folder, so that you will be in `<YOUR_LOCATION>/ntrebuild`.
-14. Extract the latest release of NT;RE into `<YOUR_LOCATION>/ntrebuild`, so you will have a directory `<YOUR_LOCATION>/ntrebuild/neo` with a `gameinfo.txt` inside.
-
-Now you have a dedicated server setup for NT;RE. To run it, you will need to be in the `<YOUR_LOCATION>/ntrebuild` directory and run `srcds_run` with whatever arguments. You can adapt the following command to your own liking:
-```
-./srcds_run +sv_lan 0 -insecure -console -game neo +ip <YOUR_IP> -maxplayers <1-32> +map <MAP_NAME>
-```
-#### Dedicated Server on Windows
-These instructions were tested on Windows Server 2016 and Windows 11 machines, they will probably work in all Windows versions.
-1. Install SteamCMD following these instructions: [LINK](https://developer.valvesoftware.com/wiki/SteamCMD#Windows)
-2. Choose a location for your server to be installed into, for example, `C:\NeotokyoServer\`, and create it. (In this case SteamCMD is also installed in this location)
-3. Run SteamCMD: `steamcmd.exe`
-4. Enter the following commands in SteamCMD:
-    ```
-    force_install_dir .\ognt\
-    login anonymous
-    app_update 313600 validate
-    (wait for it to install)
-    quit
-    ```
-5. Run SteamCMD again, and enter these commands:
-    ```
-    force_install_dir .\ntrebuild\
-    (this will be the main directory of your server)
-    login anonymous
-    app_update 244310 validate
-    (wait for it to install)
-    quit
-    ```
-6. Extract the latest release of NT;RE into `<YOUR_LOCATION>\ntrebuild`, so you will have a directory `<YOUR_LOCATION>\ntrebuild\neo` with a `gameinfo.txt` inside.
-7. Allow all Inbound and Outbound TCP and UDP requests for the following ports via Windows Firewall. [See how](https://learn.microsoft.com/en-us/windows/security/operating-system-security/network-security/windows-firewall/configure#create-an-inbound-port-rule)
-    * 27015 TCP+UDP (you can keep the TCP port closed if you don't need RCON support)
-    * 27020 UDP
-    * 27005 UDP
-    * 26900 UDP
-8. Your server should be ready to go, launch it inside your main directory (`(...)\ntrebuild\`) with the following command: (You can alter any argument to your liking, except `-game` and `-neopath`) 
-```
-srcds.exe -game neo -neopath "..\ognt\NeotokyoSource" +ip <YOUR_IP> -maxplayers <1-32> +map <MAP_NAME>
-```
-
-### Testers/Devs
-1. To run a server, install "Source SDK Base 2013 Dedicated Server" (appid 244310).
-2. For firewall, open the following ports:
-    * 27015 TCP+UDP (you can keep the TCP port closed if you don't need RCON support)
-    * 27020 UDP
-    * 27005 UDP
-    * 26900 UDP
-3. After it installed, go to the install directory in CMD, should see:
-    * Windows: `srcds.exe`
-    * Linux: `srcds_linux`
-        * You'll also see `srcds_run` but that doesn't work properly with NT;RE so ignore it
-4. Optional: Link or copy over neo, otherwise `-game <path_to_source>/game/neo` can be used also:
-    * Windows: `mklink /J neo "<path_to_source>/game/neo"`
+6. The distribution of the dedicated servers currently misplaced a few files:
     * Linux:
-        * Non-persistent bind mount: `mkdir neo && sudo mount --bind <path_to_source>/game/neo neo`
-        * Or just copy over or use the directory directly
-5. Linux-only: Symlink the names in `<PATH_TO_STEAM>/common/Source SDK Base 2013 Dedicated Server/bin` directory:
-```
-ln -s vphysics_srv.so vphysics.so;
-ln -s studiorender_srv.so studiorender.so;
-ln -s soundemittersystem_srv.so soundemittersystem.so;
-ln -s shaderapiempty_srv.so shaderapiempty.so;
-ln -s scenefilecache_srv.so scenefilecache.so;
-ln -s replay_srv.so replay.so;
-ln -s materialsystem_srv.so materialsystem.so;
-```
-6. Linux-only: Before running `srcds_linux`, some few environment variables need to setup:
-    * `SteamEnv=1`
-    * `LD_LIBRARY_PATH=$(<STEAM-RUNTIME-DIR>/run.sh printenv LD_LIBRARY_PATH):/home/YOUR_USER/.steam/steam/steamapps/Source SDK Base 2013 Dedicated Server/bin`
-        * Where `<STEAM-RUNTIME-DIR>` can be found from: `$ find "$HOME" -type d -name 'steam-runtime' 2> /dev/null`
-7. Run: `<srcds.exe|srcds_linux> +sv_lan 0 -insecure -game neo +map <some map> +maxplayers 24 -autoupdate -console`
-    * Double check on the log that VAC is disabled before continuing
-7. In-game on Windows it'll showup in the server list, on Linux it probably won't and you'll have to use `connect` command directly (EX: `connect 192.168.1.###` for LAN server)
+      ```
+      srcds_linux64
+      srcds_run_64 # NOTE - Only TF2's dedicated server have this script
+      bin/linux64/libsteam_api.so
+      ```
+    * Windows:
+      ```
+      srcds_win64.exe
+      ```
+
+    You may either fetch them from the Source SDK 2013 Multiplayer client (appid 243750) or TF2's Dedicated Server (appid 232250).
+    Once they're fetched, place them in the `<YOUR_LOCATION>/ntrebuild` directory.
+
+#### Linux-only additional instructions
+1. **Linux only:** Make a symlink so that Src2013 dedicated server can see SteamCMD's binaries:
+
+    (NOTE: I'm NOT sure if this is how it is on other systems other than Debian 12, so please, check first if you have `~/.steam/sdk64` before running these! If you have Desktop Steam installed, then you should have this directory, but it doesn't seem to be the case with SteamCMD, which is why we need to do this.)
+    ```
+    ln -s ~/.steam/steam/steamcmd/linux64 ~/.steam/sdk64
+    ```
+2. **Linux only:** Change directory into `<YOUR_LOCATION>/ntrebuild/bin/linux64` then run these commands to make symlinks for needed files:
+    ```
+    ln -s datacache_srv.so datacache.so;
+    ln -s dedicated_srv.so dedicated.so;
+    ln -s engine_srv.so engine.so;
+    ln -s libtier0_srv.so libtier0.so;
+    ln -s libvstdlib_srv.so libvstdlib.so;
+    ln -s materialsystem_srv.so materialsystem.so;
+    ln -s replay_srv.so replay.so;
+    ln -s scenefilecache_srv.so scenefilecache.so;
+    ln -s shaderapiempty_srv.so shaderapiempty.so;
+    ln -s soundemittersystem_srv.so soundemittersystem.so;
+    ln -s studiorender_srv.so studiorender.so;
+    ln -s vphysics_srv.so vphysics.so;
+    ln -s vscript_srv.so vscript.so;
+    ```
+3. `cd` up directories twice, so that you will be in `<YOUR_LOCATION>/ntrebuild`.
+
+#### Extracting NT;RE and editing gameinfo.txt
+1. Extract the latest release of NT;RE into `<YOUR_LOCATION>/ntrebuild`, so you will have a directory `<YOUR_LOCATION>/ntrebuild/neo` with a `gameinfo.txt` inside.
+2. Open up gameinfo.txt with your text editor and comment out `|appid_244630|` line and un-comment `|gameinfo_path|../../NEOTOKYO/NeotokyoSource` line. This is to ensure OG:NT mounting works properly with srcds.
+
+##### Developer-only: Mounting NT;RE
+If you're developing and just testing the server, it may be more useful to mount it to your `game/neo` from the git checkout.
+
+* Windows: `mklink /J neo "<path_to_source>/game/neo"`
+* Linux: Non-persistent bind mount: `mkdir neo && sudo mount --bind <path_to_source>/game/neo neo`
+
+Or just use the directory directly when passing to the srcds command line arguments: `-game <path_to_source>/game/neo`.
+
+#### Exposing the server to the wider internet
+
+There are two ways on exposing your dedicated server to the wider internet: Steam Networking and Port forwarding.
+Steam Networking is recommended as it doesn't expose your server directly, however if you need a persistent IP address,
+OK with showing public IP address and ports, or/and don't want to route through Valve's servers, then port forwarding is still available.
+
+##### Steam Networking
+
+Since the TF2-SDK update, NT;RE gained the ability to use "Steam Networking" which can be useful in situations where:
+
+* You cannot setup port forwarding or/and altering firewall settings
+* You don't want to expose the server's IP address and device directly
+
+Just add `+sv_use_steam_networking 1` to the `srcds` command line arguments to use Steam Networking for your dedicated server.
+
+##### Firewall - Port forwarding
+* Open the following ports:
+    * 27015 TCP+UDP (you can keep the TCP port closed if you don't need RCON support)
+    * 27020 UDP
+    * 27005 UDP
+    * 26900 UDP
+* **Windows-only:** Allow all Inbound and Outbound TCP and UDP requests for the given ports via Windows Firewall. [See how](https://learn.microsoft.com/en-us/windows/security/operating-system-security/network-security/windows-firewall/configure#create-an-inbound-port-rule)
+
+#### Running the server
+You will need to be in the `<YOUR_LOCATION>/ntrebuild` directory and run `srcds_win64`/`srcds_run_64`/`srcds_linux64` with whatever arguments. You can adapt the following command to your own liking:
+
+* Windows:
+    ```
+    srcds_win64.exe -game neo +sv_lan 0 -insecure +ip <YOUR_IP> -maxplayers <1-32> +map <MAP_NAME>
+    ```
+* Linux with `srcds_run_64` script:
+    ```
+    ./srcds_run_64 -game neo +sv_lan 0 -insecure -console +ip <YOUR_IP> -maxplayers <1-32> +map <MAP_NAME>
+    ```
+* Linux with `srcds_linux64` directly:
+    1. Before running `srcds_linux64`, some few environment variables need to setup:
+        * `SteamEnv=1`
+        * `LD_LIBRARY_PATH="<YOUR_LOCATION>/ntrebuild/bin/linux64"` - So it can find the server libraries
+    2. Run: `srcds_linux64 -game neo +sv_lan 0 -insecure -console +map <some map> +maxplayers 24`
+        * In-game it probably won't showup in the server list and you'll have to use `connect` command directly (EX: `connect 192.168.1.###` for LAN server)
+
+If using `-insecure` and intend to playtest without VAC for debugging purposes, double check on the log that VAC is disabled before continuing.
 
 ### SourceMod server modification plugins
+> [!WARNING]
+> As of the TF2-SDK update, sourcemod is broken until metamod patches and updated for the 64-bit SDK update
+
 [SourceMod](https://www.sourcemod.net/) plugins should generally work with NT;RE, however they have to be added to the `ShowMenu` whitelist to make the menu display properly. To do this:
 1. Go to directory `addons/sourcemod/gamedata/core.games` where you should find `common.games.txt`
 2. Create the directory `custom` and make a copy of `common.games.txt` into it

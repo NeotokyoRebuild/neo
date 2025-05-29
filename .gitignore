@@ -21,7 +21,10 @@ out
 /game/neo/particles
 /game/neo/shaders
 /game/neo/models
-game/neo/materials/temp
+/game/neo/materials/temp
+/game/neo/resource/*.sfd
+/game/neo/resource/*.ttf
+/game/neo/sound
 
 # Use -f to override it
 *.vmt
@@ -676,3 +679,6 @@ FodyWeavers.xsd
 /mp
 
 /game/neo/cache/DownloadCache.db
+/game/neo/lights.rad
+/game/neo/rebuild.fgd
+/game/neo/detail.vbsp

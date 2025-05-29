@@ -42,7 +42,7 @@ public:
 
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { return NEO_WEP_FRAG_GRENADE | NEO_WEP_THROWABLE | NEO_WEP_EXPLOSIVE; }
 
-	virtual float GetSpeedScale(void) const { return 1.0; }
+	virtual float GetSpeedScale(void) const OVERRIDE { return 0.85f; }
 
 	void	Precache(void);
 	void	PrimaryAttack(void);
@@ -51,6 +51,8 @@ public:
 
 	bool	Deploy(void);
 	bool	Holster(CBaseCombatWeapon *pSwitchingTo = NULL);
+
+	virtual float GetFastestDryRefireTime() const { return 1.f; } // is called if attack button spammed, doesn't really mean much for grenades
 
 	bool	Reload(void);
 

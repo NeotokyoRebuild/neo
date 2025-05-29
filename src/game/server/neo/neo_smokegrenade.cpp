@@ -26,9 +26,8 @@ DEFINE_THINKFUNC(DelayThink),
 DEFINE_INPUTFUNC(FIELD_FLOAT, "SetTimer", InputSetTimer),
 END_DATADESC()
 
-ConVar sv_neo_smoke_bloom_duration("sv_neo_smoke_bloom_duration", "15", FCVAR_CHEAT, "How long should the smoke bloom be up, in seconds.", true, 0.0, true, 60.0);
-ConVar sv_neo_smoke_bloom_radius("sv_neo_smoke_bloom_radius", "256", FCVAR_CHEAT, "Size of the smoke bloom radius, in Hammer units.", true, 1.0, true, 2048.0);
-ConVar sv_neo_smoke_bloom_layers("sv_neo_smoke_bloom_layers", "5", FCVAR_CHEAT, "Amount of smoke layers atop each other.", true, 0.0, true, 32.0);
+ConVar sv_neo_smoke_bloom_duration("sv_neo_smoke_bloom_duration", "25", FCVAR_CHEAT, "How long should the smoke bloom be up, in seconds.", true, 0.0, true, 60.0);
+ConVar sv_neo_smoke_bloom_layers("sv_neo_smoke_bloom_layers", "2", FCVAR_CHEAT, "Amount of smoke layers atop each other.", true, 0.0, true, 32.0);
 extern ConVar sv_neo_grenade_cor;
 extern ConVar sv_neo_grenade_gravity;
 extern ConVar sv_neo_grenade_friction;
@@ -154,7 +153,9 @@ void CNEOGrenadeSmoke::SetupParticles(size_t number)
 			VectorNormalize(vForward);
 
 			ptr->SetLocalOrigin(GetLocalOrigin());
-			ptr->SetFadeTime((sv_neo_smoke_bloom_duration.GetFloat() - 5), sv_neo_smoke_bloom_duration.GetFloat());
+			constexpr int smokeFadeStartTime = 17;
+			constexpr int smokeFadeEndTime = 25;
+			ptr->SetFadeTime(smokeFadeStartTime, smokeFadeEndTime);
 			ptr->Activate();
 			ptr->SetLifetime(sv_neo_smoke_bloom_duration.GetFloat()); // This call passes on responsibility for the memory to the particle thinkfunc
 			ptr->FillVolume();

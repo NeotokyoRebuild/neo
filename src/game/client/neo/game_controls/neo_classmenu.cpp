@@ -37,6 +37,7 @@
 #include <imapoverview.h>
 #include <shareddefs.h>
 #include "neo_gamerules.h"
+#include "ui/neo_root.h"
 #include <igameresources.h>
 
 #include <vgui/MouseCode.h>
@@ -127,10 +128,10 @@ void CNeoClassMenu::FindButtons()
 	m_pSkin1_Button = FindControl<Button>("Skin1_Button");
 	m_pSkin2_Button = FindControl<Button>("Skin2_Button");
 	m_pSkin3_Button = FindControl<Button>("Skin3_Button");
-	m_pRecon_Button = FindControl<Button>("Scout_Button");
-	m_pAssault_Button = FindControl<Button>("Assault_Button");
-	m_pSupport_Button = FindControl<Button>("Heavy_Button");
-	m_pBack_Button = FindControl<Button>("Back_Button");
+	m_pRecon_Button = FindControl<CNeoButton>("Scout_Button");
+	m_pAssault_Button = FindControl<CNeoButton>("Assault_Button");
+	m_pSupport_Button = FindControl<CNeoButton>("Heavy_Button");
+	m_pBack_Button = FindControl<CNeoButton>("Back_Button");
 
 	UpdateSkinImages(-1);
 }
@@ -145,7 +146,7 @@ void CNeoClassMenu::CommandCompletion()
 	SetControlEnabled("Skin3_Button", false);
 	SetControlEnabled("Back_Button", false);
 
-	SetVisible(false);
+	ShowPanel(false);
 	SetEnabled(false);
 
 	SetMouseInputEnabled(false);
@@ -184,7 +185,6 @@ void CNeoClassMenu::OnCommand(const char *command)
 	{ // Picking variant, move onto loadout selection screen
 		engine->ClientCmd(command);
 		ChangeMenu("loadoutmenu");
-		engine->ClientCmd("loadoutmenu");
 		return;
 	}
 
@@ -192,7 +192,6 @@ void CNeoClassMenu::OnCommand(const char *command)
 	{ // Going back
 		engine->ClientCmd(command);
 		ChangeMenu("teammenu");
-		engine->ClientCmd("teammenu");
 		return;
 	}
 }
@@ -200,51 +199,42 @@ void CNeoClassMenu::OnCommand(const char *command)
 void CNeoClassMenu::ChangeMenu(const char* menuName = NULL)
 {
 	CommandCompletion();
-	ShowPanel(false);
-	C_NEO_Player* player = C_NEO_Player::GetLocalNEOPlayer();
-	if (player)
+	if (!menuName)
 	{
-		if (menuName == NULL)
-		{
-			return;
-		}
-		if (Q_stricmp(menuName, "teammenu") == 0)
-		{
-			engine->ClientCmd(menuName);
-		}
+		return;
 	}
-	else
+	if (Q_stricmp(menuName, "teammenu") == 0 && NEORules()->GetForcedTeam() < 0)
 	{
-		Assert(false);
+		engine->ClientCmd(menuName);
+	}
+	if (Q_stricmp(menuName, "loadoutmenu") == 0 && NEORules()->GetForcedWeapon() < 0)
+	{
+		engine->ClientCmd(menuName);
 	}
 }
 
 void CNeoClassMenu::OnKeyCodeReleased(vgui::KeyCode code)
 {
-	switch (code) {
-	case 93: // F2 - Close the menu
+	if (code == g_pNeoRoot->m_ns.keys.bcClassMenu)
+	{
 		ChangeMenu(NULL);
-		break;
-	case 2: // 1 - Pick Recon and go straight to loadout
+		return;
+	}
+
+	switch (code) {
+	case KEY_1:
 		UpdateSkinImages(0);
 		engine->ClientCmd("setclass 1");
-		/*engine->ClientCmd("loadoutmenu");		NEO FIXME If player picking loadout with keyboard probably doesn't care about skin should go straight to loadout menu but loadout menu opens before player class and even player wanted class updates resulting in missmatch of showed loadout. Should edit loadoutmenu command to take class parameter? Can't think of case where player picked class isn't accepted unless using max players per class plugin
-		ChangeMenu("loadoutmenu");*/
 		break;
-	case 3: // 2 - Pick Assault and go straight to loadout
+	case KEY_2:
 		UpdateSkinImages(1);
 		engine->ClientCmd("setclass 2");
-		/*engine->ClientCmd("loadoutmenu");		NEO FIXME ==
-		ChangeMenu("loadoutmenu");*/
 		break;
-	case 4: // 3 - Pick Support and go straight to loadout
+	case KEY_3:
 		UpdateSkinImages(2);
 		engine->ClientCmd("setclass 3");
-		/*engine->ClientCmd("loadoutmenu");		NEO FIXME ==
-		ChangeMenu("loadoutmenu");*/
 		break;
-	case 65: // Spacebar - Continue with currently selected class and skin (player is initialised with a default class and skin. If not need to set one here)
-		engine->ClientCmd("loadoutmenu");
+	case KEY_SPACE: // Continue with currently selected class and skin
 		ChangeMenu("loadoutmenu");
 		break;
 	}

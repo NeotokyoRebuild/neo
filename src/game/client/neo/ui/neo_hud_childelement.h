@@ -4,6 +4,8 @@
 #pragma once
 #endif
 
+#include "neo_gamerules.h"
+
 class C_NEO_Player;
 
 #define NEO_HUD_ELEMENT_FREQ_CVAR_NAME(Name) cl_neo_hud_ ## Name ## _update_freq
@@ -19,7 +21,7 @@ class C_NEO_Player;
 #define NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(HudElementId, DefaultUpdateFrequencyInSeconds) ConVar NEO_HUD_ELEMENT_FREQ_CVAR_NAME(HudElementId)(xstr(NEO_HUD_ELEMENT_FREQ_CVAR_NAME(HudElementId)), #DefaultUpdateFrequencyInSeconds, NEO_HUD_ELEMENT_FREQ_CVAR_FLAGS, NEO_HUD_ELEMENT_FREQ_CVAR_DESCRIPTION, NEO_HUD_ELEMENT_FREQ_CVAR_MINMAX_PARMS); \
 	ConVar* CNEOHud_ ## HudElementId::GetUpdateFrequencyConVar() const { return &NEO_HUD_ELEMENT_FREQ_CVAR_NAME(HudElementId); }
 
-extern ConVar neo_cl_hud_ammo_enabled;
+extern ConVar cl_neo_hud_ammo_enabled;
 
 class CNEOHud_ChildElement
 {
@@ -53,7 +55,7 @@ protected:
 
 	void PaintNeoElement()
 	{
-		if (!engine->IsDrawingLoadingImage() && !engine->IsLevelMainMenuBackground())
+		if (!engine->IsDrawingLoadingImage() && !engine->IsLevelMainMenuBackground() && !(NEORules()->GetHiddenHudElements() & m_iHideHudElementNumber))
 		{
 			if (ShouldUpdateYet())
 			{
@@ -91,6 +93,7 @@ protected:
 	}
 
 	static int GetMargin();
+	int m_iHideHudElementNumber = NEO_HUD_ELEMENT_INVALID;
 
 private:
 	float GetUpdateFrequency() const { return GetUpdateFrequencyConVar()->GetFloat(); }

@@ -1,0 +1,45 @@
+// sound design and scripting by filterdecay@hotmail.com
+//--------------------------------------- version 3 
+// Place Forest folder in NeotokyoSource/sound
+// place this script file in your scripts folder
+
+"nt_sentinel_ctg.outdoors"
+
+//
+//---------------------------------------
+//wind loop
+
+
+{
+	
+	
+	"dsp"	"0"
+	"playlooping"
+	{
+		"volume"	"1"
+		"pitch"		"100"
+		"wave"		"skylines.wav"
+	}
+	
+	
+
+}
+
+
+"nt_sentinel_ctg.indoors"
+
+
+//
+//---------------------------------------
+//ambient loop
+
+{
+
+	"dsp"	"0"
+	"playlooping"
+	{
+		"volume"	".3"
+		"pitch"		"100"
+		"wave"		"office/ambience.wav"
+	}
+}

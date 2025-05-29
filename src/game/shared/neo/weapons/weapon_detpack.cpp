@@ -152,7 +152,7 @@ void CWeaponDetpack::PrimaryAttack(void)
 #endif
 		SendWeaponAnim(ACT_VM_PRIMARYATTACK_DEPLOYED);
 		pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
-		m_flNextPrimaryAttack = gpGlobals->curtime + (SequenceDuration() / 3);
+		m_flNextPrimaryAttack = gpGlobals->curtime + (SequenceDuration() * 0.5);
 		m_flTimeWeaponIdle = FLT_MAX;
 	}
 	else
@@ -165,8 +165,9 @@ void CWeaponDetpack::PrimaryAttack(void)
 			DevMsg("Preparing primary attack\n");
 #endif
 			SendWeaponAnim(ACT_VM_PRIMARYATTACK);
+			m_bLowered = false;
 			m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
-			m_flTimeWeaponIdle = FLT_MAX;
+			m_flTimeWeaponIdle = gpGlobals->curtime + SequenceDuration();
 		}
 	}
 }
@@ -212,6 +213,10 @@ void CWeaponDetpack::ItemPostFrame(void)
 						{
 							pOwner->Weapon_Drop(this);
 						}
+						else
+						{
+							pOwner->GetActiveWeapon()->SendWeaponAnim(ACT_VM_DRAW);
+						}
 					}
 				}
 				UTIL_Remove(this);
@@ -224,20 +229,11 @@ void CWeaponDetpack::ItemPostFrame(void)
 			{
 				if (gpGlobals->curtime > m_flNextPrimaryAttack)
 				{
-					TossDetpack(ToBasePlayer(pOwner));
 					m_bThisDetpackHasBeenThrown = true;
+					TossDetpack(ToBasePlayer(pOwner));
 					pOwner->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
-					// SendWeaponAnim(ACT_VM_DRAW_DEPLOYED);
-					// SendWeaponAnim(ACT_VM_THROW);
 					m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
 					m_fDrawbackFinished = false;
-				}
-			}
-			else
-			{
-				if (gpGlobals->curtime > m_flNextPrimaryAttack)
-				{
-					SendWeaponAnim(ACT_VM_IDLE_DEPLOYED);
 				}
 			}
 		}
@@ -299,7 +295,7 @@ void CWeaponDetpack::TossDetpack(CBasePlayer* pPlayer)
 
 	vecSrc += vForward * 16;
 
-	Vector vecThrow = vForward * flVel + pPlayer->GetAbsVelocity();
+	Vector vecThrow = pPlayer->GetAbsVelocity();
 	m_pDetpack = static_cast<CNEODeployedDetpack*>(NEODeployedDetpack_Create(vecSrc, vec3_angle, vecThrow, AngularImpulse(600, random->RandomInt(-1200, 1200), 0), pPlayer));
 
 	if (m_pDetpack)
@@ -312,7 +308,17 @@ void CWeaponDetpack::TossDetpack(CBasePlayer* pPlayer)
 		Assert(false);
 	}
 #endif
-	SendWeaponAnim(ACT_VM_DRAW_DEPLOYED);
+	if (GetOwner()->IsPlayer()) // NEO NOTE (Adam) if else taken from CBaseCombatWeapon::Equip, this must be what was fixing the viewmodel previously after dropping and picking up the detremote
+	{
+		SetModel(GetViewModel());
+	}
+	else
+	{
+		SetModel(GetWorldModel());
+	}
+	Precache();
+	DefaultDeploy((char*)GetViewModel(), (char*)GetModel(), ACT_VM_DRAW_DEPLOYED, (char*)GetAnimPrefix());
+
 	pPlayer->SetAnimation(PLAYER_ATTACK1);
 }
 

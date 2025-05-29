@@ -21,8 +21,15 @@
 #ifdef GLOWS_ENABLE
 
 #ifdef NEO
+extern ConVar mp_forcecamera;
 static void glowOutlineEffectToggleCallBack(IConVar* var, const char* pOldValue, float flOldValue)
 {
+	if (!flOldValue && GetLocalPlayerTeam() != TEAM_SPECTATOR && mp_forcecamera.GetInt() != OBS_ALLOW_ALL)
+	{
+		var->SetValue(false);
+		return;
+	}
+
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
 		if (auto player = UTIL_PlayerByIndex(i))

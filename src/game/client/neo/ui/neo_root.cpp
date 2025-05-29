@@ -20,11 +20,13 @@
 #include "tier1/interface.h"
 #include <ctime>
 #include "ui/neo_loading.h"
+#include "ui/neo_utils.h"
 #include "neo_gamerules.h"
 #include "neo_misc.h"
 
 #include <vgui/IInput.h>
 #include <vgui_controls/Controls.h>
+#include <stb_image.h>
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -38,20 +40,25 @@
 
 using namespace vgui;
 
+bool IsInGame()
+{
+	return (engine->IsInGame() && !engine->IsLevelMainMenuBackground());
+}
+
 // See interface.h/.cpp for specifics:  basically this ensures that we actually Sys_UnloadModule
 // the dll and that we don't call Sys_LoadModule over and over again.
 static CDllDemandLoader g_GameUIDLL("GameUI");
 
 extern ConVar neo_name;
 extern ConVar cl_onlysteamnick;
-extern ConVar neo_cl_streamermode;
+extern ConVar cl_neo_streamermode;
 extern ConVar neo_clantag;
 
 CNeoRoot *g_pNeoRoot = nullptr;
 void NeoToggleconsole();
 extern CNeoLoading *g_pNeoLoading;
 inline NeoUI::Context g_uiCtx;
-inline ConVar neo_cl_toggleconsole("neo_cl_toggleconsole", "0", FCVAR_ARCHIVE,
+inline ConVar cl_neo_toggleconsole("cl_neo_toggleconsole", "1", FCVAR_ARCHIVE,
 								   "If the console can be toggled with the ` keybind or not.", true, 0.0f, true, 1.0f);
 inline int g_iRowsInScreen;
 
@@ -111,7 +118,7 @@ CNeoRootInput::CNeoRootInput(CNeoRoot *rootPanel)
 {
 	MakePopup(true);
 	SetKeyBoardInputEnabled(true);
-	SetMouseInputEnabled(false);
+	SetMouseInputEnabled(true);
 	SetVisible(true);
 	SetEnabled(true);
 	PerformLayout();
@@ -119,8 +126,10 @@ CNeoRootInput::CNeoRootInput(CNeoRoot *rootPanel)
 
 void CNeoRootInput::PerformLayout()
 {
+	int iScrWide, iScrTall;
+	vgui::surface()->GetScreenSize(iScrWide, iScrTall);
 	SetPos(0, 0);
-	SetSize(1, 1);
+	SetSize(iScrWide, iScrTall);
 	SetBgColor(COLOR_TRANSPARENT);
 	SetFgColor(COLOR_TRANSPARENT);
 }
@@ -133,6 +142,31 @@ void CNeoRootInput::OnKeyCodeTyped(vgui::KeyCode code)
 void CNeoRootInput::OnKeyTyped(wchar_t unichar)
 {
 	m_pNeoRoot->OnRelayedKeyTyped(unichar);
+}
+
+void CNeoRootInput::OnMousePressed(vgui::MouseCode code)
+{
+	m_pNeoRoot->OnRelayedMousePressed(code);
+}
+
+void CNeoRootInput::OnMouseReleased(vgui::MouseCode code)
+{
+	m_pNeoRoot->OnRelayedMouseReleased(code);
+}
+
+void CNeoRootInput::OnMouseDoublePressed(vgui::MouseCode code)
+{
+	m_pNeoRoot->OnRelayedMouseDoublePressed(code);
+}
+
+void CNeoRootInput::OnMouseWheeled(int delta)
+{
+	m_pNeoRoot->OnRelayedMouseWheeled(delta);
+}
+
+void CNeoRootInput::OnCursorMoved(int x, int y)
+{
+	m_pNeoRoot->OnRelayedCursorMoved(x, y);
 }
 
 void CNeoRootInput::OnThink()
@@ -165,13 +199,17 @@ void CNeoRootInput::OnThink()
 }
 
 constexpr WidgetInfo BTNS_INFO[BTNS_TOTAL] = {
-	{ "#GameUI_GameMenu_ResumeGame", "ResumeGame", STATE__TOTAL, FLAG_SHOWINGAME },
-	{ "#GameUI_GameMenu_FindServers", nullptr, STATE_SERVERBROWSER, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
-	{ "#GameUI_GameMenu_CreateServer", nullptr, STATE_NEWGAME, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
-	{ "#GameUI_GameMenu_Disconnect", "Disconnect", STATE__TOTAL, FLAG_SHOWINGAME },
-	{ "#GameUI_GameMenu_PlayerList", nullptr, STATE_PLAYERLIST, FLAG_SHOWINGAME },
-	{ "#GameUI_GameMenu_Options", nullptr, STATE_SETTINGS, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
-	{ "#GameUI_GameMenu_Quit", nullptr, STATE_QUIT, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
+	{ "#GameUI_GameMenu_ResumeGame", false, "ResumeGame", true, STATE__TOTAL, FLAG_SHOWINGAME },
+	{ "#GameUI_GameMenu_FindServers", false, nullptr, true, STATE_SERVERBROWSER, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
+	{ "#GameUI_GameMenu_CreateServer", false, nullptr, true, STATE_NEWGAME, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
+	{ "#GameUI_GameMenu_Disconnect", false, "Disconnect", true, STATE__TOTAL, FLAG_SHOWINGAME },
+	{ "#GameUI_GameMenu_PlayerList", false, nullptr, true, STATE_PLAYERLIST, FLAG_SHOWINGAME },
+	{ "", true, nullptr, true, STATE__TOTAL, FLAG_SHOWINMAIN },
+	{ "#GameUI_GameMenu_Tutorial", false, "sv_use_steam_networking 0; map ntre_class_tut", false, STATE__TOTAL, FLAG_SHOWINMAIN},
+	{ "#GameUI_GameMenu_FiringRange", false, "sv_use_steam_networking 0; map ntre_shooting_tut", false, STATE__TOTAL, FLAG_SHOWINMAIN},
+	{ "", true, nullptr, true, STATE__TOTAL, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
+	{ "#GameUI_GameMenu_Options", false, nullptr, true, STATE_SETTINGS, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
+	{ "#GameUI_GameMenu_Quit", false, nullptr, true, STATE_QUIT, FLAG_SHOWINGAME | FLAG_SHOWINMAIN },
 };
 
 CNeoRoot::CNeoRoot(VPANEL parent)
@@ -283,6 +321,8 @@ CNeoRoot::~CNeoRoot()
 
 	m_gameui = nullptr;
 	g_GameUIDLL.Unload();
+
+	NeoUI::FreeContext(&g_uiCtx);
 }
 
 IGameUI *CNeoRoot::GetGameUI()
@@ -299,7 +339,6 @@ void CNeoRoot::UpdateControls()
 		surface()->DrawSetTextFont(hdlFont);
 		surface()->GetTextSize(hdlFont, WSZ_GAME_TITLE2, m_iTitleWidth, m_iTitleHeight);
 	}
-	g_uiCtx.iActiveDirection = 0;
 	g_uiCtx.iActive = NeoUI::FOCUSOFF_NUM;
 	g_uiCtx.iActiveSection = -1;
 	V_memset(g_uiCtx.iYOffset, 0, sizeof(g_uiCtx.iYOffset));
@@ -345,10 +384,10 @@ void CNeoRoot::ApplySchemeSettings(IScheme *pScheme)
 		g_uiCtx.fonts[i].hdl = pScheme->GetFont(FONT_NAMES[i], true);
 	}
 
-	// In 1080p, g_uiCtx.iRowTall == 40, g_uiCtx.iMarginX = 10, g_iAvatar = 64,
+	// In 1080p, g_uiCtx.layout.iDefRowTall == 40, g_uiCtx.iMarginX = 10, g_iAvatar = 64,
 	// other resolution scales up/down from it
-	g_uiCtx.iRowTall = tall / 27;
-	g_iRowsInScreen = (tall * 0.85f) / g_uiCtx.iRowTall;
+	g_uiCtx.layout.iDefRowTall = tall / 27;
+	g_iRowsInScreen = (tall * 0.85f) / g_uiCtx.layout.iDefRowTall;
 	g_uiCtx.iMarginX = wide / 192;
 	g_uiCtx.iMarginY = tall / 108;
 	g_iAvatar = wide / 30;
@@ -356,15 +395,6 @@ void CNeoRoot::ApplySchemeSettings(IScheme *pScheme)
 	m_flWideAs43 = static_cast<float>(tall) * (4.0f / 3.0f);
 	if (m_flWideAs43 > flWide) m_flWideAs43 = flWide;
 	g_iRootSubPanelWide = static_cast<int>(m_flWideAs43 * 0.9f);
-
-	constexpr int PARTITION = GSIW__TOTAL * 4;
-	const int iSubDiv = g_iRootSubPanelWide / PARTITION;
-	g_iGSIX[GSIW_LOCKED] = iSubDiv * 2;
-	g_iGSIX[GSIW_VAC] = iSubDiv * 2;
-	g_iGSIX[GSIW_NAME] = iSubDiv * 10;
-	g_iGSIX[GSIW_MAP] = iSubDiv * 5;
-	g_iGSIX[GSIW_PLAYERS] = iSubDiv * 3;
-	g_iGSIX[GSIW_PING] = iSubDiv * 2;
 
 	UpdateControls();
 }
@@ -374,31 +404,31 @@ void CNeoRoot::Paint()
 	OnMainLoop(NeoUI::MODE_PAINT);
 }
 
-void CNeoRoot::OnMousePressed(vgui::MouseCode code)
+void CNeoRoot::OnRelayedMousePressed(vgui::MouseCode code)
 {
 	g_uiCtx.eCode = code;
 	OnMainLoop(NeoUI::MODE_MOUSEPRESSED);
 }
 
-void CNeoRoot::OnMouseReleased(vgui::MouseCode code)
+void CNeoRoot::OnRelayedMouseReleased(vgui::MouseCode code)
 {
 	g_uiCtx.eCode = code;
 	OnMainLoop(NeoUI::MODE_MOUSERELEASED);
 }
 
-void CNeoRoot::OnMouseDoublePressed(vgui::MouseCode code)
+void CNeoRoot::OnRelayedMouseDoublePressed(vgui::MouseCode code)
 {
 	g_uiCtx.eCode = code;
 	OnMainLoop(NeoUI::MODE_MOUSEDOUBLEPRESSED);
 }
 
-void CNeoRoot::OnMouseWheeled(int delta)
+void CNeoRoot::OnRelayedMouseWheeled(int delta)
 {
 	g_uiCtx.eCode = (delta > 0) ? MOUSE_WHEEL_UP : MOUSE_WHEEL_DOWN;
 	OnMainLoop(NeoUI::MODE_MOUSEWHEELED);
 }
 
-void CNeoRoot::OnCursorMoved(int x, int y)
+void CNeoRoot::OnRelayedCursorMoved(int x, int y)
 {
 	g_uiCtx.iMouseAbsX = x;
 	g_uiCtx.iMouseAbsY = y;
@@ -427,6 +457,14 @@ void CNeoRoot::OnTick()
 			pSbTab->m_bModified = false;
 		}
 	}
+	else if (m_state == STATE_SERVERDETAILS)
+	{
+		if (m_bSPlayersSortModified)
+		{
+			m_serverPlayers.UpdateSortedList();
+			m_bSPlayersSortModified = false;
+		}
+	}
 }
 
 void CNeoRoot::FireGameEvent(IGameEvent *event)
@@ -447,6 +485,9 @@ void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 	if (m_ns.keys.bcConsole <= KEY_NONE)
 	{
 		m_ns.keys.bcConsole = gameuifuncs->GetButtonCodeForBind("neo_toggleconsole");
+		m_ns.keys.bcTeamMenu = gameuifuncs->GetButtonCodeForBind("teammenu");
+		m_ns.keys.bcClassMenu = gameuifuncs->GetButtonCodeForBind("classmenu");
+		m_ns.keys.bcLoadoutMenu = gameuifuncs->GetButtonCodeForBind("loadoutmenu");
 	}
 
 	if (code == m_ns.keys.bcConsole && code != KEY_BACKQUOTE)
@@ -479,23 +520,26 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 	// Laading screen just overlays over the root, so don't render anything else if so
 	if (!m_bOnLoadingScreen)
 	{
-		static constexpr void (CNeoRoot:: * P_FN_MAIN_LOOP[STATE__TOTAL])(const MainLoopParam param) = {
-		&CNeoRoot::MainLoopRoot,			// STATE_ROOT
-		&CNeoRoot::MainLoopSettings,		// STATE_SETTINGS
-		&CNeoRoot::MainLoopNewGame,			// STATE_NEWGAME
-		&CNeoRoot::MainLoopServerBrowser,	// STATE_SERVERBROWSER
+		static constexpr void (CNeoRoot::*P_FN_MAIN_LOOP[STATE__TOTAL])(const MainLoopParam param) = {
+			&CNeoRoot::MainLoopRoot,			// STATE_ROOT
+			&CNeoRoot::MainLoopSettings,		// STATE_SETTINGS
+			&CNeoRoot::MainLoopNewGame,			// STATE_NEWGAME
+			&CNeoRoot::MainLoopServerBrowser,	// STATE_SERVERBROWSER
 
-		&CNeoRoot::MainLoopMapList,			// STATE_MAPLIST
-		&CNeoRoot::MainLoopServerDetails,	// STATE_SERVERDETAILS
-		&CNeoRoot::MainLoopPlayerList,		// STATE_PLAYERLIST
+			&CNeoRoot::MainLoopMapList,			// STATE_MAPLIST
+			&CNeoRoot::MainLoopServerDetails,	// STATE_SERVERDETAILS
+			&CNeoRoot::MainLoopPlayerList,		// STATE_PLAYERLIST
+			&CNeoRoot::MainLoopSprayPicker,		// STATE_SPRAYPICKER
+			&CNeoRoot::MainLoopSprayPicker,		// STATE_SPRAYDELETER
 
-		&CNeoRoot::MainLoopPopup,			// STATE_KEYCAPTURE
-		&CNeoRoot::MainLoopPopup,			// STATE_CONFIRMSETTINGS
-		&CNeoRoot::MainLoopPopup,			// STATE_QUIT
-		&CNeoRoot::MainLoopPopup,			// STATE_SERVERPASSWORD
-		&CNeoRoot::MainLoopPopup,			// STATE_SETTINGSRESETDEFAULT
+			&CNeoRoot::MainLoopPopup,			// STATE_KEYCAPTURE
+			&CNeoRoot::MainLoopPopup,			// STATE_CONFIRMSETTINGS
+			&CNeoRoot::MainLoopPopup,			// STATE_QUIT
+			&CNeoRoot::MainLoopPopup,			// STATE_SERVERPASSWORD
+			&CNeoRoot::MainLoopPopup,			// STATE_SETTINGSRESETDEFAULT
+			&CNeoRoot::MainLoopPopup,			// STATE_SPRAYDELETERCONFIRM
 		};
-		(this->*P_FN_MAIN_LOOP[m_state])(MainLoopParam{ .eMode = eMode, .wide = wide, .tall = tall });
+		(this->*P_FN_MAIN_LOOP[m_state])(MainLoopParam{.eMode = eMode, .wide = wide, .tall = tall});
 
 		if (m_state != ePrevState)
 		{
@@ -535,27 +579,43 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	g_uiCtx.dPanel.wide = (m_iTitleWidth) +iMargin;
 	g_uiCtx.dPanel.tall = param.tall;
 	g_uiCtx.dPanel.x = iBtnPlaceXMid - (m_iTitleWidth * 0.5) + (iTitleNWidth * 1.16) - iMarginHalf;
-	g_uiCtx.dPanel.y = 0;
-	g_uiCtx.iYOffset[0] = (iTitleMarginTop + (2 * iTitleNHeight)) / -g_uiCtx.iRowTall;
-	g_uiCtx.bgColor = COLOR_NEOPANELNORMALBG;
+	g_uiCtx.dPanel.y = iTitleMarginTop + (2 * iTitleNHeight);
+	g_uiCtx.bgColor = Color(0, 0, 0, 0);
+
+	vgui::surface()->DrawSetColor(COLOR_NEOPANELNORMALBG);
+	vgui::surface()->DrawFilledRect(g_uiCtx.dPanel.x, 0,
+									g_uiCtx.dPanel.x + g_uiCtx.dPanel.wide, param.tall);
 
 	NeoUI::BeginContext(&g_uiCtx, param.eMode, nullptr, "CtxRoot");
 	NeoUI::BeginSection(true);
 	{
+		g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
 		const int iFlagToMatch = IsInGame() ? FLAG_SHOWINGAME : FLAG_SHOWINMAIN;
 		for (int i = 0; i < BTNS_TOTAL; ++i)
 		{
 			const auto btnInfo = BTNS_INFO[i];
 			if (btnInfo.flags & iFlagToMatch)
 			{
+				if (btnInfo.isFake)
+				{
+					NeoUI::Pad();
+					continue;
+				}
 				const auto retBtn = NeoUI::Button(m_wszDispBtnTexts[i]);
 				if (retBtn.bPressed || (i == MMBTN_QUIT && !IsInGame() && NeoUI::Bind(KEY_ESCAPE)))
 				{
 					surface()->PlaySound("ui/buttonclickrelease.wav");
-					if (btnInfo.gamemenucommand)
+					if (btnInfo.command)
 					{
 						m_state = STATE_ROOT;
-						GetGameUI()->SendMainMenuCommand(btnInfo.gamemenucommand);
+						if (btnInfo.isMainMenuCommand)
+						{
+							GetGameUI()->SendMainMenuCommand(btnInfo.command);
+						}
+						else
+						{
+							engine->ClientCmd(btnInfo.command);
+						}
 					}
 					else if (btnInfo.nextState < STATE__TOTAL)
 					{
@@ -613,8 +673,10 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 		surface()->DrawSetTextPos(iBtnPlaceXMid - (m_iTitleWidth * 0.5) + (iTitleNWidth * 1.16), iTitleMarginTop + m_iTitleHeight);
 		surface()->DrawPrintText(L"G", SZWSZ_LEN(L"G"));
 		surface()->DrawSetTextFont(g_uiCtx.fonts[NeoUI::FONT_NTNORMAL].hdl);
+	}
 
 #if (0)	// NEO TODO (Adam) place the current player info in the top right corner maybe?
+	{
 		surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
 		ISteamUser *steamUser = steamapicontext->SteamUser();
 		ISteamFriends *steamFriends = steamapicontext->SteamFriends();
@@ -682,7 +744,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 				wchar_t wszStatusTotal[48];
 				const int iStatusTotalSize = V_swprintf_safe(wszStatusTotal, L"%ls%ls",
 								WSZ_PERSONA_STATES[static_cast<int>(eCurStatus)],
-								neo_cl_streamermode.GetBool() ? L" [Streamer mode on]" : L"");
+								cl_neo_streamermode.GetBool() ? L" [Streamer mode on]" : L"");
 				const int iStatusTextStartPosY = g_uiCtx.iMarginY + iMainTextHeight + g_uiCtx.iMarginY;
 
 				[[maybe_unused]] int iStatusWide;
@@ -697,8 +759,8 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 			const int iTextTotalTall = iMainTextHeight + iStatusTall;
 			iRightSideYStart += (g_uiCtx.iMarginX * 2) + ((iTextTotalTall > g_iAvatar) ? iTextTotalTall : g_iAvatar);
 		}
-#endif (0)
 	}
+#endif
 
 #if (0) // NEO TODO (Adam) some kind of drop down for the news section, better position the current server info etc.
 	g_uiCtx.dPanel.x = iRightXPos;
@@ -706,7 +768,6 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	if (IsInGame())
 	{
 		g_uiCtx.dPanel.wide = m_flWideAs43 * 0.7f;
-		g_uiCtx.flWgXPerc = 0.25f;
 	}
 	else
 	{
@@ -752,8 +813,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 		}
 	}
 	NeoUI::EndSection();
-#endif (0)
-	NeoUI::EndContext();
+#endif
 }
 
 void CNeoRoot::MainLoopSettings(const MainLoopParam param)
@@ -777,12 +837,12 @@ void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 
 	m_ns.iNextBinding = -1;
 
-	const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
+	const int iTallTotal = g_uiCtx.layout.iRowTall * (g_iRowsInScreen + 2);
 
 	g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
 	g_uiCtx.dPanel.x = (param.wide / 2) - (g_iRootSubPanelWide / 2);
 	g_uiCtx.dPanel.y = (param.tall / 2) - (iTallTotal / 2);
-	g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
+	g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall;
 	g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
 	NeoUI::BeginContext(&g_uiCtx, param.eMode, g_pNeoRoot->m_wszDispBtnTexts[MMBTN_OPTIONS], "CtxOptions");
 	{
@@ -794,8 +854,9 @@ void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 		if (!P_FN[m_ns.iCurTab].bUISectionManaged)
 		{
 			g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
-			g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * g_iRowsInScreen;
+			g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall * g_iRowsInScreen;
 			NeoUI::BeginSection(true);
+			NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
 		}
 		{
 			P_FN[m_ns.iCurTab].func(&m_ns);
@@ -805,38 +866,36 @@ void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 			NeoUI::EndSection();
 		}
 		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
-		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
+		g_uiCtx.dPanel.tall = g_uiCtx.layout.iDefRowTall;
 		NeoUI::BeginSection();
+		g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
+		NeoUI::SetPerRowLayout(5);
 		{
 			NeoUI::SwapFont(NeoUI::FONT_NTHORIZSIDES);
-			NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 5);
+			if (NeoUI::Button(L"Back (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
 			{
-				if (NeoUI::Button(L"Back (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
+				m_ns.bBack = true;
+			}
+			if (NeoUI::Button(L"Legacy").bPressed)
+			{
+				g_pNeoRoot->GetGameUI()->SendMainMenuCommand("OpenOptionsDialog");
+			}
+			if (NeoUI::Button(L"Default").bPressed)
+			{
+				m_state = STATE_SETTINGSRESETDEFAULT;
+				engine->GetVoiceTweakAPI()->EndVoiceTweakMode();
+			}
+			if (m_ns.bModified)
+			{
+				if (NeoUI::Button(L"Revert").bPressed)
 				{
-					m_ns.bBack = true;
+					NeoSettingsRestore(&m_ns);
 				}
-				if (NeoUI::Button(L"Legacy").bPressed)
+				if (NeoUI::Button(L"Accept").bPressed)
 				{
-					g_pNeoRoot->GetGameUI()->SendMainMenuCommand("OpenOptionsDialog");
-				}
-				if (NeoUI::Button(L"Default").bPressed)
-				{
-					m_state = STATE_SETTINGSRESETDEFAULT;
-					engine->GetVoiceTweakAPI()->EndVoiceTweakMode();
-				}
-				if (m_ns.bModified)
-				{
-					if (NeoUI::Button(L"Revert").bPressed)
-					{
-						NeoSettingsRestore(&m_ns);
-					}
-					if (NeoUI::Button(L"Accept").bPressed)
-					{
-						NeoSettingsSave(&m_ns);
-					}
+					NeoSettingsSave(&m_ns);
 				}
 			}
-			NeoUI::EndHorizontal();
 			NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 		}
 		NeoUI::EndSection();
@@ -866,16 +925,17 @@ void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 
 void CNeoRoot::MainLoopNewGame(const MainLoopParam param)
 {
-	const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
+	const int iTallTotal = g_uiCtx.layout.iRowTall * (g_iRowsInScreen + 2);
 	g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
 	g_uiCtx.dPanel.x = (param.wide / 2) - (g_iRootSubPanelWide / 2);
 	g_uiCtx.dPanel.y = (param.tall / 2) - (iTallTotal / 2);
-	g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * (g_iRowsInScreen + 1);
+	g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall * (g_iRowsInScreen + 1);
 	g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
 	NeoUI::BeginContext(&g_uiCtx, param.eMode, m_wszDispBtnTexts[MMBTN_CREATESERVER], "CtxNewGame");
 	{
 		NeoUI::BeginSection(true);
 		{
+			NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
 			if (NeoUI::Button(L"Map", m_newGame.wszMap).bPressed)
 			{
 				m_state = STATE_MAPLIST;
@@ -888,11 +948,12 @@ void CNeoRoot::MainLoopNewGame(const MainLoopParam param)
 		}
 		NeoUI::EndSection();
 		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
-		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
+		g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall;
 		NeoUI::BeginSection();
 		{
 			NeoUI::SwapFont(NeoUI::FONT_NTHORIZSIDES);
-			NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 5);
+			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
+			NeoUI::SetPerRowLayout(5);
 			{
 				if (NeoUI::Button(L"Back (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
 				{
@@ -933,7 +994,6 @@ void CNeoRoot::MainLoopNewGame(const MainLoopParam param)
 					m_state = STATE_ROOT;
 				}
 			}
-			NeoUI::EndHorizontal();
 			NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 		}
 		NeoUI::EndSection();
@@ -941,22 +1001,110 @@ void CNeoRoot::MainLoopNewGame(const MainLoopParam param)
 	NeoUI::EndContext();
 }
 
+static constexpr const wchar_t *SBLABEL_NAMES[GSIW__TOTAL] = {
+	L"Lock", L"VAC", L"Name", L"Map", L"Players", L"Ping",
+};
+static const int ROWLAYOUT_TABLESPLIT[GSIW__TOTAL] = {
+	8, 8, 40, 20, 12, -1
+};
+
+static void ServerBrowserDrawRow(const gameserveritem_t &server)
+{
+	int xPos = 0;
+	const int fontStartYPos = g_uiCtx.fonts[g_uiCtx.eFont].iYOffset;
+
+	if (server.m_bPassword)
+	{
+		vgui::surface()->DrawSetTextPos(g_uiCtx.rWidgetArea.x0 + xPos + g_uiCtx.iMarginX, g_uiCtx.rWidgetArea.y0 + fontStartYPos);
+		vgui::surface()->DrawPrintText(L"P", 1);
+	}
+	xPos += static_cast<int>(g_uiCtx.irWidgetWide * (ROWLAYOUT_TABLESPLIT[GSIW_LOCKED] / 100.0f));
+
+	if (server.m_bSecure)
+	{
+		vgui::surface()->DrawSetTextPos(g_uiCtx.rWidgetArea.x0 + xPos + g_uiCtx.iMarginX, g_uiCtx.rWidgetArea.y0 + fontStartYPos);
+		vgui::surface()->DrawPrintText(L"S", 1);
+	}
+	xPos += static_cast<int>(g_uiCtx.irWidgetWide * (ROWLAYOUT_TABLESPLIT[GSIW_VAC] / 100.0f));
+
+	{
+		wchar_t wszServerName[k_cbMaxGameServerName];
+		const int iSize = g_pVGuiLocalize->ConvertANSIToUnicode(server.GetName(), wszServerName, sizeof(wszServerName));
+
+		vgui::surface()->DrawSetTextPos(g_uiCtx.rWidgetArea.x0 + xPos + g_uiCtx.iMarginX, g_uiCtx.rWidgetArea.y0 + fontStartYPos);
+		vgui::surface()->DrawPrintText(wszServerName, iSize - 1);
+	}
+	xPos += static_cast<int>(g_uiCtx.irWidgetWide * (ROWLAYOUT_TABLESPLIT[GSIW_NAME] / 100.0f));
+
+	{
+		// In lower resolution, it may overlap from name, so paint a background here
+		vgui::surface()->DrawFilledRect(g_uiCtx.rWidgetArea.x0 + xPos, g_uiCtx.rWidgetArea.y0,
+										g_uiCtx.rWidgetArea.x1, g_uiCtx.rWidgetArea.y1);
+
+		wchar_t wszMapName[k_cbMaxGameServerMapName];
+		const int iSize = g_pVGuiLocalize->ConvertANSIToUnicode(server.m_szMap, wszMapName, sizeof(wszMapName));
+
+		vgui::surface()->DrawSetTextPos(g_uiCtx.rWidgetArea.x0 + xPos + g_uiCtx.iMarginX, g_uiCtx.rWidgetArea.y0 + fontStartYPos);
+		vgui::surface()->DrawPrintText(wszMapName, iSize - 1);
+	}
+	xPos += static_cast<int>(g_uiCtx.irWidgetWide * (ROWLAYOUT_TABLESPLIT[GSIW_MAP] / 100.0f));
+
+	{
+		// In lower resolution, it may overlap from name, so paint a background here
+		vgui::surface()->DrawFilledRect(g_uiCtx.rWidgetArea.x0 + xPos, g_uiCtx.rWidgetArea.y0,
+										g_uiCtx.rWidgetArea.x1, g_uiCtx.rWidgetArea.y1);
+
+		wchar_t wszPlayers[10];
+		const int iSize = V_swprintf_safe(wszPlayers, L"%d/%d", server.m_nPlayers, server.m_nMaxPlayers);
+		vgui::surface()->DrawSetTextPos(g_uiCtx.rWidgetArea.x0 + xPos + g_uiCtx.iMarginX, g_uiCtx.rWidgetArea.y0 + fontStartYPos);
+		vgui::surface()->DrawPrintText(wszPlayers, iSize);
+	}
+	xPos += static_cast<int>(g_uiCtx.irWidgetWide * (ROWLAYOUT_TABLESPLIT[GSIW_PLAYERS] / 100.0f));
+
+	{
+		wchar_t wszPing[10];
+		const int iSize = V_swprintf_safe(wszPing, L"%d", server.m_nPing);
+		vgui::surface()->DrawSetTextPos(g_uiCtx.rWidgetArea.x0 + xPos + g_uiCtx.iMarginX, g_uiCtx.rWidgetArea.y0 + fontStartYPos);
+		vgui::surface()->DrawPrintText(wszPing, iSize);
+	}
+}
+
+static void DrawSortHint(const bool bDescending)
+{
+	if (g_uiCtx.eMode != NeoUI::MODE_PAINT || !IN_BETWEEN_AR(0, g_uiCtx.iLayoutY, g_uiCtx.dPanel.tall))
+	{
+		return;
+	}
+	int iHintTall = g_uiCtx.iMarginY / 3;
+	vgui::surface()->DrawSetColor(COLOR_NEOPANELTEXTNORMAL);
+	if (!bDescending)
+	{
+		vgui::surface()->DrawFilledRect(g_uiCtx.rWidgetArea.x0, g_uiCtx.rWidgetArea.y0,
+										g_uiCtx.rWidgetArea.x1, g_uiCtx.rWidgetArea.y0 + iHintTall);
+	}
+	else
+	{
+		vgui::surface()->DrawFilledRect(g_uiCtx.rWidgetArea.x0, g_uiCtx.rWidgetArea.y1 - iHintTall,
+										g_uiCtx.rWidgetArea.x1, g_uiCtx.rWidgetArea.y1);
+	}
+	vgui::surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
+}
+
 void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 {
 	static const wchar_t *GS_NAMES[GS__TOTAL] = {
 		L"Internet", L"LAN", L"Friends", L"Fav", L"History", L"Spec"
 	};
-
 	static const wchar_t *ANTICHEAT_LABELS[ANTICHEAT__TOTAL] = {
 		L"<Any>", L"On", L"Off"
 	};
 
 	bool bEnterServer = false;
-	const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
+	const int iTallTotal = g_uiCtx.layout.iRowTall * (g_iRowsInScreen + 2);
 	g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
 	g_uiCtx.dPanel.x = (param.wide / 2) - (g_iRootSubPanelWide / 2);
 	g_uiCtx.dPanel.y = (param.tall / 2) - (iTallTotal / 2);
-	g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * 2;
+	g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall * 2;
 	g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
 	NeoUI::BeginContext(&g_uiCtx, param.eMode, m_wszDispBtnTexts[MMBTN_FINDSERVER], "CtxServerBrowser");
 	{
@@ -975,59 +1123,42 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 				m_serverBrowser[m_iServerBrowserTab].m_bReloadedAtLeastOnce = true;
 			}
 			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
-			NeoUI::BeginHorizontal(1);
+			NeoUI::SetPerRowLayout(GSIW__TOTAL, ROWLAYOUT_TABLESPLIT);
+			for (int i = 0; i < GS__TOTAL; ++i)
 			{
-				static constexpr const wchar_t *SBLABEL_NAMES[GSIW__TOTAL] = {
-					L"Lock", L"VAC", L"Name", L"Map", L"Players", L"Ping",
-				};
-
-				for (int i = 0; i < GS__TOTAL; ++i)
+				vgui::surface()->DrawSetColor((m_sortCtx.col == i) ? COLOR_NEOPANELACCENTBG : COLOR_NEOPANELNORMALBG);
+				if (NeoUI::Button(SBLABEL_NAMES[i]).bPressed)
 				{
-					surface()->DrawSetColor((m_sortCtx.col == i) ? COLOR_NEOPANELACCENTBG : COLOR_NEOPANELNORMALBG);
-					g_uiCtx.iHorizontalWidth = g_iGSIX[i];
-					if (NeoUI::Button(SBLABEL_NAMES[i]).bPressed)
+					if (m_sortCtx.col == i)
 					{
-						if (m_sortCtx.col == i)
-						{
-							m_sortCtx.bDescending = !m_sortCtx.bDescending;
-						}
-						else
-						{
-							m_sortCtx.col = static_cast<GameServerInfoW>(i);
-						}
-						m_bSBFiltModified = true;
+						m_sortCtx.bDescending = !m_sortCtx.bDescending;
 					}
+					else
+					{
+						m_sortCtx.col = static_cast<GameServerInfoW>(i);
+					}
+					m_bSBFiltModified = true;
+				}
 
-					if (param.eMode == NeoUI::MODE_PAINT && m_sortCtx.col == i)
-					{
-						int iHintTall = g_uiCtx.iMarginY / 3;
-						surface()->DrawSetColor(COLOR_NEOPANELTEXTNORMAL);
-						if (!m_sortCtx.bDescending)
-						{
-							NeoUI::GCtxDrawFilledRectXtoX(-g_uiCtx.iHorizontalWidth, 0, 0, iHintTall);
-						}
-						else
-						{
-							NeoUI::GCtxDrawFilledRectXtoX(-g_uiCtx.iHorizontalWidth, g_uiCtx.iRowTall - iHintTall, 0, g_uiCtx.iRowTall);
-						}
-						surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
-					}
+				if (m_sortCtx.col == i)
+				{
+					DrawSortHint(m_sortCtx.bDescending);
 				}
 			}
 
 			// TODO: Should give proper controls over colors through NeoUI
-			surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
-			surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
-			NeoUI::EndHorizontal();
+			vgui::surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
+			vgui::surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
 			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
 		}
 		NeoUI::EndSection();
 		static constexpr int FILTER_ROWS = 5;
 		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
-		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * (g_iRowsInScreen - 1);
-		if (m_bShowFilterPanel) g_uiCtx.dPanel.tall -= g_uiCtx.iRowTall * FILTER_ROWS;
+		g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall * (g_iRowsInScreen - 1);
+		if (m_bShowFilterPanel) g_uiCtx.dPanel.tall -= g_uiCtx.layout.iRowTall * FILTER_ROWS;
 		NeoUI::BeginSection(true);
 		{
+			NeoUI::SetPerRowLayout(1);
 			if (m_serverBrowser[m_iServerBrowserTab].m_filteredServers.IsEmpty())
 			{
 				wchar_t wszInfo[128];
@@ -1039,9 +1170,26 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 				{
 					V_swprintf_safe(wszInfo, L"No %ls queries found. Press Refresh to re-check", GS_NAMES[m_iServerBrowserTab]);
 				}
-				g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
-				NeoUI::Label(wszInfo);
-				g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_LEFT;
+				NeoUI::HeadingLabel(wszInfo);
+#if 0 // NEO NOTE (nullsystem): Flip to 1 to just test layout with no servers
+				NeoUI::Button(L""); // dummy button
+				if (param.eMode == NeoUI::MODE_PAINT)
+				{
+					static gameserveritem_t server = {};
+					if (server.m_nPing == 0)
+					{
+						server.m_nPing = 1337;
+						server.SetName("123ABC");
+						V_strcpy(server.m_szMap, "nt_test123abc_ctg");
+						server.m_nPlayers = 0;
+						server.m_nMaxPlayers = 32;
+						server.m_nBotPlayers = 16;
+						server.m_bPassword = true;
+						server.m_bSecure = true;
+					}
+					ServerBrowserDrawRow(server);
+				}
+#endif
 			}
 			else
 			{
@@ -1082,8 +1230,8 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 						if (btn.bMouseHover) drawColor = COLOR_NEOPANELSELECTBG;
 
 						vgui::surface()->DrawSetColor(drawColor);
-						NeoUI::GCtxDrawFilledRectXtoX(0, -g_uiCtx.iRowTall, g_uiCtx.dPanel.wide, 0);
-
+						vgui::surface()->DrawFilledRect(g_uiCtx.rWidgetArea.x0, g_uiCtx.rWidgetArea.y0,
+														g_uiCtx.rWidgetArea.x1, g_uiCtx.rWidgetArea.y1);
 						ServerBrowserDrawRow(server);
 					}
 				}
@@ -1092,12 +1240,13 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 		surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
 		NeoUI::EndSection();
 		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
-		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
-		if (m_bShowFilterPanel) g_uiCtx.dPanel.tall += g_uiCtx.iRowTall * FILTER_ROWS;
+		g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall;
+		if (m_bShowFilterPanel) g_uiCtx.dPanel.tall += g_uiCtx.layout.iRowTall * FILTER_ROWS;
 		NeoUI::BeginSection();
 		{
 			NeoUI::SwapFont(NeoUI::FONT_NTHORIZSIDES);
-			NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 6);
+			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
+			NeoUI::SetPerRowLayout(6);
 			{
 				if (NeoUI::Button(L"Back (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
 				{
@@ -1176,10 +1325,10 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 					}
 				}
 			}
-			NeoUI::EndHorizontal();
 			NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 			if (m_bShowFilterPanel)
 			{
+				NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
 				NeoUI::RingBoxBool(L"Server not full", &m_sbFilters.bServerNotFull);
 				NeoUI::RingBoxBool(L"Has users playing", &m_sbFilters.bHasUsersPlaying);
 				NeoUI::RingBoxBool(L"Is not password protected", &m_sbFilters.bIsNotPasswordProtected);
@@ -1195,11 +1344,11 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 
 void CNeoRoot::MainLoopMapList(const MainLoopParam param)
 {
-	const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
+	const int iTallTotal = g_uiCtx.layout.iRowTall * (g_iRowsInScreen + 2);
 	g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
 	g_uiCtx.dPanel.x = (param.wide / 2) - (g_iRootSubPanelWide / 2);
 	g_uiCtx.dPanel.y = (param.tall / 2) - (iTallTotal / 2);
-	g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * (g_iRowsInScreen + 1);
+	g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall * (g_iRowsInScreen + 1);
 	g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
 	NeoUI::BeginContext(&g_uiCtx, param.eMode, L"Pick map", "CtxMapPicker");
 	{
@@ -1216,18 +1365,141 @@ void CNeoRoot::MainLoopMapList(const MainLoopParam param)
 		}
 		NeoUI::EndSection();
 		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
-		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
+		g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall;
 		NeoUI::BeginSection();
 		{
 			NeoUI::SwapFont(NeoUI::FONT_NTHORIZSIDES);
-			NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 5);
+			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
+			NeoUI::SetPerRowLayout(5);
 			{
 				if (NeoUI::Button(L"Back (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
 				{
 					m_state = STATE_NEWGAME;
 				}
 			}
-			NeoUI::EndHorizontal();
+			NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
+		}
+		NeoUI::EndSection();
+	}
+	NeoUI::EndContext();
+}
+
+void CNeoRoot::MainLoopSprayPicker(const MainLoopParam param)
+{
+	static CUtlVector<SprayInfo> vecStaticSprays;
+	if (m_bSprayGalleryRefresh)
+	{
+		vecStaticSprays.Purge();
+		FileFindHandle_t findHdl;
+		for (const char *pszFilename = filesystem->FindFirst("materials/vgui/logos/ui/*.vmt", &findHdl);
+				pszFilename;
+				pszFilename = filesystem->FindNext(findHdl))
+		{
+			// spray.vmt is only used for currently applying spray
+			if (V_strcmp(pszFilename, "spray.vmt") == 0)
+			{
+				continue;
+			}
+
+			if (m_state == STATE_SPRAYDELETER)
+			{
+				static constexpr const char *DEFAULT_SPRAYS[] = {
+					"spray_canned.vmt",
+					"spray_combine.vmt",
+					"spray_cop.vmt",
+					"spray_dog.vmt",
+					"spray_freeman.vmt",
+					"spray_head.vmt",
+					"spray_lambda.vmt",
+					"spray_plumbed.vmt",
+					"spray_soldier.vmt",
+				};
+				bool bSkipThis = false;
+				for (int i = 0; i < ARRAYSIZE(DEFAULT_SPRAYS); ++i)
+				{
+					if (V_strcmp(pszFilename, DEFAULT_SPRAYS[i]) == 0)
+					{
+						bSkipThis = true;
+						break;
+					}
+				}
+				if (bSkipThis)
+				{
+					continue;
+				}
+			}
+
+			SprayInfo sprayInfo = {};
+
+			V_strcpy_safe(sprayInfo.szBaseName, pszFilename);
+			sprayInfo.szBaseName[V_strlen(sprayInfo.szBaseName) - sizeof("vmt")] = '\0';
+
+			V_sprintf_safe(sprayInfo.szPath, "vgui/logos/ui/%s", sprayInfo.szBaseName);
+			V_sprintf_safe(sprayInfo.szVtf, "materials/vgui/logos/%s.vtf", sprayInfo.szBaseName);
+
+			if (filesystem->FileExists(sprayInfo.szVtf))
+			{
+				vecStaticSprays.AddToTail(sprayInfo);
+			}
+		}
+		filesystem->FindClose(findHdl);
+
+		m_bSprayGalleryRefresh = false;
+	}
+	const int iGalleryRows = g_iRowsInScreen / 4;
+	const int iNormTall = g_uiCtx.layout.iRowTall;
+	const int iCellTall = iNormTall * 4;
+
+	const int iTallTotal = iNormTall * (g_iRowsInScreen + 2);
+	g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
+	g_uiCtx.dPanel.x = (param.wide / 2) - (g_iRootSubPanelWide / 2);
+	g_uiCtx.dPanel.y = (param.tall / 2) - (iTallTotal / 2);
+	g_uiCtx.dPanel.tall = iNormTall * (g_iRowsInScreen + 1);
+	g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
+	NeoUI::BeginContext(&g_uiCtx, param.eMode,
+						(m_state == STATE_SPRAYPICKER) ? L"Pick spray" : L"Delete spray",
+						(m_state == STATE_SPRAYPICKER) ? "CtxSprayPicker" : "CtxSprayDeleter");
+	{
+		NeoUI::BeginSection(true);
+		{
+			static constexpr int COLS_IN_ROW = 5;
+			NeoUI::SetPerRowLayout(COLS_IN_ROW, nullptr, iCellTall);
+			for (int i = 0; i < vecStaticSprays.Count(); i += COLS_IN_ROW)
+			{
+				for (int j = 0; j < COLS_IN_ROW && (i + j) < vecStaticSprays.Count(); ++j)
+				{
+					const auto &sprayInfo = vecStaticSprays.Element(i + j);
+					if (NeoUI::ButtonTexture(sprayInfo.szPath).bPressed)
+					{
+						if (m_state == STATE_SPRAYPICKER)
+						{
+							m_eFileIOMode = FILEIODLGMODE_SPRAY;
+							OnFileSelected(sprayInfo.szVtf);
+							m_state = STATE_SETTINGS;
+						}
+						else
+						{
+							V_memcpy(&m_sprayToDelete, &sprayInfo, sizeof(SprayInfo));
+							m_state = STATE_SPRAYDELETERCONFIRM;
+						}
+					}
+				}
+			}
+		}
+		NeoUI::EndSection();
+		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+		g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall;
+		NeoUI::BeginSection();
+		{
+			NeoUI::SwapFont(NeoUI::FONT_NTHORIZSIDES);
+			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
+			NeoUI::SetPerRowLayout(5, nullptr, iNormTall);
+			{
+				if (NeoUI::Button(L"Back (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
+				{
+					m_state = STATE_SETTINGS;
+				}
+			}
 			NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 		}
 		NeoUI::EndSection();
@@ -1238,21 +1510,22 @@ void CNeoRoot::MainLoopMapList(const MainLoopParam param)
 void CNeoRoot::MainLoopServerDetails(const MainLoopParam param)
 {
 	const auto *gameServer = &m_serverBrowser[m_iServerBrowserTab].m_filteredServers[m_iSelectedServer];
-	const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
+	const int iTallTotal = g_uiCtx.layout.iRowTall * (g_iRowsInScreen + 2);
 	g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
 	g_uiCtx.dPanel.x = (param.wide / 2) - (g_iRootSubPanelWide / 2);
 	g_uiCtx.dPanel.y = (param.tall / 2) - (iTallTotal / 2);
-	g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * 6;
+	g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall * 6;
 	g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
 	NeoUI::BeginContext(&g_uiCtx, param.eMode, L"Server details", "CtxServerDetail");
 	{
 		NeoUI::BeginSection(true);
+		NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
 		{
 			const bool bP = param.eMode == NeoUI::MODE_PAINT;
 			wchar_t wszText[128];
 			if (bP) g_pVGuiLocalize->ConvertANSIToUnicode(gameServer->GetName(), wszText, sizeof(wszText));
 			NeoUI::Label(L"Name:", wszText);
-			if (!neo_cl_streamermode.GetBool())
+			if (!cl_neo_streamermode.GetBool())
 			{
 				if (bP) g_pVGuiLocalize->ConvertANSIToUnicode(gameServer->m_NetAdr.GetConnectionAddressString(), wszText, sizeof(wszText));
 				NeoUI::Label(L"Address:", wszText);
@@ -1269,42 +1542,123 @@ void CNeoRoot::MainLoopServerDetails(const MainLoopParam param)
 			// TODO: Header same-style as serverlist's header
 		}
 		NeoUI::EndSection();
-		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
-		g_uiCtx.dPanel.tall = (iTallTotal - g_uiCtx.iRowTall) - g_uiCtx.dPanel.tall;
-		NeoUI::BeginSection();
+		if (!cl_neo_streamermode.GetBool())
 		{
-			if (!neo_cl_streamermode.GetBool())
+			if (m_serverPlayers.m_players.IsEmpty())
 			{
-				if (m_serverPlayers.m_players.IsEmpty())
+				g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+				g_uiCtx.dPanel.tall = (iTallTotal - g_uiCtx.layout.iRowTall) - g_uiCtx.dPanel.tall;
+				NeoUI::BeginSection();
 				{
-					g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
-					NeoUI::Label(L"There are no players in the server.");
-					g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_LEFT;
-				}
-				else
-				{
-					for (const auto &player : m_serverPlayers.m_players)
+					NeoUI::SetPerRowLayout(1);
+					NeoUI::HeadingLabel(L"There are no players in the server.");
+#if 0 // NEO NOTE (nullsystem): Flip to 1 to just test layout with no players
+					float flExSecs = 1.0f;
+					for (int i = 0; i < 32; ++i)
 					{
-						NeoUI::Label(player.wszName);
-						// TODO
+						CNeoServerPlayers::PlayerInfo player = {};
+						player.iScore = i;
+						player.flTimePlayed = flExSecs;
+						flExSecs *= 2;
+						V_swprintf_safe(player.wszName, L"Example %c", 'A' + i);
+						m_serverPlayers.m_players.AddToTail(player);
+					}
+					m_serverPlayers.UpdateSortedList();
+#endif
+				}
+				NeoUI::EndSection();
+			}
+			else
+			{
+				static constexpr const int PLAYER_ROW_PROP[] = { 15, 65, -1 };
+
+				const int iInfoTall = g_uiCtx.dPanel.tall;
+				g_uiCtx.dPanel.y += iInfoTall;
+				g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall;
+				NeoUI::BeginSection();
+				{
+					NeoUI::SetPerRowLayout(ARRAYSIZE(PLAYER_ROW_PROP), PLAYER_ROW_PROP);
+					// Headers
+					static constexpr const wchar_t *PLAYER_HEADERS[GSPS__TOTAL] = {
+						L"Score", L"Name", L"Time"
+					};
+					for (int i = 0; i < GSPS__TOTAL; ++i)
+					{
+						vgui::surface()->DrawSetColor((m_serverPlayers.m_sortCtx.col == i) ? COLOR_NEOPANELACCENTBG : COLOR_NEOPANELNORMALBG);
+						if (NeoUI::Button(PLAYER_HEADERS[i]).bPressed)
+						{
+							m_bSPlayersSortModified = true;
+							if (m_serverPlayers.m_sortCtx.col == i)
+							{
+								m_serverPlayers.m_sortCtx.bDescending = !m_serverPlayers.m_sortCtx.bDescending;
+							}
+							else
+							{
+								m_serverPlayers.m_sortCtx.col = static_cast<GameServerPlayerSort>(i);
+							}
+						}
+
+						if (m_serverPlayers.m_sortCtx.col == i)
+						{
+							DrawSortHint(m_serverPlayers.m_sortCtx.bDescending);
+						}
 					}
 				}
+				NeoUI::EndSection();
+
+				g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+				g_uiCtx.dPanel.tall = iTallTotal - (2 * g_uiCtx.layout.iRowTall) - iInfoTall;
+				NeoUI::BeginSection();
+				{
+					NeoUI::SetPerRowLayout(ARRAYSIZE(PLAYER_ROW_PROP), PLAYER_ROW_PROP);
+					// Players - rows
+					for (const auto &player : m_serverPlayers.m_sortedPlayers)
+					{
+						wchar_t wszText[32];
+
+						V_swprintf_safe(wszText, L"%d", player.iScore);
+						NeoUI::Label(wszText);
+						NeoUI::Label(player.wszName);
+						{
+							static constexpr float FL_SECSINMIN = 60.0f;
+							static constexpr float FL_SECSINHRS = 60.0f * FL_SECSINMIN;
+							if (player.flTimePlayed < FL_SECSINMIN)
+							{
+								V_swprintf_safe(wszText, L"%.0fs", player.flTimePlayed);
+							}
+							else if (player.flTimePlayed < FL_SECSINMIN * 60.0f)
+							{
+								const int iMin = player.flTimePlayed / FL_SECSINMIN;
+								const int iSec = player.flTimePlayed - (iMin * FL_SECSINMIN);
+								V_swprintf_safe(wszText, L"%dm %ds", iMin, iSec);
+							}
+							else
+							{
+								const int iHrs = player.flTimePlayed / FL_SECSINHRS;
+								const int iMin = (player.flTimePlayed - (iHrs * FL_SECSINHRS)) / FL_SECSINMIN;
+								const int iSec = player.flTimePlayed - (iHrs * FL_SECSINHRS) - (iMin * FL_SECSINMIN);
+								V_swprintf_safe(wszText, L"%dh %dm %ds", iHrs, iMin, iSec);
+							}
+						}
+						NeoUI::Label(wszText);
+					}
+				}
+				NeoUI::EndSection();
 			}
 		}
-		NeoUI::EndSection();
 		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
-		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
+		g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall;
 		NeoUI::BeginSection();
 		{
 			NeoUI::SwapFont(NeoUI::FONT_NTHORIZSIDES);
-			NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 5);
+			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
+			NeoUI::SetPerRowLayout(5);
 			{
 				if (NeoUI::Button(L"Back (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
 				{
 					m_state = STATE_SERVERBROWSER;
 				}
 			}
-			NeoUI::EndHorizontal();
 			NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 		}
 		NeoUI::EndSection();
@@ -1316,11 +1670,11 @@ void CNeoRoot::MainLoopPlayerList(const MainLoopParam param)
 {
 	if (IsInGame())
 	{
-		const int iTallTotal = g_uiCtx.iRowTall * (g_iRowsInScreen + 2);
+		const int iTallTotal = g_uiCtx.layout.iRowTall * (g_iRowsInScreen + 2);
 		g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
 		g_uiCtx.dPanel.x = (param.wide / 2) - (g_iRootSubPanelWide / 2);
 		g_uiCtx.dPanel.y = (param.tall / 2) - (iTallTotal / 2);
-		g_uiCtx.dPanel.tall = g_uiCtx.iRowTall * (g_iRowsInScreen + 1);
+		g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall * (g_iRowsInScreen + 1);
 		g_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
 		NeoUI::BeginContext(&g_uiCtx, param.eMode, L"Player list", "CtxPlayerList");
 		{
@@ -1351,18 +1705,18 @@ void CNeoRoot::MainLoopPlayerList(const MainLoopParam param)
 			}
 			NeoUI::EndSection();
 			g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
-			g_uiCtx.dPanel.tall = g_uiCtx.iRowTall;
+			g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall;
 			NeoUI::BeginSection();
 			{
 				NeoUI::SwapFont(NeoUI::FONT_NTHORIZSIDES);
-				NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 5);
+				g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
+				NeoUI::SetPerRowLayout(5);
 				{
 					if (NeoUI::Button(L"Back (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
 					{
 						m_state = STATE_ROOT;
 					}
 				}
-				NeoUI::EndHorizontal();
 				NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 			}
 			NeoUI::EndSection();
@@ -1386,11 +1740,11 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 	g_uiCtx.dPanel.wide = g_iRootSubPanelWide * 0.75f;
 	g_uiCtx.dPanel.tall = tallSplit;
 	g_uiCtx.dPanel.x = (param.wide / 2) - (g_uiCtx.dPanel.wide / 2);
-	g_uiCtx.dPanel.y = tallSplit + (tallSplit / 2) - g_uiCtx.iRowTall;
+	g_uiCtx.dPanel.y = tallSplit + (tallSplit / 2) - g_uiCtx.layout.iRowTall;
 	g_uiCtx.bgColor = COLOR_TRANSPARENT;
 	if (m_state == STATE_SERVERPASSWORD)
 	{
-		g_uiCtx.dPanel.y -= g_uiCtx.iRowTall;
+		g_uiCtx.dPanel.y -= g_uiCtx.layout.iRowTall;
 	}
 	// Technically can get away with have a common context name, since these dialogs
 	// don't do anything special with it
@@ -1399,6 +1753,7 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 		NeoUI::BeginSection(true);
 		{
 			g_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
+			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
 			NeoUI::SwapFont(NeoUI::FONT_NTLARGE);
 			switch (m_state)
 			{
@@ -1413,7 +1768,7 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 			{
 				NeoUI::Label(L"Settings changed: Do you want to apply the settings?");
 				NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
-				NeoUI::BeginHorizontal((g_uiCtx.dPanel.wide / 3) - g_uiCtx.iMarginX, g_uiCtx.iMarginX);
+				NeoUI::SetPerRowLayout(3);
 				{
 					g_uiCtx.iLayoutX = (g_uiCtx.iMarginX / 2);
 					if (NeoUI::Button(L"Save (Enter)").bPressed || NeoUI::Bind(KEY_ENTER))
@@ -1430,14 +1785,13 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 						m_state = STATE_SETTINGS;
 					}
 				}
-				NeoUI::EndHorizontal();
 			}
 			break;
 			case STATE_QUIT:
 			{
 				NeoUI::Label(L"Do you want to quit the game?");
 				NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
-				NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 3);
+				NeoUI::SetPerRowLayout(3);
 				{
 					if (NeoUI::Button(L"Quit (Enter)").bPressed || NeoUI::Bind(KEY_ENTER))
 					{
@@ -1449,17 +1803,19 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 						m_state = STATE_ROOT;
 					}
 				}
-				NeoUI::EndHorizontal();
 			}
 			break;
 			case STATE_SERVERPASSWORD:
 			{
 				NeoUI::Label(L"Enter the server password");
 				NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
-				g_uiCtx.bTextEditIsPassword = true;
-				NeoUI::TextEdit(L"Password:", m_wszServerPassword, SZWSZ_LEN(m_wszServerPassword));
-				g_uiCtx.bTextEditIsPassword = false;
-				NeoUI::BeginHorizontal(g_uiCtx.dPanel.wide / 3);
+				{
+					NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
+					g_uiCtx.bTextEditIsPassword = true;
+					NeoUI::TextEdit(L"Password:", m_wszServerPassword, SZWSZ_LEN(m_wszServerPassword));
+					g_uiCtx.bTextEditIsPassword = false;
+				}
+				NeoUI::SetPerRowLayout(3);
 				{
 					if (NeoUI::Button(L"Enter (Enter)").bPressed || NeoUI::Bind(KEY_ENTER))
 					{
@@ -1483,14 +1839,13 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 						m_state = STATE_SERVERBROWSER;
 					}
 				}
-				NeoUI::EndHorizontal();
 			}
 			break;
 			case STATE_SETTINGSRESETDEFAULT:
 			{
 				NeoUI::Label(L"Do you want to reset your settings back to default?");
 				NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
-				NeoUI::BeginHorizontal((g_uiCtx.dPanel.wide / 3) - g_uiCtx.iMarginX, g_uiCtx.iMarginX);
+				NeoUI::SetPerRowLayout(3);
 				{
 					if (NeoUI::Button(L"Yes (Enter)").bPressed || NeoUI::Bind(KEY_ENTER))
 					{
@@ -1503,7 +1858,103 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 						m_state = STATE_SETTINGS;
 					}
 				}
-				NeoUI::EndHorizontal();
+			}
+			break;
+			case STATE_SPRAYDELETERCONFIRM:
+			{
+				static constexpr int TEXWH = 6;
+				const int iTexSprayWH = g_uiCtx.layout.iRowTall * TEXWH;
+				int scrWide, scrTall;
+				vgui::surface()->GetScreenSize(scrWide, scrTall);
+				NeoUI::Texture(m_sprayToDelete.szPath,
+							   (scrWide / 2) - (iTexSprayWH / 2),
+							   (scrTall / 3) - (iTexSprayWH / 2),
+							   iTexSprayWH, iTexSprayWH, "", NeoUI::TEXTUREOPTFLAGS_DONOTCROPTOPANEL);
+
+				NeoUI::Label(L"Do you want to delete this spray?");
+				NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
+				NeoUI::SetPerRowLayout(3);
+				{
+					if (NeoUI::Button(L"Yes (Enter)").bPressed || NeoUI::Bind(KEY_ENTER))
+					{
+						// NOTE (nullsystem): Check if the texture matches byte for byte
+						// for the current set spray. If so, replace it with the default spray.
+						{
+							static constexpr const char PSZ_CURRENT_SPRAY[] = "materials/vgui/logos/spray.vtf";
+							char szPathToAboutToDel[MAX_PATH];
+							V_sprintf_safe(szPathToAboutToDel, "materials/vgui/logos/%s.vtf", m_sprayToDelete.szBaseName);
+
+							bool bDelCurSpray = false;
+
+							if (filesystem->FileExists(PSZ_CURRENT_SPRAY) &&
+									filesystem->FileExists(szPathToAboutToDel))
+							{
+								const unsigned int uSizeCurSpray = filesystem->Size(PSZ_CURRENT_SPRAY);
+								const unsigned int uSizeDelSpray = filesystem->Size(szPathToAboutToDel);
+								if (uSizeCurSpray == uSizeDelSpray)
+								{
+									const unsigned int uSizeSpray = uSizeCurSpray;
+									FileHandle_t hdlCurSpray = filesystem->Open(PSZ_CURRENT_SPRAY, "rb");
+									FileHandle_t hdlDelSpray = filesystem->Open(szPathToAboutToDel, "rb");
+									if (hdlCurSpray && hdlDelSpray)
+									{
+										unsigned char *pbCurSpray = reinterpret_cast<unsigned char *>(calloc(
+													uSizeSpray * 2, sizeof(unsigned char)));
+
+										if (pbCurSpray)
+										{
+											unsigned char *pbDelSpray = pbCurSpray + uSizeSpray;
+
+											filesystem->Read(pbCurSpray, uSizeSpray, hdlCurSpray);
+											filesystem->Read(pbDelSpray, uSizeSpray, hdlDelSpray);
+
+											// Check byte for byte if it matches to determine deletion
+											bDelCurSpray = (V_memcmp(pbCurSpray, pbDelSpray, uSizeSpray) == 0);
+
+											pbDelSpray = nullptr;
+											free(pbCurSpray);
+										}
+									}
+									if (hdlCurSpray) filesystem->Close(hdlCurSpray);
+									if (hdlDelSpray) filesystem->Close(hdlDelSpray);
+								}
+							}
+
+							// NOTE (nullsystem): If current spray matches deleted one,
+							// replace it with the default spray
+							if (bDelCurSpray)
+							{
+								m_eFileIOMode = FILEIODLGMODE_SPRAY;
+								OnFileSelected("materials/vgui/logos/spray_lambda.vtf");
+							}
+						}
+
+						// NOTE (nullsystem): Spray related files to remove:
+						// * materials/vgui/logos/SPRAY.vtf
+						// * materials/vgui/logos/SPRAY.vmt
+						// * materials/vgui/logos/ui/SPRAY.vmt
+						// * materials/vgui/logos/ui/SPRAY.vtf
+						char szPathToDel[MAX_PATH];
+
+						V_sprintf_safe(szPathToDel, "materials/vgui/logos/%s.vtf", m_sprayToDelete.szBaseName);
+						filesystem->RemoveFile(szPathToDel);
+						V_sprintf_safe(szPathToDel, "materials/vgui/logos/%s.vmt", m_sprayToDelete.szBaseName);
+						filesystem->RemoveFile(szPathToDel);
+						V_sprintf_safe(szPathToDel, "materials/vgui/logos/ui/%s.vmt", m_sprayToDelete.szBaseName);
+						filesystem->RemoveFile(szPathToDel);
+						V_sprintf_safe(szPathToDel, "materials/vgui/logos/ui/%s.vtf", m_sprayToDelete.szBaseName);
+						filesystem->RemoveFile(szPathToDel);
+
+						V_memset(&m_sprayToDelete, 0, sizeof(SprayInfo));
+						m_state = STATE_SETTINGS;
+					}
+					NeoUI::Pad();
+					if (NeoUI::Button(L"No (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
+					{
+						V_memset(&m_sprayToDelete, 0, sizeof(SprayInfo));
+						m_state = STATE_SPRAYDELETER;
+					}
+				}
 			}
 			break;
 			default:
@@ -1584,10 +2035,204 @@ void CNeoRoot::ReadNewsFile(CUtlBuffer &buf)
 	}
 }
 
-void CNeoRoot::OnFileSelected(const char *szFullpath)
+void CNeoRoot::OnFileSelectedMode_Crosshair(const char *szFullpath)
 {
 	((m_ns.crosshair.eFileIOMode == vgui::FOD_OPEN) ?
-				&ImportCrosshair : &ExportCrosshair)(&m_ns.crosshair.info, szFullpath);
+			&ImportCrosshair : &ExportCrosshair)(&m_ns.crosshair.info, szFullpath);
+}
+
+void CNeoRoot::OnFileSelectedMode_Spray(const char *szFullpath)
+{
+	// Ensure the directories are there to write to
+	filesystem->CreateDirHierarchy("materials/vgui/logos");
+	filesystem->CreateDirHierarchy("materials/vgui/logos/ui");
+
+	CUtlBuffer sprayBuffer(0, 0, 0);
+
+	if (V_striEndsWith(szFullpath, ".vtf"))
+	{
+		// Check if we can just direct copy over (is DXT1 and 256x256) or will have
+		// to go through reprocessing like a PNG/JPEG format would
+		CUtlBuffer buf(0, 0, CUtlBuffer::READ_ONLY);
+		if (!filesystem->ReadFile(szFullpath, nullptr, buf))
+		{
+			return;
+		}
+
+		IVTFTexture *pVTFTexture = CreateVTFTexture();
+		if (pVTFTexture->Unserialize(buf))
+		{
+			const bool bDirectCopy = ((pVTFTexture->Width() == pVTFTexture->Height()) &&
+									  ((pVTFTexture->Format() == IMAGE_FORMAT_DXT1) ||
+									   (pVTFTexture->Format() == IMAGE_FORMAT_DXT5)));
+			if (bDirectCopy)
+			{
+				if (!engine->CopyLocalFile(szFullpath, "materials/vgui/logos/spray.vtf"))
+				{
+					Msg("ERROR: Cannot copy spray's vtf to: %s", "materials/vgui/logos/spray.vtf");
+				}
+			}
+			else
+			{
+				pVTFTexture->ConvertImageFormat(IMAGE_FORMAT_RGBA8888, false);
+				uint8 *data = NeoUtils::CropScaleTo256(pVTFTexture->ImageData(0, 0, 0),
+													   pVTFTexture->Width(), pVTFTexture->Height());
+				NeoUtils::SerializeVTFDXTSprayToBuffer(&sprayBuffer, data);
+				free(data);
+			}
+		}
+		DestroyVTFTexture(pVTFTexture);
+	}
+	else
+	{
+		int width, height, channels;
+		uint8 *data = stbi_load(szFullpath, &width, &height, &channels, 0);
+		if (!data || width <= 0 || height <= 0)
+		{
+			return;
+		}
+
+		// Convert to RGBA
+		if (channels == 3)
+		{
+			uint8 *rgbaData = reinterpret_cast<uint8 *>(calloc(width * height, sizeof(uint8) * 4));
+
+			ImageLoader::ConvertImageFormat(data, IMAGE_FORMAT_RGB888,
+											rgbaData, IMAGE_FORMAT_RGBA8888,
+											width, height);
+
+			stbi_image_free(data);
+			data = rgbaData;
+			channels = 4;
+		}
+
+		{
+			uint8 *newData = NeoUtils::CropScaleTo256(data, width, height);
+			free(data);
+			data = newData;
+			width = NeoUtils::SPRAY_WH;
+			height = NeoUtils::SPRAY_WH;
+		}
+
+		NeoUtils::SerializeVTFDXTSprayToBuffer(&sprayBuffer, data);
+		free(data);
+	}
+
+	char szBaseFName[MAX_PATH] = {};
+	{
+		static constexpr const char OS_PATH_SEP =
+#ifdef WIN32
+			'\\'
+#else
+			'/'
+#endif
+		;
+
+		const char *pLastSlash = V_strrchr(szFullpath, OS_PATH_SEP);
+
+		const char *pszBaseName = pLastSlash ? pLastSlash + 1 : szFullpath;
+		int iSzLen = V_strlen(pszBaseName);
+		const char *pszDot = strchr(pszBaseName, '.');
+		if (pszDot)
+		{
+			iSzLen = pszDot - pszBaseName;
+		}
+		V_sprintf_safe(szBaseFName, "%.*s", iSzLen, pszBaseName);
+	}
+	char szByBaseName[MAX_PATH];
+	V_sprintf_safe(szByBaseName, "materials/vgui/logos/%s.vtf", szBaseFName);
+
+	if (sprayBuffer.Size() > 0)
+	{
+		if (!filesystem->WriteFile("materials/vgui/logos/spray.vtf", nullptr, sprayBuffer))
+		{
+			Msg("ERROR: Cannot save spray's vtf to: %s", "materials/vgui/logos/spray.vtf");
+		}
+		if (!filesystem->WriteFile(szByBaseName, nullptr, sprayBuffer))
+		{
+			Msg("ERROR: Cannot save spray's vtf to: %s", szByBaseName);
+		}
+	}
+	else if (V_strcmp(szFullpath, szByBaseName) != 0)
+	{
+		if (!engine->CopyLocalFile(szFullpath, szByBaseName))
+		{
+			Msg("ERROR: Cannot copy spray's vtf to: %s", szByBaseName);
+		}
+	}
+
+	// Generate the vmt files, one for spraying, one under "ui" to display in GUI
+	for (const char *pszBaseName : {"spray", static_cast<const char *>(szBaseFName)})
+	{
+		if (pszBaseName[0] == '\0')
+		{
+			continue;
+		}
+
+		char szStrBuffer[1024];
+		{
+			V_sprintf_safe(szStrBuffer, R"VMT(
+LightmappedGeneric
+{
+"$basetexture"	"vgui/logos/%s"
+"$translucent" "1"
+"$decal" "1"
+"$decalscale" "0.250"
+}
+)VMT", pszBaseName);
+
+			CUtlBuffer bufVmt(0, 0, CUtlBuffer::TEXT_BUFFER);
+			bufVmt.PutString(szStrBuffer);
+
+			char szOutPath[MAX_PATH];
+			V_sprintf_safe(szOutPath, "materials/vgui/logos/%s.vmt", pszBaseName);
+			if (!filesystem->WriteFile(szOutPath, nullptr, bufVmt))
+			{
+				Msg("ERROR: Cannot save spray's vmt to: %s", szOutPath);
+			}
+		}
+
+		{
+			V_sprintf_safe(szStrBuffer, R"VMT(
+"UnlitGeneric"
+{
+// Original shader: BaseTimesVertexColorAlphaBlendNoOverbright
+"$translucent" 1
+"$basetexture" "VGUI/logos/%s"
+"$vertexcolor" 1
+"$vertexalpha" 1
+"$no_fullbright" 1
+"$ignorez" 1
+}
+)VMT", pszBaseName);
+
+			CUtlBuffer bufVmt(0, 0, CUtlBuffer::TEXT_BUFFER);
+			bufVmt.PutString(szStrBuffer);
+
+			char szOutPath[MAX_PATH];
+			V_sprintf_safe(szOutPath, "materials/vgui/logos/ui/%s.vmt", pszBaseName);
+			if (!filesystem->WriteFile(szOutPath, nullptr, bufVmt))
+			{
+				Msg("ERROR: Cannot save spray's vmt to: %s", szOutPath);
+			}
+		}
+	}
+
+	// Reapply the cl_logofile ConVar, update the texture to the new spray
+	ConVarRef("cl_logofile").SetValue("materials/vgui/logos/spray.vtf");
+	engine->ClientCmd_Unrestricted("cl_logofile materials/vgui/logos/spray.vtf");
+
+	NeoUI::ResetTextures();
+	materials->ReloadMaterials("vgui/logo");
+}
+
+void CNeoRoot::OnFileSelected(const char *szFullpath)
+{
+	static void (CNeoRoot::*FILESELMODEFNS[FILEIODLGMODE__TOTAL])(const char *) = {
+		&CNeoRoot::OnFileSelectedMode_Crosshair,	// FILEIODLGMODE_CROSSHAIR
+		&CNeoRoot::OnFileSelectedMode_Spray,		// FILEIODLGMODE_SPRAY
+	};
+	(this->*FILESELMODEFNS[m_eFileIOMode])(szFullpath);
 }
 
 // NEO NOTE (nullsystem): NeoRootCaptureESC is so that ESC keybinds can be recognized by non-root states, but root
@@ -1603,7 +2248,7 @@ bool NeoRootCaptureESC()
 
 void NeoToggleconsole()
 {
-	if (neo_cl_toggleconsole.GetBool())
+	if (cl_neo_toggleconsole.GetBool())
 	{
 		if (engine->IsInGame() && g_pNeoRoot)
 		{

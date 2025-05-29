@@ -46,7 +46,7 @@ constexpr int NEO_VERSION_FLAGS = FCVAR_HIDDEN;
 ConCommand neo_version("neo_version", NeoVersionPrint, "Print out client/server's build's information.", NEO_VERSION_FLAGS);
 
 #ifdef CLIENT_DLL
-ConVar __neo_cl_git_hash("__neo_cl_git_hash", GIT_LONGHASH,
+ConVar __cl_neo_git_hash("__cl_neo_git_hash", GIT_LONGHASH,
 						 FCVAR_USERINFO | FCVAR_HIDDEN | FCVAR_DONTRECORD | FCVAR_NOT_CONNECTED
 #ifndef DEBUG
 						 | FCVAR_PRINTABLEONLY
@@ -61,7 +61,7 @@ void InitializeDbgNeoClGitHashEdit()
 	static char static_dbgHash[GIT_LONGHASH_SIZE];
 	V_strcpy_safe(static_dbgHash, GIT_LONGHASH);
 	static_dbgHash[0] = static_dbgHash[0] | 0b1000'0000;
-	__neo_cl_git_hash.SetDefault(static_dbgHash);
-	__neo_cl_git_hash.Revert(); // It just sets to the default
+	__cl_neo_git_hash.SetDefault(static_dbgHash);
+	__cl_neo_git_hash.Revert(); // It just sets to the default
 }
 #endif

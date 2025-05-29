@@ -27,10 +27,10 @@ public:
 	virtual ~C_NEO_Player();
 
 	static C_NEO_Player *GetLocalNEOPlayer() { return static_cast<C_NEO_Player*>(C_BasePlayer::GetLocalPlayer()); }
-	static C_NEO_Player *GetTargetNEOPlayer()
-	{ // Returns the player we are spectating, or local player if not spectating anyone
+	static C_NEO_Player *GetVisionTargetNEOPlayer()
+	{ // Returns the player we are spectating if in first person mode, or local player
 		auto localNeoPlayer = GetLocalNEOPlayer();
-		if (localNeoPlayer->IsObserver())
+		if (localNeoPlayer->IsObserver() && localNeoPlayer->m_iObserverMode == OBS_MODE_IN_EYE)
 		{ // NEOTOD (Adam) clear m_hObserverTarget instead when exiting observer mode?
 			auto targetNeoPlayer = static_cast<C_NEO_Player*>(localNeoPlayer->GetObserverTarget());
 			if (targetNeoPlayer) { return targetNeoPlayer; }
@@ -40,6 +40,7 @@ public:
 
 	virtual int DrawModel( int flags );
 	virtual void AddEntity( void );
+	virtual void AddPoints(int score, bool bAllowNegativeScore);
 
 	virtual void PreDataUpdate(DataUpdateType_t updateType) OVERRIDE;
 
@@ -102,22 +103,16 @@ public:
 	virtual const Vector GetPlayerMins(void) const OVERRIDE;
 	virtual const Vector GetPlayerMaxs(void) const OVERRIDE;
 
-	virtual void CalcChaseCamView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov) override;
-	virtual void CalcInEyeCamView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov) override;
-
 	float CloakPower_CurrentVisualPercentage(void) const;
 
 	float GetNormSpeed_WithActiveWepEncumberment(void) const;
 	float GetCrouchSpeed_WithActiveWepEncumberment(void) const;
-	float GetWalkSpeed_WithActiveWepEncumberment(void) const;
 	float GetSprintSpeed_WithActiveWepEncumberment(void) const;
 	float GetNormSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const;
 	float GetCrouchSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const;
-	float GetWalkSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const;
 	float GetSprintSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const;
 	float GetNormSpeed(void) const;
 	float GetCrouchSpeed(void) const;
-	float GetWalkSpeed(void) const;
 	float GetSprintSpeed(void) const;
 
 	void HandleSpeedChangesLegacy();
@@ -127,8 +122,6 @@ public:
 
 private:
 	float GetActiveWeaponSpeedScale() const;
-
-	bool HandleDeathSpecCamSwitch(Vector& eyeOrigin, QAngle& eyeAngles, float& fov);
 
 public:
 	float m_flSpecFOV = 0.0f;

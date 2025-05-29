@@ -50,7 +50,7 @@ public:
 
 	virtual Activity GetPrimaryAttackActivity() final { return ACT_VM_HITCENTER; }
 	virtual Activity GetSecondaryAttackActivity() final { return ACT_VM_HITCENTER2; }
-	virtual float GetSpeedScale() const final { return 1.0; }
+	virtual float GetSpeedScale() const OVERRIDE { return 0.85f; }
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits() const { return NEO_WEP_KNIFE; }
 
 protected:

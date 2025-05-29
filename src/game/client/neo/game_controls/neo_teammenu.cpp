@@ -35,10 +35,12 @@
 #include <vgui_controls/ImagePanel.h>
 #include <vgui_controls/Panel.h>
 #include <vgui_controls/Menu.h>
+#include "neo/game_controls/neo_button.h"
 #include "IGameUIFuncs.h" // for key bindings
 #include <imapoverview.h>
 #include <shareddefs.h>
 #include "neo_gamerules.h"
+#include "ui/neo_root.h"
 #include <igameresources.h>
 
 #include <vgui/MouseCode.h>
@@ -108,11 +110,13 @@ CNeoTeamMenu::CNeoTeamMenu(IViewPort *pViewPort)
 	SetTitleBarVisible(false);
 
 	FindButtons();
+	ListenForGameEvent("team_score");
+	ListenForGameEvent("player_team");
 }
 
 CNeoTeamMenu::~CNeoTeamMenu()
 {
-	for (vgui::Button *button : {m_pJinrai_Button, m_pNSF_Button, m_pSpectator_Button, m_pAutoAssign_Button, m_pCancel_Button})
+	for (vgui::CNeoButton*button : {m_pJinrai_Button, m_pNSF_Button, m_pSpectator_Button, m_pAutoAssign_Button, m_pCancel_Button})
 	{
 		if (button)
 		{
@@ -123,17 +127,73 @@ CNeoTeamMenu::~CNeoTeamMenu()
 	g_pNeoTeamMenu = nullptr;
 }
 
+void CNeoTeamMenu::FireGameEvent(IGameEvent* event)
+{
+	const char* type = event->GetName();
+
+	if (!Q_strcmp(type, "team_score"))
+	{ // team score increased, update score label
+		const int teamID = event->GetInt("teamid");
+		const int score = event->GetInt("score");
+		char textBuff[13 + 1];
+		V_sprintf_safe(textBuff, "SCORE: %d", score);
+		if (teamID == TEAM_JINRAI)
+		{
+			m_pJinrai_ScoreLabel->SetText(textBuff);
+		}
+		else if (teamID == TEAM_NSF)
+		{
+			m_pNSF_ScoreLabel->SetText(textBuff);
+		}
+	}
+	else //if (!Q_strcmp(type, "player_team"))
+	{ // player joined a new team (also handles disconnects)
+		const int oldTeamID = event->GetInt("oldteam");
+		const int newTeamID = event->GetInt("team");
+
+		auto pJinrai = GetGlobalTeam(TEAM_JINRAI);
+		auto pNsf = GetGlobalTeam(TEAM_NSF);
+		if (!pJinrai || !pNsf)
+		{
+			return;
+		}
+
+		char textBuff[13 + 1];
+		if (oldTeamID == TEAM_JINRAI)
+		{
+			V_sprintf_safe(textBuff, "PLAYERS: %d", pJinrai->GetNumPlayers() - 1);
+			m_pJinrai_PlayercountLabel->SetText(textBuff);
+		}
+		else if (oldTeamID == TEAM_NSF)
+		{
+			V_sprintf_safe(textBuff, "PLAYERS: %d", pNsf->GetNumPlayers() - 1);
+			m_pNSF_PlayercountLabel->SetText(textBuff);
+		}
+
+		if (newTeamID == TEAM_JINRAI)
+		{
+			V_sprintf_safe(textBuff, "PLAYERS: %d", pJinrai->GetNumPlayers() + 1);
+			m_pJinrai_PlayercountLabel->SetText(textBuff);
+		}
+		else if (newTeamID == TEAM_NSF)
+		{
+			V_sprintf_safe(textBuff, "PLAYERS: %d", pNsf->GetNumPlayers() + 1);
+			m_pNSF_PlayercountLabel->SetText(textBuff);
+		}
+	}
+}
+
 void CNeoTeamMenu::FindButtons()
 {
 	m_pJinrai_PlayercountLabel = FindControl<Label>(CONTROL_JINRAI_PLAYERCOUNT_LABEL);
 	m_pNSF_PlayercountLabel = FindControl<Label>(CONTROL_NSF_PLAYERCOUNT_LABEL);
 	m_pJinrai_ScoreLabel = FindControl<Label>(CONTROL_JINRAI_SCORE_LABEL);
 	m_pNSF_ScoreLabel = FindControl<Label>(CONTROL_NSF_SCORE_LABEL);
-	m_pJinrai_Button = FindControl<Button>(CONTROL_JINRAI_BUTTON);
-	m_pNSF_Button = FindControl<Button>(CONTROL_NSF_BUTTON);
-	m_pSpectator_Button = FindControl<Button>(CONTROL_SPEC_BUTTON);
-	m_pAutoAssign_Button = FindControl<Button>(CONTROL_AUTO_BUTTON);
-	m_pCancel_Button = FindControl<Button>(CONTROL_CANCEL_BUTTON);
+	m_pJinrai_Button = FindControl<CNeoButton>(CONTROL_JINRAI_BUTTON);
+	m_pNSF_Button = FindControl<CNeoButton>(CONTROL_NSF_BUTTON);
+	m_pSpectator_Button = FindControl<CNeoButton>(CONTROL_SPEC_BUTTON);
+	m_pAutoAssign_Button = FindControl<CNeoButton>(CONTROL_AUTO_BUTTON);
+	m_pCancel_Button = FindControl<CNeoButton>(CONTROL_CANCEL_BUTTON);
 }
 
 void CNeoTeamMenu::OnClose()
@@ -179,18 +239,11 @@ void CNeoTeamMenu::OnCommand(const char *command)
 		V_sprintf_safe(commandBuffer, "jointeam %i", randomTeam);
 		CloseMenu();
 		engine->ClientCmd(commandBuffer);
+		NextMenu();
 		return;
 	}
-
 	if (Q_strcmp(commandBuffer, "jointeam 1") == 0)
-	{ // joining spectators
-		CloseMenu();
-		engine->ClientCmd(commandBuffer);
-		return;
-	}
-
-	if (Q_strcmp(commandBuffer, "jointeam 0") == 0)
-	{ // joining unnasigned
+	{ // joining spectator
 		CloseMenu();
 		engine->ClientCmd(commandBuffer);
 		return;
@@ -200,6 +253,7 @@ void CNeoTeamMenu::OnCommand(const char *command)
 	{ // joining jinrai or nsf
 		CloseMenu();
 		engine->ClientCmd(commandBuffer);
+		NextMenu();
 		return;
 	}
 
@@ -212,6 +266,18 @@ void CNeoTeamMenu::OnCommand(const char *command)
 	engine->ClientCmd(command);
 }
 
+void CNeoTeamMenu::NextMenu()
+{
+	if (NEORules()->GetForcedClass() < 0)
+	{
+		engine->ClientCmd("classmenu skipTeamCheck");
+	}
+	else if (NEORules()->GetForcedWeapon() < 0)
+	{
+		engine->ClientCmd("loadoutmenu");
+	}
+}
+
 void CNeoTeamMenu::CloseMenu()
 {
 	CommandCompletion();
@@ -220,9 +286,10 @@ void CNeoTeamMenu::CloseMenu()
 
 void CNeoTeamMenu::OnKeyCodeReleased(vgui::KeyCode code)
 { // Navigating using the keyboard hack
-	switch (code) {
-	case KEY_F1: // F1 - Close the menu
+	if (code == g_pNeoRoot->m_ns.keys.bcTeamMenu)
+	{
 		CloseMenu();
+		return;
 	}
 	// Leaving this here, useful to check what key is being pressed
 	/*char buffer[8] = "";
@@ -278,10 +345,10 @@ void CNeoTeamMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 	Assert(m_pNSF_PlayercountLabel);
 
 	char textBuff[13 + 1];
-	V_sprintf_safe(textBuff, "SCORE:%d", jinScore);
+	V_sprintf_safe(textBuff, "SCORE: %d", jinScore);
 	m_pJinrai_ScoreLabel->SetText(textBuff);
 
-	V_sprintf_safe(textBuff, "SCORE:%d", nsfScore);
+	V_sprintf_safe(textBuff, "SCORE: %d", nsfScore);
 	m_pNSF_ScoreLabel->SetText(textBuff);
 
 	V_sprintf_safe(textBuff, "PLAYERS: %d", jinNumPlayers);

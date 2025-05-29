@@ -652,3 +652,44 @@ Vector CNavLadder::GetPosAtHeight( float height ) const
 }
 
 //--------------------------------------------------------------------------------------------------------------
+
+#ifdef NEO
+// DG: This is added to avoid missing entity errors on maps old and new. We can use this for bots later, if needed
+LINK_ENTITY_TO_CLASS( info_ladder, CInfoLadder );
+
+bool CInfoLadder::KeyValue( const char *szKeyName, const char *szValue )
+{
+	if ( FStrEq( szKeyName, "mins.x" ) )
+	{
+		mins.x = atof( szValue );
+		SetCollisionBounds( mins, maxs );
+	}
+	else if ( FStrEq( szKeyName, "mins.y" ) )
+	{
+		mins.y = atof( szValue );
+		SetCollisionBounds( mins, maxs );
+	}
+	else if ( FStrEq( szKeyName, "mins.z" ) )
+	{
+		mins.z = atof( szValue );
+		SetCollisionBounds( mins, maxs );
+	}
+	else if ( FStrEq( szKeyName, "maxs.x" ) )
+	{
+		maxs.x = atof( szValue );
+		SetCollisionBounds( mins, maxs );
+	}
+	else if ( FStrEq( szKeyName, "maxs.y" ) )
+	{
+		maxs.y = atof( szValue );
+		SetCollisionBounds( mins, maxs );
+	}
+	else if ( FStrEq( szKeyName, "maxs.z" ) )
+	{
+		maxs.z = atof( szValue );
+		SetCollisionBounds( mins, maxs );
+	}
+
+	return BaseClass::KeyValue( szKeyName, szValue );
+}
+#endif

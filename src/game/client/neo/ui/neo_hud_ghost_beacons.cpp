@@ -41,6 +41,7 @@ CNEOHud_GhostBeacons::CNEOHud_GhostBeacons(const char *pElementName, vgui::Panel
 	: CHudElement(pElementName), EditablePanel(parent, pElementName)
 {
 	SetAutoDelete(true);
+	m_iHideHudElementNumber = NEO_HUD_ELEMENT_GHOST_BEACONS;
 
 	if (parent)
 	{
@@ -88,15 +89,15 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 		return;
 	}
 
-	auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if (localPlayer->GetTeamNumber() < FIRST_GAME_TEAM || !localPlayer->IsAlive() || NEORules()->IsRoundOver())
+	auto spectateTarget = IsLocalPlayerSpectator() ? UTIL_PlayerByIndex(GetSpectatorTarget()) : C_NEO_Player::GetLocalNEOPlayer();
+	if (!spectateTarget || spectateTarget->GetTeamNumber() < FIRST_GAME_TEAM || !spectateTarget->IsAlive() || NEORules()->IsRoundOver())
 	{
 		// NEO NOTE (nullsystem): Spectator and dead players even in spec shouldn't see beacons
 		// Post-round also should switch off beacon
 		return;
 	}
 
-	auto ghost = dynamic_cast<C_WeaponGhost*>(localPlayer->GetActiveWeapon());
+	auto ghost = dynamic_cast<C_WeaponGhost*>(spectateTarget->GetActiveWeapon());
 	if (!ghost) //Check ghost ready here as players might be in PVS
 	{
 		m_bHoldingGhost = false;
@@ -113,7 +114,7 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 	m_pGhost = ghost;
 	const bool showGhost = (gpGlobals->curtime > m_flNextAllowGhostShowTime);
 
-	auto enemyTeamId = localPlayer->GetTeamNumber() == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI;
+	auto enemyTeamId = spectateTarget->GetTeamNumber() == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI;
 	auto enemyTeam = GetGlobalTeam(enemyTeamId);
 	auto enemyTeamCount = enemyTeam->GetNumPlayers();
 	float closestEnemy = FLT_MAX;
@@ -124,9 +125,23 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 		{
 			auto enemyPos = enemyToShow->GetAbsOrigin();
 			float distance = FLT_MAX;
-			if(enemyToShow->IsAlive() && ghost->IsPosWithinViewDistance(enemyPos, distance) && !enemyToShow->IsDormant() && showGhost)
+			if(enemyToShow->IsAlive() && !enemyToShow->IsDormant() && ghost->IsPosWithinViewDistance(enemyPos, distance) && showGhost)
 			{
 				DrawPlayer(enemyPos);
+			}
+			closestEnemy = Min(distance, closestEnemy);
+		}
+	}
+	for (int i = 0; i <= NEORules()->m_iLastDummyBeacon; i++)
+	{
+		auto dummy = ClientEntityList().GetBaseEntityFromHandle(NEORules()->m_iDummyBeacons[i]);
+		if (dummy)
+		{
+			auto dummyPos = dummy->GetAbsOrigin();
+			float distance = FLT_MAX;
+			if (dummy->IsAlive() && !dummy->IsDormant() && ghost->IsPosWithinViewDistance(dummyPos, distance) && showGhost)
+			{
+				DrawPlayer(dummyPos);
 			}
 			closestEnemy = Min(distance, closestEnemy);
 		}

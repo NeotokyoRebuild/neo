@@ -130,7 +130,6 @@ extern ConVar tf_mm_servermode;
 #endif
 
 #ifdef NEO
-#include "neo_mount_original.h"
 #include "neo_version.h"
 #include "neo_player_shared.h"
 #endif
@@ -646,10 +645,6 @@ bool CServerGameDLL::DLLInit( CreateInterfaceFn appSystemFactory,
 	}
 
 #ifdef NEO
-	if (!FindOriginalNeotokyoAssets(filesystem, false))
-	{
-		return false;
-	}
 	NeoVersionPrint();
 #endif
 

@@ -21,6 +21,8 @@
 #include "neo_predicted_viewmodel.h"
 
 #include "game_controls/neo_teammenu.h"
+#include "game_controls/neo_classmenu.h"
+#include "game_controls/neo_loadoutmenu.h"
 
 #include "ui/neo_hud_compass.h"
 #include "ui/neo_hud_game_event.h"
@@ -48,11 +50,15 @@
 #include "model_types.h"
 
 #include "c_user_message_register.h"
+#include "neo_player_shared.h"
 
 // Don't alias here
 #if defined( CNEO_Player )
 #undef CNEO_Player	
 #endif
+
+// memdbgon must be the last include file in a .cpp file!!!
+#include "tier0/memdbgon.h"
 
 LINK_ENTITY_TO_CLASS(player, C_NEO_Player);
 
@@ -75,6 +81,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropBool(RECVINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 	RecvPropBool(RECVINFO(m_bInAim)),
 	RecvPropBool(RECVINFO(m_bIneligibleForLoadoutPick)),
+	RecvPropBool(RECVINFO(m_bCarryingGhost)),
 
 	RecvPropTime(RECVINFO(m_flCamoAuxLastTime)),
 	RecvPropInt(RECVINFO(m_nVisionLastTick)),
@@ -205,11 +212,11 @@ ConVar cl_drawhud_quickinfo("cl_drawhud_quickinfo", "0", 0,
 	"Whether to display HL2 style ammo/health info near crosshair.",
 	true, 0.0f, true, 1.0f);
 
-ConVar neo_cl_streamermode("neo_cl_streamermode", "0", FCVAR_ARCHIVE | FCVAR_USERINFO, "Streamer mode turns player names into generic names and hide avatars.", true, 0.0f, true, 1.0f);
-ConVar neo_cl_streamermode_autodetect_obs("neo_cl_streamermode_autodetect_obs", "0", FCVAR_ARCHIVE, "Automatically turn neo_cl_streamermode on if OBS was detected on startup.", true, 0.0f, true, 1.0f);
+ConVar cl_neo_streamermode("cl_neo_streamermode", "0", FCVAR_ARCHIVE | FCVAR_USERINFO, "Streamer mode turns player names into generic names and hide avatars.", true, 0.0f, true, 1.0f);
+ConVar cl_neo_streamermode_autodetect_obs("cl_neo_streamermode_autodetect_obs", "0", FCVAR_ARCHIVE, "Automatically turn cl_neo_streamermode on if OBS was detected on startup.", true, 0.0f, true, 1.0f);
 
-extern ConVar neo_sv_clantag_allow;
-extern ConVar neo_sv_dev_test_clantag;
+extern ConVar sv_neo_clantag_allow;
+extern ConVar sv_neo_dev_test_clantag;
 
 class NeoLoadoutMenu_Cb : public ICommandCallback
 {
@@ -219,7 +226,7 @@ public:
 #if DEBUG
 		DevMsg("Loadout access cb\n");
 #endif
-		if (engine->IsPlayingDemo())
+		if (engine->IsPlayingDemo() || NEORules()->GetForcedWeapon() >= 0)
 		{
 			return;
 		}
@@ -238,6 +245,19 @@ public:
 			Assert(false);
 			Warning("Couldn't find weapon loadout panel\n");
 			return;
+		}
+
+		auto classPanel = dynamic_cast<CNeoClassMenu*>(GetClientModeNormal()->
+			GetViewport()->FindChildByName(PANEL_CLASS));
+		if (classPanel)
+		{
+			classPanel->ShowPanel(false);
+		}
+		auto teamPanel = dynamic_cast<CNeoTeamMenu*>(GetClientModeNormal()->
+			GetViewport()->FindChildByName(PANEL_TEAM));
+		if (teamPanel)
+		{
+			teamPanel->ShowPanel(false);
 		}
 
 		if (panel->IsVisible() && panel->IsEnabled())
@@ -298,15 +318,18 @@ class NeoClassMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback(const CCommand& command)
 	{
-		if (engine->IsPlayingDemo())
+		if (engine->IsPlayingDemo() || NEORules()->GetForcedClass() >= 0)
 		{
 			return;
 		}
 
-		auto team = GetLocalPlayerTeam();
-		if(team < FIRST_GAME_TEAM)
-		{
-			return;
+		if (command.ArgC() > 1 && !command.FindArg("skipTeamCheck"))
+		{ // A smarter way to do this might be to assign the buttons for class and weapons menu to unique commands that check the current team and call this commandcallback
+			auto team = GetLocalPlayerTeam();
+			if(team < FIRST_GAME_TEAM)
+			{
+				return;
+			}
 		}
 
 		auto playerNeoClass = C_NEO_Player::GetLocalNEOPlayer()->m_iNeoClass;
@@ -323,6 +346,19 @@ public:
 			Assert(false);
 			Warning("Couldn't find class panel\n");
 			return;
+		}
+
+		auto loadoutPanel = dynamic_cast<CNeoLoadoutMenu*>(GetClientModeNormal()->
+			GetViewport()->FindChildByName(PANEL_NEO_LOADOUT));
+		if (loadoutPanel)
+		{
+			loadoutPanel->ShowPanel(false);
+		}
+		auto teamPanel = dynamic_cast<CNeoTeamMenu*>(GetClientModeNormal()->
+			GetViewport()->FindChildByName(PANEL_TEAM));
+		if (teamPanel)
+		{
+			teamPanel->ShowPanel(false);
 		}
 
 		if (panel->IsVisible() && panel->IsEnabled())
@@ -363,7 +399,7 @@ class NeoTeamMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback( const CCommand &command )
 	{
-		if (engine->IsPlayingDemo())
+		if (engine->IsPlayingDemo() || NEORules()->GetForcedTeam() >= 0)
 		{
 			return;
 		}
@@ -382,6 +418,19 @@ public:
 			Assert(false);
 			Warning("Couldn't find team panel\n");
 			return;
+		}
+
+		auto loadoutPanel = dynamic_cast<CNeoLoadoutMenu*>(GetClientModeNormal()->
+			GetViewport()->FindChildByName(PANEL_NEO_LOADOUT));
+		if (loadoutPanel)
+		{
+			loadoutPanel->ShowPanel(false);
+		}
+		auto classPanel = dynamic_cast<CNeoClassMenu*>(GetClientModeNormal()->
+			GetViewport()->FindChildByName(PANEL_CLASS));
+		if (classPanel)
+		{
+			classPanel->ShowPanel(false);
 		}
 
 		if (panel->IsVisible() && panel->IsEnabled())
@@ -443,13 +492,13 @@ C_NEO_Player::C_NEO_Player()
 {
 	SetPredictionEligible(true);
 
-	m_iNeoClass = NEO_CLASS_ASSAULT;
-	m_iNeoSkin = NEO_SKIN_FIRST;
+	m_iNeoClass = NEORules()->GetForcedClass() >= 0 ? NEORules()->GetForcedClass() : NEO_CLASS_ASSAULT;
+	m_iNeoSkin = NEORules()->GetForcedSkin() >= 0 ? NEORules()->GetForcedSkin() : NEO_SKIN_FIRST;
 	m_iNeoStar = NEO_DEFAULT_STAR;
 	V_memset(m_szNeoName.GetForModify(), 0, sizeof(m_szNeoName));
 	V_memset(m_szNeoClantag.GetForModify(), 0, sizeof(m_szNeoClantag));
 
-	m_iLoadoutWepChoice = 0;
+	m_iLoadoutWepChoice = NEORules()->GetForcedWeapon() >= 0 ? NEORules()->GetForcedWeapon() : 0;
 	m_iNextSpawnClassChoice = -1;
 	m_iXP.GetForModify() = 0;
 
@@ -586,13 +635,13 @@ int C_NEO_Player::GetAttackersScores(const int attackerIdx) const
 
 const char *C_NEO_Player::GetNeoClantag() const
 {
-	if (!neo_sv_clantag_allow.GetBool() ||
-			(neo_cl_streamermode.GetBool() && !IsLocalPlayer()))
+	if (!sv_neo_clantag_allow.GetBool() ||
+			(cl_neo_streamermode.GetBool() && !IsLocalPlayer()))
 	{
 		return "";
 	}
 #ifdef DEBUG
-	const char *overrideClantag = neo_sv_dev_test_clantag.GetString();
+	const char *overrideClantag = sv_neo_dev_test_clantag.GetString();
 	if (overrideClantag && overrideClantag[0])
 	{
 		return overrideClantag;
@@ -635,7 +684,7 @@ const char *C_NEO_Player::InternalGetNeoPlayerName() const
 
 const char *C_NEO_Player::GetNeoPlayerName() const
 {
-	if (neo_cl_streamermode.GetBool() && !IsLocalPlayer())
+	if (cl_neo_streamermode.GetBool() && !IsLocalPlayer())
 	{
 		[[maybe_unused]] uchar32 u32Out;
 		bool bError = false;
@@ -681,9 +730,9 @@ int C_NEO_Player::DrawModel(int flags)
 	}
 
 #ifdef GLOWS_ENABLE
-	auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetTargetNEOPlayer();
+	auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetVisionTargetNEOPlayer();
 #else
-	auto pTargetPlayer = C_NEO_Player::GetTargetNEOPlayer();
+	auto pTargetPlayer = C_NEO_Player::GetVisionTargetNEOPlayer();
 #endif // GLOWS_ENABLE
 	if (!pTargetPlayer)
 	{
@@ -722,6 +771,27 @@ int C_NEO_Player::DrawModel(int flags)
 void C_NEO_Player::AddEntity( void )
 {
 	BaseClass::AddEntity();
+}
+
+void C_NEO_Player::AddPoints(int score, bool bAllowNegativeScore)
+{
+	// Positive score always adds
+	if (score < 0)
+	{
+		if (!bAllowNegativeScore)
+		{
+			if (m_iXP < 0)		// Can't go more negative
+				return;
+
+			if (-score > m_iXP)	// Will this go negative?
+			{
+				score = -m_iXP;		// Sum will be 0
+			}
+		}
+	}
+
+	m_iXP += score;
+	//pl.frags = m_iFrags; NEO TODO (Adam) Is this actually used anywhere? should we include a xp field in CPlayerState?
 }
 
 ShadowType_t C_NEO_Player::ShadowCastType( void ) 
@@ -849,25 +919,37 @@ void C_NEO_Player::CalculateSpeed(void)
 		speed *= pNeoWep->GetSpeedScale();
 	}
 
-	static constexpr float DUCK_WALK_SPEED_MODIFIER = 0.75;
 	if (GetFlags() & FL_DUCKING)
 	{
-		speed *= DUCK_WALK_SPEED_MODIFIER;
+		speed *= NEO_CROUCH_WALK_MODIFIER;
 	}
+
 	if (m_nButtons & IN_WALK)
 	{
-		speed *= DUCK_WALK_SPEED_MODIFIER;
+		speed *= NEO_CROUCH_WALK_MODIFIER; // They stack
 	}
+
 	if (IsSprinting())
 	{
-		static constexpr float RECON_SPRINT_SPEED_MODIFIER = 1.35;
-		static constexpr float OTHER_CLASSES_SPRINT_SPEED_MODIFIER = 1.6;
-		speed *= m_iNeoClass == NEO_CLASS_RECON ? RECON_SPRINT_SPEED_MODIFIER : OTHER_CLASSES_SPRINT_SPEED_MODIFIER;
+		switch (m_iNeoClass) {
+			case NEO_CLASS_RECON:
+				speed *= NEO_RECON_SPRINT_MODIFIER;
+				break;
+			case NEO_CLASS_ASSAULT:
+			case NEO_CLASS_VIP:
+				speed *= NEO_ASSAULT_SPRINT_MODIFIER;
+				break;
+			case NEO_CLASS_SUPPORT:
+				speed *= NEO_SUPPORT_SPRINT_MODIFIER; // Should never happen
+				break;
+			default:
+				break;
+		}
 	}
+
 	if (IsInAim())
 	{
-		static constexpr float AIM_SPEED_MODIFIER = 0.6;
-		speed *= AIM_SPEED_MODIFIER;
+		speed *= NEO_AIM_MODIFIER;
 	}
 
 	Vector absoluteVelocity = GetAbsVelocity();
@@ -1040,7 +1122,7 @@ void C_NEO_Player::HandleSpeedChanges( CMoveData *mv )
 	}
 	else if ( bWantWalking )
 	{
-		mv->m_flClientMaxSpeed = GetWalkSpeed_WithActiveWepEncumberment();
+		mv->m_flClientMaxSpeed = GetCrouchSpeed_WithActiveWepEncumberment();
 	}
 	else
 	{
@@ -1056,6 +1138,13 @@ extern ConVar glow_outline_effect_enable;
 void C_NEO_Player::PreThink( void )
 {
 	BaseClass::PreThink();
+
+	HandleSpeedChangesLegacy();
+
+	if (m_HL2Local.m_flSuitPower <= 0.0f && IsSprinting())
+	{
+		StopSprinting();
+	}
 
 	CalculateSpeed();
 
@@ -1248,7 +1337,7 @@ void C_NEO_Player::PostThink(void)
 			m_bInVision = false;
 			IN_LeanReset();
 
-			if (IsLocalPlayer() && (GetTeamNumber() == TEAM_JINRAI || GetTeamNumber() == TEAM_NSF))
+			if (IsLocalPlayer() && GetDeathTime() != 0 && (GetTeamNumber() == TEAM_JINRAI || GetTeamNumber() == TEAM_NSF))
 			{
 				SetObserverMode(OBS_MODE_DEATHCAM);
 				// Fade out 8s to blackout + 2s full blackout
@@ -1290,16 +1379,6 @@ void C_NEO_Player::PostThink(void)
 				.a = 255,
 			};
 			vieweffects->Fade(sfade);
-
-			auto target = GetObserverTarget();
-			if (!IsValidObserverTarget(target))
-			{
-				auto nextTarget = FindNextObserverTarget(false);
-				if (nextTarget && nextTarget != target)
-				{
-					SetObserverTarget(nextTarget);
-				}
-			}
 		}
 		return;
 	}
@@ -1372,10 +1451,6 @@ void C_NEO_Player::CalcDeathCamView(Vector &eyeOrigin, QAngle &eyeAngles, float 
 
 void C_NEO_Player::TeamChange(int iNewTeam)
 {
-	if (IsLocalPlayer())
-	{
-		engine->ClientCmd(classmenu.GetName());
-	}
 	BaseClass::TeamChange(iNewTeam);
 }
 
@@ -1502,11 +1577,6 @@ void C_NEO_Player::Spawn( void )
 				neoHud->resetHUDState();
 			}
 		}
-
-		if (GetTeamNumber() == TEAM_UNASSIGNED && !engine->IsLevelMainMenuBackground())
-		{
-			engine->ClientCmd(teammenu.GetName());
-		}
 	}
 }
 
@@ -1569,6 +1639,7 @@ void C_NEO_Player::StartSprinting(void)
 void C_NEO_Player::StopSprinting(void)
 {
 	m_fIsSprinting = false;
+	IN_SpeedReset();
 }
 
 bool C_NEO_Player::CanSprint(void)
@@ -1601,11 +1672,6 @@ float C_NEO_Player::GetNormSpeed_WithActiveWepEncumberment(void) const
 	return GetNormSpeed() * GetActiveWeaponSpeedScale();
 }
 
-float C_NEO_Player::GetWalkSpeed_WithActiveWepEncumberment(void) const
-{
-	return GetWalkSpeed() * GetActiveWeaponSpeedScale();
-}
-
 float C_NEO_Player::GetSprintSpeed_WithActiveWepEncumberment(void) const
 {
 	return GetSprintSpeed() * GetActiveWeaponSpeedScale();
@@ -1621,12 +1687,6 @@ float C_NEO_Player::GetNormSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoW
 {
 	Assert(pNeoWep);
 	return GetNormSpeed() * pNeoWep->GetSpeedScale();
-}
-
-float C_NEO_Player::GetWalkSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const
-{
-	Assert(pNeoWep);
-	return GetWalkSpeed() * pNeoWep->GetSpeedScale();
 }
 
 float C_NEO_Player::GetSprintSpeed_WithWepEncumberment(CNEOBaseCombatWeapon* pNeoWep) const
@@ -1648,7 +1708,7 @@ float C_NEO_Player::GetCrouchSpeed(void) const
 	case NEO_CLASS_VIP:
 		return NEO_VIP_CROUCH_SPEED;
 	default:
-		return NEO_BASE_CROUCH_SPEED;
+		return (NEO_BASE_SPEED * NEO_CROUCH_WALK_MODIFIER);
 	}
 }
 
@@ -1657,32 +1717,15 @@ float C_NEO_Player::GetNormSpeed(void) const
 	switch (m_iNeoClass)
 	{
 	case NEO_CLASS_RECON:
-		return NEO_RECON_NORM_SPEED;
+		return NEO_RECON_BASE_SPEED;
 	case NEO_CLASS_ASSAULT:
-		return NEO_ASSAULT_NORM_SPEED;
+		return NEO_ASSAULT_BASE_SPEED;
 	case NEO_CLASS_SUPPORT:
-		return NEO_SUPPORT_NORM_SPEED;
+		return NEO_SUPPORT_BASE_SPEED;
 	case NEO_CLASS_VIP:
-		return NEO_VIP_NORM_SPEED;
+		return NEO_VIP_BASE_SPEED;
 	default:
-		return NEO_BASE_NORM_SPEED;
-	}
-}
-
-float C_NEO_Player::GetWalkSpeed(void) const
-{
-	switch (m_iNeoClass)
-	{
-	case NEO_CLASS_RECON:
-		return NEO_RECON_WALK_SPEED;
-	case NEO_CLASS_ASSAULT:
-		return NEO_ASSAULT_WALK_SPEED;
-	case NEO_CLASS_SUPPORT:
-		return NEO_SUPPORT_WALK_SPEED;
-	case NEO_CLASS_VIP:
-		return NEO_VIP_WALK_SPEED;
-	default:
-		return NEO_BASE_WALK_SPEED;
+		return NEO_BASE_SPEED;
 	}
 }
 
@@ -1699,42 +1742,8 @@ float C_NEO_Player::GetSprintSpeed(void) const
 	case NEO_CLASS_VIP:
 		return NEO_VIP_SPRINT_SPEED;
 	default:
-		return NEO_BASE_SPRINT_SPEED;
+		return NEO_BASE_SPEED; // No generic sprint modifier; default speed.
 	}
-}
-
-void C_NEO_Player::CalcChaseCamView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov)
-{
-	if (!HandleDeathSpecCamSwitch(eyeOrigin, eyeAngles, fov))
-	{
-		BaseClass::CalcChaseCamView(eyeOrigin, eyeAngles, fov);
-	}
-}
-
-void C_NEO_Player::CalcInEyeCamView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov)
-{
-	if (!HandleDeathSpecCamSwitch(eyeOrigin, eyeAngles, fov))
-	{
-		BaseClass::CalcInEyeCamView(eyeOrigin, eyeAngles, fov);
-	}
-}
-
-bool C_NEO_Player::HandleDeathSpecCamSwitch(Vector& eyeOrigin, QAngle& eyeAngles, float& fov)
-{
-	fov = GetFOV(); // jic the caller relies on us initializing this
-	auto target = GetObserverTarget();
-	if (!IsValidObserverTarget(target))
-	{
-		auto nextTarget = FindNextObserverTarget(false);
-		if (nextTarget && nextTarget != target)
-		{
-			SetObserverTarget(nextTarget);
-		}
-		VectorCopy(EyePosition(), eyeOrigin);
-		VectorCopy(EyeAngles(), eyeAngles);
-		return true;
-	}
-	return false;
 }
 
 float C_NEO_Player::GetActiveWeaponSpeedScale() const

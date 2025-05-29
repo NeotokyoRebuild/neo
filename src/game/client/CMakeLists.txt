@@ -24,6 +24,7 @@ target_include_directories(client
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons
     ${CMAKE_SOURCE_DIR}/public
     ${CMAKE_SOURCE_DIR}/thirdparty/sixensesdk/include
+    ${CMAKE_SOURCE_DIR}/vendor
     ${CMAKE_SOURCE_DIR}/game/client/NextBot
     game_controls
     hl2
@@ -83,8 +84,13 @@ if(NEO_RETAIL)
     target_compile_definitions(client PRIVATE RETAIL)
 endif()
 
-if(NEO_DEDICATED)
-    target_compile_definitions(client PRIVATE DEDICATED)
+if(OS_LINUX OR OS_MACOS)
+    target_compile_definitions(client
+        PRIVATE
+        GL_GLEXT_PROTOTYPES
+        DX_TO_GL_ABSTRACTION
+        USE_SDL
+    )
 endif()
 
 if(NEO_BUILD_WEAPON_PBK56S)
@@ -1498,6 +1504,9 @@ target_sources_grouped(
     TARGET client
     NAME "Source Files\\NEO"
     FILES
+    neo/c_neo_message.cpp
+    neo/c_neo_message.h
+    neo/c_neo_npc_dummy.cpp
     neo/c_neo_player.cpp
     neo/c_neo_player.h
     neo/c_neo_te_tocflash.cpp
@@ -1509,10 +1518,22 @@ target_sources_grouped(
 
 target_sources_grouped(
     TARGET client
+    NAME "Source Files\\NEO_Vendor"
+    FILES
+    neo/vendor_impl.cpp
+    ${CMAKE_SOURCE_DIR}/vendor/stb_image.h
+    ${CMAKE_SOURCE_DIR}/vendor/stb_image_resize2.h
+    ${CMAKE_SOURCE_DIR}/vendor/stb_dxt.h
+)
+
+target_sources_grouped(
+    TARGET client
     NAME "Source Files\\NEO\\Game_Controls"
     FILES
     neo/game_controls/neo_classmenu.cpp
     neo/game_controls/neo_classmenu.h
+    neo/game_controls/neo_button.cpp
+    neo/game_controls/neo_button.h
     neo/game_controls/neo_loadoutmenu.cpp
     neo/game_controls/neo_loadoutmenu.h
     neo/game_controls/neo_teammenu.cpp
@@ -1542,6 +1563,8 @@ target_sources_grouped(
     neo/ui/neo_loading.h
     neo/ui/neo_ui.cpp
     neo/ui/neo_ui.h
+    neo/ui/neo_utils.cpp
+    neo/ui/neo_utils.h
     neo/ui/IOverrideInterface.h
     neo/ui/OverrideInterface.cpp
     neo/ui/neo_hud_ammo.cpp
@@ -1553,6 +1576,7 @@ target_sources_grouped(
     neo/ui/neo_hud_crosshair.cpp
     neo/ui/neo_hud_crosshair.h
     neo/ui/neo_hud_damage_indicator.cpp
+    neo/ui/neo_hud_deathnotice.cpp
     neo/ui/neo_hud_friendly_marker.cpp
     neo/ui/neo_hud_friendly_marker.h
     neo/ui/neo_hud_game_event.cpp
@@ -1569,6 +1593,8 @@ target_sources_grouped(
     neo/ui/neo_hud_health_thermoptic_aux.h
     neo/ui/neo_hud_hint.cpp
     neo/ui/neo_hud_hint.h
+    neo/ui/neo_hud_message.cpp
+    neo/ui/neo_hud_message.h
     neo/ui/neo_hud_round_state.cpp
     neo/ui/neo_hud_round_state.h
     neo/ui/neo_hud_startup_sequence.cpp
@@ -1587,7 +1613,6 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_gamerules.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_mount_original.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_shared.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_spawnpoint.cpp
@@ -1743,7 +1768,6 @@ target_sources_grouped(
     hl2mp/hl2mp_hud_chat.h
     #hl2mp/hl2mp_hud_target_id.cpp
     hl2mp/hl2mp_hud_team.cpp
-    hl2mp/hud_deathnotice.cpp
     hl2mp/ui/backgroundpanel.cpp
     hl2mp/ui/backgroundpanel.h
     hl2mp/ui/hl2mpclientscoreboard.cpp

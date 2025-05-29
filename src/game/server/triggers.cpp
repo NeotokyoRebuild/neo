@@ -4875,10 +4875,10 @@ void CServerRagdollTrigger::Spawn( void )
 void CServerRagdollTrigger::StartTouch(CBaseEntity *pOther)
 {
 	BaseClass::StartTouch( pOther );
-
+#ifndef NEO
 	if ( pOther->IsPlayer() )
 		return;
-
+#endif
 	CBaseCombatCharacter *pCombatChar = pOther->MyCombatCharacterPointer();
 
 	if ( pCombatChar )
@@ -4890,10 +4890,10 @@ void CServerRagdollTrigger::StartTouch(CBaseEntity *pOther)
 void CServerRagdollTrigger::EndTouch(CBaseEntity *pOther)
 {
 	BaseClass::EndTouch( pOther );
-
+#ifndef NEO
 	if ( pOther->IsPlayer() )
 		return;
-
+#endif
 	CBaseCombatCharacter *pCombatChar = pOther->MyCombatCharacterPointer();
 
 	if ( pCombatChar )

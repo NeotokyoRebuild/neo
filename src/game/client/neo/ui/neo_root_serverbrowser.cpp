@@ -7,8 +7,9 @@
 
 #include "neo_ui.h"
 
+#include <algorithm>
+
 extern NeoUI::Context g_uiCtx;
-inline int g_iGSIX[GSIW__TOTAL] = {};
 
 void CNeoServerList::UpdateFilteredList()
 {
@@ -19,32 +20,27 @@ void CNeoServerList::UpdateFilteredList()
 		return;
 	}
 
-	// Can't use lamda capture for this, so pass through context
-	V_qsort_s(m_filteredServers.Base(), m_filteredServers.Size(), sizeof(gameserveritem_t),
-			  [](void *vpCtx, const void *vpLeft, const void *vpRight) -> int {
-		const GameServerSortContext gsCtx = *(static_cast<GameServerSortContext *>(vpCtx));
-		auto *pGsiLeft = static_cast<const gameserveritem_t *>(vpLeft);
-		auto *pGsiRight = static_cast<const gameserveritem_t *>(vpRight);
-
+	std::sort(m_filteredServers.begin(), m_filteredServers.end(),
+			  [this](const gameserveritem_t &gsiLeft, const gameserveritem_t &gsiRight) -> bool {
 		// Always set szLeft/szRight to name as fallback
-		const char *szLeft = pGsiLeft->GetName();
-		const char *szRight = pGsiRight->GetName();
+		const char *szLeft = gsiLeft.GetName();
+		const char *szRight = gsiRight.GetName();
 		int iLeft, iRight;
 		bool bLeft, bRight;
-		switch (gsCtx.col)
+		switch (m_pSortCtx->col)
 		{
 		case GSIW_LOCKED:
-			bLeft = pGsiLeft->m_bPassword;
-			bRight = pGsiRight->m_bPassword;
+			bLeft = gsiLeft.m_bPassword;
+			bRight = gsiRight.m_bPassword;
 			break;
 		case GSIW_VAC:
-			bLeft = pGsiLeft->m_bSecure;
-			bRight = pGsiRight->m_bSecure;
+			bLeft = gsiLeft.m_bSecure;
+			bRight = gsiRight.m_bSecure;
 			break;
 		case GSIW_MAP:
 		{
-			const char *szMapLeft = pGsiLeft->m_szMap;
-			const char *szMapRight = pGsiRight->m_szMap;
+			const char *szMapLeft = gsiLeft.m_szMap;
+			const char *szMapRight = gsiRight.m_szMap;
 			if (V_strcmp(szMapLeft, szMapRight) != 0)
 			{
 				szLeft = szMapLeft;
@@ -53,17 +49,17 @@ void CNeoServerList::UpdateFilteredList()
 			break;
 		}
 		case GSIW_PLAYERS:
-			iLeft = pGsiLeft->m_nPlayers;
-			iRight = pGsiRight->m_nPlayers;
+			iLeft = gsiLeft.m_nPlayers;
+			iRight = gsiRight.m_nPlayers;
 			if (iLeft == iRight)
 			{
-				iLeft = pGsiLeft->m_nMaxPlayers;
-				iRight = pGsiRight->m_nMaxPlayers;
+				iLeft = gsiLeft.m_nMaxPlayers;
+				iRight = gsiRight.m_nMaxPlayers;
 			}
 			break;
 		case GSIW_PING:
-			iLeft = pGsiLeft->m_nPing;
-			iRight = pGsiRight->m_nPing;
+			iLeft = gsiLeft.m_nPing;
+			iRight = gsiRight.m_nPing;
 			break;
 		case GSIW_NAME:
 		default:
@@ -71,22 +67,22 @@ void CNeoServerList::UpdateFilteredList()
 			break;
 		}
 
-		switch (gsCtx.col)
+		switch (m_pSortCtx->col)
 		{
 		case GSIW_LOCKED:
 		case GSIW_VAC:
-			if (bLeft != bRight) return (gsCtx.bDescending) ? bLeft < bRight : bLeft > bRight;
+			if (bLeft != bRight) return (m_pSortCtx->bDescending) ? bLeft < bRight : bLeft > bRight;
 			break;
 		case GSIW_PLAYERS:
 		case GSIW_PING:
-			if (iLeft != iRight) return (gsCtx.bDescending) ? iLeft < iRight : iLeft > iRight;
+			if (iLeft != iRight) return (m_pSortCtx->bDescending) ? iLeft < iRight : iLeft > iRight;
 			break;
 		default:
 			break;
 		}
 
-		return (gsCtx.bDescending) ? V_strcmp(szRight, szLeft) : V_strcmp(szLeft, szRight);
-	}, m_pSortCtx);
+		return (m_pSortCtx->bDescending) ? (V_strcmp(szRight, szLeft) > 0) : (V_strcmp(szLeft, szRight) > 0);
+	});
 }
 
 void CNeoServerList::RequestList()
@@ -153,6 +149,42 @@ CNeoServerPlayers::~CNeoServerPlayers()
 	}
 }
 
+void CNeoServerPlayers::UpdateSortedList()
+{
+	m_sortedPlayers = m_players;
+	if (m_sortedPlayers.IsEmpty())
+	{
+		return;
+	}
+
+	std::sort(m_sortedPlayers.begin(), m_sortedPlayers.end(),
+			  [this](const PlayerInfo &gspsLeft, const PlayerInfo &gspsRight) -> bool {
+		switch (m_sortCtx.col)
+		{
+		case GSPS_SCORE:
+		{
+			const int iLeft = gspsLeft.iScore;
+			const int iRight = gspsRight.iScore;
+			if (iLeft != iRight) return (m_sortCtx.bDescending) ? iLeft < iRight : iLeft > iRight;
+		} break;
+		case GSPS_TIME:
+		{
+			const float flLeft = gspsLeft.flTimePlayed;
+			const float flRight = gspsRight.flTimePlayed;
+			if (flLeft != flRight) return (m_sortCtx.bDescending) ? flLeft < flRight : flLeft > flRight;
+		} break;
+		default:
+			// no-op, already assigned (default)
+			break;
+		}
+
+		// Always set wszLeft/wszRight to name as fallback
+		const wchar_t *wszLeft = gspsLeft.wszName;
+		const wchar_t *wszRight = gspsRight.wszName;
+		return (m_sortCtx.bDescending) ? (V_wcscmp(wszRight, wszLeft) > 0) : (V_wcscmp(wszLeft, wszRight) > 0);
+	});
+}
+
 void CNeoServerPlayers::RequestList(uint32 unIP, uint16 usPort)
 {
 	auto *steamMM = steamapicontext->SteamMatchmakingServers();
@@ -172,6 +204,7 @@ void CNeoServerPlayers::AddPlayerToList(const char *pchName, int nScore, float f
 	};
 	g_pVGuiLocalize->ConvertANSIToUnicode(pchName, playerInfo.wszName, sizeof(playerInfo.wszName));
 	m_players.AddToTail(playerInfo);
+	UpdateSortedList();
 }
 
 void CNeoServerPlayers::PlayersFailedToRespond()
@@ -182,61 +215,4 @@ void CNeoServerPlayers::PlayersFailedToRespond()
 void CNeoServerPlayers::PlayersRefreshComplete()
 {
 	m_hdlQuery = HSERVERQUERY_INVALID;
-}
-
-void ServerBrowserDrawRow(const gameserveritem_t &server)
-{
-	int xPos = 0;
-	const int fontStartYPos = g_uiCtx.fonts[g_uiCtx.eFont].iYOffset;
-
-	if (server.m_bPassword)
-	{
-		NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
-		vgui::surface()->DrawPrintText(L"P", 1);
-	}
-	xPos += g_iGSIX[GSIW_LOCKED];
-
-	if (server.m_bSecure)
-	{
-		NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
-		vgui::surface()->DrawPrintText(L"S", 1);
-	}
-	xPos += g_iGSIX[GSIW_VAC];
-
-	{
-		wchar_t wszServerName[k_cbMaxGameServerName];
-		const int iSize = g_pVGuiLocalize->ConvertANSIToUnicode(server.GetName(), wszServerName, sizeof(wszServerName));
-		NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
-		vgui::surface()->DrawPrintText(wszServerName, iSize);
-	}
-	xPos += g_iGSIX[GSIW_NAME];
-
-	{
-		// In lower resolution, it may overlap from name, so paint a background here
-		NeoUI::GCtxDrawFilledRectXtoX(xPos, -g_uiCtx.iRowTall, g_uiCtx.dPanel.wide, 0);
-
-		wchar_t wszMapName[k_cbMaxGameServerMapName];
-		const int iSize = g_pVGuiLocalize->ConvertANSIToUnicode(server.m_szMap, wszMapName, sizeof(wszMapName));
-		NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
-		vgui::surface()->DrawPrintText(wszMapName, iSize);
-	}
-	xPos += g_iGSIX[GSIW_MAP];
-
-	{
-		// In lower resolution, it may overlap from name, so paint a background here
-		NeoUI::GCtxDrawFilledRectXtoX(xPos, -g_uiCtx.iRowTall, g_uiCtx.dPanel.wide, 0);
-
-		wchar_t wszPlayers[10];
-		const int iSize = V_swprintf_safe(wszPlayers, L"%d/%d", server.m_nPlayers, server.m_nMaxPlayers);
-		NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
-		vgui::surface()->DrawPrintText(wszPlayers, iSize);
-	}
-	xPos += g_iGSIX[GSIW_PLAYERS];
-
-	{
-		wchar_t wszPing[10];
-		const int iSize = V_swprintf_safe(wszPing, L"%d", server.m_nPing);
-		NeoUI::GCtxDrawSetTextPos(xPos + g_uiCtx.iMarginX, g_uiCtx.iLayoutY - g_uiCtx.iRowTall + fontStartYPos);
-		vgui::surface()->DrawPrintText(wszPing, iSize);
-	}
 }

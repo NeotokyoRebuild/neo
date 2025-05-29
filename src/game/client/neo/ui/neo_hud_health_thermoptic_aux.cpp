@@ -20,7 +20,7 @@
 
 using vgui::surface;
 
-ConVar neo_cl_hud_hta_enabled("neo_cl_hud_hta_enabled", "1", FCVAR_USERINFO,
+ConVar cl_neo_hud_hta_enabled("cl_neo_hud_hta_enabled", "1", FCVAR_USERINFO,
 	"Whether the HUD Health/ThermOptic/AUX module is enabled or not.", true, 0, true, 1);
 
 DECLARE_NAMED_HUDELEMENT(CNEOHud_HTA, NHudHealth);
@@ -31,6 +31,7 @@ CNEOHud_HTA::CNEOHud_HTA(const char* pElementName, vgui::Panel* parent)
 	: CHudElement(pElementName), EditablePanel(parent, pElementName)
 {
 	SetAutoDelete(true);
+	m_iHideHudElementNumber = NEO_HUD_ELEMENT_HEALTH_THERMOPTIC_AUX;
 
 	if (parent)
 	{
@@ -49,7 +50,7 @@ CNEOHud_HTA::CNEOHud_HTA(const char* pElementName, vgui::Panel* parent)
 		m_wszBuildInfo[0] = L'\0';
 	}
 
-	SetVisible(neo_cl_hud_hta_enabled.GetBool());
+	SetVisible(cl_neo_hud_hta_enabled.GetBool());
 
 	SetHiddenBits(HIDEHUD_HEALTH | HIDEHUD_PLAYERDEAD | HIDEHUD_NEEDSUIT | HIDEHUD_WEAPONSELECTION);
 }
@@ -157,7 +158,7 @@ void CNEOHud_HTA::DrawHTA() const
 		surface()->DrawPrintText(L"THERM-OPTIC", 11);
 		surface()->DrawSetTextColor(m_sprintTextColor);
 		surface()->DrawSetTextPos(sprinttext_xpos + xpos, sprinttext_ypos + ypos);
-		surface()->DrawPrintText(L"AUX", 3);
+		surface()->DrawPrintText(L"AUX POWER", 9);
 	}
 
 	int fontWidth, fontHeight;
@@ -236,7 +237,7 @@ void CNEOHud_HTA::DrawNeoHudElement()
 		return;
 	}
 
-	if (neo_cl_hud_hta_enabled.GetBool())
+	if (cl_neo_hud_hta_enabled.GetBool())
 	{
 		DrawHTA();
 	}
