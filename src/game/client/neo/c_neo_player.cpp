@@ -1011,7 +1011,7 @@ void C_NEO_Player::HandleSpeedChangesLegacy()
 			{
 				StopWalking();
 			}
-			else if( !IsWalking() && !IsSprinting() && (m_afButtonPressed & IN_WALK) && !(m_nButtons & IN_DUCK) )
+			else if( !IsWalking() && !IsSprinting() && (m_afButtonPressed & IN_WALK) )
 			{
 				StartWalking();
 			}

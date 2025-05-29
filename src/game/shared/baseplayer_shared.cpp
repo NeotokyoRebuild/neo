@@ -581,7 +581,11 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 
 	bool onground = ( GetFlags() & FL_ONGROUND );
 	bool movingalongground = ( groundspeed > 0.0001f );
+#ifdef NEO
+	const bool moving_fast_enough = speed >= 50.f; // Support crouched with a supa7 aimed in has a speed of 55.f
+#else
 	bool moving_fast_enough =  ( speed >= velwalk );
+#endif // NEO
 
 #ifdef PORTAL
 	// In Portal we MUST play footstep sounds even when the player is moving very slowly
@@ -699,7 +703,7 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 	{
 		fvol *= 0.65;
 #ifdef NEO
-		if (speed <= NEO_CROUCH_WALK_SPEED * SILENT_THRESHOLD_GRACE)
+		if (neoPlayer->IsWalking() && speed <= NEO_CROUCH_WALK_SPEED * SILENT_THRESHOLD_GRACE)
 		{
 			return;
 		}
@@ -707,7 +711,7 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 	}
 #ifdef NEO
 
-	else if (speed <= NEO_WALK_SPEED * SILENT_THRESHOLD_GRACE)
+	else if (neoPlayer->IsWalking() && speed <= NEO_WALK_SPEED * SILENT_THRESHOLD_GRACE)
 	{
 		return;
 	}
