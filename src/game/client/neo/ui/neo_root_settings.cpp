@@ -32,12 +32,25 @@ const wchar_t *QUALITY_LABELS[] = {
 	L"Very High",
 };
 
+const wchar_t* QUALITY3_LABELS[] = {
+	L"Low",
+	L"High",
+	L"Very High",
+};
+
 enum QualityEnum
 {
 	QUALITY_LOW = 0,
 	QUALITY_MEDIUM,
 	QUALITY_HIGH,
 	QUALITY_VERYHIGH,
+};
+
+enum Quality3Enum
+{
+	QUALITY3_LOW = 0,
+	QUALITY3_HIGH,
+	QUALITY3_VERYHIGH,
 };
 
 enum ESpeaker
@@ -263,6 +276,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->bStreamerMode = cvr->cl_neo_streamermode.GetBool();
 		pGeneral->bAutoDetectOBS = cvr->cl_neo_streamermode_autodetect_obs.GetBool();
 		pGeneral->bEnableRangeFinder = cvr->cl_neo_hud_rangefinder_enabled.GetBool();
+		pGeneral->bExtendedKillfeed = cvr->cl_neo_hud_extended_killfeed.GetBool();
 		pGeneral->iBackground = cvr->sv_unlockedchapters.GetInt();
 		NeoUI::ResetTextures();
 	}
@@ -348,7 +362,15 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pVideo->iCoreRendering = (queueMode == -1 || queueMode == 2) ? THREAD_MULTI : THREAD_SINGLE;
 		pVideo->iModelDetail = 2 - cvr->r_rootlod.GetInt(); // Inverse, highest = 0, lowest = 2
 		pVideo->iTextureDetail = 3 - (cvr->mat_picmip.GetInt() + 1); // Inverse+1, highest = -1, lowest = 2
-		pVideo->iShaderDetail = 1 - cvr->mat_reducefillrate.GetInt(); // Inverse, 1 = low, 0 = high
+		// Shader detail
+		//					mat_reducefillrate			r_lightmap_bicubic
+		// Low:						1							0
+		// High:					0							0
+		// Very High:				0							1
+		pVideo->iShaderDetail = (cvr->r_lightmap_bicubic.GetBool()) ?	QUALITY3_VERYHIGH :
+								(cvr->mat_reducefillrate.GetBool()) ?	QUALITY3_LOW :
+																		QUALITY3_HIGH;
+		
 		// Water detail
 		//                r_waterforceexpensive        r_waterforcereflectentities
 		// Simple:                  0                              0
@@ -478,6 +500,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_neo_streamermode.SetValue(pGeneral->bStreamerMode);
 		cvr->cl_neo_streamermode_autodetect_obs.SetValue(pGeneral->bAutoDetectOBS);
 		cvr->cl_neo_hud_rangefinder_enabled.SetValue(pGeneral->bEnableRangeFinder);
+		cvr->cl_neo_hud_extended_killfeed.SetValue(pGeneral->bExtendedKillfeed);
 		cvr->sv_unlockedchapters.SetValue(pGeneral->iBackground);
 	}
 	{
@@ -569,7 +592,8 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->mat_queue_mode.SetValue((pVideo->iCoreRendering == THREAD_MULTI) ? 2 : 0);
 		cvr->r_rootlod.SetValue(2 - pVideo->iModelDetail);
 		cvr->mat_picmip.SetValue(2 - pVideo->iTextureDetail);
-		cvr->mat_reducefillrate.SetValue(1 - pVideo->iShaderDetail);
+		cvr->mat_reducefillrate.SetValue(pVideo->iShaderDetail == QUALITY3_LOW);
+		cvr->r_lightmap_bicubic.SetValue(pVideo->iShaderDetail == QUALITY3_VERYHIGH);
 		cvr->r_waterforceexpensive.SetValue(pVideo->iWaterDetail >= QUALITY_MEDIUM);
 		cvr->r_waterforcereflectentities.SetValue(pVideo->iWaterDetail == QUALITY_HIGH);
 		cvr->r_shadowrendertotexture.SetValue(pVideo->iShadowDetail >= QUALITY_MEDIUM);
@@ -682,6 +706,7 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBoxBool(L"Show position", &pGeneral->bShowPos);
 	NeoUI::RingBox(L"Show FPS", SHOWFPS_LABELS, ARRAYSIZE(SHOWFPS_LABELS), &pGeneral->iShowFps);
 	NeoUI::RingBoxBool(L"Show rangefinder", &pGeneral->bEnableRangeFinder);
+	NeoUI::RingBoxBool(L"Extended Killfeed", &pGeneral->bExtendedKillfeed);
 	NeoUI::SliderInt(L"Selected Background", &pGeneral->iBackground, 1, 4); // NEO TODO (Adam) switch to RingBox with values read from ChapterBackgrounds.txt
 
 	NeoUI::HeadingLabel(L"STREAMER MODE");
@@ -824,7 +849,7 @@ void NeoSettings_Audio(NeoSettings *ns)
 
 static const wchar_t *WINDOW_MODE[WINDOWMODE__TOTAL] = { L"Fullscreen", L"Windowed", L"Windowed (Borderless)" };
 static const wchar_t *QUEUE_MODE[] = { L"Single", L"Multi", };
-static const wchar_t *QUALITY2_LABELS[] = { L"Low", L"High", };
+static const wchar_t *QUALITY2_LABELS[] = { L"Low", L"High" };
 static const wchar_t *FILTERING_LABELS[FILTERING__TOTAL] = {
 	L"Bilinear", L"Trilinear", L"Anisotropic 2X", L"Anisotropic 4X", L"Anisotropic 8X", L"Anisotropic 16X",
 };
@@ -840,7 +865,7 @@ void NeoSettings_Video(NeoSettings *ns)
 	NeoUI::RingBox(L"Core Rendering", QUEUE_MODE, ARRAYSIZE(QUEUE_MODE), &pVideo->iCoreRendering);
 	NeoUI::RingBox(L"Model detail", QUALITY_LABELS, 3, &pVideo->iModelDetail);
 	NeoUI::RingBox(L"Texture detail", QUALITY_LABELS, 4, &pVideo->iTextureDetail);
-	NeoUI::RingBox(L"Shader detail", QUALITY2_LABELS, 2, &pVideo->iShaderDetail);
+	NeoUI::RingBox(L"Shader detail", QUALITY3_LABELS, 3, &pVideo->iShaderDetail);
 	NeoUI::RingBox(L"Water detail", WATER_LABELS, ARRAYSIZE(WATER_LABELS), &pVideo->iWaterDetail);
 	NeoUI::RingBox(L"Shadow detail", QUALITY_LABELS, 3, &pVideo->iShadowDetail);
 	NeoUI::RingBoxBool(L"Color correction", &pVideo->bColorCorrection);

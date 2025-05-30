@@ -58,7 +58,7 @@ CNeoRoot *g_pNeoRoot = nullptr;
 void NeoToggleconsole();
 extern CNeoLoading *g_pNeoLoading;
 inline NeoUI::Context g_uiCtx;
-inline ConVar cl_neo_toggleconsole("cl_neo_toggleconsole", "0", FCVAR_ARCHIVE,
+inline ConVar cl_neo_toggleconsole("cl_neo_toggleconsole", "1", FCVAR_ARCHIVE,
 								   "If the console can be toggled with the ` keybind or not.", true, 0.0f, true, 1.0f);
 inline int g_iRowsInScreen;
 
@@ -118,7 +118,7 @@ CNeoRootInput::CNeoRootInput(CNeoRoot *rootPanel)
 {
 	MakePopup(true);
 	SetKeyBoardInputEnabled(true);
-	SetMouseInputEnabled(false);
+	SetMouseInputEnabled(true);
 	SetVisible(true);
 	SetEnabled(true);
 	PerformLayout();
@@ -126,8 +126,10 @@ CNeoRootInput::CNeoRootInput(CNeoRoot *rootPanel)
 
 void CNeoRootInput::PerformLayout()
 {
+	int iScrWide, iScrTall;
+	vgui::surface()->GetScreenSize(iScrWide, iScrTall);
 	SetPos(0, 0);
-	SetSize(1, 1);
+	SetSize(iScrWide, iScrTall);
 	SetBgColor(COLOR_TRANSPARENT);
 	SetFgColor(COLOR_TRANSPARENT);
 }
@@ -140,6 +142,31 @@ void CNeoRootInput::OnKeyCodeTyped(vgui::KeyCode code)
 void CNeoRootInput::OnKeyTyped(wchar_t unichar)
 {
 	m_pNeoRoot->OnRelayedKeyTyped(unichar);
+}
+
+void CNeoRootInput::OnMousePressed(vgui::MouseCode code)
+{
+	m_pNeoRoot->OnRelayedMousePressed(code);
+}
+
+void CNeoRootInput::OnMouseReleased(vgui::MouseCode code)
+{
+	m_pNeoRoot->OnRelayedMouseReleased(code);
+}
+
+void CNeoRootInput::OnMouseDoublePressed(vgui::MouseCode code)
+{
+	m_pNeoRoot->OnRelayedMouseDoublePressed(code);
+}
+
+void CNeoRootInput::OnMouseWheeled(int delta)
+{
+	m_pNeoRoot->OnRelayedMouseWheeled(delta);
+}
+
+void CNeoRootInput::OnCursorMoved(int x, int y)
+{
+	m_pNeoRoot->OnRelayedCursorMoved(x, y);
 }
 
 void CNeoRootInput::OnThink()
@@ -377,31 +404,31 @@ void CNeoRoot::Paint()
 	OnMainLoop(NeoUI::MODE_PAINT);
 }
 
-void CNeoRoot::OnMousePressed(vgui::MouseCode code)
+void CNeoRoot::OnRelayedMousePressed(vgui::MouseCode code)
 {
 	g_uiCtx.eCode = code;
 	OnMainLoop(NeoUI::MODE_MOUSEPRESSED);
 }
 
-void CNeoRoot::OnMouseReleased(vgui::MouseCode code)
+void CNeoRoot::OnRelayedMouseReleased(vgui::MouseCode code)
 {
 	g_uiCtx.eCode = code;
 	OnMainLoop(NeoUI::MODE_MOUSERELEASED);
 }
 
-void CNeoRoot::OnMouseDoublePressed(vgui::MouseCode code)
+void CNeoRoot::OnRelayedMouseDoublePressed(vgui::MouseCode code)
 {
 	g_uiCtx.eCode = code;
 	OnMainLoop(NeoUI::MODE_MOUSEDOUBLEPRESSED);
 }
 
-void CNeoRoot::OnMouseWheeled(int delta)
+void CNeoRoot::OnRelayedMouseWheeled(int delta)
 {
 	g_uiCtx.eCode = (delta > 0) ? MOUSE_WHEEL_UP : MOUSE_WHEEL_DOWN;
 	OnMainLoop(NeoUI::MODE_MOUSEWHEELED);
 }
 
-void CNeoRoot::OnCursorMoved(int x, int y)
+void CNeoRoot::OnRelayedCursorMoved(int x, int y)
 {
 	g_uiCtx.iMouseAbsX = x;
 	g_uiCtx.iMouseAbsY = y;
@@ -1393,8 +1420,8 @@ void CNeoRoot::MainLoopSprayPicker(const MainLoopParam param)
 		vecStaticSprays.Purge();
 		FileFindHandle_t findHdl;
 		for (const char *pszFilename = filesystem->FindFirst("materials/vgui/logos/ui/*.vmt", &findHdl);
-			 pszFilename;
-			 pszFilename = filesystem->FindNext(findHdl))
+				pszFilename;
+				pszFilename = filesystem->FindNext(findHdl))
 		{
 			// spray.vmt is only used for currently applying spray
 			if (V_strcmp(pszFilename, "spray.vmt") == 0)
@@ -1438,7 +1465,10 @@ void CNeoRoot::MainLoopSprayPicker(const MainLoopParam param)
 			V_sprintf_safe(sprayInfo.szPath, "vgui/logos/ui/%s", sprayInfo.szBaseName);
 			V_sprintf_safe(sprayInfo.szVtf, "materials/vgui/logos/%s.vtf", sprayInfo.szBaseName);
 
-			vecStaticSprays.AddToTail(sprayInfo);
+			if (filesystem->FileExists(sprayInfo.szVtf))
+			{
+				vecStaticSprays.AddToTail(sprayInfo);
+			}
 		}
 		filesystem->FindClose(findHdl);
 
@@ -1862,11 +1892,12 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 			{
 				static constexpr int TEXWH = 6;
 				const int iTexSprayWH = g_uiCtx.layout.iRowTall * TEXWH;
+				int scrWide, scrTall;
+				vgui::surface()->GetScreenSize(scrWide, scrTall);
 				NeoUI::Texture(m_sprayToDelete.szPath,
-							   g_uiCtx.iLayoutX + (g_uiCtx.dPanel.wide / 2) - (iTexSprayWH / 2),
-							   g_uiCtx.iLayoutY - iTexSprayWH - g_uiCtx.layout.iRowTall,
-							   iTexSprayWH,
-							   iTexSprayWH);
+							   (scrWide / 2) - (iTexSprayWH / 2),
+							   (scrTall / 3) - (iTexSprayWH / 2),
+							   iTexSprayWH, iTexSprayWH, "", NeoUI::TEXTUREOPTFLAGS_DONOTCROPTOPANEL);
 
 				NeoUI::Label(L"Do you want to delete this spray?");
 				NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
@@ -1874,6 +1905,58 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 				{
 					if (NeoUI::Button(L"Yes (Enter)").bPressed || NeoUI::Bind(KEY_ENTER))
 					{
+						// NOTE (nullsystem): Check if the texture matches byte for byte
+						// for the current set spray. If so, replace it with the default spray.
+						{
+							static constexpr const char PSZ_CURRENT_SPRAY[] = "materials/vgui/logos/spray.vtf";
+							char szPathToAboutToDel[MAX_PATH];
+							V_sprintf_safe(szPathToAboutToDel, "materials/vgui/logos/%s.vtf", m_sprayToDelete.szBaseName);
+
+							bool bDelCurSpray = false;
+
+							if (filesystem->FileExists(PSZ_CURRENT_SPRAY) &&
+									filesystem->FileExists(szPathToAboutToDel))
+							{
+								const unsigned int uSizeCurSpray = filesystem->Size(PSZ_CURRENT_SPRAY);
+								const unsigned int uSizeDelSpray = filesystem->Size(szPathToAboutToDel);
+								if (uSizeCurSpray == uSizeDelSpray)
+								{
+									const unsigned int uSizeSpray = uSizeCurSpray;
+									FileHandle_t hdlCurSpray = filesystem->Open(PSZ_CURRENT_SPRAY, "rb");
+									FileHandle_t hdlDelSpray = filesystem->Open(szPathToAboutToDel, "rb");
+									if (hdlCurSpray && hdlDelSpray)
+									{
+										unsigned char *pbCurSpray = reinterpret_cast<unsigned char *>(calloc(
+													uSizeSpray * 2, sizeof(unsigned char)));
+
+										if (pbCurSpray)
+										{
+											unsigned char *pbDelSpray = pbCurSpray + uSizeSpray;
+
+											filesystem->Read(pbCurSpray, uSizeSpray, hdlCurSpray);
+											filesystem->Read(pbDelSpray, uSizeSpray, hdlDelSpray);
+
+											// Check byte for byte if it matches to determine deletion
+											bDelCurSpray = (V_memcmp(pbCurSpray, pbDelSpray, uSizeSpray) == 0);
+
+											pbDelSpray = nullptr;
+											free(pbCurSpray);
+										}
+									}
+									if (hdlCurSpray) filesystem->Close(hdlCurSpray);
+									if (hdlDelSpray) filesystem->Close(hdlDelSpray);
+								}
+							}
+
+							// NOTE (nullsystem): If current spray matches deleted one,
+							// replace it with the default spray
+							if (bDelCurSpray)
+							{
+								m_eFileIOMode = FILEIODLGMODE_SPRAY;
+								OnFileSelected("materials/vgui/logos/spray_lambda.vtf");
+							}
+						}
+
 						// NOTE (nullsystem): Spray related files to remove:
 						// * materials/vgui/logos/SPRAY.vtf
 						// * materials/vgui/logos/SPRAY.vmt
@@ -2065,7 +2148,16 @@ void CNeoRoot::OnFileSelectedMode_Spray(const char *szFullpath)
 
 	char szBaseFName[MAX_PATH] = {};
 	{
-		const char *pLastSlash = V_strrchr(szFullpath, '/');
+		static constexpr const char OS_PATH_SEP =
+#ifdef WIN32
+			'\\'
+#else
+			'/'
+#endif
+		;
+
+		const char *pLastSlash = V_strrchr(szFullpath, OS_PATH_SEP);
+
 		const char *pszBaseName = pLastSlash ? pLastSlash + 1 : szFullpath;
 		int iSzLen = V_strlen(pszBaseName);
 		const char *pszDot = strchr(pszBaseName, '.');
