@@ -825,6 +825,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	g_uiCtx.dPanel.wide = 96;
 	g_uiCtx.dPanel.tall = 32;
 	NeoUI::BeginSection();
+	g_uiCtx.bgColor = COLOR_TRANSPARENT;
 	g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
 	const auto musicPlayerBtn = NeoUI::Button(L"MP3");
 	if (musicPlayerBtn.bPressed)
