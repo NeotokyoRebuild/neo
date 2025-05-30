@@ -75,6 +75,7 @@ CMP3Player *GetMP3Player()
 	return g_pPlayer;
 }
 
+#ifndef NEO
 static void mp3_f()
 {
 	CMP3Player *player = GetMP3Player();
@@ -83,6 +84,7 @@ static void mp3_f()
 		player->SetVisible( !player->IsVisible() );
 	}
 }
+#endif // NEO
 void MP3Player_Create( vgui::VPANEL parent )
 {
 	Assert( !g_pPlayer );
@@ -103,7 +105,9 @@ void MP3Player_Destroy()
 	}
 }
 
+#ifndef NEO
 static ConCommand mp3( "mp3", mp3_f, "Show/hide mp3 player UI." );
+#endif // NEO
 
 //-----------------------------------------------------------------------------
 // Purpose: This assumes artist/album/file.mp3!!!
@@ -1104,19 +1108,40 @@ class neo_mp3_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback(const CCommand& command)
 	{
-		if (g_pPlayer) { g_pPlayer->SetVisible(!g_pPlayer->IsVisible()); }
+		if (!g_pPlayer)
+		{
+			return;
+		}
+
+		if (g_pPlayer->IsVisible())
+		{
+			g_pPlayer->Close();
+		}
+		else
+		{
+			g_pPlayer->Activate();
+		}
 	}
 };
 neo_mp3_Cb neo_mp3_callback;
 
 ConCommand neo_mp3("neo_mp3", &neo_mp3_callback, "Toggle the mp3 player", FCVAR_DONTRECORD);
 
-void CMP3Player::OnKeyCodeReleased(vgui::KeyCode code)
+void CMP3Player::OnKeyCodePressed(vgui::KeyCode code)
 {
 	const auto toggleMP3Bind = gameuifuncs->GetButtonCodeForBind("neo_mp3");
-	if (toggleMP3Bind == code)
+	if (toggleMP3Bind != code || !g_pPlayer)
 	{
-		g_pPlayer->SetVisible(!g_pPlayer->IsVisible());
+		return;
+	}
+
+	if (g_pPlayer->IsVisible())
+	{
+		g_pPlayer->Close();
+	}
+	else
+	{
+		g_pPlayer->Activate();
 	}
 }
 

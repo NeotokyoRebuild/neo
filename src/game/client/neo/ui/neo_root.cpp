@@ -830,7 +830,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	if (musicPlayerBtn.bPressed)
 	{
 		surface()->PlaySound("ui/buttonclickrelease.wav");
-		engine->ClientCmd("mp3");
+		engine->ClientCmd("neo_mp3");
 
 	}
 	if (musicPlayerBtn.bMouseHover && BTNS_TOTAL != m_iHoverBtn)
