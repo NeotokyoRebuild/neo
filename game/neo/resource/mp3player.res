@@ -13,7 +13,7 @@
 		"visible"		"1"
 		"enabled"		"1"
 		"tabPosition"		"0"
-		"settitlebarvisible"		"0"
+		"settitlebarvisible"		"1"
 		"title"		"#MP3PlayerTitle"
 	}
 	"Menu"
@@ -280,7 +280,7 @@
 		"fieldName"		"SongName"
 		"xpos"		"85"
 		"ypos"		"11"
-		"wide"		"299"
+		"wide"		"200"
 		"tall"		"16"
 		"autoResize"		"1"
 		"pinCorner"		"0"
