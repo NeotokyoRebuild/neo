@@ -25,7 +25,7 @@ ConVar sv_motd_unload_on_dismissal( "sv_motd_unload_on_dismissal",
 	"If enabled, the MOTD contents will be unloaded when the player \
 closes the MOTD." );
 
-ConVar neo_sv_show_motd("neo_sv_show_motd", "0", FCVAR_REPLICATED,
+ConVar sv_neo_show_motd("sv_neo_show_motd", "0", FCVAR_REPLICATED,
 						"If enabled, the MOTD will be shown on player entering the server.",
 						true, 0.0f, true, 1.0f);
 
@@ -37,7 +37,7 @@ void FinishClientPutInServer( CNEO_Player *pPlayer )
 {
 	// NEO NOTE (nullsystem): CNEORules::ClientConnected is done before even CNEO_Player is
 	// created, so that's why this is here and not in CNEORules
-	if (neo_sv_player_restore.GetBool())
+	if (sv_neo_player_restore.GetBool())
 	{
 		const CSteamID steamID = GetSteamIDForPlayerIndex(pPlayer->entindex());
 		if (steamID.IsValid())
@@ -83,7 +83,7 @@ void FinishClientPutInServer( CNEO_Player *pPlayer )
 	}
 
 	INetChannelInfo *nci = engine->GetPlayerNetInfo(pPlayer->entindex());
-	if (nci && !nci->IsLoopback() && neo_sv_show_motd.GetBool())
+	if (nci && !nci->IsLoopback() && sv_neo_show_motd.GetBool())
 	{
 		const ConVar *hostname = cvar->FindVar( "hostname" );
 		const char *title = (hostname) ? hostname->GetString() : "MESSAGE OF THE DAY";
@@ -101,8 +101,7 @@ void FinishClientPutInServer( CNEO_Player *pPlayer )
 
 	// NEO TODO (Rain): Team selection HUD here.
 
-	// If player chooses to spectate upon joining, start in free roam mode.
-	pPlayer->StartObserverMode(OBS_MODE_ROAMING);
+	pPlayer->StartObserverMode(OBS_MODE_FIXED);
 }
 
 /*
@@ -325,6 +324,8 @@ void Precache_NEO_Sounds( void )
 	CBaseEntity::PrecacheScriptSound("Victory.Draw");
 	CBaseEntity::PrecacheScriptSound("Victory.Jinrai");
 	CBaseEntity::PrecacheScriptSound("Victory.NSF");
+
+	CBaseEntity::PrecacheSound("tutorial/hitsound.wav");
 }
 
 //-----------------------------------------------------------------------------

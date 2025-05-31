@@ -6,6 +6,7 @@
 
 #include "iclientmode.h"
 #include "ienginevgui.h"
+#include "engine/IEngineSound.h"
 
 #include <vgui/ILocalize.h>
 #include <vgui/ISurface.h>
@@ -31,8 +32,10 @@ NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(RoundState, 0.1)
 
 ConVar cl_neo_squad_hud_original("cl_neo_squad_hud_original", "1", FCVAR_ARCHIVE, "Use the old squad HUD", true, 0.0, true, 1.0);
 ConVar cl_neo_squad_hud_star_scale("cl_neo_squad_hud_star_scale", "0", FCVAR_ARCHIVE, "Scaling to apply from 1080p, 0 disables scaling");
-extern ConVar neo_sv_dm_win_xp;
-extern ConVar neo_cl_streamermode;
+extern ConVar sv_neo_dm_win_xp;
+extern ConVar cl_neo_streamermode;
+extern ConVar snd_victory_volume;
+extern ConVar sv_neo_readyup_countdown;
 
 namespace {
 constexpr int Y_POS = 0;
@@ -112,6 +115,17 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 		surface()->DrawSetTextureFile(m_teamLogoColors[i].totalLogo, TEAM_TEX_INFO[texIdx].totalLogo, true, false);
 	}
 
+}
+
+void CNEOHud_RoundState::LevelShutdown(void)
+{
+	for (int i = 0; i < STAR__TOTAL; ++i)
+	{
+		auto* star = m_ipStars[i];
+		star->SetVisible(false);
+	}
+
+	// NEO NOTE (Adam) set m_iPreviouslyActiveStar && m_iPreviouslyActiveTeam to -1? Seems to work fine without 
 }
 
 void CNEOHud_RoundState::ApplySchemeSettings(vgui::IScheme* pScheme)
@@ -195,7 +209,7 @@ void CNEOHud_RoundState::ApplySchemeSettings(vgui::IScheme* pScheme)
 	SetZPos(90);
 }
 
-extern ConVar neo_sv_readyup_lobby;
+extern ConVar sv_neo_readyup_lobby;
 
 void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 {
@@ -204,9 +218,18 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	const bool inSuddenDeath = NEORules()->RoundIsInSuddenDeath();
 	const bool inMatchPoint = NEORules()->RoundIsMatchPoint();
 
-	m_pWszStatusUnicode = (roundStatus == NeoRoundStatus::Warmup) ? L"Warmup" : L"";
-	if (roundStatus == NeoRoundStatus::Idle) {
-		m_pWszStatusUnicode = neo_sv_readyup_lobby.GetBool() ? L"Waiting for players to ready up" : L"Waiting for players";
+	m_pWszStatusUnicode = L"";
+	if (roundStatus == NeoRoundStatus::Idle)
+	{
+		m_pWszStatusUnicode = sv_neo_readyup_lobby.GetBool() ? L"Waiting for players to ready up" : L"Waiting for players";
+	}
+	else if (roundStatus == NeoRoundStatus::Warmup)
+	{
+		m_pWszStatusUnicode = L"Warmup";
+	}
+	else if (roundStatus == NeoRoundStatus::Countdown)
+	{
+		m_pWszStatusUnicode = L"Match is starting...";
 	}
 	else if (inSuddenDeath)
 	{
@@ -241,6 +264,10 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	{
 		m_iWszRoundUCSize = V_swprintf_safe(m_wszRoundUnicode, L"PAUSED");
 		roundTimeLeft = NEORules()->m_flPauseEnd.Get() - gpGlobals->curtime;
+	}
+	else if (NEORules()->GetRoundStatus() == NeoRoundStatus::Countdown)
+	{
+		m_iWszRoundUCSize = V_swprintf_safe(m_wszRoundUnicode, L"STARTING");
 	}
 	else
 	{
@@ -286,9 +313,9 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	if (NEORules()->GetGameType() == NEO_GAME_TYPE_DM)
 	{
 		// NEO NOTE (nullsystem): Show highest player score
-		if (neo_sv_dm_win_xp.GetInt() > 0)
+		if (sv_neo_dm_win_xp.GetInt() > 0)
 		{
-			V_sprintf_safe(szPlayersAliveANSI, "Lead: %d/%d", iDMHighestXP, neo_sv_dm_win_xp.GetInt());
+			V_sprintf_safe(szPlayersAliveANSI, "Lead: %d/%d", iDMHighestXP, sv_neo_dm_win_xp.GetInt());
 		}
 		else
 		{
@@ -351,7 +378,8 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 		break;
 	}
 
-	if (NEORules()->GetRoundStatus() == NeoRoundStatus::Pause)
+	if (NEORules()->GetRoundStatus() == NeoRoundStatus::Pause ||
+			NEORules()->GetRoundStatus() == NeoRoundStatus::Countdown)
 	{
 		szGameTypeDescription[0] = '\0';
 	}
@@ -369,7 +397,29 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 		}
 
 		g_pVGuiLocalize->ConvertANSIToUnicode(szGameTypeDescription, m_wszGameTypeDescription, m_iGameTypeDescriptionState * sizeof(wchar_t));
+
+		if (NEORules()->GetRoundStatus() == NeoRoundStatus::Countdown)
+		{
+			// NEO NOTE (nullsystem): Keep secs in integer and previous round state
+			// so it beeps client-side in sync with time change
+			if (m_ePrevRoundStatus != NeoRoundStatus::Countdown)
+			{
+				m_iBeepSecsTotal = sv_neo_readyup_countdown.GetInt();
+			}
+
+			if (m_iBeepSecsTotal != secsTotal)
+			{
+				const bool bEndBeep = secsTotal == 0;
+				const float flVol = (bEndBeep) ? (1.3f * snd_victory_volume.GetFloat()) : snd_victory_volume.GetFloat();
+				static constexpr int PITCH_END = 165;
+				enginesound->EmitAmbientSound("tutorial/hitsound.wav", flVol, bEndBeep ? PITCH_END : PITCH_NORM);
+				m_iBeepSecsTotal = secsTotal;
+			}
+			// Otherwise don't beep/alter m_iBeepSecsTotal
+		}
 	}
+
+	m_ePrevRoundStatus = NEORules()->GetRoundStatus();
 }
 
 void CNEOHud_RoundState::DrawNeoHudElement()
@@ -421,7 +471,8 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 	// Draw time
 	surface()->DrawSetTextFont(m_hOCRFont);
 	surface()->GetTextSize(m_hOCRFont, m_wszTime, fontWidth, fontHeight);
-	surface()->DrawSetTextColor(NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze ?
+	surface()->DrawSetTextColor((NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze ||
+								 NEORules()->GetRoundStatus() == NeoRoundStatus::Countdown) ?
 									COLOR_RED : COLOR_WHITE);
 	surface()->DrawSetTextPos(m_iXpos - (fontWidth / 2), m_iBoxYEnd / 2 - fontHeight / 2);
 	surface()->DrawPrintText(m_wszTime, 6);
@@ -682,7 +733,7 @@ int CNEOHud_RoundState::DrawPlayerRow(int playerIndex, const int yOffset, bool s
 	surface()->GetTextSize(m_hOCRSmallFont, m_wszPlayersAliveUnicode, fontWidth, fontHeight);
 	surface()->DrawSetTextColor(isAlive ? COLOR_FADED_WHITE : COLOR_DARK_FADED_WHITE);
 	surface()->DrawSetTextPos(8, yOffset);
-	surface()->DrawPrintText(wSquadMateText, Q_strlen(squadMateText));
+	surface()->DrawPrintText(wSquadMateText, V_wcslen(wSquadMateText));
 
 	return yOffset + fontHeight;
 }
@@ -810,7 +861,7 @@ void CNEOHud_RoundState::SetTextureToAvatar(int playerIndex)
 		return;
 	}
 
-	if (neo_cl_streamermode.GetBool())
+	if (cl_neo_streamermode.GetBool())
 	{
 		return;
 	}

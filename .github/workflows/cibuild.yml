@@ -8,7 +8,7 @@ on:
     types: [published]
 
 jobs:
-  build:
+  linux-build:
     name: ${{ matrix.platform.display_name }} ${{ matrix.preset_build_type.display_name }}
 
     runs-on: ${{ matrix.platform.os }}
@@ -23,6 +23,132 @@ jobs:
       matrix:
         platform:
         - { display_name: 'Linux Native Libraries', os: ubuntu-24.04, preset_os: linux }
+
+        preset_build_type:
+        - { display_name: 'Debug', name: debug }
+        - { display_name: 'Release', name: release }
+
+    container:
+      image: 'registry.gitlab.steamos.cloud/steamrt/sniper/sdk:latest'
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set ownership
+      run: |
+        # Fix for "detected dubious ownership in repository"
+        chown -R $(id -u):$(id -g) $PWD
+
+    - name: Set reusable strings
+      run: |
+        preset_name="${{ matrix.platform.preset_os }}-${{ matrix.preset_build_type.name }}"
+        workspace_dir="$GITHUB_WORKSPACE"
+        source_dir=${workspace_dir//\\//}/src
+        build_dir=${workspace_dir//\\//}/src/build/$preset_name
+        install_dir=$build_dir/install
+        echo "source_dir=$source_dir" >> "$GITHUB_ENV"
+        echo "build_dir=$build_dir" >> "$GITHUB_ENV"
+        echo "install_dir=$install_dir" >> "$GITHUB_ENV"
+        echo "preset_name=$preset_name" >> "$GITHUB_ENV"
+
+    - name: Git fetch tags
+      run: git fetch origin --tags
+
+    # Libraries
+
+    - name: CMake configure libraries build
+      working-directory: ${{ env.source_dir }}
+      run: >
+        cmake
+        --preset ${{ env.preset_name }}
+        -DCMAKE_INSTALL_PREFIX=${{ env.install_dir }}
+        -DNEO_CI_BUILD=ON
+        -DNEO_USE_CCACHE=OFF
+        -DNEO_COPY_LIBRARIES=OFF
+        -DNEO_USE_SEPARATE_BUILD_INFO=ON
+        -DNEO_INSTALL_LIBRARIES=ON
+        -DNEO_INSTALL_RESOURCES=OFF
+
+    - name: CMake libraries build
+      working-directory: ${{ env.source_dir }}
+      run: cmake --build --preset ${{ env.preset_name }} --parallel --verbose
+
+    - name: Install libraries
+      run: cmake --install ${{ env.build_dir }}
+
+    # Dedicated library
+
+    - name: CMake reconfigure dedicated library build
+      working-directory: ${{ env.source_dir }}
+      run: >
+        cmake
+        --preset ${{ env.preset_name }}
+        -DNEO_DEDICATED=ON
+        -DNEO_GENERATE_GAMEDATA=ON
+
+    - name: CMake dedicated library build
+      working-directory: ${{ env.source_dir }}
+      run: cmake --build --preset ${{ env.preset_name }} --parallel --verbose
+
+    - name: Install dedicated library
+      run: cmake --install ${{ env.build_dir }}
+
+    # Artifacts
+
+    - name: Get artifact names
+      working-directory: ${{ env.install_dir }}
+      run: |
+        echo "libraries=$(find . -regex '\.\/neo-\w*-\w*-libraries-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
+        echo "libraries_debuginfo=$(find . -regex '\.\/neo-\w*-\w*-libraries-debuginfo-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
+        echo "dedicated=$(find . -regex '\.\/neo-\w*-\w*-dedicated-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
+        echo "dedicated_debuginfo=$(find . -regex '\.\/neo-\w*-\w*-dedicated-debuginfo-\w*-\w*' -printf '%f')" >> "$GITHUB_ENV"
+        echo "gamedata=$(find . -regex '\.\/neo-\w*-\w*-gamedata' -printf '%f')" >> "$GITHUB_ENV"
+
+    - name: Upload libraries
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.libraries }}
+        path: ${{ env.install_dir }}/${{ env.libraries }}
+
+    - name: Upload libraries debug information
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.libraries_debuginfo }}
+        path: ${{ env.install_dir }}/${{ env.libraries_debuginfo }}
+
+    - name: Upload dedicated library
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.dedicated }}
+        path: ${{ env.install_dir }}/${{ env.dedicated }}
+
+    - name: Upload dedicated library debug information
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.dedicated_debuginfo }}
+        path: ${{ env.install_dir }}/${{ env.dedicated_debuginfo }}
+
+    - name: Upload SourceMod gamedata
+      if: ${{ matrix.preset_build_type.name == 'release' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.gamedata }}
+        path: ${{ env.install_dir }}/${{ env.gamedata }}
+
+  windows-build:
+    name: ${{ matrix.platform.display_name }} ${{ matrix.preset_build_type.display_name }}
+
+    runs-on: ${{ matrix.platform.os }}
+
+    defaults:
+      run:
+        shell: bash
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        platform:
         - { display_name: 'Windows Native Libraries', os: windows-latest, preset_os: windows }
 
         preset_build_type:
@@ -44,23 +170,15 @@ jobs:
         echo "install_dir=$install_dir" >> "$GITHUB_ENV"
         echo "preset_name=$preset_name" >> "$GITHUB_ENV"
 
-    - name: Install packages
-      if: ${{ matrix.platform.os == 'ubuntu-24.04' }}
-      run: |
-        sudo apt update
-        sudo apt install libstdc++6 gcc g++ ninja-build -y
 
     - name: Install packages
-      if: ${{ matrix.platform.os == 'windows-latest' }}
       run: choco install -y ninja
 
     - uses: ilammy/msvc-dev-cmd@v1
-      if: ${{ matrix.platform.os == 'windows-latest' }}
       with:
         arch: x64
 
     - name: Print PATH
-      if: ${{ matrix.platform.os == 'windows-latest' }}
       run: |
         echo "PATH: $PATH"
 
@@ -141,13 +259,6 @@ jobs:
         name: ${{ env.dedicated_debuginfo }}
         path: ${{ env.install_dir }}/${{ env.dedicated_debuginfo }}
 
-    - name: Upload SourceMod gamedata
-      if: ${{ matrix.platform.preset_os == 'linux' && matrix.preset_build_type.name == 'release' }}
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ env.gamedata }}
-        path: ${{ env.install_dir }}/${{ env.gamedata }}
-
   pack-resources:
     name: Windows Native Resources
 
@@ -202,10 +313,11 @@ jobs:
       with:
         name: ${{ env.resources }}
         path: ${{ env.install_dir }}/${{ env.resources }}
+
   upload-latest-build:
     name: Upload Latest Build
 
-    needs: [build, pack-resources]
+    needs: [linux-build, windows-build, pack-resources]
     runs-on: ubuntu-24.04
     if: github.ref == 'refs/heads/master'
     permissions:
@@ -231,7 +343,7 @@ jobs:
   upload-release:
     name: Upload Release
 
-    needs: [build, pack-resources]
+    needs: [linux-build, windows-build, pack-resources]
     runs-on: ubuntu-24.04
     if: github.event_name == 'release' && github.event.action == 'published'
     permissions:

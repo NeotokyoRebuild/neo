@@ -5,6 +5,7 @@ WeaponData
 	// Weapon data is loaded by both the Game and Client DLLs.
 	"printname"		"ZR68L"
 	"BulletCharacter"	"c"
+	"iDeathIcon"		"J"
 	"viewmodel"		"models/weapons/v_jinrai_zr68l.mdl"
 	"team2viewmodel"	"models/weapons/v_nsf_zr68l.mdl"
 	"playermodel"		"models/weapons/w_zr68l.mdl"

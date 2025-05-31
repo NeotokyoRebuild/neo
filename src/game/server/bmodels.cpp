@@ -921,6 +921,9 @@ void CFuncRotating::UpdateSpeed( float flNewSpeed )
 				m_flSpeed = 0.0f;
 
 				SetLocalAngles( m_angStart );
+#ifdef NEO
+				StopSound(entindex(), CHAN_STATIC, STRING(m_NoiseRunning));
+#endif
 			}
 			else if ( fabs( angDelta ) > 90.0f )
 			{
@@ -1307,6 +1310,9 @@ void CFuncRotating::InputStop( inputdata_t &inputdata )
 {
 	m_bStopAtStartPos = false;
 	SetTargetSpeed( 0 );
+#ifdef NEO
+	StopSound(entindex(), CHAN_STATIC, STRING(m_NoiseRunning));
+#endif
 }
 
 //-----------------------------------------------------------------------------

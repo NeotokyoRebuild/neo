@@ -26,14 +26,20 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+#ifndef NEO // Wind values are now based off of env_wind rather than useless cheat commands
 ConVar	cl_winddir			( "cl_winddir", "0", FCVAR_CHEAT, "Weather effects wind direction angle" );
 ConVar	cl_windspeed		( "cl_windspeed", "0", FCVAR_CHEAT, "Weather effects wind speed scalar" );
+#endif
 
 Vector g_vSplashColor( 0.5, 0.5, 0.5 );
 float g_flSplashScale = 0.15;
 float g_flSplashLifetime = 0.5f;
 float g_flSplashAlpha = 0.3f;
+#ifdef NEO
+ConVar r_RainSplashPercentage( "r_RainSplashPercentage", "100", FCVAR_CHEAT ); // N% chance of a rain particle making a splash.
+#else
 ConVar r_RainSplashPercentage( "r_RainSplashPercentage", "20", FCVAR_CHEAT ); // N% chance of a rain particle making a splash.
+#endif
 
 
 float GUST_INTERVAL_MIN = 1;
@@ -323,7 +329,23 @@ inline bool CClient_Precipitation::SimulateRain( CPrecipitationParticle* pPartic
 				pParticle->m_Velocity[i] = s_WindVector[i];
 		}
 	}
+#ifdef NEO
+	trace_t trace;
+	UTIL_TraceLine( vOldPos, pParticle->m_Pos, MASK_SOLID_BRUSHONLY, this, COLLISION_GROUP_NONE, &trace );
 
+	if ( trace.fraction < 1 || trace.DidHit() )
+	{
+		if ( RandomInt( 0, 100 ) <= r_RainSplashPercentage.GetInt() )
+			DispatchParticleEffect( "rain_splash", trace.endpos, trace.m_pEnt->GetAbsAngles(), NULL );
+
+		// Tell the framework it's time to remove the particle from the list
+		return false;
+	}
+
+	// We still want this particle
+	return true;
+}
+#else
 		// No longer in the air? punt.
 		if ( !IsInAir( pParticle->m_Pos ) )
 		{
@@ -348,7 +370,7 @@ inline bool CClient_Precipitation::SimulateRain( CPrecipitationParticle* pPartic
 	// We still want this particle
 	return true;
 }
-
+#endif
 
 inline bool CClient_Precipitation::SimulateSnow( CPrecipitationParticle* pParticle, float dt )
 {
@@ -1103,13 +1125,23 @@ void CClient_Precipitation::EmitParticles( float fTimeDelta )
 
 void CClient_Precipitation::ComputeWindVector( )
 {
+#ifdef NEO
+	Vector vWind;
+	GetWindspeedAtTime(gpGlobals->curtime, vWind); // Get values from env_wind
+	float flWindYaw = RAD2DEG( atan2( vWind.y, vWind.x ));
+
+	QAngle windangle( 0, flWindYaw, 0 );
+#else
 	// Compute the wind direction
 	QAngle windangle( 0, cl_winddir.GetFloat(), 0 );	// used to turn wind yaw direction into a vector
-
+#endif
 	// Randomize the wind angle and speed slightly to get us a little variation
 	windangle[1] = windangle[1] + random->RandomFloat( -10, 10 );
+#ifdef NEO
+	float windspeed = vWind.Length() * (1.0 + random->RandomFloat( -0.2, 0.2 ) );
+#else
 	float windspeed = cl_windspeed.GetFloat() * (1.0 + random->RandomFloat( -0.2, 0.2 ));
-
+#endif
 	AngleVectors( windangle, &s_WindVector );
 	VectorScale( s_WindVector, windspeed, s_WindVector );
 }

@@ -69,7 +69,7 @@ BEGIN_PREDICTION_DATA( C_PlayerResource )
 END_PREDICTION_DATA()	
 
 #ifdef NEO
-extern ConVar neo_cl_streamermode;
+extern ConVar cl_neo_streamermode;
 #endif
 
 C_PlayerResource *g_PR;
@@ -209,7 +209,7 @@ const char *C_PlayerResource::GetPlayerName( int iIndex )
 	}
 
 #ifdef NEO
-	if (neo_cl_streamermode.GetBool() && !IsLocalPlayer(iIndex))
+	if (cl_neo_streamermode.GetBool() && !IsLocalPlayer(iIndex))
 	{
 		[[maybe_unused]] uchar32 u32Out;
 		bool bError = false;

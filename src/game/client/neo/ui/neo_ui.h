@@ -1,6 +1,7 @@
 #pragma once
 
 #include <utlhashtable.h>
+#include <vgui/ISurface.h>
 
 /*
  * NEO NOTE (nullsystem):
@@ -32,6 +33,7 @@
  *         {
  *             // Do things here...
  *         }
+ *         NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
  *         NeoUI::RingBoxBool(L"Example boolean ringbox", &bTest);
  *         NeoUI::SliderInt(L"Example int slider", &iTest, 0, 150);
  *     }
@@ -40,6 +42,12 @@
  * NeoUI::EndContext();
  *
  * For a better example, just take a look at the CNeoRoot source code.
+ *
+ * NEO TODO (nullsystem)
+ * - Change how styling works
+ * 		- Colors
+ * 		- Padding/margins
+ * - Cut/copy/paste for text edits
  */
 
 #define SZWSZ_LEN(wlabel) ((sizeof(wlabel) / sizeof(wlabel[0])) - 1)
@@ -64,6 +72,12 @@ enum MousePos
 	MOUSEPOS_CENTER,
 	MOUSEPOS_RIGHT,
 };
+enum MouseStart
+{
+	MOUSESTART_NONE = 0,
+	MOUSESTART_SLIDER,
+};
+
 enum LayoutMode
 {
 	LAYOUT_VERTICAL = 0,
@@ -79,6 +93,8 @@ static constexpr int FOCUSOFF_NUM = -1000;
 static constexpr int MAX_SECTIONS = 5;
 static constexpr int SIZEOF_SECTIONS = sizeof(int) * MAX_SECTIONS;
 static constexpr int MAX_TEXTINPUT_U8BYTES_LIMIT = 256;
+
+extern const int ROWLAYOUT_TWOSPLIT[];
 
 struct Dim
 {
@@ -116,6 +132,13 @@ struct SliderInfo
 	bool bActive;
 };
 
+struct DynWidgetInfos
+{
+	int iYOffsets;
+	int iYTall;
+	bool bCannotActive;
+};
+
 struct Context
 {
 	Mode eMode;
@@ -133,25 +156,39 @@ struct Context
 	bool bMouseInPanel;
 	int iHasMouseInPanel;
 
+	// NEO NOTE (nullsystem):
+	// If iRowParts = nullptr, iRowPartsTotal will be used of an equal proportions split
+	struct Layout
+	{
+		int iRowPartsTotal;
+		const int *iRowParts;
+		int iRowTall;
+		int iDefRowTall;
+	};
+	Layout layout;
+
+	// Absolute positioning/wide/tall of the widget
+	vgui::IntRect rWidgetArea;
+	int irWidgetWide;
+	int irWidgetTall;
+
 	// Layout management
 	// "Static" sizing
 	Dim dPanel;
-	int iRowTall;
 	int iMarginX;
 	int iMarginY;
 
 	// Active layouting
-	int iPartitionY; // Only increments when Y-pos goes down
+	int iIdxRowParts;
 	int iLayoutX;
 	int iLayoutY;
-	float flWgXPerc;
-	int iWgXPos;
 	int iYOffset[MAX_SECTIONS] = {};
 	bool abYMouseDragOffset[MAX_SECTIONS] = {};
 	int iStartMouseDragOffset[MAX_SECTIONS] = {};
 
-	int iHorizontalWidth;
-	int iHorizontalMargin;
+	// Saved infos for EndSection managing scrolling
+	DynWidgetInfos *wdgInfos = nullptr;
+	int iWdgInfosMax = 0;
 
 	TextStyle eButtonTextStyle;
 	TextStyle eLabelTextStyle;
@@ -170,42 +207,21 @@ struct Context
 	int iHotSection;
 
 	int iActive;
-	int iActiveDirection;
 	int iActiveSection;
 	bool bValueEdited;
 
-	MousePos eMousePos; // label | prev | center | next split
-	MousePos eMousePressedStart;
+	MouseStart eMousePressedStart;
 
 	const char *pSzCurCtxName;
 	CUtlHashtable<const wchar_t *, SliderInfo> htSliders;
+	CUtlHashtable<CUtlConstString, int> htTexMap;
 };
 
-#define COLOR_NEOPANELNORMALBG Color(0, 0, 0, 170)
-#define COLOR_NEOPANELSELECTBG Color(0, 0, 0, 170)
-#define COLOR_NEOPANELACCENTBG Color(0, 0, 0, 0)
-#define COLOR_NEOPANELTEXTNORMAL Color(255, 255, 255, 255)//Color(200, 200, 200, 255)
-#define COLOR_NEOPANELTEXTBRIGHT Color(255, 255, 255, 255)
-#define COLOR_NEOPANELPOPUPBG Color(0, 0, 0, 170)
-#define COLOR_NEOPANELFRAMEBG Color(0, 0, 0, 170)
-#define COLOR_NEOTITLE Color(255, 255, 255, 255)//Color(200, 200, 200, 255)
-#define COLOR_NEOPANELBAR Color(20, 20, 20, 255)
-#define COLOR_NEOPANELMICTEST Color(30, 90, 30, 255)
-
-void GCtxDrawFilledRectXtoX(const int x1, const int y1, const int x2, const int y2);
-void GCtxDrawFilledRectXtoX(const int x1, const int x2);
-void GCtxDrawSetTextPos(const int x, const int y);
-void GCtxSkipActive();
-
-void BeginContext(NeoUI::Context *ctx, const NeoUI::Mode eMode, const wchar_t *wszTitle, const char *pSzCtxName);
-void EndContext();
-void BeginSection(const bool bDefaultFocus = false);
-void EndSection();
-void BeginHorizontal(const int iHorizontalWidth, const int iHorizontalMargin = 0);
-void EndHorizontal();
-
-void SwapFont(const EFont eFont);
-void SwapColorNormal(const Color &color);
+struct GetMouseinFocusedRet
+{
+	bool bActive;
+	bool bHot;
+};
 
 struct RetButton
 {
@@ -215,24 +231,86 @@ struct RetButton
 	bool bMouseHover;
 	bool bMouseDoublePressed;
 };
-void Pad();
-void LabelWrap(const wchar_t *wszText);
-void Label(const wchar_t *wszText);
-void Label(const wchar_t *wszLabel, const wchar_t *wszText);
-void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
-RetButton Button(const wchar_t *wszText);
-RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText);
-void RingBoxBool(const wchar_t *wszLeftLabel, bool *bChecked);
-void RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
-void Progress(const float flValue, const float flMin, const float flMax);
-void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, const float flMax,
-			const int iDp = 2, const float flStep = 1.0f, const wchar_t *wszSpecialText = nullptr);
-void SliderInt(const wchar_t *wszLeftLabel, int *iValue, const int iMin, const int iMax, const int iStep = 1,
-			   const wchar_t *wszSpecialText = nullptr);
-void SliderU8(const wchar_t *wszLeftLabel, uint8 *ucValue, const uint8 iMin, const uint8 iMax, const uint8 iStep = 1,
-			   const wchar_t *wszSpecialText = nullptr);
+
+struct LabelExOpt
+{
+	TextStyle eTextStyle;
+	EFont eFont;
+};
+
+// NEO TODO (nullsystem): Depreciate fixed colors, instead define outside of NeoUI and give proper way to
+// define color schemes
+// !!!Also the change to COLOR_NEOPANELACCENTBG makes element invisible! Should never been set to fully transparent!!!
+#define COLOR_NEOPANELNORMALBG Color(0, 0, 0, 170)
+#define COLOR_NEOPANELSELECTBG Color(0, 0, 0, 170)
+#define COLOR_NEOPANELACCENTBG Color(0, 0, 0, 0) // TODO: Why is this invisible now?
+#define COLOR_NEOPANELTEXTNORMAL Color(255, 255, 255, 255)//Color(200, 200, 200, 255)
+#define COLOR_NEOPANELTEXTBRIGHT Color(255, 255, 255, 255)
+#define COLOR_NEOPANELPOPUPBG Color(0, 0, 0, 170)
+#define COLOR_NEOPANELFRAMEBG Color(0, 0, 0, 170)
+#define COLOR_NEOTITLE Color(255, 255, 255, 255)//Color(200, 200, 200, 255)
+#define COLOR_NEOPANELBAR Color(20, 20, 20, 255)
+#define COLOR_NEOPANELMICTEST Color(30, 90, 30, 255)
+
+enum WidgetFlag
+{
+	WIDGETFLAG_NONE = 0,
+	WIDGETFLAG_SKIPACTIVE = 1 << 0,
+};
+
+void FreeContext(NeoUI::Context *pCtx);
+
+void BeginContext(NeoUI::Context *pNextCtx, const NeoUI::Mode eMode, const wchar_t *wszTitle, const char *pSzCtxName);
+void EndContext();
+void BeginSection(const bool bDefaultFocus = false);
+void EndSection();
+void BeginWidget(const WidgetFlag eWidgetFlag = WIDGETFLAG_NONE);
+void EndWidget(const GetMouseinFocusedRet wdgState);
+
+void SetPerRowLayout(const int iColTotal, const int *iColProportions = nullptr, const int iRowHeight = -1);
+void SwapFont(const EFont eFont, const bool bForce = false);
+void SwapColorNormal(const Color &color);
+void MultiWidgetHighlighter(const int iTotalWidgets);
+
+// Widgets
+/*1W*/ void Pad();
+/*1W*/ void LabelWrap(const wchar_t *wszText);
+/*SW*/ void HeadingLabel(const wchar_t *wszText);
+/*1W*/ void Label(const wchar_t *wszText, const bool bNotWidget = false);
+/*1W*/ void Label(const wchar_t *wszText, const LabelExOpt &opt);
+/*2W*/ void Label(const wchar_t *wszLabel, const wchar_t *wszText);
+/*1W*/ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
+/*1W*/ RetButton Button(const wchar_t *wszText);
+/*2W*/ RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText);
+/*1W*/ RetButton ButtonTexture(const char *szTexturePath);
+/*1W*/ void RingBoxBool(bool *bChecked);
+/*2W*/ void RingBoxBool(const wchar_t *wszLeftLabel, bool *bChecked);
+/*1W*/ void RingBox(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
+/*2W*/ void RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex);
+/*1W*/ void Progress(const float flValue, const float flMin, const float flMax);
+// Sliders relies on wszLeftLabel to cache value string, so only two-widgets variants
+/*2W*/ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, const float flMax,
+				   const int iDp = 2, const float flStep = 1.0f, const wchar_t *wszSpecialText = nullptr);
+/*2W*/ void SliderInt(const wchar_t *wszLeftLabel, int *iValue, const int iMin, const int iMax, const int iStep = 1,
+					  const wchar_t *wszSpecialText = nullptr);
+/*2W*/ void SliderU8(const wchar_t *wszLeftLabel, uint8 *ucValue, const uint8 iMin, const uint8 iMax, const uint8 iStep = 1,
+					 const wchar_t *wszSpecialText = nullptr);
 // NEO NOTE (nullsystem): iMaxBytes as in when the wchar_t fits into back into a UTF-8 char
-void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxBytes);
+/*1W*/ void TextEdit(wchar_t *wszText, const int iMaxBytes);
+/*2W*/ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxBytes);
+/*SW*/ void ImageTexture(const char *szTexturePath, const wchar_t *wszErrorMsg = L"", const char *szTextureGroup = "");
+
+// NeoUI::Texture is non-widget, but utilizes NeoUI's image/texture handling
+enum TextureOptFlags
+{
+	TEXTUREOPTFLAGS_NONE = 0,
+	TEXTUREOPTFLAGS_DONOTCROPTOPANEL = 1, // Disable cropping based on panel's dimension
+};
+bool Texture(const char *szTexturePath, const int x, const int y, const int width, const int height,
+			 const char *szTextureGroup = "", const TextureOptFlags texFlags = TEXTUREOPTFLAGS_NONE);
+void ResetTextures();
+
+// Non-widgets/convenience functions
 bool Bind(const ButtonCode_t eCode);
 void OpenURL(const char *szBaseUrl, const char *szPath);
 }

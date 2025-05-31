@@ -37,7 +37,7 @@ enum
 #define TEAM_STR_NSF "NSF"
 #define TEAM_STR_SPEC "Spectator"
 
-#define NEO_GAME_NAME "Neotokyo: Revamp"
+#define NEO_GAME_NAME "Neotokyo; Rebuild"
 
 #ifdef CLIENT_DLL
 	#define CNEORules C_NEORules
@@ -88,16 +88,16 @@ class CNEOGhostCapturePoint;
 class CNEO_Player;
 class CWeaponGhost;
 
-extern ConVar neo_sv_mirror_teamdamage_multiplier;
-extern ConVar neo_sv_mirror_teamdamage_duration;
-extern ConVar neo_sv_mirror_teamdamage_immunity;
-extern ConVar neo_sv_teamdamage_kick;
+extern ConVar sv_neo_mirror_teamdamage_multiplier;
+extern ConVar sv_neo_mirror_teamdamage_duration;
+extern ConVar sv_neo_mirror_teamdamage_immunity;
+extern ConVar sv_neo_teamdamage_kick;
 
 #else
 class C_NEO_Player;
 #endif
 
-extern ConVar neo_sv_player_restore;
+extern ConVar sv_neo_player_restore;
 
 enum NeoGameType {
 	NEO_GAME_TYPE_TDM = 0,
@@ -121,6 +121,7 @@ enum NeoRoundStatus {
 	RoundLive,
 	PostRound,
 	Pause,
+	Countdown,
 };
 
 enum NeoWinReason {
@@ -418,6 +419,7 @@ private:
 	int m_iEntPrevCapSize = 0;
 	int m_iPrintHelpCounter = 0;
 	bool m_bGamemodeTypeBeenInitialized = false;
+	Vector m_vecPreviousGhostSpawn = vec3_origin;
 #endif
 	CNetworkVar(int, m_nRoundStatus);
 	CNetworkVar(int, m_iHiddenHudElements);

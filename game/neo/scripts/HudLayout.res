@@ -387,13 +387,18 @@
 		"tall"	 "480"
 	}
 
-	HudDeathNotice
+	neo_death_notice
 	{
-		"fieldName" "HudDeathNotice"
-		"visible" "1"
-		"enabled" "1"
-		"wide"	 "640"
-		"tall"	 "480"
+		"fieldName" 		"neo_death_notice"
+		"visible" 			"1"
+		"enabled" 			"1"
+		//"wide"	 			"640"
+		//"tall"	 			"480"
+		"LineMargin"		"2"
+		"MaxDeathNotices" 	"8"
+		"RightJustify"		"1"
+		"BackgroundColor"	"200 200 200 40"
+		"BackgroundColourInvolved"	"20 20 20 220"
 	}
 
 	HudVehicle
@@ -570,16 +575,14 @@
 		"fieldName"	"HudHintKeyDisplay"
 		"visible"	"0"
 		"enabled" 	"1"
-		"xpos"		"r120"	[$WIN32]
-		"ypos"		"r340"	[$WIN32]
-		"xpos"		"r148"	[$X360]
-		"ypos"		"r338"	[$X360]
-		"wide"		"100"
+		"xpos"		"0"
+		"ypos"		"420"
+		"wide"		"200"
 		"tall"		"200"
 		"text_xpos"	"8"
 		"text_ypos"	"8"
-		"text_xgap"	"8"
-		"text_ygap"	"8"
+		"text_xgap"	"0"
+		"text_ygap"	"0"
 		"TextColor"	"255 170 0 220"
 
 		"PaintBackgroundType"	"2"

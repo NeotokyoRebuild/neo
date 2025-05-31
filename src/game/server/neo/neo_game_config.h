@@ -28,7 +28,9 @@ public:
 	// Outputs
 	void OutputRoundEnd();
 	void OutputRoundStart();
+	void OutputCompetitive();
 
 	COutputEvent m_OnRoundEnd;
 	COutputEvent m_OnRoundStart;
+	COutputEvent m_OnCompetitive;
 };

@@ -230,7 +230,7 @@
 	}
 	"neo_jinraibutton"
 	{
-		"ControlName"		"Button"
+		"ControlName"		"CNeoButton"
 		"fieldName"		"neo_jinraibutton"
 		"xpos"		"10"
 		"ypos"		"130"
@@ -252,7 +252,7 @@
 	}
 	"neo_nsfbutton"
 	{
-		"ControlName"		"Button"
+		"ControlName"		"CNeoButton"
 		"fieldName"		"neo_nsfbutton"
 		"xpos"		"125"
 		"ypos"		"130"
@@ -274,7 +274,7 @@
 	}
 	"neo_autobutton"
 	{
-		"ControlName"		"Button"
+		"ControlName"		"CNeoButton"
 		"fieldName"		"neo_autobutton"
 		"xpos"		"240"
 		"ypos"		"81"
@@ -296,7 +296,7 @@
 	}
 	"neo_specbutton"
 	{
-		"ControlName"		"Button"
+		"ControlName"		"CNeoButton"
 		"fieldName"		"neo_specbutton"
 		"xpos"		"240"
 		"ypos"		"106"
@@ -318,7 +318,7 @@
 	}
 	"neo_CancelButton"
 	{
-		"ControlName"		"Button"
+		"ControlName"		"CNeoButton"
 		"fieldName"		"neo_CancelButton"
 		"xpos"		"240"
 		"ypos"		"130"

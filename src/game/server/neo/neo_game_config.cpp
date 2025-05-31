@@ -18,7 +18,8 @@ BEGIN_DATADESC(CNEOGameConfig)
 	DEFINE_INPUTFUNC(FIELD_VOID, "FireRoundTie", InputFireRoundTie),
 
 	DEFINE_OUTPUT(m_OnRoundEnd, "OnRoundEnd"),
-	DEFINE_OUTPUT(m_OnRoundStart, "OnRoundStart")
+	DEFINE_OUTPUT(m_OnRoundStart, "OnRoundStart"),
+	DEFINE_OUTPUT(m_OnCompetitive, "OnCompetitive")
 END_DATADESC()
 
 CNEOGameConfig* CNEOGameConfig::s_pGameRulesToConfig = nullptr;
@@ -35,7 +36,7 @@ void CNEOGameConfig::Spawn()
 void CNEOGameConfig::InputFireTeamWin(inputdata_t& inputData)
 {
 	int team = inputData.value.Int();
-	static_cast<CNEORules*>(g_pGameRules)->SetWinningTeam(team, NEO_VICTORY_MAPIO, false, true, false, false);
+	NEORules()->SetWinningTeam(team, NEO_VICTORY_MAPIO, false, true, false, false);
 }
 
 void CNEOGameConfig::InputFireDMPlayerWin(inputdata_t& inputData)
@@ -49,13 +50,13 @@ void CNEOGameConfig::InputFireDMPlayerWin(inputdata_t& inputData)
 
 	if (pPlayer)
     {
-        static_cast<CNEORules*>(g_pGameRules)->SetWinningDMPlayer(static_cast<CNEO_Player*>(pPlayer));
+        NEORules()->SetWinningDMPlayer(static_cast<CNEO_Player*>(pPlayer));
     }
 }
 
 void CNEOGameConfig::InputFireRoundTie(inputdata_t& inputData)
 {
-	static_cast<CNEORules*>(g_pGameRules)->SetWinningTeam(1, NEO_VICTORY_STALEMATE, false, true, true, false);
+	NEORules()->SetWinningTeam(1, NEO_VICTORY_STALEMATE, false, true, true, false);
 }
 
 // Outputs
@@ -68,4 +69,9 @@ void CNEOGameConfig::OutputRoundEnd()
 void CNEOGameConfig::OutputRoundStart()
 {
 	m_OnRoundStart.FireOutput(NULL, this);
+}
+
+void CNEOGameConfig::OutputCompetitive()
+{
+	m_OnCompetitive.FireOutput(NULL, this);
 }

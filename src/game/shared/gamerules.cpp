@@ -32,6 +32,10 @@
 
 #endif
 
+#ifdef NEO
+#include "neo_player_spawnpoint.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -191,10 +195,15 @@ CBaseEntity *CGameRules::GetPlayerSpawnSpot( CBasePlayer *pPlayer )
 	CBaseEntity *pSpawnSpot = pPlayer->EntSelectSpawnPoint();
 	Assert( pSpawnSpot );
 #ifdef NEO
-	Vector spawnPosition = pSpawnSpot->GetAbsOrigin() + Vector(0, 0, 1);
-	if (!Q_strcmp( pSpawnSpot->m_iClassname.ToCStr(), "info_player_start" ) )
+	Vector spawnPosition = pSpawnSpot->GetAbsOrigin();
+	if ( !Q_strcmp( pSpawnSpot->m_iClassname.ToCStr(), "info_player_start" ) )
+	{ // at the map preview position, we want everyone's eyes to be in the same position NEO TODO (Adam) should we remove this offset and make the info_player_start origin the camera origin? Would need to move all info_player_start s 
+		// in the base maps, and the current info_player_start preview model wouldn't make as much sense (a small camera looking box would then be better), but would be easier for mappers to get the right position
+		spawnPosition = spawnPosition - pPlayer->GetViewOffset() + Vector(0, 0, 65);
+	}
+	else if ( auto* pNEOSpawnSpot = dynamic_cast<CNEOSpawnPoint*>( pSpawnSpot ) )
 	{
-		spawnPosition += Vector(0, 0, 64);
+		pNEOSpawnSpot->m_OnPlayerSpawn.FireOutput( pPlayer, pNEOSpawnSpot );
 	}
 	pPlayer->SetLocalOrigin( spawnPosition );
 #else
@@ -214,12 +223,25 @@ bool CGameRules::IsSpawnPointValid( CBaseEntity *pSpot, CBasePlayer *pPlayer  )
 {
 	CBaseEntity *ent = NULL;
 
+#if defined NEO && defined GAME_DLL
+	if ( auto* pNEOSpot = dynamic_cast<CNEOSpawnPoint*>( pSpot ) )
+	{
+		if ( pNEOSpot->m_bDisabled )
+		{
+			return false;
+		}
+	}
+#endif
+
 	if ( !pSpot->IsTriggered( pPlayer ) )
 	{
 		return false;
 	}
-
+#ifdef NEO
+	for ( CEntitySphereQuery sphere( pSpot->GetAbsOrigin(), 16 ); (ent = sphere.GetCurrentEntity()) != NULL; sphere.NextEntity() )
+#else
 	for ( CEntitySphereQuery sphere( pSpot->GetAbsOrigin(), 128 ); (ent = sphere.GetCurrentEntity()) != NULL; sphere.NextEntity() )
+#endif
 	{
 		// if ent is a client, don't spawn on 'em
 		if ( ent->IsPlayer() && ent != pPlayer )

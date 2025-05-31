@@ -1,0 +1,58 @@
+
+
+"nt_isolation_ctg.outdoors"
+
+//
+//---------------------------------------
+//wind thru trees base
+
+
+{
+	"dsp"	"0"
+	"playlooping"
+
+
+	{
+		"volume"	"1"
+		"pitch"		"100"
+		"wave"		"forest/wind_thru_trees_base.wav"
+	}
+
+//
+//----------------------------------------
+// Wind
+
+	
+    "playlooping"
+
+
+	{
+		"volume"	"1"
+		"pitch"		"100"
+		"wave"		"forest/wind_loop.wav"
+	}
+
+
+
+//
+//----------------------------------------
+// Wind thru Trees
+
+
+
+	"playrandom"
+	{
+
+		"time"		"20,40"
+		"volume"	"0.5,1"
+		"pitch"		"98,102"
+
+		"rndwave"
+		{
+			"wave"	"forest/wind_thru_trees_1.wav"
+			"wave"	"forest/wind_thru_trees_2.wav"			
+			"wave"	"forest/wind_thru_trees_3.wav"
+			
+		}
+	}
+}

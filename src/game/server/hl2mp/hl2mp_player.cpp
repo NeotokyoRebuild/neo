@@ -395,11 +395,7 @@ void CHL2MP_Player::Spawn(void)
 
 	BaseClass::Spawn();
 
-#ifdef NEO
-	if ( !IsObserver() && GetTeamNumber() != TEAM_UNASSIGNED )
-#else
 	if ( !IsObserver() )
-#endif // NEO
 	{
 		pl.deadflag = false;
 		RemoveSolidFlags( FSOLID_NOT_SOLID );
@@ -998,8 +994,12 @@ bool CHL2MP_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 	}
 #endif
 
-	// Don't let the player fetch weapons through walls (use MASK_SOLID so that you can't pickup through windows)
+#ifdef NEO
+	if( GetAbsOrigin() != pWeapon->GetAbsOrigin() && !pWeapon->FVisible( this, MASK_SOLID ) && !(GetFlags() & FL_NOTARGET) )
+#else
 	if( !pWeapon->FVisible( this, MASK_SOLID ) && !(GetFlags() & FL_NOTARGET) )
+#endif // NEO
+	// Don't let the player fetch weapons through walls (use MASK_SOLID so that you can't pickup through windows)
 	{
 		return false;
 	}
@@ -1375,9 +1375,11 @@ void CHL2MP_Player::Event_Killed( const CTakeDamageInfo &info )
 	CTakeDamageInfo subinfo = info;
 	subinfo.SetDamageForce( m_vecTotalBulletForce );
 
+#ifndef NEO
 	// Note: since we're dead, it won't draw us on the client, but we don't set EF_NODRAW
 	// because we still want to transmit to the clients in our PVS.
 	CreateRagdollEntity();
+#endif // NEO
 
 	DetonateTripmines();
 

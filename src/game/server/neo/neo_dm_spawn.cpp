@@ -104,7 +104,7 @@ static void DMSpawnComCallbackRemoveAll()
 
 static void DMSpawnComCallbackRemoveOne(const CCommand &command)
 {
-	static constexpr char USAGE_MSG[] = "Usage: neo_sv_dmspawn_removeone [spawn index]\n";
+	static constexpr char USAGE_MSG[] = "Usage: sv_neo_dmspawn_removeone [spawn index]\n";
 	if (command.ArgC() != 2)
 	{
 		Msg(USAGE_MSG);
@@ -241,11 +241,11 @@ static void DMSpawnComCallbackMapinfo()
 		szCurrentMapName, gDMSpawnLocs.Size(), iEntCount, (iEntCount > 0 || !gDMSpawnLocs.IsEmpty()) ? "YES" : "NO");
 }
 
-ConCommand neo_sv_dmspawn_create("neo_sv_dmspawn_create", &DMSpawnComCallbackCreate, "DMSpawn - Create a new spawn", FCVAR_USERINFO | FCVAR_CHEAT);
-ConCommand neo_sv_dmspawn_removeallspawns("neo_sv_dmspawn_removeallspawns", &DMSpawnComCallbackRemoveAll, "DMSpawn - Remove all spawns", FCVAR_USERINFO | FCVAR_CHEAT);
-ConCommand neo_sv_dmspawn_removeone("neo_sv_dmspawn_removeone", &DMSpawnComCallbackRemoveOne, "DMSpawn - Remove one spawn by a given index", FCVAR_USERINFO | FCVAR_CHEAT);
-ConCommand neo_sv_dmspawn_printlocs("neo_sv_dmspawn_printlocs", &DMSpawnComCallbackPrintLocs, "DMSpawn - Print locations and Y-angle of all spawns", FCVAR_USERINFO | FCVAR_CHEAT);
-ConCommand neo_sv_dmspawn_save("neo_sv_dmspawn_save", &DMSpawnComCallbackSave, "DMSpawn - Save spawn file to filesystem", FCVAR_USERINFO | FCVAR_CHEAT);
-ConCommand neo_sv_dmspawn_load("neo_sv_dmspawn_load", &DMSpawnComCallbackLoad, "DMSpawn - Load spawn file from filesystem", FCVAR_USERINFO | FCVAR_CHEAT);
-ConCommand neo_sv_dmspawn_teleportnext("neo_sv_dmspawn_teleportnext", &DMSpawnComCallbackTeleportNext, "DMSpawn - Teleport to the next spawn", FCVAR_USERINFO | FCVAR_CHEAT);
-ConCommand neo_sv_dmspawn_mapinfo("neo_sv_dmspawn_mapinfo", &DMSpawnComCallbackMapinfo, "DMSpawn - Map deathmatch spawns check and information", FCVAR_USERINFO);
+ConCommand sv_neo_dmspawn_create("sv_neo_dmspawn_create", &DMSpawnComCallbackCreate, "DMSpawn - Create a new spawn", FCVAR_USERINFO | FCVAR_CHEAT);
+ConCommand sv_neo_dmspawn_removeallspawns("sv_neo_dmspawn_removeallspawns", &DMSpawnComCallbackRemoveAll, "DMSpawn - Remove all spawns", FCVAR_USERINFO | FCVAR_CHEAT);
+ConCommand sv_neo_dmspawn_removeone("sv_neo_dmspawn_removeone", &DMSpawnComCallbackRemoveOne, "DMSpawn - Remove one spawn by a given index", FCVAR_USERINFO | FCVAR_CHEAT);
+ConCommand sv_neo_dmspawn_printlocs("sv_neo_dmspawn_printlocs", &DMSpawnComCallbackPrintLocs, "DMSpawn - Print locations and Y-angle of all spawns", FCVAR_USERINFO | FCVAR_CHEAT);
+ConCommand sv_neo_dmspawn_save("sv_neo_dmspawn_save", &DMSpawnComCallbackSave, "DMSpawn - Save spawn file to filesystem", FCVAR_USERINFO | FCVAR_CHEAT);
+ConCommand sv_neo_dmspawn_load("sv_neo_dmspawn_load", &DMSpawnComCallbackLoad, "DMSpawn - Load spawn file from filesystem", FCVAR_USERINFO | FCVAR_CHEAT);
+ConCommand sv_neo_dmspawn_teleportnext("sv_neo_dmspawn_teleportnext", &DMSpawnComCallbackTeleportNext, "DMSpawn - Teleport to the next spawn", FCVAR_USERINFO | FCVAR_CHEAT);
+ConCommand sv_neo_dmspawn_mapinfo("sv_neo_dmspawn_mapinfo", &DMSpawnComCallbackMapinfo, "DMSpawn - Map deathmatch spawns check and information", FCVAR_USERINFO);
