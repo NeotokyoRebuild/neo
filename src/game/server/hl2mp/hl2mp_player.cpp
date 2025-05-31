@@ -994,8 +994,12 @@ bool CHL2MP_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 	}
 #endif
 
-	// Don't let the player fetch weapons through walls (use MASK_SOLID so that you can't pickup through windows)
+#ifdef NEO
+	if( GetAbsOrigin() != pWeapon->GetAbsOrigin() && !pWeapon->FVisible( this, MASK_SOLID ) && !(GetFlags() & FL_NOTARGET) )
+#else
 	if( !pWeapon->FVisible( this, MASK_SOLID ) && !(GetFlags() & FL_NOTARGET) )
+#endif // NEO
+	// Don't let the player fetch weapons through walls (use MASK_SOLID so that you can't pickup through windows)
 	{
 		return false;
 	}

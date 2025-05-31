@@ -117,6 +117,17 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 
 }
 
+void CNEOHud_RoundState::LevelShutdown(void)
+{
+	for (int i = 0; i < STAR__TOTAL; ++i)
+	{
+		auto* star = m_ipStars[i];
+		star->SetVisible(false);
+	}
+
+	// NEO NOTE (Adam) set m_iPreviouslyActiveStar && m_iPreviouslyActiveTeam to -1? Seems to work fine without 
+}
+
 void CNEOHud_RoundState::ApplySchemeSettings(vgui::IScheme* pScheme)
 {
 	BaseClass::ApplySchemeSettings(pScheme);
@@ -722,7 +733,7 @@ int CNEOHud_RoundState::DrawPlayerRow(int playerIndex, const int yOffset, bool s
 	surface()->GetTextSize(m_hOCRSmallFont, m_wszPlayersAliveUnicode, fontWidth, fontHeight);
 	surface()->DrawSetTextColor(isAlive ? COLOR_FADED_WHITE : COLOR_DARK_FADED_WHITE);
 	surface()->DrawSetTextPos(8, yOffset);
-	surface()->DrawPrintText(wSquadMateText, Q_strlen(squadMateText));
+	surface()->DrawPrintText(wSquadMateText, V_wcslen(wSquadMateText));
 
 	return yOffset + fontHeight;
 }

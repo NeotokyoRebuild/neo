@@ -24,7 +24,7 @@ out
 /game/neo/materials/temp
 /game/neo/resource/*.sfd
 /game/neo/resource/*.ttf
-/game/neo/sound/tutorial
+/game/neo/sound
 
 # Use -f to override it
 *.vmt

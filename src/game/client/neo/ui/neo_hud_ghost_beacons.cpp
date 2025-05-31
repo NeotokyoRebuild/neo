@@ -125,14 +125,13 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 		{
 			auto enemyPos = enemyToShow->GetAbsOrigin();
 			float distance = FLT_MAX;
-			if(enemyToShow->IsAlive() && ghost->IsPosWithinViewDistance(enemyPos, distance) && !enemyToShow->IsDormant() && showGhost)
+			if(enemyToShow->IsAlive() && !enemyToShow->IsDormant() && ghost->IsPosWithinViewDistance(enemyPos, distance) && showGhost)
 			{
 				DrawPlayer(enemyPos);
 			}
 			closestEnemy = Min(distance, closestEnemy);
 		}
 	}
-	engine->Con_NPrintf(0, "%i", NEORules()->m_iLastDummyBeacon);
 	for (int i = 0; i <= NEORules()->m_iLastDummyBeacon; i++)
 	{
 		auto dummy = ClientEntityList().GetBaseEntityFromHandle(NEORules()->m_iDummyBeacons[i]);
@@ -140,7 +139,7 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 		{
 			auto dummyPos = dummy->GetAbsOrigin();
 			float distance = FLT_MAX;
-			if (dummy->IsAlive() && ghost->IsPosWithinViewDistance(dummyPos, distance) && !dummy->IsDormant() && showGhost)
+			if (dummy->IsAlive() && !dummy->IsDormant() && ghost->IsPosWithinViewDistance(dummyPos, distance) && showGhost)
 			{
 				DrawPlayer(dummyPos);
 			}

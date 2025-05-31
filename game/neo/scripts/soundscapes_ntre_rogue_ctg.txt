@@ -1,0 +1,27 @@
+"rogue.outdoors"
+
+{
+	"dsp"	"1"
+	"playlooping"
+	{
+		"volume"	"0.07"
+		"pitch"		"100"
+		"wave"		"pissalley/Distant_city_02.wav"
+	}
+
+    "playrandom"
+	{
+
+		"time"		"15,40"
+		"volume"	"0.08"
+		"pitch"		"100"
+
+		"rndwave"
+		{
+			"wave"	"inaka/wind_gust_10.wav"
+			"wave"	"inaka/wind_gust_8.wav"
+			"wave"	"office/nt_office_outside_flyby_1.mp3"
+			"wave"	"office/nt_office_outside_flyby_2.mp3"
+		}
+	}
+}

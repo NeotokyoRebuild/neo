@@ -60,6 +60,7 @@ SendPropBool(SENDINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 SendPropBool(SENDINFO(m_bShowTestMessage)),
 SendPropBool(SENDINFO(m_bInAim)),
 SendPropBool(SENDINFO(m_bIneligibleForLoadoutPick)),
+SendPropBool(SENDINFO(m_bCarryingGhost)),
 
 SendPropTime(SENDINFO(m_flCamoAuxLastTime)),
 SendPropInt(SENDINFO(m_nVisionLastTick)),
@@ -1316,6 +1317,35 @@ void CNEO_Player::PostThink(void)
 			m_bInLean = NEO_LEAN_NONE;
 		}
 
+		auto observerMode = GetObserverMode();
+		if (observerMode == OBS_MODE_CHASE || observerMode == OBS_MODE_IN_EYE)
+		{
+			auto target = GetObserverTarget();
+			if (!IsValidObserverTarget(target))
+			{
+				auto nextTarget = FindNextObserverTarget(false);
+				if (nextTarget && nextTarget != target)
+				{
+					SetObserverTarget(nextTarget);
+				}
+			}
+		}
+
+		if ((observerMode == OBS_MODE_DEATHCAM || observerMode == OBS_MODE_NONE) && gpGlobals->curtime >= (GetDeathTime() + DEATH_ANIMATION_TIME))
+		{ // We switch observer mode to none to view own body in third person so assume should still be changing observer targets
+			auto target = GetObserverTarget();
+			if (!IsValidObserverTarget(target))
+			{
+				auto nextTarget = FindNextObserverTarget(false);
+				if (nextTarget && nextTarget != target)
+				{
+					SetObserverTarget(nextTarget);
+				}
+			}
+			SetObserverMode(OBS_MODE_IN_EYE);
+		}
+
+
 		return;
 	}
 	else
@@ -1912,7 +1942,10 @@ void CNEO_Player::AddPoints(int score, bool bAllowNegativeScore)
 
 void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 {
-	CreateRagdollEntity();
+	if (!m_bForceServerRagdoll)
+	{
+		CreateRagdollEntity();
+	}
 
 	// Calculate force for weapon drop
 	Vector forceVector = CalcDamageForceVector(info);
@@ -2019,7 +2052,7 @@ void CNEO_Player::SetDeadModel(const CTakeDamageInfo& info)
 
 	int deadModelType = -1;
 
-	if (!m_bAllowGibbing) // Prevent gibbing if a custom player model has been set via I/O
+	if (!m_bAllowGibbing || m_bForceServerRagdoll) // Prevent gibbing if a custom player model has been set via I/O or the ragdoll is serverside
 	{
 		return;
 	}
@@ -2824,7 +2857,7 @@ void GiveDet(CNEO_Player* pPlayer)
 		}
 		else
 		{
-			pent->SetAbsOrigin(pPlayer->EyePosition());
+			pent->SetLocalOrigin(pPlayer->GetLocalOrigin());
 			pent->AddSpawnFlags(SF_NORESPAWN);
 
 			auto pWeapon = dynamic_cast<CNEOBaseCombatWeapon*>((CBaseEntity*)pent);
@@ -2920,7 +2953,7 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 		return;
 	}
 
-	pEnt->SetAbsOrigin(EyePosition());
+	pEnt->SetLocalOrigin(GetLocalOrigin());
 	pEnt->AddSpawnFlags(SF_NORESPAWN);
 
 	CNEOBaseCombatWeapon *pNeoWeapon = dynamic_cast<CNEOBaseCombatWeapon*>((CBaseEntity*)pEnt);
