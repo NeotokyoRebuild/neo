@@ -85,6 +85,7 @@ extern ConVar replay_rendersetting_renderglow;
 CLIENTEFFECT_REGISTER_BEGIN(PrecachePostProcessingEffectsGlow)
 CLIENTEFFECT_MATERIAL("dev/glow_color")
 CLIENTEFFECT_MATERIAL("dev/halo_add_to_screen")
+CLIENTEFFECT_MATERIAL("dev/halo_add_to_screen_outline")
 CLIENTEFFECT_REGISTER_END_CONDITIONAL(engine->GetDXSupportLevel() >= 90)
 #endif
 #define ACHIEVEMENT_ANNOUNCEMENT_MIN_TIME 10
