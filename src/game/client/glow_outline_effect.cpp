@@ -212,6 +212,8 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 
 	int iNumGlowObjects = 0;
 
+	m_GlowObjectDefinitions.Sort();
+
 	for ( int i = 0; i < m_GlowObjectDefinitions.Count(); ++ i )
 	{
 		if ( m_GlowObjectDefinitions[i].IsUnused() || !m_GlowObjectDefinitions[i].ShouldDraw( nSplitScreenSlot ) )
@@ -365,7 +367,7 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 		if (alpha)
 		{
 			stencilStateDisable.SetStencilState( pRenderContext );
-			pDimVar->SetFloatValue(glow_outline_effect_center_alpha.GetFloat());
+			pDimVar->SetFloatValue(alpha);
 			pRenderContext->DrawScreenSpaceRectangle(pMatHaloAddToScreen, 0, 0, nViewportWidth+1, nViewportHeight+1,
 				0, 0, pRtQuarterSize1->GetActualWidth(), pRtQuarterSize1->GetActualHeight(),
 				pRtQuarterSize1->GetActualWidth(),
