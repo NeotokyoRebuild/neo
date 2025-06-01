@@ -212,8 +212,6 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 
 	int iNumGlowObjects = 0;
 
-	m_GlowObjectDefinitions.Sort();
-
 	for ( int i = 0; i < m_GlowObjectDefinitions.Count(); ++ i )
 	{
 		if ( m_GlowObjectDefinitions[i].IsUnused() || !m_GlowObjectDefinitions[i].ShouldDraw( nSplitScreenSlot ) )
