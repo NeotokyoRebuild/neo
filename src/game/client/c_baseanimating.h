@@ -686,6 +686,9 @@ public:
 	virtual void	OnRestore();
 	virtual int ObjectCaps( void ) { return BaseClass::ObjectCaps() | FCAP_SAVE_NON_NETWORKABLE; }
 	virtual IPVSNotify*				GetPVSNotifyInterface() { return this; }
+#ifdef NEO
+	virtual int DrawModel(int flags) override;
+#endif neo
 
 	void	HandleAnimatedFriction( void );
 	virtual void SUB_Remove( void );

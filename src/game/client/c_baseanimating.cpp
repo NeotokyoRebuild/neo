@@ -385,6 +385,38 @@ void C_ClientRagdoll::OnRestore( void )
 	RagdollMoved();
 }
 
+#ifdef NEO
+extern ConVar glow_outline_effect_enable;
+int C_ClientRagdoll::DrawModel(int flags)
+{
+#ifdef GLOWS_ENABLE
+	auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetVisionTargetNEOPlayer();
+#else
+	auto pTargetPlayer = C_NEO_Player::GetVisionTargetNEOPlayer();
+#endif // GLOWS_ENABLE
+	if (!pTargetPlayer)
+	{
+		Assert(false);
+		return BaseClass::DrawModel(flags);
+	}
+
+	auto thing = this;
+	auto time = thing->m_flNeoCreateTime;
+
+	const bool inThermalVision = pTargetPlayer ? (pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT) : false;
+	if (inThermalVision)
+	{
+		IMaterial* pass = materials->FindMaterial("dev/thermal_ragdoll_model", TEXTURE_GROUP_MODEL);
+		modelrender->ForcedMaterialOverride(pass);
+		const int ret = BaseClass::DrawModel(flags);
+		modelrender->ForcedMaterialOverride(nullptr);
+		return ret;
+	}
+
+	return BaseClass::DrawModel(flags);
+}
+
+#endif // NEO
 void C_ClientRagdoll::ImpactTrace( trace_t *pTrace, int iDamageType, const char *pCustomImpactName )
 {
 	VPROF( "C_ClientRagdoll::ImpactTrace" );

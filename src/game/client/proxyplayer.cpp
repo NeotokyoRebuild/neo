@@ -302,7 +302,7 @@ EXPOSE_INTERFACE( CEntitySpeedProxy, IMaterialProxy, "EntitySpeed" IMATERIAL_PRO
 
 #ifdef NEO
 //-----------------------------------------------------------------------------
-// Returns how long ragdoll has existed, or 0 if not a ragdoll
+// Returns how long ragdoll has existed, or 0 if not a C_BaseAnimating object
 //-----------------------------------------------------------------------------
 class CRagdollLifeTime : public CResultProxy
 {
@@ -314,7 +314,7 @@ void CRagdollLifeTime::OnBind(void* pC_BaseEntity)
 {
 	Assert(m_pResult);
 
-	auto pEntity = dynamic_cast<C_HL2MPRagdoll*>(BindArgToEntity(pC_BaseEntity));
+	auto pEntity = dynamic_cast<C_BaseAnimating*>(BindArgToEntity(pC_BaseEntity));
 	if (!pEntity)
 	{
 		m_pResult->SetFloatValue(0);

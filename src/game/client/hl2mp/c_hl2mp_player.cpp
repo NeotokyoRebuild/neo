@@ -1446,7 +1446,7 @@ extern ConVar glow_outline_effect_enable;
 int C_HL2MPRagdoll::DrawModel(int flags)
 {
 #ifdef GLOWS_ENABLE
-	auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetTargetNEOPlayer();
+	auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetVisionTargetNEOPlayer();
 #else
 	auto pTargetPlayer = C_NEO_Player::GetTargetNEOPlayer();
 #endif // GLOWS_ENABLE
