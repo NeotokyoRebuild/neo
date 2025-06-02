@@ -49,6 +49,8 @@ private:
 					const int xOffset, const bool drawHealthClass);
 	void SetTextureToAvatar(int playerIndex);
 
+	virtual void LevelShutdown(void) override;
+
 private:
 	vgui::HFont m_hOCRLargeFont = 0UL;
 	vgui::HFont m_hOCRFont = 0UL;
@@ -98,6 +100,8 @@ private:
 	int m_iGraphicID[NEO_CLASS__ENUM_COUNT] = {};
 	TeamLogoColor m_teamLogoColors[TEAM__TOTAL] = {};
 
+	int m_iBeepSecsTotal = 0;
+	NeoRoundStatus m_ePrevRoundStatus = NeoRoundStatus::Idle;
 
 	CPanelAnimationVar(Color, box_color, "box_color", "200 200 200 40");
 	CPanelAnimationVarAliasType(bool, health_monochrome, "health_monochrome", "1", "bool");

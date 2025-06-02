@@ -84,8 +84,13 @@ if(NEO_RETAIL)
     target_compile_definitions(client PRIVATE RETAIL)
 endif()
 
-if(NEO_DEDICATED)
-    target_compile_definitions(client PRIVATE DEDICATED)
+if(OS_LINUX OR OS_MACOS)
+    target_compile_definitions(client
+        PRIVATE
+        GL_GLEXT_PROTOTYPES
+        DX_TO_GL_ABSTRACTION
+        USE_SDL
+    )
 endif()
 
 if(NEO_BUILD_WEAPON_PBK56S)
@@ -1608,7 +1613,6 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_gamerules.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_mount_original.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_shared.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_spawnpoint.cpp

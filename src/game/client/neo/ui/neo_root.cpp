@@ -58,7 +58,7 @@ CNeoRoot *g_pNeoRoot = nullptr;
 void NeoToggleconsole();
 extern CNeoLoading *g_pNeoLoading;
 inline NeoUI::Context g_uiCtx;
-inline ConVar cl_neo_toggleconsole("cl_neo_toggleconsole", "0", FCVAR_ARCHIVE,
+inline ConVar cl_neo_toggleconsole("cl_neo_toggleconsole", "1", FCVAR_ARCHIVE,
 								   "If the console can be toggled with the ` keybind or not.", true, 0.0f, true, 1.0f);
 inline int g_iRowsInScreen;
 
@@ -118,7 +118,7 @@ CNeoRootInput::CNeoRootInput(CNeoRoot *rootPanel)
 {
 	MakePopup(true);
 	SetKeyBoardInputEnabled(true);
-	SetMouseInputEnabled(false);
+	SetMouseInputEnabled(true);
 	SetVisible(true);
 	SetEnabled(true);
 	PerformLayout();
@@ -126,8 +126,10 @@ CNeoRootInput::CNeoRootInput(CNeoRoot *rootPanel)
 
 void CNeoRootInput::PerformLayout()
 {
+	int iScrWide, iScrTall;
+	vgui::surface()->GetScreenSize(iScrWide, iScrTall);
 	SetPos(0, 0);
-	SetSize(1, 1);
+	SetSize(iScrWide, iScrTall);
 	SetBgColor(COLOR_TRANSPARENT);
 	SetFgColor(COLOR_TRANSPARENT);
 }
@@ -140,6 +142,31 @@ void CNeoRootInput::OnKeyCodeTyped(vgui::KeyCode code)
 void CNeoRootInput::OnKeyTyped(wchar_t unichar)
 {
 	m_pNeoRoot->OnRelayedKeyTyped(unichar);
+}
+
+void CNeoRootInput::OnMousePressed(vgui::MouseCode code)
+{
+	m_pNeoRoot->OnRelayedMousePressed(code);
+}
+
+void CNeoRootInput::OnMouseReleased(vgui::MouseCode code)
+{
+	m_pNeoRoot->OnRelayedMouseReleased(code);
+}
+
+void CNeoRootInput::OnMouseDoublePressed(vgui::MouseCode code)
+{
+	m_pNeoRoot->OnRelayedMouseDoublePressed(code);
+}
+
+void CNeoRootInput::OnMouseWheeled(int delta)
+{
+	m_pNeoRoot->OnRelayedMouseWheeled(delta);
+}
+
+void CNeoRootInput::OnCursorMoved(int x, int y)
+{
+	m_pNeoRoot->OnRelayedCursorMoved(x, y);
 }
 
 void CNeoRootInput::OnThink()
@@ -294,6 +321,8 @@ CNeoRoot::~CNeoRoot()
 
 	m_gameui = nullptr;
 	g_GameUIDLL.Unload();
+
+	NeoUI::FreeContext(&g_uiCtx);
 }
 
 IGameUI *CNeoRoot::GetGameUI()
@@ -375,31 +404,31 @@ void CNeoRoot::Paint()
 	OnMainLoop(NeoUI::MODE_PAINT);
 }
 
-void CNeoRoot::OnMousePressed(vgui::MouseCode code)
+void CNeoRoot::OnRelayedMousePressed(vgui::MouseCode code)
 {
 	g_uiCtx.eCode = code;
 	OnMainLoop(NeoUI::MODE_MOUSEPRESSED);
 }
 
-void CNeoRoot::OnMouseReleased(vgui::MouseCode code)
+void CNeoRoot::OnRelayedMouseReleased(vgui::MouseCode code)
 {
 	g_uiCtx.eCode = code;
 	OnMainLoop(NeoUI::MODE_MOUSERELEASED);
 }
 
-void CNeoRoot::OnMouseDoublePressed(vgui::MouseCode code)
+void CNeoRoot::OnRelayedMouseDoublePressed(vgui::MouseCode code)
 {
 	g_uiCtx.eCode = code;
 	OnMainLoop(NeoUI::MODE_MOUSEDOUBLEPRESSED);
 }
 
-void CNeoRoot::OnMouseWheeled(int delta)
+void CNeoRoot::OnRelayedMouseWheeled(int delta)
 {
 	g_uiCtx.eCode = (delta > 0) ? MOUSE_WHEEL_UP : MOUSE_WHEEL_DOWN;
 	OnMainLoop(NeoUI::MODE_MOUSEWHEELED);
 }
 
-void CNeoRoot::OnCursorMoved(int x, int y)
+void CNeoRoot::OnRelayedCursorMoved(int x, int y)
 {
 	g_uiCtx.iMouseAbsX = x;
 	g_uiCtx.iMouseAbsY = y;
@@ -426,6 +455,14 @@ void CNeoRoot::OnTick()
 		{
 			pSbTab->UpdateFilteredList();
 			pSbTab->m_bModified = false;
+		}
+	}
+	else if (m_state == STATE_SERVERDETAILS)
+	{
+		if (m_bSPlayersSortModified)
+		{
+			m_serverPlayers.UpdateSortedList();
+			m_bSPlayersSortModified = false;
 		}
 	}
 }
@@ -1032,6 +1069,27 @@ static void ServerBrowserDrawRow(const gameserveritem_t &server)
 	}
 }
 
+static void DrawSortHint(const bool bDescending)
+{
+	if (g_uiCtx.eMode != NeoUI::MODE_PAINT || !IN_BETWEEN_AR(0, g_uiCtx.iLayoutY, g_uiCtx.dPanel.tall))
+	{
+		return;
+	}
+	int iHintTall = g_uiCtx.iMarginY / 3;
+	vgui::surface()->DrawSetColor(COLOR_NEOPANELTEXTNORMAL);
+	if (!bDescending)
+	{
+		vgui::surface()->DrawFilledRect(g_uiCtx.rWidgetArea.x0, g_uiCtx.rWidgetArea.y0,
+										g_uiCtx.rWidgetArea.x1, g_uiCtx.rWidgetArea.y0 + iHintTall);
+	}
+	else
+	{
+		vgui::surface()->DrawFilledRect(g_uiCtx.rWidgetArea.x0, g_uiCtx.rWidgetArea.y1 - iHintTall,
+										g_uiCtx.rWidgetArea.x1, g_uiCtx.rWidgetArea.y1);
+	}
+	vgui::surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
+}
+
 void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 {
 	static const wchar_t *GS_NAMES[GS__TOTAL] = {
@@ -1082,21 +1140,9 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 					m_bSBFiltModified = true;
 				}
 
-				if (param.eMode == NeoUI::MODE_PAINT && m_sortCtx.col == i)
+				if (m_sortCtx.col == i)
 				{
-					int iHintTall = g_uiCtx.iMarginY / 3;
-					vgui::surface()->DrawSetColor(COLOR_NEOPANELTEXTNORMAL);
-					if (!m_sortCtx.bDescending)
-					{
-						vgui::surface()->DrawFilledRect(g_uiCtx.rWidgetArea.x0, g_uiCtx.rWidgetArea.y0,
-														g_uiCtx.rWidgetArea.x1, g_uiCtx.rWidgetArea.y0 + iHintTall);
-					}
-					else
-					{
-						vgui::surface()->DrawFilledRect(g_uiCtx.rWidgetArea.x0, g_uiCtx.rWidgetArea.y1 - iHintTall,
-														g_uiCtx.rWidgetArea.x1, g_uiCtx.rWidgetArea.y1);
-					}
-					vgui::surface()->DrawSetColor(COLOR_NEOPANELACCENTBG);
+					DrawSortHint(m_sortCtx.bDescending);
 				}
 			}
 
@@ -1125,7 +1171,7 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 					V_swprintf_safe(wszInfo, L"No %ls queries found. Press Refresh to re-check", GS_NAMES[m_iServerBrowserTab]);
 				}
 				NeoUI::HeadingLabel(wszInfo);
-#if 0 // Filp to 1 to just test layout with no servers
+#if 0 // NEO NOTE (nullsystem): Flip to 1 to just test layout with no servers
 				NeoUI::Button(L""); // dummy button
 				if (param.eMode == NeoUI::MODE_PAINT)
 				{
@@ -1346,8 +1392,8 @@ void CNeoRoot::MainLoopSprayPicker(const MainLoopParam param)
 		vecStaticSprays.Purge();
 		FileFindHandle_t findHdl;
 		for (const char *pszFilename = filesystem->FindFirst("materials/vgui/logos/ui/*.vmt", &findHdl);
-			 pszFilename;
-			 pszFilename = filesystem->FindNext(findHdl))
+				pszFilename;
+				pszFilename = filesystem->FindNext(findHdl))
 		{
 			// spray.vmt is only used for currently applying spray
 			if (V_strcmp(pszFilename, "spray.vmt") == 0)
@@ -1391,7 +1437,10 @@ void CNeoRoot::MainLoopSprayPicker(const MainLoopParam param)
 			V_sprintf_safe(sprayInfo.szPath, "vgui/logos/ui/%s", sprayInfo.szBaseName);
 			V_sprintf_safe(sprayInfo.szVtf, "materials/vgui/logos/%s.vtf", sprayInfo.szBaseName);
 
-			vecStaticSprays.AddToTail(sprayInfo);
+			if (filesystem->FileExists(sprayInfo.szVtf))
+			{
+				vecStaticSprays.AddToTail(sprayInfo);
+			}
 		}
 		filesystem->FindClose(findHdl);
 
@@ -1470,6 +1519,7 @@ void CNeoRoot::MainLoopServerDetails(const MainLoopParam param)
 	NeoUI::BeginContext(&g_uiCtx, param.eMode, L"Server details", "CtxServerDetail");
 	{
 		NeoUI::BeginSection(true);
+		NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
 		{
 			const bool bP = param.eMode == NeoUI::MODE_PAINT;
 			wchar_t wszText[128];
@@ -1492,27 +1542,110 @@ void CNeoRoot::MainLoopServerDetails(const MainLoopParam param)
 			// TODO: Header same-style as serverlist's header
 		}
 		NeoUI::EndSection();
-		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
-		g_uiCtx.dPanel.tall = (iTallTotal - g_uiCtx.layout.iRowTall) - g_uiCtx.dPanel.tall;
-		NeoUI::BeginSection();
+		if (!cl_neo_streamermode.GetBool())
 		{
-			if (!cl_neo_streamermode.GetBool())
+			if (m_serverPlayers.m_players.IsEmpty())
 			{
-				if (m_serverPlayers.m_players.IsEmpty())
+				g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+				g_uiCtx.dPanel.tall = (iTallTotal - g_uiCtx.layout.iRowTall) - g_uiCtx.dPanel.tall;
+				NeoUI::BeginSection();
 				{
+					NeoUI::SetPerRowLayout(1);
 					NeoUI::HeadingLabel(L"There are no players in the server.");
-				}
-				else
-				{
-					for (const auto &player : m_serverPlayers.m_players)
+#if 0 // NEO NOTE (nullsystem): Flip to 1 to just test layout with no players
+					float flExSecs = 1.0f;
+					for (int i = 0; i < 32; ++i)
 					{
-						NeoUI::Label(player.wszName);
-						// TODO
+						CNeoServerPlayers::PlayerInfo player = {};
+						player.iScore = i;
+						player.flTimePlayed = flExSecs;
+						flExSecs *= 2;
+						V_swprintf_safe(player.wszName, L"Example %c", 'A' + i);
+						m_serverPlayers.m_players.AddToTail(player);
+					}
+					m_serverPlayers.UpdateSortedList();
+#endif
+				}
+				NeoUI::EndSection();
+			}
+			else
+			{
+				static constexpr const int PLAYER_ROW_PROP[] = { 15, 65, -1 };
+
+				const int iInfoTall = g_uiCtx.dPanel.tall;
+				g_uiCtx.dPanel.y += iInfoTall;
+				g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall;
+				NeoUI::BeginSection();
+				{
+					NeoUI::SetPerRowLayout(ARRAYSIZE(PLAYER_ROW_PROP), PLAYER_ROW_PROP);
+					// Headers
+					static constexpr const wchar_t *PLAYER_HEADERS[GSPS__TOTAL] = {
+						L"Score", L"Name", L"Time"
+					};
+					for (int i = 0; i < GSPS__TOTAL; ++i)
+					{
+						vgui::surface()->DrawSetColor((m_serverPlayers.m_sortCtx.col == i) ? COLOR_NEOPANELACCENTBG : COLOR_NEOPANELNORMALBG);
+						if (NeoUI::Button(PLAYER_HEADERS[i]).bPressed)
+						{
+							m_bSPlayersSortModified = true;
+							if (m_serverPlayers.m_sortCtx.col == i)
+							{
+								m_serverPlayers.m_sortCtx.bDescending = !m_serverPlayers.m_sortCtx.bDescending;
+							}
+							else
+							{
+								m_serverPlayers.m_sortCtx.col = static_cast<GameServerPlayerSort>(i);
+							}
+						}
+
+						if (m_serverPlayers.m_sortCtx.col == i)
+						{
+							DrawSortHint(m_serverPlayers.m_sortCtx.bDescending);
+						}
 					}
 				}
+				NeoUI::EndSection();
+
+				g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
+				g_uiCtx.dPanel.tall = iTallTotal - (2 * g_uiCtx.layout.iRowTall) - iInfoTall;
+				NeoUI::BeginSection();
+				{
+					NeoUI::SetPerRowLayout(ARRAYSIZE(PLAYER_ROW_PROP), PLAYER_ROW_PROP);
+					// Players - rows
+					for (const auto &player : m_serverPlayers.m_sortedPlayers)
+					{
+						wchar_t wszText[32];
+
+						V_swprintf_safe(wszText, L"%d", player.iScore);
+						NeoUI::Label(wszText);
+						NeoUI::Label(player.wszName);
+						{
+							static constexpr float FL_SECSINMIN = 60.0f;
+							static constexpr float FL_SECSINHRS = 60.0f * FL_SECSINMIN;
+							if (player.flTimePlayed < FL_SECSINMIN)
+							{
+								V_swprintf_safe(wszText, L"%.0fs", player.flTimePlayed);
+							}
+							else if (player.flTimePlayed < FL_SECSINMIN * 60.0f)
+							{
+								const int iMin = player.flTimePlayed / FL_SECSINMIN;
+								const int iSec = player.flTimePlayed - (iMin * FL_SECSINMIN);
+								V_swprintf_safe(wszText, L"%dm %ds", iMin, iSec);
+							}
+							else
+							{
+								const int iHrs = player.flTimePlayed / FL_SECSINHRS;
+								const int iMin = (player.flTimePlayed - (iHrs * FL_SECSINHRS)) / FL_SECSINMIN;
+								const int iSec = player.flTimePlayed - (iHrs * FL_SECSINHRS) - (iMin * FL_SECSINMIN);
+								V_swprintf_safe(wszText, L"%dh %dm %ds", iHrs, iMin, iSec);
+							}
+						}
+						NeoUI::Label(wszText);
+					}
+				}
+				NeoUI::EndSection();
 			}
 		}
-		NeoUI::EndSection();
 		g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
 		g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall;
 		NeoUI::BeginSection();
@@ -1676,9 +1809,12 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 			{
 				NeoUI::Label(L"Enter the server password");
 				NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
-				g_uiCtx.bTextEditIsPassword = true;
-				NeoUI::TextEdit(L"Password:", m_wszServerPassword, SZWSZ_LEN(m_wszServerPassword));
-				g_uiCtx.bTextEditIsPassword = false;
+				{
+					NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
+					g_uiCtx.bTextEditIsPassword = true;
+					NeoUI::TextEdit(L"Password:", m_wszServerPassword, SZWSZ_LEN(m_wszServerPassword));
+					g_uiCtx.bTextEditIsPassword = false;
+				}
 				NeoUI::SetPerRowLayout(3);
 				{
 					if (NeoUI::Button(L"Enter (Enter)").bPressed || NeoUI::Bind(KEY_ENTER))
@@ -1728,11 +1864,12 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 			{
 				static constexpr int TEXWH = 6;
 				const int iTexSprayWH = g_uiCtx.layout.iRowTall * TEXWH;
+				int scrWide, scrTall;
+				vgui::surface()->GetScreenSize(scrWide, scrTall);
 				NeoUI::Texture(m_sprayToDelete.szPath,
-							   g_uiCtx.iLayoutX + (g_uiCtx.dPanel.wide / 2) - (iTexSprayWH / 2),
-							   g_uiCtx.iLayoutY - iTexSprayWH - g_uiCtx.layout.iRowTall,
-							   iTexSprayWH,
-							   iTexSprayWH);
+							   (scrWide / 2) - (iTexSprayWH / 2),
+							   (scrTall / 3) - (iTexSprayWH / 2),
+							   iTexSprayWH, iTexSprayWH, "", NeoUI::TEXTUREOPTFLAGS_DONOTCROPTOPANEL);
 
 				NeoUI::Label(L"Do you want to delete this spray?");
 				NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
@@ -1740,6 +1877,58 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 				{
 					if (NeoUI::Button(L"Yes (Enter)").bPressed || NeoUI::Bind(KEY_ENTER))
 					{
+						// NOTE (nullsystem): Check if the texture matches byte for byte
+						// for the current set spray. If so, replace it with the default spray.
+						{
+							static constexpr const char PSZ_CURRENT_SPRAY[] = "materials/vgui/logos/spray.vtf";
+							char szPathToAboutToDel[MAX_PATH];
+							V_sprintf_safe(szPathToAboutToDel, "materials/vgui/logos/%s.vtf", m_sprayToDelete.szBaseName);
+
+							bool bDelCurSpray = false;
+
+							if (filesystem->FileExists(PSZ_CURRENT_SPRAY) &&
+									filesystem->FileExists(szPathToAboutToDel))
+							{
+								const unsigned int uSizeCurSpray = filesystem->Size(PSZ_CURRENT_SPRAY);
+								const unsigned int uSizeDelSpray = filesystem->Size(szPathToAboutToDel);
+								if (uSizeCurSpray == uSizeDelSpray)
+								{
+									const unsigned int uSizeSpray = uSizeCurSpray;
+									FileHandle_t hdlCurSpray = filesystem->Open(PSZ_CURRENT_SPRAY, "rb");
+									FileHandle_t hdlDelSpray = filesystem->Open(szPathToAboutToDel, "rb");
+									if (hdlCurSpray && hdlDelSpray)
+									{
+										unsigned char *pbCurSpray = reinterpret_cast<unsigned char *>(calloc(
+													uSizeSpray * 2, sizeof(unsigned char)));
+
+										if (pbCurSpray)
+										{
+											unsigned char *pbDelSpray = pbCurSpray + uSizeSpray;
+
+											filesystem->Read(pbCurSpray, uSizeSpray, hdlCurSpray);
+											filesystem->Read(pbDelSpray, uSizeSpray, hdlDelSpray);
+
+											// Check byte for byte if it matches to determine deletion
+											bDelCurSpray = (V_memcmp(pbCurSpray, pbDelSpray, uSizeSpray) == 0);
+
+											pbDelSpray = nullptr;
+											free(pbCurSpray);
+										}
+									}
+									if (hdlCurSpray) filesystem->Close(hdlCurSpray);
+									if (hdlDelSpray) filesystem->Close(hdlDelSpray);
+								}
+							}
+
+							// NOTE (nullsystem): If current spray matches deleted one,
+							// replace it with the default spray
+							if (bDelCurSpray)
+							{
+								m_eFileIOMode = FILEIODLGMODE_SPRAY;
+								OnFileSelected("materials/vgui/logos/spray_lambda.vtf");
+							}
+						}
+
 						// NOTE (nullsystem): Spray related files to remove:
 						// * materials/vgui/logos/SPRAY.vtf
 						// * materials/vgui/logos/SPRAY.vmt
@@ -1931,7 +2120,16 @@ void CNeoRoot::OnFileSelectedMode_Spray(const char *szFullpath)
 
 	char szBaseFName[MAX_PATH] = {};
 	{
-		const char *pLastSlash = V_strrchr(szFullpath, '/');
+		static constexpr const char OS_PATH_SEP =
+#ifdef WIN32
+			'\\'
+#else
+			'/'
+#endif
+		;
+
+		const char *pLastSlash = V_strrchr(szFullpath, OS_PATH_SEP);
+
 		const char *pszBaseName = pLastSlash ? pLastSlash + 1 : szFullpath;
 		int iSzLen = V_strlen(pszBaseName);
 		const char *pszDot = strchr(pszBaseName, '.');

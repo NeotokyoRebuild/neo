@@ -20,6 +20,7 @@ namespace NeoUI
 static inline Context g_emptyCtx;
 static Context *c = &g_emptyCtx;
 const int ROWLAYOUT_TWOSPLIT[] = { 40, -1 };
+static constexpr int WDGINFO_ALLOC_STEPS = 64;
 
 void SwapFont(const EFont eFont, const bool bForce)
 {
@@ -108,9 +109,22 @@ void MultiWidgetHighlighter(const int iTotalWidgets)
 	}
 }
 
+void FreeContext(NeoUI::Context *pCtx)
+{
+	if (pCtx->wdgInfos)
+	{
+		free(pCtx->wdgInfos);
+	}
+}
+
 void BeginContext(NeoUI::Context *pNextCtx, const NeoUI::Mode eMode, const wchar_t *wszTitle, const char *pSzCtxName)
 {
 	c = pNextCtx;
+	if (c->wdgInfos == nullptr)
+	{
+		c->iWdgInfosMax = WDGINFO_ALLOC_STEPS;
+		c->wdgInfos = (DynWidgetInfos *)(malloc(sizeof(DynWidgetInfos) * c->iWdgInfosMax));
+	}
 	c->layout.iRowParts = nullptr;
 	c->layout.iRowPartsTotal = 1;
 	c->eMode = eMode;
@@ -284,7 +298,7 @@ void EndSection()
 		c->iActiveSection = -1;
 	}
 	const int iAbsLayoutY = c->iLayoutY + c->irWidgetTall + c->iYOffset[c->iSection];
-	c->iWdgYOffsets[c->iWidget] = iAbsLayoutY;
+	c->wdgInfos[c->iWidget].iYOffsets= iAbsLayoutY;
 
 	// Scroll handling
 	const int iScrollThick = c->iMarginX * 4;
@@ -323,10 +337,10 @@ void EndSection()
 				do // do-while: Skip over widgets that cannot be an active widget
 				{
 					c->iActive += iActiveDirection;
-				} while (IN_BETWEEN_AR(0, c->iActive, c->iWidget) && c->bWdgCannotActive[c->iActive]);
+				} while (IN_BETWEEN_AR(0, c->iActive, c->iWidget) && c->wdgInfos[c->iActive].bCannotActive);
 				c->iActive = LoopAroundInArray(c->iActive, c->iWidget);
 				++activeIdxLoop;
-			} while (c->bWdgCannotActive[c->iActive] && activeIdxLoop < 2); // Loop guard limit only twice
+			} while (c->wdgInfos[c->iActive].bCannotActive && activeIdxLoop < 2); // Loop guard limit only twice
 			c->iHot = c->iActive;
 			c->iHotSection = c->iActiveSection;
 		}
@@ -336,15 +350,15 @@ void EndSection()
 			// Disable scroll if it doesn't need to
 			c->iYOffset[c->iSection] = 0;
 		}
-		else if (c->iWdgYOffsets[c->iActive] <= c->iYOffset[c->iSection])
+		else if (c->wdgInfos[c->iActive].iYOffsets <= c->iYOffset[c->iSection])
 		{
 			// Scrolling up past visible, re-adjust
-			c->iYOffset[c->iSection] = c->iWdgYOffsets[c->iActive];
+			c->iYOffset[c->iSection] = c->wdgInfos[c->iActive].iYOffsets;
 		}
-		else if (c->iWdgYOffsets[c->iActive] >= (c->iYOffset[c->iSection] + c->dPanel.tall))
+		else if (c->wdgInfos[c->iActive].iYOffsets >= (c->iYOffset[c->iSection] + c->dPanel.tall))
 		{
 			// Scrolling down post visible, re-adjust
-			c->iYOffset[c->iSection] = c->iWdgYOffsets[c->iActive] - c->dPanel.tall + c->iWdgYTall[c->iActive];
+			c->iYOffset[c->iSection] = c->wdgInfos[c->iActive].iYOffsets - c->dPanel.tall + c->wdgInfos[c->iActive].iYTall;
 		}
 	}
 
@@ -441,6 +455,12 @@ static GetMouseinFocusedRet InternalGetMouseinFocused()
 
 void BeginWidget(const WidgetFlag eWidgetFlag)
 {
+	if (c->iWidget >= c->iWdgInfosMax)
+	{
+		c->iWdgInfosMax += WDGINFO_ALLOC_STEPS;
+		c->wdgInfos = (DynWidgetInfos *)(realloc(c->wdgInfos, sizeof(DynWidgetInfos) * c->iWdgInfosMax));
+	}
+
 	if (c->iIdxRowParts < 0 || c->iIdxRowParts >= (c->layout.iRowPartsTotal - 1))
 	{
 		// Shift to the next row once we're out of partition
@@ -476,10 +496,9 @@ void BeginWidget(const WidgetFlag eWidgetFlag)
 	};
 	c->irWidgetWide = c->rWidgetArea.x1 - c->rWidgetArea.x0;
 	c->irWidgetTall = c->rWidgetArea.y1 - c->rWidgetArea.y0;
-	AssertFatalMsg(c->iWidget < MAX_WIDGETS, "Bump NeoUI::MAX_WIDGETS");
-	c->iWdgYOffsets[c->iWidget] = c->iLayoutY + c->iYOffset[c->iSection];
-	c->iWdgYTall[c->iWidget] = c->irWidgetTall;
-	c->bWdgCannotActive[c->iWidget] = (eWidgetFlag & WIDGETFLAG_SKIPACTIVE);
+	c->wdgInfos[c->iWidget].iYOffsets = c->iLayoutY + c->iYOffset[c->iSection];
+	c->wdgInfos[c->iWidget].iYTall = c->irWidgetTall;
+	c->wdgInfos[c->iWidget].bCannotActive = (eWidgetFlag & WIDGETFLAG_SKIPACTIVE);
 }
 
 void EndWidget(const GetMouseinFocusedRet wdgState)
@@ -698,7 +717,7 @@ void ImageTexture(const char *szTexturePath, const wchar_t *wszErrorMsg, const c
 }
 
 bool Texture(const char *szTexturePath, const int x, const int y, const int width, const int height,
-			 const char *szTextureGroup)
+			 const char *szTextureGroup, const TextureOptFlags texFlags)
 {
 	auto hdl = c->htTexMap.Find(szTexturePath);
 	if (hdl == c->htTexMap.InvalidHandle() && c->eMode == MODE_PAINT)
@@ -796,25 +815,36 @@ bool Texture(const char *szTexturePath, const int x, const int y, const int widt
 				const int iStartX = x + (width / 2) - (iDispWide / 2);
 				const int iStartY = y + (height / 2) - (iDispTall / 2);
 
-				// Only about bottom part since top always set to partition's Y position
-				const int iImgEnd = iStartY + iDispTall;
-				const int iEndOfPanelY = c->dPanel.y + c->dPanel.tall;
-
-				float flPartialShow = 1.0f;
-				if (iImgEnd > iEndOfPanelY)
-				{
-					const int iExtra = iImgEnd - iEndOfPanelY;
-					flPartialShow = 1.0f - (iExtra / static_cast<float>(iDispTall));
-				}
-
 				vgui::surface()->DrawSetColor(COLOR_WHITE);
 				vgui::surface()->DrawSetTexture(iTex);
-				vgui::surface()->DrawTexturedSubRect(
-							iStartX,
-							iStartY,
-							iStartX + iDispWide,
-							iStartY + (iDispTall * flPartialShow),
-							0.0f, 0.0f, 1.0f, flPartialShow);
+				if (texFlags & TEXTUREOPTFLAGS_DONOTCROPTOPANEL)
+				{
+					vgui::surface()->DrawTexturedRect(
+						iStartX,
+						iStartY,
+						iStartX + iDispWide,
+						iStartY + iDispTall);
+				}
+				else
+				{
+					// Only about bottom part since top always set to partition's Y position
+					const int iImgEnd = iStartY + iDispTall;
+					const int iEndOfPanelY = c->dPanel.y + c->dPanel.tall;
+
+					float flPartialShow = 1.0f;
+					if (iImgEnd > iEndOfPanelY)
+					{
+						const int iExtra = iImgEnd - iEndOfPanelY;
+						flPartialShow = 1.0f - (iExtra / static_cast<float>(iDispTall));
+					}
+
+					vgui::surface()->DrawTexturedSubRect(
+						iStartX,
+						iStartY,
+						iStartX + iDispWide,
+						iStartY + (iDispTall * flPartialShow),
+						0.0f, 0.0f, 1.0f, flPartialShow);
+				}
 				vgui::surface()->DrawSetColor(c->normalBgColor);
 			}
 			return true;
@@ -1292,7 +1322,8 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 		{
 			if (wdgState.bActive && vgui::input()->IsMouseDown(MOUSE_LEFT) && c->eMousePressedStart == MOUSESTART_SLIDER)
 			{
-				const float flPerc = static_cast<float>(c->iMouseRelX - c->layout.iRowTall) / static_cast<float>(c->irWidgetWide - (2 * c->layout.iRowTall));
+				const int iMouseRelXWidget = c->iMouseAbsX - c->rWidgetArea.x0;
+				const float flPerc = static_cast<float>(iMouseRelXWidget - c->layout.iRowTall) / static_cast<float>(c->irWidgetWide - (2 * c->layout.iRowTall));
 				*flValue = flMin + (flPerc * (flMax - flMin));
 				*flValue = ClampAndLimitDp(*flValue, flMin, flMax, iDp);
 				c->bValueEdited = true;

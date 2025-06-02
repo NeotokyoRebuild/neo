@@ -32,6 +32,7 @@ extern ConVar weaponstay;
 #endif
 
 ConVar sv_neo_loopback_warmup_round("sv_neo_loopback_warmup_round", "0", FCVAR_REPLICATED, "Allow loopback server to do warmup rounds.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_botsonly_warmup_round("sv_neo_botsonly_warmup_round", "0", FCVAR_REPLICATED, "Allow bots-only match to do warmup rounds.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_warmup_round_time("sv_neo_warmup_round_time", "45", FCVAR_REPLICATED, "The warmup round time, in seconds.", true, 0.0f, false, 0.0f);
 ConVar sv_neo_preround_freeze_time("sv_neo_preround_freeze_time", "15", FCVAR_REPLICATED, "The pre-round freeze time, in seconds.", true, 0.0, false, 0);
 ConVar sv_neo_latespawn_max_time("sv_neo_latespawn_max_time", "15", FCVAR_REPLICATED, "How many seconds late are players still allowed to spawn.", true, 0.0, false, 0);
@@ -126,6 +127,8 @@ ConVar sv_neo_readyup_autointermission("sv_neo_readyup_autointermission", "0", F
 ConVar sv_neo_readyup_lobby("sv_neo_readyup_lobby", "0", FCVAR_REPLICATED, "If enabled, players would need to ready up and match the players total requirements to start a game.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_pausematch_enabled("sv_neo_pausematch_enabled", "0", FCVAR_REPLICATED, "If enabled, players will be able to pause the match mid-game.", true, 0.0f, true, 1.0f);
 ConVar sv_neo_pausematch_unpauseimmediate("sv_neo_pausematch_unpauseimmediate", "0", FCVAR_REPLICATED | FCVAR_CHEAT, "Testing only - If enabled, unpause will be immediate.", true, 0.0f, true, 1.0f);
+ConVar sv_neo_readyup_countdown("sv_neo_readyup_countdown", "5", FCVAR_REPLICATED, "Set the countdown from fully ready to start of match in seconds.", true, 0.0f, true, 120.0f);
+ConVar sv_neo_ghost_spawn_bias("sv_neo_ghost_spawn_bias", "0", FCVAR_REPLICATED, "Spawn ghost in the same location as the previous round on odd-indexed rounds (Round 1 = index 0)", true, 0, true, 1);
 
 static void neoSvCompCallback(IConVar* var, const char* pOldValue, float flOldValue)
 {
@@ -134,6 +137,7 @@ static void neoSvCompCallback(IConVar* var, const char* pOldValue, float flOldVa
 	mp_forcecamera.SetValue(bCurrentValue); // 0 = OBS_ALLOWS_ALL, 1 = OBS_ALLOW_TEAM. For strictly original neotokyo spectator experience, 2 = OBS_ALLOW_NONE
 	sv_neo_spraydisable.SetValue(bCurrentValue);
 	sv_neo_pausematch_enabled.SetValue(bCurrentValue);
+	sv_neo_ghost_spawn_bias.SetValue(bCurrentValue);
 }
 
 ConVar sv_neo_comp("sv_neo_comp", "0", FCVAR_REPLICATED, "Enables competitive gamerules", true, 0.f, true, 1.f, neoSvCompCallback);
@@ -622,6 +626,7 @@ void CNEORules::ResetMapSessionCommon()
 	V_memset(m_arrayiEntPrevCap, 0, sizeof(m_arrayiEntPrevCap));
 	m_iEntPrevCapSize = 0;
 	DMSpawnComCallbackLoad();
+	m_vecPreviousGhostSpawn = vec3_origin;
 #endif
 }
 
@@ -846,7 +851,10 @@ void CNEORules::Think(void)
 	{
 		return;
 	}
-	const bool bIsIdleState = m_nRoundStatus == NeoRoundStatus::Idle || m_nRoundStatus == NeoRoundStatus::Warmup;
+
+	const bool bIsIdleState = m_nRoundStatus == NeoRoundStatus::Idle
+			|| m_nRoundStatus == NeoRoundStatus::Warmup
+			|| m_nRoundStatus == NeoRoundStatus::Countdown;
 	bool bIsPause = m_nRoundStatus == NeoRoundStatus::Pause;
 	if (bIsIdleState && gpGlobals->curtime > m_flNeoNextRoundStartTime)
 	{
@@ -1455,6 +1463,10 @@ float CNEORules::GetRoundRemainingTime() const
 	{
 		roundTimeLimit = sv_neo_warmup_round_time.GetFloat();
 	}
+	else if (m_nRoundStatus == NeoRoundStatus::Countdown)
+	{
+		roundTimeLimit = sv_neo_readyup_countdown.GetFloat();
+	}
 	else
 	{
 		switch (m_nGameTypeSelected) {
@@ -1577,13 +1589,19 @@ void CNEORules::SpawnTheGhost(const Vector *origin)
 		}
 
 		m_pGhost->SetAbsOrigin(*origin);
-		m_pGhost->Drop(Vector{ 0.0f, 0.0f, 0.0f });
+		m_pGhost->Drop(vec3_origin);
 	}
 	// We didn't have any spawns, spawn ghost at origin
 	else if (numGhostSpawns == 0)
 	{
 		Warning("No ghost spawns found! Spawning ghost at map origin, instead.\n");
 		m_pGhost->SetAbsOrigin(vec3_origin);
+		m_pGhost->Drop(vec3_origin);
+	}
+	else if (sv_neo_ghost_spawn_bias.GetBool() == true && roundAlternate())
+	{
+		m_pGhost->SetAbsOrigin(m_vecPreviousGhostSpawn);
+		m_pGhost->Drop(vec3_origin);
 	}
 	else
 	{
@@ -1610,13 +1628,14 @@ void CNEORules::SpawnTheGhost(const Vector *origin)
 					if (!ghostSpawn->GetAbsOrigin().IsValid())
 					{
 						m_pGhost->SetAbsOrigin(vec3_origin);
+						m_pGhost->Drop(vec3_origin);
 						Warning("Failed to get ghost spawn coords; spawning ghost at map origin instead!\n");
 						Assert(false);
 					}
 					else
 					{
 						m_pGhost->SetAbsOrigin(ghostSpawn->GetAbsOrigin());
-						m_pGhost->Drop(Vector{0.0f, 0.0f, 0.0f});
+						m_pGhost->Drop(vec3_origin);
 					}
 
 					break;
@@ -1627,11 +1646,12 @@ void CNEORules::SpawnTheGhost(const Vector *origin)
 		}
 	}
 
+	m_vecPreviousGhostSpawn = m_pGhost->GetAbsOrigin();
 	DevMsg("%s ghost at coords:\n\t%.1f %.1f %.1f\n",
-		   spawnedGhostNow ? "Spawned" : "Moved",
-		   m_pGhost->GetAbsOrigin().x,
-		   m_pGhost->GetAbsOrigin().y,
-		   m_pGhost->GetAbsOrigin().z);
+			spawnedGhostNow ? "Spawned" : "Moved",
+			m_vecPreviousGhostSpawn.x,
+			m_vecPreviousGhostSpawn.y,
+			m_vecPreviousGhostSpawn.z);
 }
 
 void CNEORules::SelectTheVIP()
@@ -2071,37 +2091,67 @@ void CNEORules::StartNextRound()
 
 	if (m_nRoundStatus == NeoRoundStatus::Idle)
 	{
-		// NOTE (nullsystem): If it's a loopback server, then go straight in. Mostly ease for testing other stuff.
-		bool loopbackSkipWarmup = false;
-		if (!sv_neo_loopback_warmup_round.GetBool())
+		if (bLobby)
 		{
-			for (int i = 1; i <= gpGlobals->maxClients; i++)
+			SetRoundStatus(NeoRoundStatus::Countdown);
+			m_iRoundNumber = 0;
+			m_flNeoRoundStartTime = gpGlobals->curtime;
+			m_flNeoNextRoundStartTime = gpGlobals->curtime + sv_neo_readyup_countdown.GetFloat();
+			UTIL_CenterPrintAll("- ALL PLAYERS READY: MATCH STARTING SOON... -\n");
+			return;
+		}
+		else
+		{
+			// NOTE (nullsystem): If it's a loopback server or bots only, then go straight in.
+			// Mostly ease for testing other stuff.
+			bool loopbackSkipWarmup = false;
+			const bool bLoopbackDontDoWarmup = !sv_neo_loopback_warmup_round.GetBool();
+			const bool bBotsonlyDontDoWarmup = !sv_neo_botsonly_warmup_round.GetBool();
+			if (bLoopbackDontDoWarmup || bBotsonlyDontDoWarmup)
 			{
-				if (auto* pPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i)))
+				int iCountBots = 0;
+				int iCountHumans = 0;
+				int iCountLoopback = 0;
+
+				for (int i = 1; i <= gpGlobals->maxClients; i++)
 				{
-					const int teamNum = pPlayer->GetTeamNumber();
-					if (!pPlayer->IsBot() && (teamNum == TEAM_JINRAI || teamNum == TEAM_NSF))
+					if (auto* pPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i)))
 					{
-						INetChannelInfo* nci = engine->GetPlayerNetInfo(i);
-						loopbackSkipWarmup = nci->IsLoopback();
-						if (!loopbackSkipWarmup)
+						const int teamNum = pPlayer->GetTeamNumber();
+						if (teamNum == TEAM_JINRAI || teamNum == TEAM_NSF)
 						{
-							break;
+							const bool bIsBot = pPlayer->IsBot();
+							const bool bIsHuman = (!bIsBot && !pPlayer->IsHLTV());
+							iCountBots += bIsBot;
+							iCountHumans += bIsHuman;
+							if (bIsHuman)
+							{
+								INetChannelInfo* nci = engine->GetPlayerNetInfo(i);
+								iCountLoopback += nci->IsLoopback();
+							}
 						}
 					}
 				}
+				if (bLoopbackDontDoWarmup)
+				{
+					loopbackSkipWarmup = (iCountLoopback > 0 && iCountLoopback == iCountHumans);
+				}
+				if (bBotsonlyDontDoWarmup && !loopbackSkipWarmup)
+				{
+					loopbackSkipWarmup = (iCountBots > 0 && iCountHumans == 0);
+				}
 			}
-		}
 
-		SetRoundStatus(NeoRoundStatus::Warmup);
-		m_iRoundNumber = 0;
-		if (!loopbackSkipWarmup && !(bLobby && sv_neo_readyup_skipwarmup.GetBool()))
-		{
-			// Moving from 0 players from either team to playable at team state
-			UTIL_CenterPrintAll("- WARMUP COUNTDOWN STARTED -\n");
-			m_flNeoRoundStartTime = gpGlobals->curtime;
-			m_flNeoNextRoundStartTime = gpGlobals->curtime + sv_neo_warmup_round_time.GetFloat();
-			return;
+			SetRoundStatus(NeoRoundStatus::Warmup);
+			m_iRoundNumber = 0;
+			if (!loopbackSkipWarmup && !(bLobby && sv_neo_readyup_skipwarmup.GetBool()))
+			{
+				// Moving from 0 players from either team to playable at team state
+				UTIL_CenterPrintAll("- WARMUP COUNTDOWN STARTED -\n");
+				m_flNeoRoundStartTime = gpGlobals->curtime;
+				m_flNeoNextRoundStartTime = gpGlobals->curtime + sv_neo_warmup_round_time.GetFloat();
+				return;
+			}
 		}
 	}
 
@@ -2119,8 +2169,10 @@ void CNEORules::StartNextRound()
 	m_flNeoNextRoundStartTime = 0;
 
 	CleanUpMap();
+	const bool bFromStarting = (m_nRoundStatus == NeoRoundStatus::Warmup
+								|| m_nRoundStatus == NeoRoundStatus::Countdown);
 
-	if (sv_neo_gamemode_enforcement.GetInt() == GAMEMODE_ENFORCEMENT_VOTE && m_nRoundStatus == NeoRoundStatus::Warmup)
+	if (sv_neo_gamemode_enforcement.GetInt() == GAMEMODE_ENFORCEMENT_VOTE && bFromStarting)
 	{
 		GatherGameTypeVotes();
 	}
@@ -2128,7 +2180,6 @@ void CNEORules::StartNextRound()
 	// NEO TODO (nullsystem): There should be a more sophisticated logic to be able to restore XP
 	// for when moving from idle to preroundfreeze, or in the future, competitive with whatever
 	// extra stuff in there. But to keep it simple: just clear if it was a warmup.
-	const bool clearXP = (m_nRoundStatus == NeoRoundStatus::Warmup);
 	SetRoundStatus(NeoRoundStatus::PreRoundFreeze);
 	++m_iRoundNumber;
 
@@ -2160,7 +2211,7 @@ void CNEORules::StartNextRound()
 		pPlayer->m_bInVision = false;
 		pPlayer->m_bIneligibleForLoadoutPick = false;
 
-		if (clearXP)
+		if (bFromStarting)
 		{
 			pPlayer->Reset();
 			pPlayer->m_iXP.Set(0);
@@ -2181,7 +2232,7 @@ void CNEORules::StartNextRound()
 	m_bTeamBeenAwardedDueToCapPrevent = false;
 	V_memset(m_arrayiEntPrevCap, 0, sizeof(m_arrayiEntPrevCap));
 	m_iEntPrevCapSize = 0;
-	if (clearXP)
+	if (bFromStarting)
 	{
 		m_pRestoredInfos.Purge();
 		// If game was in warmup then also decide on game mode here
@@ -3471,7 +3522,7 @@ void CNEORules::DeathNotice(CBasePlayer* pVictim, const CTakeDamageInfo& info)
 		event->SetString("weapon", killer_weapon_name);
 		event->SetInt("priority", 7);
 		event->SetBool("headshot", pVictim->LastHitGroup() == HITGROUP_HEAD);
-		event->SetBool("suicide", pKiller == pVictim);
+		event->SetBool("suicide", pKiller == pVictim || !pKiller->IsPlayer());
 		
 		if (isGrenade)
 		{
@@ -3642,8 +3693,7 @@ CBaseEntity *CNEORules::GetPlayerSpawnSpot(CBasePlayer *pPlayer)
 
 void CNEORules::SetRoundStatus(NeoRoundStatus status)
 {
-	if (status == NeoRoundStatus::RoundLive || status == NeoRoundStatus::Idle || status == NeoRoundStatus::Warmup ||
-			status == NeoRoundStatus::Pause)
+	if (status != NeoRoundStatus::PreRoundFreeze && status != NeoRoundStatus::PostRound)
 	{
 		for (int i = 1; i <= gpGlobals->maxClients; ++i)
 		{

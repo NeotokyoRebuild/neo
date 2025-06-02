@@ -46,6 +46,7 @@ struct NeoSettings
 		bool bStreamerMode;
 		bool bAutoDetectOBS;
 		bool bEnableRangeFinder;
+		bool bExtendedKillfeed;
 		int iBackground;
 	};
 
@@ -172,6 +173,7 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_lean_viewmodel_only);
 		CONVARREF_DEF(cl_neo_lean_automatic);
 		CONVARREF_DEF(cl_neo_squad_hud_original);
+		CONVARREF_DEF(cl_neo_hud_extended_killfeed);
 		CONVARREF_DEF(cl_showpos);
 		CONVARREF_DEF(cl_showfps);
 		CONVARREF_DEF(hud_fastswitch);
@@ -209,6 +211,7 @@ struct NeoSettings
 		CONVARREF_DEF(r_rootlod);
 		CONVARREF_DEF(mat_picmip);
 		CONVARREF_DEF(mat_reducefillrate);
+		CONVARREF_DEF(r_lightmap_bicubic);
 		CONVARREF_DEF(r_waterforceexpensive);
 		CONVARREF_DEF(r_waterforcereflectentities);
 		CONVARREF_DEF(r_flashlightdepthtexture);
