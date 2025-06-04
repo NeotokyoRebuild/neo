@@ -209,7 +209,7 @@ void CNeoLoading::OnMainLoop(const NeoUI::Mode eMode)
 		NeoUI::BeginSection(true);
 		{
 			NeoUI::Label(L"Press ESC to cancel");
-			if (m_pLabelInfo) NeoUI::Label(m_pLabelInfo->GetTextImage()->GetUText());
+			if (m_pLabelInfo) //NeoUI::Label(m_pLabelInfo->GetTextImage()->GetUText());
 			if (m_pProgressBarMain) NeoUI::Progress(m_pProgressBarMain->GetProgress(), 0.0f, 1.0f);
 		}
 		NeoUI::EndSection();
