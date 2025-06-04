@@ -27,6 +27,7 @@
 	#include "neo_dm_spawn.h"
 	#include "neo_misc.h"
 	#include "neo_game_config.h"
+	#include "nav_mesh.h"
 
 extern ConVar weaponstay;
 #endif
@@ -3802,3 +3803,10 @@ const char *CNEORules::GetTeamClantag(const int iTeamNum) const
 	default: return "";
 	}
 }
+
+#ifdef GAME_DLL
+void CNEORules::OnNavMeshLoad(void)
+{
+	TheNavMesh->SetPlayerSpawnName("info_player_defender");
+}
+#endif

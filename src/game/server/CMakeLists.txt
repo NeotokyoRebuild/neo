@@ -1386,6 +1386,60 @@ target_sources_grouped(
 
 target_sources_grouped(
     TARGET server
+    NAME "NEO\\Bot"
+    FILES
+    neo/bot/neo_bot.cpp
+    neo/bot/neo_bot.h
+    neo/bot/neo_bot_body.cpp
+    neo/bot/neo_bot_body.h
+    neo/bot/neo_bot_locomotion.cpp
+    neo/bot/neo_bot_locomotion.h
+    neo/bot/neo_bot_manager.cpp
+    neo/bot/neo_bot_manager.h
+    neo/bot/neo_bot_squad.cpp
+    neo/bot/neo_bot_squad.h
+    neo/bot/neo_bot_vision.cpp
+    neo/bot/neo_bot_vision.h
+    neo/bot/behavior/neo_bot_approach_object.cpp
+    neo/bot/behavior/neo_bot_approach_object.h
+    neo/bot/behavior/neo_bot_attack.cpp
+    neo/bot/behavior/neo_bot_attack.h
+    neo/bot/behavior/neo_bot_behavior.cpp
+    neo/bot/behavior/neo_bot_behavior.h
+    neo/bot/behavior/neo_bot_dead.cpp
+    neo/bot/behavior/neo_bot_dead.h
+    neo/bot/behavior/neo_bot_get_ammo.cpp
+    neo/bot/behavior/neo_bot_get_ammo.h
+    neo/bot/behavior/neo_bot_get_health.cpp
+    neo/bot/behavior/neo_bot_get_health.h
+    neo/bot/behavior/neo_bot_get_prop.cpp
+    neo/bot/behavior/neo_bot_get_prop.h
+    neo/bot/behavior/neo_bot_melee_attack.cpp
+    neo/bot/behavior/neo_bot_melee_attack.h
+    neo/bot/behavior/neo_bot_move_to_vantage_point.cpp
+    neo/bot/behavior/neo_bot_move_to_vantage_point.h
+    neo/bot/behavior/neo_bot_retreat_to_cover.cpp
+    neo/bot/behavior/neo_bot_retreat_to_cover.h
+    neo/bot/behavior/neo_bot_scenario_monitor.cpp
+    neo/bot/behavior/neo_bot_scenario_monitor.h
+    neo/bot/behavior/neo_bot_seek_and_destroy.cpp
+    neo/bot/behavior/neo_bot_seek_and_destroy.h
+    neo/bot/behavior/neo_bot_tactical_monitor.cpp
+    neo/bot/behavior/neo_bot_tactical_monitor.h
+    neo/bot/behavior/nav_entities/neo_bot_nav_ent_destroy_entity.cpp
+    neo/bot/behavior/nav_entities/neo_bot_nav_ent_destroy_entity.h
+    neo/bot/behavior/nav_entities/neo_bot_nav_ent_move_to.cpp
+    neo/bot/behavior/nav_entities/neo_bot_nav_ent_move_to.h
+    neo/bot/behavior/nav_entities/neo_bot_nav_ent_wait.cpp
+    neo/bot/behavior/nav_entities/neo_bot_nav_ent_wait.h
+    neo/bot/map_entities/neo_bot_generator.cpp
+    neo/bot/map_entities/neo_bot_generator.h
+    neo/bot/map_entities/neo_bot_proxy.cpp
+    neo/bot/map_entities/neo_bot_proxy.h
+)
+
+target_sources_grouped(
+    TARGET server
     NAME "NEO\\Weapons"
     FILES
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_aa13.cpp
