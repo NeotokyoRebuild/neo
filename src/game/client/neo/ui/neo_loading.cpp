@@ -4,6 +4,7 @@
 #include "ienginevgui.h"
 #include "ui/neo_root.h"
 #include "vgui/ISurface.h"
+#include "vgui/IVGui.h"
 #include "vgui_controls/ProgressBar.h"
 #include "vgui_controls/Label.h"
 #include "vgui_controls/TextImage.h"
@@ -31,6 +32,8 @@ CNeoLoading::CNeoLoading()
 
 	vgui::IScheme *pScheme = vgui::scheme()->GetIScheme(neoscheme);
 	ApplySchemeSettings(pScheme);
+
+	vgui::ivgui()->AddTickSignal(GetVPanel(), 250);
 }
 
 CNeoLoading::~CNeoLoading()
@@ -79,20 +82,21 @@ void CNeoLoading::OnMessage(const KeyValues *params, vgui::VPANEL fromPanel)
 {
 	BaseClass::OnMessage(params, fromPanel);
 	const char *pSzMsgName = params->GetName();
-	if (V_strcmp(pSzMsgName, "Activate") == 0)
+
+	const bool bIsActivate = (V_strcmp(pSzMsgName, "Activate") == 0);
+	const bool bIsDeactivate = (V_strcmp(pSzMsgName, "deactivate") == 0);
+
+	if (bIsActivate || bIsDeactivate)
 	{
-		FetchGameUIPanels();
-		g_pNeoRoot->m_bOnLoadingScreen = true;
-	}
-	else if (V_strcmp(pSzMsgName, "deactivate") == 0)
-	{
-		g_pNeoRoot->m_bOnLoadingScreen = false;
+		g_pNeoRoot->m_bOnLoadingScreen = bIsActivate;
+		V_memset(&m_info, 0, sizeof(CNeoLoading::LoadingInfos));
 	}
 }
 
-void CNeoLoading::FetchGameUIPanels()
+CNeoLoading::RetGameUIPanels CNeoLoading::FetchGameUIPanels()
 {
-	m_bValidGameUIPanels = false;
+	RetGameUIPanels panels = {}; // Zero-init
+
 	vgui::VPANEL basePanel = vgui::INVALID_PANEL;
 	vgui::VPANEL rootPanel = enginevgui->GetPanel(PANEL_GAMEUIDLL);
 	const int iRootChildren = vgui::ipanel()->GetChildCount(rootPanel);
@@ -108,7 +112,7 @@ void CNeoLoading::FetchGameUIPanels()
 	}
 	if (basePanel == vgui::INVALID_PANEL)
 	{
-		return;
+		return panels;
 	}
 
 	vgui::VPANEL loadingPanel = vgui::INVALID_PANEL;
@@ -125,17 +129,28 @@ void CNeoLoading::FetchGameUIPanels()
 	}
 	if (loadingPanel == vgui::INVALID_PANEL)
 	{
-		return;
+		return panels;
 	}
 
-	m_pLoadingPanel = static_cast<vgui::Frame *>(vgui::ipanel()->GetPanel(loadingPanel, "GAMEUI"));
-
-	m_aStrIdxMap[LOADINGSTATE_LOADING] = g_pVGuiLocalize->FindIndex("GameUI_Loading");
-	m_aStrIdxMap[LOADINGSTATE_DISCONNECTED] = g_pVGuiLocalize->FindIndex("GameUI_Disconnected");
+	panels.pLoadingPanel = static_cast<vgui::Frame *>(vgui::ipanel()->GetPanel(loadingPanel, "GAMEUI"));
+	panels.aStrIdxMap[LOADINGSTATE_LOADING] = g_pVGuiLocalize->FindIndex("GameUI_Loading");
+	panels.aStrIdxMap[LOADINGSTATE_DISCONNECTED] = g_pVGuiLocalize->FindIndex("GameUI_Disconnected");
 
 	// Hide loading panel
-	vgui::ipanel()->SetParent(loadingPanel, 0);
-	m_bValidGameUIPanels = true;
+	// NEO NOTE (nullsystem): Do not just un-parent it as that'll make
+	// it unable to pick up on next OnThink. Instead just make it look invisible.
+	panels.pLoadingPanel->SetAlpha(0);
+	panels.pLoadingPanel->SetSize(0, 0);
+	panels.pLoadingPanel->SetBgColor(COLOR_TRANSPARENT);
+	panels.pLoadingPanel->SetFgColor(COLOR_TRANSPARENT);
+	panels.pLoadingPanel->SetMouseInputEnabled(false);
+	panels.pLoadingPanel->SetKeyBoardInputEnabled(false);
+	vgui::TextImage *pTITitle = panels.pLoadingPanel->TITitlePtr();
+	if (pTITitle)
+	{
+		pTITitle->SetColor(COLOR_TRANSPARENT);
+	}
+
 	const int iLoadingChildren = vgui::ipanel()->GetChildCount(loadingPanel);
 	for (int i = 0; i < iLoadingChildren; ++i)
 	{
@@ -147,29 +162,27 @@ void CNeoLoading::FetchGameUIPanels()
 		{
 			continue;
 		}
+		pPanel->SetAlpha(0);
 		if (V_strcmp(curLoadChPanelName, "Progress") == 0)
 		{
 			Assert(V_strcmp(curLoadChPanelClass, "ProgressBar") == 0);
-			m_pProgressBarMain = static_cast<vgui::ProgressBar *>(pPanel);
+			panels.pProgressBarMain = static_cast<vgui::ProgressBar *>(pPanel);
 		}
 		else if (V_strcmp(curLoadChPanelName, "InfoLabel") == 0)
 		{
 			Assert(V_strcmp(curLoadChPanelClass, "Label") == 0);
-			m_pLabelInfo = static_cast<vgui::Label *>(pPanel);
+			panels.pLabelInfo = static_cast<vgui::Label *>(pPanel);
 		}
 		// NEO NOTE (nullsystem): Unused panels:
 		//    "Progress2" - Don't seem utilized
 		//    "TimeRemainingLabel" - Don't seem utilized
 		//    "CancelButton" - Can't do mouse input proper/workaround doesn't work well
 	}
+
+	return panels;
 }
 
 void CNeoLoading::Paint()
-{
-	OnMainLoop(NeoUI::MODE_PAINT);
-}
-
-void CNeoLoading::OnMainLoop(const NeoUI::Mode eMode)
 {
 	static constexpr int BOTTOM_ROWS = 3;
 
@@ -188,13 +201,9 @@ void CNeoLoading::OnMainLoop(const NeoUI::Mode eMode)
 	m_uiCtx.dPanel.y = (tall / 2) - ((m_iRowsInScreen * m_uiCtx.layout.iRowTall) / 2);
 	m_uiCtx.bgColor = COLOR_TRANSPARENT;
 
-	// NEO JANK (nullsystem): Since we don't have proper access to loading internals,
-	// determining by localization text index should be good enough to differ between
-	// loading and disconnect state.
-	vgui::TextImage *pTITitle = m_pLoadingPanel ? m_pLoadingPanel->TITitlePtr() : nullptr;
-	const StringIndex_t iStrIdx = pTITitle ? pTITitle->GetUnlocalizedTextSymbol() : INVALID_LOCALIZE_STRING_INDEX;
-	NeoUI::BeginContext(&m_uiCtx, eMode, pTITitle ? pTITitle->GetUText() : L"Loading...", "NeoLoadingMainCtx");
-	if (iStrIdx == m_aStrIdxMap[LOADINGSTATE_LOADING])
+	// Only deals with paint as key inputs already dealt with by SDK
+	NeoUI::BeginContext(&m_uiCtx, NeoUI::MODE_PAINT, m_info.wszTitle, "NeoLoadingMainCtx");
+	if (m_info.iStrIdx == m_info.aStrIdxMap[LOADINGSTATE_LOADING])
 	{
 		NeoUI::BeginSection();
 		{
@@ -209,19 +218,19 @@ void CNeoLoading::OnMainLoop(const NeoUI::Mode eMode)
 		NeoUI::BeginSection(true);
 		{
 			NeoUI::Label(L"Press ESC to cancel");
-			if (m_pLabelInfo) NeoUI::Label(m_pLabelInfo->GetTextImage()->GetUText());
-			if (m_pProgressBarMain) NeoUI::Progress(m_pProgressBarMain->GetProgress(), 0.0f, 1.0f);
+			NeoUI::Label(m_info.wszLabelInfo);
+			NeoUI::Progress(m_info.flProgressBarMain, 0.0f, 1.0f);
 		}
 		NeoUI::EndSection();
 	}
-	else if (iStrIdx == m_aStrIdxMap[LOADINGSTATE_DISCONNECTED])
+	else if (m_info.iStrIdx == m_info.aStrIdxMap[LOADINGSTATE_DISCONNECTED])
 	{
 		m_uiCtx.dPanel.tall = (m_iRowsInScreen / 2) * m_uiCtx.layout.iRowTall;
 		m_uiCtx.dPanel.y = (tall / 2) - (m_uiCtx.dPanel.tall / 2);
 		m_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
 		NeoUI::BeginSection(true);
 		{
-			if (m_pLabelInfo) NeoUI::LabelWrap(m_pLabelInfo->GetTextImage()->GetUText());
+			NeoUI::LabelWrap(m_info.wszLabelInfo);
 			NeoUI::Pad();
 			NeoUI::Label(L"Press ESC to go back");
 		}
@@ -229,3 +238,37 @@ void CNeoLoading::OnMainLoop(const NeoUI::Mode eMode)
 	}
 	NeoUI::EndContext();
 }
+
+void CNeoLoading::OnThink()
+{
+	BaseClass::OnThink();
+
+	if (!g_pNeoRoot->m_bOnLoadingScreen)
+	{
+		return;
+	}
+
+	const RetGameUIPanels panels = FetchGameUIPanels();
+	if (!panels.pLoadingPanel)
+	{
+		return;
+	}
+
+	DevMsg("CNeoLoading::OnThink: VALID PANEL");
+
+	for (int i = 0; i < LOADINGSTATE__TOTAL; ++i)
+	{
+		m_info.aStrIdxMap[i] = panels.aStrIdxMap[i];
+	}
+
+	// NEO JANK (nullsystem): Since we don't have proper access to loading internals,
+	// determining by localization text index should be good enough to differ between
+	// loading and disconnect state.
+	vgui::TextImage *pTITitle = panels.pLoadingPanel->TITitlePtr();
+
+	m_info.iStrIdx = pTITitle ? pTITitle->GetUnlocalizedTextSymbol() : INVALID_LOCALIZE_STRING_INDEX;
+	V_wcscpy_safe(m_info.wszTitle, pTITitle ? pTITitle->GetUText() : L"Loading...");
+	m_info.flProgressBarMain = (panels.pProgressBarMain) ? panels.pProgressBarMain->GetProgress() : 0.0f;
+	V_wcscpy_safe(m_info.wszLabelInfo, (panels.pLabelInfo) ? panels.pLabelInfo->GetTextImage()->GetUText() : L"");
+}
+
