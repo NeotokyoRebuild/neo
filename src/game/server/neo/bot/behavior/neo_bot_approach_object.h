@@ -1,17 +1,14 @@
-//========= Copyright Valve Corporation, All rights reserved. ============//
-
-#ifndef HL2MP_BOT_APPROACH_OBJECT_H
-#define HL2MP_BOT_APPROACH_OBJECT_H
+#pragma once
 
 #include "Path/NextBotPathFollow.h"
 
-class CHL2MPBotApproachObject : public Action< CHL2MPBot >
+class CNEOBotApproachObject : public Action< CNEOBot >
 {
 public:
-	CHL2MPBotApproachObject( CBaseEntity *loot, float range = 10.0f );
+	CNEOBotApproachObject( CBaseEntity *loot, float range = 10.0f );
 
-	virtual ActionResult< CHL2MPBot >	OnStart( CHL2MPBot *me, Action< CHL2MPBot > *priorAction );
-	virtual ActionResult< CHL2MPBot >	Update( CHL2MPBot *me, float interval );
+	virtual ActionResult< CNEOBot >	OnStart( CNEOBot *me, Action< CNEOBot > *priorAction );
+	virtual ActionResult< CNEOBot >	Update( CNEOBot *me, float interval );
 
 	virtual const char *GetName( void ) const	{ return "ApproachObject"; };
 
@@ -21,6 +18,3 @@ private:
 	PathFollower m_path;				// how we get to the loot
 	CountdownTimer m_repathTimer;
 };
-
-
-#endif // HL2MP_BOT_APPROACH_OBJECT_H

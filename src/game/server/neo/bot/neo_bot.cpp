@@ -425,97 +425,97 @@ CNEOBot::CNEOBotIntention::CNEOBotIntention(CNEOBot* me) : IIntention(me) {
 static CEntityFactory<CNEOBot> neo_bot("neo_bot");;
 
 //-----------------------------------------------------------------------------------------------------
-BEGIN_ENT_SCRIPTDESC( CNEOBot, CNEO_Player, "Beep boop beep boop :3" )
-DEFINE_SCRIPTFUNC_NAMED( SetAttribute, "AddBotAttribute", "Sets attribute flags on this HL2MPBot" )
-DEFINE_SCRIPTFUNC_NAMED( ClearAttribute, "RemoveBotAttribute", "Removes attribute flags on this HL2MPBot" )
-DEFINE_SCRIPTFUNC_NAMED( ClearAllAttributes, "ClearAllBotAttributes", "Clears all attribute flags on this HL2MPBot" )
-DEFINE_SCRIPTFUNC_NAMED( HasAttribute, "HasBotAttribute", "Checks if this HL2MPBot has the given attributes" )
-
-DEFINE_SCRIPTFUNC_NAMED( AddTag, "AddBotTag", "Adds a bot tag" )
-DEFINE_SCRIPTFUNC_NAMED( RemoveTag, "RemoveBotTag", "Removes a bot tag" )
-DEFINE_SCRIPTFUNC_NAMED( ClearTags, "ClearAllBotTags", "Clears bot tags" )
-DEFINE_SCRIPTFUNC_NAMED( HasTag, "HasBotTag", "Checks if this HL2MPBot has the given bot tag" )
-
-DEFINE_SCRIPTFUNC_NAMED( SetWeaponRestriction, "AddWeaponRestriction", "Adds weapon restriction flags" )
-DEFINE_SCRIPTFUNC_NAMED( RemoveWeaponRestriction, "RemoveWeaponRestriction", "Removes weapon restriction flags" )
-DEFINE_SCRIPTFUNC_NAMED( ClearWeaponRestrictions, "ClearAllWeaponRestrictions", "Removes all weapon restriction flags" )
-DEFINE_SCRIPTFUNC_NAMED( HasWeaponRestriction, "HasWeaponRestriction", "Checks if this HL2MPBot has the given weapon restriction flags" )
-
-DEFINE_SCRIPTFUNC_WRAPPED( IsWeaponRestricted, "Checks if the given weapon is restricted for use on the bot" )
-
-DEFINE_SCRIPTFUNC_WRAPPED( GetDifficulty, "Returns the bot's difficulty level" )
-DEFINE_SCRIPTFUNC_WRAPPED( SetDifficulty, "Sets the bots difficulty level" )
-DEFINE_SCRIPTFUNC_WRAPPED( IsDifficulty, "Returns true/false if the bot's difficulty level matches." )
-
-DEFINE_SCRIPTFUNC_WRAPPED( GetHomeArea, "Sets the home nav area of the bot" )
-DEFINE_SCRIPTFUNC_WRAPPED( SetHomeArea, "Returns the home nav area of the bot -- may be nil." )
-
-DEFINE_SCRIPTFUNC_WRAPPED( DelayedThreatNotice, "" )
-DEFINE_SCRIPTFUNC( UpdateDelayedThreatNotices, "" )
-
-DEFINE_SCRIPTFUNC( SetMaxVisionRangeOverride, "Sets max vision range override for the bot" )
-DEFINE_SCRIPTFUNC( GetMaxVisionRangeOverride, "Gets the max vision range override for the bot" )
-
-DEFINE_SCRIPTFUNC( SetScaleOverride, "Sets the scale override for the bot" )
-
-DEFINE_SCRIPTFUNC( SetAutoJump, "Sets if the bot should automatically jump" )
-DEFINE_SCRIPTFUNC( ShouldAutoJump, "Returns if the bot should automatically jump" )
-
-DEFINE_SCRIPTFUNC( IsInASquad, "Checks if we are in a squad" )
-DEFINE_SCRIPTFUNC( LeaveSquad, "Makes us leave the current squad (if any)" )
-DEFINE_SCRIPTFUNC( GetSquadFormationError, "Gets our formation error coefficient." )
-DEFINE_SCRIPTFUNC( SetSquadFormationError, "Sets our formation error coefficient." )
-DEFINE_SCRIPTFUNC_WRAPPED( DisbandCurrentSquad, "Forces the current squad to be entirely disbanded by everyone" )
-DEFINE_SCRIPTFUNC_WRAPPED( FindVantagePoint, "Get the nav area of the closest vantage point (within distance)" )
-
-DEFINE_SCRIPTFUNC_WRAPPED( SetAttentionFocus, "Sets our current attention focus to this entity" )
-DEFINE_SCRIPTFUNC_WRAPPED( IsAttentionFocusedOn, "Is our attention focused on this entity" )
-DEFINE_SCRIPTFUNC( ClearAttentionFocus, "Clear current focus" )
-DEFINE_SCRIPTFUNC( IsAttentionFocused, "Is our attention focused right now?" )
-
-DEFINE_SCRIPTFUNC( IsAmmoLow, "" )
-DEFINE_SCRIPTFUNC( IsAmmoFull, "" )
-
-DEFINE_SCRIPTFUNC_WRAPPED( GetSpawnArea, "Return the nav area of where we spawned" )
-
-DEFINE_SCRIPTFUNC( PressFireButton, "" )
-DEFINE_SCRIPTFUNC( PressAltFireButton, "" )
-DEFINE_SCRIPTFUNC( PressSpecialFireButton, "" )
-
-DEFINE_SCRIPTFUNC( GetBotId, "Get this bot's id" )
-DEFINE_SCRIPTFUNC( FlagForUpdate, "Flag this bot for update" )
-DEFINE_SCRIPTFUNC( IsFlaggedForUpdate, "Is this bot flagged for update" )
-DEFINE_SCRIPTFUNC( GetTickLastUpdate, "Get last update tick" )
-DEFINE_SCRIPTFUNC_WRAPPED( GetLocomotionInterface, "Get this bot's locomotion interface" )
-DEFINE_SCRIPTFUNC_WRAPPED( GetBodyInterface, "Get this bot's body interface" )
-DEFINE_SCRIPTFUNC_WRAPPED( GetIntentionInterface, "Get this bot's intention interface" )
-DEFINE_SCRIPTFUNC_WRAPPED( GetVisionInterface, "Get this bot's vision interface" )
-DEFINE_SCRIPTFUNC_WRAPPED( IsEnemy, "Return true if given entity is our enemy" )
-DEFINE_SCRIPTFUNC_WRAPPED( IsFriend, "Return true if given entity is our friend" )
-DEFINE_SCRIPTFUNC( IsImmobile, "Return true if we haven't moved in awhile" )
-DEFINE_SCRIPTFUNC( GetImmobileDuration, "How long have we been immobile" )
-DEFINE_SCRIPTFUNC( ClearImmobileStatus, "Clear immobile status" )
-DEFINE_SCRIPTFUNC( GetImmobileSpeedThreshold, "Return units/second below which this actor is considered immobile" )
-
-DEFINE_SCRIPTFUNC_NAMED( ScriptGetAllTags, "GetAllBotTags", "Get all bot tags" )
-
-DEFINE_SCRIPTFUNC_WRAPPED( SetMission, "Set this bot's current mission to the given mission" )
-DEFINE_SCRIPTFUNC_WRAPPED( SetPrevMission, "Set this bot's previous mission to the given mission" )
-DEFINE_SCRIPTFUNC_WRAPPED( GetMission, "Get this bot's current mission" )
-DEFINE_SCRIPTFUNC_WRAPPED( GetPrevMission, "Get this bot's previous mission" )
-DEFINE_SCRIPTFUNC_WRAPPED( HasMission, "Return true if the given mission is this bot's current mission" )
-DEFINE_SCRIPTFUNC( IsOnAnyMission, "Return true if this bot has a current mission" )
-DEFINE_SCRIPTFUNC_WRAPPED( SetMissionTarget, "Set this bot's mission target to the given entity" )
-DEFINE_SCRIPTFUNC_WRAPPED( GetMissionTarget, "Get this bot's current mission target" )
-
-DEFINE_SCRIPTFUNC( SetBehaviorFlag, "Set the given behavior flag(s) for this bot" )
-DEFINE_SCRIPTFUNC( ClearBehaviorFlag, "Clear the given behavior flag(s) for this bot" )
-DEFINE_SCRIPTFUNC( IsBehaviorFlagSet, "Return true if the given behavior flag(s) are set for this bot" )
-
-DEFINE_SCRIPTFUNC_WRAPPED( SetActionPoint, "Set the given action point for this bot" )
-DEFINE_SCRIPTFUNC_WRAPPED( GetActionPoint, "Get the given action point for this bot" )
-
-END_SCRIPTDESC();
+//BEGIN_ENT_SCRIPTDESC( CNEOBot, CNEO_Player, "Beep boop beep boop :3" )
+//DEFINE_SCRIPTFUNC_NAMED( SetAttribute, "AddBotAttribute", "Sets attribute flags on this HL2MPBot" )
+//DEFINE_SCRIPTFUNC_NAMED( ClearAttribute, "RemoveBotAttribute", "Removes attribute flags on this HL2MPBot" )
+//DEFINE_SCRIPTFUNC_NAMED( ClearAllAttributes, "ClearAllBotAttributes", "Clears all attribute flags on this HL2MPBot" )
+//DEFINE_SCRIPTFUNC_NAMED( HasAttribute, "HasBotAttribute", "Checks if this HL2MPBot has the given attributes" )
+//
+//DEFINE_SCRIPTFUNC_NAMED( AddTag, "AddBotTag", "Adds a bot tag" )
+//DEFINE_SCRIPTFUNC_NAMED( RemoveTag, "RemoveBotTag", "Removes a bot tag" )
+//DEFINE_SCRIPTFUNC_NAMED( ClearTags, "ClearAllBotTags", "Clears bot tags" )
+//DEFINE_SCRIPTFUNC_NAMED( HasTag, "HasBotTag", "Checks if this HL2MPBot has the given bot tag" )
+//
+//DEFINE_SCRIPTFUNC_NAMED( SetWeaponRestriction, "AddWeaponRestriction", "Adds weapon restriction flags" )
+//DEFINE_SCRIPTFUNC_NAMED( RemoveWeaponRestriction, "RemoveWeaponRestriction", "Removes weapon restriction flags" )
+//DEFINE_SCRIPTFUNC_NAMED( ClearWeaponRestrictions, "ClearAllWeaponRestrictions", "Removes all weapon restriction flags" )
+//DEFINE_SCRIPTFUNC_NAMED( HasWeaponRestriction, "HasWeaponRestriction", "Checks if this HL2MPBot has the given weapon restriction flags" )
+//
+//DEFINE_SCRIPTFUNC_WRAPPED( IsWeaponRestricted, "Checks if the given weapon is restricted for use on the bot" )
+//
+//DEFINE_SCRIPTFUNC_WRAPPED( GetDifficulty, "Returns the bot's difficulty level" )
+//DEFINE_SCRIPTFUNC_WRAPPED( SetDifficulty, "Sets the bots difficulty level" )
+//DEFINE_SCRIPTFUNC_WRAPPED( IsDifficulty, "Returns true/false if the bot's difficulty level matches." )
+//
+//DEFINE_SCRIPTFUNC_WRAPPED( GetHomeArea, "Sets the home nav area of the bot" )
+//DEFINE_SCRIPTFUNC_WRAPPED( SetHomeArea, "Returns the home nav area of the bot -- may be nil." )
+//
+//DEFINE_SCRIPTFUNC_WRAPPED( DelayedThreatNotice, "" )
+//DEFINE_SCRIPTFUNC( UpdateDelayedThreatNotices, "" )
+//
+//DEFINE_SCRIPTFUNC( SetMaxVisionRangeOverride, "Sets max vision range override for the bot" )
+//DEFINE_SCRIPTFUNC( GetMaxVisionRangeOverride, "Gets the max vision range override for the bot" )
+//
+//DEFINE_SCRIPTFUNC( SetScaleOverride, "Sets the scale override for the bot" )
+//
+//DEFINE_SCRIPTFUNC( SetAutoJump, "Sets if the bot should automatically jump" )
+//DEFINE_SCRIPTFUNC( ShouldAutoJump, "Returns if the bot should automatically jump" )
+//
+//DEFINE_SCRIPTFUNC( IsInASquad, "Checks if we are in a squad" )
+//DEFINE_SCRIPTFUNC( LeaveSquad, "Makes us leave the current squad (if any)" )
+//DEFINE_SCRIPTFUNC( GetSquadFormationError, "Gets our formation error coefficient." )
+//DEFINE_SCRIPTFUNC( SetSquadFormationError, "Sets our formation error coefficient." )
+//DEFINE_SCRIPTFUNC_WRAPPED( DisbandCurrentSquad, "Forces the current squad to be entirely disbanded by everyone" )
+//DEFINE_SCRIPTFUNC_WRAPPED( FindVantagePoint, "Get the nav area of the closest vantage point (within distance)" )
+//
+//DEFINE_SCRIPTFUNC_WRAPPED( SetAttentionFocus, "Sets our current attention focus to this entity" )
+//DEFINE_SCRIPTFUNC_WRAPPED( IsAttentionFocusedOn, "Is our attention focused on this entity" )
+//DEFINE_SCRIPTFUNC( ClearAttentionFocus, "Clear current focus" )
+//DEFINE_SCRIPTFUNC( IsAttentionFocused, "Is our attention focused right now?" )
+//
+//DEFINE_SCRIPTFUNC( IsAmmoLow, "" )
+//DEFINE_SCRIPTFUNC( IsAmmoFull, "" )
+//
+//DEFINE_SCRIPTFUNC_WRAPPED( GetSpawnArea, "Return the nav area of where we spawned" )
+//
+//DEFINE_SCRIPTFUNC( PressFireButton, "" )
+//DEFINE_SCRIPTFUNC( PressAltFireButton, "" )
+//DEFINE_SCRIPTFUNC( PressSpecialFireButton, "" )
+//
+//DEFINE_SCRIPTFUNC( GetBotId, "Get this bot's id" )
+//DEFINE_SCRIPTFUNC( FlagForUpdate, "Flag this bot for update" )
+//DEFINE_SCRIPTFUNC( IsFlaggedForUpdate, "Is this bot flagged for update" )
+//DEFINE_SCRIPTFUNC( GetTickLastUpdate, "Get last update tick" )
+//DEFINE_SCRIPTFUNC_WRAPPED( GetLocomotionInterface, "Get this bot's locomotion interface" )
+//DEFINE_SCRIPTFUNC_WRAPPED( GetBodyInterface, "Get this bot's body interface" )
+//DEFINE_SCRIPTFUNC_WRAPPED( GetIntentionInterface, "Get this bot's intention interface" )
+//DEFINE_SCRIPTFUNC_WRAPPED( GetVisionInterface, "Get this bot's vision interface" )
+//DEFINE_SCRIPTFUNC_WRAPPED( IsEnemy, "Return true if given entity is our enemy" )
+//DEFINE_SCRIPTFUNC_WRAPPED( IsFriend, "Return true if given entity is our friend" )
+//DEFINE_SCRIPTFUNC( IsImmobile, "Return true if we haven't moved in awhile" )
+//DEFINE_SCRIPTFUNC( GetImmobileDuration, "How long have we been immobile" )
+//DEFINE_SCRIPTFUNC( ClearImmobileStatus, "Clear immobile status" )
+//DEFINE_SCRIPTFUNC( GetImmobileSpeedThreshold, "Return units/second below which this actor is considered immobile" )
+//
+//DEFINE_SCRIPTFUNC_NAMED( ScriptGetAllTags, "GetAllBotTags", "Get all bot tags" )
+//
+//DEFINE_SCRIPTFUNC_WRAPPED( SetMission, "Set this bot's current mission to the given mission" )
+//DEFINE_SCRIPTFUNC_WRAPPED( SetPrevMission, "Set this bot's previous mission to the given mission" )
+//DEFINE_SCRIPTFUNC_WRAPPED( GetMission, "Get this bot's current mission" )
+//DEFINE_SCRIPTFUNC_WRAPPED( GetPrevMission, "Get this bot's previous mission" )
+//DEFINE_SCRIPTFUNC_WRAPPED( HasMission, "Return true if the given mission is this bot's current mission" )
+//DEFINE_SCRIPTFUNC( IsOnAnyMission, "Return true if this bot has a current mission" )
+//DEFINE_SCRIPTFUNC_WRAPPED( SetMissionTarget, "Set this bot's mission target to the given entity" )
+//DEFINE_SCRIPTFUNC_WRAPPED( GetMissionTarget, "Get this bot's current mission target" )
+//
+//DEFINE_SCRIPTFUNC( SetBehaviorFlag, "Set the given behavior flag(s) for this bot" )
+//DEFINE_SCRIPTFUNC( ClearBehaviorFlag, "Clear the given behavior flag(s) for this bot" )
+//DEFINE_SCRIPTFUNC( IsBehaviorFlagSet, "Return true if the given behavior flag(s) are set for this bot" )
+//
+//DEFINE_SCRIPTFUNC_WRAPPED( SetActionPoint, "Set the given action point for this bot" )
+//DEFINE_SCRIPTFUNC_WRAPPED( GetActionPoint, "Get the given action point for this bot" )
+//
+//END_SCRIPTDESC();
 
 //-----------------------------------------------------------------------------------------------------
 /**
@@ -1924,7 +1924,7 @@ void CNEOBot::UpdateDelayedThreatNotices(void)
 //---------------------------------------------------------------------------------------------
 bool CNEOBot::IsSquadmate(CNEO_Player* who) const
 {
-	if (!m_squad || !who || !who->IsBotOfType(HL2MP_BOT_TYPE))
+	if (!m_squad || !who || !who->IsBotOfType(NEO_BOT_TYPE))
 		return false;
 
 	return GetSquad() == ToNEOBot(who)->GetSquad();

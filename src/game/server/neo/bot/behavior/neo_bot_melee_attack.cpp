@@ -1,26 +1,23 @@
-//========= Copyright Valve Corporation, All rights reserved. ============//
-
 #include "cbase.h"
-#include "bot/hl2mp_bot.h"
-#include "bot/behavior/hl2mp_bot_melee_attack.h"
-#include "hl2mp/weapon_hl2mpbasebasebludgeon.h"
+#include "bot/neo_bot.h"
+#include "bot/behavior/neo_bot_melee_attack.h"
 
 #include "nav_mesh.h"
 
-extern ConVar hl2mp_bot_path_lookahead_range;
+extern ConVar neo_bot_path_lookahead_range;
 
-ConVar hl2mp_bot_melee_attack_abandon_range( "hl2mp_bot_melee_attack_abandon_range", "500", FCVAR_CHEAT, "If threat is farther away than this, bot will switch back to its primary weapon and attack" );
+ConVar neo_bot_melee_attack_abandon_range( "neo_bot_melee_attack_abandon_range", "500", FCVAR_CHEAT, "If threat is farther away than this, bot will switch back to its primary weapon and attack" );
 
 
 //---------------------------------------------------------------------------------------------
-CHL2MPBotMeleeAttack::CHL2MPBotMeleeAttack( float giveUpRange )
+CNEOBotMeleeAttack::CNEOBotMeleeAttack( float giveUpRange )
 {
-	m_giveUpRange = giveUpRange < 0.0f ? hl2mp_bot_melee_attack_abandon_range.GetFloat() : giveUpRange;
+	m_giveUpRange = giveUpRange < 0.0f ? neo_bot_melee_attack_abandon_range.GetFloat() : giveUpRange;
 }
 
 
 //---------------------------------------------------------------------------------------------
-ActionResult< CHL2MPBot >	CHL2MPBotMeleeAttack::OnStart( CHL2MPBot *me, Action< CHL2MPBot > *priorAction )
+ActionResult< CNEOBot >	CNEOBotMeleeAttack::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
 	m_path.SetMinLookAheadDistance( me->GetDesiredPathLookAheadRange() );
 
@@ -29,7 +26,7 @@ ActionResult< CHL2MPBot >	CHL2MPBotMeleeAttack::OnStart( CHL2MPBot *me, Action< 
 
 
 //---------------------------------------------------------------------------------------------
-ActionResult< CHL2MPBot >	CHL2MPBotMeleeAttack::Update( CHL2MPBot *me, float interval )
+ActionResult< CNEOBot >	CNEOBotMeleeAttack::Update( CNEOBot *me, float interval )
 {
 	// bash the bad guys
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
@@ -46,7 +43,7 @@ ActionResult< CHL2MPBot >	CHL2MPBotMeleeAttack::Update( CHL2MPBot *me, float int
 	}
 
 	// switch to our melee weapon
-	CBaseHL2MPBludgeonWeapon *meleeWeapon = me->GetBludgeonWeapon();
+	CNEOBaseCombatWeapon*meleeWeapon = me->GetBludgeonWeapon();
 
 	if ( !meleeWeapon )
 	{
@@ -62,7 +59,7 @@ ActionResult< CHL2MPBot >	CHL2MPBotMeleeAttack::Update( CHL2MPBot *me, float int
 	me->PressFireButton();
 
 	// chase them down
-	CHL2MPBotPathCost cost( me, FASTEST_ROUTE );
+	CNEOBotPathCost cost( me, FASTEST_ROUTE );
 	m_path.Update( me, threat->GetEntity(), cost );
 
 	return Continue();

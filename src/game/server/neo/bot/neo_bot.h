@@ -13,7 +13,7 @@
 #include "nav_entities.h"
 #include "utlstack.h"
 
-#define HL2MP_BOT_TYPE	1337
+#define NEO_BOT_TYPE	1338
 
 class CNEOBotActionPoint;
 class CNEOBotGenerator;
@@ -49,7 +49,7 @@ class CNEOBot : public NextBotPlayer< CNEO_Player >, public CGameEventListener
 public:
 	DECLARE_CLASS(CNEOBot, NextBotPlayer< CNEO_Player >);
 
-	DECLARE_ENT_SCRIPTDESC();
+	//DECLARE_ENT_SCRIPTDESC();
 
 	CNEOBot();
 	virtual ~CNEOBot();
@@ -543,7 +543,7 @@ inline void CNEOBot::StopLookingAroundForEnemies(void)
 
 inline int CNEOBot::GetBotType(void) const
 {
-	return HL2MP_BOT_TYPE;
+	return NEO_BOT_TYPE;
 }
 
 inline const Vector& CNEOBot::GetSpotWhereEnemySentryLastInjuredMe(void) const
@@ -711,7 +711,7 @@ inline bool CNEOBot::IsEnvironmentNoisy(void) const
 //---------------------------------------------------------------------------------------------
 inline CNEOBot* ToNEOBot(CBaseEntity* pEntity)
 {
-	if (!pEntity || !pEntity->IsPlayer() || !ToNEOPlayer(pEntity)->IsBotOfType(HL2MP_BOT_TYPE))
+	if (!pEntity || !pEntity->IsPlayer() || !ToNEOPlayer(pEntity)->IsBotOfType(NEO_BOT_TYPE))
 		return NULL;
 
 	Assert("***IMPORTANT!!! DONT IGNORE ME!!!***" && dynamic_cast<CNEOBot*>(pEntity) != 0);
@@ -723,7 +723,7 @@ inline CNEOBot* ToNEOBot(CBaseEntity* pEntity)
 //---------------------------------------------------------------------------------------------
 inline const CNEOBot* ToNEOBot(const CBaseEntity* pEntity)
 {
-	if (!pEntity || !pEntity->IsPlayer() || !ToNEOPlayer(const_cast<CBaseEntity*>(pEntity))->IsBotOfType(HL2MP_BOT_TYPE))
+	if (!pEntity || !pEntity->IsPlayer() || !ToNEOPlayer(const_cast<CBaseEntity*>(pEntity))->IsBotOfType(NEO_BOT_TYPE))
 		return NULL;
 
 	Assert("***IMPORTANT!!! DONT IGNORE ME!!!***" && dynamic_cast<const CNEOBot*>(pEntity) != 0);

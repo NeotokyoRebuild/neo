@@ -2,14 +2,14 @@
 
 #include "cbase.h"
 #include "nav_mesh.h"
-#include "hl2mp_player.h"
-#include "bot/hl2mp_bot.h"
-#include "bot/behavior/hl2mp_bot_approach_object.h"
+#include "neo_player.h"
+#include "bot/neo_bot.h"
+#include "bot/behavior/neo_bot_approach_object.h"
 
-extern ConVar hl2mp_bot_path_lookahead_range;
+extern ConVar neo_bot_path_lookahead_range;
 
 //---------------------------------------------------------------------------------------------
-CHL2MPBotApproachObject::CHL2MPBotApproachObject( CBaseEntity *loot, float range )
+CNEOBotApproachObject::CNEOBotApproachObject( CBaseEntity *loot, float range )
 {
 	m_loot = loot;
 	m_range = range;
@@ -17,7 +17,7 @@ CHL2MPBotApproachObject::CHL2MPBotApproachObject( CBaseEntity *loot, float range
 
 
 //---------------------------------------------------------------------------------------------
-ActionResult< CHL2MPBot >	CHL2MPBotApproachObject::OnStart( CHL2MPBot *me, Action< CHL2MPBot > *priorAction )
+ActionResult< CNEOBot >	CNEOBotApproachObject::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
 	m_path.SetMinLookAheadDistance( me->GetDesiredPathLookAheadRange() );
 
@@ -26,7 +26,7 @@ ActionResult< CHL2MPBot >	CHL2MPBotApproachObject::OnStart( CHL2MPBot *me, Actio
 
 
 //---------------------------------------------------------------------------------------------
-ActionResult< CHL2MPBot >	CHL2MPBotApproachObject::Update( CHL2MPBot *me, float interval )
+ActionResult< CNEOBot >	CNEOBotApproachObject::Update( CNEOBot *me, float interval )
 {
 	if ( m_loot == NULL )
 	{
@@ -53,7 +53,7 @@ ActionResult< CHL2MPBot >	CHL2MPBotApproachObject::Update( CHL2MPBot *me, float 
 	{
 		m_repathTimer.Start( RandomFloat( 1.0f, 2.0f ) );
 
-		CHL2MPBotPathCost cost( me, FASTEST_ROUTE );
+		CNEOBotPathCost cost( me, FASTEST_ROUTE );
 		m_path.Compute( me, m_loot->GetAbsOrigin(), cost );
 	}
 

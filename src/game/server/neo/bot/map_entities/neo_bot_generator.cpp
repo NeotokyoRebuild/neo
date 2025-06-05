@@ -9,10 +9,10 @@
 #include "tier3/tier3.h"
 #include "vgui/ILocalize.h"
 
-extern ConVar hl2mp_bot_prefix_name_with_difficulty;
-extern ConVar hl2mp_bot_difficulty;
+extern ConVar neo_bot_prefix_name_with_difficulty;
+extern ConVar neo_bot_difficulty;
 
-extern void CreateBotName( int iTeam, CNEOBot::DifficultyType skill, char* pBuffer, int iBufferSize );
+extern void CreateBotName( CNEOBot::DifficultyType skill, char* pBuffer, int iBufferSize );
 
 //------------------------------------------------------------------------------
 
@@ -275,7 +275,7 @@ void CNEOBotGenerator::SpawnBot( void )
 	CNEOBot *bot = TheNEOBots().GetAvailableBotFromPool();
 	if ( bot == NULL )
 	{
-		CreateBotName( TEAM_UNASSIGNED, (CNEOBot::DifficultyType)m_difficulty, name, sizeof(name) );
+		CreateBotName( (CNEOBot::DifficultyType)m_difficulty, name, sizeof(name) );
 		bot = NextBotCreatePlayerBot< CNEOBot >( name );
 	}
 
