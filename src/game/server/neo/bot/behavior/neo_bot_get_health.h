@@ -1,19 +1,16 @@
-//========= Copyright Valve Corporation, All rights reserved. ============//
+#pragma once
 
-#ifndef HL2MP_BOT_GET_HEALTH_H
-#define HL2MP_BOT_GET_HEALTH_H
-
-class CHL2MPBotGetHealth : public Action< CHL2MPBot >
+class CNEOBotGetHealth : public Action< CNEOBot >
 {
 public:
-	static bool IsPossible( CHL2MPBot *me );	// Return true if this Action has what it needs to perform right now
+	static bool IsPossible( CNEOBot *me );	// Return true if this Action has what it needs to perform right now
 
-	virtual ActionResult< CHL2MPBot >	OnStart( CHL2MPBot *me, Action< CHL2MPBot > *priorAction );
-	virtual ActionResult< CHL2MPBot >	Update( CHL2MPBot *me, float interval );
+	virtual ActionResult< CNEOBot >	OnStart( CNEOBot *me, Action< CNEOBot > *priorAction );
+	virtual ActionResult< CNEOBot >	Update( CNEOBot *me, float interval );
 
-	virtual EventDesiredResult< CHL2MPBot > OnStuck( CHL2MPBot *me );
-	virtual EventDesiredResult< CHL2MPBot > OnMoveToSuccess( CHL2MPBot *me, const Path *path );
-	virtual EventDesiredResult< CHL2MPBot > OnMoveToFailure( CHL2MPBot *me, const Path *path, MoveToFailureType reason );
+	virtual EventDesiredResult< CNEOBot > OnStuck( CNEOBot *me );
+	virtual EventDesiredResult< CNEOBot > OnMoveToSuccess( CNEOBot *me, const Path *path );
+	virtual EventDesiredResult< CNEOBot > OnMoveToFailure( CNEOBot *me, const Path *path, MoveToFailureType reason );
 
 	virtual QueryResultType ShouldHurry( const INextBot *me ) const;					// are we in a hurry?
 
@@ -25,6 +22,3 @@ private:
 
 	bool m_isGoalCharger = false;
 };
-
-
-#endif // HL2MP_BOT_GET_HEALTH_H

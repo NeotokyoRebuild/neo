@@ -1,56 +1,51 @@
-//========= Copyright Valve Corporation, All rights reserved. ============//
-
 #include "cbase.h"
 #include "fmtstr.h"
 
 #include "nav_mesh.h"
-#include "hl2mp_player.h"
-#include "hl2mp_gamerules.h"
-#include "hl2mp/weapon_rpg.h"
-#include "bot/hl2mp_bot.h"
-#include "bot/hl2mp_bot_manager.h"
-#include "bot/behavior/hl2mp_bot_behavior.h"
-#include "bot/behavior/hl2mp_bot_dead.h"
+#include "neo_player.h"
+#include "neo_gamerules.h"
+#include "bot/neo_bot.h"
+#include "bot/neo_bot_manager.h"
+#include "bot/behavior/neo_bot_behavior.h"
+#include "bot/behavior/neo_bot_dead.h"
 #include "NextBot/NavMeshEntities/func_nav_prerequisite.h"
-#include "bot/behavior/nav_entities/hl2mp_bot_nav_ent_destroy_entity.h"
-#include "bot/behavior/nav_entities/hl2mp_bot_nav_ent_move_to.h"
-#include "bot/behavior/nav_entities/hl2mp_bot_nav_ent_wait.h"
-#include "bot/behavior/hl2mp_bot_tactical_monitor.h"
+#include "bot/behavior/nav_entities/neo_bot_nav_ent_destroy_entity.h"
+#include "bot/behavior/nav_entities/neo_bot_nav_ent_move_to.h"
+#include "bot/behavior/nav_entities/neo_bot_nav_ent_wait.h"
+#include "bot/behavior/neo_bot_tactical_monitor.h"
 
 
-extern ConVar hl2mp_bot_health_ok_ratio;
+extern ConVar neo_bot_health_ok_ratio;
 
-ConVar hl2mp_bot_path_lookahead_range( "hl2mp_bot_path_lookahead_range", "300" );
-ConVar hl2mp_bot_sniper_aim_error( "hl2mp_bot_sniper_aim_error", "0.01", FCVAR_CHEAT );
-ConVar hl2mp_bot_sniper_aim_steady_rate( "hl2mp_bot_sniper_aim_steady_rate", "10", FCVAR_CHEAT );
-ConVar hl2mp_bot_debug_sniper( "hl2mp_bot_debug_sniper", "0", FCVAR_CHEAT );
-ConVar hl2mp_bot_fire_weapon_min_time( "hl2mp_bot_fire_weapon_min_time", "1", FCVAR_CHEAT );
-ConVar hl2mp_bot_taunt_victim_chance( "hl2mp_bot_taunt_victim_chance", "20" );		// community requested this not be a cheat cvar
+ConVar neo_bot_path_lookahead_range( "neo_bot_path_lookahead_range", "300" );
+ConVar neo_bot_sniper_aim_error( "neo_bot_sniper_aim_error", "0.01", FCVAR_CHEAT );
+ConVar neo_bot_sniper_aim_steady_rate( "neo_bot_sniper_aim_steady_rate", "10", FCVAR_CHEAT );
+ConVar neo_bot_debug_sniper( "neo_bot_debug_sniper", "0", FCVAR_CHEAT );
+ConVar neo_bot_fire_weapon_min_time( "neo_bot_fire_weapon_min_time", "1", FCVAR_CHEAT );
 
-ConVar hl2mp_bot_notice_backstab_chance( "hl2mp_bot_notice_backstab_chance", "25", FCVAR_CHEAT );
-ConVar hl2mp_bot_notice_backstab_min_range( "hl2mp_bot_notice_backstab_min_range", "100", FCVAR_CHEAT );
-ConVar hl2mp_bot_notice_backstab_max_range( "hl2mp_bot_notice_backstab_max_range", "750", FCVAR_CHEAT );
+ConVar neo_bot_notice_backstab_chance( "neo_bot_notice_backstab_chance", "25", FCVAR_CHEAT );
+ConVar neo_bot_notice_backstab_min_range( "neo_bot_notice_backstab_min_range", "100", FCVAR_CHEAT );
+ConVar neo_bot_notice_backstab_max_range( "neo_bot_notice_backstab_max_range", "750", FCVAR_CHEAT );
 
-ConVar hl2mp_bot_ballistic_elevation_rate( "hl2mp_bot_ballistic_elevation_rate", "0.01", FCVAR_CHEAT, "When lobbing grenades at far away targets, this is the degree/range slope to raise our aim" );
+ConVar neo_bot_ballistic_elevation_rate( "neo_bot_ballistic_elevation_rate", "0.01", FCVAR_CHEAT, "When lobbing grenades at far away targets, this is the degree/range slope to raise our aim" );
 
-ConVar hl2mp_bot_hitscan_range_limit( "hl2mp_bot_hitscan_range_limit", "1800", FCVAR_CHEAT );
+ConVar neo_bot_hitscan_range_limit( "neo_bot_hitscan_range_limit", "1800", FCVAR_CHEAT );
 
-ConVar hl2mp_bot_always_full_reload( "hl2mp_bot_always_full_reload", "0", FCVAR_CHEAT );
+ConVar neo_bot_always_full_reload( "neo_bot_always_full_reload", "0", FCVAR_CHEAT );
 
-ConVar hl2mp_bot_fire_weapon_allowed( "hl2mp_bot_fire_weapon_allowed", "1", FCVAR_CHEAT, "If zero, HL2MPBots will not pull the trigger of their weapons (but will act like they did)" );
+ConVar neo_bot_fire_weapon_allowed( "neo_bot_fire_weapon_allowed", "1", FCVAR_CHEAT, "If zero, NEOBots will not pull the trigger of their weapons (but will act like they did)" );
 
-ConVar hl2mp_bot_allow_retreat( "hl2mp_bot_allow_retreat", "1", FCVAR_CHEAT, "If zero, bots will not attempt to retreat if they are are in a bad situation." );
-ConVar hl2mp_bot_physcannon_wait_fire_time( "hl2mp_bot_physcannon_wait_fire_time", "1", FCVAR_CHEAT, "Time to wait after picking up a prop to firing." );
+ConVar neo_bot_allow_retreat( "neo_bot_allow_retreat", "1", FCVAR_CHEAT, "If zero, bots will not attempt to retreat if they are are in a bad situation." );
 
 //---------------------------------------------------------------------------------------------
-Action< CHL2MPBot > *CHL2MPBotMainAction::InitialContainedAction( CHL2MPBot *me )
+Action< CNEOBot > *CNEOBotMainAction::InitialContainedAction( CNEOBot *me )
 {
-	return new CHL2MPBotTacticalMonitor;
+	return new CNEOBotTacticalMonitor;
 }
 
 
 //---------------------------------------------------------------------------------------------
-ActionResult< CHL2MPBot >	CHL2MPBotMainAction::OnStart( CHL2MPBot *me, Action< CHL2MPBot > *priorAction )
+ActionResult< CNEOBot >	CNEOBotMainAction::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
 	m_lastTouch = NULL;
 	m_lastTouchTime = 0.0f;
@@ -66,7 +61,7 @@ ActionResult< CHL2MPBot >	CHL2MPBotMainAction::OnStart( CHL2MPBot *me, Action< C
 	// check for !IsAlive because bot could be DYING
 	if ( !me->IsAlive() )
 	{
-		return ChangeTo( new CHL2MPBotDead, "I'm actually dead" );
+		return ChangeTo( new CNEOBotDead, "I'm actually dead" );
 	}
 
 	return Continue();
@@ -74,9 +69,9 @@ ActionResult< CHL2MPBot >	CHL2MPBotMainAction::OnStart( CHL2MPBot *me, Action< C
 
 
 //---------------------------------------------------------------------------------------------
-ActionResult< CHL2MPBot >	CHL2MPBotMainAction::Update( CHL2MPBot *me, float interval )
+ActionResult< CNEOBot >	CNEOBotMainAction::Update( CNEOBot *me, float interval )
 {
-	VPROF_BUDGET( "CHL2MPBotMainAction::Update", "NextBot" );
+	VPROF_BUDGET( "CNEOBotMainAction::Update", "NextBot" );
 
 	// TEAM_UNASSIGNED -> deathmatch
 	if ( me->GetTeamNumber() != TEAM_COMBINE && me->GetTeamNumber() != TEAM_REBELS && me->GetTeamNumber() != TEAM_UNASSIGNED )
@@ -93,7 +88,7 @@ ActionResult< CHL2MPBot >	CHL2MPBotMainAction::Update( CHL2MPBot *me, float inte
 	m_yawRate = fabs( deltaYaw / ( interval + 0.0001f ) );
 	m_priorYaw = me->EyeAngles().y;
 
-	if ( m_yawRate < hl2mp_bot_sniper_aim_steady_rate.GetFloat() )
+	if ( m_yawRate < neo_bot_sniper_aim_steady_rate.GetFloat() )
 	{
 		if ( !m_steadyTimer.HasStarted() )
 			m_steadyTimer.Start();
@@ -124,14 +119,14 @@ ActionResult< CHL2MPBot >	CHL2MPBotMainAction::Update( CHL2MPBot *me, float inte
 
 
 //---------------------------------------------------------------------------------------------
-EventDesiredResult<CHL2MPBot> CHL2MPBotMainAction::OnKilled( CHL2MPBot *me, const CTakeDamageInfo& info )
+EventDesiredResult<CNEOBot> CNEOBotMainAction::OnKilled( CNEOBot *me, const CTakeDamageInfo& info )
 {
-	return TryChangeTo( new CHL2MPBotDead, RESULT_CRITICAL, "I died!" );
+	return TryChangeTo( new CNEOBotDead, RESULT_CRITICAL, "I died!" );
 }
 
 
 //---------------------------------------------------------------------------------------------
-EventDesiredResult< CHL2MPBot > CHL2MPBotMainAction::OnInjured( CHL2MPBot *me, const CTakeDamageInfo &info )
+EventDesiredResult< CNEOBot > CNEOBotMainAction::OnInjured( CNEOBot *me, const CTakeDamageInfo &info )
 {
 	// if an object hurt me, it must be a sentry
 	CBaseEntity *subject = info.GetAttacker();
@@ -144,7 +139,7 @@ EventDesiredResult< CHL2MPBot > CHL2MPBotMainAction::OnInjured( CHL2MPBot *me, c
 
 
 //---------------------------------------------------------------------------------------------
-EventDesiredResult< CHL2MPBot > CHL2MPBotMainAction::OnContact( CHL2MPBot *me, CBaseEntity *other, CGameTrace *result )
+EventDesiredResult< CNEOBot > CNEOBotMainAction::OnContact( CNEOBot *me, CBaseEntity *other, CGameTrace *result )
 {
 	if ( other && !other->IsSolidFlagSet( FSOLID_NOT_SOLID ) && !other->IsWorld() && !other->IsPlayer() )
 	{
@@ -157,7 +152,7 @@ EventDesiredResult< CHL2MPBot > CHL2MPBotMainAction::OnContact( CHL2MPBot *me, C
 
 
 //---------------------------------------------------------------------------------------------
-EventDesiredResult< CHL2MPBot > CHL2MPBotMainAction::OnStuck( CHL2MPBot *me )
+EventDesiredResult< CNEOBot > CNEOBotMainAction::OnStuck( CNEOBot *me )
 {
 	UTIL_LogPrintf( "\"%s<%i><%s>\" stuck (position \"%3.2f %3.2f %3.2f\") (duration \"%3.2f\") ",
 					me->GetPlayerName(),
@@ -195,7 +190,7 @@ EventDesiredResult< CHL2MPBot > CHL2MPBotMainAction::OnStuck( CHL2MPBot *me )
 
 
 //---------------------------------------------------------------------------------------------
-EventDesiredResult< CHL2MPBot > CHL2MPBotMainAction::OnOtherKilled( CHL2MPBot *me, CBaseCombatCharacter *victim, const CTakeDamageInfo &info )
+EventDesiredResult< CNEOBot > CNEOBotMainAction::OnOtherKilled( CNEOBot *me, CBaseCombatCharacter *victim, const CTakeDamageInfo &info )
 {
 	// make sure we forget about this guy
 	me->GetVisionInterface()->ForgetEntity( victim );
@@ -208,108 +203,20 @@ EventDesiredResult< CHL2MPBot > CHL2MPBotMainAction::OnOtherKilled( CHL2MPBot *m
 /**
  * Given a subject, return the world space position we should aim at
  */
-Vector CHL2MPBotMainAction::SelectTargetPoint( const INextBot *meBot, const CBaseCombatCharacter *subject ) const
+Vector CNEOBotMainAction::SelectTargetPoint( const INextBot *meBot, const CBaseCombatCharacter *subject ) const
 {
-	CHL2MPBot *me = (CHL2MPBot *)meBot->GetEntity();
+	CNEOBot *me = (CNEOBot *)meBot->GetEntity();
 
 	if ( subject )
 	{
-		CBaseHL2MPCombatWeapon *myWeapon = (CBaseHL2MPCombatWeapon *)me->GetActiveWeapon();
+		CNEOBaseCombatWeapon *myWeapon = (CNEOBaseCombatWeapon*)me->GetActiveWeapon();
 		if ( myWeapon )
 		{
-			// lead our target and aim for the feet with the rocket launcher
-			if ( !me->IsDifficulty( CHL2MPBot::EASY ) )
-			{
-				if ( myWeapon->ClassMatches( "weapon_rpg" ) )
-				{
-					// TODO: Write some code that makes them look at the threat directly when the missile is out, rather than this logic.
-
-					// if they are above us, don't aim for the feet
-					const float aboveTolerance = 30.0f;
-					if ( subject->GetAbsOrigin().z - aboveTolerance > me->GetAbsOrigin().z )
-					{
-						if ( me->GetVisionInterface()->IsAbleToSee( subject->GetAbsOrigin(), IVision::DISREGARD_FOV ) )
-							return subject->GetAbsOrigin();
-
-						if ( me->GetVisionInterface()->IsAbleToSee( subject->WorldSpaceCenter(), IVision::DISREGARD_FOV ) )
-							return subject->WorldSpaceCenter();
-
-						return subject->EyePosition();
-					}
-
-					// aim at the ground under the subject
-					if ( subject->GetGroundEntity() == NULL )
-					{
-						// they are airborne, find the ground underneath them, if they aren't too high
-						trace_t result;
-						UTIL_TraceLine( subject->GetAbsOrigin(), subject->GetAbsOrigin() + Vector( 0, 0, -200 ), MASK_SOLID, subject, COLLISION_GROUP_NONE, &result );
-						if ( result.DidHit() )
-						{
-							return result.endpos;
-						}
-					}
-
-					// aim at their feet
-
-					// lead our target
-					const float missileSpeed = 1500.0f;
-					float rangeBetween = me->GetRangeTo( subject->GetAbsOrigin() );
-
-					const float veryCloseRange = 150.0f;
-					if ( rangeBetween > veryCloseRange )
-					{
-						float timeToTravel = rangeBetween / missileSpeed;
-
-						Vector targetPos = subject->GetAbsOrigin() + timeToTravel * subject->GetAbsVelocity();
-
-						if ( me->GetVisionInterface()->IsAbleToSee( targetPos, IVision::DISREGARD_FOV ) )
-							return targetPos;
-
-						// try their head and hope
-						return subject->EyePosition() + timeToTravel * subject->GetAbsVelocity();
-					}
-
-					return subject->EyePosition();
-				}
-				else if ( myWeapon->ClassMatches( "weapon_physcannon" ) )
-				{
-					CBaseEntity *pHeldEntity = me->Physcannon_GetHeldProp();
-					if ( pHeldEntity )
-					{
-						float rangeBetween = me->GetRangeTo( subject->WorldSpaceCenter() );
-
-						float flForceMax = physcannon_maxforce.GetFloat();
-						float flForce = flForceMax;
-
-						float mass = pHeldEntity->VPhysicsGetObject()->GetMass();
-						if ( mass > 100 )
-						{
-							mass = MIN( mass, 1000 );
-							float flForceMin = physcannon_minforce.GetFloat();
-							flForce = SimpleSplineRemapVal( mass, 100, 600, flForceMax, flForceMin );
-						}
-
-						const float veryCloseRange = 150.0f;
-						if ( rangeBetween > veryCloseRange )
-						{
-							float timeToTravel = rangeBetween / flForce;
-
-							Vector targetPos = subject->WorldSpaceCenter() + timeToTravel * subject->GetAbsVelocity();
-
-							if ( me->GetVisionInterface()->IsAbleToSee( targetPos, IVision::DISREGARD_FOV ) )
-								return targetPos;
-
-							// try their head and hope
-							return subject->WorldSpaceCenter() + timeToTravel * subject->GetAbsVelocity();
-						}
-					}
-				}
-			}
-			if ( myWeapon->ClassMatches( "weapon_frag" ) )
+			if ( myWeapon->GetNeoWepBits() & NEO_WEP_THROWABLE ) // NEO TODO (Adam) Teach bots to use detpacks? 
 			{
 				Vector toThreat = subject->GetAbsOrigin() - me->GetAbsOrigin();
 				float threatRange = toThreat.NormalizeInPlace();
-				float elevationAngle = threatRange * hl2mp_bot_ballistic_elevation_rate.GetFloat();
+				float elevationAngle = threatRange * neo_bot_ballistic_elevation_rate.GetFloat();
 
 				if ( elevationAngle > 45.0f )
 				{
@@ -342,16 +249,16 @@ Vector CHL2MPBotMainAction::SelectTargetPoint( const INextBot *meBot, const CBas
  * This is most useful for bots derived from CBasePlayer that go through
  * the player movement system.
  */
-QueryResultType CHL2MPBotMainAction::IsPositionAllowed( const INextBot *me, const Vector &pos ) const
+QueryResultType CNEOBotMainAction::IsPositionAllowed( const INextBot *me, const Vector &pos ) const
 {
 	return ANSWER_YES;
 }
 
 
 //---------------------------------------------------------------------------------------------
-bool CHL2MPBotMainAction::IsImmediateThreat( const CBaseCombatCharacter *subject, const CKnownEntity *threat ) const
+bool CNEOBotMainAction::IsImmediateThreat( const CBaseCombatCharacter *subject, const CKnownEntity *threat ) const
 {
-	CHL2MPBot *me = GetActor();
+	CNEOBot *me = GetActor();
 
 	// the HL2MPBot code assumes the subject is always "me"
 	if ( !me || !me->IsSelf( subject ) )
@@ -393,7 +300,7 @@ bool CHL2MPBotMainAction::IsImmediateThreat( const CBaseCombatCharacter *subject
 
 
 //---------------------------------------------------------------------------------------------
-const CKnownEntity *CHL2MPBotMainAction::SelectCloserThreat( CHL2MPBot *me, const CKnownEntity *threat1, const CKnownEntity *threat2 ) const
+const CKnownEntity *CNEOBotMainAction::SelectCloserThreat( CNEOBot *me, const CKnownEntity *threat1, const CKnownEntity *threat2 ) const
 {
 	float rangeSq1 = me->GetRangeSquaredTo( threat1->GetEntity() );
 	float rangeSq2 = me->GetRangeSquaredTo( threat2->GetEntity() );
@@ -408,7 +315,7 @@ const CKnownEntity *CHL2MPBotMainAction::SelectCloserThreat( CHL2MPBot *me, cons
 //---------------------------------------------------------------------------------------------
 // If the given threat is being healed by a Medic, return the Medic, otherwise just
 // return the threat.
-const CKnownEntity *CHL2MPBotMainAction::GetHealerOfThreat( const CKnownEntity *threat ) const
+const CKnownEntity *CNEOBotMainAction::GetHealerOfThreat( const CKnownEntity *threat ) const
 {
 	if ( !threat || !threat->GetEntity() )
 		return NULL;
@@ -419,22 +326,22 @@ const CKnownEntity *CHL2MPBotMainAction::GetHealerOfThreat( const CKnownEntity *
 
 //---------------------------------------------------------------------------------------------
 // return the more dangerous of the two threats to 'subject', or NULL if we have no opinion
-const CKnownEntity *CHL2MPBotMainAction::SelectMoreDangerousThreat( const INextBot *meBot, 
+const CKnownEntity *CNEOBotMainAction::SelectMoreDangerousThreat( const INextBot *meBot, 
 																 const CBaseCombatCharacter *subject,
 																 const CKnownEntity *threat1, 
 																 const CKnownEntity *threat2 ) const
 {
-	CHL2MPBot *me = ToHL2MPBot( meBot->GetEntity() );
+	CNEOBot *me = ToNEOBot( meBot->GetEntity() );
 
 	// determine the actual threat
 	const CKnownEntity *threat = SelectMoreDangerousThreatInternal( me, subject, threat1, threat2 );
 
-	if ( me->IsDifficulty( CHL2MPBot::EASY ) )
+	if ( me->IsDifficulty( CNEOBot::EASY ) )
 	{
 		return threat;
 	}
 
-	if ( me->IsDifficulty( CHL2MPBot::NORMAL ) && me->TransientlyConsistentRandomValue() < 0.5f )
+	if ( me->IsDifficulty( CNEOBot::NORMAL ) && me->TransientlyConsistentRandomValue() < 0.5f )
 	{
 		return threat;
 	}
@@ -446,15 +353,15 @@ const CKnownEntity *CHL2MPBotMainAction::SelectMoreDangerousThreat( const INextB
 
 //---------------------------------------------------------------------------------------------
 // Return the more dangerous of the two threats to 'subject', or NULL if we have no opinion
-const CKnownEntity *CHL2MPBotMainAction::SelectMoreDangerousThreatInternal( const INextBot *meBot, 
+const CKnownEntity *CNEOBotMainAction::SelectMoreDangerousThreatInternal( const INextBot *meBot, 
 																		 const CBaseCombatCharacter *subject,
 																		 const CKnownEntity *threat1, 
 																		 const CKnownEntity *threat2 ) const
 {
-	CHL2MPBot *me = ToHL2MPBot( meBot->GetEntity() );
+	CNEOBot *me = ToNEOBot( meBot->GetEntity() );
 	const CKnownEntity *closerThreat = SelectCloserThreat( me, threat1, threat2 );
 
-	if ( me->HasWeaponRestriction( CHL2MPBot::MELEE_ONLY ) )
+	if ( me->HasWeaponRestriction( CNEOBot::MELEE_ONLY ) )
 	{
 		// melee only bots just use closest threat
 		return closerThreat;
@@ -502,43 +409,43 @@ const CKnownEntity *CHL2MPBotMainAction::SelectMoreDangerousThreatInternal( cons
 
 
 //---------------------------------------------------------------------------------------------
-QueryResultType CHL2MPBotMainAction::ShouldAttack( const INextBot *meBot, const CKnownEntity *them ) const
+QueryResultType CNEOBotMainAction::ShouldAttack( const INextBot *meBot, const CKnownEntity *them ) const
 {
 	return ANSWER_YES;
 }
 
 
 //---------------------------------------------------------------------------------------------
-QueryResultType	CHL2MPBotMainAction::ShouldHurry( const INextBot *meBot ) const
+QueryResultType	CNEOBotMainAction::ShouldHurry( const INextBot *meBot ) const
 {
 	return ANSWER_UNDEFINED;
 }
 
 
 //---------------------------------------------------------------------------------------------
-void CHL2MPBotMainAction::FireWeaponAtEnemy( CHL2MPBot *me )
+void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 {
 	if ( !me->IsAlive() )
 		return;
 
-	if ( me->HasAttribute( CHL2MPBot::SUPPRESS_FIRE ) )
+	if ( me->HasAttribute( CNEOBot::SUPPRESS_FIRE ) )
 		return;
 
-	if ( me->HasAttribute( CHL2MPBot::IGNORE_ENEMIES ) )
+	if ( me->HasAttribute( CNEOBot::IGNORE_ENEMIES ) )
 		return;
 
-	if ( !hl2mp_bot_fire_weapon_allowed.GetBool() )
+	if ( !neo_bot_fire_weapon_allowed.GetBool() )
 	{
 		return;
 	}
 
-	CBaseHL2MPCombatWeapon* myWeapon = dynamic_cast< CBaseHL2MPCombatWeapon *>( me->GetActiveWeapon() );
+	CNEOBaseCombatWeapon* myWeapon = dynamic_cast<CNEOBaseCombatWeapon*>( me->GetActiveWeapon() );
 	if ( !myWeapon )
 		return;
 
 	if ( me->IsBarrageAndReloadWeapon( myWeapon ) )
 	{
-		if ( me->HasAttribute( CHL2MPBot::HOLD_FIRE_UNTIL_FULL_RELOAD ) || hl2mp_bot_always_full_reload.GetBool() )
+		if ( me->HasAttribute( CNEOBot::HOLD_FIRE_UNTIL_FULL_RELOAD ) || neo_bot_always_full_reload.GetBool() )
 		{
 			if ( myWeapon->Clip1() <= 0 )
 			{
@@ -558,7 +465,7 @@ void CHL2MPBotMainAction::FireWeaponAtEnemy( CHL2MPBot *me )
 		}
 	}
 
-	if ( me->HasAttribute( CHL2MPBot::ALWAYS_FIRE_WEAPON ) )
+	if ( me->HasAttribute( CNEOBot::ALWAYS_FIRE_WEAPON ) )
 	{
 		me->PressFireButton();
 		return;
@@ -605,18 +512,10 @@ void CHL2MPBotMainAction::FireWeaponAtEnemy( CHL2MPBot *me )
 	{
 		if ( me->IsCombatWeapon( MY_CURRENT_GUN ) )
 		{
-			if ( me->Physcannon_GetHeldProp() != NULL )
-			{
-				// misyl: Wait a second so the prop can move and we can look at the right entity...
-				if ( gpGlobals->curtime > me->GetPhyscannonPickupTime() + hl2mp_bot_physcannon_wait_fire_time.GetFloat() )
-				{
-					me->PressFireButton();
-				}
-			}
-			else if ( me->IsContinuousFireWeapon( MY_CURRENT_GUN ) )
+			if ( me->IsContinuousFireWeapon( MY_CURRENT_GUN ) )
 			{
 				// spray for a bit
-				me->PressFireButton( hl2mp_bot_fire_weapon_min_time.GetFloat() );
+				me->PressFireButton( neo_bot_fire_weapon_min_time.GetFloat() );
 			}
 			else 
 			{
@@ -658,31 +557,23 @@ void CHL2MPBotMainAction::FireWeaponAtEnemy( CHL2MPBot *me )
 /**
  * If we're outnumbered, retreat and wait for backup - unless we're ubered!
  */
-QueryResultType	CHL2MPBotMainAction::ShouldRetreat( const INextBot *bot ) const
+QueryResultType	CNEOBotMainAction::ShouldRetreat( const INextBot *bot ) const
 {
-	CHL2MPBot *me = (CHL2MPBot *)bot->GetEntity();
+	CNEOBot *me = (CNEOBot *)bot->GetEntity();
 
-	if ( !hl2mp_bot_allow_retreat.GetBool() )
+	if ( !neo_bot_allow_retreat.GetBool() )
 		return ANSWER_NO;
 
 	// don't retreat if we're in "melee only" mode
-	if ( TheHL2MPBots().IsMeleeOnly() )
-		return ANSWER_NO;
-
-	// don't retreat if we're in "grav gun only" mode
-	if ( TheHL2MPBots().IsGravGunOnly() )
+	if ( TheNEOBots().IsMeleeOnly() )
 		return ANSWER_NO;
 
 	// If we are currently trying to melee, don't retreat. Chaaaarge!
-	if ( me->IsBludgeon( me->GetActiveWeapon() ) )
-		return ANSWER_NO;
-
-	// Don't retreat if we have a prop.
-	if ( me->Physcannon_GetHeldProp() != NULL )
+	if ( me->IsBludgeon( static_cast<CNEOBaseCombatWeapon*>(me->GetActiveWeapon()) ) )
 		return ANSWER_NO;
 
 	// don't retreat if we're ignoring enemies
-	if ( me->HasAttribute( CHL2MPBot::IGNORE_ENEMIES ) )
+	if ( me->HasAttribute( CNEOBot::IGNORE_ENEMIES ) )
 		return ANSWER_NO;
 
 	return ANSWER_NO;
@@ -690,14 +581,14 @@ QueryResultType	CHL2MPBotMainAction::ShouldRetreat( const INextBot *bot ) const
 
 
 //-----------------------------------------------------------------------------------------
-void CHL2MPBotMainAction::Dodge( CHL2MPBot *me )
+void CNEOBotMainAction::Dodge( CNEOBot *me )
 {
 	// low-skill bots don't dodge
-	if ( me->IsDifficulty( CHL2MPBot::EASY ) )
+	if ( me->IsDifficulty( CNEOBot::EASY ) )
 		return;
 
 	// don't dodge if that ability is "turned off"
-	if ( me->HasAttribute( CHL2MPBot::DISABLE_DODGE ) )
+	if ( me->HasAttribute( CNEOBot::DISABLE_DODGE ) )
 		return;
 
 	// don't dodge if we're not trying to fight back

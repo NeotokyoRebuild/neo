@@ -1,19 +1,17 @@
-//========= Copyright Valve Corporation, All rights reserved. ============//
-
 #include "cbase.h"
 
-#include "hl2mp_bot.h"
-#include "hl2mp_bot_locomotion.h"
+#include "neo_bot.h"
+#include "neo_bot_locomotion.h"
 #include "particle_parse.h"
 
 extern ConVar falldamage;
 
 //-----------------------------------------------------------------------------------------
-void CHL2MPBotLocomotion::Update( void )
+void CNEOBotLocomotion::Update( void )
 {
 	BaseClass::Update();
 
-	CHL2MPBot* me = ToHL2MPBot( GetBot()->GetEntity() );
+	CNEOBot* me = ToNEOBot( GetBot()->GetEntity() );
 	if ( !me )
 	{
 		return;
@@ -33,7 +31,7 @@ void CHL2MPBotLocomotion::Update( void )
 
 //-----------------------------------------------------------------------------------------
 // Move directly towards the given position
-void CHL2MPBotLocomotion::Approach( const Vector& pos, float goalWeight )
+void CNEOBotLocomotion::Approach( const Vector& pos, float goalWeight )
 {
 	BaseClass::Approach( pos, goalWeight );
 }
@@ -41,9 +39,9 @@ void CHL2MPBotLocomotion::Approach( const Vector& pos, float goalWeight )
 
 //-----------------------------------------------------------------------------------------
 // Distance at which we will die if we fall
-float CHL2MPBotLocomotion::GetDeathDropHeight( void ) const
+float CNEOBotLocomotion::GetDeathDropHeight( void ) const
 {
-	CHL2MPBot* me = ( CHL2MPBot* )GetBot()->GetEntity();
+	CNEOBot* me = ( CNEOBot* )GetBot()->GetEntity();
 
 	// misyl: Fall damage only deals 10 health otherwise. 
 	if ( falldamage.GetInt() != 1 )
@@ -63,7 +61,7 @@ float CHL2MPBotLocomotion::GetDeathDropHeight( void ) const
 
 //-----------------------------------------------------------------------------------------
 // Get maximum running speed
-float CHL2MPBotLocomotion::GetRunSpeed( void ) const
+float CNEOBotLocomotion::GetRunSpeed( void ) const
 {
 	return hl2_normspeed.GetFloat();
 	// TODO(misyl): Teach bots to sprint.
@@ -73,9 +71,9 @@ float CHL2MPBotLocomotion::GetRunSpeed( void ) const
 
 //-----------------------------------------------------------------------------------------
 // Return true if given area can be used for navigation
-bool CHL2MPBotLocomotion::IsAreaTraversable( const CNavArea* area ) const
+bool CNEOBotLocomotion::IsAreaTraversable( const CNavArea* area ) const
 {
-	CHL2MPBot* me = ( CHL2MPBot* )GetBot()->GetEntity();
+	CNEOBot* me = ( CNEOBot* )GetBot()->GetEntity();
 
 	if ( area->IsBlocked( me->GetTeamNumber() ) )
 	{
@@ -87,16 +85,10 @@ bool CHL2MPBotLocomotion::IsAreaTraversable( const CNavArea* area ) const
 
 
 //-----------------------------------------------------------------------------------------
-bool CHL2MPBotLocomotion::IsEntityTraversable( CBaseEntity* obstacle, TraverseWhenType when ) const
+bool CNEOBotLocomotion::IsEntityTraversable( CBaseEntity* obstacle, TraverseWhenType when ) const
 {
 	// assume all players are "traversable" in that they will move or can be killed
 	if ( obstacle && obstacle->IsPlayer() )
-	{
-		return true;
-	}
-
-	// assume held objects will move.
-	if ( obstacle && obstacle->VPhysicsGetObject() && ( obstacle->VPhysicsGetObject()->GetGameFlags() & FVPHYSICS_PLAYER_HELD ) )
 	{
 		return true;
 	}

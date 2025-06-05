@@ -1,19 +1,16 @@
-//========= Copyright Valve Corporation, All rights reserved. ============//
-
-#ifndef HL2MP_BOT_VISION_H
-#define HL2MP_BOT_VISION_H
+#pragma once
 
 #include "NextBotVisionInterface.h"
 
 //----------------------------------------------------------------------------
-class CHL2MPBotVision : public IVision
+class CNEOBotVision : public IVision
 {
 public:
-	CHL2MPBotVision( INextBot *bot ) : IVision( bot )
+	CNEOBotVision( INextBot *bot ) : IVision( bot )
 	{
 	}
 
-	virtual ~CHL2MPBotVision() { }
+	virtual ~CNEOBotVision() { }
 
 	/**
 	 * Populate "potentiallyVisible" with the set of all entities we could potentially see. 
@@ -33,6 +30,3 @@ private:
 
 	CountdownTimer m_scanTimer;
 };
-
-
-#endif // HL2MP_BOT_VISION_H

@@ -1,16 +1,13 @@
-//========= Copyright Valve Corporation, All rights reserved. ============//
+#pragma once
 
-#ifndef HL2MP_BOT_GENERATOR_H
-#define HL2MP_BOT_GENERATOR_H
-
-class CHL2MPBotGenerator : public CPointEntity
+class CNEOBotGenerator : public CPointEntity
 {
 public:
-	DECLARE_CLASS( CHL2MPBotGenerator, CPointEntity );
+	DECLARE_CLASS( CNEOBotGenerator, CPointEntity );
 	DECLARE_DATADESC();
 
-	CHL2MPBotGenerator( void );
-	virtual ~CHL2MPBotGenerator() { }
+	CNEOBotGenerator( void );
+	virtual ~CNEOBotGenerator() { }
 
 	virtual void Activate();
 
@@ -30,7 +27,7 @@ public:
 	void InputRemoveBots( inputdata_t &inputdata );
 
 	// Output
-	void OnBotKilled( CHL2MPBot *pBot );
+	void OnBotKilled( CNEOBot *pBot );
 
 private:
 	bool m_bSuppressFire;
@@ -55,7 +52,7 @@ private:
 	COutputEvent m_onExpended;
 	COutputEvent m_onBotKilled;
 
-	CUtlVector< CHandle< CHL2MPBot > > m_spawnedBotVector;
+	CUtlVector< CHandle< CNEOBot > > m_spawnedBotVector;
 };
 
 //---------------------------------------------------------------
@@ -64,19 +61,19 @@ private:
 // means "tell the bot I created to move here and do what this node says".
 // Things like "stay here", "move to <next task point>", "face towards <X>", "shoot at <Y>", etc
 //
-class CHL2MPBotActionPoint : public CPointEntity
+class CNEOBotActionPoint : public CPointEntity
 {
-	DECLARE_CLASS( CHL2MPBotActionPoint, CPointEntity );
+	DECLARE_CLASS( CNEOBotActionPoint, CPointEntity );
 public:
 	DECLARE_DATADESC();
 
- 	CHL2MPBotActionPoint( void );
- 	virtual ~CHL2MPBotActionPoint() { }
+ 	CNEOBotActionPoint( void );
+ 	virtual ~CNEOBotActionPoint() { }
 
 	virtual void Activate();
 
 	bool IsWithinRange( CBaseEntity *entity );
-	void ReachedActionPoint( CHL2MPBot* pBot );
+	void ReachedActionPoint( CNEOBot* pBot );
 
 	CHandle< CBaseEntity > m_moveGoal;
 
@@ -89,9 +86,7 @@ public:
 	COutputEvent m_onReachedActionPoint;
 };
 
-inline HSCRIPT ToHScript( CHL2MPBotActionPoint *pPoint )
+inline HSCRIPT ToHScript( CNEOBotActionPoint *pPoint )
 {
 	return ( pPoint ) ? pPoint->GetScriptInstance() : NULL;
 }
-
-#endif // HL2MP_BOT_GENERATOR_H

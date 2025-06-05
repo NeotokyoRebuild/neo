@@ -1,21 +1,18 @@
-//========= Copyright Valve Corporation, All rights reserved. ============//
-
-#ifndef HL2MP_BOT_LOCOMOTION_H
-#define HL2MP_BOT_LOCOMOTION_H
+#pragma once
 
 #include "NextBot/Player/NextBotPlayerLocomotion.h"
 
 //----------------------------------------------------------------------------
-class CHL2MPBotLocomotion : public PlayerLocomotion
+class CNEOBotLocomotion : public PlayerLocomotion
 {
 public:
-	DECLARE_CLASS( CHL2MPBotLocomotion, PlayerLocomotion );
+	DECLARE_CLASS( CNEOBotLocomotion, PlayerLocomotion );
 
-	CHL2MPBotLocomotion( INextBot *bot ) : PlayerLocomotion( bot )
+	CNEOBotLocomotion( INextBot *bot ) : PlayerLocomotion( bot )
 	{
 	}
 
-	virtual ~CHL2MPBotLocomotion() { }
+	virtual ~CNEOBotLocomotion() { }
 
 	virtual void Update( void );								// (EXTEND) update internal state
 
@@ -33,10 +30,8 @@ protected:
 	virtual void AdjustPosture( const Vector &moveGoal ) { }	// never crouch to navigate
 };
 
-inline float CHL2MPBotLocomotion::GetMaxJumpHeight( void ) const
+inline float CNEOBotLocomotion::GetMaxJumpHeight( void ) const
 {
 	// https://developer.valvesoftware.com/wiki/Dimensions_(Half-Life_2_and_Counter-Strike:_Source)#Jumping
 	return 56.0f;
 }
-
-#endif // HL2MP_BOT_LOCOMOTION_H

@@ -26,8 +26,8 @@ ConVar neo_bot_debug_tags("neo_bot_debug_tags", "0", FCVAR_CHEAT, "ent_text will
 ConVar neo_bot_ignore_real_players("neo_bot_ignore_real_players", "0", FCVAR_CHEAT);
 
 ConVar neo_bot_shotgunner_range("neo_bot_shotgunner_range", "320", FCVAR_NONE);
-ConVar neo_bot_prop_freak_ratio("neo_bot_prop_freak_ratio", "0.3", FCVAR_NONE);
-ConVar neo_bot_prop_hater_ratio("neo_bot_prop_hater_ratio", "0.3", FCVAR_NONE);
+ConVar neo_bot_recon_ratio("neo_bot_recon_ratio", "0.2", FCVAR_NONE);
+ConVar neo_bot_support_ratio("neo_bot_support_ratio", "0.2", FCVAR_NONE);
 
 extern ConVar neo_bot_fire_weapon_min_time;
 extern ConVar neo_bot_difficulty;
@@ -219,13 +219,13 @@ CON_COMMAND_F(neo_bot_add, "Add a bot.", FCVAR_GAMEDLL)
 			}
 
 			float flDice = RandomFloat();
-			if (flDice <= neo_bot_prop_freak_ratio.GetFloat())
+			if (flDice <= neo_bot_recon_ratio.GetFloat())
 			{
-				pBot->SetAttribute(CNEOBot::PROP_FREAK);
+				pBot->RequestSetClass(NEO_CLASS_RECON);
 			}
-			else if (flDice >= (1.0f - neo_bot_prop_hater_ratio.GetFloat()))
+			else if (flDice >= (1.0f - neo_bot_support_ratio.GetFloat()))
 			{
-				pBot->SetAttribute(CNEOBot::PROP_HATER);
+				pBot->RequestSetClass(NEO_CLASS_SUPPORT);
 			}
 
 			engine->SetFakeClientConVarValue(pBot->edict(), "name", name);
@@ -240,7 +240,7 @@ CON_COMMAND_F(neo_bot_add, "Add a bot.", FCVAR_GAMEDLL)
 
 	if (bQuotaManaged)
 	{
-		TheHL2MPBots().OnForceAddedBots(iNumAdded);
+		TheNEOBots().OnForceAddedBots(iNumAdded);
 	}
 }
 
@@ -321,7 +321,7 @@ CON_COMMAND_F(neo_bot_kick, "Remove a NEOBot by name, or all bots (\"all\").", F
 			}
 		}
 	}
-	TheHL2MPBots().OnForceKickedBots(iNumKicked);
+	TheNEOBots().OnForceKickedBots(iNumKicked);
 }
 
 
@@ -1573,7 +1573,7 @@ bool CNEOBot::IsBarrageAndReloadWeapon(CNEOBaseCombatWeapon* weapon) const
 		weapon = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
 	}
 
-	if (weapon && weapon->GetNeoWepBits() & (NEO_WEP_THROWABLE))
+	if (weapon && weapon->GetNeoWepBits() & (NEO_WEP_SUPA7 | NEO_WEP_PZ | NEO_WEP_SRS))
 	{
 		return true;
 	}
@@ -1927,7 +1927,7 @@ bool CNEOBot::IsSquadmate(CNEO_Player* who) const
 	if (!m_squad || !who || !who->IsBotOfType(HL2MP_BOT_TYPE))
 		return false;
 
-	return GetSquad() == ToHL2MPBot(who)->GetSquad();
+	return GetSquad() == ToNEOBot(who)->GetSquad();
 }
 
 

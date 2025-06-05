@@ -1,27 +1,25 @@
-//========= Copyright Valve Corporation, All rights reserved. ============//
-
 #include "cbase.h"
-#include "hl2mp_player.h"
-#include "hl2mp_gamerules.h"
+#include "neo_player.h"
+#include "neo_gamerules.h"
 #include "team_control_point_master.h"
-#include "bot/hl2mp_bot.h"
-#include "bot/behavior/hl2mp_bot_attack.h"
+#include "bot/neo_bot.h"
+#include "bot/behavior/neo_bot_attack.h"
 
 #include "nav_mesh.h"
 
-extern ConVar hl2mp_bot_path_lookahead_range;
-extern ConVar hl2mp_bot_offense_must_push_time;
+extern ConVar neo_bot_path_lookahead_range;
+extern ConVar neo_bot_offense_must_push_time;
 
-ConVar hl2mp_bot_aggressive( "hl2mp_bot_aggressive", "0", FCVAR_NONE );
+ConVar neo_bot_aggressive( "neo_bot_aggressive", "0", FCVAR_NONE );
 
 //---------------------------------------------------------------------------------------------
-CHL2MPBotAttack::CHL2MPBotAttack( void ) : m_chasePath( ChasePath::LEAD_SUBJECT )
+CNEOBotAttack::CNEOBotAttack( void ) : m_chasePath( ChasePath::LEAD_SUBJECT )
 {
 }
 
 
 //---------------------------------------------------------------------------------------------
-ActionResult< CHL2MPBot >	CHL2MPBotAttack::OnStart( CHL2MPBot *me, Action< CHL2MPBot > *priorAction )
+ActionResult< CNEOBot >	CNEOBotAttack::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
 	m_path.SetMinLookAheadDistance( me->GetDesiredPathLookAheadRange() );
 
@@ -31,7 +29,7 @@ ActionResult< CHL2MPBot >	CHL2MPBotAttack::OnStart( CHL2MPBot *me, Action< CHL2M
 
 //---------------------------------------------------------------------------------------------
 // head aiming and weapon firing is handled elsewhere - we just need to get into position to fight
-ActionResult< CHL2MPBot >	CHL2MPBotAttack::Update( CHL2MPBot *me, float interval )
+ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 {
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
 	me->EquipBestWeaponForThreat( threat );
@@ -41,13 +39,7 @@ ActionResult< CHL2MPBot >	CHL2MPBotAttack::Update( CHL2MPBot *me, float interval
 		return Done( "No threat" );
 	}
 
-	if ( me->IsPropFreak() && me->Physcannon_GetHeldProp() == NULL )
-	{
-		// No prop? Oh no
-		return Done( "Prop freak with no prop to throw!" );
-	}
-
-	CBaseHL2MPCombatWeapon* myWeapon = dynamic_cast< CBaseHL2MPCombatWeapon* >( me->GetActiveWeapon() );
+	CNEOBaseCombatWeapon* myWeapon = static_cast<CNEOBaseCombatWeapon* >( me->GetActiveWeapon() );
 	bool isUsingCloseRangeWeapon = me->IsCloseRange( myWeapon );
 	if ( isUsingCloseRangeWeapon && threat->IsVisibleRecently() && me->IsRangeLessThan( threat->GetLastKnownPosition(), 1.1f * me->GetDesiredAttackRange() ) )
 	{
@@ -65,9 +57,9 @@ ActionResult< CHL2MPBot >	CHL2MPBotAttack::Update( CHL2MPBot *me, float interval
 	bool bHasRangedWeapon = me->IsRanged( myWeapon );
 
 	// Go after them!
-	bool bAggressive = hl2mp_bot_aggressive.GetBool() &&
+	bool bAggressive = neo_bot_aggressive.GetBool() &&
 					   !bHasRangedWeapon &&
-					   me->GetDifficulty() > CHL2MPBot::EASY;
+					   me->GetDifficulty() > CNEOBot::EASY;
 
 	// pursue the threat. if not visible, go to the last known position
 	if ( bAggressive ||
@@ -79,12 +71,12 @@ ActionResult< CHL2MPBot >	CHL2MPBotAttack::Update( CHL2MPBot *me, float interval
 		{
 			if ( isUsingCloseRangeWeapon )
 			{
-				CHL2MPBotPathCost cost( me, FASTEST_ROUTE );
+				CNEOBotPathCost cost( me, FASTEST_ROUTE );
 				m_chasePath.Update( me, threat->GetEntity(), cost );
 			}
 			else
 			{
-				CHL2MPBotPathCost cost( me, DEFAULT_ROUTE );
+				CNEOBotPathCost cost( me, DEFAULT_ROUTE );
 				m_chasePath.Update( me, threat->GetEntity(), cost );
 			}
 		}
@@ -114,12 +106,12 @@ ActionResult< CHL2MPBot >	CHL2MPBotAttack::Update( CHL2MPBot *me, float interval
 
 				if ( isUsingCloseRangeWeapon )
 				{
-					CHL2MPBotPathCost cost( me, FASTEST_ROUTE );
+					CNEOBotPathCost cost( me, FASTEST_ROUTE );
 					m_path.Compute( me, threat->GetLastKnownPosition(), cost );
 				}
 				else
 				{
-					CHL2MPBotPathCost cost( me, DEFAULT_ROUTE );
+					CNEOBotPathCost cost( me, DEFAULT_ROUTE );
 					m_path.Compute( me, threat->GetLastKnownPosition(), cost );
 				}
 			}
@@ -131,35 +123,35 @@ ActionResult< CHL2MPBot >	CHL2MPBotAttack::Update( CHL2MPBot *me, float interval
 
 
 //---------------------------------------------------------------------------------------------
-EventDesiredResult< CHL2MPBot > CHL2MPBotAttack::OnStuck( CHL2MPBot *me )
+EventDesiredResult< CNEOBot > CNEOBotAttack::OnStuck( CNEOBot *me )
 {
 	return TryContinue();
 }
 
 
 //---------------------------------------------------------------------------------------------
-EventDesiredResult< CHL2MPBot > CHL2MPBotAttack::OnMoveToSuccess( CHL2MPBot *me, const Path *path )
+EventDesiredResult< CNEOBot > CNEOBotAttack::OnMoveToSuccess( CNEOBot *me, const Path *path )
 {
 	return TryContinue();
 }
 
 
 //---------------------------------------------------------------------------------------------
-EventDesiredResult< CHL2MPBot > CHL2MPBotAttack::OnMoveToFailure( CHL2MPBot *me, const Path *path, MoveToFailureType reason )
+EventDesiredResult< CNEOBot > CNEOBotAttack::OnMoveToFailure( CNEOBot *me, const Path *path, MoveToFailureType reason )
 {
 	return TryContinue();
 }
 
 
 //---------------------------------------------------------------------------------------------
-QueryResultType	CHL2MPBotAttack::ShouldRetreat( const INextBot *me ) const
+QueryResultType	CNEOBotAttack::ShouldRetreat( const INextBot *me ) const
 {
 	return ANSWER_UNDEFINED;
 }
 
 
 //---------------------------------------------------------------------------------------------
-QueryResultType CHL2MPBotAttack::ShouldHurry( const INextBot *me ) const
+QueryResultType CNEOBotAttack::ShouldHurry( const INextBot *me ) const
 {
 	return ANSWER_UNDEFINED;
 }

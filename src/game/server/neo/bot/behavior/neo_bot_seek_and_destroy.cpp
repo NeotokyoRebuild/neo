@@ -1,25 +1,22 @@
-//========= Copyright Valve Corporation, All rights reserved. ============//
-
 #include "cbase.h"
-#include "hl2mp_player.h"
-#include "hl2mp_gamerules.h"
+#include "neo_player.h"
+#include "neo_gamerules.h"
 #include "team_control_point_master.h"
-#include "bot/hl2mp_bot.h"
-#include "bot/behavior/hl2mp_bot_attack.h"
-#include "bot/behavior/hl2mp_bot_seek_and_destroy.h"
-#include "bot/behavior/hl2mp_bot_get_prop.h"
+#include "bot/neo_bot.h"
+#include "bot/behavior/neo_bot_attack.h"
+#include "bot/behavior/neo_bot_seek_and_destroy.h"
 #include "nav_mesh.h"
 
-extern ConVar hl2mp_bot_path_lookahead_range;
-extern ConVar hl2mp_bot_offense_must_push_time;
-extern ConVar hl2mp_bot_defense_must_defend_time;
+extern ConVar neo_bot_path_lookahead_range;
+extern ConVar neo_bot_offense_must_push_time;
+extern ConVar neo_bot_defense_must_defend_time;
 
-ConVar hl2mp_bot_debug_seek_and_destroy( "hl2mp_bot_debug_seek_and_destroy", "0", FCVAR_CHEAT );
-ConVar hl2mp_bot_disable_seek_and_destroy( "hl2mp_bot_disable_seek_and_destroy", "0", FCVAR_CHEAT );
+ConVar neo_bot_debug_seek_and_destroy( "neo_bot_debug_seek_and_destroy", "0", FCVAR_CHEAT );
+ConVar neo_bot_disable_seek_and_destroy( "neo_bot_disable_seek_and_destroy", "0", FCVAR_CHEAT );
 
 
 //---------------------------------------------------------------------------------------------
-CHL2MPBotSeekAndDestroy::CHL2MPBotSeekAndDestroy( float duration )
+CNEOBotSeekAndDestroy::CNEOBotSeekAndDestroy( float duration )
 {
 	if ( duration > 0.0f )
 	{
@@ -29,7 +26,7 @@ CHL2MPBotSeekAndDestroy::CHL2MPBotSeekAndDestroy( float duration )
 
 
 //---------------------------------------------------------------------------------------------
-ActionResult< CHL2MPBot >	CHL2MPBotSeekAndDestroy::OnStart( CHL2MPBot *me, Action< CHL2MPBot > *priorAction )
+ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
 	m_path.SetMinLookAheadDistance( me->GetDesiredPathLookAheadRange() );
 
@@ -41,7 +38,7 @@ ActionResult< CHL2MPBot >	CHL2MPBotSeekAndDestroy::OnStart( CHL2MPBot *me, Actio
 		m_giveUpTimer.Reset();
 	}
 
-	if ( hl2mp_bot_disable_seek_and_destroy.GetBool() )
+	if ( neo_bot_disable_seek_and_destroy.GetBool() )
 	{
 		return Done( "Disabled." );
 	}
@@ -51,43 +48,26 @@ ActionResult< CHL2MPBot >	CHL2MPBotSeekAndDestroy::OnStart( CHL2MPBot *me, Actio
 
 
 //---------------------------------------------------------------------------------------------
-ActionResult< CHL2MPBot >	CHL2MPBotSeekAndDestroy::Update( CHL2MPBot *me, float interval )
+ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interval )
 {
 	if ( m_giveUpTimer.HasStarted() && m_giveUpTimer.IsElapsed() )
 	{
 		return Done( "Behavior duration elapsed" );
 	}
 
-	if ( hl2mp_bot_disable_seek_and_destroy.GetBool() )
+	if ( neo_bot_disable_seek_and_destroy.GetBool() )
 	{
 		return Done( "Disabled." );
 	}
 
-
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
 
-	bool bShouldAttack = threat != NULL;
-
-	if ( me->IsPropFreak() )
-	{
-		// Prop freaks should only attack with a prop!
-		bShouldAttack &= me->Physcannon_GetHeldProp() != NULL;
-	}
-
-	if ( bShouldAttack )
+	if ( threat )
 	{
 		const float engageRange = 1000.0f;
 		if ( me->IsRangeLessThan( threat->GetLastKnownPosition(), engageRange ) )
 		{
-			return SuspendFor( new CHL2MPBotAttack, "Going after an enemy" );
-		}
-	}
-	else if ( !me->IsPropHater() )
-	{
-		bool wantsProp = me->Physcannon_GetHeldProp() == NULL;
-		if ( wantsProp && CHL2MPBotGetProp::IsPossible( me ) )
-		{
-			return SuspendFor( new CHL2MPBotGetProp, "Grabbing prop" );
+			return SuspendFor( new CNEOBotAttack, "Going after an enemy" );
 		}
 	}
 
@@ -145,7 +125,7 @@ ActionResult< CHL2MPBot >	CHL2MPBotSeekAndDestroy::Update( CHL2MPBot *me, float 
 
 
 //---------------------------------------------------------------------------------------------
-ActionResult< CHL2MPBot > CHL2MPBotSeekAndDestroy::OnResume( CHL2MPBot *me, Action< CHL2MPBot > *interruptingAction )
+ActionResult< CNEOBot > CNEOBotSeekAndDestroy::OnResume( CNEOBot *me, Action< CNEOBot > *interruptingAction )
 {
 	RecomputeSeekPath( me );
 
@@ -154,7 +134,7 @@ ActionResult< CHL2MPBot > CHL2MPBotSeekAndDestroy::OnResume( CHL2MPBot *me, Acti
 
 
 //---------------------------------------------------------------------------------------------
-EventDesiredResult< CHL2MPBot > CHL2MPBotSeekAndDestroy::OnStuck( CHL2MPBot *me )
+EventDesiredResult< CNEOBot > CNEOBotSeekAndDestroy::OnStuck( CNEOBot *me )
 {
 	RecomputeSeekPath( me );
 
@@ -163,7 +143,7 @@ EventDesiredResult< CHL2MPBot > CHL2MPBotSeekAndDestroy::OnStuck( CHL2MPBot *me 
 
 
 //---------------------------------------------------------------------------------------------
-EventDesiredResult< CHL2MPBot > CHL2MPBotSeekAndDestroy::OnMoveToSuccess( CHL2MPBot *me, const Path *path )
+EventDesiredResult< CNEOBot > CNEOBotSeekAndDestroy::OnMoveToSuccess( CNEOBot *me, const Path *path )
 {
 	RecomputeSeekPath( me );
 
@@ -172,7 +152,7 @@ EventDesiredResult< CHL2MPBot > CHL2MPBotSeekAndDestroy::OnMoveToSuccess( CHL2MP
 
 
 //---------------------------------------------------------------------------------------------
-EventDesiredResult< CHL2MPBot > CHL2MPBotSeekAndDestroy::OnMoveToFailure( CHL2MPBot *me, const Path *path, MoveToFailureType reason )
+EventDesiredResult< CNEOBot > CNEOBotSeekAndDestroy::OnMoveToFailure( CNEOBot *me, const Path *path, MoveToFailureType reason )
 {
 	RecomputeSeekPath( me );
 
@@ -181,14 +161,14 @@ EventDesiredResult< CHL2MPBot > CHL2MPBotSeekAndDestroy::OnMoveToFailure( CHL2MP
 
 
 //---------------------------------------------------------------------------------------------
-QueryResultType	CHL2MPBotSeekAndDestroy::ShouldRetreat( const INextBot *meBot ) const
+QueryResultType	CNEOBotSeekAndDestroy::ShouldRetreat( const INextBot *meBot ) const
 {
 	return ANSWER_UNDEFINED;
 }
 
 
 //---------------------------------------------------------------------------------------------
-QueryResultType CHL2MPBotSeekAndDestroy::ShouldHurry( const INextBot *me ) const
+QueryResultType CNEOBotSeekAndDestroy::ShouldHurry( const INextBot *me ) const
 {
 	return ANSWER_UNDEFINED;
 }
@@ -285,7 +265,7 @@ private:
 
 
 //---------------------------------------------------------------------------------------------
-void CHL2MPBotSeekAndDestroy::RecomputeSeekPath( CHL2MPBot *me )
+void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 {
 	if ( m_bOverrideApproach )
 	{
@@ -303,7 +283,7 @@ void CHL2MPBotSeekAndDestroy::RecomputeSeekPath( CHL2MPBot *me )
 	}
 
 	// Don't try to find weapons if the timer elapsed. Probably went bad?
-	if ( !m_bTimerElapsed && !me->IsPropFreak() )
+	if ( !m_bTimerElapsed )
 	{
 		CUtlVector<CBaseEntity*> pWeapons;
 
@@ -332,7 +312,7 @@ void CHL2MPBotSeekAndDestroy::RecomputeSeekPath( CHL2MPBot *me )
 			CBaseEntity* pClosestWeapon = pWeapons[i];
 			if ( pClosestWeapon )
 			{
-				CHL2MPBotPathCost cost( me, SAFEST_ROUTE );
+				CNEOBotPathCost cost( me, SAFEST_ROUTE );
 				m_hTargetEntity = pClosestWeapon;
 				m_bGoingToTargetEntity = true;
 				m_vGoalPos = pClosestWeapon->WorldSpaceCenter();
@@ -360,7 +340,7 @@ void CHL2MPBotSeekAndDestroy::RecomputeSeekPath( CHL2MPBot *me )
 		{
 			for ( int i = 0; i < 10; i++ )
 			{
-				CHL2MPBotPathCost cost( me, SAFEST_ROUTE );
+				CNEOBotPathCost cost( me, SAFEST_ROUTE );
 				m_hTargetEntity = pSpawns[RandomInt( 0, pSpawns.Size() - 1 )];
 				m_bGoingToTargetEntity = true;
 				m_vGoalPos = m_hTargetEntity->WorldSpaceCenter();
@@ -374,7 +354,7 @@ void CHL2MPBotSeekAndDestroy::RecomputeSeekPath( CHL2MPBot *me )
 	{
 		// No spawns we can get to? Just wander... somewhere!
 
-		CHL2MPBotPathCost cost( me, SAFEST_ROUTE );
+		CNEOBotPathCost cost( me, SAFEST_ROUTE );
 		Vector vWanderPoint = TheNavAreas[RandomInt( 0, TheNavAreas.Size() - 1 )]->GetCenter();
 		m_vGoalPos = vWanderPoint;
 		if ( m_path.Compute( me, vWanderPoint, cost ) )
@@ -386,33 +366,33 @@ void CHL2MPBotSeekAndDestroy::RecomputeSeekPath( CHL2MPBot *me )
 
 
 //---------------------------------------------------------------------------------------------
-EventDesiredResult< CHL2MPBot > CHL2MPBotSeekAndDestroy::OnTerritoryContested( CHL2MPBot *me, int territoryID )
+EventDesiredResult< CNEOBot > CNEOBotSeekAndDestroy::OnTerritoryContested( CNEOBot *me, int territoryID )
 {
 	return TryDone( RESULT_IMPORTANT, "Defending the point" );
 }
 
 
 //---------------------------------------------------------------------------------------------
-EventDesiredResult< CHL2MPBot > CHL2MPBotSeekAndDestroy::OnTerritoryCaptured( CHL2MPBot *me, int territoryID )
+EventDesiredResult< CNEOBot > CNEOBotSeekAndDestroy::OnTerritoryCaptured( CNEOBot *me, int territoryID )
 {
 	return TryDone( RESULT_IMPORTANT, "Giving up due to point capture" );
 }
 
 
 //---------------------------------------------------------------------------------------------
-EventDesiredResult< CHL2MPBot > CHL2MPBotSeekAndDestroy::OnTerritoryLost( CHL2MPBot *me, int territoryID )
+EventDesiredResult< CNEOBot > CNEOBotSeekAndDestroy::OnTerritoryLost( CNEOBot *me, int territoryID )
 {
 	return TryDone( RESULT_IMPORTANT, "Giving up due to point lost" );
 }
 
 
 //---------------------------------------------------------------------------------------------
-EventDesiredResult< CHL2MPBot > CHL2MPBotSeekAndDestroy::OnCommandApproach( CHL2MPBot* me, const Vector& pos, float range )
+EventDesiredResult< CNEOBot > CNEOBotSeekAndDestroy::OnCommandApproach( CNEOBot* me, const Vector& pos, float range )
 {
 	m_bOverrideApproach = true;
 	m_vOverrideApproach = pos;
 
-	CHL2MPBotPathCost cost( me, SAFEST_ROUTE );
+	CNEOBotPathCost cost( me, SAFEST_ROUTE );
 	m_path.Compute( me, m_vOverrideApproach, cost );
 
 	return TryContinue();

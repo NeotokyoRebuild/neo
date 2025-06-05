@@ -41,7 +41,7 @@ inline int GetEnemyTeam(int team)
 
 //----------------------------------------------------------------------------
 
-#define HL2MPBOT_ALL_BEHAVIOR_FLAGS		0xFFFF
+#define NEOBOT_ALL_BEHAVIOR_FLAGS		0xFFFF
 
 //----------------------------------------------------------------------------
 class CNEOBot : public NextBotPlayer< CNEO_Player >, public CGameEventListener
@@ -127,27 +127,27 @@ public:
 	bool EquipRequiredWeapon(void);								// if we're required to equip a specific weapon, do it.
 	void EquipBestWeaponForThreat(const CKnownEntity* threat);	// equip the best weapon we have to attack the given threat
 
-	void PushRequiredWeapon(CBaseHL2MPCombatWeapon* weapon);				// force us to equip and use this weapon until popped off the required stack
+	void PushRequiredWeapon(CNEOBaseCombatWeapon* weapon);				// force us to equip and use this weapon until popped off the required stack
 	void PopRequiredWeapon(void);									// pop top required weapon off of stack and discard
 
 #define MY_CURRENT_GUN NULL										// can be passed as weapon to following queries
-	bool IsCombatWeapon(CBaseHL2MPCombatWeapon* weapon) const;				// return true if given weapon can be used to attack
-	bool IsHitScanWeapon(CBaseHL2MPCombatWeapon* weapon) const;			// return true if given weapon is a "hitscan" weapon (scattered tracelines with instant damage)
-	bool IsContinuousFireWeapon(CBaseHL2MPCombatWeapon* weapon) const;		// return true if given weapon "sprays" bullets/fire/etc continuously (ie: not individual rockets/etc)
-	bool IsExplosiveProjectileWeapon(CBaseHL2MPCombatWeapon* weapon) const;// return true if given weapon launches explosive projectiles with splash damage
-	bool IsBarrageAndReloadWeapon(CBaseHL2MPCombatWeapon* weapon) const;	// return true if given weapon has small clip and long reload cost (ie: rocket launcher, etc)
-	bool IsQuietWeapon(CBaseHL2MPCombatWeapon* weapon) const;				// return true if given weapon doesn't make much sound when used (ie: spy knife, etc)
+	bool IsCombatWeapon(CNEOBaseCombatWeapon* weapon) const;				// return true if given weapon can be used to attack
+	bool IsHitScanWeapon(CNEOBaseCombatWeapon* weapon) const;			// return true if given weapon is a "hitscan" weapon (scattered tracelines with instant damage)
+	bool IsContinuousFireWeapon(CNEOBaseCombatWeapon* weapon) const;		// return true if given weapon "sprays" bullets/fire/etc continuously (ie: not individual rockets/etc)
+	bool IsExplosiveProjectileWeapon(CNEOBaseCombatWeapon* weapon) const;// return true if given weapon launches explosive projectiles with splash damage
+	bool IsBarrageAndReloadWeapon(CNEOBaseCombatWeapon* weapon) const;	// return true if given weapon has small clip and long reload cost (ie: rocket launcher, etc)
+	bool IsQuietWeapon(CNEOBaseCombatWeapon* weapon) const;				// return true if given weapon doesn't make much sound when used (ie: spy knife, etc)
 
 	bool IsEnvironmentNoisy(void) const;							// return true if there are/have been loud noises (ie: non-quiet weapons) nearby very recently
 
 	bool IsEnemy(const CBaseEntity* them) const OVERRIDE;
 
-	CBaseHL2MPBludgeonWeapon* GetBludgeonWeapon(void);
+	CNEOBaseCombatWeapon* GetBludgeonWeapon(void);
 
-	static bool IsBludgeon(CBaseCombatWeapon* pWeapon);
-	static bool IsCloseRange(CBaseCombatWeapon* pWeapon);
-	static bool IsRanged(CBaseCombatWeapon* pWeapon);
-	static bool PrefersLongRange(CBaseCombatWeapon* pWeapon);
+	static bool IsBludgeon(CNEOBaseCombatWeapon* pWeapon);
+	static bool IsCloseRange(CNEOBaseCombatWeapon* pWeapon);
+	static bool IsRanged(CNEOBaseCombatWeapon* pWeapon);
+	static bool PrefersLongRange(CNEOBaseCombatWeapon* pWeapon);
 
 	enum WeaponRestrictionType
 	{
@@ -159,7 +159,7 @@ public:
 	void SetWeaponRestriction(int restrictionFlags);
 	void RemoveWeaponRestriction(int restrictionFlags);
 	bool HasWeaponRestriction(int restrictionFlags) const;
-	bool IsWeaponRestricted(CBaseHL2MPCombatWeapon* weapon) const;
+	bool IsWeaponRestricted(CNEOBaseCombatWeapon* weapon) const;
 	bool ScriptIsWeaponRestricted(HSCRIPT script) const;
 
 	bool IsLineOfFireClear(const Vector& where) const;			// return true if a weapon has no obstructions along the line from our eye to the given position
@@ -180,14 +180,12 @@ public:
 		DISABLE_DODGE = 1 << 4,
 		BECOME_SPECTATOR_ON_DEATH = 1 << 5,					// move bot to spectator team when killed
 		QUOTA_MANANGED = 1 << 6,					// managed by the bot quota in CNEOBotManager 
-		PROP_FREAK = 1 << 7,
-		PROP_HATER = 1 << 8,
-		IGNORE_ENEMIES = 1 << 10,
-		HOLD_FIRE_UNTIL_FULL_RELOAD = 1 << 11,				// don't fire our barrage weapon until it is full reloaded (rocket launcher, etc)
-		PRIORITIZE_DEFENSE = 1 << 12,				// bot prioritizes defending when possible
-		ALWAYS_FIRE_WEAPON = 1 << 13,				// constantly fire our weapon
-		TELEPORT_TO_HINT = 1 << 14,				// bot will teleport to hint target instead of walking out from the spawn point
-		AUTO_JUMP = 1 << 18,				// auto jump
+		IGNORE_ENEMIES = 1 << 7,
+		HOLD_FIRE_UNTIL_FULL_RELOAD = 1 << 8,				// don't fire our barrage weapon until it is full reloaded (rocket launcher, etc)
+		PRIORITIZE_DEFENSE = 1 << 9,				// bot prioritizes defending when possible
+		ALWAYS_FIRE_WEAPON = 1 << 10,				// constantly fire our weapon
+		TELEPORT_TO_HINT = 1 << 11,				// bot will teleport to hint target instead of walking out from the spawn point
+		AUTO_JUMP = 1 << 12,				// auto jump
 	};
 	void SetAttribute(int attributeFlag);
 	void ClearAttribute(int attributeFlag);
@@ -375,10 +373,6 @@ public:
 	void AddEventChangeAttributes(const EventChangeAttributes_t* newEvent);
 	const EventChangeAttributes_t* GetEventChangeAttributes(const char* pszEventName) const;
 	void OnEventChangeAttributes(const CNEOBot::EventChangeAttributes_t* pEvent);
-
-	bool IsPropFreak() const;
-	bool IsPropHater() const;
-	CBaseEntity* Physcannon_GetHeldProp() const;
 
 private:
 	CNEOBotLocomotion* m_locomotor;
@@ -715,9 +709,9 @@ inline bool CNEOBot::IsEnvironmentNoisy(void) const
 }
 
 //---------------------------------------------------------------------------------------------
-inline CNEOBot* ToHL2MPBot(CBaseEntity* pEntity)
+inline CNEOBot* ToNEOBot(CBaseEntity* pEntity)
 {
-	if (!pEntity || !pEntity->IsPlayer() || !ToHL2MPPlayer(pEntity)->IsBotOfType(HL2MP_BOT_TYPE))
+	if (!pEntity || !pEntity->IsPlayer() || !ToNEOPlayer(pEntity)->IsBotOfType(HL2MP_BOT_TYPE))
 		return NULL;
 
 	Assert("***IMPORTANT!!! DONT IGNORE ME!!!***" && dynamic_cast<CNEOBot*>(pEntity) != 0);
@@ -727,9 +721,9 @@ inline CNEOBot* ToHL2MPBot(CBaseEntity* pEntity)
 
 
 //---------------------------------------------------------------------------------------------
-inline const CNEOBot* ToHL2MPBot(const CBaseEntity* pEntity)
+inline const CNEOBot* ToNEOBot(const CBaseEntity* pEntity)
 {
-	if (!pEntity || !pEntity->IsPlayer() || !ToHL2MPPlayer(const_cast<CBaseEntity*>(pEntity))->IsBotOfType(HL2MP_BOT_TYPE))
+	if (!pEntity || !pEntity->IsPlayer() || !ToNEOPlayer(const_cast<CBaseEntity*>(pEntity))->IsBotOfType(HL2MP_BOT_TYPE))
 		return NULL;
 
 	Assert("***IMPORTANT!!! DONT IGNORE ME!!!***" && dynamic_cast<const CNEOBot*>(pEntity) != 0);
@@ -855,10 +849,10 @@ public:
 
 
 //---------------------------------------------------------------------------------------------
-class CClosestHL2MPPlayer
+class CClosestNEOPlayer
 {
 public:
-	CClosestHL2MPPlayer(const Vector& where, int team = TEAM_ANY)
+	CClosestNEOPlayer(const Vector& where, int team = TEAM_ANY)
 	{
 		m_where = where;
 		m_closeRangeSq = FLT_MAX;
@@ -866,7 +860,7 @@ public:
 		m_team = team;
 	}
 
-	CClosestHL2MPPlayer(CBaseEntity* entity, int team = TEAM_ANY)
+	CClosestNEOPlayer(CBaseEntity* entity, int team = TEAM_ANY)
 	{
 		m_where = entity->WorldSpaceCenter();
 		m_closeRangeSq = FLT_MAX;
@@ -885,7 +879,7 @@ public:
 		if (m_team != TEAM_ANY && player->GetTeamNumber() != m_team)
 			return true;
 
-		CNEOBot* bot = ToHL2MPBot(player);
+		CNEOBot* bot = ToNEOBot(player);
 		if (bot && bot->HasAttribute(CNEOBot::IS_NPC))
 			return true;
 

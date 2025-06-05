@@ -1,25 +1,23 @@
-//========= Copyright Valve Corporation, All rights reserved. ============//
-
 #include "cbase.h"
-#include "hl2mp_gamerules.h"
-#include "bot/hl2mp_bot.h"
-#include "item_healthkit.h"
-#include "bot/behavior/hl2mp_bot_get_health.h"
+#include "neo_gamerules.h"
+#include "bot/neo_bot.h"
+//#include "item_healthkit.h"
+#include "bot/behavior/neo_bot_get_health.h"
 
-extern ConVar hl2mp_bot_path_lookahead_range;
+extern ConVar neo_bot_path_lookahead_range;
 
-ConVar hl2mp_bot_health_critical_ratio( "hl2mp_bot_health_critical_ratio", "0.3", FCVAR_CHEAT );
-ConVar hl2mp_bot_health_ok_ratio( "hl2mp_bot_health_ok_ratio", "0.65", FCVAR_CHEAT );
-ConVar hl2mp_bot_health_search_near_range( "hl2mp_bot_health_search_near_range", "1000", FCVAR_CHEAT );
-ConVar hl2mp_bot_health_search_far_range( "hl2mp_bot_health_search_far_range", "2000", FCVAR_CHEAT );
+ConVar neo_bot_health_critical_ratio( "neo_bot_health_critical_ratio", "0.3", FCVAR_CHEAT );
+ConVar neo_bot_health_ok_ratio( "neo_bot_health_ok_ratio", "0.65", FCVAR_CHEAT );
+ConVar neo_bot_health_search_near_range( "neo_bot_health_search_near_range", "1000", FCVAR_CHEAT );
+ConVar neo_bot_health_search_far_range( "neo_bot_health_search_far_range", "2000", FCVAR_CHEAT );
 
-ConVar hl2mp_bot_debug_health_scavenging( "hl2mp_bot_debug_ammo_scavenging", "0", FCVAR_CHEAT );
+ConVar neo_bot_debug_health_scavenging( "neo_bot_debug_ammo_scavenging", "0", FCVAR_CHEAT );
 
 //---------------------------------------------------------------------------------------------
 class CHealthFilter : public INextBotFilter
 {
 public:
-	CHealthFilter( CHL2MPBot *me )
+	CHealthFilter( CNEOBot *me )
 	{
 		m_me = me;
 	}
@@ -31,7 +29,7 @@ public:
 
 		CBaseEntity *candidate = const_cast< CBaseEntity * >( constCandidate );
 
-		CClosestHL2MPPlayer close( candidate );
+		CClosestNEOPlayer close( candidate );
 		ForEachPlayer( close );
 
 		// if the closest player to this candidate object is an enemy, don't use it
@@ -57,12 +55,12 @@ public:
 		return false;
 	}
 
-	CHL2MPBot *m_me;
+	CNEOBot *m_me;
 };
 
 
 //---------------------------------------------------------------------------------------------
-static CHL2MPBot *s_possibleBot = NULL;
+static CNEOBot *s_possibleBot = NULL;
 static CHandle< CBaseEntity > s_possibleHealth = NULL;
 static int s_possibleFrame = 0;
 
@@ -71,68 +69,70 @@ static int s_possibleFrame = 0;
 /** 
  * Return true if this Action has what it needs to perform right now
  */
-bool CHL2MPBotGetHealth::IsPossible( CHL2MPBot *me )
+bool CNEOBotGetHealth::IsPossible( CNEOBot *me )
 {
-	VPROF_BUDGET( "CHL2MPBotGetHealth::IsPossible", "NextBot" );
+	VPROF_BUDGET( "CNEOBotGetHealth::IsPossible", "NextBot" );
 
-	float healthRatio = (float)me->GetHealth() / (float)me->GetMaxHealth();
+	return false; // NEO TODO (Adam) Add a health kit?
 
-	float t = ( healthRatio - hl2mp_bot_health_critical_ratio.GetFloat() ) / ( hl2mp_bot_health_ok_ratio.GetFloat() - hl2mp_bot_health_critical_ratio.GetFloat() );
-	t = clamp( t, 0.0f, 1.0f );
+	//float healthRatio = (float)me->GetHealth() / (float)me->GetMaxHealth();
 
-	if ( me->GetFlags() & FL_ONFIRE )
-	{
-		// on fire - get health now
-		t = 0.0f;
-	}
+	//float t = ( healthRatio - neo_bot_health_critical_ratio.GetFloat() ) / ( neo_bot_health_ok_ratio.GetFloat() - neo_bot_health_critical_ratio.GetFloat() );
+	//t = clamp( t, 0.0f, 1.0f );
 
-	// the more we are hurt, the farther we'll travel to get health
-	float searchRange = hl2mp_bot_health_search_far_range.GetFloat() + t * ( hl2mp_bot_health_search_near_range.GetFloat() - hl2mp_bot_health_search_far_range.GetFloat() );
+	//if ( me->GetFlags() & FL_ONFIRE )
+	//{
+	//	// on fire - get health now
+	//	t = 0.0f;
+	//}
 
-	CBaseEntity* healthkit = NULL;
-	CUtlVector< CHandle< CBaseEntity > > hHealthKits;
-	while ( ( healthkit = gEntList.FindEntityByClassname( healthkit, "*_health*" ) ) != NULL )
-	{
-		hHealthKits.AddToTail( healthkit );
-	}
+	//// the more we are hurt, the farther we'll travel to get health
+	//float searchRange = neo_bot_health_search_far_range.GetFloat() + t * ( neo_bot_health_search_near_range.GetFloat() - neo_bot_health_search_far_range.GetFloat() );
 
-	CHealthFilter healthFilter( me );
-	CUtlVector< CHandle< CBaseEntity > > hReachableHealthKits;
-	me->SelectReachableObjects( hHealthKits, &hReachableHealthKits, healthFilter, me->GetLastKnownArea(), searchRange );
+	//CBaseEntity* healthkit = NULL;
+	//CUtlVector< CHandle< CBaseEntity > > hHealthKits;
+	//while ( ( healthkit = gEntList.FindEntityByClassname( healthkit, "*_health*" ) ) != NULL )
+	//{
+	//	hHealthKits.AddToTail( healthkit );
+	//}
 
-	CBaseEntity* closestHealth = hReachableHealthKits.Size() > 0 ? hReachableHealthKits[0] : NULL;
+	//CHealthFilter healthFilter( me );
+	//CUtlVector< CHandle< CBaseEntity > > hReachableHealthKits;
+	//me->SelectReachableObjects( hHealthKits, &hReachableHealthKits, healthFilter, me->GetLastKnownArea(), searchRange );
 
-	if ( !closestHealth )
-	{
-		if ( me->IsDebugging( NEXTBOT_BEHAVIOR ) )
-		{
-			Warning( "%3.2f: No health nearby\n", gpGlobals->curtime );
-		}
-		return false;
-	}
+	//CBaseEntity* closestHealth = hReachableHealthKits.Size() > 0 ? hReachableHealthKits[0] : NULL;
 
-	CHL2MPBotPathCost cost( me, FASTEST_ROUTE );
-	PathFollower path;
-	if ( !path.Compute( me, closestHealth->WorldSpaceCenter(), cost ) || !path.IsValid() || path.GetResult() != Path::COMPLETE_PATH )
-	{
-		if ( me->IsDebugging( NEXTBOT_BEHAVIOR ) )
-		{
-			Warning( "%3.2f: No path to health!\n", gpGlobals->curtime );
-		}
-		return false;
-	}
+	//if ( !closestHealth )
+	//{
+	//	if ( me->IsDebugging( NEXTBOT_BEHAVIOR ) )
+	//	{
+	//		Warning( "%3.2f: No health nearby\n", gpGlobals->curtime );
+	//	}
+	//	return false;
+	//}
 
-	s_possibleBot = me;
-	s_possibleHealth = closestHealth;
-	s_possibleFrame = gpGlobals->framecount;
+	//CNEOBotPathCost cost( me, FASTEST_ROUTE );
+	//PathFollower path;
+	//if ( !path.Compute( me, closestHealth->WorldSpaceCenter(), cost ) || !path.IsValid() || path.GetResult() != Path::COMPLETE_PATH )
+	//{
+	//	if ( me->IsDebugging( NEXTBOT_BEHAVIOR ) )
+	//	{
+	//		Warning( "%3.2f: No path to health!\n", gpGlobals->curtime );
+	//	}
+	//	return false;
+	//}
 
-	return true;
+	//s_possibleBot = me;
+	//s_possibleHealth = closestHealth;
+	//s_possibleFrame = gpGlobals->framecount;
+
+	//return true;
 }
 
 //---------------------------------------------------------------------------------------------
-ActionResult< CHL2MPBot >	CHL2MPBotGetHealth::OnStart( CHL2MPBot *me, Action< CHL2MPBot > *priorAction )
+ActionResult< CNEOBot >	CNEOBotGetHealth::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
-	VPROF_BUDGET( "CHL2MPBotGetHealth::OnStart", "NextBot" );
+	VPROF_BUDGET( "CNEOBotGetHealth::OnStart", "NextBot" );
 
 	m_path.SetMinLookAheadDistance( me->GetDesiredPathLookAheadRange() );
 
@@ -148,7 +148,7 @@ ActionResult< CHL2MPBot >	CHL2MPBotGetHealth::OnStart( CHL2MPBot *me, Action< CH
 	m_healthKit = s_possibleHealth;
 	m_isGoalCharger = m_healthKit->ClassMatches( "*charger*" );
 
-	CHL2MPBotPathCost cost( me, SAFEST_ROUTE );
+	CNEOBotPathCost cost( me, SAFEST_ROUTE );
 	if ( !m_path.Compute( me, m_healthKit->WorldSpaceCenter(), cost ) )
 	{
 		return Done( "No path to health!" );
@@ -159,7 +159,7 @@ ActionResult< CHL2MPBot >	CHL2MPBotGetHealth::OnStart( CHL2MPBot *me, Action< CH
 
 
 //---------------------------------------------------------------------------------------------
-ActionResult< CHL2MPBot >	CHL2MPBotGetHealth::Update( CHL2MPBot *me, float interval )
+ActionResult< CNEOBot >	CNEOBotGetHealth::Update( CNEOBot *me, float interval )
 {
 	if ( m_healthKit == NULL || ( m_healthKit->IsEffectActive( EF_NODRAW ) ) )
 	{
@@ -171,67 +171,21 @@ ActionResult< CHL2MPBot >	CHL2MPBotGetHealth::Update( CHL2MPBot *me, float inter
 		return Done( "I've been healed" );
 	}
 
-	if ( HL2MPRules()->IsTeamplay() )
+	if ( NEORules()->IsTeamplay() )
 	{
 		// if the closest player to the item we're after is an enemy, give up
 
-		CClosestHL2MPPlayer close( m_healthKit );
+		CClosestNEOPlayer close( m_healthKit );
 		ForEachPlayer( close );
 		if ( close.m_closePlayer && me->IsEnemy( close.m_closePlayer ) )
 			return Done( "An enemy is closer to it" );
-	}
-
-	if ( m_isGoalCharger )
-	{
-		// we need to get near and wait, not try to run over
-		const float nearRange = 50.0f;
-		if ( ( me->GetAbsOrigin() - m_healthKit->GetAbsOrigin() ).IsLengthLessThan( nearRange ) )
-		{
-			if ( me->GetVisionInterface()->IsLineOfSightClearToEntity( m_healthKit ) )
-			{
-				if ( me->GetHealth() == me->GetMaxHealth() )
-				{
-					return Done( "Health refilled by the Charger" );
-				}
-
-				CNewWallHealth* pNewWallHealth = dynamic_cast< CNewWallHealth* >( m_healthKit.Get() );
-				if ( pNewWallHealth )
-				{
-					pNewWallHealth->Use( me, me, USE_ON, 0.0f );
-
-					if ( pNewWallHealth->GetJuice() == 0 )
-						return Done( "Charger is out of juice!" );
-				}
-
-				CWallHealth* pWallHealth = dynamic_cast< CWallHealth* >( m_healthKit.Get() );
-				if ( pWallHealth )
-				{
-					pWallHealth->Use( me, me, USE_ON, 0.0f );
-
-					if ( pWallHealth->GetJuice() == 0 )
-						return Done( "Charger is out of juice!" );
-				}
-
-				float healthRatio = ( float )me->GetHealth() / ( float )me->GetMaxHealth();
-				bool bLowHealth = healthRatio > hl2mp_bot_health_critical_ratio.GetFloat();
-
-				// don't wait if I'm in combat
-				if ( !bLowHealth && me->GetVisionInterface()->GetPrimaryKnownThreat() )
-				{
-					return Done( "No time to wait for more health, I must fight" );
-				}
-
-				// wait until the charger refills us
-				return Continue();
-			}
-		}
 	}
 
 	if ( !m_path.IsValid() )
 	{
 		// this can occur if we overshoot the health kit's location
 		// because it is momentarily gone
-		CHL2MPBotPathCost cost( me, SAFEST_ROUTE );
+		CNEOBotPathCost cost( me, SAFEST_ROUTE );
 		if ( !m_path.Compute( me, m_healthKit->WorldSpaceCenter(), cost ) )
 		{
 			return Done( "No path to health!" );
@@ -249,21 +203,21 @@ ActionResult< CHL2MPBot >	CHL2MPBotGetHealth::Update( CHL2MPBot *me, float inter
 
 
 //---------------------------------------------------------------------------------------------
-EventDesiredResult< CHL2MPBot > CHL2MPBotGetHealth::OnStuck( CHL2MPBot *me )
+EventDesiredResult< CNEOBot > CNEOBotGetHealth::OnStuck( CNEOBot *me )
 {
 	return TryDone( RESULT_CRITICAL, "Stuck trying to reach health kit" );
 }
 
 
 //---------------------------------------------------------------------------------------------
-EventDesiredResult< CHL2MPBot > CHL2MPBotGetHealth::OnMoveToSuccess( CHL2MPBot *me, const Path *path )
+EventDesiredResult< CNEOBot > CNEOBotGetHealth::OnMoveToSuccess( CNEOBot *me, const Path *path )
 {
 	return TryContinue();
 }
 
 
 //---------------------------------------------------------------------------------------------
-EventDesiredResult< CHL2MPBot > CHL2MPBotGetHealth::OnMoveToFailure( CHL2MPBot *me, const Path *path, MoveToFailureType reason )
+EventDesiredResult< CNEOBot > CNEOBotGetHealth::OnMoveToFailure( CNEOBot *me, const Path *path, MoveToFailureType reason )
 {
 	return TryDone( RESULT_CRITICAL, "Failed to reach health kit" );
 }
@@ -271,7 +225,7 @@ EventDesiredResult< CHL2MPBot > CHL2MPBotGetHealth::OnMoveToFailure( CHL2MPBot *
 
 //---------------------------------------------------------------------------------------------
 // We are always hurrying if we need to collect health
-QueryResultType CHL2MPBotGetHealth::ShouldHurry( const INextBot *me ) const
+QueryResultType CNEOBotGetHealth::ShouldHurry( const INextBot *me ) const
 {
 	return ANSWER_YES;
 }

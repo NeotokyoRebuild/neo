@@ -1,14 +1,11 @@
-//========= Copyright Valve Corporation, All rights reserved. ============//
-
-#ifndef HL2MP_BOT_MANAGER_H
-#define HL2MP_BOT_MANAGER_H
+#pragma once
 
 #include "NextBotManager.h"
-#include "hl2mp_gamerules.h"
+#include "neo_gamerules.h"
 
-class CHL2MPBot;
-class CHL2MP_Player;
-class CHL2MPBotSquad;
+class CNEOBot;
+class CNEO_Player;
+class CNEOBotSquad;
 class CStuckBotEvent;
 
 
@@ -71,11 +68,11 @@ public:
 
 
 //----------------------------------------------------------------------------------------------
-class CHL2MPBotManager : public NextBotManager
+class CNEOBotManager : public NextBotManager
 {
 public:
-	CHL2MPBotManager();
-	virtual ~CHL2MPBotManager();
+	CNEOBotManager();
+	virtual ~CNEOBotManager();
 
 	virtual void Update();
 	void LevelShutdown();
@@ -85,9 +82,8 @@ public:
 	bool IsAllBotTeam( int iTeam );
 	bool IsInOfflinePractice() const;
 	bool IsMeleeOnly() const;
-	bool IsGravGunOnly() const;
 
-	CHL2MPBot* GetAvailableBotFromPool();
+	CNEOBot* GetAvailableBotFromPool();
 	
 	void OnForceAddedBots( int iNumAdded );
 	void OnForceKickedBots( int iNumKicked );
@@ -110,6 +106,4 @@ protected:
 };
 
 // singleton accessor
-CHL2MPBotManager &TheHL2MPBots( void );
-
-#endif // HL2MP_BOT_MANAGER_H
+CNEOBotManager &TheNEOBots( void );

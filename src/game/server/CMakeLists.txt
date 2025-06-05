@@ -1410,10 +1410,6 @@ target_sources_grouped(
     neo/bot/behavior/neo_bot_dead.h
     neo/bot/behavior/neo_bot_get_ammo.cpp
     neo/bot/behavior/neo_bot_get_ammo.h
-    neo/bot/behavior/neo_bot_get_health.cpp
-    neo/bot/behavior/neo_bot_get_health.h
-    neo/bot/behavior/neo_bot_get_prop.cpp
-    neo/bot/behavior/neo_bot_get_prop.h
     neo/bot/behavior/neo_bot_melee_attack.cpp
     neo/bot/behavior/neo_bot_melee_attack.h
     neo/bot/behavior/neo_bot_move_to_vantage_point.cpp

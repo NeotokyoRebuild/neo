@@ -1,20 +1,16 @@
-//========= Copyright Valve Corporation, All rights reserved. ============//
-
-#ifndef HL2MP_BOT_NAV_ENT_DESTROY_ENTITY_H
-#define HL2MP_BOT_NAV_ENT_DESTROY_ENTITY_H
+#pragma once
 
 #include "Path/NextBotPathFollow.h"
 #include "NextBot/NavMeshEntities/func_nav_prerequisite.h"
-#include "hl2mp/weapon_slam.h"
 
-class CHL2MPBotNavEntDestroyEntity : public Action< CHL2MPBot >
+class CNEOBotNavEntDestroyEntity : public Action< CNEOBot >
 {
 public:
-	CHL2MPBotNavEntDestroyEntity( const CFuncNavPrerequisite *prereq );
+	CNEOBotNavEntDestroyEntity( const CFuncNavPrerequisite *prereq );
 
-	virtual ActionResult< CHL2MPBot >	OnStart( CHL2MPBot *me, Action< CHL2MPBot > *priorAction );
-	virtual ActionResult< CHL2MPBot >	Update( CHL2MPBot *me, float interval );
-	virtual void					OnEnd( CHL2MPBot *me, Action< CHL2MPBot > *nextAction );
+	virtual ActionResult< CNEOBot >	OnStart( CNEOBot *me, Action< CNEOBot > *priorAction );
+	virtual ActionResult< CNEOBot >	Update( CNEOBot *me, float interval );
+	virtual void					OnEnd( CNEOBot *me, Action< CNEOBot > *nextAction );
 
 	virtual const char *GetName( void ) const	{ return "NavEntDestroyEntity"; };
 
@@ -24,9 +20,6 @@ private:
 	CountdownTimer m_repathTimer;
 	bool m_wasIgnoringEnemies;
 
-	void DetonateStickiesWhenSet( CHL2MPBot *me, CWeapon_SLAM *stickyLauncher ) const;
+	//void DetonateStickiesWhenSet( CNEOBot *me, CWeapon_SLAM *stickyLauncher ) const; // NEO TODO (Adam) remotedet
 	bool m_isReadyToLaunchSticky;
 };
-
-
-#endif // HL2MP_BOT_NAV_ENT_DESTROY_ENTITY_H

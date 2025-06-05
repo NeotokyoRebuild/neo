@@ -1,19 +1,16 @@
-//========= Copyright Valve Corporation, All rights reserved. ============//
-
-#ifndef HL2MP_BOT_NAV_ENT_MOVE_TO_H
-#define HL2MP_BOT_NAV_ENT_MOVE_TO_H
+#pragma once
 
 #include "Path/NextBotPathFollow.h"
 #include "NextBot/NavMeshEntities/func_nav_prerequisite.h"
 
 
-class CHL2MPBotNavEntMoveTo : public Action< CHL2MPBot >
+class CNEOBotNavEntMoveTo : public Action< CNEOBot >
 {
 public:
-	CHL2MPBotNavEntMoveTo( const CFuncNavPrerequisite *prereq );
+	CNEOBotNavEntMoveTo( const CFuncNavPrerequisite *prereq );
 
-	virtual ActionResult< CHL2MPBot >	OnStart( CHL2MPBot *me, Action< CHL2MPBot > *priorAction );
-	virtual ActionResult< CHL2MPBot >	Update( CHL2MPBot *me, float interval );
+	virtual ActionResult< CNEOBot >	OnStart( CNEOBot *me, Action< CNEOBot > *priorAction );
+	virtual ActionResult< CNEOBot >	Update( CNEOBot *me, float interval );
 
 	virtual const char *GetName( void ) const	{ return "NavEntMoveTo"; };
 
@@ -27,6 +24,3 @@ private:
 	PathFollower m_path;				// how we get to the loot
 	CountdownTimer m_repathTimer;
 };
-
-
-#endif // HL2MP_BOT_NAV_ENT_MOVE_TO_H

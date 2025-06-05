@@ -1,24 +1,21 @@
-//========= Copyright Valve Corporation, All rights reserved. ============//
-
-#ifndef HL2MP_BOT_BEHAVIOR_H
-#define HL2MP_BOT_BEHAVIOR_H
+#pragma once
 
 #include "Path/NextBotPathFollow.h"
 
-class CHL2MPBotMainAction : public Action< CHL2MPBot >
+class CNEOBotMainAction : public Action< CNEOBot >
 {
 public:
-	virtual Action< CHL2MPBot > *InitialContainedAction( CHL2MPBot *me );
+	virtual Action< CNEOBot > *InitialContainedAction( CNEOBot *me );
 
-	virtual ActionResult< CHL2MPBot >	OnStart( CHL2MPBot *me, Action< CHL2MPBot > *priorAction );
-	virtual ActionResult< CHL2MPBot >	Update( CHL2MPBot *me, float interval );
+	virtual ActionResult< CNEOBot >	OnStart( CNEOBot *me, Action< CNEOBot > *priorAction );
+	virtual ActionResult< CNEOBot >	Update( CNEOBot *me, float interval );
 
-	virtual EventDesiredResult< CHL2MPBot > OnKilled( CHL2MPBot *me, const CTakeDamageInfo &info );
-	virtual EventDesiredResult< CHL2MPBot > OnInjured( CHL2MPBot *me, const CTakeDamageInfo &info );
-	virtual EventDesiredResult< CHL2MPBot > OnContact( CHL2MPBot *me, CBaseEntity *other, CGameTrace *result = NULL );
-	virtual EventDesiredResult< CHL2MPBot > OnStuck( CHL2MPBot *me );
+	virtual EventDesiredResult< CNEOBot > OnKilled( CNEOBot *me, const CTakeDamageInfo &info );
+	virtual EventDesiredResult< CNEOBot > OnInjured( CNEOBot *me, const CTakeDamageInfo &info );
+	virtual EventDesiredResult< CNEOBot > OnContact( CNEOBot *me, CBaseEntity *other, CGameTrace *result = NULL );
+	virtual EventDesiredResult< CNEOBot > OnStuck( CNEOBot *me );
 
-	virtual EventDesiredResult< CHL2MPBot > OnOtherKilled( CHL2MPBot *me, CBaseCombatCharacter *victim, const CTakeDamageInfo &info );
+	virtual EventDesiredResult< CNEOBot > OnOtherKilled( CNEOBot *me, CBaseCombatCharacter *victim, const CTakeDamageInfo &info );
 
 	virtual QueryResultType ShouldAttack( const INextBot *me, const CKnownEntity *them ) const;
 	virtual QueryResultType	ShouldRetreat( const INextBot *me ) const;							// is it time to retreat?
@@ -46,13 +43,13 @@ private:
 
 	bool m_isWaitingForFullReload;
 
-	void FireWeaponAtEnemy( CHL2MPBot *me );
+	void FireWeaponAtEnemy( CNEOBot *me );
 
 	CHandle< CBaseEntity > m_lastTouch;
 	float m_lastTouchTime;
 
 	bool IsImmediateThreat( const CBaseCombatCharacter *subject, const CKnownEntity *threat ) const;
-	const CKnownEntity *SelectCloserThreat( CHL2MPBot *me, const CKnownEntity *threat1, const CKnownEntity *threat2 ) const;
+	const CKnownEntity *SelectCloserThreat( CNEOBot *me, const CKnownEntity *threat1, const CKnownEntity *threat2 ) const;
 	const CKnownEntity *GetHealerOfThreat( const CKnownEntity *threat ) const;
 
 	const CKnownEntity *SelectMoreDangerousThreatInternal( const INextBot *me, 
@@ -61,13 +58,9 @@ private:
 														   const CKnownEntity *threat2 ) const;
 
 
-	void Dodge( CHL2MPBot *me );
+	void Dodge( CNEOBot *me );
 
 	IntervalTimer m_undergroundTimer;
 
 	CountdownTimer m_reevaluateClassTimer;
 };
-
-
-
-#endif // HL2MP_BOT_BEHAVIOR_H

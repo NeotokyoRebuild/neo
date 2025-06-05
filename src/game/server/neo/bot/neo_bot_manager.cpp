@@ -1,31 +1,27 @@
-//========= Copyright Valve Corporation, All rights reserved. ============//
-//----------------------------------------------------------------------------------------------------------------
-
 #include "cbase.h"
-#include "hl2mp_bot_manager.h"
+#include "neo_bot_manager.h"
 
 #include "Player/NextBotPlayer.h"
 #include "team.h"
-#include "hl2mp_bot.h"
-#include "hl2mp_gamerules.h"
+#include "neo_bot.h"
+#include "neo_gamerules.h"
 
 
 //----------------------------------------------------------------------------------------------------------------
 
-// Creates and sets CHL2MPBotManager as the NextBotManager singleton
-static CHL2MPBotManager sHL2MPBotManager;
+// Creates and sets CNEOBotManager as the NextBotManager singleton
+static CNEOBotManager sNEOBotManager;
 
-ConVar hl2mp_bot_difficulty( "hl2mp_bot_difficulty", "2", FCVAR_NONE, "Defines the skill of bots joining the game.  Values are: 0=easy, 1=normal, 2=hard, 3=expert." );
-ConVar hl2mp_bot_quota( "hl2mp_bot_quota", "0", FCVAR_NONE, "Determines the total number of tf bots in the game." );
-ConVar hl2mp_bot_quota_mode( "hl2mp_bot_quota_mode", "normal", FCVAR_NONE, "Determines the type of quota.\nAllowed values: 'normal', 'fill', and 'match'.\nIf 'fill', the server will adjust bots to keep N players in the game, where N is bot_quota.\nIf 'match', the server will maintain a 1:N ratio of humans to bots, where N is bot_quota." );
-ConVar hl2mp_bot_join_after_player( "hl2mp_bot_join_after_player", "1", FCVAR_NONE, "If nonzero, bots wait until a player joins before entering the game." );
-ConVar hl2mp_bot_auto_vacate( "hl2mp_bot_auto_vacate", "1", FCVAR_NONE, "If nonzero, bots will automatically leave to make room for human players." );
-ConVar hl2mp_bot_offline_practice( "hl2mp_bot_offline_practice", "0", FCVAR_NONE, "Tells the server that it is in offline practice mode." );
-ConVar hl2mp_bot_melee_only( "hl2mp_bot_melee_only", "0", FCVAR_GAMEDLL, "If nonzero, HL2MPBots will only use melee weapons" );
-ConVar hl2mp_bot_gravgun_only( "hl2mp_bot_gravgun_only", "0", FCVAR_GAMEDLL, "If nonzero, HL2MPBots will only use gravity gun weapon" );
+ConVar neo_bot_difficulty( "neo_bot_difficulty", "2", FCVAR_NONE, "Defines the skill of bots joining the game.  Values are: 0=easy, 1=normal, 2=hard, 3=expert." );
+ConVar neo_bot_quota( "neo_bot_quota", "0", FCVAR_NONE, "Determines the total number of tf bots in the game." );
+ConVar neo_bot_quota_mode( "neo_bot_quota_mode", "normal", FCVAR_NONE, "Determines the type of quota.\nAllowed values: 'normal', 'fill', and 'match'.\nIf 'fill', the server will adjust bots to keep N players in the game, where N is bot_quota.\nIf 'match', the server will maintain a 1:N ratio of humans to bots, where N is bot_quota." );
+ConVar neo_bot_join_after_player( "neo_bot_join_after_player", "1", FCVAR_NONE, "If nonzero, bots wait until a player joins before entering the game." );
+ConVar neo_bot_auto_vacate( "neo_bot_auto_vacate", "1", FCVAR_NONE, "If nonzero, bots will automatically leave to make room for human players." );
+ConVar neo_bot_offline_practice( "neo_bot_offline_practice", "0", FCVAR_NONE, "Tells the server that it is in offline practice mode." );
+ConVar neo_bot_melee_only( "neo_bot_melee_only", "0", FCVAR_GAMEDLL, "If nonzero, NEOBots will only use melee weapons" );
 
 extern const char *GetRandomBotName( void );
-extern void CreateBotName( CHL2MPBot::DifficultyType skill, char* pBuffer, int iBufferSize );
+extern void CreateBotName( CNEOBot::DifficultyType skill, char* pBuffer, int iBufferSize );
 
 static bool UTIL_KickBotFromTeam( int kickTeam )
 {
@@ -34,13 +30,13 @@ static bool UTIL_KickBotFromTeam( int kickTeam )
 	// try to kick a dead bot first
 	for ( i = 1; i <= gpGlobals->maxClients; ++i )
 	{
-		CHL2MP_Player *pPlayer = ToHL2MPPlayer( UTIL_PlayerByIndex( i ) );
-		CHL2MPBot* pBot = dynamic_cast<CHL2MPBot*>(pPlayer);
+		CNEO_Player *pPlayer = ToNEOPlayer( UTIL_PlayerByIndex( i ) );
+		CNEOBot* pBot = dynamic_cast<CNEOBot*>(pPlayer);
 
 		if (pBot == NULL)
 			continue;
 
-		if ( pBot->HasAttribute( CHL2MPBot::QUOTA_MANANGED ) == false )
+		if ( pBot->HasAttribute( CNEOBot::QUOTA_MANANGED ) == false )
 			continue;
 
 		if ( ( pPlayer->GetFlags() & FL_FAKECLIENT ) == 0 )
@@ -58,13 +54,13 @@ static bool UTIL_KickBotFromTeam( int kickTeam )
 	// no dead bots, kick any bot on the given team
 	for ( i = 1; i <= gpGlobals->maxClients; ++i )
 	{
-		CHL2MP_Player *pPlayer = ToHL2MPPlayer( UTIL_PlayerByIndex( i ) );
-		CHL2MPBot* pBot = dynamic_cast<CHL2MPBot*>(pPlayer);
+		CNEO_Player *pPlayer = ToNEOPlayer( UTIL_PlayerByIndex( i ) );
+		CNEOBot* pBot = dynamic_cast<CNEOBot*>(pPlayer);
 
 		if (pBot == NULL)
 			continue;
 
-		if ( pBot->HasAttribute( CHL2MPBot::QUOTA_MANANGED ) == false )
+		if ( pBot->HasAttribute( CNEOBot::QUOTA_MANANGED ) == false )
 			continue;
 
 		if ( ( pPlayer->GetFlags() & FL_FAKECLIENT ) == 0 )
@@ -84,7 +80,7 @@ static bool UTIL_KickBotFromTeam( int kickTeam )
 
 //----------------------------------------------------------------------------------------------------------------
 
-CHL2MPBotManager::CHL2MPBotManager()
+CNEOBotManager::CNEOBotManager()
 	: NextBotManager()
 	, m_flNextPeriodicThink( 0 )
 {
@@ -93,14 +89,14 @@ CHL2MPBotManager::CHL2MPBotManager()
 
 
 //----------------------------------------------------------------------------------------------------------------
-CHL2MPBotManager::~CHL2MPBotManager()
+CNEOBotManager::~CNEOBotManager()
 {
 	NextBotManager::SetInstance( NULL );
 }
 
 
 //----------------------------------------------------------------------------------------------------------------
-void CHL2MPBotManager::OnMapLoaded( void )
+void CNEOBotManager::OnMapLoaded( void )
 {
 	NextBotManager::OnMapLoaded();
 
@@ -109,7 +105,7 @@ void CHL2MPBotManager::OnMapLoaded( void )
 
 
 //----------------------------------------------------------------------------------------------------------------
-void CHL2MPBotManager::Update()
+void CNEOBotManager::Update()
 {
 	MaintainBotQuota();
 
@@ -120,14 +116,14 @@ void CHL2MPBotManager::Update()
 
 
 //----------------------------------------------------------------------------------------------------------------
-bool CHL2MPBotManager::RemoveBotFromTeamAndKick( int nTeam )
+bool CNEOBotManager::RemoveBotFromTeamAndKick( int nTeam )
 {
-	CUtlVector< CHL2MP_Player* > vecCandidates;
+	CUtlVector< CNEO_Player* > vecCandidates;
 
 	// Gather potential candidates
 	for ( int i = 1; i <= gpGlobals->maxClients; ++i )
 	{
-		CHL2MP_Player *pPlayer = ToHL2MPPlayer( UTIL_PlayerByIndex( i ) );
+		CNEO_Player *pPlayer = ToNEOPlayer( UTIL_PlayerByIndex( i ) );
 
 		if ( pPlayer == NULL )
 			continue;
@@ -138,8 +134,8 @@ bool CHL2MPBotManager::RemoveBotFromTeamAndKick( int nTeam )
 		if ( !pPlayer->IsConnected() )
 			continue;
 
-		CHL2MPBot* pBot = dynamic_cast<CHL2MPBot*>( pPlayer );
-		if ( pBot && pBot->HasAttribute( CHL2MPBot::QUOTA_MANANGED ) )
+		CNEOBot* pBot = dynamic_cast<CNEOBot*>( pPlayer );
+		if ( pBot && pBot->HasAttribute( CNEOBot::QUOTA_MANANGED ) )
 		{
 			if ( pBot->GetTeamNumber() == nTeam )
 			{
@@ -148,13 +144,13 @@ bool CHL2MPBotManager::RemoveBotFromTeamAndKick( int nTeam )
 		}
 	}
 	
-	CHL2MP_Player *pVictim = NULL;
+	CNEO_Player *pVictim = NULL;
 	if ( vecCandidates.Count() > 0 )
 	{
 		// first look for bots that are currently dead
 		FOR_EACH_VEC( vecCandidates, i )
 		{
-			CHL2MP_Player *pPlayer = vecCandidates[i];
+			CNEO_Player *pPlayer = vecCandidates[i];
 			if ( pPlayer && !pPlayer->IsAlive() )
 			{
 				pVictim = pPlayer;
@@ -167,7 +163,7 @@ bool CHL2MPBotManager::RemoveBotFromTeamAndKick( int nTeam )
 		{
 			FOR_EACH_VEC( vecCandidates, i )
 			{
-				CHL2MP_Player *pPlayer = vecCandidates[i];
+				CNEO_Player *pPlayer = vecCandidates[i];
 				if ( pPlayer )
 				{
 					pVictim = pPlayer;
@@ -191,7 +187,7 @@ bool CHL2MPBotManager::RemoveBotFromTeamAndKick( int nTeam )
 }
 
 //----------------------------------------------------------------------------------------------------------------
-void CHL2MPBotManager::MaintainBotQuota()
+void CNEOBotManager::MaintainBotQuota()
 {
 	if ( TheNavMesh->IsGenerating() )
 		return;
@@ -220,13 +216,13 @@ void CHL2MPBotManager::MaintainBotQuota()
 
 	// We want to balance based on who's playing on game teams not necessary who's on team spectator, etc.
 	int nConnectedClients = 0;
-	int nHL2MPBots = 0;
-	int nHL2MPBotsOnGameTeams = 0;
-	int nNonHL2MPBotsOnGameTeams = 0;
+	int nNEOBots = 0;
+	int nNEOBotsOnGameTeams = 0;
+	int nNonNEOBotsOnGameTeams = 0;
 	int nSpectators = 0;
 	for ( int i = 1; i <= gpGlobals->maxClients; ++i )
 	{
-		CHL2MP_Player *pPlayer = ToHL2MPPlayer( UTIL_PlayerByIndex( i ) );
+		CNEO_Player *pPlayer = ToNEOPlayer( UTIL_PlayerByIndex( i ) );
 
 		if ( pPlayer == NULL )
 			continue;
@@ -237,20 +233,20 @@ void CHL2MPBotManager::MaintainBotQuota()
 		if ( !pPlayer->IsConnected() )
 			continue;
 
-		CHL2MPBot* pBot = dynamic_cast<CHL2MPBot*>( pPlayer );
-		if ( pBot && pBot->HasAttribute( CHL2MPBot::QUOTA_MANANGED ) )
+		CNEOBot* pBot = dynamic_cast<CNEOBot*>( pPlayer );
+		if ( pBot && pBot->HasAttribute( CNEOBot::QUOTA_MANANGED ) )
 		{
-			nHL2MPBots++;
+			nNEOBots++;
 			if ( pPlayer->GetTeamNumber() == TEAM_REBELS || pPlayer->GetTeamNumber() == TEAM_COMBINE )
 			{
-				nHL2MPBotsOnGameTeams++;
+				nNEOBotsOnGameTeams++;
 			}
 		}
 		else
 		{
 			if ( pPlayer->GetTeamNumber() == TEAM_REBELS || pPlayer->GetTeamNumber() == TEAM_COMBINE )
 			{
-				nNonHL2MPBotsOnGameTeams++;
+				nNonNEOBotsOnGameTeams++;
 			}
 			else if ( pPlayer->GetTeamNumber() == TEAM_SPECTATOR )
 			{
@@ -261,49 +257,49 @@ void CHL2MPBotManager::MaintainBotQuota()
 		nConnectedClients++;
 	}
 
-	int desiredBotCount = hl2mp_bot_quota.GetInt();
-	int nTotalNonHL2MPBots = nConnectedClients - nHL2MPBots;
+	int desiredBotCount = neo_bot_quota.GetInt();
+	int nTotalNonNEOBots = nConnectedClients - nNEOBots;
 
-	if ( FStrEq( hl2mp_bot_quota_mode.GetString(), "fill" ) )
+	if ( FStrEq( neo_bot_quota_mode.GetString(), "fill" ) )
 	{
-		desiredBotCount = MAX( 0, desiredBotCount - nNonHL2MPBotsOnGameTeams );
+		desiredBotCount = MAX( 0, desiredBotCount - nNonNEOBotsOnGameTeams );
 	}
-	else if ( FStrEq( hl2mp_bot_quota_mode.GetString(), "match" ) )
+	else if ( FStrEq( neo_bot_quota_mode.GetString(), "match" ) )
 	{
 		// If bot_quota_mode is 'match', we want the number of bots to be bot_quota * total humans
-		desiredBotCount = (int)MAX( 0, hl2mp_bot_quota.GetFloat() * nNonHL2MPBotsOnGameTeams );
+		desiredBotCount = (int)MAX( 0, neo_bot_quota.GetFloat() * nNonNEOBotsOnGameTeams );
 	}
 
 	// wait for a player to join, if necessary
-	if ( hl2mp_bot_join_after_player.GetBool() )
+	if ( neo_bot_join_after_player.GetBool() )
 	{
-		if ( ( nNonHL2MPBotsOnGameTeams == 0 ) && ( nSpectators == 0 ) )
+		if ( ( nNonNEOBotsOnGameTeams == 0 ) && ( nSpectators == 0 ) )
 		{
 			desiredBotCount = 0;
 		}
 	}
 
 	// if bots will auto-vacate, we need to keep one slot open to allow players to join
-	if ( hl2mp_bot_auto_vacate.GetBool() )
+	if ( neo_bot_auto_vacate.GetBool() )
 	{
-		desiredBotCount = MIN( desiredBotCount, gpGlobals->maxClients - nTotalNonHL2MPBots - 1 );
+		desiredBotCount = MIN( desiredBotCount, gpGlobals->maxClients - nTotalNonNEOBots - 1 );
 	}
 	else
 	{
-		desiredBotCount = MIN( desiredBotCount, gpGlobals->maxClients - nTotalNonHL2MPBots );
+		desiredBotCount = MIN( desiredBotCount, gpGlobals->maxClients - nTotalNonNEOBots );
 	}
 
 	// add bots if necessary
-	if ( desiredBotCount > nHL2MPBotsOnGameTeams )
+	if ( desiredBotCount > nNEOBotsOnGameTeams )
 	{
-		CHL2MPBot *pBot = GetAvailableBotFromPool();
+		CNEOBot *pBot = GetAvailableBotFromPool();
 		if ( pBot == NULL )
 		{
-			pBot = NextBotCreatePlayerBot< CHL2MPBot >( GetRandomBotName() );
+			pBot = NextBotCreatePlayerBot< CNEOBot >( GetRandomBotName() );
 		}
 		if ( pBot )
 		{
-			pBot->SetAttribute( CHL2MPBot::QUOTA_MANANGED );
+			pBot->SetAttribute( CNEOBot::QUOTA_MANANGED );
 
 			int iTeam = TEAM_UNASSIGNED;
 
@@ -331,15 +327,15 @@ void CHL2MPBotManager::MaintainBotQuota()
 
 			// give the bot a proper name
 			char name[256];
-			CHL2MPBot::DifficultyType skill = pBot->GetDifficulty();
-			CreateBotName( pBot->GetTeamNumber(), skill, name, sizeof( name ) );
+			CNEOBot::DifficultyType skill = pBot->GetDifficulty();
+			CreateBotName( skill, name, sizeof( name ) );
 			engine->SetFakeClientConVarValue( pBot->edict(), "cl_playermodel", pszModel );
 			engine->SetFakeClientConVarValue( pBot->edict(), "name", name );
 			pBot->HandleCommand_JoinTeam( iTeam );
 			pBot->ChangeTeam( iTeam );
 		}
 	}
-	else if ( desiredBotCount < nHL2MPBotsOnGameTeams )
+	else if ( desiredBotCount < nNEOBotsOnGameTeams )
 	{
 		// kick a bot to maintain quota
 		
@@ -387,7 +383,7 @@ void CHL2MPBotManager::MaintainBotQuota()
 
 
 //----------------------------------------------------------------------------------------------------------------
-bool CHL2MPBotManager::IsAllBotTeam( int iTeam )
+bool CNEOBotManager::IsAllBotTeam( int iTeam )
 {
 	CTeam *pTeam = GetGlobalTeam( iTeam );
 	if ( pTeam == NULL )
@@ -398,7 +394,7 @@ bool CHL2MPBotManager::IsAllBotTeam( int iTeam )
 	// check to see if any players on the team are humans
 	for ( int i = 0, n = pTeam->GetNumPlayers(); i < n; ++i )
 	{
-		CHL2MP_Player *pPlayer = ToHL2MPPlayer( pTeam->GetPlayer( i ) );
+		CNEO_Player *pPlayer = ToNEOPlayer( pTeam->GetPlayer( i ) );
 		if ( pPlayer == NULL )
 		{
 			continue;
@@ -420,46 +416,38 @@ bool CHL2MPBotManager::IsAllBotTeam( int iTeam )
 
 
 //----------------------------------------------------------------------------------------------------------------
-void CHL2MPBotManager::SetIsInOfflinePractice(bool bIsInOfflinePractice)
+void CNEOBotManager::SetIsInOfflinePractice(bool bIsInOfflinePractice)
 {
-	hl2mp_bot_offline_practice.SetValue( bIsInOfflinePractice ? 1 : 0 );
+	neo_bot_offline_practice.SetValue( bIsInOfflinePractice ? 1 : 0 );
 }
 
 
 //----------------------------------------------------------------------------------------------------------------
-bool CHL2MPBotManager::IsInOfflinePractice() const
+bool CNEOBotManager::IsInOfflinePractice() const
 {
-	return hl2mp_bot_offline_practice.GetInt() != 0;
+	return neo_bot_offline_practice.GetInt() != 0;
 }
 
 
 //----------------------------------------------------------------------------------------------------------------
-bool CHL2MPBotManager::IsMeleeOnly() const
+bool CNEOBotManager::IsMeleeOnly() const
 {
-	return hl2mp_bot_melee_only.GetBool();
+	return neo_bot_melee_only.GetBool();
+}
+
+//----------------------------------------------------------------------------------------------------------------
+void CNEOBotManager::RevertOfflinePracticeConvars()
+{
+	neo_bot_quota.Revert();
+	neo_bot_quota_mode.Revert();
+	neo_bot_auto_vacate.Revert();
+	neo_bot_difficulty.Revert();
+	neo_bot_offline_practice.Revert();
 }
 
 
 //----------------------------------------------------------------------------------------------------------------
-bool CHL2MPBotManager::IsGravGunOnly() const
-{
-	return hl2mp_bot_gravgun_only.GetBool();
-}
-
-
-//----------------------------------------------------------------------------------------------------------------
-void CHL2MPBotManager::RevertOfflinePracticeConvars()
-{
-	hl2mp_bot_quota.Revert();
-	hl2mp_bot_quota_mode.Revert();
-	hl2mp_bot_auto_vacate.Revert();
-	hl2mp_bot_difficulty.Revert();
-	hl2mp_bot_offline_practice.Revert();
-}
-
-
-//----------------------------------------------------------------------------------------------------------------
-void CHL2MPBotManager::LevelShutdown()
+void CNEOBotManager::LevelShutdown()
 {
 	m_flNextPeriodicThink = 0.0f;
 	if ( IsInOfflinePractice() )
@@ -471,12 +459,12 @@ void CHL2MPBotManager::LevelShutdown()
 
 
 //----------------------------------------------------------------------------------------------------------------
-CHL2MPBot* CHL2MPBotManager::GetAvailableBotFromPool()
+CNEOBot* CNEOBotManager::GetAvailableBotFromPool()
 {
 	for ( int i = 1; i <= gpGlobals->maxClients; ++i )
 	{
-		CHL2MP_Player *pPlayer = ToHL2MPPlayer( UTIL_PlayerByIndex( i ) );
-		CHL2MPBot* pBot = dynamic_cast<CHL2MPBot*>(pPlayer);
+		CNEO_Player *pPlayer = ToNEOPlayer( UTIL_PlayerByIndex( i ) );
+		CNEOBot* pBot = dynamic_cast<CNEOBot*>(pPlayer);
 
 		if (pBot == NULL)
 			continue;
@@ -486,7 +474,7 @@ CHL2MPBot* CHL2MPBotManager::GetAvailableBotFromPool()
 
 		if ( pBot->GetTeamNumber() == TEAM_SPECTATOR || pBot->GetTeamNumber() == TEAM_UNASSIGNED )
 		{
-			pBot->ClearAttribute( CHL2MPBot::QUOTA_MANANGED );
+			pBot->ClearAttribute( CNEOBot::QUOTA_MANANGED );
 			return pBot;
 		}
 	}
@@ -495,17 +483,17 @@ CHL2MPBot* CHL2MPBotManager::GetAvailableBotFromPool()
 
 
 //----------------------------------------------------------------------------------------------------------------
-void CHL2MPBotManager::OnForceAddedBots( int iNumAdded )
+void CNEOBotManager::OnForceAddedBots( int iNumAdded )
 {
-	hl2mp_bot_quota.SetValue( hl2mp_bot_quota.GetInt() + iNumAdded );
+	neo_bot_quota.SetValue( neo_bot_quota.GetInt() + iNumAdded );
 	m_flNextPeriodicThink = gpGlobals->curtime + 1.0f;
 }
 
 
 //----------------------------------------------------------------------------------------------------------------
-void CHL2MPBotManager::OnForceKickedBots( int iNumKicked )
+void CNEOBotManager::OnForceKickedBots( int iNumKicked )
 {
-	hl2mp_bot_quota.SetValue( MAX( hl2mp_bot_quota.GetInt() - iNumKicked, 0 ) );
+	neo_bot_quota.SetValue( MAX( neo_bot_quota.GetInt() - iNumKicked, 0 ) );
 	// allow time for the bots to be kicked
 	m_flNextPeriodicThink = gpGlobals->curtime + 2.0f;
 }
@@ -521,7 +509,7 @@ CNEOBotManager &TheNEOBots( void )
 
 //----------------------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------------------
-CON_COMMAND_F( hl2mp_bot_debug_stuck_log, "Given a server logfile, visually display bot stuck locations.", FCVAR_GAMEDLL | FCVAR_CHEAT )
+CON_COMMAND_F( neo_bot_debug_stuck_log, "Given a server logfile, visually display bot stuck locations.", FCVAR_GAMEDLL | FCVAR_CHEAT )
 {
 	// Listenserver host or rcon access only!
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
@@ -541,7 +529,7 @@ CON_COMMAND_F( hl2mp_bot_debug_stuck_log, "Given a server logfile, visually disp
 	char logMapName[ maxBufferSize ];
 	logMapName[0] = '\000';
 
-	TheHL2MPBots().ClearStuckBotData();
+	TheNEOBots().ClearStuckBotData();
 
 	if ( file )
 	{
@@ -593,7 +581,7 @@ CON_COMMAND_F( hl2mp_bot_debug_stuck_log, "Given a server logfile, visually disp
 				char *second = strtok( NULL, " " );
 				if ( second && !strcmp( second, "stuck" ) )
 				{
-					CStuckBot *stuckBot = TheHL2MPBots().FindOrCreateStuckBot( botID, playerClassname );
+					CStuckBot *stuckBot = TheNEOBots().FindOrCreateStuckBot( botID, playerClassname );
 
 					CStuckBotEvent *stuckEvent = new CStuckBotEvent;
 
@@ -637,7 +625,7 @@ CON_COMMAND_F( hl2mp_bot_debug_stuck_log, "Given a server logfile, visually disp
 		Warning( "Can't open file '%s'\n", args.Arg(1) );
 	}
 
-	//TheHL2MPBots().DrawStuckBotData();
+	//TheNEOBots().DrawStuckBotData();
 }
 
 
@@ -649,13 +637,13 @@ CON_COMMAND_F( hl2mp_bot_debug_stuck_log_clear, "Clear currently loaded bot stuc
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
 
-	TheHL2MPBots().ClearStuckBotData();
+	TheNEOBots().ClearStuckBotData();
 }
 
 
 //----------------------------------------------------------------------------------------------------------------
 // for parsing and debugging stuck bot server logs
-void CHL2MPBotManager::ClearStuckBotData()
+void CNEOBotManager::ClearStuckBotData()
 {
 	m_stuckBotVector.PurgeAndDeleteElements();
 }
@@ -663,7 +651,7 @@ void CHL2MPBotManager::ClearStuckBotData()
 
 //----------------------------------------------------------------------------------------------------------------
 // for parsing and debugging stuck bot server logs
-CStuckBot *CHL2MPBotManager::FindOrCreateStuckBot( int id, const char *playerClass )
+CStuckBot *CNEOBotManager::FindOrCreateStuckBot( int id, const char *playerClass )
 {
 	for( int i=0; i<m_stuckBotVector.Count(); ++i )
 	{
@@ -684,7 +672,7 @@ CStuckBot *CHL2MPBotManager::FindOrCreateStuckBot( int id, const char *playerCla
 
 
 //----------------------------------------------------------------------------------------------------------------
-void CHL2MPBotManager::DrawStuckBotData( float deltaT )
+void CNEOBotManager::DrawStuckBotData( float deltaT )
 {
 	if ( engine->IsDedicatedServer() )
 		return;

@@ -2,21 +2,21 @@
 
 #include "cbase.h"
 #include "nav_mesh.h"
-#include "hl2mp_player.h"
-#include "bot/hl2mp_bot.h"
-#include "bot/behavior/nav_entities/hl2mp_bot_nav_ent_wait.h"
+#include "neo_player.h"
+#include "bot/neo_bot.h"
+#include "bot/behavior/nav_entities/neo_bot_nav_ent_wait.h"
 
-extern ConVar hl2mp_bot_path_lookahead_range;
+extern ConVar neo_bot_path_lookahead_range;
 
 //---------------------------------------------------------------------------------------------
-CHL2MPBotNavEntWait::CHL2MPBotNavEntWait( const CFuncNavPrerequisite *prereq )
+CNEOBotNavEntWait::CNEOBotNavEntWait( const CFuncNavPrerequisite *prereq )
 {
 	m_prereq = prereq;
 }
 
 
 //---------------------------------------------------------------------------------------------
-ActionResult< CHL2MPBot > CHL2MPBotNavEntWait::OnStart( CHL2MPBot *me, Action< CHL2MPBot > *priorAction )
+ActionResult< CNEOBot > CNEOBotNavEntWait::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
 	if ( m_prereq == NULL )
 	{
@@ -30,7 +30,7 @@ ActionResult< CHL2MPBot > CHL2MPBotNavEntWait::OnStart( CHL2MPBot *me, Action< C
 
 
 //---------------------------------------------------------------------------------------------
-ActionResult< CHL2MPBot > CHL2MPBotNavEntWait::Update( CHL2MPBot *me, float interval )
+ActionResult< CNEOBot > CNEOBotNavEntWait::Update( CNEOBot *me, float interval )
 {
 	if ( m_prereq == NULL )
 	{

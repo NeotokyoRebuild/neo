@@ -1,24 +1,21 @@
-//========= Copyright Valve Corporation, All rights reserved. ============//
-
-#ifndef HL2MP_BOT_ATTACK_H
-#define HL2MP_BOT_ATTACK_H
+#pragma once
 
 #include "Path/NextBotChasePath.h"
 
 
 //-------------------------------------------------------------------------------
-class CHL2MPBotAttack : public Action< CHL2MPBot >
+class CNEOBotAttack : public Action< CNEOBot >
 {
 public:
-	CHL2MPBotAttack( void );
-	virtual ~CHL2MPBotAttack() { }
+	CNEOBotAttack( void );
+	virtual ~CNEOBotAttack() { }
 
-	virtual ActionResult< CHL2MPBot >	OnStart( CHL2MPBot *me, Action< CHL2MPBot > *priorAction );
-	virtual ActionResult< CHL2MPBot >	Update( CHL2MPBot *me, float interval );
+	virtual ActionResult< CNEOBot >	OnStart( CNEOBot *me, Action< CNEOBot > *priorAction );
+	virtual ActionResult< CNEOBot >	Update( CNEOBot *me, float interval );
 
-	virtual EventDesiredResult< CHL2MPBot > OnStuck( CHL2MPBot *me );
-	virtual EventDesiredResult< CHL2MPBot > OnMoveToSuccess( CHL2MPBot *me, const Path *path );
-	virtual EventDesiredResult< CHL2MPBot > OnMoveToFailure( CHL2MPBot *me, const Path *path, MoveToFailureType reason );
+	virtual EventDesiredResult< CNEOBot > OnStuck( CNEOBot *me );
+	virtual EventDesiredResult< CNEOBot > OnMoveToSuccess( CNEOBot *me, const Path *path );
+	virtual EventDesiredResult< CNEOBot > OnMoveToFailure( CNEOBot *me, const Path *path, MoveToFailureType reason );
 
 	virtual QueryResultType	ShouldRetreat( const INextBot *me ) const;							// is it time to retreat?
 	virtual QueryResultType ShouldHurry( const INextBot *me ) const;					// are we in a hurry?
@@ -30,6 +27,3 @@ private:
 	ChasePath m_chasePath;
 	CountdownTimer m_repathTimer;
 };
-
-
-#endif // HL2MP_BOT_ATTACK_H

@@ -1,20 +1,17 @@
-//========= Copyright Valve Corporation, All rights reserved. ============//
+#pragma once
 
-#ifndef HL2MP_BOT_RETREAT_TO_COVER_H
-#define HL2MP_BOT_RETREAT_TO_COVER_H
-
-class CHL2MPBotRetreatToCover : public Action< CHL2MPBot >
+class CNEOBotRetreatToCover : public Action< CNEOBot >
 {
 public:
-	CHL2MPBotRetreatToCover( float hideDuration = -1.0f );
-	CHL2MPBotRetreatToCover( Action< CHL2MPBot > *actionToChangeToOnceCoverReached );
+	CNEOBotRetreatToCover( float hideDuration = -1.0f );
+	CNEOBotRetreatToCover( Action< CNEOBot > *actionToChangeToOnceCoverReached );
 
-	virtual ActionResult< CHL2MPBot >	OnStart( CHL2MPBot *me, Action< CHL2MPBot > *priorAction );
-	virtual ActionResult< CHL2MPBot >	Update( CHL2MPBot *me, float interval );
+	virtual ActionResult< CNEOBot >	OnStart( CNEOBot *me, Action< CNEOBot > *priorAction );
+	virtual ActionResult< CNEOBot >	Update( CNEOBot *me, float interval );
 
-	virtual EventDesiredResult< CHL2MPBot > OnStuck( CHL2MPBot *me );
-	virtual EventDesiredResult< CHL2MPBot > OnMoveToSuccess( CHL2MPBot *me, const Path *path );
-	virtual EventDesiredResult< CHL2MPBot > OnMoveToFailure( CHL2MPBot *me, const Path *path, MoveToFailureType reason );
+	virtual EventDesiredResult< CNEOBot > OnStuck( CNEOBot *me );
+	virtual EventDesiredResult< CNEOBot > OnMoveToSuccess( CNEOBot *me, const Path *path );
+	virtual EventDesiredResult< CNEOBot > OnMoveToFailure( CNEOBot *me, const Path *path, MoveToFailureType reason );
 
 	virtual QueryResultType ShouldHurry( const INextBot *me ) const;					// are we in a hurry?
 
@@ -22,7 +19,7 @@ public:
 
 private:
 	float m_hideDuration;
-	Action< CHL2MPBot > *m_actionToChangeToOnceCoverReached;
+	Action< CNEOBot > *m_actionToChangeToOnceCoverReached;
 
 	PathFollower m_path;
 	CountdownTimer m_repathTimer;
@@ -30,9 +27,5 @@ private:
 	CNavArea *m_coverArea;
 	CountdownTimer m_waitInCoverTimer;
 
-	CNavArea *FindCoverArea( CHL2MPBot *me );
+	CNavArea *FindCoverArea( CNEOBot *me );
 };
-
-
-
-#endif // HL2MP_BOT_RETREAT_TO_COVER_H

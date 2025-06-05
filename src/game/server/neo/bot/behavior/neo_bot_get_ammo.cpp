@@ -1,19 +1,19 @@
 //========= Copyright Valve Corporation, All rights reserved. ============//
 
 #include "cbase.h"
-#include "hl2mp_gamerules.h"
-#include "bot/hl2mp_bot.h"
-#include "bot/behavior/hl2mp_bot_get_ammo.h"
+#include "neo_gamerules.h"
+#include "bot/neo_bot.h"
+#include "bot/behavior/neo_bot_get_ammo.h"
 #include "items.h"
 
-extern ConVar hl2mp_bot_path_lookahead_range;
+extern ConVar neo_bot_path_lookahead_range;
 
-ConVar hl2mp_bot_ammo_search_range( "hl2mp_bot_ammo_search_range", "5000", FCVAR_CHEAT, "How far bots will search to find ammo around them" );
-ConVar hl2mp_bot_debug_ammo_scavenging( "hl2mp_bot_debug_ammo_scavenging", "0", FCVAR_CHEAT );
+ConVar neo_bot_ammo_search_range( "neo_bot_ammo_search_range", "5000", FCVAR_CHEAT, "How far bots will search to find ammo around them" );
+ConVar neo_bot_debug_ammo_scavenging( "neo_bot_debug_ammo_scavenging", "0", FCVAR_CHEAT );
 
 
 //---------------------------------------------------------------------------------------------
-CHL2MPBotGetAmmo::CHL2MPBotGetAmmo( void )
+CNEOBotGetAmmo::CNEOBotGetAmmo( void )
 {
 	m_path.Invalidate();
 	m_ammo = NULL;
@@ -24,7 +24,7 @@ CHL2MPBotGetAmmo::CHL2MPBotGetAmmo( void )
 class CAmmoFilter : public INextBotFilter
 {
 public:
-	CAmmoFilter( CHL2MPBot *me )
+	CAmmoFilter( CNEOBot *me )
 	{
 		m_me = me;
 	}
@@ -36,7 +36,7 @@ public:
 
 		CBaseEntity *candidate = const_cast< CBaseEntity * >( constCandidate );
 
-		CClosestHL2MPPlayer close( candidate );
+		CClosestNEOPlayer close( candidate );
 		ForEachPlayer( close );
 
 		// if the closest player to this candidate object is an enemy, don't use it
@@ -56,7 +56,7 @@ public:
 			return false;
 
 		//CBaseCombatWeapon* pWeapon = m_me->Weapon_OwnsThisType( pszWeaponClass );
-		CBaseCombatWeapon* pWeapon = m_me->GetActiveWeapon();
+		CNEOBaseCombatWeapon* pWeapon = static_cast<CNEOBaseCombatWeapon*>(m_me->GetActiveWeapon());
 		if ( !pWeapon )
 			return false;
 
@@ -67,15 +67,15 @@ public:
 		if ( !pWeapon->ClassMatches( pszWeaponClass ) )
 			return false;
 
-		return m_me->GetAmmoCount( pWeapon->GetPrimaryAmmoType() ) < m_me->GetMaxAmmo( pWeapon->GetPrimaryAmmoType() );
+		return pWeapon->GetPrimaryAmmoCount() < pWeapon->GetWpnData().iMaxClip1;
 	}
 
-	CHL2MPBot *m_me;
+	CNEOBot *m_me;
 };
 
 
 //---------------------------------------------------------------------------------------------
-static CHL2MPBot *s_possibleBot = NULL;
+static CNEOBot *s_possibleBot = NULL;
 static CHandle< CBaseEntity > s_possibleAmmo = NULL;
 static int s_possibleFrame = 0;
 
@@ -84,11 +84,11 @@ static int s_possibleFrame = 0;
 /**
  * Return true if this Action has what it needs to perform right now
  */
-bool CHL2MPBotGetAmmo::IsPossible( CHL2MPBot *me )
+bool CNEOBotGetAmmo::IsPossible( CNEOBot *me )
 {
-	VPROF_BUDGET( "CHL2MPBotGetAmmo::IsPossible", "NextBot" );
+	VPROF_BUDGET( "CNEOBotGetAmmo::IsPossible", "NextBot" );
 
-	float searchRange = hl2mp_bot_ammo_search_range.GetFloat();
+	float searchRange = neo_bot_ammo_search_range.GetFloat();
 
 	CBaseEntity* ammo = NULL;
 	CUtlVector< CHandle< CBaseEntity > > hAmmos;
@@ -112,12 +112,12 @@ bool CHL2MPBotGetAmmo::IsPossible( CHL2MPBot *me )
 		return false;
 	}
 
-	if ( hl2mp_bot_debug_ammo_scavenging.GetBool() )
+	if ( neo_bot_debug_ammo_scavenging.GetBool() )
 	{
 		NDebugOverlay::Cross3D( closestAmmo->WorldSpaceCenter(), 5.0f, 255, 255, 0, true, 999.9 );
 	}
 
-	CHL2MPBotPathCost cost( me, FASTEST_ROUTE );
+	CNEOBotPathCost cost( me, FASTEST_ROUTE );
 	PathFollower path;
 	if ( !path.Compute( me, closestAmmo->WorldSpaceCenter(), cost ) || !path.IsValid() || path.GetResult() != Path::COMPLETE_PATH )
 	{
@@ -137,9 +137,9 @@ bool CHL2MPBotGetAmmo::IsPossible( CHL2MPBot *me )
 
 
 //---------------------------------------------------------------------------------------------
-ActionResult< CHL2MPBot >	CHL2MPBotGetAmmo::OnStart( CHL2MPBot *me, Action< CHL2MPBot > *priorAction )
+ActionResult< CNEOBot >	CNEOBotGetAmmo::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
-	VPROF_BUDGET( "CHL2MPBotGetAmmo::OnStart", "NextBot" );
+	VPROF_BUDGET( "CNEOBotGetAmmo::OnStart", "NextBot" );
 
 	m_path.SetMinLookAheadDistance( me->GetDesiredPathLookAheadRange() );
 
@@ -154,7 +154,7 @@ ActionResult< CHL2MPBot >	CHL2MPBotGetAmmo::OnStart( CHL2MPBot *me, Action< CHL2
 
 	m_ammo = s_possibleAmmo;
 
-	CHL2MPBotPathCost cost( me, FASTEST_ROUTE );
+	CNEOBotPathCost cost( me, FASTEST_ROUTE );
 	if ( !m_path.Compute( me, m_ammo->WorldSpaceCenter(), cost ) || !m_path.IsValid() || m_path.GetResult() != Path::COMPLETE_PATH )
 	{
 		return Done( "No path to ammo!" );
@@ -165,7 +165,7 @@ ActionResult< CHL2MPBot >	CHL2MPBotGetAmmo::OnStart( CHL2MPBot *me, Action< CHL2
 
 
 //---------------------------------------------------------------------------------------------
-ActionResult< CHL2MPBot >	CHL2MPBotGetAmmo::Update( CHL2MPBot *me, float interval )
+ActionResult< CNEOBot >	CNEOBotGetAmmo::Update( CNEOBot *me, float interval )
 {
 	if ( me->IsAmmoFull() )
 	{
@@ -193,35 +193,35 @@ ActionResult< CHL2MPBot >	CHL2MPBotGetAmmo::Update( CHL2MPBot *me, float interva
 
 
 //---------------------------------------------------------------------------------------------
-EventDesiredResult< CHL2MPBot > CHL2MPBotGetAmmo::OnContact( CHL2MPBot *me, CBaseEntity *other, CGameTrace *result )
+EventDesiredResult< CNEOBot > CNEOBotGetAmmo::OnContact( CNEOBot *me, CBaseEntity *other, CGameTrace *result )
 {
 	return TryContinue();
 }
 
 
 //---------------------------------------------------------------------------------------------
-EventDesiredResult< CHL2MPBot > CHL2MPBotGetAmmo::OnStuck( CHL2MPBot *me )
+EventDesiredResult< CNEOBot > CNEOBotGetAmmo::OnStuck( CNEOBot *me )
 {
 	return TryDone( RESULT_CRITICAL, "Stuck trying to reach ammo" );
 }
 
 
 //---------------------------------------------------------------------------------------------
-EventDesiredResult< CHL2MPBot > CHL2MPBotGetAmmo::OnMoveToSuccess( CHL2MPBot *me, const Path *path )
+EventDesiredResult< CNEOBot > CNEOBotGetAmmo::OnMoveToSuccess( CNEOBot *me, const Path *path )
 {
 	return TryContinue();
 }
 
 
 //---------------------------------------------------------------------------------------------
-EventDesiredResult< CHL2MPBot > CHL2MPBotGetAmmo::OnMoveToFailure( CHL2MPBot *me, const Path *path, MoveToFailureType reason )
+EventDesiredResult< CNEOBot > CNEOBotGetAmmo::OnMoveToFailure( CNEOBot *me, const Path *path, MoveToFailureType reason )
 {
 	return TryDone( RESULT_CRITICAL, "Failed to reach ammo" );
 }
 
 
 //---------------------------------------------------------------------------------------------
-QueryResultType CHL2MPBotGetAmmo::ShouldHurry( const INextBot *me ) const
+QueryResultType CNEOBotGetAmmo::ShouldHurry( const INextBot *me ) const
 {
 	// if we need ammo, we best hustle
 	return ANSWER_YES;

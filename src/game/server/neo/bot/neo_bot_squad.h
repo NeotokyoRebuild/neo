@@ -1,30 +1,27 @@
-//========= Copyright Valve Corporation, All rights reserved. ============//
-
-#ifndef HL2MP_BOT_SQUAD_H
-#define HL2MP_BOT_SQUAD_H
+#pragma once
 
 #include "NextBot/NextBotEventResponderInterface.h"
 
-class CHL2MPBot;
+class CNEOBot;
 
-class CHL2MPBotSquad : public INextBotEventResponder
+class CNEOBotSquad : public INextBotEventResponder
 {
 public:
-	CHL2MPBotSquad( void );
-	virtual ~CHL2MPBotSquad() { }		
+	CNEOBotSquad( void );
+	virtual ~CNEOBotSquad() { }		
 
 	// EventResponder ------
 	virtual INextBotEventResponder *FirstContainedResponder( void ) const;
 	virtual INextBotEventResponder *NextContainedResponder( INextBotEventResponder *current ) const;
 	//----------------------
 
-	bool IsMember( CHL2MPBot *bot ) const;		// is the given bot in this squad?
-	bool IsLeader( CHL2MPBot *bot ) const;		// is the given bot the leader of this squad?
+	bool IsMember( CNEOBot *bot ) const;		// is the given bot in this squad?
+	bool IsLeader( CNEOBot *bot ) const;		// is the given bot the leader of this squad?
 
-// 	CHL2MPBot *GetMember( int i );
+// 	CNEOBot *GetMember( int i );
  	int GetMemberCount( void ) const;
 
-	CHL2MPBot *GetLeader( void ) const;
+	CNEOBot *GetLeader( void ) const;
 
 	class Iterator
 	{
@@ -35,13 +32,13 @@ public:
 			m_index = -1;
 		}
 
-		Iterator( CHL2MPBot *bot, int index )
+		Iterator( CNEOBot *bot, int index )
 		{
 			m_bot = bot;
 			m_index = index;
 		}
 
-		CHL2MPBot *operator() ( void )
+		CNEOBot *operator() ( void )
 		{
 			return m_bot;
 		}
@@ -49,7 +46,7 @@ public:
 		bool operator==( const Iterator &it ) const	{ return m_bot == it.m_bot && m_index == it.m_index; }
 		bool operator!=( const Iterator &it ) const	{ return m_bot != it.m_bot || m_index != it.m_index; }
 
-		CHL2MPBot *m_bot;
+		CNEOBot *m_bot;
 		int m_index;
 	};
 
@@ -57,7 +54,7 @@ public:
 	Iterator GetNextMember( const Iterator &it ) const;
 	Iterator InvalidIterator() const;
 
-	void CollectMembers( CUtlVector< CHL2MPBot * > *memberVector ) const;
+	void CollectMembers( CUtlVector< CNEOBot * > *memberVector ) const;
 
 	#define EXCLUDE_LEADER false
 	float GetSlowestMemberSpeed( bool includeLeader = true ) const;
@@ -76,43 +73,39 @@ public:
 	bool ShouldPreserveSquad() const { return m_bShouldPreserveSquad; }
 
 private:
-	friend class CHL2MPBot;
+	friend class CNEOBot;
 
-	void Join( CHL2MPBot *bot );
-	void Leave( CHL2MPBot *bot );
+	void Join( CNEOBot *bot );
+	void Leave( CNEOBot *bot );
 
-	CUtlVector< CHandle< CHL2MPBot > > m_roster;
-	CHandle< CHL2MPBot > m_leader;
+	CUtlVector< CHandle< CNEOBot > > m_roster;
+	CHandle< CNEOBot > m_leader;
 
 	float m_formationSize;
 	bool m_bShouldPreserveSquad;
 };
 
-inline bool CHL2MPBotSquad::IsMember( CHL2MPBot *bot ) const
+inline bool CNEOBotSquad::IsMember( CNEOBot *bot ) const
 {
 	return m_roster.HasElement( bot );
 }
 
-inline bool CHL2MPBotSquad::IsLeader( CHL2MPBot *bot ) const
+inline bool CNEOBotSquad::IsLeader( CNEOBot *bot ) const
 {
 	return m_leader == bot;
 }
 
-inline CHL2MPBotSquad::Iterator CHL2MPBotSquad::InvalidIterator() const
+inline CNEOBotSquad::Iterator CNEOBotSquad::InvalidIterator() const
 {
 	return Iterator( NULL, -1 );
 }
 
-inline float CHL2MPBotSquad::GetFormationSize( void ) const
+inline float CNEOBotSquad::GetFormationSize( void ) const
 {
 	return m_formationSize;
 }
 
-inline void CHL2MPBotSquad::SetFormationSize( float size )
+inline void CNEOBotSquad::SetFormationSize( float size )
 {
 	m_formationSize = size;
 }
-
-
-#endif // HL2MP_BOT_SQUAD_H
-

@@ -1,43 +1,42 @@
 #include "cbase.h"
 #include "fmtstr.h"
 
-#include "hl2mp_gamerules.h"
-#include "hl2mp/weapon_slam.h"
+#include "neo_gamerules.h"
 #include "NextBot/NavMeshEntities/func_nav_prerequisite.h"
 
-#include "bot/hl2mp_bot.h"
-#include "bot/hl2mp_bot_manager.h"
+#include "bot/neo_bot.h"
+#include "bot/neo_bot_manager.h"
 
-#include "bot/behavior/hl2mp_bot_tactical_monitor.h"
-#include "bot/behavior/hl2mp_bot_scenario_monitor.h"
+#include "bot/behavior/neo_bot_tactical_monitor.h"
+#include "bot/behavior/neo_bot_scenario_monitor.h"
 
-#include "bot/behavior/hl2mp_bot_seek_and_destroy.h"
-#include "bot/behavior/hl2mp_bot_retreat_to_cover.h"
-#include "bot/behavior/hl2mp_bot_get_health.h"
-#include "bot/behavior/hl2mp_bot_get_ammo.h"
-#include "bot/behavior/nav_entities/hl2mp_bot_nav_ent_destroy_entity.h"
-#include "bot/behavior/nav_entities/hl2mp_bot_nav_ent_move_to.h"
-#include "bot/behavior/nav_entities/hl2mp_bot_nav_ent_wait.h"
+#include "bot/behavior/neo_bot_seek_and_destroy.h"
+#include "bot/behavior/neo_bot_retreat_to_cover.h"
+#include "bot/behavior/neo_bot_get_health.h"
+#include "bot/behavior/neo_bot_get_ammo.h"
+#include "bot/behavior/nav_entities/neo_bot_nav_ent_destroy_entity.h"
+#include "bot/behavior/nav_entities/neo_bot_nav_ent_move_to.h"
+#include "bot/behavior/nav_entities/neo_bot_nav_ent_wait.h"
 
-extern ConVar hl2mp_bot_health_ok_ratio;
-extern ConVar hl2mp_bot_health_critical_ratio;
+extern ConVar neo_bot_health_ok_ratio;
+extern ConVar neo_bot_health_critical_ratio;
 
-ConVar hl2mp_bot_force_jump( "hl2mp_bot_force_jump", "0", FCVAR_CHEAT, "Force bots to continuously jump" );
+ConVar neo_bot_force_jump( "neo_bot_force_jump", "0", FCVAR_CHEAT, "Force bots to continuously jump" );
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Attempts to kick/despawn the bot in the Update()
 
-class CHL2MPDespawn : public Action< CHL2MPBot >
+class CNEODespawn : public Action< CNEOBot >
 {
 public:
-	virtual ActionResult< CHL2MPBot >	Update( CHL2MPBot* me, float interval );
+	virtual ActionResult< CNEOBot >	Update( CNEOBot* me, float interval );
 	virtual const char* GetName( void ) const { return "Despawn"; };
 };
 
 
-ActionResult< CHL2MPBot > CHL2MPDespawn::Update( CHL2MPBot* me, float interval )
+ActionResult< CNEOBot > CNEODespawn::Update( CNEOBot* me, float interval )
 {
 	// players need to be kicked, not deleted
 	if ( me->GetEntity()->IsPlayer() )
@@ -54,22 +53,22 @@ ActionResult< CHL2MPBot > CHL2MPDespawn::Update( CHL2MPBot* me, float interval )
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Action< CHL2MPBot > *CHL2MPBotTacticalMonitor::InitialContainedAction( CHL2MPBot *me )
+Action< CNEOBot > *CNEOBotTacticalMonitor::InitialContainedAction( CNEOBot *me )
 {
-	return new CHL2MPBotScenarioMonitor;
+	return new CNEOBotScenarioMonitor;
 }
 
 
 //-----------------------------------------------------------------------------------------
-ActionResult< CHL2MPBot >	CHL2MPBotTacticalMonitor::OnStart( CHL2MPBot *me, Action< CHL2MPBot > *priorAction )
+ActionResult< CNEOBot >	CNEOBotTacticalMonitor::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
 	return Continue();
 }
 
 
-#ifndef NEO
+#ifndef NEO // NEO TODO (Adam) Monitor the remote detpack
 //-----------------------------------------------------------------------------------------
-void CHL2MPBotTacticalMonitor::MonitorArmedStickyBombs( CHL2MPBot *me )
+void CNEOBotTacticalMonitor::MonitorArmedStickyBombs( CNEOBot *me )
 {
 	if ( m_stickyBombCheckTimer.IsElapsed() )
 	{
@@ -130,22 +129,22 @@ void CHL2MPBotTacticalMonitor::MonitorArmedStickyBombs( CHL2MPBot *me )
 
 #endif //NEO
 //-----------------------------------------------------------------------------------------
-void CHL2MPBotTacticalMonitor::AvoidBumpingEnemies( CHL2MPBot *me )
+void CNEOBotTacticalMonitor::AvoidBumpingEnemies( CNEOBot *me )
 {
-	if ( me->GetDifficulty() < CHL2MPBot::HARD )
+	if ( me->GetDifficulty() < CNEOBot::HARD )
 		return;
 
 	const float avoidRange = 200.0f;
 
-	CUtlVector< CHL2MP_Player * > enemyVector;
+	CUtlVector< CNEO_Player * > enemyVector;
 	CollectPlayers( &enemyVector, GetEnemyTeam( me->GetTeamNumber() ), COLLECT_ONLY_LIVING_PLAYERS );
 
-	CHL2MP_Player *closestEnemy = NULL;
+	CNEO_Player *closestEnemy = NULL;
 	float closestRangeSq = avoidRange * avoidRange;
 
 	for( int i=0; i<enemyVector.Count(); ++i )
 	{
-		CHL2MP_Player *enemy = enemyVector[i];
+		CNEO_Player *enemy = enemyVector[i];
 
 		float rangeSq = ( enemy->GetAbsOrigin() - me->GetAbsOrigin() ).LengthSqr();
 		if ( rangeSq < closestRangeSq )
@@ -174,9 +173,9 @@ void CHL2MPBotTacticalMonitor::AvoidBumpingEnemies( CHL2MPBot *me )
 
 
 //-----------------------------------------------------------------------------------------
-ActionResult< CHL2MPBot >	CHL2MPBotTacticalMonitor::Update( CHL2MPBot *me, float interval )
+ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float interval )
 {
-	if ( hl2mp_bot_force_jump.GetBool() )
+	if ( neo_bot_force_jump.GetBool() )
 	{
 		if ( !me->GetLocomotionInterface()->IsClimbingOrJumping() )
 		{
@@ -187,7 +186,7 @@ ActionResult< CHL2MPBot >	CHL2MPBotTacticalMonitor::Update( CHL2MPBot *me, float
 	const CKnownEntity* threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
 	me->EquipBestWeaponForThreat( threat );
 
-	Action< CHL2MPBot > *result = me->OpportunisticallyUseWeaponAbilities();
+	Action< CNEOBot > *result = me->OpportunisticallyUseWeaponAbilities();
 	if ( result )
 	{
 		return SuspendFor( result, "Opportunistically using buff item" );
@@ -198,22 +197,19 @@ ActionResult< CHL2MPBot >	CHL2MPBotTacticalMonitor::Update( CHL2MPBot *me, float
 
 	if ( shouldRetreat == ANSWER_YES )
 	{
-		return SuspendFor( new CHL2MPBotRetreatToCover, "Backing off" );
+		return SuspendFor( new CNEOBotRetreatToCover, "Backing off" );
 	}
 	else if ( shouldRetreat != ANSWER_NO )
 	{
-		if ( !me->IsPropFreak() )
+		// retreat if we need to do a full reload
+		if ( me->IsDifficulty( CNEOBot::HARD ) || me->IsDifficulty( CNEOBot::EXPERT ) )
 		{
-			// retreat if we need to do a full reload (ie: soldiers shot all their rockets)
-			if ( me->IsDifficulty( CHL2MPBot::HARD ) || me->IsDifficulty( CHL2MPBot::EXPERT ) )
+			CNEOBaseCombatWeapon *weapon = (CNEOBaseCombatWeapon*) me->GetActiveWeapon();
+			if ( weapon && weapon->GetPrimaryAmmoCount() > 0 && me->IsBarrageAndReloadWeapon(weapon))
 			{
-				CBaseHL2MPCombatWeapon *weapon = ( CBaseHL2MPCombatWeapon *) me->GetActiveWeapon();
-				if ( weapon && me->GetAmmoCount( weapon->GetPrimaryAmmoType() ) > 0 && me->IsBarrageAndReloadWeapon( weapon ) )
+				if ( weapon->Clip1() <= 1 )
 				{
-					if ( weapon->Clip1() <= 1 )
-					{
-						return SuspendFor( new CHL2MPBotRetreatToCover, "Moving to cover to reload" );
-					}
+					return SuspendFor( new CNEOBotRetreatToCover, "Moving to cover to reload" );
 				}
 			}
 		}
@@ -228,25 +224,20 @@ ActionResult< CHL2MPBot >	CHL2MPBotTacticalMonitor::Update( CHL2MPBot *me, float
 		{
 			m_maintainTimer.Start( RandomFloat( 0.3f, 0.5f ) );
 
-			bool isHurt = ( me->GetFlags() & FL_ONFIRE ) || ( ( float )me->GetHealth() / ( float )me->GetMaxHealth() ) < hl2mp_bot_health_ok_ratio.GetFloat();
-
-			if ( isHurt && CHL2MPBotGetHealth::IsPossible( me ) )
+			/*bool isHurt = ( me->GetFlags() & FL_ONFIRE ) || ( ( float )me->GetHealth() / ( float )me->GetMaxHealth() ) < neo_bot_health_ok_ratio.GetFloat();
+			if ( isHurt && CNEOBotGetHealth::IsPossible( me ) )
 			{
-				return SuspendFor( new CHL2MPBotGetHealth, "Grabbing nearby health" );
-			}
+				return SuspendFor( new CNEOBotGetHealth, "Grabbing nearby health" );
+			}*/ // NEO NOTE (Adam) uncomment if healing becomes possible
 
-			// Prop freaks go for props instead of ammo.
-			if ( !me->IsPropFreak() )
+			if ( me->IsAmmoLow() && CNEOBotGetAmmo::IsPossible( me ) )
 			{
-				if ( me->IsAmmoLow() && CHL2MPBotGetAmmo::IsPossible( me ) )
-				{
-					return SuspendFor( new CHL2MPBotGetAmmo, "Grabbing nearby ammo" );
-				}
+				return SuspendFor( new CNEOBotGetAmmo, "Grabbing nearby ammo" );
 			}
 		}
 	}
 
-#ifndef NEO
+#ifndef NEO // NEO TODO (Adam) detonate remote detpacks
 	// detonate sticky bomb traps when victims are near
 	MonitorArmedStickyBombs( me );
 #endif // NEO
@@ -258,24 +249,24 @@ ActionResult< CHL2MPBot >	CHL2MPBotTacticalMonitor::Update( CHL2MPBot *me, float
 
 
 //-----------------------------------------------------------------------------------------
-EventDesiredResult< CHL2MPBot > CHL2MPBotTacticalMonitor::OnOtherKilled( CHL2MPBot *me, CBaseCombatCharacter *victim, const CTakeDamageInfo &info )
+EventDesiredResult< CNEOBot > CNEOBotTacticalMonitor::OnOtherKilled( CNEOBot *me, CBaseCombatCharacter *victim, const CTakeDamageInfo &info )
 {
 	return TryContinue();
 }
 
 
 //-----------------------------------------------------------------------------------------
-EventDesiredResult< CHL2MPBot > CHL2MPBotTacticalMonitor::OnNavAreaChanged( CHL2MPBot *me, CNavArea *newArea, CNavArea *oldArea )
+EventDesiredResult< CNEOBot > CNEOBotTacticalMonitor::OnNavAreaChanged( CNEOBot *me, CNavArea *newArea, CNavArea *oldArea )
 {
 	return TryContinue();
 }
 
 //-----------------------------------------------------------------------------------------
-EventDesiredResult< CHL2MPBot > CHL2MPBotTacticalMonitor::OnCommandString( CHL2MPBot *me, const char *command )
+EventDesiredResult< CNEOBot > CNEOBotTacticalMonitor::OnCommandString( CNEOBot *me, const char *command )
 {
 	if ( FStrEq( command, "despawn" ) )
 	{
-		return TrySuspendFor( new CHL2MPDespawn(), RESULT_CRITICAL, "Received command to go to de-spawn" );
+		return TrySuspendFor( new CNEODespawn(), RESULT_CRITICAL, "Received command to go to de-spawn" );
 	}
 
 	return TryContinue();

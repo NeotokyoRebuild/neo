@@ -1,19 +1,19 @@
 //========= Copyright Valve Corporation, All rights reserved. ============//
 
 #include "cbase.h"
-#include "hl2mp_player.h"
-#include "bot/hl2mp_bot.h"
-#include "bot/behavior/hl2mp_bot_retreat_to_cover.h"
+#include "neo_player.h"
+#include "bot/neo_bot.h"
+#include "bot/behavior/neo_bot_retreat_to_cover.h"
 
-extern ConVar hl2mp_bot_path_lookahead_range;
-ConVar hl2mp_bot_retreat_to_cover_range( "hl2mp_bot_retreat_to_cover_range", "1000", FCVAR_CHEAT );
-ConVar hl2mp_bot_debug_retreat_to_cover( "hl2mp_bot_debug_retreat_to_cover", "0", FCVAR_CHEAT );
-ConVar hl2mp_bot_wait_in_cover_min_time( "hl2mp_bot_wait_in_cover_min_time", "1", FCVAR_CHEAT );
-ConVar hl2mp_bot_wait_in_cover_max_time( "hl2mp_bot_wait_in_cover_max_time", "2", FCVAR_CHEAT );
+extern ConVar neo_bot_path_lookahead_range;
+ConVar neo_bot_retreat_to_cover_range( "neo_bot_retreat_to_cover_range", "1000", FCVAR_CHEAT );
+ConVar neo_bot_debug_retreat_to_cover( "neo_bot_debug_retreat_to_cover", "0", FCVAR_CHEAT );
+ConVar neo_bot_wait_in_cover_min_time( "neo_bot_wait_in_cover_min_time", "1", FCVAR_CHEAT );
+ConVar neo_bot_wait_in_cover_max_time( "neo_bot_wait_in_cover_max_time", "2", FCVAR_CHEAT );
 
 
 //---------------------------------------------------------------------------------------------
-CHL2MPBotRetreatToCover::CHL2MPBotRetreatToCover( float hideDuration )
+CNEOBotRetreatToCover::CNEOBotRetreatToCover( float hideDuration )
 {
 	m_hideDuration = hideDuration;
 	m_actionToChangeToOnceCoverReached = NULL;
@@ -21,7 +21,7 @@ CHL2MPBotRetreatToCover::CHL2MPBotRetreatToCover( float hideDuration )
 
 
 //---------------------------------------------------------------------------------------------
-CHL2MPBotRetreatToCover::CHL2MPBotRetreatToCover( Action< CHL2MPBot > *actionToChangeToOnceCoverReached )
+CNEOBotRetreatToCover::CNEOBotRetreatToCover( Action< CNEOBot > *actionToChangeToOnceCoverReached )
 {
 	m_hideDuration = -1.0f;
 	m_actionToChangeToOnceCoverReached = actionToChangeToOnceCoverReached;
@@ -33,7 +33,7 @@ CHL2MPBotRetreatToCover::CHL2MPBotRetreatToCover( Action< CHL2MPBot > *actionToC
 class CTestAreaAgainstThreats :  public IVision::IForEachKnownEntity
 {
 public:
-	CTestAreaAgainstThreats( CHL2MPBot *me, CNavArea *area )
+	CTestAreaAgainstThreats( CNEOBot *me, CNavArea *area )
 	{
 		m_me = me;
 		m_area = area;
@@ -59,7 +59,7 @@ public:
 		return true;
 	}
 
-	CHL2MPBot *m_me;
+	CNEOBot *m_me;
 	CNavArea *m_area;
 	int m_exposedThreatCount;
 };
@@ -69,12 +69,12 @@ public:
 class CSearchForCover : public ISearchSurroundingAreasFunctor
 {
 public:
-	CSearchForCover( CHL2MPBot *me )
+	CSearchForCover( CNEOBot *me )
 	{
 		m_me = me;
 		m_minExposureCount = 9999;
 
-		if ( hl2mp_bot_debug_retreat_to_cover.GetBool() )
+		if ( neo_bot_debug_retreat_to_cover.GetBool() )
 			TheNavMesh->ClearSelectedSet();
 	}
 
@@ -106,7 +106,7 @@ public:
 	// return true if 'adjArea' should be included in the ongoing search
 	virtual bool ShouldSearch( CNavArea *adjArea, CNavArea *currentArea, float travelDistanceSoFar ) 
 	{
-		if ( travelDistanceSoFar > hl2mp_bot_retreat_to_cover_range.GetFloat() )
+		if ( travelDistanceSoFar > neo_bot_retreat_to_cover_range.GetFloat() )
 			return false;
 
 		// allow falling off ledges, but don't jump up - too slow
@@ -115,23 +115,23 @@ public:
 
 	virtual void PostSearch( void )
 	{
-		if ( hl2mp_bot_debug_retreat_to_cover.GetBool() )
+		if ( neo_bot_debug_retreat_to_cover.GetBool() )
 		{
 			for( int i=0; i<m_coverAreaVector.Count(); ++i )
 				TheNavMesh->AddToSelectedSet( m_coverAreaVector[i] );
 		}
 	}
 
-	CHL2MPBot *m_me;
+	CNEOBot *m_me;
 	CUtlVector< CNavArea * > m_coverAreaVector;
 	int m_minExposureCount;
 };
 
 
 //---------------------------------------------------------------------------------------------
-CNavArea *CHL2MPBotRetreatToCover::FindCoverArea( CHL2MPBot *me )
+CNavArea *CNEOBotRetreatToCover::FindCoverArea( CNEOBot *me )
 {
-	VPROF_BUDGET( "CHL2MPBotRetreatToCover::FindCoverArea", "NextBot" );
+	VPROF_BUDGET( "CNEOBotRetreatToCover::FindCoverArea", "NextBot" );
 
 	CSearchForCover search( me );
 	SearchSurroundingAreas( me->GetLastKnownArea(), search );
@@ -150,7 +150,7 @@ CNavArea *CHL2MPBotRetreatToCover::FindCoverArea( CHL2MPBot *me )
 
 
 //---------------------------------------------------------------------------------------------
-ActionResult< CHL2MPBot >	CHL2MPBotRetreatToCover::OnStart( CHL2MPBot *me, Action< CHL2MPBot > *priorAction )
+ActionResult< CNEOBot >	CNEOBotRetreatToCover::OnStart( CNEOBot *me, Action< CNEOBot > *priorAction )
 {
 	m_path.SetMinLookAheadDistance( me->GetDesiredPathLookAheadRange() );
 
@@ -161,7 +161,7 @@ ActionResult< CHL2MPBot >	CHL2MPBotRetreatToCover::OnStart( CHL2MPBot *me, Actio
 
 	if ( m_hideDuration < 0.0f )
 	{
-		m_hideDuration = RandomFloat( hl2mp_bot_wait_in_cover_min_time.GetFloat(), hl2mp_bot_wait_in_cover_max_time.GetFloat() );
+		m_hideDuration = RandomFloat( neo_bot_wait_in_cover_min_time.GetFloat(), neo_bot_wait_in_cover_max_time.GetFloat() );
 	}
 
 	m_waitInCoverTimer.Start( m_hideDuration );
@@ -171,7 +171,7 @@ ActionResult< CHL2MPBot >	CHL2MPBotRetreatToCover::OnStart( CHL2MPBot *me, Actio
 
 
 //---------------------------------------------------------------------------------------------
-ActionResult< CHL2MPBot >	CHL2MPBotRetreatToCover::Update( CHL2MPBot *me, float interval )
+ActionResult< CNEOBot >	CNEOBotRetreatToCover::Update( CNEOBot *me, float interval )
 {
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat( true );
 
@@ -183,8 +183,8 @@ ActionResult< CHL2MPBot >	CHL2MPBotRetreatToCover::Update( CHL2MPBot *me, float 
 
 	// reload while moving to cover
 	bool isDoingAFullReload = false;
-	CBaseHL2MPCombatWeapon *myPrimary = (CBaseHL2MPCombatWeapon *)me->GetActiveWeapon();
-	if ( myPrimary && me->GetAmmoCount( myPrimary->GetPrimaryAmmoType() ) > 0 && me->IsBarrageAndReloadWeapon( myPrimary ) )
+	CNEOBaseCombatWeapon *myPrimary = (CNEOBaseCombatWeapon*)me->GetActiveWeapon();
+	if ( myPrimary && myPrimary->GetPrimaryAmmoCount() > 0 && me->IsBarrageAndReloadWeapon(myPrimary))
 	{
 		if ( myPrimary->Clip1() < myPrimary->GetMaxClip1() )
 		{
@@ -235,7 +235,7 @@ ActionResult< CHL2MPBot >	CHL2MPBotRetreatToCover::Update( CHL2MPBot *me, float 
 		{
 			m_repathTimer.Start( RandomFloat( 0.3f, 0.5f ) );
 
-			CHL2MPBotPathCost cost( me, RETREAT_ROUTE );
+			CNEOBotPathCost cost( me, RETREAT_ROUTE );
 			m_path.Compute( me, m_coverArea->GetCenter(), cost );
 		}
 
@@ -247,21 +247,21 @@ ActionResult< CHL2MPBot >	CHL2MPBotRetreatToCover::Update( CHL2MPBot *me, float 
 
 
 //---------------------------------------------------------------------------------------------
-EventDesiredResult< CHL2MPBot > CHL2MPBotRetreatToCover::OnStuck( CHL2MPBot *me )
+EventDesiredResult< CNEOBot > CNEOBotRetreatToCover::OnStuck( CNEOBot *me )
 {
 	return TryContinue();
 }
 
 
 //---------------------------------------------------------------------------------------------
-EventDesiredResult< CHL2MPBot > CHL2MPBotRetreatToCover::OnMoveToSuccess( CHL2MPBot *me, const Path *path )
+EventDesiredResult< CNEOBot > CNEOBotRetreatToCover::OnMoveToSuccess( CNEOBot *me, const Path *path )
 {
 	return TryContinue();
 }
 
 
 //---------------------------------------------------------------------------------------------
-EventDesiredResult< CHL2MPBot > CHL2MPBotRetreatToCover::OnMoveToFailure( CHL2MPBot *me, const Path *path, MoveToFailureType reason )
+EventDesiredResult< CNEOBot > CNEOBotRetreatToCover::OnMoveToFailure( CNEOBot *me, const Path *path, MoveToFailureType reason )
 {
 	return TryContinue();
 }
@@ -269,7 +269,7 @@ EventDesiredResult< CHL2MPBot > CHL2MPBotRetreatToCover::OnMoveToFailure( CHL2MP
 
 //---------------------------------------------------------------------------------------------
 // Hustle yer butt to safety!
-QueryResultType CHL2MPBotRetreatToCover::ShouldHurry( const INextBot *me ) const
+QueryResultType CNEOBotRetreatToCover::ShouldHurry( const INextBot *me ) const
 {
 	return ANSWER_YES;
 }

@@ -1,11 +1,9 @@
-//========= Copyright Valve Corporation, All rights reserved. ============//
-
 #include "cbase.h"
-#include "hl2mp_bot.h"
-#include "hl2mp_bot_squad.h"
+#include "neo_bot.h"
+#include "neo_bot_squad.h"
 
 //----------------------------------------------------------------------
-CHL2MPBotSquad::CHL2MPBotSquad( void )
+CNEOBotSquad::CNEOBotSquad( void )
 {
 	m_leader = NULL;
 	m_formationSize = -1.0f;
@@ -14,7 +12,7 @@ CHL2MPBotSquad::CHL2MPBotSquad( void )
 
 
 //----------------------------------------------------------------------
-void CHL2MPBotSquad::Join( CHL2MPBot *bot )
+void CNEOBotSquad::Join( CNEOBot *bot )
 {
 	// first member is the leader
 	if ( m_roster.Count() == 0 )
@@ -27,7 +25,7 @@ void CHL2MPBotSquad::Join( CHL2MPBot *bot )
 
 
 //----------------------------------------------------------------------
-void CHL2MPBotSquad::Leave( CHL2MPBot *bot )
+void CNEOBotSquad::Leave( CNEOBot *bot )
 {
 	m_roster.FindAndRemove( bot );
 
@@ -38,7 +36,7 @@ void CHL2MPBotSquad::Leave( CHL2MPBot *bot )
 		// pick the next living leader that's left in the squad
 		if ( m_bShouldPreserveSquad )
 		{
-			CUtlVector< CHL2MPBot* > members;
+			CUtlVector< CNEOBot* > members;
 			CollectMembers( &members );
 			if ( members.Count() )
 			{
@@ -55,16 +53,16 @@ void CHL2MPBotSquad::Leave( CHL2MPBot *bot )
 
 
 //----------------------------------------------------------------------
-INextBotEventResponder *CHL2MPBotSquad::FirstContainedResponder( void ) const
+INextBotEventResponder *CNEOBotSquad::FirstContainedResponder( void ) const
 {
 	return m_roster.Count() ? m_roster[0] : NULL;
 }
 
 
 //----------------------------------------------------------------------
-INextBotEventResponder *CHL2MPBotSquad::NextContainedResponder( INextBotEventResponder *current ) const
+INextBotEventResponder *CNEOBotSquad::NextContainedResponder( INextBotEventResponder *current ) const
 {
-	CHL2MPBot *currentBot = (CHL2MPBot *)current;
+	CNEOBot *currentBot = (CNEOBot *)current;
 
 	int i = m_roster.Find( currentBot );
 
@@ -74,19 +72,19 @@ INextBotEventResponder *CHL2MPBotSquad::NextContainedResponder( INextBotEventRes
 	if ( ++i >= m_roster.Count() )
 		return NULL;
 
-	return (CHL2MPBot *)m_roster[i];
+	return (CNEOBot *)m_roster[i];
 }
 
 
 //----------------------------------------------------------------------
-CHL2MPBot *CHL2MPBotSquad::GetLeader( void ) const
+CNEOBot *CNEOBotSquad::GetLeader( void ) const
 {
 	return m_leader;
 }
 
 
 //----------------------------------------------------------------------
-void CHL2MPBotSquad::CollectMembers( CUtlVector< CHL2MPBot * > *memberVector ) const
+void CNEOBotSquad::CollectMembers( CUtlVector< CNEOBot * > *memberVector ) const
 {
 	for( int i=0; i<m_roster.Count(); ++i )
 	{
@@ -99,7 +97,7 @@ void CHL2MPBotSquad::CollectMembers( CUtlVector< CHL2MPBot * > *memberVector ) c
 
 
 //----------------------------------------------------------------------
-CHL2MPBotSquad::Iterator CHL2MPBotSquad::GetFirstMember( void ) const
+CNEOBotSquad::Iterator CNEOBotSquad::GetFirstMember( void ) const
 {
 	// find first non-NULL member
 	for( int i=0; i<m_roster.Count(); ++i )
@@ -111,7 +109,7 @@ CHL2MPBotSquad::Iterator CHL2MPBotSquad::GetFirstMember( void ) const
 
 
 //----------------------------------------------------------------------
-CHL2MPBotSquad::Iterator CHL2MPBotSquad::GetNextMember( const Iterator &it ) const
+CNEOBotSquad::Iterator CNEOBotSquad::GetNextMember( const Iterator &it ) const
 {
 	// find next non-NULL member
 	for( int i=it.m_index+1; i<m_roster.Count(); ++i )
@@ -123,7 +121,7 @@ CHL2MPBotSquad::Iterator CHL2MPBotSquad::GetNextMember( const Iterator &it ) con
 
 
 //----------------------------------------------------------------------
-int CHL2MPBotSquad::GetMemberCount( void ) const
+int CNEOBotSquad::GetMemberCount( void ) const
 {
 	// count the non-NULL members
 	int count = 0;
@@ -137,7 +135,7 @@ int CHL2MPBotSquad::GetMemberCount( void ) const
 
 //----------------------------------------------------------------------
 // Return the speed of the slowest member of the squad
-float CHL2MPBotSquad::GetSlowestMemberSpeed( bool includeLeader ) const
+float CNEOBotSquad::GetSlowestMemberSpeed( bool includeLeader ) const
 {
 	float speed = FLT_MAX;
 
@@ -162,7 +160,7 @@ float CHL2MPBotSquad::GetSlowestMemberSpeed( bool includeLeader ) const
 //----------------------------------------------------------------------
 // Return the speed of the slowest member of the squad, 
 // considering their ideal class speed.
-float CHL2MPBotSquad::GetSlowestMemberIdealSpeed( bool includeLeader ) const
+float CNEOBotSquad::GetSlowestMemberIdealSpeed( bool includeLeader ) const
 {
 	float speed = FLT_MAX;
 
@@ -191,7 +189,7 @@ float CHL2MPBotSquad::GetSlowestMemberIdealSpeed( bool includeLeader ) const
 
 //----------------------------------------------------------------------
 // Return the maximum formation error of the squad's memebers.
-float CHL2MPBotSquad::GetMaxSquadFormationError( void ) const
+float CNEOBotSquad::GetMaxSquadFormationError( void ) const
 {
 	float maxError = 0.0f;
 
@@ -214,7 +212,7 @@ float CHL2MPBotSquad::GetMaxSquadFormationError( void ) const
 
 //----------------------------------------------------------------------
 // Return true if the squad leader needs to wait for members to catch up, ignoring those who have broken ranks
-bool CHL2MPBotSquad::ShouldSquadLeaderWaitForFormation( void ) const
+bool CNEOBotSquad::ShouldSquadLeaderWaitForFormation( void ) const
 {
 	// skip the leader since he's what the formation forms around
 	for( int i=1; i<m_roster.Count(); ++i )
@@ -238,7 +236,7 @@ bool CHL2MPBotSquad::ShouldSquadLeaderWaitForFormation( void ) const
 
 //----------------------------------------------------------------------
 // Return true if the squad is in formation (everyone is in or nearly in their desired positions)
-bool CHL2MPBotSquad::IsInFormation( void ) const
+bool CNEOBotSquad::IsInFormation( void ) const
 {
 	// skip the leader since he's what the formation forms around
 	for( int i=1; i<m_roster.Count(); ++i )
@@ -265,7 +263,7 @@ bool CHL2MPBotSquad::IsInFormation( void ) const
 
 //----------------------------------------------------------------------
 // Tell all members to leave the squad and then delete itself
-void CHL2MPBotSquad::DisbandAndDeleteSquad( void )
+void CNEOBotSquad::DisbandAndDeleteSquad( void )
 {
 	// Tell each member of the squad to remove this reference
 	for( int i=0; i < m_roster.Count(); ++i )

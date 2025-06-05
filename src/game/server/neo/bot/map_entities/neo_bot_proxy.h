@@ -1,21 +1,17 @@
-//========= Copyright Valve Corporation, All rights reserved. ============//
+#pragma once
 
-#ifndef HL2MP_BOT_PROXY_H
-#define HL2MP_BOT_PROXY_H
-
-
-class CHL2MPBot;
-class CHL2MPBotActionPoint;
+class CNEOBot;
+class CNEOBotActionPoint;
 
 
-class CHL2MPBotProxy : public CPointEntity
+class CNEOBotProxy : public CPointEntity
 {
-	DECLARE_CLASS( CHL2MPBotProxy, CPointEntity );
+	DECLARE_CLASS( CNEOBotProxy, CPointEntity );
 public:
 	DECLARE_DATADESC();
 
-	CHL2MPBotProxy( void );
-	virtual ~CHL2MPBotProxy() { }
+	CNEOBotProxy( void );
+	virtual ~CNEOBotProxy() { }
 
 	void Think( void );
 
@@ -45,9 +41,6 @@ protected:
 	string_t m_actionPointName;
 	float m_respawnInterval;
 
-	CHandle< CHL2MPBot > m_bot;
-	CHandle< CHL2MPBotActionPoint > m_moveGoal;
+	CHandle< CNEOBot > m_bot;
+	CHandle< CNEOBotActionPoint > m_moveGoal;
 };
-
-
-#endif // HL2MP_BOT_PROXY_H

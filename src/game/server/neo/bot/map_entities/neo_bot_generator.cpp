@@ -1,24 +1,22 @@
-//========= Copyright Valve Corporation, All rights reserved. ============//
-
 #include "cbase.h"
 
-#include "bot/hl2mp_bot.h"
-#include "hl2mp_bot_generator.h"
+#include "bot/neo_bot.h"
+#include "neo_bot_generator.h"
 
-#include "bot/hl2mp_bot.h"
-#include "bot/hl2mp_bot_manager.h"
-#include "hl2mp_gamerules.h"
+#include "bot/neo_bot.h"
+#include "bot/neo_bot_manager.h"
+#include "neo_gamerules.h"
 #include "tier3/tier3.h"
 #include "vgui/ILocalize.h"
 
 extern ConVar hl2mp_bot_prefix_name_with_difficulty;
 extern ConVar hl2mp_bot_difficulty;
 
-extern void CreateBotName( int iTeam, CHL2MPBot::DifficultyType skill, char* pBuffer, int iBufferSize );
+extern void CreateBotName( int iTeam, CNEOBot::DifficultyType skill, char* pBuffer, int iBufferSize );
 
 //------------------------------------------------------------------------------
 
-BEGIN_DATADESC( CHL2MPBotGenerator )
+BEGIN_DATADESC( CNEOBotGenerator )
 	DEFINE_KEYFIELD( m_spawnCount,		FIELD_INTEGER,	"count" ),
 	DEFINE_KEYFIELD( m_maxActiveCount,	FIELD_INTEGER,	"maxActive" ),
 	DEFINE_KEYFIELD( m_spawnInterval,	FIELD_FLOAT,	"interval" ),
@@ -53,7 +51,7 @@ BEGIN_DATADESC( CHL2MPBotGenerator )
 	DEFINE_THINKFUNC( GeneratorThink ),
 END_DATADESC()
 
-LINK_ENTITY_TO_CLASS( bot_generator, CHL2MPBotGenerator );
+LINK_ENTITY_TO_CLASS( bot_generator, CNEOBotGenerator );
 
 enum
 {
@@ -63,14 +61,14 @@ enum
 };
 
 //------------------------------------------------------------------------------
-CHL2MPBotGenerator::CHL2MPBotGenerator( void ) 
+CNEOBotGenerator::CNEOBotGenerator( void ) 
 	: m_bSuppressFire(false)
 	, m_bDisableDodge(false)
 	, m_bUseTeamSpawnpoint(false)
 	, m_bRetainBuildings(false)
 	, m_bExpended(false)
 	, m_iOnDeathAction(kOnDeath_RemoveSelf)
-	, m_difficulty(CHL2MPBot::UNDEFINED)
+	, m_difficulty(CNEOBot::UNDEFINED)
 	, m_spawnCountRemaining(0)
 	, m_bSpawnOnlyWhenTriggered(false)
 	, m_bEnabled(true)
@@ -79,7 +77,7 @@ CHL2MPBotGenerator::CHL2MPBotGenerator( void )
 }
 
 //------------------------------------------------------------------------------
-void CHL2MPBotGenerator::InputEnable( inputdata_t &inputdata )
+void CNEOBotGenerator::InputEnable( inputdata_t &inputdata )
 {
 	m_bEnabled = true;
 
@@ -88,7 +86,7 @@ void CHL2MPBotGenerator::InputEnable( inputdata_t &inputdata )
 		return;
 	}
 
-	SetThink( &CHL2MPBotGenerator::GeneratorThink );
+	SetThink( &CNEOBotGenerator::GeneratorThink );
 
 	if ( m_spawnCountRemaining )
 	{
@@ -100,7 +98,7 @@ void CHL2MPBotGenerator::InputEnable( inputdata_t &inputdata )
 }
 
 //------------------------------------------------------------------------------
-void CHL2MPBotGenerator::InputDisable( inputdata_t &inputdata )
+void CNEOBotGenerator::InputDisable( inputdata_t &inputdata )
 {
 	m_bEnabled = false;
 
@@ -109,34 +107,34 @@ void CHL2MPBotGenerator::InputDisable( inputdata_t &inputdata )
 }
 
 //------------------------------------------------------------------------------
-void CHL2MPBotGenerator::InputSetSuppressFire( inputdata_t &inputdata )
+void CNEOBotGenerator::InputSetSuppressFire( inputdata_t &inputdata )
 {
 	m_bSuppressFire = inputdata.value.Bool();
 }
 
 //------------------------------------------------------------------------------
-void CHL2MPBotGenerator::InputSetDisableDodge( inputdata_t &inputdata )
+void CNEOBotGenerator::InputSetDisableDodge( inputdata_t &inputdata )
 {
 	m_bDisableDodge = inputdata.value.Bool();
 }
 
 //------------------------------------------------------------------------------
-void CHL2MPBotGenerator::InputSetDifficulty( inputdata_t &inputdata )
+void CNEOBotGenerator::InputSetDifficulty( inputdata_t &inputdata )
 {
-	m_difficulty = clamp( inputdata.value.Int(), (int) CHL2MPBot::UNDEFINED, (int) CHL2MPBot::EXPERT );
+	m_difficulty = clamp( inputdata.value.Int(), (int) CNEOBot::UNDEFINED, (int) CNEOBot::EXPERT );
 }
 
 //------------------------------------------------------------------------------
-void CHL2MPBotGenerator::InputCommandGotoActionPoint( inputdata_t &inputdata )
+void CNEOBotGenerator::InputCommandGotoActionPoint( inputdata_t &inputdata )
 {
-	CHL2MPBotActionPoint *pActionPoint = dynamic_cast<CHL2MPBotActionPoint *>( gEntList.FindEntityByName( NULL, inputdata.value.String() ) );
+	CNEOBotActionPoint *pActionPoint = dynamic_cast<CNEOBotActionPoint *>( gEntList.FindEntityByName( NULL, inputdata.value.String() ) );
 	if ( pActionPoint == NULL )
 	{
 		return;
 	}
 	for ( int i = 0; i < m_spawnedBotVector.Count(); )
 	{
-		CHandle< CHL2MPBot > hBot = m_spawnedBotVector[i];
+		CHandle< CNEOBot > hBot = m_spawnedBotVector[i];
 		if ( hBot == NULL )
 		{
 			m_spawnedBotVector.FastRemove(i);
@@ -154,7 +152,7 @@ void CHL2MPBotGenerator::InputCommandGotoActionPoint( inputdata_t &inputdata )
 }
 
 //------------------------------------------------------------------------------
-void CHL2MPBotGenerator::InputSetAttentionFocus( inputdata_t &inputdata )
+void CNEOBotGenerator::InputSetAttentionFocus( inputdata_t &inputdata )
 {
 	CBaseEntity *focus = gEntList.FindEntityByName( NULL, inputdata.value.String() );
 
@@ -165,7 +163,7 @@ void CHL2MPBotGenerator::InputSetAttentionFocus( inputdata_t &inputdata )
 
 	for( int i = 0; i < m_spawnedBotVector.Count(); )
 	{
-		CHL2MPBot *bot = m_spawnedBotVector[i];
+		CNEOBot *bot = m_spawnedBotVector[i];
 
 		if ( !bot || bot->GetTeamNumber() == TEAM_SPECTATOR )
 		{
@@ -180,11 +178,11 @@ void CHL2MPBotGenerator::InputSetAttentionFocus( inputdata_t &inputdata )
 }
 
 //------------------------------------------------------------------------------
-void CHL2MPBotGenerator::InputClearAttentionFocus( inputdata_t &inputdata )
+void CNEOBotGenerator::InputClearAttentionFocus( inputdata_t &inputdata )
 {
 	for( int i = 0; i < m_spawnedBotVector.Count(); )
 	{
-		CHL2MPBot *bot = m_spawnedBotVector[i];
+		CNEOBot *bot = m_spawnedBotVector[i];
 
 		if ( !bot || bot->GetTeamNumber() == TEAM_SPECTATOR )
 		{
@@ -199,7 +197,7 @@ void CHL2MPBotGenerator::InputClearAttentionFocus( inputdata_t &inputdata )
 }
 
 //------------------------------------------------------------------------------
-void CHL2MPBotGenerator::InputSpawnBot( inputdata_t &inputdata )
+void CNEOBotGenerator::InputSpawnBot( inputdata_t &inputdata )
 {
 	if ( m_bEnabled )
 	{
@@ -208,11 +206,11 @@ void CHL2MPBotGenerator::InputSpawnBot( inputdata_t &inputdata )
 }
 
 //------------------------------------------------------------------------------
-void CHL2MPBotGenerator::InputRemoveBots( inputdata_t &inputdata )
+void CNEOBotGenerator::InputRemoveBots( inputdata_t &inputdata )
 {
 	for( int i = 0; i < m_spawnedBotVector.Count(); i++ )
 	{
-		CHL2MPBot *pBot = m_spawnedBotVector[i];
+		CNEOBot *pBot = m_spawnedBotVector[i];
 		if ( pBot )
 		{
 			pBot->Remove();
@@ -224,21 +222,21 @@ void CHL2MPBotGenerator::InputRemoveBots( inputdata_t &inputdata )
 }
 
 //------------------------------------------------------------------------------
-void CHL2MPBotGenerator::OnBotKilled( CHL2MPBot *pBot )
+void CNEOBotGenerator::OnBotKilled( CNEOBot *pBot )
 {
 	m_onBotKilled.FireOutput( pBot, this );
 }
 
 //------------------------------------------------------------------------------
 
-void CHL2MPBotGenerator::Activate()
+void CNEOBotGenerator::Activate()
 {
 	BaseClass::Activate();
 	m_moveGoal = gEntList.FindEntityByName( NULL, m_actionPointName.ToCStr() );
 }
 
 //------------------------------------------------------------------------------
-void CHL2MPBotGenerator::GeneratorThink( void )
+void CNEOBotGenerator::GeneratorThink( void )
 {
 	// create the bot finally...
 	if ( !m_bSpawnOnlyWhenTriggered )
@@ -248,12 +246,12 @@ void CHL2MPBotGenerator::GeneratorThink( void )
 }
 
 //------------------------------------------------------------------------------
-void CHL2MPBotGenerator::SpawnBot( void )
+void CNEOBotGenerator::SpawnBot( void )
 {
 	// did we exceed the max active count?
 	for ( int i = 0; i < m_spawnedBotVector.Count(); )
 	{
-		CHandle< CHL2MPBot > hBot = m_spawnedBotVector[i];
+		CHandle< CNEOBot > hBot = m_spawnedBotVector[i];
 		if ( hBot == NULL )
 		{
 			m_spawnedBotVector.FastRemove(i);
@@ -274,11 +272,11 @@ void CHL2MPBotGenerator::SpawnBot( void )
 	}
 
 	char name[256];
-	CHL2MPBot *bot = TheHL2MPBots().GetAvailableBotFromPool();
+	CNEOBot *bot = TheNEOBots().GetAvailableBotFromPool();
 	if ( bot == NULL )
 	{
-		CreateBotName( TEAM_UNASSIGNED, (CHL2MPBot::DifficultyType)m_difficulty, name, sizeof(name) );
-		bot = NextBotCreatePlayerBot< CHL2MPBot >( name );
+		CreateBotName( TEAM_UNASSIGNED, (CNEOBot::DifficultyType)m_difficulty, name, sizeof(name) );
+		bot = NextBotCreatePlayerBot< CNEOBot >( name );
 	}
 
 	if ( bot ) 
@@ -294,34 +292,34 @@ void CHL2MPBotGenerator::SpawnBot( void )
 
 		if ( m_bSuppressFire )
 		{
-			bot->SetAttribute( CHL2MPBot::SUPPRESS_FIRE );
+			bot->SetAttribute( CNEOBot::SUPPRESS_FIRE );
 		}
 
 		if ( m_bDisableDodge )
 		{
-			bot->SetAttribute( CHL2MPBot::DISABLE_DODGE );
+			bot->SetAttribute( CNEOBot::DISABLE_DODGE );
 		}
 
-		if ( m_difficulty != CHL2MPBot::UNDEFINED )
+		if ( m_difficulty != CNEOBot::UNDEFINED )
 		{
-			bot->SetDifficulty( (CHL2MPBot::DifficultyType )m_difficulty );
+			bot->SetDifficulty( (CNEOBot::DifficultyType )m_difficulty );
 		}
 
 		// propagate the generator's spawn flags into all bots generated
-		bot->ClearBehaviorFlag( HL2MPBOT_ALL_BEHAVIOR_FLAGS );
+		bot->ClearBehaviorFlag(NEOBOT_ALL_BEHAVIOR_FLAGS);
 		bot->SetBehaviorFlag( m_spawnflags );
 
 		switch ( m_iOnDeathAction )
 		{
 		case kOnDeath_RemoveSelf:
-			bot->SetAttribute( CHL2MPBot::REMOVE_ON_DEATH );
+			bot->SetAttribute( CNEOBot::REMOVE_ON_DEATH );
 			break;
 		case kOnDeath_MoveToSpectatorTeam:
-			bot->SetAttribute( CHL2MPBot::BECOME_SPECTATOR_ON_DEATH );
+			bot->SetAttribute( CNEOBot::BECOME_SPECTATOR_ON_DEATH );
 			break;
 		} // switch
 
-		bot->SetActionPoint( dynamic_cast<CHL2MPBotActionPoint *>( m_moveGoal.Get() ) );
+		bot->SetActionPoint( dynamic_cast<CNEOBotActionPoint *>( m_moveGoal.Get() ) );
 
 		// XXX(misyl): TODO!!!!!
 #if 0
@@ -391,7 +389,7 @@ void CHL2MPBotGenerator::SpawnBot( void )
 
 //------------------------------------------------------------------------------
 
-BEGIN_DATADESC( CHL2MPBotActionPoint )
+BEGIN_DATADESC( CNEOBotActionPoint )
 	DEFINE_KEYFIELD( m_stayTime,			FIELD_FLOAT,	"stay_time" ),
 	DEFINE_KEYFIELD( m_desiredDistance,		FIELD_FLOAT,	"desired_distance" ),
 	DEFINE_KEYFIELD( m_nextActionPointName,	FIELD_STRING,	"next_action_point" ),
@@ -399,11 +397,11 @@ BEGIN_DATADESC( CHL2MPBotActionPoint )
 	DEFINE_OUTPUT( m_onReachedActionPoint, "OnBotReached" ),
 END_DATADESC()
 
-LINK_ENTITY_TO_CLASS( bot_action_point, CHL2MPBotActionPoint );
+LINK_ENTITY_TO_CLASS( bot_action_point, CNEOBotActionPoint );
 
 //------------------------------------------------------------------------------
 
-CHL2MPBotActionPoint::CHL2MPBotActionPoint()
+CNEOBotActionPoint::CNEOBotActionPoint()
 : m_stayTime( 0.0f )
 , m_desiredDistance( 1.0f )
 
@@ -413,7 +411,7 @@ CHL2MPBotActionPoint::CHL2MPBotActionPoint()
 
 //------------------------------------------------------------------------------
 
-void CHL2MPBotActionPoint::Activate()
+void CNEOBotActionPoint::Activate()
 {
 	BaseClass::Activate();
 	m_moveGoal = gEntList.FindEntityByName( NULL, m_nextActionPointName.ToCStr() );
@@ -421,14 +419,14 @@ void CHL2MPBotActionPoint::Activate()
 
 //------------------------------------------------------------------------------
 
-bool CHL2MPBotActionPoint::IsWithinRange( CBaseEntity *entity )
+bool CNEOBotActionPoint::IsWithinRange( CBaseEntity *entity )
 {
 	return ( entity->GetAbsOrigin() - GetAbsOrigin() ).IsLengthLessThan( m_desiredDistance );
 }
 
 //------------------------------------------------------------------------------
 
-void CHL2MPBotActionPoint::ReachedActionPoint( CHL2MPBot* pBot )
+void CNEOBotActionPoint::ReachedActionPoint( CNEOBot* pBot )
 {
 	if ( FStrEq( m_command.ToCStr(), "" ) == false )
 	{
