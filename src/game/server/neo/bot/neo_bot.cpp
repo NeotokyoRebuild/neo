@@ -103,7 +103,7 @@ const char* DifficultyLevelToString(CNEOBot::DifficultyType skill)
 //-----------------------------------------------------------------------------------------------------
 const char* GetRandomBotName(void)
 {
-	constexpr int NUM_NAMES = 9;
+	constexpr int NUM_NAMES = 10;
 	static const char* nameList[NUM_NAMES] =
 	{
 		"Deej",
@@ -113,12 +113,11 @@ const char* GetRandomBotName(void)
 		"Grey",
 		"Glasseater",
 		"Ivy",
-		"KillahMo"
+		"KillahMo",
 		"pushBAK",
 		"Tatsur0",
 	};
 
-	// NEO TODO NOW (Adam) is this inclusive? 
 	return nameList[RandomInt(0, NUM_NAMES-1)];
 }
 
@@ -227,11 +226,14 @@ CON_COMMAND_F(neo_bot_add, "Add a bot.", FCVAR_GAMEDLL)
 			{
 				pBot->RequestSetClass(NEO_CLASS_SUPPORT);
 			}
+			else
+			{
+				pBot->RequestSetClass(NEO_CLASS_ASSAULT);
+			}
 
 			engine->SetFakeClientConVarValue(pBot->edict(), "name", name);
 			pBot->RequestSetSkin(RandomInt(0, 2));
 			pBot->HandleCommand_JoinTeam(iTeam);
-			pBot->ChangeTeam(iTeam);
 			pBot->SetDifficulty(skill);
 
 			++iNumAdded;
@@ -1453,16 +1455,32 @@ void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat)
 	// Don't stay in melee if they are far away, or we don't know where they are right now.
 	bool bInMeleeRange = !IsRangeGreaterThan(threat->GetLastKnownPosition(), 127.0f) && bCanSeeTarget;
 
+	if (throwable)
+	{
+		pChosen = throwable;
+	}
+	if (knife)
+	{
+		pChosen = knife;
+	}
+	if (secondaryWeapon)
+	{
+		pChosen = secondaryWeapon;
+	}
 	if (primaryWeapon)
 	{
 		pChosen = primaryWeapon;
 	}
 
-	if (IsRangeGreaterThan(threat->GetLastKnownPosition(), 384.0f) && primaryWeapon->GetNeoWepBits() & (NEO_WEP_AA13 | NEO_WEP_SUPA7))
+	if (primaryWeapon && IsRangeGreaterThan(threat->GetLastKnownPosition(), 384.0f) &&  primaryWeapon->GetNeoWepBits() & (NEO_WEP_AA13 | NEO_WEP_SUPA7))
 	{
 		if (secondaryWeapon)
 		{
 			pChosen = secondaryWeapon;
+		}
+		else if (knife)
+		{
+			pChosen = knife;
 		}
 		else if (throwable)
 		{
@@ -1551,8 +1569,7 @@ bool CNEOBot::IsContinuousFireWeapon(CNEOBaseCombatWeapon* weapon) const
 		return false;
 	}
 
-	return false;
-
+	return true;
 }
 
 
@@ -2219,7 +2236,10 @@ CNEOBaseCombatWeapon* CNEOBot::GetBludgeonWeapon(void)
 
 /*static*/ bool CNEOBot::IsRanged(CNEOBaseCombatWeapon* pWeapon)
 {
-	return PrefersLongRange(pWeapon);
+	if (!pWeapon)
+		return false;
+
+	return (!(pWeapon->GetNeoWepBits() & NEO_WEP_KNIFE));
 }
 
 bool CNEOBot::PrefersLongRange(CNEOBaseCombatWeapon* pWeapon)

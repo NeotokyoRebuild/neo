@@ -74,7 +74,7 @@ ActionResult< CNEOBot >	CNEOBotMainAction::Update( CNEOBot *me, float interval )
 	VPROF_BUDGET( "CNEOBotMainAction::Update", "NextBot" );
 
 	// TEAM_UNASSIGNED -> deathmatch
-	if ( me->GetTeamNumber() != TEAM_COMBINE && me->GetTeamNumber() != TEAM_REBELS && me->GetTeamNumber() != TEAM_UNASSIGNED )
+	if ( me->GetTeamNumber() != TEAM_JINRAI && me->GetTeamNumber() != TEAM_NSF && me->GetTeamNumber() != TEAM_UNASSIGNED )
 	{
 		// not on a team - do nothing
 		return Done( "Not on a playing team" );
@@ -512,6 +512,11 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 	{
 		if ( me->IsCombatWeapon( MY_CURRENT_GUN ) )
 		{
+			if (myWeapon->m_iClip1 == 0)
+			{
+				return;
+			}
+
 			if ( me->IsContinuousFireWeapon( MY_CURRENT_GUN ) )
 			{
 				// spray for a bit

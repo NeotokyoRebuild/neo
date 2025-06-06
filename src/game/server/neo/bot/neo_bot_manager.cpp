@@ -13,8 +13,8 @@
 static CNEOBotManager sNEOBotManager;
 
 ConVar neo_bot_difficulty( "neo_bot_difficulty", "2", FCVAR_NONE, "Defines the skill of bots joining the game.  Values are: 0=easy, 1=normal, 2=hard, 3=expert." );
-ConVar neo_bot_quota( "neo_bot_quota", "0", FCVAR_NONE, "Determines the total number of tf bots in the game." );
-ConVar neo_bot_quota_mode( "neo_bot_quota_mode", "normal", FCVAR_NONE, "Determines the type of quota.\nAllowed values: 'normal', 'fill', and 'match'.\nIf 'fill', the server will adjust bots to keep N players in the game, where N is bot_quota.\nIf 'match', the server will maintain a 1:N ratio of humans to bots, where N is bot_quota." );
+ConVar neo_bot_quota( "neo_bot_quota", "10", FCVAR_NONE, "Determines the total number of bots in the game." );
+ConVar neo_bot_quota_mode( "neo_bot_quota_mode", "fill", FCVAR_NONE, "Determines the type of quota.\nAllowed values: 'normal', 'fill', and 'match'.\nIf 'fill', the server will adjust bots to keep N players in the game, where N is bot_quota.\nIf 'match', the server will maintain a 1:N ratio of humans to bots, where N is bot_quota." );
 ConVar neo_bot_join_after_player( "neo_bot_join_after_player", "1", FCVAR_NONE, "If nonzero, bots wait until a player joins before entering the game." );
 ConVar neo_bot_auto_vacate( "neo_bot_auto_vacate", "1", FCVAR_NONE, "If nonzero, bots will automatically leave to make room for human players." );
 ConVar neo_bot_offline_practice( "neo_bot_offline_practice", "0", FCVAR_NONE, "Tells the server that it is in offline practice mode." );
@@ -99,6 +99,8 @@ CNEOBotManager::~CNEOBotManager()
 void CNEOBotManager::OnMapLoaded( void )
 {
 	NextBotManager::OnMapLoaded();
+
+	m_flNextPeriodicThink = 0.f;
 
 	ClearStuckBotData();
 }
@@ -187,6 +189,8 @@ bool CNEOBotManager::RemoveBotFromTeamAndKick( int nTeam )
 }
 
 //----------------------------------------------------------------------------------------------------------------
+extern ConVar neo_bot_recon_ratio;
+extern ConVar neo_bot_support_ratio;
 void CNEOBotManager::MaintainBotQuota()
 {
 	if ( TheNavMesh->IsGenerating() )
@@ -237,14 +241,14 @@ void CNEOBotManager::MaintainBotQuota()
 		if ( pBot && pBot->HasAttribute( CNEOBot::QUOTA_MANANGED ) )
 		{
 			nNEOBots++;
-			if ( pPlayer->GetTeamNumber() == TEAM_REBELS || pPlayer->GetTeamNumber() == TEAM_COMBINE )
+			if ( pPlayer->GetTeamNumber() == TEAM_JINRAI || pPlayer->GetTeamNumber() == TEAM_NSF )
 			{
 				nNEOBotsOnGameTeams++;
 			}
 		}
 		else
 		{
-			if ( pPlayer->GetTeamNumber() == TEAM_REBELS || pPlayer->GetTeamNumber() == TEAM_COMBINE )
+			if ( pPlayer->GetTeamNumber() == TEAM_JINRAI || pPlayer->GetTeamNumber() == TEAM_NSF)
 			{
 				nNonNEOBotsOnGameTeams++;
 			}
@@ -303,36 +307,37 @@ void CNEOBotManager::MaintainBotQuota()
 
 			int iTeam = TEAM_UNASSIGNED;
 
-			if ( HL2MPRules()->IsTeamplay() && iTeam == TEAM_UNASSIGNED )
+			if ( NEORules()->IsTeamplay() && iTeam == TEAM_UNASSIGNED )
 			{
-				CTeam* pRebels = GetGlobalTeam( TEAM_REBELS );
-				CTeam* pCombine = GetGlobalTeam( TEAM_COMBINE );
+				CTeam* pJinrai = GetGlobalTeam(TEAM_JINRAI);
+				CTeam* pNSF = GetGlobalTeam(TEAM_NSF);
+				const int numJinrai = pJinrai->GetNumPlayers();
+				const int numNSF = pNSF->GetNumPlayers();
 
-				iTeam = pRebels->GetNumPlayers() < pCombine->GetNumPlayers() ? TEAM_REBELS : TEAM_COMBINE;
+				iTeam = numJinrai < numNSF ? TEAM_JINRAI : numNSF < numJinrai ? TEAM_NSF : RandomInt(TEAM_JINRAI, TEAM_NSF);
 			}
 
-			const char* pszModel = "";
-			if ( iTeam == TEAM_UNASSIGNED )
+			float flDice = RandomFloat();
+			if (flDice <= neo_bot_recon_ratio.GetFloat())
 			{
-				pszModel = g_ppszRandomModels[RandomInt( 0, ARRAYSIZE( g_ppszRandomModels ) )];
+				pBot->RequestSetClass(NEO_CLASS_RECON);
 			}
-			else if ( iTeam == TEAM_COMBINE )
+			else if (flDice >= (1.0f - neo_bot_support_ratio.GetFloat()))
 			{
-				pszModel = g_ppszRandomCombineModels[RandomInt( 0, ARRAYSIZE( g_ppszRandomCombineModels ) )];
+				pBot->RequestSetClass(NEO_CLASS_SUPPORT);
 			}
 			else
 			{
-				pszModel = g_ppszRandomCitizenModels[RandomInt( 0, ARRAYSIZE( g_ppszRandomCitizenModels ) )];
+				pBot->RequestSetClass(NEO_CLASS_ASSAULT);
 			}
 
 			// give the bot a proper name
 			char name[256];
 			CNEOBot::DifficultyType skill = pBot->GetDifficulty();
 			CreateBotName( skill, name, sizeof( name ) );
-			engine->SetFakeClientConVarValue( pBot->edict(), "cl_playermodel", pszModel );
 			engine->SetFakeClientConVarValue( pBot->edict(), "name", name );
+			pBot->RequestSetSkin(RandomInt(0, 2));
 			pBot->HandleCommand_JoinTeam( iTeam );
-			pBot->ChangeTeam( iTeam );
 		}
 	}
 	else if ( desiredBotCount < nNEOBotsOnGameTeams )
@@ -345,31 +350,31 @@ void CNEOBotManager::MaintainBotQuota()
 
 		int kickTeam;
 
-		CTeam *pRebels = GetGlobalTeam( TEAM_REBELS );
-		CTeam *pCombine = GetGlobalTeam( TEAM_COMBINE );
+		CTeam *pJinrai = GetGlobalTeam(TEAM_JINRAI);
+		CTeam *pNSF = GetGlobalTeam(TEAM_NSF);
 
 		// remove from the team that has more players
-		if ( pCombine->GetNumPlayers() > pRebels->GetNumPlayers() )
+		if (pJinrai->GetNumPlayers() > pNSF->GetNumPlayers() )
 		{
-			kickTeam = TEAM_COMBINE;
+			kickTeam = TEAM_JINRAI;
 		}
-		else if ( pCombine->GetNumPlayers() < pRebels->GetNumPlayers() )
+		else if (pJinrai->GetNumPlayers() < pNSF->GetNumPlayers() )
 		{
-			kickTeam = TEAM_REBELS;
+			kickTeam = TEAM_NSF;
 		}
 		// remove from the team that's winning
-		else if ( pCombine->GetScore() > pRebels->GetScore() )
+		else if (pJinrai->GetScore() > pNSF->GetScore() )
 		{
-			kickTeam = TEAM_COMBINE;
+			kickTeam = TEAM_JINRAI;
 		}
-		else if ( pCombine->GetScore() < pRebels->GetScore() )
+		else if (pJinrai->GetScore() < pNSF->GetScore() )
 		{
-			kickTeam = TEAM_REBELS;
+			kickTeam = TEAM_NSF;
 		}
 		else
 		{
 			// teams and scores are equal, pick a team at random
-			kickTeam = (RandomInt( 0, 1 ) == 0) ? TEAM_COMBINE : TEAM_REBELS;
+			kickTeam = (RandomInt( 0, 1 ) == 0) ? TEAM_JINRAI : TEAM_NSF;
 		}
 
 		// attempt to kick a bot from the given team
@@ -377,7 +382,7 @@ void CNEOBotManager::MaintainBotQuota()
 			return;
 
 		// if there were no bots on the team, kick a bot from the other team
-		UTIL_KickBotFromTeam( kickTeam == TEAM_COMBINE ? TEAM_REBELS : TEAM_COMBINE );
+		UTIL_KickBotFromTeam( kickTeam == TEAM_JINRAI ? TEAM_JINRAI : TEAM_NSF);
 	}
 }
 
