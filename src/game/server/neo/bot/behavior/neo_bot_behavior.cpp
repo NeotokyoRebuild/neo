@@ -550,7 +550,14 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 					}
 				}
 
-				me->PressFireButton();
+				if (me->m_nButtons & IN_ATTACK)
+				{
+					me->ReleaseFireButton();
+				}
+				else
+				{
+					me->PressFireButton();
+				}
 			}
 		}
 	

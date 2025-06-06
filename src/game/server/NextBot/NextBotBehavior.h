@@ -190,12 +190,12 @@ public:
 		// destructors intentionally don't delete actions
 		// "buried" underneath them.
 		Action< Actor > *bottomAction;
-		for( bottomAction = m_action; bottomAction && bottomAction->m_buriedUnderMe; bottomAction = bottomAction->m_buriedUnderMe )
-			;
-
-		if ( bottomAction )
+		for (bottomAction = m_action; bottomAction && bottomAction->m_buriedUnderMe; bottomAction = bottomAction->m_buriedUnderMe)
 		{
-			delete bottomAction;
+			if ( bottomAction )
+			{
+				delete bottomAction;
+			}
 		}
 
 		// delete any dead Actions
@@ -218,12 +218,12 @@ public:
 
 		// find "bottom" action (see comment in destructor)
 		Action< Actor > *bottomAction;
-		for( bottomAction = m_action; bottomAction && bottomAction->m_buriedUnderMe; bottomAction = bottomAction->m_buriedUnderMe )
-			;
-
-		if ( bottomAction )
+		for (bottomAction = m_action; bottomAction && bottomAction->m_buriedUnderMe; bottomAction = bottomAction->m_buriedUnderMe)
 		{
-			delete bottomAction;
+			if ( bottomAction )
+			{
+				delete bottomAction;
+			}
 		}
 
 		// delete any dead Actions

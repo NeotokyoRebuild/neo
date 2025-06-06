@@ -1472,7 +1472,7 @@ void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat)
 		pChosen = primaryWeapon;
 	}
 
-	if (primaryWeapon && IsRangeGreaterThan(threat->GetLastKnownPosition(), 384.0f) &&  primaryWeapon->GetNeoWepBits() & (NEO_WEP_AA13 | NEO_WEP_SUPA7))
+	if (primaryWeapon && IsRangeGreaterThan(threat->GetLastKnownPosition(), 1000.0f) &&  primaryWeapon->GetNeoWepBits() & (NEO_WEP_AA13 | NEO_WEP_SUPA7))
 	{
 		if (secondaryWeapon)
 		{

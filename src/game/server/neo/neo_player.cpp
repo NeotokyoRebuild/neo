@@ -598,6 +598,11 @@ void CNEO_Player::Spawn(void)
 	SetPlayerTeamModel();
 	if (teamNumber == TEAM_JINRAI || teamNumber == TEAM_NSF)
 	{
+		if (IsFakeClient())
+		{
+			const int maxLoadoutChoice = CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(m_iXP, m_iNeoClass.Get(), false) - 1;
+			m_iLoadoutWepChoice = RandomInt(MAX(0, maxLoadoutChoice - 3), maxLoadoutChoice);
+		}
 		GiveLoadoutWeapon();
 		SetViewOffset(VEC_VIEW_NEOSCALE(this));
 	}
