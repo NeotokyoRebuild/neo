@@ -890,20 +890,42 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 		{
 			NeoUI::SetPerRowLayout(4);
 			{
-				char szClipboardCrosshair[NEO_XHAIR_SEQMAX];
-				if (NeoUI::Button(L"Export to clipboard").bPressed)
+				const bool bExportPressed = NeoUI::Button(L"Export to clipboard").bPressed;
+				const bool bImportPressed = NeoUI::Button(L"Import from clipboard").bPressed;
+				if (bExportPressed || bImportPressed)
 				{
-					ExportCrosshair(&pCrosshair->info, szClipboardCrosshair);
-					vgui::system()->SetClipboardText(szClipboardCrosshair, V_strlen(szClipboardCrosshair));
-					pCrosshair->eClipboardInfo = XHAIREXPORTNOTIFY_EXPORT_TO_CLIPBOARD;
-				}
-				if (NeoUI::Button(L"Import from clipboard").bPressed)
-				{
-					vgui::system()->GetClipboardText(0, szClipboardCrosshair, NEO_XHAIR_SEQMAX);
-					const bool bImported = ImportCrosshair(&pCrosshair->info, szClipboardCrosshair);
-					pCrosshair->eClipboardInfo = bImported
-							? XHAIREXPORTNOTIFY_IMPORT_TO_CLIPBOARD
-							: XHAIREXPORTNOTIFY_IMPORT_TO_CLIPBOARD_ERROR;
+					char szClipboardCrosshair[NEO_XHAIR_SEQMAX] = {}; // zero-init
+					if (bExportPressed)
+					{
+						// NEO NOTE (nullsystem): On Windows, SetClipboardText sets from char * looks fine
+						ExportCrosshair(&pCrosshair->info, szClipboardCrosshair);
+						vgui::system()->SetClipboardText(szClipboardCrosshair, V_strlen(szClipboardCrosshair));
+						pCrosshair->eClipboardInfo = XHAIREXPORTNOTIFY_EXPORT_TO_CLIPBOARD;
+					}
+					else // bImportPressed
+					{
+						bool bImported = false;
+						if (vgui::system()->GetClipboardTextCount() > 0)
+						{
+#ifdef WIN32
+							// NEO NOTE (nullsystem): On Windows, GetClipboardText char * returns UTF-16 arranged bytes, differs from Set...
+							wchar_t wszClipboardCrosshair[NEO_XHAIR_SEQMAX] = {};
+							const int iClipboardWSZBytes = vgui::system()->GetClipboardText(0, wszClipboardCrosshair, NEO_XHAIR_SEQMAX);
+							const int iClipboardBytes = (iClipboardWSZBytes > 0)
+									? g_pVGuiLocalize->ConvertUnicodeToANSI(wszClipboardCrosshair, szClipboardCrosshair, sizeof(szClipboardCrosshair))
+									: 0;
+#else
+							const int iClipboardBytes = vgui::system()->GetClipboardText(0, szClipboardCrosshair, NEO_XHAIR_SEQMAX);
+#endif
+							if (iClipboardBytes > 0)
+							{
+								bImported = ImportCrosshair(&pCrosshair->info, szClipboardCrosshair);
+							}
+						}
+						pCrosshair->eClipboardInfo = bImported
+								? XHAIREXPORTNOTIFY_IMPORT_TO_CLIPBOARD
+								: XHAIREXPORTNOTIFY_IMPORT_TO_CLIPBOARD_ERROR;
+					}
 				}
 			}
 

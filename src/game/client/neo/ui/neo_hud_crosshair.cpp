@@ -144,7 +144,7 @@ bool ImportCrosshair(CrosshairInfo *crh, const char *pszSequence)
 	NeoXHairVariant vars[NEOXHAIR_SEGMENT__TOTAL] = {};
 
 	const int iPszSequenceSize = V_strlen(pszSequence);
-	if (iPszSequenceSize > NEO_XHAIR_SEQMAX)
+	if (iPszSequenceSize <= 0 || iPszSequenceSize > NEO_XHAIR_SEQMAX)
 	{
 		return false;
 	}
