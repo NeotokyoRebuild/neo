@@ -492,7 +492,11 @@ void CMDLPicker::OnCommand( const char *pCommand )
 //-----------------------------------------------------------------------------
 void CMDLPicker::OnDirectorySelected( char const *dir )
 {
+#ifdef NEO
+	if ( m_hDirectorySelectDialog.Get() )
+#else
 	if ( m_hDirectorySelectDialog != 0 )
+#endif
 	{
 		m_hDirectorySelectDialog->MarkForDeletion();
 	}
@@ -931,12 +935,22 @@ void CMDLPicker::GenerateBackpackIcons( void )
 	// run vtex on the TGA and .txt file to create .VTF and add it to our Perforce changelist
 	char *vTexArgv[64];
 	int vTexArgc = 0;
+#ifdef NEO
+	// NEO NOTE (nullsystem): MSVC C++20 const-ipation
+	vTexArgv[vTexArgc++] = (char *)"";
+	vTexArgv[vTexArgc++] = (char*)"-quiet";
+	vTexArgv[vTexArgc++] = (char*)"-UseStandardError";
+	vTexArgv[vTexArgc++] = (char*)"-WarningsAsErrors";
+	vTexArgv[vTexArgc++] = (char*)"-p4skip";
+	vTexArgv[vTexArgc++] = (char*)"-outdir";
+#else
 	vTexArgv[ vTexArgc++ ] = "";
 	vTexArgv[ vTexArgc++ ] = "-quiet";
 	vTexArgv[ vTexArgc++ ] = "-UseStandardError";
 	vTexArgv[ vTexArgc++ ] = "-WarningsAsErrors";
 	vTexArgv[ vTexArgc++ ] = "-p4skip";
 	vTexArgv[ vTexArgc++ ] = "-outdir";
+#endif
 	vTexArgv[ vTexArgc++ ] = pOutputPathGame;
 	vTexArgv[ vTexArgc++ ] = (char *)pLargeTGAName;
 
@@ -1028,12 +1042,22 @@ void CMDLPicker::GenerateBackpackIcons( void )
 
 	// run vtex on the TGA and .txt file to create .VTF and add it to our Perforce changelist
 	vTexArgc = 0;
+#ifdef NEO
+	// NEO NOTE (nullsystem): MSVC C++20 const-ipation
+	vTexArgv[vTexArgc++] = (char *)"";
+	vTexArgv[vTexArgc++] = (char*)"-quiet";
+	vTexArgv[vTexArgc++] = (char*)"-UseStandardError";
+	vTexArgv[vTexArgc++] = (char*)"-WarningsAsErrors";
+	vTexArgv[vTexArgc++] = (char*)"-p4skip";
+	vTexArgv[vTexArgc++] = (char*)"-outdir";
+#else
 	vTexArgv[ vTexArgc++ ] = "";
 	vTexArgv[ vTexArgc++ ] = "-quiet";
 	vTexArgv[ vTexArgc++ ] = "-UseStandardError";
 	vTexArgv[ vTexArgc++ ] = "-WarningsAsErrors";
 	vTexArgv[ vTexArgc++ ] = "-p4skip";
 	vTexArgv[ vTexArgc++ ] = "-outdir";
+#endif
 	vTexArgv[ vTexArgc++ ] = pOutputPathGame;
 	vTexArgv[ vTexArgc++ ] = (char *)pSmallTGAName;
 	g_pVTex->VTex( MdlPickerFSFactory, pOutputPathGame, vTexArgc, vTexArgv );
