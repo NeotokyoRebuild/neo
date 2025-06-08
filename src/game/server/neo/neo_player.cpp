@@ -122,6 +122,9 @@ DEFINE_INPUTFUNC(FIELD_STRING, "SetPlayerModel", InputSetPlayerModel),
 
 END_DATADESC()
 
+BEGIN_ENT_SCRIPTDESC(CNEO_Player, CHL2MP_Player, "NEO Player")
+END_SCRIPTDESC();
+
 static constexpr int SHOWMENU_STRLIMIT = 512;
 
 CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;

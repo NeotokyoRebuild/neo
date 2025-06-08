@@ -49,7 +49,7 @@ class CNEOBot : public NextBotPlayer< CNEO_Player >, public CGameEventListener
 public:
 	DECLARE_CLASS(CNEOBot, NextBotPlayer< CNEO_Player >);
 
-	//DECLARE_ENT_SCRIPTDESC();
+	DECLARE_ENT_SCRIPTDESC();
 
 	CNEOBot();
 	virtual ~CNEOBot();
