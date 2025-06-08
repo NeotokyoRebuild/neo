@@ -194,11 +194,14 @@ public:
 		Action< Actor > *nextAction;
 		for ( bottomAction = m_action; bottomAction && bottomAction->m_buriedUnderMe; bottomAction = nextAction )
 #else
-		for ( bottomAction = m_action; bottomAction && bottomAction->m_buriedUnderMe; bottomAction = bottomAction->m_buriedUnderMe )
+		for( bottomAction = m_action; bottomAction && bottomAction->m_buriedUnderMe; bottomAction = bottomAction->m_buriedUnderMe )
 #endif // NEO
 			;
 		{
-#ifdef NEO
+#ifndef NEO
+
+			if ( bottomAction )
+#else
 			nextAction = bottomAction->m_buriedUnderMe;
 #endif // NEO
 			delete bottomAction;
@@ -228,11 +231,14 @@ public:
 		Action< Actor > *nextAction;
 		for ( bottomAction = m_action; bottomAction && bottomAction->m_buriedUnderMe; bottomAction = nextAction )
 #else
-		for ( bottomAction = m_action; bottomAction && bottomAction->m_buriedUnderMe; bottomAction = bottomAction->m_buriedUnderMe )
+		for( bottomAction = m_action; bottomAction && bottomAction->m_buriedUnderMe; bottomAction = bottomAction->m_buriedUnderMe )
 #endif // NEO
 			;
 		{
-#ifdef NEO
+#ifndef NEO
+
+			if ( bottomAction )
+#else
 			nextAction = bottomAction->m_buriedUnderMe;
 #endif // NEO
 			delete bottomAction;
