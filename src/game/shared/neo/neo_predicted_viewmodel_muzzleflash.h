@@ -20,6 +20,7 @@ public:
 	DECLARE_PREDICTABLE();
 	CNEOPredictedViewModelMuzzleFlash();
 	virtual ~CNEOPredictedViewModelMuzzleFlash();
+	virtual void CalcViewModelView(CBasePlayer* pOwner,	const Vector& eyePosition, const QAngle& eyeAngles);
 	void UpdateMuzzleFlashProperties(CBaseCombatWeapon* pWeapon, bool repeat = true);
 	virtual void Spawn(void) override;
 	virtual void Precache(void) override;
@@ -44,7 +45,6 @@ public:
 	bool	m_bScaleChangeFlag;
 #else
 	CNetworkVar(bool, m_bActive);
-	CNetworkVar(int, m_iAngleZ);
 	CNetworkVar(int, m_iAngleZIncrement);
 	CNetworkVar(bool, m_bScaleChangeFlag);
 #endif // CLIENT_DLL
