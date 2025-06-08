@@ -302,10 +302,14 @@ void CNEOBotManager::MaintainBotQuota()
 	// add bots if necessary
 	if ( desiredBotCount > nNEOBotsOnGameTeams )
 	{
+		CNEOBot::DifficultyType skill = clamp((CNEOBot::DifficultyType)neo_bot_difficulty.GetInt(), CNEOBot::EASY, CNEOBot::EXPERT);
+		char name[256];
+		CreateBotName(skill, name, sizeof(name));
+
 		CNEOBot *pBot = GetAvailableBotFromPool();
 		if ( pBot == NULL )
 		{
-			pBot = NextBotCreatePlayerBot< CNEOBot >( GetRandomBotName() );
+			pBot = NextBotCreatePlayerBot< CNEOBot >(name);
 		}
 		if ( pBot )
 		{
@@ -337,10 +341,6 @@ void CNEOBotManager::MaintainBotQuota()
 				pBot->RequestSetClass(NEO_CLASS_ASSAULT);
 			}
 
-			// give the bot a proper name
-			char name[256];
-			CNEOBot::DifficultyType skill = pBot->GetDifficulty();
-			CreateBotName( skill, name, sizeof( name ) );
 			engine->SetFakeClientConVarValue( pBot->edict(), "name", name );
 			pBot->RequestSetSkin(RandomInt(0, 2));
 			pBot->HandleCommand_JoinTeam( iTeam );

@@ -1526,8 +1526,6 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_playeranimstate.h
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_weapon_parse.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_weapon_parse.h
-    ${CMAKE_SOURCE_DIR}/game/server/hl2mp/hl2mp_bot_temp.cpp
-    ${CMAKE_SOURCE_DIR}/game/server/hl2mp/hl2mp_bot_temp.h
     hl2mp/hl2mp_client.cpp
     hl2mp/hl2mp_cvars.cpp
     hl2mp/hl2mp_gameinterface.cpp

@@ -126,9 +126,29 @@ const char* GetRandomBotName(void)
 void CreateBotName(CNEOBot::DifficultyType skill, char* pBuffer, int iBufferSize)
 {
 	const char* pDifficultyString = neo_bot_prefix_name_with_difficulty.GetBool() ? DifficultyLevelToString(skill) : "";
-
+	
 	// NEO TODO (Adam) Translate difficulty level
 	CFmtStr name("%sBOT %s", pDifficultyString, GetRandomBotName());
+
+	int i = 0;
+	for (int j = 1; j < gpGlobals->maxClients; j++)
+	{
+		auto player = UTIL_PlayerByIndex(j);
+		if (!player)
+		{
+			break;
+		}
+		if (Q_stristr(player->GetPlayerName(), name))
+		{
+			i++;
+		}
+	}
+
+	if (i)
+	{
+		name.AppendFormat("(%i)", i);
+	}
+
 	Q_strncpy(pBuffer, name.Access(), iBufferSize);
 }
 
