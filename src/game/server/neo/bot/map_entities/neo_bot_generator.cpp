@@ -3,7 +3,6 @@
 #include "bot/neo_bot.h"
 #include "neo_bot_generator.h"
 
-#include "bot/neo_bot.h"
 #include "bot/neo_bot_manager.h"
 #include "neo_gamerules.h"
 #include "tier3/tier3.h"

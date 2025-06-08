@@ -12,8 +12,9 @@
 
 #include "bot/behavior/neo_bot_seek_and_destroy.h"
 #include "bot/behavior/neo_bot_retreat_to_cover.h"
-#include "bot/behavior/neo_bot_get_health.h"
+#if 0 // NEO TODO (Adam) Fix picking up weapons, search for dropped weapons to pick up ammo
 #include "bot/behavior/neo_bot_get_ammo.h"
+#endif 0
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_destroy_entity.h"
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_move_to.h"
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_wait.h"
@@ -209,6 +210,7 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 		}
 	}
 
+#if 0 // NEO TODO (Adam) search for dropped weapons to resupply ammunition
 	bool isAvailable = ( me->GetIntentionInterface()->ShouldHurry( me ) != ANSWER_YES );
 
 	// collect ammo and health kits, unless we're in a big hurry
@@ -224,11 +226,12 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 			}
 		}
 	}
+#endif
 
-#ifndef NEO // NEO TODO (Adam) detonate remote detpacks
+#if 0 // NEO TODO (Adam) detonate remote detpacks
 	// detonate sticky bomb traps when victims are near
 	MonitorArmedStickyBombs( me );
-#endif // NEO
+#endif
 
 	me->UpdateDelayedThreatNotices();
 

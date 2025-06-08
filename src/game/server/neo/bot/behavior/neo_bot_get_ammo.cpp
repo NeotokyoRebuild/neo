@@ -55,7 +55,6 @@ public:
 		if ( !pszWeaponClass || !*pszWeaponClass )
 			return false;
 
-		//CBaseCombatWeapon* pWeapon = m_me->Weapon_OwnsThisType( pszWeaponClass );
 		CNEOBaseCombatWeapon* pWeapon = static_cast<CNEOBaseCombatWeapon*>(m_me->GetActiveWeapon());
 		if ( !pWeapon )
 			return false;
@@ -86,7 +85,6 @@ static int s_possibleFrame = 0;
  */
 bool CNEOBotGetAmmo::IsPossible( CNEOBot *me )
 {
-	return false; // NEO TODO (Adam) re-enable once ammo pick ups from weapons work, also fix so its not just looking for _health ??? 
 	VPROF_BUDGET( "CNEOBotGetAmmo::IsPossible", "NextBot" );
 
 	float searchRange = neo_bot_ammo_search_range.GetFloat();

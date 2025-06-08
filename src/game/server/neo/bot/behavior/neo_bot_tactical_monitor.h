@@ -26,10 +26,10 @@ private:
 	CountdownTimer m_acknowledgeRetryTimer;
 	CountdownTimer m_attentionTimer;
 
-#ifndef NEO
+#if 0
 	CountdownTimer m_stickyBombCheckTimer;
 	void MonitorArmedStickyBombs(CNEOBot* me);
-#endif // NEO
+#endif
 
 	void AvoidBumpingEnemies(CNEOBot* me);
 };

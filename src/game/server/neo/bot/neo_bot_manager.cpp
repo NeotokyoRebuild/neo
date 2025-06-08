@@ -200,8 +200,14 @@ void CNEOBotManager::MaintainBotQuota()
 		return;
 
 	// new players can't spawn immediately after the round has been going for some time
-	if ( !GameRules() )
+	if ( !NEORules() )
 		return;
+
+	NeoGameType gameType = (NeoGameType)NEORules()->GetGameType();
+	if (gameType == NEO_GAME_TYPE_EMT || gameType == NEO_GAME_TYPE_TUT)
+	{
+		return;
+	}
 
 	// if it is not time to do anything...
 	if ( gpGlobals->curtime < m_flNextPeriodicThink )

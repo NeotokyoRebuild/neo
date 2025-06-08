@@ -31,36 +31,38 @@ ActionResult< CNEOBot >	CNEOBotNavEntDestroyEntity::OnStart( CNEOBot *me, Action
 }
 
 // NEO TODO (Adam) Do this for remote det instead someday
-////---------------------------------------------------------------------------------------------
-//void CNEOBotNavEntDestroyEntity::DetonateStickiesWhenSet( CNEOBot *me, CWeapon_SLAM *slam ) const
-//{
-//	// TODO(misyl): Hook this up for SLAM someday.
-//#if 0
-//	if ( !stickyLauncher )
-//		return;
-//
-//	if ( stickyLauncher->GetPipeBombCount() >= 8 || me->GetAmmoCount( TF_AMMO_SECONDARY ) <= 0 )
-//	{
-//		// stickies laid - detonate them once they are on the ground
-//		const CUtlVector< CHandle< CTFGrenadePipebombProjectile > > &pipeVector = stickyLauncher->GetPipeBombVector();
-//
-//		int i;
-//		for( i=0; i<pipeVector.Count(); ++i )
-//		{
-//			if ( pipeVector[i].Get() && !pipeVector[i]->m_bTouched )
-//			{
-//				break;
-//			}
-//		}
-//
-//		if ( i == pipeVector.Count() )
-//		{
-//			// stickies are on the ground
-//			me->PressFireButton();
-//		}
-//	}
-//#endif
-//}
+#if 0
+//---------------------------------------------------------------------------------------------
+void CNEOBotNavEntDestroyEntity::DetonateStickiesWhenSet( CNEOBot *me, CWeapon_SLAM *slam ) const
+{
+	// TODO(misyl): Hook this up for SLAM someday.
+#if 0
+	if ( !stickyLauncher )
+		return;
+
+	if ( stickyLauncher->GetPipeBombCount() >= 8 || me->GetAmmoCount( TF_AMMO_SECONDARY ) <= 0 )
+	{
+		// stickies laid - detonate them once they are on the ground
+		const CUtlVector< CHandle< CTFGrenadePipebombProjectile > > &pipeVector = stickyLauncher->GetPipeBombVector();
+
+		int i;
+		for( i=0; i<pipeVector.Count(); ++i )
+		{
+			if ( pipeVector[i].Get() && !pipeVector[i]->m_bTouched )
+			{
+				break;
+			}
+		}
+
+		if ( i == pipeVector.Count() )
+		{
+			// stickies are on the ground
+			me->PressFireButton();
+		}
+	}
+#endif
+}
+#endif
 
 
 //---------------------------------------------------------------------------------------------
@@ -92,23 +94,26 @@ ActionResult< CNEOBot >	CNEOBotNavEntDestroyEntity::Update( CNEOBot *me, float i
 
 		if ( me->GetBodyInterface()->IsHeadAimingOnTarget() )
 		{
-			//// attack // NEO TODO (Adam) remotedet
-			//CWeapon_SLAM *pSLAM = ( CWeapon_SLAM * ) me->Weapon_OwnsThisType( "weapon_slam" );
-			//if ( pSLAM )
-			//{
-			//	me->Weapon_Switch( pSLAM );
+			// NEO TODO (Adam) remotedet
+#if 0
+			// attack
+			CWeapon_SLAM *pSLAM = ( CWeapon_SLAM * ) me->Weapon_OwnsThisType( "weapon_slam" );
+			if ( pSLAM )
+			{
+				me->Weapon_Switch( pSLAM );
 
-			//	if ( m_isReadyToLaunchSticky )
-			//	{
-			//		me->PressAltFireButton();
-			//	}
+				if ( m_isReadyToLaunchSticky )
+				{
+					me->PressAltFireButton();
+				}
 
-			//	m_isReadyToLaunchSticky = !m_isReadyToLaunchSticky;
+				m_isReadyToLaunchSticky = !m_isReadyToLaunchSticky;
 
-			//	DetonateStickiesWhenSet( me, pSLAM );
+				DetonateStickiesWhenSet( me, pSLAM );
 
-			//	return Continue();
-			//}
+				return Continue();
+			}
+#endif 
 
 			me->EquipBestWeaponForThreat( NULL );
 			me->PressFireButton();

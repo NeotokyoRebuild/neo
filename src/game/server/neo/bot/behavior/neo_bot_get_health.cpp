@@ -73,60 +73,58 @@ bool CNEOBotGetHealth::IsPossible( CNEOBot *me )
 {
 	VPROF_BUDGET( "CNEOBotGetHealth::IsPossible", "NextBot" );
 
-	return false; // NEO TODO (Adam) Add a health kit?
+	float healthRatio = (float)me->GetHealth() / (float)me->GetMaxHealth();
 
-	//float healthRatio = (float)me->GetHealth() / (float)me->GetMaxHealth();
+	float t = ( healthRatio - neo_bot_health_critical_ratio.GetFloat() ) / ( neo_bot_health_ok_ratio.GetFloat() - neo_bot_health_critical_ratio.GetFloat() );
+	t = clamp( t, 0.0f, 1.0f );
 
-	//float t = ( healthRatio - neo_bot_health_critical_ratio.GetFloat() ) / ( neo_bot_health_ok_ratio.GetFloat() - neo_bot_health_critical_ratio.GetFloat() );
-	//t = clamp( t, 0.0f, 1.0f );
+	if ( me->GetFlags() & FL_ONFIRE )
+	{
+		// on fire - get health now
+		t = 0.0f;
+	}
 
-	//if ( me->GetFlags() & FL_ONFIRE )
-	//{
-	//	// on fire - get health now
-	//	t = 0.0f;
-	//}
+	// the more we are hurt, the farther we'll travel to get health
+	float searchRange = neo_bot_health_search_far_range.GetFloat() + t * ( neo_bot_health_search_near_range.GetFloat() - neo_bot_health_search_far_range.GetFloat() );
 
-	//// the more we are hurt, the farther we'll travel to get health
-	//float searchRange = neo_bot_health_search_far_range.GetFloat() + t * ( neo_bot_health_search_near_range.GetFloat() - neo_bot_health_search_far_range.GetFloat() );
+	CBaseEntity* healthkit = NULL;
+	CUtlVector< CHandle< CBaseEntity > > hHealthKits;
+	while ( ( healthkit = gEntList.FindEntityByClassname( healthkit, "*_health*" ) ) != NULL )
+	{
+		hHealthKits.AddToTail( healthkit );
+	}
 
-	//CBaseEntity* healthkit = NULL;
-	//CUtlVector< CHandle< CBaseEntity > > hHealthKits;
-	//while ( ( healthkit = gEntList.FindEntityByClassname( healthkit, "*_health*" ) ) != NULL )
-	//{
-	//	hHealthKits.AddToTail( healthkit );
-	//}
+	CHealthFilter healthFilter( me );
+	CUtlVector< CHandle< CBaseEntity > > hReachableHealthKits;
+	me->SelectReachableObjects( hHealthKits, &hReachableHealthKits, healthFilter, me->GetLastKnownArea(), searchRange );
 
-	//CHealthFilter healthFilter( me );
-	//CUtlVector< CHandle< CBaseEntity > > hReachableHealthKits;
-	//me->SelectReachableObjects( hHealthKits, &hReachableHealthKits, healthFilter, me->GetLastKnownArea(), searchRange );
+	CBaseEntity* closestHealth = hReachableHealthKits.Size() > 0 ? hReachableHealthKits[0] : NULL;
 
-	//CBaseEntity* closestHealth = hReachableHealthKits.Size() > 0 ? hReachableHealthKits[0] : NULL;
+	if ( !closestHealth )
+	{
+		if ( me->IsDebugging( NEXTBOT_BEHAVIOR ) )
+		{
+			Warning( "%3.2f: No health nearby\n", gpGlobals->curtime );
+		}
+		return false;
+	}
 
-	//if ( !closestHealth )
-	//{
-	//	if ( me->IsDebugging( NEXTBOT_BEHAVIOR ) )
-	//	{
-	//		Warning( "%3.2f: No health nearby\n", gpGlobals->curtime );
-	//	}
-	//	return false;
-	//}
+	CNEOBotPathCost cost( me, FASTEST_ROUTE );
+	PathFollower path;
+	if ( !path.Compute( me, closestHealth->WorldSpaceCenter(), cost ) || !path.IsValid() || path.GetResult() != Path::COMPLETE_PATH )
+	{
+		if ( me->IsDebugging( NEXTBOT_BEHAVIOR ) )
+		{
+			Warning( "%3.2f: No path to health!\n", gpGlobals->curtime );
+		}
+		return false;
+	}
 
-	//CNEOBotPathCost cost( me, FASTEST_ROUTE );
-	//PathFollower path;
-	//if ( !path.Compute( me, closestHealth->WorldSpaceCenter(), cost ) || !path.IsValid() || path.GetResult() != Path::COMPLETE_PATH )
-	//{
-	//	if ( me->IsDebugging( NEXTBOT_BEHAVIOR ) )
-	//	{
-	//		Warning( "%3.2f: No path to health!\n", gpGlobals->curtime );
-	//	}
-	//	return false;
-	//}
+	s_possibleBot = me;
+	s_possibleHealth = closestHealth;
+	s_possibleFrame = gpGlobals->framecount;
 
-	//s_possibleBot = me;
-	//s_possibleHealth = closestHealth;
-	//s_possibleFrame = gpGlobals->framecount;
-
-	//return true;
+	return true;
 }
 
 //---------------------------------------------------------------------------------------------
