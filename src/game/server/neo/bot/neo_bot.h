@@ -129,7 +129,7 @@ public:
 
 	void PushRequiredWeapon(CNEOBaseCombatWeapon* weapon);				// force us to equip and use this weapon until popped off the required stack
 	void PopRequiredWeapon(void);									// pop top required weapon off of stack and discard
-									// can be passed as weapon to following queries
+
 	bool IsCombatWeapon(CNEOBaseCombatWeapon* weapon) const;				// return true if given weapon can be used to attack
 	bool IsHitScanWeapon(CNEOBaseCombatWeapon* weapon) const;			// return true if given weapon is a "hitscan" weapon (scattered tracelines with instant damage)
 	bool IsContinuousFireWeapon(CNEOBaseCombatWeapon* weapon) const;		// return true if given weapon "sprays" bullets/fire/etc continuously (ie: not individual rockets/etc)
