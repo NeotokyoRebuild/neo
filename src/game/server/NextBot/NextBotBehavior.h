@@ -197,11 +197,12 @@ public:
 		for( bottomAction = m_action; bottomAction && bottomAction->m_buriedUnderMe; bottomAction = bottomAction->m_buriedUnderMe )
 #endif // NEO
 			;
-		{
 #ifndef NEO
-
-			if ( bottomAction )
-#else
+		if ( bottomAction )
+		{
+#endif // NEO
+#ifdef NEO
+		{
 			nextAction = bottomAction->m_buriedUnderMe;
 #endif // NEO
 			delete bottomAction;
@@ -234,11 +235,12 @@ public:
 		for( bottomAction = m_action; bottomAction && bottomAction->m_buriedUnderMe; bottomAction = bottomAction->m_buriedUnderMe )
 #endif // NEO
 			;
-		{
 #ifndef NEO
-
-			if ( bottomAction )
-#else
+		if ( bottomAction )
+		{
+#endif // NEO
+#ifdef NEO
+		{
 			nextAction = bottomAction->m_buriedUnderMe;
 #endif // NEO
 			delete bottomAction;
