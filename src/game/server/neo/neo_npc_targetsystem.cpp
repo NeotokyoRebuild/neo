@@ -4,6 +4,8 @@
 #include "neo_player.h"
 #include "tier0/memdbgon.h"
 
+#define CLOAKED_VELOCITY_THRESHOLD 32400 // 180 horizontal velocity. Slightly under sprint/wigglerun speed
+
 class CNEO_NPCTargetSystem : public CBaseEntity
 {
 public:
@@ -170,7 +172,10 @@ void CNEO_NPCTargetSystem::Think(void)
 
         CNEO_Player* pNEOPlayer = static_cast<CNEO_Player*>(pPlayer);
         if (pNEOPlayer->m_bInThermOpticCamo)
-            continue;
+        {
+            if (pPlayer->GetAbsVelocity().Length2DSqr() < CLOAKED_VELOCITY_THRESHOLD)
+                continue;
+        }
 
         // The player's eye position is used for detection.
         // The entity might be able to see the player's body up to their neck and they won't be detected
