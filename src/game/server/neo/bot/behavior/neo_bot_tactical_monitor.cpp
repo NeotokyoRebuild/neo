@@ -186,12 +186,6 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 	const CKnownEntity* threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
 	me->EquipBestWeaponForThreat( threat );
 
-	Action< CNEOBot > *result = me->OpportunisticallyUseWeaponAbilities();
-	if ( result )
-	{
-		return SuspendFor( result, "Opportunistically using buff item" );
-	}
-
 	// check if we need to get to cover
 	QueryResultType shouldRetreat = me->GetIntentionInterface()->ShouldRetreat( me );
 
@@ -223,12 +217,6 @@ ActionResult< CNEOBot >	CNEOBotTacticalMonitor::Update( CNEOBot *me, float inter
 		if ( m_maintainTimer.IsElapsed() )
 		{
 			m_maintainTimer.Start( RandomFloat( 0.3f, 0.5f ) );
-
-			/*bool isHurt = ( me->GetFlags() & FL_ONFIRE ) || ( ( float )me->GetHealth() / ( float )me->GetMaxHealth() ) < neo_bot_health_ok_ratio.GetFloat();
-			if ( isHurt && CNEOBotGetHealth::IsPossible( me ) )
-			{
-				return SuspendFor( new CNEOBotGetHealth, "Grabbing nearby health" );
-			}*/ // NEO NOTE (Adam) uncomment if healing becomes possible
 
 			if ( me->IsAmmoLow() && CNEOBotGetAmmo::IsPossible( me ) )
 			{

@@ -9,13 +9,13 @@ extern ConVar falldamage;
 //-----------------------------------------------------------------------------------------
 void CNEOBotLocomotion::Update( void )
 {
-	BaseClass::Update();
-
 	CNEOBot* me = ToNEOBot( GetBot()->GetEntity() );
-	if ( !me )
+	if ( !me || me->GetNeoFlags() & NEO_FL_FREEZETIME)
 	{
 		return;
 	}
+
+	BaseClass::Update();
 
 	// always 'crouch jump'
 	if ( IsOnGround() )

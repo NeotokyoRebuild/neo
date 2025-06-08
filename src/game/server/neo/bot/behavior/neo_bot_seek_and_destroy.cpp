@@ -282,6 +282,7 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 		return;
 	}
 
+#if 0 // NEO TODO (Adam) search for the ghost separately, also can't pick up weapons on contact so bots just jump around weapons thinking they're stuck indefinitely
 	// Don't try to find weapons if the timer elapsed. Probably went bad?
 	if ( !m_bTimerElapsed )
 	{
@@ -305,22 +306,22 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 			}
 		);
 
-		// NEO TODO (Adam) this works fine, also makes all the bots move to the ghost, but  we can't pickup weapons on contact so bots just stand around a weapon they find and jump around
-		//// Try and find weapons we don't have above all else on the map.
-		//for ( int i = 0; i < pWeapons.Size(); i++ )
-		//{
-		//	CBaseEntity* pClosestWeapon = pWeapons[i];
-		//	if ( pClosestWeapon )
-		//	{
-		//		CNEOBotPathCost cost( me, SAFEST_ROUTE );
-		//		m_hTargetEntity = pClosestWeapon;
-		//		m_bGoingToTargetEntity = true;
-		//		m_vGoalPos = pClosestWeapon->WorldSpaceCenter();
-		//		if ( m_path.Compute( me, m_vGoalPos, cost, 0.0f, true, true ) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH )
-		//			return;
-		//	}
-		//}
+		// Try and find weapons we don't have above all else on the map.
+		for ( int i = 0; i < pWeapons.Size(); i++ )
+		{
+			CBaseEntity* pClosestWeapon = pWeapons[i];
+			if ( pClosestWeapon )
+			{
+				CNEOBotPathCost cost( me, SAFEST_ROUTE );
+				m_hTargetEntity = pClosestWeapon;
+				m_bGoingToTargetEntity = true;
+				m_vGoalPos = pClosestWeapon->WorldSpaceCenter();
+				if ( m_path.Compute( me, m_vGoalPos, cost, 0.0f, true, true ) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH )
+					return;
+			}
+		}
 	}
+#endif
 
 	// Fallback and roam random spawn points if we have all weapons.
 	{

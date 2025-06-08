@@ -514,6 +514,8 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 		{
 			if (myWeapon->m_iClip1 == 0)
 			{
+				me->ReleaseFireButton();
+				me->PressReloadButton();
 				return;
 			}
 
