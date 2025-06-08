@@ -197,6 +197,7 @@ public:
 		for( bottomAction = m_action; bottomAction && bottomAction->m_buriedUnderMe; bottomAction = bottomAction->m_buriedUnderMe )
 #endif // NEO
 			;
+
 #ifndef NEO
 		if ( bottomAction )
 		{
@@ -234,6 +235,7 @@ public:
 		for( bottomAction = m_action; bottomAction && bottomAction->m_buriedUnderMe; bottomAction = bottomAction->m_buriedUnderMe )
 #endif // NEO
 			;
+
 #ifndef NEO
 		if ( bottomAction )
 		{
