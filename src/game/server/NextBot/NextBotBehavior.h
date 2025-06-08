@@ -190,21 +190,11 @@ public:
 		// destructors intentionally don't delete actions
 		// "buried" underneath them.
 		Action< Actor > *bottomAction;
-#ifdef NEO
-		Action< Actor > *nextAction;
-		for ( bottomAction = m_action; bottomAction && bottomAction->m_buriedUnderMe; bottomAction = nextAction )
-#else
 		for( bottomAction = m_action; bottomAction && bottomAction->m_buriedUnderMe; bottomAction = bottomAction->m_buriedUnderMe )
-#endif // NEO
 			;
 
-#ifndef NEO
 		if ( bottomAction )
 		{
-#else
-		{
-			nextAction = bottomAction->m_buriedUnderMe;
-#endif // NEO
 			delete bottomAction;
 		}
 
@@ -228,21 +218,11 @@ public:
 
 		// find "bottom" action (see comment in destructor)
 		Action< Actor > *bottomAction;
-#ifdef NEO
-		Action< Actor > *nextAction;
-		for ( bottomAction = m_action; bottomAction && bottomAction->m_buriedUnderMe; bottomAction = nextAction )
-#else
 		for( bottomAction = m_action; bottomAction && bottomAction->m_buriedUnderMe; bottomAction = bottomAction->m_buriedUnderMe )
-#endif // NEO
 			;
 
-#ifndef NEO
 		if ( bottomAction )
 		{
-#else
-		{
-			nextAction = bottomAction->m_buriedUnderMe;
-#endif // NEO
 			delete bottomAction;
 		}
 
