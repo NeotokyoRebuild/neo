@@ -200,8 +200,7 @@ public:
 #ifndef NEO
 		if ( bottomAction )
 		{
-#endif // NEO
-#ifdef NEO
+#else
 		{
 			nextAction = bottomAction->m_buriedUnderMe;
 #endif // NEO
@@ -238,8 +237,7 @@ public:
 #ifndef NEO
 		if ( bottomAction )
 		{
-#endif // NEO
-#ifdef NEO
+#else
 		{
 			nextAction = bottomAction->m_buriedUnderMe;
 #endif // NEO
