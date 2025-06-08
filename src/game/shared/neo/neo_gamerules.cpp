@@ -2035,6 +2035,11 @@ CNEORules::ReadyPlayers CNEORules::FetchReadyPlayers() const
 
 void CNEORules::StartNextRound()
 {
+	if (g_fGameOver)
+	{
+		return;
+	}
+
 	// Only check ready-up on idle state
 	const bool bLobby = sv_neo_readyup_lobby.GetBool() && m_nRoundStatus == NeoRoundStatus::Idle;
 	const int iThres = sv_neo_readyup_teamplayersthres.GetInt();

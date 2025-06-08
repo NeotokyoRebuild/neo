@@ -412,15 +412,7 @@ static ConCommand neo_bot_warp_team_to_me("neo_bot_warp_team_to_me", CMD_BotWarp
 
 
 //-----------------------------------------------------------------------------------------------------
-CNEOBot::CNEOBotIntention::CNEOBotIntention(CNEOBot* me) : IIntention(me) {
-	m_behavior = new Behavior< CNEOBot >(new CNEOBotMainAction);
-} CNEOBot::CNEOBotIntention::~CNEOBotIntention() {
-	delete m_behavior;
-} void CNEOBot::CNEOBotIntention::Reset(void) {
-	delete m_behavior; m_behavior = new Behavior< CNEOBot >(new CNEOBotMainAction);
-} void CNEOBot::CNEOBotIntention::Update(void) {
-	m_behavior->Update(static_cast<CNEOBot*>(GetBot()), GetUpdateInterval());
-};
+IMPLEMENT_INTENTION_INTERFACE(CNEOBot, CNEOBotMainAction);
 
 
 //-----------------------------------------------------------------------------------------------------
@@ -678,6 +670,11 @@ void CNEOBot::SetMission(MissionType mission, bool resetBehaviorSystem)
 //-----------------------------------------------------------------------------------------------------
 void CNEOBot::PhysicsSimulate(void)
 {
+	if (g_fGameOver)
+	{ // Trouble with Actions on game over, Action pointer read access violation either in Behavior::Reset() or Behaviour::~Behavior() when starting new round after game over, or Action<CNEOBot>::IsOutOfScope() if previous is fixed
+		return;
+	}
+
 	BaseClass::PhysicsSimulate();
 
 	if (m_spawnArea == NULL)
@@ -1515,9 +1512,9 @@ void CNEOBot::PopRequiredWeapon(void)
 // return true if given weapon can be used to attack
 bool CNEOBot::IsCombatWeapon(CNEOBaseCombatWeapon* weapon) const
 {
-	if (weapon == MY_CURRENT_GUN)		// MY_CURRENT_GUN == NULL
+	if (!weapon)
 	{
-		weapon = (CNEOBaseCombatWeapon*)GetActiveWeapon();
+		return false;
 	}
 
 	if (weapon->GetNeoWepBits() & NEO_WEP_GHOST)
@@ -1533,11 +1530,6 @@ bool CNEOBot::IsCombatWeapon(CNEOBaseCombatWeapon* weapon) const
 // return true if given weapon is a "hitscan" weapon
 bool CNEOBot::IsHitScanWeapon(CNEOBaseCombatWeapon* weapon) const
 {
-	if (weapon == MY_CURRENT_GUN)		// MY_CURRENT_GUN == NULL
-	{
-		weapon = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
-	}
-
 	if (!weapon)
 	{
 		return true;
@@ -1556,9 +1548,9 @@ bool CNEOBot::IsHitScanWeapon(CNEOBaseCombatWeapon* weapon) const
 // return true if given weapon "sprays" bullets/fire/etc continuously (ie: not individual rockets/etc)
 bool CNEOBot::IsContinuousFireWeapon(CNEOBaseCombatWeapon* weapon) const
 {
-	if (weapon == MY_CURRENT_GUN)
+	if (!weapon)
 	{
-		weapon = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
+		return false;
 	}
 
 	if (!IsCombatWeapon(weapon))
@@ -1585,9 +1577,9 @@ bool CNEOBot::IsExplosiveProjectileWeapon(CNEOBaseCombatWeapon* weapon) const
 // return true if given weapon has small clip and long reload cost (ie: rocket launcher, etc)
 bool CNEOBot::IsBarrageAndReloadWeapon(CNEOBaseCombatWeapon* weapon) const
 {
-	if (weapon == MY_CURRENT_GUN)
+	if (!weapon)
 	{
-		weapon = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
+		return false;
 	}
 
 	if (weapon && weapon->GetNeoWepBits() & (NEO_WEP_SUPA7 | NEO_WEP_PZ | NEO_WEP_SRS))
@@ -1603,9 +1595,9 @@ bool CNEOBot::IsBarrageAndReloadWeapon(CNEOBaseCombatWeapon* weapon) const
 // Return true if given weapon doesn't make much sound when used (ie: spy knife, etc)
 bool CNEOBot::IsQuietWeapon(CNEOBaseCombatWeapon* weapon) const
 {
-	if (weapon == MY_CURRENT_GUN)
+	if (!weapon)
 	{
-		weapon = dynamic_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
+		return false;
 	}
 
 	if (!IsCombatWeapon(weapon))

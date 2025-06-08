@@ -510,7 +510,7 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 		 me->GetBodyInterface()->IsHeadAimingOnTarget() &&
 		 threatRange < me->GetMaxAttackRange() )
 	{
-		if ( me->IsCombatWeapon( MY_CURRENT_GUN ) )
+		if ( me->IsCombatWeapon( myWeapon ) )
 		{
 			if (myWeapon->m_iClip1 == 0)
 			{
@@ -519,14 +519,14 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 				return;
 			}
 
-			if ( me->IsContinuousFireWeapon( MY_CURRENT_GUN ) )
+			if ( me->IsContinuousFireWeapon( myWeapon ) )
 			{
 				// spray for a bit
 				me->PressFireButton( neo_bot_fire_weapon_min_time.GetFloat() );
 			}
 			else 
 			{
-				if ( me->IsExplosiveProjectileWeapon( MY_CURRENT_GUN ) )
+				if ( me->IsExplosiveProjectileWeapon( myWeapon ) )
 				{
 					// don't fire if we're going to hit a nearby wall
 					trace_t trace;
@@ -603,10 +603,6 @@ void CNEOBotMainAction::Dodge( CNEOBot *me )
 
 	// don't dodge if that ability is "turned off"
 	if ( me->HasAttribute( CNEOBot::DISABLE_DODGE ) )
-		return;
-
-	// don't dodge if we're not trying to fight back
-	if ( !me->IsCombatWeapon( MY_CURRENT_GUN ) )
 		return;
 
 	// don't waste time doding if we're in a hurry
