@@ -377,4 +377,10 @@ void GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
 						 const char *pSzNeoClantag,
 						 const bool bOnlySteamNick);
 
+// NEO NOTE (nullsystem): Max string length is 
+// something like: "2;2;-16711936;1;6;1.000;25;25;5;25;1;50;50;"
+// which is ~43 for v2 serialization | 64 length is enough for now till
+// more comes in
+static constexpr const int NEO_XHAIR_SEQMAX = 64;
+
 #endif // NEO_PLAYER_SHARED_H
