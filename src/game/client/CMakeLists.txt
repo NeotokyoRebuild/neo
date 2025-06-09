@@ -508,6 +508,8 @@ target_sources_grouped(
     c_playerresource.cpp
     c_point_camera.cpp
     c_point_commentary_node.cpp
+    c_point_worldtext.cpp
+    c_point_worldtext.h
     c_props.cpp
     c_props.h
     c_ragdoll_manager.cpp

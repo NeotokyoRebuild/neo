@@ -623,6 +623,8 @@ target_sources_grouped(
     lights.cpp
     lights.h
     locksounds.h
+    logic_eventlistener.cpp
+    logic_eventlistener.h
     logic_measure_movement.cpp
     logic_navigation.cpp
     logicauto.cpp
@@ -687,6 +689,8 @@ target_sources_grouped(
     point_spotlight.cpp
     point_template.cpp
     point_template.h
+    point_worldtext.cpp
+    point_worldtext.h
     pointanglesensor.cpp
     pointhurt.cpp
     pointteleport.cpp
@@ -708,6 +712,7 @@ target_sources_grouped(
     scriptedtarget.h
     sendproxy.cpp
     shadowcontrol.cpp
+    skyboxswapper.cpp
     slideshow_display.cpp
     sound.cpp
     soundent.cpp
