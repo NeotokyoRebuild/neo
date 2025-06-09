@@ -1019,9 +1019,7 @@ void CNEOBaseCombatWeapon::DrawCrosshair()
 
 	if (GetWpnData().iconCrosshair)
 	{
-		const Color color(cl_neo_crosshair_color_r.GetInt(), cl_neo_crosshair_color_g.GetInt(),
-						  cl_neo_crosshair_color_b.GetInt(), cl_neo_crosshair_color_a.GetInt());
-		crosshair->SetCrosshair(GetWpnData().iconCrosshair, color);
+		crosshair->SetCrosshair(GetWpnData().iconCrosshair, crosshair->m_crosshairInfo.color);
 	}
 	else
 	{
