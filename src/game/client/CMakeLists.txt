@@ -84,8 +84,13 @@ if(NEO_RETAIL)
     target_compile_definitions(client PRIVATE RETAIL)
 endif()
 
-if(NEO_DEDICATED)
-    target_compile_definitions(client PRIVATE DEDICATED)
+if(OS_LINUX OR OS_MACOS)
+    target_compile_definitions(client
+        PRIVATE
+        GL_GLEXT_PROTOTYPES
+        DX_TO_GL_ABSTRACTION
+        USE_SDL
+    )
 endif()
 
 if(NEO_BUILD_WEAPON_PBK56S)
@@ -503,6 +508,8 @@ target_sources_grouped(
     c_playerresource.cpp
     c_point_camera.cpp
     c_point_commentary_node.cpp
+    c_point_worldtext.cpp
+    c_point_worldtext.h
     c_props.cpp
     c_props.h
     c_ragdoll_manager.cpp

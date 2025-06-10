@@ -6075,12 +6075,9 @@ CBaseEntity	*CBasePlayer::GiveNamedItem( const char *pszName, int iSubType )
 		Msg( "NULL Ent in GiveNamedItem!\n" );
 		return NULL;
 	}
-#ifdef NEO
-	pent->SetAbsOrigin(EyePosition());
-#else
+
 	pent->SetLocalOrigin( GetLocalOrigin() );
-#endif
-	pent->AddSpawnFlags( SF_NORESPAWN );
+	pent->AddSpawnFlags(SF_NORESPAWN);
 
 	CBaseCombatWeapon *pWeapon = dynamic_cast<CBaseCombatWeapon*>( (CBaseEntity*)pent );
 	if ( pWeapon )

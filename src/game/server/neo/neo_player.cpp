@@ -1950,7 +1950,10 @@ void CNEO_Player::AddPoints(int score, bool bAllowNegativeScore)
 
 void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 {
-	CreateRagdollEntity();
+	if (!m_bForceServerRagdoll)
+	{
+		CreateRagdollEntity();
+	}
 
 	// Calculate force for weapon drop
 	Vector forceVector = CalcDamageForceVector(info);
@@ -2057,7 +2060,7 @@ void CNEO_Player::SetDeadModel(const CTakeDamageInfo& info)
 
 	int deadModelType = -1;
 
-	if (!m_bAllowGibbing) // Prevent gibbing if a custom player model has been set via I/O
+	if (!m_bAllowGibbing || m_bForceServerRagdoll) // Prevent gibbing if a custom player model has been set via I/O or the ragdoll is serverside
 	{
 		return;
 	}
@@ -2862,7 +2865,7 @@ void GiveDet(CNEO_Player* pPlayer)
 		}
 		else
 		{
-			pent->SetAbsOrigin(pPlayer->EyePosition());
+			pent->SetLocalOrigin(pPlayer->GetLocalOrigin());
 			pent->AddSpawnFlags(SF_NORESPAWN);
 
 			auto pWeapon = dynamic_cast<CNEOBaseCombatWeapon*>((CBaseEntity*)pent);
@@ -2958,7 +2961,7 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 		return;
 	}
 
-	pEnt->SetAbsOrigin(EyePosition());
+	pEnt->SetLocalOrigin(GetLocalOrigin());
 	pEnt->AddSpawnFlags(SF_NORESPAWN);
 
 	CNEOBaseCombatWeapon *pNeoWeapon = dynamic_cast<CNEOBaseCombatWeapon*>((CBaseEntity*)pEnt);
