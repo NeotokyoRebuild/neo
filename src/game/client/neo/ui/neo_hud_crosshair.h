@@ -44,7 +44,7 @@ extern const wchar_t **CROSSHAIR_LABELS;
 extern const wchar_t **CROSSHAIR_SIZETYPE_LABELS;
 extern const wchar_t **CROSSHAIR_DYNAMICTYPE_LABELS;
 
-#define CL_NEO_CROSSHAIR_DEFAULT "2;0;-1;0;2;0.000;1;2;0;0;1;0;0;"
+#define CL_NEO_CROSSHAIR_DEFAULT "2;0;-1;0;0;2;0.000;1;2;0;0;1;0;0;"
 static constexpr const int NEO_XHAIR_SEQMAX = 256;
 
 enum NeoXHairSegment

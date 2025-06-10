@@ -316,10 +316,6 @@ void CHudCrosshair::GetDrawPosition ( float *pX, float *pY, bool *pbBehindCamera
 ConVar cl_neo_scope_restrict_to_rectangle("cl_neo_scope_restrict_to_rectangle", "1", FCVAR_CHEAT,
 	"Whether to enforce rectangular sniper scope shape regardless of screen ratio.", true, 0.0, true, 1.0);
 
-#ifdef NEO
-extern ConVar cl_neo_crosshair_dynamic;
-extern ConVar cl_neo_crosshair_dynamic_type;
-#endif // NEO
 void CHudCrosshair::Paint( void )
 {
 	if ( !m_pCrosshair )
