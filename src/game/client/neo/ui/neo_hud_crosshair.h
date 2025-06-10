@@ -1,5 +1,7 @@
 #pragma once
 
+#include "c_neo_player.h"
+
 static constexpr int CROSSHAIR_MAX_SIZE = 100;
 static constexpr int CROSSHAIR_MAX_THICKNESS = 25;
 static constexpr int CROSSHAIR_MAX_GAP = 25;
@@ -27,7 +29,8 @@ enum NeoHudCrosshairSizeType
 
 enum NeoHudCrosshairDynamicType
 {
-	CROSSHAIR_DYNAMICTYPE_GAP = 0,
+	CROSSHAIR_DYNAMICTYPE_NONE = 0,
+	CROSSHAIR_DYNAMICTYPE_GAP,
 	CROSSHAIR_DYNAMICTYPE_CIRCLE,
 	CROSSHAIR_DYNAMICTYPE_SIZE,
 
@@ -49,6 +52,7 @@ enum NeoXHairSegment
 	NEOXHAIR_SEGMENT_I_VERSION = 0,
 	NEOXHAIR_SEGMENT_I_STYLE,
 	NEOXHAIR_SEGMENT_I_COLOR,
+	NEOXHAIR_SEGMENT_I_DYNAMICTYPE,
 	NEOXHAIR_SEGMENT_I_SIZETYPE,
 	NEOXHAIR_SEGMENT_I_SIZE,
 	NEOXHAIR_SEGMENT_FL_SCRSIZE,
@@ -68,7 +72,6 @@ struct CrosshairInfo
 {
 	int iStyle;
 	Color color;
-	bool bDynamic;
 	int iEDynamicType; // int NeoHudCrosshairDynamicType
 	int iESizeType; // int NeoHudCrosshairSizeType
 	int iSize;
@@ -81,7 +84,7 @@ struct CrosshairInfo
 	int iCircleRad;
 	int iCircleSegments;
 };
-void PaintCrosshair(const CrosshairInfo &crh, const int x, const int y);
+void PaintCrosshair(const CrosshairInfo &crh, CNEO_Player *player, const int x, const int y);
 
 // NEO NOTE (nullsystem): (*&)[NUM] enforces array size
 bool ImportCrosshair(CrosshairInfo *crh, const char *pszSequence);

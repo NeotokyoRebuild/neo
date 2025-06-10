@@ -886,7 +886,7 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 		}
 		else
 		{
-			PaintCrosshair(pCrosshair->info,
+			PaintCrosshair(pCrosshair->info, nullptr,
 						   g_uiCtx.dPanel.x + g_uiCtx.iLayoutX + (g_uiCtx.dPanel.wide / 2),
 						   g_uiCtx.dPanel.y + g_uiCtx.iLayoutY + (g_uiCtx.dPanel.tall / 2));
 		}
@@ -961,7 +961,6 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 		NeoUI::SliderU8(L"Alpha", &pCrosshair->info.color[3], 0, UCHAR_MAX);
 		if (!bTextured)
 		{
-			NeoUI::RingBoxBool(L"Dynamic crosshair", &pCrosshair->info.bDynamic);
 			NeoUI::RingBox(L"Dynamic type", CROSSHAIR_DYNAMICTYPE_LABELS, CROSSHAIR_DYNAMICTYPE_TOTAL, &pCrosshair->info.iEDynamicType);
 			NeoUI::RingBox(L"Size type", CROSSHAIR_SIZETYPE_LABELS, CROSSHAIR_SIZETYPE__TOTAL, &pCrosshair->info.iESizeType);
 			switch (pCrosshair->info.iESizeType)

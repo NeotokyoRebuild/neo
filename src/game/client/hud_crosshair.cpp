@@ -419,7 +419,7 @@ void CHudCrosshair::Paint( void )
 
 	// NEO TODO (nullsystem): Probably be better if the entire class refreshed to our own
 	// thing and can do away with that CHudTexture nonsense entirely
-	const bool bIsScoped = pNeoWep && pNeoWep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON;
+	const bool bIsScoped = pWeapon && pWeapon->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON;
 
 	if (m_bRefreshCrosshair)
 	{
@@ -450,7 +450,7 @@ void CHudCrosshair::Paint( void )
 			// No clue, just found a value which works well (fired some shots at 15 fov, then increased fov to 120 and scaled the circle down until it worked)
 			// NEO TODO (Adam) I welcome any suggestions on how to improve this, I assume its something to do with how higher fields of view distort an image.
 			constexpr float MAGIC_FOV_DISTORTION_VALUE = 0.4f / 120.0f;
-			const int size = (m_iHalfScreenWidth / ((scaledFov * 0.5f) / halfInaccuracy)) * (1 - (scaledFov * MAGIC_FOV_DISTORTION_VALUE));
+			const int size = halfInaccuracy ? (m_iHalfScreenWidth / ((scaledFov * 0.5f) / halfInaccuracy)) * (1 - (scaledFov * MAGIC_FOV_DISTORTION_VALUE)) : 0;
 			return size;
 		};
 
@@ -470,7 +470,7 @@ void CHudCrosshair::Paint( void )
 
 		if (cl_neo_crosshair_scope_inaccuracy.GetBool())
 		{
-			const int size = HalfInaccuracyConeInScreenPixels(pPlayer, pWeapon, m_iHalfScreenWidth);
+			const int size = pWeapon ? HalfInaccuracyConeInScreenPixels(pPlayer, pWeapon, m_iHalfScreenWidth) : 0;
 			if (size)
 			{
 				surface()->DrawSetTexture(m_hCrosshairLight);
@@ -512,7 +512,7 @@ void CHudCrosshair::Paint( void )
 	}
 	else
 	{
-		PaintCrosshair(m_crosshairInfo, iX, iY);
+		PaintCrosshair(m_crosshairInfo, pPlayer, iX, iY);
 	}
 
 	if (bIsScoped && pPlayer->m_bInAim)

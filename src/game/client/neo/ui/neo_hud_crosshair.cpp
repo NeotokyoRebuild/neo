@@ -1,10 +1,12 @@
 #include "neo_hud_crosshair.h"
 #include "neo_gamerules.h"
+#include "weapon_neobasecombatweapon.h"
 
 #include "filesystem.h"
 #include "vgui/ISurface.h"
 #include "vgui_controls/Controls.h"
 #include "ui/neo_root.h"
+#include "view.h"
 
 ConVar cl_neo_crosshair("cl_neo_crosshair", CL_NEO_CROSSHAIR_DEFAULT, FCVAR_ARCHIVE | FCVAR_USERINFO, "Serialized crosshair setting");
 
@@ -14,37 +16,92 @@ const char **CROSSHAIR_FILES = INTERNAL_CROSSHAIR_FILES;
 static const wchar_t *INTERNAL_CROSSHAIR_LABELS[CROSSHAIR_STYLE__TOTAL] = { L"Default", L"Alt", L"Custom" };
 const wchar_t **CROSSHAIR_LABELS = INTERNAL_CROSSHAIR_LABELS;
 
-static const wchar_t* INTERNAL_CROSSHAIR_DYNAMICTYPE_LABELS[CROSSHAIR_DYNAMICTYPE_TOTAL] = { L"Gap", L"Circle", L"Size" };
+static const wchar_t* INTERNAL_CROSSHAIR_DYNAMICTYPE_LABELS[CROSSHAIR_DYNAMICTYPE_TOTAL] = { L"Disabled", L"Gap", L"Circle", L"Size"};
 const wchar_t **CROSSHAIR_DYNAMICTYPE_LABELS = INTERNAL_CROSSHAIR_DYNAMICTYPE_LABELS;
 
 static const wchar_t *INTERNAL_CROSSHAIR_SIZETYPE_LABELS[CROSSHAIR_SIZETYPE__TOTAL] = { L"Absolute", L"Screen halves" };
 const wchar_t **CROSSHAIR_SIZETYPE_LABELS = INTERNAL_CROSSHAIR_SIZETYPE_LABELS;
 
-void PaintCrosshair(const CrosshairInfo &crh, const int x, const int y)
+void PaintCrosshair(const CrosshairInfo &crh, CNEO_Player *player, const int x, const int y)
 {
 	if (NEORules() && NEORules()->GetHiddenHudElements() & NEO_HUD_ELEMENT_CROSSHAIR)
 	{
 		return;
 	}
-	if (crh.iSize > 0)
-	{
-		int iSize = crh.iSize;
-		if (crh.iESizeType == CROSSHAIR_SIZETYPE_SCREEN)
+
+	int wide, tall;
+	vgui::surface()->GetScreenSize(wide, tall);
+	auto HalfInaccuracyConeInScreenPixels = [](C_NEO_Player* pPlayer, int m_iHalfScreenWidth)
 		{
-			int wide, tall;
-			vgui::surface()->GetScreenSize(wide, tall);
+			if (!pPlayer)
+			{
+				return MAX(0, (int)(sin(gpGlobals->curtime) * 24) + 16);
+			}
+			// Hor+ FOV, e.g at an aspect ratio of 16:9 and horizontal fov of 110, the actual horizontal fov is ~120
+			const float scaledFov = ScaleFOVByWidthRatio(pPlayer->GetFOV(), engine->GetScreenAspectRatio() * 0.75f); //  4 / 3
+			CNEOBaseCombatWeapon* pWeapon = static_cast<CNEOBaseCombatWeapon *>(pPlayer->GetActiveWeapon());
+			const float halfInaccuracy = pWeapon ? RAD2DEG(asin(pWeapon->GetBulletSpread().x)) : 0;
+			// No clue, just found a value which works well (fired some shots at 15 fov, then increased fov to 120 and scaled the circle down until it worked)
+			// NEO TODO (Adam) I welcome any suggestions on how to improve this, I assume its something to do with how higher fields of view distort an image.
+			constexpr float MAGIC_FOV_DISTORTION_VALUE = 0.4f / 120.0f;
+			const int size = halfInaccuracy ? (m_iHalfScreenWidth / ((scaledFov * 0.5f) / halfInaccuracy)) * (1 - (scaledFov * MAGIC_FOV_DISTORTION_VALUE)) : 0;
+			return size;
+		};
+	const int inaccuracy = HalfInaccuracyConeInScreenPixels(player, wide * 0.5);
+
+	int iSize = crh.iSize;
+	int iThick = crh.iThick;
+	int iGap = crh.iGap;
+	int iCircleRad = crh.iCircleRad;
+	int iCircleSegments = crh.iCircleSegments;
+
+	switch (crh.iEDynamicType)
+	{ // Do we want to add the inaccuracy or replace the inaccuracy, or set the size to whatever is larger? should the operation be another option for the player?
+	case CROSSHAIR_DYNAMICTYPE_SIZE:
+		iSize += inaccuracy;
+		if (!iThick)
+		{
+			iThick = 2;
+		}
+		break;
+	case CROSSHAIR_DYNAMICTYPE_GAP:
+		iGap += inaccuracy;
+		if (!iThick)
+		{
+			iThick = 2;
+		}
+		if (!iSize)
+		{
+			iSize = 6;
+		}
+		break;
+	case CROSSHAIR_DYNAMICTYPE_CIRCLE:
+		iCircleRad += inaccuracy;
+		if (!iCircleSegments)
+		{
+			iCircleSegments = 20;
+		}
+		break;
+	default:
+		break;
+	}
+
+	if (iSize > 0)
+	{
+		if (crh.iESizeType == CROSSHAIR_SIZETYPE_SCREEN && crh.iEDynamicType == CROSSHAIR_DYNAMICTYPE_NONE)
+		{
 			iSize = (crh.flScrSize * (max(wide, tall) / 2));
 		}
 
-		const bool bOdd = ((crh.iThick % 2) == 1);
-		const int iHalf = crh.iThick / 2;
+		const bool bOdd = ((iThick % 2) == 1);
+		const int iHalf = iThick / 2;
 		const int iStartThick = bOdd ? iHalf + 1 : iHalf;
 		const int iEndThick = iHalf;
 		vgui::IntRect iRects[4] = {
-			{ -iSize - crh.iGap, -iStartThick, -crh.iGap, iEndThick },	// Left
-			{ crh.iGap, -iStartThick, crh.iGap + iSize, iEndThick },	// Right
-			{ -iStartThick, crh.iGap, iEndThick, crh.iGap + iSize },	// Bottom
-			{ -iStartThick, -iSize - crh.iGap, iEndThick, -crh.iGap },	// Top (Must be last for bTopLine)
+			{ -iSize - iGap, -iStartThick, -iGap, iEndThick },	// Left
+			{ iGap, -iStartThick, iGap + iSize, iEndThick },	// Right
+			{ -iStartThick, iGap, iEndThick, iGap + iSize },	// Bottom
+			{ -iStartThick, -iSize - iGap, iEndThick, -iGap },	// Top (Must be last for bTopLine)
 		};
 		for (vgui::IntRect &rect : iRects)
 		{
@@ -91,10 +148,10 @@ void PaintCrosshair(const CrosshairInfo &crh, const int x, const int y)
 		vgui::surface()->DrawFilledRect(-iStartCenter + x, -iStartCenter + y, iEndCenter + x, iEndCenter + y);
 	}
 
-	if (crh.iCircleRad > 0 && crh.iCircleSegments > 0)
+	if (iCircleRad > 0 && iCircleSegments > 0)
 	{
 		vgui::surface()->DrawSetColor(crh.color);
-		vgui::surface()->DrawOutlinedCircle(x, y, crh.iCircleRad, crh.iCircleSegments);
+		vgui::surface()->DrawOutlinedCircle(x, y, iCircleRad, iCircleSegments);
 	}
 }
 
@@ -128,6 +185,7 @@ static constexpr const NeoXHairVariantType NEOXHAIR_SEGMENT_VARTYPES[NEOXHAIR_SE
 	NEOXHAIRVARTYPE_INT,   // NEOXHAIR_SEGMENT_I_VERSION
 	NEOXHAIRVARTYPE_INT,   // NEOXHAIR_SEGMENT_I_STYLE
 	NEOXHAIRVARTYPE_INT,   // NEOXHAIR_SEGMENT_I_COLOR
+	NEOXHAIRVARTYPE_INT,   // NEOXHAIR_SEGMENT_I_DYNAMICTYPE
 	NEOXHAIRVARTYPE_INT,   // NEOXHAIR_SEGMENT_I_SIZETYPE
 	NEOXHAIRVARTYPE_INT,   // NEOXHAIR_SEGMENT_I_SIZE
 	NEOXHAIRVARTYPE_FLOAT, // NEOXHAIR_SEGMENT_FL_SCRSIZE
@@ -189,6 +247,7 @@ bool ImportCrosshair(CrosshairInfo *crh, const char *pszSequence)
 
 	crh->iStyle = vars[NEOXHAIR_SEGMENT_I_STYLE].iVal;
 	crh->color.SetRawColor(vars[NEOXHAIR_SEGMENT_I_COLOR].iVal);
+	crh->iEDynamicType = vars[NEOXHAIR_SEGMENT_I_DYNAMICTYPE].iVal;
 	crh->iESizeType = vars[NEOXHAIR_SEGMENT_I_SIZETYPE].iVal;
 	crh->iSize = vars[NEOXHAIR_SEGMENT_I_SIZE].iVal;
 	crh->flScrSize = vars[NEOXHAIR_SEGMENT_FL_SCRSIZE].flVal;
@@ -206,10 +265,11 @@ bool ImportCrosshair(CrosshairInfo *crh, const char *pszSequence)
 void ExportCrosshair(const CrosshairInfo *crh, char (&szSequence)[NEO_XHAIR_SEQMAX])
 {
 	V_sprintf_safe(szSequence,
-			"%d;%d;%d;%d;%d;%.3f;%d;%d;%d;%d;%d;%d;%d;",
+			"%d;%d;%d;%d;%d;%d;%.3f;%d;%d;%d;%d;%d;%d;%d;",
 			NEOXHAIR_SERIAL_CURRENT,
 			crh->iStyle,
 			crh->color.GetRawColor(),
+			crh->iEDynamicType,
 			crh->iESizeType,
 			crh->iSize,
 			crh->flScrSize,
