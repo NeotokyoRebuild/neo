@@ -84,8 +84,10 @@ struct CrosshairInfo
 	int iCircleRad;
 	int iCircleSegments;
 };
-void PaintCrosshair(const CrosshairInfo &crh, CNEO_Player *player, const int x, const int y);
+void PaintCrosshair(const CrosshairInfo &crh, C_NEO_Player *player, const int x, const int y);
 
 // NEO NOTE (nullsystem): (*&)[NUM] enforces array size
 bool ImportCrosshair(CrosshairInfo *crh, const char *pszSequence);
 void ExportCrosshair(const CrosshairInfo *crh, char (&szSequence)[NEO_XHAIR_SEQMAX]);
+
+int HalfInaccuracyConeInScreenPixels(C_NEO_Player* player, C_NEOBaseCombatWeapon* pWeapon, int halfScreenWidth);

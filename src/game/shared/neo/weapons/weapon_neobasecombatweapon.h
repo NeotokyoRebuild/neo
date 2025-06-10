@@ -53,7 +53,7 @@ enum NeoWepBits : NEO_WEP_BITS_UNDERLYING_TYPE {
 	NEO_WEP_SCOPEDWEAPON =		(static_cast<NEO_WEP_BITS_UNDERLYING_TYPE>(1) << 28), // Scoped weapons should OR this in their flags.
 	NEO_WEP_THROWABLE =			(static_cast<NEO_WEP_BITS_UNDERLYING_TYPE>(1) << 29), // Generic for grenades
 	NEO_WEP_SUPPRESSED =		(static_cast<NEO_WEP_BITS_UNDERLYING_TYPE>(1) << 30), // Suppressed weapons
-	NEO_WEP_FIREARM =		(static_cast<NEO_WEP_BITS_UNDERLYING_TYPE>(1) << 31), // Suppressed weapons
+	NEO_WEP_FIREARM =			(static_cast<NEO_WEP_BITS_UNDERLYING_TYPE>(1) << 31), // Shoots bullets, has an entry in the m_weaponHandling table
 
 	// NOTE!!! remember to update NEP_WEP_BITS_LAST_VALUE below, if editing this/these last values!
 	NEO_WEP_EXPLOSIVE =			(static_cast<NEO_WEP_BITS_UNDERLYING_TYPE>(1) << 32), // Generic for weapons that count as explosive kills on killfeed.

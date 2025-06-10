@@ -30,7 +30,6 @@
 #ifdef NEO
 #include "weapon_neobasecombatweapon.h"
 #include "neo_gamerules.h"
-#include "hud_crosshair.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -441,18 +440,6 @@ void CHudCrosshair::Paint( void )
 		constexpr int IFF_TRACELINE_LENGTH = 8192; // a little over 200m
 		UTIL_TraceLine(pPlayer->Weapon_ShootPosition(), pPlayer->Weapon_ShootPosition() + pPlayer->GetAutoaimVector(0) * IFF_TRACELINE_LENGTH, MASK_SHOT_HULL, &iffTraceFilter, &iffTrace);
 	}
-
-	auto HalfInaccuracyConeInScreenPixels = [](C_NEO_Player *pPlayer, C_NEOBaseCombatWeapon *pWeapon, int m_iHalfScreenWidth)
-		{
-			// Hor+ FOV, e.g at an aspect ratio of 16:9 and horizontal fov of 110, the actual horizontal fov is ~120
-			const float scaledFov = ScaleFOVByWidthRatio(pPlayer->GetFOV(), engine->GetScreenAspectRatio() * 0.75f); //  4 / 3
-			const float halfInaccuracy = RAD2DEG(asin(pWeapon->GetBulletSpread().x));
-			// No clue, just found a value which works well (fired some shots at 15 fov, then increased fov to 120 and scaled the circle down until it worked)
-			// NEO TODO (Adam) I welcome any suggestions on how to improve this, I assume its something to do with how higher fields of view distort an image.
-			constexpr float MAGIC_FOV_DISTORTION_VALUE = 0.4f / 120.0f;
-			const int size = halfInaccuracy ? (m_iHalfScreenWidth / ((scaledFov * 0.5f) / halfInaccuracy)) * (1 - (scaledFov * MAGIC_FOV_DISTORTION_VALUE)) : 0;
-			return size;
-		};
 
 	if (bIsScoped && pPlayer->m_bInAim)
 	{
