@@ -12,6 +12,7 @@
 #include <vgui_controls/Controls.h>
 #include <vgui/ISurface.h>
 #include <steam/steam_api.h>
+#include "vgui/ISystem.h"
 
 #include "neo_ui.h"
 #include "neo_root.h"
@@ -421,23 +422,12 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 	}
 	{
 		NeoSettings::Crosshair *pCrosshair = &ns->crosshair;
-		pCrosshair->iStyle = cvr->cl_neo_crosshair_style.GetInt();
-		pCrosshair->info.color[0] = (uint8)(cvr->cl_neo_crosshair_color_r.GetInt());
-		pCrosshair->info.color[1] = (uint8)(cvr->cl_neo_crosshair_color_g.GetInt());
-		pCrosshair->info.color[2] = (uint8)(cvr->cl_neo_crosshair_color_b.GetInt());
-		pCrosshair->info.color[3] = (uint8)(cvr->cl_neo_crosshair_color_a.GetInt());
-		pCrosshair->info.bDynamic = cvr->cl_neo_crosshair_dynamic.GetBool();
-		pCrosshair->info.iEDynamicType = cvr->cl_neo_crosshair_dynamic_type.GetInt();
-		pCrosshair->info.iESizeType = cvr->cl_neo_crosshair_size_type.GetInt();
-		pCrosshair->info.iSize = cvr->cl_neo_crosshair_size.GetInt();
-		pCrosshair->info.flScrSize = cvr->cl_neo_crosshair_size_screen.GetFloat();
-		pCrosshair->info.iThick = cvr->cl_neo_crosshair_thickness.GetInt();
-		pCrosshair->info.iGap = cvr->cl_neo_crosshair_gap.GetInt();
-		pCrosshair->info.iOutline = cvr->cl_neo_crosshair_outline.GetInt();
-		pCrosshair->info.iCenterDot = cvr->cl_neo_crosshair_center_dot.GetInt();
-		pCrosshair->info.bTopLine = cvr->cl_neo_crosshair_top_line.GetBool();
-		pCrosshair->info.iCircleRad = cvr->cl_neo_crosshair_circle_radius.GetInt();
-		pCrosshair->info.iCircleSegments = cvr->cl_neo_crosshair_circle_segments.GetInt();
+		const bool bImported = ImportCrosshair(&pCrosshair->info, cvr->cl_neo_crosshair.GetString());
+		if (!bImported)
+		{
+			ImportCrosshair(&pCrosshair->info, CL_NEO_CROSSHAIR_DEFAULT);
+		}
+		pCrosshair->eClipboardInfo = XHAIREXPORTNOTIFY_NONE;
 	}
 }
 
@@ -617,23 +607,9 @@ void NeoSettingsSave(const NeoSettings *ns)
 	}
 	{
 		const NeoSettings::Crosshair *pCrosshair = &ns->crosshair;
-		cvr->cl_neo_crosshair_style.SetValue(pCrosshair->iStyle);
-		cvr->cl_neo_crosshair_color_r.SetValue(pCrosshair->info.color.r());
-		cvr->cl_neo_crosshair_color_g.SetValue(pCrosshair->info.color.g());
-		cvr->cl_neo_crosshair_color_b.SetValue(pCrosshair->info.color.b());
-		cvr->cl_neo_crosshair_color_a.SetValue(pCrosshair->info.color.a());
-		cvr->cl_neo_crosshair_dynamic.SetValue(pCrosshair->info.bDynamic);
-		cvr->cl_neo_crosshair_dynamic_type.SetValue(pCrosshair->info.iEDynamicType);
-		cvr->cl_neo_crosshair_size_type.SetValue(pCrosshair->info.iESizeType);
-		cvr->cl_neo_crosshair_size.SetValue(pCrosshair->info.iSize);
-		cvr->cl_neo_crosshair_size_screen.SetValue(pCrosshair->info.flScrSize);
-		cvr->cl_neo_crosshair_thickness.SetValue(pCrosshair->info.iThick);
-		cvr->cl_neo_crosshair_gap.SetValue(pCrosshair->info.iGap);
-		cvr->cl_neo_crosshair_outline.SetValue(pCrosshair->info.iOutline);
-		cvr->cl_neo_crosshair_center_dot.SetValue(pCrosshair->info.iCenterDot);
-		cvr->cl_neo_crosshair_top_line.SetValue(pCrosshair->info.bTopLine);
-		cvr->cl_neo_crosshair_circle_radius.SetValue(pCrosshair->info.iCircleRad);
-		cvr->cl_neo_crosshair_circle_segments.SetValue(pCrosshair->info.iCircleSegments);
+		char szSequence[NEO_XHAIR_SEQMAX];
+		ExportCrosshair(&pCrosshair->info, szSequence);
+		cvr->cl_neo_crosshair.SetValue(szSequence);
 	}
 
 	engine->ClientCmd_Unrestricted("host_writeconfig");
@@ -894,12 +870,12 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 	g_uiCtx.dPanel.y += g_uiCtx.dPanel.tall;
 	g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall * IVIEW_ROWS;
 
-	const bool bTextured = CROSSHAIR_FILES[pCrosshair->iStyle][0];
+	const bool bTextured = CROSSHAIR_FILES[pCrosshair->info.iStyle][0];
 	NeoUI::BeginSection();
 	{
 		if (bTextured)
 		{
-			NeoSettings::Crosshair::Texture *pTex = &ns->crosshair.arTextures[pCrosshair->iStyle];
+			NeoSettings::Crosshair::Texture *pTex = &ns->crosshair.arTextures[pCrosshair->info.iStyle];
 			vgui::surface()->DrawSetTexture(pTex->iTexId);
 			vgui::surface()->DrawSetColor(pCrosshair->info.color);
 			vgui::surface()->DrawTexturedRect(
@@ -916,26 +892,58 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 		}
 		vgui::surface()->DrawSetColor(g_uiCtx.normalBgColor);
 
-		if (pCrosshair->iStyle == CROSSHAIR_STYLE_CUSTOM)
+		if (pCrosshair->info.iStyle == CROSSHAIR_STYLE_CUSTOM)
 		{
-			NeoUI::SetPerRowLayout(5);
+			NeoUI::SetPerRowLayout(4);
 			{
-				const bool bPresExport = NeoUI::Button(L"Export").bPressed;
-				const bool bPresImport = NeoUI::Button(L"Import").bPressed;
-				if (bPresExport || bPresImport)
+				const bool bExportPressed = NeoUI::Button(L"Export to clipboard").bPressed;
+				const bool bImportPressed = NeoUI::Button(L"Import from clipboard").bPressed;
+				if (bExportPressed || bImportPressed)
 				{
-					if (g_pNeoRoot->m_pFileIODialog)
+					char szClipboardCrosshair[NEO_XHAIR_SEQMAX] = {}; // zero-init
+					if (bExportPressed)
 					{
-						g_pNeoRoot->m_pFileIODialog->MarkForDeletion();
+						// NEO NOTE (nullsystem): On Windows, SetClipboardText sets from char * looks fine
+						ExportCrosshair(&pCrosshair->info, szClipboardCrosshair);
+						vgui::system()->SetClipboardText(szClipboardCrosshair, V_strlen(szClipboardCrosshair));
+						pCrosshair->eClipboardInfo = XHAIREXPORTNOTIFY_EXPORT_TO_CLIPBOARD;
 					}
-					pCrosshair->eFileIOMode = bPresImport ? vgui::FOD_OPEN : vgui::FOD_SAVE;
-					g_pNeoRoot->m_eFileIOMode = CNeoRoot::FILEIODLGMODE_CROSSHAIR;
-					g_pNeoRoot->m_pFileIODialog = new vgui::FileOpenDialog(g_pNeoRoot,
-																		   bPresImport ? "Import crosshair" : "Export crosshair",
-																		   pCrosshair->eFileIOMode);
-					g_pNeoRoot->m_pFileIODialog->AddFilter("*." NEO_XHAIR_EXT, "NT;RE Crosshair", true);
-					g_pNeoRoot->m_pFileIODialog->DoModal();
+					else // bImportPressed
+					{
+						bool bImported = false;
+						if (vgui::system()->GetClipboardTextCount() > 0)
+						{
+#ifdef WIN32
+							// NEO NOTE (nullsystem): On Windows, GetClipboardText char * returns UTF-16 arranged bytes, differs from Set...
+							wchar_t wszClipboardCrosshair[NEO_XHAIR_SEQMAX] = {};
+							const int iClipboardWSZBytes = vgui::system()->GetClipboardText(0, wszClipboardCrosshair, NEO_XHAIR_SEQMAX);
+							const int iClipboardBytes = (iClipboardWSZBytes > 0)
+									? g_pVGuiLocalize->ConvertUnicodeToANSI(wszClipboardCrosshair, szClipboardCrosshair, sizeof(szClipboardCrosshair))
+									: 0;
+#else
+							const int iClipboardBytes = vgui::system()->GetClipboardText(0, szClipboardCrosshair, NEO_XHAIR_SEQMAX);
+#endif
+							if (iClipboardBytes > 0)
+							{
+								bImported = ImportCrosshair(&pCrosshair->info, szClipboardCrosshair);
+							}
+						}
+						pCrosshair->eClipboardInfo = bImported
+								? XHAIREXPORTNOTIFY_IMPORT_TO_CLIPBOARD
+								: XHAIREXPORTNOTIFY_IMPORT_TO_CLIPBOARD_ERROR;
+					}
 				}
+			}
+
+			NeoUI::SetPerRowLayout(1);
+			{
+				static constexpr const wchar_t *ARWSZ_XHAIREXPORTNOTIFY_STR[XHAIREXPORTNOTIFY__TOTAL] = {
+					L"", 													// XHAIREXPORTNOTIFY_NONE
+					L"Exported crosshair to clipboard", 					// XHAIREXPORTNOTIFY_EXPORT_TO_CLIPBOARD
+					L"Imported crosshair from clipboard", 					// XHAIREXPORTNOTIFY_IMPORT_TO_CLIPBOARD
+					L"ERROR: Unable to import crosshair from clipboard", 	// XHAIREXPORTNOTIFY_IMPORT_TO_CLIPBOARD_ERROR
+				};
+				NeoUI::Label(ARWSZ_XHAIREXPORTNOTIFY_STR[pCrosshair->eClipboardInfo]);
 			}
 		}
 	}
@@ -946,7 +954,7 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 	NeoUI::BeginSection(true);
 	{
 		NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
-		NeoUI::RingBox(L"Crosshair style", CROSSHAIR_LABELS, CROSSHAIR_STYLE__TOTAL, &pCrosshair->iStyle);
+		NeoUI::RingBox(L"Crosshair style", CROSSHAIR_LABELS, CROSSHAIR_STYLE__TOTAL, &pCrosshair->info.iStyle);
 		NeoUI::SliderU8(L"Red", &pCrosshair->info.color[0], 0, UCHAR_MAX);
 		NeoUI::SliderU8(L"Green", &pCrosshair->info.color[1], 0, UCHAR_MAX);
 		NeoUI::SliderU8(L"Blue", &pCrosshair->info.color[2], 0, UCHAR_MAX);

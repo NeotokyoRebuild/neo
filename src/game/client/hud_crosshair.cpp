@@ -57,8 +57,7 @@ void CVGlobal_NeoClCrosshair(IConVar *var, [[maybe_unused]] const char *pOldStri
 	CHudCrosshair *crosshair = GET_HUDELEMENT(CHudCrosshair);
 	if (crosshair && V_strstr(var->GetName(), "cl_neo_crosshair"))
 	{
-		// NEO NOTE (nullsystem): Only mark for refresh, not immediate as they will likely be multiple of convars sent
-		// over
+		// NEO NOTE (nullsystem): Mark for refresh
 		crosshair->m_bRefreshCrosshair = true;
 	}
 }
@@ -420,8 +419,19 @@ void CHudCrosshair::Paint( void )
 
 	// NEO TODO (nullsystem): Probably be better if the entire class refreshed to our own
 	// thing and can do away with that CHudTexture nonsense entirely
-	const bool bIsScoped = pWeapon && pWeapon->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON;
-	const int iXHairStyle = cl_neo_crosshair_style.GetInt();
+	const bool bIsScoped = pNeoWep && pNeoWep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON;
+
+	if (m_bRefreshCrosshair)
+	{
+		const bool bImported = ImportCrosshair(&m_crosshairInfo, cl_neo_crosshair.GetString());
+		if (!bImported)
+		{
+			cl_neo_crosshair.Revert();
+			ImportCrosshair(&m_crosshairInfo, CL_NEO_CROSSHAIR_DEFAULT);
+		}
+		m_bRefreshCrosshair = false;
+	}
+	const int iXHairStyle = m_crosshairInfo.iStyle;
 
 	trace_t iffTrace;
 	if (NEORules()->GetGameType() != NEO_GAME_TYPE_DM)
@@ -502,54 +512,6 @@ void CHudCrosshair::Paint( void )
 	}
 	else
 	{
-		if (pWeapon && cl_neo_crosshair_dynamic.GetBool() && pWeapon->GetNeoWepBits() & NEO_WEP_FIREARM)
-		{
-			m_bRefreshDynamicCrosshair = true;
-			const int size = HalfInaccuracyConeInScreenPixels(pPlayer, pWeapon, m_iHalfScreenWidth);
-
-			switch (cl_neo_crosshair_dynamic_type.GetInt())
-			{
-			case CROSSHAIR_DYNAMICTYPE_GAP:
-				m_crosshairInfo.iGap = size;
-				break;
-			case CROSSHAIR_DYNAMICTYPE_CIRCLE:
-				m_crosshairInfo.iCircleRad = size;
-				break;
-			case CROSSHAIR_DYNAMICTYPE_SIZE:
-				m_crosshairInfo.iSize = size;
-				break;
-			default:
-				Assert(false);
-				break;
-			}
-		}
-		else if (m_bRefreshDynamicCrosshair)
-		{
-			m_bRefreshDynamicCrosshair = false;
-			m_crosshairInfo.iGap = cl_neo_crosshair_gap.GetInt();
-			m_crosshairInfo.iCircleRad = cl_neo_crosshair_circle_radius.GetInt();
-			m_crosshairInfo.iSize = cl_neo_crosshair_size.GetInt();
-		}
-
-		if (m_bRefreshCrosshair)
-		{
-			m_crosshairInfo = CrosshairInfo{
-					.color = Color(
-						cl_neo_crosshair_color_r.GetInt(), cl_neo_crosshair_color_g.GetInt(),
-						cl_neo_crosshair_color_b.GetInt(), cl_neo_crosshair_color_a.GetInt()),
-					.iESizeType = cl_neo_crosshair_size_type.GetInt(),
-					.iSize = cl_neo_crosshair_size.GetInt(),
-					.flScrSize = cl_neo_crosshair_size_screen.GetFloat(),
-					.iThick = cl_neo_crosshair_thickness.GetInt(),
-					.iGap = cl_neo_crosshair_gap.GetInt(),
-					.iOutline = cl_neo_crosshair_outline.GetInt(),
-					.iCenterDot = cl_neo_crosshair_center_dot.GetInt(),
-					.bTopLine = cl_neo_crosshair_top_line.GetBool(),
-					.iCircleRad = cl_neo_crosshair_circle_radius.GetInt(),
-					.iCircleSegments = cl_neo_crosshair_circle_segments.GetInt(),
-				};
-			m_bRefreshCrosshair = false;
-		}
 		PaintCrosshair(m_crosshairInfo, iX, iY);
 	}
 
