@@ -9,6 +9,7 @@
 #include <vgui/ILocalize.h>
 #include <vgui/ISurface.h>
 #include "engine/IEngineSound.h"
+#include "voice_status.h"
 
 #include "ienginevgui.h"
 
@@ -116,6 +117,12 @@ void CNEOHud_PlayerPing::FireGameEvent(IGameEvent* event)
 	if (!Q_stricmp(eventName, "player_ping") && cl_neo_player_pings.GetBool())
 	{
 		int playerIndex = event->GetInt("playerindex");
+
+		if (GetClientVoiceMgr()->IsPlayerBlocked(playerIndex))
+		{
+			return;
+		}
+
 		Vector worldpos = Vector(event->GetInt("pingx"), event->GetInt("pingy"), event->GetInt("pingz"));
 		bool ghosterPing = event->GetBool("ghosterping");
 		SetPos(playerIndex, worldpos, ghosterPing);
