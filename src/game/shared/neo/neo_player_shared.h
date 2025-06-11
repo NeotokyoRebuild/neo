@@ -16,13 +16,7 @@
 
 #include "neo_predicted_viewmodel.h"
 
-#ifdef INCLUDE_WEP_PBK
-// Type to use if we need to ensure more than 32 bits in the mask.
 #define NEO_WEP_BITS_UNDERLYING_TYPE long long int
-#else
-// Using plain int if we don't need to ensure >32 bits in the mask.
-#define NEO_WEP_BITS_UNDERLYING_TYPE int
-#endif
 
 //////////////////////////////////////////////////////
 // NEO MOVEMENT DEFINITIONS
