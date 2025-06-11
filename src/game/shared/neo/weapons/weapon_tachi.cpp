@@ -52,6 +52,7 @@ CWeaponTachi::CWeaponTachi()
 	m_fMaxRange2 = 200;
 
 	m_bFiresUnderwater = false;
+	m_bAltFiresUnderwater = true;
 	m_bIsPrimaryFireMode = true;
 
 	m_weaponSeeds = {
