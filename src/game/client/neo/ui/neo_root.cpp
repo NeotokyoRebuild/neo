@@ -480,11 +480,13 @@ void CNeoRoot::FireGameEvent(IGameEvent *event)
 	}
 }
 
+#include "mp3player.h";
 void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 {
 	if (m_ns.keys.bcConsole <= KEY_NONE)
 	{
 		m_ns.keys.bcConsole = gameuifuncs->GetButtonCodeForBind("neo_toggleconsole");
+		m_ns.keys.bcMP3Player = gameuifuncs->GetButtonCodeForBind("neo_mp3");
 		m_ns.keys.bcTeamMenu = gameuifuncs->GetButtonCodeForBind("teammenu");
 		m_ns.keys.bcClassMenu = gameuifuncs->GetButtonCodeForBind("classmenu");
 		m_ns.keys.bcLoadoutMenu = gameuifuncs->GetButtonCodeForBind("loadoutmenu");
@@ -499,6 +501,10 @@ void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 		// opened which generally doesn't endup calling OnRelayedKeyCodeTyped anyway.
 		NeoToggleconsole();
 		return;
+	}
+	else if (code == m_ns.keys.bcMP3Player)
+	{
+		engine->ClientCmd_Unrestricted("neo_mp3");
 	}
 	g_uiCtx.eCode = code;
 	OnMainLoop(NeoUI::MODE_KEYPRESSED);
@@ -814,6 +820,28 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	}
 	NeoUI::EndSection();
 #endif
+	g_uiCtx.dPanel.x = param.wide - 128;
+	g_uiCtx.dPanel.y = param.tall - 48;
+	g_uiCtx.dPanel.wide = 128;
+	g_uiCtx.dPanel.tall = 1;
+	NeoUI::BeginSection();
+	g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
+	const auto musicPlayerBtn = NeoUI::Button(L"MP3");
+	if (musicPlayerBtn.bPressed)
+	{
+		surface()->PlaySound("ui/buttonclickrelease.wav");
+		engine->ClientCmd("neo_mp3");
+
+	}
+	if (musicPlayerBtn.bMouseHover && BTNS_TOTAL != m_iHoverBtn)
+	{
+		// Sound rollover feedback
+		surface()->PlaySound("ui/buttonrollover.wav");
+		m_iHoverBtn = BTNS_TOTAL;
+	}
+	
+	NeoUI::EndSection();
+	NeoUI::EndContext();
 }
 
 void CNeoRoot::MainLoopSettings(const MainLoopParam param)
