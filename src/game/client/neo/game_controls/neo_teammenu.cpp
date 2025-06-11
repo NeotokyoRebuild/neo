@@ -286,7 +286,7 @@ void CNeoTeamMenu::CloseMenu()
 
 void CNeoTeamMenu::OnKeyCodeReleased(vgui::KeyCode code)
 { // Navigating using the keyboard hack
-	if (code == g_pNeoRoot->m_ns.keys.bcTeamMenu)
+	if (code == gameuifuncs->GetButtonCodeForBind("teammenu"))
 	{
 		CloseMenu();
 		return;
