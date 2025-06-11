@@ -38,7 +38,7 @@ private:
 	int GetStringPixelWidth(wchar_t* pString, vgui::HFont hFont);
 	void UpdateDistanceToPlayer(C_BasePlayer* player, int pingIndex);
 	void SetPos(const int index, Vector& pos, bool ghosterPing);
-	void PlayPingSound();
+	void NotifyPing(C_NEO_Player* pPlayer = nullptr);
 
 private:
 	playerPing m_iPlayerPings[MAX_PLAYERS] = {};

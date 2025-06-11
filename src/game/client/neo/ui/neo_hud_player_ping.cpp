@@ -10,6 +10,7 @@
 #include <vgui/ISurface.h>
 #include "engine/IEngineSound.h"
 #include "voice_status.h"
+#include "hud_chat.h"
 
 #include "ienginevgui.h"
 
@@ -20,8 +21,7 @@ NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(PlayerPing, 0.05) // distances to pings and th
 CNEOHud_PlayerPing* playerPingHudElement;
 static void clNeoPlayerPingsCallback(IConVar* var, const char* pOldValue, float flOldValue)
 {
-	const bool bCurrentValue = !(bool)flOldValue;
-	if (!bCurrentValue && playerPingHudElement)
+	if (flOldValue && playerPingHudElement)
 	{
 		playerPingHudElement->HideAllPings();
 	}
@@ -47,7 +47,7 @@ CNEOHud_PlayerPing::CNEOHud_PlayerPing(const char* pElementName, vgui::Panel* pa
 	Assert(m_hTexture > 0);
 
 	pingSoundHandle = CBaseEntity::PrecacheScriptSound("HUD.Ping");
-	//Assert(pingSoundHandle > -1); Sometimes inexplicably doesn't work
+	Assert(pingSoundHandle > -1);
 
 	SetVisible(true);
 
@@ -110,23 +110,23 @@ void CNEOHud_PlayerPing::Init(void)
 //-----------------------------------------------------------------------------
 void CNEOHud_PlayerPing::FireGameEvent(IGameEvent* event)
 {
-	if (!g_PR)
-		return;
-
 	auto eventName = event->GetName();
-	if (!Q_stricmp(eventName, "player_ping") && cl_neo_player_pings.GetBool())
+	if (!Q_stricmp(eventName, "player_ping"))
 	{
-		int playerIndex = event->GetInt("playerindex");
-
-		if (GetClientVoiceMgr()->IsPlayerBlocked(playerIndex))
+		if (!cl_neo_player_pings.GetBool())
 		{
 			return;
 		}
 
+		int playerIndex = event->GetInt("playerindex");
+		if (GetClientVoiceMgr()->IsPlayerBlocked(playerIndex))
+		{
+			return;
+		}
+		
 		Vector worldpos = Vector(event->GetInt("pingx"), event->GetInt("pingy"), event->GetInt("pingz"));
 		bool ghosterPing = event->GetBool("ghosterping");
 		SetPos(playerIndex, worldpos, ghosterPing);
-		PlayPingSound();
 	}
 	else if (!Q_stricmp(eventName, "round_start"))
 	{
@@ -289,7 +289,7 @@ void CNEOHud_PlayerPing::SetPos(const int index, Vector& pos, bool ghosterPing) 
 	constexpr float PLAYER_PING_LIFETIME = 8;
 	auto localPlayer = UTIL_PlayerByIndex(GetLocalPlayerIndex());
 	if (!localPlayer) { return; }
-	auto pingPlayer = UTIL_PlayerByIndex(index);
+	auto pingPlayer = static_cast<C_NEO_Player*>(UTIL_PlayerByIndex(index));
 	if (!pingPlayer) { return; }
 
 	const int pingIndex = index - 1;
@@ -299,20 +299,35 @@ void CNEOHud_PlayerPing::SetPos(const int index, Vector& pos, bool ghosterPing) 
 	m_iPlayerPings[pingIndex].ghosterPing = ghosterPing;
 
 	UpdateDistanceToPlayer(localPlayer, pingIndex);
-	PlayPingSound();
+	NotifyPing(pingPlayer);
 }
 
 ConVar snd_ping_volume("snd_ping_volume", "0.33", FCVAR_ARCHIVE, "Player ping volume", true, 0.f, true, 1.f);
-void CNEOHud_PlayerPing::PlayPingSound()
+ConVar cl_neo_player_pings_chat_message("cl_neo_player_pings_chat_message", "1", FCVAR_ARCHIVE, "Show message in chat for player pings.", true, 0, true, 1);
+void CNEOHud_PlayerPing::NotifyPing(C_NEO_Player * pPlayer)
 {
+	if (cl_neo_player_pings_chat_message.GetBool() && pPlayer && !pPlayer->IsLocalPlayer())
+	{
+		CBaseHudChat* hudChat = (CBaseHudChat*)GET_HUDELEMENT(CHudChat);
+		if (hudChat)
+		{
+			char szText[256];
+			V_strcpy_safe(szText, pPlayer->GetNeoPlayerName());
+			V_strcat_safe(szText, " pinged a location\n");
+			hudChat->ChatPrintf(0, CHAT_FILTER_NONE, szText);
+		}
+	}
+	
 	if (gpGlobals->curtime < m_flNextPingSoundTime)
 	{
 		return;
 	}
-	m_flNextPingSoundTime = gpGlobals->curtime + 3;
+
+	constexpr int MIN_TIME_BETWEEN_PING_SOUNDS = 3;
+	m_flNextPingSoundTime = gpGlobals->curtime + MIN_TIME_BETWEEN_PING_SOUNDS;
 
 	EmitSound_t et;
-	if (!pingSoundHandle)
+	if (pingSoundHandle == -1)
 	{
 		et.m_pSoundName = "gameplay/ping.wav";
 	}

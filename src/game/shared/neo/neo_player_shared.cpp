@@ -117,13 +117,13 @@ extern ConVar cl_neo_player_pings;
 #endif // CLIENT_DLL
 void CheckPingButton(CNEO_Player* player)
 {
-	if (!(player->m_afButtonPressed & IN_ATTACK3) || player->m_flNextPingTime > gpGlobals->curtime)
+	if (!player->IsAlive() || !(player->m_afButtonPressed & IN_ATTACK3) || player->m_flNextPingTime > gpGlobals->curtime)
 	{
 		return;
 	}
 
 	if (!player->IsBot())
-	{
+	{ // players with pings disabled can't ping
 #ifdef GAME_DLL
 		const bool showPlayerPings = atoi(engine->GetClientConVarValue(engine->IndexOfEdict(player->edict()), "cl_neo_player_pings"));
 #else
@@ -140,9 +140,8 @@ void CheckPingButton(CNEO_Player* player)
 	{
 		trace_t tr;
 		Vector forward;
-		CBasePlayer* basePlayer = UTIL_PlayerByIndex(player->entindex());
-		basePlayer->EyeVectors(&forward);
-		Vector eyePosition = basePlayer->EyePosition();
+		player->EyeVectors(&forward);
+		Vector eyePosition = player->EyePosition();
 		UTIL_TraceLine(eyePosition, eyePosition + forward * MAX_COORD_RANGE, MASK_VISIBLE_AND_NPCS, player, COLLISION_GROUP_NONE, &tr);
 
 		if (Q_stristr(tr.surface.name, "SKYBOX"))
@@ -154,7 +153,7 @@ void CheckPingButton(CNEO_Player* player)
 		event->SetInt("pingx", tr.endpos.x);
 		event->SetInt("pingy", tr.endpos.y);
 		event->SetInt("pingz", tr.endpos.z);
-		event->SetBool("ghosterping", NEORules()->GetGhosterPlayer() == player->entindex());
+		event->SetBool("ghosterping", NEORules()->GetGhosterPlayer() == player->entindex() || player->m_iNeoClass == NEO_CLASS_VIP);
 #ifdef GAME_DLL
 		gameeventmanager->FireEvent(event);
 #else
