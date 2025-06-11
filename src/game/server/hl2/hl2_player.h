@@ -345,7 +345,11 @@ private:
 	float				m_fAutoSprintMinTime;	// Minimum time to maintain autosprint regardless of player speed. 
 
 	CNetworkVar( bool, m_fIsSprinting );
+#ifdef NEO
+	CNetworkVar( bool, m_fIsWalking );
+#else
 	CNetworkVarForDerived( bool, m_fIsWalking );
+#endif // NEO
 
 protected:	// Jeep: Portal_Player needs access to this variable to overload PlayerUse for picking up objects through portals
 	bool				m_bPlayUseDenySound;		// Signaled by PlayerUse, but can be unset by HL2 ladder code...
