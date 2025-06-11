@@ -27,6 +27,7 @@
 	#include "neo_dm_spawn.h"
 	#include "neo_misc.h"
 	#include "neo_game_config.h"
+	#include "nav_mesh.h"
 
 extern ConVar weaponstay;
 #endif
@@ -2034,6 +2035,11 @@ CNEORules::ReadyPlayers CNEORules::FetchReadyPlayers() const
 
 void CNEORules::StartNextRound()
 {
+	if (g_fGameOver)
+	{
+		return;
+	}
+
 	// Only check ready-up on idle state
 	const bool bLobby = sv_neo_readyup_lobby.GetBool() && m_nRoundStatus == NeoRoundStatus::Idle;
 	const int iThres = sv_neo_readyup_teamplayersthres.GetInt();
@@ -3802,3 +3808,10 @@ const char *CNEORules::GetTeamClantag(const int iTeamNum) const
 	default: return "";
 	}
 }
+
+#ifdef GAME_DLL
+void CNEORules::OnNavMeshLoad(void)
+{
+	TheNavMesh->SetPlayerSpawnName("info_player_defender");
+}
+#endif

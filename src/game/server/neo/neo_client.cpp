@@ -374,16 +374,6 @@ void respawn(CBaseEntity *pEdict, bool fCopyCorpse)
 	RespawnWithRet(pEdict, fCopyCorpse);
 }
 
-ConVar sv_neo_bot_think("sv_neo_bot_think",
-#ifdef DEBUG
-	"1",
-#else
-	"0",
-#endif
-	FCVAR_NONE, "Run think on debug bots.", true, 0.0, true, 1.0);
-
-ConVar bot_next_team("bot_next_team", "-1", FCVAR_NONE, "Which team the next bot should join. -1: Choose the playing team with less players in it. -2: Random playing team. Any other value: The corresponding team index.");
-
 void GameStartFrame( void )
 {
 	VPROF("GameStartFrame()");
@@ -391,12 +381,6 @@ void GameStartFrame( void )
 		return;
 
 	gpGlobals->teamplay = (teamplay.GetInt() != 0);
-
-	if (sv_neo_bot_think.GetBool())
-	{
-		extern void Bot_RunAll();
-		Bot_RunAll();
-	}
 }
 
 //=========================================================
