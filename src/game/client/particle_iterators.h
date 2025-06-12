@@ -52,6 +52,9 @@ public:
 	// it should GO AWAY SOON!
 	ParticleDraw* GetParticleDraw() const;
 
+#ifdef NEO
+	bool m_bInThermalVision = false;
+#endif // NEO
 
 private:
 

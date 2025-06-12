@@ -6,9 +6,11 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-ConVar mat_neo_tv_brightness_scale("mat_neo_tv_brightness_scale", "1", FCVAR_CHEAT);
-ConVar mat_neo_tv_xoffset("mat_neo_tv_xoffset", "0.125", FCVAR_CHEAT);
-ConVar mat_neo_tv_xmultiplier("mat_neo_tv_xmultiplier", "0.1", FCVAR_CHEAT);
+ConVar mat_neo_tv_brightness_scale("mat_neo_tv_brightness_scale", "", FCVAR_CHEAT);
+ConVar mat_neo_tv_xoffset("mat_neo_tv_xoffset", "0.13", FCVAR_CHEAT);
+ConVar mat_neo_tv_xmultiplier("mat_neo_tv_xmultiplier", "3", FCVAR_CHEAT);
+ConVar mat_neo_tv_brightness_nerf_threshold("mat_neo_tv_brightness_nerf_threshold", "0.325", FCVAR_CHEAT);
+ConVar mat_neo_tv_brightness_nerf("mat_neo_tv_brightness_nerf", "0.325", FCVAR_CHEAT);
 
 BEGIN_SHADER_FLAGS(Neo_ThermalVision, "Help for my shader.", SHADER_NOT_EDITABLE)
 
@@ -125,12 +127,16 @@ SHADER_DRAW
 		const float flXOffset = mat_neo_tv_xoffset.GetFloat();
 		const float flXMultiplier = mat_neo_tv_xmultiplier.GetFloat();
 		const float* noiseTransformVector = params[NOISETRANSFORM]->GetVecValue();
+		const float flBrightnessNerfThreshold = mat_neo_tv_brightness_nerf_threshold.GetFloat();
+		const float flBrightnessNerf = mat_neo_tv_brightness_nerf.GetFloat();
 
 		pShaderAPI->SetPixelShaderConstant(0, &flBrightnessScale);
 		pShaderAPI->SetPixelShaderConstant(1, &flXOffset);
 		pShaderAPI->SetPixelShaderConstant(2, &flXMultiplier);
 		pShaderAPI->SetPixelShaderConstant(3, &noiseTransformVector[0]);
 		pShaderAPI->SetPixelShaderConstant(4, &noiseTransformVector[1]);
+		pShaderAPI->SetPixelShaderConstant(5, &flBrightnessNerfThreshold);
+		pShaderAPI->SetPixelShaderConstant(6, &flBrightnessNerf);
 
 		DECLARE_DYNAMIC_VERTEX_SHADER(neo_passthrough_vs30);
 		SET_DYNAMIC_VERTEX_SHADER(neo_passthrough_vs30);
