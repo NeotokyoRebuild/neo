@@ -66,6 +66,8 @@ SendPropTime(SENDINFO(m_flCamoAuxLastTime)),
 SendPropInt(SENDINFO(m_nVisionLastTick)),
 SendPropTime(SENDINFO(m_flJumpLastTime)),
 
+SendPropTime(SENDINFO(m_flNextPingTime)),
+
 SendPropString(SENDINFO(m_pszTestMessage)),
 
 SendPropArray(SendPropVector(SENDINFO_ARRAY(m_rvFriendlyPlayerPositions), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rvFriendlyPlayerPositions),
@@ -102,6 +104,7 @@ DEFINE_FIELD(m_bInAim, FIELD_BOOLEAN),
 DEFINE_FIELD(m_flCamoAuxLastTime, FIELD_TIME),
 DEFINE_FIELD(m_nVisionLastTick, FIELD_TICK),
 DEFINE_FIELD(m_flJumpLastTime, FIELD_TIME),
+DEFINE_FIELD(m_flNextPingTime, FIELD_TIME),
 
 DEFINE_FIELD(m_pszTestMessage, FIELD_STRING),
 
@@ -464,6 +467,8 @@ CNEO_Player::CNEO_Player()
 
 	m_iDmgMenuCurPage = 0;
 	m_iDmgMenuNextPage = 0;
+
+	m_flNextPingTime = 0;
 }
 
 CNEO_Player::~CNEO_Player( void )
@@ -595,6 +600,8 @@ void CNEO_Player::Spawn(void)
 	{
 		m_rfAttackersHits.Set(i, 0);
 	}
+
+	m_flNextPingTime = 0;
 
 	Weapon_SetZoom(false);
 
@@ -992,6 +999,7 @@ void CNEO_Player::PreThink(void)
 
 	CheckThermOpticButtons();
 	CheckVisionButtons();
+	CheckPingButton(this);
 
 	if (m_bInThermOpticCamo)
 	{
