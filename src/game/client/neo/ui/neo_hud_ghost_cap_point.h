@@ -27,15 +27,12 @@ public:
 private:
 	int m_iPosX = 0;
 	int m_iPosY = 0;
-	int m_iCapTexWidth = 0;
-	int m_iCapTexHeight = 0;
 	int m_flMyRadius = 0;
 	int m_iCapTeam = TEAM_INVALID;
 	float m_flDistance = 0.0f;
 	float m_flCapTexScale = 1.0f;
 	float m_fMarkerScalesStart[4] = { 0.78f, 0.6f, 0.38f, 0.0f };
 	float m_fMarkerScalesCurrent[4] = { 0.78f, 0.6f, 0.38f, 0.0f };
-	char m_szMarkerText[64 + 1] = {};
 	wchar_t m_wszMarkerTextUnicode[64 + 1] = {};
 	Vector m_vecMyPos = Vector(0, 0, 0);
 	vgui::HFont m_hFont = 0UL;
