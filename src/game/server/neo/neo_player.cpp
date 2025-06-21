@@ -1609,39 +1609,6 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 
 		switch (m_eMenuSelectType)
 		{
-		case MENU_SELECT_TYPE_DMG:
-			if (m_iDmgMenuCurPage <= 0)
-			{
-				return true;
-			}
-			switch (slot)
-			{
-			case DAMAGE_MENU_SELECT_DISMISS:
-			case DAMAGE_MENU_SELECT_DONOTSHOW:
-			{
-				m_iDmgMenuCurPage = 0;
-				m_iDmgMenuNextPage = 0;
-				m_eMenuSelectType = MENU_SELECT_TYPE_NONE;
-				if (slot == DAMAGE_MENU_SELECT_DONOTSHOW)
-				{
-					m_bDoNotShowDmgInfoMenu = true;
-				}
-				break;
-			}
-			case DAMAGE_MENU_SELECT_NEXTPAGE:
-			{
-				char infoStr[SHOWMENU_STRLIMIT];
-				int infoStrSize = 0;
-				bool showMenu = false;
-				m_iDmgMenuCurPage = m_iDmgMenuNextPage;
-				m_iDmgMenuNextPage = SetDmgListStr(infoStr, sizeof(infoStr), m_iDmgMenuNextPage, &infoStrSize, &showMenu, NULL);
-				if (showMenu) ShowDmgInfo(infoStr, infoStrSize);
-				break;
-			}
-			default:
-				break;
-			}
-			break;
 		case MENU_SELECT_TYPE_PAUSE:
 			m_eMenuSelectType = MENU_SELECT_TYPE_NONE;
 			if (slot == PAUSE_MENU_SELECT_SHORT || slot == PAUSE_MENU_SELECT_LONG)
@@ -1721,56 +1688,6 @@ bool CNEO_Player::BecomeRagdollOnClient( const Vector &force )
 	return BaseClass::BecomeRagdollOnClient(force);
 }
 
-void CNEO_Player::ShowDmgInfo(char* infoStr, int infoStrSize)
-{
-	if (m_bDoNotShowDmgInfoMenu)
-	{
-		return;
-	}
-
-	CSingleUserRecipientFilter filter(this);
-	filter.MakeReliable();
-
-	// UserMessage has limits, so need to send more than once if it
-	// doesn't fit in one UserMessage packet
-	static const int MAX_INFOSTR_PER_UMSG = 240;
-	int infoStrOffset = 0;
-	int infoStrOffsetMax = MAX_INFOSTR_PER_UMSG;
-	while (infoStrSize > 0)
-	{
-		char tmpCh = '\0';
-		if (infoStrOffsetMax < SHOWMENU_STRLIMIT)
-		{
-			tmpCh = infoStr[infoStrOffsetMax];
-			infoStr[infoStrOffsetMax] = '\0';
-		}
-		m_eMenuSelectType = MENU_SELECT_TYPE_DMG;
-		UserMessageBegin(filter, "ShowMenu");
-		{
-			// The key options available in bitwise (EX: 1 -> 1 << 0, 9 -> 1 << 8)
-			short sBitwiseOpts =
-					  1 << (DAMAGE_MENU_SELECT_DISMISS - 1)
-					| 1 << (DAMAGE_MENU_SELECT_DONOTSHOW - 1);
-			if (m_iDmgMenuNextPage)
-			{
-				sBitwiseOpts |= 1 << (DAMAGE_MENU_SELECT_NEXTPAGE - 1);
-			}
-			WRITE_SHORT(sBitwiseOpts);
-			WRITE_CHAR(static_cast<char>(10)); // 10s timeout
-			WRITE_BYTE(static_cast<unsigned int>(infoStrSize > MAX_INFOSTR_PER_UMSG));
-			WRITE_STRING(infoStr + infoStrOffset);
-		}
-		MessageEnd();
-		if (infoStrOffsetMax < SHOWMENU_STRLIMIT)
-		{
-			infoStr[infoStrOffsetMax] = tmpCh;
-		}
-		infoStrOffset += MAX_INFOSTR_PER_UMSG;
-		infoStrOffsetMax += MAX_INFOSTR_PER_UMSG;
-		infoStrSize -= MAX_INFOSTR_PER_UMSG;
-	}
-}
-
 int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int playerIdxStart,
 		int *infoStrSize, bool *showMenu, const CTakeDamageInfo *info) const
 {
@@ -1833,8 +1750,11 @@ int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int pl
 			*showMenu = true;
 			const char *dmgerClass = GetNeoClassName(neoAttacker->GetClass());
 			static char infoLine[SHOWMENU_STRLIMIT];
+			const int infoLineLen = 0;
+#if 0 // TODO REMOVE
 			const int infoLineLen = DmgLineStr(infoLine, sizeof(infoLine),
 					dmgerName, dmgerClass, attackerInfo);
+#endif
 			if ((infoStrLen + infoLineLen) >= FILLSTR_END)
 			{
 				// Truncate for this page
@@ -1870,14 +1790,14 @@ int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int pl
 	return nextPage;
 }
 
-void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo* info)
+void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo *info)
 {
 	char infoStr[SHOWMENU_STRLIMIT];
 	int infoStrSize = 0;
+	// TODO: Remove showMenu?
 	bool showMenu = false;
 	m_iDmgMenuCurPage = 1;
 	m_iDmgMenuNextPage = SetDmgListStr(infoStr, sizeof(infoStr), m_iDmgMenuCurPage, &infoStrSize, &showMenu, info);
-	if (showMenu) ShowDmgInfo(infoStr, infoStrSize);
 
 	// Notify the client to print it out in the console
 	CSingleUserRecipientFilter filter(this);
@@ -1888,14 +1808,17 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo* info)
 		short attackerIdx = 0;
 		auto* neoAttacker = info ? dynamic_cast<CNEO_Player*>(info->GetAttacker()) : NULL;
 		const char* killedWithName = "";
-		if (neoAttacker && neoAttacker->entindex() != entindex())
+		if (neoAttacker)
 		{
 			attackerIdx = static_cast<short>(neoAttacker->entindex());
-			auto* killedWithInflictor = info->GetInflictor();
-			const bool inflictorIsPlayer = killedWithInflictor ? !Q_strcmp(killedWithInflictor->GetDebugName(), "player") : false;
-			killedWithName = killedWithInflictor ? (inflictorIsPlayer ? neoAttacker->m_hActiveWeapon->GetPrintName() : killedWithInflictor->GetDebugName()) : "";
-			if (!Q_strcmp(killedWithName, "neo_grenade_frag")) { killedWithName = "Frag Grenade"; }
-			if (!Q_strcmp(killedWithName, "neo_deployed_detpack")) { killedWithName = "Remote Detpack"; }
+			if (neoAttacker->entindex() != entindex())
+			{
+				auto* killedWithInflictor = info->GetInflictor();
+				const bool inflictorIsPlayer = killedWithInflictor ? !Q_strcmp(killedWithInflictor->GetDebugName(), "player") : false;
+				killedWithName = killedWithInflictor ? (inflictorIsPlayer ? neoAttacker->m_hActiveWeapon->GetPrintName() : killedWithInflictor->GetDebugName()) : "";
+				if (!Q_strcmp(killedWithName, "neo_grenade_frag")) { killedWithName = "Frag Grenade"; }
+				if (!Q_strcmp(killedWithName, "neo_deployed_detpack")) { killedWithName = "Remote Detpack"; }
+			}
 		}
 		WRITE_SHORT(attackerIdx);
 		WRITE_STRING(killedWithName);
