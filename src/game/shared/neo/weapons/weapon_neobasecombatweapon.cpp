@@ -248,6 +248,26 @@ void CNEOBaseCombatWeapon::Spawn()
 #endif
 }
 
+void CNEOBaseCombatWeapon::Activate(void)
+{
+#ifdef CLIENT_DLL
+	BaseClass::Activate();	// Not being called client side atm, just call baseclass in case it does
+#else
+	CBaseAnimating::Activate(); // Skip CBaseCombatWeapon::Activate();
+
+	if (GetOwnerEntity())
+		return;
+
+	if (g_pGameRules->IsAllowedToSpawn(this) == false)
+	{
+		UTIL_Remove(this);
+		return;
+	}
+
+	VPhysicsInitNormal(SOLID_BBOX, GetSolidFlags() | FSOLID_TRIGGER, false);
+#endif
+}
+
 void CNEOBaseCombatWeapon::Equip(CBaseCombatCharacter* pOwner)
 {
 	BaseClass::Equip(pOwner);
