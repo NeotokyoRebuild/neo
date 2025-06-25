@@ -321,7 +321,7 @@ void CWeaponKnife::ImpactEffect(trace_t &traceHit)
 		return;
 
 	//FIXME: need new decals
-	UTIL_ImpactTrace(&traceHit, DMG_CLUB);
+	UTIL_ImpactTrace(&traceHit, DMG_SLASH);
 }
 
 bool CWeaponKnife::ImpactWater(const Vector &start, const Vector &end)
