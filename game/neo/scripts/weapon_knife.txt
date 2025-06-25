@@ -62,9 +62,6 @@ WeaponData
 		
 		"melee_hit"			"Weapon_Generic.melee_swing" // Do the swoosh noise even if the hit lands
 		"melee_hit"			"Weapon_Crowbar.Melee_Hit"
-		
-		"melee_hit_world"	"Weapon_Generic.melee_swing" // Do the swoosh noise even if the hit lands
-		"melee_hit_world"	"Weapon_Crowbar.Melee_HitWorld"
 	}
 
 	// Weapon Sprite data is loaded by the Client DLL.
