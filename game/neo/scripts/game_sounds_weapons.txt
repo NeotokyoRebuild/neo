@@ -110,6 +110,14 @@
         "wave"				"^weapons/tachi/tachi_fire.wav"
 }
 
+"weapon_tachi.special1"
+{
+	"channel"		        "CHAN_WEAPON"
+	"volume"		        "1.0"
+	"soundlevel"		        "SNDLVL_NORM"
+        "wave"			        "weapons/tachi/tachi_empty.wav"
+}
+
 
 //---------------------------
 // Kyla
@@ -1398,4 +1406,26 @@
 		"wave"	"weapons/fx/rics/ric4.wav"
 		"wave"	"weapons/fx/rics/ric5.wav"
 	}
+}
+
+// Alyx's EMP effect
+
+"AlyxEMP.Charge"
+{
+	"channel"	"CHAN_WEAPON"
+	"volume"	"0.65"
+	"soundlevel"  	"SNDLVL_90dB"
+	"pitch"		"100,120"
+	//"wave"		"weapons/stunstick/alyx_stunner_charge2.wav"
+	"wave"		"weapons/stunstick/alyx_stunner2.wav"
+}
+
+// used in smoke grenade
+"WeaponFrag.Roll"
+{
+	"channel"	"CHAN_VOICE"
+	"volume"	"0.7"
+	"soundlevel"  "SNDLVL_75dB"
+
+	"wave"	"weapons/slam/throw.wav"
 }
