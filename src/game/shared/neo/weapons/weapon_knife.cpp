@@ -320,7 +320,6 @@ void CWeaponKnife::ImpactEffect(trace_t &traceHit)
 	if (ImpactWater(traceHit.startpos, traceHit.endpos))
 		return;
 
-	//FIXME: need new decals
 	UTIL_ImpactTrace(&traceHit, DMG_SLASH);
 }
 
