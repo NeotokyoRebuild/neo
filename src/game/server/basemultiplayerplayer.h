@@ -36,12 +36,14 @@ public:
 	virtual bool		CanSpeak( void ) { return true; }
 	virtual bool		CanBeAutobalanced() { return true; }
 
+#ifndef NEO
 	virtual void		Precache( void )
 	{
 		PrecacheParticleSystem( "achieved" );
 
 		BaseClass::Precache();
 	}
+#endif // NEO
 
 	virtual bool		ClientCommand( const CCommand &args );
 

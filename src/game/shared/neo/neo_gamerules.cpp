@@ -55,8 +55,10 @@ ConVar sv_neo_dev_test_clantag("sv_neo_dev_test_clantag", "", FCVAR_REPLICATED |
 
 #define STR_GAMEOPTS "TDM=0, CTG=1, VIP=2, DM=3"
 #define STR_GAMEBWOPTS "TDM=1, CTG=2, VIP=4, DM=8"
+#ifdef CLIENT_DLL
 ConVar neo_vote_game_mode("neo_vote_game_mode", "1", FCVAR_USERINFO, "Vote on game mode to play. " STR_GAMEOPTS, true, 0, true, NEO_GAME_TYPE__TOTAL - 1);
 ConVar neo_vip_eligible("cl_neo_vip_eligible", "1", FCVAR_ARCHIVE, "Eligible for VIP", true, 0, true, 1);
+#endif // CLIENT_DLL
 #ifdef GAME_DLL
 ConVar sv_neo_vip_ctg_on_death("sv_neo_vip_ctg_on_death", "0", FCVAR_ARCHIVE, "Spawn Ghost when VIP dies, continue the game", true, 0, true, 1);
 #endif
@@ -140,9 +142,15 @@ static void neoSvCompCallback(IConVar* var, const char* pOldValue, float flOldVa
 	sv_neo_ghost_spawn_bias.SetValue(bCurrentValue);
 }
 
-ConVar sv_neo_comp("sv_neo_comp", "0", FCVAR_REPLICATED, "Enables competitive gamerules", true, 0.f, true, 1.f, neoSvCompCallback);
+ConVar sv_neo_comp("sv_neo_comp", "0", FCVAR_REPLICATED, "Enables competitive gamerules", true, 0.f, true, 1.f
+	#ifdef GAME_DLL
+	, neoSvCompCallback
+	#endif // GAME_DLL
+);
 
+#ifdef CLIENT_DLL
 ConVar snd_victory_volume("snd_victory_volume", "0.33", FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_USERINFO, "Loudness of the victory jingle (0-1).", true, 0.0, true, 1.0);
+#endif // CLIENT_DLL
 
 REGISTER_GAMERULES_CLASS( CNEORules );
 
@@ -1394,7 +1402,7 @@ void CNEORules::SetWinningDMPlayer(CNEO_Player *pWinner)
 		{
 			if (!player->IsBot() || player->IsHLTV())
 			{
-				const char* volStr = engine->GetClientConVarValue(i, snd_victory_volume.GetName());
+				const char* volStr = engine->GetClientConVarValue(i, "snd_victory_volume");
 				const float jingleVolume = volStr ? atof(volStr) : 0.33f;
 				soundParams.m_flVolume = jingleVolume;
 
