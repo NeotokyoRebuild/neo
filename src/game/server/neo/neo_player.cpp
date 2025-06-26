@@ -1723,6 +1723,10 @@ bool CNEO_Player::BecomeRagdollOnClient( const Vector &force )
 	{
 		return BaseClass::BecomeRagdollOnClient(force);
 	}
+	else
+	{
+		return false;
+	}
 }
 
 void CNEO_Player::ShowDmgInfo(char* infoStr, int infoStrSize)
