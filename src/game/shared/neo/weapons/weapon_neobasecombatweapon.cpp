@@ -204,6 +204,10 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}},
 		{0.15, 0.25, -0.4, 0.4},
 	},
+	{NEO_WEP_HMG,
+		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_4DEGREES}},
+		{0.25, 0.5, -0.6, 0.6},
+	},
 };
 
 CNEOBaseCombatWeapon::CNEOBaseCombatWeapon( void )
