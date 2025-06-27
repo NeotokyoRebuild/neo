@@ -6,7 +6,7 @@
 
 #include "cbase.h"
 
-#if 1
+#if NEO
 #include "mp3player.h"
 #include "KeyValues.h"
 #include "filesystem.h"
@@ -56,7 +56,7 @@ vgui::Panel *GetSDKRootPanel();
 #define SOUND_ROOT "sound"
 
 #ifdef NEO
-#define MUTED_VOLUME		3
+#define MUTED_VOLUME		4
 #else
 #define MUTED_VOLUME		0.02f
 #endif // NEO
@@ -317,7 +317,7 @@ class CMP3PlayListListPanel : public ListPanel
 public:
 	CMP3PlayListListPanel(Panel* parent, const char* panelName) : ListPanel(parent, panelName) {}
 
-	void OnMouseDoublePressed(vgui::MouseCode code)
+	virtual void OnMouseDoublePressed(vgui::MouseCode code) OVERRIDE
 	{
 		g_pPlayer->PlaySong(GetSelectedItem(0));
 	}
@@ -777,7 +777,7 @@ public:
 	}
 
 #ifdef NEO
-	void OnMousePressed(MouseCode code)
+	virtual void OnMousePressed(MouseCode code) OVERRIDE
 	{
 		return; 
 	}
@@ -787,10 +787,9 @@ public:
 #ifdef NEO
 ConVar cl_neo_radio_shuffle("cl_neo_radio_shuffle", "0", FCVAR_CLIENTDLL| FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "Randomize song order", true, 0, true, 1);
 ConVar cl_neo_radio_mute("cl_neo_radio_mute", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "Turn down sound volume as far as possible", true, 0, true, 1);
-ConVar cl_neo_radio_game_pause("cl_neo_radio_game_pause", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "Pause NEO Radio song when loading into a game", true, 0, true, 1);
+ConVar cl_neo_radio_game_pause("cl_neo_radio_game_pause", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "Pause NEO Radio song when loading into a game", true, 0, true, 1);
 ConVar cl_neo_radio_volume("cl_neo_radio_volume", "80", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "NEO Radio song volume", true, MUTED_VOLUME, true, 100);
 ConVar cl_neo_radio_volume_ingame("cl_neo_radio_volume_ingame", "20", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "NEO Radio song volume in game", true, MUTED_VOLUME, true, 100);
-ConVar cl_neo_radio_unused_variable("cl_neo_radio_unused_variable", "20", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_DONTRECORD, "cl_neo_radio_unused_variable", true, MUTED_VOLUME, true, 100);
 #endif // NEO
 CMP3Player::CMP3Player( VPANEL parent, char const *panelName ) :
 	BaseClass( NULL, panelName ),
@@ -2086,7 +2085,11 @@ void CMP3Player::PopulateLists()
 		return;
 	}
 
+#ifdef NEO
+	int c;
+#else
 	int i, c;
+#endif // NEO
 	c = dir->m_FilesInDirectory.Count();
 	if ( !c )
 	{
@@ -2845,4 +2848,4 @@ void MP3Player_Destroy()
 {
 }
 
-#endif
+#endif 

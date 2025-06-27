@@ -826,18 +826,18 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	g_uiCtx.dPanel.tall = 1;
 	NeoUI::BeginSection();
 	g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
-	const auto musicPlayerBtn = NeoUI::Button(L"MP3");
+	const auto musicPlayerBtn = NeoUI::Button(L"Music");
 	if (musicPlayerBtn.bPressed)
 	{
 		surface()->PlaySound("ui/buttonclickrelease.wav");
 		engine->ClientCmd("neo_mp3");
 
 	}
-	if (musicPlayerBtn.bMouseHover && BTNS_TOTAL != m_iHoverBtn)
+	if (musicPlayerBtn.bMouseHover && SMBTN_MP3 != m_iHoverBtn)
 	{
 		// Sound rollover feedback
 		surface()->PlaySound("ui/buttonrollover.wav");
-		m_iHoverBtn = BTNS_TOTAL;
+		m_iHoverBtn = SMBTN_MP3;
 	}
 	
 	NeoUI::EndSection();
