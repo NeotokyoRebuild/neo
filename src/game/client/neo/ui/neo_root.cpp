@@ -23,6 +23,7 @@
 #include "ui/neo_utils.h"
 #include "neo_gamerules.h"
 #include "neo_misc.h"
+#include "mp3player.h";
 
 #include <vgui/IInput.h>
 #include <vgui_controls/Controls.h>
@@ -480,7 +481,6 @@ void CNeoRoot::FireGameEvent(IGameEvent *event)
 	}
 }
 
-#include "mp3player.h";
 void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 {
 	if (m_ns.keys.bcConsole <= KEY_NONE)
