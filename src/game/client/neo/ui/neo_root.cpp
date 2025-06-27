@@ -23,7 +23,7 @@
 #include "ui/neo_utils.h"
 #include "neo_gamerules.h"
 #include "neo_misc.h"
-#include "mp3player.h";
+#include "mp3player.h"
 
 #include <vgui/IInput.h>
 #include <vgui_controls/Controls.h>
