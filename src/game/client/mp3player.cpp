@@ -6,7 +6,7 @@
 
 #include "cbase.h"
 
-#if NEO
+#ifdef NEO
 #include "mp3player.h"
 #include "KeyValues.h"
 #include "filesystem.h"
