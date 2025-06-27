@@ -2200,18 +2200,28 @@ bool CHL2_Player::SuitPower_RemoveDevice( const CSuitPowerDevice &device )
 	if( !IsSuitEquipped() )
 		return false;
 
+#ifdef NEO
+	// Recons can spam sprint whenever and it doesn't matter.
+	// Fixes https://github.com/NeotokyoRebuild/neo/issues/1165
+	// where this could drain AUX for recons stuck in geometry whilst attempting to sprint.
+	const bool isRecon = static_cast<CNEO_Player*>(this)->GetClass() == NEO_CLASS_RECON;
+	const float antiExploitDrainRate = isRecon ? 0 : device.GetDeviceDrainRate() * 0.1f;
+#else
+	const float antiExploitDrainRate = device.GetDeviceDrainRate() * 0.1f;
+#endif
+
 	// Take a little bit of suit power when you disable a device. If the device is shutting off
 	// because the battery is drained, no harm done, the battery charge cannot go below 0. 
 	// This code in combination with the delay before the suit can start recharging are a defense
 	// against exploits where the player could rapidly tap sprint and never run out of power.
 	MsgPredTest2( "[Server %d] [A REMOVE] m_HL2Local.m_flSuitPower: %f\n", gpGlobals->tickcount, m_HL2Local.m_flSuitPower.Get() );
-	SuitPower_Drain( device.GetDeviceDrainRate() * 0.1f );
+	SuitPower_Drain( antiExploitDrainRate );
 	MsgPredTest2( "[Server %d] [B REMOVE] m_HL2Local.m_flSuitPower: %f\n", gpGlobals->tickcount, m_HL2Local.m_flSuitPower.Get() );
 
 	m_HL2Local.m_bitsActiveDevices &= ~device.GetDeviceID();
 	m_HL2Local.m_flSuitPowerLoad -= device.GetDeviceDrainRate();
 
-#ifdef NEO
+#ifdef NEO // NEO NOTE (Rain): Do we really wanna early-ret here, instead of setting that m_flTimeAllSuitDevicesOff value below?
 	if (static_cast<CNEO_Player*>(this)->GetClass() == NEO_CLASS_RECON)
 		return true;
 #endif
