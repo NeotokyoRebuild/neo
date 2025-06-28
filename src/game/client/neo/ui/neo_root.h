@@ -111,6 +111,8 @@ enum MainMenuButtons
 	MMBTN_QUIT,
 
 	BTNS_TOTAL,
+
+	SMBTN_MP3,
 };
 
 struct SprayInfo

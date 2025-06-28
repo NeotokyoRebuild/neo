@@ -242,6 +242,9 @@ public:
 
 protected:
 	virtual void			OnCommand( char const *cmd );
+#ifdef NEO
+	void					OnKeyCodePressed(vgui::KeyCode code) override;
+#endif // NEO
 	virtual void			ApplySchemeSettings( vgui::IScheme *pScheme );
 	virtual void			OnTick();
 
@@ -269,8 +272,13 @@ protected:
 	int						AddSong( char const *relative, int dirnum );
 	void					RemoveFSSongs(); // Remove all non-built-in .mp3s
 	int						FindSong( char const *relative );
-
+#ifdef NEO
+public:
+#endif // NEO
 	void					PlaySong( int songIndex, float skipTime = 0.0f );
+#ifdef NEO
+protected:
+#endif // NEO
 	void					GetLocalCopyOfSong( const MP3File_t &mp3, char *outsong, size_t outlen );
 	float					GetMP3Duration( char const *songname );
 	void					OnNextTrack();
@@ -278,7 +286,13 @@ protected:
 
 	void					OnPlay();
 	void					OnStop();
+#ifdef NEO
+	void					OnPause();
+#endif // NEO
 	void					OnChangeVolume( float newVol );
+#ifdef NEO
+	float					GetIdealVolume();
+#endif // NEO
 
 	void					AddGameSounds( bool recurse );
 	SoundDirectory_t		*AddSoundDirectory( char const *fullpath, bool recurse );
@@ -330,6 +344,12 @@ private:
 	vgui::CheckButton		*m_pMute;
 	vgui::CheckButton		*m_pShuffle;
 	vgui::Slider			*m_pVolume;
+#ifdef NEO
+	vgui::Slider			*m_pVolumeInGame;
+	vgui::CheckButton		*m_pGamePause;
+
+	bool					m_bFirstEverTick = true;
+#endif // NEO
 
 // Raw list of all known files
 	CUtlVector< MP3File_t >	m_Files;
@@ -347,6 +367,10 @@ private:
 	FileNameHandle_t		m_LastSong;
 	float					m_flCurrentVolume;
 	bool					m_bMuted;
+#ifdef NEO
+	bool					m_bShuffle;
+	bool					m_bPauseInGame;
+#endif // NEO
 
 // Currently playing a song?
 	bool					m_bPlaying;
@@ -358,6 +382,9 @@ private:
 // For the UI
 	int						m_nSongMinutes;
 	int						m_nSongSeconds;
+#ifdef NEO
+	float					m_flTimePaused;
+#endif // NEO
 
 // List of all added directories
 	CUtlVector< SoundDirectory_t * >	m_SoundDirectories;
@@ -381,5 +408,10 @@ private:
 
 	bool					m_bEnableAutoAdvance;
 };
+
+#ifdef NEO
+// Singleton
+static CMP3Player* g_pPlayer;
+#endif // NEO
 
 #endif // !MP3PLAYER_H

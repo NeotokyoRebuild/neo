@@ -78,6 +78,7 @@ struct NeoSettings
 
 		// Will be checked often so cached
 		ButtonCode_t bcConsole;
+		ButtonCode_t bcMP3Player;
 		ButtonCode_t bcTeamMenu;
 		ButtonCode_t bcClassMenu;
 		ButtonCode_t bcLoadoutMenu;
