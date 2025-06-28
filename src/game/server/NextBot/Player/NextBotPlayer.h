@@ -14,10 +14,6 @@
 //#include "NextBotPlayerBody.h"
 #include "NextBotBehavior.h"
 
-#ifdef NEO
-#include "movehelper_server.h"
-#endif // NEO
-
 #include "in_buttons.h"
 
 extern ConVar NextBotPlayerStop;
