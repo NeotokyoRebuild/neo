@@ -3371,17 +3371,20 @@ void CNEO_Player::SpawnJuggernautPostDeath()
 	pJuggernautItem->PostDeathEffects();
 	if (NEORules()->GetGameType() == NEO_GAME_TYPE_JGR)
 	{
-		EmitSound_t soundParams;
-		soundParams.m_pSoundName = "HUD.GhostPickUp";
-		soundParams.m_nChannel = CHAN_USER_BASE;
-		soundParams.m_bWarnOnDirectWaveReference = false;
-		soundParams.m_bEmitCloseCaption = false;
-		soundParams.m_SoundLevel = ATTN_TO_SNDLVL(ATTN_NONE);
+		if (NEORules()->GetRoundStatus() == NeoRoundStatus::RoundLive)
+		{
+			EmitSound_t soundParams;
+			soundParams.m_pSoundName = "HUD.GhostPickUp";
+			soundParams.m_nChannel = CHAN_USER_BASE;
+			soundParams.m_bWarnOnDirectWaveReference = false;
+			soundParams.m_bEmitCloseCaption = false;
+			soundParams.m_SoundLevel = ATTN_TO_SNDLVL(ATTN_NONE);
 
-		CRecipientFilter soundFilter;
-		soundFilter.AddAllPlayers();
-		soundFilter.MakeReliable();
-		EmitSound(soundFilter, this->entindex(), soundParams);
+			CRecipientFilter soundFilter;
+			soundFilter.AddAllPlayers();
+			soundFilter.MakeReliable();
+			EmitSound(soundFilter, this->entindex(), soundParams);
+		}
 
 		NEORules()->m_pJuggernautPlayer = nullptr;
 		NEORules()->m_pJuggernautItem = pJuggernautItem;
