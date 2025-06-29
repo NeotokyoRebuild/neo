@@ -46,6 +46,17 @@
 //	SNDLVL_140dB	= 140,	// 0.2
 //	SNDLVL_150dB	= 150,	// 0.2
 
+"HUD.CountdownBeep"
+{
+	"channel"		"CHAN_VOICE"
+	"volume"		"0.33"
+	"pitch"			"PITCH_NORM"
+	
+	"soundlevel"	"SNDLVL_NONE"
+	
+	"wave"			"tutorial/hitsound.wav"			
+}
+
 "HUD.JinraiWin"
 {
 	"channel"		"CHAN_VOICE"
@@ -93,7 +104,7 @@
 "HUD.GhostEquip"
 {
 	"channel"		"CHAN_ITEM"
-	"volume"		"0.1"
+	"volume"		"0.9"
 	"pitch"			"PITCH_NORM"
 
 	"soundlevel"		"SNDLVL_NONE"
