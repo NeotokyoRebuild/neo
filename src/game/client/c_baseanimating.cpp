@@ -400,9 +400,6 @@ int C_ClientRagdoll::DrawModel(int flags)
 		return BaseClass::DrawModel(flags);
 	}
 
-	auto thing = this;
-	auto time = thing->m_flNeoCreateTime;
-
 	const bool inThermalVision = pTargetPlayer ? (pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT) : false;
 	if (inThermalVision)
 	{
