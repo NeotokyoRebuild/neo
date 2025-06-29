@@ -102,6 +102,8 @@ void CNEOHud_HTA::DrawBuildInfo() const
 	surface()->DrawPrintText(m_wszBuildInfo, ARRAYSIZE(m_wszBuildInfo) - 1);
 }
 
+ConVar cl_neo_hud_health_as_percentage("cl_neo_hud_health_as_percentage", "1", FCVAR_ARCHIVE,
+	"Health display mode", true, 0, true, 1);
 void CNEOHud_HTA::DrawHTA() const
 {
 	auto player = C_NEO_Player::GetLocalNEOPlayer();
@@ -118,6 +120,7 @@ void CNEOHud_HTA::DrawHTA() const
 	wchar_t unicodeValue_ThermOptic[4]{ L'\0' };
 	wchar_t unicodeValue_Aux[4]{ L'\0' };
 
+	const int displayedHealth = player->GetDisplayedHealth(cl_neo_hud_health_as_percentage.GetBool());
 	const int health = player->GetHealth();
 	const int thermopticValue = static_cast<int>(roundf(player->m_HL2Local.m_cloakPower));
 	const float thermopticPercent = player->CloakPower_CurrentVisualPercentage();
@@ -125,7 +128,7 @@ void CNEOHud_HTA::DrawHTA() const
 	const bool playerIsNotSupport = (player->GetClass() != NEO_CLASS_SUPPORT);
 	const bool playerIsNotJuggernaut = (player->GetClass() != NEO_CLASS_JUGGERNAUT);
 
-	V_sprintf_safe(value_Integrity, "%d", health);
+	V_sprintf_safe(value_Integrity, "%d", displayedHealth);
 	if (playerIsNotSupport)
 	{
 		V_sprintf_safe(value_ThermOptic, "%d", thermopticValue);

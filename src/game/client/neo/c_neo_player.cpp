@@ -706,6 +706,18 @@ int C_NEO_Player::GetAttackerHits(const int attackerIdx) const
 	return m_rfAttackersHits.Get(attackerIdx);
 }
 
+constexpr float invertedDamageResistanceModifier[NEO_CLASS__ENUM_COUNT] = {
+	1 / NEO_RECON_DAMAGE_MODIFIER,
+	1 / NEO_ASSAULT_DAMAGE_MODIFIER,
+	1 / NEO_SUPPORT_DAMAGE_MODIFIER,
+	1 / NEO_ASSAULT_DAMAGE_MODIFIER
+};
+
+int C_NEO_Player::GetDisplayedHealth(bool asPercent) const
+{
+	return asPercent ? GetHealth() : GetHealth() * invertedDamageResistanceModifier[m_iNeoClass];
+}
+
 extern ConVar mat_neo_toc_test;
 #ifdef GLOWS_ENABLE
 extern ConVar glow_outline_effect_enable;

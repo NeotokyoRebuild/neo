@@ -1420,11 +1420,13 @@ void ClientModeShared::FireGameEvent( IGameEvent *event )
 				{
 					pPlayer->SetNextAchievementAnnounceTime( gpGlobals->curtime + ACHIEVEMENT_ANNOUNCEMENT_MIN_TIME );
 
+#ifndef NEO
 					// no particle effect if the local player is the one with the achievement or the player is dead
 					if ( !pPlayer->IsLocalPlayer() && pPlayer->IsAlive() ) 
 					{
 						pPlayer->ParticleProp()->Create( "achieved", PATTACH_POINT_FOLLOW, "head" );
 					}
+#endif // NEO
 
 					pPlayer->OnAchievementAchieved( iAchievement );
 				}

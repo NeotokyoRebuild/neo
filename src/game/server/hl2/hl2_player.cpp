@@ -109,7 +109,11 @@ ConVar player_showpredictedposition_timestep( "player_showpredictedposition_time
 ConVar player_squad_transient_commands( "player_squad_transient_commands", "1", FCVAR_REPLICATED );
 ConVar player_squad_double_tap_time( "player_squad_double_tap_time", "0.25" );
 
+#ifdef NEO
+ConVar sv_infinite_aux_power( "sv_infinite_aux_power", "0", FCVAR_CHEAT | FCVAR_REPLICATED );
+#else
 ConVar sv_infinite_aux_power( "sv_infinite_aux_power", "0", FCVAR_CHEAT );
+#endif // NEO
 
 ConVar autoaim_unlock_target( "autoaim_unlock_target", "0.8666" );
 
@@ -2202,6 +2206,13 @@ bool CHL2_Player::SuitPower_RemoveDevice( const CSuitPowerDevice &device )
 	if( !IsSuitEquipped() )
 		return false;
 
+#ifdef NEO
+	// Fix for https://github.com/NeotokyoRebuild/neo/issues/1165
+	// related to the engine's anti-exploit code block below.
+	const bool isRecon = static_cast<CNEO_Player*>(this)->GetClass() == NEO_CLASS_RECON;
+	if (isRecon) goto skipDrain;
+#endif
+
 	// Take a little bit of suit power when you disable a device. If the device is shutting off
 	// because the battery is drained, no harm done, the battery charge cannot go below 0. 
 	// This code in combination with the delay before the suit can start recharging are a defense
@@ -2209,6 +2220,10 @@ bool CHL2_Player::SuitPower_RemoveDevice( const CSuitPowerDevice &device )
 	MsgPredTest2( "[Server %d] [A REMOVE] m_HL2Local.m_flSuitPower: %f\n", gpGlobals->tickcount, m_HL2Local.m_flSuitPower.Get() );
 	SuitPower_Drain( device.GetDeviceDrainRate() * 0.1f );
 	MsgPredTest2( "[Server %d] [B REMOVE] m_HL2Local.m_flSuitPower: %f\n", gpGlobals->tickcount, m_HL2Local.m_flSuitPower.Get() );
+
+#ifdef NEO
+	skipDrain:
+#endif
 
 	m_HL2Local.m_bitsActiveDevices &= ~device.GetDeviceID();
 	m_HL2Local.m_flSuitPowerLoad -= device.GetDeviceDrainRate();

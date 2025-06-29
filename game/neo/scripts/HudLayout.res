@@ -950,6 +950,8 @@
 		"ypos"	"0"
 		"wide"	"640"
 		"tall"	"480"
+		"image_y_offset" "60"
+		"text_y_offset" "420"
 	}
 
 	neo_iff

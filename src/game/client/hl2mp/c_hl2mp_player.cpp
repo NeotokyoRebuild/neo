@@ -553,6 +553,13 @@ bool C_HL2MP_Player::SuitPower_RemoveDevice( const CSuitPowerDevice &device )
 	if( !IsSuitEquipped() )
 		return false;
 
+#ifdef NEO
+	// Fix for https://github.com/NeotokyoRebuild/neo/issues/1165
+	// related to the engine's anti-exploit code block below.
+	const bool isRecon = static_cast<CNEO_Player*>(this)->GetClass() == NEO_CLASS_RECON;
+	if (isRecon) goto skipDrain;
+#endif
+
 	// Take a little bit of suit power when you disable a device. If the device is shutting off
 	// because the battery is drained, no harm done, the battery charge cannot go below 0. 
 	// This code in combination with the delay before the suit can start recharging are a defense
@@ -560,6 +567,10 @@ bool C_HL2MP_Player::SuitPower_RemoveDevice( const CSuitPowerDevice &device )
 	MsgPredTest2( "[Client %d] [A REMOVE] m_HL2Local.m_flSuitPower: %f\n", gpGlobals->tickcount, m_HL2Local.m_flSuitPower );
 	SuitPower_Drain( device.GetDeviceDrainRate() * 0.1f );
 	MsgPredTest2( "[Client %d] [B REMOVE] m_HL2Local.m_flSuitPower: %f\n", gpGlobals->tickcount, m_HL2Local.m_flSuitPower );
+
+#ifdef NEO
+	skipDrain:
+#endif
 
 	m_HL2Local.m_bitsActiveDevices &= ~device.GetDeviceID();
 	m_HL2Local.m_flSuitPowerLoad -= device.GetDeviceDrainRate();

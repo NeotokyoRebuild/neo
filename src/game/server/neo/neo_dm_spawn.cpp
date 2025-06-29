@@ -186,7 +186,7 @@ void DMSpawnComCallbackLoad([[maybe_unused]] const CCommand &command)
 	V_sprintf_safe(szFName, "maps/dm_locs/%s.loc", szCurrentMapName);
 	if (!filesystem->ReadFile(szFName, nullptr, buf))
 	{
-		Msg("DMSpawn file not found: %s", szFName);
+		Msg("DMSpawn file not found: %s\n", szFName);
 		return;
 	}
 
@@ -207,7 +207,7 @@ void DMSpawnComCallbackLoad([[maybe_unused]] const CCommand &command)
 		gDMSpawnLocs.AddToTail(spawn);
 	}
 	gDMSpawnUsed.SetCount(gDMSpawnLocs.Size());
-	Msg("DMSpawn file loaded: %s", szFName);
+	Msg("DMSpawn file loaded: %s\n", szFName);
 }
 
 static void DMSpawnComCallbackTeleportNext()

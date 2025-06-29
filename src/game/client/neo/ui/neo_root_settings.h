@@ -193,7 +193,7 @@ struct NeoSettings
 		CONVARREF_DEF(sv_unlockedchapters);
 
 		// Multiplayer
-		CONVARREF_DEF(cl_playerspraydisable);
+		CONVARREF_DEF(cl_spraydisable);
 		CONVARREF_DEF(cl_downloadfilter);
 
 		// Mouse
