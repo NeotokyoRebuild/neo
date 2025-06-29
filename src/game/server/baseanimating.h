@@ -441,6 +441,9 @@ protected:
 	CNetworkVar( float, m_fadeMinDist );	// Point at which fading is absolute
 	CNetworkVar( float, m_fadeMaxDist );	// Point at which fading is inactive
 	CNetworkVar( float, m_flFadeScale );	// Scale applied to min / max
+#ifdef NEO
+	CNetworkVar( bool, m_bIsGib );
+#endif // NEO
 
 public:
 	COutputEvent m_OnIgnite;

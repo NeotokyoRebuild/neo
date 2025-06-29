@@ -395,11 +395,19 @@ void CSimpleEmitter::RenderParticles( CParticleRenderIterator *pIterator )
 		TransformParticle( ParticleMgr()->GetModelView(), pParticle->m_Pos, tPos );
 		float sortKey = (int) tPos.z;
 
+#ifdef NEO
+		Vector color = (pIterator->m_bInThermalVision && pParticle->m_bHighlightInThermals) ? Vector(1, 1, 1) : UpdateColor(pParticle);
+#endif // NEO
+
 		//Render it
 		RenderParticle_ColorSizeAngle(
 			pIterator->GetParticleDraw(),
 			tPos,
+#ifdef NEO
+			color,
+#else
 			UpdateColor( pParticle ),
+#endif // NEO
 			UpdateAlpha( pParticle ) * GetAlphaDistanceFade( tPos, m_flNearClipMin, m_flNearClipMax ),
 			UpdateScale( pParticle ),
 			pParticle->m_flRoll
