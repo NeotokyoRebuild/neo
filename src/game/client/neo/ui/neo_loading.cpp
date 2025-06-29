@@ -185,20 +185,27 @@ void CNeoLoading::OnMainLoop(const NeoUI::Mode eMode)
 	vgui::TextImage* pTITitle = m_pLoadingPanel ? m_pLoadingPanel->TITitlePtr() : nullptr;
 	const StringIndex_t iStrIdx = pTITitle ? pTITitle->GetUnlocalizedTextSymbol() : INVALID_LOCALIZE_STRING_INDEX;
 
+	static bool bStaticInitNeoUI = false;
+	bool bSkipRender = false;
 	if (iStrIdx == m_aStrIdxMap[LOADINGSTATE_LOADING] && m_pHostMap)
 	{
 		auto hostMapName = m_pHostMap->GetString();
 		if (V_strlen(hostMapName) == 0)
 		{
-			return;
+			bSkipRender = true;
 		}
 
 		if (Q_stristr(hostMapName, "background_"))
 		{
-			return;
+			bSkipRender = true;
 		}
 
 		// Check whether current background corresponds to the map we're loading into here?
+
+		if (bSkipRender && bStaticInitNeoUI)
+		{
+			return;
+		}
 	}
 
 	static constexpr int BOTTOM_ROWS = 3;
@@ -219,38 +226,47 @@ void CNeoLoading::OnMainLoop(const NeoUI::Mode eMode)
 	m_uiCtx.bgColor = COLOR_TRANSPARENT;
 
 	NeoUI::BeginContext(&m_uiCtx, eMode, pTITitle ? pTITitle->GetUText() : L"Loading...", "NeoLoadingMainCtx");
-	if (iStrIdx == m_aStrIdxMap[LOADINGSTATE_LOADING])
+	if (bSkipRender)
 	{
 		NeoUI::BeginSection();
-		{
-			m_uiCtx.eFont = NeoUI::FONT_NTLARGE;
-			NeoUI::Label(m_wszLoadingMap);
-			m_uiCtx.eFont = NeoUI::FONT_NTNORMAL;
-		}
 		NeoUI::EndSection();
-		m_uiCtx.dPanel.y += m_uiCtx.dPanel.tall;
-		m_uiCtx.dPanel.tall = BOTTOM_ROWS * m_uiCtx.layout.iRowTall;
-		m_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
-		NeoUI::BeginSection(true);
-		{
-			NeoUI::Label(L"Press ESC to cancel");
-			if (m_pLabelInfo) NeoUI::Label(m_pLabelInfo->GetTextImage()->GetUText());
-			if (m_pProgressBarMain) NeoUI::Progress(m_pProgressBarMain->GetProgress(), 0.0f, 1.0f);
-		}
-		NeoUI::EndSection();
+		bStaticInitNeoUI = true;
 	}
-	else if (iStrIdx == m_aStrIdxMap[LOADINGSTATE_DISCONNECTED])
+	else
 	{
-		m_uiCtx.dPanel.tall = (m_iRowsInScreen / 2) * m_uiCtx.layout.iRowTall;
-		m_uiCtx.dPanel.y = (tall / 2) - (m_uiCtx.dPanel.tall / 2);
-		m_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
-		NeoUI::BeginSection(true);
+		if (iStrIdx == m_aStrIdxMap[LOADINGSTATE_LOADING])
 		{
-			if (m_pLabelInfo) NeoUI::LabelWrap(m_pLabelInfo->GetTextImage()->GetUText());
-			NeoUI::Pad();
-			NeoUI::Label(L"Press ESC to go back");
+			NeoUI::BeginSection();
+			{
+				m_uiCtx.eFont = NeoUI::FONT_NTLARGE;
+				NeoUI::Label(m_wszLoadingMap);
+				m_uiCtx.eFont = NeoUI::FONT_NTNORMAL;
+			}
+			NeoUI::EndSection();
+			m_uiCtx.dPanel.y += m_uiCtx.dPanel.tall;
+			m_uiCtx.dPanel.tall = BOTTOM_ROWS * m_uiCtx.layout.iRowTall;
+			m_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
+			NeoUI::BeginSection(true);
+			{
+				NeoUI::Label(L"Press ESC to cancel");
+				if (m_pLabelInfo) NeoUI::Label(m_pLabelInfo->GetTextImage()->GetUText());
+				if (m_pProgressBarMain) NeoUI::Progress(m_pProgressBarMain->GetProgress(), 0.0f, 1.0f);
+			}
+			NeoUI::EndSection();
 		}
-		NeoUI::EndSection();
+		else if (iStrIdx == m_aStrIdxMap[LOADINGSTATE_DISCONNECTED])
+		{
+			m_uiCtx.dPanel.tall = (m_iRowsInScreen / 2) * m_uiCtx.layout.iRowTall;
+			m_uiCtx.dPanel.y = (tall / 2) - (m_uiCtx.dPanel.tall / 2);
+			m_uiCtx.bgColor = COLOR_NEOPANELFRAMEBG;
+			NeoUI::BeginSection(true);
+			{
+				if (m_pLabelInfo) NeoUI::LabelWrap(m_pLabelInfo->GetTextImage()->GetUText());
+				NeoUI::Pad();
+				NeoUI::Label(L"Press ESC to go back");
+			}
+			NeoUI::EndSection();
+		}
 	}
 	NeoUI::EndContext();
 }
