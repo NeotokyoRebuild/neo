@@ -35,6 +35,7 @@ public:
 
 #ifdef NEO
 	bool m_bRefreshCrosshair = true;
+	bool m_bRefreshDynamicCrosshair = false;
 	CrosshairInfo m_crosshairInfo;
 #endif
 
@@ -58,8 +59,12 @@ protected:
 	QAngle			m_vecCrossHairOffsetAngle;
 
 #ifdef NEO
+	vgui::HTexture m_hCrosshairLight = 0UL;
+	int m_iCrosshairLightWidth = 0;
+	int m_iCrosshairLightHeight = 0;
 	int m_iTexXHId[CROSSHAIR_STYLE__TOTAL] = {};
 	int m_iTexIFFId = 0;
+	int m_iHalfScreenWidth = 0;
 #endif
 
 	CPanelAnimationVar( bool, m_bHideCrosshair, "never_draw", "false" );
