@@ -1019,9 +1019,7 @@ void CNEOBaseCombatWeapon::DrawCrosshair()
 
 	if (GetWpnData().iconCrosshair)
 	{
-		const Color color(cl_neo_crosshair_color_r.GetInt(), cl_neo_crosshair_color_g.GetInt(),
-						  cl_neo_crosshair_color_b.GetInt(), cl_neo_crosshair_color_a.GetInt());
-		crosshair->SetCrosshair(GetWpnData().iconCrosshair, color);
+		crosshair->SetCrosshair(GetWpnData().iconCrosshair, crosshair->m_crosshairInfo.color);
 	}
 	else
 	{
@@ -1128,9 +1126,9 @@ extern ConVar glow_outline_effect_enable;
 int CNEOBaseCombatWeapon::DrawModel(int flags)
 {
 #ifdef GLOWS_ENABLE
-	auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetTargetNEOPlayer();
+	auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetVisionTargetNEOPlayer();
 #else
-	auto pTargetPlayer = C_NEO_Player::GetTargetNEOPlayer();
+	auto pTargetPlayer = C_NEO_Player::GetVisionTargetNEOPlayer();
 #endif // GLOWS_ENABLE
 	if (!pTargetPlayer)
 	{

@@ -1,0 +1,65 @@
+"background.alley"
+{
+	"dsp"	"0"
+	"playlooping"
+	{
+		"volume"	"0.4"
+		"pitch"		"100"
+		"wave"		"skylines.wav"
+	}
+	
+	"playlooping"
+	{
+		"volume"	"0.3"
+		"pitch"		"100"
+		"wave"		"ambient/wind/wasteland_wind.wav"
+	}
+	
+	"playrandom"
+	{
+		"time"		"6, 20"
+		"volume"	"0.1,0.7"
+		"pitch"		"90,110"
+		"soundlevel"	"SNDLVL_140dB"
+		"position"	"random"
+		"rndwave"
+		{
+			"wave"	"ambient/machines/aircraft_distant_flyby3.wav"
+			"wave"	"ambient/levels/streetwar/apc_distant2.wav"
+			"wave"	"ambient/levels/streetwar/apc_distant3.wav"
+			"wave"	"ambient/machines/truck_pass_distant3.wav"
+			"wave"	"ambient/machines/truck_pass_overhead1.wav"
+			"wave"	"ambient/materials/metal4.wav"
+		}
+	}
+	
+	"playrandom"
+	{
+		"time"		"35, 80"
+		"volume"	"0.1"
+		"pitch"		"90,110"
+		"soundlevel"	"SNDLVL_140dB"
+		"position"	"random"
+		"rndwave"
+		{
+			"wave"	"ambient/voices/playground_memory.wav"
+		}
+	}
+}
+
+"background.door"
+{
+	"dsp"	"1"
+	"playrandom"
+	{
+		"time"		"40, 80"
+		"volume"	"0.2"
+		"pitch"		"100"
+		"soundlevel"	"SNDLVL_140dB"
+		"position"	"0"
+		"rndwave"
+		{
+			"wave"	"warning_lvl3_i.mp3"
+		}
+	}
+}

@@ -195,7 +195,7 @@ void CWeaponGhost::OnPickedUp(CBaseCombatCharacter *pNewOwner)
 
 		neoOwner->m_bCarryingGhost = true;
 
-#ifdef GAME_DLL
+#ifdef GAME_DLL // NEO NOTE (Adam) Fairly sure the above will never run client side and this whole thing could be surrounded by ifdef GAME_DLL, but I don't want weapons falling through the floor again if im wrong, so just leaving this comment here
 		EmitSound_t soundParams;
 		soundParams.m_pSoundName = "HUD.GhostPickUp";
 		soundParams.m_nChannel = CHAN_USER_BASE;

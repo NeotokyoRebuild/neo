@@ -81,6 +81,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropBool(RECVINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 	RecvPropBool(RECVINFO(m_bInAim)),
 	RecvPropBool(RECVINFO(m_bIneligibleForLoadoutPick)),
+	RecvPropBool(RECVINFO(m_bCarryingGhost)),
 
 	RecvPropTime(RECVINFO(m_flCamoAuxLastTime)),
 	RecvPropInt(RECVINFO(m_nVisionLastTick)),
@@ -705,6 +706,18 @@ int C_NEO_Player::GetAttackerHits(const int attackerIdx) const
 	return m_rfAttackersHits.Get(attackerIdx);
 }
 
+constexpr float invertedDamageResistanceModifier[NEO_CLASS__ENUM_COUNT] = {
+	1 / NEO_RECON_DAMAGE_MODIFIER,
+	1 / NEO_ASSAULT_DAMAGE_MODIFIER,
+	1 / NEO_SUPPORT_DAMAGE_MODIFIER,
+	1 / NEO_ASSAULT_DAMAGE_MODIFIER
+};
+
+int C_NEO_Player::GetDisplayedHealth(bool asPercent) const
+{
+	return asPercent ? GetHealth() : GetHealth() * invertedDamageResistanceModifier[m_iNeoClass];
+}
+
 extern ConVar mat_neo_toc_test;
 #ifdef GLOWS_ENABLE
 extern ConVar glow_outline_effect_enable;
@@ -717,9 +730,9 @@ int C_NEO_Player::DrawModel(int flags)
 	}
 
 #ifdef GLOWS_ENABLE
-	auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetTargetNEOPlayer();
+	auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetVisionTargetNEOPlayer();
 #else
-	auto pTargetPlayer = C_NEO_Player::GetTargetNEOPlayer();
+	auto pTargetPlayer = C_NEO_Player::GetVisionTargetNEOPlayer();
 #endif // GLOWS_ENABLE
 	if (!pTargetPlayer)
 	{
@@ -1366,16 +1379,6 @@ void C_NEO_Player::PostThink(void)
 				.a = 255,
 			};
 			vieweffects->Fade(sfade);
-
-			auto target = GetObserverTarget();
-			if (!IsValidObserverTarget(target))
-			{
-				auto nextTarget = FindNextObserverTarget(false);
-				if (nextTarget && nextTarget != target)
-				{
-					SetObserverTarget(nextTarget);
-				}
-			}
 		}
 		return;
 	}
@@ -1741,40 +1744,6 @@ float C_NEO_Player::GetSprintSpeed(void) const
 	default:
 		return NEO_BASE_SPEED; // No generic sprint modifier; default speed.
 	}
-}
-
-void C_NEO_Player::CalcChaseCamView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov)
-{
-	if (!HandleDeathSpecCamSwitch(eyeOrigin, eyeAngles, fov))
-	{
-		BaseClass::CalcChaseCamView(eyeOrigin, eyeAngles, fov);
-	}
-}
-
-void C_NEO_Player::CalcInEyeCamView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov)
-{
-	if (!HandleDeathSpecCamSwitch(eyeOrigin, eyeAngles, fov))
-	{
-		BaseClass::CalcInEyeCamView(eyeOrigin, eyeAngles, fov);
-	}
-}
-
-bool C_NEO_Player::HandleDeathSpecCamSwitch(Vector& eyeOrigin, QAngle& eyeAngles, float& fov)
-{
-	fov = GetFOV(); // jic the caller relies on us initializing this
-	auto target = GetObserverTarget();
-	if (!IsValidObserverTarget(target))
-	{
-		auto nextTarget = FindNextObserverTarget(false);
-		if (nextTarget && nextTarget != target)
-		{
-			SetObserverTarget(nextTarget);
-		}
-		VectorCopy(EyePosition(), eyeOrigin);
-		VectorCopy(EyeAngles(), eyeAngles);
-		return true;
-	}
-	return false;
 }
 
 float C_NEO_Player::GetActiveWeaponSpeedScale() const

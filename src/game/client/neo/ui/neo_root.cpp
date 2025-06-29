@@ -58,7 +58,7 @@ CNeoRoot *g_pNeoRoot = nullptr;
 void NeoToggleconsole();
 extern CNeoLoading *g_pNeoLoading;
 inline NeoUI::Context g_uiCtx;
-inline ConVar cl_neo_toggleconsole("cl_neo_toggleconsole", "0", FCVAR_ARCHIVE,
+inline ConVar cl_neo_toggleconsole("cl_neo_toggleconsole", "1", FCVAR_ARCHIVE,
 								   "If the console can be toggled with the ` keybind or not.", true, 0.0f, true, 1.0f);
 inline int g_iRowsInScreen;
 
@@ -118,7 +118,7 @@ CNeoRootInput::CNeoRootInput(CNeoRoot *rootPanel)
 {
 	MakePopup(true);
 	SetKeyBoardInputEnabled(true);
-	SetMouseInputEnabled(false);
+	SetMouseInputEnabled(true);
 	SetVisible(true);
 	SetEnabled(true);
 	PerformLayout();
@@ -126,8 +126,10 @@ CNeoRootInput::CNeoRootInput(CNeoRoot *rootPanel)
 
 void CNeoRootInput::PerformLayout()
 {
+	int iScrWide, iScrTall;
+	vgui::surface()->GetScreenSize(iScrWide, iScrTall);
 	SetPos(0, 0);
-	SetSize(1, 1);
+	SetSize(iScrWide, iScrTall);
 	SetBgColor(COLOR_TRANSPARENT);
 	SetFgColor(COLOR_TRANSPARENT);
 }
@@ -140,6 +142,31 @@ void CNeoRootInput::OnKeyCodeTyped(vgui::KeyCode code)
 void CNeoRootInput::OnKeyTyped(wchar_t unichar)
 {
 	m_pNeoRoot->OnRelayedKeyTyped(unichar);
+}
+
+void CNeoRootInput::OnMousePressed(vgui::MouseCode code)
+{
+	m_pNeoRoot->OnRelayedMousePressed(code);
+}
+
+void CNeoRootInput::OnMouseReleased(vgui::MouseCode code)
+{
+	m_pNeoRoot->OnRelayedMouseReleased(code);
+}
+
+void CNeoRootInput::OnMouseDoublePressed(vgui::MouseCode code)
+{
+	m_pNeoRoot->OnRelayedMouseDoublePressed(code);
+}
+
+void CNeoRootInput::OnMouseWheeled(int delta)
+{
+	m_pNeoRoot->OnRelayedMouseWheeled(delta);
+}
+
+void CNeoRootInput::OnCursorMoved(int x, int y)
+{
+	m_pNeoRoot->OnRelayedCursorMoved(x, y);
 }
 
 void CNeoRootInput::OnThink()
@@ -377,31 +404,31 @@ void CNeoRoot::Paint()
 	OnMainLoop(NeoUI::MODE_PAINT);
 }
 
-void CNeoRoot::OnMousePressed(vgui::MouseCode code)
+void CNeoRoot::OnRelayedMousePressed(vgui::MouseCode code)
 {
 	g_uiCtx.eCode = code;
 	OnMainLoop(NeoUI::MODE_MOUSEPRESSED);
 }
 
-void CNeoRoot::OnMouseReleased(vgui::MouseCode code)
+void CNeoRoot::OnRelayedMouseReleased(vgui::MouseCode code)
 {
 	g_uiCtx.eCode = code;
 	OnMainLoop(NeoUI::MODE_MOUSERELEASED);
 }
 
-void CNeoRoot::OnMouseDoublePressed(vgui::MouseCode code)
+void CNeoRoot::OnRelayedMouseDoublePressed(vgui::MouseCode code)
 {
 	g_uiCtx.eCode = code;
 	OnMainLoop(NeoUI::MODE_MOUSEDOUBLEPRESSED);
 }
 
-void CNeoRoot::OnMouseWheeled(int delta)
+void CNeoRoot::OnRelayedMouseWheeled(int delta)
 {
 	g_uiCtx.eCode = (delta > 0) ? MOUSE_WHEEL_UP : MOUSE_WHEEL_DOWN;
 	OnMainLoop(NeoUI::MODE_MOUSEWHEELED);
 }
 
-void CNeoRoot::OnCursorMoved(int x, int y)
+void CNeoRoot::OnRelayedCursorMoved(int x, int y)
 {
 	g_uiCtx.iMouseAbsX = x;
 	g_uiCtx.iMouseAbsY = y;
@@ -2008,12 +2035,6 @@ void CNeoRoot::ReadNewsFile(CUtlBuffer &buf)
 	}
 }
 
-void CNeoRoot::OnFileSelectedMode_Crosshair(const char *szFullpath)
-{
-	((m_ns.crosshair.eFileIOMode == vgui::FOD_OPEN) ?
-			&ImportCrosshair : &ExportCrosshair)(&m_ns.crosshair.info, szFullpath);
-}
-
 void CNeoRoot::OnFileSelectedMode_Spray(const char *szFullpath)
 {
 	// Ensure the directories are there to write to
@@ -2202,7 +2223,6 @@ LightmappedGeneric
 void CNeoRoot::OnFileSelected(const char *szFullpath)
 {
 	static void (CNeoRoot::*FILESELMODEFNS[FILEIODLGMODE__TOTAL])(const char *) = {
-		&CNeoRoot::OnFileSelectedMode_Crosshair,	// FILEIODLGMODE_CROSSHAIR
 		&CNeoRoot::OnFileSelectedMode_Spray,		// FILEIODLGMODE_SPRAY
 	};
 	(this->*FILESELMODEFNS[m_eFileIOMode])(szFullpath);

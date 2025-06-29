@@ -27,10 +27,10 @@ public:
 	virtual ~C_NEO_Player();
 
 	static C_NEO_Player *GetLocalNEOPlayer() { return static_cast<C_NEO_Player*>(C_BasePlayer::GetLocalPlayer()); }
-	static C_NEO_Player *GetTargetNEOPlayer()
-	{ // Returns the player we are spectating, or local player if not spectating anyone
+	static C_NEO_Player *GetVisionTargetNEOPlayer()
+	{ // Returns the player we are spectating if in first person mode, or local player
 		auto localNeoPlayer = GetLocalNEOPlayer();
-		if (localNeoPlayer->IsObserver())
+		if (localNeoPlayer->IsObserver() && localNeoPlayer->m_iObserverMode == OBS_MODE_IN_EYE)
 		{ // NEOTOD (Adam) clear m_hObserverTarget instead when exiting observer mode?
 			auto targetNeoPlayer = static_cast<C_NEO_Player*>(localNeoPlayer->GetObserverTarget());
 			if (targetNeoPlayer) { return targetNeoPlayer; }
@@ -103,9 +103,6 @@ public:
 	virtual const Vector GetPlayerMins(void) const OVERRIDE;
 	virtual const Vector GetPlayerMaxs(void) const OVERRIDE;
 
-	virtual void CalcChaseCamView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov) override;
-	virtual void CalcInEyeCamView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov) override;
-
 	float CloakPower_CurrentVisualPercentage(void) const;
 
 	float GetNormSpeed_WithActiveWepEncumberment(void) const;
@@ -126,14 +123,13 @@ public:
 private:
 	float GetActiveWeaponSpeedScale() const;
 
-	bool HandleDeathSpecCamSwitch(Vector& eyeOrigin, QAngle& eyeAngles, float& fov);
-
 public:
 	float m_flSpecFOV = 0.0f;
 	bool ShouldDrawHL2StyleQuickHud( void );
 
 	int GetClass() const { return m_iNeoClass; }
 	int GetStar() const { return m_iNeoStar; }
+	int GetDisplayedHealth(bool asPercent) const;
 
 	bool IsCarryingGhost(void) const;
 

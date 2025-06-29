@@ -1,4 +1,4 @@
-soundscaples_manifest
+soundscapes_manifest
 {
 	"file"		"scripts/soundscapes.txt"
 
@@ -17,4 +17,5 @@ soundscaples_manifest
 	"file"		"scripts/soundscapes_strike.txt"
 	
 	"file"		"scripts/soundscapes_rebuild_tutorial.txt"
+	"file"		"scripts/soundscapes_background.txt"
 }

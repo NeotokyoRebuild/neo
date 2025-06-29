@@ -21,8 +21,17 @@
 #ifdef GLOWS_ENABLE
 
 #ifdef NEO
+ConVar glow_outline_effect_center_alpha("glow_outline_effect_center_alpha", "0.05f", FCVAR_ARCHIVE, "Opacity of the part of the glow effect drawn on top of the player model", true, 0.f, true, 1.f);
+
+extern ConVar mp_forcecamera;
 static void glowOutlineEffectToggleCallBack(IConVar* var, const char* pOldValue, float flOldValue)
 {
+	if (!flOldValue && GetLocalPlayerTeam() != TEAM_SPECTATOR && mp_forcecamera.GetInt() != OBS_ALLOW_ALL)
+	{
+		var->SetValue(false);
+		return;
+	}
+
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
 		if (auto player = UTIL_PlayerByIndex(i))
@@ -36,7 +45,9 @@ static void glowOutlineEffectToggleCallBack(IConVar* var, const char* pOldValue,
 }
 #endif // NEO
 ConVar glow_outline_effect_enable( "glow_outline_effect_enable", "0", 0, "Enable entity outline glow effects.", glowOutlineEffectToggleCallBack);
-#ifndef NEO
+#ifdef NEO
+ConVar glow_outline_effect_width( "glow_outline_effect_width", "0.5f", FCVAR_ARCHIVE, "Width of glow outline effect in screen space.", true, 0.f, false, 0.f);
+#else
 ConVar glow_outline_effect_width( "glow_outline_width", "10.0f", FCVAR_CHEAT, "Width of glow outline effect in screen space." );
 #endif // NEO
 
@@ -304,7 +315,11 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 	pRenderContext->GetViewport( nViewportX, nViewportY, nViewportWidth, nViewportHeight );
 
 	// Get material and texture pointers
+#ifdef NEO
+	ITexture *pRtQuarterSize1 = materials->FindTexture( FULL_FRAME_TEXTURE, TEXTURE_GROUP_RENDER_TARGET );
+#else
 	ITexture *pRtQuarterSize1 = materials->FindTexture( "_rt_SmallFB1", TEXTURE_GROUP_RENDER_TARGET );
+#endif //NEO
 
 	{
 		//=======================================================================================================//
@@ -313,6 +328,9 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 		// stencil bits set in the range we care about.                                                          //
 		//=======================================================================================================//
 		IMaterial *pMatHaloAddToScreen = materials->FindMaterial( "dev/halo_add_to_screen", TEXTURE_GROUP_OTHER, true );
+#ifdef NEO
+		IMaterial *pMatHaloAddToScreenOutline = materials->FindMaterial( "dev/halo_add_to_screen_outline", TEXTURE_GROUP_OTHER, true );
+#endif // NEO
 
 		// Do not fade the glows out at all (weight = 1.0)
 		IMaterialVar *pDimVar = pMatHaloAddToScreen->FindVar( "$C0_X", NULL );
@@ -322,7 +340,7 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 		ShaderStencilState_t stencilState;
 		stencilState.m_bEnable = true;
 		stencilState.m_nWriteMask = 0x0; // We're not changing stencil
-		stencilState.m_nTestMask = 0xFF;
+		stencilState.m_nTestMask = 0xFF; 
 		stencilState.m_nReferenceValue = 0x0;
 		stencilState.m_CompareFunc = STENCILCOMPARISONFUNCTION_EQUAL;
 		stencilState.m_PassOp = STENCILOPERATION_KEEP;
@@ -332,23 +350,27 @@ void CGlowObjectManager::ApplyEntityGlowEffects( const CViewSetup *pSetup, int n
 
 		// Draw quad
 #ifdef NEO
-		pRenderContext->DrawScreenSpaceRectangle( pMatHaloAddToScreen, 0, 0, nViewportWidth, nViewportHeight,
-			-0.25f, -0.25f, nSrcWidth / 4 - 1, nSrcHeight / 4 - 1,
-			pRtQuarterSize1->GetActualWidth(),
-			pRtQuarterSize1->GetActualHeight() );
+		const float outlineWidth = glow_outline_effect_width.GetFloat();
+		if (outlineWidth)
+		{
+			IMaterialVar* pOutlineVar = pMatHaloAddToScreenOutline->FindVar("$C0_X", NULL);
+			pOutlineVar->SetFloatValue(outlineWidth);
+			pRenderContext->DrawScreenSpaceRectangle(pMatHaloAddToScreenOutline, 0, 0, nViewportWidth+1, nViewportHeight+1,
+				0, 0, pRtQuarterSize1->GetActualWidth(), pRtQuarterSize1->GetActualHeight(),
+				pRtQuarterSize1->GetActualWidth(),
+				pRtQuarterSize1->GetActualHeight());
+		}
 
-		pRenderContext->DrawScreenSpaceRectangle(pMatHaloAddToScreen, 0, 0, nViewportWidth, nViewportHeight,
-			0.25f, 0.25f, nSrcWidth / 4 - 1, nSrcHeight / 4 - 1,
-			pRtQuarterSize1->GetActualWidth(),
-			pRtQuarterSize1->GetActualHeight());
-
-		stencilStateDisable.SetStencilState( pRenderContext );
-
-		pDimVar->SetFloatValue(0.15f);
-		pRenderContext->DrawScreenSpaceRectangle(pMatHaloAddToScreen, 0, 0, nViewportWidth, nViewportHeight,
-			0, 0, nSrcWidth / 4 - 1, nSrcHeight / 4 - 1,
-			pRtQuarterSize1->GetActualWidth(),
-			pRtQuarterSize1->GetActualHeight());
+		const float alpha = glow_outline_effect_center_alpha.GetFloat();
+		if (alpha)
+		{
+			stencilStateDisable.SetStencilState( pRenderContext );
+			pDimVar->SetFloatValue(alpha);
+			pRenderContext->DrawScreenSpaceRectangle(pMatHaloAddToScreen, 0, 0, nViewportWidth+1, nViewportHeight+1,
+				0, 0, pRtQuarterSize1->GetActualWidth(), pRtQuarterSize1->GetActualHeight(),
+				pRtQuarterSize1->GetActualWidth(),
+				pRtQuarterSize1->GetActualHeight());
+		}
 #else
 		pRenderContext->DrawScreenSpaceRectangle(pMatHaloAddToScreen, 0, 0, nViewportWidth, nViewportHeight,
 			0.0f, -0.5f, nSrcWidth / 4 - 1, nSrcHeight / 4 - 1,
