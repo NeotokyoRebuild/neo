@@ -9,11 +9,12 @@
 
 #include "ienginevgui.h"
 
-// memdbgon must be the last include file in a .cpp file!!!
 #include "c_neo_player.h"
 #include "c_team.h"
 #include "neo_gamerules.h"
 #include "weapon_ghost.h"
+
+// memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
 using vgui::surface;
@@ -100,8 +101,9 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 
 	C_WeaponGhost *ghost;
 	if (neo_ctg_ghost_beacons_when_inactive.GetBool())
-	{ // Doing a search through 48 weapons every draw call is not ideal, NEO TODO (Adam) save a pointer to the ghost somewhere client side when a player picks a ghost up? (OnPickedUp doesn't run client side fyi)
-		ghost = dynamic_cast<C_WeaponGhost*>(spectateTarget->Weapon_OwnsThisType("weapon_ghost"));
+	{
+		constexpr int WEAPON_PRIMARY_SLOT = 2; // hl2_player.h server side, NEO TODO (Adam) put this in a shared file somewhere if used more?
+		ghost = dynamic_cast<C_WeaponGhost*>(spectateTarget->GetWeapon(WEAPON_PRIMARY_SLOT));
 	}
 	else
 	{
