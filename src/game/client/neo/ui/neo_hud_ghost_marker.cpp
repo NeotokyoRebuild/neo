@@ -106,7 +106,14 @@ void CNEOHud_GhostMarker::UpdateStateForNeoHudElementDraw()
 	else
 	{
 		const float flDistMeters = METERS_PER_INCH * C_NEO_Player::GetLocalPlayer()->GetAbsOrigin().DistTo(NEORules()->GetGhostPos());
-		V_snprintf(m_szMarkerText, sizeof(m_szMarkerText), "GHOST DISTANCE: %.0fm", flDistMeters);
+		if (NEORules()->GetGameType() != NEO_GAME_TYPE_JGR)
+		{
+			V_snprintf(m_szMarkerText, sizeof(m_szMarkerText), "GHOST DISTANCE: %.0fm", flDistMeters);
+		}
+		else
+		{
+			V_snprintf(m_szMarkerText, sizeof(m_szMarkerText), "JUGGERNAUT DISTANCE: %.0fm", flDistMeters);
+		}
 		g_pVGuiLocalize->ConvertANSIToUnicode(m_szMarkerText, m_wszMarkerTextUnicode, sizeof(m_wszMarkerTextUnicode));
 	}
 }

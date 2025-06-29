@@ -16,10 +16,11 @@
 
 #include "neo_predicted_viewmodel.h"
 
-#ifdef INCLUDE_WEP_PBK
+
 // Type to use if we need to ensure more than 32 bits in the mask.
 #define NEO_WEP_BITS_UNDERLYING_TYPE long long int
-#else
+
+#if (0)
 // Using plain int if we don't need to ensure >32 bits in the mask.
 #define NEO_WEP_BITS_UNDERLYING_TYPE int
 #endif
@@ -66,6 +67,11 @@
 #define NEO_VIP_SPRINT_SPEED NEO_ASSAULT_SPRINT_SPEED
 #define NEO_VIP_CROUCH_SPEED NEO_ASSAULT_CROUCH_SPEED
 #define NEO_VIP_WALK_SPEED NEO_VIP_CROUCH_SPEED
+// Juggernaut
+#define NEO_JUGGERNAUT_BASE_SPEED NEO_ASSAULT_BASE_SPEED
+#define NEO_JUGGERNAUT_SPRINT_SPEED NEO_RECON_SPRINT_SPEED
+#define NEO_JUGGERNAUT_CROUCH_SPEED NEO_ASSAULT_CROUCH_SPEED
+#define NEO_JUGGERNAUT_WALK_SPEED NEO_JUGGERNAUT_CROUCH_SPEED
 
 
 // Sanity Checks
@@ -89,6 +95,11 @@ COMPILE_TIME_ASSERT(NEO_VIP_BASE_SPEED > 0);
 COMPILE_TIME_ASSERT(NEO_VIP_SPRINT_SPEED > 0);
 COMPILE_TIME_ASSERT(NEO_VIP_WALK_SPEED > 0);
 COMPILE_TIME_ASSERT(NEO_VIP_CROUCH_SPEED > 0);
+// Juggernaut
+COMPILE_TIME_ASSERT(NEO_JUGGERNAUT_BASE_SPEED > 0);
+COMPILE_TIME_ASSERT(NEO_JUGGERNAUT_SPRINT_SPEED > 0);
+COMPILE_TIME_ASSERT(NEO_JUGGERNAUT_WALK_SPEED > 0);
+COMPILE_TIME_ASSERT(NEO_JUGGERNAUT_CROUCH_SPEED > 0);
 
 
 // Class speeds hierarchy should be: recon > assault > support.
@@ -160,6 +171,7 @@ COMPILE_TIME_ASSERT(NEO_ASSAULT_CROUCH_SPEED == NEO_VIP_CROUCH_SPEED);
 #define NEO_RECON_DAMAGE_MODIFIER 1.485f
 #define NEO_ASSAULT_DAMAGE_MODIFIER 1.2375f
 #define NEO_SUPPORT_DAMAGE_MODIFIER 0.66f
+#define NEO_JUGGERNAUT_DAMAGE_MODIFIER 0.2f
 
 #define NEO_ANIMSTATE_LEGANIM_TYPE LegAnimType_t::LEGANIM_9WAY
 #define NEO_ANIMSTATE_USES_AIMSEQUENCES true
@@ -185,6 +197,7 @@ enum NeoClass {
 	// NOTENOTE: VIP *must* be last, because we are
 	// using array offsets for recon/assault/support
 	NEO_CLASS_VIP,
+	NEO_CLASS_JUGGERNAUT, // *gman voice* we'll see... about that.
 
 	NEO_CLASS__ENUM_COUNT
 };
@@ -243,6 +256,7 @@ inline const char* GetNeoClassName(int neoClassIdx)
 	case NEO_CLASS_ASSAULT: return "Assault";
 	case NEO_CLASS_SUPPORT: return "Support";
 	case NEO_CLASS_VIP: return "VIP";
+	case NEO_CLASS_JUGGERNAUT: return "Juggernaut";
 	default: return "";
 	}
 }
