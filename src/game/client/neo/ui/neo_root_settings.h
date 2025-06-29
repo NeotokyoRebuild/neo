@@ -23,6 +23,16 @@ public:
 #define CONVARREF_DEF(_name) ConVarRefEx _name{#_name, false}
 #define CONVARREF_DEFNOGLOBALPTR(_name) ConVarRefEx _name{#_name, true}
 
+enum XHairExportNotify
+{
+	XHAIREXPORTNOTIFY_NONE = 0,
+	XHAIREXPORTNOTIFY_EXPORT_TO_CLIPBOARD,
+	XHAIREXPORTNOTIFY_IMPORT_TO_CLIPBOARD,
+	XHAIREXPORTNOTIFY_IMPORT_TO_CLIPBOARD_ERROR,
+
+	XHAIREXPORTNOTIFY__TOTAL,
+};
+
 struct NeoSettings
 {
 	struct General
@@ -129,9 +139,8 @@ struct NeoSettings
 
 	struct Crosshair
 	{
-		int iStyle;
 		CrosshairInfo info;
-		vgui::FileOpenDialogType_t eFileIOMode;
+		XHairExportNotify eClipboardInfo;
 
 		// Textures
 		struct Texture
@@ -181,7 +190,7 @@ struct NeoSettings
 		CONVARREF_DEF(sv_unlockedchapters);
 
 		// Multiplayer
-		CONVARREF_DEF(cl_playerspraydisable);
+		CONVARREF_DEF(cl_spraydisable);
 		CONVARREF_DEF(cl_downloadfilter);
 
 		// Mouse
@@ -223,21 +232,7 @@ struct NeoSettings
 		CONVARREF_DEF(mat_monitorgamma);
 
 		// Crosshair
-		CONVARREF_DEF(cl_neo_crosshair_style);
-		CONVARREF_DEF(cl_neo_crosshair_color_r);
-		CONVARREF_DEF(cl_neo_crosshair_color_g);
-		CONVARREF_DEF(cl_neo_crosshair_color_b);
-		CONVARREF_DEF(cl_neo_crosshair_color_a);
-		CONVARREF_DEF(cl_neo_crosshair_size_type);
-		CONVARREF_DEF(cl_neo_crosshair_size);
-		CONVARREF_DEF(cl_neo_crosshair_size_screen);
-		CONVARREF_DEF(cl_neo_crosshair_thickness);
-		CONVARREF_DEF(cl_neo_crosshair_gap);
-		CONVARREF_DEF(cl_neo_crosshair_outline);
-		CONVARREF_DEF(cl_neo_crosshair_center_dot);
-		CONVARREF_DEF(cl_neo_crosshair_top_line);
-		CONVARREF_DEF(cl_neo_crosshair_circle_radius);
-		CONVARREF_DEF(cl_neo_crosshair_circle_segments);
+		CONVARREF_DEF(cl_neo_crosshair);
 	};
 	CVR cvr;
 };

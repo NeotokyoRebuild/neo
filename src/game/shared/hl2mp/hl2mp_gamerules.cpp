@@ -1140,7 +1140,11 @@ void CHL2MPRules::RestartGame()
 #ifdef GAME_DLL
 void CHL2MPRules::OnNavMeshLoad( void )
 {
+#ifdef NEO
+	TheNavMesh->SetPlayerSpawnName( "info_player_defender" );
+#else
 	TheNavMesh->SetPlayerSpawnName( "info_player_deathmatch" );
+#endif // NEO
 }
 #endif
 

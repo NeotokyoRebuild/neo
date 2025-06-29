@@ -7,27 +7,24 @@ IMPLEMENT_NETWORKCLASS_ALIASED(WeaponSupa7, DT_WeaponSupa7)
 
 BEGIN_NETWORK_TABLE(CWeaponSupa7, DT_WeaponSupa7)
 #ifdef CLIENT_DLL
-	RecvPropBool(RECVINFO(m_bDelayedFire1)),
-	RecvPropBool(RECVINFO(m_bDelayedFire2)),
-	RecvPropBool(RECVINFO(m_bDelayedReload)),
 	RecvPropBool(RECVINFO(m_bSlugDelayed)),
 	RecvPropBool(RECVINFO(m_bSlugLoaded)),
+	RecvPropBool(RECVINFO(m_bWeaponRaised)),
+	RecvPropBool(RECVINFO(m_bShellInChamber)),
 #else
-	SendPropBool(SENDINFO(m_bDelayedFire1)),
-	SendPropBool(SENDINFO(m_bDelayedFire2)),
-	SendPropBool(SENDINFO(m_bDelayedReload)),
 	SendPropBool(SENDINFO(m_bSlugDelayed)),
 	SendPropBool(SENDINFO(m_bSlugLoaded)),
+	SendPropBool(SENDINFO(m_bWeaponRaised)),
+	SendPropBool(SENDINFO(m_bShellInChamber)),
 #endif
 END_NETWORK_TABLE()
 
 #ifdef CLIENT_DLL
 BEGIN_PREDICTION_DATA(CWeaponSupa7)
-	DEFINE_PRED_FIELD(m_bDelayedFire1, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
-	DEFINE_PRED_FIELD(m_bDelayedFire2, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
-	DEFINE_PRED_FIELD(m_bDelayedReload, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bSlugDelayed, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD(m_bSlugLoaded, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bWeaponRaised, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_FIELD(m_bShellInChamber, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE),
 END_PREDICTION_DATA()
 #endif
 
@@ -37,11 +34,10 @@ PRECACHE_WEAPON_REGISTER(weapon_supa7);
 
 #ifdef GAME_DLL
 BEGIN_DATADESC(CWeaponSupa7)
-	DEFINE_FIELD(m_bDelayedFire1, FIELD_BOOLEAN),
-	DEFINE_FIELD(m_bDelayedFire2, FIELD_BOOLEAN),
-	DEFINE_FIELD(m_bDelayedReload, FIELD_BOOLEAN),
 	DEFINE_FIELD(m_bSlugDelayed, FIELD_BOOLEAN),
 	DEFINE_FIELD(m_bSlugLoaded, FIELD_BOOLEAN),
+	DEFINE_FIELD(m_bWeaponRaised, FIELD_BOOLEAN),
+	DEFINE_FIELD(m_bShellInChamber, FIELD_BOOLEAN),
 END_DATADESC()
 #endif
 
@@ -68,11 +64,10 @@ IMPLEMENT_ACTTABLE(CWeaponSupa7);
 CWeaponSupa7::CWeaponSupa7(void)
 {
 	m_bReloadsSingly = true;
-
-	m_bDelayedFire1 = false;
-	m_bDelayedFire2 = false;
 	m_bSlugDelayed = false;
 	m_bSlugLoaded = false;
+	m_bWeaponRaised = false;
+	m_bShellInChamber = true;
 
 	m_fMinRange1 = 0.0;
 	m_fMaxRange1 = 500;
@@ -183,14 +178,14 @@ bool CWeaponSupa7::Reload(void)
 	if (m_iClip1 >= GetMaxClip1())
 		return false;
 
-	FillClip();
 	// Play reload on different channel as otherwise steals channel away from fire sound
 	WeaponSound(SPECIAL1);
 	SendWeaponAnim(ACT_VM_RELOAD);
 	pOwner->DoAnimationEvent(PLAYERANIMEVENT_RELOAD);
 
 	pOwner->m_flNextAttack = gpGlobals->curtime;
-	ProposeNextAttack(gpGlobals->curtime + SequenceDuration());
+	constexpr float TIME_BETWEEN_SHELLS_LOADED = 0.5f;
+	ProposeNextAttack(gpGlobals->curtime + TIME_BETWEEN_SHELLS_LOADED);
 
 	return true;
 }
@@ -220,6 +215,8 @@ bool CWeaponSupa7::ReloadSlug(void)
 		return false;
 
 	FillClipSlug();
+	m_bShellInChamber = false;
+
 	// Play reload on different channel as otherwise steals channel away from fire sound
 	WeaponSound(SPECIAL1);
 	SendWeaponAnim(ACT_VM_RELOAD);
@@ -243,7 +240,16 @@ void CWeaponSupa7::FinishReload(void)
 	m_bInReload = false;
 
 	// Finish reload animation
-	SendWeaponAnim(ACT_SHOTGUN_RELOAD_FINISH);
+	if (!m_bShellInChamber)
+	{
+		SendWeaponAnim(ACT_SHOTGUN_PUMP);
+		WeaponSound(SPECIAL2);
+		m_bShellInChamber = true;
+	}
+	else
+	{
+		SendWeaponAnim(ACT_SHOTGUN_RELOAD_FINISH);
+	}
 
 	pOwner->m_flNextAttack = gpGlobals->curtime;
 	ProposeNextAttack(gpGlobals->curtime + SequenceDuration());
@@ -338,6 +344,10 @@ void CWeaponSupa7::PrimaryAttack(void)
 	// Don't fire again until fire animation has completed
 	ProposeNextAttack(gpGlobals->curtime + GetFireRate());
 	m_iClip1 -= 1;
+	if (m_iClip1 == 0)
+	{
+		m_bShellInChamber = false;
+	}
 
 	// player "shoot" animation
 	pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRIMARY);
@@ -368,9 +378,6 @@ void CWeaponSupa7::SecondaryAttack(void)
 void CWeaponSupa7::ClearDelayedInputs(void)
 {
 	m_bFireOnEmpty = false;
-	m_bDelayedFire1 = false;
-	m_bDelayedFire2 = false;
-	m_bDelayedReload = false;
 	m_bSlugDelayed = false;
 
 	// Explicitly networking to DT_LocalActiveWeaponData.
@@ -397,17 +404,12 @@ void CWeaponSupa7::ItemPostFrame(void)
 
 	if (m_bInReload)
 	{
-		// If I'm primary firing and have one round stop reloading and fire
+		// If I'm primary firing and have one round stop reloading
 		if ((pOwner->m_nButtons & IN_ATTACK) && (m_iClip1 >= 1))
 		{
-			m_bInReload = false;
-			m_bDelayedFire1 = true;
-		}
-		// If I'm secondary firing and am not already trying to load a slug queue one
-		else if ((pOwner->m_nButtons & IN_ATTACK2) && (m_iClip1 < GetMaxClip1()) && !m_bSlugDelayed)
-		{
-			m_bSlugDelayed = true;
-			m_bDelayedFire2 = true;
+			// OG cues a shotgun rack when beginning a reload from a completely empty clip. You can however fire without racking the shotgun, and it will instead rack the next time you reload (if you don't cancel it by shooting again)
+			// This is a slight nerf to the supa where the gun has to be racked before it is fired
+			FinishReload();
 		}
 		else if (m_flNextPrimaryAttack <= gpGlobals->curtime)
 		{
@@ -428,6 +430,11 @@ void CWeaponSupa7::ItemPostFrame(void)
 				}
 				else
 				{
+					if (m_bWeaponRaised)
+					{ // delays filling the clip until the first reload animation is finished, forcing the entire reload animation to be finished before a shell is loaded into the clip
+						FillClip();
+					}
+					m_bWeaponRaised = true;
 					Reload();
 				}
 			}
@@ -436,37 +443,25 @@ void CWeaponSupa7::ItemPostFrame(void)
 	}
 	else
 	{
+		m_bWeaponRaised = false;
 		SetShotgunShellVisible(false);
 	}
 
 	// Shotgun uses same timing and ammo for secondary attack
-	if ((m_bDelayedFire2 || pOwner->m_nButtons & IN_ATTACK2) && (m_flNextPrimaryAttack <= gpGlobals->curtime))
+	if (pOwner->m_nButtons & IN_ATTACK2 && (m_flNextPrimaryAttack <= gpGlobals->curtime) && m_iSecondaryAmmoCount)
 	{
-		m_bDelayedFire2 = false;
-
-		if (m_iSecondaryAmmoCount)
+		// If the firing button was just pressed, reset the firing time
+		if (pOwner->m_afButtonPressed & IN_ATTACK2)
 		{
-			// If the firing button was just pressed, reset the firing time
-			if (pOwner->m_afButtonPressed & IN_ATTACK2)
-			{
-				ProposeNextAttack(gpGlobals->curtime);
-			}
-			SecondaryAttack();
+			ProposeNextAttack(gpGlobals->curtime);
 		}
+		SecondaryAttack();
 	}
-	else if ((m_bDelayedFire1 || pOwner->m_nButtons & IN_ATTACK) && m_flNextPrimaryAttack <= gpGlobals->curtime)
+	else if (pOwner->m_nButtons & IN_ATTACK && m_flNextPrimaryAttack <= gpGlobals->curtime)
 	{
-		m_bDelayedFire1 = false;
 		if ((m_iClip1 <= 0 && UsesClipsForAmmo1()) || (!UsesClipsForAmmo1() && !m_iPrimaryAmmoCount))
 		{
-			if (!m_iPrimaryAmmoCount)
-			{
-				DryFire();
-			}
-			else
-			{
-				StartReload();
-			}
+			DryFire();
 		}
 		// Fire underwater?
 		else if (pOwner->GetWaterLevel() == WL_Eyes && !m_bFiresUnderwater)
@@ -487,12 +482,12 @@ void CWeaponSupa7::ItemPostFrame(void)
 		}
 	}
 
-	if (pOwner->m_nButtons & IN_RELOAD && m_flNextPrimaryAttack <= gpGlobals->curtime && UsesClipsForAmmo1() && !m_bInReload)
+	if (!(pOwner->m_nButtons & IN_ATTACK) && m_flNextPrimaryAttack <= gpGlobals->curtime && pOwner->m_nButtons & IN_RELOAD && UsesClipsForAmmo1() && !m_bInReload)
 	{
 		// reload when reload is pressed, or if no buttons are down and weapon is empty.
 		StartReload();
 	}
-	else if (pOwner->m_nButtons & IN_ATTACK2 && m_flNextPrimaryAttack <= gpGlobals->curtime && UsesClipsForAmmo1() && !m_bInReload)
+	else if (!(pOwner->m_nButtons & IN_ATTACK) && m_flNextPrimaryAttack <= gpGlobals->curtime && pOwner->m_nButtons & IN_ATTACK2 && UsesClipsForAmmo1() && !m_bInReload)
 	{
 		StartReloadSlug();
 	}
@@ -508,18 +503,6 @@ void CWeaponSupa7::ItemPostFrame(void)
 			{
 				ProposeNextAttack(gpGlobals->curtime + 0.3);
 				return;
-			}
-		}
-		else
-		{
-			// weapon is useable. Reload if empty and weapon has waited as long as it has to after firing
-			if (m_iClip1 <= 0 && !(GetWeaponFlags() & ITEM_FLAG_NOAUTORELOAD) && m_flNextPrimaryAttack < gpGlobals->curtime)
-			{
-				if (StartReload())
-				{
-					// if we've successfully started to reload, we're done
-					return;
-				}
 			}
 		}
 

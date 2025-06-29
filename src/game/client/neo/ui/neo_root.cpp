@@ -2032,12 +2032,6 @@ void CNeoRoot::ReadNewsFile(CUtlBuffer &buf)
 	}
 }
 
-void CNeoRoot::OnFileSelectedMode_Crosshair(const char *szFullpath)
-{
-	((m_ns.crosshair.eFileIOMode == vgui::FOD_OPEN) ?
-			&ImportCrosshair : &ExportCrosshair)(&m_ns.crosshair.info, szFullpath);
-}
-
 void CNeoRoot::OnFileSelectedMode_Spray(const char *szFullpath)
 {
 	// Ensure the directories are there to write to
@@ -2226,7 +2220,6 @@ LightmappedGeneric
 void CNeoRoot::OnFileSelected(const char *szFullpath)
 {
 	static void (CNeoRoot::*FILESELMODEFNS[FILEIODLGMODE__TOTAL])(const char *) = {
-		&CNeoRoot::OnFileSelectedMode_Crosshair,	// FILEIODLGMODE_CROSSHAIR
 		&CNeoRoot::OnFileSelectedMode_Spray,		// FILEIODLGMODE_SPRAY
 	};
 	(this->*FILESELMODEFNS[m_eFileIOMode])(szFullpath);
