@@ -43,6 +43,7 @@
 "F8" "joinstar 4"
 "F9" "joinstar 5"
 "F10" "joinstar 0"
+"F11" "togglekdinfo"
 "MWHEELDOWN" "invprev"
 "MWHEELUP" "invnext"
 "MOUSE1" "+attack"

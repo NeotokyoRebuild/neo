@@ -625,7 +625,6 @@ void CNEORules::ResetMapSessionCommon()
 			pPlayer->m_iTeamKillsInflicted = 0;
 			pPlayer->m_bIsPendingTKKick = false;
 			pPlayer->m_bKilledInflicted = false;
-			pPlayer->m_bDoNotShowDmgInfoMenu = false;
 		}
 	}
 	m_flPrevThinkKick = 0.0f;
@@ -2225,7 +2224,6 @@ void CNEORules::StartNextRound()
 			pPlayer->m_iXP.Set(0);
 			pPlayer->m_iTeamDamageInflicted = 0;
 			pPlayer->m_iTeamKillsInflicted = 0;
-			pPlayer->m_bDoNotShowDmgInfoMenu = false;
 		}
 		pPlayer->m_bIsPendingTKKick = false;
 
@@ -3141,7 +3139,7 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 			// Any human player still alive, show them damage stats in round end
 			if (!player->IsBot() && !player->IsHLTV() && player->IsAlive())
 			{
-				player->StartShowDmgStats(NULL);
+				player->StartShowDmgStats(nullptr);
 			}
 		}
 	}
