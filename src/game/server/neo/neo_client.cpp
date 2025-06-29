@@ -173,7 +173,6 @@ void Precache_HL2MP( void )
 	CBaseEntity::PrecacheScriptSound( "HUDQuickInfo.LowAmmo" );
 	CBaseEntity::PrecacheScriptSound( "HUDQuickInfo.LowHealth" );
 
-	CBaseEntity::PrecacheScriptSound( "FX_AntlionImpact.ShellImpact" );
 	CBaseEntity::PrecacheScriptSound( "Missile.ShotDown" );
 	CBaseEntity::PrecacheScriptSound( "Bullets.DefaultNearmiss" );
 	CBaseEntity::PrecacheScriptSound( "Bullets.GunshipNearmiss" );
@@ -253,7 +252,7 @@ void Precache_NEO_Sounds( void )
 	CBaseEntity::PrecacheScriptSound("weapon_m41l.single");
 	CBaseEntity::PrecacheScriptSound("weapon_m41l.npc_single");
 	CBaseEntity::PrecacheScriptSound("weapon_m41s.single");
-	CBaseEntity::PrecacheScriptSound("weapon_m41s.npc_single");
+	//CBaseEntity::PrecacheScriptSound("weapon_m41s.npc_single");
 
 	CBaseEntity::PrecacheScriptSound("weapon_srs.reload");
 	CBaseEntity::PrecacheScriptSound("weapon_srs.npc_reload");
