@@ -22,7 +22,7 @@ const wchar_t **CROSSHAIR_DYNAMICTYPE_LABELS = INTERNAL_CROSSHAIR_DYNAMICTYPE_LA
 static const wchar_t *INTERNAL_CROSSHAIR_SIZETYPE_LABELS[CROSSHAIR_SIZETYPE__TOTAL] = { L"Absolute", L"Screen halves" };
 const wchar_t **CROSSHAIR_SIZETYPE_LABELS = INTERNAL_CROSSHAIR_SIZETYPE_LABELS;
 
-void PaintCrosshair(const CrosshairInfo &crh, CNEO_Player *player, const int x, const int y)
+void PaintCrosshair(const CrosshairInfo &crh, int inaccuracy, const int x, const int y)
 {
 	if (NEORules() && NEORules()->GetHiddenHudElements() & NEO_HUD_ELEMENT_CROSSHAIR)
 	{
@@ -31,9 +31,6 @@ void PaintCrosshair(const CrosshairInfo &crh, CNEO_Player *player, const int x, 
 
 	int wide, tall;
 	vgui::surface()->GetScreenSize(wide, tall);
-	
-	const int inaccuracy = player	? HalfInaccuracyConeInScreenPixels(player, static_cast<C_NEOBaseCombatWeapon*>(player->GetActiveWeapon()), wide * 0.5) 
-									: MAX(0, (int)(sin(gpGlobals->curtime) * 24) + 16);
 
 	int iSize = crh.iSize;
 	int iThick = crh.iThick;
@@ -171,7 +168,6 @@ static constexpr const NeoXHairVariantType NEOXHAIR_SEGMENT_VARTYPES[NEOXHAIR_SE
 	NEOXHAIRVARTYPE_INT,   // NEOXHAIR_SEGMENT_I_VERSION
 	NEOXHAIRVARTYPE_INT,   // NEOXHAIR_SEGMENT_I_STYLE
 	NEOXHAIRVARTYPE_INT,   // NEOXHAIR_SEGMENT_I_COLOR
-	NEOXHAIRVARTYPE_INT,   // NEOXHAIR_SEGMENT_I_DYNAMICTYPE
 	NEOXHAIRVARTYPE_INT,   // NEOXHAIR_SEGMENT_I_SIZETYPE
 	NEOXHAIRVARTYPE_INT,   // NEOXHAIR_SEGMENT_I_SIZE
 	NEOXHAIRVARTYPE_FLOAT, // NEOXHAIR_SEGMENT_FL_SCRSIZE
@@ -182,6 +178,7 @@ static constexpr const NeoXHairVariantType NEOXHAIR_SEGMENT_VARTYPES[NEOXHAIR_SE
 	NEOXHAIRVARTYPE_BOOL,  // NEOXHAIR_SEGMENT_B_TOPLINE
 	NEOXHAIRVARTYPE_INT,   // NEOXHAIR_SEGMENT_I_CIRCLERAD
 	NEOXHAIRVARTYPE_INT,   // NEOXHAIR_SEGMENT_I_CIRCLESEGMENTS
+	NEOXHAIRVARTYPE_INT,   // NEOXHAIR_SEGMENT_I_DYNAMICTYPE
 };
 
 bool ImportCrosshair(CrosshairInfo *crh, const char *pszSequence)
@@ -233,7 +230,6 @@ bool ImportCrosshair(CrosshairInfo *crh, const char *pszSequence)
 
 	crh->iStyle = vars[NEOXHAIR_SEGMENT_I_STYLE].iVal;
 	crh->color.SetRawColor(vars[NEOXHAIR_SEGMENT_I_COLOR].iVal);
-	crh->iEDynamicType = vars[NEOXHAIR_SEGMENT_I_DYNAMICTYPE].iVal;
 	crh->iESizeType = vars[NEOXHAIR_SEGMENT_I_SIZETYPE].iVal;
 	crh->iSize = vars[NEOXHAIR_SEGMENT_I_SIZE].iVal;
 	crh->flScrSize = vars[NEOXHAIR_SEGMENT_FL_SCRSIZE].flVal;
@@ -244,6 +240,8 @@ bool ImportCrosshair(CrosshairInfo *crh, const char *pszSequence)
 	crh->bTopLine = vars[NEOXHAIR_SEGMENT_B_TOPLINE].bVal;
 	crh->iCircleRad = vars[NEOXHAIR_SEGMENT_I_CIRCLERAD].iVal;
 	crh->iCircleSegments = vars[NEOXHAIR_SEGMENT_I_CIRCLESEGMENTS].iVal;
+	
+	crh->iEDynamicType = vars[NEOXHAIR_SEGMENT_I_VERSION].iVal >= NEOXHAIR_SERIAL_ALPHA_V17 ? vars[NEOXHAIR_SEGMENT_I_DYNAMICTYPE].iVal : 0;
 
 	return true;
 }
@@ -251,11 +249,10 @@ bool ImportCrosshair(CrosshairInfo *crh, const char *pszSequence)
 void ExportCrosshair(const CrosshairInfo *crh, char (&szSequence)[NEO_XHAIR_SEQMAX])
 {
 	V_sprintf_safe(szSequence,
-			"%d;%d;%d;%d;%d;%d;%.3f;%d;%d;%d;%d;%d;%d;%d;",
+			"%d;%d;%d;%d;%d;%.3f;%d;%d;%d;%d;%d;%d;%d;%d;",
 			NEOXHAIR_SERIAL_CURRENT,
 			crh->iStyle,
 			crh->color.GetRawColor(),
-			crh->iEDynamicType,
 			crh->iESizeType,
 			crh->iSize,
 			crh->flScrSize,
@@ -265,7 +262,8 @@ void ExportCrosshair(const CrosshairInfo *crh, char (&szSequence)[NEO_XHAIR_SEQM
 			crh->iCenterDot,
 			static_cast<int>(crh->bTopLine),
 			crh->iCircleRad,
-			crh->iCircleSegments);
+			crh->iCircleSegments,
+			crh->iEDynamicType);
 }
 
 int HalfInaccuracyConeInScreenPixels(C_NEO_Player* pPlayer, C_NEOBaseCombatWeapon* pWeapon, int halfScreenWidth)

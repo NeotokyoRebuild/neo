@@ -139,7 +139,7 @@ void CHudCrosshair::ApplySchemeSettings( IScheme *scheme )
 #ifdef NEO
 	m_iHalfScreenWidth = ScreenWidth() * 0.5;
 #endif // NEO
-    SetSize( ScreenWidth(), ScreenHeight());
+    SetSize( ScreenWidth(), ScreenHeight() );
 
 	SetForceStereoRenderToFrameBuffer( true );
 }
@@ -495,7 +495,7 @@ void CHudCrosshair::Paint( void )
 	}
 	else
 	{
-		PaintCrosshair(m_crosshairInfo, pPlayer, iX, iY);
+		PaintCrosshair(m_crosshairInfo, HalfInaccuracyConeInScreenPixels(pPlayer, pWeapon, m_iHalfScreenWidth), iX, iY);
 	}
 
 	if (bIsScoped && pPlayer->m_bInAim)
