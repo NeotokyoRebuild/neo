@@ -174,20 +174,20 @@
 	"wave"		"vehicles/v8/v8_stop1.wav"
 }
 
-"ATV_rev"
-{
-	"channel"		"CHAN_STATIC"
-	"volume"		"0.9"
-	"soundlevel"	"SNDLVL_80dB"
-	"pitch"		"98,105"
-	"wave"		"vehicles/v8/v8_rev_short_loop1.wav"
+//"ATV_rev"
+//{
+//	"channel"		"CHAN_STATIC"
+//	"volume"		"0.9"
+//	"soundlevel"	"SNDLVL_80dB"
+//	"pitch"		"98,105"
+//	"wave"		"vehicles/v8/v8_rev_short_loop1.wav"
 
 //	"rndwave"
 //	{
 //		"wave"		"vehicles/v8/v8_rev_short_loop1.wav"
 //		"wave"		"vehicles/v8/v8_rev_short_loop6.wav"
 //	}
-}
+//}
 
 "ATV_reverse"
 {
