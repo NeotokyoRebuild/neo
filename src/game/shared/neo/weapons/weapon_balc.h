@@ -46,7 +46,7 @@ protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
 
 private:
-	CWeaponBALC(const CWeaponBALC&other);
+	CWeaponBALC(const CWeaponBALC &other);
 	virtual void Think() override;
 
 	bool	m_bOverheated = false;
