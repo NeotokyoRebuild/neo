@@ -120,3 +120,8 @@ void CWeaponAA13::PrimaryAttack(void)
 	pPlayer->ViewPunchReset();
 	AddViewKick();
 }
+
+bool CWeaponAA13::CanBePickedUpByClass(int classId)
+{
+	return classId != NEO_CLASS_JUGGERNAUT;
+}

@@ -238,3 +238,8 @@ bool CWeaponGhost::IsPosWithinViewDistance(const Vector& otherPlayerPos, float& 
 	dist = DistanceToPos(otherPlayerPos);
 	return dist <= GetGhostRangeInHammerUnits();
 }
+
+bool CWeaponGhost::CanBePickedUpByClass(int classId)
+{
+	return classId != NEO_CLASS_JUGGERNAUT;
+}
