@@ -1397,14 +1397,14 @@ target_sources_grouped(
     FILES
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_aa13.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_aa13.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_balc.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_balc.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_detpack.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_detpack.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_ghost.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_ghost.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_grenade.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_grenade.h
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_hmg.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_hmg.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_jitte.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_jitte.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_jittes.cpp

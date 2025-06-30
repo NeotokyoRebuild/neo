@@ -203,7 +203,7 @@ static bool IsNeoPrimary(CNEOBaseCombatWeapon *pNeoWep)
 		NEO_WEP_M41 | NEO_WEP_M41_L | NEO_WEP_M41_S | NEO_WEP_MPN | NEO_WEP_MPN_S |
 		NEO_WEP_MX | NEO_WEP_MX_S | NEO_WEP_PZ | NEO_WEP_SMAC | NEO_WEP_SRM |
 		NEO_WEP_SRM_S | NEO_WEP_SRS | NEO_WEP_SUPA7 | NEO_WEP_ZR68_C | NEO_WEP_ZR68_L |
-		NEO_WEP_ZR68_S | NEO_WEP_HMG;
+		NEO_WEP_ZR68_S | NEO_WEP_BALC;
 
 	return (primaryBits & bits) ? true : false;
 }
@@ -2930,8 +2930,8 @@ void CNEO_Player::GiveDefaultItems(void)
 		Weapon_Switch(Weapon_OwnsThisType("weapon_milso"));
 		break;
 	case NEO_CLASS_JUGGERNAUT:
-		GiveNamedItem("weapon_hmg");
-		Weapon_Switch(Weapon_OwnsThisType("weapon_hmg"));
+		GiveNamedItem("weapon_balc");
+		Weapon_Switch(Weapon_OwnsThisType("weapon_balc"));
 		break;
 	default:
 		GiveNamedItem("weapon_knife");

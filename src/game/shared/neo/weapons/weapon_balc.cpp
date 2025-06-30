@@ -1,31 +1,31 @@
 #include "cbase.h"
-#include "weapon_hmg.h"
+#include "weapon_balc.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-IMPLEMENT_NETWORKCLASS_ALIASED(WeaponHMG, DT_WeaponHMG)
+IMPLEMENT_NETWORKCLASS_ALIASED(WeaponBALC, DT_WeaponBALC)
 
-BEGIN_NETWORK_TABLE(CWeaponHMG, DT_WeaponHMG)
+BEGIN_NETWORK_TABLE(CWeaponBALC, DT_WeaponBALC)
 	DEFINE_NEO_BASE_WEP_NETWORK_TABLE
 END_NETWORK_TABLE()
 
 #ifdef CLIENT_DLL
-BEGIN_PREDICTION_DATA(CWeaponHMG)
+BEGIN_PREDICTION_DATA(CWeaponBALC)
 	DEFINE_NEO_BASE_WEP_PREDICTION
 END_PREDICTION_DATA()
 #endif
 
-NEO_IMPLEMENT_ACTTABLE(CWeaponHMG)
+NEO_IMPLEMENT_ACTTABLE(CWeaponBALC)
 
-LINK_ENTITY_TO_CLASS(weapon_hmg, CWeaponHMG);
+LINK_ENTITY_TO_CLASS(weapon_balc, CWeaponBALC);
 
-PRECACHE_WEAPON_REGISTER(weapon_hmg);
+PRECACHE_WEAPON_REGISTER(weapon_balc);
 
-#define HMG_COOLING_RATE 0.35f
-#define HMG_OVERHEAT_DURATION 5.0f
+#define BALC_COOLING_RATE 0.35f
+#define BALC_OVERHEAT_DURATION 5.0f
 
-CWeaponHMG::CWeaponHMG()
+CWeaponBALC::CWeaponBALC()
 {
 	m_flSoonestAttack = gpGlobals->curtime;
 	m_flAccuracyPenalty = 0;
@@ -33,27 +33,27 @@ CWeaponHMG::CWeaponHMG()
 	m_nNumShotsFired = 0;
 
 	m_weaponSeeds = {
-		"hmgpx",
-		"hmgpy",
-		"hmgrx",
-		"hmgry",
+		"balcpx",
+		"balcpy",
+		"balcrx",
+		"balcry",
 	};
 }
 
-void CWeaponHMG::Spawn(void)
+void CWeaponBALC::Spawn(void)
 {
 	BaseClass::Spawn();
 
-	SetThink(&CWeaponHMG::Think);
-	SetNextThink(gpGlobals->curtime + HMG_COOLING_RATE);
+	SetThink(&CWeaponBALC::Think);
+	SetNextThink(gpGlobals->curtime + BALC_COOLING_RATE);
 }
 
-bool CWeaponHMG::CanBePickedUpByClass(int classId)
+bool CWeaponBALC::CanBePickedUpByClass(int classId)
 {
 	return classId == NEO_CLASS_JUGGERNAUT;
 }
 
-void CWeaponHMG::PrimaryAttack(void)
+void CWeaponBALC::PrimaryAttack(void)
 {
 	if (m_bOverheated)
 	{
@@ -70,12 +70,12 @@ void CWeaponHMG::PrimaryAttack(void)
 	}
 }
 
-void CWeaponHMG::Think(void)
+void CWeaponBALC::Think(void)
 {
 	if (m_bOverheated)
 	{
 		float flTimeOverheated = gpGlobals->curtime - m_flOverheatStartTime;
-		if (flTimeOverheated >= HMG_OVERHEAT_DURATION)
+		if (flTimeOverheated >= BALC_OVERHEAT_DURATION)
 		{
 			SetPrimaryAmmoCount(GetDefaultClip1());
 			m_bOverheated = false;
@@ -86,5 +86,5 @@ void CWeaponHMG::Think(void)
 		SetPrimaryAmmoCount(GetPrimaryAmmoCount() + 1);
 	}
 
-	SetNextThink(gpGlobals->curtime + HMG_COOLING_RATE);
+	SetNextThink(gpGlobals->curtime + BALC_COOLING_RATE);
 }

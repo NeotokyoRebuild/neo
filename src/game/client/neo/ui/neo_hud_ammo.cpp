@@ -124,7 +124,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 	if(activeWep->IsGhost())
 		return;
 
-	if (activeWep->GetNeoWepBits() & NEO_WEP_HMG)
+	if (activeWep->GetNeoWepBits() & NEO_WEP_BALC)
 	{
 		DrawHeatMeter(activeWep);
 		return;

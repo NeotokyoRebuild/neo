@@ -56,13 +56,13 @@ enum NeoWepBits : NEO_WEP_BITS_UNDERLYING_TYPE {
 
 	// NOTE!!! remember to update NEP_WEP_BITS_LAST_VALUE below, if editing this/these last values!
 	NEO_WEP_EXPLOSIVE =			(static_cast<NEO_WEP_BITS_UNDERLYING_TYPE>(1) << 31), // Generic for weapons that count as explosive kills on killfeed.
-	NEO_WEP_HMG =				(static_cast<NEO_WEP_BITS_UNDERLYING_TYPE>(1) << 32),
+	NEO_WEP_BALC =				(static_cast<NEO_WEP_BITS_UNDERLYING_TYPE>(1) << 32),
 #ifdef INCLUDE_WEP_PBK
 	NEO_WEP_PBK56S =			(static_cast <NEO_WEP_BITS_UNDERLYING_TYPE>(1) << 33),
 #endif
 
 #ifndef INCLUDE_WEP_PBK
-	NEP_WEP_BITS_LAST_VALUE = NEO_WEP_HMG
+	NEP_WEP_BITS_LAST_VALUE = NEO_WEP_BALC
 #else
 	NEP_WEP_BITS_LAST_VALUE = NEO_WEP_PBK56S
 #endif
@@ -230,7 +230,7 @@ public:
 	{
 		return ((GetNeoWepBits() & (NEO_WEP_AA13 | NEO_WEP_JITTE | NEO_WEP_JITTE_S |
 			NEO_WEP_KNIFE | NEO_WEP_MPN | NEO_WEP_MPN_S | NEO_WEP_MX | NEO_WEP_MX_S |
-			NEO_WEP_PZ | NEO_WEP_SMAC | NEO_WEP_SRM | NEO_WEP_SRM_S | NEO_WEP_ZR68_C | NEO_WEP_ZR68_S | NEO_WEP_HMG
+			NEO_WEP_PZ | NEO_WEP_SMAC | NEO_WEP_SRM | NEO_WEP_SRM_S | NEO_WEP_ZR68_C | NEO_WEP_ZR68_S | NEO_WEP_BALC
 #ifdef INCLUDE_WEP_PBK
 			| NEO_WEP_PBK56S
 #endif

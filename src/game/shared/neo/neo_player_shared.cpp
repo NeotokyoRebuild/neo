@@ -56,7 +56,7 @@ bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep)
 		NEO_WEP_KNIFE |
 		NEO_WEP_PROX_MINE |
 		NEO_WEP_SMOKE_GRENADE |
-		NEO_WEP_HMG;
+		NEO_WEP_BALC;
 
 	return !(pWep->GetNeoWepBits() & forbiddenZooms);
 }
