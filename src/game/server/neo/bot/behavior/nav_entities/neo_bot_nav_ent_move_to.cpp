@@ -39,7 +39,7 @@ ActionResult< CNEOBot >	CNEOBotNavEntMoveTo::OnStart( CNEOBot *me, Action< CNEOB
 
 	TheNavMesh->GetSimpleGroundHeight( m_goalPosition, &m_goalPosition.z );
 
-	m_pGoalArea = (CNavArea*)TheNavMesh->GetNavArea( m_goalPosition );
+	m_pGoalArea = TheNavMesh->GetNavArea( m_goalPosition );
 	if ( !m_pGoalArea )
 	{
 		return Done( "There's no nav area for the goal position" );

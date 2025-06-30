@@ -19,9 +19,7 @@ class CNEOBotActionPoint;
 class CNEOBotGenerator;
 class CNEOBot;
 
-extern ConVar hl2_sprintspeed;
 extern ConVar hl2_normspeed;
-extern ConVar hl2_walkspeed;
 
 extern void BotGenerateAndWearItem(CNEO_Player* pBot, const char* itemName);
 
@@ -29,11 +27,11 @@ extern int Bot_GetTeamByName(const char* string);
 
 inline int GetEnemyTeam(int team)
 {
-	if (team == TEAM_COMBINE)
-		return TEAM_REBELS;
+	if (team == TEAM_JINRAI)
+		return TEAM_NSF;
 
-	if (team == TEAM_REBELS)
-		return TEAM_COMBINE;
+	if (team == TEAM_NSF)
+		return TEAM_JINRAI;
 
 	// no enemy team
 	return team;
@@ -152,7 +150,6 @@ public:
 	{
 		ANY_WEAPON = 0,
 		MELEE_ONLY = 0x0001,
-		GRAVGUN_ONLY = 0x0002,
 	};
 	void ClearWeaponRestrictions(void);
 	void SetWeaponRestriction(int restrictionFlags);
@@ -168,7 +165,7 @@ public:
 
 	bool IsEntityBetweenTargetAndSelf(CBaseEntity* other, CBaseEntity* target);	// return true if "other" is positioned inbetween us and "target"
 
-	CNEO_Player* GetClosestHumanLookingAtMe(int team = TEAM_ANY) const;	// return the nearest human player on the given team who is looking directly at me
+	CNEO_Player* GetClosestHumanLookingAtMe(int team = TEAM_ANY);	// return the nearest human player on the given team who is looking directly at me
 
 	enum AttributeType
 	{
@@ -872,7 +869,7 @@ public:
 		if (!player->IsAlive())
 			return true;
 
-		if (player->GetTeamNumber() != TEAM_REBELS && player->GetTeamNumber() != TEAM_COMBINE && player->GetTeamNumber() != TEAM_UNASSIGNED)
+		if (player->GetTeamNumber() != TEAM_JINRAI && player->GetTeamNumber() != TEAM_NSF && player->GetTeamNumber() != TEAM_UNASSIGNED)
 			return true;
 
 		if (m_team != TEAM_ANY && player->GetTeamNumber() != m_team)
@@ -895,57 +892,6 @@ public:
 	float m_closeRangeSq;
 	CBasePlayer* m_closePlayer;
 	int m_team;
-};
-
-static const char* g_ppszRandomCitizenModels[] =
-{
-	"models/humans/group03/male_01.mdl",
-	"models/humans/group03/male_02.mdl",
-	"models/humans/group03/female_01.mdl",
-	"models/humans/group03/male_03.mdl",
-	"models/humans/group03/female_02.mdl",
-	"models/humans/group03/male_04.mdl",
-	"models/humans/group03/female_03.mdl",
-	"models/humans/group03/male_05.mdl",
-	"models/humans/group03/female_04.mdl",
-	"models/humans/group03/male_06.mdl",
-	"models/humans/group03/female_06.mdl",
-	"models/humans/group03/male_07.mdl",
-	"models/humans/group03/female_07.mdl",
-	"models/humans/group03/male_08.mdl",
-	"models/humans/group03/male_09.mdl",
-};
-
-static const char* g_ppszRandomCombineModels[] =
-{
-	"models/combine_soldier.mdl",
-	"models/combine_soldier_prisonguard.mdl",
-	"models/combine_super_soldier.mdl",
-	"models/police.mdl",
-};
-
-static const char* g_ppszRandomModels[] =
-{
-	"models/humans/group03/male_01.mdl",
-	"models/humans/group03/male_02.mdl",
-	"models/humans/group03/female_01.mdl",
-	"models/humans/group03/male_03.mdl",
-	"models/humans/group03/female_02.mdl",
-	"models/humans/group03/male_04.mdl",
-	"models/humans/group03/female_03.mdl",
-	"models/humans/group03/male_05.mdl",
-	"models/humans/group03/female_04.mdl",
-	"models/humans/group03/male_06.mdl",
-	"models/humans/group03/female_06.mdl",
-	"models/humans/group03/male_07.mdl",
-	"models/humans/group03/female_07.mdl",
-	"models/humans/group03/male_08.mdl",
-	"models/humans/group03/male_09.mdl",
-
-	"models/combine_soldier.mdl",
-	"models/combine_soldier_prisonguard.mdl",
-	"models/combine_super_soldier.mdl",
-	"models/police.mdl",
 };
 
 

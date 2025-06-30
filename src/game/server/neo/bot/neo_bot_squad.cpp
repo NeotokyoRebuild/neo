@@ -168,14 +168,15 @@ float CNEOBotSquad::GetSlowestMemberIdealSpeed( bool includeLeader ) const
 
 	for( ; i<m_roster.Count(); ++i )
 	{
-		if ( m_roster[i].Get() != NULL && m_roster[i]->IsAlive() )
+		auto member = m_roster[i].Get();
+		if (member != NULL && member->IsAlive())
 		{
 			// TODO(misyl): One could make this consider all the members of the roster's
 			// aux power, and see if they are allowed to sprint here.
 			//
 			// I am not planning on using squads, just pointing it out if someone
 			// else wants to use this code.
-			float memberSpeed = hl2_normspeed.GetFloat();
+			float memberSpeed = member->GetNormSpeed();
 			if ( memberSpeed < speed )
 			{
 				speed = memberSpeed;

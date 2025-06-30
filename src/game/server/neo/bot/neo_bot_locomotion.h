@@ -1,6 +1,8 @@
 #pragma once
 
 #include "NextBot/Player/NextBotPlayerLocomotion.h"
+#include "neo_player_shared.h"
+#include "../neo_player.h"
 
 //----------------------------------------------------------------------------
 class CNEOBotLocomotion : public PlayerLocomotion
@@ -32,6 +34,17 @@ protected:
 
 inline float CNEOBotLocomotion::GetMaxJumpHeight( void ) const
 {
-	// https://developer.valvesoftware.com/wiki/Dimensions_(Half-Life_2_and_Counter-Strike:_Source)#Jumping
-	return 56.0f;
+	auto me = (CNEO_Player*)GetBot()->GetEntity();
+	switch (me->GetClass())
+	{
+		case NEO_CLASS_RECON:
+			return NEO_RECON_CROUCH_JUMP_HEIGHT;
+		case NEO_CLASS_ASSAULT:
+		case NEO_CLASS_SUPPORT:
+		case NEO_CLASS_VIP:
+			return NEO_CROUCH_JUMP_HEIGHT;
+		default:
+			Assert(false);
+			return 0.f;
+	}
 }

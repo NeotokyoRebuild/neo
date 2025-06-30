@@ -11,8 +11,8 @@ public:
 	virtual ~CNEOBotSquad() { }		
 
 	// EventResponder ------
-	virtual INextBotEventResponder *FirstContainedResponder( void ) const;
-	virtual INextBotEventResponder *NextContainedResponder( INextBotEventResponder *current ) const;
+	virtual INextBotEventResponder *FirstContainedResponder( void ) const override;
+	virtual INextBotEventResponder *NextContainedResponder( INextBotEventResponder *current ) const override;
 	//----------------------
 
 	bool IsMember( CNEOBot *bot ) const;		// is the given bot in this squad?

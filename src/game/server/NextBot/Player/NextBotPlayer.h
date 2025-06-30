@@ -611,7 +611,6 @@ inline void NextBotPlayer< PlayerType >::PhysicsSimulate( void )
 			if (pPlayerMimicked && pThisBot)
 			{
 				CUserCmd cmd;
-				Q_memset(&cmd, 0, sizeof(cmd));
 
 				if (!pPlayerMimicked->GetLastUserCommand())
 				{

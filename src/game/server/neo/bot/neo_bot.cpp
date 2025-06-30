@@ -13,6 +13,7 @@
 #include "vgui/ILocalize.h"
 #include "soundenvelope.h"
 #include "weapon_neobasecombatweapon.h"
+#include "weapon_knife.h"
 
 #include "behavior/neo_bot_behavior.h"
 
@@ -39,10 +40,10 @@ extern ConVar neo_bot_path_lookahead_range;
 //-----------------------------------------------------------------------------------------------------
 bool IsTeamName(const char* string)
 {
-	if (!stricmp(string, TEAM_STR_JINRAI))
+	if (!V_stricmp(string, TEAM_STR_JINRAI))
 		return true;
 
-	if (!stricmp(string, TEAM_STR_NSF))
+	if (!V_stricmp(string, TEAM_STR_NSF))
 		return true;
 
 	return false;
@@ -53,11 +54,11 @@ bool IsTeamName(const char* string)
 //-----------------------------------------------------------------------------------------------------
 int Bot_GetTeamByName(const char* string)
 {
-	if (!stricmp(string, TEAM_STR_JINRAI))
+	if (!V_stricmp(string, TEAM_STR_JINRAI))
 	{
 		return TEAM_JINRAI;
 	}
-	else if (!stricmp(string, TEAM_STR_NSF))
+	else if (!V_stricmp(string, TEAM_STR_NSF))
 	{
 		return TEAM_NSF;
 	}
@@ -69,16 +70,16 @@ int Bot_GetTeamByName(const char* string)
 //-----------------------------------------------------------------------------------------------------
 CNEOBot::DifficultyType StringToDifficultyLevel(const char* string)
 {
-	if (!stricmp(string, "easy"))
+	if (!V_stricmp(string, "easy"))
 		return CNEOBot::EASY;
 
-	if (!stricmp(string, "normal"))
+	if (!V_stricmp(string, "normal"))
 		return CNEOBot::NORMAL;
 
-	if (!stricmp(string, "hard"))
+	if (!V_stricmp(string, "hard"))
 		return CNEOBot::HARD;
 
-	if (!stricmp(string, "expert"))
+	if (!V_stricmp(string, "expert"))
 		return CNEOBot::EXPERT;
 
 	return CNEOBot::UNDEFINED;
@@ -103,8 +104,7 @@ const char* DifficultyLevelToString(CNEOBot::DifficultyType skill)
 //-----------------------------------------------------------------------------------------------------
 const char* GetRandomBotName(void)
 {
-	constexpr int NUM_NAMES = 10;
-	static const char* nameList[NUM_NAMES] =
+	static const char* nameList[] =
 	{
 		"Deej",
 		"Ed",
@@ -118,7 +118,7 @@ const char* GetRandomBotName(void)
 		"Tatsur0",
 	};
 
-	return nameList[RandomInt(0, NUM_NAMES-1)];
+	return nameList[RandomInt(0, ARRAYSIZE(nameList) - 1)];
 }
 
 
@@ -265,6 +265,7 @@ CON_COMMAND_F(neo_bot_add, "Add a bot.", FCVAR_GAMEDLL)
 		TheNEOBots().OnForceAddedBots(iNumAdded);
 	}
 }
+CON_COMMAND_EXTERN(bot_add, neo_bot_add, "Add a bot.");
 
 
 //-----------------------------------------------------------------------------------------------------
@@ -436,7 +437,7 @@ IMPLEMENT_INTENTION_INTERFACE(CNEOBot, CNEOBotMainAction);
 
 
 //-----------------------------------------------------------------------------------------------------
-static CEntityFactory<CNEOBot> neo_bot("neo_bot");;
+LINK_ENTITY_TO_CLASS(neo_bot, CNEOBot);
 
 //-----------------------------------------------------------------------------------------------------
 BEGIN_ENT_SCRIPTDESC( CNEOBot, CNEO_Player, "Beep boop beep boop :3" )
@@ -1269,7 +1270,7 @@ public:
 // Return a nearby area where we can see a member of the enemy team
 CNavArea* CNEOBot::FindVantagePoint(float maxTravelDistance) const
 {
-	CFindVantagePoint find(GetTeamNumber() == TEAM_COMBINE ? TEAM_REBELS : TEAM_COMBINE);
+	CFindVantagePoint find(GetTeamNumber() == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI);
 	SearchSurroundingAreas(GetLastKnownArea(), find, maxTravelDistance);
 	return find.m_vantageArea;
 }
@@ -1340,7 +1341,7 @@ float CNEOBot::GetMaxAttackRange(void) const
 
 	if (myWeapon->GetNeoWepBits() & NEO_WEP_KNIFE)
 	{
-		return 51.0f; // KNIFE_RANGE
+		return NEO_WEP_KNIFE_RANGE;
 	}
 
 	// bullet spray weapons, grenades, etc
@@ -1542,7 +1543,7 @@ bool CNEOBot::IsCombatWeapon(CNEOBaseCombatWeapon* weapon) const
 		return false;
 	}
 
-	return weapon != NULL;
+	return true;
 }
 
 
@@ -1615,15 +1616,12 @@ bool CNEOBot::IsBarrageAndReloadWeapon(CNEOBaseCombatWeapon* weapon) const
 // Return true if given weapon doesn't make much sound when used (ie: spy knife, etc)
 bool CNEOBot::IsQuietWeapon(CNEOBaseCombatWeapon* weapon) const
 {
-	if (!weapon)
+	if (!IsCombatWeapon(weapon))
 	{
 		return false;
 	}
 
-	if (!IsCombatWeapon(weapon))
-		return false;
-
-	if (weapon && weapon->GetNeoWepBits() & (NEO_WEP_SUPPRESSED | NEO_WEP_KNIFE))
+	if (weapon->GetNeoWepBits() & (NEO_WEP_SUPPRESSED | NEO_WEP_KNIFE))
 	{
 		return true;
 	}
@@ -1693,7 +1691,7 @@ bool CNEOBot::IsEntityBetweenTargetAndSelf(CBaseEntity* other, CBaseEntity* targ
 
 //-----------------------------------------------------------------------------------------------------
 // Return the nearest human player on the given team who is looking directly at me
-CNEO_Player* CNEOBot::GetClosestHumanLookingAtMe(int team) const
+CNEO_Player* CNEOBot::GetClosestHumanLookingAtMe(int team)
 {
 	CUtlVector< CNEO_Player* > otherVector;
 	CollectPlayers(&otherVector, team, COLLECT_ONLY_LIVING_PLAYERS);
@@ -1711,7 +1709,7 @@ CNEO_Player* CNEOBot::GetClosestHumanLookingAtMe(int team) const
 		Vector otherEye, otherForward;
 		other->EyePositionAndVectors(&otherEye, &otherForward, NULL, NULL);
 
-		Vector toMe = const_cast<CNEOBot*>(this)->EyePosition() - otherEye;
+		Vector toMe = EyePosition() - otherEye;
 		float range = toMe.NormalizeInPlace();
 
 		if (range < closeRange)
@@ -2206,12 +2204,12 @@ bool CNEOBot::IsEnemy(const CBaseEntity* them) const
 			return false;
 	}
 
-	if (HL2MPRules() && HL2MPRules()->IsTeamplay())
+	if (NEORules() && NEORules()->IsTeamplay())
 	{
-		if (them->GetTeamNumber() == TEAM_COMBINE && this->GetTeamNumber() == TEAM_REBELS)
+		if (them->GetTeamNumber() == TEAM_JINRAI && this->GetTeamNumber() == TEAM_NSF)
 			return true;
 
-		if (them->GetTeamNumber() == TEAM_REBELS && this->GetTeamNumber() == TEAM_COMBINE)
+		if (them->GetTeamNumber() == TEAM_NSF && this->GetTeamNumber() == TEAM_JINRAI)
 			return true;
 
 		return false;

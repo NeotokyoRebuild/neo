@@ -12,7 +12,7 @@
 // Creates and sets CNEOBotManager as the NextBotManager singleton
 static CNEOBotManager sNEOBotManager;
 
-ConVar neo_bot_difficulty( "neo_bot_difficulty", "2", FCVAR_NONE, "Defines the skill of bots joining the game.  Values are: 0=easy, 1=normal, 2=hard, 3=expert." );
+ConVar neo_bot_difficulty( "neo_bot_difficulty", "2", FCVAR_NONE, "Defines the skill of bots joining the game.  Values are: 0=easy, 1=normal, 2=hard, 3=expert.", true, 0, true, CNEOBot::DifficultyType::NUM_DIFFICULTY_LEVELS - 1);
 ConVar neo_bot_quota( "neo_bot_quota", "10", FCVAR_NONE, "Determines the total number of bots in the game." );
 ConVar neo_bot_quota_mode( "neo_bot_quota_mode", "fill", FCVAR_NONE, "Determines the type of quota.\nAllowed values: 'normal', 'fill', and 'match'.\nIf 'fill', the server will adjust bots to keep N players in the game, where N is bot_quota.\nIf 'match', the server will maintain a 1:N ratio of humans to bots, where N is bot_quota." );
 ConVar neo_bot_join_after_player( "neo_bot_join_after_player", "1", FCVAR_NONE, "If nonzero, bots wait until a player joins before entering the game." );
@@ -31,7 +31,7 @@ static bool UTIL_KickBotFromTeam( int kickTeam )
 	for ( i = 1; i <= gpGlobals->maxClients; ++i )
 	{
 		CNEO_Player *pPlayer = ToNEOPlayer( UTIL_PlayerByIndex( i ) );
-		CNEOBot* pBot = dynamic_cast<CNEOBot*>(pPlayer);
+		CNEOBot* pBot = ToNEOBot(pPlayer);
 
 		if (pBot == NULL)
 			continue;
@@ -55,7 +55,7 @@ static bool UTIL_KickBotFromTeam( int kickTeam )
 	for ( i = 1; i <= gpGlobals->maxClients; ++i )
 	{
 		CNEO_Player *pPlayer = ToNEOPlayer( UTIL_PlayerByIndex( i ) );
-		CNEOBot* pBot = dynamic_cast<CNEOBot*>(pPlayer);
+		CNEOBot* pBot = ToNEOBot(pPlayer);
 
 		if (pBot == NULL)
 			continue;
@@ -243,7 +243,7 @@ void CNEOBotManager::MaintainBotQuota()
 		if ( !pPlayer->IsConnected() )
 			continue;
 
-		CNEOBot* pBot = dynamic_cast<CNEOBot*>( pPlayer );
+		CNEOBot* pBot = ToNEOBot( pPlayer );
 		if ( pBot && pBot->HasAttribute( CNEOBot::QUOTA_MANANGED ) )
 		{
 			nNEOBots++;
@@ -272,12 +272,12 @@ void CNEOBotManager::MaintainBotQuota()
 
 	if ( FStrEq( neo_bot_quota_mode.GetString(), "fill" ) )
 	{
-		desiredBotCount = MAX( 0, desiredBotCount - nNonNEOBotsOnGameTeams );
+		desiredBotCount = Max( 0, desiredBotCount - nNonNEOBotsOnGameTeams );
 	}
 	else if ( FStrEq( neo_bot_quota_mode.GetString(), "match" ) )
 	{
 		// If bot_quota_mode is 'match', we want the number of bots to be bot_quota * total humans
-		desiredBotCount = (int)MAX( 0, neo_bot_quota.GetFloat() * nNonNEOBotsOnGameTeams );
+		desiredBotCount = Max( 0, (int)neo_bot_quota.GetFloat() * nNonNEOBotsOnGameTeams );
 	}
 
 	// wait for a player to join, if necessary
@@ -292,18 +292,18 @@ void CNEOBotManager::MaintainBotQuota()
 	// if bots will auto-vacate, we need to keep one slot open to allow players to join
 	if ( neo_bot_auto_vacate.GetBool() )
 	{
-		desiredBotCount = MIN( desiredBotCount, gpGlobals->maxClients - nTotalNonNEOBots - 1 );
+		desiredBotCount = Min( desiredBotCount, gpGlobals->maxClients - nTotalNonNEOBots - 1 );
 	}
 	else
 	{
-		desiredBotCount = MIN( desiredBotCount, gpGlobals->maxClients - nTotalNonNEOBots );
+		desiredBotCount = Min( desiredBotCount, gpGlobals->maxClients - nTotalNonNEOBots );
 	}
 
 	// add bots if necessary
 	if ( desiredBotCount > nNEOBotsOnGameTeams )
 	{
-		CNEOBot::DifficultyType skill = clamp((CNEOBot::DifficultyType)neo_bot_difficulty.GetInt(), CNEOBot::EASY, CNEOBot::EXPERT);
-		char name[256];
+		CNEOBot::DifficultyType skill = Clamp((CNEOBot::DifficultyType)neo_bot_difficulty.GetInt(), CNEOBot::EASY, CNEOBot::EXPERT);
+		char name[MAX_PLAYER_NAME_LENGTH];
 		CreateBotName(skill, name, sizeof(name));
 
 		CNEOBot *pBot = GetAvailableBotFromPool();
@@ -380,7 +380,7 @@ void CNEOBotManager::MaintainBotQuota()
 		else
 		{
 			// teams and scores are equal, pick a team at random
-			kickTeam = (RandomInt( 0, 1 ) == 0) ? TEAM_JINRAI : TEAM_NSF;
+			kickTeam = RandomInt(TEAM_JINRAI, TEAM_NSF);
 		}
 
 		// attempt to kick a bot from the given team
@@ -388,7 +388,7 @@ void CNEOBotManager::MaintainBotQuota()
 			return;
 
 		// if there were no bots on the team, kick a bot from the other team
-		UTIL_KickBotFromTeam( kickTeam == TEAM_JINRAI ? TEAM_JINRAI : TEAM_NSF);
+		UTIL_KickBotFromTeam(NEORules()->GetOpposingTeam(kickTeam));
 	}
 }
 
@@ -436,7 +436,7 @@ void CNEOBotManager::SetIsInOfflinePractice(bool bIsInOfflinePractice)
 //----------------------------------------------------------------------------------------------------------------
 bool CNEOBotManager::IsInOfflinePractice() const
 {
-	return neo_bot_offline_practice.GetInt() != 0;
+	return neo_bot_offline_practice.GetBool();
 }
 
 
@@ -474,8 +474,7 @@ CNEOBot* CNEOBotManager::GetAvailableBotFromPool()
 {
 	for ( int i = 1; i <= gpGlobals->maxClients; ++i )
 	{
-		CNEO_Player *pPlayer = ToNEOPlayer( UTIL_PlayerByIndex( i ) );
-		CNEOBot* pBot = dynamic_cast<CNEOBot*>(pPlayer);
+		CNEOBot* pBot = ToNEOBot(UTIL_PlayerByIndex(i));
 
 		if (pBot == NULL)
 			continue;

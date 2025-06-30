@@ -18,7 +18,7 @@ public:
 	CStuckBot( int id, const char *name )
 	{
 		m_id = id;
-		Q_strncpy( m_name, name, 256 );
+		Q_strncpy( m_name, name, MAX_PLAYER_NAME_LENGTH);
 	}
 
 	bool IsMatch( int id, const char *name )
@@ -26,7 +26,7 @@ public:
 		return ( id == m_id && FStrEq( name, m_name ) );
 	}
 
-	char m_name[256];
+	char m_name[MAX_PLAYER_NAME_LENGTH];
 	int m_id;
 
 	CUtlVector< CStuckBotEvent * > m_stuckEventVector;
@@ -74,10 +74,10 @@ public:
 	CNEOBotManager();
 	virtual ~CNEOBotManager();
 
-	virtual void Update();
+	virtual void Update() override;
 	void LevelShutdown();
 
-	virtual void OnMapLoaded( void );						// when the server has changed maps
+	virtual void OnMapLoaded( void ) override;						// when the server has changed maps
 
 	bool IsAllBotTeam( int iTeam );
 	bool IsInOfflinePractice() const;

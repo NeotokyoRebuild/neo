@@ -19,9 +19,6 @@
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_move_to.h"
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_wait.h"
 
-extern ConVar neo_bot_health_ok_ratio;
-extern ConVar neo_bot_health_critical_ratio;
-
 ConVar neo_bot_force_jump( "neo_bot_force_jump", "0", FCVAR_CHEAT, "Force bots to continuously jump" );
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -42,7 +39,7 @@ ActionResult< CNEOBot > CNEODespawn::Update( CNEOBot* me, float interval )
 	// players need to be kicked, not deleted
 	if ( me->GetEntity()->IsPlayer() )
 	{
-		CBasePlayer* player = dynamic_cast< CBasePlayer* >( me->GetEntity() );
+		CBasePlayer* player = static_cast< CBasePlayer* >( me->GetEntity() );
 		engine->ServerCommand( UTIL_VarArgs( "kickid %d\n", player->GetUserID() ) );
 	}
 	else

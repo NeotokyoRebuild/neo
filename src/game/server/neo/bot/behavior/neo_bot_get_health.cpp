@@ -5,9 +5,35 @@
 #include "bot/behavior/neo_bot_get_health.h"
 
 extern ConVar neo_bot_path_lookahead_range;
+extern ConVar neo_bot_health_critical_ratio;
+extern ConVar neo_bot_health_ok_ratio;
 
-ConVar neo_bot_health_critical_ratio( "neo_bot_health_critical_ratio", "0.3", FCVAR_CHEAT );
-ConVar neo_bot_health_ok_ratio( "neo_bot_health_ok_ratio", "0.65", FCVAR_CHEAT );
+void neo_bot_health_ratio_change_callback(IConVar* var, const char* pOldValue [[maybe_unused]], float flOldValue)
+{
+	if (neo_bot_health_ok_ratio.GetFloat() != neo_bot_health_critical_ratio.GetFloat())
+	{
+		return;
+	}
+
+	float newValue = flOldValue;
+	if (flOldValue == neo_bot_health_ok_ratio.GetFloat())
+	{ // just in case so we don't loop infinitely if old value is also a match
+		newValue = flOldValue + 0.01;
+	}
+
+	if (!Q_strcmp(var->GetName(), neo_bot_health_ok_ratio.GetName()))
+	{
+		neo_bot_health_ok_ratio.SetValue(newValue);
+	}
+	else if (!Q_strcmp(var->GetName(), neo_bot_health_critical_ratio.GetName()))
+	{
+		neo_bot_health_critical_ratio.SetValue(newValue);
+	}
+}
+
+ConVar neo_bot_health_critical_ratio( "neo_bot_health_critical_ratio", "0.3", FCVAR_CHEAT, "", neo_bot_health_ratio_change_callback);
+ConVar neo_bot_health_ok_ratio( "neo_bot_health_ok_ratio", "0.65", FCVAR_CHEAT, "", neo_bot_health_ratio_change_callback);
+
 ConVar neo_bot_health_search_near_range( "neo_bot_health_search_near_range", "1000", FCVAR_CHEAT );
 ConVar neo_bot_health_search_far_range( "neo_bot_health_search_far_range", "2000", FCVAR_CHEAT );
 
@@ -75,6 +101,9 @@ bool CNEOBotGetHealth::IsPossible( CNEOBot *me )
 
 	float healthRatio = (float)me->GetHealth() / (float)me->GetMaxHealth();
 
+#ifdef _DEBUG
+	Assert(neo_bot_health_ok_ratio.GetFloat() != neo_bot_health_critical_ratio.GetFloat()); // Change callback should ensure this isn't the case, but not sure if its triggered immediately
+#endif // _DEBUG
 	float t = ( healthRatio - neo_bot_health_critical_ratio.GetFloat() ) / ( neo_bot_health_ok_ratio.GetFloat() - neo_bot_health_critical_ratio.GetFloat() );
 	t = clamp( t, 0.0f, 1.0f );
 

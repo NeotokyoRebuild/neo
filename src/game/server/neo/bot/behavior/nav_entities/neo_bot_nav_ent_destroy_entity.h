@@ -21,5 +21,5 @@ private:
 	bool m_wasIgnoringEnemies;
 
 	//void DetonateStickiesWhenSet( CNEOBot *me, CWeapon_SLAM *stickyLauncher ) const; // NEO TODO (Adam) remotedet
-	bool m_isReadyToLaunchSticky;
+	//bool m_isReadyToLaunchSticky; // NEO TODO (Adam) remotedet
 };

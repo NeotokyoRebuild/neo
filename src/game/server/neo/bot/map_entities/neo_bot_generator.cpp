@@ -212,7 +212,6 @@ void CNEOBotGenerator::InputRemoveBots( inputdata_t &inputdata )
 		CNEOBot *pBot = m_spawnedBotVector[i];
 		if ( pBot )
 		{
-			pBot->Remove();
 			engine->ServerCommand( UTIL_VarArgs( "kickid %d\n", pBot->GetUserID() ) );
 		}
 
@@ -270,7 +269,7 @@ void CNEOBotGenerator::SpawnBot( void )
 		return;
 	}
 
-	char name[256];
+	char name[MAX_PLAYER_NAME_LENGTH];
 	CNEOBot *bot = TheNEOBots().GetAvailableBotFromPool();
 	if ( bot == NULL )
 	{

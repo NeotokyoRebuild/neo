@@ -25,7 +25,7 @@ ActionResult< CNEOBot >	CNEOBotNavEntDestroyEntity::OnStart( CNEOBot *me, Action
 
 	m_wasIgnoringEnemies = me->HasAttribute( CNEOBot::IGNORE_ENEMIES );
 
-	m_isReadyToLaunchSticky = true;
+	//m_isReadyToLaunchSticky = true;
 
 	return Continue();
 }

@@ -332,7 +332,7 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 		CBaseEntity* pSearch = NULL;
 		while ( ( pSearch = gEntList.FindEntityByClassname( pSearch, "info_player_*", &spawnFilter ) ) != NULL )
 		{
-			if ( pSearch )
+			if ( pSearch && Q_strcmp(pSearch->GetEntityName().ToCStr(), "info_player_start"))
 				pSpawns.AddToTail( pSearch );
 		}
 

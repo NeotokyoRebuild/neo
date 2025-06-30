@@ -20,10 +20,6 @@
 #include "bot/behavior/neo_bot_scenario_monitor.h"
 
 
-extern ConVar neo_bot_health_ok_ratio;
-extern ConVar neo_bot_health_critical_ratio;
-
-
 //-----------------------------------------------------------------------------------------
 // Returns the initial Action we will run concurrently as a child to us
 Action< CNEOBot > *CNEOBotScenarioMonitor::InitialContainedAction( CNEOBot *me )

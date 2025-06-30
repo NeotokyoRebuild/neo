@@ -14,9 +14,6 @@
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_wait.h"
 #include "bot/behavior/neo_bot_tactical_monitor.h"
 
-
-extern ConVar neo_bot_health_ok_ratio;
-
 ConVar neo_bot_path_lookahead_range( "neo_bot_path_lookahead_range", "300" );
 ConVar neo_bot_sniper_aim_error( "neo_bot_sniper_aim_error", "0.01", FCVAR_CHEAT );
 ConVar neo_bot_sniper_aim_steady_rate( "neo_bot_sniper_aim_steady_rate", "10", FCVAR_CHEAT );
@@ -439,7 +436,7 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 		return;
 	}
 
-	CNEOBaseCombatWeapon* myWeapon = dynamic_cast<CNEOBaseCombatWeapon*>( me->GetActiveWeapon() );
+	CNEOBaseCombatWeapon* myWeapon = static_cast<CNEOBaseCombatWeapon*>( me->GetActiveWeapon() );
 	if ( !myWeapon )
 		return;
 

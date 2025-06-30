@@ -6,8 +6,8 @@
 #include "neo_player.h"
 #include "neo_gamerules.h"
 
-ConVar neo_bot_choose_target_interval( "hl2mp_bot_choose_target_interval", "0.3f", FCVAR_CHEAT, "How often, in seconds, a NEOBot can reselect his target" );
-ConVar neo_bot_sniper_choose_target_interval( "hl2mp_bot_sniper_choose_target_interval", "3.0f", FCVAR_CHEAT, "How often, in seconds, a zoomed-in Sniper can reselect his target" );
+ConVar neo_bot_choose_target_interval( "neo_bot_choose_target_interval", "0.3f", FCVAR_CHEAT, "How often, in seconds, a NEOBot can reselect his target" );
+ConVar neo_bot_sniper_choose_target_interval( "neo_bot_sniper_choose_target_interval", "3.0f", FCVAR_CHEAT, "How often, in seconds, a zoomed-in Sniper can reselect his target" );
 
 extern ConVar neo_bot_ignore_real_players;
 

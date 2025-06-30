@@ -34,8 +34,8 @@ protected:
 	COutputEvent m_onAttackingEnemy;
 	COutputEvent m_onKilledEnemy;
 
-	char m_botName[64];
-	char m_teamName[64];
+	char m_botName[MAX_PLAYER_NAME_LENGTH];
+	char m_teamName[MAX_TEAM_NAME_LENGTH];
 
 	string_t m_spawnOnStart;
 	string_t m_actionPointName;
