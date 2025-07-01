@@ -136,7 +136,7 @@ bool CNEOBotManager::RemoveBotFromTeamAndKick( int nTeam )
 		if ( !pPlayer->IsConnected() )
 			continue;
 
-		CNEOBot* pBot = dynamic_cast<CNEOBot*>( pPlayer );
+		CNEOBot* pBot = ToNEOBot( pPlayer );
 		if ( pBot && pBot->HasAttribute( CNEOBot::QUOTA_MANANGED ) )
 		{
 			if ( pBot->GetTeamNumber() == nTeam )

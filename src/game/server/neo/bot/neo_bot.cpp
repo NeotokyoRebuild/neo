@@ -127,16 +127,16 @@ void CreateBotName(CNEOBot::DifficultyType skill, char* pBuffer, int iBufferSize
 {
 	const char* pDifficultyString = neo_bot_prefix_name_with_difficulty.GetBool() ? DifficultyLevelToString(skill) : "";
 	
-	// NEO TODO (Adam) Translate difficulty level
+	// NEO TODO (Adam) Translate difficulty level (can't be done here, would have to store difficulty separately and append everywhere where names are used. Maybe something similar to neo name but for bots?)
 	CFmtStr name("%sBOT %s", pDifficultyString, GetRandomBotName());
-
+	
 	int i = 0;
-	for (int j = 1; j < gpGlobals->maxClients; j++)
+	for (int j = 1; j <= gpGlobals->maxClients; j++)
 	{
 		auto player = UTIL_PlayerByIndex(j);
 		if (!player)
 		{
-			break;
+			continue;
 		}
 		if (Q_stristr(player->GetPlayerName(), name))
 		{
@@ -176,7 +176,7 @@ CON_COMMAND_F(neo_bot_add, "Add a bot.", FCVAR_GAMEDLL)
 		{
 			teamname = args.Arg(i);
 		}
-		else if (!stricmp(args.Arg(i), "noquota"))
+		else if (!V_stricmp(args.Arg(i), "noquota"))
 		{
 			bQuotaManaged = false;
 		}
@@ -211,7 +211,7 @@ CON_COMMAND_F(neo_bot_add, "Add a bot.", FCVAR_GAMEDLL)
 		iTeam = numJinrai < numNSF ? TEAM_JINRAI : numNSF < numJinrai ? TEAM_NSF : RandomInt(TEAM_JINRAI, TEAM_NSF);
 	}
 
-	char name[256];
+	char name[MAX_NAME_LENGTH];
 	int iNumAdded = 0;
 	for (i = 0; i < botCount; ++i)
 	{
