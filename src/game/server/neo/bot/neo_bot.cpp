@@ -691,11 +691,6 @@ void CNEOBot::SetMission(MissionType mission, bool resetBehaviorSystem)
 //-----------------------------------------------------------------------------------------------------
 void CNEOBot::PhysicsSimulate(void)
 {
-	if (g_fGameOver)
-	{ // Trouble with Actions on game over, Action pointer read access violation either in Behavior::Reset() or Behaviour::~Behavior() when starting new round after game over, or Action<CNEOBot>::IsOutOfScope() if previous is fixed
-		return;
-	}
-
 	BaseClass::PhysicsSimulate();
 
 	if (m_spawnArea == NULL)
