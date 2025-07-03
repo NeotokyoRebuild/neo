@@ -19,7 +19,9 @@ extern ConVar weaponstay;
 #include "ui/neo_hud_crosshair.h"
 #include "model_types.h"
 #include "c_neo_player.h"
-#endif
+#else
+#include "items.h"
+#endif // CLIENT_DLL
 
 #include "basecombatweapon_shared.h"
 
@@ -245,6 +247,49 @@ void CNEOBaseCombatWeapon::Spawn()
 
 #ifdef GAME_DLL
 	AddSpawnFlags(SF_NORESPAWN);
+#endif
+}
+
+void CNEOBaseCombatWeapon::Activate(void)
+{
+#ifdef CLIENT_DLL
+	BaseClass::Activate();	// Not being called client side atm, just call baseclass in case it does
+#else
+	CBaseAnimating::Activate(); // Skip CBaseCombatWeapon::Activate();
+
+	if (GetOwnerEntity())
+		return;
+
+	if (g_pGameRules->IsAllowedToSpawn(this) == false)
+	{
+		UTIL_Remove(this);
+		return;
+	}
+
+	VPhysicsInitNormal(SOLID_BBOX, GetSolidFlags() | FSOLID_TRIGGER, false);
+
+	if (HasSpawnFlags(SF_ITEM_START_CONSTRAINED))
+	{
+		//Constrain the weapon in place (copied from CItem::Spawn )
+		IPhysicsObject* pReferenceObject, * pAttachedObject;
+
+		pReferenceObject = g_PhysWorldObject;
+		pAttachedObject = VPhysicsGetObject();
+
+		if (pReferenceObject && pAttachedObject)
+		{
+			constraint_fixedparams_t fixed;
+			fixed.Defaults();
+			fixed.InitWithCurrentObjectState(pReferenceObject, pAttachedObject);
+
+			fixed.constraint.forceLimit = lbs2kg(10000);
+			fixed.constraint.torqueLimit = lbs2kg(10000);
+
+			m_pConstraint = physenv->CreateFixedConstraint(pReferenceObject, pAttachedObject, NULL, fixed);
+
+			m_pConstraint->SetGameData((void*)this);
+		}
+	}
 #endif
 }
 
