@@ -323,6 +323,25 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 	}
 #endif
 
+	if (NEORules()->GhostExists())
+	{ // If the ghost exists, go to the ghost
+		m_vGoalPos = NEORules()->GetGhostPos();
+		constexpr int DISTANCE_CONSIDERED_ARRIVED_SQUARED = 5000;
+		if (m_vGoalPos.DistToSqr(me->GetAbsOrigin()) < DISTANCE_CONSIDERED_ARRIVED_SQUARED)
+		{
+			constexpr float RECHECK_TIME = 30.f;
+			m_repathTimer.Start(RECHECK_TIME);
+			m_bGoingToTargetEntity = false;
+			return;
+		}
+		m_bGoingToTargetEntity = true;
+		CNEOBotPathCost cost(me, SAFEST_ROUTE);
+		if (m_path.Compute(me, m_vGoalPos, cost, 0.0f, true, true) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH)
+		{
+			return;
+		}
+	}
+
 	// Fallback and roam random spawn points if we have all weapons.
 	{
 		CNextSpawnFilter spawnFilter( me, 128.0f );
