@@ -1381,6 +1381,7 @@ void CEnvBeverage::Spawn( void )
 	}
 }
 
+#ifndef NEO
 //=========================================================
 // Soda can
 //=========================================================
@@ -1465,6 +1466,7 @@ void CItemSoda::CanTouch ( CBaseEntity *pOther )
 	SetThink ( &CItemSoda::SUB_Remove );
 	SetNextThink( gpGlobals->curtime );
 }
+#endif // NEO
 
 #ifndef _XBOX
 //=========================================================
