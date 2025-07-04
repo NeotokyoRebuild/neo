@@ -659,7 +659,13 @@ public:
 
 private:
 	WEAPON_FILE_INFO_HANDLE	m_hWeaponFileInfo;
+#ifdef NEO
+protected:
 	IPhysicsConstraint		*m_pConstraint;
+private:
+#else
+	IPhysicsConstraint		*m_pConstraint;
+#endif // NEO
 
 	int						m_iAltFireHudHintCount;		// How many times has this weapon displayed its alt-fire HUD hint?
 	int						m_iReloadHudHintCount;		// How many times has this weapon displayed its reload HUD hint?
