@@ -111,6 +111,8 @@ enum MainMenuButtons
 	MMBTN_QUIT,
 
 	BTNS_TOTAL,
+
+	SMBTN_MP3,
 };
 
 struct SprayInfo
@@ -218,8 +220,7 @@ public:
 
 	enum FileIODialogMode
 	{
-		FILEIODLGMODE_CROSSHAIR = 0,
-		FILEIODLGMODE_SPRAY,
+		FILEIODLGMODE_SPRAY = 0,
 
 		FILEIODLGMODE__TOTAL,
 	};
@@ -234,7 +235,6 @@ public:
 	SprayInfo m_sprayToDelete = {};
 
 private:
-	void OnFileSelectedMode_Crosshair(const char *szFullpath);
 	void OnFileSelectedMode_Spray(const char *szFullpath);
 };
 

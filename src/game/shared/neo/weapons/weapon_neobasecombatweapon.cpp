@@ -19,7 +19,9 @@ extern ConVar weaponstay;
 #include "ui/neo_hud_crosshair.h"
 #include "model_types.h"
 #include "c_neo_player.h"
-#endif
+#else
+#include "items.h"
+#endif // CLIENT_DLL
 
 #include "basecombatweapon_shared.h"
 
@@ -250,6 +252,49 @@ void CNEOBaseCombatWeapon::Spawn()
 #endif // GAME_DLL
 }
 
+void CNEOBaseCombatWeapon::Activate(void)
+{
+#ifdef CLIENT_DLL
+	BaseClass::Activate();	// Not being called client side atm, just call baseclass in case it does
+#else
+	CBaseAnimating::Activate(); // Skip CBaseCombatWeapon::Activate();
+
+	if (GetOwnerEntity())
+		return;
+
+	if (g_pGameRules->IsAllowedToSpawn(this) == false)
+	{
+		UTIL_Remove(this);
+		return;
+	}
+
+	VPhysicsInitNormal(SOLID_BBOX, GetSolidFlags() | FSOLID_TRIGGER, false);
+
+	if (HasSpawnFlags(SF_ITEM_START_CONSTRAINED))
+	{
+		//Constrain the weapon in place (copied from CItem::Spawn )
+		IPhysicsObject* pReferenceObject, * pAttachedObject;
+
+		pReferenceObject = g_PhysWorldObject;
+		pAttachedObject = VPhysicsGetObject();
+
+		if (pReferenceObject && pAttachedObject)
+		{
+			constraint_fixedparams_t fixed;
+			fixed.Defaults();
+			fixed.InitWithCurrentObjectState(pReferenceObject, pAttachedObject);
+
+			fixed.constraint.forceLimit = lbs2kg(10000);
+			fixed.constraint.torqueLimit = lbs2kg(10000);
+
+			m_pConstraint = physenv->CreateFixedConstraint(pReferenceObject, pAttachedObject, NULL, fixed);
+
+			m_pConstraint->SetGameData((void*)this);
+		}
+	}
+#endif
+}
+
 #ifdef CLIENT_DLL
 void CNEOBaseCombatWeapon::ClientThink()
 {
@@ -266,6 +311,7 @@ void CNEOBaseCombatWeapon::ClientThink()
 	SetNextClientThink(gpGlobals->curtime + TICK_INTERVAL);
 }
 #endif // CLIENT_DLL
+
 
 void CNEOBaseCombatWeapon::Equip(CBaseCombatCharacter* pOwner)
 {
@@ -1038,9 +1084,7 @@ void CNEOBaseCombatWeapon::DrawCrosshair()
 
 	if (GetWpnData().iconCrosshair)
 	{
-		const Color color(cl_neo_crosshair_color_r.GetInt(), cl_neo_crosshair_color_g.GetInt(),
-						  cl_neo_crosshair_color_b.GetInt(), cl_neo_crosshair_color_a.GetInt());
-		crosshair->SetCrosshair(GetWpnData().iconCrosshair, color);
+		crosshair->SetCrosshair(GetWpnData().iconCrosshair, crosshair->m_crosshairInfo.color);
 	}
 	else
 	{
