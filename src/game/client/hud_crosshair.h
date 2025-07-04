@@ -35,7 +35,12 @@ public:
 
 #ifdef NEO
 	bool m_bRefreshCrosshair = true;
-	CrosshairInfo m_crosshairInfo;
+	CrosshairInfo m_crosshairInfo = {};
+
+	// m_szLocalStrPlayersCrosshair is just for crosshair refresh checks
+	char m_szLocalStrPlayersCrosshair[MAX_PLAYERS][NEO_XHAIR_SEQMAX] = {};
+	CrosshairInfo m_playersCrosshairInfos[MAX_PLAYERS] = {};
+	float m_aflLastCheckedPlayersCrosshair[MAX_PLAYERS] = {};
 #endif
 
 	virtual void	SetCrosshairAngle( const QAngle& angle );

@@ -1301,6 +1301,26 @@ static void NeoClantag_ChangeCallback(IConVar *cvar, [[maybe_unused]] const char
 		bStaticCallbackChangedCVar = false;
 	}
 }
+
+static void ClNeoCrosshair_ChangeCallback(IConVar *cvar, [[maybe_unused]] const char *pOldVal, [[maybe_unused]] float flOldVal)
+{
+	static bool bStaticCallbackChangedCVar = false;
+	if (bStaticCallbackChangedCVar)
+	{
+		return;
+	}
+
+	ConVarRef cvr_cl_neo_crosshair(cvar->GetName());
+	if (V_strlen(cvr_cl_neo_crosshair.GetString()) >= NEO_XHAIR_SEQMAX)
+	{
+		bStaticCallbackChangedCVar = true;
+		char mutStr[NEO_XHAIR_SEQMAX];
+		V_strcpy_safe(mutStr, cvr_cl_neo_crosshair.GetString());
+		Q_UnicodeRepair(mutStr);
+		cvr_cl_neo_crosshair.SetValue(mutStr);
+		bStaticCallbackChangedCVar = false;
+	}
+}
 #endif
 
 //-----------------------------------------------------------------------------
@@ -1339,6 +1359,7 @@ void CHLClient::PostInit()
 		g_pCVar->FindVar("snd_musicvolume")->InstallChangeCallback(MusicVol_ChangeCallback);
 		g_pCVar->FindVar("neo_name")->InstallChangeCallback(NeoName_ChangeCallback);
 		g_pCVar->FindVar("neo_clantag")->InstallChangeCallback(NeoClantag_ChangeCallback);
+		g_pCVar->FindVar("cl_neo_crosshair")->InstallChangeCallback(ClNeoCrosshair_ChangeCallback);
 		g_pCVar->FindVar("sv_use_steam_networking")->SetValue(false);
 	}
 	else
