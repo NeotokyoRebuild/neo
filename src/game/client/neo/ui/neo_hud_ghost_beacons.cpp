@@ -9,11 +9,12 @@
 
 #include "ienginevgui.h"
 
-// memdbgon must be the last include file in a .cpp file!!!
 #include "c_neo_player.h"
 #include "c_team.h"
 #include "neo_gamerules.h"
 #include "weapon_ghost.h"
+
+// memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
 using vgui::surface;
@@ -82,6 +83,7 @@ void CNEOHud_GhostBeacons::ApplySchemeSettings(vgui::IScheme* pScheme)
 	SetBgColor(COLOR_TRANSPARENT);
 }
 
+extern ConVar neo_ctg_ghost_beacons_when_inactive;
 void CNEOHud_GhostBeacons::DrawNeoHudElement()
 {
 	if (!ShouldDraw())
@@ -97,7 +99,17 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 		return;
 	}
 
-	auto ghost = dynamic_cast<C_WeaponGhost*>(spectateTarget->GetActiveWeapon());
+	C_WeaponGhost *ghost;
+	if (neo_ctg_ghost_beacons_when_inactive.GetBool())
+	{
+		constexpr int WEAPON_PRIMARY_SLOT = 2; // hl2_player.h server side, NEO TODO (Adam) put this in a shared file somewhere if used more?
+		ghost = dynamic_cast<C_WeaponGhost*>(spectateTarget->GetWeapon(WEAPON_PRIMARY_SLOT));
+	}
+	else
+	{
+		ghost = dynamic_cast<C_WeaponGhost*>(spectateTarget->GetActiveWeapon());
+	}
+
 	if (!ghost) //Check ghost ready here as players might be in PVS
 	{
 		m_bHoldingGhost = false;
