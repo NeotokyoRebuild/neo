@@ -171,8 +171,9 @@ public:
 
 	CNEOBaseCombatWeapon();
 	virtual void Precache() override;
-
 	virtual void Spawn() override;
+	virtual void Activate() override;
+
 	virtual void Equip(CBaseCombatCharacter* pOwner) override;
 	virtual	void CheckReload(void) override;
 
