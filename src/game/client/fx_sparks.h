@@ -33,6 +33,9 @@ public:
 	float		m_flLifetime;			// How long it has been alive for so far.
 	float		m_flLength;				// Length of the tail (in seconds!)
 	float		m_flWidth;				// Width of the spark
+#ifdef NEO
+	bool		m_bHighlightInThermals = false; // Change colour to white when local player is using thermal vision
+#endif // NEO
 };
 
 inline void Color32ToFloat4( float colorOut[4], const color32 & colorIn )

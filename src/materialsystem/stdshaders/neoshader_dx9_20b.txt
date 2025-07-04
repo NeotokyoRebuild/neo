@@ -1,0 +1,18 @@
+////////////////////////////////
+// NEO PIXEL/FRAGMENT SHADERS //
+////////////////////////////////
+
+neo_testshader_ps2x.fxc
+neo_refract_ps2x.fxc
+
+neo_thermal_model_ps20b.fxc
+neo_thermal_model_vs20.fxc
+
+neo_motion_model_ps20b.fxc
+neo_motion_model_vs20.fxc
+
+////////////////////////
+// NEO VERTEX SHADERS //
+////////////////////////
+
+neo_Refract_vs20.fxc
