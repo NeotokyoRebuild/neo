@@ -119,6 +119,17 @@
 	}
 }
 
+"HUD.Ping"
+{
+	"channel"		"CHAN_VOICE"
+	"volume"		"0.33"
+	"pitch"			"PITCH_NORM"
+	
+	"soundlevel"	"SNDLVL_NONE"
+	
+	"wave"			"gameplay/ping.wav"
+}
+
 "HUDQuickInfo.LowHealth"
 {
 	"channel"		"CHAN_ITEM"
