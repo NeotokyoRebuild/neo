@@ -1572,7 +1572,7 @@ bool CNEOBot::IsContinuousFireWeapon(CNEOBaseCombatWeapon* weapon) const
 	if (!IsCombatWeapon(weapon))
 		return false;
 
-	if (weapon && weapon->GetNeoWepBits() & (NEO_WEP_THROWABLE | NEO_WEP_KYLA | NEO_WEP_SRS | NEO_WEP_M41 | NEO_WEP_M41_L | NEO_WEP_M41_S))
+	if (weapon && weapon->GetNeoWepBits() & (NEO_WEP_THROWABLE | NEO_WEP_KYLA | NEO_WEP_SRS | NEO_WEP_M41 | NEO_WEP_M41_L | NEO_WEP_M41_S | NEO_WEP_MILSO | NEO_WEP_TACHI))
 	{
 		return false;
 	}

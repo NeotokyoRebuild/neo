@@ -83,7 +83,7 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interv
 		{
 			bEntityVisible = true;
 
-			CBaseCombatWeapon* pWeapon = dynamic_cast<CBaseCombatWeapon*>( m_hTargetEntity.Get() );
+			CBaseCombatWeapon* pWeapon = m_hTargetEntity.Get()->MyCombatWeaponPointer();
 			if ( pWeapon )
 			{
 				if ( pWeapon->IsEffectActive( EF_NODRAW ) )
