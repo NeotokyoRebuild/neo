@@ -23,9 +23,9 @@
 
 using vgui::surface;
 
-ConVar neo_ghost_marker_hud_scale_factor("neo_ghost_marker_hud_scale_factor", "0.5", FCVAR_USERINFO,
+ConVar neo_ghost_marker_hud_scale_factor("neo_ghost_marker_hud_scale_factor", "1", FCVAR_ARCHIVE,
 	"Ghost marker HUD element scaling factor", true, 0.01, false, 0);
-ConVar cl_neo_hud_center_ghost_marker_size("cl_neo_hud_center_ghost_marker_size", "12.5", FCVAR_USERINFO,
+ConVar cl_neo_hud_center_ghost_marker_size("cl_neo_hud_center_ghost_marker_size", "12.5", FCVAR_ARCHIVE,
 	"HUD center size in percentage to fade ghost marker.", true, 1, false, 0);
 
 
@@ -36,17 +36,6 @@ NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(GhostMarker, 0.01)
 CNEOHud_GhostMarker::CNEOHud_GhostMarker(const char* pElemName, vgui::Panel* parent)
 	: CNEOHud_WorldPosMarker(pElemName, parent)
 {
-	{
-		int i;
-		for (i = 0; i < sizeof(m_szMarkerText) - 1; ++i)
-		{
-			m_szMarkerText[i] = ' ';
-		}
-		m_szMarkerText[i] = '\0';
-	}
-
-	g_pVGuiLocalize->ConvertANSIToUnicode(m_szMarkerText, m_wszMarkerTextUnicode, sizeof(m_wszMarkerTextUnicode));
-
 	SetAutoDelete(true);
 	m_iHideHudElementNumber = NEO_HUD_ELEMENT_GHOST_MARKER;
 
@@ -66,8 +55,6 @@ CNEOHud_GhostMarker::CNEOHud_GhostMarker(const char* pElemName, vgui::Panel* par
 	m_hTex = surface()->CreateNewTextureID();
 	Assert(m_hTex > 0);
 	surface()->DrawSetTextureFile(m_hTex, "vgui/hud/ctg/g_beacon_circle", 1, false);
-
-	surface()->DrawGetTextureSize(m_hTex, m_iMarkerTexWidth, m_iMarkerTexHeight);
 
 	SetVisible(false);
 
@@ -93,21 +80,25 @@ void CNEOHud_GhostMarker::ApplySchemeSettings(vgui::IScheme *pScheme)
 	m_viewCentreSize = widerAxis * (cl_neo_hud_center_ghost_marker_size.GetFloat() / 100.0f);
 }
 
+extern ConVar cl_neo_hud_worldpos_verbose;
 void CNEOHud_GhostMarker::UpdateStateForNeoHudElementDraw()
 {
 	if (m_ghostInPVS && (!NEORules()->GhostExists() || NEORules()->IsRoundOver()))
 	{
 		m_ghostInPVS = nullptr;
 	}
-	if (NEORules()->GetGhosterPlayer())
-	{
-		memset(m_wszMarkerTextUnicode, 0, sizeof(m_wszMarkerTextUnicode));
-	}
-	else
+
+	if (!NEORules()->GetGhosterPlayer())
 	{
 		const float flDistMeters = METERS_PER_INCH * C_NEO_Player::GetLocalPlayer()->GetAbsOrigin().DistTo(NEORules()->GetGhostPos());
-		V_snprintf(m_szMarkerText, sizeof(m_szMarkerText), "GHOST DISTANCE: %.0fm", flDistMeters);
-		g_pVGuiLocalize->ConvertANSIToUnicode(m_szMarkerText, m_wszMarkerTextUnicode, sizeof(m_wszMarkerTextUnicode));
+		if (cl_neo_hud_worldpos_verbose.GetBool())
+		{
+			V_snwprintf(m_wszMarkerTextUnicode, ARRAYSIZE(m_wszMarkerTextUnicode), L"GHOST DISTANCE: %.0fm", flDistMeters);
+		}
+		else
+		{
+			V_snwprintf(m_wszMarkerTextUnicode, ARRAYSIZE(m_wszMarkerTextUnicode), L"%.0fm", flDistMeters);
+		}
 	}
 }
 
@@ -160,7 +151,7 @@ void CNEOHud_GhostMarker::DrawNeoHudElement()
 		Assert(m_ghostInPVS);
 	}
 
-	bool hideText = false;
+	bool hideText = NEORules()->GetGhosterPlayer();
 	Color ghostColor = COLOR_GREY;
 	const int iGhostingTeam = NEORules()->GetGhosterTeam();
 	const int iClientTeam = localPlayer->GetTeamNumber();
@@ -175,9 +166,6 @@ void CNEOHud_GhostMarker::DrawNeoHudElement()
 		{
 			// Otherwise show ghosting team color (if friendly or spec)
 			ghostColor = (iGhostingTeam == TEAM_JINRAI) ? COLOR_JINRAI : COLOR_NSF;
-
-			// Use the friendly HUD text for distance display instead if spectator team or same team
-			hideText = (iClientTeam < FIRST_GAME_TEAM || iGhostingTeam == iClientTeam);
 		}
 	}
 
@@ -216,19 +204,6 @@ void CNEOHud_GhostMarker::DrawNeoHudElement()
 	int iPosX, iPosY;
 	GetVectorInScreenSpace(ghostPos, iPosX, iPosY);
 
-	const float fadeMultiplier = GetFadeValueTowardsScreenCentre(iPosX, iPosY);
-	if (!hideText && fadeMultiplier > 0.001f)
-	{
-		auto adjustedGrey = Color(COLOR_GREY.r(), COLOR_GREY.b(), COLOR_GREY.g(), COLOR_GREY.a() * fadeMultiplier);
-	
-		surface()->DrawSetTextColor(adjustedGrey);
-		surface()->DrawSetTextFont(m_hFont);
-		int textSizeX, textSizeY;
-		surface()->GetTextSize(m_hFont, m_wszMarkerTextUnicode, textSizeX, textSizeY);
-		surface()->DrawSetTextPos(iPosX - (textSizeX / 2), iPosY + (2 * textSizeY));
-		surface()->DrawPrintText(m_wszMarkerTextUnicode, sizeof(m_szMarkerText));
-	}
-
 	const float scale = neo_ghost_marker_hud_scale_factor.GetFloat();
 
 	// The increase and decrease in alpha over 6 seconds
@@ -238,13 +213,13 @@ void CNEOHud_GhostMarker::DrawNeoHudElement()
 		alpha6 = 1 - alpha6;
 	alpha6 = 128 * alpha6;
 
+	constexpr float HALF_BASE_TEX_LENGTH = 64;
 	for (int i = 0; i < 4; i++) {
 		m_fMarkerScalesCurrent[i] = (remainder(gpGlobals->curtime, 2) / 2) + 0.5 + m_fMarkerScalesStart[i];
 		if (m_fMarkerScalesCurrent[i] > 1)
 			m_fMarkerScalesCurrent[i] -= 1;
 
-		const int offset_X = iPosX - ((m_iMarkerTexWidth * 0.5f * m_fMarkerScalesCurrent[i]) * scale);
-		const int offset_Y = iPosY - ((m_iMarkerTexHeight * 0.5f * m_fMarkerScalesCurrent[i]) * scale);
+		const float halfCurrentCircle = HALF_BASE_TEX_LENGTH * m_fMarkerScalesCurrent[i] * scale;
 
 		int alpha = 64 + alpha6;
 		if (m_fMarkerScalesCurrent[i] > 0.5)
@@ -255,12 +230,24 @@ void CNEOHud_GhostMarker::DrawNeoHudElement()
 		surface()->DrawSetColor(ghostColor);
 		surface()->DrawSetTexture(m_hTex);
 		surface()->DrawTexturedRect(
-			offset_X,
-			offset_Y,
-			offset_X + (m_iMarkerTexWidth * m_fMarkerScalesCurrent[i] * scale),
-			offset_Y + (m_iMarkerTexHeight * m_fMarkerScalesCurrent[i] * scale));
+			iPosX - halfCurrentCircle,
+			iPosY - halfCurrentCircle,
+			iPosX + halfCurrentCircle,
+			iPosY + halfCurrentCircle);
 	}
-
+	
+	const float fadeMultiplier = GetFadeValueTowardsScreenCentre(iPosX, iPosY);
+	if (!hideText && fadeMultiplier > 0.001f)
+	{
+		auto adjustedGrey = Color(COLOR_GREY.r(), COLOR_GREY.b(), COLOR_GREY.g(), COLOR_GREY.a() * fadeMultiplier);
+	
+		surface()->DrawSetTextColor(adjustedGrey);
+		surface()->DrawSetTextFont(m_hFont);
+		int textSizeX, textSizeY;
+		surface()->GetTextSize(m_hFont, m_wszMarkerTextUnicode, textSizeX, textSizeY);
+		surface()->DrawSetTextPos(iPosX - (textSizeX / 2), iPosY + (HALF_BASE_TEX_LENGTH * scale));
+		surface()->DrawPrintText(m_wszMarkerTextUnicode, V_wcslen(m_wszMarkerTextUnicode));
+	}
 }
 
 void CNEOHud_GhostMarker::Paint()
