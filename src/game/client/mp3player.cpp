@@ -1597,7 +1597,9 @@ void CMP3Player::PlaySong( int songIndex, float skipTime /*= 0.0f */ )
 			return;
 		}
 
+#ifndef NEO
 		Assert( !Q_stristr( soundname, "/" ) );
+#endif
 		song.playbackfilename = g_pFullFileSystem->FindOrAddFileName( soundname );
 
 
