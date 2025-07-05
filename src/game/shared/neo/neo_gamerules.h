@@ -208,6 +208,7 @@ public:
 	int GetForcedSkin();
 	int GetForcedWeapon();
 	virtual const char* GetGameTypeName(void) OVERRIDE;
+	const bool RespawnsEnabled();
 	bool CanChangeTeamClassWeaponWhenAlive();
 
 	void GetDMHighestScorers(
