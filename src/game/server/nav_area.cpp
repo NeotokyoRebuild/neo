@@ -3638,7 +3638,11 @@ bool IsHidingSpotInCover( const Vector &spot )
 
 	// if we are crouched underneath something, that counts as good cover
 	to = from + Vector( 0, 0, 20.0f );
+#ifdef NEO
+	UTIL_TraceLine( from, to, MASK_PLAYERSOLID_BRUSHONLY, NULL, COLLISION_GROUP_NONE, &result );
+#else
 	UTIL_TraceLine( from, to, MASK_NPCSOLID_BRUSHONLY, NULL, COLLISION_GROUP_NONE, &result );
+#endif // NEO
 	if (result.fraction != 1.0f)
 		return true;
 
@@ -3649,7 +3653,11 @@ bool IsHidingSpotInCover( const Vector &spot )
 	{
 		to = from + Vector( coverRange * (float)cos(angle), coverRange * (float)sin(angle), HalfHumanHeight );
 
+#ifdef NEO
+		UTIL_TraceLine( from, to, MASK_PLAYERSOLID_BRUSHONLY, NULL, COLLISION_GROUP_NONE, &result );
+#else
 		UTIL_TraceLine( from, to, MASK_NPCSOLID_BRUSHONLY, NULL, COLLISION_GROUP_NONE, &result );
+#endif // NEO
 
 		// if traceline hit something, it hit "cover"
 		if (result.fraction != 1.0f)
@@ -4063,7 +4071,11 @@ void CNavArea::AddSpotEncounters( const CNavArea *from, NavDirType fromDir, cons
 
 			// check if we have LOS
 			// BOTPORT: ignore glass here
+#ifdef NEO
+			UTIL_TraceLine( eye, Vector( spotPos.x, spotPos.y, spotPos.z + HalfHumanHeight ), MASK_PLAYERSOLID_BRUSHONLY, NULL, COLLISION_GROUP_NONE, &result );
+#else
 			UTIL_TraceLine( eye, Vector( spotPos.x, spotPos.y, spotPos.z + HalfHumanHeight ), MASK_NPCSOLID_BRUSHONLY, NULL, COLLISION_GROUP_NONE, &result );
+#endif // NEO
 			if (result.fraction != 1.0f)
 				continue;
 
@@ -4864,7 +4876,11 @@ void CNavArea::UpdateBlocked( bool force, int teamID )
 		origin,
 		bounds.lo,
 		bounds.hi,
+#ifdef NEO
+		MASK_PLAYERSOLID_BRUSHONLY,
+#else
 		MASK_NPCSOLID_BRUSHONLY,
+#endif // NEO
 		&filter,
 		&tr );
 
@@ -4967,7 +4983,11 @@ void CNavArea::CheckFloor( CBaseEntity *ignore )
 		origin,
 		mins,
 		maxs,
+#ifdef NEO
+		MASK_PLAYERSOLID_BRUSHONLY,
+#else
 		MASK_NPCSOLID_BRUSHONLY,
+#endif // NEO
 		ignore,
 		COLLISION_GROUP_PLAYER_MOVEMENT,
 		&tr );

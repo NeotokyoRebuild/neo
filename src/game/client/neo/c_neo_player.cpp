@@ -332,7 +332,13 @@ public:
 			}
 		}
 
-		auto playerNeoClass = C_NEO_Player::GetLocalNEOPlayer()->m_iNeoClass;
+		C_NEO_Player* localPlayer = C_NEO_Player::GetLocalNEOPlayer();
+		if (!localPlayer)
+		{
+			return;
+		}
+
+		auto playerNeoClass = localPlayer->m_iNeoClass;
 		if (playerNeoClass == NEO_CLASS_VIP)
 		{
 			return;
