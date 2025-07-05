@@ -83,18 +83,22 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interv
 		{
 			bEntityVisible = true;
 
-			CBaseCombatWeapon* pWeapon = m_hTargetEntity.Get()->MyCombatWeaponPointer();
-			if ( pWeapon )
+			CBaseEntity* ent = m_hTargetEntity.Get();
+			if (ent)
 			{
-				if ( pWeapon->IsEffectActive( EF_NODRAW ) )
-					bEntityVisible = false;
-
-				if ( pWeapon->GetOwner() != NULL )
-					bEntityVisible = false;
-
-				// I don't want it anymore.
-				if ( me->Weapon_OwnsThisType( pWeapon->GetClassname() ) )
-					bEntityVisible = false;
+				CBaseCombatWeapon* pWeapon = ent->MyCombatWeaponPointer();
+				if (pWeapon)
+				{
+					if (pWeapon->IsEffectActive(EF_NODRAW))
+						bEntityVisible = false;
+					
+					if (pWeapon->GetOwner() != NULL)
+						bEntityVisible = false;
+					
+					// I don't want it anymore.
+					if (me->Weapon_OwnsThisType(pWeapon->GetClassname()))
+						bEntityVisible = false;
+				}
 			}
 		}
 
