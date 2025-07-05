@@ -13,6 +13,9 @@
 #include "GameEventListener.h"
 #include "neo_player_shared.h"
 #include "neo_misc.h"
+#ifdef GAME_DLL
+#include "neo_juggernaut.h"
+#endif
 
 #ifdef CLIENT_DLL
 	#include "c_neo_player.h"
@@ -106,6 +109,7 @@ enum NeoGameType {
 	NEO_GAME_TYPE_DM,
 	NEO_GAME_TYPE_EMT,
 	NEO_GAME_TYPE_TUT,
+	NEO_GAME_TYPE_JGR,
 
 	NEO_GAME_TYPE__TOTAL // Number of game types
 };
@@ -253,6 +257,7 @@ public:
 	void ResetTDM();
 	void ResetGhost();
 	void ResetVIP();
+	void ResetJGR();
 
 	void CheckRestartGame();
 
@@ -405,13 +410,19 @@ private:
 
 #ifdef GAME_DLL
 	void SpawnTheGhost(const Vector *origin = nullptr);
+	void SpawnTheJuggernaut(const Vector *origin = nullptr);
 	void SelectTheVIP();
-
+public:
+	void JuggernautActivated(CNEO_Player *pPlayer);
+	CNEO_Juggernaut *m_pJuggernautItem = nullptr;
+	CNEO_Player* m_pJuggernautPlayer = nullptr;
+private:
 	CUtlVector<int> m_pGhostCaps;
 	CWeaponGhost *m_pGhost = nullptr;
 	CNEO_Player *m_pVIP = nullptr;
 	int m_iVIPPreviousClass = 0;
 
+	float m_flLastPointTime = 0.0f;
 	float m_flPrevThinkKick = 0.0f;
 	float m_flPrevThinkMirrorDmg = 0.0f;
 	bool m_bTeamBeenAwardedDueToCapPrevent = false;
