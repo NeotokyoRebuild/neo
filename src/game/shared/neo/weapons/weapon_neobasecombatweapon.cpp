@@ -1265,14 +1265,14 @@ void CNEOBaseCombatWeapon::SetPickupTouch(void)
 
 	if ((!weaponstay.GetBool() || NEORules()->RespawnsEnabled()) && GetSpawnFlags() & SF_NORESPAWN)
 	{ // regardless of the value of mp_weaponstay, disappear weapons in game modes with respawns enabled. Otherwise things can get too chaotic
-		SetThink(&CBaseEntity::SUB_Remove); // NEO TODO (Adam) roll our own sub_remove to check for players in pvs?
+		SetThink(&CBaseEntity::SUB_Vanish); // NEO TODO (Adam) roll our own sub_remove to check for players in pvs?
 		SetNextThink(gpGlobals->curtime + 30.0f);
 		return;
 	}
 
 	// If we previously scheduled a removal, but the cvar was changed before it fired,
 	// cancel that scheduled removal.
-	if (this->m_pfnThink == &CBaseEntity::SUB_Remove)
+	if (this->m_pfnThink == &CBaseEntity::SUB_Remove || this->m_pfnThink == &CBaseEntity::SUB_Vanish)
 	{
 		SetNextThink(TICK_NEVER_THINK);
 		SetThink(NULL);

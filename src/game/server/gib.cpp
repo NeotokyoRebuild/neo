@@ -623,7 +623,11 @@ void CGib::Spawn( const char *szGibModel, float flLifetime )
 {
 	Spawn( szGibModel );
 	m_lifeTime = flLifetime;
+#ifdef NEO
+	SetThink ( &CGib::SUB_Vanish);
+#else
 	SetThink ( &CGib::SUB_FadeOut );
+#endif // NEO
 	SetNextThink( gpGlobals->curtime + m_lifeTime );
 }
 
