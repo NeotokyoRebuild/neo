@@ -65,20 +65,20 @@ Download and use the OCI image for Docker/Podman/Toolbx:
 ###### Running the container
 Docker:
 ```
-# docker run -v /PATH_TO_REPO/neo/src:/root/neo/src --rm -it --entrypoint /bin/bash registry.gitlab.steamos.cloud/steamrt/sniper/sdk
+# docker run -v /PATH_TO_REPO/:/root/neo/ --rm -it --entrypoint /bin/bash registry.gitlab.steamos.cloud/steamrt/sniper/sdk
 $ cd /root/neo/src/
 ```
 
 Podman: 
 ```
-$ podman run -v /PATH_TO_REPO/neo/src:/root/neo/src --rm -it --entrypoint /bin/bash registry.gitlab.steamos.cloud/steamrt/sniper/sdk
+$ podman run -v /PATH_TO_REPO/:/root/neo/ --rm -it --entrypoint /bin/bash registry.gitlab.steamos.cloud/steamrt/sniper/sdk
 $ cd /root/neo/src/
 ```
 
 Toolbx: 
 ```
 $ toolbox enter sniper
-$ cd /PATH_TO_REPO/neo/src
+$ cd /PATH_TO_REPO/src
 ```
 
 Depending on the terminal, you may need to install an additional terminfo in the container just to make it usable.
