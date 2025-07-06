@@ -564,7 +564,7 @@ void CNEO_Player::Spawn(void)
 
 	if (IsFakeClient())
 	{
-		m_iNeoClass = bot_changeclass.GetInt();
+		m_iNeoClass = bot_changeclass.GetInt() < 0 ? random->RandomInt(0, NEO_CLASS_SUPPORT) : bot_changeclass.GetInt();
 	}
 
 	BaseClass::Spawn();

@@ -247,7 +247,9 @@ void CNEOBaseCombatWeapon::Spawn()
 
 #ifdef GAME_DLL
 	AddSpawnFlags(SF_NORESPAWN);
-#endif
+#else
+	SetNextClientThink(gpGlobals->curtime + TICK_INTERVAL);
+#endif // GAME_DLL
 }
 
 void CNEOBaseCombatWeapon::Activate(void)
@@ -292,6 +294,24 @@ void CNEOBaseCombatWeapon::Activate(void)
 	}
 #endif
 }
+
+#ifdef CLIENT_DLL
+void CNEOBaseCombatWeapon::ClientThink()
+{
+	if (GetOwner() && m_flTemperature > 0)
+	{
+		constexpr int DESIRED_TEMPERATURE_WHEN_HELD = 0;
+		m_flTemperature = max(DESIRED_TEMPERATURE_WHEN_HELD, m_flTemperature - (TICK_INTERVAL / THERMALS_OBJECT_COOL_TIME));
+	}
+	else if (m_flTemperature < 1)
+	{
+		constexpr int DESIRED_TEMPERATURE_WITHOUT_OWNER = 1;
+		m_flTemperature = min(DESIRED_TEMPERATURE_WITHOUT_OWNER, m_flTemperature + (TICK_INTERVAL / THERMALS_OBJECT_COOL_TIME));
+	}
+	SetNextClientThink(gpGlobals->curtime + TICK_INTERVAL);
+}
+#endif // CLIENT_DLL
+
 
 void CNEOBaseCombatWeapon::Equip(CBaseCombatCharacter* pOwner)
 {
@@ -1190,36 +1210,31 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 	}
 
 	auto pOwner = static_cast<C_NEO_Player *>(GetOwner());
-	if (!pOwner)
-	{
-		return BaseClass::DrawModel(flags);
-	}
-
 	bool inThermalVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT;
-
 	int ret = 0;
-	if (!pOwner || !pOwner->IsCloaked() || inThermalVision)
+	
+	if (inThermalVision && (!pOwner || pOwner && !pOwner->IsCloaked()))
 	{
+		IMaterial* pass = materials->FindMaterial("dev/thermal_weapon_model", TEXTURE_GROUP_MODEL);
+		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::DrawModel(flags);
+		modelrender->ForcedMaterialOverride(nullptr);
+		return ret;
 	}
 
-	if ((pOwner && pOwner->IsCloaked()) && !inThermalVision)
+	if (pOwner && pOwner->IsCloaked() && !inThermalVision)
 	{
 		mat_neo_toc_test.SetValue(pOwner->GetCloakFactor());
 		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::DrawModel(flags);
 		modelrender->ForcedMaterialOverride(nullptr);
+		return ret;
 	}
-	else if (inThermalVision && (pOwner && !pOwner->IsCloaked()))
+	else
 	{
-		IMaterial* pass = materials->FindMaterial("dev/thermal_model", TEXTURE_GROUP_MODEL);
-		modelrender->ForcedMaterialOverride(pass);
-		ret |= BaseClass::DrawModel(flags);
-		modelrender->ForcedMaterialOverride(nullptr);
+		return BaseClass::DrawModel(flags);
 	}
-
-	return ret;
 }
 
 RenderGroup_t CNEOBaseCombatWeapon::GetRenderGroup()

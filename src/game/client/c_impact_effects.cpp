@@ -391,6 +391,9 @@ void FX_DebrisFlecks( const Vector& origin, trace_t *tr, char materialType, int 
 		newParticle.m_uchColor[0] = MIN( 1.0f, color[0]*colorRamp )*255.0f;
 		newParticle.m_uchColor[1] = MIN( 1.0f, color[1]*colorRamp )*255.0f;
 		newParticle.m_uchColor[2] = MIN( 1.0f, color[2]*colorRamp )*255.0f;
+#ifdef NEO
+		newParticle.m_bHighlightInThermals = true;
+#endif // NEO
 
 		AddSimpleParticle( &newParticle, g_Mat_DustPuff[0] );
 	}
@@ -425,6 +428,9 @@ void FX_DebrisFlecks( const Vector& origin, trace_t *tr, char materialType, int 
 		newParticle.m_uchColor[0] = MIN( 1.0f, color[0]*colorRamp )*255.0f;
 		newParticle.m_uchColor[1] = MIN( 1.0f, color[1]*colorRamp )*255.0f;
 		newParticle.m_uchColor[2] = MIN( 1.0f, color[2]*colorRamp )*255.0f;
+#ifdef NEO
+		newParticle.m_bHighlightInThermals = true;
+#endif // NEO
 
 		AddSimpleParticle( &newParticle, g_Mat_BloodPuff[0] );
 	}
@@ -459,6 +465,9 @@ void FX_DebrisFlecks( const Vector& origin, trace_t *tr, char materialType, int 
 	newParticle.m_uchColor[0] = MIN( 1.0f, color[0]*colorRamp )*255.0f;
 	newParticle.m_uchColor[1] = MIN( 1.0f, color[1]*colorRamp )*255.0f;
 	newParticle.m_uchColor[2] = MIN( 1.0f, color[2]*colorRamp )*255.0f;
+#ifdef NEO
+	newParticle.m_bHighlightInThermals = true;
+#endif // NEO
 
 	AddSimpleParticle( &newParticle, g_Mat_DustPuff[0] );
 
@@ -569,6 +578,9 @@ void FX_GlassImpact( const Vector &pos, const Vector &normal )
 		newParticle.m_uchColor[0] = MIN( 1.0f, color[0]*colorRamp )*255.0f;
 		newParticle.m_uchColor[1] = MIN( 1.0f, color[1]*colorRamp )*255.0f;
 		newParticle.m_uchColor[2] = MIN( 1.0f, color[2]*colorRamp )*255.0f;
+#ifdef NEO
+		newParticle.m_bHighlightInThermals = true;
+#endif // NEO
 
 		AddSimpleParticle( &newParticle, g_Mat_BloodPuff[0] );
 	}
@@ -602,6 +614,9 @@ void FX_GlassImpact( const Vector &pos, const Vector &normal )
 	newParticle.m_uchColor[0] = MIN( 1.0f, color[0]*colorRamp )*255.0f;
 	newParticle.m_uchColor[1] = MIN( 1.0f, color[1]*colorRamp )*255.0f;
 	newParticle.m_uchColor[2] = MIN( 1.0f, color[2]*colorRamp )*255.0f;
+#ifdef NEO
+	newParticle.m_bHighlightInThermals = true;
+#endif // NEO
 
 	AddSimpleParticle( &newParticle, g_Mat_DustPuff[0] );
 }
@@ -743,6 +758,9 @@ void FX_AntlionImpact( const Vector &pos, trace_t *trace )
 		pParticle->m_uchColor[0] = MIN( 1.0f, color[0]*colorRamp )*255.0f;
 		pParticle->m_uchColor[1] = MIN( 1.0f, color[1]*colorRamp )*255.0f;
 		pParticle->m_uchColor[2] = MIN( 1.0f, color[2]*colorRamp )*255.0f;
+#ifdef NEO
+		pParticle->m_bHighlightInThermals = true;
+#endif // NEO
 	}
 
 
@@ -1140,6 +1158,9 @@ void FX_DustImpact( const Vector &origin, trace_t *tr, float flScale )
 			
 			pParticle->m_flRoll			= random->RandomInt( 0, 360 );
 			pParticle->m_flRollDelta	= random->RandomFloat( -8.0f, 8.0f );
+#ifdef NEO
+			pParticle->m_bHighlightInThermals = true;
+#endif // NEO
 		}
 	}			
 
@@ -1178,6 +1199,9 @@ void FX_DustImpact( const Vector &origin, trace_t *tr, float flScale )
 			
 			pParticle->m_flRoll			= random->RandomInt( 0, 360 );
 			pParticle->m_flRollDelta	= random->RandomFloat( -2.0f, 2.0f );
+#ifdef NEO
+			pParticle->m_bHighlightInThermals = true;
+#endif // NEO
 		}
 	}
 
@@ -1222,6 +1246,9 @@ void FX_DustImpact( const Vector &origin, trace_t *tr, float flScale )
 			
 			pParticle->m_flRoll			= random->RandomInt( 0, 360 );
 			pParticle->m_flRollDelta	= random->RandomFloat( -16.0f, 16.0f );
+#ifdef NEO
+			pParticle->m_bHighlightInThermals = true;
+#endif // NEO
 		}
 	}			
 }
