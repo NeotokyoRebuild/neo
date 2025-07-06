@@ -23,6 +23,7 @@
 #include "ui/neo_utils.h"
 #include "neo_gamerules.h"
 #include "neo_misc.h"
+#include "mp3player.h"
 
 #include <vgui/IInput.h>
 #include <vgui_controls/Controls.h>
@@ -485,6 +486,7 @@ void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 	if (m_ns.keys.bcConsole <= KEY_NONE)
 	{
 		m_ns.keys.bcConsole = gameuifuncs->GetButtonCodeForBind("neo_toggleconsole");
+		m_ns.keys.bcMP3Player = gameuifuncs->GetButtonCodeForBind("neo_mp3");
 		m_ns.keys.bcTeamMenu = gameuifuncs->GetButtonCodeForBind("teammenu");
 		m_ns.keys.bcClassMenu = gameuifuncs->GetButtonCodeForBind("classmenu");
 		m_ns.keys.bcLoadoutMenu = gameuifuncs->GetButtonCodeForBind("loadoutmenu");
@@ -499,6 +501,10 @@ void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 		// opened which generally doesn't endup calling OnRelayedKeyCodeTyped anyway.
 		NeoToggleconsole();
 		return;
+	}
+	else if (code == m_ns.keys.bcMP3Player)
+	{
+		engine->ClientCmd_Unrestricted("neo_mp3");
 	}
 	g_uiCtx.eCode = code;
 	OnMainLoop(NeoUI::MODE_KEYPRESSED);
@@ -814,6 +820,28 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	}
 	NeoUI::EndSection();
 #endif
+	g_uiCtx.dPanel.x = param.wide - 128;
+	g_uiCtx.dPanel.y = param.tall - 48;
+	g_uiCtx.dPanel.wide = 128;
+	g_uiCtx.dPanel.tall = 1;
+	NeoUI::BeginSection();
+	g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
+	const auto musicPlayerBtn = NeoUI::Button(L"Music");
+	if (musicPlayerBtn.bPressed)
+	{
+		surface()->PlaySound("ui/buttonclickrelease.wav");
+		engine->ClientCmd("neo_mp3");
+
+	}
+	if (musicPlayerBtn.bMouseHover && SMBTN_MP3 != m_iHoverBtn)
+	{
+		// Sound rollover feedback
+		surface()->PlaySound("ui/buttonrollover.wav");
+		m_iHoverBtn = SMBTN_MP3;
+	}
+	
+	NeoUI::EndSection();
+	NeoUI::EndContext();
 }
 
 void CNeoRoot::MainLoopSettings(const MainLoopParam param)
@@ -2037,12 +2065,6 @@ void CNeoRoot::ReadNewsFile(CUtlBuffer &buf)
 	}
 }
 
-void CNeoRoot::OnFileSelectedMode_Crosshair(const char *szFullpath)
-{
-	((m_ns.crosshair.eFileIOMode == vgui::FOD_OPEN) ?
-			&ImportCrosshair : &ExportCrosshair)(&m_ns.crosshair.info, szFullpath);
-}
-
 void CNeoRoot::OnFileSelectedMode_Spray(const char *szFullpath)
 {
 	// Ensure the directories are there to write to
@@ -2231,7 +2253,6 @@ LightmappedGeneric
 void CNeoRoot::OnFileSelected(const char *szFullpath)
 {
 	static void (CNeoRoot::*FILESELMODEFNS[FILEIODLGMODE__TOTAL])(const char *) = {
-		&CNeoRoot::OnFileSelectedMode_Crosshair,	// FILEIODLGMODE_CROSSHAIR
 		&CNeoRoot::OnFileSelectedMode_Spray,		// FILEIODLGMODE_SPRAY
 	};
 	(this->*FILESELMODEFNS[m_eFileIOMode])(szFullpath);

@@ -1451,6 +1451,10 @@ bool CFuncVPhysicsClip::EntityPassesFilter( CBaseEntity *pOther )
 	if ( pFilter )
 		return pFilter->PassesFilter( this, pOther );
 
+#ifdef NEO
+	if ( !pOther->VPhysicsGetObject() ) // DG: Server ragdolls appear to be MOVETYPE_VPHYSICS but aren't actually a physics object right when they're spawned
+		return false;
+#endif
 	if ( pOther->GetMoveType() == MOVETYPE_VPHYSICS && pOther->VPhysicsGetObject()->IsMoveable() )
 		return true;
 	

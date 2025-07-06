@@ -312,6 +312,7 @@ void Precache_NEO_Sounds( void )
 
 	CBaseEntity::PrecacheScriptSound("Weapon_Generic.melee_swing");
 
+	CBaseEntity::PrecacheScriptSound("HUD.CountdownBeep");
 	CBaseEntity::PrecacheScriptSound("HUD.GhostEquip");
 	CBaseEntity::PrecacheScriptSound("HUD.GhostPickUp");
 	CBaseEntity::PrecacheScriptSound("HUD.JinraiWin");
@@ -325,7 +326,6 @@ void Precache_NEO_Sounds( void )
 	CBaseEntity::PrecacheScriptSound("Victory.Jinrai");
 	CBaseEntity::PrecacheScriptSound("Victory.NSF");
 
-	CBaseEntity::PrecacheSound("tutorial/hitsound.wav");
 }
 
 //-----------------------------------------------------------------------------
