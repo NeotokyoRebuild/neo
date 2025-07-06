@@ -48,7 +48,12 @@ Make sure the "x64 Native Tools Command Prompt for VS2022" is used instead of th
 Your system must include the following packages:
 `gcc g++ cmake ninja-build docker-ce docker-ce-cli containerd.io apt-transport-https ca-certificates curl gnupg gnupg-utils cmake build-essential`
 
-**Note:** Depending on your operating system, the package names may vary, please consult google or your package manager for correct package names. The listed are for debian `apt`. (Includes Ubuntu, Linux Mint, etc)
+> [!NOTE]
+> Depending on your distro, the package names may vary; please consult Google or your package manager for correct package names. The listed are for Debian `apt`. (Includes Ubuntu, Linux Mint, etc).
+> 
+> If using Docker, also note that following the [official install guide](https://docs.docker.com/desktop/setup/install/linux/) steps will likely configure sources for all transitive dependencies like
+> `containerd.io`, so if they were not previously available by your package manager sources, it's worth checking again after installing Docker, before proceeding to add/install them manually. This is
+> the case at least for APT.
 
 Download and use the OCI image for Docker/Podman/Toolbx:
 
