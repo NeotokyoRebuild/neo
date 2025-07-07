@@ -796,7 +796,7 @@ CBaseEntity *PathFollower::FindBlocker( INextBot *bot )
 
 	// if we don't care about hindrances, don't do the expensive tests
 #ifdef NEO
-	AssertOnce(POINTER_TO_INT(IS_ANY_HINDRANCE_POSSIBLE) == -1);
+	AssertOnce(uintp(IS_ANY_HINDRANCE_POSSIBLE) == uintp(-1));
 #endif
 	if ( think->IsHindrance( bot, IS_ANY_HINDRANCE_POSSIBLE ) != ANSWER_YES )
 		return NULL;
