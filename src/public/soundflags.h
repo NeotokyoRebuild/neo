@@ -28,6 +28,9 @@ enum
 	CHAN_STATIC		= 6,		// allocate channel from the static area 
 	CHAN_VOICE2		= 7,
 	CHAN_VOICE_BASE	= 8,		// allocate channel for network voice data
+#ifdef NEO
+	CHAN_MP3_PLAYER = 9,
+#endif // NEO
 	CHAN_USER_BASE	= (CHAN_VOICE_BASE+128)		// Anything >= this number is allocated to game code.
 };
 
