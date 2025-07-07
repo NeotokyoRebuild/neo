@@ -43,7 +43,7 @@ ConVar mp_forcecamera(
 #ifdef CSTRIKE
 	"0", 
 #elif defined NEO
-	"1",
+	"0",
 #else
 	"1",
 #endif
