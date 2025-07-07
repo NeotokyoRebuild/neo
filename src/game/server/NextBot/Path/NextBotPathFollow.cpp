@@ -795,6 +795,9 @@ CBaseEntity *PathFollower::FindBlocker( INextBot *bot )
 	IIntention *think = bot->GetIntentionInterface();
 
 	// if we don't care about hindrances, don't do the expensive tests
+#ifdef NEO
+	AssertOnce(POINTER_TO_INT(IS_ANY_HINDRANCE_POSSIBLE) == -1);
+#endif
 	if ( think->IsHindrance( bot, IS_ANY_HINDRANCE_POSSIBLE ) != ANSWER_YES )
 		return NULL;
 
