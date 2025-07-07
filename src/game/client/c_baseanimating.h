@@ -604,6 +604,12 @@ protected:
 	float							m_flOldCycle;
 	bool							m_bNoModelParticles;
 
+#ifdef NEO
+	bool							m_bIsGib;
+public:
+	float							m_flNeoCreateTime;
+#endif // NEO
+
 private:
 	float							m_flOldModelScale;
 	int								m_nOldSequence;
@@ -680,6 +686,9 @@ public:
 	virtual void	OnRestore();
 	virtual int ObjectCaps( void ) { return BaseClass::ObjectCaps() | FCAP_SAVE_NON_NETWORKABLE; }
 	virtual IPVSNotify*				GetPVSNotifyInterface() { return this; }
+#ifdef NEO
+	virtual int DrawModel(int flags) override;
+#endif neo
 
 	void	HandleAnimatedFriction( void );
 	virtual void SUB_Remove( void );

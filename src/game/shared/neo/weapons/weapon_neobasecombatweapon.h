@@ -174,6 +174,10 @@ public:
 	virtual void Spawn() override;
 	virtual void Activate() override;
 
+#ifdef CLIENT_DLL
+	virtual void ClientThink() override;
+#endif // CLIENT_DLL
+
 	virtual void Equip(CBaseCombatCharacter* pOwner) override;
 	virtual	void CheckReload(void) override;
 
@@ -267,6 +271,9 @@ public:
 	virtual bool GetRoundChambered() const { return 0; }
 	virtual bool GetRoundBeingChambered() const { return 0; }
 	float GetPenetration() const;
+#ifdef CLIENT_DLL
+	float m_flTemperature;
+#endif // CLIENT_DLL
 
 protected:
 	WeaponHandlingInfo_t m_weaponHandling;
@@ -289,6 +296,7 @@ protected:
 
 private:
 	CNEOBaseCombatWeapon(const CNEOBaseCombatWeapon &other);
+
 };
 
 #endif // WEAPON_NEO_BASECOMBATWEAPON_SHARED_H
