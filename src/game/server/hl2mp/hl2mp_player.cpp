@@ -120,7 +120,7 @@ IMPLEMENT_SERVERCLASS_ST(CHL2MP_Player, DT_HL2MP_Player)
 	// on the player.
 	// So, just never send it, and don't predict it on the client either.
 	SendPropExclude( "DT_BasePlayer", "m_flMaxspeed" ),
-#endif NEO
+#endif // NEO
 
 
 	// Data that only gets sent to the local player

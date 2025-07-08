@@ -376,6 +376,9 @@ public:
 #endif
 
 	const char *GetTeamClantag(const int iTeamNum) const;
+#ifdef GAME_DLL
+	void OnNavMeshLoad() override;
+#endif // GAME_DL:
 
 public:
 #ifdef GAME_DLL
