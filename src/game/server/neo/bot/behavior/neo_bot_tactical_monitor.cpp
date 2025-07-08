@@ -14,7 +14,7 @@
 #include "bot/behavior/neo_bot_retreat_to_cover.h"
 #if 0 // NEO TODO (Adam) Fix picking up weapons, search for dropped weapons to pick up ammo
 #include "bot/behavior/neo_bot_get_ammo.h"
-#endif 0
+#endif
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_destroy_entity.h"
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_move_to.h"
 #include "bot/behavior/nav_entities/neo_bot_nav_ent_wait.h"
