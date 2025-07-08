@@ -1,0 +1,134 @@
+// mp3 database, automatically generated
+songs
+{
+  file
+  {
+    filenumber 0
+    fromgame 1
+    subdirindex 0
+    short "101 - annul.mp3"
+    filename "..\soundtrack\101 - annul.mp3"
+  }
+  file
+  {
+    filenumber 1
+    fromgame 1
+    subdirindex 0
+    short "102 - tinsoldiers.mp3"
+    filename "..\soundtrack\102 - tinsoldiers.mp3"
+  }
+  file
+  {
+    filenumber 2
+    fromgame 1
+    subdirindex 0
+    short "103 - beacon.mp3"
+    filename "..\soundtrack\103 - beacon.mp3"
+  }
+  file
+  {
+    filenumber 3
+    fromgame 1
+    subdirindex 0
+    short "104 - imbrium.mp3"
+    filename "..\soundtrack\104 - imbrium.mp3"
+  }
+  file
+  {
+    filenumber 4
+    fromgame 1
+    subdirindex 0
+    short "105 - automata.mp3"
+    filename "..\soundtrack\105 - automata.mp3"
+  }
+  file
+  {
+    filenumber 5
+    fromgame 1
+    subdirindex 0
+    short "106 - hiroden 651.mp3"
+    filename "..\soundtrack\106 - hiroden 651.mp3"
+  }
+  file
+  {
+    filenumber 6
+    fromgame 1
+    subdirindex 0
+    short "109 - mechanism.mp3"
+    filename "..\soundtrack\109 - mechanism.mp3"
+  }
+  file
+  {
+    filenumber 7
+    fromgame 1
+    subdirindex 0
+    short "110 - paperhouse.mp3"
+    filename "..\soundtrack\110 - paperhouse.mp3"
+  }
+  file
+  {
+    filenumber 8
+    fromgame 1
+    subdirindex 0
+    short "111 - footprint.mp3"
+    filename "..\soundtrack\111 - footprint.mp3"
+  }
+  file
+  {
+    filenumber 9
+    fromgame 1
+    subdirindex 0
+    short "112 - out.mp3"
+    filename "..\soundtrack\112 - out.mp3"
+  }
+  file
+  {
+    filenumber 10
+    fromgame 1
+    subdirindex 0
+    short "202 - scrap.mp3"
+    filename "..\soundtrack\202 - scrap.mp3"
+  }
+  file
+  {
+    filenumber 11
+    fromgame 1
+    subdirindex 0
+    short "207 - carapace.mp3"
+    filename "..\soundtrack\207 - carapace.mp3"
+  }
+  file
+  {
+    filenumber 12
+    fromgame 1
+    subdirindex 0
+    short "208 - stopgap.mp3"
+    filename "..\soundtrack\208 - stopgap.mp3"
+  }
+  file
+  {
+    filenumber 13
+    fromgame 1
+    subdirindex 0
+    short "209 - radius.mp3"
+    filename "..\soundtrack\209 - radius.mp3"
+  }
+  file
+  {
+    filenumber 14
+    fromgame 1
+    subdirindex 0
+    short "210 - rebuild.mp3"
+    filename "..\soundtrack\210 - rebuild.mp3"
+  }
+}
+directories
+{
+  directory
+  {
+    gamesounds 1
+    name ""
+    dirname "Game Sounds"
+    fullpath ""
+  }
+}
