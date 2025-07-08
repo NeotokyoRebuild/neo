@@ -4,8 +4,8 @@ WeaponData
 	"printname"		"BALC3"
 	"BulletCharacter"	"c"
 	"iDeathIcon"		"@"
-	"viewmodel"		"models/weapons/v_jinrai_pz.mdl"
-	"playermodel"		"models/weapons/w_pz252.mdl"
+	"viewmodel"			"models/weapons/v_jinrai_pz.mdl"
+	"playermodel"		"models/weapons/w_balc.mdl"
 	"anim_prefix"		"m4"
 	"bucket"		"0"
 	"bucket_position"	"0"
@@ -73,16 +73,13 @@ WeaponData
 	// Sounds for the weapon. There is a max of 16 sounds per category (i.e. max 16 "single_shot" sounds)
 	SoundData
 	{
-
-		"reload"		"Weapon_pz.Reload"
+		"reload"			"Weapon_pz.Reload"
 		"reload_npc"		"Weapon_pz.NPC_Reload"
-		"empty"			"weapon_pz.empty"
-		"single_shot"		"weapon_pz.single"
-		"single_shot_npc"	"Weapon_pz.NPC_Single"
-		"special1"		"Weapon_Pistol.Special1"
-		"special2"		"Weapon_Pistol.Special2"
-		"burst"			"Weapon_Pistol.Burst"
-		"melee_miss"		"Weapon_Generic.melee_swing"
+		"empty"				"weapon_pz.empty"
+		"single_shot"		"weapon_balc.single"
+		"single_shot_npc"	"weapon_balc.single"
+		"special1"			"weapon_balc.overheat"
+		"special2"			"weapon_balc.ready"
 	}
 
 	// Weapon Sprite data is loaded by the Client DLL.

@@ -1323,3 +1323,30 @@
 	"pitch"				"98,102"
 	"wave"				"^rogue/ht_ubr_fire.wav"
 }
+
+// --------------------------
+// BALC3
+// --------------------------
+
+"weapon_balc.single"
+{
+	"channel"				"CHAN_WEAPON"
+	"soundlevel"			"SNDLVL_150dB"
+	"volume"				"1.0"
+	"pitch"					"98,102"
+	"wave"					"weapons/balc/balc_fire.wav"	
+}
+
+"weapon_balc.overheat"
+{
+	"channel"				"CHAN_ITEM"
+	"volume"				"0.4"
+	"wave"					"weapons/balc/balc_overheat.wav"	
+}
+
+"weapon_balc.ready"
+{
+	"channel"				"CHAN_ITEM"
+	"volume"				"0.4"
+	"wave"					"weapons/balc/balc_ready.wav"	
+}

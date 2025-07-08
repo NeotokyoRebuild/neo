@@ -957,7 +957,7 @@ void C_NEO_Player::CalculateSpeed(void)
 	absoluteVelocity.z = 0.f;
 	float currentSpeed = absoluteVelocity.Length();
 
-	if (((!neo_ghost_bhopping.GetBool() && m_bCarryingGhost) || m_iNeoClass == NEO_CLASS_JUGGERNAUT) && GetMoveType() != MOVETYPE_LADDER && currentSpeed > speed)
+	if (((!neo_ghost_bhopping.GetBool() && m_bCarryingGhost) || m_iNeoClass == NEO_CLASS_JUGGERNAUT) && GetMoveType() != MOVETYPE_LADDER && GetMoveType() != MOVETYPE_NOCLIP && currentSpeed > speed)
 	{
 		float overSpeed = currentSpeed - speed;
 		absoluteVelocity.NormalizeInPlace();
@@ -1888,24 +1888,24 @@ const char *C_NEO_Player::GetOverrideStepSound(const char *pBaseStepSound)
 	{
 		if (!IsSprinting())
 		{
-			if (m_Local.m_nStepside == 0)
+			if (m_Local.m_nStepside)
 			{
-				return "JGR56.FootstepRight";
+				return "JGR56.FootstepLeft";
 			}
 			else
 			{
-				return "JGR56.FootstepLeft";
+				return "JGR56.FootstepRight";
 			}
 		}
 		else
 		{
-			if (m_Local.m_nStepside == 0)
+			if (m_Local.m_nStepside)
 			{
-				return "JGR56.RunFootstepRight";
+				return "JGR56.RunFootstepLeft";
 			}
 			else
 			{
-				return "JGR56.RunFootstepLeft";
+				return "JGR56.RunFootstepRight";
 			}
 		}
 	}

@@ -66,6 +66,7 @@ void CWeaponBALC::PrimaryAttack(void)
 	{
 		m_bOverheated = true;
 		m_flOverheatStartTime = gpGlobals->curtime;
+		WeaponSound(SPECIAL1);
 		return;
 	}
 }
@@ -79,6 +80,7 @@ void CWeaponBALC::Think(void)
 		{
 			SetPrimaryAmmoCount(GetDefaultClip1());
 			m_bOverheated = false;
+			WeaponSound(SPECIAL2);
 		}
 	}
 	else if (GetPrimaryAmmoCount() < GetDefaultClip1())
