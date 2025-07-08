@@ -1783,8 +1783,8 @@ void CMP3Player::OnTick()
 		m_pMute->SetSelected(cl_neo_radio_mute.GetBool());
 		m_pShuffle->SetSelected(cl_neo_radio_shuffle.GetBool());
 		m_pGamePause->SetSelected(cl_neo_radio_game_pause.GetBool());
-		m_pVolume->SetValue(cl_neo_radio_volume.GetInt());
-		m_pVolumeInGame->SetValue(cl_neo_radio_volume_ingame.GetInt());
+		m_pVolume->SetValue(cl_neo_radio_volume.GetFloat() * 100);
+		m_pVolumeInGame->SetValue(cl_neo_radio_volume_ingame.GetFloat() * 100);
 		m_flCurrentVolume = m_pVolume->GetValue();
 		m_bMuted = m_pMute->IsSelected();
 		m_bShuffle = m_pShuffle->IsSelected();
@@ -1809,10 +1809,6 @@ void CMP3Player::OnTick()
 	if ( volumeChanged )
 	{
 		m_flCurrentVolume = newVol;
-#ifdef NEO
-		cl_neo_radio_volume.SetValue(m_pVolume->GetValue());
-		cl_neo_radio_volume_ingame.SetValue(m_pVolumeInGame->GetValue());
-#endif // NEO
 	}
 	bool muteChanged = m_bMuted != m_pMute->IsSelected();
 	if ( muteChanged )
@@ -2464,6 +2460,34 @@ void CMP3Player::OnSliderMoved()
 	PlaySong( m_nCurrentSong, -offset );
 #endif
 }
+
+#ifdef NEO
+void CMP3Player::OnSliderDragEnd(KeyValues* data)
+{
+	KeyValues* pData = data->GetFirstSubKey();
+	if (!pData)
+	{
+		return;
+	}
+	const float newValue = pData->GetInt() * 0.01f;
+
+	pData = pData->GetNextKey();
+	if (!pData)
+	{
+		return;
+	}
+	const void* pszName = pData->GetPtr();
+
+	if (m_pVolume == pData->GetPtr())
+	{
+		cl_neo_radio_volume.SetValue(newValue);
+	}
+	else if (m_pVolumeInGame == pData->GetPtr())
+	{
+		cl_neo_radio_volume_ingame.SetValue(newValue);
+	}
+}
+#endif // NEO
 
 void CMP3Player::LoadPlayList( char const *filename )
 {

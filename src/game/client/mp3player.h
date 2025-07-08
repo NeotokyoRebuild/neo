@@ -250,6 +250,9 @@ protected:
 
 	MESSAGE_FUNC( OnTreeViewItemSelected, "TreeViewItemSelected" );
 	MESSAGE_FUNC( OnSliderMoved, "SliderMoved" );
+#ifdef NEO
+	MESSAGE_FUNC_PARAMS(OnSliderDragEnd, "SliderDragEnd", data);
+#endif // NEO
 
 	void					PopulateTree();
 	void					PopulateLists();
