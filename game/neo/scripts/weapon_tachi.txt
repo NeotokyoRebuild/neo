@@ -67,8 +67,8 @@ WeaponData
 		"single_shot"	"Weapon_Tachi.Single"
 		"single_shot_npc"	"Weapon_Tachi.NPC_Single"
 		"special1"		"Weapon_Tachi.Special1"
-		"special2"		"Weapon_Tachi.Special2"
-		"burst"			"Weapon_Tachi.Burst"
+		//"special2"		"Weapon_Tachi.Special2"
+		//"burst"			"Weapon_Tachi.Burst"
 	}
 
 	// Weapon Sprite data is loaded by the Client DLL.

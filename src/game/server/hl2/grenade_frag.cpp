@@ -280,7 +280,9 @@ void CGrenadeFrag::Precache( void )
 {
 	PrecacheModel( GRENADE_MODEL );
 
+#ifndef NEO
 	PrecacheScriptSound( "Grenade.Blip" );
+#endif // NEO
 
 	PrecacheModel( "sprites/redglow1.vmt" );
 	PrecacheModel( "sprites/bluelaser1.vmt" );
