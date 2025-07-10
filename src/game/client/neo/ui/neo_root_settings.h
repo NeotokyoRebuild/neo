@@ -105,6 +105,7 @@ struct NeoSettings
 		float flVolMain;
 		float flVolMusic;
 		float flVolVictory;
+		float flVolPing;
 		int iSoundSetup;
 		int iSoundQuality;
 		bool bMuteAudioUnFocus;
@@ -209,6 +210,7 @@ struct NeoSettings
 		CONVARREF_DEFNOGLOBALPTR(volume);
 		CONVARREF_DEFNOGLOBALPTR(snd_musicvolume);
 		CONVARREF_DEFNOGLOBALPTR(snd_victory_volume);
+		CONVARREF_DEFNOGLOBALPTR(snd_ping_volume);
 		CONVARREF_DEF(snd_surround_speakers);
 		CONVARREF_DEF(voice_enable);
 		CONVARREF_DEF(voice_scale);
