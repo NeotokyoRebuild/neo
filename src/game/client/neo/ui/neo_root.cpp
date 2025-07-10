@@ -969,7 +969,7 @@ void CNeoRoot::MainLoopNewGame(const MainLoopParam param)
 				m_state = STATE_MAPLIST;
 			}
 			NeoUI::TextEdit(L"Hostname", m_newGame.wszHostname, SZWSZ_LEN(m_newGame.wszHostname));
-			NeoUI::SliderInt(L"Max players", &m_newGame.iMaxPlayers, 1, 32);
+			NeoUI::SliderInt(L"Max players", &m_newGame.iMaxPlayers, 1, MAX_PLAYERS-1); // -1 to accommodate SourceTV
 			NeoUI::TextEdit(L"Password", m_newGame.wszPassword, SZWSZ_LEN(m_newGame.wszPassword));
 			NeoUI::RingBoxBool(L"Friendly fire", &m_newGame.bFriendlyFire);
 			NeoUI::RingBoxBool(L"Use Steam networking", &m_newGame.bUseSteamNetworking);
