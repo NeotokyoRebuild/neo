@@ -1,0 +1,17 @@
+"ballistrade.general"
+{
+	"dsp"	"1"
+	"playlooping"
+	{
+		"volume"	"0.3"
+		"pitch"		"100"
+		"wave"		"pissalley/parking_garage_tone_01.wav"
+	}
+	
+	"playlooping"
+	{
+		"volume"	"0.2"
+		"pitch"		"100"
+		"wave"		"pissalley/subway_tunnel_wind_02.wav"
+	}
+}
