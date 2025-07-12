@@ -70,7 +70,7 @@ enum NeoXHairSegment
 
 struct CrosshairInfo
 {
-	bool bPreviewAnimation;
+	bool bPreviewAccuracy;
 	int iStyle;
 	Color color;
 	int iESizeType; // int NeoHudCrosshairSizeType
