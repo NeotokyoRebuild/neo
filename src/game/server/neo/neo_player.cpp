@@ -68,7 +68,6 @@ SendPropTime(SENDINFO(m_flJumpLastTime)),
 
 SendPropString(SENDINFO(m_pszTestMessage)),
 
-SendPropArray(SendPropVector(SENDINFO_ARRAY(m_rvFriendlyPlayerPositions), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rvFriendlyPlayerPositions),
 SendPropArray(SendPropInt(SENDINFO_ARRAY(m_rfAttackersScores)), m_rfAttackersScores),
 SendPropArray(SendPropFloat(SENDINFO_ARRAY(m_rfAttackersAccumlator), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT), m_rfAttackersAccumlator),
 SendPropArray(SendPropInt(SENDINFO_ARRAY(m_rfAttackersHits)), m_rfAttackersHits),
@@ -106,7 +105,6 @@ DEFINE_FIELD(m_flJumpLastTime, FIELD_TIME),
 
 DEFINE_FIELD(m_pszTestMessage, FIELD_STRING),
 
-DEFINE_FIELD(m_rvFriendlyPlayerPositions, FIELD_CUSTOM),
 DEFINE_FIELD(m_rfAttackersScores, FIELD_CUSTOM),
 DEFINE_FIELD(m_rfAttackersAccumlator, FIELD_CUSTOM),
 DEFINE_FIELD(m_rfAttackersHits, FIELD_CUSTOM),
@@ -446,8 +444,6 @@ CNEO_Player::CNEO_Player()
 	m_bShowTestMessage = false;
 	V_memset(m_pszTestMessage.GetForModify(), 0, sizeof(m_pszTestMessage));
 
-	ZeroFriendlyPlayerLocArray();
-
 	m_flCamoAuxLastTime = 0;
 	m_nVisionLastTick = 0;
 	m_flLastAirborneJumpOkTime = 0;
@@ -474,65 +470,6 @@ CNEO_Player::CNEO_Player()
 
 CNEO_Player::~CNEO_Player( void )
 {
-}
-
-void CNEO_Player::ZeroFriendlyPlayerLocArray(void)
-{
-	Assert(m_rvFriendlyPlayerPositions.Count() == MAX_PLAYERS);
-	for (int i = 0; i < MAX_PLAYERS; i++)
-	{
-		m_rvFriendlyPlayerPositions.Set(i, vec3_origin);
-	}
-	NetworkStateChanged();
-}
-
-void CNEO_Player::UpdateNetworkedFriendlyLocations()
-{
-#if(0)
-#define PVS_MAX_SIZE (MAX_MAP_CLUSTERS + 1)
-	byte pvs[PVS_MAX_SIZE]{};
-
-	const int cluster = engine->GetClusterForOrigin(GetAbsOrigin());
-	const int pvsSize = engine->GetPVSForCluster(cluster, PVS_MAX_SIZE, pvs);
-	Assert(pvsSize > 0);
-#endif
-
-	Assert(MAX_PLAYERS == m_rvFriendlyPlayerPositions.Count());
-	for (int i = 0; i < gpGlobals->maxClients; ++i)
-	{
-		// Skip self.
-		if (i == GetClientIndex())
-		{
-			continue;
-		}
-
-		auto player = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i + 1));
-
-		// Only teammates who are alive.
-		if (!player || player->GetTeamNumber() != GetTeamNumber() || player->IsDead()
-#if(1)
-			)
-#else // currently networking all friendlies, NEO TODO (Rain): optimise this
-			// If the other player is already in our PVS, we can skip them.
-			|| (engine->CheckOriginInPVS(otherPlayer->GetAbsOrigin(), pvs, pvsSize)))
-#endif
-		{
-			continue;
-		}
-
-		Assert(player != this);
-#if(0)
-		if (!IsFakeClient())
-		{
-			DevMsg("Got here: my(edict: %i) VEC: %f %f %f -- other(edict: %i) VEC: %f %f %f\n",
-				edict()->m_EdictIndex, GetAbsOrigin().x, GetAbsOrigin().y, GetAbsOrigin().z,
-				player->edict()->m_EdictIndex, player->GetAbsOrigin().x, player->GetAbsOrigin().y, player->GetAbsOrigin().z);
-		}
-#endif
-
-		m_rvFriendlyPlayerPositions.Set(i, player->GetAbsOrigin());
-		Assert(m_rvFriendlyPlayerPositions[i].IsValid());
-	}
 }
 
 void CNEO_Player::Precache( void )
@@ -1096,11 +1033,6 @@ void CNEO_Player::PreThink(void)
 				SuitPower_Drain(SUPER_JMP_COST);
 			}
 		}
-	}
-
-	if (IsAlive() && GetTeamNumber() != TEAM_SPECTATOR)
-	{
-		UpdateNetworkedFriendlyLocations();
 	}
 }
 

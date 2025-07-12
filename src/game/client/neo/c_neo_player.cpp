@@ -87,7 +87,6 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_nVisionLastTick)),
 	RecvPropTime(RECVINFO(m_flJumpLastTime)),
 
-	RecvPropArray(RecvPropVector(RECVINFO(m_rvFriendlyPlayerPositions[0])), m_rvFriendlyPlayerPositions),
 	RecvPropArray(RecvPropInt(RECVINFO(m_rfAttackersScores[0])), m_rfAttackersScores),
 	RecvPropArray(RecvPropFloat(RECVINFO(m_rfAttackersAccumlator[0])), m_rfAttackersAccumlator),
 	RecvPropArray(RecvPropInt(RECVINFO(m_rfAttackersHits[0])), m_rfAttackersHits),
@@ -103,7 +102,6 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA(C_NEO_Player)
-	DEFINE_PRED_FIELD(m_rvFriendlyPlayerPositions, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_ARRAY(m_rfAttackersScores, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_ARRAY(m_rfAttackersAccumlator, FIELD_FLOAT, MAX_PLAYERS + 1, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_ARRAY(m_rfAttackersHits, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_INSENDTABLE),
@@ -620,15 +618,6 @@ void C_NEO_Player::CheckLeanButtons()
 	else if ((m_nButtons & IN_LEAN_RIGHT) && !(m_nButtons & IN_LEAN_LEFT || IsSprinting()))
 	{
 		m_bInLean = NEO_LEAN_RIGHT;
-	}
-}
-
-void C_NEO_Player::ZeroFriendlyPlayerLocArray()
-{
-	Assert(m_rvFriendlyPlayerPositions.Count() == MAX_PLAYERS);
-	for (int i = 0; i < MAX_PLAYERS; ++i)
-	{
-		m_rvFriendlyPlayerPositions.GetForModify(i) = vec3_origin;
 	}
 }
 
