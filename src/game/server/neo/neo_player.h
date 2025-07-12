@@ -302,12 +302,9 @@ inline CNEO_Player *ToNEOPlayer(CBaseEntity *pEntity)
 {
 	if (!pEntity || !pEntity->IsPlayer())
 	{
-		return NULL;
+		return nullptr;
 	}
-#if _DEBUG
-	Assert(dynamic_cast<CNEO_Player*>(pEntity));
-#endif
-	return static_cast<CNEO_Player*>(pEntity);
+	return assert_cast<CNEO_Player*>(pEntity);
 }
 
 #endif // NEO_PLAYER_H
