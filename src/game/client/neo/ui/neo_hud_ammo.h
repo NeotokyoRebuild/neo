@@ -27,6 +27,7 @@ protected:
 
 private:
 	void DrawAmmo() const;
+	void DrawHeatMeter(C_NEOBaseCombatWeapon* activeWep) const;
 
 private:
 	vgui::HFont m_hSmallTextFont = 0;
@@ -64,6 +65,13 @@ private:
 	CPanelAnimationVar(Color, ammo_text_color, "ammo_text_color", "255 255 255 100");
 	CPanelAnimationVar(Color, ammo_color, "ammo_color", "255 255 255 150");
 	CPanelAnimationVar(Color, emptied_ammo_color, "emptied_ammo_color", "255 255 255 50");
+
+	CPanelAnimationVarAliasType(int, heatbar_xpos, "heatbar_xpos", "45", "proportional_xpos");
+	CPanelAnimationVarAliasType(int, heatbar_ypos, "heatbar_ypos", "12", "proportional_ypos");
+	CPanelAnimationVarAliasType(float, heatbar_w, "heatbar_w", "150", "proportional_float");
+	CPanelAnimationVarAliasType(float, heatbar_h, "heatbar_h", "15", "proportional_float");
+	CPanelAnimationVar(Color, heat_color, "heat_color", "255 50 50 200");
+
 private:
 	CNEOHud_Ammo(const CNEOHud_Ammo& other);
 };

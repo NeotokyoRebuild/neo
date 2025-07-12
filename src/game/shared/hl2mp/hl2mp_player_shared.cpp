@@ -116,6 +116,8 @@ void CHL2MP_Player::PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, f
 	{
 		pSoundName = szStepSound;
 	}
+
+	pSoundName = GetOverrideStepSound(pSoundName);
 #endif
 
 	CSoundParameters params;

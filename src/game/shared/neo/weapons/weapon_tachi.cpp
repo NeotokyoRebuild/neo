@@ -121,3 +121,8 @@ void CWeaponTachi::ItemPostFrame( void )
 		}
 	}
 }
+
+bool CWeaponTachi::CanBePickedUpByClass(int classId)
+{
+	return classId != NEO_CLASS_JUGGERNAUT;
+}
