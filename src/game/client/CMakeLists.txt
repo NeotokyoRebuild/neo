@@ -1509,6 +1509,7 @@ target_sources_grouped(
     neo/c_neo_message.cpp
     neo/c_neo_message.h
     neo/c_neo_npc_dummy.cpp
+    neo/c_neo_npc_dummy.h
     neo/c_neo_player.cpp
     neo/c_neo_player.h
     neo/c_neo_te_tocflash.cpp
