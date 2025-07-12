@@ -653,7 +653,7 @@ void CNEO_Player::Lean(void)
 
 void CNEO_Player::CheckVisionButtons()
 {
-	if ((m_iNeoClass == NEO_CLASS_VIP) || (m_iNeoClass == NEO_CLASS_JUGGERNAUT))
+	if (m_iNeoClass == NEO_CLASS_VIP)
 		return;
 
 	if (gpGlobals->tickcount - m_nVisionLastTick < TIME_TO_TICKS(0.1f))
