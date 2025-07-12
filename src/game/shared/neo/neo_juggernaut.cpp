@@ -7,7 +7,7 @@
 #include "model_types.h"
 #endif
 
-#define USE_DURATION 3.0f
+#define USE_DURATION 4.0f
 #define USE_DISTANCE_SQUARED 22500.0f
 
 LINK_ENTITY_TO_CLASS(neo_juggernaut, CNEO_Juggernaut);

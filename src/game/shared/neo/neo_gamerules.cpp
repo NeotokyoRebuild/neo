@@ -1813,6 +1813,7 @@ void CNEORules::SpawnTheJuggernaut(const Vector* origin)
 					else
 					{
 						m_pJuggernautItem->SetAbsOrigin(ghostSpawn->GetAbsOrigin());
+						m_pJuggernautItem->SetAbsAngles(QAngle(0, ghostSpawn->GetAbsAngles().y, 0));
 					}
 
 					break;
@@ -2779,9 +2780,9 @@ void CNEORules::SetGameRelatedVars()
 		}
 	}
 
-	ResetJGR();
 	if (GetGameType() == NEO_GAME_TYPE_JGR)
 	{
+		ResetJGR();
 		SpawnTheJuggernaut();
 	}
 }
