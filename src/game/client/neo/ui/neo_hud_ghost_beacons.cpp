@@ -92,7 +92,9 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 		return;
 	}
 
-	auto ghost = dynamic_cast<C_WeaponGhost*>(spectateTarget->GetActiveWeapon());
+	auto weapon = static_cast<CNEOBaseCombatWeapon*>(spectateTarget->GetActiveWeapon());
+	auto ghost = (weapon && weapon->IsGhost()) ? static_cast<CWeaponGhost*>(weapon) : nullptr;
+
 	if (!ghost) //Check ghost ready here as players might be in PVS
 	{
 		m_bHoldingGhost = false;
