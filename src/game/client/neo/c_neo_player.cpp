@@ -141,9 +141,9 @@ static void __MsgFunc_DamageInfo(bf_read& msg)
 
 	static const char* BORDER = "==========================\n";
 	bool setKillByLine = false;
-	if (killerIdx > 0)
+	if (killerIdx > 0 && killerIdx <= gpGlobals->maxClients)
 	{
-		auto *neoAttacker = dynamic_cast<C_NEO_Player*>(UTIL_PlayerByIndex(killerIdx));
+		auto *neoAttacker = assert_cast<C_NEO_Player*>(UTIL_PlayerByIndex(killerIdx));
 		if (neoAttacker && neoAttacker->entindex() != thisIdx)
 		{
 			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, localPlayer, foundKilledBy ? killedBy : NULL);
@@ -160,7 +160,7 @@ static void __MsgFunc_DamageInfo(bf_read& msg)
 			continue;
 		}
 
-		auto* neoAttacker = dynamic_cast<C_NEO_Player*>(UTIL_PlayerByIndex(pIdx));
+		auto* neoAttacker = assert_cast<C_NEO_Player*>(UTIL_PlayerByIndex(pIdx));
 		if (!neoAttacker || neoAttacker->IsHLTV())
 		{
 			continue;
@@ -235,7 +235,7 @@ public:
 			return;
 		}
 
-		auto panel = dynamic_cast<vgui::EditablePanel*>(GetClientModeNormal()->
+		auto panel = assert_cast<vgui::EditablePanel*>(GetClientModeNormal()->
 			GetViewport()->FindChildByName(PANEL_NEO_LOADOUT));
 
 		if (!panel)
@@ -245,13 +245,13 @@ public:
 			return;
 		}
 
-		auto classPanel = dynamic_cast<CNeoClassMenu*>(GetClientModeNormal()->
+		auto classPanel = assert_cast<CNeoClassMenu*>(GetClientModeNormal()->
 			GetViewport()->FindChildByName(PANEL_CLASS));
 		if (classPanel)
 		{
 			classPanel->ShowPanel(false);
 		}
-		auto teamPanel = dynamic_cast<CNeoTeamMenu*>(GetClientModeNormal()->
+		auto teamPanel = assert_cast<CNeoTeamMenu*>(GetClientModeNormal()->
 			GetViewport()->FindChildByName(PANEL_TEAM));
 		if (teamPanel)
 		{
@@ -295,7 +295,7 @@ public:
 		panel->SetVisible(true);
 		panel->SetEnabled(true);
 
-		auto loadoutPanel = dynamic_cast<CNeoLoadoutMenu*>(panel);
+		auto loadoutPanel = assert_cast<CNeoLoadoutMenu*>(panel);
 		if (loadoutPanel)
 		{
 			loadoutPanel->ShowPanel(true);
@@ -336,7 +336,7 @@ public:
 			return;
 		}
 		
-		vgui::EditablePanel *panel = dynamic_cast<vgui::EditablePanel*>
+		vgui::EditablePanel *panel = assert_cast<vgui::EditablePanel*>
 			(GetClientModeNormal()->GetViewport()->FindChildByName(PANEL_CLASS));
 
 		if (!panel)
@@ -346,13 +346,13 @@ public:
 			return;
 		}
 
-		auto loadoutPanel = dynamic_cast<CNeoLoadoutMenu*>(GetClientModeNormal()->
+		auto loadoutPanel = assert_cast<CNeoLoadoutMenu*>(GetClientModeNormal()->
 			GetViewport()->FindChildByName(PANEL_NEO_LOADOUT));
 		if (loadoutPanel)
 		{
 			loadoutPanel->ShowPanel(false);
 		}
-		auto teamPanel = dynamic_cast<CNeoTeamMenu*>(GetClientModeNormal()->
+		auto teamPanel = assert_cast<CNeoTeamMenu*>(GetClientModeNormal()->
 			GetViewport()->FindChildByName(PANEL_TEAM));
 		if (teamPanel)
 		{
@@ -409,7 +409,7 @@ public:
 			return;
 		}
 
-		vgui::EditablePanel *panel = dynamic_cast<vgui::EditablePanel*>
+		vgui::EditablePanel *panel = assert_cast<vgui::EditablePanel*>
 			(GetClientModeNormal()->GetViewport()->FindChildByName(PANEL_TEAM));
 		if (!panel)
 		{
@@ -418,13 +418,13 @@ public:
 			return;
 		}
 
-		auto loadoutPanel = dynamic_cast<CNeoLoadoutMenu*>(GetClientModeNormal()->
+		auto loadoutPanel = assert_cast<CNeoLoadoutMenu*>(GetClientModeNormal()->
 			GetViewport()->FindChildByName(PANEL_NEO_LOADOUT));
 		if (loadoutPanel)
 		{
 			loadoutPanel->ShowPanel(false);
 		}
-		auto classPanel = dynamic_cast<CNeoClassMenu*>(GetClientModeNormal()->
+		auto classPanel = assert_cast<CNeoClassMenu*>(GetClientModeNormal()->
 			GetViewport()->FindChildByName(PANEL_CLASS));
 		if (classPanel)
 		{
@@ -1605,13 +1605,11 @@ void C_NEO_Player::Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon)
 	if (pWeapon->IsGhost())
 	{
 		pWeapon->Holster(NULL);
-		Assert(dynamic_cast<C_WeaponGhost*>(pWeapon));
-		static_cast<C_WeaponGhost*>(pWeapon)->HandleGhostUnequip();
+		assert_cast<C_WeaponGhost*>(pWeapon)->HandleGhostUnequip();
 	}
 	else if (pWeapon->GetNeoWepBits() & NEO_WEP_SUPA7)
 	{
-		Assert(dynamic_cast<C_WeaponSupa7*>(pWeapon));
-		static_cast<C_WeaponSupa7*>(pWeapon)->ClearDelayedInputs();
+		assert_cast<C_WeaponSupa7*>(pWeapon)->ClearDelayedInputs();
 	}
 }
 
