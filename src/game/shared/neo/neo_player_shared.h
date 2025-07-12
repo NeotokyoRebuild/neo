@@ -374,4 +374,8 @@ void GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
 						 const char *pSzNeoClantag,
 						 const bool bOnlySteamNick);
 
+
+#define TUTORIAL_MAP_CLASSES "ntre_class_tut"
+#define TUTORIAL_MAP_SHOOTING "ntre_shooting_tut"
+
 #endif // NEO_PLAYER_SHARED_H
