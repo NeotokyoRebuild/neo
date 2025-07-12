@@ -44,11 +44,11 @@ class CNEO_NPCDummy : public CAI_BaseNPC
 	DECLARE_SERVERCLASS();
 
 public:
-	void			Precache(void);
-	void			Spawn(void);
-	Class_T			Classify(void);
-	int				ShouldTransmit(const CCheckTransmitInfo* pInfo) override;
-	virtual int		UpdateTransmitState() override;
+	virtual void			Precache(void) override;
+	virtual void			Spawn(void) override;
+	virtual Class_T			Classify(void) override;
+	virtual int				ShouldTransmit(const CCheckTransmitInfo* pInfo) override;
+	virtual int				UpdateTransmitState() override;
 
 	DECLARE_DATADESC();
 
