@@ -236,7 +236,7 @@ extern ConVar neo_recon_superjump_intensity;
 
 //ConVar sv_neo_resupply_anywhere("sv_neo_resupply_anywhere", "0", FCVAR_CHEAT | FCVAR_REPLICATED);
 
-inline const char* GetNeoClassName(int neoClassIdx)
+inline const char* GetNeoClassName(const int neoClassIdx)
 {
 	switch (neoClassIdx)
 	{
@@ -247,6 +247,19 @@ inline const char* GetNeoClassName(int neoClassIdx)
 	default: return "";
 	}
 }
+
+inline const wchar_t *GetNeoClassNameW(const int neoClassIdx)
+{
+	switch (neoClassIdx)
+	{
+	case NEO_CLASS_RECON: return L"Recon";
+	case NEO_CLASS_ASSAULT: return L"Assault";
+	case NEO_CLASS_SUPPORT: return L"Support";
+	case NEO_CLASS_VIP: return L"VIP";
+	default: return L"";
+	}
+}
+
 
 inline const char *GetRankName(int xp, bool shortened = false)
 {
@@ -328,11 +341,7 @@ struct AttackersTotals
 	}
 };
 
-int DmgLineStr(char* infoLine, const int infoLineMax,
-	const char* dmgerName, const char* dmgerClass,
-	const AttackersTotals &totals);
-
-void KillerLineStr(char* killByLine, const int killByLineMax,
+[[deprecated]] void KillerLineStr(char* killByLine, const int killByLineMax,
 	CNEO_Player* neoAttacker, const CNEO_Player* neoVictim, const char* killedWith = "");
 
 [[nodiscard]] auto StrToInt(std::string_view strView) -> std::optional<int>;
