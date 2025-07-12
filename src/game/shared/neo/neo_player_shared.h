@@ -383,4 +383,7 @@ void GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
 // more comes in
 static constexpr const int NEO_XHAIR_SEQMAX = 64;
 
+#define TUTORIAL_MAP_CLASSES "ntre_class_tut"
+#define TUTORIAL_MAP_SHOOTING "ntre_shooting_tut"
+
 #endif // NEO_PLAYER_SHARED_H
