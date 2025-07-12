@@ -3347,7 +3347,6 @@ void CNEO_Player::BecomeJuggernaut()
 
 #define COLOR_JGR_FADE color32{170, 170, 170, 255}
 	UTIL_ScreenFade(this, COLOR_JGR_FADE, 1.0f, 0.0f, FFADE_IN);
-	engine->ClientCommand(this->edict(), "r_screenoverlay effects/overlay_vig"); // TODO DG: do this in a less stupid way
 
 	m_iNeoClass = NEO_CLASS_JUGGERNAUT;
 	SetPlayerTeamModel();
