@@ -99,7 +99,7 @@ void CNEOHud_GhostUplinkState::DrawNeoHudElement()
 		surface()->DrawSetTexture(m_pUplinkTextures[textureOrder[m_iCurrentTextureIndex]]);
 		surface()->DrawTexturedRect(0, 0, m_iUplinkTextureWidth, m_iUplinkTextureHeight);
 	}
-	else if (localPlayer->GetClass() == NEO_CLASS_JUGGERNAUT)
+	else if (localPlayer->IsAlive() && localPlayer->GetClass() == NEO_CLASS_JUGGERNAUT)
 	{
 		surface()->DrawSetColor(COLOR_RED);
 		surface()->DrawSetTexture(m_iJGRTexture);
