@@ -174,30 +174,28 @@ Class_T	CNEO_NPCDummy::Classify(void)
 
 int CNEO_NPCDummy::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 {
-	if (auto ent = Instance(pInfo->m_pClientEnt))
+	if (pInfo)
 	{
-		if (auto* otherNeoPlayer = assert_cast<CNEO_Player*>(ent))
-		{
-			// If other is spectator or same team
-			if (otherNeoPlayer->GetTeamNumber() == TEAM_SPECTATOR ||
+		auto otherNeoPlayer = assert_cast<CNEO_Player*>(Instance(pInfo->m_pClientEnt));
+		// If other is spectator or same team
+		if (otherNeoPlayer->GetTeamNumber() == TEAM_SPECTATOR ||
 #ifdef GLOWS_ENABLE
-				otherNeoPlayer->IsDead() ||
+			otherNeoPlayer->IsDead() || // ...or dead spec, for xray purposes
 #endif
-				GetTeamNumber() == otherNeoPlayer->GetTeamNumber())
-			{
-				return FL_EDICT_ALWAYS;
-			}
-
-			// If the other player is actively using the ghost and therefore fetching beacons
-			auto otherWep = static_cast<CNEOBaseCombatWeapon*>(otherNeoPlayer->GetActiveWeapon());
-			if (otherWep && otherWep->GetNeoWepBits() & NEO_WEP_GHOST &&
-				static_cast<CWeaponGhost*>(otherWep)->IsPosWithinViewDistance(GetAbsOrigin()))
-			{
-				return FL_EDICT_ALWAYS;
-			}
-
-			// NEO TODO (Adam) Check if weapon attached to this npc is of type weapon_ghost? can we draw more than one ghost beacon at once?
+			GetTeamNumber() == otherNeoPlayer->GetTeamNumber())
+		{
+			return FL_EDICT_ALWAYS;
 		}
+
+		// Ghoster should receive beacons regardless of PVS
+		auto otherWep = static_cast<CNEOBaseCombatWeapon*>(otherNeoPlayer->GetActiveWeapon());
+		if (otherWep && otherWep->IsGhost() &&
+			static_cast<CWeaponGhost*>(otherWep)->IsPosWithinViewDistance(GetAbsOrigin()))
+		{
+			return FL_EDICT_ALWAYS;
+		}
+
+		// NEO TODO (Adam) Check if weapon attached to this npc is of type weapon_ghost? can we draw more than one ghost beacon at once?
 	}
 
 	return BaseClass::ShouldTransmit(pInfo);
