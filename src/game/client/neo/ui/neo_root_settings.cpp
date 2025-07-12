@@ -886,8 +886,8 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 		}
 		else
 		{
-			int previewAccuracy = pCrosshair->info.bPreviewAccuracy ? MAX(0, (int)(sin(gpGlobals->curtime) * 24) + 16) : 0;
-			PaintCrosshair(pCrosshair->info, previewAccuracy,
+			int iPreviewAccuracy = pCrosshair->info.bPreviewAccuracy ? MAX(0, (int)(sin(gpGlobals->curtime) * 24) + 16) : 0;
+			PaintCrosshair(pCrosshair->info, iPreviewAccuracy,
 						   g_uiCtx.dPanel.x + g_uiCtx.iLayoutX + (g_uiCtx.dPanel.wide / 2),
 						   g_uiCtx.dPanel.y + g_uiCtx.iLayoutY + (g_uiCtx.dPanel.tall / 2));
 		}
@@ -955,7 +955,7 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 	NeoUI::BeginSection(true);
 	{
 		NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
-		NeoUI::RingBoxBool(L"Preview dynamic accuracy", &pCrosshair->info.bPreviewAccuracy);
+		NeoUI::RingBoxBool(L"Preview accuracy", &pCrosshair->info.bPreviewAccuracy);
 		NeoUI::RingBox(L"Crosshair style", CROSSHAIR_LABELS, CROSSHAIR_STYLE__TOTAL, &pCrosshair->info.iStyle);
 		NeoUI::SliderU8(L"Red", &pCrosshair->info.color[0], 0, UCHAR_MAX);
 		NeoUI::SliderU8(L"Green", &pCrosshair->info.color[1], 0, UCHAR_MAX);
