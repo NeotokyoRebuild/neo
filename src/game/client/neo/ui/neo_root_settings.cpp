@@ -955,7 +955,7 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 	NeoUI::BeginSection(true);
 	{
 		NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
-		NeoUI::RingBoxBool(L"Preview dynamic inaccuracy", &pCrosshair->info.bPreviewAnimation);
+		NeoUI::RingBoxBool(L"Preview dynamic accuracy", &pCrosshair->info.bPreviewAnimation);
 		NeoUI::RingBox(L"Crosshair style", CROSSHAIR_LABELS, CROSSHAIR_STYLE__TOTAL, &pCrosshair->info.iStyle);
 		NeoUI::SliderU8(L"Red", &pCrosshair->info.color[0], 0, UCHAR_MAX);
 		NeoUI::SliderU8(L"Green", &pCrosshair->info.color[1], 0, UCHAR_MAX);
