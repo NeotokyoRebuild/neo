@@ -947,6 +947,15 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 				};
 				NeoUI::Label(ARWSZ_XHAIREXPORTNOTIFY_STR[pCrosshair->eClipboardInfo]);
 			}
+
+			NeoUI::SetPerRowLayout(1);
+			{
+				const bool bTestCrosshairPressed = NeoUI::Button(L"Test dynamic crosshair accuracy").bPressed;
+				if (bTestCrosshairPressed)
+				{
+					pCrosshair->bPreviewDynamicAccuracy = !pCrosshair->bPreviewDynamicAccuracy;
+				}
+			}
 		}
 	}
 	NeoUI::EndSection();
@@ -956,7 +965,6 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 	NeoUI::BeginSection(true);
 	{
 		NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
-		NeoUI::RingBoxBool(L"Preview dynamic accuracy", &pCrosshair->bPreviewDynamicAccuracy);
 		NeoUI::RingBox(L"Crosshair style", CROSSHAIR_LABELS, CROSSHAIR_STYLE__TOTAL, &pCrosshair->info.iStyle);
 		NeoUI::SliderU8(L"Red", &pCrosshair->info.color[0], 0, UCHAR_MAX);
 		NeoUI::SliderU8(L"Green", &pCrosshair->info.color[1], 0, UCHAR_MAX);
