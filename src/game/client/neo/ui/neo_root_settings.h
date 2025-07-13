@@ -146,6 +146,7 @@ struct NeoSettings
 	{
 		CrosshairInfo info;
 		XHairExportNotify eClipboardInfo;
+		bool bPreviewDynamicAccuracy;
 
 		// Textures
 		struct Texture
