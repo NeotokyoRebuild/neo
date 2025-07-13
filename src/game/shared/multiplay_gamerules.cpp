@@ -106,7 +106,7 @@ ConVar mp_restartgame( "mp_restartgame", "0", FCVAR_GAMEDLL, "If non-zero, game 
 #ifdef NEO
 ConVar neo_restart_this("neo_restart_this", "0", FCVAR_GAMEDLL, "If non-zero, game will restart immediately",
 	[](IConVar* var, const char* pOldValue, float flOldValue)->void {
-		if (static_cast<ConVar*>(var)->GetBool())
+		if (ConVarRef(var).GetBool())
 		{
 			if (NEORules()) NEORules()->RestartGame();
 		}
