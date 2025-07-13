@@ -899,7 +899,9 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 			NeoUI::SetPerRowLayout(3);
 			{
 				const bool bExportPressed = NeoUI::Button(L"Export to clipboard").bPressed;
+				g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
 				const bool bTestCrosshairPressed = NeoUI::Button(L"Test dynamic crosshair").bPressed;
+				g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
 				const bool bImportPressed = NeoUI::Button(L"Import from clipboard").bPressed;
 
 				if (bExportPressed || bTestCrosshairPressed || bImportPressed )
