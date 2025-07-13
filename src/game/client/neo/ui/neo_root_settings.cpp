@@ -896,11 +896,13 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 
 		if (pCrosshair->info.iStyle == CROSSHAIR_STYLE_CUSTOM)
 		{
-			NeoUI::SetPerRowLayout(4);
+			NeoUI::SetPerRowLayout(3);
 			{
 				const bool bExportPressed = NeoUI::Button(L"Export to clipboard").bPressed;
+				const bool bTestCrosshairPressed = NeoUI::Button(L"Test dynamic crosshair").bPressed;
 				const bool bImportPressed = NeoUI::Button(L"Import from clipboard").bPressed;
-				if (bExportPressed || bImportPressed)
+
+				if (bExportPressed || bTestCrosshairPressed || bImportPressed )
 				{
 					char szClipboardCrosshair[NEO_XHAIR_SEQMAX] = {}; // zero-init
 					if (bExportPressed)
@@ -909,6 +911,10 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 						ExportCrosshair(&pCrosshair->info, szClipboardCrosshair);
 						vgui::system()->SetClipboardText(szClipboardCrosshair, V_strlen(szClipboardCrosshair));
 						pCrosshair->eClipboardInfo = XHAIREXPORTNOTIFY_EXPORT_TO_CLIPBOARD;
+					}
+					else if (bTestCrosshairPressed)
+					{
+						pCrosshair->bPreviewDynamicAccuracy = !pCrosshair->bPreviewDynamicAccuracy;
 					}
 					else // bImportPressed
 					{
@@ -946,15 +952,6 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 					L"ERROR: Unable to import crosshair from clipboard", 	// XHAIREXPORTNOTIFY_IMPORT_TO_CLIPBOARD_ERROR
 				};
 				NeoUI::Label(ARWSZ_XHAIREXPORTNOTIFY_STR[pCrosshair->eClipboardInfo]);
-			}
-
-			NeoUI::SetPerRowLayout(1);
-			{
-				const bool bTestCrosshairPressed = NeoUI::Button(L"Test dynamic crosshair accuracy").bPressed;
-				if (bTestCrosshairPressed)
-				{
-					pCrosshair->bPreviewDynamicAccuracy = !pCrosshair->bPreviewDynamicAccuracy;
-				}
 			}
 		}
 	}
