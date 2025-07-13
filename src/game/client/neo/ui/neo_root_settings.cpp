@@ -887,7 +887,7 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 		}
 		else
 		{
-			int iPreviewDynamicAccuracy = pCrosshair->bPreviewDynamicAccuracy ? MAX(0, (int)(sin(gpGlobals->curtime) * 24) + 16) : 0;
+			const int iPreviewDynamicAccuracy = (pCrosshair->bPreviewDynamicAccuracy) ? (MAX(0, (int)(sin(gpGlobals->curtime) * 24) + 16)) : 0;
 			PaintCrosshair(pCrosshair->info, iPreviewDynamicAccuracy,
 						   g_uiCtx.dPanel.x + g_uiCtx.iLayoutX + (g_uiCtx.dPanel.wide / 2),
 						   g_uiCtx.dPanel.y + g_uiCtx.iLayoutY + (g_uiCtx.dPanel.tall / 2));
