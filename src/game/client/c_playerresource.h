@@ -71,6 +71,8 @@ public : // IGameResources interface
 	uint32 GetAccountID( int iIndex );
 	bool IsValid( int iIndex );
 
+	const char* GetCachedName(int slot) const;
+
 protected:
 	void	UpdatePlayerName( int slot );
 

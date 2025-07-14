@@ -1155,6 +1155,10 @@ void ClientModeShared::FireGameEvent( IGameEvent *event )
 
 			wchar_t wszReason[64];
 			const char *pszReason = event->GetString( "reason" );
+
+			auto foo = g_PR->GetCachedName(event->GetInt("userid"));
+			Msg("%s\n", foo);
+
 			if ( pszReason && ( pszReason[0] == '#' ) && g_pVGuiLocalize->Find( pszReason ) )
 			{
 				V_wcsncpy( wszReason, g_pVGuiLocalize->Find( pszReason ), sizeof( wszReason ) );

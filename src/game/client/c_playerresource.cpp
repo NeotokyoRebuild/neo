@@ -141,6 +141,19 @@ void C_PlayerResource::OnDataChanged(DataUpdateType_t updateType)
 	}
 }
 
+typedef unsigned char useridCache_t;
+#pragma push_macro("max")
+#undef max
+constexpr auto useridNumericLimit{ std::numeric_limits<useridCache_t>::max() };
+#pragma pop_macro("max")
+static_assert(MAX_PLAYERS < useridNumericLimit);
+static CUtlMap <useridCache_t, const char*>cpn(DefLessFunc(useridCache_t));
+
+const char* C_PlayerResource::GetCachedName(int slot) const
+{
+	return cpn[slot];
+}
+
 void C_PlayerResource::UpdatePlayerName( int slot )
 {
 	if ( slot < 1 || slot > MAX_PLAYERS )
@@ -158,6 +171,8 @@ void C_PlayerResource::UpdatePlayerName( int slot )
 	if ( IsConnected( slot ) && engine->GetPlayerInfo( slot, &sPlayerInfo ) )
 	{
 		m_szName[slot] = AllocPooledString( UTIL_GetFilteredPlayerName( slot, sPlayerInfo.name ) );
+
+		cpn.Insert(sPlayerInfo.userID, m_szName[slot]);
 	}
 	else 
 	{
@@ -165,7 +180,7 @@ void C_PlayerResource::UpdatePlayerName( int slot )
 		{
 			m_szName[slot] = m_szUnconnectedName;
 		}
-	}
+	}	
 }
 
 void C_PlayerResource::ClientThink()
