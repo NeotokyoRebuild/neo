@@ -91,6 +91,9 @@ C_PlayerResource::C_PlayerResource()
 	memset(m_szDispNameWDupeIdx, 0, sizeof(m_szDispNameWDupeIdx));
 	memset(m_iStar, 0, sizeof(m_iStar));
 	memset(m_szNeoClantag, 0, sizeof(m_szNeoClantag));
+
+	m_cachedPlayerNames.SetLessFunc(DefLessFunc(PlayerResource::useridCache_t));
+	m_cachedPlayerNames.EnsureCapacity(gpGlobals->maxClients * 2);
 #endif
 	memset( m_iScore, 0, sizeof( m_iScore ) );
 	memset( m_iDeaths, 0, sizeof( m_iDeaths ) );
@@ -141,18 +144,12 @@ void C_PlayerResource::OnDataChanged(DataUpdateType_t updateType)
 	}
 }
 
-typedef unsigned char useridCache_t;
-#pragma push_macro("max")
-#undef max
-constexpr auto useridNumericLimit{ std::numeric_limits<useridCache_t>::max() };
-#pragma pop_macro("max")
-static_assert(MAX_PLAYERS < useridNumericLimit);
-static CUtlMap <useridCache_t, const char*>cpn(DefLessFunc(useridCache_t));
-
-const char* C_PlayerResource::GetCachedName(int slot) const
+#ifdef NEO
+const char* C_PlayerResource::GetCachedName(int userid) const
 {
-	return cpn[slot];
+	return m_cachedPlayerNames[userid];
 }
+#endif
 
 void C_PlayerResource::UpdatePlayerName( int slot )
 {
@@ -170,9 +167,15 @@ void C_PlayerResource::UpdatePlayerName( int slot )
 	player_info_t sPlayerInfo;
 	if ( IsConnected( slot ) && engine->GetPlayerInfo( slot, &sPlayerInfo ) )
 	{
+		// Get the neo name here(?)
 		m_szName[slot] = AllocPooledString( UTIL_GetFilteredPlayerName( slot, sPlayerInfo.name ) );
-
-		cpn.Insert(sPlayerInfo.userID, m_szName[slot]);
+#ifdef NEO
+		m_cachedPlayerNames.InsertOrReplace(sPlayerInfo.userID, m_szName[slot]);
+		if (m_cachedPlayerNames.Count() >= gpGlobals->maxClients * 2)
+		{
+			PurgeOldCachedNames();
+		}
+#endif
 	}
 	else 
 	{
@@ -182,6 +185,22 @@ void C_PlayerResource::UpdatePlayerName( int slot )
 		}
 	}	
 }
+
+#ifdef NEO
+void C_PlayerResource::PurgeOldCachedNames()
+{
+	for (auto i = m_cachedPlayerNames.FirstInorder(); i != m_cachedPlayerNames.InvalidIndex(); )
+	{
+		const auto idx = i;
+		i = m_cachedPlayerNames.NextInorder(i);
+		// TODO: optimize; don't need to run the clients loop for each iteration
+		if (!UTIL_PlayerByUserId(m_cachedPlayerNames.Key(idx)))
+		{
+			m_cachedPlayerNames.RemoveAt(idx);
+		}
+	}
+}
+#endif
 
 void C_PlayerResource::ClientThink()
 {
