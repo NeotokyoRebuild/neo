@@ -116,7 +116,7 @@ protected:
 
 #ifdef NEO
 private:
-	CUtlMap <PlayerResource::useridCache_t, const char*>m_cachedPlayerNames;
+	CUtlMap<PlayerResource::useridCache_t, const char*> m_cachedPlayerNames;
 	void PurgeOldCachedNames();
 #endif
 };
