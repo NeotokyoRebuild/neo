@@ -70,6 +70,48 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interv
 			return SuspendFor( new CNEOBotAttack, "Going after an enemy" );
 		}
 	}
+	else
+	{
+		// Out of combat
+		me->DisableCloak();
+
+		// Reload when safe
+		CNEOBaseCombatWeapon* myWeapon = static_cast<CNEOBaseCombatWeapon*>(me->GetActiveWeapon());
+		if (myWeapon && myWeapon->GetPrimaryAmmoCount() > 0)
+		{
+			bool shouldReload = false;
+			// SUPA7 reload doesn't discard ammo
+			if ((myWeapon->GetNeoWepBits() & NEO_WEP_SUPA7) && (myWeapon->Clip1() < myWeapon->GetMaxClip1()))
+			{
+				shouldReload = true;
+			}
+			else
+			{
+				int maxClip = myWeapon->GetMaxClip1();
+				bool isBarrage = me->IsBarrageAndReloadWeapon(myWeapon);
+
+				int baseThreshold = isBarrage ? (maxClip / 3) : (maxClip / 2);
+
+				float healthFraction = static_cast<float>(me->GetHealth()) / me->GetMaxHealth();
+				float aggressionFactor = 1.0f - healthFraction;
+
+				float dynamicThreshold = baseThreshold + aggressionFactor * (maxClip - baseThreshold);
+
+				if (myWeapon->Clip1() < static_cast<int>(dynamicThreshold))
+				{
+					shouldReload = true;
+				}
+			}
+
+			if (shouldReload)
+			{
+				me->ReleaseFireButton();
+				me->PressReloadButton();
+				me->PressCrouchButton(0.3f);
+			}
+
+		}
+	}
 
 	// move towards our seek goal
 	m_path.Update( me );

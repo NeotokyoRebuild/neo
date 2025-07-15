@@ -2363,6 +2363,9 @@ typedef enum
 	ACT_MP_CYOA_PDA_IDLE,
 	ACT_MP_CYOA_PDA_OUTRO,
 
+#ifdef NEO
+	ACT_THERMOPTIC,
+#endif
 
 	// this is the end of the global activities, private per-monster activities start here.
 	LAST_SHARED_ACTIVITY,

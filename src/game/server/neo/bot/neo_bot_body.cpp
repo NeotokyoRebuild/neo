@@ -29,3 +29,15 @@ float CNEOBotBody::GetHeadAimTrackingInterval( void ) const
 
 	return 0.0f;
 }
+
+float CNEOBotBody::GetCloakPower( void ) const
+{
+	auto me = static_cast<CNEO_Player*>(GetBot()->GetEntity());
+	return me ? me->CloakPower_Get() : 0.0f;
+}
+
+bool CNEOBotBody::IsCloakEnabled( void ) const
+{
+	auto me = static_cast<CNEO_Player*>(GetBot()->GetEntity());
+	return me ? me->GetCloakState() : false;
+}

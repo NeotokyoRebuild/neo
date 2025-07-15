@@ -447,10 +447,14 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 			if ( myWeapon->Clip1() <= 0 )
 			{
 				m_isWaitingForFullReload = true;
+				me->ReleaseFireButton();
+				me->PressReloadButton();
 			}
 
 			if ( m_isWaitingForFullReload )
 			{
+				me->PressCrouchButton(0.3f);
+
 				if ( myWeapon->Clip1() < myWeapon->GetMaxClip1() )
 				{
 					return;
@@ -509,10 +513,24 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 	{
 		if ( me->IsCombatWeapon( myWeapon ) )
 		{
-			if (myWeapon->m_iClip1 == 0)
+			if (myWeapon->m_iClip1 <= 0)
 			{
-				me->ReleaseFireButton();
-				me->PressReloadButton();
+				me->PressCrouchButton(0.3f);
+				if (m_isWaitingForFullReload)
+				{
+					// passthrough: don't introduce decision jitter
+				}
+				else if (IsImmediateThreat(me->GetEntity(), threat) && !m_isWaitingForFullReload)
+				{
+					// intention is to swap to secondary if available
+					me->EquipBestWeaponForThreat(threat);
+				}
+				else
+				{
+					me->ReleaseFireButton();
+					me->PressReloadButton();
+					m_isWaitingForFullReload = true;
+				}
 				return;
 			}
 

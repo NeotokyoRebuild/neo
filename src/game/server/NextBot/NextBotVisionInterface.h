@@ -117,6 +117,7 @@ private:
 	CUtlVector< CKnownEntity > m_knownEntityVector;		// the set of enemies/friends we are aware of
 	void UpdateKnownEntities( void );
 	bool IsAwareOf( const CKnownEntity &known ) const;	// return true if our reaction time has passed for this entity
+	bool IsPerceptiveOf( const CKnownEntity &known ) const;	// return true if can detect despite obscuring factors
 	mutable CHandle< CBaseEntity > m_primaryThreat;
 
 	float m_lastVisionUpdateTimestamp;

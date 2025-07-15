@@ -41,6 +41,14 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 
 	CNEOBaseCombatWeapon* myWeapon = static_cast<CNEOBaseCombatWeapon* >( me->GetActiveWeapon() );
 	bool isUsingCloseRangeWeapon = me->IsCloseRange( myWeapon );
+
+	bool isThreatSupport = (threat && (static_cast<CNEO_Player*>(threat->GetEntity())->GetClass() == NEO_CLASS_SUPPORT));
+	if (isThreatSupport
+		|| (myWeapon && myWeapon->GetNeoWepBits() & NEO_WEP_SUPPRESSED))
+	{
+		me->EnableCloak(3.0f);
+	}
+
 	if ( isUsingCloseRangeWeapon && threat->IsVisibleRecently() && me->IsRangeLessThan( threat->GetLastKnownPosition(), 1.1f * me->GetDesiredAttackRange() ) )
 	{
 		// circle around our victim
@@ -67,8 +75,18 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 		 me->IsRangeGreaterThan( threat->GetEntity()->GetAbsOrigin(), me->GetDesiredAttackRange() ) || 
 		 !me->IsLineOfFireClear( threat->GetEntity()->EyePosition() ) )
 	{
+		// SUPA7 reload can be interrupted so proactively reload
+		if (myWeapon && (myWeapon->GetNeoWepBits() & NEO_WEP_SUPA7) && (myWeapon->Clip1() < myWeapon->GetMaxClip1()))
+		{
+			me->ReleaseFireButton();
+			me->PressReloadButton();
+		}
+		
 		if ( threat->IsVisibleRecently() )
 		{
+			// pre-cloak needs more thermoptic budget when chasing threats
+			me->EnableCloak(5.0f);
+
 			if ( isUsingCloseRangeWeapon )
 			{
 				CNEOBotPathCost cost( me, FASTEST_ROUTE );
