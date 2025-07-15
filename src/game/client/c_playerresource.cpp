@@ -147,7 +147,12 @@ void C_PlayerResource::OnDataChanged(DataUpdateType_t updateType)
 #ifdef NEO
 const char* C_PlayerResource::GetCachedName(int userid) const
 {
-	return m_cachedPlayerNames[userid];
+	const auto idx = m_cachedPlayerNames.Find(userid);
+	if (idx == m_cachedPlayerNames.InvalidIndex())
+	{
+		return "";
+	}
+	return m_cachedPlayerNames.Element(idx);
 }
 #endif
 
