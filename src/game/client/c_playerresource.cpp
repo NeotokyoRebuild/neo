@@ -180,8 +180,9 @@ void C_PlayerResource::UpdatePlayerName( int slot )
 		{
 			name = m_szNeoName[slot];
 		}
+
 		m_cachedPlayerNames.InsertOrReplace(sPlayerInfo.userID, name);
-		if (m_cachedPlayerNames.Count() >= gpGlobals->maxClients * 2)
+		if (m_cachedPlayerNames.Count() >= (unsigned int)(gpGlobals->maxClients * 2))
 		{
 			PurgeOldCachedNames();
 		}

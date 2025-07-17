@@ -72,6 +72,8 @@ extern ConVar replay_rendersetting_renderglow;
 #include <GameUI/IGameUI.h>
 #include "ui/neo_loading.h"
 #include "neo_gamerules.h"
+
+#include <string>
 #endif
 
 #ifdef GLOWS_ENABLE
@@ -1143,7 +1145,13 @@ void ClientModeShared::FireGameEvent( IGameEvent *event )
 		if ( !hudChat )
 			return;
 
+#ifdef NEO
+		const char* pszPlayerName = g_PR->GetCachedName(event->GetInt("userid"));
+		if (!pszPlayerName || !pszPlayerName[0])
+			pszPlayerName = event->GetString("name");
+#else
 		const char* pszPlayerName = event->GetString( "name" );
+#endif
 
 		if ( PlayerNameNotSetYet( pszPlayerName ) )
 			return;
@@ -1156,15 +1164,23 @@ void ClientModeShared::FireGameEvent( IGameEvent *event )
 			wchar_t wszReason[64];
 			const char *pszReason = event->GetString( "reason" );
 
-			auto foo = g_PR->GetCachedName(event->GetInt("userid"));
-			Msg("%s\n", foo);
-
 			if ( pszReason && ( pszReason[0] == '#' ) && g_pVGuiLocalize->Find( pszReason ) )
 			{
 				V_wcsncpy( wszReason, g_pVGuiLocalize->Find( pszReason ), sizeof( wszReason ) );
 			}
 			else
 			{
+#ifdef NEO
+				std::string sReason{ pszReason };
+				constexpr std::string timedOutSuffix{ " timed out" };
+				if (sReason.ends_with(timedOutSuffix))
+				{
+					// overwrite steam name from the event msg, because this can be the neo name
+					sReason = pszPlayerName;
+					sReason.append(timedOutSuffix);
+					pszReason = sReason.c_str();
+				}
+#endif
 				g_pVGuiLocalize->ConvertANSIToUnicode( pszReason, wszReason, sizeof(wszReason) );
 			}
 
