@@ -172,10 +172,15 @@ void C_PlayerResource::UpdatePlayerName( int slot )
 	player_info_t sPlayerInfo;
 	if ( IsConnected( slot ) && engine->GetPlayerInfo( slot, &sPlayerInfo ) )
 	{
-		// Get the neo name here(?)
 		m_szName[slot] = AllocPooledString( UTIL_GetFilteredPlayerName( slot, sPlayerInfo.name ) );
 #ifdef NEO
-		m_cachedPlayerNames.InsertOrReplace(sPlayerInfo.userID, m_szName[slot]);
+		string_t name = m_szName[slot];
+		const auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
+		if (localPlayer && localPlayer->ClientWantNeoName())
+		{
+			name = m_szNeoName[slot];
+		}
+		m_cachedPlayerNames.InsertOrReplace(sPlayerInfo.userID, name);
 		if (m_cachedPlayerNames.Count() >= gpGlobals->maxClients * 2)
 		{
 			PurgeOldCachedNames();
