@@ -83,7 +83,7 @@ public : // IGameResources interface
 	bool IsValid( int iIndex );
 
 #ifdef NEO
-	const char* GetCachedName(int userid) const;
+	string_t GetCachedName(int userid) const;
 #endif
 
 protected:
@@ -116,7 +116,9 @@ protected:
 
 #ifdef NEO
 private:
-	CUtlMap<PlayerResource::useridCache_t, const char*> m_cachedPlayerNames;
+	// This name cache is used for fixing player post-disconnect messages where the disconnecting player is already gone,
+	// but we may want to display their neo "fake" name instead of their Steam name, which gets reported by the disconnect msg.
+	CUtlMap<PlayerResource::useridCache_t, string_t> m_cachedPlayerNames;
 	void PurgeOldCachedNames();
 #endif
 };

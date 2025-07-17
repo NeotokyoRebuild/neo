@@ -145,7 +145,7 @@ void C_PlayerResource::OnDataChanged(DataUpdateType_t updateType)
 }
 
 #ifdef NEO
-const char* C_PlayerResource::GetCachedName(int userid) const
+string_t C_PlayerResource::GetCachedName(int userid) const
 {
 	const auto idx = m_cachedPlayerNames.Find(userid);
 	if (idx == m_cachedPlayerNames.InvalidIndex())
@@ -188,7 +188,7 @@ void C_PlayerResource::UpdatePlayerName( int slot )
 		{
 			m_szName[slot] = m_szUnconnectedName;
 		}
-	}	
+	}
 }
 
 #ifdef NEO
