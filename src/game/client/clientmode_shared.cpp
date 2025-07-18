@@ -72,6 +72,7 @@ extern ConVar replay_rendersetting_renderglow;
 #include <GameUI/IGameUI.h>
 #include "ui/neo_loading.h"
 #include "neo_gamerules.h"
+#include "jobthread.h"
 
 #include <string>
 #endif
@@ -1088,6 +1089,102 @@ bool PlayerNameNotSetYet( const char *pszName )
 	return false;
 }
 
+#ifdef NEO
+// Delayed handling for a joining player, because we need to wait for them to fully connect first
+// in order to pull some data required for printing the greeting.
+class DeferredGreet : public CJob {
+public:
+	DeferredGreet(int userid, CBaseHudChat* chat)
+		: m_userid(userid), m_chat(chat)
+	{
+		Assert(chat);
+	}
+
+private:
+	virtual JobStatus_t DoExecute() override final
+	{
+		JobStatus_t res = JOB_STATUS_ABORTED;
+
+		constexpr auto sleepTimeMs = 500, maxTries = 20;
+		constexpr auto maxTimeSpentMs = sleepTimeMs * maxTries;
+		static_assert(maxTimeSpentMs <= 10000);
+		for (int i = 0; i < maxTries; ++i)
+		{
+			ThreadSleep(sleepTimeMs);
+
+			if (!engine->IsInGame())
+			{
+				DoRelease();
+				return res;
+			}
+
+			if (TryGreet(m_chat, m_userid))
+			{
+				res = JOB_OK;
+				//Msg("Greet ok after %d retries\n", i);
+				break;
+			}
+			//Msg("Greet failed for userid %d\n", m_userid);
+		}
+
+		if (res == JOB_STATUS_ABORTED)
+		{
+			PrintGenericGreeting(m_chat);
+		}
+
+		DoRelease();
+		return res;
+	}
+
+	static void PrintGenericGreeting(CBaseHudChat* chat)
+	{
+		if (chat)
+		{
+			chat->Printf(CHAT_FILTER_JOINLEAVE, "Player joined the game");
+		}
+	}
+
+	static bool TryGreet(CBaseHudChat* chat, int userid)
+	{
+		Assert(engine->IsInGame());
+		if (!chat)
+		{
+			return false;
+		}
+
+		if (cl_neo_streamermode.GetBool())
+		{
+			PrintGenericGreeting(chat);
+			return true;
+		}
+
+		int iPlayerIndex = engine->GetPlayerForUserID(userid);
+		auto player = static_cast<C_NEO_Player*>(UTIL_PlayerByIndex(iPlayerIndex));
+		if (!player)
+		{
+			return false;
+		}
+
+		wchar_t wszLocalized[100];
+		wchar_t wszPlayerName[MAX_PLAYER_NAME_LENGTH];
+		UTIL_GetFilteredPlayerNameAsWChar(iPlayerIndex, player->GetPlayerName(), wszPlayerName);
+
+		auto tlString = player->IsNextBot() ? "#game_bot_joined_game" : "#game_player_joined_game";
+		g_pVGuiLocalize->ConstructString_safe(wszLocalized, g_pVGuiLocalize->Find(tlString), 1, wszPlayerName);
+
+		char szLocalized[100];
+		g_pVGuiLocalize->ConvertUnicodeToANSI(wszLocalized, szLocalized, sizeof(szLocalized));
+
+		chat->Printf(CHAT_FILTER_JOINLEAVE, "%s", szLocalized);
+
+		return true;
+	}
+
+	int m_userid;
+	CBaseHudChat* m_chat;
+};
+#endif
+
 void ClientModeShared::FireGameEvent( IGameEvent *event )
 {
 	CBaseHudChat *hudChat = (CBaseHudChat *)GET_HUDELEMENT( CHudChat );
@@ -1104,15 +1201,13 @@ void ClientModeShared::FireGameEvent( IGameEvent *event )
 		if ( !IsInCommentaryMode() )
 		{
 #ifdef NEO
-			if (cl_neo_streamermode.GetBool())
-			{
-				hudChat->Printf(CHAT_FILTER_JOINLEAVE, "Player connected");
-				return;
-			}
-#endif
+			Assert(g_pThreadPool);
+			g_pThreadPool->AddJob(new DeferredGreet(event->GetInt("userid"), hudChat));
+#else
 			wchar_t wszLocalized[100];
 			wchar_t wszPlayerName[ MAX_PLAYER_NAME_LENGTH ];
 			int iPlayerIndex = engine->GetPlayerForUserID( event->GetInt( "userid" ) );
+
 			UTIL_GetFilteredPlayerNameAsWChar( iPlayerIndex, event->GetString( "name" ), wszPlayerName );
 			g_pVGuiLocalize->ConstructString_safe( wszLocalized, g_pVGuiLocalize->Find( "#game_player_joined_game" ), 1, wszPlayerName );
 
@@ -1120,22 +1215,11 @@ void ClientModeShared::FireGameEvent( IGameEvent *event )
 			g_pVGuiLocalize->ConvertUnicodeToANSI( wszLocalized, szLocalized, sizeof(szLocalized) );
 
 			hudChat->Printf( CHAT_FILTER_JOINLEAVE, "%s", szLocalized );
+#endif
 		}
 	}
 	else if ( Q_strcmp( "player_disconnect", eventname ) == 0 )
 	{
-#ifdef NEO
-		if (cl_neo_streamermode.GetBool())
-		{
-			hudChat->Printf(CHAT_FILTER_JOINLEAVE, "Player disconnected");
-			return;
-		}
-#endif
-
-#ifndef NEO // ???
-		C_BasePlayer *pPlayer = USERID2PLAYER( event->GetInt("userid") );
-		if ( !hudChat || !pPlayer )
-#endif
 		// Josh: There used to be code here that would get the player entity here to get the name
 		// Big problem with that. The player entity is probably already gone -- they disconnected after all!
 		// So there used to be a bug where most of the time, disconnect messages just wouldn't show up in chat.
@@ -1146,6 +1230,12 @@ void ClientModeShared::FireGameEvent( IGameEvent *event )
 			return;
 
 #ifdef NEO
+		if (cl_neo_streamermode.GetBool())
+		{
+			hudChat->Printf(CHAT_FILTER_JOINLEAVE, "Player disconnected");
+			return;
+		}
+
 		const char* pszPlayerName = g_PR->GetCachedName(event->GetInt("userid"));
 		if (!pszPlayerName || !pszPlayerName[0])
 			pszPlayerName = event->GetString("name");
@@ -1171,14 +1261,13 @@ void ClientModeShared::FireGameEvent( IGameEvent *event )
 			else
 			{
 #ifdef NEO
-				std::string sReason{ pszReason };
-				constexpr std::string timedOutSuffix{ " timed out" };
-				if (sReason.ends_with(timedOutSuffix))
+				// The default message is in the form:
+				// Player <name> left the game (<name> timed out)
+				// but for NT, we have to replace the engine-provided playername with the possible neo_name for consistency.
+				// Just simplify the "timed out" message here instead of manually fixing the duplicated player name.
+				if (std::string{ pszReason }.ends_with(" timed out"))
 				{
-					// overwrite steam name from the event msg, because this can be the neo name
-					sReason = pszPlayerName;
-					sReason.append(timedOutSuffix);
-					pszReason = sReason.c_str();
+					pszReason = "connection timed out";
 				}
 #endif
 				g_pVGuiLocalize->ConvertANSIToUnicode( pszReason, wszReason, sizeof(wszReason) );
