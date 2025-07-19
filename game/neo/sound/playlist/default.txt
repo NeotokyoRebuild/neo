@@ -4,6 +4,6 @@ playlist
   song
   {
     fromgame 1
-    relativepath "ui\gamestartup1.mp3"
+    relativepath "..\soundtrack\112 - out.mp3"
   }
 }
