@@ -85,8 +85,9 @@ enum LayoutMode
 };
 enum TextStyle
 {
-	TEXTSTYLE_CENTER = 0,
-	TEXTSTYLE_LEFT,
+	TEXTSTYLE_LEFT = 0,
+	TEXTSTYLE_CENTER,
+	TEXTSTYLE_RIGHT,
 };
 
 static constexpr int FOCUSOFF_NUM = -1000;
