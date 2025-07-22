@@ -122,6 +122,9 @@ DEFINE_INPUTFUNC(FIELD_STRING, "SetPlayerModel", InputSetPlayerModel),
 
 END_DATADESC()
 
+BEGIN_ENT_SCRIPTDESC(CNEO_Player, CHL2MP_Player, "NEO Player")
+END_SCRIPTDESC();
+
 static constexpr int SHOWMENU_STRLIMIT = 512;
 
 CBaseEntity *g_pLastJinraiSpawn, *g_pLastNSFSpawn;
@@ -562,11 +565,6 @@ void CNEO_Player::Spawn(void)
 		m_iNeoClass = m_iNextSpawnClassChoice;
 	}
 
-	if (IsFakeClient())
-	{
-		m_iNeoClass = bot_changeclass.GetInt() < 0 ? random->RandomInt(0, NEO_CLASS_SUPPORT) : bot_changeclass.GetInt();
-	}
-
 	BaseClass::Spawn();
 
 	m_HL2Local.m_cloakPower = CloakPower_Cap();
@@ -603,6 +601,11 @@ void CNEO_Player::Spawn(void)
 	SetPlayerTeamModel();
 	if (teamNumber == TEAM_JINRAI || teamNumber == TEAM_NSF)
 	{
+		if (IsFakeClient())
+		{
+			const int maxLoadoutChoice = CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(m_iXP, m_iNeoClass.Get(), false) - 1;
+			m_iLoadoutWepChoice = RandomInt(MAX(0, maxLoadoutChoice - 3), maxLoadoutChoice);
+		}
 		GiveLoadoutWeapon();
 		SetViewOffset(VEC_VIEW_NEOSCALE(this));
 	}
@@ -2573,53 +2576,8 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 
 	const bool justJoined = (GetTeamNumber() == TEAM_UNASSIGNED);
 
-	// Outside the below statement scope because this incorrectly triggers warnings on MSVC otherwise:
-	// https://developercommunity.visualstudio.com/t/fallthrough-does-not-suppress-warning-c26819-when/1206339
-	enum JoinMode {
-		Random = -2,
-		TeamWithLessPlayers = -1,
-	};
-
-	// Player bots should initially join a player team.
-	// Note that we can't do a ->IsBot check here, because the bot has not
-	// received its fakeclient flags yet at this point. Hence using the
-	// m_bNextClientIsFakeClient workaround.
-	if (justJoined && NEORules()->m_bNextClientIsFakeClient && !IsHLTV())
-	{
-		Assert(gpGlobals->curtime >= m_flNextTeamChangeTime);
-		
-		ConVarRef joinMode{ "bot_next_team" };
-
-		int numJin, numNsf;
-		switch (joinMode.GetInt())
-		{
-		case JoinMode::TeamWithLessPlayers:
-			numJin = GetGlobalTeam(TEAM_JINRAI) ? GetGlobalTeam(TEAM_JINRAI)->GetNumPlayers() : 0;
-			numNsf = GetGlobalTeam(TEAM_NSF) ? GetGlobalTeam(TEAM_NSF)->GetNumPlayers() : 0;
-			if (numJin < numNsf)
-			{
-				iTeam = TEAM_JINRAI;
-				break;
-			}
-			else if (numNsf < numJin)
-			{
-				iTeam = TEAM_NSF;
-				break;
-			}
-			[[fallthrough]];
-		case JoinMode::Random:
-			static_assert(TEAM_JINRAI < TEAM_NSF);
-			iTeam = RandomInt(TEAM_JINRAI, TEAM_NSF);
-			break;
-		default:
-			const auto lastGameTeam = GetNumberOfTeams() - LAST_SHARED_TEAM,
-				minAllowed = TEAM_UNASSIGNED;
-			Assert(minAllowed <= lastGameTeam);
-			iTeam = Clamp(joinMode.GetInt(), minAllowed, lastGameTeam);
-		}
-	}
 	// Limit team join spam, unless this is a newly joined player
-	else if (!justJoined && m_flNextTeamChangeTime > gpGlobals->curtime)
+	if (!justJoined && m_flNextTeamChangeTime > gpGlobals->curtime)
 	{
 		// Except for spectators, who are allowed to join a team as soon as they wish
 		if (GetTeamNumber() != TEAM_SPECTATOR)

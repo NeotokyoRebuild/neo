@@ -970,6 +970,7 @@ void CNeoRoot::MainLoopNewGame(const MainLoopParam param)
 			}
 			NeoUI::TextEdit(L"Hostname", m_newGame.wszHostname, SZWSZ_LEN(m_newGame.wszHostname));
 			NeoUI::SliderInt(L"Max players", &m_newGame.iMaxPlayers, 1, MAX_PLAYERS-1); // -1 to accommodate SourceTV
+			NeoUI::SliderInt(L"Bot Quota", &m_newGame.iBotQuota, 0, MAX_PLAYERS-1);
 			NeoUI::TextEdit(L"Password", m_newGame.wszPassword, SZWSZ_LEN(m_newGame.wszPassword));
 			NeoUI::RingBoxBool(L"Friendly fire", &m_newGame.bFriendlyFire);
 			NeoUI::RingBoxBool(L"Use Steam networking", &m_newGame.bUseSteamNetworking);
@@ -1009,6 +1010,7 @@ void CNeoRoot::MainLoopNewGame(const MainLoopParam param)
 					ConVarRef("sv_password").SetValue(szPassword);
 					ConVarRef("mp_friendlyfire").SetValue(m_newGame.bFriendlyFire);
 					ConVarRef("sv_use_steam_networking").SetValue(m_newGame.bUseSteamNetworking);
+					ConVarRef("neo_bot_quota").SetValue(m_newGame.iBotQuota);
 
 					char cmdStr[256];
 					V_sprintf_safe(cmdStr, "maxplayers %d; progress_enable; map \"%s\"", m_newGame.iMaxPlayers, szMap);

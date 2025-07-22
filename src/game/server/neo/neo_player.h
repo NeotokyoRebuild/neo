@@ -57,6 +57,8 @@ public:
 	DECLARE_SERVERCLASS();
 	DECLARE_DATADESC();
 
+	DECLARE_ENT_SCRIPTDESC();
+
 	virtual void Precache(void) OVERRIDE;
 	virtual void Spawn(void) OVERRIDE;
 	virtual void PostThink(void) OVERRIDE;
