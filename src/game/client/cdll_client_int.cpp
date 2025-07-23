@@ -1264,7 +1264,8 @@ void MusicVol_ChangeCallback(IConVar *cvar, const char *pOldVal, float flOldVal)
 #ifdef NEO
 extern void NeoToggleConsoleEnforce();
 
-static void NeoName_ChangeCallback(IConVar *cvar, [[maybe_unused]] const char *pOldVal, [[maybe_unused]] float flOldVal)
+template <int STR_LIMIT_SIZE>
+static void NeoConVarStrLimitChangeCallback(IConVar *cvar, [[maybe_unused]] const char *pOldVal, [[maybe_unused]] float flOldVal)
 {
 	static bool bStaticCallbackChangedCVar = false;
 	if (bStaticCallbackChangedCVar)
@@ -1272,34 +1273,14 @@ static void NeoName_ChangeCallback(IConVar *cvar, [[maybe_unused]] const char *p
 		return;
 	}
 
-	ConVarRef cvr_neo_name(cvar->GetName());
-	if (V_strlen(cvr_neo_name.GetString()) >= MAX_PLAYER_NAME_LENGTH)
+	ConVarRef cvarRef(cvar);
+	if (V_strlen(cvarRef.GetString()) >= STR_LIMIT_SIZE)
 	{
 		bStaticCallbackChangedCVar = true;
-		char mutStr[MAX_PLAYER_NAME_LENGTH];
-		V_strcpy_safe(mutStr, cvr_neo_name.GetString());
+		char mutStr[STR_LIMIT_SIZE];
+		V_strcpy_safe(mutStr, cvarRef.GetString());
 		Q_UnicodeRepair(mutStr);
-		cvr_neo_name.SetValue(mutStr);
-		bStaticCallbackChangedCVar = false;
-	}
-}
-
-static void NeoClantag_ChangeCallback(IConVar *cvar, [[maybe_unused]] const char *pOldVal, [[maybe_unused]] float flOldVal)
-{
-	static bool bStaticCallbackChangedCVar = false;
-	if (bStaticCallbackChangedCVar)
-	{
-		return;
-	}
-
-	ConVarRef cvr_neo_clantag(cvar->GetName());
-	if (V_strlen(cvr_neo_clantag.GetString()) >= NEO_MAX_CLANTAG_LENGTH)
-	{
-		bStaticCallbackChangedCVar = true;
-		char mutStr[NEO_MAX_CLANTAG_LENGTH];
-		V_strcpy_safe(mutStr, cvr_neo_clantag.GetString());
-		Q_UnicodeRepair(mutStr);
-		cvr_neo_clantag.SetValue(mutStr);
+		cvarRef.SetValue(mutStr);
 		bStaticCallbackChangedCVar = false;
 	}
 }
@@ -1423,8 +1404,9 @@ void CHLClient::PostInit()
 	if (g_pCVar)
 	{
 		g_pCVar->FindVar("snd_musicvolume")->InstallChangeCallback(MusicVol_ChangeCallback);
-		g_pCVar->FindVar("neo_name")->InstallChangeCallback(NeoName_ChangeCallback);
-		g_pCVar->FindVar("neo_clantag")->InstallChangeCallback(NeoClantag_ChangeCallback);
+		g_pCVar->FindVar("neo_name")->InstallChangeCallback(NeoConVarStrLimitChangeCallback<MAX_PLAYER_NAME_LENGTH>);
+		g_pCVar->FindVar("neo_clantag")->InstallChangeCallback(NeoConVarStrLimitChangeCallback<NEO_MAX_CLANTAG_LENGTH>);
+		g_pCVar->FindVar("cl_neo_crosshair")->InstallChangeCallback(NeoConVarStrLimitChangeCallback<NEO_XHAIR_SEQMAX>);
 		g_pCVar->FindVar("sv_use_steam_networking")->SetValue(false);
 	}
 	else
