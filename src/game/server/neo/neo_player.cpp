@@ -3312,7 +3312,7 @@ void CNEO_Player::BecomeJuggernaut()
 	InitSprinting();
 	RemoveAllItems(false);
 	GiveDefaultItems();
-	SetHealth(100);
+	SetHealth(GetMaxHealth());
 	SuitPower_SetCharge(100);
 	m_HL2Local.m_cloakPower = CloakPower_Cap();
 	m_bAllowGibbing = false;
