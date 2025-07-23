@@ -311,7 +311,7 @@ void CNEOHud_Ammo::DrawHeatMeter(C_NEOBaseCombatWeapon* activeWep) const
 	{
 		surface()->DrawSetTextFont(m_hBulletFont);
 		surface()->DrawSetTextPos(icon_xpos + xpos, icon_ypos + ypos);
-		surface()->DrawPrintText(L"H°", 2);
+		surface()->DrawPrintText(L"HOT", 3);
 	}
 
 	surface()->DrawSetColor(heatColorLerp);
