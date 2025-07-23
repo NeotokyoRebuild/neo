@@ -195,6 +195,7 @@ void NeoSettingsInit(NeoSettings *ns)
 				bind->bcDefault = BUTTON_CODE_NONE;
 			}
 		}
+		AssertMsg(keys->iBindsSize < ARRAYSIZE(keys->vBinds), "Bump the size of the vBinds array");
 	}
 
 	CUtlBuffer bufDef(0, 0, CUtlBuffer::TEXT_BUFFER | CUtlBuffer::READ_ONLY);
