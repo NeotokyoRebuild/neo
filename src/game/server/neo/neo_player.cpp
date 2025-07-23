@@ -206,7 +206,7 @@ static bool IsNeoPrimary(CNEOBaseCombatWeapon *pNeoWep)
 		NEO_WEP_M41 | NEO_WEP_M41_L | NEO_WEP_M41_S | NEO_WEP_MPN | NEO_WEP_MPN_S |
 		NEO_WEP_MX | NEO_WEP_MX_S | NEO_WEP_PZ | NEO_WEP_SMAC | NEO_WEP_SRM |
 		NEO_WEP_SRM_S | NEO_WEP_SRS | NEO_WEP_SUPA7 | NEO_WEP_ZR68_C | NEO_WEP_ZR68_L |
-		NEO_WEP_ZR68_S;
+		NEO_WEP_ZR68_S | NEO_WEP_BALC;
 
 	return (primaryBits & bits) ? true : false;
 }
@@ -699,6 +699,7 @@ void CNEO_Player::CalculateSpeed(void)
 				break;
 			case NEO_CLASS_ASSAULT:
 			case NEO_CLASS_VIP:
+			case NEO_CLASS_JUGGERNAUT:
 				speed *= NEO_ASSAULT_SPRINT_MODIFIER;
 				break;
 			case NEO_CLASS_SUPPORT:
@@ -718,7 +719,7 @@ void CNEO_Player::CalculateSpeed(void)
 	absoluteVelocity.z = 0.f;
 	float currentSpeed = absoluteVelocity.Length();
 
-	if (!neo_ghost_bhopping.GetBool() && GetMoveType() != MOVETYPE_LADDER && currentSpeed > speed && m_bCarryingGhost)
+	if (((!neo_ghost_bhopping.GetBool() && m_bCarryingGhost) || m_iNeoClass == NEO_CLASS_JUGGERNAUT) && GetMoveType() != MOVETYPE_LADDER && GetMoveType() != MOVETYPE_NOCLIP && currentSpeed > speed)
 	{
 		float overSpeed = currentSpeed - speed;
 		absoluteVelocity.NormalizeInPlace();
@@ -1656,7 +1657,14 @@ void CNEO_Player::CreateViewModel( int index )
 
 bool CNEO_Player::BecomeRagdollOnClient( const Vector &force )
 {
-	return BaseClass::BecomeRagdollOnClient(force);
+	if (GetClass() != NEO_CLASS_JUGGERNAUT)
+	{
+		return BaseClass::BecomeRagdollOnClient(force);
+	}
+	else
+	{
+		return false;
+	}
 }
 
 void CNEO_Player::ShowDmgInfo(char* infoStr, int infoStrSize)
@@ -1881,7 +1889,7 @@ void CNEO_Player::AddPoints(int score, bool bAllowNegativeScore)
 
 void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 {
-	if (!m_bForceServerRagdoll)
+	if (!m_bForceServerRagdoll && GetClass() != NEO_CLASS_JUGGERNAUT)
 	{
 		CreateRagdollEntity();
 	}
@@ -1889,29 +1897,37 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 	// Calculate force for weapon drop
 	Vector forceVector = CalcDamageForceVector(info);
 
-	// Drop all weapons
-	Vector vecForward, pVecThrowDir;
-	EyeVectors(&vecForward);
-	VMatrix zRot;
-	int numExplosivesDropped = 0;
-	const int maxExplosivesToDrop = 1;
-	for (int i = 0; i < MAX_WEAPONS; ++i)
+	// Drop all weapons, unless we are the juggernaut
+	if (GetClass() != NEO_CLASS_JUGGERNAUT)
 	{
-		auto pWep = m_hMyWeapons[i].Get();
-		if (pWep)
+		Vector vecForward, pVecThrowDir;
+		EyeVectors(&vecForward);
+		VMatrix zRot;
+		int numExplosivesDropped = 0;
+		const int maxExplosivesToDrop = 1;
+		for (int i = 0; i < MAX_WEAPONS; ++i)
 		{
-			auto pNeoWep = assert_cast<CNEOBaseCombatWeapon*>(pWep);
-			if (pNeoWep && pNeoWep->IsExplosive())
+			auto pWep = m_hMyWeapons[i].Get();
+			if (pWep)
 			{
-				if (++numExplosivesDropped > maxExplosivesToDrop)
+				auto pNeoWep = assert_cast<CNEOBaseCombatWeapon*>(pWep);
+				if (pNeoWep && pNeoWep->IsExplosive())
 				{
-					continue;
+					if (++numExplosivesDropped > maxExplosivesToDrop)
+					{
+						continue;
+					}
 				}
-			}
 
-			// Nowhere in particular; just drop it.
-			Weapon_DropOnDeath(pWep, forceVector, info.GetAttacker());
+				// Nowhere in particular; just drop it.
+				Weapon_DropOnDeath(pWep, forceVector, info.GetAttacker());
+			}
 		}
+	}
+	else // Instead, we drop the juggernaut
+	{
+		RemoveAllItems(false);
+		SpawnJuggernautPostDeath();
 	}
 
 	if (!IsBot() && !IsHLTV())
@@ -2091,6 +2107,8 @@ float CNEO_Player::GetReceivedDamageScale(CBaseEntity* pAttacker)
 		return NEO_SUPPORT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
 	case NEO_CLASS_VIP:
 		return NEO_ASSAULT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
+	case NEO_CLASS_JUGGERNAUT:
+		return NEO_JUGGERNAUT_DAMAGE_MODIFIER * BaseClass::GetReceivedDamageScale(pAttacker);
 	default:
 		Assert(false);
 		return BaseClass::GetReceivedDamageScale(pAttacker);
@@ -2828,6 +2846,10 @@ void CNEO_Player::GiveDefaultItems(void)
 		GiveNamedItem("weapon_milso");
 		Weapon_Switch(Weapon_OwnsThisType("weapon_milso"));
 		break;
+	case NEO_CLASS_JUGGERNAUT:
+		GiveNamedItem("weapon_balc");
+		Weapon_Switch(Weapon_OwnsThisType("weapon_balc"));
+		break;
 	default:
 		GiveNamedItem("weapon_knife");
 		Weapon_Switch(Weapon_OwnsThisType("weapon_knife"));
@@ -3102,6 +3124,8 @@ float CNEO_Player::GetCrouchSpeed(void) const
 		return NEO_SUPPORT_CROUCH_SPEED;
 	case NEO_CLASS_VIP:
 		return NEO_VIP_CROUCH_SPEED;
+	case NEO_CLASS_JUGGERNAUT:
+		return NEO_JUGGERNAUT_CROUCH_SPEED;
 	default:
 		return (NEO_BASE_SPEED * NEO_CROUCH_WALK_MODIFIER);
 	}
@@ -3119,6 +3143,8 @@ float CNEO_Player::GetNormSpeed(void) const
 		return NEO_SUPPORT_BASE_SPEED;
 	case NEO_CLASS_VIP:
 		return NEO_VIP_BASE_SPEED;
+	case NEO_CLASS_JUGGERNAUT:
+		return NEO_JUGGERNAUT_BASE_SPEED;
 	default:
 		return NEO_BASE_SPEED;
 	}
@@ -3136,6 +3162,8 @@ float CNEO_Player::GetSprintSpeed(void) const
 		return NEO_SUPPORT_SPRINT_SPEED;
 	case NEO_CLASS_VIP:
 		return NEO_VIP_SPRINT_SPEED;
+	case NEO_CLASS_JUGGERNAUT:
+		return NEO_JUGGERNAUT_SPRINT_SPEED;
 	default:
 		return NEO_BASE_SPEED; // No generic sprint modifier; default speed.
 	}
@@ -3213,4 +3241,99 @@ extern ConVar sv_neo_wep_dmg_modifier;
 void CNEO_Player::ModifyFireBulletsDamage(CTakeDamageInfo* dmgInfo)
 {
 	dmgInfo->SetDamage(dmgInfo->GetDamage() * sv_neo_wep_dmg_modifier.GetFloat());
+}
+
+void CNEO_Player::BecomeJuggernaut()
+{
+	NEORules()->JuggernautActivated(this);
+	if (m_iNextSpawnClassChoice = -1)
+	{
+		m_iNextSpawnClassChoice = GetClass(); // Don't let the player respawn as the juggernaut
+	}
+	RemoveFlag(FL_DUCKING);
+	m_Local.m_bDucked = false;
+	m_Local.m_bDucking = false;
+	m_Local.m_flDucktime = 0.0f;
+	m_Local.m_flDuckJumpTime = 0.0f;
+	m_Local.m_flJumpTime = 0.0f;
+	if (GetToggledDuckState())
+	{
+		ToggleDuck();
+	}
+
+#define COLOR_JGR_FADE color32{170, 170, 170, 255}
+	UTIL_ScreenFade(this, COLOR_JGR_FADE, 1.0f, 0.0f, FFADE_IN);
+
+	m_iNeoClass = NEO_CLASS_JUGGERNAUT;
+	SetPlayerTeamModel();
+	SetViewOffset(VEC_VIEW_NEOSCALE(this));
+	InitSprinting();
+	RemoveAllItems(false);
+	GiveDefaultItems();
+	SetHealth(GetMaxHealth());
+	SuitPower_SetCharge(100);
+	m_HL2Local.m_cloakPower = CloakPower_Cap();
+	m_bAllowGibbing = false;
+	m_bInVision = false;
+}
+
+void CNEO_Player::SpawnJuggernautPostDeath()
+{
+	CNEO_Juggernaut* pJuggernautItem = (CNEO_Juggernaut*)CreateEntityByName("neo_juggernaut");
+	pJuggernautItem->SetAbsOrigin(GetAbsOrigin());
+	pJuggernautItem->SetAbsAngles(GetAbsAngles());
+	pJuggernautItem->SetAbsVelocity(GetAbsVelocity());
+	pJuggernautItem->PostDeathEffects();
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_JGR)
+	{
+		if (NEORules()->GetRoundStatus() == NeoRoundStatus::RoundLive)
+		{
+			EmitSound_t soundParams;
+			soundParams.m_pSoundName = "HUD.GhostPickUp";
+			soundParams.m_nChannel = CHAN_USER_BASE;
+			soundParams.m_bWarnOnDirectWaveReference = false;
+			soundParams.m_bEmitCloseCaption = false;
+			soundParams.m_SoundLevel = ATTN_TO_SNDLVL(ATTN_NONE);
+
+			CRecipientFilter soundFilter;
+			soundFilter.AddAllPlayers();
+			soundFilter.MakeReliable();
+			EmitSound(soundFilter, this->entindex(), soundParams);
+		}
+
+		NEORules()->m_pJuggernautPlayer = nullptr;
+		NEORules()->m_pJuggernautItem = pJuggernautItem;
+	}
+	DispatchSpawn(pJuggernautItem);
+}
+
+const char *CNEO_Player::GetOverrideStepSound(const char *pBaseStepSound)
+{
+	if (GetClass() == NEO_CLASS_JUGGERNAUT)
+	{
+		if (!IsSprinting())
+		{
+			if (m_Local.m_nStepside)
+			{
+				return "JGR56.FootstepLeft";
+			}
+			else
+			{
+				return "JGR56.FootstepRight";
+			}
+		}
+		else
+		{
+			if (m_Local.m_nStepside)
+			{
+				return "JGR56.RunFootstepLeft";
+			}
+			else
+			{
+				return "JGR56.RunFootstepRight";
+			}
+		}
+	}
+
+	return BaseClass::GetOverrideStepSound(pBaseStepSound);
 }

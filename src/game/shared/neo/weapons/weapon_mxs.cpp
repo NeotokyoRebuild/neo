@@ -36,3 +36,8 @@ CWeaponMX_S::CWeaponMX_S()
 		"mxsry",
 	};
 }
+
+bool CWeaponMX_S::CanBePickedUpByClass(int classId)
+{
+	return classId != NEO_CLASS_JUGGERNAUT;
+}
