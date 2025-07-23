@@ -95,6 +95,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_NeoFlags)),
 	RecvPropString(RECVINFO(m_szNeoName)),
 	RecvPropString(RECVINFO(m_szNeoClantag)),
+	RecvPropString(RECVINFO(m_szNeoCrosshair)),
 	RecvPropInt(RECVINFO(m_szNameDupePos)),
 	RecvPropBool(RECVINFO(m_bClientWantNeoName)),
 
@@ -503,6 +504,7 @@ C_NEO_Player::C_NEO_Player()
 	m_iNeoStar = NEO_DEFAULT_STAR;
 	V_memset(m_szNeoName.GetForModify(), 0, sizeof(m_szNeoName));
 	V_memset(m_szNeoClantag.GetForModify(), 0, sizeof(m_szNeoClantag));
+	V_memset(m_szNeoCrosshair.GetForModify(), 0, sizeof(m_szNeoCrosshair));
 
 	m_iLoadoutWepChoice = NEORules()->GetForcedWeapon() >= 0 ? NEORules()->GetForcedWeapon() : 0;
 	m_iNextSpawnClassChoice = -1;

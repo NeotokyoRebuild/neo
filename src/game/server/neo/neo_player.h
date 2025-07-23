@@ -266,6 +266,7 @@ public:
 	CNetworkVar(unsigned char, m_NeoFlags);
 	CNetworkString(m_szNeoName, MAX_PLAYER_NAME_LENGTH);
 	CNetworkString(m_szNeoClantag, NEO_MAX_CLANTAG_LENGTH);
+	CNetworkString(m_szNeoCrosshair, NEO_XHAIR_SEQMAX);
 	CNetworkVar(int, m_szNameDupePos);
 
 	// NEO NOTE (nullsystem): As dumb as client sets -> server -> client it may sound,

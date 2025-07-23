@@ -2828,6 +2828,13 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 		m_bThinkCheckClantags = true;
 	}
 
+	const char *pszClNeoCrosshair = engine->GetClientConVarValue(pNEOPlayer->entindex(), "cl_neo_crosshair");
+	const char *pszOldClNeoCrosshair = pNEOPlayer->m_szNeoCrosshair.Get();
+	if (V_strcmp(pszOldClNeoCrosshair, pszClNeoCrosshair) != 0)
+	{
+		V_strncpy(pNEOPlayer->m_szNeoCrosshair.GetForModify(), pszClNeoCrosshair, NEO_XHAIR_SEQMAX);
+	}
+
 	const char *pszName = pszSteamName;
 	const char *pszOldName = pPlayer->GetPlayerName();
 
