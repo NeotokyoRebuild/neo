@@ -93,14 +93,14 @@ void CNEOHud_GhostMarker::UpdateStateForNeoHudElementDraw()
 		const float flDistMeters = METERS_PER_INCH * C_NEO_Player::GetLocalPlayer()->GetAbsOrigin().DistTo(NEORules()->GetGhostPos());
 		if (cl_neo_hud_worldpos_verbose.GetBool())
 		{
-      if (NEORules()->GetGameType() != NEO_GAME_TYPE_JGR)
-      {
-			  V_snwprintf(m_wszMarkerTextUnicode, ARRAYSIZE(m_wszMarkerTextUnicode), L"GHOST DISTANCE: %.0fm", flDistMeters);
-      }
-      else
-      {
-        V_snwprintf(m_wszMarkerTextUnicode, ARRAYSIZE(m_wszMarkerTextUnicode), L"JUGGERNAUT DISTANCE: %.0fm", flDistMeters);
-      }
+			if (NEORules()->GetGameType() != NEO_GAME_TYPE_JGR)
+			{
+				V_snwprintf(m_wszMarkerTextUnicode, ARRAYSIZE(m_wszMarkerTextUnicode), L"GHOST DISTANCE: %.0fm", flDistMeters);
+			}
+			else
+			{
+				V_snwprintf(m_wszMarkerTextUnicode, ARRAYSIZE(m_wszMarkerTextUnicode), L"JUGGERNAUT DISTANCE: %.0fm", flDistMeters);
+			}
 		}
 		else
 		{
