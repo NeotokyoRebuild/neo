@@ -101,7 +101,11 @@ ConVar tv_delaymapchange_protect( "tv_delaymapchange_protect", "1", FCVAR_NONE, 
 ConVar mp_restartgame( "mp_restartgame", "0", FCVAR_GAMEDLL, "If non-zero, game will restart in the specified number of seconds" );
 ConVar mp_restartgame_immediate( "mp_restartgame_immediate", "0", FCVAR_GAMEDLL, "If non-zero, game will restart immediately" );
 
+#ifdef NEO
+ConVar mp_mapcycle_empty_timeout_seconds("mp_mapcycle_empty_timeout_seconds", "1800", FCVAR_REPLICATED, "If nonzero, server will cycle to the next map if it has been empty on the current map for N seconds");
+#else
 ConVar mp_mapcycle_empty_timeout_seconds( "mp_mapcycle_empty_timeout_seconds", "0", FCVAR_REPLICATED, "If nonzero, server will cycle to the next map if it has been empty on the current map for N seconds");
+#endif
 
 void cc_SkipNextMapInCycle()
 {

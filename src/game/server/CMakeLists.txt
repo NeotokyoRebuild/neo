@@ -1387,6 +1387,7 @@ target_sources_grouped(
     neo/neo_te_tocflash.cpp
     neo/neo_te_tocflash.h
     neo/neo_tracefilter_collisiongroupdelta.h
+    neo/neo_typeconverter.cpp
     neo/neo_dm_spawn.cpp
     neo/neo_dm_spawn.h
 )
