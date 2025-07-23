@@ -220,7 +220,7 @@ void CNEOBaseCombatWeapon::Precache()
 {
 	BaseClass::Precache();
 
-	if ((GetNeoWepBits() & NEO_WEP_SUPPRESSED))
+	if (!(GetNeoWepBits() & NEO_WEP_SUPPRESSED))
 		PrecacheParticleSystem("ntr_muzzle_source");
 }
 

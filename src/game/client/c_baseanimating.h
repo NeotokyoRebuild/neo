@@ -688,7 +688,7 @@ public:
 	virtual IPVSNotify*				GetPVSNotifyInterface() { return this; }
 #ifdef NEO
 	virtual int DrawModel(int flags) override;
-#endif neo
+#endif // NEO
 
 	void	HandleAnimatedFriction( void );
 	virtual void SUB_Remove( void );

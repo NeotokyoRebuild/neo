@@ -61,7 +61,6 @@ IMPLEMENT_ACTTABLE(CWeaponKnife);
 #endif
 
 namespace {
-constexpr float KNIFE_RANGE = 51.0f;
 constexpr float KNIFE_DAMAGE = 25.0f;
 }
 
@@ -138,7 +137,7 @@ void CWeaponKnife::Swing()
 
 	pOwner->EyeVectors(&forward, NULL, NULL);
 
-	Vector swingEnd = swingStart + forward * KNIFE_RANGE;
+	Vector swingEnd = swingStart + forward * NEO_WEP_KNIFE_RANGE;
 	UTIL_TraceLine(swingStart, swingEnd, MASK_SHOT_HULL, pOwner, COLLISION_GROUP_NONE, &traceHit);
 	const Activity nHitActivity = KNIFE_VM_ATTACK_ACT;
 
@@ -184,7 +183,7 @@ void CWeaponKnife::Swing()
 	if (traceHit.fraction == 1.0f)
 	{
 		// We want to test the first swing again
-		Vector testEnd = swingStart + forward * KNIFE_RANGE;
+		Vector testEnd = swingStart + forward * NEO_WEP_KNIFE_RANGE;
 
 		// See if we happened to hit water
 		ImpactWater(swingStart, testEnd);

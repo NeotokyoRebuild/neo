@@ -186,7 +186,11 @@ PlaceDirectory placeDirectory;
 	#define FORMAT_NAVFILE "maps\\%s.360.nav"
 #else
 	#define FORMAT_BSPFILE "maps\\%s.bsp"
+#ifdef NEO
+	#define FORMAT_NAVFILE "maps\\nav\\%s.nav"
+#else
 	#define FORMAT_NAVFILE "maps\\%s.nav"
+#endif // NEO
 	#define PATH_NAVFILE_EMBEDDED "maps\\embed.nav"
 #endif
 
