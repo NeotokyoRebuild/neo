@@ -1433,6 +1433,9 @@ void CHLClient::PostInit()
 	}
 
 	NeoToggleConsoleEnforce();
+	
+	// hide main menu when loading background map first time
+	engine->ClientCmd_Unrestricted("progress_enable");
 
 	// Detect OBS - Only on startup
 	if (cl_neo_streamermode_autodetect_obs.GetBool())

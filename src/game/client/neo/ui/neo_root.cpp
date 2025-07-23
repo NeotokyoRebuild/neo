@@ -520,10 +520,22 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 {
 	int wide, tall;
 	GetSize(wide, tall);
+	float secondsSpentOnLoadingScreen = (gpGlobals->realtime - g_pNeoRoot->m_flTimeLoadingScreenTransition);
+	if (secondsSpentOnLoadingScreen < NEO_MENU_SECONDS_DELAY)
+	{
+		// version number will not print here, could draw before return or could just ignore since we will be removing the version number anyway
+		return;
+	}
+	secondsSpentOnLoadingScreen -= NEO_MENU_SECONDS_DELAY;
+	if (secondsSpentOnLoadingScreen < NEO_MENU_SECONDS_TILL_FULLY_OPAQUE)
+	{
+		// Quadratic ease in
+		surface()->DrawSetAlphaMultiplier((secondsSpentOnLoadingScreen * secondsSpentOnLoadingScreen) / (NEO_MENU_SECONDS_TILL_FULLY_OPAQUE * NEO_MENU_SECONDS_TILL_FULLY_OPAQUE));
+	}
 
 	const RootState ePrevState = m_state;
 
-	// Laading screen just overlays over the root, so don't render anything else if so
+	// Loading screen just overlays over the root, so don't render anything else if so
 	if (!m_bOnLoadingScreen)
 	{
 		static constexpr void (CNeoRoot::*P_FN_MAIN_LOOP[STATE__TOTAL])(const MainLoopParam param) = {
@@ -560,6 +572,8 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 			}
 		}
 	}
+
+	surface()->DrawSetAlphaMultiplier(1);
 
 	if (eMode == NeoUI::MODE_PAINT)
 	{
@@ -993,6 +1007,8 @@ void CNeoRoot::MainLoopNewGame(const MainLoopParam param)
 				NeoUI::Pad();
 				if (NeoUI::Button(L"Start").bPressed)
 				{
+					g_pNeoRoot->m_flTimeLoadingScreenTransition = gpGlobals->realtime;
+
 					if (IsInGame())
 					{
 						engine->ClientCmd_Unrestricted("disconnect");
@@ -1338,6 +1354,8 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 						}
 						else
 						{
+							g_pNeoRoot->m_flTimeLoadingScreenTransition = gpGlobals->realtime;
+
 							char connectCmd[256];
 							const char *szAddress = gameServer.m_NetAdr.GetConnectionAddressString();
 							V_sprintf_safe(connectCmd, "progress_enable; wait; connect %s", szAddress);
@@ -1849,6 +1867,8 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 				{
 					if (NeoUI::Button(L"Enter (Enter)").bPressed || NeoUI::Bind(KEY_ENTER))
 					{
+						g_pNeoRoot->m_flTimeLoadingScreenTransition = gpGlobals->realtime;
+
 						char szServerPassword[ARRAYSIZE(m_wszServerPassword)];
 						g_pVGuiLocalize->ConvertUnicodeToANSI(m_wszServerPassword, szServerPassword, sizeof(szServerPassword));
 						ConVarRef("password").SetValue(szServerPassword);
