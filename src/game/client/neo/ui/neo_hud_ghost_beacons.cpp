@@ -98,7 +98,7 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 		return;
 	}
 
-	if (NEORules()->GetGhosterPlayer() != spectateTarget->entindex())
+	if (!spectateTarget->m_bCarryingGhost)
 	{ // Saves iterating through all the weapons when neo_ctg_ghost_beacons_when_inactive is set to 1
 		return;
 	}
