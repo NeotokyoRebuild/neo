@@ -2188,8 +2188,9 @@ void CViewRender::RenderView( const CViewSetup &viewRender, int nClearFlags, int
 				pRenderContext.SafeRelease();
 			}
 		}
-
+#ifndef NEO
 		GetClientModeNormal()->DoPostScreenSpaceEffects( &viewRender );
+#endif // NEO
 
 		// Now actually draw the viewmodel
 		DrawViewModels( viewRender, whatToDraw & RENDERVIEW_DRAWVIEWMODEL );
@@ -2249,8 +2250,6 @@ void CViewRender::RenderView( const CViewSetup &viewRender, int nClearFlags, int
 
 		PerformScreenSpaceEffects( 0, 0, viewRender.width, viewRender.height );
 
-		GetClientModeNormal()->DoPostScreenSpaceEffects( &viewRender );
-
 		if ( g_pMaterialSystemHardwareConfig->GetHDRType() == HDR_TYPE_INTEGER )
 		{
 			pRenderContext.GetFrom( materials );
@@ -2258,6 +2257,9 @@ void CViewRender::RenderView( const CViewSetup &viewRender, int nClearFlags, int
 			pRenderContext.SafeRelease();
 		}
 
+#ifdef NEO // Add glow effect after HDR stuff is done, so the colour of the effect doesn't vary
+		GetClientModeNormal()->DoPostScreenSpaceEffects(&viewRender);
+#endif // NEO
 		CleanupMain3DView( viewRender );
 
 		if ( m_rbTakeFreezeFrame[viewRender.m_eStereoEye ] )

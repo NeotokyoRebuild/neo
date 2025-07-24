@@ -23,6 +23,7 @@
 #include "ui/neo_utils.h"
 #include "neo_gamerules.h"
 #include "neo_misc.h"
+#include "mp3player.h"
 
 #include <vgui/IInput.h>
 #include <vgui_controls/Controls.h>
@@ -485,6 +486,7 @@ void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 	if (m_ns.keys.bcConsole <= KEY_NONE)
 	{
 		m_ns.keys.bcConsole = gameuifuncs->GetButtonCodeForBind("neo_toggleconsole");
+		m_ns.keys.bcMP3Player = gameuifuncs->GetButtonCodeForBind("neo_mp3");
 		m_ns.keys.bcTeamMenu = gameuifuncs->GetButtonCodeForBind("teammenu");
 		m_ns.keys.bcClassMenu = gameuifuncs->GetButtonCodeForBind("classmenu");
 		m_ns.keys.bcLoadoutMenu = gameuifuncs->GetButtonCodeForBind("loadoutmenu");
@@ -500,6 +502,10 @@ void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 		NeoToggleconsole();
 		return;
 	}
+	else if (code == m_ns.keys.bcMP3Player)
+	{
+		engine->ClientCmd_Unrestricted("neo_mp3");
+	}
 	g_uiCtx.eCode = code;
 	OnMainLoop(NeoUI::MODE_KEYPRESSED);
 }
@@ -514,10 +520,22 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 {
 	int wide, tall;
 	GetSize(wide, tall);
+	float secondsSpentOnLoadingScreen = (gpGlobals->realtime - g_pNeoRoot->m_flTimeLoadingScreenTransition);
+	if (secondsSpentOnLoadingScreen < NEO_MENU_SECONDS_DELAY)
+	{
+		// version number will not print here, could draw before return or could just ignore since we will be removing the version number anyway
+		return;
+	}
+	secondsSpentOnLoadingScreen -= NEO_MENU_SECONDS_DELAY;
+	if (secondsSpentOnLoadingScreen < NEO_MENU_SECONDS_TILL_FULLY_OPAQUE)
+	{
+		// Quadratic ease in
+		surface()->DrawSetAlphaMultiplier((secondsSpentOnLoadingScreen * secondsSpentOnLoadingScreen) / (NEO_MENU_SECONDS_TILL_FULLY_OPAQUE * NEO_MENU_SECONDS_TILL_FULLY_OPAQUE));
+	}
 
 	const RootState ePrevState = m_state;
 
-	// Laading screen just overlays over the root, so don't render anything else if so
+	// Loading screen just overlays over the root, so don't render anything else if so
 	if (!m_bOnLoadingScreen)
 	{
 		static constexpr void (CNeoRoot::*P_FN_MAIN_LOOP[STATE__TOTAL])(const MainLoopParam param) = {
@@ -554,6 +572,8 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 			}
 		}
 	}
+
+	surface()->DrawSetAlphaMultiplier(1);
 
 	if (eMode == NeoUI::MODE_PAINT)
 	{
@@ -814,6 +834,28 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	}
 	NeoUI::EndSection();
 #endif
+	g_uiCtx.dPanel.x = param.wide - 128;
+	g_uiCtx.dPanel.y = param.tall - 48;
+	g_uiCtx.dPanel.wide = 128;
+	g_uiCtx.dPanel.tall = 1;
+	NeoUI::BeginSection();
+	g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
+	const auto musicPlayerBtn = NeoUI::Button(L"Music");
+	if (musicPlayerBtn.bPressed)
+	{
+		surface()->PlaySound("ui/buttonclickrelease.wav");
+		engine->ClientCmd("neo_mp3");
+
+	}
+	if (musicPlayerBtn.bMouseHover && SMBTN_MP3 != m_iHoverBtn)
+	{
+		// Sound rollover feedback
+		surface()->PlaySound("ui/buttonrollover.wav");
+		m_iHoverBtn = SMBTN_MP3;
+	}
+	
+	NeoUI::EndSection();
+	NeoUI::EndContext();
 }
 
 void CNeoRoot::MainLoopSettings(const MainLoopParam param)
@@ -941,7 +983,8 @@ void CNeoRoot::MainLoopNewGame(const MainLoopParam param)
 				m_state = STATE_MAPLIST;
 			}
 			NeoUI::TextEdit(L"Hostname", m_newGame.wszHostname, SZWSZ_LEN(m_newGame.wszHostname));
-			NeoUI::SliderInt(L"Max players", &m_newGame.iMaxPlayers, 1, 32);
+			NeoUI::SliderInt(L"Max players", &m_newGame.iMaxPlayers, 1, MAX_PLAYERS-1); // -1 to accommodate SourceTV
+			NeoUI::SliderInt(L"Bot Quota", &m_newGame.iBotQuota, 0, MAX_PLAYERS-1);
 			NeoUI::TextEdit(L"Password", m_newGame.wszPassword, SZWSZ_LEN(m_newGame.wszPassword));
 			NeoUI::RingBoxBool(L"Friendly fire", &m_newGame.bFriendlyFire);
 			NeoUI::RingBoxBool(L"Use Steam networking", &m_newGame.bUseSteamNetworking);
@@ -964,6 +1007,8 @@ void CNeoRoot::MainLoopNewGame(const MainLoopParam param)
 				NeoUI::Pad();
 				if (NeoUI::Button(L"Start").bPressed)
 				{
+					g_pNeoRoot->m_flTimeLoadingScreenTransition = gpGlobals->realtime;
+
 					if (IsInGame())
 					{
 						engine->ClientCmd_Unrestricted("disconnect");
@@ -981,6 +1026,7 @@ void CNeoRoot::MainLoopNewGame(const MainLoopParam param)
 					ConVarRef("sv_password").SetValue(szPassword);
 					ConVarRef("mp_friendlyfire").SetValue(m_newGame.bFriendlyFire);
 					ConVarRef("sv_use_steam_networking").SetValue(m_newGame.bUseSteamNetworking);
+					ConVarRef("neo_bot_quota").SetValue(m_newGame.iBotQuota);
 
 					char cmdStr[256];
 					V_sprintf_safe(cmdStr, "maxplayers %d; progress_enable; map \"%s\"", m_newGame.iMaxPlayers, szMap);
@@ -1308,6 +1354,8 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 						}
 						else
 						{
+							g_pNeoRoot->m_flTimeLoadingScreenTransition = gpGlobals->realtime;
+
 							char connectCmd[256];
 							const char *szAddress = gameServer.m_NetAdr.GetConnectionAddressString();
 							V_sprintf_safe(connectCmd, "progress_enable; wait; connect %s", szAddress);
@@ -1819,6 +1867,8 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 				{
 					if (NeoUI::Button(L"Enter (Enter)").bPressed || NeoUI::Bind(KEY_ENTER))
 					{
+						g_pNeoRoot->m_flTimeLoadingScreenTransition = gpGlobals->realtime;
+
 						char szServerPassword[ARRAYSIZE(m_wszServerPassword)];
 						g_pVGuiLocalize->ConvertUnicodeToANSI(m_wszServerPassword, szServerPassword, sizeof(szServerPassword));
 						ConVarRef("password").SetValue(szServerPassword);

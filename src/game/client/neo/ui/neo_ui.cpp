@@ -591,6 +591,27 @@ void HeadingLabel(const wchar_t *wszText)
 	SetPerRowLayout(tmp.iRowPartsTotal, tmp.iRowParts, tmp.iRowTall);
 }
 
+// Internal API: Figure out X position from text, font, and text style
+static int XPosFromText(const wchar_t *wszText, const FontInfo *pFontI, const TextStyle eTextStyle)
+{
+	int iFontTextWidth = 0, iFontTextHeight = 0;
+	if (eTextStyle != TEXTSTYLE_LEFT)
+	{
+		vgui::surface()->GetTextSize(pFontI->hdl, wszText, iFontTextWidth, iFontTextHeight);
+	}
+	int x = 0;
+	switch (eTextStyle)
+	{
+	break; case TEXTSTYLE_LEFT:
+		x = c->iMarginX;
+	break; case TEXTSTYLE_CENTER:
+		x = (c->irWidgetWide / 2) - (iFontTextWidth / 2);
+	break; case TEXTSTYLE_RIGHT:
+		x = c->irWidgetWide - c->iMarginX - iFontTextWidth;
+	}
+	return x;
+}
+
 void Label(const wchar_t *wszText, const bool bNotWidget)
 {
 	if (!bNotWidget)
@@ -600,13 +621,7 @@ void Label(const wchar_t *wszText, const bool bNotWidget)
 	if (IN_BETWEEN_AR(0, c->iLayoutY, c->dPanel.tall) && c->eMode == MODE_PAINT)
 	{
 		const auto *pFontI = &c->fonts[c->eFont];
-		int iFontTextWidth = 0, iFontTextHeight = 0;
-		const bool bCenter = c->eLabelTextStyle == TEXTSTYLE_CENTER;
-		if (bCenter)
-		{
-			vgui::surface()->GetTextSize(pFontI->hdl, wszText, iFontTextWidth, iFontTextHeight);
-		}
-		const int x = ((bCenter) ? ((c->irWidgetWide / 2) - (iFontTextWidth / 2)) : c->iMarginX);
+		const int x = XPosFromText(wszText, pFontI, c->eLabelTextStyle);
 		const int y = pFontI->iYOffset;
 		vgui::surface()->DrawSetTextPos(c->rWidgetArea.x0 + x, c->rWidgetArea.y0 + y);
 		vgui::surface()->DrawPrintText(wszText, V_wcslen(wszText));
@@ -650,14 +665,12 @@ NeoUI::RetButton Button(const wchar_t *wszText)
 		{
 		case MODE_PAINT:
 		{
-			const auto *pFontI = &c->fonts[c->eFont];
-			int iFontWide, iFontTall;
-			vgui::surface()->GetTextSize(pFontI->hdl, wszText, iFontWide, iFontTall);
-			const int xMargin = c->eButtonTextStyle == TEXTSTYLE_CENTER ?
-						((c->irWidgetWide / 2) - (iFontWide / 2)) : c->iMarginX;
-
 			vgui::surface()->DrawFilledRectArray(&c->rWidgetArea, 1);
-			vgui::surface()->DrawSetTextPos(c->rWidgetArea.x0 + xMargin, c->rWidgetArea.y0 + pFontI->iYOffset);
+
+			const auto *pFontI = &c->fonts[c->eFont];
+			const int x = XPosFromText(wszText, pFontI, c->eButtonTextStyle);
+			const int y = pFontI->iYOffset;
+			vgui::surface()->DrawSetTextPos(c->rWidgetArea.x0 + x, c->rWidgetArea.y0 + y);
 			vgui::surface()->DrawPrintText(wszText, V_wcslen(wszText));
 		}
 		break;
