@@ -2532,7 +2532,7 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 
 	const bool suicidePlayerIfAlive = sv_neo_change_suicide_player.GetBool();
 	bool changedTeams = false;
-	bool spawn = false;
+	bool spawnImmediately = false;
 	if (iTeam == TEAM_SPECTATOR)
 	{
 		if (!mp_allowspectators.GetInt())
@@ -2595,13 +2595,19 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 		CHL2_Player::ChangeTeam(iTeam, false, justJoined);
 		changedTeams = true;
 		
-		// Spawn the player immediately if its a single life game mode (technically tut is as well but this is fine)
-		spawn = !NEORules()->CanRespawnAnyTime() && NEORules()->FPlayerCanRespawn(this);
-		if (!spawn)
+		// Spawn the player immediately if its a single life game mode
+		spawnImmediately = !NEORules()->CanRespawnAnyTime() && NEORules()->FPlayerCanRespawn(this);
+		if (!spawnImmediately)
 		{
-			// If we're not allowed to be in the current observer mode (because of mp_forcecamera for example), this will give us a new observer mode.
-			SetObserverMode(GetObserverMode());
-			State_Transition(STATE_OBSERVER_MODE);
+			if (NEORules()->CanRespawnAnyTime() || IsFakeClient())
+			{ // Stop observer mode so we spawn in anyway after a short delay, bots crash when transitioning to observer mode
+				StopObserverMode();
+			}
+			else
+			{ // If we're not allowed to be in the current observer mode (because of mp_forcecamera for example), this will give us a new observer mode.
+				SetObserverMode(GetObserverMode());
+				State_Transition(STATE_OBSERVER_MODE);
+			}
 		}
 	}
 	else
@@ -2633,7 +2639,7 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 		CHL2_Player::ChangeTeam(iTeam, false, justJoined);
 	}
 
-	if (spawn)
+	if (spawnImmediately)
 	{ // Spawn after all the items are removed
 		bool success = RespawnWithRet(this, false);
 		if (!success)
