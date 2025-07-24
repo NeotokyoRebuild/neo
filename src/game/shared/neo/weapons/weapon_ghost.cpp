@@ -20,7 +20,7 @@
 #include "tier0/memdbgon.h"
 
 ConVar cl_neo_ghost_view_distance("cl_neo_ghost_view_distance", "45", FCVAR_REPLICATED, "How far can the ghost user see players in meters.");
-ConVar neo_ctg_ghost_beacons_when_inactive("neo_ctg_ghost_beacons_when_inactive", "0", FCVAR_REPLICATED, "Show ghost beacons when the ghost isn't the active weapon.");
+ConVar neo_ctg_ghost_beacons_when_inactive("neo_ctg_ghost_beacons_when_inactive", "0", FCVAR_NOTIFY|FCVAR_REPLICATED, "Show ghost beacons when the ghost isn't the active weapon.");
 
 IMPLEMENT_NETWORKCLASS_ALIASED(WeaponGhost, DT_WeaponGhost)
 
