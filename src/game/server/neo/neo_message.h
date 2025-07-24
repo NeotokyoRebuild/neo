@@ -13,10 +13,13 @@ public:
     int UpdateTransmitState();
 
     CNetworkString(m_NetworkedMessageKey, 255);
+    CNetworkString(m_NetworkedSubMessageKey, 255);
 
 private:
     void InputShowMessage(inputdata_t& inputData);
     void InputHideMessage(inputdata_t& inputData);
+    void InputShowSubMessage(inputdata_t& inputData);
+    void InputHideSubMessage(inputdata_t& inputData);
 
     string_t m_sSound;
     float m_SoundVolume;

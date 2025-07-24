@@ -4,7 +4,8 @@
 LINK_ENTITY_TO_CLASS(neo_message, CNEO_Message);
 
 IMPLEMENT_SERVERCLASS_ST(CNEO_Message, DT_NEO_Message)
-    SendPropString(SENDINFO(m_NetworkedMessageKey))
+	SendPropString(SENDINFO(m_NetworkedMessageKey)),
+	SendPropString(SENDINFO(m_NetworkedSubMessageKey))
 END_SEND_TABLE()
 
 BEGIN_DATADESC(CNEO_Message)
@@ -12,8 +13,10 @@ BEGIN_DATADESC(CNEO_Message)
 	DEFINE_KEYFIELD(m_SoundVolume, FIELD_FLOAT, "volume"),
 
 // Inputs
-    DEFINE_INPUTFUNC(FIELD_STRING, "ShowMessage", InputShowMessage),
-    DEFINE_INPUTFUNC(FIELD_VOID, "HideMessage", InputHideMessage)
+	DEFINE_INPUTFUNC(FIELD_STRING, "ShowMessage", InputShowMessage),
+	DEFINE_INPUTFUNC(FIELD_VOID, "HideMessage", InputHideMessage),
+	DEFINE_INPUTFUNC(FIELD_STRING, "ShowSubMessage", InputShowSubMessage),
+	DEFINE_INPUTFUNC(FIELD_VOID, "HideSubMessage", InputHideSubMessage)
 END_DATADESC()
 
 void CNEO_Message::Spawn()
@@ -47,8 +50,7 @@ int CNEO_Message::UpdateTransmitState()
 
 void CNEO_Message::InputShowMessage(inputdata_t& inputData)
 {
-    const char* szMessageKey = inputData.value.String();
-    Q_strncpy(m_NetworkedMessageKey.GetForModify(), szMessageKey, 255);
+	Q_strncpy(m_NetworkedMessageKey.GetForModify(), inputData.value.String(), 255);
 
 	if (m_sSound != NULL_STRING)
 	{
@@ -67,5 +69,16 @@ void CNEO_Message::InputShowMessage(inputdata_t& inputData)
 
 void CNEO_Message::InputHideMessage(inputdata_t& inputData)
 {
-    Q_strncpy(m_NetworkedMessageKey.GetForModify(), "", 255);
+	Q_strncpy(m_NetworkedMessageKey.GetForModify(), "", 255);
+	Q_strncpy(m_NetworkedSubMessageKey.GetForModify(), "", 255);
+}
+
+void CNEO_Message::InputShowSubMessage(inputdata_t& inputData)
+{
+	Q_strncpy(m_NetworkedSubMessageKey.GetForModify(), inputData.value.String(), 255);
+}
+
+void CNEO_Message::InputHideSubMessage(inputdata_t& inputData)
+{
+	Q_strncpy(m_NetworkedSubMessageKey.GetForModify(), "", 255);
 }

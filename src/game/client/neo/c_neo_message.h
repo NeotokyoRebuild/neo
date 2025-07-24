@@ -14,5 +14,6 @@ public:
 
 private:
     char m_NetworkedMessageKey[255];
+    char m_NetworkedSubMessageKey[255];
     CNEOHud_Message* m_pHudMessage;
 };
