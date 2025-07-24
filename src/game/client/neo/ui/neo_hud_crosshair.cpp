@@ -7,6 +7,7 @@
 #include "ui/neo_root.h"
 
 ConVar cl_neo_crosshair("cl_neo_crosshair", CL_NEO_CROSSHAIR_DEFAULT, FCVAR_ARCHIVE | FCVAR_USERINFO, "Serialized crosshair setting");
+ConVar cl_neo_crosshair_network("cl_neo_crosshair_network", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL, "Network crosshair - 0 = disable, 1 = show other players' crosshairs", true, 0.0f, true, 1.0f);
 
 static const char *INTERNAL_CROSSHAIR_FILES[CROSSHAIR_STYLE__TOTAL] = { "vgui/hud/crosshair", "vgui/hud/crosshair_b", "" };
 const char **CROSSHAIR_FILES = INTERNAL_CROSSHAIR_FILES;

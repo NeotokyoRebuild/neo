@@ -176,8 +176,6 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropInt(RECVINFO(m_iEscortingTeam)),
 	RecvPropBool(RECVINFO(m_bGhostExists)),
 	RecvPropVector(RECVINFO(m_vecGhostMarkerPos)),
-	RecvPropArray(RecvPropEHandle(RECVINFO(m_iDummyBeacons[0])), m_iDummyBeacons),
-	RecvPropInt(RECVINFO(m_iLastDummyBeacon)),
 #else
 	SendPropFloat(SENDINFO(m_flNeoNextRoundStartTime)),
 	SendPropFloat(SENDINFO(m_flNeoRoundStartTime)),
@@ -197,8 +195,6 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropInt(SENDINFO(m_iEscortingTeam)),
 	SendPropBool(SENDINFO(m_bGhostExists)),
 	SendPropVector(SENDINFO(m_vecGhostMarkerPos), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT),
-	SendPropArray(SendPropEHandle(SENDINFO_ARRAY(m_iDummyBeacons)), m_iDummyBeacons),
-	SendPropInt(SENDINFO(m_iLastDummyBeacon)),
 #endif
 END_NETWORK_TABLE()
 
@@ -461,7 +457,6 @@ CNEORules::CNEORules()
 #ifdef GAME_DLL
 	weaponstay.InstallChangeCallback(CvarChanged_WeaponStay);
 #endif
-	m_iLastDummyBeacon = -1;
 }
 
 CNEORules::~CNEORules()
@@ -2826,6 +2821,13 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 	{
 		V_strncpy(pNEOPlayer->m_szNeoClantag.GetForModify(), pszNeoClantag, NEO_MAX_CLANTAG_LENGTH);
 		m_bThinkCheckClantags = true;
+	}
+
+	const char *pszClNeoCrosshair = engine->GetClientConVarValue(pNEOPlayer->entindex(), "cl_neo_crosshair");
+	const char *pszOldClNeoCrosshair = pNEOPlayer->m_szNeoCrosshair.Get();
+	if (V_strcmp(pszOldClNeoCrosshair, pszClNeoCrosshair) != 0)
+	{
+		V_strncpy(pNEOPlayer->m_szNeoCrosshair.GetForModify(), pszClNeoCrosshair, NEO_XHAIR_SEQMAX);
 	}
 
 	const char *pszName = pszSteamName;

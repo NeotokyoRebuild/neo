@@ -68,14 +68,12 @@ int CWeaponGhost::UpdateTransmitState()
 
 int CWeaponGhost::ShouldTransmit(const CCheckTransmitInfo *pInfo)
 {
-	if (auto ent = Instance(pInfo->m_pClientEnt))
+	if (!pInfo)
 	{
-		if (auto *otherNeoPlayer = dynamic_cast<CNEO_Player *>(ent))
-		{
-			return FL_EDICT_ALWAYS;
-		}
+		return BaseClass::ShouldTransmit(pInfo);
 	}
-	return BaseClass::ShouldTransmit(pInfo);
+	assert_cast<CNEO_Player*>(Instance(pInfo->m_pClientEnt));
+	return FL_EDICT_ALWAYS;
 }
 #endif
 

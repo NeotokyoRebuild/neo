@@ -9,11 +9,14 @@
 
 #include "ienginevgui.h"
 
+
+#include "c_neo_npc_dummy.h"
 #include "c_neo_player.h"
 #include "neo_player_shared.h"
 #include "c_team.h"
 #include "neo_gamerules.h"
 #include "weapon_ghost.h"
+
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -95,15 +98,13 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 		return;
 	}
 
-	C_WeaponGhost *ghost;
-	if (neo_ctg_ghost_beacons_when_inactive.GetBool())
-	{
-		ghost = dynamic_cast<C_WeaponGhost*>(GetNeoWepWithBits(spectateTarget, NEO_WEP_GHOST));
+	if (NEORules()->GetGhosterPlayer() != spectateTarget->entindex())
+	{ // Saves iterating through all the weapons when neo_ctg_ghost_beacons_when_inactive is set to 1
+		return;
 	}
-	else
-	{
-		ghost = dynamic_cast<C_WeaponGhost*>(spectateTarget->GetActiveWeapon());
-	}
+
+	auto ghost = static_cast<C_WeaponGhost*>(neo_ctg_ghost_beacons_when_inactive.GetBool() ? GetNeoWepWithBits(spectateTarget, NEO_WEP_GHOST)
+																						   : spectateTarget->GetActiveWeapon());
 
 	if (!ghost) //Check ghost ready here as players might be in PVS
 	{
@@ -123,9 +124,11 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 
 	auto enemyTeamId = spectateTarget->GetTeamNumber() == TEAM_JINRAI ? TEAM_NSF : TEAM_JINRAI;
 	auto enemyTeam = GetGlobalTeam(enemyTeamId);
-	auto enemyTeamCount = enemyTeam->GetNumPlayers();
+	auto enemyCount = enemyTeam->GetNumPlayers();
 	float closestEnemy = FLT_MAX;
-	for(int i = 0; i < enemyTeamCount; ++i)
+
+	// Human and bot enemies
+	for(int i = 0; i < enemyCount; ++i)
 	{
 		auto enemyToShow = enemyTeam->GetPlayer(i);
 		if(enemyToShow)
@@ -139,20 +142,19 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 			closestEnemy = Min(distance, closestEnemy);
 		}
 	}
-	for (int i = 0; i <= NEORules()->m_iLastDummyBeacon; i++)
+	// Dummy entity enemies
+	for (auto dummy = C_NEO_NPCDummy::GetList(); dummy; dummy = dummy->m_pNext)
 	{
-		auto dummy = ClientEntityList().GetBaseEntityFromHandle(NEORules()->m_iDummyBeacons[i]);
-		if (dummy)
+		Assert(dummy);
+		auto dummyPos = dummy->GetAbsOrigin();
+		float distance = FLT_MAX;
+		if (dummy->IsAlive() && !dummy->IsDormant() && ghost->IsPosWithinViewDistance(dummyPos, distance) && showGhost)
 		{
-			auto dummyPos = dummy->GetAbsOrigin();
-			float distance = FLT_MAX;
-			if (dummy->IsAlive() && !dummy->IsDormant() && ghost->IsPosWithinViewDistance(dummyPos, distance) && showGhost)
-			{
-				DrawPlayer(dummyPos);
-			}
-			closestEnemy = Min(distance, closestEnemy);
+			DrawPlayer(dummyPos);
 		}
+		closestEnemy = Min(distance, closestEnemy);
 	}
+
 	ghost->TryGhostPing(closestEnemy * METERS_PER_INCH);
 }
 
