@@ -103,8 +103,16 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 		return;
 	}
 
-	auto ghost = static_cast<C_WeaponGhost*>(neo_ctg_ghost_beacons_when_inactive.GetBool() ? GetNeoWepWithBits(spectateTarget, NEO_WEP_GHOST)
-																						   : spectateTarget->GetActiveWeapon());
+	C_WeaponGhost* ghost;
+	if (neo_ctg_ghost_beacons_when_inactive.GetBool())
+	{
+		ghost = static_cast<C_WeaponGhost*>(GetNeoWepWithBits(spectateTarget, NEO_WEP_GHOST));
+	}
+	else
+	{
+		auto weapon = static_cast<C_NEOBaseCombatWeapon*>(spectateTarget->GetActiveWeapon());
+		ghost = (weapon && weapon->IsGhost()) ? static_cast<C_WeaponGhost*>(weapon) : nullptr;
+	}
 
 	if (!ghost) //Check ghost ready here as players might be in PVS
 	{
