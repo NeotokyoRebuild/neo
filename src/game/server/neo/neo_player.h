@@ -98,6 +98,16 @@ public:
 	virtual const Vector GetPlayerMins(void) const OVERRIDE;
 	virtual const Vector GetPlayerMaxs(void) const OVERRIDE;
 
+	// -----------------------
+	// Fog
+	// -----------------------
+	virtual bool		IsHiddenByFog(const Vector& target) const OVERRIDE;       ///< return true if given target cant be seen because of fog
+	virtual bool		IsHiddenByFog(CBaseEntity* target) const OVERRIDE;        ///< return true if given target cant be seen because of fog
+	virtual bool		IsHiddenByFog(float range) const OVERRIDE;                ///< return true if given distance is too far to see through the fog
+	virtual float		GetFogObscuredRatio(const Vector& target) const OVERRIDE; ///< return 0-1 ratio where zero is not obscured, and 1 is completely obscured
+	virtual float		GetFogObscuredRatio(CBaseEntity* target) const OVERRIDE;  ///< return 0-1 ratio where zero is not obscured, and 1 is completely obscured
+	virtual float		GetFogObscuredRatio(float range) const OVERRIDE;          ///< return 0-1 ratio where zero is not obscured, and 1 is completely obscured
+
 	void AddNeoFlag(int flags)
 	{
 		m_NeoFlags.GetForModify() = (GetNeoFlags() | flags);
