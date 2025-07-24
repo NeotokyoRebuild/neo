@@ -19,7 +19,9 @@ extern ConVar weaponstay;
 #include "ui/neo_hud_crosshair.h"
 #include "model_types.h"
 #include "c_neo_player.h"
-#endif
+#else
+#include "items.h"
+#endif // CLIENT_DLL
 
 #include "basecombatweapon_shared.h"
 
@@ -214,7 +216,7 @@ void CNEOBaseCombatWeapon::Precache()
 {
 	BaseClass::Precache();
 
-	if ((GetNeoWepBits() & NEO_WEP_SUPPRESSED))
+	if (!(GetNeoWepBits() & NEO_WEP_SUPPRESSED))
 		PrecacheParticleSystem("ntr_muzzle_source");
 }
 
@@ -245,8 +247,71 @@ void CNEOBaseCombatWeapon::Spawn()
 
 #ifdef GAME_DLL
 	AddSpawnFlags(SF_NORESPAWN);
+#else
+	SetNextClientThink(gpGlobals->curtime + TICK_INTERVAL);
+#endif // GAME_DLL
+}
+
+void CNEOBaseCombatWeapon::Activate(void)
+{
+#ifdef CLIENT_DLL
+	BaseClass::Activate();	// Not being called client side atm, just call baseclass in case it does
+#else
+	CBaseAnimating::Activate(); // Skip CBaseCombatWeapon::Activate();
+
+	if (GetOwnerEntity())
+		return;
+
+	if (g_pGameRules->IsAllowedToSpawn(this) == false)
+	{
+		UTIL_Remove(this);
+		return;
+	}
+
+	VPhysicsInitNormal(SOLID_BBOX, GetSolidFlags() | FSOLID_TRIGGER, false);
+
+	if (HasSpawnFlags(SF_ITEM_START_CONSTRAINED))
+	{
+		//Constrain the weapon in place (copied from CItem::Spawn )
+		IPhysicsObject* pReferenceObject, * pAttachedObject;
+
+		pReferenceObject = g_PhysWorldObject;
+		pAttachedObject = VPhysicsGetObject();
+
+		if (pReferenceObject && pAttachedObject)
+		{
+			constraint_fixedparams_t fixed;
+			fixed.Defaults();
+			fixed.InitWithCurrentObjectState(pReferenceObject, pAttachedObject);
+
+			fixed.constraint.forceLimit = lbs2kg(10000);
+			fixed.constraint.torqueLimit = lbs2kg(10000);
+
+			m_pConstraint = physenv->CreateFixedConstraint(pReferenceObject, pAttachedObject, NULL, fixed);
+
+			m_pConstraint->SetGameData((void*)this);
+		}
+	}
 #endif
 }
+
+#ifdef CLIENT_DLL
+void CNEOBaseCombatWeapon::ClientThink()
+{
+	if (GetOwner() && m_flTemperature > 0)
+	{
+		constexpr int DESIRED_TEMPERATURE_WHEN_HELD = 0;
+		m_flTemperature = max(DESIRED_TEMPERATURE_WHEN_HELD, m_flTemperature - (TICK_INTERVAL / THERMALS_OBJECT_COOL_TIME));
+	}
+	else if (m_flTemperature < 1)
+	{
+		constexpr int DESIRED_TEMPERATURE_WITHOUT_OWNER = 1;
+		m_flTemperature = min(DESIRED_TEMPERATURE_WITHOUT_OWNER, m_flTemperature + (TICK_INTERVAL / THERMALS_OBJECT_COOL_TIME));
+	}
+	SetNextClientThink(gpGlobals->curtime + TICK_INTERVAL);
+}
+#endif // CLIENT_DLL
+
 
 void CNEOBaseCombatWeapon::Equip(CBaseCombatCharacter* pOwner)
 {
@@ -1145,36 +1210,31 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 	}
 
 	auto pOwner = static_cast<C_NEO_Player *>(GetOwner());
-	if (!pOwner)
-	{
-		return BaseClass::DrawModel(flags);
-	}
-
 	bool inThermalVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT;
-
 	int ret = 0;
-	if (!pOwner || !pOwner->IsCloaked() || inThermalVision)
+	
+	if (inThermalVision && (!pOwner || pOwner && !pOwner->IsCloaked()))
 	{
+		IMaterial* pass = materials->FindMaterial("dev/thermal_weapon_model", TEXTURE_GROUP_MODEL);
+		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::DrawModel(flags);
+		modelrender->ForcedMaterialOverride(nullptr);
+		return ret;
 	}
 
-	if ((pOwner && pOwner->IsCloaked()) && !inThermalVision)
+	if (pOwner && pOwner->IsCloaked() && !inThermalVision)
 	{
 		mat_neo_toc_test.SetValue(pOwner->GetCloakFactor());
 		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::DrawModel(flags);
 		modelrender->ForcedMaterialOverride(nullptr);
+		return ret;
 	}
-	else if (inThermalVision && (pOwner && !pOwner->IsCloaked()))
+	else
 	{
-		IMaterial* pass = materials->FindMaterial("dev/thermal_model", TEXTURE_GROUP_MODEL);
-		modelrender->ForcedMaterialOverride(pass);
-		ret |= BaseClass::DrawModel(flags);
-		modelrender->ForcedMaterialOverride(nullptr);
+		return BaseClass::DrawModel(flags);
 	}
-
-	return ret;
 }
 
 RenderGroup_t CNEOBaseCombatWeapon::GetRenderGroup()

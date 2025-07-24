@@ -3085,7 +3085,16 @@ void CBaseEntity::PhysicsRelinkChildren( float dt )
 		{
 			// the only case where this is valid is if this entity is an attached ragdoll.
 			// So assert here to catch the non-ragdoll case.
+#if NEO
+#if DEBUG
+			// NEO NOTE (Rain): This is fine in the tutorial map.
+			// Related to the dangling VR helmet prop sequence at the end of the level.
+			bool isPlayingClassTutorial = FStrEq(gpGlobals->mapname.ToCStr(), TUTORIAL_MAP_CLASSES);
+			Assert(isPlayingClassTutorial);
+#else
 			Assert( 0 );
+#endif
+#endif
 		}
 
 		if ( child->FirstMoveChild() )

@@ -3887,7 +3887,19 @@ void CBasePlayer::PlayerRunCommand(CUserCmd *ucmd, IMoveHelper *moveHelper)
 		(developer.GetInt() == 0 && gpGlobals->eLoadType == MapLoad_NewGame && gpGlobals->curtime < 3.0));
 
 #ifdef NEO
-	if (originalCheck || static_cast<CNEO_Player*>(this)->GetNeoFlags() & NEO_FL_FREEZETIME)
+	static constexpr byte IMPULSE_SPRAY = 201;
+	if (ucmd->impulse == IMPULSE_SPRAY)
+	{
+		const char *pszPlayerClDisableSpray = engine->GetClientConVarValue(entindex(), "cl_spraydisable");
+		const bool bPlayerClDisableSpray = StrToInt(pszPlayerClDisableSpray) != 0;
+		if (bPlayerClDisableSpray)
+		{
+			ucmd->impulse = 0;
+		}
+	}
+
+	const bool bPlayerInFreezeTime = static_cast<CNEO_Player*>(this)->GetNeoFlags() & NEO_FL_FREEZETIME;
+	if (originalCheck || bPlayerInFreezeTime)
 #else
 	if (originalCheck)
 #endif
@@ -3895,11 +3907,15 @@ void CBasePlayer::PlayerRunCommand(CUserCmd *ucmd, IMoveHelper *moveHelper)
 		ucmd->forwardmove = 0;
 		ucmd->sidemove = 0;
 		ucmd->upmove = 0;
-		ucmd->impulse = 0;
-
 #ifdef NEO
-		if (!originalCheck && static_cast<CNEO_Player*>(this)->GetNeoFlags() & NEO_FL_FREEZETIME)
+		if (!originalCheck && bPlayerInFreezeTime)
 		{
+			// Also allow spraying impulse in freeze time (like in playing rounds)
+			if ((ucmd->impulse != IMPULSE_SPRAY) && (GetTeamNumber() == TEAM_JINRAI || GetTeamNumber() == TEAM_NSF))
+			{
+				ucmd->impulse = 0;
+			}
+
 			ucmd->buttons &= ~(IN_ATTACK | IN_ATTACK3 | IN_JUMP | IN_SPEED |
 				IN_ALT1 | IN_ALT2 | IN_BACK | IN_FORWARD | IN_MOVELEFT | IN_MOVERIGHT | IN_RUN | IN_ZOOM);
 			const bool isTachi = (dynamic_cast<CWeaponTachi*>(GetActiveWeapon()) != NULL);
@@ -3908,7 +3924,12 @@ void CBasePlayer::PlayerRunCommand(CUserCmd *ucmd, IMoveHelper *moveHelper)
 				ucmd->buttons &= ~IN_ATTACK2;
 			}
 		}
+		else
+		{
+			ucmd->impulse = 0;
+		}
 #else
+		ucmd->impulse = 0;
 		ucmd->buttons = 0;
 #endif
 

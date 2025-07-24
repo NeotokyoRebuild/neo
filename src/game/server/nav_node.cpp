@@ -283,7 +283,11 @@ bool CNavNode::TestForCrouchArea( NavCornerType cornerNum, const Vector& mins, c
 	Vector start( m_pos );
 	Vector end( start );
 	end.z += JumpCrouchHeight;
+#ifdef NEO
+	UTIL_TraceHull( start, end, NavTraceMins, NavTraceMaxs, MASK_PLAYERSOLID_BRUSHONLY, &filter, &tr );
+#else
 	UTIL_TraceHull( start, end, NavTraceMins, NavTraceMaxs, MASK_NPCSOLID_BRUSHONLY, &filter, &tr );
+#endif // NEO
 
 	float maxHeight = tr.endpos.z - start.z;
 
@@ -295,14 +299,22 @@ bool CNavNode::TestForCrouchArea( NavCornerType cornerNum, const Vector& mins, c
 		start.z += height;
 
 		realMaxs.z = HumanCrouchHeight;
+#ifdef NEO
+		UTIL_TraceHull( start, start, mins, realMaxs, MASK_PLAYERSOLID_BRUSHONLY, &filter, &tr );
+#else
 		UTIL_TraceHull( start, start, mins, realMaxs, MASK_NPCSOLID_BRUSHONLY, &filter, &tr );
+#endif // NEO
 		if ( !tr.startsolid )
 		{
 			*groundHeightAboveNode = start.z - m_pos.z;
 
 			// We found a crouch-sized space.  See if we can stand up.
 			realMaxs.z = HumanHeight;
+#ifdef NEO
+			UTIL_TraceHull( start, start, mins, realMaxs, MASK_PLAYERSOLID_BRUSHONLY, &filter, &tr );
+#else
 			UTIL_TraceHull( start, start, mins, realMaxs, MASK_NPCSOLID_BRUSHONLY, &filter, &tr );
+#endif // NEO
 			if ( !tr.startsolid )
 			{
 				// We found a crouch-sized space.  See if we can stand up.

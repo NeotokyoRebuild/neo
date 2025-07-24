@@ -285,6 +285,9 @@ void CGib::SpawnSpecificGibs(	CBaseEntity*	pVictim,
 		{
 			pGib->SetOwnerEntity( pVictim );
 		}
+#ifdef NEO
+		pGib->m_bIsGib = true;
+#endif // NEO
 	}
 }
 

@@ -1148,6 +1148,15 @@ void CBaseEntity::VPhysicsUpdate( IPhysicsObject *pPhysics )
 		{
 			if ( GetMoveParent() )
 			{
+#ifdef NEO
+#ifdef GAME_DLL
+				// Silence the warning for this special case.
+				// This triggers during the ending sequence w/ the dangling helmet prop.
+				bool isPlayingClassTutorial = FStrEq(gpGlobals->mapname.ToCStr(), TUTORIAL_MAP_CLASSES);
+				if (isPlayingClassTutorial) return;
+#endif
+#endif
+
 				DevWarning("Updating physics on object in hierarchy %s!\n", GetClassname());
 				return;
 			}

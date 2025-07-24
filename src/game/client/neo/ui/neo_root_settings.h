@@ -16,7 +16,7 @@ public:
 	// ConVarRefEx. This is mostly to prevent the setting from included
 	// for using to reset to default.
 	// Currently only used for volume as we don't want to reset it to 100%
-	// on setting default.
+	// on setting default, and crosshair as has its own default reset button.
 	ConVarRefEx(const char *pName, const bool bExcludeGlobalPtrs);
 };
 
@@ -29,6 +29,7 @@ enum XHairExportNotify
 	XHAIREXPORTNOTIFY_EXPORT_TO_CLIPBOARD,
 	XHAIREXPORTNOTIFY_IMPORT_TO_CLIPBOARD,
 	XHAIREXPORTNOTIFY_IMPORT_TO_CLIPBOARD_ERROR,
+	XHAIREXPORTNOTIFY_RESET_TO_DEFAULT,
 
 	XHAIREXPORTNOTIFY__TOTAL,
 };
@@ -78,6 +79,7 @@ struct NeoSettings
 
 		// Will be checked often so cached
 		ButtonCode_t bcConsole;
+		ButtonCode_t bcMP3Player;
 		ButtonCode_t bcTeamMenu;
 		ButtonCode_t bcClassMenu;
 		ButtonCode_t bcLoadoutMenu;
@@ -145,6 +147,7 @@ struct NeoSettings
 	{
 		CrosshairInfo info;
 		XHairExportNotify eClipboardInfo;
+		bool bNetworkCrosshair;
 
 		// Textures
 		struct Texture
@@ -237,7 +240,8 @@ struct NeoSettings
 		CONVARREF_DEF(mat_monitorgamma);
 
 		// Crosshair
-		CONVARREF_DEF(cl_neo_crosshair);
+		CONVARREF_DEFNOGLOBALPTR(cl_neo_crosshair);
+		CONVARREF_DEF(cl_neo_crosshair_network);
 	};
 	CVR cvr;
 };

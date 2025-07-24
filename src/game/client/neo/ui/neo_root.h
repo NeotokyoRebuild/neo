@@ -19,6 +19,7 @@ struct NeoNewGame
 	wchar_t wszMap[64] = L"ntre_oilstain_ctg";
 	wchar_t wszHostname[64] = L"NEOTOKYO;REBUILD Listen Server";
 	int iMaxPlayers = 24;
+	int iBotQuota = 10;
 	wchar_t wszPassword[64] = L"neo";
 	bool bFriendlyFire = true;
 	bool bUseSteamNetworking = false;
@@ -111,6 +112,8 @@ enum MainMenuButtons
 	MMBTN_QUIT,
 
 	BTNS_TOTAL,
+
+	SMBTN_MP3,
 };
 
 struct SprayInfo
@@ -119,6 +122,9 @@ struct SprayInfo
 	char szPath[MAX_PATH];
 	char szVtf[MAX_PATH];
 };
+
+#define NEO_MENU_SECONDS_DELAY 0.25f
+#define NEO_MENU_SECONDS_TILL_FULLY_OPAQUE 0.75f
 
 // This class is what is actually used instead of the main menu.
 class CNeoRoot : public vgui::EditablePanel, public CGameEventListener
@@ -227,6 +233,7 @@ public:
 	MESSAGE_FUNC_CHARPTR(OnFileSelected, "FileSelected", fullpath);
 
 	bool m_bOnLoadingScreen = false;
+	float m_flTimeLoadingScreenTransition = 0.0f;
 	int m_iSavedYOffsets[NeoUI::MAX_SECTIONS] = {};
 	bool m_bSprayGalleryRefresh = false;
 	float m_flWideAs43 = 0.0f;

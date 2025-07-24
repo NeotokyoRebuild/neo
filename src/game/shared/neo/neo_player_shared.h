@@ -108,6 +108,9 @@ COMPILE_TIME_ASSERT(NEO_RECON_CROUCH_SPEED > NEO_ASSAULT_CROUCH_SPEED);
 COMPILE_TIME_ASSERT(NEO_ASSAULT_CROUCH_SPEED == NEO_SUPPORT_CROUCH_SPEED);
 COMPILE_TIME_ASSERT(NEO_ASSAULT_CROUCH_SPEED == NEO_VIP_CROUCH_SPEED);
 
+#define NEO_RECON_CROUCH_JUMP_HEIGHT 65.f
+#define NEO_CROUCH_JUMP_HEIGHT 56.f
+
 // END OF NEO MOVEMENT DEFINITIONS
 //////////////////////////////////////////////////////
 
@@ -115,6 +118,7 @@ COMPILE_TIME_ASSERT(NEO_ASSAULT_CROUCH_SPEED == NEO_VIP_CROUCH_SPEED);
 #define CLOAK_AUX_COST 1.0f
 #define MIN_CLOAK_AUX 0.1f
 #define SPRINT_START_MIN (2.0f)
+#define THERMALS_OBJECT_COOL_TIME 5.f
 
 // Original NT allows chaining superjumps up ramps,
 // so leaving this zeroed for enabling movement tricks.
@@ -374,5 +378,14 @@ void GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
 						 const char *pSzNeoName,
 						 const char *pSzNeoClantag,
 						 const bool bOnlySteamNick);
+
+// NEO NOTE (nullsystem): Max string length is 
+// something like: "2;2;-16711936;1;6;1.000;25;25;5;25;1;50;50;"
+// which is ~43 for v2 serialization | 64 length is enough for now till
+// more comes in
+static constexpr const int NEO_XHAIR_SEQMAX = 64;
+
+#define TUTORIAL_MAP_CLASSES "ntre_class_tut"
+#define TUTORIAL_MAP_SHOOTING "ntre_shooting_tut"
 
 #endif // NEO_PLAYER_SHARED_H
