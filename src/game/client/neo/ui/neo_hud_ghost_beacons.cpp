@@ -10,6 +10,7 @@
 #include "ienginevgui.h"
 
 #include "c_neo_player.h"
+#include "neo_player_shared.h"
 #include "c_team.h"
 #include "neo_gamerules.h"
 #include "weapon_ghost.h"
@@ -86,7 +87,7 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 		return;
 	}
 
-	auto spectateTarget = IsLocalPlayerSpectator() ? UTIL_PlayerByIndex(GetSpectatorTarget()) : C_NEO_Player::GetLocalNEOPlayer();
+	auto spectateTarget = IsLocalPlayerSpectator() ? ToNEOPlayer(UTIL_PlayerByIndex(GetSpectatorTarget())) : C_NEO_Player::GetLocalNEOPlayer();
 	if (!spectateTarget || spectateTarget->GetTeamNumber() < FIRST_GAME_TEAM || !spectateTarget->IsAlive() || NEORules()->IsRoundOver())
 	{
 		// NEO NOTE (nullsystem): Spectator and dead players even in spec shouldn't see beacons
@@ -97,8 +98,7 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 	C_WeaponGhost *ghost;
 	if (neo_ctg_ghost_beacons_when_inactive.GetBool())
 	{
-		constexpr int WEAPON_PRIMARY_SLOT = 2; // hl2_player.h server side, NEO TODO (Adam) put this in a shared file somewhere if used more?
-		ghost = dynamic_cast<C_WeaponGhost*>(spectateTarget->GetWeapon(WEAPON_PRIMARY_SLOT));
+		ghost = dynamic_cast<C_WeaponGhost*>(GetNeoWepWithBits(spectateTarget, NEO_WEP_GHOST));
 	}
 	else
 	{
