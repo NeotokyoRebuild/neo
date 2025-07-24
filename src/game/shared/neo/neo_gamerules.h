@@ -209,6 +209,7 @@ public:
 	int GetForcedWeapon();
 	virtual const char* GetGameTypeName(void) OVERRIDE;
 	bool CanChangeTeamClassWeaponWhenAlive();
+	bool CanRespawnAnyTime();
 
 	void GetDMHighestScorers(
 #ifdef GAME_DLL

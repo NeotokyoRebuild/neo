@@ -2595,7 +2595,8 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 		CHL2_Player::ChangeTeam(iTeam, false, justJoined);
 		changedTeams = true;
 		
-		spawn = NEORules()->FPlayerCanRespawn(this);
+		// Spawn the player immediately if its a single life game mode (technically tut is as well but this is fine)
+		spawn = !NEORules()->CanRespawnAnyTime() && NEORules()->FPlayerCanRespawn(this);
 		if (!spawn)
 		{
 			// If we're not allowed to be in the current observer mode (because of mp_forcecamera for example), this will give us a new observer mode.
