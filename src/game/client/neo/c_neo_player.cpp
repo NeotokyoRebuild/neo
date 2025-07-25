@@ -322,7 +322,7 @@ public:
 			return;
 		}
 
-		if (command.ArgC() > 1 && !command.FindArg("skipTeamCheck"))
+		if (!command.FindArg("skipTeamCheck"))
 		{ // A smarter way to do this might be to assign the buttons for class and weapons menu to unique commands that check the current team and call this commandcallback
 			auto team = GetLocalPlayerTeam();
 			if(team < FIRST_GAME_TEAM)
