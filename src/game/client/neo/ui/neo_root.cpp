@@ -486,10 +486,6 @@ void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 	if (m_ns.keys.bcConsole <= KEY_NONE)
 	{
 		m_ns.keys.bcConsole = gameuifuncs->GetButtonCodeForBind("neo_toggleconsole");
-		m_ns.keys.bcMP3Player = gameuifuncs->GetButtonCodeForBind("neo_mp3");
-		m_ns.keys.bcTeamMenu = gameuifuncs->GetButtonCodeForBind("teammenu");
-		m_ns.keys.bcClassMenu = gameuifuncs->GetButtonCodeForBind("classmenu");
-		m_ns.keys.bcLoadoutMenu = gameuifuncs->GetButtonCodeForBind("loadoutmenu");
 	}
 
 	if (code == m_ns.keys.bcConsole && code != KEY_BACKQUOTE)
@@ -502,10 +498,7 @@ void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 		NeoToggleconsole();
 		return;
 	}
-	else if (code == m_ns.keys.bcMP3Player)
-	{
-		engine->ClientCmd_Unrestricted("neo_mp3");
-	}
+
 	g_uiCtx.eCode = code;
 	OnMainLoop(NeoUI::MODE_KEYPRESSED);
 }

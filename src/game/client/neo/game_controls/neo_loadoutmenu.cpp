@@ -16,6 +16,7 @@
 #include "neo_weapon_loadout.h"
 #include "neo_gamerules.h"
 #include "ui/neo_root.h"
+#include "IGameUIFuncs.h" // for key bindings
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -291,7 +292,7 @@ void CNeoLoadoutMenu::ChangeMenu(const char* menuName = NULL)
 
 void CNeoLoadoutMenu::OnKeyCodeReleased(vgui::KeyCode code)
 {
-	if (code == g_pNeoRoot->m_ns.keys.bcLoadoutMenu)
+	if (code == gameuifuncs->GetButtonCodeForBind("loadoutmenu"))
 	{
 		ChangeMenu(NULL);
 		return;
