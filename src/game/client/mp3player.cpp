@@ -787,8 +787,16 @@ public:
 ConVar cl_neo_radio_shuffle("cl_neo_radio_shuffle", "0", FCVAR_CLIENTDLL| FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "Randomize song order", true, 0, true, 1);
 ConVar cl_neo_radio_mute("cl_neo_radio_mute", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "Turn down sound volume as far as possible", true, 0, true, 1);
 ConVar cl_neo_radio_game_pause("cl_neo_radio_game_pause", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "Pause NEO Radio song when loading into a game", true, 0, true, 1);
-ConVar cl_neo_radio_volume("cl_neo_radio_volume", "0.8", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "NEO Radio song volume", true, MUTED_VOLUME, true, 1);
-ConVar cl_neo_radio_volume_ingame("cl_neo_radio_volume_ingame", "0.2", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "NEO Radio song volume in game", true, MUTED_VOLUME, true, 1);
+ConVar cl_neo_radio_volume("cl_neo_radio_volume", "0.8", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "NEO Radio song volume", true, MUTED_VOLUME, true, 1,
+	[](IConVar* var [[maybe_unused]], const char* pOldValue [[maybe_unused]], float flOldValue [[maybe_unused]] )
+	{
+		if (auto pPlayer = GetMP3Player()) {pPlayer->SetVolumeSlider(cl_neo_radio_volume.GetFloat() * 100);}
+	});
+ConVar cl_neo_radio_volume_ingame("cl_neo_radio_volume_ingame", "0.2", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "NEO Radio song volume in game", true, MUTED_VOLUME, true, 1,
+	[](IConVar* var [[maybe_unused]], const char* pOldValue [[maybe_unused]], float flOldValue [[maybe_unused]] )
+	{
+		if (auto pPlayer = GetMP3Player()) {pPlayer->SetInGameVolumeSlider(cl_neo_radio_volume_ingame.GetFloat() * 100);}
+	});
 #endif // NEO
 CMP3Player::CMP3Player( VPANEL parent, char const *panelName ) :
 	BaseClass( NULL, panelName ),
@@ -1671,6 +1679,18 @@ void CMP3Player::PlaySong( int songIndex, float skipTime /*= 0.0f */ )
 	m_pSongProgress->SetProgress( 0.0f );
 }
 
+#ifdef NEO
+void CMP3Player::SetVolumeSlider(int value)
+{
+	m_pVolume->SetValue(value);
+}
+
+void CMP3Player::SetInGameVolumeSlider(int value)
+{
+	m_pVolumeInGame->SetValue(value);
+}
+
+#endif // NEO
 void CMP3Player::OnStop()
 {
 	if ( m_bPlaying )
