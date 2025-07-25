@@ -1,5 +1,7 @@
 #pragma once
 
+#include "neo_player_shared.h"
+
 static constexpr int CROSSHAIR_MAX_SIZE = 100;
 static constexpr int CROSSHAIR_MAX_THICKNESS = 25;
 static constexpr int CROSSHAIR_MAX_GAP = 25;
@@ -26,13 +28,14 @@ enum NeoHudCrosshairSizeType
 };
 
 extern ConVar cl_neo_crosshair;
+extern ConVar cl_neo_crosshair_network;
 
 extern const char **CROSSHAIR_FILES;
 extern const wchar_t **CROSSHAIR_LABELS;
 extern const wchar_t **CROSSHAIR_SIZETYPE_LABELS;
 
-#define CL_NEO_CROSSHAIR_DEFAULT "2;0;-1;0;2;0.000;1;2;0;0;1;0;0;"
-static constexpr const int NEO_XHAIR_SEQMAX = 256;
+#define CL_NEO_CROSSHAIR_DEFAULT "2;0;-1;0;6;0.000;2;4;0;0;1;0;0;"
+// NEO_XHAIR_SEQMAX defined in neo_player_shared.h instead
 
 enum NeoXHairSegment
 {

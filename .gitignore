@@ -31,6 +31,7 @@ out
 *.vmf
 
 # Any debug or user specific configs that shouldn't be pushed
+/game/neo/cfg/autoexec.cfg
 /game/neo/cfg/config.cfg
 /game/neo/cfg/rain.cfg
 
@@ -41,6 +42,9 @@ out
 /game/neo/mapsrc/*.bsp
 /game/neo/mapsrc/*.prt
 /game/neo/mapsrc/*.vmx
+
+# MP3 Databalse
+/game/neo/resource/mp3player_db.txt
 
 # Object files
 *.o

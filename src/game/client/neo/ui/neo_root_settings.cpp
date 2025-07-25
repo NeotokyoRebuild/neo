@@ -426,6 +426,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 			ImportCrosshair(&pCrosshair->info, CL_NEO_CROSSHAIR_DEFAULT);
 		}
 		pCrosshair->eClipboardInfo = XHAIREXPORTNOTIFY_NONE;
+		pCrosshair->bNetworkCrosshair = cvr->cl_neo_crosshair_network.GetBool();
 	}
 }
 
@@ -607,6 +608,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		char szSequence[NEO_XHAIR_SEQMAX];
 		ExportCrosshair(&pCrosshair->info, szSequence);
 		cvr->cl_neo_crosshair.SetValue(szSequence);
+		cvr->cl_neo_crosshair_network.SetValue(pCrosshair->bNetworkCrosshair);
 	}
 
 	engine->ClientCmd_Unrestricted("host_writeconfig");
@@ -887,59 +889,70 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 		}
 		vgui::surface()->DrawSetColor(g_uiCtx.normalBgColor);
 
-		if (pCrosshair->info.iStyle == CROSSHAIR_STYLE_CUSTOM)
+		NeoUI::SetPerRowLayout(4);
 		{
-			NeoUI::SetPerRowLayout(4);
+			const bool bExportPressed = NeoUI::Button(L"Export to clipboard").bPressed;
+			const bool bImportPressed = NeoUI::Button(L"Import from clipboard").bPressed;
+			const bool bDefaultPressed = NeoUI::Button(L"Reset to default").bPressed;
+
+			if (bExportPressed || bImportPressed)
 			{
-				const bool bExportPressed = NeoUI::Button(L"Export to clipboard").bPressed;
-				const bool bImportPressed = NeoUI::Button(L"Import from clipboard").bPressed;
-				if (bExportPressed || bImportPressed)
+				char szClipboardCrosshair[NEO_XHAIR_SEQMAX] = {}; // zero-init
+				if (bExportPressed)
 				{
-					char szClipboardCrosshair[NEO_XHAIR_SEQMAX] = {}; // zero-init
-					if (bExportPressed)
+					// NEO NOTE (nullsystem): On Windows, SetClipboardText sets from char * looks fine
+					ExportCrosshair(&pCrosshair->info, szClipboardCrosshair);
+					vgui::system()->SetClipboardText(szClipboardCrosshair, V_strlen(szClipboardCrosshair));
+					pCrosshair->eClipboardInfo = XHAIREXPORTNOTIFY_EXPORT_TO_CLIPBOARD;
+				}
+				else // bImportPressed
+				{
+					bool bImported = false;
+					if (vgui::system()->GetClipboardTextCount() > 0)
 					{
-						// NEO NOTE (nullsystem): On Windows, SetClipboardText sets from char * looks fine
-						ExportCrosshair(&pCrosshair->info, szClipboardCrosshair);
-						vgui::system()->SetClipboardText(szClipboardCrosshair, V_strlen(szClipboardCrosshair));
-						pCrosshair->eClipboardInfo = XHAIREXPORTNOTIFY_EXPORT_TO_CLIPBOARD;
-					}
-					else // bImportPressed
-					{
-						bool bImported = false;
-						if (vgui::system()->GetClipboardTextCount() > 0)
-						{
 #ifdef WIN32
-							// NEO NOTE (nullsystem): On Windows, GetClipboardText char * returns UTF-16 arranged bytes, differs from Set...
-							wchar_t wszClipboardCrosshair[NEO_XHAIR_SEQMAX] = {};
-							const int iClipboardWSZBytes = vgui::system()->GetClipboardText(0, wszClipboardCrosshair, NEO_XHAIR_SEQMAX);
-							const int iClipboardBytes = (iClipboardWSZBytes > 0)
-									? g_pVGuiLocalize->ConvertUnicodeToANSI(wszClipboardCrosshair, szClipboardCrosshair, sizeof(szClipboardCrosshair))
-									: 0;
+						// NEO NOTE (nullsystem): On Windows, GetClipboardText char * returns UTF-16 arranged bytes, differs from Set...
+						wchar_t wszClipboardCrosshair[NEO_XHAIR_SEQMAX] = {};
+						const int iClipboardWSZBytes = vgui::system()->GetClipboardText(0, wszClipboardCrosshair, NEO_XHAIR_SEQMAX);
+						const int iClipboardBytes = (iClipboardWSZBytes > 0)
+								? g_pVGuiLocalize->ConvertUnicodeToANSI(wszClipboardCrosshair, szClipboardCrosshair, sizeof(szClipboardCrosshair))
+								: 0;
 #else
-							const int iClipboardBytes = vgui::system()->GetClipboardText(0, szClipboardCrosshair, NEO_XHAIR_SEQMAX);
+						const int iClipboardBytes = vgui::system()->GetClipboardText(0, szClipboardCrosshair, NEO_XHAIR_SEQMAX);
 #endif
-							if (iClipboardBytes > 0)
+						if (iClipboardBytes > 0)
+						{
+							bImported = ImportCrosshair(&pCrosshair->info, szClipboardCrosshair);
+							if (bImported)
 							{
-								bImported = ImportCrosshair(&pCrosshair->info, szClipboardCrosshair);
+								ns->bModified = true;
 							}
 						}
-						pCrosshair->eClipboardInfo = bImported
-								? XHAIREXPORTNOTIFY_IMPORT_TO_CLIPBOARD
-								: XHAIREXPORTNOTIFY_IMPORT_TO_CLIPBOARD_ERROR;
 					}
+					pCrosshair->eClipboardInfo = bImported
+							? XHAIREXPORTNOTIFY_IMPORT_TO_CLIPBOARD
+							: XHAIREXPORTNOTIFY_IMPORT_TO_CLIPBOARD_ERROR;
 				}
 			}
 
-			NeoUI::SetPerRowLayout(1);
+			if (bDefaultPressed)
 			{
-				static constexpr const wchar_t *ARWSZ_XHAIREXPORTNOTIFY_STR[XHAIREXPORTNOTIFY__TOTAL] = {
-					L"", 													// XHAIREXPORTNOTIFY_NONE
-					L"Exported crosshair to clipboard", 					// XHAIREXPORTNOTIFY_EXPORT_TO_CLIPBOARD
-					L"Imported crosshair from clipboard", 					// XHAIREXPORTNOTIFY_IMPORT_TO_CLIPBOARD
-					L"ERROR: Unable to import crosshair from clipboard", 	// XHAIREXPORTNOTIFY_IMPORT_TO_CLIPBOARD_ERROR
-				};
-				NeoUI::Label(ARWSZ_XHAIREXPORTNOTIFY_STR[pCrosshair->eClipboardInfo]);
+				ImportCrosshair(&pCrosshair->info, CL_NEO_CROSSHAIR_DEFAULT);
+				pCrosshair->eClipboardInfo = XHAIREXPORTNOTIFY_RESET_TO_DEFAULT;
+				ns->bModified = true;
 			}
+		}
+
+		NeoUI::SetPerRowLayout(1);
+		{
+			static constexpr const wchar_t *ARWSZ_XHAIREXPORTNOTIFY_STR[XHAIREXPORTNOTIFY__TOTAL] = {
+				L"", 													// XHAIREXPORTNOTIFY_NONE
+				L"Exported crosshair to clipboard", 					// XHAIREXPORTNOTIFY_EXPORT_TO_CLIPBOARD
+				L"Imported crosshair from clipboard", 					// XHAIREXPORTNOTIFY_IMPORT_TO_CLIPBOARD
+				L"ERROR: Unable to import crosshair from clipboard", 	// XHAIREXPORTNOTIFY_IMPORT_TO_CLIPBOARD_ERROR
+				L"Crosshair reset to default",							// XHAIREXPORTNOTIFY_RESET_TO_DEFAULT
+			};
+			NeoUI::Label(ARWSZ_XHAIREXPORTNOTIFY_STR[pCrosshair->eClipboardInfo]);
 		}
 	}
 	NeoUI::EndSection();
@@ -960,7 +973,7 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 			switch (pCrosshair->info.iESizeType)
 			{
 			case CROSSHAIR_SIZETYPE_ABSOLUTE: NeoUI::SliderInt(L"Size", &pCrosshair->info.iSize, 0, CROSSHAIR_MAX_SIZE); break;
-			case CROSSHAIR_SIZETYPE_SCREEN: NeoUI::Slider(L"Size", &pCrosshair->info.flScrSize, 0.0f, 1.0f, 5, 0.01f); break;
+			case CROSSHAIR_SIZETYPE_SCREEN: NeoUI::Slider(L"Size", &pCrosshair->info.flScrSize, 0.0f, 1.0f, 3, 0.01f); break;
 			}
 			NeoUI::SliderInt(L"Thickness", &pCrosshair->info.iThick, 0, CROSSHAIR_MAX_THICKNESS);
 			NeoUI::SliderInt(L"Gap", &pCrosshair->info.iGap, 0, CROSSHAIR_MAX_GAP);
@@ -970,6 +983,8 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 			NeoUI::SliderInt(L"Circle radius", &pCrosshair->info.iCircleRad, 0, CROSSHAIR_MAX_CIRCLE_RAD);
 			NeoUI::SliderInt(L"Circle segments", &pCrosshair->info.iCircleSegments, 0, CROSSHAIR_MAX_CIRCLE_SEGMENTS);
 		}
+		NeoUI::HeadingLabel(L"NETWORKING");
+		NeoUI::RingBoxBool(L"Show other players' crosshairs", &pCrosshair->bNetworkCrosshair);
 	}
 	NeoUI::EndSection();
 }

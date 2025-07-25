@@ -895,12 +895,12 @@ CMP3Player::CMP3Player( VPANEL parent, char const *panelName ) :
 	vgui::ivgui()->AddTickSignal( GetVPanel(), 100 );
 
 #ifdef NEO
-	LoadSettings();
 	if (!RestoreDb(DB_FILENAME) && m_Files.Count() == 0)
 	{
 		// Load the "game" stuff
 		OnRefresh();
 	}
+	LoadSettings();
 
 	PopulateTree();
 	m_bFirstTime = false;
@@ -916,9 +916,7 @@ CMP3Player::~CMP3Player()
 {
 	if ( m_bDirty )
 	{
-#ifndef NEO // NEO TODO (Adam) This file is just going to grow non stop, work out what we're doing wrong, for now re-make the db on every launch
 		SaveDb( DB_FILENAME );
-#endif // NEO
 	}
 	if ( m_bSettingsDirty )
 	{
@@ -1597,7 +1595,9 @@ void CMP3Player::PlaySong( int songIndex, float skipTime /*= 0.0f */ )
 			return;
 		}
 
+#ifndef NEO
 		Assert( !Q_stristr( soundname, "/" ) );
+#endif
 		song.playbackfilename = g_pFullFileSystem->FindOrAddFileName( soundname );
 
 
@@ -2474,7 +2474,6 @@ void CMP3Player::LoadPlayList( char const *filename )
 	// Clear existing playlist
 	m_PlayList.RemoveAll();
 	m_pFileSheet->ResetPlayList();
-	m_Files.RemoveAll();
 
 	// Update most recent playlist
 	SetMostRecentPlayList(filename);

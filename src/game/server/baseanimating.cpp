@@ -217,6 +217,9 @@ BEGIN_DATADESC( CBaseAnimating )
 	DEFINE_INPUTFUNC( FIELD_FLOAT, "SetPlaybackRate", InputSetPlaybackRate ),
 
 	DEFINE_FIELD( m_fBoneCacheFlags, FIELD_SHORT ),
+#ifdef NEO
+	DEFINE_FIELD( m_bIsGib, FIELD_BOOLEAN ),
+#endif // NEO
 
 	END_DATADESC()
 
@@ -263,6 +266,9 @@ IMPLEMENT_SERVERCLASS_ST(CBaseAnimating, DT_BaseAnimating)
 	SendPropFloat( SENDINFO( m_fadeMinDist ), 0, SPROP_NOSCALE ),
 	SendPropFloat( SENDINFO( m_fadeMaxDist ), 0, SPROP_NOSCALE ),
 	SendPropFloat( SENDINFO( m_flFadeScale ), 0, SPROP_NOSCALE ),
+#ifdef NEO
+	SendPropBool( SENDINFO( m_bIsGib ) ),
+#endif // NEO
 
 END_SEND_TABLE()
 
@@ -333,6 +339,9 @@ CBaseAnimating::CBaseAnimating()
 	m_fadeMaxDist = 0;
 	m_flFadeScale = 0.0f;
 	m_fBoneCacheFlags = 0;
+#ifdef NEO
+	m_bIsGib = false;
+#endif // NEO
 }
 
 CBaseAnimating::~CBaseAnimating()
