@@ -152,7 +152,7 @@ void CNEOHud_Message::UpdateStateForNeoHudElementDraw()
 
 void CNEOHud_Message::ShowMessage(wchar_t* message)
 {
-    wcsncpy(m_szMessage, ProcessKeyBinds(message).c_str(), sizeof(m_szMessage) / sizeof(wchar_t));
+    V_wcsncpy(m_szMessage, ProcessKeyBinds(message).c_str(), sizeof(m_szMessage));
     m_bShouldDraw = true;
 
     m_Lines.clear();
@@ -246,7 +246,7 @@ std::wstring CNEOHud_Message::ProcessKeyBinds(wchar_t* rawmessage)
 
 void CNEOHud_Message::ShowSubMessage(wchar_t* message)
 {
-    wcsncpy(m_szSubMessage, ProcessKeyBinds(message).c_str(), sizeof(m_szSubMessage) / sizeof(wchar_t));
+    V_wcsncpy(m_szSubMessage, ProcessKeyBinds(message).c_str(), sizeof(m_szSubMessage));
 }
 
 void CNEOHud_Message::HideSubMessage()

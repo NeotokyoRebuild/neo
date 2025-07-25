@@ -50,7 +50,7 @@ int CNEO_Message::UpdateTransmitState()
 
 void CNEO_Message::InputShowMessage(inputdata_t& inputData)
 {
-	Q_strncpy(m_NetworkedMessageKey.GetForModify(), inputData.value.String(), 255);
+	Q_strncpy(m_NetworkedMessageKey.GetForModify(), inputData.value.String(), sizeof(m_NetworkedMessageKey));
 
 	if (m_sSound != NULL_STRING)
 	{
@@ -69,16 +69,16 @@ void CNEO_Message::InputShowMessage(inputdata_t& inputData)
 
 void CNEO_Message::InputHideMessage(inputdata_t& inputData)
 {
-	Q_strncpy(m_NetworkedMessageKey.GetForModify(), "", 255);
-	Q_strncpy(m_NetworkedSubMessageKey.GetForModify(), "", 255);
+	Q_strncpy(m_NetworkedMessageKey.GetForModify(), "", sizeof(m_NetworkedMessageKey));
+	Q_strncpy(m_NetworkedSubMessageKey.GetForModify(), "", sizeof(m_NetworkedSubMessageKey));
 }
 
 void CNEO_Message::InputShowSubMessage(inputdata_t& inputData)
 {
-	Q_strncpy(m_NetworkedSubMessageKey.GetForModify(), inputData.value.String(), 255);
+	Q_strncpy(m_NetworkedSubMessageKey.GetForModify(), inputData.value.String(), sizeof(m_NetworkedSubMessageKey));
 }
 
 void CNEO_Message::InputHideSubMessage(inputdata_t& inputData)
 {
-	Q_strncpy(m_NetworkedSubMessageKey.GetForModify(), "", 255);
+	Q_strncpy(m_NetworkedSubMessageKey.GetForModify(), "", sizeof(m_NetworkedSubMessageKey));
 }
