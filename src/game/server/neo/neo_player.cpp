@@ -2581,7 +2581,7 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	{
 		if (!justJoined && GetTeamNumber() != TEAM_SPECTATOR && !IsDead())
 		{
-			if (suicidePlayerIfAlive || NEORules()->CanChangeTeamClassWeaponWhenAlive())
+			if (suicidePlayerIfAlive || NEORules()->CanChangeTeamClassLoadoutWhenAlive())
 			{
 				SoftSuicide();
 			}

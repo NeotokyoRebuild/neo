@@ -3780,17 +3780,17 @@ int CNEORules::GetForcedWeapon(void)
 	return m_iForcedWeapon;
 }
 
-const char* CNEORules::GetGameTypeName(void)
+inline const char* CNEORules::GetGameTypeName(void)
 {
 	return NEO_GAME_TYPE_SETTINGS[GetGameType()].gameTypeName;
 }
 
-bool CNEORules::CanChangeTeamClassWeaponWhenAlive()
+inline const bool CNEORules::CanChangeTeamClassLoadoutWhenAlive()
 {
 	return NEO_GAME_TYPE_SETTINGS[GetGameType()].changeTeamClassLoadoutWhenAlive;
 }
 
-bool CNEORules::CanRespawnAnyTime()
+inline const bool CNEORules::CanRespawnAnyTime()
 {
 	return NEO_GAME_TYPE_SETTINGS[GetGameType()].respawns;
 }
