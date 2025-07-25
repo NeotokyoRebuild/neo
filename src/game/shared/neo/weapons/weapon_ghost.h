@@ -52,8 +52,8 @@ public:
 	int ShouldTransmit(const CCheckTransmitInfo *pInfo) override;
 #endif
 
-#ifdef CLIENT_DLL
 	void PlayGhostSound(float volume = 1.0f);
+#ifdef CLIENT_DLL
 	void StopGhostSound(void);
 	void HandleGhostEquip(void);
 

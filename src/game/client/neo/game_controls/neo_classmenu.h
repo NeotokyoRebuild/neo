@@ -30,7 +30,7 @@ class MouseCode;
 
 // NOTE: this class name must match its res file description.
 class CNeoClassMenu : public vgui::Frame,
-    public IViewPortPanel
+    public IViewPortPanel, public CGameEventListener
 {
     DECLARE_CLASS_SIMPLE( CNeoClassMenu, vgui::Frame );
 
@@ -47,6 +47,9 @@ public:
 	virtual void ShowPanel( bool bShow );
 
 	GameActionSet_t GetPreferredActionSet() override { return GAME_ACTION_SET_IN_GAME_HUD; }
+
+    // IGameEventListener interface:
+    virtual void FireGameEvent(IGameEvent* event);
 
     virtual void OnMessage(const KeyValues *params, vgui::VPANEL fromPanel);
 
@@ -75,7 +78,7 @@ protected:
 	void SetLabelText(const char *textEntryName, wchar_t *text);
 	void MoveLabelToFront(const char *textEntryName);
 	void FindButtons();
-	void UpdateSkinImages(int classNumber);
+	void UpdateSkinImages(int classNumber = -1, int overrideTeamNumber = -1);
 	void UpdateTimer() { }
 
     // vgui overrides
