@@ -79,7 +79,6 @@ struct NeoSettings
 
 		// Will be checked often so cached
 		ButtonCode_t bcConsole;
-		ButtonCode_t bcMP3Player;
 
 		enum Flags
 		{

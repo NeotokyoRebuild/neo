@@ -498,10 +498,7 @@ void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 		NeoToggleconsole();
 		return;
 	}
-	else if (code == m_ns.keys.bcMP3Player)
-	{
-		engine->ClientCmd_Unrestricted("neo_mp3");
-	}
+
 	g_uiCtx.eCode = code;
 	OnMainLoop(NeoUI::MODE_KEYPRESSED);
 }
