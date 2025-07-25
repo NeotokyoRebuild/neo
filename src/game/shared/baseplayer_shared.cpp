@@ -560,7 +560,8 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 		return;
 	
 #ifdef NEO
-	if (static_cast<CNEO_Player*>(this)->GetNeoFlags() & NEO_FL_FREEZETIME)
+	auto neoPlayer = static_cast<CNEO_Player*>(this);
+	if (neoPlayer->GetNeoFlags() & NEO_FL_FREEZETIME)
 		return;
 #endif
 
@@ -580,7 +581,11 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 
 	bool onground = ( GetFlags() & FL_ONGROUND );
 	bool movingalongground = ( groundspeed > 0.0001f );
+#ifdef NEO
+	const bool moving_fast_enough = speed >= 50.f; // Support crouched with a supa7 aimed in has a speed of 55.f
+#else
 	bool moving_fast_enough =  ( speed >= velwalk );
+#endif // NEO
 
 #ifdef PORTAL
 	// In Portal we MUST play footstep sounds even when the player is moving very slowly
@@ -597,7 +602,11 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 
 //	MoveHelper()->PlayerSetAnimation( PLAYER_WALK );
 
+#ifdef NEO
+	bWalking = speed < velrun && !neoPlayer->IsSprinting();
+#else
 	bWalking = speed < velrun;		
+#endif // NEO
 
 	VectorCopy( vecOrigin, knee );
 	VectorCopy( vecOrigin, feet );
@@ -683,22 +692,30 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 		}
 	}
 	
+#ifdef NEO
+	// Changing movement direction, looking around, wall-running accelerate the player. Raise the threshold.
+	// Throwing the mouse around quickly while changing direction will still result in footstep sounds, and wall running (as it should)
+	constexpr float SILENT_THRESHOLD_GRACE = 1.25;
+#endif //NEO
 	// play the sound
 	// 65% volume if ducking
 	if ( GetFlags() & FL_DUCKING )
 	{
 		fvol *= 0.65;
 #ifdef NEO
-		if (speed <= 60)
+		if (neoPlayer->IsWalking() && speed <= NEO_CROUCH_WALK_SPEED * SILENT_THRESHOLD_GRACE)
 		{
 			return;
 		}
 #endif // NEO
 	}
 #ifdef NEO
-	else if ( speed <= 90) {
+
+	else if (neoPlayer->IsWalking() && speed <= NEO_WALK_SPEED * SILENT_THRESHOLD_GRACE)
+	{
 		return;
 	}
+
 #endif
 	PlayStepSound( feet, psurface, fvol, false );
 }
