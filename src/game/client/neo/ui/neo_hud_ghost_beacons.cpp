@@ -12,6 +12,7 @@
 
 #include "c_neo_npc_dummy.h"
 #include "c_neo_player.h"
+#include "neo_player_shared.h"
 #include "c_team.h"
 #include "neo_gamerules.h"
 #include "weapon_ghost.h"
@@ -81,6 +82,7 @@ void CNEOHud_GhostBeacons::ApplySchemeSettings(vgui::IScheme* pScheme)
 	SetBgColor(COLOR_TRANSPARENT);
 }
 
+extern ConVar neo_ctg_ghost_beacons_when_inactive;
 void CNEOHud_GhostBeacons::DrawNeoHudElement()
 {
 	if (!ShouldDraw())
@@ -88,7 +90,7 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 		return;
 	}
 
-	auto spectateTarget = IsLocalPlayerSpectator() ? UTIL_PlayerByIndex(GetSpectatorTarget()) : C_NEO_Player::GetLocalNEOPlayer();
+	auto spectateTarget = IsLocalPlayerSpectator() ? ToNEOPlayer(UTIL_PlayerByIndex(GetSpectatorTarget())) : C_NEO_Player::GetLocalNEOPlayer();
 	if (!spectateTarget || spectateTarget->GetTeamNumber() < FIRST_GAME_TEAM || !spectateTarget->IsAlive() || NEORules()->IsRoundOver())
 	{
 		// NEO NOTE (nullsystem): Spectator and dead players even in spec shouldn't see beacons
@@ -96,8 +98,21 @@ void CNEOHud_GhostBeacons::DrawNeoHudElement()
 		return;
 	}
 
-	auto weapon = static_cast<CNEOBaseCombatWeapon*>(spectateTarget->GetActiveWeapon());
-	auto ghost = (weapon && weapon->IsGhost()) ? static_cast<CWeaponGhost*>(weapon) : nullptr;
+	if (!spectateTarget->m_bCarryingGhost)
+	{ // Saves iterating through all the weapons when neo_ctg_ghost_beacons_when_inactive is set to 1
+		return;
+	}
+
+	C_WeaponGhost* ghost;
+	if (neo_ctg_ghost_beacons_when_inactive.GetBool())
+	{
+		ghost = static_cast<C_WeaponGhost*>(GetNeoWepWithBits(spectateTarget, NEO_WEP_GHOST));
+	}
+	else
+	{
+		auto weapon = static_cast<C_NEOBaseCombatWeapon*>(spectateTarget->GetActiveWeapon());
+		ghost = (weapon && weapon->IsGhost()) ? static_cast<C_WeaponGhost*>(weapon) : nullptr;
+	}
 
 	if (!ghost) //Check ghost ready here as players might be in PVS
 	{
