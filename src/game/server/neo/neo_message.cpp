@@ -62,7 +62,7 @@ void CNEO_Message::Think()
 void CNEO_Message::DisplayTimer()
 {
 	float elapsed = gpGlobals->curtime - m_flTimerStart;
-	char timer[10];
+	char timer[16];
 	V_snprintf(timer, sizeof(timer), "%02d:%02d:%03d", int(elapsed / 60.0f), int(elapsed) % 60, int((elapsed - int(elapsed)) * 1000.0f)); // minutes, seconds, milliseconds
 
 	V_strncpy(m_NetworkedMessageKey.GetForModify(), timer, sizeof(m_NetworkedMessageKey));
