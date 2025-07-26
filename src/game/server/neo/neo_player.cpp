@@ -1274,11 +1274,11 @@ float CNEO_Player::GetFogObscuredRatio(CBaseEntity* target) const
 	// Assault class motion vision
 	if (GetClass() == NEO_CLASS_ASSAULT && targetIsMoving)
 	{
-		detectionChance = MAX(detectionChance, MIN_ASSAULT_DETECTION_CHANCE_PER_TICK);
+		detectionChance = Max(detectionChance, MIN_ASSAULT_DETECTION_CHANCE_PER_TICK);
 	}
 
 	// Ensure the final detection chance is within valid bounds [0, 1] (as a ratio)
-	detectionChance = MAX(0.0f, fminf(1.0f, detectionChance));
+	detectionChance = Max(0.0f, fminf(1.0f, detectionChance));
 
 	// Convert detection chance to obscured ratio (invert: high detection = low obscured ratio)
 	float obscuredRatio = 1.0f - detectionChance;
