@@ -95,6 +95,11 @@ if(OS_LINUX OR OS_MACOS)
 endif()
 
 if(OS_WINDOWS)
+    target_compile_definitions(server
+        PRIVATE
+        fopen=dont_use_fopen
+    )
+
     target_link_libraries(server
         PRIVATE 
         winmm.lib 

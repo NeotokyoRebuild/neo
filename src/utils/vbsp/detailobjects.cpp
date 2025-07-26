@@ -132,8 +132,8 @@ static void ParseDetailGroup( int detailId, KeyValues* pGroupKeyValues )
 
 			DetailModel_t &model = group.m_Models[i];
 
-			model.m_ModelName = pIter->GetString( "model", 0 );
-			if (model.m_ModelName != UTL_INVAL_SYMBOL)
+            model.m_ModelName = pIter->GetString( "model", nullptr );
+            if (model.m_ModelName)
 			{
 				model.m_Type = DETAIL_PROP_TYPE_MODEL;
 			}
@@ -285,7 +285,7 @@ static const char *FindDetailVBSPName( void )
 {
 	for( int i = 0; i < num_entities; i++ )
 	{
-		char* pEntity = ValueForKey( &entities[i], "classname" );
+        auto pEntity = ValueForKey( &entities[i], "classname" );
 		if ( !strcmp( pEntity, "worldspawn" ) )
 		{
 			const char *pDetailVBSP = ValueForKey( &entities[i], "detailvbsp" );
@@ -904,12 +904,12 @@ void EmitDetailModels()
 	Vector2D tex[2];
 	for (int i = 0; i < num_entities; ++i)
 	{
-		char* pEntity = ValueForKey(&entities[i], "classname");
+        auto pEntity = ValueForKey(&entities[i], "classname");
 		if (!strcmp(pEntity, "detail_prop") || !strcmp(pEntity, "prop_detail"))
 		{
 			GetVectorForKey( &entities[i], "origin", origin );
 			GetAnglesForKey( &entities[i], "angles", angles );
-			char* pModelName = ValueForKey( &entities[i], "model" );
+            auto  pModelName = ValueForKey( &entities[i], "model" );
 			int nOrientation = IntForKey( &entities[i], "detailOrientation" );
 
 			AddDetailToLump( pModelName, origin, angles, nOrientation );
