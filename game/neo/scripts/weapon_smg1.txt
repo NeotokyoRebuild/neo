@@ -28,7 +28,7 @@ WeaponData
 	{
 		"reload"			"Weapon_SMG1.Reload"
 		"reload_npc"		"Weapon_SMG1.NPC_Reload"
-		"empty"				"Weapon_SMG1.Empty"
+		//"empty"				"Weapon_SMG1.Empty"
 		"single_shot"		"Weapon_SMG1.Single"
 		"single_shot_npc"	"Weapon_SMG1.NPC_Single"
 		"special1"			"Weapon_SMG1.Special1"

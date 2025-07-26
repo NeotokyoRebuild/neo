@@ -76,8 +76,8 @@ WeaponData
 		"empty"			"Weapon_Pistol.Empty"
 		"single_shot"		"Weapon_MP5Navy.Single"
 		"single_shot_npc"	"Weapon_MP5Navy.Single"
-		"special1"		"Weapon_smac.Special1"
-		"special2"		"Weapon_smac.Special2"
+		//"special1"		"Weapon_smac.Special1"
+		//"special2"		"Weapon_smac.Special2"
 		"burst"			"Weapon_Pistol.Burst"
 		"melee_miss"		"Weapon_Generic.melee_swing"
 	}

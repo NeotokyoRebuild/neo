@@ -48,9 +48,9 @@ ConVar hl2mp_spawn_frag_fallback_radius( "hl2mp_spawn_frag_fallback_radius", "48
 
 #define HL2MP_COMMAND_MAX_RATE 0.3
 
+#ifndef NEO
 void DropPrimedFragGrenade( CHL2MP_Player *pPlayer, CBaseCombatWeapon *pGrenade );
 
-#ifndef NEO
 LINK_ENTITY_TO_CLASS( player, CHL2MP_Player );
 #endif
 
@@ -250,11 +250,13 @@ void CHL2MP_Player::Precache( void )
 	for ( i = 0; i < nHeads; ++i )
 		 PrecacheModel( g_ppszRandomCombineModels[i] );
 
+#ifndef NEO
 	PrecacheFootStepSounds();
 
 	PrecacheScriptSound( "NPC_MetroPolice.Die" );
 	PrecacheScriptSound( "NPC_CombineS.Die" );
 	PrecacheScriptSound( "NPC_Citizen.die" );
+#endif // NEO
 }
 
 void CHL2MP_Player::GiveAllItems( void )
@@ -1323,6 +1325,7 @@ void CHL2MP_Player::FlashlightTurnOff( void )
 
 void CHL2MP_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon, const Vector *pvecTarget, const Vector *pVelocity )
 {
+#ifndef NEO
 	//Drop a grenade if it's primed.
 	if ( GetActiveWeapon() )
 	{
@@ -1337,6 +1340,7 @@ void CHL2MP_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon, const Vector *pvecT
 			}
 		}
 	}
+#endif // NEO
 
 	BaseClass::Weapon_Drop( pWeapon, pvecTarget, pVelocity );
 }
