@@ -10,8 +10,8 @@
 #pragma once
 #endif
 
-#include "HelperInfo.h"
-#include "GameData.h"
+#include "helperinfo.h"
+#include "gamedata.h"
 #include "GDClass.h"
 #include "InputOutput.h"
 

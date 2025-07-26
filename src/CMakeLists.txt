@@ -37,6 +37,7 @@ option(NEO_BUILD_WEAPON_PBK56S "Build PBK56S weapon" OFF)
 option(NEO_BUILD_TIER1 "Build tier1 library" ON)
 option(NEO_BUILD_MATHLIB "Build mathlib library" ON)
 option(NEO_BUILD_VGUI_CONTROLS "Build vgui_controls library" ON)
+option(NEO_BUILD_UTILS "Build utils" ON)
 option(NEO_COPY_LIBRARIES "Copy libraries to bin directory by default" ON)
 option(NEO_EXTRA_ASSETS "Copy extra assets into game/neo" ON)
 set(NEO_EXTRA_ASSETS_ALT_PATH "" CACHE PATH "Alternate location to fetch the extra assets")
@@ -69,6 +70,7 @@ message(STATUS "Build PBK56S weapon (INCLUDE_WEP_PBK): ${NEO_BUILD_WEAPON_PBK56S
 message(STATUS "Build tier1 library: ${NEO_BUILD_TIER1}")
 message(STATUS "Build mathlib library: ${NEO_BUILD_MATHLIB}")
 message(STATUS "Build vgui_controls library: ${NEO_BUILD_VGUI_CONTROLS}")
+message(STATUS "Build utils: ${NEO_BUILD_UTILS}")
 message(STATUS "Copy libraries to bin directory by default: ${NEO_COPY_LIBRARIES}")
 message(STATUS "Copy extra assets into game/neo: ${NEO_EXTRA_ASSETS}")
 message(STATUS "Alternate location to fetch the extra assets: ${NEO_EXTRA_ASSETS_ALT_PATH}")
@@ -101,7 +103,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 set(CMAKE_POSITION_INDEPENDENT_CODE FALSE)
 
 set(SOURCESDK TRUE)
-set(SOURCE_HAS_FREETYPE TRUE)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_compile_definitions(
@@ -356,7 +357,6 @@ if(OS_LINUX OR OS_MACOS)
         -fdiagnostics-show-option
         -Wformat -Wformat-security
 
-
         -Usprintf
         -Ustrncpy
 
@@ -369,6 +369,15 @@ if(OS_LINUX OR OS_MACOS)
         # Fix for "error: cast from pointer to smaller type 'unsigned int' loses information"
         #-fms-extensions
     )
+
+    if(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+        add_compile_options(
+            #-fno-strict-aliasing
+            -ffast-math
+            -fno-omit-frame-pointer
+            -ftree-vectorize
+        )
+    endif()
 
     # Disable option for older compiler in docker
     if(NOT CMAKE_CXX_COMPILER_VERSION STREQUAL "4.8.4")
@@ -662,6 +671,11 @@ if(NEO_EXTRA_ASSETS)
                 "${neo_assets_SOURCE_DIR}/neo"
                 "${CMAKE_SOURCE_DIR}/../game/neo")
     endif()
+endif()
+
+if(NEO_BUILD_UTILS AND OS_WINDOWS)
+    add_subdirectory(fgdlib)
+    add_subdirectory(utils)
 endif()
 
 add_subdirectory(tests)

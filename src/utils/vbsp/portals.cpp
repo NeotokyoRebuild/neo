@@ -745,7 +745,6 @@ qboolean FloodEntities (tree_t *tree)
 {
 	int		i;
 	Vector	origin;
-	char	*cl;
 	qboolean	inside;
 	node_t *headnode;
 
@@ -760,7 +759,7 @@ qboolean FloodEntities (tree_t *tree)
 		if (VectorCompare(origin, vec3_origin))
 			continue;
 
-		cl = ValueForKey (&entities[i], "classname");
+        auto cl = ValueForKey (&entities[i], "classname");
 
 		origin[2] += 1;	// so objects on floor are ok
 
