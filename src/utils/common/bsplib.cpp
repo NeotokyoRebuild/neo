@@ -718,6 +718,8 @@ CGameLump	g_GameLumps;
 
 static IZip *s_pakFile = 0;
 
+const char *g_pszEmpty = "";
+
 //-----------------------------------------------------------------------------
 // Keep the file position aligned to an arbitrary boundary.
 // Returns updated file position.
@@ -3147,21 +3149,21 @@ void SetKeyValue(entity_t *ent, const char *key, const char *value)
 	ep->value = copystring(value);
 }
 
-char 	*ValueForKey (entity_t *ent, char *key)
+const char* ValueForKey (entity_t *ent, const char *key)
 {
 	for (epair_t *ep=ent->epairs ; ep ; ep=ep->next)
 		if (!Q_stricmp (ep->key, key) )
 			return ep->value;
-	return "";
+    return "";
 }
 
-vec_t	FloatForKey (entity_t *ent, char *key)
+vec_t	FloatForKey (entity_t *ent, const char *key)
 {
-	char *k = ValueForKey (ent, key);
+    auto k = ValueForKey (ent, key);
 	return atof(k);
 }
 
-vec_t	FloatForKeyWithDefault (entity_t *ent, char *key, float default_value)
+vec_t	FloatForKeyWithDefault (entity_t *ent, const char *key, float default_value)
 {
 	for (epair_t *ep=ent->epairs ; ep ; ep=ep->next)
 		if (!Q_stricmp (ep->key, key) )
@@ -3171,24 +3173,24 @@ vec_t	FloatForKeyWithDefault (entity_t *ent, char *key, float default_value)
 
 
 
-int		IntForKey (entity_t *ent, char *key)
+int		IntForKey (entity_t *ent, const char *key)
 {
-	char *k = ValueForKey (ent, key);
+    auto k = ValueForKey (ent, key);
 	return atol(k);
 }
 
-int		IntForKeyWithDefault(entity_t *ent, char *key, int nDefault )
+int		IntForKeyWithDefault(entity_t *ent, const char *key, int nDefault )
 {
-	char *k = ValueForKey (ent, key);
-	if ( !k[0] )
+    auto k = ValueForKey (ent, key);
+    if ( !k )
 		return nDefault;
 	return atol(k);
 }
 
-void 	GetVectorForKey (entity_t *ent, char *key, Vector& vec)
+void 	GetVectorForKey (entity_t *ent, const char *key, Vector& vec)
 {
 
-	char *k = ValueForKey (ent, key);
+    auto k = ValueForKey (ent, key);
 // scanf into doubles, then assign, so it is vec_t size independent
 	double	v1, v2, v3;
 	v1 = v2 = v3 = 0;
@@ -3198,11 +3200,11 @@ void 	GetVectorForKey (entity_t *ent, char *key, Vector& vec)
 	vec[2] = v3;
 }
 
-void 	GetVector2DForKey (entity_t *ent, char *key, Vector2D& vec)
+void 	GetVector2DForKey (entity_t *ent, const char *key, Vector2D& vec)
 {
 	double	v1, v2;
 
-	char *k = ValueForKey (ent, key);
+    auto k = ValueForKey (ent, key);
 // scanf into doubles, then assign, so it is vec_t size independent
 	v1 = v2 = 0;
 	sscanf (k, "%lf %lf", &v1, &v2);
@@ -3210,12 +3212,11 @@ void 	GetVector2DForKey (entity_t *ent, char *key, Vector2D& vec)
 	vec[1] = v2;
 }
 
-void 	GetAnglesForKey (entity_t *ent, char *key, QAngle& angle)
+void 	GetAnglesForKey (entity_t *ent, const char *key, QAngle& angle)
 {
-	char	*k;
 	double	v1, v2, v3;
 
-	k = ValueForKey (ent, key);
+    auto k = ValueForKey (ent, key);
 // scanf into doubles, then assign, so it is vec_t size independent
 	v1 = v2 = v3 = 0;
 	sscanf (k, "%lf %lf %lf", &v1, &v2, &v3);

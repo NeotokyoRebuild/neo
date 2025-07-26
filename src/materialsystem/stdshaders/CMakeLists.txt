@@ -32,6 +32,7 @@ if(OS_WINDOWS)
     target_compile_definitions(game_shader_dx9
         PRIVATE
         USE_ACTUAL_DX
+        fopen=dont_use_fopen
     )
 
     target_link_libraries(game_shader_dx9
