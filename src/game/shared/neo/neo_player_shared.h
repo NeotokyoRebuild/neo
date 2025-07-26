@@ -315,6 +315,8 @@ enum NeoWeponAimToggleE {
 
 bool ClientWantsAimHold(const CNEO_Player* player);
 
+void CheckPingButton(CNEO_Player* player);
+
 struct AttackersTotals
 {
 	int dealtDmgs;
