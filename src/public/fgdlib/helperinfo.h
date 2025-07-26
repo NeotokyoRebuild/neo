@@ -80,7 +80,7 @@ inline bool CHelperInfo::AddParameter(const char *pszParameter)
 {
 	if ((pszParameter != NULL) && (pszParameter[0] != '\0'))
 	{
-		int nLen = strlen(pszParameter);
+        auto nLen = strlen(pszParameter);
 		
 		if (nLen > 0)
 		{
