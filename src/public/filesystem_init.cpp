@@ -417,11 +417,11 @@ void LaunchVConfig()
 	Q_AppendSlash( vconfigExe, sizeof( vconfigExe ) );
 	Q_strncat( vconfigExe, "vconfig.exe", sizeof( vconfigExe ), COPY_ALL_CHARACTERS );
 
-	char *argv[] =
+    const char *argv[] =
 	{
 		vconfigExe,
 		"-allowdebug",
-		NULL
+        nullptr
 	};
 
 	_spawnv( _P_NOWAIT, vconfigExe, argv );
