@@ -41,14 +41,6 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 
 	CNEOBaseCombatWeapon* myWeapon = static_cast<CNEOBaseCombatWeapon* >( me->GetActiveWeapon() );
 	bool isUsingCloseRangeWeapon = me->IsCloseRange( myWeapon );
-
-	bool isThreatSupport = (threat && (static_cast<CNEO_Player*>(threat->GetEntity())->GetClass() == NEO_CLASS_SUPPORT));
-	if (isThreatSupport
-		|| (myWeapon && myWeapon->GetNeoWepBits() & NEO_WEP_SUPPRESSED))
-	{
-		me->EnableCloak(3.0f);
-	}
-
 	if ( isUsingCloseRangeWeapon && threat->IsVisibleRecently() && me->IsRangeLessThan( threat->GetLastKnownPosition(), 1.1f * me->GetDesiredAttackRange() ) )
 	{
 		// circle around our victim
@@ -85,7 +77,7 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 		if ( threat->IsVisibleRecently() )
 		{
 			// pre-cloak needs more thermoptic budget when chasing threats
-			me->EnableCloak(5.0f);
+			me->EnableCloak(6.0f);
 
 			if ( isUsingCloseRangeWeapon )
 			{

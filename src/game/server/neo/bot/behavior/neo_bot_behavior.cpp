@@ -446,8 +446,9 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 		{
 			if ( myWeapon->Clip1() <= 0 )
 			{
-				m_isWaitingForFullReload = true;
 				me->ReleaseFireButton();
+				me->EnableCloak(3.0f);
+				m_isWaitingForFullReload = true;
 				me->PressReloadButton();
 			}
 
@@ -515,6 +516,7 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 		{
 			if (myWeapon->m_iClip1 <= 0)
 			{
+				me->EnableCloak(3.0f);
 				me->PressCrouchButton(0.3f);
 				if (m_isWaitingForFullReload)
 				{
@@ -532,6 +534,15 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 					m_isWaitingForFullReload = true;
 				}
 				return;
+			}
+			else if (myWeapon->GetNeoWepBits() & NEO_WEP_SUPPRESSED)
+			{
+				me->EnableCloak(3.0f);
+			}
+			else
+			{
+				// don't waste cloak budget on thermoptic disrupting weapon
+				me->DisableCloak();
 			}
 
 			if ( me->IsContinuousFireWeapon( myWeapon ) )

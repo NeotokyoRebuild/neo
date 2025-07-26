@@ -92,8 +92,7 @@ ActionResult< CNEOBot >	CNEOBotSeekAndDestroy::Update( CNEOBot *me, float interv
 
 				int baseThreshold = isBarrage ? (maxClip / 3) : (maxClip / 2);
 
-				float healthFraction = static_cast<float>(me->GetHealth()) / me->GetMaxHealth();
-				float aggressionFactor = 1.0f - healthFraction;
+				float aggressionFactor = 1.0f - me->HealthFraction();
 
 				float dynamicThreshold = baseThreshold + aggressionFactor * (maxClip - baseThreshold);
 

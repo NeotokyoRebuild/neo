@@ -986,7 +986,7 @@ bool CNEOBot::IsAmmoFull(void) const
 bool CNEOBot::IsCloakEnabled(void) const
 {
 	auto myBody = GetBodyInterface();
-	return myBody ? myBody->IsCloakEnabled() : false;
+	return myBody && myBody->IsCloakEnabled();
 }
 
 float CNEOBot::GetCloakPower(void) const
@@ -997,7 +997,7 @@ float CNEOBot::GetCloakPower(void) const
 
 void CNEOBot::EnableCloak(float threshold)
 {
-	if ( (GetCloakPower() > threshold)
+	if ( (GetCloakPower() >= threshold)
 		&& !IsCloakEnabled() )
 	{
 		PressThermopticButton();

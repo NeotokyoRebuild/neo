@@ -101,12 +101,8 @@ public:
 	// -----------------------
 	// Fog
 	// -----------------------
-	virtual bool		IsHiddenByFog(const Vector& target) const OVERRIDE;       ///< return true if given target cant be seen because of fog
 	virtual bool		IsHiddenByFog(CBaseEntity* target) const OVERRIDE;        ///< return true if given target cant be seen because of fog
-	virtual bool		IsHiddenByFog(float range) const OVERRIDE;                ///< return true if given distance is too far to see through the fog
-	virtual float		GetFogObscuredRatio(const Vector& target) const OVERRIDE; ///< return 0-1 ratio where zero is not obscured, and 1 is completely obscured
 	virtual float		GetFogObscuredRatio(CBaseEntity* target) const OVERRIDE;  ///< return 0-1 ratio where zero is not obscured, and 1 is completely obscured
-	virtual float		GetFogObscuredRatio(float range) const OVERRIDE;          ///< return 0-1 ratio where zero is not obscured, and 1 is completely obscured
 
 	void AddNeoFlag(int flags)
 	{
@@ -162,11 +158,14 @@ public:
 
 	int GetSkin() const { return m_iNeoSkin; }
 	int GetClass() const { return m_iNeoClass; }
-	bool GetCloakState() { return m_aggroTimer.IsElapsed() ? m_bInThermOpticCamo : false; }
 	int GetStar() const { return m_iNeoStar; }
 	bool IsInAim() const { return m_bInAim; }
 
 	bool IsAirborne() const { return (!(GetFlags() & FL_ONGROUND)); }
+
+	bool GetInThermOpticCamo() const { return m_bInThermOpticCamo; }
+	// bots can't see anything, so they need an additional timer for cloak disruption events
+	bool GetBotPerceivedCloakState() const { return m_botThermOpticCamoDisruptedTimer.IsElapsed() && m_bInThermOpticCamo; }
 
 	virtual void StartAutoSprint(void) OVERRIDE;
 	virtual void StartSprinting(void) OVERRIDE;
@@ -179,7 +178,7 @@ public:
 	virtual void StopWalking(void) OVERRIDE;
 
 	// Cloak Power Interface
-	float CloakPower_Get(void);
+	float CloakPower_Get(void) const ;
 	void CloakPower_Update(void);
 	bool CloakPower_Drain(float flPower);
 	void CloakPower_Charge(float flPower);
@@ -223,7 +222,9 @@ public:
 	void CloakFlash(float time = 0.f);
 private:
 	bool m_bAllowGibbing;
-	CountdownTimer m_aggroTimer;
+
+	// tracks time since last cloak disruption event for bots who can't actually see
+	CountdownTimer m_botThermOpticCamoDisruptedTimer;
 
 private:
 	float GetActiveWeaponSpeedScale() const;

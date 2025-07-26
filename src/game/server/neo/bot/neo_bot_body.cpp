@@ -32,12 +32,15 @@ float CNEOBotBody::GetHeadAimTrackingInterval( void ) const
 
 float CNEOBotBody::GetCloakPower( void ) const
 {
-	auto me = static_cast<CNEO_Player*>(GetBot()->GetEntity());
+	auto me = ToNEOPlayer(GetBot()->GetEntity());
 	return me ? me->CloakPower_Get() : 0.0f;
 }
 
 bool CNEOBotBody::IsCloakEnabled( void ) const
 {
-	auto me = static_cast<CNEO_Player*>(GetBot()->GetEntity());
-	return me ? me->GetCloakState() : false;
+	// used for determining if bot needs to press thermoptic button
+	// we are only interested in the toggle state not visibility in this context
+	// so do not use GetBotPerceivedCloakState() here
+	auto me = ToNEOPlayer(GetBot()->GetEntity());
+	return me && me->GetInThermOpticCamo();
 }

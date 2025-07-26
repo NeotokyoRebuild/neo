@@ -449,7 +449,7 @@ CNEO_Player::CNEO_Player()
 	m_nVisionLastTick = 0;
 	m_flLastAirborneJumpOkTime = 0;
 	m_flLastSuperJumpTime = 0;
-	m_aggroTimer.Invalidate();
+	m_botThermOpticCamoDisruptedTimer.Invalidate();
 
 	m_bFirstDeathTick = true;
 	m_bCorpseSet = false;
@@ -1084,8 +1084,7 @@ void CNEO_Player::PlayCloakSound(bool removeLocalPlayer)
 		EmitSound(filter, edict()->m_EdictIndex, params);
 
 		// for emulating bot visibility of cloak initiation flash
-		m_aggroTimer.Invalidate();
-		m_aggroTimer.Start(0.5f);
+		m_botThermOpticCamoDisruptedTimer.Start(0.5f);
 	}
 }
 
@@ -1153,51 +1152,12 @@ void CNEO_Player::CheckThermOpticButtons()
 //-----------------------------------------------------------------------------
 // Purpose: return true if given target cant be seen because of fog
 //-----------------------------------------------------------------------------
-bool CNEO_Player::IsHiddenByFog(const Vector& target) const
-{
-	float range = CBaseCombatCharacter::EyePosition().DistTo(target);
-	return IsHiddenByFog(range);
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: return true if given target cant be seen because of fog
-//-----------------------------------------------------------------------------
 bool CNEO_Player::IsHiddenByFog(CBaseEntity* target) const
 {
 	if (!target)
 		return false;
 
-	// Get the obscured ratio (0.0 = always detected, 1.0 = never detected)
-	float obscuredRatio = GetFogObscuredRatio(target);
-
-	// Convert ratio to detection chance percentage (invert since obscured ratio is opposite of detection)
-	float detectionChancePercent = (1.0f - obscuredRatio) * 100.0f;
-
-	// Roll the chance to determine if the target is detected
-	bool detected = (RandomInt(1, 100) <= detectionChancePercent);
-
-	// Return true if hidden (not detected)
-	return !detected;
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: return true if given target cant be seen because of fog
-//-----------------------------------------------------------------------------
-bool CNEO_Player::IsHiddenByFog(float range) const
-{
-	if (GetFogObscuredRatio(range) >= 1.0f)
-		return true;
-
-	return false;
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: return 0-1 ratio where zero is not obscured, and 1 is completely obscured
-//-----------------------------------------------------------------------------
-float CNEO_Player::GetFogObscuredRatio(const Vector& target) const
-{
-	float range = CBaseCombatCharacter::EyePosition().DistTo(target);
-	return GetFogObscuredRatio(range);
+	return RandomFloat() < GetFogObscuredRatio(target);
 }
 
 //-----------------------------------------------------------------------------
@@ -1206,17 +1166,16 @@ float CNEO_Player::GetFogObscuredRatio(const Vector& target) const
 float CNEO_Player::GetFogObscuredRatio(CBaseEntity* target) const
 {
 	if (!target)
-		return 0.0f; // Changed from false to 0.0f for float return
+		return 0.0f;
 
-	auto targetPlayer = static_cast<CNEO_Player*>(target);
+	auto targetPlayer = ToNEOPlayer(target);
 	if (targetPlayer == nullptr)
 	{
 		// If it's not a player, this cloaking logic doesn't apply, so it is not obscured
 		return 0.0f;
 	}
 
-	auto targetIsCloaked = targetPlayer->GetCloakState();
-	if (!targetIsCloaked)
+	if (!targetPlayer->GetBotPerceivedCloakState())
 	{
 		// Target is not cloaked, so not obscured
 		return 0.0f;
@@ -1224,43 +1183,43 @@ float CNEO_Player::GetFogObscuredRatio(CBaseEntity* target) const
 
 	// --- Base Detection Chance (Per Tick) ---
 	// This is the baseline chance of detection in ideal conditions (stationary, healthy, class-agnostic bot).
-	// Aiming for ~5% detection per second at 66 ticks/sec, this translates to ~0.078% per tick.
-	float detectionChance = 0.0008f; // Starting very low (0.08% per tick)
+	// Aiming for ~5% detection
+	float detectionChance = 0.05f * gpGlobals->interval_per_tick;
 
 	// --- Multipliers for Detection Chance ---
 	// Multipliers > 1.0 increase detection likelihood. Multipliers < 1.0 decrease it.
 
 	// Target Movement Multipliers
-	const float MULT_TARGET_WALKING = 20.0f;   // Walking increases detection chance by 20x
-	const float MULT_TARGET_RUNNING = 50.0f;   // Running increases detection chance by 50x (very high risk)
+	constexpr float MULT_TARGET_WALKING = 20.0f;   // Walking increases detection chance by 20x
+	constexpr float MULT_TARGET_RUNNING = 50.0f;   // Running increases detection chance by 50x (very high risk)
 
 	// Bot's State Multipliers (How the observer's state affects its perception)
-	const float MULT_MY_PLAYER_MOVING = 0.5f;  // Observer moving: 50% less chance to detect (detectionChance *= 0.5)
-	const float MULT_SUPPORT_BOT_VISION = 0.6; // Support bot: 40% less chance to detect (detectionChance *= 0.6)
-	const float MIN_ASSAULT_DETECTION_CHANCE_PER_TICK = 0.20f; // 20% detection per tick (very high)
+	constexpr float MULT_MY_PLAYER_MOVING = 0.5f;  // Observer moving: 50% less chance to detect (detectionChance *= 0.5)
+	constexpr float MULT_SUPPORT_BOT_VISION = 0.6; // Support bot: 40% less chance to detect (detectionChance *= 0.6)
+	constexpr float MIN_ASSAULT_DETECTION_CHANCE_PER_TICK = 0.20f; // 20% detection per tick (very high)
 
 	// Injured Target Multiplier (How target's health affects their stealth)
-	// Each health point lost increases detection by 1% of current chance (additive to multiplier)
-	const float MULT_INJURED_PER_HEALTH_POINT_FACTOR = 0.01f;
+	// with 1.0f, someone at 1% health would be almost twice as likely to be seen
+	constexpr float MULT_INJURED_PER_HEALTH_POINT_FACTOR = 1.0f;
 
 	// Distance Multipliers (How distance affects detection)
 	// These define ranges where detection scales.
-	const float DISTANCE_MAX_DETECTION_SQ = 10000.0f;  // Max detection effect at 100 units (100^2)
-	const float DISTANCE_MIN_DETECTION_SQ = 30000000.0f; // Min detection effect at 3000 units (3000^2)
+	constexpr float DISTANCE_MAX_DETECTION_SQ = 100.0f * 100.0f;  // Max detection effect at 100 units (100^2)
+	constexpr float DISTANCE_MIN_DETECTION_SQ = 6000.0f * 6000.0f; // Min detection effect at 6000 units (6000^2)
 
-	const float DISTANCE_MULT_CLOSE = 5.0f; // Multiplier when very close (e.g., within 100 units)
-	const float DISTANCE_MULT_FAR = 0.01f;    // Multiplier when very far (e.g., beyond 3000 units)
+	constexpr float DISTANCE_MULT_CLOSE = 5.0f; // Multiplier when very close (e.g., within 100 units)
+	constexpr float DISTANCE_MULT_FAR = 0.01f;    // Multiplier when very far (e.g., beyond 3000 units)
 
 	// --- Helper Lambdas for Movement ---
-	auto isMoving = [](const CNEO_Player* player, float tolerance = 10.0f) {
+	constexpr auto isMoving = [](const CNEO_Player* player, float tolerance = 10.0f) {
 		return !player->GetAbsVelocity().IsZero(tolerance);
 		};
 	// Defined a clear threshold for 'running' velocity.
-	auto isRunning = [](const CNEO_Player* player, float runSpeedThreshold = 200.0f) {
+	constexpr auto isRunning = [](const CNEO_Player* player, float runSpeedThreshold = 200.0f) {
 		return player->GetAbsVelocity().LengthSqr() > (runSpeedThreshold * runSpeedThreshold);
 		};
 
-	bool myPlayerIsMoving = isMoving(this); // Observer (this) is moving
+	bool myPlayerIsMoving = isMoving(this); // Observer (me) is moving
 	bool targetIsMoving = isMoving(targetPlayer);
 	bool targetIsRunning = isRunning(targetPlayer);
 
@@ -1283,7 +1242,7 @@ float CNEO_Player::GetFogObscuredRatio(CBaseEntity* target) const
 	}
 
 	// Distance Impact
-	const Vector& myPos = this->GetAbsOrigin(); // TODO: May need GetBot()->GetPosition() equivalent
+	const Vector& myPos = GetAbsOrigin(); // TODO: May need GetBot()->GetPosition() equivalent
 	float currentRangeSq = (target->GetAbsOrigin() - myPos).LengthSqr(); // TODO: May need known.GetLastKnownPosition() equivalent
 
 	float distanceMultiplier;
@@ -1304,56 +1263,27 @@ float CNEO_Player::GetFogObscuredRatio(CBaseEntity* target) const
 	detectionChance *= distanceMultiplier;
 
 	// Class-specific Bot Perception
-	if (this->GetClass() == NEO_CLASS_SUPPORT)
+	if (GetClass() == NEO_CLASS_SUPPORT)
 	{
 		detectionChance *= MULT_SUPPORT_BOT_VISION;
 	}
 
 	// Injured Target Impact
-	if (targetPlayer->GetHealth() < 100)
-	{
-		float healthDeficit = 100.0f - targetPlayer->GetHealth();
-		detectionChance *= (1.0f + (healthDeficit * MULT_INJURED_PER_HEALTH_POINT_FACTOR));
-	}
+	detectionChance *= (1.0f + ((1 - targetPlayer->HealthFraction()) * MULT_INJURED_PER_HEALTH_POINT_FACTOR));
 
 	// Assault class motion vision
-	if (this->GetClass() == NEO_CLASS_ASSAULT && targetIsMoving)
+	if (GetClass() == NEO_CLASS_ASSAULT && targetIsMoving)
 	{
-		detectionChance = fmaxf(detectionChance, MIN_ASSAULT_DETECTION_CHANCE_PER_TICK);
+		detectionChance = MAX(detectionChance, MIN_ASSAULT_DETECTION_CHANCE_PER_TICK);
 	}
 
 	// Ensure the final detection chance is within valid bounds [0, 1] (as a ratio)
-	detectionChance = fmaxf(0.0f, fminf(1.0f, detectionChance));
+	detectionChance = MAX(0.0f, fminf(1.0f, detectionChance));
 
 	// Convert detection chance to obscured ratio (invert: high detection = low obscured ratio)
 	float obscuredRatio = 1.0f - detectionChance;
 
 	return obscuredRatio;
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: return 0-1 ratio where zero is not obscured, and 1 is completely obscured
-//-----------------------------------------------------------------------------
-float CNEO_Player::GetFogObscuredRatio(float range) const
-{
-	/* TODO: Get global fog from map somehow since nav mesh fog is gone
-		fogparams_t fog;
-		GetFogParams( &fog );
-
-		if ( !fog.enable )
-			return 0.0f;
-
-		if ( range <= fog.start )
-			return 0.0f;
-
-		if ( range >= fog.end )
-			return 1.0f;
-
-		float ratio = (range - fog.start) / (fog.end - fog.start);
-		ratio = MIN( ratio, fog.maxdensity );
-		return ratio;
-	*/
-	return 0.0f;
 }
 
 void CNEO_Player::SuperJump(void)
@@ -2321,11 +2251,10 @@ void CNEO_Player::FireBullets ( const FireBulletsInfo_t &info )
 {
 	BaseClass::FireBullets(info);
 
-	if (!(static_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon()))->GetNeoWepBits() & NEO_WEP_SUPPRESSED)
+	if (!((static_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon()))->GetNeoWepBits() & NEO_WEP_SUPPRESSED))
 	{
 		// cloak disruption from unsuppressed weapons
-		m_aggroTimer.Invalidate();
-		m_aggroTimer.Start(0.5f);
+		m_botThermOpticCamoDisruptedTimer.Start(0.5f);
 	}
 }
 
@@ -3237,7 +3166,7 @@ void CNEO_Player::StopWalking(void)
 	m_fIsWalking = false;
 }
 
-float CNEO_Player::CloakPower_Get(void)
+float CNEO_Player::CloakPower_Get(void) const
 {
 	return m_HL2Local.m_cloakPower;
 }
