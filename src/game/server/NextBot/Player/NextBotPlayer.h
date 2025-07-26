@@ -120,6 +120,11 @@ public:
 
 	virtual void PressJumpButton( float duration = -1.0f ) = 0;
 	virtual void ReleaseJumpButton( void ) = 0;
+	
+#ifdef NEO
+	virtual void PressThermopticButton( float duration = -1.0f ) = 0;
+	virtual void ReleaseThermopticButton( void ) = 0;
+#endif
 
 	virtual void PressCrouchButton( float duration = -1.0f ) = 0;
 	virtual void ReleaseCrouchButton( void ) = 0;
@@ -190,6 +195,9 @@ public:
 	virtual void PressSpecialFireButton( float duration = -1.0f );
 	virtual void ReleaseSpecialFireButton( void );
 
+	virtual void PressThermopticButton( float duration = -1.0f );
+	virtual void ReleaseThermopticButton( void );
+
 	virtual void PressUseButton( float duration = -1.0f );
 	virtual void ReleaseUseButton( void );
 
@@ -257,6 +265,7 @@ protected:
 	CountdownTimer m_crouchButtonTimer;
 	CountdownTimer m_walkButtonTimer;
 	CountdownTimer m_buttonScaleTimer;
+	CountdownTimer m_thermopticButtonTimer;
 	IntervalTimer m_burningTimer;		// how long since we were last burning
 	float m_forwardScale;
 	float m_rightScale;
@@ -400,6 +409,9 @@ inline void NextBotPlayer< PlayerType >::ReleaseReloadButton( void )
 template < typename PlayerType >
 inline void NextBotPlayer< PlayerType >::PressJumpButton( float duration )
 {
+	// NEO JANK workaround to allow bots to crouch while attempting to preserve crouch jumping
+	ReleaseCrouchButton();
+	// code change coordinated with disabled ground crouch cancel in CNEOBotLocomotion::Update
 	m_inputButtons |= IN_JUMP;
 	m_jumpButtonTimer.Start( duration );
 }
@@ -410,6 +422,22 @@ inline void NextBotPlayer< PlayerType >::ReleaseJumpButton( void )
 	m_inputButtons &= ~IN_JUMP;
 	m_jumpButtonTimer.Invalidate();
 }
+
+#ifdef NEO
+template < typename PlayerType >
+inline void NextBotPlayer< PlayerType >::PressThermopticButton( float duration )
+{
+	m_inputButtons |= IN_THERMOPTIC;
+	m_thermopticButtonTimer.Start( duration );
+}
+
+template < typename PlayerType >
+inline void NextBotPlayer< PlayerType >::ReleaseThermopticButton( void )
+{
+	m_inputButtons &= ~IN_THERMOPTIC;
+	m_thermopticButtonTimer.Invalidate();
+}
+#endif
 
 template < typename PlayerType >
 inline void NextBotPlayer< PlayerType >::PressCrouchButton( float duration )
@@ -545,6 +573,7 @@ inline void NextBotPlayer< PlayerType >::Spawn( void )
 	m_buttonScaleTimer.Invalidate();
 	m_forwardScale = m_rightScale = 0.04;
 	m_burningTimer.Invalidate();
+	m_thermopticButtonTimer.Invalidate();
 
 	// reset first, because Spawn() may access various interfaces
 	INextBot::Reset();

@@ -96,6 +96,11 @@ public:
 	bool IsAmmoLow(void) const;
 	bool IsAmmoFull(void) const;
 
+	bool IsCloakEnabled(void) const;
+	float GetCloakPower(void) const;
+	void EnableCloak(float threshold);
+	void DisableCloak(void);
+
 	void UpdateLookingAroundForEnemies(void);						// update our view to keep an eye on enemies, and where enemies come from
 
 #define LOOK_FOR_FRIENDS false
