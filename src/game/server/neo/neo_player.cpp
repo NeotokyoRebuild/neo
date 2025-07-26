@@ -1269,7 +1269,7 @@ float CNEO_Player::GetFogObscuredRatio(CBaseEntity* target) const
 	}
 
 	// Injured Target Impact
-	detectionChance *= 1.0f + (MULT_BLEEDING_INJURY_EVENT_FACTOR * m_iBotDetectableBleedingInjuryEvents);
+	detectionChance *= 1.0f + (MULT_BLEEDING_INJURY_EVENT_FACTOR * targetPlayer->GetBotDetectableBleedingInjuryEvents());
 
 	// Assault class motion vision
 	if (GetClass() == NEO_CLASS_ASSAULT && targetIsMoving)
@@ -1278,7 +1278,7 @@ float CNEO_Player::GetFogObscuredRatio(CBaseEntity* target) const
 	}
 
 	// Ensure the final detection chance is within valid bounds [0, 1] (as a ratio)
-	detectionChance = Max(0.0f, fminf(1.0f, detectionChance));
+	detectionChance = Clamp(detectionChance, 0.0f, 1.0f);
 
 	// Convert detection chance to obscured ratio (invert: high detection = low obscured ratio)
 	float obscuredRatio = 1.0f - detectionChance;

@@ -160,6 +160,7 @@ public:
 	int GetClass() const { return m_iNeoClass; }
 	int GetStar() const { return m_iNeoStar; }
 	bool IsInAim() const { return m_bInAim; }
+	int GetBotDetectableBleedingInjuryEvents() const { return m_iBotDetectableBleedingInjuryEvents; }
 
 	bool IsAirborne() const { return (!(GetFlags() & FL_ONGROUND)); }
 
