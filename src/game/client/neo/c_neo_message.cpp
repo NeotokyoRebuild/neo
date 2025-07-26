@@ -6,7 +6,8 @@
 
 IMPLEMENT_CLIENTCLASS_DT(C_NEO_Message, DT_NEO_Message, CNEO_Message)
     RecvPropString(RECVINFO(m_NetworkedMessageKey)),
-    RecvPropString(RECVINFO(m_NetworkedSubMessageKey))
+    RecvPropString(RECVINFO(m_NetworkedSubMessageKey)),
+    RecvPropBool(RECVINFO(m_bTimerMode))
 END_RECV_TABLE()
 
 C_NEO_Message::C_NEO_Message()
@@ -14,6 +15,8 @@ C_NEO_Message::C_NEO_Message()
     // DG: Why doesn't GET_HUDELEMENT(CNEOHud_Message) work here
     CHudElement* pPanelName = gHUD.FindElement("neo_message");
     m_pHudMessage = static_cast<CNEOHud_Message*>(pPanelName);
+
+    m_LocalizedPrefix = g_pVGuiLocalize->Find("Tutorial_TAC_Time");
 }
 
 void C_NEO_Message::OnDataChanged(DataUpdateType_t updateType)
@@ -24,13 +27,24 @@ void C_NEO_Message::OnDataChanged(DataUpdateType_t updateType)
         return;
     }
 
-    if (Q_strlen(STRING(m_NetworkedMessageKey)) > 0)
+    if (V_strlen(m_NetworkedMessageKey) > 0)
     {
-        wchar_t* localizedText = g_pVGuiLocalize->Find(STRING(m_NetworkedMessageKey));
-
-        if (localizedText)
+        if (m_bTimerMode)
         {
-            m_pHudMessage->ShowMessage(localizedText);
+            char message[64];
+            V_snprintf(message, sizeof(message), "%ls %s", m_LocalizedPrefix, m_NetworkedMessageKey);
+            wchar_t messageUnicode[sizeof(message)];
+            g_pVGuiLocalize->ConvertANSIToUnicode(message, messageUnicode, sizeof(messageUnicode));
+            m_pHudMessage->ShowMessage(messageUnicode);
+        }
+        else
+        {
+            wchar_t* localizedText = g_pVGuiLocalize->Find(m_NetworkedMessageKey);
+
+            if (localizedText)
+            {
+                m_pHudMessage->ShowMessage(localizedText);
+            }
         }
     }
     else
@@ -38,9 +52,9 @@ void C_NEO_Message::OnDataChanged(DataUpdateType_t updateType)
         m_pHudMessage->HideMessage();
     }
 
-    if (Q_strlen(STRING(m_NetworkedSubMessageKey)) > 0)
+    if (V_strlen(m_NetworkedSubMessageKey) > 0)
     {
-        wchar_t* localizedText = g_pVGuiLocalize->Find(STRING(m_NetworkedSubMessageKey));
+        wchar_t* localizedText = g_pVGuiLocalize->Find(m_NetworkedSubMessageKey);
 
         if (localizedText)
         {
