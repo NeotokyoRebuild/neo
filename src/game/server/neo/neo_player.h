@@ -308,6 +308,8 @@ private:
 
 	int m_iDmgMenuCurPage;
 	int m_iDmgMenuNextPage;
+	// blood decals are client-side, so track injury event count for bots
+	int m_iBotDetectableBleedingInjuryEvents = 0;
 
 private:
 	CNEO_Player(const CNEO_Player&);

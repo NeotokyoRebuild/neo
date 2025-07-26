@@ -514,6 +514,7 @@ void CNEO_Player::Spawn(void)
 	m_bIsPendingSpawnForThisRound = false;
 
 	m_bLastTickInThermOpticCamo = m_bInThermOpticCamo = false;
+	m_iBotDetectableBleedingInjuryEvents = 0;
 	m_flCamoAuxLastTime = 0;
 
 	m_bInVision = false;
@@ -1198,9 +1199,8 @@ float CNEO_Player::GetFogObscuredRatio(CBaseEntity* target) const
 	constexpr float MULT_SUPPORT_BOT_VISION = 0.6; // Support bot: 40% less chance to detect (detectionChance *= 0.6)
 	constexpr float MIN_ASSAULT_DETECTION_CHANCE_PER_TICK = 0.20f; // 20% detection per tick (very high)
 
-	// Injured Target Multiplier (How target's health affects their stealth)
-	// with 1.0f, someone at 1% health would be almost twice as likely to be seen
-	constexpr float MULT_INJURED_PER_HEALTH_POINT_FACTOR = 1.0f;
+	// Per Bleeding Injury Target Percentage Increase (Estimate of client-side bleeding decals)
+	constexpr float MULT_BLEEDING_INJURY_EVENT_FACTOR = 0.05f;
 
 	// Distance Multipliers (How distance affects detection)
 	// These define ranges where detection scales.
@@ -1269,7 +1269,7 @@ float CNEO_Player::GetFogObscuredRatio(CBaseEntity* target) const
 	}
 
 	// Injured Target Impact
-	detectionChance *= (1.0f + ((1 - targetPlayer->HealthFraction()) * MULT_INJURED_PER_HEALTH_POINT_FACTOR));
+	detectionChance *= 1.0f + (MULT_BLEEDING_INJURY_EVENT_FACTOR * m_iBotDetectableBleedingInjuryEvents);
 
 	// Assault class motion vision
 	if (GetClass() == NEO_CLASS_ASSAULT && targetIsMoving)
@@ -2923,6 +2923,10 @@ int	CNEO_Player::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 				if (bIsTeamDmg && sv_neo_teamdamage_kick.GetBool() && NEORules()->GetRoundStatus() == NeoRoundStatus::RoundLive)
 				{
 					attacker->m_iTeamDamageInflicted += iDamage;
+				}
+
+				if (info.GetDamageType() & (DMG_BULLET | DMG_SLASH | DMG_BUCKSHOT)) {
+					++m_iBotDetectableBleedingInjuryEvents;
 				}
 			}
 		}
