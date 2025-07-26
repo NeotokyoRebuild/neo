@@ -1240,9 +1240,9 @@ int CMapFile::SideIDToIndex( int brushSideID )
 // Input  : *mapent - 
 //			*key - 
 //-----------------------------------------------------------------------------
-void ConvertSideList( entity_t *mapent, char *key )
+void ConvertSideList( entity_t *mapent, const char *key )
 {
-	char *pszSideList = ValueForKey( mapent, key );
+    auto pszSideList = ValueForKey( mapent, key );
 
 	if (pszSideList)
 	{
@@ -1290,10 +1290,10 @@ void ConvertSideList( entity_t *mapent, char *key )
 ChunkFileResult_t HandleNoDynamicShadowsEnt( entity_t *pMapEnt )
 {
 	// Get the list of the sides.
-	char *pSideList = ValueForKey( pMapEnt, "sides" );
+    auto pSideList = const_cast<char*>(ValueForKey( pMapEnt, "sides" ));
 
 	// Parse the side list.
-	char *pScan = strtok( pSideList, " " );
+    auto pScan = strtok( pSideList, " " );
 	if( pScan )
 	{
 		do
@@ -1811,7 +1811,7 @@ void CMapFile::ForceFuncAreaPortalWindowContents()
 {
 	// Now go through all areaportal entities and force CONTENTS_WINDOW
 	// on the brushes of the bmodels they point at.
-	char *targets[] = {"target", "BackgroundBModel"};
+    const char *targets[] = {"target", "BackgroundBModel"};
 	int nTargets = sizeof(targets) / sizeof(targets[0]);
 
 	for( int i=0; i < num_entities; i++ )
@@ -2019,10 +2019,10 @@ void CMapFile::CheckForInstances( const char *pszFileName )
 	// automatically done in this processing.
 	for ( int i = 0; i < num_entities; i++ )
 	{
-		char *pEntity = ValueForKey( &entities[ i ], "classname" );
+        auto pEntity = ValueForKey( &entities[ i ], "classname" );
 		if ( !strcmp( pEntity, "func_instance" ) )
 		{
-			char *pInstanceFile = ValueForKey( &entities[ i ], "file" );
+            auto pInstanceFile = ValueForKey( &entities[ i ], "file" );
 			if ( pInstanceFile[ 0 ] )
 			{
 				char	InstancePath[ MAX_PATH ];
@@ -2337,8 +2337,8 @@ void CMapFile::MergeEntities( entity_t *pInstanceEntity, CMapFile *Instance, Vec
 	entity_t				*WorldspawnEnt = NULL;
 	GameData::TNameFixup	FixupStyle;
 
-	char *pTargetName = ValueForKey( pInstanceEntity, "targetname" );
-	char *pName = ValueForKey( pInstanceEntity, "name" );
+    auto pTargetName = ValueForKey( pInstanceEntity, "targetname" );
+    auto pName = ValueForKey( pInstanceEntity, "name" );
 	if ( pTargetName[ 0 ] )
 	{
 		sprintf( NameFixup, "%s", pTargetName );
@@ -2354,7 +2354,7 @@ void CMapFile::MergeEntities( entity_t *pInstanceEntity, CMapFile *Instance, Vec
 
 	for( int i = 0; i < num_entities; i++ )
 	{
-		char *pID = ValueForKey( &entities[ i ], "hammerid" );
+        auto pID = ValueForKey( &entities[ i ], "hammerid" );
 		if ( pID[ 0 ] )
 		{
 			int value = atoi( pID );
@@ -2374,7 +2374,7 @@ void CMapFile::MergeEntities( entity_t *pInstanceEntity, CMapFile *Instance, Vec
 		entity_t *entity = &entities[ num_entities + i ];
 		entity->firstbrush += ( nummapbrushes - Instance->nummapbrushes );
 
-		char *pID = ValueForKey( entity, "hammerid" );
+        auto pID = ValueForKey( entity, "hammerid" );
 		if ( pID[ 0 ] )
 		{
 			int value = atoi( pID );
@@ -2384,7 +2384,7 @@ void CMapFile::MergeEntities( entity_t *pInstanceEntity, CMapFile *Instance, Vec
 			SetKeyValue( entity, "hammerid", temp );
 		}
 
-		char *pEntity = ValueForKey( entity, "classname" );
+        auto pEntity = ValueForKey( entity, "classname" );
 		if ( strcmpi( pEntity, "worldspawn" ) == 0 )
 		{
 			WorldspawnEnt = entity;
@@ -2410,7 +2410,7 @@ void CMapFile::MergeEntities( entity_t *pInstanceEntity, CMapFile *Instance, Vec
 				for( int i = 0; i < EntClass->GetVariableCount(); i++ )
 				{
 					GDinputvariable *EntVar = EntClass->GetVariableAt( i );
-					char *pValue = ValueForKey( entity, ( char * )EntVar->GetName() );
+                    auto pValue = ValueForKey( entity, ( char * )EntVar->GetName() );
 					if ( GD.RemapKeyValue( EntVar->GetName(), pValue, temp, FixupStyle ) )
 					{
 #ifdef MERGE_INSTANCE_DEBUG_INFO
@@ -3146,7 +3146,7 @@ void CMapFile::TestExpandBrushes (void)
 	side_t	*s;
 	int		i, j, bn;
 	winding_t	*w;
-	char	*name = "expanded.map";
+    const char *name = "expanded.map";
 	mapbrush_t	*brush;
 	vec_t	dist;
 

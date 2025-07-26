@@ -335,11 +335,11 @@ bspbrush_t *AllocBrush (int numsides)
 	static int s_BrushId = 0;
 
 	bspbrush_t	*bb;
-	int			c;
+    size_t		c;
 
-	c = (int)&(((bspbrush_t *)0)->sides[numsides]);
+    c = (size_t)&(((bspbrush_t *)0)->sides[numsides]);
 	bb = (bspbrush_t*)malloc(c);
-	memset (bb, 0, c);
+    memset ((void*)bb, 0, c);
 	bb->id = s_BrushId++;
 	if (numthreads == 1)
 		c_active_brushes++;
