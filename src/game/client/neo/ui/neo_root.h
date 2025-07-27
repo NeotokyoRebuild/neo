@@ -44,11 +44,6 @@ public:
 	void PerformLayout() final;
 	void OnKeyCodeTyped(vgui::KeyCode code) final;
 	void OnKeyTyped(wchar_t unichar) final;
-	void OnMousePressed(vgui::MouseCode code) final;
-	void OnMouseReleased(vgui::MouseCode code) final;
-	void OnMouseDoublePressed(vgui::MouseCode code) final;
-	void OnMouseWheeled(int delta) final;
-	void OnCursorMoved(int x, int y) final;
 	void OnThink();
 	CNeoRoot *m_pNeoRoot = nullptr;
 };
@@ -151,11 +146,11 @@ public:
 	void OnRelayedKeyTyped(wchar_t unichar);
 	void ApplySchemeSettings(vgui::IScheme *pScheme) final;
 	void Paint() final;
-	void OnRelayedMousePressed(vgui::MouseCode code);
-	void OnRelayedMouseReleased(vgui::MouseCode code);
-	void OnRelayedMouseDoublePressed(vgui::MouseCode code);
-	void OnRelayedMouseWheeled(int delta);
-	void OnRelayedCursorMoved(int x, int y);
+	void OnMousePressed(vgui::MouseCode code) final;
+	void OnMouseReleased(vgui::MouseCode code) final;
+	void OnMouseDoublePressed(vgui::MouseCode code) final;
+	void OnMouseWheeled(int delta) final;
+	void OnCursorMoved(int x, int y) final;
 	void OnTick() final;
 	void FireGameEvent(IGameEvent *event) final;
 
