@@ -491,17 +491,14 @@ void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 		return;
 	}
 
-	constexpr auto refreshBind = [](ButtonCode_t& mutRefButton, const char* bind)->void{
-		mutRefButton = gameuifuncs->GetButtonCodeForBind(bind);
-	};
 	// Refresh every time, because else if the user unbinds or rebinds the key, it will still incorrectly be mapped there.
 	// NEO FIXME (Rain): We do not currently support binding multiple buttons for the same command;
 	// if the user does: bind a foo; bind b foo; then only the latest bind will work.
-	refreshBind(m_ns.keys.bcConsole, "neo_toggleconsole");
-	refreshBind(m_ns.keys.bcMP3Player, "neo_mp3");
-	refreshBind(m_ns.keys.bcTeamMenu, "teammenu");
-	refreshBind(m_ns.keys.bcClassMenu, "classmenu");
-	refreshBind(m_ns.keys.bcLoadoutMenu, "loadoutmenu");
+	m_ns.keys.bcConsole = gameuifuncs->GetButtonCodeForBind("neo_toggleconsole");
+	m_ns.keys.bcMP3Player = gameuifuncs->GetButtonCodeForBind("neo_mp3");
+	m_ns.keys.bcTeamMenu = gameuifuncs->GetButtonCodeForBind("teammenu");
+	m_ns.keys.bcClassMenu = gameuifuncs->GetButtonCodeForBind("classmenu");
+	m_ns.keys.bcLoadoutMenu = gameuifuncs->GetButtonCodeForBind("loadoutmenu");
 
 	if (code == m_ns.keys.bcConsole && code != KEY_BACKQUOTE)
 	{
