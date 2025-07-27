@@ -483,6 +483,14 @@ void CNeoRoot::FireGameEvent(IGameEvent *event)
 
 void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 {
+	// This can happen eg. when the client uses multimedia keys to adjust OS volume.
+	// If we don't return here, then any un-bound UI element which also has the bind "none"
+	// would incorrectly trigger for this unrelated input.
+	if (code <= KEY_NONE)
+	{
+		return;
+	}
+
 	if (m_ns.keys.bcConsole <= KEY_NONE)
 	{
 		m_ns.keys.bcConsole = gameuifuncs->GetButtonCodeForBind("neo_toggleconsole");
