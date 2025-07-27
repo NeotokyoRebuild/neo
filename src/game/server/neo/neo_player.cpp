@@ -719,7 +719,7 @@ void CNEO_Player::CalculateSpeed(void)
 	absoluteVelocity.z = 0.f;
 	float currentSpeed = absoluteVelocity.Length();
 
-	if (((!neo_ghost_bhopping.GetBool() && m_bCarryingGhost) || m_iNeoClass == NEO_CLASS_JUGGERNAUT) && GetMoveType() != MOVETYPE_LADDER && GetMoveType() != MOVETYPE_NOCLIP && currentSpeed > speed)
+	if (((!neo_ghost_bhopping.GetBool() && m_bCarryingGhost) || m_iNeoClass == NEO_CLASS_JUGGERNAUT) && GetMoveType() == MOVETYPE_WALK && currentSpeed > speed)
 	{
 		float overSpeed = currentSpeed - speed;
 		absoluteVelocity.NormalizeInPlace();
@@ -3169,6 +3169,7 @@ float CNEO_Player::GetSprintSpeed(void) const
 	}
 }
 
+extern ConVar neo_ctg_ghost_beacons_when_inactive;
 int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 {
 	if (pInfo)
@@ -3185,6 +3186,13 @@ int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 			return FL_EDICT_ALWAYS;
 		}
 
+		// If the other player is carrying the ghost and the ghost doesn't need to be the active weapon to fetch ghost beacons
+		if (neo_ctg_ghost_beacons_when_inactive.GetBool() && NEORules()->GetGhosterPlayer() == otherNeoPlayer->entindex())
+		{
+			return FL_EDICT_ALWAYS;
+		}
+
+
 		// If the other player is actively using the ghost and therefore fetching beacons
 		auto otherWep = static_cast<CNEOBaseCombatWeapon*>(otherNeoPlayer->GetActiveWeapon());
 		if (otherWep && otherWep->GetNeoWepBits() & NEO_WEP_GHOST &&
@@ -3193,7 +3201,7 @@ int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 			return FL_EDICT_ALWAYS;
 		}
 
-		// If this player is carrying the ghost (wether active or not)
+		// If this player is carrying the ghost (whether active or not)
 		if (IsCarryingGhost())
 		{
 			return FL_EDICT_ALWAYS;
