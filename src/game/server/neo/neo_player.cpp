@@ -119,6 +119,7 @@ DEFINE_FIELD(m_bClientWantNeoName, FIELD_BOOLEAN),
 
 // Inputs
 DEFINE_INPUTFUNC(FIELD_STRING, "SetPlayerModel", InputSetPlayerModel),
+DEFINE_INPUTFUNC(FIELD_VOID, "RefillAmmo", InputRefillAmmo),
 
 END_DATADESC()
 
@@ -718,7 +719,7 @@ void CNEO_Player::CalculateSpeed(void)
 	absoluteVelocity.z = 0.f;
 	float currentSpeed = absoluteVelocity.Length();
 
-	if (!neo_ghost_bhopping.GetBool() && GetMoveType() != MOVETYPE_LADDER && currentSpeed > speed && m_bCarryingGhost)
+	if (!neo_ghost_bhopping.GetBool() && GetMoveType() == MOVETYPE_WALK && currentSpeed > speed && m_bCarryingGhost)
 	{
 		float overSpeed = currentSpeed - speed;
 		absoluteVelocity.NormalizeInPlace();
@@ -2280,6 +2281,20 @@ void CNEO_Player::InputSetPlayerModel( inputdata_t & inputdata )
 	}
 }
 
+void CNEO_Player::InputRefillAmmo( inputdata_t & inputdata)
+{
+	CBaseCombatWeapon* pWeapon = GetActiveWeapon();
+
+	if (pWeapon)
+	{
+		pWeapon->SetPrimaryAmmoCount(pWeapon->GetDefaultClip1());
+		if (pWeapon->UsesSecondaryAmmo())
+		{
+			pWeapon->SetSecondaryAmmoCount(pWeapon->GetDefaultClip2());
+		}
+	}
+}
+
 void CNEO_Player::PickupObject( CBaseEntity *pObject,
 	bool bLimitMassAndSize )
 {
@@ -3141,6 +3156,7 @@ float CNEO_Player::GetSprintSpeed(void) const
 	}
 }
 
+extern ConVar neo_ctg_ghost_beacons_when_inactive;
 int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 {
 	if (pInfo)
@@ -3157,6 +3173,13 @@ int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 			return FL_EDICT_ALWAYS;
 		}
 
+		// If the other player is carrying the ghost and the ghost doesn't need to be the active weapon to fetch ghost beacons
+		if (neo_ctg_ghost_beacons_when_inactive.GetBool() && NEORules()->GetGhosterPlayer() == otherNeoPlayer->entindex())
+		{
+			return FL_EDICT_ALWAYS;
+		}
+
+
 		// If the other player is actively using the ghost and therefore fetching beacons
 		auto otherWep = static_cast<CNEOBaseCombatWeapon*>(otherNeoPlayer->GetActiveWeapon());
 		if (otherWep && otherWep->GetNeoWepBits() & NEO_WEP_GHOST &&
@@ -3165,7 +3188,7 @@ int CNEO_Player::ShouldTransmit(const CCheckTransmitInfo* pInfo)
 			return FL_EDICT_ALWAYS;
 		}
 
-		// If this player is carrying the ghost (wether active or not)
+		// If this player is carrying the ghost (whether active or not)
 		if (IsCarryingGhost())
 		{
 			return FL_EDICT_ALWAYS;
