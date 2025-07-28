@@ -119,6 +119,7 @@ DEFINE_FIELD(m_bClientWantNeoName, FIELD_BOOLEAN),
 
 // Inputs
 DEFINE_INPUTFUNC(FIELD_STRING, "SetPlayerModel", InputSetPlayerModel),
+DEFINE_INPUTFUNC(FIELD_VOID, "RefillAmmo", InputRefillAmmo),
 
 END_DATADESC()
 
@@ -2277,6 +2278,20 @@ void CNEO_Player::InputSetPlayerModel( inputdata_t & inputdata )
 		SetModel(modelpath);
 
 		m_bAllowGibbing = false; // Disallow gibs or else the corpse will turn into whatever the player picked as their skin
+	}
+}
+
+void CNEO_Player::InputRefillAmmo( inputdata_t & inputdata)
+{
+	CBaseCombatWeapon* pWeapon = GetActiveWeapon();
+
+	if (pWeapon)
+	{
+		pWeapon->SetPrimaryAmmoCount(pWeapon->GetDefaultClip1());
+		if (pWeapon->UsesSecondaryAmmo())
+		{
+			pWeapon->SetSecondaryAmmoCount(pWeapon->GetDefaultClip2());
+		}
 	}
 }
 
