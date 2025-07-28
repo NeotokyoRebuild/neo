@@ -17,9 +17,9 @@ public:
     void ApplySchemeSettings(vgui::IScheme* pScheme) override;
     virtual void Paint() override;
 
-    void ShowMessage(wchar_t* message);
+    void ShowMessage(const wchar_t* message);
     void HideMessage();
-    void ShowSubMessage(wchar_t* message);
+    void ShowSubMessage(const wchar_t* message);
     void HideSubMessage();
 
     void Reset() override;
@@ -29,7 +29,7 @@ protected:
     virtual ConVar* GetUpdateFrequencyConVar() const override;
 
 private:
-    std::wstring ProcessKeyBinds(wchar_t* rawmessage);
+    std::wstring ProcessKeyBinds(const wchar_t* rawmessage) const;
 
     int m_iCornerTexture;
     int m_iBackgroundTexture;

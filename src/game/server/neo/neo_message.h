@@ -8,10 +8,10 @@ class CNEO_Message : public CBaseEntity
 public:
     DECLARE_DATADESC();
 
-    void Spawn() override;
-    void Precache();
-    void Think();
-    int UpdateTransmitState();
+    virtual void Spawn() override;
+    virtual void Precache() override;
+    virtual void Think() override;
+    virtual int UpdateTransmitState() override;
 
     CNetworkString(m_NetworkedMessageKey, 256);
     CNetworkString(m_NetworkedSubMessageKey, 256);

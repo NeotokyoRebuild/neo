@@ -12,9 +12,7 @@ END_RECV_TABLE()
 
 C_NEO_Message::C_NEO_Message()
 {
-    // DG: Why doesn't GET_HUDELEMENT(CNEOHud_Message) work here
-    CHudElement* pPanelName = gHUD.FindElement("neo_message");
-    m_pHudMessage = static_cast<CNEOHud_Message*>(pPanelName);
+    m_pHudMessage = GET_NAMED_HUDELEMENT(CNEOHud_Message, neo_message);
 
     m_LocalizedPrefix = g_pVGuiLocalize->Find("Tutorial_TAC_Time");
 }
@@ -27,7 +25,7 @@ void C_NEO_Message::OnDataChanged(DataUpdateType_t updateType)
         return;
     }
 
-    if (V_strlen(m_NetworkedMessageKey) > 0)
+    if (*m_NetworkedMessageKey)
     {
         if (m_bTimerMode)
         {
@@ -52,7 +50,7 @@ void C_NEO_Message::OnDataChanged(DataUpdateType_t updateType)
         m_pHudMessage->HideMessage();
     }
 
-    if (V_strlen(m_NetworkedSubMessageKey) > 0)
+    if (*m_NetworkedSubMessageKey)
     {
         wchar_t* localizedText = g_pVGuiLocalize->Find(m_NetworkedSubMessageKey);
 

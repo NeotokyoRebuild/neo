@@ -130,13 +130,13 @@ void CNEOHud_Message::DrawNeoHudElement()
     {
         surface()->DrawSetTextFont(m_hTitleFont);
 
-        const float period = 2.0f;
+        constexpr float period = 2.0f;
         float phase = fmodf(gpGlobals->curtime, period) / period;
         int alpha = Lerp(phase, 10, 255);
 
         surface()->DrawSetTextColor(255, 255, 255, alpha);
         surface()->DrawSetTextPos(m_Padding, m_BoxHeight - crossSize - crossInset * (1.5 * m_fScale));
-        surface()->DrawPrintText(m_szSubMessage, wcslen(m_szSubMessage));
+        surface()->DrawPrintText(m_szSubMessage, V_wcslen(m_szSubMessage));
     }
 }
 
@@ -150,7 +150,7 @@ void CNEOHud_Message::UpdateStateForNeoHudElementDraw()
 {
 }
 
-void CNEOHud_Message::ShowMessage(wchar_t* message)
+void CNEOHud_Message::ShowMessage(const wchar_t* message)
 {
     V_wcsncpy(m_szMessage, ProcessKeyBinds(message).c_str(), sizeof(m_szMessage));
     m_bShouldDraw = true;
@@ -162,7 +162,8 @@ void CNEOHud_Message::ShowMessage(wchar_t* message)
     int maxWidth = 0;
     int totalHeight = 0;
 
-    wchar_t* messageCopy = wcsdup(m_szMessage);
+    wchar_t messageCopy[sizeof(m_szMessage)];
+    V_memcpy(messageCopy, m_szMessage, sizeof(messageCopy));
     wchar_t* context = nullptr;
     wchar_t* token = wcstok(messageCopy, L"\n", &context); // Any \n in the localised text will declare a new line
 
@@ -181,7 +182,6 @@ void CNEOHud_Message::ShowMessage(wchar_t* message)
         totalHeight += textHeight + 2;
         token = wcstok(nullptr, L"\n", &context);
     }
-    free(messageCopy);
 
     m_BoxWidth = maxWidth + (m_Padding * 2);
     m_BoxHeight = totalHeight + (m_Padding * 2);
@@ -193,7 +193,7 @@ void CNEOHud_Message::HideMessage()
     m_bShouldDraw = false;
 }
 
-std::wstring CNEOHud_Message::ProcessKeyBinds(wchar_t* rawmessage)
+std::wstring CNEOHud_Message::ProcessKeyBinds(const wchar_t* rawmessage) const
 {
     std::wstring inputMessage(rawmessage);
     std::wstring outputMessage;
@@ -244,7 +244,7 @@ std::wstring CNEOHud_Message::ProcessKeyBinds(wchar_t* rawmessage)
     return outputMessage;
 }
 
-void CNEOHud_Message::ShowSubMessage(wchar_t* message)
+void CNEOHud_Message::ShowSubMessage(const wchar_t* message)
 {
     V_wcsncpy(m_szSubMessage, ProcessKeyBinds(message).c_str(), sizeof(m_szSubMessage));
 }

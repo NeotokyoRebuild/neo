@@ -62,10 +62,7 @@ void CNEO_Message::Think()
 void CNEO_Message::DisplayTimer()
 {
 	float elapsed = gpGlobals->curtime - m_flTimerStart;
-	char timer[16];
-	V_snprintf(timer, sizeof(timer), "%02d:%02d:%03d", int(elapsed / 60.0f), int(elapsed) % 60, int((elapsed - int(elapsed)) * 1000.0f)); // minutes, seconds, milliseconds
-
-	V_strncpy(m_NetworkedMessageKey.GetForModify(), timer, sizeof(m_NetworkedMessageKey));
+	V_snprintf(m_NetworkedMessageKey.GetForModify(), sizeof(m_NetworkedMessageKey), "%02d:%02d:%03d", int(elapsed / 60.0f), int(elapsed) % 60, int((elapsed - int(elapsed)) * 1000.0f)); // minutes, seconds, milliseconds
 }
 
 // Inputs
@@ -99,8 +96,8 @@ void CNEO_Message::InputShowMessage(inputdata_t& inputData)
 
 void CNEO_Message::InputHideMessage(inputdata_t& inputData)
 {
-	V_strncpy(m_NetworkedMessageKey.GetForModify(), "", sizeof(m_NetworkedMessageKey));
-	V_strncpy(m_NetworkedSubMessageKey.GetForModify(), "", sizeof(m_NetworkedSubMessageKey));
+	*m_NetworkedMessageKey.GetForModify() = 0;
+	*m_NetworkedSubMessageKey.GetForModify() = 0;
 	if (m_bTimerMode)
 	{
 		SetNextThink(TICK_NEVER_THINK);
@@ -114,7 +111,7 @@ void CNEO_Message::InputShowSubMessage(inputdata_t& inputData)
 
 void CNEO_Message::InputHideSubMessage(inputdata_t& inputData)
 {
-	V_strncpy(m_NetworkedSubMessageKey.GetForModify(), "", sizeof(m_NetworkedSubMessageKey));
+	*m_NetworkedSubMessageKey.GetForModify() = 0;
 }
 
 void CNEO_Message::InputStopTimer(inputdata_t& inputData)
