@@ -217,6 +217,13 @@ std::wstring CNEOHud_Message::ProcessKeyBinds(const wchar_t* rawmessage) const
             break;
         }
 
+        if (start + 1 == end)
+        {
+            outputMessage.append(L"%"); // Allow use of % symbol normally
+            pos = end + 1;
+            continue;
+        }
+
         std::wstring unicodeBinding = inputMessage.substr(start + 1, end - start - 1); // Extract the command
 
         char binding[64];
