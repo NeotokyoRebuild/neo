@@ -1,5 +1,6 @@
 #include "cbase.h"
 #include "neo_smokegrenade.h"
+#include "neo_smokelineofsightblocker.h"
 
 #include "neo_tracefilter_collisiongroupdelta.h"
 #include "particle_smokegrenade.h"
@@ -28,6 +29,8 @@ END_DATADESC()
 
 ConVar sv_neo_smoke_bloom_duration("sv_neo_smoke_bloom_duration", "25", FCVAR_CHEAT, "How long should the smoke bloom be up, in seconds.", true, 0.0, true, 60.0);
 ConVar sv_neo_smoke_bloom_layers("sv_neo_smoke_bloom_layers", "2", FCVAR_CHEAT, "Amount of smoke layers atop each other.", true, 0.0, true, 32.0);
+ConVar sv_neo_smoke_blocker_size("sv_neo_smoke_blocker_size", "140", FCVAR_CHEAT, "Size of each LOS blocker per smoke particle.", true, 0.0, true, 200.0);
+ConVar sv_neo_smoke_blocker_duration("sv_neo_smoke_blocker_duration", "22", FCVAR_CHEAT, "Time when LOS block should disappear", true, 0.0, true, 30.0);
 extern ConVar sv_neo_grenade_cor;
 extern ConVar sv_neo_grenade_gravity;
 extern ConVar sv_neo_grenade_friction;
@@ -159,6 +162,19 @@ void CNEOGrenadeSmoke::SetupParticles(size_t number)
 			ptr->Activate();
 			ptr->SetLifetime(sv_neo_smoke_bloom_duration.GetFloat()); // This call passes on responsibility for the memory to the particle thinkfunc
 			ptr->FillVolume();
+		}
+
+		// Currently redundant to create a blocker for each particle, but will be handy for dynamic flood fill later
+		auto blocker = static_cast<CNEOSmokeLineOfSightBlocker*>(CreateEntityByName(SMOKELINEOFSIGHTBLOCKER_ENTITYNAME));
+		int blockerSize = sv_neo_smoke_blocker_size.GetInt();
+		if (blocker) {
+			blocker->SetAbsOrigin(ptr->GetAbsOrigin());
+			blocker->SetBounds(Vector(-blockerSize, -blockerSize, -blockerSize), Vector(blockerSize, blockerSize, blockerSize));
+			blocker->Spawn();
+			// There is no need for a delay to add the LOS blocker, because it takes a moment for bots to trigger another visibility check
+			blocker->SetThink(&CNEOSmokeLineOfSightBlocker::SUB_Remove);
+			// sv_neo_smoke_blocker_duration tuned to be the second after smoke can be seen through though not completely dissipated
+			blocker->SetNextThink(gpGlobals->curtime + sv_neo_smoke_blocker_duration.GetFloat());
 		}
 	}
 }
