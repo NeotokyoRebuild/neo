@@ -23,6 +23,17 @@
 #define PLAYER_UNCONNECTED_NAME	"unconnected"
 #define PLAYER_ERROR_NAME		"ERRORNAME"
 
+#ifdef NEO
+namespace PlayerResource {
+	typedef unsigned char useridCache_t;
+#pragma push_macro("max")
+#undef max
+	constexpr auto useridNumericLimit{ std::numeric_limits<useridCache_t>::max() };
+#pragma pop_macro("max")
+	static_assert(MAX_PLAYERS < useridNumericLimit);
+}
+#endif
+
 class C_PlayerResource : public C_BaseEntity, public IGameResources
 {
 	DECLARE_CLASS( C_PlayerResource, C_BaseEntity );
@@ -71,6 +82,10 @@ public : // IGameResources interface
 	uint32 GetAccountID( int iIndex );
 	bool IsValid( int iIndex );
 
+#ifdef NEO
+	string_t GetCachedName(int userid) const;
+#endif
+
 protected:
 	void	UpdatePlayerName( int slot );
 
@@ -98,6 +113,14 @@ protected:
 	bool	m_bValid[MAX_PLAYERS_ARRAY_SAFE];
 	int		m_iUserID[MAX_PLAYERS_ARRAY_SAFE];
 	string_t m_szUnconnectedName;
+
+#ifdef NEO
+private:
+	// This name cache is used for fixing player post-disconnect messages where the disconnecting player is already gone,
+	// but we may want to display their neo "fake" name instead of their Steam name, which gets reported by the disconnect msg.
+	CUtlMap<PlayerResource::useridCache_t, string_t> m_cachedPlayerNames;
+	void PurgeOldCachedNames();
+#endif
 };
 
 extern C_PlayerResource *g_PR;

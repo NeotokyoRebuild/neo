@@ -91,6 +91,9 @@ C_PlayerResource::C_PlayerResource()
 	memset(m_szDispNameWDupeIdx, 0, sizeof(m_szDispNameWDupeIdx));
 	memset(m_iStar, 0, sizeof(m_iStar));
 	memset(m_szNeoClantag, 0, sizeof(m_szNeoClantag));
+
+	m_cachedPlayerNames.SetLessFunc(DefLessFunc(PlayerResource::useridCache_t));
+	m_cachedPlayerNames.EnsureCapacity(gpGlobals->maxClients * 2);
 #endif
 	memset( m_iScore, 0, sizeof( m_iScore ) );
 	memset( m_iDeaths, 0, sizeof( m_iDeaths ) );
@@ -141,6 +144,18 @@ void C_PlayerResource::OnDataChanged(DataUpdateType_t updateType)
 	}
 }
 
+#ifdef NEO
+string_t C_PlayerResource::GetCachedName(int userid) const
+{
+	const auto idx = m_cachedPlayerNames.Find(userid);
+	if (idx == m_cachedPlayerNames.InvalidIndex())
+	{
+		return "";
+	}
+	return m_cachedPlayerNames.Element(idx);
+}
+#endif
+
 void C_PlayerResource::UpdatePlayerName( int slot )
 {
 	if ( slot < 1 || slot > MAX_PLAYERS )
@@ -158,6 +173,20 @@ void C_PlayerResource::UpdatePlayerName( int slot )
 	if ( IsConnected( slot ) && engine->GetPlayerInfo( slot, &sPlayerInfo ) )
 	{
 		m_szName[slot] = AllocPooledString( UTIL_GetFilteredPlayerName( slot, sPlayerInfo.name ) );
+#ifdef NEO
+		string_t name = m_szName[slot];
+		const auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
+		if (localPlayer && localPlayer->ClientWantNeoName())
+		{
+			name = m_szNeoName[slot];
+		}
+
+		m_cachedPlayerNames.InsertOrReplace(sPlayerInfo.userID, name);
+		if (m_cachedPlayerNames.Count() >= (unsigned int)(gpGlobals->maxClients * 2))
+		{
+			PurgeOldCachedNames();
+		}
+#endif
 	}
 	else 
 	{
@@ -167,6 +196,22 @@ void C_PlayerResource::UpdatePlayerName( int slot )
 		}
 	}
 }
+
+#ifdef NEO
+void C_PlayerResource::PurgeOldCachedNames()
+{
+	for (auto i = m_cachedPlayerNames.FirstInorder(); i != m_cachedPlayerNames.InvalidIndex(); )
+	{
+		const auto idx = i;
+		i = m_cachedPlayerNames.NextInorder(i);
+		// TODO: optimize; don't need to run the clients loop for each iteration
+		if (!UTIL_PlayerByUserId(m_cachedPlayerNames.Key(idx)))
+		{
+			m_cachedPlayerNames.RemoveAt(idx);
+		}
+	}
+}
+#endif
 
 void C_PlayerResource::ClientThink()
 {
