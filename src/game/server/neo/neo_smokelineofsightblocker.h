@@ -29,9 +29,11 @@ public:
 	// or else players in/beyond smoke become immune to damage from projectiles despite being hit.
 	virtual bool ShouldCollide(int collisionGroup, int contentsMask) const override
 	{
+		// This logic assumes entity is in COLLISION_GROUP_DEBRIS, which doesn't collide with other trace masks.
 		// Traces using CONTENTS_HITBOX determine if the target was hit, determining if damage is applied.
-		if (contentsMask & CONTENTS_HITBOX)
+		if (contentsMask & CONTENTS_HITBOX) {
 			return false;
+		}
 
 		// Fall back to normal collision behavior
 		return CBaseEntity::ShouldCollide(collisionGroup, contentsMask);
