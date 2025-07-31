@@ -345,9 +345,11 @@ void CNEOBaseCombatWeapon::Equip(CBaseCombatCharacter* pOwner)
 	}
 	else if (weapon & NEO_WEP_KNIFE)
 	{
+		AddEffects(EF_NOSHADOW);
 		return;
 	}
 	else
+		RemoveEffects(EF_NOSHADOW);
 		SetParentAttachment("SetParentAttachment", "primary", false);
 #endif
 }

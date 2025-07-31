@@ -1517,6 +1517,8 @@ target_sources_grouped(
     neo/neo_fixup_glshaders.cpp
     neo/neo_fixup_glshaders.h
     neo/c_neo_bloom_controller.cpp
+    neo/worldlight.cpp
+    neo/worldlight.h
 )
 
 target_sources_grouped(
