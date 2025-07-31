@@ -234,7 +234,7 @@ void CNeoClassMenu::ChangeMenu(const char* menuName = NULL)
 
 void CNeoClassMenu::OnKeyCodeReleased(vgui::KeyCode code)
 {
-	if (code == g_pNeoRoot->m_ns.keys.bcClassMenu)
+	if (code == gameuifuncs->GetButtonCodeForBind("classmenu"))
 	{
 		ChangeMenu(NULL);
 		return;
