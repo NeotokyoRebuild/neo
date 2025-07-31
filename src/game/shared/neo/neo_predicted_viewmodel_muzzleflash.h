@@ -20,7 +20,7 @@ public:
 	DECLARE_PREDICTABLE();
 	CNEOPredictedViewModelMuzzleFlash();
 	virtual ~CNEOPredictedViewModelMuzzleFlash();
-	virtual void CalcViewModelView(CBasePlayer* pOwner,	const Vector& eyePosition, const QAngle& eyeAngles);
+	virtual void CalcViewModelView(CBasePlayer* pOwner,	const Vector& eyePosition, const QAngle& eyeAngles) override;
 	void UpdateMuzzleFlashProperties(CBaseCombatWeapon* pWeapon, bool repeat = true);
 	virtual void Spawn(void) override;
 	virtual void Precache(void) override;
@@ -32,6 +32,7 @@ public:
 	{
 		if (!m_bActive)
 			return;
+		m_iAngleZ = (m_iAngleZ + m_iAngleZIncrement) % 360;
 		m_flTimeSwitchOffMuzzleFlash = gpGlobals->curtime + 0.01f;
 		BaseClass::ProcessMuzzleFlashEvent();
 	}
@@ -45,7 +46,6 @@ public:
 	bool	m_bScaleChangeFlag;
 #else
 	CNetworkVar(bool, m_bActive);
-	CNetworkVar(int, m_iAngleZIncrement);
 	CNetworkVar(bool, m_bScaleChangeFlag);
 #endif // CLIENT_DLL
 	float	m_flTimeSwitchOffMuzzleFlash;
