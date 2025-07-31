@@ -701,8 +701,7 @@ bool IVision::IsLineOfSightClear( const Vector &pos ) const
 	trace_t result;
 	NextBotVisionTraceFilter filter( GetBot()->GetEntity(), COLLISION_GROUP_NONE );
 	
-	// NEO Jank: Need CONTENTS_DEBRIS to detect smoke LOS blocker
-	UTIL_TraceLine( GetBot()->GetBodyInterface()->GetEyePosition(), pos, MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE|CONTENTS_DEBRIS, &filter, &result );
+	UTIL_TraceLine( GetBot()->GetBodyInterface()->GetEyePosition(), pos, MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, &result );
 	
 	return ( result.fraction >= 1.0f && !result.startsolid );
 }
@@ -753,15 +752,14 @@ bool IVision::IsLineOfSightClearToEntity( const CBaseEntity *subject, Vector *vi
 	trace_t result;
 	NextBotTraceFilterIgnoreActors filter( subject, COLLISION_GROUP_NONE );
 
-	// NEO Jank: Need CONTENTS_DEBRIS to detect smoke LOS blocker
-	UTIL_TraceLine( GetBot()->GetBodyInterface()->GetEyePosition(), subject->WorldSpaceCenter(), MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE|CONTENTS_DEBRIS, &filter, &result );
+	UTIL_TraceLine( GetBot()->GetBodyInterface()->GetEyePosition(), subject->WorldSpaceCenter(), MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, &result );
 	if ( result.DidHit() )
 	{
-		UTIL_TraceLine( GetBot()->GetBodyInterface()->GetEyePosition(), subject->EyePosition(), MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE|CONTENTS_DEBRIS, &filter, &result );
+		UTIL_TraceLine( GetBot()->GetBodyInterface()->GetEyePosition(), subject->EyePosition(), MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, &result );
 
 		if ( result.DidHit() )
 		{
-			UTIL_TraceLine( GetBot()->GetBodyInterface()->GetEyePosition(), subject->GetAbsOrigin(), MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE|CONTENTS_DEBRIS, &filter, &result );
+			UTIL_TraceLine( GetBot()->GetBodyInterface()->GetEyePosition(), subject->GetAbsOrigin(), MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, &result );
 		}
 	}
 
