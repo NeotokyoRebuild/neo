@@ -26,7 +26,7 @@ public:
 
 	bool TestCollision(const Ray_t& ray, unsigned int fContentsMask, trace_t& tr) override
 	{
-		if (fContentsMask &= CONTENTS_BLOCKLOS)
+		if ((fContentsMask & CONTENTS_BLOCKLOS) != 0)
 		{
 			tr.fraction = 0.f; // NEO NOTE (Adam) Shouldn't returning true be enough? Should we calculate correct value for the fraction?
 			return true;
