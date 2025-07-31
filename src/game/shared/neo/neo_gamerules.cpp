@@ -3785,6 +3785,11 @@ const char* CNEORules::GetGameTypeName(void)
 	return NEO_GAME_TYPE_SETTINGS[GetGameType()].gameTypeName;
 }
 
+const bool CNEORules::RespawnsEnabled()
+{
+	return NEO_GAME_TYPE_SETTINGS[GetGameType()].respawns;
+}
+
 bool CNEORules::CanChangeTeamClassWeaponWhenAlive()
 {
 	return NEO_GAME_TYPE_SETTINGS[GetGameType()].changeTeamClassLoadoutWhenAlive;
