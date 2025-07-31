@@ -74,7 +74,7 @@ struct NeoSettings
 			ButtonCode_t bcCurrent; // Only used for unbinding
 			ButtonCode_t bcDefault;
 		};
-		Bind vBinds[64];
+		Bind vBinds[96];
 		int iBindsSize = 0;
 
 		// Will be checked often so cached

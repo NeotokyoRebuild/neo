@@ -425,12 +425,16 @@ void ClientModeShared::Init()
 	HOOK_MESSAGE( Rumble );
 
 #ifdef NEO
-	if (CreateInterfaceFn gameUIFactory = g_gameUI.GetFactory())
+	const bool bCliArgTools = CommandLine()->CheckParm("-tools");
+	if (!bCliArgTools)
 	{
-		if (IGameUI *pGameUI = reinterpret_cast<IGameUI *>(gameUIFactory(GAMEUI_INTERFACE_VERSION, nullptr)))
+		if (CreateInterfaceFn gameUIFactory = g_gameUI.GetFactory())
 		{
-			g_pNeoLoading = new CNeoLoading;
-			pGameUI->SetLoadingBackgroundDialog(g_pNeoLoading->GetVPanel());
+			if (IGameUI *pGameUI = reinterpret_cast<IGameUI *>(gameUIFactory(GAMEUI_INTERFACE_VERSION, nullptr)))
+			{
+				g_pNeoLoading = new CNeoLoading;
+				pGameUI->SetLoadingBackgroundDialog(g_pNeoLoading->GetVPanel());
+			}
 		}
 	}
 #endif
@@ -970,7 +974,10 @@ void ClientModeShared::LevelInit( const char *newmap )
 	enginesound->SetPlayerDSP( filter, 0, true );
 
 #ifdef NEO
-	g_pVGuiLocalize->ConvertANSIToUnicode(newmap, g_pNeoLoading->m_wszLoadingMap, sizeof(g_pNeoLoading->m_wszLoadingMap));
+	if (g_pNeoLoading)
+	{
+		g_pVGuiLocalize->ConvertANSIToUnicode(newmap, g_pNeoLoading->m_wszLoadingMap, sizeof(g_pNeoLoading->m_wszLoadingMap));
+	}
 #endif
 }
 
@@ -997,7 +1004,10 @@ void ClientModeShared::LevelShutdown( void )
 	enginesound->SetPlayerDSP( filter, 0, true );
 
 #ifdef NEO
-	g_pNeoLoading->m_wszLoadingMap[0] = L'\0';
+	if (g_pNeoLoading)
+	{
+		g_pNeoLoading->m_wszLoadingMap[0] = L'\0';
+	}
 #endif
 }
 
