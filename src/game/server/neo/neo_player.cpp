@@ -684,12 +684,7 @@ void CNEO_Player::CalculateSpeed(void)
 
 	if (GetFlags() & FL_DUCKING)
 	{
-		speed *= NEO_CROUCH_WALK_MODIFIER;
-	}
-
-	if (m_nButtons & IN_WALK)
-	{
-		speed *= NEO_CROUCH_WALK_MODIFIER; // They stack
+		speed *= NEO_CROUCH_MODIFIER;
 	}
 
 	if (IsSprinting())
@@ -713,6 +708,11 @@ void CNEO_Player::CalculateSpeed(void)
 	if (IsInAim())
 	{
 		speed *= NEO_AIM_MODIFIER;
+	}
+
+	if (m_nButtons & IN_WALK)
+	{
+		speed = MIN(GetFlags() & FL_DUCKING ? NEO_CROUCH_WALK_SPEED : NEO_WALK_SPEED, speed);
 	}
 
 	Vector absoluteVelocity = GetAbsVelocity();
@@ -799,7 +799,7 @@ void CNEO_Player::HandleSpeedChangesLegacy()
 
 	if( IsSuitEquipped() )
 	{
-		bWantWalking = (m_nButtons & IN_WALK) && !IsSprinting() && !(m_nButtons & IN_DUCK);
+		bWantWalking = (m_nButtons & IN_WALK) && !IsSprinting();
 	}
 	else
 	{
@@ -3118,7 +3118,7 @@ float CNEO_Player::GetCrouchSpeed(void) const
 	case NEO_CLASS_VIP:
 		return NEO_VIP_CROUCH_SPEED;
 	default:
-		return (NEO_BASE_SPEED * NEO_CROUCH_WALK_MODIFIER);
+		return (NEO_BASE_SPEED * NEO_CROUCH_MODIFIER);
 	}
 }
 
