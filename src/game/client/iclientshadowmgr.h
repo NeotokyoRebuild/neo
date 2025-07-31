@@ -99,6 +99,10 @@ public:
 
 	virtual void SetShadowsDisabled( bool bDisabled ) = 0;
 
+#ifdef NEO
+	virtual void SetShadowFromWorldLightsEnabled( bool bEnabled );
+#endif
+
 	virtual void ComputeShadowDepthTextures( const CViewSetup &pView ) = 0;
 
 };

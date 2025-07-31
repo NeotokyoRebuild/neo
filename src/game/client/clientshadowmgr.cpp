@@ -810,8 +810,8 @@ public:
 		r_shadows_gamecontrol.SetValue( bDisabled != 1 );
 	}
 #ifdef NEO
-	void SuppressShadowFromWorldLights(bool bSuppress);
-	void SetShadowFromWorldLightsEnabled(bool bEnabled);
+	void SuppressShadowFromWorldLights( bool bSuppress );
+	void SetShadowFromWorldLightsEnabled( bool bEnabled );
 	bool IsShadowingFromWorldLights() const { return m_bShadowFromWorldLights; }
 #endif
 

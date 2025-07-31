@@ -40,6 +40,9 @@ private:
 	CNetworkColor32( m_shadowColor );
 	CNetworkVar( float, m_flShadowMaxDist );
 	CNetworkVar( bool, m_bDisableShadows );
+#ifdef NEO
+	CNetworkVar(bool, m_bLocalLightShadows);
+#endif
 };
 
 LINK_ENTITY_TO_CLASS(shadow_control, CShadowControl);
@@ -48,6 +51,9 @@ BEGIN_DATADESC( CShadowControl )
 
 	DEFINE_KEYFIELD( m_flShadowMaxDist, FIELD_FLOAT, "distance" ),
 	DEFINE_KEYFIELD( m_bDisableShadows, FIELD_BOOLEAN, "disableallshadows" ),
+#ifdef NEO
+	DEFINE_KEYFIELD( m_bLocalLightShadows, FIELD_BOOLEAN, "enableshadowsfromlocallights" ),
+#endif
 
 	// Inputs
 	DEFINE_INPUT( m_shadowColor,		FIELD_COLOR32, "color" ),
@@ -74,6 +80,9 @@ CShadowControl::CShadowControl()
 	m_flShadowMaxDist = 50.0f;
 	m_shadowColor.Init( 64, 64, 64, 0 );
 	m_bDisableShadows = false;
+#ifdef NEO
+	m_bLocalLightShadows = true;
+#endif
 }
 
 
