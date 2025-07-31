@@ -22,10 +22,15 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+#ifdef NEO
+// So that server/player.cpp can utilize cl_spraydisable to disable impulse 201
+static ConVar cl_spraydisable( "cl_spraydisable", "0", FCVAR_USERINFO | FCVAR_ARCHIVE, "Disable player sprays." );
+#else
 #ifdef TF_CLIENT_DLL
 static ConVar cl_spraydisable( "cl_spraydisable", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE, "Disable player sprays." );
 #else
 static ConVar cl_spraydisable( "cl_spraydisable", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE, "Disable player sprays." );
+#endif
 #endif
 
 #ifdef NEO

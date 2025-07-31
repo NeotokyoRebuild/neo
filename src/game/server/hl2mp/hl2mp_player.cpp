@@ -109,6 +109,7 @@ IMPLEMENT_SERVERCLASS_ST(CHL2MP_Player, DT_HL2MP_Player)
 	SendPropExclude( "DT_BaseFlex", "m_flexWeight" ),
 	SendPropExclude( "DT_BaseFlex", "m_blinktoggle" ),
 	SendPropExclude( "DT_BaseFlex", "m_viewtarget" ),
+	SendPropBool(SENDINFO(m_fIsWalking)),
 #endif
 
 #ifndef NEO // NEOTODO (Adam) This is causing the player to have a m_flMaxSpeed value of 0 during prediction, even though client and server set this value correctly, causing the players position to jitter
@@ -120,7 +121,7 @@ IMPLEMENT_SERVERCLASS_ST(CHL2MP_Player, DT_HL2MP_Player)
 	// on the player.
 	// So, just never send it, and don't predict it on the client either.
 	SendPropExclude( "DT_BasePlayer", "m_flMaxspeed" ),
-#endif NEO
+#endif // NEO
 
 
 	// Data that only gets sent to the local player

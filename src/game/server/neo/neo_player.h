@@ -57,6 +57,8 @@ public:
 	DECLARE_SERVERCLASS();
 	DECLARE_DATADESC();
 
+	DECLARE_ENT_SCRIPTDESC();
+
 	virtual void Precache(void) OVERRIDE;
 	virtual void Spawn(void) OVERRIDE;
 	virtual void PostThink(void) OVERRIDE;
@@ -121,10 +123,6 @@ public:
 	virtual bool	CanHearAndReadChatFrom(CBasePlayer *pPlayer) OVERRIDE;
 
 	bool IsCarryingGhost(void) const;
-
-	void ZeroFriendlyPlayerLocArray(void);
-
-	void UpdateNetworkedFriendlyLocations(void);
 
 	void Weapon_AimToggle(CNEOBaseCombatWeapon *pWep, const NeoWeponAimToggleE toggleType);
 
@@ -209,6 +207,7 @@ public:
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);
 
 	void InputSetPlayerModel( inputdata_t & inputData );
+	void InputRefillAmmo( inputdata_t & inputData );
 	void CloakFlash(float time = 0.f);
 private:
 	bool m_bAllowGibbing;
@@ -256,7 +255,6 @@ public:
 	CNetworkVar(int, m_nVisionLastTick);
 	CNetworkVar(float, m_flJumpLastTime);
 
-	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
 	CNetworkArray(int, m_rfAttackersScores, (MAX_PLAYERS + 1));
 	CNetworkArray(float, m_rfAttackersAccumlator, (MAX_PLAYERS + 1));
 	CNetworkArray(int, m_rfAttackersHits, (MAX_PLAYERS + 1));
@@ -264,6 +262,7 @@ public:
 	CNetworkVar(unsigned char, m_NeoFlags);
 	CNetworkString(m_szNeoName, MAX_PLAYER_NAME_LENGTH);
 	CNetworkString(m_szNeoClantag, NEO_MAX_CLANTAG_LENGTH);
+	CNetworkString(m_szNeoCrosshair, NEO_XHAIR_SEQMAX);
 	CNetworkVar(int, m_szNameDupePos);
 
 	// NEO NOTE (nullsystem): As dumb as client sets -> server -> client it may sound,
@@ -304,12 +303,9 @@ inline CNEO_Player *ToNEOPlayer(CBaseEntity *pEntity)
 {
 	if (!pEntity || !pEntity->IsPlayer())
 	{
-		return NULL;
+		return nullptr;
 	}
-#if _DEBUG
-	Assert(dynamic_cast<CNEO_Player*>(pEntity));
-#endif
-	return static_cast<CNEO_Player*>(pEntity);
+	return assert_cast<CNEO_Player*>(pEntity);
 }
 
 #endif // NEO_PLAYER_H

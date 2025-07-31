@@ -13,6 +13,9 @@ public:
     void OnDataChanged(DataUpdateType_t updateType) override;
 
 private:
-    char m_NetworkedMessageKey[255];
+    char m_NetworkedMessageKey[256]{};
+    char m_NetworkedSubMessageKey[256]{};
+    bool m_bTimerMode{};
     CNEOHud_Message* m_pHudMessage;
+    wchar_t *m_LocalizedPrefix;
 };

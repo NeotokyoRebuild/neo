@@ -27,6 +27,7 @@
 	#include "neo_dm_spawn.h"
 	#include "neo_misc.h"
 	#include "neo_game_config.h"
+	#include "nav_mesh.h"
 
 extern ConVar weaponstay;
 #endif
@@ -55,8 +56,10 @@ ConVar sv_neo_dev_test_clantag("sv_neo_dev_test_clantag", "", FCVAR_REPLICATED |
 
 #define STR_GAMEOPTS "TDM=0, CTG=1, VIP=2, DM=3"
 #define STR_GAMEBWOPTS "TDM=1, CTG=2, VIP=4, DM=8"
+#ifdef CLIENT_DLL
 ConVar neo_vote_game_mode("neo_vote_game_mode", "1", FCVAR_USERINFO, "Vote on game mode to play. " STR_GAMEOPTS, true, 0, true, NEO_GAME_TYPE__TOTAL - 1);
 ConVar neo_vip_eligible("cl_neo_vip_eligible", "1", FCVAR_ARCHIVE, "Eligible for VIP", true, 0, true, 1);
+#endif // CLIENT_DLL
 #ifdef GAME_DLL
 ConVar sv_neo_vip_ctg_on_death("sv_neo_vip_ctg_on_death", "0", FCVAR_ARCHIVE, "Spawn Ghost when VIP dies, continue the game", true, 0, true, 1);
 #endif
@@ -140,9 +143,15 @@ static void neoSvCompCallback(IConVar* var, const char* pOldValue, float flOldVa
 	sv_neo_ghost_spawn_bias.SetValue(bCurrentValue);
 }
 
-ConVar sv_neo_comp("sv_neo_comp", "0", FCVAR_REPLICATED, "Enables competitive gamerules", true, 0.f, true, 1.f, neoSvCompCallback);
+ConVar sv_neo_comp("sv_neo_comp", "0", FCVAR_REPLICATED, "Enables competitive gamerules", true, 0.f, true, 1.f
+	#ifdef GAME_DLL
+	, neoSvCompCallback
+	#endif // GAME_DLL
+);
 
+#ifdef CLIENT_DLL
 ConVar snd_victory_volume("snd_victory_volume", "0.33", FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_USERINFO, "Loudness of the victory jingle (0-1).", true, 0.0, true, 1.0);
+#endif // CLIENT_DLL
 
 REGISTER_GAMERULES_CLASS( CNEORules );
 
@@ -167,8 +176,6 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropInt(RECVINFO(m_iEscortingTeam)),
 	RecvPropBool(RECVINFO(m_bGhostExists)),
 	RecvPropVector(RECVINFO(m_vecGhostMarkerPos)),
-	RecvPropArray(RecvPropEHandle(RECVINFO(m_iDummyBeacons[0])), m_iDummyBeacons),
-	RecvPropInt(RECVINFO(m_iLastDummyBeacon)),
 #else
 	SendPropFloat(SENDINFO(m_flNeoNextRoundStartTime)),
 	SendPropFloat(SENDINFO(m_flNeoRoundStartTime)),
@@ -188,8 +195,6 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropInt(SENDINFO(m_iEscortingTeam)),
 	SendPropBool(SENDINFO(m_bGhostExists)),
 	SendPropVector(SENDINFO(m_vecGhostMarkerPos), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT),
-	SendPropArray(SendPropEHandle(SENDINFO_ARRAY(m_iDummyBeacons)), m_iDummyBeacons),
-	SendPropInt(SENDINFO(m_iLastDummyBeacon)),
 #endif
 END_NETWORK_TABLE()
 
@@ -452,7 +457,6 @@ CNEORules::CNEORules()
 #ifdef GAME_DLL
 	weaponstay.InstallChangeCallback(CvarChanged_WeaponStay);
 #endif
-	m_iLastDummyBeacon = -1;
 }
 
 CNEORules::~CNEORules()
@@ -1394,7 +1398,7 @@ void CNEORules::SetWinningDMPlayer(CNEO_Player *pWinner)
 		{
 			if (!player->IsBot() || player->IsHLTV())
 			{
-				const char* volStr = engine->GetClientConVarValue(i, snd_victory_volume.GetName());
+				const char* volStr = engine->GetClientConVarValue(i, "snd_victory_volume");
 				const float jingleVolume = volStr ? atof(volStr) : 0.33f;
 				soundParams.m_flVolume = jingleVolume;
 
@@ -2819,6 +2823,13 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 		m_bThinkCheckClantags = true;
 	}
 
+	const char *pszClNeoCrosshair = engine->GetClientConVarValue(pNEOPlayer->entindex(), "cl_neo_crosshair");
+	const char *pszOldClNeoCrosshair = pNEOPlayer->m_szNeoCrosshair.Get();
+	if (V_strcmp(pszOldClNeoCrosshair, pszClNeoCrosshair) != 0)
+	{
+		V_strncpy(pNEOPlayer->m_szNeoCrosshair.GetForModify(), pszClNeoCrosshair, NEO_XHAIR_SEQMAX);
+	}
+
 	const char *pszName = pszSteamName;
 	const char *pszOldName = pPlayer->GetPlayerName();
 
@@ -3802,3 +3813,10 @@ const char *CNEORules::GetTeamClantag(const int iTeamNum) const
 	default: return "";
 	}
 }
+
+#ifdef GAME_DLL
+void CNEORules::OnNavMeshLoad(void)
+{
+	TheNavMesh->SetPlayerSpawnName("info_player_defender");
+}
+#endif
