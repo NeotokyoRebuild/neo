@@ -775,8 +775,10 @@ bool IVision::IsLineOfSightClearToEntity( const CBaseEntity *subject, Vector *vi
 	{
 		*visibleSpot = result.endpos;
 	}
+#ifdef NEO
 
 	idealTargetPoint[subject->entindex()] = result.endpos;
+#endif // NEO
 
 	return ( result.fraction >= 1.0f && !result.startsolid );
 
