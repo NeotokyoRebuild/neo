@@ -14,6 +14,9 @@ public:
 	DECLARE_CLASS(CNEOSmokeLineOfSightBlocker, CBaseEntity);
 	DECLARE_DATADESC();
 
+	// Starts LOS interception after scheduled delay when smoke particles are practically occluded
+	void ActivateLOSBlocker();
+
 	void Spawn() override {
 		BaseClass::Spawn();
 		SetSolid(SOLID_BBOX);
