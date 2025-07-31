@@ -30,6 +30,7 @@
 "w" "+forward"
 "y" "messagemode"
 "f" "+use"
+"p"	"neo_mp3"
 "ALT" "+walk"
 "CTRL" "+duck"
 "SHIFT" "+sprint"

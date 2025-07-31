@@ -17,8 +17,10 @@ public:
     void ApplySchemeSettings(vgui::IScheme* pScheme) override;
     virtual void Paint() override;
 
-    void ShowMessage(wchar_t* message);
+    void ShowMessage(const wchar_t* message);
     void HideMessage();
+    void ShowSubMessage(const wchar_t* message);
+    void HideSubMessage();
 
     void Reset() override;
 protected:
@@ -27,12 +29,15 @@ protected:
     virtual ConVar* GetUpdateFrequencyConVar() const override;
 
 private:
+    std::wstring ProcessKeyBinds(const wchar_t* rawmessage) const;
+
     int m_iCornerTexture;
     int m_iBackgroundTexture;
     vgui::HFont m_hFont;
     vgui::HFont m_hTitleFont;
 
     wchar_t m_szMessage[256];
+    wchar_t m_szSubMessage[256];
     bool m_bShouldDraw;
     float m_fScale;
 

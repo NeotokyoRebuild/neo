@@ -37,75 +37,98 @@ void SwapColorNormal(const Color &color)
 
 void MultiWidgetHighlighter(const int iTotalWidgets)
 {
-	if (c->eMode == MODE_PAINT)
+	// NEO NOTE (nullsystem): c->iLayoutY instead of c->irWidgetLayoutY
+	// as this happens before rather than during widget Begin/End
+	if (c->eMode != MODE_PAINT || !IN_BETWEEN_AR(0, c->iLayoutY, c->dPanel.tall))
 	{
-		// Peek-forward what the area of the multiple widgets will cover without modifying the context
-		int iMulLayoutX = c->iLayoutX;
-		int iMulLayoutY = c->iLayoutY;
-		int iFirstLayoutX = iMulLayoutX;
-		int iFirstLayoutY = iMulLayoutY;
-		int iMulIdxRowParts = c->iIdxRowParts;
-		int iXWide = 0;
-		for (int i = 0; i < iTotalWidgets; ++i)
+		return;
+	}
+
+	Assert(c->layout.iRowPartsTotal > 0);
+	const int iRowPartsTotal = Max(1, c->layout.iRowPartsTotal);
+
+	// Peek-forward what the area of the multiple widgets will cover without modifying the context
+	int iMulLayoutX = c->iLayoutX;
+	int iMulLayoutY = c->iLayoutY;
+	int iAllXWide = 0;
+	int iMulIdxRowParts = c->iIdxRowParts;
+
+	if (iMulIdxRowParts < 0)
+	{
+		iMulLayoutX = 0;
+		iMulIdxRowParts = 0;
+	}
+
+	for (int i = 0; i < iTotalWidgets; ++i)
+	{
+		// NEO TODO (nullsystem): Maybe to not bother with vertical at this stage
+		// but this is usually an internal use at the moment
+
+		const bool bNextIsLast = (iMulIdxRowParts + 1) >= iRowPartsTotal;
+
+		int xWide;
+		if (bNextIsLast)
 		{
-			if (iMulIdxRowParts < 0 || iMulIdxRowParts >= (c->layout.iRowPartsTotal - 1))
+			xWide = c->dPanel.wide - iMulLayoutX;
+		}
+		else
+		{
+			if (c->layout.iRowParts)
 			{
-				iMulLayoutX = 0;
-				iMulLayoutY += (iMulIdxRowParts < 0) ? 0 : c->layout.iRowTall;
-				iMulIdxRowParts = 0;
+				xWide = (c->layout.iRowParts[iMulIdxRowParts] / 100.0f) * c->dPanel.wide;
 			}
 			else
 			{
-				if (c->layout.iRowParts)
-				{
-					iMulLayoutX += (c->layout.iRowParts[iMulIdxRowParts] / 100.0f) * c->dPanel.wide;
-				}
-				else
-				{
-					iMulLayoutX += (1.0f / static_cast<float>(c->layout.iRowPartsTotal)) * c->dPanel.wide;
-				}
-				++iMulIdxRowParts;
+				xWide = (1.0f / static_cast<float>(iRowPartsTotal)) * c->dPanel.wide;
 			}
-			if (i == 0)
-			{
-				iFirstLayoutX = iMulLayoutX;
-				iFirstLayoutY = iMulLayoutY;
-			}
-
-			iXWide += (iMulIdxRowParts == (c->layout.iRowPartsTotal - 1))
-					? c->dPanel.wide - iMulLayoutX
-					: (c->layout.iRowParts)
-					  ? (c->layout.iRowParts[iMulIdxRowParts] / 100.0f) * c->dPanel.wide
-					  : (1.0f / static_cast<float>(c->layout.iRowPartsTotal)) * c->dPanel.wide;
 		}
-		vgui::IntRect hightlightRect = {
-			.x0 = c->dPanel.x + iFirstLayoutX,
-			.y0 = c->dPanel.y + iFirstLayoutY,
-			.x1 = c->dPanel.x + iFirstLayoutX + iXWide,
-			.y1 = c->dPanel.y + iFirstLayoutY + c->layout.iRowTall,
-		};
+		iAllXWide += xWide;
 
-		// Mostly so the highlight can apply to multi-widget's labels
-		const bool bMouseIn = IN_BETWEEN_EQ(hightlightRect.x0, c->iMouseAbsX, hightlightRect.x1)
-				&& IN_BETWEEN_EQ(hightlightRect.y0, c->iMouseAbsY, hightlightRect.y1);
-		if (bMouseIn)
+		if (bNextIsLast)
 		{
-			c->iHot = c->iWidget;
-			c->iHotSection = c->iSection;
+			iMulIdxRowParts = 0;
+			AssertMsg(i == (iTotalWidgets - 1), "NeoUI::MultiWidgetHighlighter should not be used for split up widgets");
 		}
-
-		// Apply highlight if it's hot/active
-		const bool bHot = c->iHotSection == c->iSection && IN_BETWEEN_AR(c->iWidget, c->iHot, c->iWidget + iTotalWidgets);
-		const bool bActive = c->iActiveSection == c->iSection && IN_BETWEEN_AR(c->iWidget, c->iActive, c->iWidget + iTotalWidgets);
-		if (bHot || bActive)
+		else
 		{
-			vgui::surface()->DrawSetColor(c->selectBgColor);
-			if (bActive)
+			if (c->layout.iRowParts)
 			{
-				vgui::surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
+				iMulLayoutX += (c->layout.iRowParts[iMulIdxRowParts] / 100.0f) * c->dPanel.wide;
 			}
-			vgui::surface()->DrawFilledRectArray(&hightlightRect, 1);
+			else
+			{
+				iMulLayoutX += (1.0f / static_cast<float>(iRowPartsTotal)) * c->dPanel.wide;
+			}
+			++iMulIdxRowParts;
 		}
+	}
+	vgui::IntRect hightlightRect = {
+		.x0 = c->dPanel.x + c->iLayoutX,
+		.y0 = c->dPanel.y + c->iLayoutY,
+		.x1 = c->dPanel.x + c->iLayoutX + iAllXWide,
+		.y1 = c->dPanel.y + c->iLayoutY + c->layout.iRowTall,
+	};
+
+	// Mostly so the highlight can apply to multi-widget's labels
+	const bool bMouseIn = IN_BETWEEN_EQ(hightlightRect.x0, c->iMouseAbsX, hightlightRect.x1)
+			&& IN_BETWEEN_EQ(hightlightRect.y0, c->iMouseAbsY, hightlightRect.y1);
+	if (bMouseIn)
+	{
+		c->iHot = c->iWidget;
+		c->iHotSection = c->iSection;
+	}
+
+	// Apply highlight if it's hot/active
+	const bool bHot = c->iHotSection == c->iSection && IN_BETWEEN_AR(c->iWidget, c->iHot, c->iWidget + iTotalWidgets);
+	const bool bActive = c->iActiveSection == c->iSection && IN_BETWEEN_AR(c->iWidget, c->iActive, c->iWidget + iTotalWidgets);
+	if (bHot || bActive)
+	{
+		vgui::surface()->DrawSetColor(c->selectBgColor);
+		if (bActive)
+		{
+			vgui::surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
+		}
+		vgui::surface()->DrawFilledRectArray(&hightlightRect, 1);
 	}
 }
 
@@ -130,6 +153,7 @@ void BeginContext(NeoUI::Context *pNextCtx, const NeoUI::Mode eMode, const wchar
 	c->eMode = eMode;
 	c->iLayoutX = 0;
 	c->iLayoutY = 0;
+	c->irWidgetLayoutY = 0;
 	c->iWidget = 0;
 	c->iSection = 0;
 	c->iHasMouseInPanel = 0;
@@ -256,9 +280,12 @@ void BeginSection(const bool bDefaultFocus)
 {
 	c->iLayoutX = 0;
 	c->iLayoutY = -c->iYOffset[c->iSection];
+	c->irWidgetLayoutY = c->iLayoutY;
 	c->iWidget = 0;
 	c->iCanActives = 0;
 	c->iIdxRowParts = -1;
+	c->iIdxVertParts = -1;
+	c->iVertLayoutY = 0;
 
 	c->iMouseRelX = c->iMouseAbsX - c->dPanel.x;
 	c->iMouseRelY = c->iMouseAbsY - c->dPanel.y;
@@ -292,13 +319,13 @@ void BeginSection(const bool bDefaultFocus)
 void EndSection()
 {
 	if (c->eMode == MODE_MOUSEPRESSED && c->bMouseInPanel &&
-			c->iLayoutY < c->iMouseRelY)
+			c->irWidgetLayoutY < c->iMouseRelY)
 	{
 		c->iActive = FOCUSOFF_NUM;
 		c->iActiveSection = -1;
 	}
-	const int iAbsLayoutY = c->iLayoutY + c->irWidgetTall + c->iYOffset[c->iSection];
-	c->wdgInfos[c->iWidget].iYOffsets= iAbsLayoutY;
+	const int iAbsLayoutY = c->irWidgetLayoutY + c->irWidgetTall + c->iYOffset[c->iSection];
+	c->wdgInfos[c->iWidget].iYOffsets = iAbsLayoutY;
 
 	// Scroll handling
 	const int iScrollThick = c->iMarginX * 4;
@@ -420,15 +447,38 @@ void EndSection()
 void SetPerRowLayout(const int iColTotal, const int *iColProportions, const int iRowTall)
 {
 	// Bump y-axis with previous row layout before applying new row layout
-	if (c->iWidget > 0 && c->iIdxRowParts >= 0 && c->iIdxRowParts < c->layout.iRowPartsTotal)
+	if (c->iWidget > 0 && c->iIdxRowParts > 0 && c->iIdxRowParts < c->layout.iRowPartsTotal)
 	{
 		c->iLayoutY += c->layout.iRowTall;
+		c->irWidgetLayoutY = c->iLayoutY;
 	}
 
-	c->layout.iRowPartsTotal = iColTotal;
-	c->layout.iRowParts = iColProportions;
+	// NEO NOTE (nullsystem): Setting iColTotal must be at least 1 or more, the layout
+	// is always mainly a per row based
+	Assert(iColTotal > 0);
+	if (iColTotal <= 0)
+	{
+		// Really shouldn't ever happen but just in-case to enforce 1
+		c->layout.iRowPartsTotal = 1;
+		c->layout.iRowParts = nullptr;
+	}
+	else
+	{
+		c->layout.iRowPartsTotal = iColTotal;
+		c->layout.iRowParts = iColProportions;
+	}
 	if (iRowTall > 0) c->layout.iRowTall = iRowTall;
 	c->iIdxRowParts = -1;
+}
+
+void SetPerCellVertLayout(const int iRowTotal, const int *iRowProportions)
+{
+	// NEO NOTE (nullsystem): iRowTotal = 0 is allowed to switch off vertical layout
+	Assert(iRowTotal >= 0);
+	c->layout.iVertPartsTotal = iRowTotal;
+	c->layout.iVertParts = iRowProportions;
+	c->iIdxVertParts = -1;
+	c->iVertLayoutY = 0;
 }
 
 static GetMouseinFocusedRet InternalGetMouseinFocused()
@@ -461,44 +511,109 @@ void BeginWidget(const WidgetFlag eWidgetFlag)
 		c->wdgInfos = (DynWidgetInfos *)(realloc(c->wdgInfos, sizeof(DynWidgetInfos) * c->iWdgInfosMax));
 	}
 
-	if (c->iIdxRowParts < 0 || c->iIdxRowParts >= (c->layout.iRowPartsTotal - 1))
+	if (c->iIdxRowParts < 0)
 	{
-		// Shift to the next row once we're out of partition
+		// NEO NOTE (nullsystem): Don't need to bump c->iLayoutY
+		// because any reset of iIdxRowParts either don't need to
+		// or already done it
 		c->iLayoutX = 0;
-		c->iLayoutY += (c->iIdxRowParts < 0) ? 0 : c->layout.iRowTall;
 		c->iIdxRowParts = 0;
+	}
+
+	int iVertYOffset = 0;
+	int iWdgTall = c->layout.iRowTall;
+	bool bShiftIdxRowParts = true;
+
+	const bool bVertMode = c->layout.iVertPartsTotal > 0;
+	if (bVertMode)
+	{
+		if (c->iIdxVertParts < 0)
+		{
+			c->iVertLayoutY = 0;
+			c->iIdxVertParts = 0;
+		}
+
+		if (c->layout.iVertParts)
+		{
+			iWdgTall = (c->layout.iVertParts[c->iIdxVertParts] / 100.0f) * c->layout.iRowTall;
+		}
+		else
+		{
+			iWdgTall = (1.0f / static_cast<float>(c->layout.iVertPartsTotal)) * c->layout.iRowTall;
+		}
+
+		c->iVertLayoutY += iWdgTall;
+		iVertYOffset = c->iVertLayoutY - iWdgTall;
+
+		if ((c->iIdxVertParts + 1) >= c->layout.iVertPartsTotal)
+		{
+			c->iVertLayoutY = 0;
+			c->iIdxVertParts = 0;
+		}
+		else
+		{
+			bShiftIdxRowParts = false;
+			++c->iIdxVertParts;
+		}
+	}
+
+	Assert(c->layout.iRowPartsTotal > 0);
+	const int iRowPartsTotal = Max(1, c->layout.iRowPartsTotal);
+	const bool bNextIsLast = (c->iIdxRowParts + 1) >= iRowPartsTotal;
+
+	// NEO NOTE (nullsystem): If very last partition of the row, use what's left
+	// instead so whatever pixels don't get left out
+	int xWide;
+	if (bNextIsLast)
+	{
+		xWide = c->dPanel.wide - c->iLayoutX;
 	}
 	else
 	{
 		if (c->layout.iRowParts)
 		{
-			c->iLayoutX += (c->layout.iRowParts[c->iIdxRowParts] / 100.0f) * c->dPanel.wide;
+			xWide = (c->layout.iRowParts[c->iIdxRowParts] / 100.0f) * c->dPanel.wide;
 		}
 		else
 		{
-			c->iLayoutX += (1.0f / static_cast<float>(c->layout.iRowPartsTotal)) * c->dPanel.wide;
+			xWide = (1.0f / static_cast<float>(iRowPartsTotal)) * c->dPanel.wide;
 		}
-		++c->iIdxRowParts;
 	}
 
-	// NEO NOTE (nullsystem): If very last partition of the row, use what's left
-	// instead so whatever pixels don't get left out
-	const int xWide = (c->iIdxRowParts == (c->layout.iRowPartsTotal - 1))
-			? c->dPanel.wide - c->iLayoutX
-			: (c->layout.iRowParts)
-			  ? (c->layout.iRowParts[c->iIdxRowParts] / 100.0f) * c->dPanel.wide
-			  : (1.0f / static_cast<float>(c->layout.iRowPartsTotal)) * c->dPanel.wide;
 	c->rWidgetArea = vgui::IntRect{
 		.x0 = c->dPanel.x + c->iLayoutX,
-		.y0 = c->dPanel.y + c->iLayoutY,
+		.y0 = c->dPanel.y + c->iLayoutY + iVertYOffset,
 		.x1 = c->dPanel.x + c->iLayoutX + xWide,
-		.y1 = c->dPanel.y + c->iLayoutY + c->layout.iRowTall,
+		.y1 = c->dPanel.y + c->iLayoutY + iWdgTall,
 	};
 	c->irWidgetWide = c->rWidgetArea.x1 - c->rWidgetArea.x0;
 	c->irWidgetTall = c->rWidgetArea.y1 - c->rWidgetArea.y0;
+	c->irWidgetLayoutY = c->iLayoutY;
 	c->wdgInfos[c->iWidget].iYOffsets = c->iLayoutY + c->iYOffset[c->iSection];
 	c->wdgInfos[c->iWidget].iYTall = c->irWidgetTall;
 	c->wdgInfos[c->iWidget].bCannotActive = (eWidgetFlag & WIDGETFLAG_SKIPACTIVE);
+
+	if (bShiftIdxRowParts)
+	{
+		if (bNextIsLast)
+		{
+			c->iLayoutX = 0;
+			c->iLayoutY += c->layout.iRowTall;
+			c->iIdxRowParts = 0;
+		}
+		else
+		{
+			if (c->layout.iRowParts)
+			{
+				c->iLayoutX += (c->layout.iRowParts[c->iIdxRowParts] / 100.0f) * c->dPanel.wide;
+			}
+			else
+			{
+				c->iLayoutX += (1.0f / static_cast<float>(iRowPartsTotal)) * c->dPanel.wide;
+			}
+			++c->iIdxRowParts;
+		}
+	}
 }
 
 void EndWidget(const GetMouseinFocusedRet wdgState)
@@ -527,7 +642,7 @@ void LabelWrap(const wchar_t *wszText)
 
 	BeginWidget(WIDGETFLAG_SKIPACTIVE);
 	int iLines = 0;
-	if (IN_BETWEEN_AR(0, c->iLayoutY, c->dPanel.tall))
+	if (IN_BETWEEN_AR(0, c->irWidgetLayoutY, c->dPanel.tall))
 	{
 		const auto *pFontI = &c->fonts[c->eFont];
 		const int iWszSize = V_wcslen(wszText);
@@ -573,6 +688,7 @@ void LabelWrap(const wchar_t *wszText)
 	}
 
 	c->iLayoutY += (c->layout.iRowTall * iLines);
+	c->irWidgetLayoutY = c->iLayoutY;
 
 	EndWidget(GetMouseinFocusedRet{true, true});
 }
@@ -591,22 +707,37 @@ void HeadingLabel(const wchar_t *wszText)
 	SetPerRowLayout(tmp.iRowPartsTotal, tmp.iRowParts, tmp.iRowTall);
 }
 
+// Internal API: Figure out X position from text, font, and text style
+static int XPosFromText(const wchar_t *wszText, const FontInfo *pFontI, const TextStyle eTextStyle)
+{
+	int iFontTextWidth = 0, iFontTextHeight = 0;
+	if (eTextStyle != TEXTSTYLE_LEFT)
+	{
+		vgui::surface()->GetTextSize(pFontI->hdl, wszText, iFontTextWidth, iFontTextHeight);
+	}
+	int x = 0;
+	switch (eTextStyle)
+	{
+	break; case TEXTSTYLE_LEFT:
+		x = c->iMarginX;
+	break; case TEXTSTYLE_CENTER:
+		x = (c->irWidgetWide / 2) - (iFontTextWidth / 2);
+	break; case TEXTSTYLE_RIGHT:
+		x = c->irWidgetWide - c->iMarginX - iFontTextWidth;
+	}
+	return x;
+}
+
 void Label(const wchar_t *wszText, const bool bNotWidget)
 {
 	if (!bNotWidget)
 	{
 		BeginWidget(WIDGETFLAG_SKIPACTIVE);
 	}
-	if (IN_BETWEEN_AR(0, c->iLayoutY, c->dPanel.tall) && c->eMode == MODE_PAINT)
+	if (IN_BETWEEN_AR(0, c->irWidgetLayoutY, c->dPanel.tall) && c->eMode == MODE_PAINT)
 	{
 		const auto *pFontI = &c->fonts[c->eFont];
-		int iFontTextWidth = 0, iFontTextHeight = 0;
-		const bool bCenter = c->eLabelTextStyle == TEXTSTYLE_CENTER;
-		if (bCenter)
-		{
-			vgui::surface()->GetTextSize(pFontI->hdl, wszText, iFontTextWidth, iFontTextHeight);
-		}
-		const int x = ((bCenter) ? ((c->irWidgetWide / 2) - (iFontTextWidth / 2)) : c->iMarginX);
+		const int x = XPosFromText(wszText, pFontI, c->eLabelTextStyle);
 		const int y = pFontI->iYOffset;
 		vgui::surface()->DrawSetTextPos(c->rWidgetArea.x0 + x, c->rWidgetArea.y0 + y);
 		vgui::surface()->DrawPrintText(wszText, V_wcslen(wszText));
@@ -644,20 +775,18 @@ NeoUI::RetButton Button(const wchar_t *wszText)
 	const auto wdgState = InternalGetMouseinFocused();
 	ret.bMouseHover = wdgState.bHot;
 
-	if (IN_BETWEEN_AR(0, c->iLayoutY, c->dPanel.tall))
+	if (IN_BETWEEN_AR(0, c->irWidgetLayoutY, c->dPanel.tall))
 	{
 		switch (c->eMode)
 		{
 		case MODE_PAINT:
 		{
-			const auto *pFontI = &c->fonts[c->eFont];
-			int iFontWide, iFontTall;
-			vgui::surface()->GetTextSize(pFontI->hdl, wszText, iFontWide, iFontTall);
-			const int xMargin = c->eButtonTextStyle == TEXTSTYLE_CENTER ?
-						((c->irWidgetWide / 2) - (iFontWide / 2)) : c->iMarginX;
-
 			vgui::surface()->DrawFilledRectArray(&c->rWidgetArea, 1);
-			vgui::surface()->DrawSetTextPos(c->rWidgetArea.x0 + xMargin, c->rWidgetArea.y0 + pFontI->iYOffset);
+
+			const auto *pFontI = &c->fonts[c->eFont];
+			const int x = XPosFromText(wszText, pFontI, c->eButtonTextStyle);
+			const int y = pFontI->iYOffset;
+			vgui::surface()->DrawSetTextPos(c->rWidgetArea.x0 + x, c->rWidgetArea.y0 + y);
 			vgui::surface()->DrawPrintText(wszText, V_wcslen(wszText));
 		}
 		break;
@@ -702,7 +831,7 @@ NeoUI::RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText)
 void ImageTexture(const char *szTexturePath, const wchar_t *wszErrorMsg, const char *szTextureGroup)
 {
 	BeginWidget(WIDGETFLAG_SKIPACTIVE);
-	if (IN_BETWEEN_AR(0, c->iLayoutY, c->dPanel.tall) && c->eMode == MODE_PAINT)
+	if (IN_BETWEEN_AR(0, c->irWidgetLayoutY, c->dPanel.tall) && c->eMode == MODE_PAINT)
 	{
 		const bool bHasTexture = Texture(szTexturePath,
 										 c->rWidgetArea.x0, c->rWidgetArea.y0,
@@ -860,7 +989,7 @@ NeoUI::RetButton ButtonTexture(const char *szTexturePath)
 	const auto wdgState = InternalGetMouseinFocused();
 	ret.bMouseHover = wdgState.bHot;
 
-	if (IN_BETWEEN_AR(0, c->iLayoutY, c->dPanel.tall))
+	if (IN_BETWEEN_AR(0, c->irWidgetLayoutY, c->dPanel.tall))
 	{
 		switch (c->eMode)
 		{
@@ -941,7 +1070,7 @@ void RingBox(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 	BeginWidget();
 	const auto wdgState = InternalGetMouseinFocused();
 
-	if (IN_BETWEEN_AR(0, c->iLayoutY, c->dPanel.tall))
+	if (IN_BETWEEN_AR(0, c->irWidgetLayoutY, c->dPanel.tall))
 	{
 		switch (c->eMode)
 		{
@@ -1137,7 +1266,7 @@ static float ClampAndLimitDp(const float curValue, const float flMin, const floa
 void Progress(const float flValue, const float flMin, const float flMax)
 {
 	BeginWidget(WIDGETFLAG_SKIPACTIVE);
-	if (IN_BETWEEN_AR(0, c->iLayoutY, c->dPanel.tall) && c->eMode == MODE_PAINT)
+	if (IN_BETWEEN_AR(0, c->irWidgetLayoutY, c->dPanel.tall) && c->eMode == MODE_PAINT)
 	{
 		const float flPerc = (flValue - flMin) / (flMax - flMin);
 		vgui::surface()->DrawFilledRect(c->rWidgetArea.x0,
@@ -1156,7 +1285,7 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 	BeginWidget();
 	const auto wdgState = InternalGetMouseinFocused();
 
-	if (IN_BETWEEN_AR(0, c->iLayoutY, c->dPanel.tall))
+	if (IN_BETWEEN_AR(0, c->irWidgetLayoutY, c->dPanel.tall))
 	{
 		auto hdl = c->htSliders.Find(wszLeftLabel);
 		if (hdl == -1 || c->htSliders.Element(hdl).flCachedValue != *flValue ||
@@ -1408,7 +1537,7 @@ void TextEdit(wchar_t *wszText, const int iMaxBytes)
 
 	const auto wdgState = InternalGetMouseinFocused();
 
-	if (IN_BETWEEN_AR(0, c->iLayoutY, c->dPanel.tall))
+	if (IN_BETWEEN_AR(0, c->irWidgetLayoutY, c->dPanel.tall))
 	{
 		switch (c->eMode)
 		{

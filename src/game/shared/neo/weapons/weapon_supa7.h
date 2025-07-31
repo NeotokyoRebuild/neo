@@ -82,11 +82,10 @@ private:
 	}
 
 private:
-	CNetworkVar(bool, m_bDelayedFire1); // Fire primary when finished reloading
-	CNetworkVar(bool, m_bDelayedFire2); // Fire secondary when finished reloading
-	CNetworkVar(bool, m_bDelayedReload); // Reload when finished pump;
 	CNetworkVar(bool, m_bSlugDelayed); // Load slug into tube next
 	CNetworkVar(bool, m_bSlugLoaded); // Slug currently loaded in chamber
+	CNetworkVar(bool, m_bWeaponRaised); // Slug currently loaded in chamber
+	CNetworkVar(bool, m_bShellInChamber); // Slug currently loaded in chamber
 
 private:
 	CWeaponSupa7(const CWeaponSupa7 &other);

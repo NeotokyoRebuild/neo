@@ -1,0 +1,36 @@
+"marketa.outdoors"
+
+{
+	"dsp"	"1"
+	"playlooping"
+	{
+		"volume"	"1"
+		"pitch"		"100"
+		"wave"		"forest/wind_loop.wav"
+	}
+	
+	"playlooping"
+	{
+		"volume"	".3"
+		"pitch"		"100"
+		"wave"		"skylines.wav"
+	}
+
+    "playrandom"
+	{
+
+		"time"		"15,40"
+		"volume"	".06"
+		"pitch"		"100"
+
+		"rndwave"
+		{
+					
+			"wave"	"inaka/wind_gust_10.wav"
+			"wave"	"inaka/wind_gust_8.wav"
+			"wave"	"inaka/inaka_plane_overhead.wav"
+		}
+	}
+}
+
+

@@ -1308,7 +1308,11 @@ StairTestType IsStairs( const Vector &start, const Vector &end, StairTestType re
 	if ( abs( start.z - end.z ) > StepHeight )
 	{
 		// initialize the height delta
+#ifdef NEO
+		UTIL_TraceHull( start + traceOffset, start - traceOffset, hullMins, hullMaxs, MASK_PLAYERSOLID, &filter, &trace );
+#else
 		UTIL_TraceHull( start + traceOffset, start - traceOffset, hullMins, hullMaxs, MASK_NPCSOLID, &filter, &trace );
+#endif // NEO
 		if ( trace.startsolid || trace.IsDispSurface() )
 		{
 			return STAIRS_NO;
@@ -1324,7 +1328,11 @@ StairTestType IsStairs( const Vector &start, const Vector &end, StairTestType re
 		{
 			pos = start + t * ( end - start );
 
+#ifdef NEO
+			UTIL_TraceHull( pos + traceOffset, pos - traceOffset, hullMins, hullMaxs, MASK_PLAYERSOLID, &filter, &trace );
+#else
 			UTIL_TraceHull( pos + traceOffset, pos - traceOffset, hullMins, hullMaxs, MASK_NPCSOLID, &filter, &trace );
+#endif // NEO
 			if ( trace.startsolid || trace.IsDispSurface() )
 			{
 				return STAIRS_NO;
@@ -3632,6 +3640,9 @@ static void HideAnalysisProgress( void )
 /**
  * Process the auto-generation for 'maxTime' seconds. return false if generation is complete.
  */
+#ifdef NEO
+ConVar nav_neo_skip_visibility_calculation("nav_neo_skip_visibility_calculation", "0", 0, "Skip visibility calculation", true, 0, true, 1);
+#endif // NEO
 bool CNavMesh::UpdateGeneration( float maxTime )
 {
 	double startTime = Plat_FloatTime();
@@ -3793,6 +3804,15 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 		//---------------------------------------------------------------------------
 		case COMPUTE_MESH_VISIBILITY:
 		{
+#ifdef NEO
+			if (nav_neo_skip_visibility_calculation.GetBool())
+			{
+				Msg("Skipping mesh visibility\n");
+				m_generationState = FIND_EARLIEST_OCCUPY_TIMES;
+				m_generationIndex = 0;
+				return true;
+			}
+#endif // NEO
 			while( m_generationIndex < TheNavAreas.Count() )
 			{
 				CNavArea *area = TheNavAreas[ m_generationIndex ];
@@ -4691,7 +4711,11 @@ bool IsWalkableTraceLineClear( const Vector &from, const Vector &to, unsigned in
 	const int maxTries = 50;
 	for( int t=0; t<maxTries; ++t )
 	{
+#ifdef NEO
+		UTIL_TraceLine( useFrom, to, MASK_PLAYERSOLID, &traceFilter, &result );
+#else
 		UTIL_TraceLine( useFrom, to, MASK_NPCSOLID, &traceFilter, &result );
+#endif // NEO
 
 		// if we hit a walkable entity, try again
 		if (result.fraction != 1.0f && IsEntityWalkable( result.m_pEnt, flags ))

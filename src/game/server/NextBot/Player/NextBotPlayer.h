@@ -573,6 +573,10 @@ inline void _NextBot_BuildUserCommand( CUserCmd *cmd, const QAngle &viewangles, 
 
 
 //-----------------------------------------------------------------------------------------------------
+#ifdef NEO
+extern ConVar bot_mimic;
+extern ConVar bot_mimic_yaw_offset;
+#endif // NEO
 template < typename PlayerType >
 inline void NextBotPlayer< PlayerType >::PhysicsSimulate( void )
 {
@@ -598,6 +602,37 @@ inline void NextBotPlayer< PlayerType >::PhysicsSimulate( void )
 		return;
 	}
 
+#ifdef NEO
+	if (bot_mimic.GetBool())
+	{
+		auto pPlayerMimicked = UTIL_PlayerByIndex(bot_mimic.GetInt());
+		auto pThisBot = static_cast<CBasePlayer*>(GetEntity());
+		{
+			if (pPlayerMimicked && pThisBot)
+			{
+				CUserCmd cmd;
+
+				if (!pPlayerMimicked->GetLastUserCommand())
+				{
+					return;
+				}
+
+				cmd = *pPlayerMimicked->GetLastUserCommand();
+				cmd.viewangles[YAW] += bot_mimic_yaw_offset.GetFloat();
+
+				// allocate a new command and add it to the player's list of command to process
+				this->ProcessUsercmds(&cmd, 1, 1, 0, false);
+
+				// Clear out any fixangle that has been set
+				pThisBot->pl.fixangle = FIXANGLE_NONE;
+
+				// actually execute player commands and do player physics
+				PlayerType::PhysicsSimulate();
+				return;
+			}
+		}
+	}
+#endif // NEO
 	int inputButtons;
 	//
 	// Update bot behavior
