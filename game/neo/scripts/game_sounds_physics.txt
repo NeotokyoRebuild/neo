@@ -3875,3 +3875,25 @@
 		"wave"		"tutorial/barrierhit.wav"
 	}
 }
+
+"coast.leech_bites_loop"
+{
+	"channel"		"CHAN_STATIC"
+	"volume"		"0.300000"
+	"pitch"			"PITCH_NORM"
+
+	"soundlevel"	"SNDLVL_80dB"
+
+	"wave"			"#ambient/creatures/leech_bites_loop1.wav"
+}
+
+"coast.leech_water_churn_loop"
+{
+	"channel"		"CHAN_STATIC"
+	"volume"		"0.150000"
+	"pitch"			"PITCH_NORM"
+
+	"soundlevel"	"SNDLVL_80dB"
+
+	"wave"			"#ambient/creatures/leech_water_churn_loop2.wav"
+}
