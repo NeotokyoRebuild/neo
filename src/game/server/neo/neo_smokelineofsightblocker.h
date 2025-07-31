@@ -18,25 +18,22 @@ public:
 		BaseClass::Spawn();
 		SetSolid(SOLID_BBOX);
 		SetCollisionBounds(m_mins, m_maxs);
-
-		// For making trace lines hit
-		RemoveSolidFlags(FSOLID_NOT_SOLID);
-		// For allowing players and projectiles to pass through
-		SetCollisionGroup(COLLISION_GROUP_DEBRIS);
+		SetSolidFlags(FSOLID_CUSTOMRAYTEST | FSOLID_CUSTOMBOXTEST);
 	}
 
-	// NEO Jank: Have TraceLines that include CONTENTS_HITBOX in the mask ignore this entity
-	// or else players in/beyond smoke become immune to damage from projectiles despite being hit.
-	virtual bool ShouldCollide(int collisionGroup, int contentsMask) const override
+	bool TestCollision(const Ray_t& ray, unsigned int fContentsMask, trace_t& tr) override
 	{
-		// This logic assumes entity is in COLLISION_GROUP_DEBRIS, which doesn't collide with other trace masks.
-		// Traces using CONTENTS_HITBOX determine if the target was hit, determining if damage is applied.
-		if (contentsMask & CONTENTS_HITBOX) {
-			return false;
+		if (fContentsMask &= CONTENTS_BLOCKLOS)
+		{
+			tr.fraction = 0.f; // NEO NOTE (Adam) Shouldn't returning true be enough? Should we calculate correct value for the fraction?
+			return true;
 		}
+		return false;
+	}
 
-		// Fall back to normal collision behavior
-		return CBaseEntity::ShouldCollide(collisionGroup, contentsMask);
+	bool TestHitboxes(const Ray_t& ray, unsigned int fContentsMask, trace_t& tr) override
+	{ // NEO NOTE (Adam) Shotguns used to use hulls for half of their pellets, not sure if this los blocker would have affected that, check if/when any weapons do again
+		return false;
 	}
 
 	void SetBounds(const Vector& mins, const Vector& maxs) { m_mins = mins; m_maxs = maxs; }

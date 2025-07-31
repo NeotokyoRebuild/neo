@@ -193,8 +193,7 @@ void CNEO_NPCTargetSystem::Think(void)
         if (flZDiff > m_flTopClip || flZDiff < m_flBottomClip) // Ignore if head is out of high/low bounds
             continue;
 
-        // NEO Jank smoke LOS blocker entity is both a monster a COLLSION_GROUP_DEBRIS, so need to add npc/debris masks
-        if (!FVisible(pPlayer, MASK_BLOCKLOS_AND_NPCS|CONTENTS_DEBRIS, nullptr)) // Draw a trace to check if we can actually see the player
+        if (!FVisible(pPlayer, MASK_BLOCKLOS_AND_NPCS, nullptr)) // Draw a trace to check if we can actually see the player
             continue;
 
         float flForwardDist = DotProduct(vecTarget2DPos, vecForward);
