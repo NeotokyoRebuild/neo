@@ -149,6 +149,7 @@ struct NeoSettings
 		CrosshairInfo info;
 		XHairExportNotify eClipboardInfo;
 		bool bNetworkCrosshair;
+		bool bPreviewDynamicAccuracy;
 
 		// Textures
 		struct Texture
