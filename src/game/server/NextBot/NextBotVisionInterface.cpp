@@ -565,7 +565,11 @@ void IVision::Update( void )
 
 
 //------------------------------------------------------------------------------------------
+#ifdef NEO
+bool IVision::IsAbleToSee( CBaseEntity *subject, FieldOfViewCheckType checkFOV, Vector *visibleSpot )
+#else
 bool IVision::IsAbleToSee( CBaseEntity *subject, FieldOfViewCheckType checkFOV, Vector *visibleSpot ) const
+#endif // NEO
 {
 	VPROF_BUDGET( "IVision::IsAbleToSee", "NextBotExpensive" );
 
@@ -708,7 +712,11 @@ bool IVision::IsLineOfSightClear( const Vector &pos ) const
 
 
 //------------------------------------------------------------------------------------------
+#ifdef NEO
+bool IVision::IsLineOfSightClearToEntity( const CBaseEntity *subject, Vector *visibleSpot )
+#else
 bool IVision::IsLineOfSightClearToEntity( const CBaseEntity *subject, Vector *visibleSpot ) const
+#endif // NEO
 {
 #ifdef TERROR
 	// TODO: Integration querycache & its dependencies
@@ -767,6 +775,8 @@ bool IVision::IsLineOfSightClearToEntity( const CBaseEntity *subject, Vector *vi
 	{
 		*visibleSpot = result.endpos;
 	}
+
+	idealTargetPoint[subject->entindex()] = result.endpos;
 
 	return ( result.fraction >= 1.0f && !result.startsolid );
 
