@@ -918,12 +918,7 @@ void C_NEO_Player::CalculateSpeed(void)
 
 	if (GetFlags() & FL_DUCKING)
 	{
-		speed *= NEO_CROUCH_WALK_MODIFIER;
-	}
-
-	if (m_nButtons & IN_WALK)
-	{
-		speed *= NEO_CROUCH_WALK_MODIFIER; // They stack
+		speed *= NEO_CROUCH_MODIFIER;
 	}
 
 	if (IsSprinting())
@@ -948,6 +943,11 @@ void C_NEO_Player::CalculateSpeed(void)
 	if (IsInAim())
 	{
 		speed *= NEO_AIM_MODIFIER;
+	}
+
+	if (m_nButtons & IN_WALK)
+	{
+		speed = MIN(GetFlags() & FL_DUCKING ? NEO_CROUCH_WALK_SPEED : NEO_WALK_SPEED, speed);
 	}
 
 	Vector absoluteVelocity = GetAbsVelocity();
@@ -1021,7 +1021,7 @@ void C_NEO_Player::HandleSpeedChangesLegacy()
 			{
 				StopWalking();
 			}
-			else if( !IsWalking() && !IsSprinting() && (m_afButtonPressed & IN_WALK) && !(m_nButtons & IN_DUCK) )
+			else if( !IsWalking() && !IsSprinting() && (m_afButtonPressed & IN_WALK) )
 			{
 				StartWalking();
 			}
@@ -1706,7 +1706,7 @@ float C_NEO_Player::GetCrouchSpeed(void) const
 	case NEO_CLASS_JUGGERNAUT:
 		return NEO_JUGGERNAUT_CROUCH_SPEED;
 	default:
-		return (NEO_BASE_SPEED * NEO_CROUCH_WALK_MODIFIER);
+		return (NEO_BASE_SPEED * NEO_CROUCH_MODIFIER);
 	}
 }
 

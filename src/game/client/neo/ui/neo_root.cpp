@@ -456,14 +456,22 @@ void CNeoRoot::FireGameEvent(IGameEvent *event)
 
 void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 {
-	if (m_ns.keys.bcConsole <= KEY_NONE)
+	// This can happen eg. when the client uses multimedia keys to adjust OS volume.
+	// If we don't return here, then any un-bound UI element which also has the bind "none"
+	// would incorrectly trigger for this unrelated input.
+	if (code <= KEY_NONE)
 	{
-		m_ns.keys.bcConsole = gameuifuncs->GetButtonCodeForBind("neo_toggleconsole");
-		m_ns.keys.bcMP3Player = gameuifuncs->GetButtonCodeForBind("neo_mp3");
-		m_ns.keys.bcTeamMenu = gameuifuncs->GetButtonCodeForBind("teammenu");
-		m_ns.keys.bcClassMenu = gameuifuncs->GetButtonCodeForBind("classmenu");
-		m_ns.keys.bcLoadoutMenu = gameuifuncs->GetButtonCodeForBind("loadoutmenu");
+		return;
 	}
+
+	// Refresh every time, because else if the user unbinds or rebinds the key, it will still incorrectly be mapped there.
+	// NEO FIXME (Rain): We do not currently support binding multiple buttons for the same command;
+	// if the user does: bind a foo; bind b foo; then only the latest bind will work.
+	m_ns.keys.bcConsole = gameuifuncs->GetButtonCodeForBind("neo_toggleconsole");
+	m_ns.keys.bcMP3Player = gameuifuncs->GetButtonCodeForBind("neo_mp3");
+	m_ns.keys.bcTeamMenu = gameuifuncs->GetButtonCodeForBind("teammenu");
+	m_ns.keys.bcClassMenu = gameuifuncs->GetButtonCodeForBind("classmenu");
+	m_ns.keys.bcLoadoutMenu = gameuifuncs->GetButtonCodeForBind("loadoutmenu");
 
 	if (code == m_ns.keys.bcConsole && code != KEY_BACKQUOTE)
 	{

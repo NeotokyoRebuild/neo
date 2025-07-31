@@ -119,6 +119,7 @@ DEFINE_FIELD(m_bClientWantNeoName, FIELD_BOOLEAN),
 
 // Inputs
 DEFINE_INPUTFUNC(FIELD_STRING, "SetPlayerModel", InputSetPlayerModel),
+DEFINE_INPUTFUNC(FIELD_VOID, "RefillAmmo", InputRefillAmmo),
 
 END_DATADESC()
 
@@ -683,12 +684,7 @@ void CNEO_Player::CalculateSpeed(void)
 
 	if (GetFlags() & FL_DUCKING)
 	{
-		speed *= NEO_CROUCH_WALK_MODIFIER;
-	}
-
-	if (m_nButtons & IN_WALK)
-	{
-		speed *= NEO_CROUCH_WALK_MODIFIER; // They stack
+		speed *= NEO_CROUCH_MODIFIER;
 	}
 
 	if (IsSprinting())
@@ -713,6 +709,11 @@ void CNEO_Player::CalculateSpeed(void)
 	if (IsInAim())
 	{
 		speed *= NEO_AIM_MODIFIER;
+	}
+
+	if (m_nButtons & IN_WALK)
+	{
+		speed = MIN(GetFlags() & FL_DUCKING ? NEO_CROUCH_WALK_SPEED : NEO_WALK_SPEED, speed);
 	}
 
 	Vector absoluteVelocity = GetAbsVelocity();
@@ -799,7 +800,7 @@ void CNEO_Player::HandleSpeedChangesLegacy()
 
 	if( IsSuitEquipped() )
 	{
-		bWantWalking = (m_nButtons & IN_WALK) && !IsSprinting() && !(m_nButtons & IN_DUCK);
+		bWantWalking = (m_nButtons & IN_WALK) && !IsSprinting();
 	}
 	else
 	{
@@ -2298,6 +2299,20 @@ void CNEO_Player::InputSetPlayerModel( inputdata_t & inputdata )
 	}
 }
 
+void CNEO_Player::InputRefillAmmo( inputdata_t & inputdata)
+{
+	CBaseCombatWeapon* pWeapon = GetActiveWeapon();
+
+	if (pWeapon)
+	{
+		pWeapon->SetPrimaryAmmoCount(pWeapon->GetDefaultClip1());
+		if (pWeapon->UsesSecondaryAmmo())
+		{
+			pWeapon->SetSecondaryAmmoCount(pWeapon->GetDefaultClip2());
+		}
+	}
+}
+
 void CNEO_Player::PickupObject( CBaseEntity *pObject,
 	bool bLimitMassAndSize )
 {
@@ -2550,7 +2565,7 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 
 	const bool suicidePlayerIfAlive = sv_neo_change_suicide_player.GetBool();
 	bool changedTeams = false;
-	bool spawn = false;
+	bool spawnImmediately = false;
 	if (iTeam == TEAM_SPECTATOR)
 	{
 		if (!mp_allowspectators.GetInt())
@@ -2599,7 +2614,7 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	{
 		if (!justJoined && GetTeamNumber() != TEAM_SPECTATOR && !IsDead())
 		{
-			if (suicidePlayerIfAlive || NEORules()->CanChangeTeamClassWeaponWhenAlive())
+			if (suicidePlayerIfAlive || NEORules()->CanChangeTeamClassLoadoutWhenAlive())
 			{
 				SoftSuicide();
 			}
@@ -2613,12 +2628,19 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 		CHL2_Player::ChangeTeam(iTeam, false, justJoined);
 		changedTeams = true;
 		
-		spawn = NEORules()->FPlayerCanRespawn(this);
-		if (!spawn)
+		// Spawn the player immediately if its a single life game mode
+		spawnImmediately = !NEORules()->CanRespawnAnyTime() && NEORules()->FPlayerCanRespawn(this);
+		if (!spawnImmediately)
 		{
-			// If we're not allowed to be in the current observer mode (because of mp_forcecamera for example), this will give us a new observer mode.
-			SetObserverMode(GetObserverMode());
-			State_Transition(STATE_OBSERVER_MODE);
+			if (NEORules()->CanRespawnAnyTime() || IsFakeClient())
+			{ // Stop observer mode so we spawn in anyway after a short delay, bots crash when transitioning to observer mode
+				StopObserverMode();
+			}
+			else
+			{ // If we're not allowed to be in the current observer mode (because of mp_forcecamera for example), this will give us a new observer mode.
+				SetObserverMode(GetObserverMode());
+				State_Transition(STATE_OBSERVER_MODE);
+			}
 		}
 	}
 	else
@@ -2650,7 +2672,7 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 		CHL2_Player::ChangeTeam(iTeam, false, justJoined);
 	}
 
-	if (spawn)
+	if (spawnImmediately)
 	{ // Spawn after all the items are removed
 		bool success = RespawnWithRet(this, false);
 		if (!success)
@@ -3127,7 +3149,7 @@ float CNEO_Player::GetCrouchSpeed(void) const
 	case NEO_CLASS_JUGGERNAUT:
 		return NEO_JUGGERNAUT_CROUCH_SPEED;
 	default:
-		return (NEO_BASE_SPEED * NEO_CROUCH_WALK_MODIFIER);
+		return (NEO_BASE_SPEED * NEO_CROUCH_MODIFIER);
 	}
 }
 

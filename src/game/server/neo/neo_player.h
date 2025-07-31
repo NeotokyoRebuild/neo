@@ -208,6 +208,7 @@ public:
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);
 
 	void InputSetPlayerModel( inputdata_t & inputData );
+	void InputRefillAmmo( inputdata_t & inputData );
 	void CloakFlash(float time = 0.f);
 
 	void BecomeJuggernaut();

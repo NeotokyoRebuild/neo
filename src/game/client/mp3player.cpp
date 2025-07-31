@@ -1126,6 +1126,13 @@ ConCommand neo_mp3("neo_mp3", &neo_mp3_callback, "Toggle the mp3 player", FCVAR_
 
 void CMP3Player::OnKeyCodePressed(vgui::KeyCode code)
 {
+	// This can happen if the user presses a key which has no corresponding mapping,
+	// for example multimedia keys like "Volume Up" will trigger this.
+	if (code == BUTTON_CODE_NONE || code == BUTTON_CODE_INVALID)
+	{
+		return;
+	}
+
 	const auto toggleMP3Bind = gameuifuncs->GetButtonCodeForBind("neo_mp3");
 	if (toggleMP3Bind != code || !g_pPlayer)
 	{

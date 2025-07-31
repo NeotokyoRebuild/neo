@@ -241,7 +241,7 @@ const NeoGameTypeSettings NEO_GAME_TYPE_SETTINGS[NEO_GAME_TYPE__TOTAL] = {
 /*NEO_GAME_TYPE_VIP*/	{"VIP",			false,		true,			false,							true,	true},
 /*NEO_GAME_TYPE_DM*/	{"DM",			true,		true,			false,							false,	false},
 /*NEO_GAME_TYPE_EMT*/	{"EMT",			true,		false,			true,							false,	false},
-/*NEO_GAME_TYPE_TUT*/	{"TUT",			false,		false,			false,							false,	false},
+/*NEO_GAME_TYPE_TUT*/	{"TUT",			true,		false,			false,							false,	false},
 /*NEO_GAME_TYPE_JGR*/	{"JGR",			true,		true,			false,							false,	false},
 };
 
@@ -3837,7 +3837,7 @@ bool CNEORules::FPlayerCanRespawn(CBasePlayer* pPlayer)
 		}
 	}
 
-	if (NEO_GAME_TYPE_SETTINGS[gameType].respawns)
+	if (CanRespawnAnyTime())
 	{
 		return true;
 	}
@@ -3987,14 +3987,19 @@ int CNEORules::GetForcedWeapon(void)
 	return m_iForcedWeapon;
 }
 
-const char* CNEORules::GetGameTypeName(void)
+inline const char* CNEORules::GetGameTypeName(void)
 {
 	return NEO_GAME_TYPE_SETTINGS[GetGameType()].gameTypeName;
 }
 
-bool CNEORules::CanChangeTeamClassWeaponWhenAlive()
+inline const bool CNEORules::CanChangeTeamClassLoadoutWhenAlive()
 {
 	return NEO_GAME_TYPE_SETTINGS[GetGameType()].changeTeamClassLoadoutWhenAlive;
+}
+
+inline const bool CNEORules::CanRespawnAnyTime()
+{
+	return NEO_GAME_TYPE_SETTINGS[GetGameType()].respawns;
 }
 
 float CNEORules::GetRemainingPreRoundFreezeTime(const bool clampToZero) const
