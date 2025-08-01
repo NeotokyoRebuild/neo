@@ -193,7 +193,7 @@ void CNEO_NPCTargetSystem::Think(void)
         if (flZDiff > m_flTopClip || flZDiff < m_flBottomClip) // Ignore if head is out of high/low bounds
             continue;
 
-        if (!FVisible(pPlayer, MASK_BLOCKLOS_AND_NPCS, nullptr)) // Draw a trace to check if we can actually see the player
+        if (!FVisible(pPlayer, MASK_BLOCKLOS, nullptr)) // Draw a trace to check if we can actually see the player
             continue;
 
         float flForwardDist = DotProduct(vecTarget2DPos, vecForward);
