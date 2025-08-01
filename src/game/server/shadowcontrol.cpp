@@ -41,7 +41,7 @@ private:
 	CNetworkVar( float, m_flShadowMaxDist );
 	CNetworkVar( bool, m_bDisableShadows );
 #ifdef NEO
-	CNetworkVar(bool, m_bLocalLightShadows);
+	CNetworkVar( bool, m_bLocalLightShadows );
 #endif
 };
 
@@ -71,6 +71,9 @@ IMPLEMENT_SERVERCLASS_ST_NOBASE(CShadowControl, DT_ShadowControl)
 	SendPropInt(SENDINFO(m_shadowColor),	32, SPROP_UNSIGNED),
 	SendPropFloat(SENDINFO(m_flShadowMaxDist), 0, SPROP_NOSCALE ),
 	SendPropBool(SENDINFO(m_bDisableShadows)),
+#ifdef NEO
+	SendPropBool(SENDINFO(m_bLocalLightShadows))
+#endif
 END_SEND_TABLE()
 
 
