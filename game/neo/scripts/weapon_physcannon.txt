@@ -23,21 +23,21 @@ WeaponData
 	SoundData
 	{
 		// launch held object
-		"single_shot"		"Weapon_PhysCannon.Launch"
+		//"single_shot"		"Weapon_PhysCannon.Launch"
 		// Ignore?
-		"reload"			"Weapon_PhysCannon.Charge"
+		//"reload"			"Weapon_PhysCannon.Charge"
 		// dry fire - no target
-		"empty"				"Weapon_PhysCannon.DryFire"
+		//"empty"				"Weapon_PhysCannon.DryFire"
 		// pick up object
-		"special1"			"Weapon_PhysCannon.Pickup"
+		//"special1"			"Weapon_PhysCannon.Pickup"
 		// open claws, target object
-		"special2"			"Weapon_PhysCannon.OpenClaws"
+		//"special2"			"Weapon_PhysCannon.OpenClaws"
 		// close claws, target out of range/invalid
-		"melee_hit"			"Weapon_PhysCannon.CloseClaws"
+		//"melee_hit"			"Weapon_PhysCannon.CloseClaws"
 		// drop object
-		"melee_miss"		"Weapon_PhysCannon.Drop"
+		//"melee_miss"		"Weapon_PhysCannon.Drop"
 		// too heavy
-		"special3"		"Weapon_PhysCannon.TooHeavy"
+		//"special3"		"Weapon_PhysCannon.TooHeavy"
 	}
 
 	// Weapon Sprite data is loaded by the Client DLL.
