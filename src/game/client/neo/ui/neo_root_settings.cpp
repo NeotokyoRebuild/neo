@@ -234,6 +234,61 @@ void NeoSettingsInit(NeoSettings *ns)
 			vgui::surface()->DrawGetTextureSize(pTex->iTexId, pTex->iWide, pTex->iTall);
 		}
 	}
+
+	ns->iCBListSize = 1;
+#define STATIC_BACKGROUND_NAME "Static"
+#define RANDOM_BACKGROUND_NAME "Random"
+	int dispSize = max(sizeof(STATIC_BACKGROUND_NAME) + 1, sizeof(RANDOM_BACKGROUND_NAME) + 1);
+
+	const auto allocatedAndSetFirstOptionName = [](NeoSettings *ns, int size) {
+		ns->p2WszCBList = (wchar_t **)calloc(sizeof(wchar_t *), ns->iCBListSize);
+		ns->p2WszCBList[0] = (wchar_t *)calloc(sizeof(wchar_t) * size, ns->iCBListSize);
+		g_pVGuiLocalize->ConvertANSIToUnicode(STATIC_BACKGROUND_NAME, ns->p2WszCBList[0], sizeof(wchar_t) * size);
+	};
+
+	// Setup Background Map options
+	KeyValues *kv = new KeyValues( "ChapterBackgrounds" );
+#define CB_FILENAME "scripts/ChapterBackgrounds.txt" // TODO linux check?
+	if ( !kv->LoadFromFile( g_pFullFileSystem, CB_FILENAME, "MOD" ) )
+	{ // File empty or unable to load, set to static and return early
+		Warning( "Unable to load '%s'\n", CB_FILENAME );
+		allocatedAndSetFirstOptionName(ns, dispSize);
+		return;
+	}
+
+	// Skip first key
+	KeyValues* chapter = kv->GetFirstSubKey();
+	if (!chapter)
+	{ // ChapterBackgrounds empty, set to static and return early
+		allocatedAndSetFirstOptionName(ns, dispSize);
+		return;
+	}
+	for ( chapter = chapter->GetNextKey(); chapter != NULL; chapter = chapter->GetNextKey())
+	{ // Iterate once to get the number of options and longest background map name, remove background_ prefix from map name
+		ns->iCBListSize++;
+		chapter->SetStringValue(StringAfterPrefix(chapter->GetString(), "background_"));
+		dispSize = max(dispSize, (sizeof(wchar_t) / sizeof(char)) * (sizeof(chapter->GetString()) + 1));
+	}
+	const int wDispSize = sizeof(wchar_t) * dispSize;
+	
+	// set static name
+	chapter = kv->GetFirstSubKey();
+	allocatedAndSetFirstOptionName(ns, dispSize);
+	// iterate through background maps and set their names
+	for (int i = 1, offset = dispSize; i < ns->iCBListSize - 1; ++i, offset += dispSize)
+	{
+		chapter = chapter->GetNextKey();
+		g_pVGuiLocalize->ConvertANSIToUnicode(chapter->GetString(), ns->p2WszCBList[0] + offset, wDispSize);
+		ns->p2WszCBList[i] = ns->p2WszCBList[0] + offset;
+	}
+
+	// Set last value to random
+	if (ns->iCBListSize > 1)
+	{
+		const int offset = (ns->iCBListSize - 1) * dispSize;
+		g_pVGuiLocalize->ConvertANSIToUnicode(RANDOM_BACKGROUND_NAME, ns->p2WszCBList[0] + offset, wDispSize);
+		ns->p2WszCBList[ns->iCBListSize - 1] = ns->p2WszCBList[0] + offset;
+	}
 }
 
 void NeoSettingsDeinit(NeoSettings *ns)
@@ -279,7 +334,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->bAutoDetectOBS = cvr->cl_neo_streamermode_autodetect_obs.GetBool();
 		pGeneral->bEnableRangeFinder = cvr->cl_neo_hud_rangefinder_enabled.GetBool();
 		pGeneral->bExtendedKillfeed = cvr->cl_neo_hud_extended_killfeed.GetBool();
-		pGeneral->iBackground = cvr->sv_unlockedchapters.GetInt();
+		pGeneral->iBackground = min(cvr->sv_unlockedchapters.GetInt() - 1, ns->iCBListSize - 1);
 		NeoUI::ResetTextures();
 	}
 	{
@@ -495,7 +550,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_neo_streamermode_autodetect_obs.SetValue(pGeneral->bAutoDetectOBS);
 		cvr->cl_neo_hud_rangefinder_enabled.SetValue(pGeneral->bEnableRangeFinder);
 		cvr->cl_neo_hud_extended_killfeed.SetValue(pGeneral->bExtendedKillfeed);
-		cvr->sv_unlockedchapters.SetValue(pGeneral->iBackground);
+		cvr->sv_unlockedchapters.SetValue(pGeneral->iBackground + 1);
 	}
 	{
 		const NeoSettings::Keys *pKeys = &ns->keys;
@@ -690,7 +745,8 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBox(L"Show FPS", SHOWFPS_LABELS, ARRAYSIZE(SHOWFPS_LABELS), &pGeneral->iShowFps);
 	NeoUI::RingBoxBool(L"Show rangefinder", &pGeneral->bEnableRangeFinder);
 	NeoUI::RingBoxBool(L"Extended Killfeed", &pGeneral->bExtendedKillfeed);
-	NeoUI::SliderInt(L"Selected Background", &pGeneral->iBackground, 1, 4); // NEO TODO (Adam) switch to RingBox with values read from ChapterBackgrounds.txt
+	
+	NeoUI::RingBox(L"Selected Background", const_cast<const wchar_t **>(ns->p2WszCBList), ns->iCBListSize, &pGeneral->iBackground);
 
 	NeoUI::HeadingLabel(L"STREAMER MODE");
 	NeoUI::RingBoxBool(L"Streamer mode", &pGeneral->bStreamerMode);
