@@ -195,8 +195,10 @@ public:
 	virtual void PressSpecialFireButton( float duration = -1.0f );
 	virtual void ReleaseSpecialFireButton( void );
 
+#ifdef NEO
 	virtual void PressThermopticButton( float duration = -1.0f );
 	virtual void ReleaseThermopticButton( void );
+#endif
 
 	virtual void PressUseButton( float duration = -1.0f );
 	virtual void ReleaseUseButton( void );
@@ -265,7 +267,9 @@ protected:
 	CountdownTimer m_crouchButtonTimer;
 	CountdownTimer m_walkButtonTimer;
 	CountdownTimer m_buttonScaleTimer;
+#ifdef NEO
 	CountdownTimer m_thermopticButtonTimer;
+#endif
 	IntervalTimer m_burningTimer;		// how long since we were last burning
 	float m_forwardScale;
 	float m_rightScale;
@@ -409,9 +413,11 @@ inline void NextBotPlayer< PlayerType >::ReleaseReloadButton( void )
 template < typename PlayerType >
 inline void NextBotPlayer< PlayerType >::PressJumpButton( float duration )
 {
+#ifdef NEO
 	// NEO JANK workaround to allow bots to crouch while attempting to preserve crouch jumping
 	ReleaseCrouchButton();
 	// code change coordinated with disabled ground crouch cancel in CNEOBotLocomotion::Update
+#endif
 	m_inputButtons |= IN_JUMP;
 	m_jumpButtonTimer.Start( duration );
 }
@@ -573,7 +579,9 @@ inline void NextBotPlayer< PlayerType >::Spawn( void )
 	m_buttonScaleTimer.Invalidate();
 	m_forwardScale = m_rightScale = 0.04;
 	m_burningTimer.Invalidate();
+#ifdef NEO
 	m_thermopticButtonTimer.Invalidate();
+#endif
 
 	// reset first, because Spawn() may access various interfaces
 	INextBot::Reset();

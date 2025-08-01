@@ -20,11 +20,13 @@ void CNEOBotLocomotion::Update( void )
 	// always 'crouch jump'
 	if ( IsOnGround() )
 	{
+#ifdef NEO
 		// NEO JANK resetting of crouch timer moved to NextBotPlayer::PressJumpButton
 		// so far crouch jump seems to still be working, but watch out for a regression
-		/* disabled:
+		// disabled:
+#else
 		me->ReleaseCrouchButton();
-		*/
+#endif
 	}
 	else
 	{
