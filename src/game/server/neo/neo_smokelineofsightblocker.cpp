@@ -2,6 +2,10 @@
 #include "util.h"
 #include "neo_smokelineofsightblocker.h"
 
+// Assume most existing traceline checks were not designed with blocking smoke in mind
+// e.g. Jeff the tank in nt_rogue_ctg should see through smoke
+bool CNEOSmokeLineOfSightBlocker::m_bNextEntitySeesThroughSmoke{ true };
+
 LINK_ENTITY_TO_CLASS(env_smokelineofsightblocker, CNEOSmokeLineOfSightBlocker);
 BEGIN_DATADESC(CNEOSmokeLineOfSightBlocker)
     DEFINE_FIELD(m_mins, FIELD_VECTOR),

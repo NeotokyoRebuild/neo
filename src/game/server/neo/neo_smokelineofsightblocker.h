@@ -8,6 +8,7 @@
 
 #define SMOKELINEOFSIGHTBLOCKER_ENTITYNAME	"env_smokelineofsightblocker"
 
+struct ScopedSmokeLOS;
 
 class CNEOSmokeLineOfSightBlocker : public CBaseEntity {
 public:
@@ -26,7 +27,7 @@ public:
 
 	bool TestCollision(const Ray_t& ray, unsigned int fContentsMask, trace_t& tr) override
 	{
-		if ((fContentsMask & CONTENTS_BLOCKLOS) != 0)
+		if (((fContentsMask & CONTENTS_BLOCKLOS) != 0) && !m_bNextEntitySeesThroughSmoke)
 		{
 			tr.fraction = 0.f; // NEO NOTE (Adam) Shouldn't returning true be enough? Should we calculate correct value for the fraction?
 			return true;
@@ -43,6 +44,28 @@ public:
 
 private:
 	Vector m_mins, m_maxs;
+
+	// for smoke LOS transparency toggle
+	static bool m_bNextEntitySeesThroughSmoke;
+	friend struct ScopedSmokeLOS;
+};
+
+struct ScopedSmokeLOS
+{
+	bool m_oldValue;
+
+	// seeThrough == true  ? ignore smoke
+	// seeThrough == false ? block smoke
+	explicit ScopedSmokeLOS(bool seeThrough)
+		: m_oldValue(CNEOSmokeLineOfSightBlocker::m_bNextEntitySeesThroughSmoke)
+	{
+		CNEOSmokeLineOfSightBlocker::m_bNextEntitySeesThroughSmoke = seeThrough;
+	}
+
+	~ScopedSmokeLOS()
+	{
+		CNEOSmokeLineOfSightBlocker::m_bNextEntitySeesThroughSmoke = m_oldValue;
+	}
 };
 
 #endif // NEO_SMOKELOSBLOCKER_NEO_H
