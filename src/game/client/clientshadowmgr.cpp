@@ -97,7 +97,7 @@ static ConVar r_flashlight_version2( "r_flashlight_version2", "0", FCVAR_CHEAT |
 #ifdef NEO
 void WorldLightCastShadowCallback(IConVar* pVar, const char* pszOldValue, float flOldValue);
 static ConVar r_worldlight_castshadows("r_worldlight_castshadows", "1", FCVAR_CHEAT, "Allow world lights to cast shadows", true, 0, true, 1, WorldLightCastShadowCallback);
-static ConVar r_worldlight_lerptime("r_worldlight_lerptime", "0.5", FCVAR_CHEAT);
+static ConVar r_worldlight_lerpmaxobjectvel("r_worldlight_lerpmaxobjectvel", "130.0", FCVAR_CHEAT, "The speed the object must be moving in order to make the transition between lights reach maximum speed");
 static ConVar r_worldlight_debug("r_worldlight_debug", "0", FCVAR_CHEAT);
 static ConVar r_worldlight_shortenfactor("r_worldlight_shortenfactor", "2", FCVAR_CHEAT, "Makes shadows cast from local lights shorter");
 static ConVar r_worldlight_mincastintensity("r_worldlight_mincastintensity", "0.3", FCVAR_CHEAT, "Minimum brightness of a light to be classed as shadow casting", true, 0, false, 0);
@@ -4344,6 +4344,12 @@ void CClientShadowMgr::UpdateShadowDirectionFromLocalLightSource(ClientShadowHan
 		}
 	}
 
+	// NEO NOTE DG: Comparing the origin to the last origin isnt viable because prediction(?)
+	// makes players never still. lets check the speed to see if they are moving
+	Vector delta = pRenderable->GetRenderOrigin() - shadow.m_LastOrigin;
+	float speed = delta.Length() / gpGlobals->frametime;
+	float normalisedSpeed = clamp( speed / r_worldlight_lerpmaxobjectvel.GetFloat(), 0.0f, 0.5f);
+
 	if (shadow.m_LightPosLerp == FLT_MAX)	// First light pos ever, just init
 	{
 		shadow.m_CurrentLightPos = lightPos;
@@ -4352,9 +4358,12 @@ void CClientShadowMgr::UpdateShadowDirectionFromLocalLightSource(ClientShadowHan
 	}
 	else if (shadow.m_LightPosLerp < 1.0f)
 	{
-		// We're in the middle of a lerp from current to target light. Finish it.
-		shadow.m_LightPosLerp += gpGlobals->frametime * 1.0f / r_worldlight_lerptime.GetFloat();
-		shadow.m_LightPosLerp = clamp(shadow.m_LightPosLerp, 0.0f, 1.0f);
+		// We're in the middle of a lerp from current to target light. Finish it if they aren't moving.
+		if (speed > 20.0f)
+		{
+			shadow.m_LightPosLerp += gpGlobals->frametime * normalisedSpeed;
+			shadow.m_LightPosLerp = clamp(shadow.m_LightPosLerp, 0.0f, 1.0f);
+		}
 
 		Vector currLightPos(shadow.m_CurrentLightPos);
 		Vector targetLightPos(shadow.m_TargetLightPos);
