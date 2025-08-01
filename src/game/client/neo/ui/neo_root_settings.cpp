@@ -248,7 +248,7 @@ void NeoSettingsInit(NeoSettings *ns)
 
 	// Setup Background Map options
 	KeyValues *kv = new KeyValues( "ChapterBackgrounds" );
-#define CB_FILENAME "scripts/ChapterBackgrounds.txt" // TODO linux check?
+#define CB_FILENAME "scripts/ChapterBackgrounds.txt" // NEO TODO (Adam) linux check?
 	if ( !kv->LoadFromFile( g_pFullFileSystem, CB_FILENAME, "MOD" ) )
 	{ // File empty or unable to load, set to static and return early
 		Warning( "Unable to load '%s'\n", CB_FILENAME );
