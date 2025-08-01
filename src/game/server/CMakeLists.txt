@@ -1548,7 +1548,7 @@ target_sources_grouped(
     #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_ar2.h
     #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_crossbow.cpp
     #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_crowbar.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_frag.cpp
+    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_frag.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbase.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbase.h
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbase_machinegun.cpp
