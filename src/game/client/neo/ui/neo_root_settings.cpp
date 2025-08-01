@@ -266,7 +266,11 @@ void NeoSettingsInit(NeoSettings *ns)
 	for ( chapter = chapter->GetNextKey(); chapter != NULL; chapter = chapter->GetNextKey())
 	{ // Iterate once to get the number of options and longest background map name, remove background_ prefix from map name
 		ns->iCBListSize++;
-		chapter->SetStringValue(StringAfterPrefix(chapter->GetString(), "background_"));
+		const char* stringAfterPrefix = StringAfterPrefix(chapter->GetString(), "background_");
+		if (stringAfterPrefix)
+		{
+			chapter->SetStringValue(stringAfterPrefix);
+		}
 		dispSize = max(dispSize, (sizeof(wchar_t) / sizeof(char)) * (sizeof(chapter->GetString()) + 1));
 	}
 	const int wDispSize = sizeof(wchar_t) * dispSize;
