@@ -322,6 +322,11 @@ void CWeaponDetpack::TossDetpack(CBasePlayer* pPlayer)
 	pPlayer->SetAnimation(PLAYER_ATTACK1);
 }
 
+bool CWeaponDetpack::CanBePickedUpByClass(int classId)
+{
+	return classId != NEO_CLASS_JUGGERNAUT;
+}
+
 #ifndef CLIENT_DLL
 void CWeaponDetpack::Operator_HandleAnimEvent(animevent_t* pEvent, CBaseCombatCharacter* pOperator)
 {

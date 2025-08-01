@@ -65,6 +65,7 @@ public:
 	void	ThrowGrenade(CNEO_Player* pPlayer, bool isAlive = true, CBaseEntity *pAttacker = NULL);
 	bool	IsPrimed() const { return (m_AttackPaused != 0); }
 
+	bool CanBePickedUpByClass(int classId) OVERRIDE;
 private:
 	// Check a throw from vecSrc.  If not valid, move the position back along the line to vecEye
 	void	CheckThrowPosition(CBasePlayer* pPlayer, const Vector& vecEye, Vector& vecSrc);

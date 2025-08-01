@@ -81,6 +81,7 @@ public:
 	virtual void ChangeTeam(int iTeam) OVERRIDE;
 	virtual void PickupObject(CBaseEntity *pObject, bool bLimitMassAndSize) OVERRIDE;
 	virtual void PlayStepSound(Vector &vecOrigin, surfacedata_t *psurface, float fvol, bool force) OVERRIDE;
+	virtual const char* GetOverrideStepSound(const char* pBaseStepSound) OVERRIDE;
 	virtual void Weapon_Drop(CBaseCombatWeapon *pWeapon, const Vector *pvecTarget = NULL, const Vector *pVelocity = NULL) OVERRIDE;
 	virtual void Weapon_DropOnDeath(CBaseCombatWeapon *pWeapon, Vector pVelocity, CBaseEntity *pAttacker = NULL);
 	virtual void UpdateOnRemove(void) OVERRIDE;
@@ -209,6 +210,10 @@ public:
 	void InputSetPlayerModel( inputdata_t & inputData );
 	void InputRefillAmmo( inputdata_t & inputData );
 	void CloakFlash(float time = 0.f);
+
+	void BecomeJuggernaut();
+	void SpawnJuggernautPostDeath();
+
 private:
 	bool m_bAllowGibbing;
 

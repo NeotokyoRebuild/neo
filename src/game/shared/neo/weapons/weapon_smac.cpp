@@ -36,3 +36,8 @@ CWeaponSMAC::CWeaponSMAC()
 		"smacry",
 	};
 }
+
+bool CWeaponSMAC::CanBePickedUpByClass(int classId)
+{
+	return classId != NEO_CLASS_JUGGERNAUT;
+}

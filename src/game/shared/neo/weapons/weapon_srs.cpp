@@ -93,3 +93,8 @@ void CWeaponSRS::FinishReload()
 	m_bRoundChambered = true;
 	BaseClass::FinishReload();
 }
+
+bool CWeaponSRS::CanBePickedUpByClass(int classId)
+{
+	return classId != NEO_CLASS_JUGGERNAUT;
+}
