@@ -158,6 +158,9 @@ struct NeoSettings
 		Texture arTextures[CROSSHAIR_STYLE__TOTAL];
 	};
 
+	int iCBListSize;
+	wchar_t** p2WszCBList;
+
 	General general;
 	Keys keys;
 	Mouse mouse;
