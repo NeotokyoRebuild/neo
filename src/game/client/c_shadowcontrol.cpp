@@ -32,6 +32,9 @@ private:
 	color32 m_shadowColor;
 	float m_flShadowMaxDist;
 	bool m_bDisableShadows;
+#ifdef NEO
+	bool m_bLocalLightShadows;
+#endif
 };
 
 IMPLEMENT_CLIENTCLASS_DT(C_ShadowControl, DT_ShadowControl, CShadowControl)
@@ -39,6 +42,9 @@ IMPLEMENT_CLIENTCLASS_DT(C_ShadowControl, DT_ShadowControl, CShadowControl)
 	RecvPropInt(RECVINFO(m_shadowColor)),
 	RecvPropFloat(RECVINFO(m_flShadowMaxDist)),
 	RecvPropBool(RECVINFO(m_bDisableShadows)),
+#ifdef NEO
+	RecvPropBool(RECVINFO(m_bLocalLightShadows)),
+#endif
 END_RECV_TABLE()
 
 
@@ -54,6 +60,9 @@ void C_ShadowControl::OnDataChanged(DataUpdateType_t updateType)
 	g_pClientShadowMgr->SetShadowColor( m_shadowColor.r, m_shadowColor.g, m_shadowColor.b );
 	g_pClientShadowMgr->SetShadowDistance( m_flShadowMaxDist );
 	g_pClientShadowMgr->SetShadowsDisabled( m_bDisableShadows );
+#ifdef NEO
+	g_pClientShadowMgr->SetShadowFromWorldLightsEnabled( m_bLocalLightShadows );
+#endif
 }
 
 //------------------------------------------------------------------------------
