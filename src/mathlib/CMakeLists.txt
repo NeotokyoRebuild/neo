@@ -7,9 +7,6 @@ set_target_properties(mathlib PROPERTIES PREFIX "")
 target_include_directories(mathlib
     PRIVATE
     ${CMAKE_SOURCE_DIR}/public/mathlib
-    ${CMAKE_SOURCE_DIR}/common
-    ${CMAKE_SOURCE_DIR}/public
-    ${CMAKE_SOURCE_DIR}/public/tier0
 )
 
 target_compile_definitions(mathlib
@@ -80,7 +77,7 @@ endif()
 
 target_sources_grouped(
     TARGET mathlib
-    NAME Public Header Files
+    NAME "Public Header Files"
     FILES
     ${CMAKE_SOURCE_DIR}/public/mathlib/anorms.h
     ${CMAKE_SOURCE_DIR}/public/mathlib/bumpvects.h

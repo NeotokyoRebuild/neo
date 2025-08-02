@@ -6,8 +6,6 @@ set_target_properties(fgdlib PROPERTIES PREFIX "")
 
 target_include_directories(fgdlib
     PRIVATE
-    ${CMAKE_SOURCE_DIR}/common
-    ${CMAKE_SOURCE_DIR}/public
     ${CMAKE_SOURCE_DIR}/utils/common
 )
 
@@ -24,7 +22,6 @@ target_compile_options(fgdlib
 
 target_link_libraries(fgdlib
     PRIVATE
-    tier0::tier0
     tier1::tier1
     mathlib::mathlib
 )
