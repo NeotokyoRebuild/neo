@@ -29,8 +29,15 @@ if(OS_WINDOWS)
         odbc32.lib
         odbccp32.lib
         ws2_32.lib
-        vmpi::vmpi
+        vstdlib::vstdlib
     )
+
+    if(DNEO_VMPI)
+        target_link_libraries(vvis_library
+            PRIVATE
+            vmpi::vmpi
+        )
+    endif()
 endif()
 
 target_link_libraries(vvis_library
@@ -67,7 +74,7 @@ target_sources_grouped(
     vvis.cpp
 )
 
-if(OS_WINDOWS)
+if(OS_WINDOWS AND DNEO_VMPI)
     target_sources_grouped(
         TARGET vvis_library
         NAME "Source Files"
