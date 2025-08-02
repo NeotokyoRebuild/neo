@@ -19,3 +19,4 @@ struct SZWSZTexts
 	const wchar_t *wszStr;
 };
 #define SZWSZ_INIT(STR) {.szStr = STR, .wszStr = L"" STR}
+#define X_SZWSZ_INIT(STR) SZWSZ_INIT(STR)

@@ -1517,6 +1517,7 @@ target_sources_grouped(
     neo/neo_fixup_glshaders.cpp
     neo/neo_fixup_glshaders.h
     neo/c_neo_bloom_controller.cpp
+    neo/c_neo_killer_damage_infos.h
 )
 
 target_sources_grouped(
@@ -1590,6 +1591,8 @@ target_sources_grouped(
     neo/ui/neo_hud_ghost_cap_point.h
     neo/ui/neo_hud_ghost_marker.cpp
     neo/ui/neo_hud_ghost_marker.h
+    neo/ui/neo_hud_killer_damage_info.cpp
+    neo/ui/neo_hud_killer_damage_info.h
     neo/ui/neo_hud_ghost_uplink_state.cpp
     neo/ui/neo_hud_ghost_uplink_state.h
     neo/ui/neo_hud_health_thermoptic_aux.cpp
