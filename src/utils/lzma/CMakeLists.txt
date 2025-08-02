@@ -24,7 +24,6 @@ target_compile_definitions(lzma
 
 target_link_libraries(lzma
     PRIVATE
-    tier0::tier0
     tier1::tier1
     mathlib::mathlib
 )

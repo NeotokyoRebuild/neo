@@ -10,10 +10,6 @@ target_compile_definitions(tier1
 target_include_directories(tier1
     PUBLIC
     ${CMAKE_SOURCE_DIR}/public/tier1
-    PRIVATE
-    ${CMAKE_SOURCE_DIR}/common
-    ${CMAKE_SOURCE_DIR}/public
-    ${CMAKE_SOURCE_DIR}/public/tier0
 )
 
 if(OS_WINDOWS)

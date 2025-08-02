@@ -14,7 +14,6 @@ endif()
 
 target_include_directories(client
     PRIVATE
-    ${CMAKE_SOURCE_DIR}/common
     ${CMAKE_SOURCE_DIR}/game/client
     ${CMAKE_SOURCE_DIR}/game/shared
     ${CMAKE_SOURCE_DIR}/game/shared/hl2
@@ -22,7 +21,6 @@ target_include_directories(client
     ${CMAKE_SOURCE_DIR}/game/shared/Multiplayer
     ${CMAKE_SOURCE_DIR}/game/shared/neo
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons
-    ${CMAKE_SOURCE_DIR}/public
     ${CMAKE_SOURCE_DIR}/thirdparty/sixensesdk/include
     ${CMAKE_SOURCE_DIR}/vendor
     ${CMAKE_SOURCE_DIR}/game/client/NextBot
@@ -54,9 +52,6 @@ target_link_libraries(client
     mathlib::mathlib
     choreo_objects::choreo_objects
     dmx_loader::dmx_loader
-    tier0::tier0
-    tier1::tier1
-    tier2::tier2
     tier3::tier3
     matsys_controls::matsys_controls
     vstdlib::vstdlib
