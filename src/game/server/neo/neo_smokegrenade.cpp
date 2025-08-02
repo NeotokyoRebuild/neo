@@ -1,5 +1,6 @@
 #include "cbase.h"
 #include "neo_smokegrenade.h"
+#include "neo_smokelineofsightblocker.h"
 
 #include "neo_tracefilter_collisiongroupdelta.h"
 #include "particle_smokegrenade.h"
@@ -28,6 +29,8 @@ END_DATADESC()
 
 ConVar sv_neo_smoke_bloom_duration("sv_neo_smoke_bloom_duration", "25", FCVAR_CHEAT, "How long should the smoke bloom be up, in seconds.", true, 0.0, true, 60.0);
 ConVar sv_neo_smoke_bloom_layers("sv_neo_smoke_bloom_layers", "2", FCVAR_CHEAT, "Amount of smoke layers atop each other.", true, 0.0, true, 32.0);
+ConVar sv_neo_smoke_blocker_size("sv_neo_smoke_blocker_size", "140", FCVAR_CHEAT, "Size of each LOS blocker per smoke particle.", true, 0.0, true, 200.0);
+ConVar sv_neo_smoke_blocker_delay("sv_neo_smoke_blocker_delay", "1.0", FCVAR_CHEAT, "Time after spawn before LOS blocker activates LOS blocking", true, 0.0, true, 10.0);
 extern ConVar sv_neo_grenade_cor;
 extern ConVar sv_neo_grenade_gravity;
 extern ConVar sv_neo_grenade_friction;
@@ -159,6 +162,19 @@ void CNEOGrenadeSmoke::SetupParticles(size_t number)
 			ptr->Activate();
 			ptr->SetLifetime(sv_neo_smoke_bloom_duration.GetFloat()); // This call passes on responsibility for the memory to the particle thinkfunc
 			ptr->FillVolume();
+		}
+
+		// Currently redundant to create a blocker for each particle, but will be handy for dynamic flood fill later
+		auto blocker = static_cast<CNEOSmokeLineOfSightBlocker*>(CreateEntityByName(SMOKELINEOFSIGHTBLOCKER_ENTITYNAME));
+		if (blocker) {
+			// Use `ai_debug_los 2` after spawn to visualize relative blocker size
+			int blockerSize = sv_neo_smoke_blocker_size.GetInt();
+			// Overlap with each particle's position
+			blocker->SetAbsOrigin(ptr->GetAbsOrigin());
+			blocker->SetBounds(Vector(-blockerSize), Vector(blockerSize));
+			// Schedule activation of LOS blocking
+			blocker->SetThink(&CNEOSmokeLineOfSightBlocker::ActivateLOSBlocker);
+			blocker->SetNextThink(gpGlobals->curtime + sv_neo_smoke_blocker_delay.GetFloat());
 		}
 	}
 }
