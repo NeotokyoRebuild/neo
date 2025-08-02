@@ -37,7 +37,7 @@ public:
 	virtual void JumpAcrossGap( const Vector &landingGoal, const Vector &landingForward );	// initiate a jump across an empty volume of space to far side
 	virtual void Jump( void );								// initiate a simple undirected jump in the air
 #ifdef NEO
-	virtual void Thermoptic( void );						// initiate a simple thermoptic toggle
+	void Thermoptic( void );        						// initiate a simple thermoptic toggle
 #endif
 	virtual bool IsClimbingOrJumping( void ) const;					// is jumping in any form
 	virtual bool IsClimbingUpToLedge( void ) const;			// is climbing up to a high ledge

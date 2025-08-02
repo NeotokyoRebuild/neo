@@ -1522,7 +1522,7 @@ void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat)
 		// passthrough
 	}
 	else if (secondaryWeapon
-		&& primaryWeapon->GetNeoWepBits() & (NEO_WEP_ZR68_L | NEO_WEP_SRS | NEO_WEP_M41_L)
+		&& primaryWeapon->GetNeoWepBits() & (NEO_WEP_SCOPEDWEAPON)
 		&& IsRangeLessThan(threat->GetLastKnownPosition(), 250.0f))
 	{
 		// passthrough

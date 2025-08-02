@@ -99,9 +99,10 @@ public:
 	virtual const Vector GetPlayerMaxs(void) const OVERRIDE;
 
 	// -----------------------
-	// Fog
+	// For bots, calculate how obscuring "fog" variables like thermoptic camoflage affect the visibility of a target.
+	// While the functions aren't actually about fog in the NT context, the abstraction of visibility percentage seemed to fit.
 	// -----------------------
-	virtual bool		IsHiddenByFog(CBaseEntity* target) const OVERRIDE;        ///< return true if given target cant be seen because of fog
+	virtual bool		IsHiddenByFog(CBaseEntity* target) const OVERRIDE;        ///< return true if given target cant be seen because of "fog"
 	virtual float		GetFogObscuredRatio(CBaseEntity* target) const OVERRIDE;  ///< return 0-1 ratio where zero is not obscured, and 1 is completely obscured
 
 	void AddNeoFlag(int flags)
