@@ -276,7 +276,7 @@ void NeoSettingsBackgroundsInit(NeoSettings* ns)
 	for ( KeyValues* background = ns->backgrounds->GetFirstSubKey(); background != NULL; /*background = background->GetNextKey()*/)
 	{ // Iterate once to get the number of options and longest background map name
 		const char* displayName = background->GetName();
-		if (!displayName)
+		if (displayName == "") // NEO NOTE (Adam) If name missing read will fail
 		{ // no display name, skip
 			KeyValues* thisKey = background;
 			background = background->GetNextKey();
@@ -285,7 +285,7 @@ void NeoSettingsBackgroundsInit(NeoSettings* ns)
 		}
 
 		const char* fileName = background->GetString("fileName");
-		if (!fileName)
+		if (fileName == "")
 		{ // no file name, skip
 			KeyValues* thisKey = background;
 			background = background->GetNextKey();
