@@ -169,6 +169,7 @@ struct NeoSettings
 	int iCurTab = 0;
 	bool bBack = false;
 	bool bModified = false;
+	bool bIsValid = false;
 	int iNextBinding = -1;
 
 	struct CVR

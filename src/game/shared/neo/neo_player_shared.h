@@ -367,17 +367,25 @@ void DMClSortedPlayers(PlayerXPInfo (*pPlayersOrder)[MAX_PLAYERS + 1], int *piTo
 
 inline char gStreamerModeNames[MAX_PLAYERS + 1][MAX_PLAYER_NAME_LENGTH + 1];
 
+enum EClNeoDisplayNameFlag_
+{
+	CL_NEODISPLAYNAME_FLAG_NONE = 0,
+	CL_NEODISPLAYNAME_FLAG_ONLYSTEAMNICK = 1 << 0,
+	CL_NEODISPLAYNAME_FLAG_CHECK = 1 << 1,
+};
+typedef int EClNeoDisplayNameFlag;
+
 static constexpr int NEO_MAX_CLANTAG_LENGTH = 12;
 static constexpr int NEO_MAX_DISPLAYNAME = MAX_PLAYER_NAME_LENGTH + 1 + NEO_MAX_CLANTAG_LENGTH + 1;
-void GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
+bool GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
 						 const wchar_t wszNeoName[MAX_PLAYER_NAME_LENGTH + 1],
 						 const wchar_t wszNeoClantag[NEO_MAX_CLANTAG_LENGTH + 1],
-						 const bool bOnlySteamNick);
+						 const EClNeoDisplayNameFlag flags = CL_NEODISPLAYNAME_FLAG_NONE);
 
-void GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
+bool GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
 						 const char *pSzNeoName,
 						 const char *pSzNeoClantag,
-						 const bool bOnlySteamNick);
+						 const EClNeoDisplayNameFlag flags = CL_NEODISPLAYNAME_FLAG_NONE);
 
 // NEO NOTE (nullsystem): Max string length is 
 // something like: "2;2;-16711936;1;6;1.000;25;25;5;25;1;50;50;"
