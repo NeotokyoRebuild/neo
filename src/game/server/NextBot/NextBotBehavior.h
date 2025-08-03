@@ -12,6 +12,9 @@
 #include "NextBotDebug.h"
 #include "tier0/vprof.h"
 
+#ifdef NEO
+class CNEOBotBehavior;
+#endif
 
 //#define DEBUG_BEHAVIOR_MEMORY
 extern ConVar NextBotDebugHistory;
@@ -566,6 +569,9 @@ public:
 
 
 private:
+#ifdef NEO
+	friend class CNEOBotBehavior;
+#endif
 	Action< Actor > *m_action;
 
 	#define MAX_NAME_LENGTH 32
@@ -963,6 +969,9 @@ private:
 #endif
 
 	friend class Behavior< Actor>;							// the containing Behavior class
+#ifdef NEO
+	friend class CNEOBotBehavior;
+#endif
 	Behavior< Actor > *m_behavior;							// the Behavior this Action is part of
 
 	Action< Actor > *m_parent;								// the Action that contains us
