@@ -244,10 +244,10 @@ void NeoSettingsInit(NeoSettings *ns)
 // to only include the one background that the user is insterested in.
 void NeoSettingsBackgroundsInit(NeoSettings* ns)
 {
-#define BACKGROUNDS_FILENAME "scripts/neo_backgrounds.txt"
-#define DEFAULT_BACKGROUND_DISPLAYNAME "Marketa 2009"
-#define RANDOM_BACKGROUND_NAME "Random"
-#define DEFAULT_BACKGROUND_FILENAME "background01"
+#define NEO_BACKGROUNDS_FILENAME "scripts/neo_backgrounds.txt"
+#define NEO_DEFAULT_BACKGROUND_DISPLAYNAME "SRADI-8 ICHIBAN"
+#define NEO_RANDOM_BACKGROUND_NAME "Random"
+#define NEO_DEFAULT_BACKGROUND_FILENAME "background01"
 
 	if (ns->backgrounds)
 	{
@@ -262,14 +262,14 @@ void NeoSettingsBackgroundsInit(NeoSettings* ns)
 	};
 
 	// Setup Background Map options
-	int dispSize = max(sizeof(DEFAULT_BACKGROUND_DISPLAYNAME) + 1, sizeof(RANDOM_BACKGROUND_NAME) + 1);
-	if ( !ns->backgrounds->LoadFromFile( g_pFullFileSystem, BACKGROUNDS_FILENAME, "MOD" ) )
+	int dispSize = max(sizeof(NEO_DEFAULT_BACKGROUND_DISPLAYNAME) + 1, sizeof(NEO_RANDOM_BACKGROUND_NAME) + 1);
+	if ( !ns->backgrounds->LoadFromFile( g_pFullFileSystem, NEO_BACKGROUNDS_FILENAME, "MOD" ) )
 	{ // File empty or unable to load, set to static and return early
-		Warning( "Unable to load '%s'\n", BACKGROUNDS_FILENAME );
+		Warning( "Unable to load '%s'\n", NEO_BACKGROUNDS_FILENAME );
 		ns->iCBListSize = 1;
 		allocate(ns, dispSize);
-		g_pVGuiLocalize->ConvertANSIToUnicode(DEFAULT_BACKGROUND_DISPLAYNAME, ns->p2WszCBList[0], sizeof(wchar_t) * dispSize);
-		NeosettingsBackgroundWrite(ns, DEFAULT_BACKGROUND_FILENAME);
+		g_pVGuiLocalize->ConvertANSIToUnicode(NEO_DEFAULT_BACKGROUND_DISPLAYNAME, ns->p2WszCBList[0], sizeof(wchar_t) * dispSize);
+		NeosettingsBackgroundWrite(ns, NEO_DEFAULT_BACKGROUND_FILENAME);
 		return;
 	}
 
@@ -313,7 +313,7 @@ void NeoSettingsBackgroundsInit(NeoSettings* ns)
 
 	// Set last option to random
 	const int offset = (ns->iCBListSize - 1) * dispSize;
-	g_pVGuiLocalize->ConvertANSIToUnicode(RANDOM_BACKGROUND_NAME, ns->p2WszCBList[0] + offset, wDispSize);
+	g_pVGuiLocalize->ConvertANSIToUnicode(NEO_RANDOM_BACKGROUND_NAME, ns->p2WszCBList[0] + offset, wDispSize);
 	ns->p2WszCBList[ns->iCBListSize - 1] = ns->p2WszCBList[0] + offset;
 
 	// write selected background name
@@ -332,7 +332,7 @@ void NeosettingsBackgroundWrite(const NeoSettings* ns, const char* backgroundNam
 		for (background = ns->backgrounds->GetFirstSubKey(); background != NULL && i < iFinal; (background = background->GetNextKey()) && i++)
 		{ // Skip to the desired background
 		}
-		backgroundName = background ? background->GetString("fileName") : DEFAULT_BACKGROUND_FILENAME;
+		backgroundName = background ? background->GetString("fileName") : NEO_DEFAULT_BACKGROUND_FILENAME;
 	}
 
 	// Overwrite CHAPTER_BACKGROUNDS_FILENAME with selected background
@@ -345,8 +345,8 @@ void NeosettingsBackgroundWrite(const NeoSettings* ns, const char* backgroundNam
 	bpr(0, buf, "\"\n");
 	bpr(0, buf, "}\n");
 
-#define CHAPTER_BACKGROUNDS_FILENAME "scripts/chapterbackgrounds.txt"
-	FileHandle_t fh = g_pFullFileSystem->Open( CHAPTER_BACKGROUNDS_FILENAME, "wb" );
+#define NEO_CHAPTER_BACKGROUNDS_FILENAME "scripts/chapterbackgrounds.txt"
+	FileHandle_t fh = g_pFullFileSystem->Open( NEO_CHAPTER_BACKGROUNDS_FILENAME, "wb" );
 	if ( FILESYSTEM_INVALID_HANDLE != fh )
 	{
 		g_pFullFileSystem->Write( buf.Base(), buf.TellPut(), fh );
@@ -354,7 +354,7 @@ void NeosettingsBackgroundWrite(const NeoSettings* ns, const char* backgroundNam
 	}
 	else
 	{
-		Warning( "Unable to open '%s' for writing\n", CHAPTER_BACKGROUNDS_FILENAME );
+		Warning( "Unable to open '%s' for writing\n", NEO_CHAPTER_BACKGROUNDS_FILENAME );
 	}
 }
 
