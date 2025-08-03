@@ -483,10 +483,6 @@ void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 		NeoToggleconsole();
 		return;
 	}
-	else if (code == m_ns.keys.bcMP3Player)
-	{
-		engine->ClientCmd_Unrestricted("neo_mp3");
-	}
 	g_uiCtx.eCode = code;
 	OnMainLoop(NeoUI::MODE_KEYPRESSED);
 }
@@ -590,6 +586,11 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	NeoUI::BeginContext(&g_uiCtx, param.eMode, nullptr, "CtxRoot");
 	NeoUI::BeginSection(true);
 	{
+		if (param.eMode == NeoUI::MODE_KEYPRESSED && g_uiCtx.eCode == m_ns.keys.bcMP3Player)
+		{
+			engine->ClientCmd_Unrestricted("neo_mp3");
+		}
+
 		g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
 		const int iFlagToMatch = IsInGame() ? FLAG_SHOWINGAME : FLAG_SHOWINMAIN;
 		bool mouseOverButton = false;
@@ -1854,9 +1855,7 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 				NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 				{
 					NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
-					g_uiCtx.bTextEditIsPassword = true;
-					NeoUI::TextEdit(L"Password:", m_wszServerPassword, SZWSZ_LEN(m_wszServerPassword));
-					g_uiCtx.bTextEditIsPassword = false;
+					NeoUI::TextEdit(L"Password:", m_wszServerPassword, SZWSZ_LEN(m_wszServerPassword), NeoUI::TEXTEDITFLAG_PASSWORD);
 				}
 				NeoUI::SetPerRowLayout(3);
 				{

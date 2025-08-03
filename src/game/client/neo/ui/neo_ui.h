@@ -125,6 +125,21 @@ enum EFont
 	FONT__TOTAL,
 };
 
+enum ECopyMenu
+{
+	COPYMENU_CUT,
+	COPYMENU_COPY,
+	COPYMENU_PASTE,
+
+	COPYMENU__TOTAL,
+};
+
+enum ETextEditFlags
+{
+	TEXTEDITFLAG_NONE = 0,
+	TEXTEDITFLAG_PASSWORD = 1 << 0,
+};
+
 struct SliderInfo
 {
 	wchar_t wszText[33];
@@ -199,7 +214,6 @@ struct Context
 
 	TextStyle eButtonTextStyle;
 	TextStyle eLabelTextStyle;
-	bool bTextEditIsPassword;
 
 	FontInfo fonts[FONT__TOTAL] = {};
 	EFont eFont = FONT_NTNORMAL;
@@ -222,6 +236,21 @@ struct Context
 	const char *pSzCurCtxName;
 	CUtlHashtable<const wchar_t *, SliderInfo> htSliders;
 	CUtlHashtable<CUtlConstString, int> htTexMap;
+
+	// Right click menu
+	int iRightClick = -1;
+	int iRightClickSection = -1;
+	int iRightClickHotItem = -1;
+	int ipwszRightClickListSize = 0;
+	const wchar **pwszRightClickList = nullptr;
+	Dim dimRightClick = {};
+
+	// TextEdit text selection
+	int iTextSelStart = -1;
+	int iTextSelCur = -1;
+	int iTextSelDrag = -1;
+	int iTextSelDragSection = -1;
+	int irTextWidths[MAX_TEXTINPUT_U8BYTES_LIMIT] = {};
 };
 
 struct GetMouseinFocusedRet
@@ -305,9 +334,10 @@ void MultiWidgetHighlighter(const int iTotalWidgets);
 					  const wchar_t *wszSpecialText = nullptr);
 /*2W*/ void SliderU8(const wchar_t *wszLeftLabel, uint8 *ucValue, const uint8 iMin, const uint8 iMax, const uint8 iStep = 1,
 					 const wchar_t *wszSpecialText = nullptr);
-// NEO NOTE (nullsystem): iMaxBytes as in when the wchar_t fits into back into a UTF-8 char
-/*1W*/ void TextEdit(wchar_t *wszText, const int iMaxBytes);
-/*2W*/ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxBytes);
+// NEO NOTE (nullsystem): iMaxBytes as in when the wchar_t fits into back into a UTF-8 char, although
+// generally wszText should at least equal iMaxBytes anyway
+/*1W*/ void TextEdit(wchar_t *wszText, const int iMaxBytes, const ETextEditFlags flags = TEXTEDITFLAG_NONE);
+/*2W*/ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxBytes, const ETextEditFlags flags = TEXTEDITFLAG_NONE);
 /*SW*/ void ImageTexture(const char *szTexturePath, const wchar_t *wszErrorMsg = L"", const char *szTextureGroup = "");
 
 // NeoUI::Texture is non-widget, but utilizes NeoUI's image/texture handling
