@@ -1,6 +1,6 @@
 "backgrounds"
 {
-	"Marketa 2009"
+	"SRADI-8 ICHIBAN"
 	{
 		"fileName"		"background01"
 	}
