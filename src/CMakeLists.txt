@@ -422,6 +422,7 @@ if(NOT NEO_DEDICATED)
 endif()
 
 add_subdirectory(game/server)
+add_subdirectory(raytrace)
 
 if(NEO_COPY_LIBRARIES)
     set(COPY_ALL_LIBS_FLAG ALL)
