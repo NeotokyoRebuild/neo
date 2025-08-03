@@ -32,7 +32,7 @@ if(OS_WINDOWS)
         vstdlib::vstdlib
     )
 
-    if(DNEO_VMPI)
+    if(NEO_VMPI)
         target_link_libraries(vvis_library
             PRIVATE
             vmpi::vmpi
@@ -74,7 +74,7 @@ target_sources_grouped(
     vvis.cpp
 )
 
-if(OS_WINDOWS AND DNEO_VMPI)
+if(OS_WINDOWS AND NEO_VMPI)
     target_sources_grouped(
         TARGET vvis_library
         NAME "Source Files"
