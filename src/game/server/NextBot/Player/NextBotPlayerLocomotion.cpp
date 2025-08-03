@@ -673,6 +673,20 @@ void PlayerLocomotion::Jump( void )
 	}
 }
 
+#ifdef NEO
+
+//----------------------------------------------------------------------------------------------------
+void PlayerLocomotion::Thermoptic( void )
+{
+	INextBotPlayerInput *playerButtons = dynamic_cast< INextBotPlayerInput * >( GetBot() );
+	if ( playerButtons )
+	{
+		playerButtons->PressThermopticButton();
+	}
+}
+
+#endif // NEO
+
 
 //----------------------------------------------------------------------------------------------------
 bool PlayerLocomotion::IsClimbingOrJumping( void ) const
