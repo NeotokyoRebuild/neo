@@ -468,6 +468,7 @@ if(NOT NEO_DEDICATED)
 endif()
 
 add_subdirectory(game/server)
+add_subdirectory(raytrace)
 
 if(NEO_BUILD_LAUNCHER AND NOT NEO_DEDICATED)
     add_subdirectory(launcher_main)

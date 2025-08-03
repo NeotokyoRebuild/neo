@@ -397,7 +397,7 @@ void AddBrushesForRayTrace ( void );
 void BaseLightForFace( dface_t *f, Vector& light, float *parea, Vector& reflectivity );
 void CreateDirectLights (void);
 void GetPhongNormal( int facenum, Vector const& spot, Vector& phongnormal );
-int LightForString( char *pLight, Vector& intensity );
+int LightForString(const char *pLight, Vector& intensity );
 void MakeTransfer( int ndxPatch1, int ndxPatch2, transfer_t *all_transfers );
 void MakeScales( int ndxPatch, transfer_t *all_transfers );
 
@@ -416,7 +416,7 @@ bool RadWorld_Go();
 
 dleaf_t		*PointInLeaf (Vector const& point);
 int			ClusterFromPoint( Vector const& point );
-winding_t	*WindingFromFace (dface_t *f, Vector& origin );
+winding_t	*WindingFromFace (dface_t *f, const Vector &origin );
 
 void WriteWinding (FileHandle_t out, winding_t *w, Vector& color );
 void WriteNormal( FileHandle_t out, Vector const &nPos, Vector const &nDir, 
