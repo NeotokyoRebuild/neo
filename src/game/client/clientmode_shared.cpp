@@ -842,6 +842,30 @@ int ClientModeShared::HandleSpectatorKeyInput( int down, ButtonCode_t keynum, co
 		return 0;
 	}
 #endif // GLOWS_ENABLE
+#ifdef NEO
+	else if (down && pszCurrentBinding && Q_strcmp(pszCurrentBinding, "+use") == 0)
+	{
+		C_BasePlayer* pLocalPlayer = C_BasePlayer::GetLocalPlayer();
+
+		if (pLocalPlayer)
+		{
+			auto eObserverMode = pLocalPlayer->GetObserverMode();
+
+			if ((eObserverMode == OBS_MODE_CHASE) || (eObserverMode == OBS_MODE_IN_EYE))
+			{
+				C_BaseEntity* pObserverTarget = pLocalPlayer->GetObserverTarget();
+				C_NEO_Player* pPlayerToTakeover = ToNEOPlayer(pObserverTarget);
+
+				if (pPlayerToTakeover) // ToNEOPlayer checks valid pObserverTarget
+				{
+					// Verify on server-side that player is a valid replacement target
+					engine->ServerCmd(VarArgs("spectatortakeoverplayer %d", pPlayerToTakeover->GetUserID()));
+				}
+			}
+		}
+		return 0;
+	}
+#endif // NEO
 
 	return 1;
 }

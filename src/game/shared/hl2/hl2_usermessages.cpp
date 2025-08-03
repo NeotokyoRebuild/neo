@@ -50,6 +50,7 @@ void RegisterUserMessages( void )
 #ifdef NEO
 	usermessages->Register( "DamageInfo", -1 );
 	usermessages->Register( "IdleRespawnShowMenu", -1 );
+	usermessages->Register( "CSpectatorTakeoverPlayer", -1 );
 #endif
 
 #ifndef _X360

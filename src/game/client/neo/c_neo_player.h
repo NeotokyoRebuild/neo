@@ -171,6 +171,11 @@ public:
 	virtual void CalcDeathCamView( Vector& eyeOrigin, QAngle& eyeAngles, float& fov ) override;
 	virtual void TeamChange(int iNewTeam) override;
 
+	// Spectator takeover
+	void CSpectatorTakeoverPlayerUpdateOnDataChanged();
+	void CSpectatorTakeoverPlayerUpdate(C_NEO_Player* pPlayerTakeoverTarget);
+	CHandle<C_NEO_Player> m_hSpectatorTakeoverTarget;
+
 private:
 	void CheckThermOpticButtons();
 	void CheckVisionButtons();

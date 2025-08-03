@@ -6967,7 +6967,7 @@ void CBaseEntity::SetPredictionEligible( bool canpredict )
 void CBaseEntity::AddPoints( int score, bool bAllowNegativeScore )
 {
 #ifdef NEO
-	CNEO_Player* pPlayer = static_cast<CNEO_Player*>(this);
+	CNEO_Player* pPlayer = ToNEOPlayer(this);
 #else
 	CBasePlayer *pPlayer = ToBasePlayer(this);
 #endif // NEO

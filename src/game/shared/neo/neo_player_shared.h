@@ -14,6 +14,8 @@
 	#define max(a,b)  (((a) > (b)) ? (a) : (b))
 #endif
 
+#define USERID2NEOPLAYER(i) ToNEOPlayer( ClientEntityList().GetEnt( engine->GetPlayerForUserID( i ) ) )
+
 #include "neo_predicted_viewmodel.h"
 #include "neo_misc.h"
 #include "shareddefs.h"
