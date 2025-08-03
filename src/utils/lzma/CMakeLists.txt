@@ -17,11 +17,6 @@ target_compile_definitions(lzma
     _7ZIP_ST
 )
 
-# target_compile_options(lzma
-#     PRIVATE
-
-# )
-
 target_link_libraries(lzma
     PRIVATE
     tier1::tier1
