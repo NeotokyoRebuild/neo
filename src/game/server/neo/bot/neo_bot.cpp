@@ -996,6 +996,35 @@ bool CNEOBot::IsAmmoFull(void) const
 	return isPrimaryFull && isSecondaryFull;
 }
 
+bool CNEOBot::IsCloakEnabled(void) const
+{
+	auto myBody = GetBodyInterface();
+	return myBody && myBody->IsCloakEnabled();
+}
+
+float CNEOBot::GetCloakPower(void) const
+{
+	auto myBody = GetBodyInterface();
+	return myBody ? myBody->GetCloakPower() : 0.0f;
+}
+
+void CNEOBot::EnableCloak(float threshold)
+{
+	if ( (GetCloakPower() >= threshold)
+		&& !IsCloakEnabled() )
+	{
+		PressThermopticButton();
+	}
+}
+
+void CNEOBot::DisableCloak(void)
+{
+	if ( IsCloakEnabled() )
+	{
+		PressThermopticButton();
+	}
+}
+
 
 bool CNEOBot::IsDormantWhenDead(void) const
 {
@@ -1493,25 +1522,36 @@ void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat)
 	{
 		pChosen = secondaryWeapon;
 	}
-	if (primaryWeapon)
+
+	// When to set aside primary in special situations
+	if (!primaryWeapon)
+	{
+		// passthrough
+	}
+	else if (secondaryWeapon
+		&& primaryWeapon->GetNeoWepBits() & (NEO_WEP_AA13 | NEO_WEP_SUPA7)
+		&& IsRangeGreaterThan(threat->GetLastKnownPosition(), 1000.0f))
+	{
+		// passthrough
+	}
+	else if (secondaryWeapon
+		&& primaryWeapon->GetNeoWepBits() & (NEO_WEP_SCOPEDWEAPON)
+		&& IsRangeLessThan(threat->GetLastKnownPosition(), 250.0f))
+	{
+		// passthrough
+	}
+	// Ideally for close range empty primary reaction
+	else if ( secondaryWeapon
+		&& primaryWeapon->Clip1() <= 0
+		&& (secondaryWeapon->Clip1() > 0)
+		&& threat->IsVisibleInFOVNow()
+		&& (IsRangeLessThan(threat->GetLastKnownPosition(), 250.0f)) )
+	{
+		// passthrough
+	}
+	else
 	{
 		pChosen = primaryWeapon;
-	}
-
-	if (primaryWeapon && IsRangeGreaterThan(threat->GetLastKnownPosition(), 1000.0f) &&  primaryWeapon->GetNeoWepBits() & (NEO_WEP_AA13 | NEO_WEP_SUPA7))
-	{
-		if (secondaryWeapon)
-		{
-			pChosen = secondaryWeapon;
-		}
-		else if (knife)
-		{
-			pChosen = knife;
-		}
-		else if (throwable)
-		{
-			pChosen = throwable;
-		}
 	}
 
 	if (pChosen)
