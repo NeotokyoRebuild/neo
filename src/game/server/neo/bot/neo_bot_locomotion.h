@@ -23,7 +23,8 @@ public:
 	virtual float GetMaxJumpHeight( void ) const;				// return maximum height of a jump
 	virtual float GetDeathDropHeight( void ) const;			// distance at which we will die if we fall
 
-	virtual float GetRunSpeed( void ) const;				// get maximum running speed
+	virtual float GetRunSpeed( void ) const override;			// get maximum running speed
+	virtual float GetWalkSpeed( void ) const override;			// get maximum walking speed
 
 	virtual bool IsAreaTraversable( const CNavArea *baseArea ) const;	// return true if given area can be used for navigation
 	virtual bool IsEntityTraversable( CBaseEntity *obstacle, TraverseWhenType when = EVENTUALLY ) const;

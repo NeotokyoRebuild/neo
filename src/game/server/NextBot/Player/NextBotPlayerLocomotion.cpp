@@ -574,10 +574,17 @@ void PlayerLocomotion::Approach( const Vector &pos, float goalWeight )
 		}
 	}
 
+#ifdef NEO
+	if ( IsRunning() )
+	{
+		playerButtons->PressRunButton();
+	}
+#else
 	if ( !IsRunning() )
 	{
 		playerButtons->PressWalkButton();
 	}
+#endif
 }
 
 

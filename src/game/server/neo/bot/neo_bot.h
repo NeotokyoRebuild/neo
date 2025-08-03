@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Player/NextBotPlayer.h"
+
 #include "neo_bot_vision.h"
 #include "neo_bot_body.h"
 #include "neo_bot_locomotion.h"
@@ -12,6 +13,7 @@
 #include "weapon_neobasecombatweapon.h"
 #include "nav_entities.h"
 #include "utlstack.h"
+#include "behavior/neo_bot_behavior.h"
 
 #define NEO_BOT_TYPE	1338
 
@@ -36,6 +38,27 @@ inline int GetEnemyTeam(int team)
 	// no enemy team
 	return team;
 }
+
+class CNEOBotBehavior;
+
+// Not split off from neo_bot.h/cpp unless you want to deal with includes hell
+class CNEOBotIntention : public IIntention, public CNEOBotContextualQueryInterface
+{
+public:
+	CNEOBotIntention(CNEOBot *bot);
+	virtual ~CNEOBotIntention();
+
+	void Reset() override;
+	void Update() override;
+
+	INextBotEventResponder *FirstContainedResponder() const override;
+	INextBotEventResponder *NextContainedResponder(INextBotEventResponder *current) const override;
+
+	QueryResultType ShouldWalk(const CNEOBot *me) const final;
+
+private:
+	CNEOBotBehavior *m_behavior;
+};
 
 //----------------------------------------------------------------------------
 
@@ -80,7 +103,7 @@ public:
 	virtual CNEOBotLocomotion* GetLocomotionInterface(void) const { return m_locomotor; }
 	virtual CNEOBotBody* GetBodyInterface(void) const { return m_body; }
 	virtual CNEOBotVision* GetVisionInterface(void) const { return m_vision; }
-	DECLARE_INTENTION_INTERFACE(CNEOBot);
+	CNEOBotIntention *GetIntentionInterface(void) const override { return m_intention; }
 
 	virtual bool IsDormantWhenDead(void) const;			// should this player-bot continue to update itself when dead (respawn logic, etc)
 
@@ -375,10 +398,14 @@ public:
 	const EventChangeAttributes_t* GetEventChangeAttributes(const char* pszEventName) const;
 	void OnEventChangeAttributes(const CNEOBot::EventChangeAttributes_t* pEvent);
 
+	bool IsFiring() const;
+	bool m_bOnTarget = false;
+
 private:
-	CNEOBotLocomotion* m_locomotor;
-	CNEOBotBody* m_body;
-	CNEOBotVision* m_vision;
+	CNEOBotLocomotion *m_locomotor;
+	CNEOBotBody *m_body;
+	CNEOBotVision *m_vision;
+	CNEOBotIntention *m_intention;
 
 	CountdownTimer m_lookAtEnemyInvasionAreasTimer;
 
@@ -447,6 +474,14 @@ private:
 	CUtlVector< const EventChangeAttributes_t* > m_eventChangeAttributes;
 };
 
+class CNEOBotBehavior : public Behavior<CNEOBot>, public CNEOBotContextualQueryInterface
+{
+public:
+	CNEOBotBehavior(CNEOBotMainAction *initialAction, const char *name = "") : Behavior<CNEOBot>(initialAction, name) {}
+	virtual ~CNEOBotBehavior() {}
+
+	QueryResultType ShouldWalk(const CNEOBot *me) const final;
+};
 
 inline void CNEOBot::SetTeleportWhere(const CUtlStringList& teleportWhereName)
 {
@@ -732,7 +767,6 @@ inline const CNEOBot* ToNEOBot(const CBaseEntity* pEntity)
 	return static_cast<const CNEOBot*>(pEntity);
 }
 
-
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Functor used with NavAreaBuildPath()
@@ -940,3 +974,5 @@ public:
 	int m_iIgnoreTeam;
 	bool m_bCallerIsProjectile;
 };
+
+
