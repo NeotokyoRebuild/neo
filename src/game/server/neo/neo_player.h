@@ -31,6 +31,7 @@ enum EMenuSelectType
 
 class CNEO_Player : public CHL2MP_Player
 {
+	friend class CNEORules;
 public:
 	DECLARE_CLASS(CNEO_Player, CHL2MP_Player);
 
@@ -160,6 +161,7 @@ public:
 	bool GetInThermOpticCamo() const { return m_bInThermOpticCamo; }
 	// bots can't see anything, so they need an additional timer for cloak disruption events
 	bool GetBotPerceivedCloakState() const { return m_botThermOpticCamoDisruptedTimer.IsElapsed() && m_bInThermOpticCamo; }
+	bool GetBotTakeoverPending() const { return m_bBotTakeoverPending; }
 
 	virtual void StartAutoSprint(void) OVERRIDE;
 	virtual void StartSprinting(void) OVERRIDE;
@@ -232,6 +234,12 @@ private:
 
 	bool IsAllowedToSuperJump(void);
 
+	void TryTakeoverSpectatedBot(CNEO_Player* pBotToTakeover);
+	void RestoreBotFromReplacement();
+
+	void EnterStasis(CNEO_Player* pPlayer);
+	void ExitStasis(CNEO_Player* pPlayer);
+
 public:
 	CNetworkVar(int, m_iNeoClass);
 	CNetworkVar(int, m_iNeoSkin);
@@ -299,6 +307,11 @@ private:
 
 	// blood decals are client-side, so track injury event count for bots
 	int m_iBotDetectableBleedingInjuryEvents = 0;
+	bool m_bBotTakeoverPending{false};
+	CHandle<CBasePlayer> m_hBotToTakeover{nullptr};
+	bool m_bInStasis{false};
+	CHandle<CNEO_Player> m_hStasisBot{nullptr};
+	CHandle<CNEO_Player> m_hPossessingPlayer{nullptr};
 
 private:
 	CNEO_Player(const CNEO_Player&);
