@@ -1,9 +1,12 @@
 add_subdirectory(lzma)
 add_subdirectory(vbsp)
 
-if(DNEO_VMPI)
+if(NEO_VMPI)
     add_subdirectory(vmpi)
 endif()
 
 add_subdirectory(vvis)
 add_subdirectory(vvis_launcher)
+add_subdirectory(vrad)
+add_subdirectory(vrad_launcher)
+add_subdirectory(vice)
