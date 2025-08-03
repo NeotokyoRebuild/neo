@@ -67,8 +67,18 @@ ActionResult< CNEOBot >	CNEOBotAttack::Update( CNEOBot *me, float interval )
 		 me->IsRangeGreaterThan( threat->GetEntity()->GetAbsOrigin(), me->GetDesiredAttackRange() ) || 
 		 !me->IsLineOfFireClear( threat->GetEntity()->EyePosition() ) )
 	{
+		// SUPA7 reload can be interrupted so proactively reload
+		if (myWeapon && (myWeapon->GetNeoWepBits() & NEO_WEP_SUPA7) && (myWeapon->Clip1() < myWeapon->GetMaxClip1()))
+		{
+			me->ReleaseFireButton();
+			me->PressReloadButton();
+		}
+		
 		if ( threat->IsVisibleRecently() )
 		{
+			// pre-cloak needs more thermoptic budget when chasing threats
+			me->EnableCloak(6.0f);
+
 			if ( isUsingCloseRangeWeapon )
 			{
 				CNEOBotPathCost cost( me, FASTEST_ROUTE );

@@ -99,6 +99,13 @@ public:
 	virtual const Vector GetPlayerMins(void) const OVERRIDE;
 	virtual const Vector GetPlayerMaxs(void) const OVERRIDE;
 
+	// -----------------------
+	// For bots, calculate how obscuring "fog" variables like thermoptic camoflage affect the visibility of a target.
+	// While the functions aren't actually about fog in the NT context, the abstraction of visibility percentage seemed to fit.
+	// -----------------------
+	virtual bool		IsHiddenByFog(CBaseEntity* target) const OVERRIDE;        ///< return true if given target cant be seen because of "fog"
+	virtual float		GetFogObscuredRatio(CBaseEntity* target) const OVERRIDE;  ///< return 0-1 ratio where zero is not obscured, and 1 is completely obscured
+
 	void AddNeoFlag(int flags)
 	{
 		m_NeoFlags.GetForModify() = (GetNeoFlags() | flags);
@@ -155,8 +162,13 @@ public:
 	int GetClass() const { return m_iNeoClass; }
 	int GetStar() const { return m_iNeoStar; }
 	bool IsInAim() const { return m_bInAim; }
+	int GetBotDetectableBleedingInjuryEvents() const { return m_iBotDetectableBleedingInjuryEvents; }
 
 	bool IsAirborne() const { return (!(GetFlags() & FL_ONGROUND)); }
+
+	bool GetInThermOpticCamo() const { return m_bInThermOpticCamo; }
+	// bots can't see anything, so they need an additional timer for cloak disruption events
+	bool GetBotPerceivedCloakState() const { return m_botThermOpticCamoDisruptedTimer.IsElapsed() && m_bInThermOpticCamo; }
 
 	virtual void StartAutoSprint(void) OVERRIDE;
 	virtual void StartSprinting(void) OVERRIDE;
@@ -169,6 +181,7 @@ public:
 	virtual void StopWalking(void) OVERRIDE;
 
 	// Cloak Power Interface
+	float CloakPower_Get(void) const ;
 	void CloakPower_Update(void);
 	bool CloakPower_Drain(float flPower);
 	void CloakPower_Charge(float flPower);
@@ -216,6 +229,9 @@ public:
 
 private:
 	bool m_bAllowGibbing;
+
+	// tracks time since last cloak disruption event for bots who can't actually see
+	CountdownTimer m_botThermOpticCamoDisruptedTimer;
 
 private:
 	float GetActiveWeaponSpeedScale() const;
@@ -299,6 +315,8 @@ private:
 
 	int m_iDmgMenuCurPage;
 	int m_iDmgMenuNextPage;
+	// blood decals are client-side, so track injury event count for bots
+	int m_iBotDetectableBleedingInjuryEvents = 0;
 
 private:
 	CNEO_Player(const CNEO_Player&);
