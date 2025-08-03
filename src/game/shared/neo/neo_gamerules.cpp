@@ -2247,6 +2247,15 @@ void CNEORules::StartNextRound()
 			continue;
 		}
 
+		if (pPlayer->m_hStasisBot.Get())
+		{
+			CNEO_Player *pBot = dynamic_cast<CNEO_Player*>(pPlayer->m_hStasisBot.Get());
+			if (pBot)
+			{
+				pPlayer->RestoreBotFromReplacement(); // Restore the bot
+			}
+		}
+
 		if (pPlayer->GetTeamNumber() == TEAM_SPECTATOR)
 		{
 			continue;
@@ -2979,6 +2988,15 @@ bool CNEORules::RoundIsMatchPoint() const
 #ifdef GAME_DLL
 void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bool bSwitchTeams, bool bDontAddScore, bool bFinal)
 {
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		CNEO_Player *pPlayer = ToNEOPlayer(UTIL_PlayerByIndex(i));
+		if (pPlayer && pPlayer->m_hStasisBot.Get())
+		{
+			pPlayer->RestoreBotFromReplacement();
+		}
+	}
+
 	if (IsRoundOver())
 	{
 		return;
@@ -3677,6 +3695,13 @@ bool CNEORules::GetTeamPlayEnabled() const
 #ifdef GAME_DLL
 bool CNEORules::FPlayerCanRespawn(CBasePlayer* pPlayer)
 {
+	// Special case for bot takeover
+	CNEO_Player* pNeoPlayer = ToNEOPlayer(pPlayer);
+	if (pNeoPlayer && pNeoPlayer->GetBotTakeoverPending())
+	{
+		return true;
+	}
+
 	auto gameType = GetGameType();
 
 	if (CanRespawnAnyTime())

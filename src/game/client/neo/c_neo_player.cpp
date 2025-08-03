@@ -63,6 +63,8 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+void __MsgFunc_ReplaceBot(bf_read &msg);
+
 LINK_ENTITY_TO_CLASS(player, C_NEO_Player);
 
 IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
@@ -823,6 +825,24 @@ void C_NEO_Player::PostDataUpdate( DataUpdateType_t updateType )
 	}
 }
 
+CUserMessageRegister BotTakeoverRegistration("ReplaceBot", __MsgFunc_ReplaceBot);
+
+void __MsgFunc_ReplaceBot(bf_read &msg)
+{
+	int playerIndex = msg.ReadShort();
+	int botIndex = msg.ReadShort();
+
+	C_NEO_Player* pPossessor = dynamic_cast<C_NEO_Player*>(cl_entitylist->GetEnt(playerIndex));
+	C_NEO_Player* pBot = dynamic_cast<C_NEO_Player*>(cl_entitylist->GetEnt(botIndex));
+	if (!pBot || !pPossessor)
+	{
+		return;
+	}
+
+	// WIP to-check: what about all the other clients? How does the replacing player look like to them?
+	pPossessor->ClientBotReplacementUpdate(pBot);
+}
+
 void C_NEO_Player::PlayStepSound( Vector &vecOrigin,
 	surfacedata_t *psurface, float fvol, bool force )
 {
@@ -1368,6 +1388,41 @@ void C_NEO_Player::CalcDeathCamView(Vector &eyeOrigin, QAngle &eyeAngles, float 
 void C_NEO_Player::TeamChange(int iNewTeam)
 {
 	BaseClass::TeamChange(iNewTeam);
+}
+
+void C_NEO_Player::ClientBotReplacementUpdate(C_NEO_Player* pBot)
+{
+	if (!pBot)
+	{
+		return;
+	}
+
+	m_nSkin = pBot->m_iNeoSkin;
+	m_iNeoClass = pBot->m_iNeoClass;
+	m_iLoadoutWepChoice = pBot->m_iLoadoutWepChoice;
+	m_iNextSpawnClassChoice = pBot->m_iNextSpawnClassChoice;
+
+	m_bInThermOpticCamo = pBot->m_bInThermOpticCamo;
+	m_bInVision = pBot->m_bInVision;
+	m_bInAim = pBot->m_bInAim;
+	m_bCarryingGhost = pBot->m_bCarryingGhost;
+	m_bIneligibleForLoadoutPick = pBot->m_bIneligibleForLoadoutPick;
+	m_bInLean = pBot->m_bInLean;
+
+	m_flCamoAuxLastTime = pBot->m_flCamoAuxLastTime;
+	m_nVisionLastTick = pBot->m_nVisionLastTick;
+	m_flLastAirborneJumpOkTime = pBot->m_flLastAirborneJumpOkTime;
+	m_flLastSuperJumpTime = pBot->m_flLastSuperJumpTime;
+	m_bPreviouslyReloading = pBot->m_bPreviouslyReloading;
+	m_bLastTickInThermOpticCamo = pBot->m_bLastTickInThermOpticCamo;
+	m_bIsAllowedToToggleVision = pBot->m_bIsAllowedToToggleVision;
+	m_flTocFactor = pBot->m_flTocFactor;
+
+	pBot->SnatchModelInstance(this);
+	SetAbsOrigin(pBot->GetAbsOrigin());
+	SetAbsAngles(pBot->GetAbsAngles());
+	SetAbsVelocity(pBot->GetAbsVelocity());
+	SetLocalAngles(pBot->EyeAngles());
 }
 
 bool C_NEO_Player::IsAllowedToSuperJump(void)
