@@ -31,6 +31,7 @@ enum EMenuSelectType
 
 class CNEO_Player : public CHL2MP_Player
 {
+	friend class CNEORules;
 public:
 	DECLARE_CLASS(CNEO_Player, CHL2MP_Player);
 
@@ -162,6 +163,7 @@ public:
 	bool GetInThermOpticCamo() const { return m_bInThermOpticCamo; }
 	// bots can't see anything, so they need an additional timer for cloak disruption events
 	bool GetBotPerceivedCloakState() const { return m_botThermOpticCamoDisruptedTimer.IsElapsed() && m_bInThermOpticCamo; }
+	bool GetSpectatorTakeoverPlayerPending() const { return m_bSpectatorTakeoverPlayerPending; }
 
 	virtual void StartAutoSprint(void) OVERRIDE;
 	virtual void StartSprinting(void) OVERRIDE;
@@ -307,9 +309,23 @@ private:
 
 	// blood decals are client-side, so track injury event count for bots
 	int m_iBotDetectableBleedingInjuryEvents = 0;
+	bool m_bSpectatorTakeoverPlayerPending{false};
 
 private:
 	CNEO_Player(const CNEO_Player&);
+
+	// Spectator takeover player related functionality
+	bool IsAFK(); // not const because GetTimeSinceLastUserCommand is non-const
+	void SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace);
+	void SpectatorTakeoverPlayerPreThink();
+	void RestorePlayerFromSpectatorTakeover();
+	void RestorePlayerFromSpectatorTakeover(const CTakeDamageInfo &pInfo);
+	void SpectatorTakeoverPlayerInitiate(CNEO_Player* pPlayer);
+	void SpectatorTakeoverPlayerRevert(CNEO_Player* pPlayer);
+
+	CHandle<CNEO_Player> m_hSpectatorTakeoverPlayerTarget{nullptr};
+	CHandle<CNEO_Player> m_hSpectatorTakeoverPlayerImpersonatingMe{nullptr};
+
 };
 
 inline CNEO_Player *ToNEOPlayer(CBaseEntity *pEntity)

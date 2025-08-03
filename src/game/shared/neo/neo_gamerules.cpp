@@ -1246,23 +1246,33 @@ void CNEORules::Think(void)
 
 				for (int i = 1; i <= gpGlobals->maxClients; i++)
 				{
-					if (i == captorClient)
-					{
-						AwardRankUp(i);
-						continue;
-					}
-
 					auto player = UTIL_PlayerByIndex(i);
 					if (player && player->GetTeamNumber() == captorTeam)
 					{
+						auto* neoPlayer = static_cast<CNEO_Player*>(player);
 						if (player->IsAlive())
 						{
-							AwardRankUp(i);
+							auto playerPossessedByMe = neoPlayer->m_hSpectatorTakeoverPlayerTarget.Get();
+							if (playerPossessedByMe)
+							{
+								// I already died and am possessing another player that should instead get credit
+								neoPlayer->AddPoints(1, false);
+								AwardRankUp(playerPossessedByMe);
+							}
+							else
+							{
+								// I am myself and should get full credit for being alive
+								AwardRankUp(i);
+							}
 						}
 						else
 						{
-							auto* neoPlayer = static_cast<CNEO_Player*>(player);
-							neoPlayer->AddPoints(1, false);
+							auto playerControllingMe = neoPlayer->m_hSpectatorTakeoverPlayerImpersonatingMe.Get();
+							if (!playerControllingMe)
+							{
+								// I didn't get credit for another player possessing me, so I get a single team point
+								neoPlayer->AddPoints(1, false);
+							}
 						}
 					}
 				}
@@ -2443,6 +2453,11 @@ void CNEORules::StartNextRound()
 		if (!pPlayer)
 		{
 			continue;
+		}
+
+		if (pPlayer->m_hSpectatorTakeoverPlayerTarget.Get())
+		{
+			pPlayer->RestorePlayerFromSpectatorTakeover();
 		}
 
 		if (pPlayer->GetTeamNumber() == TEAM_SPECTATOR)
@@ -3829,6 +3844,12 @@ void CNEORules::ClientDisconnected(edict_t* pClient)
 	Assert(pNeoPlayer);
 	if (pNeoPlayer)
 	{
+		// If the disconnecting player was controlling a bot, restore the bot now.
+		if (pNeoPlayer->m_hSpectatorTakeoverPlayerTarget.Get())
+		{
+		    pNeoPlayer->RestorePlayerFromSpectatorTakeover();
+		}
+
 		auto ghost = GetNeoWepWithBits(pNeoPlayer, NEO_WEP_GHOST);
 		if (ghost)
 		{
@@ -3895,6 +3916,13 @@ bool CNEORules::GetTeamPlayEnabled() const
 #ifdef GAME_DLL
 bool CNEORules::FPlayerCanRespawn(CBasePlayer* pPlayer)
 {
+	// Special case for spectator player takeover
+	CNEO_Player* pNeoPlayer = ToNEOPlayer(pPlayer);
+	if (pNeoPlayer && pNeoPlayer->GetSpectatorTakeoverPlayerPending())
+	{
+		return true;
+	}
+
 	auto gameType = GetGameType();
 
 	if ((gameType == NEO_GAME_TYPE_JGR) && m_pJuggernautPlayer)
