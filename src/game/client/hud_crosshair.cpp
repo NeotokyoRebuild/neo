@@ -432,7 +432,7 @@ void CHudCrosshair::Paint( void )
 		{
 			// NEO NOTE (nullsystem): Don't revert, just enforce default if it
 			// is not given properly
-			ImportCrosshair(pCrosshairInfo, CL_NEO_CROSSHAIR_DEFAULT);
+			ImportCrosshair(pCrosshairInfo, NEO_CROSSHAIR_DEFAULT);
 		}
 		if (!bTakeSpecCrosshair)
 		{
