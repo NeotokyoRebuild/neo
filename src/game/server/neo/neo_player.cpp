@@ -1591,6 +1591,11 @@ void CNEO_Player::SetClientWantNeoName(const bool b)
 
 void CNEO_Player::Weapon_SetZoom(const bool bZoomIn)
 {
+	if (bZoomIn == m_bInAim)
+	{
+		return;
+	}
+
 	ShowCrosshair(bZoomIn);
 	
 	const int fov = GetDefaultFOV();
@@ -2091,14 +2096,19 @@ void CNEO_Player::Weapon_Equip(CBaseCombatWeapon* pWeapon)
 bool CNEO_Player::Weapon_Switch( CBaseCombatWeapon *pWeapon,
                                  int viewmodelindex )
 {
-	ShowCrosshair(false);
-	Weapon_SetZoom(false);
 	const auto activeWeapon = GetActiveWeapon();
+	if (activeWeapon == pWeapon)
+	{
+		return false;
+	}
+
 	if (activeWeapon)
 	{
 		activeWeapon->StopWeaponSound(RELOAD_NPC);
 	}
 
+	ShowCrosshair(false);
+	Weapon_SetZoom(false);
 	return BaseClass::Weapon_Switch(pWeapon, viewmodelindex);
 }
 
