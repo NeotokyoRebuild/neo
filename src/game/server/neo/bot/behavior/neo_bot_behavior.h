@@ -26,6 +26,7 @@ public:
 	
 	// CNEOBotContextualQueryInterface implementation
 	QueryResultType ShouldWalk(const INextBot *me) const final;
+	QueryResultType ShouldAim(const INextBot *me) const final;
 
 	virtual Vector SelectTargetPoint( const INextBot *me, const CBaseCombatCharacter *subject ) const;		// given a subject, return the world space position we should aim at
 	virtual QueryResultType IsPositionAllowed( const INextBot *me, const Vector &pos ) const;

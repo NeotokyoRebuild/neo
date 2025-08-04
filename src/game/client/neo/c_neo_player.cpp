@@ -502,7 +502,7 @@ C_NEO_Player::C_NEO_Player()
 	m_iNeoStar = NEO_DEFAULT_STAR;
 	V_memset(m_szNeoName.GetForModify(), 0, sizeof(m_szNeoName));
 	V_memset(m_szNeoClantag.GetForModify(), 0, sizeof(m_szNeoClantag));
-	V_memset(m_szNeoCrosshair.GetForModify(), 0, sizeof(m_szNeoCrosshair));
+	V_strncpy(m_szNeoCrosshair.GetForModify(), NEO_CROSSHAIR_DEFAULT, NEO_XHAIR_SEQMAX);
 
 	m_iLoadoutWepChoice = NEORules()->GetForcedWeapon() >= 0 ? NEORules()->GetForcedWeapon() : 0;
 	m_iNextSpawnClassChoice = -1;

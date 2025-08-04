@@ -55,6 +55,7 @@ public:
 	INextBotEventResponder *NextContainedResponder(INextBotEventResponder *current) const override;
 
 	QueryResultType ShouldWalk(const INextBot *me) const final;
+	QueryResultType ShouldAim(const INextBot *me) const final;
 
 private:
 	CNEOBotBehavior *m_behavior;
@@ -397,6 +398,7 @@ public:
 	void AddEventChangeAttributes(const EventChangeAttributes_t* newEvent);
 	const EventChangeAttributes_t* GetEventChangeAttributes(const char* pszEventName) const;
 	void OnEventChangeAttributes(const CNEOBot::EventChangeAttributes_t* pEvent);
+	bool IsFiring() const;
 
 private:
 	CNEOBotLocomotion *m_locomotor;
@@ -478,6 +480,7 @@ public:
 	virtual ~CNEOBotBehavior() {}
 
 	QueryResultType ShouldWalk(const INextBot *me) const final;
+	QueryResultType ShouldAim(const INextBot *me) const final;
 };
 
 inline void CNEOBot::SetTeleportWhere(const CUtlStringList& teleportWhereName)

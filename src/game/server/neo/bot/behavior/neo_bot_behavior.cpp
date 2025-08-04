@@ -111,13 +111,27 @@ ActionResult< CNEOBot >	CNEOBotMainAction::Update( CNEOBot *me, float interval )
 	FireWeaponAtEnemy( me );
 	Dodge( me );
 
-	if (me->GetIntentionInterface()->ShouldWalk(me) == ANSWER_YES)
+	const QueryResultType qShouldAimQuery = me->GetIntentionInterface()->ShouldAim(me);
+	const bool bShouldAim = qShouldAimQuery == ANSWER_YES;
+	if (bShouldAim || me->GetIntentionInterface()->ShouldWalk(me) == ANSWER_YES)
 	{
 		me->GetLocomotionInterface()->Walk();
 	}
 	else
 	{
 		me->GetLocomotionInterface()->Run();
+	}
+
+	if (auto *pNeoWep = static_cast<CNEOBaseCombatWeapon *>(me->GetActiveWeapon()))
+	{
+		if (bShouldAim)
+		{
+			me->Weapon_AimToggle(pNeoWep, NEO_TOGGLE_FORCE_AIM);
+		}
+		else
+		{
+			me->Weapon_AimToggle(pNeoWep, NEO_TOGGLE_FORCE_UN_AIM);
+		}
 	}
 
 	return Continue();
@@ -454,7 +468,25 @@ QueryResultType CNEOBotMainAction::ShouldWalk(const INextBot *me) const
 
 	// Walk if reloading or firing
 	CNEOBaseCombatWeapon *myWeapon = static_cast<CNEOBaseCombatWeapon*>(neoMe->GetActiveWeapon());
-	return (myWeapon && (myWeapon->m_bInReload || myWeapon->m_bFiringWholeClip)) ? ANSWER_YES : ANSWER_NO;
+	return (myWeapon && (myWeapon->m_bInReload || neoMe->IsFiring())) ? ANSWER_YES : ANSWER_NO;
+}
+
+QueryResultType CNEOBotMainAction::ShouldAim(const INextBot *me) const
+{
+	auto *neoMe = static_cast<const CNEOBot *>(me);
+	auto *pNeoWep = static_cast<CNEOBaseCombatWeapon *>(neoMe->GetActiveWeapon());
+	if (!pNeoWep)
+	{
+		return ANSWER_NO;
+	}
+
+	const bool bIsPlayerRunning = neoMe->GetLocomotionInterface()->IsRunning();
+	const bool bIsScoped = pNeoWep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON;
+
+	const bool bIsScopedWalk = bIsScoped && !bIsPlayerRunning;
+	const bool bIsNonScopedFiring = !bIsScoped && neoMe->IsFiring();
+
+	return (bIsScopedWalk || bIsNonScopedFiring) ? ANSWER_YES : ANSWER_NO;
 }
 
 

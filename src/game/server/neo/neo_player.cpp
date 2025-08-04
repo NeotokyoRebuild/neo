@@ -431,7 +431,7 @@ CNEO_Player::CNEO_Player()
 	V_memset(m_szNeoName.GetForModify(), 0, sizeof(m_szNeoName));
 	m_szNeoNameHasSet = false;
 	V_memset(m_szNeoClantag.GetForModify(), 0, sizeof(m_szNeoClantag));
-	V_memset(m_szNeoCrosshair.GetForModify(), 0, sizeof(m_szNeoCrosshair));
+	V_strncpy(m_szNeoCrosshair.GetForModify(), NEO_CROSSHAIR_DEFAULT, NEO_XHAIR_SEQMAX);
 
 	m_bInThermOpticCamo = m_bInVision = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;

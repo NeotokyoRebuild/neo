@@ -136,6 +136,9 @@ public:
 	// This is just an "alias" to PressWalkButton
 	virtual void PressRunButton( float duration = -1.0f ) = 0;
 	virtual void ReleaseRunButton( void ) = 0;
+
+	virtual void PressAimButton( float duration = -1.0f ) = 0;
+	virtual void ReleaseAimButton( void ) = 0;
 #endif
 
 	virtual void SetButtonScale( float forward, float right ) = 0;
@@ -237,6 +240,9 @@ public:
 	// This is just an "alias" to PressWalkButton
 	virtual void PressRunButton( float duration = -1.0f );
 	virtual void ReleaseRunButton( void );
+
+	virtual void PressAimButton( float duration = -1.0f );
+	virtual void ReleaseAimButton( void );
 #endif
 
 	virtual void SetButtonScale( float forward, float right );
@@ -281,6 +287,7 @@ protected:
 	CountdownTimer m_buttonScaleTimer;
 #ifdef NEO
 	CountdownTimer m_thermopticButtonTimer;
+	CountdownTimer m_aimButtonTimer;
 #endif
 	IntervalTimer m_burningTimer;		// how long since we were last burning
 	float m_forwardScale;
@@ -485,6 +492,7 @@ inline void NextBotPlayer< PlayerType >::ReleaseWalkButton( void )
 	m_walkButtonTimer.Invalidate();
 }
 
+#ifdef NEO
 template < typename PlayerType >
 inline void NextBotPlayer< PlayerType >::PressRunButton( float duration )
 {
@@ -496,6 +504,21 @@ inline void NextBotPlayer< PlayerType >::ReleaseRunButton( void )
 {
 	return NextBotPlayer<PlayerType>::ReleaseWalkButton();
 }
+
+template < typename PlayerType >
+inline void NextBotPlayer< PlayerType >::PressAimButton( float duration )
+{
+	m_inputButtons |= IN_AIM;
+	m_aimButtonTimer.Start( duration );
+}
+
+template < typename PlayerType >
+inline void NextBotPlayer< PlayerType >::ReleaseAimButton( void )
+{
+	m_inputButtons &= ~IN_AIM;
+	m_aimButtonTimer.Invalidate();
+}
+#endif
 
 template < typename PlayerType >
 inline void NextBotPlayer< PlayerType >::PressForwardButton( float duration )
@@ -605,6 +628,7 @@ inline void NextBotPlayer< PlayerType >::Spawn( void )
 	m_burningTimer.Invalidate();
 #ifdef NEO
 	m_thermopticButtonTimer.Invalidate();
+	m_aimButtonTimer.Invalidate();
 #endif
 
 	// reset first, because Spawn() may access various interfaces
@@ -738,6 +762,11 @@ inline void NextBotPlayer< PlayerType >::PhysicsSimulate( void )
 
 		if ( !m_walkButtonTimer.IsElapsed() )
 			m_inputButtons |= IN_SPEED;
+
+#ifdef NEO
+		if ( !m_aimButtonTimer.IsElapsed() )
+			m_inputButtons |= IN_AIM;
+#endif
 
 		m_prevInputButtons = m_inputButtons;
 		inputButtons = m_inputButtons;
