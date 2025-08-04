@@ -269,7 +269,7 @@ void NeoSettingsBackgroundsInit(NeoSettings* ns)
 		ns->iCBListSize = 1;
 		allocate(ns, dispSize);
 		g_pVGuiLocalize->ConvertANSIToUnicode(NEO_FALLBACK_BACKGROUND_DISPLAYNAME, ns->p2WszCBList[0], sizeof(wchar_t) * dispSize);
-		NeosettingsBackgroundWrite(ns, NEO_FALLBACK_BACKGROUND_FILENAME);
+		NeoSettingsBackgroundWrite(ns, NEO_FALLBACK_BACKGROUND_FILENAME);
 		return;
 	}
 
@@ -317,10 +317,10 @@ void NeoSettingsBackgroundsInit(NeoSettings* ns)
 	ns->p2WszCBList[ns->iCBListSize - 1] = ns->p2WszCBList[0] + offset;
 
 	// write selected background name
-	NeosettingsBackgroundWrite(ns);
+	NeoSettingsBackgroundWrite(ns);
 }
 
-void NeosettingsBackgroundWrite(const NeoSettings* ns, const char* backgroundName)
+void NeoSettingsBackgroundWrite(const NeoSettings* ns, const char* backgroundName)
 {
 	// Select background name
 	if (!backgroundName)
@@ -409,7 +409,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->bEnableRangeFinder = cvr->cl_neo_hud_rangefinder_enabled.GetBool();
 		pGeneral->bExtendedKillfeed = cvr->cl_neo_hud_extended_killfeed.GetBool();
 		pGeneral->iBackground = clamp(cvr->sv_unlockedchapters.GetInt(), 0, ns->iCBListSize - 1);
-		NeosettingsBackgroundWrite(ns);
+		NeoSettingsBackgroundWrite(ns);
 		NeoUI::ResetTextures();
 	}
 	{
@@ -626,7 +626,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_neo_hud_rangefinder_enabled.SetValue(pGeneral->bEnableRangeFinder);
 		cvr->cl_neo_hud_extended_killfeed.SetValue(pGeneral->bExtendedKillfeed);
 		cvr->sv_unlockedchapters.SetValue(pGeneral->iBackground);
-		NeosettingsBackgroundWrite(ns);
+		NeoSettingsBackgroundWrite(ns);
 	}
 	{
 		const NeoSettings::Keys *pKeys = &ns->keys;

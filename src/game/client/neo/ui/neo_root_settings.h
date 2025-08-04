@@ -249,7 +249,7 @@ struct NeoSettings
 };
 void NeoSettingsInit(NeoSettings *ns);
 void NeoSettingsBackgroundsInit(NeoSettings* ns);
-void NeosettingsBackgroundWrite(const NeoSettings* ns, const char* backgroundName = nullptr);
+void NeoSettingsBackgroundWrite(const NeoSettings* ns, const char* backgroundName = nullptr);
 void NeoSettingsDeinit(NeoSettings *ns);
 void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKeys = NeoSettings::Keys::NONE);
 void NeoSettingsSave(const NeoSettings *ns);
