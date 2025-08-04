@@ -34,6 +34,7 @@
 #ifdef NEO
 #include "neo_player_shared.h"
 #include <IGameUIFuncs.h>
+#include "neo/ui/neo_utils.h"
 #endif // NEO
 
 #include "engine/IEngineSound.h"
@@ -2297,6 +2298,7 @@ bool CMP3Player::RestoreDb( char const *filename )
 	return true;
 }
 
+#ifndef NEO // Moved to neo_utils
 void bpr( int level, CUtlBuffer& buf, char const *fmt, ... )
 {
 	char txt[ 4096 ];
@@ -2312,6 +2314,7 @@ void bpr( int level, CUtlBuffer& buf, char const *fmt, ... )
 	}
 	buf.Printf( "%s", txt );
 }
+#endif // NEO
 
 void CMP3Player::SaveDbFile( int level, CUtlBuffer& buf, MP3File_t *file, int filenumber )
 {
