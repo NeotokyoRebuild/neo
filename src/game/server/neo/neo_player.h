@@ -295,6 +295,9 @@ public:
 	EMenuSelectType m_eMenuSelectType = MENU_SELECT_TYPE_NONE;
 	bool m_bClientStreamermode = false;
 
+	// Bot-only usage
+	float m_flRanOutSprintTime = 0.0f;
+
 private:
 	bool m_bFirstDeathTick;
 	bool m_bCorpseSet;

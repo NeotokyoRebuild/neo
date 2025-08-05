@@ -132,6 +132,12 @@ public:
 	virtual void PressWalkButton( float duration = -1.0f ) = 0;
 	virtual void ReleaseWalkButton( void ) = 0;
 
+#ifdef NEO
+	// This is just an "alias" to PressWalkButton
+	virtual void PressRunButton( float duration = -1.0f ) = 0;
+	virtual void ReleaseRunButton( void ) = 0;
+#endif
+
 	virtual void SetButtonScale( float forward, float right ) = 0;
 };
 
@@ -226,6 +232,12 @@ public:
 
 	virtual void PressWalkButton( float duration = -1.0f );
 	virtual void ReleaseWalkButton( void );
+
+#ifdef NEO
+	// This is just an "alias" to PressWalkButton
+	virtual void PressRunButton( float duration = -1.0f );
+	virtual void ReleaseRunButton( void );
+#endif
 
 	virtual void SetButtonScale( float forward, float right );
 
@@ -471,6 +483,18 @@ inline void NextBotPlayer< PlayerType >::ReleaseWalkButton( void )
 {
 	m_inputButtons &= ~IN_SPEED;
 	m_walkButtonTimer.Invalidate();
+}
+
+template < typename PlayerType >
+inline void NextBotPlayer< PlayerType >::PressRunButton( float duration )
+{
+	return NextBotPlayer<PlayerType>::PressWalkButton(duration);
+}
+
+template < typename PlayerType >
+inline void NextBotPlayer< PlayerType >::ReleaseRunButton( void )
+{
+	return NextBotPlayer<PlayerType>::ReleaseWalkButton();
 }
 
 template < typename PlayerType >

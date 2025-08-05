@@ -537,6 +537,8 @@ void CNEO_Player::Spawn(void)
 		m_rfAttackersHits.Set(i, 0);
 	}
 
+	m_flRanOutSprintTime = 0.0f;
+
 	Weapon_SetZoom(false);
 
 	SetTransmitState(FL_EDICT_PVSCHECK);
@@ -926,6 +928,7 @@ void CNEO_Player::PreThink(void)
 
 	if (m_HL2Local.m_flSuitPower <= 0.0f && IsSprinting())
 	{
+		m_flRanOutSprintTime = gpGlobals->curtime;
 		StopSprinting();
 	}
 
@@ -3132,6 +3135,7 @@ void CNEO_Player::StartSprinting(void)
 		return;
 	}
 
+	m_flRanOutSprintTime = 0.0f;
 	BaseClass::StartSprinting();
 }
 
