@@ -97,9 +97,9 @@ CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, const NEO_WEP_BI
 bool ClientWantsAimHold(const CNEO_Player* player)
 {
 #ifdef CLIENT_DLL
-	return neo_aim_hold.GetBool();
+	return (player && player->IsBot()) ? false : neo_aim_hold.GetBool();
 #else
-	if (!player)
+	if (!player || player->IsBot())
 	{
 		return false;
 	}

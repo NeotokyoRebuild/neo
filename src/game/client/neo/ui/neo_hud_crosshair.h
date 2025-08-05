@@ -34,8 +34,7 @@ extern const char **CROSSHAIR_FILES;
 extern const wchar_t **CROSSHAIR_LABELS;
 extern const wchar_t **CROSSHAIR_SIZETYPE_LABELS;
 
-#define CL_NEO_CROSSHAIR_DEFAULT "2;0;-1;0;6;0.000;2;4;0;0;1;0;0;"
-// NEO_XHAIR_SEQMAX defined in neo_player_shared.h instead
+// NEO_CROSSHAIR_DEFAULT and NEO_XHAIR_SEQMAX defined in neo_player_shared.h instead
 
 enum NeoXHairSegment
 {

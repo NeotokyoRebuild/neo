@@ -111,6 +111,29 @@ ActionResult< CNEOBot >	CNEOBotMainAction::Update( CNEOBot *me, float interval )
 	FireWeaponAtEnemy( me );
 	Dodge( me );
 
+	const QueryResultType qShouldAimQuery = me->GetIntentionInterface()->ShouldAim(me);
+	const bool bShouldAim = qShouldAimQuery == ANSWER_YES;
+	if (bShouldAim || me->GetIntentionInterface()->ShouldWalk(me) == ANSWER_YES)
+	{
+		me->GetLocomotionInterface()->Walk();
+	}
+	else
+	{
+		me->GetLocomotionInterface()->Run();
+	}
+
+	if (auto *pNeoWep = static_cast<CNEOBaseCombatWeapon *>(me->GetActiveWeapon()))
+	{
+		if (bShouldAim)
+		{
+			me->Weapon_AimToggle(pNeoWep, NEO_TOGGLE_FORCE_AIM);
+		}
+		else
+		{
+			me->Weapon_AimToggle(pNeoWep, NEO_TOGGLE_FORCE_UN_AIM);
+		}
+	}
+
 	return Continue();
 }
 
@@ -416,6 +439,54 @@ QueryResultType CNEOBotMainAction::ShouldAttack( const INextBot *meBot, const CK
 QueryResultType	CNEOBotMainAction::ShouldHurry( const INextBot *meBot ) const
 {
 	return ANSWER_UNDEFINED;
+}
+
+QueryResultType CNEOBotMainAction::ShouldWalk(const INextBot *me) const
+{
+	auto *neoMe = static_cast<const CNEOBot *>(me);
+	if (neoMe->GetClass() == NEO_CLASS_ASSAULT)
+	{
+		// NEO TODO (nullsystem): Very very basic walking/sprinting logic
+		// at the moment. Would be better for like recon to utilize
+		// run-boost jumps and assault more sophisticated logic on
+		// when/when not to run. But this is suitable for now.
+		//
+		// If playing assault, try to not always sprint and recover sprint AUX
+		// when it can
+		const float flTimeSinceRanOutSprint = gpGlobals->curtime - neoMe->m_flRanOutSprintTime;
+		static const constexpr float FL_SPRINTRECOVER_MINTIME = 10.0f;
+		static const constexpr float FL_SPRINTRECOVER_MAXTIME = 40.0f;
+		static const constexpr float FL_MIN_AUXPOWER = 70.0f;
+		const bool bShouldSprint = (flTimeSinceRanOutSprint >= FL_SPRINTRECOVER_MINTIME &&
+				((flTimeSinceRanOutSprint < FL_SPRINTRECOVER_MAXTIME && const_cast<CNEOBot *>(neoMe)->SuitPower_GetCurrentPercentage() >= FL_MIN_AUXPOWER) ||
+				flTimeSinceRanOutSprint >= FL_SPRINTRECOVER_MAXTIME));
+		if (!bShouldSprint)
+		{
+			return ANSWER_YES;
+		}
+	}
+
+	// Walk if reloading or firing
+	CNEOBaseCombatWeapon *myWeapon = static_cast<CNEOBaseCombatWeapon*>(neoMe->GetActiveWeapon());
+	return (myWeapon && (myWeapon->m_bInReload || neoMe->IsFiring())) ? ANSWER_YES : ANSWER_NO;
+}
+
+QueryResultType CNEOBotMainAction::ShouldAim(const INextBot *me) const
+{
+	auto *neoMe = static_cast<const CNEOBot *>(me);
+	auto *pNeoWep = static_cast<CNEOBaseCombatWeapon *>(neoMe->GetActiveWeapon());
+	if (!pNeoWep)
+	{
+		return ANSWER_NO;
+	}
+
+	const bool bIsPlayerRunning = neoMe->GetLocomotionInterface()->IsRunning();
+	const bool bIsScoped = pNeoWep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON;
+
+	const bool bIsScopedWalk = bIsScoped && !bIsPlayerRunning;
+	const bool bIsNonScopedFiring = !bIsScoped && neoMe->IsFiring();
+
+	return (bIsScopedWalk || bIsNonScopedFiring) ? ANSWER_YES : ANSWER_NO;
 }
 
 

@@ -431,7 +431,7 @@ CNEO_Player::CNEO_Player()
 	V_memset(m_szNeoName.GetForModify(), 0, sizeof(m_szNeoName));
 	m_szNeoNameHasSet = false;
 	V_memset(m_szNeoClantag.GetForModify(), 0, sizeof(m_szNeoClantag));
-	V_memset(m_szNeoCrosshair.GetForModify(), 0, sizeof(m_szNeoCrosshair));
+	V_strncpy(m_szNeoCrosshair.GetForModify(), NEO_CROSSHAIR_DEFAULT, NEO_XHAIR_SEQMAX);
 
 	m_bInThermOpticCamo = m_bInVision = false;
 	m_bHasBeenAirborneForTooLongToSuperJump = false;
@@ -536,6 +536,8 @@ void CNEO_Player::Spawn(void)
 	{
 		m_rfAttackersHits.Set(i, 0);
 	}
+
+	m_flRanOutSprintTime = 0.0f;
 
 	Weapon_SetZoom(false);
 
@@ -926,6 +928,7 @@ void CNEO_Player::PreThink(void)
 
 	if (m_HL2Local.m_flSuitPower <= 0.0f && IsSprinting())
 	{
+		m_flRanOutSprintTime = gpGlobals->curtime;
 		StopSprinting();
 	}
 
@@ -3132,6 +3135,7 @@ void CNEO_Player::StartSprinting(void)
 		return;
 	}
 
+	m_flRanOutSprintTime = 0.0f;
 	BaseClass::StartSprinting();
 }
 
