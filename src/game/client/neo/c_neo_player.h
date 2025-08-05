@@ -233,6 +233,9 @@ private:
 	mutable char m_szNeoNameWDupeIdx[MAX_PLAYER_NAME_LENGTH + 10];
 	mutable int m_szNeoNameLocalDupeIdx;
 
+public:
+	bool m_rfNeoPlayerIdxsKilledByLocal[MAX_PLAYERS + 1];
+
 private:
 	C_NEO_Player(const C_NEO_Player &);
 };
