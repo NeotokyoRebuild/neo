@@ -4322,11 +4322,17 @@ void CClientShadowMgr::UpdateShadowDirectionFromLocalLightSource(ClientShadowHan
 		return;
 	}
 
+	// NEO NOTE DG: Using the bounding box for this will make the shadow jump around. Undone below
+	// They may appear to jump on walls sometimes, but this behaviour is visible on master currently
+	// NEO TODO: find out whats causing the size to change 3 times when player stops moving
+#if 0
 	Vector bbMin, bbMax;
 	pRenderable->GetRenderBoundsWorldspace(bbMin, bbMax);
 	Vector origin(0.5f * (bbMin + bbMax));
 	origin.z = bbMin.z; // Putting origin at the bottom of the bounding box makes the shadows a little shorter
+#endif
 
+	Vector origin = pRenderable->GetRenderOrigin();
 	Vector lightPos;
 	Vector lightBrightness;
 
