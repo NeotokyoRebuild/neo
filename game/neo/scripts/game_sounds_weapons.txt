@@ -1429,3 +1429,30 @@
 
 	"wave"	"weapons/slam/throw.wav"
 }
+
+// --------------------------
+// BALC3
+// --------------------------
+
+"weapon_balc.single"
+{
+	"channel"				"CHAN_WEAPON"
+	"soundlevel"			"SNDLVL_150dB"
+	"volume"				"0.8"
+	"pitch"					"90,100"
+	"wave"					"^weapons/balc/balc_fire.wav"
+}
+
+"weapon_balc.overheat"
+{
+	"channel"				"CHAN_ITEM"
+	"volume"				"0.5"
+	"wave"					"weapons/balc/balc_overheat.wav"	
+}
+
+"weapon_balc.ready"
+{
+	"channel"				"CHAN_ITEM"
+	"volume"				"0.5"
+	"wave"					"weapons/balc/balc_ready.wav"	
+}
