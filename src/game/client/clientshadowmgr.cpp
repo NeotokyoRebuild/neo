@@ -4333,6 +4333,7 @@ void CClientShadowMgr::UpdateShadowDirectionFromLocalLightSource(ClientShadowHan
 #endif
 
 	Vector origin = pRenderable->GetRenderOrigin();
+	Vector objectCenter = pRenderable->GetIClientUnknown()->GetBaseEntity()->WorldSpaceCenter();
 	Vector lightPos;
 	Vector lightBrightness;
 
@@ -4342,7 +4343,7 @@ void CClientShadowMgr::UpdateShadowDirectionFromLocalLightSource(ClientShadowHan
 		float flMinBrightnessSqr = r_worldlight_mincastintensity.GetFloat();
 		flMinBrightnessSqr *= flMinBrightnessSqr;
 
-		if (g_pWorldLights->GetBrightestLightSource(pRenderable->GetRenderOrigin(), lightPos, lightBrightness) == false || lightBrightness.LengthSqr() < flMinBrightnessSqr)
+		if (g_pWorldLights->GetBrightestLightSource(objectCenter, lightPos, lightBrightness) == false || lightBrightness.LengthSqr() < flMinBrightnessSqr)
 		{
 			// Didn't find a light source at all, use default shadow direction
 			// TODO: Could switch to using blobby shadow in this case
@@ -4352,7 +4353,7 @@ void CClientShadowMgr::UpdateShadowDirectionFromLocalLightSource(ClientShadowHan
 
 	// NEO NOTE DG: Comparing the origin to the last origin isnt viable because prediction(?)
 	// makes players never still. lets check the speed to see if they are moving
-	Vector delta = pRenderable->GetRenderOrigin() - shadow.m_LastOrigin;
+	Vector delta = origin - shadow.m_LastOrigin;
 	float speed = delta.Length() / gpGlobals->frametime;
 	float normalisedSpeed = clamp( speed / r_worldlight_lerpmaxobjectvel.GetFloat(), 0.0f, 0.5f);
 
@@ -4445,7 +4446,7 @@ void CClientShadowMgr::UpdateShadowDirectionFromLocalLightSource(ClientShadowHan
 
 	if (r_worldlight_debug.GetBool())
 	{
-		NDebugOverlay::Line(lightPos, origin, 255, 255, 0, false, 0.0f);
+		NDebugOverlay::Line(lightPos, objectCenter, 255, 255, 0, false, 0.0f);
 	}
 }
 
