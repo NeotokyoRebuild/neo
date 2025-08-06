@@ -4364,7 +4364,7 @@ void CClientShadowMgr::UpdateShadowDirectionFromLocalLightSource(ClientShadowHan
 	}
 	else if (shadow.m_LightPosLerp < 1.0f)
 	{
-		// We're in the middle of a lerp from current to target light. Finish it if they aren't moving.
+		// We're in the middle of a lerp from current to target light. Finish it if they are moving.
 		if (speed > 20.0f)
 		{
 			shadow.m_LightPosLerp += gpGlobals->frametime * normalisedSpeed;
