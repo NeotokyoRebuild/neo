@@ -10,7 +10,7 @@
 
 using vgui::surface;
 
-static ConVar cl_neo_showhints("cl_neo_showhints", "1", FCVAR_CLIENTDLL, "Toggle gameplay hints");
+static ConVar cl_neo_showhints("cl_neo_showhints", "1", FCVAR_ARCHIVE, "Toggle gameplay hints");
 
 DECLARE_NAMED_HUDELEMENT(CNEOHud_Hint, neo_hint);
 
