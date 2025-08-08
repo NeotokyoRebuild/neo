@@ -48,6 +48,8 @@ struct NeoSettings
 		bool bReloadEmpty;
 		bool bViewmodelRighthand;
 		bool bLeanViewmodelOnly;
+		bool bInaccuracyInScope;
+		bool bHipFireCrosshair;
 		int iLeanAutomatic;
 		bool bShowSquadList;
 		bool bShowPlayerSprays;
@@ -147,6 +149,7 @@ struct NeoSettings
 		CrosshairInfo info;
 		XHairExportNotify eClipboardInfo;
 		bool bNetworkCrosshair;
+		bool bPreviewDynamicAccuracy;
 
 		// Textures
 		struct Texture
@@ -184,6 +187,8 @@ struct NeoSettings
 		CONVARREF_DEF(cl_righthand);
 		CONVARREF_DEF(cl_neo_lean_viewmodel_only);
 		CONVARREF_DEF(cl_neo_lean_automatic);
+		CONVARREF_DEF(cl_neo_crosshair_scope_inaccuracy);
+		CONVARREF_DEF(cl_neo_crosshair_hip_fire);
 		CONVARREF_DEF(cl_neo_squad_hud_original);
 		CONVARREF_DEF(cl_neo_hud_extended_killfeed);
 		CONVARREF_DEF(cl_showpos);
