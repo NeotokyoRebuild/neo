@@ -71,6 +71,7 @@ public:
 class CNEOGhostCapturePoint;
 class CNEO_Player;
 class CWeaponGhost;
+class CNEOBotSeekAndDestroy;
 
 extern ConVar sv_neo_mirror_teamdamage_multiplier;
 extern ConVar sv_neo_mirror_teamdamage_duration;
@@ -395,6 +396,7 @@ private:
 	void SpawnTheGhost(const Vector *origin = nullptr);
 	void SelectTheVIP();
 
+	friend class CNEOBotSeekAndDestroy;
 	CUtlVector<int> m_pGhostCaps;
 	CWeaponGhost *m_pGhost = nullptr;
 	CNEO_Player *m_pVIP = nullptr;
