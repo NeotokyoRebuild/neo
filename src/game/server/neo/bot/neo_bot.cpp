@@ -433,10 +433,6 @@ static ConCommand neo_bot_warp_team_to_me("neo_bot_warp_team_to_me", CMD_BotWarp
 
 
 //-----------------------------------------------------------------------------------------------------
-IMPLEMENT_INTENTION_INTERFACE(CNEOBot, CNEOBotMainAction);
-
-
-//-----------------------------------------------------------------------------------------------------
 LINK_ENTITY_TO_CLASS(neo_bot, CNEOBot);
 
 //-----------------------------------------------------------------------------------------------------
@@ -542,7 +538,6 @@ CBasePlayer* CNEOBot::AllocatePlayerEntity(edict_t* edict, const char* playerNam
 	return static_cast<CBasePlayer*>(CreateEntityByName("neo_bot"));
 }
 
-
 //-----------------------------------------------------------------------------------------------------
 void CNEOBot::PressFireButton(float duration)
 {
@@ -594,7 +589,7 @@ CNEOBot::CNEOBot()
 	m_body = new CNEOBotBody(this);
 	m_locomotor = new CNEOBotLocomotion(this);
 	m_vision = new CNEOBotVision(this);
-	ALLOCATE_INTENTION_INTERFACE(CNEOBot);
+	m_intention = new CNEOBotIntention(this);
 
 	m_spawnArea = NULL;
 	m_weaponRestrictionFlags = 0;
@@ -630,7 +625,8 @@ CNEOBot::CNEOBot()
 CNEOBot::~CNEOBot()
 {
 	// delete Intention first, since destruction of Actions may access other components
-	DEALLOCATE_INTENTION_INTERFACE;
+	if (m_intention)
+		delete m_intention;
 
 	if (m_body)
 		delete m_body;
@@ -2294,3 +2290,79 @@ bool CNEOBot::PrefersLongRange(CNEOBaseCombatWeapon* pWeapon)
 
 	return (pWeapon->GetNeoWepBits() & (NEO_WEP_SRS | NEO_WEP_ZR68_L | NEO_WEP_M41 | NEO_WEP_M41_L | NEO_WEP_M41_S));
 }
+
+bool CNEOBot::IsFiring() const
+{
+	return m_nButtons & IN_ATTACK || m_afButtonPressed & IN_ATTACK || m_afButtonLast & IN_ATTACK;
+}
+
+CNEOBotIntention::CNEOBotIntention(CNEOBot *bot)
+	: IIntention(bot)
+{
+	m_behavior = new CNEOBotBehavior(new CNEOBotMainAction);
+}
+
+CNEOBotIntention::~CNEOBotIntention()
+{
+	delete m_behavior;
+}
+
+void CNEOBotIntention::Reset()
+{
+	delete m_behavior;
+	m_behavior = new CNEOBotBehavior(new CNEOBotMainAction);
+}
+
+void CNEOBotIntention::Update()
+{
+	m_behavior->Update(static_cast<CNEOBot *>(GetBot()), GetUpdateInterval());
+}
+
+INextBotEventResponder *CNEOBotIntention::FirstContainedResponder() const
+{
+	return m_behavior;
+}
+
+INextBotEventResponder *CNEOBotIntention::NextContainedResponder(INextBotEventResponder *current) const
+{
+	return nullptr;
+}
+
+QueryResultType CNEOBotIntention::ShouldWalk(const CNEOBot *me) const
+{
+	return m_behavior->ShouldWalk( me );
+}
+
+QueryResultType CNEOBotBehavior::ShouldWalk(const CNEOBot *me) const
+{
+	QueryResultType result = ANSWER_UNDEFINED;
+
+	auto *neoAction = static_cast<CNEOBotMainAction *>(m_action);
+	if ( neoAction )
+	{
+		// find innermost child action
+		CNEOBotMainAction *action;
+		for( action = neoAction; action->m_child; action = static_cast<CNEOBotMainAction *>(action->m_child) )
+			;
+
+		// work our way through our containers
+		while( action && result == ANSWER_UNDEFINED )
+		{
+			CNEOBotMainAction *containingAction = static_cast<CNEOBotMainAction *>(action->m_parent);
+
+			// work our way up the stack
+			while( action && result == ANSWER_UNDEFINED )
+			{
+				result = action->ShouldWalk(me);
+				action = static_cast<CNEOBotMainAction *>(action->GetActionBuriedUnderMe());
+			}
+
+			action = containingAction;
+		}
+	}
+
+	return result;
+}
+
+
+
