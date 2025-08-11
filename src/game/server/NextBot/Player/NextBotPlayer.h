@@ -237,6 +237,12 @@ public:
 	// This is just an "alias" to PressWalkButton
 	virtual void PressRunButton( float duration = -1.0f );
 	virtual void ReleaseRunButton( void );
+
+	void PressLeanLeftButton( float duration = -1.0f );
+	void ReleaseLeanLeftButton( void );
+
+	void PressLeanRightButton( float duration = -1.0f );
+	void ReleaseLeanRightButton( void );
 #endif // NEO
 
 	virtual void SetButtonScale( float forward, float right );
@@ -281,6 +287,8 @@ protected:
 	CountdownTimer m_buttonScaleTimer;
 #ifdef NEO
 	CountdownTimer m_thermopticButtonTimer;
+	CountdownTimer m_leanLeftButtonTimer;
+	CountdownTimer m_leanRightButtonTimer;
 #endif // NEO
 	IntervalTimer m_burningTimer;		// how long since we were last burning
 	float m_forwardScale;
@@ -497,6 +505,34 @@ inline void NextBotPlayer< PlayerType >::ReleaseRunButton( void )
 {
 	return NextBotPlayer<PlayerType>::ReleaseWalkButton();
 }
+
+template < typename PlayerType >
+inline void NextBotPlayer< PlayerType >::PressLeanLeftButton( float duration )
+{
+	m_inputButtons |= IN_LEAN_LEFT;
+	m_leanLeftButtonTimer.Start( duration );
+}
+
+template < typename PlayerType >
+inline void NextBotPlayer< PlayerType >::ReleaseLeanLeftButton( void )
+{
+	m_inputButtons &= ~IN_LEAN_LEFT;
+	m_leanLeftButtonTimer.Invalidate();
+}
+
+template < typename PlayerType >
+inline void NextBotPlayer< PlayerType >::PressLeanRightButton( float duration )
+{
+	m_inputButtons |= IN_LEAN_RIGHT;
+	m_leanRightButtonTimer.Start( duration );
+}
+
+template < typename PlayerType >
+inline void NextBotPlayer< PlayerType >::ReleaseLeanRightButton( void )
+{
+	m_inputButtons &= ~IN_LEAN_RIGHT;
+	m_leanRightButtonTimer.Invalidate();
+}
 #endif // NEO
 
 template < typename PlayerType >
@@ -607,6 +643,8 @@ inline void NextBotPlayer< PlayerType >::Spawn( void )
 	m_burningTimer.Invalidate();
 #ifdef NEO
 	m_thermopticButtonTimer.Invalidate();
+	m_leanLeftButtonTimer.Invalidate();
+	m_leanRightButtonTimer.Invalidate();
 #endif // NEO
 
 	// reset first, because Spawn() may access various interfaces
@@ -740,6 +778,14 @@ inline void NextBotPlayer< PlayerType >::PhysicsSimulate( void )
 
 		if ( !m_walkButtonTimer.IsElapsed() )
 			m_inputButtons |= IN_SPEED;
+
+#ifdef NEO
+		if ( !m_leanLeftButtonTimer.IsElapsed() )
+			m_inputButtons |= IN_LEAN_LEFT;
+
+		if ( !m_leanRightButtonTimer.IsElapsed() )
+			m_inputButtons |= IN_LEAN_RIGHT;
+#endif
 
 		m_prevInputButtons = m_inputButtons;
 		inputButtons = m_inputButtons;
