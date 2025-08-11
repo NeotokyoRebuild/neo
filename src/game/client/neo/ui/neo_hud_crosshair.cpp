@@ -8,7 +8,7 @@
 #include "ui/neo_root.h"
 #include "view.h"
 
-ConVar cl_neo_crosshair("cl_neo_crosshair", CL_NEO_CROSSHAIR_DEFAULT, FCVAR_ARCHIVE | FCVAR_USERINFO | FCVAR_HIDDEN, "Serialized crosshair setting");
+ConVar cl_neo_crosshair("cl_neo_crosshair", CL_NEO_CROSSHAIR_DEFAULT, FCVAR_ARCHIVE | FCVAR_USERINFO, "Serialized crosshair setting");
 ConVar cl_neo_crosshair_network("cl_neo_crosshair_network", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL, "Network crosshair - 0 = disable, 1 = show other players' crosshairs", true, 0.0f, true, 1.0f);
 
 static const char *INTERNAL_CROSSHAIR_FILES[CROSSHAIR_STYLE__TOTAL] = { "vgui/hud/crosshair", "vgui/hud/crosshair_b", "" };
@@ -146,6 +146,7 @@ enum NeoXHairSerial
 {
 	NEOXHAIR_SERIAL_PREALPHA_V8_2 = 1,
 	NEOXHAIR_SERIAL_ALPHA_V17,
+	NEOXHAIR_SERIAL_ALPHA_V18,
 
 	NEOXHAIR_SERIAL__LATESTPLUSONE,
 	NEOXHAIR_SERIAL_CURRENT = NEOXHAIR_SERIAL__LATESTPLUSONE - 1,
@@ -242,7 +243,7 @@ bool ImportCrosshair(CrosshairInfo *crh, const char *pszSequence)
 	crh->iCircleRad = vars[NEOXHAIR_SEGMENT_I_CIRCLERAD].iVal;
 	crh->iCircleSegments = vars[NEOXHAIR_SEGMENT_I_CIRCLESEGMENTS].iVal;
 	
-	crh->iEDynamicType = vars[NEOXHAIR_SEGMENT_I_VERSION].iVal >= NEOXHAIR_SERIAL_ALPHA_V17 ? vars[NEOXHAIR_SEGMENT_I_DYNAMICTYPE].iVal : 0;
+	crh->iEDynamicType = vars[NEOXHAIR_SEGMENT_I_VERSION].iVal >= NEOXHAIR_SERIAL_ALPHA_V18 ? vars[NEOXHAIR_SEGMENT_I_DYNAMICTYPE].iVal : 0;
 
 	return true;
 }

@@ -61,15 +61,14 @@ void CVGlobal_NeoClCrosshair(IConVar *var, [[maybe_unused]] const char *pOldStri
 	}
 }
 
-CHudCrosshair* g_pCHudCrosshair = nullptr;
-void cl_neo_crosshair_hip_fire_callback([[maybe_unused]] IConVar* var, [[maybe_unused]] const char* pOldString, float flOldValue)
-{
-	if (g_pCHudCrosshair)
-	{
-		g_pCHudCrosshair->SetHiddenBits(HIDEHUD_PLAYERDEAD | (flOldValue ? HIDEHUD_CROSSHAIR : 0));
-	}
-}
-ConVar cl_neo_crosshair_hip_fire("cl_neo_crosshair_hip_fire", "0", FCVAR_ARCHIVE, "Show the crosshair when not aiming", true, 0, true, 1, cl_neo_crosshair_hip_fire_callback);
+CHudCrosshair* g_pCHudCrosshair;
+ConVar cl_neo_crosshair_hip_fire("cl_neo_crosshair_hip_fire", "0", FCVAR_ARCHIVE, "Show the crosshair when not aiming", true, 0, true, 1,
+	[]([[maybe_unused]] IConVar* var, [[maybe_unused]] const char* pOldString, [[maybe_unused]] float flOldValue)->void{
+		if (g_pCHudCrosshair)
+		{
+			g_pCHudCrosshair->SetHiddenBits(HIDEHUD_PLAYERDEAD | (cl_neo_crosshair_hip_fire.GetBool() ? 0 : HIDEHUD_CROSSHAIR));
+		}
+	});
 ConVar cl_neo_crosshair_scope_inaccuracy("cl_neo_crosshair_scope_inaccuracy", "1", FCVAR_ARCHIVE, "Show the player's inaccuracy when scoped", true, 0, true, 1);
 #endif
 
@@ -414,7 +413,7 @@ void CHudCrosshair::Paint( void )
 
 	// NEO TODO (nullsystem): Probably be better if the entire class refreshed to our own
 	// thing and can do away with that CHudTexture nonsense entirely
-	const bool bIsScoped = pWeapon && pWeapon->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON;
+	const bool bIsScopedWep = pWeapon && pWeapon->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON;
 
 	bool bThisFrameRefreshCrosshair = m_bRefreshCrosshair;
 	auto *pNeoPlayer = static_cast<C_NEO_Player *>(pPlayer);
@@ -474,7 +473,7 @@ void CHudCrosshair::Paint( void )
 		UTIL_TraceLine(pPlayer->Weapon_ShootPosition(), pPlayer->Weapon_ShootPosition() + pPlayer->GetAutoaimVector(0) * IFF_TRACELINE_LENGTH, MASK_SHOT_HULL, &iffTraceFilter, &iffTrace);
 	}
 
-	if (bIsScoped && pPlayer->m_bInAim)
+	if (bIsScopedWep && pPlayer->m_bInAim)
 	{
 		m_pCrosshair->DrawSelfCropped (
 			iX-(iWidth/2), iY-(iHeight/2),
@@ -488,25 +487,29 @@ void CHudCrosshair::Paint( void )
 #endif
 		);
 
-		if (cl_neo_crosshair_scope_inaccuracy.GetBool())
+		const bool isSRS = pWeapon->GetNeoWepBits() & NEO_WEP_SRS;
+		if (!isSRS || pWeapon->GetRoundChambered())
 		{
-			const int size = pWeapon ? HalfInaccuracyConeInScreenPixels(pPlayer, pWeapon, m_iHalfScreenWidth) : 0;
-			if (size)
+			if (cl_neo_crosshair_scope_inaccuracy.GetBool())
 			{
-				surface()->DrawSetTexture(m_hCrosshairLight);
-				surface()->DrawSetColor(COLOR_FADED_WHITE);
-				surface()->DrawTexturedRect(
-					x - size - m_iCrosshairLightWidth,
-					y - size - m_iCrosshairLightHeight,
-					x - size + m_iCrosshairLightWidth,
-					y - size + m_iCrosshairLightHeight
-				);
-				surface()->DrawTexturedRect(
-					x + size - m_iCrosshairLightWidth,
-					y + size - m_iCrosshairLightHeight,
-					x + size + m_iCrosshairLightWidth,
-					y + size + m_iCrosshairLightHeight
-				);
+				const int size = pWeapon ? HalfInaccuracyConeInScreenPixels(pPlayer, pWeapon, m_iHalfScreenWidth) : 0;
+				if (size)
+				{
+					surface()->DrawSetTexture(m_hCrosshairLight);
+					surface()->DrawSetColor(COLOR_FADED_WHITE);
+					surface()->DrawTexturedRect(
+						x - size - m_iCrosshairLightWidth,
+						y - size - m_iCrosshairLightHeight,
+						x - size + m_iCrosshairLightWidth,
+						y - size + m_iCrosshairLightHeight
+					);
+					surface()->DrawTexturedRect(
+						x + size - m_iCrosshairLightWidth,
+						y + size - m_iCrosshairLightHeight,
+						x + size + m_iCrosshairLightWidth,
+						y + size + m_iCrosshairLightHeight
+					);
+				}
 			}
 		}
 	}
@@ -535,7 +538,7 @@ void CHudCrosshair::Paint( void )
 		PaintCrosshair(*pCrosshairInfo, HalfInaccuracyConeInScreenPixels(pPlayer, pWeapon, m_iHalfScreenWidth), iX, iY);
 	}
 
-	if (bIsScoped && pPlayer->m_bInAim)
+	if (bIsScopedWep && pPlayer->m_bInAim)
 	{
 		int screenWidth, screenHeight;
 		GetHudSize(screenWidth, screenHeight);
