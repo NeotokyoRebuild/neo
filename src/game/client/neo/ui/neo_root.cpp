@@ -592,6 +592,7 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	{
 		g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
 		const int iFlagToMatch = IsInGame() ? FLAG_SHOWINGAME : FLAG_SHOWINMAIN;
+		bool mouseOverButton = false;
 		for (int i = 0; i < BTNS_TOTAL; ++i)
 		{
 			const auto btnInfo = BTNS_INFO[i];
@@ -627,13 +628,20 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 						}
 					}
 				}
-				if (retBtn.bMouseHover && i != m_iHoverBtn)
+				if (retBtn.bMouseHover)
 				{
-					// Sound rollover feedback
-					surface()->PlaySound("ui/buttonrollover.wav");
-					m_iHoverBtn = i;
+					mouseOverButton = true;
+					if (i != m_iHoverBtn && param.eMode == NeoUI::MODE_MOUSEMOVED)
+					{ // Sound rollover feedback
+						surface()->PlaySound("ui/buttonrollover.wav");
+						m_iHoverBtn = i;
+					}
 				}
 			}
+		}
+		if (!mouseOverButton && m_iHoverBtn < BTNS_TOTAL && param.eMode == NeoUI::MODE_MOUSEMOVED)
+		{
+			m_iHoverBtn = -1;
 		}
 	}
 	NeoUI::EndSection();
@@ -828,11 +836,17 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 		engine->ClientCmd("neo_mp3");
 
 	}
-	if (musicPlayerBtn.bMouseHover && SMBTN_MP3 != m_iHoverBtn)
+	if (param.eMode == NeoUI::MODE_MOUSEMOVED)
 	{
-		// Sound rollover feedback
-		surface()->PlaySound("ui/buttonrollover.wav");
-		m_iHoverBtn = SMBTN_MP3;
+		if (musicPlayerBtn.bMouseHover && SMBTN_MP3 != m_iHoverBtn)
+		{ // Sound rollover feedback
+			surface()->PlaySound("ui/buttonrollover.wav");
+			m_iHoverBtn = SMBTN_MP3;
+		}
+		else if (!musicPlayerBtn.bMouseHover && SMBTN_MP3 == m_iHoverBtn)
+		{
+			m_iHoverBtn = -1;
+		}
 	}
 	
 	NeoUI::EndSection();

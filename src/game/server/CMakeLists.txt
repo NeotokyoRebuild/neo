@@ -1380,6 +1380,8 @@ target_sources_grouped(
     neo/neo_npc_targetsystem.cpp
     neo/neo_player.cpp
     neo/neo_player.h
+    neo/neo_smokelineofsightblocker.cpp
+    neo/neo_smokelineofsightblocker.h
     neo/neo_smokegrenade.cpp
     neo/neo_smokegrenade.h
     neo/neo_te_tocflash.cpp
@@ -1398,6 +1400,7 @@ target_sources_grouped(
     neo/bot/neo_bot.h
     neo/bot/neo_bot_body.cpp
     neo/bot/neo_bot_body.h
+    neo/bot/neo_bot_contextual_query_interface.h
     neo/bot/neo_bot_locomotion.cpp
     neo/bot/neo_bot_locomotion.h
     neo/bot/neo_bot_manager.cpp
@@ -1548,7 +1551,7 @@ target_sources_grouped(
     #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_ar2.h
     #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_crossbow.cpp
     #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_crowbar.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_frag.cpp
+    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_frag.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbase.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbase.h
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbase_machinegun.cpp

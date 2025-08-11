@@ -53,6 +53,7 @@ struct NeoSettings
 		int iLeanAutomatic;
 		bool bShowSquadList;
 		bool bShowPlayerSprays;
+		bool bShowHints;
 		bool bShowPos;
 		int iShowFps;
 		int iDlFilter;
@@ -191,6 +192,7 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_crosshair_hip_fire);
 		CONVARREF_DEF(cl_neo_squad_hud_original);
 		CONVARREF_DEF(cl_neo_hud_extended_killfeed);
+		CONVARREF_DEF(cl_neo_showhints);
 		CONVARREF_DEF(cl_showpos);
 		CONVARREF_DEF(cl_showfps);
 		CONVARREF_DEF(hud_fastswitch);

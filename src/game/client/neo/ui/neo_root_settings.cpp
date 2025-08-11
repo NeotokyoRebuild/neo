@@ -263,6 +263,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->bHipFireCrosshair = cvr->cl_neo_crosshair_hip_fire.GetBool();
 		pGeneral->bShowSquadList = cvr->cl_neo_squad_hud_original.GetBool();
 		pGeneral->bShowPlayerSprays = !(cvr->cl_spraydisable.GetBool()); // Inverse
+		pGeneral->bShowHints = cvr->cl_neo_showhints.GetBool();
 		pGeneral->bShowPos = cvr->cl_showpos.GetBool();
 		pGeneral->iShowFps = cvr->cl_showfps.GetInt();
 		{
@@ -493,6 +494,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_neo_crosshair_hip_fire.SetValue(pGeneral->bHipFireCrosshair);
 		cvr->cl_neo_squad_hud_original.SetValue(pGeneral->bShowSquadList);
 		cvr->cl_spraydisable.SetValue(!pGeneral->bShowPlayerSprays); // Inverse
+		cvr->cl_neo_showhints.SetValue(pGeneral->bShowHints);
 		cvr->cl_showpos.SetValue(pGeneral->bShowPos);
 		cvr->cl_showfps.SetValue(pGeneral->iShowFps);
 		cvr->cl_downloadfilter.SetValue(DLFILTER_STRMAP[pGeneral->iDlFilter]);
@@ -693,6 +695,7 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBoxBool(L"Inaccuracy in scope", &pGeneral->bInaccuracyInScope);
 	NeoUI::RingBoxBool(L"Hip fire crosshair", &pGeneral->bHipFireCrosshair);
 	NeoUI::RingBoxBool(L"Classic squad list", &pGeneral->bShowSquadList);
+	NeoUI::RingBoxBool(L"Show hints", &pGeneral->bShowHints);
 	NeoUI::RingBoxBool(L"Show position", &pGeneral->bShowPos);
 	NeoUI::RingBox(L"Show FPS", SHOWFPS_LABELS, ARRAYSIZE(SHOWFPS_LABELS), &pGeneral->iShowFps);
 	NeoUI::RingBoxBool(L"Show rangefinder", &pGeneral->bEnableRangeFinder);
