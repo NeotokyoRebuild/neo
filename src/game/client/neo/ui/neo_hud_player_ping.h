@@ -22,7 +22,7 @@ class CNEOHud_PlayerPing : public CNEOHud_ChildElement, public CHudElement, publ
 public:
 	CNEOHud_PlayerPing(const char *pElementName, vgui::Panel *parent = nullptr);
 
-	void Init(void);
+	virtual void Init(void) override;
 	virtual void ApplySchemeSettings(vgui::IScheme *pScheme) override;
 	virtual void Paint() override;
 	virtual void UpdateStateForNeoHudElementDraw() override;
@@ -32,12 +32,12 @@ public:
 
 	void HideAllPings();
 protected:
-	virtual void FireGameEvent(IGameEvent* event);
+	virtual void FireGameEvent(IGameEvent* event) override;
 
 private:
 	int GetStringPixelWidth(wchar_t* pString, vgui::HFont hFont);
-	void UpdateDistanceToPlayer(C_BasePlayer* player, int pingIndex);
-	void SetPos(const int index, Vector& pos, bool ghosterPing);
+	void UpdateDistanceToPlayer(C_BasePlayer* player, const int pingIndex);
+	void SetPos(const int index, const Vector& pos, bool ghosterPing);
 	void NotifyPing(C_NEO_Player* pPlayer = nullptr);
 
 private:

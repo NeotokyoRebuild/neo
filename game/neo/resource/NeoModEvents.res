@@ -83,7 +83,7 @@
 	
 	"player_ping"
 	{
-		"playerindex"	"byte"		// entindex of the player
+		"userid"		"short"   	// userID of player who pinged
 		"pingx"			"short"		// ping x position
 		"pingy"			"short"		// ping y position
 		"pingz"			"short"		// ping z position

@@ -14,19 +14,22 @@
 
 #include "ienginevgui.h"
 
+// memdbgon must be the last include file in a .cpp file!!!
+#include "tier0/memdbgon.h"
+
 DECLARE_NAMED_HUDELEMENT(CNEOHud_PlayerPing, NHudPlayerPing);
 
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(PlayerPing, 0.05) // distances to pings and thus ping offset update at 20Hz looks nice enough
 
 CNEOHud_PlayerPing* playerPingHudElement;
-static void clNeoPlayerPingsCallback(IConVar* var, const char* pOldValue, float flOldValue)
-{
-	if (flOldValue && playerPingHudElement)
-	{
-		playerPingHudElement->HideAllPings();
-	}
-}
-ConVar cl_neo_player_pings("cl_neo_player_pings", "1", FCVAR_ARCHIVE | FCVAR_USERINFO, "Show player pings.", true, 0, true, 1, clNeoPlayerPingsCallback);
+
+ConVar cl_neo_player_pings("cl_neo_player_pings", "1", FCVAR_ARCHIVE | FCVAR_USERINFO, "Show player pings.", true, 0, true, 1, 
+	[](IConVar* var [[maybe_unused]], const char* pOldValue [[maybe_unused]], float flOldValue [[maybe_unused]])->void {
+		if (!cl_neo_player_pings.GetBool())
+		{
+			playerPingHudElement->HideAllPings();
+		}
+	});
 
 CNEOHud_PlayerPing::CNEOHud_PlayerPing(const char* pElementName, vgui::Panel* parent)
 	: CHudElement(pElementName), Panel(parent, pElementName)
@@ -75,23 +78,23 @@ void CNEOHud_PlayerPing::ApplySchemeSettings(vgui::IScheme *pScheme)
 
 void CNEOHud_PlayerPing::UpdateStateForNeoHudElementDraw()
 {
-	auto *player = C_NEO_Player::GetLocalNEOPlayer();
-	if (!player) return;
+	auto *localPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if (!localPlayer) return;
 
-	const int playerTeam = player->GetTeamNumber();
+	const int playerTeam = localPlayer->GetTeamNumber();
 	if (playerTeam != TEAM_JINRAI && playerTeam != TEAM_NSF)
 	{
 		return;
 	}
 
-	for (int i = 0; i < gpGlobals->maxClients; i++)
+	for (int playerSlot = 0; playerSlot < gpGlobals->maxClients; playerSlot++)
 	{
-		if (gpGlobals->curtime >= m_iPlayerPings[i].deathTime || m_iPlayerPings[i].team != playerTeam)
+		if (gpGlobals->curtime >= m_iPlayerPings[playerSlot].deathTime || m_iPlayerPings[playerSlot].team != playerTeam)
 		{
 			continue;
 		}
 
-		UpdateDistanceToPlayer(player, i);
+		UpdateDistanceToPlayer(localPlayer, playerSlot);
 	}
 }
 
@@ -118,15 +121,22 @@ void CNEOHud_PlayerPing::FireGameEvent(IGameEvent* event)
 			return;
 		}
 
-		int playerIndex = event->GetInt("playerindex");
+		const int userID = event->GetInt("userid");
+		CBasePlayer* player = UTIL_PlayerByUserId(userID);
+		if (!player)
+		{
+			return;
+		}
+
+		const int playerIndex = player->entindex();
 		if (GetClientVoiceMgr()->IsPlayerBlocked(playerIndex))
 		{
 			return;
 		}
-		
-		Vector worldpos = Vector(event->GetInt("pingx"), event->GetInt("pingy"), event->GetInt("pingz"));
+
+		const Vector worldpos = Vector(event->GetInt("pingx"), event->GetInt("pingy"), event->GetInt("pingz"));
 		bool ghosterPing = event->GetBool("ghosterping");
-		SetPos(playerIndex, worldpos, ghosterPing);
+		SetPos(playerIndex - 1, worldpos, ghosterPing);
 	}
 	else if (!Q_stricmp(eventName, "round_start"))
 	{
@@ -145,10 +155,7 @@ void CNEOHud_PlayerPing::FireGameEvent(IGameEvent* event)
 
 void CNEOHud_PlayerPing::LevelShutdown(void)
 {
-	for (int i = 0; i < MAX_PLAYERS; i++)
-	{
-		m_iPlayerPings[i].deathTime = 0;
-	}
+	HideAllPings();
 }
 
 void CNEOHud_PlayerPing::DrawNeoHudElement()
@@ -267,38 +274,37 @@ int CNEOHud_PlayerPing::GetStringPixelWidth(wchar_t* pString, vgui::HFont hFont)
 
 void CNEOHud_PlayerPing::HideAllPings()
 {
-	for (int i = 0; i < MAX_PLAYERS; i++)
+	for (int i = 0; i < ARRAYSIZE(m_iPlayerPings); i++)
 	{
 		m_iPlayerPings[i].deathTime = 0;
 	}
 }
 
-void CNEOHud_PlayerPing::UpdateDistanceToPlayer(C_BasePlayer* player, int pingIndex)
+void CNEOHud_PlayerPing::UpdateDistanceToPlayer(C_BasePlayer* player, const int playerSlot)
 {
-	m_iPlayerPings[pingIndex].distance = METERS_PER_INCH * player->GetAbsOrigin().DistTo(m_iPlayerPings[pingIndex].worldPos);
+	m_iPlayerPings[playerSlot].distance = METERS_PER_INCH * player->GetAbsOrigin().DistTo(m_iPlayerPings[playerSlot].worldPos);
 
 	constexpr float MAX_Y_DISTANCE_OFFSET_RATIO = 1.f / 8;
-	m_iPlayerPings[pingIndex].distanceYOffset = min(m_iPosY * MAX_Y_DISTANCE_OFFSET_RATIO, m_iPlayerPings[pingIndex].distance * 2 * (m_iPosY / 480));
+	m_iPlayerPings[playerSlot].distanceYOffset = min(m_iPosY * MAX_Y_DISTANCE_OFFSET_RATIO, m_iPlayerPings[playerSlot].distance * 2 * (m_iPosY / 480));
 
 	trace_t tr;
-	UTIL_TraceLine(player->EyePosition(), m_iPlayerPings[pingIndex].worldPos, MASK_VISIBLE_AND_NPCS, player, COLLISION_GROUP_NONE, &tr);
-	m_iPlayerPings[pingIndex].noLineOfSight = tr.fraction < 0.999;
+	UTIL_TraceLine(player->EyePosition(), m_iPlayerPings[playerSlot].worldPos, MASK_VISIBLE_AND_NPCS, player, COLLISION_GROUP_NONE, &tr);
+	m_iPlayerPings[playerSlot].noLineOfSight = tr.fraction < 0.999;
 }
 
-void CNEOHud_PlayerPing::SetPos(const int index, Vector& pos, bool ghosterPing) {
+void CNEOHud_PlayerPing::SetPos(const int playerSlot, const Vector& pos, bool ghosterPing) {
 	constexpr float PLAYER_PING_LIFETIME = 8;
 	auto localPlayer = UTIL_PlayerByIndex(GetLocalPlayerIndex());
 	if (!localPlayer) { return; }
-	auto pingPlayer = static_cast<C_NEO_Player*>(UTIL_PlayerByIndex(index));
+	auto pingPlayer = static_cast<C_NEO_Player*>(UTIL_PlayerByIndex(playerSlot + 1));
 	if (!pingPlayer) { return; }
 
-	const int pingIndex = index - 1;
-	m_iPlayerPings[pingIndex].worldPos = pos;
-	m_iPlayerPings[pingIndex].deathTime = gpGlobals->curtime + PLAYER_PING_LIFETIME;
-	m_iPlayerPings[pingIndex].team = pingPlayer->GetTeamNumber();
-	m_iPlayerPings[pingIndex].ghosterPing = ghosterPing;
+	m_iPlayerPings[playerSlot].worldPos = pos;
+	m_iPlayerPings[playerSlot].deathTime = gpGlobals->curtime + PLAYER_PING_LIFETIME;
+	m_iPlayerPings[playerSlot].team = pingPlayer->GetTeamNumber();
+	m_iPlayerPings[playerSlot].ghosterPing = ghosterPing;
 
-	UpdateDistanceToPlayer(localPlayer, pingIndex);
+	UpdateDistanceToPlayer(localPlayer, playerSlot);
 	NotifyPing(pingPlayer);
 }
 
