@@ -294,7 +294,7 @@ void CNEOHud_PlayerPing::UpdateDistanceToPlayer(C_BasePlayer* player, const int 
 
 void CNEOHud_PlayerPing::SetPos(const int playerSlot, const Vector& pos, bool ghosterPing) {
 	constexpr float PLAYER_PING_LIFETIME = 8;
-	auto localPlayer = UTIL_PlayerByIndex(GetLocalPlayerIndex());
+	auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	if (!localPlayer) { return; }
 	auto pingPlayer = static_cast<C_NEO_Player*>(UTIL_PlayerByIndex(playerSlot + 1));
 	if (!pingPlayer) { return; }
