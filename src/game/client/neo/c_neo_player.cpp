@@ -324,7 +324,7 @@ public:
 			return;
 		}
 
-		if (command.ArgC() > 1 && !command.FindArg("skipTeamCheck"))
+		if (!command.FindArg("skipTeamCheck"))
 		{ // A smarter way to do this might be to assign the buttons for class and weapons menu to unique commands that check the current team and call this commandcallback
 			auto team = GetLocalPlayerTeam();
 			if(team < FIRST_GAME_TEAM)
@@ -920,12 +920,7 @@ void C_NEO_Player::CalculateSpeed(void)
 
 	if (GetFlags() & FL_DUCKING)
 	{
-		speed *= NEO_CROUCH_WALK_MODIFIER;
-	}
-
-	if (m_nButtons & IN_WALK)
-	{
-		speed *= NEO_CROUCH_WALK_MODIFIER; // They stack
+		speed *= NEO_CROUCH_MODIFIER;
 	}
 
 	if (IsSprinting())
@@ -951,11 +946,16 @@ void C_NEO_Player::CalculateSpeed(void)
 		speed *= NEO_AIM_MODIFIER;
 	}
 
+	if (m_nButtons & IN_WALK)
+	{
+		speed = MIN(GetFlags() & FL_DUCKING ? NEO_CROUCH_WALK_SPEED : NEO_WALK_SPEED, speed);
+	}
+
 	Vector absoluteVelocity = GetAbsVelocity();
 	absoluteVelocity.z = 0.f;
 	float currentSpeed = absoluteVelocity.Length();
 
-	if (!neo_ghost_bhopping.GetBool() && GetMoveType() != MOVETYPE_LADDER && currentSpeed > speed && m_bCarryingGhost)
+	if (!neo_ghost_bhopping.GetBool() && GetMoveType() == MOVETYPE_WALK && currentSpeed > speed && m_bCarryingGhost)
 	{
 		float overSpeed = currentSpeed - speed;
 		absoluteVelocity.NormalizeInPlace();
@@ -1022,7 +1022,7 @@ void C_NEO_Player::HandleSpeedChangesLegacy()
 			{
 				StopWalking();
 			}
-			else if( !IsWalking() && !IsSprinting() && (m_afButtonPressed & IN_WALK) && !(m_nButtons & IN_DUCK) )
+			else if( !IsWalking() && !IsSprinting() && (m_afButtonPressed & IN_WALK) )
 			{
 				StartWalking();
 			}
@@ -1706,7 +1706,7 @@ float C_NEO_Player::GetCrouchSpeed(void) const
 	case NEO_CLASS_VIP:
 		return NEO_VIP_CROUCH_SPEED;
 	default:
-		return (NEO_BASE_SPEED * NEO_CROUCH_WALK_MODIFIER);
+		return (NEO_BASE_SPEED * NEO_CROUCH_MODIFIER);
 	}
 }
 

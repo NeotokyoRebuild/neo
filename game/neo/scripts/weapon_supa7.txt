@@ -77,7 +77,7 @@ WeaponData
 	// Sounds for the weapon. There is a max of 16 sounds per category (i.e. max 16 "single_shot" sounds)
 	SoundData
 	{
-		"reload"			"weapon_murata.reload"
+		//"reload"			"weapon_murata.reload"
 		"reload_npc"		"weapon_murata.npc_reload"
 		"empty"				"weapon_murata.empty"
 		"single_shot"	    "weapon_murata.Single"

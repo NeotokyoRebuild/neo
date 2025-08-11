@@ -120,12 +120,23 @@ public:
 
 	virtual void PressJumpButton( float duration = -1.0f ) = 0;
 	virtual void ReleaseJumpButton( void ) = 0;
+	
+#ifdef NEO
+	virtual void PressThermopticButton( float duration = -1.0f ) = 0;
+	virtual void ReleaseThermopticButton( void ) = 0;
+#endif // NEO
 
 	virtual void PressCrouchButton( float duration = -1.0f ) = 0;
 	virtual void ReleaseCrouchButton( void ) = 0;
 
 	virtual void PressWalkButton( float duration = -1.0f ) = 0;
 	virtual void ReleaseWalkButton( void ) = 0;
+
+#ifdef NEO
+	// This is just an "alias" to PressWalkButton
+	virtual void PressRunButton( float duration = -1.0f ) = 0;
+	virtual void ReleaseRunButton( void ) = 0;
+#endif // NEO
 
 	virtual void SetButtonScale( float forward, float right ) = 0;
 };
@@ -190,6 +201,11 @@ public:
 	virtual void PressSpecialFireButton( float duration = -1.0f );
 	virtual void ReleaseSpecialFireButton( void );
 
+#ifdef NEO
+	virtual void PressThermopticButton( float duration = -1.0f );
+	virtual void ReleaseThermopticButton( void );
+#endif
+
 	virtual void PressUseButton( float duration = -1.0f );
 	virtual void ReleaseUseButton( void );
 
@@ -216,6 +232,12 @@ public:
 
 	virtual void PressWalkButton( float duration = -1.0f );
 	virtual void ReleaseWalkButton( void );
+
+#ifdef NEO
+	// This is just an "alias" to PressWalkButton
+	virtual void PressRunButton( float duration = -1.0f );
+	virtual void ReleaseRunButton( void );
+#endif // NEO
 
 	virtual void SetButtonScale( float forward, float right );
 
@@ -257,6 +279,9 @@ protected:
 	CountdownTimer m_crouchButtonTimer;
 	CountdownTimer m_walkButtonTimer;
 	CountdownTimer m_buttonScaleTimer;
+#ifdef NEO
+	CountdownTimer m_thermopticButtonTimer;
+#endif
 	IntervalTimer m_burningTimer;		// how long since we were last burning
 	float m_forwardScale;
 	float m_rightScale;
@@ -400,6 +425,11 @@ inline void NextBotPlayer< PlayerType >::ReleaseReloadButton( void )
 template < typename PlayerType >
 inline void NextBotPlayer< PlayerType >::PressJumpButton( float duration )
 {
+#ifdef NEO
+	// NEO JANK workaround to allow bots to crouch while attempting to preserve crouch jumping
+	ReleaseCrouchButton();
+	// code change coordinated with disabled ground crouch cancel in CNEOBotLocomotion::Update
+#endif
 	m_inputButtons |= IN_JUMP;
 	m_jumpButtonTimer.Start( duration );
 }
@@ -410,6 +440,22 @@ inline void NextBotPlayer< PlayerType >::ReleaseJumpButton( void )
 	m_inputButtons &= ~IN_JUMP;
 	m_jumpButtonTimer.Invalidate();
 }
+
+#ifdef NEO
+template < typename PlayerType >
+inline void NextBotPlayer< PlayerType >::PressThermopticButton( float duration )
+{
+	m_inputButtons |= IN_THERMOPTIC;
+	m_thermopticButtonTimer.Start( duration );
+}
+
+template < typename PlayerType >
+inline void NextBotPlayer< PlayerType >::ReleaseThermopticButton( void )
+{
+	m_inputButtons &= ~IN_THERMOPTIC;
+	m_thermopticButtonTimer.Invalidate();
+}
+#endif
 
 template < typename PlayerType >
 inline void NextBotPlayer< PlayerType >::PressCrouchButton( float duration )
@@ -438,6 +484,20 @@ inline void NextBotPlayer< PlayerType >::ReleaseWalkButton( void )
 	m_inputButtons &= ~IN_SPEED;
 	m_walkButtonTimer.Invalidate();
 }
+
+#ifdef NEO
+template < typename PlayerType >
+inline void NextBotPlayer< PlayerType >::PressRunButton( float duration )
+{
+	return NextBotPlayer<PlayerType>::PressWalkButton(duration);
+}
+
+template < typename PlayerType >
+inline void NextBotPlayer< PlayerType >::ReleaseRunButton( void )
+{
+	return NextBotPlayer<PlayerType>::ReleaseWalkButton();
+}
+#endif // NEO
 
 template < typename PlayerType >
 inline void NextBotPlayer< PlayerType >::PressForwardButton( float duration )
@@ -545,6 +605,9 @@ inline void NextBotPlayer< PlayerType >::Spawn( void )
 	m_buttonScaleTimer.Invalidate();
 	m_forwardScale = m_rightScale = 0.04;
 	m_burningTimer.Invalidate();
+#ifdef NEO
+	m_thermopticButtonTimer.Invalidate();
+#endif
 
 	// reset first, because Spawn() may access various interfaces
 	INextBot::Reset();

@@ -1990,7 +1990,10 @@ void CHLClient::LevelInitPostEntity( )
 	internalCenterPrint->Clear();
 
 #ifdef NEO
-	g_pNeoLoading->m_wszLoadingMap[0] = L'\0';
+	if (g_pNeoLoading)
+	{
+		g_pNeoLoading->m_wszLoadingMap[0] = L'\0';
+	}
 #endif
 }
 
