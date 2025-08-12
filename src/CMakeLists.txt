@@ -677,7 +677,7 @@ if(NEO_EXTRA_ASSETS)
     endif()
 endif()
 
-if(NEO_BUILD_UTILS AND OS_WINDOWS)
+if(NEO_BUILD_UTILS)
     add_subdirectory(fgdlib)
     add_subdirectory(utils)
 endif()

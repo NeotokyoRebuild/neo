@@ -1241,7 +1241,7 @@ int RunVBSP( int argc, char **argv )
 
 		DeleteCmdLine( argc, argv );
 		CmdLib_Cleanup();
-		CmdLib_Exit( 1 );
+		CmdLib_Exit( EXIT_FAILURE );
 	}
 
 	// Sanity check
@@ -1252,7 +1252,7 @@ int RunVBSP( int argc, char **argv )
 		         "Use the bspzip utility to update embedded files.\n" );
 		DeleteCmdLine( argc, argv );
 		CmdLib_Cleanup();
-		CmdLib_Exit( 1 );
+		CmdLib_Exit( EXIT_FAILURE );
 	}
 
 	start = Plat_FloatTime();
