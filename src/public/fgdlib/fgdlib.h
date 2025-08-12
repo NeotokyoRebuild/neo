@@ -12,7 +12,7 @@
 
 #include "helperinfo.h"
 #include "gamedata.h"
-#include "GDClass.h"
-#include "InputOutput.h"
+#include "gdclass.h"
+#include "inputoutput.h"
 
 #endif // FGDLIB_H

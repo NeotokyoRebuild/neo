@@ -9,16 +9,20 @@ target_include_directories(fgdlib
     ${CMAKE_SOURCE_DIR}/utils/common
 )
 
-target_compile_options(fgdlib
-    PRIVATE
-    /wd4091
-    /wd4316
-    /wd4355
-    /wd4577
-    /wd5033
-    /wd5054
-    /wd5055
-)
+if(OS_WINDOWS)
+    target_compile_options(fgdlib
+        PRIVATE
+        /wd4091
+        /wd4316
+        /wd4355
+        /wd4577
+        /wd5033
+        /wd5054
+        /wd5055
+    )
+elseif(OS_LINUX)
+
+endif()
 
 target_link_libraries(fgdlib
     PRIVATE

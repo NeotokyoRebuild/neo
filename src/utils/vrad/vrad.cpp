@@ -2925,7 +2925,7 @@ int RunVRAD( int argc, char **argv )
 	{
 		PrintUsage( argc, argv );
 		DeleteCmdLine( argc, argv );
-		CmdLib_Exit( 1 );
+		CmdLib_Exit( EXIT_FAILURE );
 	}
 
 	// Initialize the filesystem, so additional commandline options can be loaded

@@ -1,3 +1,6 @@
+#add_compile_options(-fsanitize=address)
+#add_link_options(-fsanitize=address)
+
 add_executable(vbsp)
 
 target_include_directories(vbsp
@@ -13,18 +16,18 @@ target_compile_definitions(vbsp
     PROTECTED_THINGS_DISABLE
 )
 
-target_compile_options(vbsp
-    PRIVATE
-    /wd4091
-    /wd4316
-    /wd4355
-    /wd4577
-    /wd5033
-    /wd5054
-    /wd5055
-)
-
 if(OS_WINDOWS)
+    target_compile_options(vbsp
+        PRIVATE
+        /wd4091
+        /wd4316
+        /wd4355
+        /wd4577
+        /wd5033
+        /wd5054
+        /wd5055
+    )
+
     target_link_libraries(vbsp
         PRIVATE
         ws2_32.lib
@@ -32,15 +35,43 @@ if(OS_WINDOWS)
         odbccp32.lib
         winmm.lib
     )
+elseif(OS_LINUX)
+    target_compile_definitions(vbsp
+        PRIVATE
+        #GL_GLEXT_PROTOTYPES
+        #DX_TO_GL_ABSTRACTION
+        USE_SDL
+        ALLOW_NOSHADERAPI
+    )
+
+    # target_compile_options(vbsp
+    #     PRIVATE
+    #     -gdwarf-4
+    # )
+
+    # set_target_properties(vbsp PROPERTIES
+    #     #BUILD_RPATH "$ORIGIN"
+    #     #BUILD_RPATH_USE_ORIGIN TRUE
+
+    #     #BUILD_WITH_INSTALL_RPATH TRUE
+    # )
+
+    # target_link_options(vbsp
+    #     PRIVATE
+    #     -Wl,--disable-new-dtags
+    #     -Wl,-rpath,$ORIGIN
+    #     -Wl,-z,origin
+    #     #-Wl,-rpath=.
+    # )
 endif()
 
 target_link_libraries(vbsp
     PRIVATE
-    bitmap::bitmap
     fgdlib::fgdlib
     mathlib::mathlib
     tier2::tier2
     vtf::vtf
+    bitmap::bitmap
     lzma::lzma
     vstdlib::vstdlib
 )
