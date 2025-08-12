@@ -85,7 +85,7 @@ bool SharedDispatch( MessageBuffer *pBuf, int iSource, int iPacketID )
 
 					if ( char *pch = strrchr( chModuleName, '.' ) )
 						*pch = 0;
-					if ( char *pch = strrchr( chModuleName, '\\' ) )
+					if ( char *pch = strrchr( chModuleName, CORRECT_PATH_SEPARATOR ) )
 						*pch = 0, pModuleName = pch + 1;
 
 					// Current time

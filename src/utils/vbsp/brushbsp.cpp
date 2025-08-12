@@ -394,10 +394,12 @@ bspbrush_t *CopyBrush (bspbrush_t *brush)
 	int			size;
 	int			i;
 	
-	size = (int)&(((bspbrush_t *)0)->sides[brush->numsides]);
+	// TODO compare
+	size = (int)(std::ptrdiff_t)&(((bspbrush_t *)0)->sides[brush->numsides]);
+	size = offsetof(bspbrush_t, numsides) + sizeof(bspbrush_t::sides) * brush->numsides;
 
 	newbrush = AllocBrush (brush->numsides);
-	memcpy (newbrush, brush, size);
+	memcpy ((void*)newbrush, brush, size);
 
 	for (i=0 ; i<brush->numsides ; i++)
 	{

@@ -16,7 +16,6 @@
 #include "xbox\xbox_win32stubs.h"
 #endif
 #if defined(POSIX)
-#include "../../filesystem/linux_support.h"
 #include <sys/stat.h>
 #endif
 /*
@@ -1018,15 +1017,15 @@ bool CScriptLib::WriteBufferToFile( const char *pTargetName, CUtlBuffer &buffer,
 	// create path
 	// prime and skip to first seperator
 	strcpy( dirPath, pTargetName );
-	ptr = strchr( dirPath, '\\' );
+	ptr = strchr( dirPath, CORRECT_PATH_SEPARATOR );
 	while ( ptr )
 	{		
-		ptr = strchr( ptr+1, '\\' );
+		ptr = strchr( ptr+1, CORRECT_PATH_SEPARATOR );
 		if ( ptr )
 		{
 			*ptr = '\0';
 			_mkdir( dirPath );
-			*ptr = '\\';
+			*ptr = CORRECT_PATH_SEPARATOR;
 		}
 	}
 
@@ -1155,16 +1154,16 @@ int CScriptLib::GetFileList( const char* pDirPath, const char* pPattern, CUtlVec
 	int len = (int)strlen( sourcePath );
 	if ( !len )
 	{
-		strcpy( sourcePath, ".\\" );
+		strcpy( sourcePath, "." CORRECT_PATH_SEPARATOR_S );
 	}
-	else if ( sourcePath[len-1] != '\\' )
+	else if ( sourcePath[len-1] != CORRECT_PATH_SEPARATOR )
 	{
-		sourcePath[len]   = '\\';
+		sourcePath[len]   = CORRECT_PATH_SEPARATOR;
 		sourcePath[len+1] = '\0';
 	}
 
 	strcpy( fullPath, sourcePath );
-	if ( pPattern[0] == '\\' && pPattern[1] == '\0' )
+	if ( pPattern[0] == CORRECT_PATH_SEPARATOR && pPattern[1] == '\0' )
 	{
 		// find directories only
 		bFindDirs = true;
@@ -1219,39 +1218,26 @@ int CScriptLib::GetFileList( const char* pDirPath, const char* pPattern, CUtlVec
 
 	_findclose( h );
 #elif defined(POSIX)
-	FIND_DATA findData;
 	Q_FixSlashes( fullPath );
-	void *h = FindFirstFile( fullPath, &findData );
-	if ( (intp)h == -1 )
-	{
-		return 0;
-	}
 
-	do
+	FileFindHandle_t findHdl;
+	for (const char *pszFilename = g_pFullFileSystem->FindFirst(fullPath, &findHdl);
+		 pszFilename;
+		 pszFilename = g_pFullFileSystem->FindNext(findHdl))
 	{
-		// dos attribute complexities i.e. _A_NORMAL is 0
-		if ( bFindDirs )
-		{
-			// skip non dirs
-			if ( !( findData.dwFileAttributes & S_IFDIR ) )
-				continue;
-		}
-		else
-		{
-			// skip dirs
-			if ( findData.dwFileAttributes & S_IFDIR )
-				continue;
-		}
-
-		if ( !stricmp( findData.cFileName, "." ) )
+		if (bFindDirs != g_pFullFileSystem->FindIsDirectory(findHdl))
 			continue;
 
-		if ( !stricmp( findData.cFileName, ".." ) )
+		if ( !stricmp( pszFilename, "." ) ) // TODO check if needed
 			continue;
 
+		if ( !stricmp( pszFilename, ".." ) ) // TODO check if needed
+			continue;
+
+		// TODO check if pszFilename is just a filename or a full path
 		char fileName[MAX_PATH];
 		strcpy( fileName, sourcePath );
-		strcat( fileName, findData.cFileName );
+		strcat( fileName, pszFilename );
 
 		int j = fileList.AddToTail();
 		fileList[j].fileName.Set( fileName );
@@ -1265,9 +1251,8 @@ int CScriptLib::GetFileList( const char* pDirPath, const char* pPattern, CUtlVec
 		else
 			fileList[j].timeWrite = 0;
 	}
-	while ( !FindNextFile( h, &findData ) );
 
-	FindClose( h );
+	g_pFullFileSystem->FindClose(findHdl);
 
 #else
 #error
@@ -1284,7 +1269,7 @@ void CScriptLib::RecurseFileTree_r( const char* pDirPath, int depth, CUtlVector<
 {
 	// recurse from source directory, get directories only
 	CUtlVector< fileList_t > fileList;
-	int dirCount = GetFileList( pDirPath, "\\", fileList );
+	int dirCount = GetFileList( pDirPath, CORRECT_PATH_SEPARATOR_S, fileList );
 	if ( !dirCount )
 	{
 		// add directory name to search tree

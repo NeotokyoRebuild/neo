@@ -4,7 +4,7 @@
 //
 //=============================================================================
 
-#include "fgdlib/WCKeyValues.h"
+#include "fgdlib/wckeyvalues.h"
 
 #ifdef _WIN32
 #define snprintf _snprintf
