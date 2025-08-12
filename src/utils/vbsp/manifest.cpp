@@ -3,7 +3,10 @@
 #include "map_shared.h"
 #include "fgdlib/fgdlib.h"
 #include "manifest.h"
-#include "windows.h"
+
+#ifdef WIN32
+#include <windows.h>
+#endif
 
 //-----------------------------------------------------------------------------
 // Purpose: default constructor
@@ -355,10 +358,14 @@ bool CManifest::LoadSubMaps( CMapFile *pMapFile, const char *pszFileName )
 bool CManifest::LoadVMFManifestUserPrefs( const char *pszFileName )
 {
 	char		UserName[ MAX_PATH ], FileName[ MAX_PATH ], UserPrefsFileName[ MAX_PATH ];
-	DWORD		UserNameSize;
 
+#ifdef WIN32
+	DWORD		UserNameSize;
 	UserNameSize = sizeof( UserName );
 	if ( GetUserName( UserName, &UserNameSize ) == 0 )
+#else
+	if ( getlogin_r(UserName, sizeof(UserName)) != 0 )
+#endif
 	{
 		strcpy( UserPrefsFileName, "default" );
 	}
