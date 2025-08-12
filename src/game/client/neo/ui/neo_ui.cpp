@@ -428,6 +428,7 @@ void BeginSection(const bool bDefaultFocus)
 	}
 
 	NeoUI::SetPerRowLayout(1, nullptr, c->layout.iDefRowTall);
+	NeoUI::SetPerCellVertLayout(0);
 }
 
 void EndSection()
@@ -2090,7 +2091,7 @@ void TextEdit(wchar_t *wszText, const int iMaxWszTextSize, const ETextEditFlags 
 					static wchar_t wszStaticTmpText[MAX_TEXTINPUT_U8BYTES_LIMIT];
 					if (bFromEnd)
 					{
-						V_wcsncat(wszText, wszClipboard, iMaxWszTextSize);
+						V_wcsncat(wszText, wszClipboard, iMaxWszTextSize + 1);
 						c->iTextSelCur = V_wcslen(wszText);
 					}
 					else if (bIsCursor)

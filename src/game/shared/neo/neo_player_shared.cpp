@@ -208,8 +208,8 @@ void DMClSortedPlayers(PlayerXPInfo (*pPlayersOrder)[MAX_PLAYERS + 1], int *piTo
 #endif
 
 bool GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
-						 const wchar_t wszNeoName[MAX_PLAYER_NAME_LENGTH + 1],
-						 const wchar_t wszNeoClantag[NEO_MAX_CLANTAG_LENGTH + 1],
+						 const wchar_t (&wszNeoName)[MAX_PLAYER_NAME_LENGTH],
+						 const wchar_t (&wszNeoClantag)[NEO_MAX_CLANTAG_LENGTH],
 						 const EClNeoDisplayNameFlag flags)
 {
 	const bool bShowSteamNick = (flags & CL_NEODISPLAYNAME_FLAG_ONLYSTEAMNICK) || wszNeoName[0] == '\0';
@@ -236,16 +236,16 @@ bool GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
 	if (flags & CL_NEODISPLAYNAME_FLAG_CHECK)
 	{
 		// Double it so we can check for overflow
-		char szNeoName[2 * (MAX_PLAYER_NAME_LENGTH + 1)];
+		char szNeoName[2 * MAX_PLAYER_NAME_LENGTH];
 		const int iSzNeoNameSize = g_pVGuiLocalize->ConvertUnicodeToANSI(wszNeoName, szNeoName, sizeof(szNeoName));
-		if (iSzNeoNameSize > (MAX_PLAYER_NAME_LENGTH + 1))
+		if (iSzNeoNameSize > MAX_PLAYER_NAME_LENGTH)
 		{
 			return false;
 		}
 
-		char szNeoClantag[2 * (NEO_MAX_CLANTAG_LENGTH + 1)];
+		char szNeoClantag[2 * NEO_MAX_CLANTAG_LENGTH];
 		const int iSzNeoClantagSize = g_pVGuiLocalize->ConvertUnicodeToANSI(wszNeoClantag, szNeoClantag, sizeof(szNeoClantag));
-		if (iSzNeoClantagSize > (NEO_MAX_CLANTAG_LENGTH + 1))
+		if (iSzNeoClantagSize > NEO_MAX_CLANTAG_LENGTH)
 		{
 			return false;
 		}
@@ -259,8 +259,8 @@ bool GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
 						 const char *pSzNeoClantag,
 						 const EClNeoDisplayNameFlag flags)
 {
-	wchar_t wszNeoName[MAX_PLAYER_NAME_LENGTH + 1];
-	wchar_t wszNeoClantag[NEO_MAX_CLANTAG_LENGTH + 1];
+	wchar_t wszNeoName[MAX_PLAYER_NAME_LENGTH];
+	wchar_t wszNeoClantag[NEO_MAX_CLANTAG_LENGTH];
 	g_pVGuiLocalize->ConvertANSIToUnicode(pSzNeoName, wszNeoName, sizeof(wszNeoName));
 	g_pVGuiLocalize->ConvertANSIToUnicode(pSzNeoClantag, wszNeoClantag, sizeof(wszNeoClantag));
 	return GetClNeoDisplayName(pWszDisplayName, wszNeoName, wszNeoClantag, flags);
