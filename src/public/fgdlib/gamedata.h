@@ -16,8 +16,8 @@
 #pragma warning(pop)
 #include "tokenreader.h"
 #include "gdclass.h"
-#include "InputOutput.h"
-#include "UtlString.h"
+#include "inputoutput.h"
+#include "utlstring.h"
 #include "utlvector.h"
 
 

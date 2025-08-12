@@ -1099,7 +1099,7 @@ int RunVVis( int argc, char **argv )
     {
         PrintUsage( argc, argv );
         DeleteCmdLine( argc, argv );
-        CmdLib_Exit( 1 );
+        CmdLib_Exit( EXIT_FAILURE );
     }
 
     CmdLib_InitFileSystem( argv[ argc - 1 ] );
