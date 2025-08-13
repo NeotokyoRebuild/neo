@@ -83,14 +83,9 @@ void CNEOHud_PlayerPing::UpdateStateForNeoHudElementDraw()
 	if (!localPlayer) return;
 
 	const int playerTeam = localPlayer->GetTeamNumber();
-	if (playerTeam != TEAM_JINRAI && playerTeam != TEAM_NSF)
-	{
-		return;
-	}
-
 	for (int playerSlot = 0; playerSlot < gpGlobals->maxClients; playerSlot++)
 	{
-		if (gpGlobals->curtime >= m_iPlayerPings[playerSlot].deathTime || m_iPlayerPings[playerSlot].team != playerTeam)
+		if (gpGlobals->curtime >= m_iPlayerPings[playerSlot].deathTime || (playerTeam != TEAM_SPECTATOR && m_iPlayerPings[playerSlot].team != playerTeam))
 		{
 			continue;
 		}
@@ -196,22 +191,20 @@ void CNEOHud_PlayerPing::DrawNeoHudElement()
 		spectateTargetTeam = observerTarget->GetTeamNumber();
 	};
 
-	int x, y;
+	int x, y, x2, y2;
 	vgui::surface()->DrawSetTexture(m_hTexture);
 	for (int i = 0; i < gpGlobals->maxClients; i++)
 	{
-		if (gpGlobals->curtime >= m_iPlayerPings[i].deathTime || !GetVectorInScreenSpace(m_iPlayerPings[i].worldPos, x, y))
+		Vector offset = Vector(0, 0, 32);
+		if (gpGlobals->curtime >= m_iPlayerPings[i].deathTime || !GetVectorInScreenSpace(m_iPlayerPings[i].worldPos, x, y) || !GetVectorInScreenSpace(m_iPlayerPings[i].worldPos, x2, y2, &offset))
 		{
 			continue;
 		}
-
 
 		if (localPlayerTeam == TEAM_SPECTATOR && playerPingsInSpectate == NEO_SPECTATE_PINGS_TARGET && m_iPlayerPings[i].team != spectateTargetTeam)
 		{
 			continue;
 		}
-
-		float y2 = y - m_iPlayerPings[i].distanceYOffset;
 
 		constexpr float PING_NORMAL_OPACITY = 200;
 		constexpr float PING_OBSTRUCTED_OPACITY = 80;
@@ -244,18 +237,24 @@ void CNEOHud_PlayerPing::DrawNeoHudElement()
 		color.SetColor(color.r(), color.g(), color.b(), opacity);
 		vgui::surface()->DrawSetColor(color);
 		vgui::surface()->DrawTexturedRect(
-			x - halfTexture,
+			x2 - halfTexture,
 			y2 - halfTexture,
-			x + halfTexture,
+			x2 + halfTexture,
 			y2 + halfTexture);
 
 		// Draw Line to root of Ping
-		if (y - y2 > m_iTexTall)
+		const Vector2D directionToOffset = Vector2D(x2 - x, y2 - y);
+		const float offsetLengthOnScreen = Vector2DLength(directionToOffset);
+		if (offsetLengthOnScreen > m_iTexTall)
 		{
-			vgui::surface()->DrawLine(x-1,y,x-1,y2 + m_iTexTall);
+			// Offset the end position of the line so it doesn't draw over the ping icon
+			const int lineX2 = x + directionToOffset.x * ((offsetLengthOnScreen - m_iTexTall) / offsetLengthOnScreen);
+			const int lineY2 = y + directionToOffset.y * ((offsetLengthOnScreen - m_iTexTall) / offsetLengthOnScreen);
+
+			vgui::surface()->DrawLine(x-1,y,lineX2-1,lineY2);
 			color.SetColor(COLOR_BLACK.r(), COLOR_BLACK.g(), COLOR_BLACK.b(), opacity);
 			vgui::surface()->DrawSetColor(color);
-			vgui::surface()->DrawLine(x, y+1, x, y2+1 + m_iTexTall);
+			vgui::surface()->DrawLine(x, y+1, lineX2, lineY2+1);
 		}
 
 		// Draw Distance to Ping in meters
@@ -268,12 +267,12 @@ void CNEOHud_PlayerPing::DrawNeoHudElement()
 
 		color.SetColor(COLOR_BLACK.r(), COLOR_BLACK.g(), COLOR_BLACK.b(), opacity);
 		vgui::surface()->DrawSetTextColor(color);
-		vgui::surface()->DrawSetTextPos(x - halfTextWidth, y2 + 1 - m_iTexTall - m_iFontTall);
+		vgui::surface()->DrawSetTextPos(x2 - halfTextWidth, y2 + 1 - m_iTexTall - m_iFontTall);
 		vgui::surface()->DrawPrintText(m_wszMarkerTextUnicode, 5);
 
 		color.SetColor(COLOR_WHITE.r(), COLOR_WHITE.g(), COLOR_WHITE.b(), opacity);
 		vgui::surface()->DrawSetTextColor(color);
-		vgui::surface()->DrawSetTextPos(x - 1 - halfTextWidth, y2 - m_iTexTall - m_iFontTall);
+		vgui::surface()->DrawSetTextPos(x2 - 1 - halfTextWidth, y2 - m_iTexTall - m_iFontTall);
 		vgui::surface()->DrawPrintText(m_wszMarkerTextUnicode, 5);
 	}
 }
@@ -310,9 +309,6 @@ void CNEOHud_PlayerPing::HideAllPings()
 void CNEOHud_PlayerPing::UpdateDistanceToPlayer(C_BasePlayer* player, const int playerSlot)
 {
 	m_iPlayerPings[playerSlot].distance = METERS_PER_INCH * player->GetAbsOrigin().DistTo(m_iPlayerPings[playerSlot].worldPos);
-
-	constexpr float MAX_Y_DISTANCE_OFFSET_RATIO = 1.f / 8;
-	m_iPlayerPings[playerSlot].distanceYOffset = min(m_iPosY * MAX_Y_DISTANCE_OFFSET_RATIO, m_iPlayerPings[playerSlot].distance * 2 * (m_iPosY / 480));
 
 	trace_t tr;
 	UTIL_TraceLine(player->EyePosition(), m_iPlayerPings[playerSlot].worldPos, MASK_VISIBLE_AND_NPCS, player, COLLISION_GROUP_NONE, &tr);

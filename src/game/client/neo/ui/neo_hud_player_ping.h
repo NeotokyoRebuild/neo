@@ -9,7 +9,6 @@ struct playerPing
 	Vector worldPos;
 	float deathTime;
 	float distance;
-	int distanceYOffset;
 	int team;
 	bool noLineOfSight;
 	bool ghosterPing;
