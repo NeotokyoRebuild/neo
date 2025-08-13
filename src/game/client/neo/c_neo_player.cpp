@@ -651,6 +651,9 @@ const char *C_NEO_Player::GetNeoClantag() const
 
 const char *C_NEO_Player::InternalGetNeoPlayerName() const
 {
+	GetSpectatorTarget();
+	GetLocalPlayerTeam();
+
 	const int dupePos = m_szNameDupePos;
 	const bool localWantNeoName = GetLocalNEOPlayer()->ClientWantNeoName();
 	if (localWantNeoName && m_szNeoName.Get()[0] != '\0')

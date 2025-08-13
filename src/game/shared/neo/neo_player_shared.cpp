@@ -150,6 +150,7 @@ void CheckPingButton(CNEO_Player* player)
 		}
 
 		event->SetInt("userid", player->GetUserID());
+		event->SetInt("playerTeam", player->GetTeamNumber());
 		event->SetInt("pingx", tr.endpos.x);
 		event->SetInt("pingy", tr.endpos.y);
 		event->SetInt("pingz", tr.endpos.z);

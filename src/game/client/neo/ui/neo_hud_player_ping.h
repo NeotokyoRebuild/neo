@@ -37,15 +37,15 @@ protected:
 private:
 	int GetStringPixelWidth(wchar_t* pString, vgui::HFont hFont);
 	void UpdateDistanceToPlayer(C_BasePlayer* player, const int pingIndex);
-	void SetPos(const int index, const Vector& pos, bool ghosterPing);
-	void NotifyPing(C_NEO_Player* pPlayer = nullptr);
+	void SetPos(const int index, const int playerTeam, const Vector& pos, bool ghosterPing);
+	void NotifyPing(const int playerSlot);
 
 private:
 	playerPing m_iPlayerPings[MAX_PLAYERS] = {};
 
 	int m_iPosX, m_iPosY;
 
-	HSOUNDSCRIPTHANDLE pingSoundHandle;
+	/*HSOUNDSCRIPTHANDLE pingSoundHandle;*/
 	float m_flNextPingSoundTime = 0;
 
 	vgui::HFont m_hFont = 0UL;
