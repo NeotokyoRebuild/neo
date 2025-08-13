@@ -618,6 +618,19 @@ CNEOBot::CNEOBot()
 	m_squadFormationError = 0.0f;
 
 	SetAutoJump(0.f, 0.f);
+
+	// set default values for convars only present on the client
+	edict_t* edict = GetEntity()->edict();
+	if (edict)
+	{
+		engine->SetFakeClientConVarValue(edict, "neo_fov", "90");
+		engine->SetFakeClientConVarValue(edict, "cl_onlysteamnick", "0");
+		engine->SetFakeClientConVarValue(edict, "neo_name", "");
+		engine->SetFakeClientConVarValue(edict, "cl_neo_streamermode", "0");
+		engine->SetFakeClientConVarValue(edict, "neo_clantag", "");
+		engine->SetFakeClientConVarValue(edict, "cl_neo_crosshair", "2;0;-1;0;6;0.000;2;4;0;0;1;0;0;"); // update with CL_NEO_CROSSHAIR_DEFAULT
+		engine->SetFakeClientConVarValue(edict, "hap_HasDevice", "0");
+	}
 }
 
 
