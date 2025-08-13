@@ -4,7 +4,7 @@ WeaponData
 	"printname"		"BALC3"
 	"BulletCharacter"	"c"
 	"iDeathIcon"		"@"
-	"viewmodel"			"models/weapons/v_jinrai_pz.mdl"
+	"viewmodel"			"models/weapons/v_balc.mdl"
 	"playermodel"		"models/weapons/w_balc.mdl"
 	"anim_prefix"		"m4"
 	"bucket"		"0"
@@ -13,7 +13,7 @@ WeaponData
 	"Penetration"		"28.0"
 	"CycleTime"		"0.1"		// time between shots
 	
-	"TPMuzzleFlashScale"	"0.3"
+	"TPMuzzleFlashScale"	"2.0"
 
 	"clip_size"		"-1"
 	"default_clip"	"40"
@@ -32,11 +32,11 @@ WeaponData
 	
 	"AimType"		"0"
 	
-	"VMFov"			"55.0"	
-	"VMOffsetForward"	"20.0"
-	"VMOffsetRight"		"10.0"	
-	"VMOffsetUp"		"-2.0"
-	"VMAngleYaw"		"-1.0"
+	"VMFov"			"54.0"	
+	"VMOffsetForward"	"-5.0"
+	"VMOffsetRight"		"5.0"	
+	"VMOffsetUp"		"-10.0"
+	"VMAngleYaw"		"0.0"
 	
 	"VMAimFov"				"40.0"	
 	"VMAimOffsetForward"	"10.0"
@@ -47,11 +47,11 @@ WeaponData
 	
 	"ViewModelOffset"
 	{
-		"fov"		"55"
-		"forward"	"20"
-		"right"		"10"
-		"up"		"-2"
-		"yaw"		"-1"
+		"fov"		"54"
+		"forward"	"-5"
+		"right"		"5"
+		"up"		"-10"
+		"yaw"		"0"
 	}
 
 	"ZoomOffset"
