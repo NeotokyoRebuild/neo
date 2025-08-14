@@ -119,6 +119,7 @@ enum NeoRoundStatus {
 	Warmup,
 	PreRoundFreeze,
 	RoundLive,
+	Overtime,
 	PostRound,
 	Pause,
 	Countdown,
@@ -267,6 +268,7 @@ public:
 	virtual bool CheckGameOver(void) OVERRIDE;
 
 	float GetRoundRemainingTime() const;
+	void GetCTGOverTime(float *withGhost = nullptr, float *withoutGhost = nullptr) const;
 	float GetRoundAccumulatedTime() const;
 #ifdef GAME_DLL
 	float MirrorDamageMultiplier() const;
@@ -441,6 +443,7 @@ private:
 	CNetworkVar(int, m_iGhosterPlayer);
 	CNetworkVector(m_vecGhostMarkerPos);
 	CNetworkVar(bool, m_bGhostExists);
+	CNetworkVar(float, m_flAccumulatedOvertime);
 
 	CNetworkVar(float, m_flNeoRoundStartTime);
 	CNetworkVar(float, m_flNeoNextRoundStartTime);
