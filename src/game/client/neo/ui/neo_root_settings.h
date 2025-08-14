@@ -38,8 +38,8 @@ struct NeoSettings
 {
 	struct General
 	{
-		wchar_t wszNeoName[MAX_PLAYER_NAME_LENGTH + 1];
-		wchar_t wszNeoClantag[NEO_MAX_CLANTAG_LENGTH + 1];
+		wchar_t wszNeoName[MAX_PLAYER_NAME_LENGTH];
+		wchar_t wszNeoClantag[NEO_MAX_CLANTAG_LENGTH];
 		bool bOnlySteamNick;
 		bool bMarkerSpecOnlyClantag;
 		int iFov;
@@ -169,6 +169,7 @@ struct NeoSettings
 	int iCurTab = 0;
 	bool bBack = false;
 	bool bModified = false;
+	bool bIsValid = false;
 	int iNextBinding = -1;
 
 	struct CVR

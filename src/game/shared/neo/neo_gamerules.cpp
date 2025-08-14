@@ -949,7 +949,7 @@ void CNEORules::Think(void)
 		m_bThinkCheckClantags = false;
 		int iHasClantags[TEAM__TOTAL] = {};
 		bool bClantagSet[TEAM__TOTAL] = {};
-		char szTeamClantags[TEAM__TOTAL][NEO_MAX_CLANTAG_LENGTH + 1] = {};
+		char szTeamClantags[TEAM__TOTAL][NEO_MAX_CLANTAG_LENGTH] = {};
 		for (int i = 1; i <= gpGlobals->maxClients; ++i)
 		{
 			auto pNeoPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
