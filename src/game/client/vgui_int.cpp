@@ -208,8 +208,12 @@ void VGui_CreateGlobalPanels( void )
 #endif
 
 #ifdef NEO
-	OverrideUI->Create(0U);
-	OverrideGameUI();
+	const bool bCliArgTools = CommandLine()->CheckParm("-tools");
+	if (!bCliArgTools)
+	{
+		OverrideUI->Create(0U);
+		OverrideGameUI();
+	}
 #endif
 
 	// Part of game

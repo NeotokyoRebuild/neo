@@ -574,10 +574,17 @@ void PlayerLocomotion::Approach( const Vector &pos, float goalWeight )
 		}
 	}
 
+#ifdef NEO
+	if ( IsRunning() )
+	{
+		playerButtons->PressRunButton();
+	}
+#else
 	if ( !IsRunning() )
 	{
 		playerButtons->PressWalkButton();
 	}
+#endif
 }
 
 
@@ -672,6 +679,20 @@ void PlayerLocomotion::Jump( void )
 		playerButtons->PressJumpButton();
 	}
 }
+
+#ifdef NEO
+
+//----------------------------------------------------------------------------------------------------
+void PlayerLocomotion::Thermoptic( void )
+{
+	INextBotPlayerInput *playerButtons = dynamic_cast< INextBotPlayerInput * >( GetBot() );
+	if ( playerButtons )
+	{
+		playerButtons->PressThermopticButton();
+	}
+}
+
+#endif // NEO
 
 
 //----------------------------------------------------------------------------------------------------

@@ -42,6 +42,10 @@
 	#include "NextBotManager.h"
 #endif
 
+#ifdef NEO
+	#include "neo_gamerules.h"
+#endif
+
 #ifdef TF_DLL
 	#include <unordered_set>
 	#include "hl2orange.spa.h"
@@ -99,9 +103,23 @@ ConVar tv_delaymapchange( "tv_delaymapchange", "0", FCVAR_NONE, "Delays map chan
 ConVar tv_delaymapchange_protect( "tv_delaymapchange_protect", "1", FCVAR_NONE, "Protect against doing a manual map change if HLTV is broadcasting and has not caught up with a major game event such as round_end" );
 
 ConVar mp_restartgame( "mp_restartgame", "0", FCVAR_GAMEDLL, "If non-zero, game will restart in the specified number of seconds" );
+#ifdef NEO
+ConVar neo_restart_this("neo_restart_this", "0", FCVAR_GAMEDLL, "If non-zero, game will restart immediately",
+	[](IConVar* var, const char* pOldValue, float flOldValue)->void {
+		if (ConVarRef(var).GetBool())
+		{
+			if (NEORules()) NEORules()->RestartGame();
+		}
+		var->SetValue("0");
+	});
+#endif
 ConVar mp_restartgame_immediate( "mp_restartgame_immediate", "0", FCVAR_GAMEDLL, "If non-zero, game will restart immediately" );
 
+#ifdef NEO
+ConVar mp_mapcycle_empty_timeout_seconds("mp_mapcycle_empty_timeout_seconds", "1800", FCVAR_REPLICATED, "If nonzero, server will cycle to the next map if it has been empty on the current map for N seconds");
+#else
 ConVar mp_mapcycle_empty_timeout_seconds( "mp_mapcycle_empty_timeout_seconds", "0", FCVAR_REPLICATED, "If nonzero, server will cycle to the next map if it has been empty on the current map for N seconds");
+#endif
 
 void cc_SkipNextMapInCycle()
 {

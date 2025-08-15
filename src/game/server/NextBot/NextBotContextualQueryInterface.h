@@ -25,8 +25,11 @@ enum QueryResultType
 };
 
 // Can pass this into IContextualQuery::IsHindrance to see if any hindrance is ever possible
+#ifdef NEO
+#define IS_ANY_HINDRANCE_POSSIBLE ( (CBaseEntity*)(INT_TO_POINTER(UINTPTR_MAX)) )
+#else
 #define IS_ANY_HINDRANCE_POSSIBLE	( (CBaseEntity*)0xFFFFFFFF )
-
+#endif
 
 //----------------------------------------------------------------------------------------------------------------
 /**

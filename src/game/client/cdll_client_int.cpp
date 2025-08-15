@@ -187,11 +187,13 @@ bool g_bOBSDetected = false;
 #include <tchar.h>
 #include <psapi.h>
 #include <tlhelp32.h>
+#include <direct.h>
 #undef CreateEvent
 #endif
 
 #ifdef LINUX
 #include "neo_fixup_glshaders.h"
+#include <unistd.h>
 #endif
 
 #endif
@@ -1262,7 +1264,8 @@ void MusicVol_ChangeCallback(IConVar *cvar, const char *pOldVal, float flOldVal)
 #ifdef NEO
 extern void NeoToggleConsoleEnforce();
 
-static void NeoName_ChangeCallback(IConVar *cvar, [[maybe_unused]] const char *pOldVal, [[maybe_unused]] float flOldVal)
+template <int STR_LIMIT_SIZE>
+static void NeoConVarStrLimitChangeCallback(IConVar *cvar, [[maybe_unused]] const char *pOldVal, [[maybe_unused]] float flOldVal)
 {
 	static bool bStaticCallbackChangedCVar = false;
 	if (bStaticCallbackChangedCVar)
@@ -1270,36 +1273,100 @@ static void NeoName_ChangeCallback(IConVar *cvar, [[maybe_unused]] const char *p
 		return;
 	}
 
-	ConVarRef cvr_neo_name(cvar->GetName());
-	if (V_strlen(cvr_neo_name.GetString()) >= MAX_PLAYER_NAME_LENGTH)
+	ConVarRef cvarRef(cvar);
+	if (V_strlen(cvarRef.GetString()) >= STR_LIMIT_SIZE)
 	{
 		bStaticCallbackChangedCVar = true;
-		char mutStr[MAX_PLAYER_NAME_LENGTH];
-		V_strcpy_safe(mutStr, cvr_neo_name.GetString());
+		char mutStr[STR_LIMIT_SIZE];
+		V_strcpy_safe(mutStr, cvarRef.GetString());
 		Q_UnicodeRepair(mutStr);
-		cvr_neo_name.SetValue(mutStr);
+		cvarRef.SetValue(mutStr);
 		bStaticCallbackChangedCVar = false;
 	}
 }
+#endif
 
-static void NeoClantag_ChangeCallback(IConVar *cvar, [[maybe_unused]] const char *pOldVal, [[maybe_unused]] float flOldVal)
+#ifdef NEO
+#define SZ_USERCUSTOM_DIR "download/user_custom"
+// NEO NOTE (nullsystem): Delete custom downloaded sprays from other players on
+// startup and shutdown.
+// NEO JANK (nullsystem): It's done on both startup and shutdown mostly to
+// mitigate SDK filesystem API bug so it likely remove all the expected files
+// on shutdown.
+static void NeoDeleteDownloadedSprays()
 {
-	static bool bStaticCallbackChangedCVar = false;
-	if (bStaticCallbackChangedCVar)
+	// NEO NOTE (nullsystem): Only deal with the .dat hexdec named files directly,
+	// no other directories (IFilesystem can't delete directories) or files deleted.
+	FileFindHandle_t findHdlFL;
+	for (const char *pszFNameFLDir = filesystem->FindFirst(SZ_USERCUSTOM_DIR "/*", &findHdlFL);
+		 pszFNameFLDir && findHdlFL != FILESYSTEM_INVALID_FIND_HANDLE;
+		 pszFNameFLDir = filesystem->FindNext(findHdlFL))
 	{
-		return;
-	}
+		// Sanity check, expects directory of two character hexadecimal
+		const bool bIsValidFLDir = filesystem->FindIsDirectory(findHdlFL)
+				&& (V_strlen(pszFNameFLDir) == 2)
+				&& V_isxdigit(pszFNameFLDir[0])
+				&& V_isxdigit(pszFNameFLDir[1]);
+		if (!bIsValidFLDir)
+		{
+			continue;
+		}
 
-	ConVarRef cvr_neo_clantag(cvar->GetName());
-	if (V_strlen(cvr_neo_clantag.GetString()) >= NEO_MAX_CLANTAG_LENGTH)
-	{
-		bStaticCallbackChangedCVar = true;
-		char mutStr[NEO_MAX_CLANTAG_LENGTH];
-		V_strcpy_safe(mutStr, cvr_neo_clantag.GetString());
-		Q_UnicodeRepair(mutStr);
-		cvr_neo_clantag.SetValue(mutStr);
-		bStaticCallbackChangedCVar = false;
+		char szSLRelPath[MAX_PATH];
+		V_sprintf_safe(szSLRelPath, SZ_USERCUSTOM_DIR "/%s", pszFNameFLDir);
+
+		char szSLSearch[MAX_PATH];
+		V_sprintf_safe(szSLSearch, "%s/*.dat", szSLRelPath);
+
+		FileFindHandle_t findHdlSL;
+		for (const char *pszFNameSLDat = filesystem->FindFirst(szSLSearch, &findHdlSL);
+			 pszFNameSLDat && findHdlSL != FILESYSTEM_INVALID_FIND_HANDLE;
+			 pszFNameSLDat = filesystem->FindNext(findHdlSL))
+		{
+			// Filename sanity check: Make sure filename is of this format: 00000000.dat - ffffffff.dat
+			static constexpr int BASE_FNAMESIZE = 8;
+			const int iFNameSLDatSize = V_strlen(pszFNameSLDat);
+			const bool bIsExpectedFNameSize = (iFNameSLDatSize == (BASE_FNAMESIZE + sizeof(".dat") - 1));
+			const bool bIsFile = !filesystem->FindIsDirectory(findHdlSL);
+			if (!bIsExpectedFNameSize || !bIsFile)
+			{
+				continue;
+			}
+
+			bool bFNameIsHexDigit = true;
+			for (int i = 0; bFNameIsHexDigit && i < BASE_FNAMESIZE; ++i)
+			{
+				bFNameIsHexDigit = V_isxdigit(pszFNameSLDat[i]);
+			}
+			if (!bFNameIsHexDigit)
+			{
+				continue;
+			}
+
+			char szFullFPathSLDat[MAX_PATH];
+			V_sprintf_safe(szFullFPathSLDat, SZ_USERCUSTOM_DIR "/%s/%s", pszFNameFLDir, pszFNameSLDat);
+
+			// NEO JANK (nullsystem): filesystem API seems buggy having earlier file(s) in alphanum order
+			// unable to recognize those files and remove them. When RemoveFile was called wasn't the issue
+			// and changing to calling it after Find... usages didn't solve it.
+			// So instead, doing this cleanup on both startup and shutdown could somewhat mitigate it.
+			filesystem->RemoveFile(szFullFPathSLDat);
+		}
+		filesystem->FindClose(findHdlSL);
+
+		// Remove this assumingly empty directory with rmdir
+		// It only removes empty directory so generally safe call
+		// and don't need to double check.
+		char szFullPath[MAX_PATH];
+		filesystem->RelativePathToFullPath_safe(szSLRelPath, "MOD", szFullPath);
+#if defined(WIN32)
+		// Both slash deliminator is valid in Windows, don't need to convert
+		_rmdir(szFullPath);
+#elif defined(LINUX)
+		rmdir(szFullPath);
+#endif
 	}
+	filesystem->FindClose(findHdlFL);
 }
 #endif
 
@@ -1337,8 +1404,9 @@ void CHLClient::PostInit()
 	if (g_pCVar)
 	{
 		g_pCVar->FindVar("snd_musicvolume")->InstallChangeCallback(MusicVol_ChangeCallback);
-		g_pCVar->FindVar("neo_name")->InstallChangeCallback(NeoName_ChangeCallback);
-		g_pCVar->FindVar("neo_clantag")->InstallChangeCallback(NeoClantag_ChangeCallback);
+		g_pCVar->FindVar("neo_name")->InstallChangeCallback(NeoConVarStrLimitChangeCallback<MAX_PLAYER_NAME_LENGTH>);
+		g_pCVar->FindVar("neo_clantag")->InstallChangeCallback(NeoConVarStrLimitChangeCallback<NEO_MAX_CLANTAG_LENGTH>);
+		g_pCVar->FindVar("cl_neo_crosshair")->InstallChangeCallback(NeoConVarStrLimitChangeCallback<NEO_XHAIR_SEQMAX>);
 		g_pCVar->FindVar("sv_use_steam_networking")->SetValue(false);
 	}
 	else
@@ -1347,6 +1415,9 @@ void CHLClient::PostInit()
 	}
 
 	NeoToggleConsoleEnforce();
+	
+	// hide main menu when loading background map first time
+	engine->ClientCmd_Unrestricted("progress_enable");
 
 	// Detect OBS - Only on startup
 	if (cl_neo_streamermode_autodetect_obs.GetBool())
@@ -1409,6 +1480,8 @@ void CHLClient::PostInit()
 	{
 		V_memset(gStreamerModeNames[i], '.', 5);
 	}
+
+	NeoDeleteDownloadedSprays();
 #endif // NEO
 	
         if ( !r_lightmap_bicubic_set.GetBool() && materials )
@@ -1427,6 +1500,10 @@ void CHLClient::PostInit()
 //-----------------------------------------------------------------------------
 void CHLClient::Shutdown( void )
 {
+#ifdef NEO
+	NeoDeleteDownloadedSprays();
+#endif
+
     if (g_pAchievementsAndStatsInterface)
     {
         g_pAchievementsAndStatsInterface->ReleasePanel();
@@ -1913,7 +1990,10 @@ void CHLClient::LevelInitPostEntity( )
 	internalCenterPrint->Clear();
 
 #ifdef NEO
-	g_pNeoLoading->m_wszLoadingMap[0] = L'\0';
+	if (g_pNeoLoading)
+	{
+		g_pNeoLoading->m_wszLoadingMap[0] = L'\0';
+	}
 #endif
 }
 

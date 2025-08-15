@@ -392,17 +392,54 @@ void CHudCrosshair::Paint( void )
 	// thing and can do away with that CHudTexture nonsense entirely
 	const bool bIsScoped = pNeoWep && pNeoWep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON;
 
-	if (m_bRefreshCrosshair)
+	bool bThisFrameRefreshCrosshair = m_bRefreshCrosshair;
+	auto *pNeoPlayer = static_cast<C_NEO_Player *>(pPlayer);
+	bool bTakeSpecCrosshair = false;
+	CrosshairInfo *pCrosshairInfo = &m_crosshairInfo;
+	const char *pszNeoCrosshair = cl_neo_crosshair.GetString();
+	if (cl_neo_crosshair_network.GetBool() && IsLocalPlayerSpectator())
 	{
-		const bool bImported = ImportCrosshair(&m_crosshairInfo, cl_neo_crosshair.GetString());
+		const int iPlayerIdx = pNeoPlayer->entindex();
+		const bool bPlayerIdxValid = ((iPlayerIdx >= 0) && (iPlayerIdx < MAX_PLAYERS));
+		Assert(bPlayerIdxValid);
+		if (bPlayerIdxValid)
+		{
+			bTakeSpecCrosshair = true;
+			m_playersCrosshairInfos;
+			bThisFrameRefreshCrosshair = false;
+			pCrosshairInfo = &m_playersCrosshairInfos[iPlayerIdx];
+			pszNeoCrosshair = pNeoPlayer->m_szNeoCrosshair.Get();
+
+			// NEO NOTE (nullsystem): Only check the string per second
+			static constexpr float FL_XHAIR_REFRESH_INTERVAL = 1.0f;
+			if (m_aflLastCheckedPlayersCrosshair[iPlayerIdx] + FL_XHAIR_REFRESH_INTERVAL < gpGlobals->curtime)
+			{
+				m_aflLastCheckedPlayersCrosshair[iPlayerIdx] = gpGlobals->curtime;
+				bThisFrameRefreshCrosshair = (V_strcmp(m_szLocalStrPlayersCrosshair[iPlayerIdx], pszNeoCrosshair) != 0);
+				if (bThisFrameRefreshCrosshair)
+				{
+					V_strcpy_safe(m_szLocalStrPlayersCrosshair[iPlayerIdx], pszNeoCrosshair);
+				}
+			}
+
+		}
+	}
+
+	if (bThisFrameRefreshCrosshair)
+	{
+		const bool bImported = ImportCrosshair(pCrosshairInfo, pszNeoCrosshair);
 		if (!bImported)
 		{
-			cl_neo_crosshair.Revert();
-			ImportCrosshair(&m_crosshairInfo, CL_NEO_CROSSHAIR_DEFAULT);
+			// NEO NOTE (nullsystem): Don't revert, just enforce default if it
+			// is not given properly
+			ImportCrosshair(pCrosshairInfo, CL_NEO_CROSSHAIR_DEFAULT);
 		}
-		m_bRefreshCrosshair = false;
+		if (!bTakeSpecCrosshair)
+		{
+			m_bRefreshCrosshair = false;
+		}
 	}
-	const int iXHairStyle = m_crosshairInfo.iStyle;
+	const int iXHairStyle = pCrosshairInfo->iStyle;
 
 	trace_t iffTrace;
 	if (NEORules()->GetGameType() != NEO_GAME_TYPE_DM)
@@ -444,12 +481,12 @@ void CHudCrosshair::Paint( void )
 		vgui::surface()->DrawGetTextureSize(m_iTexXHId[iXHairStyle], iTexWide, iTexTall);
 		iTexWide >>= 1;
 		iTexTall >>= 1;
-		vgui::surface()->DrawSetColor(m_clrCrosshair);
+		vgui::surface()->DrawSetColor(pCrosshairInfo->color);
 		vgui::surface()->DrawTexturedRect(iX - iTexWide, iY - iTexTall, iX + iTexWide, iY + iTexTall);
 	}
 	else
 	{
-		PaintCrosshair(m_crosshairInfo, iX, iY);
+		PaintCrosshair(*pCrosshairInfo, iX, iY);
 	}
 
 	if (bIsScoped)

@@ -18,6 +18,8 @@
 #define CWeaponKnife C_WeaponKnife
 #endif
 
+#define NEO_WEP_KNIFE_RANGE 51.f;
+
 class CWeaponKnife : public CNEOBaseCombatWeapon
 {
 	DECLARE_CLASS(CWeaponKnife, CNEOBaseCombatWeapon);

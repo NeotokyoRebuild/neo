@@ -27,6 +27,7 @@
 	#include "neo_dm_spawn.h"
 	#include "neo_misc.h"
 	#include "neo_game_config.h"
+	#include "nav_mesh.h"
 
 extern ConVar weaponstay;
 #endif
@@ -175,8 +176,6 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropInt(RECVINFO(m_iEscortingTeam)),
 	RecvPropBool(RECVINFO(m_bGhostExists)),
 	RecvPropVector(RECVINFO(m_vecGhostMarkerPos)),
-	RecvPropArray(RecvPropEHandle(RECVINFO(m_iDummyBeacons[0])), m_iDummyBeacons),
-	RecvPropInt(RECVINFO(m_iLastDummyBeacon)),
 #else
 	SendPropFloat(SENDINFO(m_flNeoNextRoundStartTime)),
 	SendPropFloat(SENDINFO(m_flNeoRoundStartTime)),
@@ -196,8 +195,6 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropInt(SENDINFO(m_iEscortingTeam)),
 	SendPropBool(SENDINFO(m_bGhostExists)),
 	SendPropVector(SENDINFO(m_vecGhostMarkerPos), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT),
-	SendPropArray(SendPropEHandle(SENDINFO_ARRAY(m_iDummyBeacons)), m_iDummyBeacons),
-	SendPropInt(SENDINFO(m_iLastDummyBeacon)),
 #endif
 END_NETWORK_TABLE()
 
@@ -243,7 +240,7 @@ const NeoGameTypeSettings NEO_GAME_TYPE_SETTINGS[NEO_GAME_TYPE__TOTAL] = {
 /*NEO_GAME_TYPE_VIP*/	{"VIP",			false,		true,			false,							true,	true},
 /*NEO_GAME_TYPE_DM*/	{"DM",			true,		true,			false,							false,	false},
 /*NEO_GAME_TYPE_EMT*/	{"EMT",			true,		false,			true,							false,	false},
-/*NEO_GAME_TYPE_TUT*/	{"TUT",			false,		false,			false,							false,	false},
+/*NEO_GAME_TYPE_TUT*/	{"TUT",			true,		false,			false,							false,	false},
 };
 
 #ifdef CLIENT_DLL
@@ -460,7 +457,6 @@ CNEORules::CNEORules()
 #ifdef GAME_DLL
 	weaponstay.InstallChangeCallback(CvarChanged_WeaponStay);
 #endif
-	m_iLastDummyBeacon = -1;
 }
 
 CNEORules::~CNEORules()
@@ -953,7 +949,7 @@ void CNEORules::Think(void)
 		m_bThinkCheckClantags = false;
 		int iHasClantags[TEAM__TOTAL] = {};
 		bool bClantagSet[TEAM__TOTAL] = {};
-		char szTeamClantags[TEAM__TOTAL][NEO_MAX_CLANTAG_LENGTH + 1] = {};
+		char szTeamClantags[TEAM__TOTAL][NEO_MAX_CLANTAG_LENGTH] = {};
 		for (int i = 1; i <= gpGlobals->maxClients; ++i)
 		{
 			auto pNeoPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
@@ -2827,6 +2823,13 @@ void CNEORules::ClientSettingsChanged(CBasePlayer *pPlayer)
 		m_bThinkCheckClantags = true;
 	}
 
+	const char *pszClNeoCrosshair = engine->GetClientConVarValue(pNEOPlayer->entindex(), "cl_neo_crosshair");
+	const char *pszOldClNeoCrosshair = pNEOPlayer->m_szNeoCrosshair.Get();
+	if (V_strcmp(pszOldClNeoCrosshair, pszClNeoCrosshair) != 0)
+	{
+		V_strncpy(pNEOPlayer->m_szNeoCrosshair.GetForModify(), pszClNeoCrosshair, NEO_XHAIR_SEQMAX);
+	}
+
 	const char *pszName = pszSteamName;
 	const char *pszOldName = pPlayer->GetPlayerName();
 
@@ -3627,7 +3630,7 @@ bool CNEORules::FPlayerCanRespawn(CBasePlayer* pPlayer)
 {
 	auto gameType = GetGameType();
 
-	if (NEO_GAME_TYPE_SETTINGS[gameType].respawns)
+	if (CanRespawnAnyTime())
 	{
 		return true;
 	}
@@ -3777,14 +3780,19 @@ int CNEORules::GetForcedWeapon(void)
 	return m_iForcedWeapon;
 }
 
-const char* CNEORules::GetGameTypeName(void)
+inline const char* CNEORules::GetGameTypeName(void)
 {
 	return NEO_GAME_TYPE_SETTINGS[GetGameType()].gameTypeName;
 }
 
-bool CNEORules::CanChangeTeamClassWeaponWhenAlive()
+inline const bool CNEORules::CanChangeTeamClassLoadoutWhenAlive()
 {
 	return NEO_GAME_TYPE_SETTINGS[GetGameType()].changeTeamClassLoadoutWhenAlive;
+}
+
+inline const bool CNEORules::CanRespawnAnyTime()
+{
+	return NEO_GAME_TYPE_SETTINGS[GetGameType()].respawns;
 }
 
 float CNEORules::GetRemainingPreRoundFreezeTime(const bool clampToZero) const
@@ -3810,3 +3818,10 @@ const char *CNEORules::GetTeamClantag(const int iTeamNum) const
 	default: return "";
 	}
 }
+
+#ifdef GAME_DLL
+void CNEORules::OnNavMeshLoad(void)
+{
+	TheNavMesh->SetPlayerSpawnName("info_player_defender");
+}
+#endif
