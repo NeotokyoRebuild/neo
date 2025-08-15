@@ -1329,7 +1329,6 @@ void CHLClient::PostInit()
 #ifdef NEO
 	if (g_pCVar)
 	{
-		g_pCVar->FindVar("snd_musicvolume")->InstallChangeCallback(MusicVol_ChangeCallback);
 		g_pCVar->FindVar("neo_name")->InstallChangeCallback(NeoConVarStrLimitChangeCallback<MAX_PLAYER_NAME_LENGTH>);
 		g_pCVar->FindVar("neo_clantag")->InstallChangeCallback(NeoConVarStrLimitChangeCallback<NEO_MAX_CLANTAG_LENGTH>);
 		g_pCVar->FindVar("cl_neo_crosshair")->InstallChangeCallback(NeoConVarStrLimitChangeCallback<NEO_XHAIR_SEQMAX>);
