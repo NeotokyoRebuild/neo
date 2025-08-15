@@ -1015,29 +1015,16 @@ void CNEO_Player::PreThink(void)
 		NetworkStateChanged();
 	}
 
-	if (m_iNeoClass == NEO_CLASS_RECON)
+	if (m_iNeoClass == NEO_CLASS_RECON &&
+		(m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED) &&
+		IsAllowedToSuperJump())
 	{
-		if ((m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED))
+		SuitPower_Drain(SUPER_JMP_COST);
+		bool forward = m_nButtons & IN_FORWARD;
+		bool backward = m_nButtons & IN_BACK;
+		if (forward xor backward)
 		{
-			if (IsAllowedToSuperJump())
-			{
-				SuitPower_Drain(SUPER_JMP_COST);
-
-				// If player holds both forward + back, only use up AUX power.
-				// This movement trick replaces the original NT's trick of
-				// sideways-superjumping with the intent of dumping AUX for a
-				// jump setup that requires sprint jumping without the superjump.
-				if (!((m_nButtons & IN_FORWARD) && (m_nButtons & IN_BACK)))
-				{
-					SuperJump();
-				}
-			}
-			// Allow intentional AUX dump (see comment above)
-			// even when not allowed to actually superjump.
-			else if ((m_nButtons & IN_FORWARD) && (m_nButtons & IN_BACK))
-			{
-				SuitPower_Drain(SUPER_JMP_COST);
-			}
+			SuperJump();
 		}
 	}
 }
@@ -1303,6 +1290,13 @@ void CNEO_Player::SuperJump(void)
 		forward = -forward;
 	}
 
+	float boostIntensity = GetPlayerMaxSpeed();
+	if (m_nButtons & (IN_MOVELEFT | IN_MOVERIGHT))
+	{
+		constexpr float sideWaysNerf = 0.70710678118; // 1 / sqrt(2);
+		boostIntensity *= sideWaysNerf;
+	}
+
 	// NEO TODO (Rain): handle underwater case
 	// NEO TODO (Rain): handle ladder mounted case
 	// NEO TODO (Rain): handle "mounted" use key context case
@@ -1340,7 +1334,7 @@ void CNEO_Player::SuperJump(void)
 	pOther->AddFlag(FL_BASEVELOCITY);
 #endif
 
-	ApplyAbsVelocityImpulse(forward * neo_recon_superjump_intensity.GetFloat());
+	ApplyAbsVelocityImpulse(forward * boostIntensity);
 }
 
 bool CNEO_Player::IsAllowedToSuperJump(void)
@@ -1363,7 +1357,7 @@ bool CNEO_Player::IsAllowedToSuperJump(void)
 
 	// Only superjump if we have a reasonable jump direction in mind
 	// NEO TODO (Rain): should we support sideways superjumping?
-	if ((m_nButtons & (IN_FORWARD | IN_BACK)) == 0)
+	if ((m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)) == 0)
 	{
 		return false;
 	}
