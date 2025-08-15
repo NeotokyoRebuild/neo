@@ -1,7 +1,48 @@
 #pragma once
 
+#include <tier1/netadr.h>
 #include <steam/isteammatchmaking.h>
 #include <utlvector.h>
+
+enum EServerBlacklistType
+{
+	SBLIST_TYPE_NETADR = 0,
+	SBLIST_TYPE_SUBNAME,
+
+	SBLIST_TYPE__TOTAL,
+};
+
+struct ServerBlacklistInfo
+{
+	// Data section
+	wchar_t wszName[256];
+	time_t timeVal;
+	netadr_s netAdr;
+	EServerBlacklistType eType;
+
+	// Visual cache only
+	wchar_t wszDateTimeAdded[48];
+};
+extern CUtlVector<ServerBlacklistInfo> g_blacklistedServers;
+
+enum ServerBlacklistCols
+{
+	SBLIST_COL_NAME = 0,
+	SBLIST_COL_TYPE,
+	SBLIST_COL_DATETIME,
+
+	SBLIST_COL__TOTAL,
+};
+
+// NEO NOTE (nullsystem): NT;RE blacklist should be separate as it have more feature set
+// and SDK's blacklist read/write would collide if it's the same filename
+static constexpr const char SERVER_BLACKLIST_DEFFILE[] = "cfg/ntre_server_blacklist.txt";
+
+void ServerBlacklistRead(const char *szPath);
+void ServerBlacklistWrite(const char *szPath);
+void ServerBlacklistCacheWsz(ServerBlacklistInfo *sbInfo);
+bool ServerBlacklisted(const gameserveritem_t &server);
+void ServerBlacklistUpdateSortedList();
 
 enum GameServerType
 {
@@ -11,6 +52,7 @@ enum GameServerType
 	GS_FAVORITES,
 	GS_HISTORY,
 	GS_SPEC,
+	GS_BLACKLIST,
 
 	GS__TOTAL,
 };
