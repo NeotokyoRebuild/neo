@@ -208,7 +208,8 @@ public:
 	int GetForcedSkin();
 	int GetForcedWeapon();
 	virtual const char* GetGameTypeName(void) OVERRIDE;
-	bool CanChangeTeamClassWeaponWhenAlive();
+	virtual const bool CanChangeTeamClassLoadoutWhenAlive();
+	virtual const bool CanRespawnAnyTime();
 
 	void GetDMHighestScorers(
 #ifdef GAME_DLL
@@ -376,6 +377,9 @@ public:
 #endif
 
 	const char *GetTeamClantag(const int iTeamNum) const;
+#ifdef GAME_DLL
+	void OnNavMeshLoad() override;
+#endif // GAME_DL:
 
 public:
 #ifdef GAME_DLL
@@ -444,14 +448,6 @@ private:
 public:
 	// VIP networked variables
 	CNetworkVar(int, m_iEscortingTeam);
-	
-#define MAX_DUMMY_BEACONS 32 // source sdk supports up to 2048 entities with edicts
-#ifdef GAME_DLL
-	CNetworkArray(CBaseHandle, m_iDummyBeacons, MAX_DUMMY_BEACONS);
-#else
-	CBaseHandle m_iDummyBeacons[MAX_DUMMY_BEACONS];
-#endif // GAME_DLL
-	CNetworkVar(int, m_iLastDummyBeacon);
 };
 
 inline CNEORules *NEORules()

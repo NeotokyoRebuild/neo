@@ -87,7 +87,6 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_nVisionLastTick)),
 	RecvPropTime(RECVINFO(m_flJumpLastTime)),
 
-	RecvPropArray(RecvPropVector(RECVINFO(m_rvFriendlyPlayerPositions[0])), m_rvFriendlyPlayerPositions),
 	RecvPropArray(RecvPropInt(RECVINFO(m_rfAttackersScores[0])), m_rfAttackersScores),
 	RecvPropArray(RecvPropFloat(RECVINFO(m_rfAttackersAccumlator[0])), m_rfAttackersAccumlator),
 	RecvPropArray(RecvPropInt(RECVINFO(m_rfAttackersHits[0])), m_rfAttackersHits),
@@ -95,6 +94,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_NeoFlags)),
 	RecvPropString(RECVINFO(m_szNeoName)),
 	RecvPropString(RECVINFO(m_szNeoClantag)),
+	RecvPropString(RECVINFO(m_szNeoCrosshair)),
 	RecvPropInt(RECVINFO(m_szNameDupePos)),
 	RecvPropBool(RECVINFO(m_bClientWantNeoName)),
 
@@ -102,7 +102,6 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA(C_NEO_Player)
-	DEFINE_PRED_FIELD(m_rvFriendlyPlayerPositions, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_ARRAY(m_rfAttackersScores, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_ARRAY(m_rfAttackersAccumlator, FIELD_FLOAT, MAX_PLAYERS + 1, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_ARRAY(m_rfAttackersHits, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_INSENDTABLE),
@@ -143,9 +142,9 @@ static void __MsgFunc_DamageInfo(bf_read& msg)
 
 	static const char* BORDER = "==========================\n";
 	bool setKillByLine = false;
-	if (killerIdx > 0)
+	if (killerIdx > 0 && killerIdx <= gpGlobals->maxClients)
 	{
-		auto *neoAttacker = dynamic_cast<C_NEO_Player*>(UTIL_PlayerByIndex(killerIdx));
+		auto *neoAttacker = assert_cast<C_NEO_Player*>(UTIL_PlayerByIndex(killerIdx));
 		if (neoAttacker && neoAttacker->entindex() != thisIdx)
 		{
 			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, localPlayer, foundKilledBy ? killedBy : NULL);
@@ -162,7 +161,7 @@ static void __MsgFunc_DamageInfo(bf_read& msg)
 			continue;
 		}
 
-		auto* neoAttacker = dynamic_cast<C_NEO_Player*>(UTIL_PlayerByIndex(pIdx));
+		auto* neoAttacker = assert_cast<C_NEO_Player*>(UTIL_PlayerByIndex(pIdx));
 		if (!neoAttacker || neoAttacker->IsHLTV())
 		{
 			continue;
@@ -237,7 +236,7 @@ public:
 			return;
 		}
 
-		auto panel = dynamic_cast<vgui::EditablePanel*>(GetClientModeNormal()->
+		auto panel = assert_cast<vgui::EditablePanel*>(GetClientModeNormal()->
 			GetViewport()->FindChildByName(PANEL_NEO_LOADOUT));
 
 		if (!panel)
@@ -247,13 +246,13 @@ public:
 			return;
 		}
 
-		auto classPanel = dynamic_cast<CNeoClassMenu*>(GetClientModeNormal()->
+		auto classPanel = assert_cast<CNeoClassMenu*>(GetClientModeNormal()->
 			GetViewport()->FindChildByName(PANEL_CLASS));
 		if (classPanel)
 		{
 			classPanel->ShowPanel(false);
 		}
-		auto teamPanel = dynamic_cast<CNeoTeamMenu*>(GetClientModeNormal()->
+		auto teamPanel = assert_cast<CNeoTeamMenu*>(GetClientModeNormal()->
 			GetViewport()->FindChildByName(PANEL_TEAM));
 		if (teamPanel)
 		{
@@ -297,7 +296,7 @@ public:
 		panel->SetVisible(true);
 		panel->SetEnabled(true);
 
-		auto loadoutPanel = dynamic_cast<CNeoLoadoutMenu*>(panel);
+		auto loadoutPanel = assert_cast<CNeoLoadoutMenu*>(panel);
 		if (loadoutPanel)
 		{
 			loadoutPanel->ShowPanel(true);
@@ -323,7 +322,7 @@ public:
 			return;
 		}
 
-		if (command.ArgC() > 1 && !command.FindArg("skipTeamCheck"))
+		if (!command.FindArg("skipTeamCheck"))
 		{ // A smarter way to do this might be to assign the buttons for class and weapons menu to unique commands that check the current team and call this commandcallback
 			auto team = GetLocalPlayerTeam();
 			if(team < FIRST_GAME_TEAM)
@@ -332,13 +331,19 @@ public:
 			}
 		}
 
-		auto playerNeoClass = C_NEO_Player::GetLocalNEOPlayer()->m_iNeoClass;
+		C_NEO_Player* localPlayer = C_NEO_Player::GetLocalNEOPlayer();
+		if (!localPlayer)
+		{
+			return;
+		}
+
+		auto playerNeoClass = localPlayer->m_iNeoClass;
 		if (playerNeoClass == NEO_CLASS_VIP)
 		{
 			return;
 		}
 		
-		vgui::EditablePanel *panel = dynamic_cast<vgui::EditablePanel*>
+		vgui::EditablePanel *panel = assert_cast<vgui::EditablePanel*>
 			(GetClientModeNormal()->GetViewport()->FindChildByName(PANEL_CLASS));
 
 		if (!panel)
@@ -348,13 +353,13 @@ public:
 			return;
 		}
 
-		auto loadoutPanel = dynamic_cast<CNeoLoadoutMenu*>(GetClientModeNormal()->
+		auto loadoutPanel = assert_cast<CNeoLoadoutMenu*>(GetClientModeNormal()->
 			GetViewport()->FindChildByName(PANEL_NEO_LOADOUT));
 		if (loadoutPanel)
 		{
 			loadoutPanel->ShowPanel(false);
 		}
-		auto teamPanel = dynamic_cast<CNeoTeamMenu*>(GetClientModeNormal()->
+		auto teamPanel = assert_cast<CNeoTeamMenu*>(GetClientModeNormal()->
 			GetViewport()->FindChildByName(PANEL_TEAM));
 		if (teamPanel)
 		{
@@ -411,7 +416,7 @@ public:
 			return;
 		}
 
-		vgui::EditablePanel *panel = dynamic_cast<vgui::EditablePanel*>
+		vgui::EditablePanel *panel = assert_cast<vgui::EditablePanel*>
 			(GetClientModeNormal()->GetViewport()->FindChildByName(PANEL_TEAM));
 		if (!panel)
 		{
@@ -420,13 +425,13 @@ public:
 			return;
 		}
 
-		auto loadoutPanel = dynamic_cast<CNeoLoadoutMenu*>(GetClientModeNormal()->
+		auto loadoutPanel = assert_cast<CNeoLoadoutMenu*>(GetClientModeNormal()->
 			GetViewport()->FindChildByName(PANEL_NEO_LOADOUT));
 		if (loadoutPanel)
 		{
 			loadoutPanel->ShowPanel(false);
 		}
-		auto classPanel = dynamic_cast<CNeoClassMenu*>(GetClientModeNormal()->
+		auto classPanel = assert_cast<CNeoClassMenu*>(GetClientModeNormal()->
 			GetViewport()->FindChildByName(PANEL_CLASS));
 		if (classPanel)
 		{
@@ -497,6 +502,7 @@ C_NEO_Player::C_NEO_Player()
 	m_iNeoStar = NEO_DEFAULT_STAR;
 	V_memset(m_szNeoName.GetForModify(), 0, sizeof(m_szNeoName));
 	V_memset(m_szNeoClantag.GetForModify(), 0, sizeof(m_szNeoClantag));
+	V_memset(m_szNeoCrosshair.GetForModify(), 0, sizeof(m_szNeoCrosshair));
 
 	m_iLoadoutWepChoice = NEORules()->GetForcedWeapon() >= 0 ? NEORules()->GetForcedWeapon() : 0;
 	m_iNextSpawnClassChoice = -1;
@@ -612,15 +618,6 @@ void C_NEO_Player::CheckLeanButtons()
 	else if ((m_nButtons & IN_LEAN_RIGHT) && !(m_nButtons & IN_LEAN_LEFT || IsSprinting()))
 	{
 		m_bInLean = NEO_LEAN_RIGHT;
-	}
-}
-
-void C_NEO_Player::ZeroFriendlyPlayerLocArray()
-{
-	Assert(m_rvFriendlyPlayerPositions.Count() == MAX_PLAYERS);
-	for (int i = 0; i < MAX_PLAYERS; ++i)
-	{
-		m_rvFriendlyPlayerPositions.GetForModify(i) = vec3_origin;
 	}
 }
 
@@ -921,12 +918,7 @@ void C_NEO_Player::CalculateSpeed(void)
 
 	if (GetFlags() & FL_DUCKING)
 	{
-		speed *= NEO_CROUCH_WALK_MODIFIER;
-	}
-
-	if (m_nButtons & IN_WALK)
-	{
-		speed *= NEO_CROUCH_WALK_MODIFIER; // They stack
+		speed *= NEO_CROUCH_MODIFIER;
 	}
 
 	if (IsSprinting())
@@ -952,11 +944,16 @@ void C_NEO_Player::CalculateSpeed(void)
 		speed *= NEO_AIM_MODIFIER;
 	}
 
+	if (m_nButtons & IN_WALK)
+	{
+		speed = MIN(GetFlags() & FL_DUCKING ? NEO_CROUCH_WALK_SPEED : NEO_WALK_SPEED, speed);
+	}
+
 	Vector absoluteVelocity = GetAbsVelocity();
 	absoluteVelocity.z = 0.f;
 	float currentSpeed = absoluteVelocity.Length();
 
-	if (!neo_ghost_bhopping.GetBool() && GetMoveType() != MOVETYPE_LADDER && currentSpeed > speed && m_bCarryingGhost)
+	if (!neo_ghost_bhopping.GetBool() && GetMoveType() == MOVETYPE_WALK && currentSpeed > speed && m_bCarryingGhost)
 	{
 		float overSpeed = currentSpeed - speed;
 		absoluteVelocity.NormalizeInPlace();
@@ -1023,7 +1020,7 @@ void C_NEO_Player::HandleSpeedChangesLegacy()
 			{
 				StopWalking();
 			}
-			else if( !IsWalking() && !IsSprinting() && (m_afButtonPressed & IN_WALK) && !(m_nButtons & IN_DUCK) )
+			else if( !IsWalking() && !IsSprinting() && (m_afButtonPressed & IN_WALK) )
 			{
 				StartWalking();
 			}
@@ -1616,13 +1613,11 @@ void C_NEO_Player::Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon)
 	if (pWeapon->IsGhost())
 	{
 		pWeapon->Holster(NULL);
-		Assert(dynamic_cast<C_WeaponGhost*>(pWeapon));
-		static_cast<C_WeaponGhost*>(pWeapon)->HandleGhostUnequip();
+		assert_cast<C_WeaponGhost*>(pWeapon)->HandleGhostUnequip();
 	}
 	else if (pWeapon->GetNeoWepBits() & NEO_WEP_SUPA7)
 	{
-		Assert(dynamic_cast<C_WeaponSupa7*>(pWeapon));
-		static_cast<C_WeaponSupa7*>(pWeapon)->ClearDelayedInputs();
+		assert_cast<C_WeaponSupa7*>(pWeapon)->ClearDelayedInputs();
 	}
 }
 
@@ -1708,7 +1703,7 @@ float C_NEO_Player::GetCrouchSpeed(void) const
 	case NEO_CLASS_VIP:
 		return NEO_VIP_CROUCH_SPEED;
 	default:
-		return (NEO_BASE_SPEED * NEO_CROUCH_WALK_MODIFIER);
+		return (NEO_BASE_SPEED * NEO_CROUCH_MODIFIER);
 	}
 }
 

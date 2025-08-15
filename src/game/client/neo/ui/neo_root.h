@@ -19,6 +19,7 @@ struct NeoNewGame
 	wchar_t wszMap[64] = L"ntre_oilstain_ctg";
 	wchar_t wszHostname[64] = L"NEOTOKYO;REBUILD Listen Server";
 	int iMaxPlayers = 24;
+	int iBotQuota = 10;
 	wchar_t wszPassword[64] = L"neo";
 	bool bFriendlyFire = true;
 	bool bUseSteamNetworking = false;
@@ -43,11 +44,6 @@ public:
 	void PerformLayout() final;
 	void OnKeyCodeTyped(vgui::KeyCode code) final;
 	void OnKeyTyped(wchar_t unichar) final;
-	void OnMousePressed(vgui::MouseCode code) final;
-	void OnMouseReleased(vgui::MouseCode code) final;
-	void OnMouseDoublePressed(vgui::MouseCode code) final;
-	void OnMouseWheeled(int delta) final;
-	void OnCursorMoved(int x, int y) final;
 	void OnThink();
 	CNeoRoot *m_pNeoRoot = nullptr;
 };
@@ -122,6 +118,9 @@ struct SprayInfo
 	char szVtf[MAX_PATH];
 };
 
+#define NEO_MENU_SECONDS_DELAY 0.25f
+#define NEO_MENU_SECONDS_TILL_FULLY_OPAQUE 0.75f
+
 // This class is what is actually used instead of the main menu.
 class CNeoRoot : public vgui::EditablePanel, public CGameEventListener
 {
@@ -147,11 +146,11 @@ public:
 	void OnRelayedKeyTyped(wchar_t unichar);
 	void ApplySchemeSettings(vgui::IScheme *pScheme) final;
 	void Paint() final;
-	void OnRelayedMousePressed(vgui::MouseCode code);
-	void OnRelayedMouseReleased(vgui::MouseCode code);
-	void OnRelayedMouseDoublePressed(vgui::MouseCode code);
-	void OnRelayedMouseWheeled(int delta);
-	void OnRelayedCursorMoved(int x, int y);
+	void OnMousePressed(vgui::MouseCode code) final;
+	void OnMouseReleased(vgui::MouseCode code) final;
+	void OnMouseDoublePressed(vgui::MouseCode code) final;
+	void OnMouseWheeled(int delta) final;
+	void OnCursorMoved(int x, int y) final;
 	void OnTick() final;
 	void FireGameEvent(IGameEvent *event) final;
 
@@ -229,6 +228,7 @@ public:
 	MESSAGE_FUNC_CHARPTR(OnFileSelected, "FileSelected", fullpath);
 
 	bool m_bOnLoadingScreen = false;
+	float m_flTimeLoadingScreenTransition = 0.0f;
 	int m_iSavedYOffsets[NeoUI::MAX_SECTIONS] = {};
 	bool m_bSprayGalleryRefresh = false;
 	float m_flWideAs43 = 0.0f;

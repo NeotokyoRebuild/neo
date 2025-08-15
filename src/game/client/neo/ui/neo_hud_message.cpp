@@ -100,7 +100,7 @@ void CNEOHud_Message::DrawNeoHudElement()
     {
         surface()->DrawSetTextPos(m_Padding, yOffset);
         const std::wstring& line = m_Lines[i];
-        surface()->DrawPrintText(line.c_str(), line.length());
+        surface()->DrawPrintText(line.c_str(), line.size());
         yOffset += m_LineHeights[i] + (int)(2 * m_fScale);
     }
 
@@ -124,6 +124,20 @@ void CNEOHud_Message::DrawNeoHudElement()
     surface()->DrawSetTextColor(255, 255, 255, 255);
     surface()->DrawSetTextPos(crossInset + (int)(20 * m_fScale), crossInset);
     surface()->DrawPrintText(L"SYSTEM_MSG", 10);
+
+    // Sub message for keybind hints
+    if (m_szSubMessage[0])
+    {
+        surface()->DrawSetTextFont(m_hTitleFont);
+
+        constexpr float period = 2.0f;
+        float phase = fmodf(gpGlobals->curtime, period) / period;
+        int alpha = Lerp(phase, 10, 255);
+
+        surface()->DrawSetTextColor(255, 255, 255, alpha);
+        surface()->DrawSetTextPos(m_Padding, m_BoxHeight - crossSize - crossInset * (1.5 * m_fScale));
+        surface()->DrawPrintText(m_szSubMessage, V_wcslen(m_szSubMessage));
+    }
 }
 
 void CNEOHud_Message::Paint()
@@ -136,9 +150,9 @@ void CNEOHud_Message::UpdateStateForNeoHudElementDraw()
 {
 }
 
-void CNEOHud_Message::ShowMessage(wchar_t* message)
+void CNEOHud_Message::ShowMessage(const wchar_t* message)
 {
-    wcsncpy(m_szMessage, message, sizeof(m_szMessage) / sizeof(wchar_t));
+    V_wcsncpy(m_szMessage, ProcessKeyBinds(message).c_str(), sizeof(m_szMessage));
     m_bShouldDraw = true;
 
     m_Lines.clear();
@@ -148,7 +162,8 @@ void CNEOHud_Message::ShowMessage(wchar_t* message)
     int maxWidth = 0;
     int totalHeight = 0;
 
-    wchar_t* messageCopy = wcsdup(message);
+    wchar_t messageCopy[sizeof(m_szMessage)];
+    V_memcpy(messageCopy, m_szMessage, sizeof(messageCopy));
     wchar_t* context = nullptr;
     wchar_t* token = wcstok(messageCopy, L"\n", &context); // Any \n in the localised text will declare a new line
 
@@ -167,7 +182,6 @@ void CNEOHud_Message::ShowMessage(wchar_t* message)
         totalHeight += textHeight + 2;
         token = wcstok(nullptr, L"\n", &context);
     }
-    free(messageCopy);
 
     m_BoxWidth = maxWidth + (m_Padding * 2);
     m_BoxHeight = totalHeight + (m_Padding * 2);
@@ -177,4 +191,72 @@ void CNEOHud_Message::HideMessage()
 {
     m_szMessage[0] = L'\0';
     m_bShouldDraw = false;
+}
+
+std::wstring CNEOHud_Message::ProcessKeyBinds(const wchar_t* rawmessage) const
+{
+    std::wstring inputMessage(rawmessage);
+    std::wstring outputMessage;
+    size_t pos = 0;
+
+    while (pos < inputMessage.size())
+    {
+        size_t start = inputMessage.find(L'%', pos); // Find opening %
+        if (start == std::wstring::npos)
+        {
+            outputMessage = rawmessage; // There is no keybind in here...
+            break;
+        }
+
+        outputMessage.append(inputMessage.substr(pos, start - pos)); // Write up to the first %
+
+        size_t end = inputMessage.find(L'%', start + 1); // Find closing %
+        if (end == std::wstring::npos)
+        {
+            outputMessage = rawmessage; // No closing % so probably not meant to be a keybind
+            break;
+        }
+
+        if (start + 1 == end)
+        {
+            outputMessage.append(L"%"); // Allow use of % symbol normally
+            pos = end + 1;
+            continue;
+        }
+
+        std::wstring unicodeBinding = inputMessage.substr(start + 1, end - start - 1); // Extract the command
+
+        char binding[64];
+        g_pVGuiLocalize->ConvertUnicodeToANSI(unicodeBinding.c_str(), binding, sizeof(binding));
+
+        const char *key = engine->Key_LookupBinding( *binding == '+' ? binding + 1 : binding );
+        if (!key)
+        {
+            key = "< NOT BOUND >";
+        }
+
+        wchar_t unicodeKey[64];
+        g_pVGuiLocalize->ConvertANSIToUnicode(key, unicodeKey, sizeof(unicodeKey));
+
+        for (wchar_t* p = unicodeKey; *p; ++p)
+        {
+            *p = towupper(*p); // Not nessecary but I want everything to be uppercase.
+        }
+
+        outputMessage.append(unicodeKey);
+
+        pos = end + 1; // Continue after the closing %
+    }
+
+    return outputMessage;
+}
+
+void CNEOHud_Message::ShowSubMessage(const wchar_t* message)
+{
+    V_wcsncpy(m_szSubMessage, ProcessKeyBinds(message).c_str(), sizeof(m_szSubMessage));
+}
+
+void CNEOHud_Message::HideSubMessage()
+{
+    m_szSubMessage[0] = L'\0';
 }

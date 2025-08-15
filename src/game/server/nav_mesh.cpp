@@ -812,7 +812,11 @@ CNavArea *CNavMesh::GetNavArea( CBaseEntity *pEntity, int nFlags, float flBeneat
 	{
 		// trace directly down to see if it's below us and unobstructed
 		trace_t result;
+#ifdef NEO
+		UTIL_TraceLine( testPos, Vector( testPos.x, testPos.y, useZ ), MASK_PLAYERSOLID_BRUSHONLY, NULL, COLLISION_GROUP_NONE, &result );
+#else
 		UTIL_TraceLine( testPos, Vector( testPos.x, testPos.y, useZ ), MASK_NPCSOLID_BRUSHONLY, NULL, COLLISION_GROUP_NONE, &result );
+#endif // NEO
 		if ( ( result.fraction != 1.0f ) && ( fabs( result.endpos.z - useZ ) > flStepHeight ) )
 			return NULL;
 	}
@@ -950,7 +954,11 @@ CNavArea *CNavMesh::GetNearestNavArea( const Vector &pos, bool anyZ, float maxDi
 						// make sure 'pos' is not embedded in the world
 						Vector safePos;
 
+#ifdef NEO
+						UTIL_TraceLine( pos, pos + Vector( 0, 0, StepHeight ), MASK_PLAYERSOLID_BRUSHONLY, NULL, COLLISION_GROUP_NONE, &result );
+#else
 						UTIL_TraceLine( pos, pos + Vector( 0, 0, StepHeight ), MASK_NPCSOLID_BRUSHONLY, NULL, COLLISION_GROUP_NONE, &result );
+#endif // NEO
 						if ( result.startsolid )
 						{
 							// it was embedded - move it out
@@ -966,7 +974,11 @@ CNavArea *CNavMesh::GetNearestNavArea( const Vector &pos, bool anyZ, float maxDi
 						if ( heightDelta > StepHeight )
 						{
 							// trace to the height of the original point
+#ifdef NEO
+							UTIL_TraceLine( areaPos + Vector( 0, 0, StepHeight ), Vector( areaPos.x, areaPos.y, safePos.z ), MASK_PLAYERSOLID_BRUSHONLY, NULL, COLLISION_GROUP_NONE, &result );
+#else
 							UTIL_TraceLine( areaPos + Vector( 0, 0, StepHeight ), Vector( areaPos.x, areaPos.y, safePos.z ), MASK_NPCSOLID_BRUSHONLY, NULL, COLLISION_GROUP_NONE, &result );
+#endif // NEO
 							
 							if ( result.fraction != 1.0f )
 							{
@@ -975,7 +987,11 @@ CNavArea *CNavMesh::GetNearestNavArea( const Vector &pos, bool anyZ, float maxDi
 						}
 
 						// trace to the original point's height above the area
+#ifdef NEO
+						UTIL_TraceLine( safePos, Vector( areaPos.x, areaPos.y, safePos.z + StepHeight ), MASK_PLAYERSOLID_BRUSHONLY, NULL, COLLISION_GROUP_NONE, &result );
+#else
 						UTIL_TraceLine( safePos, Vector( areaPos.x, areaPos.y, safePos.z + StepHeight ), MASK_NPCSOLID_BRUSHONLY, NULL, COLLISION_GROUP_NONE, &result );
+#endif // NEO
 
 						if ( result.fraction != 1.0f )
 						{
@@ -1341,7 +1357,11 @@ bool CNavMesh::GetGroundHeight( const Vector &pos, float *height, Vector *normal
 	Vector from( pos.x, pos.y, pos.z + HalfHumanHeight + 1e-3 );
 	while( to.z - pos.z < flMaxOffset ) 
 	{
+#ifdef NEO
+		UTIL_TraceLine( from, to, MASK_PLAYERSOLID_BRUSHONLY, &filter, &result );
+#else
 		UTIL_TraceLine( from, to, MASK_NPCSOLID_BRUSHONLY, &filter, &result );
+#endif // NEO
 		if ( !result.startsolid && (( result.fraction == 1.0f ) || ( ( from.z - result.endpos.z ) >= HalfHumanHeight ) ) )
 		{
 			*height = result.endpos.z;
@@ -1379,7 +1399,11 @@ bool CNavMesh::GetSimpleGroundHeight( const Vector &pos, float *height, Vector *
 
 	trace_t result;
 
+#ifdef NEO
+	UTIL_TraceLine( pos, to, MASK_PLAYERSOLID_BRUSHONLY, NULL, COLLISION_GROUP_NONE, &result );
+#else
 	UTIL_TraceLine( pos, to, MASK_NPCSOLID_BRUSHONLY, NULL, COLLISION_GROUP_NONE, &result );
+#endif // NEO
 
 	if (result.startsolid)
 		return false;

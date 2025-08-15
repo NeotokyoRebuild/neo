@@ -332,10 +332,12 @@ void PerformCustomEffects( const Vector &vecOrigin, trace_t &tr, const Vector &s
 	{
 		FX_DustImpact( vecOrigin, &tr, iScale );
 	}
+#ifndef NEO
 	else if ( iMaterial == CHAR_TEX_ANTLION )
 	{
 		FX_AntlionImpact( vecOrigin, &tr );
 	}
+#endif // NEO
 	else if ( ( iMaterial == CHAR_TEX_METAL ) || ( iMaterial == CHAR_TEX_VENT ) )
 	{
 		Vector	reflect;

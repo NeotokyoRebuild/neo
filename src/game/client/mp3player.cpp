@@ -895,12 +895,12 @@ CMP3Player::CMP3Player( VPANEL parent, char const *panelName ) :
 	vgui::ivgui()->AddTickSignal( GetVPanel(), 100 );
 
 #ifdef NEO
-	LoadSettings();
 	if (!RestoreDb(DB_FILENAME) && m_Files.Count() == 0)
 	{
 		// Load the "game" stuff
 		OnRefresh();
 	}
+	LoadSettings();
 
 	PopulateTree();
 	m_bFirstTime = false;
@@ -916,9 +916,7 @@ CMP3Player::~CMP3Player()
 {
 	if ( m_bDirty )
 	{
-#ifndef NEO // NEO TODO (Adam) This file is just going to grow non stop, work out what we're doing wrong, for now re-make the db on every launch
 		SaveDb( DB_FILENAME );
-#endif // NEO
 	}
 	if ( m_bSettingsDirty )
 	{
@@ -1128,6 +1126,13 @@ ConCommand neo_mp3("neo_mp3", &neo_mp3_callback, "Toggle the mp3 player", FCVAR_
 
 void CMP3Player::OnKeyCodePressed(vgui::KeyCode code)
 {
+	// This can happen if the user presses a key which has no corresponding mapping,
+	// for example multimedia keys like "Volume Up" will trigger this.
+	if (code == BUTTON_CODE_NONE || code == BUTTON_CODE_INVALID)
+	{
+		return;
+	}
+
 	const auto toggleMP3Bind = gameuifuncs->GetButtonCodeForBind("neo_mp3");
 	if (toggleMP3Bind != code || !g_pPlayer)
 	{
@@ -2476,7 +2481,6 @@ void CMP3Player::LoadPlayList( char const *filename )
 	// Clear existing playlist
 	m_PlayList.RemoveAll();
 	m_pFileSheet->ResetPlayList();
-	m_Files.RemoveAll();
 
 	// Update most recent playlist
 	SetMostRecentPlayList(filename);
