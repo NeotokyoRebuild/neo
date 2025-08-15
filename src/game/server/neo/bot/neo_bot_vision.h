@@ -23,6 +23,8 @@ public:
 	virtual float GetMaxVisionRange( void ) const override;				// return maximum distance vision can reach
 	virtual float GetMinRecognizeTime( void ) const override;			// return VISUAL reaction time
 
+	bool IsInFieldOfView( CBaseEntity *subject ) const override;
+
 private:
 	CUtlVector< CHandle< CBaseCombatCharacter > > m_potentiallyVisibleNPCVector;
 	CountdownTimer m_potentiallyVisibleUpdateTimer;

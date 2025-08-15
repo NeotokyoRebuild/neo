@@ -6,6 +6,7 @@
 #include "bot/behavior/neo_bot_attack.h"
 #include "bot/behavior/neo_bot_seek_and_destroy.h"
 #include "nav_mesh.h"
+#include "neo_ghost_cap_point.h"
 
 extern ConVar neo_bot_path_lookahead_range;
 extern ConVar neo_bot_offense_must_push_time;
@@ -369,21 +370,114 @@ void CNEOBotSeekAndDestroy::RecomputeSeekPath( CNEOBot *me )
 #endif
 
 	if (NEORules()->GhostExists())
-	{ // If the ghost exists, go to the ghost
-		m_vGoalPos = NEORules()->GetGhostPos();
-		constexpr int DISTANCE_CONSIDERED_ARRIVED_SQUARED = 5000;
-		if (m_vGoalPos.DistToSqr(me->GetAbsOrigin()) < DISTANCE_CONSIDERED_ARRIVED_SQUARED)
+	{
+		const Vector vGhostPos = NEORules()->GetGhostPos();
+		const int iGhosterPlayer = NEORules()->GetGhosterPlayer();
+
+		bool bGoToGoalPos = true;
+		bool bGetCloserToGhoster = false;
+		bool bQuickToGoalPos = false;
+
+		if (iGhosterPlayer > 0)
 		{
-			constexpr float RECHECK_TIME = 30.f;
-			m_repathTimer.Start(RECHECK_TIME);
-			m_bGoingToTargetEntity = false;
-			return;
+			const int iMyTeam = me->GetTeamNumber();
+			const int iGhosterTeam = NEORules()->GetGhosterTeam();
+
+			// If there's a player playing ghost, turn toward cap zones that's
+			// closest to the ghoster player
+			Vector vrTargetCapPos;
+			int iMinCapGhostLength = INT_MAX;
+
+			// Enemy team is carrying the ghost - try to defend the cap zone
+			// You or friendly team is carrying the ghost - go towards the cap point
+			const int iTargetCapTeam = (iGhosterTeam == iMyTeam) ? iMyTeam : iGhosterTeam;
+
+			for (int i = 0; i < NEORules()->m_pGhostCaps.Count(); i++)
+			{
+				auto pGhostCap = dynamic_cast<CNEOGhostCapturePoint *>(
+						UTIL_EntityByIndex(NEORules()->m_pGhostCaps[i]));
+				if (!pGhostCap)
+				{
+					continue;
+				}
+
+				const Vector vCapPos = pGhostCap->GetAbsOrigin();
+				const Vector vGhostCapDist = vGhostPos - vCapPos;
+				const int iGhostCapLength = static_cast<int>(vGhostCapDist.Length());
+				const int iCapTeam = pGhostCap->owningTeamAlternate();
+
+				if (iCapTeam == iTargetCapTeam && iGhostCapLength < iMinCapGhostLength)
+				{
+					vrTargetCapPos = vCapPos;
+					iMinCapGhostLength = iGhostCapLength;
+				}
+			}
+
+			if (!me->IsCarryingGhost())
+			{
+				// If a ghoster player carrying and nearby, get close to them
+				const float flGhosterMeters = METERS_PER_INCH * me->GetAbsOrigin().DistTo(vGhostPos);
+				const float flMinCapMeters = METERS_PER_INCH * iMinCapGhostLength;
+				static const constexpr float FL_NEARBY_FOLLOW_METERS = 26.0f;
+				static const constexpr float FL_NEARBY_CAPZONE_METERS = 18.0f;
+				const bool bGhosterNearby = flGhosterMeters < FL_NEARBY_FOLLOW_METERS;
+				const bool bCapzoneNearby = flMinCapMeters < FL_NEARBY_CAPZONE_METERS;
+				// But a nearby capzone overrides a nearby ghoster
+				bGetCloserToGhoster = !bCapzoneNearby && bGhosterNearby && flMinCapMeters > flGhosterMeters;
+			}
+
+			if (bGetCloserToGhoster)
+			{
+				m_vGoalPos = vGhostPos;
+				bQuickToGoalPos = true;
+			}
+			else
+			{
+				// iMinCapGhostLength == INT_MAX should never happen, just disable going to target
+				Assert(iMinCapGhostLength < INT_MAX);
+				bGoToGoalPos = (iMinCapGhostLength < INT_MAX);
+
+				m_vGoalPos = vrTargetCapPos;
+				bQuickToGoalPos = (iGhosterTeam != iMyTeam);
+			}
 		}
-		m_bGoingToTargetEntity = true;
-		CNEOBotPathCost cost(me, SAFEST_ROUTE);
-		if (m_path.Compute(me, m_vGoalPos, cost, 0.0f, true, true) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH)
+		else
 		{
-			return;
+			// If the ghost exists, go to the ghost
+			m_vGoalPos = vGhostPos;
+			// NEO TODO (nullsystem): More sophisticated on handling non-ghost playing scenario,
+			// although it kind of already prefer hunting down players when they're in view, but
+			// just going towards ghost isn't something that always happens in general.
+		}
+
+		if (bGoToGoalPos)
+		{
+			if (bGetCloserToGhoster)
+			{
+				constexpr int DISTANCE_CONSIDERED_ASSISTING_SQUARED = 50000;
+				if (m_vGoalPos.DistToSqr(me->GetAbsOrigin()) < DISTANCE_CONSIDERED_ASSISTING_SQUARED)
+				{
+					// Don't stop targeting entity even when near enough
+					return;
+				}
+			}
+			else
+			{
+				constexpr int DISTANCE_CONSIDERED_ARRIVED_SQUARED = 10000;
+				if (m_vGoalPos.DistToSqr(me->GetAbsOrigin()) < DISTANCE_CONSIDERED_ARRIVED_SQUARED)
+				{
+					constexpr float RECHECK_TIME = 30.f;
+					m_repathTimer.Start(RECHECK_TIME);
+					m_bGoingToTargetEntity = false;
+					return;
+				}
+			}
+			m_bGoingToTargetEntity = true;
+			CNEOBotPathCost cost(me, bQuickToGoalPos ? FASTEST_ROUTE : SAFEST_ROUTE);
+			if (m_path.Compute(me, m_vGoalPos, cost, 0.0f, true, true) && m_path.IsValid() && m_path.GetResult() == Path::COMPLETE_PATH)
+			{
+				return;
+			}
 		}
 	}
 
