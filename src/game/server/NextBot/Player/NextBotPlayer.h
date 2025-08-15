@@ -281,7 +281,7 @@ protected:
 	CountdownTimer m_buttonScaleTimer;
 #ifdef NEO
 	CountdownTimer m_thermopticButtonTimer;
-#endif
+#endif // NEO
 	IntervalTimer m_burningTimer;		// how long since we were last burning
 	float m_forwardScale;
 	float m_rightScale;
@@ -607,7 +607,7 @@ inline void NextBotPlayer< PlayerType >::Spawn( void )
 	m_burningTimer.Invalidate();
 #ifdef NEO
 	m_thermopticButtonTimer.Invalidate();
-#endif
+#endif // NEO
 
 	// reset first, because Spawn() may access various interfaces
 	INextBot::Reset();

@@ -97,13 +97,9 @@ bool ClientWantsAimHold(const CNEO_Player* player)
 #ifdef CLIENT_DLL
 	return neo_aim_hold.GetBool();
 #else
-	if (!player)
+	if (!player || player->IsBot())
 	{
 		return false;
-	}
-	else if (player->GetFlags() & FL_FAKECLIENT)
-	{
-		return true;
 	}
 
 	return 1 == atoi(engine->GetClientConVarValue(engine->IndexOfEdict(player->edict()), "neo_aim_hold"));

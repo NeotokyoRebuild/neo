@@ -79,6 +79,11 @@ float CNEOBotLocomotion::GetWalkSpeed( void ) const
 	return me->GetNormSpeed_WithActiveWepEncumberment();
 }
 
+bool CNEOBotLocomotion::IsRunning( void ) const
+{
+	return GetSpeed() > GetWalkSpeed();
+}
+
 
 //-----------------------------------------------------------------------------------------
 // Return true if given area can be used for navigation
