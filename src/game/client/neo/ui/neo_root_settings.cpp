@@ -245,6 +245,7 @@ void NeoSettingsDeinit(NeoSettings *ns)
 void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKeys)
 {
 	ns->bModified = false;
+	ns->bIsValid = true;
 	NeoSettings::CVR *cvr = &ns->cvr;
 	{
 		NeoSettings::General *pGeneral = &ns->general;
@@ -261,6 +262,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->iLeanAutomatic = cvr->cl_neo_lean_automatic.GetInt();
 		pGeneral->bShowSquadList = cvr->cl_neo_squad_hud_original.GetBool();
 		pGeneral->bShowPlayerSprays = !(cvr->cl_spraydisable.GetBool()); // Inverse
+		pGeneral->bShowHints = cvr->cl_neo_showhints.GetBool();
 		pGeneral->bShowPos = cvr->cl_showpos.GetBool();
 		pGeneral->iShowFps = cvr->cl_showfps.GetInt();
 		{
@@ -488,6 +490,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_neo_lean_automatic.SetValue(pGeneral->iLeanAutomatic);
 		cvr->cl_neo_squad_hud_original.SetValue(pGeneral->bShowSquadList);
 		cvr->cl_spraydisable.SetValue(!pGeneral->bShowPlayerSprays); // Inverse
+		cvr->cl_neo_showhints.SetValue(pGeneral->bShowHints);
 		cvr->cl_showpos.SetValue(pGeneral->bShowPos);
 		cvr->cl_showfps.SetValue(pGeneral->iShowFps);
 		cvr->cl_downloadfilter.SetValue(DLFILTER_STRMAP[pGeneral->iDlFilter]);
@@ -669,14 +672,27 @@ static_assert(ARRAYSIZE(DLFILTER_STRMAP) == ARRAYSIZE(DLFILTER_LABELS));
 void NeoSettings_General(NeoSettings *ns)
 {
 	NeoSettings::General *pGeneral = &ns->general;
-	NeoUI::TextEdit(L"Name", pGeneral->wszNeoName, SZWSZ_LEN(pGeneral->wszNeoName));
-	NeoUI::TextEdit(L"Clan tag", pGeneral->wszNeoClantag, SZWSZ_LEN(pGeneral->wszNeoClantag));
+	NeoUI::TextEdit(L"Name", pGeneral->wszNeoName, MAX_PLAYER_NAME_LENGTH - 1);
+	NeoUI::TextEdit(L"Clan tag", pGeneral->wszNeoClantag, NEO_MAX_CLANTAG_LENGTH - 1);
 	NeoUI::RingBoxBool(L"Show only steam name", &pGeneral->bOnlySteamNick);
 	NeoUI::RingBoxBool(L"Friendly marker spectator only clantags", &pGeneral->bMarkerSpecOnlyClantag);
 
 	wchar_t wszTotalClanAndName[NEO_MAX_DISPLAYNAME];
-	GetClNeoDisplayName(wszTotalClanAndName, pGeneral->wszNeoName, pGeneral->wszNeoClantag, pGeneral->bOnlySteamNick);
-	NeoUI::Label(L"Display name", wszTotalClanAndName);
+	ns->bIsValid = GetClNeoDisplayName(wszTotalClanAndName,
+			pGeneral->wszNeoName, pGeneral->wszNeoClantag,
+			((pGeneral->bOnlySteamNick) ?
+			 	CL_NEODISPLAYNAME_FLAG_CHECK | CL_NEODISPLAYNAME_FLAG_ONLYSTEAMNICK :
+				CL_NEODISPLAYNAME_FLAG_CHECK));
+	if (ns->bIsValid)
+	{
+		NeoUI::Label(L"Display name", wszTotalClanAndName);
+	}
+	else
+	{
+		NeoUI::BeginOverrideFgColor(COLOR_RED);
+		NeoUI::Label(L"Display name (invalid)", wszTotalClanAndName);
+		NeoUI::EndOverrideFgColor();
+	}
 
 	NeoUI::SliderInt(L"FOV", &pGeneral->iFov, 75, 110);
 	NeoUI::SliderInt(L"Viewmodel FOV Offset", &pGeneral->iViewmodelFov, -20, 40);
@@ -686,6 +702,7 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBoxBool(L"Lean viewmodel only", &pGeneral->bLeanViewmodelOnly);
 	NeoUI::RingBox(L"Automatic leaning", AUTOMATIC_LEAN_LABELS, ARRAYSIZE(AUTOMATIC_LEAN_LABELS), &pGeneral->iLeanAutomatic);
 	NeoUI::RingBoxBool(L"Classic squad list", &pGeneral->bShowSquadList);
+	NeoUI::RingBoxBool(L"Show hints", &pGeneral->bShowHints);
 	NeoUI::RingBoxBool(L"Show position", &pGeneral->bShowPos);
 	NeoUI::RingBox(L"Show FPS", SHOWFPS_LABELS, ARRAYSIZE(SHOWFPS_LABELS), &pGeneral->iShowFps);
 	NeoUI::RingBoxBool(L"Show rangefinder", &pGeneral->bEnableRangeFinder);

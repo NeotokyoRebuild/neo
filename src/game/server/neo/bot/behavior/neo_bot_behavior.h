@@ -2,7 +2,9 @@
 
 #include "Path/NextBotPathFollow.h"
 
-class CNEOBotMainAction : public Action< CNEOBot >
+#include "../neo_bot_contextual_query_interface.h"
+
+class CNEOBotMainAction : public Action< CNEOBot >, public CNEOBotContextualQueryInterface
 {
 public:
 	virtual Action< CNEOBot > *InitialContainedAction( CNEOBot *me );
@@ -17,9 +19,13 @@ public:
 
 	virtual EventDesiredResult< CNEOBot > OnOtherKilled( CNEOBot *me, CBaseCombatCharacter *victim, const CTakeDamageInfo &info );
 
+	// IContextualQuery implementation
 	virtual QueryResultType ShouldAttack( const INextBot *me, const CKnownEntity *them ) const;
 	virtual QueryResultType	ShouldRetreat( const INextBot *me ) const;							// is it time to retreat?
 	virtual QueryResultType	ShouldHurry( const INextBot *me ) const;							// are we in a hurry?
+	
+	// CNEOBotContextualQueryInterface implementation
+	QueryResultType ShouldWalk(const CNEOBot *me) const final;
 
 	virtual Vector SelectTargetPoint( const INextBot *me, const CBaseCombatCharacter *subject ) const;		// given a subject, return the world space position we should aim at
 	virtual QueryResultType IsPositionAllowed( const INextBot *me, const Vector &pos ) const;
