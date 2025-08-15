@@ -8,9 +8,6 @@
 
 #include "NextBotComponentInterface.h"
 #include "NextBotKnownEntity.h"
-#ifdef NEO
-#include <map>
-#endif // NEO
 
 class IBody;
 class INextBotEntityFilter;
@@ -84,11 +81,7 @@ public:
 	 * If 'visibleSpot' is non-NULL, the highest priority spot on the subject that is visible is returned.
 	 */ 
 	enum FieldOfViewCheckType { USE_FOV, DISREGARD_FOV };
-#ifdef NEO
-	virtual bool IsAbleToSee( CBaseEntity *subject, FieldOfViewCheckType checkFOV, Vector *visibleSpot = NULL );
-#else
 	virtual bool IsAbleToSee( CBaseEntity *subject, FieldOfViewCheckType checkFOV, Vector *visibleSpot = NULL ) const;
-#endif // NEO
 	virtual bool IsAbleToSee( const Vector &pos, FieldOfViewCheckType checkFOV ) const;
 
 	virtual bool IsIgnored( CBaseEntity *subject ) const;		// return true to completely ignore this entity (may not be in sight when this is called)
@@ -110,11 +103,9 @@ public:
 	 * A visible spot on the subject is returned in 'visibleSpot'.
 	 */
 #ifdef NEO // May as well update idealTargetPoint here to not do extra tracelines
-	virtual bool IsLineOfSightClearToEntity( const CBaseEntity *subject, Vector *visibleSpot = NULL );
-	std::map<int, Vector> idealTargetPoint;
-#else
-	virtual bool IsLineOfSightClearToEntity( const CBaseEntity *subject, Vector *visibleSpot = NULL ) const;
+	mutable CUtlMap<int, Vector> idealTargetPoint;
 #endif // NEO
+	virtual bool IsLineOfSightClearToEntity( const CBaseEntity *subject, Vector *visibleSpot = NULL ) const;
 
 	/// @todo: Implement LookAt system
 	virtual bool IsLookingAt( const Vector &pos, float cosTolerance = 0.95f ) const;					// are we looking at the given position
