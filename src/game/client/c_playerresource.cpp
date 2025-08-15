@@ -225,7 +225,7 @@ const char *C_PlayerResource::GetPlayerName( int iIndex )
 	{
 		if (dupeIdx > 0)
 		{
-			Q_snprintf(m_szDispNameWDupeIdx[iIndex], sizeof(m_szDispNameWDupeIdx[iIndex]), "%s (%d)", m_szNeoName[iIndex], dupeIdx);
+			V_sprintf_safe(m_szDispNameWDupeIdx[iIndex], "%s (%d)", m_szNeoName[iIndex], dupeIdx);
 			return m_szDispNameWDupeIdx[iIndex];
 		}
 		return m_szNeoName[iIndex];
@@ -233,7 +233,7 @@ const char *C_PlayerResource::GetPlayerName( int iIndex )
 
 	if (clientWantNeoName && dupeIdx > 0)
 	{
-		Q_snprintf(m_szDispNameWDupeIdx[iIndex], sizeof(m_szDispNameWDupeIdx[iIndex]), "%s (%d)", m_szName[iIndex], dupeIdx);
+		V_sprintf_safe(m_szDispNameWDupeIdx[iIndex], "%s (%d)", m_szName[iIndex], dupeIdx);
 		return m_szDispNameWDupeIdx[iIndex];
 	}
 #endif

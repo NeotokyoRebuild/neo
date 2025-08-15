@@ -22,6 +22,7 @@
 #include "neo_hud_childelement.h"
 #include "spectatorgui.h"
 #include "takedamageinfo.h"
+#include "c_neo_killer_damage_infos.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -797,6 +798,12 @@ void CNEOHud_DeathNotice::AddPlayerDeath(IGameEvent* event)
 	const char* deathIcon = event->GetString("deathIcon");
 	g_pVGuiLocalize->ConvertANSIToUnicode(deathIcon, deathMsg.szDeathIcon, sizeof(deathMsg.szDeathIcon));
 	deathMsg.bInvolved = killer == GetLocalPlayerIndex() || victim == GetLocalPlayerIndex() || assist == GetLocalPlayerIndex();
+	Assert(victim >= 0 && victim < (MAX_PLAYERS + 1));
+	C_NEO_Player *localPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if (localPlayer)
+	{
+		localPlayer->m_rfNeoPlayerIdxsKilledByLocal[victim] = (killer == localPlayer->entindex());
+	}
 
 	SetDeathNoticeItemDimensions(&deathMsg);
 
