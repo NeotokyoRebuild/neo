@@ -36,3 +36,8 @@ CWeaponJitteS::CWeaponJitteS()
 		"jittesry",
 	};
 }
+
+bool CWeaponJitteS::CanBePickedUpByClass(int classId)
+{
+	return classId != NEO_CLASS_JUGGERNAUT;
+}
