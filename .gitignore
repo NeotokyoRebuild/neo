@@ -48,7 +48,7 @@ out
 /game/neo/resource/mp3settings.txt
 
 # Selected Background
-/game/neo/scripts/chapterbackgrounds.txt
+/game/neo/scripts/ChapterBackgrounds.txt
 
 # Object files
 *.o

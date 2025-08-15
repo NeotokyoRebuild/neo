@@ -241,7 +241,7 @@ void NeoSettingsInit(NeoSettings *ns)
 
 // sv_unlockedchapters is not a consistent way of guaranteeing what background shows up as the menu background.
 // Instead, we read all available backgrounds from a second file neo_backgrounds.txt, and overwrite chapterbackgrounds.txt
-// to only include the one background that the user is insterested in.
+// to only include the one background that the user is interested in.
 void NeoSettingsBackgroundsInit(NeoSettings* ns)
 {
 #define NEO_BACKGROUNDS_FILENAME "scripts/neo_backgrounds.txt"
@@ -256,7 +256,7 @@ void NeoSettingsBackgroundsInit(NeoSettings* ns)
 	ns->backgrounds = new KeyValues( "neo_backgrounds" );
 	ns->iCBListSize = 0;
 
-	const auto allocate = [](NeoSettings *ns, int size) {
+	constexpr auto allocate = [](NeoSettings *ns, int size) {
 		ns->p2WszCBList = (wchar_t **)calloc(sizeof(wchar_t *), ns->iCBListSize);
 		ns->p2WszCBList[0] = (wchar_t *)calloc(sizeof(wchar_t) * size, ns->iCBListSize);
 	};
@@ -276,7 +276,7 @@ void NeoSettingsBackgroundsInit(NeoSettings* ns)
 	for ( KeyValues* background = ns->backgrounds->GetFirstSubKey(); background != NULL; /*background = background->GetNextKey()*/)
 	{ // Iterate once to get the number of options and longest background map name
 		const char* displayName = background->GetName();
-		if (displayName == "") // NEO NOTE (Adam) If name missing read will fail
+		if (FStrEq(displayName, "")) // NEO NOTE (Adam) If name missing read will fail
 		{ // no display name, skip
 			KeyValues* thisKey = background;
 			background = background->GetNextKey();
@@ -285,7 +285,7 @@ void NeoSettingsBackgroundsInit(NeoSettings* ns)
 		}
 
 		const char* fileName = background->GetString("fileName");
-		if (fileName == "")
+		if (FStrEq(fileName, ""))
 		{ // no file name, skip
 			KeyValues* thisKey = background;
 			background = background->GetNextKey();
