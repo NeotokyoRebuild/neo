@@ -125,6 +125,21 @@ enum EFont
 	FONT__TOTAL,
 };
 
+enum ECopyMenu
+{
+	COPYMENU_CUT,
+	COPYMENU_COPY,
+	COPYMENU_PASTE,
+
+	COPYMENU__TOTAL,
+};
+
+enum ETextEditFlags
+{
+	TEXTEDITFLAG_NONE = 0,
+	TEXTEDITFLAG_PASSWORD = 1 << 0,
+};
+
 struct SliderInfo
 {
 	wchar_t wszText[33];
@@ -149,6 +164,9 @@ struct Context
 	Color selectBgColor;
 	Color normalBgColor;
 
+	Color cOverrideFgColor;
+	bool bIsOverrideFgColor = false;
+
 	// Mouse handling
 	int iMouseAbsX;
 	int iMouseAbsY;
@@ -165,6 +183,9 @@ struct Context
 		const int *iRowParts;
 		int iRowTall;
 		int iDefRowTall;
+
+		int iVertPartsTotal;
+		const int *iVertParts;
 	};
 	Layout layout;
 
@@ -172,6 +193,7 @@ struct Context
 	vgui::IntRect rWidgetArea;
 	int irWidgetWide;
 	int irWidgetTall;
+	int irWidgetLayoutY;
 
 	// Layout management
 	// "Static" sizing
@@ -181,8 +203,10 @@ struct Context
 
 	// Active layouting
 	int iIdxRowParts;
+	int iIdxVertParts;
 	int iLayoutX;
 	int iLayoutY;
+	int iVertLayoutY;
 	int iYOffset[MAX_SECTIONS] = {};
 	bool abYMouseDragOffset[MAX_SECTIONS] = {};
 	int iStartMouseDragOffset[MAX_SECTIONS] = {};
@@ -193,7 +217,6 @@ struct Context
 
 	TextStyle eButtonTextStyle;
 	TextStyle eLabelTextStyle;
-	bool bTextEditIsPassword;
 
 	FontInfo fonts[FONT__TOTAL] = {};
 	EFont eFont = FONT_NTNORMAL;
@@ -216,6 +239,21 @@ struct Context
 	const char *pSzCurCtxName;
 	CUtlHashtable<const wchar_t *, SliderInfo> htSliders;
 	CUtlHashtable<CUtlConstString, int> htTexMap;
+
+	// Right click menu
+	int iRightClick = -1;
+	int iRightClickSection = -1;
+	int iRightClickHotItem = -1;
+	int ipwszRightClickListSize = 0;
+	const wchar **pwszRightClickList = nullptr;
+	Dim dimRightClick = {};
+
+	// TextEdit text selection
+	int iTextSelStart = -1;
+	int iTextSelCur = -1;
+	int iTextSelDrag = -1;
+	int iTextSelDragSection = -1;
+	int irTextWidths[MAX_TEXTINPUT_U8BYTES_LIMIT] = {};
 };
 
 struct GetMouseinFocusedRet
@@ -253,11 +291,13 @@ struct LabelExOpt
 #define COLOR_NEOPANELBAR Color(20, 20, 20, 255)
 #define COLOR_NEOPANELMICTEST Color(30, 90, 30, 255)
 
-enum WidgetFlag
+enum WidgetFlag_
 {
 	WIDGETFLAG_NONE = 0,
 	WIDGETFLAG_SKIPACTIVE = 1 << 0,
+	WIDGETFLAG_MOUSE = 1 << 1,
 };
+typedef int WidgetFlag;
 
 void FreeContext(NeoUI::Context *pCtx);
 
@@ -265,13 +305,19 @@ void BeginContext(NeoUI::Context *pNextCtx, const NeoUI::Mode eMode, const wchar
 void EndContext();
 void BeginSection(const bool bDefaultFocus = false);
 void EndSection();
-void BeginWidget(const WidgetFlag eWidgetFlag = WIDGETFLAG_NONE);
+GetMouseinFocusedRet BeginWidget(const WidgetFlag eWidgetFlag = WIDGETFLAG_NONE);
 void EndWidget(const GetMouseinFocusedRet wdgState);
 
 void SetPerRowLayout(const int iColTotal, const int *iColProportions = nullptr, const int iRowHeight = -1);
+// Layout a vertical within the (horizontal) column, iRowTotal = 0 to disable
+void SetPerCellVertLayout(const int iRowTotal, const int *iRowProportions = nullptr);
+
 void SwapFont(const EFont eFont, const bool bForce = false);
 void SwapColorNormal(const Color &color);
 void MultiWidgetHighlighter(const int iTotalWidgets);
+
+void BeginOverrideFgColor(const Color &fgColor);
+void EndOverrideFgColor();
 
 // Widgets
 /*1W*/ void Pad();
@@ -296,9 +342,8 @@ void MultiWidgetHighlighter(const int iTotalWidgets);
 					  const wchar_t *wszSpecialText = nullptr);
 /*2W*/ void SliderU8(const wchar_t *wszLeftLabel, uint8 *ucValue, const uint8 iMin, const uint8 iMax, const uint8 iStep = 1,
 					 const wchar_t *wszSpecialText = nullptr);
-// NEO NOTE (nullsystem): iMaxBytes as in when the wchar_t fits into back into a UTF-8 char
-/*1W*/ void TextEdit(wchar_t *wszText, const int iMaxBytes);
-/*2W*/ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxBytes);
+/*1W*/ void TextEdit(wchar_t *wszText, const int iMaxWszTextSize, const ETextEditFlags flags = TEXTEDITFLAG_NONE);
+/*2W*/ void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxWszTextSize, const ETextEditFlags flags = TEXTEDITFLAG_NONE);
 /*SW*/ void ImageTexture(const char *szTexturePath, const wchar_t *wszErrorMsg = L"", const char *szTextureGroup = "");
 
 // NeoUI::Texture is non-widget, but utilizes NeoUI's image/texture handling

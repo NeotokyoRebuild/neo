@@ -964,7 +964,9 @@ void CWeaponPhysCannon::Precache( void )
 	PrecacheModel( PHYSCANNON_BEAM_SPRITE );
 	PrecacheModel( PHYSCANNON_BEAM_SPRITE_NOZ );
 
+#ifndef NEO
 	PrecacheScriptSound( "Weapon_PhysCannon.HoldSound" );
+#endif // NEO
 
 	BaseClass::Precache();
 }

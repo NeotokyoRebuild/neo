@@ -456,14 +456,22 @@ void CNeoRoot::FireGameEvent(IGameEvent *event)
 
 void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 {
-	if (m_ns.keys.bcConsole <= KEY_NONE)
+	// This can happen eg. when the client uses multimedia keys to adjust OS volume.
+	// If we don't return here, then any un-bound UI element which also has the bind "none"
+	// would incorrectly trigger for this unrelated input.
+	if (code <= KEY_NONE)
 	{
-		m_ns.keys.bcConsole = gameuifuncs->GetButtonCodeForBind("neo_toggleconsole");
-		m_ns.keys.bcMP3Player = gameuifuncs->GetButtonCodeForBind("neo_mp3");
-		m_ns.keys.bcTeamMenu = gameuifuncs->GetButtonCodeForBind("teammenu");
-		m_ns.keys.bcClassMenu = gameuifuncs->GetButtonCodeForBind("classmenu");
-		m_ns.keys.bcLoadoutMenu = gameuifuncs->GetButtonCodeForBind("loadoutmenu");
+		return;
 	}
+
+	// Refresh every time, because else if the user unbinds or rebinds the key, it will still incorrectly be mapped there.
+	// NEO FIXME (Rain): We do not currently support binding multiple buttons for the same command;
+	// if the user does: bind a foo; bind b foo; then only the latest bind will work.
+	m_ns.keys.bcConsole = gameuifuncs->GetButtonCodeForBind("neo_toggleconsole");
+	m_ns.keys.bcMP3Player = gameuifuncs->GetButtonCodeForBind("neo_mp3");
+	m_ns.keys.bcTeamMenu = gameuifuncs->GetButtonCodeForBind("teammenu");
+	m_ns.keys.bcClassMenu = gameuifuncs->GetButtonCodeForBind("classmenu");
+	m_ns.keys.bcLoadoutMenu = gameuifuncs->GetButtonCodeForBind("loadoutmenu");
 
 	if (code == m_ns.keys.bcConsole && code != KEY_BACKQUOTE)
 	{
@@ -474,10 +482,6 @@ void CNeoRoot::OnRelayedKeyCodeTyped(vgui::KeyCode code)
 		// opened which generally doesn't endup calling OnRelayedKeyCodeTyped anyway.
 		NeoToggleconsole();
 		return;
-	}
-	else if (code == m_ns.keys.bcMP3Player)
-	{
-		engine->ClientCmd_Unrestricted("neo_mp3");
 	}
 	g_uiCtx.eCode = code;
 	OnMainLoop(NeoUI::MODE_KEYPRESSED);
@@ -582,8 +586,14 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	NeoUI::BeginContext(&g_uiCtx, param.eMode, nullptr, "CtxRoot");
 	NeoUI::BeginSection(true);
 	{
+		if (param.eMode == NeoUI::MODE_KEYPRESSED && g_uiCtx.eCode == m_ns.keys.bcMP3Player)
+		{
+			engine->ClientCmd_Unrestricted("neo_mp3");
+		}
+
 		g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
 		const int iFlagToMatch = IsInGame() ? FLAG_SHOWINGAME : FLAG_SHOWINMAIN;
+		bool mouseOverButton = false;
 		for (int i = 0; i < BTNS_TOTAL; ++i)
 		{
 			const auto btnInfo = BTNS_INFO[i];
@@ -619,13 +629,20 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 						}
 					}
 				}
-				if (retBtn.bMouseHover && i != m_iHoverBtn)
+				if (retBtn.bMouseHover)
 				{
-					// Sound rollover feedback
-					surface()->PlaySound("ui/buttonrollover.wav");
-					m_iHoverBtn = i;
+					mouseOverButton = true;
+					if (i != m_iHoverBtn && param.eMode == NeoUI::MODE_MOUSEMOVED)
+					{ // Sound rollover feedback
+						surface()->PlaySound("ui/buttonrollover.wav");
+						m_iHoverBtn = i;
+					}
 				}
 			}
+		}
+		if (!mouseOverButton && m_iHoverBtn < BTNS_TOTAL && param.eMode == NeoUI::MODE_MOUSEMOVED)
+		{
+			m_iHoverBtn = -1;
 		}
 	}
 	NeoUI::EndSection();
@@ -689,7 +706,8 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 			m_avImage->Paint();
 
 			wchar_t wszDisplayName[NEO_MAX_DISPLAYNAME];
-			GetClNeoDisplayName(wszDisplayName, neo_name.GetString(), neo_clantag.GetString(), cl_onlysteamnick.GetBool());
+			GetClNeoDisplayName(wszDisplayName, neo_name.GetString(), neo_clantag.GetString(),
+					(cl_onlysteamnick.GetBool()) ? CL_NEODISPLAYNAME_FLAG_ONLYSTEAMNICK : CL_NEODISPLAYNAME_FLAG_NONE);
 
 			const char *szNeoName = neo_name.GetString();
 			const bool bUseNeoName = (szNeoName && szNeoName[0] != '\0' && !cl_onlysteamnick.GetBool());
@@ -820,11 +838,17 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 		engine->ClientCmd("neo_mp3");
 
 	}
-	if (musicPlayerBtn.bMouseHover && SMBTN_MP3 != m_iHoverBtn)
+	if (param.eMode == NeoUI::MODE_MOUSEMOVED)
 	{
-		// Sound rollover feedback
-		surface()->PlaySound("ui/buttonrollover.wav");
-		m_iHoverBtn = SMBTN_MP3;
+		if (musicPlayerBtn.bMouseHover && SMBTN_MP3 != m_iHoverBtn)
+		{ // Sound rollover feedback
+			surface()->PlaySound("ui/buttonrollover.wav");
+			m_iHoverBtn = SMBTN_MP3;
+		}
+		else if (!musicPlayerBtn.bMouseHover && SMBTN_MP3 == m_iHoverBtn)
+		{
+			m_iHoverBtn = -1;
+		}
 	}
 	
 	NeoUI::EndSection();
@@ -906,9 +930,12 @@ void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 				{
 					NeoSettingsRestore(&m_ns);
 				}
-				if (NeoUI::Button(L"Accept").bPressed)
+				if (m_ns.bIsValid)
 				{
-					NeoSettingsSave(&m_ns);
+					if (NeoUI::Button(L"Accept").bPressed)
+					{
+						NeoSettingsSave(&m_ns);
+					}
 				}
 			}
 			NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
@@ -958,7 +985,8 @@ void CNeoRoot::MainLoopNewGame(const MainLoopParam param)
 			NeoUI::TextEdit(L"Hostname", m_newGame.wszHostname, SZWSZ_LEN(m_newGame.wszHostname));
 			NeoUI::SliderInt(L"Max players", &m_newGame.iMaxPlayers, 1, MAX_PLAYERS-1); // -1 to accommodate SourceTV
 			NeoUI::SliderInt(L"Bot Quota", &m_newGame.iBotQuota, 0, MAX_PLAYERS-1);
-			NeoUI::TextEdit(L"Password", m_newGame.wszPassword, SZWSZ_LEN(m_newGame.wszPassword));
+			NeoUI::TextEdit(L"Password", m_newGame.wszPassword, SZWSZ_LEN(m_newGame.wszPassword),
+					cl_neo_streamermode.GetBool() ? NeoUI::TEXTEDITFLAG_PASSWORD : NeoUI::TEXTEDITFLAG_NONE);
 			NeoUI::RingBoxBool(L"Friendly fire", &m_newGame.bFriendlyFire);
 			NeoUI::RingBoxBool(L"Use Steam networking", &m_newGame.bUseSteamNetworking);
 		}
@@ -1787,19 +1815,28 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 			break;
 			case STATE_CONFIRMSETTINGS:
 			{
-				NeoUI::Label(L"Settings changed: Do you want to apply the settings?");
+				NeoUI::Label((m_ns.bIsValid) ?
+						L"Settings changed: Do you want to apply the settings?" :
+						L"Error: Invalid settings, cannot save.");
 				NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 				NeoUI::SetPerRowLayout(3);
 				{
 					g_uiCtx.iLayoutX = (g_uiCtx.iMarginX / 2);
-					if (NeoUI::Button(L"Save (Enter)").bPressed || NeoUI::Bind(KEY_ENTER))
+					if (m_ns.bIsValid)
 					{
-						NeoSettingsSave(&m_ns);
-						m_state = STATE_ROOT;
+						if (NeoUI::Button(L"Save (Enter)").bPressed || NeoUI::Bind(KEY_ENTER))
+						{
+							NeoSettingsSave(&m_ns);
+							m_state = STATE_ROOT;
+						}
 					}
 					if (NeoUI::Button(L"Discard").bPressed)
 					{
 						m_state = STATE_ROOT;
+					}
+					if (!m_ns.bIsValid)
+					{
+						NeoUI::Pad();
 					}
 					if (NeoUI::Button(L"Cancel (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
 					{
@@ -1832,9 +1869,7 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 				NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 				{
 					NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
-					g_uiCtx.bTextEditIsPassword = true;
-					NeoUI::TextEdit(L"Password:", m_wszServerPassword, SZWSZ_LEN(m_wszServerPassword));
-					g_uiCtx.bTextEditIsPassword = false;
+					NeoUI::TextEdit(L"Password:", m_wszServerPassword, SZWSZ_LEN(m_wszServerPassword), NeoUI::TEXTEDITFLAG_PASSWORD);
 				}
 				NeoUI::SetPerRowLayout(3);
 				{

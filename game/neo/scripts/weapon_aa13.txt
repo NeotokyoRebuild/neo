@@ -84,8 +84,8 @@ WeaponData
 		"empty"				"weapon_aa13.empty"
 		"single_shot"		"weapon_aa13.single"
 		"single_shot_npc"	"weapon_aa13.npc_single"
-		"special1"			"Weapon_aa13.Insertshell"
-		"special2"			"Weapon_aa13.Pump"
+		//"special1"			"Weapon_aa13.Insertshell"
+		//"special2"			"Weapon_aa13.Pump"
 	}
 
 	// Weapon Sprite data is loaded by the Client DLL.

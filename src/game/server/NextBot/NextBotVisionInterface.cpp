@@ -17,6 +17,11 @@
 #include "querycache.h"
 #endif
 
+#ifdef NEO
+#include "neo_player.h"
+#include "neo_smokelineofsightblocker.h"
+#endif
+
 #include "tier0/vprof.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -718,6 +723,16 @@ bool IVision::IsLineOfSightClearToEntity( const CBaseEntity *subject, Vector *vi
 bool IVision::IsLineOfSightClearToEntity( const CBaseEntity *subject, Vector *visibleSpot ) const
 #endif // NEO
 {
+#ifdef NEO
+	// Special case for Support-class bots to see through smoke
+	bool isSupport = false;
+	if (auto player = ToNEOPlayer(GetBot()->GetEntity()))
+	{
+		isSupport = (player->GetClass() == NEO_CLASS_SUPPORT);
+	}
+	ScopedSmokeLOS smokeGuard(isSupport);
+#endif
+
 #ifdef TERROR
 	// TODO: Integration querycache & its dependencies
 

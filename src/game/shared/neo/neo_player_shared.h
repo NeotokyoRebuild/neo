@@ -41,25 +41,27 @@
 
 // Aim Modifier
 #define NEO_AIM_MODIFIER 0.6
-// Crouch/Walk Modifier
-#define NEO_CROUCH_WALK_MODIFIER 0.75
+// Crouch Modifier
+#define NEO_CROUCH_MODIFIER 0.75
+#define NEO_WALK_SPEED 90
+#define NEO_CROUCH_WALK_SPEED 60
 
 
 // Movement Calculations
 // Recon
 #define NEO_RECON_BASE_SPEED (NEO_BASE_SPEED * NEO_RECON_MODIFIER)
 #define NEO_RECON_SPRINT_SPEED (NEO_RECON_BASE_SPEED * NEO_RECON_SPRINT_MODIFIER)
-#define NEO_RECON_CROUCH_SPEED (NEO_RECON_BASE_SPEED * NEO_CROUCH_WALK_MODIFIER)
+#define NEO_RECON_CROUCH_SPEED (NEO_RECON_BASE_SPEED * NEO_CROUCH_MODIFIER)
 #define NEO_RECON_WALK_SPEED NEO_RECON_CROUCH_SPEED
 // Assault
 #define NEO_ASSAULT_BASE_SPEED (NEO_BASE_SPEED * NEO_ASSAULT_MODIFIER)
 #define NEO_ASSAULT_SPRINT_SPEED (NEO_ASSAULT_BASE_SPEED * NEO_ASSAULT_SPRINT_MODIFIER)
-#define NEO_ASSAULT_CROUCH_SPEED (NEO_ASSAULT_BASE_SPEED * NEO_CROUCH_WALK_MODIFIER)
+#define NEO_ASSAULT_CROUCH_SPEED (NEO_ASSAULT_BASE_SPEED * NEO_CROUCH_MODIFIER)
 #define NEO_ASSAULT_WALK_SPEED NEO_ASSAULT_CROUCH_SPEED
 // Support
 #define NEO_SUPPORT_BASE_SPEED (NEO_BASE_SPEED * NEO_SUPPORT_MODIFIER)
 #define NEO_SUPPORT_SPRINT_SPEED (NEO_SUPPORT_BASE_SPEED * NEO_SUPPORT_SPRINT_MODIFIER) // Redundant, but for future usecases
-#define NEO_SUPPORT_CROUCH_SPEED (NEO_SUPPORT_BASE_SPEED * NEO_CROUCH_WALK_MODIFIER)
+#define NEO_SUPPORT_CROUCH_SPEED (NEO_SUPPORT_BASE_SPEED * NEO_CROUCH_MODIFIER)
 #define NEO_SUPPORT_WALK_SPEED NEO_SUPPORT_CROUCH_SPEED
 // VIP
 #define NEO_VIP_BASE_SPEED NEO_ASSAULT_BASE_SPEED
@@ -365,17 +367,25 @@ void DMClSortedPlayers(PlayerXPInfo (*pPlayersOrder)[MAX_PLAYERS + 1], int *piTo
 
 inline char gStreamerModeNames[MAX_PLAYERS + 1][MAX_PLAYER_NAME_LENGTH + 1];
 
-static constexpr int NEO_MAX_CLANTAG_LENGTH = 12;
-static constexpr int NEO_MAX_DISPLAYNAME = MAX_PLAYER_NAME_LENGTH + 1 + NEO_MAX_CLANTAG_LENGTH + 1;
-void GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
-						 const wchar_t wszNeoName[MAX_PLAYER_NAME_LENGTH + 1],
-						 const wchar_t wszNeoClantag[NEO_MAX_CLANTAG_LENGTH + 1],
-						 const bool bOnlySteamNick);
+enum EClNeoDisplayNameFlag_
+{
+	CL_NEODISPLAYNAME_FLAG_NONE = 0,
+	CL_NEODISPLAYNAME_FLAG_ONLYSTEAMNICK = 1 << 0,
+	CL_NEODISPLAYNAME_FLAG_CHECK = 1 << 1,
+};
+typedef int EClNeoDisplayNameFlag;
 
-void GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
+static constexpr int NEO_MAX_CLANTAG_LENGTH = 11 + 1; // Includes null character
+static constexpr int NEO_MAX_DISPLAYNAME = MAX_PLAYER_NAME_LENGTH + 1 + NEO_MAX_CLANTAG_LENGTH + 2;
+bool GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
+						 const wchar_t (&wszNeoName)[MAX_PLAYER_NAME_LENGTH],
+						 const wchar_t (&wszNeoClantag)[NEO_MAX_CLANTAG_LENGTH],
+						 const EClNeoDisplayNameFlag flags = CL_NEODISPLAYNAME_FLAG_NONE);
+
+bool GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
 						 const char *pSzNeoName,
 						 const char *pSzNeoClantag,
-						 const bool bOnlySteamNick);
+						 const EClNeoDisplayNameFlag flags = CL_NEODISPLAYNAME_FLAG_NONE);
 
 // NEO NOTE (nullsystem): Max string length is 
 // something like: "2;2;-16711936;1;6;1.000;25;25;5;25;1;50;50;"
