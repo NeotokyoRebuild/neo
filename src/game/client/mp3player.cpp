@@ -2501,7 +2501,6 @@ void CMP3Player::OnSliderDragEnd(KeyValues* data)
 	{
 		return;
 	}
-	const void* pszName = pData->GetPtr();
 
 	if (m_pVolume == pData->GetPtr())
 	{
