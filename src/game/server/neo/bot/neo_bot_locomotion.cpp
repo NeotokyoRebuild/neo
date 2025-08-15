@@ -20,7 +20,13 @@ void CNEOBotLocomotion::Update( void )
 	// always 'crouch jump'
 	if ( IsOnGround() )
 	{
+#ifdef NEO
+		// NEO JANK resetting of crouch timer moved to NextBotPlayer::PressJumpButton
+		// so far crouch jump seems to still be working, but watch out for a regression
+		// disabled:
+#else
 		me->ReleaseCrouchButton();
+#endif
 	}
 	else
 	{
@@ -63,9 +69,14 @@ float CNEOBotLocomotion::GetDeathDropHeight( void ) const
 // Get maximum running speed
 float CNEOBotLocomotion::GetRunSpeed( void ) const
 {
-	return hl2_normspeed.GetFloat();
-	// TODO(misyl): Teach bots to sprint.
-	//return hl2_sprintspeed.GetFloat();
+	CNEOBot *me = (CNEOBot *)GetBot()->GetEntity();
+	return me->GetSprintSpeed_WithActiveWepEncumberment();
+}
+
+float CNEOBotLocomotion::GetWalkSpeed( void ) const
+{
+	CNEOBot *me = (CNEOBot *)GetBot()->GetEntity();
+	return me->GetNormSpeed_WithActiveWepEncumberment();
 }
 
 
