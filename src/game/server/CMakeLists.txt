@@ -1368,6 +1368,8 @@ target_sources_grouped(
     neo/neo_detpack.h
     neo/neo_game_config.cpp
     neo/neo_game_config.h
+    neo/neo_ghost_boundry.cpp
+    neo/neo_ghost_boundry.h
     neo/neo_ghost_spawn_point.cpp
     neo/neo_ghost_spawn_point.h
     neo/neo_grenade.cpp
