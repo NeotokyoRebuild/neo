@@ -48,7 +48,7 @@ IVision::IVision( INextBot *bot ) : INextBotComponent( bot )
  */
 void IVision::Reset( void )
 {
- 	INextBotComponent::Reset();
+	INextBotComponent::Reset();
 
 	m_knownEntityVector.RemoveAll();
 	m_lastVisionUpdateTimestamp = 0.0f;
