@@ -401,7 +401,6 @@ public:
 	bool m_bPausedByPreRoundFreeze = false;
 	bool m_bPausingTeamRequestedUnpause = false;
 	bool m_bThinkCheckClantags = false;
-	Vector m_vecPreviousGhostSpawn = vec3_origin;
 #endif
 	CNetworkVar(float, m_flPauseEnd);
 
@@ -424,6 +423,8 @@ private:
 	int m_iEntPrevCapSize = 0;
 	int m_iPrintHelpCounter = 0;
 	bool m_bGamemodeTypeBeenInitialized = false;
+	friend class CNEO_GhostBoundary;
+	Vector m_vecPreviousGhostSpawn = vec3_origin;
 #endif
 	CNetworkVar(int, m_nRoundStatus);
 	CNetworkVar(int, m_iHiddenHudElements);

@@ -10,20 +10,21 @@ public:
 
 	virtual void Spawn() override;
 	virtual void Think() override;
-	void CheckForWeapon();
 
 private:
+	void CheckForWeapon();
 	bool IsEntityInside(CBaseEntity* pEnt);
 };
 
-class CNEO_GhostBoundry : public CNEO_TriggerWeapon
+class CNEO_GhostBoundary : public CNEO_TriggerWeapon
 {
 public:
-	DECLARE_CLASS(CNEO_GhostBoundry, CNEO_TriggerWeapon);
+	DECLARE_CLASS(CNEO_GhostBoundary, CNEO_TriggerWeapon);
 	DECLARE_DATADESC();
 
 	virtual void Think() override;
 	virtual void StartTouch(CBaseEntity *pOther) override;
 
+private:
 	Vector		m_vecLastGhosterPos = vec3_origin;
 };
