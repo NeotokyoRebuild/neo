@@ -16,3 +16,5 @@ static constexpr int SPRAY_WH = 256;
 // NEO NOTE (nullsystem): This exists because the Source SDK API doesn't seem to generate a valid DXT1 VTF
 void SerializeVTFDXTSprayToBuffer(CUtlBuffer *buffer, const uint8 *rgba8888Data);
 }  // namespace NeoUtils
+
+void bpr(int level, CUtlBuffer& buf, char const* fmt, ...);
