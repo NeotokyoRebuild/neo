@@ -46,6 +46,9 @@
 #include <materialsystem/itexture.h>
 #include "rendertexture.h"
 #include "ivieweffects.h"
+#include "c_neo_killer_damage_infos.h"
+#include <vgui/ILocalize.h>
+#include <tier3.h>
 
 #include "model_types.h"
 
@@ -118,85 +121,6 @@ BEGIN_PREDICTION_DATA(C_NEO_Player)
 	DEFINE_PRED_FIELD(m_nVisionLastTick, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD_TOL(m_flJumpLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
 END_PREDICTION_DATA()
-
-static void __MsgFunc_DamageInfo(bf_read& msg)
-{
-	const int killerIdx = msg.ReadShort();
-	char killedBy[32];
-	const bool foundKilledBy = msg.ReadString(killedBy, sizeof(killedBy), false);
-
-	auto *localPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if (!localPlayer)
-	{
-		return;
-	}
-
-	// Print damage stats into the console
-	// Print to console
-	AttackersTotals totals = {};
-
-	const int thisIdx = localPlayer->entindex();
-
-	// Can't rely on Msg as it can print out of order, so do it in chunks
-	static char killByLine[512];
-
-	static const char* BORDER = "==========================\n";
-	bool setKillByLine = false;
-	if (killerIdx > 0 && killerIdx <= gpGlobals->maxClients)
-	{
-		auto *neoAttacker = assert_cast<C_NEO_Player*>(UTIL_PlayerByIndex(killerIdx));
-		if (neoAttacker && neoAttacker->entindex() != thisIdx)
-		{
-			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, localPlayer, foundKilledBy ? killedBy : NULL);
-			setKillByLine = true;
-		}
-	}
-
-	ConMsg("%sDamage infos (Round %d):\n%s\n", BORDER, NEORules()->roundNumber(), setKillByLine ? killByLine : "");
-	
-	for (int pIdx = 1; pIdx <= gpGlobals->maxClients; ++pIdx)
-	{
-		if (pIdx == thisIdx)
-		{
-			continue;
-		}
-
-		auto* neoAttacker = assert_cast<C_NEO_Player*>(UTIL_PlayerByIndex(pIdx));
-		if (!neoAttacker || neoAttacker->IsHLTV())
-		{
-			continue;
-		}
-
-		const char *dmgerName = neoAttacker->GetNeoPlayerName();
-		if (!dmgerName)
-		{
-			continue;
-		}
-
-		const AttackersTotals attackerInfo = {
-			.dealtDmgs = neoAttacker->GetAttackersScores(thisIdx),
-			.dealtHits = neoAttacker->GetAttackerHits(thisIdx),
-			.takenDmgs = localPlayer->GetAttackersScores(pIdx),
-			.takenHits = localPlayer->GetAttackerHits(pIdx),
-		};
-		if (attackerInfo.dealtDmgs > 0 || attackerInfo.takenDmgs > 0)
-		{
-			const char *dmgerClass = GetNeoClassName(neoAttacker->GetClass());
-
-			static char infoLine[128];
-			DmgLineStr(infoLine, sizeof(infoLine), dmgerName, dmgerClass, attackerInfo);
-			ConMsg("%s", infoLine);
-
-			totals += attackerInfo;
-		}
-	}
-
-	ConMsg("\nTOTAL: Dealt: %d in %d hits | Taken: %d in %d hits\n%s\n",
-		totals.dealtDmgs, totals.dealtHits,
-		totals.takenDmgs, totals.takenHits,
-		BORDER);
-}
-USER_MESSAGE_REGISTER(DamageInfo);
 
 static void __MsgFunc_IdleRespawnShowMenu(bf_read &)
 {
@@ -659,7 +583,7 @@ const char *C_NEO_Player::InternalGetNeoPlayerName() const
 			if (dupePos != m_szNeoNameLocalDupeIdx)
 			{
 				m_szNeoNameLocalDupeIdx = dupePos;
-				V_snprintf(m_szNeoNameWDupeIdx, sizeof(m_szNeoNameWDupeIdx), "%s (%d)", neoName, dupePos);
+				V_sprintf_safe(m_szNeoNameWDupeIdx, "%s (%d)", neoName, dupePos);
 			}
 			return m_szNeoNameWDupeIdx;
 		}
@@ -672,7 +596,7 @@ const char *C_NEO_Player::InternalGetNeoPlayerName() const
 		if (dupePos != m_szNeoNameLocalDupeIdx)
 		{
 			m_szNeoNameLocalDupeIdx = dupePos;
-			V_snprintf(m_szNeoNameWDupeIdx, sizeof(m_szNeoNameWDupeIdx), "%s (%d)", stndName, dupePos);
+			V_sprintf_safe(m_szNeoNameWDupeIdx, "%s (%d)", stndName, dupePos);
 		}
 		return m_szNeoNameWDupeIdx;
 	}
@@ -1551,6 +1475,7 @@ void C_NEO_Player::Spawn( void )
 	{
 		m_rfAttackersHits.Set(i, 0);
 	}
+	V_memset(m_rfNeoPlayerIdxsKilledByLocal, 0, sizeof(m_rfNeoPlayerIdxsKilledByLocal));
 
 	Weapon_SetZoom(false);
 
