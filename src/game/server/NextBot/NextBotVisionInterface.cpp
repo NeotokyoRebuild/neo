@@ -35,6 +35,9 @@ ConVar nb_debug_known_entities( "nb_debug_known_entities", "0", FCVAR_CHEAT, "Sh
 //------------------------------------------------------------------------------------------
 IVision::IVision( INextBot *bot ) : INextBotComponent( bot )
 { 
+#ifdef NEO
+	idealTargetPoint.SetLessFunc(DefLessFunc(int));
+#endif // NEO
 	Reset();
 }
 
@@ -58,6 +61,9 @@ void IVision::Reset( void )
 	{
 		m_notVisibleTimer[i].Invalidate();
 	}
+#ifdef NEO
+	idealTargetPoint.RemoveAll();
+#endif // NEO
 }
 
 
@@ -782,8 +788,17 @@ bool IVision::IsLineOfSightClearToEntity( const CBaseEntity *subject, Vector *vi
 	{
 		*visibleSpot = result.endpos;
 	}
+#ifdef NEO
+	const bool canSee = result.fraction >= 1.0f && !result.startsolid;
+	if (canSee)
+	{
+		idealTargetPoint.InsertOrReplace(subject->entindex(), result.endpos);
+	}
 
+	return canSee;
+#else
 	return ( result.fraction >= 1.0f && !result.startsolid );
+#endif // NEO
 
 #endif
 }
