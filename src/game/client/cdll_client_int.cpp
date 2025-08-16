@@ -1187,80 +1187,6 @@ bool CHLClient::ReplayPostInit()
 #endif
 }
 
-static inline void UpdateBgm(ConVar *volCvar)
-{
-	if (!volCvar)
-	{
-		Assert(false);
-		return;
-	}
-
-#ifdef LINUX
-#define DIR_SLASH "/"
-#elif defined(_WIN32)
-#define DIR_SLASH "\\"
-#else
-#error Unimplemented!
-#endif
-	const char* bgmFiles[] = {
-		"ui"		DIR_SLASH "gamestartup1.mp3", // main menu bgm should be at first index
-		"gameplay"	DIR_SLASH "draw.mp3",
-		"gameplay"	DIR_SLASH "jinrai.mp3",
-		"gameplay"	DIR_SLASH "nsf.mp3",
-	};
-
-	CUtlVector<SndInfo_t> sounds;
-	enginesound->GetActiveSounds(sounds);
-
-	// If we are playing a music track, update its current volume.
-	char filename[MAX_PATH];
-	for (int i = 0; i < sounds.Size(); i++)
-	{
-		if (!g_pFullFileSystem->String(sounds[i].m_filenameHandle, filename, sizeof(filename)))
-		{
-			continue;
-		}
-		else if (!*filename)
-		{
-			continue;
-		}
-
-		for (int j = 0; j < ARRAYSIZE(bgmFiles); ++j)
-		{
-			if (Q_strcmp(filename, bgmFiles[j]) == 0)
-			{
-				enginesound->SetVolumeByGuid(sounds[i].m_nGuid, volCvar->GetFloat());
-				return; // should only ever be playing one jingle at a time; return early
-			}
-		}
-	}
-#ifndef NEO
-	// We were not in a server nor joining a server, and there was no music playing.
-	// Start playing the main menu bgm.
-	if (!engine->IsConnected())
-	{
-		enginesound->EmitAmbientSound(bgmFiles[0], volCvar->GetFloat());
-	}
-#endif // NEO
-}
-
-void MusicVol_ChangeCallback(IConVar *cvar, const char *pOldVal, float flOldVal)
-{
-	if (!g_pFullFileSystem)
-	{
-		Assert(false);
-		return;
-	}
-
-	// We are in a level, don't start playing menu music.
-	if (Q_strcmp(engine->GetLevelName(), "") != 0)
-	{
-		return;
-	}
-
-	UpdateBgm((ConVar*)cvar);
-}
-
 #ifdef NEO
 extern void NeoToggleConsoleEnforce();
 
@@ -1368,7 +1294,7 @@ static void NeoDeleteDownloadedSprays()
 	}
 	filesystem->FindClose(findHdlFL);
 }
-#endif
+#endif // NEO
 
 //-----------------------------------------------------------------------------
 // Purpose: Called after client & server DLL are loaded and all systems initialized
@@ -1403,7 +1329,6 @@ void CHLClient::PostInit()
 #ifdef NEO
 	if (g_pCVar)
 	{
-		g_pCVar->FindVar("snd_musicvolume")->InstallChangeCallback(MusicVol_ChangeCallback);
 		g_pCVar->FindVar("neo_name")->InstallChangeCallback(NeoConVarStrLimitChangeCallback<MAX_PLAYER_NAME_LENGTH>);
 		g_pCVar->FindVar("neo_clantag")->InstallChangeCallback(NeoConVarStrLimitChangeCallback<NEO_MAX_CLANTAG_LENGTH>);
 		g_pCVar->FindVar("cl_neo_crosshair")->InstallChangeCallback(NeoConVarStrLimitChangeCallback<NEO_XHAIR_SEQMAX>);
@@ -2085,17 +2010,6 @@ void CHLClient::LevelShutdown( void )
 	// Shutdown the ragdoll recorder
 	CReplayRagdollRecorder::Instance().Shutdown();
 	CReplayRagdollCache::Instance().Shutdown();
-#endif
-
-#ifdef NEO
-	if (g_pCVar)
-	{
-		UpdateBgm(g_pCVar->FindVar("snd_musicvolume"));
-	}
-	else
-	{
-		Assert(false);
-	}
 #endif
 }
 
