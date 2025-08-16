@@ -543,6 +543,8 @@ void CNEO_Player::Spawn(void)
 
 	SetTransmitState(FL_EDICT_PVSCHECK);
 
+	StopWaterDeathSounds();
+
 	SetPlayerTeamModel();
 	if (teamNumber == TEAM_JINRAI || teamNumber == TEAM_NSF)
 	{
@@ -2024,6 +2026,8 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 	{
 		CreateRagdollEntity();
 	}
+
+	StopWaterDeathSounds();
 
 	// Calculate force for weapon drop
 	Vector forceVector = CalcDamageForceVector(info);
