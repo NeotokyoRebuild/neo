@@ -1,3 +1,4 @@
+#pragma once
 #include "cbase.h"
 #include "triggers.h"
 
@@ -18,7 +19,7 @@ private:
 class CNEO_GhostBoundry : public CNEO_TriggerWeapon
 {
 public:
-	DECLARE_CLASS(CNEO_GhostBoundry, CBaseTrigger);
+	DECLARE_CLASS(CNEO_GhostBoundry, CNEO_TriggerWeapon);
 	DECLARE_DATADESC();
 
 	virtual void Think() override;

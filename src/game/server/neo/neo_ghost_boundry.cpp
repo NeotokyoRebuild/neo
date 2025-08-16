@@ -2,6 +2,9 @@
 #include "neo_gamerules.h"
 #include "weapon_ghost.h"
 
+#define THINK_INTERVAL 0.05f
+#define GHOST_ANGLES QAngle(15, 0, 270) // Angles the ghost will reset to (laid on its back)
+
 //##############################
 //  Trigger Weapon
 //##############################
@@ -11,9 +14,6 @@ LINK_ENTITY_TO_CLASS(neo_trigger_weapon, CNEO_TriggerWeapon);
 BEGIN_DATADESC(CNEO_TriggerWeapon)
     DEFINE_THINKFUNC(Think),
 END_DATADESC()
-
-#define THINK_INTERVAL 0.05f
-#define GHOST_ANGLES QAngle(15, 0, 270)
 
 void CNEO_TriggerWeapon::Spawn()
 {
@@ -41,7 +41,7 @@ void CNEO_TriggerWeapon::CheckForWeapon()
     CollisionProp()->WorldSpaceAABB(&mins, &maxs);
 
     CBaseEntity* pEntList[128];
-    int count = UTIL_EntitiesInBox(pEntList, sizeof(pEntList), mins, maxs, null); // Low accuracy
+    int count = UTIL_EntitiesInBox(pEntList, ARRAYSIZE(pEntList), mins, maxs, null); // Low accuracy
 
     for (int i = 0; i < count; ++i)
     {
