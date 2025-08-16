@@ -250,6 +250,9 @@ protected:
 
 	MESSAGE_FUNC( OnTreeViewItemSelected, "TreeViewItemSelected" );
 	MESSAGE_FUNC( OnSliderMoved, "SliderMoved" );
+#ifdef NEO
+	MESSAGE_FUNC_PARAMS(OnSliderDragEnd, "SliderDragEnd", data);
+#endif // NEO
 
 	void					PopulateTree();
 	void					PopulateLists();
@@ -274,6 +277,8 @@ protected:
 	int						FindSong( char const *relative );
 #ifdef NEO
 public:
+	void					SetVolumeSlider(int value);
+	void					SetInGameVolumeSlider(int value);
 #endif // NEO
 	void					PlaySong( int songIndex, float skipTime = 0.0f );
 #ifdef NEO
