@@ -69,9 +69,14 @@ float CNEOBotLocomotion::GetDeathDropHeight( void ) const
 // Get maximum running speed
 float CNEOBotLocomotion::GetRunSpeed( void ) const
 {
-	return hl2_normspeed.GetFloat();
-	// TODO(misyl): Teach bots to sprint.
-	//return hl2_sprintspeed.GetFloat();
+	CNEOBot *me = (CNEOBot *)GetBot()->GetEntity();
+	return me->GetSprintSpeed_WithActiveWepEncumberment();
+}
+
+float CNEOBotLocomotion::GetWalkSpeed( void ) const
+{
+	CNEOBot *me = (CNEOBot *)GetBot()->GetEntity();
+	return me->GetNormSpeed_WithActiveWepEncumberment();
 }
 
 

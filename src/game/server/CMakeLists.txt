@@ -1368,6 +1368,8 @@ target_sources_grouped(
     neo/neo_detpack.h
     neo/neo_game_config.cpp
     neo/neo_game_config.h
+    neo/neo_ghost_boundary.cpp
+    neo/neo_ghost_boundary.h
     neo/neo_ghost_spawn_point.cpp
     neo/neo_ghost_spawn_point.h
     neo/neo_grenade.cpp
@@ -1400,6 +1402,7 @@ target_sources_grouped(
     neo/bot/neo_bot.h
     neo/bot/neo_bot_body.cpp
     neo/bot/neo_bot_body.h
+    neo/bot/neo_bot_contextual_query_interface.h
     neo/bot/neo_bot_locomotion.cpp
     neo/bot/neo_bot_locomotion.h
     neo/bot/neo_bot_manager.cpp

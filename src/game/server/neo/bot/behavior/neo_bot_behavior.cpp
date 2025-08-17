@@ -111,6 +111,15 @@ ActionResult< CNEOBot >	CNEOBotMainAction::Update( CNEOBot *me, float interval )
 	FireWeaponAtEnemy( me );
 	Dodge( me );
 
+	if (me->GetIntentionInterface()->ShouldWalk(me) == ANSWER_YES)
+	{
+		me->GetLocomotionInterface()->Walk();
+	}
+	else
+	{
+		me->GetLocomotionInterface()->Run();
+	}
+
 	return Continue();
 }
 
@@ -418,6 +427,35 @@ QueryResultType	CNEOBotMainAction::ShouldHurry( const INextBot *meBot ) const
 	return ANSWER_UNDEFINED;
 }
 
+QueryResultType CNEOBotMainAction::ShouldWalk(const CNEOBot *me) const
+{
+	if (me->GetClass() == NEO_CLASS_ASSAULT)
+	{
+		// NEO TODO (nullsystem): Very very basic walking/sprinting logic
+		// at the moment. Would be better for like recon to utilize
+		// run-boost jumps and assault more sophisticated logic on
+		// when/when not to run. But this is suitable for now.
+		//
+		// If playing assault, try to not always sprint and recover sprint AUX
+		// when it can
+		const float flTimeSinceRanOutSprint = gpGlobals->curtime - me->m_flRanOutSprintTime;
+		static const constexpr float FL_SPRINTRECOVER_MINTIME = 10.0f;
+		static const constexpr float FL_SPRINTRECOVER_MAXTIME = 40.0f;
+		static const constexpr float FL_MIN_AUXPOWER = 70.0f;
+		const bool bShouldSprint = (flTimeSinceRanOutSprint >= FL_SPRINTRECOVER_MINTIME &&
+				((flTimeSinceRanOutSprint < FL_SPRINTRECOVER_MAXTIME && const_cast<CNEOBot *>(me)->SuitPower_GetCurrentPercentage() >= FL_MIN_AUXPOWER) ||
+				flTimeSinceRanOutSprint >= FL_SPRINTRECOVER_MAXTIME));
+		if (!bShouldSprint)
+		{
+			return ANSWER_YES;
+		}
+	}
+
+	// Walk if reloading or firing
+	CNEOBaseCombatWeapon *myWeapon = static_cast<CNEOBaseCombatWeapon*>(me->GetActiveWeapon());
+	return (myWeapon && (myWeapon->m_bInReload || me->m_bOnTarget || me->IsFiring())) ? ANSWER_YES : ANSWER_NO;
+}
+
 
 //---------------------------------------------------------------------------------------------
 void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
@@ -508,9 +546,12 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 	//
 	// misyl: make sure we are actually looking at the target...
 	// tf2 doesn't do this check... i think its right to do this here...
-	if ( me->GetBodyInterface()->GetLookAtSubject() == threat->GetEntity() &&
+	const bool bOnTarget = ( me->GetBodyInterface()->GetLookAtSubject() == threat->GetEntity() &&
 		 me->GetBodyInterface()->IsHeadAimingOnTarget() &&
-		 threatRange < me->GetMaxAttackRange() )
+		 threatRange < me->GetMaxAttackRange() );
+	me->m_bOnTarget = bOnTarget;
+
+	if (bOnTarget)
 	{
 		if ( me->IsCombatWeapon( myWeapon ) )
 		{

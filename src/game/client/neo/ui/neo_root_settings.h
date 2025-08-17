@@ -38,8 +38,8 @@ struct NeoSettings
 {
 	struct General
 	{
-		wchar_t wszNeoName[MAX_PLAYER_NAME_LENGTH + 1];
-		wchar_t wszNeoClantag[NEO_MAX_CLANTAG_LENGTH + 1];
+		wchar_t wszNeoName[MAX_PLAYER_NAME_LENGTH];
+		wchar_t wszNeoClantag[NEO_MAX_CLANTAG_LENGTH];
 		bool bOnlySteamNick;
 		bool bMarkerSpecOnlyClantag;
 		int iFov;
@@ -51,6 +51,7 @@ struct NeoSettings
 		int iLeanAutomatic;
 		bool bShowSquadList;
 		bool bShowPlayerSprays;
+		bool bShowHints;
 		bool bShowPos;
 		int iShowFps;
 		int iDlFilter;
@@ -59,6 +60,7 @@ struct NeoSettings
 		bool bEnableRangeFinder;
 		bool bExtendedKillfeed;
 		int iBackground;
+		int iKdinfoToggletype;
 	};
 
 	struct Keys
@@ -172,6 +174,7 @@ struct NeoSettings
 	int iCurTab = 0;
 	bool bBack = false;
 	bool bModified = false;
+	bool bIsValid = false;
 	int iNextBinding = -1;
 
 	struct CVR
@@ -190,6 +193,7 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_lean_automatic);
 		CONVARREF_DEF(cl_neo_squad_hud_original);
 		CONVARREF_DEF(cl_neo_hud_extended_killfeed);
+		CONVARREF_DEF(cl_neo_showhints);
 		CONVARREF_DEF(cl_showpos);
 		CONVARREF_DEF(cl_showfps);
 		CONVARREF_DEF(hud_fastswitch);
@@ -198,6 +202,7 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_streamermode_autodetect_obs);
 		CONVARREF_DEF(cl_neo_hud_rangefinder_enabled);
 		CONVARREF_DEF(sv_unlockedchapters);
+		CONVARREF_DEF(cl_neo_kdinfo_toggletype);
 
 		// Multiplayer
 		CONVARREF_DEF(cl_spraydisable);
