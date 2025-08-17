@@ -582,11 +582,6 @@ void CNeoRoot::MainLoopRoot(const MainLoopParam param)
 	NeoUI::BeginContext(&g_uiCtx, param.eMode, nullptr, "CtxRoot");
 	NeoUI::BeginSection(true);
 	{
-		if (param.eMode == NeoUI::MODE_KEYPRESSED && g_uiCtx.eCode == m_ns.keys.bcMP3Player)
-		{
-			engine->ClientCmd_Unrestricted("neo_mp3");
-		}
-
 		g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
 		const int iFlagToMatch = IsInGame() ? FLAG_SHOWINGAME : FLAG_SHOWINMAIN;
 		bool mouseOverButton = false;
