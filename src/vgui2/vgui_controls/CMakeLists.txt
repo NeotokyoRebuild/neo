@@ -4,19 +4,23 @@ add_library(vgui_controls::vgui_controls ALIAS vgui_controls)
 
 set_target_properties(vgui_controls PROPERTIES PREFIX "")
 
-target_include_directories(vgui_controls
-    PRIVATE
-    ${CMAKE_SOURCE_DIR}/common
-    ${CMAKE_SOURCE_DIR}/public
-)
+# target_include_directories(vgui_controls
+#     PRIVATE
+#     ${CMAKE_SOURCE_DIR}/common
+#     ${CMAKE_SOURCE_DIR}/public
+# )
 
 target_link_libraries(vgui_controls
     PRIVATE
-    tier0::tier0
     tier1::tier1
 )
 
-if (OS_LINUX)
+if(OS_WINDOWS)
+    target_compile_definitions(vgui_controls
+        PRIVATE
+        fopen=dont_use_fopen
+    )
+elseif (OS_LINUX)
     set_target_properties(vgui_controls PROPERTIES
         POSITION_INDEPENDENT_CODE ON
     )

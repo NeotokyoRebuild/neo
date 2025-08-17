@@ -8,7 +8,7 @@
 
 #include "vmpi_filesystem_internal.h"
 #include "tier1/utlbuffer.h"
-
+#include <windows.h> // TODO for min/max only, pls replace
 
 bool g_bDisableFileAccess = false;
 
