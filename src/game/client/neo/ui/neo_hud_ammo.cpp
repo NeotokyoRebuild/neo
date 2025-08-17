@@ -248,7 +248,8 @@ void CNEOHud_Ammo::DrawAmmo() const
 		
 	if(bulletsOverflowing)
 	{
-		bullets[magSizeMax - 1] = '+';
+		if (magSizeMax > 0)
+			bullets[magSizeMax - 1] = '+';
 
 		if(maxClip == magSizeCurrent)
 		{
