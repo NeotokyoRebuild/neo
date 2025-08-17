@@ -987,4 +987,13 @@
 		"wide"	"300"
 		"tall"	"200"
 	}
+
+	neo_killer_damage_info
+	{
+		"fieldName"		"neo_killer_damage_info"
+		"xpos"	"0"
+		"ypos"	"0"
+		"wide"	"640"
+		"tall"	"480"
+	}
 }

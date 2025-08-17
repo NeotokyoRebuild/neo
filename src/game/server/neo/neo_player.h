@@ -16,13 +16,6 @@ class INEOPlayerAnimState;
 
 #include "neo_player_shared.h"
 
-enum EDmgMenuSelect
-{
-	DAMAGE_MENU_SELECT_DISMISS = 1,
-	DAMAGE_MENU_SELECT_NEXTPAGE = 2,
-	DAMAGE_MENU_SELECT_DONOTSHOW = 9,
-};
-
 enum EPauseMenuSelect
 {
 	PAUSE_MENU_SELECT_SHORT = 1,
@@ -33,7 +26,6 @@ enum EPauseMenuSelect
 enum EMenuSelectType
 {
 	MENU_SELECT_TYPE_NONE = 0,
-	MENU_SELECT_TYPE_DMG,
 	MENU_SELECT_TYPE_PAUSE,
 };
 
@@ -240,11 +232,6 @@ private:
 
 	bool IsAllowedToSuperJump(void);
 
-	void ShowDmgInfo(char *infoStr, int infoStrSize);
-	int SetDmgListStr(char *infoStr, const int infoStrMax, const int playerIdxStart,
-		int *infoStrSize, bool *showMenu,
-		const CTakeDamageInfo *info) const;
-
 public:
 	CNetworkVar(int, m_iNeoClass);
 	CNetworkVar(int, m_iNeoSkin);
@@ -292,7 +279,6 @@ public:
 	int m_iTeamDamageInflicted = 0;
 	int m_iTeamKillsInflicted = 0;
 	bool m_bIsPendingTKKick = false; // To not spam the kickid ConCommand
-	bool m_bDoNotShowDmgInfoMenu = false;
 	EMenuSelectType m_eMenuSelectType = MENU_SELECT_TYPE_NONE;
 	bool m_bClientStreamermode = false;
 
@@ -312,8 +298,6 @@ private:
 	mutable char m_szNeoNameWDupeIdx[MAX_PLAYER_NAME_LENGTH + 10];
 	mutable bool m_szNeoNameWDupeIdxNeedUpdate;
 
-	int m_iDmgMenuCurPage;
-	int m_iDmgMenuNextPage;
 	// blood decals are client-side, so track injury event count for bots
 	int m_iBotDetectableBleedingInjuryEvents = 0;
 

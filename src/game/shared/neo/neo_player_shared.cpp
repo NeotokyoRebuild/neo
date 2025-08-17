@@ -36,8 +36,6 @@ ConVar cl_autoreload_when_empty("cl_autoreload_when_empty", "1", FCVAR_USERINFO 
 	true, 0.0f, true, 1.0f);
 ConVar neo_aim_hold("neo_aim_hold", "0", FCVAR_USERINFO | FCVAR_ARCHIVE, "Hold to aim as opposed to toggle aim.", true, 0.0f, true, 1.0f);
 #endif
-ConVar neo_recon_superjump_intensity("neo_recon_superjump_intensity", "250", FCVAR_REPLICATED | FCVAR_CHEAT,
-	"Recon superjump intensity multiplier.", true, 1.0, false, 0);
 
 ConVar neo_ghost_bhopping("neo_ghost_bhopping", "0", FCVAR_REPLICATED, "Allow ghost bunnyhopping", true, 0, true, 1);
 
@@ -172,32 +170,6 @@ void CheckPingButton(CNEO_Player* player)
 	}
 }
 
-int DmgLineStr(char* infoLine, const int infoLineMax,
-	const char* dmgerName, const char* dmgerClass,
-	const AttackersTotals &totals)
-{
-	memset(infoLine, 0, infoLineMax);
-	if (totals.dealtDmgs > 0 && totals.takenDmgs > 0)
-	{
-		Q_snprintf(infoLine, infoLineMax, "%s [%s]: Dealt: %d in %d hits | Taken: %d in %d hits\n",
-				   dmgerName, dmgerClass,
-				   totals.dealtDmgs, totals.dealtHits, totals.takenDmgs, totals.takenHits);
-	}
-	else if (totals.dealtDmgs > 0)
-	{
-		Q_snprintf(infoLine, infoLineMax, "%s [%s]: Dealt: %d in %d hits\n",
-				   dmgerName, dmgerClass,
-				   totals.dealtDmgs, totals.dealtHits);
-	}
-	else if (totals.takenDmgs > 0)
-	{
-		Q_snprintf(infoLine, infoLineMax, "%s [%s]: Taken: %d in %d hits\n",
-				   dmgerName, dmgerClass,
-				   totals.takenDmgs, totals.takenHits);
-	}
-	return Q_strlen(infoLine);
-}
-
 void KillerLineStr(char* killByLine, const int killByLineMax,
 	CNEO_Player* neoAttacker, const CNEO_Player* neoVictim, const char* killedWith)
 {
@@ -267,12 +239,12 @@ void DMClSortedPlayers(PlayerXPInfo (*pPlayersOrder)[MAX_PLAYERS + 1], int *piTo
 }
 #endif
 
-void GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
-						 const wchar_t wszNeoName[MAX_PLAYER_NAME_LENGTH + 1],
-						 const wchar_t wszNeoClantag[NEO_MAX_CLANTAG_LENGTH + 1],
-						 const bool bOnlySteamNick)
+bool GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
+						 const wchar_t (&wszNeoName)[MAX_PLAYER_NAME_LENGTH],
+						 const wchar_t (&wszNeoClantag)[NEO_MAX_CLANTAG_LENGTH],
+						 const EClNeoDisplayNameFlag flags)
 {
-	const bool bShowSteamNick = bOnlySteamNick || wszNeoName[0] == '\0';
+	const bool bShowSteamNick = (flags & CL_NEODISPLAYNAME_FLAG_ONLYSTEAMNICK) || wszNeoName[0] == '\0';
 	wchar_t wszDisplayName[MAX_PLAYER_NAME_LENGTH + 1] = {};
 	if (bShowSteamNick)
 	{
@@ -292,17 +264,37 @@ void GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
 	{
 		V_wcscpy_safe(pWszDisplayName, wszDisplayName);
 	}
+
+	if (flags & CL_NEODISPLAYNAME_FLAG_CHECK)
+	{
+		// Double it so we can check for overflow
+		char szNeoName[2 * MAX_PLAYER_NAME_LENGTH];
+		const int iSzNeoNameSize = g_pVGuiLocalize->ConvertUnicodeToANSI(wszNeoName, szNeoName, sizeof(szNeoName));
+		if (iSzNeoNameSize > MAX_PLAYER_NAME_LENGTH)
+		{
+			return false;
+		}
+
+		char szNeoClantag[2 * NEO_MAX_CLANTAG_LENGTH];
+		const int iSzNeoClantagSize = g_pVGuiLocalize->ConvertUnicodeToANSI(wszNeoClantag, szNeoClantag, sizeof(szNeoClantag));
+		if (iSzNeoClantagSize > NEO_MAX_CLANTAG_LENGTH)
+		{
+			return false;
+		}
+	}
+
+	return true;
 }
 
-void GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
+bool GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
 						 const char *pSzNeoName,
 						 const char *pSzNeoClantag,
-						 const bool bOnlySteamNick)
+						 const EClNeoDisplayNameFlag flags)
 {
-	wchar_t wszNeoName[MAX_PLAYER_NAME_LENGTH + 1];
-	wchar_t wszNeoClantag[NEO_MAX_CLANTAG_LENGTH + 1];
+	wchar_t wszNeoName[MAX_PLAYER_NAME_LENGTH];
+	wchar_t wszNeoClantag[NEO_MAX_CLANTAG_LENGTH];
 	g_pVGuiLocalize->ConvertANSIToUnicode(pSzNeoName, wszNeoName, sizeof(wszNeoName));
 	g_pVGuiLocalize->ConvertANSIToUnicode(pSzNeoClantag, wszNeoClantag, sizeof(wszNeoClantag));
-	GetClNeoDisplayName(pWszDisplayName, wszNeoName, wszNeoClantag, bOnlySteamNick);
+	return GetClNeoDisplayName(pWszDisplayName, wszNeoName, wszNeoClantag, flags);
 }
 
