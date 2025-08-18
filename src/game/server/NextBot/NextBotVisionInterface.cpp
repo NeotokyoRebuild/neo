@@ -20,6 +20,7 @@
 #ifdef NEO
 #include "neo_player.h"
 #include "neo_smokelineofsightblocker.h"
+#include "bot/neo_bot.h"
 #endif
 
 #include "tier0/vprof.h"
@@ -773,6 +774,25 @@ bool IVision::IsLineOfSightClearToEntity( const CBaseEntity *subject, Vector *vi
 	trace_t result;
 	NextBotTraceFilterIgnoreActors filter( subject, COLLISION_GROUP_NONE );
 
+#ifdef NEO
+	Vector firstPosition = subject->WorldSpaceCenter();
+	Vector secondPosition = subject->EyePosition();
+	auto neoBot = static_cast<CNEOBot*>(GetBot());
+	if (neoBot && neoBot->GetDifficulty() >= CNEOBot::DifficultyType::HARD)
+	{
+		std::swap(firstPosition, secondPosition);
+	}
+	UTIL_TraceLine( GetBot()->GetBodyInterface()->GetEyePosition(), firstPosition, MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, &result );
+	if ( result.DidHit() )
+	{
+		UTIL_TraceLine( GetBot()->GetBodyInterface()->GetEyePosition(), secondPosition, MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, &result );
+
+		if ( result.DidHit() )
+		{
+			UTIL_TraceLine( GetBot()->GetBodyInterface()->GetEyePosition(), subject->GetAbsOrigin(), MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, &result );
+		}
+	}
+#else
 	UTIL_TraceLine( GetBot()->GetBodyInterface()->GetEyePosition(), subject->WorldSpaceCenter(), MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, &result );
 	if ( result.DidHit() )
 	{
@@ -783,6 +803,7 @@ bool IVision::IsLineOfSightClearToEntity( const CBaseEntity *subject, Vector *vi
 			UTIL_TraceLine( GetBot()->GetBodyInterface()->GetEyePosition(), subject->GetAbsOrigin(), MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, &result );
 		}
 	}
+#endif // NEO
 
 	if ( visibleSpot )
 	{
