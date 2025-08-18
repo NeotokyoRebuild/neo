@@ -23,6 +23,7 @@
 #endif
 
 #include "convar.h"
+#include "neo_weapon_loadout.h"
 
 #include "weapon_neobasecombatweapon.h"
 
@@ -233,5 +234,49 @@ bool GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
 	g_pVGuiLocalize->ConvertANSIToUnicode(pSzNeoName, wszNeoName, sizeof(wszNeoName));
 	g_pVGuiLocalize->ConvertANSIToUnicode(pSzNeoClantag, wszNeoClantag, sizeof(wszNeoClantag));
 	return GetClNeoDisplayName(pWszDisplayName, wszNeoName, wszNeoClantag, flags);
+}
+
+int GetRank(const int xp)
+{
+	int iRank = NEO_RANK_RANKLESS_DOG;
+	if (xp < XP_PRIVATE)
+	{
+		iRank = NEO_RANK_RANKLESS_DOG;
+	}
+	else if (xp < XP_CORPORAL)
+	{
+		iRank = NEO_RANK_PRIVATE;
+	}
+	else if (xp < XP_SERGEANT)
+	{
+		iRank = NEO_RANK_CORPORAL;
+	}
+	else if (xp < XP_LIEUTENANT)
+	{
+		iRank = NEO_RANK_SERGEANT;
+	}
+	else
+	{
+		iRank = NEO_RANK_LIEUTENANT;
+	}
+	return iRank + 1;
+}
+
+const char *GetRankName(const int xp, const bool shortened)
+{
+	static constexpr const char *RANK_NAME_LONG[] = {
+		"Rankless Dog", "Private", "Corporal", "Sergeant", "Lieutenant"
+	};
+	static constexpr const char *RANK_NAME_SHORT[] = {
+		"Dog", "Pvt", "Cpl", "Sgt", "Lt"
+	};
+	static_assert(ARRAYSIZE(RANK_NAME_LONG) == ARRAYSIZE(RANK_NAME_SHORT));
+
+	const int iRank = GetRank(xp);
+	if (IN_BETWEEN_AR(0, iRank, ARRAYSIZE(RANK_NAME_LONG)))
+	{
+		return (shortened ? RANK_NAME_SHORT : RANK_NAME_LONG)[iRank];
+	}
+	return "";
 }
 
