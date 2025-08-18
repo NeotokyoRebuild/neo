@@ -14,6 +14,7 @@
 #include "soundenvelope.h"
 #include "weapon_neobasecombatweapon.h"
 #include "weapon_knife.h"
+#include "nav_mesh.h"
 
 #include "behavior/neo_bot_behavior.h"
 
@@ -820,6 +821,14 @@ void CNEOBot::FireGameEvent(IGameEvent* event)
 {
 }
 
+inline void CNEOBot::Update()
+{
+	if (!TheNavMesh->IsLoaded())
+	{
+		return;
+	}
+	BaseClass::Update();
+}
 
 //-----------------------------------------------------------------------------------------------------
 void CNEOBot::Event_Killed(const CTakeDamageInfo& info)
