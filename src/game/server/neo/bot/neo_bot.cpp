@@ -821,10 +821,18 @@ void CNEOBot::FireGameEvent(IGameEvent* event)
 {
 }
 
+extern ConVar nb_update_frequency;
 inline void CNEOBot::Update()
 {
 	if (!TheNavMesh->IsLoaded())
 	{
+		if ( IsDebugging( NEXTBOT_DEBUG_ALL ) )
+		{
+			CFmtStr msg;
+			const float messageTime = nb_update_frequency.GetFloat() + (gpGlobals->frametime * 2);
+			GetEntity()->EntityText( 0, msg.sprintf( "#%d", GetEntity()->entindex() ), messageTime );
+			GetEntity()->EntityText( 1, msg.sprintf( "No navigation mesh, updates frozen" ), messageTime );
+		}
 		return;
 	}
 	BaseClass::Update();
