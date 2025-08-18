@@ -1447,7 +1447,7 @@ bool CNEOBot::EquipRequiredWeapon(void)
 
 //-----------------------------------------------------------------------------------------------------
 // Equip the best weapon we have to attack the given threat
-void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat)
+void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat, const bool bNotPrimary)
 {
 	if (EquipRequiredWeapon())
 		return;
@@ -1460,9 +1460,15 @@ void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat)
 	CNEOBaseCombatWeapon* throwable = static_cast<CNEOBaseCombatWeapon *>(Weapon_GetSlot(3));
 
 	// --------------------------------------------------------------------------------
-	// Don't consider weapons that we have no ammo for.
-	if (primaryWeapon && (!primaryWeapon->m_iPrimaryAmmoType || primaryWeapon->Clip1() + primaryWeapon->m_iPrimaryAmmoCount <= 0)) // We do not care about slugs
+	// Don't consider weapons that we have no ammo for (or filter out primary like shotgun + glass scenario)
+	// We do not care about slugs
+	if (bNotPrimary ||
+			(primaryWeapon &&
+			 	(!primaryWeapon->m_iPrimaryAmmoType ||
+				 (primaryWeapon->Clip1() + primaryWeapon->m_iPrimaryAmmoCount) <= 0)))
+	{
 		primaryWeapon = NULL;
+	}
 
 	if (secondaryWeapon && (secondaryWeapon->Clip1() + secondaryWeapon->m_iPrimaryAmmoCount <= 0))
 		secondaryWeapon = NULL;
@@ -1676,17 +1682,28 @@ bool CNEOBot::IsQuietWeapon(CNEOBaseCombatWeapon* weapon) const
 	return false;
 }
 
+unsigned int CNEOBot::LineOfFireMask(const LineOfFireFlags flags)
+{
+	// Flag set by outside which should already know if using shotgun or not
+	// Shotgun cannot deal with windows at all
+	if (flags & LINE_OF_FIRE_FLAGS_SHOTGUN)
+	{
+		return MASK_SHOT;
+	}
+	return MASK_SHOT & ~CONTENTS_WINDOW;
+}
+
 
 //-----------------------------------------------------------------------------------------------------
 // Return true if a weapon has no obstructions along the line between the given points
-bool CNEOBot::IsLineOfFireClear(const Vector& from, const Vector& to) const
+bool CNEOBot::IsLineOfFireClear(const Vector& from, const Vector& to, const LineOfFireFlags flags) const
 {
 	trace_t trace;
 	NextBotTraceFilterIgnoreActors botFilter(NULL, COLLISION_GROUP_NONE);
 	CTraceFilterIgnoreFriendlyCombatItems ignoreFriendlyCombatFilter(this, COLLISION_GROUP_NONE, GetTeamNumber());
 	CTraceFilterChain filter(&botFilter, &ignoreFriendlyCombatFilter);
 
-	UTIL_TraceLine(from, to, MASK_SOLID_BRUSHONLY, &filter, &trace);
+	UTIL_TraceLine(from, to, LineOfFireMask(flags), &filter, &trace);
 
 	return !trace.DidHit();
 }
@@ -1694,22 +1711,22 @@ bool CNEOBot::IsLineOfFireClear(const Vector& from, const Vector& to) const
 
 //-----------------------------------------------------------------------------------------------------
 // Return true if a weapon has no obstructions along the line from our eye to the given position
-bool CNEOBot::IsLineOfFireClear(const Vector& where) const
+bool CNEOBot::IsLineOfFireClear(const Vector& where, const LineOfFireFlags flags) const
 {
-	return IsLineOfFireClear(const_cast<CNEOBot*>(this)->EyePosition(), where);
+	return IsLineOfFireClear(const_cast<CNEOBot*>(this)->EyePosition(), where, flags);
 }
 
 
 //-----------------------------------------------------------------------------------------------------
 // Return true if a weapon has no obstructions along the line between the given point and entity
-bool CNEOBot::IsLineOfFireClear(const Vector& from, CBaseEntity* who) const
+bool CNEOBot::IsLineOfFireClear(const Vector& from, CBaseEntity* who, const LineOfFireFlags flags) const
 {
 	trace_t trace;
 	NextBotTraceFilterIgnoreActors botFilter(NULL, COLLISION_GROUP_NONE);
 	CTraceFilterIgnoreFriendlyCombatItems ignoreFriendlyCombatFilter(this, COLLISION_GROUP_NONE, GetTeamNumber());
 	CTraceFilterChain filter(&botFilter, &ignoreFriendlyCombatFilter);
 
-	UTIL_TraceLine(from, who->WorldSpaceCenter(), MASK_SOLID_BRUSHONLY, &filter, &trace);
+	UTIL_TraceLine(from, who->WorldSpaceCenter(), LineOfFireMask(flags), &filter, &trace);
 
 	return !trace.DidHit() || trace.m_pEnt == who;
 }
@@ -1717,9 +1734,9 @@ bool CNEOBot::IsLineOfFireClear(const Vector& from, CBaseEntity* who) const
 
 //-----------------------------------------------------------------------------------------------------
 // Return true if a weapon has no obstructions along the line from our eye to the given entity
-bool CNEOBot::IsLineOfFireClear(CBaseEntity* who) const
+bool CNEOBot::IsLineOfFireClear(CBaseEntity* who, const LineOfFireFlags flags) const
 {
-	return IsLineOfFireClear(const_cast<CNEOBot*>(this)->EyePosition(), who);
+	return IsLineOfFireClear(const_cast<CNEOBot*>(this)->EyePosition(), who, flags);
 }
 
 
@@ -1876,11 +1893,14 @@ bool CNEOBot::FindSplashTarget(CBaseEntity* target, float maxSplashRadius, Vecto
 		trace_t trace;
 		NextBotTraceFilterIgnoreActors filter(NULL, COLLISION_GROUP_NONE);
 
-		UTIL_TraceLine(target->WorldSpaceCenter(), probe, MASK_SOLID_BRUSHONLY, &filter, &trace);
+		auto *myWeapon = static_cast<const CNEOBaseCombatWeapon *>(GetActiveWeapon());
+		const bool bIsShotgun = (myWeapon && (myWeapon->GetNeoWepBits() & (NEO_WEP_AA13 | NEO_WEP_SUPA7)));
+		const LineOfFireFlags flags = bIsShotgun ? LINE_OF_FIRE_FLAGS_SHOTGUN : LINE_OF_FIRE_FLAGS_DEFAULT;
+		UTIL_TraceLine(target->WorldSpaceCenter(), probe, LineOfFireMask(flags), &filter, &trace);
 		if (trace.DidHitWorld())
 		{
 			// can we shoot this spot?
-			if (IsLineOfFireClear(trace.endpos))
+			if (IsLineOfFireClear(trace.endpos, flags))
 			{
 				// yes, found a corner-sticky target
 				*splashTarget = trace.endpos;

@@ -315,7 +315,7 @@ bool CNEOBotMainAction::IsImmediateThreat( const CBaseCombatCharacter *subject, 
 		return false;
 
 	// if they can't hurt me, they aren't an immediate threat
-	if ( !me->IsLineOfFireClear( threat->GetEntity() ) )
+	if ( !me->IsLineOfFireClear( threat->GetEntity(), CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT ) )
 		return false;
 
 	Vector to = me->GetAbsOrigin() - threat->GetLastKnownPosition();
@@ -581,13 +581,39 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 	if ( threat == NULL || !threat->GetEntity() || !threat->IsVisibleRecently() )
 		return;
 
-	// don't shoot through windows/etc
-	if ( !me->IsLineOfFireClear( threat->GetEntity()->EyePosition() ) )
+	// don't shoot through non-shootables, check if shootable by any non-shotguns weapons
+	Vector vShootablePos = threat->GetEntity()->EyePosition();
+	if ( !me->IsLineOfFireClear( vShootablePos, CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT ) )
 	{
-		if ( !me->IsLineOfFireClear( threat->GetEntity()->WorldSpaceCenter() ) )
+		vShootablePos = threat->GetEntity()->WorldSpaceCenter();
+		if ( !me->IsLineOfFireClear( vShootablePos, CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT ) )
 		{
-			if ( !me->IsLineOfFireClear( threat->GetEntity()->GetAbsOrigin() ) )
+			vShootablePos = threat->GetEntity()->GetAbsOrigin();
+			if ( !me->IsLineOfFireClear( vShootablePos, CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT ) )
+			{
 				return;
+			}
+		}
+	}
+
+	// Check again if shotgun from last "any" shootable pos
+	bool bNotPrimary = false;
+	if (myWeapon && (myWeapon->GetNeoWepBits() & (NEO_WEP_AA13 | NEO_WEP_SUPA7)))
+	{
+		if (!me->IsLineOfFireClear(vShootablePos, CNEOBot::LINE_OF_FIRE_FLAGS_SHOTGUN))
+		{
+			// NEO TODO (nullsystem): Supa7 slug might work out? Although it's slower
+			// than just switching to a pistol
+			//
+			// Try to switch over to non-shotgun weapon
+			bNotPrimary = true;
+			me->EquipBestWeaponForThreat(threat, bNotPrimary);
+			myWeapon = static_cast<CNEOBaseCombatWeapon *>(me->GetActiveWeapon());
+			// If it's still Supa7, then it should try to dodge the threat instead
+			if (myWeapon && (myWeapon->GetNeoWepBits() & (NEO_WEP_AA13 | NEO_WEP_SUPA7)))
+			{
+				return;
+			}
 		}
 	}
 
@@ -629,7 +655,7 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 				else if (IsImmediateThreat(me->GetEntity(), threat) && !m_isWaitingForFullReload)
 				{
 					// intention is to swap to secondary if available
-					me->EquipBestWeaponForThreat(threat);
+					me->EquipBestWeaponForThreat(threat, bNotPrimary);
 				}
 				else
 				{
@@ -742,7 +768,7 @@ void CNEOBotMainAction::Dodge( CNEOBot *me )
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
 	if ( threat && threat->IsVisibleRecently() )
 	{
-		bool isShotClear = me->IsLineOfFireClear( threat->GetLastKnownPosition() );
+		bool isShotClear = me->IsLineOfFireClear( threat->GetLastKnownPosition(), CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT );
 
 		// don't dodge if they can't hit us
 		if ( !isShotClear )
