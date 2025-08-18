@@ -132,6 +132,7 @@ extern ConVar tf_mm_servermode;
 #ifdef NEO
 #include "neo_version.h"
 #include "neo_player_shared.h"
+#include "bot/neo_bot_profile.h"
 #endif
 
 extern IToolFrameworkServer *g_pToolFrameworkServer;
@@ -772,6 +773,7 @@ void CServerGameDLL::PostInit()
 	{
 		V_memset(gStreamerModeNames[i], '.', 5);
 	}
+	NEOBotProfileLoad();
 #endif
 }
 
