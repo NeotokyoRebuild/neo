@@ -107,18 +107,72 @@ const char* GetRandomBotName(void)
 	static const char* nameList[] =
 	{
 		"Deej",
-		"Ed",
+		"0edit",
 		"Filter Decay",
 		"Gato",
 		"Grey",
 		"Glasseater",
-		"Ivy",
+		"Operation Ivy",
 		"KillahMo",
 		"pushBAK",
 		"Tatsur0",
+		"rain",
+		"The Major",
+		"Wolf",
+		"Sanjuro Executive",
+		"Grumpy Old Man",
+		"Biodroid Prototype",
+		"TGR",
+		"Jinball",
+		"Pequod",
+		"The Chimpanzee",
+		"Marchenko",
+		"Jeff",
+		"M.A.W.S.",
+		"Tin Soldier",
+		"SUKKIT",
+		"Supaman",
+		"Hadaly",
+		"Komatsu Lifthelper",
+		"HE Specialist",
+		"Left Leaner",
+		"Super Class A Hacker",
+		"and You",
 	};
 
-	return nameList[RandomInt(0, ARRAYSIZE(nameList) - 1)];
+	const int nameCount = ARRAYSIZE(nameList);
+
+	CUtlVector<int> availableList;
+	for (int i = 0; i < nameCount; ++i)
+	{
+		availableList.AddToTail(i);
+	}
+
+	for (int j = 1; j <= gpGlobals->maxClients && availableList.Count() > 0; ++j)
+	{
+		auto player = UTIL_PlayerByIndex(j);
+		if (!player)
+		{
+			continue;
+		}
+
+		for (int k = availableList.Count() - 1; k >= 0; --k)
+		{
+			if (V_stristr(player->GetPlayerName(), nameList[availableList[k]]))
+			{
+				availableList.FastRemove(k);
+			}
+		}
+	}
+
+	if (availableList.Count() == 0)
+	{
+		return nameList[RandomInt(0, nameCount - 1)];
+	}
+
+	return nameList[availableList[RandomInt(0, availableList.Count() - 1)]];
+
+	//return nameList[RandomInt(0, ARRAYSIZE(nameList) - 1)];
 }
 
 
