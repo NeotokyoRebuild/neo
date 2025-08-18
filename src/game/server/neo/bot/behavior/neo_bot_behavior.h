@@ -70,4 +70,5 @@ private:
 	IntervalTimer m_undergroundTimer;
 
 	CountdownTimer m_reevaluateClassTimer;
+	bool m_bPrevBreakBreakableInPath = false;
 };
