@@ -428,7 +428,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		const bool bImported = ImportCrosshair(&pCrosshair->info, cvr->cl_neo_crosshair.GetString());
 		if (!bImported)
 		{
-			ImportCrosshair(&pCrosshair->info, CL_NEO_CROSSHAIR_DEFAULT);
+			ImportCrosshair(&pCrosshair->info, NEO_CROSSHAIR_DEFAULT);
 		}
 		pCrosshair->eClipboardInfo = XHAIREXPORTNOTIFY_NONE;
 		pCrosshair->bNetworkCrosshair = cvr->cl_neo_crosshair_network.GetBool();
@@ -965,7 +965,7 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 
 			if (bDefaultPressed)
 			{
-				ImportCrosshair(&pCrosshair->info, CL_NEO_CROSSHAIR_DEFAULT);
+				ImportCrosshair(&pCrosshair->info, NEO_CROSSHAIR_DEFAULT);
 				pCrosshair->eClipboardInfo = XHAIREXPORTNOTIFY_RESET_TO_DEFAULT;
 				ns->bModified = true;
 			}

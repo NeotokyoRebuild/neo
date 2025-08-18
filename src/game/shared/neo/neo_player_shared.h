@@ -393,6 +393,7 @@ bool GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
 // which is ~43 for v2 serialization | 64 length is enough for now till
 // more comes in
 static constexpr const int NEO_XHAIR_SEQMAX = 64;
+#define NEO_CROSSHAIR_DEFAULT "2;0;-1;0;6;0.000;2;4;0;0;1;0;0;"
 
 #define TUTORIAL_MAP_CLASSES "ntre_class_tut"
 #define TUTORIAL_MAP_SHOOTING "ntre_shooting_tut"
