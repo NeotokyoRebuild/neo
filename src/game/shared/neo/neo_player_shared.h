@@ -259,7 +259,7 @@ static constexpr const SZWSZTexts SZWSZ_NEO_CLASS_STRS[NEO_CLASS__ENUM_COUNT] = 
 	SZWSZ_INIT("Assault"),
 	SZWSZ_INIT("Support"),
 	SZWSZ_INIT("VIP"),
-  SZWSZ_INIT("Juggernaut"),
+	SZWSZ_INIT("Juggernaut"),
 };
 
 inline const char *GetNeoClassName(const int neoClassIdx)
