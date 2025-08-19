@@ -78,6 +78,7 @@ public:
 
 	virtual void		Spawn();
 	virtual void		FireGameEvent(IGameEvent* event);
+	inline void			Update() OVERRIDE;
 	virtual void		Event_Killed(const CTakeDamageInfo& info);
 	virtual void		PhysicsSimulate(void);
 	virtual void		Touch(CBaseEntity* pOther);
