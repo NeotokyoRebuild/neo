@@ -498,16 +498,19 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 	int wide, tall;
 	GetSize(wide, tall);
 	float secondsSpentOnLoadingScreen = (gpGlobals->realtime - g_pNeoRoot->m_flTimeLoadingScreenTransition);
+	bool changedAlpha = false;
 	if (secondsSpentOnLoadingScreen < NEO_MENU_SECONDS_DELAY)
 	{
-		// version number will not print here, could draw before return or could just ignore since we will be removing the version number anyway
-		return;
+		// early return here can crash the game #1277
+		surface()->DrawSetAlphaMultiplier(0);
+		changedAlpha = true;
 	}
 	secondsSpentOnLoadingScreen -= NEO_MENU_SECONDS_DELAY;
-	if (secondsSpentOnLoadingScreen < NEO_MENU_SECONDS_TILL_FULLY_OPAQUE)
+	if (!changedAlpha && secondsSpentOnLoadingScreen < NEO_MENU_SECONDS_TILL_FULLY_OPAQUE)
 	{
 		// Quadratic ease in
 		surface()->DrawSetAlphaMultiplier((secondsSpentOnLoadingScreen * secondsSpentOnLoadingScreen) / (NEO_MENU_SECONDS_TILL_FULLY_OPAQUE * NEO_MENU_SECONDS_TILL_FULLY_OPAQUE));
+		changedAlpha = true;
 	}
 
 	const RootState ePrevState = m_state;
@@ -550,7 +553,10 @@ void CNeoRoot::OnMainLoop(const NeoUI::Mode eMode)
 		}
 	}
 
-	surface()->DrawSetAlphaMultiplier(1);
+	if (changedAlpha)
+	{
+		surface()->DrawSetAlphaMultiplier(1);
+	}
 
 	if (eMode == NeoUI::MODE_PAINT)
 	{

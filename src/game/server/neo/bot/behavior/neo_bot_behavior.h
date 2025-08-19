@@ -25,7 +25,8 @@ public:
 	virtual QueryResultType	ShouldHurry( const INextBot *me ) const;							// are we in a hurry?
 	
 	// CNEOBotContextualQueryInterface implementation
-	QueryResultType ShouldWalk(const CNEOBot *me) const final;
+	QueryResultType ShouldWalk(const CNEOBot *me, const QueryResultType qShouldAimQuery) const final;
+	QueryResultType ShouldAim(const CNEOBot *me, const bool bWepHasClip) const final;
 
 	virtual Vector SelectTargetPoint( const INextBot *me, const CBaseCombatCharacter *subject ) const;		// given a subject, return the world space position we should aim at
 	virtual QueryResultType IsPositionAllowed( const INextBot *me, const Vector &pos ) const;

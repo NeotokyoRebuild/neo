@@ -15,6 +15,8 @@
 #endif
 
 #include "neo_predicted_viewmodel.h"
+#include "neo_misc.h"
+#include "shareddefs.h"
 
 
 // Type to use if we need to ensure more than 32 bits in the mask.
@@ -252,17 +254,22 @@ bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep);
 
 //ConVar sv_neo_resupply_anywhere("sv_neo_resupply_anywhere", "0", FCVAR_CHEAT | FCVAR_REPLICATED);
 
-inline const char* GetNeoClassName(int neoClassIdx)
+static constexpr const SZWSZTexts SZWSZ_NEO_CLASS_STRS[NEO_CLASS__ENUM_COUNT] = {
+	SZWSZ_INIT("Recon"),
+	SZWSZ_INIT("Assault"),
+	SZWSZ_INIT("Support"),
+	SZWSZ_INIT("VIP"),
+  SZWSZ_INIT("Juggernaut"),
+};
+
+inline const char *GetNeoClassName(const int neoClassIdx)
 {
-	switch (neoClassIdx)
-	{
-	case NEO_CLASS_RECON: return "Recon";
-	case NEO_CLASS_ASSAULT: return "Assault";
-	case NEO_CLASS_SUPPORT: return "Support";
-	case NEO_CLASS_VIP: return "VIP";
-	case NEO_CLASS_JUGGERNAUT: return "Juggernaut";
-	default: return "";
-	}
+	return (IN_BETWEEN_AR(0, neoClassIdx, NEO_CLASS__ENUM_COUNT)) ? SZWSZ_NEO_CLASS_STRS[neoClassIdx].szStr : "";
+}
+
+inline const wchar_t *GetNeoClassNameW(const int neoClassIdx)
+{
+	return (IN_BETWEEN_AR(0, neoClassIdx, NEO_CLASS__ENUM_COUNT)) ? SZWSZ_NEO_CLASS_STRS[neoClassIdx].wszStr : L"";
 }
 
 inline const char *GetRankName(int xp, bool shortened = false)
@@ -345,11 +352,7 @@ struct AttackersTotals
 	}
 };
 
-int DmgLineStr(char* infoLine, const int infoLineMax,
-	const char* dmgerName, const char* dmgerClass,
-	const AttackersTotals &totals);
-
-void KillerLineStr(char* killByLine, const int killByLineMax,
+[[deprecated]] void KillerLineStr(char* killByLine, const int killByLineMax,
 	CNEO_Player* neoAttacker, const CNEO_Player* neoVictim, const char* killedWith = "");
 
 [[nodiscard]] auto StrToInt(std::string_view strView) -> std::optional<int>;
@@ -404,8 +407,30 @@ bool GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
 // which is ~43 for v2 serialization | 64 length is enough for now till
 // more comes in
 static constexpr const int NEO_XHAIR_SEQMAX = 64;
+#define NEO_CROSSHAIR_DEFAULT "2;0;-1;0;6;0.000;2;4;0;0;1;0;0;"
 
 #define TUTORIAL_MAP_CLASSES "ntre_class_tut"
 #define TUTORIAL_MAP_SHOOTING "ntre_shooting_tut"
+
+enum
+{
+	TEAM_JINRAI = LAST_SHARED_TEAM + 1,
+	TEAM_NSF,
+
+	TEAM__TOTAL, // Always last enum in here
+};
+
+#define TEAM_STR_JINRAI "Jinrai"
+#define TEAM_STR_NSF "NSF"
+#define TEAM_STR_SPEC "Spectator"
+
+static constexpr const SZWSZTexts SZWSZ_NEO_TEAM_STRS[TEAM__TOTAL] = {
+	SZWSZ_INIT("Unassigned"), // TEAM_UNASSIGNED
+	SZWSZ_INIT("Spectator"), // TEAM_SPECTATOR
+	X_SZWSZ_INIT(TEAM_STR_JINRAI), // TEAM_JINRAI
+	X_SZWSZ_INIT(TEAM_STR_NSF), // TEAM_NSF
+};
+
+#define NEO_GAME_NAME "Neotokyo; Rebuild"
 
 #endif // NEO_PLAYER_SHARED_H

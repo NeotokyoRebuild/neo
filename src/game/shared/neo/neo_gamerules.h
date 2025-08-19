@@ -24,23 +24,7 @@
 	#include "utlhashtable.h"
 #endif
 
-#ifdef GLOWS_ENABLE
 #include "neo_player_shared.h"
-#endif
-
-enum
-{
-	TEAM_JINRAI = LAST_SHARED_TEAM + 1,
-	TEAM_NSF,
-
-	TEAM__TOTAL, // Always last enum in here
-};
-
-#define TEAM_STR_JINRAI "Jinrai"
-#define TEAM_STR_NSF "NSF"
-#define TEAM_STR_SPEC "Spectator"
-
-#define NEO_GAME_NAME "Neotokyo; Rebuild"
 
 #ifdef CLIENT_DLL
 	#define CNEORules C_NEORules
@@ -90,6 +74,7 @@ public:
 class CNEOGhostCapturePoint;
 class CNEO_Player;
 class CWeaponGhost;
+class CNEOBotSeekAndDestroy;
 
 extern ConVar sv_neo_mirror_teamdamage_multiplier;
 extern ConVar sv_neo_mirror_teamdamage_duration;
@@ -421,6 +406,7 @@ public:
 	CNEO_Juggernaut *m_pJuggernautItem = nullptr;
 	CNEO_Player* m_pJuggernautPlayer = nullptr;
 private:
+	friend class CNEOBotSeekAndDestroy;
 	CUtlVector<int> m_pGhostCaps;
 	CWeaponGhost *m_pGhost = nullptr;
 	CNEO_Player *m_pVIP = nullptr;
@@ -434,6 +420,7 @@ private:
 	int m_iEntPrevCapSize = 0;
 	int m_iPrintHelpCounter = 0;
 	bool m_bGamemodeTypeBeenInitialized = false;
+	friend class CNEO_GhostBoundary;
 	Vector m_vecPreviousGhostSpawn = vec3_origin;
 #endif
 	CNetworkVar(int, m_nRoundStatus);

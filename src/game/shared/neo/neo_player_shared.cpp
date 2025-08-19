@@ -98,43 +98,13 @@ bool ClientWantsAimHold(const CNEO_Player* player)
 #ifdef CLIENT_DLL
 	return neo_aim_hold.GetBool();
 #else
-	if (!player)
+	if (!player || player->IsBot())
 	{
 		return false;
-	}
-	else if (player->GetFlags() & FL_FAKECLIENT)
-	{
-		return true;
 	}
 
 	return 1 == atoi(engine->GetClientConVarValue(engine->IndexOfEdict(player->edict()), "neo_aim_hold"));
 #endif
-}
-
-int DmgLineStr(char* infoLine, const int infoLineMax,
-	const char* dmgerName, const char* dmgerClass,
-	const AttackersTotals &totals)
-{
-	memset(infoLine, 0, infoLineMax);
-	if (totals.dealtDmgs > 0 && totals.takenDmgs > 0)
-	{
-		Q_snprintf(infoLine, infoLineMax, "%s [%s]: Dealt: %d in %d hits | Taken: %d in %d hits\n",
-				   dmgerName, dmgerClass,
-				   totals.dealtDmgs, totals.dealtHits, totals.takenDmgs, totals.takenHits);
-	}
-	else if (totals.dealtDmgs > 0)
-	{
-		Q_snprintf(infoLine, infoLineMax, "%s [%s]: Dealt: %d in %d hits\n",
-				   dmgerName, dmgerClass,
-				   totals.dealtDmgs, totals.dealtHits);
-	}
-	else if (totals.takenDmgs > 0)
-	{
-		Q_snprintf(infoLine, infoLineMax, "%s [%s]: Taken: %d in %d hits\n",
-				   dmgerName, dmgerClass,
-				   totals.takenDmgs, totals.takenHits);
-	}
-	return Q_strlen(infoLine);
 }
 
 void KillerLineStr(char* killByLine, const int killByLineMax,
