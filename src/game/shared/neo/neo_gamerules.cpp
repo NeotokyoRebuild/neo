@@ -62,7 +62,7 @@ ConVar neo_vip_eligible("cl_neo_vip_eligible", "1", FCVAR_ARCHIVE, "Eligible for
 #endif // CLIENT_DLL
 #ifdef GAME_DLL
 ConVar sv_neo_vip_ctg_on_death("sv_neo_vip_ctg_on_death", "0", FCVAR_ARCHIVE, "Spawn Ghost when VIP dies, continue the game", true, 0, true, 1);
-ConVar sv_neo_jgr_max_points("sv_neo_jgr_max_points", "100", FCVAR_ARCHIVE, "Maximum points required for a team to win in JGR", true, 0, true, 0);
+ConVar sv_neo_jgr_max_points("sv_neo_jgr_max_points", "100", FCVAR_ARCHIVE, "Maximum points required for a team to win in JGR", true, 1, false, 0);
 #endif
 
 #ifdef GAME_DLL
