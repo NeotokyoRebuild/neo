@@ -1214,6 +1214,7 @@ void CNEORules::Think(void)
 			Assert(false);
 		}
 
+		m_iGhosterPlayer = 0;
 		m_bGhostExists = true;
 	}
 	else
@@ -1880,6 +1881,7 @@ void CNEORules::JuggernautActivated(CNEO_Player* pPlayer)
 	if (GetGameType() == NEO_GAME_TYPE_JGR)
 	{
 		m_pJuggernautPlayer = pPlayer;
+		m_iGhosterPlayer = pPlayer->entindex();
 		m_pJuggernautItem = nullptr;
 		m_vecGhostMarkerPos = vec3_origin;
 	}
