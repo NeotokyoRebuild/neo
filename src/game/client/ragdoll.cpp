@@ -290,11 +290,17 @@ void CRagdoll::CheckSettleStationaryRagdoll()
 		return;
 
 	// Msg( "%d [%p] Settling\n", gpGlobals->tickcount, this );
-
+#ifdef NEO
+	if (!IsSettled())
+	{
+		return;
+	}
+#else
 	// It has stopped moving, see if it
 	float dt = gpGlobals->curtime - m_flLastOriginChangeTime;
 	if ( dt < ragdoll_sleepaftertime.GetFloat() )
 		return;
+#endif // NEO
 
 	// Msg( "%d [%p] FORCE SLEEP\n",gpGlobals->tickcount, this );
 
@@ -307,6 +313,13 @@ void CRagdoll::ResetRagdollSleepAfterTime( void )
 	m_flLastOriginChangeTime = gpGlobals->curtime;
 }
 
+#ifdef NEO
+inline bool CRagdoll::IsSettled()
+{ 
+	if (gpGlobals->curtime - m_flLastOriginChangeTime >= ragdoll_sleepaftertime.GetFloat()) { return true; }
+}
+
+#endif // NEO
 void CRagdoll::DrawWireframe()
 {
 	IMaterial *pWireframe = materials->FindMaterial("shadertest/wireframevertexcolor", TEXTURE_GROUP_OTHER);

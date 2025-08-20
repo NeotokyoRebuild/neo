@@ -87,6 +87,9 @@ public:
 
 	void ResetRagdollSleepAfterTime( void );
 	float GetLastVPhysicsUpdateTime() const { return m_lastUpdate; }
+#ifdef NEO
+	bool IsSettled();
+#endif // NEO
 
 private:
 
