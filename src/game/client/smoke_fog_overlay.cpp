@@ -121,6 +121,8 @@ void DrawSmokeFogOverlay()
 	pMesh->Draw();
 }
 
+extern ConVar glow_outline_effect_enable;
+extern ConVar mp_forcecamera;
 void UpdateThermalOverride()
 {
 	auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
@@ -130,6 +132,7 @@ void UpdateThermalOverride()
 		if (localPlayer->GetClass() == NEO_CLASS_SUPPORT && localPlayer->IsInVision())
 		{
 			g_SmokeFogOverlayThermalOverride = true;
+			g_SmokeFogOverlayAlpha = 0;
 			return;
 		}
 	}
@@ -141,9 +144,14 @@ void UpdateThermalOverride()
 			if (targetPlayer->GetClass() == NEO_CLASS_SUPPORT && targetPlayer->IsInVision())
 			{
 				g_SmokeFogOverlayThermalOverride = true;
+				g_SmokeFogOverlayAlpha = 0;
 				return;
 			}
 		}
+	}
+	else if (localPlayer->IsObserver() && glow_outline_effect_enable.GetBool() && (localPlayer->GetTeamNumber() == TEAM_SPECTATOR || mp_forcecamera.GetInt() == OBS_ALLOW_ALL))
+	{
+		g_SmokeFogOverlayAlpha = 0;
 	}
 	g_SmokeFogOverlayThermalOverride = false;
 }
