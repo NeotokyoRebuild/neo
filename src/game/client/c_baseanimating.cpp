@@ -3283,7 +3283,7 @@ int C_BaseAnimating::DrawModel( int flags )
 		Vector vel;
 		if (IsRagdoll())
 		{
-			vel = m_pRagdoll->IsSettled() ? vec3_origin : m_pRagdoll->m_vecLastVelocity;
+			vel = m_pRagdoll->m_vecLastVelocity;
 		}
 		else
 		{

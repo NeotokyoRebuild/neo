@@ -265,6 +265,9 @@ bool CRagdoll::TransformVectorToWorld(int iBoneIndex, const Vector *vPosition, V
 //-----------------------------------------------------------------------------
 void CRagdoll::PhysForceRagdollToSleep()
 {
+#ifdef NEO
+	m_vecLastVelocity = vec3_origin;
+#endif // NEO
 	for ( int i = 0; i < m_ragdoll.listCount; i++ )
 	{
 		if ( m_ragdoll.list[i].pObject )
@@ -301,17 +304,11 @@ void CRagdoll::CheckSettleStationaryRagdoll()
 		return;
 
 	// Msg( "%d [%p] Settling\n", gpGlobals->tickcount, this );
-#ifdef NEO
-	if (!IsSettled())
-	{
-		return;
-	}
-#else
+	
 	// It has stopped moving, see if it
 	float dt = gpGlobals->curtime - m_flLastOriginChangeTime;
 	if ( dt < ragdoll_sleepaftertime.GetFloat() )
 		return;
-#endif // NEO
 
 	// Msg( "%d [%p] FORCE SLEEP\n",gpGlobals->tickcount, this );
 
@@ -324,13 +321,6 @@ void CRagdoll::ResetRagdollSleepAfterTime( void )
 	m_flLastOriginChangeTime = gpGlobals->curtime;
 }
 
-#ifdef NEO
-inline bool CRagdoll::IsSettled()
-{ 
-	if (gpGlobals->curtime - m_flLastOriginChangeTime >= ragdoll_sleepaftertime.GetFloat()) { return true; }
-}
-
-#endif // NEO
 void CRagdoll::DrawWireframe()
 {
 	IMaterial *pWireframe = materials->FindMaterial("shadertest/wireframevertexcolor", TEXTURE_GROUP_OTHER);
