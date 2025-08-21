@@ -74,7 +74,7 @@ public:
 	virtual void PickupObject(CBaseEntity *pObject, bool bLimitMassAndSize) OVERRIDE;
 	virtual void PlayStepSound(Vector &vecOrigin, surfacedata_t *psurface, float fvol, bool force) OVERRIDE;
 	virtual void Weapon_Drop(CBaseCombatWeapon *pWeapon, const Vector *pvecTarget = NULL, const Vector *pVelocity = NULL) OVERRIDE;
-	virtual void Weapon_DropOnDeath(CBaseCombatWeapon *pWeapon, Vector pVelocity, CBaseEntity *pAttacker = NULL);
+	virtual void Weapon_DropOnDeath(CNEOBaseCombatWeapon *pWeapon, Vector pVelocity);
 	virtual void UpdateOnRemove(void) OVERRIDE;
 	virtual void DeathSound(const CTakeDamageInfo &info) OVERRIDE;
 	virtual CBaseEntity* EntSelectSpawnPoint(void) OVERRIDE;
