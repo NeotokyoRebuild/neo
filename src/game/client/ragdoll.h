@@ -104,6 +104,12 @@ private:
 	bool		m_allAsleep;
 	Vector		m_vecLastOrigin;
 	float		m_flLastOriginChangeTime;
+#ifdef NEO
+public:
+	Vector		m_vecLastVelocity;
+	Vector		m_vecInitialVelocity;
+private:
+#endif // NEO
 
 #if RAGDOLL_VISUALIZE
 	matrix3x4_t			m_savedBone1[MAXSTUDIOBONES];

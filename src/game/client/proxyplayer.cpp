@@ -279,7 +279,7 @@ void CEntitySpeedProxy::OnBind( void *pC_BaseEntity )
 		C_BaseAnimating* baseAnimating = pEntity->GetBaseAnimating();
 		if (baseAnimating && baseAnimating->IsRagdoll())
 		{
-			velocity = baseAnimating->m_pRagdoll->IsSettled() ? vec3_origin : pEntity->GetOldVelocity();
+			velocity = baseAnimating->m_pRagdoll->IsSettled() ? vec3_origin : baseAnimating->m_pRagdoll->m_vecLastVelocity;
 		}
 		else
 		{
