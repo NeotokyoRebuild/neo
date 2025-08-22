@@ -128,14 +128,6 @@ void CRagdoll::Init(
 
 	// It's moving now...
 	m_flLastOriginChangeTime = gpGlobals->curtime;
-#ifdef NEO
-	auto pCHL2mpRagdoll = static_cast<C_HL2MPRagdoll*>(ent);
-	if (pCHL2mpRagdoll)
-	{
-		m_vecInitialVelocity = pCHL2mpRagdoll->GetInitialRagdollVelocity();
-		m_vecLastOrigin = pCHL2mpRagdoll->GetInitialRagdollOrigin();
-	}
-#endif // NEO
 
 	// So traces hit it.
 	ent->AddEFlags( EFL_USE_PARTITION_WHEN_NOT_SOLID );
@@ -285,7 +277,10 @@ void CRagdoll::CheckSettleStationaryRagdoll()
 {
 	Vector delta = GetRagdollOrigin() - m_vecLastOrigin;
 #ifdef NEO
-	m_vecLastVelocity = delta / (gpGlobals->frametime);
+	if (gpGlobals->frametime > 0)
+	{
+		m_vecLastVelocity = delta / (gpGlobals->frametime);
+	}
 #endif // NEO
 	m_vecLastOrigin = GetRagdollOrigin();
 	for ( int i = 0; i < 3; ++i )
