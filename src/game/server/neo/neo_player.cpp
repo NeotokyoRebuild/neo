@@ -1881,7 +1881,7 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 		}
 		else
 		{
-			Weapon_DropOnDeath(pActiveWeapon, weaponThrowVelocity);
+			Weapon_DropOnDeath(pActiveWeapon, damageForce);
 		}
 	}
 
