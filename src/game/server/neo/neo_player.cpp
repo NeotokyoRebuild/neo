@@ -1925,13 +1925,13 @@ void CNEO_Player::Weapon_DropOnDeath(CNEOBaseCombatWeapon* pNeoWeapon, Vector at
 
 	Vector playerVelocity = vec3_origin;
 	GetVelocity(&playerVelocity, nullptr);
-	constexpr float ATTACK_FORCE_SCALE = 0.0005;
+	constexpr float ATTACK_FORCE_SCALE = 0.0005f;
 	if (VPhysicsGetObject())
 	{
 		playerVelocity += (attackForce * ATTACK_FORCE_SCALE) / VPhysicsGetObject()->GetInvMass();
 	}
 	else {
-		constexpr float SRM_WEAPON_MASS = 0.012;
+		constexpr float SRM_WEAPON_MASS = 0.012f;
 		playerVelocity += (attackForce * ATTACK_FORCE_SCALE) / SRM_WEAPON_MASS;
 	}
 	
