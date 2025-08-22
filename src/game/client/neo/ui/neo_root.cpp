@@ -12,6 +12,7 @@
 #include "neo_version_info.h"
 #include "cdll_client_int.h"
 #include <steam/steam_api.h>
+#include <steam/isteammatchmaking.h>
 #include <vgui_avatarimage.h>
 #include <IGameUIFuncs.h>
 #include <voice_status.h>
@@ -104,6 +105,118 @@ void OverrideGameUI()
 	{
 		g_pNeoRoot->GetGameUI()->SetMainMenuOverride(g_pNeoRoot->GetVPanel());
 	}
+}
+
+// Only use it rarely/cached
+static bool NetAdrIsFavorite(const servernetadr_t &netAdr)
+{
+	ISteamMatchmaking *smm = SteamMatchmaking();
+	if (!smm)
+	{
+		return false;
+	}
+
+	const int iMaxFavCount = smm->GetFavoriteGameCount();
+	for (int i = 0; i < iMaxFavCount; ++i)
+	{
+		uint32 nIP = 0;
+		uint16 nConnPort = 0;
+		uint16 nQueryPort = 0;
+		AppId_t nAppID = 0;
+		uint32 unFlags = 0;
+		[[maybe_unused]] uint32 rTime32LastPlayedOnServer = 0;
+
+		if (smm->GetFavoriteGame(i, &nAppID, &nIP, &nConnPort,
+				&nQueryPort, &unFlags, &rTime32LastPlayedOnServer))
+		{
+			if (nIP == netAdr.GetIP() &&
+					nConnPort == netAdr.GetConnectionPort() &&
+					nQueryPort == netAdr.GetQueryPort() &&
+					(unFlags & k_unFavoriteFlagFavorite) &&
+					nAppID == engine->GetAppID())
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+static void AddToBlacklist(const gameserveritem_t *gameServer)
+{
+	const netadr_t netAdr(gameServer->m_NetAdr.GetIP(), gameServer->m_NetAdr.GetConnectionPort());
+
+	ServerBlacklistInfo sbInfo = {};
+
+	g_pVGuiLocalize->ConvertANSIToUnicode(gameServer->GetName(), sbInfo.wszName, sizeof(sbInfo.wszName));
+	sbInfo.timeVal = time(nullptr);
+	sbInfo.netAdr = netAdr;
+	sbInfo.eType = SBLIST_TYPE_NETADR;
+	ServerBlacklistCacheWsz(&sbInfo);
+
+	g_blacklistedServers.AddToTail(sbInfo);
+}
+
+static void RightClickRetServer(void *pData, const int iItem)
+{
+	CNeoRoot *pNeoRoot = (CNeoRoot *)(pData);
+
+	Assert(pNeoRoot->m_iServerBrowserTab != GS_BLACKLIST && pNeoRoot->m_iSelectedServer >= 0);
+	if (pNeoRoot->m_iServerBrowserTab == GS_BLACKLIST || pNeoRoot->m_iSelectedServer < 0)
+	{
+		return;
+	}
+
+	const auto *gameServer = &pNeoRoot->m_serverBrowser[pNeoRoot->m_iServerBrowserTab].m_filteredServers[pNeoRoot->m_iSelectedServer];
+
+	switch (iItem)
+	{
+	case CNeoRoot::RIGHTCLICKSERVER_FAV:
+	{
+		if (ISteamMatchmaking *smm = SteamMatchmaking())
+		{
+			const servernetadr_t &netAdr = gameServer->m_NetAdr;
+			if (NetAdrIsFavorite(netAdr))
+			{
+				smm->RemoveFavoriteGame(
+						engine->GetAppID(),
+						netAdr.GetIP(),
+						netAdr.GetConnectionPort(),
+						netAdr.GetQueryPort(),
+						k_unFavoriteFlagFavorite);
+			}
+			else
+			{
+				smm->AddFavoriteGame(
+						engine->GetAppID(),
+						netAdr.GetIP(),
+						netAdr.GetConnectionPort(),
+						netAdr.GetQueryPort(),
+						k_unFavoriteFlagFavorite,
+						0);
+			}
+		}
+	} break;
+	case CNeoRoot::RIGHTCLICKSERVER_BLACKLIST:
+		AddToBlacklist(gameServer);
+		break;
+	default:
+		break;
+	}
+}
+
+static void RightClickRetRemoveBlacklist(void *pData, [[maybe_unused]] const int iItem)
+{
+	CNeoRoot *pNeoRoot = (CNeoRoot *)(pData);
+
+	Assert(pNeoRoot->m_iServerBrowserTab == GS_BLACKLIST && pNeoRoot->m_iSelectedServer >= 0);
+	if (pNeoRoot->m_iServerBrowserTab != GS_BLACKLIST || pNeoRoot->m_iSelectedServer < 0)
+	{
+		return;
+	}
+
+	g_blacklistedServers.Remove(pNeoRoot->m_iSelectedServer);
+	pNeoRoot->m_iSelectedServer = -1;
 }
 
 CNeoRootInput::CNeoRootInput(CNeoRoot *rootPanel)
@@ -1262,10 +1375,15 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 			{
 				m_iSelectedServer = -1;
 			}
-			if (!m_serverBrowser[m_iServerBrowserTab].m_bReloadedAtLeastOnce)
+			if ((m_bAutoRefreshFav && m_iServerBrowserTab == GS_FAVORITES) ||
+					!m_serverBrowser[m_iServerBrowserTab].m_bReloadedAtLeastOnce)
 			{
 				bForceRefresh = true;
 				m_serverBrowser[m_iServerBrowserTab].m_bReloadedAtLeastOnce = true;
+				if (m_iServerBrowserTab == GS_FAVORITES)
+				{
+					m_bAutoRefreshFav = false;
+				}
 			}
 			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
 
@@ -1330,9 +1448,15 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 						const ServerBlacklistInfo &blacklist = g_blacklistedServers[i];
 
 						const auto btn = NeoUI::Button(L"");
-						if (btn.bPressed) // Dummy button, draw over it in paint
+						if (btn.bPressed || btn.bMouseRightPressed) // Dummy button, draw over it in paint
 						{
 							m_iSelectedServer = i;
+							if (btn.bMouseRightPressed)
+							{
+								static const wchar_t *PWSZ_BLACKLIST_RIGHTCLICK[] = { L"Remove from blacklist" };
+								NeoUI::PopupMenu(PWSZ_BLACKLIST_RIGHTCLICK, ARRAYSIZE(PWSZ_BLACKLIST_RIGHTCLICK),
+										RightClickRetRemoveBlacklist, (void *)(this));
+							}
 						}
 
 						if (param.eMode == NeoUI::MODE_PAINT)
@@ -1397,9 +1521,16 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 						}
 
 						const auto btn = NeoUI::Button(L"");
-						if (btn.bPressed) // Dummy button, draw over it in paint
+						if (btn.bPressed || btn.bMouseRightPressed) // Dummy button, draw over it in paint
 						{
 							m_iSelectedServer = i;
+							if (btn.bMouseRightPressed)
+							{
+								const bool bIsFav = NetAdrIsFavorite(server.m_NetAdr);
+								pwszRightclickServer[RIGHTCLICKSERVER_FAV] = bIsFav ? L"Unfavorite" : L"Favorite";
+								NeoUI::PopupMenu(pwszRightclickServer, RIGHTCLICKSERVER__TOTAL,
+										RightClickRetServer, (void *)(this));
+							}
 							if (btn.bKeyPressed || btn.bMouseDoublePressed)
 							{
 								bEnterServer = true;
@@ -1900,22 +2031,52 @@ void CNeoRoot::MainLoopServerDetails(const MainLoopParam param)
 				{
 					m_state = STATE_SERVERBROWSER;
 				}
-				NeoUI::Pad();
 				if (NeoUI::Button(L"Blacklist").bPressed)
 				{
-					const netadr_t netAdr(gameServer->m_NetAdr.GetIP(), gameServer->m_NetAdr.GetConnectionPort());
-
-					ServerBlacklistInfo sbInfo = {};
-
-					g_pVGuiLocalize->ConvertANSIToUnicode(gameServer->GetName(), sbInfo.wszName, sizeof(sbInfo.wszName));
-					sbInfo.timeVal = time(nullptr);
-					sbInfo.netAdr = netAdr;
-					sbInfo.eType = SBLIST_TYPE_NETADR;
-					ServerBlacklistCacheWsz(&sbInfo);
-
-					g_blacklistedServers.AddToTail(sbInfo);
-
+					AddToBlacklist(gameServer);
 					m_state = STATE_SERVERBROWSER;
+				}
+				if (ISteamMatchmaking *smm = SteamMatchmaking())
+				{
+					// Check if matches the favorite detail cache we have
+					// if not, search through with GetFavoriteGame + GetFavoriteGameCount
+					const servernetadr_t &netAdr = gameServer->m_NetAdr;
+					if (m_favCacheNetAdr.GetIP() != netAdr.GetIP() ||
+							m_favCacheNetAdr.GetConnectionPort() != netAdr.GetConnectionPort() ||
+							m_favCacheNetAdr.GetQueryPort() != netAdr.GetQueryPort())
+					{
+						m_bFavCacheIsFav = NetAdrIsFavorite(netAdr);
+						m_favCacheNetAdr = netAdr;
+					}
+					if (m_bFavCacheIsFav)
+					{
+						if (NeoUI::Button(L"Unfavorite").bPressed)
+						{
+							smm->RemoveFavoriteGame(
+									engine->GetAppID(),
+									netAdr.GetIP(),
+									netAdr.GetConnectionPort(),
+									netAdr.GetQueryPort(),
+									k_unFavoriteFlagFavorite);
+							m_favCacheNetAdr = servernetadr_t{};
+							m_bAutoRefreshFav = true;
+						}
+					}
+					else
+					{
+						if (NeoUI::Button(L"Favorite").bPressed)
+						{
+							smm->AddFavoriteGame(
+									engine->GetAppID(),
+									netAdr.GetIP(),
+									netAdr.GetConnectionPort(),
+									netAdr.GetQueryPort(),
+									k_unFavoriteFlagFavorite,
+									0);
+							m_favCacheNetAdr = servernetadr_t{};
+							m_bAutoRefreshFav = true;
+						}
+					}
 				}
 			}
 			NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
