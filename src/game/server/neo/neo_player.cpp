@@ -1845,7 +1845,7 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 	StopWaterDeathSounds();
 
 	// Drop all weapons except the active weapon
-	const Vector weaponThrowVelocity = CalcDamageForceVector(info);
+	const Vector damageForce = CalcDamageForceVector(info);
 	int iExplosivesDropped = 0;
 	constexpr int MAX_EXPLOSIVES_DROPPED = 1;
 	CNEOBaseCombatWeapon* pActiveWeapon = static_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
@@ -1869,7 +1869,7 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 		}
 
 		// Nowhere in particular; just drop it.
-		Weapon_DropOnDeath(pNeoWeapon, weaponThrowVelocity);
+		Weapon_DropOnDeath(pNeoWeapon, damageForce);
 	}
 
 	// Same as above but for the active weapon
@@ -1904,7 +1904,7 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 	}
 }
 
-void CNEO_Player::Weapon_DropOnDeath(CNEOBaseCombatWeapon* pNeoWeapon, Vector attackForce)
+void CNEO_Player::Weapon_DropOnDeath(CNEOBaseCombatWeapon* pNeoWeapon, Vector damageForce)
 {
 	if (!pNeoWeapon->GetWpnData().m_bDropOnDeath)
 	{ // Can't drop this weapon on death, remove it
@@ -1925,14 +1925,14 @@ void CNEO_Player::Weapon_DropOnDeath(CNEOBaseCombatWeapon* pNeoWeapon, Vector at
 
 	Vector playerVelocity = vec3_origin;
 	GetVelocity(&playerVelocity, nullptr);
-	constexpr float ATTACK_FORCE_SCALE = 0.0005f;
+	constexpr float DAMAGE_FORCE_SCALE = 0.0005f;
 	if (VPhysicsGetObject())
 	{
-		playerVelocity += (attackForce * ATTACK_FORCE_SCALE) / VPhysicsGetObject()->GetInvMass();
+		playerVelocity += (damageForce * DAMAGE_FORCE_SCALE) / VPhysicsGetObject()->GetInvMass();
 	}
 	else {
 		constexpr float SRM_WEAPON_MASS = 0.012f;
-		playerVelocity += (attackForce * ATTACK_FORCE_SCALE) / SRM_WEAPON_MASS;
+		playerVelocity += (damageForce * DAMAGE_FORCE_SCALE) / SRM_WEAPON_MASS;
 	}
 	
 	pNeoWeapon->Drop(playerVelocity);
