@@ -61,12 +61,12 @@ void CVGlobal_NeoClCrosshair(IConVar *var, [[maybe_unused]] const char *pOldStri
 	}
 }
 
-CHudCrosshair* g_pCHudCrosshair;
 ConVar cl_neo_crosshair_hip_fire("cl_neo_crosshair_hip_fire", "0", FCVAR_ARCHIVE, "Show the crosshair when not aiming", true, 0, true, 1,
 	[]([[maybe_unused]] IConVar* var, [[maybe_unused]] const char* pOldString, [[maybe_unused]] float flOldValue)->void{
-		if (g_pCHudCrosshair)
+		CHudCrosshair *crosshair = GET_HUDELEMENT(CHudCrosshair);
+		if (crosshair)
 		{
-			g_pCHudCrosshair->SetHiddenBits(HIDEHUD_PLAYERDEAD | (cl_neo_crosshair_hip_fire.GetBool() ? 0 : HIDEHUD_CROSSHAIR));
+			crosshair->SetHiddenBits(HIDEHUD_PLAYERDEAD | (cl_neo_crosshair_hip_fire.GetBool() ? 0 : HIDEHUD_CROSSHAIR));
 		}
 	});
 ConVar cl_neo_crosshair_scope_inaccuracy("cl_neo_crosshair_scope_inaccuracy", "1", FCVAR_ARCHIVE, "Show the player's inaccuracy when scoped", true, 0, true, 1);

@@ -46,7 +46,7 @@ extern const wchar_t **CROSSHAIR_LABELS;
 extern const wchar_t **CROSSHAIR_SIZETYPE_LABELS;
 extern const wchar_t **CROSSHAIR_DYNAMICTYPE_LABELS;
 
-#define CL_NEO_CROSSHAIR_DEFAULT "2;0;-1;0;6;0.000;2;4;0;0;1;0;0;2;"
+#define CL_NEO_CROSSHAIR_DEFAULT "3;0;-1;0;6;0.000;2;4;0;0;1;0;0;2;"
 // NEO_XHAIR_SEQMAX defined in neo_player_shared.h instead
 
 enum NeoXHairSegment
@@ -92,4 +92,4 @@ void PaintCrosshair(const CrosshairInfo &crh, int inaccuracy, const int x, const
 bool ImportCrosshair(CrosshairInfo *crh, const char *pszSequence);
 void ExportCrosshair(const CrosshairInfo *crh, char (&szSequence)[NEO_XHAIR_SEQMAX]);
 
-int HalfInaccuracyConeInScreenPixels(C_NEO_Player* player, C_NEOBaseCombatWeapon* pWeapon, int halfScreenWidth);
+int HalfInaccuracyConeInScreenPixels(C_NEO_Player *player, C_NEOBaseCombatWeapon *pWeapon, int halfScreenWidth);
