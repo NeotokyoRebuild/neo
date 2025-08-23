@@ -201,7 +201,6 @@ public:
 
 	virtual Activity GetPrimaryAttackActivity(void) override;
 #ifdef CLIENT_DLL
-	void DispatchMuzzleParticleEffect(int iAttachment);
 	virtual void ProcessMuzzleFlashEvent(void) override;
 	void DrawCrosshair() override;
 #endif

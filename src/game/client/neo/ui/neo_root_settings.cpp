@@ -13,6 +13,7 @@
 #include <vgui/ISurface.h>
 #include <steam/steam_api.h>
 #include "vgui/ISystem.h"
+#include "neo_hud_killer_damage_info.h"
 
 #include "neo_ui.h"
 #include "neo_root.h"
@@ -245,6 +246,7 @@ void NeoSettingsDeinit(NeoSettings *ns)
 void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKeys)
 {
 	ns->bModified = false;
+	ns->bIsValid = true;
 	NeoSettings::CVR *cvr = &ns->cvr;
 	{
 		NeoSettings::General *pGeneral = &ns->general;
@@ -283,6 +285,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->bEnableRangeFinder = cvr->cl_neo_hud_rangefinder_enabled.GetBool();
 		pGeneral->bExtendedKillfeed = cvr->cl_neo_hud_extended_killfeed.GetBool();
 		pGeneral->iBackground = cvr->sv_unlockedchapters.GetInt();
+		pGeneral->iKdinfoToggletype = cvr->cl_neo_kdinfo_toggletype.GetInt();
 		NeoUI::ResetTextures();
 	}
 	{
@@ -427,7 +430,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		const bool bImported = ImportCrosshair(&pCrosshair->info, cvr->cl_neo_crosshair.GetString());
 		if (!bImported)
 		{
-			ImportCrosshair(&pCrosshair->info, CL_NEO_CROSSHAIR_DEFAULT);
+			ImportCrosshair(&pCrosshair->info, NEO_CROSSHAIR_DEFAULT);
 		}
 		pCrosshair->bPreviewDynamicAccuracy = false;
 		pCrosshair->eClipboardInfo = XHAIREXPORTNOTIFY_NONE;
@@ -503,6 +506,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_neo_hud_rangefinder_enabled.SetValue(pGeneral->bEnableRangeFinder);
 		cvr->cl_neo_hud_extended_killfeed.SetValue(pGeneral->bExtendedKillfeed);
 		cvr->sv_unlockedchapters.SetValue(pGeneral->iBackground);
+		cvr->cl_neo_kdinfo_toggletype.SetValue(pGeneral->iKdinfoToggletype);
 	}
 	{
 		const NeoSettings::Keys *pKeys = &ns->keys;
@@ -534,7 +538,6 @@ void NeoSettingsSave(const NeoSettings *ns)
 		}
 		// Reset the cache to none so it'll refresh on next KeyCodeTyped
 		const_cast<NeoSettings::Keys *>(pKeys)->bcConsole = KEY_NONE;
-		const_cast<NeoSettings::Keys *>(pKeys)->bcMP3Player = KEY_NONE;
 	}
 	{
 		const NeoSettings::Mouse *pMouse = &ns->mouse;
@@ -673,17 +676,36 @@ static const wchar_t *DLFILTER_LABELS[] = {
 static const wchar_t *SHOWFPS_LABELS[] = { L"Disabled", L"Enabled (FPS)", L"Enabled (Smooth FPS)", };
 static_assert(ARRAYSIZE(DLFILTER_STRMAP) == ARRAYSIZE(DLFILTER_LABELS));
 
+static const wchar_t *KDMGINFO_TOGGLETYPE_LABELS[KDMGINFO_TOGGLETYPE__TOTAL] = {
+	L"Always", // KDMGINFO_TOGGLETYPE_ROUND
+	L"Reset per match", // KDMGINFO_TOGGLETYPE_MATCH
+	L"Never", // KDMGINFO_TOGGLETYPE_NEVER
+};
+
 void NeoSettings_General(NeoSettings *ns)
 {
 	NeoSettings::General *pGeneral = &ns->general;
-	NeoUI::TextEdit(L"Name", pGeneral->wszNeoName, SZWSZ_LEN(pGeneral->wszNeoName));
-	NeoUI::TextEdit(L"Clan tag", pGeneral->wszNeoClantag, SZWSZ_LEN(pGeneral->wszNeoClantag));
+	NeoUI::TextEdit(L"Name", pGeneral->wszNeoName, MAX_PLAYER_NAME_LENGTH - 1);
+	NeoUI::TextEdit(L"Clan tag", pGeneral->wszNeoClantag, NEO_MAX_CLANTAG_LENGTH - 1);
 	NeoUI::RingBoxBool(L"Show only steam name", &pGeneral->bOnlySteamNick);
 	NeoUI::RingBoxBool(L"Friendly marker spectator only clantags", &pGeneral->bMarkerSpecOnlyClantag);
 
 	wchar_t wszTotalClanAndName[NEO_MAX_DISPLAYNAME];
-	GetClNeoDisplayName(wszTotalClanAndName, pGeneral->wszNeoName, pGeneral->wszNeoClantag, pGeneral->bOnlySteamNick);
-	NeoUI::Label(L"Display name", wszTotalClanAndName);
+	ns->bIsValid = GetClNeoDisplayName(wszTotalClanAndName,
+			pGeneral->wszNeoName, pGeneral->wszNeoClantag,
+			((pGeneral->bOnlySteamNick) ?
+			 	CL_NEODISPLAYNAME_FLAG_CHECK | CL_NEODISPLAYNAME_FLAG_ONLYSTEAMNICK :
+				CL_NEODISPLAYNAME_FLAG_CHECK));
+	if (ns->bIsValid)
+	{
+		NeoUI::Label(L"Display name", wszTotalClanAndName);
+	}
+	else
+	{
+		NeoUI::BeginOverrideFgColor(COLOR_RED);
+		NeoUI::Label(L"Display name (invalid)", wszTotalClanAndName);
+		NeoUI::EndOverrideFgColor();
+	}
 
 	NeoUI::SliderInt(L"FOV", &pGeneral->iFov, 75, 110);
 	NeoUI::SliderInt(L"Viewmodel FOV Offset", &pGeneral->iViewmodelFov, -20, 40);
@@ -701,6 +723,7 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBoxBool(L"Show rangefinder", &pGeneral->bEnableRangeFinder);
 	NeoUI::RingBoxBool(L"Extended Killfeed", &pGeneral->bExtendedKillfeed);
 	NeoUI::SliderInt(L"Selected Background", &pGeneral->iBackground, 1, 4); // NEO TODO (Adam) switch to RingBox with values read from ChapterBackgrounds.txt
+	NeoUI::RingBox(L"Killer damage info auto show", KDMGINFO_TOGGLETYPE_LABELS, KDMGINFO_TOGGLETYPE__TOTAL, &pGeneral->iKdinfoToggletype);
 
 	NeoUI::HeadingLabel(L"STREAMER MODE");
 	NeoUI::RingBoxBool(L"Streamer mode", &pGeneral->bStreamerMode);
@@ -956,7 +979,7 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 
 			if (bDefaultPressed)
 			{
-				ImportCrosshair(&pCrosshair->info, CL_NEO_CROSSHAIR_DEFAULT);
+				ImportCrosshair(&pCrosshair->info, NEO_CROSSHAIR_DEFAULT);
 				pCrosshair->eClipboardInfo = XHAIREXPORTNOTIFY_RESET_TO_DEFAULT;
 				ns->bModified = true;
 			}

@@ -544,7 +544,7 @@ void CNEOScoreBoard::UpdatePlayerInfo()
 			UpdatePlayerAvatar( i, playerData );
 
 			const char *oldName = playerData->GetString("name","");
-			char newName[MAX_PLAYER_NAME_LENGTH + 1 + NEO_MAX_CLANTAG_LENGTH + 1];
+			char newName[NEO_MAX_DISPLAYNAME];
 
 			UTIL_MakeSafeName( oldName, newName, ARRAYSIZE(newName) );
 
@@ -724,7 +724,7 @@ void CNEOScoreBoard::GetPlayerScoreInfo(int playerIndex, KeyValues *kv)
 	const char *pClantag = g_PR->GetClanTag(playerIndex);
 	if (pClantag && pClantag[0] && (!cl_neo_streamermode.GetBool() || g_PR->IsLocalPlayer(playerIndex)))
 	{
-		char szClanTagWName[MAX_PLAYER_NAME_LENGTH + 1 + NEO_MAX_CLANTAG_LENGTH + 1];
+		char szClanTagWName[NEO_MAX_DISPLAYNAME];
 		V_sprintf_safe(szClanTagWName, "[%s] %s", pClantag, g_PR->GetPlayerName(playerIndex));
 		kv->SetString("name", szClanTagWName);
 	}

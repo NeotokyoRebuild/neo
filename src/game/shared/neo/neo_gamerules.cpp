@@ -621,7 +621,6 @@ void CNEORules::ResetMapSessionCommon()
 			pPlayer->m_iTeamKillsInflicted = 0;
 			pPlayer->m_bIsPendingTKKick = false;
 			pPlayer->m_bKilledInflicted = false;
-			pPlayer->m_bDoNotShowDmgInfoMenu = false;
 		}
 	}
 	m_flPrevThinkKick = 0.0f;
@@ -949,7 +948,7 @@ void CNEORules::Think(void)
 		m_bThinkCheckClantags = false;
 		int iHasClantags[TEAM__TOTAL] = {};
 		bool bClantagSet[TEAM__TOTAL] = {};
-		char szTeamClantags[TEAM__TOTAL][NEO_MAX_CLANTAG_LENGTH + 1] = {};
+		char szTeamClantags[TEAM__TOTAL][NEO_MAX_CLANTAG_LENGTH] = {};
 		for (int i = 1; i <= gpGlobals->maxClients; ++i)
 		{
 			auto pNeoPlayer = static_cast<CNEO_Player*>(UTIL_PlayerByIndex(i));
@@ -2221,7 +2220,6 @@ void CNEORules::StartNextRound()
 			pPlayer->m_iXP.Set(0);
 			pPlayer->m_iTeamDamageInflicted = 0;
 			pPlayer->m_iTeamKillsInflicted = 0;
-			pPlayer->m_bDoNotShowDmgInfoMenu = false;
 		}
 		pPlayer->m_bIsPendingTKKick = false;
 
@@ -3121,7 +3119,7 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 			}
 
 			// Ghost-caps and VIP-escorts are handled separately
-			if (iWinReason != NEO_VICTORY_GHOST_CAPTURE && iWinReason != NEO_VICTORY_VIP_ESCORT && player->GetTeamNumber() == winningTeamNum)
+			if (winningTeamNum != TEAM_SPECTATOR && iWinReason != NEO_VICTORY_GHOST_CAPTURE && iWinReason != NEO_VICTORY_VIP_ESCORT && player->GetTeamNumber() == winningTeamNum)
 			{
 				int xpAward = 1;	// Base reward for being on winning team
 				if (player->IsAlive())
@@ -3144,7 +3142,7 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 			// Any human player still alive, show them damage stats in round end
 			if (!player->IsBot() && !player->IsHLTV() && player->IsAlive())
 			{
-				player->StartShowDmgStats(NULL);
+				player->StartShowDmgStats(nullptr);
 			}
 		}
 	}
