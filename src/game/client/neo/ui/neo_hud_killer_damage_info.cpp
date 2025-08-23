@@ -22,6 +22,8 @@ DECLARE_NAMED_HUDELEMENT(CNEOHud_KillerDamageInfo, neo_killer_damage_info)
 
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(KillerDamageInfo, 0.1)
 
+static const constexpr float UI_SCALE = 0.66f;
+
 CON_COMMAND_F(kdinfo_toggle, "Toggle killer damage info", FCVAR_USERINFO)
 {
 	CNEOHud_KillerDamageInfo *pKillerDmgInfo = GET_NAMED_HUDELEMENT(CNEOHud_KillerDamageInfo, neo_killer_damage_info);
@@ -109,8 +111,8 @@ void CNEOHud_KillerDamageInfo::ApplySchemeSettings(vgui::IScheme *pScheme)
 	SetBgColor(COLOR_TRANSPARENT);
 
 	static constexpr const char *FONT_NAMES[NeoUI::FONT__TOTAL] = {
-		"NeoUINormal", "NHudOCR", "NHudOCRSmallNoAdditive", "ClientTitleFont", "ClientTitleFontSmall",
-		"NeoUILarge"
+		"NeoUISmall", "NHudOCR", "NHudOCRSmallerNoAdditive", "ClientTitleFont", "ClientTitleFontSmall",
+		"NeoUINormal"
 	};
 	for (int i = 0; i < NeoUI::FONT__TOTAL; ++i)
 	{
@@ -118,15 +120,17 @@ void CNEOHud_KillerDamageInfo::ApplySchemeSettings(vgui::IScheme *pScheme)
 	}
 
 	// NEO TODO (nullsystem): #1253 - Unify layout sizing with root + loading
-	m_uiCtx.layout.iDefRowTall = tall / 27;
-	m_uiCtx.iMarginX = wide / 192;
-	m_uiCtx.iMarginY = tall / 108;
+	m_uiCtx.layout.iDefRowTall = (tall / 27) * UI_SCALE;
+	m_uiCtx.iMarginX = (wide / 192) * UI_SCALE;
+	m_uiCtx.iMarginY = (tall / 108) * UI_SCALE;
 }
 
 void CNEOHud_KillerDamageInfo::resetHUDState()
 {
 	V_memset(&g_neoKDmgInfos, 0, sizeof(CNEOKillerDamageInfos));
+	V_memset(&m_attackersTotals, 0, sizeof(m_attackersTotals));
 	m_iCurPage = 0;
+	m_iAttackersTotalsSize = 0;
 }
 
 void CNEOHud_KillerDamageInfo::UpdateStateForNeoHudElementDraw()
@@ -159,12 +163,10 @@ void CNEOHud_KillerDamageInfo::UpdateStateForNeoHudElementDraw()
 	// UI sizing
 	int iScrWide, iScrTall;
 	vgui::surface()->GetScreenSize(iScrWide, iScrTall);
-	const int iWide = (iScrWide / 3);
-	const int iSidePad = iWide / 8;
-	m_uiCtx.dPanel.x = iSidePad;
-	m_uiCtx.dPanel.y = (iScrTall / 4);
-	m_uiCtx.dPanel.wide = iWide;
-	m_uiCtx.dPanel.tall = iScrTall - (iScrTall / 4) - m_uiCtx.dPanel.y;
+	m_uiCtx.dPanel.wide = (iScrWide / 3) * UI_SCALE;
+	m_uiCtx.dPanel.tall = (iScrTall / 2) * UI_SCALE;
+	m_uiCtx.dPanel.x = m_uiCtx.iMarginX * 10;
+	m_uiCtx.dPanel.y = (iScrTall / 2) - (m_uiCtx.dPanel.tall / 2);
 
 	// Set keybind message
 	{
@@ -282,7 +284,7 @@ void CNEOHud_KillerDamageInfo::DrawNeoHudElement()
 				m_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_LEFT;
 				V_swprintf_safe(wszLabel, L"%d", g_neoKDmgInfos.killerInfo.iHP);
 				NeoUI::Label(wszLabel);
-				V_swprintf_safe(wszLabel, L"%.2f", g_neoKDmgInfos.killerInfo.flDistance);
+				V_swprintf_safe(wszLabel, L"%.2fm", g_neoKDmgInfos.killerInfo.flDistance);
 				NeoUI::Label(wszLabel);
 
 				m_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_RIGHT;
@@ -347,6 +349,7 @@ void CNEOHud_KillerDamageInfo::DrawNeoHudElement()
 				const bool bYouKilled = localPlayer->m_rfNeoPlayerIdxsKilledByLocal[iAttackerEntIdx];
 
 				// Left side - Dealt damages + hits to attacker
+				if (attackerInfo.dealtDmgs > 0)
 				{
 					NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 					if (bYouKilled)
@@ -361,6 +364,11 @@ void CNEOHud_KillerDamageInfo::DrawNeoHudElement()
 					V_swprintf_safe(wszLabel, L"%d hit%ls", attackerInfo.dealtHits, (attackerInfo.dealtHits <= 1) ? L"" : L"s");
 					NeoUI::Label(wszLabel);
 				}
+				else
+				{
+					NeoUI::Pad();
+					NeoUI::Pad();
+				}
 
 				// Middle - Attacker's name and class
 				{
@@ -368,13 +376,15 @@ void CNEOHud_KillerDamageInfo::DrawNeoHudElement()
 					Assert(iDmgerTeam == TEAM_JINRAI || iDmgerTeam == TEAM_NSF);
 
 					NeoUI::SwapFont(NeoUI::FONT_NTHORIZSIDES);
+					vgui::surface()->DrawSetTextColor((iDmgerTeam == TEAM_JINRAI) ? COLOR_JINRAI : COLOR_NSF);
 					NeoUI::Label(m_wszDmgerNamesList[i]);
+					vgui::surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
 
-					V_swprintf_safe(wszLabel, L"%ls (%ls)", GetNeoClassNameW(m_iClassIdxsList[i]), SZWSZ_NEO_TEAM_STRS[iDmgerTeam].wszStr);
-					NeoUI::Label(wszLabel);
+					NeoUI::Label(GetNeoClassNameW(m_iClassIdxsList[i]));
 				}
 
 				// Right side - Taken damages + hits from attacker
+				if (attackerInfo.takenDmgs > 0)
 				{
 					NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 					if (bKilledYou)
@@ -388,6 +398,11 @@ void CNEOHud_KillerDamageInfo::DrawNeoHudElement()
 					NeoUI::SwapFont(NeoUI::FONT_NTHORIZSIDES);
 					V_swprintf_safe(wszLabel, L"%d hit%ls", attackerInfo.takenHits, (attackerInfo.takenHits <= 1) ? L"" : L"s");
 					NeoUI::Label(wszLabel);
+				}
+				else
+				{
+					NeoUI::Pad();
+					NeoUI::Pad();
 				}
 
 				m_uiCtx.iLayoutY += iYOffsetting;
