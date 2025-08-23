@@ -443,7 +443,7 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 	if (player->IsBot())
 #endif
 	{
-		viewAng.z = AngleNormalize(-m_flLeanRatio * neo_lean_fp_angle.GetFloat());
+		viewAng.z = AngleNormalize(-m_flLeanRatio * ((player->GetClass() == NEO_CLASS_JUGGERNAUT) ? 15.0f : neo_lean_fp_angle.GetFloat()));
 #ifdef CLIENT_DLL
 		engine->SetViewAngles(viewAng);
 #else
@@ -456,7 +456,7 @@ float CNEOPredictedViewModel::lean(CNEO_Player *player){
 	SetNextThink(gpGlobals->curtime);
 #endif
 
-	return -m_flLeanRatio * neo_lean_tp_angle.GetFloat();
+	return -m_flLeanRatio * ((player->GetClass() == NEO_CLASS_JUGGERNAUT) ? 20.0f : neo_lean_tp_angle.GetFloat());
 }
 
 extern ConVar cl_righthand;
