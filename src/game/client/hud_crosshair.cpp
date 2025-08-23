@@ -114,7 +114,6 @@ CHudCrosshair::CHudCrosshair( const char *pElementName ) :
 	surface()->DrawSetTextureFile(m_hCrosshairLight, "vgui/hud/scopes/scope03-1", 1, false);
 	surface()->DrawGetTextureSize(m_hCrosshairLight, m_iCrosshairLightWidth, m_iCrosshairLightHeight);
 
-	g_pCHudCrosshair = this;
 	SetHiddenBits( HIDEHUD_PLAYERDEAD | (cl_neo_crosshair_hip_fire.GetBool() ? 0 : HIDEHUD_CROSSHAIR) );
 #else
 	SetHiddenBits( HIDEHUD_PLAYERDEAD | HIDEHUD_CROSSHAIR );
