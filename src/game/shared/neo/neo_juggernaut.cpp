@@ -144,7 +144,10 @@ void CNEO_Juggernaut::Think(void)
 	{
 		m_bIsHolding = false;
 		SetNextThink(TICK_NEVER_THINK);
-
+#ifdef GAME_DLL
+		m_hPlayer->CreateRagdollEntity();
+		m_hPlayer->Weapon_DropAll(false);
+#endif
 		m_hPlayer->SetAbsVelocity(vec3_origin);
 		m_hPlayer->SetAbsOrigin(GetAbsOrigin());
 		m_hPlayer->SetAbsAngles(GetAbsAngles());

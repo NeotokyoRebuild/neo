@@ -1384,7 +1384,15 @@ void C_HL2MPRagdoll::CreateHL2MPRagdoll( void )
 	matrix3x4_t currentBones[MAXSTUDIOBONES];
 	const float boneDt = 0.05f;
 
+#ifdef NEO
+	// NEO HACK DG: Crazy mismatch between the JGR model and the old
+	// playermodel sends the ragdoll flying (when turning into the JGR)
+	// Probably because of the time based stuff in GetRagdollInitBoneArrays()
+	C_NEO_Player* pNEOPlayer = ToNEOPlayer(pPlayer);
+	if (pNEOPlayer && !pNEOPlayer->IsDormant() && (pNEOPlayer->GetClass() != NEO_CLASS_JUGGERNAUT))
+#else
 	if ( pPlayer && !pPlayer->IsDormant() )
+#endif
 	{
 		pPlayer->GetRagdollInitBoneArrays( boneDelta0, boneDelta1, currentBones, boneDt );
 	}
