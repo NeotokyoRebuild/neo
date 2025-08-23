@@ -36,6 +36,7 @@ END_DATADESC()
 void CNEO_Juggernaut::Precache(void)
 {
 	PrecacheModel("models/player/jgr.mdl");
+	PrecacheModel("models/weapons/w_balc.mdl");
 	BaseClass::Precache();
 }
 
@@ -73,6 +74,18 @@ void CNEO_Juggernaut::Spawn(void)
 	SetCollisionGroup(COLLISION_GROUP_PLAYER);
 	SetFriction(100.0);
 	
+	CBaseEntity* pWeaponModel = CreateEntityByName("prop_dynamic");
+	if (pWeaponModel)
+	{
+		pWeaponModel->SetModel("models/weapons/w_balc.mdl");
+		pWeaponModel->SetParent(this);
+		pWeaponModel->AddEffects(EF_BONEMERGE);
+	}
+	else
+	{
+		Warning("Failed to create weapon model for CNEO_Juggernaut!");
+	}
+
 	SetThink(&CNEO_Juggernaut::Think);
 	SetNextThink(TICK_NEVER_THINK);
 
