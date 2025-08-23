@@ -74,7 +74,8 @@ void CNEO_Juggernaut::Spawn(void)
 	SetCollisionGroup(COLLISION_GROUP_PLAYER);
 	SetFriction(100.0);
 	
-	CBaseEntity* pWeaponModel = CreateEntityByName("prop_dynamic");
+#ifdef GAME_DLL
+	CBaseEntity *pWeaponModel = CreateEntityByName("prop_dynamic");
 	if (pWeaponModel)
 	{
 		pWeaponModel->SetModel("models/weapons/w_balc.mdl");
@@ -85,6 +86,7 @@ void CNEO_Juggernaut::Spawn(void)
 	{
 		Warning("Failed to create weapon model for CNEO_Juggernaut!");
 	}
+#endif
 
 	SetThink(&CNEO_Juggernaut::Think);
 	SetNextThink(TICK_NEVER_THINK);
