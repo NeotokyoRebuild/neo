@@ -3615,6 +3615,12 @@ int C_BaseAnimating::InternalDrawModel( int flags )
 			pInfo->pLightingOrigin = &ownerOrigin;
 		}
 	}
+	else if (IsBaseCombatWeapon())
+	{
+		static Vector worldSpaceCenter;
+		worldSpaceCenter = WorldSpaceCenter();
+		pInfo->pLightingOrigin = &worldSpaceCenter;
+	}
 #endif // NEO
 
 	DrawModelState_t state;
