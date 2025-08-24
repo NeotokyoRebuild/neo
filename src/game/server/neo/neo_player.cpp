@@ -556,7 +556,6 @@ void CNEO_Player::Spawn(void)
 
 	if (teamNumber == TEAM_UNASSIGNED && gpGlobals->eLoadType != MapLoad_Background)
 	{
-		char commandBuffer[11];
 		int forcedTeam = NEORules()->GetForcedTeam();
 		if (NEORules()->GetForcedTeam() < 1) // don't let this loop infinitely if forcedTeam set to TEAM_UNASSIGNED
 		{
@@ -1845,31 +1844,44 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 
 	StopWaterDeathSounds();
 
-	// Calculate force for weapon drop
-	Vector forceVector = CalcDamageForceVector(info);
-
-	// Drop all weapons
-	Vector vecForward, pVecThrowDir;
-	EyeVectors(&vecForward);
-	VMatrix zRot;
-	int numExplosivesDropped = 0;
-	const int maxExplosivesToDrop = 1;
+	// Drop all weapons except the active weapon
+	const Vector damageForce = CalcDamageForceVector(info);
+	int iExplosivesDropped = 0;
+	constexpr int MAX_EXPLOSIVES_DROPPED = 1;
+	CNEOBaseCombatWeapon* pActiveWeapon = static_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
 	for (int i = 0; i < MAX_WEAPONS; ++i)
 	{
-		auto pWep = m_hMyWeapons[i].Get();
-		if (pWep)
+		auto pNeoWeapon = static_cast<CNEOBaseCombatWeapon*>(m_hMyWeapons[i].Get());
+		if (!pNeoWeapon)
 		{
-			auto pNeoWep = assert_cast<CNEOBaseCombatWeapon*>(pWep);
-			if (pNeoWep && pNeoWep->IsExplosive())
-			{
-				if (++numExplosivesDropped > maxExplosivesToDrop)
-				{
-					continue;
-				}
-			}
+			continue;
+		}
 
-			// Nowhere in particular; just drop it.
-			Weapon_DropOnDeath(pWep, forceVector, info.GetAttacker());
+		if (pNeoWeapon == pActiveWeapon)
+		{
+			continue;
+		}
+
+		if (pNeoWeapon->IsExplosive() && ++iExplosivesDropped > MAX_EXPLOSIVES_DROPPED)
+		{
+			UTIL_Remove(pNeoWeapon);
+			continue;
+		}
+
+		// Nowhere in particular; just drop it.
+		Weapon_DropOnDeath(pNeoWeapon, damageForce);
+	}
+
+	// Same as above but for the active weapon
+	if (pActiveWeapon)
+	{
+		if (pActiveWeapon->IsExplosive() && ++iExplosivesDropped > MAX_EXPLOSIVES_DROPPED)
+		{
+			UTIL_Remove(pActiveWeapon);
+		}
+		else
+		{
+			Weapon_DropOnDeath(pActiveWeapon, damageForce);
 		}
 	}
 
@@ -1892,56 +1904,35 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 	}
 }
 
-void CNEO_Player::Weapon_DropOnDeath(CBaseCombatWeapon* pWeapon, Vector velocity, CBaseEntity *pAttacker)
+void CNEO_Player::Weapon_DropOnDeath(CNEOBaseCombatWeapon* pNeoWeapon, Vector damageForce)
 {
-	CNEOBaseCombatWeapon* pNeoWeapon = static_cast<CNEOBaseCombatWeapon*>(pWeapon);
-	if (!pNeoWeapon)
-		return;
 	if (!pNeoWeapon->GetWpnData().m_bDropOnDeath)
+	{ // Can't drop this weapon on death, remove it
+		UTIL_Remove(pNeoWeapon);
 		return;
-#if(0) // Remove this #if to enable dropping of live grenades if killed while primed
-
-	// If attack button was held down when player died, drop a live grenade. NEOTODO (Adam) Add delay between pressing an attack button and the pin being fully pulled out. If pin not out when dead do not drop a live grenade
-	if (GetActiveWeapon() == pNeoWeapon && pNeoWeapon->GetNeoWepBits() & NEO_WEP_FRAG_GRENADE) {
-		if (((m_nButtons & IN_ATTACK) && (!(m_afButtonPressed & IN_ATTACK))) ||
-			((m_nButtons & IN_ATTACK2) && (!(m_afButtonPressed & IN_ATTACK2))))
-		{
-			auto pWeaponFrag = static_cast<CWeaponGrenade*>(pNeoWeapon);
-			pWeaponFrag->ThrowGrenade(this, false, pAttacker);
-			return;
-		}
 	}
-	if (GetActiveWeapon() == pNeoWeapon && pNeoWeapon->GetNeoWepBits() & NEO_WEP_SMOKE_GRENADE) {
-		if (((m_nButtons & IN_ATTACK) && (!(m_afButtonPressed & IN_ATTACK))) ||
-			((m_nButtons & IN_ATTACK2) && (!(m_afButtonPressed & IN_ATTACK2))))
-		{
-			auto pWeaponSmoke = static_cast<CWeaponSmokeGrenade*>(pNeoWeapon);
-			pWeaponSmoke->ThrowGrenade(this, false, pAttacker);
-			return;
-		}
-	}
-#endif
 	
-	if (pWeapon->IsEffectActive( EF_BONEMERGE ))
+	if (pNeoWeapon->IsEffectActive( EF_BONEMERGE ))
 	{
 		//int iBIndex = LookupBone("valveBiped.Bip01_R_Hand"); NEOTODO (Adam) Should mimic the behaviour in basecombatcharacter that places the weapon such that the bones used in the bonemerge overlap
 		Vector vFacingDir = BodyDirection2D();
-		pWeapon->SetAbsOrigin(Weapon_ShootPosition() + vFacingDir);
+		pNeoWeapon->SetAbsOrigin(Weapon_ShootPosition() + vFacingDir);
+	}
+	else
+	{
+		pNeoWeapon->AddEffects(EF_BONEMERGE);
 	}
 
-	pWeapon->AddEffects(EF_BONEMERGE);
 	Vector playerVelocity = vec3_origin;
-	GetVelocity(&playerVelocity, NULL);
-	
-	if (VPhysicsGetObject())
+	GetVelocity(&playerVelocity, nullptr);
+	pNeoWeapon->Drop(playerVelocity);
+	Weapon_Detach(pNeoWeapon);
+
+	if (pNeoWeapon->VPhysicsGetObject())
 	{
-		playerVelocity += velocity * VPhysicsGetObject()->GetInvMass();
+		constexpr float DAMAGE_FORCE_SCALE = 0.1f;
+		pNeoWeapon->VPhysicsGetObject()->ApplyForceCenter(damageForce * DAMAGE_FORCE_SCALE);
 	}
-	else {
-		playerVelocity += velocity;
-	}
-	pWeapon->Drop(playerVelocity);
-	Weapon_Detach(pWeapon);
 }
 
 void CNEO_Player::SetDeadModel(const CTakeDamageInfo& info)
