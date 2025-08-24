@@ -397,8 +397,8 @@
 		"LineMargin"		"2"
 		"MaxDeathNotices" 	"8"
 		"RightJustify"		"1"
-		"BackgroundColor"	"200 200 200 40"
-		"BackgroundColourInvolved"	"20 20 20 220"
+		"BackgroundColor"	"20 20 20 220"
+		"BackgroundColourInvolved"	"200 200 200 40"
 	}
 
 	HudVehicle
