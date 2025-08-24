@@ -12,6 +12,7 @@
 #include "neo_version_info.h"
 #include "cdll_client_int.h"
 #include <steam/steam_api.h>
+#include <steam/isteammatchmaking.h>
 #include <vgui_avatarimage.h>
 #include <IGameUIFuncs.h>
 #include <voice_status.h>
@@ -1161,10 +1162,15 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 			{
 				m_iSelectedServer = -1;
 			}
-			if (!m_serverBrowser[m_iServerBrowserTab].m_bReloadedAtLeastOnce)
+			if ((m_bAutoRefreshFav && m_iServerBrowserTab == GS_FAVORITES) ||
+					!m_serverBrowser[m_iServerBrowserTab].m_bReloadedAtLeastOnce)
 			{
 				bForceRefresh = true;
 				m_serverBrowser[m_iServerBrowserTab].m_bReloadedAtLeastOnce = true;
+				if (m_iServerBrowserTab == GS_FAVORITES)
+				{
+					m_bAutoRefreshFav = false;
+				}
 			}
 			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_LEFT;
 			NeoUI::SetPerRowLayout(GSIW__TOTAL, ROWLAYOUT_TABLESPLIT);
@@ -1703,6 +1709,76 @@ void CNeoRoot::MainLoopServerDetails(const MainLoopParam param)
 				if (NeoUI::Button(L"Back (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
 				{
 					m_state = STATE_SERVERBROWSER;
+				}
+				if (ISteamMatchmaking *smm = SteamMatchmaking())
+				{
+					// NEO TODO (nullsystem): CTempEnvVar m_SteamAppId; SteamAppId? Or read gameinfo.txt
+					static constexpr const AppId_t APPID_SDK2013MP = 243750;
+					static constexpr const AppId_t APPID_NTRE = 3172910;
+
+					// Check if matches the favorite detail cache we have
+					// if not, search through with GetFavoriteGame + GetFavoriteGameCount
+					const servernetadr_t &netAdr = gameServer->m_NetAdr;
+					if (m_favCacheNetAdr.GetIP() != netAdr.GetIP() ||
+							m_favCacheNetAdr.GetConnectionPort() != netAdr.GetConnectionPort() ||
+							m_favCacheNetAdr.GetQueryPort() != netAdr.GetQueryPort())
+					{
+						m_bFavCacheIsFav = false;
+						const int iMaxFavCount = smm->GetFavoriteGameCount();
+						for (int i = 0; i < iMaxFavCount; ++i)
+						{
+							uint32 nIP = 0;
+							uint16 nConnPort = 0;
+							uint16 nQueryPort = 0;
+							AppId_t nAppID = 0;
+							uint32 unFlags = 0;
+							[[maybe_unused]] uint32 rTime32LastPlayedOnServer = 0;
+
+							if (smm->GetFavoriteGame(i, &nAppID, &nIP, &nConnPort,
+									&nQueryPort, &unFlags, &rTime32LastPlayedOnServer))
+							{
+								if (nIP == netAdr.GetIP() &&
+										nConnPort == netAdr.GetConnectionPort() &&
+										nQueryPort == netAdr.GetQueryPort() &&
+										(unFlags & k_unFavoriteFlagFavorite) &&
+										((nAppID == APPID_SDK2013MP) || (nAppID == APPID_NTRE)))
+								{
+									m_bFavCacheIsFav = true;
+									break;
+								}
+							}
+						}
+						m_favCacheNetAdr = netAdr;
+					}
+					if (m_bFavCacheIsFav)
+					{
+						if (NeoUI::Button(L"Unfavorite").bPressed)
+						{
+							smm->RemoveFavoriteGame(
+									APPID_SDK2013MP,
+									netAdr.GetIP(),
+									netAdr.GetConnectionPort(),
+									netAdr.GetQueryPort(),
+									k_unFavoriteFlagFavorite);
+							m_favCacheNetAdr = servernetadr_t{};
+							m_bAutoRefreshFav = true;
+						}
+					}
+					else
+					{
+						if (NeoUI::Button(L"Favorite").bPressed)
+						{
+							smm->AddFavoriteGame(
+									APPID_SDK2013MP,
+									netAdr.GetIP(),
+									netAdr.GetConnectionPort(),
+									netAdr.GetQueryPort(),
+									k_unFavoriteFlagFavorite,
+									0); // NEO TODO (nullsystem): rTime32LastPlayedOnServer
+							m_favCacheNetAdr = servernetadr_t{};
+							m_bAutoRefreshFav = true;
+						}
+					}
 				}
 			}
 			NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
