@@ -1236,7 +1236,7 @@ Scheme
 		{
 			"1"
 			{
-				"name"		"KillfeedIcons"
+				"name"		"killfeedicons"
 				"tall"		"12"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
@@ -1245,7 +1245,7 @@ Scheme
 			}
 			"2"
 			{
-				"name"		"KillfeedIcons"
+				"name"		"killfeedicons"
 				"tall"		"14"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
@@ -1254,7 +1254,7 @@ Scheme
 			}
 			"3"
 			{
-				"name"		"KillfeedIcons"
+				"name"		"killfeedicons"
 				"tall"		"16"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
@@ -1264,7 +1264,7 @@ Scheme
 			}
 			"4"
 			{
-				"name"		"KillfeedIcons"
+				"name"		"killfeedicons"
 				"tall"		"20"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
@@ -1274,7 +1274,7 @@ Scheme
 			}
 			"5"
 			{
-				"name"		"KillfeedIcons"
+				"name"		"killfeedicons"
 				"tall"		"24"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
@@ -1284,7 +1284,7 @@ Scheme
 			}
 			"6"
 			{
-				"name"		"KillfeedIcons"
+				"name"		"killfeedicons"
 				"tall"		"26"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
@@ -1294,7 +1294,7 @@ Scheme
 			}
 			"7"
 			{
-				"name"		"KillfeedIcons"
+				"name"		"killfeedicons"
 				"tall"		"28"
 				"weight"	"600"
 				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
@@ -3077,7 +3077,7 @@ Scheme
 		"11"		"resource/nocr.ttf"
 		"12"		"resource/neuropol2.ttf"
 		"13"		"resource/neotokyo_press_n.ttf"
-		"14"		"resource/KillfeedIcons.ttf"
+		"14"		"resource/killfeedicons.ttf"
 	}
 
 }
