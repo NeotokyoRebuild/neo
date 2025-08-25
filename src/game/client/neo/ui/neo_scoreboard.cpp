@@ -748,7 +748,7 @@ void CNEOScoreBoard::GetPlayerScoreInfo(int playerIndex, KeyValues *kv)
 	int statusIcon = -1;
 	if (neoTeam == TEAM_JINRAI || neoTeam == TEAM_NSF)
 	{
-		statusIcon = (!SHOW_ENEMY_STATUS && oppositeTeam || g_PR->IsAlive(playerIndex)) ? -1 : m_iDeadIcon;
+		statusIcon = ((!SHOW_ENEMY_STATUS && oppositeTeam) || g_PR->IsAlive(playerIndex)) ? -1 : m_iDeadIcon;
 	}
 	kv->SetInt("status", statusIcon);
 	kv->SetString("class", oppositeTeam ? "" : GetNeoClassName(neoClassIdx));

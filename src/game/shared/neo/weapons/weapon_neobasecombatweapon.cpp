@@ -1208,7 +1208,7 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 	bool inThermalVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT;
 	int ret = 0;
 	
-	if (inThermalVision && (!pOwner || pOwner && !pOwner->IsCloaked()))
+	if (inThermalVision && (!pOwner || (pOwner && !pOwner->IsCloaked())))
 	{
 		IMaterial* pass = materials->FindMaterial("dev/thermal_weapon_model", TEXTURE_GROUP_MODEL);
 		modelrender->ForcedMaterialOverride(pass);
@@ -1217,7 +1217,7 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 		return ret;
 	}
 
-	if (pOwner && pOwner->IsCloaked() && !inThermalVision)
+	if ((pOwner && pOwner->IsCloaked()) && !inThermalVision)
 	{
 		mat_neo_toc_test.SetValue(pOwner->GetCloakFactor());
 		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);
