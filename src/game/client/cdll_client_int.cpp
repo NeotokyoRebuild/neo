@@ -176,6 +176,7 @@ extern vgui::IInputInternal *g_InputInternal;
 #ifdef NEO
 #include "neo_version.h"
 #include "ui/neo_loading.h"
+#include "ui/neo_root_serverbrowser.h"
 #include "neo_player_shared.h"
 extern bool NeoRootCaptureESC();
 extern CNeoLoading *g_pNeoLoading;
@@ -1427,6 +1428,7 @@ void CHLClient::Shutdown( void )
 {
 #ifdef NEO
 	NeoDeleteDownloadedSprays();
+	ServerBlacklistWrite(SERVER_BLACKLIST_DEFFILE);
 #endif
 
     if (g_pAchievementsAndStatsInterface)
