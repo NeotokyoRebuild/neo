@@ -1392,6 +1392,13 @@ void C_HL2MPRagdoll::CreateHL2MPRagdoll( void )
 	}
 
 	InitAsClientRagdoll( boneDelta0, boneDelta1, currentBones, boneDt );
+#ifdef NEO
+	if (m_pRagdoll)
+	{
+		m_pRagdoll->SetInitialVelocity(GetInitialRagdollVelocity());
+		m_pRagdoll->SetLastOrigin(GetInitialRagdollOrigin());
+	}
+#endif // NEO
 }
 
 
