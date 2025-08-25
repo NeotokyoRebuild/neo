@@ -224,10 +224,10 @@ void BeginContext(NeoUI::Context *pNextCtx, const NeoUI::Mode eMode, const wchar
 
 		if (wszTitle)
 		{
-			SwapFont(FONT_NTHEADING);
+			SwapFont(FONT_NTLARGE);
 			vgui::surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
 			vgui::surface()->DrawSetTextPos(c->dPanel.x + c->iMarginX,
-											c->dPanel.y + -c->layout.iRowTall + c->fonts[FONT_NTHEADING].iYOffset);
+											c->dPanel.y + -c->layout.iRowTall + c->fonts[FONT_NTLARGE].iYOffset);
 			vgui::surface()->DrawPrintText(wszTitle, V_wcslen(wszTitle));
 		}
 		break;
@@ -240,7 +240,7 @@ void BeginContext(NeoUI::Context *pNextCtx, const NeoUI::Mode eMode, const wchar
 	}
 
 	// Force SwapFont on main to prevent crash on startup
-	SwapFont(FONT_NTNORMAL, true);
+	SwapFont(FONT_NTLARGE, true);
 	c->eButtonTextStyle = TEXTSTYLE_LEFT;
 	vgui::surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
 }
@@ -1283,7 +1283,7 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 	// This is basically a ringbox but different UI
 	const auto wdgState = BeginWidget(WIDGETFLAG_SKIPACTIVE | WIDGETFLAG_MOUSE);
 
-	SwapFont(FONT_NTHORIZSIDES);
+	SwapFont(FONT_NTNORMAL);
 	const int iTabWide = (c->dPanel.wide / iLabelsSize);
 	bool bResetActiveHot = false;
 
