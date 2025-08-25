@@ -353,7 +353,7 @@ FileWeaponInfo_t::FileWeaponInfo_t()
 	szDeathIcon[0] = 0;
 	iAimFOV = 0;
 	m_flPenetration = 0.f;
-	m_bDropOnDeath = 1;
+	m_bDropOnDeath = true;
 #endif
 }
 

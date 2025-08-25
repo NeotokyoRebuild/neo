@@ -136,6 +136,12 @@ By default the `gameinfo.txt` provided utilizes TF2-SDK's new `|appid_244630|` a
 ## Using `-tools`
 Engine tools have been broken since the TF2-SDK/64-bit update due to libraries being misplaced. To fix this, go to your Source SDK Base 2013 Multiplayer installation folder and move all files in `bin/tools/x64` to `bin/x64/tools`. You may have to create a tools folder if one does not exist already.
 
+## Failing to load fonts properly in Linux
+The font loading have been broken since the TF2-SDK/64-bit update on Linux, mainly affecting NEUROPOL2 and X-SCALE. To fix this, go to your NEOTOKYO installation folder and copy then rename the following to lowercase variant:
+
+* `NeotokyoSource/resource/NEUROPOL2.ttf` to `NeotokyoSource/resource/neuropol2.ttf`
+* `NeotokyoSource/resource/X-SCALE_.TTF` to `NeotokyoSource/resource/x-scale_.ttf`
+
 ## Further information
 For further information for your platform, refer to the VDC wiki on setting up extras, chroot/containers, etc...:
 https://developer.valvesoftware.com/wiki/Source_SDK_2013

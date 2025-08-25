@@ -18,14 +18,8 @@
 #include "neo_misc.h"
 #include "shareddefs.h"
 
-
-// Type to use if we need to ensure more than 32 bits in the mask.
-#define NEO_WEP_BITS_UNDERLYING_TYPE long long int
-
-#if (0)
-// Using plain int if we don't need to ensure >32 bits in the mask.
-#define NEO_WEP_BITS_UNDERLYING_TYPE int
-#endif
+#include "weapon_bits.h"
+#include "neo_enums.h"
 
 //////////////////////////////////////////////////////
 // NEO MOVEMENT DEFINITIONS
@@ -187,42 +181,6 @@ COMPILE_TIME_ASSERT(NEO_ASSAULT_CROUCH_SPEED == NEO_VIP_CROUCH_SPEED);
 
 static constexpr float NEO_ZOOM_SPEED = 0.115f;
 static_assert(NEO_ZOOM_SPEED != 0.0f, "Divide by zero");
-
-enum NeoSkin {
-	NEO_SKIN_FIRST = 0,
-	NEO_SKIN_SECOND,
-	NEO_SKIN_THIRD,
-
-	NEO_SKIN__ENUM_COUNT
-};
-static constexpr int NEO_SKIN_ENUM_COUNT = NEO_SKIN__ENUM_COUNT;
-
-enum NeoClass {
-	NEO_CLASS_RECON = 0,
-	NEO_CLASS_ASSAULT,
-	NEO_CLASS_SUPPORT,
-
-	// NOTENOTE: VIP *must* be last, because we are
-	// using array offsets for recon/assault/support
-	NEO_CLASS_VIP,
-	NEO_CLASS_JUGGERNAUT, // *gman voice* we'll see... about that.
-
-	NEO_CLASS__ENUM_COUNT
-};
-static constexpr int NEO_CLASS_ENUM_COUNT = NEO_CLASS__ENUM_COUNT;
-
-enum NeoStar {
-	STAR_NONE = 0,
-	STAR_ALPHA,
-	STAR_BRAVO,
-	STAR_CHARLIE,
-	STAR_DELTA,
-	STAR_ECHO,
-	STAR_FOXTROT,
-
-	STAR__TOTAL
-};
-#define NEO_DEFAULT_STAR STAR_ALPHA
 
 // Implemented by CNEOPlayer::m_fNeoFlags.
 // Rolling our own because Source FL_ flags already reserve all 32 bits,
