@@ -187,9 +187,15 @@ void CNeoLoading::OnMainLoop(const NeoUI::Mode eMode)
 
 	static bool bStaticInitNeoUI = false;
 	bool bSkipRender = false;
-	if (iStrIdx == m_aStrIdxMap[LOADINGSTATE_LOADING] && m_pHostMap)
+	if (iStrIdx == m_aStrIdxMap[LOADINGSTATE_LOADING])
 	{
-		auto hostMapName = m_pHostMap->GetString();
+		auto hostMapName = engine->GetLevelName();
+		
+		if (V_strlen(hostMapName) == 0 && m_pHostMap)
+		{
+			hostMapName = m_pHostMap->GetString();
+		}
+
 		if (V_strlen(hostMapName) == 0)
 		{
 			bSkipRender = true;
