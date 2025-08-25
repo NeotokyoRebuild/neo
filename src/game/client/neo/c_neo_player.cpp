@@ -89,6 +89,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropTime(RECVINFO(m_flCamoAuxLastTime)),
 	RecvPropInt(RECVINFO(m_nVisionLastTick)),
 	RecvPropTime(RECVINFO(m_flJumpLastTime)),
+	RecvPropTime(RECVINFO(m_flNextPingTime)),
 
 	RecvPropArray(RecvPropInt(RECVINFO(m_rfAttackersScores[0])), m_rfAttackersScores),
 	RecvPropArray(RecvPropFloat(RECVINFO(m_rfAttackersAccumlator[0])), m_rfAttackersAccumlator),
@@ -120,6 +121,7 @@ BEGIN_PREDICTION_DATA(C_NEO_Player)
 
 	DEFINE_PRED_FIELD(m_nVisionLastTick, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD_TOL(m_flJumpLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
+	DEFINE_PRED_FIELD_TOL(m_flNextPingTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
 END_PREDICTION_DATA()
 
 static void __MsgFunc_IdleRespawnShowMenu(bf_read &)
@@ -1068,6 +1070,7 @@ void C_NEO_Player::PreThink( void )
 
 	CheckThermOpticButtons();
 	CheckVisionButtons();
+	CheckPingButton(this);
 
 	if (m_bInThermOpticCamo)
 	{

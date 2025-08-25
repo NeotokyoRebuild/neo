@@ -1232,6 +1232,70 @@ Scheme
 				"additive"	"1"
 			}
 		}
+		NHudOCRSmallerNoAdditive
+		{
+			"1"
+			{
+				"name"		"Neuropol2"
+				"tall"		"10"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"480 599"
+			}
+			"2"
+			{
+				"name"		"Neuropol2"
+				"tall"		"12"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"600 767"
+			}
+			"3"
+			{
+				"name"		"Neuropol2"
+				"tall"		"14"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"768 1023"
+				"antialias"	"1"
+			}
+			"4"
+			{
+				"name"		"Neuropol2"
+				"tall"		"17"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1024 1199"
+				"antialias"	"1"
+			}
+			"5"
+			{
+				"name"		"Neuropol2"
+				"tall"		"20"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1200 1440"
+				"antialias"	"1"
+			}
+			"6"
+			{
+				"name"		"Neuropol2"
+				"tall"		"24"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1441 1599"
+				"antialias"	"1"
+			}
+			"7"
+			{
+				"name"		"Neuropol2"
+				"tall"		"26"
+				"weight"	"600"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"	"1600 6000"
+				"antialias"	"1"
+			}
+		}
 		NHudKillfeedIcons
 		{
 			"1"
