@@ -17,7 +17,6 @@
 #include "neo_predicted_viewmodel.h"
 #include "neo_misc.h"
 #include "shareddefs.h"
-
 #include "weapon_bits.h"
 #include "neo_enums.h"
 
