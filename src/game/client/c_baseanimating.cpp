@@ -2181,7 +2181,11 @@ bool C_BaseAnimating::GetAttachment( int number, Vector &origin, QAngle &angles 
 	if ( pData->m_bAnglesComputed == 0 )
 	{
 		MatrixAngles( pData->m_AttachmentToWorld, pData->m_angRotation );
+#ifdef NEO // NEO NOTE (nullsystem): warning: conversion from ‘unsigned int’ to ‘unsigned char:1’ changes value from ‘4294967295’ to ‘1’
+		pData->m_bAnglesComputed = 1;
+#else
 		pData->m_bAnglesComputed = -1;
+#endif
 	}
 	angles = pData->m_angRotation;
 	MatrixPosition( pData->m_AttachmentToWorld, origin );
