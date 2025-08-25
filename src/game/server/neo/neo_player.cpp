@@ -975,37 +975,21 @@ void CNEO_Player::PreThink(void)
 			m_bInVision = pBot->m_bInVision;
 			m_nVisionLastTick = pBot->m_nVisionLastTick;
 
+
+			// Transfer weapons from the bot to the player.
+			RemoveAllItems(false);
+			CBaseCombatWeapon* pBotActiveWeapon = pBot->GetActiveWeapon();
 			for (int i = 0; i < MAX_WEAPONS; ++i)
 			{
 				CBaseCombatWeapon* pBotWeapon = pBot->GetWeapon(i);
 				if (pBotWeapon)
 				{
-					CBaseCombatWeapon* pNewPlayerWeapon = dynamic_cast<CBaseCombatWeapon*>(CreateEntityByName(pBotWeapon->GetClassname()));
-					if (pNewPlayerWeapon)
-					{
-						DispatchSpawn(pNewPlayerWeapon);
-						Weapon_Equip(pNewPlayerWeapon);
-
-						pNewPlayerWeapon->SetClip1(pBotWeapon->Clip1());
-						pNewPlayerWeapon->SetClip2(pBotWeapon->Clip2());
-
-						int iAmmoType = pBotWeapon->m_iPrimaryAmmoType;
-						if (iAmmoType >= 0)
-						{
-							SetAmmoCount(pBot->GetAmmoCount(iAmmoType), iAmmoType);
-						}
-
-						int iAmmoType2 = pBotWeapon->m_iSecondaryAmmoType;
-						if (iAmmoType2 >= 0)
-						{
-							SetAmmoCount(pBot->GetAmmoCount(iAmmoType2), iAmmoType2);
-						}
-					}
+					pBot->Weapon_Detach(pBotWeapon);
+					Weapon_Equip(pBotWeapon);
 				}
 			}
 
 			// After giving weapons, ensure the correct active weapon is set.
-			CBaseCombatWeapon* pBotActiveWeapon = pBot->GetActiveWeapon();
 			if (pBotActiveWeapon)
 			{
 				CBaseCombatWeapon* pPlayerActiveWeapon = Weapon_OwnsThisType(pBotActiveWeapon->GetClassname());
