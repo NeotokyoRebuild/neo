@@ -208,7 +208,7 @@ static bool IsNeoPrimary(CNEOBaseCombatWeapon *pNeoWep)
 		NEO_WEP_M41 | NEO_WEP_M41_L | NEO_WEP_M41_S | NEO_WEP_MPN | NEO_WEP_MPN_S |
 		NEO_WEP_MX | NEO_WEP_MX_S | NEO_WEP_PZ | NEO_WEP_SMAC | NEO_WEP_SRM |
 		NEO_WEP_SRM_S | NEO_WEP_SRS | NEO_WEP_SUPA7 | NEO_WEP_ZR68_C | NEO_WEP_ZR68_L |
-		NEO_WEP_ZR68_S | NEO_WEP_BALC;
+		NEO_WEP_ZR68_S | NEO_WEP_BALC
 #ifdef INCLUDE_WEP_PBK
 		| NEO_WEP_PBK56S
 #endif
@@ -1903,6 +1903,11 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 		{
 			Weapon_DropOnDeath(pActiveWeapon, damageForce);
 		}
+	}
+
+	if (GetClass() == NEO_CLASS_JUGGERNAUT)
+	{
+		SpawnJuggernautPostDeath();
 	}
 
 	if (!IsBot() && !IsHLTV())
