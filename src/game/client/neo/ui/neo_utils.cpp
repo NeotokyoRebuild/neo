@@ -250,3 +250,18 @@ void NeoUtils::SerializeVTFDXTSprayToBuffer(CUtlBuffer *buffer, const uint8 *dat
 	free(mipData);
 }
 
+void bpr( int level, CUtlBuffer& buf, char const *fmt, ... )
+{
+	char txt[ 4096 ];
+	va_list argptr;
+	va_start( argptr, fmt );
+	_vsnprintf( txt, sizeof( txt ) - 1, fmt, argptr );
+	va_end( argptr );
+
+	int indent = 2;
+	for ( int i = 0; i < ( indent * level ); ++i )
+	{
+		buf.Printf( " " );
+	}
+	buf.Printf( "%s", txt );
+}
