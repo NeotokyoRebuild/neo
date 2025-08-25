@@ -20,8 +20,15 @@ ConVar neo_bot_auto_vacate( "neo_bot_auto_vacate", "1", FCVAR_NONE, "If nonzero,
 ConVar neo_bot_offline_practice( "neo_bot_offline_practice", "0", FCVAR_NONE, "Tells the server that it is in offline practice mode." );
 ConVar neo_bot_melee_only( "neo_bot_melee_only", "0", FCVAR_GAMEDLL, "If nonzero, NEOBots will only use melee weapons" );
 
-extern const char *GetRandomBotName( void );
-extern void CreateBotName( CNEOBot::DifficultyType skill, char* pBuffer, int iBufferSize );
+// NEO NOTE (nullsystem): This is not the same as a properly enforce class restriction,
+// this is just within the bots itself and at most make the class selection fairly even
+// amongs bots at lower populated bot matches.
+ConVar neo_bot_thres_restrict_class("neo_bot_thres_restrict_class", "3", FCVAR_NONE,
+		"Defines the maximum amount of bots per team to do class restrictions."
+		" For example, 3 will restrict for 3v3 and below with a maximum of 1 per class, but if 4v4 will not restrict."
+		" If set to a higher value like 4, it will restrict for 4v4 and below with a maximum of 2 per class."
+		" 0 will disables any class restrictions.",
+		true, 0, true, (MAX_PLAYERS - 1) / 2);
 
 static bool UTIL_KickBotFromTeam( int kickTeam )
 {
@@ -102,6 +109,7 @@ void CNEOBotManager::OnMapLoaded( void )
 
 	m_flNextPeriodicThink = 0.f;
 
+	NEOBotProfileResetPicks();
 	ClearStuckBotData();
 }
 
@@ -216,12 +224,21 @@ void CNEOBotManager::MaintainBotQuota()
 	// think every quarter second
 	m_flNextPeriodicThink = gpGlobals->curtime + 0.25f;
 
-	// don't add bots until local player has been registered, to make sure he's player ID #1
+	const int iMaxClassRestrictCount = neo_bot_thres_restrict_class.GetInt() * 2;
+	const bool bRestrictClass = (NEORules()->IsTeamplay() &&
+			iMaxClassRestrictCount > 0 && neo_bot_quota.GetInt() <= iMaxClassRestrictCount);
+
+	// don't add bots until local player has been registered and assigned, to make sure he's player ID #1
 	if ( !engine->IsDedicatedServer() )
 	{
-		CBasePlayer *pPlayer = UTIL_GetListenServerHost();
-		if ( !pPlayer )
+		CNEO_Player *pPlayer = ToNEOPlayer(UTIL_GetListenServerHost());
+		if ( !pPlayer ||
+				(bRestrictClass &&
+					(pPlayer->GetTeamNumber() == TEAM_UNASSIGNED ||
+					 !(IN_BETWEEN_EQ(NEO_CLASS_RECON, pPlayer->GetClass(), NEO_CLASS_SUPPORT)))) )
+		{
 			return;
+		}
 	}
 
 	// We want to balance based on who's playing on game teams not necessary who's on team spectator, etc.
@@ -230,6 +247,7 @@ void CNEOBotManager::MaintainBotQuota()
 	int nNEOBotsOnGameTeams = 0;
 	int nNonNEOBotsOnGameTeams = 0;
 	int nSpectators = 0;
+	int naCountClasses[TEAM__TOTAL][NEO_CLASS__ENUM_COUNT] = {};
 	for ( int i = 1; i <= gpGlobals->maxClients; ++i )
 	{
 		CNEO_Player *pPlayer = ToNEOPlayer( UTIL_PlayerByIndex( i ) );
@@ -243,22 +261,43 @@ void CNEOBotManager::MaintainBotQuota()
 		if ( !pPlayer->IsConnected() )
 			continue;
 
+		int iPlayerTeam = pPlayer->GetTeamNumber();
+
+		int iClass = pPlayer->GetClass();
+		if (IN_BETWEEN_EQ(NEO_CLASS_RECON, pPlayer->m_iNextSpawnClassChoice, NEO_CLASS_SUPPORT))
+		{
+			iClass = pPlayer->m_iNextSpawnClassChoice;
+		}
+
 		CNEOBot* pBot = ToNEOBot( pPlayer );
 		if ( pBot && pBot->HasAttribute( CNEOBot::QUOTA_MANANGED ) )
 		{
 			nNEOBots++;
-			if ( pPlayer->GetTeamNumber() == TEAM_JINRAI || pPlayer->GetTeamNumber() == TEAM_NSF )
+			bool bIsInTeam = (iPlayerTeam == TEAM_JINRAI || iPlayerTeam == TEAM_NSF);
+			if (!bIsInTeam)
+			{
+				// If not yet fully in, instead look at m_iIntendTeam
+				iPlayerTeam = pBot->m_iIntendTeam;
+				bIsInTeam = (iPlayerTeam == TEAM_JINRAI || iPlayerTeam == TEAM_NSF);
+			}
+			if (bIsInTeam)
 			{
 				nNEOBotsOnGameTeams++;
+
+				if (IN_BETWEEN_EQ(NEO_CLASS_RECON, iClass, NEO_CLASS_SUPPORT))
+				{
+					naCountClasses[iPlayerTeam][iClass]++;
+				}
 			}
 		}
 		else
 		{
-			if ( pPlayer->GetTeamNumber() == TEAM_JINRAI || pPlayer->GetTeamNumber() == TEAM_NSF)
+			if ( iPlayerTeam == TEAM_JINRAI || iPlayerTeam == TEAM_NSF)
 			{
 				nNonNEOBotsOnGameTeams++;
+				naCountClasses[iPlayerTeam][iClass]++;
 			}
-			else if ( pPlayer->GetTeamNumber() == TEAM_SPECTATOR )
+			else if ( iPlayerTeam == TEAM_SPECTATOR )
 			{
 				nSpectators++;
 			}
@@ -302,46 +341,69 @@ void CNEOBotManager::MaintainBotQuota()
 	// add bots if necessary
 	if ( desiredBotCount > nNEOBotsOnGameTeams )
 	{
+		int iTeam = TEAM_UNASSIGNED;
+
+		if ( NEORules()->IsTeamplay() && iTeam == TEAM_UNASSIGNED )
+		{
+			CTeam* pJinrai = GetGlobalTeam(TEAM_JINRAI);
+			CTeam* pNSF = GetGlobalTeam(TEAM_NSF);
+			const int numJinrai = pJinrai->GetNumPlayers();
+			const int numNSF = pNSF->GetNumPlayers();
+
+			iTeam = numJinrai < numNSF ? TEAM_JINRAI : numNSF < numJinrai ? TEAM_NSF : RandomInt(TEAM_JINRAI, TEAM_NSF);
+		}
+
 		CNEOBot::DifficultyType skill = Clamp((CNEOBot::DifficultyType)neo_bot_difficulty.GetInt(), CNEOBot::EASY, CNEOBot::EXPERT);
-		char name[MAX_PLAYER_NAME_LENGTH];
-		CreateBotName(skill, name, sizeof(name));
 
 		CNEOBot *pBot = GetAvailableBotFromPool();
 		if ( pBot == NULL )
 		{
-			pBot = NextBotCreatePlayerBot< CNEOBot >(name);
+			BotClassFlag flagTargetClass = 0;
+			BotClassFlag flagForceClass = 0;
+
+			if (iTeam != TEAM_UNASSIGNED && bRestrictClass)
+			{
+				const int iMaxPerClass = Ceil2Int(neo_bot_thres_restrict_class.GetInt() / 3.0f);
+				for (int i = NEO_CLASS_RECON; i <= NEO_CLASS_SUPPORT; ++i)
+				{
+					if (naCountClasses[iTeam][i] < iMaxPerClass)
+					{
+						flagTargetClass |= (1 << i);
+						if (flagForceClass == 0)
+						{
+							flagForceClass = (1 << i);
+						}
+					}
+				}
+			}
+
+			const CNEOBotProfileFilter botFilter = {
+				.flagTargetDifficulty = (1 << skill),
+				.flagTargetClass = flagTargetClass,
+			};
+
+			const CNEOBotProfileReturn retProfile = NEOBotProfileNextPick(botFilter);
+
+			char szBotName[MAX_PLAYER_NAME_LENGTH];
+			skill = static_cast<CNEOBot::DifficultyType>(
+					NEOBotProfileCreateNameRetSkill(szBotName, retProfile.profile, skill));
+
+			pBot = NextBotCreatePlayerBot< CNEOBot >(szBotName);
+			pBot->m_iIntendTeam = iTeam;
+			pBot->SetAttribute(CNEOBot::QUOTA_MANANGED);
+			pBot->m_iProfileIdx = retProfile.index;
+			V_memcpy(&pBot->m_profile, &retProfile.profile, sizeof(CNEOBotProfile));
+			if (flagForceClass > 0)
+			{
+				pBot->m_profile.flagClass = flagForceClass;
+			}
+			pBot->SetDifficulty(skill);
 		}
 		if ( pBot )
 		{
 			pBot->SetAttribute( CNEOBot::QUOTA_MANANGED );
-
-			int iTeam = TEAM_UNASSIGNED;
-
-			if ( NEORules()->IsTeamplay() && iTeam == TEAM_UNASSIGNED )
-			{
-				CTeam* pJinrai = GetGlobalTeam(TEAM_JINRAI);
-				CTeam* pNSF = GetGlobalTeam(TEAM_NSF);
-				const int numJinrai = pJinrai->GetNumPlayers();
-				const int numNSF = pNSF->GetNumPlayers();
-
-				iTeam = numJinrai < numNSF ? TEAM_JINRAI : numNSF < numJinrai ? TEAM_NSF : RandomInt(TEAM_JINRAI, TEAM_NSF);
-			}
-
-			float flDice = RandomFloat();
-			if (flDice <= neo_bot_recon_ratio.GetFloat())
-			{
-				pBot->RequestSetClass(NEO_CLASS_RECON);
-			}
-			else if (flDice >= (1.0f - neo_bot_support_ratio.GetFloat()))
-			{
-				pBot->RequestSetClass(NEO_CLASS_SUPPORT);
-			}
-			else
-			{
-				pBot->RequestSetClass(NEO_CLASS_ASSAULT);
-			}
-
-			engine->SetFakeClientConVarValue( pBot->edict(), "name", name );
+			pBot->RequestClassOnProfile();
+			engine->SetFakeClientConVarValue( pBot->edict(), "name", pBot->GetPlayerName() );
 			pBot->RequestSetSkin(RandomInt(0, 2));
 			pBot->HandleCommand_JoinTeam( iTeam );
 		}
