@@ -842,6 +842,27 @@ int ClientModeShared::HandleSpectatorKeyInput( int down, ButtonCode_t keynum, co
 		return 0;
 	}
 #endif // GLOWS_ENABLE
+#ifdef NEO
+	else if (down && pszCurrentBinding && Q_strcmp(pszCurrentBinding, "+use") == 0)
+	{
+		C_BasePlayer* pLocalPlayer = C_BasePlayer::GetLocalPlayer();
+
+		if (pLocalPlayer &&
+			((pLocalPlayer->GetObserverMode() == OBS_MODE_CHASE) || (pLocalPlayer->GetObserverMode() == OBS_MODE_IN_EYE)))
+		{
+			C_BaseEntity* pTarget = pLocalPlayer->GetObserverTarget();
+			C_NEO_Player* pTargetPlayer = dynamic_cast<C_NEO_Player*>(pTarget);
+
+			if (pTargetPlayer)
+			{
+				// pTargetPlayer->IsBot() is always false on client side, so defer to server judgement.
+				// Future: Might be possible to replace an AFK player.
+				engine->ServerCmd( VarArgs("replacebot %d", pTarget->entindex()) );
+			}
+		}
+		return 0;
+	}
+#endif // NEO
 
 	return 1;
 }

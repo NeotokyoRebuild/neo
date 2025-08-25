@@ -170,6 +170,8 @@ public:
 	virtual void CalcDeathCamView( Vector& eyeOrigin, QAngle& eyeAngles, float& fov ) override;
 	virtual void TeamChange(int iNewTeam) override;
 
+	void ClientBotReplacementUpdate(C_NEO_Player* pBot);
+
 private:
 	void CheckThermOpticButtons();
 	void CheckVisionButtons();
