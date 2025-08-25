@@ -17,6 +17,7 @@ enum NeoClass {
 	// NOTENOTE: VIP *must* be last, because we are
 	// using array offsets for recon/assault/support
 	NEO_CLASS_VIP,
+	NEO_CLASS_JUGGERNAUT,
 
 	NEO_CLASS__ENUM_COUNT
 };

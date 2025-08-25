@@ -55,7 +55,11 @@ public:
 	// Jump time, time to auto unduck (since we auto crouch jump now).
 	CNetworkVar( float, m_flJumpTime );
 	// Step sound side flip/flip
+#ifdef NEO
+	CNetworkVar( int, m_nStepside );
+#else
 	int m_nStepside;
+#endif
 	// Velocity at time when we hit ground
 	CNetworkVar( float, m_flFallVelocity );
 	// Previous button state

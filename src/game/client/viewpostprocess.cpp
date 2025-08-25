@@ -2958,6 +2958,7 @@ void DoEnginePostProcessing( int x, int y, int w, int h, bool bFlashlightIsOn, b
 			switch (pTargetPlayer->GetClass())
 			{
 			case NEO_CLASS_RECON:
+			case NEO_CLASS_JUGGERNAUT:
 			{
 				DoNightVision(x, y, w, h);
 				break;

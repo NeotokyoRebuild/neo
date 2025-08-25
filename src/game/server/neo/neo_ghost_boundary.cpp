@@ -87,9 +87,20 @@ void CNEO_GhostBoundary::Think()
 {
     BaseClass::Think();
 
-    if (!NEORules()->GhostExists())
+    if (NEORules()->GetGameType() == NEO_GAME_TYPE_JGR)
     {
-        return;
+        // In JGR, this is only true when the juggernaut is in it's item form
+        if (NEORules()->GhostExists())
+        {
+            return;
+        }
+    }
+    else
+    {
+        if (!NEORules()->GhostExists())
+        {
+            return;
+        }
     }
 
     int iGhosterIndex = NEORules()->GetGhosterPlayer();
@@ -101,7 +112,7 @@ void CNEO_GhostBoundary::Think()
     CBasePlayer* pPlayer = UTIL_PlayerByIndex(iGhosterIndex);
     if (pPlayer->GetFlags() & FL_ONGROUND)
     {
-        m_vecLastGhosterPos = pPlayer->GetAbsOrigin();
+        m_vecLastObjectivePos = pPlayer->GetAbsOrigin();
     }
 }
 
@@ -110,27 +121,38 @@ void CNEO_GhostBoundary::StartTouch(CBaseEntity *pOther)
     BaseClass::StartTouch(pOther);
 
     Vector vecGhostSpawn = NEORules()->m_vecPreviousGhostSpawn;
-    if ((vecGhostSpawn == vec3_origin) && (m_vecLastGhosterPos == vec3_origin))
+    if ((vecGhostSpawn == vec3_origin) && (m_vecLastObjectivePos == vec3_origin))
     {
         return; // Don't bother teleporting if there's no ghost spawn and no ghoster pos
     }
 
-    auto pDroppedGhost = (pOther && pOther->IsBaseCombatWeapon() && static_cast<CNEOBaseCombatWeapon*>(pOther)->IsGhost())
-        ? static_cast<CWeaponGhost*>(pOther) : nullptr;
-    if (pDroppedGhost)
+    if (NEORules()->GetGameType() == NEO_GAME_TYPE_JGR)
     {
-        if (m_vecLastGhosterPos == vec3_origin)
+        CNEO_Juggernaut *pDroppedJuggernaut = dynamic_cast<CNEO_Juggernaut*>(pOther);
+        if (pDroppedJuggernaut)
         {
-            pDroppedGhost->VPhysicsGetObject()->SetPosition(vecGhostSpawn, GHOST_ANGLES, true);
-            // Don't freeze it, ghosts aren't frozen when they spawn
+            pDroppedJuggernaut->SetAbsOrigin(m_vecLastObjectivePos);
         }
-        else
+    }
+    else
+    {
+        auto pDroppedGhost = (pOther && pOther->IsBaseCombatWeapon() && static_cast<CNEOBaseCombatWeapon*>(pOther)->IsGhost())
+            ? static_cast<CWeaponGhost*>(pOther) : nullptr;
+        if (pDroppedGhost)
         {
-            pDroppedGhost->VPhysicsGetObject()->SetPosition(m_vecLastGhosterPos, GHOST_ANGLES, true);
-            pDroppedGhost->VPhysicsGetObject()->EnableMotion(false);
-        }
+            if (m_vecLastObjectivePos == vec3_origin)
+            {
+                pDroppedGhost->VPhysicsGetObject()->SetPosition(vecGhostSpawn, GHOST_ANGLES, true);
+                // Don't freeze it, ghosts aren't frozen when they spawn
+            }
+            else
+            {
+                pDroppedGhost->VPhysicsGetObject()->SetPosition(m_vecLastObjectivePos, GHOST_ANGLES, true);
+                pDroppedGhost->VPhysicsGetObject()->EnableMotion(false);
+            }
 
-        return;
+            return;
+        }
     }
 
     CNEO_Player *pNEOPlayer = ToNEOPlayer(pOther);
@@ -139,7 +161,7 @@ void CNEO_GhostBoundary::StartTouch(CBaseEntity *pOther)
         CBaseCombatWeapon* pHeldGhost = pNEOPlayer->Weapon_OwnsThisType("weapon_ghost");
         pNEOPlayer->Weapon_Drop(pHeldGhost);
 
-        pHeldGhost->VPhysicsGetObject()->SetPosition(m_vecLastGhosterPos, GHOST_ANGLES, true);
+        pHeldGhost->VPhysicsGetObject()->SetPosition(m_vecLastObjectivePos, GHOST_ANGLES, true);
         pHeldGhost->VPhysicsGetObject()->EnableMotion(false);
 
         return;
