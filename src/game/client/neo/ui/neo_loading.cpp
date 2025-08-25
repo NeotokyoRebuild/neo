@@ -187,7 +187,7 @@ void CNeoLoading::OnMainLoop(const NeoUI::Mode eMode)
 
 	static bool bStaticInitNeoUI = false;
 	bool bSkipRender = false;
-	if (iStrIdx == m_aStrIdxMap[LOADINGSTATE_LOADING])
+	if (iStrIdx == m_aStrIdxMap[LOADINGSTATE_LOADING] && m_pHostMap)
 	{
 		auto hostMapName = m_pHostMap->GetString();
 		if (Q_stristr(hostMapName, "background_"))
