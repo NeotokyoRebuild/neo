@@ -217,53 +217,8 @@ inline const wchar_t *GetNeoClassNameW(const int neoClassIdx)
 	return (IN_BETWEEN_AR(0, neoClassIdx, NEO_CLASS__ENUM_COUNT)) ? SZWSZ_NEO_CLASS_STRS[neoClassIdx].wszStr : L"";
 }
 
-inline const char *GetRankName(int xp, bool shortened = false)
-{
-	if (xp < 0)
-	{
-		return shortened ? "Dog" : "Rankless Dog";
-	}
-	else if (xp < 4)
-	{
-		return shortened ? "Pvt" : "Private";
-	}
-	else if (xp < 10)
-	{
-		return shortened ? "Cpl" : "Corporal";
-	}
-	else if (xp < 20)
-	{
-		return shortened ? "Sgt" : "Sergeant";
-	}
-	else
-	{
-		return shortened ? "Lt" : "Lieutenant";
-	}
-}
-
-inline const int GetRank(int xp)
-{
-	if (xp < 0)
-	{
-		return 0;
-	}
-	else if (xp < 4)
-	{
-		return 1;
-	}
-	else if (xp < 10)
-	{
-		return 2;
-	}
-	else if (xp < 20)
-	{
-		return 3;
-	}
-	else
-	{
-		return 4;
-	}
-}
+int GetRank(const int xp);
+const char *GetRankName(const int xp, const bool shortened = false);
 
 CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, const NEO_WEP_BITS_UNDERLYING_TYPE& neoWepBits);
 
