@@ -1903,7 +1903,7 @@ void CNEO_Player::AddPoints(int score, bool bAllowNegativeScore)
 
 void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 {
-	RestorePlayerFromSpectatorTakeover();
+	RestorePlayerFromSpectatorTakeover(info);
 
 	if (!m_bForceServerRagdoll)
 	{
@@ -3474,6 +3474,15 @@ void CNEO_Player::RestorePlayerFromSpectatorTakeover()
 	}
 }
 
+void CNEO_Player::RestorePlayerFromSpectatorTakeover(const CTakeDamageInfo &pInfo)
+{
+	if (m_hSpectatorTakeoverPlayerTarget.Get())
+	{
+		m_hSpectatorTakeoverPlayerTarget->Event_Killed(pInfo);
+		RestorePlayerFromSpectatorTakeover();
+	}
+}
+
 void CNEO_Player::SpectatorTakeoverPlayerInitiate(CNEO_Player* pPlayer)
 {
     m_hSpectatorTakeoverPlayerImpersonatingMe = pPlayer;
@@ -3490,7 +3499,6 @@ void CNEO_Player::SpectatorTakeoverPlayerInitiate(CNEO_Player* pPlayer)
     // Prevent AI or movement from running.
     AddFlag(FL_FROZEN);      // Prevent movement
     AddFlag(FL_NOTARGET);    // Prevent being targeted by NPCs
-    m_lifeState = LIFE_DEAD; // Marks as dead to the game loop, but don't trigger Event_Killed.
 }
 
 void CNEO_Player::SpectatorTakeoverPlayerRevert(CNEO_Player* pPlayer)

@@ -751,6 +751,9 @@ bool C_NEO_Player::ShouldDraw( void )
 void C_NEO_Player::OnDataChanged( DataUpdateType_t type )
 {
 	BaseClass::OnDataChanged(type);
+
+	// Had to delay client sync until player model was ready
+	CSpectatorTakeoverPlayerUpdateOnDataChanged();
 }
 
 float C_NEO_Player::GetFOV( void )
@@ -1818,10 +1821,26 @@ void __MsgFunc_CSpectatorTakeoverPlayer(bf_read &msg)
 		return;
 	}
 
-	pSpectatorTakingOver->CSpectatorTakeoverPlayerUpdate(pPlayerTakeoverTarget);
+	// Save for later in C_NEO_Player::OnDataChanged
+	pSpectatorTakingOver->m_hSpectatorTakeoverTarget = pPlayerTakeoverTarget;
 }
 
 CUserMessageRegister CSpectatorTakeoverPlayerRegistration("CSpectatorTakeoverPlayer", __MsgFunc_CSpectatorTakeoverPlayer);
+
+void C_NEO_Player::CSpectatorTakeoverPlayerUpdateOnDataChanged()
+{
+    if (m_hSpectatorTakeoverTarget.Get())
+    {
+        C_NEO_Player* pTarget = m_hSpectatorTakeoverTarget.Get();
+
+        // Check if our model is stable from server & matches the target
+        if (GetModel() && pTarget->GetModel() && GetModel() == pTarget->GetModel())
+        {
+            CSpectatorTakeoverPlayerUpdate(pTarget);
+            m_hSpectatorTakeoverTarget = nullptr;
+        }
+    }
+}
 
 void C_NEO_Player::CSpectatorTakeoverPlayerUpdate(C_NEO_Player* pPlayerTakeoverTarget)
 {
