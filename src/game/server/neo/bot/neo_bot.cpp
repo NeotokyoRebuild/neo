@@ -825,7 +825,7 @@ void CNEOBot::FireGameEvent(IGameEvent* event)
 }
 
 extern ConVar nb_update_frequency;
-inline void CNEOBot::Update()
+void CNEOBot::Update()
 {
 	if (!TheNavMesh->IsLoaded())
 	{

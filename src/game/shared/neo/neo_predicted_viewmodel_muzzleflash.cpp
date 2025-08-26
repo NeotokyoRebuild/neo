@@ -89,7 +89,7 @@ void CNEOPredictedViewModelMuzzleFlash::Spawn(void)
 #ifdef CLIENT_DLL
 int CNEOPredictedViewModelMuzzleFlash::DrawModel(int flags)
 {
-	if (!m_bActive || m_flTimeSwitchOffMuzzleFlash <= gpGlobals->curtime && m_bActive)
+	if (!m_bActive || (m_flTimeSwitchOffMuzzleFlash <= gpGlobals->curtime && m_bActive))
 	{
 		return -1;
 	}
