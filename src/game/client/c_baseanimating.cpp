@@ -3800,6 +3800,9 @@ void C_BaseAnimating::DoAnimationEvents( CStudioHdr *pStudioHdr )
 
 	// check for looping
 	BOOL bLooped = false;
+#ifdef NEO
+	bool bInverse = false;
+#endif
 	if (flEventCycle <= m_flPrevEventCycle)
 	{
 		if (m_flPrevEventCycle - flEventCycle > 0.5)
@@ -3808,9 +3811,14 @@ void C_BaseAnimating::DoAnimationEvents( CStudioHdr *pStudioHdr )
 		}
 		else
 		{
+#ifdef NEO
+			// NEO NOTE DG: Animations play fine backwards. Let events play when moving forwards and backwards through a clip
+			bInverse = true;
+#else
 			// things have backed up, which is bad since it'll probably result in a hitch in the animation playback
 			// but, don't play events again for the same time slice
 			return;
+#endif
 		}
 	}
 
@@ -3851,6 +3859,42 @@ void C_BaseAnimating::DoAnimationEvents( CStudioHdr *pStudioHdr )
 		// Necessary to get the next loop working
 		m_flPrevEventCycle = flEventCycle - 0.001f;
 	}
+
+#ifdef NEO
+	if (bInverse)
+	{
+		for (int i = (int)seqdesc.numevents - 1; i >= 0; --i)
+		{
+			if ( pevent[i].type & AE_TYPE_NEWEVENTSYSTEM )
+			{
+				if ( !( pevent[i].type & AE_TYPE_CLIENT ) )
+					continue;
+			}
+			else if ( pevent[i].event < 5000 )
+				continue;
+
+			if ( pevent[i].cycle >= flEventCycle && pevent[i].cycle < m_flPrevEventCycle )
+			{
+				if ( watch )
+				{
+					Msg( "%i (seq: %d) FE %i Normal cycle %f, prev %f ev %f (time %.3f)\n",
+						gpGlobals->tickcount,
+						GetSequence(),
+						pevent[i].event,
+						pevent[i].cycle,
+						m_flPrevEventCycle,
+						flEventCycle,
+						gpGlobals->curtime );
+				}
+
+				FireEvent( GetAbsOrigin(), GetAbsAngles(), pevent[ i ].event, pevent[ i ].pszOptions() );
+			}
+		}
+
+		m_flPrevEventCycle = flEventCycle;
+		return;
+	}
+#endif
 
 	for (int i = 0; i < (int)seqdesc.numevents; i++)
 	{
