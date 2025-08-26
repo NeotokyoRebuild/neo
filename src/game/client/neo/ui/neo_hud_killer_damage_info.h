@@ -39,6 +39,7 @@ protected:
 	void UpdateStateForNeoHudElementDraw() override;
 	void DrawNeoHudElement() override;
 	ConVar *GetUpdateFrequencyConVar() const override;
+	void ResetDisplayInfos();
 
 	vgui::HFont m_hFont;
 	NeoUI::Context m_uiCtx;

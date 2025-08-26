@@ -1460,17 +1460,11 @@ void C_NEO_Player::Spawn( void )
 	m_nVisionLastTick = 0;
 	m_bInLean = NEO_LEAN_NONE;
 
-	for (int i = 0; i < m_rfAttackersScores.Count(); ++i)
+	for (int i = 0; i < MAX_PLAYERS; ++i)
 	{
-		m_rfAttackersScores.Set(i, 0);
-	}
-	for (int i = 0; i < m_rfAttackersAccumlator.Count(); ++i)
-	{
-		m_rfAttackersAccumlator.Set(i, 0.0f);
-	}
-	for (int i = 0; i < m_rfAttackersHits.Count(); ++i)
-	{
-		m_rfAttackersHits.Set(i, 0);
+		m_rfAttackersScores.GetForModify(i) = 0;
+		m_rfAttackersAccumlator.GetForModify(i) = 0.0f;
+		m_rfAttackersHits.GetForModify(i) = 0;
 	}
 	V_memset(m_rfNeoPlayerIdxsKilledByLocal, 0, sizeof(m_rfNeoPlayerIdxsKilledByLocal));
 

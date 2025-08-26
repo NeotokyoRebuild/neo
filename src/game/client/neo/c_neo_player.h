@@ -188,9 +188,9 @@ public:
 	CNetworkVar(int, m_iLoadoutWepChoice);
 	CNetworkVar(int, m_iNextSpawnClassChoice);
 
-	CNetworkArray(int, m_rfAttackersScores, (MAX_PLAYERS + 1));
-	CNetworkArray(float, m_rfAttackersAccumlator, (MAX_PLAYERS + 1));
-	CNetworkArray(int, m_rfAttackersHits, (MAX_PLAYERS + 1));
+	CNetworkArray(int, m_rfAttackersScores, MAX_PLAYERS);
+	CNetworkArray(float, m_rfAttackersAccumlator, MAX_PLAYERS);
+	CNetworkArray(int, m_rfAttackersHits, MAX_PLAYERS);
 	
 	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
 

@@ -532,17 +532,11 @@ void CNEO_Player::Spawn(void)
 	m_bAllowGibbing = true;
 	m_bIneligibleForLoadoutPick = false;
 
-	for (int i = 0; i < m_rfAttackersScores.Count(); ++i)
+	for (int i = 0; i < MAX_PLAYERS; ++i)
 	{
-		m_rfAttackersScores.Set(i, 0);
-	}
-	for (int i = 0; i < m_rfAttackersAccumlator.Count(); ++i)
-	{
-		m_rfAttackersAccumlator.Set(i, 0.0f);
-	}
-	for (int i = 0; i < m_rfAttackersHits.Count(); ++i)
-	{
-		m_rfAttackersHits.Set(i, 0);
+		m_rfAttackersScores.GetForModify(i) = 0;
+		m_rfAttackersAccumlator.GetForModify(i) = 0.0f;
+		m_rfAttackersHits.GetForModify(i) = 0;
 	}
 
 	m_flRanOutSprintTime = 0.0f;
@@ -1790,19 +1784,34 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo *info)
 	{
 		short attackerIdx = 0;
 		auto *neoAttacker = info ? ToNEOPlayer(info->GetAttacker()) : nullptr;
+		auto *killedWithInflictor = info ? info->GetInflictor() : nullptr;
 		const char *killedWithName = "";
-		if (neoAttacker && neoAttacker->entindex() != entindex())
+		if (neoAttacker)
 		{
 			attackerIdx = static_cast<short>(neoAttacker->entindex());
 
-			auto *killedWithInflictor = info->GetInflictor();
-			const bool inflictorIsPlayer = killedWithInflictor ? !Q_strcmp(killedWithInflictor->GetDebugName(), "player") : false;
 			if (killedWithInflictor)
 			{
-				killedWithName = inflictorIsPlayer ? neoAttacker->m_hActiveWeapon->GetPrintName() : killedWithInflictor->GetDebugName();
+				const bool inflictorIsPlayer = (V_strcmp(killedWithInflictor->GetDebugName(), "player") == 0);
+				if (inflictorIsPlayer)
+				{
+					// If killed with inflictor, is a player, but no active weapon, it's likely
+					// to be a suicide command kill
+					const auto *activeWep = neoAttacker->GetActiveWeapon();
+					killedWithName = (activeWep) ? activeWep->GetPrintName() : "";
+				}
+				else
+				{
+					killedWithName = killedWithInflictor->GetDebugName();
+				}
 			}
 			if (!Q_strcmp(killedWithName, "neo_grenade_frag")) { killedWithName = "Frag Grenade"; }
 			if (!Q_strcmp(killedWithName, "neo_deployed_detpack")) { killedWithName = "Remote Detpack"; }
+		}
+		else if (killedWithInflictor)
+		{
+			// Set it to NEO_ENVIRON_KILLED to indicate the map killed the player
+			attackerIdx = NEO_ENVIRON_KILLED;
 		}
 		WRITE_SHORT(attackerIdx);
 		WRITE_STRING(killedWithName);

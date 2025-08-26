@@ -1024,7 +1024,7 @@ void CClientLeafSystem::AddShadowToLeaf( int leaf, ClientLeafShadowHandle_t shad
 #ifdef NEO
 		// Engage happily blows past this limit, but it seems to be fine.
 		// Just ignoring this specific case in debug.
-		if (!FStrEq(MapName(), "nt_engage_ctg"))
+		if (!FStrEq(MapName(), "ntre_engage_ctg") && !FStrEq(MapName(), "ntre_skyline_ctg"))
 #endif
 		{
 			Assert(m_ShadowsInLeaf.NumAllocated() < 2000);
