@@ -6,36 +6,20 @@
 
 namespace CNEOWeaponLoadout {
 
-#define WEAPON_DEF(M_NAME, M_DISPLAY_NAME) \
-	inline const constexpr WeaponInfo WEP_INFO_##M_NAME = { \
-		M_DISPLAY_NAME, "loadout/loadout_" #M_NAME, "loadout/loadout_" #M_NAME "_no", "weapon_" #M_NAME };
+#define WEAPON_DEF(M_BITWNAME, M_NAME, M_DISPLAY_NAME, ...) \
+	[[maybe_unused]] inline const constexpr WeaponInfo WEP_INFO_##M_NAME = { \
+		M_DISPLAY_NAME, "loadout/loadout_" #M_NAME, "loadout/loadout_" #M_NAME "_no", "weapon_" #M_NAME, NEO_WEP_##M_BITWNAME };
 
-#define WEAPON_DEF_ALT(M_NAME, M_DISPLAY_NAME, M_NAMEWEP) \
-	inline const constexpr WeaponInfo WEP_INFO_##M_NAME = { \
-		M_DISPLAY_NAME, "loadout/loadout_" #M_NAME, "loadout/loadout_" #M_NAME "_no", "weapon_" M_NAMEWEP };
+#define WEAPON_DEF_ALT(M_BITWNAME, M_NAME, M_DISPLAY_NAME, M_NAMEWEP, ...) \
+	[[maybe_unused]] inline const constexpr WeaponInfo WEP_INFO_##M_NAME = { \
+		M_DISPLAY_NAME, "loadout/loadout_" #M_NAME, "loadout/loadout_" #M_NAME "_no", "weapon_" M_NAMEWEP, NEO_WEP_##M_BITWNAME };
 
 #define WEAPON(M_NAME) WEP_INFO_##M_NAME
 
-WEAPON_DEF(empty, "")
-WEAPON_DEF(mpn, "MPN45")
-WEAPON_DEF(srm, "SRM")
-WEAPON_DEF(jitte, "Jitte")
-WEAPON_DEF_ALT(srms, "SRM (silenced)", "srm_s")
-WEAPON_DEF_ALT(jittes, "Jitte (with scope)", "jittescoped")
-WEAPON_DEF(zr68l, "ZR68-L (accurized)")
-WEAPON_DEF(zr68c, "ZR68C")
-WEAPON_DEF(zr68s, "ZR68-S (silenced)")
-WEAPON_DEF(supa7, "Murata Supa-7")
-WEAPON_DEF_ALT(mosok, "Mosok", "m41")
-WEAPON_DEF_ALT(mosokl, "Mosok Silenced", "m41s")
-WEAPON_DEF(mx, "MX")
-WEAPON_DEF_ALT(mxs, "MX Silenced", "mx_silenced")
-WEAPON_DEF(aa13, "AA13")
-WEAPON_DEF(srs, "SRS")
-WEAPON_DEF(pz, "PZ252")
-WEAPON_DEF(smac, "SMAC")
+WEAPON_DEF(INVALID, empty, "")
+FOR_LIST_WEAPONS(WEAPON_DEF, WEAPON_DEF_ALT)
 #ifdef INCLUDE_WEP_PBK
-WEAPON_DEF(pbk56s, "PBK56")
+WEAPON_DEF(PBK56S, pbk56s, "PBK56")
 #endif
 
 inline const CLoadoutWeapon s_LoadoutWeapons[NEO_LOADOUT__COUNT][MAX_WEAPON_LOADOUTS] =

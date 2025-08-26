@@ -348,7 +348,7 @@ void CNeoLoadoutMenu::ApplySchemeSettings(vgui::IScheme *pScheme)
 
 			image->SetImage(loadout[i].info.m_szVguiImage);
 		}
-		else if (iWepPrice < CNEOWeaponLoadout::XP_EMPTY)
+		else if (iWepPrice < XP_EMPTY)
 		{
 			// Locked weapons
 			auto button = FindControl<Button>(szButtons[i]);

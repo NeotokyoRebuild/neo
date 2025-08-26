@@ -35,3 +35,15 @@ enum NeoStar {
 };
 #define NEO_DEFAULT_STAR STAR_ALPHA
 
+enum ENeoRank
+{
+	NEO_RANK_RANKLESS_DOG = -1,
+	NEO_RANK_PRIVATE = 0,
+	NEO_RANK_CORPORAL,
+	NEO_RANK_SERGEANT,
+	NEO_RANK_LIEUTENANT,
+
+	NEO_RANK__TOTAL, // rankless dog doesn't count within the arrays
+};
+static const constexpr int NEO_RANK_TOTAL = NEO_RANK__TOTAL;
+
