@@ -33,6 +33,7 @@ private:
 #endif
 
 	CHandle<CNEO_Player>	m_hPlayer;
+	float m_flWarpedPlaybackRate;
 
 	CNetworkVar(float, m_flHoldStartTime);
 	CNetworkVar(bool, m_bIsHolding);

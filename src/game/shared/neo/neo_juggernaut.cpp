@@ -7,7 +7,7 @@
 #include "model_types.h"
 #endif
 
-#define USE_DURATION 4.0f
+#define USE_DURATION 5.0f
 #define USE_DISTANCE_SQUARED 22500.0f
 
 LINK_ENTITY_TO_CLASS(neo_juggernaut, CNEO_Juggernaut);
@@ -47,7 +47,14 @@ void CNEO_Juggernaut::Spawn(void)
 	m_flHoldStartTime = 0.0f;
 	m_bIsHolding = false;
 
+	UseClientSideAnimation();
 	SetModel("models/player/jgr.mdl");
+	int iSequence = LookupSequence("Boot_seq");
+	SetSequence(iSequence);
+	m_flWarpedPlaybackRate = SequenceDuration(iSequence) / USE_DURATION;
+	ResetSequenceInfo();
+	SetPlaybackRate(0.0f);
+
 	SetMoveType(MOVETYPE_STEP);
 	SetSolid(SOLID_BBOX);
 #ifdef GAME_DLL
@@ -114,6 +121,7 @@ void CNEO_Juggernaut::Use(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYP
 		m_hPlayer = pNEOPlayer;
 		m_flHoldStartTime = gpGlobals->curtime;
 		SetNextThink(gpGlobals->curtime + 0.1f);
+		SetPlaybackRate(m_flWarpedPlaybackRate);
 		m_hPlayer->AddFlag(FL_FROZEN);
 #ifdef GAME_DLL
 		UTIL_HudMessage(m_hPlayer, m_textParms, "BOOTING JGR56"); // TODO localise this text
@@ -177,6 +185,7 @@ void CNEO_Juggernaut::HoldCancel(void)
 #endif
 	}
 	SetNextThink(TICK_NEVER_THINK);
+	SetPlaybackRate(-m_flWarpedPlaybackRate);
 	m_hPlayer = nullptr;
 	m_bIsHolding = false;
 }
@@ -184,8 +193,10 @@ void CNEO_Juggernaut::HoldCancel(void)
 #ifdef GAME_DLL
 void CNEO_Juggernaut::PostDeathEffects(void)
 {
-	Vector explOrigin = GetAbsOrigin() + NEO_JUGGERNAUT_VIEW_OFFSET;
+	Vector explOrigin = GetAbsOrigin() + EyePosition();
 	ExplosionCreate(explOrigin, GetAbsAngles(), this, 0, 128, SF_ENVEXPLOSION_NODAMAGE);
+	SetCycle(180);
+	SetPlaybackRate(-m_flWarpedPlaybackRate);
 }
 #endif
 
