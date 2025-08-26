@@ -32,11 +32,11 @@ WeaponData
 	
 	"AimType"		"0"
 	
-	"VMFov"			"54.0"	
-	"VMOffsetForward"	"-5.0"
-	"VMOffsetRight"		"5.0"	
-	"VMOffsetUp"		"-10.0"
-	"VMAngleYaw"		"0.0"
+	"VMFov"			"30.0"	
+	"VMOffsetForward"	"0.0"
+	"VMOffsetRight"		"3.0"	
+	"VMOffsetUp"		"-1.0"
+	"VMAngleYaw"		"4.0"
 	
 	"VMAimFov"				"40.0"	
 	"VMAimOffsetForward"	"10.0"
@@ -47,16 +47,17 @@ WeaponData
 	
 	"ViewModelOffset"
 	{
-		"fov"		"54"
-		"forward"	"-5"
-		"right"		"5"
-		"up"		"-10"
-		"yaw"		"0"
+		"fov"		"30"
+		"forward"	"0"
+		"right"		"3"
+		"up"		"-1"
+		"yaw"		"4"
+		"pitch"		"-9"
 	}
 
 	"ZoomOffset"
 	{
-		"fov"		"60"
+		"fov"		"54"
 		"forward"	"8"
 		"right"		"7"
 		"up"		"2"
