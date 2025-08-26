@@ -161,7 +161,7 @@ public:
 	bool GetInThermOpticCamo() const { return m_bInThermOpticCamo; }
 	// bots can't see anything, so they need an additional timer for cloak disruption events
 	bool GetBotPerceivedCloakState() const { return m_botThermOpticCamoDisruptedTimer.IsElapsed() && m_bInThermOpticCamo; }
-	bool GetBotTakeoverPending() const { return m_bBotTakeoverPending; }
+	bool GetSpectatorTakeoverPlayerPending() const { return m_bSpectatorTakeoverPlayerPending; }
 
 	virtual void StartAutoSprint(void) OVERRIDE;
 	virtual void StartSprinting(void) OVERRIDE;
@@ -234,12 +234,6 @@ private:
 
 	bool IsAllowedToSuperJump(void);
 
-	void TryTakeoverSpectatedBot(CNEO_Player* pBotToTakeover);
-	void RestoreBotFromReplacement();
-
-	void EnterStasis(CNEO_Player* pPlayer);
-	void ExitStasis(CNEO_Player* pPlayer);
-
 public:
 	CNetworkVar(int, m_iNeoClass);
 	CNetworkVar(int, m_iNeoSkin);
@@ -308,14 +302,22 @@ private:
 
 	// blood decals are client-side, so track injury event count for bots
 	int m_iBotDetectableBleedingInjuryEvents = 0;
-	bool m_bBotTakeoverPending{false};
-	CHandle<CBasePlayer> m_hBotToTakeover{nullptr};
-	bool m_bInStasis{false};
-	CHandle<CNEO_Player> m_hStasisBot{nullptr};
-	CHandle<CNEO_Player> m_hPossessingPlayer{nullptr};
+	bool m_bSpectatorTakeoverPlayerPending{false};
 
 private:
 	CNEO_Player(const CNEO_Player&);
+
+	// Spectator takeover player related functionality
+	bool IsAFK(); // not const because GetTimeSinceLastUserCommand is non-const
+	void SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace);
+	void SpectatorTakeoverPlayerPreThink();
+	void RestorePlayerFromSpectatorTakeover();
+	void SpectatorTakeoverPlayerInitiate(CNEO_Player* pPlayer);
+	void SpectatorTakeoverPlayerRevert(CNEO_Player* pPlayer);
+
+	CHandle<CNEO_Player> m_hSpectatorTakeoverPlayerTarget{nullptr};
+	CHandle<CNEO_Player> m_hSpectatorTakeoverPlayerImpersonatingMe{nullptr};
+
 };
 
 inline CNEO_Player *ToNEOPlayer(CBaseEntity *pEntity)

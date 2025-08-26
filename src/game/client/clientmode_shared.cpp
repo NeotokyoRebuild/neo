@@ -847,17 +847,20 @@ int ClientModeShared::HandleSpectatorKeyInput( int down, ButtonCode_t keynum, co
 	{
 		C_BasePlayer* pLocalPlayer = C_BasePlayer::GetLocalPlayer();
 
-		if (pLocalPlayer &&
-			((pLocalPlayer->GetObserverMode() == OBS_MODE_CHASE) || (pLocalPlayer->GetObserverMode() == OBS_MODE_IN_EYE)))
+		if (pLocalPlayer)
 		{
-			C_BaseEntity* pTarget = pLocalPlayer->GetObserverTarget();
-			C_NEO_Player* pTargetPlayer = dynamic_cast<C_NEO_Player*>(pTarget);
+			auto eObserverMode = pLocalPlayer->GetObserverMode();
 
-			if (pTargetPlayer)
+			if ((eObserverMode == OBS_MODE_CHASE) || (eObserverMode == OBS_MODE_IN_EYE))
 			{
-				// pTargetPlayer->IsBot() is always false on client side, so defer to server judgement.
-				// Future: Might be possible to replace an AFK player.
-				engine->ServerCmd( VarArgs("replacebot %d", pTarget->entindex()) );
+				C_BaseEntity* pObserverTarget = pLocalPlayer->GetObserverTarget();
+				C_NEO_Player* pPlayerToTakeover = ToNEOPlayer(pObserverTarget);
+
+				if (pPlayerToTakeover) // ToNEOPlayer checks valid pObserverTarget
+				{
+					// Verify on server-side that player is a valid replacement target
+					engine->ServerCmd(VarArgs("spectatortakeoverplayer %d", pObserverTarget->entindex()));
+				}
 			}
 		}
 		return 0;

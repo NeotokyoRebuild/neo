@@ -937,100 +937,7 @@ void CNEO_Player::HandleSpeedChanges( CMoveData *mv )
 
 void CNEO_Player::PreThink(void)
 {
-	if (m_bInStasis)
-	{
-		// Should be incorporial, but allow bot? player to wait on events
-		BaseClass::PreThink();
-		return;
-	}
-
-	if (m_bBotTakeoverPending)
-	{
-		if (!IsAlive() || IsObserver())
-		{
-			// Something is wrong, abort the takeover.
-			m_bBotTakeoverPending = false;
-			m_hBotToTakeover = nullptr;
-			return;
-		}
-
-		CNEO_Player* pBot = dynamic_cast<CNEO_Player*>(m_hBotToTakeover.Get());
-
-		if (pBot)
-		{
-			m_iNeoClass = pBot->m_iNeoClass;
-			m_iNeoSkin = pBot->m_iNeoSkin;
-			SetMaxHealth(pBot->GetMaxHealth());
-			SetHealth(pBot->GetHealth());
-			SetArmorValue(pBot->ArmorValue());
-			m_HL2Local.m_cloakPower = pBot->m_HL2Local.m_cloakPower;
-			m_HL2Local.m_flSuitPower = pBot->m_HL2Local.m_flSuitPower;
-			m_iLoadoutWepChoice = pBot->m_iLoadoutWepChoice;
-
-			m_bInThermOpticCamo = pBot->m_bInThermOpticCamo;
-			m_bHasBeenAirborneForTooLongToSuperJump = pBot->m_bHasBeenAirborneForTooLongToSuperJump;
-			m_bInAim = pBot->m_bInAim;
-			Weapon_SetZoom(pBot->m_bInAim);
-			m_bCarryingGhost = pBot->m_bCarryingGhost;
-			m_bInLean = pBot->m_bInLean;
-			m_iLoadoutWepChoice = pBot->m_iLoadoutWepChoice;
-			m_iNextSpawnClassChoice = pBot->m_iNextSpawnClassChoice;
-			m_flCamoAuxLastTime = pBot->m_flCamoAuxLastTime;
-			m_flLastAirborneJumpOkTime = pBot->m_flLastAirborneJumpOkTime;
-			m_flLastSuperJumpTime = pBot->m_flLastSuperJumpTime;
-			m_botThermOpticCamoDisruptedTimer.Invalidate(); // taken over by player
-			m_bFirstDeathTick = pBot->m_bFirstDeathTick;
-			m_bCorpseSet = pBot->m_bCorpseSet;
-			m_bPreviouslyReloading = pBot->m_bPreviouslyReloading;
-			m_bLastTickInThermOpticCamo = pBot->m_bLastTickInThermOpticCamo;
-			m_bIsPendingSpawnForThisRound = pBot->m_bIsPendingSpawnForThisRound;
-			m_bAllowGibbing = pBot->m_bAllowGibbing;
-			m_iBotDetectableBleedingInjuryEvents = pBot->m_iBotDetectableBleedingInjuryEvents;
-
-			m_bInVision = pBot->m_bInVision;
-			m_nVisionLastTick = pBot->m_nVisionLastTick;
-
-
-			// Transfer weapons from the bot to the player.
-			RemoveAllItems(false);
-			CBaseCombatWeapon* pBotActiveWeapon = pBot->GetActiveWeapon();
-			for (int i = 0; i < MAX_WEAPONS; ++i)
-			{
-				CBaseCombatWeapon* pBotWeapon = pBot->GetWeapon(i);
-				if (pBotWeapon)
-				{
-					pBot->Weapon_Detach(pBotWeapon);
-					Weapon_Equip(pBotWeapon);
-				}
-			}
-
-			// After giving weapons, ensure the correct active weapon is set.
-			if (pBotActiveWeapon)
-			{
-				CBaseCombatWeapon* pPlayerActiveWeapon = Weapon_OwnsThisType(pBotActiveWeapon->GetClassname());
-				if (pPlayerActiveWeapon)
-				{
-					Weapon_Switch(pPlayerActiveWeapon);
-				}
-			}
-
-			// Teleport the player to the bot's location and velocity.
-			SetAbsOrigin(pBot->GetAbsOrigin());
-			SetAbsAngles(pBot->GetAbsAngles());
-			SetAbsVelocity(pBot->GetAbsVelocity());
-			SetLocalAngles(pBot->EyeAngles());
-			SetViewOffset(VEC_VIEW_NEOSCALE(this));
-			SetPlayerTeamModel();
-			InitSprinting();
-
-			// Put the bot in stasis.
-			pBot->EnterStasis(this);
-		}
-
-		// Reset the takeover variables to prevent re-execution.
-		m_bBotTakeoverPending = false;
-		m_hBotToTakeover = nullptr;
-	}
+	SpectatorTakeoverPlayerPreThink();
 
 	BaseClass::PreThink();
 
@@ -1826,7 +1733,7 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 
 		return true;
 	}
-	else if (FStrEq(args[0], "replacebot"))
+	else if (FStrEq(args[0], "spectatortakeoverplayer"))
 	{
 		if (args.ArgC() < 2)
 		{
@@ -1835,11 +1742,11 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 
 		int targetIndex = V_atoi(args[1]);
 		CBaseEntity* pTarget = UTIL_EntityByIndex(targetIndex);
-		CNEO_Player* pBot = ToNEOPlayer(pTarget);
+		CNEO_Player* pPlayerToTakeover = ToNEOPlayer(pTarget);
 
-		if (pBot && pBot->IsBot())
+		if (pPlayerToTakeover && pPlayerToTakeover->IsBot())
 		{
-			TryTakeoverSpectatedBot(pBot);
+			SpectatorTryReplacePlayer(pPlayerToTakeover);
 		}
 
 		return true;
@@ -1953,14 +1860,10 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo *info)
 
 void CNEO_Player::AddPoints(int score, bool bAllowNegativeScore)
 {
-	if (m_hStasisBot.Get())
+	if (m_hSpectatorTakeoverPlayerTarget.Get())
 	{
-		CNEO_Player *pBot = dynamic_cast<CNEO_Player*>(m_hStasisBot.Get());
-		if (pBot)
-		{
-			pBot->AddPoints(score, bAllowNegativeScore);
-			return;
-		}
+		m_hSpectatorTakeoverPlayerTarget->AddPoints(score, bAllowNegativeScore);
+		return;
 	}
 
 	// Positive score always adds
@@ -1998,22 +1901,9 @@ void CNEO_Player::AddPoints(int score, bool bAllowNegativeScore)
 	}
 }
 
-void CNEO_Player::RestoreBotFromReplacement()
-{
-	if (m_hStasisBot.Get())
-	{
-		CNEO_Player* pBot = dynamic_cast<CNEO_Player*>(m_hStasisBot.Get());
-		if (pBot)
-		{
-			pBot->ExitStasis(this);
-		}
-		m_hStasisBot = nullptr;
-	}
-}
-
 void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 {
-	RestoreBotFromReplacement();
+	RestorePlayerFromSpectatorTakeover();
 
 	if (!m_bForceServerRagdoll)
 	{
@@ -2359,7 +2249,7 @@ bool CNEO_Player::Weapon_GetPosition(int slot, int position)
 
 void CNEO_Player::ChangeTeam( int iTeam )
 {
-	RestoreBotFromReplacement();
+	RestorePlayerFromSpectatorTakeover();
 
 	const bool isAllowedToChange = ProcessTeamSwitchRequest(iTeam);
 
@@ -3400,58 +3290,194 @@ void CNEO_Player::ModifyFireBulletsDamage(CTakeDamageInfo* dmgInfo)
 	dmgInfo->SetDamage(dmgInfo->GetDamage() * sv_neo_wep_dmg_modifier.GetFloat());
 }
 
-void CNEO_Player::TryTakeoverSpectatedBot(CNEO_Player* pBotToTakeover)
+// Start spectator takeover of player related code:
+ConVar sv_neo_spec_replace_player_bot_enable("sv_neo_spec_replace_player_bot_enable", "1", FCVAR_CHEAT, "Allow spectators to take over bots.");
+ConVar sv_neo_spec_replace_player_afk_enable("sv_neo_spec_replace_player_afk_enable", "1", FCVAR_CHEAT, "Allow spectators to take over AFK players.");
+ConVar sv_neo_spec_replace_player_afk_time_sec("sv_neo_spec_replace_player_afk_time_sec", "300", FCVAR_CHEAT, "Seconds of inactivity before a player is considered AFK.");
+
+bool CNEO_Player::IsAFK() {
+    return sv_neo_spec_replace_player_afk_enable.GetBool()
+        && (GetTimeSinceLastUserCommand() > sv_neo_spec_replace_player_afk_time_sec.GetInt());
+}
+
+void CNEO_Player::SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace)
 {
-    CSingleUserRecipientFilter filter(this);
+	CSingleUserRecipientFilter filter(this);
 
-    if (!IsObserver() && IsAlive())
-    {
-        UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Bot takeover failed: You are not in spectator mode.");
-        return;
-    }
+	if (!IsObserver() && IsAlive())
+	{
+		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Spectator player takeover failed: You are not in spectator mode.");
+		return;
+	}
 
-    if (!pBotToTakeover)
-    {
-        UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Bot takeover failed: The spectated target is not a valid player.");
-        return;
-    }
+	if (!pNeoPlayerToReplace)
+	{
+		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Spectator player takeover failed: The spectated target is not a valid player.");
+		return;
+	}
 
-    if (!pBotToTakeover->IsBot())
-    {
-        UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Bot takeover failed: You can only take over a bot, not a human player.");
-        return;
-    }
+	if (!pNeoPlayerToReplace->IsAlive())
+	{
+		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Spectator player takeover failed: The player is dead.");
+		return;
+	}
 
-    if (!pBotToTakeover->IsAlive())
-    {
-        UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Bot takeover failed: The bot is dead. You cannot take it over.");
-        return;
-    }
+	if (pNeoPlayerToReplace->GetTeamNumber() != GetTeamNumber())
+	{
+		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Spectator player takeover failed: You must be on the same team.");
+		return;
+	}
 
-    if (pBotToTakeover->GetTeamNumber() != GetTeamNumber())
-    {
-        UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Bot takeover failed: You must be on the same team as the bot.");
-        return;
-    }
+	const bool bIsTargetBot = pNeoPlayerToReplace->IsBot();
+	const bool bIsTargetAFK = pNeoPlayerToReplace->IsAFK();
+	const bool bAllowBotTakeover = sv_neo_spec_replace_player_bot_enable.GetBool();
+	const bool bAllowAfkTakeover = sv_neo_spec_replace_player_afk_enable.GetBool();
 
-    m_hBotToTakeover = pBotToTakeover;
-    m_bBotTakeoverPending = true;
-    ForceRespawn();
+	// If no valid condition is met, determine the specific reason and inform the user.
+	if (bIsTargetBot)
+	{
+		if (!bAllowBotTakeover)
+		{
+			UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Spectator player takeover failed: Taking over bots is disabled.");
+			return;
+		}
+	}
+	else if (bIsTargetAFK)
+	{
+		if (!bAllowAfkTakeover)
+		{
+			UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Spectator player takeover failed: Taking over AFK players is disabled.");
+			return;
+		}
+	}
+	else
+	{
+		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Spectator player takeover failed: Player is neither AFK or a bot.");
+		return;
+	}
 
-    // Send client confirmation to smooth out transition
-    CBroadcastRecipientFilter updatefilter;
+	m_bSpectatorTakeoverPlayerPending = true;
+	m_hSpectatorTakeoverPlayerTarget = pNeoPlayerToReplace;
+	ForceRespawn();
+
+	// Send client confirmation to smooth out transition
+	CBroadcastRecipientFilter updatefilter;
     updatefilter.MakeReliable();
-    UserMessageBegin(updatefilter, "ReplaceBot");
+    UserMessageBegin(updatefilter, "CSpectatorTakeoverPlayer");
 		WRITE_SHORT(this->entindex());
-		WRITE_SHORT(pBotToTakeover->entindex());
+		WRITE_SHORT(pNeoPlayerToReplace->entindex());
     MessageEnd();
 }
 
-void CNEO_Player::EnterStasis(CNEO_Player* pPlayer)
+void CNEO_Player::SpectatorTakeoverPlayerPreThink()
 {
-    m_bInStasis = true;
-    m_hPossessingPlayer = pPlayer;
-    pPlayer->m_hStasisBot = this;
+	if (m_hSpectatorTakeoverPlayerImpersonatingMe.Get())
+	{
+		// Currently being impersonated by a player, but allow waiting on events in base PreThink.
+		BaseClass::PreThink();
+		return;
+	}
+
+	if (m_bSpectatorTakeoverPlayerPending)
+	{
+		if (!IsAlive() || IsObserver())
+		{
+			// Something is wrong, abort the takeover.
+			m_bSpectatorTakeoverPlayerPending = false;
+			m_hSpectatorTakeoverPlayerTarget = nullptr;
+			return;
+		}
+
+		CNEO_Player* pPlayerTakeoverTarget = m_hSpectatorTakeoverPlayerTarget.Get();
+
+		if (pPlayerTakeoverTarget)
+		{
+			m_iNeoClass = pPlayerTakeoverTarget->m_iNeoClass;
+			m_iNeoSkin = pPlayerTakeoverTarget->m_iNeoSkin;
+			SetMaxHealth(pPlayerTakeoverTarget->GetMaxHealth());
+			SetHealth(pPlayerTakeoverTarget->GetHealth());
+			SetArmorValue(pPlayerTakeoverTarget->ArmorValue());
+			m_HL2Local.m_cloakPower = pPlayerTakeoverTarget->m_HL2Local.m_cloakPower;
+			m_HL2Local.m_flSuitPower = pPlayerTakeoverTarget->m_HL2Local.m_flSuitPower;
+			m_iLoadoutWepChoice = pPlayerTakeoverTarget->m_iLoadoutWepChoice;
+
+			m_bInThermOpticCamo = pPlayerTakeoverTarget->m_bInThermOpticCamo;
+			m_bHasBeenAirborneForTooLongToSuperJump = pPlayerTakeoverTarget->m_bHasBeenAirborneForTooLongToSuperJump;
+			m_bInAim = pPlayerTakeoverTarget->m_bInAim;
+			Weapon_SetZoom(pPlayerTakeoverTarget->m_bInAim);
+			m_bCarryingGhost = pPlayerTakeoverTarget->m_bCarryingGhost;
+			m_bInLean = pPlayerTakeoverTarget->m_bInLean;
+			m_iLoadoutWepChoice = pPlayerTakeoverTarget->m_iLoadoutWepChoice;
+			m_iNextSpawnClassChoice = pPlayerTakeoverTarget->m_iNextSpawnClassChoice;
+			m_flCamoAuxLastTime = pPlayerTakeoverTarget->m_flCamoAuxLastTime;
+			m_flLastAirborneJumpOkTime = pPlayerTakeoverTarget->m_flLastAirborneJumpOkTime;
+			m_flLastSuperJumpTime = pPlayerTakeoverTarget->m_flLastSuperJumpTime;
+			m_botThermOpticCamoDisruptedTimer.Invalidate(); // taken over by player
+			m_bFirstDeathTick = pPlayerTakeoverTarget->m_bFirstDeathTick;
+			m_bCorpseSet = pPlayerTakeoverTarget->m_bCorpseSet;
+			m_bPreviouslyReloading = pPlayerTakeoverTarget->m_bPreviouslyReloading;
+			m_bLastTickInThermOpticCamo = pPlayerTakeoverTarget->m_bLastTickInThermOpticCamo;
+			m_bIsPendingSpawnForThisRound = pPlayerTakeoverTarget->m_bIsPendingSpawnForThisRound;
+			m_bAllowGibbing = pPlayerTakeoverTarget->m_bAllowGibbing;
+			m_iBotDetectableBleedingInjuryEvents = pPlayerTakeoverTarget->m_iBotDetectableBleedingInjuryEvents;
+
+			m_bInVision = pPlayerTakeoverTarget->m_bInVision;
+			m_nVisionLastTick = pPlayerTakeoverTarget->m_nVisionLastTick;
+
+
+			// Transfer weapons from the takeover target.
+			RemoveAllItems(false);
+			CBaseCombatWeapon* pTakeoverTargetActiveWeapon = pPlayerTakeoverTarget->GetActiveWeapon();
+			for (int i = 0; i < MAX_WEAPONS; ++i)
+			{
+				CBaseCombatWeapon* pTakeoverTargetWeapon = pPlayerTakeoverTarget->GetWeapon(i);
+				if (pTakeoverTargetWeapon)
+				{
+					pPlayerTakeoverTarget->Weapon_Detach(pTakeoverTargetWeapon);
+					Weapon_Equip(pTakeoverTargetWeapon);
+				}
+			}
+
+			// After giving weapons, ensure the correct active weapon is set.
+			if (pTakeoverTargetActiveWeapon)
+			{
+				CBaseCombatWeapon* pPlayerActiveWeapon = Weapon_OwnsThisType(pTakeoverTargetActiveWeapon->GetClassname());
+				if (pPlayerActiveWeapon)
+				{
+					Weapon_Switch(pPlayerActiveWeapon);
+				}
+			}
+
+			// Teleport the takeover target's location and velocity.
+			SetAbsOrigin(pPlayerTakeoverTarget->GetAbsOrigin());
+			SetAbsAngles(pPlayerTakeoverTarget->GetAbsAngles());
+			SetAbsVelocity(pPlayerTakeoverTarget->GetAbsVelocity());
+			SetLocalAngles(pPlayerTakeoverTarget->EyeAngles());
+			SetViewOffset(VEC_VIEW_NEOSCALE(this));
+			SetPlayerTeamModel();
+			InitSprinting();
+
+			// Put the takeover target in stasis.
+			pPlayerTakeoverTarget->SpectatorTakeoverPlayerInitiate(this);
+		}
+
+		m_bSpectatorTakeoverPlayerPending = false;
+	}
+}
+
+void CNEO_Player::RestorePlayerFromSpectatorTakeover()
+{
+	if (m_hSpectatorTakeoverPlayerTarget.Get())
+	{
+		m_hSpectatorTakeoverPlayerTarget->SpectatorTakeoverPlayerRevert(this);
+		m_hSpectatorTakeoverPlayerTarget = nullptr;
+	}
+}
+
+void CNEO_Player::SpectatorTakeoverPlayerInitiate(CNEO_Player* pPlayer)
+{
+    m_hSpectatorTakeoverPlayerImpersonatingMe = pPlayer;
+    pPlayer->m_hSpectatorTakeoverPlayerTarget = this;
 
     // Strip all weapons and items so bot is truly disarmed.
     RemoveAllItems(true);
@@ -3467,13 +3493,9 @@ void CNEO_Player::EnterStasis(CNEO_Player* pPlayer)
     m_lifeState = LIFE_DEAD; // Marks as dead to the game loop, but don't trigger Event_Killed.
 }
 
-void CNEO_Player::ExitStasis(CNEO_Player* pPlayer)
+void CNEO_Player::SpectatorTakeoverPlayerRevert(CNEO_Player* pPlayer)
 {
     // Restore bot activity
-    m_bInStasis = false;
-
-    // Respawn-style reset without actual respawn effects.
-    RemoveAllItems(true);     // Clear just in case
     RemoveEffects(EF_NODRAW);
     SetSolid(SOLID_BBOX);
     m_takedamage = DAMAGE_YES;
@@ -3481,11 +3503,11 @@ void CNEO_Player::ExitStasis(CNEO_Player* pPlayer)
     RemoveFlag(FL_FROZEN);
     RemoveFlag(FL_NOTARGET);
 
-    // Clear possession handles
-    m_hPossessingPlayer = nullptr;
+    // Clear takeover handles
+    m_hSpectatorTakeoverPlayerImpersonatingMe = nullptr;
     if (pPlayer)
     {
-        pPlayer->m_hStasisBot = nullptr;
+        pPlayer->m_hSpectatorTakeoverPlayerTarget = nullptr;
     }
 }
 
