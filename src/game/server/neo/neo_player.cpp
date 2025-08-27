@@ -136,6 +136,7 @@ extern ConVar sv_neo_ignore_wep_xp_limit;
 extern ConVar sv_neo_clantag_allow;
 extern ConVar sv_neo_dev_test_clantag;
 extern ConVar sv_stickysprint;
+extern ConVar sv_neo_dev_loadout;
 
 ConVar sv_neo_can_change_classes_anytime("sv_neo_can_change_classes_anytime", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "Can players change classes at any moment, even mid-round?",
 	true, 0.0f, true, 1.0f);
@@ -207,7 +208,11 @@ static bool IsNeoPrimary(CNEOBaseCombatWeapon *pNeoWep)
 		NEO_WEP_M41 | NEO_WEP_M41_L | NEO_WEP_M41_S | NEO_WEP_MPN | NEO_WEP_MPN_S |
 		NEO_WEP_MX | NEO_WEP_MX_S | NEO_WEP_PZ | NEO_WEP_SMAC | NEO_WEP_SRM |
 		NEO_WEP_SRM_S | NEO_WEP_SRS | NEO_WEP_SUPA7 | NEO_WEP_ZR68_C | NEO_WEP_ZR68_L |
-		NEO_WEP_ZR68_S;
+		NEO_WEP_ZR68_S
+#ifdef INCLUDE_WEP_PBK
+		| NEO_WEP_PBK56S
+#endif
+		;
 
 	return (primaryBits & bits) ? true : false;
 }
@@ -234,7 +239,11 @@ void CNEO_Player::RequestSetStar(int newStar)
 bool CNEO_Player::RequestSetLoadout(int loadoutNumber)
 {
 	int classChosen = m_iNextSpawnClassChoice.Get() != -1 ? m_iNextSpawnClassChoice.Get() : m_iNeoClass.Get();
-	const char *pszWepName = CNEOWeaponLoadout::GetLoadoutWeaponEntityName(classChosen, loadoutNumber, false);
+	const int iLoadoutClass = sv_neo_dev_loadout.GetBool() ? NEO_LOADOUT_DEV : classChosen;
+
+	const char *pszWepName = (IN_BETWEEN_AR(0, iLoadoutClass, NEO_LOADOUT__COUNT) && IN_BETWEEN_AR(0, loadoutNumber, MAX_WEAPON_LOADOUTS)) ?
+		CNEOWeaponLoadout::s_LoadoutWeapons[iLoadoutClass][loadoutNumber].info.m_szWeaponEntityName :
+		"";
 
 	if (FStrEq(pszWepName, ""))
 	{
@@ -277,7 +286,9 @@ bool CNEO_Player::RequestSetLoadout(int loadoutNumber)
 		result = false;
 	}
 
-	if (!sv_neo_ignore_wep_xp_limit.GetBool() && loadoutNumber+1 > CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(m_iXP, classChosen, false))
+	if (!sv_neo_ignore_wep_xp_limit.GetBool() &&
+			loadoutNumber+1 > CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(m_iXP,
+				sv_neo_dev_loadout.GetBool() ? NEO_LOADOUT_DEV : classChosen))
 	{
 		DevMsg("Insufficient XP for %s\n", pszWepName);
 		result = false;
@@ -465,9 +476,6 @@ CNEO_Player::CNEO_Player()
 	memset(m_szNeoNameWDupeIdx, 0, sizeof(m_szNeoNameWDupeIdx));
 	m_szNeoNameWDupeIdxNeedUpdate = true;
 	m_szNameDupePos = 0;
-
-	m_iDmgMenuCurPage = 0;
-	m_iDmgMenuNextPage = 0;
 }
 
 CNEO_Player::~CNEO_Player( void )
@@ -543,12 +551,15 @@ void CNEO_Player::Spawn(void)
 
 	SetTransmitState(FL_EDICT_PVSCHECK);
 
+	StopWaterDeathSounds();
+
 	SetPlayerTeamModel();
 	if (teamNumber == TEAM_JINRAI || teamNumber == TEAM_NSF)
 	{
 		if (IsFakeClient())
 		{
-			const int maxLoadoutChoice = CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(m_iXP, m_iNeoClass.Get(), false) - 1;
+			const int maxLoadoutChoice = CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(m_iXP,
+					sv_neo_dev_loadout.GetBool() ? NEO_LOADOUT_DEV : m_iNeoClass.Get()) - 1;
 			m_iLoadoutWepChoice = RandomInt(MAX(0, maxLoadoutChoice - 3), maxLoadoutChoice);
 		}
 		GiveLoadoutWeapon();
@@ -557,7 +568,6 @@ void CNEO_Player::Spawn(void)
 
 	if (teamNumber == TEAM_UNASSIGNED && gpGlobals->eLoadType != MapLoad_Background)
 	{
-		char commandBuffer[11];
 		int forcedTeam = NEORules()->GetForcedTeam();
 		if (NEORules()->GetForcedTeam() < 1) // don't let this loop infinitely if forcedTeam set to TEAM_UNASSIGNED
 		{
@@ -1015,29 +1025,16 @@ void CNEO_Player::PreThink(void)
 		NetworkStateChanged();
 	}
 
-	if (m_iNeoClass == NEO_CLASS_RECON)
+	if (m_iNeoClass == NEO_CLASS_RECON &&
+		(m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED) &&
+		IsAllowedToSuperJump())
 	{
-		if ((m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED))
+		SuitPower_Drain(SUPER_JMP_COST);
+		bool forward = m_nButtons & IN_FORWARD;
+		bool backward = m_nButtons & IN_BACK;
+		if (forward xor backward)
 		{
-			if (IsAllowedToSuperJump())
-			{
-				SuitPower_Drain(SUPER_JMP_COST);
-
-				// If player holds both forward + back, only use up AUX power.
-				// This movement trick replaces the original NT's trick of
-				// sideways-superjumping with the intent of dumping AUX for a
-				// jump setup that requires sprint jumping without the superjump.
-				if (!((m_nButtons & IN_FORWARD) && (m_nButtons & IN_BACK)))
-				{
-					SuperJump();
-				}
-			}
-			// Allow intentional AUX dump (see comment above)
-			// even when not allowed to actually superjump.
-			else if ((m_nButtons & IN_FORWARD) && (m_nButtons & IN_BACK))
-			{
-				SuitPower_Drain(SUPER_JMP_COST);
-			}
+			SuperJump();
 		}
 	}
 }
@@ -1303,6 +1300,13 @@ void CNEO_Player::SuperJump(void)
 		forward = -forward;
 	}
 
+	float boostIntensity = GetPlayerMaxSpeed();
+	if (m_nButtons & (IN_MOVELEFT | IN_MOVERIGHT))
+	{
+		constexpr float sideWaysNerf = 0.70710678118; // 1 / sqrt(2);
+		boostIntensity *= sideWaysNerf;
+	}
+
 	// NEO TODO (Rain): handle underwater case
 	// NEO TODO (Rain): handle ladder mounted case
 	// NEO TODO (Rain): handle "mounted" use key context case
@@ -1340,7 +1344,7 @@ void CNEO_Player::SuperJump(void)
 	pOther->AddFlag(FL_BASEVELOCITY);
 #endif
 
-	ApplyAbsVelocityImpulse(forward * neo_recon_superjump_intensity.GetFloat());
+	ApplyAbsVelocityImpulse(forward * boostIntensity);
 }
 
 bool CNEO_Player::IsAllowedToSuperJump(void)
@@ -1363,7 +1367,7 @@ bool CNEO_Player::IsAllowedToSuperJump(void)
 
 	// Only superjump if we have a reasonable jump direction in mind
 	// NEO TODO (Rain): should we support sideways superjumping?
-	if ((m_nButtons & (IN_FORWARD | IN_BACK)) == 0)
+	if ((m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)) == 0)
 	{
 		return false;
 	}
@@ -1598,6 +1602,11 @@ void CNEO_Player::SetClientWantNeoName(const bool b)
 
 void CNEO_Player::Weapon_SetZoom(const bool bZoomIn)
 {
+	if (bZoomIn == m_bInAim)
+	{
+		return;
+	}
+
 	ShowCrosshair(bZoomIn);
 	
 	const int fov = GetDefaultFOV();
@@ -1692,39 +1701,6 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 
 		switch (m_eMenuSelectType)
 		{
-		case MENU_SELECT_TYPE_DMG:
-			if (m_iDmgMenuCurPage <= 0)
-			{
-				return true;
-			}
-			switch (slot)
-			{
-			case DAMAGE_MENU_SELECT_DISMISS:
-			case DAMAGE_MENU_SELECT_DONOTSHOW:
-			{
-				m_iDmgMenuCurPage = 0;
-				m_iDmgMenuNextPage = 0;
-				m_eMenuSelectType = MENU_SELECT_TYPE_NONE;
-				if (slot == DAMAGE_MENU_SELECT_DONOTSHOW)
-				{
-					m_bDoNotShowDmgInfoMenu = true;
-				}
-				break;
-			}
-			case DAMAGE_MENU_SELECT_NEXTPAGE:
-			{
-				char infoStr[SHOWMENU_STRLIMIT];
-				int infoStrSize = 0;
-				bool showMenu = false;
-				m_iDmgMenuCurPage = m_iDmgMenuNextPage;
-				m_iDmgMenuNextPage = SetDmgListStr(infoStr, sizeof(infoStr), m_iDmgMenuNextPage, &infoStrSize, &showMenu, NULL);
-				if (showMenu) ShowDmgInfo(infoStr, infoStrSize);
-				break;
-			}
-			default:
-				break;
-			}
-			break;
 		case MENU_SELECT_TYPE_PAUSE:
 			m_eMenuSelectType = MENU_SELECT_TYPE_NONE;
 			if (slot == PAUSE_MENU_SELECT_SHORT || slot == PAUSE_MENU_SELECT_LONG)
@@ -1804,180 +1780,27 @@ bool CNEO_Player::BecomeRagdollOnClient( const Vector &force )
 	return BaseClass::BecomeRagdollOnClient(force);
 }
 
-void CNEO_Player::ShowDmgInfo(char* infoStr, int infoStrSize)
+void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo *info)
 {
-	if (m_bDoNotShowDmgInfoMenu)
-	{
-		return;
-	}
-
-	CSingleUserRecipientFilter filter(this);
-	filter.MakeReliable();
-
-	// UserMessage has limits, so need to send more than once if it
-	// doesn't fit in one UserMessage packet
-	static const int MAX_INFOSTR_PER_UMSG = 240;
-	int infoStrOffset = 0;
-	int infoStrOffsetMax = MAX_INFOSTR_PER_UMSG;
-	while (infoStrSize > 0)
-	{
-		char tmpCh = '\0';
-		if (infoStrOffsetMax < SHOWMENU_STRLIMIT)
-		{
-			tmpCh = infoStr[infoStrOffsetMax];
-			infoStr[infoStrOffsetMax] = '\0';
-		}
-		m_eMenuSelectType = MENU_SELECT_TYPE_DMG;
-		UserMessageBegin(filter, "ShowMenu");
-		{
-			// The key options available in bitwise (EX: 1 -> 1 << 0, 9 -> 1 << 8)
-			short sBitwiseOpts =
-					  1 << (DAMAGE_MENU_SELECT_DISMISS - 1)
-					| 1 << (DAMAGE_MENU_SELECT_DONOTSHOW - 1);
-			if (m_iDmgMenuNextPage)
-			{
-				sBitwiseOpts |= 1 << (DAMAGE_MENU_SELECT_NEXTPAGE - 1);
-			}
-			WRITE_SHORT(sBitwiseOpts);
-			WRITE_CHAR(static_cast<char>(10)); // 10s timeout
-			WRITE_BYTE(static_cast<unsigned int>(infoStrSize > MAX_INFOSTR_PER_UMSG));
-			WRITE_STRING(infoStr + infoStrOffset);
-		}
-		MessageEnd();
-		if (infoStrOffsetMax < SHOWMENU_STRLIMIT)
-		{
-			infoStr[infoStrOffsetMax] = tmpCh;
-		}
-		infoStrOffset += MAX_INFOSTR_PER_UMSG;
-		infoStrOffsetMax += MAX_INFOSTR_PER_UMSG;
-		infoStrSize -= MAX_INFOSTR_PER_UMSG;
-	}
-}
-
-int CNEO_Player::SetDmgListStr(char* infoStr, const int infoStrMax, const int playerIdxStart,
-		int *infoStrSize, bool *showMenu, const CTakeDamageInfo *info) const
-{
-	Assert(infoStrSize != NULL);
-	Assert(showMenu != NULL);
-	*showMenu = false;
-	static constexpr int TITLE_LEN = 30; // Rough-approximate
-	static constexpr int POSTFIX_LEN = 16 + 12 + 24;
-	static constexpr int TOTALLINE_LEN = 64; // Rough-approximate
-	static constexpr int FILLSTR_END = SHOWMENU_STRLIMIT - POSTFIX_LEN - TOTALLINE_LEN - 2;
-	memset(infoStr, 0, infoStrMax);
-	Q_snprintf(infoStr, infoStrMax, "Damage infos (Round %d):\n", NEORules()->roundNumber());
-	if (info)
-	{
-		// If CTakeDamageInfo pointer given, then also show killed by information
-		auto neoAttacker = ToNEOPlayer(info->GetAttacker());
-		if (neoAttacker && neoAttacker->entindex() != entindex())
-		{
-			char killByLine[SHOWMENU_STRLIMIT];
-			auto* killedWithInflictor = info->GetInflictor();
-			const bool inflictorIsPlayer = killedWithInflictor ? !Q_strcmp(killedWithInflictor->GetDebugName(), "player") : false;
-			auto killedWithName = killedWithInflictor ? (inflictorIsPlayer ? neoAttacker->m_hActiveWeapon->GetPrintName() : killedWithInflictor->GetDebugName()) : "";
-			if (!Q_strcmp(killedWithName, "neo_grenade_frag")) { killedWithName = "Frag Grenade"; }
-			if (!Q_strcmp(killedWithName, "neo_deployed_detpack")) { killedWithName = "Remote Detpack"; }
-			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, this, killedWithName);
-			Q_strncat(infoStr, killByLine, infoStrMax, COPY_ALL_CHARACTERS);
-		}
-	}
-	Q_strncat(infoStr, " \n", infoStrMax, COPY_ALL_CHARACTERS);
-	int infoStrLen = Q_strlen(infoStr);
-	const int thisIdx = entindex();
-	int nextPage = 0;
-	Assert(playerIdxStart > 0 && playerIdxStart <= gpGlobals->maxClients);
-	for (int pIdx = playerIdxStart; pIdx > 0 && pIdx <= gpGlobals->maxClients; ++pIdx)
-	{
-		if (pIdx == thisIdx)
-		{
-			continue;
-		}
-
-		auto* neoAttacker = assert_cast<CNEO_Player*>(UTIL_PlayerByIndex(pIdx));
-		if (!neoAttacker || neoAttacker->IsHLTV())
-		{
-			continue;
-		}
-
-		const AttackersTotals attackerInfo = {
-			.dealtDmgs = neoAttacker->GetAttackersScores(thisIdx),
-			.dealtHits = neoAttacker->GetAttackerHits(thisIdx),
-			.takenDmgs = GetAttackersScores(pIdx),
-			.takenHits = GetAttackerHits(pIdx),
-		};
-		const char *dmgerName = neoAttacker->GetNeoPlayerName(this);
-#define DEBUG_SHOW_ALL (0)
-#if DEBUG_SHOW_ALL
-		if (dmgerName)
-#else
-		if (dmgerName && (attackerInfo.dealtDmgs > 0 || attackerInfo.takenDmgs > 0))
-#endif
-		{
-			*showMenu = true;
-			const char *dmgerClass = GetNeoClassName(neoAttacker->GetClass());
-			static char infoLine[SHOWMENU_STRLIMIT];
-			const int infoLineLen = DmgLineStr(infoLine, sizeof(infoLine),
-					dmgerName, dmgerClass, attackerInfo);
-			if ((infoStrLen + infoLineLen) >= FILLSTR_END)
-			{
-				// Truncate for this page
-				nextPage = pIdx;
-				break;
-			}
-
-			Q_strncat(infoStr, infoLine, infoStrMax, COPY_ALL_CHARACTERS);
-			infoStrLen += infoLineLen;
-		}
-	}
-
-	if (!*showMenu)
-	{
-		return 0;
-	}
-
-	const AttackersTotals attackersTotals = GetAttackersTotals();
-	static char totalInfoLine[SHOWMENU_STRLIMIT];
-	memset(totalInfoLine, 0, sizeof(totalInfoLine));
-	Q_snprintf(totalInfoLine, sizeof(totalInfoLine), " \nTOTAL: Dealt: %d in %d hits | Taken: %d in %d hits\n",
-			attackersTotals.dealtDmgs, attackersTotals.dealtHits,
-			attackersTotals.takenDmgs, attackersTotals.takenHits);
-	Q_strncat(infoStr, totalInfoLine, infoStrMax, COPY_ALL_CHARACTERS);
-	Q_strncat(infoStr, "->1. Dismiss", infoStrMax, COPY_ALL_CHARACTERS);
-	if (nextPage > 0)
-	{
-		Q_strncat(infoStr, "\n->2. Next", infoStrMax, COPY_ALL_CHARACTERS);
-	}
-	Q_strncat(infoStr, "\n->9. Do not show again", infoStrMax, COPY_ALL_CHARACTERS);
-	*infoStrSize = Q_strlen(infoStr);
-
-	return nextPage;
-}
-
-void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo* info)
-{
-	char infoStr[SHOWMENU_STRLIMIT];
-	int infoStrSize = 0;
-	bool showMenu = false;
-	m_iDmgMenuCurPage = 1;
-	m_iDmgMenuNextPage = SetDmgListStr(infoStr, sizeof(infoStr), m_iDmgMenuCurPage, &infoStrSize, &showMenu, info);
-	if (showMenu) ShowDmgInfo(infoStr, infoStrSize);
-
-	// Notify the client to print it out in the console
+	// Notify the client to both print out in console and show UI stats
 	CSingleUserRecipientFilter filter(this);
 	filter.MakeReliable();
 
 	UserMessageBegin(filter, "DamageInfo");
 	{
 		short attackerIdx = 0;
-		auto* neoAttacker = info ? ToNEOPlayer(info->GetAttacker()) : nullptr;
-		const char* killedWithName = "";
+		auto *neoAttacker = info ? ToNEOPlayer(info->GetAttacker()) : nullptr;
+		const char *killedWithName = "";
 		if (neoAttacker && neoAttacker->entindex() != entindex())
 		{
 			attackerIdx = static_cast<short>(neoAttacker->entindex());
-			auto* killedWithInflictor = info->GetInflictor();
+
+			auto *killedWithInflictor = info->GetInflictor();
 			const bool inflictorIsPlayer = killedWithInflictor ? !Q_strcmp(killedWithInflictor->GetDebugName(), "player") : false;
-			killedWithName = killedWithInflictor ? (inflictorIsPlayer ? neoAttacker->m_hActiveWeapon->GetPrintName() : killedWithInflictor->GetDebugName()) : "";
+			if (killedWithInflictor)
+			{
+				killedWithName = inflictorIsPlayer ? neoAttacker->m_hActiveWeapon->GetPrintName() : killedWithInflictor->GetDebugName();
+			}
 			if (!Q_strcmp(killedWithName, "neo_grenade_frag")) { killedWithName = "Frag Grenade"; }
 			if (!Q_strcmp(killedWithName, "neo_deployed_detpack")) { killedWithName = "Remote Detpack"; }
 		}
@@ -2031,31 +1854,46 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 		CreateRagdollEntity();
 	}
 
-	// Calculate force for weapon drop
-	Vector forceVector = CalcDamageForceVector(info);
+	StopWaterDeathSounds();
 
-	// Drop all weapons
-	Vector vecForward, pVecThrowDir;
-	EyeVectors(&vecForward);
-	VMatrix zRot;
-	int numExplosivesDropped = 0;
-	const int maxExplosivesToDrop = 1;
+	// Drop all weapons except the active weapon
+	const Vector damageForce = CalcDamageForceVector(info);
+	int iExplosivesDropped = 0;
+	constexpr int MAX_EXPLOSIVES_DROPPED = 1;
+	CNEOBaseCombatWeapon* pActiveWeapon = static_cast<CNEOBaseCombatWeapon*>(GetActiveWeapon());
 	for (int i = 0; i < MAX_WEAPONS; ++i)
 	{
-		auto pWep = m_hMyWeapons[i].Get();
-		if (pWep)
+		auto pNeoWeapon = static_cast<CNEOBaseCombatWeapon*>(m_hMyWeapons[i].Get());
+		if (!pNeoWeapon)
 		{
-			auto pNeoWep = assert_cast<CNEOBaseCombatWeapon*>(pWep);
-			if (pNeoWep && pNeoWep->IsExplosive())
-			{
-				if (++numExplosivesDropped > maxExplosivesToDrop)
-				{
-					continue;
-				}
-			}
+			continue;
+		}
 
-			// Nowhere in particular; just drop it.
-			Weapon_DropOnDeath(pWep, forceVector, info.GetAttacker());
+		if (pNeoWeapon == pActiveWeapon)
+		{
+			continue;
+		}
+
+		if (pNeoWeapon->IsExplosive() && ++iExplosivesDropped > MAX_EXPLOSIVES_DROPPED)
+		{
+			UTIL_Remove(pNeoWeapon);
+			continue;
+		}
+
+		// Nowhere in particular; just drop it.
+		Weapon_DropOnDeath(pNeoWeapon, damageForce);
+	}
+
+	// Same as above but for the active weapon
+	if (pActiveWeapon)
+	{
+		if (pActiveWeapon->IsExplosive() && ++iExplosivesDropped > MAX_EXPLOSIVES_DROPPED)
+		{
+			UTIL_Remove(pActiveWeapon);
+		}
+		else
+		{
+			Weapon_DropOnDeath(pActiveWeapon, damageForce);
 		}
 	}
 
@@ -2078,56 +1916,35 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 	}
 }
 
-void CNEO_Player::Weapon_DropOnDeath(CBaseCombatWeapon* pWeapon, Vector velocity, CBaseEntity *pAttacker)
+void CNEO_Player::Weapon_DropOnDeath(CNEOBaseCombatWeapon* pNeoWeapon, Vector damageForce)
 {
-	CNEOBaseCombatWeapon* pNeoWeapon = static_cast<CNEOBaseCombatWeapon*>(pWeapon);
-	if (!pNeoWeapon)
-		return;
 	if (!pNeoWeapon->GetWpnData().m_bDropOnDeath)
+	{ // Can't drop this weapon on death, remove it
+		UTIL_Remove(pNeoWeapon);
 		return;
-#if(0) // Remove this #if to enable dropping of live grenades if killed while primed
-
-	// If attack button was held down when player died, drop a live grenade. NEOTODO (Adam) Add delay between pressing an attack button and the pin being fully pulled out. If pin not out when dead do not drop a live grenade
-	if (GetActiveWeapon() == pNeoWeapon && pNeoWeapon->GetNeoWepBits() & NEO_WEP_FRAG_GRENADE) {
-		if (((m_nButtons & IN_ATTACK) && (!(m_afButtonPressed & IN_ATTACK))) ||
-			((m_nButtons & IN_ATTACK2) && (!(m_afButtonPressed & IN_ATTACK2))))
-		{
-			auto pWeaponFrag = static_cast<CWeaponGrenade*>(pNeoWeapon);
-			pWeaponFrag->ThrowGrenade(this, false, pAttacker);
-			return;
-		}
 	}
-	if (GetActiveWeapon() == pNeoWeapon && pNeoWeapon->GetNeoWepBits() & NEO_WEP_SMOKE_GRENADE) {
-		if (((m_nButtons & IN_ATTACK) && (!(m_afButtonPressed & IN_ATTACK))) ||
-			((m_nButtons & IN_ATTACK2) && (!(m_afButtonPressed & IN_ATTACK2))))
-		{
-			auto pWeaponSmoke = static_cast<CWeaponSmokeGrenade*>(pNeoWeapon);
-			pWeaponSmoke->ThrowGrenade(this, false, pAttacker);
-			return;
-		}
-	}
-#endif
 	
-	if (pWeapon->IsEffectActive( EF_BONEMERGE ))
+	if (pNeoWeapon->IsEffectActive( EF_BONEMERGE ))
 	{
 		//int iBIndex = LookupBone("valveBiped.Bip01_R_Hand"); NEOTODO (Adam) Should mimic the behaviour in basecombatcharacter that places the weapon such that the bones used in the bonemerge overlap
 		Vector vFacingDir = BodyDirection2D();
-		pWeapon->SetAbsOrigin(Weapon_ShootPosition() + vFacingDir);
+		pNeoWeapon->SetAbsOrigin(Weapon_ShootPosition() + vFacingDir);
+	}
+	else
+	{
+		pNeoWeapon->AddEffects(EF_BONEMERGE);
 	}
 
-	pWeapon->AddEffects(EF_BONEMERGE);
 	Vector playerVelocity = vec3_origin;
-	GetVelocity(&playerVelocity, NULL);
-	
-	if (VPhysicsGetObject())
+	GetVelocity(&playerVelocity, nullptr);
+	pNeoWeapon->Drop(playerVelocity);
+	Weapon_Detach(pNeoWeapon);
+
+	if (pNeoWeapon->VPhysicsGetObject())
 	{
-		playerVelocity += velocity * VPhysicsGetObject()->GetInvMass();
+		constexpr float DAMAGE_FORCE_SCALE = 0.1f;
+		pNeoWeapon->VPhysicsGetObject()->ApplyForceCenter(damageForce * DAMAGE_FORCE_SCALE);
 	}
-	else {
-		playerVelocity += velocity;
-	}
-	pWeapon->Drop(playerVelocity);
-	Weapon_Detach(pWeapon);
 }
 
 void CNEO_Player::SetDeadModel(const CTakeDamageInfo& info)
@@ -2282,14 +2099,19 @@ void CNEO_Player::Weapon_Equip(CBaseCombatWeapon* pWeapon)
 bool CNEO_Player::Weapon_Switch( CBaseCombatWeapon *pWeapon,
                                  int viewmodelindex )
 {
-	ShowCrosshair(false);
-	Weapon_SetZoom(false);
 	const auto activeWeapon = GetActiveWeapon();
+	if (activeWeapon == pWeapon)
+	{
+		return false;
+	}
+
 	if (activeWeapon)
 	{
 		activeWeapon->StopWeaponSound(RELOAD_NPC);
 	}
 
+	ShowCrosshair(false);
+	Weapon_SetZoom(false);
 	return BaseClass::Weapon_Switch(pWeapon, viewmodelindex);
 }
 
@@ -2314,7 +2136,7 @@ bool CNEO_Player::Weapon_CanSwitchTo(CBaseCombatWeapon *pWeapon)
     // 	return false;
 
     if (!pWeapon->CanDeploy())
-        return false;
+		return false;
 
 	const auto activeWeapon = GetActiveWeapon();
 	if (activeWeapon)
@@ -3024,7 +2846,10 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 		return;
 	}
 
-	const char* szWep = CNEOWeaponLoadout::GetLoadoutWeaponEntityName(m_iNeoClass.Get(), m_iLoadoutWepChoice, false);
+	const int iLoadoutClass = sv_neo_dev_loadout.GetBool() ? NEO_LOADOUT_DEV : m_iNeoClass.Get();
+	const char *szWep = (IN_BETWEEN_AR(0, iLoadoutClass, NEO_LOADOUT__COUNT) && IN_BETWEEN_AR(0, m_iLoadoutWepChoice, MAX_WEAPON_LOADOUTS)) ?
+			CNEOWeaponLoadout::s_LoadoutWeapons[iLoadoutClass][m_iLoadoutWepChoice].info.m_szWeaponEntityName :
+			"";
 #if DEBUG
 	DevMsg("Loadout slot: %i (\"%s\")\n", m_iLoadoutWepChoice.Get(), szWep);
 #endif
@@ -3052,7 +2877,9 @@ void CNEO_Player::GiveLoadoutWeapon(void)
 	CNEOBaseCombatWeapon *pNeoWeapon = assert_cast<CNEOBaseCombatWeapon*>((CBaseEntity*)pEnt);
 	if (pNeoWeapon)
 	{
-		if (sv_neo_ignore_wep_xp_limit.GetBool() || m_iLoadoutWepChoice+1 <= CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(m_iXP, m_iNeoClass.Get(), false))
+		if (sv_neo_ignore_wep_xp_limit.GetBool() ||
+				m_iLoadoutWepChoice+1 <= CNEOWeaponLoadout::GetNumberOfLoadoutWeapons(m_iXP,
+					sv_neo_dev_loadout.GetBool() ? NEO_LOADOUT_DEV : m_iNeoClass.Get()))
 		{
 			pNeoWeapon->SetSubType(wepSubType);
 

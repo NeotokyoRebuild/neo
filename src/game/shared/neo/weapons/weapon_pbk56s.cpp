@@ -24,5 +24,15 @@ PRECACHE_WEAPON_REGISTER(weapon_pbk56s);
 
 CWeaponPBK56S::CWeaponPBK56S()
 {
+	m_flSoonestAttack = gpGlobals->curtime;
+	m_flAccuracyPenalty = 0;
 
+	m_nNumShotsFired = 0;
+
+	m_weaponSeeds = {
+		"pbkpx",
+		"pbkpy",
+		"pbkrx",
+		"pbkry",
+	};
 }

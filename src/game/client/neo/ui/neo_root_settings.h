@@ -60,6 +60,7 @@ struct NeoSettings
 		bool bEnableRangeFinder;
 		bool bExtendedKillfeed;
 		int iBackground;
+		int iKdinfoToggletype;
 	};
 
 	struct Keys
@@ -80,10 +81,6 @@ struct NeoSettings
 
 		// Will be checked often so cached
 		ButtonCode_t bcConsole;
-		ButtonCode_t bcMP3Player;
-		ButtonCode_t bcTeamMenu;
-		ButtonCode_t bcClassMenu;
-		ButtonCode_t bcLoadoutMenu;
 
 		enum Flags
 		{
@@ -197,6 +194,7 @@ struct NeoSettings
 		CONVARREF_DEF(cl_neo_streamermode_autodetect_obs);
 		CONVARREF_DEF(cl_neo_hud_rangefinder_enabled);
 		CONVARREF_DEF(sv_unlockedchapters);
+		CONVARREF_DEF(cl_neo_kdinfo_toggletype);
 
 		// Multiplayer
 		CONVARREF_DEF(cl_spraydisable);

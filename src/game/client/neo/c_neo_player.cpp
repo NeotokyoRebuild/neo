@@ -46,6 +46,9 @@
 #include <materialsystem/itexture.h>
 #include "rendertexture.h"
 #include "ivieweffects.h"
+#include "c_neo_killer_damage_infos.h"
+#include <vgui/ILocalize.h>
+#include <tier3.h>
 
 #include "model_types.h"
 
@@ -119,85 +122,6 @@ BEGIN_PREDICTION_DATA(C_NEO_Player)
 	DEFINE_PRED_FIELD_TOL(m_flJumpLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
 END_PREDICTION_DATA()
 
-static void __MsgFunc_DamageInfo(bf_read& msg)
-{
-	const int killerIdx = msg.ReadShort();
-	char killedBy[32];
-	const bool foundKilledBy = msg.ReadString(killedBy, sizeof(killedBy), false);
-
-	auto *localPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if (!localPlayer)
-	{
-		return;
-	}
-
-	// Print damage stats into the console
-	// Print to console
-	AttackersTotals totals = {};
-
-	const int thisIdx = localPlayer->entindex();
-
-	// Can't rely on Msg as it can print out of order, so do it in chunks
-	static char killByLine[512];
-
-	static const char* BORDER = "==========================\n";
-	bool setKillByLine = false;
-	if (killerIdx > 0 && killerIdx <= gpGlobals->maxClients)
-	{
-		auto *neoAttacker = assert_cast<C_NEO_Player*>(UTIL_PlayerByIndex(killerIdx));
-		if (neoAttacker && neoAttacker->entindex() != thisIdx)
-		{
-			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, localPlayer, foundKilledBy ? killedBy : NULL);
-			setKillByLine = true;
-		}
-	}
-
-	ConMsg("%sDamage infos (Round %d):\n%s\n", BORDER, NEORules()->roundNumber(), setKillByLine ? killByLine : "");
-	
-	for (int pIdx = 1; pIdx <= gpGlobals->maxClients; ++pIdx)
-	{
-		if (pIdx == thisIdx)
-		{
-			continue;
-		}
-
-		auto* neoAttacker = assert_cast<C_NEO_Player*>(UTIL_PlayerByIndex(pIdx));
-		if (!neoAttacker || neoAttacker->IsHLTV())
-		{
-			continue;
-		}
-
-		const char *dmgerName = neoAttacker->GetNeoPlayerName();
-		if (!dmgerName)
-		{
-			continue;
-		}
-
-		const AttackersTotals attackerInfo = {
-			.dealtDmgs = neoAttacker->GetAttackersScores(thisIdx),
-			.dealtHits = neoAttacker->GetAttackerHits(thisIdx),
-			.takenDmgs = localPlayer->GetAttackersScores(pIdx),
-			.takenHits = localPlayer->GetAttackerHits(pIdx),
-		};
-		if (attackerInfo.dealtDmgs > 0 || attackerInfo.takenDmgs > 0)
-		{
-			const char *dmgerClass = GetNeoClassName(neoAttacker->GetClass());
-
-			static char infoLine[128];
-			DmgLineStr(infoLine, sizeof(infoLine), dmgerName, dmgerClass, attackerInfo);
-			ConMsg("%s", infoLine);
-
-			totals += attackerInfo;
-		}
-	}
-
-	ConMsg("\nTOTAL: Dealt: %d in %d hits | Taken: %d in %d hits\n%s\n",
-		totals.dealtDmgs, totals.dealtHits,
-		totals.takenDmgs, totals.takenHits,
-		BORDER);
-}
-USER_MESSAGE_REGISTER(DamageInfo);
-
 static void __MsgFunc_IdleRespawnShowMenu(bf_read &)
 {
 	if (C_NEO_Player::GetLocalNEOPlayer())
@@ -222,9 +146,6 @@ class NeoLoadoutMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback(const CCommand& command)
 	{
-#if DEBUG
-		DevMsg("Loadout access cb\n");
-#endif
 		if (engine->IsPlayingDemo() || NEORules()->GetForcedWeapon() >= 0)
 		{
 			return;
@@ -659,7 +580,7 @@ const char *C_NEO_Player::InternalGetNeoPlayerName() const
 			if (dupePos != m_szNeoNameLocalDupeIdx)
 			{
 				m_szNeoNameLocalDupeIdx = dupePos;
-				V_snprintf(m_szNeoNameWDupeIdx, sizeof(m_szNeoNameWDupeIdx), "%s (%d)", neoName, dupePos);
+				V_sprintf_safe(m_szNeoNameWDupeIdx, "%s (%d)", neoName, dupePos);
 			}
 			return m_szNeoNameWDupeIdx;
 		}
@@ -672,7 +593,7 @@ const char *C_NEO_Player::InternalGetNeoPlayerName() const
 		if (dupePos != m_szNeoNameLocalDupeIdx)
 		{
 			m_szNeoNameLocalDupeIdx = dupePos;
-			V_snprintf(m_szNeoNameWDupeIdx, sizeof(m_szNeoNameWDupeIdx), "%s (%d)", stndName, dupePos);
+			V_sprintf_safe(m_szNeoNameWDupeIdx, "%s (%d)", stndName, dupePos);
 		}
 		return m_szNeoNameWDupeIdx;
 	}
@@ -1237,21 +1158,16 @@ void C_NEO_Player::PreThink( void )
 		m_bHasBeenAirborneForTooLongToSuperJump = false;
 	}
 
-	if (m_iNeoClass == NEO_CLASS_RECON)
+	if (m_iNeoClass == NEO_CLASS_RECON && 
+		(m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED) && 
+		IsAllowedToSuperJump())
 	{
-		if ((m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED))
+		SuitPower_Drain(SUPER_JMP_COST);
+		bool forward = m_nButtons & IN_FORWARD;
+		bool backward = m_nButtons & IN_BACK;
+		if (forward xor backward)
 		{
-			// If player holds both forward + back, only use up AUX power.
-			// This movement trick replaces the original NT's trick of
-			// sideways-superjumping with the intent of dumping AUX for a
-			// jump setup that requires sprint jumping without the superjump.
-			if (IsAllowedToSuperJump())
-			{
-				if (!((m_nButtons & IN_FORWARD) && (m_nButtons & IN_BACK)))
-				{
-					SuperJump();
-				}
-			}
+			SuperJump();
 		}
 	}
 
@@ -1471,7 +1387,7 @@ bool C_NEO_Player::IsAllowedToSuperJump(void)
 
 	// Only superjump if we have a reasonable jump direction in mind
 	// NEO TODO (Rain): should we support sideways superjumping?
-	if ((m_nButtons & (IN_FORWARD | IN_BACK)) == 0)
+	if ((m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)) == 0)
 	{
 		return false;
 	}
@@ -1502,7 +1418,20 @@ void C_NEO_Player::SuperJump(void)
 	// We don't give an upwards boost aside from regular jump
 	forward.z = 0;
 
-	ApplyAbsVelocityImpulse(forward * neo_recon_superjump_intensity.GetFloat());
+	// Flip direction if jumping backwards
+	if (m_nButtons & IN_BACK)
+	{
+		forward = -forward;
+	}
+
+	float boostIntensity = GetPlayerMaxSpeed();
+	if (m_nButtons & (IN_MOVELEFT | IN_MOVERIGHT))
+	{
+		constexpr float sideWaysNerf = 0.70710678118; // 1 / sqrt(2);
+		boostIntensity *= sideWaysNerf;
+	}
+
+	ApplyAbsVelocityImpulse(forward * boostIntensity);
 }
 
 float C_NEO_Player::CloakPower_CurrentVisualPercentage(void) const
@@ -1543,6 +1472,7 @@ void C_NEO_Player::Spawn( void )
 	{
 		m_rfAttackersHits.Set(i, 0);
 	}
+	V_memset(m_rfNeoPlayerIdxsKilledByLocal, 0, sizeof(m_rfNeoPlayerIdxsKilledByLocal));
 
 	Weapon_SetZoom(false);
 
@@ -1766,6 +1696,11 @@ void C_NEO_Player::Weapon_AimToggle(C_NEOBaseCombatWeapon *pNeoWep, const NeoWep
 
 void C_NEO_Player::Weapon_SetZoom(const bool bZoomIn)
 {
+	if (bZoomIn == m_bInAim)
+	{
+		return;
+	}
+
 	float zoomSpeedSecs = NEO_ZOOM_SPEED;
 
 #if(0)

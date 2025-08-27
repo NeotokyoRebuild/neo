@@ -8,26 +8,29 @@
 #include "basegrenade_shared.h"
 
 #ifdef CLIENT_DLL
-	#include "c_neo_player.h"
-	#include "c_team.h"
-	#include "c_playerresource.h"
+#include "c_neo_player.h"
+#include "c_team.h"
+#include "c_playerresource.h"
+#include "engine/SndInfo.h"
+#include "engine/IEngineSound.h"
+#include "filesystem.h"
 #else
-	#include "neo_player.h"
-	#include "team.h"
-	#include "neo_model_manager.h"
-	#include "neo_ghost_spawn_point.h"
-	#include "neo_ghost_cap_point.h"
-	#include "neo/weapons/weapon_ghost.h"
-	#include "neo/weapons/weapon_neobasecombatweapon.h"
-	#include "eventqueue.h"
-	#include "mapentities.h"
-	#include "hl2mp_gameinterface.h"
-	#include "player_resource.h"
-	#include "inetchannelinfo.h"
-	#include "neo_dm_spawn.h"
-	#include "neo_misc.h"
-	#include "neo_game_config.h"
-	#include "nav_mesh.h"
+#include "neo_player.h"
+#include "team.h"
+#include "neo_model_manager.h"
+#include "neo_ghost_spawn_point.h"
+#include "neo_ghost_cap_point.h"
+#include "neo/weapons/weapon_ghost.h"
+#include "neo/weapons/weapon_neobasecombatweapon.h"
+#include "eventqueue.h"
+#include "mapentities.h"
+#include "hl2mp_gameinterface.h"
+#include "player_resource.h"
+#include "inetchannelinfo.h"
+#include "neo_dm_spawn.h"
+#include "neo_misc.h"
+#include "neo_game_config.h"
+#include "nav_mesh.h"
 
 extern ConVar weaponstay;
 #endif
@@ -150,7 +153,56 @@ ConVar sv_neo_comp("sv_neo_comp", "0", FCVAR_REPLICATED, "Enables competitive ga
 );
 
 #ifdef CLIENT_DLL
-ConVar snd_victory_volume("snd_victory_volume", "0.33", FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_USERINFO, "Loudness of the victory jingle (0-1).", true, 0.0, true, 1.0);
+extern ConVar snd_victory_volume;
+void sndVictoryVolumeChangeCallback(IConVar* cvar [[maybe_unused]], const char* pOldVal [[maybe_unused]], float flOldVal [[maybe_unused]])
+{
+	if (!g_pFullFileSystem)
+	{
+		Assert(false);
+		return;
+	}
+
+#ifdef LINUX
+#define DIR_SLASH "/"
+#elif defined(_WIN32)
+#define DIR_SLASH "\\"
+#else
+#error Unimplemented!
+#endif
+	const char* jingles[] = {
+		"gameplay"	DIR_SLASH "draw.mp3",
+		"gameplay"	DIR_SLASH "jinrai.mp3",
+		"gameplay"	DIR_SLASH "nsf.mp3",
+	};
+
+	CUtlVector<SndInfo_t> sounds;
+	enginesound->GetActiveSounds(sounds);
+
+	// If we are playing a victory jingle, update its volume
+	char filename[MAX_PATH];
+	for (int i = 0; i < sounds.Size(); i++)
+	{
+		if (!g_pFullFileSystem->String(sounds[i].m_filenameHandle, filename, sizeof(filename)))
+		{
+			continue;
+		}
+		else if (!*filename)
+		{
+			continue;
+		}
+
+		for (int j = 0; j < ARRAYSIZE(jingles); ++j)
+		{
+			if (Q_strcmp(filename, jingles[j]) == 0)
+			{
+				enginesound->SetVolumeByGuid(sounds[i].m_nGuid, snd_victory_volume.GetFloat());
+				return; // should only ever be playing one jingle at a time; return early
+			}
+		}
+	}
+}
+
+ConVar snd_victory_volume("snd_victory_volume", "0.33", FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_USERINFO, "Loudness of the victory jingle (0-1).", true, 0.0, true, 1.0, sndVictoryVolumeChangeCallback);
 #endif // CLIENT_DLL
 
 REGISTER_GAMERULES_CLASS( CNEORules );
@@ -621,7 +673,6 @@ void CNEORules::ResetMapSessionCommon()
 			pPlayer->m_iTeamKillsInflicted = 0;
 			pPlayer->m_bIsPendingTKKick = false;
 			pPlayer->m_bKilledInflicted = false;
-			pPlayer->m_bDoNotShowDmgInfoMenu = false;
 		}
 	}
 	m_flPrevThinkKick = 0.0f;
@@ -2221,7 +2272,6 @@ void CNEORules::StartNextRound()
 			pPlayer->m_iXP.Set(0);
 			pPlayer->m_iTeamDamageInflicted = 0;
 			pPlayer->m_iTeamKillsInflicted = 0;
-			pPlayer->m_bDoNotShowDmgInfoMenu = false;
 		}
 		pPlayer->m_bIsPendingTKKick = false;
 
@@ -2927,7 +2977,6 @@ bool CNEORules::RoundIsMatchPoint() const
 }
 
 #ifdef GAME_DLL
-extern ConVar snd_musicvolume;
 void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bool bSwitchTeams, bool bDontAddScore, bool bFinal)
 {
 	if (IsRoundOver())
@@ -3121,7 +3170,7 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 			}
 
 			// Ghost-caps and VIP-escorts are handled separately
-			if (iWinReason != NEO_VICTORY_GHOST_CAPTURE && iWinReason != NEO_VICTORY_VIP_ESCORT && player->GetTeamNumber() == winningTeamNum)
+			if (winningTeamNum != TEAM_SPECTATOR && iWinReason != NEO_VICTORY_GHOST_CAPTURE && iWinReason != NEO_VICTORY_VIP_ESCORT && player->GetTeamNumber() == winningTeamNum)
 			{
 				int xpAward = 1;	// Base reward for being on winning team
 				if (player->IsAlive())
@@ -3144,7 +3193,7 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 			// Any human player still alive, show them damage stats in round end
 			if (!player->IsBot() && !player->IsHLTV() && player->IsAlive())
 			{
-				player->StartShowDmgStats(NULL);
+				player->StartShowDmgStats(nullptr);
 			}
 		}
 	}

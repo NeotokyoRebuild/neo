@@ -25,6 +25,7 @@ public:
 
 	virtual float GetRunSpeed( void ) const override;			// get maximum running speed
 	virtual float GetWalkSpeed( void ) const override;			// get maximum walking speed
+	virtual bool IsRunning( void ) const override;
 
 	virtual bool IsAreaTraversable( const CNavArea *baseArea ) const;	// return true if given area can be used for navigation
 	virtual bool IsEntityTraversable( CBaseEntity *obstacle, TraverseWhenType when = EVENTUALLY ) const;

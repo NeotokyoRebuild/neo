@@ -1362,12 +1362,17 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_misc.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_misc.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_weapon_loadout.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_weapon_loadout.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_enums.h
     neo/neo_bloom_controller.cpp
     neo/neo_client.cpp
     neo/neo_detpack.cpp
     neo/neo_detpack.h
     neo/neo_game_config.cpp
     neo/neo_game_config.h
+    neo/neo_ghost_boundary.cpp
+    neo/neo_ghost_boundary.h
     neo/neo_ghost_spawn_point.cpp
     neo/neo_ghost_spawn_point.h
     neo/neo_grenade.cpp
@@ -1447,6 +1452,7 @@ target_sources_grouped(
     FILES
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_aa13.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_aa13.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_bits.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_detpack.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_detpack.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_ghost.cpp

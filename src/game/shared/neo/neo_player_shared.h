@@ -15,14 +15,10 @@
 #endif
 
 #include "neo_predicted_viewmodel.h"
-
-#ifdef INCLUDE_WEP_PBK
-// Type to use if we need to ensure more than 32 bits in the mask.
-#define NEO_WEP_BITS_UNDERLYING_TYPE long long int
-#else
-// Using plain int if we don't need to ensure >32 bits in the mask.
-#define NEO_WEP_BITS_UNDERLYING_TYPE int
-#endif
+#include "neo_misc.h"
+#include "shareddefs.h"
+#include "weapon_bits.h"
+#include "neo_enums.h"
 
 //////////////////////////////////////////////////////
 // NEO MOVEMENT DEFINITIONS
@@ -174,41 +170,6 @@ COMPILE_TIME_ASSERT(NEO_ASSAULT_CROUCH_SPEED == NEO_VIP_CROUCH_SPEED);
 static constexpr float NEO_ZOOM_SPEED = 0.115f;
 static_assert(NEO_ZOOM_SPEED != 0.0f, "Divide by zero");
 
-enum NeoSkin {
-	NEO_SKIN_FIRST = 0,
-	NEO_SKIN_SECOND,
-	NEO_SKIN_THIRD,
-
-	NEO_SKIN__ENUM_COUNT
-};
-static constexpr int NEO_SKIN_ENUM_COUNT = NEO_SKIN__ENUM_COUNT;
-
-enum NeoClass {
-	NEO_CLASS_RECON = 0,
-	NEO_CLASS_ASSAULT,
-	NEO_CLASS_SUPPORT,
-
-	// NOTENOTE: VIP *must* be last, because we are
-	// using array offsets for recon/assault/support
-	NEO_CLASS_VIP,
-
-	NEO_CLASS__ENUM_COUNT
-};
-static constexpr int NEO_CLASS_ENUM_COUNT = NEO_CLASS__ENUM_COUNT;
-
-enum NeoStar {
-	STAR_NONE = 0,
-	STAR_ALPHA,
-	STAR_BRAVO,
-	STAR_CHARLIE,
-	STAR_DELTA,
-	STAR_ECHO,
-	STAR_FOXTROT,
-
-	STAR__TOTAL
-};
-#define NEO_DEFAULT_STAR STAR_ALPHA
-
 // Implemented by CNEOPlayer::m_fNeoFlags.
 // Rolling our own because Source FL_ flags already reserve all 32 bits,
 // and extending the type would require a larger refactor.
@@ -237,69 +198,27 @@ extern bool IsThereRoomForLeanSlide(CNEO_Player *player,
 // Is the player allowed to aim zoom with a weapon of this type?
 bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep);
 
-extern ConVar neo_recon_superjump_intensity;
-
 //ConVar sv_neo_resupply_anywhere("sv_neo_resupply_anywhere", "0", FCVAR_CHEAT | FCVAR_REPLICATED);
 
-inline const char* GetNeoClassName(int neoClassIdx)
+static constexpr const SZWSZTexts SZWSZ_NEO_CLASS_STRS[NEO_CLASS__ENUM_COUNT] = {
+	SZWSZ_INIT("Recon"),
+	SZWSZ_INIT("Assault"),
+	SZWSZ_INIT("Support"),
+	SZWSZ_INIT("VIP"),
+};
+
+inline const char *GetNeoClassName(const int neoClassIdx)
 {
-	switch (neoClassIdx)
-	{
-	case NEO_CLASS_RECON: return "Recon";
-	case NEO_CLASS_ASSAULT: return "Assault";
-	case NEO_CLASS_SUPPORT: return "Support";
-	case NEO_CLASS_VIP: return "VIP";
-	default: return "";
-	}
+	return (IN_BETWEEN_AR(0, neoClassIdx, NEO_CLASS__ENUM_COUNT)) ? SZWSZ_NEO_CLASS_STRS[neoClassIdx].szStr : "";
 }
 
-inline const char *GetRankName(int xp, bool shortened = false)
+inline const wchar_t *GetNeoClassNameW(const int neoClassIdx)
 {
-	if (xp < 0)
-	{
-		return shortened ? "Dog" : "Rankless Dog";
-	}
-	else if (xp < 4)
-	{
-		return shortened ? "Pvt" : "Private";
-	}
-	else if (xp < 10)
-	{
-		return shortened ? "Cpl" : "Corporal";
-	}
-	else if (xp < 20)
-	{
-		return shortened ? "Sgt" : "Sergeant";
-	}
-	else
-	{
-		return shortened ? "Lt" : "Lieutenant";
-	}
+	return (IN_BETWEEN_AR(0, neoClassIdx, NEO_CLASS__ENUM_COUNT)) ? SZWSZ_NEO_CLASS_STRS[neoClassIdx].wszStr : L"";
 }
 
-inline const int GetRank(int xp)
-{
-	if (xp < 0)
-	{
-		return 0;
-	}
-	else if (xp < 4)
-	{
-		return 1;
-	}
-	else if (xp < 10)
-	{
-		return 2;
-	}
-	else if (xp < 20)
-	{
-		return 3;
-	}
-	else
-	{
-		return 4;
-	}
-}
+int GetRank(const int xp);
+const char *GetRankName(const int xp, const bool shortened = false);
 
 CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, const NEO_WEP_BITS_UNDERLYING_TYPE& neoWepBits);
 
@@ -333,11 +252,7 @@ struct AttackersTotals
 	}
 };
 
-int DmgLineStr(char* infoLine, const int infoLineMax,
-	const char* dmgerName, const char* dmgerClass,
-	const AttackersTotals &totals);
-
-void KillerLineStr(char* killByLine, const int killByLineMax,
+[[deprecated]] void KillerLineStr(char* killByLine, const int killByLineMax,
 	CNEO_Player* neoAttacker, const CNEO_Player* neoVictim, const char* killedWith = "");
 
 [[nodiscard]] auto StrToInt(std::string_view strView) -> std::optional<int>;
@@ -392,8 +307,30 @@ bool GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
 // which is ~43 for v2 serialization | 64 length is enough for now till
 // more comes in
 static constexpr const int NEO_XHAIR_SEQMAX = 64;
+#define NEO_CROSSHAIR_DEFAULT "2;0;-1;0;6;0.000;2;4;0;0;1;0;0;"
 
 #define TUTORIAL_MAP_CLASSES "ntre_class_tut"
 #define TUTORIAL_MAP_SHOOTING "ntre_shooting_tut"
+
+enum
+{
+	TEAM_JINRAI = LAST_SHARED_TEAM + 1,
+	TEAM_NSF,
+
+	TEAM__TOTAL, // Always last enum in here
+};
+
+#define TEAM_STR_JINRAI "Jinrai"
+#define TEAM_STR_NSF "NSF"
+#define TEAM_STR_SPEC "Spectator"
+
+static constexpr const SZWSZTexts SZWSZ_NEO_TEAM_STRS[TEAM__TOTAL] = {
+	SZWSZ_INIT("Unassigned"), // TEAM_UNASSIGNED
+	SZWSZ_INIT("Spectator"), // TEAM_SPECTATOR
+	X_SZWSZ_INIT(TEAM_STR_JINRAI), // TEAM_JINRAI
+	X_SZWSZ_INIT(TEAM_STR_NSF), // TEAM_NSF
+};
+
+#define NEO_GAME_NAME "Neotokyo; Rebuild"
 
 #endif // NEO_PLAYER_SHARED_H

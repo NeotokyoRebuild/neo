@@ -236,7 +236,7 @@ void CNEOHud_Ammo::DrawAmmo() const
 	constexpr auto maxBullets = 100; // PZ Mag Size
 
 	char bullets[maxBullets + 1];
-	magSizeMax = min(magSizeMax, sizeof(bullets));
+	magSizeMax = min(magSizeMax, sizeof(bullets)-1);
 	int i;
 	for(i = 0; i < magSizeMax; i++)
 	{
@@ -248,7 +248,8 @@ void CNEOHud_Ammo::DrawAmmo() const
 		
 	if(bulletsOverflowing)
 	{
-		bullets[magSizeMax - 1] = '+';
+		if (magSizeMax > 0)
+			bullets[magSizeMax - 1] = '+';
 
 		if(maxClip == magSizeCurrent)
 		{
