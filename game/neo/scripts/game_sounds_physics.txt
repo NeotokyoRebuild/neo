@@ -3961,13 +3961,10 @@
 	{
 		"wave"	"npc/dog/dog_servo1.wav"
 		"wave"	"npc/dog/dog_servo2.wav"
-		"wave"	"npc/dog/dog_servo3.wav"
 		"wave"	"npc/dog/dog_servo5.wav"
 		"wave"	"npc/dog/dog_servo6.wav"
-		"wave"	"npc/dog/dog_servo7.wav"
 		"wave"	"npc/dog/dog_servo8.wav"
 		"wave"	"npc/dog/dog_servo10.wav"
-		"wave"	"npc/dog/dog_servo12.wav"
 	}
 }
 
