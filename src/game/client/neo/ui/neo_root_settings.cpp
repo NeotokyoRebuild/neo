@@ -237,6 +237,9 @@ void NeoSettingsInit(NeoSettings *ns)
 		}
 	}
 
+	// NEO NOTE (Adam) Ensures random background on every launch if random background option selected.
+	// If new background is different from previous background, the static image will change during load
+	// NEO TODO (Adam) Change the background on client shutdown instead somehow?
 	NeoSettingsBackgroundsInit(ns);
 }
 
@@ -263,7 +266,7 @@ void NeoSettingsBackgroundsInit(NeoSettings* ns)
 	};
 
 	// Setup Background Map options
-	int dispSize = max(sizeof(NEO_FALLBACK_BACKGROUND_DISPLAYNAME) + 1, sizeof(NEO_RANDOM_BACKGROUND_NAME) + 1);
+	int dispSize = Max(sizeof(NEO_FALLBACK_BACKGROUND_DISPLAYNAME), sizeof(NEO_RANDOM_BACKGROUND_NAME) + 1);
 	if ( !ns->backgrounds->LoadFromFile( g_pFullFileSystem, NEO_BACKGROUNDS_FILENAME, "MOD" ) )
 	{ // File empty or unable to load, set to static and return early
 		Warning( "Unable to load '%s'\n", NEO_BACKGROUNDS_FILENAME );
@@ -295,7 +298,7 @@ void NeoSettingsBackgroundsInit(NeoSettings* ns)
 		}
 
 		ns->iCBListSize++;
-		dispSize = max(dispSize, (sizeof(wchar_t) / sizeof(char)) * (sizeof(displayName) + 1));
+		dispSize = Max(dispSize, (V_strlen(displayName) + 1));
 		background = background->GetNextKey();
 	}
 	const int wDispSize = sizeof(wchar_t) * dispSize;
