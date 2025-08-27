@@ -1,6 +1,6 @@
 #include "neo_juggernaut.h"
-#include "engine/IEngineSound.h"
 #ifdef GAME_DLL
+#include "engine/IEngineSound.h"
 #include "explode.h"
 #endif
 #ifdef CLIENT_DLL
@@ -14,13 +14,9 @@ LINK_ENTITY_TO_CLASS(neo_juggernaut, CNEO_Juggernaut);
 
 #ifdef GAME_DLL
 IMPLEMENT_SERVERCLASS_ST(CNEO_Juggernaut, DT_NEO_Juggernaut)
-	SendPropFloat(SENDINFO(m_flHoldStartTime)),
-	SendPropBool(SENDINFO(m_bIsHolding)),
 END_SEND_TABLE()
 #else
 IMPLEMENT_CLIENTCLASS_DT(CNEO_Juggernaut, DT_NEO_Juggernaut, CNEO_Juggernaut)
-	RecvPropFloat(RECVINFO(m_flHoldStartTime)),
-	RecvPropBool(RECVINFO(m_bIsHolding)),
 END_RECV_TABLE()
 #endif
 
@@ -33,6 +29,7 @@ BEGIN_DATADESC(CNEO_Juggernaut)
 #endif
 END_DATADESC()
 
+#ifdef GAME_DLL
 void CNEO_Juggernaut::Precache(void)
 {
 	PrecacheModel("models/player/jgr.mdl");
@@ -46,12 +43,8 @@ void CNEO_Juggernaut::Spawn(void)
 {
 	Precache();
 
-	m_flHoldStartTime = 0.0f;
-	m_bIsHolding = false;
-
 	SetModel("models/player/jgr.mdl");
 	const int iSequence = LookupSequence("Boot_seq");
-
 	if (iSequence > ACTIVITY_NOT_AVAILABLE)
 	{
 		SetSequence(iSequence);
@@ -66,10 +59,8 @@ void CNEO_Juggernaut::Spawn(void)
 
 	if (m_bPostDeath)
 	{
-#ifdef GAME_DLL
 		Vector explOrigin = GetAbsOrigin() + EyePosition();
 		ExplosionCreate(explOrigin, GetAbsAngles(), this, 0, 128, SF_ENVEXPLOSION_NODAMAGE);
-#endif
 		SetPlaybackRate(-m_flWarpedPlaybackRate);
 		SetCycle(1.0f);
 	}
@@ -80,8 +71,9 @@ void CNEO_Juggernaut::Spawn(void)
 
 	SetMoveType(MOVETYPE_STEP);
 	SetSolid(SOLID_BBOX);
-#ifdef GAME_DLL
 	UTIL_SetSize(this, -Vector(15, 15, 0), Vector(15, 15, 90)); // Needs to be equal or smaller than the player's girth to avoid getting stuck
+	SetCollisionGroup(COLLISION_GROUP_PLAYER);
+	SetFriction(100.0);
 
 	m_textParms.channel = 0;
 	m_textParms.x = 0.42;
@@ -100,11 +92,7 @@ void CNEO_Juggernaut::Spawn(void)
 	m_textParms.g2 = 200;
 	m_textParms.b2 = 200;
 	m_textParms.a2 = 100;
-#endif
-	SetCollisionGroup(COLLISION_GROUP_PLAYER);
-	SetFriction(100.0);
 	
-#ifdef GAME_DLL
 	CBaseEntity *pWeaponModel = CreateEntityByName("prop_dynamic");
 	if (pWeaponModel)
 	{
@@ -116,11 +104,12 @@ void CNEO_Juggernaut::Spawn(void)
 	{
 		Warning("Failed to create weapon model for CNEO_Juggernaut!");
 	}
-#endif
 
 	SetThink(&CNEO_Juggernaut::Think);
 	SetNextThink(TICK_NEVER_THINK);
 	SetContextThink(&CNEO_Juggernaut::AnimThink, gpGlobals->curtime + TICK_INTERVAL, "AnimThink");
+
+	StopSound("HUD.CPCharge"); // for round reset
 
 	BaseClass::Spawn();
 }
@@ -147,9 +136,7 @@ void CNEO_Juggernaut::Use(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYP
 		SetNextThink(gpGlobals->curtime + 0.1f);
 		SetPlaybackRate(m_flWarpedPlaybackRate);
 		m_hPlayer->AddFlag(FL_FROZEN);
-#ifdef GAME_DLL
 		UTIL_HudMessage(m_hPlayer, m_textParms, "BOOTING JGR56"); // TODO localise this text
-#endif
 		EmitSound("HUD.CPCharge");
 	}
 	else
@@ -160,7 +147,7 @@ void CNEO_Juggernaut::Use(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYP
 
 void CNEO_Juggernaut::Think(void)
 {
-	if (!m_bIsHolding || !m_hPlayer || !m_hPlayer->IsAlive())
+	if (!m_bIsHolding || !m_hPlayer || !m_hPlayer->IsAlive() || m_hPlayer->m_afButtonReleased & IN_USE)
 	{
 		HoldCancel();
 		return;
@@ -179,23 +166,19 @@ void CNEO_Juggernaut::Think(void)
 		SetNextThink(TICK_NEVER_THINK);
 		StopSound("HUD.CPCharge");
 		EmitSound("HUD.CPCaptured");
-#ifdef GAME_DLL
+		UTIL_HudMessage(m_hPlayer, m_textParms, ""); // Find a better way of hiding the text. This doesn't remove the old message from the user messages list and thus makes a weird overlapping visual bug
+
+		m_hPlayer->RemoveFlag(FL_FROZEN);
 		m_hPlayer->CreateRagdollEntity();
 		m_hPlayer->Weapon_DropAllOnDeath(CTakeDamageInfo(this, this, 0, DMG_GENERIC));
-#endif
-		m_hPlayer->SetAbsVelocity(vec3_origin);
-		m_hPlayer->SetAbsOrigin(GetAbsOrigin());
-		m_hPlayer->SetAbsAngles(GetAbsAngles());
-		m_hPlayer->RemoveFlag(FL_FROZEN);
-#ifdef GAME_DLL
+		m_hPlayer->Teleport(&GetAbsOrigin(), &GetAbsAngles(), &vec3_origin);
 		m_hPlayer->SnapEyeAngles(GetAbsAngles());
-		UTIL_HudMessage(m_hPlayer, m_textParms, ""); // Find a better way of hiding the text. This doesn't remove the old message from the user messages list and thus makes a weird overlapping visual bug
 
 		m_hPlayer->BecomeJuggernaut();
 
 		m_OnPlayerActivate.FireOutput(m_hPlayer, this);
 		UTIL_Remove(this);
-#endif
+
 		return;
 	}
 
@@ -207,9 +190,7 @@ void CNEO_Juggernaut::HoldCancel(void)
 	if (m_hPlayer)
 	{
 		m_hPlayer->RemoveFlag(FL_FROZEN);
-#ifdef GAME_DLL
 		UTIL_HudMessage(m_hPlayer, m_textParms, "");
-#endif
 	}
 	SetNextThink(TICK_NEVER_THINK);
 	SetPlaybackRate(-m_flWarpedPlaybackRate);
@@ -223,6 +204,7 @@ void CNEO_Juggernaut::AnimThink(void) // Required for server controlled animatio
 	StudioFrameAdvance();
 	SetContextThink(&CNEO_Juggernaut::AnimThink, gpGlobals->curtime + TICK_INTERVAL, "AnimThink");
 }
+#endif
 
 #ifdef CLIENT_DLL
 int CNEO_Juggernaut::DrawModel(int flags)

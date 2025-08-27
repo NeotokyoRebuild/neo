@@ -16,29 +16,29 @@ public:
 #endif
 	DECLARE_DATADESC();
 
+#ifdef GAME_DLL
 	void	Precache(void);
 	void	Spawn(void);
     void	Use(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value);
-
 	virtual int	ObjectCaps(void) { return BaseClass::ObjectCaps() | FCAP_ONOFF_USE; }
-
 	bool m_bPostDeath = false;
+#endif
 
 private:
+#ifdef GAME_DLL
 	void	Think(void);
 	void	HoldCancel(void);
 	void	AnimThink(void);
-#ifdef CLIENT_DLL
+#else
 	int		DrawModel(int flags) override;
 #endif
 
+#ifdef GAME_DLL
 	CHandle<CNEO_Player>	m_hPlayer;
 	float m_flWarpedPlaybackRate;
+	float m_flHoldStartTime = 0.0f;
+	bool m_bIsHolding = false;
 
-	CNetworkVar(float, m_flHoldStartTime);
-	CNetworkVar(bool, m_bIsHolding);
-
-#ifdef GAME_DLL
 	hudtextparms_t	m_textParms;
 	COutputEvent m_OnPlayerActivate;
 #endif
