@@ -2181,7 +2181,11 @@ bool C_BaseAnimating::GetAttachment( int number, Vector &origin, QAngle &angles 
 	if ( pData->m_bAnglesComputed == 0 )
 	{
 		MatrixAngles( pData->m_AttachmentToWorld, pData->m_angRotation );
+#ifdef NEO // NEO NOTE (nullsystem): warning: conversion from ‘unsigned int’ to ‘unsigned char:1’ changes value from ‘4294967295’ to ‘1’
+		pData->m_bAnglesComputed = 1;
+#else
 		pData->m_bAnglesComputed = -1;
+#endif
 	}
 	angles = pData->m_angRotation;
 	MatrixPosition( pData->m_AttachmentToWorld, origin );
@@ -3294,6 +3298,7 @@ int C_BaseAnimating::DrawModel( int flags )
 			}
 		}
 		bool isMoving = false;
+		bool isHot = false;
 		if (inMotionVision && vel.LengthSqr() > 0.25 && !IsViewModel() && !(extraFlags & STUDIO_IGNORE_NEO_EFFECTS)) // MOVING_SPEED_MINIMUM ^2
 		{
 			isMoving = true;
@@ -3312,6 +3317,7 @@ int C_BaseAnimating::DrawModel( int flags )
 			IMaterial* pass = materials->FindMaterial("dev/thermal_base_animating_model", TEXTURE_GROUP_MODEL);
 			Assert(!IsErrorMaterial(pass));
 			modelrender->ForcedMaterialOverride(pass);
+			isHot = true;
 		}
 
 #endif // NEO
@@ -3357,7 +3363,7 @@ int C_BaseAnimating::DrawModel( int flags )
 			}
 		}
 #ifdef NEO
-		if (isMoving)
+		if (isMoving || isHot)
 		{
 			modelrender->ForcedMaterialOverride(nullptr);
 		}
@@ -3612,6 +3618,12 @@ int C_BaseAnimating::InternalDrawModel( int flags )
 			ownerOrigin = pOwner->EyePosition();
 			pInfo->pLightingOrigin = &ownerOrigin;
 		}
+	}
+	else if (IsBaseCombatWeapon())
+	{
+		static Vector worldSpaceCenter;
+		worldSpaceCenter = WorldSpaceCenter();
+		pInfo->pLightingOrigin = &worldSpaceCenter;
 	}
 #endif // NEO
 

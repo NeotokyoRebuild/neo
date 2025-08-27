@@ -429,7 +429,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		const bool bImported = ImportCrosshair(&pCrosshair->info, cvr->cl_neo_crosshair.GetString());
 		if (!bImported)
 		{
-			ImportCrosshair(&pCrosshair->info, CL_NEO_CROSSHAIR_DEFAULT);
+			ImportCrosshair(&pCrosshair->info, NEO_CROSSHAIR_DEFAULT);
 		}
 		pCrosshair->eClipboardInfo = XHAIREXPORTNOTIFY_NONE;
 		pCrosshair->bNetworkCrosshair = cvr->cl_neo_crosshair_network.GetBool();
@@ -534,7 +534,6 @@ void NeoSettingsSave(const NeoSettings *ns)
 		}
 		// Reset the cache to none so it'll refresh on next KeyCodeTyped
 		const_cast<NeoSettings::Keys *>(pKeys)->bcConsole = KEY_NONE;
-		const_cast<NeoSettings::Keys *>(pKeys)->bcMP3Player = KEY_NONE;
 	}
 	{
 		const NeoSettings::Mouse *pMouse = &ns->mouse;
@@ -968,7 +967,7 @@ void NeoSettings_Crosshair(NeoSettings *ns)
 
 			if (bDefaultPressed)
 			{
-				ImportCrosshair(&pCrosshair->info, CL_NEO_CROSSHAIR_DEFAULT);
+				ImportCrosshair(&pCrosshair->info, NEO_CROSSHAIR_DEFAULT);
 				pCrosshair->eClipboardInfo = XHAIREXPORTNOTIFY_RESET_TO_DEFAULT;
 				ns->bModified = true;
 			}

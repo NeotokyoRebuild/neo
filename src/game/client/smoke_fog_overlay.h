@@ -12,7 +12,9 @@
 
 #include "basetypes.h"
 #include "mathlib/vector.h"
+#ifndef NEO
 #include "smoke_fog_overlay_shared.h"
+#endif
 
 #ifdef NEO
 #define ROTATION_SPEED				0.6

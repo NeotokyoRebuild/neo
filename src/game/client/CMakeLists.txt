@@ -1636,6 +1636,9 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_misc.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_misc.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_weapon_loadout.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_weapon_loadout.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_enums.h
 )
 
 target_sources_grouped(
@@ -1644,6 +1647,7 @@ target_sources_grouped(
     FILES
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_aa13.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_aa13.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_bits.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_detpack.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_detpack.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_ghost.cpp

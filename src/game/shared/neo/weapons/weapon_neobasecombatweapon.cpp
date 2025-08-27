@@ -165,6 +165,13 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 		{0.25, 0.5, -0.6, 0.6},
 		{1.0, 0.0, -0.25, -0.75, -0.6, 0.6},
 	},
+#ifdef INCLUDE_WEP_PBK
+	{NEO_WEP_PBK56S,
+		{{VECTOR_CONE_2DEGREES, VECTOR_CONE_5DEGREES, VECTOR_CONE_1DEGREES / 2, VECTOR_CONE_2DEGREES}},
+		{0.25, 0.5, -0.6, 0.6},
+		{1.0, 0.0, -0.25, -0.75, -0.6, 0.6},
+	},
+#endif
 	{NEO_WEP_SMAC,
 		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_4DEGREES}},
 		{0.25, 0.5, -0.6, 0.6},
@@ -1026,8 +1033,17 @@ bool CNEOBaseCombatWeapon::CanBePickedUpByClass(int classId)
 #ifdef CLIENT_DLL
 void CNEOBaseCombatWeapon::ProcessMuzzleFlashEvent()
 {
-	if (GetPlayerOwner() == NULL)
+	C_BasePlayer *owner = GetPlayerOwner();
+	if (!owner)
 		return; // If using a view model in first person, muzzle flashes are not processed until the player drops their weapon. In that case, do not play a muzzle flash effect. Need to change how this is calculated if we want to allow dropped weapons to cook off for example
+
+	C_BasePlayer *localPlayer = UTIL_PlayerByIndex(GetLocalPlayerIndex());
+	if (!localPlayer)
+		return;
+
+	// bIsVisible in function calling ProcessMuzzleFlashEvent is set to true even though this weapon may not be drawn? Probably same reason for the same check in C_BaseCombatWeapon::DrawModel
+	if (localPlayer->IsObserver() && localPlayer->GetObserverMode() == OBS_MODE_IN_EYE && localPlayer->GetObserverTarget() == owner)
+		return;
 
 	if ((GetNeoWepBits() & NEO_WEP_SUPPRESSED))
 		return;
@@ -1061,7 +1077,7 @@ void CNEOBaseCombatWeapon::ProcessMuzzleFlashEvent()
 	el->color.exponent = 5;
 
 	// Muzzle flash particle
-	DispatchMuzzleParticleEffect(iAttachment);
+	ParticleProp()->Create("ntr_muzzle_source", PATTACH_POINT_FOLLOW, iAttachment);
 }
 
 void CNEOBaseCombatWeapon::DrawCrosshair()
@@ -1090,27 +1106,6 @@ void CNEOBaseCombatWeapon::DrawCrosshair()
 	{
 		crosshair->ResetCrosshair();
 	}
-}
-
-void CNEOBaseCombatWeapon::DispatchMuzzleParticleEffect(int iAttachment) {
-	static constexpr char particleName[] = "ntr_muzzle_source";
-	constexpr bool resetAllParticlesOnEntity = false;
-	const ParticleAttachment_t iAttachType = ParticleAttachment_t::PATTACH_POINT_FOLLOW;
-
-	CEffectData	data;
-
-	data.m_nHitBox = GetParticleSystemIndex(particleName);
-	data.m_hEntity = this;
-	data.m_fFlags |= PARTICLE_DISPATCH_FROM_ENTITY;
-	data.m_vOrigin = GetAbsOrigin();
-	data.m_nDamageType = iAttachType;
-	data.m_nAttachmentIndex = iAttachment;
-
-	if (resetAllParticlesOnEntity)
-		data.m_fFlags |= PARTICLE_DISPATCH_RESET_PARTICLES;
-
-	CSingleUserRecipientFilter filter(UTIL_PlayerByIndex(GetLocalPlayerIndex()));
-	te->DispatchEffect(filter, 0.0, data.m_vOrigin, "ParticleEffect", data);
 }
 
 static inline bool ShouldDrawLocalPlayerViewModel(void)
@@ -1213,7 +1208,7 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 	bool inThermalVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT;
 	int ret = 0;
 	
-	if (inThermalVision && (!pOwner || pOwner && !pOwner->IsCloaked()))
+	if (inThermalVision && (!pOwner || (pOwner && !pOwner->IsCloaked())))
 	{
 		IMaterial* pass = materials->FindMaterial("dev/thermal_weapon_model", TEXTURE_GROUP_MODEL);
 		modelrender->ForcedMaterialOverride(pass);
@@ -1222,7 +1217,7 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 		return ret;
 	}
 
-	if (pOwner && pOwner->IsCloaked() && !inThermalVision)
+	if ((pOwner && pOwner->IsCloaked()) && !inThermalVision)
 	{
 		mat_neo_toc_test.SetValue(pOwner->GetCloakFactor());
 		IMaterial* pass = materials->FindMaterial("models/player/toc", TEXTURE_GROUP_CLIENT_EFFECTS);

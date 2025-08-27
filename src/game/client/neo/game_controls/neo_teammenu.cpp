@@ -292,7 +292,7 @@ void CNeoTeamMenu::OnKeyCodeReleased(vgui::KeyCode code)
 		return;
 	}
 
-	if (code == g_pNeoRoot->m_ns.keys.bcTeamMenu)
+	if (code == gameuifuncs->GetButtonCodeForBind("teammenu"))
 	{
 		CloseMenu();
 		return;
