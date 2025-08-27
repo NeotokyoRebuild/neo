@@ -19,11 +19,10 @@ public:
 	void	Precache(void);
 	void	Spawn(void);
     void	Use(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value);
-#ifdef GAME_DLL
-	void	PostDeathEffects(void);
-#endif
 
 	virtual int	ObjectCaps(void) { return BaseClass::ObjectCaps() | FCAP_ONOFF_USE; }
+
+	bool m_bPostDeath = false;
 
 private:
 	void	Think(void);

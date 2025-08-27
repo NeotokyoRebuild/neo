@@ -37,6 +37,8 @@ void CNEO_Juggernaut::Precache(void)
 {
 	PrecacheModel("models/player/jgr.mdl");
 	PrecacheModel("models/weapons/w_balc.mdl");
+	PrecacheScriptSound("HUD.CPCharge");
+	PrecacheScriptSound("HUD.CPCaptured");
 	BaseClass::Precache();
 }
 
@@ -49,11 +51,23 @@ void CNEO_Juggernaut::Spawn(void)
 
 	UseClientSideAnimation();
 	SetModel("models/player/jgr.mdl");
-	int iSequence = LookupSequence("Boot_seq");
+	const int iSequence = LookupSequence("Boot_seq");
 	SetSequence(iSequence);
 	m_flWarpedPlaybackRate = SequenceDuration(iSequence) / USE_DURATION;
-	ResetSequenceInfo();
-	SetPlaybackRate(0.0f);
+
+	if (m_bPostDeath)
+	{
+#ifdef GAME_DLL
+		Vector explOrigin = GetAbsOrigin() + EyePosition();
+		ExplosionCreate(explOrigin, GetAbsAngles(), this, 0, 128, SF_ENVEXPLOSION_NODAMAGE);
+#endif
+		SetPlaybackRate(-m_flWarpedPlaybackRate);
+		SetCycle(1.0f);
+	}
+	else
+	{
+		SetPlaybackRate(0.0f);
+	}
 
 	SetMoveType(MOVETYPE_STEP);
 	SetSolid(SOLID_BBOX);
@@ -126,6 +140,7 @@ void CNEO_Juggernaut::Use(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYP
 #ifdef GAME_DLL
 		UTIL_HudMessage(m_hPlayer, m_textParms, "BOOTING JGR56"); // TODO localise this text
 #endif
+		EmitSound("HUD.CPCharge");
 	}
 	else
 	{
@@ -152,6 +167,8 @@ void CNEO_Juggernaut::Think(void)
 	{
 		m_bIsHolding = false;
 		SetNextThink(TICK_NEVER_THINK);
+		StopSound("HUD.CPCharge");
+		EmitSound("HUD.CPCaptured");
 #ifdef GAME_DLL
 		m_hPlayer->CreateRagdollEntity();
 		m_hPlayer->Weapon_DropAll(false);
@@ -188,17 +205,8 @@ void CNEO_Juggernaut::HoldCancel(void)
 	SetPlaybackRate(-m_flWarpedPlaybackRate);
 	m_hPlayer = nullptr;
 	m_bIsHolding = false;
+	StopSound("HUD.CPCharge");
 }
-
-#ifdef GAME_DLL
-void CNEO_Juggernaut::PostDeathEffects(void)
-{
-	Vector explOrigin = GetAbsOrigin() + EyePosition();
-	ExplosionCreate(explOrigin, GetAbsAngles(), this, 0, 128, SF_ENVEXPLOSION_NODAMAGE);
-	SetCycle(180);
-	SetPlaybackRate(-m_flWarpedPlaybackRate);
-}
-#endif
 
 #ifdef CLIENT_DLL
 int CNEO_Juggernaut::DrawModel(int flags)

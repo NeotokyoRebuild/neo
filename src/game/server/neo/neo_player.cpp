@@ -3297,7 +3297,7 @@ void CNEO_Player::SpawnJuggernautPostDeath()
 	pJuggernautItem->SetAbsOrigin(GetAbsOrigin());
 	pJuggernautItem->SetAbsAngles(GetAbsAngles());
 	pJuggernautItem->SetAbsVelocity(GetAbsVelocity());
-	pJuggernautItem->PostDeathEffects();
+	pJuggernautItem->m_bPostDeath = true;
 	if (NEORules()->GetGameType() == NEO_GAME_TYPE_JGR)
 	{
 		if (NEORules()->GetRoundStatus() == NeoRoundStatus::RoundLive)
