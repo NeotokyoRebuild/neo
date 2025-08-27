@@ -106,6 +106,17 @@ bool CNEOBotVision::IsIgnored( CBaseEntity* subject ) const
 		return false;
 	}
 
+	const int iGhosterPlayer = NEORules()->GetGhosterPlayer();
+	if (iGhosterPlayer > 0)
+	{
+		auto *pNEOPlayer = dynamic_cast<CNEO_Player *>(subject);
+		if (pNEOPlayer && pNEOPlayer->IsCarryingGhost())
+		{
+			// don't ignore ghoster
+			return false;
+		}
+	}
+
 	if ( subject->IsEffectActive( EF_NODRAW ) )
 	{
 		return true;
@@ -147,4 +158,20 @@ float CNEOBotVision::GetMaxVisionRange( void ) const
 
 	// long range, particularly for snipers
 	return 6000.0f;
+}
+
+bool CNEOBotVision::IsInFieldOfView( CBaseEntity *subject ) const
+{
+	// Ghoster is always in FOV of everyone
+	const int iGhosterPlayer = NEORules()->GetGhosterPlayer();
+	if (iGhosterPlayer > 0)
+	{
+		auto *pNEOPlayer = dynamic_cast<CNEO_Player *>(subject);
+		if (pNEOPlayer && pNEOPlayer->IsCarryingGhost())
+		{
+			return true;
+		}
+	}
+
+	return IVision::IsInFieldOfView(subject);
 }

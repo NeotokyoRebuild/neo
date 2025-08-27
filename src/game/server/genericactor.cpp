@@ -387,7 +387,11 @@ void CFlextalkActor::ProcessSceneEvents( void )
 		} 
 		else if (m_flextime < gpGlobals->curtime)
 		{
+#ifdef NEO // NEO NOTE (nullsystem): -Wdeprecated-enum-float-conversion]
+			m_flextime = gpGlobals->curtime + random->RandomFloat( 0.3, 0.5 ) * (30.0 / static_cast<float>(GetNumFlexControllers()));
+#else
 			m_flextime = gpGlobals->curtime + random->RandomFloat( 0.3, 0.5 ) * (30.0 / GetNumFlexControllers());
+#endif
 			m_flexnum = (LocalFlexController_t)random->RandomInt( 0, GetNumFlexControllers() - 1 );
 
 			if (m_flextarget[m_flexnum] == 1)

@@ -23,6 +23,7 @@
 #endif
 
 #include "convar.h"
+#include "neo_weapon_loadout.h"
 
 #include "weapon_neobasecombatweapon.h"
 
@@ -38,6 +39,7 @@ ConVar neo_aim_hold("neo_aim_hold", "0", FCVAR_USERINFO | FCVAR_ARCHIVE, "Hold t
 #endif
 
 ConVar neo_ghost_bhopping("neo_ghost_bhopping", "0", FCVAR_REPLICATED, "Allow ghost bunnyhopping", true, 0, true, 1);
+ConVar sv_neo_dev_loadout("sv_neo_dev_loadout", "0", FCVAR_CHEAT | FCVAR_REPLICATED | FCVAR_HIDDEN | FCVAR_DONTRECORD, "", true, 0.0f, true, 1.0f);
 
 bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep)
 {
@@ -97,13 +99,9 @@ bool ClientWantsAimHold(const CNEO_Player* player)
 #ifdef CLIENT_DLL
 	return neo_aim_hold.GetBool();
 #else
-	if (!player)
+	if (!player || player->IsBot())
 	{
 		return false;
-	}
-	else if (player->GetFlags() & FL_FAKECLIENT)
-	{
-		return true;
 	}
 
 	return 1 == atoi(engine->GetClientConVarValue(engine->IndexOfEdict(player->edict()), "neo_aim_hold"));
@@ -236,5 +234,49 @@ bool GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
 	g_pVGuiLocalize->ConvertANSIToUnicode(pSzNeoName, wszNeoName, sizeof(wszNeoName));
 	g_pVGuiLocalize->ConvertANSIToUnicode(pSzNeoClantag, wszNeoClantag, sizeof(wszNeoClantag));
 	return GetClNeoDisplayName(pWszDisplayName, wszNeoName, wszNeoClantag, flags);
+}
+
+int GetRank(const int xp)
+{
+	int iRank = NEO_RANK_RANKLESS_DOG;
+	if (xp < XP_PRIVATE)
+	{
+		iRank = NEO_RANK_RANKLESS_DOG;
+	}
+	else if (xp < XP_CORPORAL)
+	{
+		iRank = NEO_RANK_PRIVATE;
+	}
+	else if (xp < XP_SERGEANT)
+	{
+		iRank = NEO_RANK_CORPORAL;
+	}
+	else if (xp < XP_LIEUTENANT)
+	{
+		iRank = NEO_RANK_SERGEANT;
+	}
+	else
+	{
+		iRank = NEO_RANK_LIEUTENANT;
+	}
+	return iRank + 1;
+}
+
+const char *GetRankName(const int xp, const bool shortened)
+{
+	static constexpr const char *RANK_NAME_LONG[] = {
+		"Rankless Dog", "Private", "Corporal", "Sergeant", "Lieutenant"
+	};
+	static constexpr const char *RANK_NAME_SHORT[] = {
+		"Dog", "Pvt", "Cpl", "Sgt", "Lt"
+	};
+	static_assert(ARRAYSIZE(RANK_NAME_LONG) == ARRAYSIZE(RANK_NAME_SHORT));
+
+	const int iRank = GetRank(xp);
+	if (IN_BETWEEN_AR(0, iRank, ARRAYSIZE(RANK_NAME_LONG)))
+	{
+		return (shortened ? RANK_NAME_SHORT : RANK_NAME_LONG)[iRank];
+	}
+	return "";
 }
 

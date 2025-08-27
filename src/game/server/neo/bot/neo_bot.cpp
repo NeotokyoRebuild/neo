@@ -14,6 +14,7 @@
 #include "soundenvelope.h"
 #include "weapon_neobasecombatweapon.h"
 #include "weapon_knife.h"
+#include "nav_mesh.h"
 
 #include "behavior/neo_bot_behavior.h"
 
@@ -628,7 +629,7 @@ CNEOBot::CNEOBot()
 		engine->SetFakeClientConVarValue(edict, "neo_name", "");
 		engine->SetFakeClientConVarValue(edict, "cl_neo_streamermode", "0");
 		engine->SetFakeClientConVarValue(edict, "neo_clantag", "");
-		engine->SetFakeClientConVarValue(edict, "cl_neo_crosshair", "2;0;-1;0;6;0.000;2;4;0;0;1;0;0;"); // update with CL_NEO_CROSSHAIR_DEFAULT
+		engine->SetFakeClientConVarValue(edict, "cl_neo_crosshair", NEO_CROSSHAIR_DEFAULT);
 		engine->SetFakeClientConVarValue(edict, "hap_HasDevice", "0");
 	}
 }
@@ -674,6 +675,9 @@ void CNEOBot::Spawn()
 	SetBrokenFormation(false);
 
 	GetVisionInterface()->ForgetAllKnownEntities();
+
+	m_qPrevShouldAim = ANSWER_NO;
+	m_flLastShouldAimTime = 0.0f;
 }
 
 
@@ -820,6 +824,22 @@ void CNEOBot::FireGameEvent(IGameEvent* event)
 {
 }
 
+extern ConVar nb_update_frequency;
+void CNEOBot::Update()
+{
+	if (!TheNavMesh->IsLoaded())
+	{
+		if ( IsDebugging( NEXTBOT_DEBUG_ALL ) )
+		{
+			CFmtStr msg;
+			const float messageTime = nb_update_frequency.GetFloat() + (gpGlobals->frametime * 2);
+			GetEntity()->EntityText( 0, msg.sprintf( "#%d", GetEntity()->entindex() ), messageTime );
+			GetEntity()->EntityText( 1, msg.sprintf( "No navigation mesh, updates frozen" ), messageTime );
+		}
+		return;
+	}
+	BaseClass::Update();
+}
 
 //-----------------------------------------------------------------------------------------------------
 void CNEOBot::Event_Killed(const CTakeDamageInfo& info)
@@ -2341,12 +2361,12 @@ INextBotEventResponder *CNEOBotIntention::NextContainedResponder(INextBotEventRe
 	return nullptr;
 }
 
-QueryResultType CNEOBotIntention::ShouldWalk(const CNEOBot *me) const
+QueryResultType CNEOBotIntention::ShouldWalk(const CNEOBot *me, const QueryResultType qShouldAimQuery) const
 {
-	return m_behavior->ShouldWalk( me );
+	return m_behavior->ShouldWalk(me, qShouldAimQuery);
 }
 
-QueryResultType CNEOBotBehavior::ShouldWalk(const CNEOBot *me) const
+QueryResultType CNEOBotBehavior::ShouldWalk(const CNEOBot *me, const QueryResultType qShouldAimQuery) const
 {
 	QueryResultType result = ANSWER_UNDEFINED;
 
@@ -2366,7 +2386,43 @@ QueryResultType CNEOBotBehavior::ShouldWalk(const CNEOBot *me) const
 			// work our way up the stack
 			while( action && result == ANSWER_UNDEFINED )
 			{
-				result = action->ShouldWalk(me);
+				result = action->ShouldWalk(me, qShouldAimQuery);
+				action = static_cast<CNEOBotMainAction *>(action->GetActionBuriedUnderMe());
+			}
+
+			action = containingAction;
+		}
+	}
+
+	return result;
+}
+
+QueryResultType CNEOBotIntention::ShouldAim(const CNEOBot *me, const bool bWepHasClip) const
+{
+	return m_behavior->ShouldAim( me, bWepHasClip );
+}
+
+QueryResultType CNEOBotBehavior::ShouldAim(const CNEOBot *me, const bool bWepHasClip) const
+{
+	QueryResultType result = ANSWER_UNDEFINED;
+
+	auto *neoAction = static_cast<CNEOBotMainAction *>(m_action);
+	if ( neoAction )
+	{
+		// find innermost child action
+		CNEOBotMainAction *action;
+		for( action = neoAction; action->m_child; action = static_cast<CNEOBotMainAction *>(action->m_child) )
+			;
+
+		// work our way through our containers
+		while( action && result == ANSWER_UNDEFINED )
+		{
+			CNEOBotMainAction *containingAction = static_cast<CNEOBotMainAction *>(action->m_parent);
+
+			// work our way up the stack
+			while( action && result == ANSWER_UNDEFINED )
+			{
+				result = action->ShouldAim(me, bWepHasClip);
 				action = static_cast<CNEOBotMainAction *>(action->GetActionBuriedUnderMe());
 			}
 
