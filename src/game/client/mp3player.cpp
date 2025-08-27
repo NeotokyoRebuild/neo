@@ -1659,7 +1659,7 @@ void CMP3Player::PlaySong( int songIndex, float skipTime /*= 0.0f */ )
 #endif // NEO
 
 	m_nSongGuid = enginesound->GetGuidForLastSoundEmitted();
-	
+
 	m_nCurrentSong = songIndex;
 	m_bPlaying = true;
 	m_LastSong = song.playbackfilename;
@@ -1800,9 +1800,6 @@ void CMP3Player::OnPause()
 void CMP3Player::OnTick()
 {
 	BaseClass::OnTick();
-	
-	CUtlVector<SndInfo_t> sounds;
-	enginesound->GetActiveSounds(sounds);
 
 #ifdef NEO
 	if (m_bFirstEverTick)
