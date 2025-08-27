@@ -49,10 +49,19 @@ void CNEO_Juggernaut::Spawn(void)
 	m_flHoldStartTime = 0.0f;
 	m_bIsHolding = false;
 
-	UseClientSideAnimation();
 	SetModel("models/player/jgr.mdl");
 	const int iSequence = LookupSequence("Boot_seq");
-	SetSequence(iSequence);
+
+	if (iSequence > ACTIVITY_NOT_AVAILABLE)
+	{
+		SetSequence(iSequence);
+	}
+	else
+	{
+		Warning("CNEO_Juggernaut missing animation!");
+		SetSequence(0);
+	}
+
 	m_flWarpedPlaybackRate = SequenceDuration(iSequence) / USE_DURATION;
 
 	if (m_bPostDeath)
@@ -111,6 +120,7 @@ void CNEO_Juggernaut::Spawn(void)
 
 	SetThink(&CNEO_Juggernaut::Think);
 	SetNextThink(TICK_NEVER_THINK);
+	SetContextThink(&CNEO_Juggernaut::AnimThink, gpGlobals->curtime + TICK_INTERVAL, "AnimThink");
 
 	BaseClass::Spawn();
 }
@@ -206,6 +216,12 @@ void CNEO_Juggernaut::HoldCancel(void)
 	m_hPlayer = nullptr;
 	m_bIsHolding = false;
 	StopSound("HUD.CPCharge");
+}
+
+void CNEO_Juggernaut::AnimThink(void) // Required for server controlled animation...
+{
+	StudioFrameAdvance();
+	SetContextThink(&CNEO_Juggernaut::AnimThink, gpGlobals->curtime + TICK_INTERVAL, "AnimThink");
 }
 
 #ifdef CLIENT_DLL

@@ -27,6 +27,7 @@ public:
 private:
 	void	Think(void);
 	void	HoldCancel(void);
+	void	AnimThink(void);
 #ifdef CLIENT_DLL
 	int		DrawModel(int flags) override;
 #endif
