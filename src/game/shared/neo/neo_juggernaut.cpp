@@ -181,7 +181,7 @@ void CNEO_Juggernaut::Think(void)
 		EmitSound("HUD.CPCaptured");
 #ifdef GAME_DLL
 		m_hPlayer->CreateRagdollEntity();
-		m_hPlayer->Weapon_DropAll(false);
+		m_hPlayer->Weapon_DropAllOnDeath(CTakeDamageInfo(this, this, 0, DMG_GENERIC));
 #endif
 		m_hPlayer->SetAbsVelocity(vec3_origin);
 		m_hPlayer->SetAbsOrigin(GetAbsOrigin());

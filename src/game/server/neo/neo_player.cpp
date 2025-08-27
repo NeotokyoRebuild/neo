@@ -1864,6 +1864,34 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 
 	StopWaterDeathSounds();
 
+	Weapon_DropAllOnDeath(info);
+
+	if (GetClass() == NEO_CLASS_JUGGERNAUT)
+	{
+		SpawnJuggernautPostDeath();
+	}
+
+	if (!IsBot() && !IsHLTV())
+	{
+		StartShowDmgStats(&info);
+	}
+
+	if (NEORules()->GetGameType() == NEO_GAME_TYPE_TDM)
+	{
+		GetGlobalTeam(NEORules()->GetOpposingTeam(this))->AddScore(1);
+	}
+
+	BaseClass::Event_Killed(info);
+
+	// Handle Corpse and Gibs
+	if (!m_bCorpseSet) // Event_Killed can be called multiple times, only set the dead model and spawn gibs once
+	{
+		SetDeadModel(info);
+	}
+}
+
+void CNEO_Player::Weapon_DropAllOnDeath( const CTakeDamageInfo &info )
+{
 	// Drop all weapons except the active weapon
 	const Vector damageForce = CalcDamageForceVector(info);
 	int iExplosivesDropped = 0;
@@ -1903,29 +1931,6 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 		{
 			Weapon_DropOnDeath(pActiveWeapon, damageForce);
 		}
-	}
-
-	if (GetClass() == NEO_CLASS_JUGGERNAUT)
-	{
-		SpawnJuggernautPostDeath();
-	}
-
-	if (!IsBot() && !IsHLTV())
-	{
-		StartShowDmgStats(&info);
-	}
-
-	if (NEORules()->GetGameType() == NEO_GAME_TYPE_TDM)
-	{
-		GetGlobalTeam(NEORules()->GetOpposingTeam(this))->AddScore(1);
-	}
-
-	BaseClass::Event_Killed(info);
-
-	// Handle Corpse and Gibs
-	if (!m_bCorpseSet) // Event_Killed can be called multiple times, only set the dead model and spawn gibs once
-	{
-		SetDeadModel(info);
 	}
 }
 

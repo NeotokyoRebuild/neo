@@ -76,6 +76,7 @@ public:
 	virtual const char* GetOverrideStepSound(const char* pBaseStepSound) OVERRIDE;
 	virtual void Weapon_Drop(CBaseCombatWeapon *pWeapon, const Vector *pvecTarget = NULL, const Vector *pVelocity = NULL) OVERRIDE;
 	void Weapon_DropOnDeath(CNEOBaseCombatWeapon *pWeapon, Vector damageForce);
+	void Weapon_DropAllOnDeath(const CTakeDamageInfo &info);
 	virtual void UpdateOnRemove(void) OVERRIDE;
 	virtual void DeathSound(const CTakeDamageInfo &info) OVERRIDE;
 	virtual CBaseEntity* EntSelectSpawnPoint(void) OVERRIDE;
