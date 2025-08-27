@@ -3291,6 +3291,7 @@ void CNEO_Player::BecomeJuggernaut()
 	GiveDefaultItems();
 	SetHealth(GetMaxHealth());
 	SuitPower_SetCharge(100);
+	//SetBloodColor(DONT_BLEED); Check C_HL2MP_Player::TraceAttack
 	m_HL2Local.m_cloakPower = CloakPower_Cap();
 	m_bAllowGibbing = false;
 	m_bInVision = false;

@@ -59,7 +59,7 @@ void CNEO_Juggernaut::Spawn(void)
 
 	if (m_bPostDeath)
 	{
-		Vector explOrigin = GetAbsOrigin() + EyePosition();
+		Vector explOrigin = GetAbsOrigin() + NEO_JUGGERNAUT_VIEW_OFFSET;
 		ExplosionCreate(explOrigin, GetAbsAngles(), this, 0, 128, SF_ENVEXPLOSION_NODAMAGE);
 		SetPlaybackRate(-m_flWarpedPlaybackRate);
 		SetCycle(1.0f);
