@@ -10,6 +10,7 @@
 #include "IGameUIFuncs.h"
 #include "neo_misc.h"
 #include "c_user_message_register.h"
+#include "igamesystem.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -330,11 +331,19 @@ void CNEOHud_KillerDamageInfo::DrawNeoHudElement()
 				// If it's an empty weapon, it's generally a suicide command kill
 				if (iKillerEntIndex == NEO_ENVIRON_KILLED)
 				{
-					NeoUI::Label(L"Killed by the map");
+					if (g_neoKDmgInfos.killerInfo.wszKilledWith[0] != L'\0')
+					{
+						V_swprintf_safe(wszLabel, L"Killed by %ls", g_neoKDmgInfos.killerInfo.wszKilledWith);
+						NeoUI::Label(wszLabel);
+					}
+					else
+					{
+						NeoUI::Label(L"Killed by map");
+					}
 				}
 				else if (g_neoKDmgInfos.killerInfo.wszKilledWith[0] == L'\0')
 				{
-					NeoUI::Label(L"Used suicide command");
+					NeoUI::Label(L"Killed by map or used suicide command");
 				}
 				else
 				{
@@ -575,6 +584,15 @@ static void __MsgFunc_DamageInfo(bf_read& msg)
 	else if (killerIdx == NEO_ENVIRON_KILLED)
 	{
 		g_neoKDmgInfos.killerInfo.iEntIndex = NEO_ENVIRON_KILLED;
+		g_neoKDmgInfos.killerInfo.wszKilledWith[0] = L'\0';
+		if (foundKilledBy)
+		{
+			const char *pszMap = IGameSystem::MapName();
+			if (V_strcmp(killedBy, "tank_targetsystem") == 0 && V_strcmp(pszMap, "ntre_rogue_ctg") == 0)
+			{
+				V_wcscpy_safe(g_neoKDmgInfos.killerInfo.wszKilledWith, L"Jeff");
+			}
+		}
 	}
 
 	ConMsg("%sDamage infos (Round %d):\n%s\n", BORDER, NEORules()->roundNumber(), setKillByLine ? killByLine : "");

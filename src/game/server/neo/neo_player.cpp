@@ -532,6 +532,9 @@ void CNEO_Player::Spawn(void)
 	m_bAllowGibbing = true;
 	m_bIneligibleForLoadoutPick = false;
 
+	static_assert(_ARRAYSIZE(m_rfAttackersScores) == MAX_PLAYERS);
+	static_assert(_ARRAYSIZE(m_rfAttackersAccumlator) == MAX_PLAYERS);
+	static_assert(_ARRAYSIZE(m_rfAttackersHits) == MAX_PLAYERS);
 	for (int i = 0; i < MAX_PLAYERS; ++i)
 	{
 		m_rfAttackersScores.GetForModify(i) = 0;
@@ -1792,13 +1795,21 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo *info)
 
 			if (killedWithInflictor)
 			{
-				const bool inflictorIsPlayer = (V_strcmp(killedWithInflictor->GetDebugName(), "player") == 0);
+				const bool inflictorIsPlayer = (ToNEOPlayer(killedWithInflictor) != nullptr);
 				if (inflictorIsPlayer)
 				{
-					// If killed with inflictor, is a player, but no active weapon, it's likely
-					// to be a suicide command kill
-					const auto *activeWep = neoAttacker->GetActiveWeapon();
-					killedWithName = (activeWep) ? activeWep->GetPrintName() : "";
+					const auto *neoActiveWep = static_cast<CNEOBaseCombatWeapon *>(neoAttacker->GetActiveWeapon());
+					if (neoAttacker->entindex() == entindex())
+					{
+						// NEO NOTE (nullsystem): This is a suicide kill, only explosive weapons makes sense
+						// Otherwise this could either be "kill" command or by map but still registers as player (EX: leech in ntre_rogue_ctg)
+						// For now we cannot tell EX: leech from kill comamnd so just leave it blank for that here
+						killedWithName = (neoActiveWep && (neoActiveWep->GetNeoWepBits() & NEO_WEP_EXPLOSIVE)) ? neoActiveWep->GetPrintName() : "";
+					}
+					else
+					{
+						killedWithName = (neoActiveWep) ? neoActiveWep->GetPrintName() : "";
+					}
 				}
 				else
 				{
@@ -1812,6 +1823,7 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo *info)
 		{
 			// Set it to NEO_ENVIRON_KILLED to indicate the map killed the player
 			attackerIdx = NEO_ENVIRON_KILLED;
+			killedWithName = killedWithInflictor->GetDebugName();
 		}
 		WRITE_SHORT(attackerIdx);
 		WRITE_STRING(killedWithName);
