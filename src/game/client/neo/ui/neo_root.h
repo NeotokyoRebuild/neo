@@ -20,6 +20,7 @@ struct NeoNewGame
 	wchar_t wszHostname[64] = L"NEOTOKYO;REBUILD Listen Server";
 	int iMaxPlayers = 24;
 	int iBotQuota = 10;
+	int iBotDifficulty = 2;
 	wchar_t wszPassword[64] = L"neo";
 	bool bFriendlyFire = true;
 	bool bUseSteamNetworking = false;

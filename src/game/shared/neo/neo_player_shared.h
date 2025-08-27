@@ -17,8 +17,8 @@
 #include "neo_predicted_viewmodel.h"
 #include "neo_misc.h"
 #include "shareddefs.h"
-
-#define NEO_WEP_BITS_UNDERLYING_TYPE long long int
+#include "weapon_bits.h"
+#include "neo_enums.h"
 
 //////////////////////////////////////////////////////
 // NEO MOVEMENT DEFINITIONS
@@ -170,41 +170,6 @@ COMPILE_TIME_ASSERT(NEO_ASSAULT_CROUCH_SPEED == NEO_VIP_CROUCH_SPEED);
 static constexpr float NEO_ZOOM_SPEED = 0.115f;
 static_assert(NEO_ZOOM_SPEED != 0.0f, "Divide by zero");
 
-enum NeoSkin {
-	NEO_SKIN_FIRST = 0,
-	NEO_SKIN_SECOND,
-	NEO_SKIN_THIRD,
-
-	NEO_SKIN__ENUM_COUNT
-};
-static constexpr int NEO_SKIN_ENUM_COUNT = NEO_SKIN__ENUM_COUNT;
-
-enum NeoClass {
-	NEO_CLASS_RECON = 0,
-	NEO_CLASS_ASSAULT,
-	NEO_CLASS_SUPPORT,
-
-	// NOTENOTE: VIP *must* be last, because we are
-	// using array offsets for recon/assault/support
-	NEO_CLASS_VIP,
-
-	NEO_CLASS__ENUM_COUNT
-};
-static constexpr int NEO_CLASS_ENUM_COUNT = NEO_CLASS__ENUM_COUNT;
-
-enum NeoStar {
-	STAR_NONE = 0,
-	STAR_ALPHA,
-	STAR_BRAVO,
-	STAR_CHARLIE,
-	STAR_DELTA,
-	STAR_ECHO,
-	STAR_FOXTROT,
-
-	STAR__TOTAL
-};
-#define NEO_DEFAULT_STAR STAR_ALPHA
-
 // Implemented by CNEOPlayer::m_fNeoFlags.
 // Rolling our own because Source FL_ flags already reserve all 32 bits,
 // and extending the type would require a larger refactor.
@@ -252,53 +217,8 @@ inline const wchar_t *GetNeoClassNameW(const int neoClassIdx)
 	return (IN_BETWEEN_AR(0, neoClassIdx, NEO_CLASS__ENUM_COUNT)) ? SZWSZ_NEO_CLASS_STRS[neoClassIdx].wszStr : L"";
 }
 
-inline const char *GetRankName(int xp, bool shortened = false)
-{
-	if (xp < 0)
-	{
-		return shortened ? "Dog" : "Rankless Dog";
-	}
-	else if (xp < 4)
-	{
-		return shortened ? "Pvt" : "Private";
-	}
-	else if (xp < 10)
-	{
-		return shortened ? "Cpl" : "Corporal";
-	}
-	else if (xp < 20)
-	{
-		return shortened ? "Sgt" : "Sergeant";
-	}
-	else
-	{
-		return shortened ? "Lt" : "Lieutenant";
-	}
-}
-
-inline const int GetRank(int xp)
-{
-	if (xp < 0)
-	{
-		return 0;
-	}
-	else if (xp < 4)
-	{
-		return 1;
-	}
-	else if (xp < 10)
-	{
-		return 2;
-	}
-	else if (xp < 20)
-	{
-		return 3;
-	}
-	else
-	{
-		return 4;
-	}
-}
+int GetRank(const int xp);
+const char *GetRankName(const int xp, const bool shortened = false);
 
 CBaseCombatWeapon* GetNeoWepWithBits(const CNEO_Player* player, const NEO_WEP_BITS_UNDERLYING_TYPE& neoWepBits);
 
