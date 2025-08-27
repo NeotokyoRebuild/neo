@@ -34,7 +34,7 @@ public:
 
 	virtual void Drop(const Vector &vecVelocity) override;
 	virtual void ItemHolsterFrame(void);
-	virtual void OnPickedUp(CBaseCombatCharacter *pNewOwner);
+	void Equip(CBaseCombatCharacter *pNewOwner) override;
 	virtual int	ObjectCaps(void) { return BaseClass::ObjectCaps() | FCAP_IMPULSE_USE;};
 	void HandleGhostUnequip(void);
 
