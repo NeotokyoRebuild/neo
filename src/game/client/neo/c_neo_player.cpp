@@ -1348,13 +1348,34 @@ void C_NEO_Player::PostThink(void)
 
 void C_NEO_Player::CalcDeathCamView(Vector &eyeOrigin, QAngle &eyeAngles, float &fov)
 {
-	if (auto *pRagdoll = static_cast<C_HL2MPRagdoll *>(m_hRagdoll.Get()))
+	auto* pRagdoll = static_cast<C_HL2MPRagdoll*>(m_hRagdoll.Get());
+	if (pRagdoll && GetClass() != NEO_CLASS_JUGGERNAUT)
 	{
 		// First person death cam
 		pRagdoll->GetAttachment(pRagdoll->LookupAttachment("eyes"), eyeOrigin, eyeAngles);
 		Vector vForward;
 		AngleVectors(eyeAngles, &vForward);
 		fov = GetFOV();
+	}
+	else if (GetClass() == NEO_CLASS_JUGGERNAUT)
+	{
+		if (NEORules()->GetGameType() == NEO_GAME_TYPE_JGR)
+		{
+			Vector vTarget = NEORules()->GetGhostPos();
+			eyeOrigin = vTarget + Vector(80, 80, 80);
+
+			Vector vDir = vTarget - eyeOrigin;
+			VectorNormalize(vDir);
+			VectorAngles(vDir, eyeAngles);
+			fov = GetFOV();
+		}
+		else
+		{
+			// Basic behaviour for now
+			eyeOrigin = EyePosition();
+			eyeAngles = CurrentViewAngles();
+			fov = GetFOV();
+		}
 	}
 	else
 	{
