@@ -859,7 +859,7 @@ int ClientModeShared::HandleSpectatorKeyInput( int down, ButtonCode_t keynum, co
 				if (pPlayerToTakeover) // ToNEOPlayer checks valid pObserverTarget
 				{
 					// Verify on server-side that player is a valid replacement target
-					engine->ServerCmd(VarArgs("spectatortakeoverplayer %d", pObserverTarget->entindex()));
+					engine->ServerCmd(VarArgs("spectatortakeoverplayer %d", pPlayerToTakeover->GetUserID()));
 				}
 			}
 		}

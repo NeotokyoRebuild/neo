@@ -1741,7 +1741,7 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 		}
 
 		int targetIndex = V_atoi(args[1]);
-		CBaseEntity* pTarget = UTIL_EntityByIndex(targetIndex);
+		CBaseEntity* pTarget = UTIL_PlayerByUserId(targetIndex);
 		CNEO_Player* pPlayerToTakeover = ToNEOPlayer(pTarget);
 
 		if (pPlayerToTakeover && pPlayerToTakeover->IsBot())
@@ -2249,8 +2249,6 @@ bool CNEO_Player::Weapon_GetPosition(int slot, int position)
 
 void CNEO_Player::ChangeTeam( int iTeam )
 {
-	RestorePlayerFromSpectatorTakeover();
-
 	const bool isAllowedToChange = ProcessTeamSwitchRequest(iTeam);
 
 	if (isAllowedToChange)
@@ -3470,8 +3468,15 @@ void CNEO_Player::RestorePlayerFromSpectatorTakeover()
 {
 	if (m_hSpectatorTakeoverPlayerTarget.Get())
 	{
+		CNEO_Player* pPlayerTakenOver = m_hSpectatorTakeoverPlayerTarget.Get();
 		m_hSpectatorTakeoverPlayerTarget->SpectatorTakeoverPlayerRevert(this);
 		m_hSpectatorTakeoverPlayerTarget = nullptr;
+
+		// If the replaced player was a human, they were AFK so kick them to spectator
+		if (pPlayerTakenOver && !pPlayerTakenOver->IsBot())
+		{
+			pPlayerTakenOver->ChangeTeam(TEAM_SPECTATOR);
+		}
 	}
 }
 
