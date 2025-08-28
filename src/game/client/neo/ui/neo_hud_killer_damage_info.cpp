@@ -587,10 +587,9 @@ static void __MsgFunc_DamageInfo(bf_read& msg)
 		g_neoKDmgInfos.killerInfo.wszKilledWith[0] = L'\0';
 		if (foundKilledBy)
 		{
-			const char *pszMap = IGameSystem::MapName();
-			if (V_strcmp(killedBy, "tank_targetsystem") == 0 && V_strcmp(pszMap, "ntre_rogue_ctg") == 0)
+			if (V_strcmp(killedBy, "neo_npc_targetsystem") == 0)
 			{
-				V_wcscpy_safe(g_neoKDmgInfos.killerInfo.wszKilledWith, L"Jeff");
+				V_wcscpy_safe(g_neoKDmgInfos.killerInfo.wszKilledWith, L"Turret");
 			}
 		}
 	}
