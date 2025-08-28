@@ -255,7 +255,7 @@ void CNEOHud_KillerDamageInfo::UpdateStateForNeoHudElementDraw()
 			m_iEntIdxsList[m_iAttackersTotalsSize] = pIdx;
 
 			int iFontTextWidth = 0, iFontTextHeight = 0;
-			vgui::surface()->GetTextSize(m_uiCtx.fonts[NeoUI::FONT_NTNORMAL].hdl,
+			vgui::surface()->GetTextSize(m_uiCtx.fonts[NeoUI::FONT_NTHORIZSIDES].hdl,
 					m_wszDmgerNamesList[m_iAttackersTotalsSize],
 					iFontTextWidth, iFontTextHeight);
 			iMaxNameTextWidth = Max(iMaxNameTextWidth, iFontTextWidth);
@@ -301,7 +301,7 @@ void CNEOHud_KillerDamageInfo::DrawNeoHudElement()
 
 		if (bHasKiller)
 		{
-			NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
+			NeoUI::SwapFont(NeoUI::FONT_NTHORIZSIDES);
 			const bool bSuicideKill = (iKillerEntIndex == localPlayer->entindex()) ||
 					(iKillerEntIndex == NEO_ENVIRON_KILLED);
 			// Killer title
@@ -439,7 +439,7 @@ void CNEOHud_KillerDamageInfo::DrawNeoHudElement()
 				// Left side - Dealt damages + hits to attacker
 				if (attackerInfo.dealtDmgs > 0)
 				{
-					NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
+					NeoUI::SwapFont(NeoUI::FONT_NTHORIZSIDES);
 					if (bYouKilled)
 					{
 						vgui::surface()->DrawSetTextColor(COLOR_RED);
@@ -474,7 +474,7 @@ void CNEOHud_KillerDamageInfo::DrawNeoHudElement()
 				// Right side - Taken damages + hits from attacker
 				if (attackerInfo.takenDmgs > 0)
 				{
-					NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
+					NeoUI::SwapFont(NeoUI::FONT_NTHORIZSIDES);
 					if (bKilledYou)
 					{
 						vgui::surface()->DrawSetTextColor(COLOR_RED);
