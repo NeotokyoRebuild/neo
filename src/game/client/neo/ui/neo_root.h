@@ -235,6 +235,10 @@ public:
 	float m_flWideAs43 = 0.0f;
 	SprayInfo m_sprayToDelete = {};
 
+	servernetadr_t m_favCacheNetAdr = {};
+	bool m_bFavCacheIsFav = false;
+	bool m_bAutoRefreshFav = false;
+
 private:
 	void OnFileSelectedMode_Spray(const char *szFullpath);
 };
