@@ -1327,7 +1327,7 @@ void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 		// NEO NOTE (nullsystem): F# as 1 is thinner than 3/not monospaced font
 		int iFontWidth, iFontHeight;
 		vgui::surface()->GetTextSize(c->fonts[c->eFont].hdl, L"F##", iFontWidth, iFontHeight);
-		const int iHintYPos = c->dPanel.y + (iFontHeight / 2);
+		const int iHintYPos = c->rWidgetArea.y0 + pFontI->iYOffset;
 
 		vgui::surface()->DrawSetTextPos(c->dPanel.x - c->iMarginX - iFontWidth, iHintYPos);
 		vgui::surface()->DrawPrintText(L"F 1", 3);
