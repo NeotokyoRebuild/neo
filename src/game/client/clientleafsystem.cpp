@@ -1004,6 +1004,20 @@ void CClientLeafSystem::RemoveShadowFromRenderables( ClientLeafShadowHandle_t ha
 //-----------------------------------------------------------------------------
 void CClientLeafSystem::AddShadowToLeaf( int leaf, ClientLeafShadowHandle_t shadow )
 {
+#if defined(DEBUG) && defined(NEO)
+	static constexpr const char *ASSERT_MAPS_TO_IGNORE[] = {
+		"ntre_engage_ctg", "ntre_skyline_ctg", "ntre_rise_ctg"
+	};
+	bool bIgnoreAssert = false;
+	for (const char *pszMapCmp : ASSERT_MAPS_TO_IGNORE)
+	{
+		if (FStrEq(MapName(), pszMapCmp))
+		{
+			bIgnoreAssert = true;
+			break;
+		}
+	}
+#endif // defined(DEBUG) && defined(NEO)
 	m_ShadowsInLeaf.AddElementToBucket( leaf, shadow ); 
 
 	// Add the shadow exactly once to all renderables in the leaf
@@ -1022,9 +1036,9 @@ void CClientLeafSystem::AddShadowToLeaf( int leaf, ClientLeafShadowHandle_t shad
 
 #ifdef DEBUG
 #ifdef NEO
-		// Engage happily blows past this limit, but it seems to be fine.
+		// Few maps will happily blows past this limit, but it seems to be fine.
 		// Just ignoring this specific case in debug.
-		if (!FStrEq(MapName(), "nt_engage_ctg"))
+		if (!bIgnoreAssert)
 #endif
 		{
 			Assert(m_ShadowsInLeaf.NumAllocated() < 2000);

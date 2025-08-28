@@ -537,17 +537,14 @@ void CNEO_Player::Spawn(void)
 	m_bAllowGibbing = true;
 	m_bIneligibleForLoadoutPick = false;
 
-	for (int i = 0; i < m_rfAttackersScores.Count(); ++i)
+	static_assert(_ARRAYSIZE(m_rfAttackersScores) == MAX_PLAYERS);
+	static_assert(_ARRAYSIZE(m_rfAttackersAccumlator) == MAX_PLAYERS);
+	static_assert(_ARRAYSIZE(m_rfAttackersHits) == MAX_PLAYERS);
+	for (int i = 0; i < MAX_PLAYERS; ++i)
 	{
-		m_rfAttackersScores.Set(i, 0);
-	}
-	for (int i = 0; i < m_rfAttackersAccumlator.Count(); ++i)
-	{
-		m_rfAttackersAccumlator.Set(i, 0.0f);
-	}
-	for (int i = 0; i < m_rfAttackersHits.Count(); ++i)
-	{
-		m_rfAttackersHits.Set(i, 0);
+		m_rfAttackersScores.GetForModify(i) = 0;
+		m_rfAttackersAccumlator.GetForModify(i) = 0.0f;
+		m_rfAttackersHits.GetForModify(i) = 0;
 	}
 
 	m_flRanOutSprintTime = 0.0f;
@@ -1797,19 +1794,43 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo *info)
 	{
 		short attackerIdx = 0;
 		auto *neoAttacker = info ? ToNEOPlayer(info->GetAttacker()) : nullptr;
+		auto *killedWithInflictor = info ? info->GetInflictor() : nullptr;
 		const char *killedWithName = "";
-		if (neoAttacker && neoAttacker->entindex() != entindex())
+		if (neoAttacker)
 		{
 			attackerIdx = static_cast<short>(neoAttacker->entindex());
 
-			auto *killedWithInflictor = info->GetInflictor();
-			const bool inflictorIsPlayer = killedWithInflictor ? !Q_strcmp(killedWithInflictor->GetDebugName(), "player") : false;
 			if (killedWithInflictor)
 			{
-				killedWithName = inflictorIsPlayer ? neoAttacker->m_hActiveWeapon->GetPrintName() : killedWithInflictor->GetDebugName();
+				const bool inflictorIsPlayer = (ToNEOPlayer(killedWithInflictor) != nullptr);
+				if (inflictorIsPlayer)
+				{
+					const auto *neoActiveWep = static_cast<CNEOBaseCombatWeapon *>(neoAttacker->GetActiveWeapon());
+					if (neoAttacker->entindex() == entindex())
+					{
+						// NEO NOTE (nullsystem): This is a suicide kill, only explosive weapons makes sense
+						// Otherwise this could either be "kill" command or by map but still registers as player (EX: leech in ntre_rogue_ctg)
+						// For now we cannot tell EX: leech from kill comamnd so just leave it blank for that here
+						killedWithName = (neoActiveWep && (neoActiveWep->GetNeoWepBits() & NEO_WEP_EXPLOSIVE)) ? neoActiveWep->GetPrintName() : "";
+					}
+					else
+					{
+						killedWithName = (neoActiveWep) ? neoActiveWep->GetPrintName() : "";
+					}
+				}
+				else
+				{
+					killedWithName = killedWithInflictor->GetDebugName();
+				}
 			}
 			if (!Q_strcmp(killedWithName, "neo_grenade_frag")) { killedWithName = "Frag Grenade"; }
 			if (!Q_strcmp(killedWithName, "neo_deployed_detpack")) { killedWithName = "Remote Detpack"; }
+		}
+		else if (killedWithInflictor)
+		{
+			// Set it to NEO_ENVIRON_KILLED to indicate the map killed the player
+			attackerIdx = NEO_ENVIRON_KILLED;
+			killedWithName = killedWithInflictor->GetDebugName();
 		}
 		WRITE_SHORT(attackerIdx);
 		WRITE_STRING(killedWithName);

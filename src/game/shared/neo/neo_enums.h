@@ -47,3 +47,5 @@ enum ENeoRank
 };
 static const constexpr int NEO_RANK_TOTAL = NEO_RANK__TOTAL;
 
+static const constexpr short NEO_ENVIRON_KILLED = -1;
+
