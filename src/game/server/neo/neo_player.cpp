@@ -3510,14 +3510,6 @@ void CNEO_Player::SpectatorTakeoverPlayerInitiate(CNEO_Player* pPlayer)
 
 void CNEO_Player::SpectatorTakeoverPlayerRevert(CNEO_Player* pPlayer)
 {
-    // Restore bot activity
-    RemoveEffects(EF_NODRAW);
-    SetSolid(SOLID_BBOX);
-    m_takedamage = DAMAGE_YES;
-
-    RemoveFlag(FL_FROZEN);
-    RemoveFlag(FL_NOTARGET);
-
     // Clear takeover handles
     m_hSpectatorTakeoverPlayerImpersonatingMe = nullptr;
     if (pPlayer)
