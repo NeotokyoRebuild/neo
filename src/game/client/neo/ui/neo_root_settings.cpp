@@ -17,6 +17,7 @@
 
 #include "neo_ui.h"
 #include "neo_root.h"
+#include "neo/ui/neo_utils.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -235,12 +236,143 @@ void NeoSettingsInit(NeoSettings *ns)
 			vgui::surface()->DrawGetTextureSize(pTex->iTexId, pTex->iWide, pTex->iTall);
 		}
 	}
+
+	// NEO NOTE (Adam) Ensures random background on every launch if random background option selected.
+	// If new background is different from previous background, the static image will change during load
+	// NEO TODO (Adam) Change the background on client shutdown instead somehow?
+	NeoSettingsBackgroundsInit(ns);
+}
+
+// sv_unlockedchapters is not a consistent way of guaranteeing what background shows up as the menu background.
+// Instead, we read all available backgrounds from a second file neo_backgrounds.txt, and overwrite chapterbackgrounds.txt
+// to only include the one background that the user is interested in.
+void NeoSettingsBackgroundsInit(NeoSettings* ns)
+{
+#define NEO_BACKGROUNDS_FILENAME "scripts/neo_backgrounds.txt"
+#define NEO_RANDOM_BACKGROUND_NAME "Random"
+#define NEO_FALLBACK_BACKGROUND_DISPLAYNAME "No backgrounds"
+#define NEO_FALLBACK_BACKGROUND_FILENAME "background01"
+
+	if (ns->backgrounds)
+	{
+		ns->backgrounds->deleteThis();
+	}
+	ns->backgrounds = new KeyValues( "neo_backgrounds" );
+	ns->iCBListSize = 0;
+
+	constexpr auto allocate = [](NeoSettings *ns, int size) {
+		ns->p2WszCBList = (wchar_t **)calloc(sizeof(wchar_t *), ns->iCBListSize);
+		ns->p2WszCBList[0] = (wchar_t *)calloc(sizeof(wchar_t) * size, ns->iCBListSize);
+	};
+
+	// Setup Background Map options
+	int dispSize = Max(sizeof(NEO_FALLBACK_BACKGROUND_DISPLAYNAME), sizeof(NEO_RANDOM_BACKGROUND_NAME) + 1);
+	if ( !ns->backgrounds->LoadFromFile( g_pFullFileSystem, NEO_BACKGROUNDS_FILENAME, "MOD" ) )
+	{ // File empty or unable to load, set to static and return early
+		Warning( "Unable to load '%s'\n", NEO_BACKGROUNDS_FILENAME );
+		ns->iCBListSize = 1;
+		allocate(ns, dispSize);
+		g_pVGuiLocalize->ConvertANSIToUnicode(NEO_FALLBACK_BACKGROUND_DISPLAYNAME, ns->p2WszCBList[0], sizeof(wchar_t) * dispSize);
+		NeoSettingsBackgroundWrite(ns, NEO_FALLBACK_BACKGROUND_FILENAME);
+		return;
+	}
+
+	for ( KeyValues* background = ns->backgrounds->GetFirstSubKey(); background != NULL; /*background = background->GetNextKey()*/)
+	{ // Iterate once to get the number of options and longest background map name
+		const char* displayName = background->GetName();
+		if (FStrEq(displayName, "")) // NEO NOTE (Adam) If name missing read will fail
+		{ // no display name, skip
+			KeyValues* thisKey = background;
+			background = background->GetNextKey();
+			ns->backgrounds->RemoveSubKey(thisKey);
+			continue;
+		}
+
+		const char* fileName = background->GetString("fileName");
+		if (FStrEq(fileName, ""))
+		{ // no file name, skip
+			KeyValues* thisKey = background;
+			background = background->GetNextKey();
+			ns->backgrounds->RemoveSubKey(thisKey);
+			continue;
+		}
+
+		ns->iCBListSize++;
+		dispSize = Max(dispSize, (V_strlen(displayName) + 1));
+		background = background->GetNextKey();
+	}
+	const int wDispSize = sizeof(wchar_t) * dispSize;
+	
+	// Random Background Option
+	ns->iCBListSize++;
+	allocate(ns, dispSize);
+	KeyValues* background = ns->backgrounds->GetFirstSubKey();
+	// iterate through background maps and set their names
+	for (int i = 0, offset = 0; i < ns->iCBListSize - 1; ++i, offset += dispSize)
+	{
+		g_pVGuiLocalize->ConvertANSIToUnicode(background->GetName(), ns->p2WszCBList[0] + offset, wDispSize);
+		ns->p2WszCBList[i] = ns->p2WszCBList[0] + offset;
+		background = background->GetNextKey();
+	}
+
+	// Set last option to random
+	const int offset = (ns->iCBListSize - 1) * dispSize;
+	g_pVGuiLocalize->ConvertANSIToUnicode(ns->iCBListSize == 1 ? NEO_FALLBACK_BACKGROUND_DISPLAYNAME : NEO_RANDOM_BACKGROUND_NAME, ns->p2WszCBList[0] + offset, wDispSize);
+	ns->p2WszCBList[ns->iCBListSize - 1] = ns->p2WszCBList[0] + offset;
+
+	// write selected background name
+	NeoSettingsBackgroundWrite(ns);
+}
+
+void NeoSettingsBackgroundWrite(const NeoSettings* ns, const char* backgroundName)
+{
+	// Select background name
+	if (!backgroundName)
+	{
+		const int selectedBackground = ns->cvr.sv_unlockedchapters.GetInt() + 1;
+		int i = 1;
+		const int iFinal = selectedBackground >= ns->iCBListSize ? RandomInt(1, ns->iCBListSize - 1) : selectedBackground;
+		KeyValues* background;
+		for (background = ns->backgrounds->GetFirstSubKey(); background != NULL && i < iFinal; (background = background->GetNextKey()) && i++)
+		{ // Skip to the desired background
+		}
+		backgroundName = background ? background->GetString("fileName") : NEO_FALLBACK_BACKGROUND_DISPLAYNAME;
+	}
+
+	// Overwrite CHAPTER_BACKGROUNDS_FILENAME with selected background
+	CUtlBuffer buf( 0, 0, CUtlBuffer::TEXT_BUFFER );
+	bpr(0, buf, "// Auto Generated on game launch. Set background in game through the options menu from those available in scripts/neo_backgrounds.txt\n");
+	bpr(0, buf, "\"chapters\"\n");
+	bpr(0, buf, "{\n" );
+	bpr(1, buf, "1 \"");
+	bpr(0, buf, backgroundName);
+	bpr(0, buf, "\"\n");
+	bpr(0, buf, "}\n");
+
+#define NEO_CHAPTER_BACKGROUNDS_FILENAME "scripts/chapterbackgrounds.txt"
+	FileHandle_t fh = g_pFullFileSystem->Open( NEO_CHAPTER_BACKGROUNDS_FILENAME, "wb" );
+	if ( FILESYSTEM_INVALID_HANDLE != fh )
+	{
+		g_pFullFileSystem->Write( buf.Base(), buf.TellPut(), fh );
+		g_pFullFileSystem->Close( fh );
+	}
+	else
+	{
+		Warning( "Unable to open '%s' for writing\n", NEO_CHAPTER_BACKGROUNDS_FILENAME );
+	}
 }
 
 void NeoSettingsDeinit(NeoSettings *ns)
 {
 	free(ns->video.p2WszVmDispList[0]);
 	free(ns->video.p2WszVmDispList);
+
+	free(ns->p2WszCBList[0]);
+	free(ns->p2WszCBList);
+	if (ns->backgrounds)
+	{
+		ns->backgrounds->deleteThis();
+	}
 }
 
 void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKeys)
@@ -282,8 +414,9 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 		pGeneral->bAutoDetectOBS = cvr->cl_neo_streamermode_autodetect_obs.GetBool();
 		pGeneral->bEnableRangeFinder = cvr->cl_neo_hud_rangefinder_enabled.GetBool();
 		pGeneral->bExtendedKillfeed = cvr->cl_neo_hud_extended_killfeed.GetBool();
-		pGeneral->iBackground = cvr->sv_unlockedchapters.GetInt();
+		pGeneral->iBackground = clamp(cvr->sv_unlockedchapters.GetInt(), 0, ns->iCBListSize - 1);
 		pGeneral->iKdinfoToggletype = cvr->cl_neo_kdinfo_toggletype.GetInt();
+		NeoSettingsBackgroundWrite(ns);
 		NeoUI::ResetTextures();
 	}
 	{
@@ -503,6 +636,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 		cvr->cl_neo_hud_extended_killfeed.SetValue(pGeneral->bExtendedKillfeed);
 		cvr->sv_unlockedchapters.SetValue(pGeneral->iBackground);
 		cvr->cl_neo_kdinfo_toggletype.SetValue(pGeneral->iKdinfoToggletype);
+		NeoSettingsBackgroundWrite(ns);
 	}
 	{
 		const NeoSettings::Keys *pKeys = &ns->keys;
@@ -717,8 +851,11 @@ void NeoSettings_General(NeoSettings *ns)
 	NeoUI::RingBox(L"Show FPS", SHOWFPS_LABELS, ARRAYSIZE(SHOWFPS_LABELS), &pGeneral->iShowFps);
 	NeoUI::RingBoxBool(L"Show rangefinder", &pGeneral->bEnableRangeFinder);
 	NeoUI::RingBoxBool(L"Extended Killfeed", &pGeneral->bExtendedKillfeed);
-	NeoUI::SliderInt(L"Selected Background", &pGeneral->iBackground, 1, 4); // NEO TODO (Adam) switch to RingBox with values read from ChapterBackgrounds.txt
 	NeoUI::RingBox(L"Killer damage info auto show", KDMGINFO_TOGGLETYPE_LABELS, KDMGINFO_TOGGLETYPE__TOTAL, &pGeneral->iKdinfoToggletype);
+
+	
+	NeoUI::HeadingLabel(L"MAIN MENU");
+	NeoUI::RingBox(L"Selected Background", const_cast<const wchar_t **>(ns->p2WszCBList), ns->iCBListSize, &pGeneral->iBackground);
 
 	NeoUI::HeadingLabel(L"STREAMER MODE");
 	NeoUI::RingBoxBool(L"Streamer mode", &pGeneral->bStreamerMode);

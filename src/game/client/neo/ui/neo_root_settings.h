@@ -164,6 +164,10 @@ struct NeoSettings
 	Video video;
 	Crosshair crosshair;
 
+	KeyValues* backgrounds;
+	int iCBListSize;
+	wchar_t** p2WszCBList;
+
 	int iCurTab = 0;
 	bool bBack = false;
 	bool bModified = false;
@@ -247,6 +251,8 @@ struct NeoSettings
 	CVR cvr;
 };
 void NeoSettingsInit(NeoSettings *ns);
+void NeoSettingsBackgroundsInit(NeoSettings* ns);
+void NeoSettingsBackgroundWrite(const NeoSettings* ns, const char* backgroundName = nullptr);
 void NeoSettingsDeinit(NeoSettings *ns);
 void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKeys = NeoSettings::Keys::NONE);
 void NeoSettingsSave(const NeoSettings *ns);
