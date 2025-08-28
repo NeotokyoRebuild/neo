@@ -102,6 +102,9 @@ public:
 	 * Returns true if the ray between the position and the subject is unobstructed.
 	 * A visible spot on the subject is returned in 'visibleSpot'.
 	 */
+#ifdef NEO // May as well update idealTargetPoint here to not do extra tracelines
+	mutable CUtlMap<int, Vector> m_idealTargetPoint;
+#endif // NEO
 	virtual bool IsLineOfSightClearToEntity( const CBaseEntity *subject, Vector *visibleSpot = NULL ) const;
 
 	/// @todo: Implement LookAt system

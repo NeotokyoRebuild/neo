@@ -263,10 +263,11 @@ public:
 	CNetworkVar(float, m_flCamoAuxLastTime);
 	CNetworkVar(int, m_nVisionLastTick);
 	CNetworkVar(float, m_flJumpLastTime);
+	CNetworkVar(float, m_flNextPingTime);
 
-	CNetworkArray(int, m_rfAttackersScores, (MAX_PLAYERS + 1));
-	CNetworkArray(float, m_rfAttackersAccumlator, (MAX_PLAYERS + 1));
-	CNetworkArray(int, m_rfAttackersHits, (MAX_PLAYERS + 1));
+	CNetworkArray(int, m_rfAttackersScores, MAX_PLAYERS);
+	CNetworkArray(float, m_rfAttackersAccumlator, MAX_PLAYERS);
+	CNetworkArray(int, m_rfAttackersHits, MAX_PLAYERS);
 
 	CNetworkVar(unsigned char, m_NeoFlags);
 	CNetworkString(m_szNeoName, MAX_PLAYER_NAME_LENGTH);

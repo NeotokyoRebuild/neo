@@ -1,0 +1,15 @@
+"backgrounds"
+{
+	"SRADI-8 ICHIBAN"
+	{
+		"fileName"		"background01"
+	}
+	"Alley"
+	{
+		"fileName"		"background_alley"
+	}
+	"Door"
+	{
+		"fileName"		"background_door"
+	}
+}

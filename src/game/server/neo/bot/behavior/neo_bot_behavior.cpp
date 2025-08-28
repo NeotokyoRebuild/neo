@@ -276,6 +276,12 @@ Vector CNEOBotMainAction::SelectTargetPoint( const INextBot *meBot, const CBaseC
 			}
 		}
 
+		int idealTargetPoint = me->GetVisionInterface()->m_idealTargetPoint.Find(subject->entindex());
+		if (idealTargetPoint != me->GetVisionInterface()->m_idealTargetPoint.InvalidIndex())
+		{
+			return me->GetVisionInterface()->m_idealTargetPoint[idealTargetPoint];
+		}
+
 		// aim for the center of the object (ie: sentry gun)
 		return subject->WorldSpaceCenter();
 	}

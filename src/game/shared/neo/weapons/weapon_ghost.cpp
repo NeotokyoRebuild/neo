@@ -176,9 +176,9 @@ ConVar neo_ghost_debug_spew("neo_ghost_debug_spew", "0", FCVAR_CHEAT | FCVAR_REP
 ConVar neo_ghost_debug_hudinfo("neo_ghost_debug_hudinfo", "0", FCVAR_CHEAT | FCVAR_REPLICATED,
 	"Whether to overlay debug text information to screen about ghosting targets.", true, 0.0, true, 1.0);
 
-void CWeaponGhost::OnPickedUp(CBaseCombatCharacter *pNewOwner)
+void CWeaponGhost::Equip(CBaseCombatCharacter *pNewOwner)
 {
-	BaseClass::OnPickedUp(pNewOwner);
+	BaseClass::Equip(pNewOwner);
 
 	if (pNewOwner)
 	{
