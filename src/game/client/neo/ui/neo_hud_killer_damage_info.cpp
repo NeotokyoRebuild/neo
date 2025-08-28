@@ -587,7 +587,7 @@ static void __MsgFunc_DamageInfo(bf_read& msg)
 		g_neoKDmgInfos.killerInfo.wszKilledWith[0] = L'\0';
 		if (foundKilledBy && V_strcmp(killedBy, "neo_npc_targetsystem") == 0)
 		{
-			const char* pszMap = IGameSystem::MapName();
+			const char *pszMap = IGameSystem::MapName();
 			if (V_strcmp(pszMap, "ntre_rogue_ctg") == 0)
 			{
 				V_wcscpy_safe(g_neoKDmgInfos.killerInfo.wszKilledWith, L"184-J IFV");
