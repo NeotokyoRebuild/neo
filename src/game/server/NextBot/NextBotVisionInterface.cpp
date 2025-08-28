@@ -20,6 +20,7 @@
 #ifdef NEO
 #include "neo_player.h"
 #include "neo_smokelineofsightblocker.h"
+#include "bot/neo_bot.h"
 #endif
 
 #include "tier0/vprof.h"
@@ -35,6 +36,9 @@ ConVar nb_debug_known_entities( "nb_debug_known_entities", "0", FCVAR_CHEAT, "Sh
 //------------------------------------------------------------------------------------------
 IVision::IVision( INextBot *bot ) : INextBotComponent( bot )
 { 
+#ifdef NEO
+	m_idealTargetPoint.SetLessFunc(DefLessFunc(int));
+#endif // NEO
 	Reset();
 }
 
@@ -58,6 +62,9 @@ void IVision::Reset( void )
 	{
 		m_notVisibleTimer[i].Invalidate();
 	}
+#ifdef NEO
+	m_idealTargetPoint.RemoveAll();
+#endif // NEO
 }
 
 
@@ -767,6 +774,25 @@ bool IVision::IsLineOfSightClearToEntity( const CBaseEntity *subject, Vector *vi
 	trace_t result;
 	NextBotTraceFilterIgnoreActors filter( subject, COLLISION_GROUP_NONE );
 
+#ifdef NEO
+	Vector firstPosition = subject->WorldSpaceCenter();
+	Vector secondPosition = subject->EyePosition();
+	auto neoBot = static_cast<CNEOBot*>(GetBot());
+	if (neoBot && neoBot->GetDifficulty() >= CNEOBot::DifficultyType::HARD)
+	{
+		std::swap(firstPosition, secondPosition);
+	}
+	UTIL_TraceLine( GetBot()->GetBodyInterface()->GetEyePosition(), firstPosition, MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, &result );
+	if ( result.DidHit() )
+	{
+		UTIL_TraceLine( GetBot()->GetBodyInterface()->GetEyePosition(), secondPosition, MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, &result );
+
+		if ( result.DidHit() )
+		{
+			UTIL_TraceLine( GetBot()->GetBodyInterface()->GetEyePosition(), subject->GetAbsOrigin(), MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, &result );
+		}
+	}
+#else
 	UTIL_TraceLine( GetBot()->GetBodyInterface()->GetEyePosition(), subject->WorldSpaceCenter(), MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, &result );
 	if ( result.DidHit() )
 	{
@@ -777,13 +803,23 @@ bool IVision::IsLineOfSightClearToEntity( const CBaseEntity *subject, Vector *vi
 			UTIL_TraceLine( GetBot()->GetBodyInterface()->GetEyePosition(), subject->GetAbsOrigin(), MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, &result );
 		}
 	}
+#endif // NEO
 
 	if ( visibleSpot )
 	{
 		*visibleSpot = result.endpos;
 	}
+#ifdef NEO
+	const bool canSee = result.fraction >= 1.0f && !result.startsolid;
+	if (canSee)
+	{
+		m_idealTargetPoint.InsertOrReplace(subject->entindex(), result.endpos);
+	}
 
+	return canSee;
+#else
 	return ( result.fraction >= 1.0f && !result.startsolid );
+#endif // NEO
 
 #endif
 }

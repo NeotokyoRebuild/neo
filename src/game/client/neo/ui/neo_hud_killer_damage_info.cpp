@@ -10,6 +10,7 @@
 #include "IGameUIFuncs.h"
 #include "neo_misc.h"
 #include "c_user_message_register.h"
+#include "igamesystem.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -17,6 +18,7 @@
 ConVar cl_neo_kdinfo_toggletype("cl_neo_kdinfo_toggletype", "0", FCVAR_ARCHIVE,
 		"Killer damage information HUD toggle behavior, 0 = always auto show, 1 = auto show based on toggle per match, 2 = never auto show",
 		true, 0.0f, true, static_cast<float>(KDMGINFO_TOGGLETYPE__TOTAL - 1));
+ConVar cl_neo_kdinfo_debug_show_local("cl_neo_kdinfo_debug_show_local", "0", FCVAR_CHEAT | FCVAR_HIDDEN | FCVAR_DONTRECORD, "Killer damage information HUD debug: Show local player in the list");
 
 DECLARE_NAMED_HUDELEMENT(CNEOHud_KillerDamageInfo, neo_killer_damage_info)
 
@@ -128,14 +130,39 @@ void CNEOHud_KillerDamageInfo::ApplySchemeSettings(vgui::IScheme *pScheme)
 void CNEOHud_KillerDamageInfo::resetHUDState()
 {
 	V_memset(&g_neoKDmgInfos, 0, sizeof(CNEOKillerDamageInfos));
-	V_memset(&m_attackersTotals, 0, sizeof(m_attackersTotals));
+	for (int pIdx = 1; pIdx <= gpGlobals->maxClients; ++pIdx)
+	{
+		auto *neoAttacker = dynamic_cast<C_NEO_Player *>(UTIL_PlayerByIndex(pIdx));
+		if (neoAttacker)
+		{
+			for (int i = 0; i < MAX_PLAYERS; ++i)
+			{
+				neoAttacker->m_rfAttackersScores.GetForModify(i) = 0;
+				neoAttacker->m_rfAttackersAccumlator.GetForModify(i) = 0.0f;
+				neoAttacker->m_rfAttackersHits.GetForModify(i) = 0;
+			}
+		}
+	}
+	ResetDisplayInfos();
+}
+
+void CNEOHud_KillerDamageInfo::ResetDisplayInfos()
+{
 	m_iCurPage = 0;
+	m_iTotalPages = 0;
 	m_iAttackersTotalsSize = 0;
+	V_memset(m_attackersTotals, 0, sizeof(m_attackersTotals));
+	V_memset(m_wszDmgerNamesList, 0, sizeof(m_wszDmgerNamesList));
 }
 
 void CNEOHud_KillerDamageInfo::UpdateStateForNeoHudElementDraw()
 {
 	const C_NEO_Player *localPlayer = C_NEO_Player::GetLocalNEOPlayer();
+
+	if (m_iTotalPages > 0 && NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze)
+	{
+		resetHUDState();
+	}
 
 	// If to show or not
 	const bool bNextPlayerShownHud = localPlayer
@@ -163,7 +190,8 @@ void CNEOHud_KillerDamageInfo::UpdateStateForNeoHudElementDraw()
 	// UI sizing
 	int iScrWide, iScrTall;
 	vgui::surface()->GetScreenSize(iScrWide, iScrTall);
-	m_uiCtx.dPanel.wide = (iScrWide / 3) * UI_SCALE;
+	// This is the baseline width, text width will determine full width
+	const int iBaselineWide = (iScrWide / 3) * UI_SCALE;
 	m_uiCtx.dPanel.tall = (iScrTall / 2) * UI_SCALE;
 	m_uiCtx.dPanel.x = m_uiCtx.iMarginX * 10;
 	m_uiCtx.dPanel.y = (iScrTall / 2) - (m_uiCtx.dPanel.tall / 2);
@@ -186,10 +214,12 @@ void CNEOHud_KillerDamageInfo::UpdateStateForNeoHudElementDraw()
 				wszBindToggle, wszBindPrev, wszBindNext);
 	}
 
-	m_iAttackersTotalsSize = 0;
+	ResetDisplayInfos();
+
+	int iMaxNameTextWidth = 0;
 	for (int pIdx = 1; pIdx <= gpGlobals->maxClients && m_iAttackersTotalsSize < MAX_PLAYERS; ++pIdx)
 	{
-		if (pIdx == localPlayer->entindex())
+		if (!cl_neo_kdinfo_debug_show_local.GetBool() && pIdx == localPlayer->entindex())
 		{
 			continue;
 		}
@@ -224,15 +254,35 @@ void CNEOHud_KillerDamageInfo::UpdateStateForNeoHudElementDraw()
 			m_iTeamIdxsList[m_iAttackersTotalsSize] = iDmgerTeam;
 			m_iEntIdxsList[m_iAttackersTotalsSize] = pIdx;
 
+			int iFontTextWidth = 0, iFontTextHeight = 0;
+			vgui::surface()->GetTextSize(m_uiCtx.fonts[NeoUI::FONT_NTNORMAL].hdl,
+					m_wszDmgerNamesList[m_iAttackersTotalsSize],
+					iFontTextWidth, iFontTextHeight);
+			iMaxNameTextWidth = Max(iMaxNameTextWidth, iFontTextWidth);
+
 			++m_iAttackersTotalsSize;
 		}
 	}
-	m_iTotalPages = 1 + (static_cast<float>(m_iAttackersTotalsSize - 1) / PAGE_MAX_SHOW);
+	m_iTotalPages = (m_iAttackersTotalsSize > 0) ?
+			(1 + (static_cast<float>(m_iAttackersTotalsSize - 1) / PAGE_MAX_SHOW)) :
+			0;
+	m_uiCtx.dPanel.wide = Max(iBaselineWide, static_cast<int>(((iScrWide / 6) * UI_SCALE) + iMaxNameTextWidth + (2 * m_uiCtx.iMarginX)));
 }
 
 void CNEOHud_KillerDamageInfo::DrawNeoHudElement()
 {
 	if (!ShouldDraw() || !m_bPlayerShownHud || !m_bShowInfo)
+	{
+		return;
+	}
+
+	const int iKillerEntIndex = g_neoKDmgInfos.killerInfo.iEntIndex;
+
+	const bool bHasKiller = iKillerEntIndex > 0 || iKillerEntIndex == NEO_ENVIRON_KILLED;
+	const bool bHasPages = m_iTotalPages > 0;
+
+	const bool bHasInfo = bHasPages || bHasKiller;
+	if (!bHasInfo)
 	{
 		return;
 	}
@@ -249,13 +299,15 @@ void CNEOHud_KillerDamageInfo::DrawNeoHudElement()
 		NeoUI::Label(m_wszBindBtnMsg);
 		m_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_LEFT;
 
-		if (g_neoKDmgInfos.killerInfo.iEntIndex > 0)
+		if (bHasKiller)
 		{
 			NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
+			const bool bSuicideKill = (iKillerEntIndex == localPlayer->entindex()) ||
+					(iKillerEntIndex == NEO_ENVIRON_KILLED);
 			// Killer title
 			{
 				NeoUI::SetPerRowLayout(1);
-				if (g_neoKDmgInfos.killerInfo.iEntIndex == localPlayer->entindex())
+				if (bSuicideKill)
 				{
 					// Show a suicide/self kill if it matches the local player's entity index
 					NeoUI::HeadingLabel(L"YOU KILLED YOURSELF");
@@ -267,15 +319,45 @@ void CNEOHud_KillerDamageInfo::DrawNeoHudElement()
 			}
 
 			NeoUI::SwapFont(NeoUI::FONT_NTHORIZSIDES);
+			static wchar_t wszLabel[32] = {};
+
 			// Killer info
+			if (bSuicideKill)
+			{
+				// Just state the weapon, the rest of the infos aren't useful
+				NeoUI::SetPerRowLayout(1);
+				m_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_CENTER;
+
+				// If it's an empty weapon, it's generally a suicide command kill
+				if (iKillerEntIndex == NEO_ENVIRON_KILLED)
+				{
+					if (g_neoKDmgInfos.killerInfo.wszKilledWith[0] != L'\0')
+					{
+						V_swprintf_safe(wszLabel, L"Killed by %ls", g_neoKDmgInfos.killerInfo.wszKilledWith);
+						NeoUI::Label(wszLabel);
+					}
+					else
+					{
+						NeoUI::Label(L"Killed by map");
+					}
+				}
+				else if (g_neoKDmgInfos.killerInfo.wszKilledWith[0] == L'\0')
+				{
+					NeoUI::Label(L"Killed by map or used suicide command");
+				}
+				else
+				{
+					V_swprintf_safe(wszLabel, L"Weapon: %ls", g_neoKDmgInfos.killerInfo.wszKilledWith);
+					NeoUI::Label(wszLabel);
+				}
+			}
+			else
 			{
 				const int iTmpMarginX = m_uiCtx.iMarginX;
 				m_uiCtx.iMarginX = m_uiCtx.iMarginX / 3;
 
 				NeoUI::SetPerRowLayout(4);
 				NeoUI::SetPerCellVertLayout(2);
-
-				static wchar_t wszLabel[32] = {};
 
 				m_uiCtx.eLabelTextStyle = NeoUI::TEXTSTYLE_RIGHT;
 				NeoUI::Label(L"Health:");
@@ -304,6 +386,7 @@ void CNEOHud_KillerDamageInfo::DrawNeoHudElement()
 		}
 
 		// General infos - Inflicted damage, name, received damage
+		if (bHasPages)
 		{
 			// Display pagination info if more than 1 page
 			if (m_iTotalPages > 1)
@@ -342,10 +425,15 @@ void CNEOHud_KillerDamageInfo::DrawNeoHudElement()
 			for (int i = iCurPageStart; i < iCurPageEnd; ++i)
 			{
 				const auto &attackerInfo = m_attackersTotals[i];
+				if (attackerInfo.dealtDmgs <= 0 && attackerInfo.takenDmgs <= 0)
+				{
+					continue;
+				}
+
 				static wchar_t wszLabel[64] = {};
 
 				const int iAttackerEntIdx = m_iEntIdxsList[i];
-				const bool bKilledYou = (iAttackerEntIdx == g_neoKDmgInfos.killerInfo.iEntIndex);
+				const bool bKilledYou = (iAttackerEntIdx == iKillerEntIndex);
 				const bool bYouKilled = localPlayer->m_rfNeoPlayerIdxsKilledByLocal[iAttackerEntIdx];
 
 				// Left side - Dealt damages + hits to attacker
@@ -427,7 +515,7 @@ void CNEOHud_KillerDamageInfo::Paint()
 static void __MsgFunc_DamageInfo(bf_read& msg)
 {
 	const int killerIdx = msg.ReadShort();
-	char killedBy[32] = {};
+	char killedBy[MAX_PLAYER_NAME_LENGTH] = {};
 	const bool foundKilledBy = msg.ReadString(killedBy, sizeof(killedBy), false);
 
 	auto *localPlayer = C_NEO_Player::GetLocalNEOPlayer();
@@ -462,7 +550,7 @@ static void __MsgFunc_DamageInfo(bf_read& msg)
 		}
 		// If not neoAttacker, already cleared out by memset earlier
 
-		if (neoAttacker && neoAttacker->entindex() != thisIdx)
+		if (neoAttacker)
 		{
 			CNEOKillerInfo killerInfo = {
 				.iEntIndex = killerIdx,
@@ -491,6 +579,19 @@ static void __MsgFunc_DamageInfo(bf_read& msg)
 						   neoAttacker->GetNeoPlayerName(), GetNeoClassName(killerInfo.iClass),
 						   killerInfo.iHP, foundKilledBy ? killedBy : "", killerInfo.flDistance);
 			setKillByLine = true;
+		}
+	}
+	else if (killerIdx == NEO_ENVIRON_KILLED)
+	{
+		g_neoKDmgInfos.killerInfo.iEntIndex = NEO_ENVIRON_KILLED;
+		g_neoKDmgInfos.killerInfo.wszKilledWith[0] = L'\0';
+		if (foundKilledBy)
+		{
+			const char *pszMap = IGameSystem::MapName();
+			if (V_strcmp(killedBy, "tank_targetsystem") == 0 && V_strcmp(pszMap, "ntre_rogue_ctg") == 0)
+			{
+				V_wcscpy_safe(g_neoKDmgInfos.killerInfo.wszKilledWith, L"Jeff");
+			}
 		}
 	}
 

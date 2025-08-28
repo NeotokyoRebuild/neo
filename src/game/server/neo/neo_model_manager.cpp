@@ -283,7 +283,7 @@ const char *viewModels[NEO_VM_ENUM_COUNT * numTeams] {
 	"models/weapons/v_nsf_zr68l.mdl",
 	"models/weapons/v_nsf_zr68s.mdl",
 	"models/gameplay/v_nsf_ghost.mdl",
-	#ifdef INCLUDE_WEP_PBK
+#ifdef INCLUDE_WEP_PBK
 	"models/weapons/v_nsf_pbk56.mdl",
 #endif
 

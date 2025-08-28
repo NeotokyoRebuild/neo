@@ -8,6 +8,10 @@
 
 #include "NextBotBodyInterface.h"
 
+#ifdef NEO
+class CNEOBotBody;
+#endif
+
 
 //----------------------------------------------------------------------------------------------------------------
 /**
@@ -115,6 +119,9 @@ public:
 
 	CBaseEntity *GetLookAtSubject( void ) const;
 private:
+#ifdef NEO
+	friend class CNEOBotBody;
+#endif
 	CBasePlayer *m_player;
 	
 	PostureType m_posture;

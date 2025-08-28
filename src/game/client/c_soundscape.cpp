@@ -924,7 +924,11 @@ void C_SoundscapeSystem::ProcessPlayRandom( KeyValues *pPlayRandom, const subsou
 		{
 			interval_t atten = ReadInterval( pKey->GetString() );
 			sound.soundlevel.start = ATTN_TO_SNDLVL( atten.start );
+#ifdef NEO // NEO NOTE (nullsystem): -Wdeprecated-enum-float-conversion
+			sound.soundlevel.range = static_cast<float>(ATTN_TO_SNDLVL( atten.start + atten.range )) - sound.soundlevel.start;
+#else
 			sound.soundlevel.range = ATTN_TO_SNDLVL( atten.start + atten.range ) - sound.soundlevel.start;
+#endif
 		}
 		else if ( !Q_strcasecmp( pKey->GetName(), "soundlevel" ) )
 		{

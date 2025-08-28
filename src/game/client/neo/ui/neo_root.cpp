@@ -964,6 +964,8 @@ void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 
 void CNeoRoot::MainLoopNewGame(const MainLoopParam param)
 {
+	static const wchar_t *DIFFICULTY_LABELS[] = { L"Easy", L"Normal", L"Hard", L"Expert" };
+
 	const int iTallTotal = g_uiCtx.layout.iRowTall * (g_iRowsInScreen + 2);
 	g_uiCtx.dPanel.wide = g_iRootSubPanelWide;
 	g_uiCtx.dPanel.x = (param.wide / 2) - (g_iRootSubPanelWide / 2);
@@ -983,6 +985,7 @@ void CNeoRoot::MainLoopNewGame(const MainLoopParam param)
 			NeoUI::TextEdit(L"Hostname", m_newGame.wszHostname, SZWSZ_LEN(m_newGame.wszHostname));
 			NeoUI::SliderInt(L"Max players", &m_newGame.iMaxPlayers, 1, MAX_PLAYERS-1); // -1 to accommodate SourceTV
 			NeoUI::SliderInt(L"Bot Quota", &m_newGame.iBotQuota, 0, MAX_PLAYERS-1);
+			NeoUI::RingBox(L"Bot difficulty", DIFFICULTY_LABELS, ARRAYSIZE(DIFFICULTY_LABELS), &m_newGame.iBotDifficulty);
 			NeoUI::TextEdit(L"Password", m_newGame.wszPassword, SZWSZ_LEN(m_newGame.wszPassword),
 					cl_neo_streamermode.GetBool() ? NeoUI::TEXTEDITFLAG_PASSWORD : NeoUI::TEXTEDITFLAG_NONE);
 			NeoUI::RingBoxBool(L"Friendly fire", &m_newGame.bFriendlyFire);
@@ -1026,6 +1029,7 @@ void CNeoRoot::MainLoopNewGame(const MainLoopParam param)
 					ConVarRef("mp_friendlyfire").SetValue(m_newGame.bFriendlyFire);
 					ConVarRef("sv_use_steam_networking").SetValue(m_newGame.bUseSteamNetworking);
 					ConVarRef("neo_bot_quota").SetValue(m_newGame.iBotQuota);
+					ConVarRef("neo_bot_difficulty").SetValue(m_newGame.iBotDifficulty);
 
 					char cmdStr[256];
 					V_sprintf_safe(cmdStr, "maxplayers %d; progress_enable; map \"%s\"", m_newGame.iMaxPlayers, szMap);
