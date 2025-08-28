@@ -585,9 +585,14 @@ static void __MsgFunc_DamageInfo(bf_read& msg)
 	{
 		g_neoKDmgInfos.killerInfo.iEntIndex = NEO_ENVIRON_KILLED;
 		g_neoKDmgInfos.killerInfo.wszKilledWith[0] = L'\0';
-		if (foundKilledBy)
+		if (foundKilledBy && V_strcmp(killedBy, "neo_npc_targetsystem") == 0)
 		{
-			if (V_strcmp(killedBy, "neo_npc_targetsystem") == 0)
+			const char* pszMap = IGameSystem::MapName();
+			if (V_strcmp(pszMap, "ntre_rogue_ctg") == 0)
+			{
+				V_wcscpy_safe(g_neoKDmgInfos.killerInfo.wszKilledWith, L"184-J IFV");
+			}
+			else
 			{
 				V_wcscpy_safe(g_neoKDmgInfos.killerInfo.wszKilledWith, L"Turret");
 			}
