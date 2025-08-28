@@ -910,6 +910,10 @@
 		"box_color"		"200 200 200 40"
 		"health_monochrome"	"1"
 	}
+	NHudPlayerPing
+	{
+		"fieldName"		"NHudPlayerPing"
+	}
 
 	neo_ghost_uplink_state
 	{
