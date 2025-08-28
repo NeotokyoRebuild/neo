@@ -3630,6 +3630,12 @@ void CNEORules::ClientDisconnected(edict_t* pClient)
 	Assert(pNeoPlayer);
 	if (pNeoPlayer)
 	{
+		// If the disconnecting player was controlling a bot, restore the bot now.
+		if (pNeoPlayer->m_hSpectatorTakeoverPlayerTarget.Get())
+		{
+		    pNeoPlayer->RestorePlayerFromSpectatorTakeover();
+		}
+
 		auto ghost = GetNeoWepWithBits(pNeoPlayer, NEO_WEP_GHOST);
 		if (ghost)
 		{

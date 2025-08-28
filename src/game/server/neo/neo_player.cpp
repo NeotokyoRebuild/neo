@@ -3291,9 +3291,9 @@ void CNEO_Player::ModifyFireBulletsDamage(CTakeDamageInfo* dmgInfo)
 }
 
 // Start spectator takeover of player related code:
-ConVar sv_neo_spec_replace_player_bot_enable("sv_neo_spec_replace_player_bot_enable", "1", FCVAR_CHEAT, "Allow spectators to take over bots.");
-ConVar sv_neo_spec_replace_player_afk_enable("sv_neo_spec_replace_player_afk_enable", "1", FCVAR_CHEAT, "Allow spectators to take over AFK players.");
-ConVar sv_neo_spec_replace_player_afk_time_sec("sv_neo_spec_replace_player_afk_time_sec", "300", FCVAR_CHEAT, "Seconds of inactivity before a player is considered AFK.");
+ConVar sv_neo_spec_replace_player_bot_enable("sv_neo_spec_replace_player_bot_enable", "1", FCVAR_NONE, "Allow spectators to take over bots.");
+ConVar sv_neo_spec_replace_player_afk_enable("sv_neo_spec_replace_player_afk_enable", "1", FCVAR_NONE, "Allow spectators to take over AFK players.");
+ConVar sv_neo_spec_replace_player_afk_time_sec("sv_neo_spec_replace_player_afk_time_sec", "300", FCVAR_NONE, "Seconds of inactivity before a player is considered AFK.");
 
 bool CNEO_Player::IsAFK() {
     return sv_neo_spec_replace_player_afk_enable.GetBool()
@@ -3364,8 +3364,8 @@ void CNEO_Player::SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace)
 	CBroadcastRecipientFilter updatefilter;
     updatefilter.MakeReliable();
     UserMessageBegin(updatefilter, "CSpectatorTakeoverPlayer");
-		WRITE_SHORT(this->entindex());
-		WRITE_SHORT(pNeoPlayerToReplace->entindex());
+		WRITE_LONG(this->GetUserID());
+		WRITE_LONG(pNeoPlayerToReplace->GetUserID());
     MessageEnd();
 }
 
@@ -3383,6 +3383,7 @@ void CNEO_Player::SpectatorTakeoverPlayerPreThink()
 		if (!IsAlive() || IsObserver())
 		{
 			// Something is wrong, abort the takeover.
+			DevWarning("Spectator takeover failed: Player state was invalid after ForceRespawn().\n");
 			m_bSpectatorTakeoverPlayerPending = false;
 			m_hSpectatorTakeoverPlayerTarget = nullptr;
 			return;
@@ -3495,6 +3496,7 @@ void CNEO_Player::SpectatorTakeoverPlayerInitiate(CNEO_Player* pPlayer)
     SetSolid(SOLID_NONE);
     AddEffects(EF_NODRAW);
     m_takedamage = DAMAGE_NO;
+    m_lifeState = LIFE_DEAD;
 
     // Prevent AI or movement from running.
     AddFlag(FL_FROZEN);      // Prevent movement
