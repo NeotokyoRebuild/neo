@@ -49,6 +49,7 @@ out
 
 # Selected Background
 /game/neo/scripts/ChapterBackgrounds.txt
+/game/neo/scripts/chapterbackgrounds.txt
 
 # Object files
 *.o
