@@ -3360,11 +3360,11 @@ void CNEO_Player::SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace)
 
 	// Send client confirmation to smooth out transition
 	CBroadcastRecipientFilter updatefilter;
-    updatefilter.MakeReliable();
-    UserMessageBegin(updatefilter, "CSpectatorTakeoverPlayer");
+	updatefilter.MakeReliable();
+	UserMessageBegin(updatefilter, "CSpectatorTakeoverPlayer");
 		WRITE_LONG(this->GetUserID());
 		WRITE_LONG(pNeoPlayerToReplace->GetUserID());
-    MessageEnd();
+	MessageEnd();
 }
 
 void CNEO_Player::SpectatorTakeoverPlayerPreThink()
