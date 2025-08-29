@@ -77,6 +77,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_iLoadoutWepChoice)),
 	RecvPropInt(RECVINFO(m_iNextSpawnClassChoice)),
 	RecvPropInt(RECVINFO(m_bInLean)),
+	RecvPropEHandle(RECVINFO(m_hDroppedJuggernautItem)),
 
 	RecvPropBool(RECVINFO(m_bInThermOpticCamo)),
 	RecvPropBool(RECVINFO(m_bLastTickInThermOpticCamo)),
@@ -1362,24 +1363,22 @@ void C_NEO_Player::CalcDeathCamView(Vector &eyeOrigin, QAngle &eyeAngles, float 
 	}
 	else if (GetClass() == NEO_CLASS_JUGGERNAUT)
 	{
-		// NEO TODO DG: Get the clientside ent and make it smooth. How?
-		Vector vTarget = NEORules()->GetJuggernautMarkerPos();
-		if ((NEORules()->GetGameType() == NEO_GAME_TYPE_JGR) && (vTarget != vec3_origin))
+		Vector vTarget = vec3_origin;
+		if (m_hDroppedJuggernautItem)
 		{
-			eyeOrigin = vTarget + Vector(80, 80, 80);
-
-			Vector vDir = vTarget - eyeOrigin;
-			VectorNormalize(vDir);
-			VectorAngles(vDir, eyeAngles);
-			fov = GetFOV();
+			vTarget = m_hDroppedJuggernautItem->WorldSpaceCenter();
 		}
 		else
 		{
-			// Basic behaviour for now
-			eyeOrigin = EyePosition();
-			eyeAngles = CurrentViewAngles();
-			fov = GetFOV();
+			vTarget = NEORules()->GetJuggernautMarkerPos();
+
 		}
+		eyeOrigin = vTarget + Vector(80, 80, 80);
+
+		Vector vDir = vTarget - eyeOrigin;
+		VectorNormalize(vDir);
+		VectorAngles(vDir, eyeAngles);
+		fov = GetFOV();
 	}
 	else
 	{
