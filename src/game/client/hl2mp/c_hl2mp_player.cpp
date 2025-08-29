@@ -267,12 +267,8 @@ void C_HL2MP_Player::TraceAttack( const CTakeDamageInfo &info, const Vector &vec
 			if ( HL2MPRules()->IsTeamplay() && pAttacker->InSameTeam( this ) == true )
 				return;
 		}
-#ifdef NEO
-		C_NEO_Player* pNEOPlayer = ToNEOPlayer(this); // NEO FIXME DG: SetBloodColor(DONT_BLEED) doesnt work and I don't know why
-		if ((blood != DONT_BLEED) && (pNEOPlayer->GetClass() != NEO_CLASS_JUGGERNAUT))
-#else
+
 		if ( blood != DONT_BLEED )
-#endif
 		{
 			SpawnBlood( vecOrigin, vecDir, blood, flDistance );// a little surface blood.
 			TraceBleed( flDistance, vecDir, ptr, info.GetDamageType() );

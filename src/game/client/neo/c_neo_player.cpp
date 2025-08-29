@@ -1362,9 +1362,10 @@ void C_NEO_Player::CalcDeathCamView(Vector &eyeOrigin, QAngle &eyeAngles, float 
 	}
 	else if (GetClass() == NEO_CLASS_JUGGERNAUT)
 	{
-		if (NEORules()->GetGameType() == NEO_GAME_TYPE_JGR)
+		// NEO TODO DG: Get the clientside ent and make it smooth. How?
+		Vector vTarget = NEORules()->GetJuggernautMarkerPos();
+		if ((NEORules()->GetGameType() == NEO_GAME_TYPE_JGR) && (vTarget != vec3_origin))
 		{
-			Vector vTarget = NEORules()->GetGhostPos();
 			eyeOrigin = vTarget + Vector(80, 80, 80);
 
 			Vector vDir = vTarget - eyeOrigin;

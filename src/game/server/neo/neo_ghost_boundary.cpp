@@ -89,10 +89,22 @@ void CNEO_GhostBoundary::Think()
 
     if (NEORules()->GetGameType() == NEO_GAME_TYPE_JGR)
     {
-        // In JGR, this is only true when the juggernaut is in it's item form
-        if (NEORules()->GhostExists())
+        // In JGR, this is only true when the juggernaut is in it's item form, so there is no player
+        if (NEORules()->JuggernautItemExists())
         {
             return;
+        }
+
+        int iJuggernautIndex = NEORules()->GetJuggernautPlayer();
+        if (iJuggernautIndex == 0)
+        {
+            return;
+        }
+
+        CBasePlayer* pPlayer = UTIL_PlayerByIndex(iJuggernautIndex);
+        if (pPlayer->GetFlags() & FL_ONGROUND)
+        {
+            m_vecLastObjectivePos = pPlayer->GetAbsOrigin();
         }
     }
     else
@@ -101,18 +113,18 @@ void CNEO_GhostBoundary::Think()
         {
             return;
         }
-    }
 
-    int iGhosterIndex = NEORules()->GetGhosterPlayer();
-    if (iGhosterIndex == 0)
-    {
-        return;
-    }
+        int iGhosterIndex = NEORules()->GetGhosterPlayer();
+        if (iGhosterIndex == 0)
+        {
+            return;
+        }
 
-    CBasePlayer* pPlayer = UTIL_PlayerByIndex(iGhosterIndex);
-    if (pPlayer->GetFlags() & FL_ONGROUND)
-    {
-        m_vecLastObjectivePos = pPlayer->GetAbsOrigin();
+        CBasePlayer* pPlayer = UTIL_PlayerByIndex(iGhosterIndex);
+        if (pPlayer->GetFlags() & FL_ONGROUND)
+        {
+            m_vecLastObjectivePos = pPlayer->GetAbsOrigin();
+        }
     }
 }
 
@@ -120,14 +132,13 @@ void CNEO_GhostBoundary::StartTouch(CBaseEntity *pOther)
 {
     BaseClass::StartTouch(pOther);
 
-    Vector vecGhostSpawn = NEORules()->m_vecPreviousGhostSpawn;
-    if ((vecGhostSpawn == vec3_origin) && (m_vecLastObjectivePos == vec3_origin))
-    {
-        return; // Don't bother teleporting if there's no ghost spawn and no ghoster pos
-    }
-
     if (NEORules()->GetGameType() == NEO_GAME_TYPE_JGR)
     {
+        if ((NEORules()->m_vecPreviousJuggernautSpawn == vec3_origin) && (m_vecLastObjectivePos == vec3_origin))
+        {
+            return; // Don't bother teleporting if there's no juggernaut spawn and no jgr player pos
+        }
+
         CNEO_Juggernaut *pDroppedJuggernaut = dynamic_cast<CNEO_Juggernaut*>(pOther);
         if (pDroppedJuggernaut)
         {
@@ -136,6 +147,12 @@ void CNEO_GhostBoundary::StartTouch(CBaseEntity *pOther)
     }
     else
     {
+        Vector vecGhostSpawn = NEORules()->m_vecPreviousGhostSpawn;
+        if ((vecGhostSpawn == vec3_origin) && (m_vecLastObjectivePos == vec3_origin))
+        {
+            return; // Don't bother teleporting if there's no ghost spawn and no ghoster pos
+        }
+
         auto pDroppedGhost = (pOther && pOther->IsBaseCombatWeapon() && static_cast<CNEOBaseCombatWeapon*>(pOther)->IsGhost())
             ? static_cast<CWeaponGhost*>(pOther) : nullptr;
         if (pDroppedGhost)
@@ -153,17 +170,17 @@ void CNEO_GhostBoundary::StartTouch(CBaseEntity *pOther)
 
             return;
         }
-    }
 
-    CNEO_Player *pNEOPlayer = ToNEOPlayer(pOther);
-    if (pNEOPlayer && pNEOPlayer->IsCarryingGhost())
-    {
-        CBaseCombatWeapon* pHeldGhost = pNEOPlayer->Weapon_OwnsThisType("weapon_ghost");
-        pNEOPlayer->Weapon_Drop(pHeldGhost);
+        CNEO_Player* pNEOPlayer = ToNEOPlayer(pOther);
+        if (pNEOPlayer && pNEOPlayer->IsCarryingGhost())
+        {
+            CBaseCombatWeapon* pHeldGhost = pNEOPlayer->Weapon_OwnsThisType("weapon_ghost");
+            pNEOPlayer->Weapon_Drop(pHeldGhost);
 
-        pHeldGhost->VPhysicsGetObject()->SetPosition(m_vecLastObjectivePos, GHOST_ANGLES, true);
-        pHeldGhost->VPhysicsGetObject()->EnableMotion(false);
+            pHeldGhost->VPhysicsGetObject()->SetPosition(m_vecLastObjectivePos, GHOST_ANGLES, true);
+            pHeldGhost->VPhysicsGetObject()->EnableMotion(false);
 
-        return;
+            return;
+        }
     }
 }

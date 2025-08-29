@@ -321,6 +321,10 @@ public:
 	bool GhostExists() const { return m_bGhostExists; }
 	Vector GetGhostPos() const { return m_vecGhostMarkerPos; }
 
+	int GetJuggernautPlayer() const { return m_iJuggernautPlayerIndex; }
+	bool JuggernautItemExists() const { return m_bJuggernautItemExists; }
+	Vector GetJuggernautMarkerPos() const { return m_vecJuggernautMarkerPos; }
+
 	int GetOpposingTeam(const int team) const
 	{
 		if (team == TEAM_JINRAI) { return TEAM_NSF; }
@@ -405,7 +409,7 @@ private:
 public:
 	void JuggernautActivated(CNEO_Player *pPlayer);
 	CNEO_Juggernaut *m_pJuggernautItem = nullptr;
-	CNEO_Player* m_pJuggernautPlayer = nullptr;
+	CNEO_Player *m_pJuggernautPlayer = nullptr;
 private:
 	friend class CNEOBotSeekAndDestroy;
 	CUtlVector<int> m_pGhostCaps;
@@ -423,6 +427,7 @@ private:
 	bool m_bGamemodeTypeBeenInitialized = false;
 	friend class CNEO_GhostBoundary;
 	Vector m_vecPreviousGhostSpawn = vec3_origin;
+	Vector m_vecPreviousJuggernautSpawn = vec3_origin;
 #endif
 	CNetworkVar(int, m_nRoundStatus);
 	CNetworkVar(int, m_iHiddenHudElements);
@@ -440,6 +445,11 @@ private:
 	CNetworkVar(int, m_iGhosterPlayer);
 	CNetworkVector(m_vecGhostMarkerPos);
 	CNetworkVar(bool, m_bGhostExists);
+
+	// Juggernaut networked variables
+	CNetworkVar(int, m_iJuggernautPlayerIndex);
+	CNetworkVar(bool, m_bJuggernautItemExists);
+	CNetworkVector(m_vecJuggernautMarkerPos);
 
 	CNetworkVar(float, m_flNeoRoundStartTime);
 	CNetworkVar(float, m_flNeoNextRoundStartTime);
