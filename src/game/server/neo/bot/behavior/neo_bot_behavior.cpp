@@ -19,6 +19,7 @@ ConVar neo_bot_sniper_aim_error( "neo_bot_sniper_aim_error", "0.01", FCVAR_CHEAT
 ConVar neo_bot_sniper_aim_steady_rate( "neo_bot_sniper_aim_steady_rate", "10", FCVAR_CHEAT );
 ConVar neo_bot_debug_sniper( "neo_bot_debug_sniper", "0", FCVAR_CHEAT );
 ConVar neo_bot_fire_weapon_min_time( "neo_bot_fire_weapon_min_time", "1", FCVAR_CHEAT );
+ConVar neo_bot_fire_at_breakable_weapon_min_time( "neo_bot_fire_at_breakable_weapon_min_time", "0.4", FCVAR_CHEAT );
 
 ConVar neo_bot_notice_backstab_chance( "neo_bot_notice_backstab_chance", "25", FCVAR_CHEAT );
 ConVar neo_bot_notice_backstab_min_range( "neo_bot_notice_backstab_min_range", "100", FCVAR_CHEAT );
@@ -321,7 +322,7 @@ bool CNEOBotMainAction::IsImmediateThreat( const CBaseCombatCharacter *subject, 
 		return false;
 
 	// if they can't hurt me, they aren't an immediate threat
-	if ( !me->IsLineOfFireClear( threat->GetEntity() ) )
+	if ( !me->IsLineOfFireClear( threat->GetEntity(), CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT ) )
 		return false;
 
 	Vector to = me->GetAbsOrigin() - threat->GetLastKnownPosition();
@@ -582,18 +583,139 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 
 	// shoot at bad guys
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
+	const bool bIgnoreThreat = (threat == nullptr || !threat->GetEntity() || !threat->IsVisibleRecently());
+
+	if (me->GetNeoFlags() & NEO_FL_FREEZETIME)
+	{
+		me->GetLocomotionInterface()->m_bBreakBreakableInPath = false;
+	}
+
+	if (me->GetLocomotionInterface()->m_bBreakBreakableInPath)
+	{
+		if (me->GetDifficulty() >= CNEOBot::HARD && !m_bPrevBreakBreakableInPath && bIgnoreThreat)
+		{
+			auto *secondaryWep = static_cast<CNEOBaseCombatWeapon *>(me->Weapon_GetSlot(1)); 
+			if (secondaryWep != myWeapon && secondaryWep && 
+					((secondaryWep->Clip1() + secondaryWep->m_iPrimaryAmmoCount) > 0))
+			{
+				me->Weapon_Switch(secondaryWep);
+			}
+		}
+
+		if (myWeapon->Clip1() <= 0)
+		{
+			me->ReleaseFireButton();
+			me->PressReloadButton();
+			m_isWaitingForFullReload = true;
+		}
+
+		if (m_isWaitingForFullReload)
+		{
+			m_isWaitingForFullReload = (myWeapon->Clip1() < myWeapon->GetMaxClip1());
+		}
+
+		if (!m_isWaitingForFullReload)
+		{
+			if (me->IsContinuousFireWeapon(myWeapon))
+			{
+				me->PressFireButton(neo_bot_fire_at_breakable_weapon_min_time.GetFloat());
+			}
+			else
+			{
+				if (me->m_nButtons & IN_ATTACK)
+				{
+					me->ReleaseFireButton();
+				}
+				else
+				{
+					me->PressFireButton();
+				}
+			}
+		}
+		m_bPrevBreakBreakableInPath = true;
+		return;
+	}
 
 	// ignore non-visible threats here so we don't force a premature weapon switch if we're doing something else
-	if ( threat == NULL || !threat->GetEntity() || !threat->IsVisibleRecently() )
-		return;
-
-	// don't shoot through windows/etc
-	if ( !me->IsLineOfFireClear( threat->GetEntity()->EyePosition() ) )
+	if (bIgnoreThreat)
 	{
-		if ( !me->IsLineOfFireClear( threat->GetEntity()->WorldSpaceCenter() ) )
+		return;
+	}
+
+	// After bIgnoreThreat so it doesn't go at a continous cycle switching weapons
+	if (!me->GetLocomotionInterface()->m_bBreakBreakableInPath && m_bPrevBreakBreakableInPath)
+	{
+		if (me->GetDifficulty() >= CNEOBot::HARD &&
+				(!myWeapon ||
+				 (myWeapon->GetNeoWepBits() & (NEO_WEP_MILSO | NEO_WEP_TACHI | NEO_WEP_KYLA | NEO_WEP_KNIFE | NEO_WEP_THROWABLE))))
 		{
-			if ( !me->IsLineOfFireClear( threat->GetEntity()->GetAbsOrigin() ) )
+			auto *primaryWeapon = static_cast<CNEOBaseCombatWeapon *>(me->Weapon_GetSlot(0)); 
+			if (primaryWeapon && (primaryWeapon->Clip1() + primaryWeapon->m_iPrimaryAmmoCount) > 0)
+			{
+				me->Weapon_Switch(primaryWeapon);
+			}
+		}
+		m_bPrevBreakBreakableInPath = false;
+	}
+
+	CNEOBot::LineOfFireFlags lofFlags = CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT;
+	auto *neoThreat = ToNEOPlayer(threat->GetEntity());
+	const bool bThreatIsGhoster = neoThreat && neoThreat->IsCarryingGhost();
+	if (bThreatIsGhoster)
+	{
+		lofFlags |= CNEOBot::LINE_OF_FIRE_FLAGS_PENETRATION;
+	}
+
+	// don't shoot through non-shootables, check if shootable by any non-shotguns weapons
+	Vector vShootablePos = threat->GetEntity()->EyePosition();
+	if ( !me->IsLineOfFireClear( vShootablePos, lofFlags ) )
+	{
+		vShootablePos = threat->GetEntity()->WorldSpaceCenter();
+		if ( !me->IsLineOfFireClear( vShootablePos, lofFlags ) )
+		{
+			vShootablePos = threat->GetEntity()->GetAbsOrigin();
+			if ( !me->IsLineOfFireClear( vShootablePos, lofFlags ) )
+			{
 				return;
+			}
+		}
+	}
+
+	// Check again if shotgun from last "any" shootable pos
+	bool bNotPrimary = false;
+	bool bShotgunSituationHandled = false;
+	// If holding non-primary, have shotgun in primary, and sight clear for shotgun, try to switch to shotgun
+	// Otherwise if holding shotgun and sight not clear for shotgun, try to switch to secondary
+	if (myWeapon && (myWeapon->GetNeoWepBits() & (NEO_WEP_MILSO | NEO_WEP_TACHI | NEO_WEP_KYLA | NEO_WEP_KNIFE | NEO_WEP_THROWABLE)))
+	{
+		auto *primaryWeapon = static_cast<CNEOBaseCombatWeapon *>(me->Weapon_GetSlot(0));
+		if (primaryWeapon && (primaryWeapon->GetNeoWepBits() & (NEO_WEP_AA13 | NEO_WEP_SUPA7)))
+		{
+			const bool bClearForShotgun = me->IsLineOfFireClear(vShootablePos, CNEOBot::LINE_OF_FIRE_FLAGS_SHOTGUN);
+			if (bClearForShotgun)
+			{
+				bNotPrimary = false;
+				me->EquipBestWeaponForThreat(threat, bNotPrimary);
+				myWeapon = static_cast<CNEOBaseCombatWeapon *>(me->GetActiveWeapon());
+			}
+			bShotgunSituationHandled = true;
+		}
+	}
+	else if (myWeapon && (myWeapon->GetNeoWepBits() & (NEO_WEP_AA13 | NEO_WEP_SUPA7)))
+	{
+		const bool bClearForShotgun = me->IsLineOfFireClear(vShootablePos, CNEOBot::LINE_OF_FIRE_FLAGS_SHOTGUN);
+		if (!bClearForShotgun)
+		{
+			// Try to switch over to non-shotgun weapon
+			bNotPrimary = true;
+			me->EquipBestWeaponForThreat(threat, bNotPrimary);
+			myWeapon = static_cast<CNEOBaseCombatWeapon *>(me->GetActiveWeapon());
+			// If it's still Supa7, then it should try to dodge the threat instead
+			if (myWeapon && (myWeapon->GetNeoWepBits() & (NEO_WEP_AA13 | NEO_WEP_SUPA7)))
+			{
+				return;
+			}
+			bShotgunSituationHandled = true;
 		}
 	}
 
@@ -609,6 +731,11 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 		return;
 	}
 
+	if (!bShotgunSituationHandled)
+	{
+		me->EquipBestWeaponForThreat(threat, false);
+	}
+
 	float threatRange = ( threat->GetEntity()->GetAbsOrigin() - me->GetAbsOrigin() ).Length();
 
 	// actual head aiming is handled elsewhere, just check if we're on target
@@ -622,6 +749,12 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 
 	if (bOnTarget)
 	{
+		if (bThreatIsGhoster)
+		{
+			me->GetBodyInterface()->AimHeadTowards(vShootablePos, IBody::CRITICAL, 1.0f, nullptr,
+					"Aiming at a visible ghoster threat");
+		}
+
 		if ( me->IsCombatWeapon( myWeapon ) )
 		{
 			if (myWeapon->m_iClip1 <= 0)
@@ -635,7 +768,7 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 				else if (IsImmediateThreat(me->GetEntity(), threat) && !m_isWaitingForFullReload)
 				{
 					// intention is to swap to secondary if available
-					me->EquipBestWeaponForThreat(threat);
+					me->EquipBestWeaponForThreat(threat, bNotPrimary);
 				}
 				else
 				{
@@ -698,7 +831,6 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 				}
 			}
 		}
-	
 	}
 }
 
@@ -748,7 +880,7 @@ void CNEOBotMainAction::Dodge( CNEOBot *me )
 	const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
 	if ( threat && threat->IsVisibleRecently() )
 	{
-		bool isShotClear = me->IsLineOfFireClear( threat->GetLastKnownPosition() );
+		bool isShotClear = me->IsLineOfFireClear( threat->GetLastKnownPosition(), CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT );
 
 		// don't dodge if they can't hit us
 		if ( !isShotClear )
