@@ -666,6 +666,7 @@ void CNEOBot::Spawn()
 	m_didReselectClass = false;
 	m_isLookingAroundForEnemies = true;
 	m_attentionFocusEntity = NULL;
+	GetLocomotionInterface()->m_bBreakBreakableInPath = false;
 
 	m_delayedNoticeVector.RemoveAll();
 
@@ -1780,7 +1781,7 @@ bool CNEOBot::IsLineOfFireClear(const Vector& from, const Vector& to, const Line
 
 	UTIL_TraceLine(from, to, LineOfFireMask(flags), &filter, &trace);
 
-	const bool bIsClear = !trace.DidHit();
+	const bool bIsClear = !trace.DidHit() || (trace.DidHit() && IsAbleToBreak(trace.m_pEnt));
 
 	if (!bIsClear && !(flags & LINE_OF_FIRE_FLAGS_SHOTGUN) && (flags & LINE_OF_FIRE_FLAGS_PENETRATION))
 	{
@@ -1810,7 +1811,7 @@ bool CNEOBot::IsLineOfFireClear(const Vector& from, CBaseEntity* who, const Line
 
 	UTIL_TraceLine(from, who->WorldSpaceCenter(), LineOfFireMask(flags), &filter, &trace);
 
-	const bool bIsClear = !trace.DidHit() || trace.m_pEnt == who;
+	const bool bIsClear = !trace.DidHit() || trace.m_pEnt == who || (trace.DidHit() && IsAbleToBreak(trace.m_pEnt));
 
 	if (!bIsClear && !(flags & LINE_OF_FIRE_FLAGS_SHOTGUN) && (flags & LINE_OF_FIRE_FLAGS_PENETRATION))
 	{
