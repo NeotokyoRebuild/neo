@@ -1,6 +1,7 @@
 #pragma once
 
 #include "neo_player_shared.h"
+#include "c_neo_player.h"
 
 static constexpr int CROSSHAIR_MAX_SIZE = 100;
 static constexpr int CROSSHAIR_MAX_THICKNESS = 25;
@@ -27,12 +28,23 @@ enum NeoHudCrosshairSizeType
 	CROSSHAIR_SIZETYPE__TOTAL,
 };
 
+enum NeoHudCrosshairDynamicType
+{
+	CROSSHAIR_DYNAMICTYPE_NONE = 0,
+	CROSSHAIR_DYNAMICTYPE_GAP,
+	CROSSHAIR_DYNAMICTYPE_CIRCLE,
+	CROSSHAIR_DYNAMICTYPE_SIZE,
+
+	CROSSHAIR_DYNAMICTYPE_TOTAL,
+};
+
 extern ConVar cl_neo_crosshair;
 extern ConVar cl_neo_crosshair_network;
 
 extern const char **CROSSHAIR_FILES;
 extern const wchar_t **CROSSHAIR_LABELS;
 extern const wchar_t **CROSSHAIR_SIZETYPE_LABELS;
+extern const wchar_t **CROSSHAIR_DYNAMICTYPE_LABELS;
 
 // NEO_CROSSHAIR_DEFAULT and NEO_XHAIR_SEQMAX defined in neo_player_shared.h instead
 
@@ -51,6 +63,7 @@ enum NeoXHairSegment
 	NEOXHAIR_SEGMENT_B_TOPLINE,
 	NEOXHAIR_SEGMENT_I_CIRCLERAD,
 	NEOXHAIR_SEGMENT_I_CIRCLESEGMENTS,
+	NEOXHAIR_SEGMENT_I_DYNAMICTYPE,
 
 	NEOXHAIR_SEGMENT__TOTAL,
 	NEOXHAIR_SEGMENT__TOTAL_SERIAL_ALPHA_V17 = NEOXHAIR_SEGMENT_I_CIRCLESEGMENTS + 1,
@@ -70,9 +83,12 @@ struct CrosshairInfo
 	bool bTopLine;
 	int iCircleRad;
 	int iCircleSegments;
+	int iEDynamicType; // int NeoHudCrosshairDynamicType
 };
-void PaintCrosshair(const CrosshairInfo &crh, const int x, const int y);
+void PaintCrosshair(const CrosshairInfo &crh, int inaccuracy, const int x, const int y);
 
 // NEO NOTE (nullsystem): (*&)[NUM] enforces array size
 bool ImportCrosshair(CrosshairInfo *crh, const char *pszSequence);
 void ExportCrosshair(const CrosshairInfo *crh, char (&szSequence)[NEO_XHAIR_SEQMAX]);
+
+int HalfInaccuracyConeInScreenPixels(C_NEO_Player *player, C_NEOBaseCombatWeapon *pWeapon, int halfScreenWidth);

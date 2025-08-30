@@ -32,6 +32,7 @@
 	X(SCOPEDWEAPON, scopedwep, "") \
 	X(THROWABLE, throwable, "") \
 	X(SUPPRESSED, suppressed, "") \
+	X(FIREARM, firearm, "") \
 	X(EXPLOSIVE, explosive, "")
 
 // SCOPEDWEAPON - Scoped weapons should OR this in their flags.
@@ -39,13 +40,7 @@
 // SUPPRESSED - Suppressed weapons
 // EXPLOSIVE - Generic for weapons that count as explosive kills on killfeed.
 
-#ifdef INCLUDE_WEP_PBK
-// Type to use if we need to ensure more than 32 bits in the mask.
 #define NEO_WEP_BITS_UNDERLYING_TYPE long long int
-#else
-// Using plain int if we don't need to ensure >32 bits in the mask.
-#define NEO_WEP_BITS_UNDERLYING_TYPE int
-#endif
 
 #define DEFINE_ENUM(name, ...) NEO_WIDX_##name,
 #define DEFINE_BITENUM(name, ...) NEO_WEP_##name = (static_cast<NEO_WEP_BITS_UNDERLYING_TYPE>(1) << static_cast<NEO_WEP_BITS_UNDERLYING_TYPE>(NEO_WIDX_##name - 1)),
