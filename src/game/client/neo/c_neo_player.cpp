@@ -751,6 +751,9 @@ bool C_NEO_Player::ShouldDraw( void )
 void C_NEO_Player::OnDataChanged( DataUpdateType_t type )
 {
 	BaseClass::OnDataChanged(type);
+
+	// Had to delay client sync until player model was ready
+	CSpectatorTakeoverPlayerUpdateOnDataChanged();
 }
 
 float C_NEO_Player::GetFOV( void )
@@ -1804,3 +1807,94 @@ void C_NEO_Player::ModifyFireBulletsDamage(CTakeDamageInfo* dmgInfo)
 {
 	dmgInfo->SetDamage(dmgInfo->GetDamage() * sv_neo_wep_dmg_modifier.GetFloat());
 }
+
+C_NEO_Player* GetNeoPlayerByUserID(int userID)
+{
+    for (int i = 1; i <= gpGlobals->maxClients; i++)
+    {
+        IClientEntity *pEntity = cl_entitylist->GetClientEntity(i);
+        C_BasePlayer* pPlayer = ToBasePlayer(static_cast<C_BaseEntity*>(pEntity));
+        
+        if (pPlayer)
+        {
+            player_info_t info;
+            if (engine->GetPlayerInfo(i, &info) && info.userID == userID)
+            {
+                return ToNEOPlayer(pPlayer);
+            }
+        }
+    }
+
+    return nullptr;
+}
+
+// Receive server message to smooth out player takeover
+void __MsgFunc_CSpectatorTakeoverPlayer(bf_read &msg)
+{
+	int spectatorTakingOverUserID = msg.ReadLong();
+	int playerTakeoverTargetUserID = msg.ReadLong();
+
+	C_NEO_Player* pSpectatorTakingOver = GetNeoPlayerByUserID(spectatorTakingOverUserID);
+	C_NEO_Player* pPlayerTakeoverTarget = GetNeoPlayerByUserID(playerTakeoverTargetUserID);
+
+
+	if (!pPlayerTakeoverTarget || !pSpectatorTakingOver)
+	{
+		return;
+	}
+
+	// Save for later in C_NEO_Player::OnDataChanged
+	pSpectatorTakingOver->m_hSpectatorTakeoverTarget = pPlayerTakeoverTarget;
+}
+
+CUserMessageRegister CSpectatorTakeoverPlayerRegistration("CSpectatorTakeoverPlayer", __MsgFunc_CSpectatorTakeoverPlayer);
+
+void C_NEO_Player::CSpectatorTakeoverPlayerUpdateOnDataChanged()
+{
+    if ( C_NEO_Player* pTarget = m_hSpectatorTakeoverTarget.Get() )
+	{
+        // Check if our model is stable from server & matches the target
+        if (GetModel() && (GetModel() == pTarget->GetModel()))
+        {
+            CSpectatorTakeoverPlayerUpdate(pTarget);
+            m_hSpectatorTakeoverTarget = nullptr;
+        }
+    }
+}
+
+void C_NEO_Player::CSpectatorTakeoverPlayerUpdate(C_NEO_Player* pPlayerTakeoverTarget)
+{
+	if (!pPlayerTakeoverTarget)
+	{
+		return;
+	}
+
+	m_nSkin = pPlayerTakeoverTarget->m_iNeoSkin;
+	m_iNeoClass = pPlayerTakeoverTarget->m_iNeoClass;
+	m_iLoadoutWepChoice = pPlayerTakeoverTarget->m_iLoadoutWepChoice;
+	m_iNextSpawnClassChoice = pPlayerTakeoverTarget->m_iNextSpawnClassChoice;
+
+	m_bInThermOpticCamo = pPlayerTakeoverTarget->m_bInThermOpticCamo;
+	m_bInVision = pPlayerTakeoverTarget->m_bInVision;
+	m_bInAim = pPlayerTakeoverTarget->m_bInAim;
+	m_bCarryingGhost = pPlayerTakeoverTarget->m_bCarryingGhost;
+	m_bIneligibleForLoadoutPick = pPlayerTakeoverTarget->m_bIneligibleForLoadoutPick;
+	m_bInLean = pPlayerTakeoverTarget->m_bInLean;
+
+	m_flCamoAuxLastTime = pPlayerTakeoverTarget->m_flCamoAuxLastTime;
+	m_nVisionLastTick = pPlayerTakeoverTarget->m_nVisionLastTick;
+	m_flLastAirborneJumpOkTime = pPlayerTakeoverTarget->m_flLastAirborneJumpOkTime;
+	m_flLastSuperJumpTime = pPlayerTakeoverTarget->m_flLastSuperJumpTime;
+	m_bPreviouslyReloading = pPlayerTakeoverTarget->m_bPreviouslyReloading;
+	m_bLastTickInThermOpticCamo = pPlayerTakeoverTarget->m_bLastTickInThermOpticCamo;
+	m_bIsAllowedToToggleVision = pPlayerTakeoverTarget->m_bIsAllowedToToggleVision;
+	m_flTocFactor = pPlayerTakeoverTarget->m_flTocFactor;
+
+	pPlayerTakeoverTarget->SnatchModelInstance(this);
+	SetAbsOrigin(pPlayerTakeoverTarget->GetAbsOrigin());
+	SetAbsAngles(pPlayerTakeoverTarget->GetAbsAngles());
+	SetAbsVelocity(pPlayerTakeoverTarget->GetAbsVelocity());
+	SetLocalAngles(pPlayerTakeoverTarget->EyeAngles());
+	pl.v_angle = pPlayerTakeoverTarget->pl.v_angle; // mimic SnapEyeAngles in neo_player
+}
+
