@@ -39,5 +39,5 @@ CWeaponPZ::CWeaponPZ()
 
 bool CWeaponPZ::CanBePickedUpByClass(int classId)
 {
-	return classId != (NEO_CLASS_RECON || NEO_CLASS_JUGGERNAUT);
+	return (classId != NEO_CLASS_RECON) && (classId != NEO_CLASS_JUGGERNAUT);
 }
