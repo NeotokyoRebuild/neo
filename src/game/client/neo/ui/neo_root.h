@@ -72,6 +72,7 @@ enum RootState
 	STATE_SERVERPASSWORD,
 	STATE_SETTINGSRESETDEFAULT,
 	STATE_SPRAYDELETERCONFIRM,
+	STATE_ADDCUSTOMBLACKLIST,
 
 	STATE__TOTAL,
 };
@@ -202,6 +203,8 @@ public:
 	wchar_t m_wszMap[128];
 
 	wchar_t m_wszServerPassword[128] = {};
+	wchar_t m_wszServerNewBlacklist[128] = {};
+	int m_iServerNewBlacklistType = 0;
 
 	CCallResult<CNeoRoot, HTTPRequestCompleted_t> m_ccallbackHttp;
 	void HTTPCallbackRequest(HTTPRequestCompleted_t *request, bool bIOFailure);
@@ -221,6 +224,8 @@ public:
 	enum FileIODialogMode
 	{
 		FILEIODLGMODE_SPRAY = 0,
+		FILEIODLGMODE_BLACKLIST_IMPORT,
+		FILEIODLGMODE_BLACKLIST_EXPORT,
 
 		FILEIODLGMODE__TOTAL,
 	};
@@ -234,9 +239,6 @@ public:
 	bool m_bSprayGalleryRefresh = false;
 	float m_flWideAs43 = 0.0f;
 	SprayInfo m_sprayToDelete = {};
-
-private:
-	void OnFileSelectedMode_Spray(const char *szFullpath);
 };
 
 extern CNeoRoot *g_pNeoRoot;

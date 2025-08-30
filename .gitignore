@@ -197,6 +197,7 @@ stats.txt
 *.cache
 glshaders.cfg
 server_blacklist.txt
+ntre_server_blacklist.txt
 videoconfig_linux.cfg
 *.ain
 user_custom
