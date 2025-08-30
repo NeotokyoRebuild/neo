@@ -71,8 +71,8 @@ void CNEO_Juggernaut::Spawn(void)
 
 	SetMoveType(MOVETYPE_STEP);
 	SetSolid(SOLID_BBOX);
-	UTIL_SetSize(this, -Vector(15, 15, 0), Vector(15, 15, 90)); // Needs to be equal or smaller than the player's girth to avoid getting stuck
-	SetCollisionGroup(COLLISION_GROUP_PLAYER);
+	UTIL_SetSize(this, VEC_HULL_MIN, VEC_HULL_MAX); // Needs to be equal or smaller than the player's girth to avoid getting stuck
+	SetCollisionGroup(COLLISION_GROUP_PLAYER); // Behave like a player, make the transition seamless
 	SetFriction(100.0);
 
 	m_textParms.channel = 0;
