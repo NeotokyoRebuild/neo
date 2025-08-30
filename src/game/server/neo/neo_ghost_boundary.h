@@ -26,5 +26,5 @@ public:
 	virtual void StartTouch(CBaseEntity *pOther) override;
 
 private:
-	Vector		m_vecLastGhosterPos = vec3_origin;
+	Vector		m_vecLastObjectivePos = vec3_origin;
 };

@@ -529,3 +529,8 @@ void CWeaponSupa7::Drop(const Vector& vecVelocity)
 	ClearDelayedInputs();
 	CNEOBaseCombatWeapon::Drop(vecVelocity);
 }
+
+bool CWeaponSupa7::CanBePickedUpByClass(int classId)
+{
+	return classId != NEO_CLASS_JUGGERNAUT;
+}

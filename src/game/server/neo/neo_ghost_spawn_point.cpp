@@ -5,3 +5,5 @@
 #include "tier0/memdbgon.h"
 
 LINK_ENTITY_TO_CLASS(neo_ghostspawnpoint, CNEOGhostSpawnPoint);
+
+LINK_ENTITY_TO_CLASS(neo_juggernautspawnpoint, CNEOJuggernautSpawnPoint);

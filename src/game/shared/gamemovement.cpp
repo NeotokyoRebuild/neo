@@ -2497,16 +2497,33 @@ bool CGameMovement::CheckJumpButton( void )
 	auto neoPlayer = static_cast<CNEO_Player*>(player);
 	if ( g_bMovementOptimizations )
 	{
-		Assert( GetCurrentGravity() == 800.0f );
-		flMul = neoPlayer->GetClass() == NEO_CLASS_RECON ?
-			293.9387691339814f: // sqrt(2 * 800 * 54)
-			240.0f; 			// sqrt(2 * 800 * 36)
+		switch (neoPlayer->GetClass())
+		{
+			case NEO_CLASS_RECON:
+				flMul = 293.9387691339814f;	// sqrt(2 * 800 * 54)
+				break;
+			case NEO_CLASS_JUGGERNAUT:
+				flMul = 283.9718295887816f;	// sqrt(2 * 800 * 50.4)
+				break;
+			default:
+				flMul = 240.0f;				// sqrt(2 * 800 * 36)
+				break;
+		}
 	}
 	else
 	{
-		flMul = neoPlayer->GetClass() == NEO_CLASS_RECON ?
-			sqrt(2 * GetCurrentGravity() * GAMEMOVEMENT_JUMP_HEIGHT * 1.5f) :
-			sqrt(2 * GetCurrentGravity() * GAMEMOVEMENT_JUMP_HEIGHT);
+		switch (neoPlayer->GetClass())
+		{
+			case NEO_CLASS_RECON:
+				flMul = sqrt(2 * GetCurrentGravity() * GAMEMOVEMENT_JUMP_HEIGHT * 1.5f);
+				break;
+			case NEO_CLASS_JUGGERNAUT:
+				flMul = sqrt(2 * GetCurrentGravity() * GAMEMOVEMENT_JUMP_HEIGHT * 1.4f);
+				break;
+			default:
+				flMul = sqrt(2 * GetCurrentGravity() * GAMEMOVEMENT_JUMP_HEIGHT);
+				break;
+		}
 	}
 	neoPlayer->DoAnimationEvent(PLAYERANIMEVENT_JUMP);
 	neoPlayer->m_flJumpLastTime = gpGlobals->curtime;

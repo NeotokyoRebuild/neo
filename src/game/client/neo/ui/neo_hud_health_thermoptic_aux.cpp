@@ -126,6 +126,7 @@ void CNEOHud_HTA::DrawHTA() const
 	const float thermopticPercent = player->CloakPower_CurrentVisualPercentage();
 	const int aux = player->m_HL2Local.m_flSuitPower;
 	const bool playerIsNotSupport = (player->GetClass() != NEO_CLASS_SUPPORT);
+	const bool playerIsNotJuggernaut = (player->GetClass() != NEO_CLASS_JUGGERNAUT);
 
 	V_sprintf_safe(value_Integrity, "%d", displayedHealth);
 	if (playerIsNotSupport)
@@ -153,9 +154,12 @@ void CNEOHud_HTA::DrawHTA() const
 	surface()->DrawPrintText(L"INTEGRITY", 9);
 	if (playerIsNotSupport)
 	{
-		surface()->DrawSetTextColor(m_camoTextColor);
-		surface()->DrawSetTextPos(camotext_xpos + xpos, camotext_ypos + ypos);
-		surface()->DrawPrintText(L"THERM-OPTIC", 11);
+		if (playerIsNotJuggernaut)
+		{
+			surface()->DrawSetTextColor(m_camoTextColor);
+			surface()->DrawSetTextPos(camotext_xpos + xpos, camotext_ypos + ypos);
+			surface()->DrawPrintText(L"THERM-OPTIC", 11);
+		}
 		surface()->DrawSetTextColor(m_sprintTextColor);
 		surface()->DrawSetTextPos(sprinttext_xpos + xpos, sprinttext_ypos + ypos);
 		surface()->DrawPrintText(L"AUX POWER", 9);
@@ -168,10 +172,13 @@ void CNEOHud_HTA::DrawHTA() const
 	surface()->DrawPrintText(unicodeValue_Integrity, valLen_Integrity);
 	if (playerIsNotSupport)
 	{
-		surface()->DrawSetTextColor(m_camoTextColor);
-		surface()->GetTextSize(m_hFont, unicodeValue_ThermOptic, fontWidth, fontHeight);
-		surface()->DrawSetTextPos(camonum_xpos + xpos - fontWidth, camonum_ypos + ypos);
-		surface()->DrawPrintText(unicodeValue_ThermOptic, valLen_ThermOptic);
+		if (playerIsNotJuggernaut)
+		{
+			surface()->DrawSetTextColor(m_camoTextColor);
+			surface()->GetTextSize(m_hFont, unicodeValue_ThermOptic, fontWidth, fontHeight);
+			surface()->DrawSetTextPos(camonum_xpos + xpos - fontWidth, camonum_ypos + ypos);
+			surface()->DrawPrintText(unicodeValue_ThermOptic, valLen_ThermOptic);
+		}
 		surface()->DrawSetTextColor(m_sprintTextColor);
 		surface()->GetTextSize(m_hFont, unicodeValue_Aux, fontWidth, fontHeight);
 		surface()->DrawSetTextPos(sprintnum_xpos + xpos - fontWidth, sprintnum_ypos + ypos);
@@ -188,13 +195,23 @@ void CNEOHud_HTA::DrawHTA() const
 
 	if (playerIsNotSupport)
 	{
-		// ThermOptic progress bar
-		surface()->DrawSetColor(m_camoColor);
-		surface()->DrawFilledRect(
-			camobar_xpos + xpos,
-			camobar_ypos + ypos,
-			camobar_xpos + xpos + (camobar_w * (thermopticPercent / 100.0)),
-			camobar_ypos + ypos + camobar_h);
+		if (playerIsNotJuggernaut)
+		{
+			// ThermOptic progress bar
+			surface()->DrawSetColor(m_camoColor);
+			surface()->DrawFilledRect(
+				camobar_xpos + xpos,
+				camobar_ypos + ypos,
+				camobar_xpos + xpos + (camobar_w * (thermopticPercent / 100.0)),
+				camobar_ypos + ypos + camobar_h);
+
+			surface()->DrawSetColor(m_camoTextColor);
+			surface()->DrawOutlinedRect(
+				camobar_xpos + xpos,
+				camobar_ypos + ypos,
+				camobar_xpos + xpos + camobar_w,
+				camobar_ypos + ypos + camobar_h);
+		}
 
 		// AUX progress bar
 		surface()->DrawSetColor(m_sprintColor);
@@ -203,13 +220,6 @@ void CNEOHud_HTA::DrawHTA() const
 			sprintbar_ypos + ypos,
 			sprintbar_xpos + xpos + (sprintbar_w * (aux / 100.0)),
 			sprintbar_ypos + ypos + sprintbar_h);
-
-		surface()->DrawSetColor(m_camoTextColor);
-		surface()->DrawOutlinedRect(
-			camobar_xpos + xpos,
-			camobar_ypos + ypos,
-			camobar_xpos + xpos + camobar_w,
-			camobar_ypos + ypos + camobar_h);
 
 		surface()->DrawSetColor(m_sprintTextColor);
 		surface()->DrawOutlinedRect(

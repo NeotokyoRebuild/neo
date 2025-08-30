@@ -87,21 +87,44 @@ void CNEO_GhostBoundary::Think()
 {
     BaseClass::Think();
 
-    if (!NEORules()->GhostExists())
+    if (NEORules()->GetGameType() == NEO_GAME_TYPE_JGR)
     {
-        return;
-    }
+        // In JGR, this is only true when the juggernaut is in it's item form, so there is no player
+        if (NEORules()->JuggernautItemExists())
+        {
+            return;
+        }
 
-    int iGhosterIndex = NEORules()->GetGhosterPlayer();
-    if (iGhosterIndex == 0)
-    {
-        return;
-    }
+        int iJuggernautIndex = NEORules()->GetJuggernautPlayer();
+        if (iJuggernautIndex == 0)
+        {
+            return;
+        }
 
-    CBasePlayer* pPlayer = UTIL_PlayerByIndex(iGhosterIndex);
-    if (pPlayer->GetFlags() & FL_ONGROUND)
+        CBasePlayer* pPlayer = UTIL_PlayerByIndex(iJuggernautIndex);
+        if (pPlayer->GetFlags() & FL_ONGROUND)
+        {
+            m_vecLastObjectivePos = pPlayer->GetAbsOrigin();
+        }
+    }
+    else
     {
-        m_vecLastGhosterPos = pPlayer->GetAbsOrigin();
+        if (!NEORules()->GhostExists())
+        {
+            return;
+        }
+
+        int iGhosterIndex = NEORules()->GetGhosterPlayer();
+        if (iGhosterIndex == 0)
+        {
+            return;
+        }
+
+        CBasePlayer* pPlayer = UTIL_PlayerByIndex(iGhosterIndex);
+        if (pPlayer->GetFlags() & FL_ONGROUND)
+        {
+            m_vecLastObjectivePos = pPlayer->GetAbsOrigin();
+        }
     }
 }
 
@@ -109,39 +132,55 @@ void CNEO_GhostBoundary::StartTouch(CBaseEntity *pOther)
 {
     BaseClass::StartTouch(pOther);
 
-    Vector vecGhostSpawn = NEORules()->m_vecPreviousGhostSpawn;
-    if ((vecGhostSpawn == vec3_origin) && (m_vecLastGhosterPos == vec3_origin))
+    if (NEORules()->GetGameType() == NEO_GAME_TYPE_JGR)
     {
-        return; // Don't bother teleporting if there's no ghost spawn and no ghoster pos
-    }
-
-    auto pDroppedGhost = (pOther && pOther->IsBaseCombatWeapon() && static_cast<CNEOBaseCombatWeapon*>(pOther)->IsGhost())
-        ? static_cast<CWeaponGhost*>(pOther) : nullptr;
-    if (pDroppedGhost)
-    {
-        if (m_vecLastGhosterPos == vec3_origin)
+        if ((NEORules()->m_vecPreviousJuggernautSpawn == vec3_origin) && (m_vecLastObjectivePos == vec3_origin))
         {
-            pDroppedGhost->VPhysicsGetObject()->SetPosition(vecGhostSpawn, GHOST_ANGLES, true);
-            // Don't freeze it, ghosts aren't frozen when they spawn
-        }
-        else
-        {
-            pDroppedGhost->VPhysicsGetObject()->SetPosition(m_vecLastGhosterPos, GHOST_ANGLES, true);
-            pDroppedGhost->VPhysicsGetObject()->EnableMotion(false);
+            return; // Don't bother teleporting if there's no juggernaut spawn and no jgr player pos
         }
 
-        return;
+        CNEO_Juggernaut *pDroppedJuggernaut = dynamic_cast<CNEO_Juggernaut*>(pOther);
+        if (pDroppedJuggernaut)
+        {
+            pDroppedJuggernaut->SetAbsOrigin(m_vecLastObjectivePos);
+        }
     }
-
-    CNEO_Player *pNEOPlayer = ToNEOPlayer(pOther);
-    if (pNEOPlayer && pNEOPlayer->IsCarryingGhost())
+    else
     {
-        CBaseCombatWeapon* pHeldGhost = pNEOPlayer->Weapon_OwnsThisType("weapon_ghost");
-        pNEOPlayer->Weapon_Drop(pHeldGhost);
+        Vector vecGhostSpawn = NEORules()->m_vecPreviousGhostSpawn;
+        if ((vecGhostSpawn == vec3_origin) && (m_vecLastObjectivePos == vec3_origin))
+        {
+            return; // Don't bother teleporting if there's no ghost spawn and no ghoster pos
+        }
 
-        pHeldGhost->VPhysicsGetObject()->SetPosition(m_vecLastGhosterPos, GHOST_ANGLES, true);
-        pHeldGhost->VPhysicsGetObject()->EnableMotion(false);
+        auto pDroppedGhost = (pOther && pOther->IsBaseCombatWeapon() && static_cast<CNEOBaseCombatWeapon*>(pOther)->IsGhost())
+            ? static_cast<CWeaponGhost*>(pOther) : nullptr;
+        if (pDroppedGhost)
+        {
+            if (m_vecLastObjectivePos == vec3_origin)
+            {
+                pDroppedGhost->VPhysicsGetObject()->SetPosition(vecGhostSpawn, GHOST_ANGLES, true);
+                // Don't freeze it, ghosts aren't frozen when they spawn
+            }
+            else
+            {
+                pDroppedGhost->VPhysicsGetObject()->SetPosition(m_vecLastObjectivePos, GHOST_ANGLES, true);
+                pDroppedGhost->VPhysicsGetObject()->EnableMotion(false);
+            }
 
-        return;
+            return;
+        }
+
+        CNEO_Player* pNEOPlayer = ToNEOPlayer(pOther);
+        if (pNEOPlayer && pNEOPlayer->IsCarryingGhost())
+        {
+            CBaseCombatWeapon* pHeldGhost = pNEOPlayer->Weapon_OwnsThisType("weapon_ghost");
+            pNEOPlayer->Weapon_Drop(pHeldGhost);
+
+            pHeldGhost->VPhysicsGetObject()->SetPosition(m_vecLastObjectivePos, GHOST_ANGLES, true);
+            pHeldGhost->VPhysicsGetObject()->EnableMotion(false);
+
+            return;
+        }
     }
 }

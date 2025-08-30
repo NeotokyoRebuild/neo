@@ -30,6 +30,8 @@ private:
 	int m_iCurrentTextureIndex = 0;
 	int m_iUplinkTextureWidth, m_iUplinkTextureHeight;
 
+	int m_iJGRTexture;
+
 private:
 	CNEOHud_GhostUplinkState(const CNEOHud_GhostUplinkState&other);
 };

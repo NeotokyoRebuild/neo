@@ -42,6 +42,7 @@ public:
 	virtual int GetNeoWepXPCost(const int neoClass) const override { return 20; }
 
 	virtual float GetSpeedScale(void) const OVERRIDE { return 0.725f; }
+	bool CanBePickedUpByClass(int classId) OVERRIDE;
 
 	float m_flChamberFinishTime = maxfloat16bits;
 protected:

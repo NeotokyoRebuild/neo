@@ -14,9 +14,10 @@ enum NeoClass {
 	NEO_CLASS_ASSAULT,
 	NEO_CLASS_SUPPORT,
 
-	// NOTENOTE: VIP *must* be last, because we are
+	// NOTENOTE: VIP and Juggernaut *must* be last, because we are
 	// using array offsets for recon/assault/support
 	NEO_CLASS_VIP,
+	NEO_CLASS_JUGGERNAUT,
 
 	NEO_CLASS__ENUM_COUNT
 };

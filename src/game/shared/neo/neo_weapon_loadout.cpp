@@ -56,6 +56,13 @@ inline const CLoadoutWeapon s_LoadoutWeapons[NEO_LOADOUT__COUNT][MAX_WEAPON_LOAD
 		{XP_LIEUTENANT, WEAPON(zr68c)},	{XP_LIEUTENANT, WEAPON(zr68l)},	{XP_LIEUTENANT, WEAPON(supa7)},
 		{XP_EMPTY, WEAPON(empty)},		{XP_EMPTY, WEAPON(empty)},		{XP_EMPTY, WEAPON(empty)},
 	},
+	// Juggernaut (empty, cannot spawn as juggernaut)
+	{
+		{XP_EMPTY, WEAPON(empty)},		{XP_EMPTY, WEAPON(empty)},		{XP_EMPTY, WEAPON(empty)},
+		{XP_EMPTY, WEAPON(empty)},		{XP_EMPTY, WEAPON(empty)},		{XP_EMPTY, WEAPON(empty)},
+		{XP_EMPTY, WEAPON(empty)},		{XP_EMPTY, WEAPON(empty)},		{XP_EMPTY, WEAPON(empty)},
+		{XP_EMPTY, WEAPON(empty)},		{XP_EMPTY, WEAPON(empty)},		{XP_EMPTY, WEAPON(empty)},
+	},
 	// Developer (special, non-class)
 	{
 		{XP_ANY, WEAPON(mpn)}, 			{XP_ANY, WEAPON(srm)}, 			{XP_ANY, WEAPON(srms)},

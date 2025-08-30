@@ -41,6 +41,9 @@ CNEOHud_GhostUplinkState::CNEOHud_GhostUplinkState(const char *pElementName, vgu
 
 	surface()->DrawGetTextureSize(m_pUplinkTextures[0], m_iUplinkTextureWidth, m_iUplinkTextureHeight);
 
+	m_iJGRTexture = surface()->CreateNewTextureID();
+	surface()->DrawSetTextureFile(m_iJGRTexture, "vgui/hud/jgr/jgr_active", 1, false);
+
 	SetVisible(true);
 }
 
@@ -84,22 +87,30 @@ void CNEOHud_GhostUplinkState::DrawNeoHudElement()
 
 	auto localPlayer = C_NEO_Player::GetLocalNEOPlayer();
 	const auto wep = static_cast<C_NEOBaseCombatWeapon*>(localPlayer->GetActiveWeapon());
-	if (!wep || !wep->IsGhost())
+	if (wep && wep->IsGhost())
+	{
+		if (m_flTimeGhostEquip == 0.f)
+		{
+			m_flTimeGhostEquip = gpGlobals->curtime;
+		}
+
+		surface()->DrawSetColor(COLOR_RED);
+		static constexpr int textureOrder[NUM_TEXTURE_START_TIMES] = { 0, 1, 2, 3, 2, 0, 1, 2, 3, 0, 1 };
+		surface()->DrawSetTexture(m_pUplinkTextures[textureOrder[m_iCurrentTextureIndex]]);
+		surface()->DrawTexturedRect(0, 0, m_iUplinkTextureWidth, m_iUplinkTextureHeight);
+	}
+	else if (localPlayer->IsAlive() && localPlayer->GetClass() == NEO_CLASS_JUGGERNAUT)
+	{
+		surface()->DrawSetColor(COLOR_RED);
+		surface()->DrawSetTexture(m_iJGRTexture);
+		surface()->DrawTexturedRect(0, 0, m_iUplinkTextureWidth, m_iUplinkTextureHeight);
+	}
+	else
 	{
 		m_flTimeGhostEquip = 0.f;
 		m_iCurrentTextureIndex = 0;
 		return;
 	}
-
-	if (m_flTimeGhostEquip == 0.f)
-	{
-		m_flTimeGhostEquip = gpGlobals->curtime;
-	}
-
-	surface()->DrawSetColor(COLOR_RED);
-	static constexpr int textureOrder[NUM_TEXTURE_START_TIMES] = { 0, 1, 2, 3, 2, 0, 1, 2, 3, 0, 1 };
-	surface()->DrawSetTexture(m_pUplinkTextures[textureOrder[m_iCurrentTextureIndex]]);
-	surface()->DrawTexturedRect(0, 0, m_iUplinkTextureWidth, m_iUplinkTextureHeight);
 }
 
 void CNEOHud_GhostUplinkState::Paint()
