@@ -190,11 +190,6 @@ void CNeoLoading::OnMainLoop(const NeoUI::Mode eMode)
 	if (iStrIdx == m_aStrIdxMap[LOADINGSTATE_LOADING] && m_pHostMap)
 	{
 		auto hostMapName = m_pHostMap->GetString();
-		if (V_strlen(hostMapName) == 0)
-		{
-			bSkipRender = true;
-		}
-
 		if (Q_stristr(hostMapName, "background_"))
 		{
 			bSkipRender = true;
