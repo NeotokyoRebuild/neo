@@ -602,7 +602,7 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 			}
 		}
 	}
-	else
+	else if (!g_pNeoScoreBoard->IsVisible())
 	{
 		DrawPlayerList();
 	}
