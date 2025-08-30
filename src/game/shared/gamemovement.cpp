@@ -2503,7 +2503,7 @@ bool CGameMovement::CheckJumpButton( void )
 				flMul = 293.9387691339814f;	// sqrt(2 * 800 * 54)
 				break;
 			case NEO_CLASS_JUGGERNAUT:
-				flMul = 283.9718295887816f;	// sqrt(2 * 800 * 1.4) DG: did i do this correctly
+				flMul = 283.9718295887816f;	// sqrt(2 * 800 * 50.4)
 				break;
 			default:
 				flMul = 240.0f;				// sqrt(2 * 800 * 36)
