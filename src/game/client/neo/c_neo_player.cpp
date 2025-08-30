@@ -1895,5 +1895,6 @@ void C_NEO_Player::CSpectatorTakeoverPlayerUpdate(C_NEO_Player* pPlayerTakeoverT
 	SetAbsAngles(pPlayerTakeoverTarget->GetAbsAngles());
 	SetAbsVelocity(pPlayerTakeoverTarget->GetAbsVelocity());
 	SetLocalAngles(pPlayerTakeoverTarget->EyeAngles());
+	pl.v_angle = pPlayerTakeoverTarget->pl.v_angle; // mimic SnapEyeAngles in neo_player
 }
 

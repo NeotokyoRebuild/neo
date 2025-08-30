@@ -3452,6 +3452,7 @@ void CNEO_Player::SpectatorTakeoverPlayerPreThink()
 			SetAbsVelocity(pPlayerTakeoverTarget->GetAbsVelocity());
 			SetLocalAngles(pPlayerTakeoverTarget->EyeAngles());
 			SetViewOffset(VEC_VIEW_NEOSCALE(this));
+			SnapEyeAngles( pPlayerTakeoverTarget->EyeAngles() ); 
 			SetPlayerTeamModel();
 			InitSprinting();
 
