@@ -907,7 +907,7 @@ void CNeoRoot::MainLoopSettings(const MainLoopParam param)
 		g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
 		NeoUI::SetPerRowLayout(5);
 		{
-			NeoUI::SwapFont(NeoUI::FONT_NTHORIZSIDES);
+			NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 			if (NeoUI::Button(L"Back (ESC)").bPressed || NeoUI::Bind(KEY_ESCAPE))
 			{
 				m_ns.bBack = true;
@@ -976,6 +976,7 @@ void CNeoRoot::MainLoopNewGame(const MainLoopParam param)
 	{
 		NeoUI::BeginSection(true);
 		{
+			NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 			NeoUI::SetPerRowLayout(2, NeoUI::ROWLAYOUT_TWOSPLIT);
 			if (NeoUI::Button(L"Map", m_newGame.wszMap).bPressed)
 			{
@@ -995,7 +996,7 @@ void CNeoRoot::MainLoopNewGame(const MainLoopParam param)
 		g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall;
 		NeoUI::BeginSection();
 		{
-			NeoUI::SwapFont(NeoUI::FONT_NTHORIZSIDES);
+			NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
 			NeoUI::SetPerRowLayout(5);
 			{
@@ -1292,7 +1293,7 @@ void CNeoRoot::MainLoopServerBrowser(const MainLoopParam param)
 		if (m_bShowFilterPanel) g_uiCtx.dPanel.tall += g_uiCtx.layout.iRowTall * FILTER_ROWS;
 		NeoUI::BeginSection();
 		{
-			NeoUI::SwapFont(NeoUI::FONT_NTHORIZSIDES);
+			NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
 			NeoUI::SetPerRowLayout(6);
 			{
@@ -1418,7 +1419,7 @@ void CNeoRoot::MainLoopMapList(const MainLoopParam param)
 		g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall;
 		NeoUI::BeginSection();
 		{
-			NeoUI::SwapFont(NeoUI::FONT_NTHORIZSIDES);
+			NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
 			NeoUI::SetPerRowLayout(5);
 			{
@@ -1541,7 +1542,7 @@ void CNeoRoot::MainLoopSprayPicker(const MainLoopParam param)
 		g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall;
 		NeoUI::BeginSection();
 		{
-			NeoUI::SwapFont(NeoUI::FONT_NTHORIZSIDES);
+			NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
 			NeoUI::SetPerRowLayout(5, nullptr, iNormTall);
 			{
@@ -1700,7 +1701,7 @@ void CNeoRoot::MainLoopServerDetails(const MainLoopParam param)
 		g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall;
 		NeoUI::BeginSection();
 		{
-			NeoUI::SwapFont(NeoUI::FONT_NTHORIZSIDES);
+			NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 			g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
 			NeoUI::SetPerRowLayout(5);
 			{
@@ -1758,7 +1759,7 @@ void CNeoRoot::MainLoopPlayerList(const MainLoopParam param)
 			g_uiCtx.dPanel.tall = g_uiCtx.layout.iRowTall;
 			NeoUI::BeginSection();
 			{
-				NeoUI::SwapFont(NeoUI::FONT_NTHORIZSIDES);
+				NeoUI::SwapFont(NeoUI::FONT_NTNORMAL);
 				g_uiCtx.eButtonTextStyle = NeoUI::TEXTSTYLE_CENTER;
 				NeoUI::SetPerRowLayout(5);
 				{
