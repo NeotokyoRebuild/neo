@@ -1744,7 +1744,7 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 		CBaseEntity* pTarget = UTIL_PlayerByUserId(targetIndex);
 		CNEO_Player* pPlayerToTakeover = ToNEOPlayer(pTarget);
 
-		if (pPlayerToTakeover && pPlayerToTakeover->IsBot())
+		if (pPlayerToTakeover)
 		{
 			SpectatorTryReplacePlayer(pPlayerToTakeover);
 		}
@@ -3294,8 +3294,7 @@ ConVar sv_neo_spec_replace_player_afk_enable("sv_neo_spec_replace_player_afk_ena
 ConVar sv_neo_spec_replace_player_afk_time_sec("sv_neo_spec_replace_player_afk_time_sec", "300", FCVAR_NONE, "Seconds of inactivity before a player is considered AFK.");
 
 bool CNEO_Player::IsAFK() {
-    return sv_neo_spec_replace_player_afk_enable.GetBool()
-        && (GetTimeSinceLastUserCommand() > sv_neo_spec_replace_player_afk_time_sec.GetInt());
+    return GetTimeSinceLastUserCommand() > sv_neo_spec_replace_player_afk_time_sec.GetInt();
 }
 
 void CNEO_Player::SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace)
