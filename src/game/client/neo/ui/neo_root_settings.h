@@ -92,6 +92,7 @@ struct NeoSettings
 	struct Mouse
 	{
 		float flSensitivity;
+		float flZoomSensitivityRatio;
 		bool bRawInput;
 		bool bFilter;
 		bool bReverse;
@@ -207,6 +208,7 @@ struct NeoSettings
 
 		// Mouse
 		CONVARREF_DEF(sensitivity);
+		CONVARREF_DEF(zoom_sensitivity_ratio);
 		CONVARREF_DEF(m_filter);
 		CONVARREF_DEF(m_pitch);
 		CONVARREF_DEF(m_customaccel);

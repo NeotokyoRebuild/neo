@@ -435,6 +435,7 @@ void NeoSettingsRestore(NeoSettings *ns, const NeoSettings::Keys::Flags flagsKey
 	{
 		NeoSettings::Mouse *pMouse = &ns->mouse;
 		pMouse->flSensitivity = cvr->sensitivity.GetFloat();
+		pMouse->flZoomSensitivityRatio = cvr->zoom_sensitivity_ratio.GetFloat();
 		pMouse->bRawInput = cvr->m_rawinput.GetBool();
 		pMouse->bFilter = cvr->m_filter.GetBool();
 		pMouse->bReverse = (cvr->m_pitch.GetFloat() < 0.0f);
@@ -672,6 +673,7 @@ void NeoSettingsSave(const NeoSettings *ns)
 	{
 		const NeoSettings::Mouse *pMouse = &ns->mouse;
 		cvr->sensitivity.SetValue(pMouse->flSensitivity);
+		cvr->zoom_sensitivity_ratio.SetValue(pMouse->flZoomSensitivityRatio);
 		cvr->m_rawinput.SetValue(pMouse->bRawInput);
 		cvr->m_filter.SetValue(pMouse->bFilter);
 		const float absPitch = abs(cvr->m_pitch.GetFloat());
@@ -938,6 +940,7 @@ void NeoSettings_Mouse(NeoSettings *ns)
 {
 	NeoSettings::Mouse *pMouse = &ns->mouse;
 	NeoUI::Slider(L"Sensitivity", &pMouse->flSensitivity, 0.1f, 10.0f, 2, 0.25f);
+	NeoUI::Slider(L"Zoom Sensitivity Ratio", &pMouse->flZoomSensitivityRatio, 0.f, 10.0f, 2, 0.25f);
 	NeoUI::RingBoxBool(L"Raw input", &pMouse->bRawInput);
 	NeoUI::RingBoxBool(L"Mouse Filter", &pMouse->bFilter);
 	NeoUI::RingBoxBool(L"Mouse Reverse", &pMouse->bReverse);
