@@ -1373,7 +1373,12 @@ void C_NEO_Player::CalcDeathCamView(Vector &eyeOrigin, QAngle &eyeAngles, float 
 			vTarget = NEORules()->GetJuggernautMarkerPos();
 
 		}
+
 		eyeOrigin = vTarget + Vector(80, 80, 80);
+		trace_t tr;
+		CTraceFilterWorldOnly traceFilter;
+		UTIL_TraceLine(vTarget, eyeOrigin, MASK_OPAQUE, &traceFilter, &tr);
+		eyeOrigin = vTarget + ((Vector(75, 75, 75) * tr.fraction));
 
 		Vector vDir = vTarget - eyeOrigin;
 		VectorNormalize(vDir);
