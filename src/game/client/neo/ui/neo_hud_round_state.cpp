@@ -374,7 +374,7 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 		}
 		break;
 	case NEO_GAME_TYPE_JGR:
-		V_sprintf_safe(szGameTypeDescription, "Keep control of the Juggernaut\n");
+		V_sprintf_safe(szGameTypeDescription, "Control the Juggernaut\n");
 		break;
 	default:
 		V_sprintf_safe(szGameTypeDescription, "Await further orders\n");
