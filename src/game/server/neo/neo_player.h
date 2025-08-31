@@ -73,7 +73,7 @@ public:
 	virtual void ChangeTeam(int iTeam) OVERRIDE;
 	virtual void PickupObject(CBaseEntity *pObject, bool bLimitMassAndSize) OVERRIDE;
 	virtual void PlayStepSound(Vector &vecOrigin, surfacedata_t *psurface, float fvol, bool force) OVERRIDE;
-	virtual const char* GetOverrideStepSound(const char* pBaseStepSound) OVERRIDE;
+	const char* GetOverrideStepSound(const char* pBaseStepSound) OVERRIDE;
 	virtual void Weapon_Drop(CBaseCombatWeapon *pWeapon, const Vector *pvecTarget = NULL, const Vector *pVelocity = NULL) OVERRIDE;
 	void Weapon_DropOnDeath(CNEOBaseCombatWeapon *pWeapon, Vector damageForce);
 	void Weapon_DropAllOnDeath(const CTakeDamageInfo &info);
