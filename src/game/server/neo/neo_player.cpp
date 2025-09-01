@@ -3425,7 +3425,7 @@ ConVar sv_neo_spec_replace_player_afk_time_sec( "sv_neo_spec_replace_player_afk_
 	true, -1, true, 999);
 ConVar sv_neo_spec_replace_player_min_exp("sv_neo_spec_replace_player_min_exp",
 	"0", FCVAR_NONE,
-	"Minimum experience level allowed to takeover players ",
+	"Minimum experience allowed to takeover players ",
 	true, -999, true, 999);
 
 bool CNEO_Player::IsAFK() const {
@@ -3654,18 +3654,15 @@ void CNEO_Player::SpectatorTakeoverPlayerInitiate(CNEO_Player* pPlayer)
     m_hSpectatorTakeoverPlayerImpersonatingMe = pPlayer;
     pPlayer->m_hSpectatorTakeoverPlayerTarget = this;
 
-    // Strip all weapons and items so bot is truly disarmed.
+    // Strip all weapons and items so replaced player is truly disarmed.
     RemoveAllItems(true);
 
-    // Become inert + invisible.
+    // Silently remove player from the game.
     SetSolid(SOLID_NONE);
     AddEffects(EF_NODRAW);
     m_takedamage = DAMAGE_NO;
     m_lifeState = LIFE_DEAD;
-
-    // Prevent AI or movement from running.
-    AddFlag(FL_FROZEN);      // Prevent movement
-    AddFlag(FL_NOTARGET);    // Prevent being targeted by NPCs
+    AddFlag(FL_NOTARGET);
 }
 
 void CNEO_Player::SpectatorTakeoverPlayerRevert(CNEO_Player* pPlayer)
