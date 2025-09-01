@@ -3240,6 +3240,7 @@ void CHL2_Player::PlayerUse ( void )
 			usedSomething = true;
 		}
 
+#ifndef NEO // NEO NOTE DG: Moved into CNEOBaseCombatWeapon::Use
 #if	HL2_SINGLE_PRIMARY_WEAPON_MODE
 
 		//Check for weapon pick-up
@@ -3270,6 +3271,7 @@ void CHL2_Player::PlayerUse ( void )
 			}
 		}
 #endif
+#endif // NEO
 	}
 	else if ( m_afButtonPressed & IN_USE )
 	{

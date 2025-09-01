@@ -1291,3 +1291,20 @@ void CNEOBaseCombatWeapon::SetPickupTouch(void)
 	}
 #endif
 }
+
+#ifdef GAME_DLL
+void CNEOBaseCombatWeapon::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+	auto* neoPlayer = ToNEOPlayer(pActivator);
+
+	if (neoPlayer && neoPlayer->Weapon_CanSwitchTo(this) && CanBePickedUpByClass(neoPlayer->GetClass()))
+	{
+		neoPlayer->Weapon_DropSlot(GetSlot());
+		neoPlayer->Weapon_Equip(this);
+
+		RemoveEffects(EF_BONEMERGE);
+	}
+
+	BaseClass::Use(pActivator, pCaller, useType, value);
+}
+#endif

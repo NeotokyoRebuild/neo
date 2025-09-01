@@ -145,7 +145,9 @@ public:
 
 	virtual void PrimaryAttack(void) override;
 	virtual void SecondaryAttack(void) override;
-
+#ifdef GAME_DLL
+	virtual void Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value ) override;
+#endif
 	virtual void DryFire(void);
 
 	virtual Activity GetPrimaryAttackActivity(void) override;
