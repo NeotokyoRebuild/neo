@@ -147,7 +147,7 @@ void CNEO_Juggernaut::Use(CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYP
 
 void CNEO_Juggernaut::Think(void)
 {
-	if (!m_bIsHolding || !m_hPlayer || !m_hPlayer->IsAlive() || m_hPlayer->m_afButtonReleased & IN_USE)
+	if (!m_bIsHolding || !m_hPlayer || !m_hPlayer->IsAlive() || !(m_hPlayer->m_nButtons & IN_USE))
 	{
 		HoldCancel();
 		return;
