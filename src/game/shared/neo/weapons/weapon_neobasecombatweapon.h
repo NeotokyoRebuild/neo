@@ -166,7 +166,7 @@ public:
 		{
 			return true;
 		}
-		if (owner->GetNeoFlags() & NEO_FL_FREEZETIME)
+		if (owner->GetNeoFlags() & NEO_FL_FREEZETIME || owner->GetFlags() & FL_FROZEN)
 		{
 			return true;
 		}
