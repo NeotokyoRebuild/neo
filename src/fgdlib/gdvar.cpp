@@ -3,8 +3,8 @@
 //=============================================================================
 
 #include "fgdlib/fgdlib.h"
-#include "fgdlib/GameData.h"
-#include "fgdlib/WCKeyValues.h"
+#include "fgdlib/gamedata.h"
+#include "fgdlib/wckeyvalues.h"
 #include "fgdlib/gdvar.h"
 
 #ifdef _WIN32
@@ -18,7 +18,7 @@
 typedef struct
 {
 	GDIV_TYPE eType;		// The enumeration of this type.
-	char *pszName;			// The name of this type.
+    const char *pszName;			// The name of this type.
 	trtoken_t eStoreAs;		// How this type is stored (STRING, INTEGER, etc).
 } TypeMap_t;
 
@@ -64,7 +64,7 @@ static TypeMap_t TypeMap[] =
 };
 
 
-char *GDinputvariable::m_pszEmpty = "";
+const char *GDinputvariable::m_pszEmpty = "";
 
 
 //-----------------------------------------------------------------------------
