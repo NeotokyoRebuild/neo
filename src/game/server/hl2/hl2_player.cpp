@@ -3250,7 +3250,7 @@ void CHL2_Player::PlayerUse ( void )
 
 			if ( ( pWeapon != NULL ) && ( Weapon_CanSwitchTo( pWeapon ) ) )
 			{
-#ifndef NEO
+//#ifndef NEO
 				// NEO TODO (Adam) this disables picking up ammunition from weapons with the use key, which we probably don't want anyway, but if we do work out why ghost weapon is of the same type as our primaryweapons like zr68s
 				//Try to take ammo or swap the weapon
 				if ( Weapon_OwnsThisType( pWeapon->GetClassname(), pWeapon->GetSubType() ) )
@@ -3258,13 +3258,13 @@ void CHL2_Player::PlayerUse ( void )
 					Weapon_EquipAmmoOnly( pWeapon );
 				}
 				else
-#endif // NEO
+//#endif
 				{
 					Weapon_DropSlot( pWeapon->GetSlot() );
 					Weapon_Equip( pWeapon );
-#ifdef NEO
+//#ifdef NEO
 					pWeapon->RemoveEffects(EF_BONEMERGE);
-#endif // NEO
+//#endif
 				}
 
 				usedSomething = true;
