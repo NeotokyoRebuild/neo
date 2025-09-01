@@ -852,6 +852,11 @@
 		"ammo_text_color"	"255 255 255 100"
 		"ammo_color"		"255 255 255 150"
 		"emptied_ammo_color"	"255 255 255 50"
+		"heatbar_xpos"	"45"
+		"heatbar_ypos"	"12"
+		"heatbar_w"		"150"
+		"heatbar_h"		"15"
+		"heat_color"	"255 50 50 200"
 	}
 	NHudHealth
 	{

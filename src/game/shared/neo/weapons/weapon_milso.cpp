@@ -36,3 +36,8 @@ CWeaponMilso::CWeaponMilso()
 		"milsory",
 	};
 }
+
+bool CWeaponMilso::CanBePickedUpByClass(int classId)
+{
+	return classId != NEO_CLASS_JUGGERNAUT;
+}

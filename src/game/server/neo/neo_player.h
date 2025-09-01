@@ -73,8 +73,10 @@ public:
 	virtual void ChangeTeam(int iTeam) OVERRIDE;
 	virtual void PickupObject(CBaseEntity *pObject, bool bLimitMassAndSize) OVERRIDE;
 	virtual void PlayStepSound(Vector &vecOrigin, surfacedata_t *psurface, float fvol, bool force) OVERRIDE;
+	const char* GetOverrideStepSound(const char* pBaseStepSound) override;
 	virtual void Weapon_Drop(CBaseCombatWeapon *pWeapon, const Vector *pvecTarget = NULL, const Vector *pVelocity = NULL) OVERRIDE;
 	void Weapon_DropOnDeath(CNEOBaseCombatWeapon *pWeapon, Vector damageForce);
+	void Weapon_DropAllOnDeath(const CTakeDamageInfo &info);
 	virtual void UpdateOnRemove(void) OVERRIDE;
 	virtual void DeathSound(const CTakeDamageInfo &info) OVERRIDE;
 	virtual CBaseEntity* EntSelectSpawnPoint(void) OVERRIDE;
@@ -214,6 +216,10 @@ public:
 	void InputSetPlayerModel( inputdata_t & inputData );
 	void InputRefillAmmo( inputdata_t & inputData );
 	void CloakFlash(float time = 0.f);
+
+	void BecomeJuggernaut();
+	void SpawnJuggernautPostDeath();
+
 private:
 	bool m_bAllowGibbing;
 
@@ -253,6 +259,7 @@ public:
 	CNetworkVar(int, m_bInLean);
 	CNetworkVar(bool, m_bCarryingGhost);
 	CNetworkVar(bool, m_bIneligibleForLoadoutPick);
+	CNetworkHandle(CBaseEntity, m_hDroppedJuggernautItem);
 
 	CNetworkVar(float, m_flCamoAuxLastTime);
 	CNetworkVar(int, m_nVisionLastTick);

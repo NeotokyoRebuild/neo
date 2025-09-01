@@ -100,12 +100,17 @@ public:
 #define NEO_SUPPORT_DUCK_MAXHULL_OFFSET Vector(0.0f, 0.0f, 0.0f)
 #define NEO_SUPPORT_DUCKED_VIEW_OFFSET Vector(0.0f, 0.0f, 0.0f)
 
-#define VEC_VIEW_NEOSCALE(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vView + ((NeoPlayer->GetClass() == NEO_CLASS_RECON) ? NEO_RECON_VIEW_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_SUPPORT) ? NEO_SUPPORT_VIEW_OFFSET : NEO_ASSAULT_VIEW_OFFSET))
-#define VEC_DUCK_VIEW_NEOSCALE(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vDuckView + ((NeoPlayer->GetClass() == NEO_CLASS_RECON) ? NEO_RECON_DUCKED_VIEW_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_SUPPORT) ? NEO_SUPPORT_DUCKED_VIEW_OFFSET : NEO_ASSAULT_DUCKED_VIEW_OFFSET))
+#define NEO_JUGGERNAUT_VIEW_OFFSET Vector(0.0f, 0.0f, 15.0f)
+#define NEO_JUGGERNAUT_MAXHULL_OFFSET Vector(0.0f, 0.0f, 18.0f)
+#define NEO_JUGGERNAUT_DUCK_MAXHULL_OFFSET Vector(0.0f, 0.0f, 16.0f)
+#define NEO_JUGGERNAUT_DUCKED_VIEW_OFFSET Vector(0.0f, 0.0f, 13.0f)
+
+#define VEC_VIEW_NEOSCALE(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vView + ((NeoPlayer->GetClass() == NEO_CLASS_RECON) ? NEO_RECON_VIEW_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_SUPPORT) ? NEO_SUPPORT_VIEW_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_JUGGERNAUT) ? NEO_JUGGERNAUT_VIEW_OFFSET : NEO_ASSAULT_VIEW_OFFSET))
+#define VEC_DUCK_VIEW_NEOSCALE(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vDuckView + ((NeoPlayer->GetClass() == NEO_CLASS_RECON) ? NEO_RECON_DUCKED_VIEW_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_SUPPORT) ? NEO_SUPPORT_DUCKED_VIEW_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_JUGGERNAUT) ? NEO_JUGGERNAUT_DUCKED_VIEW_OFFSET : NEO_ASSAULT_DUCKED_VIEW_OFFSET))
 #define VEC_HULL_MIN_NEOSCALED(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vHullMin)
-#define VEC_HULL_MAX_NEOSCALED(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vHullMax + ((NeoPlayer->GetClass() == NEO_CLASS_RECON) ? NEO_RECON_MAXHULL_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_SUPPORT) ? NEO_SUPPORT_MAXHULL_OFFSET : NEO_ASSAULT_MAXHULL_OFFSET ))
+#define VEC_HULL_MAX_NEOSCALED(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vHullMax + ((NeoPlayer->GetClass() == NEO_CLASS_RECON) ? NEO_RECON_MAXHULL_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_SUPPORT) ? NEO_SUPPORT_MAXHULL_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_JUGGERNAUT) ? NEO_JUGGERNAUT_MAXHULL_OFFSET : NEO_ASSAULT_MAXHULL_OFFSET ))
 #define VEC_DUCK_HULL_MIN_NEOSCALED(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vDuckHullMin)
-#define VEC_DUCK_HULL_MAX_NEOSCALED(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vDuckHullMax + ((NeoPlayer->GetClass() == NEO_CLASS_RECON) ? NEO_RECON_DUCK_MAXHULL_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_SUPPORT) ? NEO_SUPPORT_DUCK_MAXHULL_OFFSET : NEO_ASSAULT_DUCK_MAXHULL_OFFSET))
+#define VEC_DUCK_HULL_MAX_NEOSCALED(NeoPlayer) (g_pGameRules->GetViewVectors()->m_vDuckHullMax + ((NeoPlayer->GetClass() == NEO_CLASS_RECON) ? NEO_RECON_DUCK_MAXHULL_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_SUPPORT) ? NEO_SUPPORT_DUCK_MAXHULL_OFFSET : (NeoPlayer->GetClass() == NEO_CLASS_JUGGERNAUT) ? NEO_JUGGERNAUT_DUCK_MAXHULL_OFFSET : NEO_ASSAULT_DUCK_MAXHULL_OFFSET))
 #endif
 
 // If the player (enemy bots) are scaled, adjust the hull

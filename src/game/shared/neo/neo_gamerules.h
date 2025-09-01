@@ -13,6 +13,9 @@
 #include "GameEventListener.h"
 #include "neo_player_shared.h"
 #include "neo_misc.h"
+#ifdef GAME_DLL
+#include "neo_juggernaut.h"
+#endif
 
 #ifdef CLIENT_DLL
 	#include "c_neo_player.h"
@@ -91,6 +94,7 @@ enum NeoGameType {
 	NEO_GAME_TYPE_DM,
 	NEO_GAME_TYPE_EMT,
 	NEO_GAME_TYPE_TUT,
+	NEO_GAME_TYPE_JGR,
 
 	NEO_GAME_TYPE__TOTAL // Number of game types
 };
@@ -240,6 +244,7 @@ public:
 	void ResetTDM();
 	void ResetGhost();
 	void ResetVIP();
+	void ResetJGR();
 
 	void CheckRestartGame();
 
@@ -315,6 +320,10 @@ public:
 	int GetGhosterPlayer() const { return m_iGhosterPlayer; }
 	bool GhostExists() const { return m_bGhostExists; }
 	Vector GetGhostPos() const { return m_vecGhostMarkerPos; }
+
+	int GetJuggernautPlayer() const { return m_iJuggernautPlayerIndex; }
+	bool JuggernautItemExists() const { return m_bJuggernautItemExists; }
+	Vector GetJuggernautMarkerPos() const { return m_vecJuggernautMarkerPos; }
 
 	int GetOpposingTeam(const int team) const
 	{
@@ -395,14 +404,20 @@ private:
 
 #ifdef GAME_DLL
 	void SpawnTheGhost(const Vector *origin = nullptr);
+	void SpawnTheJuggernaut(const Vector *origin = nullptr);
 	void SelectTheVIP();
-
+public:
+	void JuggernautActivated(CNEO_Player *pPlayer);
+	CNEO_Juggernaut *m_pJuggernautItem = nullptr;
+	CNEO_Player *m_pJuggernautPlayer = nullptr;
+private:
 	friend class CNEOBotSeekAndDestroy;
 	CUtlVector<int> m_pGhostCaps;
 	CWeaponGhost *m_pGhost = nullptr;
 	CNEO_Player *m_pVIP = nullptr;
 	int m_iVIPPreviousClass = 0;
 
+	float m_flLastPointTime = 0.0f;
 	float m_flPrevThinkKick = 0.0f;
 	float m_flPrevThinkMirrorDmg = 0.0f;
 	bool m_bTeamBeenAwardedDueToCapPrevent = false;
@@ -412,6 +427,7 @@ private:
 	bool m_bGamemodeTypeBeenInitialized = false;
 	friend class CNEO_GhostBoundary;
 	Vector m_vecPreviousGhostSpawn = vec3_origin;
+	Vector m_vecPreviousJuggernautSpawn = vec3_origin;
 #endif
 	CNetworkVar(int, m_nRoundStatus);
 	CNetworkVar(int, m_iHiddenHudElements);
@@ -429,6 +445,11 @@ private:
 	CNetworkVar(int, m_iGhosterPlayer);
 	CNetworkVector(m_vecGhostMarkerPos);
 	CNetworkVar(bool, m_bGhostExists);
+
+	// Juggernaut networked variables
+	CNetworkVar(int, m_iJuggernautPlayerIndex);
+	CNetworkVar(bool, m_bJuggernautItemExists);
+	CNetworkVector(m_vecJuggernautMarkerPos);
 
 	CNetworkVar(float, m_flNeoRoundStartTime);
 	CNetworkVar(float, m_flNeoNextRoundStartTime);

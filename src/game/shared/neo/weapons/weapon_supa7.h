@@ -61,6 +61,8 @@ public:
 
 	void ClearDelayedInputs(void);
 
+	bool CanBePickedUpByClass(int classId) OVERRIDE;
+
 protected:
 	virtual float GetFastestDryRefireTime() const OVERRIDE { return 0.2f; }
 
