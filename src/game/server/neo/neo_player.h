@@ -315,7 +315,7 @@ private:
 	CNEO_Player(const CNEO_Player&);
 
 	// Spectator takeover player related functionality
-	bool IsAFK(); // not const because GetTimeSinceLastUserCommand is non-const
+	bool IsAFK() const;
 	void SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace);
 	void SpectatorTakeoverPlayerPreThink();
 	void RestorePlayerFromSpectatorTakeover();

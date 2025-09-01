@@ -3418,9 +3418,9 @@ const char *CNEO_Player::GetOverrideStepSound(const char *pBaseStepSound)
 
 // Start spectator takeover of player related code:
 ConVar sv_neo_spec_replace_player_bot_enable("sv_neo_spec_replace_player_bot_enable", "1", FCVAR_NONE, "Allow spectators to take over bots.");
-ConVar sv_neo_spec_replace_player_afk_enable("sv_neo_spec_replace_player_afk_enable", "0", FCVAR_NONE, "Allow spectators to take over AFK players.");
+ConVar sv_neo_spec_replace_player_afk_enable("sv_neo_spec_replace_player_afk_enable", "1", FCVAR_NONE, "Allow spectators to take over AFK players.");
 ConVar sv_neo_spec_replace_player_afk_time_sec( "sv_neo_spec_replace_player_afk_time_sec",
-	"30", FCVAR_NONE,
+	"60", FCVAR_NONE,
 	"Seconds of inactivity before a player is considered AFK for spectator takeover.",
 	true, -1, true, 999);
 ConVar sv_neo_spec_replace_player_min_exp("sv_neo_spec_replace_player_min_exp",
@@ -3428,8 +3428,9 @@ ConVar sv_neo_spec_replace_player_min_exp("sv_neo_spec_replace_player_min_exp",
 	"Minimum experience level allowed to takeover players ",
 	true, -999, true, 999);
 
-bool CNEO_Player::IsAFK() {
-    return GetTimeSinceLastUserCommand() > sv_neo_spec_replace_player_afk_time_sec.GetInt();
+bool CNEO_Player::IsAFK() const {
+    // NEO JANK GetTimeSinceLastUserCommand seems to return 0 as long as the player is connected, so use an alternative timer
+    return GetTimeSinceWeaponFired() > sv_neo_spec_replace_player_afk_time_sec.GetInt();
 }
 
 void CNEO_Player::SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace)
@@ -3438,8 +3439,8 @@ void CNEO_Player::SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace)
 
 	if (!IsObserver() && IsAlive())
 	{
-		DevWarning("A client initiating spectator takeover without being in spectator mode might indicate server command bugs or tampering.");
-		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Spectator player takeover failed: You are not in spectator mode.");
+		DevWarning("A client initiating player takeover without being in observer mode might indicate server command bugs or tampering.");
+		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: Not in observer mode.");
 		return;
 	}
 
@@ -3447,12 +3448,12 @@ void CNEO_Player::SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace)
 	{
 		if (m_iXP < 0)
 		{
-			UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Spectator player takeover failed: Rankless Dogs are not authorized for shell takeover.");
+			UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: Rankless Dogs are not authorized.");
 		}
 		else
 		{
 			UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE,
-				"Spectator player takeover failed: Takeover requires at least %s1 XP to perform.",
+				"Shell takeover failed: Requires at least %s1 XP for authorization.",
 				sv_neo_spec_replace_player_min_exp.GetString());
 		}
 		return;
@@ -3460,19 +3461,19 @@ void CNEO_Player::SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace)
 
 	if (!pNeoPlayerToReplace)
 	{
-		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Spectator player takeover failed: The spectated target is not a valid player.");
+		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: The target is not a valid candidate.");
 		return;
 	}
 
 	if (!pNeoPlayerToReplace->IsAlive())
 	{
-		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Spectator player takeover failed: The player is dead.");
+		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: The target is dead.");
 		return;
 	}
 
 	if (pNeoPlayerToReplace->GetTeamNumber() != GetTeamNumber())
 	{
-		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Spectator player takeover failed: You must be on the same team.");
+		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: Target is not friendly.");
 		return;
 	}
 
@@ -3486,7 +3487,7 @@ void CNEO_Player::SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace)
 	{
 		if (!bAllowBotTakeover)
 		{
-			UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Spectator player takeover failed: Taking over bots is disabled.");
+			UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: Taking over drones is disabled.");
 			return;
 		}
 	}
@@ -3494,7 +3495,7 @@ void CNEO_Player::SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace)
 	{
 		if (!bAllowAfkTakeover)
 		{
-			UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Spectator player takeover failed: Taking over AFK players is disabled.");
+			UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: Taking over inactive shells is disabled.");
 			return;
 		}
 	}
@@ -3502,12 +3503,12 @@ void CNEO_Player::SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace)
 	{
 		char timeBuf[4]; // assuming max sv_neo_spec_replace_player_afk_time_sec is 999
 		int  secondsLeft = sv_neo_spec_replace_player_afk_time_sec.GetInt()
-			- static_cast<int>(pNeoPlayerToReplace->GetTimeSinceLastUserCommand());
+			- static_cast<int>(pNeoPlayerToReplace->GetTimeSinceWeaponFired());
 		V_snprintf(timeBuf, sizeof(timeBuf), "%d", secondsLeft);
 		UTIL_ClientPrintFilter(
 			filter,
 			HUD_PRINTCONSOLE,
-			"Spectator player takeover failed: Player is not counted as AFK until %s1 seconds.",
+			"Shell takeover failed: Shell is not considered inactive until %s1 seconds.",
 			timeBuf);
 		return;
 	}
@@ -3539,7 +3540,7 @@ void CNEO_Player::SpectatorTakeoverPlayerPreThink()
 		if (!IsAlive() || IsObserver())
 		{
 			// Something is wrong, abort the takeover.
-			DevWarning("Spectator takeover failed: Player state was invalid after ForceRespawn().\n");
+			DevWarning("Shell takeover failed: Player state was invalid after ForceRespawn().\n");
 			m_bSpectatorTakeoverPlayerPending = false;
 			m_hSpectatorTakeoverPlayerTarget = nullptr;
 			return;
