@@ -1,0 +1,97 @@
+"nt_terminal_ctg.outdoors"
+
+{
+	"dsp"	"0"
+	
+	"playlooping"
+	{
+		"volume"	".03"
+		"pitch"		"100"
+		"wave"		"pissalley/Distant_city_01.wav"
+	}
+	
+	"playlooping"
+	{
+		"volume"	".08"
+		"pitch"		"100"
+		"wave"		"cicada02.wav"
+	}
+
+    "playrandom"
+	{
+
+		"time"		"10,20"
+		"volume"	".07"
+		"pitch"		"100"
+
+		"rndwave"
+		{
+			
+			"wave"	"forest/wind_thru_trees_1.wav"
+			"wave"	"forest/wind_thru_trees_2.wav"	
+		}
+	}
+
+	"playrandom"
+	{
+
+		"time"		"10,15"
+		"volume"	".05"
+		"pitch"		"70,100"
+
+		"rndwave"
+		{		
+			"wave"	"ambient/atmosphere/metallic1.wav"
+			"wave"	"ambient/atmosphere/metallic2.wav"	
+			"wave"	"ambient/materials/metal_rattle1.wav"
+			"wave"	"ambient/materials/metal_rattle3.wav"
+			"wave"	"ambient/materials/metal_rattle4.wav"
+			"wave"	"ambient/materials/metal4.wav"
+			"wave"	"ambient/materials/metal5.wav"
+			"wave"	"ambient/materials/metal9.wav"
+		}
+	}
+
+}
+
+
+"nt_terminal_ctg.indoors"
+
+{
+	"dsp"	"1"
+	
+	"playlooping"
+	{
+		"volume"	".04"
+		"pitch"		"100"
+		"wave"		"office/ambience.wav"
+	}
+
+	"playrandom"
+	{
+
+		"time"		"10,15"
+		"volume"	".1"
+		"pitch"		"70,100"
+
+		"rndwave"
+		{		
+			"wave"	"ambient/atmosphere/metallic1.wav"
+			"wave"	"ambient/atmosphere/metallic2.wav"	
+			"wave"	"ambient/materials/metal_rattle1.wav"
+			"wave"	"ambient/materials/metal_rattle3.wav"
+			"wave"	"ambient/materials/metal_rattle4.wav"
+			"wave"	"ambient/materials/metal4.wav"
+			"wave"	"ambient/materials/metal5.wav"
+			"wave"	"ambient/materials/metal9.wav"
+		}
+	}
+	
+	"playlooping"
+	{
+		"volume"	".015"
+		"pitch"		"100"
+		"wave"		"cicada02.wav"
+	}
+}
+	
