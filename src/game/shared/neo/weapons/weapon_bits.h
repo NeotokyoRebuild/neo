@@ -33,6 +33,7 @@
 	X(SCOPEDWEAPON, scopedwep, "") \
 	X(THROWABLE, throwable, "") \
 	X(SUPPRESSED, suppressed, "") \
+	X(FIREARM, firearm, "") \
 	X(EXPLOSIVE, explosive, "")
 
 // SCOPEDWEAPON - Scoped weapons should OR this in their flags.
