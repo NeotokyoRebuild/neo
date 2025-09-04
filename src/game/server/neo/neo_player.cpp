@@ -551,6 +551,7 @@ void CNEO_Player::Spawn(void)
 
 	m_flRanOutSprintTime = 0.0f;
 	m_flNextPingTime = 0.0f;
+	m_hLeadingPlayer = nullptr; // Reset leading player on spawn
 
 	Weapon_SetZoom(false);
 
@@ -3068,6 +3069,50 @@ void CNEO_Player::SendTestMessage(const char *message)
 void CNEO_Player::SetTestMessageVisible(bool visible)
 {
 	m_bShowTestMessage = visible;
+}
+
+void CNEO_Player::ToggleFollowPlayer( CNEO_Player *pCommander )
+{
+	if ( m_hLeadingPlayer.Get() == pCommander )
+	{
+		// Bot is already following this player, so toggle off.
+		m_hLeadingPlayer = nullptr;
+	}
+	// Without other checks, players can steal others' bots.
+	else
+	{
+		// Bot starts following this player.
+		m_hLeadingPlayer = pCommander;
+	}
+}
+
+void CNEO_Player::PlayerUse( void )
+{
+	BaseClass::PlayerUse();
+
+	if ( (m_afButtonPressed & IN_USE) && !FindUseEntity() )
+	{
+		// Select bot under cursor to follow/unfollow.
+		Vector eyePos = EyePosition();
+		Vector forward;
+		EyeVectors( &forward );
+		Vector traceEnd = eyePos + forward * MAX_COORD_RANGE;
+
+		trace_t tr;
+		// Use MASK_SHOT to hit players/NPCs, with CommanderFindGoal as an example.
+		UTIL_TraceLine( eyePos, traceEnd, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr );
+
+		if ( tr.DidHit() && tr.m_pEnt )
+		{
+			CNEO_Player* pTargetPlayer = ToNEOPlayer(tr.m_pEnt);
+			if ( pTargetPlayer && pTargetPlayer->IsBot())
+			{
+				// The hit entity is a bot! Now, toggle its follow state.
+				pTargetPlayer->ToggleFollowPlayer( this );
+				// TODO: Do we want to allow using players for some kind of communication?
+			}
+		}
+	}
 }
 
 void CNEO_Player::StartAutoSprint(void)
