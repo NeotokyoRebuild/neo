@@ -17,6 +17,7 @@
 #include "nav_mesh.h"
 #include "neo_penetration_resistance.h"
 #include "neo_shot_manipulator.h"
+#include "decals.h"
 
 #include "behavior/neo_bot_behavior.h"
 
@@ -1725,48 +1726,50 @@ bool CNEOBot::IsLineOfFirePenetrationClear(const trace_t &tr, const Vector &from
 	static constexpr const float FL_METERS_TRY_PENETRATE_MAX = 36.0f;
 
 	int material = physprops->GetSurfaceData(tr.surface.surfaceProps)->game.material;
-	if (material != 'J')
+	if (material == CHAR_TEX_BLOCKBULLETS)
 	{
-		// Only bother with fire penetration in short distance
-		auto *neoWeapon = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon());
-		if (!neoWeapon)
-		{
-			return false;
-		}
+		return false;
+	}
 
-		// Glass mode can just skip the distance check
-		bool bAttemptPenTest = (eMode == LINE_OF_FIRE_PENETRATION_MODE_GLASS);
-		if (!bAttemptPenTest)
-		{
-			const float flMaxTryDist = clamp(
-					(neoWeapon->GetPenetration() / 100.0f) * FL_METERS_TRY_PENETRATE_MAX,
-					FL_METERS_TRY_PENETRATE_MIN, FL_METERS_TRY_PENETRATE_MAX);
+	// Only bother with fire penetration in short distance
+	auto *neoWeapon = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon());
+	if (!neoWeapon)
+	{
+		return false;
+	}
 
-			const float flMeters = METERS_PER_INCH * from.DistTo(to);
-			bAttemptPenTest = (flMeters <= flMaxTryDist);
-		}
-		if (bAttemptPenTest)
+	// Glass mode can just skip the distance check
+	bool bAttemptPenTest = (eMode == LINE_OF_FIRE_PENETRATION_MODE_GLASS);
+	if (!bAttemptPenTest)
+	{
+		const float flMaxTryDist = Clamp(
+				(neoWeapon->GetPenetration() / 100.0f) * FL_METERS_TRY_PENETRATE_MAX,
+				FL_METERS_TRY_PENETRATE_MIN, FL_METERS_TRY_PENETRATE_MAX);
+
+		const float flMeters = METERS_PER_INCH * from.DistTo(to);
+		bAttemptPenTest = (flMeters <= flMaxTryDist);
+	}
+	if (bAttemptPenTest)
+	{
+		material -= 'A';
+		if (IN_BETWEEN_AR(0, material, MATERIALS_NUM))
 		{
-			material -= 'A';
-			if (IN_BETWEEN_AR(0, material, MATERIALS_NUM))
+			// Just for simplicity, only try to fire against materials that can be penetrated
+			if (PENETRATION_RESISTANCE[material] < 1.0f)
 			{
-				// Just for simplicity, only try to fire against materials that can be penetrated
-				if (PENETRATION_RESISTANCE[material] < 1.0f)
-				{
-					CNEOShotManipulator manipulator(0,
-							const_cast<CNEOBot *>(this)->GetAutoaimVector(AUTOAIM_SCALE_DEFAULT),
-							const_cast<CNEOBot *>(this),
-							neoWeapon);
+				CNEOShotManipulator manipulator(0,
+						const_cast<CNEOBot *>(this)->GetAutoaimVector(AUTOAIM_SCALE_DEFAULT),
+						const_cast<CNEOBot *>(this),
+						neoWeapon);
 
-					Vector vecDir = manipulator.ApplySpread(const_cast<CNEOBot *>(this)->GetAttackSpread(neoWeapon));
+				Vector vecDir = manipulator.ApplySpread(const_cast<CNEOBot *>(this)->GetAttackSpread(neoWeapon));
 
-					trace_t	penetrationTrace;
-					TestPenetrationTrace(penetrationTrace, tr, vecDir, nullptr);
+				trace_t	penetrationTrace;
+				TestPenetrationTrace(penetrationTrace, tr, vecDir, nullptr);
 
-					// See if we found the surface again
-					const bool bFoundSurface = (penetrationTrace.startsolid || tr.fraction == 0.0f || penetrationTrace.fraction == 1.0f);
-					return !bFoundSurface;
-				}
+				// See if we found the surface again
+				const bool bFoundSurface = (penetrationTrace.startsolid || tr.fraction == 0.0f || penetrationTrace.fraction == 1.0f);
+				return !bFoundSurface;
 			}
 		}
 	}
@@ -1796,10 +1799,10 @@ bool CNEOBot::IsLineOfFireClear(const Vector& from, const Vector& to, const Line
 
 	const bool bIsClear = !trace.DidHit();
 
-	if (bIsClear && !(lofMask & CONTENTS_WINDOW) && !(flags & LINE_OF_FIRE_FLAGS_PENETRATION))
+	if (bIsClear && !(lofMask & CONTENTS_WINDOW))
 	{
 		// Do a second trace with the window mask added in, if this hits but not the first,
-		// then the window need to go to IsLineOfFirePenetrationClear so we can
+		// then it's a window and need to go to IsLineOfFirePenetrationClear so we can
 		// differentiate between penetratable vs non-penetratable windows
 		trace_t withWindowTrace;
 		UTIL_TraceLine(from, to, MASK_SHOT, &filter, &withWindowTrace);
@@ -1841,10 +1844,10 @@ bool CNEOBot::IsLineOfFireClear(const Vector& from, CBaseEntity* who, const Line
 
 	const bool bIsClear = !trace.DidHit() || trace.m_pEnt == who;
 
-	if (bIsClear && !(lofMask & CONTENTS_WINDOW) && !(flags & LINE_OF_FIRE_FLAGS_PENETRATION))
+	if (bIsClear && !(lofMask & CONTENTS_WINDOW))
 	{
 		// Do a second trace with the window mask added in, if this hits but not the first,
-		// then the window need to go to IsLineOfFirePenetrationClear so we can
+		// then it's a window and need to go to IsLineOfFirePenetrationClear so we can
 		// differentiate between penetratable vs non-penetratable windows
 		trace_t withWindowTrace;
 		UTIL_TraceLine(from, to, MASK_SHOT, &filter, &withWindowTrace);

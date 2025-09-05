@@ -589,8 +589,10 @@ void CNEOBotMainAction::FireWeaponAtEnemy( CNEOBot *me )
 
 	CNEOBot::LineOfFireFlags lofFlags = CNEOBot::LINE_OF_FIRE_FLAGS_DEFAULT;
 	auto *neoThreat = ToNEOPlayer(threat->GetEntity());
+
+	// Only hard + expert bots will attempt to wallbang at ghoster
 	const bool bThreatIsGhoster = neoThreat && neoThreat->IsCarryingGhost();
-	if (bThreatIsGhoster)
+	if (bThreatIsGhoster && me->GetDifficulty() >= CNEOBot::HARD)
 	{
 		lofFlags |= CNEOBot::LINE_OF_FIRE_FLAGS_PENETRATION;
 	}

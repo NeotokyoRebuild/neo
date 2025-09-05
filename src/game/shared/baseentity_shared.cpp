@@ -2169,7 +2169,7 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 {
 	float penResistance = 0;
 	int material = physprops->GetSurfaceData(tr.surface.surfaceProps)->game.material;
-	if (material == 'J')
+	if (material == CHAR_TEX_BLOCKBULLETS)
 	{ // we hit blockbullets, do not penetrate
 #ifdef CLIENT_DLL
 		if (cl_neo_bullet_trace.GetBool())
