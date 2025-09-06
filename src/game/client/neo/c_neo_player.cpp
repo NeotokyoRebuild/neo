@@ -1872,34 +1872,14 @@ const char *C_NEO_Player::GetOverrideStepSound(const char *pBaseStepSound)
 	return BaseClass::GetOverrideStepSound(pBaseStepSound);
 }
 
-C_NEO_Player* GetNeoPlayerByUserID(int userID)
-{
-    for (int i = 1; i <= gpGlobals->maxClients; i++)
-    {
-        IClientEntity *pEntity = cl_entitylist->GetClientEntity(i);
-        C_BasePlayer* pPlayer = ToBasePlayer(static_cast<C_BaseEntity*>(pEntity));
-        
-        if (pPlayer)
-        {
-            player_info_t info;
-            if (engine->GetPlayerInfo(i, &info) && info.userID == userID)
-            {
-                return ToNEOPlayer(pPlayer);
-            }
-        }
-    }
-
-    return nullptr;
-}
-
 // Receive server message to smooth out player takeover
 void __MsgFunc_CSpectatorTakeoverPlayer(bf_read &msg)
 {
 	int spectatorTakingOverUserID = msg.ReadLong();
 	int playerTakeoverTargetUserID = msg.ReadLong();
 
-	C_NEO_Player* pSpectatorTakingOver = GetNeoPlayerByUserID(spectatorTakingOverUserID);
-	C_NEO_Player* pPlayerTakeoverTarget = GetNeoPlayerByUserID(playerTakeoverTargetUserID);
+	C_NEO_Player* pSpectatorTakingOver = USERID2NEOPLAYER(spectatorTakingOverUserID);
+	C_NEO_Player* pPlayerTakeoverTarget = USERID2NEOPLAYER(playerTakeoverTargetUserID);
 
 
 	if (!pPlayerTakeoverTarget || !pSpectatorTakingOver)
@@ -1958,7 +1938,7 @@ void C_NEO_Player::CSpectatorTakeoverPlayerUpdate(C_NEO_Player* pPlayerTakeoverT
 	SetAbsOrigin(pPlayerTakeoverTarget->GetAbsOrigin());
 	SetAbsAngles(pPlayerTakeoverTarget->GetAbsAngles());
 	SetAbsVelocity(pPlayerTakeoverTarget->GetAbsVelocity());
-	SetLocalAngles(pPlayerTakeoverTarget->EyeAngles());
+	SetLocalAngles(pPlayerTakeoverTarget->GetLocalAngles());
 	pl.v_angle = pPlayerTakeoverTarget->pl.v_angle; // mimic SnapEyeAngles in neo_player
 }
 

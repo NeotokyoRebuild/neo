@@ -319,7 +319,6 @@ private:
 	void SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace);
 	void SpectatorTakeoverPlayerPreThink();
 	void RestorePlayerFromSpectatorTakeover();
-	void RestorePlayerFromSpectatorTakeover(const CTakeDamageInfo &pInfo);
 	void SpectatorTakeoverPlayerInitiate(CNEO_Player* pPlayer);
 	void SpectatorTakeoverPlayerRevert(CNEO_Player* pPlayer);
 

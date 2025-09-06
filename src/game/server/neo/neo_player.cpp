@@ -1750,6 +1750,10 @@ bool CNEO_Player::ClientCommand( const CCommand &args )
 		{
 			SpectatorTryReplacePlayer(pPlayerToTakeover);
 		}
+		else
+		{
+			return false;
+		}
 
 		return true;
 	}
@@ -1871,8 +1875,13 @@ void CNEO_Player::AddPoints(int score, bool bAllowNegativeScore)
 {
 	if (m_hSpectatorTakeoverPlayerTarget.Get())
 	{
-		m_hSpectatorTakeoverPlayerTarget->AddPoints(score, bAllowNegativeScore);
-		return;
+		if (score >= 0)
+		{
+			// Don't penalize possessed/bot for takeover player's actions
+			m_hSpectatorTakeoverPlayerTarget->AddPoints(score, false);
+			return;
+		}
+		// If a player made a mistake while taking over another player, continue to penalize them
 	}
 
 	// Positive score always adds
@@ -1944,7 +1953,7 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 		SetDeadModel(info);
 	}
 
-	RestorePlayerFromSpectatorTakeover(info);
+	RestorePlayerFromSpectatorTakeover();
 }
 
 void CNEO_Player::Weapon_DropAllOnDeath( const CTakeDamageInfo &info )
@@ -3417,10 +3426,10 @@ const char *CNEO_Player::GetOverrideStepSound(const char *pBaseStepSound)
 }
 
 // Start spectator takeover of player related code:
-ConVar sv_neo_spec_replace_player_bot_enable("sv_neo_spec_replace_player_bot_enable", "1", FCVAR_NONE, "Allow spectators to take over bots.");
-ConVar sv_neo_spec_replace_player_afk_enable("sv_neo_spec_replace_player_afk_enable", "1", FCVAR_NONE, "Allow spectators to take over AFK players.");
+ConVar sv_neo_spec_replace_player_bot_enable("sv_neo_spec_replace_player_bot_enable", "1", FCVAR_NONE, "Allow spectators to take over bots.", true, 0, true, 1);
+ConVar sv_neo_spec_replace_player_afk_enable("sv_neo_spec_replace_player_afk_enable", "1", FCVAR_NONE, "Allow spectators to take over AFK players.", true, 0, true, 1);
 ConVar sv_neo_spec_replace_player_afk_time_sec( "sv_neo_spec_replace_player_afk_time_sec",
-	"60", FCVAR_NONE,
+	"120", FCVAR_NONE,
 	"Seconds of inactivity before a player is considered AFK for spectator takeover.",
 	true, -1, true, 999);
 ConVar sv_neo_spec_replace_player_min_exp("sv_neo_spec_replace_player_min_exp",
@@ -3610,7 +3619,7 @@ void CNEO_Player::SpectatorTakeoverPlayerPreThink()
 			SetAbsOrigin(pPlayerTakeoverTarget->GetAbsOrigin());
 			SetAbsAngles(pPlayerTakeoverTarget->GetAbsAngles());
 			SetAbsVelocity(pPlayerTakeoverTarget->GetAbsVelocity());
-			SetLocalAngles(pPlayerTakeoverTarget->EyeAngles());
+			SetLocalAngles(pPlayerTakeoverTarget->GetLocalAngles());
 			SetViewOffset(VEC_VIEW_NEOSCALE(this));
 			SnapEyeAngles( pPlayerTakeoverTarget->EyeAngles() ); 
 			SetPlayerTeamModel();
@@ -3637,15 +3646,6 @@ void CNEO_Player::RestorePlayerFromSpectatorTakeover()
 		{
 			pPlayerTakenOver->ChangeTeam(TEAM_SPECTATOR);
 		}
-	}
-}
-
-void CNEO_Player::RestorePlayerFromSpectatorTakeover(const CTakeDamageInfo &pInfo)
-{
-	if (m_hSpectatorTakeoverPlayerTarget.Get())
-	{
-		m_hSpectatorTakeoverPlayerTarget->Event_Killed(pInfo);
-		RestorePlayerFromSpectatorTakeover();
 	}
 }
 
