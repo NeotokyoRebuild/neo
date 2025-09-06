@@ -29,6 +29,7 @@
 #include "tier0/memdbgon.h"
 
 static ConVar hud_deathnotice_time( "hud_deathnotice_time", "20", 0 );
+extern ConVar cl_neo_hud_scoreboard_hide_others;
 
 // Player entries in a death notice
 struct DeathNoticePlayer
@@ -225,7 +226,7 @@ void CNEOHud_DeathNotice::VidInit( void )
 //-----------------------------------------------------------------------------
 bool CNEOHud_DeathNotice::ShouldDraw( void )
 {
-	return ( CHudElement::ShouldDraw() && ( m_DeathNotices.Count() ) && !g_pNeoScoreBoard->IsVisible() );
+	return ( CHudElement::ShouldDraw() && ( m_DeathNotices.Count() ) && ( !cl_neo_hud_scoreboard_hide_others.GetBool() || !g_pNeoScoreBoard->IsVisible() ) );
 }
 
 //-----------------------------------------------------------------------------
