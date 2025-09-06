@@ -18,7 +18,6 @@
 #include "neo_penetration_resistance.h"
 #include "neo_shot_manipulator.h"
 #include "decals.h"
-
 #include "behavior/neo_bot_behavior.h"
 
 ConVar neo_bot_notice_gunfire_range("neo_bot_notice_gunfire_range", "3000", FCVAR_GAMEDLL);
@@ -667,6 +666,7 @@ void CNEOBot::Spawn()
 	m_didReselectClass = false;
 	m_isLookingAroundForEnemies = true;
 	m_attentionFocusEntity = NULL;
+	GetLocomotionInterface()->m_bBreakBreakableInPath = false;
 
 	m_delayedNoticeVector.RemoveAll();
 
@@ -1797,7 +1797,7 @@ bool CNEOBot::IsLineOfFireClear(const Vector& from, const Vector& to, const Line
 	const auto lofMask = LineOfFireMask(flags);
 	UTIL_TraceLine(from, to, lofMask, &filter, &trace);
 
-	const bool bIsClear = !trace.DidHit();
+	const bool bIsClear = !trace.DidHit() || (trace.DidHit() && IsAbleToBreak(trace.m_pEnt));
 
 	if (bIsClear && !(lofMask & CONTENTS_WINDOW))
 	{
@@ -1842,7 +1842,7 @@ bool CNEOBot::IsLineOfFireClear(const Vector& from, CBaseEntity* who, const Line
 	const auto lofMask = LineOfFireMask(flags);
 	UTIL_TraceLine(from, to, lofMask, &filter, &trace);
 
-	const bool bIsClear = !trace.DidHit() || trace.m_pEnt == who;
+	const bool bIsClear = !trace.DidHit() || trace.m_pEnt == who || (trace.DidHit() && IsAbleToBreak(trace.m_pEnt));
 
 	if (bIsClear && !(lofMask & CONTENTS_WINDOW))
 	{
