@@ -153,7 +153,7 @@ public:
 	float GetDesiredAttackRange(void) const;						// return the ideal range at which we can effectively attack
 
 	bool EquipRequiredWeapon(void);								// if we're required to equip a specific weapon, do it.
-	void EquipBestWeaponForThreat(const CKnownEntity* threat);	// equip the best weapon we have to attack the given threat
+	void EquipBestWeaponForThreat(const CKnownEntity* threat, const bool bNotPrimary = false);	// equip the best weapon we have to attack the given threat
 
 	void PushRequiredWeapon(CNEOBaseCombatWeapon* weapon);				// force us to equip and use this weapon until popped off the required stack
 	void PopRequiredWeapon(void);									// pop top required weapon off of stack and discard
@@ -188,10 +188,29 @@ public:
 	bool IsWeaponRestricted(CNEOBaseCombatWeapon* weapon) const;
 	bool ScriptIsWeaponRestricted(HSCRIPT script) const;
 
-	bool IsLineOfFireClear(const Vector& where) const;			// return true if a weapon has no obstructions along the line from our eye to the given position
-	bool IsLineOfFireClear(CBaseEntity* who) const;				// return true if a weapon has no obstructions along the line from our eye to the given entity
-	bool IsLineOfFireClear(const Vector& from, const Vector& to) const;			// return true if a weapon has no obstructions along the line between the given points
-	bool IsLineOfFireClear(const Vector& from, CBaseEntity* who) const;			// return true if a weapon has no obstructions along the line between the given point and entity
+	enum LineOfFireFlags_
+	{
+		LINE_OF_FIRE_FLAGS_DEFAULT = 0,
+		LINE_OF_FIRE_FLAGS_SHOTGUN = 1 << 0,
+		LINE_OF_FIRE_FLAGS_PENETRATION = 1 << 1,
+	};
+	typedef int LineOfFireFlags;
+
+	enum ELineOfFirePenetrationMode
+	{
+		LINE_OF_FIRE_PENETRATION_MODE_DEFAULT = 0,
+		LINE_OF_FIRE_PENETRATION_MODE_GLASS,
+	};
+	bool IsLineOfFirePenetrationClear(const trace_t &tr, const Vector &from, const Vector &to,
+			const ELineOfFirePenetrationMode eMode) const;
+
+	using BaseClass::IsLineOfSightClear;
+	bool IsLineOfSightClear(CBaseEntity *entity, LineOfSightCheckType checkType = IGNORE_NOTHING) const override;
+
+	bool IsLineOfFireClear(const Vector& where, const LineOfFireFlags flags) const;			// return true if a weapon has no obstructions along the line from our eye to the given position
+	bool IsLineOfFireClear(CBaseEntity* who, const LineOfFireFlags flags) const;				// return true if a weapon has no obstructions along the line from our eye to the given entity
+	bool IsLineOfFireClear(const Vector& from, const Vector& to, const LineOfFireFlags flags) const;			// return true if a weapon has no obstructions along the line between the given points
+	bool IsLineOfFireClear(const Vector& from, CBaseEntity* who, const LineOfFireFlags flags) const;			// return true if a weapon has no obstructions along the line between the given point and entity
 
 	bool IsEntityBetweenTargetAndSelf(CBaseEntity* other, CBaseEntity* target);	// return true if "other" is positioned inbetween us and "target"
 
@@ -399,6 +418,8 @@ public:
 	void AddEventChangeAttributes(const EventChangeAttributes_t* newEvent);
 	const EventChangeAttributes_t* GetEventChangeAttributes(const char* pszEventName) const;
 	void OnEventChangeAttributes(const CNEOBot::EventChangeAttributes_t* pEvent);
+
+	static unsigned int LineOfFireMask(const LineOfFireFlags flags);
 
 	bool IsFiring() const;
 	bool m_bOnTarget = false;

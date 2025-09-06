@@ -15,6 +15,9 @@
 #include "weapon_neobasecombatweapon.h"
 #include "weapon_knife.h"
 #include "nav_mesh.h"
+#include "neo_penetration_resistance.h"
+#include "neo_shot_manipulator.h"
+#include "decals.h"
 
 #include "behavior/neo_bot_behavior.h"
 
@@ -1464,7 +1467,7 @@ bool CNEOBot::EquipRequiredWeapon(void)
 
 //-----------------------------------------------------------------------------------------------------
 // Equip the best weapon we have to attack the given threat
-void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat)
+void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat, const bool bNotPrimary)
 {
 	if (EquipRequiredWeapon())
 		return;
@@ -1477,9 +1480,15 @@ void CNEOBot::EquipBestWeaponForThreat(const CKnownEntity* threat)
 	CNEOBaseCombatWeapon* throwable = static_cast<CNEOBaseCombatWeapon *>(Weapon_GetSlot(3));
 
 	// --------------------------------------------------------------------------------
-	// Don't consider weapons that we have no ammo for.
-	if (primaryWeapon && (!primaryWeapon->m_iPrimaryAmmoType || primaryWeapon->Clip1() + primaryWeapon->m_iPrimaryAmmoCount <= 0)) // We do not care about slugs
+	// Don't consider weapons that we have no ammo for (or filter out primary like shotgun + glass scenario)
+	// We do not care about slugs
+	if (bNotPrimary ||
+			(primaryWeapon &&
+			 	(!primaryWeapon->m_iPrimaryAmmoType ||
+				 (primaryWeapon->Clip1() + primaryWeapon->m_iPrimaryAmmoCount) <= 0)))
+	{
 		primaryWeapon = NULL;
+	}
 
 	if (secondaryWeapon && (secondaryWeapon->Clip1() + secondaryWeapon->m_iPrimaryAmmoCount <= 0))
 		secondaryWeapon = NULL;
@@ -1693,50 +1702,175 @@ bool CNEOBot::IsQuietWeapon(CNEOBaseCombatWeapon* weapon) const
 	return false;
 }
 
+unsigned int CNEOBot::LineOfFireMask(const LineOfFireFlags flags)
+{
+	// Flag set by outside which should already know if using shotgun or not
+	// Shotgun cannot deal with windows at all
+	if (flags & LINE_OF_FIRE_FLAGS_SHOTGUN)
+	{
+		return MASK_SHOT;
+	}
+	return MASK_SHOT & ~CONTENTS_WINDOW;
+}
+
+// A very basic penetration material check, it doesn't do the full penetration
+// check and just simply base it on the material that it traced in front of the bot
+// and a short distance.
+bool CNEOBot::IsLineOfFirePenetrationClear(const trace_t &tr, const Vector &from, const Vector &to,
+		const ELineOfFirePenetrationMode eMode) const
+{
+	// Min is making sure at least the distance under it is considered
+	// Max is scaling up to penetration value of 100.0f which no weapon have, but
+	// scaling works out in general
+	static constexpr const float FL_METERS_TRY_PENETRATE_MIN = 9.0f;
+	static constexpr const float FL_METERS_TRY_PENETRATE_MAX = 36.0f;
+
+	int material = physprops->GetSurfaceData(tr.surface.surfaceProps)->game.material;
+	if (material == CHAR_TEX_BLOCKBULLETS)
+	{
+		return false;
+	}
+
+	// Only bother with fire penetration in short distance
+	auto *neoWeapon = static_cast<CNEOBaseCombatWeapon *>(GetActiveWeapon());
+	if (!neoWeapon)
+	{
+		return false;
+	}
+
+	// Glass mode can just skip the distance check
+	bool bAttemptPenTest = (eMode == LINE_OF_FIRE_PENETRATION_MODE_GLASS);
+	if (!bAttemptPenTest)
+	{
+		const float flMaxTryDist = Clamp(
+				(neoWeapon->GetPenetration() / 100.0f) * FL_METERS_TRY_PENETRATE_MAX,
+				FL_METERS_TRY_PENETRATE_MIN, FL_METERS_TRY_PENETRATE_MAX);
+
+		const float flMeters = METERS_PER_INCH * from.DistTo(to);
+		bAttemptPenTest = (flMeters <= flMaxTryDist);
+	}
+	if (bAttemptPenTest)
+	{
+		material -= 'A';
+		if (IN_BETWEEN_AR(0, material, MATERIALS_NUM))
+		{
+			// Just for simplicity, only try to fire against materials that can be penetrated
+			if (PENETRATION_RESISTANCE[material] < 1.0f)
+			{
+				CNEOShotManipulator manipulator(0,
+						const_cast<CNEOBot *>(this)->GetAutoaimVector(AUTOAIM_SCALE_DEFAULT),
+						const_cast<CNEOBot *>(this),
+						neoWeapon);
+
+				Vector vecDir = manipulator.ApplySpread(const_cast<CNEOBot *>(this)->GetAttackSpread(neoWeapon));
+
+				trace_t	penetrationTrace;
+				TestPenetrationTrace(penetrationTrace, tr, vecDir, nullptr);
+
+				// See if we found the surface again
+				const bool bFoundSurface = (penetrationTrace.startsolid || tr.fraction == 0.0f || penetrationTrace.fraction == 1.0f);
+				return !bFoundSurface;
+			}
+		}
+	}
+	return false;
+}
+
+bool CNEOBot::IsLineOfSightClear(CBaseEntity *entity, LineOfSightCheckType checkType) const
+{
+	if (auto *neoPlayer = ToNEOPlayer(entity); neoPlayer && neoPlayer->IsCarryingGhost())
+	{
+		return true;
+	}
+	return BaseClass::IsLineOfSightClear(entity, checkType);
+}
 
 //-----------------------------------------------------------------------------------------------------
 // Return true if a weapon has no obstructions along the line between the given points
-bool CNEOBot::IsLineOfFireClear(const Vector& from, const Vector& to) const
+bool CNEOBot::IsLineOfFireClear(const Vector& from, const Vector& to, const LineOfFireFlags flags) const
 {
 	trace_t trace;
 	NextBotTraceFilterIgnoreActors botFilter(NULL, COLLISION_GROUP_NONE);
 	CTraceFilterIgnoreFriendlyCombatItems ignoreFriendlyCombatFilter(this, COLLISION_GROUP_NONE, GetTeamNumber());
 	CTraceFilterChain filter(&botFilter, &ignoreFriendlyCombatFilter);
 
-	UTIL_TraceLine(from, to, MASK_SOLID_BRUSHONLY, &filter, &trace);
+	const auto lofMask = LineOfFireMask(flags);
+	UTIL_TraceLine(from, to, lofMask, &filter, &trace);
 
-	return !trace.DidHit();
+	const bool bIsClear = !trace.DidHit();
+
+	if (bIsClear && !(lofMask & CONTENTS_WINDOW))
+	{
+		// Do a second trace with the window mask added in, if this hits but not the first,
+		// then it's a window and need to go to IsLineOfFirePenetrationClear so we can
+		// differentiate between penetratable vs non-penetratable windows
+		trace_t withWindowTrace;
+		UTIL_TraceLine(from, to, MASK_SHOT, &filter, &withWindowTrace);
+		if (withWindowTrace.DidHit())
+		{
+			return IsLineOfFirePenetrationClear(withWindowTrace, from, to, LINE_OF_FIRE_PENETRATION_MODE_GLASS);
+		}
+	}
+
+	if (!bIsClear && !(flags & LINE_OF_FIRE_FLAGS_SHOTGUN) && (flags & LINE_OF_FIRE_FLAGS_PENETRATION))
+	{
+		return IsLineOfFirePenetrationClear(trace, from, to, LINE_OF_FIRE_PENETRATION_MODE_DEFAULT);
+	}
+
+	return bIsClear;
 }
 
 
 //-----------------------------------------------------------------------------------------------------
 // Return true if a weapon has no obstructions along the line from our eye to the given position
-bool CNEOBot::IsLineOfFireClear(const Vector& where) const
+bool CNEOBot::IsLineOfFireClear(const Vector& where, const LineOfFireFlags flags) const
 {
-	return IsLineOfFireClear(const_cast<CNEOBot*>(this)->EyePosition(), where);
+	return IsLineOfFireClear(const_cast<CNEOBot*>(this)->EyePosition(), where, flags);
 }
 
 
 //-----------------------------------------------------------------------------------------------------
 // Return true if a weapon has no obstructions along the line between the given point and entity
-bool CNEOBot::IsLineOfFireClear(const Vector& from, CBaseEntity* who) const
+bool CNEOBot::IsLineOfFireClear(const Vector& from, CBaseEntity* who, const LineOfFireFlags flags) const
 {
 	trace_t trace;
 	NextBotTraceFilterIgnoreActors botFilter(NULL, COLLISION_GROUP_NONE);
 	CTraceFilterIgnoreFriendlyCombatItems ignoreFriendlyCombatFilter(this, COLLISION_GROUP_NONE, GetTeamNumber());
 	CTraceFilterChain filter(&botFilter, &ignoreFriendlyCombatFilter);
 
-	UTIL_TraceLine(from, who->WorldSpaceCenter(), MASK_SOLID_BRUSHONLY, &filter, &trace);
+	const Vector to = who->WorldSpaceCenter();
+	const auto lofMask = LineOfFireMask(flags);
+	UTIL_TraceLine(from, to, lofMask, &filter, &trace);
 
-	return !trace.DidHit() || trace.m_pEnt == who;
+	const bool bIsClear = !trace.DidHit() || trace.m_pEnt == who;
+
+	if (bIsClear && !(lofMask & CONTENTS_WINDOW))
+	{
+		// Do a second trace with the window mask added in, if this hits but not the first,
+		// then it's a window and need to go to IsLineOfFirePenetrationClear so we can
+		// differentiate between penetratable vs non-penetratable windows
+		trace_t withWindowTrace;
+		UTIL_TraceLine(from, to, MASK_SHOT, &filter, &withWindowTrace);
+		if (withWindowTrace.DidHit())
+		{
+			return IsLineOfFirePenetrationClear(withWindowTrace, from, to, LINE_OF_FIRE_PENETRATION_MODE_GLASS);
+		}
+	}
+
+	if (!bIsClear && !(flags & LINE_OF_FIRE_FLAGS_SHOTGUN) && (flags & LINE_OF_FIRE_FLAGS_PENETRATION))
+	{
+		return IsLineOfFirePenetrationClear(trace, from, to, LINE_OF_FIRE_PENETRATION_MODE_DEFAULT);
+	}
+
+	return bIsClear;
 }
 
 
 //-----------------------------------------------------------------------------------------------------
 // Return true if a weapon has no obstructions along the line from our eye to the given entity
-bool CNEOBot::IsLineOfFireClear(CBaseEntity* who) const
+bool CNEOBot::IsLineOfFireClear(CBaseEntity* who, const LineOfFireFlags flags) const
 {
-	return IsLineOfFireClear(const_cast<CNEOBot*>(this)->EyePosition(), who);
+	return IsLineOfFireClear(const_cast<CNEOBot*>(this)->EyePosition(), who, flags);
 }
 
 
@@ -1893,11 +2027,14 @@ bool CNEOBot::FindSplashTarget(CBaseEntity* target, float maxSplashRadius, Vecto
 		trace_t trace;
 		NextBotTraceFilterIgnoreActors filter(NULL, COLLISION_GROUP_NONE);
 
-		UTIL_TraceLine(target->WorldSpaceCenter(), probe, MASK_SOLID_BRUSHONLY, &filter, &trace);
+		auto *myWeapon = static_cast<const CNEOBaseCombatWeapon *>(GetActiveWeapon());
+		const bool bIsShotgun = (myWeapon && (myWeapon->GetNeoWepBits() & (NEO_WEP_AA13 | NEO_WEP_SUPA7)));
+		const LineOfFireFlags flags = bIsShotgun ? LINE_OF_FIRE_FLAGS_SHOTGUN : LINE_OF_FIRE_FLAGS_DEFAULT;
+		UTIL_TraceLine(target->WorldSpaceCenter(), probe, LineOfFireMask(flags), &filter, &trace);
 		if (trace.DidHitWorld())
 		{
 			// can we shoot this spot?
-			if (IsLineOfFireClear(trace.endpos))
+			if (IsLineOfFireClear(trace.endpos, flags))
 			{
 				// yes, found a corner-sticky target
 				*splashTarget = trace.endpos;

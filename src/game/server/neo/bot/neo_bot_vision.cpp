@@ -166,7 +166,7 @@ bool CNEOBotVision::IsInFieldOfView( CBaseEntity *subject ) const
 	const int iGhosterPlayer = NEORules()->GetGhosterPlayer();
 	if (iGhosterPlayer > 0)
 	{
-		auto *pNEOPlayer = dynamic_cast<CNEO_Player *>(subject);
+		auto *pNEOPlayer = ToNEOPlayer(subject);
 		if (pNEOPlayer && pNEOPlayer->IsCarryingGhost())
 		{
 			return true;
@@ -175,3 +175,19 @@ bool CNEOBotVision::IsInFieldOfView( CBaseEntity *subject ) const
 
 	return IVision::IsInFieldOfView(subject);
 }
+
+bool CNEOBotVision::IsAbleToSee(CBaseEntity *subject, FieldOfViewCheckType checkFOV, Vector *visibleSpot) const
+{
+	const int iGhosterPlayer = NEORules()->GetGhosterPlayer();
+	if (iGhosterPlayer > 0)
+	{
+		auto *pNEOPlayer = ToNEOPlayer(subject);
+		if (pNEOPlayer && pNEOPlayer->IsCarryingGhost())
+		{
+			return true;
+		}
+	}
+
+	return IVision::IsAbleToSee(subject, checkFOV, visibleSpot);
+}
+
