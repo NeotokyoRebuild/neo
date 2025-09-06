@@ -160,7 +160,7 @@ FLAG FlagsFromStr(
 
 static void SetProfileTempBotCommon(CNEOBotProfile *pProfile, KeyValues *kv)
 {
-	static const constexpr char *SZ_CLASSES[NEO_CLASS__ENUM_COUNT] = {
+	static const constexpr char *SZ_CLASSES[NEO_CLASS__LOADOUTABLE_COUNT] = {
 		"recon", "assault", "support", "vip"
 	};
 	static const constexpr char *SZ_RANKS[NEO_RANK__TOTAL] = {
@@ -172,11 +172,11 @@ static void SetProfileTempBotCommon(CNEOBotProfile *pProfile, KeyValues *kv)
 		static_assert(BOT_TEMPLATE_APPLIED_WEP_PREF_RECON_PRIVATE ==
 				(1 << 0));
 		static_assert(BOT_TEMPLATE_APPLIED_WEP_PREF_VIP_LIEUTENANT ==
-				(1 << ((NEO_CLASS_ENUM_COUNT * NEO_RANK_TOTAL) - 1)));
+				(1 << ((NEO_CLASS_LOADOUTABLE_COUNT * NEO_RANK_TOTAL) - 1)));
 
 		int iBitWise = 0;
 
-		for (int idxClass = 0; idxClass < NEO_CLASS__ENUM_COUNT; ++idxClass)
+		for (int idxClass = 0; idxClass < NEO_CLASS__LOADOUTABLE_COUNT; ++idxClass)
 		{
 			KeyValues *wepClassKv = wepKv->FindKey(SZ_CLASSES[idxClass]);
 			if (!wepClassKv)
@@ -411,7 +411,7 @@ void NEOBotProfileLoad()
 						if (templateProfile)
 						{
 							int iBitWise = 0;
-							for (int idxClass = 0; idxClass < NEO_CLASS__ENUM_COUNT; ++idxClass)
+							for (int idxClass = 0; idxClass < NEO_CLASS__LOADOUTABLE_COUNT; ++idxClass)
 							{
 								for (int idxRank = 0; idxRank < NEO_RANK__TOTAL; ++idxRank)
 								{

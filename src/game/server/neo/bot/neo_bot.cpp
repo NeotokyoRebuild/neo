@@ -591,7 +591,7 @@ void CNEOBot::Spawn()
 	}
 
 	const ENeoRank eRank = static_cast<ENeoRank>(GetRank(m_iXP) - 1);
-	if (eRank == NEO_RANK_RANKLESS_DOG)
+	if (eRank == NEO_RANK_RANKLESS_DOG || (false == IN_BETWEEN_EQ(NEO_CLASS_RECON, m_iNeoClass, NEO_CLASS_VIP)))
 	{
 		m_iLoadoutWepChoice = 0;
 	}

@@ -64,7 +64,7 @@ struct CNEOBotProfile
 	BotDifficultyFlag flagDifficulty;
 	int iDifficultyForced;
 	BotClassFlag flagClass;
-	NEO_WEP_BITS_UNDERLYING_TYPE flagsWepPrefs[NEO_CLASS__ENUM_COUNT][NEO_RANK__TOTAL];
+	NEO_WEP_BITS_UNDERLYING_TYPE flagsWepPrefs[NEO_CLASS__LOADOUTABLE_COUNT][NEO_RANK__TOTAL];
 	BotTemplateApplied flagTemplateApplied;
 };
 
