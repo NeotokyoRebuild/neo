@@ -1871,9 +1871,9 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo *info)
 	MessageEnd();
 }
 
-void CNEO_Player::AddPoints(int score, bool bAllowNegativeScore)
+void CNEO_Player::AddPoints(int score, bool bAllowNegativeScore, bool bIgnorePlayerTakeover)
 {
-	if (m_hSpectatorTakeoverPlayerTarget.Get())
+	if (!bIgnorePlayerTakeover && m_hSpectatorTakeoverPlayerTarget.Get())
 	{
 		if (score >= 0)
 		{
@@ -3448,7 +3448,7 @@ void CNEO_Player::SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace)
 
 	if (!IsObserver() && IsAlive())
 	{
-		DevWarning("A client initiating player takeover without being in observer mode might indicate server command bugs or tampering.");
+		DevWarning("A client initiating player takeover without being in observer mode might indicate server command bugs or tampering.\n");
 		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: Not in observer mode.");
 		return;
 	}
@@ -3480,7 +3480,7 @@ void CNEO_Player::SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace)
 		return;
 	}
 
-	if (pNeoPlayerToReplace->GetTeamNumber() != GetTeamNumber())
+	if (!InSameTeam(pNeoPlayerToReplace))
 	{
 		UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: Target is not friendly.");
 		return;
@@ -3496,7 +3496,7 @@ void CNEO_Player::SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace)
 	{
 		if (!bAllowBotTakeover)
 		{
-			UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: Taking over drones is disabled.");
+			UTIL_ClientPrintFilter(filter, HUD_PRINTCONSOLE, "Shell takeover failed: Taking over bots is disabled.");
 			return;
 		}
 	}
@@ -3510,15 +3510,12 @@ void CNEO_Player::SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace)
 	}
 	else
 	{
-		char timeBuf[4]; // assuming max sv_neo_spec_replace_player_afk_time_sec is 999
 		int  secondsLeft = sv_neo_spec_replace_player_afk_time_sec.GetInt()
 			- static_cast<int>(pNeoPlayerToReplace->GetTimeSinceWeaponFired());
-		V_snprintf(timeBuf, sizeof(timeBuf), "%d", secondsLeft);
 		UTIL_ClientPrintFilter(
 			filter,
 			HUD_PRINTCONSOLE,
-			"Shell takeover failed: Shell is not considered inactive until %s1 seconds.",
-			timeBuf);
+			UTIL_VarArgs("Shell takeover failed: Shell is not considered inactive until %d seconds.", secondsLeft) );
 		return;
 	}
 
@@ -3614,6 +3611,7 @@ void CNEO_Player::SpectatorTakeoverPlayerPreThink()
 					Weapon_Switch(pPlayerActiveWeapon);
 				}
 			}
+			m_bIneligibleForLoadoutPick = true; // Prevent loadout change after takeover.
 
 			// Teleport the takeover target's location and velocity.
 			SetAbsOrigin(pPlayerTakeoverTarget->GetAbsOrigin());

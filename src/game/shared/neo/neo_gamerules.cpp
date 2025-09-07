@@ -1180,6 +1180,44 @@ void CNEORules::Think(void)
 		}
 	}
 
+	auto awardWinningTeamExperience = [&](int winningTeam)
+		{
+			for (int i = 1; i <= gpGlobals->maxClients; i++)
+			{
+				auto player = UTIL_PlayerByIndex(i);
+				if (player && player->GetTeamNumber() == winningTeam)
+				{
+					auto* neoPlayer = static_cast<CNEO_Player*>(player);
+
+
+					// Player takeover logic
+					auto playerControllingMe = neoPlayer->m_hSpectatorTakeoverPlayerImpersonatingMe.Get();
+					if (playerControllingMe)
+					{
+						// Will get XP from player possessing me based on their win conditions
+						return;
+					}
+					auto playerPossessedByMe = neoPlayer->m_hSpectatorTakeoverPlayerTarget.Get();
+					if (playerPossessedByMe)
+					{
+						// Award takeover player as if they were dead
+						neoPlayer->AddPoints(1, false, true);
+					}
+					auto playerToRankUp = playerPossessedByMe ? playerPossessedByMe : neoPlayer;
+
+
+					if (player->IsAlive())
+					{
+						AwardRankUp(playerToRankUp);
+					}
+					else
+					{
+						neoPlayer->AddPoints(1, false);
+					}
+				}
+			}
+		};
+
 	if (m_pGhost)
 	{
 		// Update ghosting team info
@@ -1244,39 +1282,7 @@ void CNEORules::Think(void)
 					break;
 				}
 
-				for (int i = 1; i <= gpGlobals->maxClients; i++)
-				{
-					auto player = UTIL_PlayerByIndex(i);
-					if (player && player->GetTeamNumber() == captorTeam)
-					{
-						auto* neoPlayer = static_cast<CNEO_Player*>(player);
-						if (player->IsAlive())
-						{
-							auto playerPossessedByMe = neoPlayer->m_hSpectatorTakeoverPlayerTarget.Get();
-							if (playerPossessedByMe)
-							{
-								// I already died and am possessing another player that should instead get credit
-								neoPlayer->AddPoints(1, false);
-								AwardRankUp(playerPossessedByMe);
-							}
-							else
-							{
-								// I am myself and should get full credit for being alive
-								AwardRankUp(i);
-							}
-						}
-						else
-						{
-							auto playerControllingMe = neoPlayer->m_hSpectatorTakeoverPlayerImpersonatingMe.Get();
-							if (!playerControllingMe)
-							{
-								// I didn't get credit for another player possessing me, so I get a single team point
-								neoPlayer->AddPoints(1, false);
-							}
-						}
-					}
-				}
-
+				awardWinningTeamExperience(captorTeam);
 				break;
 			}
 		}
@@ -1403,29 +1409,7 @@ void CNEORules::Think(void)
 					gameeventmanager->FireEvent(event);
 				}
 
-				for (int i = 1; i <= gpGlobals->maxClients; i++)
-				{
-					if (i == captorClient)
-					{
-						AwardRankUp(i);
-						continue;
-					}
-
-					auto player = UTIL_PlayerByIndex(i);
-					if (player && player->GetTeamNumber() == captorTeam)
-					{
-						if (player->IsAlive())
-						{
-							AwardRankUp(i);
-						}
-						else
-						{
-							auto* neoPlayer = static_cast<CNEO_Player*>(player);
-							neoPlayer->AddPoints(1, false);
-						}
-					}
-				}
-
+				awardWinningTeamExperience(captorTeam);
 				break;
 			}
 		}
@@ -3401,11 +3385,29 @@ void CNEORules::SetWinningTeam(int team, int iWinReason, bool bForceMapReset, bo
 			if (winningTeamNum != TEAM_SPECTATOR && iWinReason != NEO_VICTORY_GHOST_CAPTURE && iWinReason != NEO_VICTORY_VIP_ESCORT && player->GetTeamNumber() == winningTeamNum)
 			{
 				int xpAward = 1;	// Base reward for being on winning team
+
+
+				// Player takeover logic
+				auto playerControllingMe = player->m_hSpectatorTakeoverPlayerImpersonatingMe.Get();
+				if (playerControllingMe)
+				{
+					// Will get XP from player possessing me based on their win conditions
+					return;
+				}
+				auto playerPossessedByMe = player->m_hSpectatorTakeoverPlayerTarget.Get();
+				if (playerPossessedByMe)
+				{
+					// Award takeover player as if they were dead
+					player->AddPoints(xpAward, false, true);
+				}
+				auto playerToRankUp = playerPossessedByMe ? playerPossessedByMe : player;
+
+
 				if (player->IsAlive())
 				{
 					if (m_bTeamBeenAwardedDueToCapPrevent)
 					{
-						AwardRankUp(player);
+						AwardRankUp(playerToRankUp);
 						xpAward = 0; // Already been rewarded rank-up XPs
 						++iRankupCapPrev;
 					}

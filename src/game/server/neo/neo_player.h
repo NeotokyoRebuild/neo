@@ -210,7 +210,8 @@ public:
 	AttackersTotals GetAttackersTotals() const;
 	void StartShowDmgStats(const CTakeDamageInfo *info);
 
-	void AddPoints(int score, bool bAllowNegativeScore);
+	void AddPoints(int score, bool bAllowNegativeScore) { AddPoints(score, bAllowNegativeScore, false); }
+	void AddPoints(int score, bool bAllowNegativeScore, bool bIgnorePlayerTakeover);
 	inline void SetDeathTime(const float deathTime) { m_flDeathTime.Set(deathTime); }
 
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);
