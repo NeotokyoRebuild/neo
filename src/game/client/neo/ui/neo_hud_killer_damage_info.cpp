@@ -193,8 +193,8 @@ void CNEOHud_KillerDamageInfo::UpdateStateForNeoHudElementDraw()
 	// This is the baseline width, text width will determine full width
 	const int iBaselineWide = (iScrWide / 3) * UI_SCALE;
 	m_uiCtx.dPanel.tall = (iScrTall / 2) * UI_SCALE;
-	m_uiCtx.dPanel.x = m_uiCtx.iMarginX * 10;
-	m_uiCtx.dPanel.y = (iScrTall / 2) - (m_uiCtx.dPanel.tall / 2);
+	m_uiCtx.dPanel.x = xpos;
+	m_uiCtx.dPanel.y = ypos;
 
 	// Set keybind message
 	{
@@ -290,7 +290,7 @@ void CNEOHud_KillerDamageInfo::DrawNeoHudElement()
 	const C_NEO_Player *localPlayer = C_NEO_Player::GetLocalNEOPlayer();
 
 	// Show info box while it just died spectating itself
-	m_uiCtx.bgColor = COLOR_FADED_DARK;
+	DrawNeoHudRoundedBox(m_uiCtx.dPanel.x, m_uiCtx.dPanel.y, m_uiCtx.dPanel.x + m_uiCtx.dPanel.wide, m_uiCtx.dPanel.y + m_uiCtx.dPanel.tall, m_boxColor);
 	NeoUI::BeginContext(&m_uiCtx, NeoUI::MODE_PAINT, nullptr, "NeoHudKillerDmgInfo");
 	NeoUI::BeginSection();
 	{
