@@ -47,6 +47,7 @@ using namespace vgui;
 
 #define SHOW_ENEMY_STATUS true
 
+ConVar cl_neo_hud_scoreboard_hide_others("cl_neo_hud_scoreboard_hide_others", "1", FCVAR_ARCHIVE, "Hide some other HUD elements when the scoreboard is displayed to prevent overlap", true, 0.0, true, 1.0);
 ConVar neo_show_scoreboard_avatars("neo_show_scoreboard_avatars", "1", FCVAR_ARCHIVE, "Show avatars on scoreboard.", true, 0.0, true, 1.0 );
 extern ConVar cl_neo_streamermode;
 

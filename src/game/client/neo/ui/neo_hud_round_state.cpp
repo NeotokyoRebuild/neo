@@ -36,6 +36,7 @@ extern ConVar sv_neo_dm_win_xp;
 extern ConVar cl_neo_streamermode;
 extern ConVar snd_victory_volume;
 extern ConVar sv_neo_readyup_countdown;
+extern ConVar cl_neo_hud_scoreboard_hide_others;
 
 namespace {
 constexpr int Y_POS = 0;
@@ -605,7 +606,7 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 			}
 		}
 	}
-	else
+	else if (!cl_neo_hud_scoreboard_hide_others.GetBool() || !g_pNeoScoreBoard->IsVisible())
 	{
 		DrawPlayerList();
 	}
