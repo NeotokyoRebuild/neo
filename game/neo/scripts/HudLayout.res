@@ -996,7 +996,7 @@
 	neo_killer_damage_info
 	{
 		"fieldName"		"neo_killer_damage_info"
-		"xpos"	"50"
+		"xpos"	"20"
 		"ypos"	"150"
 		"wide"	"640"
 		"tall"	"480"

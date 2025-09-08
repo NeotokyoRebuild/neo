@@ -55,7 +55,7 @@ protected:
 	int m_iAttackersTotalsSize = 0;
 
 private:
-	CPanelAnimationVarAliasType(int, xpos, "xpos", "50", "proportional_xpos");
+	CPanelAnimationVarAliasType(int, xpos, "xpos", "20", "proportional_xpos");
 	CPanelAnimationVarAliasType(int, ypos, "ypos", "150", "proportional_ypos");
 	CPanelAnimationVar(Color, m_boxColor, "box_color", "200 200 200 40");
 };
