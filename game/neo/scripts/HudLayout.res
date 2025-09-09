@@ -397,7 +397,7 @@
 		"LineMargin"		"2"
 		"MaxDeathNotices" 	"8"
 		"RightJustify"		"1"
-		"BackgroundColor"	"20 20 20 220"
+		"BackgroundColour"	"20 20 20 220"
 		"BackgroundColourInvolved"	"200 200 200 40"
 	}
 
