@@ -257,6 +257,9 @@ bool CRagdoll::TransformVectorToWorld(int iBoneIndex, const Vector *vPosition, V
 //-----------------------------------------------------------------------------
 void CRagdoll::PhysForceRagdollToSleep()
 {
+#ifdef NEO
+	m_vecLastVelocity = vec3_origin;
+#endif // NEO
 	for ( int i = 0; i < m_ragdoll.listCount; i++ )
 	{
 		if ( m_ragdoll.list[i].pObject )
@@ -273,6 +276,12 @@ static ConVar ragdoll_sleepaftertime( "ragdoll_sleepaftertime", "5.0f", 0, "Afte
 void CRagdoll::CheckSettleStationaryRagdoll()
 {
 	Vector delta = GetRagdollOrigin() - m_vecLastOrigin;
+#ifdef NEO
+	if (gpGlobals->frametime > 0)
+	{
+		m_vecLastVelocity = delta / (gpGlobals->frametime);
+	}
+#endif // NEO
 	m_vecLastOrigin = GetRagdollOrigin();
 	for ( int i = 0; i < 3; ++i )
 	{
@@ -290,7 +299,7 @@ void CRagdoll::CheckSettleStationaryRagdoll()
 		return;
 
 	// Msg( "%d [%p] Settling\n", gpGlobals->tickcount, this );
-
+	
 	// It has stopped moving, see if it
 	float dt = gpGlobals->curtime - m_flLastOriginChangeTime;
 	if ( dt < ragdoll_sleepaftertime.GetFloat() )

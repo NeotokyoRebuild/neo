@@ -3287,7 +3287,7 @@ int C_BaseAnimating::DrawModel( int flags )
 		Vector vel;
 		if (IsRagdoll())
 		{
-			vel = rootMoveParent->GetOldVelocity();
+			vel = m_pRagdoll->m_vecLastVelocity;
 		}
 		else
 		{
@@ -4807,22 +4807,6 @@ void C_BaseAnimating::RagdollMoved( void )
 	m_pRagdoll->GetRagdollBounds( mins, maxs );
 	SetCollisionBounds( mins, maxs );
 
-#ifdef NEO
-	if (GetOldOrigin() != vec3_origin)
-	{
-		if (m_flLastOriginChangeTime != gpGlobals->curtime)
-		{
-			SetOldVelocity((GetAbsOrigin() - GetOldOrigin()) / (gpGlobals->curtime - m_flLastOriginChangeTime));
-			SetOldOrigin(GetAbsOrigin());
-		}
-	}
-	else
-	{ // First time
-		auto ragdoll = static_cast<C_HL2MPRagdoll*>(GetBaseAnimating());
-		SetOldVelocity(ragdoll->GetRagdollVelocity());
-		SetOldOrigin(GetAbsOrigin());
-	}
-#endif // NEO
 	// If the ragdoll moves, its render-to-texture shadow is dirty
 	InvalidatePhysicsRecursive( ANIMATION_CHANGED ); 
 }
