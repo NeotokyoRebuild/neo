@@ -22,11 +22,14 @@
 #include "neo_hud_childelement.h"
 #include "spectatorgui.h"
 #include "takedamageinfo.h"
+#include "c_neo_killer_damage_infos.h"
+#include "neo_scoreboard.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
 static ConVar hud_deathnotice_time( "hud_deathnotice_time", "20", 0 );
+extern ConVar cl_neo_hud_scoreboard_hide_others;
 
 // Player entries in a death notice
 struct DeathNoticePlayer
@@ -223,7 +226,7 @@ void CNEOHud_DeathNotice::VidInit( void )
 //-----------------------------------------------------------------------------
 bool CNEOHud_DeathNotice::ShouldDraw( void )
 {
-	return ( CHudElement::ShouldDraw() && ( m_DeathNotices.Count() ) );
+	return ( CHudElement::ShouldDraw() && ( m_DeathNotices.Count() ) && ( !cl_neo_hud_scoreboard_hide_others.GetBool() || !g_pNeoScoreBoard->IsVisible() ) );
 }
 
 //-----------------------------------------------------------------------------
@@ -797,6 +800,12 @@ void CNEOHud_DeathNotice::AddPlayerDeath(IGameEvent* event)
 	const char* deathIcon = event->GetString("deathIcon");
 	g_pVGuiLocalize->ConvertANSIToUnicode(deathIcon, deathMsg.szDeathIcon, sizeof(deathMsg.szDeathIcon));
 	deathMsg.bInvolved = killer == GetLocalPlayerIndex() || victim == GetLocalPlayerIndex() || assist == GetLocalPlayerIndex();
+	Assert(victim >= 0 && victim < (MAX_PLAYERS + 1));
+	C_NEO_Player *localPlayer = C_NEO_Player::GetLocalNEOPlayer();
+	if (localPlayer)
+	{
+		localPlayer->m_rfNeoPlayerIdxsKilledByLocal[victim] = (killer == localPlayer->entindex());
+	}
 
 	SetDeathNoticeItemDimensions(&deathMsg);
 

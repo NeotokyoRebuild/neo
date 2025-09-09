@@ -166,6 +166,13 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 		{0.25, 0.5, -0.6, 0.6},
 		{1.0, 0.0, -0.25, -0.75, -0.6, 0.6},
 	},
+#ifdef INCLUDE_WEP_PBK
+	{NEO_WEP_PBK56S,
+		{{VECTOR_CONE_2DEGREES, VECTOR_CONE_5DEGREES, VECTOR_CONE_1DEGREES / 2, VECTOR_CONE_2DEGREES}},
+		{0.25, 0.5, -0.6, 0.6},
+		{1.0, 0.0, -0.25, -0.75, -0.6, 0.6},
+	},
+#endif
 	{NEO_WEP_SMAC,
 		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_1DEGREES, VECTOR_CONE_4DEGREES}},
 		{0.25, 0.5, -0.6, 0.6},
@@ -207,6 +214,10 @@ static const WeaponHandlingInfo_t handlingTable[] = {
 		{{VECTOR_CONE_4DEGREES, VECTOR_CONE_7DEGREES, VECTOR_CONE_PRECALCULATED, VECTOR_CONE_3DEGREES}},
 		{0.15, 0.25, -0.4, 0.4},
 	},
+	{NEO_WEP_BALC,
+		{{VECTOR_CONE_6DEGREES, VECTOR_CONE_6DEGREES, VECTOR_CONE_6DEGREES, VECTOR_CONE_6DEGREES}},
+		{0.25, 0.5, -0.6, 0.6},
+	},
 };
 
 CNEOBaseCombatWeapon::CNEOBaseCombatWeapon( void )
@@ -217,7 +228,7 @@ void CNEOBaseCombatWeapon::Precache()
 {
 	BaseClass::Precache();
 
-	if ((GetNeoWepBits() & NEO_WEP_SUPPRESSED))
+	if (!(GetNeoWepBits() & NEO_WEP_SUPPRESSED))
 		PrecacheParticleSystem("ntr_muzzle_source");
 }
 
@@ -248,7 +259,9 @@ void CNEOBaseCombatWeapon::Spawn()
 
 #ifdef GAME_DLL
 	AddSpawnFlags(SF_NORESPAWN);
-#endif
+#else
+	SetNextClientThink(gpGlobals->curtime + TICK_INTERVAL);
+#endif // GAME_DLL
 }
 
 void CNEOBaseCombatWeapon::Activate(void)
@@ -293,6 +306,24 @@ void CNEOBaseCombatWeapon::Activate(void)
 	}
 #endif
 }
+
+#ifdef CLIENT_DLL
+void CNEOBaseCombatWeapon::ClientThink()
+{
+	if (GetOwner() && m_flTemperature > 0)
+	{
+		constexpr int DESIRED_TEMPERATURE_WHEN_HELD = 0;
+		m_flTemperature = max(DESIRED_TEMPERATURE_WHEN_HELD, m_flTemperature - (TICK_INTERVAL / THERMALS_OBJECT_COOL_TIME));
+	}
+	else if (m_flTemperature < 1)
+	{
+		constexpr int DESIRED_TEMPERATURE_WITHOUT_OWNER = 1;
+		m_flTemperature = min(DESIRED_TEMPERATURE_WITHOUT_OWNER, m_flTemperature + (TICK_INTERVAL / THERMALS_OBJECT_COOL_TIME));
+	}
+	SetNextClientThink(gpGlobals->curtime + TICK_INTERVAL);
+}
+#endif // CLIENT_DLL
+
 
 void CNEOBaseCombatWeapon::Equip(CBaseCombatCharacter* pOwner)
 {
@@ -1007,8 +1038,17 @@ bool CNEOBaseCombatWeapon::CanBePickedUpByClass(int classId)
 #ifdef CLIENT_DLL
 void CNEOBaseCombatWeapon::ProcessMuzzleFlashEvent()
 {
-	if (GetPlayerOwner() == NULL)
+	C_BasePlayer *owner = GetPlayerOwner();
+	if (!owner)
 		return; // If using a view model in first person, muzzle flashes are not processed until the player drops their weapon. In that case, do not play a muzzle flash effect. Need to change how this is calculated if we want to allow dropped weapons to cook off for example
+
+	C_BasePlayer *localPlayer = UTIL_PlayerByIndex(GetLocalPlayerIndex());
+	if (!localPlayer)
+		return;
+
+	// bIsVisible in function calling ProcessMuzzleFlashEvent is set to true even though this weapon may not be drawn? Probably same reason for the same check in C_BaseCombatWeapon::DrawModel
+	if (localPlayer->IsObserver() && localPlayer->GetObserverMode() == OBS_MODE_IN_EYE && localPlayer->GetObserverTarget() == owner)
+		return;
 
 	if ((GetNeoWepBits() & NEO_WEP_SUPPRESSED))
 		return;
@@ -1042,7 +1082,7 @@ void CNEOBaseCombatWeapon::ProcessMuzzleFlashEvent()
 	el->color.exponent = 5;
 
 	// Muzzle flash particle
-	DispatchMuzzleParticleEffect(iAttachment);
+	ParticleProp()->Create("ntr_muzzle_source", PATTACH_POINT_FOLLOW, iAttachment);
 }
 
 void CNEOBaseCombatWeapon::DrawCrosshair()
@@ -1071,27 +1111,6 @@ void CNEOBaseCombatWeapon::DrawCrosshair()
 	{
 		crosshair->ResetCrosshair();
 	}
-}
-
-void CNEOBaseCombatWeapon::DispatchMuzzleParticleEffect(int iAttachment) {
-	static constexpr char particleName[] = "ntr_muzzle_source";
-	constexpr bool resetAllParticlesOnEntity = false;
-	const ParticleAttachment_t iAttachType = ParticleAttachment_t::PATTACH_POINT_FOLLOW;
-
-	CEffectData	data;
-
-	data.m_nHitBox = GetParticleSystemIndex(particleName);
-	data.m_hEntity = this;
-	data.m_fFlags |= PARTICLE_DISPATCH_FROM_ENTITY;
-	data.m_vOrigin = GetAbsOrigin();
-	data.m_nDamageType = iAttachType;
-	data.m_nAttachmentIndex = iAttachment;
-
-	if (resetAllParticlesOnEntity)
-		data.m_fFlags |= PARTICLE_DISPATCH_RESET_PARTICLES;
-
-	CSingleUserRecipientFilter filter(UTIL_PlayerByIndex(GetLocalPlayerIndex()));
-	te->DispatchEffect(filter, 0.0, data.m_vOrigin, "ParticleEffect", data);
 }
 
 static inline bool ShouldDrawLocalPlayerViewModel(void)
@@ -1191,17 +1210,16 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 	}
 
 	auto pOwner = static_cast<C_NEO_Player *>(GetOwner());
-	if (!pOwner)
-	{
-		return BaseClass::DrawModel(flags);
-	}
-
 	bool inThermalVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT;
-
 	int ret = 0;
-	if (!pOwner || !pOwner->IsCloaked() || inThermalVision)
+	
+	if (inThermalVision && (!pOwner || (pOwner && !pOwner->IsCloaked())))
 	{
+		IMaterial* pass = materials->FindMaterial("dev/thermal_weapon_model", TEXTURE_GROUP_MODEL);
+		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::DrawModel(flags);
+		modelrender->ForcedMaterialOverride(nullptr);
+		return ret;
 	}
 
 	if ((pOwner && pOwner->IsCloaked()) && !inThermalVision)
@@ -1211,16 +1229,12 @@ int CNEOBaseCombatWeapon::DrawModel(int flags)
 		modelrender->ForcedMaterialOverride(pass);
 		ret |= BaseClass::DrawModel(flags);
 		modelrender->ForcedMaterialOverride(nullptr);
+		return ret;
 	}
-	else if (inThermalVision && (pOwner && !pOwner->IsCloaked()))
+	else
 	{
-		IMaterial* pass = materials->FindMaterial("dev/thermal_model", TEXTURE_GROUP_MODEL);
-		modelrender->ForcedMaterialOverride(pass);
-		ret |= BaseClass::DrawModel(flags);
-		modelrender->ForcedMaterialOverride(nullptr);
+		return BaseClass::DrawModel(flags);
 	}
-
-	return ret;
 }
 
 RenderGroup_t CNEOBaseCombatWeapon::GetRenderGroup()
@@ -1263,10 +1277,11 @@ void CNEOBaseCombatWeapon::SetPickupTouch(void)
 		return;
 	}
 
-	if ((!weaponstay.GetBool() || NEORules()->RespawnsEnabled()) && GetSpawnFlags() & SF_NORESPAWN)
+	if ((!weaponstay.GetBool() || NEORules()->CanRespawnAnyTime()) && GetSpawnFlags() & SF_NORESPAWN)
 	{ // regardless of the value of mp_weaponstay, disappear weapons in game modes with respawns enabled. Otherwise things can get too chaotic
-		SetThink(&CBaseEntity::SUB_Vanish); // NEO TODO (Adam) roll our own sub_remove to check for players in pvs?
-		SetNextThink(gpGlobals->curtime + 30.0f);
+		SetThink(&CBaseEntity::SUB_Vanish);
+		constexpr float DROPPED_WEAPON_LIFETIME = 30.f;
+		SetNextThink(gpGlobals->curtime + DROPPED_WEAPON_LIFETIME);
 		return;
 	}
 
@@ -1279,3 +1294,20 @@ void CNEOBaseCombatWeapon::SetPickupTouch(void)
 	}
 #endif
 }
+
+#ifdef GAME_DLL
+void CNEOBaseCombatWeapon::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value)
+{
+	auto* neoPlayer = ToNEOPlayer(pActivator);
+
+	if (neoPlayer && neoPlayer->Weapon_CanSwitchTo(this) && CanBePickedUpByClass(neoPlayer->GetClass()))
+	{
+		neoPlayer->Weapon_DropSlot(GetSlot());
+		neoPlayer->Weapon_Equip(this);
+
+		RemoveEffects(EF_BONEMERGE);
+	}
+
+	BaseClass::Use(pActivator, pCaller, useType, value);
+}
+#endif

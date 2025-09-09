@@ -36,3 +36,8 @@ CWeaponZR68L::CWeaponZR68L()
 		"zr68lry",
 	};
 }
+
+bool CWeaponZR68L::CanBePickedUpByClass(int classId)
+{
+	return classId != NEO_CLASS_JUGGERNAUT;
+}

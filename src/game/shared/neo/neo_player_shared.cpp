@@ -23,6 +23,7 @@
 #endif
 
 #include "convar.h"
+#include "neo_weapon_loadout.h"
 
 #include "weapon_neobasecombatweapon.h"
 
@@ -36,10 +37,9 @@ ConVar cl_autoreload_when_empty("cl_autoreload_when_empty", "1", FCVAR_USERINFO 
 	true, 0.0f, true, 1.0f);
 ConVar neo_aim_hold("neo_aim_hold", "0", FCVAR_USERINFO | FCVAR_ARCHIVE, "Hold to aim as opposed to toggle aim.", true, 0.0f, true, 1.0f);
 #endif
-ConVar neo_recon_superjump_intensity("neo_recon_superjump_intensity", "250", FCVAR_REPLICATED | FCVAR_CHEAT,
-	"Recon superjump intensity multiplier.", true, 1.0, false, 0);
 
 ConVar neo_ghost_bhopping("neo_ghost_bhopping", "0", FCVAR_REPLICATED, "Allow ghost bunnyhopping", true, 0, true, 1);
+ConVar sv_neo_dev_loadout("sv_neo_dev_loadout", "0", FCVAR_CHEAT | FCVAR_REPLICATED | FCVAR_HIDDEN | FCVAR_DONTRECORD, "", true, 0.0f, true, 1.0f);
 
 bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep)
 {
@@ -55,7 +55,8 @@ bool IsAllowedToZoom(CNEOBaseCombatWeapon *pWep)
 		NEO_WEP_GHOST |
 		NEO_WEP_KNIFE |
 		NEO_WEP_PROX_MINE |
-		NEO_WEP_SMOKE_GRENADE;
+		NEO_WEP_SMOKE_GRENADE |
+		NEO_WEP_BALC;
 
 	return !(pWep->GetNeoWepBits() & forbiddenZooms);
 }
@@ -99,43 +100,73 @@ bool ClientWantsAimHold(const CNEO_Player* player)
 #ifdef CLIENT_DLL
 	return neo_aim_hold.GetBool();
 #else
-	if (!player)
+	if (!player || player->IsBot())
 	{
 		return false;
-	}
-	else if (player->GetFlags() & FL_FAKECLIENT)
-	{
-		return true;
 	}
 
 	return 1 == atoi(engine->GetClientConVarValue(engine->IndexOfEdict(player->edict()), "neo_aim_hold"));
 #endif
 }
 
-int DmgLineStr(char* infoLine, const int infoLineMax,
-	const char* dmgerName, const char* dmgerClass,
-	const AttackersTotals &totals)
+#ifdef CLIENT_DLL
+extern ConVar cl_neo_player_pings;
+#endif // CLIENT_DLL
+void CheckPingButton(CNEO_Player* player)
 {
-	memset(infoLine, 0, infoLineMax);
-	if (totals.dealtDmgs > 0 && totals.takenDmgs > 0)
+	if (!player->IsAlive() || !(player->m_afButtonPressed & IN_ATTACK3) || player->m_flNextPingTime > gpGlobals->curtime)
 	{
-		Q_snprintf(infoLine, infoLineMax, "%s [%s]: Dealt: %d in %d hits | Taken: %d in %d hits\n",
-				   dmgerName, dmgerClass,
-				   totals.dealtDmgs, totals.dealtHits, totals.takenDmgs, totals.takenHits);
+		return;
 	}
-	else if (totals.dealtDmgs > 0)
+
+	if (!player->IsBot())
+	{ // players with pings disabled can't ping
+#ifdef GAME_DLL
+		const bool showPlayerPings = atoi(engine->GetClientConVarValue(engine->IndexOfEdict(player->edict()), "cl_neo_player_pings"));
+#else
+		const bool showPlayerPings = cl_neo_player_pings.GetBool();
+#endif // GAME_DLL
+		if (!showPlayerPings)
+		{
+			return;
+		}
+	}
+
+	IGameEvent* event = gameeventmanager->CreateEvent("player_ping");
+	if (event)
 	{
-		Q_snprintf(infoLine, infoLineMax, "%s [%s]: Dealt: %d in %d hits\n",
-				   dmgerName, dmgerClass,
-				   totals.dealtDmgs, totals.dealtHits);
+		trace_t tr;
+		Vector forward;
+		player->EyeVectors(&forward);
+		Vector eyePosition = player->EyePosition();
+		UTIL_TraceLine(eyePosition, eyePosition + forward * MAX_COORD_RANGE, MASK_VISIBLE_AND_NPCS, player, COLLISION_GROUP_NONE, &tr);
+
+		if (Q_stristr(tr.surface.name, "SKYBOX"))
+		{
+			return;
+		}
+
+		event->SetInt("userid", player->GetUserID());
+		event->SetInt("playerteam", player->GetTeamNumber());
+		event->SetInt("pingx", tr.endpos.x);
+		event->SetInt("pingy", tr.endpos.y);
+		event->SetInt("pingz", tr.endpos.z);
+		event->SetBool("ghosterping", player->IsCarryingGhost() || player->m_iNeoClass == NEO_CLASS_VIP);
+#ifdef GAME_DLL
+		gameeventmanager->FireEvent(event);
+#else
+		gameeventmanager->FireEventClientSide(event);
+#endif // GAME_DLL
+		constexpr float NEO_PING_DELAY = 2.f;
+		if ((gpGlobals->curtime - player->m_flNextPingTime) < NEO_PING_DELAY)
+		{ // NEO TODO (Adam) fix for pings placed during the first NEO_PING_DELAY seconds of the server's life?
+			player->m_flNextPingTime = gpGlobals->curtime + NEO_PING_DELAY;
+		}
+		else
+		{
+			player->m_flNextPingTime = gpGlobals->curtime;
+		}
 	}
-	else if (totals.takenDmgs > 0)
-	{
-		Q_snprintf(infoLine, infoLineMax, "%s [%s]: Taken: %d in %d hits\n",
-				   dmgerName, dmgerClass,
-				   totals.takenDmgs, totals.takenHits);
-	}
-	return Q_strlen(infoLine);
 }
 
 void KillerLineStr(char* killByLine, const int killByLineMax,
@@ -207,12 +238,12 @@ void DMClSortedPlayers(PlayerXPInfo (*pPlayersOrder)[MAX_PLAYERS + 1], int *piTo
 }
 #endif
 
-void GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
-						 const wchar_t wszNeoName[MAX_PLAYER_NAME_LENGTH + 1],
-						 const wchar_t wszNeoClantag[NEO_MAX_CLANTAG_LENGTH + 1],
-						 const bool bOnlySteamNick)
+bool GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
+						 const wchar_t (&wszNeoName)[MAX_PLAYER_NAME_LENGTH],
+						 const wchar_t (&wszNeoClantag)[NEO_MAX_CLANTAG_LENGTH],
+						 const EClNeoDisplayNameFlag flags)
 {
-	const bool bShowSteamNick = bOnlySteamNick || wszNeoName[0] == '\0';
+	const bool bShowSteamNick = (flags & CL_NEODISPLAYNAME_FLAG_ONLYSTEAMNICK) || wszNeoName[0] == '\0';
 	wchar_t wszDisplayName[MAX_PLAYER_NAME_LENGTH + 1] = {};
 	if (bShowSteamNick)
 	{
@@ -232,17 +263,81 @@ void GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
 	{
 		V_wcscpy_safe(pWszDisplayName, wszDisplayName);
 	}
+
+	if (flags & CL_NEODISPLAYNAME_FLAG_CHECK)
+	{
+		// Double it so we can check for overflow
+		char szNeoName[2 * MAX_PLAYER_NAME_LENGTH];
+		const int iSzNeoNameSize = g_pVGuiLocalize->ConvertUnicodeToANSI(wszNeoName, szNeoName, sizeof(szNeoName));
+		if (iSzNeoNameSize > MAX_PLAYER_NAME_LENGTH)
+		{
+			return false;
+		}
+
+		char szNeoClantag[2 * NEO_MAX_CLANTAG_LENGTH];
+		const int iSzNeoClantagSize = g_pVGuiLocalize->ConvertUnicodeToANSI(wszNeoClantag, szNeoClantag, sizeof(szNeoClantag));
+		if (iSzNeoClantagSize > NEO_MAX_CLANTAG_LENGTH)
+		{
+			return false;
+		}
+	}
+
+	return true;
 }
 
-void GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
+bool GetClNeoDisplayName(wchar_t (&pWszDisplayName)[NEO_MAX_DISPLAYNAME],
 						 const char *pSzNeoName,
 						 const char *pSzNeoClantag,
-						 const bool bOnlySteamNick)
+						 const EClNeoDisplayNameFlag flags)
 {
-	wchar_t wszNeoName[MAX_PLAYER_NAME_LENGTH + 1];
-	wchar_t wszNeoClantag[NEO_MAX_CLANTAG_LENGTH + 1];
+	wchar_t wszNeoName[MAX_PLAYER_NAME_LENGTH];
+	wchar_t wszNeoClantag[NEO_MAX_CLANTAG_LENGTH];
 	g_pVGuiLocalize->ConvertANSIToUnicode(pSzNeoName, wszNeoName, sizeof(wszNeoName));
 	g_pVGuiLocalize->ConvertANSIToUnicode(pSzNeoClantag, wszNeoClantag, sizeof(wszNeoClantag));
-	GetClNeoDisplayName(pWszDisplayName, wszNeoName, wszNeoClantag, bOnlySteamNick);
+	return GetClNeoDisplayName(pWszDisplayName, wszNeoName, wszNeoClantag, flags);
+}
+
+int GetRank(const int xp)
+{
+	int iRank = NEO_RANK_RANKLESS_DOG;
+	if (xp < XP_PRIVATE)
+	{
+		iRank = NEO_RANK_RANKLESS_DOG;
+	}
+	else if (xp < XP_CORPORAL)
+	{
+		iRank = NEO_RANK_PRIVATE;
+	}
+	else if (xp < XP_SERGEANT)
+	{
+		iRank = NEO_RANK_CORPORAL;
+	}
+	else if (xp < XP_LIEUTENANT)
+	{
+		iRank = NEO_RANK_SERGEANT;
+	}
+	else
+	{
+		iRank = NEO_RANK_LIEUTENANT;
+	}
+	return iRank + 1;
+}
+
+const char *GetRankName(const int xp, const bool shortened)
+{
+	static constexpr const char *RANK_NAME_LONG[] = {
+		"Rankless Dog", "Private", "Corporal", "Sergeant", "Lieutenant"
+	};
+	static constexpr const char *RANK_NAME_SHORT[] = {
+		"Dog", "Pvt", "Cpl", "Sgt", "Lt"
+	};
+	static_assert(ARRAYSIZE(RANK_NAME_LONG) == ARRAYSIZE(RANK_NAME_SHORT));
+
+	const int iRank = GetRank(xp);
+	if (IN_BETWEEN_AR(0, iRank, ARRAYSIZE(RANK_NAME_LONG)))
+	{
+		return (shortened ? RANK_NAME_SHORT : RANK_NAME_LONG)[iRank];
+	}
+	return "";
 }
 

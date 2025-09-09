@@ -34,6 +34,7 @@
 #ifdef NEO
 #include "neo_player_shared.h"
 #include <IGameUIFuncs.h>
+#include "neo/ui/neo_utils.h"
 #endif // NEO
 
 #include "engine/IEngineSound.h"
@@ -56,10 +57,9 @@ vgui::Panel *GetSDKRootPanel();
 #define SOUND_ROOT "sound"
 
 #ifdef NEO
-#define MUTED_VOLUME		4
-#else
-#define MUTED_VOLUME		0.02f
+// NEO NOTE lowest value accepted if snd_musicvolume isn't used is 0.015686274506151678
 #endif // NEO
+#define MUTED_VOLUME		0.02f
 
 #define TREE_TEXT_COLOR		Color( 200, 255, 200, 255 )
 #define LIST_TEXT_COLOR		TREE_TEXT_COLOR
@@ -788,8 +788,16 @@ public:
 ConVar cl_neo_radio_shuffle("cl_neo_radio_shuffle", "0", FCVAR_CLIENTDLL| FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "Randomize song order", true, 0, true, 1);
 ConVar cl_neo_radio_mute("cl_neo_radio_mute", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "Turn down sound volume as far as possible", true, 0, true, 1);
 ConVar cl_neo_radio_game_pause("cl_neo_radio_game_pause", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "Pause NEO Radio song when loading into a game", true, 0, true, 1);
-ConVar cl_neo_radio_volume("cl_neo_radio_volume", "80", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "NEO Radio song volume", true, MUTED_VOLUME, true, 100);
-ConVar cl_neo_radio_volume_ingame("cl_neo_radio_volume_ingame", "20", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "NEO Radio song volume in game", true, MUTED_VOLUME, true, 100);
+ConVar cl_neo_radio_volume("cl_neo_radio_volume", "0.8", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "NEO Radio song volume", true, MUTED_VOLUME, true, 1,
+	[](IConVar* var [[maybe_unused]], const char* pOldValue [[maybe_unused]], float flOldValue [[maybe_unused]] )
+	{
+		if (auto pPlayer = GetMP3Player()) {pPlayer->SetVolumeSlider(cl_neo_radio_volume.GetFloat() * 100);}
+	});
+ConVar cl_neo_radio_volume_ingame("cl_neo_radio_volume_ingame", "0.2", FCVAR_CLIENTDLL | FCVAR_ARCHIVE | FCVAR_DONTRECORD | FCVAR_HIDDEN, "NEO Radio song volume in game", true, MUTED_VOLUME, true, 1,
+	[](IConVar* var [[maybe_unused]], const char* pOldValue [[maybe_unused]], float flOldValue [[maybe_unused]] )
+	{
+		if (auto pPlayer = GetMP3Player()) {pPlayer->SetInGameVolumeSlider(cl_neo_radio_volume_ingame.GetFloat() * 100);}
+	});
 #endif // NEO
 CMP3Player::CMP3Player( VPANEL parent, char const *panelName ) :
 	BaseClass( NULL, panelName ),
@@ -846,13 +854,13 @@ CMP3Player::CMP3Player( VPANEL parent, char const *panelName ) :
 
 	m_pVolume = new Slider( this, "Volume" );
 #ifdef NEO
-	m_pVolume->SetRange( MUTED_VOLUME, 100 );
+	m_pVolume->SetRange((int)ceil(MUTED_VOLUME * 100.f), 100 );
 #else
 	m_pVolume->SetRange( (int)( MUTED_VOLUME * 100.0f ), 100 );
 #endif // NEO
 #ifdef NEO
 	m_pVolumeInGame = new Slider(this, "VolumeInGame");
-	m_pVolumeInGame->SetRange( MUTED_VOLUME, 100);
+	m_pVolumeInGame->SetRange((int)ceil(MUTED_VOLUME * 100.f), 100);
 
 	m_pGamePause = new CheckButton(this, "GamePause", "#GamePause");
 #else
@@ -895,12 +903,12 @@ CMP3Player::CMP3Player( VPANEL parent, char const *panelName ) :
 	vgui::ivgui()->AddTickSignal( GetVPanel(), 100 );
 
 #ifdef NEO
-	LoadSettings();
 	if (!RestoreDb(DB_FILENAME) && m_Files.Count() == 0)
 	{
 		// Load the "game" stuff
 		OnRefresh();
 	}
+	LoadSettings();
 
 	PopulateTree();
 	m_bFirstTime = false;
@@ -916,9 +924,7 @@ CMP3Player::~CMP3Player()
 {
 	if ( m_bDirty )
 	{
-#ifndef NEO // NEO TODO (Adam) This file is just going to grow non stop, work out what we're doing wrong, for now re-make the db on every launch
 		SaveDb( DB_FILENAME );
-#endif // NEO
 	}
 	if ( m_bSettingsDirty )
 	{
@@ -1128,6 +1134,13 @@ ConCommand neo_mp3("neo_mp3", &neo_mp3_callback, "Toggle the mp3 player", FCVAR_
 
 void CMP3Player::OnKeyCodePressed(vgui::KeyCode code)
 {
+	// This can happen if the user presses a key which has no corresponding mapping,
+	// for example multimedia keys like "Volume Up" will trigger this.
+	if (code == BUTTON_CODE_NONE || code == BUTTON_CODE_INVALID)
+	{
+		return;
+	}
+
 	const auto toggleMP3Bind = gameuifuncs->GetButtonCodeForBind("neo_mp3");
 	if (toggleMP3Bind != code || !g_pPlayer)
 	{
@@ -1597,7 +1610,9 @@ void CMP3Player::PlaySong( int songIndex, float skipTime /*= 0.0f */ )
 			return;
 		}
 
+#ifndef NEO
 		Assert( !Q_stristr( soundname, "/" ) );
+#endif
 		song.playbackfilename = g_pFullFileSystem->FindOrAddFileName( soundname );
 
 
@@ -1625,12 +1640,24 @@ void CMP3Player::PlaySong( int songIndex, float skipTime /*= 0.0f */ )
 	char drymix[ 512 ];
 	Q_snprintf( drymix, sizeof( drymix ), "#%s", soundname );
 
+#ifdef NEO
+	// NEO NOTE (Adam) As per https://developer.valvesoftware.com/wiki/Soundscripts the # symbol above makes the sound skip dsp (whatever) and makes the sound respect snd_musicvolume (big sad).
+	// We can remove the # and then the sound will use dsp (whatever) and ignore snd_musicvolume (yay). Unfortunately setting the volume of the sound to 0 stops the sound from playing as opposed
+	// to pausing it (big sad). The wiki above states that, for snd_musicvolume to be respected the sound also needs to be non-directional (sound level of 0). So we use EmitSound instead with
+	// SNDLVL_NORM, the result sounding exactly the same as before far as I can tell, being pausable, and still ignoring the value of snd_musicvolume. This only took me the entire day to figure out
+	CLocalPlayerFilter filter;
+	enginesound->EmitSound(	filter,	SOUND_FROM_UI_PANEL, CHAN_STATIC, drymix, volume,
+		SNDLVL_NORM, 0,	PITCH_NORM,	0, NULL, NULL, NULL, true, 
+		skipTime == 0.0f ? 0.0f : (gpGlobals->curtime + skipTime), -1
+	);
+#else
 	enginesound->EmitAmbientSound(
 		drymix, 
 		volume,
 		PITCH_NORM,
 		0,
 		skipTime == 0.0f ? 0.0f : ( gpGlobals->curtime + skipTime  ) ); 
+#endif // NEO
 
 	m_nSongGuid = enginesound->GetGuidForLastSoundEmitted();
 
@@ -1658,6 +1685,18 @@ void CMP3Player::PlaySong( int songIndex, float skipTime /*= 0.0f */ )
 	m_pSongProgress->SetProgress( 0.0f );
 }
 
+#ifdef NEO
+void CMP3Player::SetVolumeSlider(int value)
+{
+	m_pVolume->SetValue(value);
+}
+
+void CMP3Player::SetInGameVolumeSlider(int value)
+{
+	m_pVolumeInGame->SetValue(value);
+}
+
+#endif // NEO
 void CMP3Player::OnStop()
 {
 	if ( m_bPlaying )
@@ -1770,8 +1809,8 @@ void CMP3Player::OnTick()
 		m_pMute->SetSelected(cl_neo_radio_mute.GetBool());
 		m_pShuffle->SetSelected(cl_neo_radio_shuffle.GetBool());
 		m_pGamePause->SetSelected(cl_neo_radio_game_pause.GetBool());
-		m_pVolume->SetValue(cl_neo_radio_volume.GetInt());
-		m_pVolumeInGame->SetValue(cl_neo_radio_volume_ingame.GetInt());
+		m_pVolume->SetValue(cl_neo_radio_volume.GetFloat() * 100);
+		m_pVolumeInGame->SetValue(cl_neo_radio_volume_ingame.GetFloat() * 100);
 		m_flCurrentVolume = m_pVolume->GetValue();
 		m_bMuted = m_pMute->IsSelected();
 		m_bShuffle = m_pShuffle->IsSelected();
@@ -1796,10 +1835,6 @@ void CMP3Player::OnTick()
 	if ( volumeChanged )
 	{
 		m_flCurrentVolume = newVol;
-#ifdef NEO
-		cl_neo_radio_volume.SetValue(m_pVolume->GetValue());
-		cl_neo_radio_volume_ingame.SetValue(m_pVolumeInGame->GetValue());
-#endif // NEO
 	}
 	bool muteChanged = m_bMuted != m_pMute->IsSelected();
 	if ( muteChanged )
@@ -1932,17 +1967,9 @@ float CMP3Player::GetIdealVolume()
 	{
 		return 0;
 	}
-	if (m_bMuted)
-	{
-		constexpr float LOWEST_POSSIBLE_VOLUME = MUTED_VOLUME / 100.f;
-		return LOWEST_POSSIBLE_VOLUME;
-	}
-	if (engine->IsInGame() && !engine->IsLevelMainMenuBackground())
-	{
-		return (float)m_pVolumeInGame->GetValue() / 100.0f;
-	}
-	// player is in the menu
-	return (float)m_pVolume->GetValue() / 100.0f;
+
+	float volume = m_bMuted ? MUTED_VOLUME : (engine->IsInGame() && !engine->IsLevelMainMenuBackground()) ? ((float)m_pVolumeInGame->GetValue() * 0.01f) : ((float)m_pVolume->GetValue() * 0.01f);
+	return volume;
 }
 
 #endif // NEO
@@ -2290,6 +2317,7 @@ bool CMP3Player::RestoreDb( char const *filename )
 	return true;
 }
 
+#ifndef NEO // Moved to neo_utils
 void bpr( int level, CUtlBuffer& buf, char const *fmt, ... )
 {
 	char txt[ 4096 ];
@@ -2305,6 +2333,7 @@ void bpr( int level, CUtlBuffer& buf, char const *fmt, ... )
 	}
 	buf.Printf( "%s", txt );
 }
+#endif // NEO
 
 void CMP3Player::SaveDbFile( int level, CUtlBuffer& buf, MP3File_t *file, int filenumber )
 {
@@ -2460,6 +2489,33 @@ void CMP3Player::OnSliderMoved()
 #endif
 }
 
+#ifdef NEO
+void CMP3Player::OnSliderDragEnd(KeyValues* data)
+{
+	KeyValues* pData = data->GetFirstSubKey();
+	if (!pData)
+	{
+		return;
+	}
+	const float newValue = pData->GetInt() * 0.01f;
+
+	pData = pData->GetNextKey();
+	if (!pData)
+	{
+		return;
+	}
+
+	if (m_pVolume == pData->GetPtr())
+	{
+		cl_neo_radio_volume.SetValue(newValue);
+	}
+	else if (m_pVolumeInGame == pData->GetPtr())
+	{
+		cl_neo_radio_volume_ingame.SetValue(newValue);
+	}
+}
+#endif // NEO
+
 void CMP3Player::LoadPlayList( char const *filename )
 {
 	KeyValues *kv = new KeyValues( "playlist" );
@@ -2474,7 +2530,6 @@ void CMP3Player::LoadPlayList( char const *filename )
 	// Clear existing playlist
 	m_PlayList.RemoveAll();
 	m_pFileSheet->ResetPlayList();
-	m_Files.RemoveAll();
 
 	// Update most recent playlist
 	SetMostRecentPlayList(filename);

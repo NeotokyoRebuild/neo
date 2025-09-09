@@ -482,12 +482,12 @@ void CWeaponSupa7::ItemPostFrame(void)
 		}
 	}
 
-	if (!(pOwner->m_nButtons & IN_ATTACK) && pOwner->m_nButtons & IN_RELOAD && UsesClipsForAmmo1() && !m_bInReload)
+	if (!(pOwner->m_nButtons & IN_ATTACK) && m_flNextPrimaryAttack <= gpGlobals->curtime && pOwner->m_nButtons & IN_RELOAD && UsesClipsForAmmo1() && !m_bInReload)
 	{
 		// reload when reload is pressed, or if no buttons are down and weapon is empty.
 		StartReload();
 	}
-	else if (!(pOwner->m_nButtons & IN_ATTACK) && pOwner->m_nButtons & IN_ATTACK2 && UsesClipsForAmmo1() && !m_bInReload)
+	else if (!(pOwner->m_nButtons & IN_ATTACK) && m_flNextPrimaryAttack <= gpGlobals->curtime && pOwner->m_nButtons & IN_ATTACK2 && UsesClipsForAmmo1() && !m_bInReload)
 	{
 		StartReloadSlug();
 	}
@@ -528,4 +528,9 @@ void CWeaponSupa7::Drop(const Vector& vecVelocity)
 {
 	ClearDelayedInputs();
 	CNEOBaseCombatWeapon::Drop(vecVelocity);
+}
+
+bool CWeaponSupa7::CanBePickedUpByClass(int classId)
+{
+	return classId != NEO_CLASS_JUGGERNAUT;
 }

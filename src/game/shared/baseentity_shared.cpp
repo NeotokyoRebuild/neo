@@ -17,6 +17,7 @@
 #ifdef NEO
 #include "neo_shot_manipulator.h"
 #include "weapon_neobasecombatweapon.h"
+#include "neo_penetration_resistance.h"
 #ifdef CLIENT_DLL
 #include "c_neo_player.h"
 #else
@@ -1148,6 +1149,15 @@ void CBaseEntity::VPhysicsUpdate( IPhysicsObject *pPhysics )
 		{
 			if ( GetMoveParent() )
 			{
+#ifdef NEO
+#ifdef GAME_DLL
+				// Silence the warning for this special case.
+				// This triggers during the ending sequence w/ the dangling helmet prop.
+				bool isPlayingClassTutorial = FStrEq(gpGlobals->mapname.ToCStr(), TUTORIAL_MAP_CLASSES);
+				if (isPlayingClassTutorial) return;
+#endif
+#endif
+
 				DevWarning("Updating physics on object in hierarchy %s!\n", GetClassname());
 				return;
 			}
@@ -2149,38 +2159,7 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 }
 
 #ifdef NEO
-#define MAX_PENETRATION_DEPTH 12.f
-
-#define MATERIALS_NUM 26
-static const float penetrationResistance[MATERIALS_NUM] =
-{
-	1.0,						// CHAR_TEX_ANTLION
-	1.0,						// CHAR_TEX_BLOODYFLESH	
-	0.3,						// CHAR_TEX_CONCRETE		
-	0.2,						// CHAR_TEX_DIRT			
-	1.0,						// CHAR_TEX_EGGSHELL		
-	0.6,						// CHAR_TEX_FLESH			
-	0.75,						// CHAR_TEX_GRATE			
-	0.6,						// CHAR_TEX_ALIENFLESH		
-	1.0,						// CHAR_TEX_CLIP			
-	1.0,						// CHAR_TEX_BLOCKBULLETS		
-	1.0,						// CHAR_TEX_UNUSED		
-	0.8,						// CHAR_TEX_PLASTIC		
-	0.5,						// CHAR_TEX_METAL			
-	0.2,						// CHAR_TEX_SAND			
-	0.8,						// CHAR_TEX_FOLIAGE		
-	0.5,						// CHAR_TEX_COMPUTER		
-	1.0,						// CHAR_TEX_UNUSED		
-	1.0,						// CHAR_TEX_UNUSED		
-	1.0,						// CHAR_TEX_SLOSH			
-	0.5,						// CHAR_TEX_TILE			
-	1.0,						// CHAR_TEX_UNUSED		
-	0.75,						// CHAR_TEX_VENT			
-	0.75,						// CHAR_TEX_WOOD			
-	1.0,						// CHAR_TEX_UNUSED		
-	0.9,						// CHAR_TEX_GLASS			
-	1.0,						// CHAR_TEX_WARPSHIELD
-};
+bool ShouldPenetrate(const trace_t &tr);
 
 //-----------------------------------------------------------------------------
 // Handle shot penetration
@@ -2190,7 +2169,7 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 {
 	float penResistance = 0;
 	int material = physprops->GetSurfaceData(tr.surface.surfaceProps)->game.material;
-	if (material == 'J')
+	if (material == CHAR_TEX_BLOCKBULLETS)
 	{ // we hit blockbullets, do not penetrate
 #ifdef CLIENT_DLL
 		if (cl_neo_bullet_trace.GetBool())
@@ -2209,7 +2188,7 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 	material -= 'A';
 	if (material > 0 && material < MATERIALS_NUM)
 	{
-		penResistance = penetrationResistance[material];
+		penResistance = PENETRATION_RESISTANCE[material];
 	}
 
 	if (tr.m_pEnt && tr.m_pEnt->IsPlayer())
@@ -2229,26 +2208,8 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 	}
 #endif // CLIENT_DLL
 
-	// Find the furthest point along the bullets trajectory
-	Vector	testPos = tr.endpos + (vecDir * MAX_PENETRATION_DEPTH);
-
-	// Instead of tracing backwards from the furthest point the bullet could penetrate given a thick enough object initially penetrated, step into the object originally hit and find the next object behind this object,
-	// if any, and trace backwards from that next object. There must be empty space between the next object and the object originally hit for the next object to be detected. This is a limitation of traceline and is why
-	// placing toolsbulletblock inside of an object doesn't stop bullets penetrating straight through the bigger object.
-	trace_t	nextObjectTrace;
-	UTIL_TraceLine(tr.endpos + (vecDir * 0.1), testPos, MASK_SHOT, pTraceFilter, &nextObjectTrace);
-
-	CEffectData	data;
-
-	data.m_vNormal = tr.plane.normal;
-	data.m_vOrigin = tr.endpos;
-
 	trace_t	penetrationTrace;
-
-	// Re-trace backwards to find the bullet ext
-	// tracelines started inside of props get stuck unlike those started inside of brushes, revert to the original behaviour in those cases
-	Vector penetrationTraceStart = nextObjectTrace.fraction == 0.0f ? tr.endpos + (vecDir * MAX_PENETRATION_DEPTH) : nextObjectTrace.endpos - (vecDir * 0.1);
-	UTIL_TraceLine(penetrationTraceStart, tr.endpos, MASK_SHOT, nullptr, &penetrationTrace);
+	TestPenetrationTrace(penetrationTrace, tr, vecDir, pTraceFilter);
 
 	// See if we found the surface again
 	if (penetrationTrace.startsolid || tr.fraction == 0.0f || penetrationTrace.fraction == 1.0f)
@@ -2269,6 +2230,7 @@ void CBaseEntity::HandleShotPenetration(const FireBulletsInfo_t& info,
 	// Impact the other side (will look like an exit effect)
 	DoImpactEffect(penetrationTrace, GetAmmoDef()->DamageType(info.m_iAmmoType));
 
+	CEffectData	data;
 	data.m_vNormal = penetrationTrace.plane.normal;
 	data.m_vOrigin = penetrationTrace.endpos;
 

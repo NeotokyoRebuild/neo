@@ -34,9 +34,10 @@ public:
 
 	virtual void Drop(const Vector &vecVelocity) override;
 	virtual void ItemHolsterFrame(void);
-	virtual void OnPickedUp(CBaseCombatCharacter *pNewOwner);
+	void Equip(CBaseCombatCharacter *pNewOwner) override;
 	virtual int	ObjectCaps(void) { return BaseClass::ObjectCaps() | FCAP_IMPULSE_USE;};
 	void HandleGhostUnequip(void);
+	bool CanBePickedUpByClass(int classId) OVERRIDE;
 
 	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const { return NEO_WEP_GHOST; }
 	virtual int GetNeoWepXPCost(const int neoClass) const { return 0; }
@@ -52,8 +53,8 @@ public:
 	int ShouldTransmit(const CCheckTransmitInfo *pInfo) override;
 #endif
 
-#ifdef CLIENT_DLL
 	void PlayGhostSound(float volume = 1.0f);
+#ifdef CLIENT_DLL
 	void StopGhostSound(void);
 	void HandleGhostEquip(void);
 

@@ -10,6 +10,8 @@
 
 #include "neo_hud_worldpos_marker.h"
 
+#include "neo_juggernaut.h"
+
 class C_WeaponGhost;
 
 class CNEOHud_GhostMarker : public CNEOHud_WorldPosMarker
@@ -30,11 +32,10 @@ protected:
 
 private:
 	C_WeaponGhost *m_ghostInPVS = nullptr;
+	CNEO_Juggernaut *m_jgrInPVS = nullptr;
 	float m_fMarkerScalesStart[4] = { 0.78f, 0.6f, 0.38f, 0.0f };
 	float m_fMarkerScalesCurrent[4] = { 0.78f, 0.6f, 0.38f, 0.0f };
-	int m_iMarkerTexWidth, m_iMarkerTexHeight;
 
-	char m_szMarkerText[32 + 1];
 	wchar_t m_wszMarkerTextUnicode[32 + 1];
 
 	vgui::HTexture m_hTex = 0UL;

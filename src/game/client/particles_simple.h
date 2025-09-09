@@ -149,6 +149,9 @@ public:
 	unsigned char	m_uchEndSize;
 	unsigned char 	m_iFlags;	// See SimpleParticleFlag_t above
 	float		m_flRollDelta;
+#ifdef NEO
+	bool		m_bHighlightInThermals = false; // Change colour to white when local player is using thermal vision
+#endif // NEO
 };
 
 

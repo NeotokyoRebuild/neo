@@ -433,6 +433,8 @@ static inline float GetAuxChargeRate(CBaseCombatCharacter *player)
 		return 2.5f;	// 100 units in 40 seconds
 	case NEO_CLASS_VIP:
 		return 2.5f;	// 100 units in 40 seconds
+	case NEO_CLASS_JUGGERNAUT:
+		return 10.0f;	// 100 units in 10 seconds
 	default:
 		break;
 	}
@@ -3238,6 +3240,7 @@ void CHL2_Player::PlayerUse ( void )
 			usedSomething = true;
 		}
 
+#ifndef NEO // NEO NOTE DG: Moved into CNEOBaseCombatWeapon::Use
 #if	HL2_SINGLE_PRIMARY_WEAPON_MODE
 
 		//Check for weapon pick-up
@@ -3247,27 +3250,22 @@ void CHL2_Player::PlayerUse ( void )
 
 			if ( ( pWeapon != NULL ) && ( Weapon_CanSwitchTo( pWeapon ) ) )
 			{
-#ifndef NEO
-				// NEO TODO (Adam) this disables picking up ammunition from weapons with the use key, which we probably don't want anyway, but if we do work out why ghost weapon is of the same type as our primaryweapons like zr68s
 				//Try to take ammo or swap the weapon
 				if ( Weapon_OwnsThisType( pWeapon->GetClassname(), pWeapon->GetSubType() ) )
 				{
 					Weapon_EquipAmmoOnly( pWeapon );
 				}
 				else
-#endif // NEO
 				{
 					Weapon_DropSlot( pWeapon->GetSlot() );
 					Weapon_Equip( pWeapon );
-#ifdef NEO
-					pWeapon->RemoveEffects(EF_BONEMERGE);
-#endif // NEO
 				}
 
 				usedSomething = true;
 			}
 		}
 #endif
+#endif // NEO
 	}
 	else if ( m_afButtonPressed & IN_USE )
 	{

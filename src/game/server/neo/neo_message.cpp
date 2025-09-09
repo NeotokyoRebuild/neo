@@ -4,16 +4,24 @@
 LINK_ENTITY_TO_CLASS(neo_message, CNEO_Message);
 
 IMPLEMENT_SERVERCLASS_ST(CNEO_Message, DT_NEO_Message)
-    SendPropString(SENDINFO(m_NetworkedMessageKey))
+	SendPropString(SENDINFO(m_NetworkedMessageKey)),
+	SendPropString(SENDINFO(m_NetworkedSubMessageKey)),
+	SendPropBool(SENDINFO(m_bTimerMode))
 END_SEND_TABLE()
 
 BEGIN_DATADESC(CNEO_Message)
 	DEFINE_KEYFIELD(m_sSound, FIELD_SOUNDNAME, "sound"),
 	DEFINE_KEYFIELD(m_SoundVolume, FIELD_FLOAT, "volume"),
+	DEFINE_KEYFIELD(m_bTimerMode, FIELD_BOOLEAN, "timermode"),
 
 // Inputs
-    DEFINE_INPUTFUNC(FIELD_STRING, "ShowMessage", InputShowMessage),
-    DEFINE_INPUTFUNC(FIELD_VOID, "HideMessage", InputHideMessage)
+	DEFINE_INPUTFUNC(FIELD_STRING, "ShowMessage", InputShowMessage),
+	DEFINE_INPUTFUNC(FIELD_VOID, "HideMessage", InputHideMessage),
+	DEFINE_INPUTFUNC(FIELD_STRING, "ShowSubMessage", InputShowSubMessage),
+	DEFINE_INPUTFUNC(FIELD_VOID, "HideSubMessage", InputHideSubMessage),
+	DEFINE_INPUTFUNC(FIELD_VOID, "StopTimer", InputStopTimer),
+
+	DEFINE_THINKFUNC(Think)
 END_DATADESC()
 
 void CNEO_Message::Spawn()
@@ -28,9 +36,11 @@ void CNEO_Message::Spawn()
 	{
 		m_SoundVolume = 1.0;
 	}
+
+	SetNextThink(TICK_NEVER_THINK);
 }
 
-void CNEO_Message::Precache(void)
+void CNEO_Message::Precache()
 {
 	if (m_sSound != NULL_STRING)
 	{
@@ -43,12 +53,31 @@ int CNEO_Message::UpdateTransmitState()
     return SetTransmitState(FL_EDICT_ALWAYS);
 }
 
+void CNEO_Message::Think()
+{
+	DisplayTimer();
+	SetNextThink(gpGlobals->curtime + 0.05f);
+}
+
+void CNEO_Message::DisplayTimer()
+{
+	float elapsed = gpGlobals->curtime - m_flTimerStart;
+	V_snprintf(m_NetworkedMessageKey.GetForModify(), sizeof(m_NetworkedMessageKey), "%02d:%02d:%03d", int(elapsed / 60.0f), int(elapsed) % 60, int((elapsed - int(elapsed)) * 1000.0f)); // minutes, seconds, milliseconds
+}
+
 // Inputs
 
 void CNEO_Message::InputShowMessage(inputdata_t& inputData)
 {
-    const char* szMessageKey = inputData.value.String();
-    Q_strncpy(m_NetworkedMessageKey.GetForModify(), szMessageKey, 255);
+	if (m_bTimerMode)
+	{
+		m_flTimerStart = gpGlobals->curtime;
+		SetNextThink(gpGlobals->curtime);
+	}
+	else
+	{
+		V_strncpy(m_NetworkedMessageKey.GetForModify(), inputData.value.String(), sizeof(m_NetworkedMessageKey));
+	}
 
 	if (m_sSound != NULL_STRING)
 	{
@@ -67,5 +96,29 @@ void CNEO_Message::InputShowMessage(inputdata_t& inputData)
 
 void CNEO_Message::InputHideMessage(inputdata_t& inputData)
 {
-    Q_strncpy(m_NetworkedMessageKey.GetForModify(), "", 255);
+	*m_NetworkedMessageKey.GetForModify() = 0;
+	*m_NetworkedSubMessageKey.GetForModify() = 0;
+	if (m_bTimerMode)
+	{
+		SetNextThink(TICK_NEVER_THINK);
+	}
+}
+
+void CNEO_Message::InputShowSubMessage(inputdata_t& inputData)
+{
+	V_strncpy(m_NetworkedSubMessageKey.GetForModify(), inputData.value.String(), sizeof(m_NetworkedSubMessageKey));
+}
+
+void CNEO_Message::InputHideSubMessage(inputdata_t& inputData)
+{
+	*m_NetworkedSubMessageKey.GetForModify() = 0;
+}
+
+void CNEO_Message::InputStopTimer(inputdata_t& inputData)
+{
+	if (m_bTimerMode)
+	{
+		SetNextThink(TICK_NEVER_THINK);
+		DisplayTimer(); // Display the correct time when it stops
+	}
 }

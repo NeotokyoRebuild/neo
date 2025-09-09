@@ -272,19 +272,16 @@ void CEntitySpeedProxy::OnBind( void *pC_BaseEntity )
 
 	Assert( m_pResult );
 #ifdef NEO
-	auto rootMoveParent = pEntity->GetRootMoveParent();
-	auto velocity = rootMoveParent->GetAbsVelocity();
-	if (velocity == vec3_origin)
+	C_BaseAnimating *baseAnimating = pEntity->GetBaseAnimating();
+	C_BaseEntity *rootMoveParent = pEntity->GetRootMoveParent();
+	Vector velocity = vec3_origin;
+	if (baseAnimating && baseAnimating->IsRagdoll())
 	{
-		C_BaseAnimating* baseAnimating = pEntity->GetBaseAnimating();
-		if (baseAnimating && baseAnimating->IsRagdoll())
-		{
-			velocity = pEntity->GetOldVelocity();
-		}
-		else
-		{
-			rootMoveParent->EstimateAbsVelocity(velocity);
-		}
+		velocity = baseAnimating->m_pRagdoll->m_vecLastVelocity;
+	}
+	else
+	{
+		rootMoveParent->EstimateAbsVelocity(velocity);
 	}
 	m_pResult->SetFloatValue(velocity.Length());
 #else
@@ -299,6 +296,147 @@ void CEntitySpeedProxy::OnBind( void *pC_BaseEntity )
 
 EXPOSE_INTERFACE( CEntitySpeedProxy, IMaterialProxy, "EntitySpeed" IMATERIAL_PROXY_INTERFACE_VERSION );
 
+
+#ifdef NEO
+//-----------------------------------------------------------------------------
+// Returns how long ragdoll has existed, or 0 if not a C_BaseAnimating object
+//-----------------------------------------------------------------------------
+class CRagdollLifeTime : public CResultProxy
+{
+public:
+	void OnBind(void* pC_BaseEntity);
+};
+
+void CRagdollLifeTime::OnBind(void* pC_BaseEntity)
+{
+	Assert(m_pResult);
+
+	auto pEntity = dynamic_cast<C_BaseAnimating*>(BindArgToEntity(pC_BaseEntity));
+	if (!pEntity)
+	{
+		m_pResult->SetFloatValue(0);
+	}
+	else
+	{
+		const float lifeTime = gpGlobals->curtime - pEntity->m_flNeoCreateTime;
+		m_pResult->SetFloatValue(lifeTime);
+	}
+
+	if (ToolsEnabled())
+	{
+		ToolFramework_RecordMaterialParams(GetMaterial());
+	}
+}
+
+EXPOSE_INTERFACE(CRagdollLifeTime, IMaterialProxy, "RagdollLifeTime" IMATERIAL_PROXY_INTERFACE_VERSION);
+
+//-----------------------------------------------------------------------------
+// Returns how long object existed client side
+//-----------------------------------------------------------------------------
+class CBaseAnimatingLifeTime : public CResultProxy
+{
+public:
+	void OnBind(void* pC_BaseEntity);
+};
+
+void CBaseAnimatingLifeTime::OnBind(void* pC_BaseEntity)
+{
+	Assert(m_pResult);
+
+	auto pEntity = dynamic_cast<C_BaseAnimating*>(BindArgToEntity(pC_BaseEntity));
+	if (!pEntity)
+	{
+		m_pResult->SetFloatValue(0);
+	}
+	else
+	{
+		const float lifeTime = gpGlobals->curtime - pEntity->m_flNeoCreateTime;
+		m_pResult->SetFloatValue(lifeTime);
+	}
+
+	if (ToolsEnabled())
+	{
+		ToolFramework_RecordMaterialParams(GetMaterial());
+	}
+}
+
+EXPOSE_INTERFACE(CBaseAnimatingLifeTime, IMaterialProxy, "BaseAnimatingLifeTime" IMATERIAL_PROXY_INTERFACE_VERSION);
+
+#include "weapon_neobasecombatweapon.h"
+//-----------------------------------------------------------------------------
+// Returns weapon temperature
+//-----------------------------------------------------------------------------
+class CWeaponTemperature : public CResultProxy
+{
+public:
+	void OnBind(void* pC_BaseEntity);
+};
+
+void CWeaponTemperature::OnBind(void* pC_BaseEntity)
+{
+	Assert(m_pResult);
+
+	auto pEntityWeapon = dynamic_cast<C_NEOBaseCombatWeapon*>(BindArgToEntity(pC_BaseEntity));
+	if (!pEntityWeapon)
+	{
+		auto pEntityViewModel = dynamic_cast<C_NEOPredictedViewModel*>(BindArgToEntity(pC_BaseEntity));
+		if (pEntityViewModel)
+		{
+			pEntityWeapon = static_cast<C_NEOBaseCombatWeapon*>(pEntityViewModel->GetOwningWeapon());
+		}
+	}
+
+	if (!pEntityWeapon)
+	{
+		m_pResult->SetFloatValue(0);
+	}
+	else
+	{
+		const float temperature = pEntityWeapon->m_flTemperature;
+		m_pResult->SetFloatValue(temperature);
+	}
+
+	if (ToolsEnabled())
+	{
+		ToolFramework_RecordMaterialParams(GetMaterial());
+	}
+}
+
+EXPOSE_INTERFACE(CWeaponTemperature, IMaterialProxy, "WeaponTemperature" IMATERIAL_PROXY_INTERFACE_VERSION);
+
+#include "sdk/sdk_basegrenade_projectile.h"
+//-----------------------------------------------------------------------------
+// Returns grenade projectile temperature
+//-----------------------------------------------------------------------------
+class CGrenadeProjectileTemperature : public CResultProxy
+{
+public:
+	void OnBind(void* pC_BaseEntity);
+};
+
+void CGrenadeProjectileTemperature::OnBind(void* pC_BaseEntity)
+{
+	Assert(m_pResult);
+
+	auto pEntityProjectile = dynamic_cast<CBaseGrenadeProjectile*>(BindArgToEntity(pC_BaseEntity));
+	if (!pEntityProjectile)
+	{
+		m_pResult->SetFloatValue(0);
+	}
+	else
+	{
+		const float temperature = pEntityProjectile->m_flTemperature;
+		m_pResult->SetFloatValue(temperature);
+	}
+
+	if (ToolsEnabled())
+	{
+		ToolFramework_RecordMaterialParams(GetMaterial());
+	}
+}
+
+EXPOSE_INTERFACE(CGrenadeProjectileTemperature, IMaterialProxy, "GrenadeProjectileTemperature" IMATERIAL_PROXY_INTERFACE_VERSION);
+#endif // NEO
 
 //-----------------------------------------------------------------------------
 // Returns a random # from 0 - 1 specific to the entity it's applied to

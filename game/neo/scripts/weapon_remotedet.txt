@@ -65,9 +65,9 @@ WeaponData
 		"empty"			"Weapon_remotedet.Empty"
 		"single_shot"		"Weapon_remotedet.Single"
 		"single_shot_npc"	"Weapon_remotedet.NPC_Single"
-		"special1"		"Weapon_remotedet.Special1"
-		"special2"		"Weapon_remotedet.Special2"
-		"burst"			"Weapon_remotedet.Burst"
+		//"special1"		"Weapon_remotedet.Special1"
+		//"special2"		"Weapon_remotedet.Special2"
+		//"burst"			"Weapon_remotedet.Burst"
 	}
 
 	// Weapon Sprite data is loaded by the Client DLL.

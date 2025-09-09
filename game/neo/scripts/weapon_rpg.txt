@@ -26,13 +26,13 @@ WeaponData
 	// Sounds for the weapon. There is a max of 16 sounds per category (i.e. max 16 "single_shot" sounds)
 	SoundData
 	{
-		"single_shot"		"Weapon_RPG.Single"
-		"single_shot_npc"	"Weapon_RPG.NPC_Single"
+		//"single_shot"		"Weapon_RPG.Single"
+		//"single_shot_npc"	"Weapon_RPG.NPC_Single"
 		//Laser on
-		"special1"			"Weapon_RPG.LaserOn"
+		//"special1"			"Weapon_RPG.LaserOn"
 		//Laser off
-		"special2"			"Weapon_RPG.LaserOff"
-		"empty"				"Weapon_SMG1.Empty"
+		//"special2"			"Weapon_RPG.LaserOff"
+		//"empty"				"Weapon_SMG1.Empty"
 	}
 
 	// Weapon Sprite data is loaded by the Client DLL.

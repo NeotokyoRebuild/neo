@@ -287,10 +287,18 @@ void CNEOHud_Compass::DrawCompass() const
 	if (m_objectiveVisible && !player->IsCarryingGhost())
 	{
 		// Point the objective arrow to the ghost, if it exists
-		if (NEORules()->GhostExists())
+		if (NEORules()->GhostExists() || NEORules()->JuggernautItemExists())
 		{
 			int ghostMarkerX, ghostMarkerY;
-			const bool ghostIsInView = GetVectorInScreenSpace(NEORules()->GetGhostPos(), ghostMarkerX, ghostMarkerY);
+			bool ghostIsInView = false;
+			if (NEORules()->GetGameType() != NEO_GAME_TYPE_JGR)
+			{
+				ghostIsInView = GetVectorInScreenSpace(NEORules()->GetGhostPos(), ghostMarkerX, ghostMarkerY);
+			}
+			else
+			{
+				ghostIsInView = GetVectorInScreenSpace(NEORules()->GetJuggernautMarkerPos(), ghostMarkerX, ghostMarkerY);
+			}
 			if (ghostIsInView) {
 				// Print a unicode arrow to signify compass needle
 				const wchar_t arrowUnicode[] = L"▼";

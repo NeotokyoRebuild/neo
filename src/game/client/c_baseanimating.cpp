@@ -205,7 +205,10 @@ IMPLEMENT_CLIENTCLASS_DT(C_BaseAnimating, DT_BaseAnimating, CBaseAnimating)
 
 	RecvPropFloat( RECVINFO( m_fadeMinDist ) ), 
 	RecvPropFloat( RECVINFO( m_fadeMaxDist ) ), 
-	RecvPropFloat( RECVINFO( m_flFadeScale ) ), 
+	RecvPropFloat( RECVINFO( m_flFadeScale ) ),
+#ifdef NEO
+	RecvPropBool( RECVINFO( m_bIsGib ) ),
+#endif // NEO
 
 END_RECV_TABLE()
 
@@ -382,6 +385,35 @@ void C_ClientRagdoll::OnRestore( void )
 	RagdollMoved();
 }
 
+#ifdef NEO
+extern ConVar glow_outline_effect_enable;
+int C_ClientRagdoll::DrawModel(int flags)
+{
+#ifdef GLOWS_ENABLE
+	auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetVisionTargetNEOPlayer();
+#else
+	auto pTargetPlayer = C_NEO_Player::GetVisionTargetNEOPlayer();
+#endif // GLOWS_ENABLE
+	if (!pTargetPlayer)
+	{
+		Assert(false);
+		return BaseClass::DrawModel(flags);
+	}
+
+	const bool inThermalVision = pTargetPlayer ? (pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT) : false;
+	if (inThermalVision)
+	{
+		IMaterial* pass = materials->FindMaterial("dev/thermal_ragdoll_model", TEXTURE_GROUP_MODEL);
+		modelrender->ForcedMaterialOverride(pass);
+		const int ret = BaseClass::DrawModel(flags);
+		modelrender->ForcedMaterialOverride(nullptr);
+		return ret;
+	}
+
+	return BaseClass::DrawModel(flags);
+}
+
+#endif // NEO
 void C_ClientRagdoll::ImpactTrace( trace_t *pTrace, int iDamageType, const char *pCustomImpactName )
 {
 	VPROF( "C_ClientRagdoll::ImpactTrace" );
@@ -749,6 +781,9 @@ C_BaseAnimating::C_BaseAnimating() :
 	Q_memset(&m_mouth, 0, sizeof(m_mouth));
 	m_flCycle = 0;
 	m_flOldCycle = 0;
+#ifdef NEO
+	m_flNeoCreateTime = gpGlobals->curtime;
+#endif // NEO
 }
 
 //-----------------------------------------------------------------------------
@@ -2146,7 +2181,11 @@ bool C_BaseAnimating::GetAttachment( int number, Vector &origin, QAngle &angles 
 	if ( pData->m_bAnglesComputed == 0 )
 	{
 		MatrixAngles( pData->m_AttachmentToWorld, pData->m_angRotation );
+#ifdef NEO // NEO NOTE (nullsystem): warning: conversion from ‘unsigned int’ to ‘unsigned char:1’ changes value from ‘4294967295’ to ‘1’
+		pData->m_bAnglesComputed = 1;
+#else
 		pData->m_bAnglesComputed = -1;
+#endif
 	}
 	angles = pData->m_angRotation;
 	MatrixPosition( pData->m_AttachmentToWorld, origin );
@@ -3244,12 +3283,11 @@ int C_BaseAnimating::DrawModel( int flags )
 #endif // GLOWS_ENABLE
 
 		const bool inMotionVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_ASSAULT;
-		
 		auto rootMoveParent = GetRootMoveParent();
 		Vector vel;
 		if (IsRagdoll())
 		{
-			vel = rootMoveParent->GetOldVelocity();
+			vel = m_pRagdoll->m_vecLastVelocity;
 		}
 		else
 		{
@@ -3260,6 +3298,7 @@ int C_BaseAnimating::DrawModel( int flags )
 			}
 		}
 		bool isMoving = false;
+		bool isHot = false;
 		if (inMotionVision && vel.LengthSqr() > 0.25 && !IsViewModel() && !(extraFlags & STUDIO_IGNORE_NEO_EFFECTS)) // MOVING_SPEED_MINIMUM ^2
 		{
 			isMoving = true;
@@ -3271,6 +3310,16 @@ int C_BaseAnimating::DrawModel( int flags )
 				modelrender->ForcedMaterialOverride(pass);
 			}
 		}
+
+		const bool inThermalVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT;
+		if (m_bIsGib && inThermalVision)
+		{
+			IMaterial* pass = materials->FindMaterial("dev/thermal_base_animating_model", TEXTURE_GROUP_MODEL);
+			Assert(!IsErrorMaterial(pass));
+			modelrender->ForcedMaterialOverride(pass);
+			isHot = true;
+		}
+
 #endif // NEO
 
 		if ( flags & ( STUDIO_NO_OVERRIDE_FOR_ATTACH ) ) 
@@ -3314,7 +3363,7 @@ int C_BaseAnimating::DrawModel( int flags )
 			}
 		}
 #ifdef NEO
-		if (isMoving)
+		if (isMoving || isHot)
 		{
 			modelrender->ForcedMaterialOverride(nullptr);
 		}
@@ -3570,6 +3619,12 @@ int C_BaseAnimating::InternalDrawModel( int flags )
 			pInfo->pLightingOrigin = &ownerOrigin;
 		}
 	}
+	else if (IsBaseCombatWeapon())
+	{
+		static Vector worldSpaceCenter;
+		worldSpaceCenter = WorldSpaceCenter();
+		pInfo->pLightingOrigin = &worldSpaceCenter;
+	}
 #endif // NEO
 
 	DrawModelState_t state;
@@ -3745,6 +3800,9 @@ void C_BaseAnimating::DoAnimationEvents( CStudioHdr *pStudioHdr )
 
 	// check for looping
 	BOOL bLooped = false;
+#ifdef NEO
+	bool bInverse = false;
+#endif
 	if (flEventCycle <= m_flPrevEventCycle)
 	{
 		if (m_flPrevEventCycle - flEventCycle > 0.5)
@@ -3753,9 +3811,14 @@ void C_BaseAnimating::DoAnimationEvents( CStudioHdr *pStudioHdr )
 		}
 		else
 		{
+#ifdef NEO
+			// NEO NOTE DG: Animations play fine backwards. Let events play when moving forwards and backwards through a clip
+			bInverse = true;
+#else
 			// things have backed up, which is bad since it'll probably result in a hitch in the animation playback
 			// but, don't play events again for the same time slice
 			return;
+#endif
 		}
 	}
 
@@ -3796,6 +3859,42 @@ void C_BaseAnimating::DoAnimationEvents( CStudioHdr *pStudioHdr )
 		// Necessary to get the next loop working
 		m_flPrevEventCycle = flEventCycle - 0.001f;
 	}
+
+#ifdef NEO
+	if (bInverse)
+	{
+		for (int i = (int)seqdesc.numevents - 1; i >= 0; --i)
+		{
+			if ( pevent[i].type & AE_TYPE_NEWEVENTSYSTEM )
+			{
+				if ( !( pevent[i].type & AE_TYPE_CLIENT ) )
+					continue;
+			}
+			else if ( pevent[i].event < 5000 )
+				continue;
+
+			if ( pevent[i].cycle >= flEventCycle && pevent[i].cycle < m_flPrevEventCycle )
+			{
+				if ( watch )
+				{
+					Msg( "%i (seq: %d) FE %i Normal cycle %f, prev %f ev %f (time %.3f)\n",
+						gpGlobals->tickcount,
+						GetSequence(),
+						pevent[i].event,
+						pevent[i].cycle,
+						m_flPrevEventCycle,
+						flEventCycle,
+						gpGlobals->curtime );
+				}
+
+				FireEvent( GetAbsOrigin(), GetAbsAngles(), pevent[ i ].event, pevent[ i ].pszOptions() );
+			}
+		}
+
+		m_flPrevEventCycle = flEventCycle;
+		return;
+	}
+#endif
 
 	for (int i = 0; i < (int)seqdesc.numevents; i++)
 	{
@@ -4708,22 +4807,6 @@ void C_BaseAnimating::RagdollMoved( void )
 	m_pRagdoll->GetRagdollBounds( mins, maxs );
 	SetCollisionBounds( mins, maxs );
 
-#ifdef NEO
-	if (GetOldOrigin() != vec3_origin)
-	{
-		if (m_flLastOriginChangeTime != gpGlobals->curtime)
-		{
-			SetOldVelocity((GetAbsOrigin() - GetOldOrigin()) / (gpGlobals->curtime - m_flLastOriginChangeTime));
-			SetOldOrigin(GetAbsOrigin());
-		}
-	}
-	else
-	{ // First time
-		auto ragdoll = static_cast<C_HL2MPRagdoll*>(GetBaseAnimating());
-		SetOldVelocity(ragdoll->GetRagdollVelocity());
-		SetOldOrigin(GetAbsOrigin());
-	}
-#endif // NEO
 	// If the ragdoll moves, its render-to-texture shadow is dirty
 	InvalidatePhysicsRecursive( ANIMATION_CHANGED ); 
 }

@@ -36,3 +36,8 @@ CWeaponMPN::CWeaponMPN()
 		"mpnry",
 	};
 }
+
+bool CWeaponMPN::CanBePickedUpByClass(int classId)
+{
+	return classId != NEO_CLASS_JUGGERNAUT;
+}

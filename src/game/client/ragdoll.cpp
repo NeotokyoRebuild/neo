@@ -16,6 +16,11 @@
 #include "view.h"
 #include "physics_saverestore.h"
 #include "vphysics/constraints.h"
+
+#ifdef NEO
+#include "c_neo_player.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -252,6 +257,9 @@ bool CRagdoll::TransformVectorToWorld(int iBoneIndex, const Vector *vPosition, V
 //-----------------------------------------------------------------------------
 void CRagdoll::PhysForceRagdollToSleep()
 {
+#ifdef NEO
+	m_vecLastVelocity = vec3_origin;
+#endif // NEO
 	for ( int i = 0; i < m_ragdoll.listCount; i++ )
 	{
 		if ( m_ragdoll.list[i].pObject )
@@ -268,6 +276,12 @@ static ConVar ragdoll_sleepaftertime( "ragdoll_sleepaftertime", "5.0f", 0, "Afte
 void CRagdoll::CheckSettleStationaryRagdoll()
 {
 	Vector delta = GetRagdollOrigin() - m_vecLastOrigin;
+#ifdef NEO
+	if (gpGlobals->frametime > 0)
+	{
+		m_vecLastVelocity = delta / (gpGlobals->frametime);
+	}
+#endif // NEO
 	m_vecLastOrigin = GetRagdollOrigin();
 	for ( int i = 0; i < 3; ++i )
 	{
@@ -285,7 +299,7 @@ void CRagdoll::CheckSettleStationaryRagdoll()
 		return;
 
 	// Msg( "%d [%p] Settling\n", gpGlobals->tickcount, this );
-
+	
 	// It has stopped moving, see if it
 	float dt = gpGlobals->curtime - m_flLastOriginChangeTime;
 	if ( dt < ragdoll_sleepaftertime.GetFloat() )
@@ -382,6 +396,9 @@ public:
 
 	virtual void PostDataUpdate( DataUpdateType_t updateType );
 
+#ifdef NEO
+	virtual int DrawModel(int flags);
+#endif // NEO
 	virtual int InternalDrawModel( int flags );
 	virtual CStudioHdr *OnNewModel( void );
 	virtual unsigned char GetClientSideFade();
@@ -457,6 +474,36 @@ float C_ServerRagdoll::LastBoneChangedTime()
 {
 	return m_flLastBoneChangeTime;
 }
+
+#ifdef NEO
+extern ConVar glow_outline_effect_enable;
+int C_ServerRagdoll::DrawModel(int flags)
+{
+#ifdef GLOWS_ENABLE
+	auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetVisionTargetNEOPlayer();
+#else
+	auto pTargetPlayer = C_NEO_Player::GetVisionTargetNEOPlayer();
+#endif // GLOWS_ENABLE
+	if (!pTargetPlayer)
+	{
+		Assert(false);
+		return BaseClass::DrawModel(flags);
+	}
+
+	const bool inThermalVision = pTargetPlayer ? (pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT) : false;
+	if (inThermalVision)
+	{
+		IMaterial* pass = materials->FindMaterial("dev/thermal_ragdoll_model", TEXTURE_GROUP_MODEL);
+		modelrender->ForcedMaterialOverride(pass);
+		const int ret = BaseClass::DrawModel(flags);
+		modelrender->ForcedMaterialOverride(nullptr);
+		return ret;
+	}
+
+	return BaseClass::DrawModel(flags);
+}
+
+#endif // NEO
 
 int C_ServerRagdoll::InternalDrawModel( int flags )
 {

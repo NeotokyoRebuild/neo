@@ -120,12 +120,23 @@ public:
 
 	virtual void PressJumpButton( float duration = -1.0f ) = 0;
 	virtual void ReleaseJumpButton( void ) = 0;
+	
+#ifdef NEO
+	virtual void PressThermopticButton( float duration = -1.0f ) = 0;
+	virtual void ReleaseThermopticButton( void ) = 0;
+#endif // NEO
 
 	virtual void PressCrouchButton( float duration = -1.0f ) = 0;
 	virtual void ReleaseCrouchButton( void ) = 0;
 
 	virtual void PressWalkButton( float duration = -1.0f ) = 0;
 	virtual void ReleaseWalkButton( void ) = 0;
+
+#ifdef NEO
+	// This is just an "alias" to PressWalkButton
+	virtual void PressRunButton( float duration = -1.0f ) = 0;
+	virtual void ReleaseRunButton( void ) = 0;
+#endif // NEO
 
 	virtual void SetButtonScale( float forward, float right ) = 0;
 };
@@ -190,6 +201,11 @@ public:
 	virtual void PressSpecialFireButton( float duration = -1.0f );
 	virtual void ReleaseSpecialFireButton( void );
 
+#ifdef NEO
+	virtual void PressThermopticButton( float duration = -1.0f );
+	virtual void ReleaseThermopticButton( void );
+#endif
+
 	virtual void PressUseButton( float duration = -1.0f );
 	virtual void ReleaseUseButton( void );
 
@@ -216,6 +232,18 @@ public:
 
 	virtual void PressWalkButton( float duration = -1.0f );
 	virtual void ReleaseWalkButton( void );
+
+#ifdef NEO
+	// This is just an "alias" to PressWalkButton
+	virtual void PressRunButton( float duration = -1.0f );
+	virtual void ReleaseRunButton( void );
+
+	void PressLeanLeftButton( float duration = -1.0f );
+	void ReleaseLeanLeftButton( void );
+
+	void PressLeanRightButton( float duration = -1.0f );
+	void ReleaseLeanRightButton( void );
+#endif // NEO
 
 	virtual void SetButtonScale( float forward, float right );
 
@@ -257,6 +285,11 @@ protected:
 	CountdownTimer m_crouchButtonTimer;
 	CountdownTimer m_walkButtonTimer;
 	CountdownTimer m_buttonScaleTimer;
+#ifdef NEO
+	CountdownTimer m_thermopticButtonTimer;
+	CountdownTimer m_leanLeftButtonTimer;
+	CountdownTimer m_leanRightButtonTimer;
+#endif // NEO
 	IntervalTimer m_burningTimer;		// how long since we were last burning
 	float m_forwardScale;
 	float m_rightScale;
@@ -400,6 +433,11 @@ inline void NextBotPlayer< PlayerType >::ReleaseReloadButton( void )
 template < typename PlayerType >
 inline void NextBotPlayer< PlayerType >::PressJumpButton( float duration )
 {
+#ifdef NEO
+	// NEO JANK workaround to allow bots to crouch while attempting to preserve crouch jumping
+	ReleaseCrouchButton();
+	// code change coordinated with disabled ground crouch cancel in CNEOBotLocomotion::Update
+#endif
 	m_inputButtons |= IN_JUMP;
 	m_jumpButtonTimer.Start( duration );
 }
@@ -410,6 +448,22 @@ inline void NextBotPlayer< PlayerType >::ReleaseJumpButton( void )
 	m_inputButtons &= ~IN_JUMP;
 	m_jumpButtonTimer.Invalidate();
 }
+
+#ifdef NEO
+template < typename PlayerType >
+inline void NextBotPlayer< PlayerType >::PressThermopticButton( float duration )
+{
+	m_inputButtons |= IN_THERMOPTIC;
+	m_thermopticButtonTimer.Start( duration );
+}
+
+template < typename PlayerType >
+inline void NextBotPlayer< PlayerType >::ReleaseThermopticButton( void )
+{
+	m_inputButtons &= ~IN_THERMOPTIC;
+	m_thermopticButtonTimer.Invalidate();
+}
+#endif
 
 template < typename PlayerType >
 inline void NextBotPlayer< PlayerType >::PressCrouchButton( float duration )
@@ -438,6 +492,48 @@ inline void NextBotPlayer< PlayerType >::ReleaseWalkButton( void )
 	m_inputButtons &= ~IN_SPEED;
 	m_walkButtonTimer.Invalidate();
 }
+
+#ifdef NEO
+template < typename PlayerType >
+inline void NextBotPlayer< PlayerType >::PressRunButton( float duration )
+{
+	return NextBotPlayer<PlayerType>::PressWalkButton(duration);
+}
+
+template < typename PlayerType >
+inline void NextBotPlayer< PlayerType >::ReleaseRunButton( void )
+{
+	return NextBotPlayer<PlayerType>::ReleaseWalkButton();
+}
+
+template < typename PlayerType >
+inline void NextBotPlayer< PlayerType >::PressLeanLeftButton( float duration )
+{
+	m_inputButtons |= IN_LEAN_LEFT;
+	m_leanLeftButtonTimer.Start( duration );
+}
+
+template < typename PlayerType >
+inline void NextBotPlayer< PlayerType >::ReleaseLeanLeftButton( void )
+{
+	m_inputButtons &= ~IN_LEAN_LEFT;
+	m_leanLeftButtonTimer.Invalidate();
+}
+
+template < typename PlayerType >
+inline void NextBotPlayer< PlayerType >::PressLeanRightButton( float duration )
+{
+	m_inputButtons |= IN_LEAN_RIGHT;
+	m_leanRightButtonTimer.Start( duration );
+}
+
+template < typename PlayerType >
+inline void NextBotPlayer< PlayerType >::ReleaseLeanRightButton( void )
+{
+	m_inputButtons &= ~IN_LEAN_RIGHT;
+	m_leanRightButtonTimer.Invalidate();
+}
+#endif // NEO
 
 template < typename PlayerType >
 inline void NextBotPlayer< PlayerType >::PressForwardButton( float duration )
@@ -545,6 +641,11 @@ inline void NextBotPlayer< PlayerType >::Spawn( void )
 	m_buttonScaleTimer.Invalidate();
 	m_forwardScale = m_rightScale = 0.04;
 	m_burningTimer.Invalidate();
+#ifdef NEO
+	m_thermopticButtonTimer.Invalidate();
+	m_leanLeftButtonTimer.Invalidate();
+	m_leanRightButtonTimer.Invalidate();
+#endif // NEO
 
 	// reset first, because Spawn() may access various interfaces
 	INextBot::Reset();
@@ -573,6 +674,10 @@ inline void _NextBot_BuildUserCommand( CUserCmd *cmd, const QAngle &viewangles, 
 
 
 //-----------------------------------------------------------------------------------------------------
+#ifdef NEO
+extern ConVar bot_mimic;
+extern ConVar bot_mimic_yaw_offset;
+#endif // NEO
 template < typename PlayerType >
 inline void NextBotPlayer< PlayerType >::PhysicsSimulate( void )
 {
@@ -598,6 +703,37 @@ inline void NextBotPlayer< PlayerType >::PhysicsSimulate( void )
 		return;
 	}
 
+#ifdef NEO
+	if (bot_mimic.GetBool())
+	{
+		auto pPlayerMimicked = UTIL_PlayerByIndex(bot_mimic.GetInt());
+		auto pThisBot = static_cast<CBasePlayer*>(GetEntity());
+		{
+			if (pPlayerMimicked && pThisBot)
+			{
+				CUserCmd cmd;
+
+				if (!pPlayerMimicked->GetLastUserCommand())
+				{
+					return;
+				}
+
+				cmd = *pPlayerMimicked->GetLastUserCommand();
+				cmd.viewangles[YAW] += bot_mimic_yaw_offset.GetFloat();
+
+				// allocate a new command and add it to the player's list of command to process
+				this->ProcessUsercmds(&cmd, 1, 1, 0, false);
+
+				// Clear out any fixangle that has been set
+				pThisBot->pl.fixangle = FIXANGLE_NONE;
+
+				// actually execute player commands and do player physics
+				PlayerType::PhysicsSimulate();
+				return;
+			}
+		}
+	}
+#endif // NEO
 	int inputButtons;
 	//
 	// Update bot behavior
@@ -642,6 +778,14 @@ inline void NextBotPlayer< PlayerType >::PhysicsSimulate( void )
 
 		if ( !m_walkButtonTimer.IsElapsed() )
 			m_inputButtons |= IN_SPEED;
+
+#ifdef NEO
+		if ( !m_leanLeftButtonTimer.IsElapsed() )
+			m_inputButtons |= IN_LEAN_LEFT;
+
+		if ( !m_leanRightButtonTimer.IsElapsed() )
+			m_inputButtons |= IN_LEAN_RIGHT;
+#endif
 
 		m_prevInputButtons = m_inputButtons;
 		inputButtons = m_inputButtons;

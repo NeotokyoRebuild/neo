@@ -30,6 +30,8 @@ public:
 	int m_iRowsInScreen = 0;
 	int m_iRootSubPanelWide = 0;
 
+	ConVar* m_pHostMap;
+
 	bool m_bValidGameUIPanels = false;
 	vgui::Frame *m_pLoadingPanel = nullptr;
 	vgui::ProgressBar *m_pProgressBarMain = nullptr;

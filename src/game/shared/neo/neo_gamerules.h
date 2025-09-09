@@ -13,6 +13,9 @@
 #include "GameEventListener.h"
 #include "neo_player_shared.h"
 #include "neo_misc.h"
+#ifdef GAME_DLL
+#include "neo_juggernaut.h"
+#endif
 
 #ifdef CLIENT_DLL
 	#include "c_neo_player.h"
@@ -21,23 +24,7 @@
 	#include "utlhashtable.h"
 #endif
 
-#ifdef GLOWS_ENABLE
 #include "neo_player_shared.h"
-#endif
-
-enum
-{
-	TEAM_JINRAI = LAST_SHARED_TEAM + 1,
-	TEAM_NSF,
-
-	TEAM__TOTAL, // Always last enum in here
-};
-
-#define TEAM_STR_JINRAI "Jinrai"
-#define TEAM_STR_NSF "NSF"
-#define TEAM_STR_SPEC "Spectator"
-
-#define NEO_GAME_NAME "Neotokyo; Rebuild"
 
 #ifdef CLIENT_DLL
 	#define CNEORules C_NEORules
@@ -87,6 +74,7 @@ public:
 class CNEOGhostCapturePoint;
 class CNEO_Player;
 class CWeaponGhost;
+class CNEOBotSeekAndDestroy;
 
 extern ConVar sv_neo_mirror_teamdamage_multiplier;
 extern ConVar sv_neo_mirror_teamdamage_duration;
@@ -106,6 +94,7 @@ enum NeoGameType {
 	NEO_GAME_TYPE_DM,
 	NEO_GAME_TYPE_EMT,
 	NEO_GAME_TYPE_TUT,
+	NEO_GAME_TYPE_JGR,
 
 	NEO_GAME_TYPE__TOTAL // Number of game types
 };
@@ -155,6 +144,7 @@ enum NeoHudElements : NEO_HUD_BITS_UNDERLYING_TYPE {
 	NEO_HUD_ELEMENT_ROUND_STATE = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 12),
 	NEO_HUD_ELEMENT_WORLDPOS_MARKER = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 13),
 	NEO_HUD_ELEMENT_SCOREBOARD = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 14),
+	NEO_HUD_ELEMENT_PLAYER_PING = (static_cast<NEO_HUD_BITS_UNDERLYING_TYPE>(1) << 15),
 };
 
 class CNEORules : public CHL2MPRules, public CGameEventListener
@@ -208,8 +198,8 @@ public:
 	int GetForcedSkin();
 	int GetForcedWeapon();
 	virtual const char* GetGameTypeName(void) OVERRIDE;
-	const bool RespawnsEnabled();
-	bool CanChangeTeamClassWeaponWhenAlive();
+	virtual const bool CanChangeTeamClassLoadoutWhenAlive();
+	virtual const bool CanRespawnAnyTime();
 
 	void GetDMHighestScorers(
 #ifdef GAME_DLL
@@ -254,6 +244,7 @@ public:
 	void ResetTDM();
 	void ResetGhost();
 	void ResetVIP();
+	void ResetJGR();
 
 	void CheckRestartGame();
 
@@ -330,6 +321,10 @@ public:
 	bool GhostExists() const { return m_bGhostExists; }
 	Vector GetGhostPos() const { return m_vecGhostMarkerPos; }
 
+	int GetJuggernautPlayer() const { return m_iJuggernautPlayerIndex; }
+	bool JuggernautItemExists() const { return m_bJuggernautItemExists; }
+	Vector GetJuggernautMarkerPos() const { return m_vecJuggernautMarkerPos; }
+
 	int GetOpposingTeam(const int team) const
 	{
 		if (team == TEAM_JINRAI) { return TEAM_NSF; }
@@ -377,6 +372,9 @@ public:
 #endif
 
 	const char *GetTeamClantag(const int iTeamNum) const;
+#ifdef GAME_DLL
+	void OnNavMeshLoad() override;
+#endif // GAME_DL:
 
 public:
 #ifdef GAME_DLL
@@ -406,13 +404,20 @@ private:
 
 #ifdef GAME_DLL
 	void SpawnTheGhost(const Vector *origin = nullptr);
+	void SpawnTheJuggernaut(const Vector *origin = nullptr);
 	void SelectTheVIP();
-
+public:
+	void JuggernautActivated(CNEO_Player *pPlayer);
+	CNEO_Juggernaut *m_pJuggernautItem = nullptr;
+	CNEO_Player *m_pJuggernautPlayer = nullptr;
+private:
+	friend class CNEOBotSeekAndDestroy;
 	CUtlVector<int> m_pGhostCaps;
 	CWeaponGhost *m_pGhost = nullptr;
 	CNEO_Player *m_pVIP = nullptr;
 	int m_iVIPPreviousClass = 0;
 
+	float m_flLastPointTime = 0.0f;
 	float m_flPrevThinkKick = 0.0f;
 	float m_flPrevThinkMirrorDmg = 0.0f;
 	bool m_bTeamBeenAwardedDueToCapPrevent = false;
@@ -420,7 +425,9 @@ private:
 	int m_iEntPrevCapSize = 0;
 	int m_iPrintHelpCounter = 0;
 	bool m_bGamemodeTypeBeenInitialized = false;
+	friend class CNEO_GhostBoundary;
 	Vector m_vecPreviousGhostSpawn = vec3_origin;
+	Vector m_vecPreviousJuggernautSpawn = vec3_origin;
 #endif
 	CNetworkVar(int, m_nRoundStatus);
 	CNetworkVar(int, m_iHiddenHudElements);
@@ -439,20 +446,17 @@ private:
 	CNetworkVector(m_vecGhostMarkerPos);
 	CNetworkVar(bool, m_bGhostExists);
 
+	// Juggernaut networked variables
+	CNetworkVar(int, m_iJuggernautPlayerIndex);
+	CNetworkVar(bool, m_bJuggernautItemExists);
+	CNetworkVector(m_vecJuggernautMarkerPos);
+
 	CNetworkVar(float, m_flNeoRoundStartTime);
 	CNetworkVar(float, m_flNeoNextRoundStartTime);
 
 public:
 	// VIP networked variables
 	CNetworkVar(int, m_iEscortingTeam);
-	
-#define MAX_DUMMY_BEACONS 32 // source sdk supports up to 2048 entities with edicts
-#ifdef GAME_DLL
-	CNetworkArray(CBaseHandle, m_iDummyBeacons, MAX_DUMMY_BEACONS);
-#else
-	CBaseHandle m_iDummyBeacons[MAX_DUMMY_BEACONS];
-#endif // GAME_DLL
-	CNetworkVar(int, m_iLastDummyBeacon);
 };
 
 inline CNEORules *NEORules()

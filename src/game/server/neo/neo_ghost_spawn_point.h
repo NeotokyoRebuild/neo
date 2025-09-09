@@ -9,4 +9,9 @@ class CNEOGhostSpawnPoint : public CPointEntity
 	DECLARE_CLASS(CNEOGhostSpawnPoint, CPointEntity);
 };
 
+class CNEOJuggernautSpawnPoint : public CPointEntity
+{
+	DECLARE_CLASS(CNEOJuggernautSpawnPoint, CPointEntity);
+};
+
 #endif // NEO_GHOST_SPAWN_POINT_H
