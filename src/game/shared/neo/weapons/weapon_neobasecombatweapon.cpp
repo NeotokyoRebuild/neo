@@ -1277,11 +1277,9 @@ void CNEOBaseCombatWeapon::SetPickupTouch(void)
 		return;
 	}
 
-	if ((!weaponstay.GetBool() || NEORules()->CanRespawnAnyTime()) && GetSpawnFlags() & SF_NORESPAWN)
+	if (!weaponstay.GetBool() || NEORules()->CanRespawnAnyTime())
 	{ // regardless of the value of mp_weaponstay, disappear weapons in game modes with respawns enabled. Otherwise things can get too chaotic
-		SetThink(&CBaseEntity::SUB_Remove);
-		constexpr float DROPPED_WEAPON_LIFETIME = 30.f;
-		SetNextThink(gpGlobals->curtime + DROPPED_WEAPON_LIFETIME);
+		BaseClass::SetPickupTouch();
 		return;
 	}
 
