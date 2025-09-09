@@ -3536,13 +3536,6 @@ void CNEO_Player::SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace)
 
 void CNEO_Player::SpectatorTakeoverPlayerPreThink()
 {
-	if (m_hSpectatorTakeoverPlayerImpersonatingMe.Get())
-	{
-		// Currently being impersonated by a player, but allow waiting on events in base PreThink.
-		BaseClass::PreThink();
-		return;
-	}
-
 	if (m_bSpectatorTakeoverPlayerPending)
 	{
 		if (!IsAlive() || IsObserver())
@@ -3632,6 +3625,7 @@ void CNEO_Player::SpectatorTakeoverPlayerPreThink()
 		m_bSpectatorTakeoverPlayerPending = false;
 	}
 }
+
 void CNEO_Player::SpectatorTakeoverPlayerInitiate(CNEO_Player* pPlayer)
 {
     m_hSpectatorTakeoverPlayerImpersonatingMe = pPlayer;
