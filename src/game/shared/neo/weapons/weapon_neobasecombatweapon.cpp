@@ -1279,7 +1279,7 @@ void CNEOBaseCombatWeapon::SetPickupTouch(void)
 
 	if ((!weaponstay.GetBool() || NEORules()->CanRespawnAnyTime()) && GetSpawnFlags() & SF_NORESPAWN)
 	{ // regardless of the value of mp_weaponstay, disappear weapons in game modes with respawns enabled. Otherwise things can get too chaotic
-		SetThink(&CBaseEntity::SUB_Vanish);
+		SetThink(&CBaseEntity::SUB_Remove);
 		constexpr float DROPPED_WEAPON_LIFETIME = 30.f;
 		SetNextThink(gpGlobals->curtime + DROPPED_WEAPON_LIFETIME);
 		return;
@@ -1287,7 +1287,7 @@ void CNEOBaseCombatWeapon::SetPickupTouch(void)
 
 	// If we previously scheduled a removal, but the cvar was changed before it fired,
 	// cancel that scheduled removal.
-	if (this->m_pfnThink == &CBaseEntity::SUB_Remove || this->m_pfnThink == &CBaseEntity::SUB_Vanish)
+	if (this->m_pfnThink == &CBaseEntity::SUB_Remove)
 	{
 		SetNextThink(TICK_NEVER_THINK);
 		SetThink(NULL);
