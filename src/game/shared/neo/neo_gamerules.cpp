@@ -2439,10 +2439,7 @@ void CNEORules::StartNextRound()
 			continue;
 		}
 
-		if (pPlayer->m_hSpectatorTakeoverPlayerTarget.Get())
-		{
-			pPlayer->RestorePlayerFromSpectatorTakeover();
-		}
+		pPlayer->SpectatorTakeoverPlayerRevert();
 
 		if (pPlayer->GetTeamNumber() == TEAM_SPECTATOR)
 		{
@@ -2911,6 +2908,8 @@ void CNEORules::RestartGame()
 
 		if (!pPlayer)
 			continue;
+
+		pPlayer->SpectatorTakeoverPlayerRevert();
 
 		if (pPlayer->GetActiveWeapon())
 		{
@@ -3847,10 +3846,7 @@ void CNEORules::ClientDisconnected(edict_t* pClient)
 	if (pNeoPlayer)
 	{
 		// If the disconnecting player was controlling a bot, restore the bot now.
-		if (pNeoPlayer->m_hSpectatorTakeoverPlayerTarget.Get())
-		{
-		    pNeoPlayer->RestorePlayerFromSpectatorTakeover();
-		}
+		pNeoPlayer->SpectatorTakeoverPlayerRevert();
 
 		auto ghost = GetNeoWepWithBits(pNeoPlayer, NEO_WEP_GHOST);
 		if (ghost)
@@ -3920,7 +3916,8 @@ bool CNEORules::FPlayerCanRespawn(CBasePlayer* pPlayer)
 {
 	// Special case for spectator player takeover
 	CNEO_Player* pNeoPlayer = ToNEOPlayer(pPlayer);
-	if (pNeoPlayer && pNeoPlayer->GetSpectatorTakeoverPlayerPending())
+	Assert(pNeoPlayer);
+	if (pNeoPlayer->GetSpectatorTakeoverPlayerPending())
 	{
 		return true;
 	}
@@ -3959,7 +3956,6 @@ bool CNEORules::FPlayerCanRespawn(CBasePlayer* pPlayer)
 			return true;
 		}
 
-		CNEO_Player* pNeoPlayer = ToNEOPlayer(pPlayer);
 		if (pNeoPlayer->m_bSpawnedThisRound)
 		{
 			return false;

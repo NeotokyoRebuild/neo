@@ -210,8 +210,7 @@ public:
 	AttackersTotals GetAttackersTotals() const;
 	void StartShowDmgStats(const CTakeDamageInfo *info);
 
-	void AddPoints(int score, bool bAllowNegativeScore) { AddPoints(score, bAllowNegativeScore, false); }
-	void AddPoints(int score, bool bAllowNegativeScore, bool bIgnorePlayerTakeover);
+	void AddPoints(int score, bool bAllowNegativeScore, bool bIgnorePlayerTakeover = false);
 	inline void SetDeathTime(const float deathTime) { m_flDeathTime.Set(deathTime); }
 
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED(m_EyeAngleOffset);
@@ -319,9 +318,8 @@ private:
 	bool IsAFK() const;
 	void SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace);
 	void SpectatorTakeoverPlayerPreThink();
-	void RestorePlayerFromSpectatorTakeover();
 	void SpectatorTakeoverPlayerInitiate(CNEO_Player* pPlayer);
-	void SpectatorTakeoverPlayerRevert(CNEO_Player* pPlayer);
+	void SpectatorTakeoverPlayerRevert();
 
 	CHandle<CNEO_Player> m_hSpectatorTakeoverPlayerTarget{nullptr};
 	CHandle<CNEO_Player> m_hSpectatorTakeoverPlayerImpersonatingMe{nullptr};

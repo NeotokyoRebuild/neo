@@ -1953,7 +1953,7 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 		SetDeadModel(info);
 	}
 
-	RestorePlayerFromSpectatorTakeover();
+	SpectatorTakeoverPlayerRevert();
 }
 
 void CNEO_Player::Weapon_DropAllOnDeath( const CTakeDamageInfo &info )
@@ -2724,6 +2724,8 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 	}
 
 	NEORules()->m_bThinkCheckClantags = true;
+
+	SpectatorTakeoverPlayerRevert();
 
 	return true;
 }
@@ -3611,7 +3613,7 @@ void CNEO_Player::SpectatorTakeoverPlayerPreThink()
 					Weapon_Switch(pPlayerActiveWeapon);
 				}
 			}
-			m_bIneligibleForLoadoutPick = true; // Prevent loadout change after takeover.
+			m_bIneligibleForLoadoutPick = pPlayerTakeoverTarget->m_bIneligibleForLoadoutPick;
 
 			// Teleport the takeover target's location and velocity.
 			SetAbsOrigin(pPlayerTakeoverTarget->GetAbsOrigin());
@@ -3630,23 +3632,6 @@ void CNEO_Player::SpectatorTakeoverPlayerPreThink()
 		m_bSpectatorTakeoverPlayerPending = false;
 	}
 }
-
-void CNEO_Player::RestorePlayerFromSpectatorTakeover()
-{
-	if (m_hSpectatorTakeoverPlayerTarget.Get())
-	{
-		CNEO_Player* pPlayerTakenOver = m_hSpectatorTakeoverPlayerTarget.Get();
-		m_hSpectatorTakeoverPlayerTarget->SpectatorTakeoverPlayerRevert(this);
-		m_hSpectatorTakeoverPlayerTarget = nullptr;
-
-		// If the replaced player was a human, they were AFK so kick them to spectator
-		if (pPlayerTakenOver && !pPlayerTakenOver->IsBot())
-		{
-			pPlayerTakenOver->ChangeTeam(TEAM_SPECTATOR);
-		}
-	}
-}
-
 void CNEO_Player::SpectatorTakeoverPlayerInitiate(CNEO_Player* pPlayer)
 {
     m_hSpectatorTakeoverPlayerImpersonatingMe = pPlayer;
@@ -3663,13 +3648,28 @@ void CNEO_Player::SpectatorTakeoverPlayerInitiate(CNEO_Player* pPlayer)
     AddFlag(FL_NOTARGET);
 }
 
-void CNEO_Player::SpectatorTakeoverPlayerRevert(CNEO_Player* pPlayer)
+void CNEO_Player::SpectatorTakeoverPlayerRevert()
 {
-    // Clear takeover handles
-    m_hSpectatorTakeoverPlayerImpersonatingMe = nullptr;
-    if (pPlayer)
-    {
-        pPlayer->m_hSpectatorTakeoverPlayerTarget = nullptr;
-    }
+	// This player was taken off the field for any reason, so revert takeover status in both directions
+	if (m_hSpectatorTakeoverPlayerTarget.Get())
+	{
+		CNEO_Player* pPlayerTakenOver = m_hSpectatorTakeoverPlayerTarget.Get();
+		m_hSpectatorTakeoverPlayerTarget->m_hSpectatorTakeoverPlayerImpersonatingMe = nullptr;
+		m_hSpectatorTakeoverPlayerTarget = nullptr;
+
+		// Determine if we should kick taken over player to spectator team
+		if ( pPlayerTakenOver && !pPlayerTakenOver->IsBot()  // player is human
+			&& !pPlayerTakenOver->IsAlive() // player has not respawned by takeover
+			&& pPlayerTakenOver->IsAFK() ) // player is still AFK
+		{
+			pPlayerTakenOver->ChangeTeam(TEAM_SPECTATOR);
+		}
+	}
+	if (m_hSpectatorTakeoverPlayerImpersonatingMe.Get())
+	{
+		m_hSpectatorTakeoverPlayerImpersonatingMe->m_hSpectatorTakeoverPlayerTarget = nullptr;
+		m_hSpectatorTakeoverPlayerImpersonatingMe = nullptr;
+	}
 }
+
 
