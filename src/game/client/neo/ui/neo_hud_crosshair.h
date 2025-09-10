@@ -1,5 +1,7 @@
 #pragma once
 
+#include "neo_player_shared.h"
+
 static constexpr int CROSSHAIR_MAX_SIZE = 100;
 static constexpr int CROSSHAIR_MAX_THICKNESS = 25;
 static constexpr int CROSSHAIR_MAX_GAP = 25;
@@ -25,30 +27,38 @@ enum NeoHudCrosshairSizeType
 	CROSSHAIR_SIZETYPE__TOTAL,
 };
 
-extern ConVar cl_neo_crosshair_style;
-extern ConVar cl_neo_crosshair_color_r;
-extern ConVar cl_neo_crosshair_color_g;
-extern ConVar cl_neo_crosshair_color_b;
-extern ConVar cl_neo_crosshair_color_a;
-extern ConVar cl_neo_crosshair_size;
-extern ConVar cl_neo_crosshair_size_screen;
-extern ConVar cl_neo_crosshair_size_type;
-extern ConVar cl_neo_crosshair_thickness;
-extern ConVar cl_neo_crosshair_gap;
-extern ConVar cl_neo_crosshair_outline;
-extern ConVar cl_neo_crosshair_center_dot;
-extern ConVar cl_neo_crosshair_top_line;
-extern ConVar cl_neo_crosshair_circle_radius;
-extern ConVar cl_neo_crosshair_circle_segments;
+extern ConVar cl_neo_crosshair;
+extern ConVar cl_neo_crosshair_network;
 
 extern const char **CROSSHAIR_FILES;
 extern const wchar_t **CROSSHAIR_LABELS;
 extern const wchar_t **CROSSHAIR_SIZETYPE_LABELS;
 
-#define NEO_XHAIR_EXT "neoxhr"
+// NEO_CROSSHAIR_DEFAULT and NEO_XHAIR_SEQMAX defined in neo_player_shared.h instead
+
+enum NeoXHairSegment
+{
+	NEOXHAIR_SEGMENT_I_VERSION = 0,
+	NEOXHAIR_SEGMENT_I_STYLE,
+	NEOXHAIR_SEGMENT_I_COLOR,
+	NEOXHAIR_SEGMENT_I_SIZETYPE,
+	NEOXHAIR_SEGMENT_I_SIZE,
+	NEOXHAIR_SEGMENT_FL_SCRSIZE,
+	NEOXHAIR_SEGMENT_I_THICK,
+	NEOXHAIR_SEGMENT_I_GAP,
+	NEOXHAIR_SEGMENT_I_OUTLINE,
+	NEOXHAIR_SEGMENT_I_CENTERDOT,
+	NEOXHAIR_SEGMENT_B_TOPLINE,
+	NEOXHAIR_SEGMENT_I_CIRCLERAD,
+	NEOXHAIR_SEGMENT_I_CIRCLESEGMENTS,
+
+	NEOXHAIR_SEGMENT__TOTAL,
+	NEOXHAIR_SEGMENT__TOTAL_SERIAL_ALPHA_V17 = NEOXHAIR_SEGMENT_I_CIRCLESEGMENTS + 1,
+};
 
 struct CrosshairInfo
 {
+	int iStyle;
 	Color color;
 	int iESizeType; // int NeoHudCrosshairSizeType
 	int iSize;
@@ -62,5 +72,7 @@ struct CrosshairInfo
 	int iCircleSegments;
 };
 void PaintCrosshair(const CrosshairInfo &crh, const int x, const int y);
-void ImportCrosshair(CrosshairInfo *crh, const char *szFullpath);
-void ExportCrosshair(CrosshairInfo *crh, const char *szFullpath);
+
+// NEO NOTE (nullsystem): (*&)[NUM] enforces array size
+bool ImportCrosshair(CrosshairInfo *crh, const char *pszSequence);
+void ExportCrosshair(const CrosshairInfo *crh, char (&szSequence)[NEO_XHAIR_SEQMAX]);

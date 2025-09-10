@@ -109,7 +109,11 @@ ConVar player_showpredictedposition_timestep( "player_showpredictedposition_time
 ConVar player_squad_transient_commands( "player_squad_transient_commands", "1", FCVAR_REPLICATED );
 ConVar player_squad_double_tap_time( "player_squad_double_tap_time", "0.25" );
 
+#ifdef NEO
+ConVar sv_infinite_aux_power( "sv_infinite_aux_power", "0", FCVAR_CHEAT | FCVAR_REPLICATED );
+#else
 ConVar sv_infinite_aux_power( "sv_infinite_aux_power", "0", FCVAR_CHEAT );
+#endif // NEO
 
 ConVar autoaim_unlock_target( "autoaim_unlock_target", "0.8666" );
 
@@ -429,6 +433,8 @@ static inline float GetAuxChargeRate(CBaseCombatCharacter *player)
 		return 2.5f;	// 100 units in 40 seconds
 	case NEO_CLASS_VIP:
 		return 2.5f;	// 100 units in 40 seconds
+	case NEO_CLASS_JUGGERNAUT:
+		return 10.0f;	// 100 units in 10 seconds
 	default:
 		break;
 	}
@@ -2200,6 +2206,13 @@ bool CHL2_Player::SuitPower_RemoveDevice( const CSuitPowerDevice &device )
 	if( !IsSuitEquipped() )
 		return false;
 
+#ifdef NEO
+	// Fix for https://github.com/NeotokyoRebuild/neo/issues/1165
+	// related to the engine's anti-exploit code block below.
+	const bool isRecon = static_cast<CNEO_Player*>(this)->GetClass() == NEO_CLASS_RECON;
+	if (isRecon) goto skipDrain;
+#endif
+
 	// Take a little bit of suit power when you disable a device. If the device is shutting off
 	// because the battery is drained, no harm done, the battery charge cannot go below 0. 
 	// This code in combination with the delay before the suit can start recharging are a defense
@@ -2207,6 +2220,10 @@ bool CHL2_Player::SuitPower_RemoveDevice( const CSuitPowerDevice &device )
 	MsgPredTest2( "[Server %d] [A REMOVE] m_HL2Local.m_flSuitPower: %f\n", gpGlobals->tickcount, m_HL2Local.m_flSuitPower.Get() );
 	SuitPower_Drain( device.GetDeviceDrainRate() * 0.1f );
 	MsgPredTest2( "[Server %d] [B REMOVE] m_HL2Local.m_flSuitPower: %f\n", gpGlobals->tickcount, m_HL2Local.m_flSuitPower.Get() );
+
+#ifdef NEO
+	skipDrain:
+#endif
 
 	m_HL2Local.m_bitsActiveDevices &= ~device.GetDeviceID();
 	m_HL2Local.m_flSuitPowerLoad -= device.GetDeviceDrainRate();
@@ -3223,6 +3240,7 @@ void CHL2_Player::PlayerUse ( void )
 			usedSomething = true;
 		}
 
+#ifndef NEO // NEO NOTE DG: Moved into CNEOBaseCombatWeapon::Use
 #if	HL2_SINGLE_PRIMARY_WEAPON_MODE
 
 		//Check for weapon pick-up
@@ -3232,27 +3250,22 @@ void CHL2_Player::PlayerUse ( void )
 
 			if ( ( pWeapon != NULL ) && ( Weapon_CanSwitchTo( pWeapon ) ) )
 			{
-#ifndef NEO
-				// NEO TODO (Adam) this disables picking up ammunition from weapons with the use key, which we probably don't want anyway, but if we do work out why ghost weapon is of the same type as our primaryweapons like zr68s
 				//Try to take ammo or swap the weapon
 				if ( Weapon_OwnsThisType( pWeapon->GetClassname(), pWeapon->GetSubType() ) )
 				{
 					Weapon_EquipAmmoOnly( pWeapon );
 				}
 				else
-#endif // NEO
 				{
 					Weapon_DropSlot( pWeapon->GetSlot() );
 					Weapon_Equip( pWeapon );
-#ifdef NEO
-					pWeapon->RemoveEffects(EF_BONEMERGE);
-#endif // NEO
 				}
 
 				usedSomething = true;
 			}
 		}
 #endif
+#endif // NEO
 	}
 	else if ( m_afButtonPressed & IN_USE )
 	{

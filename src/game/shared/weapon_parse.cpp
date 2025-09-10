@@ -353,7 +353,7 @@ FileWeaponInfo_t::FileWeaponInfo_t()
 	szDeathIcon[0] = 0;
 	iAimFOV = 0;
 	m_flPenetration = 0.f;
-	m_bDropOnDeath = 1;
+	m_bDropOnDeath = true;
 #endif
 }
 
@@ -444,7 +444,7 @@ void FileWeaponInfo_t::Parse( KeyValues *pKeyValuesData, const char *szWeaponNam
 	m_bAllowFlipping = ( pKeyValuesData->GetInt( "AllowFlipping", 1 ) != 0 ) ? true : false;
 	m_bMeleeWeapon = ( pKeyValuesData->GetInt( "MeleeWeapon", 0 ) != 0 ) ? true : false;
 
-#if defined(_DEBUG) && defined(HL2_CLIENT_DLL)
+#if defined(_DEBUG) && defined(HL2_CLIENT_DLL) && !defined(NEO) // HL2_SINGLE_PRIMARY_WEAPON_MODE is defined server side only, just ifndef neo this out
 	// make sure two weapons aren't in the same slot & position
 	if ( iSlot >= MAX_WEAPON_SLOTS ||
 		iPosition >= MAX_WEAPON_POSITIONS )

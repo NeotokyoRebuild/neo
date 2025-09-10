@@ -48,7 +48,12 @@ Make sure the "x64 Native Tools Command Prompt for VS2022" is used instead of th
 Your system must include the following packages:
 `gcc g++ cmake ninja-build docker-ce docker-ce-cli containerd.io apt-transport-https ca-certificates curl gnupg gnupg-utils cmake build-essential`
 
-**Note:** Depending on your operating system, the package names may vary, please consult google or your package manager for correct package names. The listed are for debian `apt`. (Includes Ubuntu, Linux Mint, etc)
+> [!NOTE]
+> Depending on your distro, the package names may vary; please consult Google or your package manager for correct package names. The listed are for Debian `apt`. (Includes Ubuntu, Linux Mint, etc).
+> 
+> If using Docker, also note that following the [official install guide](https://docs.docker.com/desktop/setup/install/linux/) steps will likely configure sources for all transitive dependencies like
+> `containerd.io`, so if they were not previously available by your package manager sources, it's worth checking again after installing Docker, before proceeding to add/install them manually. This is
+> the case at least for APT.
 
 Download and use the OCI image for Docker/Podman/Toolbx:
 
@@ -60,20 +65,20 @@ Download and use the OCI image for Docker/Podman/Toolbx:
 ###### Running the container
 Docker:
 ```
-# docker run -v /PATH_TO_REPO/neo/src:/root/neo/src --rm -it --entrypoint /bin/bash registry.gitlab.steamos.cloud/steamrt/sniper/sdk
+# docker run -v /PATH_TO_REPO/:/root/neo/ --rm -it --entrypoint /bin/bash registry.gitlab.steamos.cloud/steamrt/sniper/sdk
 $ cd /root/neo/src/
 ```
 
 Podman: 
 ```
-$ podman run -v /PATH_TO_REPO/neo/src:/root/neo/src --rm -it --entrypoint /bin/bash registry.gitlab.steamos.cloud/steamrt/sniper/sdk
+$ podman run -v /PATH_TO_REPO/:/root/neo/ --rm -it --entrypoint /bin/bash registry.gitlab.steamos.cloud/steamrt/sniper/sdk
 $ cd /root/neo/src/
 ```
 
 Toolbx: 
 ```
 $ toolbox enter sniper
-$ cd /PATH_TO_REPO/neo/src
+$ cd /PATH_TO_REPO/src
 ```
 
 Depending on the terminal, you may need to install an additional terminfo in the container just to make it usable.
@@ -127,6 +132,16 @@ Another way is just add the `-game` option to "Source SDK Base 2013 Multiplayer"
 
 ## SDK tools and SRCDS original NEOTOKYO mounting
 By default the `gameinfo.txt` provided utilizes TF2-SDK's new `|appid_244630|` appid based search path to mount the original NEOTOKYO assets. However, some SDK tools and SRCDS either refuses to mount or crashes when trying to use this. If the appid based search path an issue, just comment this line out and uncomment `|gameinfo_path|../../NEOTOKYO/NeotokyoSource` line below and alter if needed to the actual path of your original `NeotokyoSource` installation.
+
+## Using `-tools`
+Engine tools have been broken since the TF2-SDK/64-bit update due to libraries being misplaced. To fix this, go to your Source SDK Base 2013 Multiplayer installation folder and move all files in `bin/tools/x64` to `bin/x64/tools`. You may have to create a tools folder if one does not exist already.
+
+## Failing to load fonts and sounds properly in Linux
+Fonts and sounds with non-lowercase filepaths have been broken since the TF2-SDK/64-bit update on Linux, affecting the NEUROPOL2 and X-SCALE fonts, and jitte sounds. To fix this, go to your NEOTOKYO installation folder and copy then rename the following to lowercase variant:
+
+* `NeotokyoSource/resource/NEUROPOL2.ttf` to `NeotokyoSource/resource/neuropol2.ttf`
+* `NeotokyoSource/resource/X-SCALE_.TTF` to `NeotokyoSource/resource/x-scale_.ttf`
+* `NeotokyoSource/sound/weapons/Jitte/` to `NeotokyoSource/sound/weapons/jitte/`
 
 ## Further information
 For further information for your platform, refer to the VDC wiki on setting up extras, chroot/containers, etc...:

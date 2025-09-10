@@ -9,14 +9,17 @@
 #include "NextBotPlayerBody.h"
 #include "NextBotPlayer.h"
 
-#ifdef NEO // TODO (nullsystem): 2025-02-18 SOURCE SDK 2013 CHECK
-#define VEC_HULL_MIN_SCALED( player )			( g_pGameRules->GetViewVectors()->m_vHullMin * player->GetModelScale() )
-#define VEC_HULL_MAX_SCALED( player )			( g_pGameRules->GetViewVectors()->m_vHullMax * player->GetModelScale() )
-#define VEC_VIEW_SCALED( player )				( g_pGameRules->GetViewVectors()->m_vView * player->GetModelScale() )
+// NEO NOTE (nullsystem): CNEOBotBody will overload the VEC_ usage functions instead
+// and here will use the SDK_ prefix macros to not warn out about redefining VEC_... macros
+// and making it clear it's using what was the base SDK's version not NT;RE's version here
+#ifdef NEO
+#define SDK_VEC_HULL_MIN_SCALED( player )			( g_pGameRules->GetViewVectors()->m_vHullMin * player->GetModelScale() )
+#define SDK_VEC_HULL_MAX_SCALED( player )			( g_pGameRules->GetViewVectors()->m_vHullMax * player->GetModelScale() )
+#define SDK_VEC_VIEW_SCALED( player )				( g_pGameRules->GetViewVectors()->m_vView * player->GetModelScale() )
 
-#define VEC_DUCK_HULL_MIN_SCALED( player )		( g_pGameRules->GetViewVectors()->m_vDuckHullMin * player->GetModelScale() )
-#define VEC_DUCK_HULL_MAX_SCALED( player )		( g_pGameRules->GetViewVectors()->m_vDuckHullMax * player->GetModelScale() )
-#define VEC_DUCK_VIEW_SCALED( player )			( g_pGameRules->GetViewVectors()->m_vDuckView * player->GetModelScale() )
+#define SDK_VEC_DUCK_HULL_MIN_SCALED( player )		( g_pGameRules->GetViewVectors()->m_vDuckHullMin * player->GetModelScale() )
+#define SDK_VEC_DUCK_HULL_MAX_SCALED( player )		( g_pGameRules->GetViewVectors()->m_vDuckHullMax * player->GetModelScale() )
+#define SDK_VEC_DUCK_VIEW_SCALED( player )			( g_pGameRules->GetViewVectors()->m_vDuckView * player->GetModelScale() )
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -116,6 +119,9 @@ void PlayerBody::Reset( void )
 }
 
 ConVar bot_mimic( "bot_mimic", "0", 0, "Bot uses usercmd of player by index." );
+#ifdef NEO
+ConVar bot_mimic_yaw_offset("bot_mimic_yaw_offset", "0", 0, "Offsets the bot yaw.");
+#endif // NEO
 
 //-----------------------------------------------------------------------------------------------
 /**
@@ -807,7 +813,11 @@ bool PlayerBody::IsArousal( ArousalType arousal ) const
  */
 float PlayerBody::GetHullWidth( void ) const
 {
+#ifdef NEO
+	return SDK_VEC_HULL_MAX_SCALED( m_player ).x - SDK_VEC_HULL_MIN_SCALED( m_player ).x;
+#else
 	return VEC_HULL_MAX_SCALED( m_player ).x - VEC_HULL_MIN_SCALED( m_player ).x;
+#endif
 }
 
 
@@ -832,7 +842,11 @@ float PlayerBody::GetHullHeight( void ) const
  */
 float PlayerBody::GetStandHullHeight( void ) const
 {
+#ifdef NEO
+	return SDK_VEC_HULL_MAX_SCALED( m_player ).z - SDK_VEC_HULL_MIN_SCALED( m_player ).z;
+#else
 	return VEC_HULL_MAX_SCALED( m_player ).z - VEC_HULL_MIN_SCALED( m_player ).z;
+#endif
 }
 
 
@@ -842,7 +856,11 @@ float PlayerBody::GetStandHullHeight( void ) const
  */
 float PlayerBody::GetCrouchHullHeight( void ) const
 {
+#ifdef NEO
+	return SDK_VEC_DUCK_HULL_MAX_SCALED( m_player ).z - SDK_VEC_DUCK_HULL_MIN_SCALED( m_player ).z;
+#else
 	return VEC_DUCK_HULL_MAX_SCALED( m_player ).z - VEC_DUCK_HULL_MIN_SCALED( m_player ).z;
+#endif
 }
 
 
@@ -852,6 +870,16 @@ float PlayerBody::GetCrouchHullHeight( void ) const
  */
 const Vector &PlayerBody::GetHullMins( void ) const
 {
+#ifdef NEO
+	if ( m_posture == CROUCH )
+	{
+		m_hullMins = SDK_VEC_DUCK_HULL_MIN_SCALED( m_player );
+	}
+	else
+	{
+		m_hullMins = SDK_VEC_HULL_MIN_SCALED( m_player );
+	}
+#else
 	if ( m_posture == CROUCH )
 	{
 		m_hullMins = VEC_DUCK_HULL_MIN_SCALED( m_player );
@@ -860,6 +888,7 @@ const Vector &PlayerBody::GetHullMins( void ) const
 	{
 		m_hullMins = VEC_HULL_MIN_SCALED( m_player );
 	}
+#endif
 	
 	return m_hullMins;
 }
@@ -871,6 +900,16 @@ const Vector &PlayerBody::GetHullMins( void ) const
  */
 const Vector &PlayerBody::GetHullMaxs( void ) const
 {
+#ifdef NEO
+	if ( m_posture == CROUCH )
+	{
+		m_hullMaxs = SDK_VEC_DUCK_HULL_MAX_SCALED( m_player );
+	}
+	else
+	{
+		m_hullMaxs = SDK_VEC_HULL_MAX_SCALED( m_player );
+	}
+#else
 	if ( m_posture == CROUCH )
 	{
 		m_hullMaxs = VEC_DUCK_HULL_MAX_SCALED( m_player );
@@ -879,6 +918,7 @@ const Vector &PlayerBody::GetHullMaxs( void ) const
 	{
 		m_hullMaxs = VEC_HULL_MAX_SCALED( m_player );
 	}
+#endif
 
 	return m_hullMaxs;	
 }

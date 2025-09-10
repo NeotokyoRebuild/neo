@@ -145,6 +145,8 @@ static inline float GetAuxChargeRate(C_BaseCombatCharacter *player)
 		return 2.5f;	// 100 units in 40 seconds
 	case NEO_CLASS_VIP:
 		return 2.5f;	// 100 units in 40 seconds
+	case NEO_CLASS_JUGGERNAUT:
+		return 10.0f;	// 100 units in 10 seconds
 	default:
 		break;
 	}
@@ -551,6 +553,13 @@ bool C_HL2MP_Player::SuitPower_RemoveDevice( const CSuitPowerDevice &device )
 	if( !IsSuitEquipped() )
 		return false;
 
+#ifdef NEO
+	// Fix for https://github.com/NeotokyoRebuild/neo/issues/1165
+	// related to the engine's anti-exploit code block below.
+	const bool isRecon = static_cast<CNEO_Player*>(this)->GetClass() == NEO_CLASS_RECON;
+	if (isRecon) goto skipDrain;
+#endif
+
 	// Take a little bit of suit power when you disable a device. If the device is shutting off
 	// because the battery is drained, no harm done, the battery charge cannot go below 0. 
 	// This code in combination with the delay before the suit can start recharging are a defense
@@ -558,6 +567,10 @@ bool C_HL2MP_Player::SuitPower_RemoveDevice( const CSuitPowerDevice &device )
 	MsgPredTest2( "[Client %d] [A REMOVE] m_HL2Local.m_flSuitPower: %f\n", gpGlobals->tickcount, m_HL2Local.m_flSuitPower );
 	SuitPower_Drain( device.GetDeviceDrainRate() * 0.1f );
 	MsgPredTest2( "[Client %d] [B REMOVE] m_HL2Local.m_flSuitPower: %f\n", gpGlobals->tickcount, m_HL2Local.m_flSuitPower );
+
+#ifdef NEO
+	skipDrain:
+#endif
 
 	m_HL2Local.m_bitsActiveDevices &= ~device.GetDeviceID();
 	m_HL2Local.m_flSuitPowerLoad -= device.GetDeviceDrainRate();
@@ -1222,7 +1235,9 @@ END_RECV_TABLE()
 
 C_HL2MPRagdoll::C_HL2MPRagdoll()
 {
-
+#ifdef NEO
+	m_flNeoCreateTime = gpGlobals->curtime;
+#endif // NEO
 }
 
 C_HL2MPRagdoll::~C_HL2MPRagdoll()
@@ -1369,7 +1384,15 @@ void C_HL2MPRagdoll::CreateHL2MPRagdoll( void )
 	matrix3x4_t currentBones[MAXSTUDIOBONES];
 	const float boneDt = 0.05f;
 
+#ifdef NEO
+	// NEO HACK DG: Crazy mismatch between the JGR model and the old
+	// playermodel sends the ragdoll flying (when turning into the JGR)
+	// Probably because of the time based stuff in GetRagdollInitBoneArrays()
+	C_NEO_Player* pNEOPlayer = ToNEOPlayer(pPlayer);
+	if (pNEOPlayer && !pNEOPlayer->IsDormant() && (pNEOPlayer->GetClass() != NEO_CLASS_JUGGERNAUT))
+#else
 	if ( pPlayer && !pPlayer->IsDormant() )
+#endif
 	{
 		pPlayer->GetRagdollInitBoneArrays( boneDelta0, boneDelta1, currentBones, boneDt );
 	}
@@ -1379,6 +1402,13 @@ void C_HL2MPRagdoll::CreateHL2MPRagdoll( void )
 	}
 
 	InitAsClientRagdoll( boneDelta0, boneDelta1, currentBones, boneDt );
+#ifdef NEO
+	if (m_pRagdoll)
+	{
+		m_pRagdoll->SetInitialVelocity(GetInitialRagdollVelocity());
+		m_pRagdoll->SetLastOrigin(GetInitialRagdollOrigin());
+	}
+#endif // NEO
 }
 
 
@@ -1437,6 +1467,36 @@ void C_HL2MPRagdoll::SetupWeights( const matrix3x4_t *pBoneToWorld, int nFlexWei
 		}
 	}
 }
+#ifdef NEO
+#ifdef GLOWS_ENABLE
+extern ConVar glow_outline_effect_enable;
+#endif // GLOWS_ENABLE
+int C_HL2MPRagdoll::DrawModel(int flags)
+{
+#ifdef GLOWS_ENABLE
+	auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetVisionTargetNEOPlayer();
+#else
+	auto pTargetPlayer = C_NEO_Player::GetTargetNEOPlayer();
+#endif // GLOWS_ENABLE
+	if (!pTargetPlayer)
+	{
+		Assert(false);
+		return BaseClass::DrawModel(flags);
+	}
+
+	bool inThermalVision = pTargetPlayer ? (pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT) : false;
+	if (inThermalVision)
+	{
+		IMaterial* pass = materials->FindMaterial("dev/thermal_ragdoll_model", TEXTURE_GROUP_MODEL);
+		modelrender->ForcedMaterialOverride(pass);
+		int ret = BaseClass::DrawModel(flags);
+		modelrender->ForcedMaterialOverride(nullptr);
+		return ret;
+	}
+
+	return BaseClass::DrawModel(flags);
+}
+#endif // NEO
 
 void C_HL2MP_Player::UpdateClientSideAnimation()
 {

@@ -46,3 +46,8 @@ Activity CWeaponKyla::GetPrimaryAttackActivity()
 {
 	return ACT_VM_PRIMARYATTACK;
 }
+
+bool CWeaponKyla::CanBePickedUpByClass(int classId)
+{
+	return classId != NEO_CLASS_JUGGERNAUT;
+}

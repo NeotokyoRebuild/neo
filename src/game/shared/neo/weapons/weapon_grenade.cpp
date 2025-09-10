@@ -296,6 +296,11 @@ void CWeaponGrenade::Drop(const Vector& vecVelocity)
 	BaseClass::Drop(vecVelocity);
 }
 
+bool CWeaponGrenade::CanBePickedUpByClass(int classId)
+{
+	return classId != NEO_CLASS_JUGGERNAUT;
+}
+
 #ifndef CLIENT_DLL
 void CWeaponGrenade::Operator_HandleAnimEvent(animevent_t *pEvent, CBaseCombatCharacter *pOperator)
 {

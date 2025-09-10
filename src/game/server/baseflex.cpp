@@ -2556,7 +2556,11 @@ void CFlexCycler::Think( void )
 			for ( LocalFlexController_t i = LocalFlexController_t(0); i < GetNumFlexControllers(); i++ )
 			{
 				// Throw a differently offset sine wave on all of the flex controllers
+#ifdef NEO // NEO NOTE (nullsystem): -Wdeprecated-enum-float-conversion]
+				float fFlexTime = static_cast<float>(i) * (1.0f / static_cast<float>(GetNumFlexControllers())) + gpGlobals->curtime;
+#else
 				float fFlexTime = i * (1.0f / (float)GetNumFlexControllers()) + gpGlobals->curtime;
+#endif
 				m_flextarget[i] = sinf( fFlexTime ) * 0.5f + 0.5f;
 				SetFlexWeight( i, m_flextarget[i] );
 			}
@@ -2620,7 +2624,11 @@ void CFlexCycler::Think( void )
 		else if (m_flextime < gpGlobals->curtime)
 		{
 			// m_flextime = gpGlobals->curtime + 1.0; // RandomFloat( 0.1, 0.5 );
+#ifdef NEO // NEO NOTE (nullsystem): -Wdeprecated-enum-float-conversion]
+			m_flextime = gpGlobals->curtime + random->RandomFloat( 0.3, 0.5 ) * (30.0 / static_cast<float>(GetNumFlexControllers()));
+#else
 			m_flextime = gpGlobals->curtime + random->RandomFloat( 0.3, 0.5 ) * (30.0 / GetNumFlexControllers());
+#endif
 			m_flexnum = (LocalFlexController_t)random->RandomInt( 0, GetNumFlexControllers() - 1 );
 
 			// m_flexnum = (pflex->num + 1) % r_psubmodel->numflexes;

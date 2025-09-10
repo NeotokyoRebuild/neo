@@ -852,6 +852,11 @@
 		"ammo_text_color"	"255 255 255 100"
 		"ammo_color"		"255 255 255 150"
 		"emptied_ammo_color"	"255 255 255 50"
+		"heatbar_xpos"	"45"
+		"heatbar_ypos"	"12"
+		"heatbar_w"		"150"
+		"heatbar_h"		"15"
+		"heat_color"	"255 50 50 200"
 	}
 	NHudHealth
 	{
@@ -910,6 +915,10 @@
 		"box_color"		"200 200 200 40"
 		"health_monochrome"	"1"
 	}
+	NHudPlayerPing
+	{
+		"fieldName"		"NHudPlayerPing"
+	}
 
 	neo_ghost_uplink_state
 	{
@@ -945,6 +954,8 @@
 		"ypos"	"0"
 		"wide"	"640"
 		"tall"	"480"
+		"image_y_offset" "60"
+		"text_y_offset" "420"
 	}
 
 	neo_iff
@@ -980,5 +991,14 @@
 		"ypos"	"60"
 		"wide"	"300"
 		"tall"	"200"
+	}
+
+	neo_killer_damage_info
+	{
+		"fieldName"		"neo_killer_damage_info"
+		"xpos"	"0"
+		"ypos"	"0"
+		"wide"	"640"
+		"tall"	"480"
 	}
 }

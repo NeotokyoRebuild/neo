@@ -2,12 +2,16 @@
 
 #include <vgui/ILocalize.h>
 #include <vgui/IInput.h>
+#include <vgui/ISystem.h>
 #include <vgui_controls/Controls.h>
 #include <filesystem.h>
 #include <stb_image.h>
 #include <materialsystem/imaterial.h>
 
 #include "neo_misc.h"
+
+// memdbgon must be the last include file in a .cpp file!!!
+#include "tier0/memdbgon.h"
 
 static const wchar_t *ENABLED_LABELS[] = {
 	L"Disabled",
@@ -22,6 +26,11 @@ static Context *c = &g_emptyCtx;
 const int ROWLAYOUT_TWOSPLIT[] = { 40, -1 };
 static constexpr int WDGINFO_ALLOC_STEPS = 64;
 
+#define DEBUG_NEOUI 0 // NEO NOTE (nullsystem): !!! Always flip to 0 on master + PR !!!
+#ifndef DEBUG
+static_assert(DEBUG_NEOUI == 0);
+#endif
+
 void SwapFont(const EFont eFont, const bool bForce)
 {
 	if (c->eMode != MODE_PAINT || (!bForce && (c->eFont == eFont))) return;
@@ -35,77 +44,111 @@ void SwapColorNormal(const Color &color)
 	vgui::surface()->DrawSetColor(c->normalBgColor);
 }
 
+void BeginOverrideFgColor(const Color &fgColor)
+{
+	c->cOverrideFgColor = fgColor;
+	c->bIsOverrideFgColor = true;
+}
+
+void EndOverrideFgColor()
+{
+	c->bIsOverrideFgColor = false;
+}
+
 void MultiWidgetHighlighter(const int iTotalWidgets)
 {
-	if (c->eMode == MODE_PAINT)
+	// NEO NOTE (nullsystem): c->iLayoutY instead of c->irWidgetLayoutY
+	// as this happens before rather than during widget Begin/End
+	if (c->eMode != MODE_PAINT || !IN_BETWEEN_AR(0, c->iLayoutY, c->dPanel.tall))
 	{
-		// Peek-forward what the area of the multiple widgets will cover without modifying the context
-		int iMulLayoutX = c->iLayoutX;
-		int iMulLayoutY = c->iLayoutY;
-		int iFirstLayoutX = iMulLayoutX;
-		int iFirstLayoutY = iMulLayoutY;
-		int iMulIdxRowParts = c->iIdxRowParts;
-		int iXWide = 0;
-		for (int i = 0; i < iTotalWidgets; ++i)
+		return;
+	}
+
+	Assert(c->layout.iRowPartsTotal > 0);
+	const int iRowPartsTotal = Max(1, c->layout.iRowPartsTotal);
+
+	// Peek-forward what the area of the multiple widgets will cover without modifying the context
+	int iMulLayoutX = c->iLayoutX;
+	int iMulLayoutY = c->iLayoutY;
+	int iAllXWide = 0;
+	int iMulIdxRowParts = c->iIdxRowParts;
+
+	if (iMulIdxRowParts < 0)
+	{
+		iMulLayoutX = 0;
+		iMulIdxRowParts = 0;
+	}
+
+	for (int i = 0; i < iTotalWidgets; ++i)
+	{
+		// NEO TODO (nullsystem): Maybe to not bother with vertical at this stage
+		// but this is usually an internal use at the moment
+
+		const bool bNextIsLast = (iMulIdxRowParts + 1) >= iRowPartsTotal;
+
+		int xWide;
+		if (bNextIsLast)
 		{
-			if (iMulIdxRowParts < 0 || iMulIdxRowParts >= (c->layout.iRowPartsTotal - 1))
+			xWide = c->dPanel.wide - iMulLayoutX;
+		}
+		else
+		{
+			if (c->layout.iRowParts)
 			{
-				iMulLayoutX = 0;
-				iMulLayoutY += (iMulIdxRowParts < 0) ? 0 : c->layout.iRowTall;
-				iMulIdxRowParts = 0;
+				xWide = (c->layout.iRowParts[iMulIdxRowParts] / 100.0f) * c->dPanel.wide;
 			}
 			else
 			{
-				if (c->layout.iRowParts)
-				{
-					iMulLayoutX += (c->layout.iRowParts[iMulIdxRowParts] / 100.0f) * c->dPanel.wide;
-				}
-				else
-				{
-					iMulLayoutX += (1.0f / static_cast<float>(c->layout.iRowPartsTotal)) * c->dPanel.wide;
-				}
-				++iMulIdxRowParts;
+				xWide = (1.0f / static_cast<float>(iRowPartsTotal)) * c->dPanel.wide;
 			}
-			if (i == 0)
-			{
-				iFirstLayoutX = iMulLayoutX;
-				iFirstLayoutY = iMulLayoutY;
-			}
-
-			iXWide += (iMulIdxRowParts == (c->layout.iRowPartsTotal - 1))
-					? c->dPanel.wide - iMulLayoutX
-					: (c->layout.iRowParts)
-					  ? (c->layout.iRowParts[iMulIdxRowParts] / 100.0f) * c->dPanel.wide
-					  : (1.0f / static_cast<float>(c->layout.iRowPartsTotal)) * c->dPanel.wide;
 		}
-		vgui::IntRect hightlightRect = {
-			.x0 = c->dPanel.x + iFirstLayoutX,
-			.y0 = c->dPanel.y + iFirstLayoutY,
-			.x1 = c->dPanel.x + iFirstLayoutX + iXWide,
-			.y1 = c->dPanel.y + iFirstLayoutY + c->layout.iRowTall,
-		};
+		iAllXWide += xWide;
 
-		// Mostly so the highlight can apply to multi-widget's labels
-		const bool bMouseIn = IN_BETWEEN_EQ(hightlightRect.x0, c->iMouseAbsX, hightlightRect.x1)
-				&& IN_BETWEEN_EQ(hightlightRect.y0, c->iMouseAbsY, hightlightRect.y1);
-		if (bMouseIn)
+		if (bNextIsLast)
 		{
-			c->iHot = c->iWidget;
-			c->iHotSection = c->iSection;
+			iMulIdxRowParts = 0;
+			AssertMsg(i == (iTotalWidgets - 1), "NeoUI::MultiWidgetHighlighter should not be used for split up widgets");
 		}
-
-		// Apply highlight if it's hot/active
-		const bool bHot = c->iHotSection == c->iSection && IN_BETWEEN_AR(c->iWidget, c->iHot, c->iWidget + iTotalWidgets);
-		const bool bActive = c->iActiveSection == c->iSection && IN_BETWEEN_AR(c->iWidget, c->iActive, c->iWidget + iTotalWidgets);
-		if (bHot || bActive)
+		else
 		{
-			vgui::surface()->DrawSetColor(c->selectBgColor);
-			if (bActive)
+			if (c->layout.iRowParts)
 			{
-				vgui::surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
+				iMulLayoutX += (c->layout.iRowParts[iMulIdxRowParts] / 100.0f) * c->dPanel.wide;
 			}
-			vgui::surface()->DrawFilledRectArray(&hightlightRect, 1);
+			else
+			{
+				iMulLayoutX += (1.0f / static_cast<float>(iRowPartsTotal)) * c->dPanel.wide;
+			}
+			++iMulIdxRowParts;
 		}
+	}
+	vgui::IntRect hightlightRect = {
+		.x0 = c->dPanel.x + c->iLayoutX,
+		.y0 = c->dPanel.y + c->iLayoutY,
+		.x1 = c->dPanel.x + c->iLayoutX + iAllXWide,
+		.y1 = c->dPanel.y + c->iLayoutY + c->layout.iRowTall,
+	};
+
+	// Mostly so the highlight can apply to multi-widget's labels
+	const bool bMouseIn = IN_BETWEEN_EQ(hightlightRect.x0, c->iMouseAbsX, hightlightRect.x1)
+			&& IN_BETWEEN_EQ(hightlightRect.y0, c->iMouseAbsY, hightlightRect.y1);
+	if (bMouseIn)
+	{
+		c->iHot = c->iWidget;
+		c->iHotSection = c->iSection;
+	}
+
+	// Apply highlight if it's hot/active
+	const bool bHot = c->iHotSection == c->iSection && IN_BETWEEN_AR(c->iWidget, c->iHot, c->iWidget + iTotalWidgets);
+	const bool bActive = c->iActiveSection == c->iSection && IN_BETWEEN_AR(c->iWidget, c->iActive, c->iWidget + iTotalWidgets);
+	if (bHot || bActive)
+	{
+		vgui::surface()->DrawSetColor(c->selectBgColor);
+		if (bActive)
+		{
+			vgui::surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
+		}
+		vgui::surface()->DrawFilledRectArray(&hightlightRect, 1);
 	}
 }
 
@@ -130,13 +173,13 @@ void BeginContext(NeoUI::Context *pNextCtx, const NeoUI::Mode eMode, const wchar
 	c->eMode = eMode;
 	c->iLayoutX = 0;
 	c->iLayoutY = 0;
+	c->irWidgetLayoutY = 0;
 	c->iWidget = 0;
 	c->iSection = 0;
 	c->iHasMouseInPanel = 0;
 	c->bValueEdited = false;
 	c->eButtonTextStyle = TEXTSTYLE_CENTER;
 	c->eLabelTextStyle = TEXTSTYLE_LEFT;
-	c->bTextEditIsPassword = false;
 	c->selectBgColor = COLOR_NEOPANELSELECTBG;
 	c->normalBgColor = COLOR_NEOPANELACCENTBG;
 	// Different pointer, change context
@@ -204,6 +247,101 @@ void BeginContext(NeoUI::Context *pNextCtx, const NeoUI::Mode eMode, const wchar
 
 void EndContext()
 {
+	if (c->iRightClick >= 0 && c->iRightClickSection >= 0 && c->pwszRightClickList && c->ipwszRightClickListSize > 0)
+	{
+		bool bDeInitRightClick = false;
+		switch (c->eMode)
+		{
+		case MODE_PAINT:
+		{
+			static Color menuColor = COLOR_NEOPANELFRAMEBG;
+			const Dim &dim = c->dimRightClick;
+			vgui::surface()->DrawSetColor(menuColor);
+			vgui::surface()->DrawFilledRect(
+					dim.x,
+					dim.y,
+					dim.x + dim.wide,
+					dim.y + dim.tall);
+			for (int i = 0, iNextY = dim.y;
+					i < c->ipwszRightClickListSize;
+					++i, iNextY += c->layout.iRowTall)
+			{
+				if (c->iRightClickHotItem == i)
+				{
+					vgui::surface()->DrawSetColor(c->selectBgColor);
+					vgui::surface()->DrawFilledRect(
+							dim.x,
+							iNextY,
+							dim.x + dim.wide,
+							iNextY + c->layout.iRowTall);
+				}
+				const wchar *pwszItemLabel = c->pwszRightClickList[i];
+				vgui::surface()->DrawSetTextPos(dim.x + c->iMarginX,
+						iNextY + c->iMarginY);
+				vgui::surface()->DrawPrintText(pwszItemLabel, V_wcslen(pwszItemLabel));
+			}
+			vgui::surface()->DrawSetColor(c->normalBgColor);
+		} break;
+		case MODE_KEYPRESSED:
+		case MODE_KEYTYPED:
+		{
+			bDeInitRightClick = true;
+		} break;
+		case MODE_MOUSEPRESSED:
+		{
+			bDeInitRightClick = true;
+			// Wide/tall set to 0 indicates it's a newly initialized right-click menu
+			if (c->dimRightClick.wide == 0 || c->dimRightClick.tall == 0)
+			{
+				const auto *pFontI = &c->fonts[c->eFont];
+				int iMinTextSize = 0;
+				for (int i = 0; i < c->ipwszRightClickListSize; ++i)
+				{
+					const wchar *pwszItemLabel = c->pwszRightClickList[i];
+					iMinTextSize = Max(iMinTextSize, V_wcslen(pwszItemLabel));
+				}
+				// Empty text size should never really happen, but just in-case, just don't
+				// init the menu
+				Assert(iMinTextSize > 0);
+				if (iMinTextSize > 0)
+				{
+					const int iChWidth = vgui::surface()->GetCharacterWidth(pFontI->hdl, 'A');
+					c->dimRightClick.wide = (c->iMarginX * 2) + (iMinTextSize * iChWidth);
+					c->dimRightClick.tall = c->ipwszRightClickListSize * c->layout.iRowTall;
+					bDeInitRightClick = false;
+				}
+			}
+		} break;
+		case MODE_MOUSEMOVED:
+		{
+			const Dim &dim = c->dimRightClick;
+			if (dim.wide > 0 && dim.tall > 0 &&
+					IN_BETWEEN_EQ(dim.x, c->iMouseAbsX, dim.x + dim.wide) &&
+					IN_BETWEEN_EQ(dim.y, c->iMouseAbsY, dim.y + dim.tall))
+			{
+				const int iRelMenuPosY = c->iMouseAbsY - dim.y;
+				c->iRightClickHotItem = (iRelMenuPosY / static_cast<float>(dim.tall)) * c->ipwszRightClickListSize;
+			}
+			else
+			{
+				c->iRightClickHotItem = -1;
+			}
+		} break;
+		default:
+			break;
+		}
+
+		if (bDeInitRightClick)
+		{
+			// Already set wide/tall indicates right-click menu already initalized before
+			// and can now de-initialize/close
+			c->iRightClick = -1;
+			c->iRightClickSection = -1;
+			c->pwszRightClickList = nullptr;
+			c->ipwszRightClickListSize = 0;
+		}
+	}
+
 	if (c->eMode == MODE_MOUSEPRESSED && !c->iHasMouseInPanel)
 	{
 		c->iActive = FOCUSOFF_NUM;
@@ -256,9 +394,12 @@ void BeginSection(const bool bDefaultFocus)
 {
 	c->iLayoutX = 0;
 	c->iLayoutY = -c->iYOffset[c->iSection];
+	c->irWidgetLayoutY = c->iLayoutY;
 	c->iWidget = 0;
 	c->iCanActives = 0;
 	c->iIdxRowParts = -1;
+	c->iIdxVertParts = -1;
+	c->iVertLayoutY = 0;
 
 	c->iMouseRelX = c->iMouseAbsX - c->dPanel.x;
 	c->iMouseRelY = c->iMouseAbsY - c->dPanel.y;
@@ -287,18 +428,19 @@ void BeginSection(const bool bDefaultFocus)
 	}
 
 	NeoUI::SetPerRowLayout(1, nullptr, c->layout.iDefRowTall);
+	NeoUI::SetPerCellVertLayout(0);
 }
 
 void EndSection()
 {
 	if (c->eMode == MODE_MOUSEPRESSED && c->bMouseInPanel &&
-			c->iLayoutY < c->iMouseRelY)
+			c->irWidgetLayoutY < c->iMouseRelY)
 	{
 		c->iActive = FOCUSOFF_NUM;
 		c->iActiveSection = -1;
 	}
-	const int iAbsLayoutY = c->iLayoutY + c->irWidgetTall + c->iYOffset[c->iSection];
-	c->wdgInfos[c->iWidget].iYOffsets= iAbsLayoutY;
+	const int iAbsLayoutY = c->irWidgetLayoutY + c->irWidgetTall + c->iYOffset[c->iSection];
+	c->wdgInfos[c->iWidget].iYOffsets = iAbsLayoutY;
 
 	// Scroll handling
 	const int iScrollThick = c->iMarginX * 4;
@@ -420,40 +562,41 @@ void EndSection()
 void SetPerRowLayout(const int iColTotal, const int *iColProportions, const int iRowTall)
 {
 	// Bump y-axis with previous row layout before applying new row layout
-	if (c->iWidget > 0 && c->iIdxRowParts >= 0 && c->iIdxRowParts < c->layout.iRowPartsTotal)
+	if (c->iWidget > 0 && c->iIdxRowParts > 0 && c->iIdxRowParts < c->layout.iRowPartsTotal)
 	{
 		c->iLayoutY += c->layout.iRowTall;
+		c->irWidgetLayoutY = c->iLayoutY;
 	}
 
-	c->layout.iRowPartsTotal = iColTotal;
-	c->layout.iRowParts = iColProportions;
+	// NEO NOTE (nullsystem): Setting iColTotal must be at least 1 or more, the layout
+	// is always mainly a per row based
+	Assert(iColTotal > 0);
+	if (iColTotal <= 0)
+	{
+		// Really shouldn't ever happen but just in-case to enforce 1
+		c->layout.iRowPartsTotal = 1;
+		c->layout.iRowParts = nullptr;
+	}
+	else
+	{
+		c->layout.iRowPartsTotal = iColTotal;
+		c->layout.iRowParts = iColProportions;
+	}
 	if (iRowTall > 0) c->layout.iRowTall = iRowTall;
 	c->iIdxRowParts = -1;
 }
 
-static GetMouseinFocusedRet InternalGetMouseinFocused()
+void SetPerCellVertLayout(const int iRowTotal, const int *iRowProportions)
 {
-	const bool bMouseIn = IN_BETWEEN_EQ(c->rWidgetArea.x0, c->iMouseAbsX, c->rWidgetArea.x1)
-			&& IN_BETWEEN_EQ(c->rWidgetArea.y0, c->iMouseAbsY, c->rWidgetArea.y1);
-	if (bMouseIn)
-	{
-		c->iHot = c->iWidget;
-		c->iHotSection = c->iSection;
-	}
-	const bool bHot = c->iHot == c->iWidget && c->iHotSection == c->iSection;
-	const bool bActive = c->iWidget == c->iActive && c->iSection == c->iActiveSection;
-	if (bActive || bHot)
-	{
-		vgui::surface()->DrawSetColor(c->selectBgColor);
-		if (bActive) vgui::surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
-	}
-	return GetMouseinFocusedRet{
-		.bActive = bActive,
-		.bHot = bHot,
-	};
+	// NEO NOTE (nullsystem): iRowTotal = 0 is allowed to switch off vertical layout
+	Assert(iRowTotal >= 0);
+	c->layout.iVertPartsTotal = iRowTotal;
+	c->layout.iVertParts = iRowProportions;
+	c->iIdxVertParts = -1;
+	c->iVertLayoutY = 0;
 }
 
-void BeginWidget(const WidgetFlag eWidgetFlag)
+GetMouseinFocusedRet BeginWidget(const WidgetFlag eWidgetFlag)
 {
 	if (c->iWidget >= c->iWdgInfosMax)
 	{
@@ -461,51 +604,149 @@ void BeginWidget(const WidgetFlag eWidgetFlag)
 		c->wdgInfos = (DynWidgetInfos *)(realloc(c->wdgInfos, sizeof(DynWidgetInfos) * c->iWdgInfosMax));
 	}
 
-	if (c->iIdxRowParts < 0 || c->iIdxRowParts >= (c->layout.iRowPartsTotal - 1))
+	if (c->iIdxRowParts < 0)
 	{
-		// Shift to the next row once we're out of partition
+		// NEO NOTE (nullsystem): Don't need to bump c->iLayoutY
+		// because any reset of iIdxRowParts either don't need to
+		// or already done it
 		c->iLayoutX = 0;
-		c->iLayoutY += (c->iIdxRowParts < 0) ? 0 : c->layout.iRowTall;
 		c->iIdxRowParts = 0;
+	}
+
+	int iVertYOffset = 0;
+	int iWdgTall = c->layout.iRowTall;
+	bool bShiftIdxRowParts = true;
+
+	const bool bVertMode = c->layout.iVertPartsTotal > 0;
+	if (bVertMode)
+	{
+		if (c->iIdxVertParts < 0)
+		{
+			c->iVertLayoutY = 0;
+			c->iIdxVertParts = 0;
+		}
+
+		if (c->layout.iVertParts)
+		{
+			iWdgTall = (c->layout.iVertParts[c->iIdxVertParts] / 100.0f) * c->layout.iRowTall;
+		}
+		else
+		{
+			iWdgTall = (1.0f / static_cast<float>(c->layout.iVertPartsTotal)) * c->layout.iRowTall;
+		}
+
+		c->iVertLayoutY += iWdgTall;
+		iVertYOffset = c->iVertLayoutY - iWdgTall;
+
+		if ((c->iIdxVertParts + 1) >= c->layout.iVertPartsTotal)
+		{
+			c->iVertLayoutY = 0;
+			c->iIdxVertParts = 0;
+		}
+		else
+		{
+			bShiftIdxRowParts = false;
+			++c->iIdxVertParts;
+		}
+	}
+
+	Assert(c->layout.iRowPartsTotal > 0);
+	const int iRowPartsTotal = Max(1, c->layout.iRowPartsTotal);
+	const bool bNextIsLast = (c->iIdxRowParts + 1) >= iRowPartsTotal;
+
+	// NEO NOTE (nullsystem): If very last partition of the row, use what's left
+	// instead so whatever pixels don't get left out
+	int xWide;
+	if (bNextIsLast)
+	{
+		xWide = c->dPanel.wide - c->iLayoutX;
 	}
 	else
 	{
 		if (c->layout.iRowParts)
 		{
-			c->iLayoutX += (c->layout.iRowParts[c->iIdxRowParts] / 100.0f) * c->dPanel.wide;
+			xWide = (c->layout.iRowParts[c->iIdxRowParts] / 100.0f) * c->dPanel.wide;
 		}
 		else
 		{
-			c->iLayoutX += (1.0f / static_cast<float>(c->layout.iRowPartsTotal)) * c->dPanel.wide;
+			xWide = (1.0f / static_cast<float>(iRowPartsTotal)) * c->dPanel.wide;
 		}
-		++c->iIdxRowParts;
 	}
 
-	// NEO NOTE (nullsystem): If very last partition of the row, use what's left
-	// instead so whatever pixels don't get left out
-	const int xWide = (c->iIdxRowParts == (c->layout.iRowPartsTotal - 1))
-			? c->dPanel.wide - c->iLayoutX
-			: (c->layout.iRowParts)
-			  ? (c->layout.iRowParts[c->iIdxRowParts] / 100.0f) * c->dPanel.wide
-			  : (1.0f / static_cast<float>(c->layout.iRowPartsTotal)) * c->dPanel.wide;
 	c->rWidgetArea = vgui::IntRect{
 		.x0 = c->dPanel.x + c->iLayoutX,
-		.y0 = c->dPanel.y + c->iLayoutY,
+		.y0 = c->dPanel.y + c->iLayoutY + iVertYOffset,
 		.x1 = c->dPanel.x + c->iLayoutX + xWide,
-		.y1 = c->dPanel.y + c->iLayoutY + c->layout.iRowTall,
+		.y1 = c->dPanel.y + c->iLayoutY + iWdgTall,
 	};
 	c->irWidgetWide = c->rWidgetArea.x1 - c->rWidgetArea.x0;
 	c->irWidgetTall = c->rWidgetArea.y1 - c->rWidgetArea.y0;
+	c->irWidgetLayoutY = c->iLayoutY;
 	c->wdgInfos[c->iWidget].iYOffsets = c->iLayoutY + c->iYOffset[c->iSection];
 	c->wdgInfos[c->iWidget].iYTall = c->irWidgetTall;
 	c->wdgInfos[c->iWidget].bCannotActive = (eWidgetFlag & WIDGETFLAG_SKIPACTIVE);
+
+	if (bShiftIdxRowParts)
+	{
+		if (bNextIsLast)
+		{
+			c->iLayoutX = 0;
+			c->iLayoutY += c->layout.iRowTall;
+			c->iIdxRowParts = 0;
+		}
+		else
+		{
+			if (c->layout.iRowParts)
+			{
+				c->iLayoutX += (c->layout.iRowParts[c->iIdxRowParts] / 100.0f) * c->dPanel.wide;
+			}
+			else
+			{
+				c->iLayoutX += (1.0f / static_cast<float>(iRowPartsTotal)) * c->dPanel.wide;
+			}
+			++c->iIdxRowParts;
+		}
+	}
+
+	if (c->bIsOverrideFgColor)
+	{
+		vgui::surface()->DrawSetTextColor(c->cOverrideFgColor);
+	}
+
+	// Check mouse hot/active states if WIDGETFLAG_MOUSE flag set
+	if (eWidgetFlag & WIDGETFLAG_MOUSE)
+	{
+		const bool bMouseIn = IN_BETWEEN_EQ(c->rWidgetArea.x0, c->iMouseAbsX, c->rWidgetArea.x1)
+				&& IN_BETWEEN_EQ(c->rWidgetArea.y0, c->iMouseAbsY, c->rWidgetArea.y1);
+		if (bMouseIn)
+		{
+			c->iHot = c->iWidget;
+			c->iHotSection = c->iSection;
+		}
+		const bool bHot = c->iHot == c->iWidget && c->iHotSection == c->iSection;
+		const bool bActive = c->iWidget == c->iActive && c->iSection == c->iActiveSection;
+		if (bActive || bHot)
+		{
+			vgui::surface()->DrawSetColor(c->selectBgColor);
+			if (bActive && !c->bIsOverrideFgColor)
+			{
+				vgui::surface()->DrawSetTextColor(COLOR_NEOPANELTEXTBRIGHT);
+			}
+		}
+		return GetMouseinFocusedRet{
+			.bActive = bActive,
+			.bHot = bHot,
+		};
+	}
+	
+	return GetMouseinFocusedRet{};
 }
 
 void EndWidget(const GetMouseinFocusedRet wdgState)
 {
 	++c->iWidget;
 	// NEO TODO (nullsystem): Will refactor when dealing with styling/color refactor
-	if (wdgState.bActive || wdgState.bHot)
+	if (wdgState.bActive || wdgState.bHot || c->bIsOverrideFgColor)
 	{
 		vgui::surface()->DrawSetColor(c->normalBgColor);
 		vgui::surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
@@ -527,7 +768,7 @@ void LabelWrap(const wchar_t *wszText)
 
 	BeginWidget(WIDGETFLAG_SKIPACTIVE);
 	int iLines = 0;
-	if (IN_BETWEEN_AR(0, c->iLayoutY, c->dPanel.tall))
+	if (IN_BETWEEN_AR(0, c->irWidgetLayoutY, c->dPanel.tall))
 	{
 		const auto *pFontI = &c->fonts[c->eFont];
 		const int iWszSize = V_wcslen(wszText);
@@ -573,6 +814,7 @@ void LabelWrap(const wchar_t *wszText)
 	}
 
 	c->iLayoutY += (c->layout.iRowTall * iLines);
+	c->irWidgetLayoutY = c->iLayoutY;
 
 	EndWidget(GetMouseinFocusedRet{true, true});
 }
@@ -591,22 +833,37 @@ void HeadingLabel(const wchar_t *wszText)
 	SetPerRowLayout(tmp.iRowPartsTotal, tmp.iRowParts, tmp.iRowTall);
 }
 
+// Internal API: Figure out X position from text, font, and text style
+static int XPosFromText(const wchar_t *wszText, const FontInfo *pFontI, const TextStyle eTextStyle)
+{
+	int iFontTextWidth = 0, iFontTextHeight = 0;
+	if (eTextStyle != TEXTSTYLE_LEFT)
+	{
+		vgui::surface()->GetTextSize(pFontI->hdl, wszText, iFontTextWidth, iFontTextHeight);
+	}
+	int x = 0;
+	switch (eTextStyle)
+	{
+	break; case TEXTSTYLE_LEFT:
+		x = c->iMarginX;
+	break; case TEXTSTYLE_CENTER:
+		x = (c->irWidgetWide / 2) - (iFontTextWidth / 2);
+	break; case TEXTSTYLE_RIGHT:
+		x = c->irWidgetWide - c->iMarginX - iFontTextWidth;
+	}
+	return x;
+}
+
 void Label(const wchar_t *wszText, const bool bNotWidget)
 {
 	if (!bNotWidget)
 	{
 		BeginWidget(WIDGETFLAG_SKIPACTIVE);
 	}
-	if (IN_BETWEEN_AR(0, c->iLayoutY, c->dPanel.tall) && c->eMode == MODE_PAINT)
+	if (IN_BETWEEN_AR(0, c->irWidgetLayoutY, c->dPanel.tall) && c->eMode == MODE_PAINT)
 	{
 		const auto *pFontI = &c->fonts[c->eFont];
-		int iFontTextWidth = 0, iFontTextHeight = 0;
-		const bool bCenter = c->eLabelTextStyle == TEXTSTYLE_CENTER;
-		if (bCenter)
-		{
-			vgui::surface()->GetTextSize(pFontI->hdl, wszText, iFontTextWidth, iFontTextHeight);
-		}
-		const int x = ((bCenter) ? ((c->irWidgetWide / 2) - (iFontTextWidth / 2)) : c->iMarginX);
+		const int x = XPosFromText(wszText, pFontI, c->eLabelTextStyle);
 		const int y = pFontI->iYOffset;
 		vgui::surface()->DrawSetTextPos(c->rWidgetArea.x0 + x, c->rWidgetArea.y0 + y);
 		vgui::surface()->DrawPrintText(wszText, V_wcslen(wszText));
@@ -639,25 +896,22 @@ void Label(const wchar_t *wszLabel, const wchar_t *wszText)
 
 NeoUI::RetButton Button(const wchar_t *wszText)
 {
-	BeginWidget();
+	const auto wdgState = BeginWidget(WIDGETFLAG_MOUSE);
 	RetButton ret = {};
-	const auto wdgState = InternalGetMouseinFocused();
 	ret.bMouseHover = wdgState.bHot;
 
-	if (IN_BETWEEN_AR(0, c->iLayoutY, c->dPanel.tall))
+	if (IN_BETWEEN_AR(0, c->irWidgetLayoutY, c->dPanel.tall))
 	{
 		switch (c->eMode)
 		{
 		case MODE_PAINT:
 		{
-			const auto *pFontI = &c->fonts[c->eFont];
-			int iFontWide, iFontTall;
-			vgui::surface()->GetTextSize(pFontI->hdl, wszText, iFontWide, iFontTall);
-			const int xMargin = c->eButtonTextStyle == TEXTSTYLE_CENTER ?
-						((c->irWidgetWide / 2) - (iFontWide / 2)) : c->iMarginX;
-
 			vgui::surface()->DrawFilledRectArray(&c->rWidgetArea, 1);
-			vgui::surface()->DrawSetTextPos(c->rWidgetArea.x0 + xMargin, c->rWidgetArea.y0 + pFontI->iYOffset);
+
+			const auto *pFontI = &c->fonts[c->eFont];
+			const int x = XPosFromText(wszText, pFontI, c->eButtonTextStyle);
+			const int y = pFontI->iYOffset;
+			vgui::surface()->DrawSetTextPos(c->rWidgetArea.x0 + x, c->rWidgetArea.y0 + y);
 			vgui::surface()->DrawPrintText(wszText, V_wcslen(wszText));
 		}
 		break;
@@ -702,7 +956,7 @@ NeoUI::RetButton Button(const wchar_t *wszLeftLabel, const wchar_t *wszText)
 void ImageTexture(const char *szTexturePath, const wchar_t *wszErrorMsg, const char *szTextureGroup)
 {
 	BeginWidget(WIDGETFLAG_SKIPACTIVE);
-	if (IN_BETWEEN_AR(0, c->iLayoutY, c->dPanel.tall) && c->eMode == MODE_PAINT)
+	if (IN_BETWEEN_AR(0, c->irWidgetLayoutY, c->dPanel.tall) && c->eMode == MODE_PAINT)
 	{
 		const bool bHasTexture = Texture(szTexturePath,
 										 c->rWidgetArea.x0, c->rWidgetArea.y0,
@@ -855,12 +1109,11 @@ bool Texture(const char *szTexturePath, const int x, const int y, const int widt
 
 NeoUI::RetButton ButtonTexture(const char *szTexturePath)
 {
-	BeginWidget();
+	const auto wdgState = BeginWidget(WIDGETFLAG_MOUSE);
 	RetButton ret = {};
-	const auto wdgState = InternalGetMouseinFocused();
 	ret.bMouseHover = wdgState.bHot;
 
-	if (IN_BETWEEN_AR(0, c->iLayoutY, c->dPanel.tall))
+	if (IN_BETWEEN_AR(0, c->irWidgetLayoutY, c->dPanel.tall))
 	{
 		switch (c->eMode)
 		{
@@ -938,10 +1191,9 @@ void RingBox(const wchar_t *wszLeftLabel, const wchar_t **wszLabelsList, const i
 
 void RingBox(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 {
-	BeginWidget();
-	const auto wdgState = InternalGetMouseinFocused();
+	const auto wdgState = BeginWidget(WIDGETFLAG_MOUSE);
 
-	if (IN_BETWEEN_AR(0, c->iLayoutY, c->dPanel.tall))
+	if (IN_BETWEEN_AR(0, c->irWidgetLayoutY, c->dPanel.tall))
 	{
 		switch (c->eMode)
 		{
@@ -1029,8 +1281,7 @@ void RingBox(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 void Tabs(const wchar_t **wszLabelsList, const int iLabelsSize, int *iIndex)
 {
 	// This is basically a ringbox but different UI
-	BeginWidget(WIDGETFLAG_SKIPACTIVE);
-	const auto wdgState = InternalGetMouseinFocused();
+	const auto wdgState = BeginWidget(WIDGETFLAG_SKIPACTIVE | WIDGETFLAG_MOUSE);
 
 	SwapFont(FONT_NTHORIZSIDES);
 	const int iTabWide = (c->dPanel.wide / iLabelsSize);
@@ -1137,7 +1388,7 @@ static float ClampAndLimitDp(const float curValue, const float flMin, const floa
 void Progress(const float flValue, const float flMin, const float flMax)
 {
 	BeginWidget(WIDGETFLAG_SKIPACTIVE);
-	if (IN_BETWEEN_AR(0, c->iLayoutY, c->dPanel.tall) && c->eMode == MODE_PAINT)
+	if (IN_BETWEEN_AR(0, c->irWidgetLayoutY, c->dPanel.tall) && c->eMode == MODE_PAINT)
 	{
 		const float flPerc = (flValue - flMin) / (flMax - flMin);
 		vgui::surface()->DrawFilledRect(c->rWidgetArea.x0,
@@ -1153,10 +1404,9 @@ void Slider(const wchar_t *wszLeftLabel, float *flValue, const float flMin, cons
 {
 	MultiWidgetHighlighter(2);
 	Label(wszLeftLabel);
-	BeginWidget();
-	const auto wdgState = InternalGetMouseinFocused();
+	const auto wdgState = BeginWidget(WIDGETFLAG_MOUSE);
 
-	if (IN_BETWEEN_AR(0, c->iLayoutY, c->dPanel.tall))
+	if (IN_BETWEEN_AR(0, c->irWidgetLayoutY, c->dPanel.tall))
 	{
 		auto hdl = c->htSliders.Find(wszLeftLabel);
 		if (hdl == -1 || c->htSliders.Element(hdl).flCachedValue != *flValue ||
@@ -1387,17 +1637,81 @@ void SliderU8(const wchar_t *wszLeftLabel, uint8 *ucValue, const uint8 iMin, con
 	}
 }
 
-void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxBytes)
+static int TextEditChIdxFromMouse(const int iWszTextSize)
+{
+	const int iMouseOnXWidth = c->iMouseAbsX - (c->rWidgetArea.x0 + c->iMarginX);
+	int iChIdx = -1;
+	for (int i = 0; i < iWszTextSize; ++i)
+	{
+		if (c->irTextWidths[i] > iMouseOnXWidth)
+		{
+			// Check if left or right of middle of character
+			int iMidPoint = 0;
+			if (i == 0)
+			{
+				const int iChWidth = c->irTextWidths[i];
+				iMidPoint = iChWidth / 2;
+			}
+			else
+			{
+				const int iChWidth = c->irTextWidths[i] - c->irTextWidths[i - 1];
+				iMidPoint = c->irTextWidths[i - 1] + (iChWidth / 2);
+			}
+			iChIdx = (iMouseOnXWidth >= iMidPoint) ? i + 1 : i;
+			break;
+		}
+	}
+	if (iChIdx == -1)
+	{
+		if (iMouseOnXWidth >= c->irTextWidths[iWszTextSize - 1])
+		{
+			iChIdx = iWszTextSize;
+		}
+		else
+		{
+			iChIdx = 0;
+		}
+	}
+	return iChIdx;
+}
+
+// NEO NOTE (nullsystem): Build up irTextWidths, hot spot so do only when necessary
+//
+// wszVisText could be a password for visuals so a separate iWszTextSize
+// which is always set by V_wcslen(wszText) instead
+static void BuildUpIrTextWidths(const wchar_t *wszVisText, const int iWszTextSize)
+{
+	Assert(iWszTextSize < MAX_TEXTINPUT_U8BYTES_LIMIT);
+
+	wchar_t wszMutVisText[MAX_TEXTINPUT_U8BYTES_LIMIT];
+	V_wcscpy_safe(wszMutVisText, wszVisText);
+
+	const auto *pFontI = &c->fonts[c->eFont];
+
+	V_memset(c->irTextWidths, 0, sizeof(c->irTextWidths));
+	for (int i = 0; i < iWszTextSize; ++i)
+	{
+		const wchar_t wchTemp = wszMutVisText[i + 1];
+		wszMutVisText[i + 1] = '\0';
+		int iFontWide, iFontTall;
+		vgui::surface()->GetTextSize(pFontI->hdl, wszMutVisText, iFontWide, iFontTall);
+		c->irTextWidths[i] = iFontWide;
+		wszMutVisText[i + 1] = wchTemp;
+	}
+}
+
+void TextEdit(const wchar_t *wszLeftLabel, wchar_t *wszText, const int iMaxWszTextSize, const ETextEditFlags flags)
 {
 	MultiWidgetHighlighter(2);
 	Label(wszLeftLabel);
-	TextEdit(wszText, iMaxBytes);
+	TextEdit(wszText, iMaxWszTextSize, flags);
 }
 
-void TextEdit(wchar_t *wszText, const int iMaxBytes)
+void TextEdit(wchar_t *wszText, const int iMaxWszTextSize, const ETextEditFlags flags)
 {
-	BeginWidget();
-	static wchar_t staticWszPasswordChars[256] = {};
+	const auto wdgState = BeginWidget(WIDGETFLAG_MOUSE);
+
+	static wchar_t staticWszPasswordChars[MAX_TEXTINPUT_U8BYTES_LIMIT] = {};
 	if (staticWszPasswordChars[0] == L'\0')
 	{
 		for (int i = 0; i < (ARRAYSIZE(staticWszPasswordChars) - 1); ++i)
@@ -1406,97 +1720,428 @@ void TextEdit(wchar_t *wszText, const int iMaxBytes)
 		}
 	}
 
-	const auto wdgState = InternalGetMouseinFocused();
-
-	if (IN_BETWEEN_AR(0, c->iLayoutY, c->dPanel.tall))
+	if (IN_BETWEEN_AR(0, c->irWidgetLayoutY, c->dPanel.tall))
 	{
+		int iCopyAction = -1;
+
+		const bool bHasTextSel = wdgState.bActive;
+		const bool bCurRightStart = (c->iTextSelCur >= c->iTextSelStart);
+
+		// NEO NOTE (nullsystem): Only use iWszTextSize when not changing it
+		// EX: paint, cursor/selection only change actions, or just before
+		// changing it. Otherwise use V_wcslen directly after changing wszText
+		// contents.
+		const int iWszTextSize = V_wcslen(wszText);
+
+		const int iTextSelMin = bCurRightStart ? c->iTextSelStart : c->iTextSelCur;
+		const int iTextSelMax = bCurRightStart ? c->iTextSelCur : c->iTextSelStart;
+
+		const bool bIsSelection = bHasTextSel && iTextSelMin < iTextSelMax;
+		const bool bIsCursor = bHasTextSel && iTextSelMin == iTextSelMax;
+		const bool bFromEnd = bHasTextSel && (iTextSelMin == iTextSelMax && iWszTextSize <= iTextSelMin);
+
+		const bool bIsPassword = flags & TEXTEDITFLAG_PASSWORD;
+		if (bIsPassword)
+		{
+			staticWszPasswordChars[iWszTextSize + 1] = L'\0';
+		}
+
+		bool bRebuildIrTextWidths = false;
+
 		switch (c->eMode)
 		{
 		case MODE_PAINT:
 		{
+			const bool bEditBlinkShow = (static_cast<int>(gpGlobals->curtime * 1.5f) % 2 == 0);
+			const auto *pFontI = &c->fonts[c->eFont];
 			if (wdgState.bHot)
 			{
 				vgui::surface()->DrawFilledRect(c->rWidgetArea.x0, c->rWidgetArea.y0,
 												c->rWidgetArea.x1, c->rWidgetArea.y1);
 			}
-			const auto *pFontI = &c->fonts[c->eFont];
-			vgui::surface()->DrawSetTextPos(c->rWidgetArea.x0 + c->iMarginX,
+#if defined(DEBUG) && DEBUG_NEOUI // Right-aligned text to show debug info
+			vgui::surface()->DrawSetTextColor(Color(32, 32, 180, 255));
+			wchar_t wszDbgText[MAX_TEXTINPUT_U8BYTES_LIMIT];
+			V_swprintf_safe(wszDbgText, L"%d %d %d %d",
+					iTextSelMin, iTextSelMax, c->iTextSelStart, c->iTextSelCur);
+			int iFontWide, iFontTall;
+			vgui::surface()->GetTextSize(pFontI->hdl, wszDbgText, iFontWide, iFontTall);
+			vgui::surface()->DrawSetTextPos(c->rWidgetArea.x1 - c->iMarginX - iFontWide,
 											c->rWidgetArea.y0 + pFontI->iYOffset);
-			const int iWszTextSize = V_wcslen(wszText);
-			if (c->bTextEditIsPassword)
+			vgui::surface()->DrawPrintText(wszDbgText, V_wcslen(wszDbgText));
+			vgui::surface()->DrawSetTextColor(COLOR_NEOPANELTEXTNORMAL);
+#endif // defined(DEBUG) && DEBUG_NEOUI
+			if (bHasTextSel && (bIsSelection || bEditBlinkShow))
 			{
-				vgui::surface()->DrawPrintText(staticWszPasswordChars, iWszTextSize);
-			}
-			else
-			{
-				vgui::surface()->DrawPrintText(wszText, iWszTextSize);
-			}
-			if (wdgState.bActive)
-			{
-				const bool bEditBlinkShow = (static_cast<int>(gpGlobals->curtime * 1.5f) % 2 == 0);
-				if (bEditBlinkShow)
+				int iXStart;
+				if (iTextSelMin <= 0)
 				{
-					int iFontWide, iFontTall;
-					if (c->bTextEditIsPassword)
+					iXStart = 0;
+				}
+				else if (iTextSelMin >= iWszTextSize)
+				{
+					iXStart = c->irTextWidths[iWszTextSize - 1];
+				}
+				else
+				{
+					iXStart = c->irTextWidths[iTextSelMin - 1];
+				}
+
+				// If bIsCursor, render cursor-like, otherwise selection
+				int iXEnd;
+				if (bIsCursor)
+				{
+					iXEnd = iXStart + (c->iMarginX / 2);
+				}
+				else
+				{
+					if (iTextSelMax <= 0)
 					{
-						staticWszPasswordChars[iWszTextSize] = L'\0';
-						vgui::surface()->GetTextSize(pFontI->hdl, staticWszPasswordChars, iFontWide, iFontTall);
-						staticWszPasswordChars[iWszTextSize] = L'*';
+						iXEnd = 0;
+					}
+					else if (iTextSelMax >= iWszTextSize)
+					{
+						iXEnd = c->irTextWidths[iWszTextSize - 1];
 					}
 					else
 					{
-						vgui::surface()->GetTextSize(pFontI->hdl, wszText, iFontWide, iFontTall);
+						iXEnd = c->irTextWidths[iTextSelMax - 1];
 					}
-					const int iMarkX = c->iMarginX + iFontWide;
-					vgui::surface()->DrawSetColor(COLOR_NEOPANELTEXTBRIGHT);
-					vgui::surface()->DrawFilledRect(c->rWidgetArea.x0 + iMarkX,
-													c->rWidgetArea.y0 + pFontI->iYOffset,
-													c->rWidgetArea.x0 + iMarkX + c->iMarginX,
-													c->rWidgetArea.y0 + pFontI->iYOffset + iFontTall);
+				}
+
+				if (iXStart != iXEnd)
+				{
+					vgui::surface()->DrawSetColor(
+							bIsCursor ?
+								COLOR_NEOPANELTEXTBRIGHT :
+								Color(180, 32, 32, 255));
+					vgui::surface()->DrawFilledRect(
+							c->rWidgetArea.x0 + c->iMarginX + iXStart,
+							c->rWidgetArea.y0 + ((bIsCursor) ? pFontI->iYOffset : 0),
+							c->rWidgetArea.x0 + c->iMarginX + iXEnd,
+							(bIsCursor) ? c->rWidgetArea.y0 + pFontI->iYOffset + vgui::surface()->GetFontTall(pFontI->hdl) : c->rWidgetArea.y1);
+					vgui::surface()->DrawSetColor(c->normalBgColor);
 				}
 			}
+			vgui::surface()->DrawSetTextPos(c->rWidgetArea.x0 + c->iMarginX,
+											c->rWidgetArea.y0 + pFontI->iYOffset);
+			const wchar_t *pwszPrintText = (bIsPassword) ? staticWszPasswordChars : wszText;
+			vgui::surface()->DrawPrintText(pwszPrintText, iWszTextSize);
 		}
 		break;
 		case MODE_MOUSEPRESSED:
 		{
-			if (wdgState.bHot)
+			if (c->eCode == MOUSE_LEFT &&
+					c->iRightClick == c->iWidget &&
+					c->iRightClickSection == c->iSection)
+			{
+				iCopyAction = c->iRightClickHotItem;
+			}
+
+			if (!IN_BETWEEN_AR(0, iCopyAction, c->ipwszRightClickListSize) && wdgState.bHot)
 			{
 				c->iActive = c->iWidget;
 				c->iActiveSection = c->iSection;
+
+				switch (c->eCode)
+				{
+				case MOUSE_LEFT:
+				{
+					BuildUpIrTextWidths(bIsPassword ? staticWszPasswordChars : wszText, iWszTextSize);
+					const int iStartPos = TextEditChIdxFromMouse(iWszTextSize);
+
+					// Selection start point
+					c->iTextSelStart = iStartPos;
+					c->iTextSelCur = iStartPos;
+					c->iTextSelDrag = c->iWidget;
+					c->iTextSelDragSection = c->iSection;
+				} break;
+				case MOUSE_RIGHT:
+				{
+					// Open right-click menu
+					static const wchar *PWSZ_TEXTEDIT_RIGHTCLICK[COPYMENU__TOTAL] = {
+						L"Cut", L"Copy", L"Paste",
+					};
+					c->dimRightClick.x = c->iMouseAbsX;
+					c->dimRightClick.y = c->iMouseAbsY;
+					c->dimRightClick.wide = 0;
+					c->dimRightClick.tall = 0;
+					c->iRightClick = c->iWidget;
+					c->iRightClickSection = c->iSection;
+					c->pwszRightClickList = PWSZ_TEXTEDIT_RIGHTCLICK;
+					c->ipwszRightClickListSize = ARRAYSIZE(PWSZ_TEXTEDIT_RIGHTCLICK);
+				} break;
+				default:
+					break;
+				}
+			}
+		}
+		break;
+		case MODE_MOUSERELEASED:
+		{
+			c->iTextSelDrag = -1;
+			c->iTextSelDragSection = -1;
+		}
+		break;
+		case MODE_MOUSEMOVED:
+		{
+			if (c->iTextSelDrag == c->iWidget && c->iTextSelDragSection == c->iSection)
+			{
+				c->iTextSelCur = TextEditChIdxFromMouse(iWszTextSize);
 			}
 		}
 		break;
 		case MODE_KEYPRESSED:
 		{
-			if (wdgState.bActive && c->eCode == KEY_BACKSPACE)
+			const bool bIsCtrlDown = (vgui::input()->IsKeyDown(KEY_LCONTROL) || vgui::input()->IsKeyDown(KEY_RCONTROL));
+			if (bIsCtrlDown && bHasTextSel)
 			{
-				const int iTextSize = V_wcslen(wszText);
-				if (iTextSize > 0)
+				switch (c->eCode)
 				{
-					wszText[iTextSize - 1] = L'\0';
-					c->bValueEdited = true;
+				break; case KEY_X: if (bIsSelection) iCopyAction = COPYMENU_CUT;
+				break; case KEY_C: if (bIsSelection) iCopyAction = COPYMENU_COPY;
+				break; case KEY_V: iCopyAction = COPYMENU_PASTE;
+				break; default: break;
+				}
+			}
+			if (!IN_BETWEEN_AR(0, iCopyAction, c->ipwszRightClickListSize) && wdgState.bActive)
+			{
+				const bool bIsShiftDown = (vgui::input()->IsKeyDown(KEY_LSHIFT) || vgui::input()->IsKeyDown(KEY_RSHIFT));
+				switch (c->eCode)
+				{
+				case KEY_HOME:
+				case KEY_END:
+				{
+					c->iTextSelCur = (c->eCode == KEY_HOME) ? 0 : iWszTextSize;
+					if (!bIsShiftDown)
+					{
+						c->iTextSelStart = c->iTextSelCur;
+					}
+				} break;
+				case KEY_LEFT:
+				case KEY_RIGHT:
+				{
+					if (bIsCtrlDown)
+					{
+						// NEO NOTE (nullsystem): This matches vgui behavior
+						// which is always start of word even on CTRL+right
+						// and only space used for delimiter
+						int iNextCur = (c->eCode == KEY_LEFT) ? 0 : iWszTextSize;
+						const int iIncr = ((c->eCode == KEY_LEFT) ? -1 : +1);
+
+						for (int i = c->iTextSelCur + iIncr;
+								IN_BETWEEN_AR(1, i, iWszTextSize);
+								i += iIncr)
+						{
+							if (wszText[i - 1] == L' ' && wszText[i] != L' ')
+							{
+								iNextCur = i;
+								break;
+							}
+						}
+						c->iTextSelCur = iNextCur;
+					}
+					else
+					{
+						c->iTextSelCur = clamp(c->iTextSelCur + ((c->eCode == KEY_LEFT) ? -1 : +1), 0, iWszTextSize);
+					}
+
+					if (!bIsShiftDown)
+					{
+						c->iTextSelStart = c->iTextSelCur;
+					}
+				} break;
+				case KEY_BACKSPACE:
+				case KEY_DELETE:
+				{
+					if (iWszTextSize > 0)
+					{
+						bool bIsValueEdited = true;
+						const bool bIsLeftDelete = (c->eCode == KEY_BACKSPACE);
+						// Write to temporary first otherwise wszText -> wszText can corrupt
+						static wchar_t wszStaticTmpText[MAX_TEXTINPUT_U8BYTES_LIMIT];
+
+						if (bFromEnd && bIsLeftDelete)
+						{
+							// Cursor - At the end
+							wszText[iWszTextSize - 1] = L'\0';
+							--c->iTextSelStart;
+						}
+						else if (bIsCursor)
+						{
+							if (iTextSelMin > 0 && bIsLeftDelete)
+							{
+								// Cursor - delete character before cursor, non-zero, cursor shift left
+								V_swprintf_safe(wszStaticTmpText, L"%.*ls%ls", iTextSelMin - 1, wszText, wszText + iTextSelMin);
+								V_wcsncpy(wszText, wszStaticTmpText, sizeof(wchar_t) * iMaxWszTextSize);
+								--c->iTextSelStart;
+							}
+							else if (iTextSelMin < iWszTextSize && !bIsLeftDelete)
+							{
+								// Cursor - delete character after cursor, non-end
+								V_swprintf_safe(wszStaticTmpText, L"%.*ls%ls", iTextSelMin, wszText, wszText + iTextSelMin + 1);
+								V_wcsncpy(wszText, wszStaticTmpText, sizeof(wchar_t) * iMaxWszTextSize);
+							}
+						}
+						else if (bIsSelection)
+						{
+							// Selection - delete selected texts
+							wszText[iTextSelMin] = L'\0';
+							V_swprintf_safe(wszStaticTmpText, L"%ls%ls", wszText, wszText + iTextSelMax);
+							V_wcsncpy(wszText, wszStaticTmpText, sizeof(wchar_t) * iMaxWszTextSize);
+							c->iTextSelStart = iTextSelMin;
+						}
+						else
+						{
+							bIsValueEdited = false;
+						}
+
+						if (bIsValueEdited)
+						{
+							bRebuildIrTextWidths = true;
+							c->iTextSelCur = c->iTextSelStart;
+						}
+					}
+				} break;
+				default:
+					break;
 				}
 			}
 		}
 		break;
 		case MODE_KEYTYPED:
 		{
-			if (wdgState.bActive && iswprint(c->unichar))
+			if (wdgState.bActive && iswprint(c->unichar) && iWszTextSize < iMaxWszTextSize)
 			{
-				static char szTmpANSICheck[MAX_TEXTINPUT_U8BYTES_LIMIT];
-				const int iTextInU8Bytes = g_pVGuiLocalize->ConvertUnicodeToANSI(wszText, szTmpANSICheck, sizeof(szTmpANSICheck));
-				if (iTextInU8Bytes < iMaxBytes)
+				if (bFromEnd)
 				{
-					int iTextSize = V_wcslen(wszText);
-					wszText[iTextSize++] = c->unichar;
-					wszText[iTextSize] = L'\0';
-					c->bValueEdited = true;
+					wszText[iWszTextSize] = c->unichar;
+					wszText[iWszTextSize + 1] = L'\0';
 				}
+				else if (bIsCursor)
+				{
+					for (int i = (iWszTextSize - 1); i >= iTextSelMin; --i)
+					{
+						wszText[i + 1] = wszText[i];
+					}
+					wszText[iTextSelMin] = c->unichar;
+					wszText[iWszTextSize + 1] = L'\0';
+				}
+				else if (bIsSelection)
+				{
+					// Has multi selection - delete selected texts then insert text
+					static wchar_t wszStaticTmpText[MAX_TEXTINPUT_U8BYTES_LIMIT] = {};
+					V_swprintf_safe(wszStaticTmpText, L"%.*ls%lc%ls", iTextSelMin, wszText, c->unichar, wszText + iTextSelMax);
+					V_wcsncpy(wszText, wszStaticTmpText, sizeof(wchar_t) * iMaxWszTextSize);
+				}
+				bRebuildIrTextWidths = true;
+				// Any character typed devolves back to cursor on iTextSelMin
+				c->iTextSelStart = Min(iTextSelMin + 1, V_wcslen(wszText));
+				c->iTextSelCur = c->iTextSelStart;
 			}
 		}
 		break;
 		default:
 			break;
+		}
+
+		switch (iCopyAction)
+		{
+		case COPYMENU_CUT:
+		case COPYMENU_COPY:
+		{
+			if (iTextSelMin < iTextSelMax)
+			{
+				const wchar_t wchTmp = wszText[iTextSelMax];
+				wszText[iTextSelMax] = L'\0';
+
+				wchar_t wszCopyBuf[MAX_TEXTINPUT_U8BYTES_LIMIT];
+				V_wcscpy_safe(wszCopyBuf, wszText + iTextSelMin);
+
+				wszText[iTextSelMax] = wchTmp;
+
+				char szCopyBuf[MAX_TEXTINPUT_U8BYTES_LIMIT] = {};
+				g_pVGuiLocalize->ConvertUnicodeToANSI(wszCopyBuf, szCopyBuf, sizeof(szCopyBuf));
+
+				vgui::system()->SetClipboardText(szCopyBuf, V_strlen(szCopyBuf));
+
+				const bool bIsCut = iCopyAction == COPYMENU_CUT;
+				if (bIsCut)
+				{
+					wszText[iTextSelMin] = L'\0';
+					V_snwprintf(wszText, iMaxWszTextSize, L"%ls%ls", wszText, wszText + iTextSelMax);
+					bRebuildIrTextWidths = true;
+					c->iTextSelStart = iTextSelMin;
+					c->iTextSelCur = iTextSelMin;
+				}
+#if defined(DEBUG) && DEBUG_NEOUI
+				Msg("COPYMENU_%s: %s\n", (bIsCut) ? "CUT" : "COPY", szCopyBuf);
+#endif // defined(DEBUG) && DEBUG_NEOUI
+			}
+		} break;	
+		case COPYMENU_PASTE:
+		{
+			if (vgui::system()->GetClipboardTextCount() > 0)
+			{
+				wchar_t wszClipboard[MAX_TEXTINPUT_U8BYTES_LIMIT] = {};
+				const int iClipboardWSZBytes = vgui::system()->GetClipboardText(0, wszClipboard, ARRAYSIZE(wszClipboard));
+				if (iClipboardWSZBytes > 0)
+				{
+					// Write to temporary first otherwise wszText -> wszText can corrupt
+					static wchar_t wszStaticTmpText[MAX_TEXTINPUT_U8BYTES_LIMIT];
+					if (bFromEnd)
+					{
+						V_wcsncat(wszText, wszClipboard, iMaxWszTextSize + 1);
+						c->iTextSelCur = V_wcslen(wszText);
+					}
+					else if (bIsCursor)
+					{
+						// Single selection - append clipboard on cursor
+						if (iTextSelMin > 0)
+						{
+							V_swprintf_safe(wszStaticTmpText, L"%.*ls%ls%ls", iTextSelMin, wszText, wszClipboard, wszText + iTextSelMin);
+						}
+						else
+						{
+							V_swprintf_safe(wszStaticTmpText, L"%ls%ls", wszClipboard, wszText);
+						}
+						V_wcsncpy(wszText, wszStaticTmpText, sizeof(wchar_t) * iMaxWszTextSize);
+						c->iTextSelCur = Min(c->iTextSelCur + V_wcslen(wszClipboard), V_wcslen(wszText));
+					}
+					else if (bIsSelection)
+					{
+						// Multi selection - clipboard replaces selection
+						V_swprintf_safe(wszStaticTmpText, L"%.*ls%ls%ls", iTextSelMin, wszText, wszClipboard, wszText + iTextSelMax);
+						V_wcsncpy(wszText, wszStaticTmpText, sizeof(wchar_t) * iMaxWszTextSize);
+						c->iTextSelCur = Min(iTextSelMin + V_wcslen(wszClipboard), V_wcslen(wszText));
+					}
+					// All devolves to cursor
+					c->iTextSelStart = c->iTextSelCur;
+					bRebuildIrTextWidths = true;
+#if defined(DEBUG) && DEBUG_NEOUI
+					char szClipboard[MAX_TEXTINPUT_U8BYTES_LIMIT] = {};
+					g_pVGuiLocalize->ConvertUnicodeToANSI(wszClipboard, szClipboard, sizeof(szClipboard));
+					char szText[MAX_TEXTINPUT_U8BYTES_LIMIT] = {};
+					g_pVGuiLocalize->ConvertUnicodeToANSI(wszText, szText, sizeof(szText));
+					Msg("COPYMENU_PASTE: %s -> %s\n", szClipboard, szText);
+#endif // defined(DEBUG) && DEBUG_NEOUI
+				}
+			}
+		} break;
+		default:
+			break;
+		}
+
+		if (bIsPassword)
+		{
+			// iWszTextSize instead of V_wcslen because it's altered
+			// before the changes happens.
+			staticWszPasswordChars[iWszTextSize + 1] = L'*';
+		}
+		if (bRebuildIrTextWidths)
+		{
+			BuildUpIrTextWidths(bIsPassword ? staticWszPasswordChars : wszText, V_wcslen(wszText));
+			c->bValueEdited = true;
 		}
 	}
 

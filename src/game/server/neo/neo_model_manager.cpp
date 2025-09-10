@@ -283,7 +283,7 @@ const char *viewModels[NEO_VM_ENUM_COUNT * numTeams] {
 	"models/weapons/v_nsf_zr68l.mdl",
 	"models/weapons/v_nsf_zr68s.mdl",
 	"models/gameplay/v_nsf_ghost.mdl",
-	#ifdef INCLUDE_WEP_PBK
+#ifdef INCLUDE_WEP_PBK
 	"models/weapons/v_nsf_pbk56.mdl",
 #endif
 
@@ -370,6 +370,8 @@ const char *vipModel = "models/player/vip.mdl";
 const char *vipModelDead = "models/player/vip_dead.mdl";
 const char *vipSmacViewModel = "models/weapons/v_vip_smac.mdl";
 
+const char *jgrModel = "models/player/jgr.mdl";
+
 static inline void PrecachePlayerModels( void )
 {
 	const int size = ARRAYSIZE(playerModels);
@@ -379,6 +381,7 @@ static inline void PrecachePlayerModels( void )
 	}
 
 	CBaseEntity::PrecacheModel(vipModel);
+	CBaseEntity::PrecacheModel(jgrModel);
 }
 
 static inline void PrecacheGibs( void )
@@ -456,7 +459,11 @@ void CNEOModelManager::Precache( void ) const
 
 	PrecacheMaterial("dev/motion_third.vmt");
 	PrecacheMaterial("dev/thermal_model.vmt");
+	PrecacheMaterial("dev/thermal_ragdoll_model.vmt");
+	PrecacheMaterial("dev/thermal_base_animating_model.vmt");
 	PrecacheMaterial("dev/thermal_view_model.vmt");
+	PrecacheMaterial("dev/thermal_weapon_model.vmt");
+	PrecacheMaterial("dev/thermal_grenade_projectile_model.vmt");
 }
 
 static inline int GetTeamArrOffset(int iTeam)
@@ -527,6 +534,11 @@ const char *CNEOModelManager::GetPlayerModel(NeoSkin nSkin,
 	if (nClass == NEO_CLASS_VIP)
 	{
 		return vipModel;
+	}
+
+	if (nClass == NEO_CLASS_JUGGERNAUT)
+	{
+		return jgrModel;
 	}
 
 	// Unspecified skin number, give a skin randomly.

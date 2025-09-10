@@ -21,7 +21,11 @@
 #define CHAR_TEX_GRATE			'G'
 #define CHAR_TEX_ALIENFLESH		'H'
 #define CHAR_TEX_CLIP			'I'
+#ifdef NEO
+#define CHAR_TEX_BLOCKBULLETS	'J'
+#else
 //#define CHAR_TEX_UNUSED		'J'
+#endif // NEO
 //#define CHAR_TEX_UNUSED		'K'
 #define CHAR_TEX_PLASTIC		'L'
 #define CHAR_TEX_METAL			'M'

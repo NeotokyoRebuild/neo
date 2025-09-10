@@ -46,6 +46,9 @@
 #include <materialsystem/itexture.h>
 #include "rendertexture.h"
 #include "ivieweffects.h"
+#include "c_neo_killer_damage_infos.h"
+#include <vgui/ILocalize.h>
+#include <tier3.h>
 
 #include "model_types.h"
 
@@ -74,6 +77,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_iLoadoutWepChoice)),
 	RecvPropInt(RECVINFO(m_iNextSpawnClassChoice)),
 	RecvPropInt(RECVINFO(m_bInLean)),
+	RecvPropEHandle(RECVINFO(m_hDroppedJuggernautItem)),
 
 	RecvPropBool(RECVINFO(m_bInThermOpticCamo)),
 	RecvPropBool(RECVINFO(m_bLastTickInThermOpticCamo)),
@@ -81,12 +85,13 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropBool(RECVINFO(m_bHasBeenAirborneForTooLongToSuperJump)),
 	RecvPropBool(RECVINFO(m_bInAim)),
 	RecvPropBool(RECVINFO(m_bIneligibleForLoadoutPick)),
+	RecvPropBool(RECVINFO(m_bCarryingGhost)),
 
 	RecvPropTime(RECVINFO(m_flCamoAuxLastTime)),
 	RecvPropInt(RECVINFO(m_nVisionLastTick)),
 	RecvPropTime(RECVINFO(m_flJumpLastTime)),
+	RecvPropTime(RECVINFO(m_flNextPingTime)),
 
-	RecvPropArray(RecvPropVector(RECVINFO(m_rvFriendlyPlayerPositions[0])), m_rvFriendlyPlayerPositions),
 	RecvPropArray(RecvPropInt(RECVINFO(m_rfAttackersScores[0])), m_rfAttackersScores),
 	RecvPropArray(RecvPropFloat(RECVINFO(m_rfAttackersAccumlator[0])), m_rfAttackersAccumlator),
 	RecvPropArray(RecvPropInt(RECVINFO(m_rfAttackersHits[0])), m_rfAttackersHits),
@@ -94,6 +99,7 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 	RecvPropInt(RECVINFO(m_NeoFlags)),
 	RecvPropString(RECVINFO(m_szNeoName)),
 	RecvPropString(RECVINFO(m_szNeoClantag)),
+	RecvPropString(RECVINFO(m_szNeoCrosshair)),
 	RecvPropInt(RECVINFO(m_szNameDupePos)),
 	RecvPropBool(RECVINFO(m_bClientWantNeoName)),
 
@@ -101,10 +107,9 @@ IMPLEMENT_CLIENTCLASS_DT(C_NEO_Player, DT_NEO_Player, CNEO_Player)
 END_RECV_TABLE()
 
 BEGIN_PREDICTION_DATA(C_NEO_Player)
-	DEFINE_PRED_FIELD(m_rvFriendlyPlayerPositions, FIELD_VECTOR, FTYPEDESC_INSENDTABLE),
-	DEFINE_PRED_ARRAY(m_rfAttackersScores, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_INSENDTABLE),
-	DEFINE_PRED_ARRAY(m_rfAttackersAccumlator, FIELD_FLOAT, MAX_PLAYERS + 1, FTYPEDESC_INSENDTABLE),
-	DEFINE_PRED_ARRAY(m_rfAttackersHits, FIELD_INTEGER, MAX_PLAYERS + 1, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_ARRAY(m_rfAttackersScores, FIELD_INTEGER, MAX_PLAYERS, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_ARRAY(m_rfAttackersAccumlator, FIELD_FLOAT, MAX_PLAYERS, FTYPEDESC_INSENDTABLE),
+	DEFINE_PRED_ARRAY(m_rfAttackersHits, FIELD_INTEGER, MAX_PLAYERS, FTYPEDESC_INSENDTABLE),
 
 	DEFINE_PRED_FIELD_TOL(m_flCamoAuxLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
 	
@@ -117,86 +122,8 @@ BEGIN_PREDICTION_DATA(C_NEO_Player)
 
 	DEFINE_PRED_FIELD(m_nVisionLastTick, FIELD_INTEGER, FTYPEDESC_INSENDTABLE),
 	DEFINE_PRED_FIELD_TOL(m_flJumpLastTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
+	DEFINE_PRED_FIELD_TOL(m_flNextPingTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE, TD_MSECTOLERANCE),
 END_PREDICTION_DATA()
-
-static void __MsgFunc_DamageInfo(bf_read& msg)
-{
-	const int killerIdx = msg.ReadShort();
-	char killedBy[32];
-	const bool foundKilledBy = msg.ReadString(killedBy, sizeof(killedBy), false);
-
-	auto *localPlayer = C_NEO_Player::GetLocalNEOPlayer();
-	if (!localPlayer)
-	{
-		return;
-	}
-
-	// Print damage stats into the console
-	// Print to console
-	AttackersTotals totals = {};
-
-	const int thisIdx = localPlayer->entindex();
-
-	// Can't rely on Msg as it can print out of order, so do it in chunks
-	static char killByLine[512];
-
-	static const char* BORDER = "==========================\n";
-	bool setKillByLine = false;
-	if (killerIdx > 0)
-	{
-		auto *neoAttacker = dynamic_cast<C_NEO_Player*>(UTIL_PlayerByIndex(killerIdx));
-		if (neoAttacker && neoAttacker->entindex() != thisIdx)
-		{
-			KillerLineStr(killByLine, sizeof(killByLine), neoAttacker, localPlayer, foundKilledBy ? killedBy : NULL);
-			setKillByLine = true;
-		}
-	}
-
-	ConMsg("%sDamage infos (Round %d):\n%s\n", BORDER, NEORules()->roundNumber(), setKillByLine ? killByLine : "");
-	
-	for (int pIdx = 1; pIdx <= gpGlobals->maxClients; ++pIdx)
-	{
-		if (pIdx == thisIdx)
-		{
-			continue;
-		}
-
-		auto* neoAttacker = dynamic_cast<C_NEO_Player*>(UTIL_PlayerByIndex(pIdx));
-		if (!neoAttacker || neoAttacker->IsHLTV())
-		{
-			continue;
-		}
-
-		const char *dmgerName = neoAttacker->GetNeoPlayerName();
-		if (!dmgerName)
-		{
-			continue;
-		}
-
-		const AttackersTotals attackerInfo = {
-			.dealtDmgs = neoAttacker->GetAttackersScores(thisIdx),
-			.dealtHits = neoAttacker->GetAttackerHits(thisIdx),
-			.takenDmgs = localPlayer->GetAttackersScores(pIdx),
-			.takenHits = localPlayer->GetAttackerHits(pIdx),
-		};
-		if (attackerInfo.dealtDmgs > 0 || attackerInfo.takenDmgs > 0)
-		{
-			const char *dmgerClass = GetNeoClassName(neoAttacker->GetClass());
-
-			static char infoLine[128];
-			DmgLineStr(infoLine, sizeof(infoLine), dmgerName, dmgerClass, attackerInfo);
-			ConMsg("%s", infoLine);
-
-			totals += attackerInfo;
-		}
-	}
-
-	ConMsg("\nTOTAL: Dealt: %d in %d hits | Taken: %d in %d hits\n%s\n",
-		totals.dealtDmgs, totals.dealtHits,
-		totals.takenDmgs, totals.takenHits,
-		BORDER);
-}
-USER_MESSAGE_REGISTER(DamageInfo);
 
 static void __MsgFunc_IdleRespawnShowMenu(bf_read &)
 {
@@ -222,9 +149,6 @@ class NeoLoadoutMenu_Cb : public ICommandCallback
 public:
 	virtual void CommandCallback(const CCommand& command)
 	{
-#if DEBUG
-		DevMsg("Loadout access cb\n");
-#endif
 		if (engine->IsPlayingDemo() || NEORules()->GetForcedWeapon() >= 0)
 		{
 			return;
@@ -236,7 +160,7 @@ public:
 			return;
 		}
 
-		auto panel = dynamic_cast<vgui::EditablePanel*>(GetClientModeNormal()->
+		auto panel = assert_cast<vgui::EditablePanel*>(GetClientModeNormal()->
 			GetViewport()->FindChildByName(PANEL_NEO_LOADOUT));
 
 		if (!panel)
@@ -246,13 +170,13 @@ public:
 			return;
 		}
 
-		auto classPanel = dynamic_cast<CNeoClassMenu*>(GetClientModeNormal()->
+		auto classPanel = assert_cast<CNeoClassMenu*>(GetClientModeNormal()->
 			GetViewport()->FindChildByName(PANEL_CLASS));
 		if (classPanel)
 		{
 			classPanel->ShowPanel(false);
 		}
-		auto teamPanel = dynamic_cast<CNeoTeamMenu*>(GetClientModeNormal()->
+		auto teamPanel = assert_cast<CNeoTeamMenu*>(GetClientModeNormal()->
 			GetViewport()->FindChildByName(PANEL_TEAM));
 		if (teamPanel)
 		{
@@ -296,7 +220,7 @@ public:
 		panel->SetVisible(true);
 		panel->SetEnabled(true);
 
-		auto loadoutPanel = dynamic_cast<CNeoLoadoutMenu*>(panel);
+		auto loadoutPanel = assert_cast<CNeoLoadoutMenu*>(panel);
 		if (loadoutPanel)
 		{
 			loadoutPanel->ShowPanel(true);
@@ -322,7 +246,7 @@ public:
 			return;
 		}
 
-		if (command.ArgC() > 1 && !command.FindArg("skipTeamCheck"))
+		if (!command.FindArg("skipTeamCheck"))
 		{ // A smarter way to do this might be to assign the buttons for class and weapons menu to unique commands that check the current team and call this commandcallback
 			auto team = GetLocalPlayerTeam();
 			if(team < FIRST_GAME_TEAM)
@@ -331,13 +255,19 @@ public:
 			}
 		}
 
-		auto playerNeoClass = C_NEO_Player::GetLocalNEOPlayer()->m_iNeoClass;
+		C_NEO_Player* localPlayer = C_NEO_Player::GetLocalNEOPlayer();
+		if (!localPlayer)
+		{
+			return;
+		}
+
+		auto playerNeoClass = localPlayer->m_iNeoClass;
 		if (playerNeoClass == NEO_CLASS_VIP)
 		{
 			return;
 		}
 		
-		vgui::EditablePanel *panel = dynamic_cast<vgui::EditablePanel*>
+		vgui::EditablePanel *panel = assert_cast<vgui::EditablePanel*>
 			(GetClientModeNormal()->GetViewport()->FindChildByName(PANEL_CLASS));
 
 		if (!panel)
@@ -347,13 +277,13 @@ public:
 			return;
 		}
 
-		auto loadoutPanel = dynamic_cast<CNeoLoadoutMenu*>(GetClientModeNormal()->
+		auto loadoutPanel = assert_cast<CNeoLoadoutMenu*>(GetClientModeNormal()->
 			GetViewport()->FindChildByName(PANEL_NEO_LOADOUT));
 		if (loadoutPanel)
 		{
 			loadoutPanel->ShowPanel(false);
 		}
-		auto teamPanel = dynamic_cast<CNeoTeamMenu*>(GetClientModeNormal()->
+		auto teamPanel = assert_cast<CNeoTeamMenu*>(GetClientModeNormal()->
 			GetViewport()->FindChildByName(PANEL_TEAM));
 		if (teamPanel)
 		{
@@ -410,7 +340,7 @@ public:
 			return;
 		}
 
-		vgui::EditablePanel *panel = dynamic_cast<vgui::EditablePanel*>
+		vgui::EditablePanel *panel = assert_cast<vgui::EditablePanel*>
 			(GetClientModeNormal()->GetViewport()->FindChildByName(PANEL_TEAM));
 		if (!panel)
 		{
@@ -419,13 +349,13 @@ public:
 			return;
 		}
 
-		auto loadoutPanel = dynamic_cast<CNeoLoadoutMenu*>(GetClientModeNormal()->
+		auto loadoutPanel = assert_cast<CNeoLoadoutMenu*>(GetClientModeNormal()->
 			GetViewport()->FindChildByName(PANEL_NEO_LOADOUT));
 		if (loadoutPanel)
 		{
 			loadoutPanel->ShowPanel(false);
 		}
-		auto classPanel = dynamic_cast<CNeoClassMenu*>(GetClientModeNormal()->
+		auto classPanel = assert_cast<CNeoClassMenu*>(GetClientModeNormal()->
 			GetViewport()->FindChildByName(PANEL_CLASS));
 		if (classPanel)
 		{
@@ -496,6 +426,7 @@ C_NEO_Player::C_NEO_Player()
 	m_iNeoStar = NEO_DEFAULT_STAR;
 	V_memset(m_szNeoName.GetForModify(), 0, sizeof(m_szNeoName));
 	V_memset(m_szNeoClantag.GetForModify(), 0, sizeof(m_szNeoClantag));
+	V_memset(m_szNeoCrosshair.GetForModify(), 0, sizeof(m_szNeoCrosshair));
 
 	m_iLoadoutWepChoice = NEORules()->GetForcedWeapon() >= 0 ? NEORules()->GetForcedWeapon() : 0;
 	m_iNextSpawnClassChoice = -1;
@@ -614,15 +545,6 @@ void C_NEO_Player::CheckLeanButtons()
 	}
 }
 
-void C_NEO_Player::ZeroFriendlyPlayerLocArray()
-{
-	Assert(m_rvFriendlyPlayerPositions.Count() == MAX_PLAYERS);
-	for (int i = 0; i < MAX_PLAYERS; ++i)
-	{
-		m_rvFriendlyPlayerPositions.GetForModify(i) = vec3_origin;
-	}
-}
-
 int C_NEO_Player::GetAttackersScores(const int attackerIdx) const
 {
 	if (NEORules()->GetGameType() == NEO_GAME_TYPE_DM || NEORules()->GetGameType() == NEO_GAME_TYPE_TDM)
@@ -661,7 +583,7 @@ const char *C_NEO_Player::InternalGetNeoPlayerName() const
 			if (dupePos != m_szNeoNameLocalDupeIdx)
 			{
 				m_szNeoNameLocalDupeIdx = dupePos;
-				V_snprintf(m_szNeoNameWDupeIdx, sizeof(m_szNeoNameWDupeIdx), "%s (%d)", neoName, dupePos);
+				V_sprintf_safe(m_szNeoNameWDupeIdx, "%s (%d)", neoName, dupePos);
 			}
 			return m_szNeoNameWDupeIdx;
 		}
@@ -674,7 +596,7 @@ const char *C_NEO_Player::InternalGetNeoPlayerName() const
 		if (dupePos != m_szNeoNameLocalDupeIdx)
 		{
 			m_szNeoNameLocalDupeIdx = dupePos;
-			V_snprintf(m_szNeoNameWDupeIdx, sizeof(m_szNeoNameWDupeIdx), "%s (%d)", stndName, dupePos);
+			V_sprintf_safe(m_szNeoNameWDupeIdx, "%s (%d)", stndName, dupePos);
 		}
 		return m_szNeoNameWDupeIdx;
 	}
@@ -705,6 +627,18 @@ int C_NEO_Player::GetAttackerHits(const int attackerIdx) const
 	return m_rfAttackersHits.Get(attackerIdx);
 }
 
+constexpr float invertedDamageResistanceModifier[NEO_CLASS__ENUM_COUNT] = {
+	1 / NEO_RECON_DAMAGE_MODIFIER,
+	1 / NEO_ASSAULT_DAMAGE_MODIFIER,
+	1 / NEO_SUPPORT_DAMAGE_MODIFIER,
+	1 / NEO_ASSAULT_DAMAGE_MODIFIER
+};
+
+int C_NEO_Player::GetDisplayedHealth(bool asPercent) const
+{
+	return asPercent ? GetHealth() : GetHealth() * invertedDamageResistanceModifier[m_iNeoClass];
+}
+
 extern ConVar mat_neo_toc_test;
 #ifdef GLOWS_ENABLE
 extern ConVar glow_outline_effect_enable;
@@ -717,9 +651,9 @@ int C_NEO_Player::DrawModel(int flags)
 	}
 
 #ifdef GLOWS_ENABLE
-	auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetTargetNEOPlayer();
+	auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetVisionTargetNEOPlayer();
 #else
-	auto pTargetPlayer = C_NEO_Player::GetTargetNEOPlayer();
+	auto pTargetPlayer = C_NEO_Player::GetVisionTargetNEOPlayer();
 #endif // GLOWS_ENABLE
 	if (!pTargetPlayer)
 	{
@@ -908,12 +842,7 @@ void C_NEO_Player::CalculateSpeed(void)
 
 	if (GetFlags() & FL_DUCKING)
 	{
-		speed *= NEO_CROUCH_WALK_MODIFIER;
-	}
-
-	if (m_nButtons & IN_WALK)
-	{
-		speed *= NEO_CROUCH_WALK_MODIFIER; // They stack
+		speed *= NEO_CROUCH_MODIFIER;
 	}
 
 	if (IsSprinting())
@@ -924,6 +853,7 @@ void C_NEO_Player::CalculateSpeed(void)
 				break;
 			case NEO_CLASS_ASSAULT:
 			case NEO_CLASS_VIP:
+			case NEO_CLASS_JUGGERNAUT:
 				speed *= NEO_ASSAULT_SPRINT_MODIFIER;
 				break;
 			case NEO_CLASS_SUPPORT:
@@ -939,11 +869,16 @@ void C_NEO_Player::CalculateSpeed(void)
 		speed *= NEO_AIM_MODIFIER;
 	}
 
+	if (m_nButtons & IN_WALK)
+	{
+		speed = MIN(GetFlags() & FL_DUCKING ? NEO_CROUCH_WALK_SPEED : NEO_WALK_SPEED, speed);
+	}
+
 	Vector absoluteVelocity = GetAbsVelocity();
 	absoluteVelocity.z = 0.f;
 	float currentSpeed = absoluteVelocity.Length();
 
-	if (!neo_ghost_bhopping.GetBool() && GetMoveType() != MOVETYPE_LADDER && currentSpeed > speed && m_bCarryingGhost)
+	if (((!neo_ghost_bhopping.GetBool() && m_bCarryingGhost) || m_iNeoClass == NEO_CLASS_JUGGERNAUT) && GetMoveType() == MOVETYPE_WALK && currentSpeed > speed)
 	{
 		float overSpeed = currentSpeed - speed;
 		absoluteVelocity.NormalizeInPlace();
@@ -1010,7 +945,7 @@ void C_NEO_Player::HandleSpeedChangesLegacy()
 			{
 				StopWalking();
 			}
-			else if( !IsWalking() && !IsSprinting() && (m_afButtonPressed & IN_WALK) && !(m_nButtons & IN_DUCK) )
+			else if( !IsWalking() && !IsSprinting() && (m_afButtonPressed & IN_WALK) )
 			{
 				StartWalking();
 			}
@@ -1137,6 +1072,7 @@ void C_NEO_Player::PreThink( void )
 
 	CheckThermOpticButtons();
 	CheckVisionButtons();
+	CheckPingButton(this);
 
 	if (m_bInThermOpticCamo)
 	{
@@ -1227,21 +1163,16 @@ void C_NEO_Player::PreThink( void )
 		m_bHasBeenAirborneForTooLongToSuperJump = false;
 	}
 
-	if (m_iNeoClass == NEO_CLASS_RECON)
+	if (m_iNeoClass == NEO_CLASS_RECON && 
+		(m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED) && 
+		IsAllowedToSuperJump())
 	{
-		if ((m_afButtonPressed & IN_JUMP) && (m_nButtons & IN_SPEED))
+		SuitPower_Drain(SUPER_JMP_COST);
+		bool forward = m_nButtons & IN_FORWARD;
+		bool backward = m_nButtons & IN_BACK;
+		if (forward xor backward)
 		{
-			// If player holds both forward + back, only use up AUX power.
-			// This movement trick replaces the original NT's trick of
-			// sideways-superjumping with the intent of dumping AUX for a
-			// jump setup that requires sprint jumping without the superjump.
-			if (IsAllowedToSuperJump())
-			{
-				if (!((m_nButtons & IN_FORWARD) && (m_nButtons & IN_BACK)))
-				{
-					SuperJump();
-				}
-			}
+			SuperJump();
 		}
 	}
 
@@ -1366,16 +1297,6 @@ void C_NEO_Player::PostThink(void)
 				.a = 255,
 			};
 			vieweffects->Fade(sfade);
-
-			auto target = GetObserverTarget();
-			if (!IsValidObserverTarget(target))
-			{
-				auto nextTarget = FindNextObserverTarget(false);
-				if (nextTarget && nextTarget != target)
-				{
-					SetObserverTarget(nextTarget);
-				}
-			}
 		}
 		return;
 	}
@@ -1431,12 +1352,37 @@ void C_NEO_Player::PostThink(void)
 
 void C_NEO_Player::CalcDeathCamView(Vector &eyeOrigin, QAngle &eyeAngles, float &fov)
 {
-	if (auto *pRagdoll = static_cast<C_HL2MPRagdoll *>(m_hRagdoll.Get()))
+	auto* pRagdoll = static_cast<C_HL2MPRagdoll*>(m_hRagdoll.Get());
+	if (pRagdoll && GetClass() != NEO_CLASS_JUGGERNAUT)
 	{
 		// First person death cam
 		pRagdoll->GetAttachment(pRagdoll->LookupAttachment("eyes"), eyeOrigin, eyeAngles);
 		Vector vForward;
 		AngleVectors(eyeAngles, &vForward);
+		fov = GetFOV();
+	}
+	else if (GetClass() == NEO_CLASS_JUGGERNAUT)
+	{
+		Vector vTarget = vec3_origin;
+		if (m_hDroppedJuggernautItem)
+		{
+			vTarget = m_hDroppedJuggernautItem->WorldSpaceCenter();
+		}
+		else
+		{
+			vTarget = NEORules()->GetJuggernautMarkerPos();
+
+		}
+
+		eyeOrigin = vTarget + Vector(80, 80, 80);
+		trace_t tr;
+		CTraceFilterWorldOnly traceFilter;
+		UTIL_TraceLine(vTarget, eyeOrigin, MASK_OPAQUE, &traceFilter, &tr);
+		eyeOrigin = vTarget + ((Vector(75, 75, 75) * tr.fraction));
+
+		Vector vDir = vTarget - eyeOrigin;
+		VectorNormalize(vDir);
+		VectorAngles(vDir, eyeAngles);
 		fov = GetFOV();
 	}
 	else
@@ -1471,7 +1417,7 @@ bool C_NEO_Player::IsAllowedToSuperJump(void)
 
 	// Only superjump if we have a reasonable jump direction in mind
 	// NEO TODO (Rain): should we support sideways superjumping?
-	if ((m_nButtons & (IN_FORWARD | IN_BACK)) == 0)
+	if ((m_nButtons & (IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT)) == 0)
 	{
 		return false;
 	}
@@ -1502,7 +1448,20 @@ void C_NEO_Player::SuperJump(void)
 	// We don't give an upwards boost aside from regular jump
 	forward.z = 0;
 
-	ApplyAbsVelocityImpulse(forward * neo_recon_superjump_intensity.GetFloat());
+	// Flip direction if jumping backwards
+	if (m_nButtons & IN_BACK)
+	{
+		forward = -forward;
+	}
+
+	float boostIntensity = GetPlayerMaxSpeed();
+	if (m_nButtons & (IN_MOVELEFT | IN_MOVERIGHT))
+	{
+		constexpr float sideWaysNerf = 0.70710678118; // 1 / sqrt(2);
+		boostIntensity *= sideWaysNerf;
+	}
+
+	ApplyAbsVelocityImpulse(forward * boostIntensity);
 }
 
 float C_NEO_Player::CloakPower_CurrentVisualPercentage(void) const
@@ -1531,18 +1490,16 @@ void C_NEO_Player::Spawn( void )
 	m_nVisionLastTick = 0;
 	m_bInLean = NEO_LEAN_NONE;
 
-	for (int i = 0; i < m_rfAttackersScores.Count(); ++i)
+	static_assert(_ARRAYSIZE(m_rfAttackersScores) == MAX_PLAYERS);
+	static_assert(_ARRAYSIZE(m_rfAttackersAccumlator) == MAX_PLAYERS);
+	static_assert(_ARRAYSIZE(m_rfAttackersHits) == MAX_PLAYERS);
+	for (int i = 0; i < MAX_PLAYERS; ++i)
 	{
-		m_rfAttackersScores.Set(i, 0);
+		m_rfAttackersScores.GetForModify(i) = 0;
+		m_rfAttackersAccumlator.GetForModify(i) = 0.0f;
+		m_rfAttackersHits.GetForModify(i) = 0;
 	}
-	for (int i = 0; i < m_rfAttackersAccumlator.Count(); ++i)
-	{
-		m_rfAttackersAccumlator.Set(i, 0.0f);
-	}
-	for (int i = 0; i < m_rfAttackersHits.Count(); ++i)
-	{
-		m_rfAttackersHits.Set(i, 0);
-	}
+	V_memset(m_rfNeoPlayerIdxsKilledByLocal, 0, sizeof(m_rfNeoPlayerIdxsKilledByLocal));
 
 	Weapon_SetZoom(false);
 
@@ -1613,13 +1570,11 @@ void C_NEO_Player::Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon)
 	if (pWeapon->IsGhost())
 	{
 		pWeapon->Holster(NULL);
-		Assert(dynamic_cast<C_WeaponGhost*>(pWeapon));
-		static_cast<C_WeaponGhost*>(pWeapon)->HandleGhostUnequip();
+		assert_cast<C_WeaponGhost*>(pWeapon)->HandleGhostUnequip();
 	}
 	else if (pWeapon->GetNeoWepBits() & NEO_WEP_SUPA7)
 	{
-		Assert(dynamic_cast<C_WeaponSupa7*>(pWeapon));
-		static_cast<C_WeaponSupa7*>(pWeapon)->ClearDelayedInputs();
+		assert_cast<C_WeaponSupa7*>(pWeapon)->ClearDelayedInputs();
 	}
 }
 
@@ -1704,8 +1659,10 @@ float C_NEO_Player::GetCrouchSpeed(void) const
 		return NEO_SUPPORT_CROUCH_SPEED;
 	case NEO_CLASS_VIP:
 		return NEO_VIP_CROUCH_SPEED;
+	case NEO_CLASS_JUGGERNAUT:
+		return NEO_JUGGERNAUT_CROUCH_SPEED;
 	default:
-		return (NEO_BASE_SPEED * NEO_CROUCH_WALK_MODIFIER);
+		return (NEO_BASE_SPEED * NEO_CROUCH_MODIFIER);
 	}
 }
 
@@ -1721,6 +1678,8 @@ float C_NEO_Player::GetNormSpeed(void) const
 		return NEO_SUPPORT_BASE_SPEED;
 	case NEO_CLASS_VIP:
 		return NEO_VIP_BASE_SPEED;
+	case NEO_CLASS_JUGGERNAUT:
+		return NEO_JUGGERNAUT_BASE_SPEED;
 	default:
 		return NEO_BASE_SPEED;
 	}
@@ -1738,43 +1697,11 @@ float C_NEO_Player::GetSprintSpeed(void) const
 		return NEO_SUPPORT_SPRINT_SPEED;
 	case NEO_CLASS_VIP:
 		return NEO_VIP_SPRINT_SPEED;
+	case NEO_CLASS_JUGGERNAUT:
+		return NEO_JUGGERNAUT_SPRINT_SPEED;
 	default:
 		return NEO_BASE_SPEED; // No generic sprint modifier; default speed.
 	}
-}
-
-void C_NEO_Player::CalcChaseCamView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov)
-{
-	if (!HandleDeathSpecCamSwitch(eyeOrigin, eyeAngles, fov))
-	{
-		BaseClass::CalcChaseCamView(eyeOrigin, eyeAngles, fov);
-	}
-}
-
-void C_NEO_Player::CalcInEyeCamView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov)
-{
-	if (!HandleDeathSpecCamSwitch(eyeOrigin, eyeAngles, fov))
-	{
-		BaseClass::CalcInEyeCamView(eyeOrigin, eyeAngles, fov);
-	}
-}
-
-bool C_NEO_Player::HandleDeathSpecCamSwitch(Vector& eyeOrigin, QAngle& eyeAngles, float& fov)
-{
-	fov = GetFOV(); // jic the caller relies on us initializing this
-	auto target = GetObserverTarget();
-	if (!IsValidObserverTarget(target))
-	{
-		auto nextTarget = FindNextObserverTarget(false);
-		if (nextTarget && nextTarget != target)
-		{
-			SetObserverTarget(nextTarget);
-		}
-		VectorCopy(EyePosition(), eyeOrigin);
-		VectorCopy(EyeAngles(), eyeAngles);
-		return true;
-	}
-	return false;
 }
 
 float C_NEO_Player::GetActiveWeaponSpeedScale() const
@@ -1802,6 +1729,11 @@ void C_NEO_Player::Weapon_AimToggle(C_NEOBaseCombatWeapon *pNeoWep, const NeoWep
 
 void C_NEO_Player::Weapon_SetZoom(const bool bZoomIn)
 {
+	if (bZoomIn == m_bInAim)
+	{
+		return;
+	}
+
 	float zoomSpeedSecs = NEO_ZOOM_SPEED;
 
 #if(0)
@@ -1904,4 +1836,35 @@ extern ConVar sv_neo_wep_dmg_modifier;
 void C_NEO_Player::ModifyFireBulletsDamage(CTakeDamageInfo* dmgInfo)
 {
 	dmgInfo->SetDamage(dmgInfo->GetDamage() * sv_neo_wep_dmg_modifier.GetFloat());
+}
+
+const char *C_NEO_Player::GetOverrideStepSound(const char *pBaseStepSound)
+{
+	if (GetClass() == NEO_CLASS_JUGGERNAUT)
+	{
+		if (!IsSprinting())
+		{
+			if (m_Local.m_nStepside)
+			{
+				return "JGR56.FootstepLeft";
+			}
+			else
+			{
+				return "JGR56.FootstepRight";
+			}
+		}
+		else
+		{
+			if (m_Local.m_nStepside)
+			{
+				return "JGR56.RunFootstepLeft";
+			}
+			else
+			{
+				return "JGR56.RunFootstepRight";
+			}
+		}
+	}
+
+	return BaseClass::GetOverrideStepSound(pBaseStepSound);
 }

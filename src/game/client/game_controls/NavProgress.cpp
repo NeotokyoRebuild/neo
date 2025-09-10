@@ -54,6 +54,13 @@ CNavProgress::CNavProgress( IViewPort *pViewPort ) : Frame( NULL, PANEL_NAV_PROG
 //--------------------------------------------------------------------------------------------------------------
 CNavProgress::~CNavProgress()
 {
+#ifdef NEO
+	delete m_pTitle;
+	delete m_pText;
+	delete m_pProgressBarBorder;
+	delete m_pProgressBar;
+	delete m_pProgressBarSizer;
+#endif // NEO
 }
 
 //--------------------------------------------------------------------------------------------------------------

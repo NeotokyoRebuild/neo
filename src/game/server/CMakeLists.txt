@@ -623,6 +623,8 @@ target_sources_grouped(
     lights.cpp
     lights.h
     locksounds.h
+    logic_eventlistener.cpp
+    logic_eventlistener.h
     logic_measure_movement.cpp
     logic_navigation.cpp
     logicauto.cpp
@@ -687,6 +689,8 @@ target_sources_grouped(
     point_spotlight.cpp
     point_template.cpp
     point_template.h
+    point_worldtext.cpp
+    point_worldtext.h
     pointanglesensor.cpp
     pointhurt.cpp
     pointteleport.cpp
@@ -708,6 +712,7 @@ target_sources_grouped(
     scriptedtarget.h
     sendproxy.cpp
     shadowcontrol.cpp
+    skyboxswapper.cpp
     slideshow_display.cpp
     sound.cpp
     soundent.cpp
@@ -1342,6 +1347,10 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_gamerules.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_juggernaut.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_juggernaut.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_penetration_resistance.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_penetration_resistance.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_shared.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_spawnpoint.cpp
@@ -1357,12 +1366,17 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_misc.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_misc.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_weapon_loadout.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_weapon_loadout.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_enums.h
     neo/neo_bloom_controller.cpp
     neo/neo_client.cpp
     neo/neo_detpack.cpp
     neo/neo_detpack.h
     neo/neo_game_config.cpp
     neo/neo_game_config.h
+    neo/neo_ghost_boundary.cpp
+    neo/neo_ghost_boundary.h
     neo/neo_ghost_spawn_point.cpp
     neo/neo_ghost_spawn_point.h
     neo/neo_grenade.cpp
@@ -1372,15 +1386,68 @@ target_sources_grouped(
     neo/neo_model_manager.cpp
     neo/neo_model_manager.h
     neo/neo_npc_dummy.cpp
+    neo/neo_npc_targetsystem.cpp
     neo/neo_player.cpp
     neo/neo_player.h
+    neo/neo_smokelineofsightblocker.cpp
+    neo/neo_smokelineofsightblocker.h
     neo/neo_smokegrenade.cpp
     neo/neo_smokegrenade.h
     neo/neo_te_tocflash.cpp
     neo/neo_te_tocflash.h
     neo/neo_tracefilter_collisiongroupdelta.h
+    neo/neo_typeconverter.cpp
     neo/neo_dm_spawn.cpp
     neo/neo_dm_spawn.h
+)
+
+target_sources_grouped(
+    TARGET server
+    NAME "NEO\\Bot"
+    FILES
+    neo/bot/neo_bot.cpp
+    neo/bot/neo_bot.h
+    neo/bot/neo_bot_body.cpp
+    neo/bot/neo_bot_body.h
+    neo/bot/neo_bot_contextual_query_interface.h
+    neo/bot/neo_bot_locomotion.cpp
+    neo/bot/neo_bot_locomotion.h
+    neo/bot/neo_bot_manager.cpp
+    neo/bot/neo_bot_manager.h
+    neo/bot/neo_bot_squad.cpp
+    neo/bot/neo_bot_squad.h
+    neo/bot/neo_bot_vision.cpp
+    neo/bot/neo_bot_vision.h
+    neo/bot/behavior/neo_bot_approach_object.cpp
+    neo/bot/behavior/neo_bot_approach_object.h
+    neo/bot/behavior/neo_bot_attack.cpp
+    neo/bot/behavior/neo_bot_attack.h
+    neo/bot/behavior/neo_bot_behavior.cpp
+    neo/bot/behavior/neo_bot_behavior.h
+    neo/bot/behavior/neo_bot_dead.cpp
+    neo/bot/behavior/neo_bot_dead.h
+    neo/bot/behavior/neo_bot_melee_attack.cpp
+    neo/bot/behavior/neo_bot_melee_attack.h
+    neo/bot/behavior/neo_bot_move_to_vantage_point.cpp
+    neo/bot/behavior/neo_bot_move_to_vantage_point.h
+    neo/bot/behavior/neo_bot_retreat_to_cover.cpp
+    neo/bot/behavior/neo_bot_retreat_to_cover.h
+    neo/bot/behavior/neo_bot_scenario_monitor.cpp
+    neo/bot/behavior/neo_bot_scenario_monitor.h
+    neo/bot/behavior/neo_bot_seek_and_destroy.cpp
+    neo/bot/behavior/neo_bot_seek_and_destroy.h
+    neo/bot/behavior/neo_bot_tactical_monitor.cpp
+    neo/bot/behavior/neo_bot_tactical_monitor.h
+    neo/bot/behavior/nav_entities/neo_bot_nav_ent_destroy_entity.cpp
+    neo/bot/behavior/nav_entities/neo_bot_nav_ent_destroy_entity.h
+    neo/bot/behavior/nav_entities/neo_bot_nav_ent_move_to.cpp
+    neo/bot/behavior/nav_entities/neo_bot_nav_ent_move_to.h
+    neo/bot/behavior/nav_entities/neo_bot_nav_ent_wait.cpp
+    neo/bot/behavior/nav_entities/neo_bot_nav_ent_wait.h
+    neo/bot/map_entities/neo_bot_generator.cpp
+    neo/bot/map_entities/neo_bot_generator.h
+    neo/bot/map_entities/neo_bot_proxy.cpp
+    neo/bot/map_entities/neo_bot_proxy.h
 )
 
 target_sources_grouped(
@@ -1389,6 +1456,9 @@ target_sources_grouped(
     FILES
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_aa13.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_aa13.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_balc.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_balc.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_bits.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_detpack.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_detpack.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_ghost.cpp
@@ -1477,8 +1547,6 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_playeranimstate.h
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_weapon_parse.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/hl2mp_weapon_parse.h
-    ${CMAKE_SOURCE_DIR}/game/server/hl2mp/hl2mp_bot_temp.cpp
-    ${CMAKE_SOURCE_DIR}/game/server/hl2mp/hl2mp_bot_temp.h
     hl2mp/hl2mp_client.cpp
     hl2mp/hl2mp_cvars.cpp
     hl2mp/hl2mp_gameinterface.cpp
@@ -1495,7 +1563,7 @@ target_sources_grouped(
     #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_ar2.h
     #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_crossbow.cpp
     #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_crowbar.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_frag.cpp
+    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_frag.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbase.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbase.h
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbase_machinegun.cpp

@@ -47,6 +47,7 @@ using namespace vgui;
 
 #define SHOW_ENEMY_STATUS true
 
+ConVar cl_neo_hud_scoreboard_hide_others("cl_neo_hud_scoreboard_hide_others", "1", FCVAR_ARCHIVE, "Hide some other HUD elements when the scoreboard is displayed to prevent overlap", true, 0.0, true, 1.0);
 ConVar neo_show_scoreboard_avatars("neo_show_scoreboard_avatars", "1", FCVAR_ARCHIVE, "Show avatars on scoreboard.", true, 0.0, true, 1.0 );
 extern ConVar cl_neo_streamermode;
 
@@ -544,7 +545,7 @@ void CNEOScoreBoard::UpdatePlayerInfo()
 			UpdatePlayerAvatar( i, playerData );
 
 			const char *oldName = playerData->GetString("name","");
-			char newName[MAX_PLAYER_NAME_LENGTH + 1 + NEO_MAX_CLANTAG_LENGTH + 1];
+			char newName[NEO_MAX_DISPLAYNAME];
 
 			UTIL_MakeSafeName( oldName, newName, ARRAYSIZE(newName) );
 
@@ -724,7 +725,7 @@ void CNEOScoreBoard::GetPlayerScoreInfo(int playerIndex, KeyValues *kv)
 	const char *pClantag = g_PR->GetClanTag(playerIndex);
 	if (pClantag && pClantag[0] && (!cl_neo_streamermode.GetBool() || g_PR->IsLocalPlayer(playerIndex)))
 	{
-		char szClanTagWName[MAX_PLAYER_NAME_LENGTH + 1 + NEO_MAX_CLANTAG_LENGTH + 1];
+		char szClanTagWName[NEO_MAX_DISPLAYNAME];
 		V_sprintf_safe(szClanTagWName, "[%s] %s", pClantag, g_PR->GetPlayerName(playerIndex));
 		kv->SetString("name", szClanTagWName);
 	}
@@ -748,7 +749,7 @@ void CNEOScoreBoard::GetPlayerScoreInfo(int playerIndex, KeyValues *kv)
 	int statusIcon = -1;
 	if (neoTeam == TEAM_JINRAI || neoTeam == TEAM_NSF)
 	{
-		statusIcon = (!SHOW_ENEMY_STATUS && oppositeTeam || g_PR->IsAlive(playerIndex)) ? -1 : m_iDeadIcon;
+		statusIcon = ((!SHOW_ENEMY_STATUS && oppositeTeam) || g_PR->IsAlive(playerIndex)) ? -1 : m_iDeadIcon;
 	}
 	kv->SetInt("status", statusIcon);
 	kv->SetString("class", oppositeTeam ? "" : GetNeoClassName(neoClassIdx));

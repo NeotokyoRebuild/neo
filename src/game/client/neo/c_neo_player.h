@@ -27,10 +27,10 @@ public:
 	virtual ~C_NEO_Player();
 
 	static C_NEO_Player *GetLocalNEOPlayer() { return static_cast<C_NEO_Player*>(C_BasePlayer::GetLocalPlayer()); }
-	static C_NEO_Player *GetTargetNEOPlayer()
-	{ // Returns the player we are spectating, or local player if not spectating anyone
+	static C_NEO_Player *GetVisionTargetNEOPlayer()
+	{ // Returns the player we are spectating if in first person mode, or local player
 		auto localNeoPlayer = GetLocalNEOPlayer();
-		if (localNeoPlayer->IsObserver())
+		if (localNeoPlayer->IsObserver() && localNeoPlayer->m_iObserverMode == OBS_MODE_IN_EYE)
 		{ // NEOTOD (Adam) clear m_hObserverTarget instead when exiting observer mode?
 			auto targetNeoPlayer = static_cast<C_NEO_Player*>(localNeoPlayer->GetObserverTarget());
 			if (targetNeoPlayer) { return targetNeoPlayer; }
@@ -66,6 +66,7 @@ public:
 	virtual bool ShouldReceiveProjectedTextures( int flags );
 	virtual void PostDataUpdate( DataUpdateType_t updateType );
 	virtual void PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, float fvol, bool force );
+	const char* GetOverrideStepSound(const char* pBaseStepSound) override;
 	virtual void DoImpactEffect( trace_t &tr, int nDamageType );
 	IRagdoll* GetRepresentativeRagdoll() const;
 	virtual void CalcView( Vector &eyeOrigin, QAngle &eyeAngles, float &zNear, float &zFar, float &fov );
@@ -103,9 +104,6 @@ public:
 	virtual const Vector GetPlayerMins(void) const OVERRIDE;
 	virtual const Vector GetPlayerMaxs(void) const OVERRIDE;
 
-	virtual void CalcChaseCamView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov) override;
-	virtual void CalcInEyeCamView(Vector& eyeOrigin, QAngle& eyeAngles, float& fov) override;
-
 	float CloakPower_CurrentVisualPercentage(void) const;
 
 	float GetNormSpeed_WithActiveWepEncumberment(void) const;
@@ -126,14 +124,13 @@ public:
 private:
 	float GetActiveWeaponSpeedScale() const;
 
-	bool HandleDeathSpecCamSwitch(Vector& eyeOrigin, QAngle& eyeAngles, float& fov);
-
 public:
 	float m_flSpecFOV = 0.0f;
 	bool ShouldDrawHL2StyleQuickHud( void );
 
 	int GetClass() const { return m_iNeoClass; }
 	int GetStar() const { return m_iNeoStar; }
+	int GetDisplayedHealth(bool asPercent) const;
 
 	bool IsCarryingGhost(void) const;
 
@@ -156,8 +153,6 @@ public:
 	void Weapon_Drop(C_NEOBaseCombatWeapon *pWeapon);
 
 	C_NEOPredictedViewModel *GetNEOViewModel() { return static_cast<C_NEOPredictedViewModel*>(GetViewModel()); }
-
-	inline void ZeroFriendlyPlayerLocArray(void);
 
 	bool IsCloaked() const { return m_bInThermOpticCamo; }
 	float GetCloakFactor() const { return m_flTocFactor; }
@@ -194,16 +189,17 @@ public:
 	CNetworkVar(int, m_iLoadoutWepChoice);
 	CNetworkVar(int, m_iNextSpawnClassChoice);
 
-	CNetworkArray(Vector, m_rvFriendlyPlayerPositions, MAX_PLAYERS);
-	CNetworkArray(int, m_rfAttackersScores, (MAX_PLAYERS + 1));
-	CNetworkArray(float, m_rfAttackersAccumlator, (MAX_PLAYERS + 1));
-	CNetworkArray(int, m_rfAttackersHits, (MAX_PLAYERS + 1));
+	CNetworkArray(int, m_rfAttackersScores, MAX_PLAYERS);
+	CNetworkArray(float, m_rfAttackersAccumlator, MAX_PLAYERS);
+	CNetworkArray(int, m_rfAttackersHits, MAX_PLAYERS);
 	
 	CNetworkVar(bool, m_bHasBeenAirborneForTooLongToSuperJump);
 
 	CNetworkVar(float, m_flCamoAuxLastTime);
 	CNetworkVar(int, m_nVisionLastTick);
 	CNetworkVar(float, m_flJumpLastTime);
+
+	CNetworkVar(float, m_flNextPingTime);
 
 	CNetworkVar(bool, m_bInThermOpticCamo);
 	CNetworkVar(bool, m_bLastTickInThermOpticCamo);
@@ -212,6 +208,7 @@ public:
 	CNetworkVar(int, m_bInLean);
 	CNetworkVar(bool, m_bCarryingGhost);
 	CNetworkVar(bool, m_bIneligibleForLoadoutPick);
+	CNetworkHandle(CBaseEntity, m_hDroppedJuggernautItem);
 
 	CNetworkVar(int, m_iNeoClass);
 	CNetworkVar(int, m_iNeoSkin);
@@ -219,6 +216,7 @@ public:
 
 	CNetworkString(m_szNeoName, MAX_PLAYER_NAME_LENGTH);
 	CNetworkString(m_szNeoClantag, NEO_MAX_CLANTAG_LENGTH);
+	CNetworkString(m_szNeoCrosshair, NEO_XHAIR_SEQMAX);
 	CNetworkVar(int, m_szNameDupePos);
 	CNetworkVar(bool, m_bClientWantNeoName);
 
@@ -238,6 +236,9 @@ private:
 	// Non-network version of m_szNeoName with dupe checker index
 	mutable char m_szNeoNameWDupeIdx[MAX_PLAYER_NAME_LENGTH + 10];
 	mutable int m_szNeoNameLocalDupeIdx;
+
+public:
+	bool m_rfNeoPlayerIdxsKilledByLocal[MAX_PLAYERS + 1];
 
 private:
 	C_NEO_Player(const C_NEO_Player &);

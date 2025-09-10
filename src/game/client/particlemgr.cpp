@@ -295,7 +295,12 @@ void CParticleEffectBinding::BBoxCalcEnd( bool bboxSet, Vector &bbMin, Vector &b
 	}
 }
 
-
+#ifdef NEO
+#include "c_neo_player.h"
+#ifdef GLOWS_ENABLE
+extern ConVar glow_outline_effect_enable;
+#endif // GLOWS_ENABLE
+#endif // NEO
 int CParticleEffectBinding::DrawModel( int flags )
 {
 	VPROF_BUDGET( "CParticleEffectBinding::DrawModel", VPROF_BUDGETGROUP_PARTICLE_RENDERING );
@@ -344,6 +349,15 @@ int CParticleEffectBinding::DrawModel( int flags )
 		flFrameTime = Helper_GetFrameTime();
 	}
 
+#ifdef NEO
+#ifdef GLOWS_ENABLE
+	auto pTargetPlayer = glow_outline_effect_enable.GetBool() ? C_NEO_Player::GetLocalNEOPlayer() : C_NEO_Player::GetVisionTargetNEOPlayer();
+#else
+	auto pTargetPlayer = C_NEO_Player::GetTargetNEOPlayer();
+#endif // GLOWS_ENABLE
+	bool bInThermalVision = pTargetPlayer->IsInVision() && pTargetPlayer->GetClass() == NEO_CLASS_SUPPORT;
+#endif // NEO
+
 	// For each material, render...
 	// This does an incremental bubble sort. It only does one pass every frame, and it will shuffle 
 	// unsorted particles one step towards where they should be.
@@ -361,12 +375,13 @@ int CParticleEffectBinding::DrawModel( int flags )
 		{
 			UpdateScreenEffectTexture();
 		}
-		
+
 		DrawMaterialParticles( 
 			bBucketSort,
 			pMaterial, 
 			flFrameTime,
-			bWireframe );
+			bWireframe,
+			bInThermalVision);
 	}
 
 	if ( ShouldDrawInWireFrameMode() )
@@ -380,7 +395,8 @@ int CParticleEffectBinding::DrawModel( int flags )
 				bBucketSort,
 				pMaterial, 
 				flFrameTime,
-				bWireframe );
+				bWireframe,
+				bInThermalVision);
 		}
 	}
 
@@ -775,7 +791,8 @@ int CParticleEffectBinding::DrawMaterialParticles(
 	bool bBucketSort,
 	CEffectMaterial *pMaterial, 
 	float flTimeDelta,
-	bool bWireframe
+	bool bWireframe,
+	bool bInThermalVision
 	 )
 {
 	// Setup everything.
@@ -796,6 +813,9 @@ int CParticleEffectBinding::DrawMaterialParticles(
 	renderIterator.m_pMeshBuilder = &builder;
 	renderIterator.m_pMesh = pMesh;
 	renderIterator.m_bBucketSort = bBucketSort;
+#ifdef NEO
+	renderIterator.m_bInThermalVision = bInThermalVision;
+#endif // NEO
 
 	m_pSim->RenderParticles( &renderIterator );
 	g_nParticlesDrawn += m_nActiveParticles;

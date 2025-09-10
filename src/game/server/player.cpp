@@ -2782,7 +2782,12 @@ bool CBasePlayer::IsValidObserverTarget(CBaseEntity * target)
 
 	if ( player->m_lifeState == LIFE_DEAD || player->m_lifeState == LIFE_DYING )
 	{
+#ifdef NEO
+		constexpr int DEATH_SPEC_TIME = 3.0f; // OGNT switches spectator targets much faster than the DEATH_ANIMATION_TIME
+		if ((player->m_flDeathTime + DEATH_SPEC_TIME) < gpGlobals->curtime)
+#else
 		if ( (player->m_flDeathTime + DEATH_ANIMATION_TIME ) < gpGlobals->curtime )
+#endif // NEO
 		{
 			return false;	// allow watching until 3 seconds after death to see death animation
 		}
@@ -3882,7 +3887,19 @@ void CBasePlayer::PlayerRunCommand(CUserCmd *ucmd, IMoveHelper *moveHelper)
 		(developer.GetInt() == 0 && gpGlobals->eLoadType == MapLoad_NewGame && gpGlobals->curtime < 3.0));
 
 #ifdef NEO
-	if (originalCheck || static_cast<CNEO_Player*>(this)->GetNeoFlags() & NEO_FL_FREEZETIME)
+	static constexpr byte IMPULSE_SPRAY = 201;
+	if (ucmd->impulse == IMPULSE_SPRAY)
+	{
+		const char *pszPlayerClDisableSpray = engine->GetClientConVarValue(entindex(), "cl_spraydisable");
+		const bool bPlayerClDisableSpray = StrToInt(pszPlayerClDisableSpray) != 0;
+		if (bPlayerClDisableSpray)
+		{
+			ucmd->impulse = 0;
+		}
+	}
+
+	const bool bPlayerInFreezeTime = static_cast<CNEO_Player*>(this)->GetNeoFlags() & NEO_FL_FREEZETIME;
+	if (originalCheck || bPlayerInFreezeTime)
 #else
 	if (originalCheck)
 #endif
@@ -3890,12 +3907,16 @@ void CBasePlayer::PlayerRunCommand(CUserCmd *ucmd, IMoveHelper *moveHelper)
 		ucmd->forwardmove = 0;
 		ucmd->sidemove = 0;
 		ucmd->upmove = 0;
-		ucmd->impulse = 0;
-
 #ifdef NEO
-		if (!originalCheck && static_cast<CNEO_Player*>(this)->GetNeoFlags() & NEO_FL_FREEZETIME)
+		if (!originalCheck && bPlayerInFreezeTime)
 		{
-			ucmd->buttons &= ~(IN_ATTACK | IN_ATTACK3 | IN_JUMP | IN_SPEED |
+			// Also allow spraying impulse in freeze time (like in playing rounds)
+			if ((ucmd->impulse != IMPULSE_SPRAY) && (GetTeamNumber() == TEAM_JINRAI || GetTeamNumber() == TEAM_NSF))
+			{
+				ucmd->impulse = 0;
+			}
+
+			ucmd->buttons &= ~(IN_ATTACK | IN_JUMP | IN_SPEED |
 				IN_ALT1 | IN_ALT2 | IN_BACK | IN_FORWARD | IN_MOVELEFT | IN_MOVERIGHT | IN_RUN | IN_ZOOM);
 			const bool isTachi = (dynamic_cast<CWeaponTachi*>(GetActiveWeapon()) != NULL);
 			if (!isTachi)
@@ -3903,7 +3924,12 @@ void CBasePlayer::PlayerRunCommand(CUserCmd *ucmd, IMoveHelper *moveHelper)
 				ucmd->buttons &= ~IN_ATTACK2;
 			}
 		}
+		else
+		{
+			ucmd->impulse = 0;
+		}
 #else
+		ucmd->impulse = 0;
 		ucmd->buttons = 0;
 #endif
 
@@ -6070,12 +6096,9 @@ CBaseEntity	*CBasePlayer::GiveNamedItem( const char *pszName, int iSubType )
 		Msg( "NULL Ent in GiveNamedItem!\n" );
 		return NULL;
 	}
-#ifdef NEO
-	pent->SetAbsOrigin(EyePosition());
-#else
+
 	pent->SetLocalOrigin( GetLocalOrigin() );
-#endif
-	pent->AddSpawnFlags( SF_NORESPAWN );
+	pent->AddSpawnFlags(SF_NORESPAWN);
 
 	CBaseCombatWeapon *pWeapon = dynamic_cast<CBaseCombatWeapon*>( (CBaseEntity*)pent );
 	if ( pWeapon )

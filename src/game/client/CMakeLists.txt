@@ -84,8 +84,13 @@ if(NEO_RETAIL)
     target_compile_definitions(client PRIVATE RETAIL)
 endif()
 
-if(NEO_DEDICATED)
-    target_compile_definitions(client PRIVATE DEDICATED)
+if(OS_LINUX OR OS_MACOS)
+    target_compile_definitions(client
+        PRIVATE
+        GL_GLEXT_PROTOTYPES
+        DX_TO_GL_ABSTRACTION
+        USE_SDL
+    )
 endif()
 
 if(NEO_BUILD_WEAPON_PBK56S)
@@ -503,6 +508,8 @@ target_sources_grouped(
     c_playerresource.cpp
     c_point_camera.cpp
     c_point_commentary_node.cpp
+    c_point_worldtext.cpp
+    c_point_worldtext.h
     c_props.cpp
     c_props.h
     c_ragdoll_manager.cpp
@@ -1502,6 +1509,7 @@ target_sources_grouped(
     neo/c_neo_message.cpp
     neo/c_neo_message.h
     neo/c_neo_npc_dummy.cpp
+    neo/c_neo_npc_dummy.h
     neo/c_neo_player.cpp
     neo/c_neo_player.h
     neo/c_neo_te_tocflash.cpp
@@ -1509,6 +1517,7 @@ target_sources_grouped(
     neo/neo_fixup_glshaders.cpp
     neo/neo_fixup_glshaders.h
     neo/c_neo_bloom_controller.cpp
+    neo/c_neo_killer_damage_infos.h
 )
 
 target_sources_grouped(
@@ -1582,6 +1591,8 @@ target_sources_grouped(
     neo/ui/neo_hud_ghost_cap_point.h
     neo/ui/neo_hud_ghost_marker.cpp
     neo/ui/neo_hud_ghost_marker.h
+    neo/ui/neo_hud_killer_damage_info.cpp
+    neo/ui/neo_hud_killer_damage_info.h
     neo/ui/neo_hud_ghost_uplink_state.cpp
     neo/ui/neo_hud_ghost_uplink_state.h
     neo/ui/neo_hud_health_thermoptic_aux.cpp
@@ -1590,6 +1601,8 @@ target_sources_grouped(
     neo/ui/neo_hud_hint.h
     neo/ui/neo_hud_message.cpp
     neo/ui/neo_hud_message.h
+    neo/ui/neo_hud_player_ping.cpp
+    neo/ui/neo_hud_player_ping.h
     neo/ui/neo_hud_round_state.cpp
     neo/ui/neo_hud_round_state.h
     neo/ui/neo_hud_startup_sequence.cpp
@@ -1608,6 +1621,10 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_gamerules.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_ghost_cap_point.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_juggernaut.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_juggernaut.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_penetration_resistance.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_penetration_resistance.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_shared.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_shared.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_player_spawnpoint.cpp
@@ -1623,6 +1640,9 @@ target_sources_grouped(
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_version_info.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_misc.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_misc.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_weapon_loadout.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_weapon_loadout.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/neo_enums.h
 )
 
 target_sources_grouped(
@@ -1631,6 +1651,9 @@ target_sources_grouped(
     FILES
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_aa13.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_aa13.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_balc.cpp
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_balc.h
+    ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_bits.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_detpack.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_detpack.h
     ${CMAKE_SOURCE_DIR}/game/shared/neo/weapons/weapon_ghost.cpp
@@ -1735,7 +1758,7 @@ target_sources_grouped(
     #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_ar2.h
     #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_crossbow.cpp
     #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_crowbar.cpp
-    ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_frag.cpp
+    #${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_frag.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbase.cpp
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbase.h
     ${CMAKE_SOURCE_DIR}/game/shared/hl2mp/weapon_hl2mpbase_machinegun.cpp

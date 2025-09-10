@@ -17,6 +17,23 @@ void MPForceCameraCallback( IConVar *var, const char *pOldString, float flOldVal
 	{
 		mp_forcecamera.SetValue( OBS_ALLOW_TEAM );
 	}
+
+#ifdef NEO
+	if (mp_forcecamera.GetInt() != OBS_ALLOW_ALL)
+	{
+		for (int i = 1; i <= gpGlobals->maxClients; i++)
+		{
+			if (auto player = UTIL_PlayerByIndex(i))
+			{
+				if (player->GetTeamNumber() == TEAM_SPECTATOR)
+				{
+					continue;
+				}
+				engine->ClientCommand(player->edict(), "glow_outline_effect_enable false");
+			}
+		}
+	}
+#endif // NEO
 }
 #endif 
 
@@ -25,6 +42,8 @@ ConVar mp_forcecamera(
 	"mp_forcecamera", 
 #ifdef CSTRIKE
 	"0", 
+#elif defined NEO
+	"0",
 #else
 	"1",
 #endif

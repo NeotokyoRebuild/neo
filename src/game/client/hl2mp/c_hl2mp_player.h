@@ -213,8 +213,13 @@ public:
 	void UpdateOnRemove( void );
 	virtual void SetupWeights( const matrix3x4_t *pBoneToWorld, int nFlexWeightCount, float *pFlexWeights, float *pFlexDelayedWeights );
 #ifdef NEO
-	inline const Vector& GetRagdollVelocity(void) const { return m_vecRagdollVelocity.Get(); }
-#endif
+	inline const Vector& GetInitialRagdollOrigin(void) const { return m_vecRagdollOrigin.Get(); }
+	inline const Vector& GetInitialRagdollVelocity(void) const { return m_vecRagdollVelocity.Get(); }
+#ifdef CLIENT_DLL
+	virtual int DrawModel(int flags) override;
+#endif // CLIENT_DLL
+	float m_flNeoCreateTime; // don't know what m_flCreateTime is used for, better to be safe I guess
+#endif // NEO
 	
 private:
 	

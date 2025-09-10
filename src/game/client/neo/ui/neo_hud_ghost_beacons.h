@@ -27,7 +27,6 @@ protected:
 	virtual ConVar* GetUpdateFrequencyConVar() const override;
 
 private:
-	int m_iBeaconTextureWidth, m_iBeaconTextureHeight;
 	C_WeaponGhost* m_pGhost;
 	float m_flNextAllowGhostShowTime;
 	bool m_bHoldingGhost = false;

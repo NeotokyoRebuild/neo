@@ -48,9 +48,9 @@ ConVar hl2mp_spawn_frag_fallback_radius( "hl2mp_spawn_frag_fallback_radius", "48
 
 #define HL2MP_COMMAND_MAX_RATE 0.3
 
+#ifndef NEO
 void DropPrimedFragGrenade( CHL2MP_Player *pPlayer, CBaseCombatWeapon *pGrenade );
 
-#ifndef NEO
 LINK_ENTITY_TO_CLASS( player, CHL2MP_Player );
 #endif
 
@@ -109,6 +109,7 @@ IMPLEMENT_SERVERCLASS_ST(CHL2MP_Player, DT_HL2MP_Player)
 	SendPropExclude( "DT_BaseFlex", "m_flexWeight" ),
 	SendPropExclude( "DT_BaseFlex", "m_blinktoggle" ),
 	SendPropExclude( "DT_BaseFlex", "m_viewtarget" ),
+	SendPropBool(SENDINFO(m_fIsWalking)),
 #endif
 
 #ifndef NEO // NEOTODO (Adam) This is causing the player to have a m_flMaxSpeed value of 0 during prediction, even though client and server set this value correctly, causing the players position to jitter
@@ -120,7 +121,7 @@ IMPLEMENT_SERVERCLASS_ST(CHL2MP_Player, DT_HL2MP_Player)
 	// on the player.
 	// So, just never send it, and don't predict it on the client either.
 	SendPropExclude( "DT_BasePlayer", "m_flMaxspeed" ),
-#endif NEO
+#endif // NEO
 
 
 	// Data that only gets sent to the local player
@@ -250,11 +251,13 @@ void CHL2MP_Player::Precache( void )
 	for ( i = 0; i < nHeads; ++i )
 		 PrecacheModel( g_ppszRandomCombineModels[i] );
 
+#ifndef NEO
 	PrecacheFootStepSounds();
 
 	PrecacheScriptSound( "NPC_MetroPolice.Die" );
 	PrecacheScriptSound( "NPC_CombineS.Die" );
 	PrecacheScriptSound( "NPC_Citizen.die" );
+#endif // NEO
 }
 
 void CHL2MP_Player::GiveAllItems( void )
@@ -994,8 +997,12 @@ bool CHL2MP_Player::BumpWeapon( CBaseCombatWeapon *pWeapon )
 	}
 #endif
 
-	// Don't let the player fetch weapons through walls (use MASK_SOLID so that you can't pickup through windows)
+#ifdef NEO
+	if( GetAbsOrigin() != pWeapon->GetAbsOrigin() && !pWeapon->FVisible( this, MASK_SOLID ) && !(GetFlags() & FL_NOTARGET) )
+#else
 	if( !pWeapon->FVisible( this, MASK_SOLID ) && !(GetFlags() & FL_NOTARGET) )
+#endif // NEO
+	// Don't let the player fetch weapons through walls (use MASK_SOLID so that you can't pickup through windows)
 	{
 		return false;
 	}
@@ -1319,6 +1326,7 @@ void CHL2MP_Player::FlashlightTurnOff( void )
 
 void CHL2MP_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon, const Vector *pvecTarget, const Vector *pVelocity )
 {
+#ifndef NEO
 	//Drop a grenade if it's primed.
 	if ( GetActiveWeapon() )
 	{
@@ -1333,6 +1341,7 @@ void CHL2MP_Player::Weapon_Drop( CBaseCombatWeapon *pWeapon, const Vector *pvecT
 			}
 		}
 	}
+#endif // NEO
 
 	BaseClass::Weapon_Drop( pWeapon, pvecTarget, pVelocity );
 }

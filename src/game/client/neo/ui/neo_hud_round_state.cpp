@@ -37,6 +37,7 @@ extern ConVar sv_neo_dm_win_xp;
 extern ConVar cl_neo_streamermode;
 extern ConVar snd_victory_volume;
 extern ConVar sv_neo_readyup_countdown;
+extern ConVar cl_neo_hud_scoreboard_hide_others;
 
 namespace {
 constexpr int Y_POS = 0;
@@ -88,7 +89,7 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 	for (int i = 0; i < NEO_CLASS__ENUM_COUNT; ++i)
 	{
 		static constexpr const char *TEX_NAMES[NEO_CLASS__ENUM_COUNT] = {
-			"vgui/reconSmall", "vgui/assaultSmall", "vgui/supportSmall", "vgui/vipSmall"
+			"vgui/reconSmall", "vgui/assaultSmall", "vgui/supportSmall", "vgui/vipSmall", "vgui/vipSmall"
 		};
 		m_iGraphicID[i] = surface()->CreateNewTextureID();
 		surface()->DrawSetTextureFile(m_iGraphicID[i], TEX_NAMES[i], true, false);
@@ -116,6 +117,17 @@ CNEOHud_RoundState::CNEOHud_RoundState(const char *pElementName, vgui::Panel *pa
 		surface()->DrawSetTextureFile(m_teamLogoColors[i].totalLogo, TEAM_TEX_INFO[texIdx].totalLogo, true, false);
 	}
 
+}
+
+void CNEOHud_RoundState::LevelShutdown(void)
+{
+	for (int i = 0; i < STAR__TOTAL; ++i)
+	{
+		auto* star = m_ipStars[i];
+		star->SetVisible(false);
+	}
+
+	// NEO NOTE (Adam) set m_iPreviouslyActiveStar && m_iPreviouslyActiveTeam to -1? Seems to work fine without 
 }
 
 void CNEOHud_RoundState::ApplySchemeSettings(vgui::IScheme* pScheme)
@@ -353,7 +365,7 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 			V_sprintf_safe(szPlayersAliveANSI, "Lead: %d", iDMHighestXP);
 		}
 	}
-	else if (NEORules()->GetGameType() == NEO_GAME_TYPE_TDM)
+	else if (NEORules()->GetGameType() == NEO_GAME_TYPE_TDM || NEORules()->GetGameType() == NEO_GAME_TYPE_JGR)
 	{
 		if (localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF) {
 			V_sprintf_safe(szPlayersAliveANSI, "%i:%i", GetGlobalTeam(localPlayerTeam)->Get_Score(), GetGlobalTeam(NEORules()->GetOpposingTeam(localPlayerTeam))->Get_Score());
@@ -403,6 +415,9 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 				V_sprintf_safe(szGameTypeDescription, "Eliminate the HVT\n");
 			}
 		}
+		break;
+	case NEO_GAME_TYPE_JGR:
+		V_sprintf_safe(szGameTypeDescription, "Control the Juggernaut\n");
 		break;
 	default:
 		V_sprintf_safe(szGameTypeDescription, "Await further orders\n");
@@ -747,7 +762,7 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 			}
 		}
 	}
-	else
+	else if (!cl_neo_hud_scoreboard_hide_others.GetBool() || !g_pNeoScoreBoard->IsVisible())
 	{
 		DrawPlayerList();
 	}
@@ -878,7 +893,7 @@ int CNEOHud_RoundState::DrawPlayerRow(int playerIndex, const int yOffset, bool s
 	surface()->GetTextSize(m_hOCRSmallFont, m_wszPlayersAliveUnicode, fontWidth, fontHeight);
 	surface()->DrawSetTextColor(isAlive ? COLOR_FADED_WHITE : COLOR_DARK_FADED_WHITE);
 	surface()->DrawSetTextPos(8, yOffset);
-	surface()->DrawPrintText(wSquadMateText, Q_strlen(squadMateText));
+	surface()->DrawPrintText(wSquadMateText, V_wcslen(wSquadMateText));
 
 	return yOffset + fontHeight;
 }

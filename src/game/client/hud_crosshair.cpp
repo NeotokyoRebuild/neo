@@ -56,8 +56,7 @@ void CVGlobal_NeoClCrosshair(IConVar *var, [[maybe_unused]] const char *pOldStri
 	CHudCrosshair *crosshair = GET_HUDELEMENT(CHudCrosshair);
 	if (crosshair && V_strstr(var->GetName(), "cl_neo_crosshair"))
 	{
-		// NEO NOTE (nullsystem): Only mark for refresh, not immediate as they will likely be multiple of convars sent
-		// over
+		// NEO NOTE (nullsystem): Mark for refresh
 		crosshair->m_bRefreshCrosshair = true;
 	}
 }
@@ -392,7 +391,55 @@ void CHudCrosshair::Paint( void )
 	// NEO TODO (nullsystem): Probably be better if the entire class refreshed to our own
 	// thing and can do away with that CHudTexture nonsense entirely
 	const bool bIsScoped = pNeoWep && pNeoWep->GetNeoWepBits() & NEO_WEP_SCOPEDWEAPON;
-	const int iXHairStyle = cl_neo_crosshair_style.GetInt();
+
+	bool bThisFrameRefreshCrosshair = m_bRefreshCrosshair;
+	auto *pNeoPlayer = static_cast<C_NEO_Player *>(pPlayer);
+	bool bTakeSpecCrosshair = false;
+	CrosshairInfo *pCrosshairInfo = &m_crosshairInfo;
+	const char *pszNeoCrosshair = cl_neo_crosshair.GetString();
+	if (cl_neo_crosshair_network.GetBool() && IsLocalPlayerSpectator())
+	{
+		const int iPlayerIdx = pNeoPlayer->entindex();
+		const bool bPlayerIdxValid = ((iPlayerIdx >= 0) && (iPlayerIdx < MAX_PLAYERS));
+		Assert(bPlayerIdxValid);
+		if (bPlayerIdxValid)
+		{
+			bTakeSpecCrosshair = true;
+			m_playersCrosshairInfos;
+			bThisFrameRefreshCrosshair = false;
+			pCrosshairInfo = &m_playersCrosshairInfos[iPlayerIdx];
+			pszNeoCrosshair = pNeoPlayer->m_szNeoCrosshair.Get();
+
+			// NEO NOTE (nullsystem): Only check the string per second
+			static constexpr float FL_XHAIR_REFRESH_INTERVAL = 1.0f;
+			if (m_aflLastCheckedPlayersCrosshair[iPlayerIdx] + FL_XHAIR_REFRESH_INTERVAL < gpGlobals->curtime)
+			{
+				m_aflLastCheckedPlayersCrosshair[iPlayerIdx] = gpGlobals->curtime;
+				bThisFrameRefreshCrosshair = (V_strcmp(m_szLocalStrPlayersCrosshair[iPlayerIdx], pszNeoCrosshair) != 0);
+				if (bThisFrameRefreshCrosshair)
+				{
+					V_strcpy_safe(m_szLocalStrPlayersCrosshair[iPlayerIdx], pszNeoCrosshair);
+				}
+			}
+
+		}
+	}
+
+	if (bThisFrameRefreshCrosshair)
+	{
+		const bool bImported = ImportCrosshair(pCrosshairInfo, pszNeoCrosshair);
+		if (!bImported)
+		{
+			// NEO NOTE (nullsystem): Don't revert, just enforce default if it
+			// is not given properly
+			ImportCrosshair(pCrosshairInfo, NEO_CROSSHAIR_DEFAULT);
+		}
+		if (!bTakeSpecCrosshair)
+		{
+			m_bRefreshCrosshair = false;
+		}
+	}
+	const int iXHairStyle = pCrosshairInfo->iStyle;
 
 	trace_t iffTrace;
 	if (NEORules()->GetGameType() != NEO_GAME_TYPE_DM)
@@ -434,31 +481,12 @@ void CHudCrosshair::Paint( void )
 		vgui::surface()->DrawGetTextureSize(m_iTexXHId[iXHairStyle], iTexWide, iTexTall);
 		iTexWide >>= 1;
 		iTexTall >>= 1;
-		vgui::surface()->DrawSetColor(m_clrCrosshair);
+		vgui::surface()->DrawSetColor(pCrosshairInfo->color);
 		vgui::surface()->DrawTexturedRect(iX - iTexWide, iY - iTexTall, iX + iTexWide, iY + iTexTall);
 	}
 	else
 	{
-		if (m_bRefreshCrosshair)
-		{
-			m_crosshairInfo = CrosshairInfo{
-					.color = Color(
-						cl_neo_crosshair_color_r.GetInt(), cl_neo_crosshair_color_g.GetInt(),
-						cl_neo_crosshair_color_b.GetInt(), cl_neo_crosshair_color_a.GetInt()),
-					.iESizeType = cl_neo_crosshair_size_type.GetInt(),
-					.iSize = cl_neo_crosshair_size.GetInt(),
-					.flScrSize = cl_neo_crosshair_size_screen.GetFloat(),
-					.iThick = cl_neo_crosshair_thickness.GetInt(),
-					.iGap = cl_neo_crosshair_gap.GetInt(),
-					.iOutline = cl_neo_crosshair_outline.GetInt(),
-					.iCenterDot = cl_neo_crosshair_center_dot.GetInt(),
-					.bTopLine = cl_neo_crosshair_top_line.GetBool(),
-					.iCircleRad = cl_neo_crosshair_circle_radius.GetInt(),
-					.iCircleSegments = cl_neo_crosshair_circle_segments.GetInt(),
-				};
-			m_bRefreshCrosshair = false;
-		}
-		PaintCrosshair(m_crosshairInfo, iX, iY);
+		PaintCrosshair(*pCrosshairInfo, iX, iY);
 	}
 
 	if (bIsScoped)
