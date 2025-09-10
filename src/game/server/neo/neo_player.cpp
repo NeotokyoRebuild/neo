@@ -3428,6 +3428,7 @@ const char *CNEO_Player::GetOverrideStepSound(const char *pBaseStepSound)
 }
 
 // Start spectator takeover of player related code:
+ConVar sv_neo_spec_replace_player_loadout_enable("sv_neo_spec_replace_player_loadout_enable", "0", FCVAR_NONE, "Allow loadout change after spectator takeover.", true, 0, true, 1);
 ConVar sv_neo_spec_replace_player_bot_enable("sv_neo_spec_replace_player_bot_enable", "1", FCVAR_NONE, "Allow spectators to take over bots.", true, 0, true, 1);
 ConVar sv_neo_spec_replace_player_afk_enable("sv_neo_spec_replace_player_afk_enable", "1", FCVAR_NONE, "Allow spectators to take over AFK players.", true, 0, true, 1);
 ConVar sv_neo_spec_replace_player_afk_time_sec( "sv_neo_spec_replace_player_afk_time_sec",
@@ -3606,7 +3607,14 @@ void CNEO_Player::SpectatorTakeoverPlayerPreThink()
 					Weapon_Switch(pPlayerActiveWeapon);
 				}
 			}
-			m_bIneligibleForLoadoutPick = pPlayerTakeoverTarget->m_bIneligibleForLoadoutPick;
+
+			// TODO: Limit loadout options based on takeover target's XP rank.
+			// Currently, loadout options are based on former spectator's XP rank.
+			// To evaluate loadout options on takeover target's XP rank, need to send networked takeover state to client.
+			// In an active game, bots will likely already be ineligible for loadout pick, by the time an average takeover happens.
+			m_bIneligibleForLoadoutPick = sv_neo_spec_replace_player_loadout_enable.GetBool() ?
+				pPlayerTakeoverTarget->m_bIneligibleForLoadoutPick
+				: true;
 
 			// Teleport the takeover target's location and velocity.
 			SetAbsOrigin(pPlayerTakeoverTarget->GetAbsOrigin());
