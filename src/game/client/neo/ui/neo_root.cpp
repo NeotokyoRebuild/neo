@@ -2187,8 +2187,8 @@ void CNeoRoot::MainLoopPopup(const MainLoopParam param)
 
 						V_wcscpy_safe(sbInfo.wszName, m_wszServerNewBlacklist);
 						sbInfo.timeVal = time(nullptr);
-						sbInfo.netAdr.SetFromString(szServerNewBlacklist, true);
 						sbInfo.eType = static_cast<EServerBlacklistType>(m_iServerNewBlacklistType);
+						sbInfo.netAdr.SetFromString(szServerNewBlacklist, (sbInfo.eType == SBLIST_TYPE_NETADR));
 						ServerBlacklistCacheWsz(&sbInfo);
 
 						g_blacklistedServers.AddToTail(sbInfo);
