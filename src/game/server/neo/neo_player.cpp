@@ -1829,7 +1829,7 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo *info)
 				}
 				else
 				{
-					killedWithName = killedWithInflictor->GetDebugName();
+					killedWithName = killedWithInflictor->GetClassname();
 				}
 			}
 			if (!Q_strcmp(killedWithName, "neo_grenade_frag")) { killedWithName = "Frag Grenade"; }
@@ -1839,7 +1839,7 @@ void CNEO_Player::StartShowDmgStats(const CTakeDamageInfo *info)
 		{
 			// Set it to NEO_ENVIRON_KILLED to indicate the map killed the player
 			attackerIdx = NEO_ENVIRON_KILLED;
-			killedWithName = killedWithInflictor->GetDebugName();
+			killedWithName = killedWithInflictor->GetClassname();
 		}
 		WRITE_SHORT(attackerIdx);
 		WRITE_STRING(killedWithName);
