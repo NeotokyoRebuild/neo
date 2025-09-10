@@ -42,7 +42,7 @@ ntre_bot_profiles
 
 	templates
 	{
-		// Only uses auto-rifles
+		// Prefers auto-rifles when possible
 		rifler
 		{
 			weapons
@@ -263,7 +263,7 @@ ntre_bot_profiles
 			class "recon assault"
 			templates ""
 		}
-		"rain"
+		"TGR Fuel Addict"
 		{
 			difficulty "hard expert"
 			difficulty_select "force expert"
