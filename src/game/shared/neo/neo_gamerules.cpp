@@ -1062,7 +1062,7 @@ void CNEORules::Think(void)
 		return;
 	}
 
-	if (m_nGameTypeSelected == NEO_GAME_TYPE_CTG && sv_neo_ctg_ghost_overtime_enabled.GetBool() && m_nRoundStatus == NeoRoundStatus::RoundLive && (m_flNeoRoundStartTime + (neo_ctg_round_timelimit.GetFloat() * 60)) < gpGlobals->curtime)
+	if (m_nGameTypeSelected == NEO_GAME_TYPE_CTG && sv_neo_ctg_ghost_overtime_enabled.GetBool() && m_nRoundStatus == NeoRoundStatus::RoundLive && (m_flNeoRoundStartTime + (neo_ctg_round_timelimit.GetFloat() * 60) - sv_neo_ctg_ghost_overtime_grace.GetFloat()) < gpGlobals->curtime)
 	{
 		m_nRoundStatus = NeoRoundStatus::Overtime;
 	}
