@@ -81,6 +81,11 @@ protected:
 	vgui::SectionedListPanel *m_pNSFPlayerList;
 	vgui::SectionedListPanel *m_pSpectatorsPlayerList;
 
+	int m_iLeftTeamXPos = 0;
+	int m_iLeftTeamYPos = 0;
+	int m_iRightTeamXPos = 0;
+	int m_iRightTeamYPos = 0;
+
 	int s_VoiceImage[5];
 	int TrackerImage;
 	int	m_HLTVSpectators;
@@ -112,6 +117,7 @@ private:
 	int GetSectionFromTeamNumber( int teamNumber );
 	vgui::SectionedListPanel *GetPanelForTeam(int team);
 	void RemoveItemForPlayerIndex(int index);
+	void UpdateTeamColumnsPosition(int team);
 };
 
 extern CNEOScoreBoard* g_pNeoScoreBoard;
