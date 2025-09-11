@@ -49,6 +49,7 @@ using namespace vgui;
 
 ConVar neo_show_scoreboard_avatars("neo_show_scoreboard_avatars", "1", FCVAR_ARCHIVE, "Show avatars on scoreboard.", true, 0.0, true, 1.0 );
 extern ConVar cl_neo_streamermode;
+extern ConVar cl_neo_hud_team_swap_sides;
 
 CNEOScoreBoard* g_pNeoScoreBoard = NULL;
 
@@ -877,9 +878,12 @@ void CNEOScoreBoard::MoveToCenterOfScreen()
 	SetPos((ww - GetWide()) / 2, (wt - GetTall()) / 2);
 }
 
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
 void CNEOScoreBoard::UpdateTeamColumnsPosition(int team)
 {
-	if (team == TEAM_NSF)
+	if (team == TEAM_NSF && cl_neo_hud_team_swap_sides.GetBool())
 	{
 		m_pJinraiPlayerList->SetPos(m_iRightTeamXPos, m_iRightTeamYPos);
 		m_pNSFPlayerList->SetPos(m_iLeftTeamXPos, m_iLeftTeamYPos);

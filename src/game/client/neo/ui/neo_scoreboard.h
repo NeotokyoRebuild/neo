@@ -49,6 +49,7 @@ public:
 	virtual void FireGameEvent( IGameEvent *event);
 
 	virtual void UpdatePlayerAvatar(int playerIndex, KeyValues* kv);
+	void UpdateTeamColumnsPosition(int team);
 
 	vgui::ImageList				*m_pImageList;
 	CUtlMap<CSteamID,int>		m_mapAvatarsToImageList;
@@ -117,7 +118,6 @@ private:
 	int GetSectionFromTeamNumber( int teamNumber );
 	vgui::SectionedListPanel *GetPanelForTeam(int team);
 	void RemoveItemForPlayerIndex(int index);
-	void UpdateTeamColumnsPosition(int team);
 };
 
 extern CNEOScoreBoard* g_pNeoScoreBoard;
