@@ -1062,7 +1062,8 @@ void CNEORules::Think(void)
 		return;
 	}
 
-	if (m_nGameTypeSelected == NEO_GAME_TYPE_CTG && sv_neo_ctg_ghost_overtime_enabled.GetBool() && m_nRoundStatus == NeoRoundStatus::RoundLive && (m_flNeoRoundStartTime + (neo_ctg_round_timelimit.GetFloat() * 60) - sv_neo_ctg_ghost_overtime_grace.GetFloat()) < gpGlobals->curtime)
+	if (m_nGameTypeSelected == NEO_GAME_TYPE_CTG && sv_neo_ctg_ghost_overtime_enabled.GetBool() && m_nRoundStatus == NeoRoundStatus::RoundLive &&
+		m_iGhosterPlayer && (m_flNeoRoundStartTime + (neo_ctg_round_timelimit.GetFloat() * 60) - sv_neo_ctg_ghost_overtime_grace.GetFloat()) < gpGlobals->curtime)
 	{
 		m_nRoundStatus = NeoRoundStatus::Overtime;
 	}
@@ -1684,13 +1685,14 @@ float CNEORules::GetCTGOverTime() const
 {
 	float roundTimeLimit = neo_ctg_round_timelimit.GetFloat() * 60.f;
 	float overtime = (m_flNeoRoundStartTime + roundTimeLimit + sv_neo_ctg_ghost_overtime.GetFloat()) - gpGlobals->curtime;
-	if (m_iGhosterPlayer || overtime < sv_neo_ctg_ghost_overtime_grace.GetFloat())
+	float grace = sv_neo_ctg_ghost_overtime_grace.GetFloat() - (gpGlobals->curtime - m_flGhostLastHeld);
+	if (m_iGhosterPlayer || overtime < grace)
 	{
 		return overtime;
 	}
 	else
 	{
-		return sv_neo_ctg_ghost_overtime_grace.GetFloat() - (gpGlobals->curtime - m_flGhostLastHeld);
+		return grace;
 	}
 }
 
