@@ -1953,7 +1953,7 @@ void CNEO_Player::Event_Killed( const CTakeDamageInfo &info )
 		SetDeadModel(info);
 	}
 
-	SpectatorTakeoverPlayerRevert();
+	SpectatorTakeoverPlayerRevert(false); // soft reset: may still have live impostor
 }
 
 void CNEO_Player::Weapon_DropAllOnDeath( const CTakeDamageInfo &info )
@@ -2725,7 +2725,7 @@ bool CNEO_Player::ProcessTeamSwitchRequest(int iTeam)
 
 	NEORules()->m_bThinkCheckClantags = true;
 
-	SpectatorTakeoverPlayerRevert();
+	SpectatorTakeoverPlayerRevert(); // hard reset: no longer on the same team
 
 	return true;
 }
@@ -3650,14 +3650,13 @@ void CNEO_Player::SpectatorTakeoverPlayerInitiate(CNEO_Player* pPlayer)
     AddFlag(FL_NOTARGET);
 }
 
-void CNEO_Player::SpectatorTakeoverPlayerRevert()
+void CNEO_Player::SpectatorTakeoverPlayerRevert(bool bHardReset)
 {
-	// This player was taken off the field for any reason, so revert takeover status in both directions
-	if (m_hSpectatorTakeoverPlayerTarget.Get())
+	// This player was taken off the field, so revert takeover status
+	CNEO_Player* pPlayerTakenOver = m_hSpectatorTakeoverPlayerTarget.Get();
+	if (pPlayerTakenOver)
 	{
-		CNEO_Player* pPlayerTakenOver = m_hSpectatorTakeoverPlayerTarget.Get();
-		m_hSpectatorTakeoverPlayerTarget->m_hSpectatorTakeoverPlayerImpersonatingMe = nullptr;
-		m_hSpectatorTakeoverPlayerTarget = nullptr;
+		pPlayerTakenOver->m_hSpectatorTakeoverPlayerImpersonatingMe = nullptr;
 
 		// Determine if we should kick taken over player to spectator team
 		if ( pPlayerTakenOver && !pPlayerTakenOver->IsBot()  // player is human
@@ -3667,9 +3666,26 @@ void CNEO_Player::SpectatorTakeoverPlayerRevert()
 			pPlayerTakenOver->ChangeTeam(TEAM_SPECTATOR);
 		}
 	}
-	if (m_hSpectatorTakeoverPlayerImpersonatingMe.Get())
+	m_hSpectatorTakeoverPlayerTarget = nullptr;
+
+	// Hard Reset Criteria: Does it make sense to route points to this player anymore?
+	if (bHardReset)
 	{
-		m_hSpectatorTakeoverPlayerImpersonatingMe->m_hSpectatorTakeoverPlayerTarget = nullptr;
+		// Examples for when to hard reset:
+		// For new round reset where all players will be reset
+		// For a player that disconnects, so they can no longer receive points
+		// When a possessEE changes teams, it doesn't make sense to penalize possessOR for doing well
+
+		// Example for when not to enter here:
+		// Player A is AFK, while on same team as Player B and Bot C
+		// Player B is a spectator that takes over Player A
+		// Player A returns to keyboard during round and takes over Bot C
+		// Player A dies: should reset target Bot C, but not impersonator Player B
+		// because Player B is still scoring points for Player A, despite Player A being dead again
+		if (m_hSpectatorTakeoverPlayerImpersonatingMe.Get())
+		{
+			m_hSpectatorTakeoverPlayerImpersonatingMe->m_hSpectatorTakeoverPlayerTarget = nullptr;
+		}
 		m_hSpectatorTakeoverPlayerImpersonatingMe = nullptr;
 	}
 }

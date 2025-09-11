@@ -2439,7 +2439,7 @@ void CNEORules::StartNextRound()
 			continue;
 		}
 
-		pPlayer->SpectatorTakeoverPlayerRevert();
+		pPlayer->SpectatorTakeoverPlayerRevert(); // hard reset: round restart
 
 		if (pPlayer->GetTeamNumber() == TEAM_SPECTATOR)
 		{
@@ -2909,7 +2909,7 @@ void CNEORules::RestartGame()
 		if (!pPlayer)
 			continue;
 
-		pPlayer->SpectatorTakeoverPlayerRevert();
+		pPlayer->SpectatorTakeoverPlayerRevert(); // hard reset: restart game
 
 		if (pPlayer->GetActiveWeapon())
 		{
@@ -3845,8 +3845,7 @@ void CNEORules::ClientDisconnected(edict_t* pClient)
 	Assert(pNeoPlayer);
 	if (pNeoPlayer)
 	{
-		// If the disconnecting player was controlling a bot, restore the bot now.
-		pNeoPlayer->SpectatorTakeoverPlayerRevert();
+		pNeoPlayer->SpectatorTakeoverPlayerRevert(); // hard reset: player no longer will exist
 
 		auto ghost = GetNeoWepWithBits(pNeoPlayer, NEO_WEP_GHOST);
 		if (ghost)

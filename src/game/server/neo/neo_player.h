@@ -319,7 +319,7 @@ private:
 	void SpectatorTryReplacePlayer(CNEO_Player* pNeoPlayerToReplace);
 	void SpectatorTakeoverPlayerPreThink();
 	void SpectatorTakeoverPlayerInitiate(CNEO_Player* pPlayer);
-	void SpectatorTakeoverPlayerRevert();
+	void SpectatorTakeoverPlayerRevert(bool bHardReset=true);
 
 	CHandle<CNEO_Player> m_hSpectatorTakeoverPlayerTarget{nullptr};
 	CHandle<CNEO_Player> m_hSpectatorTakeoverPlayerImpersonatingMe{nullptr};
