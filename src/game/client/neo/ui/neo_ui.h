@@ -290,6 +290,8 @@ struct LabelExOpt
 #define COLOR_NEOTITLE Color(255, 255, 255, 255)//Color(200, 200, 200, 255)
 #define COLOR_NEOPANELBAR Color(20, 20, 20, 255)
 #define COLOR_NEOPANELMICTEST Color(30, 90, 30, 255)
+#define COLOR_NEOPANELTABLEBG Color(255, 255, 255, 255)
+#define COLOR_NEOPANELTABLEFG Color(0, 0, 0, 255)
 
 enum WidgetFlag_
 {
