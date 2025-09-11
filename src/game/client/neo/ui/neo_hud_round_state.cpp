@@ -489,8 +489,8 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 	// Draw time
 	surface()->DrawSetTextFont(m_hOCRFont);
 	surface()->GetTextSize(m_hOCRFont, m_wszTime, fontWidth, fontHeight);
-	if (NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze || NEORules()->GetRoundStatus() == NeoRoundStatus::Countdown ||
-		(NEORules()->GetRoundStatus() == NeoRoundStatus::Overtime && (NEORules()->GetRoundRemainingTime() < sv_neo_ctg_ghost_overtime_grace.GetFloat())))
+	if (NEORules()->GetRoundStatus() == NeoRoundStatus::PreRoundFreeze || NEORules()->GetRoundStatus() == NeoRoundStatus::Countdown || NEORules()->GetGameType() == NEO_GAME_TYPE_CTG ?
+		(NEORules()->GetRoundStatus() == NeoRoundStatus::Overtime && (NEORules()->GetRoundRemainingTime() < sv_neo_ctg_ghost_overtime_grace.GetFloat())) : NEORules()->GetRoundStatus() == NeoRoundStatus::Overtime)
 	{
 		surface()->DrawSetTextColor(COLOR_RED);
 	}
