@@ -67,10 +67,6 @@ private:
 	wchar_t m_wszRoundUnicode[12] = {};
 	int m_iWszRoundUCSize = 0;
 	wchar_t m_wszTime[6] = {};
-	float m_flTimeOpacity = 255;
-	wchar_t m_wszOvertimeWithGhost[3] = {};
-	float m_flOverTimeWithGhostOpacity = 255;
-	wchar_t m_wszOvertimeWithoutGhost[3] = {};
 	wchar_t m_wszLeftTeamScore[3] = {};
 	wchar_t m_wszRightTeamScore[3] = {};
 	wchar_t m_wszPlayersAliveUnicode[16] = {};

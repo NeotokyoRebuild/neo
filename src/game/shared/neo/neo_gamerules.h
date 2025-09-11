@@ -259,7 +259,7 @@ public:
 	virtual bool CheckGameOver(void) OVERRIDE;
 
 	float GetRoundRemainingTime() const;
-	void GetCTGOverTime(float *withGhost = nullptr, float *withoutGhost = nullptr) const;
+	float GetCTGOverTime() const;
 	float GetRoundAccumulatedTime() const;
 #ifdef GAME_DLL
 	float MirrorDamageMultiplier() const;
@@ -447,7 +447,7 @@ private:
 	CNetworkVar(int, m_iGhosterPlayer);
 	CNetworkVector(m_vecGhostMarkerPos);
 	CNetworkVar(bool, m_bGhostExists);
-	CNetworkVar(float, m_flAccumulatedOvertime);
+	CNetworkVar(float, m_flGhostLastHeld);
 
 	// Juggernaut networked variables
 	CNetworkVar(int, m_iJuggernautPlayerIndex);

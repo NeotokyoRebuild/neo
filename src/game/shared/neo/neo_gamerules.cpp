@@ -231,7 +231,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropInt(RECVINFO(m_iGhosterPlayer)),
 	RecvPropInt(RECVINFO(m_iEscortingTeam)),
 	RecvPropBool(RECVINFO(m_bGhostExists)),
-	RecvPropFloat(RECVINFO(m_flAccumulatedOvertime)),
+	RecvPropFloat(RECVINFO(m_flGhostLastHeld)),
 	RecvPropVector(RECVINFO(m_vecGhostMarkerPos)),
 	RecvPropInt(RECVINFO(m_iJuggernautPlayerIndex)),
 	RecvPropBool(RECVINFO(m_bJuggernautItemExists)),
@@ -254,7 +254,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropInt(SENDINFO(m_iGhosterPlayer)),
 	SendPropInt(SENDINFO(m_iEscortingTeam)),
 	SendPropBool(SENDINFO(m_bGhostExists)),
-	SendPropFloat(SENDINFO(m_flAccumulatedOvertime)),
+	SendPropFloat(SENDINFO(m_flGhostLastHeld)),
 	SendPropVector(SENDINFO(m_vecGhostMarkerPos), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT),
 	SendPropInt(SENDINFO(m_iJuggernautPlayerIndex)),
 	SendPropBool(SENDINFO(m_bJuggernautItemExists)),
@@ -380,8 +380,7 @@ ConVar sv_neo_dm_win_xp("sv_neo_dm_win_xp", "50", FCVAR_REPLICATED, "The XP limi
 
 ConVar sv_neo_ctg_ghost_overtime_enabled("sv_neo_ctg_ghost_overtime_enabled", "0", FCVAR_REPLICATED, "Enable ghost overtime.", true, 0, true, 1);
 ConVar sv_neo_ctg_ghost_overtime("sv_neo_ctg_ghost_overtime", "45", FCVAR_REPLICATED, "Adds up to this many seconds to the round while the ghost is held.", true, 0, true, 120);
-ConVar sv_neo_ctg_ghost_overtime_grace("sv_neo_ctg_ghost_overtime_grace", "15", FCVAR_REPLICATED, "Number of seconds left in the round at which ghost overtime should start.", true, 0, true, 30);
-ConVar sv_neo_ctg_ghost_overtime_grace_reset("sv_neo_ctg_ghost_overtime_grace_reset", "1", FCVAR_REPLICATED, "Regardless of when the ghost is picked up and dropped during ghost overtime, use the ghost overtime timer as long as it is held during overtime", true, 0, true, 1);
+ConVar sv_neo_ctg_ghost_overtime_grace("sv_neo_ctg_ghost_overtime_grace", "10", FCVAR_REPLICATED, "Number of seconds left in the round when the ghost is dropped in overtime.", true, 0, true, 30);
 
 #ifdef CLIENT_DLL
 extern ConVar neo_fov;
@@ -683,7 +682,7 @@ void CNEORules::ResetMapSessionCommon()
 	m_vecJuggernautMarkerPos = vec3_origin;
 	m_flNeoRoundStartTime = 0.0f;
 	m_flNeoNextRoundStartTime = 0.0f;
-	m_flAccumulatedOvertime = 0.0f;
+	m_flGhostLastHeld = 0.0f;
 #ifdef GAME_DLL
 	m_pRestoredInfos.Purge();
 	m_readyAccIDs.Purge();
@@ -1063,21 +1062,14 @@ void CNEORules::Think(void)
 		return;
 	}
 
-	if (m_nGameTypeSelected == NEO_GAME_TYPE_CTG && sv_neo_ctg_ghost_overtime_enabled.GetBool() && m_nRoundStatus == NeoRoundStatus::RoundLive && (m_flNeoRoundStartTime + (neo_ctg_round_timelimit.GetFloat() * 60) - sv_neo_ctg_ghost_overtime_grace.GetFloat()) < gpGlobals->curtime)
+	if (m_nGameTypeSelected == NEO_GAME_TYPE_CTG && sv_neo_ctg_ghost_overtime_enabled.GetBool() && m_nRoundStatus == NeoRoundStatus::RoundLive && (m_flNeoRoundStartTime + (neo_ctg_round_timelimit.GetFloat() * 60)) < gpGlobals->curtime)
 	{
 		m_nRoundStatus = NeoRoundStatus::Overtime;
 	}
 
-	if (m_nGameTypeSelected == NEO_GAME_TYPE_CTG && m_nRoundStatus == NeoRoundStatus::Overtime)
+	if (m_nGameTypeSelected == NEO_GAME_TYPE_CTG && m_nRoundStatus == NeoRoundStatus::Overtime && m_iGhosterPlayer)
 	{
-		if (sv_neo_ctg_ghost_overtime_grace_reset.GetBool() && m_iGhosterPlayer)
-		{
-			m_flAccumulatedOvertime = (gpGlobals->curtime - m_flNeoRoundStartTime - (neo_ctg_round_timelimit.GetFloat() * 60.f) + sv_neo_ctg_ghost_overtime_grace.GetFloat());
-		}
-		else
-		{
-			m_flAccumulatedOvertime += m_iGhosterPlayer ? gpGlobals->interval_per_tick : gpGlobals->interval_per_tick * ((sv_neo_ctg_ghost_overtime.GetFloat() + sv_neo_ctg_ghost_overtime_grace.GetFloat()) / sv_neo_ctg_ghost_overtime_grace.GetFloat());
-		}
+		m_flGhostLastHeld = gpGlobals->curtime;
 	}
 
 	if (g_fGameOver)   // someone else quit the game already
@@ -1668,16 +1660,7 @@ float CNEORules::GetRoundRemainingTime() const
 				roundTimeLimit = neo_ctg_round_timelimit.GetFloat() * 60.f;
 				if (m_nRoundStatus == NeoRoundStatus::Overtime)
 				{
-					if (m_iGhosterPlayer)
-					{
-						GetCTGOverTime(&roundTimeLimit, nullptr);
-						return roundTimeLimit;
-					}
-					else
-					{
-						GetCTGOverTime(nullptr, &roundTimeLimit);
-						return roundTimeLimit;
-					}
+					return GetCTGOverTime();
 				}
 				break;
 			case NEO_GAME_TYPE_VIP:
@@ -1697,25 +1680,17 @@ float CNEORules::GetRoundRemainingTime() const
 	return (m_flNeoRoundStartTime + roundTimeLimit) - gpGlobals->curtime;
 }
 
-void CNEORules::GetCTGOverTime(float *withGhost, float *withoutGhost) const
+float CNEORules::GetCTGOverTime() const
 {
 	float roundTimeLimit = neo_ctg_round_timelimit.GetFloat() * 60.f;
-
-	if (withGhost)
+	float overtime = (m_flNeoRoundStartTime + roundTimeLimit + sv_neo_ctg_ghost_overtime.GetFloat()) - gpGlobals->curtime;
+	if (m_iGhosterPlayer || overtime < sv_neo_ctg_ghost_overtime_grace.GetFloat())
 	{
-		if (sv_neo_ctg_ghost_overtime_grace_reset.GetBool())
-		{
-			*withGhost = (m_flNeoRoundStartTime + roundTimeLimit + sv_neo_ctg_ghost_overtime.GetFloat()) - gpGlobals->curtime;
-		}
-		else
-		{
-			*withGhost = sv_neo_ctg_ghost_overtime.GetFloat() + sv_neo_ctg_ghost_overtime_grace.GetFloat() - m_flAccumulatedOvertime;
-		}
+		return overtime;
 	}
-
-	if (withoutGhost)
+	else
 	{
-		*withoutGhost = (sv_neo_ctg_ghost_overtime.GetFloat() + sv_neo_ctg_ghost_overtime_grace.GetFloat() - m_flAccumulatedOvertime) / ((sv_neo_ctg_ghost_overtime.GetFloat() + sv_neo_ctg_ghost_overtime_grace.GetFloat()) / sv_neo_ctg_ghost_overtime_grace.GetFloat());
+		return sv_neo_ctg_ghost_overtime_grace.GetFloat() - (gpGlobals->curtime - m_flGhostLastHeld);
 	}
 }
 
@@ -2519,7 +2494,7 @@ void CNEORules::StartNextRound()
 
 	m_flNeoRoundStartTime = gpGlobals->curtime;
 	m_flNeoNextRoundStartTime = 0;
-	m_flAccumulatedOvertime = 0;
+	m_flGhostLastHeld = 0;
 
 	CleanUpMap();
 	const bool bFromStarting = (m_nRoundStatus == NeoRoundStatus::Warmup
