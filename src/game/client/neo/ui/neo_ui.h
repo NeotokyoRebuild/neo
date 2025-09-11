@@ -155,6 +155,27 @@ struct DynWidgetInfos
 	bool bCannotActive;
 };
 
+enum ESectionFlag
+{
+	SECTIONFLAG_NONE = 0,
+
+	// Sets this section as the focus by default
+	SECTIONFLAG_DEFAULTFOCUS = 1 << 0,
+	// Allow left-right navigation of widgets
+	SECTIONFLAG_ROWWIDGETS = 1 << 1,
+	// Do not allow controller to move to this section.
+	//   Make sure to have Bind so controllers don't get cut out from being
+	//   able to utilize actions from this section.
+	SECTIONFLAG_EXCLUDECONTROLLER = 1 << 2,
+};
+typedef int ISectionFlags;
+
+enum EKeyHints
+{
+	KEYHINTS_KEYBOARD = 0,
+	KEYHINTS_CONTROLLER,
+};
+
 struct Context
 {
 	Mode eMode;
@@ -166,6 +187,9 @@ struct Context
 
 	Color cOverrideFgColor;
 	bool bIsOverrideFgColor = false;
+
+	ISectionFlags iSectionFlags;
+	EKeyHints eKeyHints;
 
 	// Mouse handling
 	int iMouseAbsX;
@@ -224,8 +248,8 @@ struct Context
 	// Input management
 	int iWidget; // Always increments per widget use
 	int iSection;
-	int iCanActives; // Only increment if widget can be activated
-	int iSectionCanActive[MAX_SECTIONS] = {};
+	uint64_t ibfSectionCanActive = 0;
+	uint64_t ibfSectionCanController = 0;
 
 	int iHot;
 	int iHotSection;
@@ -298,6 +322,7 @@ enum WidgetFlag_
 	WIDGETFLAG_NONE = 0,
 	WIDGETFLAG_SKIPACTIVE = 1 << 0,
 	WIDGETFLAG_MOUSE = 1 << 1,
+	WIDGETFLAG_MARKACTIVE = 1 << 2, // Mark section as having an active widget
 };
 typedef int WidgetFlag;
 
@@ -305,7 +330,7 @@ void FreeContext(NeoUI::Context *pCtx);
 
 void BeginContext(NeoUI::Context *pNextCtx, const NeoUI::Mode eMode, const wchar_t *wszTitle, const char *pSzCtxName);
 void EndContext();
-void BeginSection(const bool bDefaultFocus = false);
+void BeginSection(const ISectionFlags iSectionFlags = SECTIONFLAG_NONE);
 void EndSection();
 GetMouseinFocusedRet BeginWidget(const WidgetFlag eWidgetFlag = WIDGETFLAG_NONE);
 void EndWidget(const GetMouseinFocusedRet wdgState);
@@ -360,5 +385,11 @@ void ResetTextures();
 
 // Non-widgets/convenience functions
 bool Bind(const ButtonCode_t eCode);
+bool Bind(const ButtonCode_t *peCode, const int ieCodeSize);
+bool BindKeyEnter();
+bool BindKeyBack();
 void OpenURL(const char *szBaseUrl, const char *szPath);
+
+// Convience function to return wszKey or wszController depending on c->eKeyHints mode 
+const wchar_t *HintAlt(const wchar *wszKey, const wchar *wszController);
 }

@@ -43,10 +43,15 @@ class CNeoRootInput : public vgui::Panel
 public:
 	CNeoRootInput(CNeoRoot *rootPanel);
 	void PerformLayout() final;
+	void OnKeyCodePressed(vgui::KeyCode code) final;
+	void OnTick() final;
+	void OnKeyCodeReleased(vgui::KeyCode code) final;
 	void OnKeyCodeTyped(vgui::KeyCode code) final;
 	void OnKeyTyped(wchar_t unichar) final;
 	void OnThink();
 	CNeoRoot *m_pNeoRoot = nullptr;
+	vgui::KeyCode m_pressedKey = BUTTON_CODE_NONE;
+	float m_flStartPressed = 0.0f;
 };
 
 enum RootState
@@ -196,6 +201,7 @@ public:
 
 	wchar_t m_wszBindingText[128];
 	int m_iBindingIdx = -1;
+	bool m_bNextBindingSecondary = false;
 
 	int m_iTitleWidth;
 	int m_iTitleHeight;
@@ -236,6 +242,8 @@ public:
 	bool m_bOnLoadingScreen = false;
 	float m_flTimeLoadingScreenTransition = 0.0f;
 	int m_iSavedYOffsets[NeoUI::MAX_SECTIONS] = {};
+	int m_iSavedActive = 0;
+	int m_iSavedSection = 0;
 	bool m_bSprayGalleryRefresh = false;
 	float m_flWideAs43 = 0.0f;
 	SprayInfo m_sprayToDelete = {};
