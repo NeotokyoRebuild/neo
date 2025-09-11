@@ -3,7 +3,7 @@
 * NEOTOKYO rebuild in Source SDK 2013 Multiplayer (2025 TF2 SDK Update)
 * Forked from: https://github.com/NeotokyoRevamp/neo
 * License: SOURCE 1 SDK LICENSE, see [LICENSE](LICENSE) for details
-* See [CONTRIBUTING.md](CONTRIBUTING.md) for instructions on how the codebase work and contribute
+* See [CONTRIBUTING.md](CONTRIBUTING.md) for instructions on how the codebase works and how to contribute to it
 
 ## Table of contents
 To see the Table of Contents, please use the "Outline" feature on GitHub by clicking the button located in the top right of this document.
@@ -36,7 +36,7 @@ After that, it should be able to compile. For debugger/run CMake configuration, 
 #### Qt Creator (Linux)
 1. On the "Welcome" screen, click on "Open Project..."
 2. Open the `CMakeLists.txt` found in `src`
-3. By default, the build is not done in parallel but rather sequentiality. Note, parallel builds at the default setting could deadlock the system or make it unresponsive during the process. Available since CMake 3.12, the amount of jobs can be tweaked using `--parallel <jobs>` where `<jobs>` is a number to specify parallel build level, or just simply don't apply it to turn it off. To turn on parallel builds in Qt Creator: On the "Projects" screen, in [YOUR KIT (under Build & Run)] > Build, go to "Build Steps" section, expand by clicking on "Details", and add `--parallel` to the CMake arguments.
+3. By default, the build is not done in parallel but rather sequentially. Note: parallel builds at the default setting could deadlock the system or make it unresponsive during the process. Available since CMake 3.12, the amount of jobs can be tweaked using `--parallel <jobs>` where `<jobs>` is a number to specify parallel build level, or just simply don't apply it to turn it off. To turn on parallel builds in Qt Creator: On the "Projects" screen, in [YOUR KIT (under Build & Run)] > Build, go to "Build Steps" section, expand by clicking on "Details", and add `--parallel` to the CMake arguments.
 
 After that, it should be able to compile. For debugger/running configuration, refer to: [CONTRIBUTING.md - Debugging - Qt Creator (Linux)](CONTRIBUTING.md#qt-creator-linux)
 
@@ -104,11 +104,11 @@ sourcemods directory, or using `-game` option and pointing to it. If you are ins
 from a tagged build, copying over the directory is fine. If you are developing or tracking
 git branches, symlinking or just using `-game` is preferred.
 
-After apply the file copy or symlink to the sourcemods directory, launch/restart Steam
-and "Neotokyo: Rebuild" should appear. To run the game, original [NEOTOKYO](https://store.steampowered.com/app/244630/NEOTOKYO/)
-have to be installed and NT;RE will try to automatically mount it.
+After applying the file copy or symlink to the sourcemods directory, launch/restart Steam
+and "Neotokyo: Rebuild" should appear. To run the game, the original [NEOTOKYO](https://store.steampowered.com/app/244630/NEOTOKYO/)
+has to be installed and NT;RE will try to automatically mount it.
 
-The following examples assumes the default directory, but adjust if needed:
+The following examples assume the default directory, but adjust if needed:
 
 ### Windows symlink
 ```
@@ -131,7 +131,7 @@ Another way is just add the `-game` option to "Source SDK Base 2013 Multiplayer"
 ```
 
 ## SDK tools and SRCDS original NEOTOKYO mounting
-By default the `gameinfo.txt` provided utilizes TF2-SDK's new `|appid_244630|` appid based search path to mount the original NEOTOKYO assets. However, some SDK tools and SRCDS either refuses to mount or crashes when trying to use this. If the appid based search path an issue, just comment this line out and uncomment `|gameinfo_path|../../NEOTOKYO/NeotokyoSource` line below and alter if needed to the actual path of your original `NeotokyoSource` installation.
+By default the `gameinfo.txt` provided utilizes TF2-SDK's new `|appid_244630|` appid-based search path to mount the original NEOTOKYO assets. However, some SDK tools and SRCDS either refuse to mount or crash when trying to use this. If the appid-based search path is an issue, just comment this line out and uncomment `|gameinfo_path|../../NEOTOKYO/NeotokyoSource` line below and alter if needed to the actual path of your original `NeotokyoSource` installation.
 
 ## Using `-tools`
 Engine tools have been broken since the TF2-SDK/64-bit update due to libraries being misplaced. To fix this, go to your Source SDK Base 2013 Multiplayer installation folder and move all files in `bin/tools/x64` to `bin/x64/tools`. You may have to create a tools folder if one does not exist already.
@@ -159,12 +159,12 @@ alter the relevant configurations.
 
 ### Dedicated server hosting
 
-These instructions have been written for and tested on Debian 12 and Arch for Linux, and Windows Server 2016 and Windows 11 for Windows, but should work with a fairly up to date Linux and Windows systems as well.
+These instructions have been written for and tested on Debian 12 and Arch for Linux, and Windows Server 2016 and Windows 11 for Windows, but should work with fairly up-to-date Linux and Windows systems as well.
 
 #### Downloading server files - SteamCMD
 
 > [!TIP]
-> Server operators should always use the SteamCMD setup, otherwise if doing quick tests or developing and have Steam installed, you can just install "Source SDK Base 2013 Dedicated Server" (appid 244310) from Steam and assuming you've already have NT;RE client setup can skip the SteamCMD steps. Any instructions referring to `<YOUR_LOCATION>/ntrebuild` will instead use: `<PATH_TO_STEAM>/common/Source SDK Base 2013 Dedicated Server`.
+> Server operators should always use the SteamCMD setup, otherwise if doing quick tests or developing and have Steam installed, you can just install "Source SDK Base 2013 Dedicated Server" (appid 244310) from Steam and, assuming you already have the NT;RE client set up, can skip the SteamCMD steps. Any instructions referring to `<YOUR_LOCATION>/ntrebuild` will instead use: `<PATH_TO_STEAM>/common/Source SDK Base 2013 Dedicated Server`.
 
 > [!WARNING]
 > As of the TF2-SDK update, if trying to use the dedicated server downloaded from Steam but not through the detailed SteamCMD instructions, Linux will fail to find the files necessary to startup a working server. Just follow the SteamCMD server setup instructions for now.
@@ -226,7 +226,7 @@ These instructions have been written for and tested on Debian 12 and Arch for Li
     ln -s vphysics_srv.so vphysics.so;
     ln -s vscript_srv.so vscript.so;
     ```
-3. `cd` up directories twice, so that you will be in `<YOUR_LOCATION>/ntrebuild`.
+3. `cd` up directories twice, so that you are in `<YOUR_LOCATION>/ntrebuild`.
 
 #### Extracting NT;RE and editing gameinfo.txt
 1. Extract the latest release of NT;RE into `<YOUR_LOCATION>/ntrebuild`, so you will have a directory `<YOUR_LOCATION>/ntrebuild/neo` with a `gameinfo.txt` inside.
@@ -275,17 +275,17 @@ You will need to be in the `<YOUR_LOCATION>/ntrebuild` directory and run `srcds_
     ./srcds_run_64 -game neo +sv_lan 0 -insecure -console +ip <YOUR_IP> -maxplayers <1-32> +map <MAP_NAME>
     ```
 * Linux with `srcds_linux64` directly:
-    1. Before running `srcds_linux64`, some few environment variables need to setup:
+    1. Before running `srcds_linux64`, a few environment variables need to be set up:
         * `SteamEnv=1`
         * `LD_LIBRARY_PATH="<YOUR_LOCATION>/ntrebuild/bin/linux64"` - So it can find the server libraries
     2. Run: `srcds_linux64 -game neo +sv_lan 0 -insecure -console +map <some map> +maxplayers 24`
-        * In-game it probably won't showup in the server list and you'll have to use `connect` command directly (EX: `connect 192.168.1.###` for LAN server)
+        * In-game it probably won't show up in the server list and you'll have to use `connect` command directly (EX: `connect 192.168.1.###` for LAN server)
 
 If using `-insecure` and intend to playtest without VAC for debugging purposes, double check on the log that VAC is disabled before continuing.
 
 ### SourceMod server modification plugins
 > [!WARNING]
-> As of the TF2-SDK update, sourcemod is broken until metamod patches and updated for the 64-bit SDK update
+> As of the TF2-SDK update, SourceMod is broken until Metamod is patched and updated for the 64-bit SDK update
 
 [SourceMod](https://www.sourcemod.net/) plugins should generally work with NT;RE, however they have to be added to the `ShowMenu` whitelist to make the menu display properly. To do this:
 1. Go to directory `addons/sourcemod/gamedata/core.games` where you should find `common.games.txt`
@@ -334,7 +334,7 @@ shaders\fxc\sdk_screenspaceeffect_vs20.vcs
 ```
 
 ## Credits
-* [NeotokyoRevamp/neo](https://github.com/NeotokyoRevamp/neo) - Where this is forked from
+* [NeotokyoRevamp/neo](https://github.com/NeotokyoRevamp/neo) - Original fork source
 * [ValveSoftware/source-sdk-2013](https://github.com/ValveSoftware/source-sdk-2013) - Source SDK 2013 (2025 TF2 SDK Update)
     * Updated as of the TF2 SDK update: [Commit 0759e2e8e179d5352d81d0d4aaded72c1704b7a9](https://github.com/ValveSoftware/source-sdk-2013/commit/0759e2e8e179d5352d81d0d4aaded72c1704b7a9)
 * [Nbc66/source-sdk-2013-ce](https://github.com/Nbc66/source-sdk-2013-ce) - Community Edition for additional fixes prior to the TF2 SDK update
