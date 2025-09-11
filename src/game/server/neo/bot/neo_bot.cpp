@@ -18,12 +18,11 @@
 #include "neo_penetration_resistance.h"
 #include "neo_shot_manipulator.h"
 #include "decals.h"
-
+#include "neo_weapon_loadout.h"
 #include "behavior/neo_bot_behavior.h"
 
 ConVar neo_bot_notice_gunfire_range("neo_bot_notice_gunfire_range", "3000", FCVAR_GAMEDLL);
 ConVar neo_bot_notice_quiet_gunfire_range("neo_bot_notice_quiet_gunfire_range", "500", FCVAR_GAMEDLL);
-ConVar neo_bot_prefix_name_with_difficulty("neo_bot_prefix_name_with_difficulty", "0", FCVAR_GAMEDLL, "Append the skill level of the bot to the bot's name");
 ConVar neo_bot_near_point_travel_distance("neo_bot_near_point_travel_distance", "750", FCVAR_CHEAT, "If within this travel distance to the current point, bot is 'near' it");
 
 ConVar neo_bot_debug_tags("neo_bot_debug_tags", "0", FCVAR_CHEAT, "ent_text will only show tags on bots");
@@ -91,72 +90,6 @@ CNEOBot::DifficultyType StringToDifficultyLevel(const char* string)
 
 
 //-----------------------------------------------------------------------------------------------------
-const char* DifficultyLevelToString(CNEOBot::DifficultyType skill)
-{
-	switch (skill)
-	{
-	case CNEOBot::EASY:	return "Easy ";
-	case CNEOBot::NORMAL:	return "Normal ";
-	case CNEOBot::HARD:	return "Hard ";
-	case CNEOBot::EXPERT:	return "Expert ";
-	}
-
-	return "Undefined ";
-}
-
-
-//-----------------------------------------------------------------------------------------------------
-const char* GetRandomBotName(void)
-{
-	static const char* nameList[] =
-	{
-		"Deej",
-		"Ed",
-		"Filter Decay",
-		"Gato",
-		"Grey",
-		"Glasseater",
-		"Ivy",
-		"KillahMo",
-		"pushBAK",
-		"Tatsur0",
-	};
-
-	return nameList[RandomInt(0, ARRAYSIZE(nameList) - 1)];
-}
-
-
-//-----------------------------------------------------------------------------------------------------
-void CreateBotName(CNEOBot::DifficultyType skill, char* pBuffer, int iBufferSize)
-{
-	const char* pDifficultyString = neo_bot_prefix_name_with_difficulty.GetBool() ? DifficultyLevelToString(skill) : "";
-	
-	// NEO TODO (Adam) Translate difficulty level (can't be done here, would have to store difficulty separately and append everywhere where names are used. Maybe something similar to neo name but for bots?)
-	CFmtStr name("%sBOT %s", pDifficultyString, GetRandomBotName());
-	
-	int i = 0;
-	for (int j = 1; j <= gpGlobals->maxClients; j++)
-	{
-		auto player = UTIL_PlayerByIndex(j);
-		if (!player)
-		{
-			continue;
-		}
-		if (Q_stristr(player->GetPlayerName(), name))
-		{
-			i++;
-		}
-	}
-
-	if (i)
-	{
-		name.AppendFormat("(%i)", i);
-	}
-
-	Q_strncpy(pBuffer, name.Access(), iBufferSize);
-}
-
-//-----------------------------------------------------------------------------------------------------
 CON_COMMAND_F(neo_bot_add, "Add a bot.", FCVAR_GAMEDLL)
 {
 	// Listenserver host or rcon access only!
@@ -203,6 +136,10 @@ CON_COMMAND_F(neo_bot_add, "Add a bot.", FCVAR_GAMEDLL)
 		}
 	}
 
+	const CNEOBotProfileFilter botFilter = {
+		.flagTargetDifficulty = (1 << skill),
+	};
+
 	int iTeam = Bot_GetTeamByName(teamname);
 
 	if (NEORules()->IsTeamplay() && iTeam == TEAM_UNASSIGNED)
@@ -220,45 +157,29 @@ CON_COMMAND_F(neo_bot_add, "Add a bot.", FCVAR_GAMEDLL)
 	for (i = 0; i < botCount; ++i)
 	{
 		CNEOBot* pBot = NULL;
-		const char* pszBotName = NULL;
 
-		if (!pszBotNameViaArg)
-		{
-			CreateBotName(skill, name, sizeof(name));
-			pszBotName = name;
-		}
-		else
-		{
-			pszBotName = pszBotNameViaArg;
-		}
+		const CNEOBotProfileReturn retProfile = NEOBotProfileNextPick(botFilter);
 
-		pBot = NextBotCreatePlayerBot< CNEOBot >(pszBotName);
+		char szBotName[MAX_PLAYER_NAME_LENGTH];
+		const auto curBotSkill = static_cast<CNEOBot::DifficultyType>(
+				NEOBotProfileCreateNameRetSkill(szBotName, retProfile.profile, skill, pszBotNameViaArg));
+
+		pBot = NextBotCreatePlayerBot< CNEOBot >(szBotName);
 
 		if (pBot)
 		{
+			pBot->m_iProfileIdx = retProfile.index;
+			V_memcpy(&pBot->m_profile, &retProfile.profile, sizeof(CNEOBotProfile));
 			if (bQuotaManaged)
 			{
 				pBot->SetAttribute(CNEOBot::QUOTA_MANANGED);
 			}
 
-			float flDice = RandomFloat();
-			if (flDice <= neo_bot_recon_ratio.GetFloat())
-			{
-				pBot->RequestSetClass(NEO_CLASS_RECON);
-			}
-			else if (flDice >= (1.0f - neo_bot_support_ratio.GetFloat()))
-			{
-				pBot->RequestSetClass(NEO_CLASS_SUPPORT);
-			}
-			else
-			{
-				pBot->RequestSetClass(NEO_CLASS_ASSAULT);
-			}
-
-			engine->SetFakeClientConVarValue(pBot->edict(), "name", name);
+			pBot->RequestClassOnProfile();
+			engine->SetFakeClientConVarValue(pBot->edict(), "name", pBot->GetPlayerName() );
 			pBot->RequestSetSkin(RandomInt(0, 2));
 			pBot->HandleCommand_JoinTeam(iTeam);
-			pBot->SetDifficulty(skill);
+			pBot->SetDifficulty(curBotSkill);
 
 			++iNumAdded;
 		}
@@ -623,6 +544,8 @@ CNEOBot::CNEOBot()
 
 	SetAutoJump(0.f, 0.f);
 
+	V_memcpy(&m_profile, &FIXED_DEFAULT_PROFILE, sizeof(CNEOBotProfile));
+
 	// set default values for convars only present on the client
 	edict_t* edict = GetEntity()->edict();
 	if (edict)
@@ -653,12 +576,62 @@ CNEOBot::~CNEOBot()
 
 	if (m_vision)
 		delete m_vision;
+
+	NEOBotProfileFreePickByIdx(m_iProfileIdx);
 }
 
 
 //-----------------------------------------------------------------------------------------------------
 void CNEOBot::Spawn()
 {
+	// CNEOBot do m_iNeoClass a bit earlier
+	if ((m_iNextSpawnClassChoice != -1) && (m_iNeoClass != m_iNextSpawnClassChoice))
+	{
+		m_iNeoClass = m_iNextSpawnClassChoice;
+	}
+
+	const ENeoRank eRank = static_cast<ENeoRank>(GetRank(m_iXP) - 1);
+	if (eRank == NEO_RANK_RANKLESS_DOG || (false == IN_BETWEEN_EQ(NEO_CLASS_RECON, m_iNeoClass, NEO_CLASS_VIP)))
+	{
+		m_iLoadoutWepChoice = 0;
+	}
+	else
+	{
+		const NEO_WEP_BITS_UNDERLYING_TYPE wepPrefsForCurRank = m_profile.flagsWepPrefs[m_iNeoClass][eRank];
+
+		int iChosenWeps[MAX_WEAPON_LOADOUTS] = {};
+		int iChosenWepsSize = 0;
+		for (int i = 0; i < MAX_WEAPON_LOADOUTS; ++i)
+		{
+			if (wepPrefsForCurRank & CNEOWeaponLoadout::s_LoadoutWeapons[m_iNeoClass][i].info.m_iWepBit)
+			{
+				iChosenWeps[iChosenWepsSize++] = i;
+			}
+		}
+
+		if (iChosenWepsSize == 0)
+		{
+			// Generally shouldn't happen, but if so, just pick from any under the XP limit
+			for (int i = 0; i < MAX_WEAPON_LOADOUTS; ++i)
+			{
+				if (CNEOWeaponLoadout::s_LoadoutWeapons[m_iNeoClass][i].m_iWeaponPrice > m_iXP)
+				{
+					break;
+				}
+				iChosenWeps[iChosenWepsSize++] = i;
+			}
+		}
+
+		if (iChosenWepsSize == 1)
+		{
+			m_iLoadoutWepChoice = iChosenWeps[0];
+		}
+		else
+		{
+			m_iLoadoutWepChoice = iChosenWeps[RandomInt(0, iChosenWepsSize - 1)];
+		}
+	}
+
 	BaseClass::Spawn();
 
 	m_spawnArea = NULL;
@@ -2464,6 +2437,73 @@ bool CNEOBot::PrefersLongRange(CNEOBaseCombatWeapon* pWeapon)
 bool CNEOBot::IsFiring() const
 {
 	return m_nButtons & IN_ATTACK || m_afButtonPressed & IN_ATTACK || m_afButtonLast & IN_ATTACK;
+}
+
+void CNEOBot::RequestClassOnProfile()
+{
+	bool bValidClasses[NEO_CLASS__ENUM_COUNT] = {};
+	int iClassCounts = 0;
+	for (int i = 0; i <= NEO_CLASS_SUPPORT; ++i)
+	{
+		bValidClasses[i] = (m_profile.flagClass & (1 << i));
+		if (bValidClasses[i])
+		{
+			++iClassCounts;
+		}
+	}
+
+	if (iClassCounts == 0)
+	{
+		for (int i = 0; i <= NEO_CLASS_SUPPORT; ++i)
+		{
+			bValidClasses[i] = true;
+			++iClassCounts;
+		}
+	}
+
+	bool bHasPicked = false;
+	if (iClassCounts > 1)
+	{
+		for (int iRollCount = 0;
+				iRollCount < 3 && !bHasPicked;
+				++iRollCount)
+		{
+			float flDice = RandomFloat();
+			if (flDice <= neo_bot_recon_ratio.GetFloat())
+			{
+				if ((bHasPicked = bValidClasses[NEO_CLASS_RECON]))
+				{
+					RequestSetClass(NEO_CLASS_RECON);
+				}
+			}
+			else if (flDice >= (1.0f - neo_bot_support_ratio.GetFloat()))
+			{
+				if ((bHasPicked = bValidClasses[NEO_CLASS_SUPPORT]))
+				{
+					RequestSetClass(NEO_CLASS_SUPPORT);
+				}
+			}
+			else
+			{
+				if ((bHasPicked = bValidClasses[NEO_CLASS_ASSAULT]))
+				{
+					RequestSetClass(NEO_CLASS_ASSAULT);
+				}
+			}
+		}
+	}
+
+	if (!bHasPicked)
+	{
+		for (int i = 0; i <= NEO_CLASS_SUPPORT; ++i)
+		{
+			if (bValidClasses[i])
+			{
+				RequestSetClass(i);
+				break;
+			}
+		}
+	}
 }
 
 CNEOBotIntention::CNEOBotIntention(CNEOBot *bot)

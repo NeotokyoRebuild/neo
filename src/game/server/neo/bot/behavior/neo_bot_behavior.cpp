@@ -196,7 +196,7 @@ EventDesiredResult< CNEOBot > CNEOBotMainAction::OnContact( CNEOBot *me, CBaseEn
 EventDesiredResult< CNEOBot > CNEOBotMainAction::OnStuck( CNEOBot *me )
 {
 	UTIL_LogPrintf( "\"%s<%i><%s>\" stuck (position \"%3.2f %3.2f %3.2f\") (duration \"%3.2f\") ",
-					me->GetPlayerName(),
+					me->GetNeoPlayerName(),
 					me->GetUserID(),
 					me->GetNetworkIDString(),
 					me->GetAbsOrigin().x, me->GetAbsOrigin().y, me->GetAbsOrigin().z,
