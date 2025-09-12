@@ -30,12 +30,10 @@ DECLARE_NAMED_HUDELEMENT(CNEOHud_RoundState, NRoundState);
 
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(RoundState, 0.1)
 
-static void teamSwapSidesCallback(IConVar* var, const char* pOldValue, float flOldValue)
-{
-	g_pNeoScoreBoard->UpdateTeamColumnsPosition(GetLocalPlayerTeam());
-}
-
-ConVar cl_neo_hud_team_swap_sides("cl_neo_hud_team_swap_sides", "1", FCVAR_ARCHIVE, "Make the team of the local player always appear on the left side of the round info and scoreboard", true, 0.0, true, 1.0, teamSwapSidesCallback);
+ConVar cl_neo_hud_team_swap_sides("cl_neo_hud_team_swap_sides", "1", FCVAR_ARCHIVE, "Make the team of the local player always appear on the left side of the round info and scoreboard", true, 0.0, true, 1.0,
+	[]([[maybe_unused]] IConVar* var, [[maybe_unused]] const char* pOldValue, [[maybe_unused]] float flOldValue) {
+		g_pNeoScoreBoard->UpdateTeamColumnsPosition(GetLocalPlayerTeam());
+	});
 ConVar cl_neo_squad_hud_original("cl_neo_squad_hud_original", "1", FCVAR_ARCHIVE, "Use the old squad HUD", true, 0.0, true, 1.0);
 ConVar cl_neo_squad_hud_star_scale("cl_neo_squad_hud_star_scale", "0", FCVAR_ARCHIVE, "Scaling to apply from 1080p, 0 disables scaling");
 extern ConVar sv_neo_dm_win_xp;
