@@ -111,8 +111,8 @@ private:
 	CPanelAnimationVarAliasType( int, m_iLineMargin, "LineMargin", "2", "proportional_ypos");
 	CPanelAnimationVar( int, m_iMaxDeathNotices, "MaxDeathNotices", "8" );
 	CPanelAnimationVar( bool, m_bRightJustify, "RightJustify", "1" );
-	CPanelAnimationVar( Color, m_BackgroundColour, "BackgroundColour", "200 200 200 40");
-	CPanelAnimationVar( Color, m_BackgroundColourInvolved, "BackgroundColourInvolved", "50 50 50 200");
+	CPanelAnimationVar( Color, m_BackgroundColour, "BackgroundColour", "20 20 20 220");
+	CPanelAnimationVar( Color, m_BackgroundColourInvolved, "BackgroundColourInvolved", "200 200 200 40");
 
 	CUtlVector<DeathNoticeItem> m_DeathNotices;
 };
@@ -388,7 +388,7 @@ void CNEOHud_DeathNotice::SetDeathNoticeItemDimensions(DeathNoticeItem* deathNot
 			surface()->GetTextSize(g_hFontKillfeed, deathNoticeItem->Killer.szName, width, height);
 			totalWidth += width;
 		}
-		if (deathNoticeItem->Assist.iEntIndex != 0)
+		if (deathNoticeItem->Assist.iEntIndex != 0 && !deathNoticeItem->bSuicide)
 		{
 			surface()->GetTextSize(g_hFontKillfeed, deathNoticeItem->Assist.szName, width, height);
 			totalWidth += width;
@@ -398,7 +398,11 @@ void CNEOHud_DeathNotice::SetDeathNoticeItemDimensions(DeathNoticeItem* deathNot
 		if (deathNoticeItem->Victim.iEntIndex != 0)
 		{
 			surface()->GetTextSize(g_hFontKillfeed, deathNoticeItem->Victim.szName, width, height);
-			totalWidth += width + spaceLength;
+			totalWidth += width;
+			if (!deathNoticeItem->bSuicide)
+			{
+				totalWidth += spaceLength;
+			}
 		}
 		if (deathNoticeItem->bSuicide)
 		{
@@ -454,29 +458,28 @@ void CNEOHud_DeathNotice::DrawPlayerDeath(int i)
 {
 	DrawCommon(i);
 
-	surface()->DrawSetTextFont(g_hFontKillfeed);
-	// Killer
-	if (m_DeathNotices[i].Killer.iEntIndex != 0 && !m_DeathNotices[i].bSuicide)
-	{
-		SetColorForNoticePlayer(m_DeathNotices[i].Killer.iTeam);
-		surface()->DrawSetTextFont(g_hFontKillfeed);
-		surface()->DrawPrintText(m_DeathNotices[i].Killer.szName, m_DeathNotices[i].Killer.iNameLength);
-	}
-
-	// Assister
-	if (m_DeathNotices[i].Assist.iEntIndex != 0)
-	{
-		surface()->DrawSetTextColor(COLOR_NEO_WHITE);
-		surface()->DrawPrintText(ASSIST_SEPARATOR, ASSIST_SEPARATOR_LENGTH - 1);
-
-		SetColorForNoticePlayer(m_DeathNotices[i].Assist.iTeam);
-		surface()->DrawSetTextFont(g_hFontKillfeed);
-		surface()->DrawPrintText(m_DeathNotices[i].Assist.szName, m_DeathNotices[i].Assist.iNameLength);
-	}
-
-	// Icons
 	if (!m_DeathNotices[i].bSuicide)
 	{
+		// Killer
+		if (m_DeathNotices[i].Killer.iEntIndex != 0)
+		{
+			SetColorForNoticePlayer(m_DeathNotices[i].Killer.iTeam);
+			surface()->DrawSetTextFont(g_hFontKillfeed);
+			surface()->DrawPrintText(m_DeathNotices[i].Killer.szName, m_DeathNotices[i].Killer.iNameLength);
+		}
+
+		// Assister
+		if (m_DeathNotices[i].Assist.iEntIndex != 0)
+		{
+			surface()->DrawSetTextColor(COLOR_NEO_WHITE);
+			surface()->DrawPrintText(ASSIST_SEPARATOR, ASSIST_SEPARATOR_LENGTH - 1);
+
+			SetColorForNoticePlayer(m_DeathNotices[i].Assist.iTeam);
+			surface()->DrawSetTextFont(g_hFontKillfeed);
+			surface()->DrawPrintText(m_DeathNotices[i].Assist.szName, m_DeathNotices[i].Assist.iNameLength);
+		}
+
+		// Icons
 		surface()->DrawSetTextFont(g_hFontKillfeed);
 		surface()->DrawPrintText(L" ", 1);
 		surface()->DrawSetTextFont(g_hFontKillfeedIcons);
@@ -504,7 +507,10 @@ void CNEOHud_DeathNotice::DrawPlayerDeath(int i)
 	if (m_DeathNotices[i].Victim.iEntIndex != 0)
 	{
 		surface()->DrawSetTextFont(g_hFontKillfeed);
-		surface()->DrawPrintText(L" ", 1);
+		if (!m_DeathNotices[i].bSuicide)
+		{
+			surface()->DrawPrintText(L" ", 1);
+		}
 		SetColorForNoticePlayer(m_DeathNotices[i].Victim.iTeam);
 		surface()->DrawPrintText(m_DeathNotices[i].Victim.szName, m_DeathNotices[i].Victim.iNameLength);
 	}
