@@ -2040,13 +2040,13 @@ void CNEO_Player::SetDeadModel(const CTakeDamageInfo& info)
 	{
 		for (int i = 0; i < NEO_GIB_LIMB__ENUM_COUNT; i++)
 		{
-			CGib::SpawnSpecificGibs(this, 1, 10, 1000, modelManager->GetGibModel((NeoSkin)GetSkin(), (NeoClass)GetClass(), GetTeamNumber(), NeoGibLimb(i)));
+			SpawnSpecificGibs(10, 1000, modelManager->GetGibModel((NeoSkin)GetSkin(), (NeoClass)GetClass(), GetTeamNumber(), NeoGibLimb(i)));
 		}
 		UTIL_BloodSpray(info.GetDamagePosition(), info.GetDamageForce(), BLOOD_COLOR_RED, 10, FX_BLOODSPRAY_ALL);
 	}
 	else
 	{
-		CGib::SpawnSpecificGibs(this, 1, 10, 1000, modelManager->GetGibModel((NeoSkin)GetSkin(), (NeoClass)GetClass(), GetTeamNumber(), NeoGibLimb(deadModelType-1)));
+		SpawnSpecificGibs(10, 1000, modelManager->GetGibModel((NeoSkin)GetSkin(), (NeoClass)GetClass(), GetTeamNumber(), NeoGibLimb(deadModelType - 1)));
 		UTIL_BloodSpray(info.GetDamagePosition(), info.GetDamageForce(), BLOOD_COLOR_RED, 10, FX_BLOODSPRAY_GORE | FX_BLOODSPRAY_DROPS);
 	}
 	SetPlayerCorpseModel(deadModelType);
@@ -2074,6 +2074,25 @@ void CNEO_Player::SetPlayerCorpseModel(int type)
 	{
 		m_hRagdoll->SetModel(model);
 	}
+}
+
+void CNEO_Player::SpawnSpecificGibs(float vMinVelocity, float vMaxVelocity, const char* cModelName)
+{
+	CGib* pGib = CREATE_ENTITY(CGib, "gib");
+
+	if (NEORules()->CanRespawnAnyTime())
+	{
+		constexpr float GIB_LIFETIME = 30.f;
+		pGib->Spawn(cModelName, GIB_LIFETIME);
+	}
+	else
+	{
+		pGib->Spawn(cModelName);
+	}
+
+	pGib->m_nBody = 0;
+	pGib->InitGib(this, vMinVelocity, vMaxVelocity);
+	pGib->SetOwnerEntity(this);
 }
 
 float CNEO_Player::GetReceivedDamageScale(CBaseEntity* pAttacker)

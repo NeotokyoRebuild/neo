@@ -4060,12 +4060,12 @@ inline const char* CNEORules::GetGameTypeName(void)
 	return NEO_GAME_TYPE_SETTINGS[GetGameType()].gameTypeName;
 }
 
-inline const bool CNEORules::CanChangeTeamClassLoadoutWhenAlive()
+bool CNEORules::CanChangeTeamClassLoadoutWhenAlive()
 {
 	return NEO_GAME_TYPE_SETTINGS[GetGameType()].changeTeamClassLoadoutWhenAlive;
 }
 
-inline const bool CNEORules::CanRespawnAnyTime()
+bool CNEORules::CanRespawnAnyTime()
 {
 	return NEO_GAME_TYPE_SETTINGS[GetGameType()].respawns;
 }

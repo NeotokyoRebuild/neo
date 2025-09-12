@@ -115,6 +115,7 @@ public:
 	void SetPlayerTeamModel(void);
 	void SetDeadModel(const CTakeDamageInfo& info);
 	void SetPlayerCorpseModel(int type);
+	void SpawnSpecificGibs(float vMinVelocity, float vMaxVelocity, const char* cModelName);
 	virtual void PickDefaultSpawnTeam(void) OVERRIDE;
 
 	virtual bool StartObserverMode(int mode) OVERRIDE;
