@@ -1,0 +1,349 @@
+ntre_bot_profiles
+{
+	default
+	{
+		// Filter which difficulty mode(s) the bot will appear
+		difficulty "easy normal hard expert"
+
+		// How the difficulty selected, either: "match" - matches to requested difficulty level
+		// or "force [DIFFICULTY]" - force to a set difficulty regardless of the requested
+		// difficulty level and the forced difficulty is independent of the "difficulty" list.
+		difficulty_select "match"
+
+		// Filter which class(es) the bot will pick
+		class "recon assault support"
+
+		// Which weapon the bot will pick on spawning in for each rank
+		weapons
+		{
+			recon
+			{
+				private "srm"
+				corporal "jittescoped"
+				sergeant "zr68c"
+				lieutenant "supa7"
+			}
+			assault
+			{
+				private "zr68s"
+				corporal "zr68s m41"
+				sergeant "mx"
+				lieutenant "aa13 srs"
+			}
+			support
+			{
+				private "zr68c supa7"
+				corporal "mx"
+				sergeant "mx mx_silenced"
+				lieutenant "mx mx_silenced pz"
+			}
+		}
+	}
+
+	templates
+	{
+		// Prefers auto-rifles when possible
+		rifler
+		{
+			weapons
+			{
+				recon
+				{
+					lieutenant "zr68c"
+				}
+				assault
+				{
+					corporal "zr68s"
+					lieutenant "mx"
+				}
+				support
+				{
+					private "zr68c"
+					lieutenant "mx_silenced"
+				}
+			}
+		}
+
+		// Prefers non-auto or sniper rifles when possible
+		sniper
+		{
+			weapons
+			{
+				recon
+				{
+					corporal "zr68l"
+					sergeant "zr68l"
+					lieutenant "m41s"
+				}
+				assault
+				{
+					corporal "m41"
+					sergeant "m41s mx"
+					lieutenant "srs"
+				}
+				support
+				{
+					private "m41"
+					corporal "mx"
+					sergeant "mx m41s"
+					lieutenant "mx m41s"
+				}
+			}
+		}
+
+		// Prefers shotguns or non-auto when possible, but not strictly
+		shotgun
+		{
+			weapons
+			{
+				// recon not really a suitable class to use
+				// this template for
+				assault
+				{
+					corporal "supa7"
+					sergeant "supa7 mx"
+					lieutenant "aa13"
+				}
+				support
+				{
+					private "supa7"
+					corporal "supa7 mx"
+					sergeant "supa7 mx"
+					lieutenant "supa7 mx"
+				}
+			}
+		}
+
+		// Heavily prefers MX when possible
+		pref_mx
+		{
+			weapons
+			{
+				// recon not really a suitable class to use
+				// this template for
+				assault
+				{
+					private "zr68s"
+					corporal "zr68s"
+					sergeant "mx"
+					lieutenant "mx"
+				}
+				support
+				{
+					private "zr68c"
+					corporal "mx"
+					sergeant "mx"
+					lieutenant "mx"
+				}
+			}
+		}
+
+		// Prefers quieter weapons
+		quieter
+		{
+			weapons
+			{
+				recon
+				{
+					private "mpn"
+					corporal "jittescoped"
+					sergeant "jittescoped"
+					lieutenant "m41s"
+				}
+				assault
+				{
+					private "zr68s"
+					corporal "zr68s m41"
+					sergeant "zr68s m41s"
+					lieutenant "zr68s m41s"
+				}
+				support
+				{
+					private "mpn"
+					corporal "mpn"
+					sergeant "mx_silenced"
+					lieutenant "mx_silenced"
+				}
+			}
+		}
+
+		// Prefers non-silenced weapons
+		no_silencer
+		{
+			weapons
+			{
+				recon
+				{
+					private "srm jitte"
+					corporal "srm jitte"
+					sergeant "zr68c"
+					lieutenant "supa7"
+				}
+				assault
+				{
+					private "zr68c"
+					corporal "zr68c m41 supa7"
+					sergeant "mx"
+					lieutenant "mx aa13 srs"
+				}
+				support
+				{
+					private "zr68c m41 supa7"
+					corporal "mx supa7"
+					sergeant "mx"
+					lieutenant "mx pz"
+				}
+			}
+		}
+	}
+
+	bots
+	{
+		"Deej"
+		{
+			class "recon"
+			templates ""
+		}
+		"pushBAK"
+		{
+			class "assault support"
+			weapons
+			{
+				assault
+				{
+					private "zr68s"
+					corporal "m41"
+					sergeant "m41 m41s mx"
+					lieutenant "m41 m41s mx aa13"
+				}
+				support
+				{
+					private "m41"
+					corporal "m41 m41s mx"
+					sergeant "m41 m41s mx"
+					lieutenant "m41 m41s mx"
+				}
+			}
+		}
+		"Grey"
+		{
+			class "assault"
+			templates ""
+		}
+		"Tatsur0"
+		{
+		}
+		"Operation Ivy"
+		{
+			class "support"
+			templates ""
+		}
+		"0edit"
+		{
+			class "assault support"
+			templates "no_silencer"
+		}
+		"Glasseater"
+		{
+			class "assault"
+			templates "pref_mx"
+		}
+		"Filter Decay"
+		{
+			class "recon support"
+			templates "quieter"
+		}
+		"Gato"
+		{
+			class "support"
+			templates "shotgun"
+		}
+		"KillahMo"
+		{
+			class "recon assault"
+			templates ""
+		}
+		"TGR Fuel Addict"
+		{
+			difficulty "hard expert"
+			difficulty_select "force expert"
+		}
+		"The Major"
+		{
+			difficulty "hard expert"
+			difficulty_select "force expert"
+			class "recon"
+			weapons
+			{
+				recon
+				{
+					private "srm"
+					corporal "srm"
+					sergeant "zr68c"
+					lieutenant "zr68c supa7"
+				}
+			}
+		}
+		"Wolf"
+		{
+		}
+		"Sanjuro Executive"
+		{
+		}
+		"Grumpy Old Man"
+		{
+		}
+		"Biodroid Prototype"
+		{
+		}
+		"TGR"
+		{
+		}
+		"Jinball"
+		{
+		}
+		"Pequod"
+		{
+		}
+		"The Chimpanzee"
+		{
+		}
+		"Marchenko"
+		{
+		}
+		"Jeff"
+		{
+		}
+		"M.A.W.S."
+		{
+		}
+		"Tin Soldier"
+		{
+		}
+		"SUKKIT"
+		{
+		}
+		"Supaman"
+		{
+		}
+		"Hadaly"
+		{
+		}
+		"Komatsu Lifthelper"
+		{
+		}
+		"HE Specialist"
+		{
+		}
+		"Left Leaner"
+		{
+		}
+		"Super Class A Hacker"
+		{
+		}
+		"and You"
+		{
+		}
+	}
+}
+

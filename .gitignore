@@ -24,6 +24,7 @@ out
 /game/neo/materials/temp
 /game/neo/resource/*.sfd
 /game/neo/resource/*.ttf
+/game/neo/resource/OFL.txt
 /game/neo/sound
 
 # Use -f to override it
@@ -197,6 +198,7 @@ stats.txt
 *.cache
 glshaders.cfg
 server_blacklist.txt
+ntre_server_blacklist.txt
 videoconfig_linux.cfg
 *.ain
 user_custom

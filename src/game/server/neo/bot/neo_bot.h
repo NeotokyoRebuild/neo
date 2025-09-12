@@ -14,6 +14,7 @@
 #include "nav_entities.h"
 #include "utlstack.h"
 #include "behavior/neo_bot_behavior.h"
+#include "neo_bot_profile.h"
 
 #define NEO_BOT_TYPE	1338
 
@@ -425,6 +426,11 @@ public:
 	bool m_bOnTarget = false;
 	QueryResultType m_qPrevShouldAim = ANSWER_NO;
 	float m_flLastShouldAimTime = 0.0f;
+
+	CNEOBotProfile m_profile = {};
+	void RequestClassOnProfile();
+	int m_iIntendTeam = 0;
+	int m_iProfileIdx = -1;
 
 private:
 	CNEOBotLocomotion *m_locomotor;
@@ -1000,5 +1006,4 @@ public:
 	int m_iIgnoreTeam;
 	bool m_bCallerIsProjectile;
 };
-
 

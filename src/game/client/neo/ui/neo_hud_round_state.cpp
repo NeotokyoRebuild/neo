@@ -397,7 +397,7 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	}
 
 	if (NEORules()->GetRoundStatus() == NeoRoundStatus::Pause ||
-			NEORules()->GetRoundStatus() == NeoRoundStatus::Countdown)
+			NEORules()->GetRoundStatus() == NeoRoundStatus::Countdown || NEORules()->GetRoundStatus() == NeoRoundStatus::Warmup)
 	{
 		szGameTypeDescription[0] = '\0';
 	}

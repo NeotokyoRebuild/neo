@@ -8,10 +8,7 @@
 #include "tier3/tier3.h"
 #include "vgui/ILocalize.h"
 
-extern ConVar neo_bot_prefix_name_with_difficulty;
 extern ConVar neo_bot_difficulty;
-
-extern void CreateBotName( CNEOBot::DifficultyType skill, char* pBuffer, int iBufferSize );
 
 //------------------------------------------------------------------------------
 
@@ -269,12 +266,26 @@ void CNEOBotGenerator::SpawnBot( void )
 		return;
 	}
 
-	char name[MAX_PLAYER_NAME_LENGTH];
+	CNEOBot::DifficultyType curBotSkill = static_cast<CNEOBot::DifficultyType>(m_difficulty);
 	CNEOBot *bot = TheNEOBots().GetAvailableBotFromPool();
 	if ( bot == NULL )
 	{
-		CreateBotName( (CNEOBot::DifficultyType)m_difficulty, name, sizeof(name) );
-		bot = NextBotCreatePlayerBot< CNEOBot >( name );
+		const CNEOBotProfileFilter botFilter = {
+			.flagTargetDifficulty = (m_difficulty != CNEOBot::UNDEFINED) ? (1 << m_difficulty) : 0,
+		};
+
+		const CNEOBotProfileReturn retProfile = NEOBotProfileNextPick(botFilter);
+
+		char szBotName[MAX_PLAYER_NAME_LENGTH];
+		curBotSkill = static_cast<CNEOBot::DifficultyType>(
+				NEOBotProfileCreateNameRetSkill(szBotName, retProfile.profile, m_difficulty));
+
+		bot = NextBotCreatePlayerBot< CNEOBot >(szBotName);
+		if (bot)
+		{
+			bot->m_iProfileIdx = retProfile.index;
+			V_memcpy(&bot->m_profile, &retProfile.profile, sizeof(CNEOBotProfile));
+		}
 	}
 
 	if ( bot ) 
@@ -298,9 +309,9 @@ void CNEOBotGenerator::SpawnBot( void )
 			bot->SetAttribute( CNEOBot::DISABLE_DODGE );
 		}
 
-		if ( m_difficulty != CNEOBot::UNDEFINED )
+		if (curBotSkill != CNEOBot::UNDEFINED)
 		{
-			bot->SetDifficulty( (CNEOBot::DifficultyType )m_difficulty );
+			bot->SetDifficulty(curBotSkill);
 		}
 
 		// propagate the generator's spawn flags into all bots generated
