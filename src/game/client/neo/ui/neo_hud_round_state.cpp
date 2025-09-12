@@ -30,6 +30,10 @@ DECLARE_NAMED_HUDELEMENT(CNEOHud_RoundState, NRoundState);
 
 NEO_HUD_ELEMENT_DECLARE_FREQ_CVAR(RoundState, 0.1)
 
+ConVar cl_neo_hud_team_swap_sides("cl_neo_hud_team_swap_sides", "1", FCVAR_ARCHIVE, "Make the team of the local player always appear on the left side of the round info and scoreboard", true, 0.0, true, 1.0,
+	[]([[maybe_unused]] IConVar* var, [[maybe_unused]] const char* pOldValue, [[maybe_unused]] float flOldValue) {
+		g_pNeoScoreBoard->UpdateTeamColumnsPosition(GetLocalPlayerTeam());
+	});
 ConVar cl_neo_squad_hud_original("cl_neo_squad_hud_original", "1", FCVAR_ARCHIVE, "Use the old squad HUD", true, 0.0, true, 1.0);
 ConVar cl_neo_squad_hud_star_scale("cl_neo_squad_hud_star_scale", "0", FCVAR_ARCHIVE, "Scaling to apply from 1080p, 0 disables scaling");
 extern ConVar sv_neo_dm_win_xp;
@@ -295,7 +299,7 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	const int localPlayerTeam = GetLocalPlayerTeam();
 	if (NEORules()->IsTeamplay())
 	{
-		if (localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF) {
+		if (cl_neo_hud_team_swap_sides.GetBool() && (localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF)) {
 			V_snwprintf(m_wszLeftTeamScore, 3, L"%i", GetGlobalTeam(localPlayerTeam)->GetRoundsWon());
 			V_snwprintf(m_wszRightTeamScore, 3, L"%i", GetGlobalTeam(NEORules()->GetOpposingTeam(localPlayerTeam))->GetRoundsWon());
 		}
@@ -325,7 +329,7 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 	}
 	else if (NEORules()->GetGameType() == NEO_GAME_TYPE_TDM || NEORules()->GetGameType() == NEO_GAME_TYPE_JGR)
 	{
-		if (localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF) {
+		if (cl_neo_hud_team_swap_sides.GetBool() && (localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF)) {
 			V_sprintf_safe(szPlayersAliveANSI, "%i:%i", GetGlobalTeam(localPlayerTeam)->Get_Score(), GetGlobalTeam(NEORules()->GetOpposingTeam(localPlayerTeam))->Get_Score());
 		}
 		else {
@@ -460,8 +464,9 @@ void CNEOHud_RoundState::DrawNeoHudElement()
 	const int localPlayerIndex = GetLocalPlayerIndex();
 	const bool localPlayerSpecOrNoTeam = !NEORules()->IsTeamplay() || !(localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF);
 
-	const int leftTeam = localPlayerSpecOrNoTeam ? TEAM_JINRAI : localPlayerTeam;
-	const int rightTeam = (leftTeam == TEAM_JINRAI) ? TEAM_NSF : TEAM_JINRAI;
+	bool swapTeamSides = cl_neo_hud_team_swap_sides.GetBool();
+	const int leftTeam = swapTeamSides ? (localPlayerSpecOrNoTeam ? TEAM_JINRAI : localPlayerTeam) : TEAM_JINRAI;
+	const int rightTeam = swapTeamSides ? ((leftTeam == TEAM_JINRAI) ? TEAM_NSF : TEAM_JINRAI) : TEAM_NSF;
 	const auto leftTeamInfo = m_teamLogoColors[leftTeam];
 	const auto rightTeamInfo = m_teamLogoColors[rightTeam];
 
@@ -620,7 +625,7 @@ void CNEOHud_RoundState::DrawPlayerList()
 		const int localPlayerTeam = GetLocalPlayerTeam();
 		const int localPlayerIndex = GetLocalPlayerIndex();
 		const bool localPlayerSpec = !(localPlayerTeam == TEAM_JINRAI || localPlayerTeam == TEAM_NSF);
-		const int leftTeam = localPlayerSpec ? TEAM_JINRAI : localPlayerTeam;
+		const int leftTeam = cl_neo_hud_team_swap_sides.GetBool() ? (localPlayerSpec ? TEAM_JINRAI : localPlayerTeam) : TEAM_JINRAI;
 
 		if (localPlayerSpec)
 		{
