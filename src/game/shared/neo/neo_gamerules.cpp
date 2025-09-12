@@ -232,6 +232,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	RecvPropInt(RECVINFO(m_iEscortingTeam)),
 	RecvPropBool(RECVINFO(m_bGhostExists)),
 	RecvPropFloat(RECVINFO(m_flGhostLastHeld)),
+	RecvPropFloat(RECVINFO(m_flAccumulatedOvertime)),
 	RecvPropVector(RECVINFO(m_vecGhostMarkerPos)),
 	RecvPropInt(RECVINFO(m_iJuggernautPlayerIndex)),
 	RecvPropBool(RECVINFO(m_bJuggernautItemExists)),
@@ -255,6 +256,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CNEORules, DT_NEORules )
 	SendPropInt(SENDINFO(m_iEscortingTeam)),
 	SendPropBool(SENDINFO(m_bGhostExists)),
 	SendPropFloat(SENDINFO(m_flGhostLastHeld)),
+	SendPropFloat(SENDINFO(m_flAccumulatedOvertime)),
 	SendPropVector(SENDINFO(m_vecGhostMarkerPos), -1, SPROP_COORD_MP_LOWPRECISION | SPROP_CHANGES_OFTEN, MIN_COORD_FLOAT, MAX_COORD_FLOAT),
 	SendPropInt(SENDINFO(m_iJuggernautPlayerIndex)),
 	SendPropBool(SENDINFO(m_bJuggernautItemExists)),
@@ -381,6 +383,7 @@ ConVar sv_neo_dm_win_xp("sv_neo_dm_win_xp", "50", FCVAR_REPLICATED, "The XP limi
 ConVar sv_neo_ctg_ghost_overtime_enabled("sv_neo_ctg_ghost_overtime_enabled", "0", FCVAR_REPLICATED, "Enable ghost overtime.", true, 0, true, 1);
 ConVar sv_neo_ctg_ghost_overtime("sv_neo_ctg_ghost_overtime", "45", FCVAR_REPLICATED, "Adds up to this many seconds to the round while the ghost is held.", true, 0, true, 120);
 ConVar sv_neo_ctg_ghost_overtime_grace("sv_neo_ctg_ghost_overtime_grace", "10", FCVAR_REPLICATED, "Number of seconds left in the round when the ghost is dropped in overtime.", true, 0, true, 30);
+ConVar sv_neo_ctg_ghost_overtime_grace_decay("sv_neo_ctg_ghost_overtime_grace_decay", "0", FCVAR_REPLICATED, "Slowly reduce the grace time as overtime goes on.", true, 0, true, 1);
 
 #ifdef CLIENT_DLL
 extern ConVar neo_fov;
@@ -683,6 +686,7 @@ void CNEORules::ResetMapSessionCommon()
 	m_flNeoRoundStartTime = 0.0f;
 	m_flNeoNextRoundStartTime = 0.0f;
 	m_flGhostLastHeld = 0.0f;
+	m_flAccumulatedOvertime = 0.0f;
 #ifdef GAME_DLL
 	m_pRestoredInfos.Purge();
 	m_readyAccIDs.Purge();
@@ -1068,9 +1072,26 @@ void CNEORules::Think(void)
 		m_nRoundStatus = NeoRoundStatus::Overtime;
 	}
 
-	if (m_nGameTypeSelected == NEO_GAME_TYPE_CTG && m_nRoundStatus == NeoRoundStatus::Overtime && m_iGhosterPlayer)
+	if (sv_neo_ctg_ghost_overtime_grace_decay.GetBool())
 	{
-		m_flGhostLastHeld = gpGlobals->curtime;
+		if (m_nGameTypeSelected == NEO_GAME_TYPE_CTG && m_nRoundStatus == NeoRoundStatus::Overtime)
+		{
+			if (m_iGhosterPlayer)
+			{
+				m_flAccumulatedOvertime = (gpGlobals->curtime - m_flNeoRoundStartTime - (neo_ctg_round_timelimit.GetFloat() * 60.f) + sv_neo_ctg_ghost_overtime_grace.GetFloat());
+			}
+			else
+			{
+				m_flAccumulatedOvertime += m_iGhosterPlayer ? gpGlobals->interval_per_tick : gpGlobals->interval_per_tick * ((sv_neo_ctg_ghost_overtime.GetFloat() + sv_neo_ctg_ghost_overtime_grace.GetFloat()) / sv_neo_ctg_ghost_overtime_grace.GetFloat());
+			}
+		}
+	}
+	else
+	{
+		if (m_nGameTypeSelected == NEO_GAME_TYPE_CTG && m_nRoundStatus == NeoRoundStatus::Overtime && m_iGhosterPlayer)
+		{
+			m_flGhostLastHeld = gpGlobals->curtime;
+		}
 	}
 
 	if (g_fGameOver)   // someone else quit the game already
@@ -1685,14 +1706,29 @@ float CNEORules::GetCTGOverTime() const
 {
 	float roundTimeLimit = neo_ctg_round_timelimit.GetFloat() * 60.f;
 	float overtime = (m_flNeoRoundStartTime + roundTimeLimit + sv_neo_ctg_ghost_overtime.GetFloat()) - gpGlobals->curtime;
-	float grace = sv_neo_ctg_ghost_overtime_grace.GetFloat() - (gpGlobals->curtime - m_flGhostLastHeld);
-	if (m_iGhosterPlayer || overtime < grace)
+
+	if (sv_neo_ctg_ghost_overtime_grace_decay.GetBool())
 	{
-		return overtime;
+		if (m_iGhosterPlayer)
+		{
+			return overtime;
+		}
+		else
+		{
+			return (sv_neo_ctg_ghost_overtime.GetFloat() + sv_neo_ctg_ghost_overtime_grace.GetFloat() - m_flAccumulatedOvertime) / ((sv_neo_ctg_ghost_overtime.GetFloat() + sv_neo_ctg_ghost_overtime_grace.GetFloat()) / sv_neo_ctg_ghost_overtime_grace.GetFloat());
+		}
 	}
 	else
 	{
-		return grace;
+		float grace = sv_neo_ctg_ghost_overtime_grace.GetFloat() - (gpGlobals->curtime - m_flGhostLastHeld);
+		if (m_iGhosterPlayer || overtime < grace)
+		{
+			return overtime;
+		}
+		else
+		{
+			return grace;
+		}
 	}
 }
 
@@ -2497,6 +2533,7 @@ void CNEORules::StartNextRound()
 	m_flNeoRoundStartTime = gpGlobals->curtime;
 	m_flNeoNextRoundStartTime = 0;
 	m_flGhostLastHeld = 0;
+	m_flAccumulatedOvertime = 0;
 
 	CleanUpMap();
 	const bool bFromStarting = (m_nRoundStatus == NeoRoundStatus::Warmup

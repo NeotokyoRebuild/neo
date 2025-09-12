@@ -448,6 +448,7 @@ private:
 	CNetworkVector(m_vecGhostMarkerPos);
 	CNetworkVar(bool, m_bGhostExists);
 	CNetworkVar(float, m_flGhostLastHeld);
+	CNetworkVar(float, m_flAccumulatedOvertime);
 
 	// Juggernaut networked variables
 	CNetworkVar(int, m_iJuggernautPlayerIndex);
