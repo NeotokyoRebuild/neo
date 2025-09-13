@@ -49,6 +49,7 @@ public:
 	virtual void FireGameEvent( IGameEvent *event);
 
 	virtual void UpdatePlayerAvatar(int playerIndex, KeyValues* kv);
+	void UpdateTeamColumnsPosition(int team);
 
 	vgui::ImageList				*m_pImageList;
 	CUtlMap<CSteamID,int>		m_mapAvatarsToImageList;
@@ -80,6 +81,11 @@ protected:
 	vgui::SectionedListPanel *m_pJinraiPlayerList;
 	vgui::SectionedListPanel *m_pNSFPlayerList;
 	vgui::SectionedListPanel *m_pSpectatorsPlayerList;
+
+	int m_iLeftTeamXPos = 0;
+	int m_iLeftTeamYPos = 0;
+	int m_iRightTeamXPos = 0;
+	int m_iRightTeamYPos = 0;
 
 	int s_VoiceImage[5];
 	int TrackerImage;

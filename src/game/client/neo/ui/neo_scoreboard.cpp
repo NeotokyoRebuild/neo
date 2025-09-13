@@ -50,6 +50,7 @@ using namespace vgui;
 ConVar cl_neo_hud_scoreboard_hide_others("cl_neo_hud_scoreboard_hide_others", "1", FCVAR_ARCHIVE, "Hide some other HUD elements when the scoreboard is displayed to prevent overlap", true, 0.0, true, 1.0);
 ConVar neo_show_scoreboard_avatars("neo_show_scoreboard_avatars", "1", FCVAR_ARCHIVE, "Show avatars on scoreboard.", true, 0.0, true, 1.0 );
 extern ConVar cl_neo_streamermode;
+extern ConVar cl_neo_hud_team_swap_sides;
 
 CNEOScoreBoard* g_pNeoScoreBoard = NULL;
 
@@ -236,6 +237,19 @@ void CNEOScoreBoard::PostApplySchemeSettings( vgui::IScheme *pScheme )
 
 	// light up scoreboard a bit
 	SetBgColor( Color( 0,0,0,0) );
+
+	// What happens if PostApplySchemeSettings runs the instant the local player's team changes?
+	if (GetLocalPlayerTeam() == TEAM_NSF)
+	{
+		m_pJinraiPlayerList->GetPos(m_iRightTeamXPos, m_iRightTeamYPos);
+		m_pNSFPlayerList->GetPos(m_iLeftTeamXPos, m_iLeftTeamYPos);
+	}
+	else
+	{
+		m_pJinraiPlayerList->GetPos(m_iLeftTeamXPos, m_iLeftTeamYPos);
+		m_pNSFPlayerList->GetPos(m_iRightTeamXPos, m_iRightTeamYPos);
+	}
+	UpdateTeamColumnsPosition(GetLocalPlayerTeam());
 }
 
 //-----------------------------------------------------------------------------
@@ -331,6 +345,10 @@ void CNEOScoreBoard::FireGameEvent( IGameEvent *event )
 		if (pPlayer)
 		{
 			UpdatePlayerAvatar(pPlayer->index, nullptr);
+			if (GetLocalPlayerIndex() == pPlayer->entindex())
+			{
+				UpdateTeamColumnsPosition(event->GetInt("team"));
+			}
 		}
 	}
 
@@ -859,4 +877,21 @@ void CNEOScoreBoard::MoveToCenterOfScreen()
 	int wx, wy, ww, wt;
 	surface()->GetWorkspaceBounds(wx, wy, ww, wt);
 	SetPos((ww - GetWide()) / 2, (wt - GetTall()) / 2);
+}
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void CNEOScoreBoard::UpdateTeamColumnsPosition(int team)
+{
+	if (team == TEAM_NSF && cl_neo_hud_team_swap_sides.GetBool())
+	{
+		m_pJinraiPlayerList->SetPos(m_iRightTeamXPos, m_iRightTeamYPos);
+		m_pNSFPlayerList->SetPos(m_iLeftTeamXPos, m_iLeftTeamYPos);
+	}
+	else
+	{
+		m_pJinraiPlayerList->SetPos(m_iLeftTeamXPos, m_iLeftTeamYPos);
+		m_pNSFPlayerList->SetPos(m_iRightTeamXPos, m_iRightTeamYPos);
+	}
 }
