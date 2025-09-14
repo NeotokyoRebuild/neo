@@ -213,6 +213,8 @@ public:
 	bool IsLineOfFireClear(const Vector& from, const Vector& to, const LineOfFireFlags flags) const;			// return true if a weapon has no obstructions along the line between the given points
 	bool IsLineOfFireClear(const Vector& from, CBaseEntity* who, const LineOfFireFlags flags) const;			// return true if a weapon has no obstructions along the line between the given point and entity
 
+	bool IsFriendlyInCenterOfVision(); // return true if a friendly player is in the line of fire
+
 	bool IsEntityBetweenTargetAndSelf(CBaseEntity* other, CBaseEntity* target);	// return true if "other" is positioned inbetween us and "target"
 
 	CNEO_Player* GetClosestHumanLookingAtMe(int team = TEAM_ANY);	// return the nearest human player on the given team who is looking directly at me
