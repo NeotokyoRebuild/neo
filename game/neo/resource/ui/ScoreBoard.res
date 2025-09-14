@@ -70,6 +70,7 @@
 		"enabled"			"1"
 		"tabPosition"		"0"
 		"linespacing"		"18"
+		"paintborder"		"0"
 	}
 	"NSFPlayerList"
 	{
@@ -85,6 +86,7 @@
 		"enabled"			"1"
 		"tabPosition"		"0"
 		"linespacing"		"18"
+		"paintborder"		"0"
 	}
 	"SpectatorsPlayerList"
 	{
@@ -100,5 +102,6 @@
 		"enabled"			"1"
 		"tabPosition"		"0"
 		"linespacing"		"18"
+		"paintborder"		"0"
 	}
 }
