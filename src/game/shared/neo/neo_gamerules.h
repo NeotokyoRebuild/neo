@@ -402,6 +402,10 @@ public:
 private:
 	void ResetMapSessionCommon();
 
+#ifdef CLIENT_DLL
+	bool m_bIsRecording = false;
+#endif
+
 #ifdef GAME_DLL
 	void SpawnTheGhost(const Vector *origin = nullptr);
 	void SpawnTheJuggernaut(const Vector *origin = nullptr);
