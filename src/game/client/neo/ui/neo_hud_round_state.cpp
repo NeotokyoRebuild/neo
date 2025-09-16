@@ -386,8 +386,8 @@ void CNEOHud_RoundState::UpdateStateForNeoHudElementDraw()
 		break;
 	}
 
-	if (NEORules()->GetRoundStatus() == NeoRoundStatus::Pause ||
-			NEORules()->GetRoundStatus() == NeoRoundStatus::Countdown || NEORules()->GetRoundStatus() == NeoRoundStatus::Warmup || m_iStatusUnicodeSize != 0)
+	if (NEORules()->GetRoundStatus() == NeoRoundStatus::Pause || NEORules()->GetRoundStatus() == NeoRoundStatus::Countdown ||
+			NEORules()->GetRoundStatus() == NeoRoundStatus::Warmup || m_iStatusUnicodeSize != 0)
 	{
 		szGameTypeDescription[0] = '\0';
 	}
