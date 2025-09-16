@@ -32,7 +32,6 @@ out
 *.vmf
 
 # Any debug or user specific configs that shouldn't be pushed
-/game/neo/cfg/autoexec.cfg
 /game/neo/cfg/config.cfg
 /game/neo/cfg/rain.cfg
 
