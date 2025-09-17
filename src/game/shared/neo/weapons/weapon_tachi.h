@@ -40,7 +40,7 @@ public:
     virtual void ForceSetFireMode( bool bPrimaryMode,
         bool bPlaySound = false, float flSoonestSwitch = 0.0f );
 
-	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const override { return NEO_WEP_TACHI; }
+	virtual NEO_WEP_BITS_UNDERLYING_TYPE GetNeoWepBits(void) const override { return NEO_WEP_TACHI | NEO_WEP_FIREARM; }
 	virtual int GetNeoWepXPCost(const int neoClass) const override { return 0; }
 
 	virtual float GetSpeedScale(void) const OVERRIDE { return 0.85f; }
