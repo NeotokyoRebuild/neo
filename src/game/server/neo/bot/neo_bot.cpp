@@ -464,6 +464,29 @@ CBasePlayer* CNEOBot::AllocatePlayerEntity(edict_t* edict, const char* playerNam
 }
 
 //-----------------------------------------------------------------------------------------------------
+bool CNEOBot::IsFriendlyInCenterOfVision()
+{
+	Vector eyePos = EyePosition();
+	Vector forward;
+	EyeVectors(&forward);
+	Vector traceEnd = eyePos + forward * MAX_COORD_RANGE;
+
+	trace_t tr;
+	UTIL_TraceLine(eyePos, traceEnd, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr);
+
+	if (tr.DidHit() && tr.m_pEnt)
+	{
+		CNEO_Player* pTargetPlayer = ToNEOPlayer(tr.m_pEnt);
+		if (pTargetPlayer && InSameTeam(pTargetPlayer))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+//-----------------------------------------------------------------------------------------------------
 void CNEOBot::PressFireButton(float duration)
 {
 	// can't fire if stunned
@@ -472,6 +495,31 @@ void CNEOBot::PressFireButton(float duration)
 	{
 		ReleaseFireButton();
 		return;
+	}
+
+	if ( IsFriendlyInCenterOfVision() )
+	{
+		if ( m_bInLean == NEO_LEAN_LEFT )
+		{
+			PressLeftButton(0.5f);
+		}
+		else if ( m_bInLean == NEO_LEAN_RIGHT )
+		{
+			PressRightButton(0.5f);
+		}
+		else
+		{
+			if ( RandomInt( 0, 1 ) == 0 )
+			{
+				PressLeftButton(0.5f);
+			}
+			else
+			{
+				PressRightButton(0.5f);
+			}
+		}
+		ReleaseFireButton();
+		return; // don't shoot through friendly
 	}
 
 	BaseClass::PressFireButton(duration);
