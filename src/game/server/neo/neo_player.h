@@ -57,6 +57,7 @@ public:
 	virtual void CalculateSpeed(void);
 	virtual void PreThink(void) OVERRIDE;
 	virtual void PlayerDeathThink(void) OVERRIDE;
+	virtual void PlayerUse(void) OVERRIDE;
 	virtual bool HandleCommand_JoinTeam(int team) OVERRIDE;
 	virtual bool ClientCommand(const CCommand &args) OVERRIDE;
 	virtual void CreateViewModel(int viewmodelindex = 0) OVERRIDE;
@@ -292,6 +293,10 @@ public:
 
 	// Bot-only usage
 	float m_flRanOutSprintTime = 0.0f;
+	CHandle<CNEO_Player> m_hLeadingPlayer; // The player this bot is following
+
+public:
+	void ToggleFollowPlayer( CNEO_Player *pCommander );
 
 private:
 	bool m_bFirstDeathTick;
