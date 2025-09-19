@@ -289,9 +289,9 @@ void CNeoClassMenu::UpdateSkinImages(int classNumber, int overrideTeamNumber)
 
 	if (classNumber > NEO_CLASS_SUPPORT || classNumber < NEO_CLASS_RECON)
 	{
-		m_pSkin1_Button->SetButtonTexture("vgui/cm/cm_none");
-		m_pSkin2_Button->SetButtonTexture("vgui/cm/cm_none");
-		m_pSkin3_Button->SetButtonTexture("vgui/cm/cm_none");
+		m_pSkin1_Button->SetButtonTexture("vgui/cm/none");
+		m_pSkin2_Button->SetButtonTexture("vgui/cm/none");
+		m_pSkin3_Button->SetButtonTexture("vgui/cm/none");
 		return;
 	}
 	
